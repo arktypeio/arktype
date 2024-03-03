@@ -3,7 +3,7 @@ import type { NodeCompiler } from "../../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/context.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import type { TypeKind, nodeImplementationOf } from "../../shared/implement.js"
-import { BasePropConstraint } from "./prop.js"
+import { BaseConstraint } from "../constraint.js"
 
 export interface IndexSchema extends BaseMeta {
 	readonly key: TypeSchema
@@ -26,7 +26,7 @@ export type IndexDeclaration = declareNode<{
 	childKind: TypeKind
 }>
 
-export class IndexNode extends BasePropConstraint<
+export class IndexNode extends BaseConstraint<
 	IndexDeclaration,
 	typeof IndexNode
 > {

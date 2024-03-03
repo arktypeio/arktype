@@ -7,7 +7,6 @@ import type { Disjoint } from "../shared/disjoint.js"
 import type {
 	BasisKind,
 	ConstraintKind,
-	PrimitiveKind,
 	kindLeftOf
 } from "../shared/implement.js"
 
@@ -18,20 +17,14 @@ export type constraintKindOrLeftOf<kind extends ConstraintKind> =
 	| kind
 	| constraintKindLeftOf<kind>
 
-export interface BasePrimitiveConstraintDeclaration
-	extends BaseNodeDeclaration {
-	kind: PrimitiveKind & ConstraintKind
+export interface BaseConstraintDeclaration extends BaseNodeDeclaration {
+	kind: ConstraintKind
 }
 
-export abstract class BasePrimitiveConstraint<
-	d extends BasePrimitiveConstraintDeclaration,
+export abstract class BaseConstraint<
+	d extends BaseConstraintDeclaration,
 	subclass extends NodeSubclass<d>
 > extends BaseNode<d["prerequisite"], d, subclass> {
-	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
-	abstract readonly compiledCondition: string
-	abstract readonly compiledNegation: string
-	abstract readonly expectedContext: d["expectedContext"]
-
 	intersect<r extends Node<ConstraintKind>>(
 		r: r
 	): listable<Node<this["kind"] | r["kind"]>> | Disjoint | null {
@@ -41,6 +34,16 @@ export abstract class BasePrimitiveConstraint<
 	get hasOpenIntersection() {
 		return this.impl.hasOpenIntersection as d["hasOpenIntersection"]
 	}
+}
+
+export abstract class BasePrimitiveConstraint<
+	d extends BaseConstraintDeclaration,
+	subclass extends NodeSubclass<d>
+> extends BaseConstraint<d, subclass> {
+	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
+	abstract readonly compiledCondition: string
+	abstract readonly compiledNegation: string
+	abstract readonly expectedContext: d["expectedContext"]
 
 	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
 		if (!this.traverseAllows(data, ctx)) {

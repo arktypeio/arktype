@@ -17,7 +17,7 @@ import type {
 	TypeKind,
 	nodeImplementationOf
 } from "../../shared/implement.js"
-import { BasePropConstraint } from "./prop.js"
+import { BaseConstraint } from "../constraint.js"
 
 export interface BaseSequenceSchema extends BaseMeta {
 	readonly prefix?: readonly TypeSchema[]
@@ -103,7 +103,7 @@ export const isSequenceTuple = (
 	)
 }
 
-export class SequenceNode extends BasePropConstraint<
+export class SequenceNode extends BaseConstraint<
 	SequenceDeclaration,
 	typeof SequenceNode
 > {

@@ -5,7 +5,7 @@ import type { TraverseAllows, TraverseApply } from "../../shared/context.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import type { TypeKind, nodeImplementationOf } from "../../shared/implement.js"
-import { BasePropConstraint } from "./prop.js"
+import { BaseConstraint } from "../constraint.js"
 import { compileKey } from "./shared.js"
 
 export interface OptionalInner extends BaseMeta {
@@ -29,7 +29,7 @@ export type OptionalDeclaration = declareNode<{
 	childKind: TypeKind
 }>
 
-export class OptionalNode extends BasePropConstraint<
+export class OptionalNode extends BaseConstraint<
 	OptionalDeclaration,
 	typeof OptionalNode
 > {

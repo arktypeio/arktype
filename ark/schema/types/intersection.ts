@@ -63,33 +63,6 @@ export type IntersectionSchema<
 		>
 >
 
-type IntersectionCore = Omit<IntersectionInner, ConstraintKind>
-
-const intersectCores = (
-	l: IntersectionCore,
-	r: IntersectionCore
-): MutableInner<"intersection"> | Disjoint => {
-	const result: IntersectionCore = {}
-	const resultBasis = l.basis
-		? r.basis
-			? l.basis.intersect(r.basis)
-			: l.basis
-		: r.basis
-	if (resultBasis) {
-		if (resultBasis instanceof Disjoint) {
-			return resultBasis
-		}
-		result.basis = resultBasis
-	}
-	if (l.onExtraneousKey || r.onExtraneousKey) {
-		result.onExtraneousKey =
-			l.onExtraneousKey === "throw" || r.onExtraneousKey === "throw"
-				? "throw"
-				: "prune"
-	}
-	return result
-}
-
 export type IntersectionDeclaration = declareNode<{
 	kind: "intersection"
 	schema: IntersectionSchema
@@ -259,44 +232,35 @@ export class IntersectionNode<t = unknown> extends BaseType<
 			},
 			intersections: {
 				intersection: (l, r) => {
-					const result = intersectCores(l.core, r.core)
-					if (result instanceof Disjoint) {
-						return result
+					const coreResult = intersectRootKeys(l.root, r.root)
+					if (coreResult instanceof Disjoint) {
+						return coreResult
 					}
-					const flatConstraints = l.constraints.concat(r.constraints)
-					if (flatConstraints.length === 0 && result.basis) {
-						return result.basis
+					if (
+						!l.constraints.length &&
+						!r.constraints.length &&
+						coreResult.basis
+					) {
+						return coreResult.basis
 					}
-					const disjoint = new Disjoint({})
-					// TODO: are these ordered?
-					for (const constraint of flatConstraints) {
-						if (result[constraint.kind]) {
-						}
-						const possibleDisjoint = constraint.reduceIntersection(result)
-						if (possibleDisjoint instanceof Disjoint) {
-							disjoint.add(possibleDisjoint)
-						}
+					const constraintResult = intersectConstraints(
+						l.constraints,
+						r.constraints
+					)
+					if (constraintResult instanceof Disjoint) {
+						return constraintResult
 					}
-					for (const constraint of flatConstraints) {
-						const possibleDisjoint = constraint.reduceIntersection(result)
-						if (possibleDisjoint instanceof Disjoint) {
-							disjoint.add(possibleDisjoint)
-						}
-					}
-					if (!disjoint.isEmpty()) {
-						return disjoint
-					}
-					return l.$.parse("intersection", result, {
-						prereduced: true
-					})
+					return Object.assign(
+						coreResult,
+						unflattenConstraints(constraintResult)
+					)
 				},
 				domain: intersectRightward,
 				proto: intersectRightward
 			}
 		})
 
-	// TODO: remove?
-	readonly core: IntersectionCore = omit(this.inner, constraintKeys)
+	protected root: IntersectionRoot = omit(this.inner, constraintKeys)
 
 	readonly constraints = this.children.filter(
 		(child): child is Node<ConstraintKind> => child.isConstraint()
@@ -361,36 +325,48 @@ const maybeCreatePropsGroup = (inner: IntersectionInner) => {
 	return isEmptyObject(propsInput) ? undefined : new PropsGroup(propsInput)
 }
 
-const reduceConstraints = (
+type IntersectionRoot = Omit<IntersectionInner, ConstraintKind>
+
+const intersectRootKeys = (
+	l: IntersectionRoot,
+	r: IntersectionRoot
+): MutableInner<"intersection"> | Disjoint => {
+	const result: IntersectionRoot = {}
+	const resultBasis = l.basis
+		? r.basis
+			? l.basis.intersect(r.basis)
+			: l.basis
+		: r.basis
+	if (resultBasis) {
+		if (resultBasis instanceof Disjoint) {
+			return resultBasis
+		}
+		result.basis = resultBasis
+	}
+	if (l.onExtraneousKey || r.onExtraneousKey) {
+		result.onExtraneousKey =
+			l.onExtraneousKey === "throw" || r.onExtraneousKey === "throw"
+				? "throw"
+				: "prune"
+	}
+	return result
+}
+
+const intersectConstraints = (
 	l: List<Node<ConstraintKind>>,
 	r: List<Node<ConstraintKind>>
 ) => {
-	let result: readonly Node<ConstraintKind>[] | Disjoint = l
+	let constraints = l
+	const disjoint = new Disjoint({})
 	for (const constraint of r) {
+		const result = addConstraint(constraints, constraint)
 		if (result instanceof Disjoint) {
-			break
+			disjoint.add(result)
+		} else {
+			constraints = result
 		}
-		result = addConstraint(result, constraint)
 	}
-	return result instanceof Disjoint ? result : result
-}
-
-const flattenedConstraintCache = new Map<
-	IntersectionInner,
-	List<Node<ConstraintKind>>
->()
-const flattenConstraints = (
-	inner: IntersectionInner
-): List<Node<ConstraintKind>> => {
-	const cachedResult = flattenedConstraintCache.get(inner)
-	if (cachedResult) {
-		return cachedResult
-	}
-	const result = Object.entries(inner).flatMap(([k, v]) =>
-		k === "description" ? [] : (v as listable<Node<ConstraintKind>>)
-	)
-	flattenedConstraintCache.set(inner, result)
-	return result
+	return disjoint.isEmpty() ? constraints : disjoint
 }
 
 const unflattenConstraints = (
@@ -424,11 +400,14 @@ export const addConstraint = (
 	const result: Node<ConstraintKind>[] = []
 	let includesComponent = false
 	for (let i = 0; i < base.length; i++) {
-		const elementResult = constraint.reduceIntersection(base[i] as never)
+		const elementResult = constraint.intersect(base[i] as never)
 		if (elementResult === null) {
 			result.push(base[i])
 		} else if (elementResult instanceof Disjoint) {
 			return elementResult
+		} else if (isArray(elementResult)) {
+			// TODO: union
+			// result.push(...elementResult)
 		} else if (!includesComponent) {
 			result.push(elementResult)
 			includesComponent = true
