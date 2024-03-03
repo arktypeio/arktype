@@ -3,7 +3,10 @@ import type { NodeCompiler } from "../../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/context.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import type { TypeKind, nodeImplementationOf } from "../../shared/implement.js"
-import type { BaseConstraint, FoldInput } from "../constraint.js"
+import type {
+	BaseConstraint,
+	ReducibleIntersectionContext
+} from "../constraint.js"
 import { BasePropConstraint } from "./prop.js"
 
 export interface IndexSchema extends BaseMeta {
@@ -74,7 +77,7 @@ export class IndexNode
 		}
 	}
 
-	foldIntersection(into: FoldInput<"index">) {
+	reduceIntersection(into: ReducibleIntersectionContext<"index">) {
 		return undefined
 	}
 }

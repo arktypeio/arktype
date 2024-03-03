@@ -1,6 +1,6 @@
 import { Disjoint } from "../../shared/disjoint.js"
 import type { nodeImplementationOf } from "../../shared/implement.js"
-import type { FoldInput } from "../constraint.js"
+import type { ReducibleIntersectionContext } from "../constraint.js"
 import {
 	BaseRange,
 	dateLimitToString,
@@ -35,7 +35,9 @@ export class BeforeNode
 		? (data: Date) => +data < this.numericLimit
 		: (data: Date) => +data <= this.numericLimit
 
-	foldIntersection(into: FoldInput<"before">): Disjoint | undefined {
+	reduceIntersection(
+		into: ReducibleIntersectionContext<"before">
+	): Disjoint | undefined {
 		if (!into.basis?.extends(this.$.builtin.Date)) {
 			this.throwInvalidBoundOperandError(into.basis)
 		}

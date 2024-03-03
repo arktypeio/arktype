@@ -1,7 +1,10 @@
 import { jsData } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
-import { BasePrimitiveConstraint, type FoldInput } from "../constraint.js"
+import {
+	BasePrimitiveConstraint,
+	type ReducibleIntersectionContext
+} from "../constraint.js"
 import type { LengthBoundableData } from "./range.js"
 
 export interface LengthInner extends BaseMeta {
@@ -58,5 +61,5 @@ export class LengthNode extends BasePrimitiveConstraint<
 
 	readonly expectedContext = this.createExpectedContext(this.inner)
 
-	foldIntersection(into: FoldInput<"length">): undefined {}
+	reduceIntersection(into: ReducibleIntersectionContext<"length">): undefined {}
 }

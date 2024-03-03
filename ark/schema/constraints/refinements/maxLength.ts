@@ -1,6 +1,6 @@
 import { Disjoint } from "../../shared/disjoint.js"
 import type { nodeImplementationOf } from "../../shared/implement.js"
-import type { FoldInput } from "../constraint.js"
+import type { ReducibleIntersectionContext } from "../constraint.js"
 import {
 	BaseRange,
 	type LengthBoundableData,
@@ -29,7 +29,9 @@ export class MaxLengthNode extends BaseRange<
 		? (data: LengthBoundableData) => data.length < this.limit
 		: (data: LengthBoundableData) => data.length <= this.limit
 
-	foldIntersection(into: FoldInput<"maxLength">): Disjoint | undefined {
+	reduceIntersection(
+		into: ReducibleIntersectionContext<"maxLength">
+	): Disjoint | undefined {
 		if (
 			into.basis?.domain !== "string" &&
 			!into.basis?.extends(this.$.builtin.Array)

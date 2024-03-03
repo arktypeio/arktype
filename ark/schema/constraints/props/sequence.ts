@@ -17,7 +17,10 @@ import type {
 	TypeKind,
 	nodeImplementationOf
 } from "../../shared/implement.js"
-import type { BaseConstraint, FoldInput } from "../constraint.js"
+import type {
+	BaseConstraint,
+	ReducibleIntersectionContext
+} from "../constraint.js"
 import { BasePropConstraint } from "./prop.js"
 
 export interface BaseSequenceSchema extends BaseMeta {
@@ -214,49 +217,31 @@ export class SequenceNode
 				}
 			},
 			intersectSymmetric: (l, r) => {
-				const state = intersectSequences({
+				if (l.maxLength && r.minLength > l.maxLength) {
+					return Disjoint.from("range", l.maxLengthNode!, r.minLengthNode!)
+				} else if (r.maxLength && l.minLength > r.maxLength) {
+					return Disjoint.from("range", l.minLengthNode!, r.maxLengthNode!)
+				}
+
+				const rootState = intersectSequences({
 					l: [...l.tuple],
 					r: [...r.tuple],
 					fixedVariants: [],
-					disjoints: [],
+					disjoint: null,
 					result: []
 				})
 
-				if (l.maxLength && r.minLength > l.maxLength) {
-					state.disjoints = [
-						...state.disjoints,
-						Disjoint.from("range", l.maxLengthNode!, r.minLengthNode!)
-					]
-				} else if (r.maxLength && l.minLength > r.maxLength) {
-					state.disjoints = [
-						...state.disjoints,
-						Disjoint.from("range", l.minLengthNode!, r.maxLengthNode!)
-					]
+				if (rootState.fixedVariants.length === 0) {
+					return rootState.disjoint ?? l.$.parse("sequence", rootState.result)
 				}
 
-				if (state.fixedVariants.length === 0) {
-					// TODO: propagate disjoints across paths
-					return state.disjoints.length
-						? state.disjoints[0]
-						: l.$.parse("sequence", state.result)
-				}
+				const viableBranches = rootState.disjoint
+					? rootState.fixedVariants
+					: [rootState, ...rootState.fixedVariants]
 
-				const disjoints: Disjoint[] = []
-				const viableBranches: SequenceTupleSchema[] = []
-				const candidateBranches = [state, ...state.fixedVariants]
-
-				candidateBranches.forEach((candidate) =>
-					candidate.disjoints.length === 0
-						? viableBranches.push(candidate.result)
-						: // TODO: propagate disjoints across paths
-						  disjoints.push(candidate.disjoints[0])
+				return viableBranches.map((state) =>
+					l.$.parse("sequence", state.result)
 				)
-
-				return viableBranches.length
-					? viableBranches.map((tupleSchema) =>
-							l.$.parse("sequence", tupleSchema)
-					  )
-					: disjoints[0]
 			}
 		})
 
@@ -346,14 +331,16 @@ export class SequenceNode
 		...this.postfix.map((node): SequenceElement => ({ kind: "postfix", node }))
 	]
 
-	foldIntersection(into: FoldInput<"sequence">): Disjoint | undefined {
-		this.minLengthNode?.foldIntersection(into)
+	reduceIntersection(
+		into: ReducibleIntersectionContext<"sequence">
+	): Disjoint | undefined {
+		this.minLengthNode?.reduceIntersection(into)
 		const possibleLengthDisjoint =
-			this.maxLengthNode?.foldIntersection(into) ??
+			this.maxLengthNode?.reduceIntersection(into) ??
 			// even if this sequence doesn't contribute maxLength, if there is
 			// an existing maxLength constraint, check that it is compatible
 			// with the minLength constraint we just added
-			into.maxLength?.foldIntersection(into)
+			into.maxLength?.reduceIntersection(into)
 		if (possibleLengthDisjoint) return possibleLengthDisjoint
 		const ownResult = this.intersectSymmetric(into.sequence)
 		if (ownResult instanceof Disjoint) {
@@ -391,7 +378,7 @@ export type SequenceElementSchema = {
 type SequenceIntersectionState = {
 	l: readonly SequenceElement[]
 	r: readonly SequenceElement[]
-	disjoints: readonly Disjoint[]
+	disjoint: Disjoint | null
 	result: readonly SequenceElement[]
 	fixedVariants: SequenceIntersectionState[]
 }
@@ -429,7 +416,9 @@ const intersectSequences = (
 			fixedVariants: [],
 			r: rTail.map((element) => ({ ...element, kind: "prefix" }))
 		})
-		state.fixedVariants.push(postfixBranchResult)
+		if (!postfixBranchResult.disjoint) {
+			state.fixedVariants.push(postfixBranchResult)
+		}
 	} else if (
 		rHead.kind === "prefix" &&
 		lHead.kind === "variadic" &&
@@ -440,21 +429,23 @@ const intersectSequences = (
 			fixedVariants: [],
 			l: lTail.map((element) => ({ ...element, kind: "prefix" }))
 		})
-		state.fixedVariants.push(postfixBranchResult)
+		if (!postfixBranchResult.disjoint) {
+			state.fixedVariants.push(postfixBranchResult)
+		}
 	}
 
-	const node = lHead.node.intersect(rHead.node)
-	if (node instanceof Disjoint) {
+	const result = lHead.node.intersect(rHead.node)
+	if (result instanceof Disjoint) {
 		if (kind === "optionals") {
 			// if the element result is optional and unsatisfiable, the
 			// intersection can still be satisfied as long as the tuple
 			// ends before the disjoint element would occur
 			return state
 		} else {
-			state.disjoints = [...state.disjoints, node]
+			state.disjoint = result
 		}
 	} else {
-		state.result = [...state.result, { kind, node }]
+		state.result = [...state.result, { kind, node: result }]
 	}
 
 	const lRemaining = state.l.length

@@ -1,5 +1,5 @@
 import type { nodeImplementationOf } from "../../shared/implement.js"
-import type { FoldInput } from "../constraint.js"
+import type { ReducibleIntersectionContext } from "../constraint.js"
 import {
 	BaseRange,
 	type LengthBoundableData,
@@ -32,7 +32,9 @@ export class MinLengthNode extends BaseRange<
 		? (data: LengthBoundableData) => data.length > this.limit
 		: (data: LengthBoundableData) => data.length >= this.limit
 
-	foldIntersection(into: FoldInput<"minLength">): undefined {
+	reduceIntersection(
+		into: ReducibleIntersectionContext<"minLength">
+	): undefined {
 		if (
 			into.basis?.domain !== "string" &&
 			!into.basis?.extends(this.$.builtin.Array)

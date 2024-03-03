@@ -1,5 +1,5 @@
 import type { nodeImplementationOf } from "../../shared/implement.js"
-import type { FoldInput } from "../constraint.js"
+import type { ReducibleIntersectionContext } from "../constraint.js"
 import { BaseRange, type NumericRangeDeclaration } from "./range.js"
 
 export type MinDeclaration = NumericRangeDeclaration<"min">
@@ -14,7 +14,7 @@ export class MinNode extends BaseRange<MinDeclaration, typeof MinNode> {
 			}
 		})
 
-	foldIntersection(into: FoldInput<"min">): undefined {
+	reduceIntersection(into: ReducibleIntersectionContext<"min">): undefined {
 		if (into.basis?.domain !== "number") {
 			this.throwInvalidBoundOperandError(into.basis)
 		}

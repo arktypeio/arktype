@@ -12,7 +12,7 @@ import type {
 	kindRightOf
 } from "../shared/implement.js"
 
-export type FoldInput<kind extends NodeKind> = Omit<
+export type ReducibleIntersectionContext<kind extends NodeKind> = Omit<
 	MutableInner<"intersection">,
 	kindRightOf<kind>
 >
@@ -23,7 +23,9 @@ export interface BasePrimitiveConstraintDeclaration
 }
 
 export interface BaseConstraint<kind extends ConstraintKind> {
-	foldIntersection(into: FoldInput<kind>): Disjoint | undefined
+	reduceIntersection(
+		into: ReducibleIntersectionContext<kind>
+	): Disjoint | undefined
 	hasOpenIntersection: Declaration<kind>["hasOpenIntersection"]
 }
 
@@ -38,7 +40,9 @@ export abstract class BasePrimitiveConstraint<
 	abstract readonly compiledCondition: string
 	abstract readonly compiledNegation: string
 	abstract readonly expectedContext: d["expectedContext"]
-	abstract foldIntersection(into: FoldInput<d["kind"]>): Disjoint | undefined
+	abstract reduceIntersection(
+		into: ReducibleIntersectionContext<d["kind"]>
+	): Disjoint | undefined
 
 	get hasOpenIntersection() {
 		return this.impl.hasOpenIntersection as d["hasOpenIntersection"]

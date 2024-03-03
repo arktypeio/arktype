@@ -4,7 +4,7 @@ import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import {
 	BasePrimitiveConstraint,
 	getBasisName,
-	type FoldInput
+	type ReducibleIntersectionContext
 } from "../constraint.js"
 
 export interface DivisorInner extends BaseMeta {
@@ -59,7 +59,7 @@ export class DivisorNode extends BasePrimitiveConstraint<
 
 	readonly expectedContext = this.createExpectedContext(this.inner)
 
-	foldIntersection(into: FoldInput<"divisor">): undefined {
+	reduceIntersection(into: ReducibleIntersectionContext<"divisor">): undefined {
 		if (into.basis?.domain !== "number") {
 			throwParseError(writeIndivisibleMessage(getBasisName(into.basis)))
 		}

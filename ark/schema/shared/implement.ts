@@ -1,19 +1,20 @@
 import {
 	compileSerializedValue,
-	isArray,
 	morph,
 	throwParseError,
 	type ErrorMessage,
 	type JsonData,
 	type List,
+	type PartialRecord,
 	type entryOf,
 	type listable,
 	type parseNonNegativeInteger,
 	type requireKeys
 } from "@arktype/util"
 import type { Node, UnknownNode } from "../base.js"
+import type { ReducibleIntersectionContext } from "../constraints/constraint.js"
 import { boundKinds } from "../constraints/refinements/shared.js"
-import type { Declaration, ExpectedContext, Inner, Schema } from "../kinds.js"
+import type { Declaration, ExpectedContext, Inner } from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
 import type {
 	NodeConfig,
@@ -241,20 +242,3 @@ export const throwInvalidOperandError = (
 	expected: string,
 	basis: Node<BasisKind> | undefined
 ) => throwParseError(`${kind} operand must be ${expected} (was ${basis})`)
-
-export const parseOpen = <kind extends OpenNodeKind>(
-	kind: kind,
-	input: listable<Schema<kind>>,
-	ctx: SchemaParseContext
-): readonly Node<kind>[] | undefined => {
-	if (isArray(input)) {
-		if (input.length === 0) {
-			// Omit empty lists as input
-			return
-		}
-		return input
-			.map((node) => ctx.$.parse(kind, node))
-			.sort((l, r) => (l.innerId < r.innerId ? -1 : 1)) as never
-	}
-	return [ctx.$.parse(kind, input)] as never
-}

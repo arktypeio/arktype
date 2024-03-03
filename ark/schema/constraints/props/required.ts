@@ -9,7 +9,10 @@ import {
 	type TypeKind,
 	type nodeImplementationOf
 } from "../../shared/implement.js"
-import type { BaseConstraint, FoldInput } from "../constraint.js"
+import type {
+	BaseConstraint,
+	ReducibleIntersectionContext
+} from "../constraint.js"
 import { BasePropConstraint } from "./prop.js"
 import { compileKey } from "./shared.js"
 
@@ -116,7 +119,7 @@ export class RequiredNode
 		}
 	}
 
-	foldIntersection(into: FoldInput<"required">) {
+	reduceIntersection(into: ReducibleIntersectionContext<"required">) {
 		if (into.basis?.domain !== "object") {
 			throwInvalidOperandError("required", "an object", into.basis)
 		}

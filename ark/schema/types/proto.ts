@@ -5,7 +5,7 @@ import {
 	objectKindOrDomainOf,
 	type Constructor
 } from "@arktype/util"
-import type { FoldInput } from "../constraints/constraint.js"
+import type { ReducibleIntersectionContext } from "../constraints/constraint.js"
 import { jsData } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -84,7 +84,7 @@ export class ProtoNode<t = unknown> extends BaseBasis<
 
 	readonly expectedContext = this.createExpectedContext(this.inner)
 
-	foldIntersection(into: FoldInput<"predicate">) {
+	reduceIntersection(into: ReducibleIntersectionContext<"predicate">) {
 		const result = into.basis ? this.intersect(into.basis) : this
 		if (result instanceof Disjoint) {
 			return result

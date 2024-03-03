@@ -280,6 +280,10 @@ export abstract class BaseNode<
 		const result = this.impl.intersectSymmetric(this as never, r)
 		if (result === null || result instanceof Disjoint) return result as never
 
+		if (isArray(result)) {
+			return result as never
+		}
+
 		// ensure metadata is propagated if the intersection type is equal to
 		// one of its operands
 		return result.equals(this as never)

@@ -252,7 +252,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 				const disjoint = new Disjoint({})
 				// TODO: are these ordered?
 				for (const constraint of flatConstraints) {
-					const possibleDisjoint = constraint.foldIntersection(result)
+					const possibleDisjoint = constraint.reduceIntersection(result)
 					if (possibleDisjoint instanceof Disjoint) {
 						disjoint.add(possibleDisjoint)
 					}

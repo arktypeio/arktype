@@ -1,6 +1,6 @@
 import { Disjoint } from "../../shared/disjoint.js"
 import type { nodeImplementationOf } from "../../shared/implement.js"
-import type { FoldInput } from "../constraint.js"
+import type { ReducibleIntersectionContext } from "../constraint.js"
 import { BaseRange, type NumericRangeDeclaration } from "./range.js"
 
 export type MaxDeclaration = NumericRangeDeclaration<"max">
@@ -19,7 +19,9 @@ export class MaxNode extends BaseRange<MaxDeclaration, typeof MaxNode> {
 		? (data: number) => data < this.limit
 		: (data: number) => data <= this.limit
 
-	foldIntersection(into: FoldInput<"max">): Disjoint | undefined {
+	reduceIntersection(
+		into: ReducibleIntersectionContext<"max">
+	): Disjoint | undefined {
 		if (into.basis?.domain !== "number") {
 			this.throwInvalidBoundOperandError(into.basis)
 		}

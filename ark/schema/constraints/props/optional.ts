@@ -5,7 +5,10 @@ import type { TraverseAllows, TraverseApply } from "../../shared/context.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import type { TypeKind, nodeImplementationOf } from "../../shared/implement.js"
-import type { BaseConstraint, FoldInput } from "../constraint.js"
+import type {
+	BaseConstraint,
+	ReducibleIntersectionContext
+} from "../constraint.js"
 import { BasePropConstraint } from "./prop.js"
 import { compileKey } from "./shared.js"
 
@@ -86,7 +89,7 @@ export class OptionalNode
 		}
 	}
 
-	foldIntersection(into: FoldInput<"optional">) {
+	reduceIntersection(into: ReducibleIntersectionContext<"optional">) {
 		return undefined
 	}
 }

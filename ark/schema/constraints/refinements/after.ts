@@ -1,5 +1,5 @@
 import type { nodeImplementationOf } from "../../shared/implement.js"
-import type { FoldInput } from "../constraint.js"
+import type { ReducibleIntersectionContext } from "../constraint.js"
 import {
 	BaseRange,
 	dateLimitToString,
@@ -34,7 +34,7 @@ export class AfterNode
 		? (data: Date) => +data > this.numericLimit
 		: (data: Date) => +data >= this.numericLimit
 
-	foldIntersection(into: FoldInput<"after">): undefined {
+	reduceIntersection(into: ReducibleIntersectionContext<"after">): undefined {
 		if (!into.basis?.extends(this.$.builtin.Date)) {
 			this.throwInvalidBoundOperandError(into.basis)
 		}
