@@ -9,6 +9,7 @@ import type { ArkTypeError } from "../shared/errors.js"
 import {
 	basisKinds,
 	type TypeIntersection,
+	type TypeKind,
 	type nodeImplementationOf
 } from "../shared/implement.js"
 import type { Discriminant } from "./discriminate.js"
@@ -51,6 +52,7 @@ export type UnionDeclaration = declareNode<{
 	expectedContext: {
 		errors: readonly ArkTypeError[]
 	}
+	reducibleTo: TypeKind
 	childKind: UnionChildKind
 }>
 

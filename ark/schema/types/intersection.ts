@@ -40,7 +40,7 @@ import {
 	type nodeImplementationOf
 } from "../shared/implement.js"
 import type { instantiateBasis } from "./basis.js"
-import { BaseType } from "./type.js"
+import { BaseType, type typeKindOrRightOf } from "./type.js"
 
 export type IntersectionBasisKind = "domain" | "proto"
 
@@ -70,6 +70,7 @@ export type IntersectionDeclaration = declareNode<{
 	normalizedSchema: IntersectionSchema
 	inner: IntersectionInner
 	composition: "composite"
+	reducibleTo: typeKindOrRightOf<"intersection">
 	expectedContext: {
 		errors: readonly ArkTypeError[]
 	}

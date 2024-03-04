@@ -17,6 +17,7 @@ interface BaseDeclarationInput {
 	schema: unknown
 	normalizedSchema: BaseMeta
 	inner: BaseMeta
+	reducibleTo?: NodeKind
 	hasOpenIntersection?: true
 	expectedContext?: object
 	prerequisite?: unknown
@@ -57,6 +58,7 @@ export type declareNode<
 		hasOpenIntersection: false
 		prerequisite: prerequisiteOf<d>
 		childKind: never
+		reducibleTo: null
 		expectedContext: null
 	},
 	d & {
@@ -80,6 +82,7 @@ export type BaseNodeDeclaration = {
 	schema: unknown
 	normalizedSchema: BaseMeta
 	inner: BaseMeta
+	reducibleTo: NodeKind | null
 	prerequisite: any
 	hasOpenIntersection: boolean
 	childKind: NodeKind

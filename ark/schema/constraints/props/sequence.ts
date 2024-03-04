@@ -67,6 +67,7 @@ export type SequenceDeclaration = declareNode<{
 	inner: SequenceInner
 	composition: "composite"
 	prerequisite: List
+	reducibleTo: "sequence"
 	childKind: TypeKind
 }>
 
