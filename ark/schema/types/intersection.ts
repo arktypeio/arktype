@@ -206,14 +206,21 @@ export class IntersectionNode<t = unknown> extends BaseType<
 					parse: (def) => (def === "ignore" ? undefined : def)
 				}
 			},
-			reduce: (inner) => {
+			reduce: (inner, $) => {
+				const root = omit(inner, constraintKeys)
 				const rawConstraints = flattenConstraints(inner)
 				const reducedConstraints = intersectConstraints([], rawConstraints)
 				if (reducedConstraints instanceof Disjoint) {
 					return reducedConstraints.throw()
 				}
+				if (reducedConstraints.length === rawConstraints.length) return
 
-				return undefined
+				const reducedInner = Object.assign(
+					root,
+					unflattenConstraints(reducedConstraints)
+				)
+
+				return $.parse("intersection", reducedInner, { prereduced: true })
 			},
 			defaults: {
 				description(inner) {

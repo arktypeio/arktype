@@ -12,6 +12,7 @@ import {
 	type Guardable,
 	type Json,
 	type JsonData,
+	type PartialRecord,
 	type entriesOf,
 	type evaluate,
 	type listable
@@ -275,7 +276,7 @@ export abstract class BaseNode<
 		return this.description
 	}
 
-	private static intersectionCache: Record<
+	private static intersectionCache: PartialRecord<
 		string,
 		UnknownNodeIntersectionResult
 	> = {}
@@ -286,14 +287,14 @@ export abstract class BaseNode<
 		// Node works better for subclasses but internally we want to treat it as UnknownNode
 		const r = other as UnknownNode
 		const lrCacheKey = `${this.typeId}&${r.typeId}`
-		if (BaseNode.intersectionCache[lrCacheKey] !== undefined) {
-			return BaseNode.intersectionCache[lrCacheKey]
+		if (BaseNode.intersectionCache[lrCacheKey]) {
+			return BaseNode.intersectionCache[lrCacheKey]!
 		}
 		const rlCacheKey = `${r.typeId}&${this.typeId}`
-		if (BaseNode.intersectionCache[rlCacheKey] !== undefined) {
+		if (BaseNode.intersectionCache[rlCacheKey]) {
 			// if the cached result was a Disjoint and the operands originally
 			// appeared in the opposite order, we need to invert it to match
-			const rlResult = BaseNode.intersectionCache[rlCacheKey]
+			const rlResult = BaseNode.intersectionCache[rlCacheKey]!
 			const lrResult =
 				rlResult instanceof Disjoint ? rlResult.invert() : rlResult
 			// add the lr result to the cache directly to bypass this check in the future

@@ -14,7 +14,7 @@ import {
 import type { Node, UnknownNode } from "../base.js"
 import type { constraintKindLeftOf } from "../constraints/constraint.js"
 import { boundKinds } from "../constraints/refinements/shared.js"
-import type { Declaration, ExpectedContext, Inner } from "../kinds.js"
+import type { Declaration, ExpectedContext, Inner, Schema } from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
 import type {
 	NodeConfig,
@@ -270,7 +270,8 @@ export type nodeImplementationInputOf<d extends BaseNodeDeclaration> =
 		defaults: nodeDefaultsImplementationInputFor<d["kind"]>
 	} & (d["hasOpenIntersection"] extends true
 			? { hasOpenIntersection: true }
-			: {})
+			: {}) &
+		(d["reducibleTo"] extends NodeKind ? { reduce: {} } : {})
 
 type nodeDefaultsImplementationInputFor<kind extends NodeKind> = requireKeys<
 	NodeConfig<kind>,

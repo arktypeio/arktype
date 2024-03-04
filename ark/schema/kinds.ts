@@ -28,7 +28,7 @@ import {
 	PatternNode,
 	type PatternDeclaration
 } from "./constraints/refinements/pattern.js"
-import type { NodeKind, TypeKind } from "./shared/implement.js"
+import type { NodeKind } from "./shared/implement.js"
 import type { makeRootAndArrayPropertiesMutable } from "./shared/utils.js"
 import { DomainNode, type DomainDeclaration } from "./types/domain.js"
 import {
@@ -105,11 +105,10 @@ export type ioKindOf<kind extends NodeKind> = kind extends "morph"
 export type Prerequisite<kind extends NodeKind> =
 	Declaration<kind>["prerequisite"]
 
-export type reducibleKindOf<kind extends NodeKind> = kind extends "union"
-	? TypeKind
-	: kind extends "intersection"
-	? MorphChildKind
-	: kind
+export type reducibleKindOf<kind extends NodeKind> =
+	Declaration<kind>["reducibleTo"] extends NodeKind
+		? Declaration<kind>["reducibleTo"]
+		: kind
 
 export type Inner<kind extends NodeKind> = Declaration<kind>["inner"]
 
