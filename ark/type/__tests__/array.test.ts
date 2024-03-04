@@ -333,118 +333,26 @@ Value at [1] must be a number (was boolean)`)
 
 			// currently getting this "Expected" result at a type-level incurs
 			// too high a performance cost for such a niche intersection.
-			type Expected =
-				| [
-						{ a: 0; x: 0 },
-						{ a: 0; y: 0 },
-						...{ a: 0; z: 0 }[],
-						{ b: 0; z: 0 },
-						{ c: 0; z: 0 }
-				  ]
-				| [{ a: 0; x: 0 }, { b: 0; y: 0 }, { c: 0; z: 0 }]
-				| [{ b: 0; x: 0 }, { c: 0; y: 0 }]
+			const expected = type([
+				{ a: "0", x: "0" },
+				{ a: "0", y: "0" },
+				"...",
+				[{ a: "0", z: "0" }, "[]"],
+				{ b: "0", z: "0" },
+				{ c: "0", z: "0" }
+			])
+				.or([
+					{ a: "0", x: "0" },
+					{ b: "0", y: "0" },
+					{ c: "0", z: "0" }
+				])
+				.or([
+					{ b: "0", x: "0" },
+					{ c: "0", y: "0" }
+				])
 
 			const result = l.and(r)
-			attest(result.json).snap([
-				{
-					basis: "Array",
-					maxLength: 2,
-					minLength: 2,
-					sequence: {
-						prefix: [
-							{
-								basis: "object",
-								required: [
-									{ key: "b", value: { unit: 0 } },
-									{ key: "x", value: { unit: 0 } }
-								]
-							},
-							{
-								basis: "object",
-								required: [
-									{ key: "c", value: { unit: 0 } },
-									{ key: "y", value: { unit: 0 } }
-								]
-							}
-						]
-					}
-				},
-				{
-					basis: "Array",
-					maxLength: 3,
-					minLength: 3,
-					sequence: {
-						prefix: [
-							{
-								basis: "object",
-								required: [
-									{ key: "a", value: { unit: 0 } },
-									{ key: "x", value: { unit: 0 } }
-								]
-							},
-							{
-								basis: "object",
-								required: [
-									{ key: "b", value: { unit: 0 } },
-									{ key: "y", value: { unit: 0 } }
-								]
-							},
-							{
-								basis: "object",
-								required: [
-									{ key: "c", value: { unit: 0 } },
-									{ key: "z", value: { unit: 0 } }
-								]
-							}
-						]
-					}
-				},
-				{
-					basis: "Array",
-					minLength: 4,
-					sequence: {
-						postfix: [
-							{
-								basis: "object",
-								required: [
-									{ key: "b", value: { unit: 0 } },
-									{ key: "z", value: { unit: 0 } }
-								]
-							},
-							{
-								basis: "object",
-								required: [
-									{ key: "c", value: { unit: 0 } },
-									{ key: "z", value: { unit: 0 } }
-								]
-							}
-						],
-						prefix: [
-							{
-								basis: "object",
-								required: [
-									{ key: "a", value: { unit: 0 } },
-									{ key: "x", value: { unit: 0 } }
-								]
-							},
-							{
-								basis: "object",
-								required: [
-									{ key: "a", value: { unit: 0 } },
-									{ key: "y", value: { unit: 0 } }
-								]
-							}
-						],
-						variadic: {
-							basis: "object",
-							required: [
-								{ key: "a", value: { unit: 0 } },
-								{ key: "z", value: { unit: 0 } }
-							]
-						}
-					}
-				}
-			])
+			attest(result.json).snap(expected.json)
 		})
 	})
 	// TODO: reenable

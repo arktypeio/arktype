@@ -6,7 +6,7 @@ import {
 	type List,
 	type mutable
 } from "@arktype/util"
-import type { ConstraintNode, Node, TypeNode, TypeSchema } from "../../base.js"
+import type { Node, TypeNode, TypeSchema } from "../../base.js"
 import type { MutableInner } from "../../kinds.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/context.js"
@@ -173,31 +173,8 @@ export class SequenceNode extends BaseConstraint<
 					return `comprised of ${parts.join(" followed by ")}`
 				}
 			},
-
-			// reduceIntersection(node: constraintLeftOf<"sequence">) {
-			// 	if (this.minLengthNode) {
-			// 		const minLength = this.minLengthNode.intersectSymmetric(node.minLength)
-			// 		if (minLength instanceof Disjoint) return minLength
-			// 		node.minLength = minLength
-			// 		// even if this sequence doesn't contribute maxLength, if there is
-			// 		// an existing maxLength constraint, check that it is compatible
-			// 		// with the minLength constraint we just added
-			// 		node.maxLength?.reduceIntersection(node)
-			// 	}
-			// 	if (this.maxLengthNode) {
-			// 		const maxLength = this.maxLengthNode.intersectSymmetric(node.maxLength)
-			// 		if (maxLength instanceof Disjoint) return maxLength
-			// 		node.maxLength = maxLength
-			// 	}
-			// }
 			intersections: {
 				sequence: (l, r) => {
-					// if (l.maxLength && r.minLength > l.maxLength) {
-					// 	return Disjoint.from("range", l.maxLengthNode!, r.minLengthNode!)
-					// } else if (r.maxLength && l.minLength > r.maxLength) {
-					// 	return Disjoint.from("range", l.minLengthNode!, r.maxLengthNode!)
-					// }
-
 					const rootState = intersectSequences({
 						l: l.tuple,
 						r: r.tuple,
@@ -210,9 +187,11 @@ export class SequenceNode extends BaseConstraint<
 						? rootState.fixedVariants
 						: [rootState, ...rootState.fixedVariants]
 
-					return viableBranches.length
-						? viableBranches.map((state) => sequenceTupleToInner(state.result))
-						: rootState.disjoint!
+					return viableBranches.length === 0
+						? rootState.disjoint!
+						: viableBranches.length === 1
+						? sequenceTupleToInner(viableBranches[0].result)
+						: viableBranches.map((state) => sequenceTupleToInner(state.result))
 				}
 			}
 		})

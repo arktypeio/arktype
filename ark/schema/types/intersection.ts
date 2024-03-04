@@ -138,6 +138,10 @@ const intersectIntersectionInners = (
 	l: IntersectionInner,
 	r: IntersectionInner
 ) => {
+	// avoid treating adding instance keys as keys of lRoot, rRoot
+	if (l instanceof IntersectionNode) l = l.inner
+	if (r instanceof IntersectionNode) r = r.inner
+
 	const [lConstraintsInner, lRoot] = splitByKeys(l, constraintKeys)
 	const [rConstraintsInner, rRoot] = splitByKeys(r, constraintKeys)
 	const root = intersectRootKeys(lRoot, rRoot)
@@ -425,7 +429,7 @@ const addConstraint = (
 	constraint: ConstraintNode
 ): ConstraintNode[] | Disjoint => {
 	const result: ConstraintNode[] = []
-	let includesComponent = false
+	let matched = false
 	for (let i = 0; i < base.length; i++) {
 		const elementResult = constraint.intersect(base[i] as never)
 		if (elementResult === null) {
@@ -435,16 +439,16 @@ const addConstraint = (
 		} else if (isArray(elementResult)) {
 			// TODO: union
 			// result.push(...elementResult)
-		} else if (!includesComponent) {
+		} else if (!matched) {
 			result.push(elementResult)
-			includesComponent = true
+			matched = true
 		} else if (!result.includes(elementResult)) {
 			return throwInternalError(
 				`Unexpectedly encountered multiple distinct intersection results for refinement ${elementResult}`
 			)
 		}
 	}
-	if (!includesComponent) {
+	if (!matched) {
 		result.push(constraint)
 	}
 	return result
