@@ -16,7 +16,12 @@ import {
 	type evaluate,
 	type listable
 } from "@arktype/util"
-import { BaseNode, type ConstraintNode, type Node } from "../base.js"
+import {
+	BaseNode,
+	type ConstraintNode,
+	type Node,
+	type TypeNode
+} from "../base.js"
 import {
 	PropsGroup,
 	type ExtraneousKeyBehavior,
@@ -25,6 +30,7 @@ import {
 } from "../constraints/props/props.js"
 import type { Inner, MutableInner, Prerequisite, Schema } from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
+import type { ScopeNode } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../shared/context.js"
 import { metaKeys, type BaseMeta, type declareNode } from "../shared/declare.js"
@@ -134,10 +140,11 @@ const intersectRightward: TypeIntersection<"intersection"> = (
 		: Object.assign(omit(intersection.inner, metaKeys), { basis })
 }
 
-const intersectIntersectionInners = (
+const intersectIntersections = (
 	l: IntersectionInner,
-	r: IntersectionInner
-) => {
+	r: IntersectionInner,
+	$: ScopeNode
+): TypeNode | Disjoint => {
 	// avoid treating adding instance keys as keys of lRoot, rRoot
 	if (l instanceof IntersectionNode) l = l.inner
 	if (r instanceof IntersectionNode) r = r.inner
@@ -149,12 +156,22 @@ const intersectIntersectionInners = (
 
 	const lConstraints = flattenConstraints(lConstraintsInner)
 	const rConstraints = flattenConstraints(rConstraintsInner)
-	const constraints = intersectConstraints(lConstraints, rConstraints)
+	const result = intersectConstraints(lConstraints, rConstraints)
 
-	if (constraints instanceof Disjoint) return constraints
-	if (!constraints.length && root.basis) return root.basis
+	if (result instanceof Disjoint) return result
+	if (isArray(result) && !result.length && root.basis) return root.basis
 
-	return Object.assign(root, unflattenConstraints(constraints))
+	const branches = "branches" in result ? result.branches : [result]
+	const branchNodes = branches.map((branch) =>
+		$.parse("intersection", Object.assign(root, unflattenConstraints(branch)), {
+			prereduced: true
+		})
+	)
+
+	return branchNodes.length === 1
+		? branchNodes[0]
+		: // unlike the intersections, this union isn't necessarily prereduced
+		  $.parse("union", branchNodes)
 }
 
 export class IntersectionNode<t = unknown> extends BaseType<
@@ -232,14 +249,9 @@ export class IntersectionNode<t = unknown> extends BaseType<
 					parse: (def) => (def === "ignore" ? undefined : def)
 				}
 			},
-			reduce: (inner, $) => {
-				// leverage reduction logic from intersection and identity to ensure initial
-				// parse result is reduced
-				const reduced = intersectIntersectionInners({}, inner)
-				return reduced instanceof Disjoint
-					? reduced
-					: $.parse("intersection", reduced, { prereduced: true })
-			},
+			// leverage reduction logic from intersection and identity to ensure initial
+			// parse result is reduced
+			reduce: (inner, $) => intersectIntersections({}, inner, $),
 			defaults: {
 				description(inner) {
 					const children = Object.values(inner).flat()
@@ -255,7 +267,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 				}
 			},
 			intersections: {
-				intersection: intersectIntersectionInners,
+				intersection: intersectIntersections,
 				domain: intersectRightward,
 				proto: intersectRightward
 			}
@@ -354,18 +366,52 @@ const intersectRootKeys = (
 const intersectConstraints = (
 	l: List<ConstraintNode>,
 	r: List<ConstraintNode>
-) => {
-	let constraints = l
-	const disjoint = new Disjoint({})
-	for (const constraint of r) {
-		const result = addConstraint(constraints, constraint)
-		if (result instanceof Disjoint) {
-			disjoint.add(result)
-		} else {
-			constraints = result
+): { branches: List<ConstraintNode>[] } | List<ConstraintNode> | Disjoint => {
+	if (!r.length) {
+		return l
+	}
+	const [head, ...tail] = r
+	const constraints: ConstraintNode[] = []
+	let matched = false
+	for (let i = 0; i < l.length; i++) {
+		const result = l[i].intersect(head as never)
+		if (result === null) {
+			constraints.push(l[i])
+		} else if (result instanceof Disjoint) {
+			return result
+		} else if (isArray(result)) {
+			const branches: List<ConstraintNode>[] = []
+			result.forEach((constraintBranch) => {
+				const branchResult = intersectConstraints(l.toSpliced(i, 1), [
+					constraintBranch,
+					...tail
+				])
+				if (branchResult instanceof Disjoint) return
+
+				if ("branches" in branchResult) branches.push(...branchResult.branches)
+				else branches.push(branchResult)
+			})
+
+			return branches.length === 0
+				? Disjoint.from("union", l, [head])
+				: branches.length === 1
+				? branches[0]
+				: {
+						branches
+				  }
+		} else if (!matched) {
+			constraints.push(result)
+			matched = true
+		} else if (!constraints.includes(result)) {
+			return throwInternalError(
+				`Unexpectedly encountered multiple distinct intersection results for refinement ${result}`
+			)
 		}
 	}
-	return disjoint.isEmpty() ? constraints : disjoint
+	if (!matched) {
+		constraints.push(head)
+	}
+	return intersectConstraints(constraints, tail)
 }
 
 const flattenedConstraintCache = new Map<
@@ -422,36 +468,6 @@ const unflattenConstraints = (
 		}
 	}
 	return inner
-}
-
-const addConstraint = (
-	base: readonly ConstraintNode[],
-	constraint: ConstraintNode
-): ConstraintNode[] | Disjoint => {
-	const result: ConstraintNode[] = []
-	let matched = false
-	for (let i = 0; i < base.length; i++) {
-		const elementResult = constraint.intersect(base[i] as never)
-		if (elementResult === null) {
-			result.push(base[i])
-		} else if (elementResult instanceof Disjoint) {
-			return elementResult
-		} else if (isArray(elementResult)) {
-			// TODO: union
-			// result.push(...elementResult)
-		} else if (!matched) {
-			result.push(elementResult)
-			matched = true
-		} else if (!result.includes(elementResult)) {
-			return throwInternalError(
-				`Unexpectedly encountered multiple distinct intersection results for refinement ${elementResult}`
-			)
-		}
-	}
-	if (!matched) {
-		result.push(constraint)
-	}
-	return result
 }
 
 export type ConditionalTerminalIntersectionSchema = {

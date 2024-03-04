@@ -318,8 +318,8 @@ export abstract class BaseNode<
 				  // but that is not allowed by the external function signature
 				  null
 				: leftmostKind === this.kind
-				? implementation(this, r)
-				: implementation(r, this)
+				? implementation(this, r, this.$)
+				: implementation(r, this, this.$)
 
 		let instantiatedResult: UnknownNodeIntersectionResult =
 			rawResult === null || rawResult instanceof Disjoint

@@ -80,6 +80,10 @@ export type DisjointKind = keyof DisjointKinds
 export class Disjoint {
 	constructor(public sources: DisjointsSources) {}
 
+	clone() {
+		return new Disjoint(this.sources)
+	}
+
 	static from<kind extends DisjointKind>(
 		kind: kind,
 		l: Required<DisjointKinds>[kind]["l"],

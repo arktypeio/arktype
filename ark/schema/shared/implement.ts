@@ -14,7 +14,7 @@ import {
 import type { Node, UnknownNode } from "../base.js"
 import type { constraintKindLeftOf } from "../constraints/constraint.js"
 import { boundKinds } from "../constraints/refinements/shared.js"
-import type { Declaration, ExpectedContext, Inner, Schema } from "../kinds.js"
+import type { Declaration, ExpectedContext, Inner } from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
 import type {
 	NodeConfig,
@@ -129,11 +129,16 @@ type accumulateRightKinds<
 export type AsymmetricConstraintIntersection<
 	lKind extends ConstraintKind,
 	rKind extends constraintKindLeftOf<lKind>
-> = (l: Node<lKind>, r: Node<rKind>) => Inner<lKind> | Disjoint | null
+> = (
+	l: Node<lKind>,
+	r: Node<rKind>,
+	$: ScopeNode
+) => Inner<lKind> | Disjoint | null
 
 export type SymmetricConstraintIntersection<kind extends ConstraintKind> = (
 	l: Node<kind>,
-	r: Node<kind>
+	r: Node<kind>,
+	$: ScopeNode
 ) =>
 	| listable<Inner<kind>>
 	| Disjoint
@@ -153,7 +158,7 @@ export type ConstraintIntersectionMap<kind extends ConstraintKind> = evaluate<
 export type TypeIntersection<
 	lKind extends TypeKind,
 	rKind extends typeKindOrRightOf<lKind> = typeKindRightOf<lKind>
-> = (l: Node<lKind>, r: Node<rKind>) => Inner<lKind> | Disjoint
+> = (l: Node<lKind>, r: Node<rKind>, $: ScopeNode) => Inner<lKind> | Disjoint
 
 export type TypeIntersectionMap<kind extends TypeKind> = {
 	[rKind in typeKindOrRightOf<kind>]: TypeIntersection<kind, rKind>
@@ -164,9 +169,10 @@ export type IntersectionMap<kind extends NodeKind> = kind extends TypeKind
 	: ConstraintIntersectionMap<kind & ConstraintKind>
 
 export type UnknownIntersectionMap = {
-	[rKey in NodeKind | "default"]?: (
+	[k in NodeKind]?: (
 		l: UnknownNode,
-		r: UnknownNode
+		r: UnknownNode,
+		$: ScopeNode
 	) => UnknownIntersectionImplementationResult
 }
 
