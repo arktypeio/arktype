@@ -1,4 +1,4 @@
-import type { listable } from "@arktype/util"
+import type { List, listable } from "@arktype/util"
 import {
 	BaseNode,
 	type ConstraintNode,
@@ -30,6 +30,16 @@ export abstract class BaseConstraint<
 	d extends BaseConstraintDeclaration,
 	subclass extends NodeSubclass<d>
 > extends BaseNode<d["prerequisite"], d, subclass> {
+	impliedSiblings?: List<ConstraintNode>
+
+	private contributesCache: List<BaseConstraint<any, any>> | undefined
+	get contributesConstraints(): List<ConstraintNode> {
+		this.contributesCache ??= this.impliedSiblings
+			? [this, ...this.impliedSiblings]
+			: [this]
+		return this.contributesCache as never
+	}
+
 	intersect<r extends ConstraintNode>(
 		r: r
 	): listable<Node<this["kind"] | r["kind"]>> | Disjoint | null {

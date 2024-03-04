@@ -1,11 +1,12 @@
 import {
 	append,
+	conflatenateAll,
 	throwInternalError,
 	throwParseError,
 	type List,
 	type mutable
 } from "@arktype/util"
-import type { TypeNode, TypeSchema } from "../../base.js"
+import type { ConstraintNode, Node, TypeNode, TypeSchema } from "../../base.js"
 import type { MutableInner } from "../../kinds.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/context.js"
@@ -191,11 +192,11 @@ export class SequenceNode extends BaseConstraint<
 			// }
 			intersections: {
 				sequence: (l, r) => {
-					if (l.maxLength && r.minLength > l.maxLength) {
-						return Disjoint.from("range", l.maxLengthNode!, r.minLengthNode!)
-					} else if (r.maxLength && l.minLength > r.maxLength) {
-						return Disjoint.from("range", l.minLengthNode!, r.maxLengthNode!)
-					}
+					// if (l.maxLength && r.minLength > l.maxLength) {
+					// 	return Disjoint.from("range", l.maxLengthNode!, r.minLengthNode!)
+					// } else if (r.maxLength && l.minLength > r.maxLength) {
+					// 	return Disjoint.from("range", l.minLengthNode!, r.maxLengthNode!)
+					// }
 
 					const rootState = intersectSequences({
 						l: l.tuple,
@@ -230,6 +231,10 @@ export class SequenceNode extends BaseConstraint<
 		this.maxLength === undefined
 			? undefined
 			: this.$.parse("maxLength", this.maxLength)
+	readonly impliedSiblings = conflatenateAll<Node<"maxLength" | "minLength">>(
+		this.minLengthNode,
+		this.maxLengthNode
+	)
 
 	protected childAtIndex(data: List, index: number) {
 		if (index < this.prevariadic.length) return this.prevariadic[index]

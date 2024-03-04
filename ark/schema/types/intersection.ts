@@ -1,13 +1,16 @@
 import {
 	append,
+	appendUnique,
 	conflatenateAll,
 	entriesOf,
 	isArray,
 	isEmptyObject,
+	listFrom,
 	morph,
 	omit,
 	pick,
 	printable,
+	splitByKeys,
 	throwInternalError,
 	type List,
 	type evaluate,
@@ -131,6 +134,25 @@ const intersectRightward: TypeIntersection<"intersection"> = (
 		: Object.assign(omit(intersection.inner, metaKeys), { basis })
 }
 
+const intersectIntersectionInners = (
+	l: IntersectionInner,
+	r: IntersectionInner
+) => {
+	const [lConstraintsInner, lRoot] = splitByKeys(l, constraintKeys)
+	const [rConstraintsInner, rRoot] = splitByKeys(r, constraintKeys)
+	const root = intersectRootKeys(lRoot, rRoot)
+	if (root instanceof Disjoint) return root
+
+	const lConstraints = flattenConstraints(lConstraintsInner)
+	const rConstraints = flattenConstraints(rConstraintsInner)
+	const constraints = intersectConstraints(lConstraints, rConstraints)
+
+	if (constraints instanceof Disjoint) return constraints
+	if (!constraints.length && root.basis) return root.basis
+
+	return Object.assign(root, unflattenConstraints(constraints))
+}
+
 export class IntersectionNode<t = unknown> extends BaseType<
 	t,
 	IntersectionDeclaration,
@@ -206,10 +228,14 @@ export class IntersectionNode<t = unknown> extends BaseType<
 					parse: (def) => (def === "ignore" ? undefined : def)
 				}
 			},
-			reduce: (inner, $) =>
-				$.builtin.unknown.intersect(
-					$.parse("intersection", inner, { prereduced: true })
-				),
+			reduce: (inner, $) => {
+				// leverage reduction logic from intersection and identity to ensure initial
+				// parse result is reduced
+				const reduced = intersectIntersectionInners({}, inner)
+				return reduced instanceof Disjoint
+					? reduced
+					: $.parse("intersection", reduced, { prereduced: true })
+			},
 			defaults: {
 				description(inner) {
 					const children = Object.values(inner).flat()
@@ -225,17 +251,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 				}
 			},
 			intersections: {
-				intersection: (l, r) => {
-					const root = intersectRootKeys(l.root, r.root)
-					if (root instanceof Disjoint) return root
-
-					const constraints = intersectConstraints(l.constraints, r.constraints)
-
-					if (constraints instanceof Disjoint) return constraints
-					if (!constraints.length && root.basis) return root.basis
-
-					return Object.assign(root, unflattenConstraints(constraints))
-				},
+				intersection: intersectIntersectionInners,
 				domain: intersectRightward,
 				proto: intersectRightward
 			}
@@ -357,10 +373,16 @@ const flattenConstraints = (inner: IntersectionInner): List<ConstraintNode> => {
 	if (cachedResult) {
 		return cachedResult
 	}
+
 	const result = entriesOf(inner)
-		.flatMap(([k, v]) =>
-			k in constraintKeys ? (v as listable<ConstraintNode>) : []
-		)
+		.reduce<ConstraintNode[]>((acc, [k, v]) => {
+			if (k in constraintKeys) {
+				listFrom(v as listable<ConstraintNode>).forEach((node) =>
+					node.contributesConstraints.forEach((_) => appendUnique(acc, _))
+				)
+			}
+			return acc
+		}, [])
 		.sort((l, r) =>
 			l.precedence < r.precedence
 				? -1
@@ -398,7 +420,7 @@ const unflattenConstraints = (
 	return inner
 }
 
-export const addConstraint = (
+const addConstraint = (
 	base: readonly ConstraintNode[],
 	constraint: ConstraintNode
 ): ConstraintNode[] | Disjoint => {
