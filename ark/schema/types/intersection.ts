@@ -206,22 +206,10 @@ export class IntersectionNode<t = unknown> extends BaseType<
 					parse: (def) => (def === "ignore" ? undefined : def)
 				}
 			},
-			reduce: (inner, $) => {
-				const root = omit(inner, constraintKeys)
-				const rawConstraints = flattenConstraints(inner)
-				const reducedConstraints = intersectConstraints([], rawConstraints)
-				if (reducedConstraints instanceof Disjoint) {
-					return reducedConstraints.throw()
-				}
-				if (reducedConstraints.length === rawConstraints.length) return
-
-				const reducedInner = Object.assign(
-					root,
-					unflattenConstraints(reducedConstraints)
-				)
-
-				return $.parse("intersection", reducedInner, { prereduced: true })
-			},
+			reduce: (inner, $) =>
+				$.builtin.unknown.intersect(
+					$.parse("intersection", inner, { prereduced: true })
+				),
 			defaults: {
 				description(inner) {
 					const children = Object.values(inner).flat()
@@ -371,7 +359,7 @@ const flattenConstraints = (inner: IntersectionInner): List<ConstraintNode> => {
 	}
 	const result = entriesOf(inner)
 		.flatMap(([k, v]) =>
-			k in constraintKinds ? (v as listable<ConstraintNode>) : []
+			k in constraintKeys ? (v as listable<ConstraintNode>) : []
 		)
 		.sort((l, r) =>
 			l.precedence < r.precedence

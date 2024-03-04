@@ -1,13 +1,12 @@
 import {
 	append,
-	hasDomain,
-	isArray,
 	throwInternalError,
 	throwParseError,
-	type List
+	type List,
+	type mutable
 } from "@arktype/util"
 import type { TypeNode, TypeSchema } from "../../base.js"
-import type { MutableNormalizedSchema } from "../../kinds.js"
+import type { MutableInner } from "../../kinds.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/context.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
@@ -42,12 +41,7 @@ export type NormalizedSequenceSchema =
 	| NormalizedPostfixableSequenceSchema
 	| NormalizedOptionalizableSequenceSchema
 
-export type SequenceSchema =
-	| NormalizedSequenceSchema
-	| TypeSchema
-	| SequenceTupleSchema
-
-export type SequenceTupleSchema = readonly SequenceElementSchema[]
+export type SequenceSchema = NormalizedSequenceSchema | TypeSchema
 
 export interface SequenceInner extends BaseMeta {
 	// a list of fixed position elements starting at index 0
@@ -84,26 +78,6 @@ const fixedSequenceKeyDefinition: NodeKeyImplementation<
 			: schema.map((element) => ctx.$.parseTypeNode(element))
 }
 
-export const isSequenceTuple = (
-	schema: unknown
-): schema is SequenceTupleSchema => {
-	if (!isArray(schema)) return false
-
-	if (schema.length === 0) return true
-	const firstElement = schema[0]
-
-	if (!hasDomain(firstElement, "object") || !("kind" in firstElement)) {
-		return false
-	}
-
-	return (
-		firstElement.kind === "prefix" ||
-		firstElement.kind === "optionals" ||
-		firstElement.kind === "variadic" ||
-		firstElement.kind === "postfix"
-	)
-}
-
 export class SequenceNode extends BaseConstraint<
 	SequenceDeclaration,
 	typeof SequenceNode
@@ -124,19 +98,6 @@ export class SequenceNode extends BaseConstraint<
 			normalize: (schema) => {
 				if (typeof schema === "string") {
 					return { variadic: schema }
-				}
-				if (isSequenceTuple(schema)) {
-					return schema.reduce<MutableNormalizedSchema<"sequence">>(
-						(result, el) => {
-							if (el.kind === "variadic") {
-								result.variadic = el.node
-							} else {
-								result[el.kind] = append(result[el.kind], el.node)
-							}
-							return result
-						},
-						{}
-					)
 				}
 				if (
 					"variadic" in schema ||
@@ -237,24 +198,20 @@ export class SequenceNode extends BaseConstraint<
 					}
 
 					const rootState = intersectSequences({
-						l: [...l.tuple],
-						r: [...r.tuple],
-						fixedVariants: [],
+						l: l.tuple,
+						r: r.tuple,
 						disjoint: null,
-						result: []
+						result: [],
+						fixedVariants: []
 					})
-
-					if (rootState.fixedVariants.length === 0) {
-						return rootState.disjoint ?? l.$.parse("sequence", rootState.result)
-					}
 
 					const viableBranches = rootState.disjoint
 						? rootState.fixedVariants
 						: [rootState, ...rootState.fixedVariants]
 
-					return viableBranches.map((state) =>
-						l.$.parse("sequence", state.result)
-					)
+					return viableBranches.length
+						? viableBranches.map((state) => sequenceTupleToInner(state.result))
+						: rootState.disjoint!
 				}
 			}
 		})
@@ -334,17 +291,27 @@ export class SequenceNode extends BaseConstraint<
 		}
 	}
 
-	readonly tuple: readonly SequenceElement[] = [
-		...this.prefix.map((node): SequenceElement => ({ kind: "prefix", node })),
-		...this.optionals.map(
-			(node): SequenceElement => ({ kind: "optionals", node })
-		),
-		...(this.variadic
-			? [{ kind: "variadic", node: this.variadic } satisfies SequenceElement]
-			: []),
-		...this.postfix.map((node): SequenceElement => ({ kind: "postfix", node }))
-	]
+	readonly tuple = sequenceInnerToTuple(this.inner)
 }
+
+const sequenceInnerToTuple = (inner: SequenceInner): SequenceTuple => {
+	const tuple: mutable<SequenceTuple> = []
+	inner.prefix?.forEach((node) => tuple.push({ kind: "prefix", node }))
+	inner.optionals?.forEach((node) => tuple.push({ kind: "optionals", node }))
+	if (inner.variadic) tuple.push({ kind: "variadic", node: inner.variadic })
+	inner.postfix?.forEach((node) => tuple.push({ kind: "postfix", node }))
+	return tuple
+}
+
+const sequenceTupleToInner = (tuple: SequenceTuple): SequenceInner =>
+	tuple.reduce<MutableInner<"sequence">>((result, el) => {
+		if (el.kind === "variadic") {
+			result.variadic = el.node
+		} else {
+			result[el.kind] = append(result[el.kind], el.node)
+		}
+		return result
+	}, {})
 
 export const postfixFollowingOptionalMessage =
 	"A postfix required element cannot follow an optional element"
@@ -363,17 +330,13 @@ export type SequenceElement = {
 	kind: SequenceElementKind
 	node: TypeNode
 }
-
-export type SequenceElementSchema = {
-	kind: SequenceElementKind
-	node: TypeSchema
-}
+export type SequenceTuple = List<SequenceElement>
 
 type SequenceIntersectionState = {
-	l: readonly SequenceElement[]
-	r: readonly SequenceElement[]
+	l: SequenceTuple
+	r: SequenceTuple
 	disjoint: Disjoint | null
-	result: readonly SequenceElement[]
+	result: SequenceTuple
 	fixedVariants: SequenceIntersectionState[]
 }
 
