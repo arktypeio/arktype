@@ -48,7 +48,7 @@ export const parseObject = (def: object, ctx: ParseContext): TypeNode => {
 		case "Array":
 			return parseTuple(def as List, ctx)
 		case "RegExp":
-			return schema({ basis: "string", pattern: def as RegExp })
+			return schema({ basis: "string", regex: def as RegExp })
 		case "Function":
 			const resolvedDef = isThunk(def) ? def() : def
 			if (resolvedDef instanceof Type) {

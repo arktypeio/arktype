@@ -8,6 +8,8 @@ export interface LengthInner extends BaseMeta {
 	readonly length: number
 }
 
+export type length<n extends number> = { "==": n }
+
 export type NormalizedLengthSchema = LengthInner
 
 export type LengthSchema = NormalizedLengthSchema | number

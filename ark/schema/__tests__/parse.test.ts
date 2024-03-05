@@ -4,9 +4,9 @@ import type { IntersectionNode } from "../types/intersection.js"
 
 describe("parse", () => {
 	it("single constraint", () => {
-		const t = schema({ basis: "string", pattern: ".*" })
+		const t = schema({ basis: "string", regex: ".*" })
 		attest<IntersectionNode<string>>(t)
-		attest(t.json).snap({ basis: "string", pattern: [".*"] })
+		attest(t.json).snap({ basis: "string", regex: [".*"] })
 	})
 	it("multiple constraints", () => {
 		const l = schema({

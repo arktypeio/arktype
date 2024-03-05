@@ -43,7 +43,7 @@ export const propKinds = ["required", "optional", "index", "sequence"] as const
 
 export type PropKind = (typeof propKinds)[number]
 
-export const refinementKinds = ["pattern", "divisor", ...boundKinds] as const
+export const refinementKinds = ["regex", "divisor", ...boundKinds] as const
 
 export type RefinementKind = (typeof refinementKinds)[number]
 

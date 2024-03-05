@@ -10,7 +10,7 @@ import { parsedDate } from "./utils/date.js"
 const number = rootSchema({
 	in: {
 		basis: "string",
-		pattern: wellFormedNumberMatcher,
+		regex: wellFormedNumberMatcher,
 		description: "a well-formed numeric string"
 	},
 	morph: (s: string) => parseFloat(s)
@@ -19,7 +19,7 @@ const number = rootSchema({
 const integer = rootSchema({
 	in: {
 		basis: "string",
-		pattern: wellFormedIntegerMatcher
+		regex: wellFormedIntegerMatcher
 	},
 	morph: (s: string) => {
 		// if (!isWellFormedInteger(s)) {

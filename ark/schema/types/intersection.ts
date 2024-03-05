@@ -219,9 +219,9 @@ export class IntersectionNode<t = unknown> extends BaseType<
 					child: true,
 					parse: intersectionChildKeyParser("after")
 				},
-				pattern: {
+				regex: {
 					child: true,
-					parse: intersectionChildKeyParser("pattern")
+					parse: intersectionChildKeyParser("regex")
 				},
 				predicate: {
 					child: true,

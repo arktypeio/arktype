@@ -7,6 +7,8 @@ import {
 
 export interface DivisorInner extends PrimitiveConstraintInner<number> {}
 
+export type divisor<n extends number> = { "%": n }
+
 export type DivisorSchema = DivisorInner | number
 
 export type DivisorDeclaration = declareNode<{

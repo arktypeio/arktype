@@ -3,10 +3,13 @@ import type { nodeImplementationOf } from "../../shared/implement.js"
 import {
 	BaseRange,
 	type LengthBoundableData,
-	type LengthRangeDeclaration
+	type LengthRangeDeclaration,
+	type boundToIs
 } from "./range.js"
 
 export type MaxLengthDeclaration = LengthRangeDeclaration<"maxLength">
+
+export type maxLength<n extends number> = boundToIs<"maxLength", n>
 
 export class MaxLengthNode extends BaseRange<
 	MaxLengthDeclaration,

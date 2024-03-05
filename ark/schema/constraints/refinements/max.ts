@@ -9,7 +9,7 @@ import {
 
 export type MaxDeclaration = NumericRangeDeclaration<"max">
 
-export type max<schema extends Schema<"max">> = boundToIs<"max", schema>
+export type max<n extends number> = boundToIs<"max", n>
 
 export class MaxNode extends BaseRange<MaxDeclaration, typeof MaxNode> {
 	static implementation: nodeImplementationOf<MaxDeclaration> =

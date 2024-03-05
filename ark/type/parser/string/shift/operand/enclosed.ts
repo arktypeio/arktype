@@ -30,7 +30,7 @@ export const parseEnclosed = (
 	if (enclosing === "/") {
 		// fail parsing if the regex is invalid
 		new RegExp(enclosed)
-		s.root = schema({ basis: "string", pattern: token as RegexLiteral })
+		s.root = schema({ basis: "string", regex: token as RegexLiteral })
 	} else if (isKeyOf(enclosing, enclosingQuote)) {
 		s.root = schema({ unit: enclosed })
 	} else {

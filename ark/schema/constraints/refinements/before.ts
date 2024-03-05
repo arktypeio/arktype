@@ -4,10 +4,13 @@ import {
 	BaseRange,
 	dateLimitToString,
 	type DateBoundExtras,
-	type DateRangeDeclaration
+	type DateRangeDeclaration,
+	type boundToIs
 } from "./range.js"
 
 export type BeforeDeclaration = DateRangeDeclaration<"before">
+
+export type before<date extends string> = boundToIs<"before", date>
 
 export class BeforeNode
 	extends BaseRange<BeforeDeclaration, typeof BeforeNode>

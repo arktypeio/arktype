@@ -24,7 +24,7 @@ import type { RequiredNode } from "./constraints/props/required.js"
 import type { SequenceNode } from "./constraints/props/sequence.js"
 import type { DivisorNode } from "./constraints/refinements/divisor.js"
 import type { BoundNodesByKind } from "./constraints/refinements/kinds.js"
-import type { PatternNode } from "./constraints/refinements/pattern.js"
+import type { RegexNode } from "./constraints/refinements/regex.js"
 import type {
 	Declaration,
 	Inner,
@@ -418,7 +418,7 @@ interface NodesByKind<t = any> extends BoundNodesByKind {
 	proto: ProtoNode<t>
 	domain: DomainNode<t>
 	divisor: DivisorNode
-	pattern: PatternNode
+	regex: RegexNode
 	predicate: PredicateNode
 	required: RequiredNode
 	optional: OptionalNode

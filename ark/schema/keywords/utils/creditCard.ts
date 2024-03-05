@@ -31,7 +31,7 @@ const creditCardMatcher =
 
 export const creditCard = rootSchema({
 	basis: "string",
-	pattern: creditCardMatcher,
+	regex: creditCardMatcher,
 	predicate: isLuhnValid,
 	description: "a valid credit card number"
 })

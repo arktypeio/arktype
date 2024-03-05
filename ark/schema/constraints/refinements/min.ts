@@ -8,7 +8,7 @@ import {
 
 export type MinDeclaration = NumericRangeDeclaration<"min">
 
-export type min<schema extends Schema<"min">> = boundToIs<"min", schema>
+export type min<n extends number> = boundToIs<"min", n>
 
 export class MinNode extends BaseRange<MinDeclaration, typeof MinNode> {
 	static implementation: nodeImplementationOf<MinDeclaration> =

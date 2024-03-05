@@ -25,9 +25,9 @@ import {
 	type BoundDeclarations
 } from "./constraints/refinements/kinds.js"
 import {
-	PatternNode,
-	type PatternDeclaration
-} from "./constraints/refinements/pattern.js"
+	RegexNode,
+	type RegexDeclaration
+} from "./constraints/refinements/regex.js"
 import type { NodeKind } from "./shared/implement.js"
 import type { makeRootAndArrayPropertiesMutable } from "./shared/utils.js"
 import { DomainNode, type DomainDeclaration } from "./types/domain.js"
@@ -56,7 +56,7 @@ export interface NodeDeclarationsByKind extends BoundDeclarations {
 	required: RequiredDeclaration
 	optional: OptionalDeclaration
 	index: IndexDeclaration
-	pattern: PatternDeclaration
+	regex: RegexDeclaration
 	predicate: PredicateDeclaration
 }
 
@@ -69,7 +69,7 @@ export const nodesByKind = {
 	morph: MorphNode,
 	intersection: IntersectionNode,
 	divisor: DivisorNode,
-	pattern: PatternNode,
+	regex: RegexNode,
 	predicate: PredicateNode,
 	required: RequiredNode,
 	optional: OptionalNode,

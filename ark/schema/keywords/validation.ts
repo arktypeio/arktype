@@ -22,7 +22,7 @@ const emailMatcher = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/
 
 const email = rootSchema({
 	basis: "string",
-	pattern: emailMatcher,
+	regex: emailMatcher,
 	description: "a valid email"
 })
 
@@ -32,7 +32,7 @@ const uuidMatcher =
 // https://github.com/validatorjs/validator.js/blob/master/src/lib/isUUID.js
 const uuid = rootSchema({
 	basis: "string",
-	pattern: uuidMatcher,
+	regex: uuidMatcher,
 	description: "a valid UUID"
 })
 
@@ -42,7 +42,7 @@ const semverMatcher =
 // https://semver.org/
 const semver = rootSchema({
 	basis: "string",
-	pattern: semverMatcher,
+	regex: semverMatcher,
 	description: "a valid semantic version (see https://semver.org/)"
 })
 
@@ -67,22 +67,22 @@ export const Validation: ScopeNode<Validation.resolutions> = ScopeNode.from(
 	{
 		alpha: {
 			basis: "string",
-			pattern: /^[A-Za-z]*$/,
+			regex: /^[A-Za-z]*$/,
 			description: "only letters"
 		},
 		alphanumeric: {
 			basis: "string",
-			pattern: /^[A-Za-z\d]*$/,
+			regex: /^[A-Za-z\d]*$/,
 			description: "only letters and digits"
 		},
 		lowercase: {
 			basis: "string",
-			pattern: /^[a-z]*$/,
+			regex: /^[a-z]*$/,
 			description: "only lowercase letters"
 		},
 		uppercase: {
 			basis: "string",
-			pattern: /^[A-Za-z]*$/,
+			regex: /^[A-Za-z]*$/,
 			description: "only uppercase letters"
 		},
 		creditCard,

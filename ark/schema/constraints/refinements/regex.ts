@@ -5,28 +5,30 @@ import {
 	type PrimitiveConstraintInner
 } from "../constraint.js"
 
-export interface PatternInner extends PrimitiveConstraintInner<string> {
+export interface RegexInner extends PrimitiveConstraintInner<string> {
 	readonly flags?: string
 }
 
-export type NormalizedPatternSchema = PatternInner
+export type regex<s extends string> = { [_ in s]: true }
 
-export type PatternSchema = NormalizedPatternSchema | string | RegExp
+export type NormalizedRegexSchema = RegexInner
 
-export type PatternDeclaration = declareNode<{
-	kind: "pattern"
-	schema: PatternSchema
-	normalizedSchema: NormalizedPatternSchema
-	inner: PatternInner
+export type RegexSchema = NormalizedRegexSchema | string | RegExp
+
+export type RegexDeclaration = declareNode<{
+	kind: "regex"
+	schema: RegexSchema
+	normalizedSchema: NormalizedRegexSchema
+	inner: RegexInner
 	composition: "primitive"
 	hasOpenIntersection: true
 	prerequisite: string
-	expectedContext: PatternInner
+	expectedContext: RegexInner
 }>
 
-export class PatternNode extends BasePrimitiveConstraint<
-	PatternDeclaration,
-	typeof PatternNode
+export class RegexNode extends BasePrimitiveConstraint<
+	RegexDeclaration,
+	typeof RegexNode
 > {
 	static implementation = this.implement({
 		collapseKey: "rule",
@@ -46,7 +48,7 @@ export class PatternNode extends BasePrimitiveConstraint<
 		hasOpenIntersection: true,
 		intersections: {
 			// for now, non-equal regex are naively intersected
-			pattern: () => null
+			regex: () => null
 		},
 		defaults: {
 			description(inner) {
@@ -64,6 +66,6 @@ export class PatternNode extends BasePrimitiveConstraint<
 	readonly expectedContext = this.createExpectedContext(this.inner)
 
 	// if (into.basis?.domain !== "string") {
-	// 	throwInvalidOperandError("pattern", "a string", into.basis)
+	// 	throwInvalidOperandError("regex", "a string", into.basis)
 	// }
 }

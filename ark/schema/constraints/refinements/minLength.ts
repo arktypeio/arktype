@@ -2,10 +2,13 @@ import type { nodeImplementationOf } from "../../shared/implement.js"
 import {
 	BaseRange,
 	type LengthBoundableData,
-	type LengthRangeDeclaration
+	type LengthRangeDeclaration,
+	type boundToIs
 } from "./range.js"
 
 export type MinLengthDeclaration = LengthRangeDeclaration<"minLength">
+
+export type minLength<n extends number> = boundToIs<"minLength", n>
 
 export class MinLengthNode extends BaseRange<
 	MinLengthDeclaration,
