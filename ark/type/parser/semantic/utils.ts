@@ -1,6 +1,6 @@
 import type { List, Stringifiable } from "@arktype/util"
 import type { Comparator } from "../string/reduce/shared.js"
-import type { InfixExpression, PostfixExpression } from "./semantic.js"
+import type { InfixExpression, PostfixExpression } from "./infer.js"
 
 export type astToString<ast> = `'${astToStringRecurse<ast>}'`
 

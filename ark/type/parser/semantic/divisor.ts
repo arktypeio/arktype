@@ -1,6 +1,6 @@
 import type { writeIndivisibleMessage } from "@arktype/schema"
 import type { ErrorMessage } from "@arktype/util"
-import type { inferAstBase } from "./semantic.js"
+import type { inferAstBase } from "./infer.js"
 import type { astToString } from "./utils.js"
 import type { validateAst } from "./validate.js"
 

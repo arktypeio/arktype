@@ -13,7 +13,7 @@ import {
 import type { Module } from "../../../../scope.js"
 import type { Generic, GenericProps } from "../../../../type.js"
 import { hasArkKind } from "../../../../util.js"
-import type { GenericInstantiationAst } from "../../../semantic/semantic.js"
+import type { GenericInstantiationAst } from "../../../semantic/infer.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import type { state, StaticState } from "../../reduce/static.js"
 import type { BaseCompletions } from "../../string.js"

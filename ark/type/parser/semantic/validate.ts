@@ -17,7 +17,7 @@ import type {
 	GenericInstantiationAst,
 	InfixExpression,
 	PostfixExpression
-} from "./semantic.js"
+} from "./infer.js"
 import type { astToString } from "./utils.js"
 
 export type validateAst<ast, $, args> = ast extends string

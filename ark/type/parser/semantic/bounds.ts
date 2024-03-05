@@ -12,7 +12,7 @@ import type {
 	BoundExpressionKind,
 	writeInvalidLimitMessage
 } from "../string/shift/operator/bounds.js"
-import type { inferAstBase } from "./semantic.js"
+import type { inferAstBase } from "./infer.js"
 import type { astToString } from "./utils.js"
 import type { validateAst } from "./validate.js"
 
