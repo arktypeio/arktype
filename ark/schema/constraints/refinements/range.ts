@@ -18,10 +18,9 @@ import {
 } from "../../shared/implement.js"
 import {
 	BasePrimitiveConstraint,
-	type ConstraintInner,
-	type PrimitiveConstraintKind
+	type PrimitiveConstraintInner
 } from "../constraint.js"
-import type { DateLiteral } from "../is.js"
+import type { DateLiteral, normalizePrimitiveConstraintSchema } from "../is.js"
 import type { BoundKind, RangeKind } from "./shared.js"
 
 export abstract class BaseRange<
@@ -96,7 +95,7 @@ export abstract class BaseRange<
 }
 
 export interface BoundInner<limit extends LimitSchemaValue = LimitSchemaValue>
-	extends ConstraintInner<limit> {
+	extends PrimitiveConstraintInner<limit> {
 	readonly exclusive?: true
 }
 
@@ -104,7 +103,7 @@ export type LimitSchemaValue = Date | number | string
 
 export interface NormalizedBoundSchema<
 	limit extends LimitSchemaValue = LimitSchemaValue
-> extends ConstraintInner<limit> {
+> extends PrimitiveConstraintInner<limit> {
 	readonly exclusive?: boolean
 }
 
@@ -249,10 +248,6 @@ export interface DateBoundExtras {
 	numericLimit: number
 	stringLimit: string
 }
-
-export type normalizePrimitiveConstraintSchema<
-	schema extends Schema<PrimitiveConstraintKind>
-> = schema extends NormalizedBoundSchema ? schema["rule"] : schema
 
 export type boundConstraints<
 	kind extends BoundKind,

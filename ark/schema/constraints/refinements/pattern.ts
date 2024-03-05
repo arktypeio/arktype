@@ -1,8 +1,11 @@
 import { jsData } from "../../shared/compile.js"
 import type { declareNode } from "../../shared/declare.js"
-import { BasePrimitiveConstraint, type ConstraintInner } from "../constraint.js"
+import {
+	BasePrimitiveConstraint,
+	type PrimitiveConstraintInner
+} from "../constraint.js"
 
-export interface PatternInner extends ConstraintInner<string> {
+export interface PatternInner extends PrimitiveConstraintInner<string> {
 	readonly flags?: string
 }
 

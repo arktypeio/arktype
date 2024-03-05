@@ -23,7 +23,7 @@ export type parseDivisor<
 	? scanned extends NumberLiteral<infer divisor>
 		? divisor extends 0
 			? state.error<writeInvalidDivisorMessage<0>>
-			: state.setRoot<s, [s["root"], "%", scanned], nextUnscanned>
+			: state.setRoot<s, [s["root"], "%", divisor], nextUnscanned>
 		: state.error<writeInvalidDivisorMessage<scanned>>
 	: never
 

@@ -6,8 +6,7 @@ import type {
 	distill,
 	inferIntersection,
 	is,
-	limitToIs,
-	schemaToConstraints
+	limitToIs
 } from "@arktype/schema"
 import type {
 	BigintLiteral,
@@ -102,12 +101,7 @@ export type inferExpression<
 				}
 		  >
 	: ast[1] extends "%"
-	? inferAst<
-			ast[0],
-			$,
-			args,
-			constraints & schemaToConstraints<"divisor", ast[2]>
-	  >
+	? inferAst<ast[0], $, args, constraints & { "%": ast[2] & number }>
 	: ast[0] extends "keyof"
 	? keyof inferAst<ast[1], $, args, constraints>
 	: never

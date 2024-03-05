@@ -4,7 +4,10 @@ import type {
 	BoundKind,
 	writeInvalidOperandMessage
 } from "../shared/implement.js"
-import type { PrimitiveConstraintKind } from "./constraint.js"
+import type {
+	PrimitiveConstraintInner,
+	PrimitiveConstraintKind
+} from "./constraint.js"
 import type { LimitSchemaValue, boundConstraints } from "./refinements/range.js"
 
 export type Comparator = "<" | "<=" | ">" | ">=" | "=="
@@ -20,7 +23,7 @@ export type DateLiteral<source extends string = string> =
 export type Constraints = evaluate<
 	BoundConstraints & {
 		[k: DateLiteral | RegexLiteral]: true
-		"%"?: true
+		"%"?: number
 		":"?: true
 	}
 >
@@ -56,20 +59,39 @@ export type validateConstraintArg<
 			>
 	  >
 
-export type constrain<t, constraints extends Constraints> = t extends is<
+export type constrain<t, constraints extends Constraints> = rawConstrain<
+	t,
+	constraints
+>
+
+type rawConstrain<t, constraints> = t extends is<
 	infer basis,
 	infer lConstraints
 >
 	? is<basis, lConstraints & constraints>
 	: is<t, constraints>
 
+export type normalizePrimitiveConstraintSchema<
+	schema extends Schema<PrimitiveConstraintKind>
+> = schema extends PrimitiveConstraintInner<infer rule> ? rule : schema
+
 export type applySchema<
 	t,
 	kind extends PrimitiveConstraintKind,
 	schema
-> = constrain<t, schemaToConstraints<kind, conform<schema, Schema<kind>>>>
+> = rawConstrain<t, schemaToConstraints<kind, conform<schema, Schema<kind>>>>
 
 export type schemaToConstraints<
 	kind extends PrimitiveConstraintKind,
 	schema extends Schema<kind>
-> = kind extends BoundKind ? boundConstraints<kind, schema> : {}
+> = kind extends BoundKind
+	? boundConstraints<kind, schema>
+	: kind extends "regex"
+	? { [k in normalizePrimitiveConstraintSchema<schema> & RegexLiteral]: true }
+	: kind extends "date"
+	? { [k in normalizePrimitiveConstraintSchema<schema> & DateLiteral]: true }
+	: kind extends "divisor"
+	? { "%": normalizePrimitiveConstraintSchema<schema> }
+	: kind extends "keyof"
+	? { ":": true }
+	: never

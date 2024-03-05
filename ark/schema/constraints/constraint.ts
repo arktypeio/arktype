@@ -22,7 +22,7 @@ export type constraintKindOrLeftOf<kind extends ConstraintKind> =
 	| kind
 	| constraintKindLeftOf<kind>
 
-export interface ConstraintInner<rule = unknown> extends BaseMeta {
+export interface PrimitiveConstraintInner<rule = unknown> extends BaseMeta {
 	readonly rule: rule
 }
 
