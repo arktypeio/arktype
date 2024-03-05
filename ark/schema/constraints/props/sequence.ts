@@ -71,10 +71,10 @@ const fixedSequenceKeyDefinition: NodeKeyImplementation<
 	"prefix" | "postfix" | "optionals"
 > = {
 	child: true,
-	// TODO: figure out fixed []
 	parse: (schema, ctx) =>
 		schema.length === 0
-			? // omit empty affixes
+			? // empty affixes are omitted. an empty array should therefore
+			  // be specified as `{ basis: Array, length: 0 }`
 			  undefined
 			: schema.map((element) => ctx.$.parseTypeNode(element))
 }
@@ -212,6 +212,13 @@ export class SequenceNode extends BaseConstraint<
 		this.maxLength === undefined
 			? undefined
 			: this.$.parse("maxLength", this.maxLength)
+	readonly impliedSiblings = this.minLengthNode
+		? this.maxLengthNode
+			? [this.minLengthNode, this.maxLengthNode]
+			: [this.minLengthNode]
+		: this.maxLengthNode
+		? [this.maxLengthNode]
+		: undefined
 
 	protected childAtIndex(data: List, index: number) {
 		if (index < this.prevariadic.length) return this.prevariadic[index]

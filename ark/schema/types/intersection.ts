@@ -1,5 +1,6 @@
 import {
 	append,
+	appendUnique,
 	conflatenateAll,
 	entriesOf,
 	isArray,
@@ -407,6 +408,9 @@ const intersectConstraints = (
 	if (!matched) {
 		constraints.push(head)
 	}
+
+	head.impliedSiblings?.forEach((node) => appendUnique(tail, node))
+
 	return intersectConstraints(constraints, tail)
 }
 

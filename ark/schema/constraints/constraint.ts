@@ -44,6 +44,8 @@ export abstract class BaseConstraint<
 	d extends BaseConstraintDeclaration,
 	subclass extends NodeSubclass<d>
 > extends BaseNode<d["prerequisite"], d, subclass> {
+	readonly impliedSiblings?: ConstraintNode[] | undefined
+
 	intersect<r extends ConstraintNode>(
 		r: r
 	): intersectConstraintKinds<d["kind"], r["kind"]> {
