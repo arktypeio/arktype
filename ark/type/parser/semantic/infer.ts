@@ -131,7 +131,7 @@ export type InfixExpression<
 type applyConstraintsIfPresent<
 	In,
 	constraints extends Constraints
-> = {} extends constraints ? In : is<In, evaluate<constraints>>
+> = {} extends constraints ? In : is<In> & evaluate<constraints>
 
 export type inferTerminal<
 	token,
@@ -139,9 +139,9 @@ export type inferTerminal<
 	args,
 	constraints extends Constraints
 > = token extends RegexLiteral
-	? is<string, evaluate<constraints & { [_ in token]: true }>>
+	? is<string> & evaluate<constraints & { [_ in token]: true }>
 	: token extends DateLiteral
-	? is<Date, evaluate<constraints & { [_ in token]: true }>>
+	? is<Date> & evaluate<constraints & { [_ in token]: true }>
 	: applyConstraintsIfPresent<
 			token extends keyof args | keyof $
 				? resolve<token, $, args>

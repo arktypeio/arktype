@@ -1,4 +1,10 @@
-import { isNode, schema, type TypeNode, type is } from "@arktype/schema"
+import {
+	isNode,
+	schema,
+	type TypeNode,
+	type is,
+	type regex
+} from "@arktype/schema"
 import {
 	isThunk,
 	objectKindOf,
@@ -71,7 +77,7 @@ export type inferDefinition<def, $, args> = isAny<def> extends true
 	: def extends List
 	? inferTuple<def, $, args>
 	: def extends RegExp
-	? is<string, { anonymousPattern: true }>
+	? is<string> & regex<"?">
 	: def extends object
 	? inferObjectLiteral<def, $, args>
 	: never

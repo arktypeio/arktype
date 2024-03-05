@@ -45,11 +45,12 @@ type matcherInputs<ctx extends MatchParserContext> = Parameters<
 	ctx["thens"][number]
 >[0]
 
+// TODO: Fix
 type AnonymouslyRefined = {}
 
 type getHandledBranches<ctx extends MatchParserContext> = Exclude<
 	matcherInputs<ctx>,
-	is<unknown, AnonymouslyRefined>
+	AnonymouslyRefined
 >
 type getUnhandledBranches<ctx extends MatchParserContext> = Exclude<
 	unknown extends ctx["exhaustiveOver"] ? UnknownUnion : ctx["exhaustiveOver"],

@@ -77,5 +77,6 @@ export type inferNarrow<In, predicate> = predicate extends (
 	data: any,
 	...args: any[]
 ) => data is infer narrowed
-	? is<narrowed, { anonymousPredicate: true }>
+	? // TODO: preserve constraints
+	  is<narrowed> & { ":": true }
 	: In

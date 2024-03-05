@@ -35,20 +35,19 @@ export type Constraints = evaluate<
 	}
 >
 
-export type is<basis, constraints> = {
+export type is<basis> = {
 	basis: basis
-	constraints: constraints
 }
 
 export type intersectConstrainables<l, r> = [l, r] extends [
-	is<infer lInner, infer lConstraints>,
-	is<infer rInner, infer rConstraints>
+	is<infer lInner> & infer lConstraints,
+	is<infer rInner> & infer rConstraints
 ]
-	? is<lInner & rInner, lConstraints & rConstraints>
-	: l extends is<infer lInner, infer lConstraints>
-	? is<lInner & r, lConstraints>
-	: r extends is<infer rInner, infer rConstraints>
-	? is<l & rInner, rConstraints>
+	? is<lInner & rInner> & lConstraints & rConstraints
+	: l extends is<infer lInner> & infer lConstraints
+	? is<lInner & r> & lConstraints
+	: r extends is<infer rInner> & infer rConstraints
+	? is<l & rInner> & rConstraints
 	: l & r
 
 export type LimitLiteral = number | DateLiteral
@@ -71,12 +70,10 @@ export type constrain<t, constraints extends Constraints> = rawConstrain<
 	constraints
 >
 
-type rawConstrain<t, constraints> = t extends is<
-	infer basis,
+type rawConstrain<t, constraints> = t extends is<infer basis> &
 	infer lConstraints
->
-	? is<basis, lConstraints & constraints>
-	: is<t, constraints>
+	? is<basis> & lConstraints & constraints
+	: is<t> & constraints
 
 export type normalizePrimitiveConstraintSchema<
 	schema extends Schema<PrimitiveConstraintKind>
