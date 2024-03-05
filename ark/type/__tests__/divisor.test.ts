@@ -10,6 +10,12 @@ describe("divisibility", () => {
 			attest<number>(divisibleByTwo.infer)
 			attest(divisibleByTwo.json).snap({ basis: "number", divisor: 2 })
 		})
+		it("chained", () => {
+			const t = type("number").divisor(2)
+			const expected = type("number%2")
+			attest<typeof expected>(t)
+			attest(t.json).equals(expected.json)
+		})
 		it("whitespace after %", () => {
 			const t = type("number % 5")
 			attest<number>(t.infer)

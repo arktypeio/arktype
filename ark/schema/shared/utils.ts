@@ -3,23 +3,25 @@ import {
 	morph,
 	type ErrorMessage,
 	type List,
+	type conform,
 	type describe,
 	type evaluate,
 	type mutable
 } from "@arktype/util"
+import type { NormalizedDivisorSchema } from "../constraints/refinements/divisor.js"
+import type { NormalizedPatternSchema } from "../constraints/refinements/pattern.js"
 import type {
-	DivisorSchema,
-	writeIndivisibleMessage
-} from "../constraints/refinements/divisor.js"
-import type { PatternSchema } from "../constraints/refinements/pattern.js"
-import type {
+	BoundSchema,
 	LimitSchemaValue,
 	LowerBoundKind,
-	NormalizedBoundSchema,
-	writeUnboundableMessage
+	NormalizedBoundSchema
 } from "../constraints/refinements/range.js"
 import type { Prerequisite, Schema } from "../kinds.js"
-import type { BoundKind, writeInvalidOperandMessage } from "./implement.js"
+import type {
+	BoundKind,
+	ConstraintKind,
+	writeInvalidOperandMessage
+} from "./implement.js"
 
 export const makeRootAndArrayPropertiesMutable = <o extends object>(o: o) =>
 	// TODO: this cast should not be required, but it seems TS is referencing
@@ -74,13 +76,6 @@ export type is<basis, constraints> = {
 	constraints: constraints
 }
 
-export type constrain<t, constraints extends Constraints> = t extends is<
-	infer basis,
-	infer lConstraints
->
-	? is<basis, lConstraints & constraints>
-	: is<t, constraints>
-
 export type intersectConstrainables<l, r> = [l, r] extends [
 	is<infer lInner, infer lConstraints>,
 	is<infer rInner, infer rConstraints>
@@ -104,8 +99,8 @@ export const inferred = Symbol("inferred")
 
 export type LimitLiteral = number | DateLiteral
 
-export type validatedSchemaParameter<
-	kind extends BoundKind,
+export type validateConstraintArg<
+	kind extends ConstraintKind,
 	In
 > = In extends Prerequisite<kind>
 	? Schema<kind>
@@ -117,20 +112,51 @@ export type validatedSchemaParameter<
 			>
 	  >
 
-export type validatedBoundSchema<
-	kind extends BoundKind,
-	In
-> = In extends Prerequisite<kind>
-	? Schema<kind>
-	: ErrorMessage<writeUnboundableMessage<"node">>
+export type constrain<t, constraints extends Constraints> = t extends is<
+	infer basis,
+	infer lConstraints
+>
+	? is<basis, lConstraints & constraints>
+	: is<t, constraints>
 
-export type validatedDivisorSchema<In> = In extends number
-	? DivisorSchema
-	: ErrorMessage<writeIndivisibleMessage<"node">>
+export type applySchema<t, kind extends ConstraintKind, schema> = constrain<
+	t,
+	schemaToConstraints<kind, conform<schema, Schema<kind>>>
+>
 
-export type validatedPatternSchema<In> = In extends string
-	? PatternSchema
-	: ErrorMessage<writeIndivisibleMessage<"node">>
+type schemaToConstraintValue<
+	kind extends ConstraintKind,
+	schema extends Schema<kind>
+> = kind extends BoundKind
+	? boundSchemaToLimit<conform<schema, BoundSchema>>
+	: kind extends "divisor"
+	? schema extends NormalizedDivisorSchema
+		? schema["divisor"]
+		: schema
+	: kind extends "pattern"
+	? patternSchemaToSource<schema>
+	: schema extends { [_ in kind]: infer value }
+	? value
+	: schema
+
+type schemaToConstraintKey<
+	kind extends ConstraintKind,
+	schema extends Schema<kind>
+> = kind extends BoundKind
+	? schemaToComparator<kind, conform<schema, BoundSchema>>
+	: kind extends "divisor"
+	? "%"
+	: kind
+
+export type schemaToConstraints<
+	kind extends ConstraintKind,
+	schema extends Schema<kind>
+> = {
+	[_ in schemaToConstraintKey<kind, schema>]: schemaToConstraintValue<
+		kind,
+		schema
+	>
+} & unknown
 
 type schemaToComparator<
 	kind extends BoundKind,
@@ -141,7 +167,7 @@ type schemaToComparator<
 	? ""
 	: "="}`
 
-export type schemaToLimit<schema extends Schema<BoundKind>> = (
+export type boundSchemaToLimit<schema extends Schema<BoundKind>> = (
 	schema extends NormalizedBoundSchema ? schema["limit"] : schema
 ) extends infer limit extends LimitSchemaValue
 	? limit extends DateLiteral<infer source>
@@ -149,7 +175,15 @@ export type schemaToLimit<schema extends Schema<BoundKind>> = (
 		: limit extends Date
 		? string
 		: limit
-	: LimitSchemaValue
+	: never
+
+type patternSchemaToSource<schema> = (
+	schema extends NormalizedPatternSchema ? schema["source"] : schema
+) extends infer source
+	? source extends RegExp
+		? string
+		: source
+	: never
 
 export type isNarrowedLimit<limit> = limit extends number
 	? number extends limit
@@ -160,14 +194,3 @@ export type isNarrowedLimit<limit> = limit extends number
 		? false
 		: true
 	: false
-
-export type applyBound<
-	t,
-	kind extends BoundKind,
-	schema extends Schema<BoundKind>
-> = constrain<
-	t,
-	{
-		[_ in schemaToComparator<kind, schema>]: schemaToLimit<schema>
-	}
->

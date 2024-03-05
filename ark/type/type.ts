@@ -7,7 +7,6 @@ import {
 	type Out,
 	type Predicate,
 	type TypeNode,
-	type applyBound,
 	type distill,
 	type extractIn,
 	type extractOut,
@@ -15,7 +14,7 @@ import {
 	type inferIntersection,
 	type inferMorphOut,
 	type inferNarrow,
-	type validatedBoundSchema
+	type validateConstraintArg
 } from "@arktype/schema"
 import {
 	Callable,
@@ -25,6 +24,7 @@ import {
 	type List,
 	type conform
 } from "@arktype/util"
+import type { applySchema } from "../schema/shared/utils.js"
 import type {
 	inferDefinition,
 	validateDeclared,
@@ -229,68 +229,68 @@ export class Type<t = unknown, $ = any> extends Callable<
 		return result.errors ? result.errors.throw() : result.out
 	}
 
-	divisor<const limit extends validatedBoundSchema<"min", this["infer"]>>(
+	divisor<const limit extends validateConstraintArg<"divisor", this["infer"]>>(
 		limit: limit
-	): Type<applyBound<t, "min", limit>, $> {
+	): Type<applySchema<t, "divisor", limit>, $> {
 		return new Type(
 			this.root.constrain("min", limit as number),
 			this.scope
 		) as never
 	}
 
-	min<const limit extends validatedBoundSchema<"min", this["infer"]>>(
-		limit: limit
-	): Type<applyBound<t, "min", limit>, $> {
-		return new Type(
-			this.root.constrain("min", limit as number),
-			this.scope
-		) as never
-	}
+	// min<const limit extends validatedBoundSchema<"min", this["infer"]>>(
+	// 	limit: limit
+	// ): Type<applyBound<t, "min", limit>, $> {
+	// 	return new Type(
+	// 		this.root.constrain("min", limit as number),
+	// 		this.scope
+	// 	) as never
+	// }
 
-	max<limit extends validatedBoundSchema<"max", this["infer"]>>(
-		limit: limit
-	): Type<applyBound<t, "max", limit>, $> {
-		return new Type(
-			this.root.constrain("max", limit as number),
-			this.scope
-		) as never
-	}
+	// max<limit extends validatedBoundSchema<"max", this["infer"]>>(
+	// 	limit: limit
+	// ): Type<applyBound<t, "max", limit>, $> {
+	// 	return new Type(
+	// 		this.root.constrain("max", limit as number),
+	// 		this.scope
+	// 	) as never
+	// }
 
-	minLength<limit extends validatedBoundSchema<"minLength", this["infer"]>>(
-		limit: limit
-	): Type<applyBound<t, "minLength", limit>, $> {
-		return new Type(
-			this.root.constrain("minLength", limit as number),
-			this.scope
-		) as never
-	}
+	// minLength<limit extends validatedBoundSchema<"minLength", this["infer"]>>(
+	// 	limit: limit
+	// ): Type<applyBound<t, "minLength", limit>, $> {
+	// 	return new Type(
+	// 		this.root.constrain("minLength", limit as number),
+	// 		this.scope
+	// 	) as never
+	// }
 
-	maxLength<limit extends validatedBoundSchema<"maxLength", this["infer"]>>(
-		limit: limit
-	): Type<applyBound<t, "maxLength", limit>, $> {
-		return new Type(
-			this.root.constrain("maxLength", limit as number),
-			this.scope
-		) as never
-	}
+	// maxLength<limit extends validatedBoundSchema<"maxLength", this["infer"]>>(
+	// 	limit: limit
+	// ): Type<applyBound<t, "maxLength", limit>, $> {
+	// 	return new Type(
+	// 		this.root.constrain("maxLength", limit as number),
+	// 		this.scope
+	// 	) as never
+	// }
 
-	after<limit extends validatedBoundSchema<"after", this["infer"]>>(
-		limit: limit
-	): Type<applyBound<t, "after", limit>, $> {
-		return new Type(
-			this.root.constrain("after", limit as number),
-			this.scope
-		) as never
-	}
+	// after<limit extends validatedBoundSchema<"after", this["infer"]>>(
+	// 	limit: limit
+	// ): Type<applyBound<t, "after", limit>, $> {
+	// 	return new Type(
+	// 		this.root.constrain("after", limit as number),
+	// 		this.scope
+	// 	) as never
+	// }
 
-	before<limit extends validatedBoundSchema<"before", this["infer"]>>(
-		limit: limit
-	): Type<applyBound<t, "before", limit>, $> {
-		return new Type(
-			this.root.constrain("before", limit as number),
-			this.scope
-		) as never
-	}
+	// before<limit extends validatedBoundSchema<"before", this["infer"]>>(
+	// 	limit: limit
+	// ): Type<applyBound<t, "before", limit>, $> {
+	// 	return new Type(
+	// 		this.root.constrain("before", limit as number),
+	// 		this.scope
+	// 	) as never
+	// }
 
 	equals<def>(
 		other: validateTypeRoot<def, $>
