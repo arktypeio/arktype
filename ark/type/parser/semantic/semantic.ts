@@ -3,10 +3,10 @@ import type {
 	DateLiteral,
 	LimitLiteral,
 	RegexLiteral,
-	boundSchemaToLimit,
 	distill,
 	inferIntersection,
 	is,
+	limitToIs,
 	schemaToConstraints
 } from "@arktype/schema"
 import type {
@@ -90,7 +90,7 @@ export type inferExpression<
 				$,
 				args,
 				constraints & {
-					[_ in InvertedComparators[ast[1]]]: boundSchemaToLimit<ast[0]>
+					[_ in InvertedComparators[ast[1]]]: limitToIs<ast[0]>
 				}
 		  >
 		: inferAst<
@@ -98,7 +98,7 @@ export type inferExpression<
 				$,
 				args,
 				constraints & {
-					[_ in ast[1]]: boundSchemaToLimit<ast[2] & LimitLiteral>
+					[_ in ast[1]]: limitToIs<ast[2] & LimitLiteral>
 				}
 		  >
 	: ast[1] extends "%"

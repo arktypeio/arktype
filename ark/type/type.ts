@@ -229,68 +229,68 @@ export class Type<t = unknown, $ = any> extends Callable<
 		return result.errors ? result.errors.throw() : result.out
 	}
 
-	divisor<const limit extends validateConstraintArg<"divisor", this["infer"]>>(
-		limit: limit
-	): Type<applySchema<t, "divisor", limit>, $> {
+	divisor<const schema extends validateConstraintArg<"divisor", this["infer"]>>(
+		schema: schema
+	): Type<applySchema<t, "divisor", schema>, $> {
 		return new Type(
-			this.root.constrain("min", limit as number),
+			this.root.constrain("divisor", schema as never),
 			this.scope
 		) as never
 	}
 
-	// min<const limit extends validatedBoundSchema<"min", this["infer"]>>(
-	// 	limit: limit
-	// ): Type<applyBound<t, "min", limit>, $> {
-	// 	return new Type(
-	// 		this.root.constrain("min", limit as number),
-	// 		this.scope
-	// 	) as never
-	// }
+	min<const schema extends validateConstraintArg<"min", this["infer"]>>(
+		schema: schema
+	): Type<applySchema<t, "min", schema>, $> {
+		return new Type(
+			this.root.constrain("min", schema as never),
+			this.scope
+		) as never
+	}
 
-	// max<limit extends validatedBoundSchema<"max", this["infer"]>>(
-	// 	limit: limit
-	// ): Type<applyBound<t, "max", limit>, $> {
-	// 	return new Type(
-	// 		this.root.constrain("max", limit as number),
-	// 		this.scope
-	// 	) as never
-	// }
+	max<const schema extends validateConstraintArg<"max", this["infer"]>>(
+		schema: schema
+	): Type<applySchema<t, "max", schema>, $> {
+		return new Type(
+			this.root.constrain("max", schema as never),
+			this.scope
+		) as never
+	}
 
-	// minLength<limit extends validatedBoundSchema<"minLength", this["infer"]>>(
-	// 	limit: limit
-	// ): Type<applyBound<t, "minLength", limit>, $> {
-	// 	return new Type(
-	// 		this.root.constrain("minLength", limit as number),
-	// 		this.scope
-	// 	) as never
-	// }
+	minLength<
+		const schema extends validateConstraintArg<"minLength", this["infer"]>
+	>(schema: schema): Type<applySchema<t, "minLength", schema>, $> {
+		return new Type(
+			this.root.constrain("minLength", schema as never),
+			this.scope
+		) as never
+	}
 
-	// maxLength<limit extends validatedBoundSchema<"maxLength", this["infer"]>>(
-	// 	limit: limit
-	// ): Type<applyBound<t, "maxLength", limit>, $> {
-	// 	return new Type(
-	// 		this.root.constrain("maxLength", limit as number),
-	// 		this.scope
-	// 	) as never
-	// }
+	maxLength<
+		const schema extends validateConstraintArg<"maxLength", this["infer"]>
+	>(schema: schema): Type<applySchema<t, "maxLength", schema>, $> {
+		return new Type(
+			this.root.constrain("maxLength", schema as never),
+			this.scope
+		) as never
+	}
 
-	// after<limit extends validatedBoundSchema<"after", this["infer"]>>(
-	// 	limit: limit
-	// ): Type<applyBound<t, "after", limit>, $> {
-	// 	return new Type(
-	// 		this.root.constrain("after", limit as number),
-	// 		this.scope
-	// 	) as never
-	// }
+	before<const schema extends validateConstraintArg<"before", this["infer"]>>(
+		schema: schema
+	): Type<applySchema<t, "before", schema>, $> {
+		return new Type(
+			this.root.constrain("before", schema as never),
+			this.scope
+		) as never
+	}
 
-	// before<limit extends validatedBoundSchema<"before", this["infer"]>>(
-	// 	limit: limit
-	// ): Type<applyBound<t, "before", limit>, $> {
-	// 	return new Type(
-	// 		this.root.constrain("before", limit as number),
-	// 		this.scope
-	// 	) as never
-	// }
+	after<const schema extends validateConstraintArg<"after", this["infer"]>>(
+		schema: schema
+	): Type<applySchema<t, "after", schema>, $> {
+		return new Type(
+			this.root.constrain("after", schema as never),
+			this.scope
+		) as never
+	}
 
 	equals<def>(
 		other: validateTypeRoot<def, $>

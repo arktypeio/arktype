@@ -17,7 +17,7 @@ export class BeforeNode
 		this.implementBound({
 			defaults: {
 				description(inner) {
-					const limitString = dateLimitToString(inner.limit)
+					const limitString = dateLimitToString(inner.rule)
 					return inner.exclusive
 						? `before ${limitString}`
 						: `${limitString} or earlier`
@@ -33,9 +33,9 @@ export class BeforeNode
 			}
 		})
 
-	dateLimit = new Date(this.limit)
+	dateLimit = new Date(this.rule)
 	numericLimit = +this.dateLimit
-	stringLimit = dateLimitToString(this.limit)
+	stringLimit = dateLimitToString(this.rule)
 
 	traverseAllows = this.exclusive
 		? (data: Date) => +data < this.numericLimit

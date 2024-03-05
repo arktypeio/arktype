@@ -154,7 +154,7 @@ type singleEqualsMessage = typeof singleEqualsMessage
 const openLeftBoundToSchema = (
 	leftBound: OpenLeftBound
 ): Schema<BoundKind> => ({
-	limit: isDateLiteral(leftBound.limit)
+	rule: isDateLiteral(leftBound.limit)
 		? extractDateLiteralSource(leftBound.limit)
 		: leftBound.limit,
 	exclusive: leftBound.comparator.length === 1
@@ -184,7 +184,7 @@ export const parseRightBound = (
 	const exclusive = comparator.length === 1
 	// if the comparator is ==, both the min and max of that pair will be applied
 	for (const kind of getBoundKinds(comparator, limit, previousRoot)) {
-		s.constrainRoot(kind, { limit, exclusive })
+		s.constrainRoot(kind, { rule: limit, exclusive })
 	}
 	if (!s.branches.leftBound) {
 		return

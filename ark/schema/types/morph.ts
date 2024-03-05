@@ -8,6 +8,7 @@ import {
 	type listable
 } from "@arktype/util"
 import type { Node } from "../base.js"
+import type { is } from "../constraints/is.js"
 import type { Schema } from "../kinds.js"
 import type { StaticArkOption } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
@@ -24,7 +25,6 @@ import {
 	type TypeIntersection,
 	type nodeImplementationOf
 } from "../shared/implement.js"
-import type { is } from "../shared/utils.js"
 import { BaseType, type typeKindRightOf } from "./type.js"
 
 export type MorphChildKind = typeKindRightOf<"morph">

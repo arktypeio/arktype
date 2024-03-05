@@ -11,6 +11,7 @@ import type { Disjoint } from "../shared/disjoint.js"
 import type {
 	BranchableNodeKind,
 	ConstraintKind,
+	PropKind,
 	kindLeftOf
 } from "../shared/implement.js"
 
@@ -53,6 +54,8 @@ export abstract class BaseConstraint<
 		return this.impl.hasOpenIntersection as d["hasOpenIntersection"]
 	}
 }
+
+export type PrimitiveConstraintKind = Exclude<ConstraintKind, PropKind>
 
 export abstract class BasePrimitiveConstraint<
 	d extends BaseConstraintDeclaration,

@@ -164,7 +164,7 @@ export abstract class BaseNode<
 		this.kind === "morph" || this.children.some((child) => child.includesMorph)
 	readonly includesContextDependentPredicate: boolean =
 		// if a predicate accepts exactly one arg, we can safely skip passing context
-		(this.hasKind("predicate") && this.inner.predicate.length !== 1) ||
+		(this.hasKind("predicate") && this.inner.rule.length !== 1) ||
 		this.children.some((child) => child.includesContextDependentPredicate)
 	readonly referencesByName: Record<string, Node> = this.children.reduce(
 		(result, child) => Object.assign(result, child.contributesReferencesByName),

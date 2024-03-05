@@ -181,7 +181,7 @@ describe("bounds", () => {
 			})
 
 			it("chained exclusive", () => {
-				const t = type("number").min({ limit: 1337, exclusive: true })
+				const t = type("number").min({ rule: 1337, exclusive: true })
 				const expected = type("number>1337")
 				attest<typeof expected>(t)
 				attest(t.json).equals(expected.json)

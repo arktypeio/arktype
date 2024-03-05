@@ -9,7 +9,7 @@ export class MaxNode extends BaseRange<MaxDeclaration, typeof MaxNode> {
 		this.implementBound({
 			defaults: {
 				description(inner) {
-					return `${inner.exclusive ? "less than" : "at most"} ${inner.limit}`
+					return `${inner.exclusive ? "less than" : "at most"} ${inner.rule}`
 				}
 			},
 			intersections: {
@@ -20,8 +20,8 @@ export class MaxNode extends BaseRange<MaxDeclaration, typeof MaxNode> {
 		})
 
 	traverseAllows = this.exclusive
-		? (data: number) => data < this.limit
-		: (data: number) => data <= this.limit
+		? (data: number) => data < this.rule
+		: (data: number) => data <= this.rule
 
 	// if (into.basis?.domain !== "number") {
 	// 	this.throwInvalidBoundOperandError(into.basis)

@@ -17,8 +17,8 @@ export class MaxLengthNode extends BaseRange<
 			defaults: {
 				description(inner) {
 					return inner.exclusive
-						? `less than length ${inner.limit}`
-						: `at most length ${inner.limit}`
+						? `less than length ${inner.rule}`
+						: `at most length ${inner.rule}`
 				},
 				actual: (data) => `${data.length}`
 			},
@@ -30,8 +30,8 @@ export class MaxLengthNode extends BaseRange<
 		})
 
 	traverseAllows = this.exclusive
-		? (data: LengthBoundableData) => data.length < this.limit
-		: (data: LengthBoundableData) => data.length <= this.limit
+		? (data: LengthBoundableData) => data.length < this.rule
+		: (data: LengthBoundableData) => data.length <= this.rule
 
 	// if (
 	// 	into.basis?.domain !== "string" &&

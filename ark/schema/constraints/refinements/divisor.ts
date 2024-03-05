@@ -1,19 +1,15 @@
 import { jsData } from "../../shared/compile.js"
-import type { BaseMeta, declareNode } from "../../shared/declare.js"
-import { BasePrimitiveConstraint } from "../constraint.js"
+import type { declareNode } from "../../shared/declare.js"
+import { BasePrimitiveConstraint, type ConstraintInner } from "../constraint.js"
 
-export interface DivisorInner extends BaseMeta {
-	readonly divisor: number
-}
+export interface DivisorInner extends ConstraintInner<number> {}
 
-export type NormalizedDivisorSchema = DivisorInner
-
-export type DivisorSchema = NormalizedDivisorSchema | number
+export type DivisorSchema = DivisorInner | number
 
 export type DivisorDeclaration = declareNode<{
 	kind: "divisor"
 	schema: DivisorSchema
-	normalizedSchema: NormalizedDivisorSchema
+	normalizedSchema: DivisorInner
 	inner: DivisorInner
 	composition: "primitive"
 	prerequisite: number
@@ -25,33 +21,31 @@ export class DivisorNode extends BasePrimitiveConstraint<
 	typeof DivisorNode
 > {
 	static implementation = this.implement({
-		collapseKey: "divisor",
+		collapseKey: "rule",
 		keys: {
-			divisor: {}
+			rule: {}
 		},
 		normalize: (schema) =>
-			typeof schema === "number" ? { divisor: schema } : schema,
+			typeof schema === "number" ? { rule: schema } : schema,
 		intersections: {
 			divisor: (l, r) => ({
-				divisor: Math.abs(
-					(l.divisor * r.divisor) / greatestCommonDivisor(l.divisor, r.divisor)
+				rule: Math.abs(
+					(l.rule * r.rule) / greatestCommonDivisor(l.rule, r.rule)
 				)
 			})
 		},
 		hasAssociatedError: true,
 		defaults: {
 			description(inner) {
-				return inner.divisor === 1
-					? "an integer"
-					: `a multiple of ${inner.divisor}`
+				return inner.rule === 1 ? "an integer" : `a multiple of ${inner.rule}`
 			}
 		}
 	})
 
-	traverseAllows = (data: number) => data % this.divisor === 0
+	traverseAllows = (data: number) => data % this.rule === 0
 
-	compiledCondition = `${jsData} % ${this.divisor} === 0`
-	compiledNegation = `${jsData} % ${this.divisor} !== 0`
+	compiledCondition = `${jsData} % ${this.rule} === 0`
+	compiledNegation = `${jsData} % ${this.rule} !== 0`
 
 	readonly expectedContext = this.createExpectedContext(this.inner)
 

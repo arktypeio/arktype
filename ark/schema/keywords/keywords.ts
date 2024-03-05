@@ -1,6 +1,6 @@
 import { ScopeNode } from "../scope.js"
 import type { TypeKind } from "../shared/implement.js"
-import type { inferred } from "../shared/utils.js"
+import type { inferred } from "../shared/inference.js"
 import { JsObjects } from "./jsObjects.js"
 import { TsKeywords } from "./tsKeywords.js"
 import { Validation } from "./validation.js"

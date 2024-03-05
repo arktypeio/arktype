@@ -16,12 +16,12 @@ export class MinLengthNode extends BaseRange<
 			defaults: {
 				description(inner) {
 					return inner.exclusive
-						? inner.limit === 0
+						? inner.rule === 0
 							? "non-empty"
-							: `more than length ${inner.limit}`
-						: inner.limit === 1
+							: `more than length ${inner.rule}`
+						: inner.rule === 1
 						? "non-empty"
-						: `at least length ${inner.limit}`
+						: `at least length ${inner.rule}`
 				},
 				actual: (data) => `${data.length}`
 			},
@@ -31,8 +31,8 @@ export class MinLengthNode extends BaseRange<
 		})
 
 	traverseAllows = this.exclusive
-		? (data: LengthBoundableData) => data.length > this.limit
-		: (data: LengthBoundableData) => data.length >= this.limit
+		? (data: LengthBoundableData) => data.length > this.rule
+		: (data: LengthBoundableData) => data.length >= this.rule
 
 	// if (
 	// 	into.basis?.domain !== "string" &&

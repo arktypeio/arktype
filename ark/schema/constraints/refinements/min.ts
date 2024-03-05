@@ -8,7 +8,7 @@ export class MinNode extends BaseRange<MinDeclaration, typeof MinNode> {
 		this.implementBound({
 			defaults: {
 				description(inner) {
-					return `${inner.exclusive ? "more than" : "at least"} ${inner.limit}`
+					return `${inner.exclusive ? "more than" : "at least"} ${inner.rule}`
 				}
 			},
 			intersections: {
@@ -21,6 +21,6 @@ export class MinNode extends BaseRange<MinDeclaration, typeof MinNode> {
 	// }
 
 	traverseAllows = this.exclusive
-		? (data: number) => data > this.limit
-		: (data: number) => data >= this.limit
+		? (data: number) => data > this.rule
+		: (data: number) => data >= this.rule
 }

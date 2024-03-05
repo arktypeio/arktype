@@ -16,8 +16,8 @@ import type {
 	TypeKind,
 	kindRightOf
 } from "../shared/implement.js"
+import { inferred } from "../shared/inference.js"
 import type { inferIntersection } from "../shared/intersections.js"
-import { inferred } from "../shared/utils.js"
 import type { IntersectionNode } from "./intersection.js"
 import type { distill, extractIn, extractOut } from "./morph.js"
 import type { UnionChildKind, UnionNode } from "./union.js"
