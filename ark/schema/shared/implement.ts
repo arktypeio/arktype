@@ -89,6 +89,12 @@ export type OpenNodeKind = {
 		: never
 }[NodeKind]
 
+export type BranchableNodeKind = {
+	[k in NodeKind]: Declaration<k>["hasBranchableIntersection"] extends true
+		? k
+		: never
+}[NodeKind]
+
 export type ClosedNodeKind = Exclude<NodeKind, OpenNodeKind>
 
 export const primitiveKinds = [
@@ -140,9 +146,10 @@ export type SymmetricConstraintIntersection<kind extends ConstraintKind> = (
 	r: Node<kind>,
 	$: ScopeNode
 ) =>
-	| listable<Inner<kind>>
+	| Inner<kind>
 	| Disjoint
 	| (kind extends OpenNodeKind ? null : never)
+	| (kind extends BranchableNodeKind ? Inner<kind>[] : never)
 
 export type ConstraintIntersectionMap<kind extends ConstraintKind> = evaluate<
 	{

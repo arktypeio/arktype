@@ -1,6 +1,8 @@
 import { attest } from "@arktype/attest"
+import { writeUnboundableMessage, type is } from "@arktype/schema"
 import { writeMalformedNumericLiteralMessage } from "@arktype/util"
 import { type } from "arktype"
+import type { Ark } from "../ark.js"
 import { writeDoubleRightBoundMessage } from "../parser/semantic/bounds.js"
 import {
 	writeMultipleLeftBoundsMessage,
@@ -10,9 +12,9 @@ import {
 import {
 	singleEqualsMessage,
 	writeInvalidLimitMessage,
-	writeLimitMismatchMessage,
-	writeUnboundableMessage
+	writeLimitMismatchMessage
 } from "../parser/string/shift/operator/bounds.js"
+import type { Type } from "../type.js"
 
 // export const expectedBoundsCondition = (...bounds: BoundInner[]) => ""
 // // node("number", ...bounds).json
@@ -22,6 +24,20 @@ import {
 
 describe("bounds", () => {
 	describe("parse", () => {
+		it("inference", () => {
+			const t = type("number>=5")
+			attest<
+				Type<
+					is<
+						number,
+						{
+							">=": 5
+						}
+					>,
+					Ark
+				>
+			>(t)
+		})
 		describe("single", () => {
 			it(">", () => {
 				const t = type("number>0")
@@ -121,6 +137,55 @@ describe("bounds", () => {
 			// 	attest(t.json).equals(
 			// 		expectedBoundsCondition({ limitKind: "min", exclusive: true, limit: 3 })
 			// 	)
+
+			it("chained min", () => {
+				const t = type("number").min(5)
+				const expected = type("number>=5")
+				attest<typeof expected>(t)
+				attest(t.json).equals(expected.json)
+			})
+			it("chained max", () => {
+				const t = type("number").max(10)
+				const expected = type("number<=10")
+				attest<typeof expected>(t)
+				attest(t.json).equals(expected.json)
+			})
+
+			it("chained minLength", () => {
+				const t = type("string").minLength(5)
+				const expected = type("string>=5")
+				attest<typeof expected>(t)
+				attest(t.json).equals(expected.json)
+			})
+
+			it("chained maxLength", () => {
+				const t = type("string").maxLength(10)
+				const expected = type("string<=10")
+				attest<typeof expected>(t)
+				attest(t.json).equals(expected.json)
+			})
+
+			it("chained after", () => {
+				const t = type("Date").after(new Date(2022, 0, 1))
+				// widen the input to a string so both are non-narrowed
+				const expected = type(`Date>=d'${"2022-01-01" as string}'`)
+				attest<typeof expected>(t)
+				attest(t.json).equals(expected.json)
+			})
+
+			it("chained before", () => {
+				const t = type("Date").before(5)
+				const expected = type("Date<=5")
+				attest<typeof expected>(t)
+				attest(t.json).equals(expected.json)
+			})
+
+			it("chained exclusive", () => {
+				const t = type("number").min({ limit: 1337, exclusive: true })
+				const expected = type("number>1337")
+				attest<typeof expected>(t)
+				attest(t.json).equals(expected.json)
+			})
 		})
 		describe("intersection", () => {
 			describe("equality range", () => {

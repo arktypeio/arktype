@@ -354,6 +354,9 @@ Value at [1] must be a number (was boolean)`)
 			const result = l.and(r)
 			attest(result.json).snap(expected.json)
 		})
+		it("reduces minLength", () => {
+			const t = type(["number", "...", "string[]"])
+		})
 	})
 	// TODO: reenable
 	// describe("traversal", () => {

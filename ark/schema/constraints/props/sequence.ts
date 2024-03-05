@@ -1,12 +1,11 @@
 import {
 	append,
-	conflatenateAll,
 	throwInternalError,
 	throwParseError,
 	type List,
 	type mutable
 } from "@arktype/util"
-import type { Node, TypeNode, TypeSchema } from "../../base.js"
+import type { TypeNode, TypeSchema } from "../../base.js"
 import type { MutableInner } from "../../kinds.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/context.js"
@@ -63,6 +62,7 @@ export type SequenceDeclaration = declareNode<{
 	composition: "composite"
 	prerequisite: List
 	reducibleTo: "sequence"
+	hasBranchableIntersection: true
 	childKind: TypeKind
 }>
 
@@ -192,7 +192,9 @@ export class SequenceNode extends BaseConstraint<
 						: viableBranches.length === 1
 						? sequenceTupleToInner(viableBranches[0].result)
 						: viableBranches.map((state) => sequenceTupleToInner(state.result))
-				}
+				},
+				minLength: (l, r) => l.minLengthNode?.intersect(r) ?? null,
+				maxLength: (l, r) => l.maxLengthNode?.intersect(r) ?? null
 			}
 		})
 
@@ -210,10 +212,6 @@ export class SequenceNode extends BaseConstraint<
 		this.maxLength === undefined
 			? undefined
 			: this.$.parse("maxLength", this.maxLength)
-	readonly impliedSiblings = conflatenateAll<Node<"maxLength" | "minLength">>(
-		this.minLengthNode,
-		this.maxLengthNode
-	)
 
 	protected childAtIndex(data: List, index: number) {
 		if (index < this.prevariadic.length) return this.prevariadic[index]

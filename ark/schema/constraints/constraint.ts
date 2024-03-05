@@ -1,4 +1,3 @@
-import type { List, listable } from "@arktype/util"
 import {
 	BaseNode,
 	type ConstraintNode,
@@ -11,6 +10,7 @@ import type { BaseNodeDeclaration } from "../shared/declare.js"
 import type { Disjoint } from "../shared/disjoint.js"
 import type {
 	BasisKind,
+	BranchableNodeKind,
 	ConstraintKind,
 	kindLeftOf
 } from "../shared/implement.js"
@@ -26,23 +26,23 @@ export interface BaseConstraintDeclaration extends BaseNodeDeclaration {
 	kind: ConstraintKind
 }
 
+type intersectConstraintKinds<
+	l extends ConstraintKind,
+	r extends ConstraintKind
+> =
+	| Node<l | r>
+	| Disjoint
+	| null
+	// A constraint intersection may result in a union if both operands could be of the same BranchableNodeKind
+	| (l & r & BranchableNodeKind extends never ? never : Node<l | r>[])
+
 export abstract class BaseConstraint<
 	d extends BaseConstraintDeclaration,
 	subclass extends NodeSubclass<d>
 > extends BaseNode<d["prerequisite"], d, subclass> {
-	impliedSiblings?: List<ConstraintNode>
-
-	private contributesCache: List<BaseConstraint<any, any>> | undefined
-	get contributesConstraints(): List<ConstraintNode> {
-		this.contributesCache ??= this.impliedSiblings
-			? [this, ...this.impliedSiblings]
-			: [this]
-		return this.contributesCache as never
-	}
-
 	intersect<r extends ConstraintNode>(
 		r: r
-	): listable<Node<this["kind"] | r["kind"]>> | Disjoint | null {
+	): intersectConstraintKinds<d["kind"], r["kind"]> {
 		return this.intersectInternal(r) as never
 	}
 

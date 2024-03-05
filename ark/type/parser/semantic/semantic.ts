@@ -1,10 +1,12 @@
 import type {
 	Constraints,
 	DateLiteral,
+	LimitLiteral,
 	RegexLiteral,
 	distill,
 	inferIntersection,
-	is
+	is,
+	schemaToLimit
 } from "@arktype/schema"
 import type {
 	BigintLiteral,
@@ -21,8 +23,7 @@ import type { GenericProps } from "../../type.js"
 import type { inferDefinition } from "../definition.js"
 import type {
 	Comparator,
-	InvertedComparators,
-	LimitLiteral
+	InvertedComparators
 } from "../string/reduce/shared.js"
 import type { StringLiteral } from "../string/shift/operand/enclosed.js"
 
@@ -48,7 +49,7 @@ export type inferExpression<
 	ast extends List,
 	$,
 	args,
-	refinements extends Constraints
+	constraints extends Constraints
 > = ast extends GenericInstantiationAst
 	? inferDefinition<
 			ast[0]["definition"],
@@ -66,20 +67,20 @@ export type inferExpression<
 					ast[2][i & keyof ast[2]],
 					$,
 					args,
-					refinements
+					constraints
 				>
 			}
 	  >
 	: ast[1] extends "[]"
-	? inferAst<ast[0], $, args, refinements>[]
+	? inferAst<ast[0], $, args, constraints>[]
 	: ast[1] extends "|"
 	?
-			| inferAst<ast[0], $, args, refinements>
-			| inferAst<ast[2], $, args, refinements>
+			| inferAst<ast[0], $, args, constraints>
+			| inferAst<ast[2], $, args, constraints>
 	: ast[1] extends "&"
 	? inferIntersection<
-			inferAst<ast[0], $, args, refinements>,
-			inferAst<ast[2], $, args, refinements>
+			inferAst<ast[0], $, args, constraints>,
+			inferAst<ast[2], $, args, constraints>
 	  >
 	: ast[1] extends Comparator
 	? ast[0] extends LimitLiteral
@@ -87,13 +88,22 @@ export type inferExpression<
 				ast[2],
 				$,
 				args,
-				refinements & { [_ in InvertedComparators[ast[1]]]: ast[0] }
+				constraints & {
+					[_ in InvertedComparators[ast[1]]]: schemaToLimit<ast[0]>
+				}
 		  >
-		: inferAst<ast[0], $, args, refinements & { [_ in ast[1]]: ast[2] }>
+		: inferAst<
+				ast[0],
+				$,
+				args,
+				constraints & {
+					[_ in ast[1]]: schemaToLimit<ast[2] & LimitLiteral>
+				}
+		  >
 	: ast[1] extends "%"
-	? inferAst<ast[0], $, args, refinements & { [k in `%${ast[2] & string}`]: 0 }>
+	? inferAst<ast[0], $, args, constraints & { [k in `%${ast[2] & string}`]: 0 }>
 	: ast[0] extends "keyof"
-	? keyof inferAst<ast[1], $, args, refinements>
+	? keyof inferAst<ast[1], $, args, constraints>
 	: never
 
 export type PrefixOperator = "keyof" | "instanceof" | "===" | "node"
@@ -122,17 +132,17 @@ export type inferTerminal<
 	token,
 	$,
 	args,
-	refinements extends Constraints
+	constraints extends Constraints
 > = token extends keyof args | keyof $
-	? {} extends refinements
+	? {} extends constraints
 		? resolve<token, $, args>
-		: is<resolve<token, $, args>, evaluate<refinements>>
+		: is<resolve<token, $, args>, evaluate<constraints>>
 	: token extends StringLiteral<infer text>
 	? text
 	: token extends RegexLiteral
-	? is<string, evaluate<refinements & { [_ in token]: true }>>
+	? is<string, evaluate<constraints & { [_ in token]: true }>>
 	: token extends DateLiteral
-	? is<Date, evaluate<refinements & { [_ in token]: true }>>
+	? is<Date, evaluate<constraints & { [_ in token]: true }>>
 	: token extends NumberLiteral<infer value>
 	? value
 	: token extends BigintLiteral<infer value>

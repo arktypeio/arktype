@@ -1,4 +1,4 @@
-import type { TypeNode } from "@arktype/schema"
+import type { LimitLiteral, TypeNode } from "@arktype/schema"
 import {
 	isKeyOf,
 	throwInternalError,
@@ -19,7 +19,6 @@ import {
 	writeUnmatchedGroupCloseMessage,
 	writeUnpairableComparatorMessage,
 	type Comparator,
-	type LimitLiteral,
 	type OpenLeftBound,
 	type StringifiablePrefixOperator
 } from "./shared.js"

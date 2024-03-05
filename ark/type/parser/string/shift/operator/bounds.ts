@@ -1,6 +1,8 @@
 import {
 	keywords,
+	writeUnboundableMessage,
 	type BoundKind,
+	type LimitLiteral,
 	type LimitSchemaValue,
 	type Schema,
 	type TypeNode
@@ -20,7 +22,6 @@ import {
 	maxComparators,
 	writeUnpairableComparatorMessage,
 	type Comparator,
-	type LimitLiteral,
 	type MaxComparator,
 	type OpenLeftBound
 } from "../../reduce/shared.js"
@@ -102,14 +103,6 @@ type shiftComparator<
 	: start extends OneCharComparator
 	? [start, unscanned]
 	: state.error<singleEqualsMessage>
-
-export const writeUnboundableMessage = <root extends string>(
-	root: root
-): writeUnboundableMessage<root> =>
-	`Bounded expression ${root} must be a number, string, Array, or Date`
-
-export type writeUnboundableMessage<root extends string> =
-	`Bounded expression ${root} must be a number, string, Array, or Date`
 
 export const writeIncompatibleRangeMessage = (l: BoundKind, r: BoundKind) =>
 	`Bound kinds ${l} and ${r} are incompatible`

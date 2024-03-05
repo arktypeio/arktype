@@ -195,7 +195,7 @@ type distillRecurse<
 	? io extends "in"
 		? i
 		: o
-	: t extends is<infer base>
+	: t extends is<infer base, unknown>
 	? constraints extends "base"
 		? distillRecurse<base, io, constraints>
 		: t

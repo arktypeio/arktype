@@ -46,7 +46,7 @@ export abstract class BaseRange<
 				}
 			},
 			normalize: (schema: d["schema"]) =>
-				typeof schema === "object"
+				typeof schema === "object" && "limit" in schema
 					? { ...schema, limit: schema.limit }
 					: { limit: schema as Extract<d["schema"], LimitSchemaValue> },
 			defaults: implementation.defaults as never,
@@ -100,7 +100,7 @@ export interface BoundInner<limit extends LimitSchemaValue = LimitSchemaValue>
 	readonly exclusive?: true
 }
 
-export type LimitSchemaValue = number | string
+export type LimitSchemaValue = Date | number | string
 
 export interface NormalizedBoundSchema<
 	limit extends LimitSchemaValue = LimitSchemaValue
@@ -157,7 +157,11 @@ export type NumericallyBoundable = string | number | List
 export type Boundable = NumericallyBoundable | Date
 
 export const normalizeLimit = (limit: LimitSchemaValue): number =>
-	typeof limit === "string" ? new Date(limit).valueOf() : limit
+	typeof limit === "string"
+		? new Date(limit).valueOf()
+		: limit instanceof Date
+		? limit.valueOf()
+		: limit
 
 export type BaseRangeDeclaration = evaluate<
 	BaseNodeDeclaration & {
@@ -234,7 +238,7 @@ export type DateRangeKind = "before" | "after"
 export type DateRangeDeclaration<kind extends DateRangeKind = DateRangeKind> =
 	declareRange<{
 		kind: kind
-		limit: string | number
+		limit: Date | string | number
 		prerequisite: Date
 	}>
 
@@ -246,3 +250,11 @@ export interface DateBoundExtras {
 	numericLimit: number
 	stringLimit: string
 }
+
+export const writeUnboundableMessage = <root extends string>(
+	root: root
+): writeUnboundableMessage<root> =>
+	`Bounded expression ${root} must be a number, string, Array, or Date`
+
+export type writeUnboundableMessage<root extends string> =
+	`Bounded expression ${root} must be a number, string, Array, or Date`

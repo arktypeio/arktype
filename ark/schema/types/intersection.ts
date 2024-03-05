@@ -1,11 +1,9 @@
 import {
 	append,
-	appendUnique,
 	conflatenateAll,
 	entriesOf,
 	isArray,
 	isEmptyObject,
-	listFrom,
 	morph,
 	omit,
 	pick,
@@ -273,8 +271,6 @@ export class IntersectionNode<t = unknown> extends BaseType<
 			}
 		})
 
-	protected root: IntersectionRoot = omit(this.inner, constraintKeys)
-
 	readonly constraints = flattenConstraints(this.inner)
 	readonly refinements = this.constraints.filter(
 		(node): node is Node<RefinementKind> => node.isRefinement()
@@ -374,7 +370,7 @@ const intersectConstraints = (
 	const constraints: ConstraintNode[] = []
 	let matched = false
 	for (let i = 0; i < l.length; i++) {
-		const result = l[i].intersect(head as never)
+		const result = l[i].intersect(head)
 		if (result === null) {
 			constraints.push(l[i])
 		} else if (result instanceof Disjoint) {
@@ -425,14 +421,9 @@ const flattenConstraints = (inner: IntersectionInner): List<ConstraintNode> => {
 	}
 
 	const result = entriesOf(inner)
-		.reduce<ConstraintNode[]>((acc, [k, v]) => {
-			if (k in constraintKeys) {
-				listFrom(v as listable<ConstraintNode>).forEach((node) =>
-					node.contributesConstraints.forEach((_) => appendUnique(acc, _))
-				)
-			}
-			return acc
-		}, [])
+		.flatMap(([k, v]) =>
+			k in constraintKeys ? (v as listable<ConstraintNode>) : []
+		)
 		.sort((l, r) =>
 			l.precedence < r.precedence
 				? -1

@@ -1,4 +1,4 @@
-import type { DateLiteral } from "@arktype/schema"
+import type { LimitLiteral } from "@arktype/schema"
 
 export type StringifiablePrefixOperator = "keyof"
 
@@ -33,8 +33,6 @@ export const invertedComparators = {
 } as const satisfies Record<Comparator, Comparator>
 
 export type InvertedComparators = typeof invertedComparators
-
-export type LimitLiteral = number | DateLiteral
 
 export type OpenLeftBound = { limit: LimitLiteral; comparator: MinComparator }
 

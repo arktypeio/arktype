@@ -1,14 +1,16 @@
-import type { NumericallyBoundable } from "@arktype/schema"
+import type {
+	LimitLiteral,
+	NumericallyBoundable,
+	writeUnboundableMessage
+} from "@arktype/schema"
 import type { ErrorMessage } from "@arktype/util"
 import type {
 	Comparator,
-	InvertedComparators,
-	LimitLiteral
+	InvertedComparators
 } from "../string/reduce/shared.js"
 import type {
 	BoundExpressionKind,
-	writeInvalidLimitMessage,
-	writeUnboundableMessage
+	writeInvalidLimitMessage
 } from "../string/shift/operator/bounds.js"
 import type { inferAstBase } from "./semantic.js"
 import type { astToString } from "./utils.js"
