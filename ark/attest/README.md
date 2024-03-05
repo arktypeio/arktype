@@ -30,6 +30,8 @@ export const mochaGlobalSetup = setup
 export const mochaGlobalTeardown = cleanup
 ```
 
+You should also add `.attest` to your repository's `.gitignore` file.
+
 Bun support is currently pending a [bug in the way their source maps translate to stack traces](https://github.com/oven-sh/bun/issues/7120).
 
 ## Assertions
