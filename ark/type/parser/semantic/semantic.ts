@@ -6,7 +6,8 @@ import type {
 	boundSchemaToLimit,
 	distill,
 	inferIntersection,
-	is
+	is,
+	schemaToConstraints
 } from "@arktype/schema"
 import type {
 	BigintLiteral,
@@ -14,7 +15,6 @@ import type {
 	NumberLiteral,
 	evaluate
 } from "@arktype/util"
-import type { schemaToConstraints } from "../../../schema/shared/utils.js"
 import type {
 	UnparsedScope,
 	resolve,
@@ -134,6 +134,11 @@ export type InfixExpression<
 	r = unknown
 > = [l, operator, r]
 
+type applyConstraintsIfPresent<
+	In,
+	constraints extends Constraints
+> = {} extends constraints ? In : is<In, evaluate<constraints>>
+
 export type inferTerminal<
 	token,
 	$,
@@ -143,7 +148,7 @@ export type inferTerminal<
 	? is<string, evaluate<constraints & { [_ in token]: true }>>
 	: token extends DateLiteral
 	? is<Date, evaluate<constraints & { [_ in token]: true }>>
-	: is<
+	: applyConstraintsIfPresent<
 			token extends keyof args | keyof $
 				? resolve<token, $, args>
 				: token extends StringLiteral<infer text>
@@ -155,5 +160,5 @@ export type inferTerminal<
 				: // doing this last allows us to infer never if it isn't valid rather than check
 				  // if it's a valid submodule reference ahead of time
 				  tryInferSubmoduleReference<$, token>,
-			evaluate<constraints>
+			constraints
 	  >
