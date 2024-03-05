@@ -2,6 +2,7 @@ import {
 	printable,
 	throwParseError,
 	type Constructor,
+	type NonEnumerableDomain,
 	type evaluate,
 	type inferDomain,
 	type instanceOf,
@@ -12,7 +13,7 @@ import type { Schema } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { TraverseApply } from "../shared/context.js"
 import type { BasisKind } from "../shared/implement.js"
-import type { DomainNode, DomainSchema, NonEnumerableDomain } from "./domain.js"
+import type { DomainNode, DomainSchema } from "./domain.js"
 import type { ProtoNode, ProtoSchema } from "./proto.js"
 import { BaseType, type BaseTypeDeclaration } from "./type.js"
 import type { UnitNode, UnitSchema } from "./unit.js"

@@ -229,6 +229,15 @@ export class Type<t = unknown, $ = any> extends Callable<
 		return result.errors ? result.errors.throw() : result.out
 	}
 
+	divisor<const limit extends validatedBoundSchema<"min", this["infer"]>>(
+		limit: limit
+	): Type<applyBound<t, "min", limit>, $> {
+		return new Type(
+			this.root.constrain("min", limit as number),
+			this.scope
+		) as never
+	}
+
 	min<const limit extends validatedBoundSchema<"min", this["infer"]>>(
 		limit: limit
 	): Type<applyBound<t, "min", limit>, $> {

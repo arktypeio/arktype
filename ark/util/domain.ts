@@ -1,4 +1,5 @@
 import type { evaluate } from "./generics.js"
+import type { stringifyUnion } from "./unionToTuple.js"
 
 export const hasDomain = <data, domain extends Domain>(
 	data: data,
@@ -62,3 +63,32 @@ export const domainOf = <data>(data: data) => {
 			: builtinType
 	) as domainOf<data>
 }
+
+const enumerableDomainDescriptions = {
+	boolean: "boolean",
+	null: "null",
+	undefined: "undefined"
+} as const
+
+const nonEnumerableDomainDescriptions = {
+	bigint: "a bigint",
+	number: "a number",
+	object: "an object",
+	string: "a string",
+	symbol: "a symbol"
+} as const
+
+export type NonEnumerableDomain = keyof typeof nonEnumerableDomainDescriptions
+
+/** Each domain's completion for the phrase "Must be _____" */
+export const domainDescriptions = {
+	...nonEnumerableDomainDescriptions,
+	...enumerableDomainDescriptions
+} satisfies Record<Domain, string>
+
+export type domainDescriptions = typeof domainDescriptions
+
+export type describeDomainOf<t> = stringifyUnion<
+	domainDescriptions[domainOf<t>],
+	" or "
+>

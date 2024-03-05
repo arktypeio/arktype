@@ -1,4 +1,4 @@
-import { domainOf, type Domain } from "./domain.js"
+import { domainOf, type Domain, type domainDescriptions } from "./domain.js"
 import type { evaluate } from "./generics.js"
 import type { List } from "./lists.js"
 import { isKeyOf } from "./records.js"
@@ -36,17 +36,21 @@ export type objectKindOf<
 	kinds extends ObjectKindSet = BuiltinObjectConstructors
 > = object extends data
 	? keyof kinds | undefined
-	: data extends (...args: any[]) => unknown
+	: data extends (...args: never[]) => unknown
 	? "Function"
 	: instantiableObjectKind<data, kinds> extends never
 	? keyof kinds | undefined
 	: instantiableObjectKind<data, kinds>
 
+export type describeObject<o extends object> = objectKindOf<o> extends string
+	? objectKindDescriptions[objectKindOf<o>]
+	: domainDescriptions["object"]
+
 type instantiableObjectKind<
 	data extends object,
 	kinds extends ObjectKindSet
 > = {
-	[kind in keyof kinds]: kinds[kind] extends Constructor<data> ? kind : never
+	[kind in keyof kinds]: data extends InstanceType<kinds[kind]> ? kind : never
 }[keyof kinds]
 
 export const objectKindOf = <
@@ -122,6 +126,8 @@ export const objectKindDescriptions = {
 	WeakMap: "a WeakMap",
 	WeakSet: "a WeakSet"
 } as const satisfies Record<BuiltinObjectKind, string>
+
+export type objectKindDescriptions = typeof objectKindDescriptions
 
 // this will only return an object kind if it's the root constructor
 // example TypeError would return undefined not 'Error'

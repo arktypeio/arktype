@@ -2,6 +2,7 @@ import type {
 	Constructor,
 	ErrorMessage,
 	List,
+	NonEnumerableDomain,
 	Stringifiable,
 	conform,
 	exactMessageOnError
@@ -11,7 +12,6 @@ import type { isSchemaCast, schema } from "./keywords/keywords.js"
 import type { Declaration, Schema } from "./kinds.js"
 import type { BasisKind, NodeKind } from "./shared/implement.js"
 import type { instantiateBasis } from "./types/basis.js"
-import type { NonEnumerableDomain } from "./types/domain.js"
 import type {
 	IntersectionBasisKind,
 	IntersectionSchema

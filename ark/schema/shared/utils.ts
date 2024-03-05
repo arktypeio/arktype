@@ -3,9 +3,15 @@ import {
 	morph,
 	type ErrorMessage,
 	type List,
+	type describe,
 	type evaluate,
 	type mutable
 } from "@arktype/util"
+import type {
+	DivisorSchema,
+	writeIndivisibleMessage
+} from "../constraints/refinements/divisor.js"
+import type { PatternSchema } from "../constraints/refinements/pattern.js"
 import type {
 	LimitSchemaValue,
 	LowerBoundKind,
@@ -13,7 +19,7 @@ import type {
 	writeUnboundableMessage
 } from "../constraints/refinements/range.js"
 import type { Prerequisite, Schema } from "../kinds.js"
-import type { BoundKind } from "./implement.js"
+import type { BoundKind, writeInvalidOperandMessage } from "./implement.js"
 
 export const makeRootAndArrayPropertiesMutable = <o extends object>(o: o) =>
 	// TODO: this cast should not be required, but it seems TS is referencing
@@ -98,12 +104,33 @@ export const inferred = Symbol("inferred")
 
 export type LimitLiteral = number | DateLiteral
 
+export type validatedSchemaParameter<
+	kind extends BoundKind,
+	In
+> = In extends Prerequisite<kind>
+	? Schema<kind>
+	: ErrorMessage<
+			writeInvalidOperandMessage<
+				kind,
+				describe<Prerequisite<kind>>,
+				describe<In>
+			>
+	  >
+
 export type validatedBoundSchema<
 	kind extends BoundKind,
 	In
 > = In extends Prerequisite<kind>
 	? Schema<kind>
 	: ErrorMessage<writeUnboundableMessage<"node">>
+
+export type validatedDivisorSchema<In> = In extends number
+	? DivisorSchema
+	: ErrorMessage<writeIndivisibleMessage<"node">>
+
+export type validatedPatternSchema<In> = In extends string
+	? PatternSchema
+	: ErrorMessage<writeIndivisibleMessage<"node">>
 
 type schemaToComparator<
 	kind extends BoundKind,

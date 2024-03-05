@@ -1,4 +1,5 @@
 export * from "./compilation.js"
+export * from "./describe.js"
 export * from "./domain.js"
 export * from "./errors.js"
 export * from "./functions.js"

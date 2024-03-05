@@ -1,4 +1,8 @@
-import { domainOf, type Domain } from "@arktype/util"
+import {
+	domainDescriptions,
+	domainOf,
+	type NonEnumerableDomain
+} from "@arktype/util"
 import { jsData } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -10,10 +14,8 @@ export interface DomainInner<
 	readonly domain: domain
 }
 
-// only domains with an infinite number of values are allowed as bases
-export type NonEnumerableDomain = keyof typeof nonEnumerableDomainDescriptions
-
 export type DomainSchema<
+	// only domains with an infinite number of values are allowed as bases
 	domain extends NonEnumerableDomain = NonEnumerableDomain
 > = domain | NormalizedDomainSchema<domain>
 
@@ -71,23 +73,3 @@ export class DomainNode<t = unknown> extends BaseBasis<
 
 	readonly expectedContext = this.createExpectedContext(this.inner)
 }
-
-const enumerableDomainDescriptions = {
-	boolean: "boolean",
-	null: "null",
-	undefined: "undefined"
-} as const
-
-const nonEnumerableDomainDescriptions = {
-	bigint: "a bigint",
-	number: "a number",
-	object: "an object",
-	string: "a string",
-	symbol: "a symbol"
-} as const
-
-/** Each domain's completion for the phrase "Must be _____" */
-export const domainDescriptions = {
-	...nonEnumerableDomainDescriptions,
-	...enumerableDomainDescriptions
-} satisfies Record<Domain, string>

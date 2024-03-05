@@ -1,7 +1,10 @@
 import type { conform } from "./generics.js"
 import type { List, join } from "./lists.js"
 
-export type stringifyUnion<t extends string> = join<unionToTuple<t>, ", ">
+export type stringifyUnion<
+	t extends string,
+	delimiter extends string = ", "
+> = join<unionToTuple<t>, delimiter>
 
 export type unionToTuple<t> = unionToTupleRecurse<t, []> extends infer result
 	? conform<result, t[]>

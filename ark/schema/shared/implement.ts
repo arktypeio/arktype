@@ -5,6 +5,7 @@ import {
 	type Dict,
 	type ErrorMessage,
 	type JsonData,
+	type Stringifiable,
 	type entryOf,
 	type evaluate,
 	type indexOf,
@@ -309,7 +310,20 @@ export type DescriptionWriter<kind extends NodeKind = NodeKind> = (
 ) => string
 
 export const throwInvalidOperandError = (
+	...args: Parameters<typeof writeInvalidOperandMessage>
+) => throwParseError(writeInvalidOperandMessage(...args))
+
+export const getBasisName = (basis: Node<BasisKind> | undefined) =>
+	basis?.basisName ?? "unknown"
+
+export const writeInvalidOperandMessage = (
 	kind: ConstraintKind,
-	expected: string,
+	expected: Stringifiable,
 	basis: Node<BasisKind> | undefined
-) => throwParseError(`${kind} operand must be ${expected} (was ${basis})`)
+) => `${kind} operand must be ${expected} (was ${getBasisName(basis)})`
+
+export type writeInvalidOperandMessage<
+	kind extends ConstraintKind,
+	expected extends Stringifiable,
+	basis extends Stringifiable
+> = `${kind} operand must be ${expected} (was ${basis})`

@@ -9,7 +9,6 @@ import type { TraverseAllows, TraverseApply } from "../shared/context.js"
 import type { BaseNodeDeclaration } from "../shared/declare.js"
 import type { Disjoint } from "../shared/disjoint.js"
 import type {
-	BasisKind,
 	BranchableNodeKind,
 	ConstraintKind,
 	kindLeftOf
@@ -70,6 +69,3 @@ export abstract class BasePrimitiveConstraint<
 		js.compilePrimitive(this as never)
 	}
 }
-
-export const getBasisName = (basis: Node<BasisKind> | undefined) =>
-	basis?.basisName ?? "unknown"
