@@ -1,7 +1,14 @@
+import type { Schema } from "../../kinds.js"
 import type { nodeImplementationOf } from "../../shared/implement.js"
-import { BaseRange, type NumericRangeDeclaration } from "./range.js"
+import {
+	BaseRange,
+	type NumericRangeDeclaration,
+	type boundToIs
+} from "./range.js"
 
 export type MinDeclaration = NumericRangeDeclaration<"min">
+
+export type min<schema extends Schema<"min">> = boundToIs<"min", schema>
 
 export class MinNode extends BaseRange<MinDeclaration, typeof MinNode> {
 	static implementation: nodeImplementationOf<MinDeclaration> =

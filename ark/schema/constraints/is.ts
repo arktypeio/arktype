@@ -8,7 +8,9 @@ import type {
 	PrimitiveConstraintInner,
 	PrimitiveConstraintKind
 } from "./constraint.js"
-import type { LimitSchemaValue, boundConstraints } from "./refinements/range.js"
+import type { max } from "./refinements/max.js"
+import type { min } from "./refinements/min.js"
+import type { LimitSchemaValue, boundToIs } from "./refinements/range.js"
 
 export type Comparator = "<" | "<=" | ">" | ">=" | "=="
 
@@ -84,8 +86,12 @@ export type applySchema<
 export type schemaToConstraints<
 	kind extends PrimitiveConstraintKind,
 	schema extends Schema<kind>
-> = kind extends BoundKind
-	? boundConstraints<kind, schema>
+> = kind extends "min"
+	? min<schema>
+	: kind extends "max"
+	? max<schema>
+	: kind extends BoundKind
+	? boundToIs<kind, schema>
 	: kind extends "regex"
 	? { [k in normalizePrimitiveConstraintSchema<schema> & RegexLiteral]: true }
 	: kind extends "date"

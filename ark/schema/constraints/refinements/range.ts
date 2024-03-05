@@ -249,14 +249,14 @@ export interface DateBoundExtras {
 	stringLimit: string
 }
 
-export type boundConstraints<
+export type boundToIs<
 	kind extends BoundKind,
-	schema extends Schema<kind>
-> = evaluate<{
+	schema extends Schema<BoundKind>
+> = {
 	[_ in schemaToComparator<kind, schema>]: limitToIs<
 		normalizePrimitiveConstraintSchema<schema>
 	>
-}>
+}
 
 export type limitToIs<limit> = limit extends DateLiteral<infer source>
 	? string extends source
