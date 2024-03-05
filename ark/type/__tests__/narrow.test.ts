@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import type { Out, is } from "@arktype/schema"
+import type { Out, is, predicate } from "@arktype/schema"
 import type { equals } from "@arktype/util"
 import { type, type Type } from "arktype"
 
@@ -88,7 +88,7 @@ describe("narrow", () => {
 		const t = type("string")
 			.morph((s) => s.length)
 			.narrow((n): n is 5 => n === 5)
-		attest<Type<(In: string) => Out<is<5, { anonymousPredicate: true }>>>>(t)
+		attest<Type<(In: string) => Out<is<5> & predicate>>>(t)
 		attest(t.json).snap({ domain: "string" })
 	})
 	it("expression", () => {

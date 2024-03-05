@@ -2,7 +2,7 @@ import type {
 	Morph,
 	distill,
 	intersectConstrainables,
-	is
+	predicate
 } from "@arktype/schema"
 import type {
 	ErrorMessage,
@@ -45,13 +45,12 @@ type matcherInputs<ctx extends MatchParserContext> = Parameters<
 	ctx["thens"][number]
 >[0]
 
-// TODO: Fix
-type AnonymouslyRefined = {}
-
 type getHandledBranches<ctx extends MatchParserContext> = Exclude<
 	matcherInputs<ctx>,
-	AnonymouslyRefined
+	// TODO: add other anon
+	predicate
 >
+
 type getUnhandledBranches<ctx extends MatchParserContext> = Exclude<
 	unknown extends ctx["exhaustiveOver"] ? UnknownUnion : ctx["exhaustiveOver"],
 	getHandledBranches<ctx>

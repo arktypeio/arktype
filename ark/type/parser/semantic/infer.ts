@@ -67,10 +67,12 @@ export type inferExpression<
 	? inferIntersection<inferAst<ast[0], $, args>, inferAst<ast[2], $, args>>
 	: ast[1] extends Comparator
 	? ast[0] extends LimitLiteral
-		? constrain<inferAst<ast[2], $, args>, min<ast[0]>>
+		? constrain<inferAst<ast[2], $, args>, min<ast[0] & number>>
 		: constrain<
 				inferAst<ast[0], $, args>,
-				ast[1] extends MinComparator ? min<ast[2]> : max<ast[2]>
+				ast[1] extends MinComparator
+					? min<ast[2] & number>
+					: max<ast[2] & number>
 		  >
 	: ast[1] extends "%"
 	? constrain<inferAst<ast[0], $, args>, divisor<ast[2] & number>>

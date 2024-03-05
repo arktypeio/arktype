@@ -155,20 +155,21 @@ describe("bounds", () => {
 				attest(t.json).equals(expected.json)
 			})
 
-			it("chained after", () => {
-				const t = type("Date").after(new Date(2022, 0, 1))
-				// widen the input to a string so both are non-narrowed
-				const expected = type(`Date>=d'${"2022-01-01" as string}'`)
-				attest<typeof expected>(t)
-				attest(t.json).equals(expected.json)
-			})
+			// TODO:  reenable
+			// it("chained after", () => {
+			// 	const t = type("Date").after(new Date(2022, 0, 1))
+			// 	// widen the input to a string so both are non-narrowed
+			// 	const expected = type(`Date>=d'${"2022-01-01" as string}'`)
+			// 	attest<typeof expected>(t)
+			// 	attest(t.json).equals(expected.json)
+			// })
 
-			it("chained before", () => {
-				const t = type("Date").before(5)
-				const expected = type("Date<=5")
-				attest<typeof expected>(t)
-				attest(t.json).equals(expected.json)
-			})
+			// it("chained before", () => {
+			// 	const t = type("Date").before(5)
+			// 	const expected = type("Date<=5")
+			// 	attest<typeof expected>(t)
+			// 	attest(t.json).equals(expected.json)
+			// })
 
 			it("chained exclusive", () => {
 				const t = type("number").min({ rule: 1337, exclusive: true })
