@@ -65,15 +65,15 @@ export type validateConstraintArg<
 			>
 	  >
 
-export type constrain<t, constraints extends Constraints> = rawConstrain<
-	t,
-	constraints
->
+// export type constrain<t, constraints extends Constraints> = rawConstrain<
+// 	t,
+// 	constraints
+// >
 
-type rawConstrain<t, constraints> = t extends is<infer basis> &
-	infer lConstraints
-	? is<basis> & lConstraints & constraints
-	: is<t> & constraints
+export type constrain<In, constraint> = In extends is<infer base> &
+	infer constraints
+	? is<base> & constraints & constraint
+	: is<In> & constraint
 
 export type normalizePrimitiveConstraintSchema<
 	schema extends Schema<PrimitiveConstraintKind>

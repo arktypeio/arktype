@@ -1,19 +1,17 @@
 import type {
-	Constraints,
 	DateLiteral,
 	LimitLiteral,
 	RegexLiteral,
+	constrain,
 	distill,
+	divisor,
 	inferIntersection,
 	is,
-	limitToIs
+	max,
+	min,
+	regex
 } from "@arktype/schema"
-import type {
-	BigintLiteral,
-	List,
-	NumberLiteral,
-	evaluate
-} from "@arktype/util"
+import type { BigintLiteral, List, NumberLiteral } from "@arktype/util"
 import type {
 	UnparsedScope,
 	resolve,
@@ -21,24 +19,16 @@ import type {
 } from "../../scope.js"
 import type { GenericProps } from "../../type.js"
 import type { inferDefinition } from "../definition.js"
-import type {
-	Comparator,
-	InvertedComparators
-} from "../string/reduce/shared.js"
+import type { Comparator, MinComparator } from "../string/reduce/shared.js"
 import type { StringLiteral } from "../string/shift/operand/enclosed.js"
 
-export type inferAstRoot<ast, $, args> = inferAst<ast, $, args, {}>
+export type inferAstRoot<ast, $, args> = inferAst<ast, $, args>
 
 export type inferAstBase<ast, $, args> = distill<inferAstRoot<ast, $, args>>
 
-export type inferAst<
-	ast,
-	$,
-	args,
-	constraints extends Constraints
-> = ast extends List
-	? inferExpression<ast, $, args, constraints>
-	: inferTerminal<ast, $, args, constraints>
+export type inferAst<ast, $, args> = ast extends List
+	? inferExpression<ast, $, args>
+	: inferTerminal<ast, $, args>
 
 export type GenericInstantiationAst<
 	g extends GenericProps = GenericProps,
@@ -48,8 +38,7 @@ export type GenericInstantiationAst<
 export type inferExpression<
 	ast extends List,
 	$,
-	args,
-	constraints extends Constraints
+	args
 > = ast extends GenericInstantiationAst
 	? inferDefinition<
 			ast[0]["definition"],
@@ -66,44 +55,27 @@ export type inferExpression<
 					`${number}` as ast[0]["parameters"][i]]: inferAst<
 					ast[2][i & keyof ast[2]],
 					$,
-					args,
-					constraints
+					args
 				>
 			}
 	  >
 	: ast[1] extends "[]"
-	? inferAst<ast[0], $, args, constraints>[]
+	? inferAst<ast[0], $, args>[]
 	: ast[1] extends "|"
-	?
-			| inferAst<ast[0], $, args, constraints>
-			| inferAst<ast[2], $, args, constraints>
+	? inferAst<ast[0], $, args> | inferAst<ast[2], $, args>
 	: ast[1] extends "&"
-	? inferIntersection<
-			inferAst<ast[0], $, args, constraints>,
-			inferAst<ast[2], $, args, constraints>
-	  >
+	? inferIntersection<inferAst<ast[0], $, args>, inferAst<ast[2], $, args>>
 	: ast[1] extends Comparator
 	? ast[0] extends LimitLiteral
-		? inferAst<
-				ast[2],
-				$,
-				args,
-				constraints & {
-					[_ in InvertedComparators[ast[1]]]: limitToIs<ast[0]>
-				}
-		  >
-		: inferAst<
-				ast[0],
-				$,
-				args,
-				constraints & {
-					[_ in ast[1]]: limitToIs<ast[2] & LimitLiteral>
-				}
+		? constrain<inferAst<ast[2], $, args>, min<ast[0]>>
+		: constrain<
+				inferAst<ast[0], $, args>,
+				ast[1] extends MinComparator ? min<ast[2]> : max<ast[2]>
 		  >
 	: ast[1] extends "%"
-	? inferAst<ast[0], $, args, constraints & { "%": ast[2] & number }>
+	? constrain<inferAst<ast[0], $, args>, divisor<ast[2] & number>>
 	: ast[0] extends "keyof"
-	? keyof inferAst<ast[1], $, args, constraints>
+	? keyof inferAst<ast[1], $, args>
 	: never
 
 export type PrefixOperator = "keyof" | "instanceof" | "===" | "node"
@@ -128,31 +100,18 @@ export type InfixExpression<
 	r = unknown
 > = [l, operator, r]
 
-type applyConstraintsIfPresent<
-	In,
-	constraints extends Constraints
-> = {} extends constraints ? In : is<In> & evaluate<constraints>
-
-export type inferTerminal<
-	token,
-	$,
-	args,
-	constraints extends Constraints
-> = token extends RegexLiteral
-	? is<string> & evaluate<constraints & { [_ in token]: true }>
+export type inferTerminal<token, $, args> = token extends keyof args | keyof $
+	? resolve<token, $, args>
+	: token extends StringLiteral<infer text>
+	? text
+	: token extends NumberLiteral<infer value>
+	? value
+	: token extends BigintLiteral<infer value>
+	? value
+	: token extends RegexLiteral
+	? is<string> & regex<token>
 	: token extends DateLiteral
-	? is<Date> & evaluate<constraints & { [_ in token]: true }>
-	: applyConstraintsIfPresent<
-			token extends keyof args | keyof $
-				? resolve<token, $, args>
-				: token extends StringLiteral<infer text>
-				? text
-				: token extends NumberLiteral<infer value>
-				? value
-				: token extends BigintLiteral<infer value>
-				? value
-				: // doing this last allows us to infer never if it isn't valid rather than check
-				  // if it's a valid submodule reference ahead of time
-				  tryInferSubmoduleReference<$, token>,
-			constraints
-	  >
+	? is<Date> //& evaluate<constraints & { [_ in token]: true }>
+	: // doing this last allows us to infer never if it isn't valid rather than check
+	  // if it's a valid submodule reference ahead of time
+	  tryInferSubmoduleReference<$, token>

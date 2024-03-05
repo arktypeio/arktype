@@ -129,7 +129,7 @@ describe("bounds", () => {
 			// 	)
 
 			it("chained min", () => {
-				const t = type("number").min(5).max(10)
+				const t = type("number").min(5)
 				const expected = type("number>=5")
 				attest<typeof expected>(t)
 				attest(t.json).equals(expected.json)

@@ -21,12 +21,10 @@ describe("divisibility", () => {
 			attest<number>(t.infer)
 			attest(t.json).snap({ basis: "number", divisor: 5 })
 		})
-		it("with bound", () => {
-			const t = type("number%8<3")
-			attest(t.json).equals(type("number%8").and("number<3").json)
-			attest(t.root.description).snap(
-				"a number and a multiple of 8 and less than 3"
-			)
+		it("with bounds", () => {
+			const t = type("7<number%8<222")
+			attest(t.json).equals(type("number%8").and("7<number<222").json)
+			attest(t.root.description).snap()
 		})
 		it("allows non-narrowed divisor", () => {
 			const d = 5 as number
