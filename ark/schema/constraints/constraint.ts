@@ -6,7 +6,7 @@ import {
 } from "../base.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../shared/context.js"
-import type { BaseNodeDeclaration } from "../shared/declare.js"
+import type { BaseMeta, BaseNodeDeclaration } from "../shared/declare.js"
 import type { Disjoint } from "../shared/disjoint.js"
 import type {
 	BranchableNodeKind,
@@ -20,6 +20,10 @@ export type constraintKindLeftOf<kind extends ConstraintKind> = ConstraintKind &
 export type constraintKindOrLeftOf<kind extends ConstraintKind> =
 	| kind
 	| constraintKindLeftOf<kind>
+
+export interface ConstraintInner<rule = unknown> extends BaseMeta {
+	readonly rule: rule
+}
 
 export interface BaseConstraintDeclaration extends BaseNodeDeclaration {
 	kind: ConstraintKind

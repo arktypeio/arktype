@@ -1,5 +1,4 @@
 import type {
-	AnonymousConstraintKey,
 	Morph,
 	distill,
 	intersectConstrainables,
@@ -46,9 +45,7 @@ type matcherInputs<ctx extends MatchParserContext> = Parameters<
 	ctx["thens"][number]
 >[0]
 
-type AnonymouslyRefined = {
-	[k in AnonymousConstraintKey]: { [_ in k]: true }
-}[AnonymousConstraintKey]
+type AnonymouslyRefined = {}
 
 type getHandledBranches<ctx extends MatchParserContext> = Exclude<
 	matcherInputs<ctx>,

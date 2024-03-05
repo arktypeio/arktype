@@ -14,6 +14,7 @@ import type {
 	NumberLiteral,
 	evaluate
 } from "@arktype/util"
+import type { schemaToConstraints } from "../../../schema/shared/utils.js"
 import type {
 	UnparsedScope,
 	resolve,
@@ -35,10 +36,10 @@ export type inferAst<
 	ast,
 	$,
 	args,
-	refinements extends Constraints
+	constraints extends Constraints
 > = ast extends List
-	? inferExpression<ast, $, args, refinements>
-	: inferTerminal<ast, $, args, refinements>
+	? inferExpression<ast, $, args, constraints>
+	: inferTerminal<ast, $, args, constraints>
 
 export type GenericInstantiationAst<
 	g extends GenericProps = GenericProps,
@@ -101,7 +102,12 @@ export type inferExpression<
 				}
 		  >
 	: ast[1] extends "%"
-	? inferAst<ast[0], $, args, constraints & { [k in `%${ast[2] & string}`]: 0 }>
+	? inferAst<
+			ast[0],
+			$,
+			args,
+			constraints & schemaToConstraints<"divisor", ast[2]>
+	  >
 	: ast[0] extends "keyof"
 	? keyof inferAst<ast[1], $, args, constraints>
 	: never
@@ -133,21 +139,21 @@ export type inferTerminal<
 	$,
 	args,
 	constraints extends Constraints
-> = token extends keyof args | keyof $
-	? {} extends constraints
-		? resolve<token, $, args>
-		: is<resolve<token, $, args>, evaluate<constraints>>
-	: token extends StringLiteral<infer text>
-	? text
-	: token extends RegexLiteral
+> = token extends RegexLiteral
 	? is<string, evaluate<constraints & { [_ in token]: true }>>
 	: token extends DateLiteral
 	? is<Date, evaluate<constraints & { [_ in token]: true }>>
-	: token extends NumberLiteral<infer value>
-	? value
-	: token extends BigintLiteral<infer value>
-	? value
-	: // TODO: refinements
-	  // doing this last allows us to infer never if it isn't valid rather than check
-	  // if it's a valid submodule reference ahead of time
-	  tryInferSubmoduleReference<$, token>
+	: is<
+			token extends keyof args | keyof $
+				? resolve<token, $, args>
+				: token extends StringLiteral<infer text>
+				? text
+				: token extends NumberLiteral<infer value>
+				? value
+				: token extends BigintLiteral<infer value>
+				? value
+				: // doing this last allows us to infer never if it isn't valid rather than check
+				  // if it's a valid submodule reference ahead of time
+				  tryInferSubmoduleReference<$, token>,
+			evaluate<constraints>
+	  >

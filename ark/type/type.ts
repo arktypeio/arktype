@@ -7,6 +7,7 @@ import {
 	type Out,
 	type Predicate,
 	type TypeNode,
+	type applySchema,
 	type distill,
 	type extractIn,
 	type extractOut,
@@ -24,7 +25,6 @@ import {
 	type List,
 	type conform
 } from "@arktype/util"
-import type { applySchema } from "../schema/shared/utils.js"
 import type {
 	inferDefinition,
 	validateDeclared,

@@ -57,18 +57,8 @@ export type DateConstraints = {
 	[k in DateLiteral]: true
 }
 
-export type AnonymousConstraintKey =
-	| "anonymousDate"
-	| "anonymousBounds"
-	| "anonymousDivisor"
-	| "anonymousPattern"
-	| "anonymousPredicate"
-
 export type Constraints = evaluate<
-	BoundConstraints &
-		DivisorConstraints &
-		PatternConstraints &
-		DateConstraints & { [k in AnonymousConstraintKey]?: true }
+	BoundConstraints & DivisorConstraints & PatternConstraints & DateConstraints
 >
 
 export type is<basis, constraints> = {
