@@ -6,7 +6,7 @@ import {
 	type NodeSubclass,
 	type TypeNode
 } from "../base.js"
-import type { Schema, reducibleKindOf } from "../kinds.js"
+import type { Schema, parsableKindOf } from "../kinds.js"
 import { TraversalContext } from "../shared/context.js"
 import type { BaseNodeDeclaration } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -15,8 +15,8 @@ import {
 	kindsRightOf,
 	type ConstraintKind,
 	type NodeKind,
-	type TypeIntersection,
 	type TypeKind,
+	type intersectionImplementationOf,
 	type kindRightOf
 } from "../shared/implement.js"
 import { inferred } from "../shared/inference.js"
@@ -31,7 +31,7 @@ export type BaseTypeDeclaration = evaluate<
 
 export const defineRightwardIntersections = <kind extends TypeKind>(
 	kind: kind,
-	implementation: TypeIntersection<kind>
+	implementation: intersectionImplementationOf<kind, kindRightOf<kind>>
 ) => morph(kindsRightOf(kind), (i, kind) => [kind, implementation])
 
 export abstract class BaseType<
@@ -69,7 +69,7 @@ export abstract class BaseType<
 	constrain<constraintKind extends ConstraintKind>(
 		kind: constraintKind,
 		input: Schema<constraintKind>
-	): Node<reducibleKindOf<this["kind"]>> {
+	) {
 		const constraint = this.$.parse(kind, input)
 		return this.and(this.$.parse("intersection", { [kind]: constraint }))
 	}
@@ -142,7 +142,7 @@ export abstract class BaseType<
 		return this.$.parseRoot(
 			"intersection",
 			{
-				basis: Array,
+				proto: Array,
 				sequence: this
 			},
 			{ prereduced: true }
@@ -169,7 +169,7 @@ type asymmetricIntersectionOf<
 	r extends NodeKind
 > = l extends unknown
 	? r extends kindRightOf<l>
-		? l | reducibleKindOf<l>
+		? l | parsableKindOf<l>
 		: never
 	: never
 
@@ -177,12 +177,3 @@ export interface BaseBasis {
 	basisName: string
 	domain: Domain
 }
-
-export type typeKindRightOf<kind extends TypeKind> = Extract<
-	kindRightOf<kind>,
-	TypeKind
->
-
-export type typeKindOrRightOf<kind extends TypeKind> =
-	| kind
-	| typeKindRightOf<kind>

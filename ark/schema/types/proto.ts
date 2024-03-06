@@ -29,8 +29,8 @@ export type ProtoDeclaration = declareNode<{
 	schema: ProtoSchema
 	normalizedSchema: NormalizedProtoSchema
 	inner: ProtoInner
-	composition: "primitive"
 	expectedContext: ProtoInner
+	symmetricIntersection: ProtoNode | Disjoint
 }>
 
 // readonly literalKeys = prototypeKeysOf(this.rule.prototype)

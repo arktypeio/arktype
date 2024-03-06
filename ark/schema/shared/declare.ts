@@ -1,8 +1,9 @@
 import type { evaluate, merge } from "@arktype/util"
-import type { NarrowedAttachments, Node } from "../base.js"
-import type { reducibleKindOf } from "../kinds.js"
-import type { Disjoint } from "./disjoint.js"
-import type { NodeKind } from "./implement.js"
+import type { NarrowedAttachments } from "../base.js"
+import type {
+	NodeKind,
+	UnknownSymmetricIntersectionResult
+} from "./implement.js"
 
 export interface BaseMeta {
 	readonly description?: string
@@ -10,16 +11,14 @@ export interface BaseMeta {
 
 export const metaKeys: { [k in keyof BaseMeta]: 1 } = { description: 1 }
 
-export type NodeCompositionKind = "primitive" | "composite"
-
-interface BaseDeclarationInput {
+interface DeclarationInput {
 	kind: NodeKind
 	schema: unknown
 	normalizedSchema: BaseMeta
 	inner: BaseMeta
-	reducibleTo?: NodeKind
-	hasBranchableIntersection?: true
-	hasOpenIntersection?: true
+	symmetricIntersection: UnknownSymmetricIntersectionResult
+	childKind?: NodeKind
+	parsableTo?: NodeKind
 	expectedContext?: object
 	prerequisite?: unknown
 }
@@ -27,18 +26,6 @@ interface BaseDeclarationInput {
 export interface BaseExpectedContext<kind extends NodeKind = NodeKind> {
 	code: kind
 }
-
-interface CompositeDeclarationInput extends BaseDeclarationInput {
-	composition: "composite"
-	childKind: NodeKind
-}
-
-interface PrimitiveDeclarationInput extends BaseDeclarationInput {
-	composition: "primitive"
-	childKind?: never
-}
-
-type DeclarationInput = CompositeDeclarationInput | PrimitiveDeclarationInput
 
 export type defaultExpectedContext<d extends DeclarationInput> = evaluate<
 	BaseExpectedContext<d["kind"]> & { description: string } & d["inner"]
@@ -56,11 +43,9 @@ export type declareNode<
 	} & DeclarationInput
 > = merge<
 	{
-		hasOpenIntersection: false
-		hasBranchableIntersection: false
 		prerequisite: prerequisiteOf<d>
 		childKind: never
-		reducibleTo: null
+		parsableTo: d["kind"]
 		expectedContext: null
 	},
 	d & {
@@ -84,14 +69,9 @@ export type BaseNodeDeclaration = {
 	schema: unknown
 	normalizedSchema: BaseMeta
 	inner: BaseMeta
-	reducibleTo: NodeKind | null
+	parsableTo: NodeKind
 	prerequisite: any
-	hasBranchableIntersection: boolean
-	hasOpenIntersection: boolean
+	symmetricIntersection: UnknownSymmetricIntersectionResult
 	childKind: NodeKind
 	expectedContext: BaseExpectedContext | null
 }
-
-export type ownIntersectionResult<d extends BaseNodeDeclaration> =
-	| Node<reducibleKindOf<d["kind"]>>
-	| Disjoint

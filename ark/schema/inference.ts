@@ -3,17 +3,17 @@ import type {
 	ErrorMessage,
 	List,
 	NonEnumerableDomain,
-	Stringifiable,
 	conform,
-	exactMessageOnError
+	describe
 } from "@arktype/util"
 import type { Node, TypeNode } from "./base.js"
 import type { isSchemaCast, schema } from "./keywords/keywords.js"
-import type { Declaration, Schema } from "./kinds.js"
-import type { BasisKind, NodeKind } from "./shared/implement.js"
+import type { Schema } from "./kinds.js"
+import type { BasisKind, ConstraintKind } from "./shared/implement.js"
 import type { instantiateBasis } from "./types/basis.js"
+import type { DomainSchema } from "./types/domain.js"
 import type {
-	IntersectionBasisKind,
+	IntersectionNode,
 	IntersectionSchema
 } from "./types/intersection.js"
 import type {
@@ -24,7 +24,9 @@ import type {
 	Out,
 	inferMorphOut
 } from "./types/morph.js"
+import type { ProtoSchema } from "./types/proto.js"
 import type { NormalizedUnionSchema, UnionChildNode } from "./types/union.js"
+import type { UnitSchema } from "./types/unit.js"
 
 export type validateAliases<aliases> = {
 	[k in keyof aliases]: "branches" extends keyof aliases[k]
@@ -72,15 +74,10 @@ export type instantiateSchemaBranch<def> = isSchemaCast<def> extends true
 	: UnionChildNode
 
 export type validateMorphChild<def> = [def] extends [
-	NonEnumerableDomain | Constructor
+	NonEnumerableDomain | Constructor | UnitSchema
 ]
 	? def
-	: keyof def & BasisKind extends never
-	? validateIntersectionSchema<def>
-	: exactMessageOnError<
-			def & object,
-			Declaration<keyof def & BasisKind>["normalizedSchema"]
-	  >
+	: validateIntersectionSchema<def>
 
 export type instantiateMorphChild<def> = def extends Schema<BasisKind>
 	? instantiateBasis<def>
@@ -113,36 +110,37 @@ export type instantiateMorphSchema<def> = def extends MorphSchema
 	  >
 	: never
 
-type basisToString<def> = "basis" extends keyof def
-	? def["basis"] extends Stringifiable
-		? `basis '${def["basis"]}'`
-		: "this schema's basis"
-	: "this schema's basis"
+type schemaBasis<def> = def extends { proto: infer proto }
+	? proto
+	: def extends { domain: infer domain }
+	? domain
+	: undefined
 
 type exactBasisMessageOnError<def, expected> = {
 	[k in keyof def]: k extends keyof expected
 		? conform<def[k], expected[k]>
-		: ErrorMessage<`'${k & string}' is not allowed by ${basisToString<def>}`>
+		: ErrorMessage<`'${k & string}' is not allowed by ${describe<
+				schemaBasis<def>
+		  >}`>
 }
 
 export type validateIntersectionSchema<def> = exactBasisMessageOnError<
 	def,
 	IntersectionSchema<
-		"basis" extends keyof def
-			? def["basis"] extends Schema<IntersectionBasisKind>
-				? def["basis"]
-				: undefined
+		"proto" extends keyof def
+			? conform<def["proto"], ProtoSchema>
+			: "domain" extends keyof def
+			? conform<def["domain"], DomainSchema>
 			: undefined
 	>
 >
 
-export type instantiateIntersectionSchema<def> = "basis" extends keyof def
-	? def["basis"] extends Schema<BasisKind>
-		? keyof def & NodeKind extends never
-			? instantiateBasis<def["basis"]>
-			: TypeNode<instantiateBasis<def["basis"]>["infer"], "intersection">
-		: Node<"intersection">
-	: Node<"intersection">
+export type instantiateIntersectionSchema<def> =
+	schemaBasis<def> extends Schema<BasisKind>
+		? keyof def & ConstraintKind extends never
+			? instantiateBasis<schemaBasis<def>>
+			: IntersectionNode<instantiateBasis<schemaBasis<def>>["infer"]>
+		: IntersectionNode
 
 // export type inferPropsInput<input extends PropsInput> =
 // 	input extends PropsInputTuple<infer named, infer indexed>

@@ -30,7 +30,7 @@ import type {
 	Inner,
 	Schema,
 	ioKindOf,
-	reducibleKindOf
+	parsableKindOf
 } from "./kinds.js"
 import type { ScopeNode } from "./scope.js"
 import type { NodeCompiler } from "./shared/compile.js"
@@ -61,7 +61,7 @@ import {
 	type RefinementKind,
 	type TypeKind,
 	type UnknownNodeImplementation,
-	type UnknownNodeIntersectionResult,
+	type UnknownSymmetricIntersectionResult,
 	type nodeImplementationInputOf,
 	type nodeImplementationOf
 } from "./shared/implement.js"
@@ -193,6 +193,7 @@ export abstract class BaseNode<
 	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
 	abstract traverseApply: TraverseApply<d["prerequisite"]>
 	abstract compile(js: NodeCompiler): void
+	symmetricIntersectionIsOpen = this.impl.symmetricIntersectionIsOpen ?? false
 
 	private inCache?: UnknownNode;
 	get in(): Node<ioKindOf<d["kind"]>, extractIn<t>> {
@@ -278,19 +279,17 @@ export abstract class BaseNode<
 
 	private static intersectionCache: PartialRecord<
 		string,
-		UnknownNodeIntersectionResult
+		UnknownSymmetricIntersectionResult
 	> = {}
-	protected intersectInternal(
-		this: UnknownNode,
-		other: Node
-	): UnknownNodeIntersectionResult {
+	protected intersectInternal(other: Node): UnknownSymmetricIntersectionResult {
 		// Node works better for subclasses but internally we want to treat it as UnknownNode
+		const l = this as {} as UnknownNode
 		const r = other as UnknownNode
-		const lrCacheKey = `${this.typeId}&${r.typeId}`
+		const lrCacheKey = `${l.typeId}&${r.typeId}`
 		if (BaseNode.intersectionCache[lrCacheKey]) {
 			return BaseNode.intersectionCache[lrCacheKey]!
 		}
-		const rlCacheKey = `${r.typeId}&${this.typeId}`
+		const rlCacheKey = `${r.typeId}&${l.typeId}`
 		if (BaseNode.intersectionCache[rlCacheKey]) {
 			// if the cached result was a Disjoint and the operands originally
 			// appeared in the opposite order, we need to invert it to match
@@ -302,41 +301,41 @@ export abstract class BaseNode<
 			return lrResult
 		}
 
-		if (this.equals(r as never)) {
+		if (l.equals(r as never)) {
 			// TODO: meta
-			return this as never
+			return l as never
 		}
 
-		const leftmostKind = this.precedence < r.precedence ? this.kind : r.kind
+		const leftmostKind = l.precedence < r.precedence ? l.kind : r.kind
 		const implementation =
-			this.impl.intersections[r.kind] ?? r.impl.intersections[this.kind]
+			l.impl.intersections[r.kind] ?? r.impl.intersections[l.kind]
 
 		const rawResult =
 			implementation === undefined
 				? // should be two ConstraintNodes that have no relation
-				  // this could also happen if a user directly intersects a TypeNode and a ConstraintNode,
+				  // l could also happen if a user directly intersects a TypeNode and a ConstraintNode,
 				  // but that is not allowed by the external function signature
 				  null
-				: leftmostKind === this.kind
-				? implementation(this, r, this.$)
-				: implementation(r, this, this.$)
+				: leftmostKind === l.kind
+				? implementation(l, r, l.$)
+				: implementation(r, l, l.$)
 
-		let instantiatedResult: UnknownNodeIntersectionResult =
+		let instantiatedResult: UnknownSymmetricIntersectionResult =
 			rawResult === null || rawResult instanceof Disjoint
 				? rawResult
 				: isArray(rawResult)
 				? // arrays represent a constraint union of a branching intersection kind like sequence
-				  rawResult.map((inner) => this.$.parse(this.kind, inner as never))
+				  rawResult.map((inner) => l.$.parse(l.kind, inner as never))
 				: rawResult instanceof BaseNode
 				? // unlike parsing, intersection allows different node kinds to be returned,
 				  // so avoid parsing an instantiated Node here
 				  rawResult
-				: this.$.parse(leftmostKind, rawResult as never, { prereduced: true })
+				: l.$.parse(leftmostKind, rawResult as never, { prereduced: true })
 
 		if (instantiatedResult instanceof BaseNode) {
 			// if the result equals one of the operands, preserve its metadata by
 			// returning the original reference
-			if (this.equals(instantiatedResult)) instantiatedResult = this as never
+			if (l.equals(instantiatedResult)) instantiatedResult = l as never
 			else if (r.equals(instantiatedResult)) instantiatedResult = r as never
 		}
 
@@ -375,7 +374,7 @@ export abstract class BaseNode<
 	transform(
 		mapper: DeepNodeTransformation,
 		shouldTransform: (node: Node) => boolean
-	): Node<reducibleKindOf<this["kind"]>> {
+	): Node<parsableKindOf<this["kind"]>> {
 		if (!shouldTransform(this as never)) {
 			return this as never
 		}

@@ -59,10 +59,8 @@ export type SequenceDeclaration = declareNode<{
 	schema: SequenceSchema
 	normalizedSchema: NormalizedSequenceSchema
 	inner: SequenceInner
-	composition: "composite"
 	prerequisite: List
-	reducibleTo: "sequence"
-	hasBranchableIntersection: true
+	symmetricIntersection: SequenceNode | SequenceNode[] | Disjoint
 	childKind: TypeKind
 }>
 
@@ -74,7 +72,7 @@ const fixedSequenceKeyDefinition: NodeKeyImplementation<
 	parse: (schema, ctx) =>
 		schema.length === 0
 			? // empty affixes are omitted. an empty array should therefore
-			  // be specified as `{ basis: Array, length: 0 }`
+			  // be specified as `{ proto: Array, length: 0 }`
 			  undefined
 			: schema.map((element) => ctx.$.parseTypeNode(element))
 }
@@ -122,7 +120,7 @@ export class SequenceNode extends BaseConstraint<
 				if (!inner.postfix && !inner.optionals) {
 					return
 				}
-				const fixed = inner.prefix?.slice() ?? []
+				const prefix = inner.prefix?.slice() ?? []
 				const optionals = inner.optionals?.slice() ?? []
 				const postfix = inner.postfix?.slice() ?? []
 				if (inner.variadic) {
@@ -137,12 +135,12 @@ export class SequenceNode extends BaseConstraint<
 						// prefix/postfix elements to prefix, e.g.:
 						// [...number[], number] => [number, ...number[]]
 						while (postfix[0]?.equals(inner.variadic)) {
-							fixed.push(postfix.shift()!)
+							prefix.push(postfix.shift()!)
 						}
 					} else {
 						// if there's no variadic or optional parameters,
 						// postfix can just be appended to fixed
-						fixed.push(...postfix.splice(0))
+						prefix.push(...postfix.splice(0))
 					}
 				}
 				if (
@@ -154,7 +152,7 @@ export class SequenceNode extends BaseConstraint<
 						{
 							...inner,
 							// empty lists will be omitted during parsing
-							prefix: fixed,
+							prefix,
 							postfix,
 							optionals: optionals as never
 						},

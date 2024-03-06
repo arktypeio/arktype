@@ -100,14 +100,14 @@ export type parentKindOf<kind extends NodeKind> = ParentsByKind[kind]
 
 export type ioKindOf<kind extends NodeKind> = kind extends "morph"
 	? MorphChildKind
-	: reducibleKindOf<kind>
+	: parsableKindOf<kind>
 
 export type Prerequisite<kind extends NodeKind> =
 	Declaration<kind>["prerequisite"]
 
-export type reducibleKindOf<kind extends NodeKind> =
-	Declaration<kind>["reducibleTo"] extends NodeKind
-		? Declaration<kind>["reducibleTo"]
+export type parsableKindOf<kind extends NodeKind> =
+	Declaration<kind>["parsableTo"] extends NodeKind
+		? Declaration<kind>["parsableTo"]
 		: kind
 
 export type Inner<kind extends NodeKind> = Declaration<kind>["inner"]
@@ -122,3 +122,6 @@ export type MutableNormalizedSchema<kind extends NodeKind> =
 export type ExpectedContext<kind extends NodeKind> = Readonly<
 	Declaration<kind>["expectedContext"]
 >
+
+export type symmetricIntersectionResult<kind extends NodeKind> =
+	Declaration<kind>["symmetricIntersection"]

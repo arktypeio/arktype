@@ -27,9 +27,8 @@ export type RequiredDeclaration = declareNode<{
 		code: "required"
 		key: string | symbol
 	}
-	composition: "composite"
 	prerequisite: object
-	hasOpenIntersection: true
+	symmetricIntersection: RequiredNode | Disjoint | null
 	childKind: TypeKind
 }>
 
@@ -40,7 +39,7 @@ export class RequiredNode extends BaseConstraint<
 	static implementation: nodeImplementationOf<RequiredDeclaration> =
 		this.implement({
 			hasAssociatedError: true,
-			hasOpenIntersection: true,
+			symmetricIntersectionIsOpen: true,
 			keys: {
 				key: {},
 				value: {

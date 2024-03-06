@@ -4,14 +4,14 @@ import { schema } from "@arktype/schema"
 describe("props", () => {
 	it("normalizes prop order", () => {
 		const l = schema({
-			basis: "object",
+			domain: "object",
 			required: [
 				{ key: "a", value: "string" },
 				{ key: "b", value: "number" }
 			]
 		})
 		const r = schema({
-			basis: "object",
+			domain: "object",
 			required: [
 				{ key: "b", value: "number" },
 				{ key: "a", value: "string" }

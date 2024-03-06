@@ -10,13 +10,13 @@ bench("intersection", () => {
 }).types([846, "instantiations"])
 
 bench("no assignment", () => {
-	schema({ basis: "string", regex: "/.*/" })
+	schema({ domain: "string", regex: "/.*/" })
 }).types([350, "instantiations"])
 
 bench("assignment", () => {
 	// previously had issues with a union complexity error when assigning to Root | undefined
 	const n: Node<TypeKind> | undefined = schema({
-		basis: "string",
+		domain: "string",
 		regex: "/.*/"
 	})
 }).types([1329, "instantiations"])

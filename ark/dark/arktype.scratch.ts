@@ -20,7 +20,7 @@ type({
 })
 
 export const tsGenerics = Scope.root({
-	"Record<K, V>": node({ basis: "object" })
+	"Record<K, V>": node({ domain: "object" })
 })
 
 type(["string|numer", "[]"])

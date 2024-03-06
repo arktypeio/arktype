@@ -19,7 +19,7 @@ import type {
 	validateSchemaBranch
 } from "./inference.js"
 import type { keywords, schema } from "./keywords/keywords.js"
-import { nodesByKind, type Schema, type reducibleKindOf } from "./kinds.js"
+import { nodesByKind, type Schema, type parsableKindOf } from "./kinds.js"
 import { parseAttachments, type SchemaParseOptions } from "./parse.js"
 import { NodeCompiler } from "./shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "./shared/context.js"
@@ -254,7 +254,7 @@ export class ScopeNode<r extends object = any> {
 	parseTypeNode<defKind extends TypeKind>(
 		schema: Schema<defKind>,
 		opts: TypeSchemaParseOptions<defKind> = {}
-	): Node<reducibleKindOf<defKind>> {
+	): Node<parsableKindOf<defKind>> {
 		const kind = assertTypeKind(schema)
 		if (opts.allowedKinds && !opts.allowedKinds.includes(kind as never)) {
 			return throwParseError(
@@ -270,7 +270,7 @@ export class ScopeNode<r extends object = any> {
 		kind: kind,
 		def: Schema<kind>,
 		opts: SchemaParseOptions = {}
-	): Node<reducibleKindOf<kind>> {
+	): Node<parsableKindOf<kind>> {
 		const node = this.parse(kind, def, opts)
 		if (this.resolved) {
 			// this node was not part of the original scope, so compile an anonymous scope
@@ -288,7 +288,7 @@ export class ScopeNode<r extends object = any> {
 		kind: kind,
 		def: Schema<kind>,
 		opts: SchemaParseOptions = {}
-	): Node<reducibleKindOf<kind>> {
+	): Node<parsableKindOf<kind>> {
 		if (opts.alias && opts.alias in this.resolutions) {
 			return throwInternalError(
 				`Unexpected attempt to recreate existing alias ${opts.alias}`

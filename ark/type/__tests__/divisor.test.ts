@@ -8,7 +8,7 @@ describe("divisibility", () => {
 		it("integer literal", () => {
 			const divisibleByTwo = type("number%2")
 			attest<number>(divisibleByTwo.infer)
-			attest(divisibleByTwo.json).snap({ basis: "number", divisor: 2 })
+			attest(divisibleByTwo.json).snap({ domain: "number", divisor: 2 })
 		})
 		it("chained", () => {
 			const t = type("number").divisor(2)
@@ -19,7 +19,7 @@ describe("divisibility", () => {
 		it("whitespace after %", () => {
 			const t = type("number % 5")
 			attest<number>(t.infer)
-			attest(t.json).snap({ basis: "number", divisor: 5 })
+			attest(t.json).snap({ domain: "number", divisor: 5 })
 		})
 		it("with bounds", () => {
 			const t = type("7<number%8<222")

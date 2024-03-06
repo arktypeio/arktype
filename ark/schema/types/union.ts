@@ -1,5 +1,5 @@
 import { isArray } from "@arktype/util"
-import type { Node } from "../base.js"
+import type { Node, TypeNode } from "../base.js"
 import type { Schema } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../shared/context.js"
@@ -8,17 +8,14 @@ import { Disjoint } from "../shared/disjoint.js"
 import type { ArkTypeError } from "../shared/errors.js"
 import {
 	basisKinds,
+	type BasisKind,
 	type TypeKind,
 	type nodeImplementationOf
 } from "../shared/implement.js"
 import type { Discriminant } from "./discriminate.js"
-import {
-	BaseType,
-	defineRightwardIntersections,
-	type typeKindRightOf
-} from "./type.js"
+import { BaseType, defineRightwardIntersections } from "./type.js"
 
-export type UnionChildKind = typeKindRightOf<"union">
+export type UnionChildKind = "morph" | "intersection" | BasisKind
 
 export const unionChildKinds = [
 	"morph",
@@ -51,12 +48,12 @@ export type UnionDeclaration = declareNode<{
 	schema: UnionSchema
 	normalizedSchema: NormalizedUnionSchema
 	inner: UnionInner
-	composition: "composite"
 	expectedContext: {
 		errors: readonly ArkTypeError[]
 	}
-	reducibleTo: TypeKind
+	parsableTo: TypeKind
 	childKind: UnionChildKind
+	symmetricIntersection: TypeNode | Disjoint
 }>
 
 export class UnionNode<t = unknown> extends BaseType<

@@ -16,8 +16,8 @@ export type UnitDeclaration = declareNode<{
 	schema: UnitSchema
 	normalizedSchema: UnitSchema
 	inner: UnitInner
-	composition: "primitive"
 	expectedContext: UnitInner
+	symmetricIntersection: UnitNode | Disjoint
 }>
 
 export class UnitNode<t = unknown> extends BaseBasis<

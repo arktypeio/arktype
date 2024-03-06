@@ -29,8 +29,8 @@ export type DomainDeclaration = declareNode<{
 	schema: DomainSchema
 	normalizedSchema: NormalizedDomainSchema
 	inner: DomainInner
-	composition: "primitive"
 	expectedContext: DomainInner
+	symmetricIntersection: DomainNode | Disjoint
 }>
 
 export class DomainNode<t = unknown> extends BaseBasis<

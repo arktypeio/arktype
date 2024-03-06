@@ -5,6 +5,7 @@ import {
 	type Dict,
 	type ErrorMessage,
 	type JsonData,
+	type List,
 	type Stringifiable,
 	type entryOf,
 	type evaluate,
@@ -13,9 +14,12 @@ import {
 	type requireKeys
 } from "@arktype/util"
 import type { Node, UnknownNode } from "../base.js"
-import type { constraintKindLeftOf } from "../constraints/constraint.js"
 import { boundKinds } from "../constraints/refinements/shared.js"
-import type { Declaration, ExpectedContext, Inner } from "../kinds.js"
+import type {
+	ExpectedContext,
+	Inner,
+	symmetricIntersectionResult
+} from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
 import type {
 	NodeConfig,
@@ -84,15 +88,7 @@ export const nodeKinds = [
 ] as const satisfies NodeKind[]
 
 export type OpenNodeKind = {
-	[k in NodeKind]: Declaration<k>["hasOpenIntersection"] extends true
-		? k
-		: never
-}[NodeKind]
-
-export type BranchableNodeKind = {
-	[k in NodeKind]: Declaration<k>["hasBranchableIntersection"] extends true
-		? k
-		: never
+	[k in NodeKind]: null extends symmetricIntersectionResult<k> ? k : never
 }[NodeKind]
 
 export type ClosedNodeKind = Exclude<NodeKind, OpenNodeKind>
@@ -130,61 +126,55 @@ type accumulateRightKinds<
 	? accumulateRightKinds<tail, result & { [k in head]: tail[number] }>
 	: result
 
-export type AsymmetricConstraintIntersection<
-	lKind extends ConstraintKind,
-	rKind extends constraintKindLeftOf<lKind>
+export type intersectionImplementationOf<
+	lKind extends NodeKind,
+	rKind extends kindOrRightOf<lKind>
 > = (
 	l: Node<lKind>,
 	r: Node<rKind>,
 	$: ScopeNode
-) => Inner<lKind> | Disjoint | null
+) => rKind extends lKind
+	? symmetricIntersectionImplementationResult<lKind>
+	: lKind extends TypeKind
+	? Inner<lKind> | Disjoint
+	: Inner<lKind> | Disjoint | null
 
-export type SymmetricConstraintIntersection<kind extends ConstraintKind> = (
-	l: Node<kind>,
-	r: Node<kind>,
-	$: ScopeNode
-) =>
-	| Inner<kind>
-	| Disjoint
-	| (kind extends OpenNodeKind ? null : never)
-	| (kind extends BranchableNodeKind ? Inner<kind>[] : never)
-
-export type ConstraintIntersectionMap<kind extends ConstraintKind> = evaluate<
-	{
-		[_ in kind]: SymmetricConstraintIntersection<kind>
-	} & {
-		[rKind in constraintKindLeftOf<kind>]?: AsymmetricConstraintIntersection<
-			kind,
-			rKind
-		>
-	}
->
-
-export type TypeIntersection<
-	lKind extends TypeKind,
-	rKind extends kindOrRightOf<lKind> = kindRightOf<lKind>
-> = (l: Node<lKind>, r: Node<rKind>, $: ScopeNode) => Inner<lKind> | Disjoint
+type symmetricIntersectionImplementationResult<kind extends NodeKind> =
+	symmetricIntersectionResult<kind> extends infer result
+		? result extends Node
+			? result["inner"]
+			: result extends List<Node>
+			? result[number]["inner"][]
+			: result
+		: never
 
 export type TypeIntersectionMap<kind extends TypeKind> = {
-	[rKind in kindOrRightOf<kind>]: TypeIntersection<kind, rKind>
+	[rKind in kindOrRightOf<kind>]: intersectionImplementationOf<kind, rKind>
 }
 
-export type IntersectionMap<kind extends NodeKind> = kind extends TypeKind
-	? TypeIntersectionMap<kind>
-	: ConstraintIntersectionMap<kind & ConstraintKind>
+export type IntersectionMap<lKind extends NodeKind> = evaluate<
+	{
+		[rKind in lKind]: intersectionImplementationOf<lKind, rKind>
+	} & {
+		[rKind in kindRightOf<lKind>]?: intersectionImplementationOf<lKind, rKind>
+	}
+>
 
 export type UnknownIntersectionMap = {
 	[k in NodeKind]?: (
 		l: UnknownNode,
 		r: UnknownNode,
 		$: ScopeNode
-	) => UnknownIntersectionImplementationResult
+	) => UnknownSymmetricImplementationResult
 }
 
-export type UnknownNodeIntersectionResult = listable<Node> | Disjoint | null
+export type UnknownSymmetricIntersectionResult =
+	| listable<Node>
+	| Disjoint
+	| null
 
 /** Dict represents an unknown Inner value to be parsed as a union branch */
-export type UnknownIntersectionImplementationResult =
+export type UnknownSymmetricImplementationResult =
 	| listable<Dict>
 	| Node
 	| Disjoint
@@ -268,7 +258,7 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 export interface UnknownNodeImplementation
 	extends CommonNodeImplementationInput<BaseNodeDeclaration> {
 	defaults: ParsedUnknownNodeConfig
-	hasOpenIntersection: boolean
+	symmetricIntersectionIsOpen?: true
 	intersections: UnknownIntersectionMap
 	keys: Record<string, NodeKeyImplementation<any, any>>
 }
@@ -276,7 +266,7 @@ export interface UnknownNodeImplementation
 export type nodeImplementationOf<d extends BaseNodeDeclaration> =
 	nodeImplementationInputOf<d> & {
 		intersections: IntersectionMap<d["kind"]>
-		hasOpenIntersection: d["hasOpenIntersection"]
+		symmetricIntersection: d["symmetricIntersection"]
 		defaults: nodeDefaultsImplementationFor<d["kind"]>
 	}
 
@@ -284,10 +274,11 @@ export type nodeImplementationInputOf<d extends BaseNodeDeclaration> =
 	CommonNodeImplementationInput<d> & {
 		intersections: IntersectionMap<d["kind"]>
 		defaults: nodeDefaultsImplementationInputFor<d["kind"]>
-	} & (d["hasOpenIntersection"] extends true
-			? { hasOpenIntersection: true }
+	} & (d["kind"] extends OpenNodeKind
+			? { symmetricIntersectionIsOpen: true }
 			: {}) &
-		(d["reducibleTo"] extends NodeKind ? { reduce: {} } : {})
+		// if the node is declared as being parsable to other kinds, it must have a reduce implementation
+		(d["parsableTo"] extends d["kind"] ? {} : { reduce: {} })
 
 type nodeDefaultsImplementationInputFor<kind extends NodeKind> = requireKeys<
 	NodeConfig<kind>,

@@ -95,7 +95,7 @@ describe("narrow", () => {
 		const t = type("string", ":", (s): s is `f${string}` => s[0] === "f")
 		attest<`f${string}`>(t.infer)
 		attest(t.json).snap({
-			basis: "string",
+			domain: "string",
 			predicate: ["$ark.anonymousFunction8"]
 		})
 	})

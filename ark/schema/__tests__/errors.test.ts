@@ -6,7 +6,7 @@ import { scopeNode } from "../scope.js"
 describe("errors", () => {
 	it("shallow", () => {
 		const n = schema({
-			basis: "number",
+			domain: "number",
 			divisor: 3
 		})
 		attest(n.apply(6)).snap({ out: 6 })
@@ -14,11 +14,11 @@ describe("errors", () => {
 	})
 	it("at path", () => {
 		const o = schema({
-			basis: "object",
+			domain: "object",
 			required: {
 				key: "foo",
 				value: {
-					basis: "number",
+					domain: "number",
 					divisor: 3
 				}
 			}
@@ -30,7 +30,7 @@ describe("errors", () => {
 	})
 	it("array", () => {
 		const t = schema({
-			basis: Array,
+			proto: Array,
 			sequence: "number"
 		})
 		attest(t.apply([5]).out).snap([5])
@@ -50,7 +50,7 @@ describe("errors", () => {
 	})
 	it("custom description on parent doesn't affect children", () => {
 		const evenNumber = schema({
-			basis: "number",
+			domain: "number",
 			divisor: 2,
 			description: "an even number"
 		})

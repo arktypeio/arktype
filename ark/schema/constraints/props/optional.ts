@@ -23,9 +23,8 @@ export type OptionalDeclaration = declareNode<{
 	schema: OptionalSchema
 	normalizedSchema: OptionalSchema
 	inner: OptionalInner
-	composition: "composite"
 	prerequisite: object
-	hasOpenIntersection: true
+	symmetricIntersection: OptionalNode | Disjoint | null
 	childKind: TypeKind
 }>
 
@@ -43,7 +42,7 @@ export class OptionalNode extends BaseConstraint<
 				}
 			},
 			hasAssociatedError: false,
-			hasOpenIntersection: true,
+			symmetricIntersectionIsOpen: true,
 			normalize: (schema) => schema,
 			defaults: {
 				description(inner) {

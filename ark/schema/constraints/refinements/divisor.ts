@@ -15,8 +15,8 @@ export type DivisorDeclaration = declareNode<{
 	kind: "divisor"
 	schema: DivisorSchema
 	normalizedSchema: DivisorInner
+	symmetricIntersection: DivisorNode
 	inner: DivisorInner
-	composition: "primitive"
 	prerequisite: number
 	expectedContext: DivisorInner
 }>
