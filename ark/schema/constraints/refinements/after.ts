@@ -27,8 +27,7 @@ export class AfterNode
 				actual: (data) => data.toLocaleString()
 			},
 			intersections: {
-				after: (l, r) => (l.isStricterThan(r) ? l : r),
-				default: () => null
+				after: (l, r) => (l.isStricterThan(r) ? l : r)
 			}
 		})
 

@@ -157,6 +157,22 @@ export abstract class BaseType<
 	}
 }
 
+export type intersectType<l extends TypeKind, r extends NodeKind> = [
+	l,
+	r
+] extends [r, l]
+	? l
+	: asymmetricIntersectionOf<l, r> | asymmetricIntersectionOf<r, l>
+
+type asymmetricIntersectionOf<
+	l extends NodeKind,
+	r extends NodeKind
+> = l extends unknown
+	? r extends kindRightOf<l>
+		? l | parsableKindOf<l>
+		: never
+	: never
+
 export interface BaseBasis {
 	basisName: string
 	domain: Domain

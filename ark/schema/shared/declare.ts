@@ -1,7 +1,9 @@
-import type { evaluate, listable, merge } from "@arktype/util"
-import type { NarrowedAttachments, Node } from "../base.js"
-import type { Disjoint } from "./disjoint.js"
-import type { ConstraintKind, NodeKind } from "./implement.js"
+import type { evaluate, merge } from "@arktype/util"
+import type { NarrowedAttachments } from "../base.js"
+import type {
+	NodeKind,
+	UnknownSymmetricIntersectionResult
+} from "./implement.js"
 
 export interface BaseMeta {
 	readonly description?: string
@@ -14,15 +16,12 @@ interface DeclarationInput {
 	schema: unknown
 	normalizedSchema: BaseMeta
 	inner: BaseMeta
-	branchable?: true
-	symmetricIntersectionIsOpen?: true
+	symmetricIntersection: UnknownSymmetricIntersectionResult
 	childKind?: NodeKind
-	reducibleTo?: NodeKind
+	parsableTo?: NodeKind
 	expectedContext?: object
 	prerequisite?: unknown
 }
-
-export type BaseIntersectionResult = listable<Node> | Disjoint | null
 
 export interface BaseExpectedContext<kind extends NodeKind = NodeKind> {
 	code: kind
@@ -46,18 +45,8 @@ export type declareNode<
 	{
 		prerequisite: prerequisiteOf<d>
 		childKind: never
-		reducibleTo: d["kind"]
+		parsableTo: d["kind"]
 		expectedContext: null
-		branchable: false
-		symmetricIntersectionIsOpen: false
-		intersection:
-			| Node<
-					| d["kind"]
-					| (d["reducibleTo"] extends NodeKind ? d["reducibleTo"] : never)
-			  >
-			| Disjoint
-			| (d["kind"] extends ConstraintKind ? null : never)
-			| (d["branchable"] extends true ? Node<d["kind"]>[] : never)
 	},
 	d & {
 		expectedContext: d["expectedContext"] extends {}
@@ -80,11 +69,9 @@ export type BaseNodeDeclaration = {
 	schema: unknown
 	normalizedSchema: BaseMeta
 	inner: BaseMeta
-	reducibleTo: NodeKind
+	parsableTo: NodeKind
 	prerequisite: any
-	intersection: BaseIntersectionResult
-	symmetricIntersectionIsOpen: boolean
-	branchable: boolean
+	symmetricIntersection: UnknownSymmetricIntersectionResult
 	childKind: NodeKind
 	expectedContext: BaseExpectedContext | null
 }

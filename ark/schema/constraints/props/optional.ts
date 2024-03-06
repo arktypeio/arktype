@@ -24,7 +24,7 @@ export type OptionalDeclaration = declareNode<{
 	normalizedSchema: OptionalSchema
 	inner: OptionalInner
 	prerequisite: object
-	symmetricIntersectionIsOpen: true
+	symmetricIntersection: OptionalNode | Disjoint | null
 	childKind: TypeKind
 }>
 
@@ -61,8 +61,7 @@ export class OptionalNode extends BaseConstraint<
 						value:
 							value instanceof Disjoint ? (l.$.builtin.never as never) : value
 					})
-				},
-				default: () => null
+				}
 			}
 		})
 

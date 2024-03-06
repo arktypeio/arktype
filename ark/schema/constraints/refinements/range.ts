@@ -10,6 +10,7 @@ import type { Node, NodeSubclass } from "../../base.js"
 import type { Declaration, Schema } from "../../kinds.js"
 import { jsData } from "../../shared/compile.js"
 import type { BaseNodeDeclaration, declareNode } from "../../shared/declare.js"
+import type { Disjoint } from "../../shared/disjoint.js"
 import {
 	throwInvalidOperandError,
 	type BasisKind,
@@ -198,6 +199,7 @@ export type declareRange<input extends BoundDeclarationInput> = declareNode<{
 	inner: BoundInner<input["rule"]>
 	prerequisite: input["prerequisite"]
 	expectedContext: BoundInner<input["rule"]>
+	symmetricIntersection: Node<input["kind"]> | Disjoint
 }>
 
 export type BoundOperandKind = "value" | "length" | "date"

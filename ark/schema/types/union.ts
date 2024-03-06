@@ -51,9 +51,9 @@ export type UnionDeclaration = declareNode<{
 	expectedContext: {
 		errors: readonly ArkTypeError[]
 	}
-	reducibleTo: TypeKind
+	parsableTo: TypeKind
 	childKind: UnionChildKind
-	intersection: TypeNode | Disjoint
+	symmetricIntersection: TypeNode | Disjoint
 }>
 
 export class UnionNode<t = unknown> extends BaseType<
@@ -147,13 +147,13 @@ export class UnionNode<t = unknown> extends BaseType<
 							: { branches: resultBranches }
 					)
 				},
-				default: (l, r) => {
+				...defineRightwardIntersections("union", (l, r) => {
 					const branches = intersectBranches(l.branches, [r])
 					if (branches instanceof Disjoint) {
 						return branches
 					}
 					return l.ordered ? { branches, ordered: true } : { branches }
-				}
+				})
 			}
 		})
 

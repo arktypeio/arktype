@@ -28,7 +28,7 @@ export type RequiredDeclaration = declareNode<{
 		key: string | symbol
 	}
 	prerequisite: object
-	symmetricIntersectionIsOpen: true
+	symmetricIntersection: RequiredNode | Disjoint | null
 	childKind: TypeKind
 }>
 
@@ -71,8 +71,7 @@ export class RequiredNode extends BaseConstraint<
 						key,
 						value
 					}
-				},
-				default: () => null
+				}
 			}
 		})
 

@@ -60,7 +60,7 @@ export type SequenceDeclaration = declareNode<{
 	normalizedSchema: NormalizedSequenceSchema
 	inner: SequenceInner
 	prerequisite: List
-	branchable: true
+	symmetricIntersection: SequenceNode | SequenceNode[] | Disjoint
 	childKind: TypeKind
 }>
 
@@ -190,12 +190,11 @@ export class SequenceNode extends BaseConstraint<
 						: viableBranches.length === 1
 						? sequenceTupleToInner(viableBranches[0].result)
 						: viableBranches.map((state) => sequenceTupleToInner(state.result))
-				},
+				}
 				// length, minLength, and maxLength don't need to be defined
 				// here since impliedSiblings guarantees they will be added
 				// directly to the  IntersectionNode parent of the SequenceNode
-				// they exist on,
-				default: () => null
+				// they exist on
 			}
 		})
 

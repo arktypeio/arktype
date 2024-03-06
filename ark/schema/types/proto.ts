@@ -30,7 +30,7 @@ export type ProtoDeclaration = declareNode<{
 	normalizedSchema: NormalizedProtoSchema
 	inner: ProtoInner
 	expectedContext: ProtoInner
-	intersection: ProtoNode | Disjoint
+	symmetricIntersection: ProtoNode | Disjoint
 }>
 
 // readonly literalKeys = prototypeKeysOf(this.rule.prototype)
@@ -70,6 +70,7 @@ export class ProtoNode<t = unknown> extends BaseBasis<
 					: constructorExtends(r.proto, l.proto)
 					? r
 					: Disjoint.from("proto", l, r),
+			...defineRightwardIntersections("proto", (l, r) => {}),
 			domain: (proto, domain) =>
 				domain.domain === "object"
 					? proto

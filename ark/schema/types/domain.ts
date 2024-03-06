@@ -7,6 +7,7 @@ import { jsData } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import { BaseBasis } from "./basis.js"
+import { defineRightwardIntersections } from "./type.js"
 
 export interface DomainInner<
 	domain extends NonEnumerableDomain = NonEnumerableDomain
@@ -29,6 +30,7 @@ export type DomainDeclaration = declareNode<{
 	normalizedSchema: NormalizedDomainSchema
 	inner: DomainInner
 	expectedContext: DomainInner
+	symmetricIntersection: DomainNode | Disjoint
 }>
 
 export class DomainNode<t = unknown> extends BaseBasis<
@@ -53,7 +55,8 @@ export class DomainNode<t = unknown> extends BaseBasis<
 			}
 		},
 		intersections: {
-			domain: (l, r) => Disjoint.from("domain", l, r)
+			domain: (l, r) => Disjoint.from("domain", l, r),
+			...defineRightwardIntersections("domain", (l, r) => {})
 		}
 	})
 

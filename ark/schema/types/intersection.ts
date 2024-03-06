@@ -49,7 +49,8 @@ import {
 import type { instantiateBasis } from "./basis.js"
 import type { DomainNode, DomainSchema } from "./domain.js"
 import type { ProtoNode, ProtoSchema } from "./proto.js"
-import { BaseType } from "./type.js"
+import { BaseType, defineRightwardIntersections } from "./type.js"
+import type { UnionNode } from "./union.js"
 
 export type IntersectionBasisKind = "domain" | "proto"
 
@@ -80,11 +81,12 @@ export type IntersectionDeclaration = declareNode<{
 	schema: IntersectionSchema
 	normalizedSchema: IntersectionSchema
 	inner: IntersectionInner
-	reducibleTo: "intersection" | "union" | IntersectionBasisKind
+	parsableTo: "intersection" | IntersectionBasisKind
 	expectedContext: {
 		errors: readonly ArkTypeError[]
 	}
 	childKind: IntersectionChildKind
+	symmetricIntersection: IntersectionNode | UnionNode | Disjoint
 }>
 
 const constraintKeys = morph(constraintKinds, (i, kind) => [kind, 1] as const)
@@ -268,13 +270,13 @@ export class IntersectionNode<t = unknown> extends BaseType<
 			},
 			intersections: {
 				intersection: intersectIntersections,
-				default: (l, r) => {
+				...defineRightwardIntersections("intersection", (l, r) => {
 					const basis = l.basis?.intersect(r) ?? r
 
 					return basis instanceof Disjoint
 						? basis
 						: Object.assign(omit(l.inner, metaKeys), { basis })
-				}
+				})
 			}
 		})
 

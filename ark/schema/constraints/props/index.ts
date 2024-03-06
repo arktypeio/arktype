@@ -2,6 +2,7 @@ import type { TypeNode, TypeSchema } from "../../base.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/context.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
+import type { Disjoint } from "../../shared/disjoint.js"
 import type { TypeKind, nodeImplementationOf } from "../../shared/implement.js"
 import { BaseConstraint } from "../constraint.js"
 
@@ -21,7 +22,7 @@ export type IndexDeclaration = declareNode<{
 	normalizedSchema: IndexSchema
 	inner: IndexInner
 	prerequisite: object
-	symmetricIntersectionIsOpen: true
+	symmetricIntersection: IndexNode | Disjoint | null
 	childKind: TypeKind
 }>
 
@@ -50,8 +51,7 @@ export class IndexNode extends BaseConstraint<
 				}
 			},
 			intersections: {
-				index: (l, r) => l,
-				default: () => null
+				index: (l, r) => l
 			}
 		})
 

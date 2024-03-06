@@ -21,6 +21,7 @@ export type LengthDeclaration = declareNode<{
 	inner: LengthInner
 	prerequisite: LengthBoundableData
 	expectedContext: LengthInner
+	symmetricIntersection: LengthNode | Disjoint
 }>
 
 export class LengthNode extends BasePrimitiveConstraint<
@@ -43,8 +44,7 @@ export class LengthNode extends BasePrimitiveConstraint<
 							r: r.$.parse("unit", { unit: r.length })
 						}
 					}
-				}),
-			default: () => null
+				})
 		},
 		hasAssociatedError: true,
 		defaults: {
