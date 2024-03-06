@@ -74,7 +74,7 @@ const fixedSequenceKeyDefinition: NodeKeyImplementation<
 	parse: (schema, ctx) =>
 		schema.length === 0
 			? // empty affixes are omitted. an empty array should therefore
-			  // be specified as `{ basis: Array, length: 0 }`
+			  // be specified as `{ proto: Array, length: 0 }`
 			  undefined
 			: schema.map((element) => ctx.$.parseTypeNode(element))
 }

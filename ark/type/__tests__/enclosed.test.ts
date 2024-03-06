@@ -11,7 +11,7 @@ describe("parse enclosed", () => {
 	it("with neighbors", () => {
 		const t = type("'foo'|/.*/[]")
 		attest<"foo" | string[]>(t.infer)
-		attest(t.json).snap([{ unit: "foo" }, { basis: "Array" }])
+		attest(t.json).snap([{ unit: "foo" }, { domain: "Array" }])
 	})
 	describe("errors", () => {
 		describe("unterminated", () => {

@@ -4,12 +4,12 @@ import { rootNode, schema } from "@arktype/schema"
 describe("intersections", () => {
 	it("normalizes refinement order", () => {
 		const l = schema({
-			basis: "number",
+			domain: "number",
 			divisor: 3,
 			min: 5
 		})
 		const r = schema({
-			basis: "number",
+			domain: "number",
 			min: 5,
 			divisor: 3
 		})

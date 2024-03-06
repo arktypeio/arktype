@@ -142,7 +142,7 @@ export abstract class BaseType<
 		return this.$.parseRoot(
 			"intersection",
 			{
-				basis: Array,
+				proto: Array,
 				sequence: this
 			},
 			{ prereduced: true }

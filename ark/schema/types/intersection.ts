@@ -38,7 +38,6 @@ import type { ArkTypeError } from "../shared/errors.js"
 import {
 	constraintKinds,
 	propKinds,
-	type BasisKind,
 	type ConstraintKind,
 	type IntersectionChildKind,
 	type OpenNodeKind,
@@ -46,7 +45,8 @@ import {
 	type RefinementKind,
 	type nodeImplementationOf
 } from "../shared/implement.js"
-import type { instantiateBasis } from "./basis.js"
+import type { DomainNode, DomainSchema } from "./domain.js"
+import type { ProtoNode, ProtoSchema } from "./proto.js"
 import {
 	BaseType,
 	defineRightwardIntersections,
@@ -57,22 +57,18 @@ export type IntersectionBasisKind = "domain" | "proto"
 
 export type IntersectionInner = evaluate<
 	BaseMeta & {
-		basis?: Node<IntersectionBasisKind>
+		domain?: DomainNode
+		proto?: ProtoNode
 	} & {
 		[k in ConditionalIntersectionKey]?: conditionalInnerValueOfKey<k>
 	}
 >
 
-export type IntersectionSchema<
-	basis extends Schema<IntersectionBasisKind> | undefined = any
-> = evaluate<
+export type IntersectionSchema<inferredBasis = any> = evaluate<
 	BaseMeta & {
-		basis?: basis
-	} & conditionalSchemaOf<
-			basis extends Schema<BasisKind>
-				? instantiateBasis<basis>["infer"]
-				: unknown
-		>
+		domain?: DomainSchema
+		proto?: ProtoSchema
+	} & conditionalSchemaOf<inferredBasis>
 >
 
 export type IntersectionDeclaration = declareNode<{
@@ -175,10 +171,13 @@ export class IntersectionNode<t = unknown> extends BaseType<
 			hasAssociatedError: true,
 			normalize: (schema) => schema,
 			keys: {
-				basis: {
+				domain: {
 					child: true,
-					parse: (def, ctx) =>
-						ctx.$.parseTypeNode(def, { allowedKinds: ["domain", "proto"] })
+					parse: intersectionChildKeyParser("domain")
+				},
+				proto: {
+					child: true,
+					parse: intersectionChildKeyParser("proto")
 				},
 				divisor: {
 					child: true,

@@ -10,7 +10,7 @@ describe("attest features", () => {
 		// make assertions about types and values seamlessly
 		attest(even.infer).type.toString.snap("number")
 		// including object literals- no more long inline strings!
-		attest(even.json).snap({ basis: "number", divisor: 2 })
+		attest(even.json).snap({ domain: "number", divisor: 2 })
 	})
 
 	it("error assertions", () => {
