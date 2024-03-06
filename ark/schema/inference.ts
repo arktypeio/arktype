@@ -73,13 +73,18 @@ export type instantiateSchemaBranch<def> = isSchemaCast<def> extends true
 	? instantiateMorphChild<def>
 	: UnionChildNode
 
+type NonIntersectableBasisSchema =
+	| NonEnumerableDomain
+	| Constructor
+	| UnitSchema
+
 export type validateMorphChild<def> = [def] extends [
-	NonEnumerableDomain | Constructor | UnitSchema
+	NonIntersectableBasisSchema
 ]
 	? def
 	: validateIntersectionSchema<def>
 
-export type instantiateMorphChild<def> = def extends Schema<BasisKind>
+export type instantiateMorphChild<def> = def extends NonIntersectableBasisSchema
 	? instantiateBasis<def>
 	: def extends IntersectionSchema
 	? instantiateIntersectionSchema<def>

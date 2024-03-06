@@ -123,5 +123,5 @@ export type ExpectedContext<kind extends NodeKind> = Readonly<
 	Declaration<kind>["expectedContext"]
 >
 
-export type intersectionResult<kind extends NodeKind> =
+export type leftIntersectionResult<kind extends NodeKind> =
 	Declaration<kind>["intersection"]

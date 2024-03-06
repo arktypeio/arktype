@@ -172,7 +172,7 @@ export class SequenceNode extends BaseConstraint<
 				}
 			},
 			intersections: {
-				sequence: (l, r) => {
+				sequence: (l, r, $) => {
 					const rootState = intersectSequences({
 						l: l.tuple,
 						r: r.tuple,
@@ -188,8 +188,16 @@ export class SequenceNode extends BaseConstraint<
 					return viableBranches.length === 0
 						? rootState.disjoint!
 						: viableBranches.length === 1
-						? sequenceTupleToInner(viableBranches[0].result)
-						: viableBranches.map((state) => sequenceTupleToInner(state.result))
+						? $.parsePrereduced(
+								"sequence",
+								sequenceTupleToInner(viableBranches[0].result)
+						  )
+						: viableBranches.map((state) =>
+								$.parsePrereduced(
+									"sequence",
+									sequenceTupleToInner(state.result)
+								)
+						  )
 				},
 				// length, minLength, and maxLength don't need to be defined
 				// here since impliedSiblings guarantees they will be added

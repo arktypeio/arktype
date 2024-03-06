@@ -10,7 +10,6 @@ import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import { defaultValueSerializer } from "../shared/implement.js"
 import { BaseBasis } from "./basis.js"
-import { defineRightwardIntersections } from "./type.js"
 
 export interface ProtoInner<proto extends Constructor = Constructor>
 	extends BaseMeta {

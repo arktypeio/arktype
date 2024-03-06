@@ -13,7 +13,7 @@ import {
 	type nodeImplementationOf
 } from "../shared/implement.js"
 import type { Discriminant } from "./discriminate.js"
-import { BaseType, defineRightwardIntersections } from "./type.js"
+import { BaseType } from "./type.js"
 
 export type UnionChildKind = "morph" | "intersection" | BasisKind
 
@@ -53,7 +53,6 @@ export type UnionDeclaration = declareNode<{
 	}
 	reducibleTo: TypeKind
 	childKind: UnionChildKind
-	intersection: TypeNode | Disjoint
 }>
 
 export class UnionNode<t = unknown> extends BaseType<
@@ -147,12 +146,15 @@ export class UnionNode<t = unknown> extends BaseType<
 							: { branches: resultBranches }
 					)
 				},
-				default: (l, r) => {
+				default: (l, r, $) => {
 					const branches = intersectBranches(l.branches, [r])
 					if (branches instanceof Disjoint) {
 						return branches
 					}
-					return l.ordered ? { branches, ordered: true } : { branches }
+					return $.parsePrereduced(
+						"union",
+						l.ordered ? { branches, ordered: true } : { branches }
+					)
 				}
 			}
 		})
