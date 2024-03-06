@@ -1,3 +1,4 @@
+import type { Primitive } from "./domain.js"
 import type { ErrorMessage } from "./errors.js"
 import type { unionToTuple } from "./unionToTuple.js"
 
@@ -97,3 +98,18 @@ type collectWidenedType<
 > = remaining extends [infer head, ...infer tail]
 	? collectWidenedType<t, tail, t extends head ? result | head : result>
 	: result
+
+type narrowTuple<t extends readonly unknown[]> = t extends readonly [
+	infer head,
+	...infer tail
+]
+	? [head, ...narrowTuple<tail>]
+	: []
+
+export type narrow<t> = t extends Primitive
+	? t
+	: t extends readonly unknown[]
+	? narrowTuple<t>
+	: { [k in keyof t]: narrow<t[k]> }
+
+export const narrow = <t>(t: narrow<t>) => t

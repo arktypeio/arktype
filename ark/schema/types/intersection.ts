@@ -9,7 +9,6 @@ import {
 	omit,
 	pick,
 	printable,
-	splitByKeys,
 	throwInternalError,
 	type List,
 	type evaluate,
@@ -136,17 +135,24 @@ const intersectIntersections = (
 	if (l instanceof IntersectionNode) l = l.inner
 	if (r instanceof IntersectionNode) r = r.inner
 
-	const [lConstraintsInner, lRoot] = splitByKeys(l, constraintKeys)
-	const [rConstraintsInner, rRoot] = splitByKeys(r, constraintKeys)
-	const root = intersectRootKeys(lRoot, rRoot)
-	if (root instanceof Disjoint) return root
+	const root: MutableInner<"intersection"> = {}
+	if (l.onExtraneousKey || r.onExtraneousKey) {
+		root.onExtraneousKey =
+			l.onExtraneousKey === "throw" || r.onExtraneousKey === "throw"
+				? "throw"
+				: "prune"
+	}
 
-	const lConstraints = flattenConstraints(lConstraintsInner)
-	const rConstraints = flattenConstraints(rConstraintsInner)
-	const result = intersectConstraints(lConstraints, rConstraints)
+	const result = intersectConstraints(
+		flattenConstraints(l),
+		flattenConstraints(r)
+	)
 
 	if (result instanceof Disjoint) return result
-	if (isArray(result) && !result.length && root.basis) return root.basis
+	if (isArray(result) && result.length === 1 && result[0].isBasis())
+		// if the only constraint is a ProtoNode or DomainNode, we can use it directly instead of
+		// an IntersectionNode
+		return result[0]
 
 	const branches = "branches" in result ? result.branches : [result]
 	const branchNodes = branches.map((branch) =>
@@ -268,8 +274,8 @@ export class IntersectionNode<t = unknown> extends BaseType<
 			}
 		})
 
-	readonly constraints = flattenConstraints(this.inner)
-	readonly refinements = this.constraints.filter(
+	readonly basis = this.domain ?? this.proto
+	readonly refinements = this.children.filter(
 		(node): node is Node<RefinementKind> => node.isRefinement()
 	)
 	readonly props = maybeCreatePropsGroup(this.inner)
@@ -327,33 +333,6 @@ export class IntersectionNode<t = unknown> extends BaseType<
 const maybeCreatePropsGroup = (inner: IntersectionInner) => {
 	const propsInput = pick(inner, propKeys)
 	return isEmptyObject(propsInput) ? undefined : new PropsGroup(propsInput)
-}
-
-type IntersectionRoot = Omit<IntersectionInner, ConstraintKind>
-
-const intersectRootKeys = (
-	l: IntersectionRoot,
-	r: IntersectionRoot
-): MutableInner<"intersection"> | Disjoint => {
-	const result: IntersectionRoot = {}
-	const resultBasis = l.basis
-		? r.basis
-			? l.basis.intersect(r.basis)
-			: l.basis
-		: r.basis
-	if (resultBasis) {
-		if (resultBasis instanceof Disjoint) {
-			return resultBasis
-		}
-		result.basis = resultBasis
-	}
-	if (l.onExtraneousKey || r.onExtraneousKey) {
-		result.onExtraneousKey =
-			l.onExtraneousKey === "throw" || r.onExtraneousKey === "throw"
-				? "throw"
-				: "prune"
-	}
-	return result
 }
 
 const intersectConstraints = (
