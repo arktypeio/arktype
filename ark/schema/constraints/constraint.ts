@@ -4,12 +4,12 @@ import {
 	type Node,
 	type NodeSubclass
 } from "../base.js"
-import type { symmetricIntersectionResult } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../shared/context.js"
 import type { BaseMeta, BaseNodeDeclaration } from "../shared/declare.js"
 import type { Disjoint } from "../shared/disjoint.js"
 import type {
+	BranchableNodeKind,
 	ConstraintKind,
 	PropKind,
 	kindLeftOf
@@ -33,7 +33,12 @@ export interface BaseConstraintDeclaration extends BaseNodeDeclaration {
 type intersectConstraintKinds<
 	l extends ConstraintKind,
 	r extends ConstraintKind
-> = l extends r ? symmetricIntersectionResult<l> : Node<l | r> | Disjoint | null
+> =
+	| Node<l | r>
+	| Disjoint
+	| null
+	// A constraint intersection may result in a union if both operands could be of the same BranchableNodeKind
+	| (l & r & BranchableNodeKind extends never ? never : Node<l | r>[])
 
 export abstract class BaseConstraint<
 	d extends BaseConstraintDeclaration,
@@ -45,6 +50,10 @@ export abstract class BaseConstraint<
 		r: r
 	): intersectConstraintKinds<d["kind"], r["kind"]> {
 		return this.intersectInternal(r) as never
+	}
+
+	get hasOpenIntersection() {
+		return this.impl.hasOpenIntersection as d["hasOpenIntersection"]
 	}
 }
 

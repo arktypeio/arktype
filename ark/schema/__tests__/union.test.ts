@@ -5,22 +5,22 @@ describe("union", () => {
 	it("union", () => {
 		const l = schema(
 			{
-				domain: "number",
+				basis: "number",
 				divisor: 2
 			},
 			{
-				domain: "number",
+				basis: "number",
 				divisor: 3
 			}
 		)
 		const r = schema({
-			domain: "number",
+			basis: "number",
 			divisor: 5
 		})
 		const result = l.and(r)
 		attest(result.json).snap([
-			{ domain: "number", divisor: 10 },
-			{ domain: "number", divisor: 15 }
+			{ basis: "number", divisor: 10 },
+			{ basis: "number", divisor: 15 }
 		])
 	})
 

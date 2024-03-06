@@ -84,7 +84,7 @@ export const parseTupleLiteral = (def: List, ctx: ParseContext): TypeNode => {
 	}
 	return schema(
 		...sequences.map((sequence) => ({
-			proto: Array,
+			basis: Array,
 			sequence
 		}))
 	)

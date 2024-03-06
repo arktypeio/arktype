@@ -9,7 +9,7 @@ import {
 	type valueOf
 } from "@arktype/util"
 import { BaseNode, type BaseAttachments, type Node } from "./base.js"
-import { nodesByKind, type Schema, type parsableKindOf } from "./kinds.js"
+import { nodesByKind, type Schema, type reducibleKindOf } from "./kinds.js"
 import type { ScopeNode } from "./scope.js"
 import type { BaseNodeDeclaration } from "./shared/declare.js"
 import { Disjoint } from "./shared/disjoint.js"
@@ -49,7 +49,7 @@ export function parseAttachments<defKind extends NodeKind>(
 	kind: defKind,
 	schema: Schema<defKind>,
 	ctx: SchemaParseContext
-): parsableKindOf<defKind>
+): Node<reducibleKindOf<defKind>>
 // eslint-disable-next-line prefer-arrow-functions/prefer-arrow-functions
 export function parseAttachments(
 	kind: NodeKind,

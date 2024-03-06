@@ -86,7 +86,7 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): TypeNode => {
 	}
 
 	return schema({
-		domain: "object",
+		basis: "object",
 		required,
 		optional
 	})

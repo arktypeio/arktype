@@ -52,17 +52,17 @@ describe("union", () => {
 		const expected = () =>
 			schema(
 				{
-					domain: "object",
+					basis: "object",
 					required: {
 						key: "a",
-						value: { domain: "string" }
+						value: { basis: "string" }
 					}
 				},
 				{
-					domain: "object",
+					basis: "object",
 					required: {
 						key: "b",
-						value: { domain: "number" }
+						value: { basis: "number" }
 					}
 				}
 			).json

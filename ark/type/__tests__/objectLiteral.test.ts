@@ -17,7 +17,7 @@ describe("object literal", () => {
 		const o = type({ a: "string", b: "number" })
 		attest<{ a: string; b: number }>(o.infer)
 		attest(o.json).snap({
-			domain: "object",
+			basis: "object",
 			required: [
 				{ key: "a", value: "string" },
 				{ key: "b", value: "number" }
@@ -28,7 +28,7 @@ describe("object literal", () => {
 		const o = type({ "a?": "string", b: "number" })
 		attest<{ a?: string; b: number }>(o.infer)
 		attest(o.json).snap({
-			domain: "object",
+			basis: "object",
 			optional: [{ key: "a", value: "string" }],
 			required: [{ key: "b", value: "number" }]
 		})
@@ -41,7 +41,7 @@ describe("object literal", () => {
 		})
 		attest<{ [s]: string }>(t.infer)
 		attest(t.json).equals({
-			domain: "object",
+			basis: "object",
 			required: [{ key: name, value: "string" }]
 		})
 	})
@@ -53,7 +53,7 @@ describe("object literal", () => {
 	// 	})
 	// 	attest<{ [s]?: number }>(t.infer)
 	// 	attest(t.json).equals({
-	// 		domain: "object",
+	// 		basis: "object",
 	// 		optional: [{ key: name, value: "number" }]
 	// 	})
 	// })
@@ -66,7 +66,7 @@ describe("object literal", () => {
 
 			attest<{ isAdmin: true; name: string }>(s.admin.infer)
 			attest(s.admin.json).equals({
-				domain: "object",
+				basis: "object",
 				required: [
 					{ key: "isAdmin", value: { unit: true } },
 					{ key: "name", value: "string" }
@@ -80,7 +80,7 @@ describe("object literal", () => {
 
 			attest<{ isAdmin: true; name: string }>(admin.infer)
 			attest(admin.json).equals({
-				domain: "object",
+				basis: "object",
 				required: [
 					{ key: "isAdmin", value: { unit: true } },
 					{ key: "name", value: "string" }
@@ -104,7 +104,7 @@ describe("object literal", () => {
 			}>(t.infer)
 
 			attest(t.json).snap({
-				domain: "object",
+				basis: "object",
 				required: [
 					{ key: "inherited", value: [{ unit: false }, { unit: true }] },
 					{ key: "overridden", value: "number" }
@@ -120,7 +120,7 @@ describe("object literal", () => {
 			attest<{ "...": string }>(t.infer)
 
 			attest(t.json).equals({
-				domain: "object",
+				basis: "object",
 				required: [{ key: "...", value: "string" }]
 			})
 		})
@@ -141,7 +141,7 @@ describe("object literal", () => {
 
 			attest<{ isAdmin: true; name: string }>(adminUser.infer)
 			attest(adminUser.json).snap({
-				domain: "object",
+				basis: "object",
 				required: [
 					{ key: "isAdmin", value: { unit: true } },
 					{ key: "name", value: "string" }

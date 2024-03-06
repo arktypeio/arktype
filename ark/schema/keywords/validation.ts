@@ -5,7 +5,7 @@ import { creditCard } from "./utils/creditCard.js"
 // Non-trivial expressions should have an explanation or attribution
 
 const url = rootSchema({
-	domain: "string",
+	basis: "string",
 	predicate: (s: string) => {
 		try {
 			new URL(s)
@@ -21,7 +21,7 @@ const url = rootSchema({
 const emailMatcher = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/
 
 const email = rootSchema({
-	domain: "string",
+	basis: "string",
 	regex: emailMatcher,
 	description: "a valid email"
 })
@@ -31,7 +31,7 @@ const uuidMatcher =
 
 // https://github.com/validatorjs/validator.js/blob/master/src/lib/isUUID.js
 const uuid = rootSchema({
-	domain: "string",
+	basis: "string",
 	regex: uuidMatcher,
 	description: "a valid UUID"
 })
@@ -41,7 +41,7 @@ const semverMatcher =
 
 // https://semver.org/
 const semver = rootSchema({
-	domain: "string",
+	basis: "string",
 	regex: semverMatcher,
 	description: "a valid semantic version (see https://semver.org/)"
 })
@@ -66,22 +66,22 @@ export namespace Validation {
 export const Validation: ScopeNode<Validation.resolutions> = ScopeNode.from(
 	{
 		alpha: {
-			domain: "string",
+			basis: "string",
 			regex: /^[A-Za-z]*$/,
 			description: "only letters"
 		},
 		alphanumeric: {
-			domain: "string",
+			basis: "string",
 			regex: /^[A-Za-z\d]*$/,
 			description: "only letters and digits"
 		},
 		lowercase: {
-			domain: "string",
+			basis: "string",
 			regex: /^[a-z]*$/,
 			description: "only lowercase letters"
 		},
 		uppercase: {
-			domain: "string",
+			basis: "string",
 			regex: /^[A-Za-z]*$/,
 			description: "only uppercase letters"
 		},
@@ -91,7 +91,7 @@ export const Validation: ScopeNode<Validation.resolutions> = ScopeNode.from(
 		url,
 		semver,
 		integer: {
-			domain: "number",
+			basis: "number",
 			divisor: 1,
 			description: "an integer"
 		}

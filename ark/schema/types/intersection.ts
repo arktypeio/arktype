@@ -9,9 +9,9 @@ import {
 	omit,
 	pick,
 	printable,
+	splitByKeys,
 	throwInternalError,
 	type List,
-	type conform,
 	type evaluate,
 	type listable
 } from "@arktype/util"
@@ -47,17 +47,17 @@ import {
 	type nodeImplementationOf
 } from "../shared/implement.js"
 import type { instantiateBasis } from "./basis.js"
-import type { DomainNode, DomainSchema } from "./domain.js"
-import type { ProtoNode, ProtoSchema } from "./proto.js"
-import { BaseType, defineRightwardIntersections } from "./type.js"
-import type { UnionNode } from "./union.js"
+import {
+	BaseType,
+	defineRightwardIntersections,
+	type typeKindOrRightOf
+} from "./type.js"
 
 export type IntersectionBasisKind = "domain" | "proto"
 
 export type IntersectionInner = evaluate<
 	BaseMeta & {
-		domain?: DomainNode
-		proto?: ProtoNode
+		basis?: Node<IntersectionBasisKind>
 	} & {
 		[k in ConditionalIntersectionKey]?: conditionalInnerValueOfKey<k>
 	}
@@ -67,8 +67,7 @@ export type IntersectionSchema<
 	basis extends Schema<IntersectionBasisKind> | undefined = any
 > = evaluate<
 	BaseMeta & {
-		domain?: conform<basis, DomainSchema>
-		proto?: conform<basis, ProtoSchema>
+		basis?: basis
 	} & conditionalSchemaOf<
 			basis extends Schema<BasisKind>
 				? instantiateBasis<basis>["infer"]
@@ -81,12 +80,12 @@ export type IntersectionDeclaration = declareNode<{
 	schema: IntersectionSchema
 	normalizedSchema: IntersectionSchema
 	inner: IntersectionInner
-	parsableTo: "intersection" | IntersectionBasisKind
+	composition: "composite"
+	reducibleTo: typeKindOrRightOf<"intersection">
 	expectedContext: {
 		errors: readonly ArkTypeError[]
 	}
 	childKind: IntersectionChildKind
-	symmetricIntersection: IntersectionNode | UnionNode | Disjoint
 }>
 
 const constraintKeys = morph(constraintKinds, (i, kind) => [kind, 1] as const)
@@ -112,7 +111,7 @@ const intersectionChildKeyParser =
 				.sort((l, r) => (l.innerId < r.innerId ? -1 : 1)) as never
 		}
 		const node = ctx.$.parse(kind, input)
-		return node.symmetricIntersectionIsOpen ? [node] : (node as any)
+		return node.hasOpenIntersection ? [node] : (node as any)
 	}
 
 // 	readonly literalKeys = this.named.map((prop) => prop.key.name)
@@ -141,24 +140,17 @@ const intersectIntersections = (
 	if (l instanceof IntersectionNode) l = l.inner
 	if (r instanceof IntersectionNode) r = r.inner
 
-	const root: MutableInner<"intersection"> = {}
-	if (l.onExtraneousKey || r.onExtraneousKey) {
-		root.onExtraneousKey =
-			l.onExtraneousKey === "throw" || r.onExtraneousKey === "throw"
-				? "throw"
-				: "prune"
-	}
+	const [lConstraintsInner, lRoot] = splitByKeys(l, constraintKeys)
+	const [rConstraintsInner, rRoot] = splitByKeys(r, constraintKeys)
+	const root = intersectRootKeys(lRoot, rRoot)
+	if (root instanceof Disjoint) return root
 
-	const result = intersectConstraints(
-		flattenConstraints(l),
-		flattenConstraints(r)
-	)
+	const lConstraints = flattenConstraints(lConstraintsInner)
+	const rConstraints = flattenConstraints(rConstraintsInner)
+	const result = intersectConstraints(lConstraints, rConstraints)
 
 	if (result instanceof Disjoint) return result
-	if (isArray(result) && result.length === 1 && result[0].isBasis())
-		// if the only constraint is a ProtoNode or DomainNode, we can use it directly instead of
-		// an IntersectionNode
-		return result[0]
+	if (isArray(result) && !result.length && root.basis) return root.basis
 
 	const branches = "branches" in result ? result.branches : [result]
 	const branchNodes = branches.map((branch) =>
@@ -183,13 +175,10 @@ export class IntersectionNode<t = unknown> extends BaseType<
 			hasAssociatedError: true,
 			normalize: (schema) => schema,
 			keys: {
-				domain: {
+				basis: {
 					child: true,
-					parse: intersectionChildKeyParser("domain")
-				},
-				proto: {
-					child: true,
-					parse: intersectionChildKeyParser("proto")
+					parse: (def, ctx) =>
+						ctx.$.parseTypeNode(def, { allowedKinds: ["domain", "proto"] })
 				},
 				divisor: {
 					child: true,
@@ -280,7 +269,6 @@ export class IntersectionNode<t = unknown> extends BaseType<
 			}
 		})
 
-	readonly basis = this.proto ?? this.domain
 	readonly constraints = flattenConstraints(this.inner)
 	readonly refinements = this.constraints.filter(
 		(node): node is Node<RefinementKind> => node.isRefinement()
@@ -340,6 +328,33 @@ export class IntersectionNode<t = unknown> extends BaseType<
 const maybeCreatePropsGroup = (inner: IntersectionInner) => {
 	const propsInput = pick(inner, propKeys)
 	return isEmptyObject(propsInput) ? undefined : new PropsGroup(propsInput)
+}
+
+type IntersectionRoot = Omit<IntersectionInner, ConstraintKind>
+
+const intersectRootKeys = (
+	l: IntersectionRoot,
+	r: IntersectionRoot
+): MutableInner<"intersection"> | Disjoint => {
+	const result: IntersectionRoot = {}
+	const resultBasis = l.basis
+		? r.basis
+			? l.basis.intersect(r.basis)
+			: l.basis
+		: r.basis
+	if (resultBasis) {
+		if (resultBasis instanceof Disjoint) {
+			return resultBasis
+		}
+		result.basis = resultBasis
+	}
+	if (l.onExtraneousKey || r.onExtraneousKey) {
+		result.onExtraneousKey =
+			l.onExtraneousKey === "throw" || r.onExtraneousKey === "throw"
+				? "throw"
+				: "prune"
+	}
+	return result
 }
 
 const intersectConstraints = (
@@ -428,7 +443,9 @@ const unflattenConstraints = (
 ): IntersectionInner => {
 	const inner: MutableInner<"intersection"> = {}
 	for (const constraint of constraints) {
-		if (constraint.symmetricIntersectionIsOpen) {
+		if (constraint.isBasis()) {
+			inner.basis = constraint
+		} else if (constraint.hasOpenIntersection) {
 			inner[constraint.kind] = append(
 				inner[constraint.kind],
 				constraint

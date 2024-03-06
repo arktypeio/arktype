@@ -2,33 +2,33 @@
 //     describe("basis", () => {
 //         it("domain", () => {
 //             const t = node({
-//                 domain: "string"
+//                 basis: "string"
 //             })
 //             attest<TypeNode<string>>(t)
 //         })
 //         it("class", () => {
 //             const t = node({
-//                 domain: Date
+//                 basis: Date
 //             })
 //             attest<TypeNode<Date>>(t)
 //         })
 //         it("value", () => {
 //             const t = node({
-//                 domain: ["===", 3.14159]
+//                 basis: ["===", 3.14159]
 //             })
 //             attest<TypeNode<3.14159>>(t)
 //         })
 //     })
 //     it("optional props", () => {
 //         const t = node({
-//             domain: "object",
+//             basis: "object",
 //             props: {
 //                 a: {
-//                     value: { domain: "string" }
+//                     value: { basis: "string" }
 //                 },
 //                 b: {
 //                     optional: true,
-//                     value: { domain: "number" }
+//                     value: { basis: "number" }
 //                 }
 //             }
 //         })
@@ -39,16 +39,16 @@
 //     })
 //     it("arrays", () => {
 //         const t = node({
-//             proto: Array,
+//             basis: Array,
 //             props: [
 //                 {},
 //                 {
 //                     key: arrayIndexInput(),
 //                     value: {
-//                         domain: "object",
+//                         basis: "object",
 //                         props: {
 //                             name: {
-//                                 value: { domain: "string" }
+//                                 value: { basis: "string" }
 //                             }
 //                         }
 //                     }
@@ -59,21 +59,21 @@
 //     })
 //     it("variadic tuple", () => {
 //         const t = node({
-//             proto: Array,
+//             basis: Array,
 //             props: [
 //                 {
 //                     0: {
-//                         value: { domain: "string" }
+//                         value: { basis: "string" }
 //                     },
 //                     // works for numeric or string keys
 //                     "1": {
-//                         value: { domain: "number" }
+//                         value: { basis: "number" }
 //                     }
 //                 },
 //                 {
 //                     key: arrayIndexInput(2),
 //                     value: {
-//                         domain: "symbol"
+//                         basis: "symbol"
 //                     }
 //                 }
 //             ]
@@ -82,25 +82,25 @@
 //     })
 //     it("non-variadic tuple", () => {
 //         const t = node({
-//             proto: Array,
+//             basis: Array,
 //             props: {
 //                 0: {
 //                     value: {
-//                         domain: "object",
+//                         basis: "object",
 //                         props: {
-//                             a: { value: { domain: "string" } },
-//                             b: { value: { domain: "number" } }
+//                             a: { value: { basis: "string" } },
+//                             b: { value: { basis: "number" } }
 //                         }
 //                     }
 //                 },
 //                 1: {
 //                     value: {
-//                         domain: ["===", "arktype"]
+//                         basis: ["===", "arktype"]
 //                     }
 //                 },
 //                 length: {
 //                     prerequisite: true,
-//                     value: { domain: ["===", 2] }
+//                     value: { basis: ["===", 2] }
 //                 }
 //             }
 //         })
@@ -116,26 +116,26 @@
 //     })
 //     it("branches", () => {
 //         const t = node(
-//             { domain: ["===", "foo"] },
-//             { domain: ["===", "bar"] },
-//             { domain: "number" },
+//             { basis: ["===", "foo"] },
+//             { basis: ["===", "bar"] },
+//             { basis: "number" },
 //             {
-//                 domain: "object",
-//                 props: { a: { value: { domain: "bigint" } } }
+//                 basis: "object",
+//                 props: { a: { value: { basis: "bigint" } } }
 //             }
 //         )
 //         attest<TypeNode<number | "foo" | "bar" | { a: bigint }>>(t)
 //     })
 //     it("narrow", () => {
 //         const t = node({
-//             domain: "string",
+//             basis: "string",
 //             narrow: (s): s is "foo" => s === "foo"
 //         })
 //         attest<TypeNode<"foo">>(t)
 //     })
 //     it("narrow array", () => {
 //         const t = node({
-//             domain: "object",
+//             basis: "object",
 //             narrow: [
 //                 (o): o is { a: string } => typeof o.a === "string",
 //                 (o): o is { b: boolean } => typeof o.b === "boolean"
@@ -148,14 +148,14 @@
 //     })
 //     it("morph", () => {
 //         const t = node({
-//             domain: "string",
+//             basis: "string",
 //             morph: (s: string) => s.length
 //         })
 //         attest<TypeNode<(In: string) => Out<number>>>(t)
 //     })
 //     it("morph list", () => {
 //         const t = node({
-//             domain: "string",
+//             basis: "string",
 //             morph: [(s: string) => s.length, (n: number) => ({ n })] as const
 //         })
 //         attest<TypeNode<(In: string) => Out<{ n: number }>>>(t)
@@ -167,7 +167,7 @@
 //     it("errors on rule in wrong domain", () => {
 //         attest(() =>
 //             node({
-//                 domain: "number",
+//                 basis: "number",
 //                 divisor: 5,
 //                 // @ts-expect-error
 //                 regex: "/.*/"
@@ -179,7 +179,7 @@
 //     it("errors on filter literal", () => {
 //         attest(() =>
 //             node({
-//                 domain: ["===", true],
+//                 basis: ["===", true],
 //                 // @ts-expect-error
 //                 narrow: (b: boolean) => b === true
 //             })

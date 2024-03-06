@@ -1,3 +1,4 @@
+import type { Schema } from "../../kinds.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import type { nodeImplementationOf } from "../../shared/implement.js"
 import {

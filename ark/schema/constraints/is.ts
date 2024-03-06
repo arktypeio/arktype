@@ -36,7 +36,7 @@ export type Constraints = evaluate<
 >
 
 export type is<basis> = {
-	domain: basis
+	basis: basis
 }
 
 export type intersectConstrainables<l, r> = [l, r] extends [

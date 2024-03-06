@@ -20,9 +20,10 @@ export type RegexDeclaration = declareNode<{
 	schema: RegexSchema
 	normalizedSchema: NormalizedRegexSchema
 	inner: RegexInner
+	composition: "primitive"
+	hasOpenIntersection: true
 	prerequisite: string
 	expectedContext: RegexInner
-	symmetricIntersection: RegexNode | null
 }>
 
 export class RegexNode extends BasePrimitiveConstraint<
@@ -44,7 +45,7 @@ export class RegexNode extends BasePrimitiveConstraint<
 					: { rule: schema.source }
 				: schema,
 		hasAssociatedError: true,
-		symmetricIntersectionIsOpen: true,
+		hasOpenIntersection: true,
 		intersections: {
 			// for now, non-equal regex are naively intersected
 			regex: () => null

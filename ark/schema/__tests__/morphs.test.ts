@@ -6,14 +6,14 @@ describe("morphs", () => {
 	it("in/out", () => {
 		const parseNumber = schema({
 			in: {
-				domain: "string",
+				basis: "string",
 				regex: wellFormedNumberMatcher,
 				description: "a well-formed numeric string"
 			},
 			morph: (s: string) => parseFloat(s)
 		})
 		attest(parseNumber.in.json).snap({
-			domain: "string",
+			basis: "string",
 			regex: ["^(?!^-0$)-?(?:0|[1-9]\\d*)(?:\\.\\d*[1-9])?$"],
 			description: "a well-formed numeric string"
 		})
