@@ -22,7 +22,6 @@ import type {
 	ParsedUnknownNodeConfig,
 	ScopeNode
 } from "../scope.js"
-import type { typeKindOrRightOf, typeKindRightOf } from "../types/type.js"
 import type {
 	BaseExpectedContext,
 	BaseMeta,
@@ -112,8 +111,6 @@ export type OrderedNodeKinds = typeof nodeKinds
 
 type RightsByKind = accumulateRightKinds<OrderedNodeKinds, {}>
 
-export type kindRightOf<kind extends NodeKind> = RightsByKind[kind]
-
 export type kindOrRightOf<kind extends NodeKind> = kind | kindRightOf<kind>
 
 export type kindLeftOf<kind extends NodeKind> = Exclude<
@@ -165,11 +162,11 @@ export type ConstraintIntersectionMap<kind extends ConstraintKind> = evaluate<
 
 export type TypeIntersection<
 	lKind extends TypeKind,
-	rKind extends typeKindOrRightOf<lKind> = typeKindRightOf<lKind>
+	rKind extends kindOrRightOf<lKind> = kindRightOf<lKind>
 > = (l: Node<lKind>, r: Node<rKind>, $: ScopeNode) => Inner<lKind> | Disjoint
 
 export type TypeIntersectionMap<kind extends TypeKind> = {
-	[rKind in typeKindOrRightOf<kind>]: TypeIntersection<kind, rKind>
+	[rKind in kindOrRightOf<kind>]: TypeIntersection<kind, rKind>
 }
 
 export type IntersectionMap<kind extends NodeKind> = kind extends TypeKind
@@ -206,6 +203,11 @@ export type precedenceOfKind<kind extends NodeKind> = PrecedenceByKind[kind]
 
 export const precedenceOfKind = <kind extends NodeKind>(kind: kind) =>
 	precedenceByKind[kind]
+
+export type kindRightOf<kind extends NodeKind> = RightsByKind[kind]
+
+export const kindsRightOf = <kind extends NodeKind>(kind: kind) =>
+	nodeKinds.slice(precedenceOfKind(kind) + 1) as kindRightOf<kind>[]
 
 export type KeyDefinitions<d extends BaseNodeDeclaration> = {
 	[k in keyRequiringDefinition<d>]: NodeKeyImplementation<d, k>

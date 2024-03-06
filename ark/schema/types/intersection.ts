@@ -44,11 +44,14 @@ import {
 	type OpenNodeKind,
 	type PropKind,
 	type RefinementKind,
-	type TypeIntersection,
 	type nodeImplementationOf
 } from "../shared/implement.js"
 import type { instantiateBasis } from "./basis.js"
-import { BaseType, type typeKindOrRightOf } from "./type.js"
+import {
+	BaseType,
+	defineRightwardIntersections,
+	type typeKindOrRightOf
+} from "./type.js"
 
 export type IntersectionBasisKind = "domain" | "proto"
 
@@ -127,17 +130,6 @@ const intersectionChildKeyParser =
 // 		? this.named.find((entry) => entry.value.branches)?.value
 // 		: this.indexed.find((entry) => entry.key.equals(key))?.value
 // }
-
-const intersectRightward: TypeIntersection<"intersection"> = (
-	intersection,
-	r
-) => {
-	const basis = intersection.basis?.intersect(r) ?? r
-
-	return basis instanceof Disjoint
-		? basis
-		: Object.assign(omit(intersection.inner, metaKeys), { basis })
-}
 
 const intersectIntersections = (
 	l: IntersectionInner,
@@ -267,8 +259,13 @@ export class IntersectionNode<t = unknown> extends BaseType<
 			},
 			intersections: {
 				intersection: intersectIntersections,
-				domain: intersectRightward,
-				proto: intersectRightward
+				...defineRightwardIntersections("intersection", (l, r) => {
+					const basis = l.basis?.intersect(r) ?? r
+
+					return basis instanceof Disjoint
+						? basis
+						: Object.assign(omit(l.inner, metaKeys), { basis })
+				})
 			}
 		})
 

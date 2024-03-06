@@ -192,9 +192,11 @@ export class SequenceNode extends BaseConstraint<
 						: viableBranches.length === 1
 						? sequenceTupleToInner(viableBranches[0].result)
 						: viableBranches.map((state) => sequenceTupleToInner(state.result))
-				},
-				minLength: (l, r) => l.minLengthNode?.intersect(r) ?? null,
-				maxLength: (l, r) => l.maxLengthNode?.intersect(r) ?? null
+				}
+				// length, minLength, and maxLength don't need to be defined
+				// here since impliedSiblings guarantees they will be added
+				// directly to the  IntersectionNode parent of the SequenceNode
+				// they exist on
 			}
 		})
 

@@ -8,12 +8,15 @@ import { Disjoint } from "../shared/disjoint.js"
 import type { ArkTypeError } from "../shared/errors.js"
 import {
 	basisKinds,
-	type TypeIntersection,
 	type TypeKind,
 	type nodeImplementationOf
 } from "../shared/implement.js"
 import type { Discriminant } from "./discriminate.js"
-import { BaseType, type typeKindRightOf } from "./type.js"
+import {
+	BaseType,
+	defineRightwardIntersections,
+	type typeKindRightOf
+} from "./type.js"
 
 export type UnionChildKind = typeKindRightOf<"union">
 
@@ -55,14 +58,6 @@ export type UnionDeclaration = declareNode<{
 	reducibleTo: TypeKind
 	childKind: UnionChildKind
 }>
-
-const intersectRightward: TypeIntersection<"union"> = (union, r) => {
-	const branches = intersectBranches(union.branches, [r])
-	if (branches instanceof Disjoint) {
-		return branches
-	}
-	return union.ordered ? { branches, ordered: true } : { branches }
-}
 
 export class UnionNode<t = unknown> extends BaseType<
 	t,
@@ -155,11 +150,13 @@ export class UnionNode<t = unknown> extends BaseType<
 							: { branches: resultBranches }
 					)
 				},
-				morph: intersectRightward,
-				unit: intersectRightward,
-				intersection: intersectRightward,
-				domain: intersectRightward,
-				proto: intersectRightward
+				...defineRightwardIntersections("union", (l, r) => {
+					const branches = intersectBranches(l.branches, [r])
+					if (branches instanceof Disjoint) {
+						return branches
+					}
+					return l.ordered ? { branches, ordered: true } : { branches }
+				})
 			}
 		})
 

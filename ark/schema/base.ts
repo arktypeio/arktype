@@ -110,13 +110,13 @@ export type UnknownNode = BaseNode<
 	NodeSubclass<BaseNodeDeclaration>
 >
 
-type kindOf<self> = self extends Constructor<{
+type subclassKind<self> = self extends Constructor<{
 	kind: infer kind extends NodeKind
 }>
 	? kind
 	: never
 
-type declarationOf<self> = Declaration<kindOf<self>>
+type subclassDeclaration<self> = Declaration<subclassKind<self>>
 
 export abstract class BaseNode<
 	t,
@@ -129,8 +129,8 @@ export abstract class BaseNode<
 
 	protected static implement<self>(
 		this: self,
-		implementation: nodeImplementationInputOf<declarationOf<self>>
-	): nodeImplementationOf<declarationOf<self>>
+		implementation: nodeImplementationInputOf<subclassDeclaration<self>>
+	): nodeImplementationOf<subclassDeclaration<self>>
 	protected static implement(_: never): any {
 		const implementation: UnknownNodeImplementation = _
 		if (implementation.hasAssociatedError) {

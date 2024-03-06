@@ -20,12 +20,12 @@ import type {
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { ArkResult, ArkTypeError } from "../shared/errors.js"
+import { basisKinds, type nodeImplementationOf } from "../shared/implement.js"
 import {
-	basisKinds,
-	type TypeIntersection,
-	type nodeImplementationOf
-} from "../shared/implement.js"
-import { BaseType, type typeKindRightOf } from "./type.js"
+	BaseType,
+	defineRightwardIntersections,
+	type typeKindRightOf
+} from "./type.js"
 
 export type MorphChildKind = typeKindRightOf<"morph">
 
@@ -64,16 +64,6 @@ export type MorphDeclaration = declareNode<{
 	composition: "composite"
 	childKind: MorphChildKind
 }>
-
-const intersectRightward: TypeIntersection<"morph"> = (morph, r) => {
-	const inTersection = morph.in.intersect(r)
-	return inTersection instanceof Disjoint
-		? inTersection
-		: {
-				...morph.inner,
-				in: inTersection
-		  }
-}
 
 export class MorphNode<t = unknown> extends BaseType<
 	t,
@@ -126,10 +116,15 @@ export class MorphNode<t = unknown> extends BaseType<
 						out: outTersection
 					}
 				},
-				unit: intersectRightward,
-				intersection: intersectRightward,
-				domain: intersectRightward,
-				proto: intersectRightward
+				...defineRightwardIntersections("morph", (l, r) => {
+					const inTersection = l.in.intersect(r)
+					return inTersection instanceof Disjoint
+						? inTersection
+						: {
+								...l.inner,
+								in: inTersection
+						  }
+				})
 			}
 		})
 

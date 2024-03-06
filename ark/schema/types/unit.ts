@@ -2,9 +2,8 @@ import { domainOf, printable } from "@arktype/util"
 import { jsData } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { TypeIntersection } from "../shared/implement.js"
 import { BaseBasis } from "./basis.js"
-import type { typeKindRightOf } from "./type.js"
+import { defineRightwardIntersections } from "./type.js"
 
 export type UnitSchema<value = unknown> = UnitInner<value>
 
@@ -20,9 +19,6 @@ export type UnitDeclaration = declareNode<{
 	composition: "primitive"
 	expectedContext: UnitInner
 }>
-
-const intersectRightward: TypeIntersection<"unit"> = (unit, r) =>
-	r.allows(unit.unit) ? unit : Disjoint.from("assignability", unit.unit, r)
 
 export class UnitNode<t = unknown> extends BaseBasis<
 	t,
@@ -44,9 +40,9 @@ export class UnitNode<t = unknown> extends BaseBasis<
 		},
 		intersections: {
 			unit: (l, r) => Disjoint.from("unit", l, r),
-			intersection: intersectRightward,
-			domain: intersectRightward,
-			proto: intersectRightward
+			...defineRightwardIntersections("unit", (l, r) =>
+				r.allows(l.unit) ? l : Disjoint.from("assignability", l.unit, r)
+			)
 		}
 	})
 

@@ -1,4 +1,4 @@
-import type { Domain, evaluate } from "@arktype/util"
+import { morph, type Domain, type evaluate } from "@arktype/util"
 import {
 	BaseNode,
 	type BaseAttachments,
@@ -11,10 +11,13 @@ import { TraversalContext } from "../shared/context.js"
 import type { BaseNodeDeclaration } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { ArkResult } from "../shared/errors.js"
-import type {
-	ConstraintKind,
-	TypeKind,
-	kindRightOf
+import {
+	kindsRightOf,
+	type ConstraintKind,
+	type NodeKind,
+	type TypeIntersection,
+	type TypeKind,
+	type kindRightOf
 } from "../shared/implement.js"
 import { inferred } from "../shared/inference.js"
 import type { inferIntersection } from "../shared/intersections.js"
@@ -25,6 +28,11 @@ import type { UnionChildKind, UnionNode } from "./union.js"
 export type BaseTypeDeclaration = evaluate<
 	BaseNodeDeclaration & { kind: TypeKind }
 >
+
+export const defineRightwardIntersections = <kind extends TypeKind>(
+	kind: kind,
+	implementation: TypeIntersection<kind>
+) => morph(kindsRightOf(kind), (i, kind) => [kind, implementation])
 
 export abstract class BaseType<
 	t,
@@ -63,7 +71,7 @@ export abstract class BaseType<
 		input: Schema<constraintKind>
 	): Node<reducibleKindOf<this["kind"]>> {
 		const constraint = this.$.parse(kind, input)
-		return this as never
+		return this.and(this.$.parse("intersection", { [kind]: constraint }))
 	}
 
 	keyof() {
@@ -74,11 +82,11 @@ export abstract class BaseType<
 		// )
 	}
 
-	intersect<r extends TypeNode>(
+	intersect<r extends Node>(
 		r: r
 	):
 		| Node<
-				intersectTypeKinds<this["kind"], r["kind"]>,
+				intersectType<this["kind"], r["kind"]>,
 				inferIntersection<this["infer"], r["infer"]>
 		  >
 		| Disjoint {
@@ -88,7 +96,7 @@ export abstract class BaseType<
 	and<r extends TypeNode>(
 		r: r
 	): Node<
-		intersectTypeKinds<this["kind"], r["kind"]>,
+		intersectType<this["kind"], r["kind"]>,
 		inferIntersection<this["infer"], r["infer"]>
 	> {
 		const result = this.intersect(r as never)
@@ -149,7 +157,7 @@ export abstract class BaseType<
 	}
 }
 
-export type intersectTypeKinds<l extends TypeKind, r extends TypeKind> = [
+export type intersectType<l extends TypeKind, r extends NodeKind> = [
 	l,
 	r
 ] extends [r, l]
@@ -157,8 +165,8 @@ export type intersectTypeKinds<l extends TypeKind, r extends TypeKind> = [
 	: asymmetricIntersectionOf<l, r> | asymmetricIntersectionOf<r, l>
 
 type asymmetricIntersectionOf<
-	l extends TypeKind,
-	r extends TypeKind
+	l extends NodeKind,
+	r extends NodeKind
 > = l extends unknown
 	? r extends kindRightOf<l>
 		? l | reducibleKindOf<l>
