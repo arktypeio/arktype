@@ -284,6 +284,13 @@ export class ScopeNode<r extends object = any> {
 		return node
 	}
 
+	parsePrereduced<kind extends NodeKind>(
+		kind: kind,
+		def: Schema<kind>
+	): Node<parsableKindOf<kind>> {
+		return this.parse(kind, def, { prereduced: true })
+	}
+
 	parse<kind extends NodeKind>(
 		kind: kind,
 		def: Schema<kind>,

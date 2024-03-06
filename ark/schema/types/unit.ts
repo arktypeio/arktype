@@ -3,7 +3,6 @@ import { jsData } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import { BaseBasis } from "./basis.js"
-import { defineRightwardIntersections } from "./type.js"
 
 export type UnitSchema<value = unknown> = UnitInner<value>
 
@@ -17,7 +16,7 @@ export type UnitDeclaration = declareNode<{
 	normalizedSchema: UnitSchema
 	inner: UnitInner
 	expectedContext: UnitInner
-	symmetricIntersection: UnitNode | Disjoint
+	intersection: UnitNode | Disjoint
 }>
 
 export class UnitNode<t = unknown> extends BaseBasis<
@@ -40,9 +39,8 @@ export class UnitNode<t = unknown> extends BaseBasis<
 		},
 		intersections: {
 			unit: (l, r) => Disjoint.from("unit", l, r),
-			...defineRightwardIntersections("unit", (l, r) =>
+			default: (l, r) =>
 				r.allows(l.unit) ? l : Disjoint.from("assignability", l.unit, r)
-			)
 		}
 	})
 

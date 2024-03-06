@@ -29,7 +29,8 @@ export class MinLengthNode extends BaseRange<
 				actual: (data) => `${data.length}`
 			},
 			intersections: {
-				minLength: (l, r) => (l.isStricterThan(r) ? l : r)
+				minLength: (l, r) => (l.isStricterThan(r) ? l : r),
+				default: () => null
 			}
 		})
 

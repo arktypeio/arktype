@@ -21,7 +21,8 @@ export class MaxNode extends BaseRange<MaxDeclaration, typeof MaxNode> {
 			intersections: {
 				max: (l, r) => (l.isStricterThan(r) ? l : r),
 				min: (max, min) =>
-					max.isStricterThan(min) ? Disjoint.from("range", max, min) : null
+					max.isStricterThan(min) ? Disjoint.from("range", max, min) : null,
+				default: () => null
 			}
 		})
 

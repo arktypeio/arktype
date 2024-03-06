@@ -41,6 +41,7 @@ import {
 } from "./shared/context.js"
 import type {
 	BaseExpectedContext,
+	BaseIntersectionResult,
 	BaseMeta,
 	BaseNodeDeclaration,
 	attachmentsOf,
@@ -61,7 +62,6 @@ import {
 	type RefinementKind,
 	type TypeKind,
 	type UnknownNodeImplementation,
-	type UnknownSymmetricIntersectionResult,
 	type nodeImplementationInputOf,
 	type nodeImplementationOf
 } from "./shared/implement.js"
@@ -279,9 +279,9 @@ export abstract class BaseNode<
 
 	private static intersectionCache: PartialRecord<
 		string,
-		UnknownSymmetricIntersectionResult
+		BaseIntersectionResult
 	> = {}
-	protected intersectInternal(other: Node): UnknownSymmetricIntersectionResult {
+	protected intersectInternal(other: Node): BaseIntersectionResult {
 		// Node works better for subclasses but internally we want to treat it as UnknownNode
 		const l = this as {} as UnknownNode
 		const r = other as UnknownNode
@@ -320,7 +320,7 @@ export abstract class BaseNode<
 				? implementation(l, r, l.$)
 				: implementation(r, l, l.$)
 
-		let instantiatedResult: UnknownSymmetricIntersectionResult =
+		let instantiatedResult: BaseIntersectionResult =
 			rawResult === null || rawResult instanceof Disjoint
 				? rawResult
 				: isArray(rawResult)

@@ -1,4 +1,3 @@
-import type { Schema } from "../../kinds.js"
 import type { nodeImplementationOf } from "../../shared/implement.js"
 import {
 	BaseRange,
@@ -19,7 +18,8 @@ export class MinNode extends BaseRange<MinDeclaration, typeof MinNode> {
 				}
 			},
 			intersections: {
-				min: (l, r) => (l.isStricterThan(r) ? l : r)
+				min: (l, r) => (l.isStricterThan(r) ? l : r),
+				default: () => null
 			}
 		})
 

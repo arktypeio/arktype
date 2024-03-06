@@ -22,7 +22,7 @@ export type PredicateDeclaration = declareNode<{
 	schema: PredicateSchema
 	normalizedSchema: NormalizedPredicateSchema
 	inner: PredicateInner
-	symmetricIntersection: PredicateNode | null
+	symmetricIntersectionIsOpen: true
 	expectedContext: {}
 }>
 
@@ -52,7 +52,7 @@ export class PredicateNode extends BasePrimitiveConstraint<
 			// as long as the narrows in l and r are individually safe to check
 			// in the order they're specified, checking them in the order
 			// resulting from this intersection should also be safe.
-			predicate: () => null
+			default: () => null
 		}
 	})
 

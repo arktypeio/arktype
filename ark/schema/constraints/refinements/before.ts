@@ -32,7 +32,8 @@ export class BeforeNode
 				after: (before, after) =>
 					before.isStricterThan(after)
 						? Disjoint.from("range", before, after)
-						: null
+						: null,
+				default: () => null
 			}
 		})
 

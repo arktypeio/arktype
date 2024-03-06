@@ -15,7 +15,6 @@ export type DivisorDeclaration = declareNode<{
 	kind: "divisor"
 	schema: DivisorSchema
 	normalizedSchema: DivisorInner
-	symmetricIntersection: DivisorNode
 	inner: DivisorInner
 	prerequisite: number
 	expectedContext: DivisorInner
@@ -33,11 +32,13 @@ export class DivisorNode extends BasePrimitiveConstraint<
 		normalize: (schema) =>
 			typeof schema === "number" ? { rule: schema } : schema,
 		intersections: {
-			divisor: (l, r) => ({
-				rule: Math.abs(
-					(l.rule * r.rule) / greatestCommonDivisor(l.rule, r.rule)
-				)
-			})
+			divisor: (l, r, $) =>
+				$.parsePrereduced("divisor", {
+					rule: Math.abs(
+						(l.rule * r.rule) / greatestCommonDivisor(l.rule, r.rule)
+					)
+				}),
+			default: () => null
 		},
 		hasAssociatedError: true,
 		defaults: {

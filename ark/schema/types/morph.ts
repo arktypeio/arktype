@@ -62,7 +62,7 @@ export type MorphDeclaration = declareNode<{
 	normalizedSchema: MorphSchema
 	inner: MorphInner
 	childKind: MorphChildKind
-	symmetricIntersection: MorphNode | Disjoint
+	intersection: MorphNode | Disjoint
 }>
 
 export class MorphNode<t = unknown> extends BaseType<
@@ -116,7 +116,7 @@ export class MorphNode<t = unknown> extends BaseType<
 						out: outTersection
 					}
 				},
-				...defineRightwardIntersections("morph", (l, r) => {
+				default: (l, r) => {
 					const inTersection = l.in.intersect(r)
 					return inTersection instanceof Disjoint
 						? inTersection
@@ -124,7 +124,7 @@ export class MorphNode<t = unknown> extends BaseType<
 								...l.inner,
 								in: inTersection
 						  }
-				})
+				}
 			}
 		})
 

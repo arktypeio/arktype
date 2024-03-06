@@ -4,7 +4,7 @@ import {
 	type Node,
 	type NodeSubclass
 } from "../base.js"
-import type { symmetricIntersectionResult } from "../kinds.js"
+import type { intersectionResult } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../shared/context.js"
 import type { BaseMeta, BaseNodeDeclaration } from "../shared/declare.js"
@@ -33,7 +33,7 @@ export interface BaseConstraintDeclaration extends BaseNodeDeclaration {
 type intersectConstraintKinds<
 	l extends ConstraintKind,
 	r extends ConstraintKind
-> = l extends r ? symmetricIntersectionResult<l> : Node<l | r> | Disjoint | null
+> = l extends r ? intersectionResult<l> : Node<l | r> | Disjoint | null
 
 export abstract class BaseConstraint<
 	d extends BaseConstraintDeclaration,
