@@ -56,7 +56,7 @@ export class OptionalNode extends BaseConstraint<
 					}
 					const key = l.key
 					const value = l.value.intersect(r.value)
-					return l.$.parsePrereduced("optional", {
+					return l.$.parse("optional", {
 						key,
 						value:
 							value instanceof Disjoint ? (l.$.builtin.never as never) : value

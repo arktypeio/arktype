@@ -6,7 +6,7 @@ import {
 	type NodeSubclass,
 	type TypeNode
 } from "../base.js"
-import type { Schema } from "../kinds.js"
+import type { Schema, parsableKindOf } from "../kinds.js"
 import { TraversalContext } from "../shared/context.js"
 import type { BaseNodeDeclaration } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -14,9 +14,8 @@ import type { ArkResult } from "../shared/errors.js"
 import {
 	kindsRightOf,
 	type ConstraintKind,
+	type NodeKind,
 	type TypeKind,
-	type addInferredNodeType,
-	type bidirectionalIntersectionResult,
 	type intersectionImplementationOf,
 	type kindRightOf
 } from "../shared/implement.js"
@@ -85,20 +84,19 @@ export abstract class BaseType<
 
 	intersect<r extends Node>(
 		r: r
-	): addInferredNodeType<
-		bidirectionalIntersectionResult<this["kind"], r["kind"]>,
-		inferIntersection<this["infer"], r["infer"]>
-	> {
+	):
+		| Node<
+				intersectType<this["kind"], r["kind"]>,
+				inferIntersection<this["infer"], r["infer"]>
+		  >
+		| Disjoint {
 		return this.intersectInternal(r) as never
 	}
 
 	and<r extends TypeNode>(
 		r: r
 	): Node<
-		Extract<
-			bidirectionalIntersectionResult<this["kind"], r["kind"]>,
-			Node
-		>["kind"],
+		intersectType<this["kind"], r["kind"]>,
 		inferIntersection<this["infer"], r["infer"]>
 	> {
 		const result = this.intersect(r as never)

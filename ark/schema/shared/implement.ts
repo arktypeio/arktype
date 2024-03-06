@@ -18,7 +18,7 @@ import type {
 	Declaration,
 	ExpectedContext,
 	Inner,
-	leftIntersectionResult
+	intersectionResult
 } from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
 import type {
@@ -135,19 +135,13 @@ export type intersectionImplementationOf<
 	l: Node<lKind>,
 	r: Node<rKind>,
 	$: ScopeNode
-) => leftIntersectionResult<lKind>
+) => intersectKinds<lKind, rKind>
 
-export type addInferredNodeType<maybeNode, t> = maybeNode extends Node<
-	infer kind
->
-	? Node<kind, t>
-	: maybeNode
-
-export type bidirectionalIntersectionResult<
-	l extends NodeKind,
-	r extends NodeKind
-> = [l, r] extends [r, l]
-	? leftIntersectionResult<l>
+export type intersectKinds<l extends NodeKind, r extends NodeKind> = [
+	l,
+	r
+] extends [r, l]
+	? intersectionResult<l>
 	: asymmetricIntersectionOf<l, r> | asymmetricIntersectionOf<r, l>
 
 type asymmetricIntersectionOf<
@@ -155,7 +149,7 @@ type asymmetricIntersectionOf<
 	r extends NodeKind
 > = l extends unknown
 	? r extends kindRightOf<l>
-		? leftIntersectionResult<l>
+		? intersectionResult<l>
 		: never
 	: never
 

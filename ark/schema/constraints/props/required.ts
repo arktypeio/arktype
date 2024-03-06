@@ -58,7 +58,7 @@ export class RequiredNode extends BaseConstraint<
 				actual: () => null
 			},
 			intersections: {
-				required: (l, r, $) => {
+				required: (l, r) => {
 					if (l.key !== r.key) {
 						return null
 					}
@@ -67,10 +67,10 @@ export class RequiredNode extends BaseConstraint<
 					if (value instanceof Disjoint) {
 						return value
 					}
-					return $.parse("required", {
+					return {
 						key,
 						value
-					})
+					}
 				},
 				default: () => null
 			}
