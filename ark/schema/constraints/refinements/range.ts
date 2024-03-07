@@ -196,7 +196,6 @@ export type declareRange<input extends BoundDeclarationInput> = declareNode<{
 	schema: BoundSchema<input["rule"]>
 	normalizedSchema: NormalizedBoundSchema<input["rule"]>
 	inner: BoundInner<input["rule"]>
-	composition: "primitive"
 	prerequisite: input["prerequisite"]
 	expectedContext: BoundInner<input["rule"]>
 }>

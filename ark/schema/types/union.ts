@@ -51,7 +51,6 @@ export type UnionDeclaration = declareNode<{
 	schema: UnionSchema
 	normalizedSchema: NormalizedUnionSchema
 	inner: UnionInner
-	composition: "composite"
 	expectedContext: {
 		errors: readonly ArkTypeError[]
 	}

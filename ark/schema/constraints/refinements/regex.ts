@@ -20,7 +20,6 @@ export type RegexDeclaration = declareNode<{
 	schema: RegexSchema
 	normalizedSchema: NormalizedRegexSchema
 	inner: RegexInner
-	composition: "primitive"
 	hasOpenIntersection: true
 	prerequisite: string
 	expectedContext: RegexInner

@@ -29,7 +29,6 @@ export type DomainDeclaration = declareNode<{
 	schema: DomainSchema
 	normalizedSchema: NormalizedDomainSchema
 	inner: DomainInner
-	composition: "primitive"
 	expectedContext: DomainInner
 }>
 

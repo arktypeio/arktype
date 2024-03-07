@@ -12,7 +12,7 @@ export const metaKeys: { [k in keyof BaseMeta]: 1 } = { description: 1 }
 
 export type NodeCompositionKind = "primitive" | "composite"
 
-interface BaseDeclarationInput {
+interface DeclarationInput {
 	kind: NodeKind
 	schema: unknown
 	normalizedSchema: BaseMeta
@@ -22,23 +22,12 @@ interface BaseDeclarationInput {
 	hasOpenIntersection?: true
 	expectedContext?: object
 	prerequisite?: unknown
+	childKind?: NodeKind
 }
 
 export interface BaseExpectedContext<kind extends NodeKind = NodeKind> {
 	code: kind
 }
-
-interface CompositeDeclarationInput extends BaseDeclarationInput {
-	composition: "composite"
-	childKind: NodeKind
-}
-
-interface PrimitiveDeclarationInput extends BaseDeclarationInput {
-	composition: "primitive"
-	childKind?: never
-}
-
-type DeclarationInput = CompositeDeclarationInput | PrimitiveDeclarationInput
 
 export type defaultExpectedContext<d extends DeclarationInput> = evaluate<
 	BaseExpectedContext<d["kind"]> & { description: string } & d["inner"]

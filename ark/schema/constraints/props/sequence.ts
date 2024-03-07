@@ -59,7 +59,6 @@ export type SequenceDeclaration = declareNode<{
 	schema: SequenceSchema
 	normalizedSchema: NormalizedSequenceSchema
 	inner: SequenceInner
-	composition: "composite"
 	prerequisite: List
 	reducibleTo: "sequence"
 	hasBranchableIntersection: true

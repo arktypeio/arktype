@@ -19,7 +19,6 @@ export type LengthDeclaration = declareNode<{
 	schema: LengthSchema
 	normalizedSchema: NormalizedLengthSchema
 	inner: LengthInner
-	composition: "primitive"
 	prerequisite: LengthBoundableData
 	expectedContext: LengthInner
 }>

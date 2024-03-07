@@ -16,7 +16,6 @@ export type UnitDeclaration = declareNode<{
 	schema: UnitSchema
 	normalizedSchema: UnitSchema
 	inner: UnitInner
-	composition: "primitive"
 	expectedContext: UnitInner
 }>
 

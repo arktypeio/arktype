@@ -61,7 +61,6 @@ export type MorphDeclaration = declareNode<{
 	schema: MorphSchema
 	normalizedSchema: MorphSchema
 	inner: MorphInner
-	composition: "composite"
 	childKind: MorphChildKind
 }>
 

@@ -20,7 +20,6 @@ export type IndexDeclaration = declareNode<{
 	schema: IndexSchema
 	normalizedSchema: IndexSchema
 	inner: IndexInner
-	composition: "composite"
 	prerequisite: object
 	hasOpenIntersection: true
 	childKind: TypeKind

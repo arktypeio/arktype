@@ -22,7 +22,6 @@ export type PredicateDeclaration = declareNode<{
 	schema: PredicateSchema
 	normalizedSchema: NormalizedPredicateSchema
 	inner: PredicateInner
-	composition: "primitive"
 	hasOpenIntersection: true
 	expectedContext: {}
 }>

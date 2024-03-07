@@ -75,7 +75,6 @@ export type IntersectionDeclaration = declareNode<{
 	schema: IntersectionSchema
 	normalizedSchema: IntersectionSchema
 	inner: IntersectionInner
-	composition: "composite"
 	reducibleTo: typeKindOrRightOf<"intersection">
 	expectedContext: {
 		errors: readonly ArkTypeError[]

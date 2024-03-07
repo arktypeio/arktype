@@ -29,7 +29,6 @@ export type ProtoDeclaration = declareNode<{
 	schema: ProtoSchema
 	normalizedSchema: NormalizedProtoSchema
 	inner: ProtoInner
-	composition: "primitive"
 	expectedContext: ProtoInner
 }>
 
