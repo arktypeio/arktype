@@ -5,7 +5,7 @@ import {
 	type List,
 	type mutable
 } from "@arktype/util"
-import type { TypeNode, TypeSchema } from "../../base.js"
+import type { Node, TypeNode, TypeSchema } from "../../base.js"
 import type { MutableInner } from "../../kinds.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/context.js"
@@ -13,7 +13,7 @@ import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import type {
 	NodeKeyImplementation,
-	TypeKind,
+	NodeKind,
 	nodeImplementationOf
 } from "../../shared/implement.js"
 import { BaseConstraint } from "../constraint.js"
@@ -62,7 +62,7 @@ export type SequenceDeclaration = declareNode<{
 	prerequisite: List
 	reducibleTo: "sequence"
 	hasBranchableIntersection: true
-	childKind: TypeKind
+	childKind: NodeKind
 }>
 
 const fixedSequenceKeyDefinition: NodeKeyImplementation<
@@ -176,7 +176,7 @@ export class SequenceNode extends BaseConstraint<
 				}
 			},
 			intersections: {
-				sequence: (l, r) => {
+				sequence: (l, r, $) => {
 					const rootState = intersectSequences({
 						l: l.tuple,
 						r: r.tuple,
@@ -192,8 +192,15 @@ export class SequenceNode extends BaseConstraint<
 					return viableBranches.length === 0
 						? rootState.disjoint!
 						: viableBranches.length === 1
-						? sequenceTupleToInner(viableBranches[0].result)
-						: viableBranches.map((state) => sequenceTupleToInner(state.result))
+						? $.parse(
+								"sequence",
+								sequenceTupleToInner(viableBranches[0].result)
+						  )
+						: $.parse("union", {
+								branches: viableBranches.map((state) =>
+									$.parse("sequence", sequenceTupleToInner(state.result))
+								)
+						  })
 				}
 				// length, minLength, and maxLength don't need to be defined
 				// here since impliedSiblings guarantees they will be added
@@ -202,9 +209,11 @@ export class SequenceNode extends BaseConstraint<
 			}
 		})
 
+	implicitBasis = this.$.builtin.Array
+
 	readonly prefix = this.inner.prefix ?? []
 	readonly optionals = this.inner.optionals ?? []
-	readonly prevariadic = [...this.prefix, ...this.optionals]
+	readonly prevariadic: readonly Node[] = [...this.prefix, ...this.optionals]
 	readonly postfix = this.inner.postfix ?? []
 	readonly minLength = this.prefix.length + this.postfix.length
 	readonly minLengthNode =

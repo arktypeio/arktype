@@ -49,6 +49,8 @@ export class DivisorNode extends BasePrimitiveConstraint<
 		}
 	})
 
+	implicitBasis = this.$.builtin.number
+
 	traverseAllows = (data: number) => data % this.divisor === 0
 
 	compiledCondition = `${jsData} % ${this.divisor} === 0`

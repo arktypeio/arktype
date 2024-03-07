@@ -13,19 +13,14 @@ import {
 } from "@arktype/util"
 import type { Node, UnknownNode } from "../base.js"
 import { boundKinds } from "../constraints/refinements/shared.js"
-import type { Declaration, ExpectedContext, Inner } from "../kinds.js"
+import type { Declaration, Inner } from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
 import type {
 	NodeConfig,
 	ParsedUnknownNodeConfig,
 	ScopeNode
 } from "../scope.js"
-import type { typeKindRightOf } from "../types/type.js"
-import type {
-	BaseExpectedContext,
-	BaseMeta,
-	BaseNodeDeclaration
-} from "./declare.js"
+import type { BaseMeta, BaseNodeDeclaration } from "./declare.js"
 import type { Disjoint } from "./disjoint.js"
 
 export {
@@ -46,30 +41,25 @@ export const refinementKinds = ["regex", "divisor", ...boundKinds] as const
 export type RefinementKind = (typeof refinementKinds)[number]
 
 export const constraintKinds = [
-	...refinementKinds,
+	"proto",
+	"domain",
 	...propKinds,
+	...refinementKinds,
 	"predicate"
 ] as const
 
 export type ConstraintKind = (typeof constraintKinds)[number]
 
-export const typeKinds = [
+export const setKinds = [
 	"union",
 	"morph",
 	"intersection",
 	...basisKinds
 ] as const
 
-export type TypeKind = (typeof typeKinds)[number]
+export type SetKind = (typeof setKinds)[number]
 
-export const intersectionChildKinds = [
-	...basisKinds,
-	...constraintKinds
-] as const
-
-export type IntersectionChildKind = (typeof intersectionChildKinds)[number]
-
-export type NodeKind = TypeKind | ConstraintKind
+export type NodeKind = SetKind | ConstraintKind
 
 export const nodeKinds = [
 	"union",
@@ -168,8 +158,8 @@ export const precedenceOfKind = <kind extends NodeKind>(kind: kind) =>
 
 export type kindRightOf<kind extends NodeKind> = RightsByKind[kind]
 
-export const typeKindsRightOf = <kind extends TypeKind>(kind: kind) =>
-	typeKinds.slice(precedenceOfKind(kind) + 1) as typeKindRightOf<kind>[]
+export const kindsRightOf = <kind extends NodeKind>(kind: kind) =>
+	nodeKinds.slice(precedenceOfKind(kind) + 1) as kindRightOf<kind>[]
 
 export type KeyDefinitions<d extends BaseNodeDeclaration> = {
 	[k in keyRequiringDefinition<d>]: NodeKeyImplementation<d, k>
@@ -226,7 +216,7 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	collapseKey?: keyof d["inner"] & string
 	reduce?: (
 		inner: d["inner"],
-		ctx: SchemaParseContext
+		$: ScopeNode
 	) => Node<d["reducibleTo"]> | Disjoint | undefined
 }
 
@@ -258,16 +248,16 @@ export type nodeImplementationInputOf<d extends BaseNodeDeclaration> =
 
 type nodeDefaultsImplementationInputFor<kind extends NodeKind> = requireKeys<
 	NodeConfig<kind>,
-	| "description"
-	// if the node's error context is distinct from its inner definition, ensure it is implemented.
-	// this occurs for nodes like `union` where the error that occurs is not 1:1 with the existing node,
-	// but rather a single failed condition for each branch.
-	| (Inner<kind> extends Omit<
-			ExpectedContext<kind>,
-			keyof BaseExpectedContext | "description"
-	  >
-			? never
-			: "expected" & keyof NodeConfig<kind>)
+	"description"
+	// // if the node's error context is distinct from its inner definition, ensure it is implemented.
+	// // this occurs for nodes like `union` where the error that occurs is not 1:1 with the existing node,
+	// // but rather a single failed condition for each branch.
+	// | (Inner<kind> extends Omit<
+	// 		ExpectedContext<kind>,
+	// 		keyof BaseExpectedContext | "description"
+	//   >
+	// 		? never
+	// 		: "expected" & keyof NodeConfig<kind>)
 >
 
 export type nodeDefaultsImplementationFor<kind extends NodeKind> = Required<

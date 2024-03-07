@@ -1,4 +1,9 @@
-import { BaseNode, type ConstraintNode, type NodeSubclass } from "../base.js"
+import {
+	BaseNode,
+	type ConstraintNode,
+	type Node,
+	type NodeSubclass
+} from "../base.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../shared/context.js"
 import type { BaseNodeDeclaration } from "../shared/declare.js"
@@ -13,6 +18,8 @@ export abstract class BaseConstraint<
 	subclass extends NodeSubclass<d>
 > extends BaseNode<d["prerequisite"], d, subclass> {
 	readonly impliedSiblings?: ConstraintNode[] | undefined
+
+	abstract implicitBasis: Node
 
 	get hasOpenIntersection() {
 		return this.impl.hasOpenIntersection as d["hasOpenIntersection"]

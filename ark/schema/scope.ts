@@ -12,6 +12,7 @@ import {
 } from "@arktype/util"
 import type { Node, TypeNode } from "./base.js"
 import { globalConfig } from "./config.js"
+import type { LengthBoundableData } from "./constraints/refinements/range.js"
 import type {
 	instantiateAliases,
 	instantiateSchemaBranches,
@@ -30,11 +31,7 @@ import type {
 	MessageWriter,
 	ProblemWriter
 } from "./shared/errors.js"
-import type {
-	DescriptionWriter,
-	NodeKind,
-	TypeKind
-} from "./shared/implement.js"
+import type { DescriptionWriter, NodeKind } from "./shared/implement.js"
 import { BaseType } from "./types/type.js"
 import type {
 	NormalizedUnionSchema,
@@ -118,7 +115,7 @@ const parseConfig = (scopeConfig: ArkConfig | undefined): ParsedArkConfig => {
 	return parsedConfig
 }
 
-const assertTypeKind = (schema: unknown): TypeKind => {
+const assertTypeKind = (schema: unknown): NodeKind => {
 	switch (typeof schema) {
 		case "string":
 			return "domain"
@@ -159,6 +156,7 @@ export class ScopeNode<r extends object = any> {
 	protected resolved = false
 	protected prereducedAliases: boolean
 	protected prereducedSchemas: boolean
+	readonly lengthBoundable: UnionNode<LengthBoundableData>
 
 	constructor(
 		public def: Dict,
@@ -197,6 +195,9 @@ export class ScopeNode<r extends object = any> {
 			},
 			{ reduceTo: this.parsePrereduced("intersection", {}) }
 		)
+		this.lengthBoundable = this.parsePrereduced("union", {
+			branches: [this.builtin.string, this.builtin.Array]
+		})
 	}
 
 	get builtin() {
@@ -257,7 +258,7 @@ export class ScopeNode<r extends object = any> {
 		}) as never
 	}
 
-	parseTypeNode<defKind extends TypeKind>(
+	parseTypeNode<defKind extends NodeKind>(
 		schema: Schema<defKind>,
 		opts: TypeSchemaParseOptions<defKind> = {}
 	): Node<reducibleKindOf<defKind>> {
@@ -326,7 +327,7 @@ export class ScopeNode<r extends object = any> {
 			node.jit = true
 			node.traverseAllows =
 				compiledTraversals[`${node.name}Allows`].bind(compiledTraversals)
-			if (node.isType() && !node.includesContextDependentPredicate) {
+			if (node.isSet() && !node.includesContextDependentPredicate) {
 				// if the reference doesn't require context, we can assign over
 				// it directly to avoid having to initialize it
 				node.allows = node.traverseAllows as never
@@ -392,7 +393,7 @@ export type SchemaParser<$> = {
 		: UnionNode<branches[number]> | UnitNode<branches[number]>
 }
 
-export interface TypeSchemaParseOptions<allowedKind extends TypeKind = TypeKind>
+export interface TypeSchemaParseOptions<allowedKind extends NodeKind = NodeKind>
 	extends SchemaParseOptions {
 	root?: boolean
 	allowedKinds?: readonly allowedKind[]

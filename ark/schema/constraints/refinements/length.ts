@@ -53,6 +53,8 @@ export class LengthNode extends BasePrimitiveConstraint<
 		}
 	})
 
+	implicitBasis = this.$.lengthBoundable
+
 	traverseAllows = (data: LengthBoundableData) => data.length === this.length
 
 	compiledCondition = `${jsData}.length === ${this.length}`

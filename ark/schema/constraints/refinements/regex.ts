@@ -54,6 +54,8 @@ export class RegexNode extends BasePrimitiveConstraint<
 		}
 	})
 
+	implicitBasis = this.$.builtin.string
+
 	regex = new RegExp(this.source, this.flags)
 	traverseAllows = this.regex.test
 

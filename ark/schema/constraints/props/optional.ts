@@ -4,13 +4,13 @@ import type { NodeCompiler } from "../../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/context.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
-import type { TypeKind, nodeImplementationOf } from "../../shared/implement.js"
+import type { NodeKind, nodeImplementationOf } from "../../shared/implement.js"
 import { BaseConstraint } from "../constraint.js"
 import { compileKey } from "./shared.js"
 
 export interface OptionalInner extends BaseMeta {
 	readonly key: string | symbol
-	readonly value: Node<TypeKind>
+	readonly value: Node<NodeKind>
 }
 
 export interface OptionalSchema extends BaseMeta {
@@ -25,7 +25,7 @@ export type OptionalDeclaration = declareNode<{
 	inner: OptionalInner
 	prerequisite: object
 	hasOpenIntersection: true
-	childKind: TypeKind
+	childKind: NodeKind
 }>
 
 export class OptionalNode extends BaseConstraint<
@@ -64,6 +64,8 @@ export class OptionalNode extends BaseConstraint<
 				}
 			}
 		})
+
+	implicitBasis = this.$.builtin.object
 
 	serializedKey = compileSerializedValue(this.key)
 

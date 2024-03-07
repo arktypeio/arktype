@@ -1,4 +1,3 @@
-import { Disjoint } from "../../shared/disjoint.js"
 import type { nodeImplementationOf } from "../../shared/implement.js"
 import { BaseRange, type NumericRangeDeclaration } from "./range.js"
 
@@ -18,6 +17,8 @@ export class MaxNode extends BaseRange<MaxDeclaration, typeof MaxNode> {
 				max: (l, r) => (l.isStricterThan(r) ? l : r)
 			}
 		})
+
+	implicitBasis = this.$.builtin.number
 
 	traverseAllows = this.exclusive
 		? (data: number) => data < this.limit
