@@ -127,6 +127,8 @@ export function parseAttachments(
 		}
 		if (!keyImpl.implied) {
 			collapsibleJson[k] = json[k]
+		} else {
+			console.log("iompliejdpoeimd")
 		}
 	})
 
@@ -150,10 +152,9 @@ export function parseAttachments(
 	if (ctx.reduceTo) {
 		return (ctx.$.nodeCache[innerId] = ctx.reduceTo)
 	}
+
 	const typeId = JSON.stringify({ kind, ...typeJson })
-	if (innerId in ctx.$.nodeCache) {
-		return ctx.$.nodeCache[innerId]
-	}
+
 	if (impl.reduce && !ctx.prereduced) {
 		const reduced = impl.reduce(inner, ctx)
 		if (reduced) {
@@ -172,6 +173,13 @@ export function parseAttachments(
 			return (ctx.$.nodeCache[innerId] = reduced)
 		}
 	}
+
+	// we have to wait until after reduction to return a cached entry,
+	// since reduction can add impliedSiblings
+	if (innerId in ctx.$.nodeCache) {
+		return ctx.$.nodeCache[innerId]
+	}
+
 	const prefix = ctx.alias ?? kind
 	typeCountsByPrefix[prefix] ??= 0
 	const name = `${prefix}${++typeCountsByPrefix[prefix]!}`
