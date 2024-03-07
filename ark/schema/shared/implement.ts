@@ -241,12 +241,12 @@ export type NodeKeyImplementation<
 		preserveUndefined?: true
 		meta?: true
 		child?: true
+		implied?: true
 		serialize?: (
 			schema: instantiated extends listable<UnknownNode> | undefined
 				? ErrorMessage<`Keys with node children cannot specify a custom serializer`>
 				: instantiated
-			// undefined can be returned to omit the key from serialization
-		) => JsonData | undefined
+		) => JsonData
 		parse?: (
 			schema: Exclude<d["normalizedSchema"][k], undefined>,
 			ctx: SchemaParseContext

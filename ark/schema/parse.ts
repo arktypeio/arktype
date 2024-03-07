@@ -104,6 +104,7 @@ export function parseAttachments(
 
 	let json: Record<string, unknown> = {}
 	let typeJson: Record<string, unknown> = {}
+	let collapsibleJson: Record<string, unknown> = {}
 	entries.forEach(([k, v]) => {
 		const keyImpl = impl.keys[k] ?? baseKeys[k]
 		if (keyImpl.child) {
@@ -116,26 +117,31 @@ export function parseAttachments(
 				children.push(listableNode)
 			}
 		} else {
-			const serialized = keyImpl.serialize
+			json[k] = keyImpl.serialize
 				? keyImpl.serialize(v)
 				: defaultValueSerializer(v)
-			if (serialized !== undefined) {
-				json[k] = serialized
-			}
 		}
 
 		if (!keyImpl.meta) {
 			typeJson[k] = json[k]
 		}
+		if (!keyImpl.implied) {
+			collapsibleJson[k] = json[k]
+		}
 	})
 
-	let collapsibleJson = json
-	// check keys on JSON instead of schema in case one or more keys is
-	// unserialized, e.g. minVariadicLength on a SequenceNode
-	const jsonKeys = Object.keys(json)
-	if (jsonKeys.length === 1 && jsonKeys[0] === impl.collapseKey) {
-		collapsibleJson = json[impl.collapseKey] as never
-		if (hasDomain(collapsibleJson, "object")) {
+	// check keys on collapsibleJson instead of schema in case one or more keys is
+	// implied, e.g. minVariadicLength on a SequenceNode
+	const collapsibleKeys = Object.keys(collapsibleJson)
+	if (collapsibleKeys.length === 1 && collapsibleKeys[0] === impl.collapseKey) {
+		collapsibleJson = collapsibleJson[impl.collapseKey] as never
+		if (
+			// if the collapsibleJson is still an object
+			hasDomain(collapsibleJson, "object") &&
+			// and the JSON did not include any implied keys
+			Object.keys(json).length === 1
+		) {
+			// we can replace it with its collapsed value
 			json = collapsibleJson
 			typeJson = collapsibleJson
 		}

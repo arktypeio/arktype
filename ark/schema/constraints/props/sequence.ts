@@ -97,9 +97,10 @@ export class SequenceNode extends BaseConstraint<
 					parse: (schema, ctx) => ctx.$.parseTypeNode(schema)
 				},
 				minVariadicLength: {
-					// don't serialize minVariadicLength since it is reflected in
-					// its impliedSibling minLength on the parent of this node
-					serialize: () => undefined,
+					// minVariadicLength is reflected in the id of this node,
+					// but not its IntersectionNode parent since it is superceded by the minLength
+					// node it implies
+					implied: true,
 					parse: (min) => (min === 0 ? undefined : min)
 				},
 				postfix: fixedSequenceKeyDefinition
