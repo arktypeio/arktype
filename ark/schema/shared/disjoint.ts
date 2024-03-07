@@ -9,7 +9,7 @@ import {
 } from "@arktype/util"
 import type { Node } from "../base.js"
 import type { RangeKind } from "../constraints/refinements/shared.js"
-import type { ConstraintKind, kindRightOf } from "./implement.js"
+import type { IntersectionChildKind, kindRightOf } from "./implement.js"
 
 type DisjointKinds = {
 	domain?: {
@@ -41,10 +41,10 @@ type DisjointKinds = {
 	assignability?:
 		| {
 				l: unknown
-				r: Node<ConstraintKind>
+				r: Node<IntersectionChildKind>
 		  }
 		| {
-				l: Node<ConstraintKind>
+				l: Node<IntersectionChildKind>
 				r: unknown
 		  }
 	union?: {

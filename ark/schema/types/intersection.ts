@@ -1,5 +1,6 @@
 import {
 	append,
+	appendUnique,
 	conflatenateAll,
 	entriesOf,
 	isArray,
@@ -38,6 +39,7 @@ import {
 	constraintKinds,
 	propKinds,
 	type ConstraintKind,
+	type IntersectionChildKind,
 	type OpenNodeKind,
 	type PropKind,
 	type RefinementKind,
@@ -74,7 +76,7 @@ export type IntersectionDeclaration = declareNode<{
 	expectedContext: {
 		errors: readonly ArkTypeError[]
 	}
-	childKind: ConstraintKind
+	childKind: IntersectionChildKind
 }>
 
 const constraintKeys = morph(constraintKinds, (i, kind) => [kind, 1] as const)
@@ -85,7 +87,7 @@ const propKeys = morph(
 )
 
 const intersectionChildKeyParser =
-	<kind extends ConstraintKind>(kind: kind) =>
+	<kind extends IntersectionChildKind>(kind: kind) =>
 	(
 		input: listable<Schema<kind>>,
 		ctx: SchemaParseContext
@@ -237,10 +239,10 @@ export class IntersectionNode<t = unknown> extends BaseType<
 			},
 			// leverage reduction logic from intersection and identity to ensure initial
 			// parse result is reduced
-			reduce: (inner, $) =>
+			reduce: (inner, ctx) =>
 				// we cast union out of the result here since that only occurs when intersecting two sequences
 				// that cannot occur when reducing a single intersection schema using unknown
-				intersectIntersections({}, inner, $) as Node<
+				intersectIntersections({}, inner, ctx.$) as Node<
 					"intersection" | IntersectionBasisKind
 				>,
 			defaults: {
@@ -278,7 +280,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 	)
 	readonly props = maybeCreatePropsGroup(this.inner)
 	readonly traversables = conflatenateAll<
-		Node<Exclude<IntersectionBasisKind | ConstraintKind, PropKind>> | PropsGroup
+		Node<Exclude<IntersectionChildKind, PropKind>> | PropsGroup
 	>(this.basis, this.refinements, this.props, this.predicate)
 
 	traverseAllows: TraverseAllows = (data, ctx) =>
@@ -340,6 +342,25 @@ const intersectRootKeys = (
 	r: IntersectionRoot
 ): MutableInner<"intersection"> | Disjoint => {
 	const result: IntersectionRoot = {}
+	const lBasis = l.proto ?? l.domain
+	const rBasis = r.proto ?? r.domain
+	const resultBasis = lBasis
+		? rBasis
+			? lBasis.intersect(rBasis)
+			: lBasis
+		: rBasis
+	if (resultBasis) {
+		if (resultBasis instanceof Disjoint) {
+			return resultBasis
+		}
+		if (resultBasis.kind === "domain" || resultBasis.kind === "proto") {
+			result[resultBasis.kind] = resultBasis as never
+		} else {
+			return throwInternalError(
+				`Unexpected intersection basis intersection ${resultBasis}`
+			)
+		}
+	}
 	if (l.onExtraneousKey || r.onExtraneousKey) {
 		result.onExtraneousKey =
 			l.onExtraneousKey === "throw" || r.onExtraneousKey === "throw"
@@ -349,59 +370,59 @@ const intersectRootKeys = (
 	return result
 }
 
-// const intersectConstraints = (
-// 	l: List<ConstraintNode>,
-// 	r: List<ConstraintNode>
-// ): { branches: List<ConstraintNode>[] } | List<ConstraintNode> | Disjoint => {
-// 	if (!r.length) {
-// 		return l
-// 	}
-// 	const [head, ...tail] = r
-// 	const constraints: ConstraintNode[] = []
-// 	let matched = false
-// 	for (let i = 0; i < l.length; i++) {
-// 		const result = l[i].intersect(head)
-// 		if (result === null) {
-// 			constraints.push(l[i])
-// 		} else if (result instanceof Disjoint) {
-// 			return result
-// 		} else if (isArray(result)) {
-// 			const branches: List<ConstraintNode>[] = []
-// 			result.forEach((constraintBranch) => {
-// 				const branchResult = intersectConstraints(l.toSpliced(i, 1), [
-// 					constraintBranch,
-// 					...tail
-// 				])
-// 				if (branchResult instanceof Disjoint) return
+const intersectConstraints = (
+	l: List<ConstraintNode>,
+	r: List<ConstraintNode>
+): { branches: List<ConstraintNode>[] } | List<ConstraintNode> | Disjoint => {
+	if (!r.length) {
+		return l
+	}
+	const [head, ...tail] = r
+	const constraints: ConstraintNode[] = []
+	let matched = false
+	for (let i = 0; i < l.length; i++) {
+		const result = l[i].intersect(head)
+		if (result === null) {
+			constraints.push(l[i])
+		} else if (result instanceof Disjoint) {
+			return result
+		} else if (isArray(result)) {
+			const branches: List<ConstraintNode>[] = []
+			result.forEach((constraintBranch) => {
+				const branchResult = intersectConstraints(l.toSpliced(i, 1), [
+					constraintBranch,
+					...tail
+				])
+				if (branchResult instanceof Disjoint) return
 
-// 				if ("branches" in branchResult) branches.push(...branchResult.branches)
-// 				else branches.push(branchResult)
-// 			})
+				if ("branches" in branchResult) branches.push(...branchResult.branches)
+				else branches.push(branchResult)
+			})
 
-// 			return branches.length === 0
-// 				? Disjoint.from("union", l, [head])
-// 				: branches.length === 1
-// 				? branches[0]
-// 				: {
-// 						branches
-// 				  }
-// 		} else if (!matched) {
-// 			constraints.push(result)
-// 			matched = true
-// 		} else if (!constraints.includes(result)) {
-// 			return throwInternalError(
-// 				`Unexpectedly encountered multiple distinct intersection results for refinement ${result}`
-// 			)
-// 		}
-// 	}
-// 	if (!matched) {
-// 		constraints.push(head)
-// 	}
+			return branches.length === 0
+				? Disjoint.from("union", l, [head])
+				: branches.length === 1
+				? branches[0]
+				: {
+						branches
+				  }
+		} else if (!matched) {
+			constraints.push(result)
+			matched = true
+		} else if (!constraints.includes(result)) {
+			return throwInternalError(
+				`Unexpectedly encountered multiple distinct intersection results for refinement ${result}`
+			)
+		}
+	}
+	if (!matched) {
+		constraints.push(head)
+	}
 
-// 	head.impliedSiblings?.forEach((node) => appendUnique(tail, node))
+	head.impliedSiblings?.forEach((node) => appendUnique(tail, node))
 
-// 	return intersectConstraints(constraints, tail)
-// }
+	return intersectConstraints(constraints, tail)
+}
 
 const flattenedConstraintCache = new Map<
 	IntersectionInner,
@@ -477,20 +498,20 @@ type conditionalIntersectionKeyOf<t> =
 
 // not sure why explicitly allowing Inner<k> is necessary in these cases,
 // but remove if it can be removed without creating type errors
-type intersectionChildSchemaValueOf<k extends ConstraintKind> =
+type intersectionChildSchemaValueOf<k extends IntersectionChildKind> =
 	k extends OpenNodeKind ? listable<Schema<k> | Inner<k>> : Schema<k> | Inner<k>
 
 type conditionalSchemaValueOfKey<k extends ConditionalIntersectionKey> =
-	k extends ConstraintKind
+	k extends IntersectionChildKind
 		? intersectionChildSchemaValueOf<k>
 		: ConditionalTerminalIntersectionSchema[k &
 				ConditionalTerminalIntersectionKey]
 
-type intersectionChildInnerValueOf<k extends ConstraintKind> =
+type intersectionChildInnerValueOf<k extends IntersectionChildKind> =
 	k extends OpenNodeKind ? readonly Node<k>[] : Node<k>
 
 type conditionalInnerValueOfKey<k extends ConditionalIntersectionKey> =
-	k extends ConstraintKind
+	k extends IntersectionChildKind
 		? intersectionChildInnerValueOf<k>
 		: ConditionalTerminalIntersectionInner[k &
 				ConditionalTerminalIntersectionKey]

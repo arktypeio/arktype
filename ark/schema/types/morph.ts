@@ -20,12 +20,19 @@ import type {
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { ArkResult, ArkTypeError } from "../shared/errors.js"
-import { kindsRightOf, type nodeImplementationOf } from "../shared/implement.js"
-import { BaseType, defineRightwardIntersections } from "./type.js"
+import { basisKinds, type nodeImplementationOf } from "../shared/implement.js"
+import {
+	BaseType,
+	defineRightwardIntersections,
+	type typeKindRightOf
+} from "./type.js"
 
-export type MorphChildKind = (typeof morphChildKinds)[number]
+export type MorphChildKind = typeKindRightOf<"morph">
 
-export const morphChildKinds = kindsRightOf("morph")
+export const morphChildKinds = [
+	"intersection",
+	...basisKinds
+] as const satisfies readonly MorphChildKind[]
 
 export type MorphChildNode = Node<MorphChildKind>
 

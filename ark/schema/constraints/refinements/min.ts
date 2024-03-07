@@ -21,8 +21,6 @@ export class MinNode extends BaseRange<MinDeclaration, typeof MinNode> {
 			}
 		})
 
-	implicitBasis = this.$.builtin.number
-
 	// if (into.basis?.domain !== "number") {
 	// 	this.throwInvalidBoundOperandError(into.basis)
 	// }

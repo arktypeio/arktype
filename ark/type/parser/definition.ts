@@ -47,7 +47,7 @@ export const parseObject = (def: object, ctx: ParseContext): TypeNode => {
 			if (def instanceof Type) {
 				return def.root
 			}
-			if (isNode(def) && def.isSet()) {
+			if (isNode(def) && def.isType()) {
 				return def
 			}
 			return parseObjectLiteral(def as Dict, ctx)

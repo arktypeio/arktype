@@ -3,20 +3,21 @@ import { BaseNode, type NodeSubclass } from "../base.js"
 import type { reducibleKindOf } from "../kinds.js"
 import type { BaseNodeDeclaration } from "../shared/declare.js"
 import {
-	kindsRightOf,
+	typeKindsRightOf,
 	type IntersectionImplementation,
 	type NodeKind,
+	type TypeKind,
 	type kindRightOf
 } from "../shared/implement.js"
 
 export type BaseTypeDeclaration = evaluate<
-	BaseNodeDeclaration & { kind: NodeKind }
+	BaseNodeDeclaration & { kind: TypeKind }
 >
 
-export const defineRightwardIntersections = <kind extends NodeKind>(
+export const defineRightwardIntersections = <kind extends TypeKind>(
 	kind: kind,
-	implementation: IntersectionImplementation<kind, kindRightOf<kind>>
-) => morph(kindsRightOf(kind), (i, kind) => [kind, implementation])
+	implementation: IntersectionImplementation<kind, typeKindRightOf<kind>>
+) => morph(typeKindsRightOf(kind), (i, kind) => [kind, implementation])
 
 export abstract class BaseType<
 	t,
@@ -24,7 +25,7 @@ export abstract class BaseType<
 	subclass extends NodeSubclass<d>
 > extends BaseNode<t, d, subclass> {}
 
-export type intersectType<l extends NodeKind, r extends NodeKind> = [
+export type intersectType<l extends TypeKind, r extends NodeKind> = [
 	l,
 	r
 ] extends [r, l]
@@ -44,3 +45,12 @@ export interface BaseBasis {
 	basisName: string
 	domain: Domain
 }
+
+export type typeKindRightOf<kind extends TypeKind> = Extract<
+	kindRightOf<kind>,
+	TypeKind
+>
+
+export type typeKindOrRightOf<kind extends TypeKind> =
+	| kind
+	| typeKindRightOf<kind>

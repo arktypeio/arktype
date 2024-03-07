@@ -35,8 +35,6 @@ export class AfterNode
 			}
 		})
 
-	implicitBasis = this.$.builtin.Date
-
 	dateLimit = new Date(this.limit)
 	numericLimit = +this.dateLimit
 	stringLimit = dateLimitToString(this.limit)

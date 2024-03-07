@@ -143,7 +143,7 @@ export function parseAttachments(
 		return ctx.$.nodeCache[innerId]
 	}
 	if (impl.reduce && !ctx.prereduced) {
-		const reduced = impl.reduce(inner, ctx.$)
+		const reduced = impl.reduce(inner, ctx)
 		if (reduced) {
 			if (reduced instanceof Disjoint) {
 				return reduced.throw()

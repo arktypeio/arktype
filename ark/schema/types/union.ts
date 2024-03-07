@@ -8,14 +8,17 @@ import { Disjoint } from "../shared/disjoint.js"
 import type { ArkTypeError } from "../shared/errors.js"
 import {
 	basisKinds,
-	type NodeKind,
-	type kindRightOf,
+	type TypeKind,
 	type nodeImplementationOf
 } from "../shared/implement.js"
 import type { Discriminant } from "./discriminate.js"
-import { BaseType, defineRightwardIntersections } from "./type.js"
+import {
+	BaseType,
+	defineRightwardIntersections,
+	type typeKindRightOf
+} from "./type.js"
 
-export type UnionChildKind = kindRightOf<"union">
+export type UnionChildKind = typeKindRightOf<"union">
 
 export const unionChildKinds = [
 	"morph",
@@ -51,7 +54,7 @@ export type UnionDeclaration = declareNode<{
 	expectedContext: {
 		errors: readonly ArkTypeError[]
 	}
-	reducibleTo: NodeKind
+	reducibleTo: TypeKind
 	childKind: UnionChildKind
 }>
 
@@ -81,7 +84,7 @@ export class UnionNode<t = unknown> extends BaseType<
 				}
 			},
 			normalize: (schema) => (isArray(schema) ? { branches: schema } : schema),
-			reduce: (inner, $) => {
+			reduce: (inner, ctx) => {
 				const reducedBranches = reduceBranches(inner)
 				if (reducedBranches.length === 1) {
 					return reducedBranches[0]
@@ -89,7 +92,7 @@ export class UnionNode<t = unknown> extends BaseType<
 				if (reducedBranches.length === inner.branches.length) {
 					return
 				}
-				return $.parsePrereduced("union", {
+				return ctx.$.parsePrereduced("union", {
 					...inner,
 					branches: reducedBranches
 				})

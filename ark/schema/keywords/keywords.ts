@@ -1,5 +1,5 @@
 import { ScopeNode } from "../scope.js"
-import type { NodeKind } from "../shared/implement.js"
+import type { TypeKind } from "../shared/implement.js"
 import type { inferred } from "../shared/inference.js"
 import { JsObjects } from "./jsObjects.js"
 import { TsKeywords } from "./tsKeywords.js"
@@ -21,7 +21,7 @@ ScopeNode.keywords = keywords
 export const schema = builtin.schema
 
 export namespace schema {
-	export type cast<to, kind extends NodeKind = NodeKind> = {
+	export type cast<to, kind extends TypeKind = TypeKind> = {
 		[inferred]?: to
 		kind?: kind
 	}

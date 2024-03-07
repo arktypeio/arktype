@@ -2,7 +2,7 @@ import type { TypeNode, TypeSchema } from "../../base.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/context.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
-import type { NodeKind, nodeImplementationOf } from "../../shared/implement.js"
+import type { TypeKind, nodeImplementationOf } from "../../shared/implement.js"
 import { BaseConstraint } from "../constraint.js"
 
 export interface IndexSchema extends BaseMeta {
@@ -22,7 +22,7 @@ export type IndexDeclaration = declareNode<{
 	inner: IndexInner
 	prerequisite: object
 	hasOpenIntersection: true
-	childKind: NodeKind
+	childKind: TypeKind
 }>
 
 export class IndexNode extends BaseConstraint<
@@ -54,8 +54,6 @@ export class IndexNode extends BaseConstraint<
 			}
 		})
 
-	implicitBasis = this.$.builtin.object
-
 	traverseAllows: TraverseAllows<object> = (data, ctx) =>
 		Object.entries(data).every(
 			(entry) =>
@@ -66,7 +64,7 @@ export class IndexNode extends BaseConstraint<
 	traverseApply: TraverseApply<object> = (data, ctx) =>
 		Object.entries(data).forEach((entry) => {
 			if (this.key.traverseAllows(entry[0], ctx)) {
-				this.value.traverseApply(entry[1] as never, ctx)
+				this.value.traverseApply(entry[1], ctx)
 			}
 		})
 

@@ -55,16 +55,15 @@ import {
 	precedenceOfKind,
 	propKinds,
 	refinementKinds,
-	setKinds,
+	typeKinds,
 	type BasisKind,
 	type ConstraintKind,
 	type NodeKind,
 	type PropKind,
 	type RefinementKind,
-	type SetKind,
+	type TypeKind,
 	type UnknownNodeImplementation,
 	type UnknownNodeIntersectionResult,
-	type kindRightOf,
 	type nodeImplementationInputOf,
 	type nodeImplementationOf
 } from "./shared/implement.js"
@@ -79,8 +78,10 @@ import type {
 	extractOut
 } from "./types/morph.js"
 import type { ProtoNode } from "./types/proto.js"
+import type { typeKindRightOf } from "./types/type.js"
 import type { UnionNode } from "./types/union.js"
 import type { UnitNode } from "./types/unit.js"
+
 export interface BaseAttachments {
 	alias?: string
 	readonly kind: NodeKind
@@ -195,7 +196,7 @@ export abstract class BaseNode<
 	declare readonly description: string
 
 	// important we only declare this, otherwise it would reinitialize a union's branches to undefined
-	declare readonly branches: readonly Node<kindRightOf<"union">>[]
+	declare readonly branches: readonly Node<typeKindRightOf<"union">>[]
 
 	constructor(attachments: BaseAttachments) {
 		super(attachments as never)
@@ -290,8 +291,8 @@ export abstract class BaseNode<
 		return includes(propKinds, this.kind)
 	}
 
-	isSet(): this is Node<SetKind> {
-		return includes(setKinds, this.kind)
+	isType(): this is TypeNode {
+		return includes(typeKinds, this.kind)
 	}
 
 	toString() {
@@ -302,7 +303,14 @@ export abstract class BaseNode<
 		string,
 		UnknownNodeIntersectionResult
 	> = {}
-	intersect<r extends Node>(r: r): Node | Disjoint
+	intersect<r extends Node>(
+		r: r
+	):
+		| TypeNode<
+				// intersectType<this["kind"], r["kind"]>,
+				inferIntersection<this["infer"], r["infer"]>
+		  >
+		| Disjoint
 	intersect(this: UnknownNode, other: Node): UnknownNodeIntersectionResult {
 		// Node works better for subclasses but internally we want to treat it as UnknownNode
 		const r = other as UnknownNode
@@ -550,9 +558,9 @@ export type Node<
 	t = any
 > = NodesByKind<t>[kind]
 
-export type TypeNode<t = any, kind extends NodeKind = NodeKind> = Node<kind, t>
+export type TypeNode<t = any, kind extends TypeKind = TypeKind> = Node<kind, t>
 
-export type TypeSchema<kind extends NodeKind = NodeKind> = Schema<kind>
+export type TypeSchema<kind extends TypeKind = TypeKind> = Schema<kind>
 
 export type ConstraintNode<kind extends ConstraintKind = ConstraintKind> =
 	Node<kind>

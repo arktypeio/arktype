@@ -1,5 +1,4 @@
 import { compileSerializedValue } from "@arktype/util"
-import type { Node } from "../base.js"
 import { jsData } from "../shared/compile.js"
 import type { TraversalContext } from "../shared/context.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
@@ -56,8 +55,6 @@ export class PredicateNode extends BasePrimitiveConstraint<
 			predicate: () => null
 		}
 	})
-
-	implicitBasis = this.$.builtin.unknown
 
 	traverseAllows = this.predicate
 	compiledCondition = `${compileSerializedValue(this.predicate)}(${jsData})`

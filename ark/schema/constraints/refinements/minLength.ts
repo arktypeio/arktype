@@ -35,8 +35,6 @@ export class MinLengthNode extends BaseRange<
 			}
 		})
 
-	implicitBasis = this.$.lengthBoundable
-
 	traverseAllows = this.exclusive
 		? (data: LengthBoundableData) => data.length > this.limit
 		: (data: LengthBoundableData) => data.length >= this.limit

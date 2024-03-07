@@ -4,7 +4,7 @@ import type { NodeCompiler } from "../../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/context.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
-import type { NodeKind, nodeImplementationOf } from "../../shared/implement.js"
+import type { TypeKind, nodeImplementationOf } from "../../shared/implement.js"
 import { BaseConstraint } from "../constraint.js"
 import { compileKey } from "./shared.js"
 
@@ -15,7 +15,7 @@ export interface RequiredSchema extends BaseMeta {
 
 export interface RequiredInner extends BaseMeta {
 	readonly key: string | symbol
-	readonly value: Node<NodeKind>
+	readonly value: Node<TypeKind>
 }
 
 export type RequiredDeclaration = declareNode<{
@@ -29,7 +29,7 @@ export type RequiredDeclaration = declareNode<{
 	}
 	prerequisite: object
 	hasOpenIntersection: true
-	childKind: NodeKind
+	childKind: TypeKind
 }>
 
 export class RequiredNode extends BaseConstraint<
@@ -58,7 +58,7 @@ export class RequiredNode extends BaseConstraint<
 				actual: () => null
 			},
 			intersections: {
-				required: (l, r, $) => {
+				required: (l, r) => {
 					if (l.key !== r.key) {
 						return null
 					}
@@ -67,15 +67,13 @@ export class RequiredNode extends BaseConstraint<
 					if (value instanceof Disjoint) {
 						return value
 					}
-					return $.parse("required", {
+					return {
 						key,
 						value
-					})
+					}
 				}
 			}
 		})
-
-	implicitBasis = this.$.builtin.object
 
 	readonly serializedKey = compileSerializedValue(this.key)
 	readonly baseRequiredErrorContext = Object.freeze({
@@ -92,7 +90,7 @@ export class RequiredNode extends BaseConstraint<
 
 	traverseApply: TraverseApply<object> = (data, ctx) => {
 		if (this.key in data) {
-			this.value.traverseApply((data as any)[this.key] as never, ctx)
+			this.value.traverseApply((data as any)[this.key], ctx)
 		} else {
 			ctx.error(this.baseRequiredErrorContext)
 		}
