@@ -2,11 +2,11 @@ import { compileSerializedValue } from "@arktype/util"
 import { jsData } from "../shared/compile.js"
 import type { TraversalContext } from "../shared/context.js"
 import type { declareNode } from "../shared/declare.js"
+import type { of } from "./ast.js"
 import {
 	BasePrimitiveConstraint,
 	type PrimitiveConstraintInner
 } from "./constraint.js"
-import type { of } from "./is.js"
 
 export interface PredicateInner<rule extends Predicate<any> = Predicate<any>>
 	extends PrimitiveConstraintInner<rule> {}

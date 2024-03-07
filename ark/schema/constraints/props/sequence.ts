@@ -17,6 +17,7 @@ import type {
 	nodeImplementationOf
 } from "../../shared/implement.js"
 import { BaseConstraint } from "../constraint.js"
+import type { MinLengthNode } from "../refinements/minLength.js"
 
 export interface BaseSequenceSchema extends BaseMeta {
 	readonly prefix?: readonly TypeSchema[]
@@ -117,11 +118,8 @@ export class SequenceNode extends BaseConstraint<
 				}
 				return { variadic: schema }
 			},
-			reduce: (inner, $) => {
-				if (!inner.postfix && !inner.optionals) {
-					return
-				}
-				const fixed = inner.prefix?.slice() ?? []
+			reduce: (inner, ctx) => {
+				const prefix = inner.prefix?.slice() ?? []
 				const optionals = inner.optionals?.slice() ?? []
 				const postfix = inner.postfix?.slice() ?? []
 				if (inner.variadic) {
@@ -136,24 +134,38 @@ export class SequenceNode extends BaseConstraint<
 						// prefix/postfix elements to prefix, e.g.:
 						// [...number[], number] => [number, ...number[]]
 						while (postfix[0]?.equals(inner.variadic)) {
-							fixed.push(postfix.shift()!)
+							prefix.push(postfix.shift()!)
 						}
 					} else {
 						// if there's no variadic or optional parameters,
 						// postfix can just be appended to fixed
-						fixed.push(...postfix.splice(0))
+						prefix.push(...postfix.splice(0))
 					}
+				}
+				if (
+					inner.variadic &&
+					prefix.length &&
+					prefix.every((element) => element.equals(inner.variadic!))
+				) {
+					const minLength = ctx.$.parse("minLength", prefix.length)
+					ctx.intersection.minLength = ctx.intersection.minLength
+						? (minLength.intersect(ctx.intersection.minLength) as MinLengthNode)
+						: minLength
+					// TODO: max length Disjoint?
+					return ctx.$.parsePrereduced("sequence", {
+						variadic: inner.variadic
+					})
 				}
 				if (
 					(inner.postfix && postfix.length < inner.postfix.length) ||
 					(inner.optionals && optionals.length < inner.optionals.length)
 				) {
-					return $.parse(
+					return ctx.$.parse(
 						"sequence",
 						{
 							...inner,
 							// empty lists will be omitted during parsing
-							prefix: fixed,
+							prefix,
 							postfix,
 							optionals: optionals as never
 						},

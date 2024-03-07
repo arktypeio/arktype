@@ -1,5 +1,6 @@
 import { attest } from "@arktype/attest"
 import { schema } from "@arktype/schema"
+import type { TypeNode } from "../base.js"
 import type { IntersectionNode } from "../types/intersection.js"
 
 describe("parse", () => {
@@ -19,7 +20,7 @@ describe("parse", () => {
 			divisor: 5
 		})
 		const result = l.and(r)
-		attest<IntersectionNode<number>>(result)
+		attest<TypeNode<number>>(result)
 		attest(result.json).snap({
 			domain: "number",
 			divisor: 15,

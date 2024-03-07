@@ -16,11 +16,11 @@ import {
 	type nodeImplementationInputOf,
 	type nodeImplementationOf
 } from "../../shared/implement.js"
+import type { DateLiteral, normalizePrimitiveConstraintSchema } from "../ast.js"
 import {
 	BasePrimitiveConstraint,
 	type PrimitiveConstraintInner
 } from "../constraint.js"
-import type { DateLiteral, normalizePrimitiveConstraintSchema } from "../is.js"
 import type { BoundKind, RangeKind } from "./shared.js"
 
 export abstract class BaseRange<

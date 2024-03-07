@@ -12,7 +12,7 @@ import {
 	type listable,
 	type requireKeys
 } from "@arktype/util"
-import type { Node, UnknownNode } from "../base.js"
+import type { Node, TypeNode, UnknownNode } from "../base.js"
 import type { constraintKindLeftOf } from "../constraints/constraint.js"
 import { boundKinds } from "../constraints/refinements/shared.js"
 import type { Declaration, ExpectedContext, Inner } from "../kinds.js"
@@ -164,7 +164,7 @@ export type ConstraintIntersectionMap<kind extends ConstraintKind> = evaluate<
 export type TypeIntersection<
 	lKind extends TypeKind,
 	rKind extends typeKindOrRightOf<lKind>
-> = (l: Node<lKind>, r: Node<rKind>, $: ScopeNode) => Inner<lKind> | Disjoint
+> = (l: Node<lKind>, r: Node<rKind>, $: ScopeNode) => TypeNode | Disjoint
 
 export type TypeIntersectionMap<kind extends TypeKind> = {
 	[rKind in typeKindOrRightOf<kind>]: TypeIntersection<kind, rKind>
@@ -247,7 +247,7 @@ export type NodeKeyImplementation<
 		) => JsonData
 		parse?: (
 			schema: Exclude<d["normalizedSchema"][k], undefined>,
-			ctx: SchemaParseContext
+			ctx: SchemaParseContext<d["kind"]>
 		) => instantiated
 	},
 	// require parse if we can't guarantee the schema value will be valid on inner
@@ -263,7 +263,10 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	normalize: (schema: d["schema"]) => d["normalizedSchema"]
 	hasAssociatedError: d["expectedContext"] extends null ? false : true
 	collapseKey?: keyof d["inner"] & string
-	reduce?: (inner: d["inner"], $: ScopeNode) => Node | Disjoint | undefined
+	reduce?: (
+		inner: d["inner"],
+		ctx: SchemaParseContext<d["kind"]>
+	) => Node<d["reducibleTo"]> | Disjoint | undefined
 }
 
 export interface UnknownNodeImplementation
@@ -288,7 +291,9 @@ export type nodeImplementationInputOf<d extends BaseNodeDeclaration> =
 	} & (d["hasOpenIntersection"] extends true
 			? { hasOpenIntersection: true }
 			: {}) &
-		(d["reducibleTo"] extends NodeKind ? { reduce: {} } : {})
+		// if the node is declared as reducible to a kind other than its own,
+		// there must be a reduce implementation
+		(d["reducibleTo"] extends d["kind"] ? {} : { reduce: {} })
 
 type nodeDefaultsImplementationInputFor<kind extends NodeKind> = requireKeys<
 	NodeConfig<kind>,

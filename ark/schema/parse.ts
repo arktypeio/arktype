@@ -1,11 +1,14 @@
 import {
 	entriesOf,
 	hasDomain,
+	isArray,
+	isKeyOf,
 	throwParseError,
 	type Json,
 	type JsonData,
 	type PartialRecord,
 	type evaluate,
+	type listable,
 	type valueOf
 } from "@arktype/util"
 import { BaseNode, type BaseAttachments, type Node } from "./base.js"
@@ -15,10 +18,13 @@ import type { BaseNodeDeclaration } from "./shared/declare.js"
 import { Disjoint } from "./shared/disjoint.js"
 import {
 	defaultValueSerializer,
+	precedenceOfKind,
+	type ConstraintKind,
 	type KeyDefinitions,
 	type NodeKind,
 	type UnknownNodeImplementation
 } from "./shared/implement.js"
+import type { IntersectionInner } from "./types/intersection.js"
 
 export type SchemaParseOptions = {
 	alias?: string
@@ -30,13 +36,16 @@ export type SchemaParseOptions = {
 	 * Useful for defining reductions like number|string|bigint|symbol|object|true|false|null|undefined => unknown
 	 **/
 	reduceTo?: Node
+	intersection?: IntersectionInner
 }
 
-export type SchemaParseContext = evaluate<
+export type SchemaParseContext<kind extends NodeKind = NodeKind> = evaluate<
 	SchemaParseOptions & {
 		$: ScopeNode
 		definition: unknown
-	}
+	} & (kind extends "intersection" | ConstraintKind
+			? { intersection: IntersectionInner }
+			: { intersection?: undefined })
 >
 
 const typeCountsByPrefix: PartialRecord<string, number> = {}
@@ -70,44 +79,59 @@ export function parseAttachments(
 			: throwMismatchedNodeSchemaError(kind, normalizedDefinition.kind)
 	}
 	const inner: Record<string, unknown> = {}
-	const schemaEntries = entriesOf(normalizedDefinition).sort((l, r) =>
-		l[0] < r[0] ? -1 : 1
+	// ensure node entries are parsed in order of precedence, with non-children
+	// parsed first
+	const schemaEntries = entriesOf(normalizedDefinition).sort(
+		([lKey], [rKey]) =>
+			isKeyOf(lKey, nodesByKind)
+				? isKeyOf(rKey, nodesByKind)
+					? precedenceOfKind(lKey) - precedenceOfKind(rKey)
+					: 1
+				: isKeyOf(rKey, nodesByKind)
+				? -1
+				: lKey < rKey
+				? -1
+				: 1
 	)
-	let json: Record<string, unknown> = {}
-	let typeJson: Record<string, unknown> = {}
 	const children: Node[] = []
+	if (kind === "intersection") ctx.intersection = inner
 	for (const entry of schemaEntries) {
 		const k = entry[0]
-		const keyImpl =
-			(impl.keys as PartialRecord<string, valueOf<KeyDefinitions<any>>>)[k] ??
-			baseKeys[k]
+		const keyImpl = impl.keys[k] ?? baseKeys[k]
 		if (!keyImpl) {
 			return throwParseError(`Key ${k} is not valid on ${kind} schema`)
 		}
 		const v = keyImpl.parse ? keyImpl.parse(entry[1], ctx) : entry[1]
-		if (v === undefined && !keyImpl.preserveUndefined) {
-			continue
+		if (v !== undefined || keyImpl.preserveUndefined) {
+			inner[k] = v
 		}
+	}
+	const entries = entriesOf(inner)
 
+	let json: Record<string, unknown> = {}
+	let typeJson: Record<string, unknown> = {}
+	entries.forEach(([k, v]) => {
+		const keyImpl = impl.keys[k] ?? baseKeys[k]
 		if (keyImpl.child) {
-			if (Array.isArray(v)) {
-				json[k] = v.map((node) => node.collapsibleJson)
-				children.push(...v)
+			const listableNode = v as listable<Node>
+			if (isArray(listableNode)) {
+				json[k] = listableNode.map((node) => node.collapsibleJson)
+				children.push(...listableNode)
 			} else {
-				json[k] = v.collapsibleJson
-				children.push(v)
+				json[k] = listableNode.collapsibleJson
+				children.push(listableNode)
 			}
 		} else {
 			json[k] = keyImpl.serialize
 				? keyImpl.serialize(v)
 				: defaultValueSerializer(v)
 		}
-		inner[k] = v
+
 		if (!keyImpl.meta) {
 			typeJson[k] = json[k]
 		}
-	}
-	const entries = entriesOf(inner)
+	})
+
 	let collapsibleJson = json
 	if (entries.length === 1 && entries[0][0] === impl.collapseKey) {
 		collapsibleJson = json[impl.collapseKey] as never
@@ -125,7 +149,7 @@ export function parseAttachments(
 		return ctx.$.nodeCache[innerId]
 	}
 	if (impl.reduce && !ctx.prereduced) {
-		const reduced = impl.reduce(inner, ctx.$)
+		const reduced = impl.reduce(inner, ctx)
 		if (reduced) {
 			if (reduced instanceof Disjoint) {
 				return reduced.throw()

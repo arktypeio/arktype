@@ -8,7 +8,7 @@ import {
 	type listable
 } from "@arktype/util"
 import type { Node } from "../base.js"
-import type { of } from "../constraints/is.js"
+import type { of } from "../constraints/ast.js"
 import type { Schema } from "../kinds.js"
 import type { StaticArkOption } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
@@ -95,7 +95,7 @@ export class MorphNode<t = unknown> extends BaseType<
 				}
 			},
 			intersections: {
-				morph: (l, r) => {
+				morph: (l, r, $) => {
 					if (l.morph.some((morph, i) => morph !== r.morph[i])) {
 						// TODO: is this always a parse error? what about for union reduction etc.
 						// TODO: check in for union reduction
@@ -109,20 +109,28 @@ export class MorphNode<t = unknown> extends BaseType<
 					if (outTersection instanceof Disjoint) {
 						return outTersection
 					}
-					return {
+					return $.parse("morph", {
 						morph: l.morph,
 						in: inTersection,
 						out: outTersection
-					}
+					})
 				},
-				...defineRightwardIntersections("morph", (l, r) => {
+				...defineRightwardIntersections("morph", (l, r, $) => {
 					const inTersection = l.in.intersect(r)
 					return inTersection instanceof Disjoint
 						? inTersection
-						: {
+						: inTersection.kind === "union"
+						? $.parse(
+								"union",
+								inTersection.branches.map((branch) => ({
+									...l.inner,
+									in: branch
+								}))
+						  )
+						: $.parse("morph", {
 								...l.inner,
 								in: inTersection
-						  }
+						  })
 				})
 			}
 		})

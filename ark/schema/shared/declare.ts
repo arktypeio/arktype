@@ -49,7 +49,7 @@ export type declareNode<
 		hasBranchableIntersection: false
 		prerequisite: prerequisiteOf<d>
 		childKind: never
-		reducibleTo: null
+		reducibleTo: d["kind"]
 		expectedContext: null
 	},
 	d & {
@@ -73,7 +73,7 @@ export type BaseNodeDeclaration = {
 	schema: unknown
 	normalizedSchema: BaseMeta
 	inner: BaseMeta
-	reducibleTo: NodeKind | null
+	reducibleTo: NodeKind
 	prerequisite: any
 	hasBranchableIntersection: boolean
 	hasOpenIntersection: boolean

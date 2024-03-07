@@ -1,12 +1,10 @@
-import {
-	printable,
-	throwParseError,
-	type Constructor,
-	type NonEnumerableDomain,
-	type evaluate,
-	type inferDomain,
-	type instanceOf,
-	type isAny
+import type {
+	Constructor,
+	NonEnumerableDomain,
+	evaluate,
+	inferDomain,
+	instanceOf,
+	isAny
 } from "@arktype/util"
 import { isNode, type NodeSubclass } from "../base.js"
 import type { Schema } from "../kinds.js"
@@ -47,31 +45,6 @@ export abstract class BaseBasis<
 	}
 }
 
-export const maybeGetBasisKind = (schema: unknown): BasisKind | undefined => {
-	switch (typeof schema) {
-		case "string":
-			return "domain"
-		case "function":
-			return "proto"
-		case "object":
-			if (schema === null) {
-				return
-			}
-			if (isNode(schema)) {
-				if (schema.isBasis()) {
-					return schema.kind
-				}
-			}
-			if ("domain" in schema) {
-				return "domain"
-			} else if ("proto" in schema) {
-				return "proto"
-			} else if ("unit" in schema) {
-				return "unit"
-			}
-	}
-}
-
 export type instantiateBasis<def extends Schema<BasisKind>> =
 	//allow any to be used to access all constraints
 	isAny<def> extends true
@@ -87,21 +60,3 @@ export type instantiateBasis<def extends Schema<BasisKind>> =
 		: def extends UnitSchema<infer is>
 		? UnitNode<is>
 		: never
-
-export const assertBasisKind = (schema: unknown) => {
-	const basisKind = maybeGetBasisKind(schema)
-	if (basisKind === undefined) {
-		return throwParseError(
-			`${printable(
-				schema
-			)} is not a valid basis schema. Please provide one of the following:
-- A string representing a non-enumerable domain ("string", "number", "object", "bigint", or "symbol")
-- A constructor like Array
-- A schema object with one of the following keys:
-	- "domain"
-	- "proto"
-	- "unit"`
-		)
-	}
-	return basisKind
-}

@@ -355,7 +355,9 @@ Value at [1] must be a number (was boolean)`)
 			attest(result.json).snap(expected.json)
 		})
 		it("reduces minLength", () => {
-			const t = type(["number", "...", "string[]"])
+			const t = type(["number", "...", "number[]"])
+			const expected = type("number[]").minLength(1)
+			attest(t.json).equals(expected.json)
 		})
 	})
 	// TODO: reenable

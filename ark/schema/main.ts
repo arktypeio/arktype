@@ -1,6 +1,6 @@
 export * from "./base.js"
 export * from "./config.js"
-export * from "./constraints/is.js"
+export * from "./constraints/ast.js"
 export * from "./constraints/predicate.js"
 export * from "./constraints/props/sequence.js"
 export * from "./constraints/refinements/after.js"

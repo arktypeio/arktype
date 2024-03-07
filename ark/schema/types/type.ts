@@ -69,9 +69,11 @@ export abstract class BaseType<
 	constrain<constraintKind extends ConstraintKind>(
 		kind: constraintKind,
 		input: Schema<constraintKind>
-	): Node<reducibleKindOf<this["kind"]>> {
+	): TypeNode<this["infer"]> {
 		const constraint = this.$.parse(kind, input)
-		return this.and(this.$.parse("intersection", { [kind]: constraint }))
+		return this.and(
+			this.$.parse("intersection", { [kind]: constraint })
+		) as never
 	}
 
 	keyof() {
@@ -85,8 +87,8 @@ export abstract class BaseType<
 	intersect<r extends Node>(
 		r: r
 	):
-		| Node<
-				intersectType<this["kind"], r["kind"]>,
+		| TypeNode<
+				// intersectType<this["kind"], r["kind"]>,
 				inferIntersection<this["infer"], r["infer"]>
 		  >
 		| Disjoint {
@@ -95,8 +97,8 @@ export abstract class BaseType<
 
 	and<r extends TypeNode>(
 		r: r
-	): Node<
-		intersectType<this["kind"], r["kind"]>,
+	): TypeNode<
+		// intersectType<this["kind"], r["kind"]>,
 		inferIntersection<this["infer"], r["infer"]>
 	> {
 		const result = this.intersect(r as never)

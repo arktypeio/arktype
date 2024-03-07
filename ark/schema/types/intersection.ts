@@ -47,11 +47,7 @@ import {
 } from "../shared/implement.js"
 import type { DomainNode, DomainSchema } from "./domain.js"
 import type { ProtoNode, ProtoSchema } from "./proto.js"
-import {
-	BaseType,
-	defineRightwardIntersections,
-	type typeKindOrRightOf
-} from "./type.js"
+import { BaseType, defineRightwardIntersections } from "./type.js"
 
 export type IntersectionBasisKind = "domain" | "proto"
 
@@ -76,7 +72,7 @@ export type IntersectionDeclaration = declareNode<{
 	schema: IntersectionSchema
 	normalizedSchema: IntersectionSchema
 	inner: IntersectionInner
-	reducibleTo: "union" | "intersection" | IntersectionBasisKind
+	reducibleTo: "intersection" | IntersectionBasisKind
 	expectedContext: {
 		errors: readonly ArkTypeError[]
 	}
@@ -94,7 +90,7 @@ const intersectionChildKeyParser =
 	<kind extends IntersectionChildKind>(kind: kind) =>
 	(
 		input: listable<Schema<kind>>,
-		ctx: SchemaParseContext
+		ctx: SchemaParseContext<"intersection">
 	): intersectionChildInnerValueOf<kind> | undefined => {
 		if (isArray(input)) {
 			if (input.length === 0) {
@@ -102,10 +98,12 @@ const intersectionChildKeyParser =
 				return
 			}
 			return input
-				.map((schema) => ctx.$.parse(kind, schema as never))
+				.map((schema) =>
+					ctx.$.parse(kind, schema as never, { intersection: ctx.intersection })
+				)
 				.sort((l, r) => (l.innerId < r.innerId ? -1 : 1)) as never
 		}
-		const node = ctx.$.parse(kind, input)
+		const node = ctx.$.parse(kind, input, { intersection: ctx.intersection })
 		return node.hasOpenIntersection ? [node] : (node as any)
 	}
 
@@ -242,7 +240,12 @@ export class IntersectionNode<t = unknown> extends BaseType<
 			},
 			// leverage reduction logic from intersection and identity to ensure initial
 			// parse result is reduced
-			reduce: (inner, $) => intersectIntersections({}, inner, $),
+			reduce: (inner, ctx) =>
+				// we cast union out of the result here since that only occurs when intersecting two sequences
+				// that cannot occur when reducing a single intersection schema using unknown
+				intersectIntersections({}, inner, ctx.$) as Node<
+					"intersection" | IntersectionBasisKind
+				>,
 			defaults: {
 				description(inner) {
 					const children = Object.values(inner).flat()
@@ -259,12 +262,16 @@ export class IntersectionNode<t = unknown> extends BaseType<
 			},
 			intersections: {
 				intersection: intersectIntersections,
-				...defineRightwardIntersections("intersection", (l, r) => {
+				...defineRightwardIntersections("intersection", (l, r, $) => {
 					const basis = l.basis?.intersect(r) ?? r
 
 					return basis instanceof Disjoint
 						? basis
-						: Object.assign(omit(l.inner, metaKeys), { basis })
+						: $.parse(
+								"intersection",
+								Object.assign(omit(l.inner, metaKeys), { [basis.kind]: basis }),
+								{ prereduced: true }
+						  )
 				})
 			}
 		})
@@ -348,7 +355,13 @@ const intersectRootKeys = (
 		if (resultBasis instanceof Disjoint) {
 			return resultBasis
 		}
-		result[resultBasis.kind] = resultBasis as never
+		if (resultBasis.kind === "domain" || resultBasis.kind === "proto") {
+			result[resultBasis.kind] = resultBasis as never
+		} else {
+			return throwInternalError(
+				`Unexpected intersection basis intersection ${resultBasis}`
+			)
+		}
 	}
 	if (l.onExtraneousKey || r.onExtraneousKey) {
 		result.onExtraneousKey =

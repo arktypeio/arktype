@@ -35,7 +35,6 @@ import type {
 	NodeKind,
 	TypeKind
 } from "./shared/implement.js"
-import { maybeGetBasisKind } from "./types/basis.js"
 import { BaseType } from "./types/type.js"
 import type {
 	NormalizedUnionSchema,
@@ -119,24 +118,31 @@ const parseConfig = (scopeConfig: ArkConfig | undefined): ParsedArkConfig => {
 	return parsedConfig
 }
 
-const assertTypeKind = (input: unknown): TypeKind => {
-	const basisKind = maybeGetBasisKind(input)
-	if (basisKind) {
-		return basisKind
+const assertTypeKind = (schema: unknown): TypeKind => {
+	switch (typeof schema) {
+		case "string":
+			return "domain"
+		case "function":
+			return "proto"
+		case "object":
+			if (schema === null) {
+				// throw at end of function
+			} else if (schema instanceof BaseType) {
+				return schema.kind
+			} else if ("morph" in schema) {
+				return "morph"
+			} else if ("branches" in schema || isArray(schema)) {
+				return "union"
+			} else if ("unit" in schema) {
+				return "unit"
+			} else {
+				// if the schema has a proto or domain key, it will be parsed as an
+				// IntersectionNode, but reduced to the basis if there are no
+				// constraints
+				return "intersection"
+			}
 	}
-	if (typeof input === "object" && input !== null) {
-		if (input instanceof BaseType) {
-			return input.kind
-			// otherwise, error at end of function
-		} else if ("morph" in input) {
-			return "morph"
-		} else if ("branches" in input || isArray(input)) {
-			return "union"
-		} else {
-			return "intersection"
-		}
-	}
-	return throwParseError(`${printable(input)} is not a valid type schema`)
+	return throwParseError(`${printable(schema)} is not a valid type schema`)
 }
 
 export class ScopeNode<r extends object = any> {
@@ -282,6 +288,13 @@ export class ScopeNode<r extends object = any> {
 			Object.assign(this.referencesByName, node.contributesReferencesByName)
 		}
 		return node
+	}
+
+	parsePrereduced<kind extends NodeKind>(
+		kind: kind,
+		def: Schema<kind>
+	): Node<kind> {
+		return this.parse(kind, def, { prereduced: true }) as never
 	}
 
 	parse<kind extends NodeKind>(

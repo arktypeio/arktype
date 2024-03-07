@@ -1,5 +1,5 @@
 import { isArray } from "@arktype/util"
-import type { Node } from "../base.js"
+import type { Node, TypeNode } from "../base.js"
 import type { Schema } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../shared/context.js"
@@ -84,7 +84,7 @@ export class UnionNode<t = unknown> extends BaseType<
 				}
 			},
 			normalize: (schema) => (isArray(schema) ? { branches: schema } : schema),
-			reduce: (inner, $) => {
+			reduce: (inner, ctx) => {
 				const reducedBranches = reduceBranches(inner)
 				if (reducedBranches.length === 1) {
 					return reducedBranches[0]
@@ -92,7 +92,7 @@ export class UnionNode<t = unknown> extends BaseType<
 				if (reducedBranches.length === inner.branches.length) {
 					return
 				}
-				return $.parse(
+				return ctx.$.parse(
 					"union",
 					{
 						...inner,
@@ -149,12 +149,15 @@ export class UnionNode<t = unknown> extends BaseType<
 							: { branches: resultBranches }
 					)
 				},
-				...defineRightwardIntersections("union", (l, r) => {
+				...defineRightwardIntersections("union", (l, r, $) => {
 					const branches = intersectBranches(l.branches, [r])
 					if (branches instanceof Disjoint) {
 						return branches
 					}
-					return l.ordered ? { branches, ordered: true } : { branches }
+					return $.parse(
+						"union",
+						l.ordered ? { branches, ordered: true } : { branches }
+					)
 				})
 			}
 		})
@@ -282,9 +285,9 @@ export const intersectBranches = (
 	// If the corresponding r branch is identified as a subtype of an l branch, the
 	// value at rIndex is set to null so we can avoid including previous/future
 	// inersections in the reduced result.
-	const batchesByR: (UnionChildNode[] | null)[] = r.map(() => [])
+	const batchesByR: (TypeNode[] | null)[] = r.map(() => [])
 	for (let lIndex = 0; lIndex < l.length; lIndex++) {
-		let candidatesByR: { [rIndex: number]: UnionChildNode } = {}
+		let candidatesByR: { [rIndex: number]: TypeNode } = {}
 		for (let rIndex = 0; rIndex < r.length; rIndex++) {
 			if (batchesByR[rIndex] === null) {
 				// rBranch is a subtype of an lBranch and
@@ -331,7 +334,10 @@ export const intersectBranches = (
 	// Compile the reduced intersection result, including:
 	// 		1. Remaining candidates resulting from distinct intersections or strict subtypes of r
 	// 		2. Original r branches corresponding to indices with a null batch (subtypes of l)
-	const resultBranches = batchesByR.flatMap((batch, i) => batch ?? r[i])
+	const resultBranches = batchesByR.flatMap(
+		// ensure unions returned from branchable intersections like sequence are flattened
+		(batch, i) => batch?.flatMap((branch) => branch.branches) ?? r[i]
+	)
 	return resultBranches.length === 0
 		? Disjoint.from("union", l, r)
 		: resultBranches
