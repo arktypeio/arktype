@@ -1,7 +1,10 @@
-import type { ErrorMessage, describe, evaluate } from "@arktype/util"
+import type { ErrorMessage, conform, describe, evaluate } from "@arktype/util"
 import type { Prerequisite, Schema } from "../kinds.js"
 import type { writeInvalidOperandMessage } from "../shared/implement.js"
-import type { PrimitiveConstraintKind } from "./constraint.js"
+import type {
+	PrimitiveConstraintInner,
+	PrimitiveConstraintKind
+} from "./constraint.js"
 import type { predicate } from "./predicate.js"
 import type { after } from "./refinements/after.js"
 import type { before } from "./refinements/before.js"
@@ -62,10 +65,38 @@ export type validateConstraintArg<
 			>
 	  >
 
+// export type constrain<t, constraints extends Constraints> = rawConstrain<
+// 	t,
+// 	constraints
+// >
+
 export type constrain<In, constraint> = In extends of<infer base> &
 	infer constraints
 	? of<base> & constraints & constraint
 	: of<In> & constraint
+
+export type normalizePrimitiveConstraintSchema<
+	schema extends Schema<PrimitiveConstraintKind>
+> = schema extends PrimitiveConstraintInner<infer rule> ? rule : schema
+
+export type applySchema<
+	t,
+	kind extends PrimitiveConstraintKind,
+	schema
+> = constrain<t, schemaToConstraint<kind, conform<schema, Schema<kind>>>>
+
+export type schemaToConstraint<
+	kind extends PrimitiveConstraintKind,
+	schema extends Schema<kind>
+> = rawConstraint<{
+	[_ in kind]: normalizePrimitiveConstraintSchema<schema>
+}>
+
+export type ConstraintInput<
+	kind extends PrimitiveConstraintKind = PrimitiveConstraintKind
+> = kind extends unknown
+	? { [_ in kind]: normalizePrimitiveConstraintSchema<Schema<kind>> }
+	: never
 
 type Bases<rule> = {
 	divisor: divisor<rule & number>
@@ -79,3 +110,8 @@ type Bases<rule> = {
 	length: length<rule & number>
 	predicate: predicate
 }
+
+type rawConstraint<input> = Bases<input[keyof input]>[keyof input &
+	PrimitiveConstraintKind]
+
+export type constraint<input extends ConstraintInput> = rawConstraint<input>

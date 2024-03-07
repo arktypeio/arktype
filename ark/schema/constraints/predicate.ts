@@ -1,15 +1,15 @@
 import { compileSerializedValue } from "@arktype/util"
 import { jsData } from "../shared/compile.js"
 import type { TraversalContext } from "../shared/context.js"
-import type { BaseMeta, declareNode } from "../shared/declare.js"
+import type { declareNode } from "../shared/declare.js"
 import type { of } from "./ast.js"
-import { BasePrimitiveConstraint } from "./constraint.js"
+import {
+	BasePrimitiveConstraint,
+	type PrimitiveConstraintInner
+} from "./constraint.js"
 
-export interface PredicateInner<
-	predicate extends Predicate<any> = Predicate<any>
-> extends BaseMeta {
-	predicate: predicate
-}
+export interface PredicateInner<rule extends Predicate<any> = Predicate<any>>
+	extends PrimitiveConstraintInner<rule> {}
 
 export type NormalizedPredicateSchema = PredicateInner
 
@@ -35,15 +35,15 @@ export class PredicateNode extends BasePrimitiveConstraint<
 > {
 	static implementation = this.implement({
 		hasAssociatedError: true,
-		collapseKey: "predicate",
+		collapseKey: "rule",
 		keys: {
-			predicate: {}
+			rule: {}
 		},
 		normalize: (schema) =>
-			typeof schema === "function" ? { predicate: schema } : schema,
+			typeof schema === "function" ? { rule: schema } : schema,
 		defaults: {
 			description(inner) {
-				return `valid according to ${inner.predicate.name}`
+				return `valid according to ${inner.rule.name}`
 			}
 		},
 		hasOpenIntersection: true,
@@ -56,8 +56,8 @@ export class PredicateNode extends BasePrimitiveConstraint<
 		}
 	})
 
-	traverseAllows = this.predicate
-	compiledCondition = `${compileSerializedValue(this.predicate)}(${jsData})`
+	traverseAllows = this.rule
+	compiledCondition = `${compileSerializedValue(this.rule)}(${jsData})`
 	compiledNegation = `!${this.compiledCondition}`
 	expectedContext = this.createExpectedContext({ expected: this.description })
 }
