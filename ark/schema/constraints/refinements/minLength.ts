@@ -1,14 +1,14 @@
+import { Disjoint } from "../../shared/disjoint.js"
 import type { nodeImplementationOf } from "../../shared/implement.js"
 import {
 	BaseRange,
 	type LengthBoundableData,
-	type LengthRangeDeclaration,
-	type boundToIs
+	type LengthRangeDeclaration
 } from "./range.js"
 
 export type MinLengthDeclaration = LengthRangeDeclaration<"minLength">
 
-export type minLength<n extends number> = boundToIs<"minLength", n>
+export type minLength<n extends number> = { minLength: n }
 
 export class MinLengthNode extends BaseRange<
 	MinLengthDeclaration,
@@ -19,23 +19,25 @@ export class MinLengthNode extends BaseRange<
 			defaults: {
 				description(inner) {
 					return inner.exclusive
-						? inner.rule === 0
+						? inner.limit === 0
 							? "non-empty"
-							: `more than length ${inner.rule}`
-						: inner.rule === 1
+							: `more than length ${inner.limit}`
+						: inner.limit === 1
 						? "non-empty"
-						: `at least length ${inner.rule}`
+						: `at least length ${inner.limit}`
 				},
 				actual: (data) => `${data.length}`
 			},
 			intersections: {
-				minLength: (l, r) => (l.isStricterThan(r) ? l : r)
+				minLength: (l, r) => (l.isStricterThan(r) ? l : r),
+				maxLength: (min, max) =>
+					min.isStricterThan(max) ? Disjoint.from("range", min, max) : null
 			}
 		})
 
 	traverseAllows = this.exclusive
-		? (data: LengthBoundableData) => data.length > this.rule
-		: (data: LengthBoundableData) => data.length >= this.rule
+		? (data: LengthBoundableData) => data.length > this.limit
+		: (data: LengthBoundableData) => data.length >= this.limit
 
 	// if (
 	// 	into.basis?.domain !== "string" &&

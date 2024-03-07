@@ -1,56 +1,18 @@
-import {
-	BaseNode,
-	type ConstraintNode,
-	type Node,
-	type NodeSubclass
-} from "../base.js"
+import { BaseNode, type ConstraintNode, type NodeSubclass } from "../base.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../shared/context.js"
-import type { BaseMeta, BaseNodeDeclaration } from "../shared/declare.js"
-import type { Disjoint } from "../shared/disjoint.js"
-import type {
-	BranchableNodeKind,
-	ConstraintKind,
-	PropKind,
-	kindLeftOf
-} from "../shared/implement.js"
-
-export type constraintKindLeftOf<kind extends ConstraintKind> = ConstraintKind &
-	kindLeftOf<kind>
-
-export type constraintKindOrLeftOf<kind extends ConstraintKind> =
-	| kind
-	| constraintKindLeftOf<kind>
-
-export interface PrimitiveConstraintInner<rule = unknown> extends BaseMeta {
-	readonly rule: rule
-}
+import type { BaseNodeDeclaration } from "../shared/declare.js"
+import type { ConstraintKind, PropKind } from "../shared/implement.js"
 
 export interface BaseConstraintDeclaration extends BaseNodeDeclaration {
 	kind: ConstraintKind
 }
-
-type intersectConstraintKinds<
-	l extends ConstraintKind,
-	r extends ConstraintKind
-> =
-	| Node<l | r>
-	| Disjoint
-	| null
-	// A constraint intersection may result in a union if both operands could be of the same BranchableNodeKind
-	| (l & r & BranchableNodeKind extends never ? never : Node<l | r>[])
 
 export abstract class BaseConstraint<
 	d extends BaseConstraintDeclaration,
 	subclass extends NodeSubclass<d>
 > extends BaseNode<d["prerequisite"], d, subclass> {
 	readonly impliedSiblings?: ConstraintNode[] | undefined
-
-	intersect<r extends ConstraintNode>(
-		r: r
-	): intersectConstraintKinds<d["kind"], r["kind"]> {
-		return this.intersectInternal(r) as never
-	}
 
 	get hasOpenIntersection() {
 		return this.impl.hasOpenIntersection as d["hasOpenIntersection"]

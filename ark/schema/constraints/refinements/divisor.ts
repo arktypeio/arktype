@@ -1,11 +1,10 @@
 import { jsData } from "../../shared/compile.js"
-import type { declareNode } from "../../shared/declare.js"
-import {
-	BasePrimitiveConstraint,
-	type PrimitiveConstraintInner
-} from "../constraint.js"
+import type { BaseMeta, declareNode } from "../../shared/declare.js"
+import { BasePrimitiveConstraint } from "../constraint.js"
 
-export interface DivisorInner extends PrimitiveConstraintInner<number> {}
+export interface DivisorInner extends BaseMeta {
+	readonly divisor: number
+}
 
 export type divisor<n extends number> = { "%": n }
 
@@ -25,31 +24,35 @@ export class DivisorNode extends BasePrimitiveConstraint<
 	typeof DivisorNode
 > {
 	static implementation = this.implement({
-		collapseKey: "rule",
+		collapseKey: "divisor",
 		keys: {
-			rule: {}
+			divisor: {}
 		},
 		normalize: (schema) =>
-			typeof schema === "number" ? { rule: schema } : schema,
+			typeof schema === "number" ? { divisor: schema } : schema,
 		intersections: {
-			divisor: (l, r) => ({
-				rule: Math.abs(
-					(l.rule * r.rule) / greatestCommonDivisor(l.rule, r.rule)
-				)
-			})
+			divisor: (l, r) =>
+				l.$.parse("divisor", {
+					divisor: Math.abs(
+						(l.divisor * r.divisor) /
+							greatestCommonDivisor(l.divisor, r.divisor)
+					)
+				})
 		},
 		hasAssociatedError: true,
 		defaults: {
 			description(inner) {
-				return inner.rule === 1 ? "an integer" : `a multiple of ${inner.rule}`
+				return inner.divisor === 1
+					? "an integer"
+					: `a multiple of ${inner.divisor}`
 			}
 		}
 	})
 
-	traverseAllows = (data: number) => data % this.rule === 0
+	traverseAllows = (data: number) => data % this.divisor === 0
 
-	compiledCondition = `${jsData} % ${this.rule} === 0`
-	compiledNegation = `${jsData} % ${this.rule} !== 0`
+	compiledCondition = `${jsData} % ${this.divisor} === 0`
+	compiledNegation = `${jsData} % ${this.divisor} !== 0`
 
 	readonly expectedContext = this.createExpectedContext(this.inner)
 

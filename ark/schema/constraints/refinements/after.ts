@@ -1,15 +1,15 @@
+import { Disjoint } from "../../shared/disjoint.js"
 import type { nodeImplementationOf } from "../../shared/implement.js"
 import {
 	BaseRange,
 	dateLimitToString,
 	type DateBoundExtras,
-	type DateRangeDeclaration,
-	type boundToIs
+	type DateRangeDeclaration
 } from "./range.js"
 
 export type AfterDeclaration = DateRangeDeclaration<"after">
 
-export type after<date extends string> = boundToIs<"after", date>
+export type after<date extends string> = { after: date }
 
 export class AfterNode
 	extends BaseRange<AfterDeclaration, typeof AfterNode>
@@ -19,7 +19,7 @@ export class AfterNode
 		this.implementBound({
 			defaults: {
 				description(inner) {
-					const limitString = dateLimitToString(inner.rule)
+					const limitString = dateLimitToString(inner.limit)
 					return inner.exclusive
 						? `after ${limitString}`
 						: `${limitString} or later`
@@ -27,13 +27,15 @@ export class AfterNode
 				actual: (data) => data.toLocaleString()
 			},
 			intersections: {
-				after: (l, r) => (l.isStricterThan(r) ? l : r)
+				after: (l, r) => (l.isStricterThan(r) ? l : r),
+				before: (min, max) =>
+					min.isStricterThan(max) ? Disjoint.from("range", min, max) : null
 			}
 		})
 
-	dateLimit = new Date(this.rule)
+	dateLimit = new Date(this.limit)
 	numericLimit = +this.dateLimit
-	stringLimit = dateLimitToString(this.rule)
+	stringLimit = dateLimitToString(this.limit)
 
 	traverseAllows = this.exclusive
 		? (data: Date) => +data > this.numericLimit

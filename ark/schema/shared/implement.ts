@@ -12,8 +12,7 @@ import {
 	type listable,
 	type requireKeys
 } from "@arktype/util"
-import type { Node, TypeNode, UnknownNode } from "../base.js"
-import type { constraintKindLeftOf } from "../constraints/constraint.js"
+import type { Node, UnknownNode } from "../base.js"
 import { boundKinds } from "../constraints/refinements/shared.js"
 import type { Declaration, ExpectedContext, Inner } from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
@@ -22,7 +21,7 @@ import type {
 	ParsedUnknownNodeConfig,
 	ScopeNode
 } from "../scope.js"
-import type { typeKindOrRightOf, typeKindRightOf } from "../types/type.js"
+import type { typeKindRightOf } from "../types/type.js"
 import type {
 	BaseExpectedContext,
 	BaseMeta,
@@ -80,8 +79,8 @@ export const nodeKinds = [
 	"intersection",
 	"proto",
 	"domain",
-	...constraintKinds,
-	...propKinds
+	...propKinds,
+	...constraintKinds
 ] as const satisfies NodeKind[]
 
 export type OpenNodeKind = {
@@ -114,13 +113,6 @@ type RightsByKind = accumulateRightKinds<OrderedNodeKinds, {}>
 
 export type kindOrRightOf<kind extends NodeKind> = kind | kindRightOf<kind>
 
-export type kindLeftOf<kind extends NodeKind> = Exclude<
-	NodeKind,
-	kindOrRightOf<kind>
->
-
-export type kindOrLeftOf<kind extends NodeKind> = kind | kindLeftOf<kind>
-
 type accumulateRightKinds<
 	remaining extends readonly NodeKind[],
 	result
@@ -131,48 +123,18 @@ type accumulateRightKinds<
 	? accumulateRightKinds<tail, result & { [k in head]: tail[number] }>
 	: result
 
-export type AsymmetricConstraintIntersection<
-	lKind extends ConstraintKind,
-	rKind extends constraintKindLeftOf<lKind>
-> = (
-	l: Node<lKind>,
-	r: Node<rKind>,
-	$: ScopeNode
-) => Inner<lKind> | Disjoint | null
+export type IntersectionImplementation<
+	lKind extends NodeKind,
+	rKind extends kindOrRightOf<lKind>
+> = (l: Node<lKind>, r: Node<rKind>, $: ScopeNode) => Node | null
 
-export type SymmetricConstraintIntersection<kind extends ConstraintKind> = (
-	l: Node<kind>,
-	r: Node<kind>,
-	$: ScopeNode
-) =>
-	| Inner<kind>
-	| Disjoint
-	| (kind extends OpenNodeKind ? null : never)
-	| (kind extends BranchableNodeKind ? Inner<kind>[] : never)
-
-export type ConstraintIntersectionMap<kind extends ConstraintKind> = evaluate<
+export type IntersectionMap<kind extends NodeKind> = evaluate<
 	{
-		[_ in kind]: SymmetricConstraintIntersection<kind>
+		[_ in kind]: IntersectionImplementation<kind, kind>
 	} & {
-		[rKind in constraintKindLeftOf<kind>]?: AsymmetricConstraintIntersection<
-			kind,
-			rKind
-		>
+		[rKind in kindRightOf<kind>]?: IntersectionImplementation<kind, rKind>
 	}
 >
-
-export type TypeIntersection<
-	lKind extends TypeKind,
-	rKind extends typeKindOrRightOf<lKind>
-> = (l: Node<lKind>, r: Node<rKind>, $: ScopeNode) => TypeNode | Disjoint
-
-export type TypeIntersectionMap<kind extends TypeKind> = {
-	[rKind in typeKindOrRightOf<kind>]: TypeIntersection<kind, rKind>
-}
-
-export type IntersectionMap<kind extends NodeKind> = kind extends TypeKind
-	? TypeIntersectionMap<kind>
-	: ConstraintIntersectionMap<kind & ConstraintKind>
 
 export type UnknownIntersectionMap = {
 	[k in NodeKind]?: (

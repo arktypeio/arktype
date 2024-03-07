@@ -9,18 +9,19 @@ import {
 import type { Node, NodeSubclass } from "../../base.js"
 import type { Declaration, Schema } from "../../kinds.js"
 import { jsData } from "../../shared/compile.js"
-import type { BaseNodeDeclaration, declareNode } from "../../shared/declare.js"
+import type {
+	BaseMeta,
+	BaseNodeDeclaration,
+	declareNode
+} from "../../shared/declare.js"
 import {
 	throwInvalidOperandError,
 	type BasisKind,
 	type nodeImplementationInputOf,
 	type nodeImplementationOf
 } from "../../shared/implement.js"
-import type { DateLiteral, normalizePrimitiveConstraintSchema } from "../ast.js"
-import {
-	BasePrimitiveConstraint,
-	type PrimitiveConstraintInner
-} from "../constraint.js"
+import type { DateLiteral } from "../ast.js"
+import { BasePrimitiveConstraint } from "../constraint.js"
 import type { BoundKind, RangeKind } from "./shared.js"
 
 export abstract class BaseRange<
@@ -34,10 +35,10 @@ export abstract class BaseRange<
 		>
 	): nodeImplementationOf<d> {
 		return this.implement({
-			collapseKey: "rule",
+			collapseKey: "limit",
 			hasAssociatedError: true,
 			keys: {
-				rule: {
+				limit: {
 					parse: normalizeLimit
 				},
 				exclusive: {
@@ -46,9 +47,9 @@ export abstract class BaseRange<
 				}
 			},
 			normalize: (schema: d["schema"]) =>
-				typeof schema === "object" && "rule" in schema
-					? { ...schema, rule: schema.rule }
-					: { rule: schema as Extract<d["schema"], LimitSchemaValue> },
+				typeof schema === "object" && "limit" in schema
+					? { ...schema, limit: schema.limit }
+					: { limit: schema as Extract<d["schema"], LimitSchemaValue> },
 			defaults: implementation.defaults as never,
 			intersections: implementation.intersections
 		}) as never
@@ -62,7 +63,7 @@ export abstract class BaseRange<
 			? `${jsData}.length`
 			: `${jsData}.valueOf()`
 	comparator = compileComparator(this.kind, this.exclusive)
-	numericLimit = normalizeLimit(this.rule)
+	numericLimit = normalizeLimit(this.limit)
 	compiledCondition = `${this.compiledActual} ${this.comparator} ${this.numericLimit}`
 	compiledNegation = `${this.compiledActual} ${
 		negatedComparators[this.comparator]
@@ -81,8 +82,8 @@ export abstract class BaseRange<
 			return true
 		}
 		const thisLimitIsStricter =
-			this.limitKind === "upper" ? this.rule < r.rule : this.rule > r.rule
-		return thisLimitIsStricter || (this.rule === r.rule && r.exclusive)
+			this.limitKind === "upper" ? this.limit < r.limit : this.limit > r.limit
+		return thisLimitIsStricter || (this.limit === r.limit && r.exclusive)
 	}
 
 	protected throwInvalidBoundOperandError(basis: Node<BasisKind> | undefined) {
@@ -95,7 +96,8 @@ export abstract class BaseRange<
 }
 
 export interface BoundInner<limit extends LimitSchemaValue = LimitSchemaValue>
-	extends PrimitiveConstraintInner<limit> {
+	extends BaseMeta {
+	readonly limit: limit
 	readonly exclusive?: true
 }
 
@@ -103,7 +105,8 @@ export type LimitSchemaValue = Date | number | string
 
 export interface NormalizedBoundSchema<
 	limit extends LimitSchemaValue = LimitSchemaValue
-> extends PrimitiveConstraintInner<limit> {
+> extends BaseMeta {
+	readonly limit: limit
 	readonly exclusive?: boolean
 }
 
@@ -187,17 +190,17 @@ export const compileComparator = (
 
 type BoundDeclarationInput = {
 	kind: RangeKind
-	rule: LimitSchemaValue
+	limit: LimitSchemaValue
 	prerequisite: unknown
 }
 
 export type declareRange<input extends BoundDeclarationInput> = declareNode<{
 	kind: input["kind"]
-	schema: BoundSchema<input["rule"]>
-	normalizedSchema: NormalizedBoundSchema<input["rule"]>
-	inner: BoundInner<input["rule"]>
+	schema: BoundSchema<input["limit"]>
+	normalizedSchema: NormalizedBoundSchema<input["limit"]>
+	inner: BoundInner<input["limit"]>
 	prerequisite: input["prerequisite"]
-	expectedContext: BoundInner<input["rule"]>
+	expectedContext: BoundInner<input["limit"]>
 }>
 
 export type BoundOperandKind = "value" | "length" | "date"
@@ -214,7 +217,7 @@ export type NumericRangeDeclaration<
 	kind extends NumericRangeKind = NumericRangeKind
 > = declareRange<{
 	kind: kind
-	rule: number
+	limit: number
 	prerequisite: number
 }>
 
@@ -224,7 +227,7 @@ export type LengthRangeDeclaration<
 	kind extends LengthRangeKind = LengthRangeKind
 > = declareRange<{
 	kind: kind
-	rule: number
+	limit: number
 	prerequisite: LengthBoundableData
 }>
 
@@ -235,7 +238,7 @@ export type DateRangeKind = "before" | "after"
 export type DateRangeDeclaration<kind extends DateRangeKind = DateRangeKind> =
 	declareRange<{
 		kind: kind
-		rule: Date | string | number
+		limit: Date | string | number
 		prerequisite: Date
 	}>
 
@@ -246,15 +249,6 @@ export interface DateBoundExtras {
 	dateLimit: Date
 	numericLimit: number
 	stringLimit: string
-}
-
-export type boundToIs<
-	kind extends BoundKind,
-	schema extends Schema<BoundKind>
-> = {
-	[_ in schemaToComparator<kind, schema>]: limitToIs<
-		normalizePrimitiveConstraintSchema<schema>
-	>
 }
 
 export type limitToIs<limit> = limit extends DateLiteral<infer source>
