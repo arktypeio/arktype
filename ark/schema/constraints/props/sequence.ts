@@ -17,7 +17,6 @@ import type {
 	nodeImplementationOf
 } from "../../shared/implement.js"
 import { BaseConstraint } from "../constraint.js"
-import type { MinLengthNode } from "../refinements/minLength.js"
 
 export interface BaseSequenceSchema extends BaseMeta {
 	readonly prefix?: readonly TypeSchema[]
@@ -142,35 +141,27 @@ export class SequenceNode extends BaseConstraint<
 						prefix.push(...postfix.splice(0))
 					}
 				}
-				if (
-					inner.variadic &&
-					prefix.length &&
-					prefix.every((element) => element.equals(inner.variadic!))
-				) {
-					const minLength = ctx.$.parse("minLength", prefix.length)
-					ctx.intersection.minLength = ctx.intersection.minLength
-						? (minLength.intersect(ctx.intersection.minLength) as MinLengthNode)
-						: minLength
-					// TODO: max length Disjoint?
-					return ctx.$.parsePrereduced("sequence", {
-						variadic: inner.variadic
-					})
-				}
+				// if (
+				// 	inner.variadic &&
+				// 	prefix.length &&
+				// 	prefix.every((element) => element.equals(inner.variadic!))
+				// ) {
+				// 	// TODO: minLength
+				// 	return ctx.$.parsePrereduced("sequence", {
+				// 		variadic: inner.variadic
+				// 	})
+				// }
 				if (
 					(inner.postfix && postfix.length < inner.postfix.length) ||
 					(inner.optionals && optionals.length < inner.optionals.length)
 				) {
-					return ctx.$.parse(
-						"sequence",
-						{
-							...inner,
-							// empty lists will be omitted during parsing
-							prefix,
-							postfix,
-							optionals: optionals as never
-						},
-						{ prereduced: true }
-					)
+					return ctx.$.parsePrereduced("sequence", {
+						...inner,
+						// empty lists will be omitted during parsing
+						prefix,
+						postfix,
+						optionals: optionals as never
+					})
 				}
 			},
 			defaults: {

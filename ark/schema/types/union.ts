@@ -92,14 +92,10 @@ export class UnionNode<t = unknown> extends BaseType<
 				if (reducedBranches.length === inner.branches.length) {
 					return
 				}
-				return ctx.$.parse(
-					"union",
-					{
-						...inner,
-						branches: reducedBranches
-					},
-					{ prereduced: true }
-				)
+				return ctx.$.parsePrereduced("union", {
+					...inner,
+					branches: reducedBranches
+				})
 			},
 			defaults: {
 				description(inner) {
@@ -112,7 +108,7 @@ export class UnionNode<t = unknown> extends BaseType<
 				}
 			},
 			intersections: {
-				union: (l, r) => {
+				union: (l, r, $) => {
 					if (
 						(l.branches.length === 0 || r.branches.length === 0) &&
 						l.branches.length !== r.branches.length
@@ -139,7 +135,7 @@ export class UnionNode<t = unknown> extends BaseType<
 					if (resultBranches instanceof Disjoint) {
 						return resultBranches
 					}
-					return l.$.parse(
+					return $.parse(
 						"union",
 						l.ordered || r.ordered
 							? {
@@ -149,12 +145,12 @@ export class UnionNode<t = unknown> extends BaseType<
 							: { branches: resultBranches }
 					)
 				},
-				...defineRightwardIntersections("union", (l, r, $) => {
+				...defineRightwardIntersections("union", (l, r) => {
 					const branches = intersectBranches(l.branches, [r])
 					if (branches instanceof Disjoint) {
 						return branches
 					}
-					return $.parse(
+					return l.$.parse(
 						"union",
 						l.ordered ? { branches, ordered: true } : { branches }
 					)

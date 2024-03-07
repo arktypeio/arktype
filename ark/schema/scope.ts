@@ -195,7 +195,7 @@ export class ScopeNode<r extends object = any> {
 					{ unit: undefined }
 				]
 			},
-			{ reduceTo: this.parse("intersection", {}, { prereduced: true }) }
+			{ reduceTo: this.parsePrereduced("intersection", {}) }
 		)
 	}
 
@@ -247,7 +247,7 @@ export class ScopeNode<r extends object = any> {
 			}
 		}
 		const branches = uniqueValues.map((unit) =>
-			this.parse("unit", { unit }, { prereduced: true })
+			this.parsePrereduced("unit", { unit })
 		)
 		if (branches.length === 1) {
 			return branches[0] as never

@@ -50,16 +50,16 @@ export class OptionalNode extends BaseConstraint<
 				}
 			},
 			intersections: {
-				optional: (l, r) => {
+				optional: (l, r, $) => {
 					if (l.key !== r.key) {
 						return null
 					}
 					const key = l.key
 					const value = l.value.intersect(r.value)
-					return l.$.parse("optional", {
+					return $.parse("optional", {
 						key,
 						value:
-							value instanceof Disjoint ? (l.$.builtin.never as never) : value
+							value instanceof Disjoint ? ($.builtin.never as never) : value
 					})
 				}
 			}

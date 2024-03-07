@@ -28,8 +28,10 @@ export class AfterNode
 			},
 			intersections: {
 				after: (l, r) => (l.isStricterThan(r) ? l : r),
-				before: (min, max) =>
-					min.isStricterThan(max) ? Disjoint.from("range", min, max) : null
+				before: (after, before) =>
+					after.isStricterThan(before)
+						? Disjoint.from("range", after, before)
+						: null
 			}
 		})
 

@@ -31,8 +31,8 @@ export class DivisorNode extends BasePrimitiveConstraint<
 		normalize: (schema) =>
 			typeof schema === "number" ? { divisor: schema } : schema,
 		intersections: {
-			divisor: (l, r) =>
-				l.$.parse("divisor", {
+			divisor: (l, r, $) =>
+				$.parse("divisor", {
 					divisor: Math.abs(
 						(l.divisor * r.divisor) /
 							greatestCommonDivisor(l.divisor, r.divisor)
