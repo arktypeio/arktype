@@ -27,6 +27,20 @@ describe("parse", () => {
 			min: 5
 		})
 	})
+	it("throws on reduced minLength disjoint", () => {
+		attest(() =>
+			schema({
+				proto: Array,
+				maxLength: 0,
+				sequence: {
+					prefix: ["number"],
+					variadic: "number"
+				}
+			})
+		).throws(
+			"Intersection of non-empty and at most length 0 results in an unsatisfiable type"
+		)
+	})
 
 	// it("errors on all unknown keys", () => {
 	// 	attest(() => schema({ foo: "bar", bar: "baz" }))
