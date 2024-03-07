@@ -331,7 +331,7 @@ export abstract class BaseNode<
 				? // unlike parsing, intersection allows different node kinds to be returned,
 				  // so avoid parsing an instantiated Node here
 				  rawResult
-				: this.$.parse(leftmostKind, rawResult as never, { prereduced: true })
+				: this.$.parsePrereduced(leftmostKind, rawResult as never)
 
 		if (instantiatedResult instanceof BaseNode) {
 			// if the result equals one of the operands, preserve its metadata by

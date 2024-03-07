@@ -90,7 +90,7 @@ const intersectionChildKeyParser =
 	<kind extends IntersectionChildKind>(kind: kind) =>
 	(
 		input: listable<Schema<kind>>,
-		ctx: SchemaParseContext<"intersection">
+		ctx: SchemaParseContext
 	): intersectionChildInnerValueOf<kind> | undefined => {
 		if (isArray(input)) {
 			if (input.length === 0) {
@@ -98,12 +98,10 @@ const intersectionChildKeyParser =
 				return
 			}
 			return input
-				.map((schema) =>
-					ctx.$.parse(kind, schema as never, { intersection: ctx.intersection })
-				)
+				.map((schema) => ctx.$.parse(kind, schema as never))
 				.sort((l, r) => (l.innerId < r.innerId ? -1 : 1)) as never
 		}
-		const node = ctx.$.parse(kind, input, { intersection: ctx.intersection })
+		const node = ctx.$.parse(kind, input)
 		return node.hasOpenIntersection ? [node] : (node as any)
 	}
 
@@ -267,10 +265,9 @@ export class IntersectionNode<t = unknown> extends BaseType<
 
 					return basis instanceof Disjoint
 						? basis
-						: $.parse(
+						: $.parsePrereduced(
 								"intersection",
-								Object.assign(omit(l.inner, metaKeys), { [basis.kind]: basis }),
-								{ prereduced: true }
+								Object.assign(omit(l.inner, metaKeys), { [basis.kind]: basis })
 						  )
 				})
 			}

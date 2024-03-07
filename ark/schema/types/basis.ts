@@ -6,7 +6,7 @@ import type {
 	instanceOf,
 	isAny
 } from "@arktype/util"
-import { isNode, type NodeSubclass } from "../base.js"
+import type { NodeSubclass } from "../base.js"
 import type { Schema } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { TraverseApply } from "../shared/context.js"

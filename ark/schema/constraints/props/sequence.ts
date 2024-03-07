@@ -3,7 +3,8 @@ import {
 	throwInternalError,
 	throwParseError,
 	type List,
-	type mutable
+	type mutable,
+	type satisfy
 } from "@arktype/util"
 import type { TypeNode, TypeSchema } from "../../base.js"
 import type { MutableInner } from "../../kinds.js"
@@ -17,25 +18,25 @@ import type {
 	nodeImplementationOf
 } from "../../shared/implement.js"
 import { BaseConstraint } from "../constraint.js"
-import type { MinLengthNode } from "../refinements/minLength.js"
 
 export interface BaseSequenceSchema extends BaseMeta {
 	readonly prefix?: readonly TypeSchema[]
+	readonly optionals?: readonly TypeSchema[]
 	readonly variadic?: TypeSchema
+	readonly minVariadicLength?: number
 }
 
 export interface NormalizedPostfixableSequenceSchema
 	extends BaseSequenceSchema {
-	readonly optionals?: undefined
+	readonly optionals?: never
 	// variadic is required for postfix
 	readonly variadic: TypeSchema
-	readonly postfix?: readonly TypeSchema[]
+	readonly postfix: readonly TypeSchema[]
 }
 
 export interface NormalizedOptionalizableSequenceSchema
 	extends BaseSequenceSchema {
-	readonly optionals?: readonly TypeSchema[]
-	readonly postfix?: undefined
+	readonly postfix?: never
 }
 
 export type NormalizedSequenceSchema =
@@ -51,6 +52,7 @@ export interface SequenceInner extends BaseMeta {
 	readonly optionals?: readonly TypeNode[]
 	// the variadic element (only checked if all optional elements are present)
 	readonly variadic?: TypeNode
+	readonly minVariadicLength?: number
 	// a list of fixed position elements, the last being the last element of the array
 	readonly postfix?: readonly TypeNode[]
 }
@@ -94,6 +96,12 @@ export class SequenceNode extends BaseConstraint<
 					child: true,
 					parse: (schema, ctx) => ctx.$.parseTypeNode(schema)
 				},
+				minVariadicLength: {
+					// don't serialize minVariadicLength since it is reflected in
+					// its impliedSibling minLength on the parent of this node
+					serialize: () => undefined,
+					parse: (min) => (min === 0 ? undefined : min)
+				},
 				postfix: fixedSequenceKeyDefinition
 			},
 			normalize: (schema) => {
@@ -104,7 +112,8 @@ export class SequenceNode extends BaseConstraint<
 					"variadic" in schema ||
 					"prefix" in schema ||
 					"optionals" in schema ||
-					"postfix" in schema
+					"postfix" in schema ||
+					"minVariadicLength" in schema
 				) {
 					if (schema.postfix?.length) {
 						if (!schema.variadic) {
@@ -114,63 +123,65 @@ export class SequenceNode extends BaseConstraint<
 							return throwParseError(postfixFollowingOptionalMessage)
 						}
 					}
+					if (schema.minVariadicLength && !schema.variadic) {
+						return throwParseError(
+							"minVariadicLength may not be specified without a variadic element"
+						)
+					}
 					return schema
 				}
 				return { variadic: schema }
 			},
-			reduce: (inner, ctx) => {
-				const prefix = inner.prefix?.slice() ?? []
-				const optionals = inner.optionals?.slice() ?? []
-				const postfix = inner.postfix?.slice() ?? []
-				if (inner.variadic) {
+			reduce: (raw, ctx) => {
+				let minVariadicLength = raw.minVariadicLength ?? 0
+				const prefix = raw.prefix?.slice() ?? []
+				const optionals = raw.optionals?.slice() ?? []
+				const postfix = raw.postfix?.slice() ?? []
+				if (raw.variadic) {
 					// optional elements equivalent to the variadic parameter are redundant
-					while (optionals.at(-1)?.equals(inner.variadic)) {
+					while (optionals.at(-1)?.equals(raw.variadic)) {
 						optionals.pop()
 					}
-				}
-				if (optionals.length === 0) {
-					if (inner.variadic) {
-						// if optional length is 0, normalize equivalent
-						// prefix/postfix elements to prefix, e.g.:
-						// [...number[], number] => [number, ...number[]]
-						while (postfix[0]?.equals(inner.variadic)) {
-							prefix.push(postfix.shift()!)
+
+					if (optionals.length === 0) {
+						// If there are no optionals, normalize prefix
+						// elements adjacent and equivalent to variadic:
+						// 		{ variadic: number, prefix: [string, number] }
+						// reduces to:
+						// 		{ variadic: number, prefix: [string], minVariadicLength: 1 }
+						while (prefix.at(-1)?.equals(raw.variadic)) {
+							prefix.pop()
+							minVariadicLength++
 						}
-					} else {
-						// if there's no variadic or optional parameters,
-						// postfix can just be appended to fixed
-						prefix.push(...postfix.splice(0))
 					}
+					// Normalize postfix elements adjacent and equivalent to variadic:
+					// 		{ variadic: number, postfix: [number, number, 5] }
+					// reduces to:
+					// 		{ variadic: number, postfix: [5], minVariadicLength: 2 }
+					while (postfix[0]?.equals(raw.variadic)) {
+						postfix.shift()
+						minVariadicLength++
+					}
+				} else if (optionals.length === 0) {
+					// if there's no variadic or optional parameters,
+					// postfix can just be appended to prefix
+					prefix.push(...postfix.splice(0))
 				}
 				if (
-					inner.variadic &&
-					prefix.length &&
-					prefix.every((element) => element.equals(inner.variadic!))
+					// if any variadic adjacent elements were moved to minVariadicLength
+					minVariadicLength !== raw.minVariadicLength ||
+					// or any postfix elements were moved to prefix
+					(raw.prefix && raw.prefix.length !== prefix.length)
 				) {
-					const minLength = ctx.$.parse("minLength", prefix.length)
-					ctx.intersection.minLength = ctx.intersection.minLength
-						? (minLength.intersect(ctx.intersection.minLength) as MinLengthNode)
-						: minLength
-					// TODO: max length Disjoint?
+					// reparse the reduced schema
 					return ctx.$.parsePrereduced("sequence", {
-						variadic: inner.variadic
+						...raw,
+						// empty lists will be omitted during parsing
+						prefix,
+						postfix,
+						optionals: optionals as never,
+						minVariadicLength
 					})
-				}
-				if (
-					(inner.postfix && postfix.length < inner.postfix.length) ||
-					(inner.optionals && optionals.length < inner.optionals.length)
-				) {
-					return ctx.$.parse(
-						"sequence",
-						{
-							...inner,
-							// empty lists will be omitted during parsing
-							prefix,
-							postfix,
-							optionals: optionals as never
-						},
-						{ prereduced: true }
-					)
 				}
 			},
 			defaults: {
@@ -215,7 +226,9 @@ export class SequenceNode extends BaseConstraint<
 	readonly optionals = this.inner.optionals ?? []
 	readonly prevariadic = [...this.prefix, ...this.optionals]
 	readonly postfix = this.inner.postfix ?? []
-	readonly minLength = this.prefix.length + this.postfix.length
+	readonly minVariadicLength = this.inner.minVariadicLength ?? 0
+	readonly minLength =
+		this.prefix.length + this.minVariadicLength + this.postfix.length
 	readonly minLengthNode =
 		this.minLength === 0 ? undefined : this.$.parse("minLength", this.minLength)
 	readonly maxLength = this.variadic
@@ -326,7 +339,10 @@ export const postfixWithoutVariadicMessage =
 
 export type postfixWithoutVariadicMessage = typeof postfixWithoutVariadicMessage
 
-export type SequenceElementKind = Exclude<keyof SequenceInner, keyof BaseMeta>
+export type SequenceElementKind = satisfy<
+	keyof SequenceInner,
+	"prefix" | "optionals" | "variadic" | "postfix"
+>
 
 export type SequenceElement = {
 	kind: SequenceElementKind

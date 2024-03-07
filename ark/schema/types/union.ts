@@ -92,14 +92,10 @@ export class UnionNode<t = unknown> extends BaseType<
 				if (reducedBranches.length === inner.branches.length) {
 					return
 				}
-				return ctx.$.parse(
-					"union",
-					{
-						...inner,
-						branches: reducedBranches
-					},
-					{ prereduced: true }
-				)
+				return ctx.$.parsePrereduced("union", {
+					...inner,
+					branches: reducedBranches
+				})
 			},
 			defaults: {
 				description(inner) {

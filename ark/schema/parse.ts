@@ -19,12 +19,10 @@ import { Disjoint } from "./shared/disjoint.js"
 import {
 	defaultValueSerializer,
 	precedenceOfKind,
-	type ConstraintKind,
 	type KeyDefinitions,
 	type NodeKind,
 	type UnknownNodeImplementation
 } from "./shared/implement.js"
-import type { IntersectionInner } from "./types/intersection.js"
 
 export type SchemaParseOptions = {
 	alias?: string
@@ -36,16 +34,13 @@ export type SchemaParseOptions = {
 	 * Useful for defining reductions like number|string|bigint|symbol|object|true|false|null|undefined => unknown
 	 **/
 	reduceTo?: Node
-	intersection?: IntersectionInner
 }
 
-export type SchemaParseContext<kind extends NodeKind = NodeKind> = evaluate<
+export type SchemaParseContext = evaluate<
 	SchemaParseOptions & {
 		$: ScopeNode
 		definition: unknown
-	} & (kind extends "intersection" | ConstraintKind
-			? { intersection: IntersectionInner }
-			: { intersection?: undefined })
+	}
 >
 
 const typeCountsByPrefix: PartialRecord<string, number> = {}
@@ -94,7 +89,6 @@ export function parseAttachments(
 				: 1
 	)
 	const children: Node[] = []
-	if (kind === "intersection") ctx.intersection = inner
 	for (const entry of schemaEntries) {
 		const k = entry[0]
 		const keyImpl = impl.keys[k] ?? baseKeys[k]
@@ -122,9 +116,12 @@ export function parseAttachments(
 				children.push(listableNode)
 			}
 		} else {
-			json[k] = keyImpl.serialize
+			const serialized = keyImpl.serialize
 				? keyImpl.serialize(v)
 				: defaultValueSerializer(v)
+			if (serialized !== undefined) {
+				json[k] = serialized
+			}
 		}
 
 		if (!keyImpl.meta) {
@@ -133,7 +130,10 @@ export function parseAttachments(
 	})
 
 	let collapsibleJson = json
-	if (entries.length === 1 && entries[0][0] === impl.collapseKey) {
+	// check keys on JSON instead of schema in case one or more keys is
+	// unserialized, e.g. minVariadicLength on a SequenceNode
+	const jsonKeys = Object.keys(json)
+	if (jsonKeys.length === 1 && jsonKeys[0] === impl.collapseKey) {
 		collapsibleJson = json[impl.collapseKey] as never
 		if (hasDomain(collapsibleJson, "object")) {
 			json = collapsibleJson

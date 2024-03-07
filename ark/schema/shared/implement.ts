@@ -65,7 +65,8 @@ export const typeKinds = [
 export type TypeKind = (typeof typeKinds)[number]
 
 export const intersectionChildKinds = [
-	...basisKinds,
+	"proto",
+	"domain",
 	...constraintKinds
 ] as const
 
@@ -244,10 +245,11 @@ export type NodeKeyImplementation<
 			schema: instantiated extends listable<UnknownNode> | undefined
 				? ErrorMessage<`Keys with node children cannot specify a custom serializer`>
 				: instantiated
-		) => JsonData
+			// undefined can be returned to omit the key from serialization
+		) => JsonData | undefined
 		parse?: (
 			schema: Exclude<d["normalizedSchema"][k], undefined>,
-			ctx: SchemaParseContext<d["kind"]>
+			ctx: SchemaParseContext
 		) => instantiated
 	},
 	// require parse if we can't guarantee the schema value will be valid on inner
@@ -265,7 +267,7 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	collapseKey?: keyof d["inner"] & string
 	reduce?: (
 		inner: d["inner"],
-		ctx: SchemaParseContext<d["kind"]>
+		ctx: SchemaParseContext
 	) => Node<d["reducibleTo"]> | Disjoint | undefined
 }
 
