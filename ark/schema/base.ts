@@ -128,9 +128,6 @@ type subclassKind<self> = self extends Constructor<{
 
 type subclassDeclaration<self> = Declaration<subclassKind<self>>
 
-const orthogonal = Symbol("orthogonal")
-const disjoint = Symbol("disjoint")
-
 export abstract class BaseNode<
 	t,
 	d extends BaseNodeDeclaration,
@@ -140,9 +137,6 @@ export abstract class BaseNode<
 > extends DynamicBase<attachmentsOf<d>> {
 	declare infer: extractOut<t>;
 	declare [inferred]: t
-
-	static readonly orthogonal = orthogonal
-	static readonly disjoint = disjoint
 
 	protected static implement<self>(
 		this: self,
@@ -350,15 +344,11 @@ export abstract class BaseNode<
 				: implementation(r, this, this.$)
 
 		let instantiatedResult: UnknownNodeIntersectionResult =
-			rawResult === null
-				? this.$.parse(
-						"intersection",
-						this.kind === r.kind
-							? { [this.kind]: [this, r] }
-							: { [this.kind]: this, [r.kind]: r }
-				  )
-				: rawResult instanceof Disjoint
+			rawResult === null || rawResult instanceof Disjoint
 				? rawResult
+				: isArray(rawResult)
+				? // arrays represent a constraint union of a branching intersection kind like sequence
+				  rawResult.map((inner) => this.$.parse(this.kind, inner as never))
 				: rawResult instanceof BaseNode
 				? // unlike parsing, intersection allows different node kinds to be returned,
 				  // so avoid parsing an instantiated Node here

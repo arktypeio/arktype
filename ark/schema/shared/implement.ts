@@ -2,6 +2,7 @@ import {
 	compileSerializedValue,
 	morph,
 	throwParseError,
+	type Dict,
 	type ErrorMessage,
 	type JsonData,
 	type Stringifiable,
@@ -125,11 +126,7 @@ type accumulateRightKinds<
 export type IntersectionImplementation<
 	lKind extends NodeKind,
 	rKind extends kindOrRightOf<lKind>
-> = (
-	l: Node<lKind>,
-	r: Node<rKind>,
-	$: ScopeNode
-) => Node | Disjoint | (lKind extends ConstraintKind ? null : never)
+> = (l: Node<lKind>, r: Node<rKind>, $: ScopeNode) => Node | null
 
 export type IntersectionMap<kind extends NodeKind> = evaluate<
 	{
@@ -147,10 +144,14 @@ export type UnknownIntersectionMap = {
 	) => UnknownIntersectionImplementationResult
 }
 
-export type UnknownNodeIntersectionResult = Node | Disjoint
+export type UnknownNodeIntersectionResult = listable<Node> | Disjoint | null
 
 /** Dict represents an unknown Inner value to be parsed as a union branch */
-export type UnknownIntersectionImplementationResult = Node | Disjoint | null
+export type UnknownIntersectionImplementationResult =
+	| listable<Dict>
+	| Node
+	| Disjoint
+	| null
 
 type PrecedenceByKind = {
 	[i in indexOf<OrderedNodeKinds> as OrderedNodeKinds[i]]: i
@@ -208,7 +209,7 @@ export type NodeKeyImplementation<
 		) => JsonData
 		parse?: (
 			schema: Exclude<d["normalizedSchema"][k], undefined>,
-			ctx: SchemaParseContext
+			ctx: SchemaParseContext<d["kind"]>
 		) => instantiated
 	},
 	// require parse if we can't guarantee the schema value will be valid on inner
@@ -226,7 +227,7 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	collapseKey?: keyof d["inner"] & string
 	reduce?: (
 		inner: d["inner"],
-		ctx: SchemaParseContext
+		ctx: SchemaParseContext<d["kind"]>
 	) => Node<d["reducibleTo"]> | Disjoint | undefined
 }
 

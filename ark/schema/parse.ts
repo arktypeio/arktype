@@ -19,10 +19,12 @@ import { Disjoint } from "./shared/disjoint.js"
 import {
 	defaultValueSerializer,
 	precedenceOfKind,
+	type ConstraintKind,
 	type KeyDefinitions,
 	type NodeKind,
 	type UnknownNodeImplementation
 } from "./shared/implement.js"
+import type { IntersectionInner } from "./types/intersection.js"
 
 export type SchemaParseOptions = {
 	alias?: string
@@ -34,13 +36,16 @@ export type SchemaParseOptions = {
 	 * Useful for defining reductions like number|string|bigint|symbol|object|true|false|null|undefined => unknown
 	 **/
 	reduceTo?: Node
+	intersection?: IntersectionInner
 }
 
-export type SchemaParseContext = evaluate<
+export type SchemaParseContext<kind extends NodeKind = NodeKind> = evaluate<
 	SchemaParseOptions & {
 		$: ScopeNode
 		definition: unknown
-	}
+	} & (kind extends "intersection" | ConstraintKind
+			? { intersection: IntersectionInner }
+			: { intersection?: undefined })
 >
 
 const typeCountsByPrefix: PartialRecord<string, number> = {}
@@ -89,6 +94,7 @@ export function parseAttachments(
 				: 1
 	)
 	const children: Node[] = []
+	if (kind === "intersection") ctx.intersection = inner
 	for (const entry of schemaEntries) {
 		const k = entry[0]
 		const keyImpl = impl.keys[k] ?? baseKeys[k]

@@ -35,12 +35,12 @@ export class LengthNode extends BasePrimitiveConstraint<
 		normalize: (schema) =>
 			typeof schema === "number" ? { length: schema } : schema,
 		intersections: {
-			length: (l, r, $) =>
+			length: (l, r) =>
 				new Disjoint({
 					"[length]": {
 						unit: {
-							l: $.parse("unit", { unit: l.length }),
-							r: $.parse("unit", { unit: r.length })
+							l: l.$.parse("unit", { unit: l.length }),
+							r: r.$.parse("unit", { unit: r.length })
 						}
 					}
 				})
