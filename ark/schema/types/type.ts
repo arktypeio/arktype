@@ -12,7 +12,7 @@ import type { BaseNodeDeclaration } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { ArkResult } from "../shared/errors.js"
 import {
-	kindsRightOf,
+	typeKindsRightOf,
 	type ConstraintKind,
 	type NodeKind,
 	type TypeIntersection,
@@ -31,8 +31,8 @@ export type BaseTypeDeclaration = evaluate<
 
 export const defineRightwardIntersections = <kind extends TypeKind>(
 	kind: kind,
-	implementation: TypeIntersection<kind>
-) => morph(kindsRightOf(kind), (i, kind) => [kind, implementation])
+	implementation: TypeIntersection<kind, typeKindRightOf<kind>>
+) => morph(typeKindsRightOf(kind), (i, kind) => [kind, implementation])
 
 export abstract class BaseType<
 	t,

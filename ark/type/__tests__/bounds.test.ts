@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import { writeUnboundableMessage, type is, type min } from "@arktype/schema"
+import { writeUnboundableMessage, type min, type of } from "@arktype/schema"
 import { writeMalformedNumericLiteralMessage } from "@arktype/util"
 import { type } from "arktype"
 import type { Ark } from "../ark.js"
@@ -26,7 +26,7 @@ describe("bounds", () => {
 	describe("parse", () => {
 		it("inference", () => {
 			const t = type("number>=5")
-			attest<Type<is<number> & min<5>, Ark>>(t)
+			attest<Type<of<number> & min<5>, Ark>>(t)
 		})
 		describe("single", () => {
 			it(">", () => {

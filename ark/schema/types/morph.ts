@@ -8,7 +8,7 @@ import {
 	type listable
 } from "@arktype/util"
 import type { Node } from "../base.js"
-import type { is } from "../constraints/is.js"
+import type { of } from "../constraints/is.js"
 import type { Schema } from "../kinds.js"
 import type { StaticArkOption } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
@@ -189,7 +189,7 @@ type distillRecurse<
 	? io extends "in"
 		? i
 		: o
-	: t extends is<infer base>
+	: t extends of<infer base>
 	? constraints extends "base"
 		? distillRecurse<base, io, constraints>
 		: t

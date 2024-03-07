@@ -10,7 +10,6 @@ import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import { defaultValueSerializer } from "../shared/implement.js"
 import { BaseBasis } from "./basis.js"
-import { defineRightwardIntersections } from "./type.js"
 
 export interface ProtoInner<proto extends Constructor = Constructor>
 	extends BaseMeta {
@@ -69,7 +68,6 @@ export class ProtoNode<t = unknown> extends BaseBasis<
 					: constructorExtends(r.proto, l.proto)
 					? r
 					: Disjoint.from("proto", l, r),
-			...defineRightwardIntersections("proto", (l, r) => {}),
 			domain: (proto, domain) =>
 				domain.domain === "object"
 					? proto

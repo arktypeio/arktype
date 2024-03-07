@@ -9,6 +9,7 @@ import {
 	omit,
 	pick,
 	printable,
+	splitByKeys,
 	throwInternalError,
 	type List,
 	type evaluate,
@@ -75,7 +76,7 @@ export type IntersectionDeclaration = declareNode<{
 	schema: IntersectionSchema
 	normalizedSchema: IntersectionSchema
 	inner: IntersectionInner
-	reducibleTo: typeKindOrRightOf<"intersection">
+	reducibleTo: "union" | "intersection" | IntersectionBasisKind
 	expectedContext: {
 		errors: readonly ArkTypeError[]
 	}
@@ -134,24 +135,19 @@ const intersectIntersections = (
 	if (l instanceof IntersectionNode) l = l.inner
 	if (r instanceof IntersectionNode) r = r.inner
 
-	const root: MutableInner<"intersection"> = {}
-	if (l.onExtraneousKey || r.onExtraneousKey) {
-		root.onExtraneousKey =
-			l.onExtraneousKey === "throw" || r.onExtraneousKey === "throw"
-				? "throw"
-				: "prune"
-	}
+	const [lConstraintsInner, lRoot] = splitByKeys(l, constraintKeys)
+	const [rConstraintsInner, rRoot] = splitByKeys(r, constraintKeys)
+	const root = intersectRootKeys(lRoot, rRoot)
 
-	const result = intersectConstraints(
-		flattenConstraints(l),
-		flattenConstraints(r)
-	)
+	if (root instanceof Disjoint) return root
+	const basis = root.proto ?? root.domain
+
+	const lConstraints = flattenConstraints(lConstraintsInner)
+	const rConstraints = flattenConstraints(rConstraintsInner)
+	const result = intersectConstraints(lConstraints, rConstraints)
 
 	if (result instanceof Disjoint) return result
-	if (isArray(result) && result.length === 1 && result[0].isBasis())
-		// if the only constraint is a ProtoNode or DomainNode, we can use it directly instead of
-		// an IntersectionNode
-		return result[0]
+	if (isArray(result) && !result.length && basis) return basis
 
 	const branches = "branches" in result ? result.branches : [result]
 	const branchNodes = branches.map((branch) =>
@@ -334,6 +330,35 @@ const maybeCreatePropsGroup = (inner: IntersectionInner) => {
 	return isEmptyObject(propsInput) ? undefined : new PropsGroup(propsInput)
 }
 
+type IntersectionRoot = Omit<IntersectionInner, ConstraintKind>
+
+const intersectRootKeys = (
+	l: IntersectionRoot,
+	r: IntersectionRoot
+): MutableInner<"intersection"> | Disjoint => {
+	const result: IntersectionRoot = {}
+	const lBasis = l.proto ?? l.domain
+	const rBasis = r.proto ?? r.domain
+	const resultBasis = lBasis
+		? rBasis
+			? lBasis.intersect(rBasis)
+			: lBasis
+		: rBasis
+	if (resultBasis) {
+		if (resultBasis instanceof Disjoint) {
+			return resultBasis
+		}
+		result[resultBasis.kind] = resultBasis as never
+	}
+	if (l.onExtraneousKey || r.onExtraneousKey) {
+		result.onExtraneousKey =
+			l.onExtraneousKey === "throw" || r.onExtraneousKey === "throw"
+				? "throw"
+				: "prune"
+	}
+	return result
+}
+
 const intersectConstraints = (
 	l: List<ConstraintNode>,
 	r: List<ConstraintNode>
@@ -420,9 +445,7 @@ const unflattenConstraints = (
 ): IntersectionInner => {
 	const inner: MutableInner<"intersection"> = {}
 	for (const constraint of constraints) {
-		if (constraint.isBasis()) {
-			inner.basis = constraint
-		} else if (constraint.hasOpenIntersection) {
+		if (constraint.hasOpenIntersection) {
 			inner[constraint.kind] = append(
 				inner[constraint.kind],
 				constraint

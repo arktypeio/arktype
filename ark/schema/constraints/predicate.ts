@@ -6,7 +6,7 @@ import {
 	BasePrimitiveConstraint,
 	type PrimitiveConstraintInner
 } from "./constraint.js"
-import type { is } from "./is.js"
+import type { of } from "./is.js"
 
 export interface PredicateInner<rule extends Predicate<any> = Predicate<any>>
 	extends PrimitiveConstraintInner<rule> {}
@@ -77,5 +77,5 @@ export type inferNarrow<In, predicate> = predicate extends (
 	...args: any[]
 ) => data is infer narrowed
 	? // TODO: preserve constraints
-	  is<narrowed> & { ":": true }
+	  of<narrowed> & { ":": true }
 	: In

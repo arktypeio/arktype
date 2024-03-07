@@ -35,19 +35,19 @@ export type Constraints = evaluate<
 	}
 >
 
-export type is<basis> = {
+export type of<basis> = {
 	basis: basis
 }
 
 export type intersectConstrainables<l, r> = [l, r] extends [
-	is<infer lInner> & infer lConstraints,
-	is<infer rInner> & infer rConstraints
+	of<infer lInner> & infer lConstraints,
+	of<infer rInner> & infer rConstraints
 ]
-	? is<lInner & rInner> & lConstraints & rConstraints
-	: l extends is<infer lInner> & infer lConstraints
-	? is<lInner & r> & lConstraints
-	: r extends is<infer rInner> & infer rConstraints
-	? is<l & rInner> & rConstraints
+	? of<lInner & rInner> & lConstraints & rConstraints
+	: l extends of<infer lInner> & infer lConstraints
+	? of<lInner & r> & lConstraints
+	: r extends of<infer rInner> & infer rConstraints
+	? of<l & rInner> & rConstraints
 	: l & r
 
 export type LimitLiteral = number | DateLiteral
@@ -70,10 +70,10 @@ export type validateConstraintArg<
 // 	constraints
 // >
 
-export type constrain<In, constraint> = In extends is<infer base> &
+export type constrain<In, constraint> = In extends of<infer base> &
 	infer constraints
-	? is<base> & constraints & constraint
-	: is<In> & constraint
+	? of<base> & constraints & constraint
+	: of<In> & constraint
 
 export type normalizePrimitiveConstraintSchema<
 	schema extends Schema<PrimitiveConstraintKind>

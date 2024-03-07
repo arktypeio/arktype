@@ -6,9 +6,9 @@ import type {
 	distill,
 	divisor,
 	inferIntersection,
-	is,
 	max,
 	min,
+	of,
 	regex
 } from "@arktype/schema"
 import type { BigintLiteral, List, NumberLiteral } from "@arktype/util"
@@ -111,9 +111,9 @@ export type inferTerminal<token, $, args> = token extends keyof args | keyof $
 	: token extends BigintLiteral<infer value>
 	? value
 	: token extends RegexLiteral
-	? is<string> & regex<token>
+	? of<string> & regex<token>
 	: token extends DateLiteral
-	? is<Date> //& evaluate<constraints & { [_ in token]: true }>
+	? of<Date> //& evaluate<constraints & { [_ in token]: true }>
 	: // doing this last allows us to infer never if it isn't valid rather than check
 	  // if it's a valid submodule reference ahead of time
 	  tryInferSubmoduleReference<$, token>
