@@ -356,7 +356,7 @@ Value at [1] must be a number (was boolean)`)
 		})
 		it("reduces minLength", () => {
 			const t = type(["number", "number", "...", "number[]", "number"])
-			const expected = type("number[]").minLength(3)
+			const expected = type("number[]>=3")
 			attest(t.json).equals(expected.json)
 		})
 	})

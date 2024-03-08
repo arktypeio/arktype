@@ -30,9 +30,9 @@ export class BeforeNode
 			intersections: {
 				before: (l, r) => (l.isStricterThan(r) ? l : r),
 				after: (before, after) =>
-					before.isStricterThan(after)
-						? Disjoint.from("range", before, after)
-						: null
+					before.overlapsRange(after)
+						? null
+						: Disjoint.from("range", before, after)
 			}
 		})
 

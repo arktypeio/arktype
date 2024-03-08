@@ -159,7 +159,7 @@ describe("morph", () => {
 		attest<Type<boolean | ((In: number) => Out<string>)>>(types.aOrB)
 		// attest(types.aOrB.node).snap({
 		//     number: { rules: {}, morph: "(function)" },
-		//     boolean: true
+		//     boolean: true`
 		// })
 		// attest<typeof types.aOrB>(types.bOrA)
 		// attest(types.bOrA.node).equals(types.aOrB.node)

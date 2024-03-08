@@ -27,8 +27,13 @@ export class MaxLengthNode extends BaseRange<
 			},
 			intersections: {
 				maxLength: (l, r) => (l.isStricterThan(r) ? l : r),
-				minLength: (max, min) =>
-					max.isStricterThan(min) ? Disjoint.from("range", max, min) : null
+				minLength: (max, min, $) =>
+					max.overlapsRange(min)
+						? null
+						: // max.overlapIsUnit(min)
+						  // 	? $.parse("unit", { unit: max.rule })
+						  // 	: null
+						  Disjoint.from("range", max, min)
 			}
 		})
 

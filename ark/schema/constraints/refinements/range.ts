@@ -54,6 +54,7 @@ export abstract class BaseRange<
 		}) as never
 	}
 
+	exclusive = this.inner.exclusive ?? false
 	boundOperandKind = operandKindsByBoundKind[this.kind]
 	compiledActual =
 		this.boundOperandKind === "value"
@@ -73,16 +74,23 @@ export abstract class BaseRange<
 	readonly limitKind: LimitKind =
 		this.comparator["0"] === "<" ? "upper" : "lower"
 
-	isStricterThan(
-		r: Node<d["kind"] | pairedRangeKind<d["kind"]>> | undefined
-	): boolean
-	isStricterThan(r: Node<RangeKind> | undefined) {
-		if (r === undefined) {
-			return true
-		}
+	isStricterThan(r: Node<d["kind"] | pairedRangeKind<d["kind"]>>): boolean {
 		const thisLimitIsStricter =
 			this.limitKind === "upper" ? this.rule < r.rule : this.rule > r.rule
-		return thisLimitIsStricter || (this.rule === r.rule && this.exclusive)
+		return (
+			thisLimitIsStricter ||
+			(this.rule === r.rule && this.exclusive && !r.exclusive)
+		)
+	}
+
+	overlapsRange(r: Node<pairedRangeKind<d["kind"]>>) {
+		if (this.isStricterThan(r)) return false
+		if (this.rule === r.rule && (this.exclusive || r.exclusive)) return false
+		return true
+	}
+
+	overlapIsUnit(r: Node<pairedRangeKind<d["kind"]>>) {
+		return this.rule === r.rule && !this.exclusive && !r.exclusive
 	}
 
 	protected throwInvalidBoundOperandError(basis: Node<BasisKind> | undefined) {
@@ -96,16 +104,14 @@ export abstract class BaseRange<
 
 export interface BoundInner<limit extends LimitSchemaValue = LimitSchemaValue>
 	extends PrimitiveConstraintInner<limit> {
-	readonly exclusive?: true
+	readonly exclusive?: boolean
 }
 
 export type LimitSchemaValue = Date | number | string
 
-export interface NormalizedBoundSchema<
+export type NormalizedBoundSchema<
 	limit extends LimitSchemaValue = LimitSchemaValue
-> extends PrimitiveConstraintInner<limit> {
-	readonly exclusive?: boolean
-}
+> = BoundInner<limit>
 
 export type BoundSchema<limit extends LimitSchemaValue = LimitSchemaValue> =
 	| limit
@@ -177,10 +183,7 @@ export const operandKindsByBoundKind = {
 	before: "date"
 } as const satisfies Record<RangeKind, BoundOperandKind>
 
-export const compileComparator = (
-	kind: RangeKind,
-	exclusive: true | undefined
-) =>
+export const compileComparator = (kind: RangeKind, exclusive: boolean) =>
 	`${isKeyOf(kind, boundKindPairsByLower) ? ">" : "<"}${
 		exclusive ? "" : "="
 	}` as const

@@ -107,8 +107,7 @@ entriesOf(boundKindPairsByLower).forEach(([min, max]) => {
 			const l = schema({
 				...basis,
 				[min]: {
-					rule: 6,
-					exclusive: true
+					rule: 6
 				}
 			})
 			const r = schema({
@@ -138,8 +137,7 @@ entriesOf(boundKindPairsByLower).forEach(([min, max]) => {
 			const l = schema({
 				...basis,
 				[min]: {
-					rule: 3,
-					exclusive: true
+					rule: 3
 				}
 			})
 			const r = schema({
