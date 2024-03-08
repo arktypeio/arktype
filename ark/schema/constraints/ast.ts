@@ -65,10 +65,21 @@ export type validateConstraintArg<
 			>
 	  >
 
-// export type constrain<t, constraints extends Constraints> = rawConstrain<
-// 	t,
-// 	constraints
-// >
+export type RangeExclusivity = "exclusive" | "inclusive"
+
+export namespace number {
+	export type min<
+		t extends number,
+		exclusivity extends RangeExclusivity = "inclusive"
+	> = { t: number } & { min: t }
+
+	export type max<
+		t extends number,
+		exclusivity extends RangeExclusivity = "inclusive"
+	> = { t: number } & { min: t }
+
+	export type divisor<t extends number> = { t: number } & { min: t }
+}
 
 export type constrain<In, constraint> = In extends of<infer base> &
 	infer constraints
