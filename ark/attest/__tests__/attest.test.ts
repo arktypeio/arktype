@@ -56,6 +56,11 @@ describe("attest", () => {
 			"type !== typo"
 		)
 	})
+	it("instanceOf", () => {
+		const d = new Date()
+		attest(d).instanceOf(Date)
+		assert.throws(() => attest(d).instanceOf(RegExp), assert.AssertionError)
+	})
 	it("incorrect type", () => {
 		assert.throws(
 			// @ts-expect-error

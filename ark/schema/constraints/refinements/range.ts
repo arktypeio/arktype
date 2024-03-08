@@ -82,7 +82,10 @@ export abstract class BaseRange<
 		}
 		const thisLimitIsStricter =
 			this.limitKind === "upper" ? this.rule < r.rule : this.rule > r.rule
-		return thisLimitIsStricter || (this.rule === r.rule && r.exclusive)
+		return (
+			thisLimitIsStricter ||
+			(this.rule === r.rule && (this.exclusive || r.exclusive))
+		)
 	}
 
 	protected throwInvalidBoundOperandError(basis: Node<BasisKind> | undefined) {

@@ -1,5 +1,5 @@
 import { caller } from "@arktype/fs"
-import { printable, snapshot } from "@arktype/util"
+import { printable, snapshot, type Constructor } from "@arktype/util"
 import * as assert from "node:assert/strict"
 import { isDeepStrictEqual } from "node:util"
 import {
@@ -15,7 +15,8 @@ import {
 	assertEqualOrMatching,
 	assertEquals,
 	callAssertedFunction,
-	getThrownMessage
+	getThrownMessage,
+	throwAssertionError
 } from "./assertions.js"
 import type { AssertionContext } from "./attest.js"
 
@@ -63,6 +64,16 @@ export class ChainableAssertions implements AssertionRecord {
 	}
 	equals(expected: unknown) {
 		assertEquals(expected, this.actual, this.ctx)
+		return this
+	}
+
+	instanceOf(expected: Constructor) {
+		if (!(this.actual instanceof expected)) {
+			throwAssertionError({
+				ctx: this.ctx,
+				message: `Expected ${this.actual} to be an instance of ${expected}`
+			})
+		}
 		return this
 	}
 
@@ -263,6 +274,7 @@ type snapProperty<expected, kind extends AssertionKind> = {
 export type comparableValueAssertion<expected, kind extends AssertionKind> = {
 	snap: snapProperty<expected, kind>
 	equals: (value: expected) => nextAssertions<kind>
+	instanceOf: (constructor: Constructor) => nextAssertions<kind>
 	is: (value: expected) => nextAssertions<kind>
 	completions: (value?: Completions) => void
 	// This can be used to assert values without type constraints
