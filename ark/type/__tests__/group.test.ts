@@ -8,11 +8,16 @@ import { writeExpressionExpectedMessage } from "../parser/string/shift/operand/u
 
 describe("group", () => {
 	it("entire expression", () => {
-		attest<string>(type("(string)").infer)
+		const t = type("(string)")
+		const expected = type("string")
+		attest<typeof expected>(t)
+		attest(t.json).equals(expected.json)
 	})
 	it("overrides default precedence", () => {
-		attest<boolean | number[]>(type("boolean|number[]").infer)
-		attest<(boolean | number)[]>(type("(boolean|number)[]").infer)
+		const t = type("(boolean|number)[]")
+		const expected = type("boolean|number").array()
+		attest<typeof expected>(t)
+		attest(t.json).equals(expected.json)
 	})
 	it("nested", () => {
 		attest<((number | boolean)[] | (string | undefined)[])[]>(

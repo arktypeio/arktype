@@ -1,7 +1,5 @@
 import { domainOf, printable } from "@arktype/util"
-import type { ConstraintNode } from "../base.js"
 import { jsData } from "../shared/compile.js"
-import { TraversalContext } from "../shared/context.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import { BaseBasis } from "./basis.js"
@@ -47,20 +45,15 @@ export class UnitNode<t = unknown> extends BaseBasis<
 		}
 	})
 
-	serializedValue: string = (this.json as any).unit
+	serializedValue: string =
+		typeof this.unit === "string"
+			? JSON.stringify(this.unit)
+			: (this.json as any).unit
 	traverseAllows = (data: unknown) => data === this.unit
 	compiledCondition = `${jsData} === ${this.serializedValue}`
 	compiledNegation = `${jsData} !== ${this.serializedValue}`
 
 	readonly expectedContext = this.createExpectedContext(this.inner)
-
-	// applyConstraint(node: ConstraintNode) {
-	// 	const allowed = node.traverseAllows(
-	// 		this.unit,
-	// 		new TraversalContext(this.unit, this.$.config)
-	// 	)
-	// 	return allowed ? this : Disjoint.from()
-	// }
 
 	basisName = printable(this.unit)
 	domain = domainOf(this.unit)

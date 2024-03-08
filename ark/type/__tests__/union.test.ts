@@ -10,7 +10,7 @@ describe("union", () => {
 	it("binary", () => {
 		const binary = type("number|string")
 		attest<number | string>(binary.infer)
-		// attest(binary.node).snap({ number: true, string: true })
+		attest(binary.json).snap(["number", "string"])
 	})
 	it("nary", () => {
 		const nary = type("false|null|undefined|0|''")
@@ -19,12 +19,17 @@ describe("union", () => {
 		attest(nary.json).equals(expected.json)
 	})
 	it("subtype pruning", () => {
-		type([{ a: "string" }, "|", { a: "'foo'" }])
+		const t = type({ a: "string" }, "|", { a: "'foo'" })
+		const expected = type({ a: "string" })
+		attest<typeof expected>(t)
+		attest(t.json).equals(expected.json)
 	})
 	it("multiple subtypes pruned", () => {
+		// TODO: check base type union reduction
 		const t = type("'foo'|'bar'|string|'baz'|/.*/")
+		const expected = type("string")
 		attest<string>(t.infer)
-		attest(t.json).is(type("string").json)
+		attest(t.json).equals(expected.json)
 	})
 	it("union of true and false reduces to boolean", () => {
 		const t = type("true|false")

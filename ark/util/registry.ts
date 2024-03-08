@@ -20,7 +20,7 @@ export const reference = (value: object | symbol) => {
 	const uniqueName = `${baseName}${nameCounts[baseName]!++}`
 	registry[uniqueName] = value
 	namesByResolution.set(value, uniqueName)
-	return uniqueName
+	return `$ark.${uniqueName}`
 }
 
 export const isDotAccessible = (name: string) =>

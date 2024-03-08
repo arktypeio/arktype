@@ -23,8 +23,11 @@ describe("divisibility", () => {
 		})
 		it("with bounds", () => {
 			const t = type("7<number%8<222")
-			attest(t.json).equals(type("number%8").and("7<number<222").json)
-			attest(t.root.description).snap()
+			const expected = type("number%8").and("7<number<222")
+			attest(t.json).equals(expected.json)
+			attest(t.root.description).snap(
+				"a number and a multiple of 8 and more than 7 and less than 222"
+			)
 		})
 		it("allows non-narrowed divisor", () => {
 			const d = 5 as number

@@ -1,4 +1,4 @@
-import { schema, type RegexLiteral } from "@arktype/schema"
+import { schema } from "@arktype/schema"
 import { isKeyOf } from "@arktype/util"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import type { StaticState, state } from "../../reduce/static.js"
@@ -30,7 +30,7 @@ export const parseEnclosed = (
 	if (enclosing === "/") {
 		// fail parsing if the regex is invalid
 		new RegExp(enclosed)
-		s.root = schema({ domain: "string", regex: token as RegexLiteral })
+		s.root = schema({ domain: "string", regex: enclosed })
 	} else if (isKeyOf(enclosing, enclosingQuote)) {
 		s.root = schema({ unit: enclosed })
 	} else {

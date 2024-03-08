@@ -13,7 +13,7 @@ describe("instanceof", () => {
 			attest(t.json).equals(schema(Error).json)
 			const e = new Error()
 			attest(t(e).out).equals(e)
-			attest(t({}).errors?.summary).snap("Must be an Error (was Object)")
+			attest(t({}).errors?.summary).snap("Must be an Error (was object)")
 		})
 		it("inherited", () => {
 			const t = type(["instanceof", TypeError])
@@ -60,7 +60,7 @@ describe("instanceof", () => {
 			const a = new ArkClass()
 			attest(ark(a).out).equals(a)
 			attest(ark({}).errors?.summary).snap(
-				"Must be an instance of ArkClass (was Object)"
+				"Must be an instance of ArkClass (was object)"
 			)
 		})
 		// TODO: Fix- Investigate bidirectional check impact on perf to narrow private props without breaking this case:

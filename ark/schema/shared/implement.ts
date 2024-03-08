@@ -58,8 +58,10 @@ export type ConstraintKind = (typeof constraintKinds)[number]
 export const typeKinds = [
 	"union",
 	"morph",
+	"unit",
 	"intersection",
-	...basisKinds
+	"proto",
+	"domain"
 ] as const
 
 export type TypeKind = (typeof typeKinds)[number]
@@ -75,14 +77,10 @@ export type IntersectionChildKind = (typeof intersectionChildKinds)[number]
 export type NodeKind = TypeKind | ConstraintKind
 
 export const nodeKinds = [
-	"union",
-	"morph",
-	"unit",
-	"intersection",
-	"proto",
-	"domain",
-	...constraintKinds,
-	...propKinds
+	...typeKinds,
+	...refinementKinds,
+	...propKinds,
+	"predicate"
 ] as const satisfies NodeKind[]
 
 export type OpenNodeKind = {

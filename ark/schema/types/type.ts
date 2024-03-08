@@ -86,21 +86,13 @@ export abstract class BaseType<
 
 	intersect<r extends Node>(
 		r: r
-	):
-		| TypeNode<
-				// intersectType<this["kind"], r["kind"]>,
-				inferIntersection<this["infer"], r["infer"]>
-		  >
-		| Disjoint {
+	): TypeNode<inferIntersection<this["infer"], r["infer"]>> | Disjoint {
 		return this.intersectInternal(r) as never
 	}
 
 	and<r extends TypeNode>(
 		r: r
-	): TypeNode<
-		// intersectType<this["kind"], r["kind"]>,
-		inferIntersection<this["infer"], r["infer"]>
-	> {
+	): TypeNode<inferIntersection<this["infer"], r["infer"]>> {
 		const result = this.intersect(r as never)
 		return result instanceof Disjoint ? result.throw() : (result as never)
 	}
