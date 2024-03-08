@@ -133,7 +133,7 @@ export class SequenceNode extends BaseConstraint<
 				}
 				return { variadic: schema }
 			},
-			reduce: (raw, ctx) => {
+			reduce: (raw, $) => {
 				let minVariadicLength = raw.minVariadicLength ?? 0
 				const prefix = raw.prefix?.slice() ?? []
 				const optionals = raw.optionals?.slice() ?? []
@@ -175,7 +175,7 @@ export class SequenceNode extends BaseConstraint<
 					(raw.prefix && raw.prefix.length !== prefix.length)
 				) {
 					// reparse the reduced schema
-					return ctx.$.parsePrereduced("sequence", {
+					return $.parsePrereduced("sequence", {
 						...raw,
 						// empty lists will be omitted during parsing
 						prefix,

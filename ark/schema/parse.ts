@@ -156,7 +156,7 @@ export function parseAttachments(
 	const typeId = JSON.stringify({ kind, ...typeJson })
 
 	if (impl.reduce && !ctx.prereduced) {
-		const reduced = impl.reduce(inner, ctx)
+		const reduced = impl.reduce(inner, ctx.$)
 		if (reduced) {
 			if (reduced instanceof Disjoint) {
 				return reduced.throw()

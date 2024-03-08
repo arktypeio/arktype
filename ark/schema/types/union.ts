@@ -84,7 +84,7 @@ export class UnionNode<t = unknown> extends BaseType<
 				}
 			},
 			normalize: (schema) => (isArray(schema) ? { branches: schema } : schema),
-			reduce: (inner, ctx) => {
+			reduce: (inner, $) => {
 				const reducedBranches = reduceBranches(inner)
 				if (reducedBranches.length === 1) {
 					return reducedBranches[0]
@@ -92,7 +92,7 @@ export class UnionNode<t = unknown> extends BaseType<
 				if (reducedBranches.length === inner.branches.length) {
 					return
 				}
-				return ctx.$.parsePrereduced("union", {
+				return $.parsePrereduced("union", {
 					...inner,
 					branches: reducedBranches
 				})

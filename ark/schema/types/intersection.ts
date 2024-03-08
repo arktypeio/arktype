@@ -238,10 +238,10 @@ export class IntersectionNode<t = unknown> extends BaseType<
 			},
 			// leverage reduction logic from intersection and identity to ensure initial
 			// parse result is reduced
-			reduce: (inner, ctx) =>
+			reduce: (inner, $) =>
 				// we cast union out of the result here since that only occurs when intersecting two sequences
 				// that cannot occur when reducing a single intersection schema using unknown
-				intersectIntersections({}, inner, ctx.$) as Node<
+				intersectIntersections({}, inner, $) as Node<
 					"intersection" | IntersectionBasisKind
 				>,
 			defaults: {

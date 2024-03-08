@@ -267,7 +267,7 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	collapseKey?: keyof d["inner"] & string
 	reduce?: (
 		inner: d["inner"],
-		ctx: SchemaParseContext
+		$: ScopeNode
 	) => Node<d["reducibleTo"]> | Disjoint | undefined
 }
 
