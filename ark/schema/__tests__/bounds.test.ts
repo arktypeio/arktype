@@ -103,8 +103,45 @@ entriesOf(boundKindPairsByLower).forEach(([min, max]) => {
 			attest(t.allows(cases.equalToInclusiveMax)).equals(true)
 			attest(t.allows(cases.greaterThanMax)).equals(false)
 		})
+		it("unit range reduces", () => {
+			const l = schema({
+				...basis,
+				[min]: {
+					rule: 6,
+					exclusive: true
+				}
+			})
+			const r = schema({
+				...basis,
+				[max]: {
+					rule: 6
+				}
+			})
+			const expected =
+				min === "min"
+					? schema({
+							unit: 6
+					  })
+					: min === "minLength"
+					? schema({
+							...basis,
+							length: 6
+					  })
+					: schema({
+							unit: new Date(6)
+					  })
+
+			attest(l.and(r).json).equals(expected.json)
+			attest(r.and(l).json).equals(expected.json)
+		})
 		it("non-overlapping exclusive", () => {
-			const l = schema({ ...basis, [min]: 3 })
+			const l = schema({
+				...basis,
+				[min]: {
+					rule: 3,
+					exclusive: true
+				}
+			})
 			const r = schema({
 				...basis,
 				[max]: {

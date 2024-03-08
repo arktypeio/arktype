@@ -71,7 +71,11 @@ export class ChainableAssertions implements AssertionRecord {
 		if (!(this.actual instanceof expected)) {
 			throwAssertionError({
 				ctx: this.ctx,
-				message: `Expected ${this.actual} to be an instance of ${expected}`
+				message: `Expected an instance of ${expected.name} (was ${
+					typeof this.actual === "object" && this.actual !== null
+						? this.actual.constructor.name
+						: this.serializedActual
+				})`
 			})
 		}
 		return this

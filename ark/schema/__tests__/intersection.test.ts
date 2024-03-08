@@ -21,6 +21,17 @@ describe("intersections", () => {
 		attest(l.equals(r)).equals(false)
 	})
 
+	it("multiple constraints", () => {
+		const n = schema({
+			domain: "number",
+			divisor: 3,
+			min: 5
+		})
+		attest(n.allows(6)).snap(true)
+		attest(n.allows(4)).snap(false)
+		attest(n.allows(7)).snap(false)
+	})
+
 	// TODO:
 	// it("strict intersection", () => {
 	// 	const T = type(
