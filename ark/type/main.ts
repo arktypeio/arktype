@@ -1,7 +1,4 @@
-export {
-	ArkErrors as ArkErrors,
-	type ArkTypeError as ArkTypeError
-} from "@arktype/schema"
+export { ArkErrors, ArkTypeError } from "@arktype/schema"
 export type { Out, of as of } from "@arktype/schema"
 export {
 	ark,
