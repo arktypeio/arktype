@@ -15,7 +15,6 @@ export const HeroContents = () => (
 			style={{
 				display: " flex",
 				flexDirection: "row",
-				flexdomain: "row",
 				justifyContent: "space-between"
 			}}
 		>

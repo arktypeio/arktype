@@ -16,9 +16,11 @@ hero:
 
 import { Card, CardGrid } from "@astrojs/starlight/components"
 import { HeroContents } from "../../components/HeroContents.tsx"
+import { HomeDemo } from "../../components/HomeDemo.tsx"
 
 <div class="not-content">
 	<HeroContents client:only />
+	<HomeDemo client:only />
 </div>
 
 ## v2 is coming
@@ -45,3 +47,4 @@ We coudn't be more excited to share it with you.
 		Learn more in [the Starlight Docs](https://starlight.astro.build/).
 	</Card>
 </CardGrid>
+../../components/HomeDemo.tsx
