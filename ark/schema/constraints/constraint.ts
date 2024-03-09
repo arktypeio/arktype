@@ -9,7 +9,6 @@ import type { TraverseAllows, TraverseApply } from "../shared/context.js"
 import type { BaseMeta, BaseNodeDeclaration } from "../shared/declare.js"
 import type { Disjoint } from "../shared/disjoint.js"
 import type {
-	BranchableNodeKind,
 	ConstraintKind,
 	PropKind,
 	kindLeftOf
@@ -33,12 +32,7 @@ export interface BaseConstraintDeclaration extends BaseNodeDeclaration {
 type intersectConstraintKinds<
 	l extends ConstraintKind,
 	r extends ConstraintKind
-> =
-	| Node<l | r>
-	| Disjoint
-	| null
-	// A constraint intersection may result in a union if both operands could be of the same BranchableNodeKind
-	| (l & r & BranchableNodeKind extends never ? never : Node<l | r>[])
+> = Node<l | r | "unit" | "union"> | Disjoint | null
 
 export abstract class BaseConstraint<
 	d extends BaseConstraintDeclaration,

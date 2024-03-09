@@ -60,8 +60,8 @@ import {
 	type PropKind,
 	type RefinementKind,
 	type TypeKind,
+	type UnknownIntersectionResult,
 	type UnknownNodeImplementation,
-	type UnknownNodeIntersectionResult,
 	type nodeImplementationInputOf,
 	type nodeImplementationOf
 } from "./shared/implement.js"
@@ -278,12 +278,12 @@ export abstract class BaseNode<
 
 	private static intersectionCache: PartialRecord<
 		string,
-		UnknownNodeIntersectionResult
+		UnknownIntersectionResult
 	> = {}
 	protected intersectInternal(
 		this: UnknownNode,
 		other: Node
-	): UnknownNodeIntersectionResult {
+	): UnknownIntersectionResult {
 		// Node works better for subclasses but internally we want to treat it as UnknownNode
 		const r = other as UnknownNode
 		const lrCacheKey = `${this.typeId}&${r.typeId}`
@@ -311,7 +311,7 @@ export abstract class BaseNode<
 		const implementation =
 			this.impl.intersections[r.kind] ?? r.impl.intersections[this.kind]
 
-		const rawResult =
+		let result =
 			implementation === undefined
 				? // should be two ConstraintNodes that have no relation
 				  // this could also happen if a user directly intersects a TypeNode and a ConstraintNode,
@@ -321,27 +321,15 @@ export abstract class BaseNode<
 				? implementation(this, r, this.$)
 				: implementation(r, this, this.$)
 
-		let instantiatedResult: UnknownNodeIntersectionResult =
-			rawResult === null || rawResult instanceof Disjoint
-				? rawResult
-				: isArray(rawResult)
-				? // arrays represent a constraint union of a branching intersection kind like sequence
-				  rawResult.map((inner) => this.$.parse(this.kind, inner as never))
-				: rawResult instanceof BaseNode
-				? // unlike parsing, intersection allows different node kinds to be returned,
-				  // so avoid parsing an instantiated Node here
-				  rawResult
-				: this.$.parsePrereduced(leftmostKind, rawResult as never)
-
-		if (instantiatedResult instanceof BaseNode) {
+		if (result instanceof BaseNode) {
 			// if the result equals one of the operands, preserve its metadata by
 			// returning the original reference
-			if (this.equals(instantiatedResult)) instantiatedResult = this as never
-			else if (r.equals(instantiatedResult)) instantiatedResult = r as never
+			if (this.equals(result)) result = this as never
+			else if (r.equals(result)) result = r as never
 		}
 
-		BaseNode.intersectionCache[lrCacheKey] = instantiatedResult
-		return instantiatedResult
+		BaseNode.intersectionCache[lrCacheKey] = result
+		return result
 	}
 
 	firstReference<narrowed extends Node>(

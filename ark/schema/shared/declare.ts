@@ -18,7 +18,6 @@ interface DeclarationInput {
 	normalizedSchema: BaseMeta
 	inner: BaseMeta
 	reducibleTo?: NodeKind
-	hasBranchableIntersection?: true
 	hasOpenIntersection?: true
 	expectedContext?: object
 	prerequisite?: unknown
@@ -46,7 +45,6 @@ export type declareNode<
 > = merge<
 	{
 		hasOpenIntersection: false
-		hasBranchableIntersection: false
 		prerequisite: prerequisiteOf<d>
 		childKind: never
 		reducibleTo: d["kind"]
@@ -75,7 +73,6 @@ export type BaseNodeDeclaration = {
 	inner: BaseMeta
 	reducibleTo: NodeKind
 	prerequisite: any
-	hasBranchableIntersection: boolean
 	hasOpenIntersection: boolean
 	childKind: NodeKind
 	expectedContext: BaseExpectedContext | null

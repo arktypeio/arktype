@@ -1,10 +1,10 @@
 export const rangeKinds = [
-	"min",
 	"max",
-	"minLength",
+	"min",
 	"maxLength",
-	"after",
-	"before"
+	"minLength",
+	"before",
+	"after"
 ] as const
 
 export type RangeKind = (typeof rangeKinds)[number]

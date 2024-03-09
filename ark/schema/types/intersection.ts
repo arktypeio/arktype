@@ -136,26 +136,16 @@ const intersectIntersections = (
 	const root = intersectRootKeys(lRoot, rRoot)
 
 	if (root instanceof Disjoint) return root
-	const basis = root.proto ?? root.domain
 
 	const lConstraints = flattenConstraints(lConstraintsInner)
 	const rConstraints = flattenConstraints(rConstraintsInner)
-	const result = intersectConstraints(lConstraints, rConstraints)
-
-	if (result instanceof Disjoint) return result
-	if (isArray(result) && !result.length && basis) return basis
-
-	const branches = "branches" in result ? result.branches : [result]
-	const branchNodes = branches.map((branch) =>
-		$.parse("intersection", Object.assign(root, unflattenConstraints(branch)), {
-			prereduced: true
-		})
-	)
-
-	return branchNodes.length === 1
-		? branchNodes[0]
-		: // unlike the intersections, this union isn't necessarily prereduced
-		  $.parse("union", branchNodes)
+	return intersectConstraints({
+		root,
+		l: lConstraints,
+		r: rConstraints,
+		types: [],
+		$
+	})
 }
 
 export class IntersectionNode<t = unknown> extends BaseType<
@@ -369,70 +359,56 @@ const intersectRootKeys = (
 	return result
 }
 
+type ConstraintIntersectionState = {
+	root: IntersectionRoot
+	l: ConstraintNode[]
+	r: ConstraintNode[]
+	types: TypeNode[]
+	$: ScopeNode
+}
+
 const intersectConstraints = (
-	l: List<ConstraintNode>,
-	r: List<ConstraintNode>
-): { branches: List<ConstraintNode>[] } | List<ConstraintNode> | Disjoint => {
-	if (!r.length) {
-		return l
+	s: ConstraintIntersectionState
+): TypeNode | Disjoint => {
+	if (!s.r.length) {
+		let result: TypeNode | Disjoint = s.$.parsePrereduced(
+			"intersection",
+			Object.assign(s.root, unflattenConstraints(s.l))
+		)
+		for (const type of s.types) {
+			if (result instanceof Disjoint) {
+				return result
+			}
+			result = type.intersect(result)
+		}
+		return result
 	}
-	const [head, ...tail] = r
-	const constraints: ConstraintNode[] = []
+	const head = s.r.shift()!
 	let matched = false
-	for (let i = 0; i < l.length; i++) {
-		const result = l[i].intersect(head)
-		if (result === null) {
-			constraints.push(l[i])
-		} else if (result instanceof Disjoint) {
-			return result
-		} else if (isArray(result)) {
-			const branches: List<ConstraintNode>[] = []
-			result.forEach((constraintBranch) => {
-				const branchResult = intersectConstraints(l.toSpliced(i, 1), [
-					constraintBranch,
-					...tail
-				])
-				if (branchResult instanceof Disjoint) return
+	for (let i = 0; i < s.l.length; i++) {
+		const result = s.l[i].intersect(head)
+		if (result === null) continue
+		if (result instanceof Disjoint) return result
 
-				if ("branches" in branchResult) branches.push(...branchResult.branches)
-				else branches.push(branchResult)
-			})
-
-			return branches.length === 0
-				? Disjoint.from("union", l, [head])
-				: branches.length === 1
-				? branches[0]
-				: {
-						branches
-				  }
-		} else if (!matched) {
-			constraints.push(result)
+		if (!matched) {
+			if (result.isType()) s.types.push(result)
+			else s.l[i] = result
 			matched = true
-		} else if (!constraints.includes(result)) {
+		} else if (!s.l.includes(result as never)) {
 			return throwInternalError(
 				`Unexpectedly encountered multiple distinct intersection results for refinement ${result}`
 			)
 		}
 	}
 	if (!matched) {
-		constraints.push(head)
+		s.l.push(head)
 	}
 
-	head.impliedSiblings?.forEach((node) => appendUnique(tail, node))
-
-	return intersectConstraints(constraints, tail)
+	head.impliedSiblings?.forEach((node) => appendUnique(s.r, node))
+	return intersectConstraints(s)
 }
 
-const flattenedConstraintCache = new Map<
-	IntersectionInner,
-	List<ConstraintNode>
->()
-const flattenConstraints = (inner: IntersectionInner): List<ConstraintNode> => {
-	const cachedResult = flattenedConstraintCache.get(inner)
-	if (cachedResult) {
-		return cachedResult
-	}
-
+const flattenConstraints = (inner: IntersectionInner): ConstraintNode[] => {
 	const result = entriesOf(inner)
 		.flatMap(([k, v]) =>
 			k in constraintKeys ? (v as listable<ConstraintNode>) : []
@@ -446,7 +422,7 @@ const flattenConstraints = (inner: IntersectionInner): List<ConstraintNode> => {
 				? -1
 				: 1
 		)
-	flattenedConstraintCache.set(inner, result)
+
 	return result
 }
 

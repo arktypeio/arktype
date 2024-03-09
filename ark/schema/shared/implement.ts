@@ -2,7 +2,6 @@ import {
 	compileSerializedValue,
 	morph,
 	throwParseError,
-	type Dict,
 	type ErrorMessage,
 	type JsonData,
 	type Stringifiable,
@@ -13,7 +12,6 @@ import {
 	type requireKeys
 } from "@arktype/util"
 import type { Node, TypeNode, UnknownNode } from "../base.js"
-import type { constraintKindLeftOf } from "../constraints/constraint.js"
 import { boundKinds } from "../constraints/refinements/shared.js"
 import type { Declaration, ExpectedContext, Inner } from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
@@ -89,12 +87,6 @@ export type OpenNodeKind = {
 		: never
 }[NodeKind]
 
-export type BranchableNodeKind = {
-	[k in NodeKind]: Declaration<k>["hasBranchableIntersection"] extends true
-		? k
-		: never
-}[NodeKind]
-
 export type ClosedNodeKind = Exclude<NodeKind, OpenNodeKind>
 
 export const primitiveKinds = [
@@ -130,33 +122,16 @@ type accumulateRightKinds<
 	? accumulateRightKinds<tail, result & { [k in head]: tail[number] }>
 	: result
 
-export type AsymmetricConstraintIntersection<
+export type ConstraintIntersection<
 	lKind extends ConstraintKind,
-	rKind extends constraintKindLeftOf<lKind>
-> = (
-	l: Node<lKind>,
-	r: Node<rKind>,
-	$: ScopeNode
-) => Inner<lKind> | Disjoint | null
-
-export type SymmetricConstraintIntersection<kind extends ConstraintKind> = (
-	l: Node<kind>,
-	r: Node<kind>,
-	$: ScopeNode
-) =>
-	| Inner<kind>
-	| Disjoint
-	| (kind extends OpenNodeKind ? null : never)
-	| (kind extends BranchableNodeKind ? Inner<kind>[] : never)
+	rKind extends kindOrRightOf<lKind>
+> = (l: Node<lKind>, r: Node<rKind>, $: ScopeNode) => Node | Disjoint | null
 
 export type ConstraintIntersectionMap<kind extends ConstraintKind> = evaluate<
 	{
-		[_ in kind]: SymmetricConstraintIntersection<kind>
+		[_ in kind]: ConstraintIntersection<kind, kind>
 	} & {
-		[rKind in constraintKindLeftOf<kind>]?: AsymmetricConstraintIntersection<
-			kind,
-			rKind
-		>
+		[rKind in kindRightOf<kind>]?: ConstraintIntersection<kind, rKind>
 	}
 >
 
@@ -178,17 +153,10 @@ export type UnknownIntersectionMap = {
 		l: UnknownNode,
 		r: UnknownNode,
 		$: ScopeNode
-	) => UnknownIntersectionImplementationResult
+	) => UnknownIntersectionResult
 }
 
-export type UnknownNodeIntersectionResult = listable<Node> | Disjoint | null
-
-/** Dict represents an unknown Inner value to be parsed as a union branch */
-export type UnknownIntersectionImplementationResult =
-	| listable<Dict>
-	| Node
-	| Disjoint
-	| null
+export type UnknownIntersectionResult = Node | Disjoint | null
 
 type PrecedenceByKind = {
 	[i in indexOf<OrderedNodeKinds> as OrderedNodeKinds[i]]: i
