@@ -1,9 +1,9 @@
 import type { ErrorMessage, conform, describe, evaluate } from "@arktype/util"
 import type { Prerequisite, Schema } from "../kinds.js"
-import type { writeInvalidOperandMessage } from "../shared/implement.js"
 import type {
 	PrimitiveConstraintInner,
-	PrimitiveConstraintKind
+	PrimitiveConstraintKind,
+	writeInvalidOperandMessage
 } from "./constraint.js"
 import type { predicate } from "./predicate.js"
 import type { after } from "./refinements/after.js"

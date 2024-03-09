@@ -47,6 +47,7 @@ export class PredicateNode extends BasePrimitiveConstraint<
 			}
 		},
 		hasOpenIntersection: true,
+		// TODO: ordering
 		intersections: {
 			// TODO: allow changed order to be the same type
 			// as long as the narrows in l and r are individually safe to check
@@ -57,6 +58,8 @@ export class PredicateNode extends BasePrimitiveConstraint<
 	})
 
 	traverseAllows = this.rule
+
+	readonly impliedBasis = undefined
 	readonly compiledCondition = `${compileSerializedValue(this.rule)}(${jsData})`
 	readonly compiledNegation = `!${this.compiledCondition}`
 	readonly errorContext = this.createErrorContext({

@@ -5,7 +5,7 @@ import { JsObjects } from "./jsObjects.js"
 import { TsKeywords } from "./tsKeywords.js"
 import { Validation } from "./validation.js"
 
-export const builtin: ScopeNode<ArkResolutions> = ScopeNode.from(
+export const builtins: ScopeNode<ArkResolutions> = ScopeNode.from(
 	{
 		...TsKeywords.resolutions,
 		...JsObjects.resolutions,
@@ -14,11 +14,9 @@ export const builtin: ScopeNode<ArkResolutions> = ScopeNode.from(
 	{ prereducedAliases: true }
 ) as never
 
-export const keywords = builtin.resolutions
+export const nodes = builtins.resolutions
 
-ScopeNode.keywords = keywords
-
-export const schema = builtin.schema
+export const schema = builtins.schema
 
 export namespace schema {
 	export type cast<to, kind extends TypeKind = TypeKind> = {

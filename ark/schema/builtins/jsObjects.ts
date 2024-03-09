@@ -33,3 +33,5 @@ export const JsObjects: ScopeNode<JsObjects.resolutions> = ScopeNode.from(
 	},
 	{ prereducedAliases: true }
 )
+
+ScopeNode.jsObjects = JsObjects.resolutions

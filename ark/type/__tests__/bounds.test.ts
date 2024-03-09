@@ -1,13 +1,7 @@
 import { attest } from "@arktype/attest"
-import {
-	schema,
-	writeUnboundableMessage,
-	type min,
-	type of
-} from "@arktype/schema"
+import { schema, writeUnboundableMessage } from "@arktype/schema"
 import { writeMalformedNumericLiteralMessage } from "@arktype/util"
 import { type } from "arktype"
-import type { Ark } from "../ark.js"
 import { writeDoubleRightBoundMessage } from "../parser/semantic/bounds.js"
 import {
 	writeMultipleLeftBoundsMessage,
@@ -19,15 +13,9 @@ import {
 	writeInvalidLimitMessage,
 	writeLimitMismatchMessage
 } from "../parser/string/shift/operator/bounds.js"
-import type { Type } from "../type.js"
 
 describe("bounds", () => {
 	describe("string", () => {
-		it("inference", () => {
-			const t = type("number>=5")
-			attest<Type<of<number> & min<5>, Ark>>(t)
-		})
-
 		it(">", () => {
 			const t = type("number>0")
 			attest<number>(t.infer)

@@ -1,6 +1,6 @@
 import {
 	BaseType,
-	keywords,
+	builtins,
 	type ArkConfig,
 	type TypeNode,
 	type extractIn,
@@ -409,7 +409,7 @@ export class Scope<r extends Resolutions = any> {
 
 	bindThis() {
 		// TODO: fix
-		return { this: keywords.unknown }
+		return { this: builtins.resolutions.unknown }
 	}
 
 	private exportedResolutions: MergedResolutions | undefined

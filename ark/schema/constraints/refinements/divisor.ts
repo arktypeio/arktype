@@ -51,7 +51,7 @@ export class DivisorNode extends BasePrimitiveConstraint<
 
 	readonly compiledCondition = `${jsData} % ${this.rule} === 0`
 	readonly compiledNegation = `${jsData} % ${this.rule} !== 0`
-	readonly impliedBasis = this.$.builtin.number
+	readonly impliedBasis = this.$.tsKeywords.number
 	readonly errorContext = this.createErrorContext(this.inner)
 }
 

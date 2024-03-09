@@ -1,5 +1,6 @@
 import {
-	keywords,
+	builtins,
+	nodes,
 	writeUnboundableMessage,
 	type BoundKind,
 	type LimitLiteral,
@@ -114,7 +115,7 @@ export const getBoundKinds = (
 	limit: LimitSchemaValue,
 	root: TypeNode
 ): BoundKind[] => {
-	if (root.extends(keywords.number)) {
+	if (root.extends(nodes.number)) {
 		if (typeof limit !== "number") {
 			return throwParseError(writeLimitMismatchMessage(root.toString(), limit))
 		}
@@ -124,7 +125,7 @@ export const getBoundKinds = (
 			? ["min"]
 			: ["max"]
 	}
-	if (root.extends(keywords.string) || root.extends(keywords.Array)) {
+	if (root.extends(nodes.string) || root.extends(nodes.Array)) {
 		if (typeof limit !== "number") {
 			return throwParseError(writeLimitMismatchMessage(root.toString(), limit))
 		}
@@ -134,7 +135,7 @@ export const getBoundKinds = (
 			? ["minLength"]
 			: ["maxLength"]
 	}
-	if (root.extends(keywords.Date)) {
+	if (root.extends(nodes.Date)) {
 		// allow either numeric or date limits
 		return comparator === "=="
 			? ["after", "before"]

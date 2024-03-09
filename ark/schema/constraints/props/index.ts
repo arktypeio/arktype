@@ -54,7 +54,7 @@ export class IndexNode extends BaseConstraint<
 			}
 		})
 
-	readonly impliedBasis = this.$.builtin.object
+	readonly impliedBasis = this.$.tsKeywords.object
 
 	traverseAllows: TraverseAllows<object> = (data, ctx) =>
 		Object.entries(data).every(

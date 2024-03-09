@@ -41,7 +41,7 @@ export class BeforeNode
 	readonly numericLimit = +this.dateLimit
 	readonly stringLimit = dateLimitToString(this.rule)
 
-	readonly impliedBasis = this.$.builtin.Date
+	readonly impliedBasis = this.$.jsObjects.Date
 
 	traverseAllows = this.exclusive
 		? (data: Date) => +data < this.numericLimit

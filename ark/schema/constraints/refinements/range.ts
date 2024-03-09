@@ -10,11 +10,10 @@ import type { Node, NodeSubclass } from "../../base.js"
 import type { Declaration, Schema } from "../../kinds.js"
 import { jsData } from "../../shared/compile.js"
 import type { BaseNodeDeclaration, declareNode } from "../../shared/declare.js"
-import {
-	throwInvalidOperandError,
-	type BasisKind,
-	type nodeImplementationInputOf,
-	type nodeImplementationOf
+import type {
+	BasisKind,
+	nodeImplementationInputOf,
+	nodeImplementationOf
 } from "../../shared/implement.js"
 import type { DateLiteral, normalizePrimitiveConstraintSchema } from "../ast.js"
 import {
@@ -90,14 +89,6 @@ export abstract class BaseRange<
 
 	overlapIsUnit(r: Node<pairedRangeKind<d["kind"]>>) {
 		return this.rule === r.rule && !this.exclusive && !r.exclusive
-	}
-
-	protected throwInvalidBoundOperandError(basis: Node<BasisKind> | undefined) {
-		return throwInvalidOperandError(
-			this.kind,
-			prerequisiteDescriptionsByOperandKind[this.boundOperandKind],
-			basis
-		)
 	}
 }
 
@@ -203,12 +194,6 @@ export type declareRange<input extends BoundDeclarationInput> = declareNode<{
 }>
 
 export type BoundOperandKind = "value" | "length" | "date"
-
-export const prerequisiteDescriptionsByOperandKind = {
-	value: "a number",
-	length: "a string or Array",
-	date: "a Date"
-} as const satisfies Record<BoundOperandKind, string>
 
 export type NumericRangeKind = "min" | "max"
 

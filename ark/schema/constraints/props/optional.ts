@@ -58,13 +58,15 @@ export class OptionalNode extends BaseConstraint<
 					return l.$.parse("optional", {
 						key,
 						value:
-							value instanceof Disjoint ? (l.$.builtin.never as never) : value
+							value instanceof Disjoint
+								? (l.$.tsKeywords.never as never)
+								: value
 					})
 				}
 			}
 		})
 
-	readonly impliedBasis = this.$.builtin.object
+	readonly impliedBasis = this.$.tsKeywords.object
 	readonly serializedKey = compileSerializedValue(this.key)
 	readonly compiledKey =
 		typeof this.key === "string" ? this.key : this.serializedKey

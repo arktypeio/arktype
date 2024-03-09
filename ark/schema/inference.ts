@@ -7,7 +7,7 @@ import type {
 	describe
 } from "@arktype/util"
 import type { Node, TypeNode } from "./base.js"
-import type { isSchemaCast, schema } from "./keywords/keywords.js"
+import type { isSchemaCast, schema } from "./builtins/builtins.js"
 import type { Prerequisite } from "./kinds.js"
 import type { ConstraintKind } from "./shared/implement.js"
 import type { instantiateBasis } from "./types/basis.js"

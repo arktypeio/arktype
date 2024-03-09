@@ -63,6 +63,6 @@ export class RegexNode extends BasePrimitiveConstraint<
 		this.flags ?? ""
 	}.test(${jsData})`
 	readonly compiledNegation = `!${this.compiledCondition}`
-	readonly impliedBasis = this.$.builtin.string
+	readonly impliedBasis = this.$.tsKeywords.string
 	readonly errorContext = this.createErrorContext(this.inner)
 }

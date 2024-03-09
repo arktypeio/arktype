@@ -146,7 +146,7 @@ export class MorphNode<t = unknown> extends BaseType<
 	}
 
 	override get out(): Node<MorphChildKind, extractOut<t>> {
-		return this.inner.out ?? this.$.builtin.unknown
+		return this.inner.out ?? this.$.tsKeywords.unknown
 	}
 
 	compile(js: NodeCompiler) {

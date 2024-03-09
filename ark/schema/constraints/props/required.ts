@@ -74,7 +74,7 @@ export class RequiredNode extends BaseConstraint<
 			}
 		})
 
-	readonly impliedBasis = this.$.builtin.object
+	readonly impliedBasis = this.$.tsKeywords.object
 	readonly serializedKey = compileSerializedValue(this.key)
 	readonly compiledKey =
 		typeof this.key === "string" ? this.key : this.serializedKey

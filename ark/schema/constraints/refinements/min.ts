@@ -22,7 +22,7 @@ export class MinNode extends BaseRange<MinDeclaration, typeof MinNode> {
 			}
 		})
 
-	readonly impliedBasis = this.$.builtin.number
+	readonly impliedBasis = this.$.tsKeywords.number
 
 	traverseAllows = this.exclusive
 		? (data: number) => data > this.rule

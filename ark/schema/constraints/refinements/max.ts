@@ -29,7 +29,7 @@ export class MaxNode extends BaseRange<MaxDeclaration, typeof MaxNode> {
 			}
 		})
 
-	readonly impliedBasis = this.$.builtin.number
+	readonly impliedBasis = this.$.tsKeywords.number
 
 	traverseAllows = this.exclusive
 		? (data: number) => data < this.rule

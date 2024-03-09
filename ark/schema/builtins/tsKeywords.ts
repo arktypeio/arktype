@@ -1,6 +1,6 @@
 import type { TypeNode } from "../base.js"
 import { ScopeNode } from "../scope.js"
-import type { schema } from "./keywords.js"
+import type { schema } from "./builtins.js"
 
 export namespace TsKeywords {
 	export interface resolutions {
@@ -43,3 +43,5 @@ export const TsKeywords: ScopeNode<TsKeywords.resolutions> = ScopeNode.from(
 	},
 	{ prereducedAliases: true }
 )
+
+ScopeNode.tsKeywords = TsKeywords.resolutions

@@ -284,22 +284,3 @@ export type nodeDefaultsImplementationFor<kind extends NodeKind> = Required<
 export type DescriptionWriter<kind extends NodeKind = NodeKind> = (
 	inner: Node<kind>
 ) => string
-
-export const throwInvalidOperandError = (
-	...args: Parameters<typeof writeInvalidOperandMessage>
-) => throwParseError(writeInvalidOperandMessage(...args))
-
-export const getBasisName = (basis: Node<BasisKind> | undefined) =>
-	basis?.basisName ?? "unknown"
-
-export const writeInvalidOperandMessage = (
-	kind: ConstraintKind,
-	expected: Stringifiable,
-	basis: Node<BasisKind> | undefined
-) => `${kind} operand must be ${expected} (was ${getBasisName(basis)})`
-
-export type writeInvalidOperandMessage<
-	kind extends ConstraintKind,
-	expected extends Stringifiable,
-	basis extends Stringifiable
-> = `${kind} operand must be ${expected} (was ${basis})`

@@ -1,4 +1,4 @@
-import { keywords, schema, type Inner, type TypeNode } from "@arktype/schema"
+import { nodes, schema, type Inner, type TypeNode } from "@arktype/schema"
 import {
 	printable,
 	stringAndSymbolicEntriesOf,
@@ -33,7 +33,7 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): TypeNode => {
 
 		if (
 			spreadNode.kind !== "intersection" ||
-			!spreadNode.extends(keywords.object)
+			!spreadNode.extends(nodes.object)
 		) {
 			return throwParseError(
 				writeInvalidSpreadTypeMessage(printable(spreadEntry.value))

@@ -1,6 +1,6 @@
 import {
 	inferred,
-	keywords,
+	nodes,
 	type ArkResult,
 	type BaseMeta,
 	type Morph,
@@ -345,7 +345,7 @@ export const validateUninstantiatedGeneric = (g: Generic) => {
 		// the base type here: https://github.com/arktypeio/arktype/issues/796
 		{
 			baseName: "generic",
-			args: morph(g.parameters, (_, name) => [name, keywords.unknown])
+			args: morph(g.parameters, (_, name) => [name, nodes.unknown])
 		}
 	)
 	return g

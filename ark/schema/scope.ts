@@ -11,6 +11,9 @@ import {
 	type requireKeys
 } from "@arktype/util"
 import type { Node, TypeNode } from "./base.js"
+import type { schema } from "./builtins/builtins.js"
+import type { JsObjects } from "./builtins/jsObjects.js"
+import type { TsKeywords } from "./builtins/tsKeywords.js"
 import { globalConfig } from "./config.js"
 import type { LengthBoundableData } from "./constraints/refinements/range.js"
 import type {
@@ -19,7 +22,6 @@ import type {
 	validateAliases,
 	validateSchemaBranch
 } from "./inference.js"
-import type { keywords, schema } from "./keywords/keywords.js"
 import { nodesByKind, type Schema, type reducibleKindOf } from "./kinds.js"
 import { parseAttachments, type SchemaParseOptions } from "./parse.js"
 import { NodeCompiler } from "./shared/compile.js"
@@ -150,7 +152,8 @@ export class ScopeNode<r extends object = any> {
 	declare infer: {
 		[k in keyof r]: r[k] extends schema.cast<infer t> ? t : never
 	}
-	declare static keywords: typeof keywords
+	declare static jsObjects: typeof JsObjects.resolutions
+	declare static tsKeywords: typeof TsKeywords.resolutions
 
 	readonly nodeCache: { [innerId: string]: Node } = {}
 	readonly config: ParsedArkConfig
@@ -199,14 +202,15 @@ export class ScopeNode<r extends object = any> {
 			},
 			{ reduceTo: this.parsePrereduced("intersection", {}) }
 		)
-		this.lengthBoundable = this.parsePrereduced("union", [
-			this.builtin.string,
-			this.builtin.Array
-		])
+		this.lengthBoundable = this.parsePrereduced("union", ["string", Array])
 	}
 
-	get builtin() {
-		return ScopeNode.keywords
+	get tsKeywords() {
+		return ScopeNode.tsKeywords
+	}
+
+	get jsObjects() {
+		return ScopeNode.jsObjects
 	}
 
 	static from<const aliases>(

@@ -1,6 +1,6 @@
 import {
-	keywords,
 	makeRootAndArrayPropertiesMutable,
+	nodes,
 	schema,
 	type BaseMeta,
 	type Morph,
@@ -64,7 +64,7 @@ export const parseTupleLiteral = (def: List, ctx: ParseContext): TypeNode => {
 			i++
 		}
 		if (spread) {
-			if (!element.extends(keywords.Array)) {
+			if (!element.extends(nodes.Array)) {
 				return throwParseError(writeNonArraySpreadMessage(element))
 			}
 			// a spread must be distributed over branches e.g.:
@@ -142,7 +142,7 @@ const appendSpreadBranch = (
 	const spread = branch.firstReferenceOfKind("sequence")
 	if (!spread) {
 		// the only array with no sequence reference is unknown[]
-		return appendElement(base, "variadic", keywords.unknown)
+		return appendElement(base, "variadic", nodes.unknown)
 	}
 	spread.prefix.forEach((node) => appendElement(base, "required", node))
 	spread.optionals.forEach((node) => appendElement(base, "optional", node))

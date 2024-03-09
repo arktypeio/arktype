@@ -1,3 +1,4 @@
+import { throwParseError, type Stringifiable } from "@arktype/util"
 import {
 	BaseNode,
 	type ConstraintNode,
@@ -10,6 +11,7 @@ import type { TraverseAllows, TraverseApply } from "../shared/context.js"
 import type { BaseMeta, BaseNodeDeclaration } from "../shared/declare.js"
 import type { Disjoint } from "../shared/disjoint.js"
 import type {
+	BasisKind,
 	ConstraintKind,
 	PropKind,
 	kindLeftOf
@@ -35,11 +37,35 @@ type intersectConstraintKinds<
 	r extends ConstraintKind
 > = Node<l | r | "unit" | "union"> | Disjoint | null
 
+export const throwInvalidOperandError = (
+	...args: Parameters<typeof writeInvalidOperandMessage>
+) => throwParseError(writeInvalidOperandMessage(...args))
+
+export const writeInvalidOperandMessage = (
+	kind: ConstraintKind,
+	expected: Node | Stringifiable,
+	actual: Node | undefined
+) => `${kind} operand must be ${expected} (was ${actual})`
+
+export type writeInvalidOperandMessage<
+	kind extends ConstraintKind,
+	expected extends Stringifiable,
+	basis extends Stringifiable
+> = `${kind} operand must be ${expected} (was ${basis})`
+
 export abstract class BaseConstraint<
 	d extends BaseConstraintDeclaration,
 	subclass extends NodeSubclass<d>
 > extends BaseNode<d["prerequisite"], d, subclass> {
+	abstract readonly impliedBasis: TypeNode | undefined
 	readonly impliedSiblings?: ConstraintNode[] | undefined
+
+	attachTo(node: TypeNode) {
+		if (this.impliedBasis && !node.extends(this.impliedBasis)) {
+			return throwInvalidOperandError(this.kind, this.impliedBasis, node)
+		}
+		return node
+	}
 
 	intersect<r extends ConstraintNode>(
 		r: r
@@ -62,8 +88,6 @@ export abstract class BasePrimitiveConstraint<
 	abstract readonly compiledCondition: string
 	abstract readonly compiledNegation: string
 	abstract readonly errorContext: d["errorContext"]
-
-	impliedBasis?: TypeNode
 
 	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
 		if (!this.traverseAllows(data, ctx)) {

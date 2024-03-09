@@ -71,7 +71,7 @@ export class ProtoNode<t = unknown> extends BaseBasis<
 			domain: (proto, domain) =>
 				domain.domain === "object"
 					? proto
-					: Disjoint.from("domain", proto.$.builtin.object, domain)
+					: Disjoint.from("domain", proto.$.tsKeywords.object, domain)
 		}
 	})
 

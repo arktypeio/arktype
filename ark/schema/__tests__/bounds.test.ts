@@ -1,7 +1,7 @@
 import { attest } from "@arktype/attest"
 import { entriesOf, morph } from "@arktype/util"
+import { schema } from "../builtins/builtins.js"
 import { boundKindPairsByLower } from "../constraints/refinements/range.js"
-import { schema } from "../keywords/keywords.js"
 import { Disjoint } from "../shared/disjoint.js"
 
 const numericCases = {
