@@ -186,7 +186,8 @@ export class SequenceNode extends BaseConstraint<
 			},
 			defaults: {
 				description(node) {
-					if (node.isVariadicOnly) return `(${node.variadic})[]`
+					if (node.isVariadicOnly)
+						return `${node.variadic!.nestableExpression}[]`
 					return (
 						"[" +
 						node.tuple

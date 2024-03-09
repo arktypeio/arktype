@@ -1,26 +1,18 @@
-import type { List, Stringifiable } from "@arktype/util"
+import type { Stringifiable } from "@arktype/util"
 import type { Comparator } from "../string/reduce/shared.js"
 import type { InfixExpression, PostfixExpression } from "./infer.js"
 
-export type astToString<ast> = `'${astToStringRecurse<ast>}'`
-
-type astToStringRecurse<ast> = ast extends PostfixExpression<
+export type astToString<ast> = ast extends PostfixExpression<
 	infer operator,
 	infer operand
 >
 	? operator extends "[]"
-		? `${groupAst<operand>}[]`
+		? `${astToString<operand>}[]`
 		: never
 	: ast extends InfixExpression<infer operator, infer l, infer r>
 	? operator extends "&" | "|" | "%" | Comparator
-		? `${groupAst<l>}${operator}${groupAst<r>}`
+		? `${astToString<l>} ${operator} ${astToString<r>}`
 		: never
 	: ast extends Stringifiable
 	? `${ast extends bigint ? `${ast}n` : ast}`
 	: "..."
-
-type groupAst<ast> = ast extends List
-	? ast[1] extends "[]"
-		? astToStringRecurse<ast>
-		: `(${astToStringRecurse<ast>})`
-	: astToStringRecurse<ast>

@@ -74,120 +74,120 @@ describe("bounds", () => {
 			"Must be 12/31/1969, 7:00:00 PM or earlier (was 12/31/1969, 7:00:00 PM)"
 		)
 	})
-})
 
-entriesOf(boundKindPairsByLower).forEach(([min, max]) => {
-	describe(`${min}/${max} bounds`, () => {
-		const basis =
-			min === "min"
-				? { domain: "number" }
-				: min === "minLength"
-				? { domain: "string" }
-				: { proto: Date }
-		const cases =
-			min === "min"
-				? numericCases
-				: min === "minLength"
-				? lengthCases
-				: dateCases
-		it("allows", () => {
-			const t = schema({
-				...basis,
-				[min]: { rule: 5, exclusive: true },
-				[max]: { rule: 10 }
-			})
-
-			attest(t.allows(cases.lessThanMin)).equals(false)
-			attest(t.allows(cases.equalToExclusiveMin)).equals(false)
-			attest(t.allows(cases.between)).equals(true)
-			attest(t.allows(cases.equalToInclusiveMax)).equals(true)
-			attest(t.allows(cases.greaterThanMax)).equals(false)
-		})
-		it("unit range reduces", () => {
-			const l = schema({
-				...basis,
-				[min]: {
-					rule: 6
-				}
-			})
-			const r = schema({
-				...basis,
-				[max]: {
-					rule: 6
-				}
-			})
-			const expected =
+	entriesOf(boundKindPairsByLower).forEach(([min, max]) => {
+		describe(`${min}/${max}`, () => {
+			const basis =
 				min === "min"
-					? schema({
-							unit: 6
-					  })
+					? { domain: "number" }
 					: min === "minLength"
-					? schema({
-							...basis,
-							length: 6
-					  })
-					: schema({
-							unit: new Date(6)
-					  })
+					? { domain: "string" }
+					: { proto: Date }
+			const cases =
+				min === "min"
+					? numericCases
+					: min === "minLength"
+					? lengthCases
+					: dateCases
+			it("allows", () => {
+				const t = schema({
+					...basis,
+					[min]: { rule: 5, exclusive: true },
+					[max]: { rule: 10 }
+				})
 
-			attest(l.and(r).json).equals(expected.json)
-			attest(r.and(l).json).equals(expected.json)
-		})
-		it("non-overlapping exclusive", () => {
-			const l = schema({
-				...basis,
-				[min]: {
-					rule: 3
-				}
+				attest(t.allows(cases.lessThanMin)).equals(false)
+				attest(t.allows(cases.equalToExclusiveMin)).equals(false)
+				attest(t.allows(cases.between)).equals(true)
+				attest(t.allows(cases.equalToInclusiveMax)).equals(true)
+				attest(t.allows(cases.greaterThanMax)).equals(false)
 			})
-			const r = schema({
-				...basis,
-				[max]: {
-					rule: 3,
-					exclusive: true
-				}
+			it("unit range reduces", () => {
+				const l = schema({
+					...basis,
+					[min]: {
+						rule: 6
+					}
+				})
+				const r = schema({
+					...basis,
+					[max]: {
+						rule: 6
+					}
+				})
+				const expected =
+					min === "min"
+						? schema({
+								unit: 6
+						  })
+						: min === "minLength"
+						? schema({
+								...basis,
+								length: 6
+						  })
+						: schema({
+								unit: new Date(6)
+						  })
+
+				attest(l.and(r).json).equals(expected.json)
+				attest(r.and(l).json).equals(expected.json)
 			})
-			attest(l.intersect(r)).instanceOf(Disjoint)
-			attest(r.intersect(l)).instanceOf(Disjoint)
-		})
-		it("non-overlapping limits", () => {
-			const l = schema({ ...basis, [min]: 3 })
-			const r = schema({
-				...basis,
-				[max]: 1
+			it("non-overlapping exclusive", () => {
+				const l = schema({
+					...basis,
+					[min]: {
+						rule: 3
+					}
+				})
+				const r = schema({
+					...basis,
+					[max]: {
+						rule: 3,
+						exclusive: true
+					}
+				})
+				attest(l.intersect(r)).instanceOf(Disjoint)
+				attest(r.intersect(l)).instanceOf(Disjoint)
 			})
-			attest(l.intersect(r)).instanceOf(Disjoint)
-			attest(r.intersect(l)).instanceOf(Disjoint)
-		})
-		it("greater min is stricter", () => {
-			const lesser = schema({ ...basis, [min]: 3 })
-			const greater = schema({
-				...basis,
-				[min]: 4
+			it("non-overlapping limits", () => {
+				const l = schema({ ...basis, [min]: 3 })
+				const r = schema({
+					...basis,
+					[max]: 1
+				})
+				attest(l.intersect(r)).instanceOf(Disjoint)
+				attest(r.intersect(l)).instanceOf(Disjoint)
 			})
-			attest(lesser.and(greater).json).equals(greater.json)
-			attest(greater.and(lesser).json).equals(greater.json)
-		})
-		it("lesser max is stricter", () => {
-			const lesser = schema({ ...basis, [max]: 3 })
-			const greater = schema({
-				...basis,
-				[max]: { rule: 4, exclusive: true }
+			it("greater min is stricter", () => {
+				const lesser = schema({ ...basis, [min]: 3 })
+				const greater = schema({
+					...basis,
+					[min]: 4
+				})
+				attest(lesser.and(greater).json).equals(greater.json)
+				attest(greater.and(lesser).json).equals(greater.json)
 			})
-			attest(lesser.and(greater).json).equals(lesser.json)
-			attest(greater.and(lesser).json).equals(lesser.json)
-		})
-		it("exclusive wins if limits equal", () => {
-			const exclusive = schema({
-				...basis,
-				[max]: { rule: 3, exclusive: true }
+			it("lesser max is stricter", () => {
+				const lesser = schema({ ...basis, [max]: 3 })
+				const greater = schema({
+					...basis,
+					[max]: { rule: 4, exclusive: true }
+				})
+				attest(lesser.and(greater).json).equals(lesser.json)
+				attest(greater.and(lesser).json).equals(lesser.json)
 			})
-			const inclusive = schema({
-				...basis,
-				[max]: 3
+			it("exclusive wins if limits equal", () => {
+				const exclusive = schema({
+					...basis,
+					[max]: { rule: 3, exclusive: true }
+				})
+				const inclusive = schema({
+					...basis,
+					[max]: 3
+				})
+				attest(exclusive.and(inclusive).json).equals(exclusive.json)
+				attest(inclusive.and(exclusive).json).equals(exclusive.json)
 			})
-			attest(exclusive.and(inclusive).json).equals(exclusive.json)
-			attest(inclusive.and(exclusive).json).equals(exclusive.json)
 		})
 	})
 })

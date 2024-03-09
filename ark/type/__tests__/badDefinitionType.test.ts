@@ -2,7 +2,7 @@ import { attest } from "@arktype/attest"
 import { type } from "arktype"
 import { writeBadDefinitionTypeMessage } from "../parser/definition.js"
 
-describe("definitions", () => {
+describe("bad definition types", () => {
 	it("undefined", () => {
 		// @ts-expect-error
 		attest(() => type({ bad: undefined })).throwsAndHasTypeError(

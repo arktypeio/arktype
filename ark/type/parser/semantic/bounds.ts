@@ -1,9 +1,5 @@
-import type {
-	LimitLiteral,
-	NumericallyBoundable,
-	writeUnboundableMessage
-} from "@arktype/schema"
-import type { ErrorMessage } from "@arktype/util"
+import type { LimitLiteral, writeUnboundableMessage } from "@arktype/schema"
+import type { ErrorMessage, List } from "@arktype/util"
 import type {
 	Comparator,
 	InvertedComparators
@@ -36,7 +32,7 @@ export type validateBound<
 	$,
 	args
 > = inferAstBase<boundedAst, $, args> extends infer bounded
-	? [bounded] extends [NumericallyBoundable]
+	? isNumericallyBoundable<bounded> extends true
 		? limit extends number
 			? validateAst<boundedAst, $, args>
 			: ErrorMessage<writeInvalidLimitMessage<comparator, limit, boundKind>>
@@ -53,6 +49,16 @@ export type validateBound<
 				>
 		  >
 	: never
+
+// Check each numerically boundable type individually so an expression comprised
+// of mixed bound kinds like (string|number)<5 isn't allowed
+type isNumericallyBoundable<bounded> = [bounded] extends [number]
+	? true
+	: [bounded] extends [string]
+	? true
+	: [bounded] extends [List]
+	? true
+	: false
 
 export const writeDoubleRightBoundMessage = <root extends string>(
 	root: root

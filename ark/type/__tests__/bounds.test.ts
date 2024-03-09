@@ -19,9 +19,10 @@ describe("bounds", () => {
 		it(">", () => {
 			const t = type("number>0")
 			attest<number>(t.infer)
-			attest(t.allows(-1)).equals(false)
-			attest(t.allows(0)).equals(false)
-			attest(t.allows(1)).equals(true)
+			attest(t.json).snap({
+				domain: "number",
+				min: { exclusive: true, rule: 0 }
+			})
 		})
 		it("<", () => {
 			const t = type("number<10")
@@ -148,11 +149,13 @@ describe("bounds", () => {
 		it("array", () => {
 			attest<boolean[]>(type("87<=boolean[]<89").infer)
 		})
-		it("multiple boundable categories", () => {
-			const t = type("(string|boolean[]|number)>0")
-			attest<string | boolean[] | number>(t.infer)
-			const expected = type("string>0|boolean[]>0|number>0")
-			attest(t.json).equals(expected.json)
+		it("multiple bound kinds", () => {
+			attest(() =>
+				// @ts-expect-error
+				type("(number | string | boolean[])>0")
+			).throwsAndHasTypeError(
+				writeUnboundableMessage("number | string | boolean[]")
+			)
 		})
 
 		it("unknown", () => {
@@ -167,13 +170,11 @@ describe("bounds", () => {
 				writeUnboundableMessage("object")
 			)
 		})
-		it("overlapping", () => {
-			// @ts-expect-error
-			attest(() => type("1<(number|object)<10"))
-				.throws(writeUnboundableMessage("object"))
-				// At compile time we don't have access to the specific branch that failed so we
-				// summarize the expression
-				.type.errors(writeUnboundableMessage("number | object"))
+		it("same bound kind union", () => {
+			const t = type("1<(number[]|object[])<10")
+			attest<number[] | object[]>(t.infer)
+			const expected = type("1<number[]<10 | 1<object[]<10")
+			attest(t.json).equals(expected.json)
 		})
 
 		it("number with right Date bound", () => {

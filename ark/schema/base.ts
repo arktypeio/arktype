@@ -277,6 +277,10 @@ export abstract class BaseNode<
 		return this.expression
 	}
 
+	hasUnit<value>(value: unknown): this is UnitNode<value> {
+		return this.hasKind("unit") && this.allows(value)
+	}
+
 	get nestableExpression() {
 		return this.children.length > 1 &&
 			this.children.some((child) => !child.isBasis && !child.isProp())

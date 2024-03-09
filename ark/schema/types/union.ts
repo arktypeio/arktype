@@ -99,6 +99,8 @@ export class UnionNode<t = unknown> extends BaseType<
 			},
 			defaults: {
 				description(node) {
+					if (node.isBoolean) return "boolean"
+
 					return describeBranches(
 						node.branches.map((branch) => branch.description)
 					)
@@ -159,9 +161,13 @@ export class UnionNode<t = unknown> extends BaseType<
 		})
 
 	readonly discriminant: Discriminant | null = null //discriminate(inner.branches)
-	readonly expression = this.branches
-		.map((branch) => branch.nestableExpression)
-		.join(" | ")
+	readonly isBoolean =
+		this.branches.length === 2 &&
+		this.branches[0].hasUnit(false) &&
+		this.branches[1].hasUnit(true)
+	readonly expression = this.isBoolean
+		? "boolean"
+		: this.branches.map((branch) => branch.nestableExpression).join(" | ")
 
 	traverseAllows: TraverseAllows = (data, ctx) =>
 		this.branches.some((b) => b.traverseAllows(data, ctx))
@@ -178,6 +184,12 @@ export class UnionNode<t = unknown> extends BaseType<
 			)
 			js.return(false)
 		}
+	}
+
+	get nestableExpression() {
+		// avoid adding unnecessary parentheses around boolean since it's
+		// already collapsed to a single keyword
+		return this.isBoolean ? "boolean" : super.nestableExpression
 	}
 }
 
