@@ -53,8 +53,8 @@ export class UnitNode<t = unknown> extends BaseBasis<
 			? JSON.stringify((this.json as any).unit)
 			: (this.json as any).unit
 	traverseAllows = (data: unknown) => data === this.unit
-	compiledCondition = compileComparison(this, true)
-	compiledNegation = compileComparison(this, false)
+	compiledCondition = compileComparison(this)
+	compiledNegation = compileComparison(this, "negated")
 
 	readonly errorContext = this.createErrorContext(this.inner)
 
@@ -62,7 +62,7 @@ export class UnitNode<t = unknown> extends BaseBasis<
 	domain = domainOf(this.unit)
 }
 
-const compileComparison = (unit: UnitNode<any>, negated: boolean) => {
+const compileComparison = (unit: UnitNode<any>, negated?: "negated") => {
 	let compiled = ""
 	if (unit.unit instanceof Date) {
 		const initialCondition = `${jsData} instanceof Date`
