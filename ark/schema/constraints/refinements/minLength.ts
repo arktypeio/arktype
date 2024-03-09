@@ -17,14 +17,14 @@ export class MinLengthNode extends BaseRange<
 	static implementation: nodeImplementationOf<MinLengthDeclaration> =
 		this.implementBound({
 			defaults: {
-				description(inner) {
-					return inner.exclusive
-						? inner.rule === 0
+				description(node) {
+					return node.exclusive
+						? node.rule === 0
 							? "non-empty"
-							: `more than length ${inner.rule}`
-						: inner.rule === 1
+							: `more than length ${node.rule}`
+						: node.rule === 1
 						? "non-empty"
-						: `at least length ${inner.rule}`
+						: `at least length ${node.rule}`
 				},
 				actual: (data) => `${data.length}`
 			},

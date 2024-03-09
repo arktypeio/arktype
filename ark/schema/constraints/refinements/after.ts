@@ -18,11 +18,10 @@ export class AfterNode
 	static implementation: nodeImplementationOf<AfterDeclaration> =
 		this.implementBound({
 			defaults: {
-				description(inner) {
-					const limitString = dateLimitToString(inner.rule)
-					return inner.exclusive
-						? `after ${limitString}`
-						: `${limitString} or later`
+				description(node) {
+					return node.exclusive
+						? `after ${node.stringLimit}`
+						: `${node.stringLimit} or later`
 				},
 				actual: (data) => data.toLocaleString()
 			},

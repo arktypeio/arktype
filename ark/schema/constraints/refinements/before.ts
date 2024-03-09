@@ -19,11 +19,10 @@ export class BeforeNode
 	static implementation: nodeImplementationOf<BeforeDeclaration> =
 		this.implementBound({
 			defaults: {
-				description(inner) {
-					const limitString = dateLimitToString(inner.rule)
-					return inner.exclusive
-						? `before ${limitString}`
-						: `${limitString} or earlier`
+				description(node) {
+					return node.exclusive
+						? `before ${node.stringLimit}`
+						: `${node.stringLimit} or earlier`
 				},
 				actual: (data) => data.toLocaleString()
 			},

@@ -36,8 +36,8 @@ export class UnitNode<t = unknown> extends BaseBasis<
 		},
 		normalize: (schema) => schema,
 		defaults: {
-			description(inner) {
-				return printable(inner.unit)
+			description(node) {
+				return printable(node.unit)
 			}
 		},
 		intersections: {

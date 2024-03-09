@@ -64,8 +64,8 @@ export class LengthNode extends BasePrimitiveConstraint<
 		},
 		hasAssociatedError: true,
 		defaults: {
-			description(inner) {
-				return `exactly length ${inner.rule}`
+			description(node) {
+				return `exactly length ${node.rule}`
 			}
 		}
 	})

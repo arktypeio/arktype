@@ -27,7 +27,7 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): TypeNode => {
 	// https://discord.com/channels/957797212103016458/1103023445035462678/1182814502471860334
 
 	const parsedEntries = stringAndSymbolicEntriesOf(def).map(parseEntry)
-	if (parsedEntries[0].kind === "spread") {
+	if (parsedEntries[0]?.kind === "spread") {
 		// remove the spread entry so we can iterate over the remaining entries
 		// expecting non-spread entries
 		const spreadEntry = parsedEntries.shift()!

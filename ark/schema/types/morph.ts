@@ -90,8 +90,8 @@ export class MorphNode<t = unknown> extends BaseType<
 			},
 			normalize: (schema) => schema,
 			defaults: {
-				description(inner) {
-					return `a morph from ${inner.in} to ${inner.out}`
+				description(node) {
+					return `a morph from ${node.in} to ${node.out}`
 				}
 			},
 			intersections: {

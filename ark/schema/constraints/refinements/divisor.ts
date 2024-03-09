@@ -41,8 +41,8 @@ export class DivisorNode extends BasePrimitiveConstraint<
 		},
 		hasAssociatedError: true,
 		defaults: {
-			description(inner) {
-				return inner.rule === 1 ? "an integer" : `a multiple of ${inner.rule}`
+			description(node) {
+				return node.rule === 1 ? "an integer" : `a multiple of ${node.rule}`
 			}
 		}
 	})

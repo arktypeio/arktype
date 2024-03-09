@@ -14,8 +14,8 @@ export class MaxNode extends BaseRange<MaxDeclaration, typeof MaxNode> {
 	static implementation: nodeImplementationOf<MaxDeclaration> =
 		this.implementBound({
 			defaults: {
-				description(inner) {
-					return `${inner.exclusive ? "less than" : "at most"} ${inner.rule}`
+				description(node) {
+					return `${node.exclusive ? "less than" : "at most"} ${node.rule}`
 				}
 			},
 			intersections: {

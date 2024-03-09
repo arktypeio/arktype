@@ -6,7 +6,6 @@ import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import type { TypeKind, nodeImplementationOf } from "../../shared/implement.js"
 import { BaseConstraint } from "../constraint.js"
-import { compileKey } from "./shared.js"
 
 export interface RequiredSchema extends BaseMeta {
 	readonly key: string | symbol
@@ -49,8 +48,8 @@ export class RequiredNode extends BaseConstraint<
 			},
 			normalize: (schema) => schema,
 			defaults: {
-				description(inner) {
-					return `${compileKey(inner.key)}: ${inner.value}`
+				description(node) {
+					return `an optional ${node.compiledKey} key with a value of ${node.value}`
 				},
 				expected() {
 					return "provided"
@@ -76,6 +75,8 @@ export class RequiredNode extends BaseConstraint<
 		})
 
 	readonly serializedKey = compileSerializedValue(this.key)
+	compiledKey = typeof this.key === "string" ? this.key : this.serializedKey
+
 	readonly errorContext = Object.freeze({
 		code: "required",
 		description: this.description,

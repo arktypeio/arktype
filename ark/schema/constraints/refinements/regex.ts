@@ -50,8 +50,8 @@ export class RegexNode extends BasePrimitiveConstraint<
 			regex: () => null
 		},
 		defaults: {
-			description(inner) {
-				return `matched by ${inner.rule}`
+			description(node) {
+				return `matched by ${node.rule}`
 			}
 		}
 	})

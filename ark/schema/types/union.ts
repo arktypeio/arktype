@@ -98,10 +98,10 @@ export class UnionNode<t = unknown> extends BaseType<
 				})
 			},
 			defaults: {
-				description(inner) {
-					return inner.branches.length === 0
+				description(node) {
+					return node.branches.length === 0
 						? "never"
-						: inner.branches.join(" or ")
+						: node.branches.join(" or ")
 				},
 				expected(source) {
 					return describeBranches(source.errors.map((e) => e.expected))

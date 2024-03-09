@@ -7,12 +7,7 @@ import {
 	type Schema,
 	type TypeNode
 } from "@arktype/schema"
-import {
-	isKeyOf,
-	throwParseError,
-	tryParseNumber,
-	type keySet
-} from "@arktype/util"
+import { isKeyOf, throwParseError, type keySet } from "@arktype/util"
 import type { astToString } from "../../../semantic/utils.js"
 import type {
 	DynamicState,
@@ -170,6 +165,7 @@ export const parseRightBound = (
 	const previousRoot = s.unsetRoot()
 	const previousScannerIndex = s.scanner.location
 	s.parseOperand()
+	const limitNode = s.unsetRoot()
 	// after parsing the next operand, use the locations to get the
 	// token from which it was parsed
 	const limitToken = s.scanner.sliceChars(
@@ -177,11 +173,14 @@ export const parseRightBound = (
 		s.scanner.location
 	)
 	s.setRoot(previousRoot)
-	const limit =
-		tryParseNumber(limitToken) ??
-		(isDateLiteral(limitToken)
-			? extractDateLiteralSource(limitToken)
-			: s.error(writeInvalidLimitMessage(comparator, limitToken, "right")))
+	if (
+		limitNode.kind !== "unit" ||
+		(typeof limitNode.unit !== "number" && !(limitNode.unit instanceof Date))
+	) {
+		return s.error(writeInvalidLimitMessage(comparator, limitToken, "right"))
+	}
+
+	const limit = limitNode.unit
 	// apply the newly-parsed right bound
 	const exclusive = comparator.length === 1
 	// if the comparator is ==, both the min and max of that pair will be applied

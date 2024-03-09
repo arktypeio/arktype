@@ -124,8 +124,8 @@ describe("bounds", () => {
 			)
 		})
 		it("empty range", () => {
-			attest(() => type("3<=number<2")).throws(
-				"Intersection of at least 3 and less than 2 results in an unsatisfiable type"
+			attest(() => type("3<=number<2")).throws.snap(
+				"Error: Intersection of less than 2 and at least 3 results in an unsatisfiable type"
 			)
 		})
 		it("double right bound", () => {

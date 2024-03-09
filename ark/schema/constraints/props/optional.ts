@@ -6,7 +6,6 @@ import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import type { TypeKind, nodeImplementationOf } from "../../shared/implement.js"
 import { BaseConstraint } from "../constraint.js"
-import { compileKey } from "./shared.js"
 
 export interface OptionalInner extends BaseMeta {
 	readonly key: string | symbol
@@ -45,8 +44,8 @@ export class OptionalNode extends BaseConstraint<
 			hasOpenIntersection: true,
 			normalize: (schema) => schema,
 			defaults: {
-				description(inner) {
-					return `${compileKey(inner.key)}?: ${inner.value}`
+				description(node) {
+					return `an optional ${node.compiledKey} key with a value of ${node.value}`
 				}
 			},
 			intersections: {
@@ -66,6 +65,7 @@ export class OptionalNode extends BaseConstraint<
 		})
 
 	serializedKey = compileSerializedValue(this.key)
+	compiledKey = typeof this.key === "string" ? this.key : this.serializedKey
 
 	traverseAllows: TraverseAllows<object> = (data, ctx) =>
 		!(this.key in data) ||

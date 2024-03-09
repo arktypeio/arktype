@@ -185,17 +185,23 @@ export class SequenceNode extends BaseConstraint<
 				}
 			},
 			defaults: {
-				description(inner) {
-					if (!inner.prefix && !inner.optionals && !inner.postfix) {
-						return `(${inner.variadic})[]`
-					}
-					const parts = inner.prefix?.map(String) ?? []
-					inner.optionals?.forEach((node) => parts.push(`${node}?`))
-					if (inner.variadic) {
-						parts.push(`...(${inner.variadic})[]`)
-					}
-					inner.postfix?.forEach((node) => parts.push(String(node)))
-					return `[${parts.join(", ")}]`
+				description(node) {
+					if (node.isVariadicOnly) return `(${node.variadic})[]`
+					return (
+						"[" +
+						node.tuple
+							.map((element) =>
+								element.kind === "prefix"
+									? `${element.node}`
+									: element.kind === "optionals"
+									? `${element.node}?`
+									: element.kind === "variadic"
+									? `...${node.variadic}`
+									: `${element.node}`
+							)
+							.join(", ") +
+						"]"
+					)
 				}
 			},
 			intersections: {
@@ -238,6 +244,7 @@ export class SequenceNode extends BaseConstraint<
 	readonly optionals = this.inner.optionals ?? []
 	readonly prevariadic = [...this.prefix, ...this.optionals]
 	readonly postfix = this.inner.postfix ?? []
+	readonly isVariadicOnly = this.prevariadic.length + this.postfix.length === 0
 	readonly minVariadicLength = this.inner.minVariadicLength ?? 0
 	readonly minLength =
 		this.prefix.length + this.minVariadicLength + this.postfix.length

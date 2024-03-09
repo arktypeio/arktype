@@ -13,8 +13,8 @@ export class MinNode extends BaseRange<MinDeclaration, typeof MinNode> {
 	static implementation: nodeImplementationOf<MinDeclaration> =
 		this.implementBound({
 			defaults: {
-				description(inner) {
-					return `${inner.exclusive ? "more than" : "at least"} ${inner.rule}`
+				description(node) {
+					return `${node.exclusive ? "more than" : "at least"} ${node.rule}`
 				}
 			},
 			intersections: {

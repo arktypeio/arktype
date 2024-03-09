@@ -42,8 +42,8 @@ export class PredicateNode extends BasePrimitiveConstraint<
 		normalize: (schema) =>
 			typeof schema === "function" ? { rule: schema } : schema,
 		defaults: {
-			description(inner) {
-				return `valid according to ${inner.rule.name}`
+			description(node) {
+				return `valid according to ${node.rule.name}`
 			}
 		},
 		hasOpenIntersection: true,

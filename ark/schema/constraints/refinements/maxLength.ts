@@ -18,10 +18,10 @@ export class MaxLengthNode extends BaseRange<
 	static implementation: nodeImplementationOf<MaxLengthDeclaration> =
 		this.implementBound({
 			defaults: {
-				description(inner) {
-					return inner.exclusive
-						? `less than length ${inner.rule}`
-						: `at most length ${inner.rule}`
+				description(node) {
+					return node.exclusive
+						? `less than length ${node.rule}`
+						: `at most length ${node.rule}`
 				},
 				actual: (data) => `${data.length}`
 			},
