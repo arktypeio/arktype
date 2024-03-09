@@ -13,7 +13,7 @@ import {
 } from "@arktype/util"
 import type { Node, TypeNode, UnknownNode } from "../base.js"
 import { boundKinds } from "../constraints/refinements/shared.js"
-import type { Declaration, ExpectedContext, Inner } from "../kinds.js"
+import type { Declaration, Inner, errorContext } from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
 import type {
 	NodeConfig,
@@ -22,7 +22,7 @@ import type {
 } from "../scope.js"
 import type { typeKindOrRightOf, typeKindRightOf } from "../types/type.js"
 import type {
-	BaseExpectedContext,
+	BaseErrorContext,
 	BaseMeta,
 	BaseNodeDeclaration
 } from "./declare.js"
@@ -229,7 +229,7 @@ export type NodeKeyImplementation<
 interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	keys: KeyDefinitions<d>
 	normalize: (schema: d["schema"]) => d["normalizedSchema"]
-	hasAssociatedError: d["expectedContext"] extends null ? false : true
+	hasAssociatedError: d["errorContext"] extends null ? false : true
 	collapseKey?: keyof d["inner"] & string
 	reduce?: (
 		inner: d["inner"],
@@ -270,8 +270,8 @@ type nodeDefaultsImplementationInputFor<kind extends NodeKind> = requireKeys<
 	// this occurs for nodes like `union` where the error that occurs is not 1:1 with the existing node,
 	// but rather a single failed condition for each branch.
 	| (Inner<kind> extends Omit<
-			ExpectedContext<kind>,
-			keyof BaseExpectedContext | "description"
+			errorContext<kind>,
+			keyof BaseErrorContext | "description"
 	  >
 			? never
 			: "expected" & keyof NodeConfig<kind>)
@@ -282,7 +282,7 @@ export type nodeDefaultsImplementationFor<kind extends NodeKind> = Required<
 >
 
 export type DescriptionWriter<kind extends NodeKind = NodeKind> = (
-	inner: NodeKind extends kind ? any : Omit<Inner<kind>, "description">
+	inner: Node<kind>
 ) => string
 
 export const throwInvalidOperandError = (

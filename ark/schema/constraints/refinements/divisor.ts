@@ -17,7 +17,7 @@ export type DivisorDeclaration = declareNode<{
 	normalizedSchema: DivisorInner
 	inner: DivisorInner
 	prerequisite: number
-	expectedContext: DivisorInner
+	errorContext: DivisorInner
 }>
 
 export class DivisorNode extends BasePrimitiveConstraint<
@@ -52,7 +52,7 @@ export class DivisorNode extends BasePrimitiveConstraint<
 	compiledCondition = `${jsData} % ${this.rule} === 0`
 	compiledNegation = `${jsData} % ${this.rule} !== 0`
 
-	readonly expectedContext = this.createExpectedContext(this.inner)
+	readonly errorContext = this.createErrorContext(this.inner)
 
 	// if (node.basis?.domain !== "number") {
 	// 	throwParseError(writeIndivisibleMessage(getBasisName(node.basis)))

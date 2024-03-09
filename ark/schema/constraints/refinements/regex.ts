@@ -22,7 +22,7 @@ export type RegexDeclaration = declareNode<{
 	inner: RegexInner
 	hasOpenIntersection: true
 	prerequisite: string
-	expectedContext: RegexInner
+	errorContext: RegexInner
 }>
 
 export class RegexNode extends BasePrimitiveConstraint<
@@ -62,7 +62,7 @@ export class RegexNode extends BasePrimitiveConstraint<
 	compiledCondition = `/${this.rule}/${this.flags ?? ""}.test(${jsData})`
 	compiledNegation = `!${this.compiledCondition}`
 
-	readonly expectedContext = this.createExpectedContext(this.inner)
+	readonly errorContext = this.createErrorContext(this.inner)
 
 	// if (into.basis?.domain !== "string") {
 	// 	throwInvalidOperandError("regex", "a string", into.basis)

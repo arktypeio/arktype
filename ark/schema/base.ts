@@ -40,11 +40,10 @@ import {
 	type TraverseApply
 } from "./shared/context.js"
 import type {
-	BaseExpectedContext,
+	BaseErrorContext,
 	BaseMeta,
 	BaseNodeDeclaration,
-	attachmentsOf,
-	requireDescriptionIfPresent
+	attachmentsOf
 } from "./shared/declare.js"
 import { Disjoint } from "./shared/disjoint.js"
 import {
@@ -175,8 +174,6 @@ export abstract class BaseNode<
 	readonly contributesReferences: readonly Node[]
 	readonly precedence = precedenceOfKind(this.kind)
 	jit = false
-	// use declare here to ensure description from attachments isn't overwritten
-	declare readonly description: string
 
 	constructor(attachments: BaseAttachments) {
 		super(attachments as never)
@@ -185,14 +182,19 @@ export abstract class BaseNode<
 				? this.referencesByName
 				: { ...this.referencesByName, [this.name]: this as never }
 		this.contributesReferences = Object.values(this.contributesReferencesByName)
-		this.description ??= this.$.config[this.kind].description(
-			this.inner as never
-		)
 	}
 
 	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
 	abstract traverseApply: TraverseApply<d["prerequisite"]>
 	abstract compile(js: NodeCompiler): void
+
+	private descriptionCache?: string
+	get description() {
+		this.descriptionCache ??=
+			this.inner.description ??
+			this.$.config[this.kind].description?.(this as never)
+		return this.descriptionCache
+	}
 
 	private inCache?: UnknownNode;
 	get in(): Node<ioKindOf<d["kind"]>, extractIn<t>> {
@@ -228,11 +230,9 @@ export abstract class BaseNode<
 		return this.$.parse(this.kind, ioInner) as never
 	}
 
-	protected createExpectedContext<from>(
+	protected createErrorContext<from>(
 		from: from
-	): evaluate<
-		BaseExpectedContext<d["kind"]> & requireDescriptionIfPresent<from>
-	> {
+	): evaluate<BaseErrorContext<d["kind"]> & from> {
 		return Object.freeze({
 			...from,
 			code: this.kind,

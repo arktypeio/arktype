@@ -73,7 +73,7 @@ export type IntersectionDeclaration = declareNode<{
 	normalizedSchema: IntersectionSchema
 	inner: IntersectionInner
 	reducibleTo: "intersection" | IntersectionBasisKind
-	expectedContext: {
+	errorContext: {
 		errors: readonly ArkTypeError[]
 	}
 	childKind: IntersectionChildKind
@@ -235,11 +235,10 @@ export class IntersectionNode<t = unknown> extends BaseType<
 					"intersection" | IntersectionBasisKind
 				>,
 			defaults: {
-				description(inner) {
-					const children = Object.values(inner).flat()
-					return children.length === 0
-						? "an unknown value"
-						: children.join(" and ")
+				description(self) {
+					return self.children.length === 0
+						? "unknown"
+						: self.props?.description ?? self.children.join(" and ")
 				},
 				expected(source) {
 					return "  • " + source.errors.map((e) => e.expected).join("\n  • ")

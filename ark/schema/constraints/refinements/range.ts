@@ -69,7 +69,7 @@ export abstract class BaseRange<
 		negatedComparators[this.comparator]
 	} ${this.numericLimit}`
 
-	readonly expectedContext = this.createExpectedContext({})
+	readonly errorContext = this.createErrorContext({})
 
 	readonly limitKind: LimitKind =
 		this.comparator["0"] === "<" ? "upper" : "lower"
@@ -200,7 +200,7 @@ export type declareRange<input extends BoundDeclarationInput> = declareNode<{
 	normalizedSchema: NormalizedBoundSchema<input["rule"]>
 	inner: BoundInner<input["rule"]>
 	prerequisite: input["prerequisite"]
-	expectedContext: BoundInner<input["rule"]>
+	errorContext: BoundInner<input["rule"]>
 }>
 
 export type BoundOperandKind = "value" | "length" | "date"

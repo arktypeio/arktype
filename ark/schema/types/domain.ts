@@ -28,7 +28,7 @@ export type DomainDeclaration = declareNode<{
 	schema: DomainSchema
 	normalizedSchema: NormalizedDomainSchema
 	inner: DomainInner
-	expectedContext: DomainInner
+	errorContext: DomainInner
 }>
 
 export class DomainNode<t = any> extends BaseBasis<
@@ -70,5 +70,5 @@ export class DomainNode<t = any> extends BaseBasis<
 			? `((typeof ${jsData} !== "object" || ${jsData} === null) && typeof ${jsData} !== "function")`
 			: `typeof ${jsData} !== "${this.domain}"`
 
-	readonly expectedContext = this.createExpectedContext(this.inner)
+	readonly errorContext = this.createErrorContext(this.inner)
 }

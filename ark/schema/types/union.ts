@@ -51,7 +51,7 @@ export type UnionDeclaration = declareNode<{
 	schema: UnionSchema
 	normalizedSchema: NormalizedUnionSchema
 	inner: UnionInner
-	expectedContext: {
+	errorContext: {
 		errors: readonly ArkTypeError[]
 	}
 	reducibleTo: TypeKind

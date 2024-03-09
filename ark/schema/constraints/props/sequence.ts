@@ -186,13 +186,16 @@ export class SequenceNode extends BaseConstraint<
 			},
 			defaults: {
 				description(inner) {
+					if (!inner.prefix && !inner.optionals && !inner.postfix) {
+						return `(${inner.variadic})[]`
+					}
 					const parts = inner.prefix?.map(String) ?? []
-					inner.optionals?.forEach((node) => parts.push(`an optional ${node}`))
+					inner.optionals?.forEach((node) => parts.push(`${node}?`))
 					if (inner.variadic) {
-						parts.push(`zero or more ${inner.variadic} elements`)
+						parts.push(`...(${inner.variadic})[]`)
 					}
 					inner.postfix?.forEach((node) => parts.push(String(node)))
-					return `comprised of ${parts.join(" followed by ")}`
+					return `[${parts.join(", ")}]`
 				}
 			},
 			intersections: {

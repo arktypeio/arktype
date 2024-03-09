@@ -28,7 +28,7 @@ export abstract class BaseBasis<
 	abstract readonly basisName: string
 	abstract readonly compiledCondition: string
 	abstract readonly compiledNegation: string
-	abstract readonly expectedContext: d["expectedContext"]
+	abstract readonly errorContext: d["errorContext"]
 
 	get hasOpenIntersection() {
 		return false as const

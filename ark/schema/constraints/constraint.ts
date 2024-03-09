@@ -60,7 +60,7 @@ export abstract class BasePrimitiveConstraint<
 	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
 	abstract readonly compiledCondition: string
 	abstract readonly compiledNegation: string
-	abstract readonly expectedContext: d["expectedContext"]
+	abstract readonly errorContext: d["errorContext"]
 
 	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
 		if (!this.traverseAllows(data, ctx)) {

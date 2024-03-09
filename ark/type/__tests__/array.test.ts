@@ -104,11 +104,13 @@ describe("array", () => {
 Value at [1] must be a number (was boolean)`)
 			// too short
 			attest(t.allows([""])).equals(false)
-			attest(t([""]).errors?.summary).snap("Must be at least length 2 (was 1)")
+			attest(t([""]).errors?.summary).snap(
+				'Must be exactly length 2 (was [""])'
+			)
 			// too long
 			attest(t.allows(["", 0, 1])).equals(false)
 			attest(t(["", 0, 1]).errors?.summary).snap(
-				"Must be at most length 2 (was 3)"
+				'Must be exactly length 2 (was ["",0,1])'
 			)
 			// non-array
 			attest(
@@ -227,15 +229,9 @@ Value at [1] must be a number (was boolean)`)
 		})
 		it("tuple intersection", () => {
 			const t = type([[{ a: "string" }], "&", [{ b: "boolean" }]])
-			attest<
-				[
-					{
-						a: string
-						b: boolean
-					}
-				]
-			>(t.infer)
 			const expected = type([{ a: "string", b: "boolean" }])
+			attest<typeof expected>(t)
+			attest(t.json).equals(expected.json)
 		})
 		it("tuple and array", () => {
 			const tupleAndArray = type([
@@ -248,25 +244,12 @@ Value at [1] must be a number (was boolean)`)
 				"&",
 				[{ a: "string" }]
 			])
-			attest<
-				[
-					{
-						a: string
-						b: boolean
-					}
-				]
-			>(tupleAndArray.infer)
-
-			attest<
-				[
-					{
-						a: string
-						b: boolean
-					}
-				]
-			>(arrayAndTuple.infer)
 
 			const expected = type([{ a: "string", b: "boolean" }])
+			attest<typeof expected>(tupleAndArray)
+
+			attest<typeof expected>(arrayAndTuple)
+
 			attest(tupleAndArray.json).equals(expected.json)
 			attest(arrayAndTuple.json).equals(expected.json)
 		})

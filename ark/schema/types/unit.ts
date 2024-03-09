@@ -17,7 +17,7 @@ export type UnitDeclaration = declareNode<{
 	schema: UnitSchema
 	normalizedSchema: UnitSchema
 	inner: UnitInner
-	expectedContext: UnitInner
+	errorContext: UnitInner
 }>
 
 export class UnitNode<t = unknown> extends BaseBasis<
@@ -56,13 +56,20 @@ export class UnitNode<t = unknown> extends BaseBasis<
 	compiledCondition = compileComparison(this, true)
 	compiledNegation = compileComparison(this, false)
 
-	readonly expectedContext = this.createExpectedContext(this.inner)
+	readonly errorContext = this.createErrorContext(this.inner)
 
 	basisName = printable(this.unit)
 	domain = domainOf(this.unit)
 }
 
-const compileComparison = (unit: UnitNode<any>, negated: boolean) =>
-	`${unit.unit instanceof Date ? `${jsData}.toISOString()` : jsData} ${
-		negated ? "!" : "="
-	}== ${unit.serializedValue}`
+const compileComparison = (unit: UnitNode<any>, negated: boolean) => {
+	let compiled = ""
+	if (unit.unit instanceof Date) {
+		const initialCondition = `${jsData} instanceof Date`
+		compiled += negated
+			? `${initialCondition} && `
+			: `!(${initialCondition}) || `
+	}
+	compiled += `${jsData} ${negated ? "!" : "="}== ${unit.serializedValue}`
+	return compiled
+}

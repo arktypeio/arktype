@@ -21,7 +21,7 @@ export type LengthDeclaration = declareNode<{
 	normalizedSchema: NormalizedLengthSchema
 	inner: LengthInner
 	prerequisite: LengthBoundableData
-	expectedContext: LengthInner
+	errorContext: LengthInner
 }>
 
 export class LengthNode extends BasePrimitiveConstraint<
@@ -44,7 +44,23 @@ export class LengthNode extends BasePrimitiveConstraint<
 							r: r.$.parse("unit", { unit: r.rule })
 						}
 					}
-				})
+				}),
+			minLength: (length, minLength) =>
+				(
+					minLength.exclusive
+						? length.rule > minLength.rule
+						: length.rule >= minLength.rule
+				)
+					? length
+					: Disjoint.from("range", length, minLength),
+			maxLength: (length, maxLength) =>
+				(
+					maxLength.exclusive
+						? length.rule < maxLength.rule
+						: length.rule <= maxLength.rule
+				)
+					? length
+					: Disjoint.from("range", length, maxLength)
 		},
 		hasAssociatedError: true,
 		defaults: {
@@ -59,5 +75,5 @@ export class LengthNode extends BasePrimitiveConstraint<
 	compiledCondition = `${jsData}.length === ${this.rule}`
 	compiledNegation = `${jsData}.length !== ${this.rule}`
 
-	readonly expectedContext = this.createExpectedContext(this.inner)
+	readonly errorContext = this.createErrorContext(this.inner)
 }

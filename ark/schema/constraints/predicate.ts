@@ -23,7 +23,7 @@ export type PredicateDeclaration = declareNode<{
 	normalizedSchema: NormalizedPredicateSchema
 	inner: PredicateInner
 	hasOpenIntersection: true
-	expectedContext: {}
+	errorContext: {}
 }>
 
 // TODO: If node contains a predicate reference that doesn't take 1 arg, we need
@@ -59,7 +59,7 @@ export class PredicateNode extends BasePrimitiveConstraint<
 	traverseAllows = this.rule
 	compiledCondition = `${compileSerializedValue(this.rule)}(${jsData})`
 	compiledNegation = `!${this.compiledCondition}`
-	expectedContext = this.createExpectedContext({ expected: this.description })
+	errorContext = this.createErrorContext({ expected: this.description })
 }
 
 export type Predicate<data = unknown> = (

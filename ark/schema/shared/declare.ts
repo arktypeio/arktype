@@ -19,22 +19,19 @@ interface DeclarationInput {
 	inner: BaseMeta
 	reducibleTo?: NodeKind
 	hasOpenIntersection?: true
-	expectedContext?: object
+	errorContext?: object
 	prerequisite?: unknown
 	childKind?: NodeKind
 }
 
-export interface BaseExpectedContext<kind extends NodeKind = NodeKind> {
+export interface BaseErrorContext<kind extends NodeKind = NodeKind> {
 	code: kind
+	description: string
 }
 
-export type defaultExpectedContext<d extends DeclarationInput> = evaluate<
-	BaseExpectedContext<d["kind"]> & { description: string } & d["inner"]
+export type defaultErrorContext<d extends DeclarationInput> = evaluate<
+	BaseErrorContext<d["kind"]> & d["inner"]
 >
-
-export type requireDescriptionIfPresent<t> = "description" extends keyof t
-	? t & { description: string }
-	: t
 
 export type declareNode<
 	d extends {
@@ -48,13 +45,11 @@ export type declareNode<
 		prerequisite: prerequisiteOf<d>
 		childKind: never
 		reducibleTo: d["kind"]
-		expectedContext: null
+		errorContext: null
 	},
 	d & {
-		expectedContext: d["expectedContext"] extends {}
-			? BaseExpectedContext<d["kind"]> &
-					// description should always be populated if it's part of the context
-					requireDescriptionIfPresent<d["expectedContext"]>
+		errorContext: d["errorContext"] extends {}
+			? BaseErrorContext<d["kind"]>
 			: null
 	}
 >
@@ -75,7 +70,7 @@ export type BaseNodeDeclaration = {
 	prerequisite: any
 	hasOpenIntersection: boolean
 	childKind: NodeKind
-	expectedContext: BaseExpectedContext | null
+	errorContext: BaseErrorContext | null
 }
 
 export type ownIntersectionResult<d extends BaseNodeDeclaration> =

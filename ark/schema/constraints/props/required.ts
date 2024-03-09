@@ -23,7 +23,7 @@ export type RequiredDeclaration = declareNode<{
 	schema: RequiredSchema
 	normalizedSchema: RequiredSchema
 	inner: RequiredInner
-	expectedContext: {
+	errorContext: {
 		code: "required"
 		key: string | symbol
 	}
@@ -76,8 +76,9 @@ export class RequiredNode extends BaseConstraint<
 		})
 
 	readonly serializedKey = compileSerializedValue(this.key)
-	readonly baseRequiredErrorContext = Object.freeze({
+	readonly errorContext = Object.freeze({
 		code: "required",
+		description: this.description,
 		key: this.key
 	})
 
@@ -92,7 +93,7 @@ export class RequiredNode extends BaseConstraint<
 		if (this.key in data) {
 			this.value.traverseApply((data as any)[this.key], ctx)
 		} else {
-			ctx.error(this.baseRequiredErrorContext)
+			ctx.error(this.errorContext)
 		}
 	}
 
@@ -102,9 +103,7 @@ export class RequiredNode extends BaseConstraint<
 		).else(() =>
 			js.traversalKind === "Allows"
 				? js.return(false)
-				: js.line(
-						`${js.ctx}.error(${JSON.stringify(this.baseRequiredErrorContext)})`
-				  )
+				: js.line(`${js.ctx}.error(${JSON.stringify(this.errorContext)})`)
 		)
 		if (js.traversalKind === "Allows") {
 			js.return(true)

@@ -28,7 +28,7 @@ export type ProtoDeclaration = declareNode<{
 	schema: ProtoSchema
 	normalizedSchema: NormalizedProtoSchema
 	inner: ProtoInner
-	expectedContext: ProtoInner
+	errorContext: ProtoInner
 }>
 
 // readonly literalKeys = prototypeKeysOf(this.rule.prototype)
@@ -83,5 +83,5 @@ export class ProtoNode<t = unknown> extends BaseBasis<
 	compiledCondition = `${jsData} instanceof ${this.serializedConstructor}`
 	compiledNegation = `!(${this.compiledCondition})`
 
-	readonly expectedContext = this.createExpectedContext(this.inner)
+	readonly errorContext = this.createErrorContext(this.inner)
 }

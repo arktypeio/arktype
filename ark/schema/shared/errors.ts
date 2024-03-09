@@ -6,7 +6,7 @@ import {
 	type optionalizeKeys,
 	type propwiseXor
 } from "@arktype/util"
-import type { ExpectedContext, Prerequisite } from "../kinds.js"
+import type { Prerequisite, errorContext } from "../kinds.js"
 import type { TraversalContext, TraversalPath } from "./context.js"
 import type { NodeKind } from "./implement.js"
 
@@ -62,14 +62,17 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 				path: [...this.ctx.path],
 				data,
 				actual: nodeConfig.actual(data),
-				expected: input
+				expected: input,
+				description: input
 			} satisfies ProblemContext as any
 			ctx.problem = nodeConfig.problem(ctx as never)
 			ctx.message = nodeConfig.message(ctx as never)
 		} else {
 			const code = input.code ?? "predicate"
 			const nodeConfig = this.ctx.config[code]
+			const expected = input.expected ?? nodeConfig.expected?.(input as never)
 			ctx = {
+				description: expected,
 				...input,
 				// prioritize these over the raw user provided values so we can
 				// check for keys with values like undefined
@@ -80,7 +83,7 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 					input.actual !== undefined
 						? input.actual
 						: nodeConfig.actual?.(data as never),
-				expected: input.expected ?? nodeConfig.expected?.(input as never)
+				expected
 			} satisfies ProblemContext as any
 			ctx.problem = hasDefinedKey(input, "problem")
 				? input.problem
@@ -141,13 +144,11 @@ export interface DerivableErrorContext<data = unknown> {
 }
 
 export type ArkErrorCode = {
-	[kind in NodeKind]: ExpectedContext<kind> extends null ? never : kind
+	[kind in NodeKind]: errorContext<kind> extends null ? never : kind
 }[NodeKind]
 
 export type ArkErrorContext<code extends ArkErrorCode = ArkErrorCode> =
-	ExpectedContext<code> & {
-		code: code
-	} & DerivableErrorContext<Prerequisite<code>>
+	errorContext<code> & DerivableErrorContext<Prerequisite<code>>
 
 export type MessageContext<code extends ArkErrorCode = ArkErrorCode> = Omit<
 	ArkErrorContext<code>,
@@ -188,7 +189,7 @@ export type getAssociatedDataForError<code extends ArkErrorCode> =
 	code extends NodeKind ? Prerequisite<code> : unknown
 
 export type ExpectedWriter<code extends ArkErrorCode = ArkErrorCode> = (
-	source: ExpectedContext<code>
+	source: errorContext<code>
 ) => string
 
 export type ActualWriter<code extends ArkErrorCode = ArkErrorCode> = (

@@ -201,7 +201,7 @@ export function parseAttachments(
 	}
 	for (const k in inner) {
 		// avoid conflict with builtin cached getters
-		if (k !== "in" && k !== "out") {
+		if (k !== "description" && k !== "in" && k !== "out") {
 			attachments[k] = inner[k]
 		}
 	}

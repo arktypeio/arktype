@@ -30,6 +30,7 @@ export class PropsGroup extends DynamicBase<PropsGroupInput> {
 	)
 	readonly nameSet = morph(this.named, (i, node) => [node.key, 1] as const)
 	readonly nameSetReference = reference(this.nameSet)
+	readonly description = describeProps(this)
 
 	traverseAllows: TraverseAllows<object> = () => true
 
@@ -89,4 +90,19 @@ export class PropsGroup extends DynamicBase<PropsGroupInput> {
 			return js
 		})
 	}
+}
+
+const describeProps = (inner: PropsGroupInput) => {
+	if (inner.required || inner.optional || inner.index) {
+		const parts = inner.index?.map(String) ?? []
+		inner.required?.forEach((node) => parts.push(String(node)))
+		inner.optional?.forEach((node) => parts.push(String(node)))
+		const objectLiteralDescription = `${
+			inner.onExtraneousKey ? "exact " : ""
+		}{ ${parts.join(", ")} }`
+		return inner.sequence
+			? `${objectLiteralDescription} & ${inner.sequence.description}`
+			: objectLiteralDescription
+	}
+	return inner.sequence?.description ?? "{}"
 }

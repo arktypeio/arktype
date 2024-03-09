@@ -119,6 +119,6 @@ export type MutableInner<kind extends NodeKind> =
 export type MutableNormalizedSchema<kind extends NodeKind> =
 	makeRootAndArrayPropertiesMutable<NormalizedSchema<kind>>
 
-export type ExpectedContext<kind extends NodeKind> = Readonly<
-	Declaration<kind>["expectedContext"]
+export type errorContext<kind extends NodeKind> = Readonly<
+	Declaration<kind>["errorContext"]
 >

@@ -107,7 +107,7 @@ export class NodeCompiler extends CompiledFunction<
 			return this.return(node.compiledCondition)
 		}
 		return this.if(node.compiledNegation, () =>
-			this.line(`${this.ctx}.error(${JSON.stringify(node.expectedContext)})`)
+			this.line(`${this.ctx}.error(${JSON.stringify(node.errorContext)})`)
 		)
 	}
 
