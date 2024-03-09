@@ -1,7 +1,9 @@
+import type { TypeNode } from "../../base.js"
 import { jsData } from "../../shared/compile.js"
 import type { declareNode } from "../../shared/declare.js"
 import {
 	BasePrimitiveConstraint,
+	writeInvalidOperandMessage,
 	type PrimitiveConstraintInner
 } from "../constraint.js"
 
@@ -56,13 +58,15 @@ export class DivisorNode extends BasePrimitiveConstraint<
 	readonly expression = `% ${this.rule}`
 }
 
-export const writeIndivisibleMessage = <root extends string>(
-	root: root
-): writeIndivisibleMessage<root> =>
-	`Divisibility operand ${root} must be a number`
+export const writeIndivisibleMessage = <t extends TypeNode | string>(t: t) =>
+	writeInvalidOperandMessage(
+		"divisor",
+		"a number",
+		t
+	) as writeIndivisibleMessage<t>
 
-export type writeIndivisibleMessage<root extends string> =
-	`Divisibility operand ${root} must be a number`
+export type writeIndivisibleMessage<t extends TypeNode | string> =
+	writeInvalidOperandMessage<"divisor", t>
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
 const greatestCommonDivisor = (l: number, r: number) => {

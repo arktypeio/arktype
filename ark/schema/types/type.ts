@@ -80,10 +80,13 @@ export abstract class BaseType<
 				this as never
 			)
 		}
-		// TODO: not an intersection
-		return this.$.parse("intersection", {
-			[kind]: constraint
-		})
+
+		return this.and(
+			// TODO: not an intersection
+			this.$.parse("intersection", {
+				[kind]: constraint
+			})
+		) as never
 	}
 
 	keyof() {

@@ -1,4 +1,8 @@
-import { throwParseError, type Stringifiable } from "@arktype/util"
+import {
+	capitalize,
+	throwParseError,
+	type describeExpression
+} from "@arktype/util"
 import {
 	BaseNode,
 	type ConstraintNode,
@@ -6,12 +10,12 @@ import {
 	type NodeSubclass,
 	type TypeNode
 } from "../base.js"
+import type { Prerequisite } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../shared/context.js"
 import type { BaseMeta, BaseNodeDeclaration } from "../shared/declare.js"
 import type { Disjoint } from "../shared/disjoint.js"
 import type {
-	BasisKind,
 	ConstraintKind,
 	PropKind,
 	kindLeftOf
@@ -41,17 +45,27 @@ export const throwInvalidOperandError = (
 	...args: Parameters<typeof writeInvalidOperandMessage>
 ) => throwParseError(writeInvalidOperandMessage(...args))
 
-export const writeInvalidOperandMessage = (
-	kind: ConstraintKind,
-	expected: Node | Stringifiable,
-	actual: Node | undefined
-) => `${kind} operand must be ${expected} (was ${actual})`
+export const writeInvalidOperandMessage = <
+	kind extends ConstraintKind,
+	expected extends TypeNode | string,
+	actual extends TypeNode | string
+>(
+	kind: kind,
+	expected: expected,
+	actual: actual
+) =>
+	`${capitalize(kind)} operand must be ${
+		typeof expected === "string" ? expected : expected.description
+	} (was ${
+		typeof actual === "string" ? actual : actual.description
+	})` as writeInvalidOperandMessage<kind, actual>
 
 export type writeInvalidOperandMessage<
 	kind extends ConstraintKind,
-	expected extends Stringifiable,
-	basis extends Stringifiable
-> = `${kind} operand must be ${expected} (was ${basis})`
+	actual extends TypeNode | string
+> = `${Capitalize<kind>} operand must be ${describeExpression<
+	Prerequisite<kind>
+>} (was ${actual extends TypeNode<infer In> ? describeExpression<In> : actual})`
 
 export abstract class BaseConstraint<
 	d extends BaseConstraintDeclaration,
