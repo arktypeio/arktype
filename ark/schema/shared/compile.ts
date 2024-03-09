@@ -1,4 +1,9 @@
-import { CompiledFunction, serializeLiteralKey } from "@arktype/util"
+import {
+	CompiledFunction,
+	compileSerializedValue,
+	serializeLiteralKey,
+	type Dict
+} from "@arktype/util"
 import type { Node, TypeNode } from "../base.js"
 import type { Discriminant } from "../types/discriminate.js"
 import type { TraversalKind } from "./context.js"
@@ -107,11 +112,19 @@ export class NodeCompiler extends CompiledFunction<
 			return this.return(node.compiledCondition)
 		}
 		return this.if(node.compiledNegation, () =>
-			this.line(`${this.ctx}.error(${JSON.stringify(node.errorContext)})`)
+			this.line(`${this.ctx}.error(${compileErrorContext(node.errorContext)})`)
 		)
 	}
 
 	writeMethod(name: string) {
 		return `${name}(${this.argNames.join(", ")}){\n${this.body}    }\n`
 	}
+}
+
+export const compileErrorContext = (ctx: Dict): string => {
+	let result = "{ "
+	for (const [k, v] of Object.entries(ctx)) {
+		result += `${k}: ${compileSerializedValue(v)}, `
+	}
+	return result + " }"
 }

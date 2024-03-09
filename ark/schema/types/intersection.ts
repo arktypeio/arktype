@@ -244,7 +244,8 @@ export class IntersectionNode<t = unknown> extends BaseType<
 				description(self) {
 					return self.children.length === 0
 						? "unknown"
-						: self.props?.description ?? self.children.join(" and ")
+						: self.props?.description ??
+								self.children.map((child) => child.description).join(" and ")
 				},
 				expected(source) {
 					return "  • " + source.errors.map((e) => e.expected).join("\n  • ")

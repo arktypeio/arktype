@@ -77,8 +77,8 @@ export interface BaseAttachments {
 	readonly name: string
 	readonly inner: Record<string, any>
 	readonly entries: readonly Entry[]
-	readonly json: Json
-	readonly typeJson: Json
+	readonly json: object
+	readonly typeJson: object
 	readonly collapsibleJson: JsonData
 	readonly children: Node[]
 	readonly innerId: string
@@ -90,6 +90,9 @@ export interface NarrowedAttachments<d extends BaseNodeDeclaration>
 	extends BaseAttachments {
 	kind: d["kind"]
 	inner: d["inner"]
+	json: Json
+	typeJson: Json
+	collapsibleJson: JsonData
 	entries: entriesOf<d["inner"]>
 	children: Node<d["childKind"]>[]
 }
@@ -235,9 +238,9 @@ export abstract class BaseNode<
 		from: from
 	): evaluate<BaseErrorContext<d["kind"]> & from> {
 		return Object.freeze({
-			...from,
 			code: this.kind,
-			description: this.description
+			description: this.description,
+			...from
 		}) as never
 	}
 

@@ -1,5 +1,4 @@
 import {
-	builtins,
 	nodes,
 	writeUnboundableMessage,
 	type BoundKind,

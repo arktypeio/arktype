@@ -15,8 +15,10 @@ describe("narrow", () => {
 		)
 	})
 	it("implicit problem anonymous", () => {
-		const even = type(["number", ":", (n) => n % 2 === 0])
-		attest(even(1).errors?.summary).snap("Must be valid (was 1)")
+		const even = type("number", ":", (n) => n % 2 === 0)
+		attest(even(1).errors?.summary).snap(
+			"Must be valid according to an anonymous predicate (was 1)"
+		)
 	})
 	it("explicit problem", () => {
 		const even = type([

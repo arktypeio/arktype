@@ -14,8 +14,8 @@ import {
 	writeLimitMismatchMessage
 } from "../parser/string/shift/operator/bounds.js"
 
-describe("bounds", () => {
-	describe("string", () => {
+describe("parsed bounds", () => {
+	describe("string expressions", () => {
 		it(">", () => {
 			const t = type("number>0")
 			attest<number>(t.infer)
@@ -80,6 +80,68 @@ describe("bounds", () => {
 				min: { rule: 3, exclusive: true }
 			})
 			attest(t.json).equals(expected.json)
+		})
+
+		// it("single", () => {
+		// 	const t = type("Date<d'2023/1/12'")
+		// 	attest<Date>(t.infer)
+		// 	attest(t.json).equals(
+		// 		// TODO: Dates?
+		// 		expectedDateBoundsCondition({
+		// 			limitKind: "max",
+		// 			exclusive: true,
+		// 			limit: new Date("2023/1/12").valueOf()
+		// 		})
+		// 	)
+		// })
+		// it("equality", () => {
+		// 	const t = type("Date==d'2020-1-1'")
+		// 	attest<Date>(t.infer)
+		// 	attest(t.json).equals(
+		// 		expectedDateBoundsCondition(
+		// 			{
+		// 				limitKind: "min",
+		// 				exclusive: false,
+		// 				limit: new Date("2020-1-1").valueOf()
+		// 			},
+		// 			{
+		// 				limitKind: "max",
+		// 				exclusive: false,
+		// 				limit: new Date("2020-1-1").valueOf()
+		// 			}
+		// 		)
+		// 	)
+		// 	attest(t.allows(new Date("2020/01/01"))).equals(true)
+		// 	attest(t.allows(new Date("2020/01/02"))).equals(false)
+		// })
+		// it("double", () => {
+		// 	const t = type("d'2001/10/10'<Date<d'2005/10/10'")
+		// 	attest<Date>(t.infer)
+		// 	attest(t.json).equals(
+		// 		expectedDateBoundsCondition(
+		// 			{
+		// 				limitKind: "min",
+		// 				exclusive: true,
+		// 				limit: new Date("2001/10/10").valueOf()
+		// 			},
+		// 			{
+		// 				limitKind: "max",
+		// 				exclusive: true,
+		// 				limit: new Date("2005/10/10").valueOf()
+		// 			}
+		// 		)
+		// 	)
+		// 	attest(t.allows(new Date("2003/10/10"))).equals(true)
+		// 	attest(t.allows(new Date("2001/10/10"))).equals(false)
+		// 	attest(t.allows(new Date("2005/10/10"))).equals(false)
+		// })
+		it("dynamic", () => {
+			const now = new Date()
+			const t = type(`d'2000'<Date<=d'${now.toISOString()}'`)
+			attest<Date>(t.infer)
+			attest(t.allows(new Date(now.valueOf() - 1000))).equals(true)
+			attest(t.allows(now)).equals(true)
+			attest(t.allows(new Date(now.valueOf() + 1000))).equals(false)
 		})
 
 		it("single equals", () => {
@@ -194,12 +256,12 @@ describe("bounds", () => {
 		it("number with left Date bound", () => {
 			//@ts-expect-error
 			attest(() => type("d'2001/01/01'<number<2"))
-				.throws(writeLimitMismatchMessage("a number", "2001/01/01"))
+				.throws(writeLimitMismatchMessage("number", "2001/01/01"))
 				.type.errors(writeInvalidLimitMessage("<", "d'2001/01/01'", "left"))
 		})
 	})
 
-	describe("chained", () => {
+	describe("chained expressions", () => {
 		it("min", () => {
 			const t = type("number").min(5)
 			const expected = type("number>=5")
@@ -248,70 +310,6 @@ describe("bounds", () => {
 			const expected = type("number>1337")
 			attest<typeof expected>(t)
 			attest(t.json).equals(expected.json)
-		})
-	})
-
-	describe("dates", () => {
-		// it("single", () => {
-		// 	const t = type("Date<d'2023/1/12'")
-		// 	attest<Date>(t.infer)
-		// 	attest(t.json).equals(
-		// 		// TODO: Dates?
-		// 		expectedDateBoundsCondition({
-		// 			limitKind: "max",
-		// 			exclusive: true,
-		// 			limit: new Date("2023/1/12").valueOf()
-		// 		})
-		// 	)
-		// })
-		// it("equality", () => {
-		// 	const t = type("Date==d'2020-1-1'")
-		// 	attest<Date>(t.infer)
-		// 	attest(t.json).equals(
-		// 		expectedDateBoundsCondition(
-		// 			{
-		// 				limitKind: "min",
-		// 				exclusive: false,
-		// 				limit: new Date("2020-1-1").valueOf()
-		// 			},
-		// 			{
-		// 				limitKind: "max",
-		// 				exclusive: false,
-		// 				limit: new Date("2020-1-1").valueOf()
-		// 			}
-		// 		)
-		// 	)
-		// 	attest(t.allows(new Date("2020/01/01"))).equals(true)
-		// 	attest(t.allows(new Date("2020/01/02"))).equals(false)
-		// })
-		// it("double", () => {
-		// 	const t = type("d'2001/10/10'<Date<d'2005/10/10'")
-		// 	attest<Date>(t.infer)
-		// 	attest(t.json).equals(
-		// 		expectedDateBoundsCondition(
-		// 			{
-		// 				limitKind: "min",
-		// 				exclusive: true,
-		// 				limit: new Date("2001/10/10").valueOf()
-		// 			},
-		// 			{
-		// 				limitKind: "max",
-		// 				exclusive: true,
-		// 				limit: new Date("2005/10/10").valueOf()
-		// 			}
-		// 		)
-		// 	)
-		// 	attest(t.allows(new Date("2003/10/10"))).equals(true)
-		// 	attest(t.allows(new Date("2001/10/10"))).equals(false)
-		// 	attest(t.allows(new Date("2005/10/10"))).equals(false)
-		// })
-		it("dynamic", () => {
-			const now = new Date()
-			const t = type(`d'2000'<Date<=d'${now.toISOString()}'`)
-			attest<Date>(t.infer)
-			attest(t.allows(new Date(now.valueOf() - 1000))).equals(true)
-			attest(t.allows(now)).equals(true)
-			attest(t.allows(new Date(now.valueOf() + 1000))).equals(false)
 		})
 	})
 })

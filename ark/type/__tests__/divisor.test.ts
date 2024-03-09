@@ -26,7 +26,7 @@ describe("divisibility", () => {
 			const expected = type("number%8").and("7<number<222")
 			attest(t.json).equals(expected.json)
 			attest(t.root.description).snap(
-				"a number and a multiple of 8 and more than 7 and less than 222"
+				"a number and a multiple of 8 and less than 222 and more than 7"
 			)
 		})
 		it("allows non-narrowed divisor", () => {
@@ -89,8 +89,8 @@ describe("divisibility", () => {
 			attest(t.json).equals(type("0").json)
 		})
 		it("invalid literal", () => {
-			attest(() => type("number%3&8")).throws(
-				"Intersection of (a multiple of 3) and 8 results in an unsatisfiable type"
+			attest(() => type("number%3&8")).throws.snap(
+				"Error: Intersection of 8 and number & % 3 results in an unsatisfiable type"
 			)
 		})
 	})

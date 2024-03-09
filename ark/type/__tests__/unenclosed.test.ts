@@ -84,14 +84,20 @@ describe("parse unenclosed", () => {
 	})
 	describe("bigint", () => {
 		it("positive", () => {
+			const t = type("12345678910987654321n")
 			// Is prime :D
-			attest<12345678910987654321n>(type("12345678910987654321n").infer)
+			attest<12345678910987654321n>(t.infer)
+			attest(t.json).snap({ unit: "12345678910987654321n" })
 		})
 		it("negative", () => {
-			attest<-9801n>(type("-9801n").infer)
+			const t = type("-9801n")
+			attest<-9801n>(t.infer)
+			attest(t.json).snap({ unit: "-9801n" })
 		})
 		it("zero", () => {
-			attest<0n>(type("0n").infer)
+			const t = type("0n")
+			attest<0n>(t.infer)
+			attest(t.json).snap({ unit: "0n" })
 		})
 		describe("errors", () => {
 			it("decimal", () => {

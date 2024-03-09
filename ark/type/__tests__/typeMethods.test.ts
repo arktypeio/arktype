@@ -1,7 +1,7 @@
 import { attest } from "@arktype/attest"
-import { ArkTypeError } from "@arktype/schema"
 import { define, scope, type } from "arktype"
 import { AssertionError } from "node:assert"
+import { ArkError } from "../../schema/shared/errors.js"
 import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclosed.js"
 
 describe("type methods", () => {
@@ -30,7 +30,7 @@ describe("type methods", () => {
 		try {
 			attest(t("invalid").errors?.throw())
 		} catch (e) {
-			attest(e instanceof ArkTypeError).equals(true)
+			attest(e instanceof ArkError).equals(true)
 			return
 		}
 		throw new AssertionError({ message: "Expected to throw" })

@@ -43,7 +43,9 @@ export class PredicateNode extends BasePrimitiveConstraint<
 			typeof schema === "function" ? { rule: schema } : schema,
 		defaults: {
 			description(node) {
-				return `valid according to ${node.rule.name}`
+				return `valid according to ${
+					node.rule.name || "an anonymous predicate"
+				}`
 			}
 		},
 		hasOpenIntersection: true,
@@ -63,9 +65,7 @@ export class PredicateNode extends BasePrimitiveConstraint<
 	readonly serializedPredicate = compileSerializedValue(this.rule)
 	readonly compiledCondition = `${this.serializedPredicate}(${jsData})`
 	readonly compiledNegation = `!${this.compiledCondition}`
-	readonly errorContext = this.createErrorContext({
-		expected: this.description
-	})
+	readonly errorContext = this.createErrorContext({})
 	readonly expression = this.serializedPredicate
 }
 
