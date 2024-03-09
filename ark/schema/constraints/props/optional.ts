@@ -45,7 +45,7 @@ export class OptionalNode extends BaseConstraint<
 			normalize: (schema) => schema,
 			defaults: {
 				description(node) {
-					return `{ ${node.compiledKey}?: ${node.value} }`
+					return `${node.compiledKey}?: ${node.value}`
 				}
 			},
 			intersections: {

@@ -62,7 +62,7 @@ export abstract class BaseRange<
 			: `${jsData}.valueOf()`
 	readonly comparator = compileComparator(this.kind, this.exclusive)
 	readonly numericLimit = normalizeLimit(this.rule)
-	readonly expression = `${this.comparator} ${this.rule}`
+	readonly expression = `${this.comparator}${this.rule}`
 	readonly compiledCondition = `${this.compiledActual} ${this.comparator} ${this.numericLimit}`
 	readonly compiledNegation = `${this.compiledActual} ${
 		negatedComparators[this.comparator]

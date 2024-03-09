@@ -49,7 +49,7 @@ export class RequiredNode extends BaseConstraint<
 			normalize: (schema) => schema,
 			defaults: {
 				description(node) {
-					return `{ ${node.compiledKey}: ${node.value} }`
+					return `${node.compiledKey}: ${node.value}`
 				},
 				expected() {
 					return "provided"

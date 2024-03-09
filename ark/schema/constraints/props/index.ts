@@ -46,7 +46,7 @@ export class IndexNode extends BaseConstraint<
 			normalize: (schema) => schema,
 			defaults: {
 				description(node) {
-					return `{ [${node.key}]: ${node.value} }`
+					return `[${node.key}]: ${node.value}`
 				}
 			},
 			intersections: {

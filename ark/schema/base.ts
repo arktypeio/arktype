@@ -278,7 +278,10 @@ export abstract class BaseNode<
 	}
 
 	get nestableExpression() {
-		return this.children.length > 1 ? `(${this.expression})` : this.expression
+		return this.children.length > 1 &&
+			this.children.some((child) => !child.isBasis && !child.isProp())
+			? `(${this.expression})`
+			: this.expression
 	}
 
 	private static intersectionCache: PartialRecord<
