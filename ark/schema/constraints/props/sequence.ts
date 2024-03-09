@@ -194,9 +194,9 @@ export class SequenceNode extends BaseConstraint<
 								element.kind === "prefix"
 									? `${element.node}`
 									: element.kind === "optionals"
-									? `${element.node}?`
+									? `${element.node.nestableExpression}?`
 									: element.kind === "variadic"
-									? `...${node.variadic}`
+									? `...${element.node.nestableExpression}[]`
 									: `${element.node}`
 							)
 							.join(", ") +
@@ -327,6 +327,8 @@ export class SequenceNode extends BaseConstraint<
 	}
 
 	readonly tuple = sequenceInnerToTuple(this.inner)
+	// this depends on tuple so needs to come after it
+	readonly expression = this.description
 }
 
 const sequenceInnerToTuple = (inner: SequenceInner): SequenceTuple => {

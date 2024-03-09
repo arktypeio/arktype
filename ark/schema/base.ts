@@ -187,6 +187,7 @@ export abstract class BaseNode<
 	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
 	abstract traverseApply: TraverseApply<d["prerequisite"]>
 	abstract compile(js: NodeCompiler): void
+	abstract expression: string
 
 	private descriptionCache?: string
 	get description() {
@@ -273,7 +274,11 @@ export abstract class BaseNode<
 	}
 
 	toString() {
-		return this.description
+		return this.expression
+	}
+
+	get nestableExpression() {
+		return this.children.length > 1 ? `(${this.expression})` : this.expression
 	}
 
 	private static intersectionCache: PartialRecord<

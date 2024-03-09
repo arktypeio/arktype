@@ -57,11 +57,10 @@ export class RegexNode extends BasePrimitiveConstraint<
 	})
 
 	readonly regex = new RegExp(this.rule, this.flags)
+	readonly expression = `${this.regex}`
 	traverseAllows = this.regex.test
 
-	readonly compiledCondition = `/${this.rule}/${
-		this.flags ?? ""
-	}.test(${jsData})`
+	readonly compiledCondition = `${this.expression}.test(${jsData})`
 	readonly compiledNegation = `!${this.compiledCondition}`
 	readonly impliedBasis = this.$.tsKeywords.string
 	readonly errorContext = this.createErrorContext(this.inner)

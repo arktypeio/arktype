@@ -70,5 +70,5 @@ export class DomainNode<t = any> extends BaseBasis<
 			: `typeof ${jsData} !== "${this.domain}"`
 
 	readonly errorContext = this.createErrorContext(this.inner)
-	readonly basisName = this.domain
+	readonly expression = this.domain
 }

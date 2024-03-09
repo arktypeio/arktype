@@ -25,7 +25,7 @@ export abstract class BaseBasis<
 	d extends BaseBasisDeclaration,
 	subclass extends NodeSubclass<d>
 > extends BaseType<t, d, subclass> {
-	abstract readonly basisName: string
+	abstract readonly expression: string
 	abstract readonly compiledCondition: string
 	abstract readonly compiledNegation: string
 	abstract readonly errorContext: d["errorContext"]

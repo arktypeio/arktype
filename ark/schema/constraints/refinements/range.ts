@@ -11,7 +11,6 @@ import type { Declaration, Schema } from "../../kinds.js"
 import { jsData } from "../../shared/compile.js"
 import type { BaseNodeDeclaration, declareNode } from "../../shared/declare.js"
 import type {
-	BasisKind,
 	nodeImplementationInputOf,
 	nodeImplementationOf
 } from "../../shared/implement.js"
@@ -63,12 +62,13 @@ export abstract class BaseRange<
 			: `${jsData}.valueOf()`
 	readonly comparator = compileComparator(this.kind, this.exclusive)
 	readonly numericLimit = normalizeLimit(this.rule)
+	readonly expression = `${this.comparator} ${this.rule}`
 	readonly compiledCondition = `${this.compiledActual} ${this.comparator} ${this.numericLimit}`
 	readonly compiledNegation = `${this.compiledActual} ${
 		negatedComparators[this.comparator]
 	} ${this.numericLimit}`
 
-	readonly errorContext = this.createErrorContext({})
+	readonly errorContext = this.createErrorContext(this.inner)
 	readonly limitKind: LimitKind =
 		this.comparator["0"] === "<" ? "upper" : "lower"
 

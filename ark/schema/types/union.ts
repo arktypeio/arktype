@@ -159,6 +159,9 @@ export class UnionNode<t = unknown> extends BaseType<
 		})
 
 	readonly discriminant: Discriminant | null = null //discriminate(inner.branches)
+	readonly expression = this.branches
+		.map((branch) => branch.nestableExpression)
+		.join(" | ")
 
 	traverseAllows: TraverseAllows = (data, ctx) =>
 		this.branches.some((b) => b.traverseAllows(data, ctx))

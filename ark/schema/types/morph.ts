@@ -135,6 +135,8 @@ export class MorphNode<t = unknown> extends BaseType<
 			}
 		})
 
+	readonly expression = `(In: ${this.in}) => Out<${this.out}>`
+
 	traverseAllows: TraverseAllows = (data, ctx) =>
 		this.in.traverseAllows(data, ctx)
 

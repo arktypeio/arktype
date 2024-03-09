@@ -45,7 +45,7 @@ export class OptionalNode extends BaseConstraint<
 			normalize: (schema) => schema,
 			defaults: {
 				description(node) {
-					return `an optional ${node.compiledKey} key with a value of ${node.value}`
+					return `{ ${node.compiledKey}?: ${node.value} }`
 				}
 			},
 			intersections: {
@@ -70,6 +70,7 @@ export class OptionalNode extends BaseConstraint<
 	readonly serializedKey = compileSerializedValue(this.key)
 	readonly compiledKey =
 		typeof this.key === "string" ? this.key : this.serializedKey
+	readonly expression = this.description
 
 	traverseAllows: TraverseAllows<object> = (data, ctx) =>
 		!(this.key in data) ||

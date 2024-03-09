@@ -53,6 +53,7 @@ export class DivisorNode extends BasePrimitiveConstraint<
 	readonly compiledNegation = `${jsData} % ${this.rule} !== 0`
 	readonly impliedBasis = this.$.tsKeywords.number
 	readonly errorContext = this.createErrorContext(this.inner)
+	readonly expression = `% ${this.rule}`
 }
 
 export const writeIndivisibleMessage = <root extends string>(

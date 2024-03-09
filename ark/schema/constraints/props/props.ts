@@ -31,6 +31,7 @@ export class PropsGroup extends DynamicBase<PropsGroupInput> {
 	readonly nameSet = morph(this.named, (i, node) => [node.key, 1] as const)
 	readonly nameSetReference = reference(this.nameSet)
 	readonly description = describeProps(this)
+	readonly expression = this.description
 
 	traverseAllows: TraverseAllows<object> = () => true
 

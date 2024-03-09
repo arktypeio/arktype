@@ -59,7 +59,7 @@ export class UnitNode<t = unknown> extends BaseBasis<
 	readonly compiledNegation = compileComparison(this, "negated")
 
 	readonly errorContext = this.createErrorContext(this.inner)
-	readonly basisName = printable(this.unit)
+	readonly expression = printable(this.unit)
 	readonly domain = domainOf(this.unit)
 }
 

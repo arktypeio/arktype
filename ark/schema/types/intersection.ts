@@ -270,6 +270,9 @@ export class IntersectionNode<t = unknown> extends BaseType<
 	readonly traversables = conflatenateAll<
 		Node<Exclude<IntersectionChildKind, PropKind>> | PropsGroup
 	>(this.basis, this.refinements, this.props, this.predicate)
+	readonly expression =
+		this.props?.expression ??
+		this.children.map((node) => node.nestableExpression).join(" & ")
 
 	traverseAllows: TraverseAllows = (data, ctx) =>
 		this.traversables.every((traversable) =>
