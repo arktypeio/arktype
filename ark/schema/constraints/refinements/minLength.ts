@@ -37,10 +37,5 @@ export class MinLengthNode extends BaseRange<
 		? (data: LengthBoundableData) => data.length > this.rule
 		: (data: LengthBoundableData) => data.length >= this.rule
 
-	// if (
-	// 	into.basis?.domain !== "string" &&
-	// 	!into.basis?.extends(this.$.builtin.Array)
-	// ) {
-	// 	this.throwInvalidBoundOperandError(into.basis)
-	// }
+	readonly impliedBasis = this.$.lengthBoundable
 }

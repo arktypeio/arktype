@@ -49,14 +49,10 @@ export class DivisorNode extends BasePrimitiveConstraint<
 
 	traverseAllows = (data: number) => data % this.rule === 0
 
-	compiledCondition = `${jsData} % ${this.rule} === 0`
-	compiledNegation = `${jsData} % ${this.rule} !== 0`
-
+	readonly compiledCondition = `${jsData} % ${this.rule} === 0`
+	readonly compiledNegation = `${jsData} % ${this.rule} !== 0`
+	readonly impliedBasis = this.$.builtin.number
 	readonly errorContext = this.createErrorContext(this.inner)
-
-	// if (node.basis?.domain !== "number") {
-	// 	throwParseError(writeIndivisibleMessage(getBasisName(node.basis)))
-	// }
 }
 
 export const writeIndivisibleMessage = <root extends string>(

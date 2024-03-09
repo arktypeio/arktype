@@ -23,8 +23,6 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): TypeNode => {
 	// because to match JS behavior any keys before the spread are overwritten
 	// by the values in the target object, so there'd be no useful purpose in having it
 	// anywhere except for the beginning.
-	// Discussion in ArkType Discord:
-	// https://discord.com/channels/957797212103016458/1103023445035462678/1182814502471860334
 
 	const parsedEntries = stringAndSymbolicEntriesOf(def).map(parseEntry)
 	if (parsedEntries[0]?.kind === "spread") {

@@ -240,6 +240,7 @@ export class SequenceNode extends BaseConstraint<
 			}
 		})
 
+	readonly impliedBasis = this.$.builtin.Array
 	readonly prefix = this.inner.prefix ?? []
 	readonly optionals = this.inner.optionals ?? []
 	readonly prevariadic = [...this.prefix, ...this.optionals]

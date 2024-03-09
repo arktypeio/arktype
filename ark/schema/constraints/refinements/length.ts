@@ -72,8 +72,8 @@ export class LengthNode extends BasePrimitiveConstraint<
 
 	traverseAllows = (data: LengthBoundableData) => data.length === this.rule
 
-	compiledCondition = `${jsData}.length === ${this.rule}`
-	compiledNegation = `${jsData}.length !== ${this.rule}`
-
+	readonly compiledCondition = `${jsData}.length === ${this.rule}`
+	readonly compiledNegation = `${jsData}.length !== ${this.rule}`
+	readonly impliedBasis = this.$.lengthBoundable
 	readonly errorContext = this.createErrorContext(this.inner)
 }

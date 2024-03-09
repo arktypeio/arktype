@@ -54,23 +54,22 @@ export abstract class BaseRange<
 		}) as never
 	}
 
-	exclusive = this.inner.exclusive ?? false
-	boundOperandKind = operandKindsByBoundKind[this.kind]
-	compiledActual =
+	readonly exclusive = this.inner.exclusive ?? false
+	readonly boundOperandKind = operandKindsByBoundKind[this.kind]
+	readonly compiledActual =
 		this.boundOperandKind === "value"
 			? `${jsData}`
 			: this.boundOperandKind === "length"
 			? `${jsData}.length`
 			: `${jsData}.valueOf()`
-	comparator = compileComparator(this.kind, this.exclusive)
-	numericLimit = normalizeLimit(this.rule)
-	compiledCondition = `${this.compiledActual} ${this.comparator} ${this.numericLimit}`
-	compiledNegation = `${this.compiledActual} ${
+	readonly comparator = compileComparator(this.kind, this.exclusive)
+	readonly numericLimit = normalizeLimit(this.rule)
+	readonly compiledCondition = `${this.compiledActual} ${this.comparator} ${this.numericLimit}`
+	readonly compiledNegation = `${this.compiledActual} ${
 		negatedComparators[this.comparator]
 	} ${this.numericLimit}`
 
 	readonly errorContext = this.createErrorContext({})
-
 	readonly limitKind: LimitKind =
 		this.comparator["0"] === "<" ? "upper" : "lower"
 

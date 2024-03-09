@@ -36,14 +36,9 @@ export class MaxLengthNode extends BaseRange<
 			}
 		})
 
+	readonly impliedBasis = this.$.lengthBoundable
+
 	traverseAllows = this.exclusive
 		? (data: LengthBoundableData) => data.length < this.rule
 		: (data: LengthBoundableData) => data.length <= this.rule
-
-	// if (
-	// 	into.basis?.domain !== "string" &&
-	// 	!into.basis?.extends(this.$.builtin.Array)
-	// ) {
-	// 	this.throwInvalidBoundOperandError(into.basis)
-	// }
 }

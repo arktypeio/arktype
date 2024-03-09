@@ -75,13 +75,14 @@ export class ProtoNode<t = unknown> extends BaseBasis<
 		}
 	})
 
+	traverseAllows = (data: unknown) => data instanceof this.proto
+
 	readonly basisName = `${this.proto.name}`
 	readonly serializedConstructor = (this.json as { proto: string }).proto
 	readonly domain = "object"
-	traverseAllows = (data: unknown) => data instanceof this.proto
 
-	compiledCondition = `${jsData} instanceof ${this.serializedConstructor}`
-	compiledNegation = `!(${this.compiledCondition})`
+	readonly compiledCondition = `${jsData} instanceof ${this.serializedConstructor}`
+	readonly compiledNegation = `!(${this.compiledCondition})`
 
 	readonly errorContext = this.createErrorContext(this.inner)
 }

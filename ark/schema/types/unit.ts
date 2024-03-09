@@ -48,18 +48,19 @@ export class UnitNode<t = unknown> extends BaseBasis<
 		}
 	})
 
-	serializedValue: string | number | boolean | null =
+	traverseAllows = (data: unknown) => data === this.unit
+
+	readonly serializedValue: string | number | boolean | null =
 		typeof this.unit === "string" || this.unit instanceof Date
 			? JSON.stringify((this.json as any).unit)
 			: (this.json as any).unit
-	traverseAllows = (data: unknown) => data === this.unit
-	compiledCondition = compileComparison(this)
-	compiledNegation = compileComparison(this, "negated")
+
+	readonly compiledCondition = compileComparison(this)
+	readonly compiledNegation = compileComparison(this, "negated")
 
 	readonly errorContext = this.createErrorContext(this.inner)
-
-	basisName = printable(this.unit)
-	domain = domainOf(this.unit)
+	readonly basisName = printable(this.unit)
+	readonly domain = domainOf(this.unit)
 }
 
 const compileComparison = (unit: UnitNode<any>, negated?: "negated") => {

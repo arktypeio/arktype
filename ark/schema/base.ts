@@ -303,7 +303,6 @@ export abstract class BaseNode<
 		}
 
 		if (this.equals(r as never)) {
-			// TODO: meta
 			return this as never
 		}
 

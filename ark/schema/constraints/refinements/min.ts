@@ -22,9 +22,7 @@ export class MinNode extends BaseRange<MinDeclaration, typeof MinNode> {
 			}
 		})
 
-	// if (into.basis?.domain !== "number") {
-	// 	this.throwInvalidBoundOperandError(into.basis)
-	// }
+	readonly impliedBasis = this.$.builtin.number
 
 	traverseAllows = this.exclusive
 		? (data: number) => data > this.rule

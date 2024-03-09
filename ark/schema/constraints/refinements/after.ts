@@ -30,15 +30,12 @@ export class AfterNode
 			}
 		})
 
-	dateLimit = new Date(this.rule)
-	numericLimit = +this.dateLimit
-	stringLimit = dateLimitToString(this.rule)
+	readonly dateLimit = new Date(this.rule)
+	readonly numericLimit = +this.dateLimit
+	readonly stringLimit = dateLimitToString(this.rule)
+	readonly impliedBasis = this.$.builtin.Date
 
 	traverseAllows = this.exclusive
 		? (data: Date) => +data > this.numericLimit
 		: (data: Date) => +data >= this.numericLimit
-
-	// if (!into.basis?.extends(this.$.builtin.Date)) {
-	// 	this.throwInvalidBoundOperandError(into.basis)
-	// }
 }

@@ -56,15 +56,13 @@ export class RegexNode extends BasePrimitiveConstraint<
 		}
 	})
 
-	regex = new RegExp(this.rule, this.flags)
+	readonly regex = new RegExp(this.rule, this.flags)
 	traverseAllows = this.regex.test
 
-	compiledCondition = `/${this.rule}/${this.flags ?? ""}.test(${jsData})`
-	compiledNegation = `!${this.compiledCondition}`
-
+	readonly compiledCondition = `/${this.rule}/${
+		this.flags ?? ""
+	}.test(${jsData})`
+	readonly compiledNegation = `!${this.compiledCondition}`
+	readonly impliedBasis = this.$.builtin.string
 	readonly errorContext = this.createErrorContext(this.inner)
-
-	// if (into.basis?.domain !== "string") {
-	// 	throwInvalidOperandError("regex", "a string", into.basis)
-	// }
 }

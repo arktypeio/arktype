@@ -57,18 +57,18 @@ export class DomainNode<t = any> extends BaseBasis<
 		}
 	})
 
-	basisName = this.domain
-
 	traverseAllows = (data: unknown) => domainOf(data) === this.domain
-	compiledCondition =
+
+	readonly compiledCondition =
 		this.domain === "object"
 			? `((typeof ${jsData} === "object" && ${jsData} !== null) || typeof ${jsData} === "function")`
 			: `typeof ${jsData} === "${this.domain}"`
 
-	compiledNegation =
+	readonly compiledNegation =
 		this.domain === "object"
 			? `((typeof ${jsData} !== "object" || ${jsData} === null) && typeof ${jsData} !== "function")`
 			: `typeof ${jsData} !== "${this.domain}"`
 
 	readonly errorContext = this.createErrorContext(this.inner)
+	readonly basisName = this.domain
 }

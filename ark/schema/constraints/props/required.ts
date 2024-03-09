@@ -74,8 +74,10 @@ export class RequiredNode extends BaseConstraint<
 			}
 		})
 
+	readonly impliedBasis = this.$.builtin.object
 	readonly serializedKey = compileSerializedValue(this.key)
-	compiledKey = typeof this.key === "string" ? this.key : this.serializedKey
+	readonly compiledKey =
+		typeof this.key === "string" ? this.key : this.serializedKey
 
 	readonly errorContext = Object.freeze({
 		code: "required",

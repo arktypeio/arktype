@@ -64,8 +64,10 @@ export class OptionalNode extends BaseConstraint<
 			}
 		})
 
-	serializedKey = compileSerializedValue(this.key)
-	compiledKey = typeof this.key === "string" ? this.key : this.serializedKey
+	readonly impliedBasis = this.$.builtin.object
+	readonly serializedKey = compileSerializedValue(this.key)
+	readonly compiledKey =
+		typeof this.key === "string" ? this.key : this.serializedKey
 
 	traverseAllows: TraverseAllows<object> = (data, ctx) =>
 		!(this.key in data) ||

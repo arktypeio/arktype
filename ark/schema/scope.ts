@@ -12,6 +12,7 @@ import {
 } from "@arktype/util"
 import type { Node, TypeNode } from "./base.js"
 import { globalConfig } from "./config.js"
+import type { LengthBoundableData } from "./constraints/refinements/range.js"
 import type {
 	instantiateAliases,
 	instantiateSchemaBranches,
@@ -159,6 +160,7 @@ export class ScopeNode<r extends object = any> {
 	protected resolved = false
 	protected prereducedAliases: boolean
 	protected prereducedSchemas: boolean
+	readonly lengthBoundable: UnionNode<LengthBoundableData>
 
 	constructor(
 		public def: Dict,
@@ -197,6 +199,10 @@ export class ScopeNode<r extends object = any> {
 			},
 			{ reduceTo: this.parsePrereduced("intersection", {}) }
 		)
+		this.lengthBoundable = this.parsePrereduced("union", [
+			this.builtin.string,
+			this.builtin.Array
+		])
 	}
 
 	get builtin() {

@@ -158,7 +158,7 @@ export class UnionNode<t = unknown> extends BaseType<
 			}
 		})
 
-	discriminant: Discriminant | null = null //discriminate(inner.branches)
+	readonly discriminant: Discriminant | null = null //discriminate(inner.branches)
 
 	traverseAllows: TraverseAllows = (data, ctx) =>
 		this.branches.some((b) => b.traverseAllows(data, ctx))

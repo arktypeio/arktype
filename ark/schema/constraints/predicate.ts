@@ -57,9 +57,11 @@ export class PredicateNode extends BasePrimitiveConstraint<
 	})
 
 	traverseAllows = this.rule
-	compiledCondition = `${compileSerializedValue(this.rule)}(${jsData})`
-	compiledNegation = `!${this.compiledCondition}`
-	errorContext = this.createErrorContext({ expected: this.description })
+	readonly compiledCondition = `${compileSerializedValue(this.rule)}(${jsData})`
+	readonly compiledNegation = `!${this.compiledCondition}`
+	readonly errorContext = this.createErrorContext({
+		expected: this.description
+	})
 }
 
 export type Predicate<data = unknown> = (

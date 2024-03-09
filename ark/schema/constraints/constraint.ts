@@ -2,7 +2,8 @@ import {
 	BaseNode,
 	type ConstraintNode,
 	type Node,
-	type NodeSubclass
+	type NodeSubclass,
+	type TypeNode
 } from "../base.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../shared/context.js"
@@ -61,6 +62,8 @@ export abstract class BasePrimitiveConstraint<
 	abstract readonly compiledCondition: string
 	abstract readonly compiledNegation: string
 	abstract readonly errorContext: d["errorContext"]
+
+	impliedBasis?: TypeNode
 
 	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
 		if (!this.traverseAllows(data, ctx)) {

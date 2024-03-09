@@ -29,11 +29,9 @@ export class MaxNode extends BaseRange<MaxDeclaration, typeof MaxNode> {
 			}
 		})
 
+	readonly impliedBasis = this.$.builtin.number
+
 	traverseAllows = this.exclusive
 		? (data: number) => data < this.rule
 		: (data: number) => data <= this.rule
-
-	// if (into.basis?.domain !== "number") {
-	// 	this.throwInvalidBoundOperandError(into.basis)
-	// }
 }
