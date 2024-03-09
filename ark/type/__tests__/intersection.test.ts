@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import { writeIndivisibleMessage } from "@arktype/schema"
+import { nodes, writeIndivisibleMessage } from "@arktype/schema"
 import { type } from "arktype"
 import {
 	writeMissingRightOperandMessage,
@@ -80,13 +80,13 @@ describe("intersection", () => {
 		it("left semantic error", () => {
 			// @ts-expect-error
 			attest(() => type("string%2&'foo'")).throwsAndHasTypeError(
-				writeIndivisibleMessage("string")
+				writeIndivisibleMessage(nodes.string)
 			)
 		})
 		it("right semantic error", () => {
 			// @ts-expect-error
 			attest(() => type("'foo'&string%2")).throwsAndHasTypeError(
-				writeIndivisibleMessage("string")
+				writeIndivisibleMessage(nodes.string)
 			)
 		})
 		it("chained validation", () => {

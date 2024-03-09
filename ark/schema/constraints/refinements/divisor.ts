@@ -58,15 +58,15 @@ export class DivisorNode extends BasePrimitiveConstraint<
 	readonly expression = `% ${this.rule}`
 }
 
-export const writeIndivisibleMessage = <t extends TypeNode | string>(t: t) =>
+export const writeIndivisibleMessage = <node extends TypeNode>(t: node) =>
 	writeInvalidOperandMessage(
 		"divisor",
-		"a number",
+		t.$.tsKeywords.number,
 		t
-	) as writeIndivisibleMessage<t>
+	) as writeIndivisibleMessage<node>
 
-export type writeIndivisibleMessage<t extends TypeNode | string> =
-	writeInvalidOperandMessage<"divisor", t>
+export type writeIndivisibleMessage<node extends TypeNode> =
+	writeInvalidOperandMessage<"divisor", node>
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
 const greatestCommonDivisor = (l: number, r: number) => {

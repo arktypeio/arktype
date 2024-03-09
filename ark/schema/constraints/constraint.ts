@@ -47,25 +47,26 @@ export const throwInvalidOperandError = (
 
 export const writeInvalidOperandMessage = <
 	kind extends ConstraintKind,
-	expected extends TypeNode | string,
-	actual extends TypeNode | string
+	expected extends TypeNode,
+	actual extends TypeNode
 >(
 	kind: kind,
 	expected: expected,
 	actual: actual
 ) =>
 	`${capitalize(kind)} operand must be ${
-		typeof expected === "string" ? expected : expected.description
-	} (was ${
-		typeof actual === "string" ? actual : actual.description
-	})` as writeInvalidOperandMessage<kind, actual>
+		expected.description
+	} (was ${actual.exclude(expected)})` as writeInvalidOperandMessage<
+		kind,
+		actual
+	>
 
 export type writeInvalidOperandMessage<
 	kind extends ConstraintKind,
-	actual extends TypeNode | string
+	actual extends TypeNode
 > = `${Capitalize<kind>} operand must be ${describeExpression<
 	Prerequisite<kind>
->} (was ${actual extends TypeNode<infer In> ? describeExpression<In> : actual})`
+>} (was ${describeExpression<actual["infer"]>})`
 
 export abstract class BaseConstraint<
 	d extends BaseConstraintDeclaration,

@@ -24,11 +24,7 @@
 		"out",
 		// too many overlapping names, easy to import in schema/arktype where we don't want it
 		// should just import as * as ts when we need it in attest
-		"typescript",
-		// Unfortunately this also prevents suggestions from @arktype/schema:
-		// https://github.com/microsoft/TypeScript/issues/51418
-		"./ark/type/main.ts",
-		"./ark/schema/main.ts"
+		"typescript"
 	],
 	"typescript.tsserver.experimental.enableProjectDiagnostics": true,
 	"prettier.ignorePath": "ark/repo/.prettierignore",

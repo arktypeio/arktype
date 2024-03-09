@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import { writeIndivisibleMessage } from "@arktype/schema"
+import { nodes, writeIndivisibleMessage } from "@arktype/schema"
 import { lazily } from "@arktype/util"
 import { scope, type } from "arktype"
 import { arktypes } from "../ark.js"
@@ -281,7 +281,7 @@ describe("generics", () => {
 				attest(() =>
 					// @ts-expect-error
 					$.type("box<1,string%2>")
-				).throwsAndHasTypeError(writeIndivisibleMessage("string"))
+				).throwsAndHasTypeError(writeIndivisibleMessage(nodes.string))
 			})
 		})
 	})

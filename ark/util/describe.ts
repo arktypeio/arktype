@@ -1,7 +1,6 @@
 import type { describeDomainOf, domainOf, inferDomain } from "./domain.js"
 import type { Stringifiable, isAny, isNever } from "./generics.js"
 import type { describeObject } from "./objectKinds.js"
-import type { serializePrimitive } from "./serialize.js"
 import type { stringifyUnion } from "./unionToTuple.js"
 
 export type describe<
