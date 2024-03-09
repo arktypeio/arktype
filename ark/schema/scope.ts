@@ -38,6 +38,7 @@ import type {
 	NodeKind,
 	TypeKind
 } from "./shared/implement.js"
+import { discriminatingIntersectionKeys } from "./types/intersection.js"
 import { BaseType } from "./types/type.js"
 import type {
 	NormalizedUnionSchema,
@@ -128,22 +129,26 @@ const assertTypeKind = (schema: unknown): TypeKind => {
 		case "function":
 			return "proto"
 		case "object":
-			if (schema === null) {
-				// throw at end of function
-			} else if (schema instanceof BaseType) {
-				return schema.kind
-			} else if ("morph" in schema) {
-				return "morph"
-			} else if ("branches" in schema || isArray(schema)) {
-				return "union"
-			} else if ("unit" in schema) {
-				return "unit"
-			} else {
-				// if the schema has a proto or domain key, it will be parsed as an
-				// IntersectionNode, but reduced to the basis if there are no
-				// constraints
+			// throw at end of function
+			if (schema === null) break
+
+			if (schema instanceof BaseType) return schema.kind
+
+			if ("morph" in schema) return "morph"
+
+			if ("branches" in schema || isArray(schema)) return "union"
+
+			if ("unit" in schema) return "unit"
+
+			const schemaKeys = Object.keys(schema)
+
+			if (
+				schemaKeys.length === 0 ||
+				schemaKeys.some((k) => k in discriminatingIntersectionKeys)
+			)
 				return "intersection"
-			}
+			if ("proto" in schema) return "proto"
+			if ("domain" in schema) return "domain"
 	}
 	return throwParseError(`${printable(schema)} is not a valid type schema`)
 }

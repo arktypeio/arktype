@@ -13,6 +13,7 @@ import {
 	throwInternalError,
 	type List,
 	type evaluate,
+	type keySetOf,
 	type listable
 } from "@arktype/util"
 import {
@@ -79,7 +80,15 @@ export type IntersectionDeclaration = declareNode<{
 	childKind: IntersectionChildKind
 }>
 
-const constraintKeys = morph(constraintKinds, (i, kind) => [kind, 1] as const)
+export const constraintKeys = morph(
+	constraintKinds,
+	(i, kind) => [kind, 1] as const
+)
+
+export const discriminatingIntersectionKeys = {
+	...constraintKeys,
+	onExtraneousKey: 1
+} as const satisfies keySetOf<IntersectionInner>
 
 const propKeys = morph(
 	[...propKinds, "onExtraneousKey"] satisfies (keyof PropsGroupInput)[],
@@ -136,14 +145,9 @@ const intersectIntersections = (
 	const root = intersectRootKeys(lRoot, rRoot)
 
 	if (root instanceof Disjoint) return root
-	const basis = root.proto ?? root.domain
 
 	const lConstraints = flattenConstraints(lConstraintsInner)
 	const rConstraints = flattenConstraints(rConstraintsInner)
-
-	if (basis && !lConstraints.length && !rConstraints.length) {
-		return basis
-	}
 
 	return intersectConstraints({
 		root,
@@ -237,15 +241,15 @@ export class IntersectionNode<t = unknown> extends BaseType<
 			reduce: (inner, $) =>
 				// we cast union out of the result here since that only occurs when intersecting two sequences
 				// that cannot occur when reducing a single intersection schema using unknown
-				intersectIntersections({}, inner, $) as Node<
+				intersectIntersections(inner, {}, $) as Node<
 					"intersection" | IntersectionBasisKind
 				>,
 			defaults: {
-				description(self) {
-					return self.children.length === 0
+				description(node) {
+					return node.children.length === 0
 						? "unknown"
-						: self.props?.description ??
-								self.children.map((child) => child.description).join(" and ")
+						: node.props?.description ??
+								node.children.map((child) => child.description).join(" and ")
 				},
 				expected(source) {
 					return "  • " + source.errors.map((e) => e.expected).join("\n  • ")
@@ -348,7 +352,13 @@ const intersectRootKeys = (
 	l: IntersectionRoot,
 	r: IntersectionRoot
 ): MutableInner<"intersection"> | Disjoint => {
+	// since intersection with a right operand of unknown is leveraged for
+	// reduction, check for the case where r is empty so we can preserve
+	// metadata and save some time
+	if (isEmptyObject(r)) return l
+
 	const result: IntersectionRoot = {}
+
 	const lBasis = l.proto ?? l.domain
 	const rBasis = r.proto ?? r.domain
 	const resultBasis = lBasis

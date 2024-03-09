@@ -406,7 +406,7 @@ export abstract class BaseNode<
 				: (configOrDescription as never)
 		return this.transform(
 			(kind, inner) => ({ ...inner, ...config }),
-			(node) => node.isProp()
+			(node) => !node.isProp()
 		) as never
 	}
 }

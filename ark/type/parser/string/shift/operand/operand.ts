@@ -1,3 +1,4 @@
+import type { type } from "arktype"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import type { state, StaticState } from "../../reduce/static.js"
 import type { BaseCompletions } from "../../string.js"
@@ -5,7 +6,6 @@ import { Scanner } from "../scanner.js"
 import {
 	enclosingChar,
 	parseEnclosed,
-	type EnclosingEndToken,
 	type EnclosingQuote,
 	type EnclosingStartToken
 } from "./enclosed.js"
@@ -33,7 +33,7 @@ export type parseOperand<
 > = s["unscanned"] extends Scanner.shift<infer lookahead, infer unscanned>
 	? lookahead extends "("
 		? state.reduceGroupOpen<s, unscanned>
-		: lookahead extends EnclosingEndToken
+		: lookahead extends EnclosingStartToken
 		? parseEnclosed<s, lookahead, unscanned>
 		: lookahead extends Scanner.WhiteSpaceToken
 		? parseOperand<state.scanTo<s, unscanned>, $, args>
