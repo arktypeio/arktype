@@ -37,8 +37,8 @@ describe("parse", () => {
 					variadic: "number"
 				}
 			})
-		).throws(
-			"Intersection of non-empty and at most length 0 results in an unsatisfiable type"
+		).throws.snap(
+			"Error: Intersection of <=0 and >=1 results in an unsatisfiable type"
 		)
 	})
 

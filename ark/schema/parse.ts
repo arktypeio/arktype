@@ -127,8 +127,6 @@ export function parseAttachments(
 		}
 		if (!keyImpl.implied) {
 			collapsibleJson[k] = json[k]
-		} else {
-			console.log("iompliejdpoeimd")
 		}
 	})
 

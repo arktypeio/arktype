@@ -12,7 +12,7 @@ const nameCounts: Record<string, number | undefined> = {}
 export const reference = (value: object | symbol) => {
 	const existingName = namesByResolution.get(value)
 	if (existingName) {
-		return existingName
+		return `$ark.${existingName}`
 	}
 
 	const baseName = baseNameFor(value)

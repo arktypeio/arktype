@@ -68,6 +68,12 @@ export abstract class BaseRange<
 		negatedComparators[this.comparator]
 	} ${this.numericLimit}`
 
+	// we need to compute stringLimit before errorContext, which references it
+	// transitively through description for date bounds
+	readonly stringLimit =
+		this.boundOperandKind === "date"
+			? dateLimitToString(this.rule)
+			: `${this.rule}`
 	readonly errorContext = this.createErrorContext(this.inner)
 	readonly limitKind: LimitKind =
 		this.comparator["0"] === "<" ? "upper" : "lower"
@@ -92,16 +98,17 @@ export abstract class BaseRange<
 	}
 }
 
-export interface BoundInner<limit extends LimitSchemaValue = LimitSchemaValue>
-	extends PrimitiveConstraintInner<limit> {
+export interface BoundInner extends PrimitiveConstraintInner<number> {
 	readonly exclusive?: boolean
 }
 
 export type LimitSchemaValue = Date | number | string
 
-export type NormalizedBoundSchema<
+export interface NormalizedBoundSchema<
 	limit extends LimitSchemaValue = LimitSchemaValue
-> = BoundInner<limit>
+> extends PrimitiveConstraintInner<limit> {
+	readonly exclusive?: boolean
+}
 
 export type BoundSchema<limit extends LimitSchemaValue = LimitSchemaValue> =
 	| limit
@@ -188,9 +195,9 @@ export type declareRange<input extends BoundDeclarationInput> = declareNode<{
 	kind: input["kind"]
 	schema: BoundSchema<input["rule"]>
 	normalizedSchema: NormalizedBoundSchema<input["rule"]>
-	inner: BoundInner<input["rule"]>
+	inner: BoundInner
 	prerequisite: input["prerequisite"]
-	errorContext: BoundInner<input["rule"]>
+	errorContext: BoundInner
 }>
 
 export type BoundOperandKind = "value" | "length" | "date"

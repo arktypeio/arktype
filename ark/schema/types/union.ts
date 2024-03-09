@@ -99,9 +99,9 @@ export class UnionNode<t = unknown> extends BaseType<
 			},
 			defaults: {
 				description(node) {
-					return node.branches.length === 0
-						? "never"
-						: node.branches.join(" or ")
+					return describeBranches(
+						node.branches.map((branch) => branch.description)
+					)
 				},
 				expected(source) {
 					return describeBranches(source.errors.map((e) => e.expected))

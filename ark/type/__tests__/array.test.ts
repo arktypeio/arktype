@@ -180,7 +180,7 @@ Value at [1] must be a number (was boolean)`)
 			attest(() =>
 				// @ts-expect-error
 				type(["number", "...", "string"])
-			).throwsAndHasTypeError(writeNonArraySpreadMessage("a string"))
+			).throwsAndHasTypeError(writeNonArraySpreadMessage("string"))
 		})
 		it("allows multiple fixed spreads", () => {
 			const t = type([

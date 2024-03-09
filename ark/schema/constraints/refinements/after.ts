@@ -1,7 +1,6 @@
 import type { nodeImplementationOf } from "../../shared/implement.js"
 import {
 	BaseRange,
-	dateLimitToString,
 	type DateBoundExtras,
 	type DateRangeDeclaration,
 	type boundToIs
@@ -31,8 +30,6 @@ export class AfterNode
 		})
 
 	readonly dateLimit = new Date(this.rule)
-	readonly numericLimit = +this.dateLimit
-	readonly stringLimit = dateLimitToString(this.rule)
 	readonly impliedBasis = this.$.jsObjects.Date
 
 	traverseAllows = this.exclusive

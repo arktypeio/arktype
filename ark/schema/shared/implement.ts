@@ -1,10 +1,8 @@
 import {
 	compileSerializedValue,
 	morph,
-	throwParseError,
 	type ErrorMessage,
 	type JsonData,
-	type Stringifiable,
 	type entryOf,
 	type evaluate,
 	type indexOf,

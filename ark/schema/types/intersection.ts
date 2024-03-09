@@ -136,9 +136,15 @@ const intersectIntersections = (
 	const root = intersectRootKeys(lRoot, rRoot)
 
 	if (root instanceof Disjoint) return root
+	const basis = root.proto ?? root.domain
 
 	const lConstraints = flattenConstraints(lConstraintsInner)
 	const rConstraints = flattenConstraints(rConstraintsInner)
+
+	if (basis && !lConstraints.length && !rConstraints.length) {
+		return basis
+	}
+
 	return intersectConstraints({
 		root,
 		l: lConstraints,
@@ -250,11 +256,19 @@ export class IntersectionNode<t = unknown> extends BaseType<
 			intersections: {
 				intersection: intersectIntersections,
 				...defineRightwardIntersections("intersection", (l, r, $) => {
+					// if l is unknown, return r
+					if (l.children.length === 0) return r
+
 					const basis = l.basis?.intersect(r) ?? r
 
 					return basis instanceof Disjoint
 						? basis
-						: $.parsePrereduced(
+						: l?.basis?.equals(basis)
+						? // if the basis doesn't change, return the original intesection
+						  l
+						: // given we've already precluded l being unknown, the result must
+						  // be an intersection with the new basis result integrated
+						  $.parsePrereduced(
 								"intersection",
 								Object.assign(omit(l.inner, metaKeys), { [basis.kind]: basis })
 						  )
@@ -271,8 +285,9 @@ export class IntersectionNode<t = unknown> extends BaseType<
 		Node<Exclude<IntersectionChildKind, PropKind>> | PropsGroup
 	>(this.basis, this.refinements, this.props, this.predicate)
 	readonly expression =
-		this.props?.expression ??
-		this.children.map((node) => node.nestableExpression).join(" & ")
+		this.props?.expression ||
+		this.children.map((node) => node.nestableExpression).join(" & ") ||
+		"unknown"
 
 	traverseAllows: TraverseAllows = (data, ctx) =>
 		this.traversables.every((traversable) =>
