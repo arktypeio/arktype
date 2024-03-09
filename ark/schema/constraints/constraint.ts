@@ -72,10 +72,6 @@ export abstract class BaseConstraint<
 	): intersectConstraintKinds<d["kind"], r["kind"]> {
 		return this.intersectInternal(r) as never
 	}
-
-	get hasOpenIntersection() {
-		return this.impl.hasOpenIntersection as d["hasOpenIntersection"]
-	}
 }
 
 export type PrimitiveConstraintKind = Exclude<ConstraintKind, PropKind>

@@ -27,7 +27,7 @@ export type RequiredDeclaration = declareNode<{
 		key: string | symbol
 	}
 	prerequisite: object
-	hasOpenIntersection: true
+	intersectionIsOpen: true
 	childKind: TypeKind
 }>
 
@@ -38,7 +38,7 @@ export class RequiredNode extends BaseConstraint<
 	static implementation: nodeImplementationOf<RequiredDeclaration> =
 		this.implement({
 			hasAssociatedError: true,
-			hasOpenIntersection: true,
+			intersectionIsOpen: true,
 			keys: {
 				key: {},
 				value: {

@@ -1,4 +1,5 @@
 import { domainOf, printable } from "@arktype/util"
+import type { ConstraintNode } from "../base.js"
 import { jsData } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"

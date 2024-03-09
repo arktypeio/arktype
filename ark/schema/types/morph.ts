@@ -7,7 +7,7 @@ import {
 	type Primitive,
 	type listable
 } from "@arktype/util"
-import type { Node } from "../base.js"
+import type { ConstraintNode, Node } from "../base.js"
 import type { of } from "../constraints/ast.js"
 import type { Schema } from "../kinds.js"
 import type { StaticArkOption } from "../scope.js"

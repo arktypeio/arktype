@@ -21,7 +21,7 @@ export type IndexDeclaration = declareNode<{
 	normalizedSchema: IndexSchema
 	inner: IndexInner
 	prerequisite: object
-	hasOpenIntersection: true
+	intersectionIsOpen: true
 	childKind: TypeKind
 }>
 
@@ -32,7 +32,7 @@ export class IndexNode extends BaseConstraint<
 	static implementation: nodeImplementationOf<IndexDeclaration> =
 		this.implement({
 			hasAssociatedError: false,
-			hasOpenIntersection: true,
+			intersectionIsOpen: true,
 			keys: {
 				key: {
 					child: true,

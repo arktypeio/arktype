@@ -1,5 +1,5 @@
 import { isArray } from "@arktype/util"
-import type { Node, TypeNode } from "../base.js"
+import type { ConstraintNode, Node, TypeNode } from "../base.js"
 import type { Schema } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../shared/context.js"

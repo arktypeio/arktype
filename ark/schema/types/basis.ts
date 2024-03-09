@@ -30,10 +30,6 @@ export abstract class BaseBasis<
 	abstract readonly compiledNegation: string
 	abstract readonly errorContext: d["errorContext"]
 
-	get hasOpenIntersection() {
-		return false as const
-	}
-
 	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
 		if (!this.traverseAllows(data, ctx)) {
 			ctx.error(this.description)

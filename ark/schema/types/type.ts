@@ -2,10 +2,12 @@ import { morph, type Domain, type evaluate } from "@arktype/util"
 import {
 	BaseNode,
 	type BaseAttachments,
+	type ConstraintNode,
 	type Node,
 	type NodeSubclass,
 	type TypeNode
 } from "../base.js"
+import { throwInvalidOperandError } from "../constraints/constraint.js"
 import type { Schema, reducibleKindOf } from "../kinds.js"
 import { TraversalContext } from "../shared/context.js"
 import type { BaseNodeDeclaration } from "../shared/declare.js"
@@ -71,9 +73,17 @@ export abstract class BaseType<
 		input: Schema<kind>
 	): TypeNode<this["infer"]> {
 		const constraint = this.$.parse(kind, input)
-		return this.and(
-			this.$.parse("intersection", { [kind]: constraint })
-		) as never
+		if (constraint.impliedBasis && !this.extends(constraint.impliedBasis)) {
+			return throwInvalidOperandError(
+				kind,
+				constraint.impliedBasis,
+				this as never
+			)
+		}
+		// TODO: not an intersection
+		return this.$.parse("intersection", {
+			[kind]: constraint
+		})
 	}
 
 	keyof() {

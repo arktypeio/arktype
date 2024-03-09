@@ -284,6 +284,10 @@ export abstract class BaseNode<
 		return this.hasKind("unit") && this.allows(value)
 	}
 
+	get intersectionIsOpen() {
+		return this.impl.intersectionIsOpen as d["intersectionIsOpen"]
+	}
+
 	get nestableExpression() {
 		return this.children.length > 1 &&
 			this.children.some((child) => !child.isBasis && !child.isProp())

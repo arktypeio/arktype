@@ -22,7 +22,7 @@ export type PredicateDeclaration = declareNode<{
 	schema: PredicateSchema
 	normalizedSchema: NormalizedPredicateSchema
 	inner: PredicateInner
-	hasOpenIntersection: true
+	intersectionIsOpen: true
 	errorContext: {}
 }>
 
@@ -48,7 +48,7 @@ export class PredicateNode extends BasePrimitiveConstraint<
 				}`
 			}
 		},
-		hasOpenIntersection: true,
+		intersectionIsOpen: true,
 		// TODO: ordering
 		intersections: {
 			// TODO: allow changed order to be the same type

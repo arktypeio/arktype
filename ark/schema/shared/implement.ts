@@ -80,9 +80,7 @@ export const nodeKinds = [
 ] as const satisfies NodeKind[]
 
 export type OpenNodeKind = {
-	[k in NodeKind]: Declaration<k>["hasOpenIntersection"] extends true
-		? k
-		: never
+	[k in NodeKind]: Declaration<k>["intersectionIsOpen"] extends true ? k : never
 }[NodeKind]
 
 export type ClosedNodeKind = Exclude<NodeKind, OpenNodeKind>
@@ -238,7 +236,7 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 export interface UnknownNodeImplementation
 	extends CommonNodeImplementationInput<BaseNodeDeclaration> {
 	defaults: ParsedUnknownNodeConfig
-	hasOpenIntersection: boolean
+	intersectionIsOpen: boolean
 	intersections: UnknownIntersectionMap
 	keys: Record<string, NodeKeyImplementation<any, any>>
 }
@@ -246,7 +244,7 @@ export interface UnknownNodeImplementation
 export type nodeImplementationOf<d extends BaseNodeDeclaration> =
 	nodeImplementationInputOf<d> & {
 		intersections: IntersectionMap<d["kind"]>
-		hasOpenIntersection: d["hasOpenIntersection"]
+		intersectionIsOpen: d["intersectionIsOpen"]
 		defaults: nodeDefaultsImplementationFor<d["kind"]>
 	}
 
@@ -254,8 +252,8 @@ export type nodeImplementationInputOf<d extends BaseNodeDeclaration> =
 	CommonNodeImplementationInput<d> & {
 		intersections: IntersectionMap<d["kind"]>
 		defaults: nodeDefaultsImplementationInputFor<d["kind"]>
-	} & (d["hasOpenIntersection"] extends true
-			? { hasOpenIntersection: true }
+	} & (d["intersectionIsOpen"] extends true
+			? { intersectionIsOpen: true }
 			: {}) &
 		// if the node is declared as reducible to a kind other than its own,
 		// there must be a reduce implementation

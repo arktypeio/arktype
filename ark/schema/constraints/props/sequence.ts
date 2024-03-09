@@ -19,29 +19,13 @@ import type {
 } from "../../shared/implement.js"
 import { BaseConstraint } from "../constraint.js"
 
-export interface BaseSequenceSchema extends BaseMeta {
+export interface NormalizedSequenceSchema extends BaseMeta {
 	readonly prefix?: readonly TypeSchema[]
 	readonly optionals?: readonly TypeSchema[]
 	readonly variadic?: TypeSchema
 	readonly minVariadicLength?: number
+	readonly postfix?: readonly TypeSchema[]
 }
-
-export interface NormalizedPostfixableSequenceSchema
-	extends BaseSequenceSchema {
-	readonly optionals?: never
-	// variadic is required for postfix
-	readonly variadic: TypeSchema
-	readonly postfix: readonly TypeSchema[]
-}
-
-export interface NormalizedOptionalizableSequenceSchema
-	extends BaseSequenceSchema {
-	readonly postfix?: never
-}
-
-export type NormalizedSequenceSchema =
-	| NormalizedPostfixableSequenceSchema
-	| NormalizedOptionalizableSequenceSchema
 
 export type SequenceSchema = NormalizedSequenceSchema | TypeSchema
 
