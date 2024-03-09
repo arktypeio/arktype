@@ -29,9 +29,11 @@ export class BeforeNode
 			},
 			intersections: {
 				before: (l, r) => (l.isStricterThan(r) ? l : r),
-				after: (before, after) =>
+				after: (before, after, $) =>
 					before.overlapsRange(after)
-						? null
+						? before.overlapIsUnit(after)
+							? $.parse("unit", { unit: before.dateLimit })
+							: null
 						: Disjoint.from("range", before, after)
 			}
 		})

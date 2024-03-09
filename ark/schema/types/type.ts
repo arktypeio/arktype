@@ -66,9 +66,9 @@ export abstract class BaseType<
 		return { errors: ctx.currentErrors }
 	}
 
-	constrain<constraintKind extends ConstraintKind>(
-		kind: constraintKind,
-		input: Schema<constraintKind>
+	constrain<kind extends ConstraintKind>(
+		kind: kind,
+		input: Schema<kind>
 	): TypeNode<this["infer"]> {
 		const constraint = this.$.parse(kind, input)
 		return this.and(

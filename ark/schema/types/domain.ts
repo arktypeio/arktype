@@ -31,7 +31,7 @@ export type DomainDeclaration = declareNode<{
 	expectedContext: DomainInner
 }>
 
-export class DomainNode<t = unknown> extends BaseBasis<
+export class DomainNode<t = any> extends BaseBasis<
 	t,
 	DomainDeclaration,
 	typeof DomainNode

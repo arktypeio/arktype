@@ -39,7 +39,9 @@ describe("parse enclosed", () => {
 		})
 	})
 	it("single-quoted", () => {
-		attest<"hello">(type("'hello'").infer)
+		const t = type("'hello'")
+		attest<"hello">(t.infer)
+		attest(t.json).snap({ unit: "hello" })
 	})
 	it("double-quoted", () => {
 		attest<"goodbye">(type('"goodbye"').infer)

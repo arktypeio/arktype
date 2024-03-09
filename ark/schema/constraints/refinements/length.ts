@@ -1,12 +1,13 @@
 import { jsData } from "../../shared/compile.js"
-import type { BaseMeta, declareNode } from "../../shared/declare.js"
+import type { declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
-import { BasePrimitiveConstraint } from "../constraint.js"
+import {
+	BasePrimitiveConstraint,
+	type PrimitiveConstraintInner
+} from "../constraint.js"
 import type { LengthBoundableData } from "./range.js"
 
-export interface LengthInner extends BaseMeta {
-	readonly length: number
-}
+export interface LengthInner extends PrimitiveConstraintInner<number> {}
 
 export type length<n extends number> = { "==": n }
 
@@ -28,19 +29,19 @@ export class LengthNode extends BasePrimitiveConstraint<
 	typeof LengthNode
 > {
 	static implementation = this.implement({
-		collapseKey: "length",
+		collapseKey: "rule",
 		keys: {
-			length: {}
+			rule: {}
 		},
 		normalize: (schema) =>
-			typeof schema === "number" ? { length: schema } : schema,
+			typeof schema === "number" ? { rule: schema } : schema,
 		intersections: {
 			length: (l, r) =>
 				new Disjoint({
 					"[length]": {
 						unit: {
-							l: l.$.parse("unit", { unit: l.length }),
-							r: r.$.parse("unit", { unit: r.length })
+							l: l.$.parse("unit", { unit: l.rule }),
+							r: r.$.parse("unit", { unit: r.rule })
 						}
 					}
 				})
@@ -48,15 +49,15 @@ export class LengthNode extends BasePrimitiveConstraint<
 		hasAssociatedError: true,
 		defaults: {
 			description(inner) {
-				return `exactly length ${inner.length}`
+				return `exactly length ${inner.rule}`
 			}
 		}
 	})
 
-	traverseAllows = (data: LengthBoundableData) => data.length === this.length
+	traverseAllows = (data: LengthBoundableData) => data.length === this.rule
 
-	compiledCondition = `${jsData}.length === ${this.length}`
-	compiledNegation = `${jsData}.length !== ${this.length}`
+	compiledCondition = `${jsData}.length === ${this.rule}`
+	compiledNegation = `${jsData}.length !== ${this.rule}`
 
 	readonly expectedContext = this.createExpectedContext(this.inner)
 }
