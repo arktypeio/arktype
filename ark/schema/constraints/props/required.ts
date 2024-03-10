@@ -49,7 +49,7 @@ export class RequiredNode extends BaseConstraint<
 			normalize: (schema) => schema,
 			defaults: {
 				description(node) {
-					return `${node.compiledKey}: ${node.value}`
+					return `${node.compiledKey}: ${node.value.description}`
 				},
 				expected() {
 					return "provided"
@@ -78,7 +78,7 @@ export class RequiredNode extends BaseConstraint<
 	readonly serializedKey = compileSerializedValue(this.key)
 	readonly compiledKey =
 		typeof this.key === "string" ? this.key : this.serializedKey
-	readonly expression = this.description
+	readonly expression = `${this.compiledKey}: ${this.value}`
 
 	readonly errorContext = Object.freeze({
 		code: "required",

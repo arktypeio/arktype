@@ -26,7 +26,9 @@ describe("config traversal", () => {
 			monster: ["196883", "@", description]
 		})
 		attest<{ monster: 196883 }>(t.infer)
-		attest(t.description).equals(description)
+		attest(t.description).snap(
+			"{ monster: the number of dimensions in the monster group }"
+		)
 		attest(t({ monster: 196882 }).errors?.summary).snap(
 			"monster must be the number of dimensions in the monster group (was 196882)"
 		)

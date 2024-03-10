@@ -46,7 +46,7 @@ export class IndexNode extends BaseConstraint<
 			normalize: (schema) => schema,
 			defaults: {
 				description(node) {
-					return `[${node.key}]: ${node.value}`
+					return `[${node.key.description}]: ${node.value.description}`
 				}
 			},
 			intersections: {
@@ -55,7 +55,7 @@ export class IndexNode extends BaseConstraint<
 		})
 
 	readonly impliedBasis = this.$.tsKeywords.object
-	readonly expression = this.description
+	readonly expression = `[${this.key}]: ${this.value}`
 
 	traverseAllows: TraverseAllows<object> = (data, ctx) =>
 		Object.entries(data).every(
