@@ -4,7 +4,11 @@ import type { NodeCompiler } from "../../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/context.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
-import type { TypeKind, nodeImplementationOf } from "../../shared/implement.js"
+import type {
+	ConstraintIntersection,
+	TypeKind,
+	nodeImplementationOf
+} from "../../shared/implement.js"
 import { BaseConstraint } from "../constraint.js"
 
 export interface RequiredSchema extends BaseMeta {
@@ -30,6 +34,24 @@ export type RequiredDeclaration = declareNode<{
 	intersectionIsOpen: true
 	childKind: TypeKind
 }>
+
+const intersectNamed: ConstraintIntersection<
+	"required",
+	"required" | "optional"
+> = (l, r, $) => {
+	if (l.key !== r.key) {
+		return null
+	}
+	const key = l.key
+	const value = l.value.intersect(r.value)
+	if (value instanceof Disjoint) {
+		return value.withPrefixKey(l.compiledKey)
+	}
+	return $.parse("required", {
+		key,
+		value
+	})
+}
 
 export class RequiredNode extends BaseConstraint<
 	RequiredDeclaration,
@@ -57,20 +79,8 @@ export class RequiredNode extends BaseConstraint<
 				actual: () => null
 			},
 			intersections: {
-				required: (l, r, $) => {
-					if (l.key !== r.key) {
-						return null
-					}
-					const key = l.key
-					const value = l.value.intersect(r.value)
-					if (value instanceof Disjoint) {
-						return value
-					}
-					return $.parse("required", {
-						key,
-						value
-					})
-				}
+				required: intersectNamed,
+				optional: intersectNamed
 			}
 		})
 

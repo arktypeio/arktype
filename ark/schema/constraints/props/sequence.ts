@@ -194,14 +194,14 @@ export class SequenceNode extends BaseConstraint<
 					const rootState = intersectSequences({
 						l: l.tuple,
 						r: r.tuple,
-						disjoint: null,
+						disjoint: new Disjoint({}),
 						result: [],
 						fixedVariants: []
 					})
 
-					const viableBranches = rootState.disjoint
-						? rootState.fixedVariants
-						: [rootState, ...rootState.fixedVariants]
+					const viableBranches = rootState.disjoint.isEmpty()
+						? [rootState, ...rootState.fixedVariants]
+						: rootState.fixedVariants
 
 					return viableBranches.length === 0
 						? rootState.disjoint!
@@ -220,7 +220,7 @@ export class SequenceNode extends BaseConstraint<
 				}
 				// length, minLength, and maxLength don't need to be defined
 				// here since impliedSiblings guarantees they will be added
-				// directly to the  IntersectionNode parent of the SequenceNode
+				// directly to the IntersectionNode parent of the SequenceNode
 				// they exist on
 			}
 		})
@@ -360,7 +360,7 @@ export type SequenceTuple = List<SequenceElement>
 type SequenceIntersectionState = {
 	l: SequenceTuple
 	r: SequenceTuple
-	disjoint: Disjoint | null
+	disjoint: Disjoint
 	result: SequenceTuple
 	fixedVariants: SequenceIntersectionState[]
 }
@@ -418,13 +418,34 @@ const intersectSequences = (
 
 	const result = lHead.node.intersect(rHead.node)
 	if (result instanceof Disjoint) {
-		if (kind === "optionals") {
+		if (kind === "prefix" || kind === "postfix") {
+			state.disjoint.add(
+				result.withPrefixKey(
+					// TODO: more precise path handling for Disjoints
+					kind === "prefix" ? `${state.result.length}` : `-${lTail.length + 1}`
+				)
+			)
+			state.result = [
+				...state.result,
+				{ kind, node: lHead.node.$.tsKeywords.never as never }
+			]
+		} else if (kind === "optionals") {
 			// if the element result is optional and unsatisfiable, the
 			// intersection can still be satisfied as long as the tuple
 			// ends before the disjoint element would occur
 			return state
 		} else {
-			state.disjoint = result
+			// if the element is variadic and unsatisfiable, the intersection
+			// can be satisfied with a fixed length variant including zero
+			// variadic elements
+			return intersectSequences({
+				...state,
+				fixedVariants: [],
+				// if there were any optional elements, there will be no postfix elements
+				// so this mapping will never occur (which would be illegal otherwise)
+				l: lTail.map((element) => ({ ...element, kind: "prefix" })),
+				r: lTail.map((element) => ({ ...element, kind: "prefix" }))
+			})
 		}
 	} else {
 		state.result = [...state.result, { kind, node: result }]
