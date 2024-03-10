@@ -132,22 +132,32 @@ const intersectionChildKeyParser =
 // }
 
 const intersectIntersections = (
-	l: IntersectionInner,
-	r: IntersectionInner,
+	reduced: IntersectionInner,
+	raw: IntersectionInner,
 	$: ScopeNode
 ): TypeNode | Disjoint => {
 	// avoid treating adding instance keys as keys of lRoot, rRoot
-	if (l instanceof IntersectionNode) l = l.inner
-	if (r instanceof IntersectionNode) r = r.inner
+	if (reduced instanceof IntersectionNode) reduced = reduced.inner
+	if (raw instanceof IntersectionNode) raw = raw.inner
 
-	const [lConstraintsInner, lRoot] = splitByKeys(l, constraintKeys)
-	const [rConstraintsInner, rRoot] = splitByKeys(r, constraintKeys)
-	const root = intersectRootKeys(lRoot, rRoot)
+	const [reducedConstraintsInner, reducedRoot] = splitByKeys(
+		reduced,
+		constraintKeys
+	)
+	const [rawConstraintsInner, rawRoot] = splitByKeys(raw, constraintKeys)
+
+	// since intersection with a left operand of unknown is leveraged for
+	// reduction, check for the case where r is empty so we can preserve
+	// metadata and save some time
+
+	const root = isEmptyObject(reduced)
+		? rawRoot
+		: intersectRootKeys(reducedRoot, rawRoot)
 
 	if (root instanceof Disjoint) return root
 
-	const lConstraints = flattenConstraints(lConstraintsInner)
-	const rConstraints = flattenConstraints(rConstraintsInner)
+	const lConstraints = flattenConstraints(reducedConstraintsInner)
+	const rConstraints = flattenConstraints(rawConstraintsInner)
 
 	return intersectConstraints({
 		root,
@@ -241,7 +251,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 			reduce: (inner, $) =>
 				// we cast union out of the result here since that only occurs when intersecting two sequences
 				// that cannot occur when reducing a single intersection schema using unknown
-				intersectIntersections(inner, {}, $) as Node<
+				intersectIntersections({}, inner, $) as Node<
 					"intersection" | IntersectionBasisKind
 				>,
 			defaults: {
@@ -352,11 +362,6 @@ const intersectRootKeys = (
 	l: IntersectionRoot,
 	r: IntersectionRoot
 ): MutableInner<"intersection"> | Disjoint => {
-	// since intersection with a right operand of unknown is leveraged for
-	// reduction, check for the case where r is empty so we can preserve
-	// metadata and save some time
-	if (isEmptyObject(r)) return l
-
 	const result: IntersectionRoot = {}
 
 	const lBasis = l.proto ?? l.domain
