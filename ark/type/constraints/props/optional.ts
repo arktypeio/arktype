@@ -37,7 +37,7 @@ export class OptionalNode extends BaseConstraint<
 				key: {},
 				value: {
 					child: true,
-					parse: (schema, ctx) => ctx.$.parseTypeNode(schema)
+					parse: (schema, ctx) => ctx.$.parseTypeSchema(schema)
 				}
 			},
 			hasAssociatedError: false,

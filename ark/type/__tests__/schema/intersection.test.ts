@@ -1,6 +1,6 @@
 import { attest } from "@arktype/attest"
 import { schema } from "../../builtins/builtins.js"
-import { ScopeNode } from "../../schemaScope.js"
+import { Scope } from "../../scope.js"
 
 describe("intersections", () => {
 	it("normalizes refinement order", () => {
@@ -17,8 +17,8 @@ describe("intersections", () => {
 		attest(l.innerId).equals(r.innerId)
 	})
 	it("doesn't equate optional and required props", () => {
-		const l = ScopeNode.root.parse("required", { key: "a", value: "number" })
-		const r = ScopeNode.root.parse("optional", { key: "a", value: "number" })
+		const l = Scope.root.parse("required", { key: "a", value: "number" })
+		const r = Scope.root.parse("optional", { key: "a", value: "number" })
 		attest(l.equals(r)).equals(false)
 	})
 

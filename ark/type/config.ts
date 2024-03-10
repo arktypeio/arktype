@@ -1,6 +1,6 @@
 import { morph } from "@arktype/util"
 import { nodesByKind } from "./kinds.js"
-import type { ArkConfig, ParsedArkConfig } from "./schemaScope.js"
+import type { ArkConfig, ParsedArkConfig } from "./scope.js"
 import type { NodeKind } from "./shared/implement.js"
 
 export const defaultConfig: ParsedArkConfig = Object.assign(

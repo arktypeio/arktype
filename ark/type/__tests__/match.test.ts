@@ -1,6 +1,6 @@
 import { attest } from "@arktype/attest"
 import { match } from "arktype"
-import { scope } from "../ark.js"
+import { scope } from "../builtins/ark.js"
 
 describe("match", () => {
 	it("properly infers types of inputs/outputs", () => {

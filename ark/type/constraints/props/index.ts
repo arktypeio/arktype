@@ -36,11 +36,11 @@ export class IndexNode extends BaseConstraint<
 			keys: {
 				key: {
 					child: true,
-					parse: (schema, ctx) => ctx.$.parseTypeNode(schema)
+					parse: (schema, ctx) => ctx.$.parseTypeSchema(schema)
 				},
 				value: {
 					child: true,
-					parse: (schema, ctx) => ctx.$.parseTypeNode(schema)
+					parse: (schema, ctx) => ctx.$.parseTypeSchema(schema)
 				}
 			},
 			normalize: (schema) => schema,

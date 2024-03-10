@@ -1,5 +1,5 @@
 import { DynamicBase } from "@arktype/util"
-import { ark, type Ark } from "../../type/ark.js"
+import { ark, type Ark } from "../../type/builtins/ark.js"
 import {
 	Type,
 	type inferTypeRoot,

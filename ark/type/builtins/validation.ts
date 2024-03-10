@@ -1,5 +1,5 @@
 import type { TypeNode } from "../base.js"
-import { ScopeNode, rootSchema } from "../schemaScope.js"
+import { Scope, rootSchema, type rootResolutions } from "../scope.js"
 import { creditCard } from "./utils/creditCard.js"
 
 // Non-trivial expressions should have an explanation or attribution
@@ -47,23 +47,25 @@ const semver = rootSchema({
 })
 
 export namespace Validation {
-	export interface resolutions {
-		alpha: TypeNode<string, "intersection">
-		alphanumeric: TypeNode<string, "intersection">
-		lowercase: TypeNode<string, "intersection">
-		uppercase: TypeNode<string, "intersection">
-		creditCard: TypeNode<string, "intersection">
-		email: TypeNode<string, "intersection">
-		uuid: TypeNode<string, "intersection">
-		url: TypeNode<string, "intersection">
-		semver: TypeNode<string, "intersection">
-		integer: TypeNode<number, "intersection">
+	export interface exports {
+		alpha: string
+		alphanumeric: string
+		lowercase: string
+		uppercase: string
+		creditCard: string
+		email: string
+		uuid: string
+		url: string
+		semver: string
+		integer: number
 	}
+
+	export type resolutions = rootResolutions<exports>
 
 	export type infer = (typeof Validation)["infer"]
 }
 
-export const Validation: ScopeNode<Validation.resolutions> = ScopeNode.from(
+export const Validation: Scope<Validation.resolutions> = Scope.root.scope(
 	{
 		alpha: {
 			domain: "string",

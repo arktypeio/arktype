@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import { scopeNode } from "../../schemaScope.js"
+import { scopeNode } from "../../scope.js"
 
 describe("scope", () => {
 	it("parse", () => {

@@ -16,9 +16,8 @@ import {
 	type optionalKeyOf,
 	type requiredKeyOf
 } from "@arktype/util"
-import type { type } from "../ark.js"
 import { isNode, type TypeNode } from "../base.js"
-import { schema } from "../builtins/builtins.js"
+import { schema, type type } from "../builtins/ark.js"
 import type { of } from "../constraints/ast.js"
 import type { regex } from "../constraints/refinements/regex.js"
 import type { ParseContext } from "../scope.js"

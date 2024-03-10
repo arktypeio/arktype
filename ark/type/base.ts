@@ -32,7 +32,7 @@ import type {
 	ioKindOf,
 	reducibleKindOf
 } from "./kinds.js"
-import type { ScopeNode } from "./schemaScope.js"
+import type { Scope } from "./scope.js"
 import type { NodeCompiler } from "./shared/compile.js"
 import {
 	pathToPropString,
@@ -83,7 +83,7 @@ export interface BaseAttachments {
 	readonly children: Node[]
 	readonly innerId: string
 	readonly typeId: string
-	readonly $: ScopeNode
+	readonly $: Scope
 }
 
 export interface NarrowedAttachments<d extends BaseNodeDeclaration>
@@ -396,7 +396,7 @@ export abstract class BaseNode<
 		return this.$.parse(
 			this.kind,
 			mapper(this.kind, innerWithTransformedChildren as never) as never
-		)
+		) as never
 	}
 
 	configureShallowDescendants(configOrDescription: BaseMeta | string): this {

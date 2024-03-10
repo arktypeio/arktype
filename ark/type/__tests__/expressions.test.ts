@@ -1,6 +1,6 @@
 import { attest } from "@arktype/attest"
 import { type, type Out } from "arktype"
-import { scope, type Ark } from "../ark.js"
+import { scope, type Ark } from "../builtins/ark.js"
 import { schema } from "../builtins/builtins.js"
 import {
 	writeMissingRightOperandMessage,

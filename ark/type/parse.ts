@@ -13,7 +13,7 @@ import {
 } from "@arktype/util"
 import { BaseNode, type BaseAttachments, type Node } from "./base.js"
 import { nodesByKind, type Schema, type reducibleKindOf } from "./kinds.js"
-import type { ScopeNode } from "./schemaScope.js"
+import type { Scope } from "./scope.js"
 import type { BaseNodeDeclaration } from "./shared/declare.js"
 import { Disjoint } from "./shared/disjoint.js"
 import {
@@ -38,7 +38,7 @@ export type SchemaParseOptions = {
 
 export type SchemaParseContext = evaluate<
 	SchemaParseOptions & {
-		$: ScopeNode
+		$: Scope
 		definition: unknown
 	}
 >

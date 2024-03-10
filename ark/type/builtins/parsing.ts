@@ -2,8 +2,7 @@ import {
 	wellFormedIntegerMatcher,
 	wellFormedNumberMatcher
 } from "@arktype/util"
-import type { TypeNode } from "../base.js"
-import { ScopeNode, rootSchema } from "../schemaScope.js"
+import { type Scope, type rootResolutions } from "../scope.js"
 import type { Out } from "../types/morph.js"
 import { parsedDate } from "./utils/date.js"
 
@@ -61,21 +60,25 @@ const json = rootSchema({
 const date = parsedDate
 
 export namespace Parsing {
-	export interface resolutions {
-		url: TypeNode<(In: string) => Out<URL>, "morph">
-		number: TypeNode<(In: string) => Out<number>, "morph">
-		integer: TypeNode<(In: string) => Out<number>, "morph">
-		date: TypeNode<(In: string) => Out<Date>, "morph">
-		json: TypeNode<(In: string) => Out<unknown>, "morph">
+	export interface exports {
+		url: (In: string) => Out<URL>
+		number: (In: string) => Out<number>
+		integer: (In: string) => Out<number>
+		date: (In: string) => Out<Date>
+		json: (In: string) => Out<unknown>
 	}
+
+	export type resolutions = rootResolutions<exports>
 
 	export type infer = (typeof Parsing)["infer"]
 }
 
-export const Parsing: ScopeNode<Parsing.resolutions> = ScopeNode.from({
-	url,
-	number,
-	integer,
-	date,
-	json
-})
+export const Parsing: Scope<Parsing.resolutions> = {} as never
+
+// 	Scope.root.scope({
+// 	url,
+// 	number,
+// 	integer,
+// 	date,
+// 	json
+// })

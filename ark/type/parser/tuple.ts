@@ -12,27 +12,28 @@ import {
 	type evaluate
 } from "@arktype/util"
 import type { Node, TypeNode } from "../base.js"
+import { keywords, schema } from "../builtins/ark.js"
+import type { Predicate, inferNarrow } from "../constraints/predicate.js"
+import type { inferSchemaBranch, validateSchema } from "../inference.js"
 import type { MutableInner, Schema } from "../kinds.js"
 import type { ParseContext } from "../scope.js"
+import type { BaseMeta } from "../shared/declare.js"
+import type { inferIntersection } from "../shared/intersections.js"
+import { makeRootAndArrayPropertiesMutable } from "../shared/utils.js"
+import type {
+	Morph,
+	MorphChildKind,
+	Out,
+	extractIn,
+	extractOut,
+	inferMorphOut
+} from "../types/morph.js"
+import type { UnionChildKind } from "../types/union.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
 import type { InfixOperator, PostfixExpression } from "./semantic/infer.js"
 import { writeUnsatisfiableExpressionError } from "./semantic/validate.js"
 import { writeMissingRightOperandMessage } from "./string/shift/operand/unenclosed.js"
 import type { BaseCompletions } from "./string/string.js"
-import { nodes, schema } from "../builtins/builtins.js"
-import type { inferNarrow, Predicate } from "../constraints/predicate.js"
-import type { BaseMeta } from "../shared/declare.js"
-import type { inferIntersection } from "../shared/intersections.js"
-import { makeRootAndArrayPropertiesMutable } from "../shared/utils.js"
-import type {
-	extractIn,
-	Morph,
-	extractOut,
-	MorphChildKind,
-	Out,
-	inferMorphOut
-} from "../types/morph.js"
-import type { UnionChildKind } from "../types/union.js"
 
 export const parseTuple = (def: List, ctx: ParseContext) =>
 	maybeParseTupleExpression(def, ctx) ?? parseTupleLiteral(def, ctx)
@@ -60,7 +61,7 @@ export const parseTupleLiteral = (def: List, ctx: ParseContext): TypeNode => {
 			i++
 		}
 		if (spread) {
-			if (!element.extends(nodes.Array)) {
+			if (!element.extends(keywords.Array)) {
 				return throwParseError(writeNonArraySpreadMessage(element))
 			}
 			// a spread must be distributed over branches e.g.:
@@ -138,7 +139,7 @@ const appendSpreadBranch = (
 	const spread = branch.firstReferenceOfKind("sequence")
 	if (!spread) {
 		// the only array with no sequence reference is unknown[]
-		return appendElement(base, "variadic", nodes.unknown)
+		return appendElement(base, "variadic", keywords.unknown)
 	}
 	spread.prefix.forEach((node) => appendElement(base, "required", node))
 	spread.optionals.forEach((node) => appendElement(base, "optional", node))
@@ -326,8 +327,8 @@ type parseNextElement<
 
 export const writeNonArraySpreadMessage = <operand extends string | TypeNode>(
 	operand: operand
-) =>
-	`Spread element must be an array (was ${operand})` as writeNonArraySpreadMessage<operand>
+): writeNonArraySpreadMessage<operand> =>
+	`Spread element must be an array (was ${operand})` as never
 
 type writeNonArraySpreadMessage<operand> =
 	`Spread element must be an array${operand extends string
@@ -382,6 +383,8 @@ export type inferTupleExpression<
 	? InstanceType<constructors[number]>
 	: def[0] extends "keyof"
 	? inferKeyOfExpression<def[1], $, args>
+	: def[0] extends "schema"
+	? inferSchemaBranch<def[1], $, args>
 	: never
 
 export type validatePrefixExpression<
@@ -396,6 +399,8 @@ export type validatePrefixExpression<
 	? readonly [def[0], ...unknown[]]
 	: def[0] extends "instanceof"
 	? readonly [def[0], ...Constructor[]]
+	: def[0] extends "schema"
+	? [def[0], validateSchema<def[1], $, args>]
 	: never
 
 export type validatePostfixExpression<
@@ -535,7 +540,7 @@ const indexOneParsers: {
 
 export type FunctionalTupleOperator = ":" | "=>"
 
-export type IndexZeroOperator = "keyof" | "instanceof" | "==="
+export type IndexZeroOperator = "keyof" | "instanceof" | "===" | "schema"
 
 export type IndexZeroExpression<
 	token extends IndexZeroOperator = IndexZeroOperator
@@ -562,7 +567,8 @@ const prefixParsers: {
 			)
 		return schema(...branches)
 	},
-	"===": (def) => schema.units(...def.slice(1))
+	"===": (def) => schema.units(...def.slice(1)),
+	schema: (def, ctx) => ctx.scope.schema(def, ctx)
 }
 
 const isIndexZeroExpression = (def: List): def is IndexZeroExpression =>

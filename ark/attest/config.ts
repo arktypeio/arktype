@@ -152,7 +152,7 @@ const cachedConfig = parseConfig()
 
 export const getConfig = (): ParsedAttestConfig => cachedConfig
 
-export const ensureCacheDirs = () => {
+export const ensureCacheDirs = (): void => {
 	ensureDir(cachedConfig.cacheDir)
 	ensureDir(cachedConfig.snapCacheDir)
 	ensureDir(cachedConfig.benchSnapCacheDir)

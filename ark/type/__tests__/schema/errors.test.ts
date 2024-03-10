@@ -1,7 +1,7 @@
 import { attest } from "@arktype/attest"
-import { scopeNode } from "../../schemaScope.js"
 import { schema } from "../../builtins/builtins.js"
 import { configure, defaultConfig } from "../../config.js"
+import { scopeNode } from "../../scope.js"
 
 describe("errors", () => {
 	it("shallow", () => {

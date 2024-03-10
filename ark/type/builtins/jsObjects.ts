@@ -1,24 +1,29 @@
-import type { TypeNode } from "../base.js"
-import { ScopeNode } from "../schemaScope.js"
+import { Scope, type rootResolutions } from "../scope.js"
 
 export namespace JsObjects {
-	export interface resolutions {
-		Array: TypeNode<Array<unknown>, "proto">
-		Function: TypeNode<Function, "proto">
-		Date: TypeNode<Date, "proto">
-		Error: TypeNode<Error, "proto">
-		Map: TypeNode<Map<unknown, unknown>, "proto">
-		RegExp: TypeNode<RegExp, "proto">
-		Set: TypeNode<Set<unknown>, "proto">
-		WeakMap: TypeNode<WeakMap<object, unknown>, "proto">
-		WeakSet: TypeNode<WeakSet<object>, "proto">
-		Promise: TypeNode<Promise<unknown>, "proto">
+	export interface exports {
+		Array: Array<unknown>
+		Function: Function
+		Date: Date
+		Error: Error
+		Map: Map<unknown, unknown>
+		RegExp: RegExp
+		Set: Set<unknown>
+		WeakMap: WeakMap<object, unknown>
+		WeakSet: WeakSet<object>
+		Promise: Promise<unknown>
 	}
+
+	export type resolutions = rootResolutions<exports>
 
 	export type infer = (typeof JsObjects)["infer"]
 }
 
-export const JsObjects: ScopeNode<JsObjects.resolutions> = ScopeNode.from(
+export const JsObjects: Scope<{
+	exports: JsObjects.resolutions
+	locals: {}
+	ambient: {}
+}> = Scope.root.scope(
 	{
 		Array,
 		Function,
@@ -33,5 +38,3 @@ export const JsObjects: ScopeNode<JsObjects.resolutions> = ScopeNode.from(
 	},
 	{ prereducedAliases: true }
 )
-
-ScopeNode.jsObjects = JsObjects.resolutions

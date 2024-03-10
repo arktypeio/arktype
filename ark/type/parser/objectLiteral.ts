@@ -8,14 +8,14 @@ import {
 	type evaluate,
 	type merge
 } from "@arktype/util"
+import type { TypeNode } from "../base.js"
+import { keywords, schema } from "../builtins/ark.js"
+import type { Inner } from "../kinds.js"
 import type { ParseContext } from "../scope.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
 import type { astToString } from "./semantic/utils.js"
 import type { validateString } from "./semantic/validate.js"
 import { Scanner } from "./string/shift/scanner.js"
-import type { TypeNode } from "../base.js"
-import { nodes, schema } from "../builtins/builtins.js"
-import type { Inner } from "../kinds.js"
 
 export const parseObjectLiteral = (def: Dict, ctx: ParseContext): TypeNode => {
 	const required: Inner<"required">[] = []
@@ -35,7 +35,7 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): TypeNode => {
 
 		if (
 			spreadNode.kind !== "intersection" ||
-			!spreadNode.extends(nodes.object)
+			!spreadNode.extends(keywords.object)
 		) {
 			return throwParseError(
 				writeInvalidSpreadTypeMessage(printable(spreadEntry.value))

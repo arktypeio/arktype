@@ -1,16 +1,21 @@
-import { JsObjects } from "./builtins/jsObjects.js"
-import { Parsing } from "./builtins/parsing.js"
-import { TsKeywords } from "./builtins/tsKeywords.js"
-import { Validation } from "./builtins/validation.js"
-import type { MatchParser } from "./match.js"
-import { Scope, type Module, type ScopeParser } from "./scope.js"
-import type { inferred } from "./shared/inference.js"
+import type { MatchParser } from "../match.js"
+import {
+	Scope,
+	type Module,
+	type SchemaParser,
+	type ScopeParser
+} from "../scope.js"
+import type { inferred } from "../shared/inference.js"
 import type {
 	DeclarationParser,
 	DefinitionParser,
 	Generic,
 	TypeParser
-} from "./type.js"
+} from "../type.js"
+import { JsObjects } from "./jsObjects.js"
+import { Parsing } from "./parsing.js"
+import { TsKeywords } from "./tsKeywords.js"
+import { Validation } from "./validation.js"
 
 /** Root scopes can be inferred automatically from node definitions, but
  * explicitly typing them can improve responsiveness */
@@ -50,16 +55,18 @@ type TsGenericsExports<$ = Ark> = {
 
 export const tsGenerics = {} as Module<TsGenericsResolutions>
 
-export const ark: Scope<ArkResolutions> = Scope.root({
-	...TsKeywords.resolutions,
-	...JsObjects.resolutions,
-	...Validation.resolutions,
-	// TODO: fix
-	...tsGenerics,
-	parse: Parsing.resolutions as {} as Module<ParsingResolutions>
-}).toAmbient() as never
+export const ark: Scope<ArkResolutions> = Scope.root
+	.scope({
+		...TsKeywords.resolutions,
+		...JsObjects.resolutions,
+		...Validation.resolutions,
+		// TODO: fix
+		...tsGenerics,
+		parse: Parsing.resolutions as {} as Module<ParsingResolutions>
+	})
+	.toAmbient() as never
 
-export const arktypes: Module<ArkResolutions> = ark.export()
+export const keywords: Module<ArkResolutions> = ark.export()
 
 // this type is redundant with the inferred definition of ark but allow types
 // derived from the default scope to be calulated more efficiently
@@ -83,6 +90,8 @@ export namespace type {
 		[inferred]?: to
 	}
 }
+
+export const schema: SchemaParser<Ark> = ark.schema
 
 export const define: DefinitionParser<Ark> = ark.define
 

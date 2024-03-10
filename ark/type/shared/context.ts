@@ -1,6 +1,6 @@
 import { literalPropAccess } from "@arktype/util"
+import type { ParsedArkConfig } from "../scope.js"
 import { ArkErrors, type ArkErrorInput } from "./errors.js"
-import type { ParsedArkConfig } from "../schemaScope.js"
 
 export type TraversalPath = (string | symbol)[]
 

@@ -13,6 +13,7 @@ import type { Node, TypeNode, UnknownNode } from "../base.js"
 import { boundKinds } from "../constraints/refinements/shared.js"
 import type { Declaration, Inner, errorContext } from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
+import type { NodeConfig, ParsedUnknownNodeConfig, Scope } from "../scope.js"
 import type { typeKindOrRightOf, typeKindRightOf } from "../types/type.js"
 import type {
 	BaseErrorContext,
@@ -20,11 +21,6 @@ import type {
 	BaseNodeDeclaration
 } from "./declare.js"
 import type { Disjoint } from "./disjoint.js"
-import type {
-	ScopeNode,
-	ParsedUnknownNodeConfig,
-	NodeConfig
-} from "../schemaScope.js"
 
 export {
 	type BoundKind,
@@ -121,7 +117,7 @@ type accumulateRightKinds<
 export type ConstraintIntersection<
 	lKind extends ConstraintKind,
 	rKind extends kindOrRightOf<lKind>
-> = (l: Node<lKind>, r: Node<rKind>, $: ScopeNode) => Node | Disjoint | null
+> = (l: Node<lKind>, r: Node<rKind>, $: Scope) => Node | Disjoint | null
 
 export type ConstraintIntersectionMap<kind extends ConstraintKind> = evaluate<
 	{
@@ -134,7 +130,7 @@ export type ConstraintIntersectionMap<kind extends ConstraintKind> = evaluate<
 export type TypeIntersection<
 	lKind extends TypeKind,
 	rKind extends typeKindOrRightOf<lKind>
-> = (l: Node<lKind>, r: Node<rKind>, $: ScopeNode) => TypeNode | Disjoint
+> = (l: Node<lKind>, r: Node<rKind>, $: Scope) => TypeNode | Disjoint
 
 export type TypeIntersectionMap<kind extends TypeKind> = {
 	[rKind in typeKindOrRightOf<kind>]: TypeIntersection<kind, rKind>
@@ -148,7 +144,7 @@ export type UnknownIntersectionMap = {
 	[k in NodeKind]?: (
 		l: UnknownNode,
 		r: UnknownNode,
-		$: ScopeNode
+		$: Scope
 	) => UnknownIntersectionResult
 }
 
@@ -229,7 +225,7 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	collapseKey?: keyof d["inner"] & string
 	reduce?: (
 		inner: d["inner"],
-		$: ScopeNode
+		$: Scope
 	) => Node<d["reducibleTo"]> | Disjoint | undefined
 }
 

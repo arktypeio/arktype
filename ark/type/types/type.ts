@@ -112,7 +112,7 @@ export abstract class BaseType<
 	or<r extends TypeNode>(
 		r: r
 	): Node<"union" | d["kind"] | r["kind"], t | r["infer"]> {
-		return this.$.parseBranches(
+		return this.$.parseSchemaBranches(
 			...this.branches,
 			...(r.branches as any)
 		) as never
@@ -131,21 +131,21 @@ export abstract class BaseType<
 	}
 
 	extract(other: TypeNode) {
-		return this.$.parseRoot(
+		return this.$.parseRootSchema(
 			"union",
 			this.branches.filter((branch) => branch.extends(other))
 		)
 	}
 
 	exclude(other: TypeNode) {
-		return this.$.parseRoot(
+		return this.$.parseRootSchema(
 			"union",
 			this.branches.filter((branch) => !branch.extends(other))
 		)
 	}
 
 	array(): IntersectionNode<t[]> {
-		return this.$.parseRoot(
+		return this.$.parseRootSchema(
 			"intersection",
 			{
 				proto: Array,

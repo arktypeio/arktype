@@ -10,7 +10,7 @@ import {
 import type { Node } from "../base.js"
 import type { of } from "../constraints/ast.js"
 import type { Schema } from "../kinds.js"
-import type { StaticArkOption } from "../schemaScope.js"
+import type { StaticArkOption } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type {
 	TraversalContext,
@@ -77,12 +77,12 @@ export class MorphNode<t = unknown> extends BaseType<
 				in: {
 					child: true,
 					parse: (schema, ctx) =>
-						ctx.$.parseTypeNode(schema, { allowedKinds: morphChildKinds })
+						ctx.$.parseTypeSchema(schema, { allowedKinds: morphChildKinds })
 				},
 				out: {
 					child: true,
 					parse: (schema, ctx) =>
-						ctx.$.parseTypeNode(schema, { allowedKinds: morphChildKinds })
+						ctx.$.parseTypeSchema(schema, { allowedKinds: morphChildKinds })
 				},
 				morph: {
 					parse: listFrom

@@ -1,13 +1,13 @@
 export {
 	ark,
-	arktypes,
+	keywords as arktypes,
 	declare,
 	define,
 	match,
 	scope,
 	type,
 	type Ark
-} from "./ark.js"
+} from "./builtins/ark.js"
 export type { of } from "./constraints/ast.js"
 export type { Module, Scope } from "./scope.js"
 export { ArkError, ArkErrors, ArkTypeError } from "./shared/errors.js"

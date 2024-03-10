@@ -61,7 +61,7 @@ const fixedSequenceKeyDefinition: NodeKeyImplementation<
 			? // empty affixes are omitted. an empty array should therefore
 			  // be specified as `{ proto: Array, length: 0 }`
 			  undefined
-			: schema.map((element) => ctx.$.parseTypeNode(element))
+			: schema.map((element) => ctx.$.parseTypeSchema(element))
 }
 
 export class SequenceNode extends BaseConstraint<
@@ -77,7 +77,7 @@ export class SequenceNode extends BaseConstraint<
 				optionals: fixedSequenceKeyDefinition,
 				variadic: {
 					child: true,
-					parse: (schema, ctx) => ctx.$.parseTypeNode(schema)
+					parse: (schema, ctx) => ctx.$.parseTypeSchema(schema)
 				},
 				minVariadicLength: {
 					// minVariadicLength is reflected in the id of this node,
@@ -158,7 +158,7 @@ export class SequenceNode extends BaseConstraint<
 					(raw.prefix && raw.prefix.length !== prefix.length)
 				) {
 					// reparse the reduced schema
-					return $.parsePrereduced("sequence", {
+					return $.parsePrereducedSchema("sequence", {
 						...raw,
 						// empty lists will be omitted during parsing
 						prefix,

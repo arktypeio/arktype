@@ -6,7 +6,7 @@ import { analyzeProjectAssertions } from "./cache/writeAssertionCache.js"
 import { ensureCacheDirs, getConfig, type AttestConfig } from "./config.js"
 import { forTypeScriptVersions } from "./tsVersioning.js"
 
-export const setup = (options: Partial<AttestConfig> = {}) => {
+export const setup = (options: Partial<AttestConfig> = {}): void => {
 	const config = getConfig()
 	Object.assign(config, options)
 	rmSync(config.cacheDir, { recursive: true, force: true })
@@ -31,16 +31,14 @@ export const setup = (options: Partial<AttestConfig> = {}) => {
 	}
 }
 
-export const writeAssertionData = (toPath: string) => {
+export const writeAssertionData = (toPath: string): void => {
 	console.log(
 		"⏳ Waiting for TypeScript to check your project (this may take a while)..."
 	)
 	writeJson(toPath, analyzeProjectAssertions())
 }
 
-export const cleanup = () => {
-	writeSnapshotUpdatesOnExit()
-}
+export const cleanup = (): void => writeSnapshotUpdatesOnExit()
 
 /** alias for cleanup to align with vitest and others */
 export const teardown = cleanup

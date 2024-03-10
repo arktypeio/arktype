@@ -1,18 +1,28 @@
 import {
+	CompiledFunction,
 	domainOf,
 	hasDomain,
+	isArray,
 	isThunk,
 	morph,
+	printable,
+	throwInternalError,
 	throwParseError,
 	type Dict,
+	type List,
 	type evaluate,
 	type isAny,
-	type nominal
+	type nominal,
+	type requireKeys
 } from "@arktype/util"
-import type { type } from "./ark.js"
-import type { TypeNode } from "./base.js"
-import { builtins } from "./builtins/builtins.js"
+import type { Node, TypeNode } from "./base.js"
+import type { type } from "./builtins/ark.js"
+import { globalConfig } from "./config.js"
+import type { LengthBoundableData } from "./constraints/refinements/range.js"
+import type { inferSchemaBranch, validateSchemaBranch } from "./inference.js"
+import { nodesByKind, type Schema, type reducibleKindOf } from "./kinds.js"
 import { createMatchParser, type MatchParser } from "./match.js"
+import { parseAttachments, type SchemaParseOptions } from "./parse.js"
 import {
 	parseObject,
 	writeBadDefinitionTypeMessage,
@@ -31,7 +41,20 @@ import {
 	writeUnresolvableMessage
 } from "./parser/string/shift/operand/unenclosed.js"
 import { fullStringParse } from "./parser/string/string.js"
-import type { ArkConfig } from "./schemaScope.js"
+import { NodeCompiler } from "./shared/compile.js"
+import type { TraverseAllows, TraverseApply } from "./shared/context.js"
+import type {
+	ActualWriter,
+	ArkErrorCode,
+	ExpectedWriter,
+	MessageWriter,
+	ProblemWriter
+} from "./shared/errors.js"
+import type {
+	DescriptionWriter,
+	NodeKind,
+	TypeKind
+} from "./shared/implement.js"
 import {
 	Type,
 	createTypeParser,
@@ -43,13 +66,134 @@ import {
 	type GenericProps,
 	type TypeParser
 } from "./type.js"
-import type { IntersectionNode } from "./types/intersection.js"
+import {
+	discriminatingIntersectionKeys,
+	type IntersectionNode
+} from "./types/intersection.js"
 import type { extractIn, extractOut } from "./types/morph.js"
 import { BaseType } from "./types/type.js"
+import type {
+	NormalizedUnionSchema,
+	UnionChildKind,
+	UnionNode
+} from "./types/union.js"
+import type { UnitNode } from "./types/unit.js"
 import { addArkKind, hasArkKind, type arkKind } from "./util.js"
 
+export type nodeResolutions<keywords> = { [k in keyof keywords]: TypeNode }
+
+export type BaseResolutions = Record<string, TypeNode>
+
+declare global {
+	export interface StaticArkConfig {
+		preserve(): never
+	}
+}
+
+type nodeConfigForKind<kind extends NodeKind> = evaluate<
+	{
+		description?: DescriptionWriter<kind>
+	} & (kind extends ArkErrorCode
+		? {
+				expected?: ExpectedWriter<kind>
+				actual?: ActualWriter<kind>
+				problem?: ProblemWriter<kind>
+				message?: MessageWriter<kind>
+		  }
+		: {})
+>
+
+type NodeConfigsByKind = {
+	[kind in NodeKind]: nodeConfigForKind<kind>
+}
+
+export type NodeConfig<kind extends NodeKind = NodeKind> =
+	NodeConfigsByKind[kind]
+
+type UnknownNodeConfig = {
+	description?: DescriptionWriter
+	expected?: ExpectedWriter
+	actual?: ActualWriter
+	problem?: ProblemWriter
+	message?: MessageWriter
+}
+
+export type ParsedUnknownNodeConfig = requireKeys<
+	UnknownNodeConfig,
+	"description"
+>
+
+export type StaticArkOption<k extends keyof StaticArkConfig> = ReturnType<
+	StaticArkConfig[k]
+>
+
+export interface ArkConfig extends Partial<NodeConfigsByKind> {
+	ambient?: Scope | null
+	/** @internal */
+	prereducedAliases?: boolean
+}
+
+export type ParsedArkConfig = {
+	[k in keyof ArkConfig]-?: k extends NodeKind
+		? Required<ArkConfig[k]>
+		: ArkConfig[k]
+}
+
+const parseConfig = (scopeConfig: ArkConfig | undefined): ParsedArkConfig => {
+	if (!scopeConfig) {
+		return globalConfig
+	}
+	const parsedConfig = { ...globalConfig }
+	let k: keyof ArkConfig
+	for (k in scopeConfig) {
+		if (k === "prereducedAliases" || k === "ambient") {
+			parsedConfig[k] = scopeConfig[k]! as never
+		} else {
+			parsedConfig[k] = {
+				...nodesByKind[k].implementation.defaults,
+				...scopeConfig[k]
+			} as never
+		}
+	}
+	return parsedConfig
+}
+
+const assertTypeKind = (schema: unknown): TypeKind => {
+	switch (typeof schema) {
+		case "string":
+			return "domain"
+		case "function":
+			return "proto"
+		case "object":
+			// throw at end of function
+			if (schema === null) break
+
+			if (schema instanceof BaseType) return schema.kind
+
+			if ("morph" in schema) return "morph"
+
+			if ("branches" in schema || isArray(schema)) return "union"
+
+			if ("unit" in schema) return "unit"
+
+			const schemaKeys = Object.keys(schema)
+
+			if (
+				schemaKeys.length === 0 ||
+				schemaKeys.some((k) => k in discriminatingIntersectionKeys)
+			)
+				return "intersection"
+			if ("proto" in schema) return "proto"
+			if ("domain" in schema) return "domain"
+	}
+	return throwParseError(`${printable(schema)} is not a valid type schema`)
+}
+
 export type ScopeParser<parent, ambient> = {
-	<const def>(def: validateScope<def, parent & ambient>): Scope<{
+	<const def>(
+		def: validateScope<def, parent & ambient>,
+		config?: ArkConfig
+	): Scope<{
 		exports: inferBootstrapped<{
 			exports: bootstrapExports<def>
 			locals: bootstrapLocals<def> & parent
@@ -62,10 +206,6 @@ export type ScopeParser<parent, ambient> = {
 		}>
 		ambient: ambient
 	}>
-}
-
-export interface ArkScopeConfig extends ArkConfig {
-	ambient?: Scope | null
 }
 
 type validateScope<def, $> = {
@@ -207,6 +347,12 @@ export type Resolutions = {
 	ambient: unknown
 }
 
+export type rootResolutions<exports> = {
+	exports: exports
+	locals: {}
+	ambient: {}
+}
+
 export type ParseContext = {
 	baseName: string
 	path: string[]
@@ -222,18 +368,47 @@ export class Scope<r extends Resolutions = any> {
 	declare infer: extractOut<r["exports"]>
 	declare inferIn: extractIn<r["exports"]>
 
-	config: ArkScopeConfig
+	readonly config: ParsedArkConfig
 
 	private parseCache: Record<string, TypeNode> = {}
 	private resolutions: MergedResolutions
+	readonly nodeCache: { [innerId: string]: Node } = {}
+	readonly referencesByName: { [name: string]: Node } = {}
+	readonly references: readonly Node[]
+	protected resolved = false
+	readonly lengthBoundable: UnionNode<LengthBoundableData>
 
 	/** The set of names defined at the root-level of the scope mapped to their
 	 * corresponding definitions.**/
 	aliases: Record<string, unknown> = {}
 	private exportedNames: exportedName<r>[] = []
-	private ambient: Scope | null
 
-	constructor(def: Dict, config: ArkScopeConfig) {
+	constructor(def: Dict, config?: ArkConfig) {
+		this.config = parseConfig(config)
+		this.references = Object.values(this.referencesByName)
+		this.bindCompiledScope(this.references)
+		this.resolved = true
+		this.parseSchema(
+			"union",
+			{
+				branches: [
+					"string",
+					"number",
+					"object",
+					"bigint",
+					"symbol",
+					{ unit: true },
+					{ unit: false },
+					{ unit: null },
+					{ unit: undefined }
+				]
+			},
+			{ reduceTo: this.parsePrereducedSchema("intersection", {}) }
+		)
+		this.lengthBoundable = this.parsePrereducedSchema("union", [
+			"string",
+			Array
+		])
 		for (const k in def) {
 			const parsedKey = parseScopeKey(k)
 			this.aliases[parsedKey.name] = parsedKey.params.length
@@ -243,20 +418,20 @@ export class Scope<r extends Resolutions = any> {
 				this.exportedNames.push(parsedKey.name as never)
 			}
 		}
-		this.ambient = config.ambient ?? null
-		if (this.ambient) {
+		if (this.config.ambient) {
 			// ensure exportedResolutions is populated
-			this.ambient.export()
-			this.resolutions = { ...this.ambient.exportedResolutions! }
+			this.config.ambient.export()
+			this.resolutions = { ...this.config.ambient.exportedResolutions! }
 		} else {
 			this.resolutions = {}
 		}
-		this.config = config
 	}
 
-	static root: ScopeParser<{}, {}> = (aliases) => {
-		return new Scope(aliases, {}) as never
-	}
+	static root: Scope<{
+		exports: {}
+		locals: {}
+		ambient: {}
+	}> = new Scope({})
 
 	type: TypeParser<$<r>> = createTypeParser(this as never) as never
 
@@ -267,10 +442,9 @@ export class Scope<r extends Resolutions = any> {
 
 	scope: ScopeParser<r["exports"], r["ambient"]> = ((
 		def: Dict,
-		config: ArkScopeConfig = {}
+		config: ArkConfig = {}
 	) => {
 		return new Scope(def, {
-			ambient: this.ambient,
 			...this.config,
 			...config
 		})
@@ -285,8 +459,8 @@ export class Scope<r extends Resolutions = any> {
 	}> {
 		// TODO: private?
 		return new Scope(this.aliases, {
-			ambient: this,
-			...this.config
+			...this.config,
+			ambient: this
 		})
 	}
 
@@ -341,9 +515,7 @@ export class Scope<r extends Resolutions = any> {
 			return cached
 		}
 		let def = this.aliases[name]
-		if (!def) {
-			return this.maybeResolveSubalias(name)
-		}
+		if (!def) return this.maybeResolveSubalias(name)
 		if (isThunk(def) && !hasArkKind(def, "generic")) {
 			def = def()
 		}
@@ -407,7 +579,7 @@ export class Scope<r extends Resolutions = any> {
 
 	bindThis(): { this: IntersectionNode } {
 		// TODO: fix
-		return { this: builtins.resolutions.unknown }
+		return { this: builtins.resolutions.unknown } as never
 	}
 
 	private exportedResolutions: MergedResolutions | undefined
@@ -448,6 +620,130 @@ export class Scope<r extends Resolutions = any> {
 			]) as never,
 			"module"
 		) as never
+	}
+
+	parseUnits<const branches extends List>(
+		...values: branches
+	): branches["length"] extends 1
+		? UnionNode<branches[0]>
+		: UnionNode<branches[number]> | UnitNode<branches[number]> {
+		const uniqueValues: unknown[] = []
+		for (const value of values) {
+			if (!uniqueValues.includes(value)) {
+				uniqueValues.push(value)
+			}
+		}
+		const branches = uniqueValues.map((unit) =>
+			this.parsePrereducedSchema("unit", { unit })
+		)
+		if (branches.length === 1) {
+			return branches[0] as never
+		}
+		return this.parseRootSchema("union", {
+			branches
+		}) as never
+	}
+
+	parseTypeSchema<defKind extends TypeKind>(
+		schema: Schema<defKind>,
+		opts: TypeSchemaParseOptions<defKind> = {}
+	): Node<reducibleKindOf<defKind>> {
+		const kind = assertTypeKind(schema)
+		if (opts.allowedKinds && !opts.allowedKinds.includes(kind as never)) {
+			return throwParseError(
+				`Schema of kind ${kind} should be one of ${opts.allowedKinds}`
+			)
+		}
+		return opts.root
+			? (this.parseRootSchema(kind, schema as never, opts) as never)
+			: (this.parseSchema(kind, schema as never, opts) as never)
+	}
+
+	parseRootSchema<kind extends NodeKind>(
+		kind: kind,
+		def: Schema<kind>,
+		opts: SchemaParseOptions = {}
+	): Node<reducibleKindOf<kind>> {
+		const node = this.parseSchema(kind, def, opts)
+		if (this.resolved) {
+			// this node was not part of the original scope, so compile an anonymous scope
+			// including only its references
+			this.bindCompiledScope(node.contributesReferences)
+		} else {
+			// we're still parsing the scope itself, so defer compilation but
+			// add the node as a reference
+			Object.assign(this.referencesByName, node.contributesReferencesByName)
+		}
+		return node
+	}
+
+	parsePrereducedSchema<kind extends NodeKind>(
+		kind: kind,
+		def: Schema<kind>
+	): Node<kind> {
+		return this.parseSchema(kind, def, { prereduced: true }) as never
+	}
+
+	parseSchema<kind extends NodeKind>(
+		kind: kind,
+		def: Schema<kind>,
+		opts: SchemaParseOptions = {}
+	): Node<reducibleKindOf<kind>> {
+		if (opts.alias && opts.alias in this.resolutions) {
+			return throwInternalError(
+				`Unexpected attempt to recreate existing alias ${opts.alias}`
+			)
+		}
+		const node = parseAttachments(kind, def, {
+			...opts,
+			$: this,
+			definition: def,
+			prereduced: opts.prereduced ?? false
+		})
+		return node as never
+	}
+
+	protected bindCompiledScope(references: readonly Node[]): void {
+		const compiledTraversals = this.compileScope(references)
+		for (const node of references) {
+			if (node.jit) {
+				// if node has already been bound to another scope or anonymous type, don't rebind it
+				continue
+			}
+			node.jit = true
+			node.traverseAllows =
+				compiledTraversals[`${node.name}Allows`].bind(compiledTraversals)
+			if (node.isType() && !node.includesContextDependentPredicate) {
+				// if the reference doesn't require context, we can assign over
+				// it directly to avoid having to initialize it
+				node.allows = node.traverseAllows as never
+			}
+			node.traverseApply =
+				compiledTraversals[`${node.name}Apply`].bind(compiledTraversals)
+		}
+	}
+
+	protected compileScope(references: readonly Node[]): {
+		[k: `${string}Allows`]: TraverseAllows
+		[k: `${string}Apply`]: TraverseApply
+	} {
+		return new CompiledFunction()
+			.block(`return`, (js) => {
+				references.forEach((node) => {
+					const allowsCompiler = new NodeCompiler("Allows").indent()
+					node.compile(allowsCompiler)
+					const applyCompiler = new NodeCompiler("Apply").indent()
+					node.compile(applyCompiler)
+					js.line(
+						allowsCompiler.writeMethod(`${node.name}Allows`) +
+							",\n" +
+							applyCompiler.writeMethod(`${node.name}Apply`) +
+							","
+					)
+				})
+				return js
+			})
+			.compile()() as never
 	}
 }
 
@@ -550,3 +846,9 @@ type parsePossibleGenericDeclaration<
 			name: k
 			params: []
 	  }
+
+export interface TypeSchemaParseOptions<allowedKind extends TypeKind = TypeKind>
+	extends SchemaParseOptions {
+	root?: boolean
+	allowedKinds?: readonly allowedKind[]
+}

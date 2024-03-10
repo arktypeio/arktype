@@ -73,7 +73,7 @@ export class UnionNode<t = unknown> extends BaseType<
 					child: true,
 					parse: (schema, ctx) => {
 						const branches = schema.map((branch) =>
-							ctx.$.parseTypeNode(branch, { allowedKinds: unionChildKinds })
+							ctx.$.parseTypeSchema(branch, { allowedKinds: unionChildKinds })
 						)
 						const def = ctx.definition as UnionSchema
 						if (isArray(def) || def.ordered !== true) {
@@ -92,7 +92,7 @@ export class UnionNode<t = unknown> extends BaseType<
 				if (reducedBranches.length === inner.branches.length) {
 					return
 				}
-				return $.parsePrereduced("union", {
+				return $.parsePrereducedSchema("union", {
 					...inner,
 					branches: reducedBranches
 				})

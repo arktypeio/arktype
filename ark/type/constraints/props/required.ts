@@ -65,7 +65,7 @@ export class RequiredNode extends BaseConstraint<
 				key: {},
 				value: {
 					child: true,
-					parse: (schema, ctx) => ctx.$.parseTypeNode(schema)
+					parse: (schema, ctx) => ctx.$.parseTypeSchema(schema)
 				}
 			},
 			normalize: (schema) => schema,
