@@ -1,5 +1,4 @@
 import { domainOf, printable } from "@arktype/util"
-import type { ConstraintNode } from "../base.js"
 import { jsData } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -49,7 +48,11 @@ export class UnitNode<t = unknown> extends BaseBasis<
 		}
 	})
 
-	traverseAllows = (data: unknown) => data === this.unit
+	traverseAllows =
+		this.unit instanceof Date
+			? (data: unknown) =>
+					data instanceof Date && data.toISOString() === this.serializedValue
+			: (data: unknown) => data === this.unit
 
 	readonly serializedValue: string | number | boolean | null =
 		typeof this.unit === "string" || this.unit instanceof Date
@@ -65,13 +68,9 @@ export class UnitNode<t = unknown> extends BaseBasis<
 }
 
 const compileComparison = (unit: UnitNode<any>, negated?: "negated") => {
-	let compiled = ""
 	if (unit.unit instanceof Date) {
-		const initialCondition = `${jsData} instanceof Date`
-		compiled += negated
-			? `${initialCondition} && `
-			: `!(${initialCondition}) || `
+		const condition = `${jsData} instanceof Date && ${jsData}.toISOString() === ${unit.serializedValue}`
+		return negated ? `!(${condition})` : condition
 	}
-	compiled += `${jsData} ${negated ? "!" : "="}== ${unit.serializedValue}`
-	return compiled
+	return `${jsData} ${negated ? "!" : "="}== ${unit.serializedValue}`
 }

@@ -8,7 +8,7 @@ describe("date literal", () => {
 		attest<Date>(t.infer)
 		attest(t.allows(new Date("2000/05/05"))).equals(true)
 		attest(t.allows(new Date("2000/06/05"))).equals(false)
-		attest(t.allows(new Date("2000/05/05T09:00:00.00Z"))).equals(false)
+		attest(t.allows(new Date("2000-05-05T09:00:00.000Z"))).equals(false)
 	})
 	it("with punctuation", () => {
 		const ISO = type("d'2000-05-05T04:00:00.000Z'")
