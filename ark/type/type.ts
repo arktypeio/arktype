@@ -141,7 +141,7 @@ export class Type<t = unknown, $ = any> extends Callable<
 		const root = parseTypeRoot(definition, scope) as TypeNode<t>
 		super(root.apply, root)
 		this.root = root
-		this.allows = root.allows
+		this.allows = root.allows.bind(root)
 		this.json = root.json
 		this.description = this.root.description
 	}
@@ -225,7 +225,7 @@ export class Type<t = unknown, $ = any> extends Callable<
 	}
 
 	assert(data: unknown): this["infer"] {
-		const result = this.call(null, data)
+		const result = this(data)
 		return result.errors ? result.errors.throw() : result.out
 	}
 
