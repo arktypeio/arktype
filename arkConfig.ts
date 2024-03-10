@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-restricted-imports */
-import { configure } from "@arktype/schema/config"
+import { configure } from "arktype/config"
 // import { type } from "arktype"
 
 // const user = type("string")

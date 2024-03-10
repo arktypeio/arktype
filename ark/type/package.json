@@ -20,6 +20,10 @@
 			"types": "./out/main.d.ts",
 			"default": "./out/main.js"
 		},
+		"./config": {
+			"types": "./out/config.d.ts",
+			"default": "./out/config.js"
+		},
 		"./internal/*": {
 			"default": "./out/*"
 		}

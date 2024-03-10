@@ -1,9 +1,9 @@
-import type { TypeNode } from "@arktype/schema"
 import {
 	throwInternalError,
 	throwParseError,
 	type ErrorMessage
 } from "@arktype/util"
+import type { TypeNode } from "../../base.js"
 import type { inferAstRoot } from "../semantic/infer.js"
 import type { DynamicState, DynamicStateWithRoot } from "./reduce/dynamic.js"
 import type { StringifiablePrefixOperator } from "./reduce/shared.js"

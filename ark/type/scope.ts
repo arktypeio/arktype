@@ -1,12 +1,4 @@
 import {
-	BaseType,
-	builtins,
-	type ArkConfig,
-	type TypeNode,
-	type extractIn,
-	type extractOut
-} from "@arktype/schema"
-import {
 	domainOf,
 	hasDomain,
 	isThunk,
@@ -18,6 +10,8 @@ import {
 	type nominal
 } from "@arktype/util"
 import type { type } from "./ark.js"
+import type { TypeNode } from "./base.js"
+import { builtins } from "./builtins/builtins.js"
 import { createMatchParser, type MatchParser } from "./match.js"
 import {
 	parseObject,
@@ -37,6 +31,7 @@ import {
 	writeUnresolvableMessage
 } from "./parser/string/shift/operand/unenclosed.js"
 import { fullStringParse } from "./parser/string/string.js"
+import type { ArkConfig } from "./schemaScope.js"
 import {
 	Type,
 	createTypeParser,
@@ -48,6 +43,8 @@ import {
 	type GenericProps,
 	type TypeParser
 } from "./type.js"
+import type { extractIn, extractOut } from "./types/morph.js"
+import { BaseType } from "./types/type.js"
 import { addArkKind, hasArkKind, type arkKind } from "./util.js"
 
 export type ScopeParser<parent, ambient> = {

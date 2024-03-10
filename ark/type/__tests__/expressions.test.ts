@@ -1,7 +1,7 @@
 import { attest } from "@arktype/attest"
-import { schema } from "@arktype/schema"
 import { type, type Out } from "arktype"
 import { scope, type Ark } from "../ark.js"
+import { schema } from "../builtins/builtins.js"
 import {
 	writeMissingRightOperandMessage,
 	writeUnresolvableMessage

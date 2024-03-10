@@ -1,23 +1,23 @@
+import type { BigintLiteral, List, NumberLiteral } from "@arktype/util"
 import type {
 	DateLiteral,
 	LimitLiteral,
 	RegexLiteral,
 	constrain,
-	distill,
-	divisor,
-	inferIntersection,
-	max,
-	min,
-	of,
-	regex
-} from "@arktype/schema"
-import type { BigintLiteral, List, NumberLiteral } from "@arktype/util"
+	of
+} from "../../constraints/ast.js"
+import type { divisor } from "../../constraints/refinements/divisor.js"
+import type { max } from "../../constraints/refinements/max.js"
+import type { min } from "../../constraints/refinements/min.js"
+import type { regex } from "../../constraints/refinements/regex.js"
 import type {
 	UnparsedScope,
 	resolve,
 	tryInferSubmoduleReference
 } from "../../scope.js"
+import type { inferIntersection } from "../../shared/intersections.js"
 import type { GenericProps } from "../../type.js"
+import type { distill } from "../../types/morph.js"
 import type { inferDefinition } from "../definition.js"
 import type { Comparator, MinComparator } from "../string/reduce/shared.js"
 import type { StringLiteral } from "../string/shift/operand/enclosed.js"

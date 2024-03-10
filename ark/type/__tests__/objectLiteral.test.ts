@@ -1,5 +1,4 @@
 import { attest } from "@arktype/attest"
-import { writeUnboundableMessage } from "@arktype/schema"
 import { printable, reference } from "@arktype/util"
 import { scope, type } from "arktype"
 import {
@@ -7,6 +6,7 @@ import {
 	writeInvalidSpreadTypeMessage
 } from "../parser/objectLiteral.js"
 import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclosed.js"
+import { writeUnboundableMessage } from "../constraints/refinements/range.js"
 
 describe("object literal", () => {
 	it("empty", () => {

@@ -1,10 +1,10 @@
 import { attest } from "@arktype/attest"
-import { schema } from "@arktype/schema"
 import { type } from "arktype"
 import {
 	writeMissingRightOperandMessage,
 	writeUnresolvableMessage
 } from "../parser/string/shift/operand/unenclosed.js"
+import { schema } from "../builtins/builtins.js"
 
 describe("keyof", () => {
 	it("autocompletion", () => {

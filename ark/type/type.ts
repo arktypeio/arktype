@@ -1,23 +1,4 @@
 import {
-	inferred,
-	nodes,
-	type ArkResult,
-	type BaseMeta,
-	type Morph,
-	type Out,
-	type Predicate,
-	type TypeNode,
-	type applySchema,
-	type distill,
-	type extractIn,
-	type extractOut,
-	type includesMorphs,
-	type inferIntersection,
-	type inferMorphOut,
-	type inferNarrow,
-	type validateConstraintArg
-} from "@arktype/schema"
-import {
 	Callable,
 	morph,
 	type Constructor,
@@ -25,6 +6,10 @@ import {
 	type List,
 	type conform
 } from "@arktype/util"
+import type { TypeNode } from "./base.js"
+import { nodes } from "./builtins/builtins.js"
+import type { applySchema, validateConstraintArg } from "./constraints/ast.js"
+import type { Predicate, inferNarrow } from "./constraints/predicate.js"
 import type {
 	inferDefinition,
 	validateDeclared,
@@ -40,6 +25,19 @@ import type {
 	TupleInfixOperator
 } from "./parser/tuple.js"
 import type { Scope, bindThis } from "./scope.js"
+import type { BaseMeta } from "./shared/declare.js"
+import type { ArkResult } from "./shared/errors.js"
+import { inferred } from "./shared/inference.js"
+import type { inferIntersection } from "./shared/intersections.js"
+import type {
+	Morph,
+	Out,
+	distill,
+	extractIn,
+	extractOut,
+	includesMorphs,
+	inferMorphOut
+} from "./types/morph.js"
 import { arkKind } from "./util.js"
 
 export type TypeParser<$> = {

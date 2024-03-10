@@ -1,13 +1,13 @@
-import {
-	nodes,
-	writeUnboundableMessage,
-	type BoundKind,
-	type LimitLiteral,
-	type LimitSchemaValue,
-	type Schema,
-	type TypeNode
-} from "@arktype/schema"
 import { isKeyOf, throwParseError, type keySet } from "@arktype/util"
+import type { TypeNode } from "../../../../base.js"
+import { nodes } from "../../../../builtins/builtins.js"
+import type { LimitLiteral } from "../../../../constraints/ast.js"
+import {
+	writeUnboundableMessage,
+	type LimitSchemaValue
+} from "../../../../constraints/refinements/range.js"
+import type { Schema } from "../../../../kinds.js"
+import type { BoundKind } from "../../../../shared/implement.js"
 import type { astToString } from "../../../semantic/utils.js"
 import type {
 	DynamicState,

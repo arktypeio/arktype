@@ -1,4 +1,3 @@
-import { nodes, schema, type Inner, type TypeNode } from "@arktype/schema"
 import {
 	printable,
 	stringAndSymbolicEntriesOf,
@@ -14,6 +13,9 @@ import type { inferDefinition, validateDefinition } from "./definition.js"
 import type { astToString } from "./semantic/utils.js"
 import type { validateString } from "./semantic/validate.js"
 import { Scanner } from "./string/shift/scanner.js"
+import type { TypeNode } from "../base.js"
+import { nodes, schema } from "../builtins/builtins.js"
+import type { Inner } from "../kinds.js"
 
 export const parseObjectLiteral = (def: Dict, ctx: ParseContext): TypeNode => {
 	const required: Inner<"required">[] = []

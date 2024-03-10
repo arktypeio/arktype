@@ -1,10 +1,11 @@
 import { attest } from "@arktype/attest"
-import { nodes, schema, writeIndivisibleMessage } from "@arktype/schema"
 import { type } from "arktype"
 import {
 	writeMissingRightOperandMessage,
 	writeUnresolvableMessage
 } from "../parser/string/shift/operand/unenclosed.js"
+import { schema, nodes } from "../builtins/builtins.js"
+import { writeIndivisibleMessage } from "../constraints/refinements/divisor.js"
 
 describe("union", () => {
 	it("binary", () => {

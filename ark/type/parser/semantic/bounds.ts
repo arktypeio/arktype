@@ -1,5 +1,6 @@
-import type { LimitLiteral, writeUnboundableMessage } from "@arktype/schema"
 import type { ErrorMessage, List } from "@arktype/util"
+import type { LimitLiteral } from "../../constraints/ast.js"
+import type { writeUnboundableMessage } from "../../constraints/refinements/range.js"
 import type {
 	Comparator,
 	InvertedComparators

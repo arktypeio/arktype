@@ -1,10 +1,11 @@
-import type { LimitLiteral, TypeNode } from "@arktype/schema"
 import {
 	isKeyOf,
 	throwInternalError,
 	throwParseError,
 	type requireKeys
 } from "@arktype/util"
+import type { TypeNode } from "../../../base.js"
+import type { LimitLiteral } from "../../../constraints/ast.js"
 import type { ParseContext } from "../../../scope.js"
 import { parseOperand } from "../shift/operand/operand.js"
 import { parseOperator } from "../shift/operator/operator.js"

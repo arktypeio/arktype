@@ -1,6 +1,7 @@
 import { attest } from "@arktype/attest"
-import { nodes, writeIndivisibleMessage } from "@arktype/schema"
 import { type } from "arktype"
+import { nodes } from "../builtins/builtins.js"
+import { writeIndivisibleMessage } from "../constraints/refinements/divisor.js"
 import {
 	writeMissingRightOperandMessage,
 	writeUnresolvableMessage

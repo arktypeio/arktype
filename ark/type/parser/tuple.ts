@@ -1,24 +1,4 @@
 import {
-	makeRootAndArrayPropertiesMutable,
-	nodes,
-	schema,
-	type BaseMeta,
-	type Morph,
-	type MorphChildKind,
-	type MutableInner,
-	type Node,
-	type Out,
-	type Predicate,
-	type Schema,
-	type TypeNode,
-	type UnionChildKind,
-	type extractIn,
-	type extractOut,
-	type inferIntersection,
-	type inferMorphOut,
-	type inferNarrow
-} from "@arktype/schema"
-import {
 	append,
 	objectKindOrDomainOf,
 	printable,
@@ -31,12 +11,28 @@ import {
 	type conform,
 	type evaluate
 } from "@arktype/util"
+import type { Node, TypeNode } from "../base.js"
+import type { MutableInner, Schema } from "../kinds.js"
 import type { ParseContext } from "../scope.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
 import type { InfixOperator, PostfixExpression } from "./semantic/infer.js"
 import { writeUnsatisfiableExpressionError } from "./semantic/validate.js"
 import { writeMissingRightOperandMessage } from "./string/shift/operand/unenclosed.js"
 import type { BaseCompletions } from "./string/string.js"
+import { nodes, schema } from "../builtins/builtins.js"
+import type { inferNarrow, Predicate } from "../constraints/predicate.js"
+import type { BaseMeta } from "../shared/declare.js"
+import type { inferIntersection } from "../shared/intersections.js"
+import { makeRootAndArrayPropertiesMutable } from "../shared/utils.js"
+import type {
+	extractIn,
+	Morph,
+	extractOut,
+	MorphChildKind,
+	Out,
+	inferMorphOut
+} from "../types/morph.js"
+import type { UnionChildKind } from "../types/union.js"
 
 export const parseTuple = (def: List, ctx: ParseContext) =>
 	maybeParseTupleExpression(def, ctx) ?? parseTupleLiteral(def, ctx)

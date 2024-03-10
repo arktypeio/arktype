@@ -1,6 +1,6 @@
 import { attest } from "@arktype/attest"
-import { writeUnboundableMessage } from "@arktype/schema"
 import { scope, type } from "arktype"
+import { writeUnboundableMessage } from "../constraints/refinements/range.js"
 import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclosed.js"
 import { writeUnexpectedCharacterMessage } from "../parser/string/shift/operator/operator.js"
 

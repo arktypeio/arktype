@@ -1,9 +1,9 @@
 import { attest } from "@arktype/attest"
-import { schema } from "@arktype/schema"
 import { type } from "arktype"
 import type { Ark } from "../ark.js"
 import { writeInvalidConstructorMessage } from "../parser/tuple.js"
 import type { Type } from "../type.js"
+import { schema } from "../builtins/builtins.js"
 
 describe("instanceof", () => {
 	describe("tuple expression", () => {
