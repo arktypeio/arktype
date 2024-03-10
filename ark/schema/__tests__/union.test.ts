@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import { schema } from "@arktype/schema"
+import { nodes, schema } from "@arktype/schema"
 
 describe("union", () => {
 	it("union", () => {
@@ -57,5 +57,12 @@ describe("union", () => {
 			ordered: true
 		})
 		attest(l.equals(r)).equals(false)
+	})
+
+	it("reducible intersection with union", () => {
+		const l = nodes.email
+		const r = schema("string", Array)
+		const result = l.and(r)
+		attest(result.json).equals(l.json)
 	})
 })

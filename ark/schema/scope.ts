@@ -97,8 +97,6 @@ export type StaticArkOption<k extends keyof StaticArkConfig> = ReturnType<
 export interface ArkConfig extends Partial<NodeConfigsByKind> {
 	/** @internal */
 	prereducedAliases?: boolean
-	/** @internal */
-	prereducedSchemas?: boolean
 }
 
 export type ParsedArkConfig = require<ArkConfig, 2>
@@ -110,7 +108,7 @@ const parseConfig = (scopeConfig: ArkConfig | undefined): ParsedArkConfig => {
 	const parsedConfig = { ...globalConfig }
 	let k: keyof ArkConfig
 	for (k in scopeConfig) {
-		if (k === "prereducedAliases" || k === "prereducedSchemas") {
+		if (k === "prereducedAliases") {
 			parsedConfig[k] = scopeConfig[k]!
 		} else {
 			parsedConfig[k] = {
@@ -167,7 +165,6 @@ export class ScopeNode<r extends object = any> {
 	readonly references: readonly Node[]
 	protected resolved = false
 	protected prereducedAliases: boolean
-	protected prereducedSchemas: boolean
 	readonly lengthBoundable: UnionNode<LengthBoundableData>
 
 	constructor(
@@ -176,7 +173,6 @@ export class ScopeNode<r extends object = any> {
 	) {
 		this.config = parseConfig(config)
 		this.prereducedAliases = config.prereducedAliases ?? false
-		this.prereducedSchemas = config.prereducedSchemas ?? false
 		for (const k in this.def) {
 			;(this.resolutions as BaseResolutions)[k] = this.parseRoot(
 				assertTypeKind(this.def[k]),
@@ -225,10 +221,7 @@ export class ScopeNode<r extends object = any> {
 		return new ScopeNode(aliases, config)
 	}
 
-	static root: ScopeNode<{}> = this.from(
-		{},
-		{ prereducedAliases: true, prereducedSchemas: true }
-	)
+	static root: ScopeNode<{}> = this.from({})
 
 	parseUnion<const branches extends readonly Schema<UnionChildKind>[]>(
 		input: {
@@ -326,7 +319,7 @@ export class ScopeNode<r extends object = any> {
 			...opts,
 			$: this,
 			definition: def,
-			prereduced: (this.prereducedSchemas || opts.prereduced) ?? false
+			prereduced: opts.prereduced ?? false
 		})
 		return node as never
 	}
@@ -385,13 +378,15 @@ export class ScopeNode<r extends object = any> {
 	) as never
 }
 
-export type SchemaParser<$> = {
-	<const branches extends readonly Schema<UnionChildKind>[]>(
-		...branches: {
-			[i in keyof branches]: validateSchemaBranch<branches[i], $>
-		}
-	): instantiateSchemaBranches<branches>
+export type SchemaBranchesParser<$> = <
+	const branches extends readonly Schema<UnionChildKind>[]
+>(
+	...branches: {
+		[i in keyof branches]: validateSchemaBranch<branches[i], $>
+	}
+) => instantiateSchemaBranches<branches>
 
+export type SchemaParser<$> = SchemaBranchesParser<$> & {
 	union<const branches extends readonly Schema<UnionChildKind>[]>(
 		input: {
 			branches: {
@@ -415,6 +410,11 @@ export interface TypeSchemaParseOptions<allowedKind extends TypeKind = TypeKind>
 
 export const scopeNode = ScopeNode.from
 
-export const rootSchema = ScopeNode.root.schema.bind(ScopeNode.root)
-
-export const rootNode = ScopeNode.root.parse.bind(ScopeNode.root)
+export const rootSchema: SchemaBranchesParser<{}> = (...branches) =>
+	ScopeNode.root.parseTypeNode(
+		branches.length === 1 ? branches[0] : (branches as any),
+		{
+			root: true,
+			prereduced: true
+		}
+	) as never

@@ -5,10 +5,7 @@ import type { NodeKind } from "./shared/implement.js"
 
 export const defaultConfig: ParsedArkConfig = Object.assign(
 	morph(nodesByKind, (kind, node) => [kind, node.implementation.defaults]),
-	{ prereducedAliases: false, prereducedSchemas: false } satisfies Omit<
-		ParsedArkConfig,
-		NodeKind
-	>
+	{ prereducedAliases: false } satisfies Omit<ParsedArkConfig, NodeKind>
 ) as never
 
 export const globalConfig = { ...defaultConfig }
@@ -17,7 +14,7 @@ export const configure = (config: ArkConfig) => {
 	let kind: keyof ArkConfig
 	for (kind in config) {
 		globalConfig[kind] =
-			kind === "prereducedAliases" || kind === "prereducedSchemas"
+			kind === "prereducedAliases"
 				? config.prereducedAliases
 				: ({ ...globalConfig[kind], ...config[kind] } as any)
 	}

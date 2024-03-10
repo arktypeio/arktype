@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import { rootNode, schema } from "@arktype/schema"
+import { schema } from "@arktype/schema"
 
 describe("intersections", () => {
 	it("normalizes refinement order", () => {
@@ -16,8 +16,8 @@ describe("intersections", () => {
 		attest(l.innerId).equals(r.innerId)
 	})
 	it("doesn't equate optional and required props", () => {
-		const l = rootNode("required", { key: "a", value: "number" })
-		const r = rootNode("optional", { key: "a", value: "number" })
+		const l = schema("required", { key: "a", value: "number" })
+		const r = schema("optional", { key: "a", value: "number" })
 		attest(l.equals(r)).equals(false)
 	})
 
