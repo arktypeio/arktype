@@ -29,7 +29,7 @@ export const transformTsFileContents = (
 export const transformRelativeImports = (
 	sourceFile: SourceFile,
 	packageRoot: string
-) => {
+): void => {
 	const packageJson = readPackageJson(packageRoot)
 	const importDeclarations = sourceFile.getDescendantsOfKind(
 		SyntaxKind.ImportDeclaration
@@ -42,7 +42,9 @@ export const transformRelativeImports = (
 	}
 }
 
-export const transformSnipStatementComments = (sourceFile: SourceFile) => {
+export const transformSnipStatementComments = (
+	sourceFile: SourceFile
+): void => {
 	const snipStatementComments = sourceFile
 		.getDescendants()
 		.filter(

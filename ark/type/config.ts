@@ -8,7 +8,7 @@ export const defaultConfig: ParsedArkConfig = Object.assign(
 	{ prereducedAliases: false } satisfies Omit<ParsedArkConfig, NodeKind>
 ) as never
 
-export const globalConfig = { ...defaultConfig }
+export const globalConfig: ParsedArkConfig = { ...defaultConfig }
 
 export const configure = (config: ArkConfig): ParsedArkConfig => {
 	let kind: keyof ArkConfig

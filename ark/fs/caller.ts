@@ -8,7 +8,9 @@ export type GetCallStackOptions = {
 	offset?: number
 }
 
-export const getCallStack = ({ offset = 0 }: GetCallStackOptions = {}) => {
+export const getCallStack = ({
+	offset = 0
+}: GetCallStackOptions = {}): string[] => {
 	const frames = getFramesFromError(new Error())
 	frames.splice(1, 1 + offset)
 	return frames
@@ -43,13 +45,13 @@ export type FormatFilePathOptions = {
 	separator?: string
 }
 
-export const positionToString = (position: SourcePosition) =>
+export const positionToString = (position: SourcePosition): string =>
 	`line ${position.line}, character ${position.char} at path '${position.file}'`
 
 export const formatFilePath = (
 	original: string,
 	{ relative, separator }: FormatFilePathOptions
-) => {
+): string => {
 	let formatted = original
 	if (original.startsWith("file:///")) {
 		formatted = fileURLToPath(original)
@@ -103,4 +105,5 @@ export const caller = (options: CallerOfOptions = {}): SourcePosition => {
 export const callsAgo = (
 	num: number,
 	options: Omit<CallerOfOptions, "upStackBy"> = {}
-) => caller({ methodName: "callsAgo", upStackBy: num, ...options })
+): SourcePosition =>
+	caller({ methodName: "callsAgo", upStackBy: num, ...options })

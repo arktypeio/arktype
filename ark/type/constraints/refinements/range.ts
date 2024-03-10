@@ -87,13 +87,13 @@ export abstract class BaseRange<
 		)
 	}
 
-	overlapsRange(r: Node<pairedRangeKind<d["kind"]>>) {
+	overlapsRange(r: Node<pairedRangeKind<d["kind"]>>): boolean {
 		if (this.isStricterThan(r)) return false
 		if (this.rule === r.rule && (this.exclusive || r.exclusive)) return false
 		return true
 	}
 
-	overlapIsUnit(r: Node<pairedRangeKind<d["kind"]>>) {
+	overlapIsUnit(r: Node<pairedRangeKind<d["kind"]>>): boolean {
 		return this.rule === r.rule && !this.exclusive && !r.exclusive
 	}
 }
@@ -233,7 +233,7 @@ export type DateRangeDeclaration<kind extends DateRangeKind = DateRangeKind> =
 		prerequisite: Date
 	}>
 
-export const dateLimitToString = (limit: LimitSchemaValue) =>
+export const dateLimitToString = (limit: LimitSchemaValue): string =>
 	typeof limit === "string" ? limit : new Date(limit).toLocaleString()
 
 export interface DateBoundExtras {

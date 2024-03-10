@@ -43,7 +43,9 @@ export const getAssertionsInFile = (
 	return assertCalls.map((call) => analyzeAssertCall(call, diagnosticsByFile))
 }
 
-export const getAssertCallLocation = (assertCall: ts.CallExpression) => {
+export const getAssertCallLocation = (
+	assertCall: ts.CallExpression
+): LinePositionRange => {
 	const start = ts.getLineAndCharacterOfPosition(
 		assertCall.getSourceFile(),
 		assertCall.getStart()
@@ -53,7 +55,7 @@ export const getAssertCallLocation = (assertCall: ts.CallExpression) => {
 		assertCall.getEnd()
 	)
 	// Add 1 to everything, since trace positions are 1-based and TS positions are 0-based.
-	const location: LinePositionRange = {
+	return {
 		start: {
 			line: start.line + 1,
 			char: start.character + 1
@@ -63,7 +65,6 @@ export const getAssertCallLocation = (assertCall: ts.CallExpression) => {
 			char: end.character + 1
 		}
 	}
-	return location
 }
 
 export const getExpressionsByName = (

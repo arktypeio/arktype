@@ -151,7 +151,7 @@ export class MorphNode<t = unknown> extends BaseType<
 		return this.inner.out ?? this.$.tsKeywords.unknown
 	}
 
-	compile(js: NodeCompiler) {
+	compile(js: NodeCompiler): void {
 		this.in.compile(js)
 	}
 }

@@ -156,8 +156,8 @@ export class Type<t = unknown, $ = any> extends Callable<
 	}
 
 	// TODO: should return out
-	from(literal: this["in"]["infer"]) {
-		return literal
+	from(literal: this["in"]["infer"]): this["out"]["infer"] {
+		return literal as never
 	}
 
 	// TODO: Morph intersections, ordering
@@ -192,7 +192,7 @@ export class Type<t = unknown, $ = any> extends Callable<
 		>,
 		$
 	>
-	morph(morph: Morph, outValidator?: unknown) {
+	morph(morph: Morph, outValidator?: unknown): unknown {
 		// TODO: tuple expression for out validator
 		outValidator
 		return this as never
@@ -303,18 +303,18 @@ export class Type<t = unknown, $ = any> extends Callable<
 	}
 
 	private inCache?: Type<extractIn<t>, $>;
-	get in() {
+	get in(): Type<extractIn<t>, $> {
 		this.inCache ??= new Type(this.root.in, this.scope) as never
 		return this.inCache
 	}
 
 	outCache?: Type<extractOut<t>, $>
-	get out() {
+	get out(): Type<extractOut<t>, $> {
 		this.outCache ??= new Type(this.root.out, this.scope) as never
 		return this.outCache
 	}
 
-	toString() {
+	toString(): string {
 		return this.description
 	}
 }
@@ -334,7 +334,7 @@ type validateParameterString<params extends string> =
 		? message
 		: params
 
-export const validateUninstantiatedGeneric = (g: Generic) => {
+export const validateUninstantiatedGeneric = (g: Generic): Generic => {
 	// the unconstrained instantiation of the generic is not used for now
 	// other than to eagerly validate that the def does not contain any errors
 	g.scope.parseDefinition(
@@ -353,8 +353,8 @@ export const generic = (
 	parameters: string[],
 	definition: unknown,
 	scope: Scope
-) => {
-	return Object.assign(
+): Generic =>
+	Object.assign(
 		(...args: unknown[]) => {
 			const argNodes = morph(parameters, (i, param) => [
 				param,
@@ -370,8 +370,7 @@ export const generic = (
 			scope
 			// $ is only needed at compile-time
 		} satisfies Omit<GenericProps, "$">
-	) as unknown as Generic
-}
+	) as never
 
 // Comparing to Generic directly doesn't work well, so we compare to only its props
 export type GenericProps<

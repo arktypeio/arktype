@@ -26,7 +26,7 @@ shell(`pnpm changes version`, { cwd: repoDirs.repo })
 
 shell(`rm -f ${join(repoDirs.repo, ".changeset", "*.md")}`)
 
-const nonSuffixedVersion = readPackageJson(repoDirs.root).version
+const nonSuffixedVersion: string = readPackageJson(repoDirs.root).version
 const suffixedVersion = nonSuffixedVersion + `-${currentSuffix}`
 
 packageJson.version = suffixedVersion

@@ -155,8 +155,8 @@ export class ScopeNode<r extends object = any> {
 	declare infer: {
 		[k in keyof r]: r[k] extends schema.cast<infer t> ? t : never
 	}
-	declare static jsObjects: typeof JsObjects.resolutions
-	declare static tsKeywords: typeof TsKeywords.resolutions
+	declare static jsObjects: JsObjects.resolutions
+	declare static tsKeywords: TsKeywords.resolutions
 
 	readonly nodeCache: { [innerId: string]: Node } = {}
 	readonly config: ParsedArkConfig
@@ -206,11 +206,11 @@ export class ScopeNode<r extends object = any> {
 		this.lengthBoundable = this.parsePrereduced("union", ["string", Array])
 	}
 
-	get tsKeywords() {
+	get tsKeywords(): TsKeywords.resolutions {
 		return ScopeNode.tsKeywords
 	}
 
-	get jsObjects() {
+	get jsObjects(): JsObjects.resolutions {
 		return ScopeNode.jsObjects
 	}
 
@@ -344,7 +344,10 @@ export class ScopeNode<r extends object = any> {
 		}
 	}
 
-	protected compileScope(references: readonly Node[]) {
+	protected compileScope(references: readonly Node[]): {
+		[k: `${string}Allows`]: TraverseAllows
+		[k: `${string}Apply`]: TraverseApply
+	} {
 		return new CompiledFunction()
 			.block(`return`, (js) => {
 				references.forEach((node) => {
@@ -361,12 +364,7 @@ export class ScopeNode<r extends object = any> {
 				})
 				return js
 			})
-			.compile<
-				() => {
-					[k: `${string}Allows`]: TraverseAllows
-					[k: `${string}Apply`]: TraverseApply
-				}
-			>()()
+			.compile()() as never
 	}
 
 	readonly schema: SchemaParser<r> = Object.assign(

@@ -23,7 +23,8 @@ export const reference = (value: object | symbol): `$ark.${string}` => {
 	return `$ark.${uniqueName}`
 }
 
-export const isDotAccessible = /^[a-zA-Z_$][a-zA-Z_$0-9]*$/.test
+export const isDotAccessible = (keyName: string): boolean =>
+	/^[a-zA-Z_$][a-zA-Z_$0-9]*$/.test(keyName)
 
 export const compileSerializedValue = (value: unknown): string => {
 	return hasDomain(value, "object") || typeof value === "symbol"
