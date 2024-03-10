@@ -9,7 +9,7 @@ export const registry: Record<string, unknown> = {}
 const namesByResolution = new WeakMap<object | symbol, string>()
 const nameCounts: Record<string, number | undefined> = {}
 
-export const reference = (value: object | symbol) => {
+export const reference = (value: object | symbol): `$ark.${string}` => {
 	const existingName = namesByResolution.get(value)
 	if (existingName) {
 		return `$ark.${existingName}`
@@ -23,10 +23,9 @@ export const reference = (value: object | symbol) => {
 	return `$ark.${uniqueName}`
 }
 
-export const isDotAccessible = (name: string) =>
-	/^[a-zA-Z_$][a-zA-Z_$0-9]*$/.test(name)
+export const isDotAccessible = /^[a-zA-Z_$][a-zA-Z_$0-9]*$/.test
 
-export const compileSerializedValue = (value: unknown) => {
+export const compileSerializedValue = (value: unknown): string => {
 	return hasDomain(value, "object") || typeof value === "symbol"
 		? reference(value)
 		: serializePrimitive(value as SerializablePrimitive)

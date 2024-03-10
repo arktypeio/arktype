@@ -97,19 +97,21 @@ type traitsImplementingKey<
 // won't be treated as instanceof a Trait
 const implementedTraits = Symbol("implementedTraits")
 
-export const hasTrait = (traitClass: Constructor) => (o: unknown) => {
-	if (!hasDomain(o, "object")) {
-		return false
+export const hasTrait =
+	(traitClass: Constructor) =>
+	(o: unknown): boolean => {
+		if (!hasDomain(o, "object")) {
+			return false
+		}
+		if (
+			implementedTraits in o.constructor &&
+			(o.constructor[implementedTraits] as Function[]).includes(traitClass)
+		) {
+			return true
+		}
+		// emulate standard instanceof behavior
+		return ancestorsOf(o).includes(traitClass)
 	}
-	if (
-		implementedTraits in o.constructor &&
-		(o.constructor[implementedTraits] as Function[]).includes(traitClass)
-	) {
-		return true
-	}
-	// emulate standard instanceof behavior
-	return ancestorsOf(o).includes(traitClass)
-}
 
 // @ts-expect-error allow abstract property access
 export abstract class Trait<
@@ -118,7 +120,7 @@ export abstract class Trait<
 > extends NoopBase<abstracted & implemented> {
 	declare $abstracted: abstracted
 
-	static get [Symbol.hasInstance]() {
+	static get [Symbol.hasInstance](): (o: unknown) => boolean {
 		return hasTrait(this)
 	}
 

@@ -43,6 +43,7 @@ import {
 	type GenericProps,
 	type TypeParser
 } from "./type.js"
+import type { IntersectionNode } from "./types/intersection.js"
 import type { extractIn, extractOut } from "./types/morph.js"
 import { BaseType } from "./types/type.js"
 import { addArkKind, hasArkKind, type arkKind } from "./util.js"
@@ -304,7 +305,7 @@ export class Scope<r extends Resolutions = any> {
 		}
 	}
 
-	parseDefinition(def: unknown, input: ParseContextInput) {
+	parseDefinition(def: unknown, input: ParseContextInput): TypeNode {
 		return this.parse(def, this.createRootContext(input))
 	}
 
@@ -404,7 +405,7 @@ export class Scope<r extends Resolutions = any> {
 		) as never
 	}
 
-	bindThis() {
+	bindThis(): { this: IntersectionNode } {
 		// TODO: fix
 		return { this: builtins.resolutions.unknown }
 	}
@@ -490,7 +491,10 @@ type destructuredImportContext<
 	[k in name as `#${k & string}`]: type.cast<r["exports"][k]>
 }
 
-export const writeShallowCycleErrorMessage = (name: string, seen: string[]) =>
+export const writeShallowCycleErrorMessage = (
+	name: string,
+	seen: string[]
+): string =>
 	`Alias '${name}' has a shallow resolution cycle: ${[...seen, name].join(":")}`
 
 export const writeDuplicateNameMessage = <name extends string>(

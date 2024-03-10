@@ -32,6 +32,7 @@ import type {
 	ioKindOf,
 	reducibleKindOf
 } from "./kinds.js"
+import type { ScopeNode } from "./schemaScope.js"
 import type { NodeCompiler } from "./shared/compile.js"
 import {
 	pathToPropString,
@@ -69,7 +70,6 @@ import type { MorphNode, extractIn, extractOut } from "./types/morph.js"
 import type { ProtoNode } from "./types/proto.js"
 import type { UnionNode } from "./types/union.js"
 import type { UnitNode } from "./types/unit.js"
-import type { ScopeNode } from "./schemaScope.js"
 
 export interface BaseAttachments {
 	alias?: string
@@ -193,7 +193,7 @@ export abstract class BaseNode<
 	abstract expression: string
 
 	private descriptionCache?: string
-	get description() {
+	get description(): string {
 		this.descriptionCache ??=
 			this.inner.description ??
 			this.$.config[this.kind].description?.(this as never)
@@ -244,11 +244,11 @@ export abstract class BaseNode<
 		}) as never
 	}
 
-	toJSON() {
+	toJSON(): Json {
 		return this.json
 	}
 
-	equals(other: Node) {
+	equals(other: Node): boolean {
 		return this.typeId === other.typeId
 	}
 
@@ -276,7 +276,7 @@ export abstract class BaseNode<
 		return includes(typeKinds, this.kind)
 	}
 
-	toString() {
+	toString(): string {
 		return this.expression
 	}
 
@@ -284,11 +284,11 @@ export abstract class BaseNode<
 		return this.hasKind("unit") && this.allows(value)
 	}
 
-	get intersectionIsOpen() {
-		return this.impl.intersectionIsOpen as d["intersectionIsOpen"]
+	get intersectionIsOpen(): d["intersectionIsOpen"] {
+		return this.impl.intersectionIsOpen as never
 	}
 
-	get nestableExpression() {
+	get nestableExpression(): string {
 		return this.children.length > 1 &&
 			this.children.some((child) => !child.isBasis && !child.isProp())
 			? `(${this.expression})`

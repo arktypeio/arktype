@@ -82,12 +82,10 @@ export const objectKindOrDomainOf = <
 >(
 	data: data,
 	kinds?: kinds
-) =>
+): (objectKindOf<data & object, kinds> & {}) | domainOf<data> =>
 	(typeof data === "object" && data !== null
 		? objectKindOf(data, kinds) ?? "object"
-		: domainOf(data)) as
-		| (objectKindOf<data & object, kinds> & {})
-		| domainOf<data>
+		: domainOf(data)) as never
 
 export type objectKindOrDomainOf<
 	data,
@@ -158,7 +156,7 @@ export type instanceOf<constructor> = constructor extends Constructor<
  * @param {object} o - The object to find the ancestors of.
  * @returns {Function[]} An array of constructors for all ancestors of the object.
  */
-export const ancestorsOf = (o: object) => {
+export const ancestorsOf = (o: object): Function[] => {
 	let proto = Object.getPrototypeOf(o)
 	const result: Function[] = []
 	while (proto !== null) {
@@ -199,14 +197,14 @@ const baseKeysByDomain: Record<Domain, readonly PropertyKey[]> = {
 	undefined: []
 }
 
-export const getBaseDomainKeys = <domain extends Domain>(domain: domain) => [
-	...baseKeysByDomain[domain]
-]
+export const getBaseDomainKeys = <domain extends Domain>(
+	domain: domain
+): PropertyKey[] => [...baseKeysByDomain[domain]]
 
 export const constructorExtends = (
 	constructor: Constructor,
 	base: Constructor
-) => {
+): boolean => {
 	let current = constructor.prototype
 
 	while (current !== null) {

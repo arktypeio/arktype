@@ -324,7 +324,7 @@ export class ScopeNode<r extends object = any> {
 		return node as never
 	}
 
-	protected bindCompiledScope(references: readonly Node[]) {
+	protected bindCompiledScope(references: readonly Node[]): void {
 		const compiledTraversals = this.compileScope(references)
 		for (const node of references) {
 			if (node.jit) {

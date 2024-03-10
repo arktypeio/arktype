@@ -21,7 +21,7 @@ export type JsonData = string | boolean | number | null | Json
 export const snapshot = <t>(
 	data: t,
 	opts: SerializationOptions = { onUndefined: "(undefined)" }
-) => serializeRecurse(data, opts, []) as snapshot<t>
+): snapshot<t> => serializeRecurse(data, opts, []) as never
 
 export type snapshot<t, depth extends 1[] = []> = unknown extends t
 	? unknown
@@ -47,10 +47,10 @@ type snapshotPrimitive<t> = t extends undefined
 	? `(symbol${string})`
 	: t
 
-export const print = (data: unknown, indent?: number) =>
+export const print = (data: unknown, indent?: number): void =>
 	console.log(printable(data, indent))
 
-export const printable = (data: unknown, indent?: number) => {
+export const printable = (data: unknown, indent?: number): string => {
 	switch (domainOf(data)) {
 		case "object":
 			return data instanceof Date
@@ -127,12 +127,12 @@ export type SerializablePrimitive = inferDomain<keyof SerializedPrimitives>
 
 export const serializePrimitive = <value extends SerializablePrimitive>(
 	value: value
-) =>
+): serializePrimitive<value> =>
 	(typeof value === "string"
 		? JSON.stringify(value)
 		: typeof value === "bigint"
 		? `${value}n`
-		: `${value}`) as serializePrimitive<value>
+		: `${value}`) as never
 
 export type serializePrimitive<value extends SerializablePrimitive> =
 	value extends string

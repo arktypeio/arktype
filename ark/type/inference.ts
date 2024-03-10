@@ -6,13 +6,16 @@ import type {
 	conform,
 	describe
 } from "@arktype/util"
-import type { isSchemaCast, schema } from "../type/builtins/builtins.js"
-import type { instantiateBasis } from "../type/types/basis.js"
-import type { DomainNode, DomainSchema } from "../type/types/domain.js"
+import type { Node, TypeNode } from "./base.js"
+import type { isSchemaCast, schema } from "./builtins/builtins.js"
+import type { Prerequisite } from "./kinds.js"
+import type { ConstraintKind } from "./shared/implement.js"
+import type { instantiateBasis } from "./types/basis.js"
+import type { DomainNode, DomainSchema } from "./types/domain.js"
 import type {
 	IntersectionNode,
 	IntersectionSchema
-} from "../type/types/intersection.js"
+} from "./types/intersection.js"
 import type {
 	Morph,
 	MorphChildDefinition,
@@ -20,16 +23,10 @@ import type {
 	MorphSchema,
 	Out,
 	inferMorphOut
-} from "../type/types/morph.js"
-import type { ProtoNode, ProtoSchema } from "../type/types/proto.js"
-import type {
-	NormalizedUnionSchema,
-	UnionChildNode
-} from "../type/types/union.js"
-import type { UnitSchema } from "../type/types/unit.js"
-import type { Node, TypeNode } from "./base.js"
-import type { Prerequisite } from "./kinds.js"
-import type { ConstraintKind } from "./shared/implement.js"
+} from "./types/morph.js"
+import type { ProtoNode, ProtoSchema } from "./types/proto.js"
+import type { NormalizedUnionSchema, UnionChildNode } from "./types/union.js"
+import type { UnitSchema } from "./types/unit.js"
 
 export type validateAliases<aliases> = {
 	[k in keyof aliases]: "branches" extends keyof aliases[k]

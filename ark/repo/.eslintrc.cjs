@@ -58,6 +58,12 @@ module.exports = defineConfig({
 			}
 		],
 		"unused-imports/no-unused-imports": "warn",
+		// Can be replaced by --isolatedDeclarations in tsconfig once it's released:
+		// https://github.com/microsoft/TypeScript/pull/53463
+		"@typescript-eslint/explicit-module-boundary-types": [
+			"warn",
+			{ allowDirectConstAssertionInArrowFunctions: true }
+		],
 		"@typescript-eslint/default-param-last": "warn",
 		"@typescript-eslint/no-empty-interface": "off",
 		/**

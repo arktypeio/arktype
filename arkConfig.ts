@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-restricted-imports */
 import { configure } from "arktype/config"
 // import { type } from "arktype"
 

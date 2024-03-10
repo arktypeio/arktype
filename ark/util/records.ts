@@ -74,8 +74,8 @@ export type entryOf<o> = {
 
 export type entriesOf<o extends object> = entryOf<o>[]
 
-export const entriesOf = <o extends object>(o: o) =>
-	Object.entries(o) as entriesOf<o>
+export const entriesOf = <o extends object>(o: o): entriesOf<o> =>
+	Object.entries(o) as never
 
 export type Entry<
 	key extends PropertyKey = PropertyKey,
@@ -88,7 +88,7 @@ export type fromEntries<entries extends readonly Entry[]> = evaluate<{
 
 export const fromEntries = <const entries extends readonly Entry[]>(
 	entries: entries
-) => Object.fromEntries(entries) as fromEntries<entries>
+): fromEntries<entries> => Object.fromEntries(entries) as never
 
 /** Mimics the result of Object.keys(...) */
 export type keysOf<o> = o extends List
@@ -99,7 +99,8 @@ export type keysOf<o> = o extends List
 			[K in keyof o]: K extends string ? K : K extends number ? `${K}` : never
 	  }[keyof o]
 
-export const keysOf = <o extends object>(o: o) => Object.keys(o) as keysOf<o>[]
+export const keysOf = <o extends object>(o: o): keysOf<o>[] =>
+	Object.keys(o) as never
 
 export const isKeyOf = <k extends string | number | symbol, o extends object>(
 	k: k,
@@ -190,12 +191,12 @@ export const splitByKeys = <o extends object, leftKeys extends keySetOf<o>>(
 export const pick = <o extends object, keys extends keySetOf<o>>(
 	o: o,
 	keys: keys
-) => splitByKeys(o, keys)[0]
+): evaluate<Pick<o, keyof keys & keyof o>> => splitByKeys(o, keys)[0] as never
 
 export const omit = <o extends object, keys extends keySetOf<o>>(
 	o: o,
 	keys: keys
-) => splitByKeys(o, keys)[1]
+): evaluate<Omit<o, keyof keys>> => splitByKeys(o, keys)[1] as never
 
 export type EmptyObject = Record<PropertyKey, never>
 
@@ -204,7 +205,7 @@ export const isEmptyObject = (o: object): o is EmptyObject =>
 
 export const stringAndSymbolicEntriesOf = (
 	o: Record<string | symbol, unknown>
-) => [
+): Entry<string | symbol>[] => [
 	...Object.entries(o),
 	...Object.getOwnPropertySymbols(o).map((k) => [k, o[k]] as const)
 ]
@@ -215,5 +216,6 @@ export type invert<t extends Record<PropertyKey, PropertyKey>> = {
 	[k in t[keyof t]]: { [k2 in keyof t]: t[k2] extends k ? k2 : never }[keyof t]
 } & unknown
 
-export const invert = <t extends Record<PropertyKey, PropertyKey>>(t: t) =>
-	morph(t as any, (k, v) => [v, k]) as invert<t>
+export const invert = <t extends Record<PropertyKey, PropertyKey>>(
+	t: t
+): invert<t> => morph(t as any, (k, v) => [v, k]) as never
