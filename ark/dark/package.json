@@ -3,7 +3,6 @@
 	"displayName": "ArkDark",
 	"description": "ArkType syntax highlighting and theme⛵",
 	"version": "3.6.5",
-	"private": true,
 	"publisher": "arktypeio",
 	"type": "module",
 	"scripts": {
@@ -41,7 +40,7 @@
 					"source.js.jsx"
 				],
 				"scopeName": "source.arktype.injection.ts",
-				"path": "arktype.tmLanguage.json"
+				"path": "injected.tmLanguage.json"
 			}
 		],
 		"configurationDefaults": {

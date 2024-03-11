@@ -4,11 +4,11 @@
 	"injectionSelector": "L:source.ts - comment",
 	"patterns": [
 		{
-			"include": "#definition"
+			"include": "#arkDefinition"
 		}
 	],
 	"repository": {
-		"definition": {
+		"arkDefinition": {
 			"contentName": "meta.embedded.arktype.definition",
 			"begin": "(([^\\)\\(\\s]*)?((\\.)?(type|scope|define|match|when|arrayOf|intersection|keyOf|morph|narrow|union|Scope\\.root)|(\\.)(morph|and|or)))\\(",
 			"beginCaptures": {
@@ -22,16 +22,15 @@
 					"name": "punctuation.accessor"
 				}
 			},
-			"end": "(?<=([^\"'`]*([\"'`])[^\"'`]*\\2)*[^\"'`]*)\\)",
+			"end": "\\)",
 			"patterns": [
 				{
-					"include": "#nested"
+					"include": "#arkAll"
 				}
 			]
 		},
-		"quoted": {
-			"name": "quoted",
-			"match": "([\"'`])(.*?)?((?<!\\\\)(\\1))",
+		"arkQuoted": {
+			"match": "([\"'`])(.*?)(\\\\)*(\\1)",
 			"captures": {
 				"1": {
 					"name": "string.quoted"
@@ -39,10 +38,10 @@
 				"2": {
 					"patterns": [
 						{
-							"include": "#operator"
+							"include": "#arkOperator"
 						},
 						{
-							"include": "#regex"
+							"include": "#arkRegex"
 						},
 						{
 							"name": "keyword.operator",
@@ -53,13 +52,13 @@
 						}
 					]
 				},
-				"3": {
+				"4": {
 					"name": "string.quoted"
 				}
 			}
 		},
-		"regex": {
-			"match": "(\\/)(.*)((?<!\\\\)(\\1))",
+		"arkRegex": {
+			"match": "(\\/)(.*?)(\\\\)*(\\1)",
 			"captures": {
 				"1": { "name": "keyword.operator" },
 				"2": {
@@ -76,18 +75,18 @@
 							"name": "keyword.operator",
 							"match": "[^ \\w]"
 						},
-						{ "include": "#operator" },
-						{ "include": "#quoted" }
+						{ "include": "#arkOperator" },
+						{ "include": "#arkQuoted" }
 					]
 				},
-				"3": { "name": "keyword.operator" }
+				"4": { "name": "keyword.operator" }
 			}
 		},
-		"operator": {
+		"arkOperator": {
 			"name": "keyword.operator",
 			"match": "[<>=%`'&]|\""
 		},
-		"object": {
+		"arkObject": {
 			"begin": "(\\s*)?\\{",
 			"end": "\\}",
 			"beginCaptures": {
@@ -106,29 +105,29 @@
 					"name": "meta.object-literal.key.ts"
 				},
 				{
-					"include": "#nested"
+					"include": "#arkAll"
 				}
 			]
 		},
-		"tuple": {
+		"arkTuple": {
 			"begin": "(\\s*)?\\[",
 			"end": "\\]",
 			"patterns": [
 				{
-					"include": "#nested"
+					"include": "#arkAll"
 				}
 			]
 		},
-		"nested": {
+		"arkAll": {
 			"patterns": [
 				{
-					"include": "#object"
+					"include": "#arkObject"
 				},
 				{
-					"include": "#tuple"
+					"include": "#arkTuple"
 				},
 				{
-					"include": "#quoted"
+					"include": "#arkQuoted"
 				},
 				{
 					"include": "source.ts#comment"
