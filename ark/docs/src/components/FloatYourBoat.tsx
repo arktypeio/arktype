@@ -1,6 +1,6 @@
 import { motion } from "framer-motion"
 import React, { useEffect } from "react"
-import ReactDOM from "react-dom"
+import { createRoot } from "react-dom/client"
 import BoatSvg from "../assets/boat.svg"
 
 export const FloatYourBoat = () => {
@@ -14,10 +14,9 @@ export const FloatYourBoat = () => {
 		for (let i = 0; i < loopDuration; i++) {
 			bobFrames.push(i % 2 ? BOB_HEIGHT_PX : 0)
 		}
-		ReactDOM.render(
-			<Boat loopDuration={loopDuration} bobFrames={bobFrames} />,
+		createRoot(
 			document.getElementsByClassName("header")[0].appendChild(boatContainer)
-		)
+		).render(<Boat loopDuration={loopDuration} bobFrames={bobFrames} />)
 		return () => {
 			boatContainer.removeChild(boatContainer)
 		}
