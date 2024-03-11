@@ -28,7 +28,7 @@ interface ITokenColor {
 const translateVSCodeTheme = (
 	theme: IVSCodeTheme
 ): Monaco.editor.IStandaloneThemeData => {
-	theme.colors["editor.background"] = theme.colors["editor.background"] + "66"
+	theme.colors["editor.background"] = "#f5cf8f0a"
 	return {
 		base: "vs-dark",
 		inherit: false,
