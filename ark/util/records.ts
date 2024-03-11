@@ -142,9 +142,16 @@ export type optionalizeKeys<o, keys extends keyof o> = evaluate<
 	}
 >
 
-export type replaceKey<o, k extends keyof o, v> = evaluate<
-	Omit<o, k> & { [_ in k]: v }
+export type merge<base, merged> = evaluate<
+	{
+		[k in Exclude<keyof base, keyof merged>]: base[k]
+	} & merged
 >
+
+export type override<
+	base,
+	merged extends { [k in keyof base]?: unknown }
+> = merge<base, merged>
 
 export type valueOf<o> = o[keyof o]
 

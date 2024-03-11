@@ -7,7 +7,7 @@ import {
 	type conform
 } from "@arktype/util"
 import type { TypeNode } from "./base.js"
-import { nodes } from "./builtins/builtins.js"
+import { keywords } from "./builtins/ark.js"
 import type { applySchema, validateConstraintArg } from "./constraints/ast.js"
 import type { Predicate, inferNarrow } from "./constraints/predicate.js"
 import type {
@@ -134,9 +134,9 @@ export class Type<t = unknown, $ = any> extends Callable<
 
 	constructor(
 		public definition: unknown,
-		public scope: Scope
+		public $: Scope
 	) {
-		const root = parseTypeRoot(definition, scope) as TypeNode<t>
+		const root = parseTypeRoot(definition, $) as TypeNode<t>
 		super(root.apply, root)
 		this.root = root
 		this.allows = root.allows.bind(root)
@@ -147,7 +147,7 @@ export class Type<t = unknown, $ = any> extends Callable<
 	configure(configOrDescription: BaseMeta | string): this {
 		return new Type(
 			this.root.configureShallowDescendants(configOrDescription),
-			this.scope
+			this.$
 		) as never
 	}
 
@@ -164,17 +164,11 @@ export class Type<t = unknown, $ = any> extends Callable<
 	and<def>(
 		def: validateTypeRoot<def, $>
 	): Type<inferIntersection<t, inferTypeRoot<def, $>>, $> {
-		return new Type(
-			this.root.and(parseTypeRoot(def, this.scope)),
-			this.scope
-		) as never
+		return new Type(this.root.and(parseTypeRoot(def, this.$)), this.$) as never
 	}
 
 	or<def>(def: validateTypeRoot<def, $>): Type<t | inferTypeRoot<def, $>, $> {
-		return new Type(
-			this.root.or(parseTypeRoot(def, this.scope)),
-			this.scope
-		) as never
+		return new Type(this.root.or(parseTypeRoot(def, this.$)), this.$) as never
 	}
 
 	// TODO: standardize these
@@ -211,15 +205,15 @@ export class Type<t = unknown, $ = any> extends Callable<
 			: inferNarrow<this["infer"], def>,
 		$
 	> {
-		return new Type(this.root.constrain("predicate", def), this.scope) as never
+		return new Type(this.root.constrain("predicate", def), this.$) as never
 	}
 
 	array(): Type<t[], $> {
-		return new Type(this.root.array(), this.scope) as never
+		return new Type(this.root.array(), this.$) as never
 	}
 
 	keyof(): Type<keyof this["in"]["infer"], $> {
-		return new Type(this.root.keyof(), this.scope) as never
+		return new Type(this.root.keyof(), this.$) as never
 	}
 
 	assert(data: unknown): this["infer"] {
@@ -232,7 +226,7 @@ export class Type<t = unknown, $ = any> extends Callable<
 	): Type<applySchema<t, "divisor", schema>, $> {
 		return new Type(
 			this.root.constrain("divisor", schema as never),
-			this.scope
+			this.$
 		) as never
 	}
 
@@ -241,7 +235,7 @@ export class Type<t = unknown, $ = any> extends Callable<
 	): Type<applySchema<t, "min", schema>, $> {
 		return new Type(
 			this.root.constrain("min", schema as never),
-			this.scope
+			this.$
 		) as never
 	}
 
@@ -250,7 +244,7 @@ export class Type<t = unknown, $ = any> extends Callable<
 	): Type<applySchema<t, "max", schema>, $> {
 		return new Type(
 			this.root.constrain("max", schema as never),
-			this.scope
+			this.$
 		) as never
 	}
 
@@ -259,7 +253,7 @@ export class Type<t = unknown, $ = any> extends Callable<
 	>(schema: schema): Type<applySchema<t, "minLength", schema>, $> {
 		return new Type(
 			this.root.constrain("minLength", schema as never),
-			this.scope
+			this.$
 		) as never
 	}
 
@@ -268,7 +262,7 @@ export class Type<t = unknown, $ = any> extends Callable<
 	>(schema: schema): Type<applySchema<t, "maxLength", schema>, $> {
 		return new Type(
 			this.root.constrain("maxLength", schema as never),
-			this.scope
+			this.$
 		) as never
 	}
 
@@ -277,7 +271,7 @@ export class Type<t = unknown, $ = any> extends Callable<
 	): Type<applySchema<t, "before", schema>, $> {
 		return new Type(
 			this.root.constrain("before", schema as never),
-			this.scope
+			this.$
 		) as never
 	}
 
@@ -286,31 +280,31 @@ export class Type<t = unknown, $ = any> extends Callable<
 	): Type<applySchema<t, "after", schema>, $> {
 		return new Type(
 			this.root.constrain("after", schema as never),
-			this.scope
+			this.$
 		) as never
 	}
 
 	equals<def>(
 		other: validateTypeRoot<def, $>
 	): this is Type<inferTypeRoot<def, $>, $> {
-		return this.root.equals(parseTypeRoot(other, this.scope))
+		return this.root.equals(parseTypeRoot(other, this.$))
 	}
 
 	extends<def>(
 		other: validateTypeRoot<def, $>
 	): this is Type<inferTypeRoot<def, $>, $> {
-		return this.root.extends(parseTypeRoot(other, this.scope))
+		return this.root.extends(parseTypeRoot(other, this.$))
 	}
 
 	private inCache?: Type<extractIn<t>, $>;
 	get in(): Type<extractIn<t>, $> {
-		this.inCache ??= new Type(this.root.in, this.scope) as never
+		this.inCache ??= new Type(this.root.in, this.$) as never
 		return this.inCache
 	}
 
 	outCache?: Type<extractOut<t>, $>
 	get out(): Type<extractOut<t>, $> {
-		this.outCache ??= new Type(this.root.out, this.scope) as never
+		this.outCache ??= new Type(this.root.out, this.$) as never
 		return this.outCache
 	}
 
@@ -343,7 +337,7 @@ export const validateUninstantiatedGeneric = (g: Generic): Generic => {
 		// the base type here: https://github.com/arktypeio/arktype/issues/796
 		{
 			baseName: "generic",
-			args: morph(g.parameters, (_, name) => [name, nodes.unknown])
+			args: morph(g.parameters, (_, name) => [name, keywords.unknown])
 		}
 	)
 	return g

@@ -1,5 +1,5 @@
 import { isKeyOf } from "@arktype/util"
-import { schema } from "../../../../builtins/builtins.js"
+import { schema } from "../../../../schema.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import type { StaticState, state } from "../../reduce/static.js"
 import type { Scanner } from "../scanner.js"
@@ -30,12 +30,15 @@ export const parseEnclosed = (
 	if (enclosing === "/") {
 		// fail parsing if the regex is invalid
 		new RegExp(enclosed)
-		s.root = schema({ domain: "string", regex: enclosed })
+		s.root = s.ctx.$.parsePrereducedSchema("intersection", {
+			domain: "string",
+			regex: enclosed
+		})
 	} else if (isKeyOf(enclosing, enclosingQuote)) {
-		s.root = schema({ unit: enclosed })
+		s.root = s.ctx.$.parseUnits(enclosed)
 	} else {
 		const date = tryParseDate(enclosed, writeInvalidDateMessage(enclosed))
-		s.root = schema({ unit: date, description: token })
+		s.root = s.ctx.$.parseSchema("unit", { unit: date, description: token })
 	}
 }
 

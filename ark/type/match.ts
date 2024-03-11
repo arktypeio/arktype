@@ -3,7 +3,7 @@ import type {
 	UnknownUnion,
 	isDisjoint,
 	numericStringKeyOf,
-	replaceKey,
+	override,
 	unionToTuple,
 	valueOf
 } from "@arktype/util"
@@ -55,7 +55,7 @@ type getUnhandledBranches<ctx extends MatchParserContext> = Exclude<
 type addBranches<
 	ctx extends MatchParserContext,
 	branches extends unknown[]
-> = replaceKey<ctx, "thens", [...ctx["thens"], ...branches]>
+> = override<ctx, { thens: [...ctx["thens"], ...branches] }>
 
 type validateWhenDefinition<
 	def,

@@ -12,10 +12,15 @@ import {
 	type evaluate
 } from "@arktype/util"
 import type { Node, TypeNode } from "../base.js"
-import { keywords, schema } from "../builtins/ark.js"
+import { keywords } from "../builtins/ark.js"
 import type { Predicate, inferNarrow } from "../constraints/predicate.js"
-import type { inferSchemaBranch, validateSchema } from "../inference.js"
 import type { MutableInner, Schema } from "../kinds.js"
+import {
+	schema,
+	type inferSchema,
+	type inferSchemaBranch,
+	type validateSchema
+} from "../schema.js"
 import type { ParseContext } from "../scope.js"
 import type { BaseMeta } from "../shared/declare.js"
 import type { inferIntersection } from "../shared/intersections.js"
@@ -50,7 +55,7 @@ export const parseTupleLiteral = (def: List, ctx: ParseContext): TypeNode => {
 		}
 
 		ctx.path.push(`${i}`)
-		const element = ctx.scope.parse(def[i], ctx)
+		const element = ctx.$.parse(def[i], ctx)
 		ctx.path.pop()
 		i++
 		if (def[i] === "?") {
@@ -79,7 +84,7 @@ export const parseTupleLiteral = (def: List, ctx: ParseContext): TypeNode => {
 			)
 		}
 	}
-	return schema(
+	return ctx.$.parseSchemaBranches(
 		...sequences.map((sequence) => ({
 			proto: Array,
 			sequence
@@ -384,7 +389,7 @@ export type inferTupleExpression<
 	: def[0] extends "keyof"
 	? inferKeyOfExpression<def[1], $, args>
 	: def[0] extends "schema"
-	? inferSchemaBranch<def[1], $, args>
+	? inferSchema<def[1]>
 	: never
 
 export type validatePrefixExpression<
@@ -400,7 +405,7 @@ export type validatePrefixExpression<
 	: def[0] extends "instanceof"
 	? readonly [def[0], ...Constructor[]]
 	: def[0] extends "schema"
-	? [def[0], validateSchema<def[1], $, args>]
+	? [def[0], validateSchema<def[1]>]
 	: never
 
 export type validatePostfixExpression<
@@ -441,7 +446,7 @@ export type UnparsedTupleExpressionInput = {
 export type UnparsedTupleOperator = evaluate<keyof UnparsedTupleExpressionInput>
 
 export const parseKeyOfTuple: PrefixParser<"keyof"> = (def, ctx) =>
-	ctx.scope.parse(def[1], ctx).keyof()
+	ctx.$.parse(def[1], ctx).keyof()
 
 export type inferKeyOfExpression<operandDef, $, args> = evaluate<
 	keyof inferDefinition<operandDef, $, args>
@@ -451,13 +456,13 @@ const parseBranchTuple: PostfixParser<"|" | "&"> = (def, ctx) => {
 	if (def[2] === undefined) {
 		return throwParseError(writeMissingRightOperandMessage(def[1], ""))
 	}
-	const l = ctx.scope.parse(def[0], ctx)
-	const r = ctx.scope.parse(def[2], ctx)
+	const l = ctx.$.parse(def[0], ctx)
+	const r = ctx.$.parse(def[2], ctx)
 	return def[1] === "&" ? l.and(r) : l.or(r)
 }
 
 const parseArrayTuple: PostfixParser<"[]"> = (def, ctx) =>
-	ctx.scope.parse(def[0], ctx).array()
+	ctx.$.parse(def[0], ctx).array()
 
 export type PostfixParser<token extends IndexOneOperator> = (
 	def: IndexOneExpression<token>,
@@ -493,8 +498,8 @@ export const parseMorphTuple: PostfixParser<"=>"> = (def, ctx) => {
 		)
 	}
 	// TODO: nested morphs?
-	return schema({
-		in: ctx.scope.parse(def[0], ctx) as Schema<MorphChildKind>,
+	return ctx.$.parseSchema("morph", {
+		in: ctx.$.parse(def[0], ctx) as Schema<MorphChildKind>,
 		morph: def[2] as Morph
 	})
 }
@@ -519,13 +524,11 @@ export const parseNarrowTuple: PostfixParser<":"> = (def, ctx) => {
 			writeMalformedFunctionalExpressionMessage(":", def[2])
 		)
 	}
-	return ctx.scope
-		.parse(def[0], ctx)
-		.constrain("predicate", def[2] as Predicate)
+	return ctx.$.parse(def[0], ctx).constrain("predicate", def[2] as Predicate)
 }
 
 const parseAttributeTuple: PostfixParser<"@"> = (def, ctx) =>
-	ctx.scope.parse(def[0], ctx).configureShallowDescendants(def[2] as never)
+	ctx.$.parse(def[0], ctx).configureShallowDescendants(def[2] as never)
 
 const indexOneParsers: {
 	[token in IndexOneOperator]: PostfixParser<token>
@@ -550,7 +553,7 @@ const prefixParsers: {
 	[token in IndexZeroOperator]: PrefixParser<token>
 } = {
 	keyof: parseKeyOfTuple,
-	instanceof: (def) => {
+	instanceof: (def, ctx) => {
 		if (typeof def[1] !== "function") {
 			return throwParseError(
 				writeInvalidConstructorMessage(objectKindOrDomainOf(def[1]))
@@ -560,15 +563,17 @@ const prefixParsers: {
 			.slice(1)
 			.map((ctor) =>
 				typeof ctor === "function"
-					? { proto: ctor as Constructor }
+					? ctx.$.parseSchema("proto", { proto: ctor as Constructor })
 					: throwParseError(
 							writeInvalidConstructorMessage(objectKindOrDomainOf(ctor))
 					  )
 			)
-		return schema(...branches)
+		return branches.length === 1
+			? branches[0]
+			: ctx.$.parseSchema("union", { branches })
 	},
-	"===": (def) => schema.units(...def.slice(1)),
-	schema: (def, ctx) => ctx.scope.schema(def, ctx)
+	"===": (def, ctx) => ctx.$.parseUnits(...def.slice(1)),
+	schema: (def, ctx) => ctx.$.parseTypeSchema(def)
 }
 
 const isIndexZeroExpression = (def: List): def is IndexZeroExpression =>

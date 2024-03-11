@@ -71,7 +71,7 @@ export abstract class BaseType<
 		kind: kind,
 		input: Schema<kind>
 	): TypeNode<this["infer"]> {
-		const constraint = this.$.parse(kind, input)
+		const constraint = this.$.parseSchema(kind, input)
 		if (constraint.impliedBasis && !this.extends(constraint.impliedBasis)) {
 			return throwInvalidOperandError(
 				kind,
@@ -82,7 +82,7 @@ export abstract class BaseType<
 
 		return this.and(
 			// TODO: not an intersection
-			this.$.parse("intersection", {
+			this.$.parseSchema("intersection", {
 				[kind]: constraint
 			})
 		) as never
@@ -112,10 +112,10 @@ export abstract class BaseType<
 	or<r extends TypeNode>(
 		r: r
 	): Node<"union" | d["kind"] | r["kind"], t | r["infer"]> {
-		return this.$.parseSchemaBranches(
-			...this.branches,
-			...(r.branches as any)
-		) as never
+		const branches = [...this.branches, ...(r.branches as any)]
+		return branches.length === 1
+			? branches[0]
+			: (this.$.parseSchema("union", { branches }) as never)
 	}
 
 	isUnknown(): this is IntersectionNode<unknown> {

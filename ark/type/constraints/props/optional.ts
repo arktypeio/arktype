@@ -55,7 +55,7 @@ export class OptionalNode extends BaseConstraint<
 					}
 					const key = l.key
 					const value = l.value.intersect(r.value)
-					return l.$.parse("optional", {
+					return l.$.parseSchema("optional", {
 						key,
 						value:
 							value instanceof Disjoint

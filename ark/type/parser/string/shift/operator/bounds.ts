@@ -1,6 +1,6 @@
 import { isKeyOf, throwParseError, type keySet } from "@arktype/util"
 import type { TypeNode } from "../../../../base.js"
-import { nodes } from "../../../../builtins/builtins.js"
+import { keywords } from "../../../../builtins/ark.js"
 import type { LimitLiteral } from "../../../../constraints/ast.js"
 import {
 	writeUnboundableMessage,
@@ -114,7 +114,7 @@ export const getBoundKinds = (
 	limit: LimitSchemaValue,
 	root: TypeNode
 ): BoundKind[] => {
-	if (root.extends(nodes.number)) {
+	if (root.extends(keywords.number)) {
 		if (typeof limit !== "number") {
 			return throwParseError(writeLimitMismatchMessage(root.toString(), limit))
 		}
@@ -124,7 +124,7 @@ export const getBoundKinds = (
 			? ["min"]
 			: ["max"]
 	}
-	if (root.extends(nodes.string) || root.extends(nodes.Array)) {
+	if (root.extends(keywords.string) || root.extends(keywords.Array)) {
 		if (typeof limit !== "number") {
 			return throwParseError(writeLimitMismatchMessage(root.toString(), limit))
 		}

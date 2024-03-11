@@ -25,8 +25,8 @@ describe("type references", () => {
 		const $ = scope({ a })
 		const types = $.export()
 		attest(types.a.json).equals(type({ a: "string" }).json)
-		attest(a.scope).is(ark)
-		attest(types.a.scope).is($)
+		attest(a.$).is(ark)
+		attest(types.a.$).is($)
 		attest<{ a: string }>(types.a.infer)
 	})
 

@@ -137,7 +137,7 @@ export class UnionNode<t = unknown> extends BaseType<
 					if (resultBranches instanceof Disjoint) {
 						return resultBranches
 					}
-					return l.$.parse(
+					return l.$.parseSchema(
 						"union",
 						l.ordered || r.ordered
 							? {
@@ -155,7 +155,7 @@ export class UnionNode<t = unknown> extends BaseType<
 					if (branches.length === 1) {
 						return branches[0]
 					}
-					return $.parse(
+					return $.parseSchema(
 						"union",
 						l.ordered ? { branches, ordered: true } : { branches }
 					)

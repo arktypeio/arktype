@@ -1,8 +1,9 @@
+import { schema } from "../schema.js"
 import { Scope, type rootResolutions } from "../scope.js"
 
 export namespace JsObjects {
 	export interface exports {
-		Array: Array<unknown>
+		Array: unknown[]
 		Function: Function
 		Date: Date
 		Error: Error
@@ -19,22 +20,18 @@ export namespace JsObjects {
 	export type infer = (typeof JsObjects)["infer"]
 }
 
-export const JsObjects: Scope<{
-	exports: JsObjects.resolutions
-	locals: {}
-	ambient: {}
-}> = Scope.root.scope(
+export const JsObjects: Scope<JsObjects.resolutions> = Scope.root.scope(
 	{
-		Array,
-		Function,
-		Date,
-		Error,
-		Map,
-		RegExp,
-		Set,
-		WeakMap,
-		WeakSet,
-		Promise
+		Array: schema(Array),
+		Function: schema(Function),
+		Date: schema(Date),
+		Error: schema(Error),
+		Map: schema(Map),
+		RegExp: schema(RegExp),
+		Set: schema(Set),
+		WeakMap: schema(WeakMap),
+		WeakSet: schema(WeakSet),
+		Promise: schema(Promise)
 	},
 	{ prereducedAliases: true }
 )

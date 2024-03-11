@@ -30,7 +30,7 @@ export class MaxLengthNode extends BaseRange<
 				minLength: (max, min, $) =>
 					max.overlapsRange(min)
 						? max.overlapIsUnit(min)
-							? $.parse("length", { rule: max.rule })
+							? $.parseScema("length", { rule: max.rule })
 							: null
 						: Disjoint.from("range", max, min)
 			}

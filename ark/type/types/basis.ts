@@ -11,10 +11,10 @@ import type { Schema } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { TraverseApply } from "../shared/context.js"
 import type { BasisKind } from "../shared/implement.js"
-import type { DomainNode, DomainSchema } from "./domain.js"
-import type { ProtoNode, ProtoSchema } from "./proto.js"
+import type { DomainSchema } from "./domain.js"
+import type { ProtoSchema } from "./proto.js"
 import { BaseType, type BaseTypeDeclaration } from "./type.js"
-import type { UnitNode, UnitSchema } from "./unit.js"
+import type { UnitSchema } from "./unit.js"
 
 export type BaseBasisDeclaration = evaluate<
 	BaseTypeDeclaration & { kind: BasisKind }
@@ -41,18 +41,18 @@ export abstract class BaseBasis<
 	}
 }
 
-export type instantiateBasis<def extends Schema<BasisKind>> =
+export type inferBasis<def extends Schema<BasisKind>> =
 	//allow any to be used to access all constraints
 	isAny<def> extends true
 		? any
 		: def extends NonEnumerableDomain
-		? DomainNode<inferDomain<def>>
+		? inferDomain<def>
 		: def extends Constructor<infer instance>
-		? ProtoNode<instance>
+		? instance
 		: def extends DomainSchema<infer domain>
-		? DomainNode<inferDomain<domain>>
+		? inferDomain<domain>
 		: def extends ProtoSchema<infer proto>
-		? ProtoNode<instanceOf<proto>>
+		? instanceOf<proto>
 		: def extends UnitSchema<infer is>
-		? UnitNode<is>
+		? is
 		: never

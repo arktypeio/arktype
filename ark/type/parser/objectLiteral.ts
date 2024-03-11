@@ -31,7 +31,7 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): TypeNode => {
 		// remove the spread entry so we can iterate over the remaining entries
 		// expecting non-spread entries
 		const spreadEntry = parsedEntries.shift()!
-		const spreadNode = ctx.scope.parse(spreadEntry.value, ctx)
+		const spreadNode = ctx.$.parse(spreadEntry.value, ctx)
 
 		if (
 			spreadNode.kind !== "intersection" ||
@@ -72,7 +72,7 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): TypeNode => {
 					: entry.inner
 			}`
 		)
-		const value = ctx.scope.parse(entry.value, ctx)
+		const value = ctx.$.parse(entry.value, ctx)
 		const inner: Inner<"required" | "optional"> = {
 			key: entry.inner,
 			value

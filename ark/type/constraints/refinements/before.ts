@@ -30,7 +30,7 @@ export class BeforeNode
 				after: (before, after, $) =>
 					before.overlapsRange(after)
 						? before.overlapIsUnit(after)
-							? $.parse("unit", { unit: before.dateLimit })
+							? $.parseScema("unit", { unit: before.dateLimit })
 							: null
 						: Disjoint.from("range", before, after)
 			}

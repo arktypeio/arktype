@@ -47,7 +47,7 @@ const intersectNamed: ConstraintIntersection<
 	if (value instanceof Disjoint) {
 		return value.withPrefixKey(l.compiledKey)
 	}
-	return $.parse("required", {
+	return $.parseScema("required", {
 		key,
 		value
 	})

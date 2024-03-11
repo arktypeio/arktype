@@ -3,8 +3,8 @@
 	"editor.codeActionsOnSave": [
 		"editor.formatOnSave",
 		"source.fixAll.eslint",
-		"source.sortImports",
-		"source.addMissingImports"
+		"source.addMissingImports",
+		"source.sortImports"
 	],
 	"eslint.codeActionsOnSave.rules": [
 		"object-shorthand",

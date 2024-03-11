@@ -17,7 +17,7 @@ import {
 	type requiredKeyOf
 } from "@arktype/util"
 import { isNode, type TypeNode } from "../base.js"
-import { schema, type type } from "../builtins/ark.js"
+import { type type } from "../builtins/ark.js"
 import type { of } from "../constraints/ast.js"
 import type { regex } from "../constraints/refinements/regex.js"
 import type { ParseContext } from "../scope.js"
@@ -50,7 +50,10 @@ export const parseObject = (def: object, ctx: ParseContext): TypeNode => {
 		case "Array":
 			return parseTuple(def as List, ctx)
 		case "RegExp":
-			return schema({ domain: "string", regex: def as RegExp })
+			return ctx.$.parsePrereducedSchema("intersection", {
+				domain: "string",
+				regex: def as RegExp
+			})
 		case "Function":
 			const resolvedDef = isThunk(def) ? def() : def
 			if (resolvedDef instanceof Type) {

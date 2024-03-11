@@ -206,11 +206,11 @@ export class SequenceNode extends BaseConstraint<
 					return viableBranches.length === 0
 						? rootState.disjoint!
 						: viableBranches.length === 1
-						? $.parse(
+						? $.parseScema(
 								"sequence",
 								sequenceTupleToInner(viableBranches[0].result)
 						  )
-						: $.parse(
+						: $.parseScema(
 								"union",
 								viableBranches.map((state) => ({
 									proto: Array,
@@ -235,14 +235,16 @@ export class SequenceNode extends BaseConstraint<
 	readonly minLength =
 		this.prefix.length + this.minVariadicLength + this.postfix.length
 	readonly minLengthNode =
-		this.minLength === 0 ? undefined : this.$.parse("minLength", this.minLength)
+		this.minLength === 0
+			? undefined
+			: this.$.parseScema("minLength", this.minLength)
 	readonly maxLength = this.variadic
 		? undefined
 		: this.minLength + this.optionals.length
 	readonly maxLengthNode =
 		this.maxLength === undefined
 			? undefined
-			: this.$.parse("maxLength", this.maxLength)
+			: this.$.parseScema("maxLength", this.maxLength)
 	readonly impliedSiblings = this.minLengthNode
 		? this.maxLengthNode
 			? [this.minLengthNode, this.maxLengthNode]

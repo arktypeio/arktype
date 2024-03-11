@@ -1,3 +1,4 @@
+import { JsObjects } from "../../builtins/jsObjects.js"
 import type { nodeImplementationOf } from "../../shared/implement.js"
 import {
 	BaseRange,
@@ -30,7 +31,7 @@ export class AfterNode
 		})
 
 	readonly dateLimit = new Date(this.rule)
-	readonly impliedBasis = this.$.jsObjects.Date
+	readonly impliedBasis = JsObjects.Date
 
 	traverseAllows = this.exclusive
 		? (data: Date) => +data > this.numericLimit

@@ -1,10 +1,5 @@
 import type { MatchParser } from "../match.js"
-import {
-	Scope,
-	type Module,
-	type SchemaParser,
-	type ScopeParser
-} from "../scope.js"
+import { Scope, type Module, type ScopeParser } from "../scope.js"
 import type { inferred } from "../shared/inference.js"
 import type {
 	DeclarationParser,
@@ -57,12 +52,12 @@ export const tsGenerics = {} as Module<TsGenericsResolutions>
 
 export const ark: Scope<ArkResolutions> = Scope.root
 	.scope({
-		...TsKeywords.resolutions,
-		...JsObjects.resolutions,
-		...Validation.resolutions,
+		...TsKeywords.export(),
+		...JsObjects.export(),
+		...Validation.export(),
 		// TODO: fix
 		...tsGenerics,
-		parse: Parsing.resolutions as {} as Module<ParsingResolutions>
+		parse: Parsing.export()
 	})
 	.toAmbient() as never
 
@@ -90,8 +85,6 @@ export namespace type {
 		[inferred]?: to
 	}
 }
-
-export const schema: SchemaParser<Ark> = ark.schema
 
 export const define: DefinitionParser<Ark> = ark.define
 

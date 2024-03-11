@@ -107,10 +107,10 @@ const intersectionChildKeyParser =
 				return
 			}
 			return input
-				.map((schema) => ctx.$.parse(kind, schema as never))
+				.map((schema) => ctx.$.parseSchema(kind, schema as never))
 				.sort((l, r) => (l.innerId < r.innerId ? -1 : 1)) as never
 		}
-		const node = ctx.$.parse(kind, input)
+		const node = ctx.$.parseSchema(kind, input)
 		return node.intersectionIsOpen ? [node] : (node as any)
 	}
 

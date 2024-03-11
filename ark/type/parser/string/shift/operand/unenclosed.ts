@@ -10,7 +10,7 @@ import {
 	type NumberLiteral
 } from "@arktype/util"
 import type { TypeNode } from "../../../../base.js"
-import { schema } from "../../../../builtins/builtins.js"
+import { schema } from "../../../../schema.js"
 import type { Module } from "../../../../scope.js"
 import type { Generic, GenericProps } from "../../../../type.js"
 import { BaseType } from "../../../../types/type.js"
@@ -118,7 +118,7 @@ const maybeParseReference = (
 	if (s.ctx.args?.[token]) {
 		return s.ctx.args[token]
 	}
-	const resolution = s.ctx.scope.maybeResolve(token)
+	const resolution = s.ctx.$.maybeResolve(token)
 	if (resolution instanceof BaseType) {
 		return resolution
 	}
@@ -137,11 +137,11 @@ const maybeParseUnenclosedLiteral = (
 ): TypeNode | undefined => {
 	const maybeNumber = tryParseNumber(token, { strict: true })
 	if (maybeNumber !== undefined) {
-		return schema({ unit: maybeNumber })
+		return s.ctx.$.parseUnits(maybeNumber)
 	}
 	const maybeBigint = tryParseWellFormedBigint(token)
 	if (maybeBigint !== undefined) {
-		return schema({ unit: maybeBigint })
+		return s.ctx.$.parseUnits(maybeBigint)
 	}
 }
 

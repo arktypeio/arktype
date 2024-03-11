@@ -40,8 +40,8 @@ export class LengthNode extends BasePrimitiveConstraint<
 				new Disjoint({
 					"[length]": {
 						unit: {
-							l: l.$.parse("unit", { unit: l.rule }),
-							r: r.$.parse("unit", { unit: r.rule })
+							l: l.$.parseScema("unit", { unit: l.rule }),
+							r: r.$.parseScema("unit", { unit: r.rule })
 						}
 					}
 				}),

@@ -15,11 +15,10 @@ import {
 	type nominal,
 	type requireKeys
 } from "@arktype/util"
-import type { Node, TypeNode } from "./base.js"
-import type { type } from "./builtins/ark.js"
+import type { Node, TypeNode, TypeSchema } from "./base.js"
+import { keywords, type type } from "./builtins/ark.js"
 import { globalConfig } from "./config.js"
 import type { LengthBoundableData } from "./constraints/refinements/range.js"
-import type { inferSchemaBranch, validateSchemaBranch } from "./inference.js"
 import { nodesByKind, type Schema, type reducibleKindOf } from "./kinds.js"
 import { createMatchParser, type MatchParser } from "./match.js"
 import { parseAttachments, type SchemaParseOptions } from "./parse.js"
@@ -41,6 +40,7 @@ import {
 	writeUnresolvableMessage
 } from "./parser/string/shift/operand/unenclosed.js"
 import { fullStringParse } from "./parser/string/string.js"
+import type { validateSchema } from "./schema.js"
 import { NodeCompiler } from "./shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "./shared/context.js"
 import type {
@@ -72,11 +72,7 @@ import {
 } from "./types/intersection.js"
 import type { extractIn, extractOut } from "./types/morph.js"
 import { BaseType } from "./types/type.js"
-import type {
-	NormalizedUnionSchema,
-	UnionChildKind,
-	UnionNode
-} from "./types/union.js"
+import type { UnionNode } from "./types/union.js"
 import type { UnitNode } from "./types/unit.js"
 import { addArkKind, hasArkKind, type arkKind } from "./util.js"
 
@@ -356,7 +352,7 @@ export type rootResolutions<exports> = {
 export type ParseContext = {
 	baseName: string
 	path: string[]
-	scope: Scope
+	$: Scope
 	args: Record<string, TypeNode> | undefined
 }
 
@@ -385,6 +381,22 @@ export class Scope<r extends Resolutions = any> {
 
 	constructor(def: Dict, config?: ArkConfig) {
 		this.config = parseConfig(config)
+		for (const k in def) {
+			const parsedKey = parseScopeKey(k)
+			this.aliases[parsedKey.name] = parsedKey.params.length
+				? generic(parsedKey.params, def[k], this)
+				: def[k]
+			if (!parsedKey.isLocal) {
+				this.exportedNames.push(parsedKey.name as never)
+			}
+		}
+		if (this.config.ambient) {
+			// ensure exportedResolutions is populated
+			this.config.ambient.export()
+			this.resolutions = { ...this.config.ambient.exportedResolutions! }
+		} else {
+			this.resolutions = {}
+		}
 		this.references = Object.values(this.referencesByName)
 		this.bindCompiledScope(this.references)
 		this.resolved = true
@@ -409,22 +421,6 @@ export class Scope<r extends Resolutions = any> {
 			"string",
 			Array
 		])
-		for (const k in def) {
-			const parsedKey = parseScopeKey(k)
-			this.aliases[parsedKey.name] = parsedKey.params.length
-				? generic(parsedKey.params, def[k], this)
-				: def[k]
-			if (!parsedKey.isLocal) {
-				this.exportedNames.push(parsedKey.name as never)
-			}
-		}
-		if (this.config.ambient) {
-			// ensure exportedResolutions is populated
-			this.config.ambient.export()
-			this.resolutions = { ...this.config.ambient.exportedResolutions! }
-		} else {
-			this.resolutions = {}
-		}
 	}
 
 	static root: Scope<{
@@ -474,7 +470,7 @@ export class Scope<r extends Resolutions = any> {
 	private createRootContext(input: ParseContextInput): ParseContext {
 		return {
 			path: [],
-			scope: this,
+			$: this,
 			...input
 		}
 	}
@@ -579,7 +575,7 @@ export class Scope<r extends Resolutions = any> {
 
 	bindThis(): { this: IntersectionNode } {
 		// TODO: fix
-		return { this: builtins.resolutions.unknown } as never
+		return { this: keywords.unknown } as never
 	}
 
 	private exportedResolutions: MergedResolutions | undefined
@@ -657,6 +653,12 @@ export class Scope<r extends Resolutions = any> {
 		return opts.root
 			? (this.parseRootSchema(kind, schema as never, opts) as never)
 			: (this.parseSchema(kind, schema as never, opts) as never)
+	}
+
+	parseSchemaBranches(...branches: TypeSchema[]): TypeNode {
+		return branches.length === 1
+			? this.parseTypeSchema(branches[0])
+			: this.parseSchema("union", { branches })
 	}
 
 	parseRootSchema<kind extends NodeKind>(
