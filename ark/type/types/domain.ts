@@ -1,4 +1,5 @@
 import {
+	compose,
 	domainDescriptions,
 	domainOf,
 	type NonEnumerableDomain
@@ -6,6 +7,10 @@ import {
 import { jsData } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
+import {
+	PrimitiveNode,
+	type PrimitiveAttachments
+} from "../shared/implement.js"
 import { BaseBasis } from "./basis.js"
 
 export interface DomainInner<
@@ -29,6 +34,7 @@ export type DomainDeclaration = declareNode<{
 	normalizedSchema: NormalizedDomainSchema
 	inner: DomainInner
 	errorContext: DomainInner
+	attachments: PrimitiveAttachments<DomainDeclaration>
 }>
 
 export class DomainNode<t = any> extends BaseBasis<

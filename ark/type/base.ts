@@ -41,10 +41,10 @@ import {
 	type TraverseApply
 } from "./shared/context.js"
 import type {
+	BaseAttachmentsOf,
 	BaseErrorContext,
 	BaseMeta,
-	BaseNodeDeclaration,
-	attachmentsOf
+	BaseNodeDeclaration
 } from "./shared/declare.js"
 import { Disjoint } from "./shared/disjoint.js"
 import type { ArkResult } from "./shared/errors.js"
@@ -135,7 +135,7 @@ export abstract class BaseNode<
 	subclass extends NodeSubclass<d>
 > extends Callable<
 	(data: unknown) => ArkResult<distill<extractOut<t>>>,
-	attachmentsOf<d>
+	BaseAttachmentsOf<d>
 > {
 	declare infer: d["prerequisite"]
 

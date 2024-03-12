@@ -1,5 +1,10 @@
 import type { evaluate, merge } from "@arktype/util"
-import type { NarrowedAttachments, Node } from "../base.js"
+import type {
+	BaseAttachments,
+	BaseAttachments,
+	NarrowedAttachments,
+	Node
+} from "../base.js"
 import type { reducibleKindOf } from "../kinds.js"
 import type { Disjoint } from "./disjoint.js"
 import type { NodeKind } from "./implement.js"
@@ -12,11 +17,16 @@ export const metaKeys: { [k in keyof BaseMeta]: 1 } = { description: 1 }
 
 export type NodeCompositionKind = "primitive" | "composite"
 
+export interface ImplementedAttachments {
+	readonly description: string
+}
+
 interface DeclarationInput {
 	kind: NodeKind
 	schema: unknown
 	normalizedSchema: BaseMeta
 	inner: BaseMeta
+	attachments: ImplementedAttachments
 	reducibleTo?: NodeKind
 	intersectionIsOpen?: true
 	errorContext?: object
@@ -58,7 +68,7 @@ type prerequisiteOf<d extends DeclarationInput> = "prerequisite" extends keyof d
 	? d["prerequisite"]
 	: unknown
 
-export type attachmentsOf<d extends BaseNodeDeclaration> =
+export type BaseAttachmentsOf<d extends BaseNodeDeclaration> =
 	NarrowedAttachments<d> & d["inner"]
 
 export type BaseNodeDeclaration = {
@@ -71,6 +81,7 @@ export type BaseNodeDeclaration = {
 	intersectionIsOpen: boolean
 	childKind: NodeKind
 	errorContext: BaseErrorContext | null
+	attachments: ImplementedAttachments
 }
 
 export type ownIntersectionResult<d extends BaseNodeDeclaration> =

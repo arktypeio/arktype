@@ -1,6 +1,9 @@
 import {
+	Trait,
+	capitalize,
 	compileSerializedValue,
 	morph,
+	printable,
 	type ErrorMessage,
 	type JsonData,
 	type entryOf,
@@ -9,16 +12,35 @@ import {
 	type listable,
 	type requireKeys
 } from "@arktype/util"
-import type { Node, TypeNode, UnknownNode } from "../base.js"
+import type {
+	BaseAttachments,
+	NarrowedAttachments,
+	Node,
+	NodeSubclass,
+	TypeNode,
+	UnknownNode
+} from "../base.js"
+import {
+	BaseConstraint,
+	type BaseConstraintDeclaration
+} from "../constraints/constraint.js"
 import { boundKinds } from "../constraints/refinements/shared.js"
 import type { Declaration, Inner, errorContext } from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
 import type { NodeConfig, ParsedUnknownNodeConfig, Scope } from "../scope.js"
 import type { typeKindOrRightOf, typeKindRightOf } from "../types/type.js"
+import type { NodeCompiler } from "./compile.js"
+import {
+	pathToPropString,
+	type TraverseAllows,
+	type TraverseApply
+} from "./context.js"
 import type {
+	BaseAttachmentsOf,
 	BaseErrorContext,
 	BaseMeta,
-	BaseNodeDeclaration
+	BaseNodeDeclaration,
+	ImplementedAttachments
 } from "./declare.js"
 import type { Disjoint } from "./disjoint.js"
 
@@ -227,6 +249,95 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 		inner: d["inner"],
 		$: Scope
 	) => Node<d["reducibleTo"]> | Disjoint | undefined
+	attach: (base: BaseAttachmentsOf<d>) => d["attachments"]
+}
+
+export const implement = <d extends BaseNodeDeclaration>(
+	_: nodeImplementationInputOf<d>
+): nodeImplementationOf<d> => {
+	const implementation: UnknownNodeImplementation = _ as never
+	if (implementation.hasAssociatedError) {
+		implementation.defaults.expected ??= (ctx) =>
+			"description" in ctx
+				? (ctx.description as string)
+				: implementation.defaults.description(ctx)
+		implementation.defaults.actual ??= (data) => printable(data)
+		implementation.defaults.problem ??= (ctx) =>
+			`must be ${ctx.expected}${ctx.actual ? ` (was ${ctx.actual})` : ""}`
+		implementation.defaults.message ??= (ctx) => {
+			if (ctx.path.length === 0) {
+				return capitalize(ctx.problem)
+			}
+			const problemWithLocation = `${pathToPropString(ctx.path)} ${ctx.problem}`
+			if (problemWithLocation[0] === "[") {
+				// clarify paths like [1], [0][1], and ["key!"] that could be confusing
+				return `Value at ${problemWithLocation}`
+			}
+			return problemWithLocation
+		}
+	}
+	return implementation as never
+}
+
+export interface ImplementedPrimitiveAttachments<d extends BaseNodeDeclaration>
+	extends ImplementedAttachments {
+	traverseAllows: TraverseAllows<d["prerequisite"]>
+	readonly compiledCondition: string
+	readonly compiledNegation: string
+	readonly errorContext: d["errorContext"]
+}
+
+export interface DerivedPrimitiveAttachments<d extends BaseNodeDeclaration> {
+	traverseApply: TraverseApply<d["prerequisite"]>
+	compile(js: NodeCompiler): void
+}
+
+export const derivePrimitiveAttachments =
+	<
+		d extends BaseNodeDeclaration,
+		attachments extends ImplementedPrimitiveAttachments<d>
+	>(
+		attach: (base: BaseAttachmentsOf<d>) => attachments
+	) =>
+	(
+		base: BaseAttachmentsOf<d>
+	): evaluate<attachments & DerivedPrimitiveAttachments<d>> => {
+		const self = Object.assign(base, attach(base))
+		return Object.assign(self, {
+			traverseApply: (data, ctx) => {
+				if (!self.traverseAllows(data, ctx)) {
+					ctx.error(self.description)
+				}
+			},
+			compile(js) {
+				js.compilePrimitive(self as never)
+			}
+		} satisfies DerivedPrimitiveAttachments<d>)
+	}
+
+export const deriveDefaultErrorContext = <d extends BaseNodeDeclaration>(
+	base: BaseAttachmentsOf<d>
+): d["errorContext"] => {
+	return Object.freeze({
+		code: base.kind,
+		description: base.description,
+		...base.inner
+	}) as never
+}
+
+export class PrimitiveNode<d extends BaseNodeDeclaration> extends Trait<
+	ImplementedPrimitiveAttachments<d>,
+	BaseAttachmentsOf<d>
+> {
+	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
+		if (!this.traverseAllows(data, ctx)) {
+			ctx.error(this.description)
+		}
+	}
+
+	compile(js: NodeCompiler) {
+		js.compilePrimitive(this as never)
+	}
 }
 
 export interface UnknownNodeImplementation
@@ -235,6 +346,7 @@ export interface UnknownNodeImplementation
 	intersectionIsOpen: boolean
 	intersections: UnknownIntersectionMap
 	keys: Record<string, NodeKeyImplementation<any, any>>
+	attach: (base: BaseAttachments) => ImplementedAttachments
 }
 
 export type nodeImplementationOf<d extends BaseNodeDeclaration> =

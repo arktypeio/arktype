@@ -5,6 +5,7 @@ import {
 } from "@arktype/util"
 import {
 	BaseNode,
+	type BaseAttachments,
 	type ConstraintNode,
 	type Node,
 	type NodeSubclass,
@@ -13,12 +14,18 @@ import {
 import type { Prerequisite } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../shared/context.js"
-import type { BaseMeta, BaseNodeDeclaration } from "../shared/declare.js"
+import type {
+	BaseMeta,
+	BaseNodeDeclaration,
+	ImplementedAttachments
+} from "../shared/declare.js"
 import type { Disjoint } from "../shared/disjoint.js"
 import type {
 	ConstraintKind,
 	PropKind,
-	kindLeftOf
+	kindLeftOf,
+	nodeImplementationInputOf,
+	nodeImplementationOf
 } from "../shared/implement.js"
 
 export type constraintKindLeftOf<kind extends ConstraintKind> = ConstraintKind &
@@ -30,10 +37,6 @@ export type constraintKindOrLeftOf<kind extends ConstraintKind> =
 
 export interface PrimitiveConstraintInner<rule = unknown> extends BaseMeta {
 	readonly rule: rule
-}
-
-export interface BaseConstraintDeclaration extends BaseNodeDeclaration {
-	kind: ConstraintKind
 }
 
 type intersectConstraintKinds<
@@ -68,6 +71,15 @@ export type writeInvalidOperandMessage<
 	Prerequisite<kind>
 >} (was ${describeExpression<actual["infer"]>})`
 
+export interface ConstraintAttachments extends ImplementedAttachments {
+	readonly impliedBasis: TypeNode | undefined
+}
+
+export interface BaseConstraintDeclaration extends BaseNodeDeclaration {
+	kind: ConstraintKind
+	attachments: ConstraintAttachments
+}
+
 export abstract class BaseConstraint<
 	d extends BaseConstraintDeclaration,
 	subclass extends NodeSubclass<d>
@@ -87,6 +99,22 @@ export abstract class BaseConstraint<
 	): intersectConstraintKinds<d["kind"], r["kind"]> {
 		return this.intersectInternal(r) as never
 	}
+}
+
+export interface PrimitiveConstraintAttachments<
+	d extends
+		BasePrimitiveConstraintDeclaration = BasePrimitiveConstraintDeclaration
+> extends ConstraintAttachments {
+	readonly impliedBasis: TypeNode | undefined
+	traverseAllows: TraverseAllows<d["prerequisite"]>
+	readonly compiledCondition: string
+	readonly compiledNegation: string
+	readonly errorContext: d["errorContext"]
+}
+
+export interface BasePrimitiveConstraintDeclaration
+	extends BaseNodeDeclaration {
+	attachments: PrimitiveConstraintAttachments
 }
 
 export type PrimitiveConstraintKind = Exclude<ConstraintKind, PropKind>
