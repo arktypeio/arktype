@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import { Trait, compose } from "@arktype/util"
+import { Trait, compose, implement } from "@arktype/util"
 
 export class Describable extends Trait<{
 	writeDefaultDescription(): string
@@ -27,7 +27,7 @@ export class Boundable<data> extends Trait<{ sizeOf(data: data): number }> {
 
 describe("traits", () => {
 	it("compose", () => {
-		class StringChecker extends compose(Describable, Boundable<string>, {
+		class StringChecker extends implement(Describable, Boundable<string>, {
 			writeDefaultDescription: () => "foo",
 			sizeOf: (data: string) => data.length
 		}) {}
@@ -68,7 +68,7 @@ describe("traits", () => {
 				return "foo"
 			}
 		}
-		class Bar extends compose(Foo)({
+		class Bar extends implement(Foo, {
 			sizeOf: (data: number) => data
 		}) {}
 		const b = new Bar({ limit: 2 })
@@ -87,7 +87,7 @@ describe("traits", () => {
 
 			readonly b = "b"
 		}
-		class C extends compose(A, B)({}) {
+		class C extends compose(A, B) {
 			static readonly c = "c"
 
 			readonly c = "c"
@@ -109,13 +109,13 @@ describe("traits", () => {
 		class B extends Trait {
 			readonly b = "b"
 		}
-		class C extends compose(A, B)({}) {
+		class C extends compose(A, B) {
 			readonly c = "c"
 		}
 		class D extends Trait {
 			readonly d = "d"
 		}
-		class E extends compose(C, D)({}) {
+		class E extends compose(C, D) {
 			readonly e = "e"
 		}
 		const e = new E()
@@ -131,7 +131,7 @@ describe("traits", () => {
 		class A extends Trait<{ a(): number }> {}
 		class B extends Trait<{ b(): number }> {}
 		// @ts-expect-error
-		attest(class C extends compose(A, B)({}) {}).type.errors(
+		attest(class C extends implement(A, B, {}) {}).type.errors(
 			"Type '{}' is missing the following properties from type '{ a: () => number; b: () => number; }': a, b"
 		)
 	})

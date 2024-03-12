@@ -1,13 +1,31 @@
 import { hasDomain } from "./domain.js"
-import type { conform } from "./generics.js"
+import type { conform, evaluate, satisfy } from "./generics.js"
 import type { intersectParameters } from "./intersections.js"
 import type { List } from "./lists.js"
 import { ancestorsOf, type Constructor } from "./objectKinds.js"
 import { NoopBase, type override } from "./records.js"
 
+export type TraitImplementation = <
+	traits extends TraitConstructor[],
+	implementation extends implementationOf<s>,
+	s extends CompositionState = composeTraits<
+		[...traits, implementation],
+		"implementation"
+	>,
+	cls extends TraitConstructor = TraitConstructor<
+		s["params"],
+		s["implemented"],
+		s["statics"],
+		s["abstractMethods"],
+		s["abstractProps"]
+	>
+>(
+	...args: [...traits, implementation & ThisType<InstanceType<cls>>]
+) => cls
+
 export type TraitComposition = <
-	traits extends unknown[],
-	s extends CompositionState = compose<traits>
+	traits extends TraitConstructor[],
+	s extends CompositionState = composeTraits<traits, "abstract">
 >(
 	...traits: conform<traits, s["validated"]>
 ) => TraitConstructor<
@@ -68,7 +86,7 @@ const collectPrototypeDescriptors = (trait: TraitConstructor) => {
 	return result
 }
 
-export const compose: TraitComposition = (...traits: TraitConstructor[]) => {
+export const compose: TraitComposition = ((...traits: TraitConstructor[]) => {
 	const base: any = function (this: Trait, ...args: any[]) {
 		for (const trait of traits) {
 			const instance = Reflect.construct(trait, args, this.constructor)
@@ -97,9 +115,21 @@ export const compose: TraitComposition = (...traits: TraitConstructor[]) => {
 		value: flatImplementedTraits,
 		enumerable: false
 	})
+	return base as never
+}) as TraitComposition
+
+export const implement: TraitImplementation = (...args) => {
+	if (args.at(-1) instanceof Trait) {
+		return compose(...(args as never)) as never
+	}
+	const implementation = args.at(-1)
+	const base = compose(...(args.slice(0, -1) as never))
 	// copy implementation last since it overrides traits
-	Object.defineProperties(base.prototype, Object.getOwnPropertyDescriptors({}))
-	return base
+	Object.defineProperties(
+		base.prototype,
+		Object.getOwnPropertyDescriptors(implementation)
+	)
+	return base as never
 }
 
 export type TraitConstructor<
@@ -112,18 +142,25 @@ export type TraitConstructor<
 	(new (...args: params) => Trait<abstractMethods, abstractProps> & instance)
 
 type CompositionState = {
-	validated: unknown[]
-	remaining: unknown[]
+	validated: List
+	remaining: List
 	params: List
+	kind: TraitCompositionKind
 	implemented: object
 	abstractMethods: object
 	abstractProps: object
 	statics: object
 }
 
-export type compose<traits extends unknown[]> = composeRecurse<{
+export type TraitCompositionKind = "abstract" | "implementation"
+
+export type composeTraits<
+	traits extends List,
+	kind extends TraitCompositionKind
+> = composeRecurse<{
 	validated: []
 	remaining: traits
+	kind: kind
 	params: []
 	implemented: {}
 	abstractMethods: {}
@@ -156,6 +193,7 @@ type composeRecurse<s extends CompositionState> =
 		? composeRecurse<{
 				validated: [...s["validated"], s["remaining"][0]]
 				remaining: tail
+				kind: s["kind"]
 				params: intersectParameters<s["params"], params>
 				implemented: intersectImplementations<
 					s["implemented"],
@@ -171,11 +209,35 @@ type composeRecurse<s extends CompositionState> =
 				>
 				statics: intersectImplementations<s["statics"], statics>
 		  }>
+		: s["kind"] extends "abstract"
+		? evaluateState<s>
 		: {} extends s["abstractMethods"] & s["abstractProps"]
-		? s
+		? evaluateState<s>
 		: override<
-				s,
+				evaluateState<s>,
 				{
-					validated: [...s["validated"], s["abstractMethods"]]
+					validated: [...s["validated"], implementationOf<s>]
 				}
 		  >
+
+type evaluateState<s extends CompositionState> = satisfy<
+	CompositionState,
+	{
+		params: s["params"]
+		validated: s["validated"]
+		remaining: s["remaining"]
+		kind: s["kind"]
+		abstractMethods: evaluate<s["abstractMethods"]>
+		abstractProps: evaluate<s["abstractProps"]>
+		implemented: evaluate<s["implemented"]>
+		statics: evaluate<s["statics"]>
+	}
+>
+
+export type implementationOf<s extends CompositionState> =
+	s["abstractMethods"] &
+		({} extends s["abstractProps"]
+			? {}
+			: {
+					construct: (params: s["params"]) => s["abstractProps"]
+			  })
