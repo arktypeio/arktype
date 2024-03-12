@@ -1,5 +1,6 @@
 import {
 	Callable,
+	Trait,
 	includes,
 	isArray,
 	morph,
@@ -22,13 +23,7 @@ import type { SequenceNode } from "./constraints/props/sequence.js"
 import type { DivisorNode } from "./constraints/refinements/divisor.js"
 import type { BoundNodesByKind } from "./constraints/refinements/kinds.js"
 import type { RegexNode } from "./constraints/refinements/regex.js"
-import type {
-	Declaration,
-	Inner,
-	Schema,
-	ioKindOf,
-	reducibleKindOf
-} from "./kinds.js"
+import type { Inner, Schema, ioKindOf, reducibleKindOf } from "./kinds.js"
 import type { Scope } from "./scope.js"
 import type { NodeCompiler } from "./shared/compile.js"
 import { type TraverseAllows, type TraverseApply } from "./shared/context.js"
@@ -69,6 +64,7 @@ import type { UnionNode } from "./types/union.js"
 import type { UnitNode } from "./types/unit.js"
 
 export interface BaseAttachments {
+	alias?: string
 	readonly kind: NodeKind
 	readonly name: string
 	readonly inner: Record<string, any>
@@ -80,11 +76,6 @@ export interface BaseAttachments {
 	readonly innerId: string
 	readonly typeId: string
 	readonly $: Scope
-	readonly compile: (js: NodeCompiler) => void
-	readonly expression: string
-	alias?: string
-	traverseAllows: TraverseAllows
-	traverseApply: TraverseApply
 }
 
 export interface NarrowedAttachments<d extends BaseNodeDeclaration>
@@ -103,10 +94,17 @@ export const isNode = (value: unknown): value is Node =>
 
 export type UnknownNode = BaseNode<any>
 
-export abstract class BaseNode<d extends BaseNodeDeclaration> extends Callable<
-	(data: unknown) => ArkResult<distill<extractOut<t>>>,
-	BaseAttachmentsOf<d>
-> {
+export abstract class BaseNode<d extends BaseNodeDeclaration> extends Trait<{
+	abstractMethods: {
+		compile(js: NodeCompiler): void
+	}
+	abstractProps: {
+		readonly expression: string
+		traverseAllows: TraverseAllows
+		traverseApply: TraverseApply
+	}
+	dynamicBase: BaseAttachmentsOf<d>
+}> {
 	protected readonly impl: UnknownNodeImplementation = (this.constructor as any)
 		.implementation
 	readonly includesMorph: boolean =
@@ -125,8 +123,9 @@ export abstract class BaseNode<d extends BaseNodeDeclaration> extends Callable<
 	readonly precedence = precedenceOfKind(this.kind)
 	jit = false
 
-	constructor(attachments: BaseAttachments) {
-		super(attachments as never)
+	constructor(attachments: BaseAttachmentsOf<d>) {
+		super()
+		Object.assign(this, attachments)
 		this.contributesReferencesByName =
 			this.name in this.referencesByName
 				? this.referencesByName

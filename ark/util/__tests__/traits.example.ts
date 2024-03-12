@@ -19,10 +19,14 @@ export class Rectangle extends Trait {
 }
 
 // Pass an object to the generic parameter to declare abstract methods
-export class Rhombus extends Trait<
-	{ calculateArea(): number },
-	{ largestAngle: number }
-> {
+export class Rhombus extends Trait<{
+	abstractMethods: {
+		calculateArea(): number
+	}
+	abstractProps: {
+		largestAngle: number
+	}
+}> {
 	constructor(public side: number) {
 		super()
 	}

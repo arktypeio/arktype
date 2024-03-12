@@ -14,6 +14,7 @@ import {
 } from "@arktype/util"
 import type {
 	BaseAttachments,
+	BaseNode,
 	NarrowedAttachments,
 	Node,
 	NodeSubclass,
@@ -297,10 +298,13 @@ export interface DerivedPrimitiveAttachments<d extends BaseNodeDeclaration> {
 export class PrimitiveNode<
 	d extends BasePrimitiveConstraintDeclaration
 > extends Trait<{
-	traverseAllows: TraverseAllows<d["prerequisite"]>
-	readonly compiledCondition: string
-	readonly compiledNegation: string
-	readonly errorContext: d["errorContext"]
+	abstractProps: {
+		traverseAllows: TraverseAllows<d["prerequisite"]>
+		readonly compiledCondition: string
+		readonly compiledNegation: string
+		readonly errorContext: d["errorContext"]
+	}
+	dynamicBase: BaseNode<d>
 }> {
 	traverseApply: TraverseApply = (data, ctx) => {
 		if (!this.traverseAllows(data, ctx)) {

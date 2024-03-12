@@ -1,9 +1,11 @@
 import {
 	domainDescriptions,
 	domainOf,
+	implement,
 	pipeAssign,
 	type NonEnumerableDomain
 } from "@arktype/util"
+import { BaseNode } from "../base.js"
 import { jsData } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -37,11 +39,23 @@ export type DomainDeclaration = declareNode<{
 	attachments: PrimitiveAttachments<DomainDeclaration>
 }>
 
-export class DomainNode<t = any> extends BaseBasis<
-	t,
-	DomainDeclaration,
-	typeof DomainNode
-> {
+export class DomainNode<t = any> extends implement(BaseNode, PrimitiveNode, {
+	construct: (attachments) => ({
+		traverseAllows: (data: unknown) => domainOf(data) === this.domain,
+		compiledCondition:
+			this.domain === "object"
+				? `((typeof ${jsData} === "object" && ${jsData} !== null) || typeof ${jsData} === "function")`
+				: `typeof ${jsData} === "${this.domain}"`,
+
+		compiledNegation:
+			this.domain === "object"
+				? `((typeof ${jsData} !== "object" || ${jsData} === null) && typeof ${jsData} !== "function")`
+				: `typeof ${jsData} !== "${this.domain}"`,
+
+		errorContext: this.createErrorContext(this.inner),
+		expression: this.domain
+	})
+}) {
 	static implementation = this.implement({
 		hasAssociatedError: true,
 		collapseKey: "domain",
@@ -62,19 +76,4 @@ export class DomainNode<t = any> extends BaseBasis<
 			domain: (l, r) => Disjoint.from("domain", l, r)
 		}
 	})
-
-	traverseAllows = (data: unknown) => domainOf(data) === this.domain
-
-	readonly compiledCondition =
-		this.domain === "object"
-			? `((typeof ${jsData} === "object" && ${jsData} !== null) || typeof ${jsData} === "function")`
-			: `typeof ${jsData} === "${this.domain}"`
-
-	readonly compiledNegation =
-		this.domain === "object"
-			? `((typeof ${jsData} !== "object" || ${jsData} === null) && typeof ${jsData} !== "function")`
-			: `typeof ${jsData} !== "${this.domain}"`
-
-	readonly errorContext = this.createErrorContext(this.inner)
-	readonly expression = this.domain
 }

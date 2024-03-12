@@ -56,11 +56,20 @@ export const hasTrait =
 		return ancestorsOf(o).includes(traitClass)
 	}
 
-// @ts-expect-error allow abstract property access
+export type TraitDeclaration = {
+	abstractMethods?: object
+	abstractProps?: object
+	dynamicBase?: object
+}
+
+// @ts-expect-error
 export abstract class Trait<
-	abstractMethods extends object = {},
-	abstractProps extends object = {}
-> extends NoopBase<abstractMethods & abstractProps> {
+	d extends TraitDeclaration = {},
+	// we have to enumerate these for TS to understand extending their intersection
+	abstractMethods extends object = d["abstractMethods"] & {},
+	abstractProps extends object = d["abstractProps"] & {},
+	dynamicBase extends object = d["dynamicBase"] & {}
+> extends NoopBase<abstractMethods & abstractProps & dynamicBase> {
 	declare abstractMethods: abstractMethods
 	declare abstractProps: abstractProps
 
@@ -139,7 +148,11 @@ export type TraitConstructor<
 	abstractMethods extends object = {},
 	abstractProps extends object = {}
 > = statics &
-	(new (...args: params) => Trait<abstractMethods, abstractProps> & instance)
+	(abstract new (...args: params) => Trait<{
+		abstractMethods: abstractMethods
+		abstractProps: abstractProps
+	}> &
+		instance)
 
 type CompositionState = {
 	validated: List

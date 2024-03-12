@@ -2,7 +2,9 @@ import { attest } from "@arktype/attest"
 import { Trait, compose, implement } from "@arktype/util"
 
 export class Describable extends Trait<{
-	writeDefaultDescription(): string
+	abstractMethods: {
+		writeDefaultDescription(): string
+	}
 }> {
 	description: string
 
@@ -12,7 +14,9 @@ export class Describable extends Trait<{
 	}
 }
 
-export class Boundable<data> extends Trait<{ sizeOf(data: data): number }> {
+export class Boundable<data> extends Trait<{
+	abstractMethods: { sizeOf(data: data): number }
+}> {
 	limit: number | undefined
 
 	constructor(rule: { limit?: number }) {
@@ -128,8 +132,8 @@ describe("traits", () => {
 	})
 
 	it("requires abstract properties be implemented", () => {
-		class A extends Trait<{ a(): number }> {}
-		class B extends Trait<{ b(): number }> {}
+		class A extends Trait<{ abstractMethods: { a(): number } }> {}
+		class B extends Trait<{ abstractMethods: { b(): number } }> {}
 		// @ts-expect-error
 		attest(class C extends implement(A, B, {}) {}).type.errors(
 			"Type '{}' is missing the following properties from type '{ a: () => number; b: () => number; }': a, b"
