@@ -1,97 +1,22 @@
 import { hasDomain } from "./domain.js"
-import type { conform, evaluate } from "./generics.js"
+import type { conform } from "./generics.js"
 import type { intersectParameters } from "./intersections.js"
 import type { List } from "./lists.js"
 import { ancestorsOf, type Constructor } from "./objectKinds.js"
-import { NoopBase, type optionalizeKeys } from "./records.js"
+import { NoopBase, type override } from "./records.js"
 
-export type TraitComposition = <traits extends readonly TraitConstructor[]>(
-	...traits: traits
-) => TraitImplementation<traits, compose<traits>>
-
-type TraitImplementation<
-	traits extends readonly TraitConstructor[],
-	composed extends ComposedTraits
-> = <implementation>(
-	implementation: conform<implementation, baseImplementationOf<composed>> &
-		ThisType<implementation & composed["implemented"]>,
-	...disambiguation: baseDisambiguationOf<
-		traits,
-		implementation,
-		composed
-	> extends infer disambiguation
-		? {} extends disambiguation
-			? []
-			: [disambiguation]
-		: never
-) => TraitsBase<composed, implementation>
-
-type TraitsBase<
-	composed extends ComposedTraits,
-	implementation
-> = composed["statics"] &
-	(new (
-		...args: composed["params"]
-	) => evaluate<
-		intersectImplementations<implementation, composed["implemented"]>
-	>)
-
-type optionalizeSatisfied<base> = optionalizeKeys<
-	base,
-	{
-		[k in keyof base]: undefined extends base[k] ? k : never
-	}[keyof base]
+export type TraitComposition = <
+	traits extends unknown[],
+	s extends CompositionState = compose<traits>
+>(
+	...traits: conform<traits, s["validated"]>
+) => TraitConstructor<
+	s["params"],
+	s["implemented"],
+	s["statics"],
+	s["abstractMethods"],
+	s["abstractProps"]
 >
-
-type baseImplementationOf<composed extends ComposedTraits> =
-	optionalizeSatisfied<{
-		[k in keyof composed["abstracted"]]: k extends keyof composed["implemented"]
-			? composed["implemented"][k] extends composed["abstracted"][k]
-				? composed["implemented"][k] | undefined
-				: composed["implemented"][k]
-			: composed["abstracted"][k]
-	}>
-
-type omitUnambiguous<base> = Omit<
-	base,
-	{
-		[k in keyof base]: undefined extends base[k] ? k : never
-	}[keyof base]
->
-
-type baseDisambiguationOf<
-	traits extends readonly TraitConstructor[],
-	implementation,
-	composed extends ComposedTraits
-> = omitUnambiguous<{
-	[k in keyof composed["implemented"]]: k extends keyof implementation
-		? undefined
-		: k extends keyof Trait
-		? undefined
-		: traitsImplementingKey<traits, k> extends infer implementations extends
-				TraitConstructor[]
-		? implementations["length"] extends 1
-			? undefined
-			: implementations[number]
-		: never
-}>
-
-type traitsImplementingKey<
-	traits extends List,
-	k,
-	result extends unknown[] = []
-> = traits extends readonly [
-	TraitConstructor<any[], infer instance, infer abstracts>,
-	...infer tail
-]
-	? traitsImplementingKey<
-			tail,
-			k,
-			k extends Exclude<keyof instance, keyof abstracts>
-				? [...result, traits[0]]
-				: result
-	  >
-	: result
 
 // even though the value we attach will be identical, we use this so classes
 // won't be treated as instanceof a Trait
@@ -115,10 +40,11 @@ export const hasTrait =
 
 // @ts-expect-error allow abstract property access
 export abstract class Trait<
-	abstracted extends object = {},
-	implemented extends object = {}
-> extends NoopBase<abstracted & implemented> {
-	declare $abstracted: abstracted
+	abstractMethods extends object = {},
+	abstractProps extends object = {}
+> extends NoopBase<abstractMethods & abstractProps> {
+	declare abstractMethods: abstractMethods
+	declare abstractProps: abstractProps
 
 	static get [Symbol.hasInstance](): (o: unknown) => boolean {
 		return hasTrait(this)
@@ -131,12 +57,7 @@ export abstract class Trait<
 	}
 }
 
-type Disambiguation = Record<string, TraitConstructor>
-
-const collectPrototypeDescriptors = (
-	trait: TraitConstructor,
-	disambiguation: Disambiguation
-) => {
+const collectPrototypeDescriptors = (trait: TraitConstructor) => {
 	let proto = trait.prototype
 	let result: PropertyDescriptorMap = {}
 	do {
@@ -144,77 +65,71 @@ const collectPrototypeDescriptors = (
 		result = Object.assign(Object.getOwnPropertyDescriptors(proto), result)
 		proto = Object.getPrototypeOf(proto)
 	} while (proto !== Object.prototype && proto !== null)
-	for (const k in disambiguation) {
-		if (disambiguation[k] !== trait) {
-			// remove keys disambiguated to resolve to other traits
-			delete result[k]
-		}
-	}
 	return result
 }
 
-export const compose = ((...traits: TraitConstructor[]) =>
-	(implementation: object, disambiguation: Disambiguation = {}) => {
-		const base: any = function (this: any, ...args: any[]) {
-			for (const trait of traits) {
-				const instance = Reflect.construct(trait, args, this.constructor)
-				Object.assign(this, instance)
-			}
-		}
-		const flatImplementedTraits: TraitConstructor[] = []
+export const compose: TraitComposition = (...traits: TraitConstructor[]) => {
+	const base: any = function (this: Trait, ...args: any[]) {
 		for (const trait of traits) {
-			// copy static properties
-			Object.assign(base, trait)
-			// flatten and copy prototype
-			Object.defineProperties(
-				base.prototype,
-				collectPrototypeDescriptors(trait, disambiguation)
-			)
-			if (implementedTraits in trait) {
-				// add any ancestor traits from which the current trait was composed
-				for (const innerTrait of trait[
-					implementedTraits
-				] as TraitConstructor[]) {
-					if (!flatImplementedTraits.includes(innerTrait)) {
-						flatImplementedTraits.push(innerTrait)
-					}
+			const instance = Reflect.construct(trait, args, this.constructor)
+			Object.assign(this, instance)
+		}
+	}
+	const flatImplementedTraits: TraitConstructor[] = []
+	for (const trait of traits) {
+		// copy static properties
+		Object.assign(base, trait)
+		// flatten and copy prototype
+		Object.defineProperties(base.prototype, collectPrototypeDescriptors(trait))
+		if (implementedTraits in trait) {
+			// add any ancestor traits from which the current trait was composed
+			for (const innerTrait of trait[implementedTraits] as TraitConstructor[]) {
+				if (!flatImplementedTraits.includes(innerTrait)) {
+					flatImplementedTraits.push(innerTrait)
 				}
 			}
-			if (!flatImplementedTraits.includes(trait)) {
-				flatImplementedTraits.push(trait)
-			}
 		}
-		Object.defineProperty(base, implementedTraits, {
-			value: flatImplementedTraits,
-			enumerable: false
-		})
-		// copy implementation last since it overrides traits
-		Object.defineProperties(
-			base.prototype,
-			Object.getOwnPropertyDescriptors(implementation)
-		)
-		return base
-	}) as TraitComposition
+		if (!flatImplementedTraits.includes(trait)) {
+			flatImplementedTraits.push(trait)
+		}
+	}
+	Object.defineProperty(base, implementedTraits, {
+		value: flatImplementedTraits,
+		enumerable: false
+	})
+	// copy implementation last since it overrides traits
+	Object.defineProperties(base.prototype, Object.getOwnPropertyDescriptors({}))
+	return base
+}
 
 export type TraitConstructor<
 	params extends List = any[],
-	instance = {},
-	abstracted = {},
-	statics = {}
+	instance extends object = {},
+	statics = {},
+	abstractMethods extends object = {},
+	abstractProps extends object = {}
 > = statics &
-	(new (...args: params) => {
-		$abstracted: abstracted
-	} & instance)
+	(new (...args: params) => Trait<abstractMethods, abstractProps> & instance)
 
-export type ComposedTraits = {
+type CompositionState = {
+	validated: unknown[]
+	remaining: unknown[]
 	params: List
-	implemented: unknown
-	abstracted: unknown
-	statics: unknown
+	implemented: object
+	abstractMethods: object
+	abstractProps: object
+	statics: object
 }
 
-export type compose<traits extends readonly TraitConstructor[]> =
-	composeRecurse<traits, [], {}, {}, {}>
+export type compose<traits extends unknown[]> = composeRecurse<{
+	validated: []
+	remaining: traits
+	params: []
+	implemented: {}
+	abstractMethods: {}
+	abstractProps: {}
+	statics: {}
+}>
 
 type intersectImplementations<l, r> = {
 	[k in keyof l]: k extends keyof r
@@ -227,34 +142,40 @@ type intersectImplementations<l, r> = {
 		: l[k]
 } & Omit<r, keyof l>
 
-type composeRecurse<
-	traits extends List,
-	params extends List,
-	implemented,
-	abstracted,
-	statics
-> = traits extends readonly [
-	TraitConstructor<
-		infer nextParams,
-		infer nextInstance,
-		infer nextAbstracted,
-		infer nextStatics
-	>,
-	...infer tail
-]
-	? composeRecurse<
-			tail,
-			intersectParameters<params, nextParams>,
-			intersectImplementations<
-				implemented,
-				Omit<nextInstance, keyof nextAbstracted>
-			>,
-			intersectImplementations<abstracted, nextAbstracted>,
-			intersectImplementations<statics, nextStatics>
-	  >
-	: {
-			params: params
-			implemented: evaluate<implemented>
-			abstracted: evaluate<abstracted>
-			statics: evaluate<Omit<statics, keyof typeof Trait>>
-	  }
+type composeRecurse<s extends CompositionState> =
+	s["remaining"] extends readonly [
+		TraitConstructor<
+			infer params,
+			infer instance,
+			infer statics,
+			infer abstractMethods,
+			infer abstractProps
+		>,
+		...infer tail
+	]
+		? composeRecurse<{
+				validated: [...s["validated"], s["remaining"][0]]
+				remaining: tail
+				params: intersectParameters<s["params"], params>
+				implemented: intersectImplementations<
+					s["implemented"],
+					Omit<instance, keyof abstractMethods | keyof abstractProps>
+				>
+				abstractMethods: intersectImplementations<
+					s["abstractMethods"],
+					abstractMethods
+				>
+				abstractProps: intersectImplementations<
+					s["abstractProps"],
+					abstractProps
+				>
+				statics: intersectImplementations<s["statics"], statics>
+		  }>
+		: {} extends s["abstractMethods"] & s["abstractProps"]
+		? s
+		: override<
+				s,
+				{
+					validated: [...s["validated"], s["abstractMethods"]]
+				}
+		  >
