@@ -1,7 +1,7 @@
 import {
-	compose,
 	domainDescriptions,
 	domainOf,
+	pipeAssign,
 	type NonEnumerableDomain
 } from "@arktype/util"
 import { jsData } from "../shared/compile.js"

@@ -1,3 +1,4 @@
+import { compose } from "@arktype/util"
 import { BaseNode, type TypeNode } from "../../base.js"
 import { jsData } from "../../shared/compile.js"
 import type { declareNode } from "../../shared/declare.js"
@@ -71,6 +72,8 @@ export const divisorImplementation = implement<DivisorDeclaration>({
 		}
 	})
 })
+
+// export class Divisor extends compose(BaseNode, )
 
 export const writeIndivisibleMessage = <node extends TypeNode>(t: node) =>
 	writeInvalidOperandMessage(

@@ -22,7 +22,9 @@ import type {
 } from "../base.js"
 import {
 	BaseConstraint,
-	type BaseConstraintDeclaration
+	BasePrimitiveConstraint,
+	type BaseConstraintDeclaration,
+	type BasePrimitiveConstraintDeclaration
 } from "../constraints/constraint.js"
 import { boundKinds } from "../constraints/refinements/shared.js"
 import type { Declaration, Inner, errorContext } from "../kinds.js"
@@ -290,6 +292,25 @@ export interface ImplementedPrimitiveAttachments<d extends BaseNodeDeclaration>
 export interface DerivedPrimitiveAttachments<d extends BaseNodeDeclaration> {
 	traverseApply: TraverseApply<d["prerequisite"]>
 	compile(js: NodeCompiler): void
+}
+
+export class PrimitiveNode<
+	d extends BasePrimitiveConstraintDeclaration
+> extends Trait<{
+	traverseAllows: TraverseAllows<d["prerequisite"]>
+	readonly compiledCondition: string
+	readonly compiledNegation: string
+	readonly errorContext: d["errorContext"]
+}> {
+	traverseApply: TraverseApply = (data, ctx) => {
+		if (!this.traverseAllows(data, ctx)) {
+			ctx.error(this.description)
+		}
+	}
+
+	compile(js: NodeCompiler) {
+		js.compilePrimitive(this as never)
+	}
 }
 
 export type PrimitiveAttachments<d extends BaseNodeDeclaration> =

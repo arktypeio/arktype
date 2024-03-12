@@ -1,4 +1,5 @@
 import { throwInternalError } from "./errors.js"
+import type { List, tailOf } from "./lists.js"
 import { NoopBase, type Dict } from "./records.js"
 
 export const cached = <T>(thunk: () => T) => {

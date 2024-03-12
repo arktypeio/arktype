@@ -3,7 +3,6 @@ import {
 	isKeyOf,
 	type List,
 	type PartialRecord,
-	type evaluate,
 	type valueOf
 } from "@arktype/util"
 import type { Node, NodeSubclass } from "../../base.js"
@@ -11,8 +10,6 @@ import type { Declaration, Schema } from "../../kinds.js"
 import { jsData } from "../../shared/compile.js"
 import type { BaseNodeDeclaration, declareNode } from "../../shared/declare.js"
 import {
-	implement,
-	type PrimitiveAttachments,
 	type nodeImplementationInputOf,
 	type nodeImplementationOf
 } from "../../shared/implement.js"
@@ -21,35 +18,7 @@ import {
 	BasePrimitiveConstraint,
 	type PrimitiveConstraintInner
 } from "../constraint.js"
-import type { DivisorDeclaration } from "./divisor.js"
 import type { BoundKind, RangeKind } from "./shared.js"
-
-export const implementBound = <d extends Declaration<RangeKind>>(
-	implementation: Pick<
-		nodeImplementationInputOf<d>,
-		"defaults" | "intersections"
-	>
-): nodeImplementationOf<d> => {
-	return implement({
-		collapseKey: "rule",
-		hasAssociatedError: true,
-		keys: {
-			rule: {
-				parse: normalizeLimit
-			},
-			exclusive: {
-				// omit key with value false since it is the default
-				parse: (flag: boolean) => flag || undefined
-			}
-		},
-		normalize: (schema: d["schema"]) =>
-			typeof schema === "object" && "rule" in schema
-				? { ...schema, rule: schema.rule }
-				: { rule: schema as Extract<d["schema"], LimitSchemaValue> },
-		defaults: implementation.defaults as never,
-		intersections: implementation.intersections
-	}) as never
-}
 
 export abstract class BaseRange<
 	d extends BaseRangeDeclaration,
@@ -194,12 +163,30 @@ export const normalizeLimit = (limit: LimitSchemaValue): number =>
 		? limit.valueOf()
 		: limit
 
-export type BaseRangeDeclaration = evaluate<
-	BaseNodeDeclaration & {
-		kind: RangeKind
-		inner: BoundInner
-	}
->
+export const baseBoundImplementation = {
+	collapseKey: "rule",
+	hasAssociatedError: true,
+	keys: {
+		rule: {
+			parse: normalizeLimit
+		},
+		exclusive: {
+			// omit key with value false since it is the default
+			parse: (flag: boolean) => flag || undefined
+		}
+	},
+	normalize: (schema: BoundSchema) =>
+		typeof schema === "object" && "rule" in schema
+			? { ...schema, rule: schema.rule }
+			: { rule: schema as Extract<BoundSchema, LimitSchemaValue> }
+} as const satisfies Partial<nodeImplementationOf<BaseRangeDeclaration>>
+
+export interface BaseRangeDeclaration extends BaseNodeDeclaration {
+	kind: RangeKind
+	inner: BoundInner
+	schema: BoundSchema
+	normalizedSchema: NormalizedBoundSchema
+}
 
 export const operandKindsByBoundKind = {
 	min: "value",
