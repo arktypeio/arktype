@@ -3,6 +3,18 @@ import { match } from "arktype"
 import { scope } from "../ark.js"
 
 describe("match", () => {
+	it("cases only", () => {
+		const sizeOf = match({
+			"string|Array": (v) => v.length,
+			number: (v) => v,
+			bigint: (v) => v
+		}).orThrow()
+
+		attest<number>(sizeOf("abc")).equals(3)
+		attest<number>(sizeOf([1, 2, 3])).equals(3)
+		attest<bigint>(sizeOf(5n)).equals(5n)
+	})
+
 	it("properly infers types of inputs/outputs", () => {
 		const matcher = match({ string: (s) => s, number: (n) => n })
 			.when("boolean", (b) => b)
