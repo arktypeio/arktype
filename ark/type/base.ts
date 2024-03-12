@@ -1,5 +1,4 @@
 import {
-	Callable,
 	Trait,
 	includes,
 	isArray,
@@ -34,7 +33,6 @@ import type {
 	BaseNodeDeclaration
 } from "./shared/declare.js"
 import { Disjoint } from "./shared/disjoint.js"
-import type { ArkResult } from "./shared/errors.js"
 import {
 	basisKinds,
 	constraintKinds,
@@ -53,12 +51,7 @@ import {
 } from "./shared/implement.js"
 import type { DomainNode } from "./types/domain.js"
 import type { IntersectionNode } from "./types/intersection.js"
-import type {
-	MorphNode,
-	distill,
-	extractIn,
-	extractOut
-} from "./types/morph.js"
+import type { MorphNode, extractIn, extractOut } from "./types/morph.js"
 import type { ProtoNode } from "./types/proto.js"
 import type { UnionNode } from "./types/union.js"
 import type { UnitNode } from "./types/unit.js"

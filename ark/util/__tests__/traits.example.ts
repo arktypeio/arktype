@@ -46,7 +46,7 @@ class Square extends implement(
 		calculateArea() {
 			return this.side ** 2
 		},
-		construct: (...args) => ({ largestAngle: 90 })
+		construct: () => ({ largestAngle: 90 })
 	}
 ) {
 	readonly isRegular = true

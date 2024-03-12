@@ -2,7 +2,6 @@ import {
 	domainDescriptions,
 	domainOf,
 	implement,
-	pipeAssign,
 	type NonEnumerableDomain
 } from "@arktype/util"
 import { BaseNode } from "../base.js"
@@ -13,7 +12,6 @@ import {
 	PrimitiveNode,
 	type PrimitiveAttachments
 } from "../shared/implement.js"
-import { BaseBasis } from "./basis.js"
 
 export interface DomainInner<
 	domain extends NonEnumerableDomain = NonEnumerableDomain

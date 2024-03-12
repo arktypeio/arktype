@@ -236,7 +236,7 @@ type finalizeState<s extends CompositionState> = satisfy<
 		>
 		abstractProps: evaluate<Omit<s["abstractProps"], keyof s["implemented"]>>
 		implemented: evaluate<s["implemented"]>
-		statics: evaluate<s["statics"]>
+		statics: evaluate<Omit<s["statics"], keyof typeof Trait>>
 	}
 >
 
