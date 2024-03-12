@@ -222,26 +222,19 @@ type composeRecurse<s extends CompositionState> =
 				>
 				statics: intersectImplementations<s["statics"], statics>
 		  }>
-		: s["kind"] extends "abstract"
-		? evaluateState<s>
-		: {} extends s["abstractMethods"] & s["abstractProps"]
-		? evaluateState<s>
-		: override<
-				evaluateState<s>,
-				{
-					validated: [...s["validated"], implementationOf<s>]
-				}
-		  >
+		: finalizeState<s>
 
-type evaluateState<s extends CompositionState> = satisfy<
+type finalizeState<s extends CompositionState> = satisfy<
 	CompositionState,
 	{
 		params: s["params"]
 		validated: s["validated"]
 		remaining: s["remaining"]
 		kind: s["kind"]
-		abstractMethods: evaluate<s["abstractMethods"]>
-		abstractProps: evaluate<s["abstractProps"]>
+		abstractMethods: evaluate<
+			Omit<s["abstractMethods"], keyof s["implemented"]>
+		>
+		abstractProps: evaluate<Omit<s["abstractProps"], keyof s["implemented"]>>
 		implemented: evaluate<s["implemented"]>
 		statics: evaluate<s["statics"]>
 	}
@@ -252,5 +245,5 @@ export type implementationOf<s extends CompositionState> =
 		({} extends s["abstractProps"]
 			? {}
 			: {
-					construct: (params: s["params"]) => s["abstractProps"]
+					construct: (...args: s["params"]) => s["abstractProps"]
 			  })

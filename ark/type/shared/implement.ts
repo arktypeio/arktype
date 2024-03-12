@@ -15,18 +15,11 @@ import {
 import type {
 	BaseAttachments,
 	BaseNode,
-	NarrowedAttachments,
 	Node,
-	NodeSubclass,
 	TypeNode,
 	UnknownNode
 } from "../base.js"
-import {
-	BaseConstraint,
-	BasePrimitiveConstraint,
-	type BaseConstraintDeclaration,
-	type BasePrimitiveConstraintDeclaration
-} from "../constraints/constraint.js"
+import { type BasePrimitiveConstraintDeclaration } from "../constraints/constraint.js"
 import { boundKinds } from "../constraints/refinements/shared.js"
 import type { Declaration, Inner, errorContext } from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
@@ -295,9 +288,7 @@ export interface DerivedPrimitiveAttachments<d extends BaseNodeDeclaration> {
 	compile(js: NodeCompiler): void
 }
 
-export class PrimitiveNode<
-	d extends BasePrimitiveConstraintDeclaration
-> extends Trait<{
+export class PrimitiveNode<d extends BaseNodeDeclaration> extends Trait<{
 	abstractProps: {
 		traverseAllows: TraverseAllows<d["prerequisite"]>
 		readonly compiledCondition: string

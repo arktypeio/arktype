@@ -39,23 +39,28 @@ export type DomainDeclaration = declareNode<{
 	attachments: PrimitiveAttachments<DomainDeclaration>
 }>
 
-export class DomainNode<t = any> extends implement(BaseNode, PrimitiveNode, {
-	construct: (attachments) => ({
-		traverseAllows: (data: unknown) => domainOf(data) === this.domain,
-		compiledCondition:
-			this.domain === "object"
-				? `((typeof ${jsData} === "object" && ${jsData} !== null) || typeof ${jsData} === "function")`
-				: `typeof ${jsData} === "${this.domain}"`,
+export class DomainNode<t = any> extends implement(
+	BaseNode<DomainDeclaration>,
+	PrimitiveNode<DomainDeclaration>,
+	{
+		construct: (self) => {
+			return {
+				traverseAllows: (data: unknown) => domainOf(data) === self.domain,
+				compiledCondition:
+					self.domain === "object"
+						? `((typeof ${jsData} === "object" && ${jsData} !== null) || typeof ${jsData} === "function")`
+						: `typeof ${jsData} === "${self.domain}"`,
+				compiledNegation:
+					self.domain === "object"
+						? `((typeof ${jsData} !== "object" || ${jsData} === null) && typeof ${jsData} !== "function")`
+						: `typeof ${jsData} !== "${self.domain}"`,
 
-		compiledNegation:
-			this.domain === "object"
-				? `((typeof ${jsData} !== "object" || ${jsData} === null) && typeof ${jsData} !== "function")`
-				: `typeof ${jsData} !== "${this.domain}"`,
-
-		errorContext: this.createErrorContext(this.inner),
-		expression: this.domain
-	})
-}) {
+				errorContext: self.createErrorContext(self.inner),
+				expression: self.domain
+			}
+		}
+	}
+) {
 	static implementation = this.implement({
 		hasAssociatedError: true,
 		collapseKey: "domain",
