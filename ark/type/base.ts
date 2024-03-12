@@ -1,13 +1,9 @@
 import {
 	Callable,
-	DynamicBase,
-	capitalize,
 	includes,
 	isArray,
 	morph,
-	printable,
 	throwError,
-	type Constructor,
 	type Dict,
 	type Entry,
 	type Guardable,
@@ -35,11 +31,7 @@ import type {
 } from "./kinds.js"
 import type { Scope } from "./scope.js"
 import type { NodeCompiler } from "./shared/compile.js"
-import {
-	pathToPropString,
-	type TraverseAllows,
-	type TraverseApply
-} from "./shared/context.js"
+import { type TraverseAllows, type TraverseApply } from "./shared/context.js"
 import type {
 	BaseAttachmentsOf,
 	BaseErrorContext,
@@ -62,9 +54,7 @@ import {
 	type RefinementKind,
 	type TypeKind,
 	type UnknownIntersectionResult,
-	type UnknownNodeImplementation,
-	type nodeImplementationInputOf,
-	type nodeImplementationOf
+	type UnknownNodeImplementation
 } from "./shared/implement.js"
 import type { DomainNode } from "./types/domain.js"
 import type { IntersectionNode } from "./types/intersection.js"
@@ -79,7 +69,6 @@ import type { UnionNode } from "./types/union.js"
 import type { UnitNode } from "./types/unit.js"
 
 export interface BaseAttachments {
-	alias?: string
 	readonly kind: NodeKind
 	readonly name: string
 	readonly inner: Record<string, any>
@@ -91,6 +80,11 @@ export interface BaseAttachments {
 	readonly innerId: string
 	readonly typeId: string
 	readonly $: Scope
+	readonly compile: (js: NodeCompiler) => void
+	readonly expression: string
+	alias?: string
+	traverseAllows: TraverseAllows
+	traverseApply: TraverseApply
 }
 
 export interface NarrowedAttachments<d extends BaseNodeDeclaration>
@@ -104,72 +98,15 @@ export interface NarrowedAttachments<d extends BaseNodeDeclaration>
 	children: Node<d["childKind"]>[]
 }
 
-export type NodeSubclass<d extends BaseNodeDeclaration = BaseNodeDeclaration> =
-	{
-		new (attachments: never): BaseNode<any, d, any>
-		readonly implementation: nodeImplementationOf<d>
-	}
-
 export const isNode = (value: unknown): value is Node =>
 	value instanceof BaseNode
 
-export type UnknownNode = BaseNode<
-	any,
-	BaseNodeDeclaration,
-	NodeSubclass<BaseNodeDeclaration>
->
+export type UnknownNode = BaseNode<any>
 
-type subclassKind<self> = self extends Constructor<{
-	kind: infer kind extends NodeKind
-}>
-	? kind
-	: never
-
-type subclassDeclaration<self> = Declaration<subclassKind<self>>
-
-export abstract class BaseNode<
-	t,
-	d extends BaseNodeDeclaration,
-	// subclass doesn't affect the class's type, but rather is used to validate
-	// the correct implementation of the static implementation
-	subclass extends NodeSubclass<d>
-> extends Callable<
+export abstract class BaseNode<d extends BaseNodeDeclaration> extends Callable<
 	(data: unknown) => ArkResult<distill<extractOut<t>>>,
 	BaseAttachmentsOf<d>
 > {
-	declare infer: d["prerequisite"]
-
-	protected static implement<self>(
-		this: self,
-		implementation: nodeImplementationInputOf<subclassDeclaration<self>>
-	): nodeImplementationOf<subclassDeclaration<self>>
-	protected static implement(_: never): any {
-		const implementation: UnknownNodeImplementation = _
-		if (implementation.hasAssociatedError) {
-			implementation.defaults.expected ??= (ctx) =>
-				"description" in ctx
-					? (ctx.description as string)
-					: implementation.defaults.description(ctx)
-			implementation.defaults.actual ??= (data) => printable(data)
-			implementation.defaults.problem ??= (ctx) =>
-				`must be ${ctx.expected}${ctx.actual ? ` (was ${ctx.actual})` : ""}`
-			implementation.defaults.message ??= (ctx) => {
-				if (ctx.path.length === 0) {
-					return capitalize(ctx.problem)
-				}
-				const problemWithLocation = `${pathToPropString(ctx.path)} ${
-					ctx.problem
-				}`
-				if (problemWithLocation[0] === "[") {
-					// clarify paths like [1], [0][1], and ["key!"] that could be confusing
-					return `Value at ${problemWithLocation}`
-				}
-				return problemWithLocation
-			}
-		}
-		return implementation
-	}
-
 	protected readonly impl: UnknownNodeImplementation = (this.constructor as any)
 		.implementation
 	readonly includesMorph: boolean =
@@ -196,11 +133,6 @@ export abstract class BaseNode<
 				: { ...this.referencesByName, [this.name]: this as never }
 		this.contributesReferences = Object.values(this.contributesReferencesByName)
 	}
-
-	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
-	abstract traverseApply: TraverseApply<d["prerequisite"]>
-	abstract compile(js: NodeCompiler): void
-	abstract expression: string
 
 	private descriptionCache?: string
 	get description(): string {

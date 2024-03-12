@@ -2,9 +2,11 @@ import { jsData } from "../../shared/compile.js"
 import type { declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import {
-	BasePrimitiveConstraint,
-	type PrimitiveConstraintInner
-} from "../constraint.js"
+	derivePrimitiveAttachments,
+	implement,
+	type PrimitiveAttachments
+} from "../../shared/implement.js"
+import { type PrimitiveConstraintInner } from "../constraint.js"
 import type { LengthBoundableData } from "./range.js"
 
 export interface LengthInner extends PrimitiveConstraintInner<number> {}
@@ -15,6 +17,9 @@ export type NormalizedLengthSchema = LengthInner
 
 export type LengthSchema = NormalizedLengthSchema | number
 
+export interface LengthAttachments
+	extends PrimitiveAttachments<LengthDeclaration> {}
+
 export type LengthDeclaration = declareNode<{
 	kind: "length"
 	schema: LengthSchema
@@ -22,59 +27,63 @@ export type LengthDeclaration = declareNode<{
 	inner: LengthInner
 	prerequisite: LengthBoundableData
 	errorContext: LengthInner
+	attachments: LengthAttachments
 }>
 
-export class LengthNode extends BasePrimitiveConstraint<
-	LengthDeclaration,
-	typeof LengthNode
-> {
-	static implementation = this.implement({
-		collapseKey: "rule",
-		keys: {
-			rule: {}
-		},
-		normalize: (schema) =>
-			typeof schema === "number" ? { rule: schema } : schema,
-		intersections: {
-			length: (l, r) =>
-				new Disjoint({
-					"[length]": {
-						unit: {
-							l: l.$.parseScema("unit", { unit: l.rule }),
-							r: r.$.parseScema("unit", { unit: r.rule })
-						}
+export const lengthImplementation = implement<LengthDeclaration>({
+	collapseKey: "rule",
+	keys: {
+		rule: {}
+	},
+	normalize: (schema) =>
+		typeof schema === "number" ? { rule: schema } : schema,
+	intersections: {
+		length: (l, r) =>
+			new Disjoint({
+				"[length]": {
+					unit: {
+						l: l.$.parseScema("unit", { unit: l.rule }),
+						r: r.$.parseScema("unit", { unit: r.rule })
 					}
-				}),
-			minLength: (length, minLength) =>
-				(
-					minLength.exclusive
-						? length.rule > minLength.rule
-						: length.rule >= minLength.rule
-				)
-					? length
-					: Disjoint.from("range", length, minLength),
-			maxLength: (length, maxLength) =>
-				(
-					maxLength.exclusive
-						? length.rule < maxLength.rule
-						: length.rule <= maxLength.rule
-				)
-					? length
-					: Disjoint.from("range", length, maxLength)
-		},
-		hasAssociatedError: true,
-		defaults: {
-			description(node) {
-				return `exactly length ${node.rule}`
+				}
+			}),
+		minLength: (length, minLength) =>
+			(
+				minLength.exclusive
+					? length.rule > minLength.rule
+					: length.rule >= minLength.rule
+			)
+				? length
+				: Disjoint.from("range", length, minLength),
+		maxLength: (length, maxLength) =>
+			(
+				maxLength.exclusive
+					? length.rule < maxLength.rule
+					: length.rule <= maxLength.rule
+			)
+				? length
+				: Disjoint.from("range", length, maxLength)
+	},
+	hasAssociatedError: true,
+	defaults: {
+		description(node) {
+			return `exactly length ${node.rule}`
+		}
+	},
+	attach: derivePrimitiveAttachments((base) => {
+		const description = `exactly length ${base.rule}`
+		return {
+			description,
+			expression: `{ length: ${base.rule}}`,
+			traverseAllows: (data: LengthBoundableData) => data.length === base.rule,
+			compiledCondition: `${jsData}.length === ${base.rule}`,
+			compiledNegation: `${jsData}.length !== ${base.rule}`,
+			impliedBasis: base.$.lengthBoundable,
+			errorContext: {
+				code: "length",
+				description,
+				...base.inner
 			}
 		}
 	})
-
-	traverseAllows = (data: LengthBoundableData) => data.length === this.rule
-
-	readonly compiledCondition = `${jsData}.length === ${this.rule}`
-	readonly compiledNegation = `${jsData}.length !== ${this.rule}`
-	readonly impliedBasis = this.$.lengthBoundable
-	readonly errorContext = this.createErrorContext(this.inner)
-	readonly expression = `{ length: ${this.rule}}`
-}
+})

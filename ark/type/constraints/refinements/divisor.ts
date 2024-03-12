@@ -1,13 +1,12 @@
-import type { TypeNode } from "../../base.js"
+import { BaseNode, type TypeNode } from "../../base.js"
 import { jsData } from "../../shared/compile.js"
 import type { declareNode } from "../../shared/declare.js"
 import {
-	deriveDefaultErrorContext,
 	derivePrimitiveAttachments,
-	implement
+	implement,
+	type PrimitiveAttachments
 } from "../../shared/implement.js"
 import {
-	BasePrimitiveConstraint,
 	writeInvalidOperandMessage,
 	type PrimitiveConstraintInner
 } from "../constraint.js"
@@ -18,6 +17,9 @@ export type divisor<n extends number> = { "%": n }
 
 export type DivisorSchema = DivisorInner | number
 
+export interface DivisorAttachments
+	extends PrimitiveAttachments<DivisorDeclaration> {}
+
 export type DivisorDeclaration = declareNode<{
 	kind: "divisor"
 	schema: DivisorSchema
@@ -25,10 +27,12 @@ export type DivisorDeclaration = declareNode<{
 	inner: DivisorInner
 	prerequisite: number
 	errorContext: DivisorInner
-	attachments: PrimitiveAttachments<DivisorDeclaration>
+	attachments: DivisorAttachments
 }>
 
-const divisorImplementation = implement<DivisorDeclaration>({
+export interface DivisorNode extends BaseNode<DivisorDeclaration> {}
+
+export const divisorImplementation = implement<DivisorDeclaration>({
 	collapseKey: "rule",
 	keys: {
 		rule: {}
@@ -67,42 +71,6 @@ const divisorImplementation = implement<DivisorDeclaration>({
 		}
 	})
 })
-
-export class DivisorNode extends BasePrimitiveConstraint<
-	DivisorDeclaration,
-	typeof DivisorNode
-> {
-	static implementation = this.implement({
-		collapseKey: "rule",
-		keys: {
-			rule: {}
-		},
-		normalize: (schema) =>
-			typeof schema === "number" ? { rule: schema } : schema,
-		intersections: {
-			divisor: (l, r, $) =>
-				$.parseScema("divisor", {
-					rule: Math.abs(
-						(l.rule * r.rule) / greatestCommonDivisor(l.rule, r.rule)
-					)
-				})
-		},
-		hasAssociatedError: true,
-		defaults: {
-			description(node) {
-				return node.rule === 1 ? "an integer" : `a multiple of ${node.rule}`
-			}
-		}
-	})
-
-	traverseAllows = (data: number) => data % this.rule === 0
-
-	readonly compiledCondition = `${jsData} % ${this.rule} === 0`
-	readonly compiledNegation = `${jsData} % ${this.rule} !== 0`
-	readonly impliedBasis = this.$.tsKeywords.number
-	readonly errorContext = this.createErrorContext(this.inner)
-	readonly expression = `% ${this.rule}`
-}
 
 export const writeIndivisibleMessage = <node extends TypeNode>(t: node) =>
 	writeInvalidOperandMessage(

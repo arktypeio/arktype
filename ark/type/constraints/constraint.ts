@@ -8,7 +8,6 @@ import {
 	type BaseAttachments,
 	type ConstraintNode,
 	type Node,
-	type NodeSubclass,
 	type TypeNode
 } from "../base.js"
 import type { Prerequisite } from "../kinds.js"
@@ -81,9 +80,8 @@ export interface BaseConstraintDeclaration extends BaseNodeDeclaration {
 }
 
 export abstract class BaseConstraint<
-	d extends BaseConstraintDeclaration,
-	subclass extends NodeSubclass<d>
-> extends BaseNode<d["prerequisite"], d, subclass> {
+	d extends BaseConstraintDeclaration
+> extends BaseNode<d["prerequisite"]> {
 	abstract readonly impliedBasis: TypeNode | undefined
 	readonly impliedSiblings?: ConstraintNode[] | undefined
 

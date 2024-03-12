@@ -292,16 +292,16 @@ export interface DerivedPrimitiveAttachments<d extends BaseNodeDeclaration> {
 	compile(js: NodeCompiler): void
 }
 
+export type PrimitiveAttachments<d extends BaseNodeDeclaration> =
+	BaseAttachmentsOf<d> &
+		ImplementedPrimitiveAttachments<d> &
+		DerivedPrimitiveAttachments<d>
+
 export const derivePrimitiveAttachments =
-	<
-		d extends BaseNodeDeclaration,
-		attachments extends ImplementedPrimitiveAttachments<d>
-	>(
-		attach: (base: BaseAttachmentsOf<d>) => attachments
+	<d extends BaseNodeDeclaration>(
+		attach: (base: BaseAttachmentsOf<d>) => ImplementedPrimitiveAttachments<d>
 	) =>
-	(
-		base: BaseAttachmentsOf<d>
-	): evaluate<attachments & DerivedPrimitiveAttachments<d>> => {
+	(base: BaseAttachmentsOf<d>): PrimitiveAttachments<d> => {
 		const self = Object.assign(base, attach(base))
 		return Object.assign(self, {
 			traverseApply: (data, ctx) => {
@@ -314,31 +314,6 @@ export const derivePrimitiveAttachments =
 			}
 		} satisfies DerivedPrimitiveAttachments<d>)
 	}
-
-export const deriveDefaultErrorContext = <d extends BaseNodeDeclaration>(
-	base: BaseAttachmentsOf<d>
-): d["errorContext"] => {
-	return Object.freeze({
-		code: base.kind,
-		description: base.description,
-		...base.inner
-	}) as never
-}
-
-export class PrimitiveNode<d extends BaseNodeDeclaration> extends Trait<
-	ImplementedPrimitiveAttachments<d>,
-	BaseAttachmentsOf<d>
-> {
-	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
-		if (!this.traverseAllows(data, ctx)) {
-			ctx.error(this.description)
-		}
-	}
-
-	compile(js: NodeCompiler) {
-		js.compilePrimitive(this as never)
-	}
-}
 
 export interface UnknownNodeImplementation
 	extends CommonNodeImplementationInput<BaseNodeDeclaration> {

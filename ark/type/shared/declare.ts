@@ -1,10 +1,5 @@
 import type { evaluate, merge } from "@arktype/util"
-import type {
-	BaseAttachments,
-	BaseAttachments,
-	NarrowedAttachments,
-	Node
-} from "../base.js"
+import type { NarrowedAttachments, Node } from "../base.js"
 import type { reducibleKindOf } from "../kinds.js"
 import type { Disjoint } from "./disjoint.js"
 import type { NodeKind } from "./implement.js"
@@ -19,6 +14,7 @@ export type NodeCompositionKind = "primitive" | "composite"
 
 export interface ImplementedAttachments {
 	readonly description: string
+	readonly expression: string
 }
 
 interface DeclarationInput {
