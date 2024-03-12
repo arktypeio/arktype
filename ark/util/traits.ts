@@ -3,7 +3,7 @@ import type { conform, evaluate, satisfy } from "./generics.js"
 import type { intersectParameters } from "./intersections.js"
 import type { List } from "./lists.js"
 import { ancestorsOf, type Constructor } from "./objectKinds.js"
-import { NoopBase, type override } from "./records.js"
+import { NoopBase } from "./records.js"
 
 export type TraitImplementation = <
 	traits extends TraitConstructor[],
@@ -17,8 +17,10 @@ export type TraitImplementation = <
 		s["implemented"],
 		s["statics"],
 		s["abstractMethods"],
-		s["abstractProps"]
-	>
+		s["abstractProps"],
+		s["abstractStatics"]
+	> &
+		s["abstractStatics"]
 >(
 	...args: [...traits, implementation & ThisType<InstanceType<cls>>]
 ) => cls
@@ -33,7 +35,8 @@ export type TraitComposition = <
 	s["implemented"],
 	s["statics"],
 	s["abstractMethods"],
-	s["abstractProps"]
+	s["abstractProps"],
+	s["abstractStatics"]
 >
 
 // even though the value we attach will be identical, we use this so classes
@@ -59,6 +62,7 @@ export const hasTrait =
 export type TraitDeclaration = {
 	abstractMethods?: object
 	abstractProps?: object
+	abstractStatics?: object
 	dynamicBase?: object
 }
 
@@ -68,10 +72,12 @@ export abstract class Trait<
 	// we have to enumerate these for TS to understand extending their intersection
 	abstractMethods extends object = d["abstractMethods"] & {},
 	abstractProps extends object = d["abstractProps"] & {},
+	abstractStatics extends object = d["abstractStatics"] & {},
 	dynamicBase extends object = d["dynamicBase"] & {}
 > extends NoopBase<abstractMethods & abstractProps & dynamicBase> {
 	declare abstractMethods: abstractMethods
 	declare abstractProps: abstractProps
+	declare abstractStatic: abstractStatics
 
 	static get [Symbol.hasInstance](): (o: unknown) => boolean {
 		return hasTrait(this)
@@ -146,11 +152,13 @@ export type TraitConstructor<
 	instance extends object = {},
 	statics = {},
 	abstractMethods extends object = {},
-	abstractProps extends object = {}
+	abstractProps extends object = {},
+	abstractStatics extends object = {}
 > = statics &
 	(abstract new (...args: params) => Trait<{
 		abstractMethods: abstractMethods
 		abstractProps: abstractProps
+		abstractStatics: abstractStatics
 	}> &
 		instance)
 
@@ -162,6 +170,7 @@ type CompositionState = {
 	implemented: object
 	abstractMethods: object
 	abstractProps: object
+	abstractStatics: object
 	statics: object
 }
 
@@ -178,6 +187,7 @@ export type composeTraits<
 	implemented: {}
 	abstractMethods: {}
 	abstractProps: {}
+	abstractStatics: {}
 	statics: {}
 }>
 
@@ -199,7 +209,8 @@ type composeRecurse<s extends CompositionState> =
 			infer instance,
 			infer statics,
 			infer abstractMethods,
-			infer abstractProps
+			infer abstractProps,
+			infer abstractStatics
 		>,
 		...infer tail
 	]
@@ -212,6 +223,10 @@ type composeRecurse<s extends CompositionState> =
 					s["implemented"],
 					Omit<instance, keyof abstractMethods | keyof abstractProps>
 				>
+				statics: intersectImplementations<
+					s["statics"],
+					Omit<statics, keyof abstractStatics>
+				>
 				abstractMethods: intersectImplementations<
 					s["abstractMethods"],
 					abstractMethods
@@ -220,7 +235,10 @@ type composeRecurse<s extends CompositionState> =
 					s["abstractProps"],
 					abstractProps
 				>
-				statics: intersectImplementations<s["statics"], statics>
+				abstractStatics: intersectImplementations<
+					s["abstractStatics"],
+					abstractStatics
+				>
 		  }>
 		: finalizeState<s>
 
@@ -231,12 +249,13 @@ type finalizeState<s extends CompositionState> = satisfy<
 		validated: s["validated"]
 		remaining: s["remaining"]
 		kind: s["kind"]
+		implemented: evaluate<s["implemented"]>
+		statics: evaluate<Omit<s["statics"], keyof typeof Trait>>
 		abstractMethods: evaluate<
 			Omit<s["abstractMethods"], keyof s["implemented"]>
 		>
 		abstractProps: evaluate<Omit<s["abstractProps"], keyof s["implemented"]>>
-		implemented: evaluate<s["implemented"]>
-		statics: evaluate<Omit<s["statics"], keyof typeof Trait>>
+		abstractStatics: evaluate<Omit<s["abstractStatics"], keyof s["statics"]>>
 	}
 >
 
@@ -246,4 +265,9 @@ export type implementationOf<s extends CompositionState> =
 			? {}
 			: {
 					construct: (...args: s["params"]) => s["abstractProps"]
+			  }) &
+		({} extends s["abstractStatics"]
+			? {}
+			: {
+					statics: s["abstractStatics"]
 			  })

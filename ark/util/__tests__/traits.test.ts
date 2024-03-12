@@ -86,11 +86,16 @@ describe("traits", () => {
 
 			readonly a = "a"
 		}
-		class B extends Trait {
+		class B extends Trait<{
+			abstractStatics: {
+				foo: "Bar"
+			}
+		}> {
 			static readonly b = "b"
 
 			readonly b = "b"
 		}
+
 		class C extends compose(A, B) {
 			static readonly c = "c"
 
