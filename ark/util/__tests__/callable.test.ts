@@ -45,7 +45,7 @@ describe("callable", () => {
 	it("can attach properties to a subclass", () => {
 		class Foo<attach extends object> extends Callable<() => 0, attach> {
 			constructor(attach: attach) {
-				super(() => 0, attach)
+				super(() => 0, { attach })
 			}
 
 			b() {

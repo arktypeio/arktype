@@ -1,4 +1,4 @@
-import { Trait, implement } from "@arktype/util"
+import { Trait, implement } from "../main.js"
 
 // Declare a trait just like a normal class
 export class Rectangle extends Trait {
