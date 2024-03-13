@@ -1,6 +1,6 @@
 import type { ErrorMessage, conform, evaluate } from "@arktype/util"
-import type { TypeNode } from "../base.js"
 import type { Prerequisite, Schema } from "../kinds.js"
+import type { Type } from "../types/type.js"
 import type {
 	PrimitiveConstraintInner,
 	PrimitiveConstraintKind,
@@ -58,7 +58,7 @@ export type validateConstraintArg<
 	In
 > = In extends Prerequisite<kind>
 	? Schema<kind>
-	: ErrorMessage<writeInvalidOperandMessage<kind, TypeNode<In>>>
+	: ErrorMessage<writeInvalidOperandMessage<kind, Type<In>>>
 
 export type RangeExclusivity = "exclusive" | "inclusive"
 

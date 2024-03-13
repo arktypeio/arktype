@@ -19,8 +19,7 @@ import {
 import {
 	BaseNode,
 	type ConstraintNode,
-	type Node,
-	type TypeNode
+	type Node
 } from "../base.js"
 import {
 	PropsGroup,
@@ -48,7 +47,13 @@ import {
 } from "../shared/implement.js"
 import type { DomainNode, DomainSchema } from "./domain.js"
 import type { ProtoNode, ProtoSchema } from "./proto.js"
-import { BaseType, defineRightwardIntersections } from "./type.js"
+import {
+	BaseType,
+	defineRightwardIntersections,
+	type Type,
+	type Type,
+	type Type
+} from "./type.js"
 
 export type IntersectionBasisKind = "domain" | "proto"
 
@@ -118,14 +123,14 @@ const intersectionChildKeyParser =
 // 	readonly namedKeyOf = cached(() => node.unit(...this.literalKeys))
 // 	readonly indexedKeyOf = cached(
 // 		() =>
-// 			new TypeNode(
+// 			new Type(
 // 				this.indexed.flatMap((entry) => entry.key.branches),
 // 				this.meta
 // 			)
 // 	)
 // 	readonly keyof = cached(() => this.namedKeyOf().or(this.indexedKeyOf()))
 
-// get(key: string | TypeNode) {
+// get(key: string | Type) {
 // 	return typeof key === "string"
 // 		? this.named.find((entry) => entry.value.branches)?.value
 // 		: this.indexed.find((entry) => entry.key.equals(key))?.value
@@ -135,7 +140,7 @@ const intersectIntersections = (
 	reduced: IntersectionInner,
 	raw: IntersectionInner,
 	$: Scope
-): TypeNode | Disjoint => {
+): Type | Disjoint => {
 	// avoid treating adding instance keys as keys of lRoot, rRoot
 	if (reduced instanceof IntersectionNode) reduced = reduced.inner
 	if (raw instanceof IntersectionNode) raw = raw.inner
@@ -396,15 +401,15 @@ type ConstraintIntersectionState = {
 	root: IntersectionRoot
 	l: ConstraintNode[]
 	r: ConstraintNode[]
-	types: TypeNode[]
+	types: Type[]
 	$: Scope
 }
 
 const intersectConstraints = (
 	s: ConstraintIntersectionState
-): TypeNode | Disjoint => {
+): Type | Disjoint => {
 	if (!s.r.length) {
-		let result: TypeNode | Disjoint = s.$.parsePrereducedSchema(
+		let result: Type | Disjoint = s.$.parsePrereducedSchema(
 			"intersection",
 			Object.assign(s.root, unflattenConstraints(s.l))
 		)

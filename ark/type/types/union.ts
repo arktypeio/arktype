@@ -1,5 +1,5 @@
 import { isArray } from "@arktype/util"
-import type { Node, TypeNode } from "../base.js"
+import type { Node } from "../base.js"
 import type { Schema } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../shared/context.js"
@@ -15,6 +15,7 @@ import type { Discriminant } from "./discriminate.js"
 import {
 	BaseType,
 	defineRightwardIntersections,
+	type Type,
 	type typeKindRightOf
 } from "./type.js"
 
@@ -299,9 +300,9 @@ export const intersectBranches = (
 	// If the corresponding r branch is identified as a subtype of an l branch, the
 	// value at rIndex is set to null so we can avoid including previous/future
 	// inersections in the reduced result.
-	const batchesByR: (TypeNode[] | null)[] = r.map(() => [])
+	const batchesByR: (Type[] | null)[] = r.map(() => [])
 	for (let lIndex = 0; lIndex < l.length; lIndex++) {
-		let candidatesByR: { [rIndex: number]: TypeNode } = {}
+		let candidatesByR: { [rIndex: number]: Type } = {}
 		for (let rIndex = 0; rIndex < r.length; rIndex++) {
 			if (batchesByR[rIndex] === null) {
 				// rBranch is a subtype of an lBranch and

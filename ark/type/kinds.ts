@@ -16,7 +16,7 @@ import {
 	SequenceNode,
 	type SequenceDeclaration
 } from "./constraints/props/sequence.js"
-import { type DivisorDeclaration } from "./constraints/refinements/divisor.js"
+import type { DivisorDeclaration } from "./constraints/refinements/divisor.js"
 import {
 	BoundNodes,
 	type BoundDeclarations

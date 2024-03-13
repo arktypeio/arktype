@@ -8,16 +8,16 @@ import {
 	type evaluate,
 	type merge
 } from "@arktype/util"
-import type { TypeNode } from "../base.js"
 import { keywords, schema } from "../builtins/ark.js"
 import type { Inner } from "../kinds.js"
 import type { ParseContext } from "../scope.js"
+import type { Type, Type } from "../types/type.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
 import type { astToString } from "./semantic/utils.js"
 import type { validateString } from "./semantic/validate.js"
 import { Scanner } from "./string/shift/scanner.js"
 
-export const parseObjectLiteral = (def: Dict, ctx: ParseContext): TypeNode => {
+export const parseObjectLiteral = (def: Dict, ctx: ParseContext): Type => {
 	const required: Inner<"required">[] = []
 	const optional: Inner<"optional">[] = []
 

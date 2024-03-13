@@ -15,7 +15,7 @@ import {
 	type nominal,
 	type requireKeys
 } from "@arktype/util"
-import type { Node, TypeNode, TypeSchema } from "./base.js"
+import type { Node, TypeSchema } from "./base.js"
 import { keywords, type type } from "./builtins/ark.js"
 import { globalConfig } from "./config.js"
 import type { LengthBoundableData } from "./constraints/refinements/range.js"
@@ -40,7 +40,6 @@ import {
 	writeUnresolvableMessage
 } from "./parser/string/shift/operand/unenclosed.js"
 import { fullStringParse } from "./parser/string/string.js"
-import type { validateSchema } from "./schema.js"
 import { NodeCompiler } from "./shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "./shared/context.js"
 import type {
@@ -75,9 +74,9 @@ import type { UnionNode } from "./types/union.js"
 import type { UnitNode } from "./types/unit.js"
 import { addArkKind, hasArkKind, type arkKind } from "./util.js"
 
-export type nodeResolutions<keywords> = { [k in keyof keywords]: TypeNode }
+export type nodeResolutions<keywords> = { [k in keyof keywords]: Type }
 
-export type BaseResolutions = Record<string, TypeNode>
+export type BaseResolutions = Record<string, Type>
 
 declare global {
 	export interface StaticArkConfig {
@@ -352,10 +351,10 @@ export type ParseContext = {
 	baseName: string
 	path: string[]
 	$: Scope
-	args: Record<string, TypeNode> | undefined
+	args: Record<string, Type> | undefined
 }
 
-type MergedResolutions = Record<string, TypeNode | Generic>
+type MergedResolutions = Record<string, Type | Generic>
 
 type ParseContextInput = Pick<ParseContext, "baseName" | "args">
 
@@ -365,7 +364,7 @@ export class Scope<r extends Resolutions = any> {
 
 	readonly config: ParsedArkConfig
 
-	private parseCache: Record<string, TypeNode> = {}
+	private parseCache: Record<string, Type> = {}
 	private resolutions: MergedResolutions
 	readonly nodeCache: { [innerId: string]: Node } = {}
 	readonly referencesByName: { [name: string]: Node } = {}
@@ -474,11 +473,11 @@ export class Scope<r extends Resolutions = any> {
 		}
 	}
 
-	parseDefinition(def: unknown, input: ParseContextInput): TypeNode {
+	parseDefinition(def: unknown, input: ParseContextInput): Type {
 		return this.parse(def, this.createRootContext(input))
 	}
 
-	parse(def: unknown, ctx: ParseContext): TypeNode {
+	parse(def: unknown, ctx: ParseContext): Type {
 		if (typeof def === "string") {
 			if (ctx.args !== undefined) {
 				// we can only rely on the cache if there are no contextual
@@ -495,7 +494,7 @@ export class Scope<r extends Resolutions = any> {
 			: throwParseError(writeBadDefinitionTypeMessage(domainOf(def)))
 	}
 
-	parseString(def: string, ctx: ParseContext): TypeNode {
+	parseString(def: string, ctx: ParseContext): Type {
 		return (
 			this.maybeResolveNode(def) ??
 			((def.endsWith("[]") &&
@@ -504,7 +503,7 @@ export class Scope<r extends Resolutions = any> {
 		)
 	}
 
-	maybeResolve(name: string): TypeNode | Generic | undefined {
+	maybeResolve(name: string): Type | Generic | undefined {
 		const cached = this.resolutions[name]
 		if (cached) {
 			return cached
@@ -552,7 +551,7 @@ export class Scope<r extends Resolutions = any> {
 		// might be something like a decimal literal, so just fall through to return
 	}
 
-	maybeResolveNode(name: string): TypeNode | undefined {
+	maybeResolveNode(name: string): Type | undefined {
 		const result = this.maybeResolve(name)
 		return result instanceof BaseType ? (result as never) : undefined
 	}
@@ -601,7 +600,10 @@ export class Scope<r extends Resolutions = any> {
 				if (hasArkKind(def, "module")) {
 					this.exportCache[name] = def
 				} else {
-					this.exportCache[name] = new Type(this.maybeResolve(name), this)
+					this.exportCache[name] = this.parseDefinition(
+						def,
+						this.createRootContext({ baseName: name, args: {} })
+					)
 				}
 			}
 			this.exportedResolutions = resolutionsOfModule(this.exportCache)
@@ -654,7 +656,7 @@ export class Scope<r extends Resolutions = any> {
 			: (this.parseSchema(kind, schema as never, opts) as never)
 	}
 
-	parseSchemaBranches(...branches: TypeSchema[]): TypeNode {
+	parseSchemaBranches(...branches: TypeSchema[]): Type {
 		return branches.length === 1
 			? this.parseTypeSchema(branches[0])
 			: this.parseSchema("union", { branches })

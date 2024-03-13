@@ -9,11 +9,9 @@ import {
 	type join,
 	type NumberLiteral
 } from "@arktype/util"
-import type { TypeNode } from "../../../../base.js"
-import { schema } from "../../../../schema.js"
 import type { Module } from "../../../../scope.js"
 import type { Generic, GenericProps } from "../../../../type.js"
-import { BaseType } from "../../../../types/type.js"
+import { BaseType, type Type } from "../../../../types/type.js"
 import { hasArkKind } from "../../../../util.js"
 import type { GenericInstantiationAst } from "../../../semantic/infer.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
@@ -65,7 +63,7 @@ export const parseGenericInstantiation = (
 	name: string,
 	g: Generic,
 	s: DynamicState
-): TypeNode => {
+): Type => {
 	s.scanner.shiftUntilNonWhitespace()
 	const lookahead = s.scanner.shift()
 	if (lookahead !== "<") {
@@ -102,7 +100,7 @@ export type parseGenericInstantiation<
 		: never
 	: state.error<writeInvalidGenericArgsMessage<name, g["parameters"], []>>
 
-const unenclosedToNode = (s: DynamicState, token: string): TypeNode =>
+const unenclosedToNode = (s: DynamicState, token: string): Type =>
 	maybeParseReference(s, token) ??
 	maybeParseUnenclosedLiteral(s, token) ??
 	s.error(
@@ -114,7 +112,7 @@ const unenclosedToNode = (s: DynamicState, token: string): TypeNode =>
 const maybeParseReference = (
 	s: DynamicState,
 	token: string
-): TypeNode | undefined => {
+): Type | undefined => {
 	if (s.ctx.args?.[token]) {
 		return s.ctx.args[token]
 	}
@@ -134,7 +132,7 @@ const maybeParseReference = (
 const maybeParseUnenclosedLiteral = (
 	s: DynamicState,
 	token: string
-): TypeNode | undefined => {
+): Type | undefined => {
 	const maybeNumber = tryParseNumber(token, { strict: true })
 	if (maybeNumber !== undefined) {
 		return s.ctx.$.parseUnits(maybeNumber)

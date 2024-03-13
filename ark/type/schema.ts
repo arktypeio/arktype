@@ -174,7 +174,7 @@ type inferBasisOf<schema> = schema extends {
 // 	? inferResolvedPropValue<ret>
 // 	: inferResolvedPropValue<value>
 
-// type inferResolvedPropValue<value> = value extends TypeNode<infer t>
+// type inferResolvedPropValue<value> = value extends Type<infer t>
 // 	? t
 // 	: inferTypeInput<Extract<value, TypeInput>>
 

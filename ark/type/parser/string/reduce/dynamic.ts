@@ -4,9 +4,9 @@ import {
 	throwParseError,
 	type requireKeys
 } from "@arktype/util"
-import type { TypeNode } from "../../../base.js"
 import type { LimitLiteral } from "../../../constraints/ast.js"
 import type { ParseContext } from "../../../scope.js"
+import type { Type } from "../../../types/type.js"
 import { parseOperand } from "../shift/operand/operand.js"
 import { parseOperator } from "../shift/operator/operator.js"
 import { Scanner } from "../shift/scanner.js"
@@ -27,15 +27,15 @@ import {
 type BranchState = {
 	prefixes: StringifiablePrefixOperator[]
 	leftBound?: OpenLeftBound
-	"&"?: TypeNode
-	"|"?: TypeNode
+	"&"?: Type
+	"|"?: Type
 }
 
 export type DynamicStateWithRoot = requireKeys<DynamicState, "root">
 
 export class DynamicState {
 	readonly scanner: Scanner
-	root: TypeNode | undefined
+	root: Type | undefined
 	branches: BranchState = {
 		prefixes: []
 	}
@@ -63,11 +63,11 @@ export class DynamicState {
 		return value
 	}
 
-	constrainRoot(...args: Parameters<TypeNode["constrain"]>) {
+	constrainRoot(...args: Parameters<Type["constrain"]>) {
 		this.root = this.root!.constrain(...args)
 	}
 
-	setRoot(root: TypeNode) {
+	setRoot(root: Type) {
 		this.root = root
 	}
 

@@ -11,16 +11,11 @@ import {
 	type conform,
 	type evaluate
 } from "@arktype/util"
-import type { Node, TypeNode } from "../base.js"
+import type { Node } from "../base.js"
 import { keywords } from "../builtins/ark.js"
 import type { Predicate, inferNarrow } from "../constraints/predicate.js"
 import type { MutableInner, Schema } from "../kinds.js"
-import {
-	schema,
-	type inferSchema,
-	type inferSchemaBranch,
-	type validateSchema
-} from "../schema.js"
+import type { inferSchema, validateSchema } from "../schema.js"
 import type { ParseContext } from "../scope.js"
 import type { BaseMeta } from "../shared/declare.js"
 import type { inferIntersection } from "../shared/intersections.js"
@@ -33,6 +28,7 @@ import type {
 	extractOut,
 	inferMorphOut
 } from "../types/morph.js"
+import type { Type } from "../types/type.js"
 import type { UnionChildKind } from "../types/union.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
 import type { InfixOperator, PostfixExpression } from "./semantic/infer.js"
@@ -43,7 +39,7 @@ import type { BaseCompletions } from "./string/string.js"
 export const parseTuple = (def: List, ctx: ParseContext) =>
 	maybeParseTupleExpression(def, ctx) ?? parseTupleLiteral(def, ctx)
 
-export const parseTupleLiteral = (def: List, ctx: ParseContext): TypeNode => {
+export const parseTupleLiteral = (def: List, ctx: ParseContext): Type => {
 	let sequences: MutableInner<"sequence">[] = [{}]
 	let i = 0
 	while (i < def.length) {
@@ -97,7 +93,7 @@ type ElementKind = "optional" | "required" | "variadic"
 const appendElement = (
 	base: MutableInner<"sequence">,
 	kind: ElementKind,
-	element: TypeNode
+	element: Type
 ): MutableInner<"sequence"> => {
 	switch (kind) {
 		case "required":
@@ -156,7 +152,7 @@ const appendSpreadBranch = (
 const maybeParseTupleExpression = (
 	def: List,
 	ctx: ParseContext
-): TypeNode | undefined => {
+): Type | undefined => {
 	const tupleExpressionResult = isIndexOneExpression(def)
 		? indexOneParsers[def[1]](def as never, ctx)
 		: isIndexZeroExpression(def)
@@ -330,7 +326,7 @@ type parseNextElement<
 	  >
 	: s
 
-export const writeNonArraySpreadMessage = <operand extends string | TypeNode>(
+export const writeNonArraySpreadMessage = <operand extends string | Type>(
 	operand: operand
 ): writeNonArraySpreadMessage<operand> =>
 	`Spread element must be an array (was ${operand})` as never
@@ -467,12 +463,12 @@ const parseArrayTuple: PostfixParser<"[]"> = (def, ctx) =>
 export type PostfixParser<token extends IndexOneOperator> = (
 	def: IndexOneExpression<token>,
 	ctx: ParseContext
-) => TypeNode
+) => Type
 
 export type PrefixParser<token extends IndexZeroOperator> = (
 	def: IndexZeroExpression<token>,
 	ctx: ParseContext
-) => TypeNode
+) => Type
 
 export type TupleExpression = IndexZeroExpression | IndexOneExpression
 

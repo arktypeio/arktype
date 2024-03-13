@@ -6,7 +6,7 @@ import {
 	type mutable,
 	type satisfy
 } from "@arktype/util"
-import type { TypeNode, TypeSchema } from "../../base.js"
+import type { TypeSchema } from "../../base.js"
 import type { MutableInner } from "../../kinds.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/context.js"
@@ -17,6 +17,7 @@ import type {
 	TypeKind,
 	nodeImplementationOf
 } from "../../shared/implement.js"
+import type { Type, Type } from "../../types/type.js"
 import { BaseConstraint } from "../constraint.js"
 
 export interface NormalizedSequenceSchema extends BaseMeta {
@@ -31,14 +32,14 @@ export type SequenceSchema = NormalizedSequenceSchema | TypeSchema
 
 export interface SequenceInner extends BaseMeta {
 	// a list of fixed position elements starting at index 0
-	readonly prefix?: readonly TypeNode[]
+	readonly prefix?: readonly Type[]
 	// a list of optional elements following prefix
-	readonly optionals?: readonly TypeNode[]
+	readonly optionals?: readonly Type[]
 	// the variadic element (only checked if all optional elements are present)
-	readonly variadic?: TypeNode
+	readonly variadic?: Type
 	readonly minVariadicLength?: number
 	// a list of fixed position elements, the last being the last element of the array
-	readonly postfix?: readonly TypeNode[]
+	readonly postfix?: readonly Type[]
 }
 
 export type SequenceDeclaration = declareNode<{
@@ -352,7 +353,7 @@ export type SequenceElementKind = satisfy<
 
 export type SequenceElement = {
 	kind: SequenceElementKind
-	node: TypeNode
+	node: Type
 }
 export type SequenceTuple = List<SequenceElement>
 

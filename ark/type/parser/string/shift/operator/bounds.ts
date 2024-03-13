@@ -1,5 +1,4 @@
 import { isKeyOf, throwParseError, type keySet } from "@arktype/util"
-import type { TypeNode } from "../../../../base.js"
 import { keywords } from "../../../../builtins/ark.js"
 import type { LimitLiteral } from "../../../../constraints/ast.js"
 import {
@@ -8,6 +7,7 @@ import {
 } from "../../../../constraints/refinements/range.js"
 import type { Schema } from "../../../../kinds.js"
 import type { BoundKind } from "../../../../shared/implement.js"
+import type { Type } from "../../../../types/type.js"
 import type { astToString } from "../../../semantic/utils.js"
 import type {
 	DynamicState,
@@ -112,7 +112,7 @@ export const writeLimitMismatchMessage = (
 export const getBoundKinds = (
 	comparator: Comparator,
 	limit: LimitSchemaValue,
-	root: TypeNode
+	root: Type
 ): BoundKind[] => {
 	if (root.extends(keywords.number)) {
 		if (typeof limit !== "number") {

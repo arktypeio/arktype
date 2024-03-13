@@ -4,8 +4,9 @@ import {
 	serializeLiteralKey,
 	type Dict
 } from "@arktype/util"
-import type { Node, TypeNode } from "../base.js"
+import type { Node } from "../base.js"
 import type { Discriminant } from "../types/discriminate.js"
+import type { Type } from "../types/type.js"
 import type { TraversalKind } from "./context.js"
 import type { PrimitiveKind } from "./implement.js"
 
@@ -49,7 +50,7 @@ export class NodeCompiler extends CompiledFunction<
 		)
 	}
 
-	checkLiteralKey(key: PropertyKey, node: TypeNode) {
+	checkLiteralKey(key: PropertyKey, node: Type) {
 		const requiresContext = this.requiresContextFor(node)
 		if (requiresContext) {
 			this.line(`${this.ctx}.path.push(${serializeLiteralKey(key)})`)
@@ -63,7 +64,7 @@ export class NodeCompiler extends CompiledFunction<
 		return this
 	}
 
-	checkReferenceKey(keyExpression: string, node: TypeNode) {
+	checkReferenceKey(keyExpression: string, node: Type) {
 		const requiresContext = this.requiresContextFor(node)
 		if (requiresContext) {
 			this.line(`${this.ctx}.path.push(${keyExpression})`)

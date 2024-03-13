@@ -16,12 +16,12 @@ import {
 	type optionalKeyOf,
 	type requiredKeyOf
 } from "@arktype/util"
-import { isNode, type TypeNode } from "../base.js"
-import { type type } from "../builtins/ark.js"
+import { isNode } from "../base.js"
+import type { type } from "../builtins/ark.js"
 import type { of } from "../constraints/ast.js"
 import type { regex } from "../constraints/refinements/regex.js"
 import type { ParseContext } from "../scope.js"
-import { BaseType, BaseType } from "../types/type.js"
+import { BaseType, BaseType, type Type, type Type } from "../types/type.js"
 import {
 	parseObjectLiteral,
 	type inferObjectLiteral,
@@ -36,7 +36,7 @@ import {
 	type validateTuple
 } from "./tuple.js"
 
-export const parseObject = (def: object, ctx: ParseContext): TypeNode => {
+export const parseObject = (def: object, ctx: ParseContext): Type => {
 	const objectKind = objectKindOf(def)
 	switch (objectKind) {
 		case undefined:

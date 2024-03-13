@@ -1,6 +1,6 @@
 import { schema } from "../schema.js"
 import { Scope, type rootResolutions } from "../scope.js"
-import { type } from "./ark.js"
+import type { type } from "./ark.js"
 
 export namespace TsKeywords {
 	export interface exports {

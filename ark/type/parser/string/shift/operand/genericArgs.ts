@@ -1,5 +1,5 @@
 import type { ErrorMessage, join } from "@arktype/util"
-import type { TypeNode } from "../../../../base.js"
+import type { Type } from "../../../../types/type.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import { writeUnclosedGroupMessage } from "../../reduce/shared.js"
 import type { StaticState, state } from "../../reduce/static.js"
@@ -32,8 +32,8 @@ const parseGenericArgsRecurse = (
 	params: string[],
 	s: DynamicState,
 	argDefs: string[],
-	argNodes: TypeNode[]
-): ParsedArgs<TypeNode[]> => {
+	argNodes: Type[]
+): ParsedArgs<Type[]> => {
 	const argState = s.parseUntilFinalizer()
 	// remove the finalizing token from the argDef
 	argDefs.push(argState.scanner.scanned.slice(0, -1))

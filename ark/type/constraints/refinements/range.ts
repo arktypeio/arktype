@@ -5,13 +5,13 @@ import {
 	type PartialRecord,
 	type valueOf
 } from "@arktype/util"
-import type { Node, NodeSubclass } from "../../base.js"
+import type { Node } from "../../base.js"
 import type { Declaration, Schema } from "../../kinds.js"
 import { jsData } from "../../shared/compile.js"
 import type { BaseNodeDeclaration, declareNode } from "../../shared/declare.js"
-import {
-	type nodeImplementationInputOf,
-	type nodeImplementationOf
+import type {
+	nodeImplementationInputOf,
+	nodeImplementationOf
 } from "../../shared/implement.js"
 import type { DateLiteral, normalizePrimitiveConstraintSchema } from "../ast.js"
 import {

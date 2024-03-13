@@ -1,6 +1,5 @@
 import {
 	Callable,
-	DynamicBase,
 	capitalize,
 	includes,
 	isArray,
@@ -67,7 +66,7 @@ import {
 	type nodeImplementationInputOf,
 	type nodeImplementationOf
 } from "./shared/implement.js"
-import type { inferred } from "./shared/inference.js"
+import { inferred } from "./shared/inference.js"
 import type { DomainNode } from "./types/domain.js"
 import type { IntersectionNode } from "./types/intersection.js"
 import type {
@@ -77,6 +76,7 @@ import type {
 	extractOut
 } from "./types/morph.js"
 import type { ProtoNode } from "./types/proto.js"
+import type { Type, Type } from "./types/type.js"
 import type { UnionNode } from "./types/union.js"
 import type { UnitNode } from "./types/unit.js"
 
@@ -271,7 +271,7 @@ export abstract class BaseNode<
 		return includes(propKinds, this.kind)
 	}
 
-	isType(): this is TypeNode {
+	isType(): this is Type {
 		return includes(typeKinds, this.kind)
 	}
 
@@ -331,7 +331,7 @@ export abstract class BaseNode<
 		let result =
 			implementation === undefined
 				? // should be two ConstraintNodes that have no relation
-				  // this could also happen if a user directly intersects a TypeNode and a ConstraintNode,
+				  // this could also happen if a user directly intersects a Type and a ConstraintNode,
 				  // but that is not allowed by the external function signature
 				  null
 				: leftmostKind === this.kind

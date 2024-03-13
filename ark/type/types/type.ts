@@ -1,5 +1,5 @@
 import { morph, type Domain, type evaluate } from "@arktype/util"
-import { BaseNode, type Node, type TypeNode } from "../base.js"
+import { BaseNode, type Node } from "../base.js"
 import type { applySchema, validateConstraintArg } from "../constraints/ast.js"
 import { throwInvalidOperandError } from "../constraints/constraint.js"
 import type { Predicate, inferNarrow } from "../constraints/predicate.js"
@@ -17,7 +17,7 @@ import {
 	type kindRightOf
 } from "../shared/implement.js"
 import type { inferIntersection } from "../shared/intersections.js"
-import { type inferTypeRoot, type validateTypeRoot } from "../type.js"
+import type { inferTypeRoot, validateTypeRoot } from "../type.js"
 import type { IntersectionNode } from "./intersection.js"
 import type {
 	Morph,
@@ -39,7 +39,8 @@ export const defineRightwardIntersections = <kind extends TypeKind>(
 	implementation: TypeIntersection<kind, typeKindRightOf<kind>>
 ) => morph(typeKindsRightOf(kind), (i, kind) => [kind, implementation])
 
-export type Type<t = unknown, $ = any> = BaseType<t, BaseTypeDeclaration, $>
+export interface Type<t = unknown, $ = any>
+	extends BaseType<t, BaseTypeDeclaration, $> {}
 
 export abstract class BaseType<
 	t,
@@ -66,7 +67,7 @@ export abstract class BaseType<
 	constrain<kind extends ConstraintKind>(
 		kind: kind,
 		input: Schema<kind>
-	): TypeNode<this["infer"]> {
+	): Type<this["infer"]> {
 		const constraint = this.$.parseSchema(kind, input)
 		if (constraint.impliedBasis && !this.extends(constraint.impliedBasis)) {
 			return throwInvalidOperandError(
@@ -94,18 +95,18 @@ export abstract class BaseType<
 
 	intersect<r extends Node>(
 		r: r
-	): TypeNode<inferIntersection<this["infer"], r["infer"]>> | Disjoint {
+	): Type<inferIntersection<this["infer"], r["infer"]>> | Disjoint {
 		return this.intersectInternal(r) as never
 	}
 
-	and<r extends TypeNode>(
+	and<r extends Type>(
 		r: r
-	): TypeNode<inferIntersection<this["infer"], r["infer"]>> {
+	): Type<inferIntersection<this["infer"], r["infer"]>> {
 		const result = this.intersect(r as never)
 		return result instanceof Disjoint ? result.throw() : (result as never)
 	}
 
-	or<r extends TypeNode>(r: r): TypeNode<t | r["infer"]> {
+	or<r extends Type>(r: r): Type<t | r["infer"]> {
 		const branches = [...this.branches, ...(r.branches as any)]
 		return branches.length === 1
 			? branches[0]
@@ -120,18 +121,18 @@ export abstract class BaseType<
 		return this.hasKind("union") && this.branches.length === 0
 	}
 
-	get<key extends PropertyKey>(...path: readonly (key | TypeNode<key>)[]) {
+	get<key extends PropertyKey>(...path: readonly (key | Type<key>)[]) {
 		return this
 	}
 
-	extract(other: TypeNode) {
+	extract(other: Type) {
 		return this.$.parseRootSchema(
 			"union",
 			this.branches.filter((branch) => branch.extends(other))
 		)
 	}
 
-	exclude(other: TypeNode) {
+	exclude(other: Type) {
 		return this.$.parseRootSchema(
 			"union",
 			this.branches.filter((branch) => !branch.extends(other))
@@ -149,9 +150,7 @@ export abstract class BaseType<
 		) as never
 	}
 
-	extends<other extends TypeNode>(
-		other: other
-	): this is TypeNode<other["infer"]> {
+	extends<other extends Type>(other: other): this is Type<other["infer"]> {
 		const intersection = this.intersect(other)
 		return (
 			!(intersection instanceof Disjoint) && this.equals(intersection as never)
@@ -190,10 +189,6 @@ export abstract class BaseType<
 		// TODO: tuple expression for out validator
 		outValidator
 		return this as never
-		// return new Type(
-		//     this.constrain("morph", morph),
-		//     this.scope
-		// ) as never
 	}
 
 	// TODO: based on below, should maybe narrow morph output if used after
@@ -205,7 +200,7 @@ export abstract class BaseType<
 			: inferNarrow<this["infer"], def>,
 		$
 	> {
-		return new Type(this.constrain("predicate", def), this.$) as never
+		return this.constrain("predicate", def) as never
 	}
 
 	assert(data: unknown): this["infer"] {
@@ -216,49 +211,43 @@ export abstract class BaseType<
 	divisor<const schema extends validateConstraintArg<"divisor", this["infer"]>>(
 		schema: schema
 	): Type<applySchema<t, "divisor", schema>, $> {
-		return new Type(this.constrain("divisor", schema as never), this.$) as never
+		return this.constrain("divisor", schema as never) as never
 	}
 
 	min<const schema extends validateConstraintArg<"min", this["infer"]>>(
 		schema: schema
 	): Type<applySchema<t, "min", schema>, $> {
-		return new Type(this.constrain("min", schema as never), this.$) as never
+		return this.constrain("min", schema as never) as never
 	}
 
 	max<const schema extends validateConstraintArg<"max", this["infer"]>>(
 		schema: schema
 	): Type<applySchema<t, "max", schema>, $> {
-		return new Type(this.constrain("max", schema as never), this.$) as never
+		return this.constrain("max", schema as never) as never
 	}
 
 	minLength<
 		const schema extends validateConstraintArg<"minLength", this["infer"]>
 	>(schema: schema): Type<applySchema<t, "minLength", schema>, $> {
-		return new Type(
-			this.constrain("minLength", schema as never),
-			this.$
-		) as never
+		return this.constrain("minLength", schema as never) as never
 	}
 
 	maxLength<
 		const schema extends validateConstraintArg<"maxLength", this["infer"]>
 	>(schema: schema): Type<applySchema<t, "maxLength", schema>, $> {
-		return new Type(
-			this.constrain("maxLength", schema as never),
-			this.$
-		) as never
+		return this.constrain("maxLength", schema as never) as never
 	}
 
 	before<const schema extends validateConstraintArg<"before", this["infer"]>>(
 		schema: schema
 	): Type<applySchema<t, "before", schema>, $> {
-		return new Type(this.constrain("before", schema as never), this.$) as never
+		return this.constrain("before", schema as never) as never
 	}
 
 	after<const schema extends validateConstraintArg<"after", this["infer"]>>(
 		schema: schema
 	): Type<applySchema<t, "after", schema>, $> {
-		return new Type(this.constrain("after", schema as never), this.$) as never
+		return this.constrain("after", schema as never) as never
 	}
 }
 

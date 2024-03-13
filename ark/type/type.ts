@@ -1,5 +1,4 @@
 import { morph, type Constructor, type List, type conform } from "@arktype/util"
-import type { TypeNode } from "./base.js"
 import { keywords } from "./builtins/ark.js"
 import type { Predicate } from "./constraints/predicate.js"
 import type {
@@ -76,7 +75,7 @@ export const createTypeParser = <$>(scope: Scope): TypeParser<$> => {
 	const parser = (...args: unknown[]): Type | Generic => {
 		if (args.length === 1) {
 			// treat as a simple definition
-			return new Type(args[0], scope)
+			return parseTypeRoot(args[0], scope)
 		}
 		if (
 			args.length === 2 &&
@@ -93,7 +92,7 @@ export const createTypeParser = <$>(scope: Scope): TypeParser<$> => {
 		// otherwise, treat as a tuple expression. technically, this also allows
 		// non-expression tuple definitions to be parsed, but it's not a supported
 		// part of the API as specified by the associated types
-		return new Type(args, scope)
+		return parseTypeRoot(args, scope)
 	}
 	return parser as never
 }
@@ -143,8 +142,7 @@ export const generic = (
 				param,
 				parseTypeRoot(args[i], scope)
 			])
-			const root = parseTypeRoot(definition, scope, argNodes)
-			return new Type(root, scope)
+			return parseTypeRoot(definition, scope, argNodes)
 		},
 		{
 			[arkKind]: "generic",
@@ -168,7 +166,7 @@ export type GenericProps<
 	scope: Scope
 }
 
-export type BoundArgs = Record<string, TypeNode>
+export type BoundArgs = Record<string, Type>
 
 // TODO: Fix external reference (i.e. if this is attached to a scope, then args are defined using it)
 export type Generic<

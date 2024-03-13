@@ -4,7 +4,6 @@
 	"type": "module",
 	"dependencies": {
 		"arktype": "workspace:*",
-		"@arktype/schema": "workspace:*",
 		"@arktype/attest": "workspace:*",
 		"@arktype/fs": "workspace:*",
 		"ts-morph": "20.0.0"
