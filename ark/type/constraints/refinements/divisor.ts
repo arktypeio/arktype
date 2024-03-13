@@ -1,14 +1,15 @@
 import { jsData } from "../../shared/compile.js"
 import type { TraverseAllows } from "../../shared/context.js"
-import type { declareNode } from "../../shared/declare.js"
+import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import type { Type } from "../../types/type.js"
 import {
 	BasePrimitiveConstraint,
-	writeInvalidOperandMessage,
-	type PrimitiveConstraintInner
+	writeInvalidOperandMessage
 } from "../constraint.js"
 
-export interface DivisorInner extends PrimitiveConstraintInner<number> {}
+export interface DivisorInner extends BaseMeta {
+	readonly divisor: number
+}
 
 export type divisor<n extends number> = { "%": n }
 
@@ -25,35 +26,38 @@ export type DivisorDeclaration = declareNode<{
 
 export class DivisorNode extends BasePrimitiveConstraint<DivisorDeclaration> {
 	static implementation = this.implement({
-		collapseKey: "rule",
+		collapsibleKey: "divisor",
 		keys: {
-			rule: {}
+			divisor: {}
 		},
 		normalize: (schema) =>
-			typeof schema === "number" ? { rule: schema } : schema,
+			typeof schema === "number" ? { divisor: schema } : schema,
 		intersections: {
 			divisor: (l, r, $) =>
 				$.parseSchema("divisor", {
-					rule: Math.abs(
-						(l.rule * r.rule) / greatestCommonDivisor(l.rule, r.rule)
+					divisor: Math.abs(
+						(l.divisor * r.divisor) /
+							greatestCommonDivisor(l.divisor, r.divisor)
 					)
 				})
 		},
 		hasAssociatedError: true,
 		defaults: {
 			description(node) {
-				return node.rule === 1 ? "an integer" : `a multiple of ${node.rule}`
+				return node.divisor === 1
+					? "an integer"
+					: `a multiple of ${node.divisor}`
 			}
 		}
 	})
 
-	traverseAllows: TraverseAllows<number> = (data) => data % this.rule === 0
+	traverseAllows: TraverseAllows<number> = (data) => data % this.divisor === 0
 
-	readonly compiledCondition = `${jsData} % ${this.rule} === 0`
-	readonly compiledNegation = `${jsData} % ${this.rule} !== 0`
+	readonly compiledCondition = `${jsData} % ${this.divisor} === 0`
+	readonly compiledNegation = `${jsData} % ${this.divisor} !== 0`
 	readonly impliedBasis = this.$.tsKeywords.number
 	readonly errorContext = this.createErrorContext(this.inner)
-	readonly expression = `% ${this.rule}`
+	readonly expression = `% ${this.divisor}`
 }
 
 export const writeIndivisibleMessage = <node extends Type>(

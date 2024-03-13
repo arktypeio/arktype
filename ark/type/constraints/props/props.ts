@@ -39,7 +39,7 @@ export class PropsGroup extends DynamicBase<PropsGroupInput> {
 	traverseApply: TraverseApply<object> = (data, ctx) =>
 		this.all.forEach((prop) => prop.traverseApply(data as never, ctx))
 
-	compile(js: NodeCompiler) {
+	compile(js: NodeCompiler): void {
 		if (this.exhaustive) {
 			this.compileExhaustive(js)
 		} else {
@@ -47,7 +47,7 @@ export class PropsGroup extends DynamicBase<PropsGroupInput> {
 		}
 	}
 
-	protected compileEnumerable(js: NodeCompiler) {
+	protected compileEnumerable(js: NodeCompiler): void {
 		if (js.traversalKind === "Allows") {
 			this.all.forEach((node) =>
 				js.if(`!${js.invoke(node)}`, () => js.return(false))
@@ -57,7 +57,7 @@ export class PropsGroup extends DynamicBase<PropsGroupInput> {
 		}
 	}
 
-	protected compileExhaustive(js: NodeCompiler) {
+	protected compileExhaustive(js: NodeCompiler): void {
 		this.named.forEach((prop) => js.check(prop))
 		this.sequence?.compile(js)
 		if (this.sequence) js.check(this.sequence)

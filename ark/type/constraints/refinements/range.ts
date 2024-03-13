@@ -6,51 +6,18 @@ import {
 	type valueOf
 } from "@arktype/util"
 import type { Node } from "../../base.js"
-import type { Declaration, Schema } from "../../kinds.js"
+import type { Schema } from "../../kinds.js"
 import { jsData } from "../../shared/compile.js"
-import type { BaseNodeDeclaration, declareNode } from "../../shared/declare.js"
-import type {
-	nodeImplementationInputOf,
-	nodeImplementationOf
-} from "../../shared/implement.js"
+import type { BaseMeta, BaseNodeDeclaration } from "../../shared/declare.js"
+import type { KeyDefinitions } from "../../shared/implement.js"
 import type { DateLiteral, normalizePrimitiveConstraintSchema } from "../ast.js"
-import {
-	BasePrimitiveConstraint,
-	type PrimitiveConstraintInner
-} from "../constraint.js"
+import { BasePrimitiveConstraint } from "../constraint.js"
 import type { BoundKind, RangeKind } from "./shared.js"
 
 export abstract class BaseRange<
 	d extends BaseRangeDeclaration
 > extends BasePrimitiveConstraint<d> {
-	static implementBound<d extends Declaration<RangeKind>>(
-		implementation: Pick<
-			nodeImplementationInputOf<d>,
-			"defaults" | "intersections"
-		>
-	): nodeImplementationOf<d> {
-		return this.implement({
-			collapseKey: "rule",
-			hasAssociatedError: true,
-			keys: {
-				rule: {
-					parse: normalizeLimit
-				},
-				exclusive: {
-					// omit key with value false since it is the default
-					parse: (flag: boolean) => flag || undefined
-				}
-			},
-			normalize: (schema: d["schema"]) =>
-				typeof schema === "object" && "rule" in schema
-					? { ...schema, rule: schema.rule }
-					: { rule: schema as Extract<d["schema"], LimitSchemaValue> },
-			defaults: implementation.defaults as never,
-			intersections: implementation.intersections
-		}) as never
-	}
-
-	readonly exclusive = this.inner.exclusive ?? false
+	readonly limit: LimitInnerValue<d["kind"]> = (this as any)[this.kind]
 	readonly boundOperandKind = operandKindsByBoundKind[this.kind]
 	readonly compiledActual =
 		this.boundOperandKind === "value"
@@ -59,8 +26,8 @@ export abstract class BaseRange<
 			? `${jsData}.length`
 			: `${jsData}.valueOf()`
 	readonly comparator = compileComparator(this.kind, this.exclusive)
-	readonly numericLimit = normalizeLimit(this.rule)
-	readonly expression = `${this.comparator}${this.rule}`
+	readonly numericLimit = this.limit.valueOf()
+	readonly expression = `${this.comparator}${this.limit}`
 	readonly compiledCondition = `${this.compiledActual} ${this.comparator} ${this.numericLimit}`
 	readonly compiledNegation = `${this.compiledActual} ${
 		negatedComparators[this.comparator]
@@ -70,47 +37,56 @@ export abstract class BaseRange<
 	// transitively through description for date bounds
 	readonly stringLimit =
 		this.boundOperandKind === "date"
-			? dateLimitToString(this.rule)
-			: `${this.rule}`
+			? dateLimitToString(this.numericLimit)
+			: `${this.numericLimit}`
 	readonly errorContext = this.createErrorContext(this.inner)
 	readonly limitKind: LimitKind =
 		this.comparator["0"] === "<" ? "upper" : "lower"
 
 	isStricterThan(r: Node<d["kind"] | pairedRangeKind<d["kind"]>>): boolean {
 		const thisLimitIsStricter =
-			this.limitKind === "upper" ? this.rule < r.rule : this.rule > r.rule
+			this.limitKind === "upper"
+				? this.numericLimit < r.numericLimit
+				: this.numericLimit > r.numericLimit
 		return (
 			thisLimitIsStricter ||
-			(this.rule === r.rule && this.exclusive && !r.exclusive)
+			(this.numericLimit === r.numericLimit && this.exclusive && !r.exclusive)
 		)
 	}
 
 	overlapsRange(r: Node<pairedRangeKind<d["kind"]>>): boolean {
 		if (this.isStricterThan(r)) return false
-		if (this.rule === r.rule && (this.exclusive || r.exclusive)) return false
+		if (this.numericLimit === r.numericLimit && (this.exclusive || r.exclusive))
+			return false
 		return true
 	}
 
 	overlapIsUnit(r: Node<pairedRangeKind<d["kind"]>>): boolean {
-		return this.rule === r.rule && !this.exclusive && !r.exclusive
+		return (
+			this.numericLimit === r.numericLimit && !this.exclusive && !r.exclusive
+		)
 	}
 }
 
-export interface BoundInner extends PrimitiveConstraintInner<number> {
-	readonly exclusive?: boolean
+export interface BaseRangeInner extends BaseMeta {
+	readonly exclusive?: true
 }
 
-export type LimitSchemaValue = Date | number | string
+export type LimitSchemaValue<kind extends RangeKind = RangeKind> = kind extends
+	| "before"
+	| "after"
+	? Date | number | string
+	: number
 
-export interface NormalizedBoundSchema<
-	limit extends LimitSchemaValue = LimitSchemaValue
-> extends PrimitiveConstraintInner<limit> {
+export type LimitInnerValue<kind extends RangeKind = RangeKind> = kind extends
+	| "before"
+	| "after"
+	? Date
+	: number
+
+export interface BaseNormalizedRangeSchema extends BaseMeta {
 	readonly exclusive?: boolean
 }
-
-export type BoundSchema<limit extends LimitSchemaValue = LimitSchemaValue> =
-	| limit
-	| NormalizedBoundSchema<limit>
 
 export type LimitKind = "lower" | "upper"
 
@@ -155,36 +131,23 @@ export type NumericallyBoundable = string | number | List
 
 export type Boundable = NumericallyBoundable | Date
 
-export const normalizeLimit = (limit: LimitSchemaValue): number =>
-	typeof limit === "string"
-		? new Date(limit).valueOf()
-		: limit instanceof Date
-		? limit.valueOf()
-		: limit
+export const parseExclusiveKey: KeyDefinitions<BaseRangeDeclaration>["exclusive"] =
+	{
+		// omit key with value false since it is the default
+		parse: (flag: boolean) => flag || undefined
+	}
 
-export const baseBoundImplementation = {
-	collapseKey: "rule",
-	hasAssociatedError: true,
-	keys: {
-		rule: {
-			parse: normalizeLimit
-		},
-		exclusive: {
-			// omit key with value false since it is the default
-			parse: (flag: boolean) => flag || undefined
-		}
-	},
-	normalize: (schema: BoundSchema) =>
-		typeof schema === "object" && "rule" in schema
-			? { ...schema, rule: schema.rule }
-			: { rule: schema as Extract<BoundSchema, LimitSchemaValue> }
-} as const satisfies Partial<nodeImplementationOf<BaseRangeDeclaration>>
+export const parseDateLimit = {
+	parse: (limit: LimitSchemaValue): Date =>
+		typeof limit === "string" || typeof limit === "number"
+			? new Date(limit)
+			: limit
+}
 
 export interface BaseRangeDeclaration extends BaseNodeDeclaration {
 	kind: RangeKind
-	inner: BoundInner
-	schema: BoundSchema
-	normalizedSchema: NormalizedBoundSchema
+	inner: BaseRangeInner
+	normalizedSchema: BaseNormalizedRangeSchema
 }
 
 export const operandKindsByBoundKind = {
@@ -196,67 +159,22 @@ export const operandKindsByBoundKind = {
 	before: "date"
 } as const satisfies Record<RangeKind, BoundOperandKind>
 
-export const compileComparator = (kind: RangeKind, exclusive: boolean) =>
+export const compileComparator = (
+	kind: RangeKind,
+	exclusive: boolean | undefined
+) =>
 	`${isKeyOf(kind, boundKindPairsByLower) ? ">" : "<"}${
 		exclusive ? "" : "="
 	}` as const
 
-type BoundDeclarationInput = {
-	kind: RangeKind
-	rule: LimitSchemaValue
-	prerequisite: unknown
-}
-
-export type declareRange<input extends BoundDeclarationInput> = declareNode<{
-	kind: input["kind"]
-	schema: BoundSchema<input["rule"]>
-	normalizedSchema: NormalizedBoundSchema<input["rule"]>
-	inner: BoundInner
-	prerequisite: input["prerequisite"]
-	errorContext: BoundInner
-}>
-
 export type BoundOperandKind = "value" | "length" | "date"
-
-export type NumericRangeKind = "min" | "max"
-
-export type NumericRangeDeclaration<
-	kind extends NumericRangeKind = NumericRangeKind
-> = declareRange<{
-	kind: kind
-	rule: number
-	prerequisite: number
-}>
-
-export type LengthRangeKind = "minLength" | "maxLength"
-
-export type LengthRangeDeclaration<
-	kind extends LengthRangeKind = LengthRangeKind
-> = declareRange<{
-	kind: kind
-	rule: number
-	prerequisite: LengthBoundableData
-}>
 
 export type LengthBoundableData = string | List
 
 export type DateRangeKind = "before" | "after"
 
-export type DateRangeDeclaration<kind extends DateRangeKind = DateRangeKind> =
-	declareRange<{
-		kind: kind
-		rule: Date | string | number
-		prerequisite: Date
-	}>
-
 export const dateLimitToString = (limit: LimitSchemaValue): string =>
 	typeof limit === "string" ? limit : new Date(limit).toLocaleString()
-
-export interface DateBoundExtras {
-	dateLimit: Date
-	numericLimit: number
-	stringLimit: string
-}
 
 export type boundToIs<
 	kind extends BoundKind,

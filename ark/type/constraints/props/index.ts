@@ -34,11 +34,11 @@ export class IndexNode extends BaseConstraint<IndexDeclaration> {
 			keys: {
 				key: {
 					child: true,
-					parse: (schema, ctx) => ctx.$.parseTypeSchema(schema)
+					parse: (schema, ctx) => ctx.$.node(schema)
 				},
 				value: {
 					child: true,
-					parse: (schema, ctx) => ctx.$.parseTypeSchema(schema)
+					parse: (schema, ctx) => ctx.$.node(schema)
 				}
 			},
 			normalize: (schema) => schema,
@@ -69,7 +69,7 @@ export class IndexNode extends BaseConstraint<IndexDeclaration> {
 			}
 		})
 
-	compile(js: NodeCompiler) {
+	compile(js: NodeCompiler): void {
 		if (js.traversalKind === "Allows") {
 			js.return(true)
 		}

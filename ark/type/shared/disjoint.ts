@@ -75,12 +75,18 @@ export type DisjointsAtPath = {
 
 export type DisjointSourceEntry = entryOf<DisjointsSources>
 
+export type FlatDisjointEntry = {
+	path: SerializedPath
+	kind: DisjointKind
+	disjoint: Required<DisjointKinds>[DisjointKind]
+}
+
 export type DisjointKind = keyof DisjointKinds
 
 export class Disjoint {
 	constructor(public sources: DisjointsSources) {}
 
-	clone() {
+	clone(): Disjoint {
 		return new Disjoint(this.sources)
 	}
 
@@ -88,7 +94,7 @@ export class Disjoint {
 		kind: kind,
 		l: Required<DisjointKinds>[kind]["l"],
 		r: Required<DisjointKinds>[kind]["r"]
-	) {
+	): Disjoint {
 		return new Disjoint({
 			"[]": {
 				[kind]: {
@@ -99,7 +105,7 @@ export class Disjoint {
 		})
 	}
 
-	static fromEntries(entries: DisjointKindEntries) {
+	static fromEntries(entries: DisjointKindEntries): Disjoint {
 		if (!entries.length) {
 			return throwInternalError(
 				`Unexpected attempt to create a disjoint from no entries`
@@ -108,7 +114,7 @@ export class Disjoint {
 		return new Disjoint({ "[]": fromEntries(entries) })
 	}
 
-	get flat() {
+	get flat(): FlatDisjointEntry[] {
 		return entriesOf(this.sources).flatMap(([path, disjointKinds]) =>
 			entriesOf(disjointKinds).map(([kind, disjoint]) => ({
 				path,
@@ -118,7 +124,7 @@ export class Disjoint {
 		)
 	}
 
-	describeReasons() {
+	describeReasons(): string {
 		const reasons = this.flat
 		if (reasons.length === 1) {
 			const { path, disjoint } = reasons[0]
@@ -132,15 +138,15 @@ export class Disjoint {
 			.join("\n• ")}`
 	}
 
-	isEmpty() {
+	isEmpty(): boolean {
 		return this.flat.length === 0
 	}
 
-	throw() {
+	throw(): never {
 		return throwParseError(this.describeReasons())
 	}
 
-	invert() {
+	invert(): Disjoint {
 		const invertedEntries = entriesOf(this.sources).map(
 			([path, disjoints]) =>
 				[
@@ -154,13 +160,13 @@ export class Disjoint {
 		return new Disjoint(fromEntries(invertedEntries))
 	}
 
-	add(input: Disjoint) {
+	add(input: Disjoint): void {
 		entriesOf(input.sources).forEach(([path, disjoints]) =>
 			Object.assign(this.sources[path] ?? {}, disjoints)
 		)
 	}
 
-	withPrefixKey(key: string) {
+	withPrefixKey(key: string): Disjoint {
 		const entriesWithPrefix = entriesOf(this.sources).map(
 			([path, disjoints]): DisjointSourceEntry => {
 				const segments = JSON.parse(path) as string[]
@@ -172,7 +178,7 @@ export class Disjoint {
 		return new Disjoint(fromEntries(entriesWithPrefix))
 	}
 
-	toString() {
+	toString(): string {
 		return printable(this.sources)
 	}
 }

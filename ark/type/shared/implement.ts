@@ -154,10 +154,13 @@ type PrecedenceByKind = {
 	[i in indexOf<OrderedNodeKinds> as OrderedNodeKinds[i]]: i
 }
 
-const precedenceByKind = morph(
+export const precedenceByKind = morph(
 	nodeKinds,
 	(i, kind) => [kind, i] as entryOf<PrecedenceByKind>
 )
+
+export const isNodeKind = (value: unknown): value is NodeKind =>
+	typeof value === "string" && value in precedenceByKind
 
 export type precedenceOfKind<kind extends NodeKind> = PrecedenceByKind[kind]
 
@@ -225,7 +228,7 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	keys: KeyDefinitions<d>
 	normalize: (schema: d["schema"]) => d["normalizedSchema"]
 	hasAssociatedError: d["errorContext"] extends null ? false : true
-	collapseKey?: keyof d["inner"] & string
+	collapsibleKey?: keyof d["inner"]
 	reduce?: (
 		inner: d["inner"],
 		$: Scope
@@ -256,7 +259,8 @@ export type nodeImplementationInputOf<d extends BaseNodeDeclaration> =
 			: {}) &
 		// if the node is declared as reducible to a kind other than its own,
 		// there must be a reduce implementation
-		(d["reducibleTo"] extends d["kind"] ? {} : { reduce: {} })
+		(d["reducibleTo"] extends d["kind"] ? {} : { reduce: {} }) &
+		(d["kind"] extends ConstraintKind ? { collapsibleKey: {} } : {})
 
 type nodeDefaultsImplementationInputFor<kind extends NodeKind> = requireKeys<
 	NodeConfig<kind>,

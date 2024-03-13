@@ -1,11 +1,9 @@
 import { jsData } from "../../shared/compile.js"
-import type { declareNode } from "../../shared/declare.js"
-import {
-	BasePrimitiveConstraint,
-	type PrimitiveConstraintInner
-} from "../constraint.js"
+import type { BaseMeta, declareNode } from "../../shared/declare.js"
+import { BasePrimitiveConstraint } from "../constraint.js"
 
-export interface RegexInner extends PrimitiveConstraintInner<string> {
+export interface RegexInner extends BaseMeta {
+	readonly regex: string
 	readonly flags?: string
 }
 
@@ -27,18 +25,18 @@ export type RegexDeclaration = declareNode<{
 
 export class RegexNode extends BasePrimitiveConstraint<RegexDeclaration> {
 	static implementation = this.implement({
-		collapseKey: "rule",
+		collapsibleKey: "regex",
 		keys: {
-			rule: {},
+			regex: {},
 			flags: {}
 		},
 		normalize: (schema) =>
 			typeof schema === "string"
-				? { rule: schema }
+				? { regex: schema }
 				: schema instanceof RegExp
 				? schema.flags
-					? { rule: schema.source, flags: schema.flags }
-					: { rule: schema.source }
+					? { regex: schema.source, flags: schema.flags }
+					: { regex: schema.source }
 				: schema,
 		hasAssociatedError: true,
 		intersectionIsOpen: true,
@@ -48,14 +46,14 @@ export class RegexNode extends BasePrimitiveConstraint<RegexDeclaration> {
 		},
 		defaults: {
 			description(node) {
-				return `matched by ${node.rule}`
+				return `matched by ${node.regex}`
 			}
 		}
 	})
 
-	readonly regex = new RegExp(this.rule, this.flags)
-	readonly expression = `${this.regex}`
-	traverseAllows = this.regex.test
+	readonly instance = new RegExp(this.regex, this.flags)
+	readonly expression = `${this.instance}`
+	traverseAllows = this.instance.test.bind(this.instance)
 
 	readonly compiledCondition = `${this.expression}.test(${jsData})`
 	readonly compiledNegation = `!${this.compiledCondition}`

@@ -1,15 +1,14 @@
 import { compileSerializedValue } from "@arktype/util"
 import { jsData } from "../shared/compile.js"
 import type { TraversalContext } from "../shared/context.js"
-import type { declareNode } from "../shared/declare.js"
+import type { BaseMeta, declareNode } from "../shared/declare.js"
 import type { of } from "./ast.js"
-import {
-	BasePrimitiveConstraint,
-	type PrimitiveConstraintInner
-} from "./constraint.js"
+import { BasePrimitiveConstraint } from "./constraint.js"
 
 export interface PredicateInner<rule extends Predicate<any> = Predicate<any>>
-	extends PrimitiveConstraintInner<rule> {}
+	extends BaseMeta {
+	readonly predicate: rule
+}
 
 export type NormalizedPredicateSchema = PredicateInner
 
@@ -32,16 +31,16 @@ export type PredicateDeclaration = declareNode<{
 export class PredicateNode extends BasePrimitiveConstraint<PredicateDeclaration> {
 	static implementation = this.implement({
 		hasAssociatedError: true,
-		collapseKey: "rule",
+		collapsibleKey: "predicate",
 		keys: {
-			rule: {}
+			predicate: {}
 		},
 		normalize: (schema) =>
-			typeof schema === "function" ? { rule: schema } : schema,
+			typeof schema === "function" ? { predicate: schema } : schema,
 		defaults: {
 			description(node) {
 				return `valid according to ${
-					node.rule.name || "an anonymous predicate"
+					node.predicate.name || "an anonymous predicate"
 				}`
 			}
 		},
@@ -56,10 +55,10 @@ export class PredicateNode extends BasePrimitiveConstraint<PredicateDeclaration>
 		}
 	})
 
-	traverseAllows = this.rule
+	traverseAllows = this.predicate
 
 	readonly impliedBasis = undefined
-	readonly serializedPredicate = compileSerializedValue(this.rule)
+	readonly serializedPredicate = compileSerializedValue(this.predicate)
 	readonly compiledCondition = `${this.serializedPredicate}(${jsData})`
 	readonly compiledNegation = `!${this.compiledCondition}`
 	readonly errorContext = this.createErrorContext({})

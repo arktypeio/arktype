@@ -34,12 +34,14 @@ export type SchemaParseOptions = {
 	 * Useful for defining reductions like number|string|bigint|symbol|object|true|false|null|undefined => unknown
 	 **/
 	reduceTo?: Node
+	root?: boolean
+	allowedKinds?: readonly NodeKind[]
 }
 
 export type SchemaParseContext = evaluate<
 	SchemaParseOptions & {
 		$: Scope
-		definition: unknown
+		raw: unknown
 	}
 >
 
@@ -133,8 +135,11 @@ export function parseAttachments(
 	// check keys on collapsibleJson instead of schema in case one or more keys is
 	// implied, e.g. minVariadicLength on a SequenceNode
 	const collapsibleKeys = Object.keys(collapsibleJson)
-	if (collapsibleKeys.length === 1 && collapsibleKeys[0] === impl.collapseKey) {
-		collapsibleJson = collapsibleJson[impl.collapseKey] as never
+	if (
+		collapsibleKeys.length === 1 &&
+		collapsibleKeys[0] === impl.collapsibleKey
+	) {
+		collapsibleJson = collapsibleJson[impl.collapsibleKey] as never
 		if (
 			// if the collapsibleJson is still an object
 			hasDomain(collapsibleJson, "object") &&

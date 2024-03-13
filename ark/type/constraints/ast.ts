@@ -2,7 +2,6 @@ import type { ErrorMessage, conform, evaluate } from "@arktype/util"
 import type { Prerequisite, Schema } from "../kinds.js"
 import type { Type } from "../types/type.js"
 import type {
-	PrimitiveConstraintInner,
 	PrimitiveConstraintKind,
 	writeInvalidOperandMessage
 } from "./constraint.js"
@@ -83,7 +82,9 @@ export type constrain<In, constraint> = In extends of<infer base> &
 
 export type normalizePrimitiveConstraintSchema<
 	schema extends Schema<PrimitiveConstraintKind>
-> = schema extends PrimitiveConstraintInner<infer rule> ? rule : schema
+> = keyof schema & PrimitiveConstraintKind extends never
+	? schema
+	: schema[keyof schema & PrimitiveConstraintKind]
 
 export type applySchema<
 	t,

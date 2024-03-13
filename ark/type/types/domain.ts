@@ -38,7 +38,7 @@ export class DomainNode<t = any, $ = any> extends BaseBasis<
 > {
 	static implementation = this.implement({
 		hasAssociatedError: true,
-		collapseKey: "domain",
+		collapsibleKey: "domain",
 		keys: {
 			domain: {}
 		},

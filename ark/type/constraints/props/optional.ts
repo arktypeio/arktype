@@ -79,7 +79,7 @@ export class OptionalNode extends BaseConstraint<OptionalDeclaration> {
 		}
 	}
 
-	compile(js: NodeCompiler) {
+	compile(js: NodeCompiler): void {
 		js.if(`${this.serializedKey} in ${js.data}`, () =>
 			js.checkLiteralKey(this.key, this.value)
 		)

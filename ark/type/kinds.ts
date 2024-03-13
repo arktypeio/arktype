@@ -41,7 +41,7 @@ import {
 	type MorphDeclaration
 } from "./types/morph.js"
 import { ProtoNode, type ProtoDeclaration } from "./types/proto.js"
-import { UnionNode, UnionNode, type UnionDeclaration } from "./types/union.js"
+import { UnionNode, type UnionDeclaration } from "./types/union.js"
 import { UnitNode, type UnitDeclaration } from "./types/unit.js"
 
 export interface NodeDeclarationsByKind extends BoundDeclarations {

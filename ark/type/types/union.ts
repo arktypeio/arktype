@@ -67,7 +67,7 @@ export class UnionNode<t = unknown, $ = any> extends BaseType<
 	static implementation: nodeImplementationOf<UnionDeclaration> =
 		this.implement({
 			hasAssociatedError: true,
-			collapseKey: "branches",
+			collapsibleKey: "branches",
 			keys: {
 				ordered: {},
 				branches: {
@@ -76,7 +76,7 @@ export class UnionNode<t = unknown, $ = any> extends BaseType<
 						const branches = schema.map((branch) =>
 							ctx.$.parseTypeSchema(branch, { allowedKinds: unionChildKinds })
 						)
-						const def = ctx.definition as UnionSchema
+						const def = ctx.raw as UnionSchema
 						if (isArray(def) || def.ordered !== true) {
 							branches.sort((l, r) => (l.innerId < r.innerId ? -1 : 1))
 						}
@@ -156,7 +156,7 @@ export class UnionNode<t = unknown, $ = any> extends BaseType<
 					if (branches.length === 1) {
 						return branches[0]
 					}
-					return $.parseSchema(
+					return $.node(
 						"union",
 						l.ordered ? { branches, ordered: true } : { branches }
 					)

@@ -10,13 +10,6 @@ export interface BaseMeta {
 
 export const metaKeys: { [k in keyof BaseMeta]: 1 } = { description: 1 }
 
-export type NodeCompositionKind = "primitive" | "composite"
-
-export interface ImplementedAttachments {
-	readonly description: string
-	readonly expression: string
-}
-
 interface DeclarationInput {
 	kind: NodeKind
 	schema: unknown

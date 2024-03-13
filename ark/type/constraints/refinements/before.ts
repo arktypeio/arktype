@@ -1,22 +1,53 @@
+import type { TraverseAllows } from "../../shared/context.js"
+import type { declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import type { nodeImplementationOf } from "../../shared/implement.js"
 import {
 	BaseRange,
-	type DateBoundExtras,
-	type DateRangeDeclaration,
+	parseDateLimit,
+	parseExclusiveKey,
+	type BaseNormalizedRangeSchema,
+	type BaseRangeInner,
+	type LimitSchemaValue,
 	type boundToIs
 } from "./range.js"
 
-export type BeforeDeclaration = DateRangeDeclaration<"before">
-
 export type before<date extends string> = boundToIs<"before", date>
 
-export class BeforeNode
-	extends BaseRange<BeforeDeclaration>
-	implements DateBoundExtras
-{
+export interface BeforeInner extends BaseRangeInner {
+	before: Date
+}
+
+export interface NormalizedBeforeSchema extends BaseNormalizedRangeSchema {
+	before: LimitSchemaValue
+}
+
+export type BeforeSchema = NormalizedBeforeSchema | number
+
+export type BeforeDeclaration = declareNode<{
+	kind: "before"
+	schema: BeforeSchema
+	normalizedSchema: NormalizedBeforeSchema
+	inner: BeforeInner
+	prerequisite: Date
+	errorContext: BeforeInner
+}>
+
+export class BeforeNode extends BaseRange<BeforeDeclaration> {
 	static implementation: nodeImplementationOf<BeforeDeclaration> =
-		this.implementBound({
+		this.implement({
+			collapsibleKey: "before",
+			hasAssociatedError: true,
+			keys: {
+				before: parseDateLimit,
+				exclusive: parseExclusiveKey
+			},
+			normalize: (schema) =>
+				typeof schema === "number" ||
+				typeof schema === "string" ||
+				schema instanceof Date
+					? { before: schema }
+					: schema,
 			defaults: {
 				description(node) {
 					return node.exclusive
@@ -30,16 +61,15 @@ export class BeforeNode
 				after: (before, after, $) =>
 					before.overlapsRange(after)
 						? before.overlapIsUnit(after)
-							? $.parseSchema("unit", { unit: before.dateLimit })
+							? $.parseSchema("unit", { unit: before.limit })
 							: null
 						: Disjoint.from("range", before, after)
 			}
 		})
 
-	readonly dateLimit = new Date(this.rule)
 	readonly impliedBasis = this.$.jsObjects.Date
 
-	traverseAllows = this.exclusive
-		? (data: Date) => +data < this.numericLimit
-		: (data: Date) => +data <= this.numericLimit
+	traverseAllows: TraverseAllows<Date> = this.exclusive
+		? (data) => +data < this.numericLimit
+		: (data) => +data <= this.numericLimit
 }

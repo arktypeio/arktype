@@ -1,14 +1,15 @@
-import type {
-	Constructor,
-	ErrorMessage,
-	NonEnumerableDomain,
-	conform,
-	describe,
-	inferDomain
+import {
+	throwInternalError,
+	type Constructor,
+	type ErrorMessage,
+	type NonEnumerableDomain,
+	type conform,
+	type describe,
+	type inferDomain
 } from "@arktype/util"
-import type { TypeSchema } from "./base.js"
+import type { DiscriminableSchema, kindOfSchema } from "./base.js"
 import type { Prerequisite } from "./kinds.js"
-import type { SchemaParseOptions } from "./parse.js"
+import { parseAttachments, type SchemaParseOptions } from "./parse.js"
 import type { Scope } from "./scope.js"
 import type { ConstraintKind, TypeKind } from "./shared/implement.js"
 import type { inferBasis } from "./types/basis.js"
@@ -32,17 +33,10 @@ export type SchemaParser<$> = <schema>(
 
 export declare const createSchemaParser: <$>($: Scope) => SchemaParser<$>
 
-export type NodeParser<$> = <const schema extends TypeSchema>(
+export type NodeParser<$> = <const schema extends DiscriminableSchema>(
 	schema: schema,
-	opts?: TypeSchemaParseOptions
+	opts?: SchemaParseOptions
 ) => Type<inferSchema<schema>, $>
-
-export declare const createNodeParser: <$>($: Scope) => NodeParser<$>
-
-export interface TypeSchemaParseOptions extends SchemaParseOptions {
-	root?: boolean
-	allowedKinds?: readonly TypeKind[]
-}
 
 export type validateSchema<schema> = [schema] extends [
 	readonly [...infer branches]

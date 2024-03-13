@@ -6,6 +6,7 @@ import {
 	type Constructor
 } from "@arktype/util"
 import { jsData } from "../shared/compile.js"
+import type { TraverseAllows } from "../shared/context.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import { defaultValueSerializer } from "../shared/implement.js"
@@ -40,7 +41,7 @@ export class ProtoNode<t = unknown, $ = any> extends BaseBasis<
 > {
 	static implementation = this.implement({
 		hasAssociatedError: true,
-		collapseKey: "proto",
+		collapsibleKey: "proto",
 		keys: {
 			proto: {
 				serialize: (constructor) =>
@@ -75,7 +76,7 @@ export class ProtoNode<t = unknown, $ = any> extends BaseBasis<
 		}
 	})
 
-	traverseAllows = (data: unknown) => data instanceof this.proto
+	traverseAllows: TraverseAllows = (data) => data instanceof this.proto
 
 	readonly expression = `${this.proto.name}`
 	readonly serializedConstructor = (this.json as { proto: string }).proto

@@ -1,22 +1,52 @@
-import { JsObjects } from "../../builtins/jsObjects.js"
+import type { TraverseAllows } from "../../shared/context.js"
+import type { declareNode } from "../../shared/declare.js"
 import type { nodeImplementationOf } from "../../shared/implement.js"
 import {
 	BaseRange,
-	type DateBoundExtras,
-	type DateRangeDeclaration,
+	parseDateLimit,
+	parseExclusiveKey,
+	type BaseNormalizedRangeSchema,
+	type BaseRangeInner,
+	type LimitSchemaValue,
 	type boundToIs
 } from "./range.js"
 
-export type AfterDeclaration = DateRangeDeclaration<"after">
-
 export type after<date extends string> = boundToIs<"after", date>
 
-export class AfterNode
-	extends BaseRange<AfterDeclaration>
-	implements DateBoundExtras
-{
+export interface AfterInner extends BaseRangeInner {
+	after: Date
+}
+
+export interface NormalizedAfterSchema extends BaseNormalizedRangeSchema {
+	after: LimitSchemaValue
+}
+
+export type AfterSchema = NormalizedAfterSchema | number
+
+export type AfterDeclaration = declareNode<{
+	kind: "after"
+	schema: AfterSchema
+	normalizedSchema: NormalizedAfterSchema
+	inner: AfterInner
+	prerequisite: Date
+	errorContext: AfterInner
+}>
+
+export class AfterNode extends BaseRange<AfterDeclaration> {
 	static implementation: nodeImplementationOf<AfterDeclaration> =
-		this.implementBound({
+		this.implement({
+			collapsibleKey: "after",
+			hasAssociatedError: true,
+			keys: {
+				after: parseDateLimit,
+				exclusive: parseExclusiveKey
+			},
+			normalize: (schema) =>
+				typeof schema === "number" ||
+				typeof schema === "string" ||
+				schema instanceof Date
+					? { after: schema }
+					: schema,
 			defaults: {
 				description(node) {
 					return node.exclusive
@@ -30,10 +60,9 @@ export class AfterNode
 			}
 		})
 
-	readonly dateLimit = new Date(this.rule)
-	readonly impliedBasis = JsObjects.Date
+	readonly impliedBasis = this.$.jsObjects.Date
 
-	traverseAllows = this.exclusive
-		? (data: Date) => +data > this.numericLimit
-		: (data: Date) => +data >= this.numericLimit
+	traverseAllows: TraverseAllows<Date> = this.exclusive
+		? (data) => +data > this.numericLimit
+		: (data) => +data >= this.numericLimit
 }

@@ -1,13 +1,13 @@
 import { jsData } from "../../shared/compile.js"
-import type { declareNode } from "../../shared/declare.js"
+import type { TraverseAllows } from "../../shared/context.js"
+import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
-import {
-	BasePrimitiveConstraint,
-	type PrimitiveConstraintInner
-} from "../constraint.js"
+import { BasePrimitiveConstraint } from "../constraint.js"
 import type { LengthBoundableData } from "./range.js"
 
-export interface LengthInner extends PrimitiveConstraintInner<number> {}
+export interface LengthInner extends BaseMeta {
+	readonly length: number
+}
 
 export type length<n extends number> = { "==": n }
 
@@ -26,35 +26,35 @@ export type LengthDeclaration = declareNode<{
 
 export class LengthNode extends BasePrimitiveConstraint<LengthDeclaration> {
 	static implementation = this.implement({
-		collapseKey: "rule",
+		collapsibleKey: "length",
 		keys: {
-			rule: {}
+			length: {}
 		},
 		normalize: (schema) =>
-			typeof schema === "number" ? { rule: schema } : schema,
+			typeof schema === "number" ? { length: schema } : schema,
 		intersections: {
 			length: (l, r) =>
 				new Disjoint({
 					"[length]": {
 						unit: {
-							l: l.$.parseSchema("unit", { unit: l.rule }),
-							r: r.$.parseSchema("unit", { unit: r.rule })
+							l: l.$.parseSchema("unit", { unit: l.length }),
+							r: r.$.parseSchema("unit", { unit: r.length })
 						}
 					}
 				}),
 			minLength: (length, minLength) =>
 				(
 					minLength.exclusive
-						? length.rule > minLength.rule
-						: length.rule >= minLength.rule
+						? length.length > minLength.length
+						: length.length >= minLength.length
 				)
 					? length
 					: Disjoint.from("range", length, minLength),
 			maxLength: (length, maxLength) =>
 				(
 					maxLength.exclusive
-						? length.rule < maxLength.rule
-						: length.rule <= maxLength.rule
+						? length.length < maxLength.length
+						: length.length <= maxLength.length
 				)
 					? length
 					: Disjoint.from("range", length, maxLength)
@@ -62,16 +62,17 @@ export class LengthNode extends BasePrimitiveConstraint<LengthDeclaration> {
 		hasAssociatedError: true,
 		defaults: {
 			description(node) {
-				return `exactly length ${node.rule}`
+				return `exactly length ${node.length}`
 			}
 		}
 	})
 
-	traverseAllows = (data: LengthBoundableData) => data.length === this.rule
+	traverseAllows: TraverseAllows<LengthBoundableData> = (data) =>
+		data.length === this.length
 
-	readonly compiledCondition = `${jsData}.length === ${this.rule}`
-	readonly compiledNegation = `${jsData}.length !== ${this.rule}`
+	readonly compiledCondition = `${jsData}.length === ${this.length}`
+	readonly compiledNegation = `${jsData}.length !== ${this.length}`
 	readonly impliedBasis = this.$.lengthBoundable
 	readonly errorContext = this.createErrorContext(this.inner)
-	readonly expression = `{ length: ${this.rule}}`
+	readonly expression = `{ length: ${this.length}}`
 }

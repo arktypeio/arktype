@@ -2,10 +2,8 @@ import {
 	CompiledFunction,
 	domainOf,
 	hasDomain,
-	isArray,
 	isThunk,
 	morph,
-	printable,
 	throwInternalError,
 	throwParseError,
 	type Dict,
@@ -15,7 +13,7 @@ import {
 	type nominal,
 	type requireKeys
 } from "@arktype/util"
-import type { Node } from "./base.js"
+import { kindOfSchema, type DiscriminableSchema, type Node } from "./base.js"
 import { keywords, type type } from "./builtins/ark.js"
 import { globalConfig } from "./config.js"
 import type { LengthBoundableData } from "./constraints/refinements/range.js"
@@ -41,10 +39,9 @@ import {
 } from "./parser/string/shift/operand/unenclosed.js"
 import { fullStringParse } from "./parser/string/string.js"
 import {
-	createNodeParser,
 	createSchemaParser,
-	type NodeParser,
-	type SchemaParser
+	type SchemaParser,
+	type inferSchema
 } from "./schema.js"
 import { NodeCompiler } from "./shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "./shared/context.js"
@@ -61,7 +58,6 @@ import type {
 	TypeKind
 } from "./shared/implement.js"
 
-import { discriminatingIntersectionKeys } from "./types/intersection.js"
 import type { extractIn, extractOut } from "./types/morph.js"
 import { BaseType, type Type } from "./types/type.js"
 import type { UnionNode } from "./types/union.js"
@@ -155,37 +151,6 @@ const parseConfig = (scopeConfig: ArkConfig | undefined): ParsedArkConfig => {
 		}
 	}
 	return parsedConfig
-}
-
-const assertTypeKind = (schema: unknown): TypeKind => {
-	switch (typeof schema) {
-		case "string":
-			return "domain"
-		case "function":
-			return "proto"
-		case "object":
-			// throw at end of function
-			if (schema === null) break
-
-			if (schema instanceof BaseType) return schema.kind
-
-			if ("morph" in schema) return "morph"
-
-			if ("branches" in schema || isArray(schema)) return "union"
-
-			if ("unit" in schema) return "unit"
-
-			const schemaKeys = Object.keys(schema)
-
-			if (
-				schemaKeys.length === 0 ||
-				schemaKeys.some((k) => k in discriminatingIntersectionKeys)
-			)
-				return "intersection"
-			if ("proto" in schema) return "proto"
-			if ("domain" in schema) return "domain"
-	}
-	return throwParseError(`${printable(schema)} is not a valid type schema`)
 }
 
 export type ScopeParser<parent, ambient> = {
@@ -428,8 +393,6 @@ export class Scope<r extends Resolutions = any> {
 
 	type: TypeParser<$<r>> = createTypeParser(this as never) as never
 
-	node: NodeParser<$<r>> = createNodeParser(this as never) as never
-
 	schema: SchemaParser<$<r>> = createSchemaParser(this as never) as never
 
 	match: MatchParser<$<r>> = createMatchParser(this as never) as never
@@ -648,7 +611,7 @@ export class Scope<r extends Resolutions = any> {
 		schema: Schema<defKind>,
 		opts: TypeSchemaParseOptions<defKind> = {}
 	): Node<reducibleKindOf<defKind>> {
-		const kind = assertTypeKind(schema)
+		const kind = kindOfSchema(schema)
 		if (opts.allowedKinds && !opts.allowedKinds.includes(kind as never)) {
 			return throwParseError(
 				`Schema of kind ${kind} should be one of ${opts.allowedKinds}`
@@ -677,6 +640,41 @@ export class Scope<r extends Resolutions = any> {
 		return node
 	}
 
+	node<const schema extends DiscriminableSchema>(
+		schema: schema,
+		opts?: SchemaParseOptions
+	): Type<inferSchema<schema>, $<r>> {
+		if (opts?.alias && opts.alias in this.resolutions) {
+			return throwInternalError(
+				`Unexpected attempt to recreate existing alias ${opts.alias}`
+			)
+		}
+		const kind = kindOfSchema(schema)
+		if (opts?.allowedKinds && !opts.allowedKinds.includes(kind as never)) {
+			return throwParseError(
+				`Schema of kind ${kind} should be one of ${opts.allowedKinds}`
+			)
+		}
+		const node = parseAttachments(kind, schema, {
+			...opts,
+			$: this,
+			raw: schema,
+			prereduced: opts?.prereduced ?? false
+		})
+		if (opts?.root) {
+			if (this.resolved) {
+				// this node was not part of the original scope, so compile an anonymous scope
+				// including only its references
+				this.bindCompiledScope(node.contributesReferences)
+			} else {
+				// we're still parsing the scope itself, so defer compilation but
+				// add the node as a reference
+				Object.assign(this.referencesByName, node.contributesReferencesByName)
+			}
+		}
+		return node as never
+	}
+
 	parsePrereducedSchema<kind extends NodeKind>(
 		kind: kind,
 		def: Schema<kind>
@@ -697,7 +695,7 @@ export class Scope<r extends Resolutions = any> {
 		const node = parseAttachments(kind, def, {
 			...opts,
 			$: this,
-			definition: def,
+			raw: def,
 			prereduced: opts.prereduced ?? false
 		})
 		return node as never

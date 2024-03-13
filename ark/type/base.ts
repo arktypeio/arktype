@@ -6,6 +6,7 @@ import {
 	morph,
 	printable,
 	throwError,
+	throwParseError,
 	type Constructor,
 	type Dict,
 	type Entry,
@@ -28,6 +29,7 @@ import type { RegexNode } from "./constraints/refinements/regex.js"
 import type {
 	Declaration,
 	Inner,
+	NormalizedSchema,
 	Schema,
 	ioKindOf,
 	reducibleKindOf
@@ -50,6 +52,7 @@ import type { ArkResult } from "./shared/errors.js"
 import {
 	basisKinds,
 	constraintKinds,
+	isNodeKind,
 	precedenceOfKind,
 	propKinds,
 	refinementKinds,
@@ -67,7 +70,10 @@ import {
 } from "./shared/implement.js"
 import { inferred } from "./shared/inference.js"
 import type { DomainNode } from "./types/domain.js"
-import type { IntersectionNode } from "./types/intersection.js"
+import {
+	discriminatingIntersectionKeys,
+	type IntersectionNode
+} from "./types/intersection.js"
 import type {
 	MorphNode,
 	distill,
@@ -438,6 +444,43 @@ export type Node<
 export type TypeNode<t = any, kind extends TypeKind = TypeKind> = Node<kind, t>
 
 export type TypeSchema<kind extends TypeKind = TypeKind> = Schema<kind>
+
+export type DiscriminableSchema<kind extends NodeKind = NodeKind> =
+	kind extends TypeKind ? Schema<kind> : NormalizedSchema<kind>
+
+export type kindOfSchema<schema extends DiscriminableSchema> =
+	schema extends DiscriminableSchema<infer kind> ? kind : never
+
+export const kindOfSchema = (schema: unknown): NodeKind => {
+	switch (typeof schema) {
+		case "string":
+			return "domain"
+		case "function":
+			return "proto"
+		case "object":
+			// throw at end of function
+			if (schema === null) break
+
+			if ("kind" in schema && isNodeKind(schema.kind)) return schema.kind
+
+			if ("morph" in schema) return "morph"
+
+			if ("branches" in schema || isArray(schema)) return "union"
+
+			if ("unit" in schema) return "unit"
+
+			const schemaKeys = Object.keys(schema)
+
+			if (
+				schemaKeys.length === 0 ||
+				schemaKeys.some((k) => k in discriminatingIntersectionKeys)
+			)
+				return "intersection"
+			if ("proto" in schema) return "proto"
+			if ("domain" in schema) return "domain"
+	}
+	return throwParseError(`${printable(schema)} is not a valid type schema`)
+}
 
 export type ConstraintNode<kind extends ConstraintKind = ConstraintKind> =
 	Node<kind>

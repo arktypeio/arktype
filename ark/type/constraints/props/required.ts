@@ -108,7 +108,7 @@ export class RequiredNode extends BaseConstraint<RequiredDeclaration> {
 		}
 	}
 
-	compile(js: NodeCompiler) {
+	compile(js: NodeCompiler): void {
 		js.if(`${this.serializedKey} in ${js.data}`, () =>
 			js.checkLiteralKey(this.key, this.value)
 		).else(() =>

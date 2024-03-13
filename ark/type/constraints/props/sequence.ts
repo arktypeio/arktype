@@ -69,7 +69,7 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 	static implementation: nodeImplementationOf<SequenceDeclaration> =
 		this.implement({
 			hasAssociatedError: false,
-			collapseKey: "variadic",
+			collapsibleKey: "variadic",
 			keys: {
 				prefix: fixedSequenceKeyDefinition,
 				optionals: fixedSequenceKeyDefinition,
@@ -251,7 +251,7 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 		? [this.maxLengthNode]
 		: undefined
 
-	protected childAtIndex(data: List, index: number) {
+	protected childAtIndex(data: List, index: number): Type {
 		if (index < this.prevariadic.length) return this.prevariadic[index]
 		const postfixStartIndex = data.length - this.postfix.length
 		if (index >= postfixStartIndex)
@@ -281,7 +281,7 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 	}
 
 	// minLength/maxLength compilation should be handled by Intersection
-	compile(js: NodeCompiler) {
+	compile(js: NodeCompiler): void {
 		this.prefix.forEach((node, i) => js.checkReferenceKey(`${i}`, node))
 		this.optionals.forEach((node, i) => {
 			const dataIndex = `${i + this.prefix.length}`
