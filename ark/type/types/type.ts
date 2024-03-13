@@ -86,8 +86,8 @@ export abstract class BaseType<
 		) as never
 	}
 
-	keyof() {
-		return this
+	keyof(): Type<keyof this["infer"], $> {
+		return this as never
 		// return this.rule.reduce(
 		// 	(result, branch) => result.and(branch.keyof()),
 		// 	builtins.unknown()
@@ -96,19 +96,22 @@ export abstract class BaseType<
 
 	intersect<r extends Node>(
 		r: r
-	): Type<inferIntersection<this["infer"], r["infer"]>> | Disjoint {
+	): Type<inferIntersection<this["infer"], r["infer"]>, t> | Disjoint {
 		return this.intersectInternal(r) as never
 	}
 
-	and<r extends Type>(
-		r: r
-	): Type<inferIntersection<this["infer"], r["infer"]>> {
-		const result = this.intersect(r as never)
+	and<def>(
+		def: validateTypeRoot<def, $>
+	): Type<inferIntersection<t, inferTypeRoot<def, $>>, $> {
+		const result = this.intersect(this.$.parseDefinition(def))
 		return result instanceof Disjoint ? result.throw() : (result as never)
 	}
 
-	or<r extends Type>(r: r): Type<t | r["infer"]> {
-		const branches = [...this.branches, ...(r.branches as any)]
+	or<def>(def: validateTypeRoot<def, $>): Type<t | inferTypeRoot<def, $>, $> {
+		const branches = [
+			...this.branches,
+			...(this.$.parseDefinition(def).branches as any)
+		]
 		return branches.length === 1
 			? branches[0]
 			: (this.$.parseSchema("union", { branches }) as never)
@@ -140,7 +143,7 @@ export abstract class BaseType<
 		)
 	}
 
-	array(): Type<t[]> {
+	array(): Type<t[], $> {
 		return this.$.parseRootSchema(
 			"intersection",
 			{

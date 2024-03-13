@@ -1,11 +1,11 @@
 import { attest } from "@arktype/attest"
 import { type } from "arktype"
+import { writeIndivisibleMessage } from "../constraints/refinements/divisor.js"
 import {
 	writeMissingRightOperandMessage,
 	writeUnresolvableMessage
 } from "../parser/string/shift/operand/unenclosed.js"
-import { schema, nodes } from "../builtins/builtins.js"
-import { writeIndivisibleMessage } from "../constraints/refinements/divisor.js"
+import { schema } from "../schema.js"
 
 describe("union", () => {
 	it("binary", () => {
@@ -16,7 +16,7 @@ describe("union", () => {
 	it("nary", () => {
 		const nary = type("false|null|undefined|0|''")
 		attest<false | "" | 0 | null | undefined>(nary.infer)
-		const expected = schema.units(false, null, undefined, 0, "")
+		const expected = type("===", false, null, undefined, 0, "")
 		attest(nary.json).equals(expected.json)
 	})
 	it("subtype pruning", () => {

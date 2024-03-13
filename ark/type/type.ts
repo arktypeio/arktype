@@ -15,6 +15,7 @@ import type {
 	IndexZeroOperator,
 	TupleInfixOperator
 } from "./parser/tuple.js"
+import type { inferSchema, validateSchema } from "./schema.js"
 import type { Scope, bindThis } from "./scope.js"
 import type { BaseMeta } from "./shared/declare.js"
 import type { Morph, extractIn, extractOut } from "./types/morph.js"
@@ -62,6 +63,10 @@ export type TypeParser<$> = {
 			}
 		>
 	): Generic<parseGenericParams<params>, def, $>
+
+	schema: <const schema>(
+		schema: validateSchema<schema>
+	) => Type<inferSchema<schema>>
 }
 
 export type DeclarationParser<$> = <preinferred>() => {
