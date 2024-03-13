@@ -71,11 +71,11 @@ export type DeclarationParser<$> = <preinferred>() => {
 	) => Type<preinferred, $>
 }
 
-export const createTypeParser = <$>(scope: Scope): TypeParser<$> => {
+export const createTypeParser = <$>($: Scope): TypeParser<$> => {
 	const parser = (...args: unknown[]): Type | Generic => {
 		if (args.length === 1) {
 			// treat as a simple definition
-			return parseTypeRoot(args[0], scope)
+			return parseTypeRoot(args[0], $)
 		}
 		if (
 			args.length === 2 &&
@@ -87,12 +87,12 @@ export const createTypeParser = <$>(scope: Scope): TypeParser<$> => {
 			// treat as a generic
 			const params = parseGenericParams(args[0].slice(1, -1))
 			const def = args[1]
-			return validateUninstantiatedGeneric(generic(params, def, scope) as never)
+			return validateUninstantiatedGeneric(generic(params, def, $) as never)
 		}
 		// otherwise, treat as a tuple expression. technically, this also allows
 		// non-expression tuple definitions to be parsed, but it's not a supported
 		// part of the API as specified by the associated types
-		return parseTypeRoot(args, scope)
+		return parseTypeRoot(args, $)
 	}
 	return parser as never
 }
@@ -101,9 +101,9 @@ export type DefinitionParser<$> = <def>(
 	def: validateDefinition<def, $, bindThis<def>>
 ) => def
 
-const parseTypeRoot = (def: unknown, scope: Scope, args?: BoundArgs) =>
-	scope.parseDefinition(def, {
-		args: args ?? scope.bindThis(),
+const parseTypeRoot = (def: unknown, $: Scope, args?: BoundArgs) =>
+	$.parseDefinition(def, {
+		args: args ?? $.bindThis(),
 		baseName: "type"
 	})
 
@@ -134,21 +134,21 @@ export const validateUninstantiatedGeneric = (g: Generic): Generic => {
 export const generic = (
 	parameters: string[],
 	definition: unknown,
-	scope: Scope
+	$: Scope
 ): Generic =>
 	Object.assign(
 		(...args: unknown[]) => {
 			const argNodes = morph(parameters, (i, param) => [
 				param,
-				parseTypeRoot(args[i], scope)
+				parseTypeRoot(args[i], $)
 			])
-			return parseTypeRoot(definition, scope, argNodes)
+			return parseTypeRoot(definition, $, argNodes)
 		},
 		{
 			[arkKind]: "generic",
 			parameters,
 			definition,
-			scope
+			scope: $
 			// $ is only needed at compile-time
 		} satisfies Omit<GenericProps, "$">
 	) as never

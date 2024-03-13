@@ -171,14 +171,14 @@ export type MatchInvocation<ctx extends MatchInvocationContext> = <
 		: ReturnType<ctx["thens"][i]>
 }[numericStringKeyOf<ctx["thens"]>]
 
-export const createMatchParser = <$>(scope: Scope): MatchParser<$> => {
+export const createMatchParser = <$>($: Scope): MatchParser<$> => {
 	const matchParser = (isRestricted: boolean) => {
 		const handledCases: { when: Type; then: Morph }[] = []
 		let defaultCase: ((x: unknown) => unknown) | null = null
 
 		const parser = {
 			when: (when: unknown, then: Morph) => {
-				handledCases.push({ when: new Type(when, scope), then })
+				handledCases.push({ when: $.parseDefinition(when, {}), then })
 
 				return parser
 			},
@@ -198,7 +198,7 @@ export const createMatchParser = <$>(scope: Scope): MatchParser<$> => {
 				// 	return [{ in: when.root, morph: then }]
 				// })
 				// if (defaultCase) {
-				// 	branches.push({ in: new Type("unknown", scope), morph: defaultCase })
+				// 	branches.push({ in: new Type("unknown", $), morph: defaultCase })
 				// }
 				// const matchers = schema.union({
 				// 	branches,

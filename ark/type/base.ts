@@ -43,7 +43,6 @@ import type {
 	BaseAttachmentsOf,
 	BaseErrorContext,
 	BaseMeta,
-	BaseNodeDeclaration,
 	BaseNodeDeclaration
 } from "./shared/declare.js"
 import { Disjoint } from "./shared/disjoint.js"
@@ -76,7 +75,7 @@ import type {
 	extractOut
 } from "./types/morph.js"
 import type { ProtoNode } from "./types/proto.js"
-import type { Type, Type } from "./types/type.js"
+import type { Type } from "./types/type.js"
 import type { UnionNode } from "./types/union.js"
 import type { UnitNode } from "./types/unit.js"
 

@@ -11,7 +11,7 @@ import {
 import { keywords, schema } from "../builtins/ark.js"
 import type { Inner } from "../kinds.js"
 import type { ParseContext } from "../scope.js"
-import type { Type, Type } from "../types/type.js"
+import type { Type } from "../types/type.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
 import type { astToString } from "./semantic/utils.js"
 import type { validateString } from "./semantic/validate.js"

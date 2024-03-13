@@ -15,6 +15,7 @@ import {
 	type nominal,
 	type requireKeys
 } from "@arktype/util"
+import type { get } from "http"
 import type { Node, TypeSchema } from "./base.js"
 import { keywords, type type } from "./builtins/ark.js"
 import { globalConfig } from "./config.js"

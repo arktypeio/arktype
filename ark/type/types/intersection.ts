@@ -16,11 +16,7 @@ import {
 	type keySetOf,
 	type listable
 } from "@arktype/util"
-import {
-	BaseNode,
-	type ConstraintNode,
-	type Node
-} from "../base.js"
+import { BaseNode, type ConstraintNode, type Node } from "../base.js"
 import {
 	PropsGroup,
 	type ExtraneousKeyBehavior,
@@ -47,13 +43,7 @@ import {
 } from "../shared/implement.js"
 import type { DomainNode, DomainSchema } from "./domain.js"
 import type { ProtoNode, ProtoSchema } from "./proto.js"
-import {
-	BaseType,
-	defineRightwardIntersections,
-	type Type,
-	type Type,
-	type Type
-} from "./type.js"
+import { BaseType, defineRightwardIntersections, type Type } from "./type.js"
 
 export type IntersectionBasisKind = "domain" | "proto"
 

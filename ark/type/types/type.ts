@@ -39,7 +39,8 @@ export const defineRightwardIntersections = <kind extends TypeKind>(
 	implementation: TypeIntersection<kind, typeKindRightOf<kind>>
 ) => morph(typeKindsRightOf(kind), (i, kind) => [kind, implementation])
 
-export interface Type<t = unknown, $ = any>
+/** @ts-expect-error treat as covariant */
+export interface Type<out t = unknown, $ = any>
 	extends BaseType<t, BaseTypeDeclaration, $> {}
 
 export abstract class BaseType<
@@ -139,7 +140,7 @@ export abstract class BaseType<
 		)
 	}
 
-	array(): IntersectionNode<t[]> {
+	array(): Type<t[]> {
 		return this.$.parseRootSchema(
 			"intersection",
 			{

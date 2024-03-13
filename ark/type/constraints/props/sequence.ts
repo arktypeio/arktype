@@ -17,7 +17,7 @@ import type {
 	TypeKind,
 	nodeImplementationOf
 } from "../../shared/implement.js"
-import type { Type, Type } from "../../types/type.js"
+import type { Type } from "../../types/type.js"
 import { BaseConstraint } from "../constraint.js"
 
 export interface NormalizedSequenceSchema extends BaseMeta {
