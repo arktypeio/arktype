@@ -1,6 +1,6 @@
 import type { MatchParser } from "../match.js"
-import type { SchemaParser } from "../schema.js"
-import { Scope, type Module, type ScopeParser } from "../scope.js"
+import type { NodeParser, SchemaParser } from "../schema.js"
+import { type Module, type Scope, type ScopeParser } from "../scope.js"
 import type { inferred } from "../shared/inference.js"
 import type {
 	DeclarationParser,
@@ -10,6 +10,7 @@ import type {
 } from "../type.js"
 import { JsObjects } from "./jsObjects.js"
 import { Parsing } from "./parsing.js"
+import { root } from "./root.js"
 import { TsKeywords } from "./tsKeywords.js"
 import { Validation } from "./validation.js"
 
@@ -51,7 +52,7 @@ type TsGenericsExports<$ = Ark> = {
 
 export const tsGenerics = {} as Module<TsGenericsResolutions>
 
-export const ark: Scope<ArkResolutions> = Scope.root
+export const ark: Scope<ArkResolutions> = root
 	.scope({
 		...TsKeywords.export(),
 		...JsObjects.export(),
@@ -82,12 +83,14 @@ export const match: MatchParser<Ark> = ark.match
 
 export const schema: SchemaParser<Ark> = ark.schema
 
+export const node: NodeParser<Ark> = ark.node
+
+export const define: DefinitionParser<Ark> = ark.define
+
+export const declare: DeclarationParser<Ark> = ark.declare
+
 export namespace type {
 	export type cast<to> = {
 		[inferred]?: to
 	}
 }
-
-export const define: DefinitionParser<Ark> = ark.define
-
-export const declare: DeclarationParser<Ark> = ark.declare

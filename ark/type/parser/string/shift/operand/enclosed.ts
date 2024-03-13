@@ -17,7 +17,7 @@ export type SingleQuotedStringLiteral<Text extends string = string> =
 export const parseEnclosed = (
 	s: DynamicState,
 	enclosing: EnclosingStartToken
-) => {
+): void => {
 	const enclosed = s.scanner.shiftUntil(
 		untilLookaheadIsClosing[enclosingTokens[enclosing]]
 	)

@@ -1,11 +1,11 @@
 import { attest } from "@arktype/attest"
 import { type } from "arktype"
+import { keywords, node } from "../builtins/ark.js"
 import { writeIndivisibleMessage } from "../constraints/refinements/divisor.js"
 import {
 	writeMissingRightOperandMessage,
 	writeUnresolvableMessage
 } from "../parser/string/shift/operand/unenclosed.js"
-import { schema } from "../schema.js"
 
 describe("union", () => {
 	it("binary", () => {
@@ -56,7 +56,7 @@ describe("union", () => {
 	})
 	describe("expressions", () => {
 		const expected = () =>
-			schema([
+			node([
 				{
 					domain: "object",
 					required: {
@@ -134,13 +134,13 @@ describe("union", () => {
 		it("left semantic error", () => {
 			// @ts-expect-error
 			attest(() => type("symbol%2|string")).throwsAndHasTypeError(
-				writeIndivisibleMessage(nodes.symbol)
+				writeIndivisibleMessage(keywords.symbol)
 			)
 		})
 		it("right semantic error", () => {
 			// @ts-expect-error
 			attest(() => type("string|symbol%2")).throwsAndHasTypeError(
-				writeIndivisibleMessage(nodes.symbol)
+				writeIndivisibleMessage(keywords.symbol)
 			)
 		})
 		it("chained bad reference", () => {

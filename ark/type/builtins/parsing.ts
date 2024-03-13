@@ -2,12 +2,12 @@ import {
 	wellFormedIntegerMatcher,
 	wellFormedNumberMatcher
 } from "@arktype/util"
-import { schema } from "../schema.js"
 import type { Scope, rootResolutions } from "../scope.js"
 import type { Out } from "../types/morph.js"
+import { root } from "./root.js"
 import { parsedDate } from "./utils/date.js"
 
-const number = schema({
+const number = root.schema({
 	in: {
 		domain: "string",
 		regex: wellFormedNumberMatcher,
@@ -16,7 +16,7 @@ const number = schema({
 	morph: (s: string) => parseFloat(s)
 })
 
-const integer = schema({
+const integer = root.schema({
 	in: {
 		domain: "string",
 		regex: wellFormedIntegerMatcher
@@ -35,7 +35,7 @@ const integer = schema({
 	}
 })
 
-const url = schema({
+const url = root.schema({
 	in: {
 		domain: "string",
 		description: "a valid URL"
@@ -50,7 +50,7 @@ const url = schema({
 	}
 })
 
-const json = schema({
+const json = root.schema({
 	in: {
 		domain: "string",
 		description: "a JSON-parsable string"

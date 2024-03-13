@@ -30,22 +30,19 @@ import type {
 } from "./morph.js"
 import type { UnionChildKind, UnionNode } from "./union.js"
 
-export type BaseTypeDeclaration = evaluate<
-	BaseNodeDeclaration & { kind: TypeKind }
->
-
 export const defineRightwardIntersections = <kind extends TypeKind>(
 	kind: kind,
 	implementation: TypeIntersection<kind, typeKindRightOf<kind>>
-) => morph(typeKindsRightOf(kind), (i, kind) => [kind, implementation])
+): typeKindRightOf<kind>[] =>
+	morph(typeKindsRightOf(kind), (i, kind) => [kind, implementation])
 
 /** @ts-expect-error treat as covariant */
 export interface Type<out t = unknown, $ = any>
-	extends BaseType<t, BaseTypeDeclaration, $> {}
+	extends BaseType<t, BaseNodeDeclaration, $> {}
 
 export abstract class BaseType<
 	t,
-	d extends BaseTypeDeclaration,
+	d extends BaseNodeDeclaration,
 	$ = any
 > extends BaseNode<t, d> {
 	readonly branches: readonly Node<UnionChildKind>[] =
@@ -94,7 +91,7 @@ export abstract class BaseType<
 		// )
 	}
 
-	intersect<r extends Node>(
+	intersect<r extends Type>(
 		r: r
 	): Type<inferIntersection<this["infer"], r["infer"]>, t> | Disjoint {
 		return this.intersectInternal(r) as never
@@ -125,18 +122,18 @@ export abstract class BaseType<
 		return this.hasKind("union") && this.branches.length === 0
 	}
 
-	get<key extends PropertyKey>(...path: readonly (key | Type<key>)[]) {
+	get<key extends PropertyKey>(...path: readonly (key | Type<key>)[]): this {
 		return this
 	}
 
-	extract(other: Type) {
+	extract(other: Type): this {
 		return this.$.parseRootSchema(
 			"union",
 			this.branches.filter((branch) => branch.extends(other))
 		)
 	}
 
-	exclude(other: Type) {
+	exclude(other: Type): this {
 		return this.$.parseRootSchema(
 			"union",
 			this.branches.filter((branch) => !branch.extends(other))
@@ -154,7 +151,7 @@ export abstract class BaseType<
 		) as never
 	}
 
-	extends<other extends Type>(other: other): this is Type<other["infer"]> {
+	extends<other extends Type>(other: other): this is Type<other["infer"], $> {
 		const intersection = this.intersect(other)
 		return (
 			!(intersection instanceof Disjoint) && this.equals(intersection as never)

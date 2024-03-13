@@ -7,11 +7,11 @@ export const isDateLiteral = (value: unknown): value is DateLiteral =>
 	(value[1] === "'" || value[1] === '"') &&
 	value.at(-1) === value[1]
 
-export const isValidDate = (d: Date) => d.toString() !== "Invalid Date"
+export const isValidDate = (d: Date): boolean => d.toString() !== "Invalid Date"
 
 export const extractDateLiteralSource = <literal extends DateLiteral>(
 	literal: literal
-) => literal.slice(2, -1) as extractDateLiteralSource<literal>
+): extractDateLiteralSource<literal> => literal.slice(2, -1) as never
 
 type extractDateLiteralSource<literal extends DateLiteral> =
 	literal extends DateLiteral<infer source> ? source : never
@@ -26,15 +26,19 @@ export type writeInvalidDateMessage<source extends string> =
 
 export type DateInput = ConstructorParameters<typeof Date>[0]
 
+export type DateParseResult<
+	errorOnFail extends boolean | string = boolean | string
+> = Date | (errorOnFail extends true | string ? never : undefined)
+
 export const tryParseDate = <errorOnFail extends boolean | string>(
 	source: string,
 	errorOnFail?: errorOnFail
-) => maybeParseDate(source, errorOnFail)
+): DateParseResult<errorOnFail> => maybeParseDate(source, errorOnFail)
 
 const maybeParseDate = <errorOnFail extends boolean | string>(
 	source: string,
 	errorOnFail?: errorOnFail
-): Date | (errorOnFail extends true | string ? never : undefined) => {
+): DateParseResult<errorOnFail> => {
 	const stringParsedDate = new Date(source)
 	if (isValidDate(stringParsedDate)) {
 		return stringParsedDate

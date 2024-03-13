@@ -11,7 +11,7 @@ import type { TraversalContext, TraversalPath } from "./context.js"
 import type { NodeKind } from "./implement.js"
 
 export class ArkError extends TypeError {
-	toString() {
+	toString(): string {
 		return this.message
 	}
 
@@ -47,12 +47,11 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 	private mutable: ArkTypeError[] = this as never
 
 	add<input extends ArkErrorInput>(
-		this: ArkErrors,
 		input: input
 	): ArkTypeError<
 		input extends { code: ArkErrorCode } ? input["code"] : "predicate"
 	>
-	add(input: ArkErrorInput) {
+	add(input: ArkErrorInput): ArkTypeError {
 		let ctx: ArkErrorContext
 		const data = this.ctx.data
 		const nodeConfig = this.ctx.config.predicate
@@ -121,11 +120,11 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 		return error
 	}
 
-	get summary() {
+	get summary(): string {
 		return this.toString()
 	}
 
-	toString() {
+	toString(): string {
 		return this.join("\n")
 	}
 

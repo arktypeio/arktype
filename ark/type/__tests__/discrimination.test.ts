@@ -52,7 +52,7 @@ describe("discrimination", () => {
 	// 		duration: "'s' | 'min' | 'h'",
 	// 		operator: "'to'"
 	// 	})
-	// 	attest(t.root.hasKind("union") && t.root.discriminant).equals(null)
+	// 	attest(t.hasKind("union") && t.discriminant).equals(null)
 	// })
 	// it("default case", () => {
 	// 	const t = getPlaces().type([

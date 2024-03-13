@@ -161,13 +161,16 @@ const precedenceByKind = morph(
 
 export type precedenceOfKind<kind extends NodeKind> = PrecedenceByKind[kind]
 
-export const precedenceOfKind = <kind extends NodeKind>(kind: kind) =>
-	precedenceByKind[kind]
+export const precedenceOfKind = <kind extends NodeKind>(
+	kind: kind
+): precedenceOfKind<kind> => precedenceByKind[kind]
 
 export type kindRightOf<kind extends NodeKind> = RightsByKind[kind]
 
-export const typeKindsRightOf = <kind extends TypeKind>(kind: kind) =>
-	typeKinds.slice(precedenceOfKind(kind) + 1) as typeKindRightOf<kind>[]
+export const typeKindsRightOf = <kind extends TypeKind>(
+	kind: kind
+): typeKindRightOf<kind>[] =>
+	typeKinds.slice(precedenceOfKind(kind) + 1) as never
 
 export type KeyDefinitions<d extends BaseNodeDeclaration> = {
 	[k in keyRequiringDefinition<d>]: NodeKeyImplementation<d, k>
@@ -178,7 +181,7 @@ type keyRequiringDefinition<d extends BaseNodeDeclaration> = Exclude<
 	keyof BaseMeta
 >
 
-export const defaultValueSerializer = (v: unknown) => {
+export const defaultValueSerializer = (v: unknown): JsonData => {
 	if (
 		typeof v === "string" ||
 		typeof v === "boolean" ||

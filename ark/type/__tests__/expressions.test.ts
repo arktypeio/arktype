@@ -1,5 +1,6 @@
 import { attest } from "@arktype/attest"
 import { ark, schema, scope, type, type Ark, type Out } from "arktype"
+import { node } from "../builtins/ark.js"
 import {
 	writeMissingRightOperandMessage,
 	writeUnresolvableMessage
@@ -78,12 +79,14 @@ describe("root expression", () => {
 	it("instanceof single", () => {
 		const t = type("instanceof", RegExp)
 		attest<RegExp>(t.infer)
-		attest(t.json).equals(schema(RegExp).json)
+		const expected = node(RegExp)
+		attest(t.json).equals(expected.json)
 	})
 	it("instanceof branches", () => {
 		const t = type("instanceof", Array, Date)
 		attest<unknown[] | Date>(t.infer)
-		attest(t.json).equals(schema([Array, Date]).json)
+		const expected = node([Array, Date])
+		attest(t.json).equals(expected.json)
 	})
 	it("postfix", () => {
 		const t = type({ a: "string" }, "[]")

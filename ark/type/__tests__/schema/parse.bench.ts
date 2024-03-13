@@ -1,17 +1,14 @@
 import { bench } from "@arktype/attest"
-import { schema } from "arktype"
-import type { Node } from "../../base.js"
-import type { TypeKind } from "../../shared/implement.js"
-import type { Type } from "../../types/type.js"
+import { node } from "../../builtins/ark.js"
 
 bench("domain", () => {
-	return schema("string").infer
+	return node("string").infer
 }).types([2, "instantiations"])
 
 bench("intersection", () => {
-	return schema("string").and(schema("number"))
+	return node("string").and(node("number"))
 }).types([846, "instantiations"])
 
 bench("no assignment", () => {
-	schema({ domain: "string", regex: "/.*/" })
+	node({ domain: "string", regex: "/.*/" })
 }).types([350, "instantiations"])

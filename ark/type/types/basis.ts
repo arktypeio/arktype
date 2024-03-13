@@ -1,7 +1,6 @@
 import type {
 	Constructor,
 	NonEnumerableDomain,
-	evaluate,
 	inferDomain,
 	instanceOf,
 	isAny
@@ -9,19 +8,16 @@ import type {
 import type { Schema } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { TraverseApply } from "../shared/context.js"
+import type { BaseNodeDeclaration } from "../shared/declare.js"
 import type { BasisKind } from "../shared/implement.js"
 import type { DomainSchema } from "./domain.js"
 import type { ProtoSchema } from "./proto.js"
-import { BaseType, type BaseTypeDeclaration } from "./type.js"
+import { BaseType } from "./type.js"
 import type { UnitSchema } from "./unit.js"
-
-export type BaseBasisDeclaration = evaluate<
-	BaseTypeDeclaration & { kind: BasisKind }
->
 
 export abstract class BaseBasis<
 	t,
-	d extends BaseBasisDeclaration,
+	d extends BaseNodeDeclaration,
 	$
 > extends BaseType<t, d, $> {
 	abstract readonly expression: string
@@ -35,7 +31,7 @@ export abstract class BaseBasis<
 		}
 	}
 
-	compile(js: NodeCompiler) {
+	compile(js: NodeCompiler): void {
 		js.compilePrimitive(this as never)
 	}
 }

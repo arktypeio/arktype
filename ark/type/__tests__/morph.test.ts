@@ -16,7 +16,8 @@ describe("morph", () => {
 		}
 		attest<string>(result.out).equals("true")
 		attest(t("foo").errors?.summary).snap("Must be boolean (was string)")
-		attest(t).equals(type(["boolean", "=>", (data) => `${data}`]))
+		const expected = type("boolean", "=>", (data) => `${data}`)
+		attest(t).equals(expected)
 	})
 	it("endomorph", () => {
 		const t = type(["boolean", "=>", (data) => !data])

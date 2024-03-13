@@ -15,7 +15,6 @@ import type {
 	IndexZeroOperator,
 	TupleInfixOperator
 } from "./parser/tuple.js"
-import type { inferSchema, validateSchema } from "./schema.js"
 import type { Scope, bindThis } from "./scope.js"
 import type { BaseMeta } from "./shared/declare.js"
 import type { Morph, extractIn, extractOut } from "./types/morph.js"

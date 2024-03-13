@@ -1,6 +1,6 @@
-import { schema } from "../schema.js"
-import { Scope, type rootResolutions } from "../scope.js"
+import type { Scope, rootResolutions } from "../scope.js"
 import type { type } from "./ark.js"
+import { root } from "./root.js"
 
 export namespace TsKeywords {
 	export interface exports {
@@ -25,19 +25,19 @@ export namespace TsKeywords {
 	export type infer = (typeof TsKeywords)["infer"]
 }
 
-export const TsKeywords: Scope<TsKeywords.resolutions> = Scope.root.scope({
+export const TsKeywords: Scope<TsKeywords.resolutions> = root.scope({
 	any: "unknown" as type.cast<any>,
-	bigint: schema("bigint"),
+	bigint: root.schema("bigint"),
 	boolean: "false|true",
 	false: ["===", false],
-	never: schema([]),
+	never: root.schema([]),
 	null: ["===", null],
-	number: schema("number"),
-	object: schema("object"),
-	string: schema("string"),
-	symbol: schema("symbol"),
+	number: root.schema("number"),
+	object: root.schema("object"),
+	string: root.schema("string"),
+	symbol: root.schema("symbol"),
 	true: ["===", true],
-	unknown: schema({}),
+	unknown: root.schema({}),
 	void: "undefined" as type.cast<void>,
 	undefined: ["===", undefined]
 })

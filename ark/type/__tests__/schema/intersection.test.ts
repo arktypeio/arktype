@@ -1,15 +1,14 @@
 import { attest } from "@arktype/attest"
-import { schema } from "arktype"
-import { Scope } from "../../scope.js"
+import { node } from "../../builtins/ark.js"
 
 describe("intersections", () => {
 	it("normalizes refinement order", () => {
-		const l = schema({
+		const l = node({
 			domain: "number",
 			divisor: 3,
 			min: 5
 		})
-		const r = schema({
+		const r = node({
 			domain: "number",
 			min: 5,
 			divisor: 3
@@ -17,13 +16,13 @@ describe("intersections", () => {
 		attest(l.innerId).equals(r.innerId)
 	})
 	it("doesn't equate optional and required props", () => {
-		const l = Scope.root.parseSchema("required", { key: "a", value: "number" })
-		const r = Scope.root.parseSchema("optional", { key: "a", value: "number" })
+		const l = node("required", { key: "a", value: "number" })
+		const r = node("optional", { key: "a", value: "number" })
 		attest(l.equals(r)).equals(false)
 	})
 
 	it("multiple constraints", () => {
-		const n = schema({
+		const n = node({
 			domain: "number",
 			divisor: 3,
 			min: 5

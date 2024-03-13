@@ -1,6 +1,7 @@
 import { attest } from "@arktype/attest"
 import { writeMalformedNumericLiteralMessage } from "@arktype/util"
-import { schema, type } from "arktype"
+import { type } from "arktype"
+import { node } from "../builtins/ark.js"
 import { writeUnboundableMessage } from "../constraints/refinements/range.js"
 import { writeDoubleRightBoundMessage } from "../parser/semantic/bounds.js"
 import {
@@ -27,7 +28,7 @@ describe("parsed bounds", () => {
 		it("<", () => {
 			const t = type("number<10")
 			attest<number>(t.infer)
-			const expected = schema({
+			const expected = node({
 				domain: "number",
 				max: { rule: 10, exclusive: true }
 			})
@@ -36,7 +37,7 @@ describe("parsed bounds", () => {
 		it("<=", () => {
 			const t = type("number<=-49")
 			attest<number>(t.infer)
-			const expected = schema({
+			const expected = node({
 				domain: "number",
 				max: { rule: -49, exclusive: false }
 			})
@@ -45,7 +46,7 @@ describe("parsed bounds", () => {
 		it("==", () => {
 			const t = type("number==3211993")
 			attest<number>(t.infer)
-			const expected = schema({
+			const expected = node({
 				domain: "number",
 				min: { rule: 3211993, exclusive: false },
 				max: { rule: 3211993, exclusive: false }
@@ -55,7 +56,7 @@ describe("parsed bounds", () => {
 		it("<,<=", () => {
 			const t = type("-5<number<=5")
 			attest<number>(t.infer)
-			const expected = schema({
+			const expected = node({
 				domain: "number",
 				min: { rule: -5, exclusive: true },
 				max: { rule: 5, exclusive: false }
@@ -65,7 +66,7 @@ describe("parsed bounds", () => {
 		it("<=,<", () => {
 			const t = type("-3.23<=number<4.654")
 			attest<number>(t.infer)
-			const expected = schema({
+			const expected = node({
 				domain: "number",
 				min: { rule: -3.23, exclusive: false },
 				max: { rule: 4.654, exclusive: true }
@@ -75,7 +76,7 @@ describe("parsed bounds", () => {
 		it("whitespace following comparator", () => {
 			const t = type("number > 3")
 			attest<number>(t.infer)
-			const expected = schema({
+			const expected = node({
 				domain: "number",
 				min: { rule: 3, exclusive: true }
 			})

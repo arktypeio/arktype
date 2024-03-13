@@ -15,15 +15,15 @@ import {
 	type nominal,
 	type requireKeys
 } from "@arktype/util"
-import type { get } from "http"
-import type { Node, TypeSchema } from "./base.js"
-import { keywords, match, type type } from "./builtins/ark.js"
+import type { Node } from "./base.js"
+import { keywords, type type } from "./builtins/ark.js"
 import { globalConfig } from "./config.js"
 import type { LengthBoundableData } from "./constraints/refinements/range.js"
 import { nodesByKind, type Schema, type reducibleKindOf } from "./kinds.js"
 import { createMatchParser, type MatchParser } from "./match.js"
 import { parseAttachments, type SchemaParseOptions } from "./parse.js"
 import {
+	parseObject,
 	parseObject,
 	writeBadDefinitionTypeMessage,
 	type inferDefinition,
@@ -41,7 +41,12 @@ import {
 	writeUnresolvableMessage
 } from "./parser/string/shift/operand/unenclosed.js"
 import { fullStringParse } from "./parser/string/string.js"
-import type { SchemaParser } from "./schema.js"
+import {
+	createNodeParser,
+	createSchemaParser,
+	type NodeParser,
+	type SchemaParser
+} from "./schema.js"
 import { NodeCompiler } from "./shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "./shared/context.js"
 import type {
@@ -56,6 +61,14 @@ import type {
 	NodeKind,
 	TypeKind
 } from "./shared/implement.js"
+
+import { discriminatingIntersectionKeys } from "./types/intersection.js"
+import type { extractIn, extractOut } from "./types/morph.js"
+import { BaseType, type Type } from "./types/type.js"
+import type { UnionNode } from "./types/union.js"
+import type { UnitNode } from "./types/unit.js"
+import { addArkKind, hasArkKind, type arkKind } from "./util.js"
+
 import {
 	createTypeParser,
 	generic,
@@ -66,15 +79,6 @@ import {
 	type GenericProps,
 	type TypeParser
 } from "./type.js"
-import {
-	discriminatingIntersectionKeys,
-	type IntersectionNode
-} from "./types/intersection.js"
-import type { extractIn, extractOut } from "./types/morph.js"
-import { BaseType, type Type } from "./types/type.js"
-import type { UnionNode } from "./types/union.js"
-import type { UnitNode } from "./types/unit.js"
-import { addArkKind, hasArkKind, type arkKind } from "./util.js"
 
 export type nodeResolutions<keywords> = { [k in keyof keywords]: Type }
 
@@ -423,13 +427,9 @@ export class Scope<r extends Resolutions = any> {
 		])
 	}
 
-	static root: Scope<{
-		exports: {}
-		locals: {}
-		ambient: {}
-	}> = new Scope({})
-
 	type: TypeParser<$<r>> = createTypeParser(this as never) as never
+
+	node: NodeParser<$<r>> = createNodeParser(this as never) as never
 
 	schema: SchemaParser<$<r>> = createSchemaParser(this as never) as never
 
@@ -477,10 +477,6 @@ export class Scope<r extends Resolutions = any> {
 		}
 	}
 
-	parseDefinition(def: unknown, input: ParseContextInput): Type {
-		return this.parse(def, this.createRootContext(input))
-	}
-
 	parse(def: unknown, ctx: ParseContext): Type {
 		if (typeof def === "string") {
 			if (ctx.args !== undefined) {
@@ -496,6 +492,10 @@ export class Scope<r extends Resolutions = any> {
 		return hasDomain(def, "object")
 			? parseObject(def, ctx)
 			: throwParseError(writeBadDefinitionTypeMessage(domainOf(def)))
+	}
+
+	parseDefinition(def: unknown, input: ParseContextInput): Type {
+		return this.parse(def, this.createRootContext(input))
 	}
 
 	parseString(def: string, ctx: ParseContext): Type {
@@ -575,7 +575,7 @@ export class Scope<r extends Resolutions = any> {
 		) as never
 	}
 
-	bindThis(): { this: IntersectionNode } {
+	bindThis(): { this: Type } {
 		// TODO: fix
 		return { this: keywords.unknown } as never
 	}
@@ -764,7 +764,7 @@ const resolutionsOfModule = (typeSet: ExportCache) => {
 		} else if (hasArkKind(v, "generic")) {
 			result[k] = v
 		} else {
-			result[k] = (v as Type).root
+			result[k] = v as Type
 		}
 	}
 	return result

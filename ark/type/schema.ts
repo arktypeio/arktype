@@ -9,7 +9,7 @@ import type {
 import type { TypeSchema } from "./base.js"
 import type { Prerequisite } from "./kinds.js"
 import type { SchemaParseOptions } from "./parse.js"
-import { Scope } from "./scope.js"
+import type { Scope } from "./scope.js"
 import type { ConstraintKind, TypeKind } from "./shared/implement.js"
 import type { inferBasis } from "./types/basis.js"
 import type { DomainSchema } from "./types/domain.js"
@@ -26,22 +26,23 @@ import type { Type } from "./types/type.js"
 import type { NormalizedUnionSchema } from "./types/union.js"
 import type { UnitSchema } from "./types/unit.js"
 
-export type SchemaParser<$> = <const schema extends TypeSchema>(
+export type SchemaParser<$> = <schema>(
+	schema: validateSchema<schema>
+) => ["schema", schema]
+
+export declare const createSchemaParser: <$>($: Scope) => SchemaParser<$>
+
+export type NodeParser<$> = <const schema extends TypeSchema>(
 	schema: schema,
 	opts?: TypeSchemaParseOptions
 ) => Type<inferSchema<schema>, $>
+
+export declare const createNodeParser: <$>($: Scope) => NodeParser<$>
 
 export interface TypeSchemaParseOptions extends SchemaParseOptions {
 	root?: boolean
 	allowedKinds?: readonly TypeKind[]
 }
-
-export const rootSchema: SchemaParser<{}> = (schema, opts) =>
-	Scope.root.parseTypeSchema(schema, {
-		...opts,
-		root: true,
-		prereduced: true
-	}) as never
 
 export type validateSchema<schema> = [schema] extends [
 	readonly [...infer branches]

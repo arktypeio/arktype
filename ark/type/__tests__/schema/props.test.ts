@@ -1,16 +1,16 @@
 import { attest } from "@arktype/attest"
-import { schema } from "arktype"
+import { node } from "../../builtins/ark.js"
 
 describe("props", () => {
 	it("normalizes prop order", () => {
-		const l = schema({
+		const l = node({
 			domain: "object",
 			required: [
 				{ key: "a", value: "string" },
 				{ key: "b", value: "number" }
 			]
 		})
-		const r = schema({
+		const r = node({
 			domain: "object",
 			required: [
 				{ key: "b", value: "number" },

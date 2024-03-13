@@ -21,7 +21,7 @@ import type { type } from "../builtins/ark.js"
 import type { of } from "../constraints/ast.js"
 import type { regex } from "../constraints/refinements/regex.js"
 import type { ParseContext } from "../scope.js"
-import { BaseType, BaseType, type Type, type Type } from "../types/type.js"
+import { BaseType, type Type } from "../types/type.js"
 import {
 	parseObjectLiteral,
 	type inferObjectLiteral,

@@ -17,7 +17,7 @@ export const parseGenericArgs = (
 	name: string,
 	params: string[],
 	s: DynamicState
-) => parseGenericArgsRecurse(name, params, s, [], [])
+): ParsedArgs<Type[]> => parseGenericArgsRecurse(name, params, s, [], [])
 
 export type parseGenericArgs<
 	name extends string,
@@ -110,10 +110,10 @@ export const writeInvalidGenericArgsMessage = <
 	name: name,
 	params: params,
 	argDefs: argDefs
-) =>
+): writeInvalidGenericArgsMessage<name, params, argDefs> =>
 	`${name}<${params.join(", ")}> requires exactly ${params.length} args (got ${
 		argDefs.length
-	}${argDefs.length === 0 ? "" : ": " + argDefs.join(", ")})`
+	}${argDefs.length === 0 ? "" : ": " + argDefs.join(", ")})` as never
 
 export type writeInvalidGenericArgsMessage<
 	name extends string,

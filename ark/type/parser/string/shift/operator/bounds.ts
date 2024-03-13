@@ -28,7 +28,7 @@ import type { Scanner } from "../scanner.js"
 export const parseBound = (
 	s: DynamicStateWithRoot,
 	start: ComparatorStartChar
-) => {
+): void => {
 	const comparator = shiftComparator(s, start)
 	if (s.root.kind === "unit") {
 		if (typeof s.root.unit === "number") {
@@ -102,12 +102,12 @@ type shiftComparator<
 	: state.error<singleEqualsMessage>
 
 export const writeIncompatibleRangeMessage = (l: BoundKind, r: BoundKind) =>
-	`Bound kinds ${l} and ${r} are incompatible`
+	`Bound kinds ${l} and ${r} are incompatible` as const
 
 export const writeLimitMismatchMessage = (
 	root: string,
 	limitValue: LimitSchemaValue
-) => `Limit '${limitValue}' cannot bound ${root}`
+) => `Limit '${limitValue}' cannot bound ${root}` as const
 
 export const getBoundKinds = (
 	comparator: Comparator,
@@ -134,7 +134,7 @@ export const getBoundKinds = (
 			? ["minLength"]
 			: ["maxLength"]
 	}
-	if (root.extends(nodes.Date)) {
+	if (root.extends(keywords.Date)) {
 		// allow either numeric or date limits
 		return comparator === "=="
 			? ["after", "before"]
@@ -160,7 +160,7 @@ const openLeftBoundToSchema = (
 export const parseRightBound = (
 	s: DynamicStateWithRoot,
 	comparator: Comparator
-) => {
+): void => {
 	// store the node that will be bounded
 	const previousRoot = s.unsetRoot()
 	const previousScannerIndex = s.scanner.location
@@ -175,7 +175,8 @@ export const parseRightBound = (
 	s.setRoot(previousRoot)
 	if (
 		limitNode.kind !== "unit" ||
-		(typeof limitNode.unit !== "number" && !(limitNode.unit instanceof Date))
+		(typeof limitNode.hasKind("unit") !== "number" &&
+			!(limitNode.unit instanceof Date))
 	) {
 		return s.error(writeInvalidLimitMessage(comparator, limitToken, "right"))
 	}

@@ -1,5 +1,6 @@
 import { attest } from "@arktype/attest"
-import { schema, type } from "arktype"
+import { type } from "arktype"
+import { node } from "../builtins/ark.js"
 import {
 	writeMissingRightOperandMessage,
 	writeUnresolvableMessage
@@ -8,12 +9,13 @@ import {
 describe("keyof", () => {
 	it("autocompletion", () => {
 		// @ts-expect-error
-		attest(() => type("k")).type.errors("keyof ")
+		attest(() => type("k")).completions()
 	})
 	it("root expression", () => {
 		const t = type("keyof", "Date")
 		attest<keyof Date>(t.infer)
-		attest(t.json).equals(schema(Date).keyof().json)
+		const expected = node(Date).keyof()
+		attest(t.json).equals(expected.json)
 	})
 	it("primitive", () => {
 		const t = type("keyof bigint")

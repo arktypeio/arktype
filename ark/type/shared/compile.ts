@@ -6,7 +6,6 @@ import {
 } from "@arktype/util"
 import type { Node } from "../base.js"
 import type { Discriminant } from "../types/discriminate.js"
-import type { Type } from "../types/type.js"
 import type { TraversalKind } from "./context.js"
 import type { PrimitiveKind } from "./implement.js"
 
@@ -28,7 +27,7 @@ export class NodeCompiler extends CompiledFunction<
 		super(jsData, jsCtx)
 	}
 
-	invoke(node: Node, opts?: InvokeOptions) {
+	invoke(node: Node, opts?: InvokeOptions): string {
 		const invokedKind = opts?.kind ?? this.traversalKind
 		const method = `${node.name}${invokedKind}`
 		const arg = opts?.arg ?? this.data
@@ -38,19 +37,19 @@ export class NodeCompiler extends CompiledFunction<
 		return `this.${method}(${arg})`
 	}
 
-	requiresContextFor(node: Node) {
+	requiresContextFor(node: Node): boolean {
 		return (
 			this.traversalKind === "Apply" || node.includesContextDependentPredicate
 		)
 	}
 
-	returnIfHasErrors() {
+	returnIfHasErrors(): this {
 		return this.if(`${this.ctx}.currentErrors.length !== 0`, () =>
 			this.return()
 		)
 	}
 
-	checkLiteralKey(key: PropertyKey, node: Type) {
+	checkLiteralKey(key: PropertyKey, node: Node): this {
 		const requiresContext = this.requiresContextFor(node)
 		if (requiresContext) {
 			this.line(`${this.ctx}.path.push(${serializeLiteralKey(key)})`)
@@ -64,7 +63,7 @@ export class NodeCompiler extends CompiledFunction<
 		return this
 	}
 
-	checkReferenceKey(keyExpression: string, node: Type) {
+	checkReferenceKey(keyExpression: string, node: Node): this {
 		const requiresContext = this.requiresContextFor(node)
 		if (requiresContext) {
 			this.line(`${this.ctx}.path.push(${keyExpression})`)
@@ -78,13 +77,13 @@ export class NodeCompiler extends CompiledFunction<
 		return this
 	}
 
-	check(node: Node, opts?: InvokeOptions) {
+	check(node: Node, opts?: InvokeOptions): this {
 		return this.traversalKind === "Allows"
 			? this.if(`!${this.invoke(node, opts)}`, () => this.return(false))
 			: this.line(this.invoke(node, opts))
 	}
 
-	compilePrimitive(node: Node<PrimitiveKind>) {
+	compilePrimitive(node: Node<PrimitiveKind>): this {
 		const pathString = this.path.join()
 		if (
 			node.kind === "domain" &&
@@ -117,7 +116,7 @@ export class NodeCompiler extends CompiledFunction<
 		)
 	}
 
-	writeMethod(name: string) {
+	writeMethod(name: string): string {
 		return `${name}(${this.argNames.join(", ")}){\n${this.body}    }\n`
 	}
 }

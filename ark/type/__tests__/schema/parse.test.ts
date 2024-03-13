@@ -1,22 +1,20 @@
 import { attest } from "@arktype/attest"
-import { schema } from "arktype"
-import type { Ark } from "../../builtins/ark.js"
-import type { IntersectionNode } from "../../types/intersection.js"
+import { node, type Ark } from "../../builtins/ark.js"
 import type { Type } from "../../types/type.js"
 
 describe("parse", () => {
 	it("single constraint", () => {
-		const t = schema({ domain: "string", regex: ".*" })
+		const t = node({ domain: "string", regex: ".*" })
 		attest<Type<string, Ark>>(t)
 		attest(t.json).snap({ domain: "string", regex: [".*"] })
 	})
 	it("multiple constraints", () => {
-		const l = schema({
+		const l = node({
 			domain: "number",
 			divisor: 3,
 			min: 5
 		})
-		const r = schema({
+		const r = node({
 			domain: "number",
 			divisor: 5
 		})
@@ -30,7 +28,7 @@ describe("parse", () => {
 	})
 	it("throws on reduced minLength disjoint", () => {
 		attest(() =>
-			schema({
+			node({
 				proto: Array,
 				maxLength: 0,
 				sequence: {
@@ -44,18 +42,18 @@ describe("parse", () => {
 	})
 
 	// it("errors on all unknown keys", () => {
-	// 	attest(() => schema({ foo: "bar", bar: "baz" }))
+	// 	attest(() => node({ foo: "bar", bar: "baz" }))
 	// })
 	// it("errors on unknown intersection key", () => {
 	// 	// @ts-expect-error
-	// 	attest(() => schema({ foo: "bar", description:  "baz" }))
+	// 	attest(() => node({ foo: "bar", description:  "baz" }))
 	// 		.throws.snap("Error: Key foo is not valid on intersection schema")
 	// 		.type.errors.snap("Type 'string' is not assignable to type 'never'.")
 	// })
 	// TODO: Error here
 	// it("errors on unknown morph key", () => {
 	// 	// @ts-expect-error
-	// 	attest(() => schema({ morph: () => true, foo: "string" }))
+	// 	attest(() => node({ morph: () => true, foo: "string" }))
 	// 		.throws.snap()
 	// 		.type.errors.snap()
 	// })

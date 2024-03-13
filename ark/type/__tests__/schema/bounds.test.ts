@@ -1,6 +1,6 @@
 import { attest } from "@arktype/attest"
 import { entriesOf, morph } from "@arktype/util"
-import { schema } from "arktype"
+import { node } from "../../builtins/ark.js"
 import { boundKindPairsByLower } from "../../constraints/refinements/range.js"
 import { Disjoint } from "../../shared/disjoint.js"
 
@@ -18,7 +18,7 @@ const lengthCases = morph(numericCases, (name, v) => [name, "1".repeat(v)])
 
 describe("bounds", () => {
 	it("numeric apply", () => {
-		const t = schema({
+		const t = node({
 			domain: "number",
 			min: { rule: 5, exclusive: true },
 			max: { rule: 10 }
@@ -37,7 +37,7 @@ describe("bounds", () => {
 		)
 	})
 	it("length apply", () => {
-		const t = schema({
+		const t = node({
 			domain: "string",
 			minLength: { rule: 5, exclusive: true },
 			maxLength: { rule: 10 }
@@ -56,7 +56,7 @@ describe("bounds", () => {
 		)
 	})
 	it("date apply", () => {
-		const t = schema({
+		const t = node({
 			proto: Date,
 			after: { rule: 5, exclusive: true },
 			before: { rule: 10 }
@@ -90,7 +90,7 @@ describe("bounds", () => {
 					? lengthCases
 					: dateCases
 			it("allows", () => {
-				const t = schema({
+				const t = node({
 					...basis,
 					[min]: { rule: 5, exclusive: true },
 					[max]: { rule: 10 }
@@ -103,13 +103,13 @@ describe("bounds", () => {
 				attest(t.allows(cases.greaterThanMax)).equals(false)
 			})
 			it("unit range reduces", () => {
-				const l = schema({
+				const l = node({
 					...basis,
 					[min]: {
 						rule: 6
 					}
 				})
-				const r = schema({
+				const r = node({
 					...basis,
 					[max]: {
 						rule: 6
@@ -117,15 +117,15 @@ describe("bounds", () => {
 				})
 				const expected =
 					min === "min"
-						? schema({
+						? node({
 								unit: 6
 						  })
 						: min === "minLength"
-						? schema({
+						? node({
 								...basis,
 								length: 6
 						  })
-						: schema({
+						: node({
 								unit: new Date(6)
 						  })
 
@@ -133,13 +133,13 @@ describe("bounds", () => {
 				attest(r.and(l).json).equals(expected.json)
 			})
 			it("non-overlapping exclusive", () => {
-				const l = schema({
+				const l = node({
 					...basis,
 					[min]: {
 						rule: 3
 					}
 				})
-				const r = schema({
+				const r = node({
 					...basis,
 					[max]: {
 						rule: 3,
@@ -150,8 +150,8 @@ describe("bounds", () => {
 				attest(r.intersect(l)).instanceOf(Disjoint)
 			})
 			it("non-overlapping limits", () => {
-				const l = schema({ ...basis, [min]: 3 })
-				const r = schema({
+				const l = node({ ...basis, [min]: 3 })
+				const r = node({
 					...basis,
 					[max]: 1
 				})
@@ -159,8 +159,8 @@ describe("bounds", () => {
 				attest(r.intersect(l)).instanceOf(Disjoint)
 			})
 			it("greater min is stricter", () => {
-				const lesser = schema({ ...basis, [min]: 3 })
-				const greater = schema({
+				const lesser = node({ ...basis, [min]: 3 })
+				const greater = node({
 					...basis,
 					[min]: 4
 				})
@@ -168,8 +168,8 @@ describe("bounds", () => {
 				attest(greater.and(lesser).json).equals(greater.json)
 			})
 			it("lesser max is stricter", () => {
-				const lesser = schema({ ...basis, [max]: 3 })
-				const greater = schema({
+				const lesser = node({ ...basis, [max]: 3 })
+				const greater = node({
 					...basis,
 					[max]: { rule: 4, exclusive: true }
 				})
@@ -177,11 +177,11 @@ describe("bounds", () => {
 				attest(greater.and(lesser).json).equals(lesser.json)
 			})
 			it("exclusive wins if limits equal", () => {
-				const exclusive = schema({
+				const exclusive = node({
 					...basis,
 					[max]: { rule: 3, exclusive: true }
 				})
-				const inclusive = schema({
+				const inclusive = node({
 					...basis,
 					[max]: 3
 				})

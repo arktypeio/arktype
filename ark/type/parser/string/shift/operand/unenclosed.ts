@@ -75,7 +75,7 @@ export const parseGenericInstantiation = (
 	s.scanner.jumpToIndex(
 		remainingChars === 0 ? s.scanner.length : -remainingChars
 	)
-	return g(...parsedArgs.result).root as never
+	return g(...parsedArgs.result) as never
 }
 
 export type parseGenericInstantiation<
@@ -226,19 +226,12 @@ export const writeUnresolvableMessage = <token extends string>(
 type writeUnresolvableMessage<token extends string> =
 	`'${token}' is unresolvable`
 
-export const writeMissingOperandMessage = <s extends DynamicState>(s: s) => {
+export const writeMissingOperandMessage = (s: DynamicState): string => {
 	const operator = s.previousOperator()
 	return operator
 		? writeMissingRightOperandMessage(operator, s.scanner.unscanned)
 		: writeExpressionExpectedMessage(s.scanner.unscanned)
 }
-
-export type writeMissingOperandMessage<
-	s extends StaticState,
-	operator extends string | undefined = state.previousOperator<s>
-> = operator extends string
-	? writeMissingRightOperandMessage<operator, s["unscanned"]>
-	: writeExpressionExpectedMessage<s["unscanned"]>
 
 export type writeMissingRightOperandMessage<
 	token extends string,
@@ -260,7 +253,8 @@ export const writeMissingRightOperandMessage = <
 
 export const writeExpressionExpectedMessage = <unscanned extends string>(
 	unscanned: unscanned
-) => `Expected an expression${unscanned ? ` before '${unscanned}'` : ""}`
+): writeExpressionExpectedMessage<unscanned> =>
+	`Expected an expression${unscanned ? ` before '${unscanned}'` : ""}` as never
 
 export type writeExpressionExpectedMessage<unscanned extends string> =
 	`Expected an expression${unscanned extends ""

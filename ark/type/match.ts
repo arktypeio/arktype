@@ -12,7 +12,7 @@ import type { predicate } from "./constraints/predicate.js"
 import type { Scope } from "./scope.js"
 import type { inferTypeRoot, validateTypeRoot } from "./type.js"
 import type { Morph, distill } from "./types/morph.js"
-import { Type } from "./types/type.js"
+import type { Type } from "./types/type.js"
 
 type MatchParserContext = {
 	thens: readonly ((In: unknown) => unknown)[]

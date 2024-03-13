@@ -4,7 +4,7 @@ import { ArkErrors, type ArkErrorInput } from "./errors.js"
 
 export type TraversalPath = (string | symbol)[]
 
-export const pathToPropString = (path: TraversalPath) => {
+export const pathToPropString = (path: TraversalPath): string => {
 	const propAccessChain = path.reduce<string>(
 		(s, segment) => s + literalPropAccess(segment),
 		""
@@ -28,11 +28,11 @@ export class TraversalContext {
 		this.errorsStack = [new ArkErrors(this)]
 	}
 
-	get currentErrors() {
+	get currentErrors(): ArkErrors {
 		return this.errorsStack.at(-1)!
 	}
 
-	get error() {
+	get error(): ArkErrors["add"] {
 		return this.currentErrors.add.bind(this.currentErrors)
 	}
 
@@ -49,11 +49,11 @@ export class TraversalContext {
 		return false
 	}
 
-	pushUnion() {
+	pushUnion(): void {
 		this.errorsStack.push(new ArkErrors(this))
 	}
 
-	popUnion(branchCount: number, data: unknown, path: string[]) {
+	popUnion(branchCount: number, data: unknown, path: string[]): void {
 		const branchProblems = this.errorsStack.pop()!
 		if (branchProblems.count === branchCount) {
 			// this.addError("union", { data: this.data, errors: branchProblems })
