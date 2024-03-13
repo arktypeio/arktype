@@ -16,7 +16,10 @@ import {
 	SequenceNode,
 	type SequenceDeclaration
 } from "./constraints/props/sequence.js"
-import type { DivisorDeclaration } from "./constraints/refinements/divisor.js"
+import {
+	DivisorNode,
+	type DivisorDeclaration
+} from "./constraints/refinements/divisor.js"
 import {
 	BoundNodes,
 	type BoundDeclarations
@@ -38,7 +41,7 @@ import {
 	type MorphDeclaration
 } from "./types/morph.js"
 import { ProtoNode, type ProtoDeclaration } from "./types/proto.js"
-import { UnionNode, type UnionDeclaration } from "./types/union.js"
+import { UnionNode, UnionNode, type UnionDeclaration } from "./types/union.js"
 import { UnitNode, type UnitDeclaration } from "./types/unit.js"
 
 export interface NodeDeclarationsByKind extends BoundDeclarations {

@@ -1,4 +1,5 @@
 import { jsData } from "../../shared/compile.js"
+import type { TraverseAllows } from "../../shared/context.js"
 import type { declareNode } from "../../shared/declare.js"
 import type { Type } from "../../types/type.js"
 import {
@@ -46,7 +47,7 @@ export class DivisorNode extends BasePrimitiveConstraint<DivisorDeclaration> {
 		}
 	})
 
-	traverseAllows = (data: number) => data % this.rule === 0
+	traverseAllows: TraverseAllows<number> = (data) => data % this.rule === 0
 
 	readonly compiledCondition = `${jsData} % ${this.rule} === 0`
 	readonly compiledNegation = `${jsData} % ${this.rule} !== 0`
@@ -55,12 +56,10 @@ export class DivisorNode extends BasePrimitiveConstraint<DivisorDeclaration> {
 	readonly expression = `% ${this.rule}`
 }
 
-export const writeIndivisibleMessage = <node extends Type>(t: node) =>
-	writeInvalidOperandMessage(
-		"divisor",
-		t.$.tsKeywords.number,
-		t
-	) as writeIndivisibleMessage<node>
+export const writeIndivisibleMessage = <node extends Type>(
+	t: node
+): writeIndivisibleMessage<node> =>
+	writeInvalidOperandMessage("divisor", t.$.tsKeywords.number, t)
 
 export type writeIndivisibleMessage<node extends Type> =
 	writeInvalidOperandMessage<"divisor", node>

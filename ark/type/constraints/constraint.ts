@@ -34,7 +34,7 @@ type intersectConstraintKinds<
 
 export const throwInvalidOperandError = (
 	...args: Parameters<typeof writeInvalidOperandMessage>
-) => throwParseError(writeInvalidOperandMessage(...args))
+): never => throwParseError(writeInvalidOperandMessage(...args))
 
 export const writeInvalidOperandMessage = <
 	kind extends ConstraintKind,
@@ -44,13 +44,10 @@ export const writeInvalidOperandMessage = <
 	kind: kind,
 	expected: expected,
 	actual: actual
-) =>
+): writeInvalidOperandMessage<kind, actual> =>
 	`${capitalize(kind)} operand must be ${
 		expected.description
-	} (was ${actual.exclude(expected)})` as writeInvalidOperandMessage<
-		kind,
-		actual
-	>
+	} (was ${actual.exclude(expected)})` as never
 
 export type writeInvalidOperandMessage<
 	kind extends ConstraintKind,
@@ -68,13 +65,6 @@ export abstract class BaseConstraint<
 > extends BaseNode<d["prerequisite"], d> {
 	abstract readonly impliedBasis: Type | undefined
 	readonly impliedSiblings?: ConstraintNode[] | undefined
-
-	attachTo(node: Type) {
-		if (this.impliedBasis && !node.extends(this.impliedBasis)) {
-			return throwInvalidOperandError(this.kind, this.impliedBasis, node)
-		}
-		return node
-	}
 
 	intersect<r extends ConstraintNode>(
 		r: r
@@ -99,7 +89,7 @@ export abstract class BasePrimitiveConstraint<
 		}
 	}
 
-	compile(js: NodeCompiler) {
+	compile(js: NodeCompiler): void {
 		js.compilePrimitive(this as never)
 	}
 }

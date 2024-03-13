@@ -24,7 +24,6 @@ import { createMatchParser, type MatchParser } from "./match.js"
 import { parseAttachments, type SchemaParseOptions } from "./parse.js"
 import {
 	parseObject,
-	parseObject,
 	writeBadDefinitionTypeMessage,
 	type inferDefinition,
 	type validateDefinition
