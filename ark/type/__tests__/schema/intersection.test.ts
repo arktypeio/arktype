@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import { schema } from "../../builtins/builtins.js"
+import { schema } from "arktype"
 import { Scope } from "../../scope.js"
 
 describe("intersections", () => {
@@ -17,8 +17,8 @@ describe("intersections", () => {
 		attest(l.innerId).equals(r.innerId)
 	})
 	it("doesn't equate optional and required props", () => {
-		const l = Scope.root.parse("required", { key: "a", value: "number" })
-		const r = Scope.root.parse("optional", { key: "a", value: "number" })
+		const l = Scope.root.parseSchema("required", { key: "a", value: "number" })
+		const r = Scope.root.parseSchema("optional", { key: "a", value: "number" })
 		attest(l.equals(r)).equals(false)
 	})
 

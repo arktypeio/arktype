@@ -1,6 +1,6 @@
 import { attest } from "@arktype/attest"
 import { wellFormedNumberMatcher } from "@arktype/util"
-import { schema } from "../../builtins/builtins.js"
+import { schema } from "arktype"
 
 describe("morphs", () => {
 	it("in/out", () => {
@@ -21,13 +21,13 @@ describe("morphs", () => {
 	})
 
 	it("in/out union", () => {
-		const n = schema(
+		const n = schema([
 			{
 				in: "string",
 				morph: (s: string) => parseFloat(s)
 			},
 			"number"
-		)
+		])
 		attest(n.in.json).snap(["number", "string"])
 		attest(n.out.json).snap({})
 	})

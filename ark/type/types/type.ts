@@ -86,7 +86,7 @@ export abstract class BaseType<
 		) as never
 	}
 
-	keyof(): Type<keyof this["infer"], $> {
+	keyof(): Type<keyof this["in"]["infer"], $> {
 		return this as never
 		// return this.rule.reduce(
 		// 	(result, branch) => result.and(branch.keyof()),

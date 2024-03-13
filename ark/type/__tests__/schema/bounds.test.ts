@@ -1,6 +1,6 @@
 import { attest } from "@arktype/attest"
 import { entriesOf, morph } from "@arktype/util"
-import { schema } from "../../builtins/builtins.js"
+import { schema } from "arktype"
 import { boundKindPairsByLower } from "../../constraints/refinements/range.js"
 import { Disjoint } from "../../shared/disjoint.js"
 

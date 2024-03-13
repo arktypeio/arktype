@@ -1,6 +1,5 @@
 import { attest } from "@arktype/attest"
-import { type } from "arktype"
-import { schema } from "../builtins/builtins.js"
+import { schema, type } from "arktype"
 
 describe("literal", () => {
 	describe("tuple expression", () => {
@@ -25,9 +24,7 @@ describe("literal", () => {
 			attest<
 				true | "foo" | 5 | 1n | null | undefined | { ark: boolean } | typeof s
 			>(t.infer)
-			attest(t.json).equals(
-				schema.units(true, "foo", 5, 1n, null, undefined, o, s).json
-			)
+			attest(t.json).snap()
 		})
 	})
 	describe("root expression", () => {
@@ -43,9 +40,7 @@ describe("literal", () => {
 			attest<
 				true | "foo" | 5 | 1n | null | undefined | { ark: boolean } | typeof s
 			>(t.infer)
-			attest(t.json).equals(
-				schema.units(true, "foo", 5, 1n, null, undefined, o, s).json
-			)
+			attest(t.json).snap()
 		})
 	})
 })

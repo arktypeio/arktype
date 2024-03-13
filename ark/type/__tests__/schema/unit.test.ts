@@ -1,6 +1,6 @@
 import { attest } from "@arktype/attest"
 import { reference } from "@arktype/util"
-import { schema } from "../../builtins/builtins.js"
+import { schema } from "arktype"
 
 describe("unit", () => {
 	it("treats equivalent dates as equal", () => {

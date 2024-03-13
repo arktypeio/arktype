@@ -56,7 +56,7 @@ describe("union", () => {
 	})
 	describe("expressions", () => {
 		const expected = () =>
-			schema(
+			schema([
 				{
 					domain: "object",
 					required: {
@@ -71,7 +71,7 @@ describe("union", () => {
 						value: { domain: "number" }
 					}
 				}
-			).json
+			]).json
 
 		it("tuple", () => {
 			const t = type([{ a: "string" }, "|", { b: "number" }])

@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import { schema } from "../../builtins/builtins.js"
+import { schema } from "arktype"
 
 describe("props", () => {
 	it("normalizes prop order", () => {

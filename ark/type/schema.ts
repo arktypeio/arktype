@@ -6,8 +6,11 @@ import type {
 	describe,
 	inferDomain
 } from "@arktype/util"
+import type { TypeSchema } from "./base.js"
 import type { Prerequisite } from "./kinds.js"
-import type { ConstraintKind } from "./shared/implement.js"
+import type { SchemaParseOptions } from "./parse.js"
+import { Scope } from "./scope.js"
+import type { ConstraintKind, TypeKind } from "./shared/implement.js"
 import type { inferBasis } from "./types/basis.js"
 import type { DomainSchema } from "./types/domain.js"
 import type { IntersectionSchema } from "./types/intersection.js"
@@ -19,12 +22,26 @@ import type {
 	inferMorphOut
 } from "./types/morph.js"
 import type { ProtoSchema } from "./types/proto.js"
+import type { Type } from "./types/type.js"
 import type { NormalizedUnionSchema } from "./types/union.js"
 import type { UnitSchema } from "./types/unit.js"
 
-export const schema = <const def>(
-	def: validateSchema<def>
-): ["schema", validateSchema<def>] => ["schema", def]
+export type SchemaParser<$> = <const schema extends TypeSchema>(
+	schema: schema,
+	opts?: TypeSchemaParseOptions
+) => Type<inferSchema<schema>, $>
+
+export interface TypeSchemaParseOptions extends SchemaParseOptions {
+	root?: boolean
+	allowedKinds?: readonly TypeKind[]
+}
+
+export const rootSchema: SchemaParser<{}> = (schema, opts) =>
+	Scope.root.parseTypeSchema(schema, {
+		...opts,
+		root: true,
+		prereduced: true
+	}) as never
 
 export type validateSchema<schema> = [schema] extends [
 	readonly [...infer branches]

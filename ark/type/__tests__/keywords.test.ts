@@ -1,6 +1,5 @@
 import { attest } from "@arktype/attest"
-import { type } from "arktype"
-import { schema } from "../builtins/builtins.js"
+import { schema, type } from "arktype"
 
 describe("keywords", () => {
 	describe("jsObjects", () => {
@@ -38,7 +37,9 @@ describe("keywords", () => {
 			const boolean = type("boolean")
 			attest<boolean>(boolean.infer)
 			// should be simplified to simple checks for true and false literals
-			attest(boolean.json).equals(schema({ unit: false }, { unit: true }).json)
+			attest(boolean.json).equals(
+				schema([{ unit: false }, { unit: true }]).json
+			)
 			// TODO:
 			// 			attest(boolean.json).snap(`if( $arkRoot !== false && $arkRoot !== true) {
 			//     return false
@@ -48,7 +49,7 @@ describe("keywords", () => {
 			const never = type("never")
 			attest<never>(never.infer)
 			// should be equivalent to a zero-branch union
-			attest(never.json).equals(schema().json)
+			attest(never.json).equals(schema([]).json)
 		})
 		it("unknown", () => {
 			// should be equivalent to an unconstrained predicate

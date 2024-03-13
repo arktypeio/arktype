@@ -1,12 +1,13 @@
 import { attest } from "@arktype/attest"
-import { schema } from "../../builtins/builtins.js"
+import { schema } from "arktype"
+import type { Ark } from "../../builtins/ark.js"
 import type { IntersectionNode } from "../../types/intersection.js"
 import type { Type } from "../../types/type.js"
 
 describe("parse", () => {
 	it("single constraint", () => {
 		const t = schema({ domain: "string", regex: ".*" })
-		attest<IntersectionNode<string>>(t)
+		attest<Type<string, Ark>>(t)
 		attest(t.json).snap({ domain: "string", regex: [".*"] })
 	})
 	it("multiple constraints", () => {

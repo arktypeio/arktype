@@ -1,7 +1,8 @@
 import { bench } from "@arktype/attest"
+import { schema } from "arktype"
 import type { Node } from "../../base.js"
-import { schema } from "../../builtins/builtins.js"
 import type { TypeKind } from "../../shared/implement.js"
+import type { Type } from "../../types/type.js"
 
 bench("domain", () => {
 	return schema("string").infer
@@ -14,11 +15,3 @@ bench("intersection", () => {
 bench("no assignment", () => {
 	schema({ domain: "string", regex: "/.*/" })
 }).types([350, "instantiations"])
-
-bench("assignment", () => {
-	// previously had issues with a union complexity error when assigning to Root | undefined
-	const n: Node<TypeKind> | undefined = schema({
-		domain: "string",
-		regex: "/.*/"
-	})
-}).types([1329, "instantiations"])

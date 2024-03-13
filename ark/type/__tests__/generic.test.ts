@@ -1,7 +1,6 @@
 import { attest } from "@arktype/attest"
 import { lazily } from "@arktype/util"
-import { scope, type } from "arktype"
-import { keywords, keywords } from "../builtins/ark.js"
+import { keywords, scope, type } from "arktype"
 import { writeIndivisibleMessage } from "../constraints/refinements/divisor.js"
 import { emptyGenericParameterMessage } from "../parser/generic.js"
 import { writeUnclosedGroupMessage } from "../parser/string/reduce/shared.js"

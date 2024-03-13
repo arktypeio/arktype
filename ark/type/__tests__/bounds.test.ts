@@ -1,7 +1,6 @@
 import { attest } from "@arktype/attest"
 import { writeMalformedNumericLiteralMessage } from "@arktype/util"
-import { type } from "arktype"
-import { schema } from "../builtins/builtins.js"
+import { schema, type } from "arktype"
 import { writeUnboundableMessage } from "../constraints/refinements/range.js"
 import { writeDoubleRightBoundMessage } from "../parser/semantic/bounds.js"
 import {

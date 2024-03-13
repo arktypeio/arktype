@@ -17,7 +17,7 @@ import {
 } from "@arktype/util"
 import type { get } from "http"
 import type { Node, TypeSchema } from "./base.js"
-import { keywords, type type } from "./builtins/ark.js"
+import { keywords, match, type type } from "./builtins/ark.js"
 import { globalConfig } from "./config.js"
 import type { LengthBoundableData } from "./constraints/refinements/range.js"
 import { nodesByKind, type Schema, type reducibleKindOf } from "./kinds.js"
@@ -41,6 +41,7 @@ import {
 	writeUnresolvableMessage
 } from "./parser/string/shift/operand/unenclosed.js"
 import { fullStringParse } from "./parser/string/string.js"
+import type { SchemaParser } from "./schema.js"
 import { NodeCompiler } from "./shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "./shared/context.js"
 import type {
@@ -430,6 +431,8 @@ export class Scope<r extends Resolutions = any> {
 
 	type: TypeParser<$<r>> = createTypeParser(this as never) as never
 
+	schema: SchemaParser<$<r>> = createSchemaParser(this as never) as never
+
 	match: MatchParser<$<r>> = createMatchParser(this as never) as never
 
 	// TODO: decide if this API will be used for non-validated types
@@ -536,7 +539,7 @@ export class Scope<r extends Resolutions = any> {
 		const dotPrefix = name.slice(0, dotIndex)
 		const prefixDef = this.aliases[dotPrefix]
 		if (hasArkKind(prefixDef, "module")) {
-			const resolution = prefixDef[name.slice(dotIndex + 1)]?.root
+			const resolution = prefixDef[name.slice(dotIndex + 1)]
 			// if the first part of name is a submodule but the suffix is
 			// unresolvable, we can throw immediately
 			if (!resolution) {
@@ -655,12 +658,6 @@ export class Scope<r extends Resolutions = any> {
 		return opts.root
 			? (this.parseRootSchema(kind, schema as never, opts) as never)
 			: (this.parseSchema(kind, schema as never, opts) as never)
-	}
-
-	parseSchemaBranches(...branches: TypeSchema[]): Type {
-		return branches.length === 1
-			? this.parseTypeSchema(branches[0])
-			: this.parseSchema("union", { branches })
 	}
 
 	parseRootSchema<kind extends NodeKind>(

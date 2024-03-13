@@ -63,10 +63,6 @@ export type TypeParser<$> = {
 			}
 		>
 	): Generic<parseGenericParams<params>, def, $>
-
-	schema: <const schema>(
-		schema: validateSchema<schema>
-	) => Type<inferSchema<schema>>
 }
 
 export type DeclarationParser<$> = <preinferred>() => {

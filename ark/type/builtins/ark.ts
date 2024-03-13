@@ -1,4 +1,5 @@
 import type { MatchParser } from "../match.js"
+import type { SchemaParser } from "../schema.js"
 import { Scope, type Module, type ScopeParser } from "../scope.js"
 import type { inferred } from "../shared/inference.js"
 import type {
@@ -73,12 +74,13 @@ export interface Ark
 	parse: Module<ParsingResolutions>
 }
 
-export const scope: ScopeParser<{}, Ark> = ark.scope as never
+export const scope: ScopeParser<Ark, Ark> = ark.scope as never
 
 export const type: TypeParser<Ark> = ark.type
 
-// TODO: cast needed?
-export const match: MatchParser<Ark> = ark.match as never
+export const match: MatchParser<Ark> = ark.match
+
+export const schema: SchemaParser<Ark> = ark.schema
 
 export namespace type {
 	export type cast<to> = {

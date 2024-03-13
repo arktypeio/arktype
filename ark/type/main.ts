@@ -1,9 +1,10 @@
 export {
 	ark,
-	keywords as arktypes,
 	declare,
 	define,
+	keywords,
 	match,
+	schema,
 	scope,
 	type,
 	type Ark

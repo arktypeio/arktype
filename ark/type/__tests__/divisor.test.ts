@@ -1,6 +1,6 @@
 import { attest } from "@arktype/attest"
 import { type } from "arktype"
-import { nodes } from "../builtins/builtins.js"
+import { keywords } from "../builtins/ark.js"
 import { writeIndivisibleMessage } from "../constraints/refinements/divisor.js"
 import { writeInvalidDivisorMessage } from "../parser/string/shift/operator/divisor.js"
 
@@ -26,7 +26,7 @@ describe("divisibility", () => {
 			const t = type("7<number%8<222")
 			const expected = type("number%8").and("7<number<222")
 			attest(t.json).equals(expected.json)
-			attest(t.root.description).snap(
+			attest(t.description).snap(
 				"a number and a multiple of 8 and less than 222 and more than 7"
 			)
 		})
@@ -52,19 +52,19 @@ describe("divisibility", () => {
 		it("unknown", () => {
 			// @ts-expect-error
 			attest(() => type("unknown%2")).throwsAndHasTypeError(
-				writeIndivisibleMessage(nodes.unknown)
+				writeIndivisibleMessage(keywords.unknown)
 			)
 		})
 		it("indivisible", () => {
 			// @ts-expect-error
 			attest(() => type("string%1")).throwsAndHasTypeError(
-				writeIndivisibleMessage(nodes.string)
+				writeIndivisibleMessage(keywords.string)
 			)
 		})
 		it("overlapping", () => {
 			// @ts-expect-error
 			attest(() => type("(number|string)%10")).throwsAndHasTypeError(
-				writeIndivisibleMessage(nodes.number.or(nodes.string))
+				writeIndivisibleMessage(keywords.number.or(keywords.string))
 			)
 		})
 	})
