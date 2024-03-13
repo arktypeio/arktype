@@ -1,11 +1,5 @@
 import { morph, type Domain, type evaluate } from "@arktype/util"
-import {
-	BaseNode,
-	type BaseAttachments,
-	type Node,
-	type NodeSubclass,
-	type TypeNode
-} from "../base.js"
+import { BaseNode, type Node, type TypeNode } from "../base.js"
 import type { applySchema, validateConstraintArg } from "../constraints/ast.js"
 import { throwInvalidOperandError } from "../constraints/constraint.js"
 import type { Predicate, inferNarrow } from "../constraints/predicate.js"
@@ -46,24 +40,16 @@ export const defineRightwardIntersections = <kind extends TypeKind>(
 	implementation: TypeIntersection<kind, typeKindRightOf<kind>>
 ) => morph(typeKindsRightOf(kind), (i, kind) => [kind, implementation])
 
-export abstract class BaseType<
+export class BaseType<
 	t,
 	d extends BaseTypeDeclaration,
-	subclass extends NodeSubclass<d>,
 	$ = any
-> extends BaseNode<t, d, subclass> {
+> extends BaseNode<t, d> {
 	declare infer: distill<extractOut<t>>;
 	declare [inferred]: t
 
-	// important we only declare this, otherwise it would reinitialize a union's branches to undefined
-	declare readonly branches: readonly Node<UnionChildKind>[]
-
-	constructor(attachments: BaseAttachments) {
-		super(attachments)
-		// in a union, branches will have already been assigned from inner
-		// otherwise, initialize it to a singleton array containing the current branch node
-		this.branches ??= [this as never]
-	}
+	readonly branches: readonly Node<UnionChildKind>[] =
+		"branches" in this.inner ? (this.inner.branches as never) : [this]
 
 	allows = (data: d["prerequisite"]): data is distill<extractIn<t>> => {
 		const ctx = new TraversalContext(data, this.$.config)

@@ -9,6 +9,7 @@ import { jsData } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import { PrimitiveNode, defineNode } from "../shared/implement.js"
+import { BaseType } from "./type.js"
 
 export interface DomainInner<
 	domain extends NonEnumerableDomain = NonEnumerableDomain
@@ -54,7 +55,7 @@ export const domainDefinition = defineNode<DomainDeclaration>({
 })
 
 export class DomainNode<t = any> extends implement(
-	BaseNode<DomainDeclaration>,
+	BaseType<any, DomainDeclaration>,
 	PrimitiveNode<DomainDeclaration>,
 	{
 		construct: (self) => {

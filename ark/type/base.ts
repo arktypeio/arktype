@@ -88,9 +88,9 @@ export interface NarrowedAttachments<d extends BaseNodeDeclaration>
 export const isNode = (value: unknown): value is Node =>
 	value instanceof BaseNode
 
-export type UnknownNode = BaseNode<any>
+export type UnknownNode = BaseNode<any, BaseNodeDeclaration>
 
-export class BaseNode<d extends BaseNodeDeclaration> extends Trait<{
+export class BaseNode<t, d extends BaseNodeDeclaration> extends Trait<{
 	abstractMethods: {
 		compile(js: NodeCompiler): void
 	}
