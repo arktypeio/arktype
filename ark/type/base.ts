@@ -1,9 +1,13 @@
 import {
-	Trait,
+	Callable,
+	DynamicBase,
+	capitalize,
 	includes,
 	isArray,
 	morph,
+	printable,
 	throwError,
+	type Constructor,
 	type Dict,
 	type Entry,
 	type Guardable,
@@ -22,17 +26,29 @@ import type { SequenceNode } from "./constraints/props/sequence.js"
 import type { DivisorNode } from "./constraints/refinements/divisor.js"
 import type { BoundNodesByKind } from "./constraints/refinements/kinds.js"
 import type { RegexNode } from "./constraints/refinements/regex.js"
-import type { Inner, Schema, ioKindOf, reducibleKindOf } from "./kinds.js"
+import type {
+	Declaration,
+	Inner,
+	Schema,
+	ioKindOf,
+	reducibleKindOf
+} from "./kinds.js"
 import type { Scope } from "./scope.js"
 import type { NodeCompiler } from "./shared/compile.js"
-import { type TraverseAllows, type TraverseApply } from "./shared/context.js"
+import {
+	pathToPropString,
+	type TraverseAllows,
+	type TraverseApply
+} from "./shared/context.js"
 import type {
 	BaseAttachmentsOf,
 	BaseErrorContext,
 	BaseMeta,
+	BaseNodeDeclaration,
 	BaseNodeDeclaration
 } from "./shared/declare.js"
 import { Disjoint } from "./shared/disjoint.js"
+import type { ArkResult } from "./shared/errors.js"
 import {
 	basisKinds,
 	constraintKinds,
@@ -51,9 +67,15 @@ import {
 	type nodeImplementationInputOf,
 	type nodeImplementationOf
 } from "./shared/implement.js"
+import type { inferred } from "./shared/inference.js"
 import type { DomainNode } from "./types/domain.js"
 import type { IntersectionNode } from "./types/intersection.js"
-import type { MorphNode, extractIn, extractOut } from "./types/morph.js"
+import type {
+	MorphNode,
+	distill,
+	extractIn,
+	extractOut
+} from "./types/morph.js"
 import type { ProtoNode } from "./types/proto.js"
 import type { UnionNode } from "./types/union.js"
 import type { UnitNode } from "./types/unit.js"
@@ -70,8 +92,8 @@ export interface BaseAttachments {
 	readonly children: Node[]
 	readonly innerId: string
 	readonly typeId: string
-	readonly $: Scope
 	readonly description: string
+	readonly $: Scope
 }
 
 export interface NarrowedAttachments<d extends BaseNodeDeclaration>
@@ -85,22 +107,66 @@ export interface NarrowedAttachments<d extends BaseNodeDeclaration>
 	children: Node<d["childKind"]>[]
 }
 
+export type NodeSubclass<d extends BaseNodeDeclaration = BaseNodeDeclaration> =
+	{
+		new (attachments: never): BaseNode<any, d>
+		readonly implementation: nodeImplementationOf<d>
+	}
+
 export const isNode = (value: unknown): value is Node =>
 	value instanceof BaseNode
 
 export type UnknownNode = BaseNode<any, BaseNodeDeclaration>
 
-export class BaseNode<t, d extends BaseNodeDeclaration> extends Trait<{
-	abstractMethods: {
-		compile(js: NodeCompiler): void
+type subclassKind<self> = self extends Constructor<{
+	kind: infer kind extends NodeKind
+}>
+	? kind
+	: never
+
+type subclassDeclaration<self> = Declaration<subclassKind<self>>
+
+export abstract class BaseNode<
+	t,
+	d extends BaseNodeDeclaration
+> extends Callable<
+	(data: unknown) => ArkResult<distill<extractOut<t>>>,
+	BaseAttachmentsOf<d>
+> {
+	declare infer: distill<extractOut<t>>;
+	declare [inferred]: t
+
+	protected static implement<self>(
+		this: self,
+		implementation: nodeImplementationInputOf<subclassDeclaration<self>>
+	): nodeImplementationOf<subclassDeclaration<self>>
+	protected static implement(_: never): any {
+		const implementation: UnknownNodeImplementation = _
+		if (implementation.hasAssociatedError) {
+			implementation.defaults.expected ??= (ctx) =>
+				"description" in ctx
+					? (ctx.description as string)
+					: implementation.defaults.description(ctx)
+			implementation.defaults.actual ??= (data) => printable(data)
+			implementation.defaults.problem ??= (ctx) =>
+				`must be ${ctx.expected}${ctx.actual ? ` (was ${ctx.actual})` : ""}`
+			implementation.defaults.message ??= (ctx) => {
+				if (ctx.path.length === 0) {
+					return capitalize(ctx.problem)
+				}
+				const problemWithLocation = `${pathToPropString(ctx.path)} ${
+					ctx.problem
+				}`
+				if (problemWithLocation[0] === "[") {
+					// clarify paths like [1], [0][1], and ["key!"] that could be confusing
+					return `Value at ${problemWithLocation}`
+				}
+				return problemWithLocation
+			}
+		}
+		return implementation
 	}
-	abstractProps: {
-		readonly expression: string
-		traverseAllows: TraverseAllows
-		traverseApply: TraverseApply
-	}
-	dynamicBase: BaseAttachmentsOf<d>
-}> {
+
 	protected readonly impl: UnknownNodeImplementation = (this.constructor as any)
 		.implementation
 	readonly includesMorph: boolean =
@@ -119,15 +185,19 @@ export class BaseNode<t, d extends BaseNodeDeclaration> extends Trait<{
 	readonly precedence = precedenceOfKind(this.kind)
 	jit = false
 
-	constructor(attachments: BaseAttachmentsOf<d>) {
-		super()
-		Object.assign(this, attachments)
+	constructor(attachments: BaseAttachments) {
+		super(attachments as never)
 		this.contributesReferencesByName =
 			this.name in this.referencesByName
 				? this.referencesByName
 				: { ...this.referencesByName, [this.name]: this as never }
 		this.contributesReferences = Object.values(this.contributesReferencesByName)
 	}
+
+	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
+	abstract traverseApply: TraverseApply<d["prerequisite"]>
+	abstract compile(js: NodeCompiler): void
+	abstract expression: string
 
 	private inCache?: UnknownNode;
 	get in(): Node<ioKindOf<d["kind"]>, extractIn<t>> {
@@ -160,7 +230,7 @@ export class BaseNode<t, d extends BaseNodeDeclaration> extends Trait<{
 				ioInner[k] = v
 			}
 		}
-		return this.$.parseSchema(this.kind, ioInner) as never
+		return this.$.parse(this.kind, ioInner) as never
 	}
 
 	protected createErrorContext<from>(

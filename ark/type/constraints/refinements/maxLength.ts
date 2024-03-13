@@ -11,10 +11,7 @@ export type MaxLengthDeclaration = LengthRangeDeclaration<"maxLength">
 
 export type maxLength<n extends number> = boundToIs<"maxLength", n>
 
-export class MaxLengthNode extends BaseRange<
-	MaxLengthDeclaration,
-	typeof MaxLengthNode
-> {
+export class MaxLengthNode extends BaseRange<MaxLengthDeclaration> {
 	static implementation: nodeImplementationOf<MaxLengthDeclaration> =
 		this.implementBound({
 			defaults: {
@@ -30,7 +27,7 @@ export class MaxLengthNode extends BaseRange<
 				minLength: (max, min, $) =>
 					max.overlapsRange(min)
 						? max.overlapIsUnit(min)
-							? $.parseScema("length", { rule: max.rule })
+							? $.parseSchema("length", { rule: max.rule })
 							: null
 						: Disjoint.from("range", max, min)
 			}

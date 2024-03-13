@@ -47,16 +47,13 @@ const intersectNamed: ConstraintIntersection<
 	if (value instanceof Disjoint) {
 		return value.withPrefixKey(l.compiledKey)
 	}
-	return $.parseScema("required", {
+	return $.parseSchema("required", {
 		key,
 		value
 	})
 }
 
-export class RequiredNode extends BaseConstraint<
-	RequiredDeclaration,
-	typeof RequiredNode
-> {
+export class RequiredNode extends BaseConstraint<RequiredDeclaration> {
 	static implementation: nodeImplementationOf<RequiredDeclaration> =
 		this.implement({
 			hasAssociatedError: true,

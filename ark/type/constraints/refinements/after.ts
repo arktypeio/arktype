@@ -12,7 +12,7 @@ export type AfterDeclaration = DateRangeDeclaration<"after">
 export type after<date extends string> = boundToIs<"after", date>
 
 export class AfterNode
-	extends BaseRange<AfterDeclaration, typeof AfterNode>
+	extends BaseRange<AfterDeclaration>
 	implements DateBoundExtras
 {
 	static implementation: nodeImplementationOf<AfterDeclaration> =

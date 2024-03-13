@@ -9,7 +9,7 @@ export type MinDeclaration = NumericRangeDeclaration<"min">
 
 export type min<n extends number> = boundToIs<"min", n>
 
-export class MinNode extends BaseRange<MinDeclaration, typeof MinNode> {
+export class MinNode extends BaseRange<MinDeclaration> {
 	static implementation: nodeImplementationOf<MinDeclaration> =
 		this.implementBound({
 			defaults: {

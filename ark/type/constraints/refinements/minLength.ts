@@ -10,10 +10,7 @@ export type MinLengthDeclaration = LengthRangeDeclaration<"minLength">
 
 export type minLength<n extends number> = boundToIs<"minLength", n>
 
-export class MinLengthNode extends BaseRange<
-	MinLengthDeclaration,
-	typeof MinLengthNode
-> {
+export class MinLengthNode extends BaseRange<MinLengthDeclaration> {
 	static implementation: nodeImplementationOf<MinLengthDeclaration> =
 		this.implementBound({
 			defaults: {

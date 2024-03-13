@@ -16,9 +16,8 @@ import {
 	type TypeKind,
 	type kindRightOf
 } from "../shared/implement.js"
-import { inferred } from "../shared/inference.js"
 import type { inferIntersection } from "../shared/intersections.js"
-import { Type, type inferTypeRoot, type validateTypeRoot } from "../type.js"
+import { type inferTypeRoot, type validateTypeRoot } from "../type.js"
 import type { IntersectionNode } from "./intersection.js"
 import type {
 	Morph,
@@ -40,16 +39,15 @@ export const defineRightwardIntersections = <kind extends TypeKind>(
 	implementation: TypeIntersection<kind, typeKindRightOf<kind>>
 ) => morph(typeKindsRightOf(kind), (i, kind) => [kind, implementation])
 
-export class BaseType<
+export type Type<t = unknown, $ = any> = BaseType<t, BaseTypeDeclaration, $>
+
+export abstract class BaseType<
 	t,
 	d extends BaseTypeDeclaration,
 	$ = any
 > extends BaseNode<t, d> {
-	declare infer: distill<extractOut<t>>;
-	declare [inferred]: t
-
 	readonly branches: readonly Node<UnionChildKind>[] =
-		"branches" in this.inner ? (this.inner.branches as never) : [this]
+		"branches" in this.inner ? (this.inner.branches as any) : [this]
 
 	allows = (data: d["prerequisite"]): data is distill<extractIn<t>> => {
 		const ctx = new TraversalContext(data, this.$.config)

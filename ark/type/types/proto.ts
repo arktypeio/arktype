@@ -33,10 +33,10 @@ export type ProtoDeclaration = declareNode<{
 
 // readonly literalKeys = prototypeKeysOf(this.rule.prototype)
 
-export class ProtoNode<t = unknown> extends BaseBasis<
+export class ProtoNode<t = unknown, $ = any> extends BaseBasis<
 	t,
 	ProtoDeclaration,
-	typeof ProtoNode
+	$
 > {
 	static implementation = this.implement({
 		hasAssociatedError: true,

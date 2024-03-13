@@ -1,9 +1,6 @@
 import {
-	Trait,
-	capitalize,
 	compileSerializedValue,
 	morph,
-	printable,
 	type ErrorMessage,
 	type JsonData,
 	type entryOf,
@@ -12,31 +9,16 @@ import {
 	type listable,
 	type requireKeys
 } from "@arktype/util"
-import type {
-	BaseAttachments,
-	BaseNode,
-	Node,
-	TypeNode,
-	UnknownNode
-} from "../base.js"
-import { type BasePrimitiveConstraintDeclaration } from "../constraints/constraint.js"
+import type { Node, TypeNode, UnknownNode } from "../base.js"
 import { boundKinds } from "../constraints/refinements/shared.js"
 import type { Declaration, Inner, errorContext } from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
 import type { NodeConfig, ParsedUnknownNodeConfig, Scope } from "../scope.js"
 import type { typeKindOrRightOf, typeKindRightOf } from "../types/type.js"
-import type { NodeCompiler } from "./compile.js"
-import {
-	pathToPropString,
-	type TraverseAllows,
-	type TraverseApply
-} from "./context.js"
 import type {
-	BaseAttachmentsOf,
 	BaseErrorContext,
 	BaseMeta,
-	BaseNodeDeclaration,
-	ImplementedAttachments
+	BaseNodeDeclaration
 } from "./declare.js"
 import type { Disjoint } from "./disjoint.js"
 
@@ -236,7 +218,7 @@ export type NodeKeyImplementation<
 			: never)
 >
 
-export interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
+interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	keys: KeyDefinitions<d>
 	normalize: (schema: d["schema"]) => d["normalizedSchema"]
 	hasAssociatedError: d["errorContext"] extends null ? false : true
@@ -245,53 +227,6 @@ export interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 		inner: d["inner"],
 		$: Scope
 	) => Node<d["reducibleTo"]> | Disjoint | undefined
-}
-
-export const defineNode = <d extends BaseNodeDeclaration>(
-	_: nodeImplementationInputOf<d>
-): nodeImplementationOf<d> => {
-	const implementation: UnknownNodeImplementation = _ as never
-	if (implementation.hasAssociatedError) {
-		implementation.defaults.expected ??= (ctx) =>
-			"description" in ctx
-				? (ctx.description as string)
-				: implementation.defaults.description(ctx)
-		implementation.defaults.actual ??= (data) => printable(data)
-		implementation.defaults.problem ??= (ctx) =>
-			`must be ${ctx.expected}${ctx.actual ? ` (was ${ctx.actual})` : ""}`
-		implementation.defaults.message ??= (ctx) => {
-			if (ctx.path.length === 0) {
-				return capitalize(ctx.problem)
-			}
-			const problemWithLocation = `${pathToPropString(ctx.path)} ${ctx.problem}`
-			if (problemWithLocation[0] === "[") {
-				// clarify paths like [1], [0][1], and ["key!"] that could be confusing
-				return `Value at ${problemWithLocation}`
-			}
-			return problemWithLocation
-		}
-	}
-	return implementation as never
-}
-
-export class PrimitiveNode<d extends BaseNodeDeclaration> extends Trait<{
-	abstractProps: {
-		traverseAllows: TraverseAllows<d["prerequisite"]>
-		readonly compiledCondition: string
-		readonly compiledNegation: string
-		readonly errorContext: d["errorContext"]
-		readonly description: string
-	}
-}> {
-	traverseApply: TraverseApply = (data, ctx) => {
-		if (!this.traverseAllows(data, ctx)) {
-			ctx.error(this.description)
-		}
-	}
-
-	compile(js: NodeCompiler) {
-		js.compilePrimitive(this as never)
-	}
 }
 
 export interface UnknownNodeImplementation
@@ -339,5 +274,5 @@ export type nodeDefaultsImplementationFor<kind extends NodeKind> = Required<
 >
 
 export type DescriptionWriter<kind extends NodeKind = NodeKind> = (
-	inner: Inner<kind>
+	inner: Node<kind>
 ) => string

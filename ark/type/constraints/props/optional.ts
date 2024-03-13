@@ -27,10 +27,7 @@ export type OptionalDeclaration = declareNode<{
 	childKind: TypeKind
 }>
 
-export class OptionalNode extends BaseConstraint<
-	OptionalDeclaration,
-	typeof OptionalNode
-> {
+export class OptionalNode extends BaseConstraint<OptionalDeclaration> {
 	static implementation: nodeImplementationOf<OptionalDeclaration> =
 		this.implement({
 			keys: {

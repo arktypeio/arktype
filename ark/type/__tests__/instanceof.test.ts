@@ -3,7 +3,7 @@ import { type } from "arktype"
 import type { Ark } from "../builtins/ark.js"
 import { schema } from "../builtins/builtins.js"
 import { writeInvalidConstructorMessage } from "../parser/tuple.js"
-import type { Type } from "../type.js"
+import type { Type } from "../types/type.js"
 
 describe("instanceof", () => {
 	describe("tuple expression", () => {

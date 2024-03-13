@@ -10,7 +10,7 @@ export type MaxDeclaration = NumericRangeDeclaration<"max">
 
 export type max<n extends number> = boundToIs<"max", n>
 
-export class MaxNode extends BaseRange<MaxDeclaration, typeof MaxNode> {
+export class MaxNode extends BaseRange<MaxDeclaration> {
 	static implementation: nodeImplementationOf<MaxDeclaration> =
 		this.implementBound({
 			defaults: {
@@ -23,7 +23,7 @@ export class MaxNode extends BaseRange<MaxDeclaration, typeof MaxNode> {
 				min: (max, min, $) =>
 					max.overlapsRange(min)
 						? max.overlapIsUnit(min)
-							? $.parseScema("unit", { unit: max.rule })
+							? $.parseSchema("unit", { unit: max.rule })
 							: null
 						: Disjoint.from("range", max, min)
 			}

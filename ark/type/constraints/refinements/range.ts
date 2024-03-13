@@ -21,9 +21,8 @@ import {
 import type { BoundKind, RangeKind } from "./shared.js"
 
 export abstract class BaseRange<
-	d extends BaseRangeDeclaration,
-	subclass extends NodeSubclass<d>
-> extends BasePrimitiveConstraint<d, subclass> {
+	d extends BaseRangeDeclaration
+> extends BasePrimitiveConstraint<d> {
 	static implementBound<d extends Declaration<RangeKind>>(
 		implementation: Pick<
 			nodeImplementationInputOf<d>,

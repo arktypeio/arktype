@@ -1,5 +1,6 @@
 import type { Module, Scope } from "./scope.js"
-import type { Generic, Type } from "./type.js"
+import type { Generic } from "./type.js"
+import type { Type } from "./types/type.js"
 
 export const arkKind = Symbol("ArkTypeInternalKind")
 

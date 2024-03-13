@@ -168,10 +168,10 @@ const intersectIntersections = (
 	})
 }
 
-export class IntersectionNode<t = unknown> extends BaseType<
+export class IntersectionNode<t = unknown, $ = any> extends BaseType<
 	t,
 	IntersectionDeclaration,
-	typeof IntersectionNode
+	$
 > {
 	static implementation: nodeImplementationOf<IntersectionDeclaration> =
 		this.implement({

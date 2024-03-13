@@ -29,10 +29,7 @@ export type PredicateDeclaration = declareNode<{
 // TODO: If node contains a predicate reference that doesn't take 1 arg, we need
 // to wrap it with traversal state for allows
 
-export class PredicateNode extends BasePrimitiveConstraint<
-	PredicateDeclaration,
-	typeof PredicateNode
-> {
+export class PredicateNode extends BasePrimitiveConstraint<PredicateDeclaration> {
 	static implementation = this.implement({
 		hasAssociatedError: true,
 		collapseKey: "rule",

@@ -21,7 +21,7 @@ import { type type } from "../builtins/ark.js"
 import type { of } from "../constraints/ast.js"
 import type { regex } from "../constraints/refinements/regex.js"
 import type { ParseContext } from "../scope.js"
-import { Type } from "../type.js"
+import { BaseType, BaseType } from "../types/type.js"
 import {
 	parseObjectLiteral,
 	type inferObjectLiteral,
@@ -40,7 +40,7 @@ export const parseObject = (def: object, ctx: ParseContext): TypeNode => {
 	const objectKind = objectKindOf(def)
 	switch (objectKind) {
 		case undefined:
-			if (def instanceof Type) {
+			if (def instanceof BaseType) {
 				return def.root
 			}
 			if (isNode(def) && def.isType()) {
@@ -56,7 +56,7 @@ export const parseObject = (def: object, ctx: ParseContext): TypeNode => {
 			})
 		case "Function":
 			const resolvedDef = isThunk(def) ? def() : def
-			if (resolvedDef instanceof Type) {
+			if (resolvedDef instanceof BaseType) {
 				return resolvedDef.root
 			}
 			return throwParseError(writeBadDefinitionTypeMessage("Function"))

@@ -12,7 +12,7 @@ export type BeforeDeclaration = DateRangeDeclaration<"before">
 export type before<date extends string> = boundToIs<"before", date>
 
 export class BeforeNode
-	extends BaseRange<BeforeDeclaration, typeof BeforeNode>
+	extends BaseRange<BeforeDeclaration>
 	implements DateBoundExtras
 {
 	static implementation: nodeImplementationOf<BeforeDeclaration> =
@@ -30,7 +30,7 @@ export class BeforeNode
 				after: (before, after, $) =>
 					before.overlapsRange(after)
 						? before.overlapIsUnit(after)
-							? $.parseScema("unit", { unit: before.dateLimit })
+							? $.parseSchema("unit", { unit: before.dateLimit })
 							: null
 						: Disjoint.from("range", before, after)
 			}

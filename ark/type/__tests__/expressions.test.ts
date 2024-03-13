@@ -6,7 +6,7 @@ import {
 	writeMissingRightOperandMessage,
 	writeUnresolvableMessage
 } from "../parser/string/shift/operand/unenclosed.js"
-import type { Type } from "../type.js"
+import type { Type } from "../types/type.js"
 
 describe("tuple expressions", () => {
 	it("nested", () => {

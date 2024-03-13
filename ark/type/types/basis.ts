@@ -6,7 +6,6 @@ import type {
 	instanceOf,
 	isAny
 } from "@arktype/util"
-import type { NodeSubclass } from "../base.js"
 import type { Schema } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { TraverseApply } from "../shared/context.js"
@@ -23,8 +22,8 @@ export type BaseBasisDeclaration = evaluate<
 export abstract class BaseBasis<
 	t,
 	d extends BaseBasisDeclaration,
-	subclass extends NodeSubclass<d>
-> extends BaseType<t, d, subclass> {
+	$
+> extends BaseType<t, d, $> {
 	abstract readonly expression: string
 	abstract readonly compiledCondition: string
 	abstract readonly compiledNegation: string

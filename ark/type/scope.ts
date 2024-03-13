@@ -56,7 +56,6 @@ import type {
 	TypeKind
 } from "./shared/implement.js"
 import {
-	Type,
 	createTypeParser,
 	generic,
 	validateUninstantiatedGeneric,
@@ -71,7 +70,7 @@ import {
 	type IntersectionNode
 } from "./types/intersection.js"
 import type { extractIn, extractOut } from "./types/morph.js"
-import { BaseType } from "./types/type.js"
+import { BaseType, type Type } from "./types/type.js"
 import type { UnionNode } from "./types/union.js"
 import type { UnitNode } from "./types/unit.js"
 import { addArkKind, hasArkKind, type arkKind } from "./util.js"

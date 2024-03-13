@@ -64,10 +64,7 @@ const fixedSequenceKeyDefinition: NodeKeyImplementation<
 			: schema.map((element) => ctx.$.parseTypeSchema(element))
 }
 
-export class SequenceNode extends BaseConstraint<
-	SequenceDeclaration,
-	typeof SequenceNode
-> {
+export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 	static implementation: nodeImplementationOf<SequenceDeclaration> =
 		this.implement({
 			hasAssociatedError: false,
@@ -206,11 +203,11 @@ export class SequenceNode extends BaseConstraint<
 					return viableBranches.length === 0
 						? rootState.disjoint!
 						: viableBranches.length === 1
-						? $.parseScema(
+						? $.parseSchema(
 								"sequence",
 								sequenceTupleToInner(viableBranches[0].result)
 						  )
-						: $.parseScema(
+						: $.parseSchema(
 								"union",
 								viableBranches.map((state) => ({
 									proto: Array,
@@ -237,14 +234,14 @@ export class SequenceNode extends BaseConstraint<
 	readonly minLengthNode =
 		this.minLength === 0
 			? undefined
-			: this.$.parseScema("minLength", this.minLength)
+			: this.$.parseSchema("minLength", this.minLength)
 	readonly maxLength = this.variadic
 		? undefined
 		: this.minLength + this.optionals.length
 	readonly maxLengthNode =
 		this.maxLength === undefined
 			? undefined
-			: this.$.parseScema("maxLength", this.maxLength)
+			: this.$.parseSchema("maxLength", this.maxLength)
 	readonly impliedSiblings = this.minLengthNode
 		? this.maxLengthNode
 			? [this.minLengthNode, this.maxLengthNode]

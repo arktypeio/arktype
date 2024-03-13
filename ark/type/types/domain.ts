@@ -1,15 +1,12 @@
 import {
 	domainDescriptions,
 	domainOf,
-	implement,
 	type NonEnumerableDomain
 } from "@arktype/util"
-import { BaseNode } from "../base.js"
 import { jsData } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
-import { PrimitiveNode, defineNode } from "../shared/implement.js"
-import { BaseType } from "./type.js"
+import { BaseBasis } from "./basis.js"
 
 export interface DomainInner<
 	domain extends NonEnumerableDomain = NonEnumerableDomain
@@ -34,49 +31,44 @@ export type DomainDeclaration = declareNode<{
 	errorContext: DomainInner
 }>
 
-export const domainDefinition = defineNode<DomainDeclaration>({
-	hasAssociatedError: true,
-	collapseKey: "domain",
-	keys: {
-		domain: {}
-	},
-	normalize: (input) => (typeof input === "string" ? { domain: input } : input),
-	defaults: {
-		description(node) {
-			return domainDescriptions[node.domain]
+export class DomainNode<t = any, $ = any> extends BaseBasis<
+	t,
+	DomainDeclaration,
+	$
+> {
+	static implementation = this.implement({
+		hasAssociatedError: true,
+		collapseKey: "domain",
+		keys: {
+			domain: {}
 		},
-		actual(data) {
-			return domainOf(data)
-		}
-	},
-	intersections: {
-		domain: (l, r) => Disjoint.from("domain", l, r)
-	}
-})
-
-export class DomainNode<t = any> extends implement(
-	BaseType<any, DomainDeclaration>,
-	PrimitiveNode<DomainDeclaration>,
-	{
-		construct: (self) => {
-			return {
-				traverseAllows: (data: unknown) => domainOf(data) === self.domain,
-				compiledCondition:
-					self.domain === "object"
-						? `((typeof ${jsData} === "object" && ${jsData} !== null) || typeof ${jsData} === "function")`
-						: `typeof ${jsData} === "${self.domain}"`,
-				compiledNegation:
-					self.domain === "object"
-						? `((typeof ${jsData} !== "object" || ${jsData} === null) && typeof ${jsData} !== "function")`
-						: `typeof ${jsData} !== "${self.domain}"`,
-
-				errorContext: {
-					code: "domain",
-					description: self.description,
-					...self.inner
-				},
-				expression: self.domain
+		normalize: (input) =>
+			typeof input === "string" ? { domain: input } : input,
+		defaults: {
+			description(node) {
+				return domainDescriptions[node.domain]
+			},
+			actual(data) {
+				return domainOf(data)
 			}
+		},
+		intersections: {
+			domain: (l, r) => Disjoint.from("domain", l, r)
 		}
-	}
-) {}
+	})
+
+	traverseAllows = (data: unknown) => domainOf(data) === this.domain
+
+	readonly compiledCondition =
+		this.domain === "object"
+			? `((typeof ${jsData} === "object" && ${jsData} !== null) || typeof ${jsData} === "function")`
+			: `typeof ${jsData} === "${this.domain}"`
+
+	readonly compiledNegation =
+		this.domain === "object"
+			? `((typeof ${jsData} !== "object" || ${jsData} === null) && typeof ${jsData} !== "function")`
+			: `typeof ${jsData} !== "${this.domain}"`
+
+	readonly errorContext = this.createErrorContext(this.inner)
+	readonly expression = this.domain
+}

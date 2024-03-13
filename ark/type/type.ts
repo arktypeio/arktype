@@ -1,15 +1,7 @@
-import {
-	Callable,
-	morph,
-	type Constructor,
-	type Json,
-	type List,
-	type conform
-} from "@arktype/util"
+import { morph, type Constructor, type List, type conform } from "@arktype/util"
 import type { TypeNode } from "./base.js"
 import { keywords } from "./builtins/ark.js"
-import type { applySchema, validateConstraintArg } from "./constraints/ast.js"
-import type { Predicate, inferNarrow } from "./constraints/predicate.js"
+import type { Predicate } from "./constraints/predicate.js"
 import type {
 	inferDefinition,
 	validateDeclared,
@@ -26,18 +18,8 @@ import type {
 } from "./parser/tuple.js"
 import type { Scope, bindThis } from "./scope.js"
 import type { BaseMeta } from "./shared/declare.js"
-import type { ArkResult } from "./shared/errors.js"
-import { inferred } from "./shared/inference.js"
-import type { inferIntersection } from "./shared/intersections.js"
-import type {
-	Morph,
-	Out,
-	distill,
-	extractIn,
-	extractOut,
-	includesMorphs,
-	inferMorphOut
-} from "./types/morph.js"
+import type { Morph, extractIn, extractOut } from "./types/morph.js"
+import type { Type } from "./types/type.js"
 import { arkKind } from "./util.js"
 
 export type TypeParser<$> = {
@@ -119,199 +101,6 @@ export const createTypeParser = <$>(scope: Scope): TypeParser<$> => {
 export type DefinitionParser<$> = <def>(
 	def: validateDefinition<def, $, bindThis<def>>
 ) => def
-
-export class Type<t = unknown, $ = any> extends Callable<
-	(data: unknown) => ArkResult<distill<extractOut<t>>>
-> {
-	declare [inferred]: t
-	// TODO: in/out?
-	declare infer: distill<extractOut<t>>
-
-	root: TypeNode<t>
-	allows: this["root"]["allows"]
-	description: string
-	json: Json
-
-	constructor(
-		public definition: unknown,
-		public $: Scope
-	) {
-		const root = parseTypeRoot(definition, $) as TypeNode<t>
-		super(root.apply, root)
-		this.root = root
-		this.allows = root.allows.bind(root)
-		this.json = root.json
-		this.description = this.root.description
-	}
-
-	configure(configOrDescription: BaseMeta | string): this {
-		return new Type(
-			this.root.configureShallowDescendants(configOrDescription),
-			this.$
-		) as never
-	}
-
-	describe(description: string): this {
-		return this.configure(description)
-	}
-
-	// TODO: should return out
-	from(literal: this["in"]["infer"]): this["out"]["infer"] {
-		return literal as never
-	}
-
-	// TODO: Morph intersections, ordering
-	and<def>(
-		def: validateTypeRoot<def, $>
-	): Type<inferIntersection<t, inferTypeRoot<def, $>>, $> {
-		return new Type(this.root.and(parseTypeRoot(def, this.$)), this.$) as never
-	}
-
-	or<def>(def: validateTypeRoot<def, $>): Type<t | inferTypeRoot<def, $>, $> {
-		return new Type(this.root.or(parseTypeRoot(def, this.$)), this.$) as never
-	}
-
-	// TODO: standardize these
-	morph<morph extends Morph<this["infer"]>>(
-		morph: morph
-	): Type<(In: this["in"]["infer"]) => Out<inferMorphOut<ReturnType<morph>>>, $>
-	morph<morph extends Morph<this["infer"]>, def>(
-		morph: morph,
-		outValidator: validateTypeRoot<def, $>
-	): Type<
-		(In: this["in"]["infer"]) => Out<
-			// TODO: validate overlapping
-			// inferMorphOut<ReturnType<morph>> &
-			extractOut<inferTypeRoot<def, $>>
-		>,
-		$
-	>
-	morph(morph: Morph, outValidator?: unknown): unknown {
-		// TODO: tuple expression for out validator
-		outValidator
-		return this as never
-		// return new Type(
-		//     this.root.constrain("morph", morph),
-		//     this.scope
-		// ) as never
-	}
-
-	// TODO: based on below, should maybe narrow morph output if used after
-	narrow<def extends Predicate<extractOut<t>>>(
-		def: def
-	): Type<
-		includesMorphs<t> extends true
-			? (In: this["in"]["infer"]) => Out<inferNarrow<this["infer"], def>>
-			: inferNarrow<this["infer"], def>,
-		$
-	> {
-		return new Type(this.root.constrain("predicate", def), this.$) as never
-	}
-
-	array(): Type<t[], $> {
-		return new Type(this.root.array(), this.$) as never
-	}
-
-	keyof(): Type<keyof this["in"]["infer"], $> {
-		return new Type(this.root.keyof(), this.$) as never
-	}
-
-	assert(data: unknown): this["infer"] {
-		const result = this(data)
-		return result.errors ? result.errors.throw() : result.out
-	}
-
-	divisor<const schema extends validateConstraintArg<"divisor", this["infer"]>>(
-		schema: schema
-	): Type<applySchema<t, "divisor", schema>, $> {
-		return new Type(
-			this.root.constrain("divisor", schema as never),
-			this.$
-		) as never
-	}
-
-	min<const schema extends validateConstraintArg<"min", this["infer"]>>(
-		schema: schema
-	): Type<applySchema<t, "min", schema>, $> {
-		return new Type(
-			this.root.constrain("min", schema as never),
-			this.$
-		) as never
-	}
-
-	max<const schema extends validateConstraintArg<"max", this["infer"]>>(
-		schema: schema
-	): Type<applySchema<t, "max", schema>, $> {
-		return new Type(
-			this.root.constrain("max", schema as never),
-			this.$
-		) as never
-	}
-
-	minLength<
-		const schema extends validateConstraintArg<"minLength", this["infer"]>
-	>(schema: schema): Type<applySchema<t, "minLength", schema>, $> {
-		return new Type(
-			this.root.constrain("minLength", schema as never),
-			this.$
-		) as never
-	}
-
-	maxLength<
-		const schema extends validateConstraintArg<"maxLength", this["infer"]>
-	>(schema: schema): Type<applySchema<t, "maxLength", schema>, $> {
-		return new Type(
-			this.root.constrain("maxLength", schema as never),
-			this.$
-		) as never
-	}
-
-	before<const schema extends validateConstraintArg<"before", this["infer"]>>(
-		schema: schema
-	): Type<applySchema<t, "before", schema>, $> {
-		return new Type(
-			this.root.constrain("before", schema as never),
-			this.$
-		) as never
-	}
-
-	after<const schema extends validateConstraintArg<"after", this["infer"]>>(
-		schema: schema
-	): Type<applySchema<t, "after", schema>, $> {
-		return new Type(
-			this.root.constrain("after", schema as never),
-			this.$
-		) as never
-	}
-
-	equals<def>(
-		other: validateTypeRoot<def, $>
-	): this is Type<inferTypeRoot<def, $>, $> {
-		return this.root.equals(parseTypeRoot(other, this.$))
-	}
-
-	extends<def>(
-		other: validateTypeRoot<def, $>
-	): this is Type<inferTypeRoot<def, $>, $> {
-		return this.root.extends(parseTypeRoot(other, this.$))
-	}
-
-	private inCache?: Type<extractIn<t>, $>;
-	get in(): Type<extractIn<t>, $> {
-		this.inCache ??= new Type(this.root.in, this.$) as never
-		return this.inCache
-	}
-
-	outCache?: Type<extractOut<t>, $>
-	get out(): Type<extractOut<t>, $> {
-		this.outCache ??= new Type(this.root.out, this.$) as never
-		return this.outCache
-	}
-
-	toString(): string {
-		return this.description
-	}
-}
 
 const parseTypeRoot = (def: unknown, scope: Scope, args?: BoundArgs) =>
 	scope.parseDefinition(def, {

@@ -25,10 +25,7 @@ export type IndexDeclaration = declareNode<{
 	childKind: TypeKind
 }>
 
-export class IndexNode extends BaseConstraint<
-	IndexDeclaration,
-	typeof IndexNode
-> {
+export class IndexNode extends BaseConstraint<IndexDeclaration> {
 	static implementation: nodeImplementationOf<IndexDeclaration> =
 		this.implement({
 			hasAssociatedError: false,

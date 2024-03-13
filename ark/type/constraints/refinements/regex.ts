@@ -25,10 +25,7 @@ export type RegexDeclaration = declareNode<{
 	errorContext: RegexInner
 }>
 
-export class RegexNode extends BasePrimitiveConstraint<
-	RegexDeclaration,
-	typeof RegexNode
-> {
+export class RegexNode extends BasePrimitiveConstraint<RegexDeclaration> {
 	static implementation = this.implement({
 		collapseKey: "rule",
 		keys: {

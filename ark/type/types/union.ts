@@ -58,10 +58,10 @@ export type UnionDeclaration = declareNode<{
 	childKind: UnionChildKind
 }>
 
-export class UnionNode<t = unknown> extends BaseType<
+export class UnionNode<t = unknown, $ = any> extends BaseType<
 	t,
 	UnionDeclaration,
-	typeof UnionNode
+	$
 > {
 	static implementation: nodeImplementationOf<UnionDeclaration> =
 		this.implement({
