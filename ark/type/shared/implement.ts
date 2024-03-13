@@ -236,7 +236,7 @@ export type NodeKeyImplementation<
 			: never)
 >
 
-interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
+export interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	keys: KeyDefinitions<d>
 	normalize: (schema: d["schema"]) => d["normalizedSchema"]
 	hasAssociatedError: d["errorContext"] extends null ? false : true
@@ -245,10 +245,9 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 		inner: d["inner"],
 		$: Scope
 	) => Node<d["reducibleTo"]> | Disjoint | undefined
-	attach: (base: BaseAttachmentsOf<d>) => d["attachments"]
 }
 
-export const implement = <d extends BaseNodeDeclaration>(
+export const defineNode = <d extends BaseNodeDeclaration>(
 	_: nodeImplementationInputOf<d>
 ): nodeImplementationOf<d> => {
 	const implementation: UnknownNodeImplementation = _ as never
@@ -275,27 +274,14 @@ export const implement = <d extends BaseNodeDeclaration>(
 	return implementation as never
 }
 
-export interface ImplementedPrimitiveAttachments<d extends BaseNodeDeclaration>
-	extends ImplementedAttachments {
-	traverseAllows: TraverseAllows<d["prerequisite"]>
-	readonly compiledCondition: string
-	readonly compiledNegation: string
-	readonly errorContext: d["errorContext"]
-}
-
-export interface DerivedPrimitiveAttachments<d extends BaseNodeDeclaration> {
-	traverseApply: TraverseApply<d["prerequisite"]>
-	compile(js: NodeCompiler): void
-}
-
 export class PrimitiveNode<d extends BaseNodeDeclaration> extends Trait<{
 	abstractProps: {
 		traverseAllows: TraverseAllows<d["prerequisite"]>
 		readonly compiledCondition: string
 		readonly compiledNegation: string
 		readonly errorContext: d["errorContext"]
+		readonly description: string
 	}
-	dynamicBase: BaseNode<d>
 }> {
 	traverseApply: TraverseApply = (data, ctx) => {
 		if (!this.traverseAllows(data, ctx)) {
@@ -308,36 +294,12 @@ export class PrimitiveNode<d extends BaseNodeDeclaration> extends Trait<{
 	}
 }
 
-export type PrimitiveAttachments<d extends BaseNodeDeclaration> =
-	BaseAttachmentsOf<d> &
-		ImplementedPrimitiveAttachments<d> &
-		DerivedPrimitiveAttachments<d>
-
-export const derivePrimitiveAttachments =
-	<d extends BaseNodeDeclaration>(
-		attach: (base: BaseAttachmentsOf<d>) => ImplementedPrimitiveAttachments<d>
-	) =>
-	(base: BaseAttachmentsOf<d>): PrimitiveAttachments<d> => {
-		const self = Object.assign(base, attach(base))
-		return Object.assign(self, {
-			traverseApply: (data, ctx) => {
-				if (!self.traverseAllows(data, ctx)) {
-					ctx.error(self.description)
-				}
-			},
-			compile(js) {
-				js.compilePrimitive(self as never)
-			}
-		} satisfies DerivedPrimitiveAttachments<d>)
-	}
-
 export interface UnknownNodeImplementation
 	extends CommonNodeImplementationInput<BaseNodeDeclaration> {
 	defaults: ParsedUnknownNodeConfig
 	intersectionIsOpen: boolean
 	intersections: UnknownIntersectionMap
 	keys: Record<string, NodeKeyImplementation<any, any>>
-	attach: (base: BaseAttachments) => ImplementedAttachments
 }
 
 export type nodeImplementationOf<d extends BaseNodeDeclaration> =
@@ -377,5 +339,5 @@ export type nodeDefaultsImplementationFor<kind extends NodeKind> = Required<
 >
 
 export type DescriptionWriter<kind extends NodeKind = NodeKind> = (
-	inner: Node<kind>
+	inner: Inner<kind>
 ) => string

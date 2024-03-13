@@ -47,7 +47,9 @@ import {
 	type RefinementKind,
 	type TypeKind,
 	type UnknownIntersectionResult,
-	type UnknownNodeImplementation
+	type UnknownNodeImplementation,
+	type nodeImplementationInputOf,
+	type nodeImplementationOf
 } from "./shared/implement.js"
 import type { DomainNode } from "./types/domain.js"
 import type { IntersectionNode } from "./types/intersection.js"
@@ -69,6 +71,7 @@ export interface BaseAttachments {
 	readonly innerId: string
 	readonly typeId: string
 	readonly $: Scope
+	readonly description: string
 }
 
 export interface NarrowedAttachments<d extends BaseNodeDeclaration>
@@ -87,7 +90,7 @@ export const isNode = (value: unknown): value is Node =>
 
 export type UnknownNode = BaseNode<any>
 
-export abstract class BaseNode<d extends BaseNodeDeclaration> extends Trait<{
+export class BaseNode<d extends BaseNodeDeclaration> extends Trait<{
 	abstractMethods: {
 		compile(js: NodeCompiler): void
 	}
@@ -124,14 +127,6 @@ export abstract class BaseNode<d extends BaseNodeDeclaration> extends Trait<{
 				? this.referencesByName
 				: { ...this.referencesByName, [this.name]: this as never }
 		this.contributesReferences = Object.values(this.contributesReferencesByName)
-	}
-
-	private descriptionCache?: string
-	get description(): string {
-		this.descriptionCache ??=
-			this.inner.description ??
-			this.$.config[this.kind].description?.(this as never)
-		return this.descriptionCache
 	}
 
 	private inCache?: UnknownNode;

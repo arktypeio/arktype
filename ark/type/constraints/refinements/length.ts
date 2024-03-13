@@ -2,8 +2,8 @@ import { jsData } from "../../shared/compile.js"
 import type { declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import {
+	defineNode,
 	derivePrimitiveAttachments,
-	implement,
 	type PrimitiveAttachments
 } from "../../shared/implement.js"
 import { type PrimitiveConstraintInner } from "../constraint.js"
@@ -30,7 +30,7 @@ export type LengthDeclaration = declareNode<{
 	attachments: LengthAttachments
 }>
 
-export const lengthImplementation = implement<LengthDeclaration>({
+export const lengthImplementation = defineNode<LengthDeclaration>({
 	collapseKey: "rule",
 	keys: {
 		rule: {}

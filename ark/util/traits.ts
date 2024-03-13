@@ -19,8 +19,7 @@ export type TraitImplementation = <
 		s["abstractMethods"],
 		s["abstractProps"],
 		s["abstractStatics"]
-	> &
-		s["abstractStatics"]
+	>
 >(
 	...args: [...traits, implementation & ThisType<InstanceType<cls>>]
 ) => cls
@@ -155,7 +154,7 @@ export type TraitConstructor<
 	abstractProps extends object = {},
 	abstractStatics extends object = {}
 > = statics &
-	(abstract new (...args: params) => Trait<{
+	(new (...args: params) => Trait<{
 		abstractMethods: abstractMethods
 		abstractProps: abstractProps
 		abstractStatics: abstractStatics

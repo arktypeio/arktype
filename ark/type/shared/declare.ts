@@ -22,7 +22,6 @@ interface DeclarationInput {
 	schema: unknown
 	normalizedSchema: BaseMeta
 	inner: BaseMeta
-	attachments: ImplementedAttachments
 	reducibleTo?: NodeKind
 	intersectionIsOpen?: true
 	errorContext?: object
@@ -77,7 +76,6 @@ export type BaseNodeDeclaration = {
 	intersectionIsOpen: boolean
 	childKind: NodeKind
 	errorContext: BaseErrorContext | null
-	attachments: ImplementedAttachments
 }
 
 export type ownIntersectionResult<d extends BaseNodeDeclaration> =

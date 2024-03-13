@@ -3,8 +3,8 @@ import { BaseNode, type TypeNode } from "../../base.js"
 import { jsData } from "../../shared/compile.js"
 import type { declareNode } from "../../shared/declare.js"
 import {
+	defineNode,
 	derivePrimitiveAttachments,
-	implement,
 	type PrimitiveAttachments
 } from "../../shared/implement.js"
 import {
@@ -33,7 +33,7 @@ export type DivisorDeclaration = declareNode<{
 
 export interface DivisorNode extends BaseNode<DivisorDeclaration> {}
 
-export const divisorImplementation = implement<DivisorDeclaration>({
+export const divisorImplementation = defineNode<DivisorDeclaration>({
 	collapseKey: "rule",
 	keys: {
 		rule: {}
