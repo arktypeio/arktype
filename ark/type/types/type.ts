@@ -1,4 +1,4 @@
-import { morph, type Domain } from "@arktype/util"
+import { morph, narrow, type Domain } from "@arktype/util"
 import { BaseNode, type Node } from "../base.js"
 import { throwInvalidOperandError } from "../constraints/constraint.js"
 import type { Predicate, inferNarrow } from "../constraints/predicate.js"
