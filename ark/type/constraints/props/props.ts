@@ -18,17 +18,12 @@ export type PropsGroupInput = Pick<
 export class PropsGroup extends DynamicBase<PropsGroupInput> {
 	readonly exhaustive =
 		this.onExtraneousKey !== undefined || this.index !== undefined
-	readonly named: readonly Node<"required" | "optional">[] = this.required
-		? this.optional
-			? [...this.required, ...this.optional]
-			: this.required
-		: this.optional ?? []
 	readonly all = conflatenateAll<Node<PropKind>>(
-		this.named,
+		this.prop,
 		this.index,
 		this.sequence
 	)
-	readonly nameSet = morph(this.named, (i, node) => [node.key, 1] as const)
+	readonly nameSet = morph(this.prop, (i, node) => [node.key, 1] as const)
 	readonly nameSetReference = reference(this.nameSet)
 	readonly description = describeProps(this, "description")
 	readonly expression = describeProps(this, "expression")
@@ -58,7 +53,7 @@ export class PropsGroup extends DynamicBase<PropsGroupInput> {
 	}
 
 	protected compileExhaustive(js: NodeCompiler): void {
-		this.named.forEach((prop) => js.check(prop))
+		this.prop.forEach((prop) => js.check(prop))
 		this.sequence?.compile(js)
 		if (this.sequence) js.check(this.sequence)
 		js.forIn(js.data, () => {
@@ -66,22 +61,25 @@ export class PropsGroup extends DynamicBase<PropsGroupInput> {
 				js.let("matched", false)
 			}
 			this.index?.forEach((node) => {
-				js.if(`${js.invoke(node.key, { arg: "k", kind: "Allows" })}`, () => {
-					if (js.traversalKind === "Allows") {
-						js.if(`!${js.invoke(node.value, { arg: `${js.data}[k]` })}`, () =>
-							js.return(false)
-						)
-					} else {
-						js.line(js.invoke(node.value, { arg: `${js.data}[k]` }))
+				js.if(
+					`${js.invoke(node.signature, { arg: "k", kind: "Allows" })}`,
+					() => {
+						if (js.traversalKind === "Allows") {
+							js.if(`!${js.invoke(node.value, { arg: `${js.data}[k]` })}`, () =>
+								js.return(false)
+							)
+						} else {
+							js.line(js.invoke(node.value, { arg: `${js.data}[k]` }))
+						}
+						if (this.onExtraneousKey) {
+							js.set("matched", true)
+						}
+						return js
 					}
-					if (this.onExtraneousKey) {
-						js.set("matched", true)
-					}
-					return js
-				})
+				)
 			})
 			if (this.onExtraneousKey) {
-				if (this.named.length !== 0) {
+				if (this.prop.length !== 0) {
 					js.line(`matched ||= k in ${this.nameSetReference}`)
 				}
 				if (this.sequence) {

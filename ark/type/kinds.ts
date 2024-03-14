@@ -9,9 +9,11 @@ import {
 	type OptionalDeclaration
 } from "./constraints/props/optional.js"
 import {
+	PropNode,
 	RequiredNode,
+	type PropDeclaration,
 	type RequiredDeclaration
-} from "./constraints/props/required.js"
+} from "./constraints/props/prop.js"
 import {
 	SequenceNode,
 	type SequenceDeclaration
@@ -53,8 +55,7 @@ export interface NodeDeclarationsByKind extends BoundDeclarations {
 	intersection: IntersectionDeclaration
 	sequence: SequenceDeclaration
 	divisor: DivisorDeclaration
-	required: RequiredDeclaration
-	optional: OptionalDeclaration
+	prop: PropDeclaration
 	index: IndexDeclaration
 	regex: RegexDeclaration
 	predicate: PredicateDeclaration
@@ -71,8 +72,7 @@ export const nodesByKind = {
 	divisor: DivisorNode,
 	regex: RegexNode,
 	predicate: PredicateNode,
-	required: RequiredNode,
-	optional: OptionalNode,
+	prop: PropNode,
 	index: IndexNode,
 	sequence: SequenceNode
 } as const satisfies { [k in NodeKind]: NodeSubclass<Declaration<k>> }

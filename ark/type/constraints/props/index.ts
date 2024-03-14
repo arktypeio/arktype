@@ -7,12 +7,12 @@ import type { Type } from "../../types/type.js"
 import { BaseConstraint } from "../constraint.js"
 
 export interface IndexSchema extends BaseMeta {
-	readonly key: TypeSchema
+	readonly signature: TypeSchema
 	readonly value: TypeSchema
 }
 
 export interface IndexInner extends BaseMeta {
-	readonly key: Type<string | symbol>
+	readonly signature: Type<string | symbol>
 	readonly value: Type
 }
 
@@ -32,7 +32,7 @@ export class IndexNode extends BaseConstraint<IndexDeclaration> {
 			hasAssociatedError: false,
 			intersectionIsOpen: true,
 			keys: {
-				key: {
+				signature: {
 					child: true,
 					parse: (schema, ctx) => ctx.$.node(schema)
 				},
@@ -44,7 +44,7 @@ export class IndexNode extends BaseConstraint<IndexDeclaration> {
 			normalize: (schema) => schema,
 			defaults: {
 				description(node) {
-					return `[${node.key.description}]: ${node.value.description}`
+					return `[${node.signature.description}]: ${node.value.description}`
 				}
 			},
 			intersections: {
@@ -53,18 +53,18 @@ export class IndexNode extends BaseConstraint<IndexDeclaration> {
 		})
 
 	readonly impliedBasis = this.$.tsKeywords.object
-	readonly expression = `[${this.key}]: ${this.value}`
+	readonly expression = `[${this.signature}]: ${this.value}`
 
 	traverseAllows: TraverseAllows<object> = (data, ctx) =>
 		Object.entries(data).every(
 			(entry) =>
-				!this.key.traverseAllows(entry[0], ctx) ||
+				!this.signature.traverseAllows(entry[0], ctx) ||
 				this.value.traverseAllows(entry[1], ctx)
 		)
 
 	traverseApply: TraverseApply<object> = (data, ctx) =>
 		Object.entries(data).forEach((entry) => {
-			if (this.key.traverseAllows(entry[0], ctx)) {
+			if (this.signature.traverseAllows(entry[0], ctx)) {
 				this.value.traverseApply(entry[1], ctx)
 			}
 		})

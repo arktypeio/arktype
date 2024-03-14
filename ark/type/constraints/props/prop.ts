@@ -4,30 +4,28 @@ import type { NodeCompiler } from "../../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/context.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
-import type {
-	ConstraintIntersection,
-	TypeKind,
-	nodeImplementationOf
-} from "../../shared/implement.js"
+import type { TypeKind, nodeImplementationOf } from "../../shared/implement.js"
 import { BaseConstraint } from "../constraint.js"
 
-export interface RequiredSchema extends BaseMeta {
+export interface PropSchema extends BaseMeta {
 	readonly key: string | symbol
 	readonly value: TypeSchema
+	readonly optional?: boolean
 }
 
-export interface RequiredInner extends BaseMeta {
+export interface PropInner extends BaseMeta {
 	readonly key: string | symbol
 	readonly value: Node<TypeKind>
+	readonly optional?: true
 }
 
-export type RequiredDeclaration = declareNode<{
-	kind: "required"
-	schema: RequiredSchema
-	normalizedSchema: RequiredSchema
-	inner: RequiredInner
+export type PropDeclaration = declareNode<{
+	kind: "prop"
+	schema: PropSchema
+	normalizedSchema: PropSchema
+	inner: PropInner
 	errorContext: {
-		code: "required"
+		code: "missingKey"
 		key: string | symbol
 	}
 	prerequisite: object
@@ -35,27 +33,9 @@ export type RequiredDeclaration = declareNode<{
 	childKind: TypeKind
 }>
 
-const intersectNamed: ConstraintIntersection<
-	"required",
-	"required" | "optional"
-> = (l, r, $) => {
-	if (l.key !== r.key) {
-		return null
-	}
-	const key = l.key
-	const value = l.value.intersect(r.value)
-	if (value instanceof Disjoint) {
-		return value.withPrefixKey(l.compiledKey)
-	}
-	return $.parseSchema("required", {
-		key,
-		value
-	})
-}
-
-export class RequiredNode extends BaseConstraint<RequiredDeclaration> {
-	static implementation: nodeImplementationOf<RequiredDeclaration> =
-		this.implement({
+export class PropNode extends BaseConstraint<PropDeclaration> {
+	static implementation: nodeImplementationOf<PropDeclaration> = this.implement(
+		{
 			hasAssociatedError: true,
 			intersectionIsOpen: true,
 			keys: {
@@ -63,12 +43,17 @@ export class RequiredNode extends BaseConstraint<RequiredDeclaration> {
 				value: {
 					child: true,
 					parse: (schema, ctx) => ctx.$.parseTypeSchema(schema)
+				},
+				optional: {
+					parse: (schema) => (schema.optional === true ? true : undefined)
 				}
 			},
 			normalize: (schema) => schema,
 			defaults: {
 				description(node) {
-					return `${node.compiledKey}: ${node.value.description}`
+					return `${node.compiledKey}${node.optional ? "?" : ""}: ${
+						node.value.description
+					}`
 				},
 				expected() {
 					return "provided"
@@ -76,16 +61,32 @@ export class RequiredNode extends BaseConstraint<RequiredDeclaration> {
 				actual: () => null
 			},
 			intersections: {
-				required: intersectNamed,
-				optional: intersectNamed
+				prop: (l, r, $) => {
+					if (l.key !== r.key) {
+						return null
+					}
+					const key = l.key
+					const value = l.value.intersect(r.value)
+					if (value instanceof Disjoint) {
+						return value.withPrefixKey(l.compiledKey)
+					}
+					return $.parseSchema("prop", {
+						key,
+						value
+					})
+				}
 			}
-		})
+		}
+	)
 
+	readonly required = !this.optional
 	readonly impliedBasis = this.$.tsKeywords.object
 	readonly serializedKey = compileSerializedValue(this.key)
 	readonly compiledKey =
 		typeof this.key === "string" ? this.key : this.serializedKey
-	readonly expression = `${this.compiledKey}: ${this.value}`
+	readonly expression = `${this.compiledKey}${this.optional ? "?" : ""}: ${
+		this.value
+	}`
 
 	readonly errorContext = Object.freeze({
 		code: "required",
@@ -97,13 +98,13 @@ export class RequiredNode extends BaseConstraint<RequiredDeclaration> {
 		if (this.key in data) {
 			return this.value.traverseAllows((data as any)[this.key], ctx)
 		}
-		return false
+		return this.required
 	}
 
 	traverseApply: TraverseApply<object> = (data, ctx) => {
 		if (this.key in data) {
 			this.value.traverseApply((data as any)[this.key], ctx)
-		} else {
+		} else if (this.required) {
 			ctx.error(this.errorContext)
 		}
 	}
@@ -111,11 +112,15 @@ export class RequiredNode extends BaseConstraint<RequiredDeclaration> {
 	compile(js: NodeCompiler): void {
 		js.if(`${this.serializedKey} in ${js.data}`, () =>
 			js.checkLiteralKey(this.key, this.value)
-		).else(() =>
-			js.traversalKind === "Allows"
-				? js.return(false)
-				: js.line(`${js.ctx}.error(${JSON.stringify(this.errorContext)})`)
 		)
+		if (this.required) {
+			js.else(() =>
+				js.traversalKind === "Allows"
+					? js.return(false)
+					: js.line(`${js.ctx}.error(${JSON.stringify(this.errorContext)})`)
+			)
+		}
+
 		if (js.traversalKind === "Allows") {
 			js.return(true)
 		}
