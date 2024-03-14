@@ -75,7 +75,7 @@ export const createTypeParser = <$>($: Scope): TypeParser<$> => {
 	const parser = (...args: unknown[]): Type | Generic => {
 		if (args.length === 1) {
 			// treat as a simple definition
-			return parseTypeRoot(args[0], $)
+			return $.parseTypeRoot(args[0])
 		}
 		if (
 			args.length === 2 &&
@@ -92,7 +92,7 @@ export const createTypeParser = <$>($: Scope): TypeParser<$> => {
 		// otherwise, treat as a tuple expression. technically, this also allows
 		// non-expression tuple definitions to be parsed, but it's not a supported
 		// part of the API as specified by the associated types
-		return parseTypeRoot(args, $)
+		return $.parseTypeRoot(args)
 	}
 	return parser as never
 }
@@ -100,12 +100,6 @@ export const createTypeParser = <$>($: Scope): TypeParser<$> => {
 export type DefinitionParser<$> = <def>(
 	def: validateDefinition<def, $, bindThis<def>>
 ) => def
-
-const parseTypeRoot = (def: unknown, $: Scope, args?: BoundArgs) =>
-	$.parseDefinition(def, {
-		args: args ?? $.bindThis(),
-		baseName: "type"
-	})
 
 export type validateTypeRoot<def, $> = validateDefinition<def, $, bindThis<def>>
 
@@ -119,7 +113,7 @@ type validateParameterString<params extends string> =
 export const validateUninstantiatedGeneric = (g: Generic): Generic => {
 	// the unconstrained instantiation of the generic is not used for now
 	// other than to eagerly validate that the def does not contain any errors
-	g.scope.parseDefinition(
+	g.scope.parseTypeRoot(
 		g.definition,
 		// once we support constraints on generic parameters, we'd use
 		// the base type here: https://github.com/arktypeio/arktype/issues/796
@@ -140,9 +134,9 @@ export const generic = (
 		(...args: unknown[]) => {
 			const argNodes = morph(parameters, (i, param) => [
 				param,
-				parseTypeRoot(args[i], $)
+				$.parseTypeRoot(args[i])
 			])
-			return parseTypeRoot(definition, $, argNodes)
+			return $.parseTypeRoot(definition, { args: argNodes })
 		},
 		{
 			[arkKind]: "generic",

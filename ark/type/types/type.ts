@@ -96,14 +96,14 @@ export abstract class BaseType<
 	and<def>(
 		def: validateTypeRoot<def, $>
 	): Type<inferIntersection<t, inferTypeRoot<def, $>>, $> {
-		const result = this.intersect(this.$.parseDefinition(def))
+		const result = this.intersect(this.$.parseTypeRoot(def))
 		return result instanceof Disjoint ? result.throw() : (result as never)
 	}
 
 	or<def>(def: validateTypeRoot<def, $>): Type<t | inferTypeRoot<def, $>, $> {
 		const branches = [
 			...this.branches,
-			...(this.$.parseDefinition(def).branches as any)
+			...(this.$.parseTypeRoot(def).branches as any)
 		]
 		return branches.length === 1
 			? branches[0]
@@ -122,14 +122,14 @@ export abstract class BaseType<
 		return this
 	}
 
-	extract(other: Type): this {
+	extract(other: Type): Type {
 		return this.$.parseRootSchema(
 			"union",
 			this.branches.filter((branch) => branch.extends(other))
 		)
 	}
 
-	exclude(other: Type): this {
+	exclude(other: Type): Type {
 		return this.$.parseRootSchema(
 			"union",
 			this.branches.filter((branch) => !branch.extends(other))

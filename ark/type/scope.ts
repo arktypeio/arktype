@@ -331,7 +331,7 @@ export type ParseContext = {
 
 type MergedResolutions = Record<string, Type | Generic>
 
-type ParseContextInput = Pick<ParseContext, "baseName" | "args">
+type ParseContextInput = Partial<ParseContext>
 
 export class Scope<r extends Resolutions = any> {
 	declare infer: extractOut<r["exports"]>
@@ -461,8 +461,15 @@ export class Scope<r extends Resolutions = any> {
 			: throwParseError(writeBadDefinitionTypeMessage(domainOf(def)))
 	}
 
-	parseDefinition(def: unknown, input: ParseContextInput): Type {
-		return this.parse(def, this.createRootContext(input))
+	parseTypeRoot(def: unknown, input?: ParseContextInput): Type {
+		return this.parse(
+			def,
+			this.createRootContext({
+				args: { this: keywords.unknown },
+				baseName: "type",
+				...input
+			})
+		)
 	}
 
 	parseString(def: string, ctx: ParseContext): Type {
@@ -489,7 +496,7 @@ export class Scope<r extends Resolutions = any> {
 			? validateUninstantiatedGeneric(def)
 			: hasArkKind(def, "module")
 			? throwParseError(writeMissingSubmoduleAccessMessage(name))
-			: this.parseDefinition(
+			: this.parseTypeRoot(
 					def,
 					this.createRootContext({ baseName: name, args: {} })
 			  )
@@ -542,11 +549,6 @@ export class Scope<r extends Resolutions = any> {
 		) as never
 	}
 
-	bindThis(): { this: Type } {
-		// TODO: fix
-		return { this: keywords.unknown } as never
-	}
-
 	private exportedResolutions: MergedResolutions | undefined
 	private exportCache: ExportCache | undefined
 	export<names extends exportedName<r>[]>(
@@ -571,7 +573,7 @@ export class Scope<r extends Resolutions = any> {
 				if (hasArkKind(def, "module")) {
 					this.exportCache[name] = def
 				} else {
-					this.exportCache[name] = this.parseDefinition(
+					this.exportCache[name] = this.parseTypeRoot(
 						def,
 						this.createRootContext({ baseName: name, args: {} })
 					)
@@ -706,7 +708,7 @@ export class Scope<r extends Resolutions = any> {
 		return node as never
 	}
 
-	protected bindCompiledScope(references: readonly Node[]): void {
+	protected bindCompiledScope(references: readonly UnknownNode[]): void {
 		const compiledTraversals = this.compileScope(references)
 		for (const node of references) {
 			if (node.jit) {
@@ -726,7 +728,7 @@ export class Scope<r extends Resolutions = any> {
 		}
 	}
 
-	protected compileScope(references: readonly Node[]): {
+	protected compileScope(references: readonly UnknownNode[]): {
 		[k: `${string}Allows`]: TraverseAllows
 		[k: `${string}Apply`]: TraverseApply
 	} {
