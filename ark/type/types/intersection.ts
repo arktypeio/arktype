@@ -221,13 +221,9 @@ export class IntersectionNode<t = unknown, $ = any> extends BaseType<
 					child: true,
 					parse: intersectionChildKeyParser("predicate")
 				},
-				required: {
+				prop: {
 					child: true,
-					parse: intersectionChildKeyParser("required")
-				},
-				optional: {
-					child: true,
-					parse: intersectionChildKeyParser("optional")
+					parse: intersectionChildKeyParser("prop")
 				},
 				index: {
 					child: true,

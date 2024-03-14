@@ -25,7 +25,6 @@ export type PropDeclaration = declareNode<{
 	normalizedSchema: PropSchema
 	inner: PropInner
 	errorContext: {
-		code: "missingKey"
 		key: string | symbol
 	}
 	prerequisite: object
@@ -45,7 +44,8 @@ export class PropNode extends BaseConstraint<PropDeclaration> {
 					parse: (schema, ctx) => ctx.$.parseTypeSchema(schema)
 				},
 				optional: {
-					parse: (schema) => (schema.optional === true ? true : undefined)
+					// normalize {optional: false} to {}
+					parse: (schema) => schema || undefined
 				}
 			},
 			normalize: (schema) => schema,
@@ -72,7 +72,8 @@ export class PropNode extends BaseConstraint<PropDeclaration> {
 					}
 					return $.parseSchema("prop", {
 						key,
-						value
+						value,
+						optional: l.optional && r.optional
 					})
 				}
 			}
@@ -89,7 +90,7 @@ export class PropNode extends BaseConstraint<PropDeclaration> {
 	}`
 
 	readonly errorContext = Object.freeze({
-		code: "required",
+		code: "prop",
 		description: this.description,
 		key: this.key
 	})

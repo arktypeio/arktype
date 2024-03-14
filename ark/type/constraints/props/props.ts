@@ -23,7 +23,9 @@ export class PropsGroup extends DynamicBase<PropsGroupInput> {
 		this.index,
 		this.sequence
 	)
-	readonly nameSet = morph(this.prop, (i, node) => [node.key, 1] as const)
+	readonly nameSet = this.prop
+		? morph(this.prop, (i, node) => [node.key, 1] as const)
+		: {}
 	readonly nameSetReference = reference(this.nameSet)
 	readonly description = describeProps(this, "description")
 	readonly expression = describeProps(this, "expression")
@@ -53,7 +55,7 @@ export class PropsGroup extends DynamicBase<PropsGroupInput> {
 	}
 
 	protected compileExhaustive(js: NodeCompiler): void {
-		this.prop.forEach((prop) => js.check(prop))
+		this.prop?.forEach((prop) => js.check(prop))
 		this.sequence?.compile(js)
 		if (this.sequence) js.check(this.sequence)
 		js.forIn(js.data, () => {
@@ -79,7 +81,7 @@ export class PropsGroup extends DynamicBase<PropsGroupInput> {
 				)
 			})
 			if (this.onExtraneousKey) {
-				if (this.prop.length !== 0) {
+				if (this.prop?.length !== 0) {
 					js.line(`matched ||= k in ${this.nameSetReference}`)
 				}
 				if (this.sequence) {
@@ -97,10 +99,9 @@ const describeProps = (
 	inner: PropsGroupInput,
 	childStringProp: "expression" | "description"
 ) => {
-	if (inner.required || inner.optional || inner.index) {
+	if (inner.prop || inner.index) {
 		const parts = inner.index?.map(String) ?? []
-		inner.required?.forEach((node) => parts.push(node[childStringProp]))
-		inner.optional?.forEach((node) => parts.push(node[childStringProp]))
+		inner.prop?.forEach((node) => parts.push(node[childStringProp]))
 		const objectLiteralDescription = `${
 			inner.onExtraneousKey ? "exact " : ""
 		}{ ${parts.join(", ")} }`
