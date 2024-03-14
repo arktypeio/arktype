@@ -14,12 +14,7 @@ import {
 	type nominal,
 	type requireKeys
 } from "@arktype/util"
-import {
-	typeKindOfSchema,
-	type Node,
-	type TypeSchema,
-	type UnknownNode
-} from "./base.js"
+import { typeKindOfSchema, type Node, type UnknownNode } from "./base.js"
 import { keywords, type type } from "./builtins/ark.js"
 import { globalConfig } from "./config.js"
 import { nodesByKind, type Schema, type reducibleKindOf } from "./kinds.js"
@@ -45,8 +40,8 @@ import {
 import { fullStringParse } from "./parser/string/string.js"
 import {
 	createSchemaParser,
-	type SchemaParser,
-	type instantiateSchema
+	type NodeParser,
+	type SchemaParser
 } from "./schema.js"
 import { NodeCompiler } from "./shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "./shared/context.js"
@@ -615,16 +610,8 @@ export class Scope<r extends Resolutions = any> {
 		return node
 	}
 
-	node<const schema extends TypeSchema>(
-		schema: schema,
-		opts?: SchemaParseOptions
-	): instantiateSchema<schema, $<r>>
-	node<kind extends NodeKind, const schema extends Schema<kind>>(
-		kind: kind,
-		schema: schema,
-		opts?: SchemaParseOptions
-	): Node<reducibleKindOf<kind>, instantiateSchema<schema, $<r>>["infer"], $<r>>
-	node(
+	node: NodeParser<$<r>> = this.internalNodeParser
+	protected internalNodeParser(
 		schemaOrKind: unknown,
 		schemaOrOpts?: unknown,
 		constraintOpts?: SchemaParseOptions
