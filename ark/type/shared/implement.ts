@@ -148,7 +148,7 @@ export type UnknownIntersectionMap = {
 	) => UnknownIntersectionResult
 }
 
-export type UnknownIntersectionResult = Node | Disjoint | null
+export type UnknownIntersectionResult = UnknownNode | Disjoint | null
 
 type PrecedenceByKind = {
 	[i in indexOf<OrderedNodeKinds> as OrderedNodeKinds[i]]: i
@@ -259,8 +259,7 @@ export type nodeImplementationInputOf<d extends BaseNodeDeclaration> =
 			: {}) &
 		// if the node is declared as reducible to a kind other than its own,
 		// there must be a reduce implementation
-		(d["reducibleTo"] extends d["kind"] ? {} : { reduce: {} }) &
-		(d["kind"] extends ConstraintKind ? { collapsibleKey: {} } : {})
+		(d["reducibleTo"] extends d["kind"] ? {} : { reduce: {} })
 
 type nodeDefaultsImplementationInputFor<kind extends NodeKind> = requireKeys<
 	NodeConfig<kind>,

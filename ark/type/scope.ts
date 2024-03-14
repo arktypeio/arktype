@@ -13,7 +13,12 @@ import {
 	type nominal,
 	type requireKeys
 } from "@arktype/util"
-import { kindOfSchema, type DiscriminableSchema, type Node } from "./base.js"
+import {
+	kindOfSchema,
+	type DiscriminableSchema,
+	type Node,
+	type UnknownNode
+} from "./base.js"
 import { keywords, type type } from "./builtins/ark.js"
 import { globalConfig } from "./config.js"
 import type { LengthBoundableData } from "./constraints/refinements/range.js"
@@ -336,9 +341,9 @@ export class Scope<r extends Resolutions = any> {
 
 	private parseCache: Record<string, Type> = {}
 	private resolutions: MergedResolutions
-	readonly nodeCache: { [innerId: string]: Node } = {}
-	readonly referencesByName: { [name: string]: Node } = {}
-	readonly references: readonly Node[]
+	readonly nodeCache: { [innerId: string]: UnknownNode } = {}
+	readonly referencesByName: { [name: string]: UnknownNode } = {}
+	readonly references: readonly UnknownNode[]
 	protected resolved = false
 	readonly lengthBoundable: UnionNode<LengthBoundableData>
 

@@ -24,6 +24,7 @@ import { basisKinds, type nodeImplementationOf } from "../shared/implement.js"
 import {
 	BaseType,
 	defineRightwardIntersections,
+	type Type,
 	type typeKindRightOf
 } from "./type.js"
 
@@ -64,7 +65,7 @@ export type MorphDeclaration = declareNode<{
 	childKind: MorphChildKind
 }>
 
-export class MorphNode<t = unknown, $ = any> extends BaseType<
+export class MorphNode<t = any, $ = any> extends BaseType<
 	t,
 	MorphDeclaration,
 	$

@@ -59,7 +59,7 @@ export type UnionDeclaration = declareNode<{
 	childKind: UnionChildKind
 }>
 
-export class UnionNode<t = unknown, $ = any> extends BaseType<
+export class UnionNode<t = any, $ = any> extends BaseType<
 	t,
 	UnionDeclaration,
 	$
@@ -156,10 +156,7 @@ export class UnionNode<t = unknown, $ = any> extends BaseType<
 					if (branches.length === 1) {
 						return branches[0]
 					}
-					return $.node(
-						"union",
-						l.ordered ? { branches, ordered: true } : { branches }
-					)
+					return $.node(l.ordered ? { branches, ordered: true } : { branches })
 				})
 			}
 		})

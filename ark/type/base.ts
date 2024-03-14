@@ -14,14 +14,12 @@ import {
 	type Json,
 	type JsonData,
 	type PartialRecord,
-	type entriesOf,
 	type evaluate,
 	type listable
 } from "@arktype/util"
 import type { PredicateNode } from "./constraints/predicate.js"
 import type { IndexNode } from "./constraints/props/index.js"
-import type { OptionalNode } from "./constraints/props/optional.js"
-import type { PropNode, RequiredNode } from "./constraints/props/prop.js"
+import type { PropNode } from "./constraints/props/prop.js"
 import type { SequenceNode } from "./constraints/props/sequence.js"
 import type { DivisorNode } from "./constraints/refinements/divisor.js"
 import type { BoundNodesByKind } from "./constraints/refinements/kinds.js"
@@ -90,11 +88,11 @@ export interface BaseAttachments {
 	readonly kind: NodeKind
 	readonly name: string
 	readonly inner: Record<string, any>
-	readonly entries: readonly Entry[]
+	readonly entries: readonly Entry<string>[]
 	readonly json: object
 	readonly typeJson: object
 	readonly collapsibleJson: JsonData
-	readonly children: Node[]
+	readonly children: UnknownNode[]
 	readonly innerId: string
 	readonly typeId: string
 	readonly description: string
@@ -108,7 +106,6 @@ export interface NarrowedAttachments<d extends BaseNodeDeclaration>
 	json: Json
 	typeJson: Json
 	collapsibleJson: JsonData
-	entries: entriesOf<d["inner"]>
 	children: Node<d["childKind"]>[]
 }
 
@@ -118,7 +115,7 @@ export type NodeSubclass<d extends BaseNodeDeclaration = BaseNodeDeclaration> =
 		readonly implementation: nodeImplementationOf<d>
 	}
 
-export const isNode = (value: unknown): value is Node =>
+export const isNode = (value: unknown): value is UnknownNode =>
 	value instanceof BaseNode
 
 export type UnknownNode = BaseNode<any, BaseNodeDeclaration>
@@ -178,15 +175,17 @@ export abstract class BaseNode<
 		this.kind === "morph" || this.children.some((child) => child.includesMorph)
 	readonly includesContextDependentPredicate: boolean =
 		// if a predicate accepts exactly one arg, we can safely skip passing context
-		(this.hasKind("predicate") && this.inner.rule.length !== 1) ||
+		(this.hasKind("predicate") && this.inner.predicate.length !== 1) ||
 		this.children.some((child) => child.includesContextDependentPredicate)
-	readonly referencesByName: Record<string, Node> = this.children.reduce(
+	readonly referencesByName: Record<string, UnknownNode> = this.children.reduce(
 		(result, child) => Object.assign(result, child.contributesReferencesByName),
 		{}
 	)
-	readonly references: readonly Node[] = Object.values(this.referencesByName)
-	readonly contributesReferencesByName: Record<string, Node>
-	readonly contributesReferences: readonly Node[]
+	readonly references: readonly UnknownNode[] = Object.values(
+		this.referencesByName
+	)
+	readonly contributesReferencesByName: Record<string, UnknownNode>
+	readonly contributesReferences: readonly UnknownNode[]
 	readonly precedence = precedenceOfKind(this.kind)
 	jit = false
 
@@ -221,7 +220,7 @@ export abstract class BaseNode<
 			return this as never
 		}
 		const ioInner: Record<any, unknown> = {}
-		for (const [k, v] of this.entries as readonly Entry<string>[]) {
+		for (const [k, v] of this.entries) {
 			const keyDefinition = this.impl.keys[k]
 			if (keyDefinition.meta) {
 				continue
@@ -252,7 +251,7 @@ export abstract class BaseNode<
 		return this.json
 	}
 
-	equals(other: Node): boolean {
+	equals(other: UnknownNode): boolean {
 		return this.typeId === other.typeId
 	}
 
@@ -305,10 +304,8 @@ export abstract class BaseNode<
 	> = {}
 	protected intersectInternal(
 		this: UnknownNode,
-		other: Node
+		r: UnknownNode
 	): UnknownIntersectionResult {
-		// Node works better for subclasses but internally we want to treat it as UnknownNode
-		const r = other as UnknownNode
 		const lrCacheKey = `${this.typeId}&${r.typeId}`
 		if (BaseNode.intersectionCache[lrCacheKey]) {
 			return BaseNode.intersectionCache[lrCacheKey]!
@@ -354,14 +351,14 @@ export abstract class BaseNode<
 		return result
 	}
 
-	firstReference<narrowed extends Node>(
-		filter: Guardable<Node, narrowed>
+	firstReference<narrowed extends UnknownNode>(
+		filter: Guardable<UnknownNode, narrowed>
 	): narrowed | undefined {
 		return this.references.find(filter as never)
 	}
 
-	firstReferenceOrThrow<narrowed extends Node>(
-		filter: Guardable<Node, narrowed>
+	firstReferenceOrThrow<narrowed extends UnknownNode>(
+		filter: Guardable<UnknownNode, narrowed>
 	): narrowed {
 		return (
 			this.firstReference(filter) ??
@@ -372,7 +369,7 @@ export abstract class BaseNode<
 	firstReferenceOfKind<kind extends NodeKind>(
 		kind: kind
 	): Node<kind> | undefined {
-		return this.firstReference((node) => node.kind === kind)
+		return this.firstReference((node): node is Node<kind> => node.kind === kind)
 	}
 
 	firstReferenceOfKindOrThrow<kind extends NodeKind>(kind: kind): Node<kind> {
@@ -384,7 +381,7 @@ export abstract class BaseNode<
 
 	transform(
 		mapper: DeepNodeTransformation,
-		shouldTransform: (node: Node) => boolean
+		shouldTransform: (node: UnknownNode) => boolean
 	): Node<reducibleKindOf<this["kind"]>> {
 		if (!shouldTransform(this as never)) {
 			return this as never
@@ -393,8 +390,10 @@ export abstract class BaseNode<
 			k,
 			this.impl.keys[k].child
 				? isArray(v)
-					? v.map((node) => (node as Node).transform(mapper, shouldTransform))
-					: (v as Node).transform(mapper, shouldTransform)
+					? v.map((node) =>
+							(node as UnknownNode).transform(mapper, shouldTransform)
+					  )
+					: (v as UnknownNode).transform(mapper, shouldTransform)
 				: v
 		])
 		return this.$.parse(
@@ -435,10 +434,7 @@ interface NodesByKind<t = any> extends BoundNodesByKind {
 	sequence: SequenceNode
 }
 
-export type Node<
-	kind extends NodeKind = NodeKind,
-	t = any
-> = NodesByKind<t>[kind]
+export type Node<kind extends NodeKind, t = any> = NodesByKind<t>[kind]
 
 export type TypeNode<t = any, kind extends TypeKind = TypeKind> = Node<kind, t>
 

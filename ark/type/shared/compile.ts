@@ -4,7 +4,7 @@ import {
 	serializeLiteralKey,
 	type Dict
 } from "@arktype/util"
-import type { Node } from "../base.js"
+import type { Node, UnknownNode } from "../base.js"
 import type { Discriminant } from "../types/discriminate.js"
 import type { TraversalKind } from "./context.js"
 import type { PrimitiveKind } from "./implement.js"
@@ -27,7 +27,7 @@ export class NodeCompiler extends CompiledFunction<
 		super(jsData, jsCtx)
 	}
 
-	invoke(node: Node, opts?: InvokeOptions): string {
+	invoke(node: UnknownNode, opts?: InvokeOptions): string {
 		const invokedKind = opts?.kind ?? this.traversalKind
 		const method = `${node.name}${invokedKind}`
 		const arg = opts?.arg ?? this.data
@@ -37,7 +37,7 @@ export class NodeCompiler extends CompiledFunction<
 		return `this.${method}(${arg})`
 	}
 
-	requiresContextFor(node: Node): boolean {
+	requiresContextFor(node: UnknownNode): boolean {
 		return (
 			this.traversalKind === "Apply" || node.includesContextDependentPredicate
 		)
@@ -49,7 +49,7 @@ export class NodeCompiler extends CompiledFunction<
 		)
 	}
 
-	checkLiteralKey(key: PropertyKey, node: Node): this {
+	checkLiteralKey(key: PropertyKey, node: UnknownNode): this {
 		const requiresContext = this.requiresContextFor(node)
 		if (requiresContext) {
 			this.line(`${this.ctx}.path.push(${serializeLiteralKey(key)})`)
@@ -63,7 +63,7 @@ export class NodeCompiler extends CompiledFunction<
 		return this
 	}
 
-	checkReferenceKey(keyExpression: string, node: Node): this {
+	checkReferenceKey(keyExpression: string, node: UnknownNode): this {
 		const requiresContext = this.requiresContextFor(node)
 		if (requiresContext) {
 			this.line(`${this.ctx}.path.push(${keyExpression})`)
@@ -77,7 +77,7 @@ export class NodeCompiler extends CompiledFunction<
 		return this
 	}
 
-	check(node: Node, opts?: InvokeOptions): this {
+	check(node: UnknownNode, opts?: InvokeOptions): this {
 		return this.traversalKind === "Allows"
 			? this.if(`!${this.invoke(node, opts)}`, () => this.return(false))
 			: this.line(this.invoke(node, opts))

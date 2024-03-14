@@ -11,7 +11,12 @@ import {
 	type listable,
 	type valueOf
 } from "@arktype/util"
-import { BaseNode, type BaseAttachments, type Node } from "./base.js"
+import {
+	BaseNode,
+	type BaseAttachments,
+	type Node,
+	type UnknownNode
+} from "./base.js"
 import { nodesByKind, type Schema, type reducibleKindOf } from "./kinds.js"
 import type { Scope } from "./scope.js"
 import type { BaseNodeDeclaration } from "./shared/declare.js"
@@ -33,7 +38,7 @@ export type SchemaParseOptions = {
 	 *
 	 * Useful for defining reductions like number|string|bigint|symbol|object|true|false|null|undefined => unknown
 	 **/
-	reduceTo?: Node
+	reduceTo?: UnknownNode
 	root?: boolean
 	allowedKinds?: readonly NodeKind[]
 }
@@ -61,7 +66,7 @@ export function parseAttachments(
 	kind: NodeKind,
 	schema: unknown,
 	ctx: SchemaParseContext
-): Node {
+): UnknownNode {
 	const cls = nodesByKind[kind]
 	const impl: UnknownNodeImplementation = cls.implementation as never
 	if (schema instanceof BaseNode && schema.kind === kind) {
@@ -90,7 +95,7 @@ export function parseAttachments(
 				? -1
 				: 1
 	)
-	const children: Node[] = []
+	const children: UnknownNode[] = []
 	for (const entry of schemaEntries) {
 		const k = entry[0]
 		const keyImpl = impl.keys[k] ?? baseKeys[k]
@@ -110,7 +115,7 @@ export function parseAttachments(
 	entries.forEach(([k, v]) => {
 		const keyImpl = impl.keys[k] ?? baseKeys[k]
 		if (keyImpl.child) {
-			const listableNode = v as listable<Node>
+			const listableNode = v as listable<UnknownNode>
 			if (isArray(listableNode)) {
 				json[k] = listableNode.map((node) => node.collapsibleJson)
 				children.push(...listableNode)

@@ -1,6 +1,5 @@
-import { morph, type Domain, type evaluate } from "@arktype/util"
+import { morph, type Domain } from "@arktype/util"
 import { BaseNode, type Node } from "../base.js"
-import type { applySchema, validateConstraintArg } from "../constraints/ast.js"
 import { throwInvalidOperandError } from "../constraints/constraint.js"
 import type { Predicate, inferNarrow } from "../constraints/predicate.js"
 import type { Schema, reducibleKindOf } from "../kinds.js"
@@ -20,24 +19,21 @@ import type { inferIntersection } from "../shared/intersections.js"
 import type { inferTypeRoot, validateTypeRoot } from "../type.js"
 import type { IntersectionNode } from "./intersection.js"
 import type {
-	Morph,
 	Out,
 	distill,
 	extractIn,
 	extractOut,
-	includesMorphs,
-	inferMorphOut
+	includesMorphs
 } from "./morph.js"
 import type { UnionChildKind, UnionNode } from "./union.js"
 
 export const defineRightwardIntersections = <kind extends TypeKind>(
 	kind: kind,
 	implementation: TypeIntersection<kind, typeKindRightOf<kind>>
-): typeKindRightOf<kind>[] =>
-	morph(typeKindsRightOf(kind), (i, kind) => [kind, implementation])
+): { [k in typeKindRightOf<kind>]: TypeIntersection<kind, k> } =>
+	morph(typeKindsRightOf(kind), (i, kind) => [kind, implementation]) as never
 
-/** @ts-expect-error treat as covariant */
-export interface Type<out t = unknown, $ = any>
+export interface Type<t = any, $ = any>
 	extends BaseType<t, BaseNodeDeclaration, $> {}
 
 export abstract class BaseType<
@@ -171,26 +167,26 @@ export abstract class BaseType<
 		return literal as never
 	}
 
-	// TODO: standardize these
-	morph<morph extends Morph<this["infer"]>>(
-		morph: morph
-	): Type<(In: this["in"]["infer"]) => Out<inferMorphOut<ReturnType<morph>>>, $>
-	morph<morph extends Morph<this["infer"]>, def>(
-		morph: morph,
-		outValidator: validateTypeRoot<def, $>
-	): Type<
-		(In: this["in"]["infer"]) => Out<
-			// TODO: validate overlapping
-			// inferMorphOut<ReturnType<morph>> &
-			extractOut<inferTypeRoot<def, $>>
-		>,
-		$
-	>
-	morph(morph: Morph, outValidator?: unknown): unknown {
-		// TODO: tuple expression for out validator
-		outValidator
-		return this as never
-	}
+	// // TODO: standardize these
+	// morph<morph extends Morph<this["infer"]>>(
+	// 	morph: morph
+	// ): Type<(In: this["in"]["infer"]) => Out<inferMorphOut<ReturnType<morph>>>, $>
+	// morph<morph extends Morph<this["infer"]>, def>(
+	// 	morph: morph,
+	// 	outValidator: validateTypeRoot<def, $>
+	// ): Type<
+	// 	(In: this["in"]["infer"]) => Out<
+	// 		// TODO: validate overlapping
+	// 		// inferMorphOut<ReturnType<morph>> &
+	// 		extractOut<inferTypeRoot<def, $>>
+	// 	>,
+	// 	$
+	// >
+	// morph(morph: Morph, outValidator?: unknown): unknown {
+	// 	// TODO: tuple expression for out validator
+	// 	outValidator
+	// 	return this as never
+	// }
 
 	// TODO: based on below, should maybe narrow morph output if used after
 	narrow<def extends Predicate<extractOut<t>>>(
@@ -209,47 +205,47 @@ export abstract class BaseType<
 		return result.errors ? result.errors.throw() : result.out
 	}
 
-	divisor<const schema extends validateConstraintArg<"divisor", this["infer"]>>(
-		schema: schema
-	): Type<applySchema<t, "divisor", schema>, $> {
-		return this.constrain("divisor", schema as never) as never
-	}
+	// divisor<const schema extends validateConstraintArg<"divisor", this["infer"]>>(
+	// 	schema: schema
+	// ): Type<applySchema<t, "divisor", schema>, $> {
+	// 	return this.constrain("divisor", schema as never) as never
+	// }
 
-	min<const schema extends validateConstraintArg<"min", this["infer"]>>(
-		schema: schema
-	): Type<applySchema<t, "min", schema>, $> {
-		return this.constrain("min", schema as never) as never
-	}
+	// min<const schema extends validateConstraintArg<"min", this["infer"]>>(
+	// 	schema: schema
+	// ): Type<applySchema<t, "min", schema>, $> {
+	// 	return this.constrain("min", schema as never) as never
+	// }
 
-	max<const schema extends validateConstraintArg<"max", this["infer"]>>(
-		schema: schema
-	): Type<applySchema<t, "max", schema>, $> {
-		return this.constrain("max", schema as never) as never
-	}
+	// max<const schema extends validateConstraintArg<"max", this["infer"]>>(
+	// 	schema: schema
+	// ): Type<applySchema<t, "max", schema>, $> {
+	// 	return this.constrain("max", schema as never) as never
+	// }
 
-	minLength<
-		const schema extends validateConstraintArg<"minLength", this["infer"]>
-	>(schema: schema): Type<applySchema<t, "minLength", schema>, $> {
-		return this.constrain("minLength", schema as never) as never
-	}
+	// minLength<
+	// 	const schema extends validateConstraintArg<"minLength", this["infer"]>
+	// >(schema: schema): Type<applySchema<t, "minLength", schema>, $> {
+	// 	return this.constrain("minLength", schema as never) as never
+	// }
 
-	maxLength<
-		const schema extends validateConstraintArg<"maxLength", this["infer"]>
-	>(schema: schema): Type<applySchema<t, "maxLength", schema>, $> {
-		return this.constrain("maxLength", schema as never) as never
-	}
+	// maxLength<
+	// 	const schema extends validateConstraintArg<"maxLength", this["infer"]>
+	// >(schema: schema): Type<applySchema<t, "maxLength", schema>, $> {
+	// 	return this.constrain("maxLength", schema as never) as never
+	// }
 
-	before<const schema extends validateConstraintArg<"before", this["infer"]>>(
-		schema: schema
-	): Type<applySchema<t, "before", schema>, $> {
-		return this.constrain("before", schema as never) as never
-	}
+	// before<const schema extends validateConstraintArg<"before", this["infer"]>>(
+	// 	schema: schema
+	// ): Type<applySchema<t, "before", schema>, $> {
+	// 	return this.constrain("before", schema as never) as never
+	// }
 
-	after<const schema extends validateConstraintArg<"after", this["infer"]>>(
-		schema: schema
-	): Type<applySchema<t, "after", schema>, $> {
-		return this.constrain("after", schema as never) as never
-	}
+	// after<const schema extends validateConstraintArg<"after", this["infer"]>>(
+	// 	schema: schema
+	// ): Type<applySchema<t, "after", schema>, $> {
+	// 	return this.constrain("after", schema as never) as never
+	// }
 }
 
 export type intersectType<l extends TypeKind, r extends NodeKind> = [

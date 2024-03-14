@@ -1,6 +1,6 @@
 import type { MatchParser } from "../match.js"
-import type { ConstraintParser, NodeParser, SchemaParser } from "../schema.js"
-import { type Module, type Scope, type ScopeParser } from "../scope.js"
+import type { NodeParser, SchemaParser } from "../schema.js"
+import type { Module, Scope, ScopeParser } from "../scope.js"
 import type { inferred } from "../shared/inference.js"
 import type {
 	DeclarationParser,
@@ -88,8 +88,6 @@ export const node: NodeParser<Ark> = ark.node
 export const define: DefinitionParser<Ark> = ark.define
 
 export const declare: DeclarationParser<Ark> = ark.declare
-
-export const constraint: ConstraintParser<Ark> = ark.constraint
 
 export namespace type {
 	export type cast<to> = {
