@@ -176,7 +176,7 @@ export class UnionNode<t = any, $ = any> extends BaseType<
 	traverseApply: TraverseApply = (data, ctx) =>
 		this.branches.forEach((b) => b.traverseApply(data, ctx))
 
-	compile(js: NodeCompiler) {
+	compile(js: NodeCompiler): void {
 		if (js.traversalKind === "Apply") {
 			this.branches.forEach((branch) => js.line(js.invoke(branch)))
 		} else {
@@ -187,7 +187,7 @@ export class UnionNode<t = any, $ = any> extends BaseType<
 		}
 	}
 
-	get nestableExpression() {
+	get nestableExpression(): string {
 		// avoid adding unnecessary parentheses around boolean since it's
 		// already collapsed to a single keyword
 		return this.isBoolean ? "boolean" : super.nestableExpression
@@ -355,7 +355,10 @@ export const intersectBranches = (
 		: resultBranches
 }
 
-export const reduceBranches = ({ branches, ordered }: UnionInner) => {
+export const reduceBranches = ({
+	branches,
+	ordered
+}: UnionInner): readonly UnionChildNode[] => {
 	if (branches.length < 2) {
 		return branches
 	}
