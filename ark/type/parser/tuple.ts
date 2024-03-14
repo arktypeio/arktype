@@ -496,7 +496,7 @@ export const parseMorphTuple: PostfixParser<"=>"> = (def, ctx) => {
 	// TODO: nested morphs?
 	return ctx.$.parseSchema("morph", {
 		in: ctx.$.parse(def[0], ctx) as Schema<MorphChildKind>,
-		morph: def[2] as Morph
+		morphs: def[2] as Morph
 	})
 }
 

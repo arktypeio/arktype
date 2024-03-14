@@ -13,7 +13,7 @@ const number = root.schema({
 		regex: wellFormedNumberMatcher,
 		description: "a well-formed numeric string"
 	},
-	morph: (s: string) => parseFloat(s)
+	morphs: (s: string) => parseFloat(s)
 })
 
 const integer = root.schema({
@@ -21,7 +21,7 @@ const integer = root.schema({
 		domain: "string",
 		regex: wellFormedIntegerMatcher
 	},
-	morph: (s: string) => {
+	morphs: (s: string) => {
 		// if (!isWellFormedInteger(s)) {
 		// 	return errors.mustBe("a well-formed integer string")
 		// }
@@ -40,7 +40,7 @@ const url = root.schema({
 		domain: "string",
 		description: "a valid URL"
 	},
-	morph: (s: string) => {
+	morphs: (s: string) => {
 		return new URL(s)
 		// try {
 		// 	return new URL(s)
@@ -55,7 +55,7 @@ const json = root.schema({
 		domain: "string",
 		description: "a JSON-parsable string"
 	},
-	morph: (s: string): unknown => JSON.parse(s)
+	morphs: (s: string): unknown => JSON.parse(s)
 })
 
 const date = parsedDate

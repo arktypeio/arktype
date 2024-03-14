@@ -1,7 +1,7 @@
 import { root } from "../root.js"
 
 // https://github.com/validatorjs/validator.js/blob/master/src/lib/isLuhnNumber.js
-export const isLuhnValid = (creditCardInput: string) => {
+export const isLuhnValid = (creditCardInput: string): boolean => {
 	const sanitized = creditCardInput.replace(/[- ]+/g, "")
 	let sum = 0
 	let digit

@@ -101,7 +101,7 @@ export const tryParseDatePattern = (
 
 export const parsedDate = root.schema({
 	in: "string",
-	morph: (s: string) => {
+	morphs: (s: string) => {
 		const result = tryParseDatePattern(s)
 		return typeof result === "string"
 			? // TODO: Fix

@@ -25,7 +25,6 @@ import { basisKinds, type nodeImplementationOf } from "../shared/implement.js"
 import {
 	BaseType,
 	defineRightwardIntersections,
-	type Type,
 	type typeKindRightOf
 } from "./type.js"
 
@@ -49,13 +48,13 @@ export type MorphAst<i = any, o = any> = (In: i) => Out<o>
 export interface MorphInner extends BaseMeta {
 	readonly in: MorphChildNode
 	readonly out: MorphChildNode
-	readonly morph: readonly Morph[]
+	readonly morphs: readonly Morph[]
 }
 
 export interface MorphSchema extends BaseMeta {
 	readonly in: MorphChildDefinition
 	readonly out?: MorphChildDefinition
-	readonly morph: listable<Morph>
+	readonly morphs: listable<Morph>
 }
 
 export type MorphDeclaration = declareNode<{
@@ -86,7 +85,7 @@ export class MorphNode<t = any, $ = any> extends BaseType<
 					parse: (schema, ctx) =>
 						ctx.$.parseTypeSchema(schema, { allowedKinds: morphChildKinds })
 				},
-				morph: {
+				morphs: {
 					parse: listFrom
 				}
 			},
@@ -98,7 +97,7 @@ export class MorphNode<t = any, $ = any> extends BaseType<
 			},
 			intersections: {
 				morph: (l, r, $) => {
-					if (l.morph.some((morph, i) => morph !== r.morph[i])) {
+					if (l.morphs.some((morph, i) => morph !== r.morphs[i])) {
 						// TODO: is this always a parse error? what about for union reduction etc.
 						// TODO: check in for union reduction
 						return throwParseError(`Invalid intersection of morphs`)
@@ -112,7 +111,7 @@ export class MorphNode<t = any, $ = any> extends BaseType<
 						return outTersection
 					}
 					return $.parseSchema("morph", {
-						morph: l.morph,
+						morphs: l.morphs,
 						in: inTersection,
 						out: outTersection
 					})

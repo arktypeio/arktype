@@ -51,6 +51,7 @@ import {
 	basisKinds,
 	constraintKinds,
 	isNodeKind,
+	isNodeKind,
 	precedenceOfKind,
 	propKinds,
 	refinementKinds,
@@ -68,10 +69,7 @@ import {
 } from "./shared/implement.js"
 import { inferred } from "./shared/inference.js"
 import type { DomainNode } from "./types/domain.js"
-import {
-	discriminatingIntersectionKeys,
-	type IntersectionNode
-} from "./types/intersection.js"
+import type { IntersectionNode } from "./types/intersection.js"
 import type {
 	MorphNode,
 	distill,
@@ -459,21 +457,16 @@ export const kindOfSchema = (schema: unknown): NodeKind => {
 
 			if ("kind" in schema && isNodeKind(schema.kind)) return schema.kind
 
-			if ("morph" in schema) return "morph"
+			if ("morphs" in schema) return "morph"
 
 			if ("branches" in schema || isArray(schema)) return "union"
 
 			if ("unit" in schema) return "unit"
 
-			const schemaKeys = Object.keys(schema)
+			const schemaKeys = Object.keys(schema).filter(isNodeKind)
 
-			if (
-				schemaKeys.length === 0 ||
-				schemaKeys.some((k) => k in discriminatingIntersectionKeys)
-			)
-				return "intersection"
-			if ("proto" in schema) return "proto"
-			if ("domain" in schema) return "domain"
+			if (schemaKeys.length === 1) return schemaKeys[0]
+			if (schemaKeys.length !== 1) return "intersection"
 	}
 	return throwParseError(`${printable(schema)} is not a valid type schema`)
 }

@@ -1,4 +1,4 @@
-import { morph, narrow, type Domain } from "@arktype/util"
+import { morph, type Domain } from "@arktype/util"
 import { BaseNode, type Node } from "../base.js"
 import { throwInvalidOperandError } from "../constraints/constraint.js"
 import type { Predicate, inferNarrow } from "../constraints/predicate.js"
@@ -19,11 +19,13 @@ import type { inferIntersection } from "../shared/intersections.js"
 import type { inferTypeRoot, validateTypeRoot } from "../type.js"
 import type { IntersectionNode } from "./intersection.js"
 import type {
+	Morph,
 	Out,
 	distill,
 	extractIn,
 	extractOut,
-	includesMorphs
+	includesMorphs,
+	inferMorphOut
 } from "./morph.js"
 import type { UnionChildKind, UnionNode } from "./union.js"
 
@@ -168,26 +170,26 @@ export abstract class BaseType<
 		return literal as never
 	}
 
-	// // TODO: standardize these
-	// morph<morph extends Morph<this["infer"]>>(
-	// 	morph: morph
-	// ): Type<(In: this["in"]["infer"]) => Out<inferMorphOut<ReturnType<morph>>>, $>
-	// morph<morph extends Morph<this["infer"]>, def>(
-	// 	morph: morph,
-	// 	outValidator: validateTypeRoot<def, $>
-	// ): Type<
-	// 	(In: this["in"]["infer"]) => Out<
-	// 		// TODO: validate overlapping
-	// 		// inferMorphOut<ReturnType<morph>> &
-	// 		extractOut<inferTypeRoot<def, $>>
-	// 	>,
-	// 	$
-	// >
-	// morph(morph: Morph, outValidator?: unknown): unknown {
-	// 	// TODO: tuple expression for out validator
-	// 	outValidator
-	// 	return this as never
-	// }
+	// TODO: standardize these
+	morph<morph extends Morph<this["infer"]>>(
+		morph: morph
+	): Type<(In: this["in"]["infer"]) => Out<inferMorphOut<ReturnType<morph>>>, $>
+	morph<morph extends Morph<this["infer"]>, def>(
+		morph: morph,
+		outValidator: validateTypeRoot<def, $>
+	): Type<
+		(In: this["in"]["infer"]) => Out<
+			// TODO: validate overlapping
+			// inferMorphOut<ReturnType<morph>> &
+			extractOut<inferTypeRoot<def, $>>
+		>,
+		$
+	>
+	morph(morph: Morph, outValidator?: unknown): unknown {
+		// TODO: tuple expression for out validator
+		outValidator
+		return this as never
+	}
 
 	// TODO: based on below, should maybe narrow morph output if used after
 	narrow<def extends Predicate<extractOut<t>>>(

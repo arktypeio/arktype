@@ -99,7 +99,7 @@ export type inferMorphSchema<schema> = schema extends MorphSchema
 			In: schema["in"] extends {} ? inferMorphChild<schema["in"]> : unknown
 	  ) => schema["out"] extends {}
 			? Out<inferMorphChild<schema["out"]>>
-			: schema["morph"] extends
+			: schema["morphs"] extends
 					| Morph<any, infer o>
 					| readonly [...unknown[], Morph<any, infer o>]
 			? Out<inferMorphOut<o>>
