@@ -34,7 +34,7 @@ export type ProtoDeclaration = declareNode<{
 
 // readonly literalKeys = prototypeKeysOf(this.rule.prototype)
 
-export class ProtoNode<t = unknown, $ = any> extends BaseBasis<
+export class ProtoNode<t = any, $ = any> extends BaseBasis<
 	t,
 	ProtoDeclaration,
 	$

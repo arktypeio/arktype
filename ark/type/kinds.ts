@@ -4,16 +4,7 @@ import {
 	type PredicateDeclaration
 } from "./constraints/predicate.js"
 import { IndexNode, type IndexDeclaration } from "./constraints/props/index.js"
-import {
-	OptionalNode,
-	type OptionalDeclaration
-} from "./constraints/props/optional.js"
-import {
-	PropNode,
-	RequiredNode,
-	type PropDeclaration,
-	type RequiredDeclaration
-} from "./constraints/props/prop.js"
+import { PropNode, type PropDeclaration } from "./constraints/props/prop.js"
 import {
 	SequenceNode,
 	type SequenceDeclaration

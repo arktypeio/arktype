@@ -20,7 +20,7 @@ export type UnitDeclaration = declareNode<{
 	errorContext: UnitInner
 }>
 
-export class UnitNode<t = unknown, $ = any> extends BaseBasis<
+export class UnitNode<t = any, $ = any> extends BaseBasis<
 	t,
 	UnitDeclaration,
 	$

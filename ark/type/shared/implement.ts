@@ -117,7 +117,7 @@ type accumulateRightKinds<
 export type ConstraintIntersection<
 	lKind extends ConstraintKind,
 	rKind extends kindOrRightOf<lKind>
-> = (l: Node<lKind>, r: Node<rKind>, $: Scope) => Node | Disjoint | null
+> = (l: Node<lKind>, r: Node<rKind>, $: Scope) => UnknownNode | Disjoint | null
 
 export type ConstraintIntersectionMap<kind extends ConstraintKind> = evaluate<
 	{

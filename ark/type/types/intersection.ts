@@ -316,14 +316,15 @@ export class IntersectionNode<t = unknown, $ = any> extends BaseType<
 		this.predicate?.forEach((node) => node.traverseApply(data as never, ctx))
 	}
 
-	compile(js: NodeCompiler) {
+	compile(js: NodeCompiler): void {
 		if (js.traversalKind === "Allows") {
 			this.traversables.forEach((traversable) =>
 				traversable instanceof BaseNode
 					? js.check(traversable)
 					: traversable.compile(js)
 			)
-			return js.return(true)
+			js.return(true)
+			return
 		}
 		if (this.basis) {
 			js.check(this.basis)
