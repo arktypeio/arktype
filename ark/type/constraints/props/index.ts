@@ -1,4 +1,5 @@
 import type { TypeSchema } from "../../base.js"
+import { tsPrimitiveKeywords } from "../../builtins/tsKeywords.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/context.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
@@ -52,7 +53,7 @@ export class IndexNode extends BaseConstraint<IndexDeclaration> {
 			}
 		})
 
-	readonly impliedBasis = this.$.tsKeywords.object
+	readonly impliedBasis = tsPrimitiveKeywords.object
 	readonly expression = `[${this.signature}]: ${this.value}`
 
 	traverseAllows: TraverseAllows<object> = (data, ctx) =>

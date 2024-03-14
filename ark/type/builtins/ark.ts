@@ -8,11 +8,11 @@ import type {
 	Generic,
 	TypeParser
 } from "../type.js"
-import { JsObjects } from "./jsObjects.js"
-import { Parsing } from "./parsing.js"
+import { jsObjectKeywords, type jsObject } from "./jsObjects.js"
+import { parsingKeywords, type parsing } from "./parsing.js"
 import { root } from "./root.js"
-import { TsKeywords } from "./tsKeywords.js"
-import { Validation } from "./validation.js"
+import { tsPrimitiveKeywords, type tsPrimitive } from "./tsKeywords.js"
+import { validationKeywords, type validation } from "./validation.js"
 
 /** Root scopes can be inferred automatically from node definitions, but
  * explicitly typing them can improve responsiveness */
@@ -27,7 +27,7 @@ export type ArkResolutions = { exports: Ark; locals: {}; ambient: Ark }
 // For some reason if we try to inline this, it gets evaluated and the module
 // can't be inferred
 export type ParsingResolutions = {
-	exports: Parsing.infer
+	exports: parsing.infer
 	locals: {}
 	ambient: {}
 }
@@ -54,12 +54,12 @@ export const tsGenerics = {} as Module<TsGenericsResolutions>
 
 export const ark: Scope<ArkResolutions> = root
 	.scope({
-		...TsKeywords.export(),
-		...JsObjects.export(),
-		...Validation.export(),
+		...tsPrimitiveKeywords,
+		...jsObjectKeywords,
+		...validationKeywords,
 		// TODO: fix
 		...tsGenerics,
-		parse: Parsing.export()
+		parse: parsingKeywords
 	})
 	.toAmbient() as never
 
@@ -68,9 +68,9 @@ export const keywords: Module<ArkResolutions> = ark.export()
 // this type is redundant with the inferred definition of ark but allow types
 // derived from the default scope to be calulated more efficiently
 export interface Ark
-	extends TsKeywords.infer,
-		JsObjects.infer,
-		Validation.infer,
+	extends tsPrimitive.infer,
+		jsObject.infer,
+		validation.infer,
 		TsGenericsExports {
 	parse: Module<ParsingResolutions>
 }

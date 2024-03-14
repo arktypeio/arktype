@@ -8,6 +8,7 @@ import {
 	type listable
 } from "@arktype/util"
 import type { Node } from "../base.js"
+import { tsPrimitiveKeywords } from "../builtins/tsKeywords.js"
 import type { of } from "../constraints/ast.js"
 import type { Schema } from "../kinds.js"
 import type { StaticArkOption } from "../scope.js"
@@ -149,7 +150,7 @@ export class MorphNode<t = any, $ = any> extends BaseType<
 	}
 
 	override get out(): Node<MorphChildKind, extractOut<t>> {
-		return this.inner.out ?? this.$.tsKeywords.unknown
+		return this.inner.out ?? tsPrimitiveKeywords.unknown
 	}
 
 	compile(js: NodeCompiler): void {

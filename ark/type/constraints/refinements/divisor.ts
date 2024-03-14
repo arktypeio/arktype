@@ -1,3 +1,4 @@
+import { tsPrimitiveKeywords } from "../../builtins/tsKeywords.js"
 import { jsData } from "../../shared/compile.js"
 import type { TraverseAllows } from "../../shared/context.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
@@ -55,7 +56,7 @@ export class DivisorNode extends BasePrimitiveConstraint<DivisorDeclaration> {
 
 	readonly compiledCondition = `${jsData} % ${this.divisor} === 0`
 	readonly compiledNegation = `${jsData} % ${this.divisor} !== 0`
-	readonly impliedBasis = this.$.tsKeywords.number
+	readonly impliedBasis = tsPrimitiveKeywords.number
 	readonly errorContext = this.createErrorContext(this.inner)
 	readonly expression = `% ${this.divisor}`
 }
@@ -63,7 +64,7 @@ export class DivisorNode extends BasePrimitiveConstraint<DivisorDeclaration> {
 export const writeIndivisibleMessage = <node extends Type>(
 	t: node
 ): writeIndivisibleMessage<node> =>
-	writeInvalidOperandMessage("divisor", t.$.tsKeywords.number, t)
+	writeInvalidOperandMessage("divisor", tsPrimitiveKeywords.number, t)
 
 export type writeIndivisibleMessage<node extends Type> =
 	writeInvalidOperandMessage<"divisor", node>

@@ -2,7 +2,7 @@ import {
 	wellFormedIntegerMatcher,
 	wellFormedNumberMatcher
 } from "@arktype/util"
-import type { Scope, rootResolutions } from "../scope.js"
+import type { Module, Scope, rootResolutions } from "../scope.js"
 import type { Out } from "../types/morph.js"
 import { root } from "./root.js"
 import { parsedDate } from "./utils/date.js"
@@ -60,7 +60,7 @@ const json = root.schema({
 
 const date = parsedDate
 
-export namespace Parsing {
+export namespace parsing {
 	export interface exports {
 		url: (In: string) => Out<URL>
 		number: (In: string) => Out<number>
@@ -71,10 +71,12 @@ export namespace Parsing {
 
 	export type resolutions = rootResolutions<exports>
 
-	export type infer = (typeof Parsing)["infer"]
+	export type infer = (typeof parsing)["infer"]
 }
 
-export const Parsing: Scope<Parsing.resolutions> = {} as never
+export const parsing: Scope<parsing.resolutions> = {} as never
+
+export const parsingKeywords: Module<parsing.resolutions> = {} as never
 
 // 	Scope.root.scope({
 // 	url,

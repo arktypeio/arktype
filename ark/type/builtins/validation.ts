@@ -1,4 +1,4 @@
-import type { Scope, rootResolutions } from "../scope.js"
+import type { Module, Scope, rootResolutions } from "../scope.js"
 import { root } from "./root.js"
 import { creditCard } from "./utils/creditCard.js"
 
@@ -76,7 +76,7 @@ const integer = root.schema({
 	description: "an integer"
 })
 
-export namespace Validation {
+export namespace validation {
 	export interface exports {
 		alpha: string
 		alphanumeric: string
@@ -92,10 +92,10 @@ export namespace Validation {
 
 	export type resolutions = rootResolutions<exports>
 
-	export type infer = (typeof Validation)["infer"]
+	export type infer = (typeof validation)["infer"]
 }
 
-export const Validation: Scope<Validation.resolutions> = root.scope(
+export const validation: Scope<validation.resolutions> = root.scope(
 	{
 		alpha,
 		alphanumeric,
@@ -110,3 +110,6 @@ export const Validation: Scope<Validation.resolutions> = root.scope(
 	},
 	{ prereducedAliases: true }
 )
+
+export const validationKeywords: Module<validation.resolutions> =
+	validation.export()

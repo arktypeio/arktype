@@ -62,7 +62,6 @@ import type {
 	NodeKind,
 	TypeKind
 } from "./shared/implement.js"
-
 import type { extractIn, extractOut } from "./types/morph.js"
 import { BaseType, type Type } from "./types/type.js"
 import type { UnionNode } from "./types/union.js"

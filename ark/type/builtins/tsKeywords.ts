@@ -1,8 +1,8 @@
-import type { Scope, rootResolutions } from "../scope.js"
+import type { Module, Scope, rootResolutions } from "../scope.js"
 import type { type } from "./ark.js"
 import { root } from "./root.js"
 
-export namespace TsKeywords {
+export namespace tsPrimitive {
 	export interface exports {
 		any: any
 		bigint: bigint
@@ -22,10 +22,10 @@ export namespace TsKeywords {
 
 	export type resolutions = rootResolutions<exports>
 
-	export type infer = (typeof TsKeywords)["infer"]
+	export type infer = (typeof tsPrimitive)["infer"]
 }
 
-export const TsKeywords: Scope<TsKeywords.resolutions> = root.scope({
+export const tsPrimitive: Scope<tsPrimitive.resolutions> = root.scope({
 	any: "unknown" as type.cast<any>,
 	bigint: root.schema("bigint"),
 	boolean: "false|true",
@@ -41,3 +41,6 @@ export const TsKeywords: Scope<TsKeywords.resolutions> = root.scope({
 	void: "undefined" as type.cast<void>,
 	undefined: ["===", undefined]
 })
+
+export const tsPrimitiveKeywords: Module<tsPrimitive.resolutions> =
+	tsPrimitive.export()

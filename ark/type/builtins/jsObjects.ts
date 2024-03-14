@@ -1,7 +1,7 @@
-import type { Scope, rootResolutions } from "../scope.js"
+import type { Module, Scope, rootResolutions } from "../scope.js"
 import { root } from "./root.js"
 
-export namespace JsObjects {
+export namespace jsObject {
 	export interface exports {
 		Array: unknown[]
 		Function: Function
@@ -17,10 +17,10 @@ export namespace JsObjects {
 
 	export type resolutions = rootResolutions<exports>
 
-	export type infer = (typeof JsObjects)["infer"]
+	export type infer = (typeof jsObject)["infer"]
 }
 
-export const JsObjects: Scope<JsObjects.resolutions> = root.scope(
+export const jsObject: Scope<jsObject.resolutions> = root.scope(
 	{
 		Array: root.schema(Array),
 		Function: root.schema(Function),
@@ -35,3 +35,5 @@ export const JsObjects: Scope<JsObjects.resolutions> = root.scope(
 	},
 	{ prereducedAliases: true }
 )
+
+export const jsObjectKeywords: Module<jsObject.resolutions> = jsObject.export()

@@ -50,7 +50,9 @@ export abstract class BaseRange<
 				: this.numericLimit > r.numericLimit
 		return (
 			thisLimitIsStricter ||
-			(this.numericLimit === r.numericLimit && this.exclusive && !r.exclusive)
+			(this.numericLimit === r.numericLimit &&
+				this.exclusive === true &&
+				!r.exclusive)
 		)
 	}
 
