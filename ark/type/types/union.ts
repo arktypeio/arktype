@@ -74,7 +74,7 @@ export class UnionNode<t = any, $ = any> extends BaseType<
 					child: true,
 					parse: (schema, ctx) => {
 						const branches = schema.map((branch) =>
-							ctx.$.parseTypeSchema(branch, { allowedKinds: unionChildKinds })
+							ctx.$.node(branch, { allowedKinds: unionChildKinds })
 						)
 						const def = ctx.raw as UnionSchema
 						if (isArray(def) || def.ordered !== true) {

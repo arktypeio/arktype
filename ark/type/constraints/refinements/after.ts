@@ -22,7 +22,7 @@ export interface NormalizedAfterSchema extends BaseNormalizedRangeSchema {
 	after: LimitSchemaValue
 }
 
-export type AfterSchema = NormalizedAfterSchema | number
+export type AfterSchema = NormalizedAfterSchema | LimitSchemaValue
 
 export type AfterDeclaration = declareNode<{
 	kind: "after"

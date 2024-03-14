@@ -42,7 +42,7 @@ export class PropNode extends BaseConstraint<PropDeclaration> {
 				key: {},
 				value: {
 					child: true,
-					parse: (schema, ctx) => ctx.$.parseTypeSchema(schema)
+					parse: (schema, ctx) => ctx.$.node(schema)
 				},
 				optional: {
 					// normalize {optional: false} to {}

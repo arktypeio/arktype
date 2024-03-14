@@ -2,6 +2,7 @@ import {
 	CompiledFunction,
 	domainOf,
 	hasDomain,
+	isArray,
 	isThunk,
 	morph,
 	throwInternalError,
@@ -14,14 +15,13 @@ import {
 	type requireKeys
 } from "@arktype/util"
 import {
-	kindOfSchema,
-	type DiscriminableSchema,
+	typeKindOfSchema,
 	type Node,
+	type TypeSchema,
 	type UnknownNode
 } from "./base.js"
 import { keywords, type type } from "./builtins/ark.js"
 import { globalConfig } from "./config.js"
-import type { LengthBoundableData } from "./constraints/refinements/range.js"
 import { nodesByKind, type Schema, type reducibleKindOf } from "./kinds.js"
 import { createMatchParser, type MatchParser } from "./match.js"
 import { parseAttachments, type SchemaParseOptions } from "./parse.js"
@@ -46,7 +46,7 @@ import { fullStringParse } from "./parser/string/string.js"
 import {
 	createSchemaParser,
 	type SchemaParser,
-	type inferSchema
+	type instantiateSchema
 } from "./schema.js"
 import { NodeCompiler } from "./shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "./shared/context.js"
@@ -57,10 +57,11 @@ import type {
 	MessageWriter,
 	ProblemWriter
 } from "./shared/errors.js"
-import type {
-	DescriptionWriter,
-	NodeKind,
-	TypeKind
+import {
+	isNodeKind,
+	type DescriptionWriter,
+	type NodeKind,
+	type TypeKind
 } from "./shared/implement.js"
 import type { extractIn, extractOut } from "./types/morph.js"
 import { BaseType, type Type } from "./types/type.js"
@@ -596,21 +597,6 @@ export class Scope<r extends Resolutions = any> {
 		}) as never
 	}
 
-	parseTypeSchema<defKind extends TypeKind>(
-		schema: Schema<defKind>,
-		opts: TypeSchemaParseOptions<defKind> = {}
-	): Node<reducibleKindOf<defKind>> {
-		const kind = kindOfSchema(schema)
-		if (opts.allowedKinds && !opts.allowedKinds.includes(kind as never)) {
-			return throwParseError(
-				`Schema of kind ${kind} should be one of ${opts.allowedKinds}`
-			)
-		}
-		return opts.root
-			? (this.parseRootSchema(kind, schema as never, opts) as never)
-			: (this.parseSchema(kind, schema as never, opts) as never)
-	}
-
 	parseRootSchema<kind extends NodeKind>(
 		kind: kind,
 		def: Schema<kind>,
@@ -629,22 +615,39 @@ export class Scope<r extends Resolutions = any> {
 		return node
 	}
 
-	node<const schema extends DiscriminableSchema>(
+	node<const schema extends TypeSchema>(
 		schema: schema,
 		opts?: SchemaParseOptions
-	): Type<inferSchema<schema>, $<r>> {
+	): instantiateSchema<schema, $<r>>
+	node<kind extends NodeKind, const schema extends Schema<kind>>(
+		kind: kind,
+		schema: schema,
+		opts?: SchemaParseOptions
+	): Node<reducibleKindOf<kind>, instantiateSchema<schema, $<r>>["infer"], $<r>>
+	node(
+		schemaOrKind: unknown,
+		schemaOrOpts?: unknown,
+		constraintOpts?: SchemaParseOptions
+	): UnknownNode {
+		const kindArg = isNodeKind(schemaOrKind) ? schemaOrKind : undefined
+
+		let schema = kindArg ? schemaOrOpts : schemaOrKind
+		const opts: SchemaParseOptions | undefined = kindArg
+			? (schemaOrOpts as never)
+			: constraintOpts
 		if (opts?.alias && opts.alias in this.resolutions) {
 			return throwInternalError(
 				`Unexpected attempt to recreate existing alias ${opts.alias}`
 			)
 		}
-		const kind = kindOfSchema(schema)
-		if (opts?.allowedKinds && !opts.allowedKinds.includes(kind as never)) {
+		if (isArray(schema) && schema.length === 1) schema = schema[0]
+		const kind = kindArg ?? typeKindOfSchema(schemaOrKind)
+		if (opts?.allowedKinds && !opts.allowedKinds.includes(kind)) {
 			return throwParseError(
 				`Schema of kind ${kind} should be one of ${opts.allowedKinds}`
 			)
 		}
-		const node = parseAttachments(kind, schema, {
+		const node = parseAttachments(kind, schema as never, {
 			...opts,
 			$: this,
 			raw: schema,

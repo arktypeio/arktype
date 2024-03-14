@@ -78,12 +78,12 @@ export class MorphNode<t = any, $ = any> extends BaseType<
 				in: {
 					child: true,
 					parse: (schema, ctx) =>
-						ctx.$.parseTypeSchema(schema, { allowedKinds: morphChildKinds })
+						ctx.$.node(schema, { allowedKinds: morphChildKinds })
 				},
 				out: {
 					child: true,
 					parse: (schema, ctx) =>
-						ctx.$.parseTypeSchema(schema, { allowedKinds: morphChildKinds })
+						ctx.$.node(schema, { allowedKinds: morphChildKinds })
 				},
 				morphs: {
 					parse: listFrom

@@ -27,7 +27,6 @@ import type { RegexNode } from "./constraints/refinements/regex.js"
 import type {
 	Declaration,
 	Inner,
-	NormalizedSchema,
 	Schema,
 	ioKindOf,
 	reducibleKindOf
@@ -50,8 +49,6 @@ import type { ArkResult } from "./shared/errors.js"
 import {
 	basisKinds,
 	constraintKinds,
-	isNodeKind,
-	isNodeKind,
 	precedenceOfKind,
 	propKinds,
 	refinementKinds,
@@ -69,7 +66,10 @@ import {
 } from "./shared/implement.js"
 import { inferred } from "./shared/inference.js"
 import type { DomainNode } from "./types/domain.js"
-import type { IntersectionNode } from "./types/intersection.js"
+import {
+	discriminatingIntersectionKeys,
+	type IntersectionNode
+} from "./types/intersection.js"
 import type {
 	MorphNode,
 	distill,
@@ -439,13 +439,7 @@ export type Node<kind extends NodeKind, t = any, $ = any> = NodesByKind<
 
 export type TypeSchema<kind extends TypeKind = TypeKind> = Schema<kind>
 
-export type DiscriminableSchema<kind extends NodeKind = NodeKind> =
-	kind extends TypeKind ? Schema<kind> : NormalizedSchema<kind>
-
-export type kindOfSchema<schema extends DiscriminableSchema> =
-	schema extends DiscriminableSchema<infer kind> ? kind : never
-
-export const kindOfSchema = (schema: unknown): NodeKind => {
+export const typeKindOfSchema = (schema: unknown): TypeKind => {
 	switch (typeof schema) {
 		case "string":
 			return "domain"
@@ -455,7 +449,7 @@ export const kindOfSchema = (schema: unknown): NodeKind => {
 			// throw at end of function
 			if (schema === null) break
 
-			if ("kind" in schema && isNodeKind(schema.kind)) return schema.kind
+			if (isNode(schema) && schema.isType()) return schema.kind
 
 			if ("morphs" in schema) return "morph"
 
@@ -463,10 +457,15 @@ export const kindOfSchema = (schema: unknown): NodeKind => {
 
 			if ("unit" in schema) return "unit"
 
-			const schemaKeys = Object.keys(schema).filter(isNodeKind)
+			const schemaKeys = Object.keys(schema)
 
-			if (schemaKeys.length === 1) return schemaKeys[0]
-			if (schemaKeys.length !== 1) return "intersection"
+			if (
+				schemaKeys.length === 0 ||
+				schemaKeys.some((k) => k in discriminatingIntersectionKeys)
+			)
+				return "intersection"
+			if ("proto" in schema) return "proto"
+			if ("domain" in schema) return "domain"
 	}
 	return throwParseError(`${printable(schema)} is not a valid type schema`)
 }

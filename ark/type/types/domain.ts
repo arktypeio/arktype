@@ -4,6 +4,7 @@ import {
 	type NonEnumerableDomain
 } from "@arktype/util"
 import { jsData } from "../shared/compile.js"
+import type { TraverseAllows } from "../shared/context.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import { BaseBasis } from "./basis.js"
@@ -57,7 +58,7 @@ export class DomainNode<t = any, $ = any> extends BaseBasis<
 		}
 	})
 
-	traverseAllows = (data: unknown) => domainOf(data) === this.domain
+	traverseAllows: TraverseAllows = (data) => domainOf(data) === this.domain
 
 	readonly compiledCondition =
 		this.domain === "object"

@@ -13,11 +13,11 @@ import {
 export type minLength<n extends number> = boundToIs<"minLength", n>
 
 export interface MinLengthInner extends BaseRangeInner {
-	minLength: number
+	rule: number
 }
 
 export interface NormalizedMinLengthSchema extends BaseNormalizedRangeSchema {
-	minLength: number
+	rule: number
 }
 
 export type MinLengthSchema = NormalizedMinLengthSchema | number
@@ -34,14 +34,14 @@ export type MinLengthDeclaration = declareNode<{
 export class MinLengthNode extends BaseRange<MinLengthDeclaration> {
 	static implementation: nodeImplementationOf<MinLengthDeclaration> =
 		this.implement({
-			collapsibleKey: "minLength",
+			collapsibleKey: "rule",
 			hasAssociatedError: true,
 			keys: {
-				minLength: {},
+				rule: {},
 				exclusive: parseExclusiveKey
 			},
 			normalize: (schema) =>
-				typeof schema === "number" ? { minLength: schema } : schema,
+				typeof schema === "number" ? { rule: schema } : schema,
 			defaults: {
 				description(node) {
 					return node.exclusive

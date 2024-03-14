@@ -4,7 +4,7 @@ import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { BasePrimitiveConstraint } from "../constraint.js"
 
 export interface RegexInner extends BaseMeta {
-	readonly regex: string
+	readonly rule: string
 	readonly flags?: string
 }
 
@@ -26,18 +26,18 @@ export type RegexDeclaration = declareNode<{
 
 export class RegexNode extends BasePrimitiveConstraint<RegexDeclaration> {
 	static implementation = this.implement({
-		collapsibleKey: "regex",
+		collapsibleKey: "rule",
 		keys: {
-			regex: {},
+			rule: {},
 			flags: {}
 		},
 		normalize: (schema) =>
 			typeof schema === "string"
-				? { regex: schema }
+				? { rule: schema }
 				: schema instanceof RegExp
 				? schema.flags
-					? { regex: schema.source, flags: schema.flags }
-					: { regex: schema.source }
+					? { rule: schema.source, flags: schema.flags }
+					: { rule: schema.source }
 				: schema,
 		hasAssociatedError: true,
 		intersectionIsOpen: true,
@@ -47,12 +47,12 @@ export class RegexNode extends BasePrimitiveConstraint<RegexDeclaration> {
 		},
 		defaults: {
 			description(node) {
-				return `matched by ${node.regex}`
+				return `matched by ${node.rule}`
 			}
 		}
 	})
 
-	readonly instance = new RegExp(this.regex, this.flags)
+	readonly instance = new RegExp(this.rule, this.flags)
 	readonly expression = `${this.instance}`
 	traverseAllows = this.instance.test.bind(this.instance)
 

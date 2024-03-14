@@ -5,3 +5,5 @@ export const root: Scope<{
 	locals: {}
 	ambient: {}
 }> = new Scope({})
+
+root.node([])

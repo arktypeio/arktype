@@ -16,14 +16,14 @@ import {
 export type before<date extends string> = boundToIs<"before", date>
 
 export interface BeforeInner extends BaseRangeInner {
-	before: Date
+	rule: Date
 }
 
 export interface NormalizedBeforeSchema extends BaseNormalizedRangeSchema {
-	before: LimitSchemaValue
+	rule: LimitSchemaValue
 }
 
-export type BeforeSchema = NormalizedBeforeSchema | number
+export type BeforeSchema = NormalizedBeforeSchema | LimitSchemaValue
 
 export type BeforeDeclaration = declareNode<{
 	kind: "before"
@@ -37,17 +37,17 @@ export type BeforeDeclaration = declareNode<{
 export class BeforeNode extends BaseRange<BeforeDeclaration> {
 	static implementation: nodeImplementationOf<BeforeDeclaration> =
 		this.implement({
-			collapsibleKey: "before",
+			collapsibleKey: "rule",
 			hasAssociatedError: true,
 			keys: {
-				before: parseDateLimit,
+				rule: parseDateLimit,
 				exclusive: parseExclusiveKey
 			},
 			normalize: (schema) =>
 				typeof schema === "number" ||
 				typeof schema === "string" ||
 				schema instanceof Date
-					? { before: schema }
+					? { rule: schema }
 					: schema,
 			defaults: {
 				description(node) {

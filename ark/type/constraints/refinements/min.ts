@@ -10,11 +10,11 @@ import {
 } from "./range.js"
 
 export interface MinInner extends BaseRangeInner {
-	min: number
+	rule: number
 }
 
 export interface NormalizedMinSchema extends BaseNormalizedRangeSchema {
-	min: number
+	rule: number
 }
 
 export type MinSchema = NormalizedMinSchema | number
@@ -32,20 +32,20 @@ export type min<n extends number> = boundToIs<"min", n>
 
 export class MinNode extends BaseRange<MinDeclaration> {
 	static implementation: nodeImplementationOf<MinDeclaration> = this.implement({
-		collapsibleKey: "min",
+		collapsibleKey: "rule",
 		hasAssociatedError: true,
 		keys: {
-			min: {},
+			rule: {},
 			exclusive: parseExclusiveKey
 		},
 		normalize: (schema) =>
-			typeof schema === "number" ? { min: schema } : schema,
+			typeof schema === "number" ? { rule: schema } : schema,
 		intersections: {
 			min: (l, r) => (l.isStricterThan(r) ? l : r)
 		},
 		defaults: {
 			description(node) {
-				return `${node.exclusive ? "more than" : "at least"} ${node.min}`
+				return `${node.exclusive ? "more than" : "at least"} ${node.rule}`
 			}
 		}
 	})
@@ -53,6 +53,6 @@ export class MinNode extends BaseRange<MinDeclaration> {
 	readonly impliedBasis = tsPrimitiveKeywords.number
 
 	traverseAllows = this.exclusive
-		? (data: number) => data > this.min
-		: (data: number) => data >= this.min
+		? (data: number) => data > this.rule
+		: (data: number) => data >= this.rule
 }

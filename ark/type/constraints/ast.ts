@@ -82,9 +82,7 @@ export type constrain<In, constraint> = In extends of<infer base> &
 
 export type normalizePrimitiveConstraintSchema<
 	schema extends Schema<PrimitiveConstraintKind>
-> = keyof schema & PrimitiveConstraintKind extends never
-	? schema
-	: schema[keyof schema & PrimitiveConstraintKind]
+> = "rule" extends keyof schema ? schema["rule"] : schema
 
 export type applySchema<
 	t,

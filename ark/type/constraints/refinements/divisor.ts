@@ -9,7 +9,7 @@ import {
 } from "../constraint.js"
 
 export interface DivisorInner extends BaseMeta {
-	readonly divisor: number
+	readonly rule: number
 }
 
 export type divisor<n extends number> = { "%": n }
@@ -27,38 +27,35 @@ export type DivisorDeclaration = declareNode<{
 
 export class DivisorNode extends BasePrimitiveConstraint<DivisorDeclaration> {
 	static implementation = this.implement({
-		collapsibleKey: "divisor",
+		collapsibleKey: "rule",
 		keys: {
-			divisor: {}
+			rule: {}
 		},
 		normalize: (schema) =>
-			typeof schema === "number" ? { divisor: schema } : schema,
+			typeof schema === "number" ? { rule: schema } : schema,
 		intersections: {
 			divisor: (l, r, $) =>
 				$.parseSchema("divisor", {
-					divisor: Math.abs(
-						(l.divisor * r.divisor) /
-							greatestCommonDivisor(l.divisor, r.divisor)
+					rule: Math.abs(
+						(l.rule * r.rule) / greatestCommonDivisor(l.rule, r.rule)
 					)
 				})
 		},
 		hasAssociatedError: true,
 		defaults: {
 			description(node) {
-				return node.divisor === 1
-					? "an integer"
-					: `a multiple of ${node.divisor}`
+				return node.rule === 1 ? "an integer" : `a multiple of ${node.rule}`
 			}
 		}
 	})
 
-	traverseAllows: TraverseAllows<number> = (data) => data % this.divisor === 0
+	traverseAllows: TraverseAllows<number> = (data) => data % this.rule === 0
 
-	readonly compiledCondition = `${jsData} % ${this.divisor} === 0`
-	readonly compiledNegation = `${jsData} % ${this.divisor} !== 0`
+	readonly compiledCondition = `${jsData} % ${this.rule} === 0`
+	readonly compiledNegation = `${jsData} % ${this.rule} !== 0`
 	readonly impliedBasis = tsPrimitiveKeywords.number
 	readonly errorContext = this.createErrorContext(this.inner)
-	readonly expression = `% ${this.divisor}`
+	readonly expression = `% ${this.rule}`
 }
 
 export const writeIndivisibleMessage = <node extends Type>(

@@ -183,10 +183,7 @@ export type DateRangeKind = "before" | "after"
 export const dateLimitToString = (limit: LimitSchemaValue): string =>
 	typeof limit === "string" ? limit : new Date(limit).toLocaleString()
 
-export type boundToIs<
-	kind extends BoundKind,
-	schema extends Schema<BoundKind>
-> = {
+export type boundToIs<kind extends BoundKind, schema extends Schema<kind>> = {
 	[_ in schemaToComparator<kind, schema>]: limitToIs<
 		normalizePrimitiveConstraintSchema<schema>
 	>

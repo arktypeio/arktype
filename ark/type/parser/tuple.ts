@@ -15,7 +15,7 @@ import type { Node } from "../base.js"
 import { keywords } from "../builtins/ark.js"
 import type { Predicate, inferNarrow } from "../constraints/predicate.js"
 import type { MutableInner, Schema } from "../kinds.js"
-import type { inferSchema, validateSchema } from "../schema.js"
+import type { instantiateSchema, validateSchema } from "../schema.js"
 import type { ParseContext } from "../scope.js"
 import type { BaseMeta } from "../shared/declare.js"
 import type { inferIntersection } from "../shared/intersections.js"
@@ -36,7 +36,7 @@ import { writeUnsatisfiableExpressionError } from "./semantic/validate.js"
 import { writeMissingRightOperandMessage } from "./string/shift/operand/unenclosed.js"
 import type { BaseCompletions } from "./string/string.js"
 
-export const parseTuple = (def: List, ctx: ParseContext) =>
+export const parseTuple = (def: List, ctx: ParseContext): Type =>
 	maybeParseTupleExpression(def, ctx) ?? parseTupleLiteral(def, ctx)
 
 export const parseTupleLiteral = (def: List, ctx: ParseContext): Type => {
@@ -80,11 +80,14 @@ export const parseTupleLiteral = (def: List, ctx: ParseContext): Type => {
 			)
 		}
 	}
-	return ctx.$.parseSchemaBranches(
-		...sequences.map((sequence) => ({
-			proto: Array,
-			sequence
-		}))
+	return ctx.$.node(
+		sequences.map(
+			(sequence) =>
+				({
+					proto: Array,
+					sequence
+				}) as const
+		)
 	)
 }
 
@@ -97,7 +100,7 @@ const appendElement = (
 ): MutableInner<"sequence"> => {
 	switch (kind) {
 		case "required":
-			if (base.optional)
+			if (base.optionals)
 				// e.g. [string?, number]
 				return throwParseError(requiredPostOptionalMessage)
 			if (base.variadic) {
@@ -113,7 +116,7 @@ const appendElement = (
 				// e.g. [...string[], number?]
 				return throwParseError(optionalPostVariadicMessage)
 			// e.g. [string, number?]
-			base.optional = append(base.optional, element)
+			base.optionals = append(base.optionals, element)
 			return base
 		case "variadic":
 			// e.g. [...string[], number, ...string[]]
@@ -143,7 +146,7 @@ const appendSpreadBranch = (
 		return appendElement(base, "variadic", keywords.unknown)
 	}
 	spread.prefix.forEach((node) => appendElement(base, "required", node))
-	spread.optional.forEach((node) => appendElement(base, "optional", node))
+	spread.optionals.forEach((node) => appendElement(base, "optional", node))
 	spread.variadic && appendElement(base, "variadic", spread.variadic)
 	spread.postfix.forEach((node) => appendElement(base, "required", node))
 	return base
@@ -385,7 +388,7 @@ export type inferTupleExpression<
 	: def[0] extends "keyof"
 	? inferKeyOfExpression<def[1], $, args>
 	: def[0] extends "schema"
-	? inferSchema<def[1]>
+	? instantiateSchema<def[1], $>["infer"]
 	: never
 
 export type validatePrefixExpression<
@@ -401,7 +404,7 @@ export type validatePrefixExpression<
 	: def[0] extends "instanceof"
 	? readonly [def[0], ...Constructor[]]
 	: def[0] extends "schema"
-	? [def[0], validateSchema<def[1]>]
+	? [def[0], validateSchema<def[1], $>]
 	: never
 
 export type validatePostfixExpression<
@@ -506,7 +509,7 @@ export const writeMalformedFunctionalExpressionMessage = (
 ) =>
 	`${
 		operator === ":" ? "Narrow" : "Morph"
-	} expression requires a function following '${operator}' (was ${typeof value})`
+	} expression requires a function following '${operator}' (was ${typeof value})` as const
 
 export type parseMorph<inDef, morph, $, args> = morph extends Morph
 	? (
@@ -569,7 +572,7 @@ const prefixParsers: {
 			: ctx.$.parseSchema("union", { branches })
 	},
 	"===": (def, ctx) => ctx.$.parseUnits(...def.slice(1)),
-	schema: (def, ctx) => ctx.$.parseTypeSchema(def)
+	schema: (def, ctx) => ctx.$.node(def)
 }
 
 const isIndexZeroExpression = (def: List): def is IndexZeroExpression =>
@@ -579,4 +582,5 @@ export const writeInvalidConstructorMessage = <
 	actual extends Domain | BuiltinObjectKind
 >(
 	actual: actual
-) => `Expected a constructor following 'instanceof' operator (was ${actual})`
+) =>
+	`Expected a constructor following 'instanceof' operator (was ${actual})` as const

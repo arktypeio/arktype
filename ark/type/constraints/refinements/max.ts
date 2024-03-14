@@ -13,11 +13,11 @@ import {
 export type max<n extends number> = boundToIs<"max", n>
 
 export interface MaxInner extends BaseRangeInner {
-	max: number
+	rule: number
 }
 
 export interface NormalizedMaxSchema extends BaseNormalizedRangeSchema {
-	max: number
+	rule: number
 }
 
 export type MaxSchema = NormalizedMaxSchema | number
@@ -33,17 +33,17 @@ export type MaxDeclaration = declareNode<{
 
 export class MaxNode extends BaseRange<MaxDeclaration> {
 	static implementation: nodeImplementationOf<MaxDeclaration> = this.implement({
-		collapsibleKey: "max",
+		collapsibleKey: "rule",
 		hasAssociatedError: true,
 		keys: {
-			max: {},
+			rule: {},
 			exclusive: parseExclusiveKey
 		},
 		normalize: (schema) =>
-			typeof schema === "number" ? { max: schema } : schema,
+			typeof schema === "number" ? { rule: schema } : schema,
 		defaults: {
 			description(node) {
-				return `${node.exclusive ? "less than" : "at most"} ${node.max}`
+				return `${node.exclusive ? "less than" : "at most"} ${node.rule}`
 			}
 		},
 		intersections: {
@@ -51,7 +51,7 @@ export class MaxNode extends BaseRange<MaxDeclaration> {
 			min: (max, min, $) =>
 				max.overlapsRange(min)
 					? max.overlapIsUnit(min)
-						? $.parseSchema("unit", { unit: max.max })
+						? $.parseSchema("unit", { unit: max.rule })
 						: null
 					: Disjoint.from("range", max, min)
 		}
@@ -60,6 +60,6 @@ export class MaxNode extends BaseRange<MaxDeclaration> {
 	readonly impliedBasis = tsPrimitiveKeywords.number
 
 	traverseAllows = this.exclusive
-		? (data: number) => data < this.max
-		: (data: number) => data <= this.max
+		? (data: number) => data < this.rule
+		: (data: number) => data <= this.rule
 }

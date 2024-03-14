@@ -6,7 +6,7 @@ import { BasePrimitiveConstraint } from "../constraint.js"
 import { lengthBoundable, type LengthBoundableData } from "./range.js"
 
 export interface LengthInner extends BaseMeta {
-	readonly length: number
+	readonly rule: number
 }
 
 export type length<n extends number> = { "==": n }
@@ -26,35 +26,35 @@ export type LengthDeclaration = declareNode<{
 
 export class LengthNode extends BasePrimitiveConstraint<LengthDeclaration> {
 	static implementation = this.implement({
-		collapsibleKey: "length",
+		collapsibleKey: "rule",
 		keys: {
-			length: {}
+			rule: {}
 		},
 		normalize: (schema) =>
-			typeof schema === "number" ? { length: schema } : schema,
+			typeof schema === "number" ? { rule: schema } : schema,
 		intersections: {
 			length: (l, r) =>
 				new Disjoint({
 					"[length]": {
 						unit: {
-							l: l.$.parseSchema("unit", { unit: l.length }),
-							r: r.$.parseSchema("unit", { unit: r.length })
+							l: l.$.parseSchema("unit", { unit: l.rule }),
+							r: r.$.parseSchema("unit", { unit: r.rule })
 						}
 					}
 				}),
 			minLength: (length, minLength) =>
 				(
 					minLength.exclusive
-						? length.length > minLength.length
-						: length.length >= minLength.length
+						? length.rule > minLength.length
+						: length.rule >= minLength.length
 				)
 					? length
 					: Disjoint.from("range", length, minLength),
 			maxLength: (length, maxLength) =>
 				(
 					maxLength.exclusive
-						? length.length < maxLength.length
-						: length.length <= maxLength.length
+						? length.rule < maxLength.length
+						: length.rule <= maxLength.length
 				)
 					? length
 					: Disjoint.from("range", length, maxLength)
@@ -62,17 +62,17 @@ export class LengthNode extends BasePrimitiveConstraint<LengthDeclaration> {
 		hasAssociatedError: true,
 		defaults: {
 			description(node) {
-				return `exactly length ${node.length}`
+				return `exactly length ${node.rule}`
 			}
 		}
 	})
 
 	traverseAllows: TraverseAllows<LengthBoundableData> = (data) =>
-		data.length === this.length
+		data.length === this.rule
 
-	readonly compiledCondition = `${jsData}.length === ${this.length}`
-	readonly compiledNegation = `${jsData}.length !== ${this.length}`
+	readonly compiledCondition = `${jsData}.length === ${this.rule}`
+	readonly compiledNegation = `${jsData}.length !== ${this.rule}`
 	readonly impliedBasis = lengthBoundable
 	readonly errorContext = this.createErrorContext(this.inner)
-	readonly expression = `{ length: ${this.length}}`
+	readonly expression = `{ length: ${this.rule}}`
 }
