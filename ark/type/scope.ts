@@ -344,7 +344,6 @@ export class Scope<r extends Resolutions = any> {
 	readonly referencesByName: { [name: string]: UnknownNode } = {}
 	readonly references: readonly UnknownNode[]
 	protected resolved = false
-	readonly lengthBoundable: UnionNode<LengthBoundableData>
 
 	/** The set of names defined at the root-level of the scope mapped to their
 	 * corresponding definitions.**/
@@ -389,10 +388,6 @@ export class Scope<r extends Resolutions = any> {
 			},
 			{ reduceTo: this.parsePrereducedSchema("intersection", {}) }
 		)
-		this.lengthBoundable = this.parsePrereducedSchema("union", [
-			"string",
-			Array
-		])
 	}
 
 	type: TypeParser<$<r>> = createTypeParser(this as never) as never

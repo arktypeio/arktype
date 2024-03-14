@@ -74,7 +74,7 @@ export class PropNode extends BaseConstraint<PropDeclaration> {
 					return $.parseSchema("prop", {
 						key,
 						value,
-						optional: l.optional && r.optional
+						optional: l.optional === true && r.optional === true
 					})
 				}
 			}

@@ -2,6 +2,7 @@ import type { declareNode } from "../../shared/declare.js"
 import type { nodeImplementationOf } from "../../shared/implement.js"
 import {
 	BaseRange,
+	lengthBoundable,
 	parseExclusiveKey,
 	type BaseNormalizedRangeSchema,
 	type BaseRangeInner,
@@ -62,5 +63,5 @@ export class MinLengthNode extends BaseRange<MinLengthDeclaration> {
 		? (data: LengthBoundableData) => data.length > this.limit
 		: (data: LengthBoundableData) => data.length >= this.limit
 
-	readonly impliedBasis = this.$.lengthBoundable
+	readonly impliedBasis = lengthBoundable
 }

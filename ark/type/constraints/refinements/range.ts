@@ -6,6 +6,7 @@ import {
 	type valueOf
 } from "@arktype/util"
 import type { Node } from "../../base.js"
+import { root } from "../../builtins/root.js"
 import type { Schema } from "../../kinds.js"
 import { jsData } from "../../shared/compile.js"
 import type { BaseMeta, BaseNodeDeclaration } from "../../shared/declare.js"
@@ -172,6 +173,10 @@ export const compileComparator = (
 export type BoundOperandKind = "value" | "length" | "date"
 
 export type LengthBoundableData = string | List
+
+export const lengthBoundable = root.parsePrereducedSchema("union", {
+	branches: ["string", Array]
+})
 
 export type DateRangeKind = "before" | "after"
 
