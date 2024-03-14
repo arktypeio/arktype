@@ -436,14 +436,6 @@ export class Scope<r extends Resolutions = any> {
 		return this.export()[name] as never
 	}
 
-	private createRootContext(input: ParseContextInput): ParseContext {
-		return {
-			path: [],
-			$: this,
-			...input
-		}
-	}
-
 	parse(def: unknown, ctx: ParseContext): Type {
 		if (typeof def === "string") {
 			if (ctx.args !== undefined) {
@@ -462,14 +454,13 @@ export class Scope<r extends Resolutions = any> {
 	}
 
 	parseTypeRoot(def: unknown, input?: ParseContextInput): Type {
-		return this.parse(
-			def,
-			this.createRootContext({
-				args: { this: keywords.unknown },
-				baseName: "type",
-				...input
-			})
-		)
+		return this.parse(def, {
+			args: { this: keywords.unknown },
+			baseName: "type",
+			path: [],
+			$: this,
+			...input
+		})
 	}
 
 	parseString(def: string, ctx: ParseContext): Type {
@@ -496,10 +487,7 @@ export class Scope<r extends Resolutions = any> {
 			? validateUninstantiatedGeneric(def)
 			: hasArkKind(def, "module")
 			? throwParseError(writeMissingSubmoduleAccessMessage(name))
-			: this.parseTypeRoot(
-					def,
-					this.createRootContext({ baseName: name, args: {} })
-			  )
+			: this.parseTypeRoot(def, { baseName: name, args: {} })
 		this.resolutions[name] = resolution
 		return resolution
 	}
@@ -573,10 +561,10 @@ export class Scope<r extends Resolutions = any> {
 				if (hasArkKind(def, "module")) {
 					this.exportCache[name] = def
 				} else {
-					this.exportCache[name] = this.parseTypeRoot(
-						def,
-						this.createRootContext({ baseName: name, args: {} })
-					)
+					this.exportCache[name] = this.parseTypeRoot(def, {
+						baseName: name,
+						args: {}
+					})
 				}
 			}
 			this.exportedResolutions = resolutionsOfModule(this.exportCache)

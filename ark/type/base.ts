@@ -419,13 +419,13 @@ export type DeepNodeTransformation = <kind extends NodeKind>(
 	inner: Inner<kind>
 ) => Inner<kind>
 
-interface NodesByKind<t = any> extends BoundNodesByKind {
-	union: UnionNode<t>
-	morph: MorphNode<t>
-	intersection: IntersectionNode<t>
-	unit: UnitNode<t>
-	proto: ProtoNode<t>
-	domain: DomainNode<t>
+interface NodesByKind<t = any, $ = any> extends BoundNodesByKind {
+	union: UnionNode<t, $>
+	morph: MorphNode<t, $>
+	intersection: IntersectionNode<t, $>
+	unit: UnitNode<t, $>
+	proto: ProtoNode<t, $>
+	domain: DomainNode<t, $>
 	divisor: DivisorNode
 	regex: RegexNode
 	predicate: PredicateNode
@@ -434,9 +434,10 @@ interface NodesByKind<t = any> extends BoundNodesByKind {
 	sequence: SequenceNode
 }
 
-export type Node<kind extends NodeKind, t = any> = NodesByKind<t>[kind]
-
-export type TypeNode<t = any, kind extends TypeKind = TypeKind> = Node<kind, t>
+export type Node<kind extends NodeKind, t = any, $ = any> = NodesByKind<
+	t,
+	$
+>[kind]
 
 export type TypeSchema<kind extends TypeKind = TypeKind> = Schema<kind>
 

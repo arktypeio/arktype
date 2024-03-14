@@ -33,8 +33,7 @@ export const defineRightwardIntersections = <kind extends TypeKind>(
 ): { [k in typeKindRightOf<kind>]: TypeIntersection<kind, k> } =>
 	morph(typeKindsRightOf(kind), (i, kind) => [kind, implementation]) as never
 
-export interface Type<t = any, $ = any>
-	extends BaseType<t, BaseNodeDeclaration, $> {}
+export type Type<t = any, $ = any> = Node<TypeKind, t, $>
 
 export abstract class BaseType<
 	t,
@@ -147,7 +146,9 @@ export abstract class BaseType<
 		) as never
 	}
 
-	extends<other extends Type>(other: other): this is Type<other["infer"], $> {
+	// TODO:
+	// this is Type<other["infer"], $>
+	extends<other extends Type>(other: other): boolean {
 		const intersection = this.intersect(other)
 		return (
 			!(intersection instanceof Disjoint) && this.equals(intersection as never)
