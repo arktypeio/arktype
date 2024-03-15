@@ -10,7 +10,7 @@ describe("morphs", () => {
 				regex: wellFormedNumberMatcher,
 				description: "a well-formed numeric string"
 			},
-			morph: (s: string) => parseFloat(s)
+			morphs: (s: string) => parseFloat(s)
 		})
 		attest(parseNumber.in.json).snap({
 			domain: "string",

@@ -14,6 +14,7 @@ import {
 	type Json,
 	type JsonData,
 	type PartialRecord,
+	type conform,
 	type evaluate,
 	type listable
 } from "@arktype/util"
@@ -232,7 +233,7 @@ export abstract class BaseNode<
 				ioInner[k] = v
 			}
 		}
-		return this.$.parse(this.kind, ioInner) as never
+		return this.$.node(this.kind, ioInner)
 	}
 
 	protected createErrorContext<from>(
@@ -349,10 +350,10 @@ export abstract class BaseNode<
 		return result
 	}
 
-	firstReference<narrowed extends UnknownNode>(
-		filter: Guardable<UnknownNode, narrowed>
+	firstReference<narrowed>(
+		filter: Guardable<UnknownNode, conform<narrowed, UnknownNode>>
 	): narrowed | undefined {
-		return this.references.find(filter as never)
+		return this.references.find(filter as never) as never
 	}
 
 	firstReferenceOrThrow<narrowed extends UnknownNode>(

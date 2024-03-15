@@ -264,27 +264,27 @@ describe("parsed bounds", () => {
 
 	describe("chained expressions", () => {
 		it("min", () => {
-			const t = type("number").min(5)
+			const t = type("number").atLeast(5)
 			const expected = type("number>=5")
 			attest<typeof expected>(t)
 			attest(t.json).equals(expected.json)
 		})
 		it("max", () => {
-			const t = type("number").max(10)
+			const t = type("number").atMost(10)
 			const expected = type("number<=10")
 			attest<typeof expected>(t)
 			attest(t.json).equals(expected.json)
 		})
 
 		it("minLength", () => {
-			const t = type("string").minLength(5)
+			const t = type("string").atLeastLength(5)
 			const expected = type("string>=5")
 			attest<typeof expected>(t)
 			attest(t.json).equals(expected.json)
 		})
 
 		it("maxLength", () => {
-			const t = type("string").maxLength(10)
+			const t = type("string").atMostLength(10)
 			const expected = type("string<=10")
 			attest<typeof expected>(t)
 			attest(t.json).equals(expected.json)
@@ -307,7 +307,7 @@ describe("parsed bounds", () => {
 		// })
 
 		it("exclusive", () => {
-			const t = type("number").min({ rule: 1337, exclusive: true })
+			const t = type("number").atLeast({ rule: 1337, exclusive: true })
 			const expected = type("number>1337")
 			attest<typeof expected>(t)
 			attest(t.json).equals(expected.json)

@@ -3,6 +3,7 @@ import { entriesOf, morph } from "@arktype/util"
 import { node } from "../../builtins/ark.js"
 import { boundKindPairsByLower } from "../../constraints/refinements/range.js"
 import { Disjoint } from "../../shared/disjoint.js"
+import type { IntersectionSchema } from "../../types/intersection.js"
 
 const numericCases = {
 	lessThanMin: 4,
@@ -94,7 +95,7 @@ describe("bounds", () => {
 					...basis,
 					[min]: { rule: 5, exclusive: true },
 					[max]: { rule: 10 }
-				})
+				} as IntersectionSchema)
 
 				attest(t.allows(cases.lessThanMin)).equals(false)
 				attest(t.allows(cases.equalToExclusiveMin)).equals(false)
@@ -108,13 +109,13 @@ describe("bounds", () => {
 					[min]: {
 						rule: 6
 					}
-				})
+				} as IntersectionSchema)
 				const r = node({
 					...basis,
 					[max]: {
 						rule: 6
 					}
-				})
+				} as IntersectionSchema)
 				const expected =
 					min === "min"
 						? node({
@@ -124,7 +125,7 @@ describe("bounds", () => {
 						? node({
 								...basis,
 								length: 6
-						  })
+						  } as IntersectionSchema)
 						: node({
 								unit: new Date(6)
 						  })
@@ -138,41 +139,41 @@ describe("bounds", () => {
 					[min]: {
 						rule: 3
 					}
-				})
+				} as IntersectionSchema)
 				const r = node({
 					...basis,
 					[max]: {
 						rule: 3,
 						exclusive: true
 					}
-				})
+				} as IntersectionSchema)
 				attest(l.intersect(r)).instanceOf(Disjoint)
 				attest(r.intersect(l)).instanceOf(Disjoint)
 			})
 			it("non-overlapping limits", () => {
-				const l = node({ ...basis, [min]: 3 })
+				const l = node({ ...basis, [min]: 3 } as IntersectionSchema)
 				const r = node({
 					...basis,
 					[max]: 1
-				})
+				} as IntersectionSchema)
 				attest(l.intersect(r)).instanceOf(Disjoint)
 				attest(r.intersect(l)).instanceOf(Disjoint)
 			})
 			it("greater min is stricter", () => {
-				const lesser = node({ ...basis, [min]: 3 })
+				const lesser = node({ ...basis, [min]: 3 } as IntersectionSchema)
 				const greater = node({
 					...basis,
 					[min]: 4
-				})
+				} as IntersectionSchema)
 				attest(lesser.and(greater).json).equals(greater.json)
 				attest(greater.and(lesser).json).equals(greater.json)
 			})
 			it("lesser max is stricter", () => {
-				const lesser = node({ ...basis, [max]: 3 })
+				const lesser = node({ ...basis, [max]: 3 } as IntersectionSchema)
 				const greater = node({
 					...basis,
 					[max]: { rule: 4, exclusive: true }
-				})
+				} as IntersectionSchema)
 				attest(lesser.and(greater).json).equals(lesser.json)
 				attest(greater.and(lesser).json).equals(lesser.json)
 			})
@@ -180,11 +181,11 @@ describe("bounds", () => {
 				const exclusive = node({
 					...basis,
 					[max]: { rule: 3, exclusive: true }
-				})
+				} as IntersectionSchema)
 				const inclusive = node({
 					...basis,
 					[max]: 3
-				})
+				} as IntersectionSchema)
 				attest(exclusive.and(inclusive).json).equals(exclusive.json)
 				attest(inclusive.and(exclusive).json).equals(exclusive.json)
 			})

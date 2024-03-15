@@ -12,7 +12,7 @@ describe("divisibility", () => {
 			attest(divisibleByTwo.json).snap({ domain: "number", divisor: 2 })
 		})
 		it("chained", () => {
-			const t = type("number").divisor(2)
+			const t = type("number").divisibleBy(2)
 			const expected = type("number%2")
 			attest<typeof expected>(t)
 			attest(t.json).equals(expected.json)

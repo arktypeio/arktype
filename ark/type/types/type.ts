@@ -1,5 +1,6 @@
 import { morph, type Domain } from "@arktype/util"
 import { BaseNode, type Node } from "../base.js"
+import type { applySchema, validateConstraintArg } from "../constraints/ast.js"
 import { throwInvalidOperandError } from "../constraints/constraint.js"
 import type { Predicate, inferNarrow } from "../constraints/predicate.js"
 import type { Schema, reducibleKindOf } from "../kinds.js"
@@ -17,7 +18,7 @@ import {
 } from "../shared/implement.js"
 import type { inferIntersection } from "../shared/intersections.js"
 import type { inferTypeRoot, validateTypeRoot } from "../type.js"
-import type { IntersectionNode } from "./intersection.js"
+import type { IntersectionNode, constraintKindOf } from "./intersection.js"
 import type {
 	Morph,
 	Out,
@@ -57,27 +58,6 @@ export abstract class BaseType<
 			return { out: data } as any
 		}
 		return { errors: ctx.currentErrors }
-	}
-
-	constrain<kind extends ConstraintKind>(
-		kind: kind,
-		input: Schema<kind>
-	): Type<this["infer"]> {
-		const constraint = this.$.parseSchema(kind, input)
-		if (constraint.impliedBasis && !this.extends(constraint.impliedBasis)) {
-			return throwInvalidOperandError(
-				kind,
-				constraint.impliedBasis,
-				this as never
-			)
-		}
-
-		return this.and(
-			// TODO: not an intersection
-			this.$.parseSchema("intersection", {
-				[kind]: constraint
-			})
-		) as never
 	}
 
 	keyof(): Type<keyof this["in"]["infer"], $> {
@@ -208,47 +188,84 @@ export abstract class BaseType<
 		return result.errors ? result.errors.throw() : result.out
 	}
 
-	// divisor<const schema extends validateConstraintArg<"divisor", this["infer"]>>(
-	// 	schema: schema
-	// ): Type<applySchema<t, "divisor", schema>, $> {
-	// 	return this.constrain("divisor", schema as never) as never
-	// }
+	constrain<kind extends constraintKindOf<this["in"]["infer"]>>(
+		kind: kind,
+		schema: Schema<kind>
+	): Type<t, $> {
+		return this.rawConstrain(kind, schema) as never
+	}
 
-	// min<const schema extends validateConstraintArg<"min", this["infer"]>>(
-	// 	schema: schema
-	// ): Type<applySchema<t, "min", schema>, $> {
-	// 	return this.constrain("min", schema as never) as never
-	// }
+	protected rawConstrain(kind: ConstraintKind, schema: unknown): Type {
+		const constraint = this.$.parseSchema(kind, schema as never)
+		if (constraint.impliedBasis && !this.extends(constraint.impliedBasis)) {
+			return throwInvalidOperandError(
+				kind,
+				constraint.impliedBasis,
+				this as never
+			)
+		}
 
-	// max<const schema extends validateConstraintArg<"max", this["infer"]>>(
-	// 	schema: schema
-	// ): Type<applySchema<t, "max", schema>, $> {
-	// 	return this.constrain("max", schema as never) as never
-	// }
+		return this.and(
+			// TODO: not an intersection
+			this.$.parseSchema("intersection", {
+				[kind]: constraint
+			})
+		) as never
+	}
 
-	// minLength<
-	// 	const schema extends validateConstraintArg<"minLength", this["infer"]>
-	// >(schema: schema): Type<applySchema<t, "minLength", schema>, $> {
-	// 	return this.constrain("minLength", schema as never) as never
-	// }
+	divisibleBy<
+		const schema extends validateConstraintArg<"divisor", this["infer"]>
+	>(schema: schema): Type<applySchema<t, "divisor", schema>, $> {
+		return this.rawConstrain("divisor", schema as never) as never
+	}
 
-	// maxLength<
-	// 	const schema extends validateConstraintArg<"maxLength", this["infer"]>
-	// >(schema: schema): Type<applySchema<t, "maxLength", schema>, $> {
-	// 	return this.constrain("maxLength", schema as never) as never
-	// }
+	atLeast<const schema extends validateConstraintArg<"min", this["infer"]>>(
+		schema: schema
+	): Type<applySchema<t, "min", schema>, $> {
+		return this.rawConstrain("min", schema as never) as never
+	}
 
-	// before<const schema extends validateConstraintArg<"before", this["infer"]>>(
-	// 	schema: schema
-	// ): Type<applySchema<t, "before", schema>, $> {
-	// 	return this.constrain("before", schema as never) as never
-	// }
+	atMost<const schema extends validateConstraintArg<"max", this["infer"]>>(
+		schema: schema
+	): Type<applySchema<t, "max", schema>, $> {
+		return this.rawConstrain("max", schema as never) as never
+	}
 
-	// after<const schema extends validateConstraintArg<"after", this["infer"]>>(
-	// 	schema: schema
-	// ): Type<applySchema<t, "after", schema>, $> {
-	// 	return this.constrain("after", schema as never) as never
-	// }
+	moreThan<const schema extends validateConstraintArg<"min", this["infer"]>>(
+		schema: schema
+	): Type<applySchema<t, "min", schema>, $> {
+		return this.rawConstrain("min", schema as never) as never
+	}
+
+	lessThan<const schema extends validateConstraintArg<"max", this["infer"]>>(
+		schema: schema
+	): Type<applySchema<t, "max", schema>, $> {
+		return this.rawConstrain("max", schema as never) as never
+	}
+
+	atLeastLength<
+		const schema extends validateConstraintArg<"minLength", this["infer"]>
+	>(schema: schema): Type<applySchema<t, "minLength", schema>, $> {
+		return this.rawConstrain("minLength", schema as never) as never
+	}
+
+	atMostLength<
+		const schema extends validateConstraintArg<"maxLength", this["infer"]>
+	>(schema: schema): Type<applySchema<t, "maxLength", schema>, $> {
+		return this.rawConstrain("maxLength", schema as never) as never
+	}
+
+	earlierThan<
+		const schema extends validateConstraintArg<"before", this["infer"]>
+	>(schema: schema): Type<applySchema<t, "before", schema>, $> {
+		return this.rawConstrain("before", schema as never) as never
+	}
+
+	laterThan<const schema extends validateConstraintArg<"after", this["infer"]>>(
+		schema: schema
+	): Type<applySchema<t, "after", schema>, $> {
+		return this.rawConstrain("after", schema as never) as never
+	}
 }
 
 export type intersectType<l extends TypeKind, r extends NodeKind> = [

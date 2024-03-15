@@ -488,7 +488,7 @@ type ConditionalIntersectionKey =
 	| ConstraintKind
 	| keyof ConditionalTerminalIntersectionInner
 
-type constraintKindOf<t> = {
+export type constraintKindOf<t> = {
 	[k in ConstraintKind]: t extends Prerequisite<k> ? k : never
 }[ConstraintKind]
 

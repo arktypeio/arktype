@@ -1,7 +1,7 @@
 import { throwInternalError } from "./errors.js"
 import { NoopBase } from "./records.js"
 
-export const cached = <T>(thunk: () => T) => {
+export const cached = <T>(thunk: () => T): (() => T) => {
 	let isCached = false
 	let result: T | undefined
 	return () => {

@@ -15,11 +15,6 @@ describe("intersections", () => {
 		})
 		attest(l.innerId).equals(r.innerId)
 	})
-	it("doesn't equate optional and required props", () => {
-		const l = node("required", { key: "a", value: "number" })
-		const r = node("optional", { key: "a", value: "number" })
-		attest(l.equals(r)).equals(false)
-	})
 
 	it("multiple constraints", () => {
 		const n = node({

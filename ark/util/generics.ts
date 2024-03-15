@@ -106,4 +106,4 @@ export type narrow<t> = t extends Primitive
 	? narrowTuple<t>
 	: { [k in keyof t]: narrow<t[k]> }
 
-export const narrow = <t>(t: narrow<t>) => t
+export const narrow = <t>(t: narrow<t>): t => t as t
