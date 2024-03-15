@@ -15,7 +15,7 @@ import {
 	type requireKeys
 } from "@arktype/util"
 import { typeKindOfSchema, type Node, type UnknownNode } from "./base.js"
-import { keywords, type type } from "./builtins/ark.js"
+import type { type } from "./builtins/ark.js"
 import { globalConfig } from "./config.js"
 import { nodesByKind, type Schema, type reducibleKindOf } from "./kinds.js"
 import { createMatchParser, type MatchParser } from "./match.js"
@@ -444,7 +444,7 @@ export class Scope<r extends Resolutions = any> {
 
 	parseTypeRoot(def: unknown, input?: ParseContextInput): Type {
 		return this.parse(def, {
-			args: { this: keywords.unknown },
+			args: { this: {} as Type },
 			baseName: "type",
 			path: [],
 			$: this,

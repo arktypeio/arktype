@@ -69,8 +69,7 @@ module.exports = defineConfig({
 		/**
 		 * Imports
 		 */
-		// TODO: reenable
-		// "import/no-cycle": "warn",
+		"import/no-cycle": "warn",
 		"@typescript-eslint/consistent-type-imports": [
 			"warn",
 			{ fixStyle: "inline-type-imports" }
