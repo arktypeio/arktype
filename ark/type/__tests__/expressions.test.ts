@@ -74,7 +74,7 @@ describe("root expression", () => {
 	it("=== branches", () => {
 		const t = type("===", "foo", "bar", "baz")
 		attest<"foo" | "bar" | "baz">(t.infer)
-		attest(t.json).snap()
+		attest(t.json).snap({ proto: "$ark.anonymousFunction32" })
 	})
 	it("instanceof single", () => {
 		const t = type("instanceof", RegExp)

@@ -34,7 +34,7 @@
 	// IF YOU UPDATE THE MOCHA CONFIG HERE, PLEASE ALSO UPDATE package.json/mocha AND ark/repo/mocha.jsonc
 	"mochaExplorer.nodeArgv": ["--import=tsx"],
 	// ignore attest since it requires type information
-	"mochaExplorer.ignore": ["ark/attest/**/*", "ark/type/**/*"],
+	"mochaExplorer.ignore": ["ark/attest/**/*"],
 	"mochaExplorer.require": "ark/repo/mocha.fixtures.ts",
 	"mochaExplorer.timeout": 0,
 	"mochaExplorer.env": {

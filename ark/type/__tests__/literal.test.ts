@@ -24,7 +24,7 @@ describe("literal", () => {
 			attest<
 				true | "foo" | 5 | 1n | null | undefined | { ark: boolean } | typeof s
 			>(t.infer)
-			attest(t.json).snap()
+			attest(t.json).snap({ proto: "$ark.anonymousFunction64" })
 		})
 	})
 	describe("root expression", () => {
@@ -40,7 +40,7 @@ describe("literal", () => {
 			attest<
 				true | "foo" | 5 | 1n | null | undefined | { ark: boolean } | typeof s
 			>(t.infer)
-			attest(t.json).snap()
+			attest(t.json).snap({ proto: "$ark.anonymousFunction66" })
 		})
 	})
 })
