@@ -38,11 +38,7 @@ import {
 	writeUnresolvableMessage
 } from "./parser/string/shift/operand/unenclosed.js"
 import { fullStringParse } from "./parser/string/string.js"
-import {
-	createSchemaParser,
-	type NodeParser,
-	type SchemaParser
-} from "./schema.js"
+import type { NodeParser, SchemaParser } from "./schema.js"
 import { NodeCompiler } from "./shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "./shared/context.js"
 import type {
@@ -388,7 +384,10 @@ export class Scope<r extends Resolutions = any> {
 
 	type: TypeParser<$<r>> = createTypeParser(this as never) as never
 
-	schema: SchemaParser<$<r>> = createSchemaParser(this as never) as never
+	schema: SchemaParser<$<r>> = this.rawSchema as never
+	protected rawSchema(schema: unknown): ["schema", unknown] {
+		return ["schema", schema] as const
+	}
 
 	match: MatchParser<$<r>> = createMatchParser(this as never) as never
 

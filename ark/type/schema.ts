@@ -41,8 +41,6 @@ export type SchemaParser<$> = <schema>(
 	schema: validateSchema<schema, $>
 ) => ["schema", schema]
 
-export declare const createSchemaParser: <$>($: Scope) => SchemaParser<$>
-
 export type NodeParser<$> = {
 	<const schema extends TypeSchema>(
 		schema: schema,
