@@ -1,7 +1,7 @@
 import { attest } from "@arktype/attest"
 import { entriesOf, morph } from "@arktype/util"
-import { node } from "../../builtins/ark.js"
 import { boundKindPairsByLower } from "../../constraints/refinements/range.js"
+import { node } from "../../keywords/ark.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import type { IntersectionSchema } from "../../types/intersection.js"
 
@@ -25,15 +25,15 @@ describe("bounds", () => {
 			max: { rule: 10 }
 		})
 
-		attest(t.apply(numericCases.lessThanMin).errors?.summary).snap(
+		attest(t(numericCases.lessThanMin).errors?.summary).snap(
 			"Must be more than 5 (was 4)"
 		)
-		attest(t.apply(numericCases.equalToExclusiveMin).errors?.summary).snap(
+		attest(t(numericCases.equalToExclusiveMin).errors?.summary).snap(
 			"Must be more than 5 (was 5)"
 		)
-		attest(t.apply(numericCases.between).errors).equals(undefined)
-		attest(t.apply(numericCases.equalToInclusiveMax).errors).equals(undefined)
-		attest(t.apply(numericCases.greaterThanMax).errors?.summary).snap(
+		attest(t(numericCases.between).errors).equals(undefined)
+		attest(t(numericCases.equalToInclusiveMax).errors).equals(undefined)
+		attest(t(numericCases.greaterThanMax).errors?.summary).snap(
 			"Must be at most 10 (was 11)"
 		)
 	})
@@ -44,15 +44,15 @@ describe("bounds", () => {
 			maxLength: { rule: 10 }
 		})
 
-		attest(t.apply(lengthCases.lessThanMin).errors?.summary).snap(
+		attest(t(lengthCases.lessThanMin).errors?.summary).snap(
 			"Must be more than length 5 (was 4)"
 		)
-		attest(t.apply(lengthCases.equalToExclusiveMin).errors?.summary).snap(
+		attest(t(lengthCases.equalToExclusiveMin).errors?.summary).snap(
 			"Must be more than length 5 (was 5)"
 		)
-		attest(t.apply(lengthCases.between).errors).equals(undefined)
-		attest(t.apply(lengthCases.equalToInclusiveMax).errors).equals(undefined)
-		attest(t.apply(lengthCases.greaterThanMax).errors?.summary).snap(
+		attest(t(lengthCases.between).errors).equals(undefined)
+		attest(t(lengthCases.equalToInclusiveMax).errors).equals(undefined)
+		attest(t(lengthCases.greaterThanMax).errors?.summary).snap(
 			"Must be at most length 10 (was 11)"
 		)
 	})
@@ -63,15 +63,15 @@ describe("bounds", () => {
 			before: { rule: 10 }
 		})
 
-		attest(t.apply(dateCases.lessThanMin).errors?.summary).snap(
+		attest(t(dateCases.lessThanMin).errors?.summary).snap(
 			"Must be after 12/31/1969, 7:00:00 PM (was 12/31/1969, 7:00:00 PM)"
 		)
-		attest(t.apply(dateCases.equalToExclusiveMin).errors?.summary).snap(
+		attest(t(dateCases.equalToExclusiveMin).errors?.summary).snap(
 			"Must be after 12/31/1969, 7:00:00 PM (was 12/31/1969, 7:00:00 PM)"
 		)
-		attest(t.apply(dateCases.between).errors).equals(undefined)
-		attest(t.apply(dateCases.equalToInclusiveMax).errors).equals(undefined)
-		attest(t.apply(dateCases.greaterThanMax).errors?.summary).snap(
+		attest(t(dateCases.between).errors).equals(undefined)
+		attest(t(dateCases.equalToInclusiveMax).errors).equals(undefined)
+		attest(t(dateCases.greaterThanMax).errors?.summary).snap(
 			"Must be 12/31/1969, 7:00:00 PM or earlier (was 12/31/1969, 7:00:00 PM)"
 		)
 	})

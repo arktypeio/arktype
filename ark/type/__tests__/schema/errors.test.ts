@@ -1,7 +1,7 @@
 import { attest } from "@arktype/attest"
 import { scope } from "arktype"
-import { node } from "../../builtins/ark.js"
 import { configure, defaultConfig } from "../../config.js"
+import { node } from "../../keywords/ark.js"
 
 describe("errors", () => {
 	it("shallow", () => {
@@ -9,8 +9,8 @@ describe("errors", () => {
 			domain: "number",
 			divisor: 3
 		})
-		attest(n.apply(6)).snap({ out: 6 })
-		attest(n.apply(7).errors?.summary).snap("Must be a multiple of 3 (was 7)")
+		attest(n(6)).snap({ out: 6 })
+		attest(n(7).errors?.summary).snap("Must be a multiple of 3 (was 7)")
 	})
 	it("at path", () => {
 		const o = node({
@@ -23,8 +23,8 @@ describe("errors", () => {
 				}
 			}
 		})
-		attest(o.apply({ foo: 6 }).out).snap({ foo: 6 })
-		attest(o.apply({ foo: 7 }).errors?.summary).snap(
+		attest(o({ foo: 6 }).out).snap({ foo: 6 })
+		attest(o({ foo: 7 }).errors?.summary).snap(
 			"foo must be a multiple of 3 (was 7)"
 		)
 	})
@@ -33,8 +33,8 @@ describe("errors", () => {
 			proto: Array,
 			sequence: "number"
 		})
-		attest(t.apply([5]).out).snap([5])
-		attest(t.apply([5, "five"]).errors?.summary).snap(
+		attest(t([5]).out).snap([5])
+		attest(t([5, "five"]).errors?.summary).snap(
 			"Value at [1] must be a number (was string)"
 		)
 	})
@@ -44,7 +44,7 @@ describe("errors", () => {
 			description: "my special bigint"
 		})
 		attest(superSpecialBigint.description).snap("my special bigint")
-		attest(superSpecialBigint.apply(5).errors?.summary).snap(
+		attest(superSpecialBigint(5).errors?.summary).snap(
 			"Must be my special bigint (was number)"
 		)
 	})
@@ -57,7 +57,7 @@ describe("errors", () => {
 		attest(evenNumber.description).snap("an even number")
 		// since the error is from the divisor constraint which didn't have a
 		// description, it is unchanged
-		attest(evenNumber.apply(5).errors?.summary).snap(
+		attest(evenNumber(5).errors?.summary).snap(
 			"Must be a multiple of 2 (was 5)"
 		)
 	})
@@ -74,7 +74,7 @@ describe("errors", () => {
 			}
 		).export()
 		const superSpecialString = types.superSpecialString
-		attest(superSpecialString.apply(5).errors?.summary).snap(
+		attest(superSpecialString(5).errors?.summary).snap(
 			"custom message custom problem custom expected string custom actual 5"
 		)
 	})
@@ -89,7 +89,7 @@ describe("errors", () => {
 		).export()
 		const superSpecialNumber = types.superSpecialNumber
 		attest(superSpecialNumber.description).snap("my special number")
-		attest(superSpecialNumber.apply("five").errors?.summary).snap(
+		attest(superSpecialNumber("five").errors?.summary).snap(
 			"Must be my special number (was string)"
 		)
 	})
@@ -100,14 +100,14 @@ describe("errors", () => {
 			}
 		})
 		const mySpecialSymbol = scope({}).node("symbol")
-		attest(mySpecialSymbol.apply("foo").errors?.summary).snap(
+		attest(mySpecialSymbol("foo").errors?.summary).snap(
 			"Must be my special symbol (was string)"
 		)
 		configure({
 			domain: defaultConfig.domain
 		})
 		const myBoringSymbol = scope({}).node("symbol")
-		attest(myBoringSymbol.apply("foo").errors?.summary).snap(
+		attest(myBoringSymbol("foo").errors?.summary).snap(
 			"Must be a symbol (was string)"
 		)
 	})

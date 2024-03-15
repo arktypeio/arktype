@@ -1,6 +1,6 @@
 import { attest } from "@arktype/attest"
 import { reference } from "@arktype/util"
-import { node } from "../../builtins/ark.js"
+import { node } from "../../keywords/ark.js"
 
 describe("unit", () => {
 	it("treats equivalent dates as equal", () => {

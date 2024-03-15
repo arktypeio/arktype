@@ -29,7 +29,7 @@ export class NodeCompiler extends CompiledFunction<
 
 	invoke(node: UnknownNode, opts?: InvokeOptions): string {
 		const invokedKind = opts?.kind ?? this.traversalKind
-		const method = `${node.name}${invokedKind}`
+		const method = `${node.reference}${invokedKind}`
 		const arg = opts?.arg ?? this.data
 		if (this.requiresContextFor(node)) {
 			return `this.${method}(${arg}, ${this.ctx})`

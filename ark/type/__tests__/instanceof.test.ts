@@ -1,6 +1,6 @@
 import { attest } from "@arktype/attest"
 import { type } from "arktype"
-import { node, type Ark } from "../builtins/ark.js"
+import { node, type Ark } from "../keywords/ark.js"
 import { writeInvalidConstructorMessage } from "../parser/tuple.js"
 import type { Type } from "../types/type.js"
 

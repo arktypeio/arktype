@@ -1,6 +1,6 @@
 import { attest } from "@arktype/attest"
 import { wellFormedNumberMatcher } from "@arktype/util"
-import { node } from "../../builtins/ark.js"
+import { node } from "../../keywords/ark.js"
 
 describe("morphs", () => {
 	it("in/out", () => {

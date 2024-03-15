@@ -17,11 +17,11 @@ import {
 	type requiredKeyOf
 } from "@arktype/util"
 import { isNode } from "../base.js"
-import type { type } from "../builtins/ark.js"
 import type { of } from "../constraints/ast.js"
 import type { regex } from "../constraints/refinements/regex.js"
+import type { type } from "../keywords/ark.js"
 import type { ParseContext } from "../scope.js"
-import { BaseType, type Type } from "../types/type.js"
+import { BaseType, isType, type Type } from "../types/type.js"
 import {
 	parseObjectLiteral,
 	type inferObjectLiteral,
@@ -40,10 +40,7 @@ export const parseObject = (def: object, ctx: ParseContext): Type => {
 	const objectKind = objectKindOf(def)
 	switch (objectKind) {
 		case undefined:
-			if (def instanceof BaseType) {
-				return def.root
-			}
-			if (isNode(def) && def.isType()) {
+			if (isType(def)) {
 				return def
 			}
 			return parseObjectLiteral(def as Dict, ctx)
@@ -56,8 +53,8 @@ export const parseObject = (def: object, ctx: ParseContext): Type => {
 			})
 		case "Function":
 			const resolvedDef = isThunk(def) ? def() : def
-			if (resolvedDef instanceof BaseType) {
-				return resolvedDef.root
+			if (isType(resolvedDef)) {
+				return resolvedDef
 			}
 			return throwParseError(writeBadDefinitionTypeMessage("Function"))
 		default:

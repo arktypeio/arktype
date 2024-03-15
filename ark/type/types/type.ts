@@ -4,10 +4,8 @@ import type { applySchema, validateConstraintArg } from "../constraints/ast.js"
 import { throwInvalidOperandError } from "../constraints/constraint.js"
 import type { Predicate, inferNarrow } from "../constraints/predicate.js"
 import type { Schema, reducibleKindOf } from "../kinds.js"
-import { TraversalContext } from "../shared/context.js"
 import type { BaseMeta, BaseNodeDeclaration } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { ArkResult } from "../shared/errors.js"
 import {
 	typeKindsRightOf,
 	type ConstraintKind,
@@ -23,8 +21,6 @@ import type { IntersectionNode, constraintKindOf } from "./intersection.js"
 import type {
 	Morph,
 	Out,
-	distill,
-	extractIn,
 	extractOut,
 	includesMorphs,
 	inferMorphOut
@@ -46,20 +42,6 @@ export abstract class BaseType<
 > extends BaseNode<t, d> {
 	readonly branches: readonly Node<UnionChildKind>[] =
 		"branches" in this.inner ? (this.inner.branches as any) : [this]
-
-	allows = (data: d["prerequisite"]): data is distill<extractIn<t>> => {
-		const ctx = new TraversalContext(data, this.$.config)
-		return this.traverseAllows(data as never, ctx)
-	}
-
-	apply(data: d["prerequisite"]): ArkResult<distill<extractOut<t>>> {
-		const ctx = new TraversalContext(data, this.$.config)
-		this.traverseApply(data, ctx)
-		if (ctx.currentErrors.length === 0) {
-			return { out: data } as any
-		}
-		return { errors: ctx.currentErrors }
-	}
 
 	keyof(): Type<keyof this["in"]["infer"], $> {
 		return this as never
@@ -268,6 +250,9 @@ export abstract class BaseType<
 		return this.rawConstrain("after", schema as never) as never
 	}
 }
+
+export const isType = (value: unknown): value is Type =>
+	value instanceof BaseType
 
 export type intersectType<l extends TypeKind, r extends NodeKind> = [
 	l,

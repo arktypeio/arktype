@@ -307,5 +307,5 @@ export type nodeDefaultsImplementationFor<kind extends NodeKind> = Required<
 >
 
 export type DescriptionWriter<kind extends NodeKind = NodeKind> = (
-	inner: Node<kind>
+	node: Node<kind>
 ) => string

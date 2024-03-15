@@ -8,10 +8,12 @@ import type {
 	Generic,
 	TypeParser
 } from "../type.js"
+// this needs to be imported before `jsObects` so jsObects can bootstrap corrrectly
+import { tsPrimitiveKeywords, type tsPrimitive } from "./tsPrimitive.js"
+
 import { jsObjectKeywords, type jsObject } from "./jsObject.js"
 import { parsingKeywords, type parsing } from "./parsing.js"
 import { root } from "./root.js"
-import { tsPrimitiveKeywords, type tsPrimitive } from "./tsPrimitive.js"
 import { validationKeywords, type validation } from "./validation.js"
 
 /** Root scopes can be inferred automatically from node definitions, but

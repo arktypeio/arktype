@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import { keywords, node } from "../../builtins/ark.js"
+import { keywords, node } from "../../keywords/ark.js"
 
 describe("union", () => {
 	it("union", () => {

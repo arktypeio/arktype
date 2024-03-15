@@ -1,6 +1,6 @@
 import { attest } from "@arktype/attest"
 import { type } from "arktype"
-import { node } from "../builtins/ark.js"
+import { node } from "../keywords/ark.js"
 import {
 	writeMissingRightOperandMessage,
 	writeUnresolvableMessage

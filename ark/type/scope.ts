@@ -15,10 +15,10 @@ import {
 	type requireKeys
 } from "@arktype/util"
 import { typeKindOfSchema, type Node, type UnknownNode } from "./base.js"
-import type { type } from "./builtins/ark.js"
-import type { jsObjectKeywords } from "./builtins/jsObject.js"
-import type { tsPrimitiveKeywords } from "./builtins/tsPrimitive.js"
 import { globalConfig } from "./config.js"
+import type { type } from "./keywords/ark.js"
+import type { jsObjectKeywords } from "./keywords/jsObject.js"
+import type { tsPrimitiveKeywords } from "./keywords/tsPrimitive.js"
 import { nodesByKind, type Schema, type reducibleKindOf } from "./kinds.js"
 import { createMatchParser, type MatchParser } from "./match.js"
 import { parseAttachments, type SchemaParseOptions } from "./parse.js"
@@ -346,7 +346,7 @@ export class Scope<r extends Resolutions = any> {
 	// these allow builtin types to be accessed during parsing without cyclic imports
 	// they are populated as each scope is parsed with `registerKeywords` in its config
 	/** @internal */
-	declare static keywords: PrimitiveKeywords
+	static keywords = {} as PrimitiveKeywords
 
 	/** @internal */
 	get keywords(): PrimitiveKeywords {
@@ -709,14 +709,14 @@ export class Scope<r extends Resolutions = any> {
 			}
 			node.jit = true
 			node.traverseAllows =
-				compiledTraversals[`${node.name}Allows`].bind(compiledTraversals)
+				compiledTraversals[`${node.reference}Allows`].bind(compiledTraversals)
 			if (node.isType() && !node.includesContextDependentPredicate) {
 				// if the reference doesn't require context, we can assign over
 				// it directly to avoid having to initialize it
 				node.allows = node.traverseAllows as never
 			}
 			node.traverseApply =
-				compiledTraversals[`${node.name}Apply`].bind(compiledTraversals)
+				compiledTraversals[`${node.reference}Apply`].bind(compiledTraversals)
 		}
 	}
 
@@ -732,9 +732,9 @@ export class Scope<r extends Resolutions = any> {
 					const applyCompiler = new NodeCompiler("Apply").indent()
 					node.compile(applyCompiler)
 					js.line(
-						allowsCompiler.writeMethod(`${node.name}Allows`) +
+						allowsCompiler.writeMethod(`${node.reference}Allows`) +
 							",\n" +
-							applyCompiler.writeMethod(`${node.name}Apply`) +
+							applyCompiler.writeMethod(`${node.reference}Apply`) +
 							","
 					)
 				})

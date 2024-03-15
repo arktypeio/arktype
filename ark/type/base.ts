@@ -35,6 +35,7 @@ import type {
 import type { Scope } from "./scope.js"
 import type { NodeCompiler } from "./shared/compile.js"
 import {
+	TraversalContext,
 	pathToPropString,
 	type TraverseAllows,
 	type TraverseApply
@@ -83,7 +84,7 @@ import type { UnitNode } from "./types/unit.js"
 export interface BaseAttachments {
 	alias?: string
 	readonly kind: NodeKind
-	readonly name: string
+	readonly reference: string
 	readonly inner: Record<string, any>
 	readonly entries: readonly Entry<string>[]
 	readonly json: object
@@ -92,7 +93,6 @@ export interface BaseAttachments {
 	readonly children: UnknownNode[]
 	readonly innerId: string
 	readonly typeId: string
-	readonly description: string
 	readonly $: Scope
 }
 
@@ -184,15 +184,32 @@ export abstract class BaseNode<
 	readonly contributesReferencesByName: Record<string, UnknownNode>
 	readonly contributesReferences: readonly UnknownNode[]
 	readonly precedence = precedenceOfKind(this.kind)
+	readonly description: string =
+		this.inner.description ??
+		this.$.config[this.kind].description(this as never)
 	jit = false
 
 	constructor(attachments: BaseAttachments) {
-		super(attachments as never)
+		super(BaseNode.prototype.parse, { attach: attachments as never })
 		this.contributesReferencesByName =
-			this.name in this.referencesByName
+			this.reference in this.referencesByName
 				? this.referencesByName
-				: { ...this.referencesByName, [this.name]: this as never }
+				: { ...this.referencesByName, [this.reference]: this as never }
 		this.contributesReferences = Object.values(this.contributesReferencesByName)
+	}
+
+	allows = (data: d["prerequisite"]): data is distill<extractIn<t>> => {
+		const ctx = new TraversalContext(data, this.$.config)
+		return this.traverseAllows(data as never, ctx)
+	}
+
+	parse(data: d["prerequisite"]): ArkResult<distill<extractOut<t>>> {
+		const ctx = new TraversalContext(data, this.$.config)
+		this.traverseApply(data, ctx)
+		if (ctx.currentErrors.length === 0) {
+			return { out: data } as any
+		}
+		return { errors: ctx.currentErrors }
 	}
 
 	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
@@ -359,7 +376,9 @@ export abstract class BaseNode<
 	): narrowed {
 		return (
 			this.firstReference(filter) ??
-			throwError(`${this.name} had no references matching predicate ${filter}`)
+			throwError(
+				`${this.reference} had no references matching predicate ${filter}`
+			)
 		)
 	}
 
@@ -372,7 +391,7 @@ export abstract class BaseNode<
 	firstReferenceOfKindOrThrow<kind extends NodeKind>(kind: kind): Node<kind> {
 		return (
 			this.firstReference((node) => node.kind === kind) ??
-			throwError(`${this.name} had no ${kind} references`)
+			throwError(`${this.reference} had no ${kind} references`)
 		)
 	}
 

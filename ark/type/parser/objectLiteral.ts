@@ -1,5 +1,15 @@
-import type { Dict, ErrorMessage, Key, evaluate, merge } from "@arktype/util"
+import {
+	printable,
+	stringAndSymbolicEntriesOf,
+	throwParseError,
+	type Dict,
+	type ErrorMessage,
+	type Key,
+	type evaluate,
+	type merge
+} from "@arktype/util"
 import type { writeInvalidPropertyKeyMessage } from "../constraints/props/index.js"
+import type { Schema } from "../kinds.js"
 import type { ParseContext } from "../scope.js"
 import type { Type } from "../types/type.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
@@ -8,72 +18,60 @@ import type { validateString } from "./semantic/validate.js"
 import { Scanner } from "./string/shift/scanner.js"
 
 export const parseObjectLiteral = (def: Dict, ctx: ParseContext): Type => {
-	return {} as never
-	// const required: Inner<"required">[] = []
-	// const optional: Inner<"optional">[] = []
-	// // We only allow a spread operator to be used as the first key in an object
-	// // because to match JS behavior any keys before the spread are overwritten
-	// // by the values in the target object, so there'd be no useful purpose in having it
-	// // anywhere except for the beginning.
-	// const parsedEntries = stringAndSymbolicEntriesOf(def).map(parseEntry)
-	// if (parsedEntries[0]?.kind === "spread") {
-	// 	// remove the spread entry so we can iterate over the remaining entries
-	// 	// expecting non-spread entries
-	// 	const spreadEntry = parsedEntries.shift()!
-	// 	const spreadNode = ctx.$.parse(spreadEntry.value, ctx)
-	// 	if (
-	// 		spreadNode.kind !== "intersection" ||
-	// 		!spreadNode.extends(keywords.object)
-	// 	) {
-	// 		return throwParseError(
-	// 			writeInvalidSpreadTypeMessage(printable(spreadEntry.value))
-	// 		)
-	// 	}
-	// 	// TODO: move to props group merge in schema
-	// 	// For each key on spreadNode, add it to our object.
-	// 	// We filter out keys from the spreadNode that will be defined later on this same object
-	// 	// because the currently parsed definition will overwrite them.
-	// 	spreadNode.required?.forEach(
-	// 		(spreadRequired) =>
-	// 			!parsedEntries.some(
-	// 				({ inner: innerKey }) => innerKey === spreadRequired.key
-	// 			) && required.push(spreadRequired)
-	// 	)
-	// 	spreadNode.optional?.forEach(
-	// 		(spreadOptional) =>
-	// 			!parsedEntries.some(
-	// 				({ inner: innerKey }) => innerKey === spreadOptional.key
-	// 			) && optional.push(spreadOptional)
-	// 	)
-	// }
-	// for (const entry of parsedEntries) {
-	// 	if (entry.kind === "spread") {
-	// 		return throwParseError(nonLeadingSpreadError)
-	// 	}
-	// 	ctx.path.push(
-	// 		`${
-	// 			typeof entry.inner === "symbol"
-	// 				? `[${printable(entry.inner)}]`
-	// 				: entry.inner
-	// 		}`
-	// 	)
-	// 	const value = ctx.$.parse(entry.value, ctx)
-	// 	const inner: Inner<"required" | "optional"> = {
-	// 		key: entry.inner,
-	// 		value
-	// 	}
-	// 	if (entry.kind === "optional") {
-	// 		optional.push(inner)
-	// 	} else {
-	// 		required.push(inner)
-	// 	}
-	// 	ctx.path.pop()
-	// }
-	// return schema({
-	// 	domain: "object",
-	// 	required,
-	// 	optional
-	// })
+	const propSchemas: Schema<"prop">[] = []
+	// We only allow a spread operator to be used as the first key in an object
+	// because to match JS behavior any keys before the spread are overwritten
+	// by the values in the target object, so there'd be no useful purpose in having it
+	// anywhere except for the beginning.
+	const parsedEntries = stringAndSymbolicEntriesOf(def).map(parseEntry)
+	if (parsedEntries[0]?.kind === "spread") {
+		// remove the spread entry so we can iterate over the remaining entries
+		// expecting non-spread entries
+		const spreadEntry = parsedEntries.shift()!
+		const spreadNode = ctx.$.parse(spreadEntry.value, ctx)
+		if (
+			spreadNode.kind !== "intersection" ||
+			!spreadNode.extends(ctx.$.keywords.object)
+		) {
+			return throwParseError(
+				writeInvalidSpreadTypeMessage(printable(spreadEntry.value))
+			)
+		}
+		// TODO: move to props group merge in schema
+		// For each key on spreadNode, add it to our object.
+		// We filter out keys from the spreadNode that will be defined later on this same object
+		// because the currently parsed definition will overwrite them.
+		spreadNode.prop?.forEach(
+			(spreadRequired) =>
+				!parsedEntries.some(
+					({ inner: innerKey }) => innerKey === spreadRequired.key
+				) && propSchemas.push(spreadRequired)
+		)
+	}
+	for (const entry of parsedEntries) {
+		if (entry.kind === "spread") {
+			return throwParseError(nonLeadingSpreadError)
+		}
+		ctx.path.push(
+			`${
+				typeof entry.inner === "symbol"
+					? `[${printable(entry.inner)}]`
+					: entry.inner
+			}`
+		)
+		const value = ctx.$.parse(entry.value, ctx)
+		const schema: Schema<"prop"> = {
+			key: entry.inner,
+			value,
+			optional: entry.kind === "optional"
+		}
+		propSchemas.push(schema)
+		ctx.path.pop()
+	}
+	return ctx.$.node({
+		domain: "object",
+		prop: propSchemas
+	})
 }
 
 export const nonLeadingSpreadError =
