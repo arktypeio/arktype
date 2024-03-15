@@ -32,7 +32,7 @@ import type {
 	ioKindOf,
 	reducibleKindOf
 } from "./kinds.js"
-import type { Scope } from "./scope.js"
+import type { Resolutions, Scope } from "./scope.js"
 import type { NodeCompiler } from "./shared/compile.js"
 import {
 	TraversalContext,
@@ -189,7 +189,7 @@ export abstract class BaseNode<
 		this.$.config[this.kind].description(this as never)
 	jit = false
 
-	constructor(attachments: BaseAttachments) {
+	constructor(public attachments: BaseAttachments) {
 		super(BaseNode.prototype.parse, { attach: attachments as never })
 		this.contributesReferencesByName =
 			this.reference in this.referencesByName
@@ -393,6 +393,13 @@ export abstract class BaseNode<
 			this.firstReference((node) => node.kind === kind) ??
 			throwError(`${this.reference} had no ${kind} references`)
 		)
+	}
+
+	bindScope<resolutions extends Resolutions>(
+		$: Scope<resolutions>
+	): Node<d["kind"], t, resolutions> {
+		if (this.$ === $) return this as never
+		return new (this.constructor as any)({ ...this.attachments, $ })
 	}
 
 	transform(

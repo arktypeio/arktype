@@ -1,6 +1,6 @@
 import { relative } from "node:path"
 
-export const getFileKey = (path: string) => relative(".", path)
+export const getFileKey = (path: string): string => relative(".", path)
 
 /**
  *  Can be used to allow arbitrarily chained property access and function calls.

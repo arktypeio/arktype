@@ -29,8 +29,8 @@ import {
 type BranchState = {
 	prefixes: StringifiablePrefixOperator[]
 	leftBound?: OpenLeftBound
-	"&"?: Type
-	"|"?: Type
+	intersection?: Type
+	union?: Type
 }
 
 export type DynamicStateWithRoot = requireKeys<DynamicState, "root">
@@ -104,12 +104,12 @@ export class DynamicState {
 
 	finalizeBranches(): void {
 		this.assertRangeUnset()
-		if (this.branches["|"]) {
+		if (this.branches["union"]) {
 			this.pushRootToBranch("|")
-			this.root = this.branches["|"]
-		} else if (this.branches["&"]) {
+			this.root = this.branches["union"]
+		} else if (this.branches["intersection"]) {
 			this.pushRootToBranch("&")
-			this.root = this.branches["&"]
+			this.root = this.branches["intersection"]
 		} else {
 			this.applyPrefixes()
 		}
@@ -142,11 +142,13 @@ export class DynamicState {
 		this.assertRangeUnset()
 		this.applyPrefixes()
 		const root = this.root!
-		this.branches["&"] = this.branches["&"]?.and(root) ?? root
+		this.branches["intersection"] =
+			this.branches["intersection"]?.and(root) ?? root
 		if (token === "|") {
-			this.branches["|"] =
-				this.branches["|"]?.or(this.branches["&"]) ?? this.branches["&"]
-			delete this.branches["&"]
+			this.branches["union"] =
+				this.branches["union"]?.or(this.branches["intersection"]) ??
+				this.branches["intersection"]
+			delete this.branches["intersection"]
 		}
 		this.root = undefined
 	}
@@ -191,7 +193,11 @@ export class DynamicState {
 		return (
 			this.branches.leftBound?.comparator ??
 			this.branches.prefixes.at(-1) ??
-			(this.branches["&"] ? "&" : this.branches["|"] ? "|" : undefined)
+			(this.branches["intersection"]
+				? "&"
+				: this.branches["union"]
+				? "|"
+				: undefined)
 		)
 	}
 

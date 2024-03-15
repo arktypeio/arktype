@@ -54,20 +54,21 @@ export class ChainableAssertions implements AssertionRecord {
 		)
 	}
 
-	get unknown() {
+	get unknown(): this {
 		return this
 	}
 
-	is(expected: unknown) {
+	is(expected: unknown): this {
 		assert.equal(this.actual, expected)
 		return this
 	}
-	equals(expected: unknown) {
+
+	equals(expected: unknown): this {
 		assertEquals(expected, this.actual, this.ctx)
 		return this
 	}
 
-	instanceOf(expected: Constructor) {
+	instanceOf(expected: Constructor): this {
 		if (!(this.actual instanceof expected)) {
 			throwAssertionError({
 				ctx: this.ctx,
@@ -155,7 +156,7 @@ export class ChainableAssertions implements AssertionRecord {
 		})
 	}
 
-	get throws() {
+	get throws(): unknown {
 		const result = callAssertedFunction(this.actual as Function)
 		this.ctx.actual = getThrownMessage(result, this.ctx)
 		this.ctx.allowRegex = true
@@ -163,7 +164,7 @@ export class ChainableAssertions implements AssertionRecord {
 		return this.immediateOrChained()
 	}
 
-	throwsAndHasTypeError(matchValue: string | RegExp) {
+	throwsAndHasTypeError(matchValue: string | RegExp): void {
 		assertEqualOrMatching(
 			matchValue,
 			getThrownMessage(callAssertedFunction(this.actual as Function), this.ctx),
@@ -180,7 +181,7 @@ export class ChainableAssertions implements AssertionRecord {
 		}
 	}
 
-	get completions() {
+	get completions(): any {
 		if (this.ctx.cfg.skipTypes) {
 			return chainableNoOpProxy
 		}
@@ -192,7 +193,7 @@ export class ChainableAssertions implements AssertionRecord {
 		return this.snap
 	}
 
-	get type() {
+	get type(): any {
 		if (this.ctx.cfg.skipTypes) {
 			return chainableNoOpProxy
 		}

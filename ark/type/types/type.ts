@@ -40,8 +40,9 @@ export abstract class BaseType<
 	d extends BaseNodeDeclaration,
 	$ = any
 > extends BaseNode<t, d> {
-	readonly branches: readonly Node<UnionChildKind>[] =
-		"branches" in this.inner ? (this.inner.branches as any) : [this]
+	readonly branches: readonly Node<UnionChildKind>[] = this.hasKind("union")
+		? this.inner.branches
+		: [this as never]
 
 	keyof(): Type<keyof this["in"]["infer"], $> {
 		return this as never

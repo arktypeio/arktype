@@ -40,7 +40,7 @@ export type InternalAssertionHooks = {
 export const attestInternal = (
 	value?: unknown,
 	{ cfg: cfgHooks, ...ctxHooks }: InternalAssertionHooks = {}
-) => {
+): ChainableAssertions => {
 	const position = caller()
 	const cfg = { ...getConfig(), ...cfgHooks }
 	const ctx: AssertionContext = {

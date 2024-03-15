@@ -8,18 +8,19 @@ import {
 	throwInternalError,
 	throwParseError,
 	type Dict,
+	type Json,
 	type List,
 	type evaluate,
 	type isAny,
 	type nominal,
 	type requireKeys
 } from "@arktype/util"
-import { typeKindOfSchema, type Node, type UnknownNode } from "./base.js"
+import { typeKindOfSchema, type UnknownNode } from "./base.js"
 import { globalConfig } from "./config.js"
 import type { type } from "./keywords/ark.js"
 import type { jsObjectKeywords } from "./keywords/jsObject.js"
 import type { tsPrimitiveKeywords } from "./keywords/tsPrimitive.js"
-import { nodesByKind, type Schema, type reducibleKindOf } from "./kinds.js"
+import { nodesByKind } from "./kinds.js"
 import { createMatchParser, type MatchParser } from "./match.js"
 import { parseAttachments, type SchemaParseOptions } from "./parse.js"
 import {
@@ -67,7 +68,7 @@ import {
 	type TypeParser
 } from "./type.js"
 import type { extractIn, extractOut } from "./types/morph.js"
-import { BaseType, type Type } from "./types/type.js"
+import { BaseType, isType, type Type } from "./types/type.js"
 import type { UnionNode } from "./types/union.js"
 import type { UnitNode } from "./types/unit.js"
 import { addArkKind, hasArkKind, type arkKind } from "./util.js"
@@ -340,7 +341,8 @@ export class Scope<r extends Resolutions = any> {
 	private resolutions: MergedResolutions
 	readonly nodeCache: { [innerId: string]: UnknownNode } = {}
 	readonly referencesByName: { [name: string]: UnknownNode } = {}
-	readonly references: readonly UnknownNode[]
+	references: readonly UnknownNode[] = []
+	json: Json = {}
 	protected resolved = false
 
 	// these allow builtin types to be accessed during parsing without cyclic imports
@@ -376,9 +378,6 @@ export class Scope<r extends Resolutions = any> {
 		} else {
 			this.resolutions = {}
 		}
-		this.references = Object.values(this.referencesByName)
-		this.bindCompiledScope(this.references)
-		this.resolved = true
 		this.node(
 			"union",
 			{
@@ -447,6 +446,7 @@ export class Scope<r extends Resolutions = any> {
 	parse(def: unknown, ctx: ParseContext): Type {
 		if (typeof def === "string") {
 			if (ctx.args !== undefined) {
+				// TODO: allow caching with this by serializing it?
 				// we can only rely on the cache if there are no contextual
 				// resolutions like "this" or generic args
 				return this.parseString(def, ctx)
@@ -468,7 +468,7 @@ export class Scope<r extends Resolutions = any> {
 			path: [],
 			$: this,
 			...input
-		})
+		}).bindScope(this)
 	}
 
 	parseString(def: string, ctx: ParseContext): Type {
@@ -576,9 +576,16 @@ export class Scope<r extends Resolutions = any> {
 				}
 			}
 			this.exportedResolutions = resolutionsOfModule(this.exportCache)
+			// TODO: add generic json
+			this.json = morph(this.exportedResolutions, (k, v) =>
+				isType(v) ? [k, v.json] : []
+			)
 			Object.assign(this.resolutions, this.exportedResolutions)
 			if (this.config.registerKeywords)
 				Object.assign(Scope.keywords, this.exportedResolutions)
+			this.references = Object.values(this.referencesByName)
+			this.bindCompiledScope(this.references)
+			this.resolved = true
 		}
 		const namesToExport = names.length ? names : this.exportedNames
 		return addArkKind(
