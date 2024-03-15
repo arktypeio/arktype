@@ -8,10 +8,10 @@ import type {
 	Generic,
 	TypeParser
 } from "../type.js"
-import { jsObjectKeywords, type jsObject } from "./jsObjects.js"
+import { jsObjectKeywords, type jsObject } from "./jsObject.js"
 import { parsingKeywords, type parsing } from "./parsing.js"
 import { root } from "./root.js"
-import { tsPrimitiveKeywords, type tsPrimitive } from "./tsKeywords.js"
+import { tsPrimitiveKeywords, type tsPrimitive } from "./tsPrimitive.js"
 import { validationKeywords, type validation } from "./validation.js"
 
 /** Root scopes can be inferred automatically from node definitions, but

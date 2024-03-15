@@ -1,4 +1,4 @@
-import type { Module, Scope, rootResolutions } from "../scope.js"
+import type { Module, rootResolutions, Scope } from "../scope.js"
 import { root } from "./root.js"
 
 export namespace jsObject {
@@ -33,7 +33,7 @@ export const jsObject: Scope<jsObject.resolutions> = root.scope(
 		WeakSet: root.schema(WeakSet),
 		Promise: root.schema(Promise)
 	},
-	{ prereducedAliases: true }
+	{ prereducedAliases: true, registerKeywords: true }
 )
 
 export const jsObjectKeywords: Module<jsObject.resolutions> = jsObject.export()

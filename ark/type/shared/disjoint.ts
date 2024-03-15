@@ -8,8 +8,11 @@ import {
 	type entryOf
 } from "@arktype/util"
 import type { Node } from "../base.js"
-import type { BoundKind } from "../constraints/refinements/shared.js"
-import type { IntersectionChildKind, kindRightOf } from "./implement.js"
+import type {
+	BoundKind,
+	IntersectionChildKind,
+	kindRightOf
+} from "./implement.js"
 
 type DisjointKinds = {
 	domain?: {

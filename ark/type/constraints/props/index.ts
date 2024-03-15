@@ -1,7 +1,5 @@
 import { throwParseError } from "@arktype/util"
 import type { TypeSchema } from "../../base.js"
-import { root } from "../../builtins/root.js"
-import { tsPrimitiveKeywords } from "../../builtins/tsKeywords.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/context.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
@@ -29,8 +27,6 @@ export type IndexDeclaration = declareNode<{
 	childKind: TypeKind
 }>
 
-const stringOrSymbol = root.node({ branches: ["string", "symbol"] })
-
 export class IndexNode extends BaseConstraint<IndexDeclaration> {
 	static implementation: nodeImplementationOf<IndexDeclaration> =
 		this.implement({
@@ -41,7 +37,7 @@ export class IndexNode extends BaseConstraint<IndexDeclaration> {
 					child: true,
 					parse: (schema, ctx) => {
 						const key = ctx.$.node(schema)
-						if (!key.extends(stringOrSymbol))
+						if (!key.extends(ctx.$.type("string|symbol")))
 							return throwParseError(
 								writeInvalidPropertyKeyMessage(key.expression)
 							)
@@ -64,7 +60,7 @@ export class IndexNode extends BaseConstraint<IndexDeclaration> {
 			}
 		})
 
-	readonly impliedBasis = tsPrimitiveKeywords.object
+	readonly impliedBasis = this.$.keywords.object
 	readonly expression = `[${this.signature}]: ${this.value}`
 
 	traverseAllows: TraverseAllows<object> = (data, ctx) =>

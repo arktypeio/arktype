@@ -6,14 +6,16 @@ import {
 	type entryOf,
 	type evaluate,
 	type indexOf,
+	type keySetOf,
 	type listable,
 	type requireKeys
 } from "@arktype/util"
 import type { Node, UnknownNode } from "../base.js"
-import { boundKinds } from "../constraints/refinements/shared.js"
+import type { PropsGroupInput } from "../constraints/props/props.js"
 import type { Declaration, Inner, errorContext } from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
 import type { NodeConfig, ParsedUnknownNodeConfig, Scope } from "../scope.js"
+import type { IntersectionInner } from "../types/intersection.js"
 import type { Type, typeKindOrRightOf, typeKindRightOf } from "../types/type.js"
 import type {
 	BaseErrorContext,
@@ -22,11 +24,6 @@ import type {
 } from "./declare.js"
 import type { Disjoint } from "./disjoint.js"
 
-export {
-	type BoundKind,
-	type RangeKind
-} from "../constraints/refinements/shared.js"
-
 export const basisKinds = ["unit", "proto", "domain"] as const
 
 export type BasisKind = (typeof basisKinds)[number]
@@ -34,6 +31,21 @@ export type BasisKind = (typeof basisKinds)[number]
 export const propKinds = ["prop", "index", "sequence"] as const
 
 export type PropKind = (typeof propKinds)[number]
+
+export const rangeKinds = [
+	"max",
+	"min",
+	"maxLength",
+	"minLength",
+	"before",
+	"after"
+] as const
+
+export type RangeKind = (typeof rangeKinds)[number]
+
+export const boundKinds = ["length", ...rangeKinds] as const
+
+export type BoundKind = (typeof boundKinds)[number]
 
 export const refinementKinds = ["regex", "divisor", ...boundKinds] as const
 
@@ -92,6 +104,21 @@ export type PrimitiveKind = (typeof primitiveKinds)[number]
 export type CompositeKind = Exclude<NodeKind, PrimitiveKind>
 
 export type OrderedNodeKinds = typeof nodeKinds
+
+export const constraintKeys = morph(
+	constraintKinds,
+	(i, kind) => [kind, 1] as const
+)
+
+export const propKeys = morph(
+	[...propKinds, "onExtraneousKey"] satisfies (keyof PropsGroupInput)[],
+	(i, k) => [k, 1] as const
+)
+
+export const discriminatingIntersectionKeys = {
+	...constraintKeys,
+	onExtraneousKey: 1
+} as const satisfies keySetOf<IntersectionInner>
 
 type RightsByKind = accumulateRightKinds<OrderedNodeKinds, {}>
 

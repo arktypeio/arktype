@@ -3,7 +3,6 @@ import { Disjoint } from "../../shared/disjoint.js"
 import type { nodeImplementationOf } from "../../shared/implement.js"
 import {
 	BaseRange,
-	lengthBoundable,
 	parseExclusiveKey,
 	type BaseNormalizedRangeSchema,
 	type BaseRangeInner,
@@ -62,7 +61,7 @@ export class MaxLengthNode extends BaseRange<MaxLengthDeclaration> {
 			}
 		})
 
-	readonly impliedBasis = lengthBoundable
+	readonly impliedBasis = this.$.type("string|Array")
 
 	traverseAllows = this.exclusive
 		? (data: LengthBoundableData) => data.length < this.limit

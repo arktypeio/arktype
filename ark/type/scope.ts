@@ -16,6 +16,8 @@ import {
 } from "@arktype/util"
 import { typeKindOfSchema, type Node, type UnknownNode } from "./base.js"
 import type { type } from "./builtins/ark.js"
+import type { jsObjectKeywords } from "./builtins/jsObject.js"
+import type { tsPrimitiveKeywords } from "./builtins/tsPrimitive.js"
 import { globalConfig } from "./config.js"
 import { nodesByKind, type Schema, type reducibleKindOf } from "./kinds.js"
 import { createMatchParser, type MatchParser } from "./match.js"
@@ -54,12 +56,6 @@ import {
 	type NodeKind,
 	type TypeKind
 } from "./shared/implement.js"
-import type { extractIn, extractOut } from "./types/morph.js"
-import { BaseType, type Type } from "./types/type.js"
-import type { UnionNode } from "./types/union.js"
-import type { UnitNode } from "./types/unit.js"
-import { addArkKind, hasArkKind, type arkKind } from "./util.js"
-
 import {
 	createTypeParser,
 	generic,
@@ -70,6 +66,11 @@ import {
 	type GenericProps,
 	type TypeParser
 } from "./type.js"
+import type { extractIn, extractOut } from "./types/morph.js"
+import { BaseType, type Type } from "./types/type.js"
+import type { UnionNode } from "./types/union.js"
+import type { UnitNode } from "./types/unit.js"
+import { addArkKind, hasArkKind, type arkKind } from "./util.js"
 
 export type nodeResolutions<keywords> = { [k in keyof keywords]: Type }
 
@@ -122,28 +123,30 @@ export interface ArkConfig extends Partial<NodeConfigsByKind> {
 	ambient?: Scope | null
 	/** @internal */
 	prereducedAliases?: boolean
+	/** @internal */
+	registerKeywords?: boolean
 }
 
-export type ParsedArkConfig = {
-	[k in keyof ArkConfig]-?: k extends NodeKind
-		? Required<ArkConfig[k]>
-		: ArkConfig[k]
+type resolveConfig<config extends ArkConfig> = {
+	[k in keyof config]-?: k extends NodeKind ? Required<config[k]> : config[k]
 }
 
-const parseConfig = (scopeConfig: ArkConfig | undefined): ParsedArkConfig => {
+export type ResolvedArkConfig = resolveConfig<ArkConfig>
+
+const parseConfig = (scopeConfig: ArkConfig | undefined): ResolvedArkConfig => {
 	if (!scopeConfig) {
 		return globalConfig
 	}
 	const parsedConfig = { ...globalConfig }
 	let k: keyof ArkConfig
 	for (k in scopeConfig) {
-		if (k === "prereducedAliases" || k === "ambient") {
-			parsedConfig[k] = scopeConfig[k]! as never
-		} else {
+		if (isNodeKind(k)) {
 			parsedConfig[k] = {
 				...nodesByKind[k].implementation.defaults,
 				...scopeConfig[k]
 			} as never
+		} else {
+			parsedConfig[k] = scopeConfig[k]! as never
 		}
 	}
 	return parsedConfig
@@ -324,11 +327,14 @@ type MergedResolutions = Record<string, Type | Generic>
 
 type ParseContextInput = Partial<ParseContext>
 
+export type PrimitiveKeywords = typeof tsPrimitiveKeywords &
+	typeof jsObjectKeywords
+
 export class Scope<r extends Resolutions = any> {
 	declare infer: extractOut<r["exports"]>
 	declare inferIn: extractIn<r["exports"]>
 
-	readonly config: ParsedArkConfig
+	readonly config: ResolvedArkConfig
 
 	private parseCache: Record<string, Type> = {}
 	private resolutions: MergedResolutions
@@ -336,6 +342,16 @@ export class Scope<r extends Resolutions = any> {
 	readonly referencesByName: { [name: string]: UnknownNode } = {}
 	readonly references: readonly UnknownNode[]
 	protected resolved = false
+
+	// these allow builtin types to be accessed during parsing without cyclic imports
+	// they are populated as each scope is parsed with `registerKeywords` in its config
+	/** @internal */
+	declare static keywords: PrimitiveKeywords
+
+	/** @internal */
+	get keywords(): PrimitiveKeywords {
+		return Scope.keywords
+	}
 
 	/** The set of names defined at the root-level of the scope mapped to their
 	 * corresponding definitions.**/
@@ -400,6 +416,9 @@ export class Scope<r extends Resolutions = any> {
 	) => {
 		return new Scope(def, {
 			...this.config,
+			// these options shouldn't be inherited
+			prereducedAliases: false,
+			registerKeywords: false,
 			...config
 		})
 	}) as never
@@ -558,6 +577,8 @@ export class Scope<r extends Resolutions = any> {
 			}
 			this.exportedResolutions = resolutionsOfModule(this.exportCache)
 			Object.assign(this.resolutions, this.exportedResolutions)
+			if (this.config.registerKeywords)
+				Object.assign(Scope.keywords, this.exportedResolutions)
 		}
 		const namesToExport = names.length ? names : this.exportedNames
 		return addArkKind(

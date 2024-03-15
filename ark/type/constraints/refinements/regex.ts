@@ -1,4 +1,3 @@
-import { tsPrimitiveKeywords } from "../../builtins/tsKeywords.js"
 import { jsData } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { BasePrimitiveConstraint } from "../constraint.js"
@@ -58,6 +57,6 @@ export class RegexNode extends BasePrimitiveConstraint<RegexDeclaration> {
 
 	readonly compiledCondition = `${this.expression}.test(${jsData})`
 	readonly compiledNegation = `!${this.compiledCondition}`
-	readonly impliedBasis = tsPrimitiveKeywords.string
+	readonly impliedBasis = this.$.keywords.string
 	readonly errorContext = this.createErrorContext(this.inner)
 }

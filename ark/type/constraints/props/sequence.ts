@@ -7,8 +7,6 @@ import {
 	type satisfy
 } from "@arktype/util"
 import type { TypeSchema } from "../../base.js"
-import { jsObjectKeywords } from "../../builtins/jsObjects.js"
-import { tsPrimitiveKeywords } from "../../builtins/tsKeywords.js"
 import type { MutableInner } from "../../kinds.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/context.js"
@@ -225,7 +223,7 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 			}
 		})
 
-	readonly impliedBasis = jsObjectKeywords.Array
+	readonly impliedBasis = this.$.keywords.Array
 	readonly prefix = this.inner.prefix ?? []
 	readonly optionals = this.inner.optionals ?? []
 	readonly prevariadic = [...this.prefix, ...this.optionals]
@@ -429,7 +427,7 @@ const intersectSequences = (
 			)
 			state.result = [
 				...state.result,
-				{ kind, node: tsPrimitiveKeywords.never as never }
+				{ kind, node: lHead.node.$.keywords.never as never }
 			]
 		} else if (kind === "optionals") {
 			// if the element result is optional and unsatisfiable, the

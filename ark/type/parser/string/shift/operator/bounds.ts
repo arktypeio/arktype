@@ -1,5 +1,4 @@
 import { isKeyOf, throwParseError, type keySet } from "@arktype/util"
-import { keywords } from "../../../../builtins/ark.js"
 import type { LimitLiteral } from "../../../../constraints/ast.js"
 import {
 	writeUnboundableMessage,
@@ -24,7 +23,6 @@ import type { StaticState, state } from "../../reduce/static.js"
 import { extractDateLiteralSource, isDateLiteral } from "../operand/date.js"
 import type { parseOperand } from "../operand/operand.js"
 import type { Scanner } from "../scanner.js"
-
 export const parseBound = (
 	s: DynamicStateWithRoot,
 	start: ComparatorStartChar
@@ -114,7 +112,7 @@ export const getBoundKinds = (
 	limit: LimitSchemaValue,
 	root: Type
 ): BoundKind[] => {
-	if (root.extends(keywords.number)) {
+	if (root.extends(root.$.keywords.number)) {
 		if (typeof limit !== "number") {
 			return throwParseError(writeLimitMismatchMessage(root.toString(), limit))
 		}
@@ -124,7 +122,10 @@ export const getBoundKinds = (
 			? ["min"]
 			: ["max"]
 	}
-	if (root.extends(keywords.string) || root.extends(keywords.Array)) {
+	if (
+		root.extends(root.$.keywords.string) ||
+		root.extends(root.$.keywords.Array)
+	) {
 		if (typeof limit !== "number") {
 			return throwParseError(writeLimitMismatchMessage(root.toString(), limit))
 		}
@@ -134,7 +135,7 @@ export const getBoundKinds = (
 			? ["minLength"]
 			: ["maxLength"]
 	}
-	if (root.extends(keywords.Date)) {
+	if (root.extends(root.$.keywords.Date)) {
 		// allow either numeric or date limits
 		return comparator === "=="
 			? ["after", "before"]

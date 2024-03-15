@@ -5,7 +5,6 @@ import {
 	entriesOf,
 	isArray,
 	isEmptyObject,
-	morph,
 	omit,
 	pick,
 	printable,
@@ -13,15 +12,13 @@ import {
 	throwInternalError,
 	type List,
 	type evaluate,
-	type keySetOf,
 	type listable
 } from "@arktype/util"
 import { BaseNode, type ConstraintNode, type Node } from "../base.js"
 import {
 	PropsGroup,
 	type ExtraneousKeyBehavior,
-	type ExtraneousKeyRestriction,
-	type PropsGroupInput
+	type ExtraneousKeyRestriction
 } from "../constraints/props/props.js"
 import type { Inner, MutableInner, Prerequisite, Schema } from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
@@ -32,8 +29,8 @@ import { metaKeys, type BaseMeta, type declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { ArkTypeError } from "../shared/errors.js"
 import {
-	constraintKinds,
-	propKinds,
+	constraintKeys,
+	propKeys,
 	type ConstraintKind,
 	type IntersectionChildKind,
 	type OpenNodeKind,
@@ -74,21 +71,6 @@ export type IntersectionDeclaration = declareNode<{
 	}
 	childKind: IntersectionChildKind
 }>
-
-export const constraintKeys = morph(
-	constraintKinds,
-	(i, kind) => [kind, 1] as const
-)
-
-export const discriminatingIntersectionKeys = {
-	...constraintKeys,
-	onExtraneousKey: 1
-} as const satisfies keySetOf<IntersectionInner>
-
-const propKeys = morph(
-	[...propKinds, "onExtraneousKey"] satisfies (keyof PropsGroupInput)[],
-	(i, k) => [k, 1] as const
-)
 
 const intersectionChildKeyParser =
 	<kind extends IntersectionChildKind>(kind: kind) =>

@@ -1,4 +1,3 @@
-import { tsPrimitiveKeywords } from "../../builtins/tsKeywords.js"
 import type { declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import type { nodeImplementationOf } from "../../shared/implement.js"
@@ -57,7 +56,7 @@ export class MaxNode extends BaseRange<MaxDeclaration> {
 		}
 	})
 
-	readonly impliedBasis = tsPrimitiveKeywords.number
+	readonly impliedBasis = this.$.keywords.number
 
 	traverseAllows = this.exclusive
 		? (data: number) => data < this.rule

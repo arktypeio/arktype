@@ -12,7 +12,6 @@ import {
 	type evaluate
 } from "@arktype/util"
 import type { Node } from "../base.js"
-import { keywords } from "../builtins/ark.js"
 import type { Predicate, inferNarrow } from "../constraints/predicate.js"
 import type { MutableInner, Schema } from "../kinds.js"
 import type { instantiateSchema, validateSchema } from "../schema.js"
@@ -62,7 +61,7 @@ export const parseTupleLiteral = (def: List, ctx: ParseContext): Type => {
 			i++
 		}
 		if (spread) {
-			if (!element.extends(keywords.Array)) {
+			if (!element.extends(ctx.$.keywords.Array)) {
 				return throwParseError(writeNonArraySpreadMessage(element))
 			}
 			// a spread must be distributed over branches e.g.:
@@ -143,7 +142,7 @@ const appendSpreadBranch = (
 	const spread = branch.firstReferenceOfKind("sequence")
 	if (!spread) {
 		// the only array with no sequence reference is unknown[]
-		return appendElement(base, "variadic", keywords.unknown)
+		return appendElement(base, "variadic", branch.$.keywords.unknown)
 	}
 	spread.prefix.forEach((node) => appendElement(base, "required", node))
 	spread.optionals.forEach((node) => appendElement(base, "optional", node))

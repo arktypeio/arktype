@@ -5,7 +5,6 @@ import {
 	objectKindOrDomainOf,
 	type Constructor
 } from "@arktype/util"
-import { tsPrimitiveKeywords } from "../builtins/tsKeywords.js"
 import { jsData } from "../shared/compile.js"
 import type { TraverseAllows } from "../shared/context.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
@@ -74,7 +73,7 @@ export class ProtoNode<t = any, $ = any> extends BaseBasis<
 				domain.domain === "object"
 					? proto
 					: // TODO: infer node to avoid cast
-					  Disjoint.from("domain", tsPrimitiveKeywords.object as never, domain)
+					  Disjoint.from("domain", proto.$.keywords.object as never, domain)
 		}
 	})
 

@@ -3,7 +3,7 @@ import type { TraverseAllows } from "../../shared/context.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import { BasePrimitiveConstraint } from "../constraint.js"
-import { lengthBoundable, type LengthBoundableData } from "./range.js"
+import type { LengthBoundableData } from "./range.js"
 
 export interface LengthInner extends BaseMeta {
 	readonly rule: number
@@ -72,7 +72,7 @@ export class LengthNode extends BasePrimitiveConstraint<LengthDeclaration> {
 
 	readonly compiledCondition = `${jsData}.length === ${this.rule}`
 	readonly compiledNegation = `${jsData}.length !== ${this.rule}`
-	readonly impliedBasis = lengthBoundable
+	readonly impliedBasis = this.$.type("string|Array")
 	readonly errorContext = this.createErrorContext(this.inner)
 	readonly expression = `{ length: ${this.rule}}`
 }

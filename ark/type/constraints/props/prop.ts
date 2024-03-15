@@ -1,6 +1,5 @@
 import { compileSerializedValue } from "@arktype/util"
 import type { Node, TypeSchema } from "../../base.js"
-import { tsPrimitiveKeywords } from "../../builtins/tsKeywords.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/context.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
@@ -82,7 +81,7 @@ export class PropNode extends BaseConstraint<PropDeclaration> {
 	)
 
 	readonly required = !this.optional
-	readonly impliedBasis = tsPrimitiveKeywords.object
+	readonly impliedBasis = this.$.keywords.object
 	readonly serializedKey = compileSerializedValue(this.key)
 	readonly compiledKey =
 		typeof this.key === "string" ? this.key : this.serializedKey

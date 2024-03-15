@@ -25,22 +25,28 @@ export namespace tsPrimitive {
 	export type infer = (typeof tsPrimitive)["infer"]
 }
 
-export const tsPrimitive: Scope<tsPrimitive.resolutions> = root.scope({
-	any: "unknown" as type.cast<any>,
-	bigint: root.schema("bigint"),
-	boolean: "false|true",
-	false: ["===", false],
-	never: root.schema([]),
-	null: ["===", null],
-	number: root.schema("number"),
-	object: root.schema("object"),
-	string: root.schema("string"),
-	symbol: root.schema("symbol"),
-	true: ["===", true],
-	unknown: root.schema({}),
-	void: "undefined" as type.cast<void>,
-	undefined: ["===", undefined]
-})
+export const tsPrimitive: Scope<tsPrimitive.resolutions> = root.scope(
+	{
+		any: "unknown" as type.cast<any>,
+		bigint: root.schema("bigint"),
+		boolean: "false|true",
+		false: ["===", false],
+		never: root.schema([]),
+		null: ["===", null],
+		number: root.schema("number"),
+		object: root.schema("object"),
+		string: root.schema("string"),
+		symbol: root.schema("symbol"),
+		true: ["===", true],
+		unknown: root.schema({}),
+		void: "undefined" as type.cast<void>,
+		undefined: ["===", undefined]
+	},
+	{
+		prereducedAliases: true,
+		registerKeywords: true
+	}
+)
 
 export const tsPrimitiveKeywords: Module<tsPrimitive.resolutions> =
 	tsPrimitive.export()

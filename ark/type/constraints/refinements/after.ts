@@ -1,4 +1,3 @@
-import { jsObjectKeywords } from "../../builtins/jsObjects.js"
 import type { TraverseAllows } from "../../shared/context.js"
 import type { declareNode } from "../../shared/declare.js"
 import type { nodeImplementationOf } from "../../shared/implement.js"
@@ -61,7 +60,7 @@ export class AfterNode extends BaseRange<AfterDeclaration> {
 			}
 		})
 
-	readonly impliedBasis = jsObjectKeywords.Date
+	readonly impliedBasis = this.$.keywords.Date
 
 	traverseAllows: TraverseAllows<Date> = this.exclusive
 		? (data) => +data > this.numericLimit

@@ -1,5 +1,5 @@
 import { literalPropAccess } from "@arktype/util"
-import type { ParsedArkConfig } from "../scope.js"
+import type { ResolvedArkConfig } from "../scope.js"
 import { ArkErrors, type ArkErrorInput } from "./errors.js"
 
 export type TraversalPath = (string | symbol)[]
@@ -23,7 +23,7 @@ export class TraversalContext {
 
 	constructor(
 		public root: unknown,
-		public config: ParsedArkConfig
+		public config: ResolvedArkConfig
 	) {
 		this.errorsStack = [new ArkErrors(this)]
 	}

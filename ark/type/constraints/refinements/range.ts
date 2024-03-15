@@ -6,14 +6,16 @@ import {
 	type valueOf
 } from "@arktype/util"
 import type { Node } from "../../base.js"
-import { root } from "../../builtins/root.js"
 import type { Schema } from "../../kinds.js"
 import { jsData } from "../../shared/compile.js"
 import type { BaseMeta, BaseNodeDeclaration } from "../../shared/declare.js"
-import type { KeyDefinitions } from "../../shared/implement.js"
+import type {
+	BoundKind,
+	KeyDefinitions,
+	RangeKind
+} from "../../shared/implement.js"
 import type { DateLiteral, normalizePrimitiveConstraintSchema } from "../ast.js"
 import { BasePrimitiveConstraint } from "../constraint.js"
-import type { BoundKind, RangeKind } from "./shared.js"
 
 export abstract class BaseRange<
 	d extends BaseRangeDeclaration
@@ -173,10 +175,6 @@ export const compileComparator = (
 export type BoundOperandKind = "value" | "length" | "date"
 
 export type LengthBoundableData = string | List
-
-export const lengthBoundable = root.parsePrereducedSchema("union", {
-	branches: ["string", Array]
-})
 
 export type DateRangeKind = "before" | "after"
 

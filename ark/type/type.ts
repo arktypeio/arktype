@@ -1,5 +1,4 @@
 import { morph, type Constructor, type List, type conform } from "@arktype/util"
-import { keywords } from "./builtins/ark.js"
 import type { Predicate } from "./constraints/predicate.js"
 import type {
 	inferDefinition,
@@ -119,7 +118,7 @@ export const validateUninstantiatedGeneric = (g: Generic): Generic => {
 		// the base type here: https://github.com/arktypeio/arktype/issues/796
 		{
 			baseName: "generic",
-			args: morph(g.parameters, (_, name) => [name, keywords.unknown])
+			args: morph(g.parameters, (_, name) => [name, g.scope.keywords.unknown])
 		}
 	)
 	return g

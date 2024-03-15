@@ -1,4 +1,3 @@
-import { tsPrimitiveKeywords } from "../../builtins/tsKeywords.js"
 import type { declareNode } from "../../shared/declare.js"
 import type { nodeImplementationOf } from "../../shared/implement.js"
 import {
@@ -50,7 +49,7 @@ export class MinNode extends BaseRange<MinDeclaration> {
 		}
 	})
 
-	readonly impliedBasis = tsPrimitiveKeywords.number
+	readonly impliedBasis = this.$.keywords.number
 
 	traverseAllows = this.exclusive
 		? (data: number) => data > this.rule

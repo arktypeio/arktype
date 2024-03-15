@@ -50,6 +50,7 @@ import type { ArkResult } from "./shared/errors.js"
 import {
 	basisKinds,
 	constraintKinds,
+	discriminatingIntersectionKeys,
 	precedenceOfKind,
 	propKinds,
 	refinementKinds,
@@ -67,10 +68,7 @@ import {
 } from "./shared/implement.js"
 import { inferred } from "./shared/inference.js"
 import type { DomainNode } from "./types/domain.js"
-import {
-	discriminatingIntersectionKeys,
-	type IntersectionNode
-} from "./types/intersection.js"
+import type { IntersectionNode } from "./types/intersection.js"
 import type {
 	MorphNode,
 	distill,
