@@ -73,7 +73,8 @@ export class ProtoNode<t = any, $ = any> extends BaseBasis<
 			domain: (proto, domain) =>
 				domain.domain === "object"
 					? proto
-					: Disjoint.from("domain", tsPrimitiveKeywords.object, domain)
+					: // TODO: infer node to avoid cast
+					  Disjoint.from("domain", tsPrimitiveKeywords.object as never, domain)
 		}
 	})
 

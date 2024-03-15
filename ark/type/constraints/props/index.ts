@@ -1,4 +1,6 @@
+import { throwParseError } from "@arktype/util"
 import type { TypeSchema } from "../../base.js"
+import { root } from "../../builtins/root.js"
 import { tsPrimitiveKeywords } from "../../builtins/tsKeywords.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/context.js"
@@ -27,6 +29,8 @@ export type IndexDeclaration = declareNode<{
 	childKind: TypeKind
 }>
 
+const stringOrSymbol = root.node({ branches: ["string", "symbol"] })
+
 export class IndexNode extends BaseConstraint<IndexDeclaration> {
 	static implementation: nodeImplementationOf<IndexDeclaration> =
 		this.implement({
@@ -35,7 +39,14 @@ export class IndexNode extends BaseConstraint<IndexDeclaration> {
 			keys: {
 				signature: {
 					child: true,
-					parse: (schema, ctx) => ctx.$.node(schema)
+					parse: (schema, ctx) => {
+						const key = ctx.$.node(schema)
+						if (!key.extends(stringOrSymbol))
+							return throwParseError(
+								writeInvalidPropertyKeyMessage(key.expression)
+							)
+						return key
+					}
 				},
 				value: {
 					child: true,
@@ -76,3 +87,11 @@ export class IndexNode extends BaseConstraint<IndexDeclaration> {
 		}
 	}
 }
+
+export const writeInvalidPropertyKeyMessage = <indexDef extends string>(
+	indexDef: indexDef
+): writeInvalidPropertyKeyMessage<indexDef> =>
+	`Indexed key definition '${indexDef}' must be a string, number or symbol`
+
+export type writeInvalidPropertyKeyMessage<indexDef extends string> =
+	`Indexed key definition '${indexDef}' must be a string, number or symbol`

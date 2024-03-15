@@ -16,6 +16,7 @@ import {
 	type TypeKind,
 	type kindRightOf
 } from "../shared/implement.js"
+import type { inferred } from "../shared/inference.js"
 import type { inferIntersection } from "../shared/intersections.js"
 import type { inferTypeRoot, validateTypeRoot } from "../type.js"
 import type { IntersectionNode, constraintKindOf } from "./intersection.js"
@@ -128,10 +129,10 @@ export abstract class BaseType<
 		) as never
 	}
 
-	// TODO:
-	// this is Type<other["infer"], $>
-	extends<other extends Type>(other: other): boolean {
-		const intersection = this.intersect(other)
+	// add the extra inferred intersection so that a variable of Type
+	// can be narrowed without other branches becoming never
+	extends<r>(other: Type<r>): this is Type<r, $> & { [inferred]?: r } {
+		const intersection = this.intersect(other as never)
 		return (
 			!(intersection instanceof Disjoint) && this.equals(intersection as never)
 		)

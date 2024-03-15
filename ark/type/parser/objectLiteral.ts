@@ -1,4 +1,5 @@
 import type { Dict, ErrorMessage, Key, evaluate, merge } from "@arktype/util"
+import type { writeInvalidPropertyKeyMessage } from "../constraints/props/index.js"
 import type { ParseContext } from "../scope.js"
 import type { Type } from "../types/type.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
@@ -209,14 +210,6 @@ declare const indexParseSymbol: unique symbol
 export type indexParseError<message extends string = string> = {
 	[indexParseSymbol]: message
 }
-
-export const writeInvalidPropertyKeyMessage = <indexDef extends string>(
-	indexDef: indexDef
-): writeInvalidPropertyKeyMessage<indexDef> =>
-	`Indexed key definition '${indexDef}' must be a string, number or symbol`
-
-type writeInvalidPropertyKeyMessage<indexDef extends string> =
-	`Indexed key definition '${indexDef}' must be a string, number or symbol`
 
 export const writeInvalidSpreadTypeMessage = <def extends string>(
 	def: def
