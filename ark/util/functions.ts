@@ -61,11 +61,13 @@ export class Callable<
 > extends NoopBase<f & attachments> {
 	constructor(f: f, opts?: CallableOptions<attachments>) {
 		super()
+		const proto = opts?.bind ?? this.constructor.prototype
+		const self = Object.create(
+			proto,
+			Object.getOwnPropertyDescriptors(opts?.attach)
+		)
 		return Object.assign(
-			Object.setPrototypeOf(
-				f.bind(opts?.bind ?? this),
-				this.constructor.prototype
-			),
+			Object.setPrototypeOf(f.bind(self), proto),
 			opts?.attach
 		)
 	}

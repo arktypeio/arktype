@@ -184,18 +184,33 @@ export abstract class BaseNode<
 	readonly contributesReferencesByName: Record<string, UnknownNode>
 	readonly contributesReferences: readonly UnknownNode[]
 	readonly precedence = precedenceOfKind(this.kind)
-	readonly description: string =
-		this.inner.description ??
-		this.$.config[this.kind].description(this as never)
 	jit = false
 
 	constructor(public attachments: BaseAttachments) {
-		super(BaseNode.prototype.parse, { attach: attachments as never })
+		super(
+			(data) => {
+				const ctx = new TraversalContext(data, this.$.config)
+				this.traverseApply(data, ctx)
+				if (ctx.currentErrors.length === 0) {
+					return { out: data } as any
+				}
+				return { errors: ctx.currentErrors }
+			},
+			{ attach: attachments as never }
+		)
 		this.contributesReferencesByName =
 			this.reference in this.referencesByName
 				? this.referencesByName
 				: { ...this.referencesByName, [this.reference]: this as never }
 		this.contributesReferences = Object.values(this.contributesReferencesByName)
+	}
+
+	private descriptionCache?: string
+	get description(): string {
+		this.descriptionCache ??=
+			this.inner.description ??
+			this.$.config[this.kind].description?.(this as never)
+		return this.descriptionCache
 	}
 
 	allows = (data: d["prerequisite"]): data is distill<extractIn<t>> => {
@@ -204,12 +219,7 @@ export abstract class BaseNode<
 	}
 
 	parse(data: d["prerequisite"]): ArkResult<distill<extractOut<t>>> {
-		const ctx = new TraversalContext(data, this.$.config)
-		this.traverseApply(data, ctx)
-		if (ctx.currentErrors.length === 0) {
-			return { out: data } as any
-		}
-		return { errors: ctx.currentErrors }
+		return this(data)
 	}
 
 	abstract traverseAllows: TraverseAllows<d["prerequisite"]>

@@ -51,6 +51,10 @@ describe("callable", () => {
 			b() {
 				return 2 as const
 			}
+
+			getAttached<k extends keyof attach>(k: k): attach[k] {
+				return (this as any)[k]
+			}
 		}
 
 		const foo = new Foo({ a: 1 } as const)
@@ -62,5 +66,30 @@ describe("callable", () => {
 		attest<1>(foo.a).snap(1)
 		// subclass methods preserved
 		attest<2>(foo.b()).snap(2)
+		// can access attached on methods
+		attest<1>(foo.getAttached("a")).snap()
+	})
+
+	it("can access attached properties and prototype methods", () => {
+		class GetAttached<attach extends object> extends Callable<
+			<k extends keyof attach>(k: k) => attach[k],
+			attach
+		> {
+			constructor(attach: attach) {
+				super(GetAttached.prototype.getAttached, { attach })
+			}
+
+			protoGetAttached(k: PropertyKey) {
+				return (this as any)[k]
+			}
+
+			getAttached<k extends keyof attach>(k: k): attach[k] {
+				return this.protoGetAttached(k)
+			}
+		}
+
+		const foo = new GetAttached({ a: 1 } as const)
+		attest<1>(foo.a).equals(1)
+		attest<1>(foo("a")).equals(1)
 	})
 })
