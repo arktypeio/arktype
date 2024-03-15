@@ -47,10 +47,14 @@ export const parseObject = (def: object, ctx: ParseContext): Type => {
 		case "Array":
 			return parseTuple(def as List, ctx)
 		case "RegExp":
-			return ctx.$.parsePrereducedSchema("intersection", {
-				domain: "string",
-				regex: def as RegExp
-			})
+			return ctx.$.node(
+				"intersection",
+				{
+					domain: "string",
+					regex: def as RegExp
+				},
+				{ prereduced: true }
+			)
 		case "Function":
 			const resolvedDef = isThunk(def) ? def() : def
 			if (isType(resolvedDef)) {

@@ -61,7 +61,7 @@ export class BeforeNode extends BaseRange<BeforeDeclaration> {
 				after: (before, after, $) =>
 					before.overlapsRange(after)
 						? before.overlapIsUnit(after)
-							? $.parseSchema("unit", { unit: before.limit })
+							? $.node("unit", { unit: before.limit })
 							: null
 						: Disjoint.from("range", before, after)
 			}

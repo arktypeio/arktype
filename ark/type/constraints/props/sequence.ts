@@ -156,14 +156,18 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 					(raw.prefix && raw.prefix.length !== prefix.length)
 				) {
 					// reparse the reduced schema
-					return $.parsePrereducedSchema("sequence", {
-						...raw,
-						// empty lists will be omitted during parsing
-						prefix,
-						postfix,
-						optionals: optional,
-						minVariadicLength
-					})
+					return $.node(
+						"sequence",
+						{
+							...raw,
+							// empty lists will be omitted during parsing
+							prefix,
+							postfix,
+							optionals: optional,
+							minVariadicLength
+						},
+						{ prereduced: true }
+					)
 				}
 			},
 			defaults: {
@@ -204,11 +208,8 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 					return viableBranches.length === 0
 						? rootState.disjoint!
 						: viableBranches.length === 1
-						? $.parseSchema(
-								"sequence",
-								sequenceTupleToInner(viableBranches[0].result)
-						  )
-						: $.parseSchema(
+						? $.node("sequence", sequenceTupleToInner(viableBranches[0].result))
+						: $.node(
 								"union",
 								viableBranches.map((state) => ({
 									proto: Array,
@@ -233,16 +234,14 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 	readonly minLength =
 		this.prefix.length + this.minVariadicLength + this.postfix.length
 	readonly minLengthNode =
-		this.minLength === 0
-			? undefined
-			: this.$.parseSchema("minLength", this.minLength)
+		this.minLength === 0 ? undefined : this.$.node("minLength", this.minLength)
 	readonly maxLength = this.variadic
 		? undefined
 		: this.minLength + this.optionals.length
 	readonly maxLengthNode =
 		this.maxLength === undefined
 			? undefined
-			: this.$.parseSchema("maxLength", this.maxLength)
+			: this.$.node("maxLength", this.maxLength)
 	readonly impliedSiblings = this.minLengthNode
 		? this.maxLengthNode
 			? [this.minLengthNode, this.maxLengthNode]

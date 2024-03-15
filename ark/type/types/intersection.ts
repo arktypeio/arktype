@@ -84,10 +84,10 @@ const intersectionChildKeyParser =
 				return
 			}
 			return input
-				.map((schema) => ctx.$.parseSchema(kind, schema as never))
+				.map((schema) => ctx.$.node(kind, schema as never))
 				.sort((l, r) => (l.innerId < r.innerId ? -1 : 1)) as never
 		}
-		const node = ctx.$.parseSchema(kind, input)
+		const node = ctx.$.node(kind, input)
 		return node.intersectionIsOpen ? [node] : (node as any)
 	}
 
@@ -256,9 +256,10 @@ export class IntersectionNode<t = unknown, $ = any> extends BaseType<
 						  l
 						: // given we've already precluded l being unknown, the result must
 						  // be an intersection with the new basis result integrated
-						  $.parsePrereducedSchema(
+						  $.node(
 								"intersection",
-								Object.assign(omit(l.inner, metaKeys), { [basis.kind]: basis })
+								Object.assign(omit(l.inner, metaKeys), { [basis.kind]: basis }),
+								{ prereduced: true }
 						  )
 				})
 			}
@@ -378,9 +379,10 @@ const intersectConstraints = (
 	s: ConstraintIntersectionState
 ): Type | Disjoint => {
 	if (!s.r.length) {
-		let result: Type | Disjoint = s.$.parsePrereducedSchema(
+		let result: Type | Disjoint = s.$.node(
 			"intersection",
-			Object.assign(s.root, unflattenConstraints(s.l))
+			Object.assign(s.root, unflattenConstraints(s.l)),
+			{ prereduced: true }
 		)
 		for (const type of s.types) {
 			if (result instanceof Disjoint) {

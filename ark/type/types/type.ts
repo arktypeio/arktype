@@ -69,9 +69,7 @@ export abstract class BaseType<
 			...this.branches,
 			...(this.$.parseTypeRoot(def).branches as any)
 		]
-		return branches.length === 1
-			? branches[0]
-			: (this.$.parseSchema("union", { branches }) as never)
+		return this.$.node(branches)
 	}
 
 	isUnknown(): this is IntersectionNode<unknown> {
@@ -87,27 +85,26 @@ export abstract class BaseType<
 	}
 
 	extract(other: Type): Type {
-		return this.$.parseRootSchema(
-			"union",
-			this.branches.filter((branch) => branch.extends(other))
+		return this.$.node(
+			this.branches.filter((branch) => branch.extends(other)),
+			{ root: true }
 		)
 	}
 
 	exclude(other: Type): Type {
-		return this.$.parseRootSchema(
-			"union",
-			this.branches.filter((branch) => !branch.extends(other))
+		return this.$.node(
+			this.branches.filter((branch) => !branch.extends(other)),
+			{ root: true }
 		)
 	}
 
 	array(): Type<t[], $> {
-		return this.$.parseRootSchema(
-			"intersection",
+		return this.$.node(
 			{
 				proto: Array,
 				sequence: this
 			},
-			{ prereduced: true }
+			{ prereduced: true, root: true }
 		) as never
 	}
 
@@ -179,7 +176,7 @@ export abstract class BaseType<
 	}
 
 	protected rawConstrain(kind: ConstraintKind, schema: unknown): Type {
-		const constraint = this.$.parseSchema(kind, schema as never)
+		const constraint = this.$.node(kind, schema as never)
 		if (constraint.impliedBasis && !this.extends(constraint.impliedBasis)) {
 			return throwInvalidOperandError(
 				kind,
@@ -190,7 +187,7 @@ export abstract class BaseType<
 
 		return this.and(
 			// TODO: not an intersection
-			this.$.parseSchema("intersection", {
+			this.$.node("intersection", {
 				[kind]: constraint
 			})
 		) as never

@@ -109,7 +109,7 @@ export class MorphNode<t = any, $ = any> extends BaseType<
 					if (outTersection instanceof Disjoint) {
 						return outTersection
 					}
-					return $.parseSchema("morph", {
+					return $.node("morph", {
 						morphs: l.morphs,
 						in: inTersection,
 						out: outTersection
@@ -120,14 +120,14 @@ export class MorphNode<t = any, $ = any> extends BaseType<
 					return inTersection instanceof Disjoint
 						? inTersection
 						: inTersection.kind === "union"
-						? $.parseSchema(
+						? $.node(
 								"union",
 								inTersection.branches.map((branch) => ({
 									...l.inner,
 									in: branch
 								}))
 						  )
-						: $.parseSchema("morph", {
+						: $.node("morph", {
 								...l.inner,
 								in: inTersection
 						  })

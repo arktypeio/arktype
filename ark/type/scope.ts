@@ -379,7 +379,7 @@ export class Scope<r extends Resolutions = any> {
 		this.references = Object.values(this.referencesByName)
 		this.bindCompiledScope(this.references)
 		this.resolved = true
-		this.parseSchema(
+		this.node(
 			"union",
 			{
 				branches: [
@@ -394,7 +394,7 @@ export class Scope<r extends Resolutions = any> {
 					{ unit: undefined }
 				]
 			},
-			{ reduceTo: this.parsePrereducedSchema("intersection", {}) }
+			{ reduceTo: this.node("intersection", {}, { prereduced: true }) }
 		)
 	}
 
@@ -601,33 +601,10 @@ export class Scope<r extends Resolutions = any> {
 				uniqueValues.push(value)
 			}
 		}
-		const branches = uniqueValues.map((unit) =>
-			this.parsePrereducedSchema("unit", { unit })
-		)
-		if (branches.length === 1) {
-			return branches[0] as never
-		}
-		return this.parseRootSchema("union", {
-			branches
-		}) as never
-	}
-
-	parseRootSchema<kind extends NodeKind>(
-		kind: kind,
-		def: Schema<kind>,
-		opts: SchemaParseOptions = {}
-	): Node<reducibleKindOf<kind>> {
-		const node = this.parseSchema(kind, def, opts)
-		if (this.resolved) {
-			// this node was not part of the original scope, so compile an anonymous scope
-			// including only its references
-			this.bindCompiledScope(node.contributesReferences)
-		} else {
-			// we're still parsing the scope itself, so defer compilation but
-			// add the node as a reference
-			Object.assign(this.referencesByName, node.contributesReferencesByName)
-		}
-		return node
+		const branches = uniqueValues.map((unit) => this.node("unit", { unit }))
+		return branches.length === 1
+			? (branches[0] as any)
+			: this.node(branches, { root: true, prereduced: true })
 	}
 
 	node: NodeParser<$<r>> = this.internalNodeParser
@@ -640,8 +617,8 @@ export class Scope<r extends Resolutions = any> {
 
 		let schema = kindArg ? schemaOrOpts : schemaOrKind
 		const opts: SchemaParseOptions | undefined = kindArg
-			? (schemaOrOpts as never)
-			: constraintOpts
+			? constraintOpts
+			: (schemaOrOpts as never)
 		if (opts?.alias && opts.alias in this.resolutions) {
 			return throwInternalError(
 				`Unexpected attempt to recreate existing alias ${opts.alias}`
@@ -655,10 +632,10 @@ export class Scope<r extends Resolutions = any> {
 			)
 		}
 		const node = parseAttachments(kind, schema as never, {
-			...opts,
 			$: this,
+			prereduced: opts?.prereduced ?? false,
 			raw: schema,
-			prereduced: opts?.prereduced ?? false
+			...opts
 		})
 		if (opts?.root) {
 			if (this.resolved) {
@@ -671,32 +648,6 @@ export class Scope<r extends Resolutions = any> {
 				Object.assign(this.referencesByName, node.contributesReferencesByName)
 			}
 		}
-		return node as never
-	}
-
-	parsePrereducedSchema<kind extends NodeKind>(
-		kind: kind,
-		def: Schema<kind>
-	): Node<kind> {
-		return this.parseSchema(kind, def, { prereduced: true }) as never
-	}
-
-	parseSchema<kind extends NodeKind>(
-		kind: kind,
-		def: Schema<kind>,
-		opts: SchemaParseOptions = {}
-	): Node<reducibleKindOf<kind>> {
-		if (opts.alias && opts.alias in this.resolutions) {
-			return throwInternalError(
-				`Unexpected attempt to recreate existing alias ${opts.alias}`
-			)
-		}
-		const node = parseAttachments(kind, def, {
-			...opts,
-			$: this,
-			raw: def,
-			prereduced: opts.prereduced ?? false
-		})
 		return node as never
 	}
 

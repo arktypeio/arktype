@@ -50,7 +50,7 @@ export class MaxNode extends BaseRange<MaxDeclaration> {
 			min: (max, min, $) =>
 				max.overlapsRange(min)
 					? max.overlapIsUnit(min)
-						? $.parseSchema("unit", { unit: max.rule })
+						? $.node("unit", { unit: max.rule })
 						: null
 					: Disjoint.from("range", max, min)
 		}

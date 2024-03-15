@@ -48,5 +48,8 @@
 	"astro.language-server.ls-path": "ark/docs/node_modules/astro",
 	"search.exclude": {
 		"**/out": true
+	},
+	"debug.javascript.terminalOptions": {
+		"skipFiles": ["<node_internals>/**", "**/node_modules/**"]
 	}
 }

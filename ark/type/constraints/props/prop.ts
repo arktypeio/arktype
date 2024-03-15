@@ -70,7 +70,7 @@ export class PropNode extends BaseConstraint<PropDeclaration> {
 					if (value instanceof Disjoint) {
 						return value.withPrefixKey(l.compiledKey)
 					}
-					return $.parseSchema("prop", {
+					return $.node("prop", {
 						key,
 						value,
 						optional: l.optional === true && r.optional === true

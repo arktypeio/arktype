@@ -93,10 +93,14 @@ export class UnionNode<t = any, $ = any> extends BaseType<
 				if (reducedBranches.length === inner.branches.length) {
 					return
 				}
-				return $.parsePrereducedSchema("union", {
-					...inner,
-					branches: reducedBranches
-				})
+				return $.node(
+					"union",
+					{
+						...inner,
+						branches: reducedBranches
+					},
+					{ prereduced: true }
+				)
 			},
 			defaults: {
 				description(node) {
@@ -138,7 +142,7 @@ export class UnionNode<t = any, $ = any> extends BaseType<
 					if (resultBranches instanceof Disjoint) {
 						return resultBranches
 					}
-					return l.$.parseSchema(
+					return l.$.node(
 						"union",
 						l.ordered || r.ordered
 							? {

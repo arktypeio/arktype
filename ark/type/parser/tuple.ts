@@ -161,6 +161,7 @@ const maybeParseTupleExpression = (
 		? prefixParsers[def[0]](def as never, ctx)
 		: undefined
 	if (tupleExpressionResult) {
+		if (def[0] === "schema") return tupleExpressionResult
 		return tupleExpressionResult.isNever()
 			? throwParseError(
 					writeUnsatisfiableExpressionError(
@@ -496,7 +497,7 @@ export const parseMorphTuple: PostfixParser<"=>"> = (def, ctx) => {
 		)
 	}
 	// TODO: nested morphs?
-	return ctx.$.parseSchema("morph", {
+	return ctx.$.node("morph", {
 		in: ctx.$.parse(def[0], ctx) as Schema<MorphChildKind>,
 		morphs: def[2] as Morph
 	})
@@ -561,17 +562,17 @@ const prefixParsers: {
 			.slice(1)
 			.map((ctor) =>
 				typeof ctor === "function"
-					? ctx.$.parseSchema("proto", { proto: ctor as Constructor })
+					? ctx.$.node("proto", { proto: ctor as Constructor })
 					: throwParseError(
 							writeInvalidConstructorMessage(objectKindOrDomainOf(ctor))
 					  )
 			)
 		return branches.length === 1
 			? branches[0]
-			: ctx.$.parseSchema("union", { branches })
+			: ctx.$.node("union", { branches })
 	},
 	"===": (def, ctx) => ctx.$.parseUnits(...def.slice(1)),
-	schema: (def, ctx) => ctx.$.node(def)
+	schema: (def, ctx) => ctx.$.node(def[1] as never)
 }
 
 const isIndexZeroExpression = (def: List): def is IndexZeroExpression =>

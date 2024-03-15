@@ -12,7 +12,6 @@ import type {
 import type { Node, TypeSchema, UnknownNode } from "./base.js"
 import type { Prerequisite, Schema, reducibleKindOf } from "./kinds.js"
 import type { SchemaParseOptions } from "./parse.js"
-import type { Scope } from "./scope.js"
 import type { BasisKind, ConstraintKind, NodeKind } from "./shared/implement.js"
 import type { DomainNode, DomainSchema } from "./types/domain.js"
 import type {
@@ -42,15 +41,15 @@ export type SchemaParser<$> = <schema>(
 ) => ["schema", schema]
 
 export type NodeParser<$> = {
-	<const schema extends TypeSchema>(
-		schema: schema,
-		opts?: SchemaParseOptions
-	): instantiateSchema<schema, $>
 	<kind extends NodeKind, const schema extends Schema<kind>>(
 		kind: kind,
 		schema: schema,
 		opts?: SchemaParseOptions
 	): Node<reducibleKindOf<kind>, instantiateSchema<schema, $>["infer"], $>
+	<const schema extends TypeSchema>(
+		schema: schema,
+		opts?: SchemaParseOptions
+	): instantiateSchema<schema, $>
 }
 
 export type validateSchema<schema, $> = schema extends UnknownNode

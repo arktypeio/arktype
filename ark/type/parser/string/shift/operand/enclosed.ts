@@ -29,15 +29,19 @@ export const parseEnclosed = (
 	if (enclosing === "/") {
 		// fail parsing if the regex is invalid
 		new RegExp(enclosed)
-		s.root = s.ctx.$.parsePrereducedSchema("intersection", {
-			domain: "string",
-			regex: enclosed
-		})
+		s.root = s.ctx.$.node(
+			"intersection",
+			{
+				domain: "string",
+				regex: enclosed
+			},
+			{ prereduced: true }
+		)
 	} else if (isKeyOf(enclosing, enclosingQuote)) {
 		s.root = s.ctx.$.parseUnits(enclosed)
 	} else {
 		const date = tryParseDate(enclosed, writeInvalidDateMessage(enclosed))
-		s.root = s.ctx.$.parseSchema("unit", { unit: date, description: token })
+		s.root = s.ctx.$.node("unit", { unit: date, description: token })
 	}
 }
 
