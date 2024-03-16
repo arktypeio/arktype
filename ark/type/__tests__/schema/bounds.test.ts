@@ -124,7 +124,7 @@ describe("bounds", () => {
 						: min === "minLength"
 						? node({
 								...basis,
-								length: 6
+								exactLength: 6
 						  } as IntersectionSchema)
 						: node({
 								unit: new Date(6)

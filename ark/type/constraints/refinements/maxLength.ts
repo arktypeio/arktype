@@ -13,11 +13,11 @@ import {
 export type maxLength<n extends number> = boundToIs<"maxLength", n>
 
 export interface MaxLengthInner extends BaseRangeInner {
-	maxLength: number
+	rule: number
 }
 
 export interface NormalizedMaxLengthSchema extends BaseNormalizedRangeSchema {
-	maxLength: number
+	rule: number
 }
 
 export type MaxLengthSchema = NormalizedMaxLengthSchema | number
@@ -34,19 +34,19 @@ export type MaxLengthDeclaration = declareNode<{
 export class MaxLengthNode extends BaseRange<MaxLengthDeclaration> {
 	static implementation: nodeImplementationOf<MaxLengthDeclaration> =
 		this.implement({
-			collapsibleKey: "maxLength",
+			collapsibleKey: "rule",
 			hasAssociatedError: true,
 			keys: {
-				maxLength: {},
+				rule: {},
 				exclusive: parseExclusiveKey
 			},
 			normalize: (schema) =>
-				typeof schema === "number" ? { maxLength: schema } : schema,
+				typeof schema === "number" ? { rule: schema } : schema,
 			defaults: {
 				description(node) {
 					return node.exclusive
-						? `less than length ${node.limit}`
-						: `at most length ${node.limit}`
+						? `less than length ${node.rule}`
+						: `at most length ${node.rule}`
 				},
 				actual: (data) => `${data.length}`
 			},
@@ -55,7 +55,7 @@ export class MaxLengthNode extends BaseRange<MaxLengthDeclaration> {
 				minLength: (max, min, $) =>
 					max.overlapsRange(min)
 						? max.overlapIsUnit(min)
-							? $.node("length", { rule: max.limit })
+							? $.node("exactLength", { rule: max.rule })
 							: null
 						: Disjoint.from("range", max, min)
 			}
@@ -64,6 +64,6 @@ export class MaxLengthNode extends BaseRange<MaxLengthDeclaration> {
 	readonly impliedBasis = this.$.type("string|Array")
 
 	traverseAllows = this.exclusive
-		? (data: LengthBoundableData) => data.length < this.limit
-		: (data: LengthBoundableData) => data.length <= this.limit
+		? (data: LengthBoundableData) => data.length < this.rule
+		: (data: LengthBoundableData) => data.length <= this.rule
 }

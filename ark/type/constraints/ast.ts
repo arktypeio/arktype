@@ -9,7 +9,7 @@ import type { predicate } from "./predicate.js"
 import type { after } from "./refinements/after.js"
 import type { before } from "./refinements/before.js"
 import type { divisor } from "./refinements/divisor.js"
-import type { length } from "./refinements/length.js"
+import type { length } from "./refinements/exactLength.js"
 import type { max } from "./refinements/max.js"
 import type { maxLength } from "./refinements/maxLength.js"
 import type { min } from "./refinements/min.js"
@@ -112,7 +112,7 @@ type Bases<rule> = {
 	after: after<rule & string>
 	before: before<rule & string>
 	regex: regex<rule & string>
-	length: length<rule & number>
+	exactLength: length<rule & number>
 	predicate: predicate
 }
 

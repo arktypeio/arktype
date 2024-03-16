@@ -27,7 +27,9 @@ export type IntegerLiteral<value extends bigint = bigint> = `${value}`
 export const wellFormedNumberMatcher =
 	/^(?!^-0$)-?(?:0|[1-9]\d*)(?:\.\d*[1-9])?$/
 
-export const isWellFormedNumber = wellFormedNumberMatcher.test
+export const isWellFormedNumber = wellFormedNumberMatcher.test.bind(
+	wellFormedNumberMatcher
+)
 
 const numberLikeMatcher = /^-?\d*\.?\d*$/
 const isNumberLike = (s: string) => s.length !== 0 && numberLikeMatcher.test(s)
@@ -38,10 +40,12 @@ const isNumberLike = (s: string) => s.length !== 0 && numberLikeMatcher.test(s)
  *    2. The value may not be "-0"
  */
 export const wellFormedIntegerMatcher = /^(?:0|(?:-?[1-9]\d*))$/
-export const isWellFormedInteger = wellFormedIntegerMatcher.test
+export const isWellFormedInteger = wellFormedIntegerMatcher.test.bind(
+	wellFormedIntegerMatcher
+)
 
 const integerLikeMatcher = /^-?\d+$/
-const isIntegerLike = (s: string) => integerLikeMatcher.test(s)
+const isIntegerLike = integerLikeMatcher.test.bind(integerLikeMatcher)
 
 type NumericLiteralKind = "number" | "bigint" | "integer"
 

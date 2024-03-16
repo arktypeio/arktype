@@ -5,26 +5,26 @@ import { Disjoint } from "../../shared/disjoint.js"
 import { BasePrimitiveConstraint } from "../constraint.js"
 import type { LengthBoundableData } from "./range.js"
 
-export interface LengthInner extends BaseMeta {
+export interface ExactLengthInner extends BaseMeta {
 	readonly rule: number
 }
 
 export type length<n extends number> = { "==": n }
 
-export type NormalizedLengthSchema = LengthInner
+export type NormalizedExactLengthSchema = ExactLengthInner
 
-export type LengthSchema = NormalizedLengthSchema | number
+export type ExactLengthSchema = NormalizedExactLengthSchema | number
 
-export type LengthDeclaration = declareNode<{
-	kind: "length"
-	schema: LengthSchema
-	normalizedSchema: NormalizedLengthSchema
-	inner: LengthInner
+export type ExactLengthDeclaration = declareNode<{
+	kind: "exactLength"
+	schema: ExactLengthSchema
+	normalizedSchema: NormalizedExactLengthSchema
+	inner: ExactLengthInner
 	prerequisite: LengthBoundableData
-	errorContext: LengthInner
+	errorContext: ExactLengthInner
 }>
 
-export class LengthNode extends BasePrimitiveConstraint<LengthDeclaration> {
+export class ExactLengthNode extends BasePrimitiveConstraint<ExactLengthDeclaration> {
 	static implementation = this.implement({
 		collapsibleKey: "rule",
 		keys: {
@@ -33,7 +33,7 @@ export class LengthNode extends BasePrimitiveConstraint<LengthDeclaration> {
 		normalize: (schema) =>
 			typeof schema === "number" ? { rule: schema } : schema,
 		intersections: {
-			length: (l, r) =>
+			exactLength: (l, r) =>
 				new Disjoint({
 					"[length]": {
 						unit: {

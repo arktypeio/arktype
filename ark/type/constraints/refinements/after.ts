@@ -14,11 +14,11 @@ import {
 export type after<date extends string> = boundToIs<"after", date>
 
 export interface AfterInner extends BaseRangeInner {
-	after: Date
+	rule: Date
 }
 
 export interface NormalizedAfterSchema extends BaseNormalizedRangeSchema {
-	after: LimitSchemaValue
+	rule: LimitSchemaValue
 }
 
 export type AfterSchema = NormalizedAfterSchema | LimitSchemaValue
@@ -35,17 +35,17 @@ export type AfterDeclaration = declareNode<{
 export class AfterNode extends BaseRange<AfterDeclaration> {
 	static implementation: nodeImplementationOf<AfterDeclaration> =
 		this.implement({
-			collapsibleKey: "after",
+			collapsibleKey: "rule",
 			hasAssociatedError: true,
 			keys: {
-				after: parseDateLimit,
+				rule: parseDateLimit,
 				exclusive: parseExclusiveKey
 			},
 			normalize: (schema) =>
 				typeof schema === "number" ||
 				typeof schema === "string" ||
 				schema instanceof Date
-					? { after: schema }
+					? { rule: schema }
 					: schema,
 			defaults: {
 				description(node) {

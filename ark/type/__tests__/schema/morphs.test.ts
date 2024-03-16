@@ -24,7 +24,7 @@ describe("morphs", () => {
 		const n = node([
 			{
 				in: "string",
-				morph: (s: string) => parseFloat(s)
+				morphs: (s: string) => parseFloat(s)
 			},
 			"number"
 		])

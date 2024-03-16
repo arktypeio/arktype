@@ -1,6 +1,6 @@
 import { AfterNode, type AfterDeclaration } from "./after.js"
 import { BeforeNode, type BeforeDeclaration } from "./before.js"
-import { LengthNode, type LengthDeclaration } from "./length.js"
+import { ExactLengthNode, type ExactLengthDeclaration } from "./exactLength.js"
 import { MaxNode, type MaxDeclaration } from "./max.js"
 import { MaxLengthNode, type MaxLengthDeclaration } from "./maxLength.js"
 import { MinNode, type MinDeclaration } from "./min.js"
@@ -11,7 +11,7 @@ export interface BoundDeclarations {
 	max: MaxDeclaration
 	minLength: MinLengthDeclaration
 	maxLength: MaxLengthDeclaration
-	length: LengthDeclaration
+	exactLength: ExactLengthDeclaration
 	after: AfterDeclaration
 	before: BeforeDeclaration
 }
@@ -21,7 +21,7 @@ export const BoundNodes = {
 	max: MaxNode,
 	minLength: MinLengthNode,
 	maxLength: MaxLengthNode,
-	length: LengthNode,
+	exactLength: ExactLengthNode,
 	after: AfterNode,
 	before: BeforeNode
 }

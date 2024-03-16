@@ -186,7 +186,7 @@ export const parseRightBound = (
 	const exclusive = comparator.length === 1
 	// if the comparator is ==, both the min and max of that pair will be applied
 	for (const kind of getBoundKinds(comparator, limit, previousRoot)) {
-		s.constrainRoot(kind, { [kind]: limit, exclusive } as never)
+		s.constrainRoot(kind, { rule: limit, exclusive })
 	}
 	if (!s.branches.leftBound) {
 		return

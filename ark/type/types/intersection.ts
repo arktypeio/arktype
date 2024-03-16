@@ -183,9 +183,9 @@ export class IntersectionNode<t = unknown, $ = any> extends BaseType<
 					child: true,
 					parse: intersectionChildKeyParser("minLength")
 				},
-				length: {
+				exactLength: {
 					child: true,
-					parse: intersectionChildKeyParser("length")
+					parse: intersectionChildKeyParser("exactLength")
 				},
 				before: {
 					child: true,

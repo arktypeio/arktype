@@ -43,7 +43,7 @@ export const rangeKinds = [
 
 export type RangeKind = (typeof rangeKinds)[number]
 
-export const boundKinds = ["length", ...rangeKinds] as const
+export const boundKinds = ["exactLength", ...rangeKinds] as const
 
 export type BoundKind = (typeof boundKinds)[number]
 

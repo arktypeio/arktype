@@ -20,7 +20,6 @@ import { BasePrimitiveConstraint } from "../constraint.js"
 export abstract class BaseRange<
 	d extends BaseRangeDeclaration
 > extends BasePrimitiveConstraint<d> {
-	readonly limit: LimitInnerValue<d["kind"]> = (this as any)[this.kind]
 	readonly boundOperandKind = operandKindsByBoundKind[this.kind]
 	readonly compiledActual =
 		this.boundOperandKind === "value"
@@ -29,8 +28,8 @@ export abstract class BaseRange<
 			? `${jsData}.length`
 			: `${jsData}.valueOf()`
 	readonly comparator = compileComparator(this.kind, this.exclusive)
-	readonly numericLimit = this.limit.valueOf()
-	readonly expression = `${this.comparator}${this.limit}`
+	readonly numericLimit = this.rule.valueOf()
+	readonly expression = `${this.comparator}${this.rule}`
 	readonly compiledCondition = `${this.compiledActual} ${this.comparator} ${this.numericLimit}`
 	readonly compiledNegation = `${this.compiledActual} ${
 		negatedComparators[this.comparator]
@@ -74,6 +73,7 @@ export abstract class BaseRange<
 }
 
 export interface BaseRangeInner extends BaseMeta {
+	readonly rule: number | Date
 	readonly exclusive?: true
 }
 

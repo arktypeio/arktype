@@ -62,7 +62,7 @@ export const parseTupleLiteral = (def: List, ctx: ParseContext): Type => {
 		}
 		if (spread) {
 			if (!element.extends(ctx.$.keywords.Array)) {
-				return throwParseError(writeNonArraySpreadMessage(element))
+				return throwParseError(writeNonArraySpreadMessage(element.expression))
 			}
 			// a spread must be distributed over branches e.g.:
 			// def: [string, ...(number[] | [true, false])]
@@ -329,7 +329,7 @@ type parseNextElement<
 	  >
 	: s
 
-export const writeNonArraySpreadMessage = <operand extends string | Type>(
+export const writeNonArraySpreadMessage = <operand extends string>(
 	operand: operand
 ): writeNonArraySpreadMessage<operand> =>
 	`Spread element must be an array (was ${operand})` as never
