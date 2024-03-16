@@ -303,10 +303,6 @@ export abstract class BaseNode<
 		return includes(typeKinds, this.kind)
 	}
 
-	toString(): string {
-		return this.expression
-	}
-
 	hasUnit<value>(value: unknown): this is UnitNode<value> {
 		return this.hasKind("unit") && this.allows(value)
 	}
@@ -479,12 +475,16 @@ export const typeKindOfSchema = (schema: unknown): TypeKind => {
 		case "string":
 			return "domain"
 		case "function":
-			return "proto"
+			return isNode(schema)
+				? schema.isType()
+					? schema.kind
+					: throwParseError(
+							`${schema.kind} constraint ${schema.expression} cannot be used as a root type`
+					  )
+				: "proto"
 		case "object":
 			// throw at end of function
 			if (schema === null) break
-
-			if (isNode(schema) && schema.isType()) return schema.kind
 
 			if ("morphs" in schema) return "morph"
 

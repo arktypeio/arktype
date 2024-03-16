@@ -249,9 +249,6 @@ export abstract class BaseType<
 	}
 }
 
-export const isType = (value: unknown): value is Type =>
-	value instanceof BaseType
-
 export type intersectType<l extends TypeKind, r extends NodeKind> = [
 	l,
 	r

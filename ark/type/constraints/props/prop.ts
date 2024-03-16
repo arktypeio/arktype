@@ -86,7 +86,7 @@ export class PropNode extends BaseConstraint<PropDeclaration> {
 	readonly compiledKey =
 		typeof this.key === "string" ? this.key : this.serializedKey
 	readonly expression = `${this.compiledKey}${this.optional ? "?" : ""}: ${
-		this.value
+		this.value.expression
 	}`
 
 	readonly errorContext = Object.freeze({

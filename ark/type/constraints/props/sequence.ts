@@ -178,13 +178,11 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 						"[" +
 						node.tuple
 							.map((element) =>
-								element.kind === "prefix"
-									? `${element.node}`
-									: element.kind === "optionals"
+								element.kind === "optionals"
 									? `${element.node.nestableExpression}?`
 									: element.kind === "variadic"
 									? `...${element.node.nestableExpression}[]`
-									: `${element.node}`
+									: element.node.expression
 							)
 							.join(", ") +
 						"]"

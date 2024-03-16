@@ -67,7 +67,7 @@ describe("callable", () => {
 		// subclass methods preserved
 		attest<2>(foo.b()).snap(2)
 		// can access attached on methods
-		attest<1>(foo.getAttached("a")).snap()
+		attest<1>(foo.getAttached("a")).snap(1)
 	})
 
 	it("can access attached properties and prototype methods", () => {

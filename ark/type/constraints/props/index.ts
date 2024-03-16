@@ -52,7 +52,7 @@ export class IndexNode extends BaseConstraint<IndexDeclaration> {
 			normalize: (schema) => schema,
 			defaults: {
 				description(node) {
-					return `[${node.signature.description}]: ${node.value.description}`
+					return `[${node.signature.expression}]: ${node.value.description}`
 				}
 			},
 			intersections: {
@@ -61,7 +61,7 @@ export class IndexNode extends BaseConstraint<IndexDeclaration> {
 		})
 
 	readonly impliedBasis = this.$.keywords.object
-	readonly expression = `[${this.signature}]: ${this.value}`
+	readonly expression = `[${this.signature.expression}]: ${this.value.expression}`
 
 	traverseAllows: TraverseAllows<object> = (data, ctx) =>
 		Object.entries(data).every(

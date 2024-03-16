@@ -15,7 +15,7 @@ import {
 	type nominal,
 	type requireKeys
 } from "@arktype/util"
-import { typeKindOfSchema, type UnknownNode } from "./base.js"
+import { isNode, typeKindOfSchema, type UnknownNode } from "./base.js"
 import { globalConfig } from "./config.js"
 import type { type } from "./keywords/ark.js"
 import type { jsObjectKeywords } from "./keywords/jsObject.js"
@@ -68,7 +68,7 @@ import {
 	type TypeParser
 } from "./type.js"
 import type { extractIn, extractOut } from "./types/morph.js"
-import { BaseType, isType, type Type } from "./types/type.js"
+import { BaseType, type Type } from "./types/type.js"
 import type { UnionNode } from "./types/union.js"
 import type { UnitNode } from "./types/unit.js"
 import { addArkKind, hasArkKind, type arkKind } from "./util.js"
@@ -578,7 +578,7 @@ export class Scope<r extends Resolutions = any> {
 			this.exportedResolutions = resolutionsOfModule(this.exportCache)
 			// TODO: add generic json
 			this.json = morph(this.exportedResolutions, (k, v) =>
-				isType(v) ? [k, v.json] : []
+				isNode(v) ? [k, v.json] : []
 			)
 			Object.assign(this.resolutions, this.exportedResolutions)
 			if (this.config.registerKeywords)

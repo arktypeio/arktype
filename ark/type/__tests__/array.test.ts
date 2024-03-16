@@ -8,7 +8,7 @@ import {
 } from "../parser/tuple.js"
 
 describe("array", () => {
-	describe("base", () => {
+	describe("non-tuple", () => {
 		it("allows and apply", () => {
 			const t = type("string[]")
 			attest<string[]>(t.infer)

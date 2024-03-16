@@ -91,7 +91,7 @@ export class MorphNode<t = any, $ = any> extends BaseType<
 			normalize: (schema) => schema,
 			defaults: {
 				description(node) {
-					return `a morph from ${node.in} to ${node.out}`
+					return `a morph from ${node.in.description} to ${node.out.description}`
 				}
 			},
 			intersections: {
@@ -135,7 +135,7 @@ export class MorphNode<t = any, $ = any> extends BaseType<
 			}
 		})
 
-	readonly expression = `(In: ${this.in}) => Out<${this.out}>`
+	readonly expression = `(In: ${this.in.expression}) => Out<${this.out.expression}>`
 
 	traverseAllows: TraverseAllows = (data, ctx) =>
 		this.in.traverseAllows(data, ctx)
