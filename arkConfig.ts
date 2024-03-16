@@ -1,11 +1,10 @@
-/* eslint-disable @typescript-eslint/no-restricted-imports */
-import { configure } from "@arktype/schema/config"
-// import { type } from "arktype"
+// import { configure } from "arktype/config"
+// // import { type } from "arktype"
 
-// const user = type("string")
+// // const user = type("string")
 
-configure({
-	domain: {
-		description: (inner) => `my special ${inner.domain}`
-	}
-})
+// configure({
+// 	domain: {
+// 		description: (inner) => `my special ${inner.domain}`
+// 	}
+// })

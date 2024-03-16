@@ -27,7 +27,9 @@ export type IntegerLiteral<value extends bigint = bigint> = `${value}`
 export const wellFormedNumberMatcher =
 	/^(?!^-0$)-?(?:0|[1-9]\d*)(?:\.\d*[1-9])?$/
 
-export const isWellFormedNumber = (s: string) => wellFormedNumberMatcher.test(s)
+export const isWellFormedNumber = wellFormedNumberMatcher.test.bind(
+	wellFormedNumberMatcher
+)
 
 const numberLikeMatcher = /^-?\d*\.?\d*$/
 const isNumberLike = (s: string) => s.length !== 0 && numberLikeMatcher.test(s)
@@ -38,11 +40,12 @@ const isNumberLike = (s: string) => s.length !== 0 && numberLikeMatcher.test(s)
  *    2. The value may not be "-0"
  */
 export const wellFormedIntegerMatcher = /^(?:0|(?:-?[1-9]\d*))$/
-export const isWellFormedInteger = (s: string) =>
-	wellFormedIntegerMatcher.test(s)
+export const isWellFormedInteger = wellFormedIntegerMatcher.test.bind(
+	wellFormedIntegerMatcher
+)
 
 const integerLikeMatcher = /^-?\d+$/
-const isIntegerLike = (s: string) => integerLikeMatcher.test(s)
+const isIntegerLike = integerLikeMatcher.test.bind(integerLikeMatcher)
 
 type NumericLiteralKind = "number" | "bigint" | "integer"
 
@@ -82,7 +85,8 @@ const isKindLike = (def: string, kind: ValidationKind) =>
 export const tryParseNumber = <errorOnFail extends boolean | string>(
 	token: string,
 	options?: NumericParseOptions<errorOnFail>
-) => parseNumeric(token, "number", options)
+): errorOnFail extends true | string ? number : number | undefined =>
+	parseNumeric(token, "number", options)
 
 export type tryParseNumber<
 	token extends string,
@@ -102,7 +106,8 @@ export type parseNumber<token extends string> = token extends NumberLiteral<
 export const tryParseInteger = <errorOnFail extends boolean | string>(
 	token: string,
 	options?: NumericParseOptions<errorOnFail>
-) => parseNumeric(token, "integer", options)
+): errorOnFail extends true | string ? number : number | undefined =>
+	parseNumeric(token, "integer", options)
 
 // We use bigint to check if the string matches an integer, but here we
 // convert it to a plain number by exploiting the fact that TS stringifies
@@ -161,7 +166,7 @@ const parseNumeric = <errorOnFail extends boolean | string>(
 	) as never
 }
 
-export const tryParseWellFormedBigint = (def: string) => {
+export const tryParseWellFormedBigint = (def: string): bigint | undefined => {
 	if (def[def.length - 1] !== "n") {
 		return
 	}

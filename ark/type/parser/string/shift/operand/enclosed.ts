@@ -1,4 +1,3 @@
-import { schema } from "@arktype/schema"
 import { isKeyOf } from "@arktype/util"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import type { StaticState, state } from "../../reduce/static.js"
@@ -18,7 +17,7 @@ export type SingleQuotedStringLiteral<Text extends string = string> =
 export const parseEnclosed = (
 	s: DynamicState,
 	enclosing: EnclosingStartToken
-) => {
+): void => {
 	const enclosed = s.scanner.shiftUntil(
 		untilLookaheadIsClosing[enclosingTokens[enclosing]]
 	)
@@ -30,12 +29,19 @@ export const parseEnclosed = (
 	if (enclosing === "/") {
 		// fail parsing if the regex is invalid
 		new RegExp(enclosed)
-		s.root = schema({ domain: "string", regex: enclosed })
+		s.root = s.ctx.$.node(
+			"intersection",
+			{
+				domain: "string",
+				regex: enclosed
+			},
+			{ prereduced: true }
+		)
 	} else if (isKeyOf(enclosing, enclosingQuote)) {
-		s.root = schema({ unit: enclosed })
+		s.root = s.ctx.$.parseUnits(enclosed)
 	} else {
 		const date = tryParseDate(enclosed, writeInvalidDateMessage(enclosed))
-		s.root = schema({ unit: date, description: token })
+		s.root = s.ctx.$.node("unit", { unit: date, description: enclosed })
 	}
 }
 

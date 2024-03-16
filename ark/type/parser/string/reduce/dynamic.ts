@@ -1,11 +1,13 @@
-import type { LimitLiteral, TypeNode } from "@arktype/schema"
 import {
 	isKeyOf,
 	throwInternalError,
 	throwParseError,
 	type requireKeys
 } from "@arktype/util"
+import type { LimitLiteral } from "../../../constraints/ast.js"
 import type { ParseContext } from "../../../scope.js"
+import type { Type } from "../../../types/type.js"
+import type { InfixOperator } from "../../semantic/infer.js"
 import { parseOperand } from "../shift/operand/operand.js"
 import { parseOperator } from "../shift/operator/operator.js"
 import { Scanner } from "../shift/scanner.js"
@@ -19,6 +21,7 @@ import {
 	writeUnmatchedGroupCloseMessage,
 	writeUnpairableComparatorMessage,
 	type Comparator,
+	type MinComparator,
 	type OpenLeftBound,
 	type StringifiablePrefixOperator
 } from "./shared.js"
@@ -26,15 +29,15 @@ import {
 type BranchState = {
 	prefixes: StringifiablePrefixOperator[]
 	leftBound?: OpenLeftBound
-	"&"?: TypeNode
-	"|"?: TypeNode
+	intersection?: Type
+	union?: Type
 }
 
 export type DynamicStateWithRoot = requireKeys<DynamicState, "root">
 
 export class DynamicState {
 	readonly scanner: Scanner
-	root: TypeNode | undefined
+	root: Type | undefined
 	branches: BranchState = {
 		prefixes: []
 	}
@@ -48,7 +51,7 @@ export class DynamicState {
 		this.scanner = new Scanner(def)
 	}
 
-	error(message: string) {
+	error(message: string): never {
 		return throwParseError(message)
 	}
 
@@ -62,15 +65,15 @@ export class DynamicState {
 		return value
 	}
 
-	constrainRoot(...args: Parameters<TypeNode["constrain"]>) {
+	constrainRoot(...args: Parameters<Type["constrain"]>): void {
 		this.root = this.root!.constrain(...args)
 	}
 
-	setRoot(root: TypeNode) {
+	setRoot(root: Type): void {
 		this.root = root
 	}
 
-	finalize(finalizer: Scanner.FinalizingLookahead) {
+	finalize(finalizer: Scanner.FinalizingLookahead): void {
 		if (this.groups.length) {
 			return this.error(writeUnclosedGroupMessage(")"))
 		}
@@ -78,7 +81,7 @@ export class DynamicState {
 		this.finalizer = finalizer
 	}
 
-	reduceLeftBound(limit: LimitLiteral, comparator: Comparator) {
+	reduceLeftBound(limit: LimitLiteral, comparator: Comparator): void {
 		const invertedComparator = invertedComparators[comparator]
 		if (!isKeyOf(invertedComparator, minComparators)) {
 			return this.error(writeUnpairableComparatorMessage(comparator))
@@ -99,20 +102,20 @@ export class DynamicState {
 		}
 	}
 
-	finalizeBranches() {
+	finalizeBranches(): void {
 		this.assertRangeUnset()
-		if (this.branches["|"]) {
+		if (this.branches["union"]) {
 			this.pushRootToBranch("|")
-			this.root = this.branches["|"]
-		} else if (this.branches["&"]) {
+			this.root = this.branches["union"]
+		} else if (this.branches["intersection"]) {
 			this.pushRootToBranch("&")
-			this.root = this.branches["&"]
+			this.root = this.branches["intersection"]
 		} else {
 			this.applyPrefixes()
 		}
 	}
 
-	finalizeGroup() {
+	finalizeGroup(): void {
 		this.finalizeBranches()
 		const topBranchState = this.groups.pop()
 		if (!topBranchState) {
@@ -121,11 +124,11 @@ export class DynamicState {
 		this.branches = topBranchState
 	}
 
-	addPrefix(prefix: StringifiablePrefixOperator) {
+	addPrefix(prefix: StringifiablePrefixOperator): void {
 		this.branches.prefixes.push(prefix)
 	}
 
-	applyPrefixes() {
+	applyPrefixes(): void {
 		while (this.branches.prefixes.length) {
 			const lastPrefix = this.branches.prefixes.pop()!
 			this.root =
@@ -135,30 +138,32 @@ export class DynamicState {
 		}
 	}
 
-	pushRootToBranch(token: "|" | "&") {
+	pushRootToBranch(token: "|" | "&"): void {
 		this.assertRangeUnset()
 		this.applyPrefixes()
 		const root = this.root!
-		this.branches["&"] = this.branches["&"]?.and(root) ?? root
+		this.branches["intersection"] =
+			this.branches["intersection"]?.and(root) ?? root
 		if (token === "|") {
-			this.branches["|"] =
-				this.branches["|"]?.or(this.branches["&"]) ?? this.branches["&"]
-			delete this.branches["&"]
+			this.branches["union"] =
+				this.branches["union"]?.or(this.branches["intersection"]) ??
+				this.branches["intersection"]
+			delete this.branches["intersection"]
 		}
 		this.root = undefined
 	}
 
-	parseUntilFinalizer() {
+	parseUntilFinalizer(): DynamicStateWithRoot {
 		return parseUntilFinalizer(
 			new DynamicState(this.scanner.unscanned, this.ctx)
 		)
 	}
 
-	parseOperator(this: DynamicStateWithRoot) {
+	parseOperator(this: DynamicStateWithRoot): void {
 		return parseOperator(this)
 	}
 
-	parseOperand() {
+	parseOperand(): void {
 		return parseOperand(this)
 	}
 
@@ -173,22 +178,30 @@ export class DynamicState {
 		}
 	}
 
-	reduceGroupOpen() {
+	reduceGroupOpen(): void {
 		this.groups.push(this.branches)
 		this.branches = {
 			prefixes: []
 		}
 	}
 
-	previousOperator() {
+	previousOperator():
+		| MinComparator
+		| StringifiablePrefixOperator
+		| InfixOperator
+		| undefined {
 		return (
 			this.branches.leftBound?.comparator ??
 			this.branches.prefixes.at(-1) ??
-			(this.branches["&"] ? "&" : this.branches["|"] ? "|" : undefined)
+			(this.branches["intersection"]
+				? "&"
+				: this.branches["union"]
+				? "|"
+				: undefined)
 		)
 	}
 
-	shiftedByOne() {
+	shiftedByOne(): this {
 		this.scanner.shift()
 		return this
 	}

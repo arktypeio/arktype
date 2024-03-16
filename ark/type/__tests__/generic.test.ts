@@ -1,8 +1,7 @@
 import { attest } from "@arktype/attest"
-import { nodes, writeIndivisibleMessage } from "@arktype/schema"
 import { lazily } from "@arktype/util"
-import { scope, type } from "arktype"
-import { arktypes } from "../ark.js"
+import { keywords, scope, type } from "arktype"
+import { writeIndivisibleMessage } from "../constraints/refinements/divisor.js"
 import { emptyGenericParameterMessage } from "../parser/generic.js"
 import { writeUnclosedGroupMessage } from "../parser/string/reduce/shared.js"
 import { writeInvalidGenericArgsMessage } from "../parser/string/shift/operand/genericArgs.js"
@@ -281,13 +280,13 @@ describe("generics", () => {
 				attest(() =>
 					// @ts-expect-error
 					$.type("box<1,string%2>")
-				).throwsAndHasTypeError(writeIndivisibleMessage(nodes.string))
+				).throwsAndHasTypeError(writeIndivisibleMessage(keywords.string))
 			})
 		})
 	})
 	describe("builtins", () => {
 		it("record", () => {
-			const t = arktypes.Record("string", "number")
+			const t = keywords.Record("string", "number")
 			attest(t.json).equals(type("Record<string, number>").json)
 		})
 	})

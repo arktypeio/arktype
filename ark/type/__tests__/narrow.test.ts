@@ -1,7 +1,9 @@
 import { attest } from "@arktype/attest"
-import type { Out, of, predicate } from "@arktype/schema"
 import type { equals } from "@arktype/util"
 import { type, type Type } from "arktype"
+import type { of } from "../constraints/ast.js"
+import type { predicate } from "../constraints/predicate.js"
+import type { Out } from "../types/morph.js"
 
 describe("narrow", () => {
 	it("implicit problem", () => {

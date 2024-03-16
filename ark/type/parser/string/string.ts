@@ -1,9 +1,9 @@
-import type { TypeNode } from "@arktype/schema"
 import {
 	throwInternalError,
 	throwParseError,
 	type ErrorMessage
 } from "@arktype/util"
+import type { Type } from "../../types/type.js"
 import type { inferAstRoot } from "../semantic/infer.js"
 import type { DynamicState, DynamicStateWithRoot } from "./reduce/dynamic.js"
 import type { StringifiablePrefixOperator } from "./reduce/shared.js"
@@ -40,7 +40,7 @@ export type BaseCompletions<$, args, otherSuggestions extends string = never> =
 	| StringifiablePrefixOperator
 	| otherSuggestions
 
-export const fullStringParse = (s: DynamicState): TypeNode => {
+export const fullStringParse = (s: DynamicState): Type => {
 	s.parseOperand()
 	const result = parseUntilFinalizer(s).root
 	if (!result) {
@@ -60,7 +60,7 @@ type fullStringParse<s extends StaticState, $, args> = extractFinalizedResult<
 	parseUntilFinalizer<s, $, args>
 >
 
-export const parseUntilFinalizer = (s: DynamicState) => {
+export const parseUntilFinalizer = (s: DynamicState): DynamicStateWithRoot => {
 	while (s.finalizer === undefined) {
 		next(s)
 	}

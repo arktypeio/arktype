@@ -1,6 +1,7 @@
 import { attest } from "@arktype/attest"
-import { nodes, schema, writeIndivisibleMessage } from "@arktype/schema"
 import { type } from "arktype"
+import { writeIndivisibleMessage } from "../constraints/refinements/divisor.js"
+import { keywords, node } from "../keywords/ark.js"
 import {
 	writeMissingRightOperandMessage,
 	writeUnresolvableMessage
@@ -15,7 +16,7 @@ describe("union", () => {
 	it("nary", () => {
 		const nary = type("false|null|undefined|0|''")
 		attest<false | "" | 0 | null | undefined>(nary.infer)
-		const expected = schema.units(false, null, undefined, 0, "")
+		const expected = type("===", false, null, undefined, 0, "")
 		attest(nary.json).equals(expected.json)
 	})
 	it("subtype pruning", () => {
@@ -55,22 +56,22 @@ describe("union", () => {
 	})
 	describe("expressions", () => {
 		const expected = () =>
-			schema(
+			node([
 				{
 					domain: "object",
-					required: {
+					prop: {
 						key: "a",
 						value: { domain: "string" }
 					}
 				},
 				{
 					domain: "object",
-					required: {
+					prop: {
 						key: "b",
 						value: { domain: "number" }
 					}
 				}
-			).json
+			]).json
 
 		it("tuple", () => {
 			const t = type([{ a: "string" }, "|", { b: "number" }])
@@ -133,13 +134,13 @@ describe("union", () => {
 		it("left semantic error", () => {
 			// @ts-expect-error
 			attest(() => type("symbol%2|string")).throwsAndHasTypeError(
-				writeIndivisibleMessage(nodes.symbol)
+				writeIndivisibleMessage(keywords.symbol)
 			)
 		})
 		it("right semantic error", () => {
 			// @ts-expect-error
 			attest(() => type("string|symbol%2")).throwsAndHasTypeError(
-				writeIndivisibleMessage(nodes.symbol)
+				writeIndivisibleMessage(keywords.symbol)
 			)
 		})
 		it("chained bad reference", () => {

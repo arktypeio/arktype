@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import { schema } from "@arktype/schema"
+import { reference } from "@arktype/util"
 import { type } from "arktype"
 
 describe("literal", () => {
@@ -20,14 +20,23 @@ describe("literal", () => {
 		})
 		it("branches", () => {
 			const o = { ark: true }
+			const oReference = reference(o)
 			const s = Symbol()
+			const sReference = reference(s)
 			const t = type(["===", true, "foo", 5, 1n, null, undefined, o, s])
 			attest<
 				true | "foo" | 5 | 1n | null | undefined | { ark: boolean } | typeof s
 			>(t.infer)
-			attest(t.json).equals(
-				schema.units(true, "foo", 5, 1n, null, undefined, o, s).json
-			)
+			attest(t.json).equals([
+				{ unit: sReference },
+				{ unit: oReference },
+				{ unit: "1n" },
+				{ unit: "foo" },
+				{ unit: "undefined" },
+				{ unit: 5 },
+				{ unit: null },
+				{ unit: true }
+			])
 		})
 	})
 	describe("root expression", () => {
@@ -38,14 +47,23 @@ describe("literal", () => {
 		})
 		it("branches", () => {
 			const o = { ark: true }
+			const oReference = reference(o)
 			const s = Symbol()
+			const sReference = reference(s)
 			const t = type("===", "foo", 5, true, null, 1n, undefined, o, s)
 			attest<
 				true | "foo" | 5 | 1n | null | undefined | { ark: boolean } | typeof s
 			>(t.infer)
-			attest(t.json).equals(
-				schema.units(true, "foo", 5, 1n, null, undefined, o, s).json
-			)
+			attest(t.json).equals([
+				{ unit: sReference },
+				{ unit: oReference },
+				{ unit: "1n" },
+				{ unit: "foo" },
+				{ unit: "undefined" },
+				{ unit: 5 },
+				{ unit: null },
+				{ unit: true }
+			])
 		})
 	})
 })

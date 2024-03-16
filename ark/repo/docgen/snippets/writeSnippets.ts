@@ -4,7 +4,9 @@ import { repoDirs } from "../../shared.js"
 import type { SnippetsByPath } from "./extractSnippets.js"
 import { referenceTokens } from "./snipTokens.js"
 
-export const updateSnippetReferences = (snippetsByPath: SnippetsByPath) => {
+export const updateSnippetReferences = (
+	snippetsByPath: SnippetsByPath
+): void => {
 	const updatedPaths = Object.keys(snippetsByPath).filter((path) =>
 		updateSnippetReferencesIfNeeded(path, snippetsByPath)
 	)

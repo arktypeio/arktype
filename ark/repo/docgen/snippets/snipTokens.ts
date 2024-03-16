@@ -20,5 +20,7 @@ export const snipTokens = {
 	...referenceTokens
 }
 
-export const includesTokenFrom = (s: string, tokens: Record<string, string>) =>
-	Object.keys(tokens).some((token) => s.includes(token))
+export const includesTokenFrom = (
+	s: string,
+	tokens: Record<string, string>
+): boolean => Object.keys(tokens).some((token) => s.includes(token))

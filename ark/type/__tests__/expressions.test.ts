@@ -1,12 +1,11 @@
 import { attest } from "@arktype/attest"
-import { schema } from "@arktype/schema"
-import { type, type Out } from "arktype"
-import { scope, type Ark } from "../ark.js"
+import { ark, schema, scope, type, type Ark, type Out } from "arktype"
+import { node } from "../keywords/ark.js"
 import {
 	writeMissingRightOperandMessage,
 	writeUnresolvableMessage
 } from "../parser/string/shift/operand/unenclosed.js"
-import type { Type } from "../type.js"
+import type { Type } from "../types/type.js"
 
 describe("tuple expressions", () => {
 	it("nested", () => {
@@ -75,17 +74,19 @@ describe("root expression", () => {
 	it("=== branches", () => {
 		const t = type("===", "foo", "bar", "baz")
 		attest<"foo" | "bar" | "baz">(t.infer)
-		attest(t.json).equals(schema.units("foo", "bar", "baz").json)
+		attest(t.json).snap({ proto: "$ark.anonymousFunction32" })
 	})
 	it("instanceof single", () => {
 		const t = type("instanceof", RegExp)
 		attest<RegExp>(t.infer)
-		attest(t.json).equals(schema(RegExp).json)
+		const expected = node(RegExp)
+		attest(t.json).equals(expected.json)
 	})
 	it("instanceof branches", () => {
 		const t = type("instanceof", Array, Date)
 		attest<unknown[] | Date>(t.infer)
-		attest(t.json).equals(schema(Array, Date).json)
+		const expected = node([Array, Date])
+		attest(t.json).equals(expected.json)
 	})
 	it("postfix", () => {
 		const t = type({ a: "string" }, "[]")

@@ -3,6 +3,7 @@
 	"editor.codeActionsOnSave": [
 		"editor.formatOnSave",
 		"source.fixAll.eslint",
+		"source.addMissingImports",
 		"source.sortImports"
 	],
 	"eslint.codeActionsOnSave.rules": [
@@ -24,7 +25,8 @@
 		"out",
 		// too many overlapping names, easy to import in schema/arktype where we don't want it
 		// should just import as * as ts when we need it in attest
-		"typescript"
+		"typescript",
+		"./ark/type/main.ts"
 	],
 	"typescript.tsserver.experimental.enableProjectDiagnostics": true,
 	"prettier.ignorePath": "ark/repo/.prettierignore",
@@ -46,5 +48,8 @@
 	"astro.language-server.ls-path": "ark/docs/node_modules/astro",
 	"search.exclude": {
 		"**/out": true
+	},
+	"debug.javascript.terminalOptions": {
+		"skipFiles": ["<node_internals>/**", "**/node_modules/**"]
 	}
 }

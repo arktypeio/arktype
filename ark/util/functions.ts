@@ -1,6 +1,7 @@
 import { throwInternalError } from "./errors.js"
+import { NoopBase } from "./records.js"
 
-export const cached = <T>(thunk: () => T) => {
+export const cached = <T>(thunk: () => T): (() => T) => {
 	let isCached = false
 	let result: T | undefined
 	return () => {
@@ -48,19 +49,36 @@ export type DynamicFunction = new <f extends (...args: never[]) => unknown>(
 	call(thisArg: null, ...args: Parameters<f>): ReturnType<f>
 }
 
-export const Callable: Callable = class {
-	constructor(f: Function, thisArg?: object) {
-		return Object.setPrototypeOf(
-			f.bind(thisArg ?? this),
-			this.constructor.prototype
-		)
-	}
-} as never
+export type CallableOptions<attachments extends object> = {
+	attach?: attachments
+	bind?: object
+}
 
-export type Callable = new <f extends (...args: never[]) => unknown>(
-	f: f,
-	thisArg?: object
-) => f
+// @ts-expect-error requires to cast function type
+export class Callable<
+	f extends (...args: never[]) => unknown,
+	attachments extends object = {}
+> extends NoopBase<f & attachments> {
+	constructor(f: f, opts?: CallableOptions<attachments>) {
+		super()
+		return Object.assign(
+			Object.setPrototypeOf(
+				f.bind(opts?.bind ?? this),
+				this.constructor.prototype
+			),
+			opts?.attach
+		)
+		// const proto = opts?.bind ?? this.constructor.prototype
+		// const self = Object.create(
+		// 	proto,
+		// 	Object.getOwnPropertyDescriptors(opts?.attach)
+		// )
+		// return Object.assign(
+		// 	Object.setPrototypeOf(f.bind(self), proto),
+		// 	opts?.attach
+		// )
+	}
+}
 
 export type Guardable<input = unknown, narrowed extends input = input> =
 	| ((In: input) => In is narrowed)

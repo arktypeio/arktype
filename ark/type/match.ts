@@ -1,20 +1,18 @@
 import type {
-	Morph,
-	distill,
-	intersectConstrainables,
-	predicate
-} from "@arktype/schema"
-import type {
 	ErrorMessage,
 	UnknownUnion,
 	isDisjoint,
 	numericStringKeyOf,
-	replaceKey,
+	override,
 	unionToTuple,
 	valueOf
 } from "@arktype/util"
+import type { intersectConstrainables } from "./constraints/ast.js"
+import type { predicate } from "./constraints/predicate.js"
 import type { Scope } from "./scope.js"
-import { Type, type inferTypeRoot, type validateTypeRoot } from "./type.js"
+import type { inferTypeRoot, validateTypeRoot } from "./type.js"
+import type { Morph, distill } from "./types/morph.js"
+import type { Type } from "./types/type.js"
 
 type MatchParserContext = {
 	thens: readonly ((In: unknown) => unknown)[]
@@ -58,7 +56,7 @@ type getUnhandledBranches<ctx extends MatchParserContext> = Exclude<
 type addBranches<
 	ctx extends MatchParserContext,
 	branches extends unknown[]
-> = replaceKey<ctx, "thens", [...ctx["thens"], ...branches]>
+> = override<ctx, { thens: [...ctx["thens"], ...branches] }>
 
 type validateWhenDefinition<
 	def,
@@ -173,14 +171,14 @@ export type MatchInvocation<ctx extends MatchInvocationContext> = <
 		: ReturnType<ctx["thens"][i]>
 }[numericStringKeyOf<ctx["thens"]>]
 
-export const createMatchParser = <$>(scope: Scope): MatchParser<$> => {
+export const createMatchParser = <$>($: Scope): MatchParser<$> => {
 	const matchParser = (isRestricted: boolean) => {
 		const handledCases: { when: Type; then: Morph }[] = []
 		let defaultCase: ((x: unknown) => unknown) | null = null
 
 		const parser = {
 			when: (when: unknown, then: Morph) => {
-				handledCases.push({ when: new Type(when, scope), then })
+				handledCases.push({ when: $.parseTypeRoot(when, {}), then })
 
 				return parser
 			},
@@ -200,7 +198,7 @@ export const createMatchParser = <$>(scope: Scope): MatchParser<$> => {
 				// 	return [{ in: when.root, morph: then }]
 				// })
 				// if (defaultCase) {
-				// 	branches.push({ in: new Type("unknown", scope), morph: defaultCase })
+				// 	branches.push({ in: new Type("unknown", $), morph: defaultCase })
 				// }
 				// const matchers = schema.union({
 				// 	branches,

@@ -17,7 +17,7 @@ import { caller } from "./caller.js"
 import { shell } from "./shell.js"
 export { rmSync } from "node:fs"
 
-export const ensureDir = (path: string) => {
+export const ensureDir = (path: string): string => {
 	if (existsSync(path)) {
 		if (!statSync(path).isDirectory()) {
 			throw new Error(`${path} exists and is not a directory.`)
@@ -28,18 +28,18 @@ export const ensureDir = (path: string) => {
 	return path
 }
 
-export const readFile = (path: string) => readFileSync(path).toString()
+export const readFile = (path: string): string => readFileSync(path).toString()
 
-export const writeFile = (path: string, contents: string) =>
+export const writeFile = (path: string, contents: string): void =>
 	writeFileSync(path, contents)
 
-export const readJson = (path: string) =>
+export const readJson = (path: string): any =>
 	JSON.parse(readFileSync(path, { encoding: "utf8" }))
 
-export const writeJson = (path: string, data: object) =>
+export const writeJson = (path: string, data: object): void =>
 	writeFileSync(path, JSON.stringify(data, null, 4) + "\n")
 
-export const rmRf = (target: string) =>
+export const rmRf = (target: string): void =>
 	rmSync(target, { recursive: true, force: true })
 
 export const cpR = (from: string, to: string): void =>
@@ -47,7 +47,7 @@ export const cpR = (from: string, to: string): void =>
 
 export type JsonTransformer = (data: object) => object
 
-export const rewriteJson = (path: string, transform: JsonTransformer) =>
+export const rewriteJson = (path: string, transform: JsonTransformer): void =>
 	writeJson(path, transform(readJson(path)))
 
 export type WalkOptions = {
@@ -80,7 +80,7 @@ export const walkPaths = (dir: string, options: WalkOptions = {}): string[] =>
 	}, [])
 
 /** Fetch the file and directory paths from a path, uri, or `import.meta.url` */
-export const filePath = (path: string) => {
+export const filePath = (path: string): string => {
 	let file
 	if (path.includes("://")) {
 		// is a url, e.g. file://, or https://
@@ -99,21 +99,22 @@ const fileOfCaller = () =>
 const dirOfCaller = () =>
 	dirname(filePath(caller({ methodName: "dirOfCaller", upStackBy: 1 }).file))
 
-export const fileName = () => fileOfCaller()
+export const fileName = (): string => fileOfCaller()
 
-export const dirName = () => dirOfCaller()
+export const dirName = (): string => dirOfCaller()
 
-export const fromHere = (...joinWith: string[]) =>
+export const fromHere = (...joinWith: string[]): string =>
 	join(dirOfCaller(), ...joinWith)
 
-export const fromCwd = (...joinWith: string[]) =>
+export const fromCwd = (...joinWith: string[]): string =>
 	join(process.cwd(), ...joinWith)
 
-export const fromHome = (...joinWith: string[]) => join(homedir()!, ...joinWith)
+export const fromHome = (...joinWith: string[]): string =>
+	join(homedir()!, ...joinWith)
 
 export const fsRoot = parse(process.cwd()).root
 
-export const findPackageRoot = (fromDir?: string) => {
+export const findPackageRoot = (fromDir?: string): string => {
 	const startDir = fromDir ?? dirOfCaller()
 	let dirToCheck = startDir
 	while (dirToCheck !== fsRoot) {
@@ -123,7 +124,7 @@ export const findPackageRoot = (fromDir?: string) => {
 			 * If the file is just a stub with no package name, don't consider
 			 * it a package root
 			 */
-			if (contents.name) {
+			if ("name" in contents) {
 				return dirToCheck
 			}
 		} catch {
@@ -134,13 +135,13 @@ export const findPackageRoot = (fromDir?: string) => {
 	throw new Error(`${startDir} is not part of a node package.`)
 }
 
-export const fromPackageRoot = (...joinWith: string[]) =>
+export const fromPackageRoot = (...joinWith: string[]): string =>
 	join(findPackageRoot(dirOfCaller()), ...joinWith)
 
-export const readPackageJson = (startDir?: string) =>
+export const readPackageJson = (startDir?: string): any =>
 	readJson(join(findPackageRoot(startDir), "package.json"))
 
-export const getSourceControlPaths = () =>
+export const getSourceControlPaths = (): string[] =>
 	// include tracked and untracked files as long as they are not ignored
 	shell("git ls-files --exclude-standard --cached --others", {
 		stdio: "pipe"
@@ -156,7 +157,8 @@ const inFileFilter: WalkOptions = {
 	ignoreDirsMatching: /node_modules|out|dist|docgen/
 }
 
-export const getSourceFilePaths = (dir = ".") => walkPaths(dir, inFileFilter)
+export const getSourceFilePaths = (dir = "."): string[] =>
+	walkPaths(dir, inFileFilter)
 
 export type SourceFileEntry = [path: string, contents: string]
 

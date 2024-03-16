@@ -1,5 +1,5 @@
-import type { TypeNode } from "@arktype/schema"
 import type { ErrorMessage, join } from "@arktype/util"
+import type { Type } from "../../../../types/type.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import { writeUnclosedGroupMessage } from "../../reduce/shared.js"
 import type { StaticState, state } from "../../reduce/static.js"
@@ -17,7 +17,7 @@ export const parseGenericArgs = (
 	name: string,
 	params: string[],
 	s: DynamicState
-) => parseGenericArgsRecurse(name, params, s, [], [])
+): ParsedArgs<Type[]> => parseGenericArgsRecurse(name, params, s, [], [])
 
 export type parseGenericArgs<
 	name extends string,
@@ -32,8 +32,8 @@ const parseGenericArgsRecurse = (
 	params: string[],
 	s: DynamicState,
 	argDefs: string[],
-	argNodes: TypeNode[]
-): ParsedArgs<TypeNode[]> => {
+	argNodes: Type[]
+): ParsedArgs<Type[]> => {
 	const argState = s.parseUntilFinalizer()
 	// remove the finalizing token from the argDef
 	argDefs.push(argState.scanner.scanned.slice(0, -1))
@@ -110,10 +110,10 @@ export const writeInvalidGenericArgsMessage = <
 	name: name,
 	params: params,
 	argDefs: argDefs
-) =>
+): writeInvalidGenericArgsMessage<name, params, argDefs> =>
 	`${name}<${params.join(", ")}> requires exactly ${params.length} args (got ${
 		argDefs.length
-	}${argDefs.length === 0 ? "" : ": " + argDefs.join(", ")})`
+	}${argDefs.length === 0 ? "" : ": " + argDefs.join(", ")})` as never
 
 export type writeInvalidGenericArgsMessage<
 	name extends string,

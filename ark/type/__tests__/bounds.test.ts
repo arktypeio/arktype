@@ -1,7 +1,8 @@
 import { attest } from "@arktype/attest"
-import { schema, writeUnboundableMessage } from "@arktype/schema"
 import { writeMalformedNumericLiteralMessage } from "@arktype/util"
 import { type } from "arktype"
+import { writeUnboundableMessage } from "../constraints/refinements/range.js"
+import { node } from "../keywords/ark.js"
 import { writeDoubleRightBoundMessage } from "../parser/semantic/bounds.js"
 import {
 	writeMultipleLeftBoundsMessage,
@@ -10,8 +11,7 @@ import {
 } from "../parser/string/reduce/shared.js"
 import {
 	singleEqualsMessage,
-	writeInvalidLimitMessage,
-	writeLimitMismatchMessage
+	writeInvalidLimitMessage
 } from "../parser/string/shift/operator/bounds.js"
 
 describe("parsed bounds", () => {
@@ -27,7 +27,7 @@ describe("parsed bounds", () => {
 		it("<", () => {
 			const t = type("number<10")
 			attest<number>(t.infer)
-			const expected = schema({
+			const expected = node({
 				domain: "number",
 				max: { rule: 10, exclusive: true }
 			})
@@ -36,7 +36,7 @@ describe("parsed bounds", () => {
 		it("<=", () => {
 			const t = type("number<=-49")
 			attest<number>(t.infer)
-			const expected = schema({
+			const expected = node({
 				domain: "number",
 				max: { rule: -49, exclusive: false }
 			})
@@ -45,7 +45,7 @@ describe("parsed bounds", () => {
 		it("==", () => {
 			const t = type("number==3211993")
 			attest<number>(t.infer)
-			const expected = schema({
+			const expected = node({
 				domain: "number",
 				min: { rule: 3211993, exclusive: false },
 				max: { rule: 3211993, exclusive: false }
@@ -55,7 +55,7 @@ describe("parsed bounds", () => {
 		it("<,<=", () => {
 			const t = type("-5<number<=5")
 			attest<number>(t.infer)
-			const expected = schema({
+			const expected = node({
 				domain: "number",
 				min: { rule: -5, exclusive: true },
 				max: { rule: 5, exclusive: false }
@@ -65,7 +65,7 @@ describe("parsed bounds", () => {
 		it("<=,<", () => {
 			const t = type("-3.23<=number<4.654")
 			attest<number>(t.infer)
-			const expected = schema({
+			const expected = node({
 				domain: "number",
 				min: { rule: -3.23, exclusive: false },
 				max: { rule: 4.654, exclusive: true }
@@ -75,7 +75,7 @@ describe("parsed bounds", () => {
 		it("whitespace following comparator", () => {
 			const t = type("number > 3")
 			attest<number>(t.infer)
-			const expected = schema({
+			const expected = node({
 				domain: "number",
 				min: { rule: 3, exclusive: true }
 			})
@@ -241,49 +241,43 @@ describe("parsed bounds", () => {
 
 		it("number with right Date bound", () => {
 			attest(() =>
-				//@ts-expect-error
+				// @ts-expect-error
 				type("number<d'2001/01/01'")
+			).throwsAndHasTypeError(
+				writeInvalidLimitMessage("<", "d'2001/01/01'", "right")
 			)
-				.throws(
-					writeInvalidLimitMessage(
-						"<",
-						"Mon Jan 01 2001 00:00:00 GMT-0500 (Eastern Standard Time)",
-						"right"
-					)
-				)
-				.type.errors(writeInvalidLimitMessage("<", "d'2001/01/01'", "right"))
 		})
 		it("number with left Date bound", () => {
-			//@ts-expect-error
-			attest(() => type("d'2001/01/01'<number<2"))
-				.throws(writeLimitMismatchMessage("number", "2001/01/01"))
-				.type.errors(writeInvalidLimitMessage("<", "d'2001/01/01'", "left"))
+			// @ts-expect-error
+			attest(() => type("d'2001/01/01'<number<2")).throwsAndHasTypeError(
+				writeInvalidLimitMessage("<", "d'2001/01/01'", "left")
+			)
 		})
 	})
 
 	describe("chained expressions", () => {
 		it("min", () => {
-			const t = type("number").min(5)
+			const t = type("number").atLeast(5)
 			const expected = type("number>=5")
 			attest<typeof expected>(t)
 			attest(t.json).equals(expected.json)
 		})
 		it("max", () => {
-			const t = type("number").max(10)
+			const t = type("number").atMost(10)
 			const expected = type("number<=10")
 			attest<typeof expected>(t)
 			attest(t.json).equals(expected.json)
 		})
 
 		it("minLength", () => {
-			const t = type("string").minLength(5)
+			const t = type("string").atLeastLength(5)
 			const expected = type("string>=5")
 			attest<typeof expected>(t)
 			attest(t.json).equals(expected.json)
 		})
 
 		it("maxLength", () => {
-			const t = type("string").maxLength(10)
+			const t = type("string").atMostLength(10)
 			const expected = type("string<=10")
 			attest<typeof expected>(t)
 			attest(t.json).equals(expected.json)
@@ -306,7 +300,7 @@ describe("parsed bounds", () => {
 		// })
 
 		it("exclusive", () => {
-			const t = type("number").min({ rule: 1337, exclusive: true })
+			const t = type("number").atLeast({ rule: 1337, exclusive: true })
 			const expected = type("number>1337")
 			attest<typeof expected>(t)
 			attest(t.json).equals(expected.json)

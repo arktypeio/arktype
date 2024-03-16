@@ -24,17 +24,17 @@ export const upcomingTsSyntax = type({
 	variadicTuples: ["true", "...", "false[]"]
 })
 
-export const validationSyntax = type({
-	keywords: "email|uuid|creditCard|integer", // and many more
-	builtinParsers: "parse.date", // parses a Date from a string
-	nativeRegexLiteral: /@arktype\.io/,
-	embeddedRegexLiteral: "email&/@arktype\\.io/",
-	divisibility: "number%10", // a multiple of 10
-	bound: "alpha>10", // an alpha-only string with more than 10 characters
-	range: "1<=email[]<100", // a list of 1 to 99 emails
-	narrows: ["number", ":", (n) => n % 2 === 1], // an odd integer
-	morphs: ["string", "=>", parseFloat] // validates a string input then parses it to a number
-})
+// export const validationSyntax = type({
+// 	keywords: "email|uuid|creditCard|integer", // and many more
+// 	builtinParsers: "parse.date", // parses a Date from a string
+// 	nativeRegexLiteral: /@arktype\.io/,
+// 	embeddedRegexLiteral: "email&/@arktype\\.io/",
+// 	divisibility: "number%10", // a multiple of 10
+// 	bound: "alpha>10", // an alpha-only string with more than 10 characters
+// 	range: "1<=email[]<100", // a list of 1 to 99 emails
+// 	narrows: ["number", ":", (n) => n % 2 === 1], // an odd integer
+// 	morphs: ["string", "=>", parseFloat] // validates a string input then parses it to a number
+// })
 
 // in the upcoming release, you can use chaining to define expressions directly
 // that use objects or functions that can't be embedded in strings

@@ -1,11 +1,4 @@
 import {
-	isNode,
-	schema,
-	type TypeNode,
-	type of,
-	type regex
-} from "@arktype/schema"
-import {
 	isThunk,
 	objectKindOf,
 	printable,
@@ -23,9 +16,12 @@ import {
 	type optionalKeyOf,
 	type requiredKeyOf
 } from "@arktype/util"
-import type { type } from "../ark.js"
+import { isNode } from "../base.js"
+import type { of } from "../constraints/ast.js"
+import type { regex } from "../constraints/refinements/regex.js"
+import type { type } from "../keywords/ark.js"
 import type { ParseContext } from "../scope.js"
-import { Type } from "../type.js"
+import type { Type } from "../types/type.js"
 import {
 	parseObjectLiteral,
 	type inferObjectLiteral,
@@ -40,13 +36,10 @@ import {
 	type validateTuple
 } from "./tuple.js"
 
-export const parseObject = (def: object, ctx: ParseContext): TypeNode => {
+export const parseObject = (def: object, ctx: ParseContext): Type => {
 	const objectKind = objectKindOf(def)
 	switch (objectKind) {
 		case undefined:
-			if (def instanceof Type) {
-				return def.root
-			}
 			if (isNode(def) && def.isType()) {
 				return def
 			}
@@ -54,11 +47,18 @@ export const parseObject = (def: object, ctx: ParseContext): TypeNode => {
 		case "Array":
 			return parseTuple(def as List, ctx)
 		case "RegExp":
-			return schema({ domain: "string", regex: def as RegExp })
+			return ctx.$.node(
+				"intersection",
+				{
+					domain: "string",
+					regex: def as RegExp
+				},
+				{ prereduced: true }
+			)
 		case "Function":
 			const resolvedDef = isThunk(def) ? def() : def
-			if (resolvedDef instanceof Type) {
-				return resolvedDef.root
+			if (isNode(resolvedDef) && resolvedDef.isType()) {
+				return resolvedDef
 			}
 			return throwParseError(writeBadDefinitionTypeMessage("Function"))
 		default:

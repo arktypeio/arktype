@@ -1,10 +1,8 @@
 import { attest } from "@arktype/attest"
-import {
-	writeUndiscriminableMorphUnionMessage,
-	type ArkTypeError,
-	type Out
-} from "@arktype/schema"
 import { scope, type, type Ark, type Type } from "arktype"
+import type { ArkTypeError } from "../shared/errors.js"
+import { writeUndiscriminableMorphUnionMessage } from "../types/discriminate.js"
+import type { Out } from "../types/morph.js"
 
 describe("morph", () => {
 	it("base", () => {
@@ -18,7 +16,8 @@ describe("morph", () => {
 		}
 		attest<string>(result.out).equals("true")
 		attest(t("foo").errors?.summary).snap("Must be boolean (was string)")
-		attest(t.root).equals(type(["boolean", "=>", (data) => `${data}`]).root)
+		const expected = type("boolean", "=>", (data) => `${data}`)
+		attest(t).equals(expected)
 	})
 	it("endomorph", () => {
 		const t = type(["boolean", "=>", (data) => !data])

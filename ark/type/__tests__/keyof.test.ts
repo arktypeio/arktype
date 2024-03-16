@@ -1,6 +1,6 @@
 import { attest } from "@arktype/attest"
-import { schema } from "@arktype/schema"
 import { type } from "arktype"
+import { node } from "../keywords/ark.js"
 import {
 	writeMissingRightOperandMessage,
 	writeUnresolvableMessage
@@ -9,17 +9,19 @@ import {
 describe("keyof", () => {
 	it("autocompletion", () => {
 		// @ts-expect-error
-		attest(() => type("k")).type.errors("keyof ")
+		attest(() => type("k")).completions()
 	})
 	it("root expression", () => {
 		const t = type("keyof", "Date")
 		attest<keyof Date>(t.infer)
-		attest(t.json).equals(schema(Date).keyof().json)
+		const expected = node(Date).keyof()
+		attest(t.json).equals(expected.json)
 	})
 	it("primitive", () => {
 		const t = type("keyof bigint")
 		attest<keyof bigint>(t.infer)
-		const expected = schema.units(
+		const expected = type(
+			"===",
 			"toLocaleString",
 			"toString",
 			"valueOf",
@@ -47,7 +49,7 @@ describe("keyof", () => {
 	it("tuple expression", () => {
 		const t = type(["keyof", { a: "string" }])
 		attest<"a">(t.infer)
-		attest(t.json).equals(schema.units("a").json)
+		attest(t.json).equals(type("'a'").json)
 	})
 	it("union including non-object", () => {
 		attest(() => type({ a: "number" }).or("boolean").keyof()).throws(
@@ -62,19 +64,19 @@ describe("keyof", () => {
 	it("multiple keyofs", () => {
 		const t = type("keyof keyof string")
 		attest<"toString" | "valueOf">(t.infer)
-		attest(t.json).equals(schema.units("toString", "valueOf").json)
+		attest(t.json).equals(type("===", "toString", "valueOf").json)
 	})
 	it("groupable", () => {
 		const t = type("(keyof symbol & string)[]")
 		attest<("toString" | "valueOf" | "description")[]>(t.infer)
 		attest(t.json).equals(
-			schema.units("toString", "valueOf", "description").array().json
+			type("===", "toString", "valueOf", "description").array().json
 		)
 	})
 	it("intersection precedence", () => {
 		const t = type("keyof symbol & symbol")
 		attest<typeof Symbol.toStringTag | typeof Symbol.toPrimitive>(t.infer)
-		attest(t.json).is(schema.units(Symbol.toStringTag, Symbol.toPrimitive).json)
+		attest(t.json).is(type("===", Symbol.toStringTag, Symbol.toPrimitive).json)
 	})
 	it("union precedence", () => {
 		const t = type("keyof boolean | number")
@@ -127,7 +129,7 @@ describe("keyof", () => {
 		const a = type([{ "1": "'foo'" }, "&", "string[]"])
 		const t = type("keyof", a)
 		// TODO should still include wellFormed
-		attest(t.root.toString()).snap(
+		attest(t.toString()).snap(
 			'"1" or "at" or "concat" or "copyWithin" or "entries" or "every" or "fill" or "filter" or "find" or "findIndex" or "findLast" or "findLastIndex" or "flat" or "flatMap" or "forEach" or "includes" or "indexOf" or "join" or "keys" or "lastIndexOf" or "length" or "map" or "pop" or "push" or "reduce" or "reduceRight" or "reverse" or "shift" or "slice" or "some" or "sort" or "splice" or "toLocaleString" or "toString" or "unshift" or "values" or (symbol Symbol.iterator) or (symbol Symbol.unscopables) or /^(?:0|(?:[1-9]\\d*))$/'
 		)
 	})

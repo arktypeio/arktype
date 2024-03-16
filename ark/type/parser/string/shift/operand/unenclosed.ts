@@ -1,4 +1,3 @@
-import { BaseType, schema, type TypeNode } from "@arktype/schema"
 import {
 	printable,
 	throwParseError,
@@ -12,6 +11,7 @@ import {
 } from "@arktype/util"
 import type { Module } from "../../../../scope.js"
 import type { Generic, GenericProps } from "../../../../type.js"
+import { BaseType, type Type } from "../../../../types/type.js"
 import { hasArkKind } from "../../../../util.js"
 import type { GenericInstantiationAst } from "../../../semantic/infer.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
@@ -63,7 +63,7 @@ export const parseGenericInstantiation = (
 	name: string,
 	g: Generic,
 	s: DynamicState
-): TypeNode => {
+): Type => {
 	s.scanner.shiftUntilNonWhitespace()
 	const lookahead = s.scanner.shift()
 	if (lookahead !== "<") {
@@ -75,7 +75,7 @@ export const parseGenericInstantiation = (
 	s.scanner.jumpToIndex(
 		remainingChars === 0 ? s.scanner.length : -remainingChars
 	)
-	return g(...parsedArgs.result).root as never
+	return g(...parsedArgs.result) as never
 }
 
 export type parseGenericInstantiation<
@@ -100,7 +100,7 @@ export type parseGenericInstantiation<
 		: never
 	: state.error<writeInvalidGenericArgsMessage<name, g["parameters"], []>>
 
-const unenclosedToNode = (s: DynamicState, token: string): TypeNode =>
+const unenclosedToNode = (s: DynamicState, token: string): Type =>
 	maybeParseReference(s, token) ??
 	maybeParseUnenclosedLiteral(s, token) ??
 	s.error(
@@ -112,11 +112,11 @@ const unenclosedToNode = (s: DynamicState, token: string): TypeNode =>
 const maybeParseReference = (
 	s: DynamicState,
 	token: string
-): TypeNode | undefined => {
+): Type | undefined => {
 	if (s.ctx.args?.[token]) {
 		return s.ctx.args[token]
 	}
-	const resolution = s.ctx.scope.maybeResolve(token)
+	const resolution = s.ctx.$.maybeResolve(token)
 	if (resolution instanceof BaseType) {
 		return resolution
 	}
@@ -132,14 +132,14 @@ const maybeParseReference = (
 const maybeParseUnenclosedLiteral = (
 	s: DynamicState,
 	token: string
-): TypeNode | undefined => {
+): Type | undefined => {
 	const maybeNumber = tryParseNumber(token, { strict: true })
 	if (maybeNumber !== undefined) {
-		return schema({ unit: maybeNumber })
+		return s.ctx.$.parseUnits(maybeNumber)
 	}
 	const maybeBigint = tryParseWellFormedBigint(token)
 	if (maybeBigint !== undefined) {
-		return schema({ unit: maybeBigint })
+		return s.ctx.$.parseUnits(maybeBigint)
 	}
 }
 
@@ -226,19 +226,12 @@ export const writeUnresolvableMessage = <token extends string>(
 type writeUnresolvableMessage<token extends string> =
 	`'${token}' is unresolvable`
 
-export const writeMissingOperandMessage = <s extends DynamicState>(s: s) => {
+export const writeMissingOperandMessage = (s: DynamicState): string => {
 	const operator = s.previousOperator()
 	return operator
 		? writeMissingRightOperandMessage(operator, s.scanner.unscanned)
 		: writeExpressionExpectedMessage(s.scanner.unscanned)
 }
-
-export type writeMissingOperandMessage<
-	s extends StaticState,
-	operator extends string | undefined = state.previousOperator<s>
-> = operator extends string
-	? writeMissingRightOperandMessage<operator, s["unscanned"]>
-	: writeExpressionExpectedMessage<s["unscanned"]>
 
 export type writeMissingRightOperandMessage<
 	token extends string,
@@ -260,7 +253,8 @@ export const writeMissingRightOperandMessage = <
 
 export const writeExpressionExpectedMessage = <unscanned extends string>(
 	unscanned: unscanned
-) => `Expected an expression${unscanned ? ` before '${unscanned}'` : ""}`
+): writeExpressionExpectedMessage<unscanned> =>
+	`Expected an expression${unscanned ? ` before '${unscanned}'` : ""}` as never
 
 export type writeExpressionExpectedMessage<unscanned extends string> =
 	`Expected an expression${unscanned extends ""

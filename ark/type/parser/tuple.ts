@@ -1,24 +1,4 @@
 import {
-	makeRootAndArrayPropertiesMutable,
-	nodes,
-	schema,
-	type BaseMeta,
-	type Morph,
-	type MorphChildKind,
-	type MutableInner,
-	type Node,
-	type Out,
-	type Predicate,
-	type Schema,
-	type TypeNode,
-	type UnionChildKind,
-	type extractIn,
-	type extractOut,
-	type inferIntersection,
-	type inferMorphOut,
-	type inferNarrow
-} from "@arktype/schema"
-import {
 	append,
 	objectKindOrDomainOf,
 	printable,
@@ -31,17 +11,34 @@ import {
 	type conform,
 	type evaluate
 } from "@arktype/util"
+import type { Node } from "../base.js"
+import type { Predicate, inferNarrow } from "../constraints/predicate.js"
+import type { MutableInner, Schema } from "../kinds.js"
+import type { instantiateSchema, validateSchema } from "../schema.js"
 import type { ParseContext } from "../scope.js"
+import type { BaseMeta } from "../shared/declare.js"
+import type { inferIntersection } from "../shared/intersections.js"
+import { makeRootAndArrayPropertiesMutable } from "../shared/utils.js"
+import type {
+	Morph,
+	MorphChildKind,
+	Out,
+	extractIn,
+	extractOut,
+	inferMorphOut
+} from "../types/morph.js"
+import type { Type } from "../types/type.js"
+import type { UnionChildKind } from "../types/union.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
 import type { InfixOperator, PostfixExpression } from "./semantic/infer.js"
 import { writeUnsatisfiableExpressionError } from "./semantic/validate.js"
 import { writeMissingRightOperandMessage } from "./string/shift/operand/unenclosed.js"
 import type { BaseCompletions } from "./string/string.js"
 
-export const parseTuple = (def: List, ctx: ParseContext) =>
+export const parseTuple = (def: List, ctx: ParseContext): Type =>
 	maybeParseTupleExpression(def, ctx) ?? parseTupleLiteral(def, ctx)
 
-export const parseTupleLiteral = (def: List, ctx: ParseContext): TypeNode => {
+export const parseTupleLiteral = (def: List, ctx: ParseContext): Type => {
 	let sequences: MutableInner<"sequence">[] = [{}]
 	let i = 0
 	while (i < def.length) {
@@ -53,7 +50,7 @@ export const parseTupleLiteral = (def: List, ctx: ParseContext): TypeNode => {
 		}
 
 		ctx.path.push(`${i}`)
-		const element = ctx.scope.parse(def[i], ctx)
+		const element = ctx.$.parse(def[i], ctx)
 		ctx.path.pop()
 		i++
 		if (def[i] === "?") {
@@ -64,8 +61,8 @@ export const parseTupleLiteral = (def: List, ctx: ParseContext): TypeNode => {
 			i++
 		}
 		if (spread) {
-			if (!element.extends(nodes.Array)) {
-				return throwParseError(writeNonArraySpreadMessage(element))
+			if (!element.extends(ctx.$.keywords.Array)) {
+				return throwParseError(writeNonArraySpreadMessage(element.expression))
 			}
 			// a spread must be distributed over branches e.g.:
 			// def: [string, ...(number[] | [true, false])]
@@ -82,11 +79,14 @@ export const parseTupleLiteral = (def: List, ctx: ParseContext): TypeNode => {
 			)
 		}
 	}
-	return schema(
-		...sequences.map((sequence) => ({
-			proto: Array,
-			sequence
-		}))
+	return ctx.$.node(
+		sequences.map(
+			(sequence) =>
+				({
+					proto: Array,
+					sequence
+				}) as const
+		)
 	)
 }
 
@@ -95,7 +95,7 @@ type ElementKind = "optional" | "required" | "variadic"
 const appendElement = (
 	base: MutableInner<"sequence">,
 	kind: ElementKind,
-	element: TypeNode
+	element: Type
 ): MutableInner<"sequence"> => {
 	switch (kind) {
 		case "required":
@@ -142,7 +142,7 @@ const appendSpreadBranch = (
 	const spread = branch.firstReferenceOfKind("sequence")
 	if (!spread) {
 		// the only array with no sequence reference is unknown[]
-		return appendElement(base, "variadic", nodes.unknown)
+		return appendElement(base, "variadic", branch.$.keywords.unknown)
 	}
 	spread.prefix.forEach((node) => appendElement(base, "required", node))
 	spread.optionals.forEach((node) => appendElement(base, "optional", node))
@@ -154,13 +154,14 @@ const appendSpreadBranch = (
 const maybeParseTupleExpression = (
 	def: List,
 	ctx: ParseContext
-): TypeNode | undefined => {
+): Type | undefined => {
 	const tupleExpressionResult = isIndexOneExpression(def)
 		? indexOneParsers[def[1]](def as never, ctx)
 		: isIndexZeroExpression(def)
 		? prefixParsers[def[0]](def as never, ctx)
 		: undefined
 	if (tupleExpressionResult) {
+		if (def[0] === "schema") return tupleExpressionResult
 		return tupleExpressionResult.isNever()
 			? throwParseError(
 					writeUnsatisfiableExpressionError(
@@ -328,10 +329,10 @@ type parseNextElement<
 	  >
 	: s
 
-export const writeNonArraySpreadMessage = <operand extends string | TypeNode>(
+export const writeNonArraySpreadMessage = <operand extends string>(
 	operand: operand
-) =>
-	`Spread element must be an array (was ${operand})` as writeNonArraySpreadMessage<operand>
+): writeNonArraySpreadMessage<operand> =>
+	`Spread element must be an array (was ${operand})` as never
 
 type writeNonArraySpreadMessage<operand> =
 	`Spread element must be an array${operand extends string
@@ -386,6 +387,8 @@ export type inferTupleExpression<
 	? InstanceType<constructors[number]>
 	: def[0] extends "keyof"
 	? inferKeyOfExpression<def[1], $, args>
+	: def[0] extends "schema"
+	? instantiateSchema<def[1], $>["infer"]
 	: never
 
 export type validatePrefixExpression<
@@ -400,6 +403,8 @@ export type validatePrefixExpression<
 	? readonly [def[0], ...unknown[]]
 	: def[0] extends "instanceof"
 	? readonly [def[0], ...Constructor[]]
+	: def[0] extends "schema"
+	? [def[0], validateSchema<def[1], $>]
 	: never
 
 export type validatePostfixExpression<
@@ -440,7 +445,7 @@ export type UnparsedTupleExpressionInput = {
 export type UnparsedTupleOperator = evaluate<keyof UnparsedTupleExpressionInput>
 
 export const parseKeyOfTuple: PrefixParser<"keyof"> = (def, ctx) =>
-	ctx.scope.parse(def[1], ctx).keyof()
+	ctx.$.parse(def[1], ctx).keyof()
 
 export type inferKeyOfExpression<operandDef, $, args> = evaluate<
 	keyof inferDefinition<operandDef, $, args>
@@ -450,23 +455,23 @@ const parseBranchTuple: PostfixParser<"|" | "&"> = (def, ctx) => {
 	if (def[2] === undefined) {
 		return throwParseError(writeMissingRightOperandMessage(def[1], ""))
 	}
-	const l = ctx.scope.parse(def[0], ctx)
-	const r = ctx.scope.parse(def[2], ctx)
+	const l = ctx.$.parse(def[0], ctx)
+	const r = ctx.$.parse(def[2], ctx)
 	return def[1] === "&" ? l.and(r) : l.or(r)
 }
 
 const parseArrayTuple: PostfixParser<"[]"> = (def, ctx) =>
-	ctx.scope.parse(def[0], ctx).array()
+	ctx.$.parse(def[0], ctx).array()
 
 export type PostfixParser<token extends IndexOneOperator> = (
 	def: IndexOneExpression<token>,
 	ctx: ParseContext
-) => TypeNode
+) => Type
 
 export type PrefixParser<token extends IndexZeroOperator> = (
 	def: IndexZeroExpression<token>,
 	ctx: ParseContext
-) => TypeNode
+) => Type
 
 export type TupleExpression = IndexZeroExpression | IndexOneExpression
 
@@ -492,9 +497,9 @@ export const parseMorphTuple: PostfixParser<"=>"> = (def, ctx) => {
 		)
 	}
 	// TODO: nested morphs?
-	return schema({
-		in: ctx.scope.parse(def[0], ctx) as Schema<MorphChildKind>,
-		morph: def[2] as Morph
+	return ctx.$.node("morph", {
+		in: ctx.$.parse(def[0], ctx) as Schema<MorphChildKind>,
+		morphs: def[2] as Morph
 	})
 }
 
@@ -504,7 +509,7 @@ export const writeMalformedFunctionalExpressionMessage = (
 ) =>
 	`${
 		operator === ":" ? "Narrow" : "Morph"
-	} expression requires a function following '${operator}' (was ${typeof value})`
+	} expression requires a function following '${operator}' (was ${typeof value})` as const
 
 export type parseMorph<inDef, morph, $, args> = morph extends Morph
 	? (
@@ -518,13 +523,11 @@ export const parseNarrowTuple: PostfixParser<":"> = (def, ctx) => {
 			writeMalformedFunctionalExpressionMessage(":", def[2])
 		)
 	}
-	return ctx.scope
-		.parse(def[0], ctx)
-		.constrain("predicate", def[2] as Predicate)
+	return ctx.$.parse(def[0], ctx).constrain("predicate", def[2] as Predicate)
 }
 
 const parseAttributeTuple: PostfixParser<"@"> = (def, ctx) =>
-	ctx.scope.parse(def[0], ctx).configureShallowDescendants(def[2] as never)
+	ctx.$.parse(def[0], ctx).configureShallowDescendants(def[2] as never)
 
 const indexOneParsers: {
 	[token in IndexOneOperator]: PostfixParser<token>
@@ -539,7 +542,7 @@ const indexOneParsers: {
 
 export type FunctionalTupleOperator = ":" | "=>"
 
-export type IndexZeroOperator = "keyof" | "instanceof" | "==="
+export type IndexZeroOperator = "keyof" | "instanceof" | "===" | "schema"
 
 export type IndexZeroExpression<
 	token extends IndexZeroOperator = IndexZeroOperator
@@ -549,7 +552,7 @@ const prefixParsers: {
 	[token in IndexZeroOperator]: PrefixParser<token>
 } = {
 	keyof: parseKeyOfTuple,
-	instanceof: (def) => {
+	instanceof: (def, ctx) => {
 		if (typeof def[1] !== "function") {
 			return throwParseError(
 				writeInvalidConstructorMessage(objectKindOrDomainOf(def[1]))
@@ -559,14 +562,17 @@ const prefixParsers: {
 			.slice(1)
 			.map((ctor) =>
 				typeof ctor === "function"
-					? { proto: ctor as Constructor }
+					? ctx.$.node("proto", { proto: ctor as Constructor })
 					: throwParseError(
 							writeInvalidConstructorMessage(objectKindOrDomainOf(ctor))
 					  )
 			)
-		return schema(...branches)
+		return branches.length === 1
+			? branches[0]
+			: ctx.$.node("union", { branches })
 	},
-	"===": (def) => schema.units(...def.slice(1))
+	"===": (def, ctx) => ctx.$.parseUnits(...def.slice(1)),
+	schema: (def, ctx) => ctx.$.node(def[1] as never)
 }
 
 const isIndexZeroExpression = (def: List): def is IndexZeroExpression =>
@@ -576,4 +582,5 @@ export const writeInvalidConstructorMessage = <
 	actual extends Domain | BuiltinObjectKind
 >(
 	actual: actual
-) => `Expected a constructor following 'instanceof' operator (was ${actual})`
+) =>
+	`Expected a constructor following 'instanceof' operator (was ${actual})` as const

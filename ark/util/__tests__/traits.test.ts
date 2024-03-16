@@ -1,7 +1,11 @@
 import { attest } from "@arktype/attest"
-import { Trait, compose } from "@arktype/util"
+import { Trait, compose, implement } from "@arktype/util"
 
-export class Describable extends Trait<{ writeDefaultDescription(): string }> {
+export class Describable extends Trait<{
+	abstractMethods: {
+		writeDefaultDescription(): string
+	}
+}> {
 	description: string
 
 	constructor(rule: unknown, attributes?: { description?: string }) {
@@ -10,7 +14,9 @@ export class Describable extends Trait<{ writeDefaultDescription(): string }> {
 	}
 }
 
-export class Boundable<data> extends Trait<{ sizeOf(data: data): number }> {
+export class Boundable<data> extends Trait<{
+	abstractMethods: { sizeOf(data: data): number }
+}> {
 	limit: number | undefined
 
 	constructor(rule: { limit?: number }) {
@@ -25,12 +31,9 @@ export class Boundable<data> extends Trait<{ sizeOf(data: data): number }> {
 
 describe("traits", () => {
 	it("compose", () => {
-		class StringChecker extends compose(
-			Describable,
-			Boundable<string>
-		)({
-			sizeOf: (data: string) => data.length,
-			writeDefaultDescription: () => "foo"
+		class StringChecker extends implement(Describable, Boundable<string>, {
+			writeDefaultDescription: () => "foo",
+			sizeOf: (data: string) => data.length
 		}) {}
 
 		const shortString = new StringChecker(
@@ -69,7 +72,7 @@ describe("traits", () => {
 				return "foo"
 			}
 		}
-		class Bar extends compose(Foo)({
+		class Bar extends implement(Foo, {
 			sizeOf: (data: number) => data
 		}) {}
 		const b = new Bar({ limit: 2 })
@@ -83,12 +86,17 @@ describe("traits", () => {
 
 			readonly a = "a"
 		}
-		class B extends Trait {
+		class B extends Trait<{
+			abstractStatics: {
+				foo: "Bar"
+			}
+		}> {
 			static readonly b = "b"
 
 			readonly b = "b"
 		}
-		class C extends compose(A, B)({}) {
+
+		class C extends compose(A, B) {
 			static readonly c = "c"
 
 			readonly c = "c"
@@ -110,13 +118,13 @@ describe("traits", () => {
 		class B extends Trait {
 			readonly b = "b"
 		}
-		class C extends compose(A, B)({}) {
+		class C extends compose(A, B) {
 			readonly c = "c"
 		}
 		class D extends Trait {
 			readonly d = "d"
 		}
-		class E extends compose(C, D)({}) {
+		class E extends compose(C, D) {
 			readonly e = "e"
 		}
 		const e = new E()
@@ -129,49 +137,11 @@ describe("traits", () => {
 	})
 
 	it("requires abstract properties be implemented", () => {
-		class A extends Trait<{ a(): number }> {}
-		class B extends Trait<{ b(): number }> {}
+		class A extends Trait<{ abstractMethods: { a(): number } }> {}
+		class B extends Trait<{ abstractMethods: { b(): number } }> {}
 		// @ts-expect-error
-		attest(class C extends compose(A, B)({}) {}).type.errors(
+		attest(class C extends implement(A, B, {}) {}).type.errors(
 			"Type '{}' is missing the following properties from type '{ a: () => number; b: () => number; }': a, b"
 		)
-	})
-
-	it("can disambiguate conflicting implementations", () => {
-		class A1 extends Trait {
-			a() {
-				return 1
-			}
-		}
-		class A2 extends Trait {
-			a() {
-				return 2
-			}
-		}
-		// @ts-expect-error
-		attest(class A3 extends compose(A1, A2)({}) {}).type.errors(
-			"Expected 2 arguments, but got 1."
-		)
-
-		// you can disambiguate by implementing the method yourself
-
-		class A4 extends compose(
-			A1,
-			A2
-		)({
-			a: () => 4 as const
-		}) {}
-
-		attest<4>(new A4().a()).equals(4)
-
-		// or you can disambiguate by specifying a disambiguation param
-
-		class A5 extends compose(A1, A2)({}, { a: A1 }) {}
-
-		attest<number>(new A5().a()).equals(1)
-
-		class A6 extends compose(A1, A2)({}, { a: A2 }) {}
-
-		attest<number>(new A6().a()).equals(2)
 	})
 })

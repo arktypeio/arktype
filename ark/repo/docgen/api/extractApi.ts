@@ -32,11 +32,14 @@ export type PackageMetadata = {
 	packageJsonData: Record<string, unknown>
 }
 
-export const extractApi = (project: Project, packageRoot: string) => {
+export const extractApi = (
+	project: Project,
+	packageRoot: string
+): PackageExtractionData => {
 	const packageJsonData = readPackageJson(packageRoot)
 	const metadata: PackageMetadata = {
-		name: packageJsonData.name!,
-		version: packageJsonData.version!,
+		name: packageJsonData.name as never,
+		version: packageJsonData.version as never,
 		rootDir: packageRoot,
 		packageJsonData
 	}

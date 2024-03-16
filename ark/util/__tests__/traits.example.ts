@@ -1,4 +1,4 @@
-import { Trait, compose } from "@arktype/util"
+import { Trait, implement } from "../main.js"
 
 // Declare a trait just like a normal class
 export class Rectangle extends Trait {
@@ -19,7 +19,14 @@ export class Rectangle extends Trait {
 }
 
 // Pass an object to the generic parameter to declare abstract methods
-export class Rhombus extends Trait<{ largestAngle: number; area(): number }> {
+export class Rhombus extends Trait<{
+	abstractMethods: {
+		calculateArea(): number
+	}
+	abstractProps: {
+		largestAngle: number
+	}
+}> {
 	constructor(public side: number) {
 		super()
 	}
@@ -30,16 +37,16 @@ export class Rhombus extends Trait<{ largestAngle: number; area(): number }> {
 }
 
 // Use compose to implement a type-safe set of Traits
-class Square extends compose(Rectangle, Rhombus)(
+class Square extends implement(
+	Rectangle,
+	Rhombus,
 	// Here we have to implement any declared abstract methods.
 	// Notice we don't need to reimplement area() since it can be derived from Rectangle!
 	{
-		largestAngle: 90
-	},
-	// Methods with the same name must be disambiguated by specifying which
-	// Trait to use. If there are no overlaps, this parameter is optional.
-	{
-		perimeter: Rhombus
+		calculateArea() {
+			return this.side ** 2
+		},
+		construct: () => ({ largestAngle: 90 })
 	}
 ) {
 	readonly isRegular = true

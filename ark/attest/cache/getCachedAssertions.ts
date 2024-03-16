@@ -9,13 +9,13 @@ import type {
 	TypeAssertionData
 } from "./writeAssertionCache.js"
 
-export type VerionedAssertionsByFile = [
+export type VersionedAssertionsByFile = [
 	tsVersion: string,
 	assertions: AssertionsByFile
 ]
 
-let assertionEntries: VerionedAssertionsByFile[] | undefined
-export const getCachedAssertionEntries = () => {
+let assertionEntries: VersionedAssertionsByFile[] | undefined
+export const getCachedAssertionEntries = (): VersionedAssertionsByFile[] => {
 	if (!assertionEntries) {
 		const config = getConfig()
 		if (!existsSync(config.assertionCacheDir)) {

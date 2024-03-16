@@ -31,7 +31,7 @@ export type SnapshotArgs = {
 export const resolveSnapshotPath = (
 	testFile: string,
 	customPath: string | undefined
-) => {
+): string => {
 	if (customPath && isAbsolute(customPath)) {
 		return customPath
 	}
@@ -42,7 +42,7 @@ export const getSnapshotByName = (
 	file: string,
 	name: string,
 	customPath: string | undefined
-) => {
+): object => {
 	const snapshotPath = resolveSnapshotPath(file, customPath)
 	return readJson(snapshotPath)?.[basename(file)]?.[name]
 }
@@ -51,7 +51,7 @@ export const getSnapshotByName = (
  * Writes the update and position to cacheDir, which will eventually be read and copied to the source
  * file by a cleanup process after all tests have completed.
  */
-export const queueSnapshotUpdate = (args: SnapshotArgs) => {
+export const queueSnapshotUpdate = (args: SnapshotArgs): void => {
 	const isBench = args.baselinePath
 	const config = getConfig()
 	writeJson(
@@ -103,7 +103,7 @@ export const updateExternalSnapshot = ({
 	position,
 	name,
 	customPath
-}: ExternalSnapshotArgs) => {
+}: ExternalSnapshotArgs): void => {
 	const snapshotPath = resolveSnapshotPath(position.file, customPath)
 	const snapshotData = readJson(snapshotPath) ?? {}
 	const fileKey = basename(position.file)
@@ -115,7 +115,7 @@ export const updateExternalSnapshot = ({
 }
 
 let snapshotsWillBeWritten = false
-export const writeSnapshotUpdatesOnExit = () => {
+export const writeSnapshotUpdatesOnExit = (): void => {
 	if (snapshotsWillBeWritten) {
 		return
 	}
@@ -188,7 +188,7 @@ const snapshotArgsToQueuedUpdate = ({
 }
 
 // Waiting until process exit to write snapshots avoids invalidating existing source positions
-export const writeUpdates = (queuedUpdates: QueuedUpdate[]) => {
+export const writeUpdates = (queuedUpdates: QueuedUpdate[]): void => {
 	if (!queuedUpdates.length) {
 		return
 	}

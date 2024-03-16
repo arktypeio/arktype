@@ -8,7 +8,7 @@ import {
 } from "../parser/tuple.js"
 
 describe("array", () => {
-	describe("base", () => {
+	describe("non-tuple", () => {
 		it("allows and apply", () => {
 			const t = type("string[]")
 			attest<string[]>(t.infer)
@@ -307,7 +307,7 @@ Value at [1] must be a number (was boolean)`)
 				[{ d: "3", g: "6" }, "[]"]
 			])
 
-			attest(expected.root.expression).snap(
+			attest(expected.expression).snap(
 				"[{ a: 0, e: 4 }, { b: 1, f: 5 }?, { c: 2, g: 6 }?, ...{ d: 3, g: 6 }[]]"
 			)
 
@@ -338,8 +338,10 @@ Value at [1] must be a number (was boolean)`)
 					{ c: "0", y: "0" }
 				])
 
-			const result = l.and(r)
-			attest(result.json).snap(expected.json)
+			const lrResult = l.and(r)
+			attest(lrResult.json).snap(expected.json)
+			const rlResult = r.and(l)
+			attest(rlResult.json).snap(expected.json)
 		})
 		it("reduces minLength", () => {
 			const t = type(["number", "number", "...", "number[]", "number"])

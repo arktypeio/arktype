@@ -1,6 +1,6 @@
 import { attest } from "@arktype/attest"
-import { schema } from "@arktype/schema"
 import { type } from "arktype"
+import { node } from "../keywords/ark.js"
 
 describe("keywords", () => {
 	describe("jsObjects", () => {
@@ -37,8 +37,9 @@ describe("keywords", () => {
 		it("boolean", () => {
 			const boolean = type("boolean")
 			attest<boolean>(boolean.infer)
+			const expected = node([{ unit: false }, { unit: true }])
 			// should be simplified to simple checks for true and false literals
-			attest(boolean.json).equals(schema({ unit: false }, { unit: true }).json)
+			attest(boolean.json).equals(expected.json)
 			// TODO:
 			// 			attest(boolean.json).snap(`if( $arkRoot !== false && $arkRoot !== true) {
 			//     return false
@@ -47,18 +48,21 @@ describe("keywords", () => {
 		it("never", () => {
 			const never = type("never")
 			attest<never>(never.infer)
+			const expected = node([])
 			// should be equivalent to a zero-branch union
-			attest(never.json).equals(schema().json)
+			attest(never.json).equals(expected.json)
 		})
 		it("unknown", () => {
+			const expected = node({})
 			// should be equivalent to an unconstrained predicate
-			attest(type("unknown").json).equals(schema({}).json)
+			attest(type("unknown").json).equals(expected.json)
 		})
 		it("void", () => {
 			const t = type("void")
 			attest<void>(t.infer)
+			const expected = type("undefined")
 			//should be treated as undefined at runtime
-			attest(t.json).equals(type("undefined").json)
+			attest(t.json).equals(expected.json)
 		})
 	})
 	// describe("validation", () => {

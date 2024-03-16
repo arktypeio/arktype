@@ -1,4 +1,3 @@
-import type { type } from "arktype"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import type { state, StaticState } from "../../reduce/static.js"
 import type { BaseCompletions } from "../../string.js"

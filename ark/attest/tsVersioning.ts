@@ -22,7 +22,7 @@ import ts from "typescript"
 export const forTypeScriptVersions = (
 	versions: TsVersionData[],
 	fn: (version: TsVersionData) => void
-) => {
+): void => {
 	const passedVersions: TsVersionData[] = []
 	const failedVersions: TsVersionData[] = []
 	const nodeModules = join(findPackageRoot(process.cwd()), "node_modules")

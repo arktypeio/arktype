@@ -29,12 +29,6 @@ export type exactMessageOnError<t extends object, u extends object> = {
 
 export type defer<t> = [t][t extends any ? 0 : never]
 
-export type merge<base, merged> = evaluate<
-	{
-		[k in Exclude<keyof base, keyof merged>]: base[k]
-	} & merged
->
-
 export type UnknownUnion =
 	| string
 	| number
@@ -112,4 +106,4 @@ export type narrow<t> = t extends Primitive
 	? narrowTuple<t>
 	: { [k in keyof t]: narrow<t[k]> }
 
-export const narrow = <t>(t: narrow<t>) => t
+export const narrow = <t>(t: narrow<t>): t => t as t
