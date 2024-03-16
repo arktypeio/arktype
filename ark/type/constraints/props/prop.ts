@@ -104,7 +104,9 @@ export class PropNode extends BaseConstraint<PropDeclaration> {
 
 	traverseApply: TraverseApply<object> = (data, ctx) => {
 		if (this.key in data) {
+			ctx.path.push(this.key)
 			this.value.traverseApply((data as any)[this.key], ctx)
+			ctx.path.pop()
 		} else if (this.required) {
 			ctx.error(this.errorContext)
 		}

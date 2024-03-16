@@ -632,7 +632,7 @@ export class Scope<r extends Resolutions = any> {
 			)
 		}
 		if (isArray(schema) && schema.length === 1) schema = schema[0]
-		const kind = kindArg ?? typeKindOfSchema(schemaOrKind)
+		const kind = kindArg ?? typeKindOfSchema(schema)
 		if (opts?.allowedKinds && !opts.allowedKinds.includes(kind)) {
 			return throwParseError(
 				`Schema of kind ${kind} should be one of ${opts.allowedKinds}`

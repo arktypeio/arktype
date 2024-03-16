@@ -2,7 +2,7 @@ import { literalPropAccess } from "@arktype/util"
 import type { ResolvedArkConfig } from "../scope.js"
 import { ArkErrors, type ArkErrorInput } from "./errors.js"
 
-export type TraversalPath = (string | symbol)[]
+export type TraversalPath = (string | symbol | number)[]
 
 export const pathToPropString = (path: TraversalPath): string => {
 	const propAccessChain = path.reduce<string>(

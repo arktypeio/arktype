@@ -273,7 +273,9 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 
 	traverseApply: TraverseApply<List> = (data, ctx) => {
 		for (let i = 0; i < data.length; i++) {
+			ctx.path.push(i)
 			this.childAtIndex(data, i).traverseApply(data[i], ctx)
+			ctx.path.pop()
 		}
 	}
 
