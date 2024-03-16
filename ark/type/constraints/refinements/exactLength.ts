@@ -42,22 +42,22 @@ export class ExactLengthNode extends BasePrimitiveConstraint<ExactLengthDeclarat
 						}
 					}
 				}),
-			minLength: (length, minLength) =>
+			minLength: (exactLength, minLength) =>
 				(
 					minLength.exclusive
-						? length.rule > minLength.length
-						: length.rule >= minLength.length
+						? exactLength.rule > minLength.rule
+						: exactLength.rule >= minLength.rule
 				)
-					? length
-					: Disjoint.from("range", length, minLength),
-			maxLength: (length, maxLength) =>
+					? exactLength
+					: Disjoint.from("range", exactLength, minLength),
+			maxLength: (exactLength, maxLength) =>
 				(
 					maxLength.exclusive
-						? length.rule < maxLength.length
-						: length.rule <= maxLength.length
+						? exactLength.rule < maxLength.rule
+						: exactLength.rule <= maxLength.rule
 				)
-					? length
-					: Disjoint.from("range", length, maxLength)
+					? exactLength
+					: Disjoint.from("range", exactLength, maxLength)
 		},
 		hasAssociatedError: true,
 		defaults: {
@@ -74,5 +74,5 @@ export class ExactLengthNode extends BasePrimitiveConstraint<ExactLengthDeclarat
 	readonly compiledNegation = `${jsData}.length !== ${this.rule}`
 	readonly impliedBasis = this.$.type("string|Array")
 	readonly errorContext = this.createErrorContext(this.inner)
-	readonly expression = `{ length: ${this.rule}}`
+	readonly expression = `{ length: ${this.rule} }`
 }

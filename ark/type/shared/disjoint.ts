@@ -1,6 +1,7 @@
 import {
 	entriesOf,
 	fromEntries,
+	hasDomain,
 	morph,
 	printable,
 	throwInternalError,
@@ -132,12 +133,19 @@ export class Disjoint {
 		if (reasons.length === 1) {
 			const { path, disjoint } = reasons[0]
 			const pathString = JSON.parse(path).join(".")
-			return `Intersection${pathString && ` at ${pathString}`} of ${
-				disjoint.l
-			} and ${disjoint.r} results in an unsatisfiable type`
+			return `Intersection${
+				pathString && ` at ${pathString}`
+			} of ${describeReason(disjoint.l)} and ${describeReason(
+				disjoint.r
+			)} results in an unsatisfiable type`
 		}
 		return `The following intersections result in unsatisfiable types:\n• ${reasons
-			.map(({ path, disjoint }) => `${path}: ${disjoint.l} and ${disjoint.r}`)
+			.map(
+				({ path, disjoint }) =>
+					`${path}: ${describeReason(disjoint.l)} and ${describeReason(
+						disjoint.r
+					)}`
+			)
 			.join("\n• ")}`
 	}
 
@@ -185,3 +193,8 @@ export class Disjoint {
 		return printable(this.sources)
 	}
 }
+
+const describeReason = (value: unknown): string =>
+	hasDomain(value, "object") && "expression" in value
+		? (value.expression as string)
+		: String(value)

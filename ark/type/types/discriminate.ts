@@ -165,4 +165,4 @@ export const writeUndiscriminableMorphUnionMessage = <path extends string>(
 ) =>
 	`${
 		path === "/" ? "A" : `At ${path}, a`
-	} union including one or more morphs must be discriminable`
+	} union including one or more morphs must be discriminable` as const

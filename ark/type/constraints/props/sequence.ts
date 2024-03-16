@@ -117,15 +117,15 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 			reduce: (raw, $) => {
 				let minVariadicLength = raw.minVariadicLength ?? 0
 				const prefix = raw.prefix?.slice() ?? []
-				const optional = raw.optionals?.slice() ?? []
+				const optionals = raw.optionals?.slice() ?? []
 				const postfix = raw.postfix?.slice() ?? []
 				if (raw.variadic) {
 					// optional elements equivalent to the variadic parameter are redundant
-					while (optional.at(-1)?.equals(raw.variadic)) {
-						optional.pop()
+					while (optionals.at(-1)?.equals(raw.variadic)) {
+						optionals.pop()
 					}
 
-					if (optional.length === 0) {
+					if (optionals.length === 0) {
 						// If there are no optional, normalize prefix
 						// elements adjacent and equivalent to variadic:
 						// 		{ variadic: number, prefix: [string, number] }
@@ -144,7 +144,7 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 						postfix.shift()
 						minVariadicLength++
 					}
-				} else if (optional.length === 0) {
+				} else if (optionals.length === 0) {
 					// if there's no variadic or optional parameters,
 					// postfix can just be appended to prefix
 					prefix.push(...postfix.splice(0))
@@ -163,7 +163,7 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 							// empty lists will be omitted during parsing
 							prefix,
 							postfix,
-							optionals: optional,
+							optionals,
 							minVariadicLength
 						},
 						{ prereduced: true }

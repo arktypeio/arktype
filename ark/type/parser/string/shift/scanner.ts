@@ -11,15 +11,15 @@ export class Scanner<Lookahead extends string = string> {
 	}
 
 	/** Get lookahead and advance scanner by one */
-	shift() {
+	shift(): Lookahead {
 		return (this.chars[this.i++] ?? "") as Lookahead
 	}
 
-	get lookahead() {
+	get lookahead(): Lookahead {
 		return (this.chars[this.i] ?? "") as Lookahead
 	}
 
-	get length() {
+	get length(): number {
 		return this.chars.length
 	}
 
@@ -38,32 +38,32 @@ export class Scanner<Lookahead extends string = string> {
 		return shifted
 	}
 
-	shiftUntilNextTerminator() {
+	shiftUntilNextTerminator(): string {
 		this.shiftUntilNonWhitespace()
 		return this.shiftUntil(Scanner.lookaheadIsTerminator)
 	}
 
-	shiftUntilNonWhitespace() {
+	shiftUntilNonWhitespace(): string {
 		return this.shiftUntil(Scanner.lookaheadIsNotWhitespace)
 	}
 
-	jumpToIndex(i: number) {
+	jumpToIndex(i: number): void {
 		this.i = i < 0 ? this.length + i : i
 	}
 
-	get location() {
+	get location(): number {
 		return this.i
 	}
 
-	get unscanned() {
+	get unscanned(): string {
 		return this.chars.slice(this.i, this.length).join("")
 	}
 
-	get scanned() {
+	get scanned(): string {
 		return this.chars.slice(0, this.i).join("")
 	}
 
-	sliceChars(start: number, end?: number) {
+	sliceChars(start: number, end?: number): string {
 		return this.chars.slice(start, end).join("")
 	}
 
