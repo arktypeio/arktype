@@ -338,8 +338,10 @@ Value at [1] must be a number (was boolean)`)
 					{ c: "0", y: "0" }
 				])
 
-			const result = l.and(r)
-			attest(result.json).snap(expected.json)
+			const lrResult = l.and(r)
+			attest(lrResult.json).snap(expected.json)
+			const rlResult = r.and(l)
+			attest(rlResult.json).snap(expected.json)
 		})
 		it("reduces minLength", () => {
 			const t = type(["number", "number", "...", "number[]", "number"])

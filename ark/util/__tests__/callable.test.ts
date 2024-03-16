@@ -76,7 +76,9 @@ describe("callable", () => {
 			attach
 		> {
 			constructor(attach: attach) {
-				super(GetAttached.prototype.getAttached, { attach })
+				super(<k extends keyof attach>(k: k) => this.protoGetAttached(k), {
+					attach
+				})
 			}
 
 			protoGetAttached(k: PropertyKey) {
@@ -84,12 +86,13 @@ describe("callable", () => {
 			}
 
 			getAttached<k extends keyof attach>(k: k): attach[k] {
-				return this.protoGetAttached(k)
+				return this(k)
 			}
 		}
 
 		const foo = new GetAttached({ a: 1 } as const)
 		attest<1>(foo.a).equals(1)
+		attest<1>(foo.getAttached("a")).equals(1)
 		attest<1>(foo("a")).equals(1)
 	})
 })

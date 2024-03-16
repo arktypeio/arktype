@@ -399,7 +399,7 @@ export class Scope<r extends Resolutions = any> {
 
 	type: TypeParser<$<r>> = createTypeParser(this as never) as never
 
-	schema: SchemaParser<$<r>> = this.rawSchema as never
+	schema: SchemaParser<$<r>> = this.rawSchema.bind(this) as never
 	protected rawSchema(schema: unknown): ["schema", unknown] {
 		return ["schema", schema] as const
 	}
@@ -614,7 +614,7 @@ export class Scope<r extends Resolutions = any> {
 			: this.node(branches, { root: true, prereduced: true })
 	}
 
-	node: NodeParser<$<r>> = this.internalNodeParser
+	node: NodeParser<$<r>> = this.internalNodeParser.bind(this)
 	protected internalNodeParser(
 		schemaOrKind: unknown,
 		schemaOrOpts?: unknown,

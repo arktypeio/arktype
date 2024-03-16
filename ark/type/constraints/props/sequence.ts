@@ -215,7 +215,7 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 								}))
 						  )
 				}
-				// length, minLength, and maxLength don't need to be defined
+				// exactLength, minLength, and maxLength don't need to be defined
 				// here since impliedSiblings guarantees they will be added
 				// directly to the IntersectionNode parent of the SequenceNode
 				// they exist on
@@ -397,7 +397,7 @@ const intersectSequences = (
 			fixedVariants: [],
 			r: rTail.map((element) => ({ ...element, kind: "prefix" }))
 		})
-		if (!postfixBranchResult.disjoint) {
+		if (postfixBranchResult.disjoint.isEmpty()) {
 			state.fixedVariants.push(postfixBranchResult)
 		}
 	} else if (
@@ -410,7 +410,7 @@ const intersectSequences = (
 			fixedVariants: [],
 			l: lTail.map((element) => ({ ...element, kind: "prefix" }))
 		})
-		if (!postfixBranchResult.disjoint) {
+		if (postfixBranchResult.disjoint.isEmpty()) {
 			state.fixedVariants.push(postfixBranchResult)
 		}
 	}
