@@ -72,7 +72,7 @@
 	"mocha": {
 		"//": "IF YOU UPDATE THE MOCHA CONFIG HERE, PLEASE ALSO UPDATE ark/repo/mocha.jsonc AND .vscode/settings.json",
 		"spec": [
-			"**/__tests__/*.test.*"
+			"**/__tests__/**/*.test.*"
 		],
 		"ignore": "**/node_modules/**/*",
 		"node-option": [
