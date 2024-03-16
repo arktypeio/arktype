@@ -1,9 +1,6 @@
 import { isKeyOf, throwParseError, type keySet } from "@arktype/util"
-import type { LimitLiteral } from "../../../../constraints/ast.js"
-import {
-	writeUnboundableMessage,
-	type LimitSchemaValue
-} from "../../../../constraints/refinements/range.js"
+import type { DateLiteral, LimitLiteral } from "../../../../constraints/ast.js"
+import { writeUnboundableMessage } from "../../../../constraints/refinements/range.js"
 import type { Schema } from "../../../../kinds.js"
 import type { BoundKind } from "../../../../shared/implement.js"
 import type { Type } from "../../../../types/type.js"
@@ -13,6 +10,7 @@ import type {
 	DynamicStateWithRoot
 } from "../../reduce/dynamic.js"
 import {
+	invertedComparators,
 	maxComparators,
 	writeUnpairableComparatorMessage,
 	type Comparator,
@@ -23,6 +21,7 @@ import type { StaticState, state } from "../../reduce/static.js"
 import { extractDateLiteralSource, isDateLiteral } from "../operand/date.js"
 import type { parseOperand } from "../operand/operand.js"
 import type { Scanner } from "../scanner.js"
+
 export const parseBound = (
 	s: DynamicStateWithRoot,
 	start: ComparatorStartChar
@@ -102,19 +101,17 @@ type shiftComparator<
 export const writeIncompatibleRangeMessage = (l: BoundKind, r: BoundKind) =>
 	`Bound kinds ${l} and ${r} are incompatible` as const
 
-export const writeLimitMismatchMessage = (
-	root: string,
-	limitValue: LimitSchemaValue
-) => `Limit '${limitValue}' cannot bound ${root}` as const
-
 export const getBoundKinds = (
 	comparator: Comparator,
-	limit: LimitSchemaValue,
-	root: Type
+	limit: LimitLiteral,
+	root: Type,
+	boundKind: BoundExpressionKind
 ): BoundKind[] => {
 	if (root.extends(root.$.keywords.number)) {
 		if (typeof limit !== "number") {
-			return throwParseError(writeLimitMismatchMessage(root.toString(), limit))
+			return throwParseError(
+				writeInvalidLimitMessage(comparator, limit, boundKind)
+			)
 		}
 		return comparator === "=="
 			? ["min", "max"]
@@ -127,7 +124,9 @@ export const getBoundKinds = (
 		root.extends(root.$.keywords.Array)
 	) {
 		if (typeof limit !== "number") {
-			return throwParseError(writeLimitMismatchMessage(root.toString(), limit))
+			return throwParseError(
+				writeInvalidLimitMessage(comparator, limit, boundKind)
+			)
 		}
 		return comparator === "=="
 			? ["minLength", "maxLength"]
@@ -143,7 +142,7 @@ export const getBoundKinds = (
 			? ["after"]
 			: ["before"]
 	}
-	return throwParseError(writeUnboundableMessage(root.toString()))
+	return throwParseError(writeUnboundableMessage(root.expression))
 }
 
 export const singleEqualsMessage = `= is not a valid comparator. Use == to check for equality`
@@ -185,7 +184,12 @@ export const parseRightBound = (
 	// apply the newly-parsed right bound
 	const exclusive = comparator.length === 1
 	// if the comparator is ==, both the min and max of that pair will be applied
-	for (const kind of getBoundKinds(comparator, limit, previousRoot)) {
+	for (const kind of getBoundKinds(
+		comparator,
+		typeof limit === "number" ? limit : (limitToken as DateLiteral),
+		previousRoot,
+		"right"
+	)) {
 		s.constrainRoot(kind, { rule: limit, exclusive })
 	}
 	if (!s.branches.leftBound) {
@@ -196,9 +200,10 @@ export const parseRightBound = (
 		return s.error(writeUnpairableComparatorMessage(comparator))
 	}
 	const lowerBoundKind = getBoundKinds(
-		s.branches.leftBound.comparator,
+		invertedComparators[s.branches.leftBound.comparator],
 		s.branches.leftBound.limit,
-		previousRoot
+		previousRoot,
+		"left"
 	)
 	s.constrainRoot(
 		lowerBoundKind[0],

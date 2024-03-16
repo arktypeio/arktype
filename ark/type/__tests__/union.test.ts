@@ -59,14 +59,14 @@ describe("union", () => {
 			node([
 				{
 					domain: "object",
-					required: {
+					prop: {
 						key: "a",
 						value: { domain: "string" }
 					}
 				},
 				{
 					domain: "object",
-					required: {
+					prop: {
 						key: "b",
 						value: { domain: "number" }
 					}

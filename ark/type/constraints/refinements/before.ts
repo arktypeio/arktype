@@ -67,7 +67,7 @@ export class BeforeNode extends BaseRange<BeforeDeclaration> {
 			}
 		})
 
-	readonly impliedBasis = this.$.keywords.number
+	readonly impliedBasis = this.$.keywords.Date
 
 	traverseAllows: TraverseAllows<Date> = this.exclusive
 		? (data) => +data < this.numericLimit

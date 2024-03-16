@@ -11,8 +11,7 @@ import {
 } from "../parser/string/reduce/shared.js"
 import {
 	singleEqualsMessage,
-	writeInvalidLimitMessage,
-	writeLimitMismatchMessage
+	writeInvalidLimitMessage
 } from "../parser/string/shift/operator/bounds.js"
 
 describe("parsed bounds", () => {
@@ -242,23 +241,17 @@ describe("parsed bounds", () => {
 
 		it("number with right Date bound", () => {
 			attest(() =>
-				//@ts-expect-error
+				// @ts-expect-error
 				type("number<d'2001/01/01'")
+			).throwsAndHasTypeError(
+				writeInvalidLimitMessage("<", "d'2001/01/01'", "right")
 			)
-				.throws(
-					writeInvalidLimitMessage(
-						"<",
-						"Mon Jan 01 2001 00:00:00 GMT-0500 (Eastern Standard Time)",
-						"right"
-					)
-				)
-				.type.errors(writeInvalidLimitMessage("<", "d'2001/01/01'", "right"))
 		})
 		it("number with left Date bound", () => {
-			//@ts-expect-error
-			attest(() => type("d'2001/01/01'<number<2"))
-				.throws(writeLimitMismatchMessage("number", "2001/01/01"))
-				.type.errors(writeInvalidLimitMessage("<", "d'2001/01/01'", "left"))
+			// @ts-expect-error
+			attest(() => type("d'2001/01/01'<number<2")).throwsAndHasTypeError(
+				writeInvalidLimitMessage("<", "d'2001/01/01'", "left")
+			)
 		})
 	})
 
