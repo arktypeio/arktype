@@ -175,10 +175,9 @@ export function parseAttachments(
 			if (ctx.alias) {
 				reduced.alias ??= ctx.alias
 			}
-			// if we get a reduced node back, it will already have its own cache
-			// entry however, we also point the unreduced id to that node so we
-			// can bypass that reduction in the future
-			return (ctx.$.nodeCache[innerId] = reduced)
+			// we can't cache this reduction for now in case the reduction involved
+			// impliedSiblings
+			return reduced
 		}
 	}
 
