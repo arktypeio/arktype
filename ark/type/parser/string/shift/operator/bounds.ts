@@ -200,7 +200,7 @@ export const parseRightBound = (
 		return s.error(writeUnpairableComparatorMessage(comparator))
 	}
 	const lowerBoundKind = getBoundKinds(
-		invertedComparators[s.branches.leftBound.comparator],
+		s.branches.leftBound.comparator,
 		s.branches.leftBound.limit,
 		previousRoot,
 		"left"

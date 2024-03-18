@@ -51,13 +51,15 @@ export class UnitNode<t = any, $ = any> extends BaseBasis<
 	traverseAllows =
 		this.unit instanceof Date
 			? (data: unknown) =>
-					data instanceof Date && data.toISOString() === this.serializedValue
+					data instanceof Date && data.toISOString() === this.compiledValue
 			: (data: unknown) => data === this.unit
 
+	readonly compiledValue: string | number | boolean | null = (this.json as any)
+		.unit
 	readonly serializedValue: string | number | boolean | null =
 		typeof this.unit === "string" || this.unit instanceof Date
-			? JSON.stringify((this.json as any).unit)
-			: (this.json as any).unit
+			? JSON.stringify(this.compiledValue)
+			: this.compiledValue
 
 	readonly compiledCondition = compileComparison(this)
 	readonly compiledNegation = compileComparison(this, "negated")

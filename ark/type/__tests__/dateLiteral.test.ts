@@ -24,7 +24,7 @@ describe("date literal", () => {
 		const now = new Date()
 		const t = type(`d'${now.valueOf()}'`)
 		attest(t.allows(now)).equals(true)
-		attest(t.allows(new Date(now.valueOf() + 1)))
+		attest(t.allows(new Date(now.valueOf() + 1))).equals(false)
 	})
 	it("invalid date", () => {
 		attest(() => type("d'tuesday'")).throws(writeInvalidDateMessage("tuesday"))
