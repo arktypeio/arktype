@@ -425,7 +425,7 @@ export abstract class BaseNode<
 					: (v as UnknownNode).transform(mapper, shouldTransform)
 				: v
 		])
-		return this.$.parse(
+		return this.$.node(
 			this.kind,
 			mapper(this.kind, innerWithTransformedChildren as never) as never
 		) as never
