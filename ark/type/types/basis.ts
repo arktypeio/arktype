@@ -12,12 +12,16 @@ import type { BaseNodeDeclaration } from "../shared/declare.js"
 import type { BasisKind } from "../shared/implement.js"
 import type { DomainSchema } from "./domain.js"
 import type { ProtoSchema } from "./proto.js"
-import { BaseType } from "./type.js"
+import { BaseType, type BaseTypeDeclaration } from "./type.js"
 import type { UnitSchema } from "./unit.js"
+
+export interface BaseBasisDeclaration extends BaseTypeDeclaration {
+	kind: BasisKind
+}
 
 export abstract class BaseBasis<
 	t,
-	d extends BaseNodeDeclaration,
+	d extends BaseBasisDeclaration,
 	$
 > extends BaseType<t, d, $> {
 	abstract readonly expression: string
