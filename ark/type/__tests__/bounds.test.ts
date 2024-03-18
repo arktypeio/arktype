@@ -45,11 +45,7 @@ describe("parsed bounds", () => {
 		it("==", () => {
 			const t = type("number==3211993")
 			attest<number>(t.infer)
-			const expected = node({
-				domain: "number",
-				min: { rule: 3211993, exclusive: false },
-				max: { rule: 3211993, exclusive: false }
-			})
+			const expected = node({ unit: 3211993 })
 			attest(t.json).equals(expected.json)
 		})
 		it("<,<=", () => {
@@ -58,7 +54,7 @@ describe("parsed bounds", () => {
 			const expected = node({
 				domain: "number",
 				min: { rule: -5, exclusive: true },
-				max: { rule: 5, exclusive: false }
+				max: 5
 			})
 			attest(t.json).equals(expected.json)
 		})
@@ -67,7 +63,7 @@ describe("parsed bounds", () => {
 			attest<number>(t.infer)
 			const expected = node({
 				domain: "number",
-				min: { rule: -3.23, exclusive: false },
+				min: { rule: -3.23 },
 				max: { rule: 4.654, exclusive: true }
 			})
 			attest(t.json).equals(expected.json)

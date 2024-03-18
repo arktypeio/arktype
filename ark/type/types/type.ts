@@ -29,6 +29,7 @@ import type {
 	inferMorphOut
 } from "./morph.js"
 import type { UnionChildKind, UnionNode } from "./union.js"
+
 export const defineRightwardIntersections = <kind extends TypeKind>(
 	kind: kind,
 	implementation: TypeIntersection<kind, typeKindRightOf<kind>>
