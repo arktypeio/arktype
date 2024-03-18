@@ -21,7 +21,9 @@ describe("traverse", () => {
 	it("regex", () => {
 		const t = type("/.*@arktype.io/")
 		attest(t("shawn@arktype.io").out).snap("shawn@arktype.io")
-		attest(t("shawn@hotmail.com").errors?.summary).snap()
+		attest(t("shawn@hotmail.com").errors?.summary).snap(
+			'Must be matched by .*@arktype.io (was "shawn@hotmail.com")'
+		)
 	})
 	it("required keys", () => {
 		const t = type({
@@ -57,7 +59,9 @@ describe("traverse", () => {
 		const t = type(["string", "number", "string", "string[]"])
 		const data: typeof t.infer = ["foo", 5, "boo", []]
 		attest(t(data).out).equals(data)
-		attest(t(["hello"]).errors?.summary).snap()
+		attest(t(["hello"]).errors?.summary).snap(
+			'Must be exactly length 4 (was ["hello"])'
+		)
 	})
 	it("branches", () => {
 		const t = type([{ a: "string" }, "|", { b: "boolean" }])

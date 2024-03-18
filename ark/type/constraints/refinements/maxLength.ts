@@ -61,7 +61,7 @@ export class MaxLengthNode extends BaseRange<MaxLengthDeclaration> {
 			}
 		})
 
-	readonly impliedBasis = this.$.type("string|Array")
+	readonly impliedBasis = this.$.keywords.lengthBoundable
 
 	traverseAllows = this.exclusive
 		? (data: LengthBoundableData) => data.length < this.rule

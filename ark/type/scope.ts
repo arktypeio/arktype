@@ -18,6 +18,7 @@ import {
 import { isNode, typeKindOfSchema, type UnknownNode } from "./base.js"
 import { globalConfig } from "./config.js"
 import type { type } from "./keywords/ark.js"
+import type { internalPrimitiveKeywords } from "./keywords/internal.js"
 import type { jsObjectKeywords } from "./keywords/jsObject.js"
 import type { tsPrimitiveKeywords } from "./keywords/tsPrimitive.js"
 import { nodesByKind } from "./kinds.js"
@@ -329,7 +330,8 @@ type MergedResolutions = Record<string, Type | Generic>
 type ParseContextInput = Partial<ParseContext>
 
 export type PrimitiveKeywords = typeof tsPrimitiveKeywords &
-	typeof jsObjectKeywords
+	typeof jsObjectKeywords &
+	typeof internalPrimitiveKeywords
 
 export class Scope<r extends Resolutions = any> {
 	declare infer: extractOut<r["exports"]>

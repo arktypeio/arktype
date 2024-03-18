@@ -62,5 +62,5 @@ export class MinLengthNode extends BaseRange<MinLengthDeclaration> {
 		? (data: LengthBoundableData) => data.length > this.rule
 		: (data: LengthBoundableData) => data.length >= this.rule
 
-	readonly impliedBasis = this.$.type("string|Array")
+	readonly impliedBasis = this.$.keywords.lengthBoundable
 }

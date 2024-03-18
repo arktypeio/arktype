@@ -190,7 +190,10 @@ export abstract class BaseType<
 
 	protected rawConstrain(kind: ConstraintKind, schema: unknown): Type {
 		const constraint = this.$.node(kind, schema as never)
-		if (constraint.impliedBasis && !this.extends(constraint.impliedBasis)) {
+		if (
+			constraint.impliedBasis &&
+			!this.extends(constraint.impliedBasis as never)
+		) {
 			return throwInvalidOperandError(
 				kind,
 				constraint.impliedBasis,

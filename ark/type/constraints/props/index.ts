@@ -37,7 +37,7 @@ export class IndexNode extends BaseConstraint<IndexDeclaration> {
 					child: true,
 					parse: (schema, ctx) => {
 						const key = ctx.$.node(schema)
-						if (!key.extends(ctx.$.node(["string", "symbol"])))
+						if (!key.extends(ctx.$.keywords.propertyKey))
 							return throwParseError(
 								writeInvalidPropertyKeyMessage(key.expression)
 							)

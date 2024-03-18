@@ -72,7 +72,7 @@ export class ExactLengthNode extends BasePrimitiveConstraint<ExactLengthDeclarat
 
 	readonly compiledCondition = `${jsData}.length === ${this.rule}`
 	readonly compiledNegation = `${jsData}.length !== ${this.rule}`
-	readonly impliedBasis = this.$.type("string|Array")
+	readonly impliedBasis = this.$.keywords.lengthBoundable
 	readonly errorContext = this.createErrorContext(this.inner)
 	readonly expression = `{ length: ${this.rule} }`
 }

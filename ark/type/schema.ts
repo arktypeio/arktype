@@ -36,7 +36,7 @@ import type {
 } from "./types/union.js"
 import type { UnitNode, UnitSchema } from "./types/unit.js"
 
-export type SchemaParser<$> = <schema>(
+export type SchemaParser<$> = <const schema>(
 	schema: validateSchema<schema, $>
 ) => ["schema", schema]
 
