@@ -25,7 +25,6 @@ import type {
 	inferMorphOut
 } from "./morph.js"
 import type { UnionChildKind, UnionNode } from "./union.js"
-
 export const defineRightwardIntersections = <kind extends TypeKind>(
 	kind: kind,
 	implementation: TypeIntersection<kind, typeKindRightOf<kind>>
@@ -174,10 +173,10 @@ export abstract class BaseType<
 		return result.errors ? result.errors.throw() : result.out
 	}
 
-	constrain<kind extends constraintKindOf<this["in"]["infer"]>>(
-		kind: kind,
-		schema: Schema<kind>
-	): Type<t, $> {
+	constrain<
+		kind extends constraintKindOf<this["in"]["infer"]>,
+		schema extends Schema<kind>
+	>(kind: kind, schema: schema): Type<t, $> {
 		return this.rawConstrain(kind, schema) as never
 	}
 

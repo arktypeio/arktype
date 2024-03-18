@@ -30,7 +30,7 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): Type => {
 		const spreadEntry = parsedEntries.shift()!
 		const spreadNode = ctx.$.parse(spreadEntry.value, ctx)
 		if (
-			spreadNode.kind !== "intersection" ||
+			!spreadNode.hasKind("intersection") ||
 			!spreadNode.extends(ctx.$.keywords.object)
 		) {
 			return throwParseError(
