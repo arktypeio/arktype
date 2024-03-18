@@ -5,14 +5,14 @@ describe("props", () => {
 	it("normalizes prop order", () => {
 		const l = node({
 			domain: "object",
-			required: [
+			prop: [
 				{ key: "a", value: "string" },
 				{ key: "b", value: "number" }
 			]
 		})
 		const r = node({
 			domain: "object",
-			required: [
+			prop: [
 				{ key: "b", value: "number" },
 				{ key: "a", value: "string" }
 			]

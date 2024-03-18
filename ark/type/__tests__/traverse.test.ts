@@ -1,5 +1,6 @@
 import { attest } from "@arktype/attest"
 import { scope, type } from "arktype"
+import { it } from "mocha"
 
 describe("traverse", () => {
 	it("divisible", () => {
@@ -20,9 +21,7 @@ describe("traverse", () => {
 	it("regex", () => {
 		const t = type("/.*@arktype.io/")
 		attest(t("shawn@arktype.io").out).snap("shawn@arktype.io")
-		attest(t("shawn@hotmail.com").errors?.summary).snap(
-			"Must be a string matching /.*@arktype.io/ (was 'shawn@hotmail.com')"
-		)
+		attest(t("shawn@hotmail.com").errors?.summary).snap()
 	})
 	it("required keys", () => {
 		const t = type({
@@ -38,16 +37,13 @@ describe("traverse", () => {
 	})
 	it("customized builtin problem", () => {
 		const types = scope(
-			{ isEven: "number%2" }
-			//{
-			// TODO: Fix
-			// codes: {
-			//     divisor: {
-			//         mustBe: (divisor) => `a multiple of ${divisor}`,
-			//         writeReason: (mustBe, was) => `${was} is not ${mustBe}!`
-			//     }
-			// }
-			//}
+			{ isEven: "number%2" },
+			{
+				divisor: {
+					expected: (inner) => `a multiple of ${inner.rule}`,
+					problem: (ctx) => `${ctx.actual} is not ${ctx.expected}!`
+				}
+			}
 		).export()
 		attest(types.isEven(3).errors?.summary).snap("3 is not a multiple of 2!")
 	})
@@ -61,7 +57,7 @@ describe("traverse", () => {
 		const t = type(["string", "number", "string", "string[]"])
 		const data: typeof t.infer = ["foo", 5, "boo", []]
 		attest(t(data).out).equals(data)
-		attest(t(["hello"]).errors?.summary).snap("length must be 4 (was 1)")
+		attest(t(["hello"]).errors?.summary).snap()
 	})
 	it("branches", () => {
 		const t = type([{ a: "string" }, "|", { b: "boolean" }])

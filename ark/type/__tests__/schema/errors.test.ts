@@ -15,7 +15,7 @@ describe("errors", () => {
 	it("at path", () => {
 		const o = node({
 			domain: "object",
-			required: {
+			prop: {
 				key: "foo",
 				value: {
 					domain: "number",
