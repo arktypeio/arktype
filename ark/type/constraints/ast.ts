@@ -1,4 +1,4 @@
-import type { ErrorMessage, conform, evaluate } from "@arktype/util"
+import type { ErrorMessage, evaluate } from "@arktype/util"
 import type { Prerequisite, Schema } from "../kinds.js"
 import type { Type } from "../types/type.js"
 import type {
@@ -87,8 +87,8 @@ export type normalizePrimitiveConstraintSchema<
 export type applySchema<
 	t,
 	kind extends PrimitiveConstraintKind,
-	schema
-> = constrain<t, schemaToConstraint<kind, conform<schema, Schema<kind>>>>
+	schema extends Schema<kind>
+> = constrain<t, schemaToConstraint<kind, schema>>
 
 export type schemaToConstraint<
 	kind extends PrimitiveConstraintKind,

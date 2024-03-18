@@ -1,6 +1,10 @@
-import { morph, type Domain } from "@arktype/util"
+import { morph, type Domain, type conform } from "@arktype/util"
 import { BaseNode, type Node } from "../base.js"
-import { throwInvalidOperandError } from "../constraints/constraint.js"
+import type { applySchema } from "../constraints/ast.js"
+import {
+	throwInvalidOperandError,
+	type PrimitiveConstraintKind
+} from "../constraints/constraint.js"
 import type { Predicate, inferNarrow } from "../constraints/predicate.js"
 import type { Schema, reducibleKindOf } from "../kinds.js"
 import type { BaseMeta, BaseNodeDeclaration } from "../shared/declare.js"
@@ -165,7 +169,7 @@ export abstract class BaseType<
 			: inferNarrow<this["infer"], def>,
 		$
 	> {
-		return this.constrain("predicate", def as never) as never
+		return this.rawConstrain("predicate", def) as never
 	}
 
 	assert(data: unknown): this["infer"] {
@@ -174,9 +178,12 @@ export abstract class BaseType<
 	}
 
 	constrain<
-		kind extends constraintKindOf<this["in"]["infer"]>,
-		schema extends Schema<kind>
-	>(kind: kind, schema: schema): Type<t, $> {
+		kind extends PrimitiveConstraintKind,
+		const schema extends Schema<kind>
+	>(
+		kind: conform<kind, constraintKindOf<this["in"]["infer"]>>,
+		schema: schema
+	): Type<applySchema<t, kind, schema>, $> {
 		return this.rawConstrain(kind, schema) as never
 	}
 
