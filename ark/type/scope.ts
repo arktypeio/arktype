@@ -21,7 +21,6 @@ import type { type } from "./keywords/ark.js"
 import type { internalPrimitiveKeywords } from "./keywords/internal.js"
 import type { jsObjectKeywords } from "./keywords/jsObject.js"
 import type { tsPrimitiveKeywords } from "./keywords/tsPrimitive.js"
-import { nodesByKind } from "./kinds.js"
 import { createMatchParser, type MatchParser } from "./match.js"
 import { parseAttachments, type SchemaParseOptions } from "./parse.js"
 import {
@@ -135,7 +134,9 @@ type resolveConfig<config extends ArkConfig> = {
 
 export type ResolvedArkConfig = resolveConfig<ArkConfig>
 
-const parseConfig = (scopeConfig: ArkConfig | undefined): ResolvedArkConfig => {
+const resolveConfig = (
+	scopeConfig: ArkConfig | undefined
+): ResolvedArkConfig => {
 	if (!scopeConfig) {
 		return globalConfig
 	}
@@ -144,7 +145,7 @@ const parseConfig = (scopeConfig: ArkConfig | undefined): ResolvedArkConfig => {
 	for (k in scopeConfig) {
 		if (isNodeKind(k)) {
 			parsedConfig[k] = {
-				...nodesByKind[k].implementation.defaults,
+				...globalConfig[k],
 				...scopeConfig[k]
 			} as never
 		} else {
@@ -337,7 +338,7 @@ export class Scope<r extends Resolutions = any> {
 	declare infer: extractOut<r["exports"]>
 	declare inferIn: extractIn<r["exports"]>
 
-	readonly config: ResolvedArkConfig
+	readonly resolvedConfig: ResolvedArkConfig
 
 	private parseCache: Record<string, Type> = {}
 	private resolutions: MergedResolutions
@@ -362,8 +363,11 @@ export class Scope<r extends Resolutions = any> {
 	aliases: Record<string, unknown> = {}
 	private exportedNames: exportedName<r>[] = []
 
-	constructor(def: Dict, config?: ArkConfig) {
-		this.config = parseConfig(config)
+	constructor(
+		def: Dict,
+		public config: ArkConfig = {}
+	) {
+		this.resolvedConfig = resolveConfig(config)
 		for (const k in def) {
 			const parsedKey = parseScopeKey(k)
 			this.aliases[parsedKey.name] = parsedKey.params.length
@@ -415,7 +419,9 @@ export class Scope<r extends Resolutions = any> {
 		def: Dict,
 		config: ArkConfig = {}
 	) => {
+		// TODO: abstract merge here
 		return new Scope(def, {
+			// use input config, not resolved when propagating options
 			...this.config,
 			// these options shouldn't be inherited
 			prereducedAliases: false,

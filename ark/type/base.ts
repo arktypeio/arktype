@@ -189,7 +189,7 @@ export abstract class BaseNode<
 	constructor(public attachments: BaseAttachments) {
 		super(
 			(data) => {
-				const ctx = new TraversalContext(data, this.$.config)
+				const ctx = new TraversalContext(data, this.$.resolvedConfig)
 				this.traverseApply(data, ctx)
 				if (ctx.currentErrors.length === 0) {
 					return { out: data } as any
@@ -209,12 +209,12 @@ export abstract class BaseNode<
 	get description(): string {
 		this.descriptionCache ??=
 			this.inner.description ??
-			this.$.config[this.kind].description?.(this as never)
+			this.$.resolvedConfig[this.kind].description?.(this as never)
 		return this.descriptionCache
 	}
 
 	allows = (data: d["prerequisite"]): data is distill<extractIn<t>> => {
-		const ctx = new TraversalContext(data, this.$.config)
+		const ctx = new TraversalContext(data, this.$.resolvedConfig)
 		return this.traverseAllows(data as never, ctx)
 	}
 
