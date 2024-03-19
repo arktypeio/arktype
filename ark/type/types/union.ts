@@ -191,6 +191,13 @@ export class UnionNode<t = any, $ = any> extends BaseType<
 		}
 	}
 
+	protected rawKeyOf(): Type {
+		return this.branches.reduce(
+			(result, branch) => result.and(branch.keyof()),
+			this.$.keywords.unknown
+		)
+	}
+
 	get nestableExpression(): string {
 		// avoid adding unnecessary parentheses around boolean since it's
 		// already collapsed to a single keyword

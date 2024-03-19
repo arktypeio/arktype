@@ -53,13 +53,13 @@ export abstract class BaseType<
 		? this.inner.branches
 		: [this as never]
 
+	private keyofCache: Type | undefined
 	keyof(): Type<keyof this["in"]["infer"], $> {
-		return this as never
-		// return this.rule.reduce(
-		// 	(result, branch) => result.and(branch.keyof()),
-		// 	builtins.unknown()
-		// )
+		this.keyofCache ??= this.rawKeyOf()
+		return this.keyofCache as never
 	}
+
+	protected abstract rawKeyOf(): Type
 
 	intersect<r extends Type>(
 		r: r

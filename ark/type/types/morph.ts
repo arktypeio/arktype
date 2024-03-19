@@ -24,6 +24,7 @@ import { basisKinds, type nodeImplementationOf } from "../shared/implement.js"
 import {
 	BaseType,
 	defineRightwardIntersections,
+	type Type,
 	type typeKindRightOf
 } from "./type.js"
 
@@ -153,6 +154,10 @@ export class MorphNode<t = any, $ = any> extends BaseType<
 
 	compile(js: NodeCompiler): void {
 		this.in.compile(js)
+	}
+
+	protected rawKeyOf(): Type {
+		return this.in.keyof()
 	}
 }
 

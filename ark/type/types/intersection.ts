@@ -269,7 +269,7 @@ export class IntersectionNode<t = unknown, $ = any> extends BaseType<
 	readonly refinements = this.children.filter(
 		(node): node is Node<RefinementKind> => node.isRefinement()
 	)
-	readonly props = maybeCreatePropsGroup(this.inner)
+	readonly props = maybeCreatePropsGroup(this.inner, this.$)
 	readonly traversables = conflatenateAll<
 		Node<Exclude<IntersectionChildKind, PropKind>> | PropsGroup
 	>(this.basis, this.refinements, this.props, this.predicate)
@@ -324,11 +324,19 @@ export class IntersectionNode<t = unknown, $ = any> extends BaseType<
 		}
 		this.predicate?.forEach((node) => js.check(node))
 	}
+
+	protected rawKeyOf(): Type {
+		return this.basis
+			? this.props
+				? this.basis.keyof().or(this.props.keyof())
+				: this.basis.keyof()
+			: this.props?.keyof() ?? this.$.keywords.never
+	}
 }
 
-const maybeCreatePropsGroup = (inner: IntersectionInner) => {
+const maybeCreatePropsGroup = (inner: IntersectionInner, $: Scope) => {
 	const propsInput = pick(inner, propKeys)
-	return isEmptyObject(propsInput) ? undefined : new PropsGroup(propsInput)
+	return isEmptyObject(propsInput) ? undefined : new PropsGroup(propsInput, $)
 }
 
 type IntersectionRoot = Omit<IntersectionInner, ConstraintKind>

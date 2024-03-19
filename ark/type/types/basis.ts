@@ -8,11 +8,10 @@ import type {
 import type { Schema } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { TraverseApply } from "../shared/context.js"
-import type { BaseNodeDeclaration } from "../shared/declare.js"
 import type { BasisKind } from "../shared/implement.js"
 import type { DomainSchema } from "./domain.js"
 import type { ProtoSchema } from "./proto.js"
-import { BaseType, type BaseTypeDeclaration } from "./type.js"
+import { BaseType, type BaseTypeDeclaration, type Type } from "./type.js"
 import type { UnitSchema } from "./unit.js"
 
 export interface BaseBasisDeclaration extends BaseTypeDeclaration {
@@ -28,6 +27,11 @@ export abstract class BaseBasis<
 	abstract readonly compiledCondition: string
 	abstract readonly compiledNegation: string
 	abstract readonly errorContext: d["errorContext"]
+	abstract literalKeys: (string | symbol)[]
+
+	protected rawKeyOf(): Type {
+		return this.$.parseUnits(this.literalKeys)
+	}
 
 	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
 		if (!this.traverseAllows(data, ctx)) {

@@ -1,4 +1,4 @@
-import { domainOf, printable } from "@arktype/util"
+import { domainOf, printable, prototypeKeysOf } from "@arktype/util"
 import { jsData } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -67,6 +67,7 @@ export class UnitNode<t = any, $ = any> extends BaseBasis<
 	readonly errorContext = this.createErrorContext(this.inner)
 	readonly expression = printable(this.unit)
 	readonly domain = domainOf(this.unit)
+	readonly literalKeys = prototypeKeysOf(this.unit)
 }
 
 const compileComparison = (unit: UnitNode<any>, negated?: "negated") => {

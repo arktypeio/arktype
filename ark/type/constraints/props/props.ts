@@ -1,21 +1,30 @@
 import { DynamicBase, conflatenateAll, morph, reference } from "@arktype/util"
 import type { Node } from "../../base.js"
+import type { Scope } from "../../scope.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/context.js"
-import type { IntersectionInner } from "../../types/intersection.js"
-import { arrayIndexMatcherReference } from "./shared.js"
 import type { PropKind } from "../../shared/implement.js"
+import type { IntersectionNode } from "../../types/intersection.js"
+import type { Type } from "../../types/type.js"
+import { arrayIndexMatcherReference } from "./shared.js"
 
 export type ExtraneousKeyBehavior = "ignore" | ExtraneousKeyRestriction
 
 export type ExtraneousKeyRestriction = "throw" | "prune"
 
 export type PropsGroupInput = Pick<
-	IntersectionInner,
+	IntersectionNode,
 	PropKind | "onExtraneousKey"
 >
 
 export class PropsGroup extends DynamicBase<PropsGroupInput> {
+	constructor(
+		public inner: PropsGroupInput,
+		public $: Scope
+	) {
+		super(inner)
+	}
+
 	readonly exhaustive =
 		this.onExtraneousKey !== undefined || this.index !== undefined
 	readonly all = conflatenateAll<Node<PropKind>>(
@@ -29,6 +38,19 @@ export class PropsGroup extends DynamicBase<PropsGroupInput> {
 	readonly nameSetReference = reference(this.nameSet)
 	readonly description = describeProps(this, "description")
 	readonly expression = describeProps(this, "expression")
+	readonly literalKeys = literalPropKeysOf(this.all)
+
+	private keyofCache: Type | undefined
+	keyof(): Type {
+		if (!this.keyofCache) {
+			let branches = this.$.parseUnits(this.literalKeys).branches
+			this.index?.forEach(
+				({ key }) => (branches = branches.concat(key.branches))
+			)
+			this.keyofCache = this.$.node("union", branches)
+		}
+		return this.keyofCache
+	}
 
 	traverseAllows: TraverseAllows<object> = (data, ctx) =>
 		this.all.every((prop) => prop.traverseAllows(data as never, ctx))
@@ -63,22 +85,19 @@ export class PropsGroup extends DynamicBase<PropsGroupInput> {
 				js.let("matched", false)
 			}
 			this.index?.forEach((node) => {
-				js.if(
-					`${js.invoke(node.signature, { arg: "k", kind: "Allows" })}`,
-					() => {
-						if (js.traversalKind === "Allows") {
-							js.if(`!${js.invoke(node.value, { arg: `${js.data}[k]` })}`, () =>
-								js.return(false)
-							)
-						} else {
-							js.line(js.invoke(node.value, { arg: `${js.data}[k]` }))
-						}
-						if (this.onExtraneousKey) {
-							js.set("matched", true)
-						}
-						return js
+				js.if(`${js.invoke(node.key, { arg: "k", kind: "Allows" })}`, () => {
+					if (js.traversalKind === "Allows") {
+						js.if(`!${js.invoke(node.value, { arg: `${js.data}[k]` })}`, () =>
+							js.return(false)
+						)
+					} else {
+						js.line(js.invoke(node.value, { arg: `${js.data}[k]` }))
 					}
-				)
+					if (this.onExtraneousKey) {
+						js.set("matched", true)
+					}
+					return js
+				})
 			})
 			if (this.onExtraneousKey) {
 				if (this.prop?.length !== 0) {
@@ -93,6 +112,16 @@ export class PropsGroup extends DynamicBase<PropsGroupInput> {
 			return js
 		})
 	}
+}
+
+const literalPropKeysOf = (all: readonly Node<PropKind>[]) => {
+	const keys: (string | symbol)[] = []
+	all.forEach((node) => {
+		if (node.kind === "index") return
+		if (node.kind === "prop") return keys.push(node.key)
+		node.prevariadic.forEach((_, i) => keys.push(`${i}`))
+	})
+	return keys
 }
 
 const describeProps = (

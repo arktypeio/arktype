@@ -1,5 +1,4 @@
 import { domainOf, type Domain, type domainDescriptions } from "./domain.js"
-import type { evaluate } from "./generics.js"
 import type { List } from "./lists.js"
 import { isKeyOf } from "./records.js"
 
@@ -166,8 +165,14 @@ export const ancestorsOf = (o: object): Function[] => {
 	return result
 }
 
+export type normalizedKeyOf<t> = keyof t extends infer k
+	? k extends number
+		? `${k}`
+		: k
+	: never
+
 /** Mimics output of TS's keyof operator at runtime */
-export const prototypeKeysOf = <t>(value: t): evaluate<keyof t>[] => {
+export const prototypeKeysOf = <t>(value: t): normalizedKeyOf<t>[] => {
 	const result: (string | symbol)[] = []
 	while (value !== Object.prototype && value !== null && value !== undefined) {
 		for (const k of Object.getOwnPropertyNames(value)) {
@@ -182,7 +187,7 @@ export const prototypeKeysOf = <t>(value: t): evaluate<keyof t>[] => {
 		}
 		value = Object.getPrototypeOf(value)
 	}
-	return result as evaluate<keyof t>[]
+	return result as never
 }
 
 const baseKeysByDomain: Record<Domain, readonly PropertyKey[]> = {

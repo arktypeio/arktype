@@ -3,6 +3,7 @@ import {
 	getExactBuiltinConstructorName,
 	objectKindDescriptions,
 	objectKindOrDomainOf,
+	prototypeKeysOf,
 	type Constructor
 } from "@arktype/util"
 import { jsData } from "../shared/compile.js"
@@ -31,8 +32,6 @@ export type ProtoDeclaration = declareNode<{
 	inner: ProtoInner
 	errorContext: ProtoInner
 }>
-
-// readonly literalKeys = prototypeKeysOf(this.rule.prototype)
 
 export class ProtoNode<t = any, $ = any> extends BaseBasis<
 	t,
@@ -87,4 +86,5 @@ export class ProtoNode<t = any, $ = any> extends BaseBasis<
 	readonly compiledNegation = `!(${this.compiledCondition})`
 
 	readonly errorContext = this.createErrorContext(this.inner)
+	readonly literalKeys = prototypeKeysOf(this.proto.prototype)
 }
