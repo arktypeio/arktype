@@ -238,7 +238,9 @@ describe("object literal", () => {
 				"[object]":
 					"Indexed key definition 'object' must be a string, number or symbol"
 			})
-		).throwsAndHasTypeError(writeInvalidPropertyKeyMessage("object"))
+		)
+			.throws(writeUnresolvableMessage("Indexed"))
+			.type.errors(writeInvalidPropertyKeyMessage("object"))
 	})
 
 	it("nested", () => {

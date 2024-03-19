@@ -8,8 +8,8 @@ import {
 	type evaluate,
 	type merge
 } from "@arktype/util"
+import type { Node } from "../base.js"
 import type { writeInvalidPropertyKeyMessage } from "../constraints/props/index.js"
-import type { Schema } from "../kinds.js"
 import type { ParseContext } from "../scope.js"
 import type { Type } from "../types/type.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
@@ -18,7 +18,8 @@ import type { validateString } from "./semantic/validate.js"
 import { Scanner } from "./string/shift/scanner.js"
 
 export const parseObjectLiteral = (def: Dict, ctx: ParseContext): Type => {
-	const propSchemas: Schema<"prop">[] = []
+	const propNodes: Node<"prop">[] = []
+	const indexNodes: Node<"index">[] = []
 	// We only allow a spread operator to be used as the first key in an object
 	// because to match JS behavior any keys before the spread are overwritten
 	// by the values in the target object, so there'd be no useful purpose in having it
@@ -45,7 +46,7 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): Type => {
 			(spreadRequired) =>
 				!parsedEntries.some(
 					({ inner: innerKey }) => innerKey === spreadRequired.key
-				) && propSchemas.push(spreadRequired)
+				) && propNodes.push(spreadRequired)
 		)
 	}
 	for (const entry of parsedEntries) {
@@ -59,18 +60,28 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): Type => {
 					: entry.inner
 			}`
 		)
-		const value = ctx.$.parse(entry.value, ctx)
-		const schema: Schema<"prop"> = {
-			key: entry.inner,
-			value,
-			optional: entry.kind === "optional"
+
+		if (entry.kind === "index") {
+			// handle key parsing first to match type behavior
+			const key = ctx.$.parse(entry.inner, ctx)
+			const value = ctx.$.parse(entry.value, ctx)
+			const indexNode = ctx.$.node("index", { key, value })
+			indexNodes.push(indexNode)
+		} else {
+			const value = ctx.$.parse(entry.value, ctx)
+			const propNode = ctx.$.node("prop", {
+				key: entry.inner,
+				value,
+				optional: entry.kind === "optional"
+			})
+			propNodes.push(propNode)
 		}
-		propSchemas.push(schema)
 		ctx.path.pop()
 	}
 	return ctx.$.node({
 		domain: "object",
-		prop: propSchemas
+		prop: propNodes,
+		index: indexNodes
 	})
 }
 
@@ -163,13 +174,17 @@ export const parseEntry = (entry: readonly [Key, unknown]): PreparsedEntry =>
 	Object.assign(parseKey(entry[0]), { value: entry[1] })
 
 const parseKey = (key: Key): PreparsedKey =>
-	typeof key === "string" && key.at(-1) === "?"
+	typeof key === "symbol"
+		? { inner: key, kind: "required" }
+		: key.at(-1) === "?"
 		? key.at(-2) === Scanner.escapeToken
 			? { inner: `${key.slice(0, -2)}?`, kind: "required" }
 			: {
 					inner: key.slice(0, -1),
 					kind: "optional"
 			  }
+		: key[0] === "[" && key.at(-1) === "]"
+		? { inner: key.slice(1, -1), kind: "index" }
 		: key === "..."
 		? { inner: "...", kind: "spread" }
 		: { inner: key === "\\..." ? "..." : key, kind: "required" }

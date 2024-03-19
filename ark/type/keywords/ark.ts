@@ -8,6 +8,9 @@ import type {
 	Generic,
 	TypeParser
 } from "../type.js"
+// we don't need these for the base scope, but we import them here so we
+// register the keywords for internal use
+import "./internal.js"
 // this needs to be imported before `jsObects` so jsObects can bootstrap corrrectly
 import { tsPrimitiveKeywords, type tsPrimitive } from "./tsPrimitive.js"
 
