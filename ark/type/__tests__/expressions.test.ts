@@ -14,13 +14,9 @@ describe("tuple expressions", () => {
 	})
 	it("autocompletion", () => {
 		// @ts-expect-error
-		attest(() => type([""])).type.errors(
-			`IndexZeroOperator | keyof Ark | "this"`
-		)
+		attest(() => type([""])).completions()
 		// @ts-expect-error
-		attest(() => type(["string", ""])).type.errors(
-			`"keyof" | keyof Ark | "this" | IndexOneOperator'`
-		)
+		attest(() => type(["string", ""])).completions()
 	})
 	describe("errors", () => {
 		it("missing right operand", () => {
@@ -129,6 +125,8 @@ describe("root expression", () => {
 		// this case is not fundamentally unique but TS has a hard time
 		// narrowing tuples in contexts like this
 		const t = type("keyof", [{ a: "string" }, "&", { b: "boolean" }])
-		attest<"a" | "b">(t.infer)
+		const expected = type("'a' | 'b'")
+		attest<typeof expected.infer>(t.infer)
+		attest(t.json).equals(expected.json)
 	})
 })
