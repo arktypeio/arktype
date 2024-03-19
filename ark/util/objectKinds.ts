@@ -1,6 +1,6 @@
 import { domainOf, type Domain, type domainDescriptions } from "./domain.js"
 import type { List } from "./lists.js"
-import { isKeyOf } from "./records.js"
+import { isKeyOf, type Key } from "./records.js"
 
 // Built-in object constructors based on a subset of:
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
@@ -173,7 +173,7 @@ export type normalizedKeyOf<t> = keyof t extends infer k
 
 /** Mimics output of TS's keyof operator at runtime */
 export const prototypeKeysOf = <t>(value: t): normalizedKeyOf<t>[] => {
-	const result: (string | symbol)[] = []
+	const result: Key[] = []
 	while (value !== Object.prototype && value !== null && value !== undefined) {
 		for (const k of Object.getOwnPropertyNames(value)) {
 			if (k !== "constructor" && !result.includes(k)) {
@@ -190,7 +190,7 @@ export const prototypeKeysOf = <t>(value: t): normalizedKeyOf<t>[] => {
 	return result as never
 }
 
-const baseKeysByDomain: Record<Domain, readonly PropertyKey[]> = {
+const baseKeysByDomain: Record<Domain, readonly Key[]> = {
 	bigint: prototypeKeysOf(0n),
 	boolean: prototypeKeysOf(false),
 	null: [],
@@ -204,7 +204,7 @@ const baseKeysByDomain: Record<Domain, readonly PropertyKey[]> = {
 
 export const getBaseDomainKeys = <domain extends Domain>(
 	domain: domain
-): PropertyKey[] => [...baseKeysByDomain[domain]]
+): Key[] => [...baseKeysByDomain[domain]]
 
 export const constructorExtends = (
 	constructor: Constructor,

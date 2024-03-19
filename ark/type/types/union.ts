@@ -191,9 +191,9 @@ export class UnionNode<t = any, $ = any> extends BaseType<
 		}
 	}
 
-	protected rawKeyOf(): Type {
+	rawKeyOf(): Type {
 		return this.branches.reduce(
-			(result, branch) => result.and(branch.keyof()),
+			(result, branch) => result.and(branch.rawKeyOf()),
 			this.$.keywords.unknown
 		)
 	}

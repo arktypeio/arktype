@@ -10,7 +10,9 @@ export const throwError: (
 	throw new constructor(message)
 }
 
-export class ParseError extends Error {}
+export class ParseError extends Error {
+	name = "ParseError"
+}
 
 export const throwParseError: (message: string) => never = (message) =>
 	throwError(message, ParseError)

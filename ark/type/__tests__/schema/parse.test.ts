@@ -37,7 +37,7 @@ describe("parse", () => {
 				}
 			})
 		).throws.snap(
-			"Error: Intersection of <=0 and >=1 results in an unsatisfiable type"
+			"ParseError: Intersection of <=0 and >=1 results in an unsatisfiable type"
 		)
 	})
 

@@ -1,4 +1,10 @@
-import { DynamicBase, conflatenateAll, morph, reference } from "@arktype/util"
+import {
+	DynamicBase,
+	conflatenateAll,
+	morph,
+	reference,
+	type Key
+} from "@arktype/util"
 import type { Node } from "../../base.js"
 import type { Scope } from "../../scope.js"
 import type { NodeCompiler } from "../../shared/compile.js"
@@ -41,13 +47,13 @@ export class PropsGroup extends DynamicBase<PropsGroupInput> {
 	readonly literalKeys = literalPropKeysOf(this.all)
 
 	private keyofCache: Type | undefined
-	keyof(): Type {
+	rawKeyOf(): Type {
 		if (!this.keyofCache) {
-			let branches = this.$.parseUnits(this.literalKeys).branches
+			let branches = this.$.parseUnits(...this.literalKeys).branches
 			this.index?.forEach(
 				({ key }) => (branches = branches.concat(key.branches))
 			)
-			this.keyofCache = this.$.node("union", branches)
+			this.keyofCache = this.$.node(branches)
 		}
 		return this.keyofCache
 	}
@@ -115,7 +121,7 @@ export class PropsGroup extends DynamicBase<PropsGroupInput> {
 }
 
 const literalPropKeysOf = (all: readonly Node<PropKind>[]) => {
-	const keys: (string | symbol)[] = []
+	const keys: Key[] = []
 	all.forEach((node) => {
 		if (node.kind === "index") return
 		if (node.kind === "prop") return keys.push(node.key)

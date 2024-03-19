@@ -75,7 +75,7 @@ describe("intersection", () => {
 		})
 		it("implicit never", () => {
 			attest(() => type("string&number")).throws.snap(
-				"Error: Intersection of string and number results in an unsatisfiable type"
+				"ParseError: Intersection of string and number results in an unsatisfiable type"
 			)
 		})
 		it("left semantic error", () => {
@@ -98,7 +98,7 @@ describe("intersection", () => {
 		})
 		it("at path", () => {
 			attest(() => type({ a: "string" }).and({ a: "number" })).throws.snap(
-				"Error: Intersection at a of string and number results in an unsatisfiable type"
+				"ParseError: Intersection at a of string and number results in an unsatisfiable type"
 			)
 		})
 	})

@@ -1,7 +1,7 @@
 import {
 	domainDescriptions,
 	domainOf,
-	prototypeKeysOf,
+	getBaseDomainKeys,
 	type NonEnumerableDomain
 } from "@arktype/util"
 import { jsData } from "../shared/compile.js"
@@ -73,5 +73,5 @@ export class DomainNode<t = any, $ = any> extends BaseBasis<
 
 	readonly errorContext = this.createErrorContext(this.inner)
 	readonly expression = this.domain
-	readonly literalKeys = prototypeKeysOf(this.domain)
+	readonly literalKeys = getBaseDomainKeys(this.domain)
 }

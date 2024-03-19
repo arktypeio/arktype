@@ -1,7 +1,7 @@
 import {
 	entriesOf,
 	fromEntries,
-	hasDomain,
+	isArray,
 	morph,
 	printable,
 	throwInternalError,
@@ -9,6 +9,7 @@ import {
 	type entryOf
 } from "@arktype/util"
 import type { Node } from "../base.js"
+import { hasArkKind } from "../util.js"
 import type {
 	BoundKind,
 	IntersectionChildKind,
@@ -195,6 +196,8 @@ export class Disjoint {
 }
 
 const describeReason = (value: unknown): string =>
-	hasDomain(value, "object") && "expression" in value
-		? (value.expression as string)
+	hasArkKind(value, "node")
+		? value.expression
+		: isArray(value)
+		? value.map(describeReason).join(" | ")
 		: String(value)

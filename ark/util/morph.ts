@@ -1,6 +1,6 @@
 import type { evaluate } from "./generics.js"
 import type { List, listable } from "./lists.js"
-import type { Entry, entryOf, fromEntries } from "./records.js"
+import type { Entry, Key, entryOf, fromEntries } from "./records.js"
 import type { intersectUnion } from "./unionToTuple.js"
 
 type objectFromListableEntries<transformed extends readonly Entry[]> = evaluate<
@@ -46,7 +46,7 @@ type numericArrayEntry<a extends List> = number extends a["length"]
 			[i in keyof a]: i extends `${infer n extends number}` ? [n, a[i]] : never
 	  }[number]
 
-export type MappedEntry = listable<Entry<string | symbol> | Entry<number>>
+export type MappedEntry = listable<Entry<Key> | Entry<number>>
 
 export type fromMappedEntries<transformed extends MappedEntry> = [
 	transformed

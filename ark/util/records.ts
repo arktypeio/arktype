@@ -211,8 +211,8 @@ export const isEmptyObject = (o: object): o is EmptyObject =>
 	Object.keys(o).length === 0
 
 export const stringAndSymbolicEntriesOf = (
-	o: Record<string | symbol, unknown>
-): Entry<string | symbol>[] => [
+	o: Record<Key, unknown>
+): Entry<Key>[] => [
 	...Object.entries(o),
 	...Object.getOwnPropertySymbols(o).map((k) => [k, o[k]] as const)
 ]

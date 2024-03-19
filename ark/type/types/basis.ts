@@ -1,5 +1,6 @@
 import type {
 	Constructor,
+	Key,
 	NonEnumerableDomain,
 	inferDomain,
 	instanceOf,
@@ -27,10 +28,10 @@ export abstract class BaseBasis<
 	abstract readonly compiledCondition: string
 	abstract readonly compiledNegation: string
 	abstract readonly errorContext: d["errorContext"]
-	abstract literalKeys: (string | symbol)[]
+	abstract literalKeys: Key[]
 
-	protected rawKeyOf(): Type {
-		return this.$.parseUnits(this.literalKeys)
+	rawKeyOf(): Type {
+		return this.$.parseUnits(...this.literalKeys)
 	}
 
 	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {

@@ -1,10 +1,11 @@
+import type { Key } from "@arktype/util"
 import type { Module, Scope, rootResolutions } from "../scope.js"
 import { root } from "./root.js"
 
 export namespace internalPrimitive {
 	export interface exports {
 		lengthBoundable: string | unknown[]
-		propertyKey: string | symbol
+		propertyKey: Key
 	}
 
 	export type resolutions = rootResolutions<exports>

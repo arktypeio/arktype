@@ -1,11 +1,11 @@
+import type { UnknownNode } from "./base.js"
 import type { Module, Scope } from "./scope.js"
 import type { Generic } from "./type.js"
-import type { Type } from "./types/type.js"
 
 export const arkKind = Symbol("ArkTypeInternalKind")
 
 export type ArkKinds = {
-	type: Type
+	node: UnknownNode
 	scope: Scope
 	generic: Generic
 	module: Module

@@ -156,8 +156,8 @@ export class MorphNode<t = any, $ = any> extends BaseType<
 		this.in.compile(js)
 	}
 
-	protected rawKeyOf(): Type {
-		return this.in.keyof()
+	rawKeyOf(): Type {
+		return this.in.rawKeyOf()
 	}
 }
 

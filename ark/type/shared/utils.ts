@@ -1,4 +1,6 @@
 import { isArray, morph, type List, type mutable } from "@arktype/util"
+import type { UnknownNode } from "../base.js"
+import { hasArkKind } from "../util.js"
 
 export const makeRootAndArrayPropertiesMutable = <o extends object>(
 	o: o

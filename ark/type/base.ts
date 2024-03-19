@@ -80,6 +80,7 @@ import type { ProtoNode } from "./types/proto.js"
 import type { Type } from "./types/type.js"
 import type { UnionNode } from "./types/union.js"
 import type { UnitNode } from "./types/unit.js"
+import { arkKind, hasArkKind } from "./util.js"
 
 export interface BaseAttachments {
 	alias?: string
@@ -112,9 +113,6 @@ export type NodeSubclass<d extends BaseNodeDeclaration = BaseNodeDeclaration> =
 		readonly implementation: nodeImplementationOf<d>
 	}
 
-export const isNode = (value: unknown): value is UnknownNode =>
-	value instanceof BaseNode
-
 export type UnknownNode = BaseNode<any, BaseNodeDeclaration>
 
 type subclassKind<self> = self extends Constructor<{
@@ -133,7 +131,8 @@ export abstract class BaseNode<
 	BaseAttachmentsOf<d>
 > {
 	declare infer: distill<extractOut<t>>;
-	declare [inferred]: t
+	declare [inferred]: t;
+	readonly [arkKind] = "node"
 
 	protected static implement<self>(
 		this: self,
@@ -475,7 +474,7 @@ export const typeKindOfSchema = (schema: unknown): TypeKind => {
 		case "string":
 			return "domain"
 		case "function":
-			return isNode(schema)
+			return hasArkKind(schema, "node")
 				? schema.isType()
 					? schema.kind
 					: throwParseError(

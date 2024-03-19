@@ -52,13 +52,13 @@ describe("keyof", () => {
 		attest(t.json).equals(type("'a'").json)
 	})
 	it("union including non-object", () => {
-		attest(() => type({ a: "number" }).or("boolean").keyof()).throws(
-			'Intersection of "toString" or "valueOf" and "a" results in an unsatisfiable type'
+		attest(() => type({ a: "number" }).or("boolean").keyof()).throws.snap(
+			'ParseError: Intersection of "toString" | "valueOf" and "a" results in an unsatisfiable type'
 		)
 	})
 	it("unsatisfiable", () => {
-		attest(() => type("keyof undefined")).throws(
-			"Intersection of unknown and never results in an unsatisfiable type"
+		attest(() => type("keyof undefined")).throws.snap(
+			"ParseError: keyof undefined results in an unsatisfiable type"
 		)
 	})
 	it("multiple keyofs", () => {

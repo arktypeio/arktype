@@ -155,10 +155,10 @@ const maybeParseTupleExpression = (
 	def: List,
 	ctx: ParseContext
 ): Type | undefined => {
-	const tupleExpressionResult = isIndexOneExpression(def)
-		? indexOneParsers[def[1]](def as never, ctx)
-		: isIndexZeroExpression(def)
+	const tupleExpressionResult = isIndexZeroExpression(def)
 		? prefixParsers[def[0]](def as never, ctx)
+		: isIndexOneExpression(def)
+		? indexOneParsers[def[1]](def as never, ctx)
 		: undefined
 	if (tupleExpressionResult) {
 		if (def[0] === "schema") return tupleExpressionResult

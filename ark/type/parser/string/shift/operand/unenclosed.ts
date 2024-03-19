@@ -24,7 +24,7 @@ import {
 	type ParsedArgs
 } from "./genericArgs.js"
 
-export const parseUnenclosed = (s: DynamicState) => {
+export const parseUnenclosed = (s: DynamicState): void => {
 	const token = s.scanner.shiftUntilNextTerminator()
 	if (token === "keyof") {
 		s.addPrefix("keyof")

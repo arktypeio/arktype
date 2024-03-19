@@ -1,4 +1,4 @@
-import { throwParseError } from "@arktype/util"
+import { throwParseError, type Key } from "@arktype/util"
 import type { TypeSchema } from "../../base.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/context.js"
@@ -13,7 +13,7 @@ export interface IndexSchema extends BaseMeta {
 }
 
 export interface IndexInner extends BaseMeta {
-	readonly key: Type<string | symbol>
+	readonly key: Type<Key>
 	readonly value: Type
 }
 

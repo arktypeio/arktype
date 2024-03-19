@@ -1,4 +1,4 @@
-import { compileSerializedValue } from "@arktype/util"
+import { compileSerializedValue, type Key } from "@arktype/util"
 import type { Node, TypeSchema } from "../../base.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/context.js"
@@ -8,13 +8,13 @@ import type { TypeKind, nodeImplementationOf } from "../../shared/implement.js"
 import { BaseConstraint } from "../constraint.js"
 
 export interface PropSchema extends BaseMeta {
-	readonly key: string | symbol
+	readonly key: Key
 	readonly value: TypeSchema
 	readonly optional?: boolean
 }
 
 export interface PropInner extends BaseMeta {
-	readonly key: string | symbol
+	readonly key: Key
 	readonly value: Node<TypeKind>
 	readonly optional?: true
 }
@@ -25,7 +25,7 @@ export type PropDeclaration = declareNode<{
 	normalizedSchema: PropSchema
 	inner: PropInner
 	errorContext: {
-		key: string | symbol
+		key: Key
 	}
 	prerequisite: object
 	intersectionIsOpen: true

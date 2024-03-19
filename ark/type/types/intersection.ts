@@ -325,12 +325,12 @@ export class IntersectionNode<t = unknown, $ = any> extends BaseType<
 		this.predicate?.forEach((node) => js.check(node))
 	}
 
-	protected rawKeyOf(): Type {
+	rawKeyOf(): Type {
 		return this.basis
 			? this.props
-				? this.basis.keyof().or(this.props.keyof())
-				: this.basis.keyof()
-			: this.props?.keyof() ?? this.$.keywords.never
+				? this.basis.rawKeyOf().or(this.props.rawKeyOf())
+				: this.basis.rawKeyOf()
+			: this.props?.rawKeyOf() ?? this.$.keywords.never
 	}
 }
 

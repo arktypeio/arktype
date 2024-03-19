@@ -15,7 +15,7 @@ import {
 	type nominal,
 	type requireKeys
 } from "@arktype/util"
-import { isNode, typeKindOfSchema, type UnknownNode } from "./base.js"
+import { typeKindOfSchema, type UnknownNode } from "./base.js"
 import { globalConfig } from "./config.js"
 import type { type } from "./keywords/ark.js"
 import type { internalPrimitiveKeywords } from "./keywords/internal.js"
@@ -586,7 +586,7 @@ export class Scope<r extends Resolutions = any> {
 			this.exportedResolutions = resolutionsOfModule(this.exportCache)
 			// TODO: add generic json
 			this.json = morph(this.exportedResolutions, (k, v) =>
-				isNode(v) ? [k, v.json] : []
+				hasArkKind(v, "node") ? [k, v.json] : []
 			)
 			Object.assign(this.resolutions, this.exportedResolutions)
 			if (this.config.registerKeywords)
@@ -639,8 +639,11 @@ export class Scope<r extends Resolutions = any> {
 				`Unexpected attempt to recreate existing alias ${opts.alias}`
 			)
 		}
-		if (isArray(schema) && schema.length === 1) schema = schema[0]
-		const kind = kindArg ?? typeKindOfSchema(schema)
+		let kind = kindArg ?? typeKindOfSchema(schema)
+		if (kind === "union" && isArray(schema) && schema.length === 1) {
+			schema = schema[0]
+			kind = typeKindOfSchema(schema)
+		}
 		if (opts?.allowedKinds && !opts.allowedKinds.includes(kind)) {
 			return throwParseError(
 				`Schema of kind ${kind} should be one of ${opts.allowedKinds}`

@@ -1,4 +1,9 @@
-import { morph, type Domain, type conform } from "@arktype/util"
+import {
+	morph,
+	throwParseError,
+	type Domain,
+	type conform
+} from "@arktype/util"
 import { BaseNode, type Node } from "../base.js"
 import type { applySchema } from "../constraints/ast.js"
 import {
@@ -55,11 +60,17 @@ export abstract class BaseType<
 
 	private keyofCache: Type | undefined
 	keyof(): Type<keyof this["in"]["infer"], $> {
-		this.keyofCache ??= this.rawKeyOf()
+		if (!this.keyofCache) {
+			this.keyofCache = this.rawKeyOf()
+			if (this.keyofCache.isNever())
+				throwParseError(
+					`keyof ${this.expression} results in an unsatisfiable type`
+				)
+		}
 		return this.keyofCache as never
 	}
 
-	protected abstract rawKeyOf(): Type
+	abstract rawKeyOf(): Type
 
 	intersect<r extends Type>(
 		r: r
