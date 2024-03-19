@@ -16,11 +16,12 @@ import {
 	type requireKeys
 } from "@arktype/util"
 import { typeKindOfSchema, type UnknownNode } from "./base.js"
-import { globalConfig } from "./config.js"
+import { globalConfig, mergeConfigs } from "./config.js"
 import type { type } from "./keywords/ark.js"
 import type { internalPrimitiveKeywords } from "./keywords/internal.js"
 import type { jsObjectKeywords } from "./keywords/jsObject.js"
 import type { tsPrimitiveKeywords } from "./keywords/tsPrimitive.js"
+import { nodesByKind } from "./kinds.js"
 import { createMatchParser, type MatchParser } from "./match.js"
 import { parseAttachments, type SchemaParseOptions } from "./parse.js"
 import {
@@ -83,17 +84,19 @@ declare global {
 	}
 }
 
-type nodeConfigForKind<kind extends NodeKind> = evaluate<
-	{
-		description?: DescriptionWriter<kind>
-	} & (kind extends ArkErrorCode
-		? {
-				expected?: ExpectedWriter<kind>
-				actual?: ActualWriter<kind>
-				problem?: ProblemWriter<kind>
-				message?: MessageWriter<kind>
-		  }
-		: {})
+type nodeConfigForKind<kind extends NodeKind> = Readonly<
+	evaluate<
+		{
+			description?: DescriptionWriter<kind>
+		} & (kind extends ArkErrorCode
+			? {
+					expected?: ExpectedWriter<kind>
+					actual?: ActualWriter<kind>
+					problem?: ProblemWriter<kind>
+					message?: MessageWriter<kind>
+			  }
+			: {})
+	>
 >
 
 type NodeConfigsByKind = {
@@ -120,12 +123,12 @@ export type StaticArkOption<k extends keyof StaticArkConfig> = ReturnType<
 	StaticArkConfig[k]
 >
 
-export interface ArkConfig extends Partial<NodeConfigsByKind> {
-	ambient?: Scope | null
+export interface ArkConfig extends Partial<Readonly<NodeConfigsByKind>> {
+	readonly ambient?: Scope | null
 	/** @internal */
-	prereducedAliases?: boolean
+	readonly prereducedAliases?: boolean
 	/** @internal */
-	registerKeywords?: boolean
+	readonly registerKeywords?: boolean
 }
 
 type resolveConfig<config extends ArkConfig> = {
@@ -134,26 +137,34 @@ type resolveConfig<config extends ArkConfig> = {
 
 export type ResolvedArkConfig = resolveConfig<ArkConfig>
 
-const resolveConfig = (
-	scopeConfig: ArkConfig | undefined
-): ResolvedArkConfig => {
-	if (!scopeConfig) {
-		return globalConfig
-	}
-	const parsedConfig = { ...globalConfig }
-	let k: keyof ArkConfig
-	for (k in scopeConfig) {
-		if (isNodeKind(k)) {
-			parsedConfig[k] = {
-				...globalConfig[k],
-				...scopeConfig[k]
-			} as never
-		} else {
-			parsedConfig[k] = scopeConfig[k]! as never
-		}
-	}
-	return parsedConfig
+export const defaultConfig: ResolvedArkConfig = Object.assign(
+	morph(nodesByKind, (kind, node) => [kind, node.implementation.defaults]),
+	{
+		prereducedAliases: false,
+		ambient: null,
+		registerKeywords: false
+	} satisfies Omit<ResolvedArkConfig, NodeKind>
+) as never
+
+const nonInheritedKeys = [
+	"registerKeywords",
+	"prereducedAliases"
+] as const satisfies List<keyof ArkConfig>
+
+const extendConfig = (
+	base: ArkConfig,
+	extension: ArkConfig | undefined
+): ArkConfig => {
+	if (!extension) return base
+	const result = mergeConfigs(base, extension)
+	nonInheritedKeys.forEach((k) => {
+		if (!(k in extension)) delete result[k]
+	})
+	return result
 }
+
+const resolveConfig = (scopeConfig: ArkConfig | undefined): ResolvedArkConfig =>
+	extendConfig(defaultConfig, scopeConfig) as never
 
 export type ScopeParser<parent, ambient> = {
 	<const def>(
@@ -338,6 +349,7 @@ export class Scope<r extends Resolutions = any> {
 	declare infer: extractOut<r["exports"]>
 	declare inferIn: extractIn<r["exports"]>
 
+	readonly config: ArkConfig
 	readonly resolvedConfig: ResolvedArkConfig
 
 	private parseCache: Record<string, Type> = {}
@@ -363,11 +375,9 @@ export class Scope<r extends Resolutions = any> {
 	aliases: Record<string, unknown> = {}
 	private exportedNames: exportedName<r>[] = []
 
-	constructor(
-		def: Dict,
-		public config: ArkConfig = {}
-	) {
-		this.resolvedConfig = resolveConfig(config)
+	constructor(def: Dict, config?: ArkConfig) {
+		this.config = extendConfig(globalConfig, config)
+		this.resolvedConfig = resolveConfig(this.config)
 		for (const k in def) {
 			const parsedKey = parseScopeKey(k)
 			this.aliases[parsedKey.name] = parsedKey.params.length
@@ -412,7 +422,6 @@ export class Scope<r extends Resolutions = any> {
 
 	match: MatchParser<$<r>> = createMatchParser(this as never) as never
 
-	// TODO: decide if this API will be used for non-validated types
 	declare: DeclarationParser<$<r>> = () => ({ type: this.type }) as never
 
 	scope: ScopeParser<r["exports"], r["ambient"]> = ((
@@ -420,14 +429,7 @@ export class Scope<r extends Resolutions = any> {
 		config: ArkConfig = {}
 	) => {
 		// TODO: abstract merge here
-		return new Scope(def, {
-			// use input config, not resolved when propagating options
-			...this.config,
-			// these options shouldn't be inherited
-			prereducedAliases: false,
-			registerKeywords: false,
-			...config
-		})
+		return new Scope(def, extendConfig(this.config, config))
 	}) as never
 
 	define: DefinitionParser<$<r>> = (def) => def as never

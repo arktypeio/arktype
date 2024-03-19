@@ -1,25 +1,25 @@
-import { morph } from "@arktype/util"
-import { nodesByKind } from "./kinds.js"
-import type { ArkConfig, ResolvedArkConfig } from "./scope.js"
-import { isNodeKind, type NodeKind } from "./shared/implement.js"
+import type { mutable } from "@arktype/util"
+import type { ArkConfig } from "./scope.js"
+import { isNodeKind } from "./shared/implement.js"
 
-export const defaultConfig: ResolvedArkConfig = Object.assign(
-	morph(nodesByKind, (kind, node) => [kind, node.implementation.defaults]),
-	{
-		prereducedAliases: false,
-		ambient: null,
-		registerKeywords: false
-	} satisfies Omit<ResolvedArkConfig, NodeKind>
-) as never
+export const globalConfig: mutable<ArkConfig> = {}
 
-export const globalConfig: ResolvedArkConfig = { ...defaultConfig }
-
-export const configure = (config: ArkConfig): ResolvedArkConfig => {
-	let kind: keyof ArkConfig
-	for (kind in config) {
-		globalConfig[kind] = isNodeKind(kind)
-			? ({ ...globalConfig[kind], ...config[kind] } as any)
-			: config[kind]
+export const mergeConfigs = (
+	base: ArkConfig,
+	extensions: ArkConfig
+): mutable<ArkConfig> => {
+	const result = { ...base }
+	let k: keyof ArkConfig
+	for (k in extensions) {
+		result[k] = isNodeKind(k)
+			? ({
+					...base[k],
+					...extensions[k]
+			  } as never)
+			: (extensions[k]! as never)
 	}
-	return globalConfig
+	return result
 }
+
+export const configure = (config: ArkConfig): ArkConfig =>
+	Object.assign(globalConfig, mergeConfigs(globalConfig, config))
