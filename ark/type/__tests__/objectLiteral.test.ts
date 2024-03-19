@@ -16,7 +16,7 @@ describe("object literal", () => {
 		attest<{ a: string; b: number }>(o.infer)
 		attest(o.json).snap({
 			domain: "object",
-			required: [
+			prop: [
 				{ key: "a", value: "string" },
 				{ key: "b", value: "number" }
 			]
@@ -27,8 +27,10 @@ describe("object literal", () => {
 		attest<{ a?: string; b: number }>(o.infer)
 		attest(o.json).snap({
 			domain: "object",
-			optional: [{ key: "a", value: "string" }],
-			required: [{ key: "b", value: "number" }]
+			prop: [
+				{ key: "a", optional: true, value: "string" },
+				{ key: "b", value: "number" }
+			]
 		})
 	})
 	it("symbol key", () => {
@@ -38,9 +40,9 @@ describe("object literal", () => {
 			[s]: "string"
 		})
 		attest<{ [s]: string }>(t.infer)
-		attest(t.json).equals({
+		attest(t.json).snap({
 			domain: "object",
-			required: [{ key: name, value: "string" }]
+			prop: [{ key: name, value: "string" }]
 		})
 	})
 	// it("optional symbol", () => {
@@ -65,7 +67,7 @@ describe("object literal", () => {
 			attest<{ isAdmin: true; name: string }>(s.admin.infer)
 			attest(s.admin.json).equals({
 				domain: "object",
-				required: [
+				prop: [
 					{ key: "isAdmin", value: { unit: true } },
 					{ key: "name", value: "string" }
 				]
@@ -77,9 +79,9 @@ describe("object literal", () => {
 			const admin = type({ "...": user, isAdmin: "true" })
 
 			attest<{ isAdmin: true; name: string }>(admin.infer)
-			attest(admin.json).equals({
+			attest(admin.json).snap({
 				domain: "object",
-				required: [
+				prop: [
 					{ key: "isAdmin", value: { unit: true } },
 					{ key: "name", value: "string" }
 				]
@@ -103,7 +105,7 @@ describe("object literal", () => {
 
 			attest(t.json).snap({
 				domain: "object",
-				required: [
+				prop: [
 					{ key: "inherited", value: [{ unit: false }, { unit: true }] },
 					{ key: "overridden", value: "number" }
 				]
@@ -117,9 +119,9 @@ describe("object literal", () => {
 
 			attest<{ "...": string }>(t.infer)
 
-			attest(t.json).equals({
+			attest(t.json).snap({
 				domain: "object",
-				required: [{ key: "...", value: "string" }]
+				prop: [{ key: "...", value: "string" }]
 			})
 		})
 
@@ -140,7 +142,7 @@ describe("object literal", () => {
 			attest<{ isAdmin: true; name: string }>(adminUser.infer)
 			attest(adminUser.json).snap({
 				domain: "object",
-				required: [
+				prop: [
 					{ key: "isAdmin", value: { unit: true } },
 					{ key: "name", value: "string" }
 				]

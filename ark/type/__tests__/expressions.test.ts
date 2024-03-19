@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import { ark, schema, scope, type, type Ark, type Out } from "arktype"
+import { scope, type, type Ark, type Out } from "arktype"
 import { node } from "../keywords/ark.js"
 import {
 	writeMissingRightOperandMessage,
@@ -74,7 +74,7 @@ describe("root expression", () => {
 	it("=== branches", () => {
 		const t = type("===", "foo", "bar", "baz")
 		attest<"foo" | "bar" | "baz">(t.infer)
-		attest(t.json).snap({ proto: "$ark.anonymousFunction32" })
+		attest(t.json).snap([{ unit: "bar" }, { unit: "baz" }, { unit: "foo" }])
 	})
 	it("instanceof single", () => {
 		const t = type("instanceof", RegExp)
