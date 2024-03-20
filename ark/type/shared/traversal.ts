@@ -48,17 +48,6 @@ export class TraversalContext {
 		this.error(input)
 		return false
 	}
-
-	pushUnion(): void {
-		this.errorsStack.push(new ArkErrors(this))
-	}
-
-	popUnion(branchCount: number): void {
-		const branchErrors = this.errorsStack.pop()!
-		if (branchErrors.count === branchCount) {
-			this.error({ code: "union", errors: branchErrors })
-		}
-	}
 }
 
 export type TraversalMethodsByKind<input = unknown> = {
