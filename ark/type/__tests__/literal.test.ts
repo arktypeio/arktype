@@ -15,7 +15,7 @@ describe("literal", () => {
 			attest<symbol>(t.infer)
 			attest(t(s).out).equals(s)
 			attest(t("test").errors?.summary).snap(
-				'Must be (symbol anonymous) (was "test")'
+				'must be (symbol anonymous) (was "test")'
 			)
 		})
 		it("branches", () => {

@@ -11,7 +11,7 @@ describe("errors", () => {
 			divisor: 3
 		})
 		attest(n(6)).snap({ out: 6 })
-		attest(n(7).errors?.summary).snap("Must be a multiple of 3 (was 7)")
+		attest(n(7).errors?.summary).snap("must be a multiple of 3 (was 7)")
 	})
 	it("at path", () => {
 		const o = node({
@@ -46,7 +46,7 @@ describe("errors", () => {
 		})
 		attest(superSpecialBigint.description).snap("my special bigint")
 		attest(superSpecialBigint(5).errors?.summary).snap(
-			"Must be my special bigint (was number)"
+			"must be my special bigint (was number)"
 		)
 	})
 	it("custom description on parent doesn't affect children", () => {
@@ -59,7 +59,7 @@ describe("errors", () => {
 		// since the error is from the divisor constraint which didn't have a
 		// description, it is unchanged
 		attest(evenNumber(5).errors?.summary).snap(
-			"Must be a multiple of 2 (was 5)"
+			"must be a multiple of 2 (was 5)"
 		)
 	})
 	it("can configure errors by kind at a scope level", () => {
@@ -91,7 +91,7 @@ describe("errors", () => {
 		const superSpecialNumber = types.superSpecialNumber
 		attest(superSpecialNumber.description).snap("my special number")
 		attest(superSpecialNumber("five").errors?.summary).snap(
-			"Must be my special number (was string)"
+			"must be my special number (was string)"
 		)
 	})
 	it("can apply a global config", () => {
@@ -102,14 +102,14 @@ describe("errors", () => {
 		})
 		const mySpecialSymbol = scope({}).node("symbol")
 		attest(mySpecialSymbol("foo").errors?.summary).snap(
-			"Must be my special symbol (was string)"
+			"must be my special symbol (was string)"
 		)
 		configure({
 			domain: defaultConfig.domain
 		})
 		const myBoringSymbol = scope({}).node("symbol")
 		attest(myBoringSymbol("foo").errors?.summary).snap(
-			"Must be a symbol (was string)"
+			"must be a symbol (was string)"
 		)
 	})
 })

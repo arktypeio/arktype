@@ -13,7 +13,7 @@ describe("config traversal", () => {
 		attest<string>(types.a.infer)
 		attest(types.a.description).equals(description)
 		attest(types.a(1).errors?.summary).snap(
-			"Must be a series of characters (was number)"
+			"must be a series of characters (was number)"
 		)
 		attest<{ a: string }>(types.b.infer)
 		attest(types.b({ a: true }).errors?.summary).snap(
@@ -36,7 +36,7 @@ describe("config traversal", () => {
 	it("anonymous type config", () => {
 		const t = type(type("true", "@", { description: "unfalse" }))
 		attest<true>(t.infer)
-		attest(t(false).errors?.summary).snap("Must be unfalse (was false)")
+		attest(t(false).errors?.summary).snap("must be unfalse (was false)")
 	})
 	it("anonymous type config at path", () => {
 		const unfalse = type("true", "@", { description: "unfalse" })
@@ -74,6 +74,6 @@ describe("config traversal", () => {
 		).snap("age must be a number (was boolean)")
 
 		// should give the shallow custom error
-		attest(user(null).errors?.summary).snap("Must be a valid user (was null)")
+		attest(user(null).errors?.summary).snap("must be a valid user (was null)")
 	})
 })

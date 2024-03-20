@@ -7,7 +7,6 @@ import {
 	isEmptyObject,
 	omit,
 	pick,
-	printable,
 	splitByKeys,
 	throwInternalError,
 	type List,
@@ -238,7 +237,7 @@ export class IntersectionNode<t = unknown, $ = any> extends BaseType<
 					return "  • " + source.errors.map((e) => e.expected).join("\n  • ")
 				},
 				problem(ctx) {
-					return `must be...\n${ctx.expected}\n(was ${printable(ctx.data)})`
+					return `must be...\n${ctx.expected}`
 				}
 			},
 			intersections: {
@@ -284,17 +283,18 @@ export class IntersectionNode<t = unknown, $ = any> extends BaseType<
 		)
 
 	traverseApply: TraverseApply = (data, ctx) => {
+		const originalErrorCount = ctx.currentErrors.count
 		if (this.basis) {
 			this.basis.traverseApply(data, ctx)
-			if (ctx.currentErrors.length !== 0) return
+			if (ctx.currentErrors.count > originalErrorCount) return
 		}
 		if (this.refinements.length) {
 			this.refinements.forEach((node) => node.traverseApply(data as never, ctx))
-			if (ctx.currentErrors.length !== 0) return
+			if (ctx.currentErrors.count > originalErrorCount) return
 		}
 		if (this.props) {
 			this.props.traverseApply(data as never, ctx)
-			if (ctx.currentErrors.length !== 0) return
+			if (ctx.currentErrors.count > originalErrorCount) return
 		}
 		this.predicate?.forEach((node) => node.traverseApply(data as never, ctx))
 	}

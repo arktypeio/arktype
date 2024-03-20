@@ -1,6 +1,5 @@
 import {
 	Callable,
-	capitalize,
 	includes,
 	isArray,
 	morph,
@@ -150,15 +149,13 @@ export abstract class BaseNode<
 			implementation.defaults.problem ??= (ctx) =>
 				`must be ${ctx.expected}${ctx.actual ? ` (was ${ctx.actual})` : ""}`
 			implementation.defaults.message ??= (ctx) => {
-				if (ctx.path.length === 0) {
-					return capitalize(ctx.problem)
-				}
+				if (ctx.path.length === 0) return ctx.problem
 				const problemWithLocation = `${pathToPropString(ctx.path)} ${
 					ctx.problem
 				}`
 				if (problemWithLocation[0] === "[") {
 					// clarify paths like [1], [0][1], and ["key!"] that could be confusing
-					return `Value at ${problemWithLocation}`
+					return `value at ${problemWithLocation}`
 				}
 				return problemWithLocation
 			}

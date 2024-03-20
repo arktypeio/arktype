@@ -13,13 +13,13 @@ describe("narrow", () => {
 		// attest(odd.node).equals({ number: { narrow: isOdd as any } })
 		attest(odd(1).out).equals(1)
 		attest(odd(2).errors?.summary).snap(
-			"Must be valid according to isOdd (was 2)"
+			"must be valid according to isOdd (was 2)"
 		)
 	})
 	it("implicit problem anonymous", () => {
 		const even = type("number", ":", (n) => n % 2 === 0)
 		attest(even(1).errors?.summary).snap(
-			"Must be valid according to an anonymous predicate (was 1)"
+			"must be valid according to an anonymous predicate (was 1)"
 		)
 	})
 	it("explicit problem", () => {
@@ -28,7 +28,7 @@ describe("narrow", () => {
 			":",
 			(n, ctx) => n % 3 === 0 || ctx.invalid({ expected: "divisible by 3" })
 		])
-		attest(even(1).errors?.summary).snap("Must be divisible by 3 (was 1)")
+		attest(even(1).errors?.summary).snap("must be divisible by 3 (was 1)")
 	})
 	// it("problem at path", () => {
 	// 	type([{ s: "string" }])
@@ -85,7 +85,7 @@ describe("narrow", () => {
 		attest<Type<string>>(palindrome)
 		attest(palindrome("dad").out).snap("dad")
 		attest(palindrome("david").errors?.summary).snap(
-			"Must be a palindrome (was 'david')"
+			"must be a palindrome (was 'david')"
 		)
 	})
 	it("narrows the output type of a morph", () => {

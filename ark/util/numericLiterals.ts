@@ -36,7 +36,7 @@ const isNumberLike = (s: string) => s.length !== 0 && numberLikeMatcher.test(s)
 
 /**
  *  Matches a well-formatted integer according to the following rules:
- *    1. Must begin with an integer, the first digit of which cannot be 0 unless the entire value is 0
+ *    1. must begin with an integer, the first digit of which cannot be 0 unless the entire value is 0
  *    2. The value may not be "-0"
  */
 export const wellFormedIntegerMatcher = /^(?:0|(?:-?[1-9]\d*))$/

@@ -6,23 +6,23 @@ describe("traverse", () => {
 	it("divisible", () => {
 		const t = type("number%2")
 		attest(t(4).out).snap(4)
-		attest(t(5).errors?.summary).snap("Must be a multiple of 2 (was 5)")
+		attest(t(5).errors?.summary).snap("must be a multiple of 2 (was 5)")
 	})
 	it("range", () => {
 		const t = type("number>2")
 		attest(t(3).out).snap(3)
-		attest(t(2).errors?.summary).snap("Must be more than 2 (was 2)")
+		attest(t(2).errors?.summary).snap("must be more than 2 (was 2)")
 	})
 	it("domain", () => {
 		const t = type("number")
 		attest(t(5).out).snap(5)
-		attest(t("foo").errors?.summary).snap("Must be a number (was string)")
+		attest(t("foo").errors?.summary).snap("must be a number (was string)")
 	})
 	it("regex", () => {
 		const t = type("/.*@arktype.io/")
 		attest(t("shawn@arktype.io").out).snap("shawn@arktype.io")
 		attest(t("shawn@hotmail.com").errors?.summary).snap(
-			'Must be matched by .*@arktype.io (was "shawn@hotmail.com")'
+			'must be matched by .*@arktype.io (was "shawn@hotmail.com")'
 		)
 	})
 	it("required keys", () => {
@@ -53,43 +53,39 @@ describe("traverse", () => {
 		const t = type("string|number[]")
 		attest(t([1]).out).snap([1])
 		attest(t("hello").out).snap("hello")
-		attest(t(2).errors?.summary).snap("Must be a string or an array (was 2)")
+		attest(t(2).errors?.summary).snap("must be a string or an array (was 2)")
 	})
 	it("tuple length", () => {
 		const t = type(["string", "number", "string", "string[]"])
 		const data: typeof t.infer = ["foo", 5, "boo", []]
 		attest(t(data).out).equals(data)
 		attest(t(["hello"]).errors?.summary).snap(
-			'Must be exactly length 4 (was ["hello"])'
+			'must be exactly length 4 (was ["hello"])'
 		)
 	})
 	it("branches", () => {
 		const t = type([{ a: "string" }, "|", { b: "boolean" }])
-		// attest(t({ a: "ok" }).out).snap({ a: "ok" })
-		// attest(t({ b: true }).out).snap({ b: true })
-		attest(t({}).errors?.summary).snap(
-			"a must be defined or b must be defined (was {})"
-		)
+		attest(t({ a: "ok" }).out).snap({ a: "ok" })
+		attest(t({ b: true }).out).snap({ b: true })
+		attest(t({}).errors?.summary).snap("a must be defined or b must be defined")
 	})
 	it("branches at path", () => {
 		const t = type({ key: [{ a: "string" }, "|", { b: "boolean" }] })
 		attest(t({ key: { a: "ok" } }).out).snap({ key: { a: "ok" } })
 		attest(t({ key: { b: true } }).out).snap({ key: { b: true } })
 		attest(t({ key: {} }).errors?.summary).snap(
-			"At key, a must be defined or b must be defined (was {})"
+			"key.a must be defined or key.b must be defined"
 		)
 	})
 	it("switch", () => {
-		const t = type([{ a: "string" }, "|", { a: "boolean" }])
+		const t = type({ a: "string" }).or({ a: "null" }).or({ a: "number" })
 		attest(t({ a: "ok" }).out).snap({ a: "ok" })
-		attest(t({ a: true }).out).snap({ a: true })
+		attest(t({ a: 5 }).out).snap({ a: 5 })
 		// value isn't present
-		attest(t({}).errors?.summary).snap(
-			"a must be a string or boolean (was undefined)"
-		)
+		attest(t({}).errors?.summary).snap("a must be defined (was undefined)")
 		// unsatisfying value
-		attest(t({ a: 5 }).errors?.summary).snap(
-			"a must be a string or boolean (was 5)"
+		attest(t({ a: false }).errors?.summary).snap(
+			"a must be a number, a string or null (was false)"
 		)
 	})
 	it("multiple switch", () => {
@@ -100,20 +96,27 @@ describe("traverse", () => {
 			d: "a|b|c"
 		}).export()
 		attest(types.d({}).errors?.summary).snap(
-			"a must be a string, a number or an object (was undefined)"
+			"a must be defined (was undefined)"
+		)
+		attest(types.d({ a: null }).errors?.summary).snap(
+			"a must be a function, a number or a string (was null)"
 		)
 	})
 
 	it("multi", () => {
 		const naturalNumber = type("integer>0")
 		attest(naturalNumber(-1.2).errors?.summary).snap(
-			"-1.2 must be...\n• an integer\n• more than 0"
+			`must be...
+  • an integer
+  • more than 0`
 		)
 		const naturalAtPath = type({
 			natural: naturalNumber
 		})
 		attest(naturalAtPath({ natural: -0.1 }).errors?.summary).snap(
-			"At natural, -0.1 must be...\n• an integer\n• more than 0"
+			`natural must be...
+  • an integer
+  • more than 0`
 		)
 	})
 })

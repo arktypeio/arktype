@@ -58,7 +58,7 @@ describe("array", () => {
 				"Value at [0] must be a string (was number)"
 			)
 			attest(t(["foo", "bar"]).errors?.summary).snap(
-				"Must be at most length 1 (was 2)"
+				"must be at most length 1 (was 2)"
 			)
 		})
 		it("nested optional tuple", () => {
@@ -105,12 +105,12 @@ Value at [1] must be a number (was boolean)`)
 			// too short
 			attest(t.allows([""])).equals(false)
 			attest(t([""]).errors?.summary).snap(
-				'Must be exactly length 2 (was [""])'
+				'must be exactly length 2 (was [""])'
 			)
 			// too long
 			attest(t.allows(["", 0, 1])).equals(false)
 			attest(t(["", 0, 1]).errors?.summary).snap(
-				'Must be exactly length 2 (was ["",0,1])'
+				'must be exactly length 2 (was ["",0,1])'
 			)
 			// non-array
 			attest(
@@ -126,7 +126,7 @@ Value at [1] must be a number (was boolean)`)
 					0: "",
 					1: 0
 				}).errors?.summary
-			).snap("Must be an array (was object)")
+			).snap("must be an array (was object)")
 		})
 
 		it("nested", () => {

@@ -107,7 +107,7 @@ export const hasObjectKind = <
 
 export const isArray = (data: unknown): data is List => Array.isArray(data)
 
-/** Each defaultObjectKind's completion for the phrase "Must be _____" */
+/** Each defaultObjectKind's completion for the phrase "must be _____" */
 export const objectKindDescriptions = {
 	Array: "an array",
 	Function: "a function",

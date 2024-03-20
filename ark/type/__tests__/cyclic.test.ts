@@ -97,7 +97,7 @@ describe("cyclic", () => {
 			(p) => !p.dependencies?.some((d) => d.name === p.name)
 		])
 		attest(nonSelfDependent(data).errors?.summary).snap(
-			'Must be valid (was {"name":"arktype","dependencies":[{"name":"typescript"},"(cycle)"],"contributors":[{"email":"david@arktype.io"}]})'
+			'must be valid (was {"name":"arktype","dependencies":[{"name":"typescript"},"(cycle)"],"contributors":[{"email":"david@arktype.io"}]})'
 		)
 	})
 

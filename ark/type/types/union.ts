@@ -1,4 +1,4 @@
-import { isArray } from "@arktype/util"
+import { appendUnique, isArray, printable } from "@arktype/util"
 import type { Node } from "../base.js"
 import type { Schema } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
@@ -103,22 +103,6 @@ export class UnionNode<t = any, $ = any> extends BaseType<
 				)
 			},
 			defaults: {
-				// 	mustBe: (branchProblems) =>
-				// 	describeBranches(
-				// 		branchProblems.map(
-				// 			(problem) =>
-				// 				`${problem.path} must be ${
-				// 					problem.parts
-				// 						? describeBranches(
-				// 							  problem.parts.map((part) => part.mustBe)
-				// 						  )
-				// 						: problem.mustBe
-				// 				}`
-				// 		)
-				// 	),
-				// writeReason: (mustBe, data) => `${mustBe} (was ${data})`,
-				// addContext: (reason, path) =>
-				// 	path.length ? `At ${path}, ${reason}` : reason
 				description(node) {
 					if (node.isBoolean) return "boolean"
 
@@ -126,8 +110,30 @@ export class UnionNode<t = any, $ = any> extends BaseType<
 						node.branches.map((branch) => branch.description)
 					)
 				},
-				expected(source) {
-					return describeBranches(source.errors.map((e) => e.expected))
+				expected(ctx) {
+					return describeBranches(
+						ctx.errors.map((e) => {
+							if (e.code !== "intersection") return e.message
+							const pathPrefix = e.path.length ? `${e.path} ` : ""
+							e.errors.map((_) => _.expected)
+							const branchesAtPath: string[] = []
+							e.errors.forEach((errorAtPath) =>
+								// avoid duplicate messages when multiple branches
+								// are invalid due to the same error
+								appendUnique(branchesAtPath, errorAtPath.expected)
+							)
+							const expected = describeBranches(branchesAtPath)
+							return `${pathPrefix}must be ${expected} (was ${printable(
+								e.data
+							)})`
+						})
+					)
+				},
+				problem(ctx) {
+					return ctx.expected
+				},
+				message(ctx) {
+					return ctx.problem
 				}
 			},
 			intersections: {

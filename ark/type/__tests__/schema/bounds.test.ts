@@ -26,15 +26,15 @@ describe("bounds", () => {
 		})
 
 		attest(t(numericCases.lessThanMin).errors?.summary).snap(
-			"Must be more than 5 (was 4)"
+			"must be more than 5 (was 4)"
 		)
 		attest(t(numericCases.equalToExclusiveMin).errors?.summary).snap(
-			"Must be more than 5 (was 5)"
+			"must be more than 5 (was 5)"
 		)
 		attest(t(numericCases.between).errors).equals(undefined)
 		attest(t(numericCases.equalToInclusiveMax).errors).equals(undefined)
 		attest(t(numericCases.greaterThanMax).errors?.summary).snap(
-			"Must be at most 10 (was 11)"
+			"must be at most 10 (was 11)"
 		)
 	})
 	it("length apply", () => {
@@ -45,15 +45,15 @@ describe("bounds", () => {
 		})
 
 		attest(t(lengthCases.lessThanMin).errors?.summary).snap(
-			"Must be more than length 5 (was 4)"
+			"must be more than length 5 (was 4)"
 		)
 		attest(t(lengthCases.equalToExclusiveMin).errors?.summary).snap(
-			"Must be more than length 5 (was 5)"
+			"must be more than length 5 (was 5)"
 		)
 		attest(t(lengthCases.between).errors).equals(undefined)
 		attest(t(lengthCases.equalToInclusiveMax).errors).equals(undefined)
 		attest(t(lengthCases.greaterThanMax).errors?.summary).snap(
-			"Must be at most length 10 (was 11)"
+			"must be at most length 10 (was 11)"
 		)
 	})
 	it("date apply", () => {
@@ -64,15 +64,15 @@ describe("bounds", () => {
 		})
 
 		attest(t(dateCases.lessThanMin).errors?.summary).snap(
-			"Must be after 12/31/1969, 7:00:00 PM (was 12/31/1969, 7:00:00 PM)"
+			"must be after 12/31/1969, 7:00:00 PM (was 12/31/1969, 7:00:00 PM)"
 		)
 		attest(t(dateCases.equalToExclusiveMin).errors?.summary).snap(
-			"Must be after 12/31/1969, 7:00:00 PM (was 12/31/1969, 7:00:00 PM)"
+			"must be after 12/31/1969, 7:00:00 PM (was 12/31/1969, 7:00:00 PM)"
 		)
 		attest(t(dateCases.between).errors).equals(undefined)
 		attest(t(dateCases.equalToInclusiveMax).errors).equals(undefined)
 		attest(t(dateCases.greaterThanMax).errors?.summary).snap(
-			"Must be 12/31/1969, 7:00:00 PM or earlier (was 12/31/1969, 7:00:00 PM)"
+			"must be 12/31/1969, 7:00:00 PM or earlier (was 12/31/1969, 7:00:00 PM)"
 		)
 	})
 

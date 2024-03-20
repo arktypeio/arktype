@@ -15,7 +15,7 @@ describe("morph", () => {
 			return result.errors.throw()
 		}
 		attest<string>(result.out).equals("true")
-		attest(t("foo").errors?.summary).snap("Must be boolean (was string)")
+		attest(t("foo").errors?.summary).snap("must be boolean (was string)")
 		const expected = type("boolean", "=>", (data) => `${data}`)
 		attest(t).equals(expected)
 	})
@@ -33,7 +33,7 @@ describe("morph", () => {
 	// 	attest<Type<(In: string) => Out<Date>>>(t)
 	// 	attest(t("5/21/1993").out?.getDate()).equals(21)
 	// 	attest(t("foobar").errors?.summary).snap(
-	// 		"Must be a valid date (was 'foobar')"
+	// 		"must be a valid date (was 'foobar')"
 	// 	)
 	// })
 	it("validated output", () => {
@@ -69,7 +69,7 @@ describe("morph", () => {
 	// 	])
 	// 	attest<Type<(In: number) => Out<number>>>(divide100By)
 	// 	attest(divide100By(5).out).equals(20)
-	// 	attest(divide100By(0).errors?.summary).snap("Must be non-zero (was 0)")
+	// 	attest(divide100By(0).errors?.summary).snap("must be non-zero (was 0)")
 	// })
 	it("adds a problem if one is returned without being added", () => {
 		const divide100By = type([
@@ -85,7 +85,7 @@ describe("morph", () => {
 				}
 			}
 		])
-		attest(divide100By(0).errors?.summary).snap("Must be non-zero (was 0)")
+		attest(divide100By(0).errors?.summary).snap("must be non-zero (was 0)")
 	})
 	it("at path", () => {
 		const t = type({ a: ["string", "=>", (data) => data.length] })
@@ -382,7 +382,7 @@ describe("morph", () => {
 	// 	attest<Type<(In: string) => Out<number>>>(parsedInt)
 	// 	attest(parsedInt("5").out).snap(5)
 	// 	attest(parsedInt("five").errors?.summary).snap(
-	// 		"Must be an integer string (was 'five')"
+	// 		"must be an integer string (was 'five')"
 	// 	)
 	// })
 	it("nullable return", () => {

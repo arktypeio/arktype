@@ -17,10 +17,6 @@ export class ArkError extends TypeError {
 	throw(): never {
 		throw this
 	}
-
-	hasCode<code extends ArkErrorCode>(code: code): this is ArkTypeError<code> {
-		return "code" in this && this.code === code
-	}
 }
 
 export type ArkTypeError<code extends ArkErrorCode = ArkErrorCode> = ArkError &
@@ -50,6 +46,33 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 		input extends { code: ArkErrorCode } ? input["code"] : "predicate"
 	>
 	add(input: ArkErrorInput): ArkTypeError {
+		const error = this.create(input)
+		const pathKey = error.path.join(".")
+		const existing = this.byPath[pathKey]
+		if (existing) {
+			const errorIntersection = this.create({
+				code: "intersection",
+				errors:
+					existing.code === "intersection"
+						? [...existing.errors, error]
+						: [existing, error]
+			})
+			const existingIndex = this.indexOf(existing)
+			// If existing is found (which it always should be unless this was externally mutated),
+			// replace it with the new problem intersection. In case it isn't for whatever reason,
+			// just append the intersection.
+			this.mutable[existingIndex === -1 ? this.length : existingIndex] =
+				errorIntersection
+			this.byPath[pathKey] = errorIntersection
+		} else {
+			this.byPath[pathKey] = error
+			this.mutable.push(error)
+		}
+		this.count++
+		return error
+	}
+
+	protected create(input: ArkErrorInput): ArkTypeError {
 		let ctx: ArkErrorContext
 		const data = this.ctx.data
 		const nodeConfig = this.ctx.config.predicate
@@ -87,31 +110,7 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 				? input.message
 				: nodeConfig.message(ctx as never)
 		}
-
-		const pathKey = this.ctx.path.join(".")
-		const existing = this.byPath[pathKey]
-		const error = new ArkTypeError(ctx)
-		if (existing) {
-			const errorIntersection = this.ctx.error({
-				code: "intersection",
-				errors:
-					existing.code === "intersection"
-						? [...existing.errors, error]
-						: [existing, error]
-			})
-			const existingIndex = this.indexOf(existing)
-			// If existing is found (which it always should be unless this was externally mutated),
-			// replace it with the new problem intersection. In case it isn't for whatever reason,
-			// just append the intersection.
-			this.mutable[existingIndex === -1 ? this.length : existingIndex] =
-				errorIntersection
-			this.byPath[pathKey] = errorIntersection
-		} else {
-			this.byPath[pathKey] = error
-			this.mutable.push(error)
-		}
-		this.count++
-		return error
+		return new ArkTypeError(ctx)
 	}
 
 	get summary(): string {

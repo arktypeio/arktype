@@ -51,7 +51,7 @@ export type domainOf<data> = unknown extends data
 	? "symbol"
 	: never
 
-export const domainOf = <data>(data: data) => {
+export const domainOf = <data>(data: data): domainOf<data> => {
 	const builtinType = typeof data
 	return (
 		builtinType === "object"
@@ -80,7 +80,7 @@ const nonEnumerableDomainDescriptions = {
 
 export type NonEnumerableDomain = keyof typeof nonEnumerableDomainDescriptions
 
-/** Each domain's completion for the phrase "Must be _____" */
+/** Each domain's completion for the phrase "must be _____" */
 export const domainDescriptions = {
 	...nonEnumerableDomainDescriptions,
 	...enumerableDomainDescriptions
