@@ -103,6 +103,22 @@ export class UnionNode<t = any, $ = any> extends BaseType<
 				)
 			},
 			defaults: {
+				// 	mustBe: (branchProblems) =>
+				// 	describeBranches(
+				// 		branchProblems.map(
+				// 			(problem) =>
+				// 				`${problem.path} must be ${
+				// 					problem.parts
+				// 						? describeBranches(
+				// 							  problem.parts.map((part) => part.mustBe)
+				// 						  )
+				// 						: problem.mustBe
+				// 				}`
+				// 		)
+				// 	),
+				// writeReason: (mustBe, data) => `${mustBe} (was ${data})`,
+				// addContext: (reason, path) =>
+				// 	path.length ? `At ${path}, ${reason}` : reason
 				description(node) {
 					if (node.isBoolean) return "boolean"
 
