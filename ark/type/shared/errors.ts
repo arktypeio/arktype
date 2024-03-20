@@ -7,8 +7,8 @@ import {
 	type propwiseXor
 } from "@arktype/util"
 import type { Prerequisite, errorContext } from "../kinds.js"
-import type { TraversalContext, TraversalPath } from "./context.js"
 import type { NodeKind } from "./implement.js"
+import type { TraversalContext, TraversalPath } from "./traversal.js"
 
 export class ArkError extends TypeError {
 	toString(): string {

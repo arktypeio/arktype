@@ -1,10 +1,10 @@
 import { compileSerializedValue, type Key } from "@arktype/util"
 import type { Node, TypeSchema } from "../../base.js"
 import type { NodeCompiler } from "../../shared/compile.js"
-import type { TraverseAllows, TraverseApply } from "../../shared/context.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import type { TypeKind, nodeImplementationOf } from "../../shared/implement.js"
+import type { TraverseAllows, TraverseApply } from "../../shared/traversal.js"
 import { BaseConstraint } from "../constraint.js"
 
 export interface PropSchema extends BaseMeta {
@@ -56,7 +56,7 @@ export class PropNode extends BaseConstraint<PropDeclaration> {
 					}`
 				},
 				expected() {
-					return "provided"
+					return "defined"
 				},
 				actual: () => null
 			},
@@ -97,31 +97,48 @@ export class PropNode extends BaseConstraint<PropDeclaration> {
 
 	traverseAllows: TraverseAllows<object> = (data, ctx) => {
 		if (this.key in data) {
-			return this.value.traverseAllows((data as any)[this.key], ctx)
+			// ctx will be undefined if this node doesn't have a context-dependent predicate
+			ctx?.path.push(this.key)
+			const allowed = this.value.traverseAllows((data as any)[this.key], ctx)
+			ctx?.path.pop()
+			return allowed
 		}
 		return this.required
 	}
 
 	traverseApply: TraverseApply<object> = (data, ctx) => {
+		ctx.path.push(this.key)
 		if (this.key in data) {
-			ctx.path.push(this.key)
 			this.value.traverseApply((data as any)[this.key], ctx)
-			ctx.path.pop()
 		} else if (this.required) {
 			ctx.error(this.errorContext)
 		}
+		ctx.path.pop()
 	}
 
 	compile(js: NodeCompiler): void {
+		const requiresContext = js.requiresContextFor(this.value)
+		if (requiresContext) {
+			js.line(`${js.ctx}.path.push(${this.serializedKey})`)
+		}
+
 		js.if(`${this.serializedKey} in ${js.data}`, () =>
-			js.checkLiteralKey(this.key, this.value)
+			js.check(this.value, {
+				arg: `${js.data}${js.prop(this.key)}`
+			})
 		)
 		if (this.required) {
-			js.else(() =>
-				js.traversalKind === "Allows"
-					? js.return(false)
-					: js.line(`${js.ctx}.error(${JSON.stringify(this.errorContext)})`)
-			)
+			js.else(() => {
+				if (js.traversalKind === "Apply") {
+					return js
+						.line(`${js.ctx}.error(${JSON.stringify(this.errorContext)})`)
+						.line(`${js.ctx}.path.pop()`)
+				}
+				if (requiresContext) {
+					js.line(`${js.ctx}.path.pop()`)
+				}
+				return js.return(false)
+			})
 		}
 
 		if (js.traversalKind === "Allows") {

@@ -34,12 +34,6 @@ import type {
 } from "./kinds.js"
 import type { Resolutions, Scope } from "./scope.js"
 import type { NodeCompiler } from "./shared/compile.js"
-import {
-	TraversalContext,
-	pathToPropString,
-	type TraverseAllows,
-	type TraverseApply
-} from "./shared/context.js"
 import type {
 	BaseAttachmentsOf,
 	BaseErrorContext,
@@ -68,6 +62,12 @@ import {
 	type nodeImplementationOf
 } from "./shared/implement.js"
 import { inferred } from "./shared/inference.js"
+import {
+	TraversalContext,
+	pathToPropString,
+	type TraverseAllows,
+	type TraverseApply
+} from "./shared/traversal.js"
 import type { DomainNode } from "./types/domain.js"
 import type { IntersectionNode } from "./types/intersection.js"
 import type {

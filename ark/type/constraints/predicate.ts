@@ -1,7 +1,7 @@
 import { compileSerializedValue } from "@arktype/util"
 import { jsData } from "../shared/compile.js"
-import type { TraversalContext } from "../shared/context.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
+import type { TraversalContext } from "../shared/traversal.js"
 import type { of } from "./ast.js"
 import { BasePrimitiveConstraint } from "./constraint.js"
 

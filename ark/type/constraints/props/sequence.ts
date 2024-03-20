@@ -9,7 +9,6 @@ import {
 import type { TypeSchema } from "../../base.js"
 import type { MutableInner } from "../../kinds.js"
 import type { NodeCompiler } from "../../shared/compile.js"
-import type { TraverseAllows, TraverseApply } from "../../shared/context.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import type {
@@ -17,6 +16,7 @@ import type {
 	TypeKind,
 	nodeImplementationOf
 } from "../../shared/implement.js"
+import type { TraverseAllows, TraverseApply } from "../../shared/traversal.js"
 import type { Type } from "../../types/type.js"
 import { BaseConstraint } from "../constraint.js"
 

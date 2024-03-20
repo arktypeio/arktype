@@ -44,7 +44,6 @@ import {
 import { fullStringParse } from "./parser/string/string.js"
 import type { NodeParser, SchemaParser } from "./schema.js"
 import { NodeCompiler } from "./shared/compile.js"
-import type { TraverseAllows, TraverseApply } from "./shared/context.js"
 import type {
 	ActualWriter,
 	ArkErrorCode,
@@ -58,6 +57,7 @@ import {
 	type NodeKind,
 	type TypeKind
 } from "./shared/implement.js"
+import type { TraverseAllows, TraverseApply } from "./shared/traversal.js"
 import {
 	createTypeParser,
 	generic,

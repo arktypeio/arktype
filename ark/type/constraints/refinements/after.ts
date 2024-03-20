@@ -1,6 +1,6 @@
-import type { TraverseAllows } from "../../shared/context.js"
 import type { declareNode } from "../../shared/declare.js"
 import type { nodeImplementationOf } from "../../shared/implement.js"
+import type { TraverseAllows } from "../../shared/traversal.js"
 import {
 	BaseRange,
 	parseDateLimit,

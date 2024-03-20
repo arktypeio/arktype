@@ -24,7 +24,6 @@ import type { Inner, MutableInner, Prerequisite, Schema } from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
 import type { Scope } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
-import type { TraverseAllows, TraverseApply } from "../shared/context.js"
 import { metaKeys, type BaseMeta, type declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { ArkTypeError } from "../shared/errors.js"
@@ -38,6 +37,7 @@ import {
 	type RefinementKind,
 	type nodeImplementationOf
 } from "../shared/implement.js"
+import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 import type { DomainNode, DomainSchema } from "./domain.js"
 import type { ProtoNode, ProtoSchema } from "./proto.js"
 import { BaseType, defineRightwardIntersections, type Type } from "./type.js"

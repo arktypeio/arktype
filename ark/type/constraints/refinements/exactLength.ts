@@ -1,7 +1,7 @@
 import { jsData } from "../../shared/compile.js"
-import type { TraverseAllows } from "../../shared/context.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
+import type { TraverseAllows } from "../../shared/traversal.js"
 import { BasePrimitiveConstraint } from "../constraint.js"
 import type { LengthBoundableData } from "./range.js"
 

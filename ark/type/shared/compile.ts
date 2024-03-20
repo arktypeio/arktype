@@ -1,13 +1,12 @@
 import {
 	CompiledFunction,
 	compileSerializedValue,
-	serializeLiteralKey,
 	type Dict
 } from "@arktype/util"
 import type { Node, UnknownNode } from "../base.js"
 import type { Discriminant } from "../types/discriminate.js"
-import type { TraversalKind } from "./context.js"
 import type { PrimitiveKind } from "./implement.js"
+import type { TraversalKind } from "./traversal.js"
 
 export const jsData = "data"
 export const jsCtx = "ctx"
@@ -47,20 +46,6 @@ export class NodeCompiler extends CompiledFunction<
 		return this.if(`${this.ctx}.currentErrors.length !== 0`, () =>
 			this.return()
 		)
-	}
-
-	checkLiteralKey(key: PropertyKey, node: UnknownNode): this {
-		const requiresContext = this.requiresContextFor(node)
-		if (requiresContext) {
-			this.line(`${this.ctx}.path.push(${serializeLiteralKey(key)})`)
-		}
-		this.check(node, {
-			arg: `${this.data}${this.prop(key)}`
-		})
-		if (requiresContext) {
-			this.line(`${this.ctx}.path.pop()`)
-		}
-		return this
 	}
 
 	checkReferenceKey(keyExpression: string, node: UnknownNode): this {

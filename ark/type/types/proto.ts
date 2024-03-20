@@ -7,10 +7,10 @@ import {
 	type Constructor
 } from "@arktype/util"
 import { jsData } from "../shared/compile.js"
-import type { TraverseAllows } from "../shared/context.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import { defaultValueSerializer } from "../shared/implement.js"
+import type { TraverseAllows } from "../shared/traversal.js"
 import { BaseBasis } from "./basis.js"
 
 export interface ProtoInner<proto extends Constructor = Constructor>

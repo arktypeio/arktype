@@ -6,7 +6,6 @@ import {
 import { BaseNode, type ConstraintNode, type Node } from "../base.js"
 import type { Prerequisite } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
-import type { TraverseAllows, TraverseApply } from "../shared/context.js"
 import type { BaseNodeDeclaration } from "../shared/declare.js"
 import type { Disjoint } from "../shared/disjoint.js"
 import type {
@@ -14,6 +13,7 @@ import type {
 	PropKind,
 	kindLeftOf
 } from "../shared/implement.js"
+import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 import type { Type } from "../types/type.js"
 
 export type constraintKindLeftOf<kind extends ConstraintKind> = ConstraintKind &
