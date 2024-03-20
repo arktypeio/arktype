@@ -177,8 +177,11 @@ export class UnionNode<t = any, $ = any> extends BaseType<
 	traverseAllows: TraverseAllows = (data, ctx) =>
 		this.branches.some((b) => b.traverseAllows(data, ctx))
 
-	traverseApply: TraverseApply = (data, ctx) =>
-		this.branches.forEach((b) => b.traverseApply(data, ctx))
+	traverseApply: TraverseApply = (data, ctx) => {
+		ctx.pushUnion()
+		this.branches.forEach((branch) => branch.traverseApply(data, ctx))
+		ctx.popUnion(this.branches.length)
+	}
 
 	compile(js: NodeCompiler): void {
 		if (js.traversalKind === "Apply") {

@@ -24,7 +24,6 @@ interface DeclarationInput {
 
 export interface BaseErrorContext<kind extends NodeKind = NodeKind> {
 	code: kind
-	description: string
 }
 
 export type defaultErrorContext<d extends DeclarationInput> = evaluate<

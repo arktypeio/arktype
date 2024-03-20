@@ -61,8 +61,7 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 				path: [...this.ctx.path],
 				data,
 				actual: nodeConfig.actual(data),
-				expected: input,
-				description: input
+				expected: input
 			} satisfies ProblemContext as any
 			ctx.problem = nodeConfig.problem(ctx as never)
 			ctx.message = nodeConfig.message(ctx as never)
@@ -71,7 +70,6 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 			const nodeConfig = this.ctx.config[code]
 			const expected = input.expected ?? nodeConfig.expected?.(input as never)
 			ctx = {
-				description: expected,
 				...input,
 				// prioritize these over the raw user provided values so we can
 				// check for keys with values like undefined

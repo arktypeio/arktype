@@ -144,7 +144,8 @@ export abstract class BaseNode<
 			implementation.defaults.expected ??= (ctx) =>
 				"description" in ctx
 					? (ctx.description as string)
-					: implementation.defaults.description(ctx)
+					: // TODO: does passing ctx here work? or will some expect node?
+					  implementation.defaults.description(ctx as never)
 			implementation.defaults.actual ??= (data) => printable(data)
 			implementation.defaults.problem ??= (ctx) =>
 				`must be ${ctx.expected}${ctx.actual ? ` (was ${ctx.actual})` : ""}`
