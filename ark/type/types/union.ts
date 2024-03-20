@@ -4,7 +4,7 @@ import type { Schema } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
-import { ArkErrors, type ArkTypeError } from "../shared/errors.js"
+import type { ArkTypeError } from "../shared/errors.js"
 import {
 	basisKinds,
 	type TypeKind,
@@ -178,15 +178,9 @@ export class UnionNode<t = any, $ = any> extends BaseType<
 		this.branches.some((b) => b.traverseAllows(data, ctx))
 
 	traverseApply: TraverseApply = (data, ctx) => {
-		const errors: ArkTypeError[] = []
-		for (let i = 0; i < this.branches.length; i++) {
-			ctx.errorsStack.push(new ArkErrors(ctx))
-			this.branches[i].traverseApply(data, ctx)
-			const branchErrors = ctx.errorsStack.pop()!
-			if (branchErrors.length) errors.push(branchErrors[0])
-			else return
-		}
-		ctx.error({ code: "union", errors })
+		ctx.pushUnion()
+		this.branches.forEach((branch) => branch.traverseApply(data, ctx))
+		ctx.popUnion(this.branches.length)
 	}
 
 	compile(js: NodeCompiler): void {
