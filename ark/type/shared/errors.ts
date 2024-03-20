@@ -1,7 +1,6 @@
 import {
 	ReadonlyArray,
 	hasDefinedKey,
-	type DynamicBase,
 	type evaluate,
 	type optionalizeKeys,
 	type propwiseXor
@@ -24,22 +23,17 @@ export class ArkError extends TypeError {
 	}
 }
 
-export const ArkTypeError = <context extends ArkErrorContext>(
-	context: context
-): ArkTypeError & context => {
-	const e = new ArkError(context.message)
-	e.name = "ArkTypeError"
-	return Object.assign(e, context) as never
-}
+export type ArkTypeError<code extends ArkErrorCode = ArkErrorCode> = ArkError &
+	ArkErrorContext<code>
 
-Object.defineProperty(ArkTypeError, Symbol.hasInstance, {
-	value: (instance: unknown) =>
-		instance instanceof ArkError && instance.name === "ArkTypeError"
-})
-
-export interface ArkTypeError<code extends ArkErrorCode = ArkErrorCode>
-	extends ArkError,
-		DynamicBase<ArkErrorContext<code>> {}
+export const ArkTypeError: new <code extends ArkErrorCode = ArkErrorCode>(
+	context: ArkErrorContext<code>
+) => ArkTypeError<code> = class extends ArkError {
+	constructor(context: ArkErrorContext) {
+		super(context.message)
+		Object.assign(this, context)
+	}
+} as never
 
 export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 	constructor(protected ctx: TraversalContext) {
@@ -96,23 +90,22 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 
 		const pathKey = this.ctx.path.join(".")
 		const existing = this.byPath[pathKey]
-		const error = ArkTypeError(ctx)
+		const error = new ArkTypeError(ctx)
 		if (existing) {
-			// if (existing.hasCode("intersection")) {
-			// 	existing.errors.push(error)
-			// } else {
-			// 	const errorIntersection = this.ctx.error({
-			// 		code: "intersection",
-			// 		errors: [existing, error]
-			// 	})
-			// 	const existingIndex = this.indexOf(existing)
-			// 	// If existing is found (which it always should be unless this was externally mutated),
-			// 	// replace it with the new problem intersection. In case it isn't for whatever reason,
-			// 	// just append the intersection.
-			// 	this[existingIndex === -1 ? this.length : existingIndex] =
-			// 		errorIntersection
-			// 	this.byPath[pathKey] = errorIntersection
-			// }
+			const errorIntersection = this.ctx.error({
+				code: "intersection",
+				errors:
+					existing.code === "intersection"
+						? [...existing.errors, error]
+						: [existing, error]
+			})
+			const existingIndex = this.indexOf(existing)
+			// If existing is found (which it always should be unless this was externally mutated),
+			// replace it with the new problem intersection. In case it isn't for whatever reason,
+			// just append the intersection.
+			this.mutable[existingIndex === -1 ? this.length : existingIndex] =
+				errorIntersection
+			this.byPath[pathKey] = errorIntersection
 		} else {
 			this.byPath[pathKey] = error
 			this.mutable.push(error)
