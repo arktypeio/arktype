@@ -18,11 +18,11 @@ describe("array", () => {
 			attest(t(["foo", "bar"]).out).snap(["foo", "bar"])
 			attest(t.allows(["foo", "bar", 5])).equals(false)
 			attest(t(["foo", "bar", 5]).errors?.summary).snap(
-				"Value at [2] must be a string (was number)"
+				"value at [2] must be a string (was number)"
 			)
 			attest(t.allows([5, "foo", "bar"])).equals(false)
 			attest(t([5, "foo", "bar"]).errors?.summary).snap(
-				"Value at [0] must be a string (was number)"
+				"value at [0] must be a string (was number)"
 			)
 		})
 
@@ -35,11 +35,11 @@ describe("array", () => {
 			attest(t([["foo"]]).out).snap([["foo"]])
 			attest(t.allows(["foo"])).equals(false)
 			attest(t(["foo"]).errors?.summary).snap(
-				"Value at [0] must be an array (was string)"
+				"value at [0] must be an array (was string)"
 			)
 			attest(t.allows([["foo", 5]])).equals(false)
 			attest(t([["foo", 5]]).errors?.summary).snap(
-				"Value at [0][1] must be a string (was number)"
+				"value at [0][1] must be a string (was number)"
 			)
 		})
 
@@ -55,7 +55,7 @@ describe("array", () => {
 			attest(t([]).errors).equals(undefined)
 			attest(t(["foo"]).errors).equals(undefined)
 			attest(t([5]).errors?.summary).snap(
-				"Value at [0] must be a string (was number)"
+				"value at [0] must be a string (was number)"
 			)
 			attest(t(["foo", "bar"]).errors?.summary).snap(
 				"must be at most length 1 (was 2)"
@@ -96,12 +96,12 @@ describe("array", () => {
 			attest(t(["", 0]).out).snap(["", 0])
 			attest(t.allows([true, 0])).equals(false)
 			attest(t([true, 0]).errors?.summary).snap(
-				"Value at [0] must be a string (was boolean)"
+				"value at [0] must be a string (was boolean)"
 			)
 			attest(t.allows([0, false])).equals(false)
 			attest(t([0, false]).errors?.summary)
-				.snap(`Value at [0] must be a string (was number)
-Value at [1] must be a number (was boolean)`)
+				.snap(`value at [0] must be a string (was number)
+value at [1] must be a number (was boolean)`)
 			// too short
 			attest(t.allows([""])).equals(false)
 			attest(t([""]).errors?.summary).snap(
@@ -148,7 +148,7 @@ Value at [1] must be a number (was boolean)`)
 			const invalid = [["", 0], [{ a: 0n, b: [undefined] }]]
 			attest(t.allows(invalid)).equals(false)
 			attest(t(invalid).errors?.summary).snap(
-				"Value at [1][0].b[0] must be null (was undefined)"
+				"value at [1][0].b[0] must be null (was undefined)"
 			)
 		})
 	})
