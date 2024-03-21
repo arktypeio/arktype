@@ -5,7 +5,7 @@ import {
 } from "@arktype/util"
 import { BaseNode, type ConstraintNode, type Node } from "../base.js"
 import type { Prerequisite } from "../kinds.js"
-import { compileErrorContext, type NodeCompiler } from "../shared/compile.js"
+import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseNodeDeclaration } from "../shared/declare.js"
 import type { Disjoint } from "../shared/disjoint.js"
 import type {
@@ -66,14 +66,6 @@ export abstract class BaseConstraint<
 		r: r
 	): intersectConstraintKinds<d["kind"], r["kind"]> {
 		return this.intersectInternal(r) as never
-	}
-
-	private compiledErrorContextCache: string | undefined
-	get compiledErrorContext(): string {
-		this.compiledErrorContextCache ??= compileErrorContext(
-			"errorContext" in this ? (this.errorContext as object) : null
-		)
-		return this.compiledErrorContextCache
 	}
 }
 

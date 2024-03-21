@@ -1,5 +1,6 @@
 import {
 	Callable,
+	compileSerializedValue,
 	includes,
 	isArray,
 	morph,
@@ -208,6 +209,22 @@ export abstract class BaseNode<
 			this.inner.description ??
 			this.$.resolvedConfig[this.kind].description?.(this as never)
 		return this.descriptionCache
+	}
+
+	private compiledErrorContextCache: string | undefined
+	get compiledErrorContext(): string {
+		if (!this.compiledErrorContextCache) {
+			if ("errorContext" in this) {
+				let result = "{ "
+				for (const [k, v] of Object.entries(this.errorContext!)) {
+					result += `${k}: ${compileSerializedValue(v)}, `
+				}
+				this.compiledErrorContextCache = result + " }"
+			} else {
+				this.compiledErrorContextCache = "{}"
+			}
+		}
+		return this.compiledErrorContextCache
 	}
 
 	allows = (data: d["prerequisite"]): data is distill<extractIn<t>> => {

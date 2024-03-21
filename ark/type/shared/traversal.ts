@@ -17,7 +17,6 @@ export class TraversalContext {
 	errorsStack: ArkErrors[]
 	// TODO: add morphs here
 	entriesToPrune: [data: Record<string, unknown>, key: string][] = []
-	branchHasError = false
 
 	// Qualified
 	seen: { [name in string]?: object[] } = {}
@@ -58,11 +57,8 @@ export class TraversalContext {
 		this.errorsStack.push(new ArkErrors(this))
 	}
 
-	popUnion(branchCount: number): void {
-		const branchErrors = this.errorsStack.pop()!
-		if (branchErrors.count >= branchCount) {
-			this.error({ code: "union", errors: branchErrors })
-		}
+	popUnion(): ArkErrors {
+		return this.errorsStack.pop()!
 	}
 }
 

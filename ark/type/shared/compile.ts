@@ -90,12 +90,3 @@ export class NodeCompiler extends CompiledFunction<["data", "ctx"]> {
 		return `${name}(${this.argNames.join(", ")}){\n${this.body}    }\n`
 	}
 }
-
-export const compileErrorContext = (ctx: object | null): string => {
-	if (ctx === null) return "{}"
-	let result = "{ "
-	for (const [k, v] of Object.entries(ctx)) {
-		result += `${k}: ${compileSerializedValue(v)}, `
-	}
-	return result + " }"
-}

@@ -202,11 +202,11 @@ export class UnionNode<t = any, $ = any> extends BaseType<
 	traverseApply: TraverseApply = (data, ctx) => {
 		ctx.pushUnion()
 		for (let i = 0; i < this.branches.length; i++) {
-			ctx.branchHasError = false
+			// ctx.branchHasError = false
 			this.branches[i].traverseApply(data, ctx)
-			if (!ctx.branchHasError) break
+			// if (!ctx.branchHasError) return ctx.popUnion()
 		}
-		ctx.popUnion(this.branches.length)
+		ctx.error({ code: "union", errors: ctx.popUnion() })
 	}
 
 	compile(js: NodeCompiler): void {
@@ -216,9 +216,9 @@ export class UnionNode<t = any, $ = any> extends BaseType<
 				js
 					.line("ctx.branchHasError = false")
 					.line(js.invoke(branch))
-					.if("!ctx.branchHasError", () => js.line("break"))
+					.if("!ctx.branchHasError", () => js.return("ctx.popUnion()"))
 			)
-			js.line(`ctx.popUnion(${this.branches.length})`)
+			js.line(`ctx.error({ code: "union", errors: ctx.popUnion() })`)
 		} else {
 			this.branches.forEach((branch) =>
 				js.if(`${js.invoke(branch)}`, () => js.return(true))

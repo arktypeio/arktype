@@ -69,7 +69,6 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 			this.mutable.push(error)
 		}
 		this.count++
-		this.ctx.branchHasError = true
 		return error
 	}
 

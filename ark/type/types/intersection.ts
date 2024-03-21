@@ -283,26 +283,27 @@ export class IntersectionNode<t = unknown, $ = any> extends BaseType<
 		)
 
 	traverseApply: TraverseApply = (data, ctx) => {
+		const originalErrorCount = ctx.currentErrors.count
 		if (this.basis) {
 			this.basis.traverseApply(data, ctx)
-			if (ctx.branchHasError) return
+			if (ctx.currentErrors.count > originalErrorCount) return
 		}
 		if (this.refinements.length) {
 			for (let i = 0; i < this.refinements.length - 1; i++) {
 				this.refinements[i].traverseApply(data as never, ctx)
-				if (ctx.failFast && ctx.branchHasError) return
+				if (ctx.failFast && ctx.currentErrors.count > originalErrorCount) return
 			}
 			this.refinements.at(-1)!.traverseApply(data as never, ctx)
-			if (ctx.branchHasError) return
+			if (ctx.currentErrors.count > originalErrorCount) return
 		}
 		if (this.props) {
 			this.props.traverseApply(data as never, ctx)
-			if (ctx.branchHasError) return
+			if (ctx.currentErrors.count > originalErrorCount) return
 		}
 		if (this.predicate) {
 			for (let i = 0; i < this.predicate.length - 1; i++) {
 				this.predicate[i].traverseApply(data as never, ctx)
-				if (ctx.failFast && ctx.branchHasError) return
+				if (ctx.failFast && ctx.currentErrors.count > originalErrorCount) return
 			}
 			this.predicate.at(-1)!.traverseApply(data as never, ctx)
 		}
@@ -318,9 +319,13 @@ export class IntersectionNode<t = unknown, $ = any> extends BaseType<
 			js.return(true)
 			return
 		}
-		const returnIfFail = () => js.if("ctx.branchHasError", () => js.return())
+		const returnIfFail = () =>
+			js.if("ctx.currentErrors.count > originalErrorCount", () => js.return())
 		const returnIfFailFast = () =>
-			js.if("ctx.failFast && ctx.branchHasError", () => js.return())
+			js.if(
+				"ctx.failFast && ctx.currentErrors.count > originalErrorCount",
+				() => js.return()
+			)
 
 		if (this.basis) {
 			js.check(this.basis)
