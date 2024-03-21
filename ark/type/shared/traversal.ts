@@ -37,7 +37,7 @@ export class TraversalContext {
 	}
 
 	get error(): ArkErrors["add"] {
-		return this.currentErrors.add.bind(this.currentErrors)
+		return (...args) => this.currentErrors.add(...args)
 	}
 
 	get data(): unknown {

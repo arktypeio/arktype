@@ -319,6 +319,8 @@ export class IntersectionNode<t = unknown, $ = any> extends BaseType<
 			js.return(true)
 			return
 		}
+		js.const("originalErrorCount", "ctx.currentErrors.count")
+
 		const returnIfFail = () =>
 			js.if("ctx.currentErrors.count > originalErrorCount", () => js.return())
 		const returnIfFailFast = () =>
