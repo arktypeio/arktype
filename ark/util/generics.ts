@@ -97,7 +97,7 @@ type narrowTuple<t extends readonly unknown[]> = t extends readonly [
 	infer head,
 	...infer tail
 ]
-	? [head, ...narrowTuple<tail>]
+	? readonly [head, ...narrowTuple<tail>]
 	: []
 
 export type narrow<t> = t extends Primitive

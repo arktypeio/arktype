@@ -54,7 +54,7 @@ export type CallableOptions<attachments extends object> = {
 	bind?: object
 }
 
-// @ts-expect-error requires to cast function type
+// @ts-expect-error required to cast function type
 export class Callable<
 	f extends (...args: never[]) => unknown,
 	attachments extends object = {}
@@ -68,15 +68,6 @@ export class Callable<
 			),
 			opts?.attach
 		)
-		// const proto = opts?.bind ?? this.constructor.prototype
-		// const self = Object.create(
-		// 	proto,
-		// 	Object.getOwnPropertyDescriptors(opts?.attach)
-		// )
-		// return Object.assign(
-		// 	Object.setPrototypeOf(f.bind(self), proto),
-		// 	opts?.attach
-		// )
 	}
 }
 
