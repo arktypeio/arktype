@@ -1,4 +1,3 @@
-import { jsData } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import type { TraverseAllows } from "../../shared/traversal.js"
 import type { Type } from "../../types/type.js"
@@ -50,8 +49,8 @@ export class DivisorNode extends BasePrimitiveConstraint<DivisorDeclaration> {
 
 	traverseAllows: TraverseAllows<number> = (data) => data % this.rule === 0
 
-	readonly compiledCondition = `${jsData} % ${this.rule} === 0`
-	readonly compiledNegation = `${jsData} % ${this.rule} !== 0`
+	readonly compiledCondition = `data % ${this.rule} === 0`
+	readonly compiledNegation = `data % ${this.rule} !== 0`
 	readonly impliedBasis = this.$.keywords.number
 	readonly errorContext = this.createErrorContext(this.inner)
 	readonly expression = `% ${this.rule}`

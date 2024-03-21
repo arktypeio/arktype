@@ -283,20 +283,29 @@ export class IntersectionNode<t = unknown, $ = any> extends BaseType<
 		)
 
 	traverseApply: TraverseApply = (data, ctx) => {
-		const originalErrorCount = ctx.currentErrors.count
 		if (this.basis) {
 			this.basis.traverseApply(data, ctx)
-			if (ctx.currentErrors.count > originalErrorCount) return
+			if (ctx.branchHasError) return
 		}
 		if (this.refinements.length) {
-			this.refinements.forEach((node) => node.traverseApply(data as never, ctx))
-			if (ctx.currentErrors.count > originalErrorCount) return
+			for (let i = 0; i < this.refinements.length - 1; i++) {
+				this.refinements[i].traverseApply(data as never, ctx)
+				if (ctx.failFast && ctx.branchHasError) return
+			}
+			this.refinements.at(-1)!.traverseApply(data as never, ctx)
+			if (ctx.branchHasError) return
 		}
 		if (this.props) {
 			this.props.traverseApply(data as never, ctx)
-			if (ctx.currentErrors.count > originalErrorCount) return
+			if (ctx.branchHasError) return
 		}
-		this.predicate?.forEach((node) => node.traverseApply(data as never, ctx))
+		if (this.predicate) {
+			for (let i = 0; i < this.predicate.length - 1; i++) {
+				this.predicate[i].traverseApply(data as never, ctx)
+				if (ctx.failFast && ctx.branchHasError) return
+			}
+			this.predicate.at(-1)!.traverseApply(data as never, ctx)
+		}
 	}
 
 	compile(js: NodeCompiler): void {
@@ -309,26 +318,34 @@ export class IntersectionNode<t = unknown, $ = any> extends BaseType<
 			js.return(true)
 			return
 		}
-		js.const("originalErrorCount", `${js.ctx}.currentErrors.count`)
-		const returnIfAdditionalErrors = () =>
-			js.if(`${js.ctx}.currentErrors.count > originalErrorCount`, () =>
-				js.return()
-			)
+		const returnIfFail = () => js.if("ctx.branchHasError", () => js.return())
+		const returnIfFailFast = () =>
+			js.if("ctx.failFast && ctx.branchHasError", () => js.return())
 
 		if (this.basis) {
 			js.check(this.basis)
 			// we only have to return conditionally if this is not the last check
-			if (this.traversables.length > 1) returnIfAdditionalErrors()
+			if (this.traversables.length > 1) returnIfFail()
 		}
 		if (this.refinements.length) {
-			this.refinements.forEach((node) => js.check(node))
-			if (this.props || this.predicate) returnIfAdditionalErrors()
+			for (let i = 0; i < this.refinements.length - 1; i++) {
+				js.check(this.refinements[i])
+				returnIfFailFast()
+			}
+			js.check(this.refinements.at(-1)!)
+			if (this.props || this.predicate) returnIfFail()
 		}
 		if (this.props) {
 			this.props.compile(js)
-			if (this.predicate) returnIfAdditionalErrors()
+			if (this.predicate) returnIfFail()
 		}
-		this.predicate?.forEach((node) => js.check(node))
+		if (this.predicate) {
+			for (let i = 0; i < this.predicate.length - 1; i++) {
+				js.check(this.predicate[i])
+				returnIfFailFast()
+			}
+			js.check(this.predicate.at(-1)!)
+		}
 	}
 
 	rawKeyOf(): Type {

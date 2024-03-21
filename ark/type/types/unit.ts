@@ -1,5 +1,4 @@
 import { domainOf, printable, prototypeKeysOf } from "@arktype/util"
-import { jsData } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import { defaultValueSerializer } from "../shared/implement.js"
@@ -72,8 +71,8 @@ export class UnitNode<t = any, $ = any> extends BaseBasis<
 
 const compileComparison = (unit: UnitNode<any>, negated?: "negated") => {
 	if (unit.unit instanceof Date) {
-		const condition = `${jsData} instanceof Date && ${jsData}.toISOString() === ${unit.serializedValue}`
+		const condition = `data instanceof Date && data.toISOString() === ${unit.serializedValue}`
 		return negated ? `!(${condition})` : condition
 	}
-	return `${jsData} ${negated ? "!" : "="}== ${unit.serializedValue}`
+	return `data ${negated ? "!" : "="}== ${unit.serializedValue}`
 }

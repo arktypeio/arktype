@@ -1,4 +1,3 @@
-import { jsData } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import type { TraverseAllows } from "../../shared/traversal.js"
@@ -70,8 +69,8 @@ export class ExactLengthNode extends BasePrimitiveConstraint<ExactLengthDeclarat
 	traverseAllows: TraverseAllows<LengthBoundableData> = (data) =>
 		data.length === this.rule
 
-	readonly compiledCondition = `${jsData}.length === ${this.rule}`
-	readonly compiledNegation = `${jsData}.length !== ${this.rule}`
+	readonly compiledCondition = `data.length === ${this.rule}`
+	readonly compiledNegation = `data.length !== ${this.rule}`
 	readonly impliedBasis = this.$.keywords.lengthBoundable
 	readonly errorContext = this.createErrorContext(this.inner)
 	readonly expression = `{ length: ${this.rule} }`

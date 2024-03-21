@@ -4,22 +4,17 @@ import type { Discriminant } from "../types/discriminate.js"
 import type { PrimitiveKind } from "./implement.js"
 import type { TraversalKind } from "./traversal.js"
 
-export const jsData = "data"
-export const jsCtx = "ctx"
-
 export type InvokeOptions = {
 	arg?: string
 	kind?: TraversalKind
 }
 
-export class NodeCompiler extends CompiledFunction<
-	[typeof jsData, typeof jsCtx]
-> {
+export class NodeCompiler extends CompiledFunction<["data", "ctx"]> {
 	path: string[] = []
 	discriminants: Discriminant[] = []
 
 	constructor(public traversalKind: TraversalKind) {
-		super(jsData, jsCtx)
+		super("data", "ctx")
 	}
 
 	invoke(node: UnknownNode, opts?: InvokeOptions): string {

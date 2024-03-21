@@ -1,5 +1,4 @@
 import { compileSerializedValue } from "@arktype/util"
-import { jsData } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import type { TraversalContext } from "../shared/traversal.js"
 import type { of } from "./ast.js"
@@ -59,7 +58,7 @@ export class PredicateNode extends BasePrimitiveConstraint<PredicateDeclaration>
 
 	readonly impliedBasis = undefined
 	readonly serializedPredicate = compileSerializedValue(this.predicate)
-	readonly compiledCondition = `${this.serializedPredicate}(${jsData})`
+	readonly compiledCondition = `${this.serializedPredicate}(data)`
 	readonly compiledNegation = `!${this.compiledCondition}`
 	readonly errorContext = this.createErrorContext({})
 	readonly expression = this.serializedPredicate

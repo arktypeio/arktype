@@ -7,7 +7,6 @@ import {
 } from "@arktype/util"
 import type { Node } from "../../base.js"
 import type { Schema } from "../../kinds.js"
-import { jsData } from "../../shared/compile.js"
 import type { BaseMeta, BaseNodeDeclaration } from "../../shared/declare.js"
 import type {
 	BoundKind,
@@ -23,10 +22,10 @@ export abstract class BaseRange<
 	readonly boundOperandKind = operandKindsByBoundKind[this.kind]
 	readonly compiledActual =
 		this.boundOperandKind === "value"
-			? `${jsData}`
+			? `data`
 			: this.boundOperandKind === "length"
-			? `${jsData}.length`
-			: `${jsData}.valueOf()`
+			? `data.length`
+			: `data.valueOf()`
 	readonly comparator = compileComparator(this.kind, this.exclusive)
 	readonly numericLimit = this.rule.valueOf()
 	readonly expression = `${this.comparator}${this.rule}`

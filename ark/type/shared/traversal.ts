@@ -17,6 +17,7 @@ export class TraversalContext {
 	errorsStack: ArkErrors[]
 	// TODO: add morphs here
 	entriesToPrune: [data: Record<string, unknown>, key: string][] = []
+	branchHasError = false
 
 	// Qualified
 	seen: { [name in string]?: object[] } = {}
@@ -30,6 +31,10 @@ export class TraversalContext {
 
 	get currentErrors(): ArkErrors {
 		return this.errorsStack.at(-1)!
+	}
+
+	get failFast(): boolean {
+		return this.errorsStack.length > 1
 	}
 
 	get error(): ArkErrors["add"] {

@@ -1,4 +1,3 @@
-import { jsData } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { BasePrimitiveConstraint } from "../constraint.js"
 
@@ -55,7 +54,7 @@ export class RegexNode extends BasePrimitiveConstraint<RegexDeclaration> {
 	readonly expression = `${this.instance}`
 	traverseAllows = this.instance.test.bind(this.instance)
 
-	readonly compiledCondition = `${this.expression}.test(${jsData})`
+	readonly compiledCondition = `${this.expression}.test(data)`
 	readonly compiledNegation = `!${this.compiledCondition}`
 	readonly impliedBasis = this.$.keywords.string
 	readonly errorContext = this.createErrorContext(this.inner)

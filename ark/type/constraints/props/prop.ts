@@ -119,7 +119,7 @@ export class PropNode extends BaseConstraint<PropDeclaration> {
 	compile(js: NodeCompiler): void {
 		const requiresContext = js.requiresContextFor(this.value)
 		if (requiresContext) {
-			js.line(`${js.ctx}.path.push(${this.serializedKey})`)
+			js.line(`ctx.path.push(${this.serializedKey})`)
 		}
 
 		js.if(`${this.serializedKey} in ${js.data}`, () =>
@@ -130,17 +130,17 @@ export class PropNode extends BaseConstraint<PropDeclaration> {
 		if (this.required) {
 			js.else(() => {
 				if (js.traversalKind === "Apply") {
-					return js.line(`${js.ctx}.error(${this.compiledErrorContext})`)
+					return js.line(`ctx.error(${this.compiledErrorContext})`)
 				} else {
 					if (requiresContext) {
-						js.line(`${js.ctx}.path.pop()`)
+						js.line(`ctx.path.pop()`)
 					}
 					return js.return(false)
 				}
 			})
 		}
 
-		if (requiresContext) js.line(`${js.ctx}.path.pop()`)
+		if (requiresContext) js.line(`ctx.path.pop()`)
 		else js.return(true)
 	}
 }

@@ -4,7 +4,6 @@ import {
 	getBaseDomainKeys,
 	type NonEnumerableDomain
 } from "@arktype/util"
-import { jsData } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { TraverseAllows } from "../shared/traversal.js"
@@ -63,13 +62,13 @@ export class DomainNode<t = any, $ = any> extends BaseBasis<
 
 	readonly compiledCondition =
 		this.domain === "object"
-			? `((typeof ${jsData} === "object" && ${jsData} !== null) || typeof ${jsData} === "function")`
-			: `typeof ${jsData} === "${this.domain}"`
+			? `((typeof data === "object" && data !== null) || typeof data === "function")`
+			: `typeof data === "${this.domain}"`
 
 	readonly compiledNegation =
 		this.domain === "object"
-			? `((typeof ${jsData} !== "object" || ${jsData} === null) && typeof ${jsData} !== "function")`
-			: `typeof ${jsData} !== "${this.domain}"`
+			? `((typeof data !== "object" || data === null) && typeof data !== "function")`
+			: `typeof data !== "${this.domain}"`
 
 	readonly errorContext = this.createErrorContext(this.inner)
 	readonly expression = this.domain
