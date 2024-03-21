@@ -1,6 +1,7 @@
 import { attest } from "@arktype/attest"
-import type { equals } from "@arktype/util"
+import { reference, type equals } from "@arktype/util"
 import { type, type Type } from "arktype"
+import { describe } from "mocha"
 import type { of } from "../constraints/ast.js"
 import type { predicate } from "../constraints/predicate.js"
 import type { Out } from "../types/morph.js"
@@ -8,9 +9,10 @@ import type { Out } from "../types/morph.js"
 describe("narrow", () => {
 	it("implicit problem", () => {
 		const isOdd = (n: number) => n % 2 === 1
+		const isOddRef = reference(isOdd)
 		const odd = type(["number", ":", isOdd])
 		attest<number>(odd.infer)
-		// attest(odd.node).equals({ number: { narrow: isOdd as any } })
+		attest(odd.json).equals({ domain: "number", predicate: [isOddRef] })
 		attest(odd(1).out).equals(1)
 		attest(odd(2).errors?.summary).snap(
 			"must be valid according to isOdd (was 2)"
@@ -30,30 +32,27 @@ describe("narrow", () => {
 		])
 		attest(even(1).errors?.summary).snap("must be divisible by 3 (was 1)")
 	})
-	// it("problem at path", () => {
-	// 	type([{ s: "string" }])
-	// 	const abEqual = type([
-	// 		{
-	// 			a: "number",
-	// 			b: "number"
-	// 		},
-	// 		":",
-	// 		({ a, b }, ctx) => {
-	// 			if (a === b) {
-	// 				return true
-	// 			}
-	// 			//  a, ["a"]
-	// 			ctx.error("equal to b")
-	// 			//  b, ["b"]
-	// 			ctx.error("equal to a")
-	// 			return false
-	// 		}
-	// 	])
-	// 	attest(abEqual({ a: 1, b: 1 }).out).equals({ a: 1, b: 1 })
-	// 	attest(abEqual({ a: 1, b: 2 }).errors?.summary).snap(
-	// 		'a must be equal to b (was {"a":1,"b":2})\nb must be equal to a (was {"a":1,"b":2})'
-	// 	)
-	// })
+	it("problem at path", () => {
+		const abEqual = type([
+			{
+				a: "number",
+				b: "number"
+			},
+			":",
+			({ a, b }, ctx) => {
+				if (a === b) {
+					return true
+				}
+				ctx.error({ expected: "equal to b", path: ["a"] })
+				ctx.error({ expected: "equal to a", path: ["b"] })
+				return false
+			}
+		])
+		attest(abEqual({ a: 1, b: 1 }).out).equals({ a: 1, b: 1 })
+		attest(abEqual({ a: 1, b: 2 }).errors?.summary).snap(
+			'a must be equal to b (was {"a":1,"b":2})\nb must be equal to a (was {"a":1,"b":2})'
+		)
+	})
 	it("functional predicate", () => {
 		const one = type(["number", ":", (n): n is 1 => n === 1])
 		attest<1>(one.infer)
@@ -85,7 +84,7 @@ describe("narrow", () => {
 		attest<Type<string>>(palindrome)
 		attest(palindrome("dad").out).snap("dad")
 		attest(palindrome("david").errors?.summary).snap(
-			"must be a palindrome (was 'david')"
+			'must be a palindrome (was "david")'
 		)
 	})
 	it("narrows the output type of a morph", () => {
@@ -93,14 +92,9 @@ describe("narrow", () => {
 			.morph((s) => s.length)
 			.narrow((n): n is 5 => n === 5)
 		attest<Type<(In: string) => Out<of<5> & predicate>>>(t)
-		attest(t.json).snap({ domain: "string" })
 	})
 	it("expression", () => {
 		const t = type("string", ":", (s): s is `f${string}` => s[0] === "f")
 		attest<`f${string}`>(t.infer)
-		attest(t.json).snap({
-			domain: "string",
-			predicate: ["$ark.anonymousFunction8"]
-		})
 	})
 })

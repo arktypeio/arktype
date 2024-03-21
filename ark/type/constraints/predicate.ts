@@ -1,6 +1,11 @@
 import { compileSerializedValue } from "@arktype/util"
+import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
-import type { TraversalContext } from "../shared/traversal.js"
+import type {
+	TraversalContext,
+	TraverseAllows,
+	TraverseApply
+} from "../shared/traversal.js"
 import type { of } from "./ast.js"
 import { BasePrimitiveConstraint } from "./constraint.js"
 
@@ -54,11 +59,32 @@ export class PredicateNode extends BasePrimitiveConstraint<PredicateDeclaration>
 		}
 	})
 
-	traverseAllows = this.predicate
+	traverseAllows: TraverseAllows = this.predicate
+
+	traverseApply: TraverseApply = (data, ctx) => {
+		const originalErrorCount = ctx.currentErrors.count
+		if (
+			!this.predicate(data, ctx) &&
+			ctx.currentErrors.count === originalErrorCount
+		)
+			ctx.error(this.errorContext)
+	}
+
+	override compile(js: NodeCompiler): void {
+		if (js.traversalKind === "Allows") {
+			js.return(this.compiledCondition)
+			return
+		}
+		js.const("originalErrorCount", "ctx.currentErrors.count")
+		js.if(
+			`${this.compiledNegation} && ctx.currentErrors.count === originalErrorCount`,
+			() => js.line(`ctx.error(${this.compiledErrorContext})`)
+		)
+	}
 
 	readonly impliedBasis = undefined
 	readonly serializedPredicate = compileSerializedValue(this.predicate)
-	readonly compiledCondition = `${this.serializedPredicate}(data)`
+	readonly compiledCondition = `${this.serializedPredicate}(data, ctx)`
 	readonly compiledNegation = `!${this.compiledCondition}`
 	readonly errorContext = this.createErrorContext({})
 	readonly expression = this.serializedPredicate
