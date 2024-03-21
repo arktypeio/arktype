@@ -1,8 +1,4 @@
-import {
-	CompiledFunction,
-	compileSerializedValue,
-	type Dict
-} from "@arktype/util"
+import { CompiledFunction, compileSerializedValue } from "@arktype/util"
 import type { Node, UnknownNode } from "../base.js"
 import type { Discriminant } from "../types/discriminate.js"
 import type { PrimitiveKind } from "./implement.js"
@@ -39,12 +35,6 @@ export class NodeCompiler extends CompiledFunction<
 	requiresContextFor(node: UnknownNode): boolean {
 		return (
 			this.traversalKind === "Apply" || node.includesContextDependentPredicate
-		)
-	}
-
-	returnIfHasErrors(): this {
-		return this.if(`${this.ctx}.currentErrors.length !== 0`, () =>
-			this.return()
 		)
 	}
 
@@ -97,7 +87,7 @@ export class NodeCompiler extends CompiledFunction<
 			return this.return(node.compiledCondition)
 		}
 		return this.if(node.compiledNegation, () =>
-			this.line(`${this.ctx}.error(${compileErrorContext(node.errorContext)})`)
+			this.line(`${this.ctx}.error(${node.compiledErrorContext})`)
 		)
 	}
 
@@ -106,7 +96,8 @@ export class NodeCompiler extends CompiledFunction<
 	}
 }
 
-export const compileErrorContext = (ctx: Dict): string => {
+export const compileErrorContext = (ctx: object | null): string => {
+	if (ctx === null) return "{}"
 	let result = "{ "
 	for (const [k, v] of Object.entries(ctx)) {
 		result += `${k}: ${compileSerializedValue(v)}, `

@@ -7,7 +7,7 @@ import type {
 	isAny
 } from "@arktype/util"
 import type { Schema } from "../kinds.js"
-import type { NodeCompiler } from "../shared/compile.js"
+import { compileErrorContext, type NodeCompiler } from "../shared/compile.js"
 import type { BasisKind } from "../shared/implement.js"
 import type { TraverseApply } from "../shared/traversal.js"
 import type { DomainSchema } from "./domain.js"
@@ -42,6 +42,12 @@ export abstract class BaseBasis<
 
 	compile(js: NodeCompiler): void {
 		js.compilePrimitive(this as never)
+	}
+
+	private compiledErrorContextCache: string | undefined
+	get compiledErrorContext(): string {
+		this.compiledErrorContextCache ??= compileErrorContext(this.errorContext)
+		return this.compiledErrorContextCache
 	}
 }
 

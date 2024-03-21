@@ -309,18 +309,24 @@ export class IntersectionNode<t = unknown, $ = any> extends BaseType<
 			js.return(true)
 			return
 		}
+		js.const("originalErrorCount", `${js.ctx}.currentErrors.count`)
+		const returnIfAdditionalErrors = () =>
+			js.if(`${js.ctx}.currentErrors.count > originalErrorCount`, () =>
+				js.return()
+			)
+
 		if (this.basis) {
 			js.check(this.basis)
 			// we only have to return conditionally if this is not the last check
-			if (this.traversables.length > 1) js.returnIfHasErrors()
+			if (this.traversables.length > 1) returnIfAdditionalErrors()
 		}
 		if (this.refinements.length) {
 			this.refinements.forEach((node) => js.check(node))
-			if (this.props || this.predicate) js.returnIfHasErrors()
+			if (this.props || this.predicate) returnIfAdditionalErrors()
 		}
 		if (this.props) {
 			this.props.compile(js)
-			if (this.predicate) js.returnIfHasErrors()
+			if (this.predicate) returnIfAdditionalErrors()
 		}
 		this.predicate?.forEach((node) => js.check(node))
 	}

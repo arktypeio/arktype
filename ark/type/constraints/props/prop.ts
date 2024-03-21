@@ -130,19 +130,17 @@ export class PropNode extends BaseConstraint<PropDeclaration> {
 		if (this.required) {
 			js.else(() => {
 				if (js.traversalKind === "Apply") {
-					return js
-						.line(`${js.ctx}.error(${JSON.stringify(this.errorContext)})`)
-						.line(`${js.ctx}.path.pop()`)
+					return js.line(`${js.ctx}.error(${this.compiledErrorContext})`)
+				} else {
+					if (requiresContext) {
+						js.line(`${js.ctx}.path.pop()`)
+					}
+					return js.return(false)
 				}
-				if (requiresContext) {
-					js.line(`${js.ctx}.path.pop()`)
-				}
-				return js.return(false)
 			})
 		}
 
-		if (js.traversalKind === "Allows") {
-			js.return(true)
-		}
+		if (requiresContext) js.line(`${js.ctx}.path.pop()`)
+		else js.return(true)
 	}
 }

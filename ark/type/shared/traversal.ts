@@ -55,7 +55,7 @@ export class TraversalContext {
 
 	popUnion(branchCount: number): void {
 		const branchErrors = this.errorsStack.pop()!
-		if (branchErrors.count === branchCount) {
+		if (branchErrors.count >= branchCount) {
 			this.error({ code: "union", errors: branchErrors })
 		}
 	}

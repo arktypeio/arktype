@@ -207,7 +207,9 @@ export class UnionNode<t = any, $ = any> extends BaseType<
 
 	compile(js: NodeCompiler): void {
 		if (js.traversalKind === "Apply") {
+			js.line(`${js.ctx}.pushUnion()`)
 			this.branches.forEach((branch) => js.line(js.invoke(branch)))
+			js.line(`${js.ctx}.popUnion(${this.branches.length})`)
 		} else {
 			this.branches.forEach((branch) =>
 				js.if(`${js.invoke(branch)}`, () => js.return(true))
