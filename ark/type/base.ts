@@ -127,10 +127,29 @@ export abstract class BaseNode<
 	t,
 	d extends BaseNodeDeclaration
 > extends Callable<
-	(data: unknown) => ArkResult<distill<extractOut<t>>>,
+	(data: unknown) => ArkResult<distill<t>>,
 	BaseAttachmentsOf<d>
 > {
-	declare infer: distill<extractOut<t>>;
+	constructor(public attachments: BaseAttachments) {
+		super(
+			(data) => {
+				const ctx = new TraversalContext(data, this.$.resolvedConfig)
+				this.traverseApply(data, ctx)
+				if (ctx.currentErrors.length === 0) {
+					return { out: data } as never
+				}
+				return { errors: ctx.currentErrors }
+			},
+			{ attach: attachments as never }
+		)
+		this.contributesReferencesByName =
+			this.reference in this.referencesByName
+				? this.referencesByName
+				: { ...this.referencesByName, [this.reference]: this as never }
+		this.contributesReferences = Object.values(this.contributesReferencesByName)
+	}
+
+	declare infer: distill<t>;
 	declare [inferred]: t;
 	readonly [arkKind] = "node"
 
@@ -184,25 +203,6 @@ export abstract class BaseNode<
 	readonly precedence = precedenceOfKind(this.kind)
 	jit = false
 
-	constructor(public attachments: BaseAttachments) {
-		super(
-			(data) => {
-				const ctx = new TraversalContext(data, this.$.resolvedConfig)
-				this.traverseApply(data, ctx)
-				if (ctx.currentErrors.length === 0) {
-					return { out: data } as any
-				}
-				return { errors: ctx.currentErrors }
-			},
-			{ attach: attachments as never }
-		)
-		this.contributesReferencesByName =
-			this.reference in this.referencesByName
-				? this.referencesByName
-				: { ...this.referencesByName, [this.reference]: this as never }
-		this.contributesReferences = Object.values(this.contributesReferencesByName)
-	}
-
 	private descriptionCache?: string
 	get description(): string {
 		this.descriptionCache ??=
@@ -232,7 +232,7 @@ export abstract class BaseNode<
 		return this.traverseAllows(data as never, ctx)
 	}
 
-	parse(data: d["prerequisite"]): ArkResult<distill<extractOut<t>>> {
+	parse(data: d["prerequisite"]): ArkResult<distill<t>> {
 		return this(data)
 	}
 
