@@ -40,9 +40,9 @@ describe("scope", () => {
 		>(types.b.infer)
 	})
 	it("doesn't try to validate any in scope", () => {
-		// const $ = scope({ a: {} as any })
-		// attest<{ a: never }>($.infer)
-		// attest<[number, never]>($.type(["number", "a"]).infer)
+		const $ = scope({ a: {} as any })
+		attest<{ a: never }>($.infer)
+		attest<[number, never]>($.type(["number", "a"]).infer)
 	})
 	it("infers input and output", () => {
 		const $ = scope({
@@ -59,7 +59,7 @@ describe("scope", () => {
 		const importer = $.scope({ b: "a[]" })
 		attest<{ b: string[] }>(importer.infer)
 		const t = importer.type("b")
-		attest(t.json).is(type("string[]").json)
+		attest(t.json).equals(type("string[]").json)
 	})
 	it("infers its own helpers", () => {
 		const $ = scope({
@@ -96,7 +96,9 @@ describe("scope", () => {
 				lessThan10: () => $.type("b<10")
 			})
 			$.export()
-		}).throwsAndHasTypeError(writeUnboundableMessage("'b'"))
+		})
+			.throws(writeUnboundableMessage("boolean"))
+			.type.errors(writeUnboundableMessage("'b'"))
 	})
 	it("errors on ridiculous unexpected alias scenario", () => {
 		attest(() =>

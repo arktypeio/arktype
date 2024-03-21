@@ -14,6 +14,7 @@ import {
 	maxComparators,
 	writeUnpairableComparatorMessage,
 	type Comparator,
+	type InvertedComparators,
 	type MaxComparator,
 	type OpenLeftBound
 } from "../../reduce/shared.js"
@@ -249,7 +250,9 @@ export const writeInvalidLimitMessage = <
 	limit: limit,
 	boundKind: boundKind
 ): writeInvalidLimitMessage<comparator, limit, boundKind> =>
-	`Comparator ${comparator} must be ${
+	`Comparator ${
+		boundKind === "left" ? invertedComparators[comparator] : (comparator as any)
+	} must be ${
 		boundKind === "left" ? "preceded" : ("followed" as any)
 	} by a corresponding literal (was '${limit}')`
 
@@ -257,7 +260,9 @@ export type writeInvalidLimitMessage<
 	comparator extends Comparator,
 	limit extends string | number,
 	boundKind extends BoundExpressionKind
-> = `Comparator ${comparator} must be ${boundKind extends "left"
+> = `Comparator ${boundKind extends "left"
+	? InvertedComparators[comparator]
+	: comparator} must be ${boundKind extends "left"
 	? "preceded"
 	: "followed"} by a corresponding literal (was '${limit}')`
 

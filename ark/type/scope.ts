@@ -427,10 +427,11 @@ export class Scope<r extends Resolutions = any> {
 	scope: ScopeParser<r["exports"], r["ambient"]> = ((
 		def: Dict,
 		config: ArkConfig = {}
-	) => {
-		// TODO: abstract merge here
-		return new Scope(def, extendConfig(this.config, config))
-	}) as never
+	) =>
+		new Scope(
+			{ ...this.import(), ...def },
+			extendConfig(this.config, config)
+		)) as never
 
 	define: DefinitionParser<$<r>> = (def) => def as never
 
@@ -439,11 +440,11 @@ export class Scope<r extends Resolutions = any> {
 		locals: r["locals"]
 		ambient: r["exports"]
 	}> {
-		// TODO: private?
-		return new Scope(this.aliases, {
+		;(this as any).config = {
 			...this.config,
 			ambient: this
-		})
+		} satisfies ArkConfig
+		return this as never
 	}
 
 	// TODO: name?

@@ -246,7 +246,7 @@ describe("parsed bounds", () => {
 		it("number with left Date bound", () => {
 			// @ts-expect-error
 			attest(() => type("d'2001/01/01'<number<2")).throwsAndHasTypeError(
-				writeInvalidLimitMessage("<", "d'2001/01/01'", "left")
+				writeInvalidLimitMessage(">", "d'2001/01/01'", "left")
 			)
 		})
 	})

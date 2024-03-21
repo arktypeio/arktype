@@ -89,7 +89,7 @@ describe("submodules", () => {
 		)
 	})
 	it("autocompletion", () => {
-		const base = scope({ foo: "true" })
+		const base = scope({ foo: "true" }).export()
 		// @ts-expect-error
 		attest(() => scope({ base, reference: "base." }).export())
 			.throws(writeUnresolvableMessage("base."))
