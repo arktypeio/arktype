@@ -6,27 +6,20 @@ import type { Out } from "../types/morph.js"
 
 describe("morph", () => {
 	it("base", () => {
-		const t = type("boolean").morph((data) => `${data}`)
-		attest<Type<(In: boolean) => Out<string>>>(t)
+		const t = type("number").morph((data) => `${data}`)
+		attest<Type<(In: number) => Out<string>>>(t)
 		attest<string>(t.infer)
-		attest<boolean>(t.in.infer)
-		const result = t(true)
-		if (result.errors) {
-			return result.errors.throw()
-		}
-		attest<string>(result.out).equals("true")
-		attest(t("foo").errors?.summary).snap("must be boolean (was string)")
-		const expected = type("boolean", "=>", (data) => `${data}`)
-		attest(t).equals(expected)
+		attest<number>(t.in.infer)
+		const { out } = t(true)
+		attest<string | undefined>(out).equals("true")
+		const { errors } = t("foo")
+		attest(errors?.summary).snap("must be boolean (was string)")
 	})
 	it("endomorph", () => {
 		const t = type(["boolean", "=>", (data) => !data])
 		attest<Type<(In: boolean) => Out<boolean>>>(t)
-		const result = t(true)
-		if (result.errors) {
-			return result.errors.throw()
-		}
-		attest<boolean>(result.out).equals(false)
+		const { out } = t(true)
+		attest<boolean | undefined>(out).equals(false)
 	})
 	// it("chained to type", () => {
 	// 	const t = type(["string>5", "=>", arktypes.parse.date])

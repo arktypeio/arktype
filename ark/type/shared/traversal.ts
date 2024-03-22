@@ -21,6 +21,7 @@ export type BranchTraversalContext = {
 
 export class TraversalContext {
 	path: TraversalPath = []
+	morphs: QueuedMorph[] = []
 	errors: ArkErrors = new ArkErrors(this)
 	branches: BranchTraversalContext[] = []
 
@@ -34,6 +35,11 @@ export class TraversalContext {
 
 	get currentBranch(): BranchTraversalContext | undefined {
 		return this.branches.at(-1)
+	}
+
+	queueMorph(morph: Morph): void {
+		const input: QueuedMorph = { path: [...this.path], morph }
+		this.currentBranch?.morphs.push(input) ?? this.morphs.push(input)
 	}
 
 	hasError(): boolean {
@@ -73,14 +79,14 @@ export class TraversalContext {
 		return false
 	}
 
-	pushUnion(): void {
+	pushBranch(): void {
 		this.branches.push({
 			error: undefined,
 			morphs: []
 		})
 	}
 
-	popUnion(): BranchTraversalContext {
+	popBranch(): BranchTraversalContext {
 		return this.branches.pop()!
 	}
 }

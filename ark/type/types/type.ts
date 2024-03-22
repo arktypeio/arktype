@@ -167,9 +167,22 @@ export abstract class BaseType<
 		$
 	>
 	morph(morph: Morph, outValidator?: unknown): unknown {
-		// TODO: tuple expression for out validator
-		outValidator
-		return this as never
+		if (this.hasKind("union")) {
+			const branches = this.branches.map((node) =>
+				node.morph(morph, outValidator as never)
+			)
+			return this.$.node("union", { ...this.inner, branches })
+		}
+		if (this.hasKind("morph")) {
+			return this.$.node("morph", {
+				...this.inner,
+				morphs: [...this.morphs, morph]
+			})
+		}
+		return this.$.node("morph", {
+			in: this,
+			morphs: [morph]
+		})
 	}
 
 	// TODO: based on below, should maybe narrow morph output if used after

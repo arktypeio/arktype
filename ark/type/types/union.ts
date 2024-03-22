@@ -6,7 +6,7 @@ import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { ArkTypeError } from "../shared/errors.js"
 import {
-	basisKinds,
+	typeKindsRightOf,
 	type TypeKind,
 	type nodeImplementationOf
 } from "../shared/implement.js"
@@ -21,11 +21,7 @@ import {
 
 export type UnionChildKind = typeKindRightOf<"union">
 
-export const unionChildKinds = [
-	"morph",
-	"intersection",
-	...basisKinds
-] as const satisfies readonly UnionChildKind[]
+export const unionChildKinds = typeKindsRightOf("union")
 
 export type UnionChildSchema = Schema<UnionChildKind>
 
@@ -212,10 +208,10 @@ export class UnionNode<t = any, $ = any> extends BaseType<
 	traverseApply: TraverseApply = (data, ctx) => {
 		const errors: ArkTypeError[] = []
 		for (let i = 0; i < this.branches.length; i++) {
-			ctx.pushUnion()
+			ctx.pushBranch()
 			this.branches[i].traverseApply(data, ctx)
-			if (!ctx.hasError()) return ctx.popUnion()
-			errors.push(ctx.popUnion().error!)
+			if (!ctx.hasError()) return ctx.morphs.push(...ctx.popBranch().morphs)
+			errors.push(ctx.popBranch().error!)
 		}
 		ctx.error({ code: "union", errors })
 	}
@@ -225,10 +221,12 @@ export class UnionNode<t = any, $ = any> extends BaseType<
 			js.const("errors", "[]")
 			this.branches.forEach((branch) =>
 				js
-					.line("ctx.pushUnion()")
+					.line("ctx.pushBranch()")
 					.line(js.invoke(branch))
-					.if("!ctx.hasError()", () => js.return("ctx.popUnion()"))
-					.line("errors.push(ctx.popUnion().error)")
+					.if("!ctx.hasError()", () =>
+						js.return("ctx.morphs.push(...ctx.popBranch().morphs)")
+					)
+					.line("errors.push(ctx.popBranch().error)")
 			)
 			js.line(`ctx.error({ code: "union", errors })`)
 		} else {
