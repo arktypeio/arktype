@@ -7,7 +7,8 @@ import {
 } from "@arktype/util"
 import type { Prerequisite, errorContext } from "../kinds.js"
 import type { NodeKind } from "./implement.js"
-import type { TraversalContext, TraversalPath } from "./traversal.js"
+import type { TraversalContext } from "./traversal.js"
+import { pathToPropString, type TraversalPath } from "./utils.js"
 
 export class ArkError extends TypeError {
 	toString(): string {
@@ -40,17 +41,11 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 	count = 0
 	private mutable: ArkTypeError[] = this as never
 
-	add<input extends ArkErrorInput>(
-		input: input
-	): ArkTypeError<
-		input extends { code: ArkErrorCode } ? input["code"] : "predicate"
-	>
-	add(input: ArkErrorInput): ArkTypeError {
-		const error = this.create(input)
+	add(error: ArkTypeError): void {
 		const pathKey = error.path.join(".")
 		const existing = this.byPath[pathKey]
 		if (existing) {
-			const errorIntersection = this.create({
+			const errorIntersection = createError(this.ctx, {
 				code: "intersection",
 				errors:
 					existing.code === "intersection"
@@ -69,48 +64,6 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 			this.mutable.push(error)
 		}
 		this.count++
-		return error
-	}
-
-	protected create(input: ArkErrorInput): ArkTypeError {
-		let ctx: ArkErrorContext
-		const data = this.ctx.data
-		const nodeConfig = this.ctx.config.predicate
-		if (typeof input === "string") {
-			ctx = {
-				code: "predicate",
-				path: [...this.ctx.path],
-				data,
-				actual: nodeConfig.actual(data),
-				expected: input
-			} satisfies ProblemContext as any
-			ctx.problem = nodeConfig.problem(ctx as never)
-			ctx.message = nodeConfig.message(ctx as never)
-		} else {
-			const code = input.code ?? "predicate"
-			const nodeConfig = this.ctx.config[code]
-			const expected = input.expected ?? nodeConfig.expected?.(input as never)
-			ctx = {
-				...input,
-				// prioritize these over the raw user provided values so we can
-				// check for keys with values like undefined
-				code,
-				path: input.path ?? [...this.ctx.path],
-				data: "data" in input ? input.data : data,
-				actual:
-					input.actual !== undefined
-						? input.actual
-						: nodeConfig.actual?.(data as never),
-				expected
-			} satisfies ProblemContext as any
-			ctx.problem = hasDefinedKey(input, "problem")
-				? input.problem
-				: nodeConfig.problem(ctx as never)
-			ctx.message = hasDefinedKey(input, "message")
-				? input.message
-				: nodeConfig.message(ctx as never)
-		}
-		return new ArkTypeError(ctx)
 	}
 
 	get summary(): string {
@@ -126,6 +79,53 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 	}
 }
 
+export const createError = (
+	ctx: TraversalContext,
+	input: ArkErrorInput
+): ArkTypeError => {
+	let errCtx: ArkErrorContext
+	const data = ctx.data
+	const nodeConfig = ctx.config.predicate
+	if (typeof input === "string") {
+		errCtx = {
+			code: "predicate",
+			path: [...ctx.path],
+			propString: pathToPropString(ctx.path),
+			data,
+			actual: nodeConfig.actual(data),
+			expected: input
+		} satisfies ProblemContext as any
+		errCtx.problem = nodeConfig.problem(errCtx as never)
+		errCtx.message = nodeConfig.message(errCtx as never)
+	} else {
+		const code = input.code ?? "predicate"
+		const nodeConfig = ctx.config[code]
+		const expected = input.expected ?? nodeConfig.expected?.(input as never)
+		const path = input.path ?? [...ctx.path]
+		errCtx = {
+			...input,
+			// prioritize these over the raw user provided values so we can
+			// check for keys with values like undefined
+			code,
+			path,
+			propString: pathToPropString(path),
+			data: "data" in input ? input.data : data,
+			actual:
+				input.actual !== undefined
+					? input.actual
+					: nodeConfig.actual?.(data as never),
+			expected
+		} satisfies ProblemContext as any
+		errCtx.problem = hasDefinedKey(input, "problem")
+			? input.problem
+			: nodeConfig.problem(errCtx as never)
+		errCtx.message = hasDefinedKey(input, "message")
+			? input.message
+			: nodeConfig.message(errCtx as never)
+	}
+	return new ArkTypeError(errCtx)
+}
+
 export interface DerivableErrorContext<data = unknown> {
 	expected: string
 	actual: string | null
@@ -133,6 +133,7 @@ export interface DerivableErrorContext<data = unknown> {
 	message: string
 	data: data
 	path: TraversalPath
+	propString: string
 }
 
 export type ArkErrorCode = {

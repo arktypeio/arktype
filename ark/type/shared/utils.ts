@@ -1,6 +1,10 @@
-import { isArray, morph, type List, type mutable } from "@arktype/util"
-import type { UnknownNode } from "../base.js"
-import { hasArkKind } from "../util.js"
+import {
+	isArray,
+	literalPropAccess,
+	morph,
+	type List,
+	type mutable
+} from "@arktype/util"
 
 export const makeRootAndArrayPropertiesMutable = <o extends object>(
 	o: o
@@ -14,3 +18,13 @@ export type makeRootAndArrayPropertiesMutable<inner> = {
 		? mutable<inner[k]>
 		: inner[k]
 } & unknown
+
+export type TraversalPath = PropertyKey[]
+
+export const pathToPropString = (path: TraversalPath): string => {
+	const propAccessChain = path.reduce<string>(
+		(s, segment) => s + literalPropAccess(segment),
+		""
+	)
+	return propAccessChain[0] === "." ? propAccessChain.slice(1) : propAccessChain
+}

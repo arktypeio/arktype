@@ -1,22 +1,28 @@
-import { literalPropAccess } from "@arktype/util"
 import type { ResolvedArkConfig } from "../scope.js"
-import { ArkErrors, type ArkErrorInput } from "./errors.js"
+import type { Morph } from "../types/morph.js"
+import {
+	ArkErrors,
+	createError,
+	type ArkErrorCode,
+	type ArkErrorInput,
+	type ArkTypeError
+} from "./errors.js"
+import type { TraversalPath } from "./utils.js"
 
-export type TraversalPath = PropertyKey[]
+export type QueuedMorph = {
+	path: TraversalPath
+	morph: Morph
+}
 
-export const pathToPropString = (path: TraversalPath): string => {
-	const propAccessChain = path.reduce<string>(
-		(s, segment) => s + literalPropAccess(segment),
-		""
-	)
-	return propAccessChain[0] === "." ? propAccessChain.slice(1) : propAccessChain
+export type BranchTraversalContext = {
+	error: ArkTypeError | undefined
+	morphs: QueuedMorph[]
 }
 
 export class TraversalContext {
 	path: TraversalPath = []
-	errorsStack: ArkErrors[]
-	// TODO: add morphs here
-	entriesToPrune: [data: Record<string, unknown>, key: string][] = []
+	errors: ArkErrors = new ArkErrors(this)
+	branches: BranchTraversalContext[] = []
 
 	// Qualified
 	seen: { [name in string]?: object[] } = {}
@@ -24,20 +30,34 @@ export class TraversalContext {
 	constructor(
 		public root: unknown,
 		public config: ResolvedArkConfig
-	) {
-		this.errorsStack = [new ArkErrors(this)]
+	) {}
+
+	get currentBranch(): BranchTraversalContext | undefined {
+		return this.branches.at(-1)
 	}
 
-	get currentErrors(): ArkErrors {
-		return this.errorsStack.at(-1)!
+	hasError(): boolean {
+		return this.currentBranch
+			? this.currentBranch.error !== undefined
+			: this.errors.count !== 0
 	}
 
 	get failFast(): boolean {
-		return this.errorsStack.length > 1
+		return this.branches.length !== 0
 	}
 
-	get error(): ArkErrors["add"] {
-		return (...args) => this.currentErrors.add(...args)
+	error<input extends ArkErrorInput>(
+		input: input
+	): ArkTypeError<
+		input extends { code: ArkErrorCode } ? input["code"] : "predicate"
+	> {
+		const error = createError(this, input)
+		if (this.currentBranch) {
+			this.currentBranch.error = error
+		} else {
+			this.errors.add(error)
+		}
+		return error
 	}
 
 	get data(): unknown {
@@ -54,11 +74,14 @@ export class TraversalContext {
 	}
 
 	pushUnion(): void {
-		this.errorsStack.push(new ArkErrors(this))
+		this.branches.push({
+			error: undefined,
+			morphs: []
+		})
 	}
 
-	popUnion(): ArkErrors {
-		return this.errorsStack.pop()!
+	popUnion(): BranchTraversalContext {
+		return this.branches.pop()!
 	}
 }
 

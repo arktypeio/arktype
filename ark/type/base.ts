@@ -64,7 +64,6 @@ import {
 import { inferred } from "./shared/inference.js"
 import {
 	TraversalContext,
-	pathToPropString,
 	type TraverseAllows,
 	type TraverseApply
 } from "./shared/traversal.js"
@@ -135,10 +134,10 @@ export abstract class BaseNode<
 			(data) => {
 				const ctx = new TraversalContext(data, this.$.resolvedConfig)
 				this.traverseApply(data, ctx)
-				if (ctx.currentErrors.length === 0) {
+				if (!ctx.hasError()) {
 					return { out: data } as never
 				}
-				return { errors: ctx.currentErrors }
+				return { errors: ctx.errors }
 			},
 			{ attach: attachments as never }
 		)
@@ -170,9 +169,7 @@ export abstract class BaseNode<
 				`must be ${ctx.expected}${ctx.actual ? ` (was ${ctx.actual})` : ""}`
 			implementation.defaults.message ??= (ctx) => {
 				if (ctx.path.length === 0) return ctx.problem
-				const problemWithLocation = `${pathToPropString(ctx.path)} ${
-					ctx.problem
-				}`
+				const problemWithLocation = `${ctx.propString} ${ctx.problem}`
 				if (problemWithLocation[0] === "[") {
 					// clarify paths like [1], [0][1], and ["key!"] that could be confusing
 					return `value at ${problemWithLocation}`

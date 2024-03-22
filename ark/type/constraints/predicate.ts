@@ -62,11 +62,7 @@ export class PredicateNode extends BasePrimitiveConstraint<PredicateDeclaration>
 	traverseAllows: TraverseAllows = this.predicate
 
 	traverseApply: TraverseApply = (data, ctx) => {
-		const originalErrorCount = ctx.currentErrors.count
-		if (
-			!this.predicate(data, ctx) &&
-			ctx.currentErrors.count === originalErrorCount
-		)
+		if (!this.predicate(data, ctx) && !ctx.hasError())
 			ctx.error(this.errorContext)
 	}
 
@@ -75,10 +71,8 @@ export class PredicateNode extends BasePrimitiveConstraint<PredicateDeclaration>
 			js.return(this.compiledCondition)
 			return
 		}
-		js.const("originalErrorCount", "ctx.currentErrors.count")
-		js.if(
-			`${this.compiledNegation} && ctx.currentErrors.count === originalErrorCount`,
-			() => js.line(`ctx.error(${this.compiledErrorContext})`)
+		js.if(`${this.compiledNegation} && !ctx.hasError()`, () =>
+			js.line(`ctx.error(${this.compiledErrorContext})`)
 		)
 	}
 

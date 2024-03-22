@@ -1,4 +1,4 @@
-import { appendUnique, isArray, printable } from "@arktype/util"
+import { appendUnique, groupBy, isArray } from "@arktype/util"
 import type { Node } from "../base.js"
 import type { Schema } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
@@ -111,23 +111,33 @@ export class UnionNode<t = any, $ = any> extends BaseType<
 					)
 				},
 				expected(ctx) {
-					return describeBranches(
-						ctx.errors.map((e) => {
-							if (e.code !== "intersection") return e.message
-							const pathPrefix = e.path.length ? `${e.path} ` : ""
-							e.errors.map((_) => _.expected)
+					const byPath = groupBy(ctx.errors, "propString") as Record<
+						string,
+						ArkTypeError[]
+					>
+					const pathDescriptions = Object.entries(byPath).map(
+						([path, errors]) => {
+							errors.map((_) => _.expected)
 							const branchesAtPath: string[] = []
-							e.errors.forEach((errorAtPath) =>
+							errors.forEach((errorAtPath) =>
 								// avoid duplicate messages when multiple branches
 								// are invalid due to the same error
 								appendUnique(branchesAtPath, errorAtPath.expected)
 							)
 							const expected = describeBranches(branchesAtPath)
-							return `${pathPrefix}must be ${expected} (was ${printable(
-								e.data
-							)})`
-						})
+							const actual = ctx.errors.reduce(
+								(acc, e) =>
+									e.actual && !acc.includes(e.actual)
+										? `${acc && acc + ", "}${e.actual}`
+										: acc,
+								""
+							)
+							return `${path && path + " "}must be ${expected}${
+								actual && ` (was ${actual})`
+							}`
+						}
 					)
+					return describeBranches(pathDescriptions)
 				},
 				problem(ctx) {
 					return ctx.expected
@@ -200,30 +210,27 @@ export class UnionNode<t = any, $ = any> extends BaseType<
 		this.branches.some((b) => b.traverseAllows(data, ctx))
 
 	traverseApply: TraverseApply = (data, ctx) => {
-		ctx.pushUnion()
-		let previousErrorCount = 0
+		const errors: ArkTypeError[] = []
 		for (let i = 0; i < this.branches.length; i++) {
+			ctx.pushUnion()
 			this.branches[i].traverseApply(data, ctx)
-			if (ctx.currentErrors.count === previousErrorCount) return ctx.popUnion()
-			previousErrorCount = ctx.currentErrors.count
+			if (!ctx.hasError()) return ctx.popUnion()
+			errors.push(ctx.popUnion().error!)
 		}
-		ctx.error({ code: "union", errors: ctx.popUnion() })
+		ctx.error({ code: "union", errors })
 	}
 
 	compile(js: NodeCompiler): void {
 		if (js.traversalKind === "Apply") {
-			js.line(`ctx.pushUnion()`)
-			js.let("previousErrorCount", 0)
+			js.const("errors", "[]")
 			this.branches.forEach((branch) =>
 				js
-
+					.line("ctx.pushUnion()")
 					.line(js.invoke(branch))
-					.if("ctx.currentErrors.count === previousErrorCount", () =>
-						js.return("ctx.popUnion()")
-					)
-					.line("previousErrorCount = ctx.currentErrors.count")
+					.if("!ctx.hasError()", () => js.return("ctx.popUnion()"))
+					.line("errors.push(ctx.popUnion().error)")
 			)
-			js.line(`ctx.error({ code: "union", errors: ctx.popUnion() })`)
+			js.line(`ctx.error({ code: "union", errors })`)
 		} else {
 			this.branches.forEach((branch) =>
 				js.if(`${js.invoke(branch)}`, () => js.return(true))

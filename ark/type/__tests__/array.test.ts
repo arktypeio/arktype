@@ -96,12 +96,12 @@ describe("array", () => {
 			attest(t(["", 0]).out).snap(["", 0])
 			attest(t.allows([true, 0])).equals(false)
 			attest(t([true, 0]).errors?.summary).snap(
-				"value at [0] must be a string (was boolean)"
+				"value at [0] must be a string (was true)"
 			)
 			attest(t.allows([0, false])).equals(false)
 			attest(t([0, false]).errors?.summary)
 				.snap(`value at [0] must be a string (was number)
-value at [1] must be a number (was boolean)`)
+value at [1] must be a number (was false)`)
 			// too short
 			attest(t.allows([""])).equals(false)
 			attest(t([""]).errors?.summary).snap(

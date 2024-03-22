@@ -53,7 +53,9 @@ describe("traverse", () => {
 		const t = type("string|number[]")
 		attest(t([1]).out).snap([1])
 		attest(t("hello").out).snap("hello")
-		attest(t(2).errors?.summary).snap("must be a string or an array (was 2)")
+		attest(t(2).errors?.summary).snap(
+			"must be a string or an array (was number)"
+		)
 	})
 	it("tuple length", () => {
 		const t = type(["string", "number", "string", "string[]"])
@@ -82,7 +84,7 @@ describe("traverse", () => {
 		attest(t({ a: "ok" }).out).snap({ a: "ok" })
 		attest(t({ a: 5 }).out).snap({ a: 5 })
 		// value isn't present
-		attest(t({}).errors?.summary).snap("a must be defined (was undefined)")
+		attest(t({}).errors?.summary).snap("a must be defined")
 		// unsatisfying value
 		attest(t({ a: false }).errors?.summary).snap(
 			"a must be a number, a string or null (was false)"
@@ -95,9 +97,7 @@ describe("traverse", () => {
 			c: { a: "Function" },
 			d: "a|b|c"
 		}).export()
-		attest(types.d({}).errors?.summary).snap(
-			"a must be defined (was undefined)"
-		)
+		attest(types.d({}).errors?.summary).snap("a must be defined")
 		attest(types.d({ a: null }).errors?.summary).snap(
 			"a must be a function, a number or a string (was null)"
 		)

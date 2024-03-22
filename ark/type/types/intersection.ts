@@ -283,27 +283,26 @@ export class IntersectionNode<t = unknown, $ = any> extends BaseType<
 		)
 
 	traverseApply: TraverseApply = (data, ctx) => {
-		const originalErrorCount = ctx.currentErrors.count
 		if (this.basis) {
 			this.basis.traverseApply(data, ctx)
-			if (ctx.currentErrors.count > originalErrorCount) return
+			if (ctx.hasError()) return
 		}
 		if (this.refinements.length) {
 			for (let i = 0; i < this.refinements.length - 1; i++) {
 				this.refinements[i].traverseApply(data as never, ctx)
-				if (ctx.failFast && ctx.currentErrors.count > originalErrorCount) return
+				if (ctx.failFast && ctx.hasError()) return
 			}
 			this.refinements.at(-1)!.traverseApply(data as never, ctx)
-			if (ctx.currentErrors.count > originalErrorCount) return
+			if (ctx.hasError()) return
 		}
 		if (this.props) {
 			this.props.traverseApply(data as never, ctx)
-			if (ctx.currentErrors.count > originalErrorCount) return
+			if (ctx.hasError()) return
 		}
 		if (this.predicate) {
 			for (let i = 0; i < this.predicate.length - 1; i++) {
 				this.predicate[i].traverseApply(data as never, ctx)
-				if (ctx.failFast && ctx.currentErrors.count > originalErrorCount) return
+				if (ctx.failFast && ctx.hasError()) return
 			}
 			this.predicate.at(-1)!.traverseApply(data as never, ctx)
 		}
@@ -319,15 +318,10 @@ export class IntersectionNode<t = unknown, $ = any> extends BaseType<
 			js.return(true)
 			return
 		}
-		js.const("originalErrorCount", "ctx.currentErrors.count")
 
-		const returnIfFail = () =>
-			js.if("ctx.currentErrors.count > originalErrorCount", () => js.return())
+		const returnIfFail = () => js.if("ctx.hasError()", () => js.return())
 		const returnIfFailFast = () =>
-			js.if(
-				"ctx.failFast && ctx.currentErrors.count > originalErrorCount",
-				() => js.return()
-			)
+			js.if("ctx.failFast && ctx.hasError()", () => js.return())
 
 		if (this.basis) {
 			js.check(this.basis)
@@ -349,7 +343,9 @@ export class IntersectionNode<t = unknown, $ = any> extends BaseType<
 		if (this.predicate) {
 			for (let i = 0; i < this.predicate.length - 1; i++) {
 				js.check(this.predicate[i])
-				returnIfFailFast()
+				// since predicates can be chained, we have to fail immediately
+				// if one fails
+				returnIfFail()
 			}
 			js.check(this.predicate.at(-1)!)
 		}

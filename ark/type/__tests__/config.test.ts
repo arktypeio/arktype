@@ -17,7 +17,7 @@ describe("config traversal", () => {
 		)
 		attest<{ a: string }>(types.b.infer)
 		attest(types.b({ a: true }).errors?.summary).snap(
-			"a must be a series of characters (was boolean)"
+			"a must be a series of characters (was true)"
 		)
 	})
 	it("tuple expression at path", () => {
@@ -71,7 +71,7 @@ describe("config traversal", () => {
 				name: "david",
 				age: true
 			}).errors?.summary
-		).snap("age must be a number (was boolean)")
+		).snap("age must be a number (was true)")
 
 		// should give the shallow custom error
 		attest(user(null).errors?.summary).snap("must be a valid user (was null)")
