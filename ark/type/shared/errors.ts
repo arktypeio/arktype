@@ -189,7 +189,7 @@ export type ActualWriter<code extends ArkErrorCode = ArkErrorCode> = (
 	data: getAssociatedDataForError<code>
 ) => string | null
 
-export type ArkResult<out = unknown> = propwiseXor<
-	{ out: out },
+export type ArkResult<data = unknown, out = data> = propwiseXor<
+	{ data: data; out: out },
 	{ errors: ArkErrors }
 >

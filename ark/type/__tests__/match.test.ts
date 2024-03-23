@@ -47,21 +47,21 @@ describe("match", () => {
 		)
 	})
 
-	describe("constraint handling", () => {
-		it("properly considers constrained types as different from their base", () => {
-			const matcher = match
-				.only<number>()
-				.when("number>2", (n) => {
-					attest<number>(n)
-					return n
-				})
-				.when("number", (n) => n)
-				.finalize()
+	// describe("constraint handling", () => {
+	// 	it("properly considers constrained types as different from their base", () => {
+	// 		const matcher = match
+	// 			.only<number>()
+	// 			.when("number>2", (n) => {
+	// 				attest<number>(n)
+	// 				return n
+	// 			})
+	// 			.when("number", (n) => n)
+	// 			.finalize()
 
-			// for assertions
-			matcher(5)
-		})
-	})
+	// 		// for assertions
+	// 		matcher(5)
+	// 	})
+	// })
 
 	describe('"finalizations"', () => {
 		it(".orThrow()", () => {

@@ -127,7 +127,9 @@ export abstract class BaseNode<
 	t,
 	d extends BaseNodeDeclaration
 > extends Callable<
-	(data: unknown) => ArkResult<distill<t>>,
+	(
+		data: unknown
+	) => ArkResult<distill<t, "in", "base">, distill<t, "out", "base">>,
 	BaseAttachmentsOf<d>
 > {
 	constructor(public attachments: BaseAttachments) {
@@ -177,7 +179,7 @@ export abstract class BaseNode<
 		this.contributesReferences = Object.values(this.contributesReferencesByName)
 	}
 
-	declare infer: distill<t>;
+	declare infer: distill<t, "out", "base">;
 	declare [inferred]: t;
 	readonly [arkKind] = "node"
 
@@ -253,12 +255,14 @@ export abstract class BaseNode<
 		return this.compiledErrorContextCache
 	}
 
-	allows = (data: d["prerequisite"]): data is distill<extractIn<t>> => {
+	allows = (data: d["prerequisite"]): data is this["in"]["infer"] => {
 		const ctx = new TraversalContext(data, this.$.resolvedConfig)
 		return this.traverseAllows(data as never, ctx)
 	}
 
-	parse(data: d["prerequisite"]): ArkResult<distill<t>> {
+	parse(
+		data: d["prerequisite"]
+	): ArkResult<this["in"]["infer"], this["infer"]> {
 		return this(data)
 	}
 

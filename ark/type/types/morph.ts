@@ -170,16 +170,22 @@ export class MorphNode<t = any, $ = any> extends BaseType<
 	}
 }
 
-export type inferMorphOut<out> = out extends ArkResult<infer t>
+export type inferMorphOut<out> = out extends ArkResult<unknown, infer innerOut>
 	? out extends null
-		? // avoid treating any/never as CheckResult
+		? // avoid treating any/never as ArkResult
 		  out
-		: t
+		: innerOut
 	: Exclude<out, ArkTypeError>
 
-export type distill<t> = includesMorphs<t> extends true
-	? distillRecurse<t, "out", "base">
-	: t
+export type distill<
+	t,
+	io extends "in" | "out",
+	constraints extends "base" | "constrained"
+> = distillRecurse<t, io, constraints> extends infer result
+	? [t, result] extends [result, t]
+		? t
+		: result
+	: never
 
 export type extractIn<t> = includesMorphs<t> extends true
 	? distillRecurse<t, "in", "constrained">

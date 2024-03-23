@@ -10,7 +10,7 @@ describe("errors", () => {
 			domain: "number",
 			divisor: 3
 		})
-		attest(n(6)).snap({ out: 6 })
+		attest(n(6)).snap({ data: 6, out: 6 })
 		attest(n(7).errors?.summary).snap("must be a multiple of 3 (was 7)")
 	})
 	it("at path", () => {

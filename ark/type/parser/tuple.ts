@@ -497,10 +497,7 @@ export const parseMorphTuple: PostfixParser<"=>"> = (def, ctx) => {
 		)
 	}
 	// TODO: nested morphs?
-	return ctx.$.node("morph", {
-		in: ctx.$.parse(def[0], ctx) as Schema<MorphChildKind>,
-		morphs: def[2] as Morph
-	})
+	return ctx.$.parse(def[0], ctx).morph(def[2] as Morph)
 }
 
 export const writeMalformedFunctionalExpressionMessage = (

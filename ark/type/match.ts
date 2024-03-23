@@ -49,10 +49,17 @@ type getHandledBranches<ctx extends MatchParserContext> = Exclude<
 	predicate
 >
 
-type getUnhandledBranches<ctx extends MatchParserContext> = Exclude<
-	unknown extends ctx["exhaustiveOver"] ? UnknownUnion : ctx["exhaustiveOver"],
-	getHandledBranches<ctx>
+type getUnhandledBranches<ctx extends MatchParserContext> = distill<
+	Exclude<
+		unknown extends ctx["exhaustiveOver"]
+			? UnknownUnion
+			: ctx["exhaustiveOver"],
+		getHandledBranches<ctx>
+	>,
+	"out",
+	"base"
 >
+
 type addBranches<
 	ctx extends MatchParserContext,
 	branches extends unknown[]
@@ -69,19 +76,20 @@ type validateWhenDefinition<
 
 // infer the types handled by a match branch, which is identical to `inferTypeRoot` while properly
 // excluding cases that are already handled by other branches
-type inferMatchBranch<
-	def,
-	ctx extends MatchParserContext
-> = intersectConstrainables<
-	getUnhandledBranches<ctx>,
-	inferTypeRoot<def, ctx["$"]>
+type inferMatchBranch<def, ctx extends MatchParserContext> = distill<
+	intersectConstrainables<
+		getUnhandledBranches<ctx>,
+		inferTypeRoot<def, ctx["$"]>
+	>,
+	"out",
+	"base"
 >
 
 export type ChainableMatchParser<ctx extends MatchParserContext> = {
 	// chainable methods
 	when: <def, ret>(
 		when: validateWhenDefinition<def, ctx>,
-		then: (In: distill<inferMatchBranch<def, ctx>>) => ret
+		then: (In: inferMatchBranch<def, ctx>) => ret
 	) => ChainableMatchParser<
 		addBranches<ctx, [(In: inferMatchBranch<def, ctx>) => ret]>
 	>
@@ -108,24 +116,28 @@ type MatchParserDefaultInvocation<ctx extends MatchParserContext> = {
 
 type validateCases<cases, ctx extends MatchParserContext> = {
 	[def in keyof cases | keyof ctx["$"] | "default"]?: def extends "default"
-		? (In: distill<getUnhandledBranches<ctx>>) => unknown
+		? (In: getUnhandledBranches<ctx>) => unknown
 		: def extends validateWhenDefinition<def, ctx>
-		? (In: distill<inferMatchBranch<def, ctx>>) => unknown
+		? (In: inferMatchBranch<def, ctx>) => unknown
 		: validateWhenDefinition<def, ctx>
 }
 
 type errorCases<cases, ctx extends MatchParserContext> = {
 	[def in keyof cases]?: def extends "default"
-		? (In: distill<getUnhandledBranches<ctx>>) => unknown
+		? (In: getUnhandledBranches<ctx>) => unknown
 		: def extends validateWhenDefinition<def, ctx>
-		? (In: distill<inferMatchBranch<def, ctx>>) => unknown
+		? (In: inferMatchBranch<def, ctx>) => unknown
 		: validateWhenDefinition<def, ctx>
 } & {
 	[k in Exclude<keyof ctx["$"], keyof cases>]?: (
-		In: distill<intersectConstrainables<getUnhandledBranches<ctx>, ctx["$"][k]>>
+		In: distill<
+			intersectConstrainables<getUnhandledBranches<ctx>, ctx["$"][k]>,
+			"out",
+			"base"
+		>
 	) => unknown
 } & {
-	default?: (In: distill<getUnhandledBranches<ctx>>) => unknown
+	default?: (In: getUnhandledBranches<ctx>) => unknown
 }
 
 export type CaseMatchParser<ctx extends MatchParserContext> = {

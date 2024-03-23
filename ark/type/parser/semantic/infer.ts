@@ -24,7 +24,11 @@ import type { StringLiteral } from "../string/shift/operand/enclosed.js"
 
 export type inferAstRoot<ast, $, args> = inferAst<ast, $, args>
 
-export type inferAstBase<ast, $, args> = distill<inferAstRoot<ast, $, args>>
+export type inferAstBase<ast, $, args> = distill<
+	inferAstRoot<ast, $, args>,
+	"in",
+	"base"
+>
 
 export type inferAst<ast, $, args> = ast extends List
 	? inferExpression<ast, $, args>
