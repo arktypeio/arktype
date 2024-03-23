@@ -6,6 +6,7 @@ import {
 	type propwiseXor
 } from "@arktype/util"
 import type { Prerequisite, errorContext } from "../kinds.js"
+import { arkKind } from "../util.js"
 import type { NodeKind } from "./implement.js"
 import type { TraversalContext } from "./traversal.js"
 import { pathToPropString, type TraversalPath } from "./utils.js"
@@ -26,6 +27,8 @@ export type ArkTypeError<code extends ArkErrorCode = ArkErrorCode> = ArkError &
 export const ArkTypeError: new <code extends ArkErrorCode = ArkErrorCode>(
 	context: ArkErrorContext<code>
 ) => ArkTypeError<code> = class extends ArkError {
+	readonly [arkKind] = "error"
+
 	constructor(context: ArkErrorContext) {
 		super(context.message)
 		Object.assign(this, context)

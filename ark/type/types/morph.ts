@@ -1,5 +1,6 @@
 import {
 	listFrom,
+	reference,
 	throwParseError,
 	type BuiltinObjectKind,
 	type BuiltinObjects,
@@ -138,7 +139,7 @@ export class MorphNode<t = any, $ = any> extends BaseType<
 
 	readonly expression = `(In: ${this.in.expression}) => Out<${this.out.expression}>`
 
-	readonly serializedMorphs = (this.json as any).morphs as string[]
+	readonly serializedMorphs = this.morphs.map((morph) => reference(morph))
 
 	traverseAllows: TraverseAllows = (data, ctx) =>
 		this.in.traverseAllows(data, ctx)
@@ -150,11 +151,11 @@ export class MorphNode<t = any, $ = any> extends BaseType<
 
 	compile(js: NodeCompiler): void {
 		if (js.traversalKind === "Allows") {
-			js.invoke(this.in)
+			js.return(js.invoke(this.in))
 			return
 		}
-		this.serializedMorphs.forEach((name) => `ctx.queueMorph(${name})`)
-		js.invoke(this.in)
+		this.serializedMorphs.forEach((name) => js.line(`ctx.queueMorph(${name})`))
+		js.line(js.invoke(this.in))
 	}
 
 	override get in(): Node<MorphChildKind, extractIn<t>> {

@@ -1,6 +1,5 @@
 import { attest } from "@arktype/attest"
 import { scope, type, type Ark, type Type } from "arktype"
-import type { ArkTypeError } from "../shared/errors.js"
 import { writeUndiscriminableMorphUnionMessage } from "../types/discriminate.js"
 import type { Out } from "../types/morph.js"
 
@@ -54,30 +53,12 @@ describe("morph", () => {
 		attest<string>(t.in.infer)
 		attest<never>(t.infer)
 	})
-	// it("return problem", () => {
-	// 	const divide100By = type([
-	// 		"number",
-	// 		"=>",
-	// 		(n, errors) => (n === 0 ? errors.mustBe("non-zero", n, []) : 100 / n)
-	// 	])
-	// 	attest<Type<(In: number) => Out<number>>>(divide100By)
-	// 	attest(divide100By(5).out).equals(20)
-	// 	attest(divide100By(0).errors?.summary).snap("must be non-zero (was 0)")
-	// })
-	it("adds a problem if one is returned without being added", () => {
-		const divide100By = type([
-			"number",
-			"=>",
-			(n, errors) => {
-				if (n !== 0) {
-					return 100 / n
-				} else {
-					// errors.mustBe("non-zero")
-					// errors.byPath = {}
-					return (errors as unknown as ArkTypeError[]).pop()
-				}
-			}
-		])
+	it("return problem", () => {
+		const divide100By = type("number", "=>", (n, ctx) =>
+			n !== 0 ? 100 / n : ctx.error("non-zero")
+		)
+		attest<Type<(In: number) => Out<number>>>(divide100By)
+		attest(divide100By(5).out).equals(20)
 		attest(divide100By(0).errors?.summary).snap("must be non-zero (was 0)")
 	})
 	it("at path", () => {
@@ -101,11 +82,8 @@ describe("morph", () => {
 			mapToLengths: "lengthOfString[]"
 		}).export()
 		attest<Type<((In: string) => Out<number>)[]>>(types.mapToLengths)
-		const result = types.mapToLengths(["1", "22", "333"])
-		if (result.errors) {
-			return result.errors.throw()
-		}
-		attest<number[]>(result.out).equals([1, 2, 3])
+		const { out } = types.mapToLengths(["1", "22", "333"])
+		attest<number[] | undefined>(out).equals([1, 2, 3])
 	})
 	it("object inference", () => {
 		const t = type([{ a: "string" }, "=>", (data) => `${data}`])

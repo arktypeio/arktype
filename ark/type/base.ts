@@ -1,7 +1,6 @@
 import {
 	Callable,
 	compileSerializedValue,
-	deepClone,
 	includes,
 	isArray,
 	morph,
@@ -137,38 +136,7 @@ export abstract class BaseNode<
 			(data: any) => {
 				const ctx = new TraversalContext(data, this.$.resolvedConfig)
 				this.traverseApply(data, ctx)
-				if (!ctx.hasError()) {
-					let out = data
-					if (ctx.morphs) {
-						out = deepClone(out)
-						for (let i = 0; i < ctx.morphs.length; i++) {
-							const { path, morph } = ctx.morphs[i]
-							if (path.length === 0) {
-								ctx.path = []
-								// if the morph applies to the root, just assign to it directly
-								out = morph(out, ctx)
-								continue
-							}
-
-							// find the object on which the key to be morphed exists
-							let parent = out
-							for (
-								let pathIndex = 0;
-								pathIndex < path.length - 1;
-								pathIndex++
-							) {
-								parent = parent[path[pathIndex]]
-							}
-
-							// apply the morph function and assign the result to the corresponding property
-							const key = path.at(-1)!
-							ctx.path = path
-							parent[key] = morph(parent[key], ctx)
-						}
-					}
-					return { data, out } as never
-				}
-				return { errors: ctx.errors }
+				return ctx.finalize()
 			},
 			{ attach: attachments as never }
 		)
