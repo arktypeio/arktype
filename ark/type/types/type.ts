@@ -116,7 +116,7 @@ export abstract class BaseType<
 		return this.$.node(
 			this.branches.filter((branch) => !branch.extends(other)),
 			{ root: true }
-		)
+		) as never
 	}
 
 	array(): Type<t[], $> {

@@ -11,6 +11,12 @@ import type { NodeKind } from "./implement.js"
 import type { TraversalContext } from "./traversal.js"
 import { pathToPropString, type TraversalPath } from "./utils.js"
 
+export const throwArkError = (
+	...args: ConstructorParameters<typeof ArkError>
+): never => {
+	throw new ArkError(...args)
+}
+
 export class ArkError extends TypeError {
 	toString(): string {
 		return this.message

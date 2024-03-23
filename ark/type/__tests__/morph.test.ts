@@ -1,5 +1,6 @@
 import { attest } from "@arktype/attest"
 import { scope, type, type Ark, type Type } from "arktype"
+import { assertNodeKind } from "../shared/implement.js"
 import { writeUndiscriminableMorphUnionMessage } from "../types/discriminate.js"
 import type { Out } from "../types/morph.js"
 
@@ -20,14 +21,6 @@ describe("morph", () => {
 		const { out } = t(true)
 		attest<boolean | undefined>(out).equals(false)
 	})
-	// it("chained to type", () => {
-	// 	const t = type(["string>5", "=>", arktypes.parse.date])
-	// 	attest<Type<(In: string) => Out<Date>>>(t)
-	// 	attest(t("5/21/1993").out?.getDate()).equals(21)
-	// 	attest(t("foobar").errors?.summary).snap(
-	// 		"must be a valid date (was 'foobar')"
-	// 	)
-	// })
 	it("validated output", () => {
 		const parsedUser = type("string").morph((s) => JSON.parse(s), {
 			name: "string",
@@ -94,37 +87,37 @@ describe("morph", () => {
 	it("intersection", () => {
 		const $ = scope({
 			b: "3.14",
-			a: () => $.type("number"), //.morph((data) => `${data}`),
+			a: ["number", "=>", (data) => `${data}`],
 			aAndB: () => $.type("a&b"),
 			bAndA: () => $.type("b&a")
 		})
-		// const types = $.compile()
-		// attest<Type<(In: 3.14) => string>>(types.aAndB)
-		// attest(types.aAndB.node).snap({
-		//     number: { rules: { value: 3.14 }, morph: "(function)" }
-		// })
-		// attest<typeof types.aAndB>(types.bAndA)
-		// attest(types.bAndA.node).equals(types.aAndB.node)
+		const types = $.export()
+		attest<Type<(In: 3.14) => Out<string>>>(types.aAndB)
+		attest(types.aAndB.json).snap({
+			in: { unit: 3.14 },
+			morphs: ["$ark.anonymousFunction1"]
+		})
+		attest<typeof types.aAndB>(types.bAndA)
+		attest(types.bAndA).equals(types.aAndB)
 	})
 	it("object intersection", () => {
-		// const $ = scope({
-		//     a: () => $.type({ a: "1" }).morph((data) => `${data}`),
-		//     b: { b: "2" },
-		//     c: "a&b"
-		// })
-		// const types = $.compile()
-		// attest<Type<(In: { a: 1; b: 2 }) => string>>(types.c)
-		// attest(types.c.node).snap({
-		//     object: {
-		//         rules: {
-		//             props: {
-		//                 a: { number: { value: 1 } },
-		//                 b: { number: { value: 2 } }
-		//             }
-		//         },
-		//         morph: "(function)"
-		//     }
-		// })
+		const $ = scope({
+			a: [{ a: "1" }, "=>", (data) => `${data}`],
+			b: { b: "2" },
+			c: "a&b"
+		})
+		const types = $.export()
+		attest<Type<(In: { a: 1; b: 2 }) => string>>(types.c)
+		attest(types.c.json).snap({
+			in: {
+				domain: "object",
+				prop: [
+					{ key: "a", value: { unit: 1 } },
+					{ key: "b", value: { unit: 2 } }
+				]
+			},
+			morphs: ["$ark.anonymousFunction1"]
+		})
 	})
 	it("union", () => {
 		const types = scope({
@@ -134,32 +127,26 @@ describe("morph", () => {
 			bOrA: "b|a"
 		}).export()
 		attest<Type<boolean | ((In: number) => Out<string>)>>(types.aOrB)
-		// attest(types.aOrB.node).snap({
-		//     number: { rules: {}, morph: "(function)" },
-		//     boolean: true`
-		// })
-		// attest<typeof types.aOrB>(types.bOrA)
-		// attest(types.bOrA.node).equals(types.aOrB.node)
+		attest(types.aOrB.json).snap([
+			{ in: "number", morphs: ["$ark.anonymousFunction1"] },
+			{ unit: false },
+			{ unit: true }
+		])
+		attest<typeof types.aOrB>(types.bOrA)
+		attest(types.bOrA.json).equals(types.aOrB.json)
 	})
 	it("union with output", () => {
 		const t = type("number|parse.number")
 		attest<number>(t.infer)
 	})
 	it("deep intersection", () => {
-		// TODO: Fix
 		// const types = scope({
 		// 	a: { a: ["number>0", "=>", (data) => data + 1] },
 		// 	b: { a: "1" },
 		// 	c: "a&b"
 		// }).export()
 		// attest<Type<{ a: (In: 1) => Out<number> }>>(types.c)
-		// attest(types.c.node).snap({
-		//     object: {
-		//         props: {
-		//             a: { number: { rules: { value: 1 }, morph: "(function)" } }
-		//         }
-		//     }
-		// })
+		// attest(types.c.json).snap()
 	})
 	it("deep union", () => {
 		const types = scope({
@@ -178,25 +165,21 @@ describe("morph", () => {
 			>
 		>(types.c)
 
-		// attest(types.c.node).snap({
-		//     object: [
-		//         {
-		//             props: {
-		//                 a: {
-		//                     number: {
-		//                         rules: {
-		//                             range: {
-		//                                 min: { limit: 0, comparator: ">" }
-		//                             }
-		//                         },
-		//                         morph: "(function)"
-		//                     }
-		//                 }
-		//             }
-		//         },
-		//         { props: { a: "Function" } }
-		//     ]
-		// })
+		attest(types.c.json).snap([
+			{ domain: "object", prop: [{ key: "a", value: "Function" }] },
+			{
+				domain: "object",
+				prop: [
+					{
+						key: "a",
+						value: {
+							in: { domain: "number", min: { exclusive: true, rule: 0 } },
+							morphs: ["$ark.anonymousFunction1"]
+						}
+					}
+				]
+			}
+		])
 	})
 	it("chained reference", () => {
 		const $ = scope({
@@ -205,9 +188,11 @@ describe("morph", () => {
 		})
 		const types = $.export()
 		attest<Type<(In: string) => Out<boolean>>>(types.b)
-		// attest(types.b.node).snap({
-		//     string: { rules: {}, morph: ["(function)", "(function)"] }
-		// })
+		assertNodeKind(types.b, "morph")
+		attest(types.b.json).snap({
+			in: "string",
+			morphs: types.b.serializedMorphs
+		})
 	})
 	it("chained nested", () => {
 		const $ = scope({
@@ -217,27 +202,44 @@ describe("morph", () => {
 
 		const types = $.export()
 		attest<Type<(In: { a: string }) => Out<boolean>>>(types.b)
-		// attest(types.b.node).snap({
-		//     object: { rules: { props: { a: "a" } }, morph: "(function)" }
-		// })
+		assertNodeKind(types.b, "morph")
+		assertNodeKind(types.a, "morph")
+		attest(types.b.json).snap({
+			in: {
+				domain: "object",
+				prop: [
+					{
+						key: "a",
+						value: { in: "string", morphs: types.a.serializedMorphs }
+					}
+				]
+			},
+			morphs: types.b.serializedMorphs
+		})
 	})
 	it("directly nested", () => {
 		const t = type([
 			{
-				a: ["string", "=>", (s: string) => s.length]
+				a: ["string", "=>", (s) => s.length]
 			},
 			"=>",
 			({ a }) => a === 0
 		])
 		attest<Type<(In: { a: string }) => Out<boolean>>>(t)
-		// attest(t.node).snap({
-		//     object: {
-		//         rules: {
-		//             props: { a: { string: { rules: {}, morph: "(function)" } } }
-		//         },
-		//         morph: "(function)"
-		//     }
-		// })
+		assertNodeKind(t, "morph")
+		const nestedMorph = t.firstReferenceOfKindOrThrow("morph")
+		attest(t.json).snap({
+			in: {
+				domain: "object",
+				prop: [
+					{
+						key: "a",
+						value: { in: "string", morphs: nestedMorph.serializedMorphs }
+					}
+				]
+			},
+			morphs: t.serializedMorphs
+		})
 	})
 	it("discriminable tuple union", () => {
 		const $ = scope({

@@ -1,6 +1,7 @@
 import {
 	compileSerializedValue,
 	morph,
+	printable,
 	type ErrorMessage,
 	type JsonData,
 	type entryOf,
@@ -17,12 +18,14 @@ import type { SchemaParseContext } from "../parse.js"
 import type { NodeConfig, ParsedUnknownNodeConfig, Scope } from "../scope.js"
 import type { IntersectionInner } from "../types/intersection.js"
 import type { Type, typeKindOrRightOf, typeKindRightOf } from "../types/type.js"
+import { hasArkKind } from "../util.js"
 import type {
 	BaseErrorContext,
 	BaseMeta,
 	BaseNodeDeclaration
 } from "./declare.js"
 import type { Disjoint } from "./disjoint.js"
+import { throwArkError } from "./errors.js"
 
 export const basisKinds = ["unit", "proto", "domain"] as const
 
@@ -188,6 +191,19 @@ export const precedenceByKind = morph(
 
 export const isNodeKind = (value: unknown): value is NodeKind =>
 	typeof value === "string" && value in precedenceByKind
+
+export function assertNodeKind<kind extends NodeKind>(
+	value: unknown,
+	kind: kind
+): asserts value is Node<kind> {
+	const isNode = hasArkKind(value, "node")
+	if (!isNode || value.kind !== kind)
+		throwArkError(
+			`Expected node of kind ${kind} (was ${
+				isNode ? `${value.kind} node` : printable(value)
+			})`
+		)
+}
 
 export type precedenceOfKind<kind extends NodeKind> = PrecedenceByKind[kind]
 

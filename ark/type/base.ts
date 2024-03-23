@@ -41,7 +41,7 @@ import type {
 	BaseNodeDeclaration
 } from "./shared/declare.js"
 import { Disjoint } from "./shared/disjoint.js"
-import type { ArkResult } from "./shared/errors.js"
+import { throwArkError, type ArkResult } from "./shared/errors.js"
 import {
 	basisKinds,
 	constraintKinds,

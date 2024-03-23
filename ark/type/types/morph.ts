@@ -87,7 +87,8 @@ export class MorphNode<t = any, $ = any> extends BaseType<
 						ctx.$.node(schema, { allowedKinds: morphChildKinds })
 				},
 				morphs: {
-					parse: listFrom
+					parse: listFrom,
+					serialize: (morphs) => morphs.map(reference)
 				}
 			},
 			normalize: (schema) => schema,
