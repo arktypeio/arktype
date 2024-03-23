@@ -10,10 +10,10 @@ describe("morph", () => {
 		attest<Type<(In: number) => Out<string>>>(t)
 		attest<string>(t.infer)
 		attest<number>(t.in.infer)
-		const { out } = t(true)
-		attest<string | undefined>(out).equals("true")
+		const { out } = t(5)
+		attest<string | undefined>(out).equals("5")
 		const { errors } = t("foo")
-		attest(errors?.summary).snap("must be boolean (was string)")
+		attest(errors?.summary).snap("must be a number (was string)")
 	})
 	it("endomorph", () => {
 		const t = type(["boolean", "=>", (data) => !data])

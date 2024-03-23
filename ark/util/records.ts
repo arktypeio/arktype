@@ -155,25 +155,19 @@ export type override<
 
 export type valueOf<o> = o[keyof o]
 
-export const ShallowClone = class {
+export const InnerDynamicBase = class {
 	constructor(properties: object) {
 		Object.assign(this, properties)
 	}
 } as new <t extends object>(base: t) => t
 
 /** @ts-expect-error (needed to extend `t`, but safe given ShallowClone's implementation) **/
-export class DynamicBase<t extends object> extends ShallowClone<t> {}
+export class DynamicBase<t extends object> extends InnerDynamicBase<t> {}
 
 export const NoopBase = class {} as new <t extends object>() => t
 
 /** @ts-expect-error (see DynamicBase) **/
 export class CastableBase<t extends object> extends NoopBase<t> {}
-
-export const shallowClone = <input extends object>(input: input): input =>
-	Object.create(
-		Object.getPrototypeOf(input),
-		Object.getOwnPropertyDescriptors(input)
-	)
 
 export const splitByKeys = <o extends object, leftKeys extends keySetOf<o>>(
 	o: o,

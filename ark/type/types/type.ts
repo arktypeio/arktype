@@ -159,7 +159,7 @@ export abstract class BaseType<
 		morph: morph,
 		outValidator: validateTypeRoot<def, $>
 	): Type<
-		(In: this["in"]["infer"]) => Out<
+		(In: this["in"][typeof inferred]) => Out<
 			// TODO: validate overlapping
 			// inferMorphOut<ReturnType<morph>> &
 			extractOut<inferTypeRoot<def, $>>
