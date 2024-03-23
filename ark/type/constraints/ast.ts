@@ -1,10 +1,6 @@
-import type { ErrorMessage, evaluate } from "@arktype/util"
-import type { Prerequisite, Schema } from "../kinds.js"
-import type { Type } from "../types/type.js"
-import type {
-	PrimitiveConstraintKind,
-	writeInvalidOperandMessage
-} from "./constraint.js"
+import type { evaluate } from "@arktype/util"
+import type { Schema } from "../kinds.js"
+import type { PrimitiveConstraintKind } from "./constraint.js"
 import type { predicate } from "./predicate.js"
 import type { after } from "./refinements/after.js"
 import type { before } from "./refinements/before.js"
@@ -51,13 +47,6 @@ export type intersectConstrainables<l, r> = [l, r] extends [
 	: l & r
 
 export type LimitLiteral = number | DateLiteral
-
-export type validateConstraintArg<
-	kind extends PrimitiveConstraintKind,
-	In
-> = In extends Prerequisite<kind>
-	? Schema<kind>
-	: ErrorMessage<writeInvalidOperandMessage<kind, Type<In>>>
 
 export type RangeExclusivity = "exclusive" | "inclusive"
 
