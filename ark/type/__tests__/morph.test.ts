@@ -89,9 +89,11 @@ describe("morph", () => {
 		const { data, out } = t(input)
 
 		attest<{ a: number } | undefined>(out).equals({ a: 4 })
+		attest<{ a: string } | undefined>(data).snap({ a: "four" })
 		// out is cloned before the morph
-		attest(out !== (input as {})).equals(true)
+		attest(out === (input as never)).equals(false)
 		// data has the original reference + data
+		attest(data === input).equals(true)
 	})
 	it("in array", () => {
 		const types = scope({
