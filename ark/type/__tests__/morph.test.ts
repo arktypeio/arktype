@@ -249,13 +249,13 @@ describe("morph", () => {
 		attest<Type<[boolean] | ((In: [string]) => Out<string[]>)>>(types.c)
 	})
 	it("double intersection", () => {
-		// attest(() => {
-		//     const z = scope({
-		//         a: ["boolean", "=>", (data) => `${data}`],
-		//         b: ["boolean", "=>", (data) => `${data}!!!`],
-		//         c: "a&b"
-		//     }).compile()
-		// }).throws("Intersection of morphs results in an unsatisfiable type")
+		attest(() =>
+			scope({
+				a: ["boolean", "=>", (data) => `${data}`],
+				b: ["boolean", "=>", (data) => `${data}!!!`],
+				c: "a&b"
+			}).export()
+		).throws.snap("ParseError: Invalid intersection of morphs")
 	})
 	it("undiscriminated union", () => {
 		// TODO: fix
@@ -269,12 +269,12 @@ describe("morph", () => {
 	})
 	it("deep double intersection", () => {
 		attest(() => {
-			// const s = scope({
-			//     a: { a: ["boolean", "=>", (data) => `${data}`] },
-			//     b: { a: ["boolean", "=>", (data) => `${data}!!!`] },
-			//     c: "a&b"
-			// }).compile()
-		}).throws("At a: Intersection of morphs results in an unsatisfiable type")
+			scope({
+				a: { a: ["boolean", "=>", (data) => `${data}`] },
+				b: { a: ["boolean", "=>", (data) => `${data}!!!`] },
+				c: "a&b"
+			}).export()
+		}).throws.snap("ParseError: Invalid intersection of morphs")
 	})
 	it("deep undiscriminated union", () => {
 		attest(() => {
