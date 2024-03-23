@@ -85,9 +85,11 @@ describe("morph", () => {
 		const { out } = types.mapToLengths(["1", "22", "333"])
 		attest<number[] | undefined>(out).equals([1, 2, 3])
 	})
-	it("object inference", () => {
-		const t = type([{ a: "string" }, "=>", (data) => `${data}`])
-		attest<Type<(In: { a: string }) => Out<string>>>(t)
+	it("object to string", () => {
+		const t = type([{ a: "string" }, "=>", (data) => JSON.stringify(data)])
+		const { data, out } = t({ a: "foo" })
+		attest<{ a: string } | undefined>(data).snap({ a: "foo" })
+		attest<string | undefined>(out).snap('{"a":"foo"}')
 	})
 	it("intersection", () => {
 		const $ = scope({
@@ -343,24 +345,24 @@ describe("morph", () => {
 				.or("'foo'")
 		).throws(writeUndiscriminableMorphUnionMessage("/"))
 	})
-	// it("problem not included in return", () => {
-	// 	const parsedInt = type([
-	// 		"string",
-	// 		"=>",
-	// 		(s, errors) => {
-	// 			const result = parseInt(s)
-	// 			if (Number.isNaN(result)) {
-	// 				return errors.mustBe("an integer string", s, [])
-	// 			}
-	// 			return result
-	// 		}
-	// 	])
-	// 	attest<Type<(In: string) => Out<number>>>(parsedInt)
-	// 	attest(parsedInt("5").out).snap(5)
-	// 	attest(parsedInt("five").errors?.summary).snap(
-	// 		"must be an integer string (was 'five')"
-	// 	)
-	// })
+	it("ArkTypeError not included in return", () => {
+		const parsedInt = type([
+			"string",
+			"=>",
+			(s, ctx) => {
+				const result = parseInt(s)
+				if (Number.isNaN(result)) {
+					return ctx.error("an integer string")
+				}
+				return result
+			}
+		])
+		attest<Type<(In: string) => Out<number>>>(parsedInt)
+		attest(parsedInt("5").out).snap(5)
+		attest(parsedInt("five").errors?.summary).snap(
+			'must be an integer string (was "five")'
+		)
+	})
 	it("nullable return", () => {
 		const toNullableNumber = type(["string", "=>", (s) => s.length || null])
 		attest<Type<(In: string) => Out<number | null>>>(toNullableNumber)
