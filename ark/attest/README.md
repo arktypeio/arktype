@@ -50,7 +50,7 @@ export const teardown = teardown
 `package.json`
 
 ```json
-mocha: {
+"mocha": {
 	"require": "./setupMocha.ts"
 }
 ```
