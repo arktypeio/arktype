@@ -2,7 +2,8 @@ import { attest } from "@arktype/attest"
 import { reference, type equals } from "@arktype/util"
 import { type, type Type } from "arktype"
 import { describe } from "mocha"
-import type { of, predicate, predicate } from "../constraints/ast.js"
+import type { of, predicate, string } from "../constraints/ast.js"
+import type { Ark } from "../keywords/ark.js"
 import type { Out } from "../types/morph.js"
 
 describe("narrow", () => {
@@ -80,7 +81,7 @@ describe("narrow", () => {
 			(s, ctx) =>
 				s === [...s].reverse().join("") ? true : ctx.invalid("a palindrome")
 		])
-		attest<Type<string>>(palindrome)
+		attest<Type<string.narrowed>>(palindrome)
 		attest(palindrome("dad").out).snap("dad")
 		attest(palindrome("david").errors?.summary).snap(
 			'must be a palindrome (was "david")'
@@ -90,7 +91,8 @@ describe("narrow", () => {
 		const t = type("string")
 			.morph((s) => s.length)
 			.narrow((n): n is 5 => n === 5)
-		attest<Type<(In: string) => Out<of<5> & predicate>>>(t)
+
+		attest<Type<(In: string) => Out<of<5, predicate>>, Ark>>(t)
 	})
 	it("expression", () => {
 		const t = type("string", ":", (s): s is `f${string}` => s[0] === "f")

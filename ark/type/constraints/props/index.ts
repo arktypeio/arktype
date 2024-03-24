@@ -46,7 +46,7 @@ export class IndexNode extends BaseConstraint<IndexDeclaration> {
 				},
 				value: {
 					child: true,
-					parse: (schema, ctx) => ctx.$.node(schema)
+					parse: (schema, ctx) => ctx.$.node(schema) as Type
 				}
 			},
 			normalize: (schema) => schema,

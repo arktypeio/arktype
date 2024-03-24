@@ -6,7 +6,7 @@ import type {
 	TraverseAllows,
 	TraverseApply
 } from "../shared/traversal.js"
-import type { of } from "./ast.js"
+import type { constrain, of } from "./ast.js"
 import { BasePrimitiveConstraint } from "./constraint.js"
 
 export interface PredicateInner<rule extends Predicate<any> = Predicate<any>>
@@ -96,6 +96,7 @@ export type inferNarrow<In, predicate> = predicate extends (
 	data: any,
 	...args: any[]
 ) => data is infer narrowed
-	? // TODO: preserve constraints
-	  of<narrowed> & { ":": true }
-	: In
+	? In extends of<unknown, infer constraints>
+		? constrain<of<narrowed, constraints>, "predicate", any>
+		: constrain<narrowed, "predicate", any>
+	: constrain<In, "predicate", any>

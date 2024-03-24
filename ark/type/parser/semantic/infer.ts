@@ -1,11 +1,11 @@
 import type { BigintLiteral, List, NumberLiteral } from "@arktype/util"
 import type {
+	Date,
 	DateLiteral,
 	LimitLiteral,
 	RegexLiteral,
 	constrain,
-	of,
-	regex
+	string
 } from "../../constraints/ast.js"
 import type {
 	UnparsedScope,
@@ -16,11 +16,7 @@ import type { inferIntersection } from "../../shared/intersections.js"
 import type { GenericProps } from "../../type.js"
 import type { distillIn } from "../../types/morph.js"
 import type { inferDefinition } from "../definition.js"
-import type {
-	Comparator,
-	MaxComparator,
-	MinComparator
-} from "../string/reduce/shared.js"
+import type { Comparator, MinComparator } from "../string/reduce/shared.js"
 import type { StringLiteral } from "../string/shift/operand/enclosed.js"
 
 export type inferAstRoot<ast, $, args> = inferConstrainableAst<ast, $, args>
@@ -93,25 +89,26 @@ export type constrainBound<
 	constrainableIn,
 	comparator extends Comparator,
 	limit
-> = distillIn<constrainableIn> extends number
-	? comparator extends MinComparator
-		? constrain<constrainableIn, "min", limit & number>
-		: comparator extends MaxComparator
-		? constrain<constrainableIn, "max", limit & number>
-		: constrain<constrainableIn, "exactLength", limit & number>
-	: distillIn<constrainableIn> extends string
-	? comparator extends MinComparator
-		? constrain<constrainableIn, "minLength", limit & number>
-		: comparator extends MaxComparator
-		? constrain<constrainableIn, "maxLength", limit & number>
-		: constrain<constrainableIn, "exactLength", limit & number>
-	: distillIn<constrainableIn> extends Date
-	? comparator extends MinComparator
-		? constrain<constrainableIn, "after", limit & string>
-		: comparator extends MaxComparator
-		? constrain<constrainableIn, "before", limit & string>
-		: inferIntersection<constrainableIn, Date>
-	: never
+> = constrain<
+	constrainableIn,
+	distillIn<constrainableIn> extends infer In
+		? In extends number
+			? comparator extends MinComparator
+				? "min"
+				: "max"
+			: In extends string | List
+			? comparator extends MinComparator
+				? "minLength"
+				: "maxLength"
+			: comparator extends MinComparator
+			? "after"
+			: "before"
+		: never,
+	{
+		rule: limit & number
+		exclusive: comparator extends ">" | "<" ? true : false
+	}
+>
 
 export type PrefixOperator = "keyof" | "instanceof" | "===" | "node"
 
@@ -143,10 +140,10 @@ export type inferTerminal<token, $, args> = token extends keyof args | keyof $
 	? value
 	: token extends BigintLiteral<infer value>
 	? value
-	: token extends RegexLiteral
-	? of<string> & regex<token>
-	: token extends DateLiteral
-	? of<Date> //& evaluate<constraints & { [_ in token]: true }>
+	: token extends RegexLiteral<infer source>
+	? string.matching<source>
+	: token extends DateLiteral<infer source>
+	? Date.literal<source>
 	: // doing this last allows us to infer never if it isn't valid rather than check
 	  // if it's a valid submodule reference ahead of time
 	  tryInferSubmoduleReference<$, token>

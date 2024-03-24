@@ -212,22 +212,22 @@ export type includesMorphs<t> = [
 type distillRecurse<
 	t,
 	io extends "in" | "out",
-	constraints extends "base" | "constrainable"
+	distilledKind extends "base" | "constrainable"
 > = unknown extends t
 	? unknown
 	: t extends MorphAst<infer i, infer o>
 	? io extends "in"
 		? i
 		: o
-	: t extends of<infer base>
-	? constraints extends "base"
-		? distillRecurse<base, io, constraints>
+	: t extends of<infer base, any>
+	? distilledKind extends "base"
+		? distillRecurse<base, io, distilledKind>
 		: t
 	: t extends TerminallyInferredObjectKind | Primitive
 	? t
 	: t extends List
-	? distillArray<t, io, constraints, []>
-	: { [k in keyof t]: distillRecurse<t[k], io, constraints> }
+	? distillArray<t, io, distilledKind, []>
+	: { [k in keyof t]: distillRecurse<t[k], io, distilledKind> }
 
 type distillArray<
 	t extends List,

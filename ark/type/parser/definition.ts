@@ -16,7 +16,7 @@ import {
 	type optionalKeyOf,
 	type requiredKeyOf
 } from "@arktype/util"
-import type { of, regex } from "../constraints/ast.js"
+import type { string } from "../constraints/ast.js"
 import type { type } from "../keywords/ark.js"
 import type { ParseContext } from "../scope.js"
 import type { Type } from "../types/type.js"
@@ -76,7 +76,7 @@ export type inferDefinition<def, $, args> = isAny<def> extends true
 	: def extends List
 	? inferTuple<def, $, args>
 	: def extends RegExp
-	? of<string> & regex<string>
+	? string.matching<string>
 	: def extends object
 	? inferObjectLiteral<def, $, args>
 	: never
