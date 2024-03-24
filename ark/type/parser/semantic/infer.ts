@@ -18,7 +18,6 @@ import type { distillIn } from "../../types/morph.js"
 import type { inferDefinition } from "../definition.js"
 import type {
 	Comparator,
-	InvertedComparators,
 	MaxComparator,
 	MinComparator
 } from "../string/reduce/shared.js"
