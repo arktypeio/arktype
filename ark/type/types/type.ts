@@ -5,7 +5,7 @@ import {
 	type conform
 } from "@arktype/util"
 import { BaseNode, type Node } from "../base.js"
-import type { constrain, schemaToConstraint } from "../constraints/ast.js"
+import type { constrain } from "../constraints/ast.js"
 import {
 	throwInvalidOperandError,
 	type PrimitiveConstraintKind
@@ -29,7 +29,7 @@ import type { IntersectionNode, constraintKindOf } from "./intersection.js"
 import type {
 	Morph,
 	Out,
-	extractOut,
+	constrainableOutOf,
 	includesMorphs,
 	inferMorphOut
 } from "./morph.js"
@@ -162,7 +162,7 @@ export abstract class BaseType<
 		(In: this["in"][typeof inferred]) => Out<
 			// TODO: validate overlapping
 			// inferMorphOut<ReturnType<morph>> &
-			extractOut<inferTypeRoot<def, $>>
+			constrainableOutOf<inferTypeRoot<def, $>>
 		>,
 		$
 	>
@@ -186,7 +186,7 @@ export abstract class BaseType<
 	}
 
 	// TODO: based on below, should maybe narrow morph output if used after
-	narrow<def extends Predicate<extractOut<t>>>(
+	narrow<def extends Predicate<constrainableOutOf<t>>>(
 		def: def
 	): Type<
 		includesMorphs<t> extends true

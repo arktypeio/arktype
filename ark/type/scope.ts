@@ -68,7 +68,7 @@ import {
 	type GenericProps,
 	type TypeParser
 } from "./type.js"
-import type { extractIn, extractOut } from "./types/morph.js"
+import type { constrainableInOf, constrainableOutOf } from "./types/morph.js"
 import { BaseType, type Type } from "./types/type.js"
 import type { UnionNode } from "./types/union.js"
 import type { UnitNode } from "./types/unit.js"
@@ -346,8 +346,8 @@ export type PrimitiveKeywords = typeof tsPrimitiveKeywords &
 	typeof internalPrimitiveKeywords
 
 export class Scope<r extends Resolutions = any> {
-	declare infer: extractOut<r["exports"]>
-	declare inferIn: extractIn<r["exports"]>
+	declare infer: constrainableOutOf<r["exports"]>
+	declare inferIn: constrainableInOf<r["exports"]>
 
 	readonly config: ArkConfig
 	readonly resolvedConfig: ResolvedArkConfig

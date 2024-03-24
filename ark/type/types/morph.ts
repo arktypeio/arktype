@@ -159,11 +159,11 @@ export class MorphNode<t = any, $ = any> extends BaseType<
 		js.line(js.invoke(this.in))
 	}
 
-	override get in(): Node<MorphChildKind, extractIn<t>> {
+	override get in(): Node<MorphChildKind, constrainableInOf<t>> {
 		return this.inner.in
 	}
 
-	override get out(): Node<MorphChildKind, extractOut<t>> {
+	override get out(): Node<MorphChildKind, constrainableOutOf<t>> {
 		return this.inner.out ?? this.$.keywords.unknown
 	}
 
@@ -189,12 +189,20 @@ export type distill<
 		: result
 	: never
 
-export type extractIn<t> = includesMorphs<t> extends true
-	? distillRecurse<t, "in", "constrained">
+export type inOf<t> = includesMorphs<t> extends true
+	? distillRecurse<t, "in", "base">
 	: t
 
-export type extractOut<t> = includesMorphs<t> extends true
-	? distillRecurse<t, "out", "constrained">
+export type outOf<t> = includesMorphs<t> extends true
+	? distillRecurse<t, "out", "base">
+	: t
+
+export type constrainableInOf<t> = includesMorphs<t> extends true
+	? distillRecurse<t, "in", "constrainable">
+	: t
+
+export type constrainableOutOf<t> = includesMorphs<t> extends true
+	? distillRecurse<t, "out", "constrainable">
 	: t
 
 export type includesMorphs<t> = [
@@ -214,7 +222,7 @@ export type includesMorphs<t> = [
 type distillRecurse<
 	t,
 	io extends "in" | "out",
-	constraints extends "base" | "constrained"
+	constraints extends "base" | "constrainable"
 > = unknown extends t
 	? unknown
 	: t extends MorphAst<infer i, infer o>
@@ -234,7 +242,7 @@ type distillRecurse<
 type distillArray<
 	t extends List,
 	io extends "in" | "out",
-	constraints extends "base" | "constrained",
+	constraints extends "base" | "constrainable",
 	prefix extends List
 > = t extends readonly [infer head, ...infer tail]
 	? distillArray<
@@ -248,7 +256,7 @@ type distillArray<
 type distillPostfix<
 	t extends List,
 	io extends "in" | "out",
-	constraints extends "base" | "constrained",
+	constraints extends "base" | "constrainable",
 	postfix extends List = []
 > = t extends readonly [...infer init, infer last]
 	? distillPostfix<

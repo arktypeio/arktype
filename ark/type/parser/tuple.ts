@@ -13,7 +13,7 @@ import {
 } from "@arktype/util"
 import type { Node } from "../base.js"
 import type { Predicate, inferNarrow } from "../constraints/predicate.js"
-import type { MutableInner, Schema } from "../kinds.js"
+import type { MutableInner } from "../kinds.js"
 import type { instantiateSchema, validateSchema } from "../schema.js"
 import type { ParseContext } from "../scope.js"
 import type { BaseMeta } from "../shared/declare.js"
@@ -21,10 +21,9 @@ import type { inferIntersection } from "../shared/intersections.js"
 import { makeRootAndArrayPropertiesMutable } from "../shared/utils.js"
 import type {
 	Morph,
-	MorphChildKind,
 	Out,
-	extractIn,
-	extractOut,
+	constrainableInOf,
+	constrainableOutOf,
 	inferMorphOut
 } from "../types/morph.js"
 import type { Type } from "../types/type.js"
@@ -429,9 +428,9 @@ export type validateInfixExpression<
 				: def[1] extends "&"
 				? validateDefinition<def[2], $, args>
 				: def[1] extends ":"
-				? Predicate<extractIn<inferDefinition<def[0], $, args>>>
+				? Predicate<constrainableInOf<inferDefinition<def[0], $, args>>>
 				: def[1] extends "=>"
-				? Morph<extractOut<inferDefinition<def[0], $, args>>, unknown>
+				? Morph<constrainableOutOf<inferDefinition<def[0], $, args>>, unknown>
 				: def[1] extends "@"
 				? BaseMeta | string
 				: validateDefinition<def[2], $, args>
@@ -510,7 +509,7 @@ export const writeMalformedFunctionalExpressionMessage = (
 
 export type parseMorph<inDef, morph, $, args> = morph extends Morph
 	? (
-			In: extractIn<inferDefinition<inDef, $, args>>
+			In: constrainableInOf<inferDefinition<inDef, $, args>>
 	  ) => Out<inferMorphOut<ReturnType<morph>>>
 	: never
 

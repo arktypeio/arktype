@@ -16,7 +16,11 @@ import type {
 } from "./parser/tuple.js"
 import type { Scope, bindThis } from "./scope.js"
 import type { BaseMeta } from "./shared/declare.js"
-import type { Morph, extractIn, extractOut } from "./types/morph.js"
+import type {
+	Morph,
+	constrainableInOf,
+	constrainableOutOf
+} from "./types/morph.js"
 import type { Type } from "./types/type.js"
 import { arkKind } from "./util.js"
 
@@ -41,10 +45,10 @@ export type TypeParser<$> = {
 			? conform<rest, readonly Constructor[]>
 			: one extends TupleInfixOperator
 			? one extends ":"
-				? [Predicate<extractIn<inferTypeRoot<zero, $>>>]
+				? [Predicate<constrainableInOf<inferTypeRoot<zero, $>>>]
 				: one extends "=>"
 				? // TODO: centralize
-				  [Morph<extractOut<inferTypeRoot<zero, $>>, unknown>]
+				  [Morph<constrainableOutOf<inferTypeRoot<zero, $>>, unknown>]
 				: one extends "@"
 				? [string | BaseMeta]
 				: [validateTypeRoot<rest[0], $>]

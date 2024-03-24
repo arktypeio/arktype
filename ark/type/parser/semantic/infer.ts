@@ -7,7 +7,6 @@ import type {
 	of,
 	regex
 } from "../../constraints/ast.js"
-import type { NumericallyBoundable } from "../../constraints/refinements/range.js"
 import type {
 	UnparsedScope,
 	resolve,
@@ -15,24 +14,21 @@ import type {
 } from "../../scope.js"
 import type { inferIntersection } from "../../shared/intersections.js"
 import type { GenericProps } from "../../type.js"
-import type { distill } from "../../types/morph.js"
+import type { inOf } from "../../types/morph.js"
 import type { inferDefinition } from "../definition.js"
 import type {
 	Comparator,
+	InvertedComparators,
 	MaxComparator,
 	MinComparator
 } from "../string/reduce/shared.js"
 import type { StringLiteral } from "../string/shift/operand/enclosed.js"
 
-export type inferAstRoot<ast, $, args> = inferAst<ast, $, args>
+export type inferAstRoot<ast, $, args> = inferConstrainableAst<ast, $, args>
 
-export type inferAstBase<ast, $, args> = distill<
-	inferAstRoot<ast, $, args>,
-	"in",
-	"base"
->
+export type inferAstIn<ast, $, args> = inOf<inferAstRoot<ast, $, args>>
 
-export type inferAst<ast, $, args> = ast extends List
+export type inferConstrainableAst<ast, $, args> = ast extends List
 	? inferExpression<ast, $, args>
 	: inferTerminal<ast, $, args>
 
@@ -58,7 +54,7 @@ export type inferExpression<
 				// Using keyof g["parameters"] & number here results in the element types
 				// being mixed- another reason TS should not have separate `${number}` and number keys!
 				[i in keyof ast[0]["parameters"] &
-					`${number}` as ast[0]["parameters"][i]]: inferAst<
+					`${number}` as ast[0]["parameters"][i]]: inferConstrainableAst<
 					ast[2][i & keyof ast[2]],
 					$,
 					args
@@ -66,31 +62,60 @@ export type inferExpression<
 			}
 	  >
 	: ast[1] extends "[]"
-	? inferAst<ast[0], $, args>[]
+	? inferConstrainableAst<ast[0], $, args>[]
 	: ast[1] extends "|"
-	? inferAst<ast[0], $, args> | inferAst<ast[2], $, args>
+	?
+			| inferConstrainableAst<ast[0], $, args>
+			| inferConstrainableAst<ast[2], $, args>
 	: ast[1] extends "&"
-	? inferIntersection<inferAst<ast[0], $, args>, inferAst<ast[2], $, args>>
+	? inferIntersection<
+			inferConstrainableAst<ast[0], $, args>,
+			inferConstrainableAst<ast[2], $, args>
+	  >
 	: ast[1] extends Comparator
 	? ast[0] extends LimitLiteral
-		? constrain<inferAst<ast[2], $, args>, "min", ast[0] & number>
-		: constrain<
-				inferAst<ast[0], $, args>,
-				ast[1] extends MinComparator ? "min" : "max",
+		? constrainBound<
+				inferConstrainableAst<ast[2], $, args>,
+				InvertedComparators[ast[1]],
+				ast[0]
+		  >
+		: constrainBound<
+				inferConstrainableAst<ast[0], $, args>,
+				ast[1],
 				ast[2] & number
 		  >
 	: ast[1] extends "%"
-	? constrain<inferAst<ast[0], $, args>, "divisor", ast[2] & number>
+	? constrain<
+			inferConstrainableAst<ast[0], $, args>,
+			"divisor",
+			ast[2] & number
+	  >
 	: ast[0] extends "keyof"
-	? keyof inferAst<ast[1], $, args>
+	? keyof inferConstrainableAst<ast[1], $, args>
 	: never
 
-export type constrainBound<t, comparator, limit> = t extends Date
+export type constrainBound<
+	constrainableIn,
+	comparator extends Comparator,
+	limit
+> = inOf<constrainableIn> extends number
 	? comparator extends MinComparator
-		? constrain<t, "after", limit & string>
+		? constrain<constrainableIn, "min", limit & number>
 		: comparator extends MaxComparator
-		? constrain<t, "before", limit & string>
-		: inferIntersection<t, Date>
+		? constrain<constrainableIn, "max", limit & number>
+		: constrain<constrainableIn, "exactLength", limit & number>
+	: inOf<constrainableIn> extends string
+	? comparator extends MinComparator
+		? constrain<constrainableIn, "minLength", limit & number>
+		: comparator extends MaxComparator
+		? constrain<constrainableIn, "maxLength", limit & number>
+		: constrain<constrainableIn, "exactLength", limit & number>
+	: inOf<constrainableIn> extends Date
+	? comparator extends MinComparator
+		? constrain<constrainableIn, "after", limit & string>
+		: comparator extends MaxComparator
+		? constrain<constrainableIn, "before", limit & string>
+		: inferIntersection<constrainableIn, Date>
 	: never
 
 export type PrefixOperator = "keyof" | "instanceof" | "===" | "node"
