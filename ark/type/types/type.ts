@@ -29,7 +29,7 @@ import type { IntersectionNode, constraintKindOf } from "./intersection.js"
 import type {
 	Morph,
 	Out,
-	constrainableOutOf,
+	distillConstrainableOut,
 	includesMorphs,
 	inferMorphOut
 } from "./morph.js"
@@ -162,7 +162,7 @@ export abstract class BaseType<
 		(In: this["in"][typeof inferred]) => Out<
 			// TODO: validate overlapping
 			// inferMorphOut<ReturnType<morph>> &
-			constrainableOutOf<inferTypeRoot<def, $>>
+			distillConstrainableOut<inferTypeRoot<def, $>>
 		>,
 		$
 	>
@@ -186,7 +186,7 @@ export abstract class BaseType<
 	}
 
 	// TODO: based on below, should maybe narrow morph output if used after
-	narrow<def extends Predicate<constrainableOutOf<t>>>(
+	narrow<def extends Predicate<distillConstrainableOut<t>>>(
 		def: def
 	): Type<
 		includesMorphs<t> extends true

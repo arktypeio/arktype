@@ -2,8 +2,7 @@ import { attest } from "@arktype/attest"
 import { reference, type equals } from "@arktype/util"
 import { type, type Type } from "arktype"
 import { describe } from "mocha"
-import type { of } from "../constraints/ast.js"
-import type { predicate } from "../constraints/predicate.js"
+import type { of, predicate, predicate } from "../constraints/ast.js"
 import type { Out } from "../types/morph.js"
 
 describe("narrow", () => {

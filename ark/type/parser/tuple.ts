@@ -22,8 +22,8 @@ import { makeRootAndArrayPropertiesMutable } from "../shared/utils.js"
 import type {
 	Morph,
 	Out,
-	constrainableInOf,
-	constrainableOutOf,
+	distillConstrainableIn,
+	distillConstrainableOut,
 	inferMorphOut
 } from "../types/morph.js"
 import type { Type } from "../types/type.js"
@@ -428,9 +428,12 @@ export type validateInfixExpression<
 				: def[1] extends "&"
 				? validateDefinition<def[2], $, args>
 				: def[1] extends ":"
-				? Predicate<constrainableInOf<inferDefinition<def[0], $, args>>>
+				? Predicate<distillConstrainableIn<inferDefinition<def[0], $, args>>>
 				: def[1] extends "=>"
-				? Morph<constrainableOutOf<inferDefinition<def[0], $, args>>, unknown>
+				? Morph<
+						distillConstrainableOut<inferDefinition<def[0], $, args>>,
+						unknown
+				  >
 				: def[1] extends "@"
 				? BaseMeta | string
 				: validateDefinition<def[2], $, args>
@@ -509,7 +512,7 @@ export const writeMalformedFunctionalExpressionMessage = (
 
 export type parseMorph<inDef, morph, $, args> = morph extends Morph
 	? (
-			In: constrainableInOf<inferDefinition<inDef, $, args>>
+			In: distillConstrainableIn<inferDefinition<inDef, $, args>>
 	  ) => Out<inferMorphOut<ReturnType<morph>>>
 	: never
 

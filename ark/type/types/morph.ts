@@ -159,11 +159,11 @@ export class MorphNode<t = any, $ = any> extends BaseType<
 		js.line(js.invoke(this.in))
 	}
 
-	override get in(): Node<MorphChildKind, constrainableInOf<t>> {
+	override get in(): Node<MorphChildKind, distillConstrainableIn<t>> {
 		return this.inner.in
 	}
 
-	override get out(): Node<MorphChildKind, constrainableOutOf<t>> {
+	override get out(): Node<MorphChildKind, distillConstrainableOut<t>> {
 		return this.inner.out ?? this.$.keywords.unknown
 	}
 
@@ -179,29 +179,19 @@ export type inferMorphOut<out> = out extends ArkResult<unknown, infer innerOut>
 		: innerOut
 	: Exclude<out, ArkTypeError>
 
-export type distill<
-	t,
-	io extends "in" | "out",
-	constraints extends "base" | "constrained"
-> = distillRecurse<t, io, constraints> extends infer result
-	? [t, result] extends [result, t]
-		? t
-		: result
-	: never
-
-export type inOf<t> = includesMorphs<t> extends true
+export type distillIn<t> = includesMorphs<t> extends true
 	? distillRecurse<t, "in", "base">
 	: t
 
-export type outOf<t> = includesMorphs<t> extends true
+export type distillOut<t> = includesMorphs<t> extends true
 	? distillRecurse<t, "out", "base">
 	: t
 
-export type constrainableInOf<t> = includesMorphs<t> extends true
+export type distillConstrainableIn<t> = includesMorphs<t> extends true
 	? distillRecurse<t, "in", "constrainable">
 	: t
 
-export type constrainableOutOf<t> = includesMorphs<t> extends true
+export type distillConstrainableOut<t> = includesMorphs<t> extends true
 	? distillRecurse<t, "out", "constrainable">
 	: t
 

@@ -41,7 +41,7 @@ import type {
 	BaseNodeDeclaration
 } from "./shared/declare.js"
 import { Disjoint } from "./shared/disjoint.js"
-import { type ArkResult } from "./shared/errors.js"
+import type { ArkResult } from "./shared/errors.js"
 import {
 	basisKinds,
 	constraintKinds,
@@ -71,10 +71,10 @@ import type { DomainNode } from "./types/domain.js"
 import type { IntersectionNode } from "./types/intersection.js"
 import type {
 	MorphNode,
-	constrainableInOf,
-	constrainableOutOf,
-	inOf,
-	outOf
+	distillConstrainableIn,
+	distillConstrainableOut,
+	distillIn,
+	distillOut
 } from "./types/morph.js"
 import type { ProtoNode } from "./types/proto.js"
 import type { Type } from "./types/type.js"
@@ -127,7 +127,7 @@ export abstract class BaseNode<
 	t,
 	d extends BaseNodeDeclaration
 > extends Callable<
-	(data: unknown) => ArkResult<inOf<t>, outOf<t>>,
+	(data: unknown) => ArkResult<distillIn<t>, distillOut<t>>,
 	BaseAttachmentsOf<d>
 > {
 	constructor(public attachments: BaseAttachments) {
@@ -146,7 +146,7 @@ export abstract class BaseNode<
 		this.contributesReferences = Object.values(this.contributesReferencesByName)
 	}
 
-	declare infer: outOf<t>;
+	declare infer: distillOut<t>;
 	declare [inferred]: t;
 	readonly [arkKind] = "node"
 
@@ -239,13 +239,13 @@ export abstract class BaseNode<
 	abstract expression: string
 
 	private inCache?: UnknownNode;
-	get in(): Node<ioKindOf<d["kind"]>, constrainableInOf<t>> {
+	get in(): Node<ioKindOf<d["kind"]>, distillConstrainableIn<t>> {
 		this.inCache ??= this.getIo("in")
 		return this.inCache as never
 	}
 
 	private outCache?: UnknownNode
-	get out(): Node<ioKindOf<d["kind"]>, constrainableOutOf<t>> {
+	get out(): Node<ioKindOf<d["kind"]>, distillConstrainableOut<t>> {
 		this.outCache ??= this.getIo("out")
 		return this.outCache as never
 	}

@@ -108,7 +108,7 @@ export namespace number {
 
 	export type predicate = of<number> & { predicate: 1 }
 
-	export type is<constraints> = of<number> & constraints
+	export type all<constraints> = of<number> & constraints
 
 	export type constrain<
 		kind extends PrimitiveConstraintKind,
@@ -141,7 +141,7 @@ export namespace string {
 
 	export type predicate = of<string> & { predicate: 1 }
 
-	export type is<constraints> = of<string> & constraints
+	export type all<constraints> = of<string> & constraints
 
 	export type constrain<
 		kind extends PrimitiveConstraintKind,
@@ -164,9 +164,9 @@ export type constrain<
 > = schemaToConstraint<kind, schema> extends infer constraint
 	? t extends of<infer base> & infer constraints
 		? [number, base] extends [base, number]
-			? number.is<constraint & constraints>
+			? number.all<constraint & constraints>
 			: [string, base] extends [base, string]
-			? string.is<constraint & constraints>
+			? string.all<constraint & constraints>
 			: of<base> & constraints & constraint
 		: [number, t] extends [t, number]
 		? number.constrain<kind, schema>

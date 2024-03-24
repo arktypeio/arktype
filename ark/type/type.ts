@@ -18,8 +18,8 @@ import type { Scope, bindThis } from "./scope.js"
 import type { BaseMeta } from "./shared/declare.js"
 import type {
 	Morph,
-	constrainableInOf,
-	constrainableOutOf
+	distillConstrainableIn,
+	distillConstrainableOut
 } from "./types/morph.js"
 import type { Type } from "./types/type.js"
 import { arkKind } from "./util.js"
@@ -45,10 +45,10 @@ export type TypeParser<$> = {
 			? conform<rest, readonly Constructor[]>
 			: one extends TupleInfixOperator
 			? one extends ":"
-				? [Predicate<constrainableInOf<inferTypeRoot<zero, $>>>]
+				? [Predicate<distillConstrainableIn<inferTypeRoot<zero, $>>>]
 				: one extends "=>"
 				? // TODO: centralize
-				  [Morph<constrainableOutOf<inferTypeRoot<zero, $>>, unknown>]
+				  [Morph<distillConstrainableOut<inferTypeRoot<zero, $>>, unknown>]
 				: one extends "@"
 				? [string | BaseMeta]
 				: [validateTypeRoot<rest[0], $>]

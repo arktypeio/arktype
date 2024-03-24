@@ -14,7 +14,7 @@ import type {
 } from "../../scope.js"
 import type { inferIntersection } from "../../shared/intersections.js"
 import type { GenericProps } from "../../type.js"
-import type { inOf } from "../../types/morph.js"
+import type { distillIn } from "../../types/morph.js"
 import type { inferDefinition } from "../definition.js"
 import type {
 	Comparator,
@@ -26,7 +26,7 @@ import type { StringLiteral } from "../string/shift/operand/enclosed.js"
 
 export type inferAstRoot<ast, $, args> = inferConstrainableAst<ast, $, args>
 
-export type inferAstIn<ast, $, args> = inOf<inferAstRoot<ast, $, args>>
+export type inferAstIn<ast, $, args> = distillIn<inferAstRoot<ast, $, args>>
 
 export type inferConstrainableAst<ast, $, args> = ast extends List
 	? inferExpression<ast, $, args>
@@ -74,11 +74,7 @@ export type inferExpression<
 	  >
 	: ast[1] extends Comparator
 	? ast[0] extends LimitLiteral
-		? constrainBound<
-				inferConstrainableAst<ast[2], $, args>,
-				InvertedComparators[ast[1]],
-				ast[0]
-		  >
+		? constrainBound<inferConstrainableAst<ast[2], $, args>, ast[1], ast[0]>
 		: constrainBound<
 				inferConstrainableAst<ast[0], $, args>,
 				ast[1],
@@ -98,19 +94,19 @@ export type constrainBound<
 	constrainableIn,
 	comparator extends Comparator,
 	limit
-> = inOf<constrainableIn> extends number
+> = distillIn<constrainableIn> extends number
 	? comparator extends MinComparator
 		? constrain<constrainableIn, "min", limit & number>
 		: comparator extends MaxComparator
 		? constrain<constrainableIn, "max", limit & number>
 		: constrain<constrainableIn, "exactLength", limit & number>
-	: inOf<constrainableIn> extends string
+	: distillIn<constrainableIn> extends string
 	? comparator extends MinComparator
 		? constrain<constrainableIn, "minLength", limit & number>
 		: comparator extends MaxComparator
 		? constrain<constrainableIn, "maxLength", limit & number>
 		: constrain<constrainableIn, "exactLength", limit & number>
-	: inOf<constrainableIn> extends Date
+	: distillIn<constrainableIn> extends Date
 	? comparator extends MinComparator
 		? constrain<constrainableIn, "after", limit & string>
 		: comparator extends MaxComparator
