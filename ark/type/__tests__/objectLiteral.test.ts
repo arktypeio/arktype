@@ -3,61 +3,82 @@ import { printable, reference } from "@arktype/util"
 import { scope, type } from "arktype"
 import { writeInvalidPropertyKeyMessage } from "../constraints/props/index.js"
 import { writeUnboundableMessage } from "../constraints/refinements/range.js"
+import { node } from "../keywords/ark.js"
 import { writeInvalidSpreadTypeMessage } from "../parser/objectLiteral.js"
 import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclosed.js"
 
 describe("object literal", () => {
-	it("empty", () => {
-		const o = type({})
-		attest(o.json).equals(type("object").json)
-	})
-	it("required", () => {
-		const o = type({ a: "string", b: "number" })
-		attest<{ a: string; b: number }>(o.infer)
-		attest(o.json).snap({
-			domain: "object",
-			prop: [
-				{ key: "a", value: "string" },
-				{ key: "b", value: "number" }
-			]
+	describe("named props", () => {
+		it("empty", () => {
+			const o = type({})
+			attest(o.json).equals(type("object").json)
+		})
+		it("required", () => {
+			const o = type({ a: "string", b: "number" })
+			attest<{ a: string; b: number }>(o.infer)
+			attest(o.json).snap({
+				domain: "object",
+				prop: [
+					{ key: "a", value: "string" },
+					{ key: "b", value: "number" }
+				]
+			})
+		})
+		it("optional keys", () => {
+			const o = type({ "a?": "string", b: "number" })
+			attest<{ a?: string; b: number }>(o.infer)
+			attest(o.json).snap({
+				domain: "object",
+				prop: [
+					{ key: "a", optional: true, value: "string" },
+					{ key: "b", value: "number" }
+				]
+			})
+		})
+		it("symbol key", () => {
+			const s = Symbol()
+			const name = reference(s)
+			const t = type({
+				[s]: "string"
+			})
+			attest<{ [s]: string }>(t.infer)
+			attest(t.json).snap({
+				domain: "object",
+				prop: [{ key: name, value: "string" }]
+			})
+		})
+		// it("optional symbol", () => {
+		// 	const s = Symbol()
+		// 	const name = reference(s)
+		// 	const t = type({
+		// 		[optional(s)]: "number"
+		// 	})
+		// 	attest<{ [s]?: number }>(t.infer)
+		// 	attest(t.json).equals({
+		// 		domain: "object",
+		// 		optional: [{ key: name, value: "number" }]
+		// 	})
+		// })
+		it("normalizes prop order", () => {
+			const l = node({
+				domain: "object",
+				prop: [
+					{ key: "a", value: "string" },
+					{ key: "b", value: "number" }
+				]
+			})
+			const r = node({
+				domain: "object",
+				prop: [
+					{ key: "b", value: "number" },
+					{ key: "a", value: "string" }
+				]
+			})
+			attest(l.innerId).equals(r.innerId)
 		})
 	})
-	it("optional keys", () => {
-		const o = type({ "a?": "string", b: "number" })
-		attest<{ a?: string; b: number }>(o.infer)
-		attest(o.json).snap({
-			domain: "object",
-			prop: [
-				{ key: "a", optional: true, value: "string" },
-				{ key: "b", value: "number" }
-			]
-		})
-	})
-	it("symbol key", () => {
-		const s = Symbol()
-		const name = reference(s)
-		const t = type({
-			[s]: "string"
-		})
-		attest<{ [s]: string }>(t.infer)
-		attest(t.json).snap({
-			domain: "object",
-			prop: [{ key: name, value: "string" }]
-		})
-	})
-	// it("optional symbol", () => {
-	// 	const s = Symbol()
-	// 	const name = reference(s)
-	// 	const t = type({
-	// 		[optional(s)]: "number"
-	// 	})
-	// 	attest<{ [s]?: number }>(t.infer)
-	// 	attest(t.json).equals({
-	// 		domain: "object",
-	// 		optional: [{ key: name, value: "number" }]
-	// 	})
-	// })
-	describe("spread syntax", () => {
+
+	describe("spread props", () => {
 		it("within scope", () => {
 			const s = scope({
 				user: { isAdmin: "false", name: "string" },
@@ -149,6 +170,7 @@ describe("object literal", () => {
 			})
 		})
 	})
+
 	it("error in obj that has tuple that writes error at proper path", () => {
 		// @ts-expect-error
 		attest(() => type({ "a?": ["string", ["stringx", "?"]] }))
@@ -285,5 +307,25 @@ describe("object literal", () => {
 	// 	attest(t({ a: 1, b: 2 }).errors?.summary).snap(
 	// 		"a must be a string (was number)\nb must be boolean (was number)"
 	// 	)
+	// })
+
+	// TODO:
+	// it("strict intersection", () => {
+	// 	const T = type(
+	// 		{
+	// 			a: "number",
+	// 			b: "number"
+	// 		},
+	// 		{ keys: "strict" }
+	// 	)
+	// 	const U = type(
+	// 		{
+	// 			a: "number"
+	// 		},
+	// 		{ keys: "strict" }
+	// 	)
+
+	// 	const i = intersection(T, U)
+	// 	//  const i: Type<{ a: number; b: number;}>
 	// })
 })
