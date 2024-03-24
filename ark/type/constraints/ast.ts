@@ -11,14 +11,10 @@ export type DateLiteral<source extends string = string> =
 
 export type Constraints = {
 	divisor?: { [k: number]: 1 }
-	min?: { [k: number]: RangeExclusivity }
-	max?: { [k: number]: RangeExclusivity }
-	minLength?: { [k: number]: RangeExclusivity }
-	maxLength?: { [k: number]: RangeExclusivity }
-	after?: { [k: string]: RangeExclusivity }
-	before?: { [k: string]: RangeExclusivity }
+	min?: { [k: number | string]: 0 | 1 }
+	max?: { [k: number | string]: 0 | 1 }
 	regex?: { [k: string]: 1 }
-	exactLength?: { [k: number]: 1 }
+	length?: { [k: number]: 1 }
 	predicate?: 1
 }
 
@@ -43,44 +39,20 @@ export type intersectConstrainables<l, r> = [l, r] extends [
 
 export type LimitLiteral = number | DateLiteral
 
-export type RangeExclusivity = "exclusive" | "inclusive"
+export type min<rule extends number | string> = { min: { [k in rule]: 0 | 1 } }
 
-export type min<
-	rule extends number,
-	exclusivity extends RangeExclusivity = "inclusive"
-> = { min: { [k in rule]: exclusivity } }
+export type max<rule extends number | string> = { max: { [k in rule]: 0 | 1 } }
 
-export type max<
-	rule extends number,
-	exclusivity extends RangeExclusivity = "inclusive"
-> = { max: { [k in rule]: exclusivity } }
+export type more<rule extends number | string> = { min: { [k in rule]: 0 } }
 
-export type minLength<
-	rule extends number,
-	exclusivity extends RangeExclusivity = "inclusive"
-> = { minLength: { [k in rule]: exclusivity } }
-
-export type maxLength<
-	rule extends number,
-	exclusivity extends RangeExclusivity = "inclusive"
-> = { maxLength: { [k in rule]: exclusivity } }
-
-export type after<
-	rule extends string,
-	exclusivity extends RangeExclusivity = "inclusive"
-> = { after: { [k in rule]: exclusivity } }
-
-export type before<
-	rule extends string,
-	exclusivity extends RangeExclusivity = "inclusive"
-> = { before: { [k in rule]: exclusivity } }
+export type less<rule extends number | string> = { max: { [k in rule]: 0 } }
 
 export type divisor<rule extends number> = {
 	divisor: { [k in rule]: 1 }
 }
 
-export type exactLength<rule extends number> = {
-	exactLength: { [k in rule]: 1 }
+export type length<rule extends number> = {
+	length: { [k in rule]: 1 }
 }
 
 export type regex<rule extends string> = {
@@ -92,21 +64,17 @@ export type predicate = {
 }
 
 export namespace number {
-	export type min<
-		rule extends number,
-		exclusivity extends RangeExclusivity = "inclusive"
-	> = of<number> & { min: { [k in rule]: exclusivity } }
+	export type atLeast<rule extends number> = of<number> & min<rule>
 
-	export type max<
-		rule extends number,
-		exclusivity extends RangeExclusivity = "inclusive"
-	> = of<number> & { max: { [k in rule]: exclusivity } }
+	export type moreThan<rule extends number> = of<number> & more<rule>
 
-	export type divisor<rule extends number> = of<number> & {
-		divisor: { [k in rule]: 1 }
-	}
+	export type atMost<rule extends number> = of<number> & max<rule>
 
-	export type predicate = of<number> & { predicate: 1 }
+	export type lessThan<rule extends number> = of<number> & less<rule>
+
+	export type divisibleBy<rule extends number> = of<number> & divisor<rule>
+
+	export type narrowed = of<number> & predicate
 
 	export type all<constraints> = of<number> & constraints
 
@@ -115,31 +83,31 @@ export namespace number {
 		schema extends Schema<kind>
 	> = normalizePrimitiveConstraintSchema<schema> extends infer rule
 		? kind extends "min"
-			? min<rule & number>
+			? schema extends { exclusive: true }
+				? moreThan<rule & number>
+				: atLeast<rule & number>
 			: kind extends "max"
-			? max<rule & number>
+			? schema extends { exclusive: true }
+				? lessThan<rule & number>
+				: atMost<rule & number>
 			: kind extends "divisor"
-			? divisor<rule & number>
-			: predicate
+			? divisibleBy<rule & number>
+			: narrowed
 		: never
 }
 
 export namespace string {
-	export type minLength<
-		rule extends number,
-		exclusivity extends RangeExclusivity = "inclusive"
-	> = of<string> & { minLength: { [k in rule]: exclusivity } }
+	export type atLeastLength<rule extends number> = of<string> & min<rule>
 
-	export type maxLength<
-		rule extends number,
-		exclusivity extends RangeExclusivity = "inclusive"
-	> = of<string> & { maxLength: { [k in rule]: exclusivity } }
+	export type moreThanLength<rule extends number> = of<string> & more<rule>
 
-	export type regex<rule extends string> = of<string> & {
-		regex: { [k in rule]: 1 }
-	}
+	export type atMostLength<rule extends number> = of<string> & max<rule>
 
-	export type predicate = of<string> & { predicate: 1 }
+	export type lessThanLength<rule extends number> = of<string> & less<rule>
+
+	export type matching<rule extends string> = of<string> & regex<rule>
+
+	export type narrowed = of<string> & predicate
 
 	export type all<constraints> = of<string> & constraints
 
@@ -148,12 +116,16 @@ export namespace string {
 		schema extends Schema<kind>
 	> = normalizePrimitiveConstraintSchema<schema> extends infer rule
 		? kind extends "minLength"
-			? minLength<rule & number>
+			? schema extends { exclusive: true }
+				? moreThanLength<rule & number>
+				: atLeastLength<rule & number>
 			: kind extends "maxLength"
-			? maxLength<rule & number>
+			? schema extends { exclusive: true }
+				? lessThanLength<rule & number>
+				: atMostLength<rule & number>
 			: kind extends "regex"
-			? regex<rule & string>
-			: predicate
+			? matching<rule & string>
+			: narrowed
 		: never
 }
 
@@ -182,30 +154,22 @@ export type normalizePrimitiveConstraintSchema<
 export type schemaToConstraint<
 	kind extends PrimitiveConstraintKind,
 	schema extends Schema<kind>
-> = rawConstraint<{
-	[_ in kind]: normalizePrimitiveConstraintSchema<schema>
-}>
-
-export type ConstraintInput<
-	kind extends PrimitiveConstraintKind = PrimitiveConstraintKind
-> = kind extends unknown
-	? { [_ in kind]: normalizePrimitiveConstraintSchema<Schema<kind>> }
+> = normalizePrimitiveConstraintSchema<schema> extends infer rule
+	? kind extends "regex"
+		? regex<rule & string>
+		: kind extends "divisor"
+		? divisor<rule & number>
+		: kind extends "exactLength"
+		? length<rule & number>
+		: kind extends "min" | "minLength" | "after"
+		? schema extends { exclusive: true }
+			? more<rule & (string | number)>
+			: min<rule & (string | number)>
+		: kind extends "max" | "maxLength" | "before"
+		? schema extends { exclusive: true }
+			? less<rule & (string | number)>
+			: max<rule & (string | number)>
+		: kind extends "predicate"
+		? predicate
+		: {}
 	: never
-
-type ConstraintsByKind<rule> = {
-	divisor: divisor<rule & number>
-	min: min<rule & number>
-	max: max<rule & number>
-	minLength: minLength<rule & number>
-	maxLength: maxLength<rule & number>
-	after: after<rule & string>
-	before: before<rule & string>
-	regex: regex<rule & string>
-	exactLength: exactLength<rule & number>
-	predicate: predicate
-}
-
-type rawConstraint<input> = ConstraintsByKind<input[keyof input]>[keyof input &
-	PrimitiveConstraintKind]
-
-export type constraint<input extends ConstraintInput> = rawConstraint<input>
