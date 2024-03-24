@@ -20,19 +20,55 @@ _Note: This package is still in alpha! Your feedback will help us iterate toward
 
 To use attest's type assertions, you'll need to call our setup/cleanup methods before your first test and after your last test, respectively. This usually involves some kind of globalSetup/globalTeardown config.
 
-For example, in mocha:
+### Vitest
+
+`vitest.config.ts`
 
 ```ts
-import { cleanup, setup } from "@arktype/attest"
+import { defineConfig } from "vitest/config"
 
-export const mochaGlobalSetup = setup
+export default defineConfig({
+	test: {
+		globalSetup: ["setupVitest.ts"]
+	}
+})
+```
 
-export const mochaGlobalTeardown = cleanup
+`setupVitest.ts`
+
+```ts
+import { setup, teardown } from "@arktype/attest"
+
+// config options can be passed here
+export const setup = () => setup({})
+
+export const teardown = teardown
+```
+
+### Mocha
+
+`package.json`
+
+```json
+mocha: {
+	"require": "./setupMocha.ts"
+}
+```
+
+`setupMocha.ts`
+
+```ts
+import { setup, teardown } from "@arktype/attest"
+
+// config options can be passed here
+export const mochaGlobalSetup = () => setup({})
+
+export const mochaGlobalTeardown = teardown
 ```
 
 You should also add `.attest` to your repository's `.gitignore` file.
 
-Bun support is currently pending a [bug in the way their source maps translate to stack traces](https://github.com/oven-sh/bun/issues/7120).
+Bun support is currently pending a [bug in the way their source maps translate to stack traces](https://github.com/oven-sh/bun/issues/7120). If this is a problem for you, please 👍 that issue so they prioritize it!
 
 ## Assertions
 

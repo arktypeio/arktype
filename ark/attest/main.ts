@@ -3,9 +3,9 @@ export { attest } from "./assert/attest.js"
 export { bench } from "./bench/bench.js"
 export { getTypeAssertionsAtPosition } from "./cache/getCachedAssertions.js"
 export type {
+	ArgAssertionData,
 	LinePositionRange,
-	ArgAssertionData as SerializedArgAssertion,
-	TypeAssertionData as SerializedAssertionData,
+	TypeAssertionData,
 	TypeRelationship
 } from "./cache/writeAssertionCache.js"
 export { getDefaultAttestConfig, type AttestConfig } from "./config.js"
