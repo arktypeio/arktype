@@ -45,8 +45,6 @@ export type LimitLiteral = number | DateLiteral
 
 export type RangeExclusivity = "exclusive" | "inclusive"
 
-type Z = number.min<5>
-
 export type min<
 	rule extends number,
 	exclusivity extends RangeExclusivity = "inclusive"
@@ -110,6 +108,8 @@ export namespace number {
 
 	export type predicate = of<number> & { predicate: 1 }
 
+	export type is<constraints> = of<number> & constraints
+
 	export type constrain<
 		kind extends PrimitiveConstraintKind,
 		schema extends Schema<kind>
@@ -124,15 +124,54 @@ export namespace number {
 		: never
 }
 
+export namespace string {
+	export type minLength<
+		rule extends number,
+		exclusivity extends RangeExclusivity = "inclusive"
+	> = of<string> & { minLength: { [k in rule]: exclusivity } }
+
+	export type maxLength<
+		rule extends number,
+		exclusivity extends RangeExclusivity = "inclusive"
+	> = of<string> & { maxLength: { [k in rule]: exclusivity } }
+
+	export type regex<rule extends string> = of<string> & {
+		regex: { [k in rule]: 1 }
+	}
+
+	export type predicate = of<string> & { predicate: 1 }
+
+	export type is<constraints> = of<string> & constraints
+
+	export type constrain<
+		kind extends PrimitiveConstraintKind,
+		schema extends Schema<kind>
+	> = normalizePrimitiveConstraintSchema<schema> extends infer rule
+		? kind extends "minLength"
+			? minLength<rule & number>
+			: kind extends "maxLength"
+			? maxLength<rule & number>
+			: kind extends "regex"
+			? regex<rule & string>
+			: predicate
+		: never
+}
+
 export type constrain<
 	t,
 	kind extends PrimitiveConstraintKind,
 	schema extends Schema<kind>
-> = [number, t] extends [t, number]
-	? number.constrain<kind, schema>
-	: schemaToConstraint<kind, schema> extends infer constraint
+> = schemaToConstraint<kind, schema> extends infer constraint
 	? t extends of<infer base> & infer constraints
-		? of<base> & constraints & constraint
+		? [number, base] extends [base, number]
+			? number.is<constraint & constraints>
+			: [string, base] extends [base, string]
+			? string.is<constraint & constraints>
+			: of<base> & constraints & constraint
+		: [number, t] extends [t, number]
+		? number.constrain<kind, schema>
+		: [string, t] extends [t, string]
+		? string.constrain<kind, schema>
 		: of<t> & constraint
 	: never
 

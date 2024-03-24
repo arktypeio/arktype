@@ -7,8 +7,7 @@ import type {
 	unionToTuple,
 	valueOf
 } from "@arktype/util"
-import type { intersectConstrainables } from "./constraints/ast.js"
-import type { predicate } from "./constraints/predicate.js"
+import type { intersectConstrainables, predicate } from "./constraints/ast.js"
 import type { Scope } from "./scope.js"
 import type { inferTypeRoot, validateTypeRoot } from "./type.js"
 import type { Morph, distill } from "./types/morph.js"
