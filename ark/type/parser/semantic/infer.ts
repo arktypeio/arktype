@@ -7,6 +7,7 @@ import type {
 	of,
 	regex
 } from "../../constraints/ast.js"
+import type { NumericallyBoundable } from "../../constraints/refinements/range.js"
 import type {
 	UnparsedScope,
 	resolve,
@@ -16,7 +17,11 @@ import type { inferIntersection } from "../../shared/intersections.js"
 import type { GenericProps } from "../../type.js"
 import type { distill } from "../../types/morph.js"
 import type { inferDefinition } from "../definition.js"
-import type { Comparator, MinComparator } from "../string/reduce/shared.js"
+import type {
+	Comparator,
+	MaxComparator,
+	MinComparator
+} from "../string/reduce/shared.js"
 import type { StringLiteral } from "../string/shift/operand/enclosed.js"
 
 export type inferAstRoot<ast, $, args> = inferAst<ast, $, args>
@@ -78,6 +83,14 @@ export type inferExpression<
 	? constrain<inferAst<ast[0], $, args>, "divisor", ast[2] & number>
 	: ast[0] extends "keyof"
 	? keyof inferAst<ast[1], $, args>
+	: never
+
+export type constrainBound<t, comparator, limit> = t extends Date
+	? comparator extends MinComparator
+		? constrain<t, "after", limit & string>
+		: comparator extends MaxComparator
+		? constrain<t, "before", limit & string>
+		: inferIntersection<t, Date>
 	: never
 
 export type PrefixOperator = "keyof" | "instanceof" | "===" | "node"
