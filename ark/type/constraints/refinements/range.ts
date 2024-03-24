@@ -6,14 +6,8 @@ import {
 	type valueOf
 } from "@arktype/util"
 import type { Node } from "../../base.js"
-import type { Schema } from "../../kinds.js"
 import type { BaseMeta, BaseNodeDeclaration } from "../../shared/declare.js"
-import type {
-	BoundKind,
-	KeyDefinitions,
-	RangeKind
-} from "../../shared/implement.js"
-import type { DateLiteral, normalizePrimitiveConstraintSchema } from "../ast.js"
+import type { KeyDefinitions, RangeKind } from "../../shared/implement.js"
 import { BasePrimitiveConstraint } from "../constraint.js"
 
 export abstract class BaseRange<
@@ -179,39 +173,6 @@ export type DateRangeKind = "before" | "after"
 
 export const dateLimitToString = (limit: LimitSchemaValue): string =>
 	typeof limit === "string" ? limit : new Date(limit).toLocaleString()
-
-export type boundToIs<kind extends BoundKind, schema extends Schema<kind>> = {
-	[_ in schemaToComparator<kind, schema>]: limitToIs<
-		normalizePrimitiveConstraintSchema<schema>
-	>
-}
-
-export type limitToIs<limit> = limit extends DateLiteral<infer source>
-	? string extends source
-		? Date
-		: source
-	: string extends limit
-	? Date
-	: limit
-
-type schemaToComparator<
-	kind extends BoundKind,
-	schema extends Schema<BoundKind>
-> = `${kind extends LowerBoundKind ? ">" : "<"}${schema extends {
-	exclusive: true
-}
-	? ""
-	: "="}`
-
-export type isNarrowedLimit<limit> = limit extends number
-	? number extends limit
-		? false
-		: true
-	: limit extends DateLiteral<infer source>
-	? string extends source
-		? false
-		: true
-	: false
 
 export const writeUnboundableMessage = <root extends string>(
 	root: root

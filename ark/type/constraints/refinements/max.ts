@@ -5,11 +5,8 @@ import {
 	BaseRange,
 	parseExclusiveKey,
 	type BaseNormalizedRangeSchema,
-	type BaseRangeInner,
-	type boundToIs
+	type BaseRangeInner
 } from "./range.js"
-
-export type max<n extends number> = boundToIs<"max", n>
 
 export interface MaxInner extends BaseRangeInner {
 	rule: number

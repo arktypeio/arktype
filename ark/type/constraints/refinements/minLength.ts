@@ -5,11 +5,8 @@ import {
 	parseExclusiveKey,
 	type BaseNormalizedRangeSchema,
 	type BaseRangeInner,
-	type LengthBoundableData,
-	type boundToIs
+	type LengthBoundableData
 } from "./range.js"
-
-export type minLength<n extends number> = boundToIs<"minLength", n>
 
 export interface MinLengthInner extends BaseRangeInner {
 	rule: number

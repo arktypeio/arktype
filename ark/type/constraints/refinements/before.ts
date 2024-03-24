@@ -8,11 +8,8 @@ import {
 	parseExclusiveKey,
 	type BaseNormalizedRangeSchema,
 	type BaseRangeInner,
-	type LimitSchemaValue,
-	type boundToIs
+	type LimitSchemaValue
 } from "./range.js"
-
-export type before<date extends string> = boundToIs<"before", date>
 
 export interface BeforeInner extends BaseRangeInner {
 	rule: Date

@@ -4,12 +4,9 @@ import type {
 	LimitLiteral,
 	RegexLiteral,
 	constrain,
-	of
+	of,
+	regex
 } from "../../constraints/ast.js"
-import type { divisor } from "../../constraints/refinements/divisor.js"
-import type { max } from "../../constraints/refinements/max.js"
-import type { min } from "../../constraints/refinements/min.js"
-import type { regex } from "../../constraints/refinements/regex.js"
 import type {
 	UnparsedScope,
 	resolve,
@@ -71,15 +68,14 @@ export type inferExpression<
 	? inferIntersection<inferAst<ast[0], $, args>, inferAst<ast[2], $, args>>
 	: ast[1] extends Comparator
 	? ast[0] extends LimitLiteral
-		? constrain<inferAst<ast[2], $, args>, min<ast[0] & number>>
+		? constrain<inferAst<ast[2], $, args>, "min", ast[0] & number>
 		: constrain<
 				inferAst<ast[0], $, args>,
-				ast[1] extends MinComparator
-					? min<ast[2] & number>
-					: max<ast[2] & number>
+				ast[1] extends MinComparator ? "min" : "max",
+				ast[2] & number
 		  >
 	: ast[1] extends "%"
-	? constrain<inferAst<ast[0], $, args>, divisor<ast[2] & number>>
+	? constrain<inferAst<ast[0], $, args>, "divisor", ast[2] & number>
 	: ast[0] extends "keyof"
 	? keyof inferAst<ast[1], $, args>
 	: never

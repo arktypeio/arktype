@@ -8,8 +8,6 @@ export interface ExactLengthInner extends BaseMeta {
 	readonly rule: number
 }
 
-export type length<n extends number> = { "==": n }
-
 export type NormalizedExactLengthSchema = ExactLengthInner
 
 export type ExactLengthSchema = NormalizedExactLengthSchema | number

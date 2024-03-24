@@ -10,8 +10,6 @@ export interface DivisorInner extends BaseMeta {
 	readonly rule: number
 }
 
-export type divisor<n extends number> = { "%": n }
-
 export type DivisorSchema = DivisorInner | number
 
 export type DivisorDeclaration = declareNode<{

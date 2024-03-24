@@ -4,8 +4,7 @@ import {
 	BaseRange,
 	parseExclusiveKey,
 	type BaseNormalizedRangeSchema,
-	type BaseRangeInner,
-	type boundToIs
+	type BaseRangeInner
 } from "./range.js"
 
 export interface MinInner extends BaseRangeInner {
@@ -26,8 +25,6 @@ export type MinDeclaration = declareNode<{
 	prerequisite: number
 	errorContext: MinInner
 }>
-
-export type min<n extends number> = boundToIs<"min", n>
 
 export class MinNode extends BaseRange<MinDeclaration> {
 	static implementation: nodeImplementationOf<MinDeclaration> = this.implement({

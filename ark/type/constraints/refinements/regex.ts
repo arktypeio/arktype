@@ -6,8 +6,6 @@ export interface RegexInner extends BaseMeta {
 	readonly flags?: string
 }
 
-export type regex<s extends string> = { [_ in s]: true }
-
 export type NormalizedRegexSchema = RegexInner
 
 export type RegexSchema = NormalizedRegexSchema | string | RegExp

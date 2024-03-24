@@ -5,7 +5,7 @@ import {
 	type conform
 } from "@arktype/util"
 import { BaseNode, type Node } from "../base.js"
-import type { applySchema } from "../constraints/ast.js"
+import type { constrain, schemaToConstraint } from "../constraints/ast.js"
 import {
 	throwInvalidOperandError,
 	type PrimitiveConstraintKind
@@ -208,7 +208,7 @@ export abstract class BaseType<
 	>(
 		kind: conform<kind, constraintKindOf<this["in"]["infer"]>>,
 		schema: schema
-	): Type<applySchema<t, kind, schema>, $> {
+	): Type<constrain<t, kind, schema>, $> {
 		return this.rawConstrain(kind, schema) as never
 	}
 

@@ -16,8 +16,6 @@ export interface PredicateInner<rule extends Predicate<any> = Predicate<any>>
 
 export type NormalizedPredicateSchema = PredicateInner
 
-export type predicate = { ":": true }
-
 export type PredicateSchema = NormalizedPredicateSchema | Predicate<any>
 
 export type PredicateDeclaration = declareNode<{
