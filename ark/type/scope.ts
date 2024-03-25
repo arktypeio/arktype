@@ -476,13 +476,15 @@ export class Scope<r extends Resolutions = any> {
 	}
 
 	parseTypeRoot(def: unknown, input?: ParseContextInput): Type {
-		return this.parse(def, {
+		const result = this.parse(def, {
 			args: { this: {} as Type },
 			baseName: "type",
 			path: [],
 			$: this,
 			...input
 		}).bindScope(this)
+		this.bindCompiledScope(result.contributesReferences)
+		return result
 	}
 
 	parseString(def: string, ctx: ParseContext): Type {

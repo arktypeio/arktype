@@ -3,7 +3,7 @@ import type { DynamicStateWithRoot } from "../../reduce/dynamic.js"
 import type { StaticState, state } from "../../reduce/static.js"
 import type { Scanner } from "../scanner.js"
 
-export const parseDivisor = (s: DynamicStateWithRoot) => {
+export const parseDivisor = (s: DynamicStateWithRoot): void => {
 	const divisorToken = s.scanner.shiftUntilNextTerminator()
 	const divisor = tryParseInteger(divisorToken, {
 		errorOnFail: writeInvalidDivisorMessage(divisorToken)
