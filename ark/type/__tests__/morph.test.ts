@@ -94,10 +94,12 @@ describe("morph", () => {
 			bAndA: () => $.type("b&a")
 		})
 		const types = $.export()
+		assertNodeKind(types.bAndA, "morph")
+		assertNodeKind(types.aAndB, "morph")
 		attest<Type<(In: 3.14) => Out<string>>>(types.aAndB)
 		attest(types.aAndB.json).snap({
 			in: { unit: 3.14 },
-			morphs: ["$ark.anonymousFunction1"]
+			morphs: types.aAndB.serializedMorphs
 		})
 		attest<typeof types.aAndB>(types.bAndA)
 		attest(types.bAndA).equals(types.aAndB)
@@ -110,6 +112,7 @@ describe("morph", () => {
 		})
 		const types = $.export()
 		attest<Type<(In: { a: 1; b: 2 }) => string>>(types.c)
+		assertNodeKind(types.c, "morph")
 		attest(types.c.json).snap({
 			in: {
 				domain: "object",
@@ -118,7 +121,7 @@ describe("morph", () => {
 					{ key: "b", value: { unit: 2 } }
 				]
 			},
-			morphs: ["$ark.anonymousFunction1"]
+			morphs: types.c.serializedMorphs
 		})
 	})
 	it("union", () => {
@@ -129,8 +132,10 @@ describe("morph", () => {
 			bOrA: "b|a"
 		}).export()
 		attest<Type<boolean | ((In: number) => Out<string>)>>(types.aOrB)
+		const serializedMorphs =
+			types.aOrB.firstReferenceOfKindOrThrow("morph").serializedMorphs
 		attest(types.aOrB.json).snap([
-			{ in: "number", morphs: ["$ark.anonymousFunction1"] },
+			{ in: "number", morphs: serializedMorphs },
 			{ unit: false },
 			{ unit: true }
 		])

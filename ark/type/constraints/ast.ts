@@ -31,17 +31,6 @@ export type of<base, constraints extends Constraints> = [
 	constraints
 ]
 
-export type intersectConstrainables<l, r> = [l, r] extends [
-	of<infer lInner, infer lConstraints>,
-	of<infer rInner, infer rConstraints>
-]
-	? of<lInner & rInner, lConstraints & rConstraints>
-	: l extends of<infer lInner, infer lConstraints>
-	? of<lInner & r, lConstraints>
-	: r extends of<infer rInner, infer rConstraints>
-	? of<l & rInner, rConstraints>
-	: l & r
-
 export type LimitLiteral = number | DateLiteral
 
 export type AtLeast<rule extends number | string> = {

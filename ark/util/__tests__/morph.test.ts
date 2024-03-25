@@ -1,7 +1,7 @@
 import { attest } from "@arktype/attest"
 import { morph } from "@arktype/util"
 
-describe("remap", () => {
+describe("transform", () => {
 	it("object", () => {
 		const result = morph({ a: true, b: false }, (k, v) =>
 			k === "a"

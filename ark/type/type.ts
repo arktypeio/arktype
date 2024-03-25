@@ -16,13 +16,7 @@ import type {
 } from "./parser/tuple.js"
 import type { Scope, bindThis } from "./scope.js"
 import type { BaseMeta } from "./shared/declare.js"
-import type {
-	Morph,
-	distillConstrainableIn,
-	distillConstrainableOut,
-	distillIn,
-	distillOut
-} from "./types/morph.js"
+import type { Morph, distillIn, distillOut } from "./types/morph.js"
 import type { Type } from "./types/type.js"
 import { arkKind } from "./util.js"
 

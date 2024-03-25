@@ -7,8 +7,9 @@ import type {
 	unionToTuple,
 	valueOf
 } from "@arktype/util"
-import type { intersectConstrainables, predicate } from "./constraints/ast.js"
+import type { predicate } from "./constraints/ast.js"
 import type { Scope } from "./scope.js"
+import type { inferIntersection } from "./shared/intersections.js"
 import type { inferTypeRoot, validateTypeRoot } from "./type.js"
 import type { Morph, distillOut } from "./types/morph.js"
 import type { Type } from "./types/type.js"
@@ -74,10 +75,7 @@ type validateWhenDefinition<
 // infer the types handled by a match branch, which is identical to `inferTypeRoot` while properly
 // excluding cases that are already handled by other branches
 type inferMatchBranch<def, ctx extends MatchParserContext> = distillOut<
-	intersectConstrainables<
-		getUnhandledBranches<ctx>,
-		inferTypeRoot<def, ctx["$"]>
-	>
+	inferIntersection<getUnhandledBranches<ctx>, inferTypeRoot<def, ctx["$"]>>
 >
 
 export type ChainableMatchParser<ctx extends MatchParserContext> = {
@@ -125,9 +123,7 @@ type errorCases<cases, ctx extends MatchParserContext> = {
 		: validateWhenDefinition<def, ctx>
 } & {
 	[k in Exclude<keyof ctx["$"], keyof cases>]?: (
-		In: distillOut<
-			intersectConstrainables<getUnhandledBranches<ctx>, ctx["$"][k]>
-		>
+		In: distillOut<inferIntersection<getUnhandledBranches<ctx>, ctx["$"][k]>>
 	) => unknown
 } & {
 	default?: (In: getUnhandledBranches<ctx>) => unknown
