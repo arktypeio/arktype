@@ -1,8 +1,8 @@
 import type {
 	Constructor,
 	ErrorMessage,
-	List,
 	NonEnumerableDomain,
+	array,
 	conform,
 	describe,
 	inferDomain,
@@ -54,7 +54,7 @@ export type NodeParser<$> = {
 
 export type validateSchema<schema, $> = schema extends UnknownNode
 	? schema
-	: schema extends List
+	: schema extends array
 	? { [i in keyof schema]: validateSchemaBranch<schema[i], $> }
 	: schema extends NormalizedUnionSchema<infer branches>
 	? conform<

@@ -1,10 +1,10 @@
 import { attest } from "@arktype/attest"
-import { Hkt, type conform, type evaluate, type List } from "@arktype/util"
+import { Hkt, type array, type conform, type evaluate } from "@arktype/util"
 
 describe("hkt", () => {
 	interface AppendKind extends Hkt.Kind {
 		f: (
-			args: conform<this[Hkt.key], readonly [element: unknown, to: List]>
+			args: conform<this[Hkt.key], readonly [element: unknown, to: array]>
 		) => [...(typeof args)[1], (typeof args)[0]]
 	}
 	it("base", () => {
@@ -12,7 +12,7 @@ describe("hkt", () => {
 		attest<[0, 1, 2], result>()
 	})
 	it("reify", () => {
-		const append = (([element, to]: [unknown, List]) => [
+		const append = (([element, to]: [unknown, array]) => [
 			...to,
 			element
 		]) as Hkt.apply<Hkt.Reify, AppendKind>

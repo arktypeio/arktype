@@ -1,7 +1,7 @@
 import {
 	invert,
 	isKeyOf,
-	type List,
+	type array,
 	type PartialRecord,
 	type valueOf
 } from "@arktype/util"
@@ -125,7 +125,7 @@ export type UpperBoundKind = valueOf<typeof boundKindPairsByLower>
 
 export type UpperNode = Node<UpperBoundKind>
 
-export type NumericallyBoundable = string | number | List
+export type NumericallyBoundable = string | number | array
 
 export type Boundable = NumericallyBoundable | Date
 
@@ -167,7 +167,7 @@ export const compileComparator = (
 
 export type BoundOperandKind = "value" | "length" | "date"
 
-export type LengthBoundableData = string | List
+export type LengthBoundableData = string | array
 
 export type DateRangeKind = "before" | "after"
 

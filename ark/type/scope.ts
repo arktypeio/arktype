@@ -9,7 +9,7 @@ import {
 	throwParseError,
 	type Dict,
 	type Json,
-	type List,
+	type array,
 	type evaluate,
 	type isAny,
 	type nominal,
@@ -152,7 +152,7 @@ export const defaultConfig: ResolvedArkConfig = Object.assign(
 const nonInheritedKeys = [
 	"registerKeywords",
 	"prereducedAliases"
-] as const satisfies List<keyof ArkConfig>
+] as const satisfies array<keyof ArkConfig>
 
 const extendConfig = (
 	base: ArkConfig,
@@ -611,7 +611,7 @@ export class Scope<r extends Resolutions = any> {
 		) as never
 	}
 
-	parseUnits<const branches extends List>(
+	parseUnits<const branches extends array>(
 		...values: branches
 	): branches["length"] extends 1
 		? UnionNode<branches[0]>

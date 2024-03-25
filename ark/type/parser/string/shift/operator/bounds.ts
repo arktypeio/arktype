@@ -18,7 +18,7 @@ import {
 	type MaxComparator,
 	type OpenLeftBound
 } from "../../reduce/shared.js"
-import type { StaticState, state } from "../../reduce/static.js"
+import type { state, StaticState } from "../../reduce/static.js"
 import { extractDateLiteralSource, isDateLiteral } from "../operand/date.js"
 import type { parseOperand } from "../operand/operand.js"
 import type { Scanner } from "../scanner.js"

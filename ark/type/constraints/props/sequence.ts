@@ -2,7 +2,7 @@ import {
 	append,
 	throwInternalError,
 	throwParseError,
-	type List,
+	type array,
 	type mutable,
 	type satisfy
 } from "@arktype/util"
@@ -47,7 +47,7 @@ export type SequenceDeclaration = declareNode<{
 	schema: SequenceSchema
 	normalizedSchema: NormalizedSequenceSchema
 	inner: SequenceInner
-	prerequisite: List
+	prerequisite: array
 	reducibleTo: "sequence"
 	childKind: TypeKind
 }>
@@ -248,7 +248,7 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 		? [this.maxLengthNode]
 		: undefined
 
-	protected childAtIndex(data: List, index: number): Type {
+	protected childAtIndex(data: array, index: number): Type {
 		if (index < this.prevariadic.length) return this.prevariadic[index]
 		const postfixStartIndex = data.length - this.postfix.length
 		if (index >= postfixStartIndex)
@@ -262,7 +262,7 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 	}
 
 	// minLength/maxLength should be checked by Intersection before either traversal
-	traverseAllows: TraverseAllows<List> = (data, ctx) => {
+	traverseAllows: TraverseAllows<array> = (data, ctx) => {
 		for (let i = 0; i < data.length; i++) {
 			if (!this.childAtIndex(data, i).traverseAllows(data[i], ctx)) {
 				return false
@@ -271,7 +271,7 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 		return true
 	}
 
-	traverseApply: TraverseApply<List> = (data, ctx) => {
+	traverseApply: TraverseApply<array> = (data, ctx) => {
 		for (let i = 0; i < data.length; i++) {
 			ctx.path.push(i)
 			this.childAtIndex(data, i).traverseApply(data[i], ctx)
@@ -354,7 +354,7 @@ export type SequenceElement = {
 	kind: SequenceElementKind
 	node: Type
 }
-export type SequenceTuple = List<SequenceElement>
+export type SequenceTuple = array<SequenceElement>
 
 type SequenceIntersectionState = {
 	l: SequenceTuple

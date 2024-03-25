@@ -1,6 +1,6 @@
 import {
 	Hkt,
-	type List,
+	type array,
 	type conform,
 	type evaluate,
 	type intersectArrays,
@@ -42,8 +42,8 @@ declare class MorphableIntersection extends Hkt.Kind {
 }
 
 type intersectObjects<l, r> = [l, r] extends [
-	infer lList extends List,
-	infer rList extends List
+	infer lList extends array,
+	infer rList extends array
 ]
 	? intersectArrays<lList, rList, MorphableIntersection>
 	: evaluate<

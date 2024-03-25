@@ -46,7 +46,7 @@ export const getPath = (root: unknown, path: string[]): unknown => {
 export const intersectUniqueLists = <item>(
 	l: readonly item[],
 	r: readonly item[]
-) => {
+): item[] => {
 	const intersection = [...l]
 	for (const item of r) {
 		if (!l.includes(item)) {
@@ -57,7 +57,7 @@ export const intersectUniqueLists = <item>(
 }
 
 export type filter<
-	t extends List,
+	t extends array,
 	constraint,
 	result extends unknown[] = []
 > = t extends readonly [infer head, ...infer tail]
@@ -68,7 +68,7 @@ export type filter<
 	  >
 	: result
 
-export type List<t = unknown> = readonly t[]
+export type array<t = unknown> = readonly t[]
 
 export type listable<t> = t | readonly t[]
 
@@ -79,42 +79,49 @@ export type CollapsingList<t = unknown> =
 	| t
 	| readonly [t, t, ...t[]]
 
-export type headOf<t extends List> = t[0]
+export type headOf<t extends array> = t[0]
 
-export type tailOf<t extends List> = t extends readonly [unknown, ...infer tail]
+export type tailOf<t extends array> = t extends readonly [
+	unknown,
+	...infer tail
+]
 	? tail
 	: never
 
-export type lastIndexOf<t extends List> = tailOf<t>["length"]
+export type lastIndexOf<t extends array> = tailOf<t>["length"]
 
-export type lastOf<t extends List> = t[lastIndexOf<t>]
+export type lastOf<t extends array> = t[lastIndexOf<t>]
 
-export type initOf<t extends List> = t extends readonly [...infer init, unknown]
+export type initOf<t extends array> = t extends readonly [
+	...infer init,
+	unknown
+]
 	? init
 	: never
 
-export type numericStringKeyOf<t extends List> = Extract<keyof t, NumberLiteral>
+export type numericStringKeyOf<t extends array> = Extract<
+	keyof t,
+	NumberLiteral
+>
 
-export type indexOf<array extends List> = keyof array extends infer k
+export type indexOf<a extends array> = keyof a extends infer k
 	? parseNonNegativeInteger<k & string>
 	: never
 
-export const listFrom = <t>(data: t) =>
-	(Array.isArray(data) ? data : [data]) as t extends List
-		? [t] extends [null]
-			? // check for any/never
-			  t[]
-			: t
-		: t[]
+export const listFrom = <t>(
+	data: t
+): t extends array
+	? [t] extends [null]
+		? // check for any/never
+		  t[]
+		: t
+	: t[] => (Array.isArray(data) ? data : [data]) as never
 
 export const spliterate = <item, included extends item>(
 	list: readonly item[],
 	by: (item: item) => item is included
-) => {
-	const result: [included: included[], excluded: Exclude<item, included>[]] = [
-		[],
-		[]
-	]
+): [included: included[], excluded: Exclude<item, included>[]] => {
+	const result: [any[], any[]] = [[], []]
 	for (const item of list) {
 		if (by(item)) {
 			result[0].push(item)
@@ -129,10 +136,10 @@ export const ReadonlyArray = Array as unknown as new <T>(
 	...args: ConstructorParameters<typeof Array<T>>
 ) => ReadonlyArray<T>
 
-export const includes = <array extends List>(
-	array: array,
+export const includes = <a extends array>(
+	array: a,
 	element: unknown
-): element is array[number] => array.includes(element)
+): element is a[number] => array.includes(element)
 
 export const range = (length: number, offset = 0): number[] =>
 	[...new Array(length)].map((_, i) => i + offset)
@@ -201,7 +208,8 @@ export const conflatenate = <element>(
  */
 export const conflatenateAll = <element>(
 	...elementsOrLists: (listable<element> | undefined)[]
-) => elementsOrLists.reduce<readonly element[]>(conflatenate, [])
+): readonly element[] =>
+	elementsOrLists.reduce<readonly element[]>(conflatenate, [])
 
 /**
  * Appends a value to an array if it is not already included, returning the array
@@ -213,7 +221,7 @@ export const conflatenateAll = <element>(
 export const appendUnique = <to extends unknown[]>(
 	to: to | undefined,
 	value: to[number]
-) => {
+): to => {
 	if (to === undefined) {
 		return [value] as never
 	}

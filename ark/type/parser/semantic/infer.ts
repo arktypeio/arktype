@@ -1,10 +1,11 @@
-import type { BigintLiteral, List, NumberLiteral } from "@arktype/util"
+import type { BigintLiteral, NumberLiteral, array } from "@arktype/util"
 import type {
 	Date,
 	DateLiteral,
 	LimitLiteral,
 	RegexLiteral,
 	constrain,
+	normalizeLimit,
 	string
 } from "../../constraints/ast.js"
 import type {
@@ -23,7 +24,7 @@ export type inferAstRoot<ast, $, args> = inferConstrainableAst<ast, $, args>
 
 export type inferAstIn<ast, $, args> = distillIn<inferAstRoot<ast, $, args>>
 
-export type inferConstrainableAst<ast, $, args> = ast extends List
+export type inferConstrainableAst<ast, $, args> = ast extends array
 	? inferExpression<ast, $, args>
 	: inferTerminal<ast, $, args>
 
@@ -33,7 +34,7 @@ export type GenericInstantiationAst<
 > = [g, "<>", argAsts]
 
 export type inferExpression<
-	ast extends List,
+	ast extends array,
 	$,
 	args
 > = ast extends GenericInstantiationAst
@@ -70,11 +71,7 @@ export type inferExpression<
 	: ast[1] extends Comparator
 	? ast[0] extends LimitLiteral
 		? constrainBound<inferConstrainableAst<ast[2], $, args>, ast[1], ast[0]>
-		: constrainBound<
-				inferConstrainableAst<ast[0], $, args>,
-				ast[1],
-				ast[2] & number
-		  >
+		: constrainBound<inferConstrainableAst<ast[0], $, args>, ast[1], ast[2]>
 	: ast[1] extends "%"
 	? constrain<
 			inferConstrainableAst<ast[0], $, args>,
@@ -94,7 +91,7 @@ export type constrainBound<
 		? In extends number
 			? limit
 			: In extends Date
-			? Date.literal<limit & (string | number)>
+			? Date.literal<normalizeLimit<limit>>
 			: constrain<constrainableIn, "exactLength", limit & number>
 		: constrain<
 				constrainableIn,
@@ -102,7 +99,7 @@ export type constrainBound<
 					? comparator extends MinComparator
 						? "min"
 						: "max"
-					: In extends string | List
+					: In extends string | array
 					? comparator extends MinComparator
 						? "minLength"
 						: "maxLength"
@@ -110,7 +107,7 @@ export type constrainBound<
 					? "after"
 					: "before",
 				{
-					rule: limit & number
+					rule: normalizeLimit<limit>
 					exclusive: comparator extends ">" | "<" ? true : false
 				}
 		  >

@@ -1,4 +1,9 @@
-import { morph, type Constructor, type List, type conform } from "@arktype/util"
+import {
+	morph,
+	type Constructor,
+	type array,
+	type conform
+} from "@arktype/util"
 import type { Predicate } from "./constraints/predicate.js"
 import type {
 	inferDefinition,
@@ -26,7 +31,7 @@ export type TypeParser<$> = {
 	<const def>(def: validateTypeRoot<def, $>): Type<inferTypeRoot<def, $>, $>
 
 	// Spread version of a tuple expression
-	<const zero, const one, const rest extends List>(
+	<const zero, const one, const rest extends array>(
 		_0: zero extends IndexZeroOperator ? zero : validateTypeRoot<zero, $>,
 		_1: zero extends "keyof"
 			? validateTypeRoot<one, $>

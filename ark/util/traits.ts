@@ -1,7 +1,7 @@
 import { hasDomain } from "./domain.js"
 import type { conform, evaluate, satisfy } from "./generics.js"
 import type { intersectParameters } from "./intersections.js"
-import type { List } from "./lists.js"
+import type { array } from "./lists.js"
 import { ancestorsOf, type Constructor } from "./objectKinds.js"
 import { NoopBase } from "./records.js"
 
@@ -147,7 +147,7 @@ export const implement: TraitImplementation = (...args) => {
 }
 
 export type TraitConstructor<
-	params extends List = any[],
+	params extends array = any[],
 	instance extends object = {},
 	statics = {},
 	abstractMethods extends object = {},
@@ -162,9 +162,9 @@ export type TraitConstructor<
 		instance)
 
 type CompositionState = {
-	validated: List
-	remaining: List
-	params: List
+	validated: array
+	remaining: array
+	params: array
 	kind: TraitCompositionKind
 	implemented: object
 	abstractMethods: object
@@ -176,7 +176,7 @@ type CompositionState = {
 export type TraitCompositionKind = "abstract" | "implementation"
 
 export type composeTraits<
-	traits extends List,
+	traits extends array,
 	kind extends TraitCompositionKind
 > = composeRecurse<{
 	validated: []

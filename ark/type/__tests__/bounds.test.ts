@@ -6,18 +6,11 @@ import {
 } from "@arktype/util"
 import { type } from "arktype"
 import { it } from "mocha"
-import type {
-	AtLeast,
-	AtMost,
-	LessThan,
-	MoreThan,
-	number
-} from "../constraints/ast.js"
 import {
 	boundKindPairsByLower,
 	writeUnboundableMessage
 } from "../constraints/refinements/range.js"
-import { node, type Ark } from "../keywords/ark.js"
+import { node } from "../keywords/ark.js"
 import { writeDoubleRightBoundMessage } from "../parser/semantic/bounds.js"
 import {
 	writeMultipleLeftBoundsMessage,
@@ -30,7 +23,6 @@ import {
 } from "../parser/string/shift/operator/bounds.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { IntersectionSchema } from "../types/intersection.js"
-import type { Type } from "../types/type.js"
 
 describe("bounds", () => {
 	describe("parse", () => {
@@ -103,63 +95,34 @@ describe("bounds", () => {
 			attest(t.json).equals(expected.json)
 		})
 
-		// it("single", () => {
-		// 	const t = type("Date<d'2023/1/12'")
-		// 	attest<Date>(t.infer)
-		// 	attest(t.json).equals(
-		// 		// TODO: Dates?
-		// 		expectedDateBoundsCondition({
-		// 			limitKind: "max",
-		// 			exclusive: true,
-		// 			limit: new Date("2023/1/12").valueOf()
-		// 		})
-		// 	)
-		// })
-		// it("equality", () => {
-		// 	const t = type("Date==d'2020-1-1'")
-		// 	attest<Date>(t.infer)
-		// 	attest(t.json).equals(
-		// 		expectedDateBoundsCondition(
-		// 			{
-		// 				limitKind: "min",
-		// 				exclusive: false,
-		// 				limit: new Date("2020-1-1").valueOf()
-		// 			},
-		// 			{
-		// 				limitKind: "max",
-		// 				exclusive: false,
-		// 				limit: new Date("2020-1-1").valueOf()
-		// 			}
-		// 		)
-		// 	)
-		// 	attest(t.allows(new Date("2020/01/01"))).equals(true)
-		// 	attest(t.allows(new Date("2020/01/02"))).equals(false)
-		// })
-		// it("double", () => {
-		// 	const t = type("d'2001/10/10'<Date<d'2005/10/10'")
-		// 	attest<Date>(t.infer)
-		// 	attest(t.json).equals(
-		// 		expectedDateBoundsCondition(
-		// 			{
-		// 				limitKind: "min",
-		// 				exclusive: true,
-		// 				limit: new Date("2001/10/10").valueOf()
-		// 			},
-		// 			{
-		// 				limitKind: "max",
-		// 				exclusive: true,
-		// 				limit: new Date("2005/10/10").valueOf()
-		// 			}
-		// 		)
-		// 	)
-		// 	attest(t.allows(new Date("2003/10/10"))).equals(true)
-		// 	attest(t.allows(new Date("2001/10/10"))).equals(false)
-		// 	attest(t.allows(new Date("2005/10/10"))).equals(false)
-		// })
-		it("dynamic", () => {
+		it("single Date", () => {
+			const t = type("Date<d'2023/1/12'")
+			attest<Date>(t.infer)
+			attest(t).type.toString.snap()
+			attest(t.json).snap()
+		})
+		it("Date equality", () => {
+			const t = type("Date==d'2020-1-1'")
+			attest<Date>(t.infer)
+			attest(t).type.toString.snap()
+			attest(t.json).snap()
+			attest(t.allows(new Date("2020/01/01"))).equals(true)
+			attest(t.allows(new Date("2020/01/02"))).equals(false)
+		})
+		it("double Date", () => {
+			const t = type("d'2001/10/10'<Date<d'2005/10/10'")
+			attest<Date>(t.infer)
+			attest(t).type.toString.snap()
+			attest(t.json).snap()
+			attest(t.allows(new Date("2003/10/10"))).equals(true)
+			attest(t.allows(new Date("2001/10/10"))).equals(false)
+			attest(t.allows(new Date("2005/10/10"))).equals(false)
+		})
+		it("dynamic Date", () => {
 			const now = new Date()
 			const t = type(`d'2000'<Date<=d'${now.toISOString()}'`)
 			attest<Date>(t.infer)
+			attest(t).type.toString.snap()
 			attest(t.allows(new Date(now.valueOf() - 1000))).equals(true)
 			attest(t.allows(now)).equals(true)
 			attest(t.allows(new Date(now.valueOf() + 1000))).equals(false)
@@ -304,21 +267,20 @@ describe("bounds", () => {
 			attest(t.json).equals(expected.json)
 		})
 
-		// TODO:  reenable
-		// it("chained after", () => {
-		// 	const t = type("Date").after(new Date(2022, 0, 1))
-		// 	// widen the input to a string so both are non-narrowed
-		// 	const expected = type(`Date>=d'${"2022-01-01" as string}'`)
-		// 	attest<typeof expected>(t)
-		// 	attest(t.json).equals(expected.json)
-		// })
+		it("after", () => {
+			const t = type("Date").constrain("after", new Date(2022, 0, 1))
+			// widen the input to a string so both are non-narrowed
+			const expected = type(`Date>=d'${"2022-01-01" as string}'`)
+			attest<typeof expected>(t)
+			attest(t.json).equals(expected.json)
+		})
 
-		// it("chained before", () => {
-		// 	const t = type("Date").before(5)
-		// 	const expected = type("Date<=5")
-		// 	attest<typeof expected>(t)
-		// 	attest(t.json).equals(expected.json)
-		// })
+		it("cbefore", () => {
+			const t = type("Date").constrain("before", 5)
+			const expected = type("Date<=5")
+			attest<typeof expected>(t)
+			attest(t.json).equals(expected.json)
+		})
 
 		it("exclusive", () => {
 			const t = type("number").constrain("min", { rule: 1337, exclusive: true })

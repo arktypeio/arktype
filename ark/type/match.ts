@@ -7,7 +7,7 @@ import type {
 	unionToTuple,
 	valueOf
 } from "@arktype/util"
-import type { predicate } from "./constraints/ast.js"
+import type { Narrowed } from "./constraints/ast.js"
 import type { Scope } from "./scope.js"
 import type { inferIntersection } from "./shared/intersections.js"
 import type { inferTypeRoot, validateTypeRoot } from "./type.js"
@@ -46,7 +46,7 @@ type matcherInputs<ctx extends MatchParserContext> = Parameters<
 type getHandledBranches<ctx extends MatchParserContext> = Exclude<
 	matcherInputs<ctx>,
 	// TODO: add other anon
-	predicate
+	Narrowed
 >
 
 type getUnhandledBranches<ctx extends MatchParserContext> = distillOut<

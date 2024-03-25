@@ -1,7 +1,7 @@
 import type { domainOf } from "./domain.js"
 import type { andPreserveUnknown, conform } from "./generics.js"
 import type { Hkt } from "./hkt.js"
-import type { List } from "./lists.js"
+import type { array } from "./lists.js"
 import type { requiredKeyOf, valueOf } from "./records.js"
 
 export interface AndPreserveUnknown extends Hkt.Kind {
@@ -13,22 +13,22 @@ export interface AndPreserveUnknown extends Hkt.Kind {
 type SequenceIntersectionKind = "array" | "parameters"
 
 export type intersectArrays<
-	l extends List,
-	r extends List,
+	l extends array,
+	r extends array,
 	operator extends Hkt.Kind = AndPreserveUnknown
 > = intersectSequences<l, r, [], [], operator, "array">
 
 export type intersectParameters<
-	l extends List,
-	r extends List,
+	l extends array,
+	r extends array,
 	operator extends Hkt.Kind = AndPreserveUnknown
 > = intersectSequences<l, r, [], [], operator, "parameters">
 
 type intersectSequences<
-	l extends List,
-	r extends List,
-	prefix extends List,
-	postfix extends List,
+	l extends array,
+	r extends array,
+	prefix extends array,
+	postfix extends array,
 	intersector extends Hkt.Kind,
 	kind extends SequenceIntersectionKind
 > = [parseNextElement<l, kind>, parseNextElement<r, kind>] extends [
@@ -98,13 +98,13 @@ type ElementParseResult = {
 	last: unknown
 	source: "head" | "last" | null
 	optional: boolean
-	rest: List
+	rest: array
 }
 
 type result<from extends ElementParseResult> = from
 
 type parseNextElement<
-	elements extends List,
+	elements extends array,
 	kind extends SequenceIntersectionKind
 > = elements extends readonly []
 	? result<{

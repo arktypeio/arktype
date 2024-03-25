@@ -4,8 +4,8 @@ import {
 	throwParseError,
 	type BuiltinObjectKind,
 	type BuiltinObjects,
-	type List,
 	type Primitive,
+	type array,
 	type listable
 } from "@arktype/util"
 import type { Node } from "../base.js"
@@ -225,15 +225,15 @@ type distillRecurse<
 		: t
 	: t extends TerminallyInferredObjectKind | Primitive
 	? t
-	: t extends List
+	: t extends array
 	? distillArray<t, io, distilledKind, []>
 	: { [k in keyof t]: distillRecurse<t[k], io, distilledKind> }
 
 type distillArray<
-	t extends List,
+	t extends array,
 	io extends "in" | "out",
 	constraints extends "base" | "constrainable",
-	prefix extends List
+	prefix extends array
 > = t extends readonly [infer head, ...infer tail]
 	? distillArray<
 			tail,
@@ -244,10 +244,10 @@ type distillArray<
 	: [...prefix, ...distillPostfix<t, io, constraints>]
 
 type distillPostfix<
-	t extends List,
+	t extends array,
 	io extends "in" | "out",
 	constraints extends "base" | "constrainable",
-	postfix extends List = []
+	postfix extends array = []
 > = t extends readonly [...infer init, infer last]
 	? distillPostfix<
 			init,

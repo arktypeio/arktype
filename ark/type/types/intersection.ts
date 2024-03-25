@@ -9,7 +9,7 @@ import {
 	pick,
 	splitByKeys,
 	throwInternalError,
-	type List,
+	type array,
 	type evaluate,
 	type listable
 } from "@arktype/util"
@@ -470,7 +470,7 @@ const flattenConstraints = (inner: IntersectionInner): ConstraintNode[] => {
 }
 
 const unflattenConstraints = (
-	constraints: List<ConstraintNode>
+	constraints: array<ConstraintNode>
 ): IntersectionInner => {
 	const inner: MutableInner<"intersection"> = {}
 	for (const constraint of constraints) {

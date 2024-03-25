@@ -7,7 +7,7 @@ import {
 	type Constructor,
 	type Domain,
 	type ErrorMessage,
-	type List,
+	type array,
 	type conform,
 	type evaluate
 } from "@arktype/util"
@@ -34,10 +34,10 @@ import { writeUnsatisfiableExpressionError } from "./semantic/validate.js"
 import { writeMissingRightOperandMessage } from "./string/shift/operand/unenclosed.js"
 import type { BaseCompletions } from "./string/string.js"
 
-export const parseTuple = (def: List, ctx: ParseContext): Type =>
+export const parseTuple = (def: array, ctx: ParseContext): Type =>
 	maybeParseTupleExpression(def, ctx) ?? parseTupleLiteral(def, ctx)
 
-export const parseTupleLiteral = (def: List, ctx: ParseContext): Type => {
+export const parseTupleLiteral = (def: array, ctx: ParseContext): Type => {
 	let sequences: MutableInner<"sequence">[] = [{}]
 	let i = 0
 	while (i < def.length) {
@@ -151,7 +151,7 @@ const appendSpreadBranch = (
 }
 
 const maybeParseTupleExpression = (
-	def: List,
+	def: array,
 	ctx: ParseContext
 ): Type | undefined => {
 	const tupleExpressionResult = isIndexZeroExpression(def)
@@ -179,7 +179,7 @@ const maybeParseTupleExpression = (
 type InfixExpression = readonly [unknown, InfixOperator, ...unknown[]]
 
 export type validateTuple<
-	def extends List,
+	def extends array,
 	$,
 	args
 > = def extends IndexZeroExpression
@@ -201,25 +201,25 @@ export type validateTuple<
 	  ]
 	: validateTupleLiteral<def, $, args>
 
-export type validateTupleLiteral<def extends List, $, args> = parseSequence<
+export type validateTupleLiteral<def extends array, $, args> = parseSequence<
 	def,
 	$,
 	args
 >["validated"]
 
-type inferTupleLiteral<def extends List, $, args> = parseSequence<
+type inferTupleLiteral<def extends array, $, args> = parseSequence<
 	def,
 	$,
 	args
 >["inferred"]
 
 type SequenceParseState = {
-	unscanned: List
-	inferred: List
-	validated: List
+	unscanned: array
+	inferred: array
+	validated: array
 }
 
-type parseSequence<def extends List, $, args> = parseNextElement<
+type parseSequence<def extends array, $, args> = parseNextElement<
 	{
 		unscanned: def
 		inferred: []
@@ -231,7 +231,7 @@ type parseSequence<def extends List, $, args> = parseNextElement<
 
 type PreparsedElement = {
 	head: unknown
-	tail: List
+	tail: array
 	optional: boolean
 	spread: boolean
 }
@@ -283,7 +283,7 @@ type parseNextElement<
 				inferred: next["spread"] extends true
 					? [
 							...s["inferred"],
-							...conform<inferDefinition<next["head"], $, args>, List>
+							...conform<inferDefinition<next["head"], $, args>, array>
 					  ]
 					: next["optional"] extends true
 					? [...s["inferred"], inferDefinition<next["head"], $, args>?]
@@ -296,7 +296,7 @@ type parseNextElement<
 									next["head"],
 									$,
 									args
-								> extends infer spreadOperand extends List
+								> extends infer spreadOperand extends array
 									? [number, number] extends [
 											s["inferred"]["length"],
 											spreadOperand["length"]
@@ -354,7 +354,7 @@ export const spreadOptionalMessage = `A spread element cannot be optional`
 
 type spreadOptionalMessage = typeof optionalPostVariadicMessage
 
-export type inferTuple<def extends List, $, args> = def extends TupleExpression
+export type inferTuple<def extends array, $, args> = def extends TupleExpression
 	? inferTupleExpression<def, $, args>
 	: inferTupleLiteral<def, $, args>
 
@@ -489,7 +489,7 @@ export type IndexOneExpression<
 	token extends IndexOneOperator = IndexOneOperator
 > = readonly [unknown, token, ...unknown[]]
 
-const isIndexOneExpression = (def: List): def is IndexOneExpression =>
+const isIndexOneExpression = (def: array): def is IndexOneExpression =>
 	indexOneParsers[def[1] as IndexOneOperator] !== undefined
 
 export const parseMorphTuple: PostfixParser<"=>"> = (def, ctx) => {
@@ -574,7 +574,7 @@ const prefixParsers: {
 	schema: (def, ctx) => ctx.$.node(def[1] as never)
 }
 
-const isIndexZeroExpression = (def: List): def is IndexZeroExpression =>
+const isIndexZeroExpression = (def: array): def is IndexZeroExpression =>
 	prefixParsers[def[0] as IndexZeroOperator] !== undefined
 
 export const writeInvalidConstructorMessage = <

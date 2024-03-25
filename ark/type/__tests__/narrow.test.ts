@@ -2,7 +2,7 @@ import { attest } from "@arktype/attest"
 import { reference, type equals } from "@arktype/util"
 import { type, type Type } from "arktype"
 import { describe } from "mocha"
-import type { of, predicate, string } from "../constraints/ast.js"
+import type { Narrowed, of, string } from "../constraints/ast.js"
 import type { Ark } from "../keywords/ark.js"
 import type { Out } from "../types/morph.js"
 
@@ -92,7 +92,7 @@ describe("narrow", () => {
 			.morph((s) => s.length)
 			.narrow((n): n is 5 => n === 5)
 
-		attest<Type<(In: string) => Out<of<5, predicate>>, Ark>>(t)
+		attest<Type<(In: string) => Out<of<5, Narrowed>>, Ark>>(t)
 	})
 	it("expression", () => {
 		const t = type("string", ":", (s): s is `f${string}` => s[0] === "f")

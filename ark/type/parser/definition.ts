@@ -5,8 +5,8 @@ import {
 	throwParseError,
 	type Dict,
 	type ErrorMessage,
-	type List,
 	type Primitive,
+	type array,
 	type defined,
 	type equals,
 	type evaluate,
@@ -44,7 +44,7 @@ export const parseObject = (def: object, ctx: ParseContext): Type => {
 			}
 			return parseObjectLiteral(def as Dict, ctx)
 		case "Array":
-			return parseTuple(def as List, ctx)
+			return parseTuple(def as array, ctx)
 		case "RegExp":
 			return ctx.$.node(
 				"intersection",
@@ -73,7 +73,7 @@ export type inferDefinition<def, $, args> = isAny<def> extends true
 	? t
 	: def extends string
 	? inferString<def, $, args>
-	: def extends List
+	: def extends array
 	? inferTuple<def, $, args>
 	: def extends RegExp
 	? string.matching<string>
@@ -87,7 +87,7 @@ export type validateDefinition<def, $, args> = null extends undefined
 	? def
 	: def extends string
 	? validateString<def, $, args>
-	: def extends List
+	: def extends array
 	? validateTuple<def, $, args>
 	: def extends BadDefinitionType
 	? writeBadDefinitionTypeMessage<objectKindOrDomainOf<def>>
@@ -108,8 +108,8 @@ type validateInference<def, declared, $, args> = def extends
 	| ThunkCast
 	| TupleExpression
 	? validateShallowInference<def, declared, $, args>
-	: def extends List
-	? declared extends List
+	: def extends array
+	? declared extends array
 		? {
 				[i in keyof declared]: i extends keyof def
 					? validateInference<def[i], declared[i], $, args>

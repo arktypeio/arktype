@@ -184,7 +184,7 @@ export namespace state {
 	export type reduceSingleBound<
 		s extends StaticState,
 		comparator extends Comparator,
-		limit extends LimitLiteral,
+		limit extends number | string,
 		unscanned extends string
 	> = state.from<{
 		root: [s["root"], comparator, limit]

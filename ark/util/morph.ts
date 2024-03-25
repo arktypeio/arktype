@@ -1,5 +1,5 @@
 import type { evaluate } from "./generics.js"
-import type { List, listable } from "./lists.js"
+import type { array, listable } from "./lists.js"
 import type { Entry, Key, entryOf, fromEntries } from "./records.js"
 import type { intersectUnion } from "./unionToTuple.js"
 
@@ -40,7 +40,7 @@ type entryArgsWithIndex<o> = {
 	[k in keyof o]: [k: k, v: o[k], i: number]
 }[keyof o]
 
-type numericArrayEntry<a extends List> = number extends a["length"]
+type numericArrayEntry<a extends array> = number extends a["length"]
 	? [number, a[number]]
 	: {
 			[i in keyof a]: i extends `${infer n extends number}` ? [n, a[i]] : never
@@ -54,7 +54,7 @@ export type fromMappedEntries<transformed extends MappedEntry> = [
 	? arrayFromListableEntries<extractEntries<transformed>>
 	: objectFromListableEntries<extractEntrySets<transformed>>
 
-export function morph<const o extends List, transformed extends MappedEntry>(
+export function morph<const o extends array, transformed extends MappedEntry>(
 	o: o,
 	flatMapEntry: (...args: numericArrayEntry<o>) => transformed
 ): fromMappedEntries<transformed>

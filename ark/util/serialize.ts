@@ -1,5 +1,5 @@
 import { domainOf, type inferDomain, type Primitive } from "./domain.js"
-import type { List } from "./lists.js"
+import type { array } from "./lists.js"
 import type { BigintLiteral, NumberLiteral } from "./numericLiterals.js"
 import type { Dict } from "./records.js"
 
@@ -33,8 +33,8 @@ export type snapshot<t, depth extends 1[] = []> = unknown extends t
 	? string
 	: depth["length"] extends 10
 	? unknown
-	: t extends List<infer item>
-	? List<snapshot<item, [...depth, 1]>>
+	: t extends array<infer item>
+	? array<snapshot<item, [...depth, 1]>>
 	: {
 			[k in keyof t]: snapshot<t[k], [...depth, 1]>
 	  }

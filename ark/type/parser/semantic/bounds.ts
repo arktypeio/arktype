@@ -1,4 +1,4 @@
-import type { ErrorMessage, List } from "@arktype/util"
+import type { ErrorMessage, array } from "@arktype/util"
 import type { LimitLiteral } from "../../constraints/ast.js"
 import type { writeUnboundableMessage } from "../../constraints/refinements/range.js"
 import type {
@@ -57,7 +57,7 @@ type isNumericallyBoundable<bounded> = [bounded] extends [number]
 	? true
 	: [bounded] extends [string]
 	? true
-	: [bounded] extends [List]
+	: [bounded] extends [array]
 	? true
 	: false
 

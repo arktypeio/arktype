@@ -1,5 +1,5 @@
 import type { defined, evaluate } from "./generics.js"
-import type { List } from "./lists.js"
+import type { array } from "./lists.js"
 import { morph } from "./morph.js"
 
 export type Dict<k extends string = string, v = unknown> = {
@@ -69,7 +69,7 @@ type mutableRecurse<
 
 export type entryOf<o> = {
 	[k in keyof o]-?: [k, o[k] & ({} | null)]
-}[o extends List ? keyof o & number : keyof o] &
+}[o extends array ? keyof o & number : keyof o] &
 	unknown
 
 export type entriesOf<o extends object> = entryOf<o>[]
@@ -91,7 +91,7 @@ export const fromEntries = <const entries extends readonly Entry[]>(
 ): fromEntries<entries> => Object.fromEntries(entries) as never
 
 /** Mimics the result of Object.keys(...) */
-export type keysOf<o> = o extends List
+export type keysOf<o> = o extends array
 	? number extends o["length"]
 		? `${number}`
 		: keyof o & `${number}`
