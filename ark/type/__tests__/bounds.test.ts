@@ -101,7 +101,7 @@ describe("bounds", () => {
 			attest(t).type.toString.snap()
 			attest(t.json).snap({
 				proto: "Date",
-				before: { exclusive: true, rule: "$ark.date1" }
+				before: { exclusive: true, rule: "2023-01-12T05:00:00.000Z" }
 			})
 		})
 		it("Date equality", () => {
@@ -118,8 +118,8 @@ describe("bounds", () => {
 			attest(t).type.toString.snap()
 			attest(t.json).snap({
 				proto: "Date",
-				before: { exclusive: true, rule: "$ark.date3" },
-				after: { exclusive: true, rule: "$ark.date4" }
+				before: { exclusive: true, rule: "2005-10-10T04:00:00.000Z" },
+				after: { exclusive: true, rule: "2001-10-10T04:00:00.000Z" }
 			})
 			attest(t.allows(new Date("2003/10/10"))).equals(true)
 			attest(t.allows(new Date("2001/10/10"))).equals(false)
