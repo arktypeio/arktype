@@ -155,6 +155,32 @@ bench(
 	.types([337, "instantiations"])
 ```
 
+## CLI
+
+Attest also includes a builtin `attest` CLI including the following commands:
+
+### `stats`
+
+```bash
+npm run attest stats packages/*
+```
+
+Summarizes key type performance metrics for each package (check time, instantiations, and type count).
+
+Expects any number of args representing package directories to check, optionally specified using glob patterns like `packages/*`.
+
+If no directories are provided, defaults to CWD.
+
+### `trace`
+
+```bash
+npm run attest trace .
+```
+
+Creates a trace.json file in a .tstrace directory that can be viewed as a type performance heat map via a tool like https://ui.perfetto.dev/. Also summarizes any hot spots as identified by `@typescript/analyze-trace`.
+
+Trace expects a single argument representing the root directory of the root package for which to gather type information.
+
 ## Integration
 
 ### Setup

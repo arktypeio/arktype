@@ -1,7 +1,7 @@
 import { execSync } from "child_process"
 import { baseDiagnosticTscCmd } from "./shared.js"
 
-export const stats = (args: string[]) => {
+export const stats = (args: string[]): void => {
 	const packageDirs = args.length ? args : [process.cwd()]
 	const listedStats = packageDirs.map((packageDir): TypePerfStats => {
 		console.log(`⏳ Gathering type perf data for ${packageDir}...`)
