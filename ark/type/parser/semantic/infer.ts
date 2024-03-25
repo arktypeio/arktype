@@ -89,26 +89,32 @@ export type constrainBound<
 	constrainableIn,
 	comparator extends Comparator,
 	limit
-> = constrain<
-	constrainableIn,
-	distillIn<constrainableIn> extends infer In
+> = distillIn<constrainableIn> extends infer In
+	? comparator extends "=="
 		? In extends number
-			? comparator extends MinComparator
-				? "min"
-				: "max"
-			: In extends string | List
-			? comparator extends MinComparator
-				? "minLength"
-				: "maxLength"
-			: comparator extends MinComparator
-			? "after"
-			: "before"
-		: never,
-	{
-		rule: limit & number
-		exclusive: comparator extends ">" | "<" ? true : false
-	}
->
+			? limit
+			: In extends Date
+			? Date.literal<limit & (string | number)>
+			: constrain<constrainableIn, "exactLength", limit & number>
+		: constrain<
+				constrainableIn,
+				In extends number
+					? comparator extends MinComparator
+						? "min"
+						: "max"
+					: In extends string | List
+					? comparator extends MinComparator
+						? "minLength"
+						: "maxLength"
+					: comparator extends MinComparator
+					? "after"
+					: "before",
+				{
+					rule: limit & number
+					exclusive: comparator extends ">" | "<" ? true : false
+				}
+		  >
+	: never
 
 export type PrefixOperator = "keyof" | "instanceof" | "===" | "node"
 

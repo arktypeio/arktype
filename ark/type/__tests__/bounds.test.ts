@@ -5,6 +5,7 @@ import {
 	writeMalformedNumericLiteralMessage
 } from "@arktype/util"
 import { type } from "arktype"
+import { it } from "mocha"
 import type {
 	AtLeast,
 	AtMost,
@@ -36,6 +37,7 @@ describe("bounds", () => {
 		it(">", () => {
 			const t = type("number>0")
 			attest<number>(t.infer)
+			attest(t).type.toString.snap()
 			attest(t.json).snap({
 				domain: "number",
 				min: { exclusive: true, rule: 0 }
@@ -44,6 +46,7 @@ describe("bounds", () => {
 		it("<", () => {
 			const t = type("number<10")
 			attest<number>(t.infer)
+			attest(t).type.toString.snap()
 			const expected = node({
 				domain: "number",
 				max: { rule: 10, exclusive: true }
@@ -53,6 +56,7 @@ describe("bounds", () => {
 		it("<=", () => {
 			const t = type("number<=-49")
 			attest<number>(t.infer)
+			attest(t).type.toString.snap()
 			const expected = node({
 				domain: "number",
 				max: { rule: -49, exclusive: false }
@@ -61,13 +65,14 @@ describe("bounds", () => {
 		})
 		it("==", () => {
 			const t = type("number==3211993")
-			attest<number>(t.infer)
+			attest<3211993>(t.infer)
+			attest(t).type.toString.snap()
 			const expected = node({ unit: 3211993 })
 			attest(t.json).equals(expected.json)
 		})
 		it("<,<=", () => {
 			const t = type("-5<number<=5")
-			attest<Type<number.is<MoreThan<-5> & AtMost<5>>, Ark>>(t)
+			attest(t).type.toString.snap()
 			attest<number>(t.infer)
 			const expected = node({
 				domain: "number",
@@ -78,7 +83,7 @@ describe("bounds", () => {
 		})
 		it("<=,<", () => {
 			const t = type("-3.23<=number<4.654")
-			attest<Type<number.is<AtLeast<-3.23> & LessThan<4.654>>, Ark>>(t)
+			attest(t).type.toString.snap()
 			attest<number>(t.infer)
 			const expected = node({
 				domain: "number",
@@ -89,6 +94,7 @@ describe("bounds", () => {
 		})
 		it("whitespace following comparator", () => {
 			const t = type("number > 3")
+			attest(t).type.toString.snap()
 			attest<number>(t.infer)
 			const expected = node({
 				domain: "number",
