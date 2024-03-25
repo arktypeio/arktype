@@ -5,11 +5,18 @@ import {
 	writeMalformedNumericLiteralMessage
 } from "@arktype/util"
 import { type } from "arktype"
+import type {
+	AtLeast,
+	AtMost,
+	LessThan,
+	MoreThan,
+	number
+} from "../constraints/ast.js"
 import {
 	boundKindPairsByLower,
 	writeUnboundableMessage
 } from "../constraints/refinements/range.js"
-import { node } from "../keywords/ark.js"
+import { node, type Ark } from "../keywords/ark.js"
 import { writeDoubleRightBoundMessage } from "../parser/semantic/bounds.js"
 import {
 	writeMultipleLeftBoundsMessage,
@@ -22,6 +29,7 @@ import {
 } from "../parser/string/shift/operator/bounds.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { IntersectionSchema } from "../types/intersection.js"
+import type { Type } from "../types/type.js"
 
 describe("bounds", () => {
 	describe("parse", () => {
@@ -59,6 +67,7 @@ describe("bounds", () => {
 		})
 		it("<,<=", () => {
 			const t = type("-5<number<=5")
+			attest<Type<number.is<MoreThan<-5> & AtMost<5>>, Ark>>(t)
 			attest<number>(t.infer)
 			const expected = node({
 				domain: "number",
@@ -69,6 +78,7 @@ describe("bounds", () => {
 		})
 		it("<=,<", () => {
 			const t = type("-3.23<=number<4.654")
+			attest<Type<number.is<AtLeast<-3.23> & LessThan<4.654>>, Ark>>(t)
 			attest<number>(t.infer)
 			const expected = node({
 				domain: "number",
