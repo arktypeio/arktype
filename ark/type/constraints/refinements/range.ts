@@ -135,12 +135,10 @@ export const parseExclusiveKey: KeyDefinitions<BaseRangeDeclaration>["exclusive"
 		parse: (flag: boolean) => flag || undefined
 	}
 
-export const parseDateLimit = {
-	parse: (limit: LimitSchemaValue): Date =>
-		typeof limit === "string" || typeof limit === "number"
-			? new Date(limit)
-			: limit
-}
+export const parseDateLimit = (limit: LimitSchemaValue): Date =>
+	typeof limit === "string" || typeof limit === "number"
+		? new Date(limit)
+		: limit
 
 export interface BaseRangeDeclaration extends BaseNodeDeclaration {
 	kind: RangeKind

@@ -36,7 +36,10 @@ export class BeforeNode extends BaseRange<BeforeDeclaration> {
 			collapsibleKey: "rule",
 			hasAssociatedError: true,
 			keys: {
-				rule: parseDateLimit,
+				rule: {
+					parse: parseDateLimit,
+					serialize: (schema) => schema.toISOString()
+				},
 				exclusive: parseExclusiveKey
 			},
 			normalize: (schema) =>

@@ -35,7 +35,10 @@ export class AfterNode extends BaseRange<AfterDeclaration> {
 			collapsibleKey: "rule",
 			hasAssociatedError: true,
 			keys: {
-				rule: parseDateLimit,
+				rule: {
+					parse: parseDateLimit,
+					serialize: (schema) => schema.toISOString()
+				},
 				exclusive: parseExclusiveKey
 			},
 			normalize: (schema) =>

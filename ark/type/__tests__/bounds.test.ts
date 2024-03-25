@@ -99,13 +99,16 @@ describe("bounds", () => {
 			const t = type("Date<d'2023/1/12'")
 			attest<Date>(t.infer)
 			attest(t).type.toString.snap()
-			attest(t.json).snap()
+			attest(t.json).snap({
+				proto: "Date",
+				before: { exclusive: true, rule: "$ark.date1" }
+			})
 		})
 		it("Date equality", () => {
 			const t = type("Date==d'2020-1-1'")
 			attest<Date>(t.infer)
 			attest(t).type.toString.snap()
-			attest(t.json).snap()
+			attest(t.json).snap({ unit: "2020-01-01T05:00:00.000Z" })
 			attest(t.allows(new Date("2020/01/01"))).equals(true)
 			attest(t.allows(new Date("2020/01/02"))).equals(false)
 		})
@@ -113,7 +116,11 @@ describe("bounds", () => {
 			const t = type("d'2001/10/10'<Date<d'2005/10/10'")
 			attest<Date>(t.infer)
 			attest(t).type.toString.snap()
-			attest(t.json).snap()
+			attest(t.json).snap({
+				proto: "Date",
+				before: { exclusive: true, rule: "$ark.date3" },
+				after: { exclusive: true, rule: "$ark.date4" }
+			})
 			attest(t.allows(new Date("2003/10/10"))).equals(true)
 			attest(t.allows(new Date("2001/10/10"))).equals(false)
 			attest(t.allows(new Date("2005/10/10"))).equals(false)
@@ -268,14 +275,14 @@ describe("bounds", () => {
 		})
 
 		it("after", () => {
-			const t = type("Date").constrain("after", new Date(2022, 0, 1))
+			const t = type("Date").constrain("after", new Date("2022-01-01"))
 			// widen the input to a string so both are non-narrowed
 			const expected = type(`Date>=d'${"2022-01-01" as string}'`)
 			attest<typeof expected>(t)
 			attest(t.json).equals(expected.json)
 		})
 
-		it("cbefore", () => {
+		it("before", () => {
 			const t = type("Date").constrain("before", 5)
 			const expected = type("Date<=5")
 			attest<typeof expected>(t)
