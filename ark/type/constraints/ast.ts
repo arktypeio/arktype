@@ -44,17 +44,25 @@ export type intersectConstrainables<l, r> = [l, r] extends [
 
 export type LimitLiteral = number | DateLiteral
 
-export type min<rule extends number | string> = { min: { [k in rule]: 0 | 1 } }
+export type atLeast_<rule extends number | string> = {
+	min: { [k in rule]: 0 | 1 }
+}
 
-export type max<rule extends number | string> = { max: { [k in rule]: 0 | 1 } }
+export type atMost_<rule extends number | string> = {
+	max: { [k in rule]: 0 | 1 }
+}
 
-export type more<rule extends number | string> = { min: { [k in rule]: 0 } }
+export type moreThan_<rule extends number | string> = {
+	min: { [k in rule]: 0 }
+}
 
-export type less<rule extends number | string> = { max: { [k in rule]: 0 } }
+export type lessThan_<rule extends number | string> = {
+	max: { [k in rule]: 0 }
+}
 
-export type dateLiteral<rule extends string | number> = { dateLiteral: rule }
+export type dateLiteral_<rule extends string | number> = { dateLiteral: rule }
 
-export type divisor<rule extends number> = {
+export type divisibleBy_<rule extends number> = {
 	divisor: { [k in rule]: 1 }
 }
 
@@ -76,19 +84,19 @@ export type primitiveConstraintKindOf<In> = Extract<
 >
 
 export namespace number {
-	export type atLeast<rule extends number> = of<number, min<rule>>
+	export type atLeast<rule extends number> = of<number, atLeast_<rule>>
 
-	export type moreThan<rule extends number> = of<number, more<rule>>
+	export type moreThan<rule extends number> = of<number, moreThan_<rule>>
 
-	export type atMost<rule extends number> = of<number, max<rule>>
+	export type atMost<rule extends number> = of<number, atMost_<rule>>
 
-	export type lessThan<rule extends number> = of<number, less<rule>>
+	export type lessThan<rule extends number> = of<number, lessThan_<rule>>
 
-	export type divisibleBy<rule extends number> = of<number, divisor<rule>>
+	export type divisibleBy<rule extends number> = of<number, divisibleBy_<rule>>
 
 	export type narrowed = of<number, predicate>
 
-	export type all<constraints extends Constraints> = of<number, constraints>
+	export type _<constraints extends Constraints> = of<number, constraints>
 
 	export type constrain<
 		kind extends PrimitiveConstraintKind,
@@ -108,20 +116,48 @@ export namespace number {
 		: never
 }
 
+export type atLeastLength_<rule extends number | string> = {
+	min: { [k in rule]: 0 | 1 }
+}
+
+export type atMostLength_<rule extends number | string> = {
+	max: { [k in rule]: 0 | 1 }
+}
+
+export type moreThanLength_<rule extends number | string> = {
+	min: { [k in rule]: 0 }
+}
+
+export type lessThanLength_<rule extends number | string> = {
+	max: { [k in rule]: 0 }
+}
+
 export namespace string {
-	export type atLeastLength<rule extends number> = of<string, min<rule>>
+	export type atLeastLength<rule extends number> = of<
+		string,
+		atLeastLength_<rule>
+	>
 
-	export type moreThanLength<rule extends number> = of<string, more<rule>>
+	export type moreThanLength<rule extends number> = of<
+		string,
+		moreThanLength_<rule>
+	>
 
-	export type atMostLength<rule extends number> = of<string, max<rule>>
+	export type atMostLength<rule extends number> = of<
+		string,
+		atMostLength_<rule>
+	>
 
-	export type lessThanLength<rule extends number> = of<string, less<rule>>
+	export type lessThanLength<rule extends number> = of<
+		string,
+		lessThanLength_<rule>
+	>
 
 	export type matching<rule extends string> = of<string, regex<rule>>
 
 	export type narrowed = of<string, predicate>
 
-	export type all<constraints extends Constraints> = of<string, constraints>
+	export type _<constraints extends Constraints> = of<string, constraints>
 
 	export type constrain<
 		kind extends PrimitiveConstraintKind,
@@ -141,23 +177,39 @@ export namespace string {
 		: never
 }
 
+export type atOrAfter_<rule extends number | string> = {
+	min: { [k in rule]: 0 | 1 }
+}
+
+export type atOrBefore_<rule extends number | string> = {
+	max: { [k in rule]: 0 | 1 }
+}
+
+export type after_<rule extends number | string> = {
+	min: { [k in rule]: 0 }
+}
+
+export type before_<rule extends number | string> = {
+	max: { [k in rule]: 0 }
+}
+
 export namespace Date {
-	export type atOrAfter<rule extends string> = of<Date, min<rule>>
+	export type atOrAfter<rule extends string> = of<Date, atOrAfter_<rule>>
 
-	export type after<rule extends string> = of<Date, more<rule>>
+	export type after<rule extends string> = of<Date, after_<rule>>
 
-	export type atOrBefore<rule extends string> = of<Date, max<rule>>
+	export type atOrBefore<rule extends string> = of<Date, atOrBefore_<rule>>
 
-	export type before<rule extends string> = of<Date, less<rule>>
+	export type before<rule extends string> = of<Date, before_<rule>>
 
 	export type narrowed = of<Date, predicate>
 
 	export type literal<rule extends string | number> = of<
 		Date,
-		dateLiteral<rule>
+		dateLiteral_<rule>
 	>
 
-	export type all<constraints extends Constraints> = of<Date, constraints>
+	export type _<constraints extends Constraints> = of<Date, constraints>
 
 	export type constrain<
 		kind extends PrimitiveConstraintKind,
@@ -182,9 +234,9 @@ export type constrain<
 > = schemaToConstraint<kind, schema> extends infer constraint
 	? t extends of<infer base, infer constraints>
 		? [number, base] extends [base, number]
-			? number.all<constraint & constraints>
+			? number._<constraint & constraints>
 			: [string, base] extends [base, string]
-			? string.all<constraint & constraints>
+			? string._<constraint & constraints>
 			: of<base, constraints & constraint>
 		: [number, t] extends [t, number]
 		? number.constrain<kind, schema>
@@ -206,16 +258,16 @@ export type schemaToConstraint<
 	? kind extends "regex"
 		? regex<rule & string>
 		: kind extends "divisor"
-		? divisor<rule & number>
+		? divisibleBy_<rule & number>
 		: kind extends "exactLength"
 		? length<rule & number>
 		: kind extends "min" | "minLength" | "after"
 		? schema extends { exclusive: true }
-			? more<rule & (string | number)>
-			: min<rule & (string | number)>
+			? moreThan_<rule & (string | number)>
+			: atLeast_<rule & (string | number)>
 		: kind extends "max" | "maxLength" | "before"
 		? schema extends { exclusive: true }
-			? less<rule & (string | number)>
-			: max<rule & (string | number)>
+			? lessThan_<rule & (string | number)>
+			: atMost_<rule & (string | number)>
 		: predicate
 	: never
