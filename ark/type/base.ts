@@ -127,12 +127,19 @@ export abstract class BaseNode<
 	t,
 	d extends BaseNodeDeclaration
 > extends Callable<
-	(data: unknown) => ArkResult<distillIn<t>, distillOut<t>>,
+	(data: d["prerequisite"]) => ArkResult<distillIn<t>, distillOut<t>>,
 	BaseAttachmentsOf<d>
 > {
 	constructor(public attachments: BaseAttachments) {
 		super(
-			(data: any) => {
+			(data: any): ArkResult<any> => {
+				if (
+					!this.includesMorph &&
+					!this.includesContextDependentPredicate &&
+					this.allows(data)
+				) {
+					return { data, out: data }
+				}
 				const ctx = new TraversalContext(data, this.$.resolvedConfig)
 				this.traverseApply(data, ctx)
 				return ctx.finalize()

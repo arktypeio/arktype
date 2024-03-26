@@ -31,10 +31,10 @@ const t = type({
 	}
 })
 
-// bench("allows", () => {
-// 	t.allows(validData)
-// }).median([5.93, "ns"])
+bench("allows", () => {
+	t.allows(validData)
+}).median([5.59, "ns"])
 
-// bench("apply", () => {
-// 	t(validData)
-// }).median([6.98, "us"])
+bench("apply", () => {
+	t(validData)
+}).median([7.01, "ns"])
