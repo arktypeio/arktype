@@ -1,6 +1,6 @@
 import { attest } from "@arktype/attest"
-import { node, type Ark } from "../keywords/ark.js"
-import type { Type } from "../types/type.js"
+import { node, type Ark } from "../../keywords/ark.js"
+import type { Type } from "../../types/type.js"
 
 describe("parse", () => {
 	it("single constraint", () => {

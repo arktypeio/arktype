@@ -1,8 +1,8 @@
 import { attest } from "@arktype/attest"
 import { scope } from "arktype"
-import { configure } from "../config.js"
-import { node } from "../keywords/ark.js"
-import { defaultConfig } from "../scope.js"
+import { configure } from "../../config.js"
+import { node } from "../../keywords/ark.js"
+import { defaultConfig } from "../../scope.js"
 
 describe("errors", () => {
 	it("shallow", () => {
