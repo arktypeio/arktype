@@ -1,5 +1,5 @@
 import { bench } from "@arktype/attest"
-import { node } from "../../keywords/ark.js"
+import { node } from "@arktype/schema"
 
 bench("domain", () => {
 	return node("string").infer

@@ -18,7 +18,6 @@ import {
 	type evaluate,
 	type listable
 } from "@arktype/util"
-import { arkKind, hasArkKind } from "../type/util.js"
 import type { PredicateNode } from "./constraints/predicate.js"
 import type { IndexNode } from "./constraints/props/index.js"
 import type { PropNode } from "./constraints/props/prop.js"
@@ -67,6 +66,7 @@ import {
 	type TraverseAllows,
 	type TraverseApply
 } from "./shared/traversal.js"
+import { arkKind, hasArkKind } from "./shared/utils.js"
 import type { DomainNode } from "./types/domain.js"
 import type { IntersectionNode } from "./types/intersection.js"
 import type {
@@ -76,7 +76,6 @@ import type {
 	distillOut
 } from "./types/morph.js"
 import type { ProtoNode } from "./types/proto.js"
-import type { Type } from "./types/type.js"
 import type { UnionNode } from "./types/union.js"
 import type { UnitNode } from "./types/unit.js"
 
@@ -307,7 +306,7 @@ export abstract class BaseNode<
 		return includes(propKinds, this.kind)
 	}
 
-	isType(): this is Type {
+	isType(): this is TypeNode {
 		return includes(typeKinds, this.kind)
 	}
 
@@ -467,7 +466,10 @@ interface NodesByKind<t = any> extends BoundNodesByKind {
 	sequence: SequenceNode
 }
 
-export type Node<kind extends NodeKind, t = any> = NodesByKind<t>[kind]
+export type Node<
+	kind extends NodeKind = NodeKind,
+	t = any
+> = NodesByKind<t>[kind]
 
 export type TypeNode<t = any, kind extends TypeKind = TypeKind> = Node<kind, t>
 

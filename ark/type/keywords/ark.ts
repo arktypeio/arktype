@@ -85,10 +85,6 @@ export const type: TypeParser<Ark> = ark.type
 
 export const match: MatchParser<Ark> = ark.match
 
-export const schema: SchemaParser<Ark> = ark.schema
-
-export const node: NodeParser<Ark> = ark.node
-
 export const define: DefinitionParser<Ark> = ark.define
 
 export const declare: DeclarationParser<Ark> = ark.declare

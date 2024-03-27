@@ -6,7 +6,7 @@ import {
 	type mutable,
 	type satisfy
 } from "@arktype/util"
-import type { TypeSchema } from "../../base.js"
+import type { TypeNode, TypeSchema } from "../../base.js"
 import type { MutableInner } from "../../kinds.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
@@ -17,7 +17,6 @@ import type {
 	nodeImplementationOf
 } from "../../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/traversal.js"
-import type { Type } from "../../types/type.js"
 import { BaseConstraint } from "../constraint.js"
 
 export interface NormalizedSequenceSchema extends BaseMeta {
@@ -32,14 +31,14 @@ export type SequenceSchema = NormalizedSequenceSchema | TypeSchema
 
 export interface SequenceInner extends BaseMeta {
 	// a list of fixed position elements starting at index 0
-	readonly prefix?: readonly Type[]
+	readonly prefix?: readonly TypeNode[]
 	// a list of optional elements following prefix
-	readonly optionals?: readonly Type[]
+	readonly optionals?: readonly TypeNode[]
 	// the variadic element (only checked if all optional elements are present)
-	readonly variadic?: Type
+	readonly variadic?: TypeNode
 	readonly minVariadicLength?: number
 	// a list of fixed position elements, the last being the last element of the array
-	readonly postfix?: readonly Type[]
+	readonly postfix?: readonly TypeNode[]
 }
 
 export type SequenceDeclaration = declareNode<{
@@ -62,7 +61,7 @@ const fixedSequenceKeyDefinition: NodeKeyImplementation<
 			? // empty affixes are omitted. an empty array should therefore
 			  // be specified as `{ proto: Array, length: 0 }`
 			  undefined
-			: schema.map((element) => ctx.$.node(element) as Type)
+			: schema.map((element) => ctx.$.node(element))
 }
 
 export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
@@ -75,7 +74,7 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 				optionals: fixedSequenceKeyDefinition,
 				variadic: {
 					child: true,
-					parse: (schema, ctx) => ctx.$.node(schema) as Type
+					parse: (schema, ctx) => ctx.$.node(schema) as TypeNode
 				},
 				minVariadicLength: {
 					// minVariadicLength is reflected in the id of this node,
@@ -248,7 +247,7 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 		? [this.maxLengthNode]
 		: undefined
 
-	protected childAtIndex(data: array, index: number): Type {
+	protected childAtIndex(data: array, index: number): TypeNode {
 		if (index < this.prevariadic.length) return this.prevariadic[index]
 		const postfixStartIndex = data.length - this.postfix.length
 		if (index >= postfixStartIndex)
@@ -352,7 +351,7 @@ export type SequenceElementKind = satisfy<
 
 export type SequenceElement = {
 	kind: SequenceElementKind
-	node: Type
+	node: TypeNode
 }
 export type SequenceTuple = array<SequenceElement>
 

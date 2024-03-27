@@ -1,32 +1,27 @@
 import {
+	addArkKind,
 	BaseType,
+	extendConfig,
 	globalConfig,
-	isNodeKind,
-	NodeCompiler,
-	parseAttachments,
-	typeKindOfSchema,
+	hasArkKind,
+	resolveConfig,
 	type ArkConfig,
+	type arkKind,
 	type distillIn,
 	type distillOut,
-	type NodeParser,
 	type ResolvedArkConfig,
 	type SchemaParseOptions,
 	type SchemaParser,
-	type TraverseAllows,
-	type TraverseApply,
 	type TypeKind,
 	type UnionNode,
 	type UnitNode,
 	type UnknownNode
 } from "@arktype/schema"
 import {
-	CompiledFunction,
 	domainOf,
 	flatMorph,
 	hasDomain,
-	isArray,
 	isThunk,
-	throwInternalError,
 	throwParseError,
 	type array,
 	type Dict,
@@ -69,7 +64,6 @@ import {
 	type Type,
 	type TypeParser
 } from "./type.js"
-import { addArkKind, hasArkKind, type arkKind } from "./util.js"
 
 export type ScopeParser<parent, ambient> = {
 	<const def>(
@@ -299,23 +293,6 @@ export class Scope<r extends Resolutions = any> {
 		} else {
 			this.resolutions = {}
 		}
-		this.node(
-			"union",
-			{
-				branches: [
-					"string",
-					"number",
-					"object",
-					"bigint",
-					"symbol",
-					{ unit: true },
-					{ unit: false },
-					{ unit: null },
-					{ unit: undefined }
-				]
-			},
-			{ reduceTo: this.node("intersection", {}, { prereduced: true }) }
-		)
 	}
 
 	type: TypeParser<$<r>> = createTypeParser(this as never) as never
@@ -530,96 +507,6 @@ export class Scope<r extends Resolutions = any> {
 		return branches.length === 1
 			? (branches[0] as any)
 			: this.node(branches, { root: true, prereduced: true })
-	}
-
-	node: NodeParser<$<r>> = this.internalNodeParser.bind(this)
-	protected internalNodeParser(
-		schemaOrKind: unknown,
-		schemaOrOpts?: unknown,
-		constraintOpts?: SchemaParseOptions
-	): UnknownNode {
-		const kindArg = isNodeKind(schemaOrKind) ? schemaOrKind : undefined
-
-		let schema = kindArg ? schemaOrOpts : schemaOrKind
-		const opts: SchemaParseOptions | undefined = kindArg
-			? constraintOpts
-			: (schemaOrOpts as never)
-		if (opts?.alias && opts.alias in this.resolutions) {
-			return throwInternalError(
-				`Unexpected attempt to recreate existing alias ${opts.alias}`
-			)
-		}
-		let kind = kindArg ?? typeKindOfSchema(schema)
-		if (kind === "union" && isArray(schema) && schema.length === 1) {
-			schema = schema[0]
-			kind = typeKindOfSchema(schema)
-		}
-		if (opts?.allowedKinds && !opts.allowedKinds.includes(kind)) {
-			return throwParseError(
-				`Schema of kind ${kind} should be one of ${opts.allowedKinds}`
-			)
-		}
-		const node = parseAttachments(kind, schema as never, {
-			$: this,
-			prereduced: opts?.prereduced ?? false,
-			raw: schema,
-			...opts
-		})
-		if (opts?.root) {
-			if (this.resolved) {
-				// this node was not part of the original scope, so compile an anonymous scope
-				// including only its references
-				this.bindCompiledScope(node.contributesReferences)
-			} else {
-				// we're still parsing the scope itself, so defer compilation but
-				// add the node as a reference
-				Object.assign(this.referencesByName, node.contributesReferencesByName)
-			}
-		}
-		return node as never
-	}
-
-	protected bindCompiledScope(references: readonly UnknownNode[]): void {
-		const compiledTraversals = this.compileScope(references)
-		for (const node of references) {
-			if (node.jit) {
-				// if node has already been bound to another scope or anonymous type, don't rebind it
-				continue
-			}
-			node.jit = true
-			node.traverseAllows =
-				compiledTraversals[`${node.reference}Allows`].bind(compiledTraversals)
-			if (node.isType() && !node.includesContextDependentPredicate) {
-				// if the reference doesn't require context, we can assign over
-				// it directly to avoid having to initialize it
-				node.allows = node.traverseAllows as never
-			}
-			node.traverseApply =
-				compiledTraversals[`${node.reference}Apply`].bind(compiledTraversals)
-		}
-	}
-
-	protected compileScope(references: readonly UnknownNode[]): {
-		[k: `${string}Allows`]: TraverseAllows
-		[k: `${string}Apply`]: TraverseApply
-	} {
-		return new CompiledFunction()
-			.block(`return`, (js) => {
-				references.forEach((node) => {
-					const allowsCompiler = new NodeCompiler("Allows").indent()
-					node.compile(allowsCompiler)
-					const applyCompiler = new NodeCompiler("Apply").indent()
-					node.compile(applyCompiler)
-					js.line(
-						allowsCompiler.writeMethod(`${node.reference}Allows`) +
-							",\n" +
-							applyCompiler.writeMethod(`${node.reference}Apply`) +
-							","
-					)
-				})
-				return js
-			})
-			.compile()() as never
 	}
 }
 

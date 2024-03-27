@@ -6,13 +6,14 @@ import type {
 	instanceOf,
 	isAny
 } from "@arktype/util"
+import type { TypeNode } from "../base.js"
 import type { Schema } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BasisKind } from "../shared/implement.js"
 import type { TraverseApply } from "../shared/traversal.js"
 import type { DomainSchema } from "./domain.js"
 import type { ProtoSchema } from "./proto.js"
-import { BaseType, type BaseTypeDeclaration, type Type } from "./type.js"
+import { BaseType, type BaseTypeDeclaration } from "./type.js"
 import type { UnitSchema } from "./unit.js"
 
 export interface BaseBasisDeclaration extends BaseTypeDeclaration {
@@ -29,7 +30,7 @@ export abstract class BaseBasis<
 	abstract readonly errorContext: d["errorContext"]
 	abstract literalKeys: Key[]
 
-	rawKeyOf(): Type {
+	rawKeyOf(): TypeNode {
 		return this.$.parseUnits(...this.literalKeys)
 	}
 

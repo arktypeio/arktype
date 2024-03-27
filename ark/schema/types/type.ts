@@ -40,8 +40,6 @@ export interface BaseTypeDeclaration extends BaseNodeDeclaration {
 	kind: TypeKind
 }
 
-export type Type<t = any> = TypeNode<t>
-
 export abstract class BaseType<
 	t,
 	d extends BaseTypeDeclaration
@@ -50,8 +48,8 @@ export abstract class BaseType<
 		? this.inner.branches
 		: [this as never]
 
-	private keyofCache: Type | undefined
-	keyof(): Type<keyof this["in"]["infer"]> {
+	private keyofCache: TypeNode | undefined
+	keyof(): TypeNode<keyof this["in"]["infer"]> {
 		if (!this.keyofCache) {
 			this.keyofCache = this.rawKeyOf()
 			if (this.keyofCache.isNever())
@@ -62,9 +60,9 @@ export abstract class BaseType<
 		return this.keyofCache as never
 	}
 
-	abstract rawKeyOf(): Type
+	abstract rawKeyOf(): TypeNode
 
-	intersect<r extends Type>(
+	intersect<r extends TypeNode>(
 		r: r
 	): TypeNode<inferIntersection<this["infer"], r["infer"]>> | Disjoint {
 		return this.intersectInternal(r) as never
@@ -90,18 +88,20 @@ export abstract class BaseType<
 		return this.hasKind("union") && this.branches.length === 0
 	}
 
-	get<key extends PropertyKey>(...path: readonly (key | Type<key>)[]): this {
+	get<key extends PropertyKey>(
+		...path: readonly (key | TypeNode<key>)[]
+	): this {
 		return this
 	}
 
-	extract(other: Type): Type {
+	extract(other: TypeNode): TypeNode {
 		return this.$.node(
 			this.branches.filter((branch) => branch.extends(other)),
 			{ root: true }
 		)
 	}
 
-	exclude(other: Type): Type {
+	exclude(other: TypeNode): TypeNode {
 		return this.$.node(
 			this.branches.filter((branch) => !branch.extends(other)),
 			{ root: true }
@@ -120,7 +120,7 @@ export abstract class BaseType<
 
 	// add the extra inferred intersection so that a variable of Type
 	// can be narrowed without other branches becoming never
-	extends<r>(other: Type<r>): this is Type<r> & { [inferred]?: r } {
+	extends<r>(other: TypeNode<r>): this is TypeNode<r> & { [inferred]?: r } {
 		const intersection = this.intersect(other as never)
 		return (
 			!(intersection instanceof Disjoint) && this.equals(intersection as never)
@@ -174,7 +174,7 @@ export abstract class BaseType<
 		return this.rawConstrain(kind, schema) as never
 	}
 
-	protected rawConstrain(kind: ConstraintKind, schema: unknown): Type {
+	protected rawConstrain(kind: ConstraintKind, schema: unknown): TypeNode {
 		const constraint = this.$.node(kind, schema as never)
 		if (
 			constraint.impliedBasis &&

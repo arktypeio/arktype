@@ -5,13 +5,11 @@ import {
 	reference,
 	type Key
 } from "@arktype/util"
-import type { Node } from "../../base.js"
-import type { Scope } from "../../scope.js"
+import type { Node, TypeNode } from "../../base.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { PropKind } from "../../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/traversal.js"
 import type { IntersectionNode } from "../../types/intersection.js"
-import type { Type } from "../../types/type.js"
 import { arrayIndexMatcherReference } from "./shared.js"
 
 export type ExtraneousKeyBehavior = "ignore" | ExtraneousKeyRestriction
@@ -24,10 +22,7 @@ export type PropsGroupInput = Pick<
 >
 
 export class PropsGroup extends DynamicBase<PropsGroupInput> {
-	constructor(
-		public inner: PropsGroupInput,
-		public $: Scope
-	) {
+	constructor(public inner: PropsGroupInput) {
 		super(inner)
 	}
 
@@ -46,8 +41,8 @@ export class PropsGroup extends DynamicBase<PropsGroupInput> {
 	readonly expression = describeProps(this, "expression")
 	readonly literalKeys = literalPropKeysOf(this.all)
 
-	private keyofCache: Type | undefined
-	rawKeyOf(): Type {
+	private keyofCache: TypeNode | undefined
+	rawKeyOf(): TypeNode {
 		if (!this.keyofCache) {
 			let branches = this.$.parseUnits(...this.literalKeys).branches
 			this.index?.forEach(

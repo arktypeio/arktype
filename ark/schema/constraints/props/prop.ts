@@ -66,14 +66,16 @@ export class PropNode extends BaseConstraint<PropDeclaration> {
 						return null
 					}
 					const key = l.key
-					const value = l.value.intersect(r.value)
+					let value = l.value.intersect(r.value)
+					const optional = l.optional === true && r.optional === true
 					if (value instanceof Disjoint) {
-						return value.withPrefixKey(l.compiledKey)
+						if (optional) value = $.keywords.never
+						else return value.withPrefixKey(l.compiledKey)
 					}
 					return $.node("prop", {
 						key,
 						value,
-						optional: l.optional === true && r.optional === true
+						optional
 					})
 				}
 			}

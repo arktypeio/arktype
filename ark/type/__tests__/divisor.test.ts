@@ -1,6 +1,6 @@
 import { attest } from "@arktype/attest"
+import { writeIndivisibleMessage } from "@arktype/schema"
 import { type } from "arktype"
-import { writeIndivisibleMessage } from "../constraints/refinements/divisor.js"
 import { keywords } from "../keywords/ark.js"
 import { writeInvalidDivisorMessage } from "../parser/string/shift/operator/divisor.js"
 

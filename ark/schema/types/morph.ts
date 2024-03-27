@@ -8,7 +8,7 @@ import {
 	type array,
 	type listable
 } from "@arktype/util"
-import type { Node } from "../base.js"
+import type { Node, TypeNode } from "../base.js"
 import type { of } from "../constraints/ast.js"
 import type { Schema } from "../kinds.js"
 import type { StaticArkOption } from "../scope.js"
@@ -25,7 +25,6 @@ import type {
 import {
 	BaseType,
 	defineRightwardIntersections,
-	type Type,
 	type typeKindRightOf
 } from "./type.js"
 
@@ -163,7 +162,7 @@ export class MorphNode<t = any> extends BaseType<t, MorphDeclaration> {
 		return this.inner.out ?? this.$.keywords.unknown
 	}
 
-	rawKeyOf(): Type {
+	rawKeyOf(): TypeNode {
 		return this.in.rawKeyOf()
 	}
 }

@@ -1,10 +1,9 @@
 import { throwParseError, type Key } from "@arktype/util"
-import type { TypeSchema } from "../../base.js"
+import type { TypeNode, TypeSchema } from "../../base.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import type { TypeKind, nodeImplementationOf } from "../../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/traversal.js"
-import type { Type } from "../../types/type.js"
 import { BaseConstraint } from "../constraint.js"
 
 export interface IndexSchema extends BaseMeta {
@@ -13,8 +12,8 @@ export interface IndexSchema extends BaseMeta {
 }
 
 export interface IndexInner extends BaseMeta {
-	readonly key: Type<Key>
-	readonly value: Type
+	readonly key: TypeNode<Key>
+	readonly value: TypeNode
 }
 
 export type IndexDeclaration = declareNode<{
@@ -46,7 +45,7 @@ export class IndexNode extends BaseConstraint<IndexDeclaration> {
 				},
 				value: {
 					child: true,
-					parse: (schema, ctx) => ctx.$.node(schema) as Type
+					parse: (schema, ctx) => ctx.$.node(schema)
 				}
 			},
 			normalize: (schema) => schema,

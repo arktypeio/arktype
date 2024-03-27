@@ -3,7 +3,12 @@ import {
 	throwParseError,
 	type describeExpression
 } from "@arktype/util"
-import { BaseNode, type ConstraintNode, type Node } from "../base.js"
+import {
+	BaseNode,
+	type ConstraintNode,
+	type Node,
+	type TypeNode
+} from "../base.js"
 import type { Prerequisite } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseNodeDeclaration } from "../shared/declare.js"
@@ -14,7 +19,6 @@ import type {
 	kindLeftOf
 } from "../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
-import type { Type } from "../types/type.js"
 
 export type constraintKindLeftOf<kind extends ConstraintKind> = ConstraintKind &
 	kindLeftOf<kind>
@@ -34,8 +38,8 @@ export const throwInvalidOperandError = (
 
 export const writeInvalidOperandMessage = <
 	kind extends ConstraintKind,
-	expected extends Type,
-	actual extends Type
+	expected extends TypeNode,
+	actual extends TypeNode
 >(
 	kind: kind,
 	expected: expected,
@@ -47,7 +51,7 @@ export const writeInvalidOperandMessage = <
 
 export type writeInvalidOperandMessage<
 	kind extends ConstraintKind,
-	actual extends Type
+	actual extends TypeNode
 > = `${Capitalize<kind>} operand must be ${describeExpression<
 	Prerequisite<kind>
 >} (was ${describeExpression<actual["infer"]>})`
@@ -59,7 +63,7 @@ export interface BaseConstraintDeclaration extends BaseNodeDeclaration {
 export abstract class BaseConstraint<
 	d extends BaseConstraintDeclaration
 > extends BaseNode<d["prerequisite"], d> {
-	abstract readonly impliedBasis: Type | undefined
+	abstract readonly impliedBasis: TypeNode | undefined
 	readonly impliedSiblings?: ConstraintNode[] | undefined
 
 	intersect<r extends ConstraintNode>(

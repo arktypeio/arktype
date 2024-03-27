@@ -1,8 +1,10 @@
 import { attest } from "@arktype/attest"
+import {
+	assertNodeKind,
+	writeUndiscriminableMorphUnionMessage,
+	type Out
+} from "@arktype/schema"
 import { scope, type, type Ark, type Type } from "arktype"
-import { assertNodeKind } from "../shared/implement.js"
-import { writeUndiscriminableMorphUnionMessage } from "../types/discriminate.js"
-import type { Out } from "../types/morph.js"
 
 describe("morph", () => {
 	it("base", () => {

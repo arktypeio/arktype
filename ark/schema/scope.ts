@@ -4,6 +4,7 @@ import {
 	type evaluate,
 	type requireKeys
 } from "@arktype/util"
+import type { TypeNode } from "./base.js"
 import { mergeConfigs } from "./config.js"
 import { nodesByKind } from "./kinds.js"
 import type {
@@ -14,11 +15,28 @@ import type {
 	ProblemWriter
 } from "./shared/errors.js"
 import type { DescriptionWriter, NodeKind } from "./shared/implement.js"
-import type { Type } from "./types/type.js"
 
-export type nodeResolutions<keywords> = { [k in keyof keywords]: Type }
+export type nodeResolutions<keywords> = { [k in keyof keywords]: TypeNode }
 
-export type BaseResolutions = Record<string, Type>
+export type BaseResolutions = Record<string, TypeNode>
+
+// this.node(
+// 	"union",
+// 	{
+// 		branches: [
+// 			"string",
+// 			"number",
+// 			"object",
+// 			"bigint",
+// 			"symbol",
+// 			{ unit: true },
+// 			{ unit: false },
+// 			{ unit: null },
+// 			{ unit: undefined }
+// 		]
+// 	},
+// 	{ reduceTo: this.node("intersection", {}, { prereduced: true }) }
+// )
 
 declare global {
 	export interface StaticArkConfig {
@@ -91,7 +109,7 @@ const nonInheritedKeys = [
 	"prereducedAliases"
 ] as const satisfies array<keyof ArkConfig>
 
-const extendConfig = (
+export const extendConfig = (
 	base: ArkConfig,
 	extension: ArkConfig | undefined
 ): ArkConfig => {
@@ -103,5 +121,6 @@ const extendConfig = (
 	return result
 }
 
-const resolveConfig = (scopeConfig: ArkConfig | undefined): ResolvedArkConfig =>
-	extendConfig(defaultConfig, scopeConfig) as never
+export const resolveConfig = (
+	scopeConfig: ArkConfig | undefined
+): ResolvedArkConfig => extendConfig(defaultConfig, scopeConfig) as never

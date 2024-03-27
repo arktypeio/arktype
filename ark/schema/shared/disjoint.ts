@@ -9,12 +9,12 @@ import {
 	type entryOf
 } from "@arktype/util"
 import type { Node } from "../base.js"
-import { hasArkKind } from "../util.js"
 import type {
 	BoundKind,
 	IntersectionChildKind,
 	kindRightOf
 } from "./implement.js"
+import { hasArkKind } from "./utils.js"
 
 type DisjointKinds = {
 	domain?: {

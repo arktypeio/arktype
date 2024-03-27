@@ -3,10 +3,10 @@ import {
 	type BoundKind,
 	type DateLiteral,
 	type LimitLiteral,
-	type Schema
+	type Schema,
+	type TypeNode
 } from "@arktype/schema"
 import { isKeyOf, throwParseError, type keySet } from "@arktype/util"
-import type { Type } from "../../../../type.js"
 import type { astToString } from "../../../semantic/utils.js"
 import type {
 	DynamicState,
@@ -108,7 +108,7 @@ export const writeIncompatibleRangeMessage = (l: BoundKind, r: BoundKind) =>
 export const getBoundKinds = (
 	comparator: Comparator,
 	limit: LimitLiteral,
-	root: Type,
+	root: TypeNode,
 	boundKind: BoundExpressionKind
 ): BoundKind[] => {
 	if (root.extends(root.$.keywords.number)) {

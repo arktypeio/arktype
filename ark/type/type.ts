@@ -1,18 +1,17 @@
-import type {
+import {
 	Disjoint,
-	Schema,
-	TypeNode,
-	throwInvalidOperandError,
+	arkKind,
 	type ArkResult,
 	type BaseMeta,
-	type ConstraintKind,
 	type Morph,
-	type Node,
 	type Out,
 	type Predicate,
 	type PrimitiveConstraintKind,
+	type Schema,
+	type TypeNode,
 	type constrain,
 	type constraintKindOf,
+	type distillConstrainableIn,
 	type distillConstrainableOut,
 	type distillIn,
 	type distillOut,
@@ -25,7 +24,6 @@ import type {
 import {
 	Callable,
 	flatMorph,
-	throwParseError,
 	type Constructor,
 	type Json,
 	type array,
@@ -45,8 +43,7 @@ import type {
 	IndexZeroOperator,
 	TupleInfixOperator
 } from "./parser/tuple.js"
-import type { Resolutions, Scope, bindThis } from "./scope.js"
-import { arkKind } from "./util.js"
+import type { Scope, bindThis } from "./scope.js"
 
 export type TypeParser<$> = {
 	// Parse and check the definition, returning either the original input for a
@@ -123,31 +120,42 @@ export const createTypeParser = <$>($: Scope): TypeParser<$> => {
 	return parser as never
 }
 
-export abstract class Type<t = unknown, $ = any> extends Callable<
+export class Type<t = unknown, $ = any> extends Callable<
 	(data: unknown) => ArkResult<distillIn<t>, distillOut<t>>
 > {
 	declare [inferred]: t
-	// TODO: in/out?
 	declare infer: distillOut<t>
 
 	root: TypeNode<t>
 	allows: this["root"]["allows"]
 	description: string
+	expression: string
 	json: Json
 
-	private keyofCache: Type | undefined
-	keyof(): Type<keyof this["in"]["infer"], $> {
-		if (!this.keyofCache) {
-			this.keyofCache = this.rawKeyOf()
-			if (this.keyofCache.isNever())
-				throwParseError(
-					`keyof ${this.expression} results in an unsatisfiable type`
-				)
-		}
-		return this.keyofCache as never
+	constructor(
+		public definition: unknown,
+		public $: Scope
+	) {
+		const root = $.parseTypeRoot(definition) as {} as TypeNode<t>
+		super(root.apply as never, { bind: root })
+		this.root = root
+		this.allows = root.allows.bind(root)
+		this.json = root.json
+		this.description = this.root.description
+		this.expression = this.root.expression
 	}
 
-	abstract rawKeyOf(): Type
+	get in(): Type<distillConstrainableIn<t>> {
+		return new Type(this.root.in, this.$)
+	}
+
+	get out(): Type<distillConstrainableOut<t>> {
+		return new Type(this.root.out, this.$)
+	}
+
+	keyof(): Type<keyof this["in"]["infer"], $> {
+		return new Type(this.root.keyof(), this.$)
+	}
 
 	intersect<r extends Type>(
 		r: r
@@ -175,10 +183,7 @@ export abstract class Type<t = unknown, $ = any> extends Callable<
 	}
 
 	extract(other: Type): Type {
-		return this.$.node(
-			this.branches.filter((branch) => branch.extends(other)),
-			{ root: true }
-		)
+		return new Type(this.root.extract(other.root), this.$)
 	}
 
 	exclude(other: Type): Type {
@@ -208,7 +213,10 @@ export abstract class Type<t = unknown, $ = any> extends Callable<
 	}
 
 	configure(configOrDescription: BaseMeta | string): this {
-		return this.configureShallowDescendants(configOrDescription)
+		return new Type(
+			this.root.configureShallowDescendants(configOrDescription),
+			this.$
+		) as never
 	}
 
 	describe(description: string): this {
@@ -223,12 +231,15 @@ export abstract class Type<t = unknown, $ = any> extends Callable<
 	// TODO: standardize these
 	morph<morph extends Morph<this["infer"]>>(
 		morph: morph
-	): Type<(In: this["in"]["infer"]) => Out<inferMorphOut<ReturnType<morph>>>, $>
+	): Type<
+		(In: distillConstrainableIn<t>) => Out<inferMorphOut<ReturnType<morph>>>,
+		$
+	>
 	morph<morph extends Morph<this["infer"]>, def>(
 		morph: morph,
 		outValidator: validateTypeRoot<def, $>
 	): Type<
-		(In: this["in"][typeof inferred]) => Out<
+		(In: distillConstrainableIn<t>) => Out<
 			// TODO: validate overlapping
 			// inferMorphOut<ReturnType<morph>> &
 			distillConstrainableOut<inferTypeRoot<def, $>>
@@ -236,22 +247,7 @@ export abstract class Type<t = unknown, $ = any> extends Callable<
 		$
 	>
 	morph(morph: Morph, outValidator?: unknown): unknown {
-		if (this.hasKind("union")) {
-			const branches = this.branches.map((node) =>
-				node.morph(morph, outValidator as never)
-			)
-			return this.$.node("union", { ...this.inner, branches })
-		}
-		if (this.hasKind("morph")) {
-			return this.$.node("morph", {
-				...this.inner,
-				morphs: [...this.morphs, morph]
-			})
-		}
-		return this.$.node("morph", {
-			in: this,
-			morphs: [morph]
-		})
+		return new Type(this.root.morph(morph, outValidator), this.$)
 	}
 
 	// TODO: based on below, should maybe narrow morph output if used after
@@ -259,11 +255,11 @@ export abstract class Type<t = unknown, $ = any> extends Callable<
 		def: def
 	): Type<
 		includesMorphs<t> extends true
-			? (In: this["in"]["infer"]) => Out<inferNarrow<this["infer"], def>>
+			? (In: distillIn<t>) => Out<inferNarrow<this["infer"], def>>
 			: inferNarrow<this["infer"], def>,
 		$
 	> {
-		return this.rawConstrain("predicate", def) as never
+		return this.constrain("predicate" as any, def) as never
 	}
 
 	assert(data: unknown): this["infer"] {
@@ -278,35 +274,7 @@ export abstract class Type<t = unknown, $ = any> extends Callable<
 		kind: conform<kind, constraintKindOf<this["in"]["infer"]>>,
 		schema: schema
 	): Type<constrain<t, kind, schema>, $> {
-		return this.rawConstrain(kind, schema) as never
-	}
-
-	bindScope<resolutions extends Resolutions>(
-		$: Scope<resolutions>
-	): Node<d["kind"], t, resolutions> {
-		if (this.$ === $) return this as never
-		return new (this.constructor as any)({ ...this.attachments, $ })
-	}
-
-	protected rawConstrain(kind: ConstraintKind, schema: unknown): Type {
-		const constraint = this.$.node(kind, schema as never)
-		if (
-			constraint.impliedBasis &&
-			!this.extends(constraint.impliedBasis as never)
-		) {
-			return throwInvalidOperandError(
-				kind,
-				constraint.impliedBasis,
-				this as never
-			)
-		}
-
-		return this.and(
-			// TODO: not an intersection
-			this.$.node("intersection", {
-				[kind]: constraint
-			})
-		) as never
+		return new Type(this.root.constrain(kind, schema), this.$)
 	}
 }
 

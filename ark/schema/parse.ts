@@ -18,7 +18,6 @@ import {
 	type UnknownNode
 } from "./base.js"
 import { nodesByKind, type Schema, type reducibleKindOf } from "./kinds.js"
-import type { Scope } from "./scope.js"
 import type { BaseNodeDeclaration } from "./shared/declare.js"
 import { Disjoint } from "./shared/disjoint.js"
 import {
@@ -45,7 +44,8 @@ export type SchemaParseOptions = {
 
 export type SchemaParseContext = evaluate<
 	SchemaParseOptions & {
-		$: Scope
+		// TODO:?
+		$: any
 		raw: unknown
 	}
 >

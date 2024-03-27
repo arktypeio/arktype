@@ -1,8 +1,6 @@
 import { attest } from "@arktype/attest"
+import { configure, defaultConfig, node } from "@arktype/schema"
 import { scope } from "arktype"
-import { configure } from "../../config.js"
-import { node } from "../../keywords/ark.js"
-import { defaultConfig } from "../../scope.js"
 
 describe("errors", () => {
 	it("shallow", () => {
@@ -10,8 +8,8 @@ describe("errors", () => {
 			domain: "number",
 			divisor: 3
 		})
-		attest(n(6)).snap({ data: 6, out: 6 })
-		attest(n(7).errors?.summary).snap("must be a multiple of 3 (was 7)")
+		attest(n.apply(6)).snap({ data: 6, out: 6 })
+		attest(n.apply(7).errors?.summary).snap("must be a multiple of 3 (was 7)")
 	})
 	it("at path", () => {
 		const o = node({
@@ -24,8 +22,8 @@ describe("errors", () => {
 				}
 			}
 		})
-		attest(o({ foo: 6 }).out).snap({ foo: 6 })
-		attest(o({ foo: 7 }).errors?.summary).snap(
+		attest(o.apply({ foo: 6 }).out).snap({ foo: 6 })
+		attest(o.apply({ foo: 7 }).errors?.summary).snap(
 			"foo must be a multiple of 3 (was 7)"
 		)
 	})
@@ -34,8 +32,8 @@ describe("errors", () => {
 			proto: Array,
 			sequence: "number"
 		})
-		attest(t([5]).out).snap([5])
-		attest(t([5, "five"]).errors?.summary).snap(
+		attest(t.apply([5]).out).snap([5])
+		attest(t.apply([5, "five"]).errors?.summary).snap(
 			"value at [1] must be a number (was string)"
 		)
 	})
@@ -45,7 +43,7 @@ describe("errors", () => {
 			description: "my special bigint"
 		})
 		attest(superSpecialBigint.description).snap("my special bigint")
-		attest(superSpecialBigint(5).errors?.summary).snap(
+		attest(superSpecialBigint.apply(5).errors?.summary).snap(
 			"must be my special bigint (was number)"
 		)
 	})
@@ -58,7 +56,7 @@ describe("errors", () => {
 		attest(evenNumber.description).snap("an even number")
 		// since the error is from the divisor constraint which didn't have a
 		// description, it is unchanged
-		attest(evenNumber(5).errors?.summary).snap(
+		attest(evenNumber.apply(5).errors?.summary).snap(
 			"must be a multiple of 2 (was 5)"
 		)
 	})

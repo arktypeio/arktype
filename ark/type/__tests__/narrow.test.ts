@@ -1,10 +1,9 @@
 import { attest } from "@arktype/attest"
+import type { Narrowed, of, Out, string } from "@arktype/schema"
 import { reference, type equals } from "@arktype/util"
 import { type, type Type } from "arktype"
 import { describe } from "mocha"
-import type { Narrowed, of, string } from "../constraints/ast.js"
 import type { Ark } from "../keywords/ark.js"
-import type { Out } from "../types/morph.js"
 
 describe("narrow", () => {
 	it("implicit problem", () => {

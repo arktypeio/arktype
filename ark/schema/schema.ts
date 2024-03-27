@@ -1,18 +1,34 @@
-import type {
-	Constructor,
-	ErrorMessage,
-	NonEnumerableDomain,
-	array,
-	conform,
-	describe,
-	inferDomain,
-	instanceOf,
-	isAny
+import {
+	CompiledFunction,
+	isArray,
+	throwInternalError,
+	throwParseError,
+	type Constructor,
+	type ErrorMessage,
+	type NonEnumerableDomain,
+	type array,
+	type conform,
+	type describe,
+	type inferDomain,
+	type instanceOf,
+	type isAny
 } from "@arktype/util"
-import type { Node, TypeSchema, UnknownNode } from "./base.js"
+import {
+	typeKindOfSchema,
+	type Node,
+	type TypeSchema,
+	type UnknownNode
+} from "./base.js"
 import type { Prerequisite, Schema, reducibleKindOf } from "./kinds.js"
-import type { SchemaParseOptions } from "./parse.js"
-import type { BasisKind, ConstraintKind, NodeKind } from "./shared/implement.js"
+import { parseAttachments, type SchemaParseOptions } from "./parse.js"
+import { NodeCompiler } from "./shared/compile.js"
+import {
+	isNodeKind,
+	type BasisKind,
+	type ConstraintKind,
+	type NodeKind
+} from "./shared/implement.js"
+import type { TraverseAllows, TraverseApply } from "./shared/traversal.js"
 import type { DomainNode, DomainSchema } from "./types/domain.js"
 import type {
 	IntersectionNode,
@@ -35,6 +51,97 @@ import type {
 	UnionSchema
 } from "./types/union.js"
 import type { UnitNode, UnitSchema } from "./types/unit.js"
+
+export const node: NodeParser<{}> = ((
+	schemaOrKind: unknown,
+	schemaOrOpts?: unknown,
+	constraintOpts?: SchemaParseOptions
+): UnknownNode => {
+	const kindArg = isNodeKind(schemaOrKind) ? schemaOrKind : undefined
+
+	let schema = kindArg ? schemaOrOpts : schemaOrKind
+	const opts: SchemaParseOptions | undefined = kindArg
+		? constraintOpts
+		: (schemaOrOpts as never)
+	if (opts?.alias && opts.alias in this.resolutions) {
+		return throwInternalError(
+			`Unexpected attempt to recreate existing alias ${opts.alias}`
+		)
+	}
+	let kind = kindArg ?? typeKindOfSchema(schema)
+	if (kind === "union" && isArray(schema) && schema.length === 1) {
+		schema = schema[0]
+		kind = typeKindOfSchema(schema)
+	}
+	if (opts?.allowedKinds && !opts.allowedKinds.includes(kind)) {
+		return throwParseError(
+			`Schema of kind ${kind} should be one of ${opts.allowedKinds}`
+		)
+	}
+	const node = parseAttachments(kind, schema as never, {
+		$: this,
+		prereduced: opts?.prereduced ?? false,
+		raw: schema,
+		...opts
+	})
+	if (opts?.root) {
+		if (this.resolved) {
+			// this node was not part of the original scope, so compile an anonymous scope
+			// including only its references
+			this.bindCompiledScope(node.contributesReferences)
+		} else {
+			// we're still parsing the scope itself, so defer compilation but
+			// add the node as a reference
+			Object.assign(this.referencesByName, node.contributesReferencesByName)
+		}
+	}
+	return node as never
+}) as never
+
+const bindCompiledScope = (references: readonly UnknownNode[]): void => {
+	const compiledTraversals = this.compileScope(references)
+	for (const node of references) {
+		if (node.jit) {
+			// if node has already been bound to another scope or anonymous type, don't rebind it
+			continue
+		}
+		node.jit = true
+		node.traverseAllows =
+			compiledTraversals[`${node.reference}Allows`].bind(compiledTraversals)
+		if (node.isType() && !node.includesContextDependentPredicate) {
+			// if the reference doesn't require context, we can assign over
+			// it directly to avoid having to initialize it
+			node.allows = node.traverseAllows as never
+		}
+		node.traverseApply =
+			compiledTraversals[`${node.reference}Apply`].bind(compiledTraversals)
+	}
+}
+
+const compileScope = (
+	references: readonly UnknownNode[]
+): {
+	[k: `${string}Allows`]: TraverseAllows
+	[k: `${string}Apply`]: TraverseApply
+} => {
+	return new CompiledFunction()
+		.block(`return`, (js) => {
+			references.forEach((node) => {
+				const allowsCompiler = new NodeCompiler("Allows").indent()
+				node.compile(allowsCompiler)
+				const applyCompiler = new NodeCompiler("Apply").indent()
+				node.compile(applyCompiler)
+				js.line(
+					allowsCompiler.writeMethod(`${node.reference}Allows`) +
+						",\n" +
+						applyCompiler.writeMethod(`${node.reference}Apply`) +
+						","
+				)
+			})
+			return js
+		})
+		.compile()() as never
+}
 
 export type SchemaParser<$> = <const schema>(
 	schema: validateSchema<schema, $>

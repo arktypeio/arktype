@@ -13,8 +13,12 @@ import {
 	type evaluate,
 	type listable
 } from "@arktype/util"
-import type { Scope } from "../../type/scope.js"
-import { BaseNode, type ConstraintNode, type Node } from "../base.js"
+import {
+	BaseNode,
+	type ConstraintNode,
+	type Node,
+	type TypeNode
+} from "../base.js"
 import {
 	PropsGroup,
 	type ExtraneousKeyBehavior,
@@ -39,7 +43,7 @@ import {
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 import type { DomainNode, DomainSchema } from "./domain.js"
 import type { ProtoNode, ProtoSchema } from "./proto.js"
-import { BaseType, defineRightwardIntersections, type Type } from "./type.js"
+import { BaseType, defineRightwardIntersections } from "./type.js"
 
 export type IntersectionBasisKind = "domain" | "proto"
 
@@ -93,8 +97,8 @@ const intersectionChildKeyParser =
 const intersectIntersections = (
 	reduced: IntersectionInner,
 	raw: IntersectionInner,
-	$: Scope
-): Type | Disjoint => {
+	$: unknown
+): TypeNode | Disjoint => {
 	// avoid treating adding instance keys as keys of lRoot, rRoot
 	if (reduced instanceof IntersectionNode) reduced = reduced.inner
 	if (raw instanceof IntersectionNode) raw = raw.inner
@@ -333,7 +337,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 		}
 	}
 
-	rawKeyOf(): Type {
+	rawKeyOf(): TypeNode {
 		return this.basis
 			? this.props
 				? this.basis.rawKeyOf().or(this.props.rawKeyOf())
@@ -342,7 +346,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 	}
 }
 
-const maybeCreatePropsGroup = (inner: IntersectionInner, $: Scope) => {
+const maybeCreatePropsGroup = (inner: IntersectionInner, $: unknown) => {
 	const propsInput = pick(inner, propKeys)
 	return isEmptyObject(propsInput) ? undefined : new PropsGroup(propsInput, $)
 }
@@ -387,15 +391,15 @@ type ConstraintIntersectionState = {
 	root: IntersectionRoot
 	l: ConstraintNode[]
 	r: ConstraintNode[]
-	types: Type[]
-	$: Scope
+	types: TypeNode[]
+	$: unknown
 }
 
 const intersectConstraints = (
 	s: ConstraintIntersectionState
-): Type | Disjoint => {
+): TypeNode | Disjoint => {
 	if (!s.r.length) {
-		let result: Type | Disjoint = s.$.node(
+		let result: TypeNode | Disjoint = s.$.node(
 			"intersection",
 			Object.assign(s.root, unflattenConstraints(s.l)),
 			{ prereduced: true }

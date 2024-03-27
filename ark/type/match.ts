@@ -1,6 +1,7 @@
 import type {
 	Morph,
 	Narrowed,
+	TypeNode,
 	distillOut,
 	inferIntersection
 } from "@arktype/schema"
@@ -14,7 +15,7 @@ import type {
 	valueOf
 } from "@arktype/util"
 import type { Scope } from "./scope.js"
-import type { Type, inferTypeRoot, validateTypeRoot } from "./type.js"
+import type { inferTypeRoot, validateTypeRoot } from "./type.js"
 
 type MatchParserContext = {
 	thens: readonly ((In: unknown) => unknown)[]
@@ -176,7 +177,7 @@ export type MatchInvocation<ctx extends MatchInvocationContext> = <
 
 export const createMatchParser = <$>($: Scope): MatchParser<$> => {
 	const matchParser = (isRestricted: boolean) => {
-		const handledCases: { when: Type; then: Morph }[] = []
+		const handledCases: { when: TypeNode; then: Morph }[] = []
 		let defaultCase: ((x: unknown) => unknown) | null = null
 
 		const parser = {

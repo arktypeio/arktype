@@ -6,10 +6,9 @@ import {
 	type propwiseXor
 } from "@arktype/util"
 import type { Prerequisite, errorContext } from "../kinds.js"
-import { arkKind } from "../util.js"
 import type { NodeKind } from "./implement.js"
 import type { TraversalContext } from "./traversal.js"
-import { pathToPropString, type TraversalPath } from "./utils.js"
+import { arkKind, pathToPropString, type TraversalPath } from "./utils.js"
 
 export const throwArkError = (
 	...args: ConstructorParameters<typeof ArkError>

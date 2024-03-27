@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import { node } from "../../keywords/ark.js"
+import { node } from "@arktype/schema"
 
 describe("intersections", () => {
 	it("normalizes refinement order", () => {

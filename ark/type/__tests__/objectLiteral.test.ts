@@ -1,8 +1,10 @@
 import { attest } from "@arktype/attest"
+import {
+	writeInvalidPropertyKeyMessage,
+	writeUnboundableMessage
+} from "@arktype/schema"
 import { printable, reference } from "@arktype/util"
 import { scope, type } from "arktype"
-import { writeInvalidPropertyKeyMessage } from "../constraints/props/index.js"
-import { writeUnboundableMessage } from "../constraints/refinements/range.js"
 import { writeInvalidSpreadTypeMessage } from "../parser/objectLiteral.js"
 import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclosed.js"
 

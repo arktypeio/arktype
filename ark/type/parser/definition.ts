@@ -1,4 +1,4 @@
-import type { string } from "@arktype/schema"
+import { hasArkKind, type TypeNode, type string } from "@arktype/schema"
 import {
 	isThunk,
 	objectKindOf,
@@ -19,8 +19,6 @@ import {
 } from "@arktype/util"
 import type { type } from "../keywords/ark.js"
 import type { ParseContext } from "../scope.js"
-import type { Type } from "../type.js"
-import { hasArkKind } from "../util.js"
 import {
 	parseObjectLiteral,
 	type inferObjectLiteral,
@@ -35,7 +33,7 @@ import {
 	type validateTuple
 } from "./tuple.js"
 
-export const parseObject = (def: object, ctx: ParseContext): Type => {
+export const parseObject = (def: object, ctx: ParseContext): TypeNode => {
 	const objectKind = objectKindOf(def)
 	switch (objectKind) {
 		case undefined:

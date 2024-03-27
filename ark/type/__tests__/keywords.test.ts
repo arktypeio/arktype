@@ -1,6 +1,6 @@
 import { attest } from "@arktype/attest"
+import { node } from "@arktype/schema"
 import { type } from "arktype"
-import { node } from "../keywords/ark.js"
 
 describe("keywords", () => {
 	describe("jsObjects", () => {

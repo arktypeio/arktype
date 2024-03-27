@@ -1,4 +1,4 @@
-import type { LimitLiteral } from "@arktype/schema"
+import type { LimitLiteral, TypeNode } from "@arktype/schema"
 import {
 	isKeyOf,
 	throwInternalError,
@@ -6,7 +6,6 @@ import {
 	type requireKeys
 } from "@arktype/util"
 import type { ParseContext } from "../../../scope.js"
-import type { Type } from "../../../type.js"
 import type { InfixOperator } from "../../semantic/infer.js"
 import { parseOperand } from "../shift/operand/operand.js"
 import { parseOperator } from "../shift/operator/operator.js"
@@ -29,15 +28,15 @@ import {
 type BranchState = {
 	prefixes: StringifiablePrefixOperator[]
 	leftBound?: OpenLeftBound
-	intersection?: Type
-	union?: Type
+	intersection?: TypeNode
+	union?: TypeNode
 }
 
 export type DynamicStateWithRoot = requireKeys<DynamicState, "root">
 
 export class DynamicState {
 	readonly scanner: Scanner
-	root: Type | undefined
+	root: TypeNode | undefined
 	branches: BranchState = {
 		prefixes: []
 	}
@@ -65,11 +64,11 @@ export class DynamicState {
 		return value
 	}
 
-	constrainRoot(...args: Parameters<Type["constrain"]>): void {
+	constrainRoot(...args: Parameters<TypeNode["constrain"]>): void {
 		this.root = this.root!.constrain(...args)
 	}
 
-	setRoot(root: Type): void {
+	setRoot(root: TypeNode): void {
 		this.root = root
 	}
 

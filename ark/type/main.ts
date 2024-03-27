@@ -6,7 +6,6 @@ export {
 	define,
 	keywords,
 	match,
-	schema,
 	scope,
 	type,
 	type Ark

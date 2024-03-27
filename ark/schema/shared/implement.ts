@@ -11,14 +11,13 @@ import {
 	type listable,
 	type requireKeys
 } from "@arktype/util"
-import type { Node, UnknownNode } from "../base.js"
+import type { Node, TypeNode, UnknownNode } from "../base.js"
 import type { PropsGroupInput } from "../constraints/props/props.js"
 import type { Declaration, Inner, errorContext } from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
-import type { NodeConfig, ParsedUnknownNodeConfig, Scope } from "../scope.js"
+import type { NodeConfig, ParsedUnknownNodeConfig } from "../scope.js"
 import type { IntersectionInner } from "../types/intersection.js"
-import type { Type, typeKindOrRightOf, typeKindRightOf } from "../types/type.js"
-import { hasArkKind } from "../util.js"
+import type { typeKindOrRightOf, typeKindRightOf } from "../types/type.js"
 import type {
 	BaseErrorContext,
 	BaseMeta,
@@ -26,6 +25,7 @@ import type {
 } from "./declare.js"
 import type { Disjoint } from "./disjoint.js"
 import { throwArkError } from "./errors.js"
+import { hasArkKind } from "./utils.js"
 
 export const basisKinds = ["unit", "proto", "domain"] as const
 
@@ -147,7 +147,11 @@ type accumulateRightKinds<
 export type ConstraintIntersection<
 	lKind extends ConstraintKind,
 	rKind extends kindOrRightOf<lKind>
-> = (l: Node<lKind>, r: Node<rKind>, $: Scope) => UnknownNode | Disjoint | null
+> = (
+	l: Node<lKind>,
+	r: Node<rKind>,
+	$: unknown
+) => UnknownNode | Disjoint | null
 
 export type ConstraintIntersectionMap<kind extends ConstraintKind> = evaluate<
 	{
@@ -160,7 +164,7 @@ export type ConstraintIntersectionMap<kind extends ConstraintKind> = evaluate<
 export type TypeIntersection<
 	lKind extends TypeKind,
 	rKind extends typeKindOrRightOf<lKind>
-> = (l: Node<lKind>, r: Node<rKind>, $: Scope) => Type | Disjoint
+> = (l: Node<lKind>, r: Node<rKind>, $: unknown) => TypeNode | Disjoint
 
 export type TypeIntersectionMap<kind extends TypeKind> = {
 	[rKind in typeKindOrRightOf<kind>]: TypeIntersection<kind, rKind>
@@ -174,7 +178,7 @@ export type UnknownIntersectionMap = {
 	[k in NodeKind]?: (
 		l: UnknownNode,
 		r: UnknownNode,
-		$: Scope
+		$: unknown
 	) => UnknownIntersectionResult
 }
 
@@ -274,7 +278,7 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	collapsibleKey?: keyof d["inner"]
 	reduce?: (
 		inner: d["inner"],
-		$: Scope
+		$: unknown
 	) => Node<d["reducibleTo"]> | Disjoint | undefined
 }
 

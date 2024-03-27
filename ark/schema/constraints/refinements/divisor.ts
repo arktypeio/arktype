@@ -1,6 +1,6 @@
+import type { TypeNode } from "../../base.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import type { TraverseAllows } from "../../shared/traversal.js"
-import type { Type } from "../../types/type.js"
 import {
 	BasePrimitiveConstraint,
 	writeInvalidOperandMessage
@@ -54,12 +54,12 @@ export class DivisorNode extends BasePrimitiveConstraint<DivisorDeclaration> {
 	readonly expression = `% ${this.rule}`
 }
 
-export const writeIndivisibleMessage = <node extends Type>(
+export const writeIndivisibleMessage = <node extends TypeNode>(
 	t: node
 ): writeIndivisibleMessage<node> =>
 	writeInvalidOperandMessage("divisor", t.$.keywords.number, t)
 
-export type writeIndivisibleMessage<node extends Type> =
+export type writeIndivisibleMessage<node extends TypeNode> =
 	writeInvalidOperandMessage<"divisor", node>
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
