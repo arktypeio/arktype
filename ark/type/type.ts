@@ -1,10 +1,36 @@
+import type {
+	Disjoint,
+	Schema,
+	TypeNode,
+	throwInvalidOperandError,
+	type ArkResult,
+	type BaseMeta,
+	type ConstraintKind,
+	type Morph,
+	type Node,
+	type Out,
+	type Predicate,
+	type PrimitiveConstraintKind,
+	type constrain,
+	type constraintKindOf,
+	type distillConstrainableOut,
+	type distillIn,
+	type distillOut,
+	type includesMorphs,
+	type inferIntersection,
+	type inferMorphOut,
+	type inferNarrow,
+	type inferred
+} from "@arktype/schema"
 import {
+	Callable,
 	flatMorph,
+	throwParseError,
 	type Constructor,
+	type Json,
 	type array,
 	type conform
 } from "@arktype/util"
-import type { Predicate } from "./constraints/predicate.js"
 import type {
 	inferDefinition,
 	validateDeclared,
@@ -19,10 +45,7 @@ import type {
 	IndexZeroOperator,
 	TupleInfixOperator
 } from "./parser/tuple.js"
-import type { Scope, bindThis } from "./scope.js"
-import type { BaseMeta } from "./shared/declare.js"
-import type { Morph, distillIn, distillOut } from "./types/morph.js"
-import type { Type } from "./types/type.js"
+import type { Resolutions, Scope, bindThis } from "./scope.js"
 import { arkKind } from "./util.js"
 
 export type TypeParser<$> = {
@@ -98,6 +121,193 @@ export const createTypeParser = <$>($: Scope): TypeParser<$> => {
 		return $.parseTypeRoot(args)
 	}
 	return parser as never
+}
+
+export abstract class Type<t = unknown, $ = any> extends Callable<
+	(data: unknown) => ArkResult<distillIn<t>, distillOut<t>>
+> {
+	declare [inferred]: t
+	// TODO: in/out?
+	declare infer: distillOut<t>
+
+	root: TypeNode<t>
+	allows: this["root"]["allows"]
+	description: string
+	json: Json
+
+	private keyofCache: Type | undefined
+	keyof(): Type<keyof this["in"]["infer"], $> {
+		if (!this.keyofCache) {
+			this.keyofCache = this.rawKeyOf()
+			if (this.keyofCache.isNever())
+				throwParseError(
+					`keyof ${this.expression} results in an unsatisfiable type`
+				)
+		}
+		return this.keyofCache as never
+	}
+
+	abstract rawKeyOf(): Type
+
+	intersect<r extends Type>(
+		r: r
+	): Type<inferIntersection<this["infer"], r["infer"]>, t> | Disjoint {
+		return this.intersectInternal(r) as never
+	}
+
+	and<def>(
+		def: validateTypeRoot<def, $>
+	): Type<inferIntersection<t, inferTypeRoot<def, $>>, $> {
+		const result = this.intersect(this.$.parseTypeRoot(def))
+		return result instanceof Disjoint ? result.throw() : (result as never)
+	}
+
+	or<def>(def: validateTypeRoot<def, $>): Type<t | inferTypeRoot<def, $>, $> {
+		const branches = [
+			...this.branches,
+			...(this.$.parseTypeRoot(def).branches as any)
+		]
+		return this.$.node(branches) as never
+	}
+
+	get<key extends PropertyKey>(...path: readonly (key | Type<key>)[]): this {
+		return this
+	}
+
+	extract(other: Type): Type {
+		return this.$.node(
+			this.branches.filter((branch) => branch.extends(other)),
+			{ root: true }
+		)
+	}
+
+	exclude(other: Type): Type {
+		return this.$.node(
+			this.branches.filter((branch) => !branch.extends(other)),
+			{ root: true }
+		) as never
+	}
+
+	array(): Type<t[], $> {
+		return this.$.node(
+			{
+				proto: Array,
+				sequence: this
+			},
+			{ prereduced: true, root: true }
+		) as never
+	}
+
+	// add the extra inferred intersection so that a variable of Type
+	// can be narrowed without other branches becoming never
+	extends<r>(other: Type<r>): this is Type<r, $> & { [inferred]?: r } {
+		const intersection = this.intersect(other as never)
+		return (
+			!(intersection instanceof Disjoint) && this.equals(intersection as never)
+		)
+	}
+
+	configure(configOrDescription: BaseMeta | string): this {
+		return this.configureShallowDescendants(configOrDescription)
+	}
+
+	describe(description: string): this {
+		return this.configure(description)
+	}
+
+	// TODO: should return out
+	from(literal: this["in"]["infer"]): this["out"]["infer"] {
+		return literal as never
+	}
+
+	// TODO: standardize these
+	morph<morph extends Morph<this["infer"]>>(
+		morph: morph
+	): Type<(In: this["in"]["infer"]) => Out<inferMorphOut<ReturnType<morph>>>, $>
+	morph<morph extends Morph<this["infer"]>, def>(
+		morph: morph,
+		outValidator: validateTypeRoot<def, $>
+	): Type<
+		(In: this["in"][typeof inferred]) => Out<
+			// TODO: validate overlapping
+			// inferMorphOut<ReturnType<morph>> &
+			distillConstrainableOut<inferTypeRoot<def, $>>
+		>,
+		$
+	>
+	morph(morph: Morph, outValidator?: unknown): unknown {
+		if (this.hasKind("union")) {
+			const branches = this.branches.map((node) =>
+				node.morph(morph, outValidator as never)
+			)
+			return this.$.node("union", { ...this.inner, branches })
+		}
+		if (this.hasKind("morph")) {
+			return this.$.node("morph", {
+				...this.inner,
+				morphs: [...this.morphs, morph]
+			})
+		}
+		return this.$.node("morph", {
+			in: this,
+			morphs: [morph]
+		})
+	}
+
+	// TODO: based on below, should maybe narrow morph output if used after
+	narrow<def extends Predicate<distillConstrainableOut<t>>>(
+		def: def
+	): Type<
+		includesMorphs<t> extends true
+			? (In: this["in"]["infer"]) => Out<inferNarrow<this["infer"], def>>
+			: inferNarrow<this["infer"], def>,
+		$
+	> {
+		return this.rawConstrain("predicate", def) as never
+	}
+
+	assert(data: unknown): this["infer"] {
+		const result = this(data)
+		return result.errors ? result.errors.throw() : result.out
+	}
+
+	constrain<
+		kind extends PrimitiveConstraintKind,
+		const schema extends Schema<kind>
+	>(
+		kind: conform<kind, constraintKindOf<this["in"]["infer"]>>,
+		schema: schema
+	): Type<constrain<t, kind, schema>, $> {
+		return this.rawConstrain(kind, schema) as never
+	}
+
+	bindScope<resolutions extends Resolutions>(
+		$: Scope<resolutions>
+	): Node<d["kind"], t, resolutions> {
+		if (this.$ === $) return this as never
+		return new (this.constructor as any)({ ...this.attachments, $ })
+	}
+
+	protected rawConstrain(kind: ConstraintKind, schema: unknown): Type {
+		const constraint = this.$.node(kind, schema as never)
+		if (
+			constraint.impliedBasis &&
+			!this.extends(constraint.impliedBasis as never)
+		) {
+			return throwInvalidOperandError(
+				kind,
+				constraint.impliedBasis,
+				this as never
+			)
+		}
+
+		return this.and(
+			// TODO: not an intersection
+			this.$.node("intersection", {
+				[kind]: constraint
+			})
+		) as never
+	}
 }
 
 export type DefinitionParser<$> = <def>(

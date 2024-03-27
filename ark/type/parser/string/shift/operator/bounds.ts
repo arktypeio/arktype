@@ -1,9 +1,12 @@
+import {
+	writeUnboundableMessage,
+	type BoundKind,
+	type DateLiteral,
+	type LimitLiteral,
+	type Schema
+} from "@arktype/schema"
 import { isKeyOf, throwParseError, type keySet } from "@arktype/util"
-import type { DateLiteral, LimitLiteral } from "../../../../constraints/ast.js"
-import { writeUnboundableMessage } from "../../../../constraints/refinements/range.js"
-import type { Schema } from "../../../../kinds.js"
-import type { BoundKind } from "../../../../shared/implement.js"
-import type { Type } from "../../../../types/type.js"
+import type { Type } from "../../../../type.js"
 import type { astToString } from "../../../semantic/utils.js"
 import type {
 	DynamicState,

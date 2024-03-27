@@ -1,5 +1,5 @@
 import type { ErrorMessage, join } from "@arktype/util"
-import type { Type } from "../../../../types/type.js"
+import type { Type } from "../../../../type.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import { writeUnclosedGroupMessage } from "../../reduce/shared.js"
 import type { StaticState, state } from "../../reduce/static.js"

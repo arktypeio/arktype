@@ -32,11 +32,7 @@ export type ProtoDeclaration = declareNode<{
 	errorContext: ProtoInner
 }>
 
-export class ProtoNode<t = any, $ = any> extends BaseBasis<
-	t,
-	ProtoDeclaration,
-	$
-> {
+export class ProtoNode<t = any> extends BaseBasis<t, ProtoDeclaration> {
 	static implementation = this.implement({
 		hasAssociatedError: true,
 		collapsibleKey: "proto",

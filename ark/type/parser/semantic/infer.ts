@@ -1,21 +1,21 @@
-import type { BigintLiteral, NumberLiteral, array } from "@arktype/util"
 import type {
 	Date,
 	DateLiteral,
 	LimitLiteral,
 	RegexLiteral,
 	constrain,
+	distillIn,
+	inferIntersection,
 	normalizeLimit,
 	string
-} from "../../constraints/ast.js"
+} from "@arktype/schema"
+import type { BigintLiteral, NumberLiteral, array } from "@arktype/util"
 import type {
 	UnparsedScope,
 	resolve,
 	tryInferSubmoduleReference
 } from "../../scope.js"
-import type { inferIntersection } from "../../shared/intersections.js"
 import type { GenericProps } from "../../type.js"
-import type { distillIn } from "../../types/morph.js"
 import type { inferDefinition } from "../definition.js"
 import type { Comparator, MinComparator } from "../string/reduce/shared.js"
 import type { StringLiteral } from "../string/shift/operand/enclosed.js"

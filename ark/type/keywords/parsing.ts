@@ -1,9 +1,9 @@
+import type { Out } from "@arktype/schema"
 import {
 	wellFormedIntegerMatcher,
 	wellFormedNumberMatcher
 } from "@arktype/util"
 import type { Module, Scope, rootResolutions } from "../scope.js"
-import type { Out } from "../types/morph.js"
 import { root } from "./root.js"
 import { parsedDate } from "./utils/date.js"
 

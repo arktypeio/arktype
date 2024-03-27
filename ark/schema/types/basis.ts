@@ -21,9 +21,8 @@ export interface BaseBasisDeclaration extends BaseTypeDeclaration {
 
 export abstract class BaseBasis<
 	t,
-	d extends BaseBasisDeclaration,
-	$
-> extends BaseType<t, d, $> {
+	d extends BaseBasisDeclaration
+> extends BaseType<t, d> {
 	abstract readonly expression: string
 	abstract readonly compiledCondition: string
 	abstract readonly compiledNegation: string

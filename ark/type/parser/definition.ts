@@ -1,3 +1,4 @@
+import type { string } from "@arktype/schema"
 import {
 	isThunk,
 	objectKindOf,
@@ -16,10 +17,9 @@ import {
 	type optionalKeyOf,
 	type requiredKeyOf
 } from "@arktype/util"
-import type { string } from "../constraints/ast.js"
 import type { type } from "../keywords/ark.js"
 import type { ParseContext } from "../scope.js"
-import type { Type } from "../types/type.js"
+import type { Type } from "../type.js"
 import { hasArkKind } from "../util.js"
 import {
 	parseObjectLiteral,

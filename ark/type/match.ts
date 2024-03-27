@@ -1,4 +1,10 @@
 import type {
+	Morph,
+	Narrowed,
+	distillOut,
+	inferIntersection
+} from "@arktype/schema"
+import type {
 	ErrorMessage,
 	UnknownUnion,
 	isDisjoint,
@@ -7,12 +13,8 @@ import type {
 	unionToTuple,
 	valueOf
 } from "@arktype/util"
-import type { Narrowed } from "./constraints/ast.js"
 import type { Scope } from "./scope.js"
-import type { inferIntersection } from "./shared/intersections.js"
-import type { inferTypeRoot, validateTypeRoot } from "./type.js"
-import type { Morph, distillOut } from "./types/morph.js"
-import type { Type } from "./types/type.js"
+import type { Type, inferTypeRoot, validateTypeRoot } from "./type.js"
 
 type MatchParserContext = {
 	thens: readonly ((In: unknown) => unknown)[]

@@ -4,13 +4,12 @@ import {
 	type Domain,
 	type conform
 } from "@arktype/util"
-import { BaseNode, type Node } from "../base.js"
+import { BaseNode, type Node, type TypeNode } from "../base.js"
 import type { constrain } from "../constraints/ast.js"
 import {
 	throwInvalidOperandError,
 	type PrimitiveConstraintKind
 } from "../constraints/constraint.js"
-import type { Predicate, inferNarrow } from "../constraints/predicate.js"
 import type { Schema, reducibleKindOf } from "../kinds.js"
 import type { BaseMeta, BaseNodeDeclaration } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -24,15 +23,8 @@ import {
 } from "../shared/implement.js"
 import type { inferred } from "../shared/inference.js"
 import type { inferIntersection } from "../shared/intersections.js"
-import type { inferTypeRoot, validateTypeRoot } from "../type.js"
 import type { IntersectionNode, constraintKindOf } from "./intersection.js"
-import type {
-	Morph,
-	Out,
-	distillConstrainableOut,
-	includesMorphs,
-	inferMorphOut
-} from "./morph.js"
+import type { Morph } from "./morph.js"
 import type { UnionChildKind, UnionNode } from "./union.js"
 
 export const defineRightwardIntersections = <kind extends TypeKind>(
@@ -48,21 +40,18 @@ export interface BaseTypeDeclaration extends BaseNodeDeclaration {
 	kind: TypeKind
 }
 
-// @ts-expect-error treat as covariant
-export interface Type<out t = any, $ = any>
-	extends BaseType<t, BaseTypeDeclaration, $> {}
+export type Type<t = any> = TypeNode<t>
 
 export abstract class BaseType<
 	t,
-	d extends BaseTypeDeclaration,
-	$ = any
+	d extends BaseTypeDeclaration
 > extends BaseNode<t, d> {
 	readonly branches: readonly Node<UnionChildKind>[] = this.hasKind("union")
 		? this.inner.branches
 		: [this as never]
 
 	private keyofCache: Type | undefined
-	keyof(): Type<keyof this["in"]["infer"], $> {
+	keyof(): Type<keyof this["in"]["infer"]> {
 		if (!this.keyofCache) {
 			this.keyofCache = this.rawKeyOf()
 			if (this.keyofCache.isNever())
@@ -77,22 +66,19 @@ export abstract class BaseType<
 
 	intersect<r extends Type>(
 		r: r
-	): Type<inferIntersection<this["infer"], r["infer"]>, t> | Disjoint {
+	): TypeNode<inferIntersection<this["infer"], r["infer"]>> | Disjoint {
 		return this.intersectInternal(r) as never
 	}
 
-	and<def>(
-		def: validateTypeRoot<def, $>
-	): Type<inferIntersection<t, inferTypeRoot<def, $>>, $> {
-		const result = this.intersect(this.$.parseTypeRoot(def))
+	and<r extends TypeNode>(
+		r: r
+	): TypeNode<inferIntersection<this["infer"], r["infer"]>> {
+		const result = this.intersect(r)
 		return result instanceof Disjoint ? result.throw() : (result as never)
 	}
 
-	or<def>(def: validateTypeRoot<def, $>): Type<t | inferTypeRoot<def, $>, $> {
-		const branches = [
-			...this.branches,
-			...(this.$.parseTypeRoot(def).branches as any)
-		]
+	or<r extends TypeNode>(r: r): TypeNode<t | r["infer"]> {
+		const branches = [...this.branches, ...(r.branches as any)]
 		return this.$.node(branches) as never
 	}
 
@@ -122,7 +108,7 @@ export abstract class BaseType<
 		) as never
 	}
 
-	array(): Type<t[], $> {
+	array(): IntersectionNode<t[]> {
 		return this.$.node(
 			{
 				proto: Array,
@@ -134,7 +120,7 @@ export abstract class BaseType<
 
 	// add the extra inferred intersection so that a variable of Type
 	// can be narrowed without other branches becoming never
-	extends<r>(other: Type<r>): this is Type<r, $> & { [inferred]?: r } {
+	extends<r>(other: Type<r>): this is Type<r> & { [inferred]?: r } {
 		const intersection = this.intersect(other as never)
 		return (
 			!(intersection instanceof Disjoint) && this.equals(intersection as never)
@@ -154,21 +140,6 @@ export abstract class BaseType<
 		return literal as never
 	}
 
-	// TODO: standardize these
-	morph<morph extends Morph<this["infer"]>>(
-		morph: morph
-	): Type<(In: this["in"]["infer"]) => Out<inferMorphOut<ReturnType<morph>>>, $>
-	morph<morph extends Morph<this["infer"]>, def>(
-		morph: morph,
-		outValidator: validateTypeRoot<def, $>
-	): Type<
-		(In: this["in"][typeof inferred]) => Out<
-			// TODO: validate overlapping
-			// inferMorphOut<ReturnType<morph>> &
-			distillConstrainableOut<inferTypeRoot<def, $>>
-		>,
-		$
-	>
 	morph(morph: Morph, outValidator?: unknown): unknown {
 		if (this.hasKind("union")) {
 			const branches = this.branches.map((node) =>
@@ -188,20 +159,8 @@ export abstract class BaseType<
 		})
 	}
 
-	// TODO: based on below, should maybe narrow morph output if used after
-	narrow<def extends Predicate<distillConstrainableOut<t>>>(
-		def: def
-	): Type<
-		includesMorphs<t> extends true
-			? (In: this["in"]["infer"]) => Out<inferNarrow<this["infer"], def>>
-			: inferNarrow<this["infer"], def>,
-		$
-	> {
-		return this.rawConstrain("predicate", def) as never
-	}
-
 	assert(data: unknown): this["infer"] {
-		const result = this(data)
+		const result = this.apply(data)
 		return result.errors ? result.errors.throw() : result.out
 	}
 
@@ -211,7 +170,7 @@ export abstract class BaseType<
 	>(
 		kind: conform<kind, constraintKindOf<this["in"]["infer"]>>,
 		schema: schema
-	): Type<constrain<t, kind, schema>, $> {
+	): TypeNode<constrain<t, kind, schema>> {
 		return this.rawConstrain(kind, schema) as never
 	}
 

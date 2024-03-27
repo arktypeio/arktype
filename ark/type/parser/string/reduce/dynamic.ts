@@ -1,12 +1,12 @@
+import type { LimitLiteral } from "@arktype/schema"
 import {
 	isKeyOf,
 	throwInternalError,
 	throwParseError,
 	type requireKeys
 } from "@arktype/util"
-import type { LimitLiteral } from "../../../constraints/ast.js"
 import type { ParseContext } from "../../../scope.js"
-import type { Type } from "../../../types/type.js"
+import type { Type } from "../../../type.js"
 import type { InfixOperator } from "../../semantic/infer.js"
 import { parseOperand } from "../shift/operand/operand.js"
 import { parseOperator } from "../shift/operator/operator.js"

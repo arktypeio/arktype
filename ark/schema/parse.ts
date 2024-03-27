@@ -3,7 +3,6 @@ import {
 	hasDomain,
 	isArray,
 	isKeyOf,
-	registry,
 	throwParseError,
 	type Json,
 	type JsonData,

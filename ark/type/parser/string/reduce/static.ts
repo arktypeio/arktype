@@ -1,5 +1,5 @@
+import type { LimitLiteral } from "@arktype/schema"
 import type { Completion, defined, ErrorMessage } from "@arktype/util"
-import type { LimitLiteral } from "../../../constraints/ast.js"
 import type { Scanner } from "../shift/scanner.js"
 import type {
 	Comparator,

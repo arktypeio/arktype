@@ -1,6 +1,5 @@
-import type { UnknownNode } from "./base.js"
+import type { ArkTypeError, UnknownNode } from "@arktype/schema"
 import type { Module, Scope } from "./scope.js"
-import type { ArkTypeError } from "./shared/errors.js"
 import type { Generic } from "./type.js"
 
 export const arkKind = Symbol("ArkTypeInternalKind")

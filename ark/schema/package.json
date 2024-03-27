@@ -1,7 +1,6 @@
 {
-	"name": "arktype",
-	"description": "TypeScript's 1:1 validator, optimized from editor to runtime",
-	"version": "2.0.0-dev.5",
+	"name": "@arktype/schema",
+	"version": "0.0.6",
 	"license": "MIT",
 	"author": {
 		"name": "David Blass",
@@ -35,10 +34,11 @@
 	],
 	"scripts": {
 		"build": "tsx ../repo/build.ts",
-		"test": "tsx ../repo/testPackage.ts"
+		"bench": "tsx ./__tests__/comparison.bench.ts",
+		"test": "tsx ../repo/testPackage.ts",
+		"tnt": "tsx ../repo/testPackage.ts --skipTypes"
 	},
 	"dependencies": {
-		"@arktype/util": "workspace:*",
-		"@arktype/schema": "workspace:*"
+		"@arktype/util": "workspace:*"
 	}
 }

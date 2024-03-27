@@ -13,6 +13,7 @@ import {
 	type evaluate,
 	type listable
 } from "@arktype/util"
+import type { Scope } from "../../type/scope.js"
 import { BaseNode, type ConstraintNode, type Node } from "../base.js"
 import {
 	PropsGroup,
@@ -21,7 +22,6 @@ import {
 } from "../constraints/props/props.js"
 import type { Inner, MutableInner, Prerequisite, Schema } from "../kinds.js"
 import type { SchemaParseContext } from "../parse.js"
-import type { Scope } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import { metaKeys, type BaseMeta, type declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -90,23 +90,6 @@ const intersectionChildKeyParser =
 		return node.intersectionIsOpen ? [node] : (node as any)
 	}
 
-// 	readonly literalKeys = this.named.map((prop) => prop.key.name)
-// 	readonly namedKeyOf = cached(() => node.unit(...this.literalKeys))
-// 	readonly indexedKeyOf = cached(
-// 		() =>
-// 			new Type(
-// 				this.indexed.flatMap((entry) => entry.key.branches),
-// 				this.meta
-// 			)
-// 	)
-// 	readonly keyof = cached(() => this.namedKeyOf().or(this.indexedKeyOf()))
-
-// get(key: string | Type) {
-// 	return typeof key === "string"
-// 		? this.named.find((entry) => entry.value.branches)?.value
-// 		: this.indexed.find((entry) => entry.key.equals(key))?.value
-// }
-
 const intersectIntersections = (
 	reduced: IntersectionInner,
 	raw: IntersectionInner,
@@ -144,10 +127,9 @@ const intersectIntersections = (
 	})
 }
 
-export class IntersectionNode<t = unknown, $ = any> extends BaseType<
+export class IntersectionNode<t = unknown> extends BaseType<
 	t,
-	IntersectionDeclaration,
-	$
+	IntersectionDeclaration
 > {
 	static implementation: nodeImplementationOf<IntersectionDeclaration> =
 		this.implement({

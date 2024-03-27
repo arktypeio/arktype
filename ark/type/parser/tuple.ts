@@ -1,3 +1,20 @@
+import type {
+	BaseMeta,
+	Morph,
+	MutableInner,
+	Node,
+	Out,
+	Predicate,
+	UnionChildKind,
+	distillConstrainableIn,
+	distillConstrainableOut,
+	inferIntersection,
+	inferMorphOut,
+	inferNarrow,
+	instantiateSchema,
+	makeRootAndArrayPropertiesMutable,
+	validateSchema
+} from "@arktype/schema"
 import {
 	append,
 	objectKindOrDomainOf,
@@ -11,23 +28,8 @@ import {
 	type conform,
 	type evaluate
 } from "@arktype/util"
-import type { Node } from "../base.js"
-import type { Predicate, inferNarrow } from "../constraints/predicate.js"
-import type { MutableInner } from "../kinds.js"
-import type { instantiateSchema, validateSchema } from "../schema.js"
 import type { ParseContext } from "../scope.js"
-import type { BaseMeta } from "../shared/declare.js"
-import type { inferIntersection } from "../shared/intersections.js"
-import { makeRootAndArrayPropertiesMutable } from "../shared/utils.js"
-import type {
-	Morph,
-	Out,
-	distillConstrainableIn,
-	distillConstrainableOut,
-	inferMorphOut
-} from "../types/morph.js"
-import type { Type } from "../types/type.js"
-import type { UnionChildKind } from "../types/union.js"
+import type { Type } from "../type.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
 import type { InfixOperator, PostfixExpression } from "./semantic/infer.js"
 import { writeUnsatisfiableExpressionError } from "./semantic/validate.js"

@@ -1,4 +1,5 @@
-export type { of } from "./constraints/ast.js"
+export { ArkError, ArkErrors, ArkTypeError } from "@arktype/schema"
+export type { Out } from "@arktype/schema"
 export {
 	ark,
 	declare,
@@ -11,7 +12,4 @@ export {
 	type Ark
 } from "./keywords/ark.js"
 export type { Module, Scope } from "./scope.js"
-export { ArkError, ArkErrors, ArkTypeError } from "./shared/errors.js"
-export type { inferTypeRoot, validateTypeRoot } from "./type.js"
-export type { Out } from "./types/morph.js"
-export type { Type } from "./types/type.js"
+export type { Type, inferTypeRoot, validateTypeRoot } from "./type.js"

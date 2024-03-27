@@ -1,4 +1,25 @@
 import {
+	BaseType,
+	globalConfig,
+	isNodeKind,
+	NodeCompiler,
+	parseAttachments,
+	typeKindOfSchema,
+	type ArkConfig,
+	type distillIn,
+	type distillOut,
+	type NodeParser,
+	type ResolvedArkConfig,
+	type SchemaParseOptions,
+	type SchemaParser,
+	type TraverseAllows,
+	type TraverseApply,
+	type TypeKind,
+	type UnionNode,
+	type UnitNode,
+	type UnknownNode
+} from "@arktype/schema"
+import {
 	CompiledFunction,
 	domainOf,
 	flatMorph,
@@ -7,23 +28,18 @@ import {
 	isThunk,
 	throwInternalError,
 	throwParseError,
-	type Dict,
-	type Json,
 	type array,
+	type Dict,
 	type evaluate,
 	type isAny,
-	type nominal,
-	type requireKeys
+	type Json,
+	type nominal
 } from "@arktype/util"
-import { typeKindOfSchema, type UnknownNode } from "./base.js"
-import { globalConfig, mergeConfigs } from "./config.js"
 import type { type } from "./keywords/ark.js"
 import type { internalPrimitiveKeywords } from "./keywords/internal.js"
 import type { jsObjectKeywords } from "./keywords/jsObject.js"
 import type { tsPrimitiveKeywords } from "./keywords/tsPrimitive.js"
-import { nodesByKind } from "./kinds.js"
 import { createMatchParser, type MatchParser } from "./match.js"
-import { parseAttachments, type SchemaParseOptions } from "./parse.js"
 import {
 	parseObject,
 	writeBadDefinitionTypeMessage,
@@ -42,22 +58,6 @@ import {
 	writeUnresolvableMessage
 } from "./parser/string/shift/operand/unenclosed.js"
 import { fullStringParse } from "./parser/string/string.js"
-import type { NodeParser, SchemaParser } from "./schema.js"
-import { NodeCompiler } from "./shared/compile.js"
-import type {
-	ActualWriter,
-	ArkErrorCode,
-	ExpectedWriter,
-	MessageWriter,
-	ProblemWriter
-} from "./shared/errors.js"
-import {
-	isNodeKind,
-	type DescriptionWriter,
-	type NodeKind,
-	type TypeKind
-} from "./shared/implement.js"
-import type { TraverseAllows, TraverseApply } from "./shared/traversal.js"
 import {
 	createTypeParser,
 	generic,
@@ -66,105 +66,10 @@ import {
 	type DefinitionParser,
 	type Generic,
 	type GenericProps,
+	type Type,
 	type TypeParser
 } from "./type.js"
-import type { distillIn, distillOut } from "./types/morph.js"
-import { BaseType, type Type } from "./types/type.js"
-import type { UnionNode } from "./types/union.js"
-import type { UnitNode } from "./types/unit.js"
 import { addArkKind, hasArkKind, type arkKind } from "./util.js"
-
-export type nodeResolutions<keywords> = { [k in keyof keywords]: Type }
-
-export type BaseResolutions = Record<string, Type>
-
-declare global {
-	export interface StaticArkConfig {
-		preserve(): never
-	}
-}
-
-type nodeConfigForKind<kind extends NodeKind> = Readonly<
-	evaluate<
-		{
-			description?: DescriptionWriter<kind>
-		} & (kind extends ArkErrorCode
-			? {
-					expected?: ExpectedWriter<kind>
-					actual?: ActualWriter<kind>
-					problem?: ProblemWriter<kind>
-					message?: MessageWriter<kind>
-			  }
-			: {})
-	>
->
-
-type NodeConfigsByKind = {
-	[kind in NodeKind]: nodeConfigForKind<kind>
-}
-
-export type NodeConfig<kind extends NodeKind = NodeKind> =
-	NodeConfigsByKind[kind]
-
-type UnknownNodeConfig = {
-	description?: DescriptionWriter
-	expected?: ExpectedWriter
-	actual?: ActualWriter
-	problem?: ProblemWriter
-	message?: MessageWriter
-}
-
-export type ParsedUnknownNodeConfig = requireKeys<
-	UnknownNodeConfig,
-	"description"
->
-
-export type StaticArkOption<k extends keyof StaticArkConfig> = ReturnType<
-	StaticArkConfig[k]
->
-
-export interface ArkConfig extends Partial<Readonly<NodeConfigsByKind>> {
-	readonly ambient?: Scope | null
-	/** @internal */
-	readonly prereducedAliases?: boolean
-	/** @internal */
-	readonly registerKeywords?: boolean
-}
-
-type resolveConfig<config extends ArkConfig> = {
-	[k in keyof config]-?: k extends NodeKind ? Required<config[k]> : config[k]
-}
-
-export type ResolvedArkConfig = resolveConfig<ArkConfig>
-
-export const defaultConfig: ResolvedArkConfig = Object.assign(
-	flatMorph(nodesByKind, (kind, node) => [kind, node.implementation.defaults]),
-	{
-		prereducedAliases: false,
-		ambient: null,
-		registerKeywords: false
-	} satisfies Omit<ResolvedArkConfig, NodeKind>
-) as never
-
-const nonInheritedKeys = [
-	"registerKeywords",
-	"prereducedAliases"
-] as const satisfies array<keyof ArkConfig>
-
-const extendConfig = (
-	base: ArkConfig,
-	extension: ArkConfig | undefined
-): ArkConfig => {
-	if (!extension) return base
-	const result = mergeConfigs(base, extension)
-	nonInheritedKeys.forEach((k) => {
-		if (!(k in extension)) delete result[k]
-	})
-	return result
-}
-
-const resolveConfig = (scopeConfig: ArkConfig | undefined): ResolvedArkConfig =>
-	extendConfig(defaultConfig, scopeConfig) as never
 
 export type ScopeParser<parent, ambient> = {
 	<const def>(

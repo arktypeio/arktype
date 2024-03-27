@@ -1,5 +1,5 @@
 import {
-	Callable,
+	DynamicBase,
 	compileSerializedValue,
 	flatMorph,
 	includes,
@@ -18,6 +18,7 @@ import {
 	type evaluate,
 	type listable
 } from "@arktype/util"
+import { arkKind, hasArkKind } from "../type/util.js"
 import type { PredicateNode } from "./constraints/predicate.js"
 import type { IndexNode } from "./constraints/props/index.js"
 import type { PropNode } from "./constraints/props/prop.js"
@@ -32,7 +33,6 @@ import type {
 	ioKindOf,
 	reducibleKindOf
 } from "./kinds.js"
-import type { Resolutions, Scope } from "./scope.js"
 import type { NodeCompiler } from "./shared/compile.js"
 import type {
 	BaseAttachmentsOf,
@@ -73,14 +73,12 @@ import type {
 	MorphNode,
 	distillConstrainableIn,
 	distillConstrainableOut,
-	distillIn,
 	distillOut
 } from "./types/morph.js"
 import type { ProtoNode } from "./types/proto.js"
 import type { Type } from "./types/type.js"
 import type { UnionNode } from "./types/union.js"
 import type { UnitNode } from "./types/unit.js"
-import { arkKind, hasArkKind } from "./util.js"
 
 export interface BaseAttachments {
 	alias?: string
@@ -94,7 +92,7 @@ export interface BaseAttachments {
 	readonly children: UnknownNode[]
 	readonly innerId: string
 	readonly typeId: string
-	readonly $: Scope
+	readonly $: any
 }
 
 export interface NarrowedAttachments<d extends BaseNodeDeclaration>
@@ -126,26 +124,9 @@ type subclassDeclaration<self> = Declaration<subclassKind<self>>
 export abstract class BaseNode<
 	t,
 	d extends BaseNodeDeclaration
-> extends Callable<
-	(data: d["prerequisite"]) => ArkResult<distillIn<t>, distillOut<t>>,
-	BaseAttachmentsOf<d>
-> {
+> extends DynamicBase<BaseAttachmentsOf<d>> {
 	constructor(public attachments: BaseAttachments) {
-		super(
-			(data: any): ArkResult<any> => {
-				if (
-					!this.includesMorph &&
-					!this.includesContextDependentPredicate &&
-					this.allows(data)
-				) {
-					return { data, out: data }
-				}
-				const ctx = new TraversalContext(data, this.$.resolvedConfig)
-				this.traverseApply(data, ctx)
-				return ctx.finalize()
-			},
-			{ attach: attachments as never }
-		)
+		super(attachments as never)
 		this.contributesReferencesByName =
 			this.reference in this.referencesByName
 				? this.referencesByName
@@ -234,10 +215,19 @@ export abstract class BaseNode<
 		return this.traverseAllows(data as never, ctx)
 	}
 
-	parse(
+	apply(
 		data: d["prerequisite"]
 	): ArkResult<this["in"]["infer"], this["infer"]> {
-		return this(data)
+		if (
+			!this.includesMorph &&
+			!this.includesContextDependentPredicate &&
+			this.allows(data)
+		) {
+			return { data, out: data }
+		}
+		const ctx = new TraversalContext(data, this.$.resolvedConfig)
+		this.traverseApply(data, ctx)
+		return ctx.finalize()
 	}
 
 	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
@@ -419,13 +409,6 @@ export abstract class BaseNode<
 		)
 	}
 
-	bindScope<resolutions extends Resolutions>(
-		$: Scope<resolutions>
-	): Node<d["kind"], t, resolutions> {
-		if (this.$ === $) return this as never
-		return new (this.constructor as any)({ ...this.attachments, $ })
-	}
-
 	transform(
 		mapper: DeepNodeTransformation,
 		shouldTransform: (node: UnknownNode) => boolean
@@ -469,13 +452,13 @@ export type DeepNodeTransformation = <kind extends NodeKind>(
 	inner: Inner<kind>
 ) => Inner<kind>
 
-interface NodesByKind<t = any, $ = any> extends BoundNodesByKind {
-	union: UnionNode<t, $>
-	morph: MorphNode<t, $>
-	intersection: IntersectionNode<t, $>
-	unit: UnitNode<t, $>
-	proto: ProtoNode<t, $>
-	domain: DomainNode<t, $>
+interface NodesByKind<t = any> extends BoundNodesByKind {
+	union: UnionNode<t>
+	morph: MorphNode<t>
+	intersection: IntersectionNode<t>
+	unit: UnitNode<t>
+	proto: ProtoNode<t>
+	domain: DomainNode<t>
 	divisor: DivisorNode
 	regex: RegexNode
 	predicate: PredicateNode
@@ -484,10 +467,9 @@ interface NodesByKind<t = any, $ = any> extends BoundNodesByKind {
 	sequence: SequenceNode
 }
 
-export type Node<kind extends NodeKind, t = any, $ = any> = NodesByKind<
-	t,
-	$
->[kind]
+export type Node<kind extends NodeKind, t = any> = NodesByKind<t>[kind]
+
+export type TypeNode<t = any, kind extends TypeKind = TypeKind> = Node<kind, t>
 
 export type TypeSchema<kind extends TypeKind = TypeKind> = Schema<kind>
 

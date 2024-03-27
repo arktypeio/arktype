@@ -45,7 +45,7 @@ export type NodeParser<$> = {
 		kind: kind,
 		schema: schema,
 		opts?: SchemaParseOptions
-	): Node<reducibleKindOf<kind>, instantiateSchema<schema, $>["infer"], $>
+	): Node<reducibleKindOf<kind>, instantiateSchema<schema, $>["infer"]>
 	<const schema extends TypeSchema>(
 		schema: schema,
 		opts?: SchemaParseOptions
@@ -71,7 +71,7 @@ export type instantiateSchema<schema, $> = schema extends UnionSchema<
 	infer branches
 >
 	? branches["length"] extends 0
-		? UnionNode<never, "union">
+		? UnionNode<never>
 		: branches["length"] extends 1
 		? instantiateSchemaBranch<branches[0], $>
 		: Node<
@@ -160,26 +160,26 @@ type inferBasisOf<schema, $> = "proto" extends keyof schema
 export type instantiateIntersectionSchema<schema, $> = keyof schema &
 	ConstraintKind extends never
 	? "proto" extends keyof schema
-		? ProtoNode<inferBasisOf<schema, $>, $>
+		? ProtoNode<inferBasisOf<schema, $>>
 		: "domain" extends keyof schema
-		? DomainNode<inferBasisOf<schema, $>, $>
+		? DomainNode<inferBasisOf<schema, $>>
 		: IntersectionNode
-	: IntersectionNode<inferBasisOf<schema, $>, $>
+	: IntersectionNode<inferBasisOf<schema, $>>
 
 export type instantiateBasis<schema extends Schema<BasisKind>, $> =
 	//allow any to be used to access all constraints
 	isAny<schema> extends true
 		? any
 		: schema extends NonEnumerableDomain
-		? DomainNode<inferDomain<schema>, $>
+		? DomainNode<inferDomain<schema>>
 		: schema extends Constructor<infer instance>
-		? ProtoNode<instance, $>
+		? ProtoNode<instance>
 		: schema extends DomainSchema<infer domain>
-		? DomainNode<inferDomain<domain>, $>
+		? DomainNode<inferDomain<domain>>
 		: schema extends ProtoSchema<infer proto>
-		? ProtoNode<instanceOf<proto>, $>
+		? ProtoNode<instanceOf<proto>>
 		: schema extends UnitSchema<infer is>
-		? UnitNode<is, $>
+		? UnitNode<is>
 		: never
 
 // export type inferPropsInput<input extends PropsInput> =

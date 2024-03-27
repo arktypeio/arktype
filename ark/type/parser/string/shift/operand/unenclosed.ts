@@ -1,3 +1,4 @@
+import { BaseType } from "@arktype/schema"
 import {
 	printable,
 	throwParseError,
@@ -10,8 +11,7 @@ import {
 	type NumberLiteral
 } from "@arktype/util"
 import type { Module } from "../../../../scope.js"
-import type { Generic, GenericProps } from "../../../../type.js"
-import { BaseType, type Type } from "../../../../types/type.js"
+import type { Generic, GenericProps, Type } from "../../../../type.js"
 import { hasArkKind } from "../../../../util.js"
 import type { GenericInstantiationAst } from "../../../semantic/infer.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
