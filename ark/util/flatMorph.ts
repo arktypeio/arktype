@@ -54,20 +54,29 @@ export type fromMappedEntries<transformed extends MappedEntry> = [
 	? arrayFromListableEntries<extractEntries<transformed>>
 	: objectFromListableEntries<extractEntrySets<transformed>>
 
-export function morph<const o extends array, transformed extends MappedEntry>(
+export function flatMorph<
+	const o extends array,
+	transformed extends MappedEntry
+>(
 	o: o,
 	flatMapEntry: (...args: numericArrayEntry<o>) => transformed
 ): fromMappedEntries<transformed>
-export function morph<const o extends object, transformed extends MappedEntry>(
+export function flatMorph<
+	const o extends object,
+	transformed extends MappedEntry
+>(
 	o: o,
 	flatMapEntry: (...args: entryOf<o>) => transformed
 ): fromMappedEntries<transformed>
-export function morph<const o extends object, transformed extends MappedEntry>(
+export function flatMorph<
+	const o extends object,
+	transformed extends MappedEntry
+>(
 	o: o,
 	flatMapEntry: (...args: entryArgsWithIndex<o>) => transformed
 ): fromMappedEntries<transformed>
 // eslint-disable-next-line prefer-arrow-functions/prefer-arrow-functions
-export function morph(
+export function flatMorph(
 	o: object,
 	flatMapEntry: (...args: any[]) => listable<Entry>
 ): any {

@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import { entriesOf, morph } from "@arktype/util"
+import { entriesOf, flatMorph } from "@arktype/util"
 import { boundKindPairsByLower } from "../../constraints/refinements/range.js"
 import { node } from "../../keywords/ark.js"
 import { Disjoint } from "../../shared/disjoint.js"
@@ -13,9 +13,9 @@ const numericCases = {
 	greaterThanMax: 11
 }
 
-const dateCases = morph(numericCases, (name, v) => [name, new Date(v)])
+const dateCases = flatMorph(numericCases, (name, v) => [name, new Date(v)])
 
-const lengthCases = morph(numericCases, (name, v) => [name, "1".repeat(v)])
+const lengthCases = flatMorph(numericCases, (name, v) => [name, "1".repeat(v)])
 
 describe("bounds", () => {
 	it("numeric apply", () => {

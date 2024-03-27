@@ -1,8 +1,8 @@
 import {
 	entriesOf,
+	flatMorph,
 	fromEntries,
 	isArray,
-	morph,
 	printable,
 	throwInternalError,
 	throwParseError,
@@ -163,7 +163,7 @@ export class Disjoint {
 			([path, disjoints]) =>
 				[
 					path,
-					morph(disjoints, (kind, disjoint) => [
+					flatMorph(disjoints, (kind, disjoint) => [
 						kind,
 						{ l: disjoint.r, r: disjoint.l }
 					])

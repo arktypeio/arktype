@@ -1,10 +1,10 @@
 import {
 	CompiledFunction,
 	domainOf,
+	flatMorph,
 	hasDomain,
 	isArray,
 	isThunk,
-	morph,
 	throwInternalError,
 	throwParseError,
 	type Dict,
@@ -138,7 +138,7 @@ type resolveConfig<config extends ArkConfig> = {
 export type ResolvedArkConfig = resolveConfig<ArkConfig>
 
 export const defaultConfig: ResolvedArkConfig = Object.assign(
-	morph(nodesByKind, (kind, node) => [kind, node.implementation.defaults]),
+	flatMorph(nodesByKind, (kind, node) => [kind, node.implementation.defaults]),
 	{
 		prereducedAliases: false,
 		ambient: null,
@@ -550,7 +550,7 @@ export class Scope<r extends Resolutions = any> {
 		names extends [] ? keyof r["exports"] & string : names[number]
 	> {
 		return addArkKind(
-			morph(this.export(...names) as Dict, (alias, value) => [
+			flatMorph(this.export(...names) as Dict, (alias, value) => [
 				`#${alias}`,
 				value
 			]) as never,
@@ -590,7 +590,7 @@ export class Scope<r extends Resolutions = any> {
 			}
 			this.exportedResolutions = resolutionsOfModule(this.exportCache)
 			// TODO: add generic json
-			this.json = morph(this.exportedResolutions, (k, v) =>
+			this.json = flatMorph(this.exportedResolutions, (k, v) =>
 				hasArkKind(v, "node") ? [k, v.json] : []
 			)
 			Object.assign(this.resolutions, this.exportedResolutions)
@@ -602,7 +602,7 @@ export class Scope<r extends Resolutions = any> {
 		}
 		const namesToExport = names.length ? names : this.exportedNames
 		return addArkKind(
-			morph(namesToExport, (_, name) => [
+			flatMorph(namesToExport, (_, name) => [
 				name,
 				this.exportCache![name]
 			]) as never,
@@ -726,10 +726,10 @@ const resolutionsOfModule = (typeSet: ExportCache) => {
 		const v = typeSet[k]
 		if (hasArkKind(v, "module")) {
 			const innerResolutions = resolutionsOfModule(v as never)
-			const prefixedResolutions = morph(innerResolutions, (innerK, innerV) => [
-				`${k}.${innerK}`,
-				innerV
-			])
+			const prefixedResolutions = flatMorph(
+				innerResolutions,
+				(innerK, innerV) => [`${k}.${innerK}`, innerV]
+			)
 			Object.assign(result, prefixedResolutions)
 		} else if (hasArkKind(v, "generic")) {
 			result[k] = v

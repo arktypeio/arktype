@@ -1,5 +1,5 @@
 import type { LinePosition } from "@arktype/fs"
-import { morph } from "@arktype/util"
+import { flatMorph } from "@arktype/util"
 import ts from "typescript"
 import { getConfig } from "../config.js"
 import { getFileKey } from "../utils.js"
@@ -170,7 +170,7 @@ const getCompletions = (attestCall: ts.CallExpression) => {
 		}
 	}
 
-	return morph(completions, (prefix, entries) =>
+	return flatMorph(completions, (prefix, entries) =>
 		entries.length >= 1 ? [prefix, entries] : []
 	)
 }

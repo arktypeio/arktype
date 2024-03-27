@@ -1,5 +1,5 @@
 import {
-	morph,
+	flatMorph,
 	type Constructor,
 	type array,
 	type conform
@@ -122,7 +122,10 @@ export const validateUninstantiatedGeneric = (g: Generic): Generic => {
 		// the base type here: https://github.com/arktypeio/arktype/issues/796
 		{
 			baseName: "generic",
-			args: morph(g.parameters, (_, name) => [name, g.scope.keywords.unknown])
+			args: flatMorph(g.parameters, (_, name) => [
+				name,
+				g.scope.keywords.unknown
+			])
 		}
 	)
 	return g
@@ -135,7 +138,7 @@ export const generic = (
 ): Generic =>
 	Object.assign(
 		(...args: unknown[]) => {
-			const argNodes = morph(parameters, (i, param) => [
+			const argNodes = flatMorph(parameters, (i, param) => [
 				param,
 				$.parseTypeRoot(args[i])
 			])

@@ -1,7 +1,7 @@
 import {
 	DynamicBase,
 	conflatenateAll,
-	morph,
+	flatMorph,
 	reference,
 	type Key
 } from "@arktype/util"
@@ -39,7 +39,7 @@ export class PropsGroup extends DynamicBase<PropsGroupInput> {
 		this.sequence
 	)
 	readonly nameSet = this.prop
-		? morph(this.prop, (i, node) => [node.key, 1] as const)
+		? flatMorph(this.prop, (i, node) => [node.key, 1] as const)
 		: {}
 	readonly nameSetReference = reference(this.nameSet)
 	readonly description = describeProps(this, "description")

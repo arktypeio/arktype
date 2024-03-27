@@ -1,6 +1,6 @@
 import {
 	compileSerializedValue,
-	morph,
+	flatMorph,
 	printable,
 	type ErrorMessage,
 	type JsonData,
@@ -108,12 +108,12 @@ export type CompositeKind = Exclude<NodeKind, PrimitiveKind>
 
 export type OrderedNodeKinds = typeof nodeKinds
 
-export const constraintKeys = morph(
+export const constraintKeys = flatMorph(
 	constraintKinds,
 	(i, kind) => [kind, 1] as const
 )
 
-export const propKeys = morph(
+export const propKeys = flatMorph(
 	[...propKinds, "onExtraneousKey"] satisfies (keyof PropsGroupInput)[],
 	(i, k) => [k, 1] as const
 )
@@ -184,7 +184,7 @@ type PrecedenceByKind = {
 	[i in indexOf<OrderedNodeKinds> as OrderedNodeKinds[i]]: i
 }
 
-export const precedenceByKind = morph(
+export const precedenceByKind = flatMorph(
 	nodeKinds,
 	(i, kind) => [kind, i] as entryOf<PrecedenceByKind>
 )

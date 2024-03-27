@@ -1,5 +1,5 @@
 import {
-	morph,
+	flatMorph,
 	throwParseError,
 	type Domain,
 	type conform
@@ -39,7 +39,10 @@ export const defineRightwardIntersections = <kind extends TypeKind>(
 	kind: kind,
 	implementation: TypeIntersection<kind, typeKindRightOf<kind>>
 ): { [k in typeKindRightOf<kind>]: TypeIntersection<kind, k> } =>
-	morph(typeKindsRightOf(kind), (i, kind) => [kind, implementation]) as never
+	flatMorph(typeKindsRightOf(kind), (i, kind) => [
+		kind,
+		implementation
+	]) as never
 
 export interface BaseTypeDeclaration extends BaseNodeDeclaration {
 	kind: TypeKind

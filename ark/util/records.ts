@@ -1,6 +1,6 @@
+import { flatMorph } from "./flatMorph.js"
 import type { defined, evaluate } from "./generics.js"
 import type { array } from "./lists.js"
-import { morph } from "./morph.js"
 
 export type Dict<k extends string = string, v = unknown> = {
 	readonly [_ in k]: v
@@ -219,4 +219,4 @@ export type invert<t extends Record<PropertyKey, PropertyKey>> = {
 
 export const invert = <t extends Record<PropertyKey, PropertyKey>>(
 	t: t
-): invert<t> => morph(t as any, (k, v) => [v, k]) as never
+): invert<t> => flatMorph(t as any, (k, v) => [v, k]) as never

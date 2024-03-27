@@ -1,9 +1,9 @@
 import {
 	Callable,
 	compileSerializedValue,
+	flatMorph,
 	includes,
 	isArray,
-	morph,
 	printable,
 	throwError,
 	throwParseError,
@@ -433,16 +433,19 @@ export abstract class BaseNode<
 		if (!shouldTransform(this as never)) {
 			return this as never
 		}
-		const innerWithTransformedChildren = morph(this.inner as Dict, (k, v) => [
-			k,
-			this.impl.keys[k].child
-				? isArray(v)
-					? v.map((node) =>
-							(node as UnknownNode).transform(mapper, shouldTransform)
-					  )
-					: (v as UnknownNode).transform(mapper, shouldTransform)
-				: v
-		])
+		const innerWithTransformedChildren = flatMorph(
+			this.inner as Dict,
+			(k, v) => [
+				k,
+				this.impl.keys[k].child
+					? isArray(v)
+						? v.map((node) =>
+								(node as UnknownNode).transform(mapper, shouldTransform)
+						  )
+						: (v as UnknownNode).transform(mapper, shouldTransform)
+					: v
+			]
+		)
 		return this.$.node(
 			this.kind,
 			mapper(this.kind, innerWithTransformedChildren as never) as never
