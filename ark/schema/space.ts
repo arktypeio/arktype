@@ -241,7 +241,7 @@ export type instantiateAliases<aliases> = {
 export const space = <aliases>(
 	aliases: validateAliases<aliases>,
 	config: ArkConfig = {}
-) => {
+): instantiateAliases<aliases> => {
 	const referencesByName: { [name: string]: Node } = {}
 	const references: readonly Node[] = []
 	const resolvedConfig = resolveConfig(config)
