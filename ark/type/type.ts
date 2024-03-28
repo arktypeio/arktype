@@ -1,6 +1,7 @@
 import {
 	Disjoint,
 	arkKind,
+	hasArkKind,
 	type ArkResult,
 	type BaseMeta,
 	type Morph,
@@ -145,22 +146,25 @@ export class Type<t = unknown, $ = any> extends Callable<
 		this.expression = this.root.expression
 	}
 
-	get in(): Type<distillConstrainableIn<t>> {
-		return new Type(this.root.in, this.$)
+	get in(): Type<distillConstrainableIn<t>, $> {
+		return new Type(this.root.in, this.$) as never
 	}
 
-	get out(): Type<distillConstrainableOut<t>> {
-		return new Type(this.root.out, this.$)
+	get out(): Type<distillConstrainableOut<t>, $> {
+		return new Type(this.root.out, this.$) as never
 	}
 
 	keyof(): Type<keyof this["in"]["infer"], $> {
-		return new Type(this.root.keyof(), this.$)
+		return new Type(this.root.keyof(), this.$) as never
 	}
 
 	intersect<r extends Type>(
 		r: r
 	): Type<inferIntersection<this["infer"], r["infer"]>, t> | Disjoint {
-		return this.intersectInternal(r) as never
+		const result = this.root.intersect(r.root)
+		return hasArkKind(result, "node")
+			? new Type(result, this.$)
+			: (result as any)
 	}
 
 	and<def>(
@@ -171,36 +175,30 @@ export class Type<t = unknown, $ = any> extends Callable<
 	}
 
 	or<def>(def: validateTypeRoot<def, $>): Type<t | inferTypeRoot<def, $>, $> {
-		const branches = [
-			...this.branches,
-			...(this.$.parseTypeRoot(def).branches as any)
-		]
-		return this.$.node(branches) as never
+		return new Type(
+			this.root.or(this.$.parseTypeRoot(def).root),
+			this.$
+		) as never
 	}
 
 	get<key extends PropertyKey>(...path: readonly (key | Type<key>)[]): this {
 		return this
 	}
 
-	extract(other: Type): Type {
+	equals<r>(r: Type<r>): this is Type<r, $> {
+		return this.root.equals(r.root)
+	}
+
+	extract(other: Type): Type<t, $> {
 		return new Type(this.root.extract(other.root), this.$)
 	}
 
-	exclude(other: Type): Type {
-		return this.$.node(
-			this.branches.filter((branch) => !branch.extends(other)),
-			{ root: true }
-		) as never
+	exclude(other: Type): Type<t, $> {
+		return new Type(this.root.exclude(other.root), this.$)
 	}
 
 	array(): Type<t[], $> {
-		return this.$.node(
-			{
-				proto: Array,
-				sequence: this
-			},
-			{ prereduced: true, root: true }
-		) as never
+		return new Type(this.root.array(), this.$) as never
 	}
 
 	// add the extra inferred intersection so that a variable of Type
@@ -274,7 +272,7 @@ export class Type<t = unknown, $ = any> extends Callable<
 		kind: conform<kind, constraintKindOf<this["in"]["infer"]>>,
 		schema: schema
 	): Type<constrain<t, kind, schema>, $> {
-		return new Type(this.root.constrain(kind, schema), this.$)
+		return new Type(this.root.constrain(kind, schema), this.$) as never
 	}
 }
 
