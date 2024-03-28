@@ -1,28 +1,21 @@
 import {
 	CompiledFunction,
 	flatMorph,
-	isArray,
-	throwInternalError,
-	throwParseError,
 	type array,
 	type evaluate,
 	type requireKeys
 } from "@arktype/util"
-import { typeKindOfSchema, type Node, type TypeNode } from "./base.js"
+import type { Node, TypeNode } from "./base.js"
 import { mergeConfigs } from "./config.js"
 import type { internalPrimitive } from "./keywords/internal.js"
 import type { jsObjects } from "./keywords/jsObjects.js"
 import type { tsKeywords } from "./keywords/tsKeywords.js"
-import { nodesByKind } from "./kinds.js"
 import type {
 	instantiateSchema,
-	NodeParser,
-	RootParser,
 	SchemaBranchesParser,
-	SchemaParser,
 	validateSchema
 } from "./parser/inference.js"
-import { parseAttachments, type SchemaParseOptions } from "./parser/parse.js"
+import type { SchemaParseOptions } from "./parser/parse.js"
 import { NodeCompiler } from "./shared/compile.js"
 import type {
 	ActualWriter,
@@ -31,11 +24,10 @@ import type {
 	MessageWriter,
 	ProblemWriter
 } from "./shared/errors.js"
-import {
-	isNodeKind,
-	type DescriptionWriter,
-	type NodeKind,
-	type TypeKind
+import type {
+	DescriptionWriter,
+	NodeKind,
+	TypeKind
 } from "./shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "./shared/traversal.js"
 
@@ -102,7 +94,10 @@ type resolveConfig<config extends ArkConfig> = {
 export type ResolvedArkConfig = resolveConfig<ArkConfig>
 
 export const defaultConfig: ResolvedArkConfig = Object.assign(
-	flatMorph(nodesByKind, (kind, node) => [kind, node.implementation.defaults]),
+	flatMorph($ark.nodeClassesByKind, (kind, node) => [
+		kind,
+		node.implementation.defaults
+	]),
 	{
 		prereducedAliases: false,
 		registerKeywords: false
@@ -131,68 +126,6 @@ export const resolveConfig = (
 ): ResolvedArkConfig => extendConfig(defaultConfig, scopeConfig) as never
 
 export type PrimitiveKeywords = tsKeywords & jsObjects & internalPrimitive
-
-export const root: RootParser<{}> = () => {}
-
-export const node: NodeParser<{}> = () => {
-	const kindArg = isNodeKind(schemaOrKind) ? schemaOrKind : undefined
-
-	let schema = kindArg ? schemaOrOpts : schemaOrKind
-	const opts: SchemaParseOptions | undefined = kindArg
-		? constraintOpts
-		: (schemaOrOpts as never)
-	if (opts?.alias && opts.alias in this.resolutions) {
-		return throwInternalError(
-			`Unexpected attempt to recreate existing alias ${opts.alias}`
-		)
-	}
-	let kind = kindArg ?? typeKindOfSchema(schema)
-	if (kind === "union" && isArray(schema) && schema.length === 1) {
-		schema = schema[0]
-		kind = typeKindOfSchema(schema)
-	}
-	if (opts?.allowedKinds && !opts.allowedKinds.includes(kind)) {
-		return throwParseError(
-			`Schema of kind ${kind} should be one of ${opts.allowedKinds}`
-		)
-	}
-	const node = parseAttachments(kind, schema as never, {
-		$: this,
-		prereduced: opts?.prereduced ?? false,
-		raw: schema,
-		...opts
-	})
-	if (opts?.root) {
-		if (this.resolved) {
-			// this node was not part of the original scope, so compile an anonymous scope
-			// including only its references
-			this.bindCompiledScope(node.contributesReferences)
-		} else {
-			// we're still parsing the scope itself, so defer compilation but
-			// add the node as a reference
-			Object.assign(this.referencesByName, node.contributesReferencesByName)
-		}
-	}
-	return node as never
-}
-
-// parseUnits(...values: unknown[]): UnionNode | UnitNode {
-// 	const uniqueValues: unknown[] = []
-// 	for (const value of values) {
-// 		if (!uniqueValues.includes(value)) {
-// 			uniqueValues.push(value)
-// 		}
-// 	}
-// 	const branches = uniqueValues.map((unit) =>
-// 		this.parsePrereduced("unit", { unit })
-// 	)
-// 	if (branches.length === 1) {
-// 		return branches[0] as never
-// 	}
-// 	return this.parseRoot("union", {
-// 		branches
-// 	}) as never
-// }
 
 const bindCompiledSpace = (references: readonly Node[]) => {
 	const compiledTraversals = compileSpace(references)
@@ -247,7 +180,7 @@ export type instantiateAliases<aliases> = {
 	[k in keyof aliases]: instantiateSchema<aliases[k], aliases>
 } & unknown
 
-export const space = <aliases>(
+export const space = <const aliases>(
 	aliases: validateAliases<aliases>,
 	config: ArkConfig = {}
 ): instantiateAliases<aliases> => {

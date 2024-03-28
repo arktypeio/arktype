@@ -25,7 +25,7 @@ import {
 	type ExtraneousKeyRestriction
 } from "../constraints/props/props.js"
 import type { Inner, MutableInner, Prerequisite, Schema } from "../kinds.js"
-import type { SchemaParseContext } from "../parser/parse.js"
+import { node, type SchemaParseContext } from "../parser/parse.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import { metaKeys, type BaseMeta, type declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -96,8 +96,7 @@ const intersectionChildKeyParser =
 
 const intersectIntersections = (
 	reduced: IntersectionInner,
-	raw: IntersectionInner,
-	$: unknown
+	raw: IntersectionInner
 ): TypeNode | Disjoint => {
 	// avoid treating adding instance keys as keys of lRoot, rRoot
 	if (reduced instanceof IntersectionNode) reduced = reduced.inner
@@ -126,8 +125,7 @@ const intersectIntersections = (
 		root,
 		l: lConstraints,
 		r: rConstraints,
-		types: [],
-		$
+		types: []
 	})
 }
 
@@ -137,6 +135,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 > {
 	static implementation: nodeImplementationOf<IntersectionDeclaration> =
 		this.implement({
+			kind: "intersection",
 			hasAssociatedError: true,
 			normalize: (schema) => schema,
 			keys: {
@@ -206,10 +205,10 @@ export class IntersectionNode<t = unknown> extends BaseType<
 			},
 			// leverage reduction logic from intersection and identity to ensure initial
 			// parse result is reduced
-			reduce: (inner, $) =>
+			reduce: (inner) =>
 				// we cast union out of the result here since that only occurs when intersecting two sequences
 				// that cannot occur when reducing a single intersection schema using unknown
-				intersectIntersections({}, inner, $) as Node<
+				intersectIntersections({}, inner) as Node<
 					"intersection" | IntersectionBasisKind
 				>,
 			defaults: {
@@ -228,7 +227,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 			},
 			intersections: {
 				intersection: intersectIntersections,
-				...defineRightwardIntersections("intersection", (l, r, $) => {
+				...defineRightwardIntersections("intersection", (l, r) => {
 					// if l is unknown, return r
 					if (l.children.length === 0) return r
 
@@ -241,7 +240,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 						  l
 						: // given we've already precluded l being unknown, the result must
 						  // be an intersection with the new basis result integrated
-						  $.node(
+						  node(
 								"intersection",
 								Object.assign(omit(l.inner, metaKeys), { [basis.kind]: basis }),
 								{ prereduced: true }
@@ -254,7 +253,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 	readonly refinements = this.children.filter(
 		(node): node is Node<RefinementKind> => node.isRefinement()
 	)
-	readonly props = maybeCreatePropsGroup(this.inner, this.$)
+	readonly props = maybeCreatePropsGroup(this.inner)
 	readonly traversables = conflatenateAll<
 		Node<Exclude<IntersectionChildKind, PropKind>> | PropsGroup
 	>(this.basis, this.refinements, this.props, this.predicate)
@@ -346,9 +345,9 @@ export class IntersectionNode<t = unknown> extends BaseType<
 	}
 }
 
-const maybeCreatePropsGroup = (inner: IntersectionInner, $: unknown) => {
+const maybeCreatePropsGroup = (inner: IntersectionInner) => {
 	const propsInput = pick(inner, propKeys)
-	return isEmptyObject(propsInput) ? undefined : new PropsGroup(propsInput, $)
+	return isEmptyObject(propsInput) ? undefined : new PropsGroup(propsInput)
 }
 
 type IntersectionRoot = Omit<IntersectionInner, ConstraintKind>
@@ -392,14 +391,13 @@ type ConstraintIntersectionState = {
 	l: ConstraintNode[]
 	r: ConstraintNode[]
 	types: TypeNode[]
-	$: unknown
 }
 
 const intersectConstraints = (
 	s: ConstraintIntersectionState
 ): TypeNode | Disjoint => {
 	if (!s.r.length) {
-		let result: TypeNode | Disjoint = s.$.node(
+		let result: TypeNode | Disjoint = node(
 			"intersection",
 			Object.assign(s.root, unflattenConstraints(s.l)),
 			{ prereduced: true }

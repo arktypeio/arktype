@@ -1,10 +1,10 @@
 import { attest } from "@arktype/attest"
-import { node } from "@arktype/schema"
+import { root } from "@arktype/schema"
 import { wellFormedNumberMatcher } from "@arktype/util"
 
 describe("morphs", () => {
 	it("in/out", () => {
-		const parseNumber = node({
+		const parseNumber = root({
 			in: {
 				domain: "string",
 				regex: wellFormedNumberMatcher,
@@ -21,7 +21,7 @@ describe("morphs", () => {
 	})
 
 	it("in/out union", () => {
-		const n = node([
+		const n = root([
 			{
 				in: "string",
 				morphs: (s: string) => parseFloat(s)

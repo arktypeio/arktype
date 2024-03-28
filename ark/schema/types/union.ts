@@ -1,6 +1,7 @@
 import { appendUnique, groupBy, isArray } from "@arktype/util"
 import type { Node, TypeNode } from "../base.js"
 import type { Schema } from "../kinds.js"
+import { node } from "../parser/parse.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -57,6 +58,7 @@ export type UnionDeclaration = declareNode<{
 export class UnionNode<t = any> extends BaseType<t, UnionDeclaration> {
 	static implementation: nodeImplementationOf<UnionDeclaration> =
 		this.implement({
+			kind: "union",
 			hasAssociatedError: true,
 			collapsibleKey: "branches",
 			keys: {
@@ -76,7 +78,7 @@ export class UnionNode<t = any> extends BaseType<t, UnionDeclaration> {
 				}
 			},
 			normalize: (schema) => (isArray(schema) ? { branches: schema } : schema),
-			reduce: (inner, $) => {
+			reduce: (inner) => {
 				const reducedBranches = reduceBranches(inner)
 				if (reducedBranches.length === 1) {
 					return reducedBranches[0]
@@ -84,7 +86,7 @@ export class UnionNode<t = any> extends BaseType<t, UnionDeclaration> {
 				if (reducedBranches.length === inner.branches.length) {
 					return
 				}
-				return $.node(
+				return node(
 					"union",
 					{
 						...inner,
@@ -175,7 +177,7 @@ export class UnionNode<t = any> extends BaseType<t, UnionDeclaration> {
 							: { branches: resultBranches }
 					)
 				},
-				...defineRightwardIntersections("union", (l, r, $) => {
+				...defineRightwardIntersections("union", (l, r) => {
 					const branches = intersectBranches(l.branches, [r])
 					if (branches instanceof Disjoint) {
 						return branches
@@ -183,7 +185,10 @@ export class UnionNode<t = any> extends BaseType<t, UnionDeclaration> {
 					if (branches.length === 1) {
 						return branches[0]
 					}
-					return $.node(l.ordered ? { branches, ordered: true } : { branches })
+					return node(
+						"union",
+						l.ordered ? { branches, ordered: true } : { branches }
+					)
 				})
 			}
 		})

@@ -34,6 +34,7 @@ export type DomainDeclaration = declareNode<{
 
 export class DomainNode<t = any> extends BaseBasis<t, DomainDeclaration> {
 	static implementation = this.implement({
+		kind: "domain",
 		hasAssociatedError: true,
 		collapsibleKey: "domain",
 		keys: {

@@ -30,6 +30,7 @@ export type MinLengthDeclaration = declareNode<{
 export class MinLengthNode extends BaseRange<MinLengthDeclaration> {
 	static implementation: nodeImplementationOf<MinLengthDeclaration> =
 		this.implement({
+			kind: "minLength",
 			collapsibleKey: "rule",
 			hasAssociatedError: true,
 			keys: {

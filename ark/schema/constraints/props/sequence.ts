@@ -8,6 +8,7 @@ import {
 } from "@arktype/util"
 import type { TypeNode, TypeSchema } from "../../base.js"
 import type { MutableInner } from "../../kinds.js"
+import { node } from "../../parser/parse.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
@@ -67,6 +68,7 @@ const fixedSequenceKeyDefinition: NodeKeyImplementation<
 export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 	static implementation: nodeImplementationOf<SequenceDeclaration> =
 		this.implement({
+			kind: "sequence",
 			hasAssociatedError: false,
 			collapsibleKey: "variadic",
 			keys: {
@@ -113,7 +115,7 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 				}
 				return { variadic: schema }
 			},
-			reduce: (raw, $) => {
+			reduce: (raw) => {
 				let minVariadicLength = raw.minVariadicLength ?? 0
 				const prefix = raw.prefix?.slice() ?? []
 				const optional = raw.optional?.slice() ?? []
@@ -155,7 +157,7 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 					(raw.prefix && raw.prefix.length !== prefix.length)
 				) {
 					// reparse the reduced schema
-					return $.node(
+					return node(
 						"sequence",
 						{
 							...raw,
@@ -189,7 +191,7 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 				}
 			},
 			intersections: {
-				sequence: (l, r, $) => {
+				sequence: (l, r) => {
 					const rootState = intersectSequences({
 						l: l.tuple,
 						r: r.tuple,
@@ -205,8 +207,8 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 					return viableBranches.length === 0
 						? rootState.disjoint!
 						: viableBranches.length === 1
-						? $.node("sequence", sequenceTupleToInner(viableBranches[0].result))
-						: $.node(
+						? node("sequence", sequenceTupleToInner(viableBranches[0].result))
+						: node(
 								"union",
 								viableBranches.map((state) => ({
 									proto: Array,

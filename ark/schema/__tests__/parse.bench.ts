@@ -1,14 +1,14 @@
 import { bench } from "@arktype/attest"
-import { node } from "@arktype/schema"
+import { root } from "@arktype/schema"
 
 bench("domain", () => {
-	return node("string").infer
+	return root("string").infer
 }).types([2, "instantiations"])
 
 bench("intersection", () => {
-	return node("string").and(node("number"))
+	return root("string").and(root("number"))
 }).types([846, "instantiations"])
 
 bench("no assignment", () => {
-	node({ domain: "string", regex: "/.*/" })
+	root({ domain: "string", regex: "/.*/" })
 }).types([350, "instantiations"])

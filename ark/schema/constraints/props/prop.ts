@@ -1,5 +1,7 @@
 import { compileSerializedValue, type Key } from "@arktype/util"
 import type { Node, TypeSchema } from "../../base.js"
+import { tsKeywords } from "../../keywords/tsKeywords.js"
+import { node } from "../../parser/parse.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
@@ -35,6 +37,7 @@ export type PropDeclaration = declareNode<{
 export class PropNode extends BaseConstraint<PropDeclaration> {
 	static implementation: nodeImplementationOf<PropDeclaration> = this.implement(
 		{
+			kind: "prop",
 			hasAssociatedError: true,
 			intersectionIsOpen: true,
 			keys: {
@@ -61,7 +64,7 @@ export class PropNode extends BaseConstraint<PropDeclaration> {
 				actual: () => null
 			},
 			intersections: {
-				prop: (l, r, $) => {
+				prop: (l, r) => {
 					if (l.key !== r.key) {
 						return null
 					}
@@ -69,10 +72,10 @@ export class PropNode extends BaseConstraint<PropDeclaration> {
 					let value = l.value.intersect(r.value)
 					const optional = l.optional === true && r.optional === true
 					if (value instanceof Disjoint) {
-						if (optional) value = $.keywords.never
+						if (optional) value = tsKeywords.never as never
 						else return value.withPrefixKey(l.compiledKey)
 					}
-					return $.node("prop", {
+					return node("prop", {
 						key,
 						value,
 						optional

@@ -6,6 +6,7 @@ import {
 	type Key
 } from "@arktype/util"
 import type { Node, TypeNode } from "../../base.js"
+import { node, parseUnits } from "../../parser/parse.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { PropKind } from "../../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/traversal.js"
@@ -44,11 +45,11 @@ export class PropsGroup extends DynamicBase<PropsGroupInput> {
 	private keyofCache: TypeNode | undefined
 	rawKeyOf(): TypeNode {
 		if (!this.keyofCache) {
-			let branches = this.$.parseUnits(...this.literalKeys).branches
+			let branches = parseUnits(...this.literalKeys).branches
 			this.index?.forEach(
 				({ key }) => (branches = branches.concat(key.branches))
 			)
-			this.keyofCache = this.$.node(branches)
+			this.keyofCache = node("union", branches)
 		}
 		return this.keyofCache
 	}

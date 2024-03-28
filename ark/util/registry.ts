@@ -3,6 +3,12 @@ import { throwInternalError } from "./errors.js"
 import { objectKindOf } from "./objectKinds.js"
 import { serializePrimitive, type SerializablePrimitive } from "./serialize.js"
 
+declare global {
+	export const $ark: Registry
+
+	export interface Registry {}
+}
+
 export const registry: Record<string, unknown> = {}
 ;(globalThis as any).$ark = registry
 

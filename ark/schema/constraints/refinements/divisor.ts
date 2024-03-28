@@ -1,4 +1,5 @@
 import type { TypeNode } from "../../base.js"
+import { node } from "../../parser/parse.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import type { TraverseAllows } from "../../shared/traversal.js"
 import {
@@ -23,6 +24,7 @@ export type DivisorDeclaration = declareNode<{
 
 export class DivisorNode extends BasePrimitiveConstraint<DivisorDeclaration> {
 	static implementation = this.implement({
+		kind: "divisor",
 		collapsibleKey: "rule",
 		keys: {
 			rule: {}
@@ -30,8 +32,8 @@ export class DivisorNode extends BasePrimitiveConstraint<DivisorDeclaration> {
 		normalize: (schema) =>
 			typeof schema === "number" ? { rule: schema } : schema,
 		intersections: {
-			divisor: (l, r, $) =>
-				$.node("divisor", {
+			divisor: (l, r) =>
+				node("divisor", {
 					rule: Math.abs(
 						(l.rule * r.rule) / greatestCommonDivisor(l.rule, r.rule)
 					)

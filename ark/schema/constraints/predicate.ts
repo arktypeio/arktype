@@ -32,6 +32,7 @@ export type PredicateDeclaration = declareNode<{
 
 export class PredicateNode extends BasePrimitiveConstraint<PredicateDeclaration> {
 	static implementation = this.implement({
+		kind: "predicate",
 		hasAssociatedError: true,
 		collapsibleKey: "predicate",
 		keys: {

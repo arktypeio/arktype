@@ -2,7 +2,7 @@ import {
 	entriesOf,
 	hasDomain,
 	isArray,
-	isKeyOf,
+	printable,
 	throwParseError,
 	type Json,
 	type JsonData,
@@ -11,22 +11,22 @@ import {
 	type listable,
 	type valueOf
 } from "@arktype/util"
-import {
-	BaseNode,
-	type BaseAttachments,
-	type Node,
-	type UnknownNode
-} from "../base.js"
-import { nodesByKind, type Schema, type reducibleKindOf } from "../kinds.js"
+import type { BaseAttachments, Node, UnknownNode } from "../base.js"
+import type { Schema, reducibleKindOf } from "../kinds.js"
 import type { BaseNodeDeclaration } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
 	defaultValueSerializer,
+	discriminatingIntersectionKeys,
+	isNodeKind,
 	precedenceOfKind,
 	type KeyDefinitions,
 	type NodeKind,
+	type TypeKind,
 	type UnknownNodeImplementation
 } from "../shared/implement.js"
+import { hasArkKind } from "../shared/utils.js"
+import type { NodeParser, RootParser, UnitsParser } from "./inference.js"
 
 export type SchemaParseOptions = {
 	alias?: string
@@ -56,6 +56,90 @@ const baseKeys: PartialRecord<string, valueOf<KeyDefinitions<any>>> = {
 	description: { meta: true }
 } satisfies KeyDefinitions<BaseNodeDeclaration> as never
 
+export const typeKindOfSchema = (schema: unknown): TypeKind => {
+	switch (typeof schema) {
+		case "string":
+			return "domain"
+		case "function":
+			return hasArkKind(schema, "node")
+				? schema.isType()
+					? schema.kind
+					: throwParseError(
+							`${schema.kind} constraint ${schema.expression} cannot be used as a root type`
+					  )
+				: "proto"
+		case "object":
+			// throw at end of function
+			if (schema === null) break
+
+			if ("morphs" in schema) return "morph"
+
+			if ("branches" in schema || isArray(schema)) return "union"
+
+			if ("unit" in schema) return "unit"
+
+			const schemaKeys = Object.keys(schema)
+
+			if (
+				schemaKeys.length === 0 ||
+				schemaKeys.some((k) => k in discriminatingIntersectionKeys)
+			)
+				return "intersection"
+			if ("proto" in schema) return "proto"
+			if ("domain" in schema) return "domain"
+	}
+	return throwParseError(`${printable(schema)} is not a valid type schema`)
+}
+
+export const root: RootParser<{}> = (schema, opts) => {
+	const kind = typeKindOfSchema(schema)
+	if (opts?.allowedKinds && !opts.allowedKinds.includes(kind)) {
+		return throwParseError(
+			`Schema of kind ${kind} should be one of ${opts.allowedKinds}`
+		)
+	}
+	// if (opts?.root) {
+	// 	if (this.resolved) {
+	// 		// this node was not part of the original scope, so compile an anonymous scope
+	// 		// including only its references
+	// 		this.bindCompiledScope(node.contributesReferences)
+	// 	} else {
+	// 		// we're still parsing the scope itself, so defer compilation but
+	// 		// add the node as a reference
+	// 		Object.assign(this.referencesByName, node.contributesReferencesByName)
+	// 	}
+	// }
+	return node(kind, schema, opts) as never
+}
+
+export const node: NodeParser<{}> = (kind: NodeKind, schema: unknown, opts) => {
+	if (kind === "union" && isArray(schema) && schema.length === 1) {
+		schema = schema[0]
+		kind = typeKindOfSchema(schema)
+	}
+	const node = parseAttachments(kind, schema as never, {
+		$: this,
+		prereduced: opts?.prereduced ?? false,
+		raw: schema,
+		...opts
+	})
+	return node as never
+}
+
+export const parseUnits: UnitsParser = (...values) => {
+	const uniqueValues: unknown[] = []
+	for (const value of values) {
+		if (!uniqueValues.includes(value)) {
+			uniqueValues.push(value)
+		}
+	}
+	const branches = uniqueValues.map((unit) => node("unit", { unit }))
+	if (branches.length === 1) {
+		return branches[0] as never
+	}
+	return node("union", branches) as never
+}
+
 export function parseAttachments<defKind extends NodeKind>(
 	kind: defKind,
 	schema: Schema<defKind>,
@@ -67,15 +151,15 @@ export function parseAttachments(
 	schema: unknown,
 	ctx: SchemaParseContext
 ): UnknownNode {
-	const cls = nodesByKind[kind]
+	const cls = $ark.nodeClassesByKind[kind]
 	const impl: UnknownNodeImplementation = cls.implementation as never
-	if (schema instanceof BaseNode && schema.kind === kind) {
+	if (hasArkKind(schema, "node") && schema.kind === kind) {
 		return schema as never
 	}
 	const normalizedDefinition: any = impl.normalize?.(schema) ?? schema
 	// check again after normalization in case a node is a valid collapsed
 	// schema for the kind (e.g. sequence can collapse to element accepting a Node)
-	if (normalizedDefinition instanceof BaseNode) {
+	if (hasArkKind(normalizedDefinition, "node")) {
 		return normalizedDefinition.kind === kind
 			? (normalizedDefinition as never)
 			: throwMismatchedNodeSchemaError(kind, normalizedDefinition.kind)
@@ -85,11 +169,11 @@ export function parseAttachments(
 	// parsed first
 	const schemaEntries = entriesOf(normalizedDefinition).sort(
 		([lKey], [rKey]) =>
-			isKeyOf(lKey, nodesByKind)
-				? isKeyOf(rKey, nodesByKind)
+			isNodeKind(lKey)
+				? isNodeKind(rKey)
 					? precedenceOfKind(lKey) - precedenceOfKind(rKey)
 					: 1
-				: isKeyOf(rKey, nodesByKind)
+				: isNodeKind(rKey)
 				? -1
 				: lKey < rKey
 				? -1
@@ -156,6 +240,7 @@ export function parseAttachments(
 			typeJson = collapsibleJson
 		}
 	}
+
 	const innerId = JSON.stringify({ kind, ...json })
 	if (ctx.reduceTo) {
 		return (ctx.$.nodeCache[innerId] = ctx.reduceTo)

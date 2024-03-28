@@ -10,7 +10,7 @@ import type {
 	isAny
 } from "@arktype/util"
 import type { Node, TypeNode, TypeSchema, UnknownNode } from "../base.js"
-import type { isSchemaCast, schema } from "../keywords/builtins.js"
+import type { isSchemaCast, schema } from "../keywords/keywords.js"
 import type { Prerequisite, Schema, reducibleKindOf } from "../kinds.js"
 import type {
 	BasisKind,
@@ -66,6 +66,12 @@ export type SchemaParser<$> = SchemaBranchesParser<$> & {
 		: UnionNode<branches[number]> | UnitNode<branches[number]>
 }
 
+export type UnitsParser = <const branches extends array>(
+	...values: branches
+) => branches["length"] extends 1
+	? UnionNode<branches[0]>
+	: UnionNode<branches[number]> | UnitNode<branches[number]>
+
 export type NodeParser<$> = <
 	kind extends NodeKind,
 	const schema extends Schema<kind>
@@ -95,11 +101,11 @@ export type validateSchema<schema, $> = isSchemaCast<schema> extends true
 	  >
 	: validateSchemaBranch<schema, $>
 
-export type instantiateSchema<schema, $> = isSchemaCast<schema> extends true
-	? schema extends schema.cast<infer to, infer kind>
+export type instantiateSchema<def, $> = isSchemaCast<def> extends true
+	? def extends schema.cast<infer to, infer kind>
 		? TypeNode<to, kind>
 		: never
-	: schema extends UnionSchema<infer branches>
+	: def extends UnionSchema<infer branches>
 	? branches["length"] extends 0
 		? UnionNode<never>
 		: branches["length"] extends 1
@@ -108,7 +114,7 @@ export type instantiateSchema<schema, $> = isSchemaCast<schema> extends true
 				reducibleKindOf<"union">,
 				instantiateSchemaBranch<branches[number], $>["infer"]
 		  >
-	: instantiateSchemaBranch<schema, $>
+	: instantiateSchemaBranch<def, $>
 
 type validateSchemaBranch<schema, $> = schema extends UnknownNode
 	? schema

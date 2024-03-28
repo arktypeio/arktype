@@ -32,6 +32,7 @@ export type AfterDeclaration = declareNode<{
 export class AfterNode extends BaseRange<AfterDeclaration> {
 	static implementation: nodeImplementationOf<AfterDeclaration> =
 		this.implement({
+			kind: "after",
 			collapsibleKey: "rule",
 			hasAssociatedError: true,
 			keys: {

@@ -23,6 +23,7 @@ export type ExactLengthDeclaration = declareNode<{
 
 export class ExactLengthNode extends BasePrimitiveConstraint<ExactLengthDeclaration> {
 	static implementation = this.implement({
+		kind: "exactLength",
 		collapsibleKey: "rule",
 		keys: {
 			rule: {}

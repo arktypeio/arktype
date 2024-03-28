@@ -1,3 +1,4 @@
+import { node } from "../../parser/parse.js"
 import type { declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import type { nodeImplementationOf } from "../../shared/implement.js"
@@ -33,6 +34,7 @@ export type BeforeDeclaration = declareNode<{
 export class BeforeNode extends BaseRange<BeforeDeclaration> {
 	static implementation: nodeImplementationOf<BeforeDeclaration> =
 		this.implement({
+			kind: "before",
 			collapsibleKey: "rule",
 			hasAssociatedError: true,
 			keys: {
@@ -58,10 +60,10 @@ export class BeforeNode extends BaseRange<BeforeDeclaration> {
 			},
 			intersections: {
 				before: (l, r) => (l.isStricterThan(r) ? l : r),
-				after: (before, after, $) =>
+				after: (before, after) =>
 					before.overlapsRange(after)
 						? before.overlapIsUnit(after)
-							? $.node("unit", { unit: before.rule })
+							? node("unit", { unit: before.rule })
 							: null
 						: Disjoint.from("range", before, after)
 			}

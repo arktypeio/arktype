@@ -52,7 +52,7 @@ export interface NodeDeclarationsByKind extends BoundDeclarations {
 	predicate: PredicateDeclaration
 }
 
-export const nodesByKind = {
+export const nodeClassesByKind = {
 	...BoundNodes,
 	domain: DomainNode,
 	unit: UnitNode,
@@ -66,13 +66,13 @@ export const nodesByKind = {
 	prop: PropNode,
 	index: IndexNode,
 	sequence: SequenceNode
-} as const satisfies { [k in NodeKind]: NodeSubclass<Declaration<k>> }
+} satisfies { [k in NodeKind]: NodeSubclass<Declaration<k>> }
 
-export type NodesByKind = typeof nodesByKind
+export type NodeClassesByKind = typeof nodeClassesByKind
 
 export type Declaration<kind extends NodeKind> = NodeDeclarationsByKind[kind]
 
-export type Implementation<kind extends NodeKind> = NodesByKind[kind]
+export type Implementation<kind extends NodeKind> = NodeClassesByKind[kind]
 
 export type Schema<kind extends NodeKind> = Declaration<kind>["schema"]
 

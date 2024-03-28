@@ -6,7 +6,6 @@ import {
 	isArray,
 	printable,
 	throwError,
-	throwParseError,
 	type Constructor,
 	type Dict,
 	type Entry,
@@ -28,10 +27,12 @@ import type { RegexNode } from "./constraints/refinements/regex.js"
 import type {
 	Declaration,
 	Inner,
+	NodeClassesByKind,
 	Schema,
 	ioKindOf,
 	reducibleKindOf
 } from "./kinds.js"
+import { node } from "./parser/parse.js"
 import type { NodeCompiler } from "./shared/compile.js"
 import type {
 	BaseAttachmentsOf,
@@ -44,7 +45,6 @@ import type { ArkResult } from "./shared/errors.js"
 import {
 	basisKinds,
 	constraintKinds,
-	discriminatingIntersectionKeys,
 	precedenceOfKind,
 	propKinds,
 	refinementKinds,
@@ -66,7 +66,7 @@ import {
 	type TraverseAllows,
 	type TraverseApply
 } from "./shared/traversal.js"
-import { arkKind, hasArkKind } from "./shared/utils.js"
+import { arkKind } from "./shared/utils.js"
 import type { DomainNode } from "./types/domain.js"
 import type { IntersectionNode } from "./types/intersection.js"
 import type {
@@ -120,6 +120,14 @@ type subclassKind<self> = self extends Constructor<{
 
 type subclassDeclaration<self> = Declaration<subclassKind<self>>
 
+declare global {
+	export interface Registry {
+		nodeClassesByKind: NodeClassesByKind
+	}
+}
+
+$ark.nodeClassesByKind = {} as NodeClassesByKind
+
 export abstract class BaseNode<
 	t,
 	d extends BaseNodeDeclaration
@@ -143,6 +151,7 @@ export abstract class BaseNode<
 	): nodeImplementationOf<subclassDeclaration<self>>
 	protected static implement(_: never): any {
 		const implementation: UnknownNodeImplementation = _
+		$ark.nodeClassesByKind[implementation.kind] = this as never
 		if (implementation.hasAssociatedError) {
 			implementation.defaults.expected ??= (ctx) =>
 				"description" in ctx
@@ -265,7 +274,7 @@ export abstract class BaseNode<
 				ioInner[k] = v
 			}
 		}
-		return this.$.node(this.kind, ioInner)
+		return node(this.kind, ioInner)
 	}
 
 	protected createErrorContext<from>(
@@ -364,8 +373,8 @@ export abstract class BaseNode<
 				  // but that is not allowed by the external function signature
 				  null
 				: leftmostKind === this.kind
-				? implementation(this, r, this.$)
-				: implementation(r, this, this.$)
+				? implementation(this, r)
+				: implementation(r, this)
 
 		if (result instanceof BaseNode) {
 			// if the result equals one of the operands, preserve its metadata by
@@ -472,41 +481,6 @@ export type Node<
 export type TypeNode<t = any, kind extends TypeKind = TypeKind> = Node<kind, t>
 
 export type TypeSchema<kind extends TypeKind = TypeKind> = Schema<kind>
-
-export const typeKindOfSchema = (schema: unknown): TypeKind => {
-	switch (typeof schema) {
-		case "string":
-			return "domain"
-		case "function":
-			return hasArkKind(schema, "node")
-				? schema.isType()
-					? schema.kind
-					: throwParseError(
-							`${schema.kind} constraint ${schema.expression} cannot be used as a root type`
-					  )
-				: "proto"
-		case "object":
-			// throw at end of function
-			if (schema === null) break
-
-			if ("morphs" in schema) return "morph"
-
-			if ("branches" in schema || isArray(schema)) return "union"
-
-			if ("unit" in schema) return "unit"
-
-			const schemaKeys = Object.keys(schema)
-
-			if (
-				schemaKeys.length === 0 ||
-				schemaKeys.some((k) => k in discriminatingIntersectionKeys)
-			)
-				return "intersection"
-			if ("proto" in schema) return "proto"
-			if ("domain" in schema) return "domain"
-	}
-	return throwParseError(`${printable(schema)} is not a valid type schema`)
-}
 
 export type ConstraintNode<kind extends ConstraintKind = ConstraintKind> =
 	Node<kind>

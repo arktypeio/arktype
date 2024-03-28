@@ -1,10 +1,10 @@
 import type { Key } from "@arktype/util"
+import type { TypeNode } from "../base.js"
 import { space } from "../space.js"
-import type { UnionNode } from "../types/union.js"
 
 export interface internalPrimitive {
-	lengthBoundable: UnionNode<string | unknown[]>
-	propertyKey: UnionNode<Key>
+	lengthBoundable: TypeNode<string | unknown[]>
+	propertyKey: TypeNode<Key>
 }
 
 export const internalPrimitive: internalPrimitive = space(

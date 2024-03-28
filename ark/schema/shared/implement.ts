@@ -147,11 +147,7 @@ type accumulateRightKinds<
 export type ConstraintIntersection<
 	lKind extends ConstraintKind,
 	rKind extends kindOrRightOf<lKind>
-> = (
-	l: Node<lKind>,
-	r: Node<rKind>,
-	$: unknown
-) => UnknownNode | Disjoint | null
+> = (l: Node<lKind>, r: Node<rKind>) => UnknownNode | Disjoint | null
 
 export type ConstraintIntersectionMap<kind extends ConstraintKind> = evaluate<
 	{
@@ -164,7 +160,7 @@ export type ConstraintIntersectionMap<kind extends ConstraintKind> = evaluate<
 export type TypeIntersection<
 	lKind extends TypeKind,
 	rKind extends typeKindOrRightOf<lKind>
-> = (l: Node<lKind>, r: Node<rKind>, $: unknown) => TypeNode | Disjoint
+> = (l: Node<lKind>, r: Node<rKind>) => TypeNode | Disjoint
 
 export type TypeIntersectionMap<kind extends TypeKind> = {
 	[rKind in typeKindOrRightOf<kind>]: TypeIntersection<kind, rKind>
@@ -177,8 +173,7 @@ export type IntersectionMap<kind extends NodeKind> = kind extends TypeKind
 export type UnknownIntersectionMap = {
 	[k in NodeKind]?: (
 		l: UnknownNode,
-		r: UnknownNode,
-		$: unknown
+		r: UnknownNode
 	) => UnknownIntersectionResult
 }
 
@@ -272,6 +267,7 @@ export type NodeKeyImplementation<
 >
 
 interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
+	kind: d["kind"]
 	keys: KeyDefinitions<d>
 	normalize: (schema: d["schema"]) => d["normalizedSchema"]
 	hasAssociatedError: d["errorContext"] extends null ? false : true

@@ -1,6 +1,6 @@
 import type { TypeNode } from "../base.js"
 import { space } from "../space.js"
-import type { schema } from "./builtins.js"
+import type { schema } from "./keywords.js"
 
 export interface tsKeywords {
 	any: TypeNode<any, "intersection">

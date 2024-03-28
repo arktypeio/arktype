@@ -1,9 +1,9 @@
 import { attest } from "@arktype/attest"
-import { keywords, node } from "@arktype/schema"
+import { keywords, root } from "@arktype/schema"
 
 describe("union", () => {
 	it("union", () => {
-		const l = node([
+		const l = root([
 			{
 				domain: "number",
 				divisor: 2
@@ -13,7 +13,7 @@ describe("union", () => {
 				divisor: 3
 			}
 		])
-		const r = node({
+		const r = root({
 			domain: "number",
 			divisor: 5
 		})
@@ -25,11 +25,11 @@ describe("union", () => {
 	})
 
 	it("reduces union", () => {
-		const n = node(["number", {}, { unit: 5 }])
+		const n = root(["number", {}, { unit: 5 }])
 		attest(n.json).snap({})
 	})
 	it("union of all types reduced to unknown", () => {
-		const n = node([
+		const n = root([
 			"string",
 			"number",
 			"object",
@@ -43,16 +43,16 @@ describe("union", () => {
 		attest(n.json).snap({})
 	})
 	it("normalizes union order", () => {
-		const l = node(["number", "string"])
-		const r = node(["string", "number"])
+		const l = root(["number", "string"])
+		const r = root(["string", "number"])
 		attest(l.innerId).equals(r.innerId)
 	})
 	it("doesn't normalize ordered unions", () => {
-		const l = node({
+		const l = root({
 			branches: ["string", "number"],
 			ordered: true
 		})
-		const r = node({
+		const r = root({
 			branches: ["number", "string"],
 			ordered: true
 		})
@@ -61,7 +61,7 @@ describe("union", () => {
 
 	it("reducible intersection with union", () => {
 		const l = keywords.email
-		const r = node(["string", Array])
+		const r = root(["string", Array])
 		const result = l.and(r)
 		attest(result.json).equals(l.json)
 	})

@@ -29,6 +29,7 @@ export type IndexDeclaration = declareNode<{
 export class IndexNode extends BaseConstraint<IndexDeclaration> {
 	static implementation: nodeImplementationOf<IndexDeclaration> =
 		this.implement({
+			kind: "index",
 			hasAssociatedError: false,
 			intersectionIsOpen: true,
 			keys: {

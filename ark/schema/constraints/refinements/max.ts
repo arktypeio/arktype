@@ -1,3 +1,4 @@
+import { node } from "../../parser/parse.js"
 import type { declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import type { nodeImplementationOf } from "../../shared/implement.js"
@@ -29,6 +30,7 @@ export type MaxDeclaration = declareNode<{
 
 export class MaxNode extends BaseRange<MaxDeclaration> {
 	static implementation: nodeImplementationOf<MaxDeclaration> = this.implement({
+		kind: "max",
 		collapsibleKey: "rule",
 		hasAssociatedError: true,
 		keys: {
@@ -44,10 +46,10 @@ export class MaxNode extends BaseRange<MaxDeclaration> {
 		},
 		intersections: {
 			max: (l, r) => (l.isStricterThan(r) ? l : r),
-			min: (max, min, $) =>
+			min: (max, min) =>
 				max.overlapsRange(min)
 					? max.overlapIsUnit(min)
-						? $.node("unit", { unit: max.rule })
+						? node("unit", { unit: max.rule })
 						: null
 					: Disjoint.from("range", max, min)
 		}

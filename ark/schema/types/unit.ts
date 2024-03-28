@@ -21,6 +21,7 @@ export type UnitDeclaration = declareNode<{
 
 export class UnitNode<t = any> extends BaseBasis<t, UnitDeclaration> {
 	static implementation = this.implement({
+		kind: "unit",
 		hasAssociatedError: true,
 		keys: {
 			unit: {

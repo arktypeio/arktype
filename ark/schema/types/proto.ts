@@ -34,6 +34,7 @@ export type ProtoDeclaration = declareNode<{
 
 export class ProtoNode<t = any> extends BaseBasis<t, ProtoDeclaration> {
 	static implementation = this.implement({
+		kind: "proto",
 		hasAssociatedError: true,
 		collapsibleKey: "proto",
 		keys: {

@@ -1,19 +1,19 @@
 import { attest } from "@arktype/attest"
-import { type TypeNode, node } from "@arktype/schema"
+import { type TypeNode, root } from "@arktype/schema"
 
 describe("parse", () => {
 	it("single constraint", () => {
-		const t = node({ domain: "string", regex: ".*" })
+		const t = root({ domain: "string", regex: ".*" })
 		attest<TypeNode<string>>(t)
 		attest(t.json).snap({ domain: "string", regex: [".*"] })
 	})
 	it("multiple constraints", () => {
-		const l = node({
+		const l = root({
 			domain: "number",
 			divisor: 3,
 			min: 5
 		})
-		const r = node({
+		const r = root({
 			domain: "number",
 			divisor: 5
 		})
@@ -27,7 +27,7 @@ describe("parse", () => {
 	})
 	it("throws on reduced minLength disjoint", () => {
 		attest(() =>
-			node({
+			root({
 				proto: Array,
 				maxLength: 0,
 				sequence: {

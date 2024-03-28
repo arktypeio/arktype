@@ -22,6 +22,7 @@ export type RegexDeclaration = declareNode<{
 
 export class RegexNode extends BasePrimitiveConstraint<RegexDeclaration> {
 	static implementation = this.implement({
+		kind: "regex",
 		collapsibleKey: "rule",
 		keys: {
 			rule: {},

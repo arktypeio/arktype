@@ -5,7 +5,7 @@ import { jsObjects } from "./jsObjects.js"
 import { tsKeywords } from "./tsKeywords.js"
 import { validation } from "./validation.js"
 
-export const builtins: ArkResolutions = space(
+export const keywords: ArkResolutions = space(
 	{
 		...tsKeywords,
 		...jsObjects,
