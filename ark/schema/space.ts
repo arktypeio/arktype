@@ -1,11 +1,14 @@
 import {
 	CompiledFunction,
 	flatMorph,
+	isArray,
+	throwInternalError,
+	throwParseError,
 	type array,
 	type evaluate,
 	type requireKeys
 } from "@arktype/util"
-import type { Node, TypeNode } from "./base.js"
+import { typeKindOfSchema, type Node, type TypeNode } from "./base.js"
 import { mergeConfigs } from "./config.js"
 import type { internalPrimitive } from "./keywords/internal.js"
 import type { jsObjects } from "./keywords/jsObjects.js"
@@ -13,10 +16,13 @@ import type { tsKeywords } from "./keywords/tsKeywords.js"
 import { nodesByKind } from "./kinds.js"
 import type {
 	instantiateSchema,
+	NodeParser,
+	RootParser,
+	SchemaBranchesParser,
 	SchemaParser,
 	validateSchema
 } from "./parser/inference.js"
-import type { SchemaParseOptions } from "./parser/parse.js"
+import { parseAttachments, type SchemaParseOptions } from "./parser/parse.js"
 import { NodeCompiler } from "./shared/compile.js"
 import type {
 	ActualWriter,
@@ -25,10 +31,11 @@ import type {
 	MessageWriter,
 	ProblemWriter
 } from "./shared/errors.js"
-import type {
-	DescriptionWriter,
-	NodeKind,
-	TypeKind
+import {
+	isNodeKind,
+	type DescriptionWriter,
+	type NodeKind,
+	type TypeKind
 } from "./shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "./shared/traversal.js"
 
@@ -125,7 +132,9 @@ export const resolveConfig = (
 
 export type PrimitiveKeywords = tsKeywords & jsObjects & internalPrimitive
 
-export const node: SchemaParser<{}> = () => {
+export const root: RootParser<{}> = () => {}
+
+export const node: NodeParser<{}> = () => {
 	const kindArg = isNodeKind(schemaOrKind) ? schemaOrKind : undefined
 
 	let schema = kindArg ? schemaOrOpts : schemaOrKind

@@ -9,10 +9,14 @@ import type {
 	instanceOf,
 	isAny
 } from "@arktype/util"
-import type { Node, TypeNode, UnknownNode } from "../base.js"
+import type { Node, TypeNode, TypeSchema, UnknownNode } from "../base.js"
 import type { isSchemaCast, schema } from "../keywords/builtins.js"
 import type { Prerequisite, Schema, reducibleKindOf } from "../kinds.js"
-import type { BasisKind, ConstraintKind } from "../shared/implement.js"
+import type {
+	BasisKind,
+	ConstraintKind,
+	NodeKind
+} from "../shared/implement.js"
 import type { DomainNode, DomainSchema } from "../types/domain.js"
 import type {
 	IntersectionNode,
@@ -36,6 +40,7 @@ import type {
 	UnionSchema
 } from "../types/union.js"
 import type { UnitNode, UnitSchema } from "../types/unit.js"
+import type { SchemaParseOptions } from "./parse.js"
 
 export type SchemaBranchesParser<$> = <
 	const branches extends readonly Schema<UnionChildKind>[]
@@ -60,6 +65,20 @@ export type SchemaParser<$> = SchemaBranchesParser<$> & {
 		? UnionNode<branches[0]>
 		: UnionNode<branches[number]> | UnitNode<branches[number]>
 }
+
+export type NodeParser<$> = <
+	kind extends NodeKind,
+	const schema extends Schema<kind>
+>(
+	kind: kind,
+	schema: schema,
+	opts?: SchemaParseOptions
+) => Node<reducibleKindOf<kind>>
+
+export type RootParser<$> = <const schema extends TypeSchema>(
+	schema: schema,
+	opts?: SchemaParseOptions
+) => instantiateSchema<schema, $>
 
 export type validateSchema<schema, $> = isSchemaCast<schema> extends true
 	? schema
