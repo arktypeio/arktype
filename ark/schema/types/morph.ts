@@ -11,7 +11,6 @@ import {
 import type { Node, TypeNode } from "../base.js"
 import type { of } from "../constraints/ast.js"
 import type { Schema } from "../kinds.js"
-import type { StaticArkOption } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -22,6 +21,7 @@ import type {
 	TraverseAllows,
 	TraverseApply
 } from "../shared/traversal.js"
+import type { StaticArkOption } from "../space.js"
 import {
 	BaseType,
 	defineRightwardIntersections,

@@ -25,7 +25,7 @@ import {
 	type ExtraneousKeyRestriction
 } from "../constraints/props/props.js"
 import type { Inner, MutableInner, Prerequisite, Schema } from "../kinds.js"
-import type { SchemaParseContext } from "../parse.js"
+import type { SchemaParseContext } from "../parser/parse.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import { metaKeys, type BaseMeta, type declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"

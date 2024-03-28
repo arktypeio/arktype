@@ -82,7 +82,7 @@ import type { UnitNode } from "./types/unit.js"
 export interface BaseAttachments {
 	alias?: string
 	readonly kind: NodeKind
-	readonly reference: string
+	readonly name: string
 	readonly inner: Record<string, any>
 	readonly entries: readonly Entry<string>[]
 	readonly json: object
@@ -127,9 +127,9 @@ export abstract class BaseNode<
 	constructor(public attachments: BaseAttachments) {
 		super(attachments as never)
 		this.contributesReferencesByName =
-			this.reference in this.referencesByName
+			this.name in this.referencesByName
 				? this.referencesByName
-				: { ...this.referencesByName, [this.reference]: this as never }
+				: { ...this.referencesByName, [this.name]: this as never }
 		this.contributesReferences = Object.values(this.contributesReferencesByName)
 	}
 
@@ -389,9 +389,7 @@ export abstract class BaseNode<
 	): narrowed {
 		return (
 			this.firstReference(filter) ??
-			throwError(
-				`${this.reference} had no references matching predicate ${filter}`
-			)
+			throwError(`${this.name} had no references matching predicate ${filter}`)
 		)
 	}
 
@@ -404,7 +402,7 @@ export abstract class BaseNode<
 	firstReferenceOfKindOrThrow<kind extends NodeKind>(kind: kind): Node<kind> {
 		return (
 			this.firstReference((node) => node.kind === kind) ??
-			throwError(`${this.reference} had no ${kind} references`)
+			throwError(`${this.name} had no ${kind} references`)
 		)
 	}
 

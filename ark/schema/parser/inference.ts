@@ -1,39 +1,23 @@
-import {
-	CompiledFunction,
-	isArray,
-	throwInternalError,
-	throwParseError,
-	type Constructor,
-	type ErrorMessage,
-	type NonEnumerableDomain,
-	type array,
-	type conform,
-	type describe,
-	type inferDomain,
-	type instanceOf,
-	type isAny
+import type {
+	Constructor,
+	ErrorMessage,
+	NonEnumerableDomain,
+	array,
+	conform,
+	describe,
+	inferDomain,
+	instanceOf,
+	isAny
 } from "@arktype/util"
-import {
-	typeKindOfSchema,
-	type Node,
-	type TypeSchema,
-	type UnknownNode
-} from "./base.js"
-import type { Prerequisite, Schema, reducibleKindOf } from "./kinds.js"
-import { parseAttachments, type SchemaParseOptions } from "./parse.js"
-import { NodeCompiler } from "./shared/compile.js"
-import {
-	isNodeKind,
-	type BasisKind,
-	type ConstraintKind,
-	type NodeKind
-} from "./shared/implement.js"
-import type { TraverseAllows, TraverseApply } from "./shared/traversal.js"
-import type { DomainNode, DomainSchema } from "./types/domain.js"
+import type { Node, TypeNode, UnknownNode } from "../base.js"
+import type { isSchemaCast, schema } from "../keywords/builtins.js"
+import type { Prerequisite, Schema, reducibleKindOf } from "../kinds.js"
+import type { BasisKind, ConstraintKind } from "../shared/implement.js"
+import type { DomainNode, DomainSchema } from "../types/domain.js"
 import type {
 	IntersectionNode,
 	IntersectionSchema
-} from "./types/intersection.js"
+} from "../types/intersection.js"
 import type {
 	Morph,
 	MorphChildDefinition,
@@ -42,124 +26,42 @@ import type {
 	MorphSchema,
 	Out,
 	inferMorphOut
-} from "./types/morph.js"
-import type { ProtoNode, ProtoSchema } from "./types/proto.js"
+} from "../types/morph.js"
+import type { ProtoNode, ProtoSchema } from "../types/proto.js"
 import type {
 	NormalizedUnionSchema,
+	UnionChildKind,
 	UnionChildNode,
 	UnionNode,
 	UnionSchema
-} from "./types/union.js"
-import type { UnitNode, UnitSchema } from "./types/unit.js"
+} from "../types/union.js"
+import type { UnitNode, UnitSchema } from "../types/unit.js"
 
-export const node: NodeParser<{}> = ((
-	schemaOrKind: unknown,
-	schemaOrOpts?: unknown,
-	constraintOpts?: SchemaParseOptions
-): UnknownNode => {
-	const kindArg = isNodeKind(schemaOrKind) ? schemaOrKind : undefined
+export type SchemaBranchesParser<$> = <
+	const branches extends readonly Schema<UnionChildKind>[]
+>(
+	...branches: {
+		[i in keyof branches]: validateSchemaBranch<branches[i], $>
+	}
+) => instantiateSchema<branches, $>
 
-	let schema = kindArg ? schemaOrOpts : schemaOrKind
-	const opts: SchemaParseOptions | undefined = kindArg
-		? constraintOpts
-		: (schemaOrOpts as never)
-	if (opts?.alias && opts.alias in this.resolutions) {
-		return throwInternalError(
-			`Unexpected attempt to recreate existing alias ${opts.alias}`
-		)
-	}
-	let kind = kindArg ?? typeKindOfSchema(schema)
-	if (kind === "union" && isArray(schema) && schema.length === 1) {
-		schema = schema[0]
-		kind = typeKindOfSchema(schema)
-	}
-	if (opts?.allowedKinds && !opts.allowedKinds.includes(kind)) {
-		return throwParseError(
-			`Schema of kind ${kind} should be one of ${opts.allowedKinds}`
-		)
-	}
-	const node = parseAttachments(kind, schema as never, {
-		$: this,
-		prereduced: opts?.prereduced ?? false,
-		raw: schema,
-		...opts
-	})
-	if (opts?.root) {
-		if (this.resolved) {
-			// this node was not part of the original scope, so compile an anonymous scope
-			// including only its references
-			this.bindCompiledScope(node.contributesReferences)
-		} else {
-			// we're still parsing the scope itself, so defer compilation but
-			// add the node as a reference
-			Object.assign(this.referencesByName, node.contributesReferencesByName)
-		}
-	}
-	return node as never
-}) as never
+export type SchemaParser<$> = SchemaBranchesParser<$> & {
+	union<const branches extends readonly Schema<UnionChildKind>[]>(
+		input: {
+			branches: {
+				[i in keyof branches]: validateSchemaBranch<branches[i], $>
+			}
+		} & NormalizedUnionSchema
+	): instantiateSchema<branches, $>
 
-const bindCompiledScope = (references: readonly UnknownNode[]): void => {
-	const compiledTraversals = this.compileScope(references)
-	for (const node of references) {
-		if (node.jit) {
-			// if node has already been bound to another scope or anonymous type, don't rebind it
-			continue
-		}
-		node.jit = true
-		node.traverseAllows =
-			compiledTraversals[`${node.reference}Allows`].bind(compiledTraversals)
-		if (node.isType() && !node.includesContextDependentPredicate) {
-			// if the reference doesn't require context, we can assign over
-			// it directly to avoid having to initialize it
-			node.allows = node.traverseAllows as never
-		}
-		node.traverseApply =
-			compiledTraversals[`${node.reference}Apply`].bind(compiledTraversals)
-	}
+	units<const branches extends array>(
+		...values: branches
+	): branches["length"] extends 1
+		? UnionNode<branches[0]>
+		: UnionNode<branches[number]> | UnitNode<branches[number]>
 }
 
-const compileScope = (
-	references: readonly UnknownNode[]
-): {
-	[k: `${string}Allows`]: TraverseAllows
-	[k: `${string}Apply`]: TraverseApply
-} => {
-	return new CompiledFunction()
-		.block(`return`, (js) => {
-			references.forEach((node) => {
-				const allowsCompiler = new NodeCompiler("Allows").indent()
-				node.compile(allowsCompiler)
-				const applyCompiler = new NodeCompiler("Apply").indent()
-				node.compile(applyCompiler)
-				js.line(
-					allowsCompiler.writeMethod(`${node.reference}Allows`) +
-						",\n" +
-						applyCompiler.writeMethod(`${node.reference}Apply`) +
-						","
-				)
-			})
-			return js
-		})
-		.compile()() as never
-}
-
-export type SchemaParser<$> = <const schema>(
-	schema: validateSchema<schema, $>
-) => ["schema", schema]
-
-export type NodeParser<$> = {
-	<kind extends NodeKind, const schema extends Schema<kind>>(
-		kind: kind,
-		schema: schema,
-		opts?: SchemaParseOptions
-	): Node<reducibleKindOf<kind>, instantiateSchema<schema, $>["infer"]>
-	<const schema extends TypeSchema>(
-		schema: schema,
-		opts?: SchemaParseOptions
-	): instantiateSchema<schema, $>
-}
-
-export type validateSchema<schema, $> = schema extends UnknownNode
+export type validateSchema<schema, $> = isSchemaCast<schema> extends true
 	? schema
 	: schema extends array
 	? { [i in keyof schema]: validateSchemaBranch<schema[i], $> }
@@ -174,9 +76,11 @@ export type validateSchema<schema, $> = schema extends UnknownNode
 	  >
 	: validateSchemaBranch<schema, $>
 
-export type instantiateSchema<schema, $> = schema extends UnionSchema<
-	infer branches
->
+export type instantiateSchema<schema, $> = isSchemaCast<schema> extends true
+	? schema extends schema.cast<infer to, infer kind>
+		? TypeNode<to, kind>
+		: never
+	: schema extends UnionSchema<infer branches>
 	? branches["length"] extends 0
 		? UnionNode<never>
 		: branches["length"] extends 1

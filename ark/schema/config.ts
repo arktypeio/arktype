@@ -1,6 +1,6 @@
 import type { mutable } from "@arktype/util"
-import type { ArkConfig } from "./scope.js"
 import { isNodeKind } from "./shared/implement.js"
+import type { ArkConfig } from "./space.js"
 
 export const globalConfig: mutable<ArkConfig> = {}
 

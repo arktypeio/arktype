@@ -297,11 +297,6 @@ export class Scope<r extends Resolutions = any> {
 
 	type: TypeParser<$<r>> = createTypeParser(this as never) as never
 
-	schema: SchemaParser<$<r>> = this.rawSchema.bind(this) as never
-	protected rawSchema(schema: unknown): ["schema", unknown] {
-		return ["schema", schema] as const
-	}
-
 	match: MatchParser<$<r>> = createMatchParser(this as never) as never
 
 	declare: DeclarationParser<$<r>> = () => ({ type: this.type }) as never
@@ -355,15 +350,13 @@ export class Scope<r extends Resolutions = any> {
 	}
 
 	parseTypeRoot(def: unknown, input?: ParseContextInput): Type {
-		const result = this.parse(def, {
+		return this.parse(def, {
 			args: { this: {} as Type },
 			baseName: "type",
 			path: [],
 			$: this,
 			...input
-		}).bindScope(this)
-		this.bindCompiledScope(result.contributesReferences)
-		return result
+		})
 	}
 
 	parseString(def: string, ctx: ParseContext): Type {
@@ -490,23 +483,6 @@ export class Scope<r extends Resolutions = any> {
 			]) as never,
 			"module"
 		) as never
-	}
-
-	parseUnits<const branches extends array>(
-		...values: branches
-	): branches["length"] extends 1
-		? UnionNode<branches[0]>
-		: UnionNode<branches[number]> | UnitNode<branches[number]> {
-		const uniqueValues: unknown[] = []
-		for (const value of values) {
-			if (!uniqueValues.includes(value)) {
-				uniqueValues.push(value)
-			}
-		}
-		const branches = uniqueValues.map((unit) => this.node("unit", { unit }))
-		return branches.length === 1
-			? (branches[0] as any)
-			: this.node(branches, { root: true, prereduced: true })
 	}
 }
 

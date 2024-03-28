@@ -16,17 +16,17 @@ import {
 	type BaseAttachments,
 	type Node,
 	type UnknownNode
-} from "./base.js"
-import { nodesByKind, type Schema, type reducibleKindOf } from "./kinds.js"
-import type { BaseNodeDeclaration } from "./shared/declare.js"
-import { Disjoint } from "./shared/disjoint.js"
+} from "../base.js"
+import { nodesByKind, type Schema, type reducibleKindOf } from "../kinds.js"
+import type { BaseNodeDeclaration } from "../shared/declare.js"
+import { Disjoint } from "../shared/disjoint.js"
 import {
 	defaultValueSerializer,
 	precedenceOfKind,
 	type KeyDefinitions,
 	type NodeKind,
 	type UnknownNodeImplementation
-} from "./shared/implement.js"
+} from "../shared/implement.js"
 
 export type SchemaParseOptions = {
 	alias?: string
@@ -190,7 +190,7 @@ export function parseAttachments(
 	typeCountsByPrefix[prefix] ??= 0
 	const reference = `${prefix}${++typeCountsByPrefix[prefix]!}`
 	const attachments = {
-		reference,
+		name: reference,
 		kind,
 		inner,
 		entries,

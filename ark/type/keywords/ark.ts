@@ -1,4 +1,4 @@
-import type { NodeParser, SchemaParser, inferred } from "@arktype/schema"
+import type { inferred } from "@arktype/schema"
 import type { MatchParser } from "../match.js"
 import type { Module, Scope, ScopeParser } from "../scope.js"
 import type {
