@@ -11,6 +11,11 @@ import type { internalPrimitive } from "./keywords/internal.js"
 import type { jsObjects } from "./keywords/jsObjects.js"
 import type { tsKeywords } from "./keywords/tsKeywords.js"
 import { nodesByKind } from "./kinds.js"
+import type {
+	instantiateSchema,
+	SchemaParser,
+	validateSchema
+} from "./parser/inference.js"
 import type { SchemaParseOptions } from "./parser/parse.js"
 import { NodeCompiler } from "./shared/compile.js"
 import type {
@@ -120,52 +125,47 @@ export const resolveConfig = (
 
 export type PrimitiveKeywords = tsKeywords & jsObjects & internalPrimitive
 
-// node: NodeParser<$<r>> = this.internalNodeParser.bind(this)
-// protected internalNodeParser(
-// 	schemaOrKind: unknown,
-// 	schemaOrOpts?: unknown,
-// 	constraintOpts?: SchemaParseOptions
-// ): UnknownNode {
-// 	const kindArg = isNodeKind(schemaOrKind) ? schemaOrKind : undefined
+export const node: SchemaParser<{}> = () => {
+	const kindArg = isNodeKind(schemaOrKind) ? schemaOrKind : undefined
 
-// 	let schema = kindArg ? schemaOrOpts : schemaOrKind
-// 	const opts: SchemaParseOptions | undefined = kindArg
-// 		? constraintOpts
-// 		: (schemaOrOpts as never)
-// 	if (opts?.alias && opts.alias in this.resolutions) {
-// 		return throwInternalError(
-// 			`Unexpected attempt to recreate existing alias ${opts.alias}`
-// 		)
-// 	}
-// 	let kind = kindArg ?? typeKindOfSchema(schema)
-// 	if (kind === "union" && isArray(schema) && schema.length === 1) {
-// 		schema = schema[0]
-// 		kind = typeKindOfSchema(schema)
-// 	}
-// 	if (opts?.allowedKinds && !opts.allowedKinds.includes(kind)) {
-// 		return throwParseError(
-// 			`Schema of kind ${kind} should be one of ${opts.allowedKinds}`
-// 		)
-// 	}
-// 	const node = parseAttachments(kind, schema as never, {
-// 		$: this,
-// 		prereduced: opts?.prereduced ?? false,
-// 		raw: schema,
-// 		...opts
-// 	})
-// 	if (opts?.root) {
-// 		if (this.resolved) {
-// 			// this node was not part of the original scope, so compile an anonymous scope
-// 			// including only its references
-// 			this.bindCompiledScope(node.contributesReferences)
-// 		} else {
-// 			// we're still parsing the scope itself, so defer compilation but
-// 			// add the node as a reference
-// 			Object.assign(this.referencesByName, node.contributesReferencesByName)
-// 		}
-// 	}
-// 	return node as never
-// }
+	let schema = kindArg ? schemaOrOpts : schemaOrKind
+	const opts: SchemaParseOptions | undefined = kindArg
+		? constraintOpts
+		: (schemaOrOpts as never)
+	if (opts?.alias && opts.alias in this.resolutions) {
+		return throwInternalError(
+			`Unexpected attempt to recreate existing alias ${opts.alias}`
+		)
+	}
+	let kind = kindArg ?? typeKindOfSchema(schema)
+	if (kind === "union" && isArray(schema) && schema.length === 1) {
+		schema = schema[0]
+		kind = typeKindOfSchema(schema)
+	}
+	if (opts?.allowedKinds && !opts.allowedKinds.includes(kind)) {
+		return throwParseError(
+			`Schema of kind ${kind} should be one of ${opts.allowedKinds}`
+		)
+	}
+	const node = parseAttachments(kind, schema as never, {
+		$: this,
+		prereduced: opts?.prereduced ?? false,
+		raw: schema,
+		...opts
+	})
+	if (opts?.root) {
+		if (this.resolved) {
+			// this node was not part of the original scope, so compile an anonymous scope
+			// including only its references
+			this.bindCompiledScope(node.contributesReferences)
+		} else {
+			// we're still parsing the scope itself, so defer compilation but
+			// add the node as a reference
+			Object.assign(this.referencesByName, node.contributesReferencesByName)
+		}
+	}
+	return node as never
+}
 
 // parseUnits(...values: unknown[]): UnionNode | UnitNode {
 // 	const uniqueValues: unknown[] = []
@@ -255,6 +255,7 @@ export const space = <aliases>(
 			}
 		)
 	}
+	return {} as any
 	// this.references = Object.values(this.referencesByName)
 	// 	this.bindCompiledScope(this.references)
 	// 	this.resolved = true
