@@ -12,7 +12,7 @@ export type GenericParamsParseError<message extends string = string> = [
 	nominal<message, "InvalidGenericParameters">
 ]
 
-export const parseGenericParams = (def: string) =>
+export const parseGenericParams = (def: string): string[] =>
 	parseGenericParamsRecurse(new Scanner(def))
 
 export type parseGenericParams<def extends string> = parseParamsRecurse<

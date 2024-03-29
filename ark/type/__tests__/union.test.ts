@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import { node, writeIndivisibleMessage } from "@arktype/schema"
+import { root, writeIndivisibleMessage } from "@arktype/schema"
 import { keywords, type } from "arktype"
 import {
 	writeMissingRightOperandMessage,
@@ -55,7 +55,7 @@ describe("union", () => {
 	})
 	describe("expressions", () => {
 		const expected = () =>
-			node([
+			root([
 				{
 					domain: "object",
 					prop: {

@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import { node } from "@arktype/schema"
+import { root } from "@arktype/schema"
 import { scope, type, type Ark, type Out, type Type } from "arktype"
 import {
 	writeMissingRightOperandMessage,
@@ -74,13 +74,13 @@ describe("root expression", () => {
 	it("instanceof single", () => {
 		const t = type("instanceof", RegExp)
 		attest<RegExp>(t.infer)
-		const expected = node(RegExp)
+		const expected = root(RegExp)
 		attest(t.json).equals(expected.json)
 	})
 	it("instanceof branches", () => {
 		const t = type("instanceof", Array, Date)
 		attest<unknown[] | Date>(t.infer)
-		const expected = node([Array, Date])
+		const expected = root([Array, Date])
 		attest(t.json).equals(expected.json)
 	})
 	it("postfix", () => {

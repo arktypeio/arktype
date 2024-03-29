@@ -26,8 +26,8 @@
 		// too many overlapping names, easy to import in schema/arktype where we don't want it
 		// should just import as * as ts when we need it in attest
 		"typescript",
-		"./ark/type/main.ts",
-		"./ark/schema/main.ts"
+		"./ark/type/main.ts"
+		// "./ark/schema/main.ts"
 	],
 	"typescript.tsserver.experimental.enableProjectDiagnostics": true,
 	"prettier.ignorePath": "ark/repo/.prettierignore",

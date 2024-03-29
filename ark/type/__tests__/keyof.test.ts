@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import { node } from "@arktype/schema"
+import { root } from "@arktype/schema"
 import { type } from "arktype"
 import {
 	writeMissingRightOperandMessage,
@@ -14,7 +14,7 @@ describe("keyof", () => {
 	it("root expression", () => {
 		const t = type("keyof", "Date")
 		attest<keyof Date>(t.infer)
-		const expected = node(Date).keyof()
+		const expected = root(Date).keyof()
 		attest(t.json).equals(expected.json)
 	})
 	it("primitive", () => {

@@ -1,4 +1,4 @@
-import { hasArkKind, type TypeNode, type string } from "@arktype/schema"
+import { hasArkKind, node, type TypeNode, type string } from "@arktype/schema"
 import {
 	isThunk,
 	objectKindOf,
@@ -44,7 +44,7 @@ export const parseObject = (def: object, ctx: ParseContext): TypeNode => {
 		case "Array":
 			return parseTuple(def as array, ctx)
 		case "RegExp":
-			return ctx.$.node(
+			return node(
 				"intersection",
 				{
 					domain: "string",

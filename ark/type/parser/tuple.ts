@@ -1,20 +1,22 @@
-import type {
-	BaseMeta,
-	Morph,
-	MutableInner,
-	Node,
-	Out,
-	Predicate,
-	TypeNode,
-	UnionChildKind,
-	distillConstrainableIn,
-	distillConstrainableOut,
-	inferIntersection,
-	inferMorphOut,
-	inferNarrow,
-	instantiateSchema,
-	makeRootAndArrayPropertiesMutable,
-	validateSchema
+import {
+	node,
+	parseUnits,
+	type BaseMeta,
+	type Morph,
+	type MutableInner,
+	type Node,
+	type Out,
+	type Predicate,
+	type TypeNode,
+	type UnionChildKind,
+	type distillConstrainableIn,
+	type distillConstrainableOut,
+	type inferIntersection,
+	type inferMorphOut,
+	type inferNarrow,
+	type instantiateSchema,
+	type makeRootAndArrayPropertiesMutable,
+	type validateSchema
 } from "@arktype/schema"
 import {
 	append,
@@ -80,7 +82,8 @@ export const parseTupleLiteral = (def: array, ctx: ParseContext): TypeNode => {
 			)
 		}
 	}
-	return ctx.$.node(
+	return node(
+		"union",
 		sequences.map(
 			(sequence) =>
 				({
@@ -100,7 +103,7 @@ const appendElement = (
 ): MutableInner<"sequence"> => {
 	switch (kind) {
 		case "required":
-			if (base.optionals)
+			if (base.optional)
 				// e.g. [string?, number]
 				return throwParseError(requiredPostOptionalMessage)
 			if (base.variadic) {
@@ -116,7 +119,7 @@ const appendElement = (
 				// e.g. [...string[], number?]
 				return throwParseError(optionalPostVariadicMessage)
 			// e.g. [string, number?]
-			base.optionals = append(base.optionals, element)
+			base.optional = append(base.optional, element)
 			return base
 		case "variadic":
 			// e.g. [...string[], number, ...string[]]
@@ -146,7 +149,7 @@ const appendSpreadBranch = (
 		return appendElement(base, "variadic", branch.$.keywords.unknown)
 	}
 	spread.prefix.forEach((node) => appendElement(base, "required", node))
-	spread.optionals.forEach((node) => appendElement(base, "optional", node))
+	spread.optional.forEach((node) => appendElement(base, "optional", node))
 	spread.variadic && appendElement(base, "variadic", spread.variadic)
 	spread.postfix.forEach((node) => appendElement(base, "required", node))
 	return base
@@ -543,7 +546,7 @@ const indexOneParsers: {
 
 export type FunctionalTupleOperator = ":" | "=>"
 
-export type IndexZeroOperator = "keyof" | "instanceof" | "===" | "schema"
+export type IndexZeroOperator = "keyof" | "instanceof" | "==="
 
 export type IndexZeroExpression<
 	token extends IndexZeroOperator = IndexZeroOperator
@@ -563,17 +566,14 @@ const prefixParsers: {
 			.slice(1)
 			.map((ctor) =>
 				typeof ctor === "function"
-					? ctx.$.node("proto", { proto: ctor as Constructor })
+					? node("proto", { proto: ctor as Constructor })
 					: throwParseError(
 							writeInvalidConstructorMessage(objectKindOrDomainOf(ctor))
 					  )
 			)
-		return branches.length === 1
-			? branches[0]
-			: ctx.$.node("union", { branches })
+		return branches.length === 1 ? branches[0] : node("union", { branches })
 	},
-	"===": (def, ctx) => ctx.$.parseUnits(...def.slice(1)),
-	schema: (def, ctx) => ctx.$.node(def[1] as never)
+	"===": (def, ctx) => parseUnits(...def.slice(1))
 }
 
 const isIndexZeroExpression = (def: array): def is IndexZeroExpression =>

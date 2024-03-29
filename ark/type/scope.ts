@@ -11,10 +11,8 @@ import {
 	type distillOut,
 	type ResolvedArkConfig,
 	type SchemaParseOptions,
-	type SchemaParser,
 	type TypeKind,
-	type UnionNode,
-	type UnitNode,
+	type TypeNode,
 	type UnknownNode
 } from "@arktype/schema"
 import {
@@ -23,14 +21,12 @@ import {
 	hasDomain,
 	isThunk,
 	throwParseError,
-	type array,
 	type Dict,
 	type evaluate,
 	type isAny,
 	type Json,
 	type nominal
 } from "@arktype/util"
-import { extendConfig } from "../schema/space.js"
 import type { type } from "./ark.js"
 import { createMatchParser, type MatchParser } from "./match.js"
 import {
@@ -54,12 +50,12 @@ import { fullStringParse } from "./parser/string/string.js"
 import {
 	createTypeParser,
 	generic,
+	Type,
 	validateUninstantiatedGeneric,
 	type DeclarationParser,
 	type DefinitionParser,
 	type Generic,
 	type GenericProps,
-	type Type,
 	type TypeParser
 } from "./type.js"
 
@@ -231,10 +227,10 @@ export type ParseContext = {
 	baseName: string
 	path: string[]
 	$: Scope
-	args: Record<string, Type> | undefined
+	args: Record<string, TypeNode> | undefined
 }
 
-type MergedResolutions = Record<string, Type | Generic>
+type MergedResolutions = Record<string, TypeNode | Generic>
 
 type ParseContextInput = Partial<ParseContext>
 
@@ -245,7 +241,7 @@ export class Scope<r extends Resolutions = any> {
 	readonly config: ArkConfig
 	readonly resolvedConfig: ResolvedArkConfig
 
-	private parseCache: Record<string, Type> = {}
+	private parseCache: Record<string, TypeNode> = {}
 	private resolutions: MergedResolutions
 	readonly nodeCache: { [innerId: string]: UnknownNode } = {}
 	readonly referencesByName: { [name: string]: UnknownNode } = {}
@@ -319,7 +315,7 @@ export class Scope<r extends Resolutions = any> {
 		return this.export()[name] as never
 	}
 
-	parse(def: unknown, ctx: ParseContext): Type {
+	parse(def: unknown, ctx: ParseContext): TypeNode {
 		if (typeof def === "string") {
 			if (ctx.args !== undefined) {
 				// TODO: allow caching with this by serializing it?
@@ -338,16 +334,19 @@ export class Scope<r extends Resolutions = any> {
 	}
 
 	parseTypeRoot(def: unknown, input?: ParseContextInput): Type {
-		return this.parse(def, {
-			args: { this: {} as Type },
-			baseName: "type",
-			path: [],
-			$: this,
-			...input
-		})
+		return new Type(
+			this.parse(def, {
+				args: { this: {} as TypeNode },
+				baseName: "type",
+				path: [],
+				$: this,
+				...input
+			}),
+			this
+		)
 	}
 
-	parseString(def: string, ctx: ParseContext): Type {
+	parseString(def: string, ctx: ParseContext): TypeNode {
 		return (
 			this.maybeResolveNode(def) ??
 			((def.endsWith("[]") &&
@@ -356,7 +355,7 @@ export class Scope<r extends Resolutions = any> {
 		)
 	}
 
-	maybeResolve(name: string): Type | Generic | undefined {
+	maybeResolve(name: string): TypeNode | Generic | undefined {
 		const cached = this.resolutions[name]
 		if (cached) {
 			return cached
@@ -377,7 +376,7 @@ export class Scope<r extends Resolutions = any> {
 	}
 
 	/** If name is a valid reference to a submodule alias, return its resolution  */
-	private maybeResolveSubalias(name: string) {
+	private maybeResolveSubalias(name: string): TypeNode | Generic | undefined {
 		const dotIndex = name.indexOf(".")
 		if (dotIndex === -1) {
 			return
@@ -401,7 +400,7 @@ export class Scope<r extends Resolutions = any> {
 		// might be something like a decimal literal, so just fall through to return
 	}
 
-	maybeResolveNode(name: string): Type | undefined {
+	maybeResolveNode(name: string): TypeNode | undefined {
 		const result = this.maybeResolve(name)
 		return result instanceof BaseType ? (result as never) : undefined
 	}
@@ -457,8 +456,6 @@ export class Scope<r extends Resolutions = any> {
 				hasArkKind(v, "node") ? [k, v.json] : []
 			)
 			Object.assign(this.resolutions, this.exportedResolutions)
-			if (this.config.registerKeywords)
-				Object.assign(Scope.keywords, this.exportedResolutions)
 			this.references = Object.values(this.referencesByName)
 			this.bindCompiledScope(this.references)
 			this.resolved = true
@@ -490,7 +487,7 @@ const resolutionsOfModule = (typeSet: ExportCache) => {
 		} else if (hasArkKind(v, "generic")) {
 			result[k] = v
 		} else {
-			result[k] = v as Type
+			result[k] = v.root
 		}
 	}
 	return result

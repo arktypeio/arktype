@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import { node, writeUnboundableMessage } from "@arktype/schema"
+import { root, writeUnboundableMessage } from "@arktype/schema"
 import { writeMalformedNumericLiteralMessage } from "@arktype/util"
 import { type } from "arktype"
 import { writeDoubleRightBoundMessage } from "../parser/semantic/bounds.js"
@@ -28,7 +28,7 @@ describe("parsed bounds", () => {
 			const t = type("number<10")
 			attest<number>(t.infer)
 			attest(t).type.toString.snap()
-			const expected = node({
+			const expected = root({
 				domain: "number",
 				max: { rule: 10, exclusive: true }
 			})
@@ -38,7 +38,7 @@ describe("parsed bounds", () => {
 			const t = type("number<=-49")
 			attest<number>(t.infer)
 			attest(t).type.toString.snap()
-			const expected = node({
+			const expected = root({
 				domain: "number",
 				max: { rule: -49, exclusive: false }
 			})
@@ -48,14 +48,14 @@ describe("parsed bounds", () => {
 			const t = type("number==3211993")
 			attest<3211993>(t.infer)
 			attest(t).type.toString.snap()
-			const expected = node({ unit: 3211993 })
+			const expected = root({ unit: 3211993 })
 			attest(t.json).equals(expected.json)
 		})
 		it("<,<=", () => {
 			const t = type("-5<number<=5")
 			attest(t).type.toString.snap()
 			attest<number>(t.infer)
-			const expected = node({
+			const expected = root({
 				domain: "number",
 				min: { rule: -5, exclusive: true },
 				max: 5
@@ -66,7 +66,7 @@ describe("parsed bounds", () => {
 			const t = type("-3.23<=number<4.654")
 			attest(t).type.toString.snap()
 			attest<number>(t.infer)
-			const expected = node({
+			const expected = root({
 				domain: "number",
 				min: { rule: -3.23 },
 				max: { rule: 4.654, exclusive: true }
@@ -77,7 +77,7 @@ describe("parsed bounds", () => {
 			const t = type("number > 3")
 			attest(t).type.toString.snap()
 			attest<number>(t.infer)
-			const expected = node({
+			const expected = root({
 				domain: "number",
 				min: { rule: 3, exclusive: true }
 			})

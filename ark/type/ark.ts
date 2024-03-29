@@ -1,13 +1,12 @@
-import {
-	type inferred,
-	type jsObjects,
-	type parsing,
-	root,
-	type tsKeywords,
-	type validation
+import type {
+	inferred,
+	jsObjects,
+	parsing,
+	tsKeywords,
+	validation
 } from "@arktype/schema"
 import type { MatchParser } from "./match.js"
-import type { Module, Scope, ScopeParser } from "./scope.js"
+import { Scope, type Module, type ScopeParser } from "./scope.js"
 import type {
 	DeclarationParser,
 	DefinitionParser,
@@ -53,12 +52,10 @@ type TsGenericsExports<$ = Ark> = {
 
 export const tsGenerics = {} as Module<TsGenericsResolutions>
 
-export const ark: Scope<ArkResolutions> = root
-	.scope({
-		...keywords,
-		parse: parsingKeywords
-	})
-	.toAmbient() as never
+export const ark: Scope<ArkResolutions> = Scope.root({
+	...keywords,
+	parse: parsingKeywords
+}).toAmbient() as never
 
 export const keywords: Module<ArkResolutions> = ark.export()
 

@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import { node } from "@arktype/schema"
+import { root } from "@arktype/schema"
 import { type } from "arktype"
 
 describe("keywords", () => {
@@ -37,7 +37,7 @@ describe("keywords", () => {
 		it("boolean", () => {
 			const boolean = type("boolean")
 			attest<boolean>(boolean.infer)
-			const expected = node([{ unit: false }, { unit: true }])
+			const expected = root([{ unit: false }, { unit: true }])
 			// should be simplified to simple checks for true and false literals
 			attest(boolean.json).equals(expected.json)
 			// TODO:
@@ -48,12 +48,12 @@ describe("keywords", () => {
 		it("never", () => {
 			const never = type("never")
 			attest<never>(never.infer)
-			const expected = node([])
+			const expected = root([])
 			// should be equivalent to a zero-branch union
 			attest(never.json).equals(expected.json)
 		})
 		it("unknown", () => {
-			const expected = node({})
+			const expected = root({})
 			// should be equivalent to an unconstrained predicate
 			attest(type("unknown").json).equals(expected.json)
 		})
