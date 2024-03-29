@@ -30,10 +30,8 @@ import {
 	type Json,
 	type nominal
 } from "@arktype/util"
-import type { type } from "./keywords/ark.js"
-import type { internalPrimitiveKeywords } from "./keywords/internal.js"
-import type { jsObjectKeywords } from "./keywords/jsObject.js"
-import type { tsPrimitiveKeywords } from "./keywords/tsPrimitive.js"
+import { extendConfig } from "../schema/space.js"
+import type { type } from "./ark.js"
 import { createMatchParser, type MatchParser } from "./match.js"
 import {
 	parseObject,
@@ -240,10 +238,6 @@ type MergedResolutions = Record<string, Type | Generic>
 
 type ParseContextInput = Partial<ParseContext>
 
-export type PrimitiveKeywords = typeof tsPrimitiveKeywords &
-	typeof jsObjectKeywords &
-	typeof internalPrimitiveKeywords
-
 export class Scope<r extends Resolutions = any> {
 	declare infer: distillOut<r["exports"]>
 	declare inferIn: distillIn<r["exports"]>
@@ -258,16 +252,6 @@ export class Scope<r extends Resolutions = any> {
 	references: readonly UnknownNode[] = []
 	json: Json = {}
 	protected resolved = false
-
-	// these allow builtin types to be accessed during parsing without cyclic imports
-	// they are populated as each scope is parsed with `registerKeywords` in its config
-	/** @internal */
-	static keywords = {} as PrimitiveKeywords
-
-	/** @internal */
-	get keywords(): PrimitiveKeywords {
-		return Scope.keywords
-	}
 
 	/** The set of names defined at the root-level of the scope mapped to their
 	 * corresponding definitions.**/
@@ -293,6 +277,10 @@ export class Scope<r extends Resolutions = any> {
 		} else {
 			this.resolutions = {}
 		}
+	}
+
+	static root: ScopeParser<{}, {}> = (aliases) => {
+		return new Scope(aliases, {}) as never
 	}
 
 	type: TypeParser<$<r>> = createTypeParser(this as never) as never

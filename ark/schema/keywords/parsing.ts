@@ -7,6 +7,7 @@ import type { TypeNode } from "../base.js"
 import { rootSchema, space } from "../space.js"
 import type { Out } from "../types/morph.js"
 import { parsedDate } from "./utils/date.js"
+import type { spaceFromExports } from "./utils/utils.js"
 
 const number = rootSchema({
 	in: {
@@ -59,13 +60,17 @@ const json = rootSchema({
 
 const date = parsedDate
 
-export interface parsing {
-	url: TypeNode<(In: string) => Out<URL>, "morph">
-	number: TypeNode<(In: string) => Out<number>, "morph">
-	integer: TypeNode<(In: string) => Out<number>, "morph">
-	date: TypeNode<(In: string) => Out<Date>, "morph">
-	json: TypeNode<(In: string) => Out<unknown>, "morph">
+export namespace parsing {
+	export type exports = {
+		url: (In: string) => Out<URL>
+		number: (In: string) => Out<number>
+		integer: (In: string) => Out<number>
+		date: (In: string) => Out<Date>
+		json: (In: string) => Out<unknown>
+	}
 }
+
+export type parsing = spaceFromExports<parsing.exports>
 
 export const parsing: parsing = space({
 	url,

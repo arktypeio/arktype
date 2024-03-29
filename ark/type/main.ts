@@ -9,6 +9,6 @@ export {
 	scope,
 	type,
 	type Ark
-} from "./keywords/ark.js"
+} from "./ark.js"
 export type { Module, Scope } from "./scope.js"
 export type { Type, inferTypeRoot, validateTypeRoot } from "./type.js"

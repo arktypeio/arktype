@@ -1,18 +1,22 @@
-import type { TypeNode } from "../base.js"
 import { space } from "../space.js"
+import type { spaceFromExports } from "./utils/utils.js"
 
-export interface jsObjects {
-	Array: TypeNode<Array<unknown>, "proto">
-	Function: TypeNode<Function, "proto">
-	Date: TypeNode<Date, "proto">
-	Error: TypeNode<Error, "proto">
-	Map: TypeNode<Map<unknown, unknown>, "proto">
-	RegExp: TypeNode<RegExp, "proto">
-	Set: TypeNode<Set<unknown>, "proto">
-	WeakMap: TypeNode<WeakMap<object, unknown>, "proto">
-	WeakSet: TypeNode<WeakSet<object>, "proto">
-	Promise: TypeNode<Promise<unknown>, "proto">
+export namespace jsObjects {
+	export interface exports {
+		Array: Array<unknown>
+		Function: Function
+		Date: Date
+		Error: Error
+		Map: Map<unknown, unknown>
+		RegExp: RegExp
+		Set: Set<unknown>
+		WeakMap: WeakMap<object, unknown>
+		WeakSet: WeakSet<object>
+		Promise: Promise<unknown>
+	}
 }
+
+export type jsObjects = spaceFromExports<jsObjects.exports>
 
 export const jsObjects: jsObjects = space(
 	{

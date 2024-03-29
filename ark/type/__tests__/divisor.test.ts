@@ -1,7 +1,7 @@
 import { attest } from "@arktype/attest"
 import { writeIndivisibleMessage } from "@arktype/schema"
 import { type } from "arktype"
-import { keywords } from "../keywords/ark.js"
+import { keywords } from "../ark.js"
 import { writeInvalidDivisorMessage } from "../parser/string/shift/operator/divisor.js"
 
 describe("divisibility", () => {

@@ -17,7 +17,7 @@ import {
 	type optionalKeyOf,
 	type requiredKeyOf
 } from "@arktype/util"
-import type { type } from "../keywords/ark.js"
+import type { type } from "../ark.js"
 import type { ParseContext } from "../scope.js"
 import {
 	parseObjectLiteral,

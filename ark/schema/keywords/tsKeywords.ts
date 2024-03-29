@@ -1,23 +1,28 @@
 import type { TypeNode } from "../base.js"
 import { space } from "../space.js"
 import type { schema } from "./keywords.js"
+import type { spaceFromExports } from "./utils/utils.js"
 
-export interface tsKeywords {
-	any: TypeNode<any, "intersection">
-	bigint: TypeNode<bigint, "domain">
-	boolean: TypeNode<boolean, "union">
-	false: TypeNode<false, "unit">
-	never: TypeNode<never, "union">
-	null: TypeNode<null, "unit">
-	number: TypeNode<number, "domain">
-	object: TypeNode<object, "domain">
-	string: TypeNode<string, "domain">
-	symbol: TypeNode<symbol, "domain">
-	true: TypeNode<true, "unit">
-	unknown: TypeNode<unknown, "intersection">
-	void: TypeNode<void, "unit">
-	undefined: TypeNode<undefined, "unit">
+export namespace tsKeywords {
+	export interface exports {
+		any: any
+		bigint: bigint
+		boolean: boolean
+		false: false
+		never: never
+		null: null
+		number: number
+		object: object
+		string: string
+		symbol: symbol
+		true: true
+		unknown: unknown
+		void: void
+		undefined: undefined
+	}
 }
+
+export type tsKeywords = spaceFromExports<tsKeywords.exports>
 
 export const tsKeywords: tsKeywords = space(
 	{

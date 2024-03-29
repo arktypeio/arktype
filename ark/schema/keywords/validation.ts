@@ -1,6 +1,6 @@
-import type { TypeNode } from "../base.js"
 import { rootSchema, space } from "../space.js"
 import { creditCard } from "./utils/creditCard.js"
+import type { spaceFromExports } from "./utils/utils.js"
 
 // Non-trivial expressions should have an explanation or attribution
 
@@ -46,18 +46,22 @@ const semver = rootSchema({
 	description: "a valid semantic version (see https://semver.org/)"
 })
 
-export interface validation {
-	alpha: TypeNode<string, "intersection">
-	alphanumeric: TypeNode<string, "intersection">
-	lowercase: TypeNode<string, "intersection">
-	uppercase: TypeNode<string, "intersection">
-	creditCard: TypeNode<string, "intersection">
-	email: TypeNode<string, "intersection">
-	uuid: TypeNode<string, "intersection">
-	url: TypeNode<string, "intersection">
-	semver: TypeNode<string, "intersection">
-	integer: TypeNode<number, "intersection">
+export namespace validation {
+	export interface exports {
+		alpha: string
+		alphanumeric: string
+		lowercase: string
+		uppercase: string
+		creditCard: string
+		email: string
+		uuid: string
+		url: string
+		semver: string
+		integer: number
+	}
 }
+
+export type validation = spaceFromExports<validation.exports>
 
 export const validation: validation = space(
 	{

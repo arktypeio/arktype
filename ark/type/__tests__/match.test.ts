@@ -1,6 +1,6 @@
 import { attest } from "@arktype/attest"
 import { match } from "arktype"
-import { scope } from "../keywords/ark.js"
+import { scope } from "../ark.js"
 
 describe("match", () => {
 	it("cases only", () => {
