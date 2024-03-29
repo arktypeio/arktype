@@ -72,6 +72,8 @@ export type array<t = unknown> = readonly t[]
 
 export type listable<t> = t | readonly t[]
 
+export type flattenListable<t> = t extends array<infer element> ? element : t
+
 export type NonEmptyList<t = unknown> = readonly [t, ...t[]]
 
 export type CollapsingList<t = unknown> =

@@ -86,7 +86,7 @@ export class PropNode extends BaseConstraint<PropDeclaration> {
 	)
 
 	readonly required = !this.optional
-	readonly impliedBasis = this.$.keywords.object
+	readonly impliedBasis = tsKeywords.object
 	readonly serializedKey = compileSerializedValue(this.key)
 	readonly compiledKey =
 		typeof this.key === "string" ? this.key : this.serializedKey

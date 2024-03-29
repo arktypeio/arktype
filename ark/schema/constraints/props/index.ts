@@ -1,6 +1,7 @@
 import { throwParseError, type Key } from "@arktype/util"
 import type { TypeNode, TypeSchema } from "../../base.js"
 import { internalKeywords } from "../../keywords/internal.js"
+import { tsKeywords } from "../../keywords/tsKeywords.js"
 import { root } from "../../parser/parse.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
@@ -62,7 +63,7 @@ export class IndexNode extends BaseConstraint<IndexDeclaration> {
 			}
 		})
 
-	readonly impliedBasis = this.$.keywords.object
+	readonly impliedBasis = tsKeywords.object
 	readonly expression = `[${this.key.expression}]: ${this.value.expression}`
 
 	traverseAllows: TraverseAllows<object> = (data, ctx) =>

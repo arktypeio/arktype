@@ -5,16 +5,19 @@ import type {
 	array,
 	conform,
 	describe,
+	flattenListable,
 	inferDomain,
 	instanceOf,
-	isAny
+	isAny,
+	listable
 } from "@arktype/util"
 import type { Node, TypeNode, TypeSchema, UnknownNode } from "../base.js"
 import type { Prerequisite, Schema, reducibleKindOf } from "../kinds.js"
 import type {
 	BasisKind,
 	ConstraintKind,
-	NodeKind
+	NodeKind,
+	TypeKind
 } from "../shared/implement.js"
 import type { inferred } from "../shared/inference.js"
 import type { DomainNode, DomainSchema } from "../types/domain.js"
@@ -58,13 +61,13 @@ export type SchemaParser<$> = <const schema extends TypeSchema>(
 ) => schema
 
 export type NodeParser<$> = <
-	kind extends NodeKind,
-	const schema extends Schema<kind>
+	kinds extends NodeKind | listable<TypeKind>,
+	const schema extends Schema<flattenListable<kinds>>
 >(
-	kind: kind,
+	kinds: kinds,
 	schema: schema,
 	opts?: SchemaParseOptions
-) => Node<reducibleKindOf<kind>>
+) => Node<reducibleKindOf<flattenListable<kinds>>>
 
 export type RootParser<$> = <const schema extends TypeSchema>(
 	schema: schema,

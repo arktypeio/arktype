@@ -11,8 +11,7 @@ import {
 	type listable,
 	type valueOf
 } from "@arktype/util"
-import { json } from "stream/consumers"
-import type { BaseAttachments, Node, TypeNode, UnknownNode } from "../base.js"
+import type { BaseAttachments, Node, UnknownNode } from "../base.js"
 import type { Schema, reducibleKindOf } from "../kinds.js"
 import type { BaseNodeDeclaration } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -27,6 +26,7 @@ import {
 	type UnknownNodeImplementation
 } from "../shared/implement.js"
 import { hasArkKind } from "../shared/utils.js"
+import type { ArkConfig, Space } from "../space.js"
 import type {
 	NodeParser,
 	RootParser,
@@ -37,6 +37,8 @@ import type {
 export type SchemaParseOptions = {
 	alias?: string
 	prereduced?: boolean
+	config?: ArkConfig
+	space?: Space
 	// TODO: check if reduceTo works across scopes
 	/** Instead of creating the node, compute the innerId of the definition and
 	 * point it to the specified resolution.
@@ -50,7 +52,6 @@ export type SchemaParseOptions = {
 
 export type SchemaParseContext = evaluate<
 	SchemaParseOptions & {
-		$: Record<string, TypeNode | undefined>
 		raw: unknown
 	}
 >
@@ -60,6 +61,19 @@ const typeCountsByPrefix: PartialRecord<string, number> = {}
 const baseKeys: PartialRecord<string, valueOf<KeyDefinitions<any>>> = {
 	description: { meta: true }
 } satisfies KeyDefinitions<BaseNodeDeclaration> as never
+
+export const assertTypeKindOfSchema = <kind extends TypeKind>(
+	schema: unknown,
+	allowedKinds: readonly kind[]
+): kind => {
+	const kind = typeKindOfSchema(schema)
+	if (!allowedKinds.includes(kind as never)) {
+		return throwParseError(
+			`Schema of kind ${kind} should be one of ${allowedKinds}`
+		)
+	}
+	return kind as never
+}
 
 export const typeKindOfSchema = (schema: unknown): TypeKind => {
 	switch (typeof schema) {
@@ -119,7 +133,9 @@ export const root: RootParser<{}> = (schema, opts) => {
 	return node(kind, schema, opts) as never
 }
 
-export const node: NodeParser<{}> = (kind: NodeKind, schema: unknown, opts) => {
+export const node: NodeParser<{}> = (kinds, schema: unknown, opts) => {
+	let kind: NodeKind =
+		typeof kinds === "string" ? kinds : assertTypeKindOfSchema(schema, kinds)
 	if (kind === "union" && isArray(schema) && schema.length === 1) {
 		schema = schema[0]
 		kind = typeKindOfSchema(schema)
@@ -258,7 +274,7 @@ export function parseAttachments(
 	const typeId = JSON.stringify({ kind, ...typeJson })
 
 	if (impl.reduce && !ctx.prereduced) {
-		const reduced = impl.reduce(inner, ctx.$)
+		const reduced = impl.reduce(inner)
 		if (reduced) {
 			if (reduced instanceof Disjoint) return reduced.throw()
 
@@ -280,9 +296,9 @@ export function parseAttachments(
 
 	const prefix = ctx.alias ?? kind
 	typeCountsByPrefix[prefix] ??= 0
-	const reference = `${prefix}${++typeCountsByPrefix[prefix]!}`
+	const name = `${prefix}${++typeCountsByPrefix[prefix]!}`
 	const attachments = {
-		name: reference,
+		name,
 		kind,
 		inner,
 		entries,

@@ -272,10 +272,7 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	normalize: (schema: d["schema"]) => d["normalizedSchema"]
 	hasAssociatedError: d["errorContext"] extends null ? false : true
 	collapsibleKey?: keyof d["inner"]
-	reduce?: (
-		inner: d["inner"],
-		$: unknown
-	) => Node<d["reducibleTo"]> | Disjoint | undefined
+	reduce?: (inner: d["inner"]) => Node<d["reducibleTo"]> | Disjoint | undefined
 }
 
 export interface UnknownNodeImplementation

@@ -117,7 +117,7 @@ export const resolveConfig = (
 	scopeConfig: ArkConfig | undefined
 ): ResolvedArkConfig => extendConfig(defaultConfig, scopeConfig) as never
 
-export type PrimitiveKeywords = tsKeywords & jsObjects & internalPrimitive
+export type PrimitiveKeywords = tsKeywords & jsObjects & internalKeywords
 
 const bindCompiledSpace = (references: readonly Node[]) => {
 	const compiledTraversals = compileSpace(references)
@@ -171,6 +171,8 @@ export type validateAliases<aliases> = {
 export type instantiateAliases<aliases> = {
 	[k in keyof aliases]: instantiateSchema<aliases[k], aliases>
 } & unknown
+
+export type Space = Record<string, TypeNode | unknown>
 
 export const space = <const aliases>(
 	aliases: validateAliases<aliases>,
