@@ -11,6 +11,7 @@ import {
 	type PrimitiveConstraintKind
 } from "../constraints/constraint.js"
 import type { Schema, reducibleKindOf } from "../kinds.js"
+import { node, root } from "../parser/parse.js"
 import type { BaseMeta, BaseNodeDeclaration } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
@@ -77,7 +78,7 @@ export abstract class BaseType<
 
 	or<r extends TypeNode>(r: r): TypeNode<t | r["infer"]> {
 		const branches = [...this.branches, ...(r.branches as any)]
-		return this.$.node(branches) as never
+		return root(branches) as never
 	}
 
 	isUnknown(): this is IntersectionNode<unknown> {
@@ -95,21 +96,21 @@ export abstract class BaseType<
 	}
 
 	extract(other: TypeNode): TypeNode {
-		return this.$.node(
+		return root(
 			this.branches.filter((branch) => branch.extends(other)),
 			{ root: true }
 		)
 	}
 
 	exclude(other: TypeNode): TypeNode {
-		return this.$.node(
+		return root(
 			this.branches.filter((branch) => !branch.extends(other)),
 			{ root: true }
 		) as never
 	}
 
 	array(): IntersectionNode<t[]> {
-		return this.$.node(
+		return root(
 			{
 				proto: Array,
 				sequence: this
@@ -145,15 +146,15 @@ export abstract class BaseType<
 			const branches = this.branches.map((node) =>
 				node.morph(morph, outValidator as never)
 			)
-			return this.$.node("union", { ...this.inner, branches })
+			return node("union", { ...this.inner, branches })
 		}
 		if (this.hasKind("morph")) {
-			return this.$.node("morph", {
+			return node("morph", {
 				...this.inner,
 				morphs: [...this.morphs, morph]
 			})
 		}
-		return this.$.node("morph", {
+		return node("morph", {
 			in: this,
 			morphs: [morph]
 		})
@@ -175,7 +176,7 @@ export abstract class BaseType<
 	}
 
 	protected rawConstrain(kind: ConstraintKind, schema: unknown): TypeNode {
-		const constraint = this.$.node(kind, schema as never)
+		const constraint = node(kind, schema as never)
 		if (
 			constraint.impliedBasis &&
 			!this.extends(constraint.impliedBasis as never)
@@ -189,7 +190,7 @@ export abstract class BaseType<
 
 		return this.and(
 			// TODO: not an intersection
-			this.$.node("intersection", {
+			node("intersection", {
 				[kind]: constraint
 			})
 		) as never

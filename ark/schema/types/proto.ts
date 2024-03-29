@@ -6,6 +6,7 @@ import {
 	prototypeKeysOf,
 	type Constructor
 } from "@arktype/util"
+import { tsKeywords } from "../keywords/tsKeywords.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import { defaultValueSerializer } from "../shared/implement.js"
@@ -68,7 +69,7 @@ export class ProtoNode<t = any> extends BaseBasis<t, ProtoDeclaration> {
 				domain.domain === "object"
 					? proto
 					: // TODO: infer node to avoid cast
-					  Disjoint.from("domain", proto.$.keywords.object as never, domain)
+					  Disjoint.from("domain", tsKeywords.object as never, domain)
 		}
 	})
 

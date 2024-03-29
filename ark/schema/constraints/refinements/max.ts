@@ -1,3 +1,4 @@
+import { tsKeywords } from "../../keywords/tsKeywords.js"
 import { node } from "../../parser/parse.js"
 import type { declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
@@ -55,7 +56,7 @@ export class MaxNode extends BaseRange<MaxDeclaration> {
 		}
 	})
 
-	readonly impliedBasis = this.$.keywords.number
+	readonly impliedBasis = tsKeywords.number
 
 	traverseAllows = this.exclusive
 		? (data: number) => data < this.rule

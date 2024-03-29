@@ -1,13 +1,18 @@
 import type { Key } from "@arktype/util"
 import type { TypeNode } from "../base.js"
 import { space } from "../space.js"
+import type { spaceFromExports } from "./utils/utils.js"
 
-export interface internalPrimitive {
-	lengthBoundable: TypeNode<string | unknown[]>
-	propertyKey: TypeNode<Key>
+export namespace internalKeywords {
+	export interface exports {
+		lengthBoundable: string | unknown[]
+		propertyKey: Key
+	}
 }
 
-export const internalPrimitive: internalPrimitive = space(
+export type internalKeywords = spaceFromExports<internalKeywords.exports>
+
+export const internalKeywords: internalKeywords = space(
 	{
 		lengthBoundable: ["string", Array],
 		propertyKey: ["string", "symbol"]

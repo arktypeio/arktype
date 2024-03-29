@@ -1,3 +1,4 @@
+import type { MorphChildKind } from "@arktype/schema"
 import {
 	listFrom,
 	reference,
@@ -10,8 +11,9 @@ import {
 } from "@arktype/util"
 import type { Node, TypeNode } from "../base.js"
 import type { of } from "../constraints/ast.js"
+import { tsKeywords } from "../keywords/tsKeywords.js"
 import type { Schema } from "../kinds.js"
-import { node } from "../parser/parse.js"
+import { node, root } from "../parser/parse.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -76,12 +78,12 @@ export class MorphNode<t = any> extends BaseType<t, MorphDeclaration> {
 				in: {
 					child: true,
 					parse: (schema, ctx) =>
-						ctx.$.node(schema, { allowedKinds: morphChildKinds })
+						root(schema, { allowedKinds: morphChildKinds })
 				},
 				out: {
 					child: true,
 					parse: (schema, ctx) =>
-						ctx.$.node(schema, { allowedKinds: morphChildKinds })
+						root(schema, { allowedKinds: morphChildKinds })
 				},
 				morphs: {
 					parse: listFrom,
@@ -161,7 +163,7 @@ export class MorphNode<t = any> extends BaseType<t, MorphDeclaration> {
 	}
 
 	override get out(): Node<MorphChildKind, distillConstrainableOut<t>> {
-		return this.inner.out ?? this.$.keywords.unknown
+		return this.inner.out ?? tsKeywords.unknown
 	}
 
 	rawKeyOf(): TypeNode {

@@ -1,3 +1,4 @@
+import { internalKeywords } from "../../keywords/internal.js"
 import { node } from "../../parser/parse.js"
 import type { declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
@@ -60,7 +61,7 @@ export class MaxLengthNode extends BaseRange<MaxLengthDeclaration> {
 			}
 		})
 
-	readonly impliedBasis = this.$.keywords.lengthBoundable
+	readonly impliedBasis = internalKeywords.lengthBoundable
 
 	traverseAllows = this.exclusive
 		? (data: LengthBoundableData) => data.length < this.rule

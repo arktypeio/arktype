@@ -1,7 +1,7 @@
 import { compileSerializedValue, type Key } from "@arktype/util"
 import type { Node, TypeSchema } from "../../base.js"
 import { tsKeywords } from "../../keywords/tsKeywords.js"
-import { node } from "../../parser/parse.js"
+import { node, root } from "../../parser/parse.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
@@ -44,7 +44,7 @@ export class PropNode extends BaseConstraint<PropDeclaration> {
 				key: {},
 				value: {
 					child: true,
-					parse: (schema, ctx) => ctx.$.node(schema)
+					parse: (schema, ctx) => root(schema)
 				},
 				optional: {
 					// normalize { optional: false } to {}

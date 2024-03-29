@@ -1,3 +1,4 @@
+import { internalKeywords } from "../../keywords/internal.js"
 import type { declareNode } from "../../shared/declare.js"
 import type { nodeImplementationOf } from "../../shared/implement.js"
 import {
@@ -60,5 +61,5 @@ export class MinLengthNode extends BaseRange<MinLengthDeclaration> {
 		? (data: LengthBoundableData) => data.length > this.rule
 		: (data: LengthBoundableData) => data.length >= this.rule
 
-	readonly impliedBasis = this.$.keywords.lengthBoundable
+	readonly impliedBasis = internalKeywords.lengthBoundable
 }

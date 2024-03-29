@@ -1,6 +1,5 @@
-import type { TypeNode } from "../base.js"
+import type { type } from "../parser/inference.js"
 import { space } from "../space.js"
-import type { schema } from "./keywords.js"
 import type { spaceFromExports } from "./utils/utils.js"
 
 export namespace tsKeywords {
@@ -26,10 +25,10 @@ export type tsKeywords = spaceFromExports<tsKeywords.exports>
 
 export const tsKeywords: tsKeywords = space(
 	{
-		any: {} as schema.cast<any, "intersection">,
+		any: {} as type.cast<any>,
 		bigint: "bigint",
 		// since we know this won't be reduced, it can be safely cast to a union
-		boolean: [{ unit: false }, { unit: true }] as schema.cast<boolean, "union">,
+		boolean: [{ unit: false }, { unit: true }] as type.cast<boolean>,
 		false: { unit: false },
 		never: [],
 		null: { unit: null },
@@ -39,7 +38,7 @@ export const tsKeywords: tsKeywords = space(
 		symbol: "symbol",
 		true: { unit: true },
 		unknown: {},
-		void: { unit: undefined } as schema.cast<void, "unit">,
+		void: { unit: undefined } as type.cast<void>,
 		undefined: { unit: undefined }
 	},
 	{ prereducedAliases: true }

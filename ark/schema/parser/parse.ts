@@ -11,7 +11,8 @@ import {
 	type listable,
 	type valueOf
 } from "@arktype/util"
-import type { BaseAttachments, Node, UnknownNode } from "../base.js"
+import { json } from "stream/consumers"
+import type { BaseAttachments, Node, TypeNode, UnknownNode } from "../base.js"
 import type { Schema, reducibleKindOf } from "../kinds.js"
 import type { BaseNodeDeclaration } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -26,7 +27,12 @@ import {
 	type UnknownNodeImplementation
 } from "../shared/implement.js"
 import { hasArkKind } from "../shared/utils.js"
-import type { NodeParser, RootParser, UnitsParser } from "./inference.js"
+import type {
+	NodeParser,
+	RootParser,
+	SchemaParser,
+	UnitsParser
+} from "./inference.js"
 
 export type SchemaParseOptions = {
 	alias?: string
@@ -37,15 +43,14 @@ export type SchemaParseOptions = {
 	 *
 	 * Useful for defining reductions like number|string|bigint|symbol|object|true|false|null|undefined => unknown
 	 **/
-	reduceTo?: UnknownNode
+	reduceTo?: Node
 	root?: boolean
 	allowedKinds?: readonly NodeKind[]
 }
 
 export type SchemaParseContext = evaluate<
 	SchemaParseOptions & {
-		// TODO:?
-		$: any
+		$: Record<string, TypeNode | undefined>
 		raw: unknown
 	}
 >
@@ -91,6 +96,8 @@ export const typeKindOfSchema = (schema: unknown): TypeKind => {
 	return throwParseError(`${printable(schema)} is not a valid type schema`)
 }
 
+export const schema: SchemaParser<{}> = (schema) => schema
+
 export const root: RootParser<{}> = (schema, opts) => {
 	const kind = typeKindOfSchema(schema)
 	if (opts?.allowedKinds && !opts.allowedKinds.includes(kind)) {
@@ -118,9 +125,9 @@ export const node: NodeParser<{}> = (kind: NodeKind, schema: unknown, opts) => {
 		kind = typeKindOfSchema(schema)
 	}
 	const node = parseAttachments(kind, schema as never, {
-		$: this,
 		prereduced: opts?.prereduced ?? false,
 		raw: schema,
+		$: {},
 		...opts
 	})
 	return node as never
@@ -139,6 +146,8 @@ export const parseUnits: UnitsParser = (...values) => {
 	}
 	return node("union", branches) as never
 }
+
+const nodeCache: Record<string, Node | undefined> = {}
 
 export function parseAttachments<defKind extends NodeKind>(
 	kind: defKind,
@@ -243,7 +252,7 @@ export function parseAttachments(
 
 	const innerId = JSON.stringify({ kind, ...json })
 	if (ctx.reduceTo) {
-		return (ctx.$.nodeCache[innerId] = ctx.reduceTo)
+		return (nodeCache[innerId] = ctx.reduceTo)
 	}
 
 	const typeId = JSON.stringify({ kind, ...typeJson })
@@ -267,9 +276,7 @@ export function parseAttachments(
 
 	// we have to wait until after reduction to return a cached entry,
 	// since reduction can add impliedSiblings
-	if (innerId in ctx.$.nodeCache) {
-		return ctx.$.nodeCache[innerId]
-	}
+	if (nodeCache[innerId]) return nodeCache[innerId]
 
 	const prefix = ctx.alias ?? kind
 	typeCountsByPrefix[prefix] ??= 0
@@ -284,8 +291,7 @@ export function parseAttachments(
 		collapsibleJson: collapsibleJson as JsonData,
 		children,
 		innerId,
-		typeId,
-		$: ctx.$
+		typeId
 	} satisfies BaseAttachments as Record<string, any>
 	if (ctx.alias) {
 		attachments.alias = ctx.alias
@@ -296,7 +302,7 @@ export function parseAttachments(
 			attachments[k] = inner[k]
 		}
 	}
-	return (ctx.$.nodeCache[innerId] = new cls(attachments as never))
+	return (nodeCache[innerId] = new cls(attachments as never))
 }
 
 const throwMismatchedNodeSchemaError = (expected: NodeKind, actual: NodeKind) =>

@@ -1,4 +1,4 @@
-import { rootSchema } from "../../space.js"
+import { schema } from "../../parser/parse.js"
 
 type DayDelimiter = "." | "/" | "-"
 
@@ -98,7 +98,7 @@ export const tryParseDatePattern = (
 	return writeFormattedExpected(opts.format)
 }
 
-export const parsedDate = rootSchema({
+export const parsedDate = schema({
 	in: "string",
 	morphs: (s: string, ctx) => {
 		const result = tryParseDatePattern(s)

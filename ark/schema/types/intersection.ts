@@ -24,6 +24,7 @@ import {
 	type ExtraneousKeyBehavior,
 	type ExtraneousKeyRestriction
 } from "../constraints/props/props.js"
+import { tsKeywords } from "../keywords/tsKeywords.js"
 import type { Inner, MutableInner, Prerequisite, Schema } from "../kinds.js"
 import { node, type SchemaParseContext } from "../parser/parse.js"
 import type { NodeCompiler } from "../shared/compile.js"
@@ -87,11 +88,11 @@ const intersectionChildKeyParser =
 				return
 			}
 			return input
-				.map((schema) => ctx.$.node(kind, schema as never))
+				.map((schema) => node(kind, schema as never))
 				.sort((l, r) => (l.innerId < r.innerId ? -1 : 1)) as never
 		}
-		const node = ctx.$.node(kind, input)
-		return node.intersectionIsOpen ? [node] : (node as any)
+		const child = node(kind, input)
+		return child.intersectionIsOpen ? [child] : (child as any)
 	}
 
 const intersectIntersections = (
@@ -341,7 +342,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 			? this.props
 				? this.basis.rawKeyOf().or(this.props.rawKeyOf())
 				: this.basis.rawKeyOf()
-			: this.props?.rawKeyOf() ?? this.$.keywords.never
+			: this.props?.rawKeyOf() ?? tsKeywords.never
 	}
 }
 

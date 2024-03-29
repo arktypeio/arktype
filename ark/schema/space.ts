@@ -7,15 +7,11 @@ import {
 } from "@arktype/util"
 import type { Node, TypeNode } from "./base.js"
 import { mergeConfigs } from "./config.js"
-import type { internalPrimitive } from "./keywords/internal.js"
+import type { internalKeywords } from "./keywords/internal.js"
 import type { jsObjects } from "./keywords/jsObjects.js"
 import type { tsKeywords } from "./keywords/tsKeywords.js"
-import type {
-	instantiateSchema,
-	SchemaBranchesParser,
-	validateSchema
-} from "./parser/inference.js"
-import type { SchemaParseOptions } from "./parser/parse.js"
+import type { instantiateSchema, validateSchema } from "./parser/inference.js"
+import { root, type SchemaParseOptions } from "./parser/parse.js"
 import { NodeCompiler } from "./shared/compile.js"
 import type {
 	ActualWriter,
@@ -180,21 +176,19 @@ export const space = <const aliases>(
 	aliases: validateAliases<aliases>,
 	config: ArkConfig = {}
 ): instantiateAliases<aliases> => {
+	const resolutions: BaseResolutions = {}
 	const referencesByName: { [name: string]: Node } = {}
-	const references: readonly Node[] = []
 	const resolvedConfig = resolveConfig(config)
 	for (const k in aliases) {
-		;(this.resolutions as BaseResolutions)[k] = this.parseRoot(
-			assertTypeKind(this.def[k]),
-			this.def[k] as never,
-			{
-				alias: k,
-				prereduced: this.resolvedConfig.prereducedAliases
-			}
-		)
+		const node = root(aliases[k] as any, {
+			alias: k,
+			prereduced: resolvedConfig.prereducedAliases
+		})
+
+		resolutions[k] = node
+		Object.assign(referencesByName, node.referencesByName)
 	}
-	return {} as any
-	// this.references = Object.values(this.referencesByName)
+	const references = Object.values(referencesByName)
 	// 	this.bindCompiledScope(this.references)
 	// 	this.resolved = true
 	// 	this.parse(
@@ -214,6 +208,7 @@ export const space = <const aliases>(
 	// 		},
 	// 		{ reduceTo: this.parsePrereduced("intersection", {}) }
 	// 	)
+	return resolutions as never
 }
 
 export interface TypeSchemaParseOptions<allowedKind extends TypeKind = TypeKind>
@@ -221,12 +216,3 @@ export interface TypeSchemaParseOptions<allowedKind extends TypeKind = TypeKind>
 	root?: boolean
 	allowedKinds?: readonly allowedKind[]
 }
-
-export const rootSchema: SchemaBranchesParser<{}> = (...branches) =>
-	ScopeNode.root.parseTypeNode(
-		branches.length === 1 ? branches[0] : (branches as any),
-		{
-			root: true,
-			prereduced: true
-		}
-	) as never

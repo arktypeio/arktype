@@ -1,4 +1,5 @@
 import type { TypeNode } from "../../base.js"
+import { tsKeywords } from "../../keywords/tsKeywords.js"
 import { node } from "../../parser/parse.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import type { TraverseAllows } from "../../shared/traversal.js"
@@ -51,7 +52,7 @@ export class DivisorNode extends BasePrimitiveConstraint<DivisorDeclaration> {
 
 	readonly compiledCondition = `data % ${this.rule} === 0`
 	readonly compiledNegation = `data % ${this.rule} !== 0`
-	readonly impliedBasis = this.$.keywords.number
+	readonly impliedBasis = tsKeywords.number
 	readonly errorContext = this.createErrorContext(this.inner)
 	readonly expression = `% ${this.rule}`
 }
@@ -59,7 +60,7 @@ export class DivisorNode extends BasePrimitiveConstraint<DivisorDeclaration> {
 export const writeIndivisibleMessage = <node extends TypeNode>(
 	t: node
 ): writeIndivisibleMessage<node> =>
-	writeInvalidOperandMessage("divisor", t.$.keywords.number, t)
+	writeInvalidOperandMessage("divisor", tsKeywords.number, t)
 
 export type writeIndivisibleMessage<node extends TypeNode> =
 	writeInvalidOperandMessage<"divisor", node>

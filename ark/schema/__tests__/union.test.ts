@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import { keywords, root } from "@arktype/schema"
+import { root, validation } from "@arktype/schema"
 
 describe("union", () => {
 	it("union", () => {
@@ -60,7 +60,7 @@ describe("union", () => {
 	})
 
 	it("reducible intersection with union", () => {
-		const l = keywords.email
+		const l = validation.email
 		const r = root(["string", Array])
 		const result = l.and(r)
 		attest(result.json).equals(l.json)

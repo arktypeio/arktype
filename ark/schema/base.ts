@@ -67,6 +67,7 @@ import {
 	type TraverseApply
 } from "./shared/traversal.js"
 import { arkKind } from "./shared/utils.js"
+import type { ResolvedArkConfig } from "./space.js"
 import type { DomainNode } from "./types/domain.js"
 import type { IntersectionNode } from "./types/intersection.js"
 import type {
@@ -91,7 +92,7 @@ export interface BaseAttachments {
 	readonly children: UnknownNode[]
 	readonly innerId: string
 	readonly typeId: string
-	readonly $: any
+	readonly resolvedConfig: ResolvedArkConfig
 }
 
 export interface NarrowedAttachments<d extends BaseNodeDeclaration>
@@ -198,7 +199,7 @@ export abstract class BaseNode<
 	get description(): string {
 		this.descriptionCache ??=
 			this.inner.description ??
-			this.$.resolvedConfig[this.kind].description?.(this as never)
+			this.resolvedConfig[this.kind].description?.(this as never)
 		return this.descriptionCache
 	}
 
@@ -219,7 +220,7 @@ export abstract class BaseNode<
 	}
 
 	allows = (data: d["prerequisite"]): data is this["in"]["infer"] => {
-		const ctx = new TraversalContext(data, this.$.resolvedConfig)
+		const ctx = new TraversalContext(data, this.resolvedConfig)
 		return this.traverseAllows(data as never, ctx)
 	}
 
@@ -233,7 +234,7 @@ export abstract class BaseNode<
 		) {
 			return { data, out: data }
 		}
-		const ctx = new TraversalContext(data, this.$.resolvedConfig)
+		const ctx = new TraversalContext(data, this.resolvedConfig)
 		this.traverseApply(data, ctx)
 		return ctx.finalize()
 	}
@@ -435,7 +436,7 @@ export abstract class BaseNode<
 					: v
 			]
 		)
-		return this.$.node(
+		return node(
 			this.kind,
 			mapper(this.kind, innerWithTransformedChildren as never) as never
 		) as never

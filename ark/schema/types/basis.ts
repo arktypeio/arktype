@@ -8,6 +8,7 @@ import type {
 } from "@arktype/util"
 import type { TypeNode } from "../base.js"
 import type { Schema } from "../kinds.js"
+import { parseUnits } from "../parser/parse.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BasisKind } from "../shared/implement.js"
 import type { TraverseApply } from "../shared/traversal.js"
@@ -31,7 +32,7 @@ export abstract class BaseBasis<
 	abstract literalKeys: Key[]
 
 	rawKeyOf(): TypeNode {
-		return this.$.parseUnits(...this.literalKeys)
+		return parseUnits(...this.literalKeys)
 	}
 
 	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {

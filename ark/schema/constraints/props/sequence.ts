@@ -7,8 +7,10 @@ import {
 	type satisfy
 } from "@arktype/util"
 import type { TypeNode, TypeSchema } from "../../base.js"
+import { jsObjects } from "../../keywords/jsObjects.js"
+import { tsKeywords } from "../../keywords/tsKeywords.js"
 import type { MutableInner } from "../../kinds.js"
-import { node } from "../../parser/parse.js"
+import { node, root } from "../../parser/parse.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
@@ -62,7 +64,7 @@ const fixedSequenceKeyDefinition: NodeKeyImplementation<
 			? // empty affixes are omitted. an empty array should therefore
 			  // be specified as `{ proto: Array, length: 0 }`
 			  undefined
-			: schema.map((element) => ctx.$.node(element))
+			: schema.map((element) => root(element))
 }
 
 export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
@@ -76,7 +78,7 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 				optional: fixedSequenceKeyDefinition,
 				variadic: {
 					child: true,
-					parse: (schema, ctx) => ctx.$.node(schema) as TypeNode
+					parse: (schema, ctx) => root(schema, ctx)
 				},
 				minVariadicLength: {
 					// minVariadicLength is reflected in the id of this node,
@@ -223,7 +225,7 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 			}
 		})
 
-	readonly impliedBasis = this.$.keywords.Array
+	readonly impliedBasis = jsObjects.Array
 	readonly prefix = this.inner.prefix ?? []
 	readonly optional = this.inner.optional ?? []
 	readonly prevariadic = [...this.prefix, ...this.optional]
@@ -233,14 +235,12 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 	readonly minLength =
 		this.prefix.length + this.minVariadicLength + this.postfix.length
 	readonly minLengthNode =
-		this.minLength === 0 ? undefined : this.$.node("minLength", this.minLength)
+		this.minLength === 0 ? undefined : node("minLength", this.minLength)
 	readonly maxLength = this.variadic
 		? undefined
 		: this.minLength + this.optional.length
 	readonly maxLengthNode =
-		this.maxLength === undefined
-			? undefined
-			: this.$.node("maxLength", this.maxLength)
+		this.maxLength === undefined ? undefined : node("maxLength", this.maxLength)
 	readonly impliedSiblings = this.minLengthNode
 		? this.maxLengthNode
 			? [this.minLengthNode, this.maxLengthNode]
@@ -427,7 +427,7 @@ const intersectSequences = (
 			)
 			state.result = [
 				...state.result,
-				{ kind, node: lHead.node.$.keywords.never as never }
+				{ kind, node: tsKeywords.never as never }
 			]
 		} else if (kind === "optional") {
 			// if the element result is optional and unsatisfiable, the

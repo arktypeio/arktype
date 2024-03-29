@@ -73,14 +73,14 @@ export const scope: ScopeParser<Ark, Ark> = ark.scope as never
 
 export const type: TypeParser<Ark> = ark.type
 
-export const match: MatchParser<Ark> = ark.match
-
-export const define: DefinitionParser<Ark> = ark.define
-
-export const declare: DeclarationParser<Ark> = ark.declare
-
 export namespace type {
 	export type cast<to> = {
 		[inferred]?: to
 	}
 }
+
+export const match: MatchParser<Ark> = ark.match
+
+export const define: DefinitionParser<Ark> = ark.define
+
+export const declare: DeclarationParser<Ark> = ark.declare
