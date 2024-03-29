@@ -32,7 +32,7 @@ export abstract class BaseBasis<
 	abstract literalKeys: Key[]
 
 	rawKeyOf(): TypeNode {
-		return parseUnits(...this.literalKeys)
+		return parseUnits(this.literalKeys)
 	}
 
 	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {

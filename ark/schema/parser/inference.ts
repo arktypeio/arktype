@@ -61,13 +61,13 @@ export type SchemaParser<$> = <const schema extends TypeSchema>(
 ) => schema
 
 export type NodeParser<$> = <
-	kinds extends NodeKind | listable<TypeKind>,
-	const schema extends Schema<flattenListable<kinds>>
+	kind extends NodeKind,
+	const schema extends Schema<kind>
 >(
-	kinds: kinds,
+	kinds: kind,
 	schema: schema,
 	opts?: SchemaParseOptions
-) => Node<reducibleKindOf<flattenListable<kinds>>>
+) => Node<reducibleKindOf<kind>>
 
 export type RootParser<$> = <const schema extends TypeSchema>(
 	schema: schema,

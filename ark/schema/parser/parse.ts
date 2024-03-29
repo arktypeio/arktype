@@ -1,3 +1,4 @@
+import type { SchemaParseOptions } from "@arktype/schema"
 import {
 	entriesOf,
 	hasDomain,
@@ -11,7 +12,13 @@ import {
 	type listable,
 	type valueOf
 } from "@arktype/util"
-import type { BaseAttachments, Node, UnknownNode } from "../base.js"
+import type {
+	BaseAttachments,
+	Node,
+	TypeNode,
+	TypeSchema,
+	UnknownNode
+} from "../base.js"
 import type { Schema, reducibleKindOf } from "../kinds.js"
 import type { BaseNodeDeclaration } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -27,6 +34,8 @@ import {
 } from "../shared/implement.js"
 import { hasArkKind } from "../shared/utils.js"
 import type { ArkConfig, Space } from "../space.js"
+import type { UnionNode } from "../types/union.js"
+import type { UnitNode } from "../types/unit.js"
 import type {
 	NodeParser,
 	RootParser,
@@ -62,12 +71,12 @@ const baseKeys: PartialRecord<string, valueOf<KeyDefinitions<any>>> = {
 	description: { meta: true }
 } satisfies KeyDefinitions<BaseNodeDeclaration> as never
 
-export const assertTypeKindOfSchema = <kind extends TypeKind>(
+export const schemaKindOf = <kind extends TypeKind = TypeKind>(
 	schema: unknown,
-	allowedKinds: readonly kind[]
+	allowedKinds?: readonly kind[]
 ): kind => {
-	const kind = typeKindOfSchema(schema)
-	if (!allowedKinds.includes(kind as never)) {
+	const kind = discriminateSchemaKind(schema)
+	if (allowedKinds && !allowedKinds.includes(kind as never)) {
 		return throwParseError(
 			`Schema of kind ${kind} should be one of ${allowedKinds}`
 		)
@@ -75,7 +84,7 @@ export const assertTypeKindOfSchema = <kind extends TypeKind>(
 	return kind as never
 }
 
-export const typeKindOfSchema = (schema: unknown): TypeKind => {
+const discriminateSchemaKind = (schema: unknown): TypeKind => {
 	switch (typeof schema) {
 		case "string":
 			return "domain"
@@ -112,75 +121,65 @@ export const typeKindOfSchema = (schema: unknown): TypeKind => {
 
 export const schema: SchemaParser<{}> = (schema) => schema
 
-export const root: RootParser<{}> = (schema, opts) => {
-	const kind = typeKindOfSchema(schema)
-	if (opts?.allowedKinds && !opts.allowedKinds.includes(kind)) {
-		return throwParseError(
-			`Schema of kind ${kind} should be one of ${opts.allowedKinds}`
-		)
-	}
-	// if (opts?.root) {
-	// 	if (this.resolved) {
-	// 		// this node was not part of the original scope, so compile an anonymous scope
-	// 		// including only its references
-	// 		this.bindCompiledScope(node.contributesReferences)
-	// 	} else {
-	// 		// we're still parsing the scope itself, so defer compilation but
-	// 		// add the node as a reference
-	// 		Object.assign(this.referencesByName, node.contributesReferencesByName)
-	// 	}
-	// }
-	return node(kind, schema, opts) as never
-}
+export const root: RootParser<{}> = (schema, opts) =>
+	node(schemaKindOf(schema), schema, opts) as never
 
-export const node: NodeParser<{}> = (kinds, schema: unknown, opts) => {
-	let kind: NodeKind =
-		typeof kinds === "string" ? kinds : assertTypeKindOfSchema(schema, kinds)
-	if (kind === "union" && isArray(schema) && schema.length === 1) {
-		schema = schema[0]
-		kind = typeKindOfSchema(schema)
-	}
-	const node = parseAttachments(kind, schema as never, {
-		prereduced: opts?.prereduced ?? false,
-		raw: schema,
-		$: {},
-		...opts
-	})
-	return node as never
-}
+export const units: UnitsParser = (...values) => {}
 
-export const parseUnits: UnitsParser = (...values) => {
+export const parseUnits = (
+	values: unknown[],
+	ctx: SchemaParseContext
+): UnionNode | UnitNode => {
 	const uniqueValues: unknown[] = []
 	for (const value of values) {
 		if (!uniqueValues.includes(value)) {
 			uniqueValues.push(value)
 		}
 	}
-	const branches = uniqueValues.map((unit) => node("unit", { unit }))
+	const branches = uniqueValues.map((unit) => parseNode("unit", { unit }, ctx))
 	if (branches.length === 1) {
 		return branches[0] as never
 	}
-	return node("union", branches) as never
+	return parseNode("union", branches, { ...ctx, prereduced: true }) as never
 }
+
+export const node: NodeParser<{}> = (kind, schema: unknown, opts) =>
+	parseNode(kind, schema as never, {
+		prereduced: opts?.prereduced ?? false,
+		raw: schema,
+		$: {},
+		...opts
+	})
 
 const nodeCache: Record<string, Node | undefined> = {}
 
-export function parseAttachments<defKind extends NodeKind>(
-	kind: defKind,
-	schema: Schema<defKind>,
+export function parseNode<kind extends NodeKind>(
+	kind: kind,
+	schema: Schema<kind>,
 	ctx: SchemaParseContext
-): Node<reducibleKindOf<defKind>>
+): Node<reducibleKindOf<kind>>
 // eslint-disable-next-line prefer-arrow-functions/prefer-arrow-functions
-export function parseAttachments(
+export function parseNode(
 	kind: NodeKind,
 	schema: unknown,
 	ctx: SchemaParseContext
 ): UnknownNode {
-	const cls = $ark.nodeClassesByKind[kind]
-	const impl: UnknownNodeImplementation = cls.implementation as never
 	if (hasArkKind(schema, "node") && schema.kind === kind) {
 		return schema as never
 	}
+	if (kind === "union" && hasDomain(schema, "object")) {
+		if (isArray(schema) && schema.length === 1) {
+			return parseNode(schemaKindOf(schema), schema[0] as never, ctx)
+		} else if (
+			"branches" in schema &&
+			isArray(schema.branches) &&
+			schema.branches.length === 1
+		) {
+			return parseNode(schemaKindOf(schema), schema.branches[0] as never, ctx)
+		}
+	}
+	const cls = $ark.nodeClassesByKind[kind]
+	const impl: UnknownNodeImplementation = cls.implementation as never
 	const normalizedDefinition: any = impl.normalize?.(schema) ?? schema
 	// check again after normalization in case a node is a valid collapsed
 	// schema for the kind (e.g. sequence can collapse to element accepting a Node)
@@ -318,6 +317,17 @@ export function parseAttachments(
 			attachments[k] = inner[k]
 		}
 	}
+	// if (opts?.root) {
+	// 	if (this.resolved) {
+	// 		// this node was not part of the original scope, so compile an anonymous scope
+	// 		// including only its references
+	// 		this.bindCompiledScope(node.contributesReferences)
+	// 	} else {
+	// 		// we're still parsing the scope itself, so defer compilation but
+	// 		// add the node as a reference
+	// 		Object.assign(this.referencesByName, node.contributesReferencesByName)
+	// 	}
+	// }
 	return (nodeCache[innerId] = new cls(attachments as never))
 }
 
