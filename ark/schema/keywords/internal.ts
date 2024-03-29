@@ -13,7 +13,6 @@ export const internalPrimitive: internalPrimitive = space(
 		propertyKey: ["string", "symbol"]
 	},
 	{
-		prereducedAliases: true,
-		registerKeywords: true
+		prereducedAliases: true
 	}
 )

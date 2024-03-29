@@ -83,8 +83,6 @@ export type StaticArkOption<k extends keyof StaticArkConfig> = ReturnType<
 export interface ArkConfig extends Partial<Readonly<NodeConfigsByKind>> {
 	/** @internal */
 	readonly prereducedAliases?: boolean
-	/** @internal */
-	readonly registerKeywords?: boolean
 }
 
 type resolveConfig<config extends ArkConfig> = {
@@ -99,15 +97,13 @@ export const defaultConfig: ResolvedArkConfig = Object.assign(
 		node.implementation.defaults
 	]),
 	{
-		prereducedAliases: false,
-		registerKeywords: false
+		prereducedAliases: false
 	} satisfies Omit<ResolvedArkConfig, NodeKind>
 ) as never
 
-const nonInheritedKeys = [
-	"registerKeywords",
-	"prereducedAliases"
-] as const satisfies array<keyof ArkConfig>
+const nonInheritedKeys = ["prereducedAliases"] as const satisfies array<
+	keyof ArkConfig
+>
 
 export const extendConfig = (
 	base: ArkConfig,

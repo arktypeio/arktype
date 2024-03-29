@@ -234,11 +234,15 @@ type MergedResolutions = Record<string, TypeNode | Generic>
 
 type ParseContextInput = Partial<ParseContext>
 
+export interface ScopeConfig extends ArkConfig {
+	ambient?: Scope | undefined
+}
+
 export class Scope<r extends Resolutions = any> {
 	declare infer: distillOut<r["exports"]>
 	declare inferIn: distillIn<r["exports"]>
 
-	readonly config: ArkConfig
+	readonly config: ScopeConfig
 	readonly resolvedConfig: ResolvedArkConfig
 
 	private parseCache: Record<string, TypeNode> = {}
@@ -254,7 +258,7 @@ export class Scope<r extends Resolutions = any> {
 	aliases: Record<string, unknown> = {}
 	private exportedNames: exportedName<r>[] = []
 
-	constructor(def: Dict, config?: ArkConfig) {
+	constructor(def: Dict, config?: ScopeConfig) {
 		this.config = extendConfig(globalConfig, config)
 		this.resolvedConfig = resolveConfig(this.config)
 		for (const k in def) {
@@ -301,10 +305,7 @@ export class Scope<r extends Resolutions = any> {
 		locals: r["locals"]
 		ambient: r["exports"]
 	}> {
-		;(this as any).config = {
-			...this.config,
-			ambient: this
-		} satisfies ArkConfig
+		Object.assign(this.config, { ambient: this })
 		return this as never
 	}
 
@@ -333,17 +334,14 @@ export class Scope<r extends Resolutions = any> {
 			: throwParseError(writeBadDefinitionTypeMessage(domainOf(def)))
 	}
 
-	parseTypeRoot(def: unknown, input?: ParseContextInput): Type {
-		return new Type(
-			this.parse(def, {
-				args: { this: {} as TypeNode },
-				baseName: "type",
-				path: [],
-				$: this,
-				...input
-			}),
-			this
-		)
+	parseTypeRoot(def: unknown, input?: ParseContextInput): TypeNode {
+		return this.parse(def, {
+			args: { this: {} as TypeNode },
+			baseName: "type",
+			path: [],
+			$: this,
+			...input
+		})
 	}
 
 	parseString(def: string, ctx: ParseContext): TypeNode {
@@ -384,7 +382,7 @@ export class Scope<r extends Resolutions = any> {
 		const dotPrefix = name.slice(0, dotIndex)
 		const prefixDef = this.aliases[dotPrefix]
 		if (hasArkKind(prefixDef, "module")) {
-			const resolution = prefixDef[name.slice(dotIndex + 1)]
+			const resolution = prefixDef[name.slice(dotIndex + 1)]?.root
 			// if the first part of name is a submodule but the suffix is
 			// unresolvable, we can throw immediately
 			if (!resolution) {
@@ -444,10 +442,13 @@ export class Scope<r extends Resolutions = any> {
 				if (hasArkKind(def, "module")) {
 					this.exportCache[name] = def
 				} else {
-					this.exportCache[name] = this.parseTypeRoot(def, {
-						baseName: name,
-						args: {}
-					})
+					this.exportCache[name] = new Type(
+						this.parseTypeRoot(def, {
+							baseName: name,
+							args: {}
+						}),
+						this
+					)
 				}
 			}
 			this.exportedResolutions = resolutionsOfModule(this.exportCache)
@@ -457,7 +458,7 @@ export class Scope<r extends Resolutions = any> {
 			)
 			Object.assign(this.resolutions, this.exportedResolutions)
 			this.references = Object.values(this.referencesByName)
-			this.bindCompiledScope(this.references)
+			// this.bindCompiledScope(this.references)
 			this.resolved = true
 		}
 		const namesToExport = names.length ? names : this.exportedNames
