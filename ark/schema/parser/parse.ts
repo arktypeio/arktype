@@ -1,4 +1,4 @@
-import type { SchemaParseOptions } from "@arktype/schema"
+import type { SchemaParseOptions, SchemaParseOptions } from "@arktype/schema"
 import {
 	entriesOf,
 	hasDomain,
@@ -8,17 +8,10 @@ import {
 	type Json,
 	type JsonData,
 	type PartialRecord,
-	type evaluate,
 	type listable,
 	type valueOf
 } from "@arktype/util"
-import type {
-	BaseAttachments,
-	Node,
-	TypeNode,
-	TypeSchema,
-	UnknownNode
-} from "../base.js"
+import type { BaseAttachments, Node, UnknownNode } from "../base.js"
 import type { Schema, reducibleKindOf } from "../kinds.js"
 import type { BaseNodeDeclaration } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -33,7 +26,7 @@ import {
 	type UnknownNodeImplementation
 } from "../shared/implement.js"
 import { hasArkKind } from "../shared/utils.js"
-import type { ArkConfig, Space } from "../space.js"
+import type { ResolvedArkConfig, Space } from "../space.js"
 import type { UnionNode } from "../types/union.js"
 import type { UnitNode } from "../types/unit.js"
 import type {
@@ -46,9 +39,6 @@ import type {
 export type SchemaParseOptions = {
 	alias?: string
 	prereduced?: boolean
-	config?: ArkConfig
-	space?: Space
-	// TODO: check if reduceTo works across scopes
 	/** Instead of creating the node, compute the innerId of the definition and
 	 * point it to the specified resolution.
 	 *
@@ -56,14 +46,13 @@ export type SchemaParseOptions = {
 	 **/
 	reduceTo?: Node
 	root?: boolean
-	allowedKinds?: readonly NodeKind[]
 }
 
-export type SchemaParseContext = evaluate<
-	SchemaParseOptions & {
-		raw: unknown
-	}
->
+export type SchemaParseContext = {
+	config: ResolvedArkConfig
+	space: Space
+	raw: unknown
+}
 
 const typeCountsByPrefix: PartialRecord<string, number> = {}
 
@@ -140,42 +129,44 @@ export const parseUnits = (
 	if (branches.length === 1) {
 		return branches[0] as never
 	}
-	return parseNode("union", branches, { ...ctx, prereduced: true }) as never
+	return parseNode("union", branches, ctx, { prereduced: true }) as never
 }
 
 export const node: NodeParser<{}> = (kind, schema: unknown, opts) =>
-	parseNode(kind, schema as never, {
-		prereduced: opts?.prereduced ?? false,
-		raw: schema,
-		$: {},
-		...opts
-	})
+	parseNode(
+		kind,
+		schema as never,
+		{
+			space: {},
+			raw: schema
+		},
+		opts
+	)
 
 const nodeCache: Record<string, Node | undefined> = {}
 
-export function parseNode<kind extends NodeKind>(
+export const parseNode = <kind extends NodeKind>(
 	kind: kind,
 	schema: Schema<kind>,
-	ctx: SchemaParseContext
-): Node<reducibleKindOf<kind>>
-// eslint-disable-next-line prefer-arrow-functions/prefer-arrow-functions
-export function parseNode(
-	kind: NodeKind,
-	schema: unknown,
-	ctx: SchemaParseContext
-): UnknownNode {
+	ctx: SchemaParseContext,
+	opts?: SchemaParseOptions
+): Node<reducibleKindOf<kind>> => {
 	if (hasArkKind(schema, "node") && schema.kind === kind) {
 		return schema as never
 	}
 	if (kind === "union" && hasDomain(schema, "object")) {
 		if (isArray(schema) && schema.length === 1) {
-			return parseNode(schemaKindOf(schema), schema[0] as never, ctx)
+			return parseNode(schemaKindOf(schema), schema[0] as never, ctx) as never
 		} else if (
 			"branches" in schema &&
 			isArray(schema.branches) &&
 			schema.branches.length === 1
 		) {
-			return parseNode(schemaKindOf(schema), schema.branches[0] as never, ctx)
+			return parseNode(
+				schemaKindOf(schema),
+				schema.branches[0] as never,
+				ctx
+			) as never
 		}
 	}
 	const cls = $ark.nodeClassesByKind[kind]
@@ -266,13 +257,13 @@ export function parseNode(
 	}
 
 	const innerId = JSON.stringify({ kind, ...json })
-	if (ctx.reduceTo) {
-		return (nodeCache[innerId] = ctx.reduceTo)
+	if (opts?.reduceTo) {
+		return (nodeCache[innerId] = opts.reduceTo) as never
 	}
 
 	const typeId = JSON.stringify({ kind, ...typeJson })
 
-	if (impl.reduce && !ctx.prereduced) {
+	if (impl.reduce && !opts?.prereduced) {
 		const reduced = impl.reduce(inner)
 		if (reduced) {
 			if (reduced instanceof Disjoint) return reduced.throw()
@@ -280,20 +271,20 @@ export function parseNode(
 			// if we're defining the resolution of an alias and the result is
 			// reduced to another node, add the alias to that node if it doesn't
 			// already have one.
-			if (ctx.alias) {
-				reduced.alias ??= ctx.alias
+			if (opts?.alias) {
+				reduced.alias ??= opts.alias
 			}
 			// we can't cache this reduction for now in case the reduction involved
 			// impliedSiblings
-			return reduced
+			return reduced as never
 		}
 	}
 
 	// we have to wait until after reduction to return a cached entry,
 	// since reduction can add impliedSiblings
-	if (nodeCache[innerId]) return nodeCache[innerId]
+	if (nodeCache[innerId]) return nodeCache[innerId] as never
 
-	const prefix = ctx.alias ?? kind
+	const prefix = opts?.alias ?? kind
 	typeCountsByPrefix[prefix] ??= 0
 	const name = `${prefix}${++typeCountsByPrefix[prefix]!}`
 	const attachments = {
@@ -308,8 +299,8 @@ export function parseNode(
 		innerId,
 		typeId
 	} satisfies BaseAttachments as Record<string, any>
-	if (ctx.alias) {
-		attachments.alias = ctx.alias
+	if (opts?.alias) {
+		attachments.alias = opts.alias
 	}
 	for (const k in inner) {
 		// avoid conflict with builtin cached getters
@@ -328,7 +319,7 @@ export function parseNode(
 	// 		Object.assign(this.referencesByName, node.contributesReferencesByName)
 	// 	}
 	// }
-	return (nodeCache[innerId] = new cls(attachments as never))
+	return (nodeCache[innerId] = new cls(attachments as never)) as never
 }
 
 const throwMismatchedNodeSchemaError = (expected: NodeKind, actual: NodeKind) =>

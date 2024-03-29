@@ -256,7 +256,7 @@ export class Scope<r extends Resolutions = any> {
 	/** The set of names defined at the root-level of the scope mapped to their
 	 * corresponding definitions.**/
 	aliases: Record<string, unknown> = {}
-	private exportedNames: exportedName<r>[] = []
+	exportedNames: exportedName<r>[] = []
 
 	constructor(def: Dict, config?: ScopeConfig) {
 		this.config = extendConfig(globalConfig, config)
