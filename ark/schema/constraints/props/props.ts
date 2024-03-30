@@ -45,7 +45,7 @@ export class PropsGroup extends DynamicBase<PropsGroupInput> {
 	private keyofCache: TypeNode | undefined
 	rawKeyOf(): TypeNode {
 		if (!this.keyofCache) {
-			let branches = parseUnits(...this.literalKeys).branches
+			let branches = parseUnits(this.literalKeys).branches
 			this.index?.forEach(
 				({ key }) => (branches = branches.concat(key.branches))
 			)

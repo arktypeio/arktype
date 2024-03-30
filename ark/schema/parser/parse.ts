@@ -1,4 +1,3 @@
-import type { SchemaParseOptions, SchemaParseOptions } from "@arktype/schema"
 import {
 	entriesOf,
 	hasDomain,
@@ -26,7 +25,12 @@ import {
 	type UnknownNodeImplementation
 } from "../shared/implement.js"
 import { hasArkKind } from "../shared/utils.js"
-import type { ResolvedArkConfig, Space } from "../space.js"
+import {
+	defaultConfig,
+	type ArkConfig,
+	type ResolvedArkConfig,
+	type Space
+} from "../space.js"
 import type { UnionNode } from "../types/union.js"
 import type { UnitNode } from "../types/unit.js"
 import type {
@@ -46,6 +50,8 @@ export type SchemaParseOptions = {
 	 **/
 	reduceTo?: Node
 	root?: boolean
+	config?: ArkConfig
+	space?: Space
 }
 
 export type SchemaParseContext = {
@@ -137,7 +143,8 @@ export const node: NodeParser<{}> = (kind, schema: unknown, opts) =>
 		kind,
 		schema as never,
 		{
-			space: {},
+			space: opts?.space ?? {},
+			config: opts?.config ?? defaultConfig,
 			raw: schema
 		},
 		opts
