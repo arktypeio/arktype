@@ -32,9 +32,9 @@
 		"bunTest": "bun test --preload ../repo/bunTestSetup.ts"
 	},
 	"dependencies": {
-		"arktype": "2.0.0-dev.5",
-		"@arktype/fs": "0.0.14",
-		"@arktype/util": "0.0.31",
+		"arktype": "workspace:*",
+		"@arktype/fs": "workspace:*",
+		"@arktype/util": "workspace:*",
 		"@typescript/vfs": "1.5.0",
 		"@typescript/analyze-trace": "0.10.1"
 	},
