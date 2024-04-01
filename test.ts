@@ -1,5 +1,6 @@
 import { bench } from "@arktype/attest"
 import { type } from "arktype"
+import { root } from "./ark/schema/parser/parse.js"
 import "./arkConfig.js"
 
 export const validData = Object.freeze({
@@ -16,6 +17,12 @@ export const validData = Object.freeze({
 		bool: false
 	}
 })
+
+const z = type({ a: "string", b: "number" }).keyof()
+
+const a = root({ domain: "object", prop: [{ key: "a", value: "string" }] })
+const b = root({ domain: "object", prop: [{ key: "b", value: "number" }] })
+const c = a.or(b)
 
 const t = type({
 	number: "number",
