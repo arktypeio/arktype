@@ -13,7 +13,7 @@ import type { Node, TypeNode } from "../base.js"
 import type { of } from "../constraints/ast.js"
 import { tsKeywords } from "../keywords/tsKeywords.js"
 import type { Schema } from "../kinds.js"
-import { node, root } from "../parser/parse.js"
+import { node, parseNode, root, schemaKindOf } from "../parser/parse.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -78,7 +78,7 @@ export class MorphNode<t = any> extends BaseType<t, MorphDeclaration> {
 				in: {
 					child: true,
 					parse: (schema, ctx) =>
-						root(schema, { allowedKinds: morphChildKinds })
+						parseNode(schemaKindOf(schema, morphChildKinds), schema, ctx)
 				},
 				out: {
 					child: true,
