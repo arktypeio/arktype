@@ -1,4 +1,3 @@
-import type { MorphChildKind } from "@arktype/schema"
 import {
 	listFrom,
 	reference,
@@ -77,13 +76,11 @@ export class MorphNode<t = any> extends BaseType<t, MorphDeclaration> {
 			keys: {
 				in: {
 					child: true,
-					parse: (schema, ctx) =>
-						parseNode(schemaKindOf(schema, morphChildKinds), schema, ctx)
+					parse: (schema, ctx) => parseNode(morphChildKinds, schema, ctx)
 				},
 				out: {
 					child: true,
-					parse: (schema, ctx) =>
-						root(schema, { allowedKinds: morphChildKinds })
+					parse: (schema, ctx) => parseNode(morphChildKinds, schema, ctx)
 				},
 				morphs: {
 					parse: listFrom,

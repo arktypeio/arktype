@@ -7,6 +7,8 @@ import {
 	type Json,
 	type JsonData,
 	type PartialRecord,
+	type array,
+	type flattenListable,
 	type listable,
 	type valueOf
 } from "@arktype/util"
@@ -152,12 +154,14 @@ export const node: NodeParser<{}> = (kind, schema: unknown, opts) =>
 
 const nodeCache: Record<string, Node | undefined> = {}
 
-export const parseNode = <kind extends NodeKind>(
-	kind: kind,
-	schema: Schema<kind>,
+export const parseNode = <kinds extends NodeKind | array<TypeKind>>(
+	kinds: kinds,
+	schema: Schema<flattenListable<kinds>>,
 	ctx: SchemaParseContext,
 	opts?: SchemaParseOptions
-): Node<reducibleKindOf<kind>> => {
+): Node<reducibleKindOf<flattenListable<kinds>>> => {
+	const kind: NodeKind =
+		typeof kinds === "string" ? kinds : schemaKindOf(schema, kinds)
 	if (hasArkKind(schema, "node") && schema.kind === kind) {
 		return schema as never
 	}
