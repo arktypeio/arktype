@@ -116,7 +116,7 @@ export const resolveConfig = (
 	scopeConfig: ArkConfig | undefined
 ): ResolvedArkConfig => extendConfig(defaultConfig, scopeConfig) as never
 
-export class Scope<$ = any> {
+export class Space<$ = any> {
 	declare infer: distillOut<$>
 	declare inferIn: distillIn<$>
 
@@ -183,8 +183,6 @@ export type validateAliases<aliases> = {
 export type instantiateAliases<aliases> = {
 	[k in keyof aliases]: instantiateSchema<aliases[k], aliases>
 } & unknown
-
-export type Space = Record<string, TypeNode | unknown>
 
 export const space = <const aliases>(
 	aliases: validateAliases<aliases>,

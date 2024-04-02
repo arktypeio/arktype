@@ -5,13 +5,9 @@ import {
 	globalConfig,
 	hasArkKind,
 	resolveConfig,
+	Space,
 	type ArkConfig,
 	type arkKind,
-	type distillIn,
-	type distillOut,
-	type ResolvedArkConfig,
-	type SchemaParseOptions,
-	type TypeKind,
 	type TypeNode,
 	type UnknownNode
 } from "@arktype/schema"
@@ -27,7 +23,7 @@ import {
 	type Json,
 	type nominal
 } from "@arktype/util"
-import type { type } from "./ark.js"
+import type { ambient, type } from "./ark.js"
 import { createMatchParser, type MatchParser } from "./match.js"
 import {
 	parseObject,
@@ -59,7 +55,7 @@ import {
 	type TypeParser
 } from "./type.js"
 
-export type ScopeParser<parent, ambient> = {
+export type ScopeParser<parent> = {
 	<const def>(
 		def: validateScope<def, parent & ambient>,
 		config?: ArkConfig
@@ -67,14 +63,11 @@ export type ScopeParser<parent, ambient> = {
 		exports: inferBootstrapped<{
 			exports: bootstrapExports<def>
 			locals: bootstrapLocals<def> & parent
-			ambient: ambient
 		}>
 		locals: inferBootstrapped<{
 			exports: bootstrapLocals<def>
 			locals: bootstrapExports<def> & parent
-			ambient: ambient
 		}>
-		ambient: ambient
 	}>
 }
 
@@ -232,17 +225,16 @@ type MergedResolutions = Record<string, TypeNode | Generic>
 
 type ParseContextInput = Partial<ParseContext>
 
-export class Scope<r extends Resolutions = any> {
-	declare infer: distillOut<r["exports"]>
-	declare inferIn: distillIn<r["exports"]>
+declare global {
+	export interface ArkRegistry {
+		ambient: Scope<rootResolutions<ambient>>
+	}
+}
 
-	readonly config: ArkConfig
-	readonly resolvedConfig: ResolvedArkConfig
-
+export class Scope<r extends Resolutions = any> extends Space<r["exports"]> {
 	private parseCache: Record<string, TypeNode> = {}
 	private resolutions: MergedResolutions
-	readonly nodeCache: { [innerId: string]: UnknownNode } = {}
-	readonly referencesByName: { [name: string]: UnknownNode } = {}
+
 	references: readonly UnknownNode[] = []
 	json: Json = {}
 	protected resolved = false
@@ -283,10 +275,7 @@ export class Scope<r extends Resolutions = any> {
 
 	declare: DeclarationParser<$<r>> = () => ({ type: this.type }) as never
 
-	scope: ScopeParser<r["exports"], r["ambient"]> = ((
-		def: Dict,
-		config: ArkConfig = {}
-	) =>
+	scope: ScopeParser<r["exports"]> = ((def: Dict, config: ArkConfig = {}) =>
 		new Scope(
 			{ ...this.import(), ...def },
 			extendConfig(this.config, config)
@@ -495,7 +484,6 @@ type destructuredExportContext<
 	locals: r["locals"] & {
 		[k in Exclude<keyof r["exports"], name>]: r["exports"][k]
 	}
-	ambient: r["ambient"]
 }
 
 type destructuredImportContext<
@@ -564,9 +552,3 @@ type parsePossibleGenericDeclaration<
 			name: k
 			params: []
 	  }
-
-export interface TypeSchemaParseOptions<allowedKind extends TypeKind = TypeKind>
-	extends SchemaParseOptions {
-	root?: boolean
-	allowedKinds?: readonly allowedKind[]
-}
