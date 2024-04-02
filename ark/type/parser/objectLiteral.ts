@@ -1,7 +1,8 @@
-import type {
-	Node,
-	TypeNode,
-	writeInvalidPropertyKeyMessage
+import {
+	keywordNodes,
+	type Node,
+	type TypeNode,
+	type writeInvalidPropertyKeyMessage
 } from "@arktype/schema"
 import {
 	printable,
@@ -34,7 +35,7 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): TypeNode => {
 		const spreadNode = ctx.$.parse(spreadEntry.value, ctx)
 		if (
 			!spreadNode.hasKind("intersection") ||
-			!spreadNode.extends(ctx.$.keywords.object)
+			!spreadNode.extends(keywordNodes.object)
 		) {
 			return throwParseError(
 				writeInvalidSpreadTypeMessage(printable(spreadEntry.value))

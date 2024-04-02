@@ -9,7 +9,6 @@ import {
 } from "@arktype/util"
 import type { Node, TypeNode, UnknownNode } from "./base.js"
 import { mergeConfigs } from "./config.js"
-import type { distillIn, distillOut } from "./main.js"
 import type { instantiateSchema, validateSchema } from "./parser/inference.js"
 import { root, type SchemaParseOptions } from "./parser/parse.js"
 import { NodeCompiler } from "./shared/compile.js"
@@ -26,6 +25,7 @@ import type {
 	TypeKind
 } from "./shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "./shared/traversal.js"
+import type { distillIn, distillOut } from "./types/morph.js"
 
 export type nodeResolutions<keywords> = { [k in keyof keywords]: TypeNode }
 

@@ -1,10 +1,4 @@
-import type {
-	inferred,
-	jsObjects,
-	parsing,
-	tsKeywords,
-	validation
-} from "@arktype/schema"
+import type { Ark, inferred } from "@arktype/schema"
 import type { MatchParser } from "./match.js"
 import { Scope, type Module, type ScopeParser } from "./scope.js"
 import type {
@@ -39,16 +33,6 @@ export type ambient = ReturnType<StaticArkConfig["ambient"]>
 export const ark: Scope<Ark> = Scope.root({}) as never
 
 export const keywords: Module<Ark> = ark.export()
-
-// this type is redundant with the inferred definition of ark but allow types
-// derived from the default scope to be calulated more efficiently
-export interface Ark
-	extends tsKeywords.exports,
-		jsObjects.exports,
-		validation.exports,
-		TsGenericsExports {
-	parse: Module<parsing.exports>
-}
 
 export const scope: ScopeParser<Ark> = ark.scope as never
 

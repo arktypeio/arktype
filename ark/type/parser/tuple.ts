@@ -1,4 +1,6 @@
 import {
+	keywordNodes,
+	makeRootAndArrayPropertiesMutable,
 	node,
 	parseUnits,
 	type BaseMeta,
@@ -15,7 +17,6 @@ import {
 	type inferMorphOut,
 	type inferNarrow,
 	type instantiateSchema,
-	type makeRootAndArrayPropertiesMutable,
 	type validateSchema
 } from "@arktype/schema"
 import {
@@ -64,7 +65,7 @@ export const parseTupleLiteral = (def: array, ctx: ParseContext): TypeNode => {
 			i++
 		}
 		if (spread) {
-			if (!element.extends(ctx.$.keywords.Array)) {
+			if (!element.extends(keywordNodes.Array)) {
 				return throwParseError(writeNonArraySpreadMessage(element.expression))
 			}
 			// a spread must be distributed over branches e.g.:
@@ -573,7 +574,7 @@ const prefixParsers: {
 			)
 		return branches.length === 1 ? branches[0] : node("union", { branches })
 	},
-	"===": (def, ctx) => parseUnits(...def.slice(1))
+	"===": (def, ctx) => parseUnits(def.slice(1), ctx)
 }
 
 const isIndexZeroExpression = (def: array): def is IndexZeroExpression =>

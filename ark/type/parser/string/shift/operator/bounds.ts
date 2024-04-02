@@ -1,4 +1,6 @@
 import {
+	internalKeywords,
+	keywordNodes,
 	writeUnboundableMessage,
 	type BoundKind,
 	type DateLiteral,
@@ -111,7 +113,7 @@ export const getBoundKinds = (
 	root: TypeNode,
 	boundKind: BoundExpressionKind
 ): BoundKind[] => {
-	if (root.extends(root.$.keywords.number)) {
+	if (root.extends(keywordNodes.number)) {
 		if (typeof limit !== "number") {
 			return throwParseError(
 				writeInvalidLimitMessage(comparator, limit, boundKind)
@@ -123,10 +125,7 @@ export const getBoundKinds = (
 			? ["min"]
 			: ["max"]
 	}
-	if (
-		root.extends(root.$.keywords.string) ||
-		root.extends(root.$.keywords.Array)
-	) {
+	if (root.extends(internalKeywords.lengthBoundable)) {
 		if (typeof limit !== "number") {
 			return throwParseError(
 				writeInvalidLimitMessage(comparator, limit, boundKind)
@@ -138,7 +137,7 @@ export const getBoundKinds = (
 			? ["minLength"]
 			: ["maxLength"]
 	}
-	if (root.extends(root.$.keywords.Date)) {
+	if (root.extends(keywordNodes.Date)) {
 		// allow either numeric or date limits
 		return comparator === "=="
 			? ["after", "before"]
