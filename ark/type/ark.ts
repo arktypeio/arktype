@@ -77,7 +77,7 @@ export interface Ark
 	parse: Module<ParsingResolutions>
 }
 
-export const scope: ScopeParser<Ark, Ark> = ark.scope as never
+export const scope: ScopeParser<Ark> = ark.scope as never
 
 export const type: TypeParser<ambient> = ark.type
 

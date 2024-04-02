@@ -1,15 +1,12 @@
 import {
 	addArkKind,
+	BaseScope,
 	BaseType,
 	extendConfig,
-	globalConfig,
 	hasArkKind,
-	resolveConfig,
-	Space,
 	type ArkConfig,
 	type arkKind,
-	type TypeNode,
-	type UnknownNode
+	type TypeNode
 } from "@arktype/schema"
 import {
 	domainOf,
@@ -17,10 +14,10 @@ import {
 	hasDomain,
 	isThunk,
 	throwParseError,
+	type array,
 	type Dict,
 	type evaluate,
 	type isAny,
-	type Json,
 	type nominal
 } from "@arktype/util"
 import type { ambient, type } from "./ark.js"
@@ -231,41 +228,30 @@ declare global {
 	}
 }
 
-export class Scope<r extends Resolutions = any> extends Space<r["exports"]> {
+export class Scope<r extends Resolutions = any> extends BaseScope<
+	r["exports"]
+> {
 	private parseCache: Record<string, TypeNode> = {}
-	private resolutions: MergedResolutions
 
-	references: readonly UnknownNode[] = []
-	json: Json = {}
-	protected resolved = false
-
-	/** The set of names defined at the root-level of the scope mapped to their
-	 * corresponding definitions.**/
 	aliases: Record<string, unknown> = {}
-	exportedNames: exportedName<r>[] = []
+	exportedNames: array<exportedName<r>> = []
 
-	constructor(def: Dict, config?: ArkConfig) {
-		this.config = extendConfig(globalConfig, config)
-		this.resolvedConfig = resolveConfig(this.config)
+	constructor(def: Record<string, unknown>, config?: ArkConfig) {
+		const aliases: Record<string, unknown> = {}
+		const exportedNames: string[] = []
 		for (const k in def) {
 			const parsedKey = parseScopeKey(k)
-			this.aliases[parsedKey.name] = parsedKey.params.length
+			aliases[parsedKey.name] = parsedKey.params.length
 				? generic(parsedKey.params, def[k], this)
 				: def[k]
 			if (!parsedKey.isLocal) {
-				this.exportedNames.push(parsedKey.name as never)
+				exportedNames.push(parsedKey.name)
 			}
 		}
-		if ($ark.ambient) {
-			// ensure exportedResolutions is populated
-			$ark.ambient.export()
-			this.resolutions = { ...$ark.ambient.exportedResolutions! }
-		} else {
-			this.resolutions = {}
-		}
+		super(aliases, config)
 	}
 
-	static root: ScopeParser<{}, {}> = (aliases) => {
+	static root: ScopeParser<{}> = (aliases) => {
 		return new Scope(aliases, {}) as never
 	}
 
@@ -282,15 +268,6 @@ export class Scope<r extends Resolutions = any> extends Space<r["exports"]> {
 		)) as never
 
 	define: DefinitionParser<$<r>> = (def) => def as never
-
-	toAmbient(): Scope<{
-		exports: r["exports"]
-		locals: r["locals"]
-		ambient: r["exports"]
-	}> {
-		Object.assign(this.config, { ambient: this })
-		return this as never
-	}
 
 	// TODO: name?
 	get<name extends keyof r["exports"] & string>(

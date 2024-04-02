@@ -2,6 +2,7 @@ import {
 	CompiledFunction,
 	flatMorph,
 	type array,
+	type Dict,
 	type evaluate,
 	type Json,
 	type requireKeys
@@ -113,10 +114,18 @@ export const extendConfig = (
 }
 
 export const resolveConfig = (
-	scopeConfig: ArkConfig | undefined
-): ResolvedArkConfig => extendConfig(defaultConfig, scopeConfig) as never
+	config: ArkConfig | undefined
+): ResolvedArkConfig => extendConfig(defaultConfig, config) as never
 
-export class Space<$ = any> {
+export type SpaceResolutions = Record<string, TypeNode | undefined>
+
+export type SpaceInput = {
+	exports: Dict
+	locals?: Dict
+	config?: ArkConfig
+}
+
+export class BaseScope<$ = any> {
 	declare infer: distillOut<$>
 	declare inferIn: distillIn<$>
 
@@ -126,9 +135,77 @@ export class Space<$ = any> {
 	readonly nodeCache: { [innerId: string]: UnknownNode } = {}
 	readonly referencesByName: { [name: string]: UnknownNode } = {}
 	readonly references: readonly UnknownNode[] = []
-	json: Json = {}
+	readonly resolutions: SpaceResolutions = {}
+	readonly json: Json = {}
+	/** The set of names defined at the root-level of the scope mapped to their
+	 * corresponding definitions.**/
+	public aliases: Record<string, unknown>
 
-	constructor(public resolutions: BaseResolutions) {}
+	protected resolved = false
+
+	constructor(input: SpaceInput) {
+		this.config = input.config ?? {}
+		this.resolvedConfig = resolveConfig(input.config)
+		if ($ark.ambient) {
+			// ensure exportedResolutions is populated
+			$ark.ambient.export()
+			this.resolutions = { ...$ark.ambient.resolutions! }
+		} else {
+			this.resolutions = {}
+		}
+		this.aliases = input.locals
+			? { ...input.locals, ...input.exports }
+			: input.exports
+	}
+
+	private exportedResolutions: SpaceResolutions | undefined
+	private exportCache: ExportCache | undefined
+	protected rawExport(...names: string[]): unknown {
+		if (!this.exportCache) {
+			this.exportCache = {}
+			for (const name of this.exportedNames) {
+				let def = this.aliases[name]
+				if (hasArkKind(def, "generic")) {
+					this.exportCache[name] = def
+					continue
+				}
+				// TODO: thunk generics?
+				// handle generics before invoking thunks, since they use
+				// varargs they will incorrectly be considered thunks
+				if (isThunk(def)) {
+					def = def()
+				}
+				if (hasArkKind(def, "module")) {
+					this.exportCache[name] = def
+				} else {
+					this.exportCache[name] = new Type(
+						this.parseTypeRoot(def, {
+							baseName: name,
+							args: {}
+						}),
+						this
+					)
+				}
+			}
+			this.exportedResolutions = resolutionsOfModule(this.exportCache)
+			// TODO: add generic json
+			this.json = flatMorph(this.exportedResolutions, (k, v) =>
+				hasArkKind(v, "node") ? [k, v.json] : []
+			)
+			Object.assign(this.resolutions, this.exportedResolutions)
+			this.references = Object.values(this.referencesByName)
+			// this.bindCompiledScope(this.references)
+			this.resolved = true
+		}
+		const namesToExport = names.length ? names : this.exportedNames
+		return addArkKind(
+			flatMorph(namesToExport, (_, name) => [
+				name,
+				this.exportCache![name]
+			]) as never,
+			"module"
+		) as never
+	}
 }
 
 const bindCompiledSpace = (references: readonly Node[]) => {

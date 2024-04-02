@@ -30,8 +30,8 @@ import { hasArkKind } from "../shared/utils.js"
 import {
 	defaultConfig,
 	type ArkConfig,
-	type ResolvedArkConfig,
-	type Space
+	type BaseScope,
+	type ResolvedArkConfig
 } from "../space.js"
 import type { UnionNode } from "../types/union.js"
 import type { UnitNode } from "../types/unit.js"
@@ -53,12 +53,12 @@ export type SchemaParseOptions = {
 	reduceTo?: Node
 	root?: boolean
 	config?: ArkConfig
-	space?: Space
+	space?: BaseScope
 }
 
 export type SchemaParseContext = {
 	config: ResolvedArkConfig
-	space: Space
+	space: BaseScope
 	raw: unknown
 }
 
