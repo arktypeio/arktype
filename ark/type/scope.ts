@@ -56,16 +56,7 @@ export type ScopeParser<parent> = {
 	<const def>(
 		def: validateScope<def, parent & ambient>,
 		config?: ArkConfig
-	): Scope<{
-		exports: inferBootstrapped<{
-			exports: bootstrapExports<def>
-			locals: bootstrapLocals<def> & parent
-		}>
-		locals: inferBootstrapped<{
-			exports: bootstrapLocals<def>
-			locals: bootstrapExports<def> & parent
-		}>
-	}>
+	): Scope<inferBootstrapped<bootstrapAliases<def>>>
 }
 
 type validateScope<def, $> = {
@@ -97,17 +88,17 @@ type Def<def = {}> = nominal<def, "unparsed">
 /** sentinel indicating a scope that will be associated with a generic has not yet been parsed */
 export type UnparsedScope = "$"
 
-type bootstrap<def> = bootstrapLocals<def> & bootstrapExports<def>
+type bootstrap<def> = bootstrapAliases<def>
 
-type bootstrapLocals<def> = bootstrapAliases<{
-	// intersection seems redundant but it is more efficient for TS to avoid
-	// mapping all the keys
-	[k in keyof def & PrivateDeclaration as extractPrivateKey<k>]: def[k]
-}>
+// type bootstrapLocals<def> = bootstrapAliases<{
+// 	// intersection seems redundant but it is more efficient for TS to avoid
+// 	// mapping all the keys
+// 	[k in keyof def & PrivateDeclaration as extractPrivateKey<k>]: def[k]
+// }>
 
-type bootstrapExports<def> = bootstrapAliases<{
-	[k in Exclude<keyof def, PrivateDeclaration>]: def[k]
-}>
+// type bootstrapExports<def> = bootstrapAliases<{
+// 	[k in Exclude<keyof def, PrivateDeclaration>]: def[k]
+// }>
 
 /** These are legal as values of a scope but not as definitions in other contexts */
 type PreparsedResolution = Module | GenericProps
@@ -130,14 +121,14 @@ type bootstrapAliases<def> = {
 	>
 }
 
-type inferBootstrapped<r extends Resolutions> = evaluate<{
-	[name in keyof r["exports"]]: r["exports"][name] extends Def<infer def>
-		? inferDefinition<def, $<r>, {}>
-		: r["exports"][name] extends GenericProps<infer params, infer def>
+type inferBootstrapped<$> = evaluate<{
+	[name in keyof $]: $[name] extends Def<infer def>
+		? inferDefinition<def, $, {}>
+		: $[name] extends GenericProps<infer params, infer def>
 		? // add the scope in which the generic was defined here
-		  Generic<params, def, $<r>>
+		  Generic<params, def, $>
 		: // otherwise should be a submodule
-		  r["exports"][name]
+		  $[name]
 }>
 
 type extractGenericName<k> = k extends GenericDeclaration<infer name>
@@ -182,28 +173,21 @@ export type tryInferSubmoduleReference<$, token> =
 			: never
 		: never
 
-type $<r extends Resolutions> = r["exports"] & r["locals"]
+type exportedName<$> = Exclude<keyof $, `#${string}`>
 
-type exportedName<r extends Resolutions> = keyof r["exports"] & string
-
-export type Module<r extends Resolutions = any> = {
+export type Module<$ = any> = {
 	// just adding the nominal id this way and mapping it is cheaper than an intersection
-	[k in exportedName<r> | arkKind]: k extends string
-		? [r["exports"][k]] extends [never]
-			? Type<never, $<r>>
-			: isAny<r["exports"][k]> extends true
-			? Type<any, $<r>>
-			: r["exports"][k] extends PreparsedResolution
-			? r["exports"][k]
-			: Type<r["exports"][k], $<r>>
+	[k in exportedName<$> | arkKind]: k extends string
+		? [$[k]] extends [never]
+			? Type<never, $>
+			: isAny<$[k]> extends true
+			? Type<any, $>
+			: $[k] extends PreparsedResolution
+			? $[k]
+			: Type<$[k], $>
 		: // set the nominal symbol's value to something validation won't care about
 		  // since the inferred type will be omitted anyways
 		  type.cast<"module">
-}
-
-export type Resolutions = {
-	exports: unknown
-	locals: unknown
 }
 
 export type rootResolutions<exports> = {
@@ -228,13 +212,11 @@ declare global {
 	}
 }
 
-export class Scope<r extends Resolutions = any> extends BaseScope<
-	r["exports"]
-> {
+export class Scope<$ = any> extends BaseScope<$> {
 	private parseCache: Record<string, TypeNode> = {}
 
 	aliases: Record<string, unknown> = {}
-	exportedNames: array<exportedName<r>> = []
+	exportedNames: array<exportedName<$>> = []
 
 	constructor(def: Record<string, unknown>, config?: ArkConfig) {
 		const aliases: Record<string, unknown> = {}
@@ -255,24 +237,22 @@ export class Scope<r extends Resolutions = any> extends BaseScope<
 		return new Scope(aliases, {}) as never
 	}
 
-	type: TypeParser<$<r>> = createTypeParser(this as never) as never
+	type: TypeParser<$> = createTypeParser(this as never) as never
 
-	match: MatchParser<$<r>> = createMatchParser(this as never) as never
+	match: MatchParser<$> = createMatchParser(this as never) as never
 
-	declare: DeclarationParser<$<r>> = () => ({ type: this.type }) as never
+	declare: DeclarationParser<$> = () => ({ type: this.type }) as never
 
-	scope: ScopeParser<r["exports"]> = ((def: Dict, config: ArkConfig = {}) =>
+	scope: ScopeParser<$> = ((def: Dict, config: ArkConfig = {}) =>
 		new Scope(
 			{ ...this.import(), ...def },
 			extendConfig(this.config, config)
 		)) as never
 
-	define: DefinitionParser<$<r>> = (def) => def as never
+	define: DefinitionParser<$> = (def) => def as never
 
 	// TODO: name?
-	get<name extends keyof r["exports"] & string>(
-		name: name
-	): Type<r["exports"][name], $<r>> {
+	get<name extends exportedName<$>>(name: name): Type<$[name], $> {
 		return this.export()[name] as never
 	}
 
@@ -362,11 +342,11 @@ export class Scope<r extends Resolutions = any> extends BaseScope<
 		return result instanceof BaseType ? (result as never) : undefined
 	}
 
-	import<names extends exportedName<r>[]>(
+	import<names extends exportedName<$>[]>(
 		...names: names
 	): destructuredImportContext<
-		r,
-		names extends [] ? keyof r["exports"] & string : names[number]
+		$,
+		names extends [] ? exportedName<$> : names[number]
 	> {
 		return addArkKind(
 			flatMorph(this.export(...names) as Dict, (alias, value) => [
@@ -379,10 +359,10 @@ export class Scope<r extends Resolutions = any> extends BaseScope<
 
 	private exportedResolutions: MergedResolutions | undefined
 	private exportCache: ExportCache | undefined
-	export<names extends exportedName<r>[]>(
+	export<names extends exportedName<$>[]>(
 		...names: names
 	): Module<
-		names extends [] ? r : destructuredExportContext<r, names[number]>
+		names extends [] ? $ : destructuredExportContext<$, names[number]>
 	> {
 		if (!this.exportCache) {
 			this.exportCache = {}
@@ -453,21 +433,12 @@ const resolutionsOfModule = (typeSet: ExportCache) => {
 	return result
 }
 
-type destructuredExportContext<
-	r extends Resolutions,
-	name extends exportedName<r>
-> = {
-	exports: { [k in name]: r["exports"][k] }
-	locals: r["locals"] & {
-		[k in Exclude<keyof r["exports"], name>]: r["exports"][k]
-	}
+type destructuredExportContext<$, name extends exportedName<$>> = {
+	[k in name]: $[k]
 }
 
-type destructuredImportContext<
-	r extends Resolutions,
-	name extends exportedName<r>
-> = {
-	[k in name as `#${k & string}`]: type.cast<r["exports"][k]>
+type destructuredImportContext<$, name extends exportedName<$>> = {
+	[k in name as `#${k & string}`]: type.cast<$[k]>
 }
 
 export const writeShallowCycleErrorMessage = (

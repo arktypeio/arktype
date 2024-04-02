@@ -10,6 +10,7 @@ import {
 	type join,
 	type NumberLiteral
 } from "@arktype/util"
+import type { ambient } from "../../../../ark.js"
 import type { Module } from "../../../../scope.js"
 import type { Generic, GenericProps } from "../../../../type.js"
 import type { GenericInstantiationAst } from "../../../semantic/infer.js"
@@ -149,6 +150,8 @@ type tryResolve<
 	args
 > = token extends keyof $
 	? token
+	: token extends keyof ambient
+	? token
 	: token extends keyof args
 	? token
 	: token extends NumberLiteral
@@ -157,10 +160,10 @@ type tryResolve<
 	? token
 	: token extends `${infer submodule extends keyof $ &
 			string}.${infer reference}`
-	? $[submodule] extends Module<infer r>
-		? reference extends keyof r["exports"]
+	? $[submodule] extends Module<infer sub$>
+		? reference extends keyof sub$
 			? token
-			: unknown extends r["exports"]
+			: unknown extends sub$
 			? // not sure why I need the additional check here, but for now TS seems to
 			  // hit this branch for a non-scope dot access rather than failing
 			  // initially when we try to infer r. if this can be removed without breaking

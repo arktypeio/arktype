@@ -10,6 +10,7 @@ import type {
 	string
 } from "@arktype/schema"
 import type { BigintLiteral, NumberLiteral, array } from "@arktype/util"
+import type { ambient } from "../../ark.js"
 import type {
 	UnparsedScope,
 	resolve,
@@ -137,6 +138,8 @@ export type InfixExpression<
 
 export type inferTerminal<token, $, args> = token extends keyof args | keyof $
 	? resolve<token, $, args>
+	: token extends keyof ambient
+	? ambient[token]
 	: token extends StringLiteral<infer text>
 	? text
 	: token extends NumberLiteral<infer value>

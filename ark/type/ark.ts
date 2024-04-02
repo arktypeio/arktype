@@ -14,30 +14,6 @@ import type {
 	TypeParser
 } from "./type.js"
 
-/** Root scopes can be inferred automatically from node definitions, but
- * explicitly typing them can improve responsiveness */
-export type RootScope<exports> = Scope<{
-	exports: exports
-	locals: {}
-	ambient: {}
-}>
-
-export type ArkResolutions = { exports: Ark; locals: {}; ambient: Ark }
-
-// For some reason if we try to inline this, it gets evaluated and the module
-// can't be inferred
-export type ParsingResolutions = {
-	exports: parsing.exports
-	locals: {}
-	ambient: {}
-}
-
-export type TsGenericsResolutions<$ = Ark> = {
-	exports: TsGenericsExports<$>
-	locals: {}
-	ambient: {}
-}
-
 type TsGenericsExports<$ = Ark> = {
 	Record: Generic<
 		["K", "V"],
@@ -50,7 +26,7 @@ type TsGenericsExports<$ = Ark> = {
 	>
 }
 
-export const tsGenerics = {} as Module<TsGenericsResolutions>
+export const tsGenerics = {} as Module<TsGenericsExports>
 
 declare global {
 	export interface StaticArkConfig {
@@ -60,12 +36,9 @@ declare global {
 
 export type ambient = ReturnType<StaticArkConfig["ambient"]>
 
-export const ark: Scope<ArkResolutions> = Scope.root({
-	...keywords,
-	parse: parsingKeywords
-}).toAmbient() as never
+export const ark: Scope<Ark> = Scope.root({}) as never
 
-export const keywords: Module<ArkResolutions> = ark.export()
+export const keywords: Module<Ark> = ark.export()
 
 // this type is redundant with the inferred definition of ark but allow types
 // derived from the default scope to be calulated more efficiently
@@ -74,7 +47,7 @@ export interface Ark
 		jsObjects.exports,
 		validation.exports,
 		TsGenericsExports {
-	parse: Module<ParsingResolutions>
+	parse: Module<parsing.exports>
 }
 
 export const scope: ScopeParser<Ark> = ark.scope as never
