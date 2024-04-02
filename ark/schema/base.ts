@@ -122,7 +122,7 @@ type subclassKind<self> = self extends Constructor<{
 type subclassDeclaration<self> = Declaration<subclassKind<self>>
 
 declare global {
-	export interface Registry {
+	export interface ArkRegistry {
 		nodeClassesByKind: NodeClassesByKind
 	}
 }

@@ -6,7 +6,6 @@ import {
 	hasArkKind,
 	resolveConfig,
 	type ArkConfig,
-	type arkKind,
 	type distillIn,
 	type distillOut,
 	type ResolvedArkConfig,
@@ -16,200 +15,24 @@ import {
 	type UnknownNode
 } from "@arktype/schema"
 import {
-	domainOf,
 	flatMorph,
-	hasDomain,
 	isThunk,
 	throwParseError,
 	type Dict,
-	type evaluate,
-	type isAny,
-	type Json,
-	type nominal
+	type Json
 } from "@arktype/util"
-import type { type } from "./ark.js"
-import { createMatchParser, type MatchParser } from "./match.js"
-import {
-	parseObject,
-	writeBadDefinitionTypeMessage,
-	type inferDefinition,
-	type validateDefinition
-} from "./parser/definition.js"
+import type { ambient, type } from "./ark.js"
 import {
 	parseGenericParams,
-	type GenericDeclaration,
-	type GenericParamsParseError
+	type GenericDeclaration
 } from "./parser/generic.js"
-import { DynamicState } from "./parser/string/reduce/dynamic.js"
 import {
 	writeMissingSubmoduleAccessMessage,
 	writeNonSubmoduleDotMessage,
 	writeUnresolvableMessage
 } from "./parser/string/shift/operand/unenclosed.js"
-import { fullStringParse } from "./parser/string/string.js"
-import {
-	createTypeParser,
-	generic,
-	Type,
-	validateUninstantiatedGeneric,
-	type DeclarationParser,
-	type DefinitionParser,
-	type Generic,
-	type GenericProps,
-	type TypeParser
-} from "./type.js"
-
-export type ScopeParser<parent, ambient> = {
-	<const def>(
-		def: validateScope<def, parent & ambient>,
-		config?: ArkConfig
-	): Scope<{
-		exports: inferBootstrapped<{
-			exports: bootstrapExports<def>
-			locals: bootstrapLocals<def> & parent
-			ambient: ambient
-		}>
-		locals: inferBootstrapped<{
-			exports: bootstrapLocals<def>
-			locals: bootstrapExports<def> & parent
-			ambient: ambient
-		}>
-		ambient: ambient
-	}>
-}
-
-type validateScope<def, $> = {
-	[k in keyof def]: parseScopeKey<k>["params"] extends []
-		? // Not including Type here directly breaks inference
-		  def[k] extends Type | PreparsedResolution
-			? def[k]
-			: validateDefinition<def[k], $ & bootstrap<def>, {}>
-		: parseScopeKey<k>["params"] extends GenericParamsParseError
-		? // use the full nominal type here to avoid an overlap between the
-		  // error message and a possible value for the property
-		  parseScopeKey<k>["params"][0]
-		: validateDefinition<
-				def[k],
-				$ & bootstrap<def>,
-				{
-					// once we support constraints on generic parameters, we'd use
-					// the base type here: https://github.com/arktypeio/arktype/issues/796
-					[param in parseScopeKey<k>["params"][number]]: unknown
-				}
-		  >
-}
-
-export type bindThis<def> = { this: Def<def> }
-
-/** nominal type for an unparsed definition used during scope bootstrapping */
-type Def<def = {}> = nominal<def, "unparsed">
-
-/** sentinel indicating a scope that will be associated with a generic has not yet been parsed */
-export type UnparsedScope = "$"
-
-type bootstrap<def> = bootstrapLocals<def> & bootstrapExports<def>
-
-type bootstrapLocals<def> = bootstrapAliases<{
-	// intersection seems redundant but it is more efficient for TS to avoid
-	// mapping all the keys
-	[k in keyof def & PrivateDeclaration as extractPrivateKey<k>]: def[k]
-}>
-
-type bootstrapExports<def> = bootstrapAliases<{
-	[k in Exclude<keyof def, PrivateDeclaration>]: def[k]
-}>
-
-/** These are legal as values of a scope but not as definitions in other contexts */
-type PreparsedResolution = Module | GenericProps
-
-type bootstrapAliases<def> = {
-	[k in Exclude<
-		keyof def,
-		// avoid inferring nominal symbols, e.g. arkKind from Module
-		GenericDeclaration | symbol
-	>]: def[k] extends PreparsedResolution
-		? def[k]
-		: def[k] extends (() => infer thunkReturn extends PreparsedResolution)
-		? thunkReturn
-		: Def<def[k]>
-} & {
-	[k in keyof def & GenericDeclaration as extractGenericName<k>]: Generic<
-		parseGenericParams<extractGenericParameters<k>>,
-		def[k],
-		UnparsedScope
-	>
-}
-
-type inferBootstrapped<r extends Resolutions> = evaluate<{
-	[name in keyof r["exports"]]: r["exports"][name] extends Def<infer def>
-		? inferDefinition<def, $<r>, {}>
-		: r["exports"][name] extends GenericProps<infer params, infer def>
-		? // add the scope in which the generic was defined here
-		  Generic<params, def, $<r>>
-		: // otherwise should be a submodule
-		  r["exports"][name]
-}>
-
-type extractGenericName<k> = k extends GenericDeclaration<infer name>
-	? name
-	: never
-
-type extractGenericParameters<k> = k extends GenericDeclaration<
-	string,
-	infer params
->
-	? params
-	: never
-
-type extractPrivateKey<k> = k extends PrivateDeclaration<infer key>
-	? key
-	: never
-
-type PrivateDeclaration<key extends string = string> = `#${key}`
-
-export type resolve<reference extends keyof $ | keyof args, $, args> = (
-	reference extends keyof args ? args[reference] : $[reference & keyof $]
-) extends infer resolution
-	? [resolution] extends [never]
-		? never
-		: isAny<resolution> extends true
-		? any
-		: resolution extends Def<infer def>
-		? inferDefinition<def, $, args>
-		: resolution
-	: never
-
-export type moduleKeyOf<$> = {
-	[k in keyof $]: $[k] extends Module ? k & string : never
-}[keyof $]
-
-export type tryInferSubmoduleReference<$, token> =
-	token extends `${infer submodule extends moduleKeyOf<$>}.${infer subalias}`
-		? subalias extends keyof $[submodule]
-			? $[submodule][subalias] extends Type<infer t>
-				? t
-				: never
-			: never
-		: never
-
-type $<r extends Resolutions> = r["exports"] & r["locals"]
-
-type exportedName<r extends Resolutions> = keyof r["exports"] & string
-
-export type Module<r extends Resolutions = any> = {
-	// just adding the nominal id this way and mapping it is cheaper than an intersection
-	[k in exportedName<r> | arkKind]: k extends string
-		? [r["exports"][k]] extends [never]
-			? Type<never, $<r>>
-			: isAny<r["exports"][k]> extends true
-			? Type<any, $<r>>
-			: r["exports"][k] extends PreparsedResolution
-			? r["exports"][k]
-			: Type<r["exports"][k], $<r>>
-		: // set the nominal symbol's value to something validation won't care about
-		  // since the inferred type will be omitted anyways
-		  type.cast<"module">
-}
+import type { Module } from "./scope.js"
+import { Type, validateUninstantiatedGeneric, type Generic } from "./type.js"
 
 export type Resolutions = {
 	exports: unknown
@@ -230,9 +53,20 @@ export type ParseContext = {
 
 type MergedResolutions = Record<string, TypeNode | Generic>
 
-type ParseContextInput = Partial<ParseContext>
+type exportedName<r extends Resolutions> = keyof r["exports"] & string
 
-export class Scope<r extends Resolutions = any> {
+export type ScopeInput = {
+	exports: {}
+	locals: {}
+}
+
+declare global {
+	export interface ArkRegistry {
+		ambient: Scope<rootResolutions<ambient>>
+	}
+}
+
+export abstract class Scope<r extends Resolutions = any> {
 	declare infer: distillOut<r["exports"]>
 	declare inferIn: distillIn<r["exports"]>
 
@@ -240,7 +74,7 @@ export class Scope<r extends Resolutions = any> {
 	readonly resolvedConfig: ResolvedArkConfig
 
 	private parseCache: Record<string, TypeNode> = {}
-	private resolutions: MergedResolutions
+	private resolutions: MergedResolutions = {}
 	readonly nodeCache: { [innerId: string]: UnknownNode } = {}
 	readonly referencesByName: { [name: string]: UnknownNode } = {}
 	references: readonly UnknownNode[] = []
@@ -255,15 +89,6 @@ export class Scope<r extends Resolutions = any> {
 	constructor(def: Dict, config?: ArkConfig) {
 		this.config = extendConfig(globalConfig, config)
 		this.resolvedConfig = resolveConfig(this.config)
-		for (const k in def) {
-			const parsedKey = parseScopeKey(k)
-			this.aliases[parsedKey.name] = parsedKey.params.length
-				? generic(parsedKey.params, def[k], this)
-				: def[k]
-			if (!parsedKey.isLocal) {
-				this.exportedNames.push(parsedKey.name as never)
-			}
-		}
 		if ($ark.ambient) {
 			// ensure exportedResolutions is populated
 			$ark.ambient.export()
@@ -273,78 +98,10 @@ export class Scope<r extends Resolutions = any> {
 		}
 	}
 
-	static root: ScopeParser<{}, {}> = (aliases) => {
-		return new Scope(aliases, {}) as never
-	}
-
-	type: TypeParser<$<r>> = createTypeParser(this as never) as never
-
-	match: MatchParser<$<r>> = createMatchParser(this as never) as never
-
-	declare: DeclarationParser<$<r>> = () => ({ type: this.type }) as never
-
-	scope: ScopeParser<r["exports"], r["ambient"]> = ((
-		def: Dict,
-		config: ArkConfig = {}
-	) =>
-		new Scope(
-			{ ...this.import(), ...def },
-			extendConfig(this.config, config)
-		)) as never
-
-	define: DefinitionParser<$<r>> = (def) => def as never
-
-	toAmbient(): Scope<{
-		exports: r["exports"]
-		locals: r["locals"]
-		ambient: r["exports"]
-	}> {
-		Object.assign(this.config, { ambient: this })
-		return this as never
-	}
-
-	// TODO: name?
-	get<name extends keyof r["exports"] & string>(
-		name: name
-	): Type<r["exports"][name], $<r>> {
-		return this.export()[name] as never
-	}
-
-	parse(def: unknown, ctx: ParseContext): TypeNode {
-		if (typeof def === "string") {
-			if (ctx.args && Object.keys(ctx.args).every((k) => !def.includes(k))) {
-				// we can only rely on the cache if there are no contextual
-				// resolutions like "this" or generic args
-				return this.parseString(def, ctx)
-			}
-			if (!this.parseCache[def]) {
-				this.parseCache[def] = this.parseString(def, ctx)
-			}
-			return this.parseCache[def]
-		}
-		return hasDomain(def, "object")
-			? parseObject(def, ctx)
-			: throwParseError(writeBadDefinitionTypeMessage(domainOf(def)))
-	}
-
-	parseTypeRoot(def: unknown, input?: ParseContextInput): TypeNode {
-		return this.parse(def, {
-			args: { this: {} as TypeNode },
-			baseName: "type",
-			path: [],
-			$: this,
-			...input
-		})
-	}
-
-	parseString(def: string, ctx: ParseContext): TypeNode {
-		return (
-			this.maybeResolveNode(def) ??
-			((def.endsWith("[]") &&
-				this.maybeResolveNode(def.slice(0, -2))?.array()) ||
-				fullStringParse(new DynamicState(def, ctx)))
-		)
-	}
+	abstract parse(...args: any[]): unknown
+	abstract type(...args: any[]): unknown
+	abstract scope(...args: any[]): unknown
+	abstract define(...args: any[]): unknown
 
 	maybeResolve(name: string): TypeNode | Generic | undefined {
 		const cached = this.resolutions[name]
@@ -411,8 +168,8 @@ export class Scope<r extends Resolutions = any> {
 		) as never
 	}
 
-	private exportedResolutions: MergedResolutions | undefined
-	private exportCache: ExportCache | undefined
+	protected exportedResolutions: MergedResolutions | undefined
+	protected exportCache: ExportCache | undefined
 	export<names extends exportedName<r>[]>(
 		...names: names
 	): Module<

@@ -3,7 +3,7 @@
 	"editor.codeActionsOnSave": [
 		"editor.formatOnSave",
 		"source.fixAll.eslint",
-		"source.addMissingImports",
+		// "source.addMissingImports",
 		"source.sortImports"
 	],
 	"eslint.codeActionsOnSave.rules": [

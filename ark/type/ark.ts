@@ -52,6 +52,14 @@ type TsGenericsExports<$ = Ark> = {
 
 export const tsGenerics = {} as Module<TsGenericsResolutions>
 
+declare global {
+	export interface StaticArkConfig {
+		ambient(): Ark
+	}
+}
+
+export type ambient = ReturnType<StaticArkConfig["ambient"]>
+
 export const ark: Scope<ArkResolutions> = Scope.root({
 	...keywords,
 	parse: parsingKeywords
@@ -71,7 +79,7 @@ export interface Ark
 
 export const scope: ScopeParser<Ark, Ark> = ark.scope as never
 
-export const type: TypeParser<Ark> = ark.type
+export const type: TypeParser<ambient> = ark.type
 
 export namespace type {
 	export type cast<to> = {

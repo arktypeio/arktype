@@ -38,13 +38,6 @@ declare global {
 	}
 }
 
-// export type ArkKinds = {
-// 	type: Type
-// 	scope: Scope
-// 	generic: Generic
-// 	module: Module
-// }
-
 export type ArkKind = keyof ArkKinds
 
 export const addArkKind = <kind extends ArkKind>(

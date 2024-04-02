@@ -4,9 +4,9 @@ import { objectKindOf } from "./objectKinds.js"
 import { serializePrimitive, type SerializablePrimitive } from "./serialize.js"
 
 declare global {
-	export const $ark: Registry
+	export const $ark: ArkRegistry
 
-	export interface Registry {}
+	export interface ArkRegistry {}
 }
 
 export const registry: Record<string, unknown> = {}
