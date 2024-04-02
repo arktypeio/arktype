@@ -318,8 +318,7 @@ export class Scope<r extends Resolutions = any> {
 
 	parse(def: unknown, ctx: ParseContext): TypeNode {
 		if (typeof def === "string") {
-			if (ctx.args !== undefined) {
-				// TODO: allow caching with this by serializing it?
+			if (ctx.args && Object.keys(ctx.args).every((k) => !def.includes(k))) {
 				// we can only rely on the cache if there are no contextual
 				// resolutions like "this" or generic args
 				return this.parseString(def, ctx)

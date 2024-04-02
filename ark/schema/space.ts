@@ -3,13 +3,12 @@ import {
 	flatMorph,
 	type array,
 	type evaluate,
+	type Json,
 	type requireKeys
 } from "@arktype/util"
-import type { Node, TypeNode } from "./base.js"
+import type { Node, TypeNode, UnknownNode } from "./base.js"
 import { mergeConfigs } from "./config.js"
-import type { internalKeywords } from "./keywords/internal.js"
-import type { jsObjects } from "./keywords/jsObjects.js"
-import type { tsKeywords } from "./keywords/tsKeywords.js"
+import type { distillIn, distillOut } from "./main.js"
 import type { instantiateSchema, validateSchema } from "./parser/inference.js"
 import { root, type SchemaParseOptions } from "./parser/parse.js"
 import { NodeCompiler } from "./shared/compile.js"
@@ -117,7 +116,20 @@ export const resolveConfig = (
 	scopeConfig: ArkConfig | undefined
 ): ResolvedArkConfig => extendConfig(defaultConfig, scopeConfig) as never
 
-export type PrimitiveKeywords = tsKeywords & jsObjects & internalKeywords
+export class Scope<$ = any> {
+	declare infer: distillOut<$>
+	declare inferIn: distillIn<$>
+
+	readonly config: ArkConfig
+	readonly resolvedConfig: ResolvedArkConfig
+
+	readonly nodeCache: { [innerId: string]: UnknownNode } = {}
+	readonly referencesByName: { [name: string]: UnknownNode } = {}
+	readonly references: readonly UnknownNode[] = []
+	json: Json = {}
+
+	constructor(public resolutions: BaseResolutions) {}
+}
 
 const bindCompiledSpace = (references: readonly Node[]) => {
 	const compiledTraversals = compileSpace(references)
@@ -192,7 +204,6 @@ export const space = <const aliases>(
 	}
 	const references = Object.values(referencesByName)
 	// 	this.bindCompiledScope(this.references)
-	// 	this.resolved = true
 	// 	this.parse(
 	// 		"union",
 	// 		{
