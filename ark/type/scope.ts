@@ -18,7 +18,7 @@ import {
 	type nominal
 } from "@arktype/util"
 import type { type } from "./ark.js"
-import { generic, type Generic } from "./generic.js"
+import { generic, type Generic, type GenericProps } from "./generic.js"
 import { createMatchParser, type MatchParser } from "./match.js"
 import {
 	parseObject,
@@ -80,7 +80,7 @@ export type UnparsedScope = "$"
 type bootstrap<def> = bootstrapAliases<def>
 
 /** These are legal as values of a scope but not as definitions in other contexts */
-type PreparsedResolution = Module | Generic
+type PreparsedResolution = Module | GenericProps
 
 type bootstrapAliases<def> = {
 	[k in Exclude<
@@ -103,7 +103,7 @@ type bootstrapAliases<def> = {
 type inferBootstrapped<$> = evaluate<{
 	[name in keyof $]: $[name] extends Def<infer def>
 		? inferDefinition<def, $, {}>
-		: $[name] extends Generic<infer params, infer def>
+		: $[name] extends GenericProps<infer params, infer def>
 		? // add the scope in which the generic was defined here
 		  Generic<params, def, $>
 		: // otherwise should be a submodule

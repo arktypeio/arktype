@@ -17,7 +17,7 @@ import {
 	type join,
 	type NumberLiteral
 } from "@arktype/util"
-import type { Generic } from "../../../../generic.js"
+import type { Generic, GenericProps } from "../../../../generic.js"
 import type { Module } from "../../../../scope.js"
 import type { GenericInstantiationAst } from "../../../semantic/infer.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
@@ -52,7 +52,7 @@ export type parseUnenclosed<
 		? result extends ErrorMessage<infer message>
 			? state.error<message>
 			: result extends keyof $
-			? $[result] extends Generic
+			? $[result] extends GenericProps
 				? parseGenericInstantiation<
 						token,
 						$[result],
@@ -86,7 +86,7 @@ export const parseGenericInstantiation = (
 
 export type parseGenericInstantiation<
 	name extends string,
-	g extends Generic,
+	g extends GenericProps,
 	s extends StaticState,
 	$,
 	args

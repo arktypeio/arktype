@@ -11,7 +11,7 @@ import type {
 	string
 } from "@arktype/schema"
 import type { BigintLiteral, NumberLiteral, array } from "@arktype/util"
-import type { Generic } from "../../generic.js"
+import type { Generic, GenericProps } from "../../generic.js"
 import type {
 	UnparsedScope,
 	resolve,
@@ -30,7 +30,7 @@ export type inferConstrainableAst<ast, $, args> = ast extends array
 	: inferTerminal<ast, $, args>
 
 export type GenericInstantiationAst<
-	g extends Generic = Generic,
+	g extends GenericProps = GenericProps,
 	argAsts extends unknown[] = unknown[]
 > = [g, "<>", argAsts]
 
