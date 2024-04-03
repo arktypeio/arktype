@@ -3,6 +3,7 @@ import {
 	hasArkKind,
 	writeUnresolvableMessage,
 	type ambient,
+	type GenericProps,
 	type TypeNode,
 	type writeNonSubmoduleDotMessage
 } from "@arktype/schema"
@@ -17,7 +18,7 @@ import {
 	type join,
 	type NumberLiteral
 } from "@arktype/util"
-import type { Generic, GenericProps } from "../../../../generic.js"
+import type { Generic } from "../../../../generic.js"
 import type { Module } from "../../../../scope.js"
 import type { GenericInstantiationAst } from "../../../semantic/infer.js"
 import type { DynamicState } from "../../reduce/dynamic.js"

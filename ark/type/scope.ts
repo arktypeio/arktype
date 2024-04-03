@@ -5,6 +5,7 @@ import {
 	type ArkConfig,
 	type arkKind,
 	type exportedName,
+	type GenericProps,
 	type TypeNode
 } from "@arktype/schema"
 import {
@@ -18,7 +19,7 @@ import {
 	type nominal
 } from "@arktype/util"
 import type { type } from "./ark.js"
-import { generic, type Generic, type GenericProps } from "./generic.js"
+import { generic, type Generic } from "./generic.js"
 import { createMatchParser, type MatchParser } from "./match.js"
 import {
 	parseObject,

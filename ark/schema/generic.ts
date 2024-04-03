@@ -20,24 +20,41 @@ type bindGenericInstantiation<params extends string[], $, args> = {
 	>[inferred]
 }
 
-export class GenericNode<
+// Comparing to Generic directly doesn't work well, so we compare to only its props
+export type GenericProps<
 	params extends string[] = string[],
 	def = unknown,
 	$ = any
-> extends Callable<GenericNodeInstantiation<params, def, $>> {
+> = {
+	[arkKind]: "generic"
+	$: $
+	parameters: params
+	def: def
+	scope: BaseScope
+}
+
+export class GenericNode<
+		params extends string[] = string[],
+		def = unknown,
+		$ = any
+	>
+	extends Callable<GenericNodeInstantiation<params, def, $>>
+	implements GenericProps
+{
 	readonly [arkKind] = "generic"
+	declare readonly $: $
 
 	constructor(
 		public parameters: params,
 		public def: def,
-		public $: BaseScope<$>
+		public scope: BaseScope<$>
 	) {
-		super((...args) => {
+		super((...args: TypeSchema[]) => {
 			const argNodes = flatMorph(parameters, (i, param) => [
 				param,
-				$.root(args[i] as never)
+				scope.root(args[i])
 			])
-			return $.root(def, { args: argNodes })
+			return scope.root(def as never, { args: argNodes }) as never
 		})
 	}
 }

@@ -1,4 +1,4 @@
-import { arkKind, keywordNodes } from "@arktype/schema"
+import { arkKind, keywordNodes, type GenericProps } from "@arktype/schema"
 import { flatMorph, type conform } from "@arktype/util"
 import type { inferDefinition } from "./parser/definition.js"
 import type {
@@ -49,19 +49,6 @@ export const generic = (
 			// $ is only needed at compile-time
 		} satisfies Omit<GenericProps, "$">
 	) as never
-
-// Comparing to Generic directly doesn't work well, so we compare to only its props
-export type GenericProps<
-	params extends string[] = string[],
-	def = unknown,
-	$ = any
-> = {
-	[arkKind]: "generic"
-	$: $
-	parameters: params
-	def: def
-	scope: Scope
-}
 
 export type BoundArgs = Record<string, Type>
 
