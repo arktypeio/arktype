@@ -3,6 +3,7 @@ import {
 	isArray,
 	literalPropAccess,
 	type array,
+	type evaluate,
 	type mutable
 } from "@arktype/util"
 import type { Node } from "../base.js"
@@ -38,7 +39,7 @@ declare global {
 	}
 }
 
-export type ArkKind = keyof ArkKinds
+export type ArkKind = evaluate<keyof ArkKinds>
 
 export const addArkKind = <kind extends ArkKind>(
 	value: Omit<ArkKinds[kind], arkKind> & {

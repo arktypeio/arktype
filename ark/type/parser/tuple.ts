@@ -14,9 +14,7 @@ import {
 	type distillConstrainableOut,
 	type inferIntersection,
 	type inferMorphOut,
-	type inferNarrow,
-	type instantiateSchema,
-	type validateSchema
+	type inferNarrow
 } from "@arktype/schema"
 import {
 	append,
@@ -391,8 +389,6 @@ export type inferTupleExpression<
 	? InstanceType<constructors[number]>
 	: def[0] extends "keyof"
 	? inferKeyOfExpression<def[1], $, args>
-	: def[0] extends "schema"
-	? instantiateSchema<def[1], $>["infer"]
 	: never
 
 export type validatePrefixExpression<
@@ -407,8 +403,6 @@ export type validatePrefixExpression<
 	? readonly [def[0], ...unknown[]]
 	: def[0] extends "instanceof"
 	? readonly [def[0], ...Constructor[]]
-	: def[0] extends "schema"
-	? [def[0], validateSchema<def[1], $>]
 	: never
 
 export type validatePostfixExpression<
