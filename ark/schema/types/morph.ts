@@ -172,24 +172,17 @@ export class MorphNode<t = any, $ = any> extends BaseType<
 	}
 }
 
-export type applyMorph<
-	t,
-	morph extends Morph<distillOut<t>>,
-	outValidator = never
-> = (In: distillConstrainableIn<t>) => Out<
-	outValidator extends never
-		? inferMorphOut<ReturnType<morph>>
-		: // TODO: validate overlapping
-		  // inferMorphOut<ReturnType<morph>> &
-		  distillConstrainableOut<outValidator>
+export type inferMorphOut<morph extends Morph> = morph extends Morph<
+	never,
+	infer out
 >
-
-export type inferMorphOut<out> = out extends ArkResult<unknown, infer innerOut>
-	? out extends null
-		? // avoid treating any/never as ArkResult
-		  out
-		: innerOut
-	: Exclude<out, ArkTypeError>
+	? out extends ArkResult<unknown, infer innerOut>
+		? out extends null
+			? // avoid treating any/never as ArkResult
+			  out
+			: innerOut
+		: Exclude<out, ArkTypeError>
+	: never
 
 export type distillIn<t> = includesMorphs<t> extends true
 	? distillRecurse<t, "in", "base">

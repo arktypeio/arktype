@@ -95,12 +95,12 @@ describe("morph", () => {
 			bAndA: () => $.type("b&a")
 		})
 		const types = $.export()
-		assertNodeKind(types.bAndA, "morph")
-		assertNodeKind(types.aAndB, "morph")
+		assertNodeKind(types.bAndA.root, "morph")
+		assertNodeKind(types.aAndB.root, "morph")
 		attest<Type<(In: 3.14) => Out<string>>>(types.aAndB)
 		attest(types.aAndB.json).snap({
 			in: { unit: 3.14 },
-			morphs: types.aAndB.serializedMorphs
+			morphs: types.aAndB.root.serializedMorphs
 		})
 		attest<typeof types.aAndB>(types.bAndA)
 		attest(types.bAndA).equals(types.aAndB)
@@ -113,7 +113,7 @@ describe("morph", () => {
 		})
 		const types = $.export()
 		attest<Type<(In: { a: 1; b: 2 }) => string>>(types.c)
-		assertNodeKind(types.c, "morph")
+		assertNodeKind(types.c.root, "morph")
 		attest(types.c.json).snap({
 			in: {
 				domain: "object",
@@ -122,7 +122,7 @@ describe("morph", () => {
 					{ key: "b", value: { unit: 2 } }
 				]
 			},
-			morphs: types.c.serializedMorphs
+			morphs: types.c.root.serializedMorphs
 		})
 	})
 	it("union", () => {
@@ -134,7 +134,7 @@ describe("morph", () => {
 		}).export()
 		attest<Type<boolean | ((In: number) => Out<string>)>>(types.aOrB)
 		const serializedMorphs =
-			types.aOrB.firstReferenceOfKindOrThrow("morph").serializedMorphs
+			types.aOrB.root.firstReferenceOfKindOrThrow("morph").serializedMorphs
 		attest(types.aOrB.json).snap([
 			{ in: "number", morphs: serializedMorphs },
 			{ unit: false },
@@ -172,7 +172,7 @@ describe("morph", () => {
 				  }
 			>
 		>(types.c)
-
+		assertNodeKind(types.a.root, "morph")
 		attest(types.c.json).snap([
 			{ domain: "object", prop: [{ key: "a", value: "Function" }] },
 			{
@@ -182,7 +182,7 @@ describe("morph", () => {
 						key: "a",
 						value: {
 							in: { domain: "number", min: { exclusive: true, rule: 0 } },
-							morphs: ["$ark.anonymousFunction1"]
+							morphs: types.a.root.serializedMorphs
 						}
 					}
 				]
@@ -196,10 +196,10 @@ describe("morph", () => {
 		})
 		const types = $.export()
 		attest<Type<(In: string) => Out<boolean>>>(types.b)
-		assertNodeKind(types.b, "morph")
+		assertNodeKind(types.b.root, "morph")
 		attest(types.b.json).snap({
 			in: "string",
-			morphs: types.b.serializedMorphs
+			morphs: types.b.root.serializedMorphs
 		})
 	})
 	it("chained nested", () => {
@@ -210,19 +210,19 @@ describe("morph", () => {
 
 		const types = $.export()
 		attest<Type<(In: { a: string }) => Out<boolean>>>(types.b)
-		assertNodeKind(types.b, "morph")
-		assertNodeKind(types.a, "morph")
+		assertNodeKind(types.b.root, "morph")
+		assertNodeKind(types.a.root, "morph")
 		attest(types.b.json).snap({
 			in: {
 				domain: "object",
 				prop: [
 					{
 						key: "a",
-						value: { in: "string", morphs: types.a.serializedMorphs }
+						value: { in: "string", morphs: types.a.root.serializedMorphs }
 					}
 				]
 			},
-			morphs: types.b.serializedMorphs
+			morphs: types.b.root.serializedMorphs
 		})
 	})
 	it("directly nested", () => {
@@ -234,8 +234,8 @@ describe("morph", () => {
 			({ a }) => a === 0
 		])
 		attest<Type<(In: { a: string }) => Out<boolean>>>(t)
-		assertNodeKind(t, "morph")
-		const nestedMorph = t.firstReferenceOfKindOrThrow("morph")
+		assertNodeKind(t.root, "morph")
+		const nestedMorph = t.root.firstReferenceOfKindOrThrow("morph")
 		attest(t.json).snap({
 			in: {
 				domain: "object",
@@ -246,7 +246,7 @@ describe("morph", () => {
 					}
 				]
 			},
-			morphs: t.serializedMorphs
+			morphs: t.root.serializedMorphs
 		})
 	})
 	it("discriminable tuple union", () => {

@@ -54,14 +54,14 @@ type validateScope<def> = {
 		? // Not including Type here directly breaks inference
 		  def[k] extends Type | PreparsedResolution
 			? def[k]
-			: validateDefinition<def[k], bootstrap<def>, {}>
+			: validateDefinition<def[k], bootstrapAliases<def>, {}>
 		: parseScopeKey<k>["params"] extends GenericParamsParseError
 		? // use the full nominal type here to avoid an overlap between the
 		  // error message and a possible value for the property
 		  parseScopeKey<k>["params"][0]
 		: validateDefinition<
 				def[k],
-				bootstrap<def>,
+				bootstrapAliases<def>,
 				{
 					// once we support constraints on generic parameters, we'd use
 					// the base type here: https://github.com/arktypeio/arktype/issues/796
@@ -77,8 +77,6 @@ type Def<def = {}> = nominal<def, "unparsed">
 
 /** sentinel indicating a scope that will be associated with a generic has not yet been parsed */
 export type UnparsedScope = "$"
-
-type bootstrap<def> = bootstrapAliases<def>
 
 /** These are legal as values of a scope but not as definitions in other contexts */
 type PreparsedResolution = Module | GenericProps

@@ -9,7 +9,6 @@ import {
 	type PrimitiveConstraintKind,
 	type Schema,
 	type TypeNode,
-	type applyMorph,
 	type constrain,
 	type constraintKindOf,
 	type distillConstrainableIn,
@@ -18,6 +17,7 @@ import {
 	type distillOut,
 	type includesMorphs,
 	type inferIntersection,
+	type inferMorphOut,
 	type inferNarrow,
 	type inferred
 } from "@arktype/schema"
@@ -226,10 +226,19 @@ export class Type<t = unknown, $ = any> extends Callable<
 		return literal as never
 	}
 
-	morph<morph extends Morph<this["infer"]>, def = never>(
+	morph<morph extends Morph<this["infer"]>, outValidatorDef = never>(
 		morph: morph,
-		outValidator?: validateTypeRoot<def, $>
-	): Type<applyMorph<t, morph, inferTypeRoot<def, $>>, $>
+		outValidator?: validateTypeRoot<outValidatorDef, $>
+	): Type<
+		(
+			In: distillConstrainableIn<t>
+		) => Out<
+			[outValidatorDef] extends [never]
+				? inferMorphOut<morph>
+				: distillConstrainableOut<inferTypeRoot<outValidatorDef, $>>
+		>,
+		$
+	>
 	morph(morph: Morph, outValidator?: unknown): unknown {
 		return new Type(this.root.morph(morph, outValidator as never), this.$)
 	}

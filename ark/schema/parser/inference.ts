@@ -147,10 +147,13 @@ type instantiateMorphSchema<schema, $> = schema extends MorphSchema
 					: unknown
 			) => schema["out"] extends {}
 				? Out<instantiateMorphChild<schema["out"], $>["infer"]>
-				: schema["morphs"] extends
-						| Morph<any, infer o>
-						| readonly [...unknown[], Morph<any, infer o>]
-				? Out<inferMorphOut<o>>
+				: schema["morphs"] extends infer morph extends Morph
+				? Out<inferMorphOut<morph>>
+				: schema["morphs"] extends readonly [
+						...unknown[],
+						infer morph extends Morph
+				  ]
+				? Out<inferMorphOut<morph>>
 				: never
 	  >
 	: never

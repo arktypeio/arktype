@@ -26,7 +26,14 @@ import {
 import type { inferIntersection } from "../shared/intersections.js"
 import type { inferred } from "../shared/utils.js"
 import type { IntersectionNode, constraintKindOf } from "./intersection.js"
-import type { Morph, MorphNode, applyMorph } from "./morph.js"
+import type {
+	Morph,
+	MorphNode,
+	Out,
+	distillConstrainableIn,
+	distillConstrainableOut,
+	inferMorphOut
+} from "./morph.js"
 import type { UnionChildKind, UnionNode } from "./union.js"
 
 export const defineRightwardIntersections = <kind extends TypeKind>(
@@ -143,10 +150,24 @@ export abstract class BaseType<
 		return literal as never
 	}
 
-	morph<morph extends Morph<this["infer"]>, schema extends TypeSchema = never>(
+	morph<
+		morph extends Morph<this["infer"]>,
+		outValidatorSchema extends TypeSchema = never
+	>(
 		morph: morph,
-		outValidator?: schema
-	): MorphNode<applyMorph<t, morph, instantiateSchema<schema, $>["infer"]>, $>
+		outValidator?: outValidatorSchema
+	): MorphNode<
+		(
+			In: distillConstrainableIn<t>
+		) => Out<
+			[outValidatorSchema] extends [never]
+				? inferMorphOut<morph>
+				: distillConstrainableOut<
+						instantiateSchema<outValidatorSchema, $>["infer"]
+				  >
+		>,
+		$
+	>
 	morph(morph: Morph, outValidator?: unknown): unknown {
 		if (this.hasKind("union")) {
 			const branches = this.branches.map((node) =>

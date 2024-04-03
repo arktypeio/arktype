@@ -518,7 +518,7 @@ export const writeMalformedFunctionalExpressionMessage = (
 export type parseMorph<inDef, morph, $, args> = morph extends Morph
 	? (
 			In: distillConstrainableIn<inferDefinition<inDef, $, args>>
-	  ) => Out<inferMorphOut<ReturnType<morph>>>
+	  ) => Out<inferMorphOut<morph>>
 	: never
 
 export const parseNarrowTuple: PostfixParser<":"> = (def, ctx) => {
