@@ -27,7 +27,7 @@ export interface GenericProps<
 	$ = any
 > {
 	[arkKind]: "generic"
-	parameters: params
+	params: params
 	def: def
 	$: BaseScope<$>
 }
@@ -43,15 +43,12 @@ export class GenericNode<
 	readonly [arkKind] = "generic"
 
 	constructor(
-		public parameters: params,
+		public params: params,
 		public def: def,
 		public $: BaseScope<$>
 	) {
 		super((...args: TypeSchema[]) => {
-			const argNodes = flatMorph(parameters, (i, param) => [
-				param,
-				$.root(args[i])
-			])
+			const argNodes = flatMorph(params, (i, param) => [param, $.root(args[i])])
 			return $.root(def as never, { args: argNodes }) as never
 		})
 	}

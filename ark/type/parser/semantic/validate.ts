@@ -77,9 +77,7 @@ type validateStringAst<def extends string, $> = def extends NumberLiteral<
 		: // these problems would've been caught during a fullStringParse, but it's most
 		// efficient to check for them here in case the string was naively parsed
 		$[def] extends Generic
-		? ErrorMessage<
-				writeInvalidGenericArgsMessage<def, $[def]["parameters"], []>
-		  >
+		? ErrorMessage<writeInvalidGenericArgsMessage<def, $[def]["params"], []>>
 		: $[def] extends Module
 		? ErrorMessage<writeMissingSubmoduleAccessMessage<def>>
 		: undefined

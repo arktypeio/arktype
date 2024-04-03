@@ -22,7 +22,7 @@ export const validateUninstantiatedGeneric = (g: Generic): Generic => {
 		// the base type here: https://github.com/arktypeio/arktype/issues/796
 		{
 			baseName: "generic",
-			args: flatMorph(g.parameters, (_, name) => [name, keywordNodes.unknown])
+			args: flatMorph(g.params, (_, name) => [name, keywordNodes.unknown])
 		}
 	)
 	return g
@@ -58,12 +58,12 @@ export class Generic<params extends string[] = string[], def = unknown, $ = any>
 	readonly [arkKind] = "generic"
 
 	constructor(
-		public parameters: params,
+		public params: params,
 		public def: def,
 		public $: Scope<$>
 	) {
 		super((...args: unknown[]) => {
-			const argNodes = flatMorph(parameters, (i, param) => [
+			const argNodes = flatMorph(params, (i, param) => [
 				param,
 				$.parseTypeRoot(args[i])
 			])

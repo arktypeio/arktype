@@ -48,10 +48,10 @@ export type inferExpression<
 				: // Otherwise, use the scope that was explicitly associated with it.
 				  ast[0]["$"],
 			{
-				// Using keyof g["parameters"] & number here results in the element types
+				// Using keyof g["params"] & number here results in the element types
 				// being mixed- another reason TS should not have separate `${number}` and number keys!
-				[i in keyof ast[0]["parameters"] &
-					`${number}` as ast[0]["parameters"][i]]: inferConstrainableAst<
+				[i in keyof ast[0]["params"] &
+					`${number}` as ast[0]["params"][i]]: inferConstrainableAst<
 					ast[2][i & keyof ast[2]],
 					$,
 					args
