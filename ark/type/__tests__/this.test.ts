@@ -1,6 +1,6 @@
 import { attest } from "@arktype/attest"
+import { writeUnresolvableMessage } from "@arktype/schema"
 import { scope, type } from "arktype"
-import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclosed.js"
 
 describe("this reference", () => {
 	it("resolves from type", () => {

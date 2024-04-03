@@ -1,12 +1,12 @@
 import { attest } from "@arktype/attest"
 import {
 	writeInvalidPropertyKeyMessage,
-	writeUnboundableMessage
+	writeUnboundableMessage,
+	writeUnresolvableMessage
 } from "@arktype/schema"
 import { printable, reference } from "@arktype/util"
 import { scope, type } from "arktype"
 import { writeInvalidSpreadTypeMessage } from "../parser/objectLiteral.js"
-import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclosed.js"
 
 describe("object literal", () => {
 	it("empty", () => {

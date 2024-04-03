@@ -1,6 +1,5 @@
 import type { Generic } from "../../type/type.js"
 import type { jsObjects } from "./jsObjects.js"
-import type { parsing } from "./parsing.js"
 import type { tsKeywords } from "./tsKeywords.js"
 import type { spaceFromExports } from "./utils/utils.js"
 import type { validation } from "./validation.js"

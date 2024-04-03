@@ -1,7 +1,7 @@
 import { attest } from "@arktype/attest"
+import { writeUnresolvableMessage } from "@arktype/schema"
 import { writeMalformedNumericLiteralMessage } from "@arktype/util"
 import { scope, type } from "arktype"
-import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclosed.js"
 
 describe("parse unenclosed", () => {
 	describe("identifier", () => {

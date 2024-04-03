@@ -1,7 +1,7 @@
 import { attest } from "@arktype/attest"
+import { writeUnresolvableMessage } from "@arktype/schema"
 import { ArkError, define, scope, type } from "arktype"
 import { AssertionError } from "node:assert"
-import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclosed.js"
 
 describe("type methods", () => {
 	it("root discriminates", () => {

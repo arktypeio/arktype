@@ -271,6 +271,13 @@ export class BaseScope<$ = any> {
 	}
 }
 
+export const writeUnresolvableMessage = <token extends string>(
+	token: token
+): writeUnresolvableMessage<token> => `'${token}' is unresolvable`
+
+export type writeUnresolvableMessage<token extends string> =
+	`'${token}' is unresolvable`
+
 export const writeNonSubmoduleDotMessage = <name extends string>(
 	name: name
 ): writeNonSubmoduleDotMessage<name> =>

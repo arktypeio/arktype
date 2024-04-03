@@ -1,6 +1,7 @@
 import {
 	BaseType,
 	hasArkKind,
+	writeUnresolvableMessage,
 	type ambient,
 	type TypeNode,
 	type writeNonSubmoduleDotMessage
@@ -209,13 +210,6 @@ type validReferenceFromToken<
 	submodulePath extends [] ? BaseCompletions<$, args> : keyof $,
 	`${token}${string}`
 >
-
-export const writeUnresolvableMessage = <token extends string>(
-	token: token
-): writeUnresolvableMessage<token> => `'${token}' is unresolvable`
-
-type writeUnresolvableMessage<token extends string> =
-	`'${token}' is unresolvable`
 
 export const writeMissingOperandMessage = (s: DynamicState): string => {
 	const operator = s.previousOperator()

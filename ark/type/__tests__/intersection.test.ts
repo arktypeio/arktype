@@ -1,11 +1,11 @@
 import { attest } from "@arktype/attest"
-import { keywordNodes, writeIndivisibleMessage } from "@arktype/schema"
-import { type } from "arktype"
-import { keywords } from "../ark.js"
 import {
-	writeMissingRightOperandMessage,
+	keywordNodes,
+	writeIndivisibleMessage,
 	writeUnresolvableMessage
-} from "../parser/string/shift/operand/unenclosed.js"
+} from "@arktype/schema"
+import { type } from "arktype"
+import { writeMissingRightOperandMessage } from "../parser/string/shift/operand/unenclosed.js"
 
 describe("intersection", () => {
 	it("two types", () => {

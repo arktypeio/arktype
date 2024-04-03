@@ -2,11 +2,10 @@ import { attest } from "@arktype/attest"
 import {
 	writeMissingSubmoduleAccessMessage,
 	writeNonSubmoduleDotMessage,
-	type Ark
+	writeUnresolvableMessage
 } from "@arktype/schema"
 import { lazily } from "@arktype/util"
 import { scope, type, type Module, type Scope } from "arktype"
-import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclosed.js"
 
 const $ = lazily(() =>
 	scope({
@@ -21,19 +20,11 @@ describe("submodules", () => {
 		const types = $.export()
 		attest<
 			Module<{
-				exports: {
-					a: string
-					b: number
-					sub: Module<{
-						exports: {
-							alias: number
-						}
-						locals: {}
-						ambient: Ark
-					}>
-				}
-				locals: {}
-				ambient: Ark
+				a: string
+				b: number
+				sub: Module<{
+					alias: number
+				}>
 			}>
 		>(types)
 
@@ -60,20 +51,12 @@ describe("submodules", () => {
 		})
 		attest<
 			Scope<{
-				exports: {
-					a: string
-					c: string
-					sub: Module<{
-						exports: {
-							foo: string
-							bar: string
-						}
-						locals: {}
-						ambient: Ark
-					}>
-				}
-				locals: {}
-				ambient: Ark
+				a: string
+				c: string
+				sub: Module<{
+					foo: string
+					bar: string
+				}>
 			}>
 		>($)
 	})

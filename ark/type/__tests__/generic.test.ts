@@ -1,11 +1,14 @@
 import { attest } from "@arktype/attest"
-import { keywordNodes, writeIndivisibleMessage } from "@arktype/schema"
+import {
+	keywordNodes,
+	writeIndivisibleMessage,
+	writeUnresolvableMessage
+} from "@arktype/schema"
 import { lazily } from "@arktype/util"
 import { keywords, scope, type } from "arktype"
 import { emptyGenericParameterMessage } from "../parser/generic.js"
 import { writeUnclosedGroupMessage } from "../parser/string/reduce/shared.js"
 import { writeInvalidGenericArgsMessage } from "../parser/string/shift/operand/genericArgs.js"
-import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclosed.js"
 import { writeInvalidDivisorMessage } from "../parser/string/shift/operator/divisor.js"
 import { writeUnexpectedCharacterMessage } from "../parser/string/shift/operator/operator.js"
 

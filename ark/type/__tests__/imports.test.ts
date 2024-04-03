@@ -1,5 +1,4 @@
 import { attest } from "@arktype/attest"
-import type { Ark } from "@arktype/schema"
 import { lazily } from "@arktype/util"
 import { scope, type, type Module } from "arktype"
 
@@ -63,7 +62,7 @@ describe("scope imports", () => {
 		const types = scope({
 			...threeSixtyNoScope.import("three", "no"),
 			...scopeCreep.export(),
-			public: "hasCrept|three|no|private",
+			public: "hasCrept|#three|#no|#private",
 			"#private": "uuid"
 		}).export()
 
@@ -73,16 +72,11 @@ describe("scope imports", () => {
 
 		attest<
 			Module<{
-				exports: {
-					hasCrept: true
-					public: string | true | 3
-				}
-				locals: {
-					three: 3
-					no: "no"
-					private: string
-				}
-				ambient: Ark
+				hasCrept: true
+				public: string | true | 3
+				"#three": 3
+				"#no": "no"
+				"#private": string
 			}>
 		>(types)
 	})
@@ -91,22 +85,21 @@ describe("scope imports", () => {
 describe("private aliases", () => {
 	it("non-generic", () => {
 		const types = scope({
-			foo: "bar[]",
+			foo: "#bar[]",
 			"#bar": "boolean"
 		}).export()
 		attest(Object.keys(types)).equals(["foo"])
 		attest(types.foo.json).equals(type("boolean[]").json)
 		attest<
 			Module<{
-				exports: { foo: boolean[] }
-				locals: { bar: boolean }
-				ambient: Ark
+				foo: boolean[]
+				"#bar": boolean
 			}>
 		>(types)
 	})
 	it("generic", () => {
 		const types = scope({
-			foo: "bar<string>[]",
+			foo: "#bar<string>[]",
 			"#bar<t>": ["t"]
 		}).export()
 		attest<[string][]>(types.foo.infer)

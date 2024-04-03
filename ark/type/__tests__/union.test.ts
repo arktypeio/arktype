@@ -1,10 +1,12 @@
 import { attest } from "@arktype/attest"
-import { keywordNodes, root, writeIndivisibleMessage } from "@arktype/schema"
-import { keywords, type } from "arktype"
 import {
-	writeMissingRightOperandMessage,
+	keywordNodes,
+	root,
+	writeIndivisibleMessage,
 	writeUnresolvableMessage
-} from "../parser/string/shift/operand/unenclosed.js"
+} from "@arktype/schema"
+import { type } from "arktype"
+import { writeMissingRightOperandMessage } from "../parser/string/shift/operand/unenclosed.js"
 
 describe("union", () => {
 	it("binary", () => {

@@ -1,10 +1,8 @@
 import { attest } from "@arktype/attest"
+import { writeUnresolvableMessage } from "@arktype/schema"
 import { type } from "arktype"
 import { writeUnterminatedEnclosedMessage } from "../parser/string/shift/operand/enclosed.js"
-import {
-	writeExpressionExpectedMessage,
-	writeUnresolvableMessage
-} from "../parser/string/shift/operand/unenclosed.js"
+import { writeExpressionExpectedMessage } from "../parser/string/shift/operand/unenclosed.js"
 
 describe("string", () => {
 	it("errors on empty string", () => {

@@ -1,10 +1,7 @@
 import { attest } from "@arktype/attest"
-import { root, type Ark } from "@arktype/schema"
+import { root, writeUnresolvableMessage, type Ark } from "@arktype/schema"
 import { scope, type, type Out, type Type } from "arktype"
-import {
-	writeMissingRightOperandMessage,
-	writeUnresolvableMessage
-} from "../parser/string/shift/operand/unenclosed.js"
+import { writeMissingRightOperandMessage } from "../parser/string/shift/operand/unenclosed.js"
 
 describe("tuple expressions", () => {
 	it("nested", () => {

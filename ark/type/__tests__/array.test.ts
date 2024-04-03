@@ -1,6 +1,6 @@
 import { attest } from "@arktype/attest"
+import { writeUnresolvableMessage } from "@arktype/schema"
 import { scope, type } from "arktype"
-import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclosed.js"
 import { incompleteArrayTokenMessage } from "../parser/string/shift/operator/operator.js"
 import {
 	multipleVariadicMesage,
