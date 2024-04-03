@@ -12,7 +12,6 @@ import type {
 	string
 } from "@arktype/schema"
 import type { BigintLiteral, NumberLiteral, array } from "@arktype/util"
-
 import type {
 	UnparsedScope,
 	resolve,
@@ -42,7 +41,7 @@ export type inferExpression<
 > = ast extends GenericInstantiationAst
 	? inferDefinition<
 			ast[0]["def"],
-			ast[0]["$"] extends UnparsedScope
+			ast[0]["$"]["t"] extends UnparsedScope
 				? // If the generic was defined in the current scope, its definition can be
 				  // resolved using the same scope as that of the input args.
 				  $

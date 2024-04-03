@@ -19,7 +19,7 @@ import {
 	type nominal
 } from "@arktype/util"
 import type { type } from "./ark.js"
-import { generic, type Generic } from "./generic.js"
+import { Generic } from "./generic.js"
 import { createMatchParser, type MatchParser } from "./match.js"
 import {
 	parseObject,
@@ -190,7 +190,7 @@ export class Scope<$ = any> extends BaseScope<$> {
 		for (const k in def) {
 			const parsedKey = parseScopeKey(k)
 			aliases[parsedKey.name] = parsedKey.params.length
-				? generic(parsedKey.params, def[k], this)
+				? new Generic(parsedKey.params, def[k], this)
 				: def[k]
 		}
 		super(aliases, config)

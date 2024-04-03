@@ -29,9 +29,8 @@ import {
 	type conform
 } from "@arktype/util"
 import {
-	generic,
+	Generic,
 	validateUninstantiatedGeneric,
-	type Generic,
 	type validateParameterString
 } from "./generic.js"
 import type {
@@ -112,7 +111,7 @@ export const createTypeParser = <$>($: Scope): TypeParser<$> => {
 			// treat as a generic
 			const params = parseGenericParams(args[0].slice(1, -1))
 			const def = args[1]
-			return validateUninstantiatedGeneric(generic(params, def, $) as never)
+			return validateUninstantiatedGeneric(new Generic(params, def, $) as never)
 		}
 		// otherwise, treat as a tuple expression. technically, this also allows
 		// non-expression tuple definitions to be parsed, but it's not a supported

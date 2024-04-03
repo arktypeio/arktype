@@ -140,6 +140,7 @@ export type exportedName<$> = Exclude<keyof $, PrivateDeclaration>
 export type PrivateDeclaration<key extends string = string> = `#${key}`
 
 export class BaseScope<$ = any> {
+	declare t: $
 	declare infer: distillOut<$>
 	declare inferIn: distillIn<$>
 
