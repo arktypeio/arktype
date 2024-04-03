@@ -149,7 +149,7 @@ describe("generics", () => {
 			const t = $.type("string | box<0, 1> | boolean")
 			attest(t.json).equals(
 				// as const is required for TS <=5.0
-				type("string|boolean", "|", { box: "0|1" } as const).json
+				type("string|boolean", "|", { box: "0|1" }).json
 			)
 			attest<string | { box: 0 | 1 } | boolean>(t.infer)
 		})

@@ -239,7 +239,7 @@ export class Type<t = unknown, $ = any> extends Callable<
 		outValidator?: validateTypeRoot<def, $>
 	): Type<applyMorph<t, morph, inferTypeRoot<def, $>>, $>
 	morph(morph: Morph, outValidator?: unknown): unknown {
-		return new Type(this.root.morph(morph, outValidator), this.$)
+		return new Type(this.root.morph(morph, outValidator as never), this.$)
 	}
 
 	// TODO: based on below, should maybe narrow morph output if used after
