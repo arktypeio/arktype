@@ -24,13 +24,14 @@ type bindGenericInstantiation<params extends string[], $, args> = {
 export type GenericProps<
 	params extends string[] = string[],
 	def = unknown,
-	$ = any
+	$ = any,
+	scope extends BaseScope = BaseScope
 > = {
 	[arkKind]: "generic"
 	$: $
 	parameters: params
 	def: def
-	scope: BaseScope
+	scope: scope
 }
 
 export class GenericNode<

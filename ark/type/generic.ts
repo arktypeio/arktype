@@ -66,7 +66,7 @@ export type Generic<
 			}
 		>
 	): Type<inferDefinition<def, $, bindGenericInstantiation<params, $, args>>, $>
-} & GenericProps<params, def, $>
+} & GenericProps<params, def, $, Scope<$>>
 
 type bindGenericInstantiation<params extends string[], $, args> = {
 	[i in keyof params & `${number}` as params[i]]: inferTypeRoot<
