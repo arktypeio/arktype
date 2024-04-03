@@ -26,7 +26,7 @@ import {
 } from "../constraints/props/props.js"
 import { tsKeywords } from "../keywords/tsKeywords.js"
 import type { Inner, MutableInner, NodeDef, Prerequisite } from "../kinds.js"
-import { node, type SchemaParseContext } from "../parser/parse.js"
+import { node, type NodeParseContext } from "../parser/parse.js"
 import type { BaseScope } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import { metaKeys, type BaseMeta, type declareNode } from "../shared/declare.js"
@@ -81,7 +81,7 @@ const intersectionChildKeyParser =
 	<kind extends IntersectionChildKind>(kind: kind) =>
 	(
 		def: listable<NodeDef<kind>>,
-		ctx: SchemaParseContext
+		ctx: NodeParseContext
 	): intersectionChildInnerValueOf<kind> | undefined => {
 		if (isArray(def)) {
 			if (def.length === 0) {

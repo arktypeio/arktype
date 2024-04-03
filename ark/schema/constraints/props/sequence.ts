@@ -59,12 +59,12 @@ const fixedSequenceKeyDefinition: NodeKeyImplementation<
 	"prefix" | "postfix" | "optional"
 > = {
 	child: true,
-	parse: (schema, ctx) =>
-		schema.length === 0
+	parse: (def, ctx) =>
+		def.length === 0
 			? // empty affixes are omitted. an empty array should therefore
 			  // be specified as `{ proto: Array, length: 0 }`
 			  undefined
-			: schema.map((element) => root(element))
+			: def.map((element) => root(element))
 }
 
 export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
@@ -158,7 +158,7 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 					// or any postfix elements were moved to prefix
 					(raw.prefix && raw.prefix.length !== prefix.length)
 				) {
-					// reparse the reduced schema
+					// reparse the reduced def
 					return node(
 						"sequence",
 						{

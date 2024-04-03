@@ -39,7 +39,7 @@ import type {
 	NodeKind
 } from "../shared/implement.js"
 import type { inferred } from "../shared/utils.js"
-import type { SchemaParseOptions } from "./parse.js"
+import type { NodeParseOptions } from "./parse.js"
 
 export namespace type {
 	export type cast<to = unknown> = {
@@ -53,23 +53,21 @@ export type UnitsParser = <const branches extends array>(
 	? UnionNode<branches[0]>
 	: UnionNode<branches[number]> | UnitNode<branches[number]>
 
-export type SchemaParser<$> = <const schema extends SchemaDef>(
-	schema: schema
-) => schema
+export type SchemaParser<$> = <const def extends SchemaDef>(schema: def) => def
 
 export type NodeParser<$> = <
 	kind extends NodeKind,
-	const schema extends NodeDef<kind>
+	const def extends NodeDef<kind>
 >(
 	kinds: kind,
-	schema: schema,
-	opts?: SchemaParseOptions
+	schema: def,
+	opts?: NodeParseOptions
 ) => Node<reducibleKindOf<kind>>
 
-export type RootParser<$> = <const schema extends SchemaDef>(
-	schema: schema,
-	opts?: SchemaParseOptions
-) => instantiateSchema<schema, $>
+export type RootParser<$> = <const def extends SchemaDef>(
+	schema: def,
+	opts?: NodeParseOptions
+) => instantiateSchema<def, $>
 
 export type validateSchema<def, $> = def extends type.cast
 	? def

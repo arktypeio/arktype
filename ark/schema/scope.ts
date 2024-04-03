@@ -19,7 +19,7 @@ import type { instantiateSchema, validateSchema } from "./parser/inference.js"
 import {
 	parseNode,
 	schemaKindOf,
-	type SchemaParseOptions
+	type NodeParseOptions
 } from "./parser/parse.js"
 import type { distillIn, distillOut } from "./schemas/morph.js"
 import type { UnionNode } from "./schemas/union.js"
@@ -176,28 +176,28 @@ export class BaseScope<$ = any> {
 		) as never
 	}
 
-	node<kind extends NodeKind, const schema extends NodeDef<kind>>(
+	node<kind extends NodeKind, const def extends NodeDef<kind>>(
 		kind: kind,
-		def: schema,
-		opts?: SchemaParseOptions
+		def: def,
+		opts?: NodeParseOptions
 	): Node<reducibleKindOf<kind>> {
 		return parseNode(kind, def, this, opts) as never
 	}
 
-	schema<const schema extends SchemaDef>(
-		def: schema,
-		opts?: SchemaParseOptions
-	): instantiateSchema<schema, $> {
+	schema<const def extends SchemaDef>(
+		def: def,
+		opts?: NodeParseOptions
+	): instantiateSchema<def, $> {
 		return parseNode(schemaKindOf(def), def, this, opts) as never
 	}
 
 	units<const branches extends array>(
 		values: branches,
-		opts?: SchemaParseOptions
+		opts?: NodeParseOptions
 	): branches["length"] extends 1
 		? UnionNode<branches[0]>
 		: UnionNode<branches[number]> | UnitNode<branches[number]>
-	units(values: array, opts?: SchemaParseOptions): UnionNode | UnitNode {
+	units(values: array, opts?: NodeParseOptions): UnionNode | UnitNode {
 		{
 			const uniqueValues: unknown[] = []
 			for (const value of values) {
@@ -218,7 +218,7 @@ export class BaseScope<$ = any> {
 	parseNode<kinds extends NodeKind | array<SchemaKind>>(
 		kinds: kinds,
 		schema: NodeDef<flattenListable<kinds>>,
-		opts?: SchemaParseOptions
+		opts?: NodeParseOptions
 	): Node<reducibleKindOf<flattenListable<kinds>>> {
 		return parseNode(kinds, schema, this, opts) as never
 	}

@@ -28,7 +28,7 @@ import {
 import { hasArkKind } from "../shared/utils.js"
 import type { NodeParser, RootParser, SchemaParser } from "./inference.js"
 
-export type SchemaParseOptions = {
+export type NodeParseOptions = {
 	alias?: string
 	prereduced?: boolean
 	/** Instead of creating the node, compute the innerId of the definition and
@@ -40,22 +40,22 @@ export type SchemaParseOptions = {
 	root?: boolean
 }
 
-export interface SchemaParseContext extends SchemaParseOptions {
+export interface NodeParseContext extends NodeParseOptions {
 	$: BaseScope
 	raw: unknown
 }
 
-const typeCountsByPrefix: PartialRecord<string, number> = {}
+const nodeCountsByPrefix: PartialRecord<string, number> = {}
 
 const baseKeys: PartialRecord<string, valueOf<KeyDefinitions<any>>> = {
 	description: { meta: true }
 } satisfies KeyDefinitions<BaseNodeDeclaration> as never
 
 export const schemaKindOf = <kind extends SchemaKind = SchemaKind>(
-	schema: unknown,
+	def: unknown,
 	allowedKinds?: readonly kind[]
 ): kind => {
-	const kind = discriminateSchemaKind(schema)
+	const kind = discriminateSchemaKind(def)
 	if (allowedKinds && !allowedKinds.includes(kind as never)) {
 		return throwParseError(
 			`Schema of kind ${kind} should be one of ${allowedKinds}`
@@ -64,39 +64,39 @@ export const schemaKindOf = <kind extends SchemaKind = SchemaKind>(
 	return kind as never
 }
 
-const discriminateSchemaKind = (schema: unknown): SchemaKind => {
-	switch (typeof schema) {
+const discriminateSchemaKind = (def: unknown): SchemaKind => {
+	switch (typeof def) {
 		case "string":
 			return "domain"
 		case "function":
-			return hasArkKind(schema, "node")
-				? schema.isType()
-					? schema.kind
+			return hasArkKind(def, "node")
+				? def.isType()
+					? def.kind
 					: throwParseError(
-							`${schema.kind} constraint ${schema.expression} cannot be used as a root type`
+							`${def.kind} constraint ${def.expression} cannot be used as a root type`
 					  )
 				: "proto"
 		case "object":
 			// throw at end of function
-			if (schema === null) break
+			if (def === null) break
 
-			if ("morphs" in schema) return "morph"
+			if ("morphs" in def) return "morph"
 
-			if ("branches" in schema || isArray(schema)) return "union"
+			if ("branches" in def || isArray(def)) return "union"
 
-			if ("unit" in schema) return "unit"
+			if ("unit" in def) return "unit"
 
-			const schemaKeys = Object.keys(schema)
+			const schemaKeys = Object.keys(def)
 
 			if (
 				schemaKeys.length === 0 ||
 				schemaKeys.some((k) => k in discriminatingIntersectionKeys)
 			)
 				return "intersection"
-			if ("proto" in schema) return "proto"
-			if ("domain" in schema) return "domain"
+			if ("proto" in def) return "proto"
+			if ("domain" in def) return "domain"
 	}
-	return throwParseError(`${printable(schema)} is not a valid type schema`)
+	return throwParseError(`${printable(def)} is not a valid type schema`)
 }
 
 export declare const schema: SchemaParser<{}>
@@ -125,7 +125,7 @@ export const parseNode = (
 	kinds: NodeKind | array<SchemaKind>,
 	schema: unknown,
 	$: BaseScope,
-	opts?: SchemaParseOptions
+	opts?: NodeParseOptions
 ): Node => {
 	const kind: NodeKind =
 		typeof kinds === "string" ? kinds : schemaKindOf(schema, kinds)
@@ -148,7 +148,7 @@ export const parseNode = (
 			? (normalizedDefinition as never)
 			: throwMismatchedNodeSchemaError(kind, normalizedDefinition.kind)
 	}
-	const ctx: SchemaParseContext = { $, raw: schema, ...opts }
+	const ctx: NodeParseContext = { $, raw: schema, ...opts }
 	const inner: Record<string, unknown> = {}
 	// ensure node entries are parsed in order of precedence, with non-children
 	// parsed first
@@ -255,8 +255,8 @@ export const parseNode = (
 	if ($.nodeCache[innerId]) return $.nodeCache[innerId]
 
 	const prefix = opts?.alias ?? kind
-	typeCountsByPrefix[prefix] ??= 0
-	const name = `${prefix}${++typeCountsByPrefix[prefix]!}`
+	nodeCountsByPrefix[prefix] ??= 0
+	const name = `${prefix}${++nodeCountsByPrefix[prefix]!}`
 	const attachments = {
 		name,
 		kind,

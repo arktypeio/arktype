@@ -30,8 +30,7 @@ export class DivisorNode extends BasePrimitiveConstraint<DivisorDeclaration> {
 		keys: {
 			rule: {}
 		},
-		normalize: (schema) =>
-			typeof schema === "number" ? { rule: schema } : schema,
+		normalize: (def) => (typeof def === "number" ? { rule: def } : def),
 		intersections: {
 			divisor: (l, r) =>
 				node("divisor", {

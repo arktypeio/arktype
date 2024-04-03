@@ -38,8 +38,7 @@ export class MaxNode extends BaseRange<MaxDeclaration> {
 			rule: {},
 			exclusive: parseExclusiveKey
 		},
-		normalize: (schema) =>
-			typeof schema === "number" ? { rule: schema } : schema,
+		normalize: (def) => (typeof def === "number" ? { rule: def } : def),
 		defaults: {
 			description(node) {
 				return `${node.exclusive ? "less than" : "at most"} ${node.rule}`

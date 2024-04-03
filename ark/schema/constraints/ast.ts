@@ -95,14 +95,14 @@ export namespace number {
 
 	export type constrain<
 		kind extends PrimitiveConstraintKind,
-		schema extends NodeDef<kind>
-	> = normalizePrimitiveConstraintSchema<schema> extends infer rule
+		def extends NodeDef<kind>
+	> = normalizePrimitiveConstraintSchema<def> extends infer rule
 		? kind extends "min"
-			? schema extends { exclusive: true }
+			? def extends { exclusive: true }
 				? moreThan<rule & number>
 				: atLeast<rule & number>
 			: kind extends "max"
-			? schema extends { exclusive: true }
+			? def extends { exclusive: true }
 				? lessThan<rule & number>
 				: atMost<rule & number>
 			: kind extends "divisor"
@@ -225,8 +225,8 @@ export namespace Date {
 export type constrain<
 	t,
 	kind extends PrimitiveConstraintKind,
-	schema extends NodeDef<kind>
-> = schemaToConstraint<kind, schema> extends infer constraint
+	def extends NodeDef<kind>
+> = schemaToConstraint<kind, def> extends infer constraint
 	? t extends of<infer base, infer constraints>
 		? [number, base] extends [base, number]
 			? number.is<constraint & constraints>
@@ -236,24 +236,24 @@ export type constrain<
 			? Date.is<constraint & constraints>
 			: of<base, constraints & constraint>
 		: [number, t] extends [t, number]
-		? number.constrain<kind, schema>
+		? number.constrain<kind, def>
 		: [string, t] extends [t, string]
-		? string.constrain<kind, schema>
+		? string.constrain<kind, def>
 		: [Date, t] extends [t, Date]
-		? Date.constrain<kind, schema>
+		? Date.constrain<kind, def>
 		: of<t, conform<constraint, Constraints>>
 	: never
 
 export type normalizePrimitiveConstraintSchema<
-	schema extends NodeDef<PrimitiveConstraintKind>
-> = "rule" extends keyof schema
-	? conform<schema["rule"], string | number>
-	: conform<schema, string | number>
+	def extends NodeDef<PrimitiveConstraintKind>
+> = "rule" extends keyof def
+	? conform<def["rule"], string | number>
+	: conform<def, string | number>
 
 export type schemaToConstraint<
 	kind extends PrimitiveConstraintKind,
-	schema extends NodeDef<kind>
-> = normalizePrimitiveConstraintSchema<schema> extends infer rule
+	def extends NodeDef<kind>
+> = normalizePrimitiveConstraintSchema<def> extends infer rule
 	? kind extends "regex"
 		? Matching<rule & string>
 		: kind extends "divisor"
@@ -261,27 +261,27 @@ export type schemaToConstraint<
 		: kind extends "exactLength"
 		? Length<rule & number>
 		: kind extends "min"
-		? schema extends { exclusive: true }
+		? def extends { exclusive: true }
 			? MoreThan<rule & number>
 			: AtLeast<rule & number>
 		: kind extends "max"
-		? schema extends { exclusive: true }
+		? def extends { exclusive: true }
 			? LessThan<rule & number>
 			: AtMost<rule & number>
 		: kind extends "minLength"
-		? schema extends { exclusive: true }
+		? def extends { exclusive: true }
 			? MoreThanLength<rule & number>
 			: AtLeastLength<rule & number>
 		: kind extends "maxLength"
-		? schema extends { exclusive: true }
+		? def extends { exclusive: true }
 			? LessThanLength<rule & number>
 			: AtMostLength<rule & number>
 		: kind extends "after"
-		? schema extends { exclusive: true }
+		? def extends { exclusive: true }
 			? After<normalizeLimit<rule>>
 			: AtOrAfter<normalizeLimit<rule>>
 		: kind extends "before"
-		? schema extends { exclusive: true }
+		? def extends { exclusive: true }
 			? Before<normalizeLimit<rule>>
 			: AtOrBefore<normalizeLimit<rule>>
 		: Narrowed

@@ -30,8 +30,7 @@ export class ExactLengthNode extends BasePrimitiveConstraint<ExactLengthDeclarat
 		keys: {
 			rule: {}
 		},
-		normalize: (schema) =>
-			typeof schema === "number" ? { rule: schema } : schema,
+		normalize: (def) => (typeof def === "number" ? { rule: def } : def),
 		intersections: {
 			exactLength: (l, r) =>
 				new Disjoint({

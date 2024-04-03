@@ -14,7 +14,7 @@ import {
 import type { Node, SchemaNode, UnknownNode } from "../base.js"
 import type { PropsGroupInput } from "../constraints/props/props.js"
 import type { Declaration, Inner, errorContext } from "../kinds.js"
-import type { SchemaParseContext } from "../parser/parse.js"
+import type { NodeParseContext } from "../parser/parse.js"
 import type { IntersectionInner } from "../schemas/intersection.js"
 import type {
 	schemaKindOrRightOf,
@@ -258,7 +258,7 @@ export type NodeKeyImplementation<
 		) => JsonData
 		parse?: (
 			schema: Exclude<d["normalizedDef"][k], undefined>,
-			ctx: SchemaParseContext
+			ctx: NodeParseContext
 		) => instantiated
 	},
 	// require parse if we can't guarantee the schema value will be valid on inner

@@ -262,12 +262,12 @@ export class Type<t = unknown, $ = any> extends Callable<
 
 	constrain<
 		kind extends PrimitiveConstraintKind,
-		const schema extends NodeDef<kind>
+		const def extends NodeDef<kind>
 	>(
 		kind: conform<kind, constraintKindOf<this["in"]["infer"]>>,
-		schema: schema
-	): Type<constrain<t, kind, schema>, $> {
-		return new Type(this.root.constrain(kind, schema), this.$) as never
+		def: def
+	): Type<constrain<t, kind, def>, $> {
+		return new Type(this.root.constrain(kind, def), this.$) as never
 	}
 }
 
