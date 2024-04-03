@@ -45,7 +45,7 @@ import {
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 import type { DomainDef, DomainNode } from "./domain.js"
 import type { ProtoDef, ProtoNode } from "./proto.js"
-import { BaseType, defineRightwardIntersections } from "./schema.js"
+import { BaseSchema, defineRightwardIntersections } from "./schema.js"
 
 export type IntersectionBasisKind = "domain" | "proto"
 
@@ -131,7 +131,7 @@ const intersectIntersections = (
 	})
 }
 
-export class IntersectionNode<t = unknown, $ = any> extends BaseType<
+export class IntersectionNode<t = unknown, $ = any> extends BaseSchema<
 	t,
 	$,
 	IntersectionDeclaration

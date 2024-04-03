@@ -25,12 +25,12 @@ import type {
 	TraverseApply
 } from "../shared/traversal.js"
 import {
-	BaseType,
+	BaseSchema,
 	defineRightwardIntersections,
-	type typeKindRightOf
+	type schemaKindRightOf
 } from "./schema.js"
 
-export type MorphChildKind = typeKindRightOf<"morph">
+export type MorphChildKind = schemaKindRightOf<"morph">
 
 export const morphChildKinds = [
 	"intersection",
@@ -67,7 +67,7 @@ export type MorphDeclaration = declareNode<{
 	childKind: MorphChildKind
 }>
 
-export class MorphNode<t = any, $ = any> extends BaseType<
+export class MorphNode<t = any, $ = any> extends BaseSchema<
 	t,
 	$,
 	MorphDeclaration

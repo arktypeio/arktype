@@ -15,12 +15,12 @@ import {
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 import type { Discriminant } from "./discriminate.js"
 import {
-	BaseType,
+	BaseSchema,
 	defineRightwardIntersections,
-	type typeKindRightOf
+	type schemaKindRightOf
 } from "./schema.js"
 
-export type UnionChildKind = typeKindRightOf<"union">
+export type UnionChildKind = schemaKindRightOf<"union">
 
 export const unionChildKinds = schemaKindsRightOf("union")
 
@@ -56,7 +56,7 @@ export type UnionDeclaration = declareNode<{
 	childKind: UnionChildKind
 }>
 
-export class UnionNode<t = any, $ = any> extends BaseType<
+export class UnionNode<t = any, $ = any> extends BaseSchema<
 	t,
 	$,
 	UnionDeclaration

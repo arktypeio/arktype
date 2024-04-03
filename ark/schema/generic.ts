@@ -48,8 +48,11 @@ export class GenericNode<
 		public $: BaseScope<$>
 	) {
 		super((...args: SchemaDef[]) => {
-			const argNodes = flatMorph(params, (i, param) => [param, $.root(args[i])])
-			return $.root(def as never, { args: argNodes }) as never
+			const argNodes = flatMorph(params, (i, param) => [
+				param,
+				$.schema(args[i])
+			])
+			return $.schema(def as never, { args: argNodes }) as never
 		})
 	}
 }

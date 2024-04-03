@@ -178,17 +178,17 @@ export class BaseScope<$ = any> {
 
 	node<kind extends NodeKind, const schema extends NodeDef<kind>>(
 		kind: kind,
-		schema: schema,
+		def: schema,
 		opts?: SchemaParseOptions
 	): Node<reducibleKindOf<kind>> {
-		return parseNode(kind, schema, this, opts) as never
+		return parseNode(kind, def, this, opts) as never
 	}
 
-	root<const schema extends SchemaDef>(
-		schema: schema,
+	schema<const schema extends SchemaDef>(
+		def: schema,
 		opts?: SchemaParseOptions
 	): instantiateSchema<schema, $> {
-		return parseNode(schemaKindOf(schema), schema, this, opts) as never
+		return parseNode(schemaKindOf(def), def, this, opts) as never
 	}
 
 	units<const branches extends array>(

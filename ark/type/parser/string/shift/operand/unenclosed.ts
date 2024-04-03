@@ -1,5 +1,5 @@
 import {
-	BaseType,
+	BaseSchema,
 	hasArkKind,
 	writeUnresolvableMessage,
 	type ambient,
@@ -118,7 +118,7 @@ const maybeParseReference = (
 		return s.ctx.args[token]
 	}
 	const resolution = s.ctx.$.maybeResolve(token)
-	if (resolution instanceof BaseType) {
+	if (resolution instanceof BaseSchema) {
 		return resolution
 	}
 	if (resolution === undefined) {

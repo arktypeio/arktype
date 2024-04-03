@@ -1,9 +1,4 @@
-import {
-	flatMorph,
-	throwParseError,
-	type Domain,
-	type conform
-} from "@arktype/util"
+import { flatMorph, throwParseError, type conform } from "@arktype/util"
 import {
 	BaseNode,
 	type Node,
@@ -43,21 +38,21 @@ import type { UnionChildKind, UnionNode } from "./union.js"
 
 export const defineRightwardIntersections = <kind extends SchemaKind>(
 	kind: kind,
-	implementation: TypeIntersection<kind, typeKindRightOf<kind>>
-): { [k in typeKindRightOf<kind>]: TypeIntersection<kind, k> } =>
+	implementation: TypeIntersection<kind, schemaKindRightOf<kind>>
+): { [k in schemaKindRightOf<kind>]: TypeIntersection<kind, k> } =>
 	flatMorph(schemaKindsRightOf(kind), (i, kind) => [
 		kind,
 		implementation
 	]) as never
 
-export interface BaseTypeDeclaration extends BaseNodeDeclaration {
+export interface BaseSchemaDeclaration extends BaseNodeDeclaration {
 	kind: SchemaKind
 }
 
-export abstract class BaseType<
+export abstract class BaseSchema<
 	t,
 	$,
-	d extends BaseTypeDeclaration
+	d extends BaseSchemaDeclaration
 > extends BaseNode<t, d> {
 	readonly branches: readonly Node<UnionChildKind>[] = this.hasKind("union")
 		? this.inner.branches
@@ -229,7 +224,7 @@ export abstract class BaseType<
 	}
 }
 
-export type intersectType<l extends SchemaKind, r extends NodeKind> = [
+export type intersectSchema<l extends SchemaKind, r extends NodeKind> = [
 	l,
 	r
 ] extends [r, l]
@@ -245,16 +240,11 @@ type asymmetricIntersectionOf<
 		: never
 	: never
 
-export interface BaseBasis {
-	basisName: string
-	domain: Domain
-}
-
-export type typeKindRightOf<kind extends SchemaKind> = Extract<
+export type schemaKindRightOf<kind extends SchemaKind> = Extract<
 	kindRightOf<kind>,
 	SchemaKind
 >
 
-export type typeKindOrRightOf<kind extends SchemaKind> =
+export type schemaKindOrRightOf<kind extends SchemaKind> =
 	| kind
-	| typeKindRightOf<kind>
+	| schemaKindRightOf<kind>

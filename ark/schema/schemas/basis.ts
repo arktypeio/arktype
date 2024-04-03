@@ -13,10 +13,10 @@ import type { BasisKind } from "../shared/implement.js"
 import type { TraverseApply } from "../shared/traversal.js"
 import type { DomainDef } from "./domain.js"
 import type { ProtoDef } from "./proto.js"
-import { BaseType, type BaseTypeDeclaration } from "./schema.js"
+import { BaseSchema, type BaseSchemaDeclaration } from "./schema.js"
 import type { UnitDef } from "./unit.js"
 
-export interface BaseBasisDeclaration extends BaseTypeDeclaration {
+export interface BaseBasisDeclaration extends BaseSchemaDeclaration {
 	kind: BasisKind
 }
 
@@ -24,7 +24,7 @@ export abstract class BaseBasis<
 	t,
 	$,
 	d extends BaseBasisDeclaration
-> extends BaseType<t, $, d> {
+> extends BaseSchema<t, $, d> {
 	abstract readonly expression: string
 	abstract readonly compiledCondition: string
 	abstract readonly compiledNegation: string

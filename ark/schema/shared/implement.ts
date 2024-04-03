@@ -16,7 +16,10 @@ import type { PropsGroupInput } from "../constraints/props/props.js"
 import type { Declaration, Inner, errorContext } from "../kinds.js"
 import type { SchemaParseContext } from "../parser/parse.js"
 import type { IntersectionInner } from "../schemas/intersection.js"
-import type { typeKindOrRightOf, typeKindRightOf } from "../schemas/schema.js"
+import type {
+	schemaKindOrRightOf,
+	schemaKindRightOf
+} from "../schemas/schema.js"
 import type { NodeConfig, ParsedUnknownNodeConfig } from "../scope.js"
 import type {
 	BaseErrorContext,
@@ -159,11 +162,11 @@ export type ConstraintIntersectionMap<kind extends ConstraintKind> = evaluate<
 
 export type TypeIntersection<
 	lKind extends SchemaKind,
-	rKind extends typeKindOrRightOf<lKind>
+	rKind extends schemaKindOrRightOf<lKind>
 > = (l: Node<lKind>, r: Node<rKind>) => SchemaNode | Disjoint
 
 export type TypeIntersectionMap<kind extends SchemaKind> = {
-	[rKind in typeKindOrRightOf<kind>]: TypeIntersection<kind, rKind>
+	[rKind in schemaKindOrRightOf<kind>]: TypeIntersection<kind, rKind>
 }
 
 export type IntersectionMap<kind extends NodeKind> = kind extends SchemaKind
@@ -214,7 +217,7 @@ export type kindRightOf<kind extends NodeKind> = RightsByKind[kind]
 
 export const schemaKindsRightOf = <kind extends SchemaKind>(
 	kind: kind
-): typeKindRightOf<kind>[] =>
+): schemaKindRightOf<kind>[] =>
 	schemaKinds.slice(precedenceOfKind(kind) + 1) as never
 
 export type KeyDefinitions<d extends BaseNodeDeclaration> = {

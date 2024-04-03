@@ -84,7 +84,7 @@ export const parseObjectLiteral = (
 		}
 		ctx.path.pop()
 	}
-	return ctx.$.root({
+	return ctx.$.schema({
 		domain: "object",
 		prop: propNodes,
 		index: indexNodes
