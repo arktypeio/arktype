@@ -35,6 +35,7 @@ export type ProtoDeclaration = declareNode<{
 
 export class ProtoNode<t = any, $ = any> extends BaseBasis<
 	t,
+	$,
 	ProtoDeclaration
 > {
 	static implementation = this.implement({

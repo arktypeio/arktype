@@ -1,5 +1,6 @@
+import type { Generic } from "./generic.js"
 import type { Module, Scope } from "./scope.js"
-import type { Generic, Type } from "./type.js"
+import type { Type } from "./type.js"
 
 declare global {
 	export interface ArkKinds {

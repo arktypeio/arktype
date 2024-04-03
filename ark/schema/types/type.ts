@@ -4,13 +4,14 @@ import {
 	type Domain,
 	type conform
 } from "@arktype/util"
-import { BaseNode, type Node, type TypeNode } from "../base.js"
+import { BaseNode, type Node, type TypeNode, type TypeSchema } from "../base.js"
 import type { constrain } from "../constraints/ast.js"
 import {
 	throwInvalidOperandError,
 	type PrimitiveConstraintKind
 } from "../constraints/constraint.js"
 import type { Schema, reducibleKindOf } from "../kinds.js"
+import type { instantiateSchema } from "../parser/inference.js"
 import { node, root } from "../parser/parse.js"
 import type { BaseMeta, BaseNodeDeclaration } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -22,10 +23,10 @@ import {
 	type TypeKind,
 	type kindRightOf
 } from "../shared/implement.js"
-import type { inferred } from "../shared/inference.js"
 import type { inferIntersection } from "../shared/intersections.js"
+import type { inferred } from "../shared/utils.js"
 import type { IntersectionNode, constraintKindOf } from "./intersection.js"
-import type { Morph } from "./morph.js"
+import type { Morph, MorphNode, applyMorph } from "./morph.js"
 import type { UnionChildKind, UnionNode } from "./union.js"
 
 export const defineRightwardIntersections = <kind extends TypeKind>(
@@ -43,6 +44,7 @@ export interface BaseTypeDeclaration extends BaseNodeDeclaration {
 
 export abstract class BaseType<
 	t,
+	$,
 	d extends BaseTypeDeclaration
 > extends BaseNode<t, d> {
 	readonly branches: readonly Node<UnionChildKind>[] = this.hasKind("union")
@@ -141,6 +143,10 @@ export abstract class BaseType<
 		return literal as never
 	}
 
+	morph<morph extends Morph<this["infer"]>, schema extends TypeSchema = never>(
+		morph: morph,
+		outValidator?: schema
+	): MorphNode<applyMorph<t, morph, instantiateSchema<schema, $>["infer"]>, $>
 	morph(morph: Morph, outValidator?: unknown): unknown {
 		if (this.hasKind("union")) {
 			const branches = this.branches.map((node) =>

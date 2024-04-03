@@ -19,7 +19,11 @@ export type UnitDeclaration = declareNode<{
 	errorContext: UnitInner
 }>
 
-export class UnitNode<t = any, $ = any> extends BaseBasis<t, UnitDeclaration> {
+export class UnitNode<t = any, $ = any> extends BaseBasis<
+	t,
+	$,
+	UnitDeclaration
+> {
 	static implementation = this.implement({
 		kind: "unit",
 		hasAssociatedError: true,

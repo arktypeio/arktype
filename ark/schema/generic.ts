@@ -1,6 +1,7 @@
-import { Callable, type conform, type repeat } from "@arktype/util"
+import { Callable, flatMorph, type conform, type repeat } from "@arktype/util"
 import type { TypeSchema } from "./base.js"
 import type { instantiateSchema } from "./parser/inference.js"
+import type { BaseScope } from "./scope.js"
 import { arkKind, type inferred } from "./shared/utils.js"
 
 // TODO: Fix external reference (i.e. if this is attached to a scope, then args are defined using it)
@@ -25,8 +26,18 @@ export class GenericNode<
 	$ = any
 > extends Callable<GenericNodeInstantiation<params, def, $>> {
 	readonly [arkKind] = "generic"
-	readonly $: $
-	readonly parameters: params
-	readonly definition: def
-	readonly scope: Scope
+
+	constructor(
+		public parameters: params,
+		public def: def,
+		public $: BaseScope<$>
+	) {
+		super((...args) => {
+			const argNodes = flatMorph(parameters, (i, param) => [
+				param,
+				$.root(args[i] as never)
+			])
+			return $.root(def, { args: argNodes })
+		})
+	}
 }

@@ -27,6 +27,7 @@ import {
 import { tsKeywords } from "../keywords/tsKeywords.js"
 import type { Inner, MutableInner, Prerequisite, Schema } from "../kinds.js"
 import { node, type SchemaParseContext } from "../parser/parse.js"
+import type { BaseScope } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import { metaKeys, type BaseMeta, type declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -132,6 +133,7 @@ const intersectIntersections = (
 
 export class IntersectionNode<t = unknown, $ = any> extends BaseType<
 	t,
+	$,
 	IntersectionDeclaration
 > {
 	static implementation: nodeImplementationOf<IntersectionDeclaration> =
@@ -254,7 +256,7 @@ export class IntersectionNode<t = unknown, $ = any> extends BaseType<
 	readonly refinements = this.children.filter(
 		(node): node is Node<RefinementKind> => node.isRefinement()
 	)
-	readonly props = maybeCreatePropsGroup(this.inner)
+	readonly props = maybeCreatePropsGroup(this.inner, this.$)
 	readonly traversables = conflatenateAll<
 		Node<Exclude<IntersectionChildKind, PropKind>> | PropsGroup
 	>(this.basis, this.refinements, this.props, this.predicate)
@@ -346,9 +348,9 @@ export class IntersectionNode<t = unknown, $ = any> extends BaseType<
 	}
 }
 
-const maybeCreatePropsGroup = (inner: IntersectionInner) => {
+const maybeCreatePropsGroup = (inner: IntersectionInner, $: BaseScope) => {
 	const propsInput = pick(inner, propKeys)
-	return isEmptyObject(propsInput) ? undefined : new PropsGroup(propsInput)
+	return isEmptyObject(propsInput) ? undefined : new PropsGroup(propsInput, $)
 }
 
 type IntersectionRoot = Omit<IntersectionInner, ConstraintKind>

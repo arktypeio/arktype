@@ -1,12 +1,8 @@
 import type { ambient, Ark, inferred } from "@arktype/schema"
+import type { Generic } from "./generic.js"
 import type { MatchParser } from "./match.js"
 import { scope, type Module, type Scope } from "./scope.js"
-import type {
-	DeclarationParser,
-	DefinitionParser,
-	Generic,
-	TypeParser
-} from "./type.js"
+import type { DeclarationParser, DefinitionParser, TypeParser } from "./type.js"
 
 type TsGenericsExports<$ = Ark> = {
 	Record: Generic<

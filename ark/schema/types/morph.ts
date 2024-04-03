@@ -67,7 +67,11 @@ export type MorphDeclaration = declareNode<{
 	childKind: MorphChildKind
 }>
 
-export class MorphNode<t = any, $ = any> extends BaseType<t, MorphDeclaration> {
+export class MorphNode<t = any, $ = any> extends BaseType<
+	t,
+	$,
+	MorphDeclaration
+> {
 	// TODO: recursively extract in?
 	static implementation: nodeImplementationOf<MorphDeclaration> =
 		this.implement({
@@ -167,6 +171,18 @@ export class MorphNode<t = any, $ = any> extends BaseType<t, MorphDeclaration> {
 		return this.in.rawKeyOf()
 	}
 }
+
+export type applyMorph<
+	t,
+	morph extends Morph<distillOut<t>>,
+	outValidator = never
+> = (In: distillConstrainableIn<t>) => Out<
+	outValidator extends never
+		? inferMorphOut<ReturnType<morph>>
+		: // TODO: validate overlapping
+		  // inferMorphOut<ReturnType<morph>> &
+		  distillConstrainableOut<outValidator>
+>
 
 export type inferMorphOut<out> = out extends ArkResult<unknown, infer innerOut>
 	? out extends null

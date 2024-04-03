@@ -11,12 +11,12 @@ import type {
 	string
 } from "@arktype/schema"
 import type { BigintLiteral, NumberLiteral, array } from "@arktype/util"
+import type { Generic } from "../../generic.js"
 import type {
 	UnparsedScope,
 	resolve,
 	tryInferSubmoduleReference
 } from "../../scope.js"
-import type { GenericProps } from "../../type.js"
 import type { inferDefinition } from "../definition.js"
 import type { Comparator, MinComparator } from "../string/reduce/shared.js"
 import type { StringLiteral } from "../string/shift/operand/enclosed.js"
@@ -30,7 +30,7 @@ export type inferConstrainableAst<ast, $, args> = ast extends array
 	: inferTerminal<ast, $, args>
 
 export type GenericInstantiationAst<
-	g extends GenericProps = GenericProps,
+	g extends Generic = Generic,
 	argAsts extends unknown[] = unknown[]
 > = [g, "<>", argAsts]
 
@@ -40,7 +40,7 @@ export type inferExpression<
 	args
 > = ast extends GenericInstantiationAst
 	? inferDefinition<
-			ast[0]["definition"],
+			ast[0]["def"],
 			ast[0]["$"] extends UnparsedScope
 				? // If the generic was defined in the current scope, its definition can be
 				  // resolved using the same scope as that of the input args.

@@ -11,6 +11,7 @@ import {
 	type PrimitiveConstraintKind,
 	type Schema,
 	type TypeNode,
+	type applyMorph,
 	type constrain,
 	type constraintKindOf,
 	type distillConstrainableIn,
@@ -31,6 +32,12 @@ import {
 	type array,
 	type conform
 } from "@arktype/util"
+import {
+	generic,
+	validateUninstantiatedGeneric,
+	type Generic,
+	type validateParameterString
+} from "./generic.js"
 import type {
 	inferDefinition,
 	validateDeclared,
@@ -227,24 +234,10 @@ export class Type<t = unknown, $ = any> extends Callable<
 		return literal as never
 	}
 
-	// TODO: standardize these
-	morph<morph extends Morph<this["infer"]>>(
-		morph: morph
-	): Type<
-		(In: distillConstrainableIn<t>) => Out<inferMorphOut<ReturnType<morph>>>,
-		$
-	>
-	morph<morph extends Morph<this["infer"]>, def>(
+	morph<morph extends Morph<this["infer"]>, def = never>(
 		morph: morph,
-		outValidator: validateTypeRoot<def, $>
-	): Type<
-		(In: distillConstrainableIn<t>) => Out<
-			// TODO: validate overlapping
-			// inferMorphOut<ReturnType<morph>> &
-			distillConstrainableOut<inferTypeRoot<def, $>>
-		>,
-		$
-	>
+		outValidator?: validateTypeRoot<def, $>
+	): Type<applyMorph<t, morph, inferTypeRoot<def, $>>, $>
 	morph(morph: Morph, outValidator?: unknown): unknown {
 		return new Type(this.root.morph(morph, outValidator), this.$)
 	}
@@ -284,83 +277,3 @@ export type DefinitionParser<$> = <def>(
 export type validateTypeRoot<def, $> = validateDefinition<def, $, bindThis<def>>
 
 export type inferTypeRoot<def, $> = inferDefinition<def, $, bindThis<def>>
-
-type validateParameterString<params extends string> =
-	parseGenericParams<params> extends GenericParamsParseError<infer message>
-		? message
-		: params
-
-export const validateUninstantiatedGeneric = (g: Generic): Generic => {
-	// the unconstrained instantiation of the generic is not used for now
-	// other than to eagerly validate that the def does not contain any errors
-	g.scope.parseTypeRoot(
-		g.definition,
-		// once we support constraints on generic parameters, we'd use
-		// the base type here: https://github.com/arktypeio/arktype/issues/796
-		{
-			baseName: "generic",
-			args: flatMorph(g.parameters, (_, name) => [name, keywordNodes.unknown])
-		}
-	)
-	return g
-}
-
-export const generic = (
-	parameters: string[],
-	definition: unknown,
-	$: Scope
-): Generic =>
-	Object.assign(
-		(...args: unknown[]) => {
-			const argNodes = flatMorph(parameters, (i, param) => [
-				param,
-				$.parseTypeRoot(args[i])
-			])
-			return $.parseTypeRoot(definition, { args: argNodes })
-		},
-		{
-			[arkKind]: "generic",
-			parameters,
-			definition,
-			scope: $
-			// $ is only needed at compile-time
-		} satisfies Omit<GenericProps, "$">
-	) as never
-
-// Comparing to Generic directly doesn't work well, so we compare to only its props
-export type GenericProps<
-	params extends string[] = string[],
-	def = unknown,
-	$ = any
-> = {
-	[arkKind]: "generic"
-	$: $
-	parameters: params
-	definition: def
-	scope: Scope
-}
-
-export type BoundArgs = Record<string, Type>
-
-// TODO: Fix external reference (i.e. if this is attached to a scope, then args are defined using it)
-export type Generic<
-	params extends string[] = string[],
-	def = unknown,
-	$ = any
-> = {
-	<args>(
-		...args: conform<
-			args,
-			{
-				[i in keyof params]: validateTypeRoot<args[i & keyof args], $>
-			}
-		>
-	): Type<inferDefinition<def, $, bindGenericInstantiation<params, $, args>>, $>
-} & GenericProps<params, def, $>
-
-type bindGenericInstantiation<params extends string[], $, args> = {
-	[i in keyof params & `${number}` as params[i]]: inferTypeRoot<
-		args[i & keyof args],
-		$
-	>
-}

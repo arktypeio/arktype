@@ -17,8 +17,8 @@ import {
 	type join,
 	type NumberLiteral
 } from "@arktype/util"
+import type { Generic } from "../../../../generic.js"
 import type { Module } from "../../../../scope.js"
-import type { Generic, GenericProps } from "../../../../type.js"
 import type { GenericInstantiationAst } from "../../../semantic/infer.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import type { state, StaticState } from "../../reduce/static.js"
@@ -52,7 +52,7 @@ export type parseUnenclosed<
 		? result extends ErrorMessage<infer message>
 			? state.error<message>
 			: result extends keyof $
-			? $[result] extends GenericProps
+			? $[result] extends Generic
 				? parseGenericInstantiation<
 						token,
 						$[result],
@@ -86,7 +86,7 @@ export const parseGenericInstantiation = (
 
 export type parseGenericInstantiation<
 	name extends string,
-	g extends GenericProps,
+	g extends Generic,
 	s extends StaticState,
 	$,
 	args
@@ -141,11 +141,11 @@ const maybeParseUnenclosedLiteral = (
 ): TypeNode | undefined => {
 	const maybeNumber = tryParseNumber(token, { strict: true })
 	if (maybeNumber !== undefined) {
-		return s.ctx.$.parseUnits(maybeNumber)
+		return s.ctx.$.node("unit", { unit: maybeNumber })
 	}
 	const maybeBigint = tryParseWellFormedBigint(token)
 	if (maybeBigint !== undefined) {
-		return s.ctx.$.parseUnits(maybeBigint)
+		return s.ctx.$.node("unit", { unit: maybeBigint })
 	}
 }
 
@@ -156,6 +156,8 @@ type tryResolve<
 	args
 > = token extends keyof $
 	? token
+	: `#${token}` extends keyof $
+	? `#${token}`
 	: token extends keyof ambient
 	? token
 	: token extends keyof args

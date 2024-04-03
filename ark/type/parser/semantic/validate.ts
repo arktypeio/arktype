@@ -6,8 +6,8 @@ import type {
 	NumberLiteral,
 	writeMalformedNumericLiteralMessage
 } from "@arktype/util"
+import type { Generic } from "../../generic.js"
 import type { Module } from "../../scope.js"
-import type { GenericProps } from "../../type.js"
 import type { Comparator } from "../string/reduce/shared.js"
 import type { writeInvalidGenericArgsMessage } from "../string/shift/operand/genericArgs.js"
 import type { parseString } from "../string/string.js"
@@ -76,7 +76,7 @@ type validateStringAst<def extends string, $> = def extends NumberLiteral<
 		  def
 		: // these problems would've been caught during a fullStringParse, but it's most
 		// efficient to check for them here in case the string was naively parsed
-		$[def] extends GenericProps
+		$[def] extends Generic
 		? ErrorMessage<
 				writeInvalidGenericArgsMessage<def, $[def]["parameters"], []>
 		  >

@@ -18,6 +18,7 @@ import {
 	type nominal
 } from "@arktype/util"
 import type { type } from "./ark.js"
+import { generic, type Generic } from "./generic.js"
 import { createMatchParser, type MatchParser } from "./match.js"
 import {
 	parseObject,
@@ -34,12 +35,9 @@ import { DynamicState } from "./parser/string/reduce/dynamic.js"
 import { fullStringParse } from "./parser/string/string.js"
 import {
 	createTypeParser,
-	generic,
+	Type,
 	type DeclarationParser,
 	type DefinitionParser,
-	type Generic,
-	type GenericProps,
-	type Type,
 	type TypeParser
 } from "./type.js"
 
@@ -82,7 +80,7 @@ export type UnparsedScope = "$"
 type bootstrap<def> = bootstrapAliases<def>
 
 /** These are legal as values of a scope but not as definitions in other contexts */
-type PreparsedResolution = Module | GenericProps
+type PreparsedResolution = Module | Generic
 
 type bootstrapAliases<def> = {
 	[k in Exclude<
@@ -105,7 +103,7 @@ type bootstrapAliases<def> = {
 type inferBootstrapped<$> = evaluate<{
 	[name in keyof $]: $[name] extends Def<infer def>
 		? inferDefinition<def, $, {}>
-		: $[name] extends GenericProps<infer params, infer def>
+		: $[name] extends Generic<infer params, infer def>
 		? // add the scope in which the generic was defined here
 		  Generic<params, def, $>
 		: // otherwise should be a submodule
@@ -227,14 +225,17 @@ export class Scope<$ = any> extends BaseScope<$> {
 			: throwParseError(writeBadDefinitionTypeMessage(domainOf(def)))
 	}
 
-	parseTypeRoot(def: unknown, input?: ParseContextInput): TypeNode {
-		return this.parse(def, {
-			args: { this: {} as TypeNode },
-			baseName: "type",
-			path: [],
-			$: this,
-			...input
-		})
+	parseTypeRoot(def: unknown, input?: ParseContextInput): Type {
+		return new Type(
+			this.parse(def, {
+				args: { this: {} as TypeNode },
+				baseName: "type",
+				path: [],
+				$: this,
+				...input
+			}),
+			this
+		)
 	}
 
 	parseString(def: string, ctx: ParseContext): TypeNode {

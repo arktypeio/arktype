@@ -2,7 +2,6 @@ import {
 	keywordNodes,
 	makeRootAndArrayPropertiesMutable,
 	node,
-	parseUnits,
 	type BaseMeta,
 	type Morph,
 	type MutableInner,
@@ -574,7 +573,7 @@ const prefixParsers: {
 			)
 		return branches.length === 1 ? branches[0] : node("union", { branches })
 	},
-	"===": (def, ctx) => parseUnits(def.slice(1), ctx)
+	"===": (def, ctx) => ctx.$.units(def.slice(1))
 }
 
 const isIndexZeroExpression = (def: array): def is IndexZeroExpression =>

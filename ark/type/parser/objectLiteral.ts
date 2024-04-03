@@ -81,7 +81,7 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): TypeNode => {
 		}
 		ctx.path.pop()
 	}
-	return ctx.$.node({
+	return ctx.$.root({
 		domain: "object",
 		prop: propNodes,
 		index: indexNodes

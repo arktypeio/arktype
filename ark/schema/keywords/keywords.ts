@@ -1,11 +1,11 @@
-import type { Generic } from "../../type/type.js"
+import type { GenericNode } from "../generic.js"
 import type { jsObjects } from "./jsObjects.js"
 import type { tsKeywords } from "./tsKeywords.js"
 import type { spaceFromExports } from "./utils/utils.js"
 import type { validation } from "./validation.js"
 
 type TsGenericsExports<$ = Ark> = {
-	Record: Generic<
+	Record: GenericNode<
 		["K", "V"],
 		{
 			"[K]": "V"
