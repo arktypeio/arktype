@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import { writeIndivisibleMessage } from "@arktype/schema"
+import { keywordNodes, writeIndivisibleMessage } from "@arktype/schema"
 import { type } from "arktype"
 import { keywords } from "../ark.js"
 import { writeInvalidDivisorMessage } from "../parser/string/shift/operator/divisor.js"
@@ -52,19 +52,19 @@ describe("divisibility", () => {
 		it("unknown", () => {
 			// @ts-expect-error
 			attest(() => type("unknown%2")).throwsAndHasTypeError(
-				writeIndivisibleMessage(keywords.unknown)
+				writeIndivisibleMessage(keywordNodes.unknown)
 			)
 		})
 		it("indivisible", () => {
 			// @ts-expect-error
 			attest(() => type("string%1")).throwsAndHasTypeError(
-				writeIndivisibleMessage(keywords.string)
+				writeIndivisibleMessage(keywordNodes.string)
 			)
 		})
 		it("overlapping", () => {
 			// @ts-expect-error
 			attest(() => type("(number|string)%10")).throwsAndHasTypeError(
-				writeIndivisibleMessage(keywords.number.or(keywords.string))
+				writeIndivisibleMessage(keywordNodes.number.or(keywordNodes.string))
 			)
 		})
 	})

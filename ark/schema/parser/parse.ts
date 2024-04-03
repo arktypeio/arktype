@@ -152,6 +152,24 @@ export const node: NodeParser<{}> = (kind, schema: unknown, opts) =>
 		opts
 	)
 
+// 	this.parse(
+// 		"union",
+// 		{
+// 			branches: [
+// 				"string",
+// 				"number",
+// 				"object",
+// 				"bigint",
+// 				"symbol",
+// 				{ unit: true },
+// 				{ unit: false },
+// 				{ unit: null },
+// 				{ unit: undefined }
+// 			]
+// 		},
+// 		{ reduceTo: this.parsePrereduced("intersection", {}) }
+// 	)
+
 const nodeCache: Record<string, Node | undefined> = {}
 
 export const parseNode = <kinds extends NodeKind | array<TypeKind>>(

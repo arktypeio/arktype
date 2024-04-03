@@ -2,7 +2,8 @@ import {
 	BaseType,
 	hasArkKind,
 	type ambient,
-	type TypeNode
+	type TypeNode,
+	type writeNonSubmoduleDotMessage
 } from "@arktype/schema"
 import {
 	printable,
@@ -176,22 +177,6 @@ type tryResolve<
 			: unresolvableError<s, reference, $[submodule], args, [submodule]>
 		: ErrorMessage<writeNonSubmoduleDotMessage<submodule>>
 	: unresolvableError<s, token, $, args, []>
-
-export const writeNonSubmoduleDotMessage = <name extends string>(
-	name: name
-): writeNonSubmoduleDotMessage<name> =>
-	`'${name}' must reference a module to be accessed using dot syntax`
-
-type writeNonSubmoduleDotMessage<name extends string> =
-	`'${name}' must reference a module to be accessed using dot syntax`
-
-export const writeMissingSubmoduleAccessMessage = <name extends string>(
-	name: name
-): writeMissingSubmoduleAccessMessage<name> =>
-	`Reference to submodule '${name}' must specify an alias`
-
-export type writeMissingSubmoduleAccessMessage<name extends string> =
-	`Reference to submodule '${name}' must specify an alias`
 
 /** Provide valid completions for the current token, or fallback to an
  * unresolvable error if there are none */

@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import { root, writeIndivisibleMessage } from "@arktype/schema"
+import { keywordNodes, root, writeIndivisibleMessage } from "@arktype/schema"
 import { keywords, type } from "arktype"
 import {
 	writeMissingRightOperandMessage,
@@ -133,13 +133,13 @@ describe("union", () => {
 		it("left semantic error", () => {
 			// @ts-expect-error
 			attest(() => type("symbol%2|string")).throwsAndHasTypeError(
-				writeIndivisibleMessage(keywords.symbol)
+				writeIndivisibleMessage(keywordNodes.symbol)
 			)
 		})
 		it("right semantic error", () => {
 			// @ts-expect-error
 			attest(() => type("string|symbol%2")).throwsAndHasTypeError(
-				writeIndivisibleMessage(keywords.symbol)
+				writeIndivisibleMessage(keywordNodes.symbol)
 			)
 		})
 		it("chained bad reference", () => {

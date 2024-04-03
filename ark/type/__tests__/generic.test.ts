@@ -1,7 +1,7 @@
 import { attest } from "@arktype/attest"
+import { keywordNodes, writeIndivisibleMessage } from "@arktype/schema"
 import { lazily } from "@arktype/util"
 import { keywords, scope, type } from "arktype"
-import { writeIndivisibleMessage } from "../constraints/refinements/divisor.js"
 import { emptyGenericParameterMessage } from "../parser/generic.js"
 import { writeUnclosedGroupMessage } from "../parser/string/reduce/shared.js"
 import { writeInvalidGenericArgsMessage } from "../parser/string/shift/operand/genericArgs.js"
@@ -280,7 +280,7 @@ describe("generics", () => {
 				attest(() =>
 					// @ts-expect-error
 					$.type("box<1,string%2>")
-				).throwsAndHasTypeError(writeIndivisibleMessage(keywords.string))
+				).throwsAndHasTypeError(writeIndivisibleMessage(keywordNodes.string))
 			})
 		})
 	})

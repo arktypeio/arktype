@@ -2,9 +2,10 @@ import { attest } from "@arktype/attest"
 import {
 	assertNodeKind,
 	writeUndiscriminableMorphUnionMessage,
+	type Ark,
 	type Out
 } from "@arktype/schema"
-import { scope, type, type Ark, type Type } from "arktype"
+import { scope, type, type Type } from "arktype"
 
 describe("morph", () => {
 	it("base", () => {

@@ -1,6 +1,6 @@
 import { attest } from "@arktype/attest"
-import { root } from "@arktype/schema"
-import { scope, type, type Ark, type Out, type Type } from "arktype"
+import { root, type Ark } from "@arktype/schema"
+import { scope, type, type Out, type Type } from "arktype"
 import {
 	writeMissingRightOperandMessage,
 	writeUnresolvableMessage

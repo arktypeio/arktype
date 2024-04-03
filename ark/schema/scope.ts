@@ -13,7 +13,6 @@ import type { Node, TypeNode, UnknownNode } from "./base.js"
 import { mergeConfigs } from "./config.js"
 import type { Ark } from "./keywords/keywords.js"
 import type { instantiateSchema, validateSchema } from "./parser/inference.js"
-import { root } from "./parser/parse.js"
 import { NodeCompiler } from "./shared/compile.js"
 import type {
 	ActualWriter,
@@ -272,6 +271,22 @@ export class BaseScope<$ = any> {
 	}
 }
 
+export const writeNonSubmoduleDotMessage = <name extends string>(
+	name: name
+): writeNonSubmoduleDotMessage<name> =>
+	`'${name}' must reference a module to be accessed using dot syntax`
+
+export type writeNonSubmoduleDotMessage<name extends string> =
+	`'${name}' must reference a module to be accessed using dot syntax`
+
+export const writeMissingSubmoduleAccessMessage = <name extends string>(
+	name: name
+): writeMissingSubmoduleAccessMessage<name> =>
+	`Reference to submodule '${name}' must specify an alias`
+
+export type writeMissingSubmoduleAccessMessage<name extends string> =
+	`Reference to submodule '${name}' must specify an alias`
+
 const bindCompiledSpace = (references: readonly Node[]) => {
 	const compiledTraversals = compileSpace(references)
 	for (const node of references) {
@@ -328,37 +343,4 @@ export type instantiateAliases<aliases> = {
 export const space = <const aliases>(
 	aliases: validateAliases<aliases>,
 	config: ArkConfig = {}
-): instantiateAliases<aliases> => {
-	const resolutions: BaseResolutions = {}
-	const referencesByName: { [name: string]: Node } = {}
-	const resolvedConfig = resolveConfig(config)
-	for (const k in aliases) {
-		const node = root(aliases[k] as any, {
-			alias: k,
-			prereduced: resolvedConfig.prereducedAliases
-		})
-
-		resolutions[k] = node
-		Object.assign(referencesByName, node.referencesByName)
-	}
-	const references = Object.values(referencesByName)
-	// 	this.bindCompiledScope(this.references)
-	// 	this.parse(
-	// 		"union",
-	// 		{
-	// 			branches: [
-	// 				"string",
-	// 				"number",
-	// 				"object",
-	// 				"bigint",
-	// 				"symbol",
-	// 				{ unit: true },
-	// 				{ unit: false },
-	// 				{ unit: null },
-	// 				{ unit: undefined }
-	// 			]
-	// 		},
-	// 		{ reduceTo: this.parsePrereduced("intersection", {}) }
-	// 	)
-	return resolutions as never
-}
+): instantiateAliases<aliases> => {}

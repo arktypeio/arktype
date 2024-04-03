@@ -1,3 +1,4 @@
+import type { writeMissingSubmoduleAccessMessage } from "@arktype/schema"
 import type {
 	BigintLiteral,
 	Completion,
@@ -9,7 +10,6 @@ import type { Module } from "../../scope.js"
 import type { GenericProps } from "../../type.js"
 import type { Comparator } from "../string/reduce/shared.js"
 import type { writeInvalidGenericArgsMessage } from "../string/shift/operand/genericArgs.js"
-import type { writeMissingSubmoduleAccessMessage } from "../string/shift/operand/unenclosed.js"
 import type { parseString } from "../string/string.js"
 import type { validateRange } from "./bounds.js"
 import type { validateDivisor } from "./divisor.js"
