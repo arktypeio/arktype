@@ -12,7 +12,6 @@ import {
 	type valueOf
 } from "@arktype/util"
 import type { BaseAttachments, Node, UnknownNode } from "../base.js"
-import type { reducibleKindOf } from "../kinds.js"
 import type { BaseScope } from "../scope.js"
 import type { BaseNodeDeclaration } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -23,7 +22,7 @@ import {
 	precedenceOfKind,
 	type KeyDefinitions,
 	type NodeKind,
-	type TypeKind,
+	type SchemaKind,
 	type UnknownNodeImplementation
 } from "../shared/implement.js"
 import { hasArkKind } from "../shared/utils.js"
@@ -52,7 +51,7 @@ const baseKeys: PartialRecord<string, valueOf<KeyDefinitions<any>>> = {
 	description: { meta: true }
 } satisfies KeyDefinitions<BaseNodeDeclaration> as never
 
-export const schemaKindOf = <kind extends TypeKind = TypeKind>(
+export const schemaKindOf = <kind extends SchemaKind = SchemaKind>(
 	schema: unknown,
 	allowedKinds?: readonly kind[]
 ): kind => {
@@ -65,7 +64,7 @@ export const schemaKindOf = <kind extends TypeKind = TypeKind>(
 	return kind as never
 }
 
-const discriminateSchemaKind = (schema: unknown): TypeKind => {
+const discriminateSchemaKind = (schema: unknown): SchemaKind => {
 	switch (typeof schema) {
 		case "string":
 			return "domain"
@@ -123,7 +122,7 @@ export declare const node: NodeParser<{}>
 // 	)
 
 export const parseNode = (
-	kinds: NodeKind | array<TypeKind>,
+	kinds: NodeKind | array<SchemaKind>,
 	schema: unknown,
 	$: BaseScope,
 	opts?: SchemaParseOptions

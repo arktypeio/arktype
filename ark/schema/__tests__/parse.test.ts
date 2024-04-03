@@ -1,10 +1,10 @@
 import { attest } from "@arktype/attest"
-import { type TypeNode, root } from "@arktype/schema"
+import { type SchemaNode, root } from "@arktype/schema"
 
 describe("parse", () => {
 	it("single constraint", () => {
 		const t = root({ domain: "string", regex: ".*" })
-		attest<TypeNode<string>>(t)
+		attest<SchemaNode<string>>(t)
 		attest(t.json).snap({ domain: "string", regex: [".*"] })
 	})
 	it("multiple constraints", () => {
@@ -18,7 +18,7 @@ describe("parse", () => {
 			divisor: 5
 		})
 		const result = l.and(r)
-		attest<TypeNode<number>>(result)
+		attest<SchemaNode<number>>(result)
 		attest(result.json).snap({
 			domain: "number",
 			divisor: 15,

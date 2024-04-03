@@ -12,8 +12,8 @@ export const metaKeys: { [k in keyof BaseMeta]: 1 } = { description: 1 }
 
 interface DeclarationInput {
 	kind: NodeKind
-	schema: unknown
-	normalizedSchema: BaseMeta
+	def: unknown
+	normalizedDef: BaseMeta
 	inner: BaseMeta
 	reducibleTo?: NodeKind
 	intersectionIsOpen?: true
@@ -60,8 +60,8 @@ export type BaseAttachmentsOf<d extends BaseNodeDeclaration> =
 
 export type BaseNodeDeclaration = {
 	kind: NodeKind
-	schema: unknown
-	normalizedSchema: BaseMeta
+	def: unknown
+	normalizedDef: BaseMeta
 	inner: BaseMeta
 	reducibleTo: NodeKind
 	prerequisite: any

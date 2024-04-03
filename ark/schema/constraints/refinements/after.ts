@@ -15,16 +15,16 @@ export interface AfterInner extends BaseRangeInner {
 	rule: Date
 }
 
-export interface NormalizedAfterSchema extends BaseNormalizedRangeSchema {
+export interface NormalizedAfterDef extends BaseNormalizedRangeSchema {
 	rule: LimitSchemaValue
 }
 
-export type AfterSchema = NormalizedAfterSchema | LimitSchemaValue
+export type AfterDef = NormalizedAfterDef | LimitSchemaValue
 
 export type AfterDeclaration = declareNode<{
 	kind: "after"
-	schema: AfterSchema
-	normalizedSchema: NormalizedAfterSchema
+	def: AfterDef
+	normalizedDef: NormalizedAfterDef
 	inner: AfterInner
 	prerequisite: Date
 	errorContext: AfterInner
@@ -39,16 +39,16 @@ export class AfterNode extends BaseRange<AfterDeclaration> {
 			keys: {
 				rule: {
 					parse: parseDateLimit,
-					serialize: (schema) => schema.toISOString()
+					serialize: (def) => def.toISOString()
 				},
 				exclusive: parseExclusiveKey
 			},
-			normalize: (schema) =>
-				typeof schema === "number" ||
-				typeof schema === "string" ||
-				schema instanceof Date
-					? { rule: schema }
-					: schema,
+			normalize: (def) =>
+				typeof def === "number" ||
+				typeof def === "string" ||
+				def instanceof Date
+					? { rule: def }
+					: def,
 			defaults: {
 				description(node) {
 					return node.exclusive

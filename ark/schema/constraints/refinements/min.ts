@@ -20,8 +20,8 @@ export type MinSchema = NormalizedMinSchema | number
 
 export type MinDeclaration = declareNode<{
 	kind: "min"
-	schema: MinSchema
-	normalizedSchema: NormalizedMinSchema
+	def: MinSchema
+	normalizedDef: NormalizedMinSchema
 	inner: MinInner
 	prerequisite: number
 	errorContext: MinInner
@@ -36,8 +36,7 @@ export class MinNode extends BaseRange<MinDeclaration> {
 			rule: {},
 			exclusive: parseExclusiveKey
 		},
-		normalize: (schema) =>
-			typeof schema === "number" ? { rule: schema } : schema,
+		normalize: (def) => (typeof def === "number" ? { rule: def } : def),
 		intersections: {
 			min: (l, r) => (l.isStricterThan(r) ? l : r)
 		},

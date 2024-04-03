@@ -17,7 +17,7 @@ import {
 	BaseNode,
 	type ConstraintNode,
 	type Node,
-	type TypeNode
+	type SchemaNode
 } from "../base.js"
 import {
 	PropsGroup,
@@ -25,7 +25,7 @@ import {
 	type ExtraneousKeyRestriction
 } from "../constraints/props/props.js"
 import { tsKeywords } from "../keywords/tsKeywords.js"
-import type { Inner, MutableInner, Prerequisite, Schema } from "../kinds.js"
+import type { Inner, MutableInner, NodeDef, Prerequisite } from "../kinds.js"
 import { node, type SchemaParseContext } from "../parser/parse.js"
 import type { BaseScope } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
@@ -43,9 +43,9 @@ import {
 	type nodeImplementationOf
 } from "../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
-import type { DomainNode, DomainSchema } from "./domain.js"
-import type { ProtoNode, ProtoSchema } from "./proto.js"
-import { BaseType, defineRightwardIntersections } from "./type.js"
+import type { DomainDef, DomainNode } from "./domain.js"
+import type { ProtoDef, ProtoNode } from "./proto.js"
+import { BaseType, defineRightwardIntersections } from "./schema.js"
 
 export type IntersectionBasisKind = "domain" | "proto"
 
@@ -58,17 +58,17 @@ export type IntersectionInner = evaluate<
 	}
 >
 
-export type IntersectionSchema<inferredBasis = any> = evaluate<
+export type IntersectionDef<inferredBasis = any> = evaluate<
 	BaseMeta & {
-		domain?: DomainSchema
-		proto?: ProtoSchema
+		domain?: DomainDef
+		proto?: ProtoDef
 	} & conditionalSchemaOf<inferredBasis>
 >
 
 export type IntersectionDeclaration = declareNode<{
 	kind: "intersection"
-	schema: IntersectionSchema
-	normalizedSchema: IntersectionSchema
+	def: IntersectionDef
+	normalizedDef: IntersectionDef
 	inner: IntersectionInner
 	reducibleTo: "intersection" | IntersectionBasisKind
 	errorContext: {
@@ -80,26 +80,26 @@ export type IntersectionDeclaration = declareNode<{
 const intersectionChildKeyParser =
 	<kind extends IntersectionChildKind>(kind: kind) =>
 	(
-		input: listable<Schema<kind>>,
+		def: listable<NodeDef<kind>>,
 		ctx: SchemaParseContext
 	): intersectionChildInnerValueOf<kind> | undefined => {
-		if (isArray(input)) {
-			if (input.length === 0) {
+		if (isArray(def)) {
+			if (def.length === 0) {
 				// Omit empty lists as input
 				return
 			}
-			return input
+			return def
 				.map((schema) => node(kind, schema as never))
 				.sort((l, r) => (l.innerId < r.innerId ? -1 : 1)) as never
 		}
-		const child = node(kind, input)
+		const child = node(kind, def)
 		return child.intersectionIsOpen ? [child] : (child as any)
 	}
 
 const intersectIntersections = (
 	reduced: IntersectionInner,
 	raw: IntersectionInner
-): TypeNode | Disjoint => {
+): SchemaNode | Disjoint => {
 	// avoid treating adding instance keys as keys of lRoot, rRoot
 	if (reduced instanceof IntersectionNode) reduced = reduced.inner
 	if (raw instanceof IntersectionNode) raw = raw.inner
@@ -339,12 +339,12 @@ export class IntersectionNode<t = unknown, $ = any> extends BaseType<
 		}
 	}
 
-	rawKeyOf(): TypeNode {
+	rawKeyOf(): SchemaNode {
 		return this.basis
 			? this.props
 				? this.basis.rawKeyOf().or(this.props.rawKeyOf())
 				: this.basis.rawKeyOf()
-			: this.props?.rawKeyOf() ?? (tsKeywords.never as {} as TypeNode)
+			: this.props?.rawKeyOf() ?? (tsKeywords.never as {} as SchemaNode)
 	}
 }
 
@@ -393,14 +393,14 @@ type ConstraintIntersectionState = {
 	root: IntersectionRoot
 	l: ConstraintNode[]
 	r: ConstraintNode[]
-	types: TypeNode[]
+	types: SchemaNode[]
 }
 
 const intersectConstraints = (
 	s: ConstraintIntersectionState
-): TypeNode | Disjoint => {
+): SchemaNode | Disjoint => {
 	if (!s.r.length) {
-		let result: TypeNode | Disjoint = node(
+		let result: SchemaNode | Disjoint = node(
 			"intersection",
 			Object.assign(s.root, unflattenConstraints(s.l)),
 			{ prereduced: true }
@@ -504,7 +504,9 @@ type conditionalIntersectionKeyOf<t> =
 // not sure why explicitly allowing Inner<k> is necessary in these cases,
 // but remove if it can be removed without creating type errors
 type intersectionChildSchemaValueOf<k extends IntersectionChildKind> =
-	k extends OpenNodeKind ? listable<Schema<k> | Inner<k>> : Schema<k> | Inner<k>
+	k extends OpenNodeKind
+		? listable<NodeDef<k> | Inner<k>>
+		: NodeDef<k> | Inner<k>
 
 type conditionalSchemaValueOfKey<k extends ConditionalIntersectionKey> =
 	k extends IntersectionChildKind

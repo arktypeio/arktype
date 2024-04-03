@@ -1,15 +1,15 @@
 import { appendUnique, groupBy, isArray } from "@arktype/util"
-import type { Node, TypeNode } from "../base.js"
+import type { Node, SchemaNode } from "../base.js"
 import { tsKeywords } from "../keywords/tsKeywords.js"
-import type { Schema } from "../kinds.js"
+import type { NodeDef } from "../kinds.js"
 import { node } from "../parser/parse.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { ArkTypeError } from "../shared/errors.js"
 import {
-	typeKindsRightOf,
-	type TypeKind,
+	schemaKindsRightOf,
+	type SchemaKind,
 	type nodeImplementationOf
 } from "../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
@@ -18,22 +18,22 @@ import {
 	BaseType,
 	defineRightwardIntersections,
 	type typeKindRightOf
-} from "./type.js"
+} from "./schema.js"
 
 export type UnionChildKind = typeKindRightOf<"union">
 
-export const unionChildKinds = typeKindsRightOf("union")
+export const unionChildKinds = schemaKindsRightOf("union")
 
-export type UnionChildSchema = Schema<UnionChildKind>
+export type UnionChildDef = NodeDef<UnionChildKind>
 
 export type UnionChildNode = Node<UnionChildKind>
 
-export type UnionSchema<
-	branches extends readonly UnionChildSchema[] = readonly UnionChildSchema[]
-> = NormalizedUnionSchema<branches> | branches
+export type UnionDef<
+	branches extends readonly UnionChildDef[] = readonly UnionChildDef[]
+> = NormalizedUnionDef<branches> | branches
 
-export interface NormalizedUnionSchema<
-	branches extends readonly UnionChildSchema[] = readonly UnionChildSchema[]
+export interface NormalizedUnionDef<
+	branches extends readonly UnionChildDef[] = readonly UnionChildDef[]
 > extends BaseMeta {
 	readonly branches: branches
 	readonly ordered?: true
@@ -46,13 +46,13 @@ export interface UnionInner extends BaseMeta {
 
 export type UnionDeclaration = declareNode<{
 	kind: "union"
-	schema: UnionSchema
-	normalizedSchema: NormalizedUnionSchema
+	def: UnionDef
+	normalizedDef: NormalizedUnionDef
 	inner: UnionInner
 	errorContext: {
 		errors: readonly ArkTypeError[]
 	}
-	reducibleTo: TypeKind
+	reducibleTo: SchemaKind
 	childKind: UnionChildKind
 }>
 
@@ -70,19 +70,19 @@ export class UnionNode<t = any, $ = any> extends BaseType<
 				ordered: {},
 				branches: {
 					child: true,
-					parse: (schema, ctx) => {
-						const branches = schema.map((branch) =>
+					parse: (def, ctx) => {
+						const branches = def.map((branch) =>
 							ctx.$.parseNode(unionChildKinds, branch)
 						)
-						const def = ctx.raw as UnionSchema
-						if (isArray(def) || def.ordered !== true) {
+						const raw = ctx.raw as UnionDef
+						if (isArray(raw) || raw.ordered !== true) {
 							branches.sort((l, r) => (l.innerId < r.innerId ? -1 : 1))
 						}
 						return branches
 					}
 				}
 			},
-			normalize: (schema) => (isArray(schema) ? { branches: schema } : schema),
+			normalize: (def) => (isArray(def) ? { branches: def } : def),
 			reduce: (inner) => {
 				const reducedBranches = reduceBranches(inner)
 				if (reducedBranches.length === 1) {
@@ -242,7 +242,7 @@ export class UnionNode<t = any, $ = any> extends BaseType<
 		}
 	}
 
-	rawKeyOf(): TypeNode {
+	rawKeyOf(): SchemaNode {
 		return this.branches.reduce(
 			(result, branch) => result.and(branch.rawKeyOf()),
 			tsKeywords.unknown
@@ -359,9 +359,9 @@ export const intersectBranches = (
 	// If the corresponding r branch is identified as a subtype of an l branch, the
 	// value at rIndex is set to null so we can avoid including previous/future
 	// inersections in the reduced result.
-	const batchesByR: (TypeNode[] | null)[] = r.map(() => [])
+	const batchesByR: (SchemaNode[] | null)[] = r.map(() => [])
 	for (let lIndex = 0; lIndex < l.length; lIndex++) {
-		let candidatesByR: { [rIndex: number]: TypeNode } = {}
+		let candidatesByR: { [rIndex: number]: SchemaNode } = {}
 		for (let rIndex = 0; rIndex < r.length; rIndex++) {
 			if (batchesByR[rIndex] === null) {
 				// rBranch is a subtype of an lBranch and

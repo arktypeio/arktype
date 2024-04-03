@@ -1,5 +1,5 @@
-import type { TypeNode } from "../../base.js"
+import type { SchemaNode } from "../../base.js"
 
 export type spaceFromExports<exports> = {
-	[k in keyof exports]: TypeNode<exports[k]>
+	[k in keyof exports]: SchemaNode<exports[k]>
 }

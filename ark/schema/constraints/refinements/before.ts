@@ -17,16 +17,16 @@ export interface BeforeInner extends BaseRangeInner {
 	rule: Date
 }
 
-export interface NormalizedBeforeSchema extends BaseNormalizedRangeSchema {
+export interface NormalizedBeforeDef extends BaseNormalizedRangeSchema {
 	rule: LimitSchemaValue
 }
 
-export type BeforeSchema = NormalizedBeforeSchema | LimitSchemaValue
+export type BeforeDef = NormalizedBeforeDef | LimitSchemaValue
 
 export type BeforeDeclaration = declareNode<{
 	kind: "before"
-	schema: BeforeSchema
-	normalizedSchema: NormalizedBeforeSchema
+	def: BeforeDef
+	normalizedDef: NormalizedBeforeDef
 	inner: BeforeInner
 	prerequisite: Date
 	errorContext: BeforeInner
@@ -41,16 +41,16 @@ export class BeforeNode extends BaseRange<BeforeDeclaration> {
 			keys: {
 				rule: {
 					parse: parseDateLimit,
-					serialize: (schema) => schema.toISOString()
+					serialize: (def) => def.toISOString()
 				},
 				exclusive: parseExclusiveKey
 			},
-			normalize: (schema) =>
-				typeof schema === "number" ||
-				typeof schema === "string" ||
-				schema instanceof Date
-					? { rule: schema }
-					: schema,
+			normalize: (def) =>
+				typeof def === "number" ||
+				typeof def === "string" ||
+				def instanceof Date
+					? { rule: def }
+					: def,
 			defaults: {
 				description(node) {
 					return node.exclusive

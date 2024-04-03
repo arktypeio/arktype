@@ -1,6 +1,6 @@
 import { deepClone } from "@arktype/util"
+import type { Morph } from "../schemas/morph.js"
 import type { ResolvedArkConfig } from "../scope.js"
-import type { Morph } from "../types/morph.js"
 import {
 	ArkErrors,
 	createError,

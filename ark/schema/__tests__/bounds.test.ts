@@ -2,8 +2,8 @@ import { attest } from "@arktype/attest"
 import { root } from "@arktype/schema"
 import { entriesOf, flatMorph } from "@arktype/util"
 import { boundKindPairsByLower } from "../constraints/refinements/range.js"
+import type { IntersectionDef } from "../schemas/intersection.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { IntersectionSchema } from "../types/intersection.js"
 
 const numericCases = {
 	lessThanMin: 4,
@@ -95,7 +95,7 @@ describe("bounds", () => {
 					...basis,
 					[min]: { rule: 5, exclusive: true },
 					[max]: { rule: 10 }
-				} as IntersectionSchema)
+				} as IntersectionDef)
 
 				attest(t.allows(cases.lessThanMin)).equals(false)
 				attest(t.allows(cases.equalToExclusiveMin)).equals(false)
@@ -109,13 +109,13 @@ describe("bounds", () => {
 					[min]: {
 						rule: 6
 					}
-				} as IntersectionSchema)
+				} as IntersectionDef)
 				const r = root({
 					...basis,
 					[max]: {
 						rule: 6
 					}
-				} as IntersectionSchema)
+				} as IntersectionDef)
 				const expected =
 					min === "min"
 						? root({
@@ -125,7 +125,7 @@ describe("bounds", () => {
 						? root({
 								...basis,
 								exactLength: 6
-						  } as IntersectionSchema)
+						  } as IntersectionDef)
 						: root({
 								unit: new Date(6)
 						  })
@@ -139,41 +139,41 @@ describe("bounds", () => {
 					[min]: {
 						rule: 3
 					}
-				} as IntersectionSchema)
+				} as IntersectionDef)
 				const r = root({
 					...basis,
 					[max]: {
 						rule: 3,
 						exclusive: true
 					}
-				} as IntersectionSchema)
+				} as IntersectionDef)
 				attest(l.intersect(r)).instanceOf(Disjoint)
 				attest(r.intersect(l)).instanceOf(Disjoint)
 			})
 			it("non-overlapping limits", () => {
-				const l = root({ ...basis, [min]: 3 } as IntersectionSchema)
+				const l = root({ ...basis, [min]: 3 } as IntersectionDef)
 				const r = root({
 					...basis,
 					[max]: 1
-				} as IntersectionSchema)
+				} as IntersectionDef)
 				attest(l.intersect(r)).instanceOf(Disjoint)
 				attest(r.intersect(l)).instanceOf(Disjoint)
 			})
 			it("greater min is stricter", () => {
-				const lesser = root({ ...basis, [min]: 3 } as IntersectionSchema)
+				const lesser = root({ ...basis, [min]: 3 } as IntersectionDef)
 				const greater = root({
 					...basis,
 					[min]: 4
-				} as IntersectionSchema)
+				} as IntersectionDef)
 				attest(lesser.and(greater).json).equals(greater.json)
 				attest(greater.and(lesser).json).equals(greater.json)
 			})
 			it("lesser max is stricter", () => {
-				const lesser = root({ ...basis, [max]: 3 } as IntersectionSchema)
+				const lesser = root({ ...basis, [max]: 3 } as IntersectionDef)
 				const greater = root({
 					...basis,
 					[max]: { rule: 4, exclusive: true }
-				} as IntersectionSchema)
+				} as IntersectionDef)
 				attest(lesser.and(greater).json).equals(lesser.json)
 				attest(greater.and(lesser).json).equals(lesser.json)
 			})
@@ -181,11 +181,11 @@ describe("bounds", () => {
 				const exclusive = root({
 					...basis,
 					[max]: { rule: 3, exclusive: true }
-				} as IntersectionSchema)
+				} as IntersectionDef)
 				const inclusive = root({
 					...basis,
 					[max]: 3
-				} as IntersectionSchema)
+				} as IntersectionDef)
 				attest(exclusive.and(inclusive).json).equals(exclusive.json)
 				attest(inclusive.and(exclusive).json).equals(exclusive.json)
 			})

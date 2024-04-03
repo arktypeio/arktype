@@ -3,9 +3,9 @@ import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import { defaultValueSerializer } from "../shared/implement.js"
 import { BaseBasis } from "./basis.js"
-import { defineRightwardIntersections } from "./type.js"
+import { defineRightwardIntersections } from "./schema.js"
 
-export type UnitSchema<value = unknown> = UnitInner<value>
+export type UnitDef<value = unknown> = UnitInner<value>
 
 export interface UnitInner<value = unknown> extends BaseMeta {
 	readonly unit: value
@@ -13,8 +13,8 @@ export interface UnitInner<value = unknown> extends BaseMeta {
 
 export type UnitDeclaration = declareNode<{
 	kind: "unit"
-	schema: UnitSchema
-	normalizedSchema: UnitSchema
+	def: UnitDef
+	normalizedDef: UnitDef
 	inner: UnitInner
 	errorContext: UnitInner
 }>
@@ -30,11 +30,11 @@ export class UnitNode<t = any, $ = any> extends BaseBasis<
 		keys: {
 			unit: {
 				preserveUndefined: true,
-				serialize: (v) =>
-					v instanceof Date ? v.toISOString() : defaultValueSerializer(v)
+				serialize: (def) =>
+					def instanceof Date ? def.toISOString() : defaultValueSerializer(def)
 			}
 		},
-		normalize: (schema) => schema,
+		normalize: (def) => def,
 		defaults: {
 			description(node) {
 				return printable(node.unit)

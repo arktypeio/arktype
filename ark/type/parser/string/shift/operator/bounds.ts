@@ -5,8 +5,8 @@ import {
 	type BoundKind,
 	type DateLiteral,
 	type LimitLiteral,
-	type Schema,
-	type TypeNode
+	type NodeDef,
+	type SchemaNode
 } from "@arktype/schema"
 import { isKeyOf, throwParseError, type keySet } from "@arktype/util"
 import type { astToString } from "../../../semantic/utils.js"
@@ -110,7 +110,7 @@ export const writeIncompatibleRangeMessage = (l: BoundKind, r: BoundKind) =>
 export const getBoundKinds = (
 	comparator: Comparator,
 	limit: LimitLiteral,
-	root: TypeNode,
+	root: SchemaNode,
 	boundKind: BoundExpressionKind
 ): BoundKind[] => {
 	if (root.extends(keywordNodes.number)) {
@@ -153,7 +153,7 @@ type singleEqualsMessage = typeof singleEqualsMessage
 
 const openLeftBoundToSchema = (
 	leftBound: OpenLeftBound
-): Schema<BoundKind> => ({
+): NodeDef<BoundKind> => ({
 	rule: isDateLiteral(leftBound.limit)
 		? extractDateLiteralSource(leftBound.limit)
 		: leftBound.limit,

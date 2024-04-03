@@ -1,32 +1,35 @@
 import { throwParseError, type Key } from "@arktype/util"
-import type { TypeNode, TypeSchema } from "../../base.js"
+import type { SchemaDef, SchemaNode } from "../../base.js"
 import { internalKeywords } from "../../keywords/internal.js"
 import { tsKeywords } from "../../keywords/tsKeywords.js"
 import { root } from "../../parser/parse.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
-import type { TypeKind, nodeImplementationOf } from "../../shared/implement.js"
+import type {
+	SchemaKind,
+	nodeImplementationOf
+} from "../../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/traversal.js"
 import { BaseConstraint } from "../constraint.js"
 
-export interface IndexSchema extends BaseMeta {
-	readonly key: TypeSchema
-	readonly value: TypeSchema
+export interface IndexDef extends BaseMeta {
+	readonly key: SchemaDef
+	readonly value: SchemaDef
 }
 
 export interface IndexInner extends BaseMeta {
-	readonly key: TypeNode<Key>
-	readonly value: TypeNode
+	readonly key: SchemaNode<Key>
+	readonly value: SchemaNode
 }
 
 export type IndexDeclaration = declareNode<{
 	kind: "index"
-	schema: IndexSchema
-	normalizedSchema: IndexSchema
+	def: IndexDef
+	normalizedDef: IndexDef
 	inner: IndexInner
 	prerequisite: object
 	intersectionIsOpen: true
-	childKind: TypeKind
+	childKind: SchemaKind
 }>
 
 export class IndexNode extends BaseConstraint<IndexDeclaration> {
@@ -38,8 +41,8 @@ export class IndexNode extends BaseConstraint<IndexDeclaration> {
 			keys: {
 				key: {
 					child: true,
-					parse: (schema, ctx) => {
-						const key = root(schema)
+					parse: (def, ctx) => {
+						const key = root(def)
 						if (!key.extends(internalKeywords.propertyKey))
 							return throwParseError(
 								writeInvalidPropertyKeyMessage(key.expression)
@@ -49,10 +52,10 @@ export class IndexNode extends BaseConstraint<IndexDeclaration> {
 				},
 				value: {
 					child: true,
-					parse: (schema, ctx) => root(schema)
+					parse: (def, ctx) => root(def)
 				}
 			},
-			normalize: (schema) => schema,
+			normalize: (def) => def,
 			defaults: {
 				description(node) {
 					return `[${node.key.expression}]: ${node.value.description}`

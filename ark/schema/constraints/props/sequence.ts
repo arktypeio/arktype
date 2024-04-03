@@ -6,7 +6,7 @@ import {
 	type mutable,
 	type satisfy
 } from "@arktype/util"
-import type { TypeNode, TypeSchema } from "../../base.js"
+import type { SchemaDef, SchemaNode } from "../../base.js"
 import { jsObjects } from "../../keywords/jsObjects.js"
 import { tsKeywords } from "../../keywords/tsKeywords.js"
 import type { MutableInner } from "../../kinds.js"
@@ -16,42 +16,42 @@ import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import type {
 	NodeKeyImplementation,
-	TypeKind,
+	SchemaKind,
 	nodeImplementationOf
 } from "../../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/traversal.js"
 import { BaseConstraint } from "../constraint.js"
 
-export interface NormalizedSequenceSchema extends BaseMeta {
-	readonly prefix?: readonly TypeSchema[]
-	readonly optional?: readonly TypeSchema[]
-	readonly variadic?: TypeSchema
+export interface NormalizedSequenceDef extends BaseMeta {
+	readonly prefix?: readonly SchemaDef[]
+	readonly optional?: readonly SchemaDef[]
+	readonly variadic?: SchemaDef
 	readonly minVariadicLength?: number
-	readonly postfix?: readonly TypeSchema[]
+	readonly postfix?: readonly SchemaDef[]
 }
 
-export type SequenceSchema = NormalizedSequenceSchema | TypeSchema
+export type SequenceDef = NormalizedSequenceDef | SchemaDef
 
 export interface SequenceInner extends BaseMeta {
 	// a list of fixed position elements starting at index 0
-	readonly prefix?: readonly TypeNode[]
+	readonly prefix?: readonly SchemaNode[]
 	// a list of optional elements following prefix
-	readonly optional?: readonly TypeNode[]
+	readonly optional?: readonly SchemaNode[]
 	// the variadic element (only checked if all optional elements are present)
-	readonly variadic?: TypeNode
+	readonly variadic?: SchemaNode
 	readonly minVariadicLength?: number
 	// a list of fixed position elements, the last being the last element of the array
-	readonly postfix?: readonly TypeNode[]
+	readonly postfix?: readonly SchemaNode[]
 }
 
 export type SequenceDeclaration = declareNode<{
 	kind: "sequence"
-	schema: SequenceSchema
-	normalizedSchema: NormalizedSequenceSchema
+	def: SequenceDef
+	normalizedDef: NormalizedSequenceDef
 	inner: SequenceInner
 	prerequisite: array
 	reducibleTo: "sequence"
-	childKind: TypeKind
+	childKind: SchemaKind
 }>
 
 const fixedSequenceKeyDefinition: NodeKeyImplementation<
@@ -78,7 +78,7 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 				optional: fixedSequenceKeyDefinition,
 				variadic: {
 					child: true,
-					parse: (schema, ctx) => root(schema, ctx)
+					parse: (def, ctx) => root(def, ctx)
 				},
 				minVariadicLength: {
 					// minVariadicLength is reflected in the id of this node,
@@ -89,33 +89,33 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 				},
 				postfix: fixedSequenceKeyDefinition
 			},
-			normalize: (schema) => {
-				if (typeof schema === "string") {
-					return { variadic: schema }
+			normalize: (def) => {
+				if (typeof def === "string") {
+					return { variadic: def }
 				}
 				if (
-					"variadic" in schema ||
-					"prefix" in schema ||
-					"optional" in schema ||
-					"postfix" in schema ||
-					"minVariadicLength" in schema
+					"variadic" in def ||
+					"prefix" in def ||
+					"optional" in def ||
+					"postfix" in def ||
+					"minVariadicLength" in def
 				) {
-					if (schema.postfix?.length) {
-						if (!schema.variadic) {
+					if (def.postfix?.length) {
+						if (!def.variadic) {
 							return throwParseError(postfixWithoutVariadicMessage)
 						}
-						if (schema.optional?.length) {
+						if (def.optional?.length) {
 							return throwParseError(postfixFollowingOptionalMessage)
 						}
 					}
-					if (schema.minVariadicLength && !schema.variadic) {
+					if (def.minVariadicLength && !def.variadic) {
 						return throwParseError(
 							"minVariadicLength may not be specified without a variadic element"
 						)
 					}
-					return schema
+					return def
 				}
-				return { variadic: schema }
+				return { variadic: def }
 			},
 			reduce: (raw) => {
 				let minVariadicLength = raw.minVariadicLength ?? 0
@@ -249,7 +249,7 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 		? [this.maxLengthNode]
 		: undefined
 
-	protected childAtIndex(data: array, index: number): TypeNode {
+	protected childAtIndex(data: array, index: number): SchemaNode {
 		if (index < this.prevariadic.length) return this.prevariadic[index]
 		const postfixStartIndex = data.length - this.postfix.length
 		if (index >= postfixStartIndex)
@@ -353,7 +353,7 @@ export type SequenceElementKind = satisfy<
 
 export type SequenceElement = {
 	kind: SequenceElementKind
-	node: TypeNode
+	node: SchemaNode
 }
 export type SequenceTuple = array<SequenceElement>
 

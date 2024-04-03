@@ -1,37 +1,40 @@
 import { compileSerializedValue, type Key } from "@arktype/util"
-import type { Node, TypeSchema } from "../../base.js"
+import type { Node, SchemaDef } from "../../base.js"
 import { tsKeywords } from "../../keywords/tsKeywords.js"
 import { node, root } from "../../parser/parse.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
-import type { TypeKind, nodeImplementationOf } from "../../shared/implement.js"
+import type {
+	SchemaKind,
+	nodeImplementationOf
+} from "../../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/traversal.js"
 import { BaseConstraint } from "../constraint.js"
 
-export interface PropSchema extends BaseMeta {
+export interface PropDef extends BaseMeta {
 	readonly key: Key
-	readonly value: TypeSchema
+	readonly value: SchemaDef
 	readonly optional?: boolean
 }
 
 export interface PropInner extends BaseMeta {
 	readonly key: Key
-	readonly value: Node<TypeKind>
+	readonly value: Node<SchemaKind>
 	readonly optional?: true
 }
 
 export type PropDeclaration = declareNode<{
 	kind: "prop"
-	schema: PropSchema
-	normalizedSchema: PropSchema
+	def: PropDef
+	normalizedDef: PropDef
 	inner: PropInner
 	errorContext: {
 		key: Key
 	}
 	prerequisite: object
 	intersectionIsOpen: true
-	childKind: TypeKind
+	childKind: SchemaKind
 }>
 
 export class PropNode extends BaseConstraint<PropDeclaration> {
@@ -44,14 +47,14 @@ export class PropNode extends BaseConstraint<PropDeclaration> {
 				key: {},
 				value: {
 					child: true,
-					parse: (schema, ctx) => root(schema)
+					parse: (def, ctx) => root(def)
 				},
 				optional: {
 					// normalize { optional: false } to {}
-					parse: (schema) => schema || undefined
+					parse: (def) => def || undefined
 				}
 			},
-			normalize: (schema) => schema,
+			normalize: (def) => def,
 			defaults: {
 				description(node) {
 					return `${node.compiledKey}${node.optional ? "?" : ""}: ${

@@ -8,10 +8,10 @@ import {
 	type array,
 	type listable
 } from "@arktype/util"
-import type { Node, TypeNode } from "../base.js"
+import type { Node, SchemaNode } from "../base.js"
 import type { of } from "../constraints/ast.js"
 import { tsKeywords } from "../keywords/tsKeywords.js"
-import type { Schema } from "../kinds.js"
+import type { NodeDef } from "../kinds.js"
 import { node } from "../parser/parse.js"
 import type { StaticArkOption } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
@@ -28,7 +28,7 @@ import {
 	BaseType,
 	defineRightwardIntersections,
 	type typeKindRightOf
-} from "./type.js"
+} from "./schema.js"
 
 export type MorphChildKind = typeKindRightOf<"morph">
 
@@ -39,7 +39,7 @@ export const morphChildKinds = [
 
 export type MorphChildNode = Node<MorphChildKind>
 
-export type MorphChildDefinition = Schema<MorphChildKind>
+export type MorphChildDefinition = NodeDef<MorphChildKind>
 
 export type Morph<i = any, o = unknown> = (In: i, ctx: TraversalContext) => o
 
@@ -53,7 +53,7 @@ export interface MorphInner extends BaseMeta {
 	readonly morphs: readonly Morph[]
 }
 
-export interface MorphSchema extends BaseMeta {
+export interface MorphDef extends BaseMeta {
 	readonly in: MorphChildDefinition
 	readonly out?: MorphChildDefinition
 	readonly morphs: listable<Morph>
@@ -61,8 +61,8 @@ export interface MorphSchema extends BaseMeta {
 
 export type MorphDeclaration = declareNode<{
 	kind: "morph"
-	schema: MorphSchema
-	normalizedSchema: MorphSchema
+	def: MorphDef
+	normalizedDef: MorphDef
 	inner: MorphInner
 	childKind: MorphChildKind
 }>
@@ -80,18 +80,18 @@ export class MorphNode<t = any, $ = any> extends BaseType<
 			keys: {
 				in: {
 					child: true,
-					parse: (schema, ctx) => ctx.$.parseNode(morphChildKinds, schema)
+					parse: (def, ctx) => ctx.$.parseNode(morphChildKinds, def)
 				},
 				out: {
 					child: true,
-					parse: (schema, ctx) => ctx.$.parseNode(morphChildKinds, schema)
+					parse: (def, ctx) => ctx.$.parseNode(morphChildKinds, def)
 				},
 				morphs: {
 					parse: arrayFrom,
 					serialize: (morphs) => morphs.map(reference)
 				}
 			},
-			normalize: (schema) => schema,
+			normalize: (def) => def,
 			defaults: {
 				description(node) {
 					return `a morph from ${node.in.description} to ${node.out.description}`
@@ -167,7 +167,7 @@ export class MorphNode<t = any, $ = any> extends BaseType<
 		return this.inner.out ?? tsKeywords.unknown
 	}
 
-	rawKeyOf(): TypeNode {
+	rawKeyOf(): SchemaNode {
 		return this.in.rawKeyOf()
 	}
 }

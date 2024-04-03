@@ -18,17 +18,17 @@ export interface ProtoInner<proto extends Constructor = Constructor>
 	readonly proto: proto
 }
 
-export type NormalizedProtoSchema<proto extends Constructor = Constructor> =
+export type NormalizedProtoDef<proto extends Constructor = Constructor> =
 	ProtoInner<proto>
 
-export type ProtoSchema<proto extends Constructor = Constructor> =
+export type ProtoDef<proto extends Constructor = Constructor> =
 	| proto
-	| NormalizedProtoSchema<proto>
+	| NormalizedProtoDef<proto>
 
 export type ProtoDeclaration = declareNode<{
 	kind: "proto"
-	schema: ProtoSchema
-	normalizedSchema: NormalizedProtoSchema
+	def: ProtoDef
+	normalizedDef: NormalizedProtoDef
 	inner: ProtoInner
 	errorContext: ProtoInner
 }>
@@ -49,8 +49,7 @@ export class ProtoNode<t = any, $ = any> extends BaseBasis<
 					defaultValueSerializer(constructor)
 			}
 		},
-		normalize: (input) =>
-			typeof input === "function" ? { proto: input } : input,
+		normalize: (def) => (typeof def === "function" ? { proto: def } : def),
 		defaults: {
 			description(node) {
 				const knownObjectKind = getExactBuiltinConstructorName(node.proto)

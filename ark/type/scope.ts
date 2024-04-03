@@ -6,7 +6,7 @@ import {
 	type arkKind,
 	type exportedName,
 	type GenericProps,
-	type TypeNode
+	type SchemaNode
 } from "@arktype/schema"
 import {
 	domainOf,
@@ -161,10 +161,10 @@ export type ParseContext = {
 	baseName: string
 	path: string[]
 	$: Scope
-	args: Record<string, TypeNode> | undefined
+	args: Record<string, SchemaNode> | undefined
 }
 
-type MergedResolutions = Record<string, TypeNode | Generic>
+type MergedResolutions = Record<string, SchemaNode | Generic>
 
 type ParseContextInput = Partial<ParseContext>
 
@@ -178,7 +178,7 @@ export const scope: ScopeParser = ((def: Dict, config: ArkConfig = {}) =>
 	new Scope(def, config)) as never
 
 export class Scope<$ = any> extends BaseScope<$> {
-	private parseCache: Record<string, TypeNode> = {}
+	private parseCache: Record<string, SchemaNode> = {}
 
 	constructor(def: Record<string, unknown>, config?: ArkConfig) {
 		const aliases: Record<string, unknown> = {}
@@ -204,7 +204,7 @@ export class Scope<$ = any> extends BaseScope<$> {
 		return this.export()[name] as never
 	}
 
-	parse(def: unknown, ctx: ParseContext): TypeNode {
+	parse(def: unknown, ctx: ParseContext): SchemaNode {
 		if (typeof def === "string") {
 			if (ctx.args && Object.keys(ctx.args).every((k) => !def.includes(k))) {
 				// we can only rely on the cache if there are no contextual
@@ -224,7 +224,7 @@ export class Scope<$ = any> extends BaseScope<$> {
 	parseTypeRoot(def: unknown, input?: ParseContextInput): Type {
 		return new Type(
 			this.parse(def, {
-				args: { this: {} as TypeNode },
+				args: { this: {} as SchemaNode },
 				baseName: "type",
 				path: [],
 				$: this,
@@ -234,7 +234,7 @@ export class Scope<$ = any> extends BaseScope<$> {
 		)
 	}
 
-	parseString(def: string, ctx: ParseContext): TypeNode {
+	parseString(def: string, ctx: ParseContext): SchemaNode {
 		return (
 			this.maybeResolveNode(def) ??
 			((def.endsWith("[]") &&

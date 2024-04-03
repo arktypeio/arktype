@@ -1,6 +1,6 @@
 import type { conform } from "@arktype/util"
-import type { Schema } from "../kinds.js"
-import type { constraintKindOf } from "../types/intersection.js"
+import type { NodeDef } from "../kinds.js"
+import type { constraintKindOf } from "../schemas/intersection.js"
 import type { PrimitiveConstraintKind } from "./constraint.js"
 
 export type Comparator = "<" | "<=" | ">" | ">=" | "=="
@@ -95,7 +95,7 @@ export namespace number {
 
 	export type constrain<
 		kind extends PrimitiveConstraintKind,
-		schema extends Schema<kind>
+		schema extends NodeDef<kind>
 	> = normalizePrimitiveConstraintSchema<schema> extends infer rule
 		? kind extends "min"
 			? schema extends { exclusive: true }
@@ -153,7 +153,7 @@ export namespace string {
 
 	export type constrain<
 		kind extends PrimitiveConstraintKind,
-		schema extends Schema<kind>
+		schema extends NodeDef<kind>
 	> = normalizePrimitiveConstraintSchema<schema> extends infer rule
 		? kind extends "minLength"
 			? schema extends { exclusive: true }
@@ -208,7 +208,7 @@ export namespace Date {
 
 	export type constrain<
 		kind extends PrimitiveConstraintKind,
-		schema extends Schema<kind>
+		schema extends NodeDef<kind>
 	> = normalizePrimitiveConstraintSchema<schema> extends infer rule
 		? kind extends "after"
 			? schema extends { exclusive: true }
@@ -225,7 +225,7 @@ export namespace Date {
 export type constrain<
 	t,
 	kind extends PrimitiveConstraintKind,
-	schema extends Schema<kind>
+	schema extends NodeDef<kind>
 > = schemaToConstraint<kind, schema> extends infer constraint
 	? t extends of<infer base, infer constraints>
 		? [number, base] extends [base, number]
@@ -245,14 +245,14 @@ export type constrain<
 	: never
 
 export type normalizePrimitiveConstraintSchema<
-	schema extends Schema<PrimitiveConstraintKind>
+	schema extends NodeDef<PrimitiveConstraintKind>
 > = "rule" extends keyof schema
 	? conform<schema["rule"], string | number>
 	: conform<schema, string | number>
 
 export type schemaToConstraint<
 	kind extends PrimitiveConstraintKind,
-	schema extends Schema<kind>
+	schema extends NodeDef<kind>
 > = normalizePrimitiveConstraintSchema<schema> extends infer rule
 	? kind extends "regex"
 		? Matching<rule & string>

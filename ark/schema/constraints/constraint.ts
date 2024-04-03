@@ -7,7 +7,7 @@ import {
 	BaseNode,
 	type ConstraintNode,
 	type Node,
-	type TypeNode
+	type SchemaNode
 } from "../base.js"
 import type { Prerequisite } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
@@ -38,8 +38,8 @@ export const throwInvalidOperandError = (
 
 export const writeInvalidOperandMessage = <
 	kind extends ConstraintKind,
-	expected extends TypeNode,
-	actual extends TypeNode
+	expected extends SchemaNode,
+	actual extends SchemaNode
 >(
 	kind: kind,
 	expected: expected,
@@ -51,7 +51,7 @@ export const writeInvalidOperandMessage = <
 
 export type writeInvalidOperandMessage<
 	kind extends ConstraintKind,
-	actual extends TypeNode
+	actual extends SchemaNode
 > = `${Capitalize<kind>} operand must be ${describeExpression<
 	Prerequisite<kind>
 >} (was ${describeExpression<actual["infer"]>})`
@@ -63,7 +63,7 @@ export interface BaseConstraintDeclaration extends BaseNodeDeclaration {
 export abstract class BaseConstraint<
 	d extends BaseConstraintDeclaration
 > extends BaseNode<d["prerequisite"], d> {
-	abstract readonly impliedBasis: TypeNode | undefined
+	abstract readonly impliedBasis: SchemaNode | undefined
 	readonly impliedSiblings?: ConstraintNode[] | undefined
 
 	intersect<r extends ConstraintNode>(

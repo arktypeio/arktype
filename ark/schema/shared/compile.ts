@@ -1,6 +1,6 @@
 import { CompiledFunction, compileSerializedValue } from "@arktype/util"
 import type { Node, UnknownNode } from "../base.js"
-import type { Discriminant } from "../types/discriminate.js"
+import type { Discriminant } from "../schemas/discriminate.js"
 import type { PrimitiveKind } from "./implement.js"
 import type { TraversalKind } from "./traversal.js"
 

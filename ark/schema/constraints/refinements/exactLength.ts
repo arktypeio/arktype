@@ -10,14 +10,14 @@ export interface ExactLengthInner extends BaseMeta {
 	readonly rule: number
 }
 
-export type NormalizedExactLengthSchema = ExactLengthInner
+export type NormalizedExactLengthDef = ExactLengthInner
 
-export type ExactLengthSchema = NormalizedExactLengthSchema | number
+export type ExactLengthDef = NormalizedExactLengthDef | number
 
 export type ExactLengthDeclaration = declareNode<{
 	kind: "exactLength"
-	schema: ExactLengthSchema
-	normalizedSchema: NormalizedExactLengthSchema
+	def: ExactLengthDef
+	normalizedDef: NormalizedExactLengthDef
 	inner: ExactLengthInner
 	prerequisite: LengthBoundableData
 	errorContext: ExactLengthInner

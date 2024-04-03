@@ -6,15 +6,15 @@ import type {
 	instanceOf,
 	isAny
 } from "@arktype/util"
-import type { TypeNode } from "../base.js"
-import type { Schema } from "../kinds.js"
+import type { SchemaNode } from "../base.js"
+import type { NodeDef } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BasisKind } from "../shared/implement.js"
 import type { TraverseApply } from "../shared/traversal.js"
-import type { DomainSchema } from "./domain.js"
-import type { ProtoSchema } from "./proto.js"
-import { BaseType, type BaseTypeDeclaration } from "./type.js"
-import type { UnitSchema } from "./unit.js"
+import type { DomainDef } from "./domain.js"
+import type { ProtoDef } from "./proto.js"
+import { BaseType, type BaseTypeDeclaration } from "./schema.js"
+import type { UnitDef } from "./unit.js"
 
 export interface BaseBasisDeclaration extends BaseTypeDeclaration {
 	kind: BasisKind
@@ -31,7 +31,7 @@ export abstract class BaseBasis<
 	abstract readonly errorContext: d["errorContext"]
 	abstract literalKeys: Key[]
 
-	rawKeyOf(): TypeNode {
+	rawKeyOf(): SchemaNode {
 		return this.$.units(this.literalKeys)
 	}
 
@@ -46,7 +46,7 @@ export abstract class BaseBasis<
 	}
 }
 
-export type inferBasis<def extends Schema<BasisKind>> =
+export type inferBasis<def extends NodeDef<BasisKind>> =
 	//allow any to be used to access all constraints
 	isAny<def> extends true
 		? any
@@ -54,10 +54,10 @@ export type inferBasis<def extends Schema<BasisKind>> =
 		? inferDomain<def>
 		: def extends Constructor<infer instance>
 		? instance
-		: def extends DomainSchema<infer domain>
+		: def extends DomainDef<infer domain>
 		? inferDomain<domain>
-		: def extends ProtoSchema<infer proto>
+		: def extends ProtoDef<infer proto>
 		? instanceOf<proto>
-		: def extends UnitSchema<infer is>
+		: def extends UnitDef<infer is>
 		? is
 		: never

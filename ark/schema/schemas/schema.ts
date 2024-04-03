@@ -4,23 +4,28 @@ import {
 	type Domain,
 	type conform
 } from "@arktype/util"
-import { BaseNode, type Node, type TypeNode, type TypeSchema } from "../base.js"
+import {
+	BaseNode,
+	type Node,
+	type SchemaDef,
+	type SchemaNode
+} from "../base.js"
 import type { constrain } from "../constraints/ast.js"
 import {
 	throwInvalidOperandError,
 	type PrimitiveConstraintKind
 } from "../constraints/constraint.js"
-import type { Schema, reducibleKindOf } from "../kinds.js"
+import type { NodeDef, reducibleKindOf } from "../kinds.js"
 import type { instantiateSchema } from "../parser/inference.js"
 import { node, root } from "../parser/parse.js"
 import type { BaseMeta, BaseNodeDeclaration } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
-	typeKindsRightOf,
+	schemaKindsRightOf,
 	type ConstraintKind,
 	type NodeKind,
+	type SchemaKind,
 	type TypeIntersection,
-	type TypeKind,
 	type kindRightOf
 } from "../shared/implement.js"
 import type { inferIntersection } from "../shared/intersections.js"
@@ -36,17 +41,17 @@ import type {
 } from "./morph.js"
 import type { UnionChildKind, UnionNode } from "./union.js"
 
-export const defineRightwardIntersections = <kind extends TypeKind>(
+export const defineRightwardIntersections = <kind extends SchemaKind>(
 	kind: kind,
 	implementation: TypeIntersection<kind, typeKindRightOf<kind>>
 ): { [k in typeKindRightOf<kind>]: TypeIntersection<kind, k> } =>
-	flatMorph(typeKindsRightOf(kind), (i, kind) => [
+	flatMorph(schemaKindsRightOf(kind), (i, kind) => [
 		kind,
 		implementation
 	]) as never
 
 export interface BaseTypeDeclaration extends BaseNodeDeclaration {
-	kind: TypeKind
+	kind: SchemaKind
 }
 
 export abstract class BaseType<
@@ -58,8 +63,8 @@ export abstract class BaseType<
 		? this.inner.branches
 		: [this as never]
 
-	private keyofCache: TypeNode | undefined
-	keyof(): TypeNode<keyof this["in"]["infer"]> {
+	private keyofCache: SchemaNode | undefined
+	keyof(): SchemaNode<keyof this["in"]["infer"]> {
 		if (!this.keyofCache) {
 			this.keyofCache = this.rawKeyOf()
 			if (this.keyofCache.isNever())
@@ -70,22 +75,22 @@ export abstract class BaseType<
 		return this.keyofCache as never
 	}
 
-	abstract rawKeyOf(): TypeNode
+	abstract rawKeyOf(): SchemaNode
 
-	intersect<r extends TypeNode>(
+	intersect<r extends SchemaNode>(
 		r: r
-	): TypeNode<inferIntersection<this["infer"], r["infer"]>> | Disjoint {
+	): SchemaNode<inferIntersection<this["infer"], r["infer"]>> | Disjoint {
 		return this.intersectInternal(r) as never
 	}
 
-	and<r extends TypeNode>(
+	and<r extends SchemaNode>(
 		r: r
-	): TypeNode<inferIntersection<this["infer"], r["infer"]>> {
+	): SchemaNode<inferIntersection<this["infer"], r["infer"]>> {
 		const result = this.intersect(r)
 		return result instanceof Disjoint ? result.throw() : (result as never)
 	}
 
-	or<r extends TypeNode>(r: r): TypeNode<t | r["infer"]> {
+	or<r extends SchemaNode>(r: r): SchemaNode<t | r["infer"]> {
 		const branches = [...this.branches, ...(r.branches as any)]
 		return root(branches) as never
 	}
@@ -99,19 +104,19 @@ export abstract class BaseType<
 	}
 
 	get<key extends PropertyKey>(
-		...path: readonly (key | TypeNode<key>)[]
+		...path: readonly (key | SchemaNode<key>)[]
 	): this {
 		return this
 	}
 
-	extract(other: TypeNode): TypeNode {
+	extract(other: SchemaNode): SchemaNode {
 		return root(
 			this.branches.filter((branch) => branch.extends(other)),
 			{ root: true }
 		)
 	}
 
-	exclude(other: TypeNode): TypeNode {
+	exclude(other: SchemaNode): SchemaNode {
 		return root(
 			this.branches.filter((branch) => !branch.extends(other)),
 			{ root: true }
@@ -130,7 +135,7 @@ export abstract class BaseType<
 
 	// add the extra inferred intersection so that a variable of Type
 	// can be narrowed without other branches becoming never
-	extends<r>(other: TypeNode<r>): this is TypeNode<r> & { [inferred]?: r } {
+	extends<r>(other: SchemaNode<r>): this is SchemaNode<r> & { [inferred]?: r } {
 		const intersection = this.intersect(other as never)
 		return (
 			!(intersection instanceof Disjoint) && this.equals(intersection as never)
@@ -152,7 +157,7 @@ export abstract class BaseType<
 
 	morph<
 		morph extends Morph<this["infer"]>,
-		outValidatorSchema extends TypeSchema = never
+		outValidatorSchema extends SchemaDef = never
 	>(
 		morph: morph,
 		outValidator?: outValidatorSchema
@@ -194,15 +199,15 @@ export abstract class BaseType<
 
 	constrain<
 		kind extends PrimitiveConstraintKind,
-		const schema extends Schema<kind>
+		const schema extends NodeDef<kind>
 	>(
 		kind: conform<kind, constraintKindOf<this["in"]["infer"]>>,
 		schema: schema
-	): TypeNode<constrain<t, kind, schema>> {
+	): SchemaNode<constrain<t, kind, schema>> {
 		return this.rawConstrain(kind, schema) as never
 	}
 
-	protected rawConstrain(kind: ConstraintKind, schema: unknown): TypeNode {
+	protected rawConstrain(kind: ConstraintKind, schema: unknown): SchemaNode {
 		const constraint = node(kind, schema as never)
 		if (
 			constraint.impliedBasis &&
@@ -224,7 +229,7 @@ export abstract class BaseType<
 	}
 }
 
-export type intersectType<l extends TypeKind, r extends NodeKind> = [
+export type intersectType<l extends SchemaKind, r extends NodeKind> = [
 	l,
 	r
 ] extends [r, l]
@@ -245,11 +250,11 @@ export interface BaseBasis {
 	domain: Domain
 }
 
-export type typeKindRightOf<kind extends TypeKind> = Extract<
+export type typeKindRightOf<kind extends SchemaKind> = Extract<
 	kindRightOf<kind>,
-	TypeKind
+	SchemaKind
 >
 
-export type typeKindOrRightOf<kind extends TypeKind> =
+export type typeKindOrRightOf<kind extends SchemaKind> =
 	| kind
 	| typeKindRightOf<kind>

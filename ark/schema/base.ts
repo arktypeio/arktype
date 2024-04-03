@@ -28,11 +28,22 @@ import type {
 	Declaration,
 	Inner,
 	NodeClassesByKind,
-	Schema,
+	NodeDef,
 	ioKindOf,
 	reducibleKindOf
 } from "./kinds.js"
 import { node } from "./parser/parse.js"
+import type { DomainNode } from "./schemas/domain.js"
+import type { IntersectionNode } from "./schemas/intersection.js"
+import type {
+	MorphNode,
+	distillConstrainableIn,
+	distillConstrainableOut,
+	distillOut
+} from "./schemas/morph.js"
+import type { ProtoNode } from "./schemas/proto.js"
+import type { UnionNode } from "./schemas/union.js"
+import type { UnitNode } from "./schemas/unit.js"
 import type { BaseScope } from "./scope.js"
 import type { NodeCompiler } from "./shared/compile.js"
 import type {
@@ -49,13 +60,13 @@ import {
 	precedenceOfKind,
 	propKinds,
 	refinementKinds,
-	typeKinds,
+	schemaKinds,
 	type BasisKind,
 	type ConstraintKind,
 	type NodeKind,
 	type PropKind,
 	type RefinementKind,
-	type TypeKind,
+	type SchemaKind,
 	type UnknownIntersectionResult,
 	type UnknownNodeImplementation,
 	type nodeImplementationInputOf,
@@ -67,17 +78,6 @@ import {
 	type TraverseApply
 } from "./shared/traversal.js"
 import { arkKind, inferred } from "./shared/utils.js"
-import type { DomainNode } from "./types/domain.js"
-import type { IntersectionNode } from "./types/intersection.js"
-import type {
-	MorphNode,
-	distillConstrainableIn,
-	distillConstrainableOut,
-	distillOut
-} from "./types/morph.js"
-import type { ProtoNode } from "./types/proto.js"
-import type { UnionNode } from "./types/union.js"
-import type { UnitNode } from "./types/unit.js"
 
 export interface BaseAttachments {
 	alias?: string
@@ -315,8 +315,8 @@ export abstract class BaseNode<
 		return includes(propKinds, this.kind)
 	}
 
-	isType(): this is TypeNode {
-		return includes(typeKinds, this.kind)
+	isType(): this is SchemaNode {
+		return includes(schemaKinds, this.kind)
 	}
 
 	hasUnit<value>(value: unknown): this is UnitNode<value> {
@@ -478,9 +478,12 @@ export type Node<
 	t = any
 > = NodesByKind<t>[kind]
 
-export type TypeNode<t = any, kind extends TypeKind = TypeKind> = Node<kind, t>
+export type SchemaNode<t = any, kind extends SchemaKind = SchemaKind> = Node<
+	kind,
+	t
+>
 
-export type TypeSchema<kind extends TypeKind = TypeKind> = Schema<kind>
+export type SchemaDef<kind extends SchemaKind = SchemaKind> = NodeDef<kind>
 
 export type ConstraintNode<kind extends ConstraintKind = ConstraintKind> =
 	Node<kind>

@@ -14,16 +14,16 @@ export interface MaxInner extends BaseRangeInner {
 	rule: number
 }
 
-export interface NormalizedMaxSchema extends BaseNormalizedRangeSchema {
+export interface NormalizedMaxDef extends BaseNormalizedRangeSchema {
 	rule: number
 }
 
-export type MaxSchema = NormalizedMaxSchema | number
+export type MaxDef = NormalizedMaxDef | number
 
 export type MaxDeclaration = declareNode<{
 	kind: "max"
-	schema: MaxSchema
-	normalizedSchema: NormalizedMaxSchema
+	def: MaxDef
+	normalizedDef: NormalizedMaxDef
 	inner: MaxInner
 	prerequisite: number
 	errorContext: MaxInner

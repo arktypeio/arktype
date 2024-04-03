@@ -1,7 +1,7 @@
 import {
 	keywordNodes,
 	type Node,
-	type TypeNode,
+	type SchemaNode,
 	type writeInvalidPropertyKeyMessage
 } from "@arktype/schema"
 import {
@@ -20,7 +20,10 @@ import type { astToString } from "./semantic/utils.js"
 import type { validateString } from "./semantic/validate.js"
 import { Scanner } from "./string/shift/scanner.js"
 
-export const parseObjectLiteral = (def: Dict, ctx: ParseContext): TypeNode => {
+export const parseObjectLiteral = (
+	def: Dict,
+	ctx: ParseContext
+): SchemaNode => {
 	const propNodes: Node<"prop">[] = []
 	const indexNodes: Node<"index">[] = []
 	// We only allow a spread operator to be used as the first key in an object

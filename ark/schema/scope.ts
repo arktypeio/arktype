@@ -10,17 +10,20 @@ import {
 	type Json,
 	type requireKeys
 } from "@arktype/util"
-import type { Node, TypeNode, TypeSchema, UnknownNode } from "./base.js"
+import type { Node, SchemaDef, SchemaNode, UnknownNode } from "./base.js"
 import { mergeConfigs } from "./config.js"
 import type { GenericNode } from "./generic.js"
 import type { Ark } from "./keywords/keywords.js"
-import type { reducibleKindOf, Schema } from "./kinds.js"
+import type { NodeDef, reducibleKindOf } from "./kinds.js"
 import type { instantiateSchema, validateSchema } from "./parser/inference.js"
 import {
 	parseNode,
 	schemaKindOf,
 	type SchemaParseOptions
 } from "./parser/parse.js"
+import type { distillIn, distillOut } from "./schemas/morph.js"
+import type { UnionNode } from "./schemas/union.js"
+import type { UnitNode } from "./schemas/unit.js"
 import { NodeCompiler } from "./shared/compile.js"
 import type {
 	ActualWriter,
@@ -32,17 +35,14 @@ import type {
 import type {
 	DescriptionWriter,
 	NodeKind,
-	TypeKind
+	SchemaKind
 } from "./shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "./shared/traversal.js"
 import { addArkKind, hasArkKind } from "./shared/utils.js"
-import type { distillIn, distillOut } from "./types/morph.js"
-import type { UnionNode } from "./types/union.js"
-import type { UnitNode } from "./types/unit.js"
 
-export type nodeResolutions<keywords> = { [k in keyof keywords]: TypeNode }
+export type nodeResolutions<keywords> = { [k in keyof keywords]: SchemaNode }
 
-export type BaseResolutions = Record<string, TypeNode>
+export type BaseResolutions = Record<string, SchemaNode>
 
 declare global {
 	export interface StaticArkConfig {
@@ -133,7 +133,7 @@ export const resolveConfig = (
 	config: ArkConfig | undefined
 ): ResolvedArkConfig => extendConfig(defaultConfig, config) as never
 
-export type SpaceResolutions = Record<string, TypeNode | undefined>
+export type SpaceResolutions = Record<string, SchemaNode | undefined>
 
 export type exportedName<$> = Exclude<keyof $, PrivateDeclaration>
 
@@ -176,7 +176,7 @@ export class BaseScope<$ = any> {
 		) as never
 	}
 
-	node<kind extends NodeKind, const schema extends Schema<kind>>(
+	node<kind extends NodeKind, const schema extends NodeDef<kind>>(
 		kind: kind,
 		schema: schema,
 		opts?: SchemaParseOptions
@@ -184,7 +184,7 @@ export class BaseScope<$ = any> {
 		return parseNode(kind, schema, this, opts) as never
 	}
 
-	root<const schema extends TypeSchema>(
+	root<const schema extends SchemaDef>(
 		schema: schema,
 		opts?: SchemaParseOptions
 	): instantiateSchema<schema, $> {
@@ -215,15 +215,15 @@ export class BaseScope<$ = any> {
 		}
 	}
 
-	parseNode<kinds extends NodeKind | array<TypeKind>>(
+	parseNode<kinds extends NodeKind | array<SchemaKind>>(
 		kinds: kinds,
-		schema: Schema<flattenListable<kinds>>,
+		schema: NodeDef<flattenListable<kinds>>,
 		opts?: SchemaParseOptions
 	): Node<reducibleKindOf<flattenListable<kinds>>> {
 		return parseNode(kinds, schema, this, opts) as never
 	}
 
-	maybeResolve(name: string): TypeNode | GenericNode | undefined {
+	maybeResolve(name: string): SchemaNode | GenericNode | undefined {
 		const cached = this.resolutions[name]
 		if (cached) {
 			return cached
@@ -246,7 +246,7 @@ export class BaseScope<$ = any> {
 	/** If name is a valid reference to a submodule alias, return its resolution  */
 	private maybeResolveSubalias(
 		name: string
-	): TypeNode | GenericNode | undefined {
+	): SchemaNode | GenericNode | undefined {
 		const dotIndex = name.indexOf(".")
 		if (dotIndex === -1) {
 			return
@@ -270,7 +270,7 @@ export class BaseScope<$ = any> {
 		// might be something like a decimal literal, so just fall through to return
 	}
 
-	maybeResolveNode(name: string): TypeNode | undefined {
+	maybeResolveNode(name: string): SchemaNode | undefined {
 		const result = this.maybeResolve(name)
 		return hasArkKind(result, "node") ? (result as never) : undefined
 	}

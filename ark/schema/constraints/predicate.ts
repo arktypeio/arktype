@@ -14,14 +14,14 @@ export interface PredicateInner<rule extends Predicate<any> = Predicate<any>>
 	readonly predicate: rule
 }
 
-export type NormalizedPredicateSchema = PredicateInner
+export type NormalizedPredicateDef = PredicateInner
 
-export type PredicateSchema = NormalizedPredicateSchema | Predicate<any>
+export type PredicateDef = NormalizedPredicateDef | Predicate<any>
 
 export type PredicateDeclaration = declareNode<{
 	kind: "predicate"
-	schema: PredicateSchema
-	normalizedSchema: NormalizedPredicateSchema
+	def: PredicateDef
+	normalizedDef: NormalizedPredicateDef
 	inner: PredicateInner
 	intersectionIsOpen: true
 	errorContext: {}
@@ -38,8 +38,7 @@ export class PredicateNode extends BasePrimitiveConstraint<PredicateDeclaration>
 		keys: {
 			predicate: {}
 		},
-		normalize: (schema) =>
-			typeof schema === "function" ? { predicate: schema } : schema,
+		normalize: (def) => (typeof def === "function" ? { predicate: def } : def),
 		defaults: {
 			description(node) {
 				return `valid according to ${

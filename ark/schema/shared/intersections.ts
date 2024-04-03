@@ -7,7 +7,7 @@ import {
 	type isAny
 } from "@arktype/util"
 import type { of } from "../constraints/ast.js"
-import type { MorphAst, Out } from "../types/morph.js"
+import type { MorphAst, Out } from "../schemas/morph.js"
 
 export type inferIntersection<l, r> = [l] extends [never]
 	? never

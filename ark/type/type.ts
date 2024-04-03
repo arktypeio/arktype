@@ -4,11 +4,11 @@ import {
 	type ArkResult,
 	type BaseMeta,
 	type Morph,
+	type NodeDef,
 	type Out,
 	type Predicate,
 	type PrimitiveConstraintKind,
-	type Schema,
-	type TypeNode,
+	type SchemaNode,
 	type constrain,
 	type constraintKindOf,
 	type distillConstrainableIn,
@@ -127,7 +127,7 @@ export class Type<t = unknown, $ = any> extends Callable<
 	declare [inferred]: t
 	declare infer: distillOut<t>
 
-	root: TypeNode<t>
+	root: SchemaNode<t>
 	allows: this["root"]["allows"]
 	description: string
 	expression: string
@@ -137,7 +137,7 @@ export class Type<t = unknown, $ = any> extends Callable<
 		public definition: unknown,
 		public $: Scope
 	) {
-		const root = $.parseTypeRoot(definition) as {} as TypeNode<t>
+		const root = $.parseTypeRoot(definition) as {} as SchemaNode<t>
 		super(root.apply as never, { bind: root })
 		this.root = root
 		this.allows = root.allows.bind(root)
@@ -262,7 +262,7 @@ export class Type<t = unknown, $ = any> extends Callable<
 
 	constrain<
 		kind extends PrimitiveConstraintKind,
-		const schema extends Schema<kind>
+		const schema extends NodeDef<kind>
 	>(
 		kind: conform<kind, constraintKindOf<this["in"]["infer"]>>,
 		schema: schema

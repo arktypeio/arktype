@@ -1,4 +1,4 @@
-import type { TypeNode } from "../../base.js"
+import type { SchemaNode } from "../../base.js"
 import { tsKeywords } from "../../keywords/tsKeywords.js"
 import { node } from "../../parser/parse.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
@@ -12,12 +12,12 @@ export interface DivisorInner extends BaseMeta {
 	readonly rule: number
 }
 
-export type DivisorSchema = DivisorInner | number
+export type DivisorDef = DivisorInner | number
 
 export type DivisorDeclaration = declareNode<{
 	kind: "divisor"
-	schema: DivisorSchema
-	normalizedSchema: DivisorInner
+	def: DivisorDef
+	normalizedDef: DivisorInner
 	inner: DivisorInner
 	prerequisite: number
 	errorContext: DivisorInner
@@ -57,12 +57,12 @@ export class DivisorNode extends BasePrimitiveConstraint<DivisorDeclaration> {
 	readonly expression = `% ${this.rule}`
 }
 
-export const writeIndivisibleMessage = <node extends TypeNode>(
+export const writeIndivisibleMessage = <node extends SchemaNode>(
 	t: node
 ): writeIndivisibleMessage<node> =>
 	writeInvalidOperandMessage("divisor", tsKeywords.number, t)
 
-export type writeIndivisibleMessage<node extends TypeNode> =
+export type writeIndivisibleMessage<node extends SchemaNode> =
 	writeInvalidOperandMessage<"divisor", node>
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm

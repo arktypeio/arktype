@@ -15,16 +15,16 @@ export interface MaxLengthInner extends BaseRangeInner {
 	rule: number
 }
 
-export interface NormalizedMaxLengthSchema extends BaseNormalizedRangeSchema {
+export interface NormalizedMaxLengthDef extends BaseNormalizedRangeSchema {
 	rule: number
 }
 
-export type MaxLengthSchema = NormalizedMaxLengthSchema | number
+export type MaxLengthDef = NormalizedMaxLengthDef | number
 
 export type MaxLengthDeclaration = declareNode<{
 	kind: "maxLength"
-	schema: MaxLengthSchema
-	normalizedSchema: NormalizedMaxLengthSchema
+	def: MaxLengthDef
+	normalizedDef: NormalizedMaxLengthDef
 	inner: MaxLengthInner
 	prerequisite: LengthBoundableData
 	errorContext: MaxLengthInner
@@ -40,8 +40,7 @@ export class MaxLengthNode extends BaseRange<MaxLengthDeclaration> {
 				rule: {},
 				exclusive: parseExclusiveKey
 			},
-			normalize: (schema) =>
-				typeof schema === "number" ? { rule: schema } : schema,
+			normalize: (def) => (typeof def === "number" ? { rule: def } : def),
 			defaults: {
 				description(node) {
 					return node.exclusive

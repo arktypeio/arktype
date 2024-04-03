@@ -11,13 +11,13 @@ import {
 	type listable,
 	type requireKeys
 } from "@arktype/util"
-import type { Node, TypeNode, UnknownNode } from "../base.js"
+import type { Node, SchemaNode, UnknownNode } from "../base.js"
 import type { PropsGroupInput } from "../constraints/props/props.js"
 import type { Declaration, Inner, errorContext } from "../kinds.js"
 import type { SchemaParseContext } from "../parser/parse.js"
+import type { IntersectionInner } from "../schemas/intersection.js"
+import type { typeKindOrRightOf, typeKindRightOf } from "../schemas/schema.js"
 import type { NodeConfig, ParsedUnknownNodeConfig } from "../scope.js"
-import type { IntersectionInner } from "../types/intersection.js"
-import type { typeKindOrRightOf, typeKindRightOf } from "../types/type.js"
 import type {
 	BaseErrorContext,
 	BaseMeta,
@@ -62,7 +62,7 @@ export const constraintKinds = [
 
 export type ConstraintKind = (typeof constraintKinds)[number]
 
-export const typeKinds = [
+export const schemaKinds = [
 	"union",
 	"morph",
 	"unit",
@@ -71,7 +71,7 @@ export const typeKinds = [
 	"domain"
 ] as const
 
-export type TypeKind = (typeof typeKinds)[number]
+export type SchemaKind = (typeof schemaKinds)[number]
 
 export const intersectionChildKinds = [
 	"proto",
@@ -81,10 +81,10 @@ export const intersectionChildKinds = [
 
 export type IntersectionChildKind = (typeof intersectionChildKinds)[number]
 
-export type NodeKind = TypeKind | ConstraintKind
+export type NodeKind = SchemaKind | ConstraintKind
 
 export const nodeKinds = [
-	...typeKinds,
+	...schemaKinds,
 	...refinementKinds,
 	...propKinds,
 	"predicate"
@@ -158,15 +158,15 @@ export type ConstraintIntersectionMap<kind extends ConstraintKind> = evaluate<
 >
 
 export type TypeIntersection<
-	lKind extends TypeKind,
+	lKind extends SchemaKind,
 	rKind extends typeKindOrRightOf<lKind>
-> = (l: Node<lKind>, r: Node<rKind>) => TypeNode | Disjoint
+> = (l: Node<lKind>, r: Node<rKind>) => SchemaNode | Disjoint
 
-export type TypeIntersectionMap<kind extends TypeKind> = {
+export type TypeIntersectionMap<kind extends SchemaKind> = {
 	[rKind in typeKindOrRightOf<kind>]: TypeIntersection<kind, rKind>
 }
 
-export type IntersectionMap<kind extends NodeKind> = kind extends TypeKind
+export type IntersectionMap<kind extends NodeKind> = kind extends SchemaKind
 	? TypeIntersectionMap<kind>
 	: ConstraintIntersectionMap<kind & ConstraintKind>
 
@@ -212,17 +212,17 @@ export const precedenceOfKind = <kind extends NodeKind>(
 
 export type kindRightOf<kind extends NodeKind> = RightsByKind[kind]
 
-export const typeKindsRightOf = <kind extends TypeKind>(
+export const schemaKindsRightOf = <kind extends SchemaKind>(
 	kind: kind
 ): typeKindRightOf<kind>[] =>
-	typeKinds.slice(precedenceOfKind(kind) + 1) as never
+	schemaKinds.slice(precedenceOfKind(kind) + 1) as never
 
 export type KeyDefinitions<d extends BaseNodeDeclaration> = {
 	[k in keyRequiringDefinition<d>]: NodeKeyImplementation<d, k>
 }
 
 type keyRequiringDefinition<d extends BaseNodeDeclaration> = Exclude<
-	keyof d["normalizedSchema"],
+	keyof d["normalizedDef"],
 	keyof BaseMeta
 >
 
@@ -240,7 +240,7 @@ export const defaultValueSerializer = (v: unknown): JsonData => {
 
 export type NodeKeyImplementation<
 	d extends BaseNodeDeclaration,
-	k extends keyof d["normalizedSchema"],
+	k extends keyof d["normalizedDef"],
 	instantiated = k extends keyof d["inner"] ? d["inner"][k] : never
 > = requireKeys<
 	{
@@ -254,12 +254,12 @@ export type NodeKeyImplementation<
 				: instantiated
 		) => JsonData
 		parse?: (
-			schema: Exclude<d["normalizedSchema"][k], undefined>,
+			schema: Exclude<d["normalizedDef"][k], undefined>,
 			ctx: SchemaParseContext
 		) => instantiated
 	},
 	// require parse if we can't guarantee the schema value will be valid on inner
-	| (d["normalizedSchema"][k] extends instantiated ? never : "parse")
+	| (d["normalizedDef"][k] extends instantiated ? never : "parse")
 	// require keys containing children specify it
 	| ([instantiated] extends [listable<UnknownNode> | undefined]
 			? "child"
@@ -269,7 +269,7 @@ export type NodeKeyImplementation<
 interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	kind: d["kind"]
 	keys: KeyDefinitions<d>
-	normalize: (schema: d["schema"]) => d["normalizedSchema"]
+	normalize: (schema: d["def"]) => d["normalizedDef"]
 	hasAssociatedError: d["errorContext"] extends null ? false : true
 	collapsibleKey?: keyof d["inner"]
 	reduce?: (inner: d["inner"]) => Node<d["reducibleTo"]> | Disjoint | undefined

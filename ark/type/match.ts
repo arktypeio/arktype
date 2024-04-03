@@ -1,7 +1,7 @@
 import type {
 	Morph,
 	Narrowed,
-	TypeNode,
+	SchemaNode,
 	distillOut,
 	inferIntersection
 } from "@arktype/schema"
@@ -171,7 +171,7 @@ export type MatchInvocation<ctx extends MatchInvocationContext> = <
 
 export const createMatchParser = <$>($: Scope): MatchParser<$> => {
 	const matchParser = (isRestricted: boolean) => {
-		const handledCases: { when: TypeNode; then: Morph }[] = []
+		const handledCases: { when: SchemaNode; then: Morph }[] = []
 		let defaultCase: ((x: unknown) => unknown) | null = null
 
 		const parser = {

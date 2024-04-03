@@ -143,7 +143,7 @@ export const parseDateLimit = (limit: LimitSchemaValue): Date =>
 export interface BaseRangeDeclaration extends BaseNodeDeclaration {
 	kind: RangeKind
 	inner: BaseRangeInner
-	normalizedSchema: BaseNormalizedRangeSchema
+	normalizedDef: BaseNormalizedRangeSchema
 }
 
 export const operandKindsByBoundKind = {

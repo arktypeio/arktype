@@ -21,21 +21,21 @@ import {
 	RegexNode,
 	type RegexDeclaration
 } from "./constraints/refinements/regex.js"
-import type { NodeKind } from "./shared/implement.js"
-import type { makeRootAndArrayPropertiesMutable } from "./shared/utils.js"
-import { DomainNode, type DomainDeclaration } from "./types/domain.js"
+import { DomainNode, type DomainDeclaration } from "./schemas/domain.js"
 import {
 	IntersectionNode,
 	type IntersectionDeclaration
-} from "./types/intersection.js"
+} from "./schemas/intersection.js"
 import {
 	MorphNode,
 	type MorphChildKind,
 	type MorphDeclaration
-} from "./types/morph.js"
-import { ProtoNode, type ProtoDeclaration } from "./types/proto.js"
-import { UnionNode, type UnionDeclaration } from "./types/union.js"
-import { UnitNode, type UnitDeclaration } from "./types/unit.js"
+} from "./schemas/morph.js"
+import { ProtoNode, type ProtoDeclaration } from "./schemas/proto.js"
+import { UnionNode, type UnionDeclaration } from "./schemas/union.js"
+import { UnitNode, type UnitDeclaration } from "./schemas/unit.js"
+import type { NodeKind } from "./shared/implement.js"
+import type { makeRootAndArrayPropertiesMutable } from "./shared/utils.js"
 
 export interface NodeDeclarationsByKind extends BoundDeclarations {
 	domain: DomainDeclaration
@@ -74,10 +74,10 @@ export type Declaration<kind extends NodeKind> = NodeDeclarationsByKind[kind]
 
 export type Implementation<kind extends NodeKind> = NodeClassesByKind[kind]
 
-export type Schema<kind extends NodeKind> = Declaration<kind>["schema"]
+export type NodeDef<kind extends NodeKind> = Declaration<kind>["def"]
 
 export type NormalizedSchema<kind extends NodeKind> =
-	Declaration<kind>["normalizedSchema"]
+	Declaration<kind>["normalizedDef"]
 
 export type childKindOf<kind extends NodeKind> = Declaration<kind>["childKind"]
 

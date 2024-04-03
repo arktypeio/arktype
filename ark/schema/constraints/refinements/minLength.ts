@@ -13,16 +13,16 @@ export interface MinLengthInner extends BaseRangeInner {
 	rule: number
 }
 
-export interface NormalizedMinLengthSchema extends BaseNormalizedRangeSchema {
+export interface NormalizedMinLengthDef extends BaseNormalizedRangeSchema {
 	rule: number
 }
 
-export type MinLengthSchema = NormalizedMinLengthSchema | number
+export type MinLengthDef = NormalizedMinLengthDef | number
 
 export type MinLengthDeclaration = declareNode<{
 	kind: "minLength"
-	schema: MinLengthSchema
-	normalizedSchema: NormalizedMinLengthSchema
+	def: MinLengthDef
+	normalizedDef: NormalizedMinLengthDef
 	inner: MinLengthInner
 	prerequisite: LengthBoundableData
 	errorContext: MinLengthInner
@@ -38,8 +38,7 @@ export class MinLengthNode extends BaseRange<MinLengthDeclaration> {
 				rule: {},
 				exclusive: parseExclusiveKey
 			},
-			normalize: (schema) =>
-				typeof schema === "number" ? { rule: schema } : schema,
+			normalize: (def) => (typeof def === "number" ? { rule: def } : def),
 			defaults: {
 				description(node) {
 					return node.exclusive
