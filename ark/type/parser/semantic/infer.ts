@@ -1,6 +1,7 @@
 import type {
 	Date,
 	DateLiteral,
+	GenericProps,
 	LimitLiteral,
 	RegexLiteral,
 	ambient,
@@ -11,7 +12,7 @@ import type {
 	string
 } from "@arktype/schema"
 import type { BigintLiteral, NumberLiteral, array } from "@arktype/util"
-import type { Generic, GenericProps } from "../../generic.js"
+
 import type {
 	UnparsedScope,
 	resolve,

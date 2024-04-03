@@ -1,8 +1,6 @@
 import {
 	Disjoint,
-	arkKind,
 	hasArkKind,
-	keywordNodes,
 	type ArkResult,
 	type BaseMeta,
 	type Morph,
@@ -20,13 +18,11 @@ import {
 	type distillOut,
 	type includesMorphs,
 	type inferIntersection,
-	type inferMorphOut,
 	type inferNarrow,
 	type inferred
 } from "@arktype/schema"
 import {
 	Callable,
-	flatMorph,
 	type Constructor,
 	type Json,
 	type array,
@@ -43,10 +39,7 @@ import type {
 	validateDeclared,
 	validateDefinition
 } from "./parser/definition.js"
-import {
-	parseGenericParams,
-	type GenericParamsParseError
-} from "./parser/generic.js"
+import { parseGenericParams } from "./parser/generic.js"
 import type {
 	IndexOneOperator,
 	IndexZeroOperator,
