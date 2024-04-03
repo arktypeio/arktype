@@ -44,7 +44,8 @@ describe("submodules", () => {
 			a: "string",
 			c: "a",
 			sub: () =>
-				$.scope({
+				scope({
+					...$.import("a", "c"),
 					foo: "a",
 					bar: "foo"
 				}).export()

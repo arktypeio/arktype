@@ -17,8 +17,9 @@ describe("scope imports", () => {
 
 	it("single", () => {
 		const $ = scope({
-			...threeSixtyNoModule
-		}).scope({ threeSixtyNo: "three|sixty|no" })
+			...threeSixtyNoModule,
+			threeSixtyNo: "three|sixty|no"
+		})
 		attest<{ threeSixtyNo: 3 | 60 | "no" }>($.infer)
 	})
 
@@ -29,7 +30,8 @@ describe("scope imports", () => {
 			extra: "true"
 		})
 
-		const imported = base.scope({
+		const imported = scope({
+			...base.import(),
 			a: "three|sixty|no|yes|extra"
 		})
 
@@ -62,7 +64,7 @@ describe("scope imports", () => {
 		const types = scope({
 			...threeSixtyNoScope.import("three", "no"),
 			...scopeCreep.export(),
-			public: "hasCrept|#three|#no|#private",
+			public: "hasCrept|three|no|private",
 			"#private": "uuid"
 		}).export()
 
@@ -99,7 +101,7 @@ describe("private aliases", () => {
 	})
 	it("generic", () => {
 		const types = scope({
-			foo: "#bar<string>[]",
+			foo: "bar<string>[]",
 			"#bar<t>": ["t"]
 		}).export()
 		attest<[string][]>(types.foo.infer)

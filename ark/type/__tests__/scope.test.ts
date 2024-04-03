@@ -54,15 +54,16 @@ describe("scope", () => {
 		// TODO: API?
 		// attest<{ a: string }>($.in.infer)
 	})
-	it("scope.scope", () => {
-		const $ = scope({
-			a: "string"
-		})
-		const importer = $.scope({ b: "a[]" })
-		attest<{ b: string[] }>(importer.infer)
-		const t = importer.type("b")
-		attest(t.json).equals(type("string[]").json)
-	})
+	// TODO: remove if not preserving
+	// it("scope.scope", () => {
+	// 	const $ = scope({
+	// 		a: "string"
+	// 	})
+	// 	const importer = $.scope({ b: "a[]" })
+	// 	attest<{ b: string[] }>(importer.infer)
+	// 	const t = importer.type("b")
+	// 	attest(t.json).equals(type("string[]").json)
+	// })
 	it("infers its own helpers", () => {
 		const $ = scope({
 			a: () => $.type("string"),

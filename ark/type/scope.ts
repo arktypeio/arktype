@@ -1,6 +1,5 @@
 import {
 	BaseScope,
-	extendConfig,
 	hasArkKind,
 	type ambient,
 	type ArkConfig,
@@ -44,26 +43,26 @@ import {
 	type TypeParser
 } from "./type.js"
 
-export type ScopeParser<parent> = {
+export type ScopeParser = {
 	<const def>(
-		def: validateScope<def, parent>,
+		def: validateScope<def>,
 		config?: ArkConfig
 	): Scope<inferBootstrapped<bootstrapAliases<def>>>
 }
 
-type validateScope<def, $> = {
+type validateScope<def> = {
 	[k in keyof def]: parseScopeKey<k>["params"] extends []
 		? // Not including Type here directly breaks inference
 		  def[k] extends Type | PreparsedResolution
 			? def[k]
-			: validateDefinition<def[k], $ & bootstrap<def>, {}>
+			: validateDefinition<def[k], bootstrap<def>, {}>
 		: parseScopeKey<k>["params"] extends GenericParamsParseError
 		? // use the full nominal type here to avoid an overlap between the
 		  // error message and a possible value for the property
 		  parseScopeKey<k>["params"][0]
 		: validateDefinition<
 				def[k],
-				$ & bootstrap<def>,
+				bootstrap<def>,
 				{
 					// once we support constraints on generic parameters, we'd use
 					// the base type here: https://github.com/arktypeio/arktype/issues/796
@@ -181,6 +180,9 @@ declare global {
 	}
 }
 
+export const scope: ScopeParser = ((def: Dict, config: ArkConfig = {}) =>
+	new Scope(def, config)) as never
+
 export class Scope<$ = any> extends BaseScope<$> {
 	private parseCache: Record<string, TypeNode> = {}
 
@@ -195,21 +197,11 @@ export class Scope<$ = any> extends BaseScope<$> {
 		super(aliases, config)
 	}
 
-	static root: ScopeParser<{}> = (aliases) => {
-		return new Scope(aliases, {}) as never
-	}
-
 	type: TypeParser<$> = createTypeParser(this as never) as never
 
 	match: MatchParser<$> = createMatchParser(this as never) as never
 
 	declare: DeclarationParser<$> = () => ({ type: this.type }) as never
-
-	scope: ScopeParser<$> = ((def: Dict, config: ArkConfig = {}) =>
-		new Scope(
-			{ ...this.import(), ...def },
-			extendConfig(this.config, config)
-		)) as never
 
 	define: DefinitionParser<$> = (def) => def as never
 
