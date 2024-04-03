@@ -13,6 +13,7 @@ import type { of } from "../constraints/ast.js"
 import { tsKeywords } from "../keywords/tsKeywords.js"
 import type { Schema } from "../kinds.js"
 import { node, parseNode, root, schemaKindOf } from "../parser/parse.js"
+import type { StaticArkOption } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -23,7 +24,6 @@ import type {
 	TraverseAllows,
 	TraverseApply
 } from "../shared/traversal.js"
-import type { StaticArkOption } from "../space.js"
 import {
 	BaseType,
 	defineRightwardIntersections,

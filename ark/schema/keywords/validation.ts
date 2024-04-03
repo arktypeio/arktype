@@ -1,5 +1,5 @@
 import { schema } from "../parser/parse.js"
-import { space } from "../space.js"
+import { space } from "../scope.js"
 import { creditCard } from "./utils/creditCard.js"
 import type { spaceFromExports } from "./utils/utils.js"
 

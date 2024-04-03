@@ -1,9 +1,8 @@
 import {
-	addArkKind,
 	BaseScope,
-	BaseType,
 	extendConfig,
 	hasArkKind,
+	type ambient,
 	type ArkConfig,
 	type arkKind,
 	type TypeNode
@@ -12,7 +11,6 @@ import {
 	domainOf,
 	flatMorph,
 	hasDomain,
-	isThunk,
 	throwParseError,
 	type array,
 	type Dict,
@@ -20,7 +18,7 @@ import {
 	type isAny,
 	type nominal
 } from "@arktype/util"
-import type { ambient, type } from "./ark.js"
+import type { type } from "./ark.js"
 import { createMatchParser, type MatchParser } from "./match.js"
 import {
 	parseObject,
@@ -34,27 +32,21 @@ import {
 	type GenericParamsParseError
 } from "./parser/generic.js"
 import { DynamicState } from "./parser/string/reduce/dynamic.js"
-import {
-	writeMissingSubmoduleAccessMessage,
-	writeNonSubmoduleDotMessage,
-	writeUnresolvableMessage
-} from "./parser/string/shift/operand/unenclosed.js"
 import { fullStringParse } from "./parser/string/string.js"
 import {
 	createTypeParser,
 	generic,
-	Type,
-	validateUninstantiatedGeneric,
 	type DeclarationParser,
 	type DefinitionParser,
 	type Generic,
 	type GenericProps,
+	type Type,
 	type TypeParser
 } from "./type.js"
 
 export type ScopeParser<parent> = {
 	<const def>(
-		def: validateScope<def, parent & ambient>,
+		def: validateScope<def, parent>,
 		config?: ArkConfig
 	): Scope<inferBootstrapped<bootstrapAliases<def>>>
 }
@@ -89,16 +81,6 @@ type Def<def = {}> = nominal<def, "unparsed">
 export type UnparsedScope = "$"
 
 type bootstrap<def> = bootstrapAliases<def>
-
-// type bootstrapLocals<def> = bootstrapAliases<{
-// 	// intersection seems redundant but it is more efficient for TS to avoid
-// 	// mapping all the keys
-// 	[k in keyof def & PrivateDeclaration as extractPrivateKey<k>]: def[k]
-// }>
-
-// type bootstrapExports<def> = bootstrapAliases<{
-// 	[k in Exclude<keyof def, PrivateDeclaration>]: def[k]
-// }>
 
 /** These are legal as values of a scope but not as definitions in other contexts */
 type PreparsedResolution = Module | GenericProps
@@ -140,10 +122,6 @@ type extractGenericParameters<k> = k extends GenericDeclaration<
 	infer params
 >
 	? params
-	: never
-
-type extractPrivateKey<k> = k extends PrivateDeclaration<infer key>
-	? key
 	: never
 
 type PrivateDeclaration<key extends string = string> = `#${key}`
@@ -292,122 +270,21 @@ export class Scope<$ = any> extends BaseScope<$> {
 		)
 	}
 
-	maybeResolve(name: string): TypeNode | Generic | undefined {
-		const cached = this.resolutions[name]
-		if (cached) {
-			return cached
-		}
-		let def = this.aliases[name]
-		if (!def) return this.maybeResolveSubalias(name)
-		if (isThunk(def) && !hasArkKind(def, "generic")) {
-			def = def()
-		}
-		// TODO: initialize here?
-		const resolution = hasArkKind(def, "generic")
-			? validateUninstantiatedGeneric(def)
-			: hasArkKind(def, "module")
-			? throwParseError(writeMissingSubmoduleAccessMessage(name))
-			: this.parseTypeRoot(def, { baseName: name, args: {} })
-		this.resolutions[name] = resolution
-		return resolution
-	}
-
-	/** If name is a valid reference to a submodule alias, return its resolution  */
-	private maybeResolveSubalias(name: string): TypeNode | Generic | undefined {
-		const dotIndex = name.indexOf(".")
-		if (dotIndex === -1) {
-			return
-		}
-		const dotPrefix = name.slice(0, dotIndex)
-		const prefixDef = this.aliases[dotPrefix]
-		if (hasArkKind(prefixDef, "module")) {
-			const resolution = prefixDef[name.slice(dotIndex + 1)]?.root
-			// if the first part of name is a submodule but the suffix is
-			// unresolvable, we can throw immediately
-			if (!resolution) {
-				return throwParseError(writeUnresolvableMessage(name))
-			}
-			this.resolutions[name] = resolution
-			return resolution
-		}
-		if (prefixDef !== undefined) {
-			return throwParseError(writeNonSubmoduleDotMessage(dotPrefix))
-		}
-		// if the name includes ".", but the prefix is not an alias, it
-		// might be something like a decimal literal, so just fall through to return
-	}
-
-	maybeResolveNode(name: string): TypeNode | undefined {
-		const result = this.maybeResolve(name)
-		return result instanceof BaseType ? (result as never) : undefined
-	}
-
 	import<names extends exportedName<$>[]>(
 		...names: names
 	): destructuredImportContext<
 		$,
 		names extends [] ? exportedName<$> : names[number]
 	> {
-		return addArkKind(
-			flatMorph(this.export(...names) as Dict, (alias, value) => [
-				`#${alias}`,
-				value
-			]) as never,
-			"module"
-		) as never
+		return this.rawImport(...names) as never
 	}
 
-	private exportedResolutions: MergedResolutions | undefined
-	private exportCache: ExportCache | undefined
 	export<names extends exportedName<$>[]>(
 		...names: names
 	): Module<
 		names extends [] ? $ : destructuredExportContext<$, names[number]>
 	> {
-		if (!this.exportCache) {
-			this.exportCache = {}
-			for (const name of this.exportedNames) {
-				let def = this.aliases[name]
-				if (hasArkKind(def, "generic")) {
-					this.exportCache[name] = def
-					continue
-				}
-				// TODO: thunk generics?
-				// handle generics before invoking thunks, since they use
-				// varargs they will incorrectly be considered thunks
-				if (isThunk(def)) {
-					def = def()
-				}
-				if (hasArkKind(def, "module")) {
-					this.exportCache[name] = def
-				} else {
-					this.exportCache[name] = new Type(
-						this.parseTypeRoot(def, {
-							baseName: name,
-							args: {}
-						}),
-						this
-					)
-				}
-			}
-			this.exportedResolutions = resolutionsOfModule(this.exportCache)
-			// TODO: add generic json
-			this.json = flatMorph(this.exportedResolutions, (k, v) =>
-				hasArkKind(v, "node") ? [k, v.json] : []
-			)
-			Object.assign(this.resolutions, this.exportedResolutions)
-			this.references = Object.values(this.referencesByName)
-			// this.bindCompiledScope(this.references)
-			this.resolved = true
-		}
-		const namesToExport = names.length ? names : this.exportedNames
-		return addArkKind(
-			flatMorph(namesToExport, (_, name) => [
-				name,
-				this.exportCache![name]
-			]) as never,
-			"module"
-		) as never
+		return this.rawExport(...names) as never
 	}
 }
 
@@ -446,12 +323,6 @@ export const writeShallowCycleErrorMessage = (
 	seen: string[]
 ): string =>
 	`Alias '${name}' has a shallow resolution cycle: ${[...seen, name].join(":")}`
-
-export const writeDuplicateNameMessage = <name extends string>(
-	name: name
-): writeDuplicateNameMessage<name> => `Duplicate name '${name}'`
-
-type writeDuplicateNameMessage<name extends string> = `Duplicate name '${name}'`
 
 export type ParsedScopeKey = {
 	isLocal: boolean

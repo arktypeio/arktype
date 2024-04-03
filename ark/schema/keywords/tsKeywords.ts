@@ -1,5 +1,5 @@
 import type { type } from "../parser/inference.js"
-import { space } from "../space.js"
+import { space } from "../scope.js"
 import type { spaceFromExports } from "./utils/utils.js"
 
 export namespace tsKeywords {

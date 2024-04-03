@@ -1,6 +1,5 @@
 import type { Key } from "@arktype/util"
-import type { TypeNode } from "../base.js"
-import { space } from "../space.js"
+import { space } from "../scope.js"
 import type { spaceFromExports } from "./utils/utils.js"
 
 export namespace internalKeywords {

@@ -1,4 +1,9 @@
-import { BaseType, hasArkKind, type TypeNode } from "@arktype/schema"
+import {
+	BaseType,
+	hasArkKind,
+	type ambient,
+	type TypeNode
+} from "@arktype/schema"
 import {
 	printable,
 	throwParseError,
@@ -10,7 +15,6 @@ import {
 	type join,
 	type NumberLiteral
 } from "@arktype/util"
-import type { ambient } from "../../../../ark.js"
 import type { Module } from "../../../../scope.js"
 import type { Generic, GenericProps } from "../../../../type.js"
 import type { GenericInstantiationAst } from "../../../semantic/infer.js"

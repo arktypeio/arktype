@@ -14,6 +14,12 @@ import {
 } from "@arktype/util"
 import type { BaseAttachments, Node, UnknownNode } from "../base.js"
 import type { Schema, reducibleKindOf } from "../kinds.js"
+import {
+	defaultConfig,
+	type ArkConfig,
+	type BaseScope,
+	type ResolvedArkConfig
+} from "../scope.js"
 import type { BaseNodeDeclaration } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
@@ -27,12 +33,6 @@ import {
 	type UnknownNodeImplementation
 } from "../shared/implement.js"
 import { hasArkKind } from "../shared/utils.js"
-import {
-	defaultConfig,
-	type ArkConfig,
-	type BaseScope,
-	type ResolvedArkConfig
-} from "../space.js"
 import type { UnionNode } from "../types/union.js"
 import type { UnitNode } from "../types/unit.js"
 import type {

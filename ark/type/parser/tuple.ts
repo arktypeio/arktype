@@ -147,7 +147,7 @@ const appendSpreadBranch = (
 	const spread = branch.firstReferenceOfKind("sequence")
 	if (!spread) {
 		// the only array with no sequence reference is unknown[]
-		return appendElement(base, "variadic", branch.$.keywords.unknown)
+		return appendElement(base, "variadic", keywordNodes.unknown)
 	}
 	spread.prefix.forEach((node) => appendElement(base, "required", node))
 	spread.optional.forEach((node) => appendElement(base, "optional", node))

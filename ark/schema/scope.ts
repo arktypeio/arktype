@@ -1,6 +1,8 @@
 import {
 	CompiledFunction,
 	flatMorph,
+	isThunk,
+	throwParseError,
 	type array,
 	type Dict,
 	type evaluate,
@@ -9,6 +11,8 @@ import {
 } from "@arktype/util"
 import type { Node, TypeNode, UnknownNode } from "./base.js"
 import { mergeConfigs } from "./config.js"
+import type { Ark } from "./keywords/keywords.js"
+import { addArkKind, hasArkKind } from "./main.js"
 import type { instantiateSchema, validateSchema } from "./parser/inference.js"
 import { root, type SchemaParseOptions } from "./parser/parse.js"
 import { NodeCompiler } from "./shared/compile.js"
@@ -34,8 +38,11 @@ export type BaseResolutions = Record<string, TypeNode>
 declare global {
 	export interface StaticArkConfig {
 		preserve(): never
+		ambient(): Ark
 	}
 }
+
+export type ambient = ReturnType<StaticArkConfig["ambient"]>
 
 type nodeConfigForKind<kind extends NodeKind> = Readonly<
 	evaluate<
@@ -156,6 +163,66 @@ export class BaseScope<$ = any> {
 		this.aliases = input.locals
 			? { ...input.locals, ...input.exports }
 			: input.exports
+	}
+
+	maybeResolve(name: string): TypeNode | Generic | undefined {
+		const cached = this.resolutions[name]
+		if (cached) {
+			return cached
+		}
+		let def = this.aliases[name]
+		if (!def) return this.maybeResolveSubalias(name)
+		if (isThunk(def) && !hasArkKind(def, "generic")) {
+			def = def()
+		}
+		// TODO: initialize here?
+		const resolution = hasArkKind(def, "generic")
+			? validateUninstantiatedGeneric(def)
+			: hasArkKind(def, "module")
+			? throwParseError(writeMissingSubmoduleAccessMessage(name))
+			: this.parseTypeRoot(def, { baseName: name, args: {} })
+		this.resolutions[name] = resolution
+		return resolution
+	}
+
+	/** If name is a valid reference to a submodule alias, return its resolution  */
+	private maybeResolveSubalias(name: string): TypeNode | Generic | undefined {
+		const dotIndex = name.indexOf(".")
+		if (dotIndex === -1) {
+			return
+		}
+		const dotPrefix = name.slice(0, dotIndex)
+		const prefixDef = this.aliases[dotPrefix]
+		if (hasArkKind(prefixDef, "module")) {
+			const resolution = prefixDef[name.slice(dotIndex + 1)]?.root
+			// if the first part of name is a submodule but the suffix is
+			// unresolvable, we can throw immediately
+			if (!resolution) {
+				return throwParseError(writeUnresolvableMessage(name))
+			}
+			this.resolutions[name] = resolution
+			return resolution
+		}
+		if (prefixDef !== undefined) {
+			return throwParseError(writeNonSubmoduleDotMessage(dotPrefix))
+		}
+		// if the name includes ".", but the prefix is not an alias, it
+		// might be something like a decimal literal, so just fall through to return
+	}
+
+	maybeResolveNode(name: string): TypeNode | undefined {
+		const result = this.maybeResolve(name)
+		return hasArkKind(result, "node") ? (result as never) : undefined
+	}
+
+	protected rawImport(...names: string[]): unknown {
+		return addArkKind(
+			flatMorph(this.rawExport(...names) as Dict, (alias, value) => [
+				`#${alias}`,
+				value
+			]) as never,
+			"module"
+		) as never
 	}
 
 	private exportedResolutions: SpaceResolutions | undefined

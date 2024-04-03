@@ -1,4 +1,4 @@
-import type { Ark, inferred } from "@arktype/schema"
+import type { ambient, Ark, inferred } from "@arktype/schema"
 import type { MatchParser } from "./match.js"
 import { Scope, type Module, type ScopeParser } from "./scope.js"
 import type {
@@ -21,14 +21,6 @@ type TsGenericsExports<$ = Ark> = {
 }
 
 export const tsGenerics = {} as Module<TsGenericsExports>
-
-declare global {
-	export interface StaticArkConfig {
-		ambient(): Ark
-	}
-}
-
-export type ambient = ReturnType<StaticArkConfig["ambient"]>
 
 export const ark: Scope<Ark> = Scope.root({}) as never
 

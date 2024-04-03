@@ -2,6 +2,7 @@ import {
 	Disjoint,
 	arkKind,
 	hasArkKind,
+	keywordNodes,
 	type ArkResult,
 	type BaseMeta,
 	type Morph,
@@ -298,10 +299,7 @@ export const validateUninstantiatedGeneric = (g: Generic): Generic => {
 		// the base type here: https://github.com/arktypeio/arktype/issues/796
 		{
 			baseName: "generic",
-			args: flatMorph(g.parameters, (_, name) => [
-				name,
-				g.scope.keywords.unknown
-			])
+			args: flatMorph(g.parameters, (_, name) => [name, keywordNodes.unknown])
 		}
 	)
 	return g

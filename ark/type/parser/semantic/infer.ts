@@ -3,6 +3,7 @@ import type {
 	DateLiteral,
 	LimitLiteral,
 	RegexLiteral,
+	ambient,
 	constrain,
 	distillIn,
 	inferIntersection,
@@ -10,7 +11,6 @@ import type {
 	string
 } from "@arktype/schema"
 import type { BigintLiteral, NumberLiteral, array } from "@arktype/util"
-import type { ambient } from "../../ark.js"
 import type {
 	UnparsedScope,
 	resolve,

@@ -4,7 +4,7 @@ import {
 	wellFormedNumberMatcher
 } from "@arktype/util"
 import { schema } from "../parser/parse.js"
-import { space } from "../space.js"
+import { space } from "../scope.js"
 import type { Out } from "../types/morph.js"
 import { parsedDate } from "./utils/date.js"
 import type { spaceFromExports } from "./utils/utils.js"

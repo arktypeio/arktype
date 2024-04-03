@@ -33,6 +33,7 @@ import type {
 	reducibleKindOf
 } from "./kinds.js"
 import { node } from "./parser/parse.js"
+import type { ResolvedArkConfig } from "./scope.js"
 import type { NodeCompiler } from "./shared/compile.js"
 import type {
 	BaseAttachmentsOf,
@@ -67,7 +68,6 @@ import {
 	type TraverseApply
 } from "./shared/traversal.js"
 import { arkKind } from "./shared/utils.js"
-import type { ResolvedArkConfig } from "./space.js"
 import type { DomainNode } from "./types/domain.js"
 import type { IntersectionNode } from "./types/intersection.js"
 import type {

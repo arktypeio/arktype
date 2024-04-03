@@ -15,7 +15,7 @@ import type { Node, TypeNode, UnknownNode } from "../base.js"
 import type { PropsGroupInput } from "../constraints/props/props.js"
 import type { Declaration, Inner, errorContext } from "../kinds.js"
 import type { SchemaParseContext } from "../parser/parse.js"
-import type { NodeConfig, ParsedUnknownNodeConfig } from "../space.js"
+import type { NodeConfig, ParsedUnknownNodeConfig } from "../scope.js"
 import type { IntersectionInner } from "../types/intersection.js"
 import type { typeKindOrRightOf, typeKindRightOf } from "../types/type.js"
 import type {
