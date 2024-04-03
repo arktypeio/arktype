@@ -31,12 +31,14 @@ import type { NodeParser, RootParser, SchemaParser } from "./inference.js"
 export type NodeParseOptions = {
 	alias?: string
 	prereduced?: boolean
+	args?: Record<string, Node>
 	/** Instead of creating the node, compute the innerId of the definition and
 	 * point it to the specified resolution.
 	 *
 	 * Useful for defining reductions like number|string|bigint|symbol|object|true|false|null|undefined => unknown
 	 **/
 	reduceTo?: Node
+	// TODO: remove?
 	root?: boolean
 }
 

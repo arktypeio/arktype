@@ -28,8 +28,6 @@ export const validateUninstantiatedGeneric = (g: Generic): Generic => {
 	return g
 }
 
-export type BoundArgs = Record<string, Type>
-
 export type GenericInstantiation<
 	params extends string[] = string[],
 	def = unknown,

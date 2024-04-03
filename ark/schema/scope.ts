@@ -12,7 +12,10 @@ import {
 } from "@arktype/util"
 import type { Node, SchemaDef, SchemaNode, UnknownNode } from "./base.js"
 import { mergeConfigs } from "./config.js"
-import type { GenericNode } from "./generic.js"
+import {
+	validateUninstantiatedGenericNode,
+	type GenericNode
+} from "./generic.js"
 import type { Ark } from "./keywords/keywords.js"
 import type { NodeDef, reducibleKindOf } from "./kinds.js"
 import type { instantiateSchema, validateSchema } from "./parser/inference.js"
@@ -235,10 +238,10 @@ export class BaseScope<$ = any> {
 		}
 		// TODO: initialize here?
 		const resolution = hasArkKind(def, "generic")
-			? validateUninstantiatedGeneric(def)
+			? validateUninstantiatedGenericNode(def)
 			: hasArkKind(def, "module")
 			? throwParseError(writeMissingSubmoduleAccessMessage(name))
-			: this.parseTypeRoot(def, { baseName: name, args: {} })
+			: this.schema(def as never, { args: {} })
 		this.resolutions[name] = resolution
 		return resolution
 	}
