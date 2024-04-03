@@ -7,7 +7,6 @@ import type {
 } from "@arktype/schema"
 import type {
 	ErrorMessage,
-	UnknownUnion,
 	isDisjoint,
 	numericStringKeyOf,
 	override,
@@ -53,12 +52,7 @@ type getHandledBranches<ctx extends MatchParserContext> = Exclude<
 >
 
 type getUnhandledBranches<ctx extends MatchParserContext> = distillOut<
-	Exclude<
-		unknown extends ctx["exhaustiveOver"]
-			? UnknownUnion
-			: ctx["exhaustiveOver"],
-		getHandledBranches<ctx>
-	>
+	Exclude<ctx["exhaustiveOver"], getHandledBranches<ctx>>
 >
 
 type addBranches<

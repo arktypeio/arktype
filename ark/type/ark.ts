@@ -1,4 +1,4 @@
-import type { ambient, Ark, inferred } from "@arktype/schema"
+import type { Ark, inferred } from "@arktype/schema"
 import type { Generic } from "./generic.js"
 import type { MatchParser } from "./match.js"
 import { scope, type Module, type Scope } from "./scope.js"
@@ -22,7 +22,7 @@ export const ark: Scope<Ark> = scope({}) as never
 
 export const keywords: Module<Ark> = ark.export()
 
-export const type: TypeParser<ambient> = ark.type
+export const type: TypeParser<{}> = ark.type as never
 
 export namespace type {
 	export type cast<to> = {
@@ -30,8 +30,8 @@ export namespace type {
 	}
 }
 
-export const match: MatchParser<Ark> = ark.match
+export const match: MatchParser<{}> = ark.match as never
 
-export const define: DefinitionParser<Ark> = ark.define
+export const define: DefinitionParser<{}> = ark.define as never
 
-export const declare: DeclarationParser<Ark> = ark.declare
+export const declare: DeclarationParser<{}> = ark.declare as never
