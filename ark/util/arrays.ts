@@ -76,6 +76,22 @@ export type flattenListable<t> = t extends array<infer element> ? element : t
 
 export type NonEmptyList<t = unknown> = readonly [t, ...t[]]
 
+export type repeat<t extends array, count extends number> = repeatRecurse<
+	t,
+	[],
+	count,
+	[]
+>
+
+type repeatRecurse<
+	base extends array,
+	result extends array,
+	maxDepth extends number,
+	depth extends 1[]
+> = depth["length"] extends maxDepth
+	? result
+	: repeatRecurse<base, [...result, ...base], maxDepth, [...depth, 1]>
+
 export type CollapsingList<t = unknown> =
 	| readonly []
 	| t
@@ -110,7 +126,7 @@ export type indexOf<a extends array> = keyof a extends infer k
 	? parseNonNegativeInteger<k & string>
 	: never
 
-export const listFrom = <t>(
+export const arrayFrom = <t>(
 	data: t
 ): t extends array
 	? [t] extends [null]
@@ -197,7 +213,7 @@ export const conflatenate = <element>(
 		return to ?? ([] as never)
 	}
 	if (to === undefined) {
-		return listFrom(elementOrList) as never
+		return arrayFrom(elementOrList) as never
 	}
 	return to.concat(elementOrList) as never
 }

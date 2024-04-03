@@ -130,7 +130,7 @@ const intersectIntersections = (
 	})
 }
 
-export class IntersectionNode<t = unknown> extends BaseType<
+export class IntersectionNode<t = unknown, $ = any> extends BaseType<
 	t,
 	IntersectionDeclaration
 > {
@@ -342,7 +342,7 @@ export class IntersectionNode<t = unknown> extends BaseType<
 			? this.props
 				? this.basis.rawKeyOf().or(this.props.rawKeyOf())
 				: this.basis.rawKeyOf()
-			: this.props?.rawKeyOf() ?? tsKeywords.never
+			: this.props?.rawKeyOf() ?? (tsKeywords.never as {} as TypeNode)
 	}
 }
 

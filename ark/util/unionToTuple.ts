@@ -1,5 +1,5 @@
+import type { array, join } from "./arrays.js"
 import type { conform } from "./generics.js"
-import type { array, join } from "./lists.js"
 
 export type stringifyUnion<
 	t extends string,

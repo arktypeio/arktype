@@ -5,21 +5,18 @@ import type {
 	array,
 	conform,
 	describe,
-	flattenListable,
 	inferDomain,
 	instanceOf,
-	isAny,
-	listable
+	isAny
 } from "@arktype/util"
 import type { Node, TypeNode, TypeSchema, UnknownNode } from "../base.js"
 import type { Prerequisite, Schema, reducibleKindOf } from "../kinds.js"
 import type {
 	BasisKind,
 	ConstraintKind,
-	NodeKind,
-	TypeKind
+	NodeKind
 } from "../shared/implement.js"
-import type { inferred } from "../shared/inference.js"
+import type { inferred } from "../shared/utils.js"
 import type { DomainNode, DomainSchema } from "../types/domain.js"
 import type {
 	IntersectionNode,

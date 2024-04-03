@@ -1,7 +1,7 @@
+import type { array } from "./arrays.js"
 import { hasDomain } from "./domain.js"
 import type { conform, evaluate, satisfy } from "./generics.js"
 import type { intersectParameters } from "./intersections.js"
-import type { array } from "./lists.js"
 import { ancestorsOf, type Constructor } from "./objectKinds.js"
 import { NoopBase } from "./records.js"
 

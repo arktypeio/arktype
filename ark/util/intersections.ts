@@ -1,7 +1,7 @@
+import type { array } from "./arrays.js"
 import type { domainOf } from "./domain.js"
 import type { andPreserveUnknown, conform } from "./generics.js"
 import type { Hkt } from "./hkt.js"
-import type { array } from "./lists.js"
 import type { requiredKeyOf, valueOf } from "./records.js"
 
 export interface AndPreserveUnknown extends Hkt.Kind {

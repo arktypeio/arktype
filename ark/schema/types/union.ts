@@ -2,7 +2,7 @@ import { appendUnique, groupBy, isArray } from "@arktype/util"
 import type { Node, TypeNode } from "../base.js"
 import { tsKeywords } from "../keywords/tsKeywords.js"
 import type { Schema } from "../kinds.js"
-import { node, parseNode, root } from "../parser/parse.js"
+import { node } from "../parser/parse.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -56,7 +56,7 @@ export type UnionDeclaration = declareNode<{
 	childKind: UnionChildKind
 }>
 
-export class UnionNode<t = any> extends BaseType<t, UnionDeclaration> {
+export class UnionNode<t = any, $ = any> extends BaseType<t, UnionDeclaration> {
 	static implementation: nodeImplementationOf<UnionDeclaration> =
 		this.implement({
 			kind: "union",
@@ -68,7 +68,7 @@ export class UnionNode<t = any> extends BaseType<t, UnionDeclaration> {
 					child: true,
 					parse: (schema, ctx) => {
 						const branches = schema.map((branch) =>
-							parseNode(unionChildKinds, branch, ctx)
+							ctx.$.parseNode(unionChildKinds, branch)
 						)
 						const def = ctx.raw as UnionSchema
 						if (isArray(def) || def.ordered !== true) {

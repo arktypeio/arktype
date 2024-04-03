@@ -6,13 +6,21 @@ import {
 	type array,
 	type Dict,
 	type evaluate,
+	type flattenListable,
 	type Json,
 	type requireKeys
 } from "@arktype/util"
-import type { Node, TypeNode, UnknownNode } from "./base.js"
+import type { Node, TypeNode, TypeSchema, UnknownNode } from "./base.js"
 import { mergeConfigs } from "./config.js"
+import type { GenericNode } from "./generic.js"
 import type { Ark } from "./keywords/keywords.js"
+import type { reducibleKindOf, Schema } from "./kinds.js"
 import type { instantiateSchema, validateSchema } from "./parser/inference.js"
+import {
+	parseNode,
+	schemaKindOf,
+	type SchemaParseOptions
+} from "./parser/parse.js"
 import { NodeCompiler } from "./shared/compile.js"
 import type {
 	ActualWriter,
@@ -21,10 +29,16 @@ import type {
 	MessageWriter,
 	ProblemWriter
 } from "./shared/errors.js"
-import type { DescriptionWriter, NodeKind } from "./shared/implement.js"
+import type {
+	DescriptionWriter,
+	NodeKind,
+	TypeKind
+} from "./shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "./shared/traversal.js"
 import { addArkKind, hasArkKind } from "./shared/utils.js"
 import type { distillIn, distillOut } from "./types/morph.js"
+import type { UnionNode } from "./types/union.js"
+import type { UnitNode } from "./types/unit.js"
 
 export type nodeResolutions<keywords> = { [k in keyof keywords]: TypeNode }
 
@@ -132,7 +146,7 @@ export class BaseScope<$ = any> {
 	readonly config: ArkConfig
 	readonly resolvedConfig: ResolvedArkConfig
 
-	readonly nodeCache: { [innerId: string]: UnknownNode } = {}
+	readonly nodeCache: { [innerId: string]: Node } = {}
 	readonly referencesByName: { [name: string]: UnknownNode } = {}
 	readonly references: readonly UnknownNode[] = []
 	readonly resolutions: SpaceResolutions = {}
@@ -161,7 +175,54 @@ export class BaseScope<$ = any> {
 		) as never
 	}
 
-	maybeResolve(name: string): TypeNode | Generic | undefined {
+	node<kind extends NodeKind, const schema extends Schema<kind>>(
+		kind: kind,
+		schema: schema,
+		opts?: SchemaParseOptions
+	): Node<reducibleKindOf<kind>> {
+		return parseNode(kind, schema, this, opts) as never
+	}
+
+	root<const schema extends TypeSchema>(
+		schema: schema,
+		opts?: SchemaParseOptions
+	): instantiateSchema<schema, $> {
+		return parseNode(schemaKindOf(schema), schema, this, opts) as never
+	}
+
+	units<const branches extends array>(
+		values: branches,
+		opts?: SchemaParseOptions
+	): branches["length"] extends 1
+		? UnionNode<branches[0]>
+		: UnionNode<branches[number]> | UnitNode<branches[number]>
+	units(values: array, opts?: SchemaParseOptions): UnionNode | UnitNode {
+		{
+			const uniqueValues: unknown[] = []
+			for (const value of values) {
+				if (!uniqueValues.includes(value)) {
+					uniqueValues.push(value)
+				}
+			}
+			const branches = uniqueValues.map((unit) =>
+				parseNode("unit", { unit }, this, opts)
+			)
+			return parseNode("union", branches, this, {
+				...opts,
+				prereduced: true
+			}) as never
+		}
+	}
+
+	parseNode<kinds extends NodeKind | array<TypeKind>>(
+		kinds: kinds,
+		schema: Schema<flattenListable<kinds>>,
+		opts?: SchemaParseOptions
+	): Node<reducibleKindOf<flattenListable<kinds>>> {
+		return parseNode(kinds, schema, this, opts) as never
+	}
+
+	maybeResolve(name: string): TypeNode | GenericNode | undefined {
 		const cached = this.resolutions[name]
 		if (cached) {
 			return cached
@@ -182,7 +243,9 @@ export class BaseScope<$ = any> {
 	}
 
 	/** If name is a valid reference to a submodule alias, return its resolution  */
-	private maybeResolveSubalias(name: string): TypeNode | Generic | undefined {
+	private maybeResolveSubalias(
+		name: string
+	): TypeNode | GenericNode | undefined {
 		const dotIndex = name.indexOf(".")
 		if (dotIndex === -1) {
 			return

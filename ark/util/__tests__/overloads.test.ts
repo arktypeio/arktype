@@ -1,6 +1,6 @@
 import { attest } from "@arktype/attest"
+import type { array } from "../arrays.js"
 import type { conform } from "../generics.js"
-import type { array } from "../lists.js"
 import type { overloadOf } from "../unionToTuple.js"
 
 declare const f: {

@@ -1,5 +1,5 @@
 import {
-	listFrom,
+	arrayFrom,
 	reference,
 	throwParseError,
 	type BuiltinObjectKind,
@@ -12,7 +12,7 @@ import type { Node, TypeNode } from "../base.js"
 import type { of } from "../constraints/ast.js"
 import { tsKeywords } from "../keywords/tsKeywords.js"
 import type { Schema } from "../kinds.js"
-import { node, parseNode, root, schemaKindOf } from "../parser/parse.js"
+import { node } from "../parser/parse.js"
 import type { StaticArkOption } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
@@ -67,7 +67,7 @@ export type MorphDeclaration = declareNode<{
 	childKind: MorphChildKind
 }>
 
-export class MorphNode<t = any> extends BaseType<t, MorphDeclaration> {
+export class MorphNode<t = any, $ = any> extends BaseType<t, MorphDeclaration> {
 	// TODO: recursively extract in?
 	static implementation: nodeImplementationOf<MorphDeclaration> =
 		this.implement({
@@ -76,14 +76,14 @@ export class MorphNode<t = any> extends BaseType<t, MorphDeclaration> {
 			keys: {
 				in: {
 					child: true,
-					parse: (schema, ctx) => parseNode(morphChildKinds, schema, ctx)
+					parse: (schema, ctx) => ctx.$.parseNode(morphChildKinds, schema)
 				},
 				out: {
 					child: true,
-					parse: (schema, ctx) => parseNode(morphChildKinds, schema, ctx)
+					parse: (schema, ctx) => ctx.$.parseNode(morphChildKinds, schema)
 				},
 				morphs: {
-					parse: listFrom,
+					parse: arrayFrom,
 					serialize: (morphs) => morphs.map(reference)
 				}
 			},

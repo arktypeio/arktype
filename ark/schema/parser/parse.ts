@@ -8,18 +8,12 @@ import {
 	type JsonData,
 	type PartialRecord,
 	type array,
-	type flattenListable,
 	type listable,
 	type valueOf
 } from "@arktype/util"
 import type { BaseAttachments, Node, UnknownNode } from "../base.js"
-import type { Schema, reducibleKindOf } from "../kinds.js"
-import {
-	defaultConfig,
-	type ArkConfig,
-	type BaseScope,
-	type ResolvedArkConfig
-} from "../scope.js"
+import type { reducibleKindOf } from "../kinds.js"
+import type { BaseScope } from "../scope.js"
 import type { BaseNodeDeclaration } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
@@ -33,14 +27,7 @@ import {
 	type UnknownNodeImplementation
 } from "../shared/implement.js"
 import { hasArkKind } from "../shared/utils.js"
-import type { UnionNode } from "../types/union.js"
-import type { UnitNode } from "../types/unit.js"
-import type {
-	NodeParser,
-	RootParser,
-	SchemaParser,
-	UnitsParser
-} from "./inference.js"
+import type { NodeParser, RootParser, SchemaParser } from "./inference.js"
 
 export type SchemaParseOptions = {
 	alias?: string
@@ -52,13 +39,10 @@ export type SchemaParseOptions = {
 	 **/
 	reduceTo?: Node
 	root?: boolean
-	config?: ArkConfig
-	space?: BaseScope
 }
 
-export type SchemaParseContext = {
-	config: ResolvedArkConfig
-	space: BaseScope
+export interface SchemaParseContext extends SchemaParseOptions {
+	$: BaseScope
 	raw: unknown
 }
 
@@ -116,41 +100,9 @@ const discriminateSchemaKind = (schema: unknown): TypeKind => {
 	return throwParseError(`${printable(schema)} is not a valid type schema`)
 }
 
-export const schema: SchemaParser<{}> = (schema) => schema
-
-export const root: RootParser<{}> = (schema, opts) =>
-	node(schemaKindOf(schema), schema, opts) as never
-
-export const units: UnitsParser = (...values) => {}
-
-export const parseUnits = (
-	values: unknown[],
-	ctx: SchemaParseContext
-): UnionNode | UnitNode => {
-	const uniqueValues: unknown[] = []
-	for (const value of values) {
-		if (!uniqueValues.includes(value)) {
-			uniqueValues.push(value)
-		}
-	}
-	const branches = uniqueValues.map((unit) => parseNode("unit", { unit }, ctx))
-	if (branches.length === 1) {
-		return branches[0] as never
-	}
-	return parseNode("union", branches, ctx, { prereduced: true }) as never
-}
-
-export const node: NodeParser<{}> = (kind, schema: unknown, opts) =>
-	parseNode(
-		kind,
-		schema as never,
-		{
-			space: opts?.space ?? {},
-			config: opts?.config ?? defaultConfig,
-			raw: schema
-		},
-		opts
-	)
+export declare const schema: SchemaParser<{}>
+export declare const root: RootParser<{}>
+export declare const node: NodeParser<{}>
 
 // 	this.parse(
 // 		"union",
@@ -170,32 +122,21 @@ export const node: NodeParser<{}> = (kind, schema: unknown, opts) =>
 // 		{ reduceTo: this.parsePrereduced("intersection", {}) }
 // 	)
 
-const nodeCache: Record<string, Node | undefined> = {}
-
-export const parseNode = <kinds extends NodeKind | array<TypeKind>>(
-	kinds: kinds,
-	schema: Schema<flattenListable<kinds>>,
-	ctx: SchemaParseContext,
+export const parseNode = (
+	kinds: NodeKind | array<TypeKind>,
+	schema: unknown,
+	$: BaseScope,
 	opts?: SchemaParseOptions
-): Node<reducibleKindOf<flattenListable<kinds>>> => {
+): Node => {
 	const kind: NodeKind =
 		typeof kinds === "string" ? kinds : schemaKindOf(schema, kinds)
 	if (hasArkKind(schema, "node") && schema.kind === kind) {
-		return schema as never
+		return schema
 	}
 	if (kind === "union" && hasDomain(schema, "object")) {
-		if (isArray(schema) && schema.length === 1) {
-			return parseNode(schemaKindOf(schema), schema[0] as never, ctx) as never
-		} else if (
-			"branches" in schema &&
-			isArray(schema.branches) &&
-			schema.branches.length === 1
-		) {
-			return parseNode(
-				schemaKindOf(schema),
-				schema.branches[0] as never,
-				ctx
-			) as never
+		const branches = schemaBranchesOf(schema)
+		if (branches?.length === 1) {
+			return parseNode(schemaKindOf(schema), branches as never, $, opts)
 		}
 	}
 	const cls = $ark.nodeClassesByKind[kind]
@@ -208,6 +149,7 @@ export const parseNode = <kinds extends NodeKind | array<TypeKind>>(
 			? (normalizedDefinition as never)
 			: throwMismatchedNodeSchemaError(kind, normalizedDefinition.kind)
 	}
+	const ctx: SchemaParseContext = { $, raw: schema, ...opts }
 	const inner: Record<string, unknown> = {}
 	// ensure node entries are parsed in order of precedence, with non-children
 	// parsed first
@@ -287,7 +229,7 @@ export const parseNode = <kinds extends NodeKind | array<TypeKind>>(
 
 	const innerId = JSON.stringify({ kind, ...json })
 	if (opts?.reduceTo) {
-		return (nodeCache[innerId] = opts.reduceTo) as never
+		return ($.nodeCache[innerId] = opts.reduceTo)
 	}
 
 	const typeId = JSON.stringify({ kind, ...typeJson })
@@ -305,13 +247,13 @@ export const parseNode = <kinds extends NodeKind | array<TypeKind>>(
 			}
 			// we can't cache this reduction for now in case the reduction involved
 			// impliedSiblings
-			return reduced as never
+			return reduced
 		}
 	}
 
 	// we have to wait until after reduction to return a cached entry,
 	// since reduction can add impliedSiblings
-	if (nodeCache[innerId]) return nodeCache[innerId] as never
+	if ($.nodeCache[innerId]) return $.nodeCache[innerId]
 
 	const prefix = opts?.alias ?? kind
 	typeCountsByPrefix[prefix] ??= 0
@@ -326,7 +268,8 @@ export const parseNode = <kinds extends NodeKind | array<TypeKind>>(
 		collapsibleJson: collapsibleJson as JsonData,
 		children,
 		innerId,
-		typeId
+		typeId,
+		$
 	} satisfies BaseAttachments as Record<string, any>
 	if (opts?.alias) {
 		attachments.alias = opts.alias
@@ -348,8 +291,15 @@ export const parseNode = <kinds extends NodeKind | array<TypeKind>>(
 	// 		Object.assign(this.referencesByName, node.contributesReferencesByName)
 	// 	}
 	// }
-	return (nodeCache[innerId] = new cls(attachments as never)) as never
+	return ($.nodeCache[innerId] = new cls(attachments as never))
 }
+
+const schemaBranchesOf = (schema: object) =>
+	isArray(schema)
+		? schema
+		: "branches" in schema && isArray(schema.branches)
+		? schema.branches
+		: undefined
 
 const throwMismatchedNodeSchemaError = (expected: NodeKind, actual: NodeKind) =>
 	throwParseError(

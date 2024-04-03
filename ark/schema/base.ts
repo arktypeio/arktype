@@ -33,7 +33,7 @@ import type {
 	reducibleKindOf
 } from "./kinds.js"
 import { node } from "./parser/parse.js"
-import type { ResolvedArkConfig } from "./scope.js"
+import type { BaseScope } from "./scope.js"
 import type { NodeCompiler } from "./shared/compile.js"
 import type {
 	BaseAttachmentsOf,
@@ -61,13 +61,12 @@ import {
 	type nodeImplementationInputOf,
 	type nodeImplementationOf
 } from "./shared/implement.js"
-import { inferred } from "./shared/inference.js"
 import {
 	TraversalContext,
 	type TraverseAllows,
 	type TraverseApply
 } from "./shared/traversal.js"
-import { arkKind } from "./shared/utils.js"
+import { arkKind, inferred } from "./shared/utils.js"
 import type { DomainNode } from "./types/domain.js"
 import type { IntersectionNode } from "./types/intersection.js"
 import type {
@@ -92,7 +91,7 @@ export interface BaseAttachments {
 	readonly children: UnknownNode[]
 	readonly innerId: string
 	readonly typeId: string
-	readonly resolvedConfig: ResolvedArkConfig
+	readonly $: BaseScope
 }
 
 export interface NarrowedAttachments<d extends BaseNodeDeclaration>
@@ -199,7 +198,7 @@ export abstract class BaseNode<
 	get description(): string {
 		this.descriptionCache ??=
 			this.inner.description ??
-			this.resolvedConfig[this.kind].description?.(this as never)
+			this.$.resolvedConfig[this.kind].description?.(this as never)
 		return this.descriptionCache
 	}
 
@@ -220,7 +219,7 @@ export abstract class BaseNode<
 	}
 
 	allows = (data: d["prerequisite"]): data is this["in"]["infer"] => {
-		const ctx = new TraversalContext(data, this.resolvedConfig)
+		const ctx = new TraversalContext(data, this.$.resolvedConfig)
 		return this.traverseAllows(data as never, ctx)
 	}
 
@@ -234,7 +233,7 @@ export abstract class BaseNode<
 		) {
 			return { data, out: data }
 		}
-		const ctx = new TraversalContext(data, this.resolvedConfig)
+		const ctx = new TraversalContext(data, this.$.resolvedConfig)
 		this.traverseApply(data, ctx)
 		return ctx.finalize()
 	}
@@ -459,13 +458,13 @@ export type DeepNodeTransformation = <kind extends NodeKind>(
 	inner: Inner<kind>
 ) => Inner<kind>
 
-interface NodesByKind<t = any> extends BoundNodesByKind {
-	union: UnionNode<t>
-	morph: MorphNode<t>
-	intersection: IntersectionNode<t>
-	unit: UnitNode<t>
-	proto: ProtoNode<t>
-	domain: DomainNode<t>
+interface NodesByKind<t = any, $ = any> extends BoundNodesByKind {
+	union: UnionNode<t, $>
+	morph: MorphNode<t, $>
+	intersection: IntersectionNode<t, $>
+	unit: UnitNode<t, $>
+	proto: ProtoNode<t, $>
+	domain: DomainNode<t, $>
 	divisor: DivisorNode
 	regex: RegexNode
 	predicate: PredicateNode

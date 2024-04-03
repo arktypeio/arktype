@@ -1,5 +1,5 @@
+import type { array } from "./arrays.js"
 import { domainOf, type Domain, type domainDescriptions } from "./domain.js"
-import type { array } from "./lists.js"
 import { isKeyOf, type Key } from "./records.js"
 
 // Built-in object constructors based on a subset of:

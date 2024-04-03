@@ -1,5 +1,5 @@
+import type { array, listable } from "./arrays.js"
 import type { evaluate } from "./generics.js"
-import type { array, listable } from "./lists.js"
 import type { Entry, Key, entryOf, fromEntries } from "./records.js"
 import type { intersectUnion } from "./unionToTuple.js"
 

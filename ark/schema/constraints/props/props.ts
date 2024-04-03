@@ -6,7 +6,8 @@ import {
 	type Key
 } from "@arktype/util"
 import type { Node, TypeNode } from "../../base.js"
-import { node, parseUnits } from "../../parser/parse.js"
+import { node } from "../../parser/parse.js"
+import type { BaseScope } from "../../scope.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { PropKind } from "../../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/traversal.js"
@@ -23,7 +24,10 @@ export type PropsGroupInput = Pick<
 >
 
 export class PropsGroup extends DynamicBase<PropsGroupInput> {
-	constructor(public inner: PropsGroupInput) {
+	constructor(
+		public inner: PropsGroupInput,
+		public $: BaseScope
+	) {
 		super(inner)
 	}
 
@@ -45,7 +49,7 @@ export class PropsGroup extends DynamicBase<PropsGroupInput> {
 	private keyofCache: TypeNode | undefined
 	rawKeyOf(): TypeNode {
 		if (!this.keyofCache) {
-			let branches = parseUnits(this.literalKeys).branches
+			let branches = this.$.units(this.literalKeys).branches
 			this.index?.forEach(
 				({ key }) => (branches = branches.concat(key.branches))
 			)

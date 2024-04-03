@@ -1,7 +1,7 @@
 import { ensureDir, fromCwd } from "@arktype/fs"
 import {
+	arrayFrom,
 	isArray,
-	listFrom,
 	tryParseNumber,
 	type autocomplete
 } from "@arktype/util"
@@ -135,7 +135,7 @@ const parseTsVersions = (aliases: TsVersionAliases): TsVersionData[] => {
 	if (aliases === "*") {
 		return versions
 	}
-	return listFrom(aliases).map((alias) => {
+	return arrayFrom(aliases).map((alias) => {
 		const matching = versions.find((v) => v.alias === alias)
 		if (!matching) {
 			throw new Error(

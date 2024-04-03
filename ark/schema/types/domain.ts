@@ -32,7 +32,10 @@ export type DomainDeclaration = declareNode<{
 	errorContext: DomainInner
 }>
 
-export class DomainNode<t = any> extends BaseBasis<t, DomainDeclaration> {
+export class DomainNode<t = any, $ = any> extends BaseBasis<
+	t,
+	DomainDeclaration
+> {
 	static implementation = this.implement({
 		kind: "domain",
 		hasAssociatedError: true,
