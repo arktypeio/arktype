@@ -502,7 +502,7 @@ export const parseMorphTuple: PostfixParser<"=>"> = (def, ctx) => {
 }
 
 export const writeMalformedFunctionalExpressionMessage = (
-	operator: FunctionalTupleOperator,
+	operator: ":" | "=>",
 	value: unknown
 ) =>
 	`${
@@ -537,8 +537,6 @@ const indexOneParsers: {
 	"=>": parseMorphTuple,
 	"@": parseAttributeTuple
 }
-
-export type FunctionalTupleOperator = ":" | "=>"
 
 export type IndexZeroOperator = "keyof" | "instanceof" | "==="
 

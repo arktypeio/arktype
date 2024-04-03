@@ -15,7 +15,6 @@ import {
 	throwParseError,
 	type Dict,
 	type evaluate,
-	type isAny,
 	type nominal
 } from "@arktype/util"
 import type { type } from "./ark.js"
@@ -123,12 +122,11 @@ type extractGenericParameters<k> = k extends GenericDeclaration<
 export type resolve<reference extends keyof $ | keyof args, $, args> = (
 	reference extends keyof args ? args[reference] : $[reference & keyof $]
 ) extends infer resolution
-	? [resolution] extends [never]
-		? never
-		: isAny<resolution> extends true
-		? any
-		: resolution extends Def<infer def>
-		? inferDefinition<def, $, args>
+	? resolution extends Def<infer def>
+		? def extends null
+			? // handle resolution of any and never
+			  resolution
+			: inferDefinition<def, $, args>
 		: resolution
 	: never
 
@@ -148,15 +146,14 @@ export type tryInferSubmoduleReference<$, token> =
 export type Module<$ = any> = {
 	// just adding the nominal id this way and mapping it is cheaper than an intersection
 	[k in exportedName<$> | arkKind]: k extends string
-		? [$[k]] extends [never]
-			? Type<never, $>
-			: isAny<$[k]> extends true
-			? Type<any, $>
-			: $[k] extends PreparsedResolution
-			? $[k]
+		? $[k] extends PreparsedResolution
+			? [$[k]] extends [null]
+				? // handle `Type<any>` and `Type<never>`
+				  Type<$[k], $>
+				: $[k]
 			: Type<$[k], $>
-		: // set the nominal symbol's value to something validation won't care about
-		  // since the inferred type will be omitted anyways
+		: // et the nominal symbol's value to something validation won't care about
+		  // ssince the inferred type will be omitted anyways
 		  type.cast<"module">
 }
 
