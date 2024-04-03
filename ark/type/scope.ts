@@ -151,7 +151,7 @@ export type tryInferSubmoduleReference<$, token> =
 			: never
 		: never
 
-type exportedName<$> = Exclude<keyof $, `#${string}`>
+type exportedName<$> = Exclude<keyof $, PrivateDeclaration>
 
 export type Module<$ = any> = {
 	// just adding the nominal id this way and mapping it is cheaper than an intersection
@@ -353,21 +353,15 @@ export const parseScopeKey = (k: string): ParsedScopeKey => {
 	}
 }
 
-type parseScopeKey<k> = k extends PrivateDeclaration<infer inner>
-	? parsePossibleGenericDeclaration<inner, true>
-	: parsePossibleGenericDeclaration<k, false>
-
-type parsePossibleGenericDeclaration<
-	k,
-	isLocal extends boolean
-> = k extends GenericDeclaration<infer name, infer paramString>
+export type parseScopeKey<k> = k extends GenericDeclaration<
+	infer name,
+	infer paramString
+>
 	? {
-			isLocal: isLocal
 			name: name
 			params: parseGenericParams<paramString>
 	  }
 	: {
-			isLocal: isLocal
 			name: k
 			params: []
 	  }

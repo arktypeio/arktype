@@ -12,9 +12,8 @@ import {
 import type { Node, TypeNode, UnknownNode } from "./base.js"
 import { mergeConfigs } from "./config.js"
 import type { Ark } from "./keywords/keywords.js"
-import { addArkKind, hasArkKind } from "./main.js"
 import type { instantiateSchema, validateSchema } from "./parser/inference.js"
-import { root, type SchemaParseOptions } from "./parser/parse.js"
+import { root } from "./parser/parse.js"
 import { NodeCompiler } from "./shared/compile.js"
 import type {
 	ActualWriter,
@@ -23,12 +22,9 @@ import type {
 	MessageWriter,
 	ProblemWriter
 } from "./shared/errors.js"
-import type {
-	DescriptionWriter,
-	NodeKind,
-	TypeKind
-} from "./shared/implement.js"
+import type { DescriptionWriter, NodeKind } from "./shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "./shared/traversal.js"
+import { addArkKind, hasArkKind } from "./shared/utils.js"
 import type { distillIn, distillOut } from "./types/morph.js"
 
 export type nodeResolutions<keywords> = { [k in keyof keywords]: TypeNode }
@@ -146,7 +142,7 @@ export class BaseScope<$ = any> {
 	readonly json: Json = {}
 	/** The set of names defined at the root-level of the scope mapped to their
 	 * corresponding definitions.**/
-	public aliases: Record<string, unknown>
+	readonly aliases: Record<string, unknown>
 
 	protected resolved = false
 
@@ -364,10 +360,4 @@ export const space = <const aliases>(
 	// 		{ reduceTo: this.parsePrereduced("intersection", {}) }
 	// 	)
 	return resolutions as never
-}
-
-export interface TypeSchemaParseOptions<allowedKind extends TypeKind = TypeKind>
-	extends SchemaParseOptions {
-	root?: boolean
-	allowedKinds?: readonly allowedKind[]
 }
