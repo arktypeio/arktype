@@ -1,5 +1,4 @@
 import { internalKeywords } from "../../keywords/internal.js"
-import { node } from "../../parser/parse.js"
 import type { declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import type { nodeImplementationOf } from "../../shared/implement.js"
@@ -51,10 +50,10 @@ export class MaxLengthNode extends BaseRange<MaxLengthDeclaration> {
 			},
 			intersections: {
 				maxLength: (l, r) => (l.isStricterThan(r) ? l : r),
-				minLength: (max, min) =>
+				minLength: (max, min, $) =>
 					max.overlapsRange(min)
 						? max.overlapIsUnit(min)
-							? node("exactLength", { rule: max.rule })
+							? $.node("exactLength", { rule: max.rule })
 							: null
 						: Disjoint.from("range", max, min)
 			}

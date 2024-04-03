@@ -179,6 +179,8 @@ export class BaseScope<$ = any> {
 		) as never
 	}
 
+	static root: BaseScope<{}> = new BaseScope({})
+
 	node<kind extends NodeKind, const def extends NodeDef<kind>>(
 		kind: kind,
 		def: def,
@@ -192,6 +194,10 @@ export class BaseScope<$ = any> {
 		opts?: NodeParseOptions
 	): instantiateSchema<def, $> {
 		return parseNode(schemaKindOf(def), def, this, opts) as never
+	}
+
+	defineSchema<const def extends SchemaDef>(def: def): def {
+		return def
 	}
 
 	units<const branches extends array>(
@@ -337,6 +343,10 @@ export class BaseScope<$ = any> {
 		) as never
 	}
 }
+
+export const root: BaseScope<{}> = new BaseScope({})
+
+export const { schema, defineSchema, node, units } = root
 
 export const writeUnresolvableMessage = <token extends string>(
 	token: token

@@ -12,7 +12,6 @@ import type { Node, SchemaNode } from "../base.js"
 import type { of } from "../constraints/ast.js"
 import { tsKeywords } from "../keywords/tsKeywords.js"
 import type { NodeDef } from "../kinds.js"
-import { node } from "../parser/parse.js"
 import type { StaticArkOption } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
@@ -98,7 +97,7 @@ export class MorphNode<t = any, $ = any> extends BaseSchema<
 				}
 			},
 			intersections: {
-				morph: (l, r) => {
+				morph: (l, r, $) => {
 					if (l.morphs.some((morph, i) => morph !== r.morphs[i])) {
 						// TODO: is this always a parse error? what about for union reduction etc.
 						// TODO: check in for union reduction
@@ -112,25 +111,25 @@ export class MorphNode<t = any, $ = any> extends BaseSchema<
 					if (outTersection instanceof Disjoint) {
 						return outTersection
 					}
-					return node("morph", {
+					return $.node("morph", {
 						morphs: l.morphs,
 						in: inTersection,
 						out: outTersection
 					})
 				},
-				...defineRightwardIntersections("morph", (l, r) => {
+				...defineRightwardIntersections("morph", (l, r, $) => {
 					const inTersection = l.in.intersect(r)
 					return inTersection instanceof Disjoint
 						? inTersection
 						: inTersection.kind === "union"
-						? node(
+						? $.node(
 								"union",
 								inTersection.branches.map((branch) => ({
 									...l.inner,
 									in: branch
 								}))
 						  )
-						: node("morph", {
+						: $.node("morph", {
 								...l.inner,
 								in: inTersection
 						  })

@@ -1,5 +1,4 @@
 import { internalKeywords } from "../../keywords/internal.js"
-import { node } from "../../parser/parse.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import type { TraverseAllows } from "../../shared/traversal.js"
@@ -32,12 +31,12 @@ export class ExactLengthNode extends BasePrimitiveConstraint<ExactLengthDeclarat
 		},
 		normalize: (def) => (typeof def === "number" ? { rule: def } : def),
 		intersections: {
-			exactLength: (l, r) =>
+			exactLength: (l, r, $) =>
 				new Disjoint({
 					"[length]": {
 						unit: {
-							l: node("unit", { unit: l.rule }),
-							r: node("unit", { unit: r.rule })
+							l: $.node("unit", { unit: l.rule }),
+							r: $.node("unit", { unit: r.rule })
 						}
 					}
 				}),

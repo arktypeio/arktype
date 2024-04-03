@@ -1,14 +1,14 @@
 import { attest } from "@arktype/attest"
-import { root } from "@arktype/schema"
+import { schema } from "@arktype/schema"
 
 describe("intersections", () => {
 	it("normalizes refinement order", () => {
-		const l = root({
+		const l = schema({
 			domain: "number",
 			divisor: 3,
 			min: 5
 		})
-		const r = root({
+		const r = schema({
 			domain: "number",
 			min: 5,
 			divisor: 3
@@ -17,7 +17,7 @@ describe("intersections", () => {
 	})
 
 	it("multiple constraints", () => {
-		const n = root({
+		const n = schema({
 			domain: "number",
 			divisor: 3,
 			min: 5

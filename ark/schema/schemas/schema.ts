@@ -12,7 +12,6 @@ import {
 } from "../constraints/constraint.js"
 import type { NodeDef, reducibleKindOf } from "../kinds.js"
 import type { instantiateSchema } from "../parser/inference.js"
-import { node, root } from "../parser/parse.js"
 import type { BaseMeta, BaseNodeDeclaration } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
@@ -87,7 +86,7 @@ export abstract class BaseSchema<
 
 	or<r extends SchemaNode>(r: r): SchemaNode<t | r["infer"]> {
 		const branches = [...this.branches, ...(r.branches as any)]
-		return root(branches) as never
+		return this.$.schema(branches) as never
 	}
 
 	isUnknown(): this is IntersectionNode<unknown> {
@@ -105,21 +104,21 @@ export abstract class BaseSchema<
 	}
 
 	extract(other: SchemaNode): SchemaNode {
-		return root(
+		return this.$.schema(
 			this.branches.filter((branch) => branch.extends(other)),
 			{ root: true }
 		)
 	}
 
 	exclude(other: SchemaNode): SchemaNode {
-		return root(
+		return this.$.schema(
 			this.branches.filter((branch) => !branch.extends(other)),
 			{ root: true }
 		) as never
 	}
 
 	array(): IntersectionNode<t[]> {
-		return root(
+		return this.$.schema(
 			{
 				proto: Array,
 				sequence: this
@@ -173,15 +172,15 @@ export abstract class BaseSchema<
 			const branches = this.branches.map((node) =>
 				node.morph(morph, outValidator as never)
 			)
-			return node("union", { ...this.inner, branches })
+			return this.$.node("union", { ...this.inner, branches })
 		}
 		if (this.hasKind("morph")) {
-			return node("morph", {
+			return this.$.node("morph", {
 				...this.inner,
 				morphs: [...this.morphs, morph]
 			})
 		}
-		return node("morph", {
+		return this.$.node("morph", {
 			in: this,
 			morphs: [morph]
 		})
@@ -194,16 +193,16 @@ export abstract class BaseSchema<
 
 	constrain<
 		kind extends PrimitiveConstraintKind,
-		const schema extends NodeDef<kind>
+		const def extends NodeDef<kind>
 	>(
 		kind: conform<kind, constraintKindOf<this["in"]["infer"]>>,
-		schema: schema
-	): SchemaNode<constrain<t, kind, schema>> {
-		return this.rawConstrain(kind, schema) as never
+		def: def
+	): SchemaNode<constrain<t, kind, def>> {
+		return this.rawConstrain(kind, def) as never
 	}
 
-	protected rawConstrain(kind: ConstraintKind, schema: unknown): SchemaNode {
-		const constraint = node(kind, schema as never)
+	protected rawConstrain(kind: ConstraintKind, def: unknown): SchemaNode {
+		const constraint = this.$.node(kind, def as never)
 		if (
 			constraint.impliedBasis &&
 			!this.extends(constraint.impliedBasis as never)
@@ -217,7 +216,7 @@ export abstract class BaseSchema<
 
 		return this.and(
 			// TODO: not an intersection
-			node("intersection", {
+			this.$.node("intersection", {
 				[kind]: constraint
 			})
 		) as never

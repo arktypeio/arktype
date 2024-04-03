@@ -6,6 +6,7 @@ import {
 	type arkKind,
 	type exportedName,
 	type GenericProps,
+	type NodeParseContext,
 	type SchemaNode
 } from "@arktype/schema"
 import {
@@ -152,16 +153,13 @@ export type Module<$ = any> = {
 				  Type<$[k], $>
 				: $[k]
 			: Type<$[k], $>
-		: // et the nominal symbol's value to something validation won't care about
-		  // ssince the inferred type will be omitted anyways
+		: // set the nominal symbol's value to something validation won't care about
+		  // since the inferred type will be omitted anyways
 		  type.cast<"module">
 }
 
-export type ParseContext = {
-	baseName: string
-	path: string[]
+export interface ParseContext extends NodeParseContext {
 	$: Scope
-	args: Record<string, SchemaNode> | undefined
 }
 
 type MergedResolutions = Record<string, SchemaNode | Generic>

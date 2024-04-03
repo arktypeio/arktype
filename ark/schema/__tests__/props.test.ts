@@ -1,16 +1,16 @@
 import { attest } from "@arktype/attest"
-import { root } from "@arktype/schema"
+import { schema } from "@arktype/schema"
 
 describe("props", () => {
 	it("normalizes prop order", () => {
-		const l = root({
+		const l = schema({
 			domain: "object",
 			prop: [
 				{ key: "a", value: "string" },
 				{ key: "b", value: "number" }
 			]
 		})
-		const r = root({
+		const r = schema({
 			domain: "object",
 			prop: [
 				{ key: "b", value: "number" },

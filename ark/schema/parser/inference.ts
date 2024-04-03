@@ -47,28 +47,6 @@ export namespace type {
 	}
 }
 
-export type UnitsParser = <const branches extends array>(
-	...values: branches
-) => branches["length"] extends 1
-	? UnionNode<branches[0]>
-	: UnionNode<branches[number]> | UnitNode<branches[number]>
-
-export type SchemaParser<$> = <const def extends SchemaDef>(schema: def) => def
-
-export type NodeParser<$> = <
-	kind extends NodeKind,
-	const def extends NodeDef<kind>
->(
-	kinds: kind,
-	schema: def,
-	opts?: NodeParseOptions
-) => Node<reducibleKindOf<kind>>
-
-export type RootParser<$> = <const def extends SchemaDef>(
-	schema: def,
-	opts?: NodeParseOptions
-) => instantiateSchema<def, $>
-
 export type validateSchema<def, $> = def extends type.cast
 	? def
 	: def extends array

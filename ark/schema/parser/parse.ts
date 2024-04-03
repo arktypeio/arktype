@@ -4,14 +4,14 @@ import {
 	isArray,
 	printable,
 	throwParseError,
+	type array,
 	type Json,
 	type JsonData,
-	type PartialRecord,
-	type array,
 	type listable,
+	type PartialRecord,
 	type valueOf
 } from "@arktype/util"
-import type { BaseAttachments, Node, UnknownNode } from "../base.js"
+import type { BaseAttachments, Node, SchemaNode, UnknownNode } from "../base.js"
 import type { BaseScope } from "../scope.js"
 import type { BaseNodeDeclaration } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -26,12 +26,11 @@ import {
 	type UnknownNodeImplementation
 } from "../shared/implement.js"
 import { hasArkKind } from "../shared/utils.js"
-import type { NodeParser, RootParser, SchemaParser } from "./inference.js"
 
 export type NodeParseOptions = {
 	alias?: string
 	prereduced?: boolean
-	args?: Record<string, Node>
+	args?: Record<string, SchemaNode>
 	/** Instead of creating the node, compute the innerId of the definition and
 	 * point it to the specified resolution.
 	 *
@@ -43,6 +42,7 @@ export type NodeParseOptions = {
 }
 
 export interface NodeParseContext extends NodeParseOptions {
+	path: string[]
 	$: BaseScope
 	raw: unknown
 }
@@ -100,10 +100,6 @@ const discriminateSchemaKind = (def: unknown): SchemaKind => {
 	}
 	return throwParseError(`${printable(def)} is not a valid type schema`)
 }
-
-export declare const schema: SchemaParser<{}>
-export declare const root: RootParser<{}>
-export declare const node: NodeParser<{}>
 
 // 	this.parse(
 // 		"union",
@@ -236,7 +232,7 @@ export const parseNode = (
 	const typeId = JSON.stringify({ kind, ...typeJson })
 
 	if (impl.reduce && !opts?.prereduced) {
-		const reduced = impl.reduce(inner)
+		const reduced = impl.reduce(inner, $)
 		if (reduced) {
 			if (reduced instanceof Disjoint) return reduced.throw()
 

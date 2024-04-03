@@ -32,7 +32,6 @@ import type {
 	ioKindOf,
 	reducibleKindOf
 } from "./kinds.js"
-import { node } from "./parser/parse.js"
 import type { DomainNode } from "./schemas/domain.js"
 import type { IntersectionNode } from "./schemas/intersection.js"
 import type {
@@ -274,7 +273,7 @@ export abstract class BaseNode<
 				ioInner[k] = v
 			}
 		}
-		return node(this.kind, ioInner)
+		return this.$.node(this.kind, ioInner)
 	}
 
 	protected createErrorContext<from>(
@@ -373,8 +372,8 @@ export abstract class BaseNode<
 				  // but that is not allowed by the external function signature
 				  null
 				: leftmostKind === this.kind
-				? implementation(this, r)
-				: implementation(r, this)
+				? implementation(this, r, this.$)
+				: implementation(r, this, this.$)
 
 		if (result instanceof BaseNode) {
 			// if the result equals one of the operands, preserve its metadata by
@@ -435,7 +434,7 @@ export abstract class BaseNode<
 					: v
 			]
 		)
-		return node(
+		return this.$.node(
 			this.kind,
 			mapper(this.kind, innerWithTransformedChildren as never) as never
 		) as never

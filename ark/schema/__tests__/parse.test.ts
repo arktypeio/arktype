@@ -1,19 +1,19 @@
 import { attest } from "@arktype/attest"
-import { type SchemaNode, root } from "@arktype/schema"
+import { type SchemaNode, schema } from "@arktype/schema"
 
 describe("parse", () => {
 	it("single constraint", () => {
-		const t = root({ domain: "string", regex: ".*" })
+		const t = schema({ domain: "string", regex: ".*" })
 		attest<SchemaNode<string>>(t)
 		attest(t.json).snap({ domain: "string", regex: [".*"] })
 	})
 	it("multiple constraints", () => {
-		const l = root({
+		const l = schema({
 			domain: "number",
 			divisor: 3,
 			min: 5
 		})
-		const r = root({
+		const r = schema({
 			domain: "number",
 			divisor: 5
 		})
@@ -27,7 +27,7 @@ describe("parse", () => {
 	})
 	it("throws on reduced minLength disjoint", () => {
 		attest(() =>
-			root({
+			schema({
 				proto: Array,
 				maxLength: 0,
 				sequence: {

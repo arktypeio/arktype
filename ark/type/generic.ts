@@ -21,7 +21,6 @@ export const validateUninstantiatedGeneric = (g: Generic): Generic => {
 		// once we support constraints on generic parameters, we'd use
 		// the base type here: https://github.com/arktypeio/arktype/issues/796
 		{
-			baseName: "generic",
 			args: flatMorph(g.params, (_, name) => [name, keywordNodes.unknown])
 		}
 	)
@@ -61,9 +60,9 @@ export class Generic<params extends string[] = string[], def = unknown, $ = any>
 		public $: Scope<$>
 	) {
 		super((...args: unknown[]) => {
-			const argNodes = flatMorph(params, (i, param) => [
+			const argNodes = flatMorph(params, (i, param: string) => [
 				param,
-				$.parseTypeRoot(args[i])
+				$.parseTypeRoot(args[i]).root
 			])
 			return $.parseTypeRoot(def, { args: argNodes }) as never
 		})

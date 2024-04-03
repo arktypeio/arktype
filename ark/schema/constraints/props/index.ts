@@ -2,7 +2,6 @@ import { throwParseError, type Key } from "@arktype/util"
 import type { SchemaDef, SchemaNode } from "../../base.js"
 import { internalKeywords } from "../../keywords/internal.js"
 import { tsKeywords } from "../../keywords/tsKeywords.js"
-import { root } from "../../parser/parse.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import type {
@@ -42,7 +41,7 @@ export class IndexNode extends BaseConstraint<IndexDeclaration> {
 				key: {
 					child: true,
 					parse: (def, ctx) => {
-						const key = root(def)
+						const key = ctx.$.schema(def)
 						if (!key.extends(internalKeywords.propertyKey))
 							return throwParseError(
 								writeInvalidPropertyKeyMessage(key.expression)
@@ -52,7 +51,7 @@ export class IndexNode extends BaseConstraint<IndexDeclaration> {
 				},
 				value: {
 					child: true,
-					parse: (def, ctx) => root(def)
+					parse: (def, ctx) => ctx.$.schema(def)
 				}
 			},
 			normalize: (def) => def,

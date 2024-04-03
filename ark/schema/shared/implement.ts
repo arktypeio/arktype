@@ -20,7 +20,11 @@ import type {
 	schemaKindOrRightOf,
 	schemaKindRightOf
 } from "../schemas/schema.js"
-import type { NodeConfig, ParsedUnknownNodeConfig } from "../scope.js"
+import type {
+	BaseScope,
+	NodeConfig,
+	ParsedUnknownNodeConfig
+} from "../scope.js"
 import type {
 	BaseErrorContext,
 	BaseMeta,
@@ -150,7 +154,11 @@ type accumulateRightKinds<
 export type ConstraintIntersection<
 	lKind extends ConstraintKind,
 	rKind extends kindOrRightOf<lKind>
-> = (l: Node<lKind>, r: Node<rKind>) => UnknownNode | Disjoint | null
+> = (
+	l: Node<lKind>,
+	r: Node<rKind>,
+	$: BaseScope
+) => UnknownNode | Disjoint | null
 
 export type ConstraintIntersectionMap<kind extends ConstraintKind> = evaluate<
 	{
@@ -163,7 +171,7 @@ export type ConstraintIntersectionMap<kind extends ConstraintKind> = evaluate<
 export type TypeIntersection<
 	lKind extends SchemaKind,
 	rKind extends schemaKindOrRightOf<lKind>
-> = (l: Node<lKind>, r: Node<rKind>) => SchemaNode | Disjoint
+> = (l: Node<lKind>, r: Node<rKind>, $: BaseScope) => SchemaNode | Disjoint
 
 export type TypeIntersectionMap<kind extends SchemaKind> = {
 	[rKind in schemaKindOrRightOf<kind>]: TypeIntersection<kind, rKind>
@@ -176,7 +184,8 @@ export type IntersectionMap<kind extends NodeKind> = kind extends SchemaKind
 export type UnknownIntersectionMap = {
 	[k in NodeKind]?: (
 		l: UnknownNode,
-		r: UnknownNode
+		r: UnknownNode,
+		$: BaseScope
 	) => UnknownIntersectionResult
 }
 
@@ -275,7 +284,10 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	normalize: (schema: d["def"]) => d["normalizedDef"]
 	hasAssociatedError: d["errorContext"] extends null ? false : true
 	collapsibleKey?: keyof d["inner"]
-	reduce?: (inner: d["inner"]) => Node<d["reducibleTo"]> | Disjoint | undefined
+	reduce?: (
+		inner: d["inner"],
+		$: BaseScope
+	) => Node<d["reducibleTo"]> | Disjoint | undefined
 }
 
 export interface UnknownNodeImplementation

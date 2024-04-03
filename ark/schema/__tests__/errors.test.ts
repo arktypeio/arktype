@@ -1,10 +1,10 @@
 import { attest } from "@arktype/attest"
-import { configure, defaultConfig, root } from "@arktype/schema"
+import { configure, defaultConfig, schema } from "@arktype/schema"
 import { scope } from "arktype"
 
 describe("errors", () => {
 	it("shallow", () => {
-		const n = root({
+		const n = schema({
 			domain: "number",
 			divisor: 3
 		})
@@ -12,7 +12,7 @@ describe("errors", () => {
 		attest(n.apply(7).errors?.summary).snap("must be a multiple of 3 (was 7)")
 	})
 	it("at path", () => {
-		const o = root({
+		const o = schema({
 			domain: "object",
 			prop: {
 				key: "foo",
@@ -28,7 +28,7 @@ describe("errors", () => {
 		)
 	})
 	it("array", () => {
-		const t = root({
+		const t = schema({
 			proto: Array,
 			sequence: "number"
 		})
@@ -38,7 +38,7 @@ describe("errors", () => {
 		)
 	})
 	it("custom description integrated with error", () => {
-		const superSpecialBigint = root({
+		const superSpecialBigint = schema({
 			domain: "bigint",
 			description: "my special bigint"
 		})
@@ -48,7 +48,7 @@ describe("errors", () => {
 		)
 	})
 	it("custom description on parent doesn't affect children", () => {
-		const evenNumber = root({
+		const evenNumber = schema({
 			domain: "number",
 			divisor: 2,
 			description: "an even number"
@@ -98,14 +98,14 @@ describe("errors", () => {
 				description: (inner) => `my special ${inner.domain}`
 			}
 		})
-		const mySpecialSymbol = root("symbol")
+		const mySpecialSymbol = schema("symbol")
 		attest(mySpecialSymbol.apply("foo").errors?.summary).snap(
 			"must be my special symbol (was string)"
 		)
 		configure({
 			domain: defaultConfig.domain
 		})
-		const myBoringSymbol = root("symbol")
+		const myBoringSymbol = schema("symbol")
 		attest(myBoringSymbol.apply("foo").errors?.summary).snap(
 			"must be a symbol (was string)"
 		)

@@ -2,7 +2,6 @@ import { appendUnique, groupBy, isArray } from "@arktype/util"
 import type { Node, SchemaNode } from "../base.js"
 import { tsKeywords } from "../keywords/tsKeywords.js"
 import type { NodeDef } from "../kinds.js"
-import { node } from "../parser/parse.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -83,7 +82,7 @@ export class UnionNode<t = any, $ = any> extends BaseSchema<
 				}
 			},
 			normalize: (def) => (isArray(def) ? { branches: def } : def),
-			reduce: (inner) => {
+			reduce: (inner, $) => {
 				const reducedBranches = reduceBranches(inner)
 				if (reducedBranches.length === 1) {
 					return reducedBranches[0]
@@ -91,7 +90,7 @@ export class UnionNode<t = any, $ = any> extends BaseSchema<
 				if (reducedBranches.length === inner.branches.length) {
 					return
 				}
-				return node(
+				return $.node(
 					"union",
 					{
 						...inner,
@@ -145,7 +144,7 @@ export class UnionNode<t = any, $ = any> extends BaseSchema<
 				}
 			},
 			intersections: {
-				union: (l, r) => {
+				union: (l, r, $) => {
 					if (
 						(l.branches.length === 0 || r.branches.length === 0) &&
 						l.branches.length !== r.branches.length
@@ -172,7 +171,7 @@ export class UnionNode<t = any, $ = any> extends BaseSchema<
 					if (resultBranches instanceof Disjoint) {
 						return resultBranches
 					}
-					return node(
+					return $.node(
 						"union",
 						l.ordered || r.ordered
 							? {
@@ -182,7 +181,7 @@ export class UnionNode<t = any, $ = any> extends BaseSchema<
 							: { branches: resultBranches }
 					)
 				},
-				...defineRightwardIntersections("union", (l, r) => {
+				...defineRightwardIntersections("union", (l, r, $) => {
 					const branches = intersectBranches(l.branches, [r])
 					if (branches instanceof Disjoint) {
 						return branches
@@ -190,7 +189,7 @@ export class UnionNode<t = any, $ = any> extends BaseSchema<
 					if (branches.length === 1) {
 						return branches[0]
 					}
-					return node(
+					return $.node(
 						"union",
 						l.ordered ? { branches, ordered: true } : { branches }
 					)

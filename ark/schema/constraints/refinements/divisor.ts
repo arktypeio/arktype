@@ -1,6 +1,5 @@
 import type { SchemaNode } from "../../base.js"
 import { tsKeywords } from "../../keywords/tsKeywords.js"
-import { node } from "../../parser/parse.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import type { TraverseAllows } from "../../shared/traversal.js"
 import {
@@ -32,8 +31,8 @@ export class DivisorNode extends BasePrimitiveConstraint<DivisorDeclaration> {
 		},
 		normalize: (def) => (typeof def === "number" ? { rule: def } : def),
 		intersections: {
-			divisor: (l, r) =>
-				node("divisor", {
+			divisor: (l, r, $) =>
+				$.node("divisor", {
 					rule: Math.abs(
 						(l.rule * r.rule) / greatestCommonDivisor(l.rule, r.rule)
 					)

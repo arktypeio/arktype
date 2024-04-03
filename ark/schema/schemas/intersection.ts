@@ -26,7 +26,7 @@ import {
 } from "../constraints/props/props.js"
 import { tsKeywords } from "../keywords/tsKeywords.js"
 import type { Inner, MutableInner, NodeDef, Prerequisite } from "../kinds.js"
-import { node, type NodeParseContext } from "../parser/parse.js"
+import type { NodeParseContext } from "../parser/parse.js"
 import type { BaseScope } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import { metaKeys, type BaseMeta, type declareNode } from "../shared/declare.js"
@@ -89,16 +89,17 @@ const intersectionChildKeyParser =
 				return
 			}
 			return def
-				.map((schema) => node(kind, schema as never))
+				.map((schema) => ctx.$.node(kind, schema as never))
 				.sort((l, r) => (l.innerId < r.innerId ? -1 : 1)) as never
 		}
-		const child = node(kind, def)
+		const child = ctx.$.node(kind, def)
 		return child.intersectionIsOpen ? [child] : (child as any)
 	}
 
 const intersectIntersections = (
 	reduced: IntersectionInner,
-	raw: IntersectionInner
+	raw: IntersectionInner,
+	$: BaseScope
 ): SchemaNode | Disjoint => {
 	// avoid treating adding instance keys as keys of lRoot, rRoot
 	if (reduced instanceof IntersectionNode) reduced = reduced.inner
@@ -127,7 +128,8 @@ const intersectIntersections = (
 		root,
 		l: lConstraints,
 		r: rConstraints,
-		types: []
+		types: [],
+		$
 	})
 }
 
@@ -208,10 +210,10 @@ export class IntersectionNode<t = unknown, $ = any> extends BaseSchema<
 			},
 			// leverage reduction logic from intersection and identity to ensure initial
 			// parse result is reduced
-			reduce: (inner) =>
+			reduce: (inner, $) =>
 				// we cast union out of the result here since that only occurs when intersecting two sequences
 				// that cannot occur when reducing a single intersection schema using unknown
-				intersectIntersections({}, inner) as Node<
+				intersectIntersections({}, inner, $) as Node<
 					"intersection" | IntersectionBasisKind
 				>,
 			defaults: {
@@ -243,7 +245,7 @@ export class IntersectionNode<t = unknown, $ = any> extends BaseSchema<
 						  l
 						: // given we've already precluded l being unknown, the result must
 						  // be an intersection with the new basis result integrated
-						  node(
+						  l.$.node(
 								"intersection",
 								Object.assign(omit(l.inner, metaKeys), { [basis.kind]: basis }),
 								{ prereduced: true }
@@ -394,13 +396,14 @@ type ConstraintIntersectionState = {
 	l: ConstraintNode[]
 	r: ConstraintNode[]
 	types: SchemaNode[]
+	$: BaseScope
 }
 
 const intersectConstraints = (
 	s: ConstraintIntersectionState
 ): SchemaNode | Disjoint => {
 	if (!s.r.length) {
-		let result: SchemaNode | Disjoint = node(
+		let result: SchemaNode | Disjoint = s.$.node(
 			"intersection",
 			Object.assign(s.root, unflattenConstraints(s.l)),
 			{ prereduced: true }

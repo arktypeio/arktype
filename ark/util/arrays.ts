@@ -141,11 +141,8 @@ export const spliterate = <item, included extends item>(
 ): [included: included[], excluded: Exclude<item, included>[]] => {
 	const result: [any[], any[]] = [[], []]
 	for (const item of list) {
-		if (by(item)) {
-			result[0].push(item)
-		} else {
-			result[1].push(item as any)
-		}
+		if (by(item)) result[0].push(item)
+		else result[1].push(item)
 	}
 	return result
 }

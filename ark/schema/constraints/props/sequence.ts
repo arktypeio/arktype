@@ -10,7 +10,6 @@ import type { SchemaDef, SchemaNode } from "../../base.js"
 import { jsObjects } from "../../keywords/jsObjects.js"
 import { tsKeywords } from "../../keywords/tsKeywords.js"
 import type { MutableInner } from "../../kinds.js"
-import { node, root } from "../../parser/parse.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
@@ -64,7 +63,7 @@ const fixedSequenceKeyDefinition: NodeKeyImplementation<
 			? // empty affixes are omitted. an empty array should therefore
 			  // be specified as `{ proto: Array, length: 0 }`
 			  undefined
-			: def.map((element) => root(element))
+			: def.map((element) => ctx.$.schema(element))
 }
 
 export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
@@ -78,7 +77,7 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 				optional: fixedSequenceKeyDefinition,
 				variadic: {
 					child: true,
-					parse: (def, ctx) => root(def, ctx)
+					parse: (def, ctx) => ctx.$.schema(def, ctx)
 				},
 				minVariadicLength: {
 					// minVariadicLength is reflected in the id of this node,
@@ -117,7 +116,7 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 				}
 				return { variadic: def }
 			},
-			reduce: (raw) => {
+			reduce: (raw, $) => {
 				let minVariadicLength = raw.minVariadicLength ?? 0
 				const prefix = raw.prefix?.slice() ?? []
 				const optional = raw.optional?.slice() ?? []
@@ -159,7 +158,7 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 					(raw.prefix && raw.prefix.length !== prefix.length)
 				) {
 					// reparse the reduced def
-					return node(
+					return $.node(
 						"sequence",
 						{
 							...raw,
@@ -193,7 +192,7 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 				}
 			},
 			intersections: {
-				sequence: (l, r) => {
+				sequence: (l, r, $) => {
 					const rootState = intersectSequences({
 						l: l.tuple,
 						r: r.tuple,
@@ -209,8 +208,8 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 					return viableBranches.length === 0
 						? rootState.disjoint!
 						: viableBranches.length === 1
-						? node("sequence", sequenceTupleToInner(viableBranches[0].result))
-						: node(
+						? $.node("sequence", sequenceTupleToInner(viableBranches[0].result))
+						: $.node(
 								"union",
 								viableBranches.map((state) => ({
 									proto: Array,
@@ -235,12 +234,14 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 	readonly minLength =
 		this.prefix.length + this.minVariadicLength + this.postfix.length
 	readonly minLengthNode =
-		this.minLength === 0 ? undefined : node("minLength", this.minLength)
+		this.minLength === 0 ? undefined : this.$.node("minLength", this.minLength)
 	readonly maxLength = this.variadic
 		? undefined
 		: this.minLength + this.optional.length
 	readonly maxLengthNode =
-		this.maxLength === undefined ? undefined : node("maxLength", this.maxLength)
+		this.maxLength === undefined
+			? undefined
+			: this.$.node("maxLength", this.maxLength)
 	readonly impliedSiblings = this.minLengthNode
 		? this.maxLengthNode
 			? [this.minLengthNode, this.maxLengthNode]

@@ -6,7 +6,6 @@ import {
 	type Key
 } from "@arktype/util"
 import type { Node, SchemaNode } from "../../base.js"
-import { node } from "../../parser/parse.js"
 import type { IntersectionNode } from "../../schemas/intersection.js"
 import type { BaseScope } from "../../scope.js"
 import type { NodeCompiler } from "../../shared/compile.js"
@@ -53,7 +52,7 @@ export class PropsGroup extends DynamicBase<PropsGroupInput> {
 			this.index?.forEach(
 				({ key }) => (branches = branches.concat(key.branches))
 			)
-			this.keyofCache = node("union", branches)
+			this.keyofCache = this.$.node("union", branches)
 		}
 		return this.keyofCache
 	}
