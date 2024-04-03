@@ -5,6 +5,7 @@ import {
 	type ambient,
 	type ArkConfig,
 	type arkKind,
+	type exportedName,
 	type TypeNode
 } from "@arktype/schema"
 import {
@@ -12,7 +13,6 @@ import {
 	flatMorph,
 	hasDomain,
 	throwParseError,
-	type array,
 	type Dict,
 	type evaluate,
 	type isAny,
@@ -124,8 +124,6 @@ type extractGenericParameters<k> = k extends GenericDeclaration<
 	? params
 	: never
 
-type PrivateDeclaration<key extends string = string> = `#${key}`
-
 export type resolve<reference extends keyof $ | keyof args, $, args> = (
 	reference extends keyof args ? args[reference] : $[reference & keyof $]
 ) extends infer resolution
@@ -151,8 +149,6 @@ export type tryInferSubmoduleReference<$, token> =
 			: never
 		: never
 
-type exportedName<$> = Exclude<keyof $, PrivateDeclaration>
-
 export type Module<$ = any> = {
 	// just adding the nominal id this way and mapping it is cheaper than an intersection
 	[k in exportedName<$> | arkKind]: k extends string
@@ -168,11 +164,6 @@ export type Module<$ = any> = {
 		  type.cast<"module">
 }
 
-export type rootResolutions<exports> = {
-	exports: exports
-	locals: {}
-}
-
 export type ParseContext = {
 	baseName: string
 	path: string[]
@@ -186,27 +177,20 @@ type ParseContextInput = Partial<ParseContext>
 
 declare global {
 	export interface ArkRegistry {
-		ambient: Scope<rootResolutions<ambient>>
+		ambient: Scope<ambient>
 	}
 }
 
 export class Scope<$ = any> extends BaseScope<$> {
 	private parseCache: Record<string, TypeNode> = {}
 
-	aliases: Record<string, unknown> = {}
-	exportedNames: array<exportedName<$>> = []
-
 	constructor(def: Record<string, unknown>, config?: ArkConfig) {
 		const aliases: Record<string, unknown> = {}
-		const exportedNames: string[] = []
 		for (const k in def) {
 			const parsedKey = parseScopeKey(k)
 			aliases[parsedKey.name] = parsedKey.params.length
 				? generic(parsedKey.params, def[k], this)
 				: def[k]
-			if (!parsedKey.isLocal) {
-				exportedNames.push(parsedKey.name)
-			}
 		}
 		super(aliases, config)
 	}
@@ -325,19 +309,15 @@ export const writeShallowCycleErrorMessage = (
 	`Alias '${name}' has a shallow resolution cycle: ${[...seen, name].join(":")}`
 
 export type ParsedScopeKey = {
-	isLocal: boolean
 	name: string
 	params: string[]
 }
 
 export const parseScopeKey = (k: string): ParsedScopeKey => {
-	const isLocal = k[0] === "#"
-	const name = isLocal ? k.slice(1) : k
 	const firstParamIndex = k.indexOf("<")
 	if (firstParamIndex === -1) {
 		return {
-			isLocal,
-			name,
+			name: k,
 			params: []
 		}
 	}
@@ -347,8 +327,7 @@ export const parseScopeKey = (k: string): ParsedScopeKey => {
 		)
 	}
 	return {
-		isLocal,
-		name: name.slice(0, firstParamIndex),
+		name: k.slice(0, firstParamIndex),
 		params: parseGenericParams(k.slice(firstParamIndex + 1, -1))
 	}
 }

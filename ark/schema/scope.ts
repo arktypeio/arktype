@@ -122,11 +122,9 @@ export const resolveConfig = (
 
 export type SpaceResolutions = Record<string, TypeNode | undefined>
 
-export type SpaceInput = {
-	exports: Dict
-	locals?: Dict
-	config?: ArkConfig
-}
+export type exportedName<$> = Exclude<keyof $, PrivateDeclaration>
+
+export type PrivateDeclaration<key extends string = string> = `#${key}`
 
 export class BaseScope<$ = any> {
 	declare infer: distillOut<$>
@@ -140,15 +138,18 @@ export class BaseScope<$ = any> {
 	readonly references: readonly UnknownNode[] = []
 	readonly resolutions: SpaceResolutions = {}
 	readonly json: Json = {}
-	/** The set of names defined at the root-level of the scope mapped to their
-	 * corresponding definitions.**/
-	readonly aliases: Record<string, unknown>
+	exportedNames: array<exportedName<$>>
 
 	protected resolved = false
 
-	constructor(input: SpaceInput) {
-		this.config = input.config ?? {}
-		this.resolvedConfig = resolveConfig(input.config)
+	constructor(
+		/** The set of names defined at the root-level of the scope mapped to their
+		 * corresponding definitions.**/
+		public aliases: Record<string, unknown>,
+		config?: ArkConfig
+	) {
+		this.config = config ?? {}
+		this.resolvedConfig = resolveConfig(config)
 		if ($ark.ambient) {
 			// ensure exportedResolutions is populated
 			$ark.ambient.export()
@@ -156,9 +157,9 @@ export class BaseScope<$ = any> {
 		} else {
 			this.resolutions = {}
 		}
-		this.aliases = input.locals
-			? { ...input.locals, ...input.exports }
-			: input.exports
+		this.exportedNames = Object.keys(this.aliases).filter(
+			(k) => k[0] !== "#"
+		) as never
 	}
 
 	maybeResolve(name: string): TypeNode | Generic | undefined {
