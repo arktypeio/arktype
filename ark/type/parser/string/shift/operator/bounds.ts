@@ -6,7 +6,7 @@ import {
 	type DateLiteral,
 	type LimitLiteral,
 	type NodeDef,
-	type SchemaNode
+	type Schema
 } from "@arktype/schema"
 import { isKeyOf, throwParseError, type keySet } from "@arktype/util"
 import type { astToString } from "../../../semantic/utils.js"
@@ -23,7 +23,7 @@ import {
 	type MaxComparator,
 	type OpenLeftBound
 } from "../../reduce/shared.js"
-import type { state, StaticState } from "../../reduce/static.js"
+import type { StaticState, state } from "../../reduce/static.js"
 import { extractDateLiteralSource, isDateLiteral } from "../operand/date.js"
 import type { parseOperand } from "../operand/operand.js"
 import type { Scanner } from "../scanner.js"
@@ -110,7 +110,7 @@ export const writeIncompatibleRangeMessage = (l: BoundKind, r: BoundKind) =>
 export const getBoundKinds = (
 	comparator: Comparator,
 	limit: LimitLiteral,
-	root: SchemaNode,
+	root: Schema,
 	boundKind: BoundExpressionKind
 ): BoundKind[] => {
 	if (root.extends(keywordNodes.number)) {

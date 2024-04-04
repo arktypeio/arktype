@@ -6,7 +6,7 @@ import {
 	type mutable,
 	type satisfy
 } from "@arktype/util"
-import type { SchemaDef, SchemaNode } from "../../base.js"
+import type { Schema, SchemaDef } from "../../base.js"
 import { jsObjects } from "../../keywords/jsObjects.js"
 import { tsKeywords } from "../../keywords/tsKeywords.js"
 import type { MutableInner } from "../../kinds.js"
@@ -33,14 +33,14 @@ export type SequenceDef = NormalizedSequenceDef | SchemaDef
 
 export interface SequenceInner extends BaseMeta {
 	// a list of fixed position elements starting at index 0
-	readonly prefix?: readonly SchemaNode[]
+	readonly prefix?: readonly Schema[]
 	// a list of optional elements following prefix
-	readonly optional?: readonly SchemaNode[]
+	readonly optional?: readonly Schema[]
 	// the variadic element (only checked if all optional elements are present)
-	readonly variadic?: SchemaNode
+	readonly variadic?: Schema
 	readonly minVariadicLength?: number
 	// a list of fixed position elements, the last being the last element of the array
-	readonly postfix?: readonly SchemaNode[]
+	readonly postfix?: readonly Schema[]
 }
 
 export type SequenceDeclaration = declareNode<{
@@ -250,7 +250,7 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 		? [this.maxLengthNode]
 		: undefined
 
-	protected childAtIndex(data: array, index: number): SchemaNode {
+	protected childAtIndex(data: array, index: number): Schema {
 		if (index < this.prevariadic.length) return this.prevariadic[index]
 		const postfixStartIndex = data.length - this.postfix.length
 		if (index >= postfixStartIndex)
@@ -354,7 +354,7 @@ export type SequenceElementKind = satisfy<
 
 export type SequenceElement = {
 	kind: SequenceElementKind
-	node: SchemaNode
+	node: Schema
 }
 export type SequenceTuple = array<SequenceElement>
 

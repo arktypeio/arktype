@@ -7,7 +7,7 @@ import {
 	type exportedName,
 	type GenericProps,
 	type NodeParseOptions,
-	type SchemaNode
+	type Schema
 } from "@arktype/schema"
 import {
 	domainOf,
@@ -150,7 +150,6 @@ export class Module<$ = any> extends DynamicBase<exportScope<$>> {
 }
 
 type exportScope<$ = any> = {
-	// just adding the nominal id this way and mapping it is cheaper than an intersection
 	[k in exportedName<$>]: $[k] extends PreparsedResolution
 		? [$[k]] extends [null]
 			? // handle `Type<any>` and `Type<never>`
@@ -163,7 +162,7 @@ export interface ParseContext extends NodeParseOptions {
 	$: Scope
 }
 
-type MergedResolutions = Record<string, SchemaNode | Generic>
+type MergedResolutions = Record<string, Schema | Generic>
 
 declare global {
 	export interface ArkRegistry {
@@ -175,7 +174,7 @@ export const scope: ScopeParser = ((def: Dict, config: ArkConfig = {}) =>
 	new Scope(def, config)) as never
 
 export class Scope<$ = any> extends BaseScope<$> {
-	private parseCache: Record<string, SchemaNode> = {}
+	private parseCache: Record<string, Schema> = {}
 
 	constructor(def: Record<string, unknown>, config?: ArkConfig) {
 		const aliases: Record<string, unknown> = {}
@@ -201,7 +200,7 @@ export class Scope<$ = any> extends BaseScope<$> {
 		return this.export()[name] as never
 	}
 
-	parse(def: unknown, ctx: ParseContext): SchemaNode {
+	parse(def: unknown, ctx: ParseContext): Schema {
 		if (typeof def === "string") {
 			if (ctx.args && Object.keys(ctx.args).every((k) => !def.includes(k))) {
 				// we can only rely on the cache if there are no contextual
@@ -221,7 +220,7 @@ export class Scope<$ = any> extends BaseScope<$> {
 	parseTypeRoot(def: unknown, opts?: NodeParseOptions): Type {
 		return new Type(
 			this.parse(def, {
-				args: { this: {} as SchemaNode },
+				args: { this: {} as Schema },
 				$: this,
 				...opts
 			}),
@@ -229,7 +228,7 @@ export class Scope<$ = any> extends BaseScope<$> {
 		)
 	}
 
-	parseString(def: string, ctx: ParseContext): SchemaNode {
+	parseString(def: string, ctx: ParseContext): Schema {
 		return (
 			this.maybeResolveNode(def) ??
 			((def.endsWith("[]") &&

@@ -8,7 +8,7 @@ import {
 	type array,
 	type listable
 } from "@arktype/util"
-import type { Node, SchemaNode } from "../base.js"
+import type { Node, Schema } from "../base.js"
 import type { of } from "../constraints/ast.js"
 import { tsKeywords } from "../keywords/tsKeywords.js"
 import type { NodeDef } from "../kinds.js"
@@ -166,7 +166,7 @@ export class MorphNode<t = any, $ = any> extends BaseSchema<
 		return this.inner.out ?? tsKeywords.unknown
 	}
 
-	rawKeyOf(): SchemaNode {
+	rawKeyOf(): Schema {
 		return this.in.rawKeyOf()
 	}
 }

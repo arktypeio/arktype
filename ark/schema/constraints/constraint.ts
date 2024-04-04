@@ -3,12 +3,7 @@ import {
 	throwParseError,
 	type describeExpression
 } from "@arktype/util"
-import {
-	BaseNode,
-	type ConstraintNode,
-	type Node,
-	type SchemaNode
-} from "../base.js"
+import { BaseNode, type Constraint, type Node, type Schema } from "../base.js"
 import type { Prerequisite } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseNodeDeclaration } from "../shared/declare.js"
@@ -38,8 +33,8 @@ export const throwInvalidOperandError = (
 
 export const writeInvalidOperandMessage = <
 	kind extends ConstraintKind,
-	expected extends SchemaNode,
-	actual extends SchemaNode
+	expected extends Schema,
+	actual extends Schema
 >(
 	kind: kind,
 	expected: expected,
@@ -51,7 +46,7 @@ export const writeInvalidOperandMessage = <
 
 export type writeInvalidOperandMessage<
 	kind extends ConstraintKind,
-	actual extends SchemaNode
+	actual extends Schema
 > = `${Capitalize<kind>} operand must be ${describeExpression<
 	Prerequisite<kind>
 >} (was ${describeExpression<actual["infer"]>})`
@@ -63,10 +58,10 @@ export interface BaseConstraintDeclaration extends BaseNodeDeclaration {
 export abstract class BaseConstraint<
 	d extends BaseConstraintDeclaration
 > extends BaseNode<d["prerequisite"], d> {
-	abstract readonly impliedBasis: SchemaNode | undefined
-	readonly impliedSiblings?: ConstraintNode[] | undefined
+	abstract readonly impliedBasis: Schema | undefined
+	readonly impliedSiblings?: Constraint[] | undefined
 
-	intersect<r extends ConstraintNode>(
+	intersect<r extends Constraint>(
 		r: r
 	): intersectConstraintKinds<d["kind"], r["kind"]> {
 		return this.intersectInternal(r) as never

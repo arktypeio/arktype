@@ -8,7 +8,7 @@ import {
 	type Out,
 	type Predicate,
 	type PrimitiveConstraintKind,
-	type SchemaNode,
+	type Schema,
 	type constrain,
 	type constraintKindOf,
 	type distillConstrainableIn,
@@ -127,7 +127,7 @@ export class Type<t = unknown, $ = any> extends Callable<
 	declare [inferred]: t
 	declare infer: distillOut<t>
 
-	root: SchemaNode<t>
+	root: Schema<t>
 	allows: this["root"]["allows"]
 	description: string
 	expression: string
@@ -137,7 +137,7 @@ export class Type<t = unknown, $ = any> extends Callable<
 		public definition: unknown,
 		public $: Scope
 	) {
-		const root = $.parseTypeRoot(definition) as {} as SchemaNode<t>
+		const root = $.parseTypeRoot(definition) as {} as Schema<t>
 		super(root.apply as never, { bind: root })
 		this.root = root
 		this.allows = root.allows.bind(root)

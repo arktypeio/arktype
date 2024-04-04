@@ -1,4 +1,4 @@
-import type { SchemaNode } from "@arktype/schema"
+import type { Schema } from "@arktype/schema"
 import {
 	throwInternalError,
 	throwParseError,
@@ -40,7 +40,7 @@ export type BaseCompletions<$, args, otherSuggestions extends string = never> =
 	| StringifiablePrefixOperator
 	| otherSuggestions
 
-export const fullStringParse = (s: DynamicState): SchemaNode => {
+export const fullStringParse = (s: DynamicState): Schema => {
 	s.parseOperand()
 	const result = parseUntilFinalizer(s).root
 	if (!result) {

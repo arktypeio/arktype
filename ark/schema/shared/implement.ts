@@ -11,7 +11,7 @@ import {
 	type listable,
 	type requireKeys
 } from "@arktype/util"
-import type { Node, SchemaNode, UnknownNode } from "../base.js"
+import type { Node, Schema, UnknownNode } from "../base.js"
 import type { PropsGroupInput } from "../constraints/props/props.js"
 import type { Declaration, Inner, errorContext } from "../kinds.js"
 import type { NodeParseContext } from "../parser/parse.js"
@@ -171,7 +171,7 @@ export type ConstraintIntersectionMap<kind extends ConstraintKind> = evaluate<
 export type TypeIntersection<
 	lKind extends SchemaKind,
 	rKind extends schemaKindOrRightOf<lKind>
-> = (l: Node<lKind>, r: Node<rKind>, $: BaseScope) => SchemaNode | Disjoint
+> = (l: Node<lKind>, r: Node<rKind>, $: BaseScope) => Schema | Disjoint
 
 export type TypeIntersectionMap<kind extends SchemaKind> = {
 	[rKind in schemaKindOrRightOf<kind>]: TypeIntersection<kind, rKind>

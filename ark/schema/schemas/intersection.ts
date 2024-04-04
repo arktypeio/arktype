@@ -13,12 +13,7 @@ import {
 	type evaluate,
 	type listable
 } from "@arktype/util"
-import {
-	BaseNode,
-	type ConstraintNode,
-	type Node,
-	type SchemaNode
-} from "../base.js"
+import { BaseNode, type Constraint, type Node, type Schema } from "../base.js"
 import {
 	PropsGroup,
 	type ExtraneousKeyBehavior,
@@ -100,7 +95,7 @@ const intersectIntersections = (
 	reduced: IntersectionInner,
 	raw: IntersectionInner,
 	$: BaseScope
-): SchemaNode | Disjoint => {
+): Schema | Disjoint => {
 	// avoid treating adding instance keys as keys of lRoot, rRoot
 	if (reduced instanceof IntersectionNode) reduced = reduced.inner
 	if (raw instanceof IntersectionNode) raw = raw.inner
@@ -341,12 +336,12 @@ export class IntersectionNode<t = unknown, $ = any> extends BaseSchema<
 		}
 	}
 
-	rawKeyOf(): SchemaNode {
+	rawKeyOf(): Schema {
 		return this.basis
 			? this.props
 				? this.basis.rawKeyOf().or(this.props.rawKeyOf())
 				: this.basis.rawKeyOf()
-			: this.props?.rawKeyOf() ?? (tsKeywords.never as {} as SchemaNode)
+			: this.props?.rawKeyOf() ?? (tsKeywords.never as {} as Schema)
 	}
 }
 
@@ -393,17 +388,17 @@ const intersectRootKeys = (
 
 type ConstraintIntersectionState = {
 	root: IntersectionRoot
-	l: ConstraintNode[]
-	r: ConstraintNode[]
-	types: SchemaNode[]
+	l: Constraint[]
+	r: Constraint[]
+	types: Schema[]
 	$: BaseScope
 }
 
 const intersectConstraints = (
 	s: ConstraintIntersectionState
-): SchemaNode | Disjoint => {
+): Schema | Disjoint => {
 	if (!s.r.length) {
-		let result: SchemaNode | Disjoint = s.$.node(
+		let result: Schema | Disjoint = s.$.node(
 			"intersection",
 			Object.assign(s.root, unflattenConstraints(s.l)),
 			{ prereduced: true }
@@ -441,10 +436,10 @@ const intersectConstraints = (
 	return intersectConstraints(s)
 }
 
-const flattenConstraints = (inner: IntersectionInner): ConstraintNode[] => {
+const flattenConstraints = (inner: IntersectionInner): Constraint[] => {
 	const result = entriesOf(inner)
 		.flatMap(([k, v]) =>
-			k in constraintKeys ? (v as listable<ConstraintNode>) : []
+			k in constraintKeys ? (v as listable<Constraint>) : []
 		)
 		.sort((l, r) =>
 			l.precedence < r.precedence
@@ -460,7 +455,7 @@ const flattenConstraints = (inner: IntersectionInner): ConstraintNode[] => {
 }
 
 const unflattenConstraints = (
-	constraints: array<ConstraintNode>
+	constraints: array<Constraint>
 ): IntersectionInner => {
 	const inner: MutableInner<"intersection"> = {}
 	for (const constraint of constraints) {

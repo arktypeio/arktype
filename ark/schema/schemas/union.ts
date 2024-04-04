@@ -1,5 +1,5 @@
 import { appendUnique, groupBy, isArray } from "@arktype/util"
-import type { Node, SchemaNode } from "../base.js"
+import type { Node, Schema } from "../base.js"
 import { tsKeywords } from "../keywords/tsKeywords.js"
 import type { NodeDef } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
@@ -241,7 +241,7 @@ export class UnionNode<t = any, $ = any> extends BaseSchema<
 		}
 	}
 
-	rawKeyOf(): SchemaNode {
+	rawKeyOf(): Schema {
 		return this.branches.reduce(
 			(result, branch) => result.and(branch.rawKeyOf()),
 			tsKeywords.unknown
@@ -358,9 +358,9 @@ export const intersectBranches = (
 	// If the corresponding r branch is identified as a subtype of an l branch, the
 	// value at rIndex is set to null so we can avoid including previous/future
 	// inersections in the reduced result.
-	const batchesByR: (SchemaNode[] | null)[] = r.map(() => [])
+	const batchesByR: (Schema[] | null)[] = r.map(() => [])
 	for (let lIndex = 0; lIndex < l.length; lIndex++) {
-		let candidatesByR: { [rIndex: number]: SchemaNode } = {}
+		let candidatesByR: { [rIndex: number]: Schema } = {}
 		for (let rIndex = 0; rIndex < r.length; rIndex++) {
 			if (batchesByR[rIndex] === null) {
 				// rBranch is a subtype of an lBranch and

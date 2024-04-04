@@ -5,7 +5,7 @@ import {
 	reference,
 	type Key
 } from "@arktype/util"
-import type { Node, SchemaNode } from "../../base.js"
+import type { Node, Schema } from "../../base.js"
 import type { IntersectionNode } from "../../schemas/intersection.js"
 import type { BaseScope } from "../../scope.js"
 import type { NodeCompiler } from "../../shared/compile.js"
@@ -45,8 +45,8 @@ export class PropsGroup extends DynamicBase<PropsGroupInput> {
 	readonly expression = describeProps(this, "expression")
 	readonly literalKeys = literalPropKeysOf(this.all)
 
-	private keyofCache: SchemaNode | undefined
-	rawKeyOf(): SchemaNode {
+	private keyofCache: Schema | undefined
+	rawKeyOf(): Schema {
 		if (!this.keyofCache) {
 			let branches = this.$.units(this.literalKeys).branches
 			this.index?.forEach(

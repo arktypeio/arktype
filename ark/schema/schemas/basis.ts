@@ -6,7 +6,7 @@ import type {
 	instanceOf,
 	isAny
 } from "@arktype/util"
-import type { SchemaNode } from "../base.js"
+import type { Schema } from "../base.js"
 import type { NodeDef } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BasisKind } from "../shared/implement.js"
@@ -31,7 +31,7 @@ export abstract class BaseBasis<
 	abstract readonly errorContext: d["errorContext"]
 	abstract literalKeys: Key[]
 
-	rawKeyOf(): SchemaNode {
+	rawKeyOf(): Schema {
 		return this.$.units(this.literalKeys)
 	}
 

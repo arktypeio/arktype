@@ -11,7 +11,7 @@ import {
 	type PartialRecord,
 	type valueOf
 } from "@arktype/util"
-import type { BaseAttachments, Node, SchemaNode, UnknownNode } from "../base.js"
+import type { BaseAttachments, Node, Schema, UnknownNode } from "../base.js"
 import type { BaseScope } from "../scope.js"
 import type { BaseNodeDeclaration } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -30,7 +30,7 @@ import { hasArkKind } from "../shared/utils.js"
 export type NodeParseOptions = {
 	alias?: string
 	prereduced?: boolean
-	args?: Record<string, SchemaNode>
+	args?: Record<string, Schema>
 	/** Instead of creating the node, compute the innerId of the definition and
 	 * point it to the specified resolution.
 	 *

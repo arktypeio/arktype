@@ -1,10 +1,5 @@
 import { flatMorph, throwParseError, type conform } from "@arktype/util"
-import {
-	BaseNode,
-	type Node,
-	type SchemaDef,
-	type SchemaNode
-} from "../base.js"
+import { BaseNode, type Node, type Schema, type SchemaDef } from "../base.js"
 import type { constrain } from "../constraints/ast.js"
 import {
 	throwInvalidOperandError,
@@ -57,8 +52,8 @@ export abstract class BaseSchema<
 		? this.inner.branches
 		: [this as never]
 
-	private keyofCache: SchemaNode | undefined
-	keyof(): SchemaNode<keyof this["in"]["infer"]> {
+	private keyofCache: Schema | undefined
+	keyof(): Schema<keyof this["in"]["infer"]> {
 		if (!this.keyofCache) {
 			this.keyofCache = this.rawKeyOf()
 			if (this.keyofCache.isNever())
@@ -69,22 +64,22 @@ export abstract class BaseSchema<
 		return this.keyofCache as never
 	}
 
-	abstract rawKeyOf(): SchemaNode
+	abstract rawKeyOf(): Schema
 
-	intersect<r extends SchemaNode>(
+	intersect<r extends Schema>(
 		r: r
-	): SchemaNode<inferIntersection<this["infer"], r["infer"]>> | Disjoint {
+	): Schema<inferIntersection<this["infer"], r["infer"]>> | Disjoint {
 		return this.intersectInternal(r) as never
 	}
 
-	and<r extends SchemaNode>(
+	and<r extends Schema>(
 		r: r
-	): SchemaNode<inferIntersection<this["infer"], r["infer"]>> {
+	): Schema<inferIntersection<this["infer"], r["infer"]>> {
 		const result = this.intersect(r)
 		return result instanceof Disjoint ? result.throw() : (result as never)
 	}
 
-	or<r extends SchemaNode>(r: r): SchemaNode<t | r["infer"]> {
+	or<r extends Schema>(r: r): Schema<t | r["infer"]> {
 		const branches = [...this.branches, ...(r.branches as any)]
 		return this.$.schema(branches) as never
 	}
@@ -97,19 +92,17 @@ export abstract class BaseSchema<
 		return this.hasKind("union") && this.branches.length === 0
 	}
 
-	get<key extends PropertyKey>(
-		...path: readonly (key | SchemaNode<key>)[]
-	): this {
+	get<key extends PropertyKey>(...path: readonly (key | Schema<key>)[]): this {
 		return this
 	}
 
-	extract(other: SchemaNode): SchemaNode {
+	extract(other: Schema): Schema {
 		return this.$.schema(
 			this.branches.filter((branch) => branch.extends(other))
 		)
 	}
 
-	exclude(other: SchemaNode): SchemaNode {
+	exclude(other: Schema): Schema {
 		return this.$.schema(
 			this.branches.filter((branch) => !branch.extends(other))
 		) as never
@@ -127,7 +120,7 @@ export abstract class BaseSchema<
 
 	// add the extra inferred intersection so that a variable of Type
 	// can be narrowed without other branches becoming never
-	extends<r>(other: SchemaNode<r>): this is SchemaNode<r> & { [inferred]?: r } {
+	extends<r>(other: Schema<r>): this is Schema<r> & { [inferred]?: r } {
 		const intersection = this.intersect(other as never)
 		return (
 			!(intersection instanceof Disjoint) && this.equals(intersection as never)
@@ -195,11 +188,11 @@ export abstract class BaseSchema<
 	>(
 		kind: conform<kind, constraintKindOf<this["in"]["infer"]>>,
 		def: def
-	): SchemaNode<constrain<t, kind, def>> {
+	): Schema<constrain<t, kind, def>> {
 		return this.rawConstrain(kind, def) as never
 	}
 
-	protected rawConstrain(kind: ConstraintKind, def: unknown): SchemaNode {
+	protected rawConstrain(kind: ConstraintKind, def: unknown): Schema {
 		const constraint = this.$.node(kind, def as never)
 		if (
 			constraint.impliedBasis &&

@@ -9,7 +9,7 @@ import type {
 	instanceOf,
 	isAny
 } from "@arktype/util"
-import type { Node, SchemaDef, SchemaNode, UnknownNode } from "../base.js"
+import type { Node, Schema, SchemaDef, UnknownNode } from "../base.js"
 import type { NodeDef, Prerequisite, reducibleKindOf } from "../kinds.js"
 import type { DomainDef, DomainNode } from "../schemas/domain.js"
 import type {
@@ -63,7 +63,7 @@ export type validateSchema<def, $> = def extends type.cast
 	: validateSchemaBranch<def, $>
 
 export type instantiateSchema<def, $> = def extends type.cast<infer to>
-	? SchemaNode<to>
+	? Schema<to>
 	: def extends UnionDef<infer branches>
 	? branches["length"] extends 0
 		? UnionNode<never>

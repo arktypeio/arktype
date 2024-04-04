@@ -1,4 +1,4 @@
-import type { SchemaNode } from "../../base.js"
+import type { Schema } from "../../base.js"
 import { tsKeywords } from "../../keywords/tsKeywords.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import type { TraverseAllows } from "../../shared/traversal.js"
@@ -55,12 +55,12 @@ export class DivisorNode extends BasePrimitiveConstraint<DivisorDeclaration> {
 	readonly expression = `% ${this.rule}`
 }
 
-export const writeIndivisibleMessage = <node extends SchemaNode>(
+export const writeIndivisibleMessage = <node extends Schema>(
 	t: node
 ): writeIndivisibleMessage<node> =>
 	writeInvalidOperandMessage("divisor", tsKeywords.number, t)
 
-export type writeIndivisibleMessage<node extends SchemaNode> =
+export type writeIndivisibleMessage<node extends Schema> =
 	writeInvalidOperandMessage<"divisor", node>
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm

@@ -302,7 +302,7 @@ export abstract class BaseNode<
 		return includes(basisKinds, this.kind)
 	}
 
-	isConstraint(): this is ConstraintNode {
+	isConstraint(): this is Constraint {
 		return includes(constraintKinds, this.kind)
 	}
 
@@ -314,7 +314,7 @@ export abstract class BaseNode<
 		return includes(propKinds, this.kind)
 	}
 
-	isType(): this is SchemaNode {
+	isType(): this is Schema {
 		return includes(schemaKinds, this.kind)
 	}
 
@@ -477,12 +477,13 @@ export type Node<
 	t = any
 > = NodesByKind<t>[kind]
 
-export type SchemaNode<t = any, kind extends SchemaKind = SchemaKind> = Node<
-	kind,
-	t
->
+export type Schema<
+	t = any,
+	$ = any,
+	kind extends SchemaKind = SchemaKind
+> = NodesByKind<t, $>[kind]
 
 export type SchemaDef<kind extends SchemaKind = SchemaKind> = NodeDef<kind>
 
-export type ConstraintNode<kind extends ConstraintKind = ConstraintKind> =
+export type Constraint<kind extends ConstraintKind = ConstraintKind> =
 	Node<kind>

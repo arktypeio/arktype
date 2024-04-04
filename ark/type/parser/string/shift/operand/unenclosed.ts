@@ -4,7 +4,7 @@ import {
 	writeUnresolvableMessage,
 	type ambient,
 	type GenericProps,
-	type SchemaNode,
+	type Schema,
 	type writeNonSubmoduleDotMessage
 } from "@arktype/schema"
 import {
@@ -70,7 +70,7 @@ export const parseGenericInstantiation = (
 	name: string,
 	g: Generic,
 	s: DynamicState
-): SchemaNode => {
+): Schema => {
 	s.scanner.shiftUntilNonWhitespace()
 	const lookahead = s.scanner.shift()
 	if (lookahead !== "<") {
@@ -101,7 +101,7 @@ export type parseGenericInstantiation<
 		: never
 	: state.error<writeInvalidGenericArgsMessage<name, g["params"], []>>
 
-const unenclosedToNode = (s: DynamicState, token: string): SchemaNode =>
+const unenclosedToNode = (s: DynamicState, token: string): Schema =>
 	maybeParseReference(s, token) ??
 	maybeParseUnenclosedLiteral(s, token) ??
 	s.error(
@@ -113,7 +113,7 @@ const unenclosedToNode = (s: DynamicState, token: string): SchemaNode =>
 const maybeParseReference = (
 	s: DynamicState,
 	token: string
-): SchemaNode | undefined => {
+): Schema | undefined => {
 	if (s.ctx.args?.[token]) {
 		return s.ctx.args[token]
 	}
@@ -133,7 +133,7 @@ const maybeParseReference = (
 const maybeParseUnenclosedLiteral = (
 	s: DynamicState,
 	token: string
-): SchemaNode | undefined => {
+): Schema | undefined => {
 	const maybeNumber = tryParseNumber(token, { strict: true })
 	if (maybeNumber !== undefined) {
 		return s.ctx.$.node("unit", { unit: maybeNumber })

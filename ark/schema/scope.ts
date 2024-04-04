@@ -10,7 +10,7 @@ import {
 	type Json,
 	type requireKeys
 } from "@arktype/util"
-import type { Node, SchemaDef, SchemaNode, UnknownNode } from "./base.js"
+import type { Node, Schema, SchemaDef, UnknownNode } from "./base.js"
 import { mergeConfigs } from "./config.js"
 import {
 	validateUninstantiatedGenericNode,
@@ -44,9 +44,9 @@ import type {
 import type { TraverseAllows, TraverseApply } from "./shared/traversal.js"
 import { addArkKind, hasArkKind } from "./shared/utils.js"
 
-export type nodeResolutions<keywords> = { [k in keyof keywords]: SchemaNode }
+export type nodeResolutions<keywords> = { [k in keyof keywords]: Schema }
 
-export type BaseResolutions = Record<string, SchemaNode>
+export type BaseResolutions = Record<string, Schema>
 
 declare global {
 	export interface StaticArkConfig {
@@ -139,7 +139,7 @@ export const resolveConfig = (
 
 export type BaseScopeResolutions = Record<
 	string,
-	SchemaNode | GenericNode | undefined
+	Schema | GenericNode | undefined
 >
 
 export type exportedName<$> = Exclude<keyof $, PrivateDeclaration>
@@ -236,7 +236,7 @@ export class BaseScope<$ = any> {
 		return parseNode(kinds, schema, this, opts) as never
 	}
 
-	maybeResolve(name: string): SchemaNode | GenericNode | undefined {
+	maybeResolve(name: string): Schema | GenericNode | undefined {
 		const cached = this.resolutions[name]
 		if (cached) {
 			return cached
@@ -257,9 +257,7 @@ export class BaseScope<$ = any> {
 	}
 
 	/** If name is a valid reference to a submodule alias, return its resolution  */
-	private maybeResolveSubalias(
-		name: string
-	): SchemaNode | GenericNode | undefined {
+	private maybeResolveSubalias(name: string): Schema | GenericNode | undefined {
 		const dotIndex = name.indexOf(".")
 		if (dotIndex === -1) {
 			return
@@ -283,7 +281,7 @@ export class BaseScope<$ = any> {
 		// might be something like a decimal literal, so just fall through to return
 	}
 
-	maybeResolveNode(name: string): SchemaNode | undefined {
+	maybeResolveNode(name: string): Schema | undefined {
 		const result = this.maybeResolve(name)
 		return hasArkKind(result, "node") ? (result as never) : undefined
 	}
@@ -353,7 +351,7 @@ export class BaseScope<$ = any> {
 
 export type NodeExportCache = Record<
 	string,
-	SchemaNode | GenericNode | ModuleNode | undefined
+	Schema | GenericNode | ModuleNode | undefined
 >
 
 export const root: BaseScope<{}> = new BaseScope({})

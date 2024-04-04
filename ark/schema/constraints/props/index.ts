@@ -1,5 +1,5 @@
 import { throwParseError, type Key } from "@arktype/util"
-import type { SchemaDef, SchemaNode } from "../../base.js"
+import type { Schema, SchemaDef } from "../../base.js"
 import { internalKeywords } from "../../keywords/internal.js"
 import { tsKeywords } from "../../keywords/tsKeywords.js"
 import type { NodeCompiler } from "../../shared/compile.js"
@@ -17,8 +17,8 @@ export interface IndexDef extends BaseMeta {
 }
 
 export interface IndexInner extends BaseMeta {
-	readonly key: SchemaNode<Key>
-	readonly value: SchemaNode
+	readonly key: Schema<Key>
+	readonly value: Schema
 }
 
 export type IndexDeclaration = declareNode<{
