@@ -63,7 +63,7 @@ export const domainImplementation = implementNode<DomainDeclaration>({
 	intersections: {
 		domain: (l, r) => Disjoint.from("domain", l, r)
 	},
-	attach: (self): DomainDeclaration["attachments"] => {
+	construct: (self): DomainDeclaration["attachments"] => {
 		const literalKeys = getBaseDomainKeys(self.domain)
 		const traverseAllows: TraverseAllows = (data) =>
 			domainOf(data) === self.domain

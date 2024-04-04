@@ -1,15 +1,16 @@
-import { throwParseError, type Key } from "@arktype/util"
-import { implementNode, type Schema, type SchemaDef } from "../../base.js"
+import { type Key, throwParseError } from "@arktype/util"
+import {
+	type BaseAttachments,
+	type BaseNode,
+	type Schema,
+	type SchemaDef,
+	implementNode
+} from "../../base.js"
 import { internalKeywords } from "../../keywords/internal.js"
 import { tsKeywords } from "../../keywords/tsKeywords.js"
-import type { NodeCompiler } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
-import type {
-	SchemaKind,
-	nodeImplementationOf
-} from "../../shared/implement.js"
-import type { TraverseAllows, TraverseApply } from "../../shared/traversal.js"
-import { BaseConstraint } from "../constraint.js"
+import type { SchemaKind } from "../../shared/implement.js"
+import type { ConstraintAttachments } from "../constraint.js"
 
 export interface IndexDef extends BaseMeta {
 	readonly key: SchemaDef
@@ -29,7 +30,12 @@ export type IndexDeclaration = declareNode<{
 	prerequisite: object
 	intersectionIsOpen: true
 	childKind: SchemaKind
+	attachments: IndexAttachments
 }>
+
+export interface IndexAttachments
+	extends BaseAttachments<IndexDeclaration>,
+		ConstraintAttachments {}
 
 export const indexImplementation = implementNode<IndexDeclaration>({
 	kind: "index",
@@ -59,36 +65,35 @@ export const indexImplementation = implementNode<IndexDeclaration>({
 	},
 	intersections: {
 		index: (l, r) => l
+	},
+	construct: (self) => {
+		return {
+			expression: `[${self.key.expression}]: ${self.value.expression}`,
+			impliedBasis: tsKeywords.object,
+			traverseAllows(data, ctx) {
+				return Object.entries(data).every(
+					(entry) =>
+						!this.key.traverseAllows(entry[0], ctx) ||
+						this.value.traverseAllows(entry[1], ctx)
+				)
+			},
+			traverseApply(data, ctx) {
+				return Object.entries(data).forEach((entry) => {
+					if (this.key.traverseAllows(entry[0], ctx)) {
+						this.value.traverseApply(entry[1], ctx)
+					}
+				})
+			},
+			compile(js) {
+				if (js.traversalKind === "Allows") {
+					js.return(true)
+				}
+			}
+		}
 	}
 })
 
-export class IndexNode extends BaseConstraint<IndexDeclaration> {
-	static implementation: nodeImplementationOf<IndexDeclaration> =
-		indexImplementation
-
-	readonly impliedBasis = tsKeywords.object
-	readonly expression = `[${this.key.expression}]: ${this.value.expression}`
-
-	traverseAllows: TraverseAllows<object> = (data, ctx) =>
-		Object.entries(data).every(
-			(entry) =>
-				!this.key.traverseAllows(entry[0], ctx) ||
-				this.value.traverseAllows(entry[1], ctx)
-		)
-
-	traverseApply: TraverseApply<object> = (data, ctx) =>
-		Object.entries(data).forEach((entry) => {
-			if (this.key.traverseAllows(entry[0], ctx)) {
-				this.value.traverseApply(entry[1], ctx)
-			}
-		})
-
-	compile(js: NodeCompiler): void {
-		if (js.traversalKind === "Allows") {
-			js.return(true)
-		}
-	}
-}
+export type IndexNode = BaseNode<object, IndexDeclaration>
 
 export const writeInvalidPropertyKeyMessage = <indexDef extends string>(
 	indexDef: indexDef

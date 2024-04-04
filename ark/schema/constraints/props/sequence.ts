@@ -1,12 +1,12 @@
 import {
 	append,
-	throwInternalError,
-	throwParseError,
 	type array,
 	type mutable,
-	type satisfy
+	type satisfy,
+	throwInternalError,
+	throwParseError
 } from "@arktype/util"
-import { implementNode, type Schema, type SchemaDef } from "../../base.js"
+import { type Schema, type SchemaDef, implementNode } from "../../base.js"
 import { jsObjects } from "../../keywords/jsObjects.js"
 import { tsKeywords } from "../../keywords/tsKeywords.js"
 import type { MutableInner } from "../../kinds.js"
@@ -174,19 +174,16 @@ export const sequenceImplementation = implementNode<SequenceDeclaration>({
 		description: (node) => {
 			if (node.isVariadicOnly)
 				return `${node.variadic!.nestableExpression}[]`
-			return (
-				"[" +
-				node.tuple
-					.map((element) =>
-						element.kind === "optional"
-							? `${element.node.nestableExpression}?`
-							: element.kind === "variadic"
-								? `...${element.node.nestableExpression}[]`
-								: element.node.expression
-					)
-					.join(", ") +
-				"]"
-			)
+			const innerDescription = node.tuple
+				.map((element) =>
+					element.kind === "optional"
+						? `${element.node.nestableExpression}?`
+						: element.kind === "variadic"
+							? `...${element.node.nestableExpression}[]`
+							: element.node.expression
+				)
+				.join(", ")
+			return `[${innerDescription}]`
 		}
 	},
 	intersections: {

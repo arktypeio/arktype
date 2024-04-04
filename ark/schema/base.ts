@@ -80,7 +80,7 @@ import {
 } from "./shared/traversal.js"
 import { arkKind, inferred } from "./shared/utils.js"
 
-export interface BaseAttachments {
+export interface UnknownAttachments {
 	alias?: string
 	readonly kind: NodeKind
 	readonly name: string
@@ -97,7 +97,7 @@ export interface BaseAttachments {
 }
 
 export interface NarrowedAttachments<d extends BaseNodeDeclaration>
-	extends BaseAttachments {
+	extends UnknownAttachments {
 	kind: d["kind"]
 	inner: d["inner"]
 	json: Json
@@ -149,7 +149,7 @@ export const implementNode = <d extends BaseNodeDeclaration = never>(
 	return implementation as never
 }
 
-export type BaseNodeAttachments<d extends BaseNodeDeclaration> = {
+export type BaseAttachments<d extends BaseNodeDeclaration> = {
 	traverseAllows: TraverseAllows<d["prerequisite"]>
 	traverseApply: TraverseApply<d["prerequisite"]>
 	expression: string
@@ -163,7 +163,7 @@ export abstract class BaseNode<
 	(data: d["prerequisite"]) => ArkResult<distillIn<t>, distillOut<t>>,
 	attachmentsOf<d>
 > {
-	constructor(public attachments: BaseAttachments) {
+	constructor(public attachments: UnknownAttachments) {
 		super((data: any): ArkResult<any> => {
 			if (
 				!this.includesMorph &&

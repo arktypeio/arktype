@@ -1,7 +1,7 @@
 import { type conform, flatMorph, throwParseError } from "@arktype/util"
 import {
+	type BaseAttachments,
 	BaseNode,
-	type BaseNodeAttachments,
 	type Node,
 	type Schema,
 	type SchemaDef
@@ -51,7 +51,7 @@ export interface BaseSchemaDeclaration extends BaseNodeDeclaration {
 }
 
 export interface BaseSchemaAttachments<d extends BaseNodeDeclaration>
-	extends BaseNodeAttachments<d> {
+	extends BaseAttachments<d> {
 	rawKeyOf(): Schema
 }
 

@@ -11,15 +11,7 @@ import {
 	printable,
 	type requireKeys
 } from "@arktype/util"
-import type { satisfy } from "../../util/generics.js"
-import type { Dict, Key } from "../../util/records.js"
-import type {
-	BaseAttachments,
-	BaseNodeAttachments,
-	Node,
-	Schema,
-	UnknownNode
-} from "../base.js"
+import type { BaseAttachments, Node, Schema, UnknownNode } from "../base.js"
 import type { PropsGroupInput } from "../constraints/props/props.js"
 import type { Declaration, Inner, errorContext } from "../kinds.js"
 import type { NodeParseContext } from "../parser/parse.js"
@@ -33,7 +25,6 @@ import type {
 	NodeConfig,
 	ParsedUnknownNodeConfig
 } from "../scope.js"
-import type { NodeCompiler } from "./compile.js"
 import type {
 	BaseErrorContext,
 	BaseMeta,
@@ -42,7 +33,6 @@ import type {
 } from "./declare.js"
 import type { Disjoint } from "./disjoint.js"
 import { throwArkError } from "./errors.js"
-import type { TraverseAllows, TraverseApply } from "./traversal.js"
 import { hasArkKind } from "./utils.js"
 
 export const basisKinds = ["unit", "proto", "domain"] as const
@@ -301,7 +291,9 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 		inner: d["inner"],
 		$: BaseScope
 	) => Node<d["reducibleTo"]> | Disjoint | undefined
-	attach?: (base: parsedAttachmentsOf<d>) => d["attachments"]
+	construct?: (
+		self: parsedAttachmentsOf<d>
+	) => d["attachments"] & ThisType<Node<d["kind"]>>
 }
 
 export interface UnknownNodeImplementation
@@ -314,8 +306,8 @@ export interface UnknownNodeImplementation
 
 export interface PrimitiveNodeDeclaration extends BaseNodeDeclaration {
 	kind: PrimitiveKind
-	attachments: PrimitiveAttachments<this>
-	inner: {}
+	attachments: BaseAttachments<this> &
+		PrimitiveAttachments<PrimitiveNodeDeclaration>
 }
 
 export const derivePrimitiveAttachments = <
@@ -348,7 +340,7 @@ export const derivePrimitiveAttachments = <
 
 export interface PrimitiveAttachments<
 	d extends PrimitiveNodeDeclaration = PrimitiveNodeDeclaration
-> extends BaseNodeAttachments<d> {
+> {
 	readonly compiledCondition: string
 	readonly compiledNegation: string
 	readonly errorContext: d["errorContext"]

@@ -83,7 +83,7 @@ export const protoImplementation = implementNode<ProtoDeclaration>({
 				: // TODO: infer node to avoid cast
 					Disjoint.from("domain", tsKeywords.object as never, domain)
 	},
-	attach: (self): ProtoDeclaration["attachments"] => {
+	construct: (self): ProtoDeclaration["attachments"] => {
 		const serializedConstructor = (self.json as { proto: string }).proto
 		const compiledCondition = `data instanceof ${serializedConstructor}`
 		const literalKeys = prototypeKeysOf(self.proto.prototype)

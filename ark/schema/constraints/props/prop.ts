@@ -1,5 +1,11 @@
-import { compileSerializedValue, type Key } from "@arktype/util"
-import { implementNode, type Node, type SchemaDef } from "../../base.js"
+import { type Key, compileSerializedValue } from "@arktype/util"
+import {
+	type BaseAttachments,
+	type BaseNode,
+	type Node,
+	type SchemaDef,
+	implementNode
+} from "../../base.js"
 import { tsKeywords } from "../../keywords/tsKeywords.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
@@ -9,7 +15,7 @@ import type {
 	nodeImplementationOf
 } from "../../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/traversal.js"
-import { BaseConstraint } from "../constraint.js"
+import { BaseConstraint, type ConstraintAttachments } from "../constraint.js"
 
 export interface PropDef extends BaseMeta {
 	readonly key: Key
@@ -34,7 +40,12 @@ export type PropDeclaration = declareNode<{
 	prerequisite: object
 	intersectionIsOpen: true
 	childKind: SchemaKind
+	attachments: PropAttachments
 }>
+
+export interface PropAttachments
+	extends BaseAttachments<PropDeclaration>,
+		ConstraintAttachments {}
 
 export const propImplementation = implementNode<PropDeclaration>({
 	kind: "prop",
@@ -78,77 +89,76 @@ export const propImplementation = implementNode<PropDeclaration>({
 				optional
 			})
 		}
+	},
+	construct: (self) => {
+		const required = !self.optional
+		const impliedBasis = tsKeywords.object
+		const serializedKey = compileSerializedValue(self.key)
+		const compiledKey =
+			typeof self.key === "string" ? self.key : serializedKey
+		const expression = `${compiledKey}${self.optional ? "?" : ""}: ${
+			self.value.expression
+		}`
+
+		const errorContext = Object.freeze({
+			code: "prop",
+			description: self.description,
+			key: self.key
+		})
+
+		return {
+			traverseAllows(data, ctx) {
+				if (this.key in data) {
+					// ctx will be undefined if this node doesn't have a context-dependent predicate
+					ctx?.path.push(this.key)
+					const allowed = this.value.traverseAllows(
+						(data as any)[this.key],
+						ctx
+					)
+					ctx?.path.pop()
+					return allowed
+				}
+				return required
+			},
+			traverseApply(data, ctx) {
+				ctx.path.push(this.key)
+				if (this.key in data) {
+					this.value.traverseApply((data as any)[this.key], ctx)
+				} else if (required) {
+					ctx.error(errorContext)
+				}
+				ctx.path.pop()
+			},
+			compile(js) {
+				const requiresContext = js.requiresContextFor(this.value)
+				if (requiresContext) {
+					js.line(`ctx.path.push(${serializedKey})`)
+				}
+
+				js.if(`${serializedKey} in ${js.data}`, () =>
+					js.check(this.value, {
+						arg: `${js.data}${js.prop(this.key)}`
+					})
+				)
+				if (required) {
+					js.else(() => {
+						if (js.traversalKind === "Apply") {
+							return js.line(
+								`ctx.error(${this.compiledErrorContext})`
+							)
+						}
+						if (requiresContext) {
+							js.line("ctx.path.pop()")
+						}
+						return js.return(false)
+					})
+				}
+
+				if (requiresContext) js.line("ctx.path.pop()")
+				else js.return(true)
+			}
+		}
 	}
 })
 
-export class PropNode extends BaseConstraint<PropDeclaration> {
-	static implementation: nodeImplementationOf<PropDeclaration> =
-		propImplementation
-
-	readonly required = !this.optional
-	readonly impliedBasis = tsKeywords.object
-	readonly serializedKey = compileSerializedValue(this.key)
-	readonly compiledKey =
-		typeof this.key === "string" ? this.key : this.serializedKey
-	readonly expression = `${this.compiledKey}${this.optional ? "?" : ""}: ${
-		this.value.expression
-	}`
-
-	readonly errorContext = Object.freeze({
-		code: "prop",
-		description: this.description,
-		key: this.key
-	})
-
-	traverseAllows: TraverseAllows<object> = (data, ctx) => {
-		if (this.key in data) {
-			// ctx will be undefined if this node doesn't have a context-dependent predicate
-			ctx?.path.push(this.key)
-			const allowed = this.value.traverseAllows(
-				(data as any)[this.key],
-				ctx
-			)
-			ctx?.path.pop()
-			return allowed
-		}
-		return this.required
-	}
-
-	traverseApply: TraverseApply<object> = (data, ctx) => {
-		ctx.path.push(this.key)
-		if (this.key in data) {
-			this.value.traverseApply((data as any)[this.key], ctx)
-		} else if (this.required) {
-			ctx.error(this.errorContext)
-		}
-		ctx.path.pop()
-	}
-
-	compile(js: NodeCompiler): void {
-		const requiresContext = js.requiresContextFor(this.value)
-		if (requiresContext) {
-			js.line(`ctx.path.push(${this.serializedKey})`)
-		}
-
-		js.if(`${this.serializedKey} in ${js.data}`, () =>
-			js.check(this.value, {
-				arg: `${js.data}${js.prop(this.key)}`
-			})
-		)
-		if (this.required) {
-			js.else(() => {
-				if (js.traversalKind === "Apply") {
-					return js.line(`ctx.error(${this.compiledErrorContext})`)
-				} else {
-					if (requiresContext) {
-						js.line(`ctx.path.pop()`)
-					}
-					return js.return(false)
-				}
-			})
-		}
-
-		if (requiresContext) js.line(`ctx.path.pop()`)
-		else js.return(true)
-	}
-}
+export type PropNode = BaseNode<object, PropDeclaration>

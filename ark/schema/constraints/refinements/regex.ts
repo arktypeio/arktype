@@ -1,7 +1,15 @@
-import { implementNode } from "../../base.js"
+import {
+	type BaseAttachments,
+	type BaseNode,
+	implementNode
+} from "../../base.js"
 import { tsKeywords } from "../../keywords/tsKeywords.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
-import { BasePrimitiveConstraint } from "../constraint.js"
+import {
+	type PrimitiveAttachments,
+	derivePrimitiveAttachments
+} from "../../shared/implement.js"
+import type { ConstraintAttachments } from "../constraint.js"
 
 export interface RegexInner extends BaseMeta {
 	readonly rule: string
@@ -20,7 +28,15 @@ export type RegexDeclaration = declareNode<{
 	intersectionIsOpen: true
 	prerequisite: string
 	errorContext: RegexInner
+	attachments: RegexAttachments
 }>
+
+export interface RegexAttachments
+	extends BaseAttachments<RegexDeclaration>,
+		PrimitiveAttachments<RegexDeclaration>,
+		ConstraintAttachments {
+	instance: RegExp
+}
 
 export const regexImplementation = implementNode<RegexDeclaration>({
 	kind: "regex",
@@ -45,18 +61,20 @@ export const regexImplementation = implementNode<RegexDeclaration>({
 	},
 	defaults: {
 		description: (node) => `matched by ${node.rule}`
+	},
+	construct: (self) => {
+		const instance = new RegExp(self.rule, self.flags)
+		const expression = `${instance}`
+		const compiledCondition = expression
+		return derivePrimitiveAttachments<RegexDeclaration>(self, {
+			instance,
+			expression,
+			traverseAllows: instance.test.bind(instance),
+			compiledCondition: `${expression}.test(data)`,
+			compiledNegation: `!${compiledCondition}`,
+			impliedBasis: tsKeywords.string
+		})
 	}
 })
 
-export class RegexNode extends BasePrimitiveConstraint<RegexDeclaration> {
-	static implementation = regexImplementation
-
-	readonly instance = new RegExp(this.rule, this.flags)
-	readonly expression = `${this.instance}`
-	traverseAllows = this.instance.test.bind(this.instance)
-
-	readonly compiledCondition = `${this.expression}.test(data)`
-	readonly compiledNegation = `!${this.compiledCondition}`
-	readonly impliedBasis = tsKeywords.string
-	readonly errorContext = this.createErrorContext(this.inner)
-}
+export type RegexNode = BaseNode<string, RegexDeclaration>

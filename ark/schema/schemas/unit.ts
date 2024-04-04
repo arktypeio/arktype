@@ -67,7 +67,7 @@ export const unitImplementation = implementNode<UnitDeclaration>({
 			r.allows(l.unit) ? l : Disjoint.from("assignability", l.unit, r)
 		)
 	},
-	attach: (self) => {
+	construct: (self) => {
 		const compiledValue: JsonPrimitive = (self.json as any).unit
 		const serializedValue: JsonPrimitive =
 			typeof self.unit === "string" || self.unit instanceof Date

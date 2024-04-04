@@ -1,9 +1,20 @@
-import { implementNode, type Schema } from "../../base.js"
+import {
+	type BaseAttachments,
+	type BaseNode,
+	type Schema,
+	type UnknownAttachments,
+	implementNode
+} from "../../base.js"
 import { tsKeywords } from "../../keywords/tsKeywords.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
+import {
+	type PrimitiveAttachments,
+	derivePrimitiveAttachments
+} from "../../shared/implement.js"
 import type { TraverseAllows } from "../../shared/traversal.js"
 import {
 	BasePrimitiveConstraint,
+	type ConstraintAttachments,
 	writeInvalidOperandMessage
 } from "../constraint.js"
 
@@ -20,7 +31,13 @@ export type DivisorDeclaration = declareNode<{
 	inner: DivisorInner
 	prerequisite: number
 	errorContext: DivisorInner
+	attachments: DivisorAttachments
 }>
+
+export interface DivisorAttachments
+	extends BaseAttachments<DivisorDeclaration>,
+		PrimitiveAttachments<DivisorDeclaration>,
+		ConstraintAttachments {}
 
 export const divisorImplementation = implementNode<DivisorDeclaration>({
 	kind: "divisor",
@@ -41,20 +58,19 @@ export const divisorImplementation = implementNode<DivisorDeclaration>({
 	defaults: {
 		description: (node) =>
 			node.rule === 1 ? "an integer" : `a multiple of ${node.rule}`
+	},
+	construct: (self) => {
+		return derivePrimitiveAttachments<DivisorDeclaration>(self, {
+			compiledCondition: `data % ${self.rule} === 0`,
+			compiledNegation: `data % ${self.rule} !== 0`,
+			impliedBasis: tsKeywords.number,
+			expression: `% ${self.rule}`,
+			traverseAllows: (data) => data % self.rule === 0
+		})
 	}
 })
 
-export class DivisorNode extends BasePrimitiveConstraint<DivisorDeclaration> {
-	static implementation = divisorImplementation
-
-	traverseAllows: TraverseAllows<number> = (data) => data % this.rule === 0
-
-	readonly compiledCondition = `data % ${this.rule} === 0`
-	readonly compiledNegation = `data % ${this.rule} !== 0`
-	readonly impliedBasis = tsKeywords.number
-	readonly errorContext = this.createErrorContext(this.inner)
-	readonly expression = `% ${this.rule}`
-}
+export type DivisorNode = BaseNode<number, DivisorDeclaration>
 
 export const writeIndivisibleMessage = <node extends Schema>(
 	t: node

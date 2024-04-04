@@ -11,7 +11,7 @@ import {
 	type propValueOf,
 	throwParseError
 } from "@arktype/util"
-import type { BaseAttachments, Node, Schema, UnknownNode } from "../base.js"
+import type { Node, Schema, UnknownAttachments, UnknownNode } from "../base.js"
 import type { BaseScope } from "../scope.js"
 import type { BaseNodeDeclaration } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -266,7 +266,7 @@ export const parseNode = (
 		innerId,
 		typeId,
 		$
-	} satisfies Omit<BaseAttachments, "description"> as Record<string, any>
+	} satisfies Omit<UnknownAttachments, "description"> as Record<string, any>
 	if (opts?.alias) {
 		attachments.alias = opts.alias
 	}
