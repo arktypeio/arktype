@@ -92,6 +92,7 @@ export interface BaseAttachments {
 	readonly innerId: string
 	readonly typeId: string
 	readonly $: BaseScope
+	readonly description: string
 }
 
 export interface NarrowedAttachments<d extends BaseNodeDeclaration>
