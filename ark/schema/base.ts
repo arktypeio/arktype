@@ -1,11 +1,5 @@
 import {
 	Callable,
-	compileSerializedValue,
-	flatMorph,
-	includes,
-	isArray,
-	printable,
-	throwError,
 	type Constructor,
 	type Dict,
 	type Entry,
@@ -13,9 +7,15 @@ import {
 	type Json,
 	type JsonData,
 	type PartialRecord,
+	compileSerializedValue,
 	type conform,
 	type evaluate,
-	type listable
+	flatMorph,
+	includes,
+	isArray,
+	type listable,
+	printable,
+	throwError
 } from "@arktype/util"
 import type { PredicateNode } from "./constraints/predicate.js"
 import type { IndexNode } from "./constraints/props/index.js"
@@ -55,12 +55,6 @@ import type {
 import { Disjoint } from "./shared/disjoint.js"
 import type { ArkResult } from "./shared/errors.js"
 import {
-	basisKinds,
-	constraintKinds,
-	precedenceOfKind,
-	propKinds,
-	refinementKinds,
-	schemaKinds,
 	type BasisKind,
 	type ConstraintKind,
 	type NodeKind,
@@ -69,8 +63,14 @@ import {
 	type SchemaKind,
 	type UnknownIntersectionResult,
 	type UnknownNodeImplementation,
+	basisKinds,
+	constraintKinds,
 	type nodeImplementationInputOf,
-	type nodeImplementationOf
+	type nodeImplementationOf,
+	precedenceOfKind,
+	propKinds,
+	refinementKinds,
+	schemaKinds
 } from "./shared/implement.js"
 import {
 	TraversalContext,
@@ -229,7 +229,7 @@ export abstract class BaseNode<
 				for (const [k, v] of Object.entries(this.errorContext!)) {
 					result += `${k}: ${compileSerializedValue(v)}, `
 				}
-				this.compiledErrorContextCache = result + " }"
+				this.compiledErrorContextCache = `${result} }`
 			} else {
 				this.compiledErrorContextCache = "{}"
 			}

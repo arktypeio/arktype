@@ -165,7 +165,7 @@ export type override<
 	merged extends { [k in keyof base]?: unknown }
 > = merge<base, merged>
 
-export type valueOf<o> = o[keyof o]
+export type propValueOf<o> = o[keyof o]
 
 export const InnerDynamicBase = class {
 	constructor(properties: object) {

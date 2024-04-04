@@ -2,7 +2,7 @@ import type { array } from "./arrays.js"
 import type { domainOf } from "./domain.js"
 import type { andPreserveUnknown, conform } from "./generics.js"
 import type { Hkt } from "./hkt.js"
-import type { requiredKeyOf, valueOf } from "./records.js"
+import type { propValueOf, requiredKeyOf } from "./records.js"
 
 export interface AndPreserveUnknown extends Hkt.Kind {
 	f: (
@@ -176,7 +176,7 @@ export type isDisjoint<l, r> = l & r extends never
 	: domainOf<l> & domainOf<r> extends never
 		? true
 		: [l, r] extends [object, object]
-			? true extends valueOf<{
+			? true extends propValueOf<{
 					[k in Extract<
 						keyof l & keyof r,
 						requiredKeyOf<l> | requiredKeyOf<r>

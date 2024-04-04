@@ -1,5 +1,5 @@
 import type { array } from "./arrays.js"
-import { domainOf, type inferDomain, type Primitive } from "./domain.js"
+import { type Primitive, domainOf, type inferDomain } from "./domain.js"
 import type { BigintLiteral, NumberLiteral } from "./numericLiterals.js"
 import type { Dict } from "./records.js"
 
@@ -79,7 +79,7 @@ const serializeRecurse = (
 	seen: unknown[]
 ): unknown => {
 	switch (domainOf(data)) {
-		case "object":
+		case "object": {
 			if (typeof data === "function") {
 				return printableOpts.onFunction(data)
 			}
@@ -100,6 +100,7 @@ const serializeRecurse = (
 				result[k] = serializeRecurse((data as any)[k], opts, nextSeen)
 			}
 			return result
+		}
 		case "symbol":
 			return printableOpts.onSymbol(data as symbol)
 		case "bigint":

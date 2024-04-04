@@ -1,29 +1,29 @@
 import {
+	type Json,
+	type JsonData,
+	type PartialRecord,
+	type array,
 	entriesOf,
 	hasDomain,
 	isArray,
-	printable,
-	throwParseError,
-	type array,
-	type Json,
-	type JsonData,
 	type listable,
-	type PartialRecord,
-	type valueOf
+	printable,
+	type propValueOf,
+	throwParseError
 } from "@arktype/util"
 import type { BaseAttachments, Node, Schema, UnknownNode } from "../base.js"
 import type { BaseScope } from "../scope.js"
 import type { BaseNodeDeclaration } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
-	defaultValueSerializer,
-	discriminatingIntersectionKeys,
-	isNodeKind,
-	precedenceOfKind,
 	type KeyDefinitions,
 	type NodeKind,
 	type SchemaKind,
-	type UnknownNodeImplementation
+	type UnknownNodeImplementation,
+	defaultValueSerializer,
+	discriminatingIntersectionKeys,
+	isNodeKind,
+	precedenceOfKind
 } from "../shared/implement.js"
 import { hasArkKind } from "../shared/utils.js"
 
@@ -46,7 +46,7 @@ export interface NodeParseContext extends NodeParseOptions {
 
 const nodeCountsByPrefix: PartialRecord<string, number> = {}
 
-const baseKeys: PartialRecord<string, valueOf<KeyDefinitions<any>>> = {
+const baseKeys: PartialRecord<string, propValueOf<KeyDefinitions<any>>> = {
 	description: { meta: true }
 } satisfies KeyDefinitions<BaseNodeDeclaration> as never
 
@@ -75,7 +75,7 @@ const discriminateSchemaKind = (def: unknown): SchemaKind => {
 							`${def.kind} constraint ${def.expression} cannot be used as a root type`
 						)
 				: "proto"
-		case "object":
+		case "object": {
 			// throw at end of function
 			if (def === null) break
 
@@ -94,6 +94,7 @@ const discriminateSchemaKind = (def: unknown): SchemaKind => {
 				return "intersection"
 			if ("proto" in def) return "proto"
 			if ("domain" in def) return "domain"
+		}
 	}
 	return throwParseError(`${printable(def)} is not a valid type schema`)
 }
@@ -223,7 +224,8 @@ export const parseNode = (
 
 	const innerId = JSON.stringify({ kind, ...json })
 	if (opts?.reduceTo) {
-		return ($.nodeCache[innerId] = opts.reduceTo)
+		$.nodeCache[innerId] = opts.reduceTo
+		return opts.reduceTo
 	}
 
 	const typeId = JSON.stringify({ kind, ...typeJson })
@@ -285,7 +287,9 @@ export const parseNode = (
 	// 		Object.assign(this.referencesByName, node.contributesReferencesByName)
 	// 	}
 	// }
-	return ($.nodeCache[innerId] = new cls(attachments as never))
+	const node = new cls(attachments as never)
+	$.nodeCache[innerId] = node
+	return node
 }
 
 const schemaBranchesOf = (schema: object) =>

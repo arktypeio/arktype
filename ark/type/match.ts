@@ -10,8 +10,8 @@ import type {
 	isDisjoint,
 	numericStringKeyOf,
 	override,
-	unionToTuple,
-	valueOf
+	propValueOf,
+	unionToTuple
 } from "@arktype/util"
 import type { Scope } from "./scope.js"
 import type { inferTypeRoot, validateTypeRoot } from "./type.js"
@@ -140,7 +140,7 @@ export type CaseMatchParser<ctx extends MatchParserContext> = <cases>(
 			>,
 			defaultReturn
 		>
-	: ChainableMatchParser<addBranches<ctx, unionToTuple<valueOf<cases>>>>
+	: ChainableMatchParser<addBranches<ctx, unionToTuple<propValueOf<cases>>>>
 
 type finalizeWithDefault<
 	ctx extends MatchParserContext,

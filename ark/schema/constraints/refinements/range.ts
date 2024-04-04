@@ -1,9 +1,9 @@
 import {
+	type PartialRecord,
+	type array,
 	invert,
 	isKeyOf,
-	type array,
-	type PartialRecord,
-	type valueOf
+	type propValueOf
 } from "@arktype/util"
 import type { Node } from "../../base.js"
 import type { BaseMeta, BaseNodeDeclaration } from "../../shared/declare.js"
@@ -16,10 +16,10 @@ export abstract class BaseRange<
 	readonly boundOperandKind = operandKindsByBoundKind[this.kind]
 	readonly compiledActual =
 		this.boundOperandKind === "value"
-			? `data`
+			? "data"
 			: this.boundOperandKind === "length"
-				? `data.length`
-				: `data.valueOf()`
+				? "data.length"
+				: "data.valueOf()"
 	readonly comparator = compileComparator(this.kind, this.exclusive)
 	readonly numericLimit = this.rule.valueOf()
 	readonly expression = `${this.comparator}${this.rule}`
@@ -127,7 +127,7 @@ export type LowerBoundKind = keyof typeof boundKindPairsByLower
 
 export type LowerNode = Node<LowerBoundKind>
 
-export type UpperBoundKind = valueOf<typeof boundKindPairsByLower>
+export type UpperBoundKind = propValueOf<typeof boundKindPairsByLower>
 
 export type UpperNode = Node<UpperBoundKind>
 

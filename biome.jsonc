@@ -1,5 +1,8 @@
 {
 	"$schema": "node_modules/@biomejs/biome/configuration_schema.json",
+	"files": {
+		"include": ["."]
+	},
 	"formatter": {
 		"indentWidth": 4
 	},
@@ -23,7 +26,8 @@
 				"noNonNullAssertion": "off"
 			},
 			"correctness": {
-				"noVoidTypeReturn": "off"
+				"noVoidTypeReturn": "off",
+				"noInvalidUseBeforeDeclaration": "off"
 			}
 		}
 	}
