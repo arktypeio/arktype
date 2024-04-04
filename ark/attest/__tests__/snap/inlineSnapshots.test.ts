@@ -27,7 +27,10 @@ describe("inline snaps", () => {
 	it("value and type snap", () => {
 		attest(o).snap({ re: `do` }).type.toString.snap(`{ re: string; }`)
 		assert.throws(
-			() => attest(o).snap({ re: `do` }).type.toString.snap(`{ re: number; }`),
+			() =>
+				attest(o)
+					.snap({ re: `do` })
+					.type.toString.snap(`{ re: number; }`),
 			assert.AssertionError,
 			"number"
 		)

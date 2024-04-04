@@ -50,20 +50,20 @@ export type parseUnenclosed<
 	? token extends "keyof"
 		? state.addPrefix<s, "keyof", unscanned>
 		: tryResolve<s, token, $, args> extends infer result
-		? result extends ErrorMessage<infer message>
-			? state.error<message>
-			: result extends keyof $
-			? $[result] extends GenericProps
-				? parseGenericInstantiation<
-						token,
-						$[result],
-						state.scanTo<s, unscanned>,
-						$,
-						args
-				  >
-				: state.setRoot<s, result, unscanned>
-			: state.setRoot<s, result, unscanned>
-		: never
+			? result extends ErrorMessage<infer message>
+				? state.error<message>
+				: result extends keyof $
+					? $[result] extends GenericProps
+						? parseGenericInstantiation<
+								token,
+								$[result],
+								state.scanTo<s, unscanned>,
+								$,
+								args
+							>
+						: state.setRoot<s, result, unscanned>
+					: state.setRoot<s, result, unscanned>
+			: never
 	: never
 
 export const parseGenericInstantiation = (
@@ -93,11 +93,21 @@ export type parseGenericInstantiation<
 	args
 	// have to skip whitespace here since TS allows instantiations like `Partial    <T>`
 > = Scanner.skipWhitespace<s["unscanned"]> extends `<${infer unscanned}`
-	? parseGenericArgs<name, g["params"], unscanned, $, args> extends infer result
+	? parseGenericArgs<
+			name,
+			g["params"],
+			unscanned,
+			$,
+			args
+		> extends infer result
 		? result extends ParsedArgs<infer argAsts, infer nextUnscanned>
-			? state.setRoot<s, GenericInstantiationAst<g, argAsts>, nextUnscanned>
+			? state.setRoot<
+					s,
+					GenericInstantiationAst<g, argAsts>,
+					nextUnscanned
+				>
 			: // propagate error
-			  result
+				result
 		: never
 	: state.error<writeInvalidGenericArgsMessage<name, g["params"], []>>
 
@@ -152,29 +162,39 @@ type tryResolve<
 > = token extends keyof $
 	? token
 	: `#${token}` extends keyof $
-	? `#${token}`
-	: token extends keyof ambient
-	? token
-	: token extends keyof args
-	? token
-	: token extends NumberLiteral
-	? token
-	: token extends BigintLiteral
-	? token
-	: token extends `${infer submodule extends keyof $ &
-			string}.${infer reference}`
-	? $[submodule] extends Module<infer sub$>
-		? reference extends keyof sub$
+		? `#${token}`
+		: token extends keyof ambient
 			? token
-			: unknown extends sub$
-			? // not sure why I need the additional check here, but for now TS seems to
-			  // hit this branch for a non-scope dot access rather than failing
-			  // initially when we try to infer r. if this can be removed without breaking
-			  // any submodule test cases, do it!
-			  ErrorMessage<writeNonSubmoduleDotMessage<submodule>>
-			: unresolvableError<s, reference, $[submodule], args, [submodule]>
-		: ErrorMessage<writeNonSubmoduleDotMessage<submodule>>
-	: unresolvableError<s, token, $, args, []>
+			: token extends keyof args
+				? token
+				: token extends NumberLiteral
+					? token
+					: token extends BigintLiteral
+						? token
+						: token extends `${infer submodule extends keyof $ &
+									string}.${infer reference}`
+							? $[submodule] extends Module<infer sub$>
+								? reference extends keyof sub$
+									? token
+									: unknown extends sub$
+										? // not sure why I need the additional check here, but for now TS seems to
+											// hit this branch for a non-scope dot access rather than failing
+											// initially when we try to infer r. if this can be removed without breaking
+											// any submodule test cases, do it!
+											ErrorMessage<
+												writeNonSubmoduleDotMessage<submodule>
+											>
+										: unresolvableError<
+												s,
+												reference,
+												$[submodule],
+												args,
+												[submodule]
+											>
+								: ErrorMessage<
+										writeNonSubmoduleDotMessage<submodule>
+									>
+							: unresolvableError<s, token, $, args, []>
 
 /** Provide valid completions for the current token, or fallback to an
  * unresolvable error if there are none */
@@ -187,11 +207,11 @@ export type unresolvableError<
 > = validReferenceFromToken<token, $, args, submodulePath> extends never
 	? ErrorMessage<
 			writeUnresolvableMessage<qualifiedReference<token, submodulePath>>
-	  >
+		>
 	: Completion<`${s["scanned"]}${qualifiedReference<
 			validReferenceFromToken<token, $, args, submodulePath>,
 			submodulePath
-	  >}`>
+		>}`>
 
 type qualifiedReference<
 	reference extends string,
@@ -236,7 +256,9 @@ export const writeMissingRightOperandMessage = <
 export const writeExpressionExpectedMessage = <unscanned extends string>(
 	unscanned: unscanned
 ): writeExpressionExpectedMessage<unscanned> =>
-	`Expected an expression${unscanned ? ` before '${unscanned}'` : ""}` as never
+	`Expected an expression${
+		unscanned ? ` before '${unscanned}'` : ""
+	}` as never
 
 export type writeExpressionExpectedMessage<unscanned extends string> =
 	`Expected an expression${unscanned extends ""

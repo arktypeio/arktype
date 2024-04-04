@@ -22,7 +22,10 @@ export type DayPattern<delimiter extends DayDelimiter = DayDelimiter> =
 	delimiter extends unknown
 		? {
 				[k1 in keyof DayPatterns]: {
-					[k2 in Exclude<keyof DayPatterns, k1>]: `${DayPatterns[k1]}${fragment<
+					[k2 in Exclude<
+						keyof DayPatterns,
+						k1
+					>]: `${DayPatterns[k1]}${fragment<
 						DayPatterns[k2],
 						delimiter
 					>}${fragment<
@@ -30,7 +33,7 @@ export type DayPattern<delimiter extends DayDelimiter = DayDelimiter> =
 						delimiter
 					>}`
 				}[Exclude<keyof DayPatterns, k1>]
-		  }[keyof DayPatterns]
+			}[keyof DayPatterns]
 		: never
 
 export type DateFormat = "iso8601" | DayPattern

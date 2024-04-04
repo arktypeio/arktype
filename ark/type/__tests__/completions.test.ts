@@ -4,7 +4,9 @@ import { scope, type } from "arktype"
 describe("completions", () => {
 	it("completes standalone keyword", () => {
 		// @ts-expect-error
-		attest(() => type("s")).completions({ s: ["string", "symbol", "semver"] })
+		attest(() => type("s")).completions({
+			s: ["string", "symbol", "semver"]
+		})
 	})
 	it("completes within objects", () => {
 		// @ts-expect-error

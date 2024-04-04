@@ -50,7 +50,9 @@ export const hasTrait =
 		}
 		if (
 			implementedTraits in o.constructor &&
-			(o.constructor[implementedTraits] as Function[]).includes(traitClass)
+			(o.constructor[implementedTraits] as Function[]).includes(
+				traitClass
+			)
 		) {
 			return true
 		}
@@ -112,10 +114,15 @@ export const compose: TraitComposition = ((...traits: TraitConstructor[]) => {
 		// copy static properties
 		Object.assign(base, trait)
 		// flatten and copy prototype
-		Object.defineProperties(base.prototype, collectPrototypeDescriptors(trait))
+		Object.defineProperties(
+			base.prototype,
+			collectPrototypeDescriptors(trait)
+		)
 		if (implementedTraits in trait) {
 			// add any ancestor traits from which the current trait was composed
-			for (const innerTrait of trait[implementedTraits] as TraitConstructor[]) {
+			for (const innerTrait of trait[
+				implementedTraits
+			] as TraitConstructor[]) {
 				if (!flatImplementedTraits.includes(innerTrait)) {
 					flatImplementedTraits.push(innerTrait)
 				}
@@ -154,7 +161,9 @@ export type TraitConstructor<
 	abstractProps extends object = {},
 	abstractStatics extends object = {}
 > = statics &
-	(new (...args: params) => Trait<{
+	(new (
+		...args: params
+	) => Trait<{
 		abstractMethods: abstractMethods
 		abstractProps: abstractProps
 		abstractStatics: abstractStatics
@@ -195,7 +204,9 @@ type intersectImplementations<l, r> = {
 		? l[k] extends (...args: infer lArgs) => infer lReturn
 			? r[k] extends (...args: infer rArgs) => infer rReturn
 				? // ensure function intersections aren't handled as overloads which leads to unsafe behavior
-				  (...args: intersectParameters<lArgs, rArgs>) => lReturn & rReturn
+					(
+						...args: intersectParameters<lArgs, rArgs>
+					) => lReturn & rReturn
 				: l[k] & r[k]
 			: l[k] & r[k]
 		: l[k]
@@ -238,7 +249,7 @@ type composeRecurse<s extends CompositionState> =
 					s["abstractStatics"],
 					abstractStatics
 				>
-		  }>
+			}>
 		: finalizeState<s>
 
 type finalizeState<s extends CompositionState> = satisfy<
@@ -253,8 +264,12 @@ type finalizeState<s extends CompositionState> = satisfy<
 		abstractMethods: evaluate<
 			Omit<s["abstractMethods"], keyof s["implemented"]>
 		>
-		abstractProps: evaluate<Omit<s["abstractProps"], keyof s["implemented"]>>
-		abstractStatics: evaluate<Omit<s["abstractStatics"], keyof s["statics"]>>
+		abstractProps: evaluate<
+			Omit<s["abstractProps"], keyof s["implemented"]>
+		>
+		abstractStatics: evaluate<
+			Omit<s["abstractStatics"], keyof s["statics"]>
+		>
 	}
 >
 
@@ -264,9 +279,9 @@ export type implementationOf<s extends CompositionState> =
 			? {}
 			: {
 					construct: (...args: s["params"]) => s["abstractProps"]
-			  }) &
+				}) &
 		({} extends s["abstractStatics"]
 			? {}
 			: {
 					statics: s["abstractStatics"]
-			  })
+				})

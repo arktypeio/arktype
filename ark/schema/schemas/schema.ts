@@ -89,7 +89,9 @@ export class BaseSchema<t, $, d extends BaseSchemaDeclaration> extends BaseNode<
 		return this.hasKind("union") && this.branches.length === 0
 	}
 
-	get<key extends PropertyKey>(...path: readonly (key | Schema<key>)[]): this {
+	get<key extends PropertyKey>(
+		...path: readonly (key | Schema<key>)[]
+	): this {
 		return this
 	}
 
@@ -120,7 +122,8 @@ export class BaseSchema<t, $, d extends BaseSchemaDeclaration> extends BaseNode<
 	extends<r>(other: Schema<r>): this is Schema<r> & { [inferred]?: r } {
 		const intersection = this.intersect(other as never)
 		return (
-			!(intersection instanceof Disjoint) && this.equals(intersection as never)
+			!(intersection instanceof Disjoint) &&
+			this.equals(intersection as never)
 		)
 	}
 
@@ -151,7 +154,7 @@ export class BaseSchema<t, $, d extends BaseSchemaDeclaration> extends BaseNode<
 				? inferMorphOut<morph>
 				: distillConstrainableOut<
 						instantiateSchema<outValidatorSchema, $>["infer"]
-				  >
+					>
 		>,
 		$
 	>

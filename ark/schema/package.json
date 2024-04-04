@@ -27,11 +27,7 @@
 			"default": "./out/*"
 		}
 	},
-	"files": [
-		"out",
-		"!__tests__",
-		"**/*.ts"
-	],
+	"files": ["out", "!__tests__", "**/*.ts"],
 	"scripts": {
 		"build": "tsx ../repo/build.ts",
 		"bench": "tsx ./__tests__/comparison.bench.ts",

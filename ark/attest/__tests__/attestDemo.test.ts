@@ -36,7 +36,7 @@ describe("attest features", () => {
 		// works for keys or index access as well (may need prettier-ignore to
 		// avoid removing quotes)
 		// prettier-ignore
-		attest({ "f": "🐐" } as Legends).completions({ "f": ["faker"] })
+		attest({ f: "🐐" } as Legends).completions({ f: ["faker"] })
 	})
 
 	it("integrate runtime logic with type assertions", () => {

@@ -139,7 +139,7 @@ export const implementNode = <d extends BaseNodeDeclaration = never>(
 			"description" in ctx
 				? (ctx.description as string)
 				: // TODO: does passing ctx here work? or will some expect node?
-				  implementation.defaults.description(ctx as never)
+					implementation.defaults.description(ctx as never)
 		implementation.defaults.actual ??= (data) => printable(data)
 		implementation.defaults.problem ??= (ctx) =>
 			`must be ${ctx.expected}${ctx.actual ? ` (was ${ctx.actual})` : ""}`
@@ -180,25 +180,31 @@ export abstract class BaseNode<
 			this.name in this.referencesByName
 				? this.referencesByName
 				: { ...this.referencesByName, [this.name]: this as never }
-		this.contributesReferences = Object.values(this.contributesReferencesByName)
+		this.contributesReferences = Object.values(
+			this.contributesReferencesByName
+		)
 	}
 
-	declare infer: distillOut<t>;
-	declare [inferred]: t;
+	declare infer: distillOut<t>
+	declare [inferred]: t
 	readonly [arkKind] = "node"
 
-	protected readonly impl: UnknownNodeImplementation = (this.constructor as any)
-		.implementation
+	protected readonly impl: UnknownNodeImplementation = (
+		this.constructor as any
+	).implementation
 	readonly includesMorph: boolean =
-		this.kind === "morph" || this.children.some((child) => child.includesMorph)
+		this.kind === "morph" ||
+		this.children.some((child) => child.includesMorph)
 	readonly includesContextDependentPredicate: boolean =
 		// if a predicate accepts exactly one arg, we can safely skip passing context
 		(this.hasKind("predicate") && this.inner.predicate.length !== 1) ||
 		this.children.some((child) => child.includesContextDependentPredicate)
-	readonly referencesByName: Record<string, UnknownNode> = this.children.reduce(
-		(result, child) => Object.assign(result, child.contributesReferencesByName),
-		{}
-	)
+	readonly referencesByName: Record<string, UnknownNode> =
+		this.children.reduce(
+			(result, child) =>
+				Object.assign(result, child.contributesReferencesByName),
+			{}
+		)
 	readonly references: readonly UnknownNode[] = Object.values(
 		this.referencesByName
 	)
@@ -247,7 +253,7 @@ export abstract class BaseNode<
 	abstract compile(js: NodeCompiler): void
 	abstract expression: string
 
-	private inCache?: UnknownNode;
+	private inCache?: UnknownNode
 	get in(): Node<ioKindOf<d["kind"]>, distillConstrainableIn<t>> {
 		this.inCache ??= this.getIo("in")
 		return this.inCache as never
@@ -373,12 +379,12 @@ export abstract class BaseNode<
 		let result =
 			implementation === undefined
 				? // should be two ConstraintNodes that have no relation
-				  // this could also happen if a user directly intersects a Type and a ConstraintNode,
-				  // but that is not allowed by the external function signature
-				  null
+					// this could also happen if a user directly intersects a Type and a ConstraintNode,
+					// but that is not allowed by the external function signature
+					null
 				: leftmostKind === this.kind
-				? implementation(this, r, this.$)
-				: implementation(r, this, this.$)
+					? implementation(this, r, this.$)
+					: implementation(r, this, this.$)
 
 		if (result instanceof BaseNode) {
 			// if the result equals one of the operands, preserve its metadata by
@@ -402,14 +408,18 @@ export abstract class BaseNode<
 	): narrowed {
 		return (
 			this.firstReference(filter) ??
-			throwError(`${this.name} had no references matching predicate ${filter}`)
+			throwError(
+				`${this.name} had no references matching predicate ${filter}`
+			)
 		)
 	}
 
 	firstReferenceOfKind<kind extends NodeKind>(
 		kind: kind
 	): Node<kind> | undefined {
-		return this.firstReference((node): node is Node<kind> => node.kind === kind)
+		return this.firstReference(
+			(node): node is Node<kind> => node.kind === kind
+		)
 	}
 
 	firstReferenceOfKindOrThrow<kind extends NodeKind>(kind: kind): Node<kind> {
@@ -433,8 +443,11 @@ export abstract class BaseNode<
 				this.impl.keys[k].child
 					? isArray(v)
 						? v.map((node) =>
-								(node as UnknownNode).transform(mapper, shouldTransform)
-						  )
+								(node as UnknownNode).transform(
+									mapper,
+									shouldTransform
+								)
+							)
 						: (v as UnknownNode).transform(mapper, shouldTransform)
 					: v
 			]

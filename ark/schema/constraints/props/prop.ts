@@ -104,7 +104,10 @@ export class PropNode extends BaseConstraint<PropDeclaration> {
 		if (this.key in data) {
 			// ctx will be undefined if this node doesn't have a context-dependent predicate
 			ctx?.path.push(this.key)
-			const allowed = this.value.traverseAllows((data as any)[this.key], ctx)
+			const allowed = this.value.traverseAllows(
+				(data as any)[this.key],
+				ctx
+			)
 			ctx?.path.pop()
 			return allowed
 		}

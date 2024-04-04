@@ -92,7 +92,9 @@ describe("parse enclosed", () => {
 185778053217122680661300192"`
 		// parses exactly 1001 characters before hitting a recursion limit
 		const t = type(s)
-		type Expected = typeof s extends `"${infer enclosed}"` ? enclosed : never
+		type Expected = typeof s extends `"${infer enclosed}"`
+			? enclosed
+			: never
 		attest<Expected>(t.infer)
 	})
 })

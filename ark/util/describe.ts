@@ -10,18 +10,18 @@ export type describe<
 	isAny<t> extends true
 		? "any"
 		: isNever<t> extends true
-		? "never"
-		: unknown extends t
-		? "unknown"
-		: t extends object
-		? describeObject<t>
-		: t extends Stringifiable
-		? // if it's the base wideneded domain, use that name
-		  inferDomain<domainOf<t>> extends t
-			? describeDomainOf<t>
-			: // otherwise if it's a literal, use that
-			  `${t}`
-		: describeDomainOf<t>,
+			? "never"
+			: unknown extends t
+				? "unknown"
+				: t extends object
+					? describeObject<t>
+					: t extends Stringifiable
+						? // if it's the base wideneded domain, use that name
+							inferDomain<domainOf<t>> extends t
+							? describeDomainOf<t>
+							: // otherwise if it's a literal, use that
+								`${t}`
+						: describeDomainOf<t>,
 	branchDelimiter
 >
 

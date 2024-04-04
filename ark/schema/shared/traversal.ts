@@ -66,7 +66,11 @@ export class TraversalContext {
 
 				// find the object on which the key to be morphed exists
 				let parent = out
-				for (let pathIndex = 0; pathIndex < path.length - 1; pathIndex++)
+				for (
+					let pathIndex = 0;
+					pathIndex < path.length - 1;
+					pathIndex++
+				)
 					parent = parent[path[pathIndex]]
 
 				// apply the morph function and assign the result to the corresponding property

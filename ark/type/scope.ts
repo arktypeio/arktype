@@ -43,32 +43,30 @@ import {
 	type TypeParser
 } from "./type.js"
 
-export type ScopeParser = {
-	<const def>(
-		def: validateScope<def>,
-		config?: ArkConfig
-	): Scope<inferBootstrapped<bootstrapAliases<def>>>
-}
+export type ScopeParser = <const def>(
+	def: validateScope<def>,
+	config?: ArkConfig
+) => Scope<inferBootstrapped<bootstrapAliases<def>>>
 
 type validateScope<def> = {
 	[k in keyof def]: parseScopeKey<k>["params"] extends []
 		? // Not including Type here directly breaks inference
-		  def[k] extends Type | PreparsedResolution
+			def[k] extends Type | PreparsedResolution
 			? def[k]
 			: validateDefinition<def[k], bootstrapAliases<def>, {}>
 		: parseScopeKey<k>["params"] extends GenericParamsParseError
-		? // use the full nominal type here to avoid an overlap between the
-		  // error message and a possible value for the property
-		  parseScopeKey<k>["params"][0]
-		: validateDefinition<
-				def[k],
-				bootstrapAliases<def>,
-				{
-					// once we support constraints on generic parameters, we'd use
-					// the base type here: https://github.com/arktypeio/arktype/issues/796
-					[param in parseScopeKey<k>["params"][number]]: unknown
-				}
-		  >
+			? // use the full nominal type here to avoid an overlap between the
+				// error message and a possible value for the property
+				parseScopeKey<k>["params"][0]
+			: validateDefinition<
+					def[k],
+					bootstrapAliases<def>,
+					{
+						// once we support constraints on generic parameters, we'd use
+						// the base type here: https://github.com/arktypeio/arktype/issues/796
+						[param in parseScopeKey<k>["params"][number]]: unknown
+					}
+				>
 }
 
 export type bindThis<def> = { this: Def<def> }
@@ -90,8 +88,8 @@ type bootstrapAliases<def> = {
 	>]: def[k] extends PreparsedResolution
 		? def[k]
 		: def[k] extends (() => infer thunkReturn extends PreparsedResolution)
-		? thunkReturn
-		: Def<def[k]>
+			? thunkReturn
+			: Def<def[k]>
 } & {
 	[k in keyof def & GenericDeclaration as extractGenericName<k>]: Generic<
 		parseGenericParams<extractGenericParameters<k>>,
@@ -104,10 +102,10 @@ type inferBootstrapped<$> = evaluate<{
 	[name in keyof $]: $[name] extends Def<infer def>
 		? inferDefinition<def, $, {}>
 		: $[name] extends GenericProps<infer params, infer def>
-		? // add the scope in which the generic was defined here
-		  Generic<params, def, $>
-		: // otherwise should be a submodule
-		  $[name]
+			? // add the scope in which the generic was defined here
+				Generic<params, def, $>
+			: // otherwise should be a submodule
+				$[name]
 }>
 
 type extractGenericName<k> = k extends GenericDeclaration<infer name>
@@ -122,12 +120,14 @@ type extractGenericParameters<k> = k extends GenericDeclaration<
 	: never
 
 export type resolve<reference extends keyof $ | keyof args, $, args> = (
-	reference extends keyof args ? args[reference] : $[reference & keyof $]
+	reference extends keyof args
+		? args[reference]
+		: $[reference & keyof $]
 ) extends infer resolution
 	? resolution extends Def<infer def>
 		? def extends null
 			? // handle resolution of any and never
-			  resolution
+				resolution
 			: inferDefinition<def, $, args>
 		: resolution
 	: never
@@ -153,7 +153,7 @@ type exportScope<$ = any> = {
 	[k in exportedName<$>]: $[k] extends PreparsedResolution
 		? [$[k]] extends [null]
 			? // handle `Type<any>` and `Type<never>`
-			  Type<$[k], $>
+				Type<$[k], $>
 			: $[k]
 		: Type<$[k], $>
 }
@@ -202,7 +202,10 @@ export class Scope<$ = any> extends BaseScope<$> {
 
 	parse(def: unknown, ctx: ParseContext): Schema {
 		if (typeof def === "string") {
-			if (ctx.args && Object.keys(ctx.args).every((k) => !def.includes(k))) {
+			if (
+				ctx.args &&
+				Object.keys(ctx.args).every((k) => !def.includes(k))
+			) {
 				// we can only rely on the cache if there are no contextual
 				// resolutions like "this" or generic args
 				return this.parseString(def, ctx)
@@ -289,7 +292,9 @@ export const writeShallowCycleErrorMessage = (
 	name: string,
 	seen: string[]
 ): string =>
-	`Alias '${name}' has a shallow resolution cycle: ${[...seen, name].join(":")}`
+	`Alias '${name}' has a shallow resolution cycle: ${[...seen, name].join(
+		":"
+	)}`
 
 export type ParsedScopeKey = {
 	name: string
@@ -322,8 +327,8 @@ export type parseScopeKey<k> = k extends GenericDeclaration<
 	? {
 			name: name
 			params: parseGenericParams<paramString>
-	  }
+		}
 	: {
 			name: k
 			params: []
-	  }
+		}

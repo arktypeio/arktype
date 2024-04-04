@@ -44,38 +44,56 @@ type intersectSequences<
 					// the intersection is optional iff both elements are optional
 					...("head" extends lState["source"] | rState["source"]
 						? lState["optional"] | rState["optional"] extends true
-							? [Hkt.apply<intersector, [lState["head"], rState["head"]]>?]
-							: [Hkt.apply<intersector, [lState["head"], rState["head"]]>]
+							? [
+									Hkt.apply<
+										intersector,
+										[lState["head"], rState["head"]]
+									>?
+								]
+							: [
+									Hkt.apply<
+										intersector,
+										[lState["head"], rState["head"]]
+									>
+								]
 						: [])
 				],
 				[
 					...("last" extends lState["source"] | rState["source"]
-						? [Hkt.apply<intersector, [lState["last"], rState["last"]]>]
+						? [
+								Hkt.apply<
+									intersector,
+									[lState["last"], rState["last"]]
+								>
+							]
 						: []),
 					...postfix
 				],
 				intersector,
 				kind
-		  >
+			>
 		: // once both arrays have reached their fixed end or a variadic element, return the final result
-		  [
+			[
 				...prefix,
 				...(lState["rest"] extends readonly []
 					? rState["rest"] extends readonly []
 						? []
 						: // if done and non-empty, we've reached a variadic element
-						// (or it's just a normal array, since number[] === [...number[]])
-						kind extends "parameters"
-						? rState["rest"]
-						: []
+							// (or it's just a normal array, since number[] === [...number[]])
+							kind extends "parameters"
+							? rState["rest"]
+							: []
 					: rState["rest"] extends readonly []
-					? kind extends "parameters"
-						? lState["rest"]
-						: []
-					: // if we've reached a variadic element in both arrays, intersect them
-					  Hkt.apply<intersector, [lState["head"], rState["head"]]>[]),
+						? kind extends "parameters"
+							? lState["rest"]
+							: []
+						: // if we've reached a variadic element in both arrays, intersect them
+							Hkt.apply<
+								intersector,
+								[lState["head"], rState["head"]]
+							>[]),
 				...postfix
-		  ]
+			]
 	: never
 
 type shouldRecurse<
@@ -85,13 +103,13 @@ type shouldRecurse<
 > = [lState["source"], rState["source"]] extends [null, null]
 	? false
 	: kind extends "parameters"
-	? true
-	: // for values, we should stop recursing immediately if we reach the end of a fixed-length array
-	[null, readonly []] extends
-			| [lState["source"], lState["rest"]]
-			| [rState["source"], rState["rest"]]
-	? false
-	: true
+		? true
+		: // for values, we should stop recursing immediately if we reach the end of a fixed-length array
+			[null, readonly []] extends
+					| [lState["source"], lState["rest"]]
+					| [rState["source"], rState["rest"]]
+			? false
+			: true
 
 type ElementParseResult = {
 	head: unknown
@@ -115,53 +133,55 @@ type parseNextElement<
 			source: null
 			optional: true
 			rest: []
-	  }>
+		}>
 	: elements extends readonly [(infer head)?, ...infer tail]
-	? [tail, elements] extends [elements, tail]
-		? result<{
-				head: head
-				last: unknown
-				source: null
-				optional: true
-				rest: tail
-		  }>
-		: // when inferring head/tail from the left, TS gives unknown for a tuple with a
-		// non-trailing variadic element, e.g. [...0[], 1]. if we see a result
-		// that looks like that, try inferring init/last from the right instead
-		[[unknown, unknown[]], elements] extends [
-				[head, tail],
-				[...infer init, (infer last)?]
-		  ]
-		? result<{
-				head: init[0]
-				last: last
-				source: "last"
-				optional: [] extends elements ? true : false
-				rest: init
-		  }>
-		: result<{
-				// Inferring params often results in optional adding `|undefined`,
-				// so the goal here is to counteract that. If this
-				// causes problems, it should be removed.
-				head: [] extends elements ? Exclude<head, undefined> : head
-				last: tail[tail["length"]]
-				source: "head"
-				optional: [] extends elements ? true : false
-				rest: tail
-		  }>
-	: never
+		? [tail, elements] extends [elements, tail]
+			? result<{
+					head: head
+					last: unknown
+					source: null
+					optional: true
+					rest: tail
+				}>
+			: // when inferring head/tail from the left, TS gives unknown for a tuple with a
+				// non-trailing variadic element, e.g. [...0[], 1]. if we see a result
+				// that looks like that, try inferring init/last from the right instead
+				[[unknown, unknown[]], elements] extends [
+						[head, tail],
+						[...infer init, (infer last)?]
+					]
+				? result<{
+						head: init[0]
+						last: last
+						source: "last"
+						optional: [] extends elements ? true : false
+						rest: init
+					}>
+				: result<{
+						// Inferring params often results in optional adding `|undefined`,
+						// so the goal here is to counteract that. If this
+						// causes problems, it should be removed.
+						head: [] extends elements
+							? Exclude<head, undefined>
+							: head
+						last: tail[tail["length"]]
+						source: "head"
+						optional: [] extends elements ? true : false
+						rest: tail
+					}>
+		: never
 
 export type isDisjoint<l, r> = l & r extends never
 	? true
 	: domainOf<l> & domainOf<r> extends never
-	? true
-	: [l, r] extends [object, object]
-	? true extends valueOf<{
-			[k in Extract<
-				keyof l & keyof r,
-				requiredKeyOf<l> | requiredKeyOf<r>
-			>]: isDisjoint<l[k], r[k]>
-	  }>
 		? true
-		: false
-	: false
+		: [l, r] extends [object, object]
+			? true extends valueOf<{
+					[k in Extract<
+						keyof l & keyof r,
+						requiredKeyOf<l> | requiredKeyOf<r>
+					>]: isDisjoint<l[k], r[k]>
+				}>
+				? true
+				: false
+			: false

@@ -31,7 +31,7 @@ const integer = root.defineSchema({
 			? parsed
 			: ctx.error(
 					"an integer in the range Number.MIN_SAFE_INTEGER to Number.MAX_SAFE_INTEGER"
-			  )
+				)
 	}
 })
 

@@ -15,7 +15,7 @@ export const mergeConfigs = (
 			? ({
 					...base[k],
 					...extensions[k]
-			  } as never)
+				} as never)
 			: (extensions[k]! as never)
 	}
 	return result

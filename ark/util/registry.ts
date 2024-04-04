@@ -48,7 +48,9 @@ const baseNameFor = (value: object | symbol) => {
 			// convert to camelCase
 			return prefix[0].toLowerCase() + prefix.slice(1)
 		case "function":
-			return isDotAccessible(value.name) ? value.name : "anonymousFunction"
+			return isDotAccessible(value.name)
+				? value.name
+				: "anonymousFunction"
 		case "symbol":
 			return value.description && isDotAccessible(value.description)
 				? value.description

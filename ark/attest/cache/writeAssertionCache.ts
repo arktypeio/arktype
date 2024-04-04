@@ -102,7 +102,9 @@ export const analyzeAssertCall = (
 	const types = extractArgumentTypesFromCall(assertCall)
 	const location = getAssertCallLocation(assertCall)
 	const args = types.args.map((arg) => serializeArg(arg, types))
-	const typeArgs = types.typeArgs.map((typeArg) => serializeArg(typeArg, types))
+	const typeArgs = types.typeArgs.map((typeArg) =>
+		serializeArg(typeArg, types)
+	)
 	const errors = checkDiagnosticMessages(assertCall, diagnosticsByFile)
 	const completions = getCompletions(assertCall)
 	return {
@@ -138,11 +140,15 @@ const getCompletions = (attestCall: ts.CallExpression) => {
 	const completions: Completions | string = {}
 
 	for (const descendant of descendants) {
-		if (ts.isStringLiteral(descendant) || ts.isTemplateLiteral(descendant)) {
+		if (
+			ts.isStringLiteral(descendant) ||
+			ts.isTemplateLiteral(descendant)
+		) {
 			// descendant.pos tends to be an open quote while d.end tends to be right after the closing quote.
 			// It seems to be more consistent using this to get the pos for the completion over descendant.pos
 			const lastPositionOfInnerString =
-				descendant.end - (/["'`]/.test(text[descendant.end - 1]) ? 1 : 2)
+				descendant.end -
+				(/["'`]/.test(text[descendant.end - 1]) ? 1 : 2)
 			const completionData =
 				TsServer.instance.virtualEnv.languageService.getCompletionsAtPosition(
 					file.fileName,
@@ -185,7 +191,8 @@ export type DiagnosticsByFile = Record<string, DiagnosticData[]>
 
 export const getDiagnosticsByFile = (): DiagnosticsByFile => {
 	const diagnosticsByFile: DiagnosticsByFile = {}
-	const diagnostics: ts.Diagnostic[] = getInternalTypeChecker().getDiagnostics()
+	const diagnostics: ts.Diagnostic[] =
+		getInternalTypeChecker().getDiagnostics()
 	for (const diagnostic of diagnostics) {
 		addDiagnosticDataFrom(diagnostic, diagnosticsByFile)
 	}
@@ -277,8 +284,8 @@ export const compareTsTypes = (
 				? "equality"
 				: "subtype"
 			: isSupertype
-			? "supertype"
-			: "none"
+				? "supertype"
+				: "none"
 	}
 }
 

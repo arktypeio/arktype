@@ -24,11 +24,15 @@ export const mapDir = (
 					.split(sep)
 					.join("/")
 				if (!(repoRelativePath in snippetsByPath)) {
-					throw new Error(`Expected to find ${repoRelativePath} in snippets.`)
+					throw new Error(
+						`Expected to find ${repoRelativePath} in snippets.`
+					)
 				}
-				let transformedContents = snippetsByPath[repoRelativePath].all.text
+				let transformedContents =
+					snippetsByPath[repoRelativePath].all.text
 				if (options.transformContents) {
-					transformedContents = options.transformContents(transformedContents)
+					transformedContents =
+						options.transformContents(transformedContents)
 				}
 				let transformedOutputPath = sourceRelativePath
 				if (options.transformOutputPaths) {
@@ -36,7 +40,11 @@ export const mapDir = (
 						transformedOutputPath
 					)
 				}
-				return [transformedOutputPath, transformedContents, repoRelativePath]
+				return [
+					transformedOutputPath,
+					transformedContents,
+					repoRelativePath
+				]
 			})
 	)
 	for (const target of options.targets) {
@@ -54,7 +62,11 @@ export const mapDir = (
 			rmSync(target, { recursive: true, force: true })
 		}
 		const isBuildProcess = process.argv.some((arg) => /build.ts/.test(arg))
-		for (const [path, contents, source] of fileContentsByRelativeDestination) {
+		for (const [
+			path,
+			contents,
+			source
+		] of fileContentsByRelativeDestination) {
 			sourceMapData[path] = source
 			const resolvedPath = join(target, isBuildProcess ? source : path)
 			ensureDir(dirname(resolvedPath))

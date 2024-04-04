@@ -135,7 +135,9 @@ describe("morph", () => {
 		}).export()
 		attest<Type<boolean | ((In: number) => Out<string>)>>(types.aOrB)
 		const serializedMorphs =
-			types.aOrB.root.firstReferenceOfKindOrThrow("morph").serializedMorphs
+			types.aOrB.root.firstReferenceOfKindOrThrow(
+				"morph"
+			).serializedMorphs
 		attest(types.aOrB.json).snap([
 			{ in: "number", morphs: serializedMorphs },
 			{ unit: false },
@@ -182,7 +184,10 @@ describe("morph", () => {
 					{
 						key: "a",
 						value: {
-							in: { domain: "number", min: { exclusive: true, rule: 0 } },
+							in: {
+								domain: "number",
+								min: { exclusive: true, rule: 0 }
+							},
 							morphs: types.a.root.serializedMorphs
 						}
 					}
@@ -219,7 +224,10 @@ describe("morph", () => {
 				prop: [
 					{
 						key: "a",
-						value: { in: "string", morphs: types.a.root.serializedMorphs }
+						value: {
+							in: "string",
+							morphs: types.a.root.serializedMorphs
+						}
 					}
 				]
 			},
@@ -244,7 +252,10 @@ describe("morph", () => {
 				prop: [
 					{
 						key: "a",
-						value: { in: "string", morphs: nestedMorph.serializedMorphs }
+						value: {
+							in: "string",
+							morphs: nestedMorph.serializedMorphs
+						}
 					}
 				]
 			},
@@ -385,14 +396,19 @@ describe("morph", () => {
 			"=>",
 			(s) => s.length || undefined
 		])
-		attest<Type<(In: string) => Out<number | undefined>>>(toUndefinableNumber)
+		attest<Type<(In: string) => Out<number | undefined>>>(
+			toUndefinableNumber
+		)
 	})
 	it("null or undefined return", () => {
 		const toMaybeNumber = type([
 			"string",
 			"=>",
-			(s) => (s.length === 0 ? undefined : s.length === 1 ? null : s.length)
+			(s) =>
+				s.length === 0 ? undefined : s.length === 1 ? null : s.length
 		])
-		attest<Type<(In: string) => Out<number | null | undefined>>>(toMaybeNumber)
+		attest<Type<(In: string) => Out<number | null | undefined>>>(
+			toMaybeNumber
+		)
 	})
 })

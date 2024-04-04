@@ -44,26 +44,14 @@
 		"@arktype/repo": "workspace:*",
 		"@changesets/changelog-github": "0.5.0",
 		"@changesets/cli": "2.27.1",
-		"@swc/core": "1.4.6",
+		"@swc/core": "1.4.12",
 		"@types/mocha": "10.0.6",
-		"@types/node": "20.11.24",
-		"@typescript-eslint/eslint-plugin": "7.1.1",
-		"@typescript-eslint/parser": "7.1.1",
+		"@types/node": "20.12.4",
+		"@biomejs/biome": "1.6.4",
 		"c8": "9.1.0",
-		"eslint": "8.57.0",
-		"eslint-config-prettier": "9.1.0",
-		"eslint-define-config": "2.1.0",
-		"eslint-import-resolver-typescript": "3.6.1",
-		"eslint-plugin-import": "2.29.1",
-		"eslint-plugin-mdx": "3.1.5",
-		"eslint-plugin-only-warn": "1.1.0",
-		"eslint-plugin-prefer-arrow-functions": "3.3.2",
-		"eslint-plugin-unused-imports": "3.1.0",
-		"knip": "5.0.3",
-		"mocha": "10.3.0",
-		"prettier": "3.0.3",
-		"prettier-plugin-jsdoc": "1.3.0",
-		"tsx": "4.7.1",
+		"knip": "5.7.2",
+		"mocha": "10.4.0",
+		"tsx": "4.7.2",
 		"typescript": "5.4.2",
 		"typescript-52": "npm:typescript@5.2",
 		"typescript-53": "npm:typescript@5.3",
@@ -71,36 +59,17 @@
 	},
 	"mocha": {
 		"//": "IF YOU UPDATE THE MOCHA CONFIG HERE, PLEASE ALSO UPDATE ark/repo/mocha.jsonc AND .vscode/settings.json",
-		"spec": [
-			"**/__tests__/**/*.test.*"
-		],
+		"spec": ["**/__tests__/**/*.test.*"],
 		"ignore": "**/node_modules/**/*",
-		"node-option": [
-			"import=tsx"
-		],
+		"node-option": ["import=tsx"],
 		"require": "./ark/repo/mocha.fixtures.ts"
 	},
 	"c8": {
 		"checkCoverage": true,
 		"lines": 96,
 		"src": "./src",
-		"exclude": [
-			"__tests__/**"
-		],
+		"exclude": ["__tests__/**"],
 		"extension": ".ts",
 		"reporter": "lcovonly"
-	},
-	"quokka": {
-		"recycle": false,
-		"stdEsm": false,
-		"nativeEsm": true
-	},
-	"prettier": {
-		"useTabs": true,
-		"semi": false,
-		"trailingComma": "none"
-	},
-	"eslintConfig": {
-		"extends": "./ark/repo/.eslintrc.cjs"
 	}
 }

@@ -1,4 +1,4 @@
-import { throwParseError, type nominal } from "@arktype/util"
+import { type nominal, throwParseError } from "@arktype/util"
 import { writeUnexpectedCharacterMessage } from "./string/shift/operator/operator.js"
 import { Scanner } from "./string/shift/scanner.js"
 
@@ -25,7 +25,8 @@ export type parseGenericParams<def extends string> = parseParamsRecurse<
 		: result
 	: never
 
-export const emptyGenericParameterMessage = `An empty string is not a valid generic parameter name`
+export const emptyGenericParameterMessage =
+	"An empty string is not a valid generic parameter name"
 
 export type emptyGenericParameterMessage = typeof emptyGenericParameterMessage
 
@@ -39,8 +40,10 @@ const parseGenericParamsRecurse = (scanner: Scanner): string[] => {
 	return nextNonWhitespace === ""
 		? [param]
 		: nextNonWhitespace === ","
-		? [param, ...parseGenericParamsRecurse(scanner)]
-		: throwParseError(writeUnexpectedCharacterMessage(nextNonWhitespace, ","))
+			? [param, ...parseGenericParamsRecurse(scanner)]
+			: throwParseError(
+					writeUnexpectedCharacterMessage(nextNonWhitespace, ",")
+				)
 }
 
 type parseParamsRecurse<
@@ -51,18 +54,25 @@ type parseParamsRecurse<
 	? lookahead extends ","
 		? parseParamsRecurse<nextUnscanned, "", [...result, param]>
 		: lookahead extends Scanner.WhiteSpaceToken
-		? param extends ""
-			? // if the next char is whitespace and we aren't in the middle of a param, skip to the next one
-			  parseParamsRecurse<Scanner.skipWhitespace<nextUnscanned>, "", result>
-			: Scanner.skipWhitespace<nextUnscanned> extends `${infer nextNonWhitespace}${infer rest}`
-			? nextNonWhitespace extends ","
-				? parseParamsRecurse<rest, "", [...result, param]>
-				: GenericParamsParseError<
-						writeUnexpectedCharacterMessage<nextNonWhitespace, ",">
-				  >
-			: // params end with a single whitespace character, add the current token
-			  [...result, param]
-		: parseParamsRecurse<nextUnscanned, `${param}${lookahead}`, result>
+			? param extends ""
+				? // if the next char is whitespace and we aren't in the middle of a param, skip to the next one
+					parseParamsRecurse<
+						Scanner.skipWhitespace<nextUnscanned>,
+						"",
+						result
+					>
+				: Scanner.skipWhitespace<nextUnscanned> extends `${infer nextNonWhitespace}${infer rest}`
+					? nextNonWhitespace extends ","
+						? parseParamsRecurse<rest, "", [...result, param]>
+						: GenericParamsParseError<
+								writeUnexpectedCharacterMessage<
+									nextNonWhitespace,
+									","
+								>
+							>
+					: // params end with a single whitespace character, add the current token
+						[...result, param]
+			: parseParamsRecurse<nextUnscanned, `${param}${lookahead}`, result>
 	: param extends ""
-	? result
-	: [...result, param]
+		? result
+		: [...result, param]

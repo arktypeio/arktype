@@ -59,7 +59,10 @@ export const createTimeMeasure = (ms: number) => {
 		if (!bestMatch) {
 			bestMatch = candidateMeasure
 		} else if (bestMatch[0] >= 1) {
-			if (candidateMeasure[0] >= 1 && candidateMeasure[0] < bestMatch[0]) {
+			if (
+				candidateMeasure[0] >= 1 &&
+				candidateMeasure[0] < bestMatch[0]
+			) {
 				bestMatch = candidateMeasure
 			}
 		} else {

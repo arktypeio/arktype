@@ -27,7 +27,10 @@ export const keywordTable = (text: string, tags: TsTagData) => {
 			const description = descriptionsByKeyword
 				? descriptionsByKeyword[keyword[1]] ?? ""
 				: ""
-			const row = constructRow([keyword[1], keyword[2], description], ["1"])
+			const row = constructRow(
+				[keyword[1], keyword[2], description],
+				["1"]
+			)
 			table.push(row)
 		}
 	}

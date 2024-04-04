@@ -47,7 +47,9 @@ describe("traverse", () => {
 				}
 			}
 		).export()
-		attest(types.isEven(3).errors?.summary).snap("3 is not a multiple of 2!")
+		attest(types.isEven(3).errors?.summary).snap(
+			"3 is not a multiple of 2!"
+		)
 	})
 	it("domains", () => {
 		const t = type("string|number[]")
@@ -69,7 +71,9 @@ describe("traverse", () => {
 		const t = type([{ a: "string" }, "|", { b: "boolean" }])
 		attest(t({ a: "ok" }).out).snap({ a: "ok" })
 		attest(t({ b: true }).out).snap({ b: true })
-		attest(t({}).errors?.summary).snap("a must be defined or b must be defined")
+		attest(t({}).errors?.summary).snap(
+			"a must be defined or b must be defined"
+		)
 	})
 	it("branches at path", () => {
 		const t = type({ key: [{ a: "string" }, "|", { b: "boolean" }] })

@@ -51,13 +51,13 @@ export type inferBasis<def extends NodeDef<BasisKind>> =
 	isAny<def> extends true
 		? any
 		: def extends NonEnumerableDomain
-		? inferDomain<def>
-		: def extends Constructor<infer instance>
-		? instance
-		: def extends DomainDef<infer domain>
-		? inferDomain<domain>
-		: def extends ProtoDef<infer proto>
-		? instanceOf<proto>
-		: def extends UnitDef<infer is>
-		? is
-		: never
+			? inferDomain<def>
+			: def extends Constructor<infer instance>
+				? instance
+				: def extends DomainDef<infer domain>
+					? inferDomain<domain>
+					: def extends ProtoDef<infer proto>
+						? instanceOf<proto>
+						: def extends UnitDef<infer is>
+							? is
+							: never

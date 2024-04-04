@@ -99,7 +99,9 @@ export const nodeKinds = [
 ] as const satisfies NodeKind[]
 
 export type OpenNodeKind = {
-	[k in NodeKind]: Declaration<k>["intersectionIsOpen"] extends true ? k : never
+	[k in NodeKind]: Declaration<k>["intersectionIsOpen"] extends true
+		? k
+		: never
 }[NodeKind]
 
 export type ClosedNodeKind = Exclude<NodeKind, OpenNodeKind>

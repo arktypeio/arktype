@@ -27,7 +27,9 @@ export const unitImplementation = implementNode<UnitDeclaration>({
 		unit: {
 			preserveUndefined: true,
 			serialize: (def) =>
-				def instanceof Date ? def.toISOString() : defaultValueSerializer(def)
+				def instanceof Date
+					? def.toISOString()
+					: defaultValueSerializer(def)
 		}
 	},
 	normalize: (def) => def,
@@ -52,11 +54,13 @@ export class UnitNode<t = any, $ = any> extends BaseBasis<
 	traverseAllows =
 		this.unit instanceof Date
 			? (data: unknown) =>
-					data instanceof Date && data.toISOString() === this.compiledValue
+					data instanceof Date &&
+					data.toISOString() === this.compiledValue
 			: (data: unknown) => data === this.unit
 
-	readonly compiledValue: string | number | boolean | null = (this.json as any)
-		.unit
+	readonly compiledValue: string | number | boolean | null = (
+		this.json as any
+	).unit
 	readonly serializedValue: string | number | boolean | null =
 		typeof this.unit === "string" || this.unit instanceof Date
 			? JSON.stringify(this.compiledValue)

@@ -61,7 +61,7 @@ export type parseEnclosed<
 				nextUnscanned extends Scanner.shift<string, infer unscanned>
 					? unscanned
 					: ""
-		  >
+			>
 	: never
 
 export const enclosingQuote = {

@@ -1,8 +1,5 @@
 import { attest } from "@arktype/attest"
-import type {
-	intersectArrays,
-	intersectParameters
-} from "@arktype/util"
+import type { intersectArrays, intersectParameters } from "@arktype/util"
 
 describe("intersectParameters", () => {
 	it("both empty", () => {

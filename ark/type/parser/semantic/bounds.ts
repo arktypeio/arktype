@@ -21,8 +21,8 @@ export type validateRange<
 > = l extends LimitLiteral
 	? validateBound<r, InvertedComparators[comparator], l, "left", $, args>
 	: l extends [infer leftAst, Comparator, unknown]
-	? ErrorMessage<writeDoubleRightBoundMessage<astToString<leftAst>>>
-	: validateBound<l, comparator, r & LimitLiteral, "right", $, args>
+		? ErrorMessage<writeDoubleRightBoundMessage<astToString<leftAst>>>
+		: validateBound<l, comparator, r & LimitLiteral, "right", $, args>
 
 export type validateBound<
 	boundedAst,
@@ -35,19 +35,21 @@ export type validateBound<
 	? isNumericallyBoundable<bounded> extends true
 		? limit extends number
 			? validateAst<boundedAst, $, args>
-			: ErrorMessage<writeInvalidLimitMessage<comparator, limit, boundKind>>
+			: ErrorMessage<
+					writeInvalidLimitMessage<comparator, limit, boundKind>
+				>
 		: bounded extends Date
-		? // allow numeric or date literal as a Date limit
-		  validateAst<boundedAst, $, args>
-		: ErrorMessage<
-				writeUnboundableMessage<
-					astToString<
-						boundKind extends "left"
-							? boundedAst[0 & keyof boundedAst]
-							: boundedAst
+			? // allow numeric or date literal as a Date limit
+				validateAst<boundedAst, $, args>
+			: ErrorMessage<
+					writeUnboundableMessage<
+						astToString<
+							boundKind extends "left"
+								? boundedAst[0 & keyof boundedAst]
+								: boundedAst
+						>
 					>
 				>
-		  >
 	: never
 
 // Check each numerically boundable type individually so an expression comprised
@@ -55,10 +57,10 @@ export type validateBound<
 type isNumericallyBoundable<bounded> = [bounded] extends [number]
 	? true
 	: [bounded] extends [string]
-	? true
-	: [bounded] extends [array]
-	? true
-	: false
+		? true
+		: [bounded] extends [array]
+			? true
+			: false
 
 export const writeDoubleRightBoundMessage = <root extends string>(
 	root: root

@@ -14,7 +14,7 @@ type exportScope<$ = any> = {
 	[k in exportedName<$>]: $[k] extends PreparsedNodeResolution
 		? [$[k]] extends [null]
 			? // handle `Schema<any>` and `Schema<never>`
-			  Schema<$[k], $>
+				Schema<$[k], $>
 			: $[k]
 		: Schema<$[k], $>
 }

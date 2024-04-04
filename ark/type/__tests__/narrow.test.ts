@@ -26,7 +26,8 @@ describe("narrow", () => {
 		const even = type([
 			"number",
 			":",
-			(n, ctx) => n % 3 === 0 || ctx.invalid({ expected: "divisible by 3" })
+			(n, ctx) =>
+				n % 3 === 0 || ctx.invalid({ expected: "divisible by 3" })
 		])
 		attest(even(1).errors?.summary).snap("must be divisible by 3 (was 1)")
 	})
@@ -77,7 +78,9 @@ describe("narrow", () => {
 			"string",
 			":",
 			(s, ctx) =>
-				s === [...s].reverse().join("") ? true : ctx.invalid("a palindrome")
+				s === [...s].reverse().join("")
+					? true
+					: ctx.invalid("a palindrome")
 		])
 		attest<Type<string.narrowed>>(palindrome)
 		attest(palindrome("dad").out).snap("dad")

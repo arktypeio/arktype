@@ -15,8 +15,8 @@ export const deepClone = <input>(input: input, seen = new Map()): input => {
 
 	const cloned = Array.isArray(input)
 		? // ensure arrays are copied with their original class attached so they
-		  // work with Array.isArray
-		  input.slice()
+			// work with Array.isArray
+			input.slice()
 		: Object.create(Object.getPrototypeOf(input))
 
 	seen.set(input, cloned)

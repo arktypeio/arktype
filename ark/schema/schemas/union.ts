@@ -97,33 +97,37 @@ export const unionImplementation = implementNode<UnionDeclaration>({
 		description: (node) => {
 			if (node.isBoolean) return "boolean"
 
-			return describeBranches(node.branches.map((branch) => branch.description))
+			return describeBranches(
+				node.branches.map((branch) => branch.description)
+			)
 		},
 		expected: (ctx) => {
 			const byPath = groupBy(ctx.errors, "propString") as Record<
 				string,
 				ArkTypeError[]
 			>
-			const pathDescriptions = Object.entries(byPath).map(([path, errors]) => {
-				errors.map((_) => _.expected)
-				const branchesAtPath: string[] = []
-				errors.forEach((errorAtPath) =>
-					// avoid duplicate messages when multiple branches
-					// are invalid due to the same error
-					appendUnique(branchesAtPath, errorAtPath.expected)
-				)
-				const expected = describeBranches(branchesAtPath)
-				const actual = ctx.errors.reduce(
-					(acc, e) =>
-						e.actual && !acc.includes(e.actual)
-							? `${acc && acc + ", "}${e.actual}`
-							: acc,
-					""
-				)
-				return `${path && path + " "}must be ${expected}${
-					actual && ` (was ${actual})`
-				}`
-			})
+			const pathDescriptions = Object.entries(byPath).map(
+				([path, errors]) => {
+					errors.map((_) => _.expected)
+					const branchesAtPath: string[] = []
+					errors.forEach((errorAtPath) =>
+						// avoid duplicate messages when multiple branches
+						// are invalid due to the same error
+						appendUnique(branchesAtPath, errorAtPath.expected)
+					)
+					const expected = describeBranches(branchesAtPath)
+					const actual = ctx.errors.reduce(
+						(acc, e) =>
+							e.actual && !acc.includes(e.actual)
+								? `${acc && acc + ", "}${e.actual}`
+								: acc,
+						""
+					)
+					return `${path && path + " "}must be ${expected}${
+						actual && ` (was ${actual})`
+					}`
+				}
+			)
 			return describeBranches(pathDescriptions)
 		},
 		problem: (ctx) => ctx.expected,
@@ -163,7 +167,7 @@ export const unionImplementation = implementNode<UnionDeclaration>({
 					? {
 							branches: resultBranches,
 							ordered: true as const
-					  }
+						}
 					: { branches: resultBranches }
 			)
 		},
@@ -208,7 +212,8 @@ export class UnionNode<t = any, $ = any> extends BaseSchema<
 		for (let i = 0; i < this.branches.length; i++) {
 			ctx.pushBranch()
 			this.branches[i].traverseApply(data, ctx)
-			if (!ctx.hasError()) return ctx.morphs.push(...ctx.popBranch().morphs)
+			if (!ctx.hasError())
+				return ctx.morphs.push(...ctx.popBranch().morphs)
 			errors.push(ctx.popBranch().error!)
 		}
 		ctx.error({ code: "union", errors })

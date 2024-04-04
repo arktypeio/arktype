@@ -73,7 +73,7 @@ const discriminateSchemaKind = (def: unknown): SchemaKind => {
 					? def.kind
 					: throwParseError(
 							`${def.kind} constraint ${def.expression} cannot be used as a root type`
-					  )
+						)
 				: "proto"
 		case "object":
 			// throw at end of function
@@ -154,10 +154,10 @@ export const parseNode = (
 					? precedenceOfKind(lKey) - precedenceOfKind(rKey)
 					: 1
 				: isNodeKind(rKey)
-				? -1
-				: lKey < rKey
-				? -1
-				: 1
+					? -1
+					: lKey < rKey
+						? -1
+						: 1
 	)
 	const children: UnknownNode[] = []
 	for (const entry of schemaEntries) {
@@ -292,8 +292,8 @@ const schemaBranchesOf = (schema: object) =>
 	isArray(schema)
 		? schema
 		: "branches" in schema && isArray(schema.branches)
-		? schema.branches
-		: undefined
+			? schema.branches
+			: undefined
 
 const throwMismatchedNodeSchemaError = (expected: NodeKind, actual: NodeKind) =>
 	throwParseError(

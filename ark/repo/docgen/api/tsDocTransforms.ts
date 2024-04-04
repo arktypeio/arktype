@@ -32,7 +32,9 @@ export const transformLinkTagToURL = (
 					`[${alias ?? basename}](./${basename.toLowerCase()}.md)`
 				)
 			} else {
-				throw new Error(`${basename} doesn't appear to be part of the API`)
+				throw new Error(
+					`${basename} doesn't appear to be part of the API`
+				)
 			}
 		}
 	}

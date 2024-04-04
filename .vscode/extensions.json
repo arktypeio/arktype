@@ -1,7 +1,6 @@
 {
 	"recommendations": [
-		"esbenp.prettier-vscode",
-		"dbaeumer.vscode-eslint",
+		"biomejs.biome",
 		"unifiedjs.vscode-mdx",
 		// Run/debug tests inline via VSCode's Test Explorer
 		"hbenl.vscode-mocha-test-adapter",

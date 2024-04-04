@@ -43,7 +43,9 @@ export const afterImplementation = implementNode<AfterDeclaration>({
 		exclusive: parseExclusiveKey
 	},
 	normalize: (def) =>
-		typeof def === "number" || typeof def === "string" || def instanceof Date
+		typeof def === "number" ||
+		typeof def === "string" ||
+		def instanceof Date
 			? { rule: def }
 			: def,
 	defaults: {

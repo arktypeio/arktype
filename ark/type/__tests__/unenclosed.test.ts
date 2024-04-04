@@ -112,7 +112,9 @@ describe("parse unenclosed", () => {
 				// though it matches our rules for a "malformed" integer.
 				// @ts-expect-error
 				attest(() => type("007n"))
-					.throws(writeMalformedNumericLiteralMessage("007n", "bigint"))
+					.throws(
+						writeMalformedNumericLiteralMessage("007n", "bigint")
+					)
 					.type.errors(writeUnresolvableMessage("007n"))
 			})
 			it("negative zero", () => {

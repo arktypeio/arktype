@@ -10,7 +10,8 @@ export class Describable extends Trait<{
 
 	constructor(rule: unknown, attributes?: { description?: string }) {
 		super()
-		this.description = attributes?.description ?? this.writeDefaultDescription()
+		this.description =
+			attributes?.description ?? this.writeDefaultDescription()
 	}
 }
 

@@ -1,4 +1,4 @@
-import { tryParseInteger, type NumberLiteral } from "@arktype/util"
+import { type NumberLiteral, tryParseInteger } from "@arktype/util"
 import type { DynamicStateWithRoot } from "../../reduce/dynamic.js"
 import type { StaticState, state } from "../../reduce/static.js"
 import type { Scanner } from "../scanner.js"

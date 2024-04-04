@@ -73,7 +73,9 @@ describe("keyof", () => {
 	it("intersection precedence", () => {
 		const t = type("keyof symbol & symbol")
 		attest<typeof Symbol.toStringTag | typeof Symbol.toPrimitive>(t.infer)
-		attest(t.json).is(type("===", Symbol.toStringTag, Symbol.toPrimitive).json)
+		attest(t.json).is(
+			type("===", Symbol.toStringTag, Symbol.toPrimitive).json
+		)
 	})
 	it("union precedence", () => {
 		const t = type("keyof boolean | number")

@@ -57,23 +57,28 @@ export type TypeParser<$> = {
 		_1: zero extends "keyof"
 			? validateTypeRoot<one, $>
 			: zero extends "instanceof"
-			? conform<one, Constructor>
-			: zero extends "==="
-			? conform<one, unknown>
-			: conform<one, IndexOneOperator>,
+				? conform<one, Constructor>
+				: zero extends "==="
+					? conform<one, unknown>
+					: conform<one, IndexOneOperator>,
 		..._2: zero extends "==="
 			? rest
 			: zero extends "instanceof"
-			? conform<rest, readonly Constructor[]>
-			: one extends TupleInfixOperator
-			? one extends ":"
-				? [Predicate<distillIn<inferTypeRoot<zero, $>>>]
-				: one extends "=>"
-				? [Morph<distillOut<inferTypeRoot<zero, $>>, unknown>]
-				: one extends "@"
-				? [string | BaseMeta]
-				: [validateTypeRoot<rest[0], $>]
-			: []
+				? conform<rest, readonly Constructor[]>
+				: one extends TupleInfixOperator
+					? one extends ":"
+						? [Predicate<distillIn<inferTypeRoot<zero, $>>>]
+						: one extends "=>"
+							? [
+									Morph<
+										distillOut<inferTypeRoot<zero, $>>,
+										unknown
+									>
+								]
+							: one extends "@"
+								? [string | BaseMeta]
+								: [validateTypeRoot<rest[0], $>]
+					: []
 	): Type<inferTypeRoot<[zero, one, ...rest], $>, $>
 
 	<params extends string, const def>(
@@ -111,7 +116,9 @@ export const createTypeParser = <$>($: Scope): TypeParser<$> => {
 			// treat as a generic
 			const params = parseGenericParams(args[0].slice(1, -1))
 			const def = args[1]
-			return validateUninstantiatedGeneric(new Generic(params, def, $) as never)
+			return validateUninstantiatedGeneric(
+				new Generic(params, def, $) as never
+			)
 		}
 		// otherwise, treat as a tuple expression. technically, this also allows
 		// non-expression tuple definitions to be parsed, but it's not a supported
@@ -206,7 +213,8 @@ export class Type<t = unknown, $ = any> extends Callable<
 	extends<r>(other: Type<r>): this is Type<r, $> & { [inferred]?: r } {
 		const intersection = this.intersect(other as never)
 		return (
-			!(intersection instanceof Disjoint) && this.equals(intersection as never)
+			!(intersection instanceof Disjoint) &&
+			this.equals(intersection as never)
 		)
 	}
 

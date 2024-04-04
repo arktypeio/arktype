@@ -90,8 +90,9 @@ export namespace Scanner {
 	export const lookaheadIsTerminator: UntilCondition = (scanner: Scanner) =>
 		scanner.lookahead in terminatingChars
 
-	export const lookaheadIsNotWhitespace: UntilCondition = (scanner: Scanner) =>
-		!(scanner.lookahead in whiteSpaceTokens)
+	export const lookaheadIsNotWhitespace: UntilCondition = (
+		scanner: Scanner
+	) => !(scanner.lookahead in whiteSpaceTokens)
 
 	export const terminatingChars = {
 		"<": true,
@@ -140,13 +141,13 @@ export namespace Scanner {
 		lookahead === ">"
 			? unscanned[0] === "="
 				? // >== would only occur in an expression like Array<number>==5
-				  // otherwise, >= would only occur as part of a bound like number>=5
-				  unscanned[1] === "="
+					// otherwise, >= would only occur as part of a bound like number>=5
+					unscanned[1] === "="
 				: // if > is the end of a generic instantiation, the next token will be an operator or the end of the string
-				  unscanned.trimStart() === "" ||
-				  isKeyOf(unscanned.trimStart()[0], Scanner.terminatingChars)
+					unscanned.trimStart() === "" ||
+					isKeyOf(unscanned.trimStart()[0], Scanner.terminatingChars)
 			: // if the lookahead is a finalizing token but not >, it's unambiguously a finalizer (currently just ",")
-			  lookahead === ","
+				lookahead === ","
 
 	export type lookaheadIsFinalizing<
 		lookahead extends string,
@@ -157,13 +158,13 @@ export namespace Scanner {
 				? true
 				: false
 			: Scanner.skipWhitespace<unscanned> extends
-					| ""
-					| `${TerminatingChar}${string}`
+						| ""
+						| `${TerminatingChar}${string}`
+				? true
+				: false
+		: lookahead extends ","
 			? true
 			: false
-		: lookahead extends ","
-		? true
-		: false
 
 	export type shift<
 		lookahead extends string,
@@ -188,7 +189,11 @@ export namespace Scanner {
 		scanned extends string = ""
 	> = unscanned extends shift<infer lookahead, infer nextUnscanned>
 		? lookahead extends nonTerminator
-			? shiftUntilNot<nextUnscanned, nonTerminator, `${scanned}${lookahead}`>
+			? shiftUntilNot<
+					nextUnscanned,
+					nonTerminator,
+					`${scanned}${lookahead}`
+				>
 			: [scanned, unscanned]
 		: [scanned, ""]
 
@@ -202,8 +207,8 @@ export namespace Scanner {
 		WhiteSpaceToken
 	>[1]
 
-	export type shiftResult<scanned extends string, unscanned extends string> = [
-		scanned,
-		unscanned
-	]
+	export type shiftResult<
+		scanned extends string,
+		unscanned extends string
+	> = [scanned, unscanned]
 }

@@ -18,11 +18,7 @@
 			"default": "./out/*"
 		}
 	},
-	"files": [
-		"out",
-		"!__tests__",
-		"**/*.ts"
-	],
+	"files": ["out", "!__tests__", "**/*.ts"],
 	"bin": {
 		"attest": "./out/cli/cli.js"
 	},

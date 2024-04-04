@@ -30,7 +30,9 @@ export const pathToPropString = (path: TraversalPath): string => {
 		(s, segment) => s + literalPropAccess(segment),
 		""
 	)
-	return propAccessChain[0] === "." ? propAccessChain.slice(1) : propAccessChain
+	return propAccessChain[0] === "."
+		? propAccessChain.slice(1)
+		: propAccessChain
 }
 
 export const arkKind = Symbol("ArkTypeInternalKind")

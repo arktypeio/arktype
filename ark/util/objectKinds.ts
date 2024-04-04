@@ -36,10 +36,10 @@ export type objectKindOf<
 > = object extends data
 	? keyof kinds | undefined
 	: data extends (...args: never[]) => unknown
-	? "Function"
-	: instantiableObjectKind<data, kinds> extends never
-	? keyof kinds | undefined
-	: instantiableObjectKind<data, kinds>
+		? "Function"
+		: instantiableObjectKind<data, kinds> extends never
+			? keyof kinds | undefined
+			: instantiableObjectKind<data, kinds>
 
 export type describeObject<o extends object> = objectKindOf<o> extends string
 	? objectKindDescriptions[objectKindOf<o>]
@@ -174,7 +174,11 @@ export type normalizedKeyOf<t> = keyof t extends infer k
 /** Mimics output of TS's keyof operator at runtime */
 export const prototypeKeysOf = <t>(value: t): normalizedKeyOf<t>[] => {
 	const result: Key[] = []
-	while (value !== Object.prototype && value !== null && value !== undefined) {
+	while (
+		value !== Object.prototype &&
+		value !== null &&
+		value !== undefined
+	) {
 		for (const k of Object.getOwnPropertyNames(value)) {
 			if (k !== "constructor" && !result.includes(k)) {
 				result.push(k)

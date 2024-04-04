@@ -37,7 +37,11 @@ describe("hkt", () => {
 		attest<{ a: 1; b: 1 }, result1>()
 		const addAB = Hkt.pipe(AddB, AddC)
 		const result = addAB({ a: 1 as const })
-		attest<{ a: 1; b: 1; c: [1, 1] }>(result).equals({ a: 1, b: 1, c: [1, 1] })
+		attest<{ a: 1; b: 1; c: [1, 1] }>(result).equals({
+			a: 1,
+			b: 1,
+			c: [1, 1]
+		})
 	})
 
 	it("initial parameter", () => {

@@ -217,7 +217,9 @@ export const intersectionImplementation =
 				node.children.length === 0
 					? "unknown"
 					: node.props?.description ??
-					  node.children.map((child) => child.description).join(" and "),
+						node.children
+							.map((child) => child.description)
+							.join(" and "),
 			expected: (source) =>
 				"  • " + source.errors.map((e) => e.expected).join("\n  • "),
 			problem: (ctx) => `must be...\n${ctx.expected}`
@@ -233,15 +235,17 @@ export const intersectionImplementation =
 				return basis instanceof Disjoint
 					? basis
 					: l?.basis?.equals(basis)
-					? // if the basis doesn't change, return the original intesection
-					  l
-					: // given we've already precluded l being unknown, the result must
-					  // be an intersection with the new basis result integrated
-					  l.$.node(
-							"intersection",
-							Object.assign(omit(l.inner, metaKeys), { [basis.kind]: basis }),
-							{ prereduced: true }
-					  )
+						? // if the basis doesn't change, return the original intesection
+							l
+						: // given we've already precluded l being unknown, the result must
+							// be an intersection with the new basis result integrated
+							l.$.node(
+								"intersection",
+								Object.assign(omit(l.inner, metaKeys), {
+									[basis.kind]: basis
+								}),
+								{ prereduced: true }
+							)
 			})
 		}
 	})
@@ -450,10 +454,10 @@ const flattenConstraints = (inner: IntersectionInner): Constraint[] => {
 			l.precedence < r.precedence
 				? -1
 				: l.precedence > r.precedence
-				? 1
-				: l.innerId < r.innerId
-				? -1
-				: 1
+					? 1
+					: l.innerId < r.innerId
+						? -1
+						: 1
 		)
 
 	return result

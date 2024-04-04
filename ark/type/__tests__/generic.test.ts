@@ -17,7 +17,9 @@ describe("generics", () => {
 		it("unary", () => {
 			const boxOf = type("<t>", { box: "t" })
 			const schrodingersBox = boxOf({ cat: { isAlive: "boolean" } })
-			attest<{ box: { cat: { isAlive: boolean } } }>(schrodingersBox.infer)
+			attest<{ box: { cat: { isAlive: boolean } } }>(
+				schrodingersBox.infer
+			)
 
 			attest(schrodingersBox.json).equals(
 				type({
@@ -213,7 +215,9 @@ describe("generics", () => {
 						nest: "nest"
 					}
 				}).export()
-			).throwsAndHasTypeError(writeInvalidGenericArgsMessage("nest", ["t"], []))
+			).throwsAndHasTypeError(
+				writeInvalidGenericArgsMessage("nest", ["t"], [])
+			)
 		})
 		it("declaration and instantiation leading and trailing whitespace", () => {
 			const types = scope({
@@ -269,7 +273,11 @@ describe("generics", () => {
 					// @ts-expect-error
 					$.type("box<0, box<1, 2, 3>>")
 				).throwsAndHasTypeError(
-					writeInvalidGenericArgsMessage("box", ["t", "u"], ["1", " 2", " 3"])
+					writeInvalidGenericArgsMessage(
+						"box",
+						["t", "u"],
+						["1", " 2", " 3"]
+					)
 				)
 			})
 			it("syntactic error in arg", () => {
@@ -282,7 +290,9 @@ describe("generics", () => {
 				attest(() =>
 					// @ts-expect-error
 					$.type("box<1,string%2>")
-				).throwsAndHasTypeError(writeIndivisibleMessage(keywordNodes.string))
+				).throwsAndHasTypeError(
+					writeIndivisibleMessage(keywordNodes.string)
+				)
 			})
 		})
 	})

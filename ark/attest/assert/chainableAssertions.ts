@@ -36,8 +36,10 @@ export class ChainableAssertions implements AssertionRecord {
 
 	private get actual() {
 		return this.ctx.actual instanceof TypeAssertionMapping
-			? this.ctx.actual.fn(this.ctx.typeAssertionEntries![0][1], this.ctx)!
-					.actual
+			? this.ctx.actual.fn(
+					this.ctx.typeAssertionEntries![0][1],
+					this.ctx
+				)!.actual
 			: this.ctx.actual
 	}
 
@@ -102,7 +104,11 @@ export class ChainableAssertions implements AssertionRecord {
 				// like subtypes of array that do not pass node's deep equality test
 				// but serialize to the same value.
 				if (printable(args[0]) !== printable(this.actual)) {
-					assertEquals(expectedSerialized, this.serializedActual, this.ctx)
+					assertEquals(
+						expectedSerialized,
+						this.serializedActual,
+						this.ctx
+					)
 				}
 			}
 			return this
@@ -167,7 +173,10 @@ export class ChainableAssertions implements AssertionRecord {
 	throwsAndHasTypeError(matchValue: string | RegExp): void {
 		assertEqualOrMatching(
 			matchValue,
-			getThrownMessage(callAssertedFunction(this.actual as Function), this.ctx),
+			getThrownMessage(
+				callAssertedFunction(this.actual as Function),
+				this.ctx
+			),
 			this.ctx
 		)
 		if (!this.ctx.cfg.skipTypes) {
@@ -260,7 +269,7 @@ export type functionAssertions<kind extends AssertionKind> = {
 } & ("type" extends kind
 	? {
 			throwsAndHasTypeError: (message: string | RegExp) => undefined
-	  }
+		}
 	: {})
 
 export type valueFromTypeAssertion<

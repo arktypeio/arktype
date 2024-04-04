@@ -36,8 +36,8 @@ export type LimitLiteral = number | DateLiteral
 export type normalizeLimit<limit> = limit extends DateLiteral<infer source>
 	? source
 	: limit extends number | string
-	? limit
-	: string
+		? limit
+		: string
 
 export type AtLeast<rule extends number> = {
 	min: { [k in rule]: 0 | 1 }
@@ -102,12 +102,12 @@ export namespace number {
 				? moreThan<rule & number>
 				: atLeast<rule & number>
 			: kind extends "max"
-			? def extends { exclusive: true }
-				? lessThan<rule & number>
-				: atMost<rule & number>
-			: kind extends "divisor"
-			? divisibleBy<rule & number>
-			: narrowed
+				? def extends { exclusive: true }
+					? lessThan<rule & number>
+					: atMost<rule & number>
+				: kind extends "divisor"
+					? divisibleBy<rule & number>
+					: narrowed
 		: never
 }
 
@@ -138,7 +138,10 @@ export namespace string {
 		MoreThanLength<rule>
 	>
 
-	export type atMostLength<rule extends number> = of<string, AtMostLength<rule>>
+	export type atMostLength<rule extends number> = of<
+		string,
+		AtMostLength<rule>
+	>
 
 	export type lessThanLength<rule extends number> = of<
 		string,
@@ -160,12 +163,12 @@ export namespace string {
 				? moreThanLength<rule & number>
 				: atLeastLength<rule & number>
 			: kind extends "maxLength"
-			? schema extends { exclusive: true }
-				? lessThanLength<rule & number>
-				: atMostLength<rule & number>
-			: kind extends "regex"
-			? matching<rule & string>
-			: narrowed
+				? schema extends { exclusive: true }
+					? lessThanLength<rule & number>
+					: atMostLength<rule & number>
+				: kind extends "regex"
+					? matching<rule & string>
+					: narrowed
 		: never
 }
 
@@ -215,10 +218,10 @@ export namespace Date {
 				? after<normalizeLimit<rule>>
 				: atOrAfter<normalizeLimit<rule>>
 			: kind extends "before"
-			? schema extends { exclusive: true }
-				? before<normalizeLimit<rule>>
-				: atOrBefore<normalizeLimit<rule>>
-			: narrowed
+				? schema extends { exclusive: true }
+					? before<normalizeLimit<rule>>
+					: atOrBefore<normalizeLimit<rule>>
+				: narrowed
 		: never
 }
 
@@ -231,17 +234,17 @@ export type constrain<
 		? [number, base] extends [base, number]
 			? number.is<constraint & constraints>
 			: [string, base] extends [base, string]
-			? string.is<constraint & constraints>
-			: [Date, base] extends [base, Date]
-			? Date.is<constraint & constraints>
-			: of<base, constraints & constraint>
+				? string.is<constraint & constraints>
+				: [Date, base] extends [base, Date]
+					? Date.is<constraint & constraints>
+					: of<base, constraints & constraint>
 		: [number, t] extends [t, number]
-		? number.constrain<kind, def>
-		: [string, t] extends [t, string]
-		? string.constrain<kind, def>
-		: [Date, t] extends [t, Date]
-		? Date.constrain<kind, def>
-		: of<t, conform<constraint, Constraints>>
+			? number.constrain<kind, def>
+			: [string, t] extends [t, string]
+				? string.constrain<kind, def>
+				: [Date, t] extends [t, Date]
+					? Date.constrain<kind, def>
+					: of<t, conform<constraint, Constraints>>
 	: never
 
 export type normalizePrimitiveConstraintSchema<
@@ -257,32 +260,32 @@ export type schemaToConstraint<
 	? kind extends "regex"
 		? Matching<rule & string>
 		: kind extends "divisor"
-		? DivisibleBy<rule & number>
-		: kind extends "exactLength"
-		? Length<rule & number>
-		: kind extends "min"
-		? def extends { exclusive: true }
-			? MoreThan<rule & number>
-			: AtLeast<rule & number>
-		: kind extends "max"
-		? def extends { exclusive: true }
-			? LessThan<rule & number>
-			: AtMost<rule & number>
-		: kind extends "minLength"
-		? def extends { exclusive: true }
-			? MoreThanLength<rule & number>
-			: AtLeastLength<rule & number>
-		: kind extends "maxLength"
-		? def extends { exclusive: true }
-			? LessThanLength<rule & number>
-			: AtMostLength<rule & number>
-		: kind extends "after"
-		? def extends { exclusive: true }
-			? After<normalizeLimit<rule>>
-			: AtOrAfter<normalizeLimit<rule>>
-		: kind extends "before"
-		? def extends { exclusive: true }
-			? Before<normalizeLimit<rule>>
-			: AtOrBefore<normalizeLimit<rule>>
-		: Narrowed
+			? DivisibleBy<rule & number>
+			: kind extends "exactLength"
+				? Length<rule & number>
+				: kind extends "min"
+					? def extends { exclusive: true }
+						? MoreThan<rule & number>
+						: AtLeast<rule & number>
+					: kind extends "max"
+						? def extends { exclusive: true }
+							? LessThan<rule & number>
+							: AtMost<rule & number>
+						: kind extends "minLength"
+							? def extends { exclusive: true }
+								? MoreThanLength<rule & number>
+								: AtLeastLength<rule & number>
+							: kind extends "maxLength"
+								? def extends { exclusive: true }
+									? LessThanLength<rule & number>
+									: AtMostLength<rule & number>
+								: kind extends "after"
+									? def extends { exclusive: true }
+										? After<normalizeLimit<rule>>
+										: AtOrAfter<normalizeLimit<rule>>
+									: kind extends "before"
+										? def extends { exclusive: true }
+											? Before<normalizeLimit<rule>>
+											: AtOrBefore<normalizeLimit<rule>>
+										: Narrowed
 	: never

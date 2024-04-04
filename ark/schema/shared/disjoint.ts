@@ -143,9 +143,9 @@ export class Disjoint {
 		return `The following intersections result in unsatisfiable types:\n• ${reasons
 			.map(
 				({ path, disjoint }) =>
-					`${path}: ${describeReason(disjoint.l)} and ${describeReason(
-						disjoint.r
-					)}`
+					`${path}: ${describeReason(
+						disjoint.l
+					)} and ${describeReason(disjoint.r)}`
 			)
 			.join("\n• ")}`
 	}
@@ -199,5 +199,5 @@ const describeReason = (value: unknown): string =>
 	hasArkKind(value, "node")
 		? value.expression
 		: isArray(value)
-		? value.map(describeReason).join(" | ")
-		: String(value)
+			? value.map(describeReason).join(" | ")
+			: String(value)

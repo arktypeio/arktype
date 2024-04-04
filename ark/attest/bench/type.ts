@@ -59,7 +59,8 @@ const getInstantiationsWithFile = (fileText: string, fileName: string) => {
 	const env = getIsolatedEnv()
 	const file = createFile(env, fileName, fileText)
 	getProgram(env)?.emit(file)
-	const instantiationCount = getInternalTypeChecker(env).getInstantiationCount()
+	const instantiationCount =
+		getInternalTypeChecker(env).getInstantiationCount()
 	return instantiationCount
 }
 
@@ -100,7 +101,8 @@ const getInstantiationsContributedByNode = (
 	const baselineFile = getBaselineSourceFile(originalFile)
 
 	const baselineFileWithBenchBlock =
-		baselineFile + `\nconst $attestIsolatedBench = ${benchBlock.getFullText()}`
+		baselineFile +
+		`\nconst $attestIsolatedBench = ${benchBlock.getFullText()}`
 
 	if (!instantiationsByPath[fakePath]) {
 		console.log(`⏳ attest: Analyzing type assertions...`)

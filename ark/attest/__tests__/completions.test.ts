@@ -24,7 +24,7 @@ describe("completions", () => {
 		attest({ ark: "" } as Ark).completions({ "": ["type"] })
 		// prettier-ignore
 		// @ts-expect-error
-		attest({ ark: "t" } as Ark).completions({t: ["type"]})
+		attest({ ark: "t" } as Ark).completions({ t: ["type"] })
 		//@ts-expect-error
 		attest({ ark: "ty" } as Ark).completions({ ty: ["type"] })
 	})

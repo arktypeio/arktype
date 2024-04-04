@@ -108,36 +108,39 @@ type validateCases<cases, ctx extends MatchParserContext> = {
 	[def in keyof cases | keyof ctx["$"] | "default"]?: def extends "default"
 		? (In: getUnhandledBranches<ctx>) => unknown
 		: def extends validateWhenDefinition<def, ctx>
-		? (In: inferMatchBranch<def, ctx>) => unknown
-		: validateWhenDefinition<def, ctx>
+			? (In: inferMatchBranch<def, ctx>) => unknown
+			: validateWhenDefinition<def, ctx>
 }
 
 type errorCases<cases, ctx extends MatchParserContext> = {
 	[def in keyof cases]?: def extends "default"
 		? (In: getUnhandledBranches<ctx>) => unknown
 		: def extends validateWhenDefinition<def, ctx>
-		? (In: inferMatchBranch<def, ctx>) => unknown
-		: validateWhenDefinition<def, ctx>
+			? (In: inferMatchBranch<def, ctx>) => unknown
+			: validateWhenDefinition<def, ctx>
 } & {
 	[k in Exclude<keyof ctx["$"], keyof cases>]?: (
-		In: distillOut<inferIntersection<getUnhandledBranches<ctx>, ctx["$"][k]>>
+		In: distillOut<
+			inferIntersection<getUnhandledBranches<ctx>, ctx["$"][k]>
+		>
 	) => unknown
 } & {
 	default?: (In: getUnhandledBranches<ctx>) => unknown
 }
 
-export type CaseMatchParser<ctx extends MatchParserContext> = {
-	<cases>(
-		def: cases extends validateCases<cases, ctx>
-			? cases
-			: errorCases<cases, ctx>
-	): cases extends { default: (...args: never[]) => infer defaultReturn }
-		? finalizeWithDefault<
-				addBranches<ctx, unionToTuple<cases[Exclude<keyof cases, "default">]>>,
-				defaultReturn
-		  >
-		: ChainableMatchParser<addBranches<ctx, unionToTuple<valueOf<cases>>>>
-}
+export type CaseMatchParser<ctx extends MatchParserContext> = <cases>(
+	def: cases extends validateCases<cases, ctx>
+		? cases
+		: errorCases<cases, ctx>
+) => cases extends { default: (...args: never[]) => infer defaultReturn }
+	? finalizeWithDefault<
+			addBranches<
+				ctx,
+				unionToTuple<cases[Exclude<keyof cases, "default">]>
+			>,
+			defaultReturn
+		>
+	: ChainableMatchParser<addBranches<ctx, unionToTuple<valueOf<cases>>>>
 
 type finalizeWithDefault<
 	ctx extends MatchParserContext,

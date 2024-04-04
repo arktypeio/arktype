@@ -118,14 +118,18 @@ export namespace state {
 				branches: {
 					prefixes: []
 					leftBound: undefined
-					intersection: token extends "&" ? mergeToIntersection<s> : undefined
-					union: token extends "|" ? mergeToUnion<s> : s["branches"]["union"]
+					intersection: token extends "&"
+						? mergeToIntersection<s>
+						: undefined
+					union: token extends "|"
+						? mergeToUnion<s>
+						: s["branches"]["union"]
 				}
 				groups: s["groups"]
 				finalizer: s["finalizer"]
 				scanned: updateScanned<s["scanned"], s["unscanned"], unscanned>
 				unscanned: unscanned
-		  }>
+			}>
 
 	export type reduceLeftBound<
 		s extends StaticState,
@@ -141,7 +145,7 @@ export namespace state {
 						limit,
 						InvertedComparators[comparator]
 					>
-			  >
+				>
 			: from<{
 					root: undefined
 					branches: {
@@ -155,9 +159,13 @@ export namespace state {
 					}
 					groups: s["groups"]
 					finalizer: s["finalizer"]
-					scanned: updateScanned<s["scanned"], s["unscanned"], unscanned>
+					scanned: updateScanned<
+						s["scanned"],
+						s["unscanned"],
+						unscanned
+					>
 					unscanned: unscanned
-			  }>
+				}>
 		: state.error<writeUnpairableComparatorMessage<comparator>>
 
 	export type reduceRange<
@@ -228,15 +236,19 @@ export namespace state {
 	> = s["branches"]["leftBound"] extends {}
 		? openRangeError<s["branches"]["leftBound"]>
 		: s["groups"] extends popGroup<infer stack, infer top>
-		? from<{
-				groups: stack
-				branches: top
-				root: mergeToUnion<s>
-				finalizer: s["finalizer"]
-				scanned: updateScanned<s["scanned"], s["unscanned"], unscanned>
-				unscanned: unscanned
-		  }>
-		: state.error<writeUnmatchedGroupCloseMessage<unscanned>>
+			? from<{
+					groups: stack
+					branches: top
+					root: mergeToUnion<s>
+					finalizer: s["finalizer"]
+					scanned: updateScanned<
+						s["scanned"],
+						s["unscanned"],
+						unscanned
+					>
+					unscanned: unscanned
+				}>
+			: state.error<writeUnmatchedGroupCloseMessage<unscanned>>
 
 	export type reduceGroupOpen<
 		s extends StaticState,
@@ -263,7 +275,7 @@ export namespace state {
 					finalizer: finalizer
 					scanned: s["scanned"]
 					unscanned: s["unscanned"]
-			  }>
+				}>
 		: state.error<writeUnclosedGroupMessage<")">>
 
 	type openRangeError<range extends defined<BranchState["leftBound"]>> =
@@ -273,15 +285,15 @@ export namespace state {
 		s["branches"]["leftBound"] extends {}
 			? s["branches"]["leftBound"]["comparator"]
 			: s["branches"]["prefixes"] extends [
-					...unknown[],
-					infer tail extends string
-			  ]
-			? tail
-			: s["branches"]["intersection"] extends {}
-			? "&"
-			: s["branches"]["union"] extends {}
-			? "|"
-			: undefined
+						...unknown[],
+						infer tail extends string
+					]
+				? tail
+				: s["branches"]["intersection"] extends {}
+					? "&"
+					: s["branches"]["union"] extends {}
+						? "|"
+						: undefined
 
 	export type scanTo<s extends StaticState, unscanned extends string> = from<{
 		root: s["root"]

@@ -25,7 +25,14 @@ describe("literal", () => {
 			const sReference = reference(s)
 			const t = type(["===", true, "foo", 5, 1n, null, undefined, o, s])
 			attest<
-				true | "foo" | 5 | 1n | null | undefined | { ark: boolean } | typeof s
+				| true
+				| "foo"
+				| 5
+				| 1n
+				| null
+				| undefined
+				| { ark: boolean }
+				| typeof s
 			>(t.infer)
 			attest(t.json).equals([
 				{ unit: sReference },
@@ -52,7 +59,14 @@ describe("literal", () => {
 			const sReference = reference(s)
 			const t = type("===", "foo", 5, true, null, 1n, undefined, o, s)
 			attest<
-				true | "foo" | 5 | 1n | null | undefined | { ark: boolean } | typeof s
+				| true
+				| "foo"
+				| 5
+				| 1n
+				| null
+				| undefined
+				| { ark: boolean }
+				| typeof s
 			>(t.infer)
 			attest(t.json).equals([
 				{ unit: sReference },

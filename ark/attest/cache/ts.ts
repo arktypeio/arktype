@@ -71,7 +71,8 @@ const nearestBoundingCallExpression = (
 		? node
 				.getChildren()
 				.flatMap(
-					(child) => nearestBoundingCallExpression(child, position) ?? []
+					(child) =>
+						nearestBoundingCallExpression(child, position) ?? []
 				)[0] ?? (ts.isCallExpression(node) ? node : undefined)
 		: undefined
 
@@ -202,7 +203,8 @@ export const extractArgumentTypesFromCall = (
 ): ArgumentTypes => ({
 	args: call.arguments.map((arg) => getStringifiableType(arg)),
 	typeArgs:
-		call.typeArguments?.map((typeArg) => getStringifiableType(typeArg)) ?? []
+		call.typeArguments?.map((typeArg) => getStringifiableType(typeArg)) ??
+		[]
 })
 
 export const getDescendants = (node: ts.Node): ts.Node[] =>

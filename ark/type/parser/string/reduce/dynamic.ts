@@ -1,9 +1,9 @@
 import type { LimitLiteral, Schema } from "@arktype/schema"
 import {
 	isKeyOf,
+	type requireKeys,
 	throwInternalError,
-	throwParseError,
-	type requireKeys
+	throwParseError
 } from "@arktype/util"
 import type { ParseContext } from "../../../scope.js"
 import type { InfixOperator } from "../../semantic/infer.js"
@@ -12,24 +12,24 @@ import { parseOperator } from "../shift/operator/operator.js"
 import { Scanner } from "../shift/scanner.js"
 import { parseUntilFinalizer } from "../string.js"
 import {
+	type Comparator,
+	type MinComparator,
+	type OpenLeftBound,
+	type StringifiablePrefixOperator,
 	invertedComparators,
 	minComparators,
 	writeMultipleLeftBoundsMessage,
 	writeOpenRangeMessage,
 	writeUnclosedGroupMessage,
 	writeUnmatchedGroupCloseMessage,
-	writeUnpairableComparatorMessage,
-	type Comparator,
-	type MinComparator,
-	type OpenLeftBound,
-	type StringifiablePrefixOperator
+	writeUnpairableComparatorMessage
 } from "./shared.js"
 
 type BranchState = {
 	prefixes: StringifiablePrefixOperator[]
-	leftBound?: OpenLeftBound
-	intersection?: Schema
-	union?: Schema
+	leftBound: OpenLeftBound | null
+	intersection: Schema | null
+	union: Schema | null
 }
 
 export type DynamicStateWithRoot = requireKeys<DynamicState, "root">
@@ -38,7 +38,10 @@ export class DynamicState {
 	readonly scanner: Scanner
 	root: Schema | undefined
 	branches: BranchState = {
-		prefixes: []
+		prefixes: [],
+		leftBound: null,
+		intersection: null,
+		union: null
 	}
 	finalizer: Scanner.FinalizingLookahead | undefined
 	groups: BranchState[] = []
@@ -103,12 +106,12 @@ export class DynamicState {
 
 	finalizeBranches(): void {
 		this.assertRangeUnset()
-		if (this.branches["union"]) {
+		if (this.branches.union) {
 			this.pushRootToBranch("|")
-			this.root = this.branches["union"]
-		} else if (this.branches["intersection"]) {
+			this.root = this.branches.union
+		} else if (this.branches.intersection) {
 			this.pushRootToBranch("&")
-			this.root = this.branches["intersection"]
+			this.root = this.branches.intersection
 		} else {
 			this.applyPrefixes()
 		}
@@ -118,7 +121,9 @@ export class DynamicState {
 		this.finalizeBranches()
 		const topBranchState = this.groups.pop()
 		if (!topBranchState) {
-			return this.error(writeUnmatchedGroupCloseMessage(this.scanner.unscanned))
+			return this.error(
+				writeUnmatchedGroupCloseMessage(this.scanner.unscanned)
+			)
 		}
 		this.branches = topBranchState
 	}
@@ -141,13 +146,13 @@ export class DynamicState {
 		this.assertRangeUnset()
 		this.applyPrefixes()
 		const root = this.root!
-		this.branches["intersection"] =
-			this.branches["intersection"]?.intersectSatisfiable(root) ?? root
+		this.branches.intersection =
+			this.branches.intersection?.intersectSatisfiable(root) ?? root
 		if (token === "|") {
-			this.branches["union"] =
-				this.branches["union"]?.union(this.branches["intersection"]) ??
-				this.branches["intersection"]
-			delete this.branches["intersection"]
+			this.branches.union =
+				this.branches.union?.union(this.branches.intersection) ??
+				this.branches.intersection
+			this.branches.intersection = null
 		}
 		this.root = undefined
 	}
@@ -180,7 +185,10 @@ export class DynamicState {
 	reduceGroupOpen(): void {
 		this.groups.push(this.branches)
 		this.branches = {
-			prefixes: []
+			prefixes: [],
+			leftBound: null,
+			union: null,
+			intersection: null
 		}
 	}
 
@@ -192,11 +200,11 @@ export class DynamicState {
 		return (
 			this.branches.leftBound?.comparator ??
 			this.branches.prefixes.at(-1) ??
-			(this.branches["intersection"]
+			(this.branches.intersection
 				? "&"
-				: this.branches["union"]
-				? "|"
-				: undefined)
+				: this.branches.union
+					? "|"
+					: undefined)
 		)
 	}
 

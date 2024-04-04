@@ -41,7 +41,9 @@ export const indexImplementation = implementNode<IndexDeclaration>({
 			parse: (def, ctx) => {
 				const key = ctx.$.schema(def)
 				if (!key.extends(internalKeywords.propertyKey))
-					return throwParseError(writeInvalidPropertyKeyMessage(key.expression))
+					return throwParseError(
+						writeInvalidPropertyKeyMessage(key.expression)
+					)
 				return key
 			}
 		},
@@ -52,7 +54,8 @@ export const indexImplementation = implementNode<IndexDeclaration>({
 	},
 	normalize: (def) => def,
 	defaults: {
-		description: (node) => `[${node.key.expression}]: ${node.value.description}`
+		description: (node) =>
+			`[${node.key.expression}]: ${node.value.description}`
 	},
 	intersections: {
 		index: (l, r) => l

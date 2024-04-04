@@ -10,9 +10,9 @@ export type astToString<ast> = ast extends PostfixExpression<
 		? `${astToString<operand>}[]`
 		: never
 	: ast extends InfixExpression<infer operator, infer l, infer r>
-	? operator extends "&" | "|" | "%" | Comparator
-		? `${astToString<l>} ${operator} ${astToString<r>}`
-		: never
-	: ast extends Stringifiable
-	? `${ast extends bigint ? `${ast}n` : ast}`
-	: "..."
+		? operator extends "&" | "|" | "%" | Comparator
+			? `${astToString<l>} ${operator} ${astToString<r>}`
+			: never
+		: ast extends Stringifiable
+			? `${ast extends bigint ? `${ast}n` : ast}`
+			: "..."

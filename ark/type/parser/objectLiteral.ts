@@ -91,11 +91,11 @@ type inferObjectLiteralInner<def extends object, $, args> = {
 	// since def is a const parameter, we remove the readonly modifier here
 	// support for builtin readonly tracked here:
 	// https://github.com/arktypeio/arktype/issues/808
-	-readonly [k in keyof def as nonOptionalKeyFrom<k, $, args>]: inferDefinition<
-		def[k],
+	-readonly [k in keyof def as nonOptionalKeyFrom<
+		k,
 		$,
 		args
-	>
+	>]: inferDefinition<def[k], $, args>
 } & {
 	-readonly [k in keyof def as optionalKeyFrom<k>]?: inferDefinition<
 		def[k],
@@ -109,7 +109,7 @@ export type inferObjectLiteral<def extends object, $, args> = evaluate<
 		? merge<
 				inferDefinition<def["..."], $, args>,
 				inferObjectLiteralInner<def, $, args>
-		  >
+			>
 		: inferObjectLiteralInner<def, $, args>
 >
 
@@ -117,17 +117,19 @@ export type validateObjectLiteral<def, $, args> = {
 	[k in keyof def]: k extends IndexKey<infer indexDef>
 		? validateString<indexDef, $, args> extends ErrorMessage<infer message>
 			? // add a nominal type here to avoid allowing the error message as input
-			  indexParseError<message>
+				indexParseError<message>
 			: inferDefinition<indexDef, $, args> extends PropertyKey
-			? // if the indexDef is syntactically and semantically valid,
-			  // move on to the validating the value definition
-			  validateDefinition<def[k], $, args>
-			: indexParseError<writeInvalidPropertyKeyMessage<indexDef>>
+				? // if the indexDef is syntactically and semantically valid,
+					// move on to the validating the value definition
+					validateDefinition<def[k], $, args>
+				: indexParseError<writeInvalidPropertyKeyMessage<indexDef>>
 		: k extends "..."
-		? inferDefinition<def[k], $, args> extends object
-			? validateDefinition<def[k], $, args>
-			: indexParseError<writeInvalidSpreadTypeMessage<astToString<def[k]>>>
-		: validateDefinition<def[k], $, args>
+			? inferDefinition<def[k], $, args> extends object
+				? validateDefinition<def[k], $, args>
+				: indexParseError<
+						writeInvalidSpreadTypeMessage<astToString<def[k]>>
+					>
+			: validateDefinition<def[k], $, args>
 }
 
 type nonOptionalKeyFrom<k, $, args> = parseKey<k> extends PreparsedKey<
@@ -136,9 +138,9 @@ type nonOptionalKeyFrom<k, $, args> = parseKey<k> extends PreparsedKey<
 >
 	? inner
 	: parseKey<k> extends PreparsedKey<"index", infer inner>
-	? inferDefinition<inner, $, args> & Key
-	: // spread key is handled at the type root so is handled neither here nor in optionalKeyFrom
-	  never
+		? inferDefinition<inner, $, args> & Key
+		: // spread key is handled at the type root so is handled neither here nor in optionalKeyFrom
+			never
 
 type optionalKeyFrom<k> = parseKey<k> extends PreparsedKey<
 	"optional",
@@ -172,46 +174,46 @@ const parseKey = (key: Key): PreparsedKey =>
 	typeof key === "symbol"
 		? { inner: key, kind: "required" }
 		: key.at(-1) === "?"
-		? key.at(-2) === Scanner.escapeToken
-			? { inner: `${key.slice(0, -2)}?`, kind: "required" }
-			: {
-					inner: key.slice(0, -1),
-					kind: "optional"
-			  }
-		: key[0] === "[" && key.at(-1) === "]"
-		? { inner: key.slice(1, -1), kind: "index" }
-		: key === "..."
-		? { inner: "...", kind: "spread" }
-		: { inner: key === "\\..." ? "..." : key, kind: "required" }
+			? key.at(-2) === Scanner.escapeToken
+				? { inner: `${key.slice(0, -2)}?`, kind: "required" }
+				: {
+						inner: key.slice(0, -1),
+						kind: "optional"
+					}
+			: key[0] === "[" && key.at(-1) === "]"
+				? { inner: key.slice(1, -1), kind: "index" }
+				: key === "..."
+					? { inner: "...", kind: "spread" }
+					: { inner: key === "\\..." ? "..." : key, kind: "required" }
 
 type parseKey<k> = k extends `${infer inner}?`
 	? inner extends `${infer baseName}${Scanner.EscapeToken}`
 		? PreparsedKey.from<{
 				kind: "required"
 				inner: `${baseName}?`
-		  }>
+			}>
 		: PreparsedKey.from<{
 				kind: "optional"
 				inner: inner
-		  }>
+			}>
 	: k extends "..."
-	? PreparsedKey.from<{ kind: "spread"; inner: "..." }>
-	: k extends `${Scanner.EscapeToken}...`
-	? PreparsedKey.from<{ kind: "required"; inner: "..." }>
-	: k extends IndexKey<infer def>
-	? PreparsedKey.from<{
-			kind: "index"
-			inner: def
-	  }>
-	: PreparsedKey.from<{
-			kind: "required"
-			inner: k extends `${Scanner.EscapeToken}${infer escapedIndexKey extends
-				IndexKey}`
-				? escapedIndexKey
-				: k extends Key
-				? k
-				: `${k & number}`
-	  }>
+		? PreparsedKey.from<{ kind: "spread"; inner: "..." }>
+		: k extends `${Scanner.EscapeToken}...`
+			? PreparsedKey.from<{ kind: "required"; inner: "..." }>
+			: k extends IndexKey<infer def>
+				? PreparsedKey.from<{
+						kind: "index"
+						inner: def
+					}>
+				: PreparsedKey.from<{
+						kind: "required"
+						inner: k extends `${Scanner.EscapeToken}${infer escapedIndexKey extends
+							IndexKey}`
+							? escapedIndexKey
+							: k extends Key
+								? k
+								: `${k & number}`
+					}>
 
 declare const indexParseSymbol: unique symbol
 

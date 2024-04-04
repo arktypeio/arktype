@@ -20,7 +20,10 @@ export type TimeAssertionName = StatName | "mark"
 
 export const stats = {
 	mean: (callTimes: number[]) => {
-		const totalCallMs = callTimes.reduce((sum, duration) => sum + duration, 0)
+		const totalCallMs = callTimes.reduce(
+			(sum, duration) => sum + duration,
+			0
+		)
 		return totalCallMs / callTimes.length
 	},
 	median: (callTimes: number[]) => {
@@ -60,7 +63,8 @@ class ResultCollector {
 	}
 
 	done() {
-		const metMsTarget = performance.now() - this.benchStart >= this.bounds.ms
+		const metMsTarget =
+			performance.now() - this.benchStart >= this.bounds.ms
 		const metCountTarget = this.results.length >= this.bounds.count
 		return metMsTarget || metCountTarget
 	}
@@ -143,7 +147,10 @@ export class BenchAssertions<
 			return this.markAssertion(baseline as any, callTimes)
 		}
 		const ms: number = stats[name as StatName](callTimes)
-		const comparison = createTimeComparison(ms, baseline as Measure<TimeUnit>)
+		const comparison = createTimeComparison(
+			ms,
+			baseline as Measure<TimeUnit>
+		)
 		console.group(`${this.label} (${name}):`)
 		compareToBaseline(comparison, this.ctx)
 		console.groupEnd()
@@ -163,7 +170,7 @@ export class BenchAssertions<
 			baseline
 				? Object.entries(baseline)
 				: // If nothing was passed, gather all available baselines by setting their values to undefined.
-				  Object.entries(stats).map(([kind]) => [kind, undefined])
+					Object.entries(stats).map(([kind]) => [kind, undefined])
 		) as any
 		const markResults = Object.fromEntries(
 			markEntries.map(([kind, kindBaseline]) => {
@@ -208,7 +215,11 @@ export class BenchAssertions<
 		}
 		let assertions = chainableNoOpProxy
 		try {
-			assertions = this.createAssertion(name, baseline, this.callTimesSync())
+			assertions = this.createAssertion(
+				name,
+				baseline,
+				this.callTimesSync()
+			)
 		} catch (e) {
 			this.addUnhandledBenchException(e)
 		}
@@ -234,7 +245,10 @@ export class BenchAssertions<
 
 	mean(baseline?: Measure<TimeUnit>) {
 		this.ctx.lastSnapCallPosition = caller()
-		return this.createStatMethod("mean", baseline) as any as ReturnedAssertions
+		return this.createStatMethod(
+			"mean",
+			baseline
+		) as any as ReturnedAssertions
 	}
 
 	mark(baseline?: MarkMeasure) {

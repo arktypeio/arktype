@@ -1,0 +1,30 @@
+{
+	"$schema": "node_modules/@biomejs/biome/configuration_schema.json",
+	"formatter": {
+		"indentWidth": 4
+	},
+	"javascript": {
+		"formatter": {
+			"semicolons": "asNeeded",
+			"trailingComma": "none"
+		}
+	},
+	"linter": {
+		"rules": {
+			"suspicious": {
+				"noExplicitAny": "off",
+				"noRedeclare": "off"
+			},
+			"complexity": {
+				"noBannedTypes": "off",
+				"noForEach": "off"
+			},
+			"style": {
+				"noNonNullAssertion": "off"
+			},
+			"correctness": {
+				"noVoidTypeReturn": "off"
+			}
+		}
+	}
+}

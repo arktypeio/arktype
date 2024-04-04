@@ -69,7 +69,8 @@ describe("errors", () => {
 				domain: {
 					expected: (inner) => `custom expected ${inner.domain}`,
 					actual: (data) => `custom actual ${data}`,
-					problem: (ctx) => `custom problem ${ctx.expected} ${ctx.actual}`,
+					problem: (ctx) =>
+						`custom problem ${ctx.expected} ${ctx.actual}`,
 					message: (ctx) => `custom message ${ctx.problem}`
 				}
 			}

@@ -18,7 +18,7 @@ export type join<
 			tail,
 			delimiter,
 			result extends "" ? head : `${result}${delimiter}${head}`
-	  >
+		>
 	: result
 
 export type split<
@@ -65,7 +65,7 @@ export type filter<
 			tail,
 			constraint,
 			head extends constraint ? [...result, head] : result
-	  >
+		>
 	: result
 
 export type array<t = unknown> = readonly t[]
@@ -131,7 +131,7 @@ export const arrayFrom = <t>(
 ): t extends array
 	? [t] extends [null]
 		? // check for any/never
-		  t[]
+			t[]
 		: t
 	: t[] => (Array.isArray(data) ? data : [data]) as never
 

@@ -90,19 +90,27 @@ export class PropsGroup extends DynamicBase<PropsGroupInput> {
 				js.let("matched", false)
 			}
 			this.index?.forEach((node) => {
-				js.if(`${js.invoke(node.key, { arg: "k", kind: "Allows" })}`, () => {
-					if (js.traversalKind === "Allows") {
-						js.if(`!${js.invoke(node.value, { arg: `${js.data}[k]` })}`, () =>
-							js.return(false)
-						)
-					} else {
-						js.line(js.invoke(node.value, { arg: `${js.data}[k]` }))
+				js.if(
+					`${js.invoke(node.key, { arg: "k", kind: "Allows" })}`,
+					() => {
+						if (js.traversalKind === "Allows") {
+							js.if(
+								`!${js.invoke(node.value, {
+									arg: `${js.data}[k]`
+								})}`,
+								() => js.return(false)
+							)
+						} else {
+							js.line(
+								js.invoke(node.value, { arg: `${js.data}[k]` })
+							)
+						}
+						if (this.onExtraneousKey) {
+							js.set("matched", true)
+						}
+						return js
 					}
-					if (this.onExtraneousKey) {
-						js.set("matched", true)
-					}
-					return js
-				})
+				)
 			})
 			if (this.onExtraneousKey) {
 				if (this.prop?.length !== 0) {

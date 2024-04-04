@@ -67,7 +67,7 @@ type nodeConfigForKind<kind extends NodeKind> = Readonly<
 					actual?: ActualWriter<kind>
 					problem?: ProblemWriter<kind>
 					message?: MessageWriter<kind>
-			  }
+				}
 			: {})
 	>
 >
@@ -250,14 +250,16 @@ export class BaseScope<$ = any> {
 		const resolution = hasArkKind(def, "genericNode")
 			? validateUninstantiatedGenericNode(def)
 			: hasArkKind(def, "moduleNode")
-			? throwParseError(writeMissingSubmoduleAccessMessage(name))
-			: this.schema(def as never, { args: {} })
+				? throwParseError(writeMissingSubmoduleAccessMessage(name))
+				: this.schema(def as never, { args: {} })
 		this.resolutions[name] = resolution
 		return resolution
 	}
 
 	/** If name is a valid reference to a submodule alias, return its resolution  */
-	private maybeResolveSubalias(name: string): Schema | GenericNode | undefined {
+	private maybeResolveSubalias(
+		name: string
+	): Schema | GenericNode | undefined {
 		const dotIndex = name.indexOf(".")
 		if (dotIndex === -1) {
 			return

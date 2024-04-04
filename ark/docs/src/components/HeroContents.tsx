@@ -18,7 +18,12 @@ export const HeroContents = () => (
 				justifyContent: "space-between"
 			}}
 		>
-			<PlatformCloud main="ts" right="vscode" top="neovim" left="intellij" />
+			<PlatformCloud
+				main="ts"
+				right="vscode"
+				top="neovim"
+				left="intellij"
+			/>
 			<PlatformCloud main="js" right="chromium" top="node" left="bun" />
 		</div>
 		<FloatYourBoat />

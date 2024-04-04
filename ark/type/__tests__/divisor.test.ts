@@ -35,7 +35,9 @@ describe("divisibility", () => {
 			attest<number>(type(`number%${d}`).infer)
 		})
 		it("fails at runtime on non-integer divisor", () => {
-			attest(() => type("number%2.3")).throws(writeInvalidDivisorMessage("2.3"))
+			attest(() => type("number%2.3")).throws(
+				writeInvalidDivisorMessage("2.3")
+			)
 		})
 		it("non-numeric divisor", () => {
 			// @ts-expect-error
@@ -64,7 +66,9 @@ describe("divisibility", () => {
 		it("overlapping", () => {
 			// @ts-expect-error
 			attest(() => type("(number|string)%10")).throwsAndHasTypeError(
-				writeIndivisibleMessage(keywordNodes.number.union(keywordNodes.string))
+				writeIndivisibleMessage(
+					keywordNodes.number.union(keywordNodes.string)
+				)
 			)
 		})
 	})

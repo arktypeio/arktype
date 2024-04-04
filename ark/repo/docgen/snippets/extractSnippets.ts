@@ -77,7 +77,9 @@ const extractLabeledSnippets = (
 					)
 				}
 				labeledSnippets[lastOpenBlock.id] = {
-					text: linesToOutput(lines.slice(lastOpenBlock.lineNumber, lineNumber))
+					text: linesToOutput(
+						lines.slice(lastOpenBlock.lineNumber, lineNumber)
+					)
 				}
 			} else {
 				labeledSnippets[parsedSnip.id] = {

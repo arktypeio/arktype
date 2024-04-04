@@ -43,10 +43,10 @@ export type inferExpression<
 			ast[0]["def"],
 			ast[0]["$"]["t"] extends UnparsedScope
 				? // If the generic was defined in the current scope, its definition can be
-				  // resolved using the same scope as that of the input args.
-				  $
+					// resolved using the same scope as that of the input args.
+					$
 				: // Otherwise, use the scope that was explicitly associated with it.
-				  ast[0]["$"],
+					ast[0]["$"],
 			{
 				// Using keyof g["params"] & number here results in the element types
 				// being mixed- another reason TS should not have separate `${number}` and number keys!
@@ -57,31 +57,39 @@ export type inferExpression<
 					args
 				>
 			}
-	  >
+		>
 	: ast[1] extends "[]"
-	? inferConstrainableAst<ast[0], $, args>[]
-	: ast[1] extends "|"
-	?
-			| inferConstrainableAst<ast[0], $, args>
-			| inferConstrainableAst<ast[2], $, args>
-	: ast[1] extends "&"
-	? inferIntersection<
-			inferConstrainableAst<ast[0], $, args>,
-			inferConstrainableAst<ast[2], $, args>
-	  >
-	: ast[1] extends Comparator
-	? ast[0] extends LimitLiteral
-		? constrainBound<inferConstrainableAst<ast[2], $, args>, ast[1], ast[0]>
-		: constrainBound<inferConstrainableAst<ast[0], $, args>, ast[1], ast[2]>
-	: ast[1] extends "%"
-	? constrain<
-			inferConstrainableAst<ast[0], $, args>,
-			"divisor",
-			ast[2] & number
-	  >
-	: ast[0] extends "keyof"
-	? keyof inferConstrainableAst<ast[1], $, args>
-	: never
+		? inferConstrainableAst<ast[0], $, args>[]
+		: ast[1] extends "|"
+			?
+					| inferConstrainableAst<ast[0], $, args>
+					| inferConstrainableAst<ast[2], $, args>
+			: ast[1] extends "&"
+				? inferIntersection<
+						inferConstrainableAst<ast[0], $, args>,
+						inferConstrainableAst<ast[2], $, args>
+					>
+				: ast[1] extends Comparator
+					? ast[0] extends LimitLiteral
+						? constrainBound<
+								inferConstrainableAst<ast[2], $, args>,
+								ast[1],
+								ast[0]
+							>
+						: constrainBound<
+								inferConstrainableAst<ast[0], $, args>,
+								ast[1],
+								ast[2]
+							>
+					: ast[1] extends "%"
+						? constrain<
+								inferConstrainableAst<ast[0], $, args>,
+								"divisor",
+								ast[2] & number
+							>
+						: ast[0] extends "keyof"
+							? keyof inferConstrainableAst<ast[1], $, args>
+							: never
 
 export type constrainBound<
 	constrainableIn,
@@ -92,8 +100,8 @@ export type constrainBound<
 		? In extends number
 			? limit
 			: In extends Date
-			? Date.literal<normalizeLimit<limit>>
-			: constrain<constrainableIn, "exactLength", limit & number>
+				? Date.literal<normalizeLimit<limit>>
+				: constrain<constrainableIn, "exactLength", limit & number>
 		: constrain<
 				constrainableIn,
 				In extends number
@@ -101,17 +109,17 @@ export type constrainBound<
 						? "min"
 						: "max"
 					: In extends string | array
-					? comparator extends MinComparator
-						? "minLength"
-						: "maxLength"
-					: comparator extends MinComparator
-					? "after"
-					: "before",
+						? comparator extends MinComparator
+							? "minLength"
+							: "maxLength"
+						: comparator extends MinComparator
+							? "after"
+							: "before",
 				{
 					rule: normalizeLimit<limit>
 					exclusive: comparator extends ">" | "<" ? true : false
 				}
-		  >
+			>
 	: never
 
 export type PrefixOperator = "keyof" | "instanceof" | "===" | "node"
@@ -139,17 +147,17 @@ export type InfixExpression<
 export type inferTerminal<token, $, args> = token extends keyof args | keyof $
 	? resolve<token, $, args>
 	: token extends keyof ambient
-	? ambient[token]
-	: token extends StringLiteral<infer text>
-	? text
-	: token extends NumberLiteral<infer value>
-	? value
-	: token extends BigintLiteral<infer value>
-	? value
-	: token extends RegexLiteral<infer source>
-	? string.matching<source>
-	: token extends DateLiteral<infer source>
-	? Date.literal<source>
-	: // doing this last allows us to infer never if it isn't valid rather than check
-	  // if it's a valid submodule reference ahead of time
-	  tryInferSubmoduleReference<$, token>
+		? ambient[token]
+		: token extends StringLiteral<infer text>
+			? text
+			: token extends NumberLiteral<infer value>
+				? value
+				: token extends BigintLiteral<infer value>
+					? value
+					: token extends RegexLiteral<infer source>
+						? string.matching<source>
+						: token extends DateLiteral<infer source>
+							? Date.literal<source>
+							: // doing this last allows us to infer never if it isn't valid rather than check
+								// if it's a valid submodule reference ahead of time
+								tryInferSubmoduleReference<$, token>

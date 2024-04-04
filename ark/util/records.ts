@@ -32,12 +32,16 @@ type requireRecurse<
 > = depth["length"] extends maxDepth
 	? o
 	: o extends object
-	? o extends (...args: never[]) => unknown
-		? o
-		: {
-				[k in keyof o]-?: requireRecurse<o[k], [...depth, 1], maxDepth>
-		  }
-	: o
+		? o extends (...args: never[]) => unknown
+			? o
+			: {
+					[k in keyof o]-?: requireRecurse<
+						o[k],
+						[...depth, 1],
+						maxDepth
+					>
+				}
+		: o
 
 export type PartialRecord<k extends PropertyKey = PropertyKey, v = unknown> = {
 	[_ in k]?: v
@@ -60,12 +64,16 @@ type mutableRecurse<
 > = depth["length"] extends maxDepth
 	? o
 	: o extends object
-	? o extends (...args: never[]) => unknown
-		? o
-		: {
-				-readonly [k in keyof o]: mutableRecurse<o[k], [...depth, 1], maxDepth>
-		  }
-	: o
+		? o extends (...args: never[]) => unknown
+			? o
+			: {
+					-readonly [k in keyof o]: mutableRecurse<
+						o[k],
+						[...depth, 1],
+						maxDepth
+					>
+				}
+		: o
 
 export type entryOf<o> = {
 	[k in keyof o]-?: [k, o[k] & ({} | null)]
@@ -96,8 +104,12 @@ export type keysOf<o> = o extends array
 		? `${number}`
 		: keyof o & `${number}`
 	: {
-			[K in keyof o]: K extends string ? K : K extends number ? `${K}` : never
-	  }[keyof o]
+			[K in keyof o]: K extends string
+				? K
+				: K extends number
+					? `${K}`
+					: never
+		}[keyof o]
 
 export const keysOf = <o extends object>(o: o): keysOf<o>[] =>
 	Object.keys(o) as never
@@ -159,7 +171,9 @@ export const InnerDynamicBase = class {
 	constructor(properties: object) {
 		Object.assign(this, properties)
 	}
-} as new <t extends object>(base: t) => t
+} as new <t extends object>(
+	base: t
+) => t
 
 /** @ts-expect-error (needed to extend `t`, but safe given ShallowClone's implementation) **/
 export class DynamicBase<t extends object> extends InnerDynamicBase<t> {}
@@ -214,7 +228,9 @@ export const stringAndSymbolicEntriesOf = (
 export type Key = string | symbol
 
 export type invert<t extends Record<PropertyKey, PropertyKey>> = {
-	[k in t[keyof t]]: { [k2 in keyof t]: t[k2] extends k ? k2 : never }[keyof t]
+	[k in t[keyof t]]: {
+		[k2 in keyof t]: t[k2] extends k ? k2 : never
+	}[keyof t]
 } & unknown
 
 export const invert = <t extends Record<PropertyKey, PropertyKey>>(

@@ -119,8 +119,8 @@ export type tryParseInteger<
 	? bigint extends value
 		? writeMalformedNumericLiteralMessage<token, "integer">
 		: `${value}` extends NumberLiteral<infer valueAsNumber>
-		? valueAsNumber
-		: never
+			? valueAsNumber
+			: never
 	: messageOnFail
 
 export type parseInteger<token extends string> = token extends IntegerLiteral<
@@ -150,7 +150,9 @@ const parseNumeric = <errorOnFail extends boolean | string>(
 			if (options?.strict) {
 				return isWellFormed(token, kind)
 					? value
-					: throwParseError(writeMalformedNumericLiteralMessage(token, kind))
+					: throwParseError(
+							writeMalformedNumericLiteralMessage(token, kind)
+						)
 			}
 			return value
 		}
@@ -161,7 +163,7 @@ const parseNumeric = <errorOnFail extends boolean | string>(
 					options?.errorOnFail === true
 						? `Failed to parse ${numericLiteralDescriptions[kind]} from '${token}'`
 						: options?.errorOnFail
-			  )
+				)
 			: undefined
 	) as never
 }
@@ -183,6 +185,8 @@ export const tryParseWellFormedBigint = (def: string): bigint | undefined => {
 	if (integerLikeMatcher.test(maybeIntegerLiteral)) {
 		// If the definition looks like a bigint but is
 		// not well-formed, throw.
-		return throwParseError(writeMalformedNumericLiteralMessage(def, "bigint"))
+		return throwParseError(
+			writeMalformedNumericLiteralMessage(def, "bigint")
+		)
 	}
 }

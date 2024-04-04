@@ -18,12 +18,13 @@ export abstract class BaseRange<
 		this.boundOperandKind === "value"
 			? `data`
 			: this.boundOperandKind === "length"
-			? `data.length`
-			: `data.valueOf()`
+				? `data.length`
+				: `data.valueOf()`
 	readonly comparator = compileComparator(this.kind, this.exclusive)
 	readonly numericLimit = this.rule.valueOf()
 	readonly expression = `${this.comparator}${this.rule}`
-	readonly compiledCondition = `${this.compiledActual} ${this.comparator} ${this.numericLimit}`
+	readonly compiledCondition =
+		`${this.compiledActual} ${this.comparator} ${this.numericLimit}`
 	readonly compiledNegation = `${this.compiledActual} ${
 		negatedComparators[this.comparator]
 	} ${this.numericLimit}`
@@ -53,14 +54,19 @@ export abstract class BaseRange<
 
 	overlapsRange(r: Node<pairedRangeKind<d["kind"]>>): boolean {
 		if (this.isStricterThan(r)) return false
-		if (this.numericLimit === r.numericLimit && (this.exclusive || r.exclusive))
+		if (
+			this.numericLimit === r.numericLimit &&
+			(this.exclusive || r.exclusive)
+		)
 			return false
 		return true
 	}
 
 	overlapIsUnit(r: Node<pairedRangeKind<d["kind"]>>): boolean {
 		return (
-			this.numericLimit === r.numericLimit && !this.exclusive && !r.exclusive
+			this.numericLimit === r.numericLimit &&
+			!this.exclusive &&
+			!r.exclusive
 		)
 	}
 }

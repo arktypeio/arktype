@@ -103,7 +103,7 @@ type narrowTuple<t extends readonly unknown[]> = t extends readonly [
 export type narrow<t> = t extends Primitive
 	? t
 	: t extends readonly unknown[]
-	? narrowTuple<t>
-	: { [k in keyof t]: narrow<t[k]> }
+		? narrowTuple<t>
+		: { [k in keyof t]: narrow<t[k]> }
 
 export const narrow = <t>(t: narrow<t>): t => t as t

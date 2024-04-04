@@ -1,26 +1,12 @@
 {
-	"editor.defaultFormatter": "esbenp.prettier-vscode",
-	"editor.codeActionsOnSave": [
-		"editor.formatOnSave",
-		"source.fixAll.eslint",
-		// "source.addMissingImports",
-		"source.sortImports"
-	],
-	"eslint.codeActionsOnSave.rules": [
-		"object-shorthand",
-		"@typescript-eslint/consistent-type-imports",
-		"import/no-duplicates",
-		"@typescript-eslint/no-import-type-side-effects"
-	],
-	"eslint.codeActionsOnSave.mode": "problems",
-	"eslint.run": "onSave",
-	"eslint.rules.customizations": [
-		// These will still be caught when run from the CLI, but I see them too
-		// often I'm in the middle of writing something.
-		{ "rule": "@typescript-eslint/no-unused-vars", "severity": "off" },
-		{ "rule": "unused-imports/no-unused-imports", "severity": "off" },
-		{ "rule": "no-empty", "severity": "off" }
-	],
+	"editor.defaultFormatter": "biomejs.biome",
+	"[javascript]": {
+		"editor.defaultFormatter": "biomejs.biome"
+	},
+	"editor.codeActionsOnSave": {
+		"quickfix.biome": "explicit",
+		"source.organizeImports.biome": "explicit"
+	},
 	"typescript.preferences.autoImportFileExcludePatterns": [
 		"out",
 		// too many overlapping names, easy to import in schema/arktype where we don't want it
@@ -30,8 +16,6 @@
 		// "./ark/schema/main.ts"
 	],
 	"typescript.tsserver.experimental.enableProjectDiagnostics": true,
-	"prettier.ignorePath": "ark/repo/.prettierignore",
-	"prettier.prettierPath": "./node_modules/prettier/index.cjs",
 	// IF YOU UPDATE THE MOCHA CONFIG HERE, PLEASE ALSO UPDATE package.json/mocha AND ark/repo/mocha.jsonc
 	"mochaExplorer.nodeArgv": ["--import=tsx"],
 	// ignore attest since it requires type information

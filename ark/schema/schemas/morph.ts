@@ -114,17 +114,17 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 			return inTersection instanceof Disjoint
 				? inTersection
 				: inTersection.kind === "union"
-				? $.node(
-						"union",
-						inTersection.branches.map((branch) => ({
+					? $.node(
+							"union",
+							inTersection.branches.map((branch) => ({
+								...l.inner,
+								in: branch
+							}))
+						)
+					: $.node("morph", {
 							...l.inner,
-							in: branch
-						}))
-				  )
-				: $.node("morph", {
-						...l.inner,
-						in: inTersection
-				  })
+							in: inTersection
+						})
 		})
 	}
 })
@@ -138,7 +138,8 @@ export class MorphNode<t = any, $ = any> extends BaseSchema<
 	static implementation: nodeImplementationOf<MorphDeclaration> =
 		morphImplementation
 
-	readonly expression = `(In: ${this.in.expression}) => Out<${this.out.expression}>`
+	readonly expression =
+		`(In: ${this.in.expression}) => Out<${this.out.expression}>`
 
 	readonly serializedMorphs = this.morphs.map((morph) => reference(morph))
 
@@ -155,7 +156,9 @@ export class MorphNode<t = any, $ = any> extends BaseSchema<
 			js.return(js.invoke(this.in))
 			return
 		}
-		this.serializedMorphs.forEach((name) => js.line(`ctx.queueMorph(${name})`))
+		this.serializedMorphs.forEach((name) =>
+			js.line(`ctx.queueMorph(${name})`)
+		)
 		js.line(js.invoke(this.in))
 	}
 
@@ -179,7 +182,7 @@ export type inferMorphOut<morph extends Morph> = morph extends Morph<
 	? out extends ArkResult<unknown, infer innerOut>
 		? out extends null
 			? // avoid treating any/never as ArkResult
-			  out
+				out
 			: innerOut
 		: Exclude<out, ArkTypeError>
 	: never
@@ -221,18 +224,24 @@ type distillRecurse<
 > = unknown extends t
 	? unknown
 	: t extends MorphAst<infer i, infer o>
-	? io extends "in"
-		? i
-		: o
-	: t extends of<infer base, any>
-	? distilledKind extends "base"
-		? distillRecurse<base, io, distilledKind>
-		: t
-	: t extends TerminallyInferredObjectKind | Primitive
-	? t
-	: t extends array
-	? distillArray<t, io, distilledKind, []>
-	: { [k in keyof t]: distillRecurse<t[k], io, distilledKind> }
+		? io extends "in"
+			? i
+			: o
+		: t extends of<infer base, any>
+			? distilledKind extends "base"
+				? distillRecurse<base, io, distilledKind>
+				: t
+			: t extends TerminallyInferredObjectKind | Primitive
+				? t
+				: t extends array
+					? distillArray<t, io, distilledKind, []>
+					: {
+							[k in keyof t]: distillRecurse<
+								t[k],
+								io,
+								distilledKind
+							>
+						}
 
 type distillArray<
 	t extends array,
@@ -245,7 +254,7 @@ type distillArray<
 			io,
 			constraints,
 			[...prefix, distillRecurse<head, io, constraints>]
-	  >
+		>
 	: [...prefix, ...distillPostfix<t, io, constraints>]
 
 type distillPostfix<
@@ -259,7 +268,7 @@ type distillPostfix<
 			io,
 			constraints,
 			[distillRecurse<last, io, constraints>, ...postfix]
-	  >
+		>
 	: [...{ [i in keyof t]: distillRecurse<t[i], io, constraints> }, ...postfix]
 
 /** Objects we don't want to expand during inference like Date or Promise */

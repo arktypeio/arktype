@@ -29,7 +29,8 @@ export class NodeCompiler extends CompiledFunction<["data", "ctx"]> {
 
 	requiresContextFor(node: UnknownNode): boolean {
 		return (
-			this.traversalKind === "Apply" || node.includesContextDependentPredicate
+			this.traversalKind === "Apply" ||
+			node.includesContextDependentPredicate
 		)
 	}
 

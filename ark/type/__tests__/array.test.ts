@@ -99,8 +99,7 @@ describe("array", () => {
 				"value at [0] must be a string (was true)"
 			)
 			attest(t.allows([0, false])).equals(false)
-			attest(t([0, false]).errors?.summary)
-				.snap(`value at [0] must be a string (was number)
+			attest(t([0, false]).errors?.summary).snap(`value at [0] must be a string (was number)
 value at [1] must be a number (was false)`)
 			// too short
 			attest(t.allows([""])).equals(false)
@@ -130,7 +129,10 @@ value at [1] must be a number (was false)`)
 		})
 
 		it("nested", () => {
-			const t = type([["string", "number"], [{ a: "bigint", b: ["null"] }]])
+			const t = type([
+				["string", "number"],
+				[{ a: "bigint", b: ["null"] }]
+			])
 			attest<
 				[
 					[string, number],
@@ -166,7 +168,11 @@ value at [1] must be a number (was false)`)
 		it("distributes spread unions", () => {
 			const t = type(["1", "...", "(Date[] | RegExp[])"])
 			attest<[1, ...(Date[] | RegExp[])]>(t.infer)
-			const expected = type(["1", "...", "Date[]"]).or(["1", "...", "RegExp[]"])
+			const expected = type(["1", "...", "Date[]"]).or([
+				"1",
+				"...",
+				"RegExp[]"
+			])
 			attest(t.json).equals(expected.json)
 		})
 		it("allows array keyword", () => {
@@ -267,7 +273,10 @@ value at [1] must be a number (was false)`)
 		})
 		it("variadic and array", () => {
 			const b = type({ b: "boolean" }, "[]")
-			const t = type([{ a: "string" }, "...", b]).and([{ c: "number" }, "[]"])
+			const t = type([{ a: "string" }, "...", b]).and([
+				{ c: "number" },
+				"[]"
+			])
 			const expected = type([
 				{ a: "string", c: "number" },
 				"...",
