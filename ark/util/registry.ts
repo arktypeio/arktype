@@ -1,7 +1,7 @@
 import { domainOf, hasDomain } from "./domain.js"
 import { throwInternalError } from "./errors.js"
 import { objectKindOf } from "./objectKinds.js"
-import { serializePrimitive, type SerializablePrimitive } from "./serialize.js"
+import { type SerializablePrimitive, serializePrimitive } from "./serialize.js"
 
 declare global {
 	export const $ark: ArkRegistry

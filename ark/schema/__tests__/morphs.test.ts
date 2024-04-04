@@ -10,7 +10,7 @@ describe("morphs", () => {
 				regex: wellFormedNumberMatcher,
 				description: "a well-formed numeric string"
 			},
-			morphs: (s: string) => parseFloat(s)
+			morphs: (s: string) => Number.parseFloat(s)
 		})
 		attest(parseNumber.in.json).snap({
 			domain: "string",
@@ -24,7 +24,7 @@ describe("morphs", () => {
 		const n = schema([
 			{
 				in: "string",
-				morphs: (s: string) => parseFloat(s)
+				morphs: (s: string) => Number.parseFloat(s)
 			},
 			"number"
 		])

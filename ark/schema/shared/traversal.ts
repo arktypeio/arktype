@@ -2,12 +2,12 @@ import { deepClone } from "@arktype/util"
 import type { Morph } from "../schemas/morph.js"
 import type { ResolvedArkConfig } from "../scope.js"
 import {
-	ArkErrors,
-	createError,
 	type ArkErrorCode,
 	type ArkErrorInput,
+	ArkErrors,
 	type ArkResult,
-	type ArkTypeError
+	type ArkTypeError,
+	createError
 } from "./errors.js"
 import type { TraversalPath } from "./utils.js"
 
@@ -78,7 +78,7 @@ export class TraversalContext {
 				this.path = path
 				const result = morph(parent[key], this)
 				if (this.hasError()) return { errors: this.errors }
-				else parent[key] = result
+				parent[key] = result
 			}
 		}
 		return { data, out }

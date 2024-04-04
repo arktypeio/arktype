@@ -346,9 +346,9 @@ export const derivePrimitiveAttachments = <
 	} satisfies DerivedPrimitiveAttachments) as never
 }
 
-export type PrimitiveAttachments<
+export interface PrimitiveAttachments<
 	d extends PrimitiveNodeDeclaration = PrimitiveNodeDeclaration
-> = BaseNodeAttachments<d> & {
+> extends BaseNodeAttachments<d> {
 	readonly compiledCondition: string
 	readonly compiledNegation: string
 	readonly errorContext: d["errorContext"]

@@ -149,13 +149,12 @@ export const implementNode = <d extends BaseNodeDeclaration = never>(
 	return implementation as never
 }
 
-export type BaseNodeAttachments<d extends BaseNodeDeclaration> =
-	parsedAttachmentsOf<d> & {
-		traverseAllows: TraverseAllows<d["prerequisite"]>
-		traverseApply: TraverseApply<d["prerequisite"]>
-		expression: string
-		compile: (js: NodeCompiler) => void
-	}
+export type BaseNodeAttachments<d extends BaseNodeDeclaration> = {
+	traverseAllows: TraverseAllows<d["prerequisite"]>
+	traverseApply: TraverseApply<d["prerequisite"]>
+	expression: string
+	compile: (js: NodeCompiler) => void
+}
 
 export abstract class BaseNode<
 	t,
