@@ -50,7 +50,8 @@ import type {
 	BaseAttachmentsOf,
 	BaseErrorContext,
 	BaseMeta,
-	BaseNodeDeclaration
+	BaseNodeDeclaration,
+	attachmentsOf
 } from "./shared/declare.js"
 import { Disjoint } from "./shared/disjoint.js"
 import type { ArkResult } from "./shared/errors.js"
@@ -161,7 +162,7 @@ export abstract class BaseNode<
 	d extends BaseNodeDeclaration
 > extends Callable<
 	(data: d["prerequisite"]) => ArkResult<distillIn<t>, distillOut<t>>,
-	BaseAttachmentsOf<d>
+	attachmentsOf<d>
 > {
 	constructor(public attachments: BaseAttachments) {
 		super((data: any): ArkResult<any> => {

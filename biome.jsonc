@@ -1,7 +1,7 @@
 {
 	"$schema": "node_modules/@biomejs/biome/configuration_schema.json",
 	"files": {
-		"include": ["."]
+		"ignore": ["lib.*.d.ts"]
 	},
 	"formatter": {
 		"indentWidth": 4

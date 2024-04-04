@@ -1,6 +1,6 @@
 import type { array } from "./arrays.js"
-import { domainOf, type Domain, type domainDescriptions } from "./domain.js"
-import { isKeyOf, type Key } from "./records.js"
+import { type Domain, type domainDescriptions, domainOf } from "./domain.js"
+import { type Key, isKeyOf } from "./records.js"
 
 // Built-in object constructors based on a subset of:
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
@@ -129,12 +129,12 @@ export type objectKindDescriptions = typeof objectKindDescriptions
 // this will only return an object kind if it's the root constructor
 // example TypeError would return undefined not 'Error'
 export const getExactBuiltinConstructorName = (
-	constructor: unknown
+	ctor: unknown
 ): BuiltinObjectKind | undefined => {
-	const constructorName: string | undefined = Object(constructor).name
+	const constructorName: string | undefined = Object(ctor).name
 	return constructorName &&
 		isKeyOf(constructorName, builtinObjectKinds) &&
-		builtinObjectKinds[constructorName] === constructor
+		builtinObjectKinds[constructorName] === ctor
 		? constructorName
 		: undefined
 }
@@ -174,22 +174,19 @@ export type normalizedKeyOf<t> = keyof t extends infer k
 /** Mimics output of TS's keyof operator at runtime */
 export const prototypeKeysOf = <t>(value: t): normalizedKeyOf<t>[] => {
 	const result: Key[] = []
-	while (
-		value !== Object.prototype &&
-		value !== null &&
-		value !== undefined
-	) {
-		for (const k of Object.getOwnPropertyNames(value)) {
+	let curr = value
+	while (curr !== Object.prototype && curr !== null && curr !== undefined) {
+		for (const k of Object.getOwnPropertyNames(curr)) {
 			if (k !== "constructor" && !result.includes(k)) {
 				result.push(k)
 			}
 		}
-		for (const symbol of Object.getOwnPropertySymbols(value)) {
+		for (const symbol of Object.getOwnPropertySymbols(curr)) {
 			if (!result.includes(symbol)) {
 				result.push(symbol)
 			}
 		}
-		value = Object.getPrototypeOf(value)
+		curr = Object.getPrototypeOf(curr)
 	}
 	return result as never
 }
@@ -211,10 +208,10 @@ export const getBaseDomainKeys = <domain extends Domain>(
 ): Key[] => [...baseKeysByDomain[domain]]
 
 export const constructorExtends = (
-	constructor: Constructor,
+	ctor: Constructor,
 	base: Constructor
 ): boolean => {
-	let current = constructor.prototype
+	let current = ctor.prototype
 
 	while (current !== null) {
 		if (current === base.prototype) {

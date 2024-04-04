@@ -1,21 +1,22 @@
 import {
+	type Constructor,
+	type Key,
+	type array,
 	constructorExtends,
 	getExactBuiltinConstructorName,
 	objectKindDescriptions,
 	objectKindOrDomainOf,
-	prototypeKeysOf,
-	type Constructor,
-	type Key,
-	type array
+	prototypeKeysOf
 } from "@arktype/util"
-import { implementNode } from "../base.js"
+import { type Schema, implementNode } from "../base.js"
 import { tsKeywords } from "../keywords/tsKeywords.js"
 import type { errorContext } from "../kinds.js"
+import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import { defaultValueSerializer } from "../shared/implement.js"
-import type { TraverseAllows } from "../shared/traversal.js"
-import { BaseBasis } from "./basis.js"
+import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
+import type { BaseSchema } from "./schema.js"
 
 export interface ProtoInner<proto extends Constructor = Constructor>
 	extends BaseMeta {
@@ -38,6 +39,9 @@ export interface ProtoAttachments {
 	readonly compiledNegation: string
 	readonly errorContext: errorContext<"proto">
 	readonly literalKeys: array<Key>
+	rawKeyOf(): Schema
+	traverseApply: TraverseApply
+	compile(js: NodeCompiler): void
 }
 
 export type ProtoDeclaration = declareNode<{
@@ -55,9 +59,9 @@ export const protoImplementation = implementNode<ProtoDeclaration>({
 	collapsibleKey: "proto",
 	keys: {
 		proto: {
-			serialize: (constructor) =>
-				getExactBuiltinConstructorName(constructor) ??
-				defaultValueSerializer(constructor)
+			serialize: (ctor) =>
+				getExactBuiltinConstructorName(ctor) ??
+				defaultValueSerializer(ctor)
 		}
 	},
 	normalize: (def) => (typeof def === "function" ? { proto: def } : def),
@@ -83,42 +87,35 @@ export const protoImplementation = implementNode<ProtoDeclaration>({
 				: // TODO: infer node to avoid cast
 					Disjoint.from("domain", tsKeywords.object as never, domain)
 	},
-	attach: (self) => {
+	attach: (self): ProtoDeclaration["attachments"] => {
 		const serializedConstructor = (self.json as { proto: string }).proto
 		const compiledCondition = `data instanceof ${serializedConstructor}`
+		const literalKeys = prototypeKeysOf(self.proto.prototype)
+		const traverseAllows: TraverseAllows = (data) =>
+			data instanceof self.proto
+		const errorContext = {
+			code: "proto",
+			description: self.description,
+			...self.inner
+		} as const
 		return {
-			traverseAllows: (data) => data instanceof self.proto,
+			traverseAllows,
 			expression: self.proto.name,
 			serializedConstructor,
 			domain: "object",
 			compiledCondition,
 			compiledNegation: `!(${compiledCondition})`,
-			literalKeys: prototypeKeysOf(self.proto.prototype),
-			errorContext: {
-				code: "proto",
-				description: self.description,
-				...self.inner
-			}
+			literalKeys,
+			errorContext,
+			rawKeyOf: () => self.$.units(literalKeys),
+			traverseApply: (data, ctx) => {
+				if (!traverseAllows(data, ctx)) {
+					ctx.error(errorContext as never)
+				}
+			},
+			compile: (js) => js.compilePrimitive(self as never)
 		}
 	}
 })
 
-export class ProtoNode<t = any, $ = any> extends BaseBasis<
-	t,
-	$,
-	ProtoDeclaration
-> {
-	static implementation = protoImplementation
-
-	traverseAllows: TraverseAllows = (data) => data instanceof this.proto
-
-	readonly expression = `${this.proto.name}`
-	readonly serializedConstructor = (this.json as { proto: string }).proto
-	readonly domain = "object"
-
-	readonly compiledCondition = `data instanceof ${this.serializedConstructor}`
-	readonly compiledNegation = `!(${this.compiledCondition})`
-
-	readonly errorContext = this.createErrorContext(this.inner)
-	readonly literalKeys = prototypeKeysOf(this.proto.prototype)
-}
+export type ProtoNode<t = any, $ = any> = BaseSchema<t, $, ProtoDeclaration>

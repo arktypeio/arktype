@@ -1,39 +1,40 @@
 import type { NodeSubclass } from "./base.js"
 import {
-	PredicateNode,
-	type PredicateDeclaration
+	type PredicateDeclaration,
+	PredicateNode
 } from "./constraints/predicate.js"
-import { IndexNode, type IndexDeclaration } from "./constraints/props/index.js"
-import { PropNode, type PropDeclaration } from "./constraints/props/prop.js"
+import { type IndexDeclaration, IndexNode } from "./constraints/props/index.js"
+import { type PropDeclaration, PropNode } from "./constraints/props/prop.js"
 import {
-	SequenceNode,
-	type SequenceDeclaration
+	type SequenceDeclaration,
+	SequenceNode
 } from "./constraints/props/sequence.js"
 import {
-	DivisorNode,
-	type DivisorDeclaration
+	type DivisorDeclaration,
+	DivisorNode
 } from "./constraints/refinements/divisor.js"
 import {
-	BoundNodes,
-	type BoundDeclarations
+	type BoundDeclarations,
+	BoundNodes
 } from "./constraints/refinements/kinds.js"
 import {
-	RegexNode,
-	type RegexDeclaration
+	type RegexDeclaration,
+	RegexNode
 } from "./constraints/refinements/regex.js"
-import { DomainNode, type DomainDeclaration } from "./schemas/domain.js"
+import { BaseSchema } from "./main.js"
+import { type DomainDeclaration, DomainNode } from "./schemas/domain.js"
 import {
-	IntersectionNode,
-	type IntersectionDeclaration
+	type IntersectionDeclaration,
+	IntersectionNode
 } from "./schemas/intersection.js"
 import {
-	MorphNode,
 	type MorphChildKind,
-	type MorphDeclaration
+	type MorphDeclaration,
+	MorphNode
 } from "./schemas/morph.js"
-import { ProtoNode, type ProtoDeclaration } from "./schemas/proto.js"
-import { UnionNode, type UnionDeclaration } from "./schemas/union.js"
-import { UnitNode, type UnitDeclaration } from "./schemas/unit.js"
+import type { ProtoDeclaration } from "./schemas/proto.js"
+import { type UnionDeclaration, UnionNode } from "./schemas/union.js"
+import { type UnitDeclaration, UnitNode } from "./schemas/unit.js"
 import type { NodeKind } from "./shared/implement.js"
 import type { makeRootAndArrayPropertiesMutable } from "./shared/utils.js"
 
@@ -56,7 +57,8 @@ export const nodeClassesByKind = {
 	...BoundNodes,
 	domain: DomainNode,
 	unit: UnitNode,
-	proto: ProtoNode,
+	// TODO: fix
+	proto: BaseSchema as never,
 	union: UnionNode,
 	morph: MorphNode,
 	intersection: IntersectionNode,

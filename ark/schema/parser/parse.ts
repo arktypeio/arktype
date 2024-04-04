@@ -266,13 +266,13 @@ export const parseNode = (
 		innerId,
 		typeId,
 		$
-	} satisfies BaseAttachments as Record<string, any>
+	} satisfies Omit<BaseAttachments, "description"> as Record<string, any>
 	if (opts?.alias) {
 		attachments.alias = opts.alias
 	}
 	for (const k in inner) {
 		// avoid conflict with builtin cached getters
-		if (k !== "description" && k !== "in" && k !== "out") {
+		if (k !== "in" && k !== "out") {
 			attachments[k] = inner[k]
 		}
 	}
@@ -287,6 +287,7 @@ export const parseNode = (
 	// 		Object.assign(this.referencesByName, node.contributesReferencesByName)
 	// 	}
 	// }
+	attachments.description ??= $.resolvedConfig[kind].description(attachments)
 	const node = new cls(attachments as never)
 	$.nodeCache[innerId] = node
 	return node
