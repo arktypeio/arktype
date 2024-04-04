@@ -64,7 +64,7 @@ describe("generics", () => {
 				).json
 			)
 		})
-		// // TODO: currently crashes TS compiler
+		// TODO: currently crashes TS compiler
 		// it("referenced in scope inline", () => {
 		// 	const $ = scope({
 		// 		one: "1",
