@@ -1,9 +1,9 @@
 import {
+	arkKind,
 	BaseScope,
 	hasArkKind,
 	type ambient,
 	type ArkConfig,
-	type arkKind,
 	type exportedName,
 	type GenericProps,
 	type NodeParseOptions,
@@ -11,6 +11,7 @@ import {
 } from "@arktype/schema"
 import {
 	domainOf,
+	DynamicBase,
 	flatMorph,
 	hasDomain,
 	throwParseError,
@@ -144,18 +145,18 @@ export type tryInferSubmoduleReference<$, token> =
 			: never
 		: never
 
-export type Module<$ = any> = {
+export class Module<$ = any> extends DynamicBase<exportScope<$>> {
+	private readonly [arkKind] = "module"
+}
+
+type exportScope<$ = any> = {
 	// just adding the nominal id this way and mapping it is cheaper than an intersection
-	[k in exportedName<$> | arkKind]: k extends string
-		? $[k] extends PreparsedResolution
-			? [$[k]] extends [null]
-				? // handle `Type<any>` and `Type<never>`
-				  Type<$[k], $>
-				: $[k]
-			: Type<$[k], $>
-		: // set the nominal symbol's value to something validation won't care about
-		  // since the inferred type will be omitted anyways
-		  type.cast<"module">
+	[k in exportedName<$>]: $[k] extends PreparsedResolution
+		? [$[k]] extends [null]
+			? // handle `Type<any>` and `Type<never>`
+			  Type<$[k], $>
+			: $[k]
+		: Type<$[k], $>
 }
 
 export interface ParseContext extends NodeParseOptions {
