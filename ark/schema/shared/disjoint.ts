@@ -1,12 +1,12 @@
 import {
 	entriesOf,
+	type entryOf,
 	flatMorph,
 	fromEntries,
 	isArray,
 	printable,
 	throwInternalError,
-	throwParseError,
-	type entryOf
+	throwParseError
 } from "@arktype/util"
 import type { Node } from "../base.js"
 import type {
@@ -113,7 +113,7 @@ export class Disjoint {
 	static fromEntries(entries: DisjointKindEntries): Disjoint {
 		if (!entries.length) {
 			return throwInternalError(
-				`Unexpected attempt to create a disjoint from no entries`
+				"Unexpected attempt to create a disjoint from no entries"
 			)
 		}
 		return new Disjoint({ "[]": fromEntries(entries) })

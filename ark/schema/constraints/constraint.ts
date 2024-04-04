@@ -69,7 +69,7 @@ export abstract class BaseConstraint<
 }
 
 export interface ConstraintAttachments {
-	readonly impliedBasis: Schema | undefined
+	impliedBasis: Schema | undefined
 }
 
 export type PrimitiveConstraintKind = Exclude<ConstraintKind, PropKind>

@@ -1,10 +1,30 @@
-import { AfterNode, type AfterDeclaration } from "./after.js"
-import { BeforeNode, type BeforeDeclaration } from "./before.js"
-import { ExactLengthNode, type ExactLengthDeclaration } from "./exactLength.js"
-import { MaxNode, type MaxDeclaration } from "./max.js"
-import { MaxLengthNode, type MaxLengthDeclaration } from "./maxLength.js"
-import { MinNode, type MinDeclaration } from "./min.js"
-import { MinLengthNode, type MinLengthDeclaration } from "./minLength.js"
+import {
+	type AfterDeclaration,
+	type AfterNode,
+	afterImplementation
+} from "./after.js"
+import {
+	type BeforeDeclaration,
+	type BeforeNode,
+	beforeImplementation
+} from "./before.js"
+import {
+	type ExactLengthDeclaration,
+	type ExactLengthNode,
+	exactLengthImplementation
+} from "./exactLength.js"
+import { type MaxDeclaration, type MaxNode, maxImplementation } from "./max.js"
+import {
+	type MaxLengthDeclaration,
+	type MaxLengthNode,
+	maxLengthImplementation
+} from "./maxLength.js"
+import { type MinDeclaration, type MinNode, minImplementation } from "./min.js"
+import {
+	type MinLengthDeclaration,
+	type MinLengthNode,
+	minLengthImplementation
+} from "./minLength.js"
 
 export interface BoundDeclarations {
 	min: MinDeclaration
@@ -16,16 +36,22 @@ export interface BoundDeclarations {
 	before: BeforeDeclaration
 }
 
-export const BoundNodes = {
-	min: MinNode,
-	max: MaxNode,
-	minLength: MinLengthNode,
-	maxLength: MaxLengthNode,
-	exactLength: ExactLengthNode,
-	after: AfterNode,
+export interface BoundNodesByKind {
+	min: MinNode
+	max: MaxNode
+	minLength: MinLengthNode
+	maxLength: MaxLengthNode
+	exactLength: ExactLengthNode
+	after: AfterNode
 	before: BeforeNode
 }
 
-export type BoundNodesByKind = {
-	[k in keyof typeof BoundNodes]: InstanceType<(typeof BoundNodes)[k]>
+export const boundImplementationsByKind = {
+	min: minImplementation,
+	max: maxImplementation,
+	minLength: minLengthImplementation,
+	maxLength: maxLengthImplementation,
+	exactLength: exactLengthImplementation,
+	after: afterImplementation,
+	before: beforeImplementation
 }

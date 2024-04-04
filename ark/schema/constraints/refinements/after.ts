@@ -1,15 +1,14 @@
-import { implementNode } from "../../base.js"
+import { type BaseNode, implementNode } from "../../base.js"
 import { jsObjects } from "../../keywords/jsObjects.js"
 import type { declareNode } from "../../shared/declare.js"
-import type { nodeImplementationOf } from "../../shared/implement.js"
-import type { TraverseAllows } from "../../shared/traversal.js"
 import {
-	BaseRange,
-	parseDateLimit,
-	parseExclusiveKey,
 	type BaseNormalizedRangeSchema,
 	type BaseRangeInner,
-	type LimitSchemaValue
+	type LimitSchemaValue,
+	type RangeAttachments,
+	deriveRangeAttachments,
+	parseDateLimit,
+	parseExclusiveKey
 } from "./range.js"
 
 export interface AfterInner extends BaseRangeInner {
@@ -29,7 +28,10 @@ export type AfterDeclaration = declareNode<{
 	inner: AfterInner
 	prerequisite: Date
 	errorContext: AfterInner
+	attachments: AfterAttachments
 }>
+
+export interface AfterAttachments extends RangeAttachments<AfterDeclaration> {}
 
 export const afterImplementation = implementNode<AfterDeclaration>({
 	kind: "after",
@@ -57,16 +59,14 @@ export const afterImplementation = implementNode<AfterDeclaration>({
 	},
 	intersections: {
 		after: (l, r) => (l.isStricterThan(r) ? l : r)
-	}
+	},
+	construct: (self) =>
+		deriveRangeAttachments<AfterDeclaration>(self, {
+			traverseAllows: self.exclusive
+				? (data) => data > self.rule
+				: (data) => data >= self.rule,
+			impliedBasis: jsObjects.Date
+		})
 })
 
-export class AfterNode extends BaseRange<AfterDeclaration> {
-	static implementation: nodeImplementationOf<AfterDeclaration> =
-		afterImplementation
-
-	readonly impliedBasis = jsObjects.Date
-
-	traverseAllows: TraverseAllows<Date> = this.exclusive
-		? (data) => +data > this.numericLimit
-		: (data) => +data >= this.numericLimit
-}
+export type AfterNode = BaseNode<Date, AfterDeclaration>

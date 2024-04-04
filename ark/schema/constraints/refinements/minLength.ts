@@ -1,13 +1,13 @@
-import { implementNode } from "../../base.js"
+import { type BaseNode, implementNode } from "../../base.js"
 import { internalKeywords } from "../../keywords/internal.js"
 import type { declareNode } from "../../shared/declare.js"
-import type { nodeImplementationOf } from "../../shared/implement.js"
 import {
-	BaseRange,
-	parseExclusiveKey,
 	type BaseNormalizedRangeSchema,
 	type BaseRangeInner,
-	type LengthBoundableData
+	type LengthBoundableData,
+	type RangeAttachments,
+	deriveRangeAttachments,
+	parseExclusiveKey
 } from "./range.js"
 
 export interface MinLengthInner extends BaseRangeInner {
@@ -27,7 +27,11 @@ export type MinLengthDeclaration = declareNode<{
 	inner: MinLengthInner
 	prerequisite: LengthBoundableData
 	errorContext: MinLengthInner
+	attachments: MinLengthAttachments
 }>
+
+export interface MinLengthAttachments
+	extends RangeAttachments<MinLengthDeclaration> {}
 
 export const minLengthImplementation = implementNode<MinLengthDeclaration>({
 	kind: "minLength",
@@ -51,16 +55,14 @@ export const minLengthImplementation = implementNode<MinLengthDeclaration>({
 	},
 	intersections: {
 		minLength: (l, r) => (l.isStricterThan(r) ? l : r)
-	}
+	},
+	construct: (self) =>
+		deriveRangeAttachments<MinLengthDeclaration>(self, {
+			traverseAllows: self.exclusive
+				? (data) => data.length > self.rule
+				: (data) => data.length >= self.rule,
+			impliedBasis: internalKeywords.lengthBoundable
+		})
 })
 
-export class MinLengthNode extends BaseRange<MinLengthDeclaration> {
-	static implementation: nodeImplementationOf<MinLengthDeclaration> =
-		minLengthImplementation
-
-	traverseAllows = this.exclusive
-		? (data: LengthBoundableData) => data.length > this.rule
-		: (data: LengthBoundableData) => data.length >= this.rule
-
-	readonly impliedBasis = internalKeywords.lengthBoundable
-}
+export type MinLengthNode = BaseNode<LengthBoundableData, MinLengthDeclaration>

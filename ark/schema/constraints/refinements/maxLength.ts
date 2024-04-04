@@ -1,14 +1,14 @@
-import { implementNode } from "../../base.js"
+import { type BaseNode, implementNode } from "../../base.js"
 import { internalKeywords } from "../../keywords/internal.js"
 import type { declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
-import type { nodeImplementationOf } from "../../shared/implement.js"
 import {
-	BaseRange,
-	parseExclusiveKey,
 	type BaseNormalizedRangeSchema,
 	type BaseRangeInner,
-	type LengthBoundableData
+	type LengthBoundableData,
+	type RangeAttachments,
+	deriveRangeAttachments,
+	parseExclusiveKey
 } from "./range.js"
 
 export interface MaxLengthInner extends BaseRangeInner {
@@ -28,7 +28,11 @@ export type MaxLengthDeclaration = declareNode<{
 	inner: MaxLengthInner
 	prerequisite: LengthBoundableData
 	errorContext: MaxLengthInner
+	attachments: MaxLengthAttachments
 }>
+
+export interface MaxLengthAttachments
+	extends RangeAttachments<MaxLengthDeclaration> {}
 
 export const maxLengthImplementation = implementNode<MaxLengthDeclaration>({
 	kind: "maxLength",
@@ -54,16 +58,14 @@ export const maxLengthImplementation = implementNode<MaxLengthDeclaration>({
 					? $.node("exactLength", { rule: max.rule })
 					: null
 				: Disjoint.from("range", max, min)
-	}
+	},
+	construct: (self) =>
+		deriveRangeAttachments<MaxLengthDeclaration>(self, {
+			traverseAllows: self.exclusive
+				? (data) => data.length < self.rule
+				: (data) => data.length <= self.rule,
+			impliedBasis: internalKeywords.lengthBoundable
+		})
 })
 
-export class MaxLengthNode extends BaseRange<MaxLengthDeclaration> {
-	static implementation: nodeImplementationOf<MaxLengthDeclaration> =
-		maxLengthImplementation
-
-	readonly impliedBasis = internalKeywords.lengthBoundable
-
-	traverseAllows = this.exclusive
-		? (data: LengthBoundableData) => data.length < this.rule
-		: (data: LengthBoundableData) => data.length <= this.rule
-}
+export type MaxLengthNode = BaseNode<LengthBoundableData, MaxLengthDeclaration>

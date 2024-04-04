@@ -1,9 +1,16 @@
-import { implementNode } from "../../base.js"
+import {
+	type BaseAttachments,
+	type BaseNode,
+	implementNode
+} from "../../base.js"
 import { internalKeywords } from "../../keywords/internal.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
-import type { TraverseAllows } from "../../shared/traversal.js"
-import { BasePrimitiveConstraint } from "../constraint.js"
+import {
+	type PrimitiveAttachments,
+	derivePrimitiveAttachments
+} from "../../shared/implement.js"
+import type { ConstraintAttachments } from "../constraint.js"
 import type { LengthBoundableData } from "./range.js"
 
 export interface ExactLengthInner extends BaseMeta {
@@ -21,7 +28,13 @@ export type ExactLengthDeclaration = declareNode<{
 	inner: ExactLengthInner
 	prerequisite: LengthBoundableData
 	errorContext: ExactLengthInner
+	attachments: ExactLengthAttachments
 }>
+
+export interface ExactLengthAttachments
+	extends BaseAttachments<ExactLengthDeclaration>,
+		PrimitiveAttachments<ExactLengthDeclaration>,
+		ConstraintAttachments {}
 
 export const exactLengthImplementation = implementNode<ExactLengthDeclaration>({
 	kind: "exactLength",
@@ -60,18 +73,19 @@ export const exactLengthImplementation = implementNode<ExactLengthDeclaration>({
 	hasAssociatedError: true,
 	defaults: {
 		description: (node) => `exactly length ${node.rule}`
+	},
+	construct: (self) => {
+		return derivePrimitiveAttachments<ExactLengthDeclaration>(self, {
+			compiledCondition: `data.length === ${self.rule}`,
+			compiledNegation: `data.length !== ${self.rule}`,
+			impliedBasis: internalKeywords.lengthBoundable,
+			expression: `{ length: ${self.rule} }`,
+			traverseAllows: (data) => data.length === self.rule
+		})
 	}
 })
 
-export class ExactLengthNode extends BasePrimitiveConstraint<ExactLengthDeclaration> {
-	static implementation = exactLengthImplementation
-
-	traverseAllows: TraverseAllows<LengthBoundableData> = (data) =>
-		data.length === this.rule
-
-	readonly compiledCondition = `data.length === ${this.rule}`
-	readonly compiledNegation = `data.length !== ${this.rule}`
-	readonly impliedBasis = internalKeywords.lengthBoundable
-	readonly errorContext = this.createErrorContext(this.inner)
-	readonly expression = `{ length: ${this.rule} }`
-}
+export type ExactLengthNode = BaseNode<
+	LengthBoundableData,
+	ExactLengthDeclaration
+>

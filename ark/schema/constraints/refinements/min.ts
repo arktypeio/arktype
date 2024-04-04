@@ -1,12 +1,12 @@
-import { implementNode } from "../../base.js"
-import { tsKeywords } from "../../keywords/tsKeywords.js"
+import { type BaseNode, implementNode } from "../../base.js"
+import { internalKeywords } from "../../keywords/internal.js"
 import type { declareNode } from "../../shared/declare.js"
-import type { nodeImplementationOf } from "../../shared/implement.js"
 import {
-	BaseRange,
-	parseExclusiveKey,
 	type BaseNormalizedRangeSchema,
-	type BaseRangeInner
+	type BaseRangeInner,
+	type RangeAttachments,
+	deriveRangeAttachments,
+	parseExclusiveKey
 } from "./range.js"
 
 export interface MinInner extends BaseRangeInner {
@@ -26,7 +26,10 @@ export type MinDeclaration = declareNode<{
 	inner: MinInner
 	prerequisite: number
 	errorContext: MinInner
+	attachments: MinAttachments
 }>
+
+export interface MinAttachments extends RangeAttachments<MinDeclaration> {}
 
 export const minImplementation = implementNode<MinDeclaration>({
 	kind: "min",
@@ -43,15 +46,14 @@ export const minImplementation = implementNode<MinDeclaration>({
 	defaults: {
 		description: (node) =>
 			`${node.exclusive ? "more than" : "at least"} ${node.rule}`
-	}
+	},
+	construct: (self) =>
+		deriveRangeAttachments<MinDeclaration>(self, {
+			traverseAllows: self.exclusive
+				? (data) => data > self.rule
+				: (data) => data >= self.rule,
+			impliedBasis: internalKeywords.lengthBoundable
+		})
 })
 
-export class MinNode extends BaseRange<MinDeclaration> {
-	static implementation: nodeImplementationOf<MinDeclaration> =
-		minImplementation
-	readonly impliedBasis = tsKeywords.number
-
-	traverseAllows = this.exclusive
-		? (data: number) => data > this.rule
-		: (data: number) => data >= this.rule
-}
+export type MinNode = BaseNode<number, MinDeclaration>

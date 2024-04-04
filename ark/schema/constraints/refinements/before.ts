@@ -1,16 +1,15 @@
-import { implementNode } from "../../base.js"
+import { type BaseNode, implementNode } from "../../base.js"
 import { jsObjects } from "../../keywords/jsObjects.js"
 import type { declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
-import type { nodeImplementationOf } from "../../shared/implement.js"
-import type { TraverseAllows } from "../../shared/traversal.js"
 import {
-	BaseRange,
-	parseDateLimit,
-	parseExclusiveKey,
 	type BaseNormalizedRangeSchema,
 	type BaseRangeInner,
-	type LimitSchemaValue
+	type LimitSchemaValue,
+	type RangeAttachments,
+	deriveRangeAttachments,
+	parseDateLimit,
+	parseExclusiveKey
 } from "./range.js"
 
 export interface BeforeInner extends BaseRangeInner {
@@ -30,7 +29,11 @@ export type BeforeDeclaration = declareNode<{
 	inner: BeforeInner
 	prerequisite: Date
 	errorContext: BeforeInner
+	attachments: BeforeAttachments
 }>
+
+export interface BeforeAttachments
+	extends RangeAttachments<BeforeDeclaration> {}
 
 export const beforeImplementation = implementNode<BeforeDeclaration>({
 	kind: "before",
@@ -64,16 +67,14 @@ export const beforeImplementation = implementNode<BeforeDeclaration>({
 					? $.node("unit", { unit: before.rule })
 					: null
 				: Disjoint.from("range", before, after)
-	}
+	},
+	construct: (self) =>
+		deriveRangeAttachments<BeforeDeclaration>(self, {
+			traverseAllows: self.exclusive
+				? (data) => data < self.rule
+				: (data) => data <= self.rule,
+			impliedBasis: jsObjects.Date
+		})
 })
 
-export class BeforeNode extends BaseRange<BeforeDeclaration> {
-	static implementation: nodeImplementationOf<BeforeDeclaration> =
-		beforeImplementation
-
-	readonly impliedBasis = jsObjects.Date
-
-	traverseAllows: TraverseAllows<Date> = this.exclusive
-		? (data) => +data < this.numericLimit
-		: (data) => +data <= this.numericLimit
-}
+export type BeforeNode = BaseNode<Date, BeforeDeclaration>

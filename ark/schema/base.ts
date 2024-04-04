@@ -1,6 +1,5 @@
 import {
 	Callable,
-	type Constructor,
 	type Dict,
 	type Entry,
 	type Guardable,
@@ -25,11 +24,10 @@ import type { DivisorNode } from "./constraints/refinements/divisor.js"
 import type { BoundNodesByKind } from "./constraints/refinements/kinds.js"
 import type { RegexNode } from "./constraints/refinements/regex.js"
 import type {
-	Declaration,
 	Inner,
-	NodeClassesByKind,
 	NodeDef,
 	ioKindOf,
+	nodeImplementationsByKind,
 	reducibleKindOf
 } from "./kinds.js"
 import type { DomainNode } from "./schemas/domain.js"
@@ -50,8 +48,7 @@ import type {
 	BaseErrorContext,
 	BaseMeta,
 	BaseNodeDeclaration,
-	attachmentsOf,
-	parsedAttachmentsOf
+	attachmentsOf
 } from "./shared/declare.js"
 import { Disjoint } from "./shared/disjoint.js"
 import type { ArkResult } from "./shared/errors.js"
@@ -116,11 +113,11 @@ export type UnknownNode = BaseNode<any, BaseNodeDeclaration>
 
 declare global {
 	export interface ArkRegistry {
-		nodeClassesByKind: NodeClassesByKind
+		nodeClassesByKind: typeof nodeImplementationsByKind
 	}
 }
 
-$ark.nodeClassesByKind = {} as NodeClassesByKind
+$ark.nodeClassesByKind = {} as typeof nodeImplementationsByKind
 
 export const implementNode = <d extends BaseNodeDeclaration = never>(
 	_: nodeImplementationInputOf<d>

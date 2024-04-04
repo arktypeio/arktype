@@ -6,7 +6,7 @@ import {
 } from "@arktype/util"
 import type { array } from "../../util/arrays.js"
 import type { Key } from "../../util/records.js"
-import { implementNode } from "../base.js"
+import { BaseNode, implementNode } from "../base.js"
 import {
 	type PrimitiveAttachments,
 	derivePrimitiveAttachments
@@ -15,7 +15,7 @@ import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { TraverseAllows } from "../shared/traversal.js"
 import { BaseBasis } from "./basis.js"
-import type { BaseSchemaAttachments } from "./schema.js"
+import type { BaseSchema, BaseSchemaAttachments } from "./schema.js"
 
 export interface DomainInner<
 	domain extends NonEnumerableDomain = NonEnumerableDomain
@@ -84,26 +84,4 @@ export const domainImplementation = implementNode<DomainDeclaration>({
 	}
 })
 
-export class DomainNode<t = any, $ = any> extends BaseBasis<
-	t,
-	$,
-	DomainDeclaration
-> {
-	static implementation = domainImplementation
-
-	traverseAllows: TraverseAllows = (data) => domainOf(data) === this.domain
-
-	readonly compiledCondition =
-		this.domain === "object"
-			? `((typeof data === "object" && data !== null) || typeof data === "function")`
-			: `typeof data === "${this.domain}"`
-
-	readonly compiledNegation =
-		this.domain === "object"
-			? `((typeof data !== "object" || data === null) && typeof data !== "function")`
-			: `typeof data !== "${this.domain}"`
-
-	readonly errorContext = this.createErrorContext(this.inner)
-	readonly expression = this.domain
-	readonly literalKeys = getBaseDomainKeys(this.domain)
-}
+export type DomainNode<t = any, $ = any> = BaseSchema<t, $, DomainDeclaration>

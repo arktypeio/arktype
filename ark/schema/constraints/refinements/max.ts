@@ -1,13 +1,13 @@
-import { implementNode } from "../../base.js"
-import { tsKeywords } from "../../keywords/tsKeywords.js"
+import { type BaseNode, implementNode } from "../../base.js"
+import { internalKeywords } from "../../keywords/internal.js"
 import type { declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
-import type { nodeImplementationOf } from "../../shared/implement.js"
 import {
-	BaseRange,
-	parseExclusiveKey,
 	type BaseNormalizedRangeSchema,
-	type BaseRangeInner
+	type BaseRangeInner,
+	type RangeAttachments,
+	deriveRangeAttachments,
+	parseExclusiveKey
 } from "./range.js"
 
 export interface MaxInner extends BaseRangeInner {
@@ -27,7 +27,10 @@ export type MaxDeclaration = declareNode<{
 	inner: MaxInner
 	prerequisite: number
 	errorContext: MaxInner
+	attachments: MaxAttachments
 }>
+
+export interface MaxAttachments extends RangeAttachments<MaxDeclaration> {}
 
 export const maxImplementation = implementNode<MaxDeclaration>({
 	kind: "max",
@@ -50,16 +53,14 @@ export const maxImplementation = implementNode<MaxDeclaration>({
 					? $.node("unit", { unit: max.rule })
 					: null
 				: Disjoint.from("range", max, min)
-	}
+	},
+	construct: (self) =>
+		deriveRangeAttachments<MaxDeclaration>(self, {
+			traverseAllows: self.exclusive
+				? (data) => data < self.rule
+				: (data) => data <= self.rule,
+			impliedBasis: internalKeywords.lengthBoundable
+		})
 })
 
-export class MaxNode extends BaseRange<MaxDeclaration> {
-	static implementation: nodeImplementationOf<MaxDeclaration> =
-		maxImplementation
-
-	readonly impliedBasis = tsKeywords.number
-
-	traverseAllows = this.exclusive
-		? (data: number) => data < this.rule
-		: (data: number) => data <= this.rule
-}
+export type MaxNode = BaseNode<number, MaxDeclaration>

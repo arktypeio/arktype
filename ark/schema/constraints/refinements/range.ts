@@ -5,10 +5,120 @@ import {
 	isKeyOf,
 	type propValueOf
 } from "@arktype/util"
-import type { Node } from "../../base.js"
-import type { BaseMeta, BaseNodeDeclaration } from "../../shared/declare.js"
-import type { KeyDefinitions, RangeKind } from "../../shared/implement.js"
-import { BasePrimitiveConstraint } from "../constraint.js"
+import type { BaseAttachments, Node } from "../../base.js"
+import type {
+	BaseMeta,
+	BaseNodeDeclaration,
+	parsedAttachmentsOf
+} from "../../shared/declare.js"
+import {
+	type DerivedPrimitiveAttachments,
+	type KeyDefinitions,
+	type PrimitiveAttachments,
+	type RangeKind,
+	derivePrimitiveAttachments
+} from "../../shared/implement.js"
+import type { Comparator } from "../ast.js"
+import {
+	BasePrimitiveConstraint,
+	type ConstraintAttachments
+} from "../constraint.js"
+
+export interface BaseRangeDeclaration extends BaseNodeDeclaration {
+	kind: RangeKind
+	inner: BaseRangeInner
+	normalizedDef: BaseNormalizedRangeSchema
+	attachments: RangeAttachments<any>
+}
+
+export interface DerivedRangeAttachments<
+	d extends BaseRangeDeclaration = BaseRangeDeclaration
+> {
+	expression: string
+	boundOperandKind: BoundOperandKind
+	compiledActual: string
+	compiledCondition: string
+	compiledNegation: string
+	comparator: Comparator
+	numericLimit: number
+	stringLimit: string
+	limitKind: LimitKind
+	isStricterThan(r: Node<d["kind"] | pairedRangeKind<d["kind"]>>): boolean
+	overlapsRange(r: Node<pairedRangeKind<d["kind"]>>): boolean
+	overlapIsUnit(r: Node<pairedRangeKind<d["kind"]>>): boolean
+}
+
+export interface RangeAttachments<
+	d extends BaseRangeDeclaration = BaseRangeDeclaration
+> extends BaseAttachments<d>,
+		PrimitiveAttachments<d>,
+		ConstraintAttachments,
+		DerivedRangeAttachments<d> {}
+
+export type ImplementedRangeAttachments<d extends BaseRangeDeclaration> = Omit<
+	d["attachments"],
+	keyof DerivedRangeAttachments | keyof DerivedPrimitiveAttachments
+>
+
+export const deriveRangeAttachments = <d extends BaseRangeDeclaration = never>(
+	parsed: parsedAttachmentsOf<d>,
+	implemented: ImplementedRangeAttachments<d>
+): d["attachments"] & ThisType<Node<RangeKind>> => {
+	const self: parsedAttachmentsOf<d> = derivePrimitiveAttachments(
+		parsed,
+		implemented
+	)
+	const boundOperandKind = operandKindsByBoundKind[self.kind]
+	const compiledActual =
+		boundOperandKind === "value"
+			? "data"
+			: boundOperandKind === "length"
+				? "data.length"
+				: "data.valueOf()"
+	const comparator = compileComparator(self.kind, self.exclusive)
+	const numericLimit = self.rule.valueOf()
+
+	return {
+		expression: `${comparator}${self.rule}`,
+		compiledCondition: `${compiledActual} ${comparator} ${numericLimit}`,
+		compiledNegation: `${compiledActual} ${negatedComparators[comparator]} ${numericLimit}`,
+		// we need to compute stringLimit before errorContext, which references it
+		// transitively through description for date bounds
+		stringLimit:
+			boundOperandKind === "date"
+				? dateLimitToString(numericLimit)
+				: `${numericLimit}`,
+		limitKind: comparator["0"] === "<" ? "upper" : "lower",
+		isStricterThan(r) {
+			const thisLimitIsStricter =
+				this.limitKind === "upper"
+					? this.numericLimit < r.numericLimit
+					: this.numericLimit > r.numericLimit
+			return (
+				thisLimitIsStricter ||
+				(this.numericLimit === r.numericLimit &&
+					this.exclusive === true &&
+					!r.exclusive)
+			)
+		},
+		overlapsRange(r) {
+			if (this.isStricterThan(r)) return false
+			if (
+				this.numericLimit === r.numericLimit &&
+				(this.exclusive || r.exclusive)
+			)
+				return false
+			return true
+		},
+		overlapIsUnit(r) {
+			return (
+				this.numericLimit === r.numericLimit &&
+				!this.exclusive &&
+				!r.exclusive
+			)
+		}
+	}
+}
 
 export abstract class BaseRange<
 	d extends BaseRangeDeclaration
@@ -145,12 +255,6 @@ export const parseDateLimit = (limit: LimitSchemaValue): Date =>
 	typeof limit === "string" || typeof limit === "number"
 		? new Date(limit)
 		: limit
-
-export interface BaseRangeDeclaration extends BaseNodeDeclaration {
-	kind: RangeKind
-	inner: BaseRangeInner
-	normalizedDef: BaseNormalizedRangeSchema
-}
 
 export const operandKindsByBoundKind = {
 	min: "value",

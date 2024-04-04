@@ -15,8 +15,8 @@ import {
 	defaultValueSerializer,
 	derivePrimitiveAttachments
 } from "../shared/implement.js"
-import { BaseBasis } from "./basis.js"
 import {
+	type BaseSchema,
 	type BaseSchemaAttachments,
 	defineRightwardIntersections
 } from "./schema.js"
@@ -97,36 +97,7 @@ export const unitImplementation = implementNode<UnitDeclaration>({
 	}
 })
 
-export class UnitNode<t = any, $ = any> extends BaseBasis<
-	t,
-	$,
-	UnitDeclaration
-> {
-	static implementation = unitImplementation
-
-	traverseAllows =
-		this.unit instanceof Date
-			? (data: unknown) =>
-					data instanceof Date &&
-					data.toISOString() === this.compiledValue
-			: (data: unknown) => data === this.unit
-
-	readonly compiledValue: string | number | boolean | null = (
-		this.json as any
-	).unit
-	readonly serializedValue: string | number | boolean | null =
-		typeof this.unit === "string" || this.unit instanceof Date
-			? JSON.stringify(this.compiledValue)
-			: this.compiledValue
-
-	readonly compiledCondition = compileEqualityCheck(this)
-	readonly compiledNegation = compileEqualityCheck(this, "negated")
-
-	readonly errorContext = this.createErrorContext(this.inner)
-	readonly expression = printable(this.unit)
-	readonly domain = domainOf(this.unit)
-	readonly literalKeys = prototypeKeysOf(this.unit)
-}
+export type UnitNode<t = any, $ = any> = BaseSchema<t, $, UnitDeclaration>
 
 const compileEqualityCheck = (
 	unit: unknown,

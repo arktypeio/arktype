@@ -1,40 +1,42 @@
 import type { NodeSubclass } from "./base.js"
 import {
 	type PredicateDeclaration,
-	PredicateNode
+	predicateImplementation
 } from "./constraints/predicate.js"
-import { type IndexDeclaration, IndexNode } from "./constraints/props/index.js"
-import { type PropDeclaration, PropNode } from "./constraints/props/prop.js"
+import type { IndexDeclaration } from "./constraints/props/index.js"
+import type { PropDeclaration } from "./constraints/props/prop.js"
 import {
 	type SequenceDeclaration,
-	SequenceNode
+	sequenceImplementation
 } from "./constraints/props/sequence.js"
-import {
-	type DivisorDeclaration,
-	DivisorNode
-} from "./constraints/refinements/divisor.js"
+import type { DivisorDeclaration } from "./constraints/refinements/divisor.js"
 import {
 	type BoundDeclarations,
-	BoundNodes
+	boundImplementationsByKind
 } from "./constraints/refinements/kinds.js"
+import type { RegexDeclaration } from "./constraints/refinements/regex.js"
 import {
-	type RegexDeclaration,
-	RegexNode
-} from "./constraints/refinements/regex.js"
-import { BaseSchema } from "./main.js"
-import { type DomainDeclaration, DomainNode } from "./schemas/domain.js"
+	divisorImplementation,
+	indexImplementation,
+	propImplementation,
+	regexImplementation
+} from "./main.js"
+import {
+	type DomainDeclaration,
+	domainImplementation
+} from "./schemas/domain.js"
 import {
 	type IntersectionDeclaration,
-	IntersectionNode
+	intersectionImplementation
 } from "./schemas/intersection.js"
 import {
 	type MorphChildKind,
 	type MorphDeclaration,
-	MorphNode
+	morphImplementation
 } from "./schemas/morph.js"
-import type { ProtoDeclaration } from "./schemas/proto.js"
-import { type UnionDeclaration, UnionNode } from "./schemas/union.js"
-import { type UnitDeclaration, UnitNode } from "./schemas/unit.js"
+import { type ProtoDeclaration, protoImplementation } from "./schemas/proto.js"
+import { type UnionDeclaration, unionImplementation } from "./schemas/union.js"
+import { type UnitDeclaration, unitImplementation } from "./schemas/unit.js"
 import type { NodeKind } from "./shared/implement.js"
 import type { makeRootAndArrayPropertiesMutable } from "./shared/utils.js"
 
@@ -53,28 +55,23 @@ export interface NodeDeclarationsByKind extends BoundDeclarations {
 	predicate: PredicateDeclaration
 }
 
-export const nodeClassesByKind = {
-	...BoundNodes,
-	domain: DomainNode,
-	unit: UnitNode,
-	// TODO: fix
-	proto: BaseSchema as never,
-	union: UnionNode,
-	morph: MorphNode,
-	intersection: IntersectionNode,
-	divisor: DivisorNode,
-	regex: RegexNode,
-	predicate: PredicateNode,
-	prop: PropNode,
-	index: IndexNode,
-	sequence: SequenceNode
-} satisfies { [k in NodeKind]: NodeSubclass<Declaration<k>> }
-
-export type NodeClassesByKind = typeof nodeClassesByKind
+export const nodeImplementationsByKind = {
+	...boundImplementationsByKind,
+	domain: domainImplementation,
+	unit: unitImplementation,
+	proto: protoImplementation,
+	union: unionImplementation,
+	morph: morphImplementation,
+	intersection: intersectionImplementation,
+	divisor: divisorImplementation,
+	regex: regexImplementation,
+	predicate: predicateImplementation,
+	prop: propImplementation,
+	index: indexImplementation,
+	sequence: sequenceImplementation
+}
 
 export type Declaration<kind extends NodeKind> = NodeDeclarationsByKind[kind]
-
-export type Implementation<kind extends NodeKind> = NodeClassesByKind[kind]
 
 export type NodeDef<kind extends NodeKind> = Declaration<kind>["def"]
 

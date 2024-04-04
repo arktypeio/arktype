@@ -17,7 +17,6 @@ import {
 	defaultValueSerializer,
 	derivePrimitiveAttachments
 } from "../shared/implement.js"
-import type { TraverseAllows } from "../shared/traversal.js"
 import type { BaseSchema, BaseSchemaAttachments } from "./schema.js"
 
 export interface ProtoInner<proto extends Constructor = Constructor>
