@@ -8,8 +8,10 @@ describe("errors", () => {
 			domain: "number",
 			divisor: 3
 		})
-		attest(n.apply(6)).snap({ data: 6, out: 6 })
-		attest(n.apply(7).errors?.summary).snap("must be a multiple of 3 (was 7)")
+		attest(n.traverse(6)).snap({ data: 6, out: 6 })
+		attest(n.traverse(7).errors?.summary).snap(
+			"must be a multiple of 3 (was 7)"
+		)
 	})
 	it("at path", () => {
 		const o = schema({
@@ -22,8 +24,8 @@ describe("errors", () => {
 				}
 			}
 		})
-		attest(o.apply({ foo: 6 }).out).snap({ foo: 6 })
-		attest(o.apply({ foo: 7 }).errors?.summary).snap(
+		attest(o.traverse({ foo: 6 }).out).snap({ foo: 6 })
+		attest(o.traverse({ foo: 7 }).errors?.summary).snap(
 			"foo must be a multiple of 3 (was 7)"
 		)
 	})
@@ -32,8 +34,8 @@ describe("errors", () => {
 			proto: Array,
 			sequence: "number"
 		})
-		attest(t.apply([5]).out).snap([5])
-		attest(t.apply([5, "five"]).errors?.summary).snap(
+		attest(t.traverse([5]).out).snap([5])
+		attest(t.traverse([5, "five"]).errors?.summary).snap(
 			"value at [1] must be a number (was string)"
 		)
 	})
@@ -43,7 +45,7 @@ describe("errors", () => {
 			description: "my special bigint"
 		})
 		attest(superSpecialBigint.description).snap("my special bigint")
-		attest(superSpecialBigint.apply(5).errors?.summary).snap(
+		attest(superSpecialBigint.traverse(5).errors?.summary).snap(
 			"must be my special bigint (was number)"
 		)
 	})
@@ -56,7 +58,7 @@ describe("errors", () => {
 		attest(evenNumber.description).snap("an even number")
 		// since the error is from the divisor constraint which didn't have a
 		// description, it is unchanged
-		attest(evenNumber.apply(5).errors?.summary).snap(
+		attest(evenNumber.traverse(5).errors?.summary).snap(
 			"must be a multiple of 2 (was 5)"
 		)
 	})
@@ -99,14 +101,14 @@ describe("errors", () => {
 			}
 		})
 		const mySpecialSymbol = schema("symbol")
-		attest(mySpecialSymbol.apply("foo").errors?.summary).snap(
+		attest(mySpecialSymbol.traverse("foo").errors?.summary).snap(
 			"must be my special symbol (was string)"
 		)
 		configure({
 			domain: defaultConfig.domain
 		})
 		const myBoringSymbol = schema("symbol")
-		attest(myBoringSymbol.apply("foo").errors?.summary).snap(
+		attest(myBoringSymbol.traverse("foo").errors?.summary).snap(
 			"must be a symbol (was string)"
 		)
 	})

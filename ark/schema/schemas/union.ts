@@ -243,7 +243,7 @@ export class UnionNode<t = any, $ = any> extends BaseSchema<
 
 	rawKeyOf(): Schema {
 		return this.branches.reduce(
-			(result, branch) => result.and(branch.rawKeyOf()),
+			(result, branch) => result.intersectSatisfiable(branch.rawKeyOf()),
 			tsKeywords.unknown
 		)
 	}

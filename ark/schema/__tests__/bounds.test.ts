@@ -25,15 +25,17 @@ describe("bounds", () => {
 			max: { rule: 10 }
 		})
 
-		attest(t.apply(numericCases.lessThanMin).errors?.summary).snap(
+		attest(t.traverse(numericCases.lessThanMin).errors?.summary).snap(
 			"must be more than 5 (was 4)"
 		)
-		attest(t.apply(numericCases.equalToExclusiveMin).errors?.summary).snap(
+		attest(t.traverse(numericCases.equalToExclusiveMin).errors?.summary).snap(
 			"must be more than 5 (was 5)"
 		)
-		attest(t.apply(numericCases.between).errors).equals(undefined)
-		attest(t.apply(numericCases.equalToInclusiveMax).errors).equals(undefined)
-		attest(t.apply(numericCases.greaterThanMax).errors?.summary).snap(
+		attest(t.traverse(numericCases.between).errors).equals(undefined)
+		attest(t.traverse(numericCases.equalToInclusiveMax).errors).equals(
+			undefined
+		)
+		attest(t.traverse(numericCases.greaterThanMax).errors?.summary).snap(
 			"must be at most 10 (was 11)"
 		)
 	})
@@ -44,15 +46,15 @@ describe("bounds", () => {
 			maxLength: { rule: 10 }
 		})
 
-		attest(t.apply(lengthCases.lessThanMin).errors?.summary).snap(
+		attest(t.traverse(lengthCases.lessThanMin).errors?.summary).snap(
 			"must be more than length 5 (was 4)"
 		)
-		attest(t.apply(lengthCases.equalToExclusiveMin).errors?.summary).snap(
+		attest(t.traverse(lengthCases.equalToExclusiveMin).errors?.summary).snap(
 			"must be more than length 5 (was 5)"
 		)
-		attest(t.apply(lengthCases.between).errors).equals(undefined)
-		attest(t.apply(lengthCases.equalToInclusiveMax).errors).equals(undefined)
-		attest(t.apply(lengthCases.greaterThanMax).errors?.summary).snap(
+		attest(t.traverse(lengthCases.between).errors).equals(undefined)
+		attest(t.traverse(lengthCases.equalToInclusiveMax).errors).equals(undefined)
+		attest(t.traverse(lengthCases.greaterThanMax).errors?.summary).snap(
 			"must be at most length 10 (was 11)"
 		)
 	})
@@ -63,15 +65,15 @@ describe("bounds", () => {
 			before: { rule: 10 }
 		})
 
-		attest(t.apply(dateCases.lessThanMin).errors?.summary).snap(
+		attest(t.traverse(dateCases.lessThanMin).errors?.summary).snap(
 			"must be after 12/31/1969, 7:00:00 PM (was 12/31/1969, 7:00:00 PM)"
 		)
-		attest(t.apply(dateCases.equalToExclusiveMin).errors?.summary).snap(
+		attest(t.traverse(dateCases.equalToExclusiveMin).errors?.summary).snap(
 			"must be after 12/31/1969, 7:00:00 PM (was 12/31/1969, 7:00:00 PM)"
 		)
-		attest(t.apply(dateCases.between).errors).equals(undefined)
-		attest(t.apply(dateCases.equalToInclusiveMax).errors).equals(undefined)
-		attest(t.apply(dateCases.greaterThanMax).errors?.summary).snap(
+		attest(t.traverse(dateCases.between).errors).equals(undefined)
+		attest(t.traverse(dateCases.equalToInclusiveMax).errors).equals(undefined)
+		attest(t.traverse(dateCases.greaterThanMax).errors?.summary).snap(
 			"must be 12/31/1969, 7:00:00 PM or earlier (was 12/31/1969, 7:00:00 PM)"
 		)
 	})
@@ -130,8 +132,8 @@ describe("bounds", () => {
 								unit: new Date(6)
 						  })
 
-				attest(l.and(r).json).equals(expected.json)
-				attest(r.and(l).json).equals(expected.json)
+				attest(l.intersectSatisfiable(r).json).equals(expected.json)
+				attest(r.intersectSatisfiable(l).json).equals(expected.json)
 			})
 			it("non-overlapping exclusive", () => {
 				const l = schema({
@@ -165,8 +167,8 @@ describe("bounds", () => {
 					...basis,
 					[min]: 4
 				} as IntersectionDef)
-				attest(lesser.and(greater).json).equals(greater.json)
-				attest(greater.and(lesser).json).equals(greater.json)
+				attest(lesser.intersectSatisfiable(greater).json).equals(greater.json)
+				attest(greater.intersectSatisfiable(lesser).json).equals(greater.json)
 			})
 			it("lesser max is stricter", () => {
 				const lesser = schema({ ...basis, [max]: 3 } as IntersectionDef)
@@ -174,8 +176,8 @@ describe("bounds", () => {
 					...basis,
 					[max]: { rule: 4, exclusive: true }
 				} as IntersectionDef)
-				attest(lesser.and(greater).json).equals(lesser.json)
-				attest(greater.and(lesser).json).equals(lesser.json)
+				attest(lesser.intersectSatisfiable(greater).json).equals(lesser.json)
+				attest(greater.intersectSatisfiable(lesser).json).equals(lesser.json)
 			})
 			it("exclusive wins if limits equal", () => {
 				const exclusive = schema({
@@ -186,8 +188,12 @@ describe("bounds", () => {
 					...basis,
 					[max]: 3
 				} as IntersectionDef)
-				attest(exclusive.and(inclusive).json).equals(exclusive.json)
-				attest(inclusive.and(exclusive).json).equals(exclusive.json)
+				attest(exclusive.intersectSatisfiable(inclusive).json).equals(
+					exclusive.json
+				)
+				attest(inclusive.intersectSatisfiable(exclusive).json).equals(
+					exclusive.json
+				)
 			})
 		})
 	})

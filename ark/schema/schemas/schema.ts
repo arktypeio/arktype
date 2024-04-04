@@ -72,14 +72,14 @@ export abstract class BaseSchema<
 		return this.intersectInternal(r) as never
 	}
 
-	and<r extends Schema>(
+	intersectSatisfiable<r extends Schema>(
 		r: r
 	): Schema<inferIntersection<this["infer"], r["infer"]>> {
 		const result = this.intersect(r)
 		return result instanceof Disjoint ? result.throw() : (result as never)
 	}
 
-	or<r extends Schema>(r: r): Schema<t | r["infer"]> {
+	union<r extends Schema>(r: r): Schema<t | r["infer"]> {
 		const branches = [...this.branches, ...(r.branches as any)]
 		return this.$.schema(branches) as never
 	}
@@ -178,7 +178,7 @@ export abstract class BaseSchema<
 	}
 
 	assert(data: unknown): this["infer"] {
-		const result = this.apply(data)
+		const result = this.traverse(data)
 		return result.errors ? result.errors.throw() : result.out
 	}
 
@@ -205,7 +205,7 @@ export abstract class BaseSchema<
 			)
 		}
 
-		return this.and(
+		return this.intersectSatisfiable(
 			// TODO: not an intersection
 			this.$.node("intersection", {
 				[kind]: constraint

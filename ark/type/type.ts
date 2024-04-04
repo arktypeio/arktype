@@ -138,7 +138,7 @@ export class Type<t = unknown, $ = any> extends Callable<
 		public $: Scope
 	) {
 		const root = $.parseTypeRoot(definition) as {} as Schema<t>
-		super(root.apply as never, { bind: root })
+		super(root.traverse as never, { bind: root })
 		this.root = root
 		this.allows = root.allows.bind(root)
 		this.json = root.json
@@ -176,7 +176,7 @@ export class Type<t = unknown, $ = any> extends Callable<
 
 	or<def>(def: validateTypeRoot<def, $>): Type<t | inferTypeRoot<def, $>, $> {
 		return new Type(
-			this.root.or(this.$.parseTypeRoot(def).root),
+			this.root.union(this.$.parseTypeRoot(def).root),
 			this.$
 		) as never
 	}

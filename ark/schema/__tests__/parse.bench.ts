@@ -6,7 +6,7 @@ bench("domain", () => {
 }).types([2, "instantiations"])
 
 bench("intersection", () => {
-	return schema("string").and(schema("number"))
+	return schema("string").intersectSatisfiable(schema("number"))
 }).types([846, "instantiations"])
 
 bench("no assignment", () => {

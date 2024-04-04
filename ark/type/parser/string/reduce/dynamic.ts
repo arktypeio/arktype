@@ -142,10 +142,10 @@ export class DynamicState {
 		this.applyPrefixes()
 		const root = this.root!
 		this.branches["intersection"] =
-			this.branches["intersection"]?.and(root) ?? root
+			this.branches["intersection"]?.intersectSatisfiable(root) ?? root
 		if (token === "|") {
 			this.branches["union"] =
-				this.branches["union"]?.or(this.branches["intersection"]) ??
+				this.branches["union"]?.union(this.branches["intersection"]) ??
 				this.branches["intersection"]
 			delete this.branches["intersection"]
 		}

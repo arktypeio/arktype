@@ -17,7 +17,7 @@ describe("parse", () => {
 			domain: "number",
 			divisor: 5
 		})
-		const result = l.and(r)
+		const result = l.intersectSatisfiable(r)
 		attest<Schema<number>>(result)
 		attest(result.json).snap({
 			domain: "number",

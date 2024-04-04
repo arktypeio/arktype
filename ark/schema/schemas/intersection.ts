@@ -339,7 +339,7 @@ export class IntersectionNode<t = unknown, $ = any> extends BaseSchema<
 	rawKeyOf(): Schema {
 		return this.basis
 			? this.props
-				? this.basis.rawKeyOf().or(this.props.rawKeyOf())
+				? this.basis.rawKeyOf().union(this.props.rawKeyOf())
 				: this.basis.rawKeyOf()
 			: this.props?.rawKeyOf() ?? (tsKeywords.never as {} as Schema)
 	}

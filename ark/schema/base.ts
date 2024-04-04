@@ -1,5 +1,5 @@
 import {
-	DynamicBase,
+	Callable,
 	compileSerializedValue,
 	flatMorph,
 	includes,
@@ -38,6 +38,7 @@ import type {
 	MorphNode,
 	distillConstrainableIn,
 	distillConstrainableOut,
+	distillIn,
 	distillOut
 } from "./schemas/morph.js"
 import type { ProtoNode } from "./schemas/proto.js"
@@ -130,9 +131,23 @@ $ark.nodeClassesByKind = {} as NodeClassesByKind
 export abstract class BaseNode<
 	t,
 	d extends BaseNodeDeclaration
-> extends DynamicBase<BaseAttachmentsOf<d>> {
+> extends Callable<
+	(data: d["prerequisite"]) => ArkResult<distillIn<t>, distillOut<t>>,
+	BaseAttachmentsOf<d>
+> {
 	constructor(public attachments: BaseAttachments) {
-		super(attachments as never)
+		super((data: any): ArkResult<any> => {
+			if (
+				!this.includesMorph &&
+				!this.includesContextDependentPredicate &&
+				this.allows(data)
+			) {
+				return { data, out: data }
+			}
+			const ctx = new TraversalContext(data, this.$.resolvedConfig)
+			this.traverseApply(data, ctx)
+			return ctx.finalize()
+		}, attachments as never)
 		this.contributesReferencesByName =
 			this.name in this.referencesByName
 				? this.referencesByName
@@ -222,19 +237,10 @@ export abstract class BaseNode<
 		return this.traverseAllows(data as never, ctx)
 	}
 
-	apply(
+	traverse(
 		data: d["prerequisite"]
 	): ArkResult<this["in"]["infer"], this["infer"]> {
-		if (
-			!this.includesMorph &&
-			!this.includesContextDependentPredicate &&
-			this.allows(data)
-		) {
-			return { data, out: data }
-		}
-		const ctx = new TraversalContext(data, this.$.resolvedConfig)
-		this.traverseApply(data, ctx)
-		return ctx.finalize()
+		return this(data)
 	}
 
 	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
