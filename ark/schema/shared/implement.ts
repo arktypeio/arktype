@@ -26,6 +26,7 @@ import type {
 	ParsedUnknownNodeConfig
 } from "../scope.js"
 import type {
+	BaseAttachmentsOf,
 	BaseErrorContext,
 	BaseMeta,
 	BaseNodeDeclaration
@@ -288,6 +289,7 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 		inner: d["inner"],
 		$: BaseScope
 	) => Node<d["reducibleTo"]> | Disjoint | undefined
+	attach?: (base: BaseAttachmentsOf<d>) => d["attachments"]
 }
 
 export interface UnknownNodeImplementation

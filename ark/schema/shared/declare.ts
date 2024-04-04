@@ -20,6 +20,7 @@ interface DeclarationInput {
 	errorContext?: object
 	prerequisite?: unknown
 	childKind?: NodeKind
+	attachments?: object
 }
 
 export interface BaseErrorContext<kind extends NodeKind = NodeKind> {
@@ -43,6 +44,8 @@ export type declareNode<
 		childKind: never
 		reducibleTo: d["kind"]
 		errorContext: null
+		// TODO: remove
+		attachments: {}
 	},
 	d & {
 		errorContext: d["errorContext"] extends {}
@@ -68,6 +71,7 @@ export type BaseNodeDeclaration = {
 	intersectionIsOpen: boolean
 	childKind: NodeKind
 	errorContext: BaseErrorContext | null
+	attachments: object
 }
 
 export type ownIntersectionResult<d extends BaseNodeDeclaration> =
