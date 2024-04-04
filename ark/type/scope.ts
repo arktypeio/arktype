@@ -6,7 +6,7 @@ import {
 	type arkKind,
 	type exportedName,
 	type GenericProps,
-	type NodeParseContext,
+	type NodeParseOptions,
 	type SchemaNode
 } from "@arktype/schema"
 import {
@@ -158,13 +158,11 @@ export type Module<$ = any> = {
 		  type.cast<"module">
 }
 
-export interface ParseContext extends NodeParseContext {
+export interface ParseContext extends NodeParseOptions {
 	$: Scope
 }
 
 type MergedResolutions = Record<string, SchemaNode | Generic>
-
-type ParseContextInput = Partial<ParseContext>
 
 declare global {
 	export interface ArkRegistry {
@@ -219,14 +217,12 @@ export class Scope<$ = any> extends BaseScope<$> {
 			: throwParseError(writeBadDefinitionTypeMessage(domainOf(def)))
 	}
 
-	parseTypeRoot(def: unknown, input?: ParseContextInput): Type {
+	parseTypeRoot(def: unknown, opts?: NodeParseOptions): Type {
 		return new Type(
 			this.parse(def, {
 				args: { this: {} as SchemaNode },
-				baseName: "type",
-				path: [],
 				$: this,
-				...input
+				...opts
 			}),
 			this
 		)

@@ -59,13 +59,6 @@ export const parseObjectLiteral = (
 		if (entry.kind === "spread") {
 			return throwParseError(nonLeadingSpreadError)
 		}
-		ctx.path.push(
-			`${
-				typeof entry.inner === "symbol"
-					? `[${printable(entry.inner)}]`
-					: entry.inner
-			}`
-		)
 
 		if (entry.kind === "index") {
 			// handle key parsing first to match type behavior
@@ -82,7 +75,6 @@ export const parseObjectLiteral = (
 			})
 			propNodes.push(propNode)
 		}
-		ctx.path.pop()
 	}
 	return ctx.$.schema({
 		domain: "object",

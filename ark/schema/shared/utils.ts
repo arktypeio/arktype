@@ -7,6 +7,8 @@ import {
 	type mutable
 } from "@arktype/util"
 import type { Node } from "../base.js"
+import type { GenericNode } from "../generic.js"
+import type { ModuleNode } from "../module.js"
 
 export const makeRootAndArrayPropertiesMutable = <o extends object>(
 	o: o
@@ -36,6 +38,8 @@ export const arkKind = Symbol("ArkTypeInternalKind")
 declare global {
 	export interface ArkKinds {
 		node: Node
+		genericNode: GenericNode
+		moduleNode: ModuleNode
 	}
 }
 

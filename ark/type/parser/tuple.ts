@@ -53,9 +53,8 @@ export const parseTupleLiteral = (
 			i++
 		}
 
-		ctx.path.push(`${i}`)
 		const element = ctx.$.parse(def[i], ctx)
-		ctx.path.pop()
+
 		i++
 		if (def[i] === "?") {
 			if (spread) {

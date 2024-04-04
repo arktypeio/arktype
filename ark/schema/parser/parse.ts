@@ -37,12 +37,9 @@ export type NodeParseOptions = {
 	 * Useful for defining reductions like number|string|bigint|symbol|object|true|false|null|undefined => unknown
 	 **/
 	reduceTo?: Node
-	// TODO: remove?
-	root?: boolean
 }
 
 export interface NodeParseContext extends NodeParseOptions {
-	path: string[]
 	$: BaseScope
 	raw: unknown
 }

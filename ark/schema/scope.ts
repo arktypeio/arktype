@@ -18,6 +18,7 @@ import {
 } from "./generic.js"
 import type { Ark } from "./keywords/keywords.js"
 import type { NodeDef, reducibleKindOf } from "./kinds.js"
+import type { ModuleNode } from "./module.js"
 import type { instantiateSchema, validateSchema } from "./parser/inference.js"
 import {
 	parseNode,
@@ -136,7 +137,10 @@ export const resolveConfig = (
 	config: ArkConfig | undefined
 ): ResolvedArkConfig => extendConfig(defaultConfig, config) as never
 
-export type SpaceResolutions = Record<string, SchemaNode | undefined>
+export type BaseScopeResolutions = Record<
+	string,
+	SchemaNode | GenericNode | undefined
+>
 
 export type exportedName<$> = Exclude<keyof $, PrivateDeclaration>
 
@@ -152,8 +156,8 @@ export class BaseScope<$ = any> {
 
 	readonly nodeCache: { [innerId: string]: Node } = {}
 	readonly referencesByName: { [name: string]: UnknownNode } = {}
-	readonly references: readonly UnknownNode[] = []
-	readonly resolutions: SpaceResolutions = {}
+	references: readonly UnknownNode[] = []
+	readonly resolutions: BaseScopeResolutions = {}
 	readonly json: Json = {}
 	exportedNames: array<exportedName<$>>
 
@@ -243,9 +247,9 @@ export class BaseScope<$ = any> {
 			def = def()
 		}
 		// TODO: initialize here?
-		const resolution = hasArkKind(def, "generic")
+		const resolution = hasArkKind(def, "genericNode")
 			? validateUninstantiatedGenericNode(def)
-			: hasArkKind(def, "module")
+			: hasArkKind(def, "moduleNode")
 			? throwParseError(writeMissingSubmoduleAccessMessage(name))
 			: this.schema(def as never, { args: {} })
 		this.resolutions[name] = resolution
@@ -290,12 +294,12 @@ export class BaseScope<$ = any> {
 				`#${alias}`,
 				value
 			]) as never,
-			"module"
+			"moduleNode"
 		) as never
 	}
 
-	private exportedResolutions: SpaceResolutions | undefined
-	private exportCache: ExportCache | undefined
+	private exportedResolutions: BaseScopeResolutions | undefined
+	private exportCache: NodeExportCache | undefined
 	protected rawExport(...names: string[]): unknown {
 		if (!this.exportCache) {
 			this.exportCache = {}
@@ -325,8 +329,11 @@ export class BaseScope<$ = any> {
 			}
 			this.exportedResolutions = resolutionsOfModule(this.exportCache)
 			// TODO: add generic json
-			this.json = flatMorph(this.exportedResolutions, (k, v) =>
-				hasArkKind(v, "node") ? [k, v.json] : []
+			Object.assign(
+				this.json,
+				flatMorph(this.exportedResolutions, (k, v) =>
+					hasArkKind(v, "node") ? [k, v.json] : []
+				)
 			)
 			Object.assign(this.resolutions, this.exportedResolutions)
 			this.references = Object.values(this.referencesByName)
@@ -339,10 +346,15 @@ export class BaseScope<$ = any> {
 				name,
 				this.exportCache![name]
 			]) as never,
-			"module"
+			"moduleNode"
 		) as never
 	}
 }
+
+export type NodeExportCache = Record<
+	string,
+	SchemaNode | GenericNode | ModuleNode | undefined
+>
 
 export const root: BaseScope<{}> = new BaseScope({})
 

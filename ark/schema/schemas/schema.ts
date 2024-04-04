@@ -105,15 +105,13 @@ export abstract class BaseSchema<
 
 	extract(other: SchemaNode): SchemaNode {
 		return this.$.schema(
-			this.branches.filter((branch) => branch.extends(other)),
-			{ root: true }
+			this.branches.filter((branch) => branch.extends(other))
 		)
 	}
 
 	exclude(other: SchemaNode): SchemaNode {
 		return this.$.schema(
-			this.branches.filter((branch) => !branch.extends(other)),
-			{ root: true }
+			this.branches.filter((branch) => !branch.extends(other))
 		) as never
 	}
 
@@ -123,7 +121,7 @@ export abstract class BaseSchema<
 				proto: Array,
 				sequence: this
 			},
-			{ prereduced: true, root: true }
+			{ prereduced: true }
 		) as never
 	}
 
