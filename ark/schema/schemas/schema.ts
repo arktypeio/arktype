@@ -1,21 +1,27 @@
-import { flatMorph, throwParseError, type conform } from "@arktype/util"
-import { BaseNode, type Node, type Schema, type SchemaDef } from "../base.js"
+import { type conform, flatMorph, throwParseError } from "@arktype/util"
+import {
+	BaseNode,
+	type BaseNodeAttachments,
+	type Node,
+	type Schema,
+	type SchemaDef
+} from "../base.js"
 import type { constrain } from "../constraints/ast.js"
 import {
-	throwInvalidOperandError,
-	type PrimitiveConstraintKind
+	type PrimitiveConstraintKind,
+	throwInvalidOperandError
 } from "../constraints/constraint.js"
 import type { NodeDef, reducibleKindOf } from "../kinds.js"
 import type { instantiateSchema } from "../parser/inference.js"
 import type { BaseMeta, BaseNodeDeclaration } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
-	schemaKindsRightOf,
 	type ConstraintKind,
 	type NodeKind,
 	type SchemaKind,
 	type TypeIntersection,
-	type kindRightOf
+	type kindRightOf,
+	schemaKindsRightOf
 } from "../shared/implement.js"
 import type { inferIntersection } from "../shared/intersections.js"
 import type { inferred } from "../shared/utils.js"
@@ -41,6 +47,12 @@ export const defineRightwardIntersections = <kind extends SchemaKind>(
 
 export interface BaseSchemaDeclaration extends BaseNodeDeclaration {
 	kind: SchemaKind
+	attachments: BaseSchemaAttachments<BaseSchemaDeclaration>
+}
+
+export interface BaseSchemaAttachments<d extends BaseNodeDeclaration>
+	extends BaseNodeAttachments<d> {
+	rawKeyOf(): Schema
 }
 
 export class BaseSchema<t, $, d extends BaseSchemaDeclaration> extends BaseNode<

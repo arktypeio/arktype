@@ -16,7 +16,8 @@
 		"rules": {
 			"suspicious": {
 				"noExplicitAny": "off",
-				"noRedeclare": "off"
+				"noRedeclare": "off",
+				"noEmptyInterface": "off"
 			},
 			"complexity": {
 				"noBannedTypes": "off",

@@ -47,11 +47,11 @@ import type { UnitNode } from "./schemas/unit.js"
 import type { BaseScope } from "./scope.js"
 import type { NodeCompiler } from "./shared/compile.js"
 import type {
-	BaseAttachmentsOf,
 	BaseErrorContext,
 	BaseMeta,
 	BaseNodeDeclaration,
-	attachmentsOf
+	attachmentsOf,
+	parsedAttachmentsOf
 } from "./shared/declare.js"
 import { Disjoint } from "./shared/disjoint.js"
 import type { ArkResult } from "./shared/errors.js"
@@ -114,14 +114,6 @@ export type NodeSubclass<d extends BaseNodeDeclaration = BaseNodeDeclaration> =
 
 export type UnknownNode = BaseNode<any, BaseNodeDeclaration>
 
-type subclassKind<self> = self extends Constructor<{
-	kind: infer kind extends NodeKind
-}>
-	? kind
-	: never
-
-type subclassDeclaration<self> = Declaration<subclassKind<self>>
-
 declare global {
 	export interface ArkRegistry {
 		nodeClassesByKind: NodeClassesByKind
@@ -156,6 +148,14 @@ export const implementNode = <d extends BaseNodeDeclaration = never>(
 	}
 	return implementation as never
 }
+
+export type BaseNodeAttachments<d extends BaseNodeDeclaration> =
+	parsedAttachmentsOf<d> & {
+		traverseAllows: TraverseAllows<d["prerequisite"]>
+		traverseApply: TraverseApply<d["prerequisite"]>
+		expression: string
+		compile: (js: NodeCompiler) => void
+	}
 
 export abstract class BaseNode<
 	t,

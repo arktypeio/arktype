@@ -1,17 +1,25 @@
 import {
-	compileSerializedValue,
-	flatMorph,
-	printable,
 	type ErrorMessage,
 	type JsonData,
+	compileSerializedValue,
 	type entryOf,
 	type evaluate,
+	flatMorph,
 	type indexOf,
 	type keySetOf,
 	type listable,
+	printable,
 	type requireKeys
 } from "@arktype/util"
-import type { Node, Schema, UnknownNode } from "../base.js"
+import type { satisfy } from "../../util/generics.js"
+import type { Dict, Key } from "../../util/records.js"
+import type {
+	BaseAttachments,
+	BaseNodeAttachments,
+	Node,
+	Schema,
+	UnknownNode
+} from "../base.js"
 import type { PropsGroupInput } from "../constraints/props/props.js"
 import type { Declaration, Inner, errorContext } from "../kinds.js"
 import type { NodeParseContext } from "../parser/parse.js"
@@ -25,14 +33,16 @@ import type {
 	NodeConfig,
 	ParsedUnknownNodeConfig
 } from "../scope.js"
+import type { NodeCompiler } from "./compile.js"
 import type {
-	BaseAttachmentsOf,
 	BaseErrorContext,
 	BaseMeta,
-	BaseNodeDeclaration
+	BaseNodeDeclaration,
+	parsedAttachmentsOf
 } from "./declare.js"
 import type { Disjoint } from "./disjoint.js"
 import { throwArkError } from "./errors.js"
+import type { TraverseAllows, TraverseApply } from "./traversal.js"
 import { hasArkKind } from "./utils.js"
 
 export const basisKinds = ["unit", "proto", "domain"] as const
@@ -291,7 +301,7 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 		inner: d["inner"],
 		$: BaseScope
 	) => Node<d["reducibleTo"]> | Disjoint | undefined
-	attach?: (base: BaseAttachmentsOf<d>) => d["attachments"]
+	attach?: (base: parsedAttachmentsOf<d>) => d["attachments"]
 }
 
 export interface UnknownNodeImplementation
@@ -301,6 +311,59 @@ export interface UnknownNodeImplementation
 	intersections: UnknownIntersectionMap
 	keys: Record<string, NodeKeyImplementation<any, any>>
 }
+
+export interface PrimitiveNodeDeclaration extends BaseNodeDeclaration {
+	kind: PrimitiveKind
+	attachments: PrimitiveAttachments<this>
+	inner: {}
+}
+
+export const derivePrimitiveAttachments = <
+	d extends PrimitiveNodeDeclaration = never
+>(
+	parsed: parsedAttachmentsOf<d>,
+	implemented: ImplementedPrimitiveAttachments<d>
+): d["attachments"] => {
+	const self = Object.assign(
+		parsed,
+		implemented as {} as ImplementedPrimitiveAttachments
+	)
+	const errorContext = {
+		code: self.kind,
+		description: self.description,
+		...self.inner
+	}
+	return Object.assign(self, {
+		errorContext,
+		traverseApply: (data, ctx) => {
+			if (!self.traverseAllows(data, ctx)) {
+				ctx.error(errorContext as never)
+			}
+		},
+		compile(js) {
+			js.compilePrimitive(self as never)
+		}
+	} satisfies DerivedPrimitiveAttachments) as never
+}
+
+export type PrimitiveAttachments<
+	d extends PrimitiveNodeDeclaration = PrimitiveNodeDeclaration
+> = BaseNodeAttachments<d> & {
+	readonly compiledCondition: string
+	readonly compiledNegation: string
+	readonly errorContext: d["errorContext"]
+}
+
+export type ImplementedPrimitiveAttachments<
+	d extends PrimitiveNodeDeclaration = PrimitiveNodeDeclaration
+> = Omit<
+	d["attachments"],
+	keyof parsedAttachmentsOf<d> | keyof DerivedPrimitiveAttachments
+>
+
+export type DerivedPrimitiveAttachments<
+	d extends PrimitiveNodeDeclaration = PrimitiveNodeDeclaration
+> = Pick<d["attachments"], "errorContext" | "traverseApply" | "compile">
 
 export type nodeImplementationOf<d extends BaseNodeDeclaration> =
 	nodeImplementationInputOf<d> & {

@@ -16,7 +16,9 @@ export type Json =
 	  }
 	| JsonData[]
 
-export type JsonData = string | boolean | number | null | Json
+export type JsonPrimitive = string | boolean | number | null
+
+export type JsonData = Json | JsonPrimitive
 
 export const snapshot = <t>(
 	data: t,

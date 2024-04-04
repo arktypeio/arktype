@@ -1,7 +1,7 @@
 import {
 	capitalize,
-	throwParseError,
-	type describeExpression
+	type describeExpression,
+	throwParseError
 } from "@arktype/util"
 import { BaseNode, type Constraint, type Node, type Schema } from "../base.js"
 import type { Prerequisite } from "../kinds.js"

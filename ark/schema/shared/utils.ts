@@ -1,9 +1,9 @@
 import {
+	type array,
+	type evaluate,
 	flatMorph,
 	isArray,
 	literalPropAccess,
-	type array,
-	type evaluate,
 	type mutable
 } from "@arktype/util"
 import type { Node } from "../base.js"

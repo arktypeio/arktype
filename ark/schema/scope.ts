@@ -1,29 +1,29 @@
 import {
 	CompiledFunction,
-	flatMorph,
-	isThunk,
-	throwParseError,
-	type array,
 	type Dict,
-	type evaluate,
-	type flattenListable,
 	type Json,
-	type requireKeys
+	type array,
+	type evaluate,
+	flatMorph,
+	type flattenListable,
+	isThunk,
+	type requireKeys,
+	throwParseError
 } from "@arktype/util"
 import type { Node, Schema, SchemaDef, UnknownNode } from "./base.js"
 import { mergeConfigs } from "./config.js"
 import {
-	validateUninstantiatedGenericNode,
-	type GenericNode
+	type GenericNode,
+	validateUninstantiatedGenericNode
 } from "./generic.js"
 import type { Ark } from "./keywords/keywords.js"
 import type { NodeDef, reducibleKindOf } from "./kinds.js"
 import type { ModuleNode } from "./module.js"
 import type { instantiateSchema, validateSchema } from "./parser/inference.js"
 import {
+	type NodeParseOptions,
 	parseNode,
-	schemaKindOf,
-	type NodeParseOptions
+	schemaKindOf
 } from "./parser/parse.js"
 import type { distillIn, distillOut } from "./schemas/morph.js"
 import type { UnionNode } from "./schemas/union.js"

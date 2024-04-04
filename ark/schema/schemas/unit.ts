@@ -1,10 +1,25 @@
-import { domainOf, printable, prototypeKeysOf } from "@arktype/util"
+import {
+	type Domain,
+	domainOf,
+	printable,
+	prototypeKeysOf
+} from "@arktype/util"
+import type { array } from "../../util/arrays.js"
+import type { Key } from "../../util/records.js"
+import type { JsonPrimitive } from "../../util/serialize.js"
 import { implementNode } from "../base.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
-import { defaultValueSerializer } from "../shared/implement.js"
+import {
+	type PrimitiveAttachments,
+	defaultValueSerializer,
+	derivePrimitiveAttachments
+} from "../shared/implement.js"
 import { BaseBasis } from "./basis.js"
-import { defineRightwardIntersections } from "./schema.js"
+import {
+	type BaseSchemaAttachments,
+	defineRightwardIntersections
+} from "./schema.js"
 
 export type UnitDef<value = unknown> = UnitInner<value>
 
@@ -18,7 +33,17 @@ export type UnitDeclaration = declareNode<{
 	normalizedDef: UnitDef
 	inner: UnitInner
 	errorContext: UnitInner
+	attachments: UnitAttachments
 }>
+
+export interface UnitAttachments
+	extends BaseSchemaAttachments<UnitDeclaration>,
+		PrimitiveAttachments<UnitDeclaration> {
+	readonly literalKeys: array<Key>
+	readonly domain: Domain
+	readonly compiledValue: JsonPrimitive
+	readonly serializedValue: JsonPrimitive
+}
 
 export const unitImplementation = implementNode<UnitDeclaration>({
 	kind: "unit",
@@ -41,6 +66,34 @@ export const unitImplementation = implementNode<UnitDeclaration>({
 		...defineRightwardIntersections("unit", (l, r) =>
 			r.allows(l.unit) ? l : Disjoint.from("assignability", l.unit, r)
 		)
+	},
+	attach: (self) => {
+		const compiledValue: JsonPrimitive = (self.json as any).unit
+		const serializedValue: JsonPrimitive =
+			typeof self.unit === "string" || self.unit instanceof Date
+				? JSON.stringify(compiledValue)
+				: compiledValue
+		const literalKeys = prototypeKeysOf(self.unit)
+		return derivePrimitiveAttachments<UnitDeclaration>(self, {
+			compiledValue,
+			serializedValue,
+			compiledCondition: compileEqualityCheck(self.unit, serializedValue),
+			compiledNegation: compileEqualityCheck(
+				self.unit,
+				serializedValue,
+				"negated"
+			),
+			expression: printable(self.unit),
+			domain: domainOf(self.unit),
+			literalKeys,
+			traverseAllows:
+				self.unit instanceof Date
+					? (data: unknown) =>
+							data instanceof Date &&
+							data.toISOString() === compiledValue
+					: (data: unknown) => data === self.unit,
+			rawKeyOf: () => self.$.units(literalKeys) as never
+		})
 	}
 })
 
@@ -66,8 +119,8 @@ export class UnitNode<t = any, $ = any> extends BaseBasis<
 			? JSON.stringify(this.compiledValue)
 			: this.compiledValue
 
-	readonly compiledCondition = compileComparison(this)
-	readonly compiledNegation = compileComparison(this, "negated")
+	readonly compiledCondition = compileEqualityCheck(this)
+	readonly compiledNegation = compileEqualityCheck(this, "negated")
 
 	readonly errorContext = this.createErrorContext(this.inner)
 	readonly expression = printable(this.unit)
@@ -75,10 +128,14 @@ export class UnitNode<t = any, $ = any> extends BaseBasis<
 	readonly literalKeys = prototypeKeysOf(this.unit)
 }
 
-const compileComparison = (unit: UnitNode<any>, negated?: "negated") => {
-	if (unit.unit instanceof Date) {
-		const condition = `data instanceof Date && data.toISOString() === ${unit.serializedValue}`
+const compileEqualityCheck = (
+	unit: unknown,
+	serializedValue: JsonPrimitive,
+	negated?: "negated"
+) => {
+	if (unit instanceof Date) {
+		const condition = `data instanceof Date && data.toISOString() === ${serializedValue}`
 		return negated ? `!(${condition})` : condition
 	}
-	return `data ${negated ? "!" : "="}== ${unit.serializedValue}`
+	return `data ${negated ? "!" : "="}== ${serializedValue}`
 }

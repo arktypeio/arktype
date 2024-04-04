@@ -58,11 +58,11 @@ type prerequisiteOf<d extends DeclarationInput> = "prerequisite" extends keyof d
 	? d["prerequisite"]
 	: unknown
 
-export type BaseAttachmentsOf<d extends BaseNodeDeclaration> =
+export type parsedAttachmentsOf<d extends BaseNodeDeclaration> =
 	NarrowedAttachments<d> & d["inner"]
 
 export type attachmentsOf<d extends BaseNodeDeclaration> =
-	BaseAttachmentsOf<d> & d["attachments"]
+	parsedAttachmentsOf<d> & d["attachments"]
 
 export type BaseNodeDeclaration = {
 	kind: NodeKind

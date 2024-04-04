@@ -8,15 +8,17 @@ import {
 	objectKindOrDomainOf,
 	prototypeKeysOf
 } from "@arktype/util"
-import { type Schema, implementNode } from "../base.js"
+import { implementNode } from "../base.js"
 import { tsKeywords } from "../keywords/tsKeywords.js"
-import type { errorContext } from "../kinds.js"
-import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
-import { defaultValueSerializer } from "../shared/implement.js"
-import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
-import type { BaseSchema } from "./schema.js"
+import {
+	type PrimitiveAttachments,
+	defaultValueSerializer,
+	derivePrimitiveAttachments
+} from "../shared/implement.js"
+import type { TraverseAllows } from "../shared/traversal.js"
+import type { BaseSchema, BaseSchemaAttachments } from "./schema.js"
 
 export interface ProtoInner<proto extends Constructor = Constructor>
 	extends BaseMeta {
@@ -30,18 +32,12 @@ export type ProtoDef<proto extends Constructor = Constructor> =
 	| proto
 	| NormalizedProtoDef<proto>
 
-export interface ProtoAttachments {
-	traverseAllows: TraverseAllows
-	readonly expression: string
+export interface ProtoAttachments
+	extends BaseSchemaAttachments<ProtoDeclaration>,
+		PrimitiveAttachments<ProtoDeclaration> {
 	readonly serializedConstructor: string
 	readonly domain: "object"
-	readonly compiledCondition: string
-	readonly compiledNegation: string
-	readonly errorContext: errorContext<"proto">
 	readonly literalKeys: array<Key>
-	rawKeyOf(): Schema
-	traverseApply: TraverseApply
-	compile(js: NodeCompiler): void
 }
 
 export type ProtoDeclaration = declareNode<{
@@ -91,30 +87,16 @@ export const protoImplementation = implementNode<ProtoDeclaration>({
 		const serializedConstructor = (self.json as { proto: string }).proto
 		const compiledCondition = `data instanceof ${serializedConstructor}`
 		const literalKeys = prototypeKeysOf(self.proto.prototype)
-		const traverseAllows: TraverseAllows = (data) =>
-			data instanceof self.proto
-		const errorContext = {
-			code: "proto",
-			description: self.description,
-			...self.inner
-		} as const
-		return {
-			traverseAllows,
+		return derivePrimitiveAttachments<ProtoDeclaration>(self, {
+			traverseAllows: (data) => data instanceof self.proto,
 			expression: self.proto.name,
 			serializedConstructor,
 			domain: "object",
 			compiledCondition,
 			compiledNegation: `!(${compiledCondition})`,
 			literalKeys,
-			errorContext,
-			rawKeyOf: () => self.$.units(literalKeys),
-			traverseApply: (data, ctx) => {
-				if (!traverseAllows(data, ctx)) {
-					ctx.error(errorContext as never)
-				}
-			},
-			compile: (js) => js.compilePrimitive(self as never)
-		}
+			rawKeyOf: () => self.$.units(literalKeys)
+		})
 	}
 })
 
