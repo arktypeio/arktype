@@ -1,3 +1,4 @@
+import { implementNode } from "../../base.js"
 import { jsObjects } from "../../keywords/jsObjects.js"
 import type { declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
@@ -31,43 +32,42 @@ export type BeforeDeclaration = declareNode<{
 	errorContext: BeforeInner
 }>
 
+export const beforeImplementation = implementNode<BeforeDeclaration>({
+	kind: "before",
+	collapsibleKey: "rule",
+	hasAssociatedError: true,
+	keys: {
+		rule: {
+			parse: parseDateLimit,
+			serialize: (def) => def.toISOString()
+		},
+		exclusive: parseExclusiveKey
+	},
+	normalize: (def) =>
+		typeof def === "number" || typeof def === "string" || def instanceof Date
+			? { rule: def }
+			: def,
+	defaults: {
+		description: (node) =>
+			node.exclusive
+				? `before ${node.stringLimit}`
+				: `${node.stringLimit} or earlier`,
+		actual: (data) => data.toLocaleString()
+	},
+	intersections: {
+		before: (l, r) => (l.isStricterThan(r) ? l : r),
+		after: (before, after, $) =>
+			before.overlapsRange(after)
+				? before.overlapIsUnit(after)
+					? $.node("unit", { unit: before.rule })
+					: null
+				: Disjoint.from("range", before, after)
+	}
+})
+
 export class BeforeNode extends BaseRange<BeforeDeclaration> {
 	static implementation: nodeImplementationOf<BeforeDeclaration> =
-		this.implement({
-			kind: "before",
-			collapsibleKey: "rule",
-			hasAssociatedError: true,
-			keys: {
-				rule: {
-					parse: parseDateLimit,
-					serialize: (def) => def.toISOString()
-				},
-				exclusive: parseExclusiveKey
-			},
-			normalize: (def) =>
-				typeof def === "number" ||
-				typeof def === "string" ||
-				def instanceof Date
-					? { rule: def }
-					: def,
-			defaults: {
-				description(node) {
-					return node.exclusive
-						? `before ${node.stringLimit}`
-						: `${node.stringLimit} or earlier`
-				},
-				actual: (data) => data.toLocaleString()
-			},
-			intersections: {
-				before: (l, r) => (l.isStricterThan(r) ? l : r),
-				after: (before, after, $) =>
-					before.overlapsRange(after)
-						? before.overlapIsUnit(after)
-							? $.node("unit", { unit: before.rule })
-							: null
-						: Disjoint.from("range", before, after)
-			}
-		})
+		beforeImplementation
 
 	readonly impliedBasis = jsObjects.Date
 

@@ -43,11 +43,10 @@ export interface BaseSchemaDeclaration extends BaseNodeDeclaration {
 	kind: SchemaKind
 }
 
-export abstract class BaseSchema<
+export class BaseSchema<t, $, d extends BaseSchemaDeclaration> extends BaseNode<
 	t,
-	$,
-	d extends BaseSchemaDeclaration
-> extends BaseNode<t, d> {
+	d
+> {
 	readonly branches: readonly Node<UnionChildKind>[] = this.hasKind("union")
 		? this.inner.branches
 		: [this as never]
@@ -63,8 +62,6 @@ export abstract class BaseSchema<
 		}
 		return this.keyofCache as never
 	}
-
-	abstract rawKeyOf(): Schema
 
 	intersect<r extends Schema>(
 		r: r

@@ -1,3 +1,4 @@
+import { implementNode } from "../../base.js"
 import { internalKeywords } from "../../keywords/internal.js"
 import type { declareNode } from "../../shared/declare.js"
 import type { nodeImplementationOf } from "../../shared/implement.js"
@@ -28,33 +29,34 @@ export type MinLengthDeclaration = declareNode<{
 	errorContext: MinLengthInner
 }>
 
+export const minLengthImplementation = implementNode<MinLengthDeclaration>({
+	kind: "minLength",
+	collapsibleKey: "rule",
+	hasAssociatedError: true,
+	keys: {
+		rule: {},
+		exclusive: parseExclusiveKey
+	},
+	normalize: (def) => (typeof def === "number" ? { rule: def } : def),
+	defaults: {
+		description: (node) =>
+			node.exclusive
+				? node.rule === 0
+					? "non-empty"
+					: `more than length ${node.rule}`
+				: node.rule === 1
+				? "non-empty"
+				: `at least length ${node.rule}`,
+		actual: (data) => `${data.length}`
+	},
+	intersections: {
+		minLength: (l, r) => (l.isStricterThan(r) ? l : r)
+	}
+})
+
 export class MinLengthNode extends BaseRange<MinLengthDeclaration> {
 	static implementation: nodeImplementationOf<MinLengthDeclaration> =
-		this.implement({
-			kind: "minLength",
-			collapsibleKey: "rule",
-			hasAssociatedError: true,
-			keys: {
-				rule: {},
-				exclusive: parseExclusiveKey
-			},
-			normalize: (def) => (typeof def === "number" ? { rule: def } : def),
-			defaults: {
-				description(node) {
-					return node.exclusive
-						? node.rule === 0
-							? "non-empty"
-							: `more than length ${node.rule}`
-						: node.rule === 1
-						? "non-empty"
-						: `at least length ${node.rule}`
-				},
-				actual: (data) => `${data.length}`
-			},
-			intersections: {
-				minLength: (l, r) => (l.isStricterThan(r) ? l : r)
-			}
-		})
+		minLengthImplementation
 
 	traverseAllows = this.exclusive
 		? (data: LengthBoundableData) => data.length > this.rule

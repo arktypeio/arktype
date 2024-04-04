@@ -1,3 +1,4 @@
+import { implementNode } from "../../base.js"
 import { jsObjects } from "../../keywords/jsObjects.js"
 import type { declareNode } from "../../shared/declare.js"
 import type { nodeImplementationOf } from "../../shared/implement.js"
@@ -30,37 +31,36 @@ export type AfterDeclaration = declareNode<{
 	errorContext: AfterInner
 }>
 
+export const afterImplementation = implementNode<AfterDeclaration>({
+	kind: "after",
+	collapsibleKey: "rule",
+	hasAssociatedError: true,
+	keys: {
+		rule: {
+			parse: parseDateLimit,
+			serialize: (def) => def.toISOString()
+		},
+		exclusive: parseExclusiveKey
+	},
+	normalize: (def) =>
+		typeof def === "number" || typeof def === "string" || def instanceof Date
+			? { rule: def }
+			: def,
+	defaults: {
+		description: (node) =>
+			node.exclusive
+				? `after ${node.stringLimit}`
+				: `${node.stringLimit} or later`,
+		actual: (data) => data.toLocaleString()
+	},
+	intersections: {
+		after: (l, r) => (l.isStricterThan(r) ? l : r)
+	}
+})
+
 export class AfterNode extends BaseRange<AfterDeclaration> {
 	static implementation: nodeImplementationOf<AfterDeclaration> =
-		this.implement({
-			kind: "after",
-			collapsibleKey: "rule",
-			hasAssociatedError: true,
-			keys: {
-				rule: {
-					parse: parseDateLimit,
-					serialize: (def) => def.toISOString()
-				},
-				exclusive: parseExclusiveKey
-			},
-			normalize: (def) =>
-				typeof def === "number" ||
-				typeof def === "string" ||
-				def instanceof Date
-					? { rule: def }
-					: def,
-			defaults: {
-				description(node) {
-					return node.exclusive
-						? `after ${node.stringLimit}`
-						: `${node.stringLimit} or later`
-				},
-				actual: (data) => data.toLocaleString()
-			},
-			intersections: {
-				after: (l, r) => (l.isStricterThan(r) ? l : r)
-			}
-		})
+		afterImplementation
 
 	readonly impliedBasis = jsObjects.Date
 

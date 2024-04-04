@@ -6,7 +6,7 @@ import {
 	type mutable,
 	type satisfy
 } from "@arktype/util"
-import type { Schema, SchemaDef } from "../../base.js"
+import { implementNode, type Schema, type SchemaDef } from "../../base.js"
 import { jsObjects } from "../../keywords/jsObjects.js"
 import { tsKeywords } from "../../keywords/tsKeywords.js"
 import type { MutableInner } from "../../kinds.js"
@@ -66,163 +66,164 @@ const fixedSequenceKeyDefinition: NodeKeyImplementation<
 			: def.map((element) => ctx.$.schema(element))
 }
 
+export const sequenceImplementation = implementNode<SequenceDeclaration>({
+	kind: "sequence",
+	hasAssociatedError: false,
+	collapsibleKey: "variadic",
+	keys: {
+		prefix: fixedSequenceKeyDefinition,
+		optional: fixedSequenceKeyDefinition,
+		variadic: {
+			child: true,
+			parse: (def, ctx) => ctx.$.schema(def, ctx)
+		},
+		minVariadicLength: {
+			// minVariadicLength is reflected in the id of this node,
+			// but not its IntersectionNode parent since it is superceded by the minLength
+			// node it implies
+			implied: true,
+			parse: (min) => (min === 0 ? undefined : min)
+		},
+		postfix: fixedSequenceKeyDefinition
+	},
+	normalize: (def) => {
+		if (typeof def === "string") {
+			return { variadic: def }
+		}
+		if (
+			"variadic" in def ||
+			"prefix" in def ||
+			"optional" in def ||
+			"postfix" in def ||
+			"minVariadicLength" in def
+		) {
+			if (def.postfix?.length) {
+				if (!def.variadic) {
+					return throwParseError(postfixWithoutVariadicMessage)
+				}
+				if (def.optional?.length) {
+					return throwParseError(postfixFollowingOptionalMessage)
+				}
+			}
+			if (def.minVariadicLength && !def.variadic) {
+				return throwParseError(
+					"minVariadicLength may not be specified without a variadic element"
+				)
+			}
+			return def
+		}
+		return { variadic: def }
+	},
+	reduce: (raw, $) => {
+		let minVariadicLength = raw.minVariadicLength ?? 0
+		const prefix = raw.prefix?.slice() ?? []
+		const optional = raw.optional?.slice() ?? []
+		const postfix = raw.postfix?.slice() ?? []
+		if (raw.variadic) {
+			// optional elements equivalent to the variadic parameter are redundant
+			while (optional.at(-1)?.equals(raw.variadic)) {
+				optional.pop()
+			}
+
+			if (optional.length === 0) {
+				// If there are no optional, normalize prefix
+				// elements adjacent and equivalent to variadic:
+				// 		{ variadic: number, prefix: [string, number] }
+				// reduces to:
+				// 		{ variadic: number, prefix: [string], minVariadicLength: 1 }
+				while (prefix.at(-1)?.equals(raw.variadic)) {
+					prefix.pop()
+					minVariadicLength++
+				}
+			}
+			// Normalize postfix elements adjacent and equivalent to variadic:
+			// 		{ variadic: number, postfix: [number, number, 5] }
+			// reduces to:
+			// 		{ variadic: number, postfix: [5], minVariadicLength: 2 }
+			while (postfix[0]?.equals(raw.variadic)) {
+				postfix.shift()
+				minVariadicLength++
+			}
+		} else if (optional.length === 0) {
+			// if there's no variadic or optional parameters,
+			// postfix can just be appended to prefix
+			prefix.push(...postfix.splice(0))
+		}
+		if (
+			// if any variadic adjacent elements were moved to minVariadicLength
+			minVariadicLength !== raw.minVariadicLength ||
+			// or any postfix elements were moved to prefix
+			(raw.prefix && raw.prefix.length !== prefix.length)
+		) {
+			// reparse the reduced def
+			return $.node(
+				"sequence",
+				{
+					...raw,
+					// empty lists will be omitted during parsing
+					prefix,
+					postfix,
+					optional,
+					minVariadicLength
+				},
+				{ prereduced: true }
+			)
+		}
+	},
+	defaults: {
+		description: (node) => {
+			if (node.isVariadicOnly) return `${node.variadic!.nestableExpression}[]`
+			return (
+				"[" +
+				node.tuple
+					.map((element) =>
+						element.kind === "optional"
+							? `${element.node.nestableExpression}?`
+							: element.kind === "variadic"
+							? `...${element.node.nestableExpression}[]`
+							: element.node.expression
+					)
+					.join(", ") +
+				"]"
+			)
+		}
+	},
+	intersections: {
+		sequence: (l, r, $) => {
+			const rootState = intersectSequences({
+				l: l.tuple,
+				r: r.tuple,
+				disjoint: new Disjoint({}),
+				result: [],
+				fixedVariants: []
+			})
+
+			const viableBranches = rootState.disjoint.isEmpty()
+				? [rootState, ...rootState.fixedVariants]
+				: rootState.fixedVariants
+
+			return viableBranches.length === 0
+				? rootState.disjoint!
+				: viableBranches.length === 1
+				? $.node("sequence", sequenceTupleToInner(viableBranches[0].result))
+				: $.node(
+						"union",
+						viableBranches.map((state) => ({
+							proto: Array,
+							sequence: sequenceTupleToInner(state.result)
+						}))
+				  )
+		}
+		// exactLength, minLength, and maxLength don't need to be defined
+		// here since impliedSiblings guarantees they will be added
+		// directly to the IntersectionNode parent of the SequenceNode
+		// they exist on
+	}
+})
+
 export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 	static implementation: nodeImplementationOf<SequenceDeclaration> =
-		this.implement({
-			kind: "sequence",
-			hasAssociatedError: false,
-			collapsibleKey: "variadic",
-			keys: {
-				prefix: fixedSequenceKeyDefinition,
-				optional: fixedSequenceKeyDefinition,
-				variadic: {
-					child: true,
-					parse: (def, ctx) => ctx.$.schema(def, ctx)
-				},
-				minVariadicLength: {
-					// minVariadicLength is reflected in the id of this node,
-					// but not its IntersectionNode parent since it is superceded by the minLength
-					// node it implies
-					implied: true,
-					parse: (min) => (min === 0 ? undefined : min)
-				},
-				postfix: fixedSequenceKeyDefinition
-			},
-			normalize: (def) => {
-				if (typeof def === "string") {
-					return { variadic: def }
-				}
-				if (
-					"variadic" in def ||
-					"prefix" in def ||
-					"optional" in def ||
-					"postfix" in def ||
-					"minVariadicLength" in def
-				) {
-					if (def.postfix?.length) {
-						if (!def.variadic) {
-							return throwParseError(postfixWithoutVariadicMessage)
-						}
-						if (def.optional?.length) {
-							return throwParseError(postfixFollowingOptionalMessage)
-						}
-					}
-					if (def.minVariadicLength && !def.variadic) {
-						return throwParseError(
-							"minVariadicLength may not be specified without a variadic element"
-						)
-					}
-					return def
-				}
-				return { variadic: def }
-			},
-			reduce: (raw, $) => {
-				let minVariadicLength = raw.minVariadicLength ?? 0
-				const prefix = raw.prefix?.slice() ?? []
-				const optional = raw.optional?.slice() ?? []
-				const postfix = raw.postfix?.slice() ?? []
-				if (raw.variadic) {
-					// optional elements equivalent to the variadic parameter are redundant
-					while (optional.at(-1)?.equals(raw.variadic)) {
-						optional.pop()
-					}
-
-					if (optional.length === 0) {
-						// If there are no optional, normalize prefix
-						// elements adjacent and equivalent to variadic:
-						// 		{ variadic: number, prefix: [string, number] }
-						// reduces to:
-						// 		{ variadic: number, prefix: [string], minVariadicLength: 1 }
-						while (prefix.at(-1)?.equals(raw.variadic)) {
-							prefix.pop()
-							minVariadicLength++
-						}
-					}
-					// Normalize postfix elements adjacent and equivalent to variadic:
-					// 		{ variadic: number, postfix: [number, number, 5] }
-					// reduces to:
-					// 		{ variadic: number, postfix: [5], minVariadicLength: 2 }
-					while (postfix[0]?.equals(raw.variadic)) {
-						postfix.shift()
-						minVariadicLength++
-					}
-				} else if (optional.length === 0) {
-					// if there's no variadic or optional parameters,
-					// postfix can just be appended to prefix
-					prefix.push(...postfix.splice(0))
-				}
-				if (
-					// if any variadic adjacent elements were moved to minVariadicLength
-					minVariadicLength !== raw.minVariadicLength ||
-					// or any postfix elements were moved to prefix
-					(raw.prefix && raw.prefix.length !== prefix.length)
-				) {
-					// reparse the reduced def
-					return $.node(
-						"sequence",
-						{
-							...raw,
-							// empty lists will be omitted during parsing
-							prefix,
-							postfix,
-							optional,
-							minVariadicLength
-						},
-						{ prereduced: true }
-					)
-				}
-			},
-			defaults: {
-				description(node) {
-					if (node.isVariadicOnly)
-						return `${node.variadic!.nestableExpression}[]`
-					return (
-						"[" +
-						node.tuple
-							.map((element) =>
-								element.kind === "optional"
-									? `${element.node.nestableExpression}?`
-									: element.kind === "variadic"
-									? `...${element.node.nestableExpression}[]`
-									: element.node.expression
-							)
-							.join(", ") +
-						"]"
-					)
-				}
-			},
-			intersections: {
-				sequence: (l, r, $) => {
-					const rootState = intersectSequences({
-						l: l.tuple,
-						r: r.tuple,
-						disjoint: new Disjoint({}),
-						result: [],
-						fixedVariants: []
-					})
-
-					const viableBranches = rootState.disjoint.isEmpty()
-						? [rootState, ...rootState.fixedVariants]
-						: rootState.fixedVariants
-
-					return viableBranches.length === 0
-						? rootState.disjoint!
-						: viableBranches.length === 1
-						? $.node("sequence", sequenceTupleToInner(viableBranches[0].result))
-						: $.node(
-								"union",
-								viableBranches.map((state) => ({
-									proto: Array,
-									sequence: sequenceTupleToInner(state.result)
-								}))
-						  )
-				}
-				// exactLength, minLength, and maxLength don't need to be defined
-				// here since impliedSiblings guarantees they will be added
-				// directly to the IntersectionNode parent of the SequenceNode
-				// they exist on
-			}
-		})
+		sequenceImplementation
 
 	readonly impliedBasis = jsObjects.Array
 	readonly prefix = this.inner.prefix ?? []

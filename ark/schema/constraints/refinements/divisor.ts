@@ -1,4 +1,4 @@
-import type { Schema } from "../../base.js"
+import { implementNode, type Schema } from "../../base.js"
 import { tsKeywords } from "../../keywords/tsKeywords.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import type { TraverseAllows } from "../../shared/traversal.js"
@@ -22,29 +22,30 @@ export type DivisorDeclaration = declareNode<{
 	errorContext: DivisorInner
 }>
 
+export const divisorImplementation = implementNode<DivisorDeclaration>({
+	kind: "divisor",
+	collapsibleKey: "rule",
+	keys: {
+		rule: {}
+	},
+	normalize: (def) => (typeof def === "number" ? { rule: def } : def),
+	intersections: {
+		divisor: (l, r, $) =>
+			$.node("divisor", {
+				rule: Math.abs(
+					(l.rule * r.rule) / greatestCommonDivisor(l.rule, r.rule)
+				)
+			})
+	},
+	hasAssociatedError: true,
+	defaults: {
+		description: (node) =>
+			node.rule === 1 ? "an integer" : `a multiple of ${node.rule}`
+	}
+})
+
 export class DivisorNode extends BasePrimitiveConstraint<DivisorDeclaration> {
-	static implementation = this.implement({
-		kind: "divisor",
-		collapsibleKey: "rule",
-		keys: {
-			rule: {}
-		},
-		normalize: (def) => (typeof def === "number" ? { rule: def } : def),
-		intersections: {
-			divisor: (l, r, $) =>
-				$.node("divisor", {
-					rule: Math.abs(
-						(l.rule * r.rule) / greatestCommonDivisor(l.rule, r.rule)
-					)
-				})
-		},
-		hasAssociatedError: true,
-		defaults: {
-			description(node) {
-				return node.rule === 1 ? "an integer" : `a multiple of ${node.rule}`
-			}
-		}
-	})
+	static implementation = divisorImplementation
 
 	traverseAllows: TraverseAllows<number> = (data) => data % this.rule === 0
 

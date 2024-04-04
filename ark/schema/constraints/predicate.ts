@@ -1,4 +1,5 @@
 import { compileSerializedValue } from "@arktype/util"
+import { implementNode } from "../base.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import type {
@@ -30,32 +31,31 @@ export type PredicateDeclaration = declareNode<{
 // TODO: If node contains a predicate reference that doesn't take 1 arg, we need
 // to wrap it with traversal state for allows
 
+export const predicateImplementation = implementNode<PredicateDeclaration>({
+	kind: "predicate",
+	hasAssociatedError: true,
+	collapsibleKey: "predicate",
+	keys: {
+		predicate: {}
+	},
+	normalize: (def) => (typeof def === "function" ? { predicate: def } : def),
+	defaults: {
+		description: (node) =>
+			`valid according to ${node.predicate.name || "an anonymous predicate"}`
+	},
+	intersectionIsOpen: true,
+	// TODO: ordering
+	intersections: {
+		// TODO: allow changed order to be the same type
+		// as long as the narrows in l and r are individually safe to check
+		// in the order they're specified, checking them in the order
+		// resulting from this intersection should also be safe.
+		predicate: () => null
+	}
+})
+
 export class PredicateNode extends BasePrimitiveConstraint<PredicateDeclaration> {
-	static implementation = this.implement({
-		kind: "predicate",
-		hasAssociatedError: true,
-		collapsibleKey: "predicate",
-		keys: {
-			predicate: {}
-		},
-		normalize: (def) => (typeof def === "function" ? { predicate: def } : def),
-		defaults: {
-			description(node) {
-				return `valid according to ${
-					node.predicate.name || "an anonymous predicate"
-				}`
-			}
-		},
-		intersectionIsOpen: true,
-		// TODO: ordering
-		intersections: {
-			// TODO: allow changed order to be the same type
-			// as long as the narrows in l and r are individually safe to check
-			// in the order they're specified, checking them in the order
-			// resulting from this intersection should also be safe.
-			predicate: () => null
-		}
-	})
+	static implementation = predicateImplementation
 
 	traverseAllows: TraverseAllows = this.predicate
 

@@ -1,5 +1,5 @@
 import { compileSerializedValue, type Key } from "@arktype/util"
-import type { Node, SchemaDef } from "../../base.js"
+import { implementNode, type Node, type SchemaDef } from "../../base.js"
 import { tsKeywords } from "../../keywords/tsKeywords.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
@@ -36,56 +36,54 @@ export type PropDeclaration = declareNode<{
 	childKind: SchemaKind
 }>
 
-export class PropNode extends BaseConstraint<PropDeclaration> {
-	static implementation: nodeImplementationOf<PropDeclaration> = this.implement(
-		{
-			kind: "prop",
-			hasAssociatedError: true,
-			intersectionIsOpen: true,
-			keys: {
-				key: {},
-				value: {
-					child: true,
-					parse: (def, ctx) => ctx.$.schema(def)
-				},
-				optional: {
-					// normalize { optional: false } to {}
-					parse: (def) => def || undefined
-				}
-			},
-			normalize: (def) => def,
-			defaults: {
-				description(node) {
-					return `${node.compiledKey}${node.optional ? "?" : ""}: ${
-						node.value.description
-					}`
-				},
-				expected() {
-					return "defined"
-				},
-				actual: () => null
-			},
-			intersections: {
-				prop: (l, r, $) => {
-					if (l.key !== r.key) {
-						return null
-					}
-					const key = l.key
-					let value = l.value.intersect(r.value)
-					const optional = l.optional === true && r.optional === true
-					if (value instanceof Disjoint) {
-						if (optional) value = tsKeywords.never as never
-						else return value.withPrefixKey(l.compiledKey)
-					}
-					return $.node("prop", {
-						key,
-						value,
-						optional
-					})
-				}
-			}
+export const propImplementation = implementNode<PropDeclaration>({
+	kind: "prop",
+	hasAssociatedError: true,
+	intersectionIsOpen: true,
+	keys: {
+		key: {},
+		value: {
+			child: true,
+			parse: (def, ctx) => ctx.$.schema(def)
+		},
+		optional: {
+			// normalize { optional: false } to {}
+			parse: (def) => def || undefined
 		}
-	)
+	},
+	normalize: (def) => def,
+	defaults: {
+		description: (node) =>
+			`${node.compiledKey}${node.optional ? "?" : ""}: ${
+				node.value.description
+			}`,
+		expected: () => "defined",
+		actual: () => null
+	},
+	intersections: {
+		prop: (l, r, $) => {
+			if (l.key !== r.key) {
+				return null
+			}
+			const key = l.key
+			let value = l.value.intersect(r.value)
+			const optional = l.optional === true && r.optional === true
+			if (value instanceof Disjoint) {
+				if (optional) value = tsKeywords.never as never
+				else return value.withPrefixKey(l.compiledKey)
+			}
+			return $.node("prop", {
+				key,
+				value,
+				optional
+			})
+		}
+	}
+})
+
+export class PropNode extends BaseConstraint<PropDeclaration> {
+	static implementation: nodeImplementationOf<PropDeclaration> =
+		propImplementation
 
 	readonly required = !this.optional
 	readonly impliedBasis = tsKeywords.object

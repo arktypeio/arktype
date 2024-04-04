@@ -4,6 +4,7 @@ import {
 	getBaseDomainKeys,
 	type NonEnumerableDomain
 } from "@arktype/util"
+import { implementNode } from "../base.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { TraverseAllows } from "../shared/traversal.js"
@@ -32,34 +33,29 @@ export type DomainDeclaration = declareNode<{
 	errorContext: DomainInner
 }>
 
+export const domainImplementation = implementNode<DomainDeclaration>({
+	kind: "domain",
+	hasAssociatedError: true,
+	collapsibleKey: "domain",
+	keys: {
+		domain: {}
+	},
+	normalize: (def) => (typeof def === "string" ? { domain: def } : def),
+	defaults: {
+		description: (node) => domainDescriptions[node.domain],
+		actual: (data) => (typeof data === "boolean" ? `${data}` : domainOf(data))
+	},
+	intersections: {
+		domain: (l, r) => Disjoint.from("domain", l, r)
+	}
+})
+
 export class DomainNode<t = any, $ = any> extends BaseBasis<
 	t,
 	$,
 	DomainDeclaration
 > {
-	static implementation = this.implement({
-		kind: "domain",
-		hasAssociatedError: true,
-		collapsibleKey: "domain",
-		keys: {
-			domain: {}
-		},
-		normalize: (def) => (typeof def === "string" ? { domain: def } : def),
-		defaults: {
-			description(node) {
-				return domainDescriptions[node.domain]
-			},
-			actual(data) {
-				// don't treat boolean as a domain since it is union of units
-				// and are error messages are more consistent if they're described
-				// that way universally
-				return typeof data === "boolean" ? `${data}` : domainOf(data)
-			}
-		},
-		intersections: {
-			domain: (l, r) => Disjoint.from("domain", l, r)
-		}
-	})
+	static implementation = domainImplementation
 
 	traverseAllows: TraverseAllows = (data) => domainOf(data) === this.domain
 

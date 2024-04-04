@@ -128,6 +128,33 @@ declare global {
 
 $ark.nodeClassesByKind = {} as NodeClassesByKind
 
+export const implementNode = <d extends BaseNodeDeclaration = never>(
+	_: nodeImplementationInputOf<d>
+): nodeImplementationOf<d> => {
+	const implementation: UnknownNodeImplementation = _ as never
+	$ark.nodeClassesByKind[implementation.kind] = this as never
+	if (implementation.hasAssociatedError) {
+		implementation.defaults.expected ??= (ctx) =>
+			"description" in ctx
+				? (ctx.description as string)
+				: // TODO: does passing ctx here work? or will some expect node?
+				  implementation.defaults.description(ctx as never)
+		implementation.defaults.actual ??= (data) => printable(data)
+		implementation.defaults.problem ??= (ctx) =>
+			`must be ${ctx.expected}${ctx.actual ? ` (was ${ctx.actual})` : ""}`
+		implementation.defaults.message ??= (ctx) => {
+			if (ctx.path.length === 0) return ctx.problem
+			const problemWithLocation = `${ctx.propString} ${ctx.problem}`
+			if (problemWithLocation[0] === "[") {
+				// clarify paths like [1], [0][1], and ["key!"] that could be confusing
+				return `value at ${problemWithLocation}`
+			}
+			return problemWithLocation
+		}
+	}
+	return implementation as never
+}
+
 export abstract class BaseNode<
 	t,
 	d extends BaseNodeDeclaration
@@ -158,35 +185,6 @@ export abstract class BaseNode<
 	declare infer: distillOut<t>;
 	declare [inferred]: t;
 	readonly [arkKind] = "node"
-
-	protected static implement<self>(
-		this: self,
-		implementation: nodeImplementationInputOf<subclassDeclaration<self>>
-	): nodeImplementationOf<subclassDeclaration<self>>
-	protected static implement(_: never): any {
-		const implementation: UnknownNodeImplementation = _
-		$ark.nodeClassesByKind[implementation.kind] = this as never
-		if (implementation.hasAssociatedError) {
-			implementation.defaults.expected ??= (ctx) =>
-				"description" in ctx
-					? (ctx.description as string)
-					: // TODO: does passing ctx here work? or will some expect node?
-					  implementation.defaults.description(ctx as never)
-			implementation.defaults.actual ??= (data) => printable(data)
-			implementation.defaults.problem ??= (ctx) =>
-				`must be ${ctx.expected}${ctx.actual ? ` (was ${ctx.actual})` : ""}`
-			implementation.defaults.message ??= (ctx) => {
-				if (ctx.path.length === 0) return ctx.problem
-				const problemWithLocation = `${ctx.propString} ${ctx.problem}`
-				if (problemWithLocation[0] === "[") {
-					// clarify paths like [1], [0][1], and ["key!"] that could be confusing
-					return `value at ${problemWithLocation}`
-				}
-				return problemWithLocation
-			}
-		}
-		return implementation
-	}
 
 	protected readonly impl: UnknownNodeImplementation = (this.constructor as any)
 		.implementation

@@ -1,3 +1,4 @@
+import { implementNode } from "../../base.js"
 import { internalKeywords } from "../../keywords/internal.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
@@ -22,48 +23,48 @@ export type ExactLengthDeclaration = declareNode<{
 	errorContext: ExactLengthInner
 }>
 
-export class ExactLengthNode extends BasePrimitiveConstraint<ExactLengthDeclaration> {
-	static implementation = this.implement({
-		kind: "exactLength",
-		collapsibleKey: "rule",
-		keys: {
-			rule: {}
-		},
-		normalize: (def) => (typeof def === "number" ? { rule: def } : def),
-		intersections: {
-			exactLength: (l, r, $) =>
-				new Disjoint({
-					"[length]": {
-						unit: {
-							l: $.node("unit", { unit: l.rule }),
-							r: $.node("unit", { unit: r.rule })
-						}
+export const exactLengthImplementation = implementNode<ExactLengthDeclaration>({
+	kind: "exactLength",
+	collapsibleKey: "rule",
+	keys: {
+		rule: {}
+	},
+	normalize: (def) => (typeof def === "number" ? { rule: def } : def),
+	intersections: {
+		exactLength: (l, r, $) =>
+			new Disjoint({
+				"[length]": {
+					unit: {
+						l: $.node("unit", { unit: l.rule }),
+						r: $.node("unit", { unit: r.rule })
 					}
-				}),
-			minLength: (exactLength, minLength) =>
-				(
-					minLength.exclusive
-						? exactLength.rule > minLength.rule
-						: exactLength.rule >= minLength.rule
-				)
-					? exactLength
-					: Disjoint.from("range", exactLength, minLength),
-			maxLength: (exactLength, maxLength) =>
-				(
-					maxLength.exclusive
-						? exactLength.rule < maxLength.rule
-						: exactLength.rule <= maxLength.rule
-				)
-					? exactLength
-					: Disjoint.from("range", exactLength, maxLength)
-		},
-		hasAssociatedError: true,
-		defaults: {
-			description(node) {
-				return `exactly length ${node.rule}`
-			}
-		}
-	})
+				}
+			}),
+		minLength: (exactLength, minLength) =>
+			(
+				minLength.exclusive
+					? exactLength.rule > minLength.rule
+					: exactLength.rule >= minLength.rule
+			)
+				? exactLength
+				: Disjoint.from("range", exactLength, minLength),
+		maxLength: (exactLength, maxLength) =>
+			(
+				maxLength.exclusive
+					? exactLength.rule < maxLength.rule
+					: exactLength.rule <= maxLength.rule
+			)
+				? exactLength
+				: Disjoint.from("range", exactLength, maxLength)
+	},
+	hasAssociatedError: true,
+	defaults: {
+		description: (node) => `exactly length ${node.rule}`
+	}
+})
+
+export class ExactLengthNode extends BasePrimitiveConstraint<ExactLengthDeclaration> {
+	static implementation = exactLengthImplementation
 
 	traverseAllows: TraverseAllows<LengthBoundableData> = (data) =>
 		data.length === this.rule

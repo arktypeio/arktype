@@ -1,3 +1,4 @@
+import { implementNode } from "../../base.js"
 import { tsKeywords } from "../../keywords/tsKeywords.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { BasePrimitiveConstraint } from "../constraint.js"
@@ -21,34 +22,34 @@ export type RegexDeclaration = declareNode<{
 	errorContext: RegexInner
 }>
 
+export const regexImplementation = implementNode<RegexDeclaration>({
+	kind: "regex",
+	collapsibleKey: "rule",
+	keys: {
+		rule: {},
+		flags: {}
+	},
+	normalize: (def) =>
+		typeof def === "string"
+			? { rule: def }
+			: def instanceof RegExp
+			? def.flags
+				? { rule: def.source, flags: def.flags }
+				: { rule: def.source }
+			: def,
+	hasAssociatedError: true,
+	intersectionIsOpen: true,
+	intersections: {
+		// for now, non-equal regex are naively intersected
+		regex: () => null
+	},
+	defaults: {
+		description: (node) => `matched by ${node.rule}`
+	}
+})
+
 export class RegexNode extends BasePrimitiveConstraint<RegexDeclaration> {
-	static implementation = this.implement({
-		kind: "regex",
-		collapsibleKey: "rule",
-		keys: {
-			rule: {},
-			flags: {}
-		},
-		normalize: (def) =>
-			typeof def === "string"
-				? { rule: def }
-				: def instanceof RegExp
-				? def.flags
-					? { rule: def.source, flags: def.flags }
-					: { rule: def.source }
-				: def,
-		hasAssociatedError: true,
-		intersectionIsOpen: true,
-		intersections: {
-			// for now, non-equal regex are naively intersected
-			regex: () => null
-		},
-		defaults: {
-			description(node) {
-				return `matched by ${node.rule}`
-			}
-		}
-	})
+	static implementation = regexImplementation
 
 	readonly instance = new RegExp(this.rule, this.flags)
 	readonly expression = `${this.instance}`

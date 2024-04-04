@@ -13,7 +13,13 @@ import {
 	type evaluate,
 	type listable
 } from "@arktype/util"
-import { BaseNode, type Constraint, type Node, type Schema } from "../base.js"
+import {
+	BaseNode,
+	implementNode,
+	type Constraint,
+	type Node,
+	type Schema
+} from "../base.js"
 import {
 	PropsGroup,
 	type ExtraneousKeyBehavior,
@@ -128,126 +134,125 @@ const intersectIntersections = (
 	})
 }
 
+export const intersectionImplementation =
+	implementNode<IntersectionDeclaration>({
+		kind: "intersection",
+		hasAssociatedError: true,
+		normalize: (schema) => schema,
+		keys: {
+			domain: {
+				child: true,
+				parse: intersectionChildKeyParser("domain")
+			},
+			proto: {
+				child: true,
+				parse: intersectionChildKeyParser("proto")
+			},
+			divisor: {
+				child: true,
+				parse: intersectionChildKeyParser("divisor")
+			},
+			max: {
+				child: true,
+				parse: intersectionChildKeyParser("max")
+			},
+			min: {
+				child: true,
+				parse: intersectionChildKeyParser("min")
+			},
+			maxLength: {
+				child: true,
+				parse: intersectionChildKeyParser("maxLength")
+			},
+			minLength: {
+				child: true,
+				parse: intersectionChildKeyParser("minLength")
+			},
+			exactLength: {
+				child: true,
+				parse: intersectionChildKeyParser("exactLength")
+			},
+			before: {
+				child: true,
+				parse: intersectionChildKeyParser("before")
+			},
+			after: {
+				child: true,
+				parse: intersectionChildKeyParser("after")
+			},
+			regex: {
+				child: true,
+				parse: intersectionChildKeyParser("regex")
+			},
+			predicate: {
+				child: true,
+				parse: intersectionChildKeyParser("predicate")
+			},
+			prop: {
+				child: true,
+				parse: intersectionChildKeyParser("prop")
+			},
+			index: {
+				child: true,
+				parse: intersectionChildKeyParser("index")
+			},
+			sequence: {
+				child: true,
+				parse: intersectionChildKeyParser("sequence")
+			},
+			onExtraneousKey: {
+				parse: (def) => (def === "ignore" ? undefined : def)
+			}
+		},
+		// leverage reduction logic from intersection and identity to ensure initial
+		// parse result is reduced
+		reduce: (inner, $) =>
+			// we cast union out of the result here since that only occurs when intersecting two sequences
+			// that cannot occur when reducing a single intersection schema using unknown
+			intersectIntersections({}, inner, $) as Node<
+				"intersection" | IntersectionBasisKind
+			>,
+		defaults: {
+			description: (node) =>
+				node.children.length === 0
+					? "unknown"
+					: node.props?.description ??
+					  node.children.map((child) => child.description).join(" and "),
+			expected: (source) =>
+				"  • " + source.errors.map((e) => e.expected).join("\n  • "),
+			problem: (ctx) => `must be...\n${ctx.expected}`
+		},
+		intersections: {
+			intersection: intersectIntersections,
+			...defineRightwardIntersections("intersection", (l, r) => {
+				// if l is unknown, return r
+				if (l.children.length === 0) return r
+
+				const basis = l.basis?.intersect(r) ?? r
+
+				return basis instanceof Disjoint
+					? basis
+					: l?.basis?.equals(basis)
+					? // if the basis doesn't change, return the original intesection
+					  l
+					: // given we've already precluded l being unknown, the result must
+					  // be an intersection with the new basis result integrated
+					  l.$.node(
+							"intersection",
+							Object.assign(omit(l.inner, metaKeys), { [basis.kind]: basis }),
+							{ prereduced: true }
+					  )
+			})
+		}
+	})
+
 export class IntersectionNode<t = unknown, $ = any> extends BaseSchema<
 	t,
 	$,
 	IntersectionDeclaration
 > {
 	static implementation: nodeImplementationOf<IntersectionDeclaration> =
-		this.implement({
-			kind: "intersection",
-			hasAssociatedError: true,
-			normalize: (schema) => schema,
-			keys: {
-				domain: {
-					child: true,
-					parse: intersectionChildKeyParser("domain")
-				},
-				proto: {
-					child: true,
-					parse: intersectionChildKeyParser("proto")
-				},
-				divisor: {
-					child: true,
-					parse: intersectionChildKeyParser("divisor")
-				},
-				max: {
-					child: true,
-					parse: intersectionChildKeyParser("max")
-				},
-				min: {
-					child: true,
-					parse: intersectionChildKeyParser("min")
-				},
-				maxLength: {
-					child: true,
-					parse: intersectionChildKeyParser("maxLength")
-				},
-				minLength: {
-					child: true,
-					parse: intersectionChildKeyParser("minLength")
-				},
-				exactLength: {
-					child: true,
-					parse: intersectionChildKeyParser("exactLength")
-				},
-				before: {
-					child: true,
-					parse: intersectionChildKeyParser("before")
-				},
-				after: {
-					child: true,
-					parse: intersectionChildKeyParser("after")
-				},
-				regex: {
-					child: true,
-					parse: intersectionChildKeyParser("regex")
-				},
-				predicate: {
-					child: true,
-					parse: intersectionChildKeyParser("predicate")
-				},
-				prop: {
-					child: true,
-					parse: intersectionChildKeyParser("prop")
-				},
-				index: {
-					child: true,
-					parse: intersectionChildKeyParser("index")
-				},
-				sequence: {
-					child: true,
-					parse: intersectionChildKeyParser("sequence")
-				},
-				onExtraneousKey: {
-					parse: (def) => (def === "ignore" ? undefined : def)
-				}
-			},
-			// leverage reduction logic from intersection and identity to ensure initial
-			// parse result is reduced
-			reduce: (inner, $) =>
-				// we cast union out of the result here since that only occurs when intersecting two sequences
-				// that cannot occur when reducing a single intersection schema using unknown
-				intersectIntersections({}, inner, $) as Node<
-					"intersection" | IntersectionBasisKind
-				>,
-			defaults: {
-				description(node) {
-					return node.children.length === 0
-						? "unknown"
-						: node.props?.description ??
-								node.children.map((child) => child.description).join(" and ")
-				},
-				expected(source) {
-					return "  • " + source.errors.map((e) => e.expected).join("\n  • ")
-				},
-				problem(ctx) {
-					return `must be...\n${ctx.expected}`
-				}
-			},
-			intersections: {
-				intersection: intersectIntersections,
-				...defineRightwardIntersections("intersection", (l, r) => {
-					// if l is unknown, return r
-					if (l.children.length === 0) return r
-
-					const basis = l.basis?.intersect(r) ?? r
-
-					return basis instanceof Disjoint
-						? basis
-						: l?.basis?.equals(basis)
-						? // if the basis doesn't change, return the original intesection
-						  l
-						: // given we've already precluded l being unknown, the result must
-						  // be an intersection with the new basis result integrated
-						  l.$.node(
-								"intersection",
-								Object.assign(omit(l.inner, metaKeys), { [basis.kind]: basis }),
-								{ prereduced: true }
-						  )
-				})
-			}
-		})
+		intersectionImplementation
 
 	readonly basis = this.domain ?? this.proto
 	readonly refinements = this.children.filter(

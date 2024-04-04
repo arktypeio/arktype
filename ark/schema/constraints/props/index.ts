@@ -1,5 +1,5 @@
 import { throwParseError, type Key } from "@arktype/util"
-import type { Schema, SchemaDef } from "../../base.js"
+import { implementNode, type Schema, type SchemaDef } from "../../base.js"
 import { internalKeywords } from "../../keywords/internal.js"
 import { tsKeywords } from "../../keywords/tsKeywords.js"
 import type { NodeCompiler } from "../../shared/compile.js"
@@ -31,39 +31,37 @@ export type IndexDeclaration = declareNode<{
 	childKind: SchemaKind
 }>
 
+export const indexImplementation = implementNode<IndexDeclaration>({
+	kind: "index",
+	hasAssociatedError: false,
+	intersectionIsOpen: true,
+	keys: {
+		key: {
+			child: true,
+			parse: (def, ctx) => {
+				const key = ctx.$.schema(def)
+				if (!key.extends(internalKeywords.propertyKey))
+					return throwParseError(writeInvalidPropertyKeyMessage(key.expression))
+				return key
+			}
+		},
+		value: {
+			child: true,
+			parse: (def, ctx) => ctx.$.schema(def)
+		}
+	},
+	normalize: (def) => def,
+	defaults: {
+		description: (node) => `[${node.key.expression}]: ${node.value.description}`
+	},
+	intersections: {
+		index: (l, r) => l
+	}
+})
+
 export class IndexNode extends BaseConstraint<IndexDeclaration> {
 	static implementation: nodeImplementationOf<IndexDeclaration> =
-		this.implement({
-			kind: "index",
-			hasAssociatedError: false,
-			intersectionIsOpen: true,
-			keys: {
-				key: {
-					child: true,
-					parse: (def, ctx) => {
-						const key = ctx.$.schema(def)
-						if (!key.extends(internalKeywords.propertyKey))
-							return throwParseError(
-								writeInvalidPropertyKeyMessage(key.expression)
-							)
-						return key
-					}
-				},
-				value: {
-					child: true,
-					parse: (def, ctx) => ctx.$.schema(def)
-				}
-			},
-			normalize: (def) => def,
-			defaults: {
-				description(node) {
-					return `[${node.key.expression}]: ${node.value.description}`
-				}
-			},
-			intersections: {
-				index: (l, r) => l
-			}
-		})
+		indexImplementation
 
 	readonly impliedBasis = tsKeywords.object
 	readonly expression = `[${this.key.expression}]: ${this.value.expression}`

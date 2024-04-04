@@ -1,3 +1,4 @@
+import { implementNode } from "../../base.js"
 import { internalKeywords } from "../../keywords/internal.js"
 import type { declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
@@ -29,35 +30,36 @@ export type MaxLengthDeclaration = declareNode<{
 	errorContext: MaxLengthInner
 }>
 
+export const maxLengthImplementation = implementNode<MaxLengthDeclaration>({
+	kind: "maxLength",
+	collapsibleKey: "rule",
+	hasAssociatedError: true,
+	keys: {
+		rule: {},
+		exclusive: parseExclusiveKey
+	},
+	normalize: (def) => (typeof def === "number" ? { rule: def } : def),
+	defaults: {
+		description: (node) =>
+			node.exclusive
+				? `less than length ${node.rule}`
+				: `at most length ${node.rule}`,
+		actual: (data) => `${data.length}`
+	},
+	intersections: {
+		maxLength: (l, r) => (l.isStricterThan(r) ? l : r),
+		minLength: (max, min, $) =>
+			max.overlapsRange(min)
+				? max.overlapIsUnit(min)
+					? $.node("exactLength", { rule: max.rule })
+					: null
+				: Disjoint.from("range", max, min)
+	}
+})
+
 export class MaxLengthNode extends BaseRange<MaxLengthDeclaration> {
 	static implementation: nodeImplementationOf<MaxLengthDeclaration> =
-		this.implement({
-			kind: "maxLength",
-			collapsibleKey: "rule",
-			hasAssociatedError: true,
-			keys: {
-				rule: {},
-				exclusive: parseExclusiveKey
-			},
-			normalize: (def) => (typeof def === "number" ? { rule: def } : def),
-			defaults: {
-				description(node) {
-					return node.exclusive
-						? `less than length ${node.rule}`
-						: `at most length ${node.rule}`
-				},
-				actual: (data) => `${data.length}`
-			},
-			intersections: {
-				maxLength: (l, r) => (l.isStricterThan(r) ? l : r),
-				minLength: (max, min, $) =>
-					max.overlapsRange(min)
-						? max.overlapIsUnit(min)
-							? $.node("exactLength", { rule: max.rule })
-							: null
-						: Disjoint.from("range", max, min)
-			}
-		})
+		maxLengthImplementation
 
 	readonly impliedBasis = internalKeywords.lengthBoundable
 

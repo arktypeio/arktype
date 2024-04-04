@@ -1,3 +1,4 @@
+import { implementNode } from "../../base.js"
 import { tsKeywords } from "../../keywords/tsKeywords.js"
 import type { declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
@@ -28,31 +29,33 @@ export type MaxDeclaration = declareNode<{
 	errorContext: MaxInner
 }>
 
+export const maxImplementation = implementNode<MaxDeclaration>({
+	kind: "max",
+	collapsibleKey: "rule",
+	hasAssociatedError: true,
+	keys: {
+		rule: {},
+		exclusive: parseExclusiveKey
+	},
+	normalize: (def) => (typeof def === "number" ? { rule: def } : def),
+	defaults: {
+		description: (node) =>
+			`${node.exclusive ? "less than" : "at most"} ${node.rule}`
+	},
+	intersections: {
+		max: (l, r) => (l.isStricterThan(r) ? l : r),
+		min: (max, min, $) =>
+			max.overlapsRange(min)
+				? max.overlapIsUnit(min)
+					? $.node("unit", { unit: max.rule })
+					: null
+				: Disjoint.from("range", max, min)
+	}
+})
+
 export class MaxNode extends BaseRange<MaxDeclaration> {
-	static implementation: nodeImplementationOf<MaxDeclaration> = this.implement({
-		kind: "max",
-		collapsibleKey: "rule",
-		hasAssociatedError: true,
-		keys: {
-			rule: {},
-			exclusive: parseExclusiveKey
-		},
-		normalize: (def) => (typeof def === "number" ? { rule: def } : def),
-		defaults: {
-			description(node) {
-				return `${node.exclusive ? "less than" : "at most"} ${node.rule}`
-			}
-		},
-		intersections: {
-			max: (l, r) => (l.isStricterThan(r) ? l : r),
-			min: (max, min, $) =>
-				max.overlapsRange(min)
-					? max.overlapIsUnit(min)
-						? $.node("unit", { unit: max.rule })
-						: null
-					: Disjoint.from("range", max, min)
-		}
-	})
+	static implementation: nodeImplementationOf<MaxDeclaration> =
+		maxImplementation
 
 	readonly impliedBasis = tsKeywords.number
 

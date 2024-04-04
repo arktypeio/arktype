@@ -8,7 +8,7 @@ import {
 	type array,
 	type listable
 } from "@arktype/util"
-import type { Node, Schema } from "../base.js"
+import { implementNode, type Node, type Schema } from "../base.js"
 import type { of } from "../constraints/ast.js"
 import { tsKeywords } from "../keywords/tsKeywords.js"
 import type { NodeDef } from "../kinds.js"
@@ -66,6 +66,69 @@ export type MorphDeclaration = declareNode<{
 	childKind: MorphChildKind
 }>
 
+export const morphImplementation = implementNode<MorphDeclaration>({
+	kind: "morph",
+	hasAssociatedError: false,
+	keys: {
+		in: {
+			child: true,
+			parse: (def, ctx) => ctx.$.parseNode(morphChildKinds, def)
+		},
+		out: {
+			child: true,
+			parse: (def, ctx) => ctx.$.parseNode(morphChildKinds, def)
+		},
+		morphs: {
+			parse: arrayFrom,
+			serialize: (morphs) => morphs.map(reference)
+		}
+	},
+	normalize: (def) => def,
+	defaults: {
+		description: (node) =>
+			`a morph from ${node.in.description} to ${node.out.description}`
+	},
+	intersections: {
+		morph: (l, r, $) => {
+			if (l.morphs.some((morph, i) => morph !== r.morphs[i])) {
+				// TODO: is this always a parse error? what about for union reduction etc.
+				// TODO: check in for union reduction
+				return throwParseError(`Invalid intersection of morphs`)
+			}
+			const inTersection = l.in.intersect(r.in)
+			if (inTersection instanceof Disjoint) {
+				return inTersection
+			}
+			const outTersection = l.out.intersect(r.out)
+			if (outTersection instanceof Disjoint) {
+				return outTersection
+			}
+			return $.node("morph", {
+				morphs: l.morphs,
+				in: inTersection,
+				out: outTersection
+			})
+		},
+		...defineRightwardIntersections("morph", (l, r, $) => {
+			const inTersection = l.in.intersect(r)
+			return inTersection instanceof Disjoint
+				? inTersection
+				: inTersection.kind === "union"
+				? $.node(
+						"union",
+						inTersection.branches.map((branch) => ({
+							...l.inner,
+							in: branch
+						}))
+				  )
+				: $.node("morph", {
+						...l.inner,
+						in: inTersection
+				  })
+		})
+	}
+})
+
 export class MorphNode<t = any, $ = any> extends BaseSchema<
 	t,
 	$,
@@ -73,69 +136,7 @@ export class MorphNode<t = any, $ = any> extends BaseSchema<
 > {
 	// TODO: recursively extract in?
 	static implementation: nodeImplementationOf<MorphDeclaration> =
-		this.implement({
-			kind: "morph",
-			hasAssociatedError: false,
-			keys: {
-				in: {
-					child: true,
-					parse: (def, ctx) => ctx.$.parseNode(morphChildKinds, def)
-				},
-				out: {
-					child: true,
-					parse: (def, ctx) => ctx.$.parseNode(morphChildKinds, def)
-				},
-				morphs: {
-					parse: arrayFrom,
-					serialize: (morphs) => morphs.map(reference)
-				}
-			},
-			normalize: (def) => def,
-			defaults: {
-				description(node) {
-					return `a morph from ${node.in.description} to ${node.out.description}`
-				}
-			},
-			intersections: {
-				morph: (l, r, $) => {
-					if (l.morphs.some((morph, i) => morph !== r.morphs[i])) {
-						// TODO: is this always a parse error? what about for union reduction etc.
-						// TODO: check in for union reduction
-						return throwParseError(`Invalid intersection of morphs`)
-					}
-					const inTersection = l.in.intersect(r.in)
-					if (inTersection instanceof Disjoint) {
-						return inTersection
-					}
-					const outTersection = l.out.intersect(r.out)
-					if (outTersection instanceof Disjoint) {
-						return outTersection
-					}
-					return $.node("morph", {
-						morphs: l.morphs,
-						in: inTersection,
-						out: outTersection
-					})
-				},
-				...defineRightwardIntersections("morph", (l, r, $) => {
-					const inTersection = l.in.intersect(r)
-					return inTersection instanceof Disjoint
-						? inTersection
-						: inTersection.kind === "union"
-						? $.node(
-								"union",
-								inTersection.branches.map((branch) => ({
-									...l.inner,
-									in: branch
-								}))
-						  )
-						: $.node("morph", {
-								...l.inner,
-								in: inTersection
-						  })
-				})
-			}
-		})
+		morphImplementation
 
 	readonly expression = `(In: ${this.in.expression}) => Out<${this.out.expression}>`
 

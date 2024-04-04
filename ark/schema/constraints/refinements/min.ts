@@ -1,3 +1,4 @@
+import { implementNode } from "../../base.js"
 import { tsKeywords } from "../../keywords/tsKeywords.js"
 import type { declareNode } from "../../shared/declare.js"
 import type { nodeImplementationOf } from "../../shared/implement.js"
@@ -27,26 +28,27 @@ export type MinDeclaration = declareNode<{
 	errorContext: MinInner
 }>
 
-export class MinNode extends BaseRange<MinDeclaration> {
-	static implementation: nodeImplementationOf<MinDeclaration> = this.implement({
-		kind: "min",
-		collapsibleKey: "rule",
-		hasAssociatedError: true,
-		keys: {
-			rule: {},
-			exclusive: parseExclusiveKey
-		},
-		normalize: (def) => (typeof def === "number" ? { rule: def } : def),
-		intersections: {
-			min: (l, r) => (l.isStricterThan(r) ? l : r)
-		},
-		defaults: {
-			description(node) {
-				return `${node.exclusive ? "more than" : "at least"} ${node.rule}`
-			}
-		}
-	})
+export const minImplementation = implementNode<MinDeclaration>({
+	kind: "min",
+	collapsibleKey: "rule",
+	hasAssociatedError: true,
+	keys: {
+		rule: {},
+		exclusive: parseExclusiveKey
+	},
+	normalize: (def) => (typeof def === "number" ? { rule: def } : def),
+	intersections: {
+		min: (l, r) => (l.isStricterThan(r) ? l : r)
+	},
+	defaults: {
+		description: (node) =>
+			`${node.exclusive ? "more than" : "at least"} ${node.rule}`
+	}
+})
 
+export class MinNode extends BaseRange<MinDeclaration> {
+	static implementation: nodeImplementationOf<MinDeclaration> =
+		minImplementation
 	readonly impliedBasis = tsKeywords.number
 
 	traverseAllows = this.exclusive

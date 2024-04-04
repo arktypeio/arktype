@@ -1,4 +1,5 @@
 import { domainOf, printable, prototypeKeysOf } from "@arktype/util"
+import { implementNode } from "../base.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import { defaultValueSerializer } from "../shared/implement.js"
@@ -19,34 +20,34 @@ export type UnitDeclaration = declareNode<{
 	errorContext: UnitInner
 }>
 
+export const unitImplementation = implementNode<UnitDeclaration>({
+	kind: "unit",
+	hasAssociatedError: true,
+	keys: {
+		unit: {
+			preserveUndefined: true,
+			serialize: (def) =>
+				def instanceof Date ? def.toISOString() : defaultValueSerializer(def)
+		}
+	},
+	normalize: (def) => def,
+	defaults: {
+		description: (node) => printable(node.unit)
+	},
+	intersections: {
+		unit: (l, r) => Disjoint.from("unit", l, r),
+		...defineRightwardIntersections("unit", (l, r) =>
+			r.allows(l.unit) ? l : Disjoint.from("assignability", l.unit, r)
+		)
+	}
+})
+
 export class UnitNode<t = any, $ = any> extends BaseBasis<
 	t,
 	$,
 	UnitDeclaration
 > {
-	static implementation = this.implement({
-		kind: "unit",
-		hasAssociatedError: true,
-		keys: {
-			unit: {
-				preserveUndefined: true,
-				serialize: (def) =>
-					def instanceof Date ? def.toISOString() : defaultValueSerializer(def)
-			}
-		},
-		normalize: (def) => def,
-		defaults: {
-			description(node) {
-				return printable(node.unit)
-			}
-		},
-		intersections: {
-			unit: (l, r) => Disjoint.from("unit", l, r),
-			...defineRightwardIntersections("unit", (l, r) =>
-				r.allows(l.unit) ? l : Disjoint.from("assignability", l.unit, r)
-			)
-		}
-	})
+	static implementation = unitImplementation
 
 	traverseAllows =
 		this.unit instanceof Date
