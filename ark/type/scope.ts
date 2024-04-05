@@ -1,46 +1,46 @@
 import {
-	arkKind,
-	BaseScope,
-	hasArkKind,
-	type ambient,
 	type ArkConfig,
-	type exportedName,
+	BaseScope,
 	type GenericProps,
 	type NodeParseOptions,
-	type Schema
+	type Schema,
+	type ambient,
+	arkKind,
+	type exportedName,
+	hasArkKind
 } from "@arktype/schema"
 import {
-	domainOf,
+	type Dict,
 	DynamicBase,
+	domainOf,
+	type evaluate,
 	flatMorph,
 	hasDomain,
-	throwParseError,
-	type Dict,
-	type evaluate,
-	type nominal
+	type nominal,
+	throwParseError
 } from "@arktype/util"
 import type { type } from "./ark.js"
 import { Generic } from "./generic.js"
-import { createMatchParser, type MatchParser } from "./match.js"
+import { type MatchParser, createMatchParser } from "./match.js"
 import {
-	parseObject,
-	writeBadDefinitionTypeMessage,
 	type inferDefinition,
-	type validateDefinition
+	parseObject,
+	type validateDefinition,
+	writeBadDefinitionTypeMessage
 } from "./parser/definition.js"
 import {
-	parseGenericParams,
 	type GenericDeclaration,
-	type GenericParamsParseError
+	type GenericParamsParseError,
+	parseGenericParams
 } from "./parser/generic.js"
 import { DynamicState } from "./parser/string/reduce/dynamic.js"
 import { fullStringParse } from "./parser/string/string.js"
 import {
-	createTypeParser,
-	Type,
 	type DeclarationParser,
 	type DefinitionParser,
-	type TypeParser
+	Type,
+	type TypeParser,
+	createTypeParser
 } from "./type.js"
 
 export type ScopeParser = <const def>(

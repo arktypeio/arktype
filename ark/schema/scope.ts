@@ -405,18 +405,15 @@ const bindCompiledSpace = (references: readonly Node[]) => {
 
 const compileSpace = (references: readonly Node[]) => {
 	return new CompiledFunction()
-		.block(`return`, (js) => {
+		.block("return", (js) => {
 			references.forEach((node) => {
 				const allowsCompiler = new NodeCompiler("Allows").indent()
 				node.compile(allowsCompiler)
 				const applyCompiler = new NodeCompiler("Apply").indent()
 				node.compile(applyCompiler)
 				js.line(
-					allowsCompiler.writeMethod(`${node.name}Allows`) +
-						",\n" +
-						applyCompiler.writeMethod(`${node.name}Apply`) +
-						","
-				)
+					`${allowsCompiler.writeMethod(`${node.name}Allows`)},`
+				).line(`${applyCompiler.writeMethod(`${node.name}Apply`)},`)
 			})
 			return js
 		})

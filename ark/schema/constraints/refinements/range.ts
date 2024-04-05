@@ -63,8 +63,8 @@ export const deriveRangeAttachments = <d extends BaseRangeDeclaration = never>(
 ): d["attachments"] & ThisType<Node<RangeKind>> => {
 	const self: parsedAttachmentsOf<d> = derivePrimitiveAttachments(
 		parsed,
-		implemented
-	)
+		implemented as never
+	) as never
 	const boundOperandKind = operandKindsByBoundKind[self.kind]
 	const compiledActual =
 		boundOperandKind === "value"
