@@ -86,7 +86,7 @@ export interface UnknownAttachments {
 	readonly json: object
 	readonly typeJson: object
 	readonly collapsibleJson: JsonData
-	readonly children: BaseNode[]
+	readonly children: Node[]
 	readonly innerId: string
 	readonly typeId: string
 	readonly $: BaseScope
@@ -105,17 +105,17 @@ export interface NarrowedAttachments<d extends BaseNodeDeclaration>
 
 declare global {
 	export interface ArkRegistry {
-		nodeClassesByKind: typeof nodeImplementationsByKind
+		nodeImplementationsByKind: typeof nodeImplementationsByKind
 	}
 }
 
-$ark.nodeClassesByKind = {} as typeof nodeImplementationsByKind
+$ark.nodeImplementationsByKind = {} as typeof nodeImplementationsByKind
 
 export const implementNode = <d extends BaseNodeDeclaration = never>(
 	_: nodeImplementationInputOf<d>
 ): nodeImplementationOf<d> => {
 	const implementation: UnknownNodeImplementation = _ as never
-	$ark.nodeClassesByKind[implementation.kind] = this as never
+	$ark.nodeImplementationsByKind[implementation.kind] = this as never
 	if (implementation.hasAssociatedError) {
 		implementation.defaults.expected ??= (ctx) =>
 			"description" in ctx
@@ -387,13 +387,13 @@ export class BaseNode<
 	}
 
 	firstReference<narrowed>(
-		filter: Guardable<BaseNode, conform<narrowed, BaseNode>>
+		filter: Guardable<Node, conform<narrowed, Node>>
 	): narrowed | undefined {
 		return this.references.find(filter as never) as never
 	}
 
-	firstReferenceOrThrow<narrowed extends BaseNode>(
-		filter: Guardable<BaseNode, narrowed>
+	firstReferenceOrThrow<narrowed extends Node>(
+		filter: Guardable<Node, narrowed>
 	): narrowed {
 		return (
 			this.firstReference(filter) ??

@@ -5,13 +5,20 @@ import {
 	type array,
 	entriesOf,
 	hasDomain,
+	includes,
 	isArray,
 	type listable,
 	printable,
 	type propValueOf,
 	throwParseError
 } from "@arktype/util"
-import type { BaseNode, Node, Schema, UnknownAttachments } from "../base.js"
+import {
+	BaseNode,
+	type Node,
+	type Schema,
+	type UnknownAttachments
+} from "../base.js"
+import { BaseSchema } from "../schemas/schema.js"
 import type { BaseScope } from "../scope.js"
 import type { BaseNodeDeclaration } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -23,7 +30,8 @@ import {
 	defaultValueSerializer,
 	discriminatingIntersectionKeys,
 	isNodeKind,
-	precedenceOfKind
+	precedenceOfKind,
+	schemaKinds
 } from "../shared/implement.js"
 import { hasArkKind } from "../shared/utils.js"
 
@@ -134,8 +142,9 @@ export const parseNode = (
 			return parseNode(schemaKindOf(schema), branches as never, $, opts)
 		}
 	}
-	const cls = $ark.nodeClassesByKind[kind]
-	const impl: UnknownNodeImplementation = cls.implementation as never
+	const impl: UnknownNodeImplementation = $ark.nodeImplementationsByKind[
+		kind
+	] as never
 	const normalizedDefinition: any = impl.normalize?.(schema) ?? schema
 	// check again after normalization in case a node is a valid collapsed
 	// schema for the kind (e.g. sequence can collapse to element accepting a Node)
@@ -160,7 +169,7 @@ export const parseNode = (
 						? -1
 						: 1
 	)
-	const children: BaseNode[] = []
+	const children: Node[] = []
 	for (const entry of schemaEntries) {
 		const k = entry[0]
 		const keyImpl = impl.keys[k] ?? baseKeys[k]
@@ -180,7 +189,7 @@ export const parseNode = (
 	entries.forEach(([k, v]) => {
 		const keyImpl = impl.keys[k] ?? baseKeys[k]
 		if (keyImpl.child) {
-			const listableNode = v as listable<BaseNode>
+			const listableNode = v as listable<Node>
 			if (isArray(listableNode)) {
 				json[k] = listableNode.map((node) => node.collapsibleJson)
 				children.push(...listableNode)
@@ -287,8 +296,12 @@ export const parseNode = (
 	// 		Object.assign(this.referencesByName, node.contributesReferencesByName)
 	// 	}
 	// }
-	attachments.description ??= $.resolvedConfig[kind].description(attachments)
-	const node = new cls(attachments as never)
+	attachments.description ??= $.resolvedConfig[kind].description(
+		attachments as never
+	)
+	const node: Node = includes(schemaKinds, kind)
+		? new BaseSchema(attachments as never)
+		: (new BaseNode(attachments as never) as any)
 	$.nodeCache[innerId] = node
 	return node
 }

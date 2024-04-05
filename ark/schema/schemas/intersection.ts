@@ -44,7 +44,7 @@ import {
 import type { DomainDef, DomainNode } from "./domain.js"
 import type { ProtoDef, ProtoNode } from "./proto.js"
 import {
-	type BaseSchema,
+	BaseSchema,
 	type BaseSchemaAttachments,
 	defineRightwardIntersections
 } from "./schema.js"
@@ -115,8 +115,10 @@ const intersectIntersections = (
 	$: BaseScope
 ): Schema | Disjoint => {
 	// avoid treating adding instance keys as keys of lRoot, rRoot
-	if (reduced instanceof IntersectionNode) reduced = reduced.inner
-	if (raw instanceof IntersectionNode) raw = raw.inner
+	if (reduced instanceof BaseSchema && reduced.hasKind("intersection"))
+		return intersectIntersections(reduced.inner, raw, $)
+	if (raw instanceof BaseSchema && raw.hasKind("intersection"))
+		return intersectIntersections(reduced, raw.inner, $)
 
 	const [reducedConstraintsInner, reducedRoot] = splitByKeys(
 		reduced,

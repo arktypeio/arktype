@@ -17,7 +17,7 @@ export class NodeCompiler extends CompiledFunction<["data", "ctx"]> {
 		super("data", "ctx")
 	}
 
-	invoke(node: BaseNode, opts?: InvokeOptions): string {
+	invoke(node: Node, opts?: InvokeOptions): string {
 		const invokedKind = opts?.kind ?? this.traversalKind
 		const method = `${node.name}${invokedKind}`
 		const arg = opts?.arg ?? this.data
@@ -27,14 +27,14 @@ export class NodeCompiler extends CompiledFunction<["data", "ctx"]> {
 		return `this.${method}(${arg})`
 	}
 
-	requiresContextFor(node: BaseNode): boolean {
+	requiresContextFor(node: Node): boolean {
 		return (
 			this.traversalKind === "Apply" ||
 			node.includesContextDependentPredicate
 		)
 	}
 
-	checkReferenceKey(keyExpression: string, node: BaseNode): this {
+	checkReferenceKey(keyExpression: string, node: Node): this {
 		const requiresContext = this.requiresContextFor(node)
 		if (requiresContext) {
 			this.line(`${this.ctx}.path.push(${keyExpression})`)
@@ -48,7 +48,7 @@ export class NodeCompiler extends CompiledFunction<["data", "ctx"]> {
 		return this
 	}
 
-	check(node: BaseNode, opts?: InvokeOptions): this {
+	check(node: Node, opts?: InvokeOptions): this {
 		return this.traversalKind === "Allows"
 			? this.if(`!${this.invoke(node, opts)}`, () => this.return(false))
 			: this.line(this.invoke(node, opts))

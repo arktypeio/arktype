@@ -1,4 +1,5 @@
 import {
+	type array,
 	capitalize,
 	type describeExpression,
 	throwParseError
@@ -50,6 +51,7 @@ export type writeInvalidOperandMessage<
 
 export interface ConstraintAttachments {
 	impliedBasis: Schema | null
+	impliedSiblings?: array<Node<ConstraintKind>> | null
 }
 
 export type PrimitiveConstraintKind = Exclude<ConstraintKind, PropKind>
