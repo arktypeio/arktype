@@ -242,19 +242,19 @@ export class BaseNode<
 		return this(data)
 	}
 
-	private inCache?: BaseNode
+	private inCache?: Node
 	get in(): Node<ioKindOf<d["kind"]>, distillConstrainableIn<t>> {
 		this.inCache ??= this.getIo("in")
 		return this.inCache as never
 	}
 
-	private outCache?: BaseNode
+	private outCache?: Node
 	get out(): Node<ioKindOf<d["kind"]>, distillConstrainableOut<t>> {
 		this.outCache ??= this.getIo("out")
 		return this.outCache as never
 	}
 
-	private getIo(kind: "in" | "out"): BaseNode {
+	private getIo(kind: "in" | "out"): Node {
 		if (!this.includesMorph) {
 			return this as never
 		}
@@ -265,7 +265,7 @@ export class BaseNode<
 				continue
 			}
 			if (keyDefinition.child) {
-				const childValue = v as listable<BaseNode>
+				const childValue = v as listable<Node>
 				ioInner[k] = isArray(childValue)
 					? childValue.map((child) => child[kind])
 					: childValue[kind]
