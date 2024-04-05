@@ -1,9 +1,9 @@
 import {
 	DynamicBase,
+	type Key,
 	conflatenateAll,
 	flatMorph,
-	reference,
-	type Key
+	reference
 } from "@arktype/util"
 import type { Node, Schema } from "../../base.js"
 import type { IntersectionNode } from "../../schemas/intersection.js"
@@ -49,9 +49,9 @@ export class PropsGroup extends DynamicBase<PropsGroupInput> {
 	rawKeyOf(): Schema {
 		if (!this.keyofCache) {
 			let branches = this.$.units(this.literalKeys).branches
-			this.index?.forEach(
-				({ key }) => (branches = branches.concat(key.branches))
-			)
+			this.index?.forEach(({ key }) => {
+				branches = branches.concat(key.branches)
+			})
 			this.keyofCache = this.$.node("union", branches)
 		}
 		return this.keyofCache
