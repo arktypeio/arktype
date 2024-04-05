@@ -1,5 +1,5 @@
-import { space } from "../scope.js"
-import type { spaceFromExports } from "./utils/utils.js"
+import type { SchemaModule } from "../module.js"
+import { schemaScope } from "../scope.js"
 
 export namespace jsObjects {
 	export interface exports {
@@ -16,9 +16,9 @@ export namespace jsObjects {
 	}
 }
 
-export type jsObjects = spaceFromExports<jsObjects.exports>
+export type jsObjects = SchemaModule<jsObjects.exports>
 
-export const jsObjects: jsObjects = space(
+export const jsObjects: jsObjects = schemaScope(
 	{
 		Array,
 		Function,
@@ -32,4 +32,4 @@ export const jsObjects: jsObjects = space(
 		Promise
 	},
 	{ prereducedAliases: true }
-)
+).export()

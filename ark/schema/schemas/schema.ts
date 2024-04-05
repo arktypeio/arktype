@@ -24,7 +24,7 @@ import {
 	schemaKindsRightOf
 } from "../shared/implement.js"
 import type { inferIntersection } from "../shared/intersections.js"
-import type { inferred } from "../shared/utils.js"
+import { arkKind, type inferred } from "../shared/utils.js"
 import type { IntersectionNode, constraintKindOf } from "./intersection.js"
 import type {
 	Morph,
@@ -62,6 +62,8 @@ export class BaseSchema<kind extends SchemaKind, t, $> extends BaseNode<
 	readonly branches: readonly Node<UnionChildKind>[] = this.hasKind("union")
 		? this.inner.branches
 		: [this as never]
+
+	readonly [arkKind] = "schema"
 
 	private keyofCache: Schema | undefined
 	keyof(): Schema<keyof this["in"]["infer"]> {

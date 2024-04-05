@@ -1,6 +1,6 @@
 import { attest } from "@arktype/attest"
 import { lazily } from "@arktype/util"
-import { scope, type, type Module } from "arktype"
+import { type Module, scope, type } from "arktype"
 
 describe("scope imports", () => {
 	const threeSixtyNoScope = lazily(() =>

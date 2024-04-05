@@ -1,6 +1,6 @@
 import type { Key } from "@arktype/util"
-import { space } from "../scope.js"
-import type { spaceFromExports } from "./utils/utils.js"
+import type { SchemaModule } from "../module.js"
+import { schemaScope } from "../scope.js"
 
 export namespace internalKeywords {
 	export interface exports {
@@ -9,9 +9,9 @@ export namespace internalKeywords {
 	}
 }
 
-export type internalKeywords = spaceFromExports<internalKeywords.exports>
+export type internalKeywords = SchemaModule<internalKeywords.exports>
 
-export const internalKeywords: internalKeywords = space(
+export const internalKeywords: internalKeywords = schemaScope(
 	{
 		lengthBoundable: ["string", Array],
 		propertyKey: ["string", "symbol"]
@@ -19,4 +19,4 @@ export const internalKeywords: internalKeywords = space(
 	{
 		prereducedAliases: true
 	}
-)
+).export()

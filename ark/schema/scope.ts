@@ -10,15 +10,16 @@ import {
 	type requireKeys,
 	throwParseError
 } from "@arktype/util"
+import type { type } from "../type/ark.js"
 import type { BaseNode, Node, Schema, SchemaDef } from "./base.js"
 import { mergeConfigs } from "./config.js"
 import {
-	type GenericNode,
+	type GenericSchema,
 	validateUninstantiatedGenericNode
 } from "./generic.js"
 import type { Ark } from "./keywords/keywords.js"
 import type { NodeDef, reducibleKindOf } from "./kinds.js"
-import type { ModuleNode } from "./module.js"
+import { SchemaModule } from "./module.js"
 import type { instantiateSchema, validateSchema } from "./parser/inference.js"
 import {
 	type NodeParseOptions,
@@ -42,7 +43,7 @@ import type {
 	SchemaKind
 } from "./shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "./shared/traversal.js"
-import { addArkKind, hasArkKind } from "./shared/utils.js"
+import { hasArkKind } from "./shared/utils.js"
 
 export type nodeResolutions<keywords> = { [k in keyof keywords]: Schema }
 
@@ -137,16 +138,16 @@ export const resolveConfig = (
 	config: ArkConfig | undefined
 ): ResolvedArkConfig => extendConfig(defaultConfig, config) as never
 
-export type BaseScopeResolutions = Record<
+export type SchemaScopeResolutions = Record<
 	string,
-	Schema | GenericNode | undefined
+	Schema | GenericSchema | undefined
 >
 
-export type exportedName<$> = Exclude<keyof $, PrivateDeclaration>
+export type exportedNameOf<$> = Exclude<keyof $, PrivateDeclaration>
 
 export type PrivateDeclaration<key extends string = string> = `#${key}`
 
-export class BaseScope<$ = any> {
+export class SchemaScope<$ = any> {
 	declare t: $
 	declare infer: distillOut<$>
 	declare inferIn: distillIn<$>
@@ -157,9 +158,9 @@ export class BaseScope<$ = any> {
 	readonly nodeCache: { [innerId: string]: Node } = {}
 	readonly referencesByName: { [name: string]: BaseNode } = {}
 	references: readonly BaseNode[] = []
-	readonly resolutions: BaseScopeResolutions = {}
+	readonly resolutions: SchemaScopeResolutions = {}
 	readonly json: Json = {}
-	exportedNames: array<exportedName<$>>
+	exportedNames: array<exportedNameOf<$>>
 
 	protected resolved = false
 
@@ -183,7 +184,7 @@ export class BaseScope<$ = any> {
 		) as never
 	}
 
-	static root: BaseScope<{}> = new BaseScope({})
+	static root: SchemaScope<{}> = new SchemaScope({})
 
 	node<kind extends NodeKind, const def extends NodeDef<kind>>(
 		kind: kind,
@@ -236,7 +237,7 @@ export class BaseScope<$ = any> {
 		return parseNode(kinds, schema, this, opts) as never
 	}
 
-	maybeResolve(name: string): Schema | GenericNode | undefined {
+	maybeResolve(name: string): Schema | GenericSchema | undefined {
 		const cached = this.resolutions[name]
 		if (cached) {
 			return cached
@@ -247,9 +248,9 @@ export class BaseScope<$ = any> {
 			def = def()
 		}
 		// TODO: initialize here?
-		const resolution = hasArkKind(def, "genericNode")
+		const resolution = hasArkKind(def, "generic")
 			? validateUninstantiatedGenericNode(def)
-			: hasArkKind(def, "moduleNode")
+			: hasArkKind(def, "module")
 				? throwParseError(writeMissingSubmoduleAccessMessage(name))
 				: this.schema(def as never, { args: {} })
 		this.resolutions[name] = resolution
@@ -259,7 +260,7 @@ export class BaseScope<$ = any> {
 	/** If name is a valid reference to a submodule alias, return its resolution  */
 	private maybeResolveSubalias(
 		name: string
-	): Schema | GenericNode | undefined {
+	): Schema | GenericSchema | undefined {
 		const dotIndex = name.indexOf(".")
 		if (dotIndex === -1) {
 			return
@@ -285,28 +286,36 @@ export class BaseScope<$ = any> {
 
 	maybeResolveNode(name: string): Schema | undefined {
 		const result = this.maybeResolve(name)
-		return hasArkKind(result, "node") ? (result as never) : undefined
+		return hasArkKind(result, "schema") ? (result as never) : undefined
 	}
 
-	protected rawImport(...names: string[]): unknown {
-		return addArkKind(
-			flatMorph(this.rawExport(...names) as Dict, (alias, value) => [
+	import<names extends exportedNameOf<$>[]>(
+		...names: names
+	): destructuredImportContext<
+		$,
+		names extends [] ? exportedNameOf<$> : names[number]
+	> {
+		return new SchemaModule(
+			flatMorph(this.export(...names) as Dict, (alias, value) => [
 				`#${alias}`,
 				value
-			]) as never,
-			"moduleNode"
-		) as never
+			]) as never
+		)
 	}
 
-	private exportedResolutions: BaseScopeResolutions | undefined
-	private exportCache: NodeExportCache | undefined
-	protected rawExport(...names: string[]): unknown {
-		if (!this.exportCache) {
-			this.exportCache = {}
+	#exportedResolutions: SchemaScopeResolutions | undefined
+	#exportCache: NodeExportCache | undefined
+	export<names extends exportedNameOf<$>[]>(
+		...names: names
+	): SchemaModule<
+		names extends [] ? $ : destructuredExportContext<$, names[number]>
+	> {
+		if (!this.#exportCache) {
+			this.#exportCache = {}
 			for (const name of this.exportedNames) {
 				let def = this.aliases[name]
 				if (hasArkKind(def, "generic")) {
-					this.exportCache[name] = def
+					this.#exportCache[name] = def
 					continue
 				}
 				// TODO: thunk generics?
@@ -316,9 +325,9 @@ export class BaseScope<$ = any> {
 					def = def()
 				}
 				if (hasArkKind(def, "module")) {
-					this.exportCache[name] = def
+					this.#exportCache[name] = def
 				} else {
-					this.exportCache[name] = new Type(
+					this.#exportCache[name] = new Type(
 						this.parseTypeRoot(def, {
 							baseName: name,
 							args: {}
@@ -327,36 +336,43 @@ export class BaseScope<$ = any> {
 					)
 				}
 			}
-			this.exportedResolutions = resolutionsOfModule(this.exportCache)
+			this.#exportedResolutions = resolutionsOfModule(this.#exportCache)
 			// TODO: add generic json
 			Object.assign(
 				this.json,
-				flatMorph(this.exportedResolutions, (k, v) =>
-					hasArkKind(v, "node") ? [k, v.json] : []
+				flatMorph(this.#exportedResolutions, (k, v) =>
+					hasArkKind(v, "schema") ? [k, v.json] : []
 				)
 			)
-			Object.assign(this.resolutions, this.exportedResolutions)
+			Object.assign(this.resolutions, this.#exportedResolutions)
 			this.references = Object.values(this.referencesByName)
 			// this.bindCompiledScope(this.references)
 			this.resolved = true
 		}
 		const namesToExport = names.length ? names : this.exportedNames
-		return addArkKind(
+		return new SchemaModule(
 			flatMorph(namesToExport, (_, name) => [
 				name,
-				this.exportCache![name]
-			]) as never,
-			"moduleNode"
-		) as never
+				this.#exportCache![name]
+			]) as never
+		)
 	}
+}
+
+export type destructuredExportContext<$, name extends exportedNameOf<$>> = {
+	[k in name]: type.cast<$[k]>
+}
+
+export type destructuredImportContext<$, name extends exportedNameOf<$>> = {
+	[k in name as `#${k & string}`]: type.cast<$[k]>
 }
 
 export type NodeExportCache = Record<
 	string,
-	Schema | GenericNode | ModuleNode | undefined
+	Schema | GenericSchema | SchemaModule | undefined
 >
 
-export const root: BaseScope<{}> = new BaseScope({})
+export const root: SchemaScope<{}> = new SchemaScope({})
 
 export const { schema, defineSchema, node, units } = root
 
@@ -433,7 +449,7 @@ export type instantiateAliases<aliases> = {
 	[k in keyof aliases]: instantiateSchema<aliases[k], aliases>
 } & unknown
 
-export const space = <const aliases>(
+export const schemaScope = <const aliases>(
 	aliases: validateAliases<aliases>,
 	config: ArkConfig = {}
-): instantiateAliases<aliases> => {}
+): SchemaScope<instantiateAliases<aliases>> => {}

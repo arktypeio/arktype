@@ -1,34 +1,34 @@
 import {
 	BaseSchema,
-	hasArkKind,
-	writeUnresolvableMessage,
-	type ambient,
 	type GenericProps,
 	type Schema,
-	type writeNonSubmoduleDotMessage
+	type ambient,
+	hasArkKind,
+	type writeNonSubmoduleDotMessage,
+	writeUnresolvableMessage
 } from "@arktype/schema"
 import {
-	printable,
-	throwParseError,
-	tryParseNumber,
-	tryParseWellFormedBigint,
 	type BigintLiteral,
 	type Completion,
 	type ErrorMessage,
+	type NumberLiteral,
 	type join,
-	type NumberLiteral
+	printable,
+	throwParseError,
+	tryParseNumber,
+	tryParseWellFormedBigint
 } from "@arktype/util"
 import type { Generic } from "../../../../generic.js"
 import type { Module } from "../../../../scope.js"
 import type { GenericInstantiationAst } from "../../../semantic/infer.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
-import type { state, StaticState } from "../../reduce/static.js"
+import type { StaticState, state } from "../../reduce/static.js"
 import type { BaseCompletions } from "../../string.js"
 import type { Scanner } from "../scanner.js"
 import {
+	type ParsedArgs,
 	parseGenericArgs,
-	writeInvalidGenericArgsMessage,
-	type ParsedArgs
+	writeInvalidGenericArgsMessage
 } from "./genericArgs.js"
 
 export const parseUnenclosed = (s: DynamicState): void => {
@@ -124,19 +124,12 @@ const maybeParseReference = (
 	s: DynamicState,
 	token: string
 ): Schema | undefined => {
-	if (s.ctx.args?.[token]) {
-		return s.ctx.args[token]
-	}
+	if (s.ctx.args?.[token]) return s.ctx.args[token]
 	const resolution = s.ctx.$.maybeResolve(token)
-	if (resolution instanceof BaseSchema) {
-		return resolution
-	}
-	if (resolution === undefined) {
-		return
-	}
-	if (hasArkKind(resolution, "generic")) {
+	if (resolution instanceof BaseSchema) return resolution
+	if (resolution === undefined) return
+	if (hasArkKind(resolution, "generic"))
 		return parseGenericInstantiation(token, resolution, s)
-	}
 	return throwParseError(`Unexpected resolution ${printable(resolution)}`)
 }
 

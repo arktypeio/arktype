@@ -196,7 +196,7 @@ export class Disjoint {
 }
 
 const describeReason = (value: unknown): string =>
-	hasArkKind(value, "node")
+	hasArkKind(value, "schema")
 		? value.expression
 		: isArray(value)
 			? value.map(describeReason).join(" | ")

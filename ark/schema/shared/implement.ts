@@ -11,7 +11,12 @@ import {
 	printable,
 	type requireKeys
 } from "@arktype/util"
-import type { BaseAttachments, BaseNode, Node, Schema } from "../base.js"
+import {
+	type BaseAttachments,
+	BaseNode,
+	type Node,
+	type Schema
+} from "../base.js"
 import type { PropsGroupInput } from "../constraints/props/props.js"
 import type { Declaration, Inner, errorContext } from "../kinds.js"
 import type { NodeParseContext } from "../parser/parse.js"
@@ -21,9 +26,9 @@ import type {
 	schemaKindRightOf
 } from "../schemas/schema.js"
 import type {
-	BaseScope,
 	NodeConfig,
-	ParsedUnknownNodeConfig
+	ParsedUnknownNodeConfig,
+	SchemaScope
 } from "../scope.js"
 import type {
 	BaseErrorContext,
@@ -33,7 +38,6 @@ import type {
 } from "./declare.js"
 import type { Disjoint } from "./disjoint.js"
 import { throwArkError } from "./errors.js"
-import { hasArkKind } from "./utils.js"
 
 export const basisKinds = ["unit", "proto", "domain"] as const
 
@@ -157,7 +161,7 @@ type accumulateRightKinds<
 export type ConstraintIntersection<
 	lKind extends ConstraintKind,
 	rKind extends kindOrRightOf<lKind>
-> = (l: Node<lKind>, r: Node<rKind>, $: BaseScope) => Node | Disjoint | null
+> = (l: Node<lKind>, r: Node<rKind>, $: SchemaScope) => Node | Disjoint | null
 
 export type ConstraintIntersectionMap<kind extends ConstraintKind> = evaluate<
 	{
@@ -170,7 +174,7 @@ export type ConstraintIntersectionMap<kind extends ConstraintKind> = evaluate<
 export type TypeIntersection<
 	lKind extends SchemaKind,
 	rKind extends schemaKindOrRightOf<lKind>
-> = (l: Node<lKind>, r: Node<rKind>, $: BaseScope) => Schema | Disjoint
+> = (l: Node<lKind>, r: Node<rKind>, $: SchemaScope) => Schema | Disjoint
 
 export type TypeIntersectionMap<kind extends SchemaKind> = {
 	[rKind in schemaKindOrRightOf<kind>]: TypeIntersection<kind, rKind>
@@ -184,7 +188,7 @@ export type UnknownIntersectionMap = {
 	[k in NodeKind]?: (
 		l: BaseNode,
 		r: BaseNode,
-		$: BaseScope
+		$: SchemaScope
 	) => UnknownIntersectionResult
 }
 
@@ -206,7 +210,7 @@ export function assertNodeKind<kind extends NodeKind>(
 	value: unknown,
 	kind: kind
 ): asserts value is Node<kind> {
-	const isNode = hasArkKind(value, "node")
+	const isNode = value instanceof BaseNode
 	if (!isNode || value.kind !== kind)
 		throwArkError(
 			`Expected node of kind ${kind} (was ${
@@ -285,7 +289,7 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	collapsibleKey?: keyof d["inner"]
 	reduce?: (
 		inner: d["inner"],
-		$: BaseScope
+		$: SchemaScope
 	) => Node<d["reducibleTo"]> | Disjoint | undefined
 	construct: (
 		self: parsedAttachmentsOf<d>

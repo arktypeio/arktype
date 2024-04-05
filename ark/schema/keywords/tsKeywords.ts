@@ -1,6 +1,6 @@
+import type { SchemaModule } from "../module.js"
 import type { type } from "../parser/inference.js"
-import { space } from "../scope.js"
-import type { spaceFromExports } from "./utils/utils.js"
+import { schemaScope } from "../scope.js"
 
 export namespace tsKeywords {
 	export interface exports {
@@ -16,14 +16,15 @@ export namespace tsKeywords {
 		symbol: symbol
 		true: true
 		unknown: unknown
+		// biome-ignore lint/suspicious/noConfusingVoidType:
 		void: void
 		undefined: undefined
 	}
 }
 
-export type tsKeywords = spaceFromExports<tsKeywords.exports>
+export type tsKeywords = SchemaModule<tsKeywords.exports>
 
-export const tsKeywords: tsKeywords = space(
+export const tsKeywords: tsKeywords = schemaScope(
 	{
 		any: {} as type.cast<any>,
 		bigint: "bigint",
@@ -42,4 +43,4 @@ export const tsKeywords: tsKeywords = space(
 		undefined: { unit: undefined }
 	},
 	{ prereducedAliases: true }
-)
+).export()

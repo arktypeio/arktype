@@ -3,10 +3,10 @@ import {
 	wellFormedIntegerMatcher,
 	wellFormedNumberMatcher
 } from "@arktype/util"
+import type { SchemaModule } from "../module.js"
 import type { Out } from "../schemas/morph.js"
-import { root, space } from "../scope.js"
+import { root, schemaScope } from "../scope.js"
 import { parsedDate } from "./utils/date.js"
-import type { spaceFromExports } from "./utils/utils.js"
 
 const number = root.defineSchema({
 	in: {
@@ -14,7 +14,7 @@ const number = root.defineSchema({
 		regex: wellFormedNumberMatcher,
 		description: "a well-formed numeric string"
 	},
-	morphs: (s: string) => parseFloat(s)
+	morphs: (s: string) => Number.parseFloat(s)
 })
 
 const integer = root.defineSchema({
@@ -26,7 +26,7 @@ const integer = root.defineSchema({
 		if (!isWellFormedInteger(s)) {
 			return ctx.error("a well-formed integer string")
 		}
-		const parsed = parseInt(s)
+		const parsed = Number.parseInt(s)
 		return Number.isSafeInteger(parsed)
 			? parsed
 			: ctx.error(
@@ -69,12 +69,12 @@ export namespace parsing {
 	}
 }
 
-export type parsing = spaceFromExports<parsing.exports>
+export type parsing = SchemaModule<parsing.exports>
 
-export const parsing: parsing = space({
+export const parsing: parsing = schemaScope({
 	url,
 	number,
 	integer,
 	date,
 	json
-})
+}).export()

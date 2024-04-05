@@ -7,7 +7,7 @@ import {
 } from "@arktype/util"
 import type { Node, Schema } from "../../base.js"
 import type { IntersectionNode } from "../../schemas/intersection.js"
-import type { BaseScope } from "../../scope.js"
+import type { SchemaScope } from "../../scope.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { PropKind } from "../../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/traversal.js"
@@ -25,7 +25,7 @@ export type PropsGroupInput = Pick<
 export class PropsGroup extends DynamicBase<PropsGroupInput> {
 	constructor(
 		public inner: PropsGroupInput,
-		public $: BaseScope
+		public $: SchemaScope
 	) {
 		super(inner)
 	}

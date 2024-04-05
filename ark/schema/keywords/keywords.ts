@@ -1,11 +1,11 @@
-import type { GenericNode } from "../generic.js"
+import type { GenericSchema } from "../generic.js"
+import type { SchemaModule } from "../module.js"
 import type { jsObjects } from "./jsObjects.js"
 import type { tsKeywords } from "./tsKeywords.js"
-import type { spaceFromExports } from "./utils/utils.js"
 import type { validation } from "./validation.js"
 
 type TsGenericsExports<$ = Ark> = {
-	Record: GenericNode<
+	Record: GenericSchema<
 		["K", "V"],
 		{
 			"[K]": "V"
@@ -16,7 +16,7 @@ type TsGenericsExports<$ = Ark> = {
 	>
 }
 
-export const keywordNodes: spaceFromExports<Ark> = {} as never
+export const keywordNodes: SchemaModule<Ark> = {} as never
 
 // this type is redundant with the inferred definition of ark but allow types
 // derived from the default scope to be calulated more efficiently

@@ -1,12 +1,14 @@
 import {
 	type ArkConfig,
-	BaseScope,
 	type GenericProps,
 	type NodeParseOptions,
 	type Schema,
+	SchemaScope,
 	type ambient,
 	arkKind,
-	type exportedName,
+	type destructuredExportContext,
+	type destructuredImportContext,
+	type exportedNameOf,
 	hasArkKind
 } from "@arktype/schema"
 import {
@@ -150,7 +152,7 @@ export class Module<$ = any> extends DynamicBase<exportScope<$>> {
 }
 
 type exportScope<$ = any> = {
-	[k in exportedName<$>]: $[k] extends PreparsedResolution
+	[k in exportedNameOf<$>]: $[k] extends PreparsedResolution
 		? [$[k]] extends [null]
 			? // handle `Type<any>` and `Type<never>`
 				Type<$[k], $>
@@ -173,7 +175,7 @@ declare global {
 export const scope: ScopeParser = ((def: Dict, config: ArkConfig = {}) =>
 	new Scope(def, config)) as never
 
-export class Scope<$ = any> extends BaseScope<$> {
+export class Scope<$ = any> extends SchemaScope<$> {
 	private parseCache: Record<string, Schema> = {}
 
 	constructor(def: Record<string, unknown>, config?: ArkConfig) {
@@ -196,7 +198,7 @@ export class Scope<$ = any> extends BaseScope<$> {
 	define: DefinitionParser<$> = (def) => def as never
 
 	// TODO: name?
-	get<name extends exportedName<$>>(name: name): Type<$[name], $> {
+	get<name extends exportedNameOf<$>>(name: name): Type<$[name], $> {
 		return this.export()[name] as never
 	}
 
@@ -240,21 +242,21 @@ export class Scope<$ = any> extends BaseScope<$> {
 		)
 	}
 
-	import<names extends exportedName<$>[]>(
+	import<names extends exportedNameOf<$>[]>(
 		...names: names
 	): destructuredImportContext<
 		$,
-		names extends [] ? exportedName<$> : names[number]
+		names extends [] ? exportedNameOf<$> : names[number]
 	> {
-		return this.rawImport(...names) as never
+		return super.import(...names) as never
 	}
 
-	export<names extends exportedName<$>[]>(
+	export<names extends exportedNameOf<$>[]>(
 		...names: names
 	): Module<
 		names extends [] ? $ : destructuredExportContext<$, names[number]>
 	> {
-		return this.rawExport(...names) as never
+		return super.export(...names) as never
 	}
 }
 
@@ -278,14 +280,6 @@ const resolutionsOfModule = (typeSet: ExportCache) => {
 		}
 	}
 	return result
-}
-
-type destructuredExportContext<$, name extends exportedName<$>> = {
-	[k in name]: $[k]
-}
-
-type destructuredImportContext<$, name extends exportedName<$>> = {
-	[k in name as `#${k & string}`]: type.cast<$[k]>
 }
 
 export const writeShallowCycleErrorMessage = (

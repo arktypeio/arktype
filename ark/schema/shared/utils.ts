@@ -6,9 +6,11 @@ import {
 	literalPropAccess,
 	type mutable
 } from "@arktype/util"
-import type { Node } from "../base.js"
-import type { GenericNode } from "../generic.js"
-import type { ModuleNode } from "../module.js"
+import type { Constraint, Node, Schema } from "../base.js"
+import type { GenericSchema } from "../generic.js"
+import type { SchemaModule } from "../module.js"
+import type { SchemaScope } from "../scope.js"
+import type { ArkTypeError } from "./errors.js"
 
 export const makeRootAndArrayPropertiesMutable = <o extends object>(
 	o: o
@@ -37,12 +39,13 @@ export const pathToPropString = (path: TraversalPath): string => {
 
 export const arkKind = Symbol("ArkTypeInternalKind")
 
-declare global {
-	export interface ArkKinds {
-		node: Node
-		genericNode: GenericNode
-		moduleNode: ModuleNode
-	}
+export interface ArkKinds {
+	constraint: Constraint
+	schema: Schema
+	scope: SchemaScope
+	generic: GenericSchema
+	module: SchemaModule
+	error: ArkTypeError
 }
 
 export type ArkKind = evaluate<keyof ArkKinds>
@@ -69,6 +72,9 @@ export const hasArkKind = <kind extends ArkKind>(
 	value: unknown,
 	kind: kind
 ): value is ArkKinds[kind] => (value as any)?.[arkKind] === kind
+
+export const isNode = (value: unknown): value is Node =>
+	hasArkKind(value, "schema") || hasArkKind(value, "constraint")
 
 export type cast<to> = {
 	[inferred]?: to

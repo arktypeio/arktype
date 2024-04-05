@@ -19,7 +19,7 @@ import {
 	type UnknownAttachments
 } from "../base.js"
 import { BaseSchema } from "../schemas/schema.js"
-import type { BaseScope } from "../scope.js"
+import type { SchemaScope } from "../scope.js"
 import type { BaseNodeDeclaration } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
@@ -33,7 +33,7 @@ import {
 	precedenceOfKind,
 	schemaKinds
 } from "../shared/implement.js"
-import { hasArkKind } from "../shared/utils.js"
+import { hasArkKind, isNode } from "../shared/utils.js"
 
 export type NodeParseOptions = {
 	alias?: string
@@ -48,7 +48,7 @@ export type NodeParseOptions = {
 }
 
 export interface NodeParseContext extends NodeParseOptions {
-	$: BaseScope
+	$: SchemaScope
 	raw: unknown
 }
 
@@ -76,13 +76,7 @@ const discriminateSchemaKind = (def: unknown): SchemaKind => {
 		case "string":
 			return "domain"
 		case "function":
-			return hasArkKind(def, "node")
-				? def.isType()
-					? def.kind
-					: throwParseError(
-							`${def.kind} constraint ${def.expression} cannot be used as a root type`
-						)
-				: "proto"
+			return hasArkKind(def, "schema") ? def.kind : "proto"
 		case "object": {
 			// throw at end of function
 			if (def === null) break
@@ -128,12 +122,12 @@ const discriminateSchemaKind = (def: unknown): SchemaKind => {
 export const parseNode = (
 	kinds: NodeKind | array<SchemaKind>,
 	schema: unknown,
-	$: BaseScope,
+	$: SchemaScope,
 	opts?: NodeParseOptions
 ): Node => {
 	const kind: NodeKind =
 		typeof kinds === "string" ? kinds : schemaKindOf(schema, kinds)
-	if (hasArkKind(schema, "node") && schema.kind === kind) {
+	if (isNode(schema) && schema.kind === kind) {
 		return schema
 	}
 	if (kind === "union" && hasDomain(schema, "object")) {
@@ -148,7 +142,7 @@ export const parseNode = (
 	const normalizedDefinition: any = impl.normalize?.(schema) ?? schema
 	// check again after normalization in case a node is a valid collapsed
 	// schema for the kind (e.g. sequence can collapse to element accepting a Node)
-	if (hasArkKind(normalizedDefinition, "node")) {
+	if (isNode(normalizedDefinition)) {
 		return normalizedDefinition.kind === kind
 			? (normalizedDefinition as never)
 			: throwMismatchedNodeSchemaError(kind, normalizedDefinition.kind)

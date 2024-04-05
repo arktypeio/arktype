@@ -1,6 +1,6 @@
-import { root, space } from "../scope.js"
+import type { SchemaModule } from "../module.js"
+import { root, schemaScope } from "../scope.js"
 import { creditCard } from "./utils/creditCard.js"
-import type { spaceFromExports } from "./utils/utils.js"
 
 // Non-trivial expressions should have an explanation or attribution
 
@@ -61,9 +61,9 @@ export namespace validation {
 	}
 }
 
-export type validation = spaceFromExports<validation.exports>
+export type validation = SchemaModule<validation.exports>
 
-export const validation: validation = space(
+export const validation: validation = schemaScope(
 	{
 		alpha: {
 			domain: "string",
@@ -97,4 +97,4 @@ export const validation: validation = space(
 		}
 	},
 	{ prereducedAliases: true }
-)
+).export()

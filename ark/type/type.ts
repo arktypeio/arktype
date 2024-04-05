@@ -1,8 +1,7 @@
 import {
-	Disjoint,
-	hasArkKind,
 	type ArkResult,
 	type BaseMeta,
+	Disjoint,
 	type Morph,
 	type NodeDef,
 	type Out,
@@ -15,6 +14,7 @@ import {
 	type distillConstrainableOut,
 	type distillIn,
 	type distillOut,
+	hasArkKind,
 	type includesMorphs,
 	type inferIntersection,
 	type inferMorphOut,
@@ -30,8 +30,8 @@ import {
 } from "@arktype/util"
 import {
 	Generic,
-	validateUninstantiatedGeneric,
-	type validateParameterString
+	type validateParameterString,
+	validateUninstantiatedGeneric
 } from "./generic.js"
 import type {
 	inferDefinition,
@@ -169,7 +169,7 @@ export class Type<t = unknown, $ = any> extends Callable<
 		r: r
 	): Type<inferIntersection<this["infer"], r["infer"]>, t> | Disjoint {
 		const result = this.root.intersect(r.root)
-		return hasArkKind(result, "node")
+		return hasArkKind(result, "schema")
 			? new Type(result, this.$)
 			: (result as any)
 	}
