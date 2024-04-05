@@ -75,7 +75,7 @@ import {
 	type TraverseAllows,
 	type TraverseApply
 } from "./shared/traversal.js"
-import { arkKind, inferred } from "./shared/utils.js"
+import { inferred } from "./shared/utils.js"
 
 export interface UnknownAttachments {
 	alias?: string
@@ -241,19 +241,19 @@ export class BaseNode<
 		return this(data)
 	}
 
-	private inCache?: BaseNode
+	#inCache?: BaseNode
 	get in(): Node<ioKindOf<d["kind"]>, distillConstrainableIn<t>> {
-		this.inCache ??= this.getIo("in")
-		return this.inCache as never
+		this.#inCache ??= this.#getIo("in")
+		return this.#inCache as never
 	}
 
-	private outCache?: BaseNode
+	#outCache?: BaseNode
 	get out(): Node<ioKindOf<d["kind"]>, distillConstrainableOut<t>> {
-		this.outCache ??= this.getIo("out")
-		return this.outCache as never
+		this.#outCache ??= this.#getIo("out")
+		return this.#outCache as never
 	}
 
-	private getIo(kind: "in" | "out"): BaseNode {
+	#getIo(kind: "in" | "out"): BaseNode {
 		if (!this.includesMorph) {
 			return this as never
 		}
@@ -313,7 +313,7 @@ export class BaseNode<
 		return includes(propKinds, this.kind)
 	}
 
-	isType(): this is Schema {
+	isSchema(): this is Schema {
 		return includes(schemaKinds, this.kind)
 	}
 

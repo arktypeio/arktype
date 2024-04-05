@@ -1,6 +1,8 @@
 import {
-	type ArkResult,
+	type Ark,
 	type BaseMeta,
+	BaseSchema,
+	type BaseSchemaDeclaration,
 	Disjoint,
 	type Morph,
 	type NodeDef,
@@ -21,13 +23,7 @@ import {
 	type inferNarrow,
 	type inferred
 } from "@arktype/schema"
-import {
-	Callable,
-	type Constructor,
-	type Json,
-	type array,
-	type conform
-} from "@arktype/util"
+import type { Constructor, array, conform } from "@arktype/util"
 import {
 	Generic,
 	type validateParameterString,
@@ -128,51 +124,38 @@ export const createTypeParser = <$>($: Scope): TypeParser<$> => {
 	return parser as never
 }
 
-export class Type<t = unknown, $ = any> extends Callable<
-	(data: unknown) => ArkResult<distillIn<t>, distillOut<t>>
-> {
-	declare [inferred]: t
-	declare infer: distillOut<t>
-
+export class Type<t = unknown, $ = any> extends BaseSchema<t, $> {
 	root: Schema<t>
-	allows: this["root"]["allows"]
-	description: string
-	expression: string
-	json: Json
 
 	constructor(
 		public definition: unknown,
-		public $: Scope
+		public $: Scope<$>
 	) {
 		const root = $.parseTypeRoot(definition) as {} as Schema<t>
 		super(root.traverse as never, { bind: root })
 		this.root = root
-		this.allows = root.allows.bind(root)
-		this.json = root.json
-		this.description = this.root.description
-		this.expression = this.root.expression
 	}
 
-	get in(): Type<distillConstrainableIn<t>, $> {
-		return new Type(this.root.in, this.$) as never
-	}
+	// get in(): Type<distillConstrainableIn<t>, $> {
+	// 	return new Type(super.in, this.$) as never
+	// }
 
-	get out(): Type<distillConstrainableOut<t>, $> {
-		return new Type(this.root.out, this.$) as never
-	}
+	// get out(): Type<distillConstrainableOut<t>, $> {
+	// 	return new Type(super.out, this.$) as never
+	// }
 
 	keyof(): Type<keyof this["in"]["infer"], $> {
-		return new Type(this.root.keyof(), this.$) as never
+		return new Type(super.keyof(), this.$) as never
 	}
 
-	intersect<r extends Type>(
-		r: r
-	): Type<inferIntersection<this["infer"], r["infer"]>, t> | Disjoint {
-		const result = this.root.intersect(r.root)
-		return hasArkKind(result, "schema")
-			? new Type(result, this.$)
-			: (result as any)
-	}
+	// intersect<r extends Type>(
+	// 	r: r
+	// ): Type<inferIntersection<this["infer"], r["infer"]>, t> | Disjoint {
+	// 	const result = super.intersect(r.root)
+	// 	return hasArkKind(result, "schema")
+	// 		? new Type(result, this.$)
+	// 		: (result as any)
+	// }
 
 	and<def>(
 		def: validateTypeRoot<def, $>
@@ -183,44 +166,44 @@ export class Type<t = unknown, $ = any> extends Callable<
 
 	or<def>(def: validateTypeRoot<def, $>): Type<t | inferTypeRoot<def, $>, $> {
 		return new Type(
-			this.root.union(this.$.parseTypeRoot(def).root),
+			super.union(this.$.parseTypeRoot(def).root),
 			this.$
 		) as never
 	}
 
-	get<key extends PropertyKey>(...path: readonly (key | Type<key>)[]): this {
-		return this
-	}
+	// get<key extends PropertyKey>(...path: readonly (key | Type<key>)[]): this {
+	// 	return this
+	// }
 
-	equals<r>(r: Type<r>): this is Type<r, $> {
-		return this.root.equals(r.root)
-	}
+	// equals<r>(r: Type<r>): this is Type<r, $> {
+	// 	return super.equals(r.root)
+	// }
 
-	extract(other: Type): Type<t, $> {
-		return new Type(this.root.extract(other.root), this.$)
-	}
+	// extract(other: Type): Type<t, $> {
+	// 	return new Type(super.extract(other.root), this.$)
+	// }
 
-	exclude(other: Type): Type<t, $> {
-		return new Type(this.root.exclude(other.root), this.$)
-	}
+	// exclude(other: Type): Type<t, $> {
+	// 	return new Type(super.exclude(other.root), this.$)
+	// }
+
+	// // add the extra inferred intersection so that a variable of Type
+	// // can be narrowed without other branches becoming never
+	// extends<r>(other: Type<r>): this is Type<r, $> & { [inferred]?: r } {
+	// 	const intersection = this.intersect(other as never)
+	// 	return (
+	// 		!(intersection instanceof Disjoint) &&
+	// 		this.equals(intersection as never)
+	// 	)
+	// }
 
 	array(): Type<t[], $> {
-		return new Type(this.root.array(), this.$) as never
-	}
-
-	// add the extra inferred intersection so that a variable of Type
-	// can be narrowed without other branches becoming never
-	extends<r>(other: Type<r>): this is Type<r, $> & { [inferred]?: r } {
-		const intersection = this.intersect(other as never)
-		return (
-			!(intersection instanceof Disjoint) &&
-			this.equals(intersection as never)
-		)
+		return new Type(super.array(), this.$) as never
 	}
 
 	configure(configOrDescription: BaseMeta | string): this {
 		return new Type(
-			this.root.configureShallowDescendants(configOrDescription),
+			super.configureShallowDescendants(configOrDescription),
 			this.$
 		) as never
 	}
@@ -248,7 +231,7 @@ export class Type<t = unknown, $ = any> extends Callable<
 		$
 	>
 	morph(morph: Morph, outValidator?: unknown): unknown {
-		return new Type(this.root.morph(morph, outValidator as never), this.$)
+		return new Type(super.morph(morph, outValidator as never), this.$)
 	}
 
 	// TODO: based on below, should maybe narrow morph output if used after
@@ -268,15 +251,15 @@ export class Type<t = unknown, $ = any> extends Callable<
 		return result.errors ? result.errors.throw() : result.out
 	}
 
-	constrain<
-		kind extends PrimitiveConstraintKind,
-		const def extends NodeDef<kind>
-	>(
-		kind: conform<kind, constraintKindOf<this["in"]["infer"]>>,
-		def: def
-	): Type<constrain<t, kind, def>, $> {
-		return new Type(this.root.constrain(kind, def), this.$) as never
-	}
+	// constrain<
+	// 	kind extends PrimitiveConstraintKind,
+	// 	const def extends NodeDef<kind>
+	// >(
+	// 	kind: conform<kind, constraintKindOf<this["in"]["infer"]>>,
+	// 	def: def
+	// ): Type<constrain<t, kind, def>, $> {
+	// 	return new Type(super.constrain(kind, def), this.$) as never
+	// }
 }
 
 export type DefinitionParser<$> = <def>(

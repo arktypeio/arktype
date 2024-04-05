@@ -258,7 +258,7 @@ export const parseNode = (
 	nodeCountsByPrefix[prefix] ??= 0
 	const name = `${prefix}${++nodeCountsByPrefix[prefix]!}`
 	const attachments = {
-		name,
+		name: name,
 		kind,
 		inner,
 		entries,

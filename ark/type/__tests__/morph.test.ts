@@ -1,11 +1,11 @@
 import { attest } from "@arktype/attest"
 import {
-	assertNodeKind,
-	writeUndiscriminableMorphUnionMessage,
 	type Ark,
-	type Out
+	type Out,
+	assertNodeKind,
+	writeUndiscriminableMorphUnionMessage
 } from "@arktype/schema"
-import { scope, type, type Type } from "arktype"
+import { type Type, scope, type } from "arktype"
 
 describe("morph", () => {
 	it("base", () => {
@@ -95,12 +95,12 @@ describe("morph", () => {
 			bAndA: () => $.type("b&a")
 		})
 		const types = $.export()
-		assertNodeKind(types.bAndA.root, "morph")
-		assertNodeKind(types.aAndB.root, "morph")
+		assertNodeKind(types.bAndA, "morph")
+		assertNodeKind(types.aAndB, "morph")
 		attest<Type<(In: 3.14) => Out<string>>>(types.aAndB)
 		attest(types.aAndB.json).snap({
 			in: { unit: 3.14 },
-			morphs: types.aAndB.root.serializedMorphs
+			morphs: types.aAndB.serializedMorphs
 		})
 		attest<typeof types.aAndB>(types.bAndA)
 		attest(types.bAndA).equals(types.aAndB)
@@ -114,7 +114,7 @@ describe("morph", () => {
 		const types = $.export()
 		// TODO: FIX
 		// attest<Type<(In: { a: 1; b: 2 }) => string>>(types.c)
-		assertNodeKind(types.c.root, "morph")
+		assertNodeKind(types.c, "morph")
 		attest(types.c.json).snap({
 			in: {
 				domain: "object",
@@ -123,7 +123,7 @@ describe("morph", () => {
 					{ key: "b", value: { unit: 2 } }
 				]
 			},
-			morphs: types.c.root.serializedMorphs
+			morphs: types.c.serializedMorphs
 		})
 	})
 	it("union", () => {
@@ -135,9 +135,7 @@ describe("morph", () => {
 		}).export()
 		attest<Type<boolean | ((In: number) => Out<string>)>>(types.aOrB)
 		const serializedMorphs =
-			types.aOrB.root.firstReferenceOfKindOrThrow(
-				"morph"
-			).serializedMorphs
+			types.aOrB.firstReferenceOfKindOrThrow("morph").serializedMorphs
 		attest(types.aOrB.json).snap([
 			{ in: "number", morphs: serializedMorphs },
 			{ unit: false },
@@ -175,7 +173,7 @@ describe("morph", () => {
 				  }
 			>
 		>(types.c)
-		assertNodeKind(types.a.root, "morph")
+		assertNodeKind(types.a, "morph")
 		attest(types.c.json).snap([
 			{ domain: "object", prop: [{ key: "a", value: "Function" }] },
 			{
@@ -188,7 +186,7 @@ describe("morph", () => {
 								domain: "number",
 								min: { exclusive: true, rule: 0 }
 							},
-							morphs: types.a.root.serializedMorphs
+							morphs: types.a.serializedMorphs
 						}
 					}
 				]
@@ -202,10 +200,10 @@ describe("morph", () => {
 		})
 		const types = $.export()
 		attest<Type<(In: string) => Out<boolean>>>(types.b)
-		assertNodeKind(types.b.root, "morph")
+		assertNodeKind(types.b, "morph")
 		attest(types.b.json).snap({
 			in: "string",
-			morphs: types.b.root.serializedMorphs
+			morphs: types.b.serializedMorphs
 		})
 	})
 	it("chained nested", () => {
@@ -216,8 +214,8 @@ describe("morph", () => {
 
 		const types = $.export()
 		attest<Type<(In: { a: string }) => Out<boolean>>>(types.b)
-		assertNodeKind(types.b.root, "morph")
-		assertNodeKind(types.a.root, "morph")
+		assertNodeKind(types.b, "morph")
+		assertNodeKind(types.a, "morph")
 		attest(types.b.json).snap({
 			in: {
 				domain: "object",
@@ -226,12 +224,12 @@ describe("morph", () => {
 						key: "a",
 						value: {
 							in: "string",
-							morphs: types.a.root.serializedMorphs
+							morphs: types.a.serializedMorphs
 						}
 					}
 				]
 			},
-			morphs: types.b.root.serializedMorphs
+			morphs: types.b.serializedMorphs
 		})
 	})
 	it("directly nested", () => {
@@ -244,8 +242,8 @@ describe("morph", () => {
 		])
 		// TODO: check
 		// attest<Type<(In: { a: string }) => Out<boolean>>>(t)
-		assertNodeKind(t.root, "morph")
-		const nestedMorph = t.root.firstReferenceOfKindOrThrow("morph")
+		assertNodeKind(t, "morph")
+		const nestedMorph = t.firstReferenceOfKindOrThrow("morph")
 		attest(t.json).snap({
 			in: {
 				domain: "object",
@@ -259,7 +257,7 @@ describe("morph", () => {
 					}
 				]
 			},
-			morphs: t.root.serializedMorphs
+			morphs: t.serializedMorphs
 		})
 	})
 	it("discriminable tuple union", () => {
@@ -373,7 +371,7 @@ describe("morph", () => {
 			"string",
 			"=>",
 			(s, ctx) => {
-				const result = parseInt(s)
+				const result = Number.parseInt(s)
 				if (Number.isNaN(result)) {
 					return ctx.error("an integer string")
 				}

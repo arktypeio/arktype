@@ -409,7 +409,7 @@ const bindCompiledSpace = (references: readonly Node[]) => {
 		node.jit = true
 		node.traverseAllows =
 			compiledTraversals[`${node.name}Allows`].bind(compiledTraversals)
-		if (node.isType() && !node.includesContextDependentPredicate) {
+		if (node.isSchema() && !node.includesContextDependentPredicate) {
 			// if the reference doesn't require context, we can assign over
 			// it directly to avoid having to initialize it
 			node.allows = node.traverseAllows as never

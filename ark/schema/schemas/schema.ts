@@ -13,6 +13,7 @@ import {
 } from "../constraints/constraint.js"
 import type { Declaration, NodeDef, reducibleKindOf } from "../kinds.js"
 import type { instantiateSchema } from "../parser/inference.js"
+import type { SchemaScope } from "../scope.js"
 import type { BaseMeta, BaseNodeDeclaration } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
@@ -47,7 +48,7 @@ export const defineRightwardIntersections = <kind extends SchemaKind>(
 
 export interface BaseSchemaDeclaration extends BaseNodeDeclaration {
 	kind: SchemaKind
-	attachments: BaseSchemaAttachments<any>
+	attachments: BaseSchemaAttachments<this>
 }
 
 export interface BaseSchemaAttachments<d extends BaseNodeDeclaration>
@@ -55,26 +56,29 @@ export interface BaseSchemaAttachments<d extends BaseNodeDeclaration>
 	rawKeyOf(): Schema
 }
 
-export class BaseSchema<t, $, d extends BaseSchemaDeclaration> extends BaseNode<
-	t,
-	d
-> {
+export class BaseSchema<
+	t = any,
+	$ = any,
+	d extends BaseSchemaDeclaration = BaseSchemaDeclaration
+> extends BaseNode<t, d> {
+	declare $: SchemaScope<$>
+
 	readonly branches: readonly Node<UnionChildKind>[] = this.hasKind("union")
 		? this.inner.branches
 		: [this as never]
 
 	readonly [arkKind] = "schema"
 
-	private keyofCache: Schema | undefined
-	keyof(): Schema<keyof this["in"]["infer"]> {
-		if (!this.keyofCache) {
-			this.keyofCache = this.rawKeyOf()
-			if (this.keyofCache.isNever())
+	#keyofCache: Schema | undefined
+	keyof(): BaseSchema<keyof this["in"]["infer"], $> {
+		if (!this.#keyofCache) {
+			this.#keyofCache = this.rawKeyOf()
+			if (this.#keyofCache.isNever())
 				throwParseError(
 					`keyof ${this.expression} results in an unsatisfiable type`
 				)
 		}
-		return this.keyofCache as never
+		return this.#keyofCache as never
 	}
 
 	intersect<r extends Schema>(
@@ -121,7 +125,7 @@ export class BaseSchema<t, $, d extends BaseSchemaDeclaration> extends BaseNode<
 		) as never
 	}
 
-	array(): IntersectionNode<t[]> {
+	array(): BaseSchema<t[], $> {
 		return this.$.schema(
 			{
 				proto: Array,
@@ -154,42 +158,42 @@ export class BaseSchema<t, $, d extends BaseSchemaDeclaration> extends BaseNode<
 		return literal as never
 	}
 
-	morph<
-		morph extends Morph<this["infer"]>,
-		outValidatorSchema extends SchemaDef = never
-	>(
-		morph: morph,
-		outValidator?: outValidatorSchema
-	): MorphNode<
-		(
-			In: distillConstrainableIn<t>
-		) => Out<
-			[outValidatorSchema] extends [never]
-				? inferMorphOut<morph>
-				: distillConstrainableOut<
-						instantiateSchema<outValidatorSchema, $>["infer"]
-					>
-		>,
-		$
-	>
-	morph(morph: Morph, outValidator?: unknown): unknown {
-		if (this.hasKind("union")) {
-			const branches = this.branches.map((node) =>
-				node.morph(morph, outValidator as never)
-			)
-			return this.$.node("union", { ...this.inner, branches })
-		}
-		if (this.hasKind("morph")) {
-			return this.$.node("morph", {
-				...this.inner,
-				morphs: [...this.morphs, morph]
-			})
-		}
-		return this.$.node("morph", {
-			in: this,
-			morphs: [morph]
-		})
-	}
+	// morph<
+	// 	morph extends Morph<this["infer"]>,
+	// 	outValidatorSchema extends SchemaDef = never
+	// >(
+	// 	morph: morph,
+	// 	outValidator?: outValidatorSchema
+	// ): MorphNode<
+	// 	(
+	// 		In: distillConstrainableIn<t>
+	// 	) => Out<
+	// 		[outValidatorSchema] extends [never]
+	// 			? inferMorphOut<morph>
+	// 			: distillConstrainableOut<
+	// 					instantiateSchema<outValidatorSchema, $>["infer"]
+	// 				>
+	// 	>,
+	// 	$
+	// >
+	// morph(morph: Morph, outValidator?: unknown): unknown {
+	// 	if (this.hasKind("union")) {
+	// 		const branches = this.branches.map((node) =>
+	// 			node.morph(morph, outValidator as never)
+	// 		)
+	// 		return this.$.node("union", { ...this.inner, branches })
+	// 	}
+	// 	if (this.hasKind("morph")) {
+	// 		return this.$.node("morph", {
+	// 			...this.inner,
+	// 			morphs: [...this.morphs, morph]
+	// 		})
+	// 	}
+	// 	return this.$.node("morph", {
+	// 		in: this,
+	// 		morphs: [morph]
+	// 	})
+	// }
 
 	assert(data: unknown): this["infer"] {
 		const result = this.traverse(data)
