@@ -1,18 +1,17 @@
-import type { NodeSubclass } from "./base.js"
 import {
-	type PredicateDeclaration,
-	predicateImplementation
+	predicateImplementation,
+	type PredicateDeclaration
 } from "./constraints/predicate.js"
 import type { IndexDeclaration } from "./constraints/props/index.js"
 import type { PropDeclaration } from "./constraints/props/prop.js"
 import {
-	type SequenceDeclaration,
-	sequenceImplementation
+	sequenceImplementation,
+	type SequenceDeclaration
 } from "./constraints/props/sequence.js"
 import type { DivisorDeclaration } from "./constraints/refinements/divisor.js"
 import {
-	type BoundDeclarations,
-	boundImplementationsByKind
+	boundImplementationsByKind,
+	type BoundDeclarations
 } from "./constraints/refinements/kinds.js"
 import type { RegexDeclaration } from "./constraints/refinements/regex.js"
 import {
@@ -22,21 +21,21 @@ import {
 	regexImplementation
 } from "./main.js"
 import {
-	type DomainDeclaration,
-	domainImplementation
+	domainImplementation,
+	type DomainDeclaration
 } from "./schemas/domain.js"
 import {
-	type IntersectionDeclaration,
-	intersectionImplementation
+	intersectionImplementation,
+	type IntersectionDeclaration
 } from "./schemas/intersection.js"
 import {
+	morphImplementation,
 	type MorphChildKind,
-	type MorphDeclaration,
-	morphImplementation
+	type MorphDeclaration
 } from "./schemas/morph.js"
-import { type ProtoDeclaration, protoImplementation } from "./schemas/proto.js"
-import { type UnionDeclaration, unionImplementation } from "./schemas/union.js"
-import { type UnitDeclaration, unitImplementation } from "./schemas/unit.js"
+import { protoImplementation, type ProtoDeclaration } from "./schemas/proto.js"
+import { unionImplementation, type UnionDeclaration } from "./schemas/union.js"
+import { unitImplementation, type UnitDeclaration } from "./schemas/unit.js"
 import type { NodeKind } from "./shared/implement.js"
 import type { makeRootAndArrayPropertiesMutable } from "./shared/utils.js"
 

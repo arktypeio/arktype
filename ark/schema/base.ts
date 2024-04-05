@@ -103,14 +103,6 @@ export interface NarrowedAttachments<d extends BaseNodeDeclaration>
 	children: Node<d["childKind"]>[]
 }
 
-export type NodeSubclass<d extends BaseNodeDeclaration = BaseNodeDeclaration> =
-	{
-		new (attachments: never): BaseNode<any, d>
-		readonly implementation: nodeImplementationOf<d>
-	}
-
-export type UnknownNode = BaseNode<any, BaseNodeDeclaration>
-
 declare global {
 	export interface ArkRegistry {
 		nodeClassesByKind: typeof nodeImplementationsByKind
@@ -153,9 +145,9 @@ export type BaseAttachments<d extends BaseNodeDeclaration> = {
 	compile: (js: NodeCompiler) => void
 }
 
-export abstract class BaseNode<
-	t,
-	d extends BaseNodeDeclaration
+export class BaseNode<
+	t = any,
+	d extends BaseNodeDeclaration = BaseNodeDeclaration
 > extends Callable<
 	(data: d["prerequisite"]) => ArkResult<distillIn<t>, distillOut<t>>,
 	attachmentsOf<d>
@@ -186,6 +178,12 @@ export abstract class BaseNode<
 	declare [inferred]: t
 	readonly [arkKind] = "node"
 
+	// TODO: Remove
+	declare traverseAllows: TraverseAllows<d["prerequisite"]>
+	declare traverseApply: TraverseApply<d["prerequisite"]>
+	declare compile: (js: NodeCompiler) => void
+	declare expression: string
+
 	protected readonly impl: UnknownNodeImplementation = (
 		this.constructor as any
 	).implementation
@@ -196,17 +194,16 @@ export abstract class BaseNode<
 		// if a predicate accepts exactly one arg, we can safely skip passing context
 		(this.hasKind("predicate") && this.inner.predicate.length !== 1) ||
 		this.children.some((child) => child.includesContextDependentPredicate)
-	readonly referencesByName: Record<string, UnknownNode> =
-		this.children.reduce(
-			(result, child) =>
-				Object.assign(result, child.contributesReferencesByName),
-			{}
-		)
-	readonly references: readonly UnknownNode[] = Object.values(
+	readonly referencesByName: Record<string, BaseNode> = this.children.reduce(
+		(result, child) =>
+			Object.assign(result, child.contributesReferencesByName),
+		{}
+	)
+	readonly references: readonly BaseNode[] = Object.values(
 		this.referencesByName
 	)
-	readonly contributesReferencesByName: Record<string, UnknownNode>
-	readonly contributesReferences: readonly UnknownNode[]
+	readonly contributesReferencesByName: Record<string, BaseNode>
+	readonly contributesReferences: readonly BaseNode[]
 	readonly precedence = precedenceOfKind(this.kind)
 	jit = false
 
@@ -245,24 +242,19 @@ export abstract class BaseNode<
 		return this(data)
 	}
 
-	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
-	abstract traverseApply: TraverseApply<d["prerequisite"]>
-	abstract compile(js: NodeCompiler): void
-	abstract expression: string
-
-	private inCache?: UnknownNode
+	private inCache?: BaseNode
 	get in(): Node<ioKindOf<d["kind"]>, distillConstrainableIn<t>> {
 		this.inCache ??= this.getIo("in")
 		return this.inCache as never
 	}
 
-	private outCache?: UnknownNode
+	private outCache?: BaseNode
 	get out(): Node<ioKindOf<d["kind"]>, distillConstrainableOut<t>> {
 		this.outCache ??= this.getIo("out")
 		return this.outCache as never
 	}
 
-	private getIo(kind: "in" | "out"): UnknownNode {
+	private getIo(kind: "in" | "out"): BaseNode {
 		if (!this.includesMorph) {
 			return this as never
 		}
@@ -273,7 +265,7 @@ export abstract class BaseNode<
 				continue
 			}
 			if (keyDefinition.child) {
-				const childValue = v as listable<UnknownNode>
+				const childValue = v as listable<BaseNode>
 				ioInner[k] = isArray(childValue)
 					? childValue.map((child) => child[kind])
 					: childValue[kind]
@@ -298,7 +290,7 @@ export abstract class BaseNode<
 		return this.json
 	}
 
-	equals(other: UnknownNode): boolean {
+	equals(other: BaseNode): boolean {
 		return this.typeId === other.typeId
 	}
 
@@ -346,8 +338,8 @@ export abstract class BaseNode<
 		UnknownIntersectionResult
 	> = {}
 	protected intersectInternal(
-		this: UnknownNode,
-		r: UnknownNode
+		this: BaseNode,
+		r: BaseNode
 	): UnknownIntersectionResult {
 		const lrCacheKey = `${this.typeId}&${r.typeId}`
 		if (BaseNode.intersectionCache[lrCacheKey]) {
@@ -395,13 +387,13 @@ export abstract class BaseNode<
 	}
 
 	firstReference<narrowed>(
-		filter: Guardable<UnknownNode, conform<narrowed, UnknownNode>>
+		filter: Guardable<BaseNode, conform<narrowed, BaseNode>>
 	): narrowed | undefined {
 		return this.references.find(filter as never) as never
 	}
 
-	firstReferenceOrThrow<narrowed extends UnknownNode>(
-		filter: Guardable<UnknownNode, narrowed>
+	firstReferenceOrThrow<narrowed extends BaseNode>(
+		filter: Guardable<BaseNode, narrowed>
 	): narrowed {
 		return (
 			this.firstReference(filter) ??
@@ -428,7 +420,7 @@ export abstract class BaseNode<
 
 	transform(
 		mapper: DeepNodeTransformation,
-		shouldTransform: (node: UnknownNode) => boolean
+		shouldTransform: (node: BaseNode) => boolean
 	): Node<reducibleKindOf<this["kind"]>> {
 		if (!shouldTransform(this as never)) {
 			return this as never
@@ -440,12 +432,12 @@ export abstract class BaseNode<
 				this.impl.keys[k].child
 					? isArray(v)
 						? v.map((node) =>
-								(node as UnknownNode).transform(
+								(node as BaseNode).transform(
 									mapper,
 									shouldTransform
 								)
 							)
-						: (v as UnknownNode).transform(mapper, shouldTransform)
+						: (v as BaseNode).transform(mapper, shouldTransform)
 					: v
 			]
 		)

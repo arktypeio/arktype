@@ -1,14 +1,14 @@
 import {
-	arrayFrom,
-	reference,
-	throwParseError,
 	type BuiltinObjectKind,
 	type BuiltinObjects,
 	type Primitive,
 	type array,
-	type listable
+	arrayFrom,
+	type listable,
+	reference,
+	throwParseError
 } from "@arktype/util"
-import { implementNode, type Node, type Schema } from "../base.js"
+import { type Node, type Schema, implementNode } from "../base.js"
 import type { of } from "../constraints/ast.js"
 import { tsKeywords } from "../keywords/tsKeywords.js"
 import type { NodeDef } from "../kinds.js"
@@ -93,7 +93,7 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 			if (l.morphs.some((morph, i) => morph !== r.morphs[i])) {
 				// TODO: is this always a parse error? what about for union reduction etc.
 				// TODO: check in for union reduction
-				return throwParseError(`Invalid intersection of morphs`)
+				return throwParseError("Invalid intersection of morphs")
 			}
 			const inTersection = l.in.intersect(r.in)
 			if (inTersection instanceof Disjoint) {

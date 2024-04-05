@@ -6,7 +6,7 @@ import {
 } from "@arktype/util"
 import type { array } from "../../util/arrays.js"
 import type { Key } from "../../util/records.js"
-import { BaseNode, implementNode } from "../base.js"
+import { implementNode } from "../base.js"
 import {
 	type PrimitiveAttachments,
 	derivePrimitiveAttachments
@@ -14,7 +14,6 @@ import {
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { TraverseAllows } from "../shared/traversal.js"
-import { BaseBasis } from "./basis.js"
 import type { BaseSchema, BaseSchemaAttachments } from "./schema.js"
 
 export interface DomainInner<

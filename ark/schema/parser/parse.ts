@@ -11,7 +11,7 @@ import {
 	type propValueOf,
 	throwParseError
 } from "@arktype/util"
-import type { Node, Schema, UnknownAttachments, UnknownNode } from "../base.js"
+import type { BaseNode, Node, Schema, UnknownAttachments } from "../base.js"
 import type { BaseScope } from "../scope.js"
 import type { BaseNodeDeclaration } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -160,7 +160,7 @@ export const parseNode = (
 						? -1
 						: 1
 	)
-	const children: UnknownNode[] = []
+	const children: BaseNode[] = []
 	for (const entry of schemaEntries) {
 		const k = entry[0]
 		const keyImpl = impl.keys[k] ?? baseKeys[k]
@@ -180,7 +180,7 @@ export const parseNode = (
 	entries.forEach(([k, v]) => {
 		const keyImpl = impl.keys[k] ?? baseKeys[k]
 		if (keyImpl.child) {
-			const listableNode = v as listable<UnknownNode>
+			const listableNode = v as listable<BaseNode>
 			if (isArray(listableNode)) {
 				json[k] = listableNode.map((node) => node.collapsibleJson)
 				children.push(...listableNode)

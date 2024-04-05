@@ -1,5 +1,5 @@
 import { appendUnique, groupBy, isArray } from "@arktype/util"
-import { implementNode, type Node, type Schema } from "../base.js"
+import { type Node, type Schema, implementNode } from "../base.js"
 import { tsKeywords } from "../keywords/tsKeywords.js"
 import type { NodeDef } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
@@ -7,9 +7,9 @@ import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { ArkTypeError } from "../shared/errors.js"
 import {
-	schemaKindsRightOf,
 	type SchemaKind,
-	type nodeImplementationOf
+	type nodeImplementationOf,
+	schemaKindsRightOf
 } from "../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 import type { Discriminant } from "./discriminate.js"
@@ -119,11 +119,11 @@ export const unionImplementation = implementNode<UnionDeclaration>({
 					const actual = ctx.errors.reduce(
 						(acc, e) =>
 							e.actual && !acc.includes(e.actual)
-								? `${acc && acc + ", "}${e.actual}`
+								? `${acc && `${acc}, `}${e.actual}`
 								: acc,
 						""
 					)
-					return `${path && path + " "}must be ${expected}${
+					return `${path && `${path} `}must be ${expected}${
 						actual && ` (was ${actual})`
 					}`
 				}

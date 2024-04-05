@@ -10,7 +10,7 @@ import {
 	type requireKeys,
 	throwParseError
 } from "@arktype/util"
-import type { Node, Schema, SchemaDef, UnknownNode } from "./base.js"
+import type { BaseNode, Node, Schema, SchemaDef } from "./base.js"
 import { mergeConfigs } from "./config.js"
 import {
 	type GenericNode,
@@ -155,8 +155,8 @@ export class BaseScope<$ = any> {
 	readonly resolvedConfig: ResolvedArkConfig
 
 	readonly nodeCache: { [innerId: string]: Node } = {}
-	readonly referencesByName: { [name: string]: UnknownNode } = {}
-	references: readonly UnknownNode[] = []
+	readonly referencesByName: { [name: string]: BaseNode } = {}
+	references: readonly BaseNode[] = []
 	readonly resolutions: BaseScopeResolutions = {}
 	readonly json: Json = {}
 	exportedNames: array<exportedName<$>>

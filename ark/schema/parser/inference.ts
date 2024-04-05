@@ -9,7 +9,7 @@ import type {
 	instanceOf,
 	isAny
 } from "@arktype/util"
-import type { Node, Schema, SchemaDef, UnknownNode } from "../base.js"
+import type { BaseNode, Node, Schema } from "../base.js"
 import type { NodeDef, Prerequisite, reducibleKindOf } from "../kinds.js"
 import type { DomainDef, DomainNode } from "../schemas/domain.js"
 import type {
@@ -33,13 +33,8 @@ import type {
 	UnionNode
 } from "../schemas/union.js"
 import type { UnitDef, UnitNode } from "../schemas/unit.js"
-import type {
-	BasisKind,
-	ConstraintKind,
-	NodeKind
-} from "../shared/implement.js"
+import type { BasisKind, ConstraintKind } from "../shared/implement.js"
 import type { inferred } from "../shared/utils.js"
-import type { NodeParseOptions } from "./parse.js"
 
 export namespace type {
 	export type cast<to = unknown> = {
@@ -78,13 +73,13 @@ export type instantiateSchema<def, $> = def extends type.cast<infer to>
 					>
 		: instantiateSchemaBranch<def, $>
 
-type validateSchemaBranch<def, $> = def extends UnknownNode
+type validateSchemaBranch<def, $> = def extends BaseNode
 	? def
 	: keyof def & ("morph" | "in" | "out") extends never
 		? validateMorphChild<def, $>
 		: validateMorphSchema<def, $>
 
-type instantiateSchemaBranch<def, $> = def extends UnknownNode
+type instantiateSchemaBranch<def, $> = def extends BaseNode
 	? def
 	: def extends MorphDef
 		? instantiateMorphSchema<def, $>

@@ -11,7 +11,7 @@ import {
 	printable,
 	type requireKeys
 } from "@arktype/util"
-import type { BaseAttachments, Node, Schema, UnknownNode } from "../base.js"
+import type { BaseAttachments, BaseNode, Node, Schema } from "../base.js"
 import type { PropsGroupInput } from "../constraints/props/props.js"
 import type { Declaration, Inner, errorContext } from "../kinds.js"
 import type { NodeParseContext } from "../parser/parse.js"
@@ -182,13 +182,13 @@ export type IntersectionMap<kind extends NodeKind> = kind extends SchemaKind
 
 export type UnknownIntersectionMap = {
 	[k in NodeKind]?: (
-		l: UnknownNode,
-		r: UnknownNode,
+		l: BaseNode,
+		r: BaseNode,
 		$: BaseScope
 	) => UnknownIntersectionResult
 }
 
-export type UnknownIntersectionResult = UnknownNode | Disjoint | null
+export type UnknownIntersectionResult = BaseNode | Disjoint | null
 
 type PrecedenceByKind = {
 	[i in indexOf<OrderedNodeKinds> as OrderedNodeKinds[i]]: i
@@ -260,7 +260,7 @@ export type NodeKeyImplementation<
 		child?: true
 		implied?: true
 		serialize?: (
-			schema: instantiated extends listable<UnknownNode> | undefined
+			schema: instantiated extends listable<BaseNode> | undefined
 				? ErrorMessage<`Keys with node children cannot specify a custom serializer`>
 				: instantiated
 		) => JsonData
@@ -272,7 +272,7 @@ export type NodeKeyImplementation<
 	// require parse if we can't guarantee the schema value will be valid on inner
 	| (d["normalizedDef"][k] extends instantiated ? never : "parse")
 	// require keys containing children specify it
-	| ([instantiated] extends [listable<UnknownNode> | undefined]
+	| ([instantiated] extends [listable<BaseNode> | undefined]
 			? "child"
 			: never)
 >

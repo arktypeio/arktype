@@ -4,7 +4,8 @@
 		"ignore": ["lib.*.d.ts"]
 	},
 	"formatter": {
-		"indentWidth": 4
+		"indentWidth": 4,
+		"formatWithErrors": true
 	},
 	"javascript": {
 		"formatter": {

@@ -1,5 +1,5 @@
 import { compileSerializedValue } from "@arktype/util"
-import { type BaseAttachments, implementNode } from "../base.js"
+import { type BaseAttachments, type BaseNode, implementNode } from "../base.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import type { PrimitiveAttachments } from "../shared/implement.js"
 import type { TraversalContext } from "../shared/traversal.js"
@@ -89,6 +89,8 @@ export const predicateImplementation = implementNode<PredicateDeclaration>({
 		}
 	}
 })
+
+export type PredicateNode = BaseNode<unknown, PredicateDeclaration>
 
 export type Predicate<data = unknown> = (
 	data: data,

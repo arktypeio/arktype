@@ -1,5 +1,5 @@
 import { CompiledFunction, compileSerializedValue } from "@arktype/util"
-import type { Node, UnknownNode } from "../base.js"
+import type { BaseNode, Node } from "../base.js"
 import type { Discriminant } from "../schemas/discriminate.js"
 import type { PrimitiveKind } from "./implement.js"
 import type { TraversalKind } from "./traversal.js"
@@ -17,7 +17,7 @@ export class NodeCompiler extends CompiledFunction<["data", "ctx"]> {
 		super("data", "ctx")
 	}
 
-	invoke(node: UnknownNode, opts?: InvokeOptions): string {
+	invoke(node: BaseNode, opts?: InvokeOptions): string {
 		const invokedKind = opts?.kind ?? this.traversalKind
 		const method = `${node.name}${invokedKind}`
 		const arg = opts?.arg ?? this.data
@@ -27,14 +27,14 @@ export class NodeCompiler extends CompiledFunction<["data", "ctx"]> {
 		return `this.${method}(${arg})`
 	}
 
-	requiresContextFor(node: UnknownNode): boolean {
+	requiresContextFor(node: BaseNode): boolean {
 		return (
 			this.traversalKind === "Apply" ||
 			node.includesContextDependentPredicate
 		)
 	}
 
-	checkReferenceKey(keyExpression: string, node: UnknownNode): this {
+	checkReferenceKey(keyExpression: string, node: BaseNode): this {
 		const requiresContext = this.requiresContextFor(node)
 		if (requiresContext) {
 			this.line(`${this.ctx}.path.push(${keyExpression})`)
@@ -48,7 +48,7 @@ export class NodeCompiler extends CompiledFunction<["data", "ctx"]> {
 		return this
 	}
 
-	check(node: UnknownNode, opts?: InvokeOptions): this {
+	check(node: BaseNode, opts?: InvokeOptions): this {
 		return this.traversalKind === "Allows"
 			? this.if(`!${this.invoke(node, opts)}`, () => this.return(false))
 			: this.line(this.invoke(node, opts))
