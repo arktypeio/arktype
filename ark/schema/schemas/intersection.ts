@@ -370,9 +370,9 @@ export const intersectionImplementation =
 	})
 
 export type IntersectionNode<t = unknown, $ = any> = BaseSchema<
+	"intersection",
 	t,
-	$,
-	IntersectionDeclaration
+	$
 >
 
 const maybeCreatePropsGroup = (inner: IntersectionInner, $: BaseScope) => {

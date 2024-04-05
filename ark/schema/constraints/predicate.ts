@@ -4,7 +4,7 @@ import type { BaseMeta, declareNode } from "../shared/declare.js"
 import type { PrimitiveAttachments } from "../shared/implement.js"
 import type { TraversalContext } from "../shared/traversal.js"
 import type { constrain, of } from "./ast.js"
-import type { ConstraintAttachments } from "./constraint.js"
+import type { BaseConstraint, ConstraintAttachments } from "./constraint.js"
 
 export interface PredicateInner<rule extends Predicate<any> = Predicate<any>>
 	extends BaseMeta {
@@ -90,7 +90,7 @@ export const predicateImplementation = implementNode<PredicateDeclaration>({
 	}
 })
 
-export type PredicateNode = BaseNode<unknown, PredicateDeclaration>
+export type PredicateNode = BaseConstraint<PredicateDeclaration>
 
 export type Predicate<data = unknown> = (
 	data: data,

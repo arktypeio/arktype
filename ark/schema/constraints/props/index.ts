@@ -10,7 +10,7 @@ import { internalKeywords } from "../../keywords/internal.js"
 import { tsKeywords } from "../../keywords/tsKeywords.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import type { SchemaKind } from "../../shared/implement.js"
-import type { ConstraintAttachments } from "../constraint.js"
+import type { BaseConstraint, ConstraintAttachments } from "../constraint.js"
 
 export interface IndexDef extends BaseMeta {
 	readonly key: SchemaDef
@@ -93,7 +93,7 @@ export const indexImplementation = implementNode<IndexDeclaration>({
 	}
 })
 
-export type IndexNode = BaseNode<object, IndexDeclaration>
+export type IndexNode = BaseConstraint<IndexDeclaration>
 
 export const writeInvalidPropertyKeyMessage = <indexDef extends string>(
 	indexDef: indexDef

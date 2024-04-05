@@ -2,6 +2,7 @@ import { type BaseNode, implementNode } from "../../base.js"
 import { jsObjects } from "../../keywords/jsObjects.js"
 import type { declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
+import type { BaseConstraint } from "../constraint.js"
 import {
 	type BaseNormalizedRangeSchema,
 	type BaseRangeInner,
@@ -77,4 +78,4 @@ export const beforeImplementation = implementNode<BeforeDeclaration>({
 		})
 })
 
-export type BeforeNode = BaseNode<Date, BeforeDeclaration>
+export type BeforeNode = BaseConstraint<BeforeDeclaration>

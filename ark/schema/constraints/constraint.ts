@@ -4,8 +4,9 @@ import {
 	type describeExpression,
 	throwParseError
 } from "@arktype/util"
-import type { Node, Schema } from "../base.js"
+import { BaseNode, type Node, type Schema } from "../base.js"
 import type { Prerequisite } from "../kinds.js"
+import type { BaseNodeDeclaration } from "../shared/declare.js"
 import type { Disjoint } from "../shared/disjoint.js"
 import type {
 	ConstraintKind,
@@ -53,5 +54,10 @@ export interface ConstraintAttachments {
 	impliedBasis: Schema | null
 	impliedSiblings?: array<Node<ConstraintKind>> | null
 }
+
+export class BaseConstraint<d extends BaseNodeDeclaration> extends BaseNode<
+	d["prerequisite"],
+	d
+> {}
 
 export type PrimitiveConstraintKind = Exclude<ConstraintKind, PropKind>

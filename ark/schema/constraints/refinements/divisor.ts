@@ -1,9 +1,4 @@
-import {
-	type BaseAttachments,
-	type BaseNode,
-	type Schema,
-	implementNode
-} from "../../base.js"
+import { type BaseAttachments, type Schema, implementNode } from "../../base.js"
 import { tsKeywords } from "../../keywords/tsKeywords.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import {
@@ -11,6 +6,7 @@ import {
 	derivePrimitiveAttachments
 } from "../../shared/implement.js"
 import {
+	type BaseConstraint,
 	type ConstraintAttachments,
 	writeInvalidOperandMessage
 } from "../constraint.js"
@@ -67,7 +63,7 @@ export const divisorImplementation = implementNode<DivisorDeclaration>({
 	}
 })
 
-export type DivisorNode = BaseNode<number, DivisorDeclaration>
+export type DivisorNode = BaseConstraint<DivisorDeclaration>
 
 export const writeIndivisibleMessage = <node extends Schema>(
 	t: node

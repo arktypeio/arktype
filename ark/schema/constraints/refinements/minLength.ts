@@ -1,6 +1,7 @@
 import { type BaseNode, implementNode } from "../../base.js"
 import { internalKeywords } from "../../keywords/internal.js"
 import type { declareNode } from "../../shared/declare.js"
+import type { BaseConstraint } from "../constraint.js"
 import {
 	type BaseNormalizedRangeSchema,
 	type BaseRangeInner,
@@ -65,4 +66,4 @@ export const minLengthImplementation = implementNode<MinLengthDeclaration>({
 		})
 })
 
-export type MinLengthNode = BaseNode<LengthBoundableData, MinLengthDeclaration>
+export type MinLengthNode = BaseConstraint<MinLengthDeclaration>

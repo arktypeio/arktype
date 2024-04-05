@@ -108,9 +108,9 @@ type resolveConfig<config extends ArkConfig> = {
 export type ResolvedArkConfig = resolveConfig<ArkConfig>
 
 export const defaultConfig: ResolvedArkConfig = Object.assign(
-	flatMorph($ark.nodeImplementationsByKind, (kind, node) => [
+	flatMorph($ark.nodeImplementationsByKind, (kind, implementation) => [
 		kind,
-		node.implementation.defaults
+		implementation.defaults
 	]),
 	{
 		prereducedAliases: false

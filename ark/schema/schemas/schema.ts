@@ -11,7 +11,7 @@ import {
 	type PrimitiveConstraintKind,
 	throwInvalidOperandError
 } from "../constraints/constraint.js"
-import type { NodeDef, reducibleKindOf } from "../kinds.js"
+import type { Declaration, NodeDef, reducibleKindOf } from "../kinds.js"
 import type { instantiateSchema } from "../parser/inference.js"
 import type { BaseMeta, BaseNodeDeclaration } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -55,9 +55,9 @@ export interface BaseSchemaAttachments<d extends BaseNodeDeclaration>
 	rawKeyOf(): Schema
 }
 
-export class BaseSchema<t, $, d extends BaseSchemaDeclaration> extends BaseNode<
+export class BaseSchema<kind extends SchemaKind, t, $> extends BaseNode<
 	t,
-	d
+	Declaration<kind>
 > {
 	readonly branches: readonly Node<UnionChildKind>[] = this.hasKind("union")
 		? this.inner.branches
