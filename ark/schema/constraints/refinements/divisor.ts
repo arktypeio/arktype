@@ -2,7 +2,6 @@ import {
 	type BaseAttachments,
 	type BaseNode,
 	type Schema,
-	type UnknownAttachments,
 	implementNode
 } from "../../base.js"
 import { tsKeywords } from "../../keywords/tsKeywords.js"
@@ -11,9 +10,7 @@ import {
 	type PrimitiveAttachments,
 	derivePrimitiveAttachments
 } from "../../shared/implement.js"
-import type { TraverseAllows } from "../../shared/traversal.js"
 import {
-	BasePrimitiveConstraint,
 	type ConstraintAttachments,
 	writeInvalidOperandMessage
 } from "../constraint.js"

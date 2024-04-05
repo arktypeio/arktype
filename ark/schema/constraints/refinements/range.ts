@@ -19,10 +19,7 @@ import {
 	derivePrimitiveAttachments
 } from "../../shared/implement.js"
 import type { Comparator } from "../ast.js"
-import {
-	BasePrimitiveConstraint,
-	type ConstraintAttachments
-} from "../constraint.js"
+import type { ConstraintAttachments } from "../constraint.js"
 
 export interface BaseRangeDeclaration extends BaseNodeDeclaration {
 	kind: RangeKind
@@ -117,67 +114,6 @@ export const deriveRangeAttachments = <d extends BaseRangeDeclaration = never>(
 				!r.exclusive
 			)
 		}
-	}
-}
-
-export abstract class BaseRange<
-	d extends BaseRangeDeclaration
-> extends BasePrimitiveConstraint<d> {
-	readonly boundOperandKind = operandKindsByBoundKind[this.kind]
-	readonly compiledActual =
-		this.boundOperandKind === "value"
-			? "data"
-			: this.boundOperandKind === "length"
-				? "data.length"
-				: "data.valueOf()"
-	readonly comparator = compileComparator(this.kind, this.exclusive)
-	readonly numericLimit = this.rule.valueOf()
-	readonly expression = `${this.comparator}${this.rule}`
-	readonly compiledCondition =
-		`${this.compiledActual} ${this.comparator} ${this.numericLimit}`
-	readonly compiledNegation = `${this.compiledActual} ${
-		negatedComparators[this.comparator]
-	} ${this.numericLimit}`
-
-	// we need to compute stringLimit before errorContext, which references it
-	// transitively through description for date bounds
-	readonly stringLimit =
-		this.boundOperandKind === "date"
-			? dateLimitToString(this.numericLimit)
-			: `${this.numericLimit}`
-	readonly errorContext = this.createErrorContext(this.inner)
-	readonly limitKind: LimitKind =
-		this.comparator["0"] === "<" ? "upper" : "lower"
-
-	isStricterThan(r: Node<d["kind"] | pairedRangeKind<d["kind"]>>): boolean {
-		const thisLimitIsStricter =
-			this.limitKind === "upper"
-				? this.numericLimit < r.numericLimit
-				: this.numericLimit > r.numericLimit
-		return (
-			thisLimitIsStricter ||
-			(this.numericLimit === r.numericLimit &&
-				this.exclusive === true &&
-				!r.exclusive)
-		)
-	}
-
-	overlapsRange(r: Node<pairedRangeKind<d["kind"]>>): boolean {
-		if (this.isStricterThan(r)) return false
-		if (
-			this.numericLimit === r.numericLimit &&
-			(this.exclusive || r.exclusive)
-		)
-			return false
-		return true
-	}
-
-	overlapIsUnit(r: Node<pairedRangeKind<d["kind"]>>): boolean {
-		return (
-			this.numericLimit === r.numericLimit &&
-			!this.exclusive &&
-			!r.exclusive
-		)
 	}
 }
 

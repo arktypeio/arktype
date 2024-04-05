@@ -7,15 +7,14 @@ import {
 	implementNode
 } from "../../base.js"
 import { tsKeywords } from "../../keywords/tsKeywords.js"
-import type { NodeCompiler } from "../../shared/compile.js"
-import type { BaseMeta, declareNode } from "../../shared/declare.js"
-import { Disjoint } from "../../shared/disjoint.js"
 import type {
-	SchemaKind,
-	nodeImplementationOf
-} from "../../shared/implement.js"
-import type { TraverseAllows, TraverseApply } from "../../shared/traversal.js"
-import { BaseConstraint, type ConstraintAttachments } from "../constraint.js"
+	BaseErrorContext,
+	BaseMeta,
+	declareNode
+} from "../../shared/declare.js"
+import { Disjoint } from "../../shared/disjoint.js"
+import type { SchemaKind } from "../../shared/implement.js"
+import type { ConstraintAttachments } from "../constraint.js"
 
 export interface PropDef extends BaseMeta {
 	readonly key: Key
@@ -34,18 +33,25 @@ export type PropDeclaration = declareNode<{
 	def: PropDef
 	normalizedDef: PropDef
 	inner: PropInner
-	errorContext: {
-		key: Key
-	}
+	errorContext: PropErrorContext
 	prerequisite: object
 	intersectionIsOpen: true
 	childKind: SchemaKind
 	attachments: PropAttachments
 }>
 
+export interface PropErrorContext extends BaseErrorContext {
+	key: Key
+}
+
 export interface PropAttachments
 	extends BaseAttachments<PropDeclaration>,
-		ConstraintAttachments {}
+		ConstraintAttachments {
+	required: boolean
+	compiledKey: string
+	serializedKey: string
+	errorContext: PropErrorContext
+}
 
 export const propImplementation = implementNode<PropDeclaration>({
 	kind: "prop",
@@ -92,21 +98,23 @@ export const propImplementation = implementNode<PropDeclaration>({
 	},
 	construct: (self) => {
 		const required = !self.optional
-		const impliedBasis = tsKeywords.object
 		const serializedKey = compileSerializedValue(self.key)
 		const compiledKey =
 			typeof self.key === "string" ? self.key : serializedKey
-		const expression = `${compiledKey}${self.optional ? "?" : ""}: ${
-			self.value.expression
-		}`
-
 		const errorContext = Object.freeze({
 			code: "prop",
 			description: self.description,
 			key: self.key
 		})
-
 		return {
+			required,
+			serializedKey,
+			compiledKey,
+			errorContext,
+			expression: `${compiledKey}${self.optional ? "?" : ""}: ${
+				self.value.expression
+			}`,
+			impliedBasis: tsKeywords.object,
 			traverseAllows(data, ctx) {
 				if (this.key in data) {
 					// ctx will be undefined if this node doesn't have a context-dependent predicate

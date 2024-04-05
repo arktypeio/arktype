@@ -6,41 +6,47 @@ import {
 	throwInternalError,
 	throwParseError
 } from "@arktype/util"
-import { type Schema, type SchemaDef, implementNode } from "../../base.js"
+import {
+	type BaseAttachments,
+	type BaseNode,
+	type Node,
+	type Schema,
+	type SchemaDef,
+	implementNode
+} from "../../base.js"
 import { jsObjects } from "../../keywords/jsObjects.js"
 import { tsKeywords } from "../../keywords/tsKeywords.js"
 import type { MutableInner } from "../../kinds.js"
-import type { NodeCompiler } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import type {
 	NodeKeyImplementation,
-	SchemaKind,
-	nodeImplementationOf
+	SchemaKind
 } from "../../shared/implement.js"
-import type { TraverseAllows, TraverseApply } from "../../shared/traversal.js"
-import { BaseConstraint } from "../constraint.js"
+import type { ConstraintAttachments } from "../constraint.js"
+import type { MaxLengthNode } from "../refinements/maxLength.js"
+import type { MinLengthNode } from "../refinements/minLength.js"
 
 export interface NormalizedSequenceDef extends BaseMeta {
-	readonly prefix?: readonly SchemaDef[]
-	readonly optional?: readonly SchemaDef[]
+	readonly prefix?: array<SchemaDef>
+	readonly optional?: array<SchemaDef>
 	readonly variadic?: SchemaDef
 	readonly minVariadicLength?: number
-	readonly postfix?: readonly SchemaDef[]
+	readonly postfix?: array<SchemaDef>
 }
 
 export type SequenceDef = NormalizedSequenceDef | SchemaDef
 
 export interface SequenceInner extends BaseMeta {
 	// a list of fixed position elements starting at index 0
-	readonly prefix?: readonly Schema[]
+	readonly prefix?: array<Schema>
 	// a list of optional elements following prefix
-	readonly optional?: readonly Schema[]
+	readonly optional?: array<Schema>
 	// the variadic element (only checked if all optional elements are present)
 	readonly variadic?: Schema
 	readonly minVariadicLength?: number
 	// a list of fixed position elements, the last being the last element of the array
-	readonly postfix?: readonly Schema[]
+	readonly postfix?: array<Schema>
 }
 
 export type SequenceDeclaration = declareNode<{
@@ -51,7 +57,25 @@ export type SequenceDeclaration = declareNode<{
 	prerequisite: array
 	reducibleTo: "sequence"
 	childKind: SchemaKind
+	attachments: SequenceAttachments
 }>
+
+export interface SequenceAttachments
+	extends BaseAttachments<SequenceDeclaration>,
+		ConstraintAttachments {
+	prefix: array<Schema>
+	optional: array<Schema>
+	prevariadic: array<Schema>
+	postfix: array<Schema>
+	isVariadicOnly: boolean
+	minVariadicLength: number
+	minLength: number
+	minLengthNode: MinLengthNode | null
+	maxLength: number | null
+	maxLengthNode: MaxLengthNode | null
+	impliedSiblings: array<Node<"minLength" | "maxLength">> | null
+	tuple: SequenceTuple
+}
 
 const fixedSequenceKeyDefinition: NodeKeyImplementation<
 	SequenceDeclaration,
@@ -219,110 +243,118 @@ export const sequenceImplementation = implementNode<SequenceDeclaration>({
 		// here since impliedSiblings guarantees they will be added
 		// directly to the IntersectionNode parent of the SequenceNode
 		// they exist on
+	},
+	construct: (self) => {
+		const impliedBasis = jsObjects.Array
+		const prefix = self.inner.prefix ?? []
+		const optional = self.inner.optional ?? []
+		const prevariadic = [...prefix, ...optional]
+		const postfix = self.inner.postfix ?? []
+		const isVariadicOnly = prevariadic.length + postfix.length === 0
+		const minVariadicLength = self.inner.minVariadicLength ?? 0
+		const minLength = prefix.length + minVariadicLength + postfix.length
+		const minLengthNode =
+			minLength === 0 ? null : self.$.node("minLength", minLength)
+		const maxLength = self.variadic ? null : minLength + optional.length
+		const maxLengthNode =
+			maxLength === null ? null : self.$.node("maxLength", maxLength)
+		const impliedSiblings = minLengthNode
+			? maxLengthNode
+				? [minLengthNode, maxLengthNode]
+				: [minLengthNode]
+			: maxLengthNode
+				? [maxLengthNode]
+				: null
+		const expression = self.description
+		const _childAtIndex = (data: array, index: number): Schema => {
+			if (index < prevariadic.length) return prevariadic[index]
+			const postfixStartIndex = data.length - postfix.length
+			if (index >= postfixStartIndex)
+				return postfix[index - postfixStartIndex]
+			return (
+				self.variadic ??
+				throwInternalError(
+					`Unexpected attempt to access index ${index} on ${expression}`
+				)
+			)
+		}
+
+		return {
+			impliedBasis,
+			prefix,
+			optional,
+			prevariadic,
+			postfix,
+			isVariadicOnly,
+			minVariadicLength,
+			minLength,
+			minLengthNode,
+			maxLength,
+			maxLengthNode,
+			impliedSiblings,
+			tuple: sequenceInnerToTuple(self.inner),
+			// TODO: ensure this can work with resolution order
+			expression,
+			// minLength/maxLength should be checked by Intersection before either traversal
+			traverseAllows(data, ctx) {
+				for (let i = 0; i < data.length; i++) {
+					if (!_childAtIndex(data, i).traverseAllows(data[i], ctx)) {
+						return false
+					}
+				}
+				return true
+			},
+			traverseApply(data, ctx) {
+				for (let i = 0; i < data.length; i++) {
+					ctx.path.push(i)
+					_childAtIndex(data, i).traverseApply(data[i], ctx)
+					ctx.path.pop()
+				}
+			},
+			// minLength/maxLength compilation should be handled by Intersection
+			compile(js) {
+				this.prefix.forEach((node, i) =>
+					js.checkReferenceKey(`${i}`, node)
+				)
+				this.optional.forEach((node, i) => {
+					const dataIndex = `${i + this.prefix.length}`
+					js.if(`${dataIndex} >= ${js.data}.length`, () =>
+						js.traversalKind === "Allows"
+							? js.return(true)
+							: js.return()
+					)
+					js.checkReferenceKey(dataIndex, node)
+				})
+
+				if (this.variadic) {
+					js.const(
+						"lastVariadicIndex",
+						`${js.data}.length${
+							this.postfix ? `- ${this.postfix.length}` : ""
+						}`
+					)
+					js.for(
+						"i < lastVariadicIndex",
+						() => js.checkReferenceKey("i", this.variadic!),
+						this.prevariadic.length
+					)
+					this.postfix.forEach((node, i) =>
+						js.checkReferenceKey(
+							`lastVariadicIndex + ${i + 1}`,
+							node
+						)
+					)
+				}
+
+				if (js.traversalKind === "Allows") {
+					js.return(true)
+				}
+			}
+		}
 	}
 })
 
-export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
-	static implementation: nodeImplementationOf<SequenceDeclaration> =
-		sequenceImplementation
-
-	readonly impliedBasis = jsObjects.Array
-	readonly prefix = this.inner.prefix ?? []
-	readonly optional = this.inner.optional ?? []
-	readonly prevariadic = [...this.prefix, ...this.optional]
-	readonly postfix = this.inner.postfix ?? []
-	readonly isVariadicOnly =
-		this.prevariadic.length + this.postfix.length === 0
-	readonly minVariadicLength = this.inner.minVariadicLength ?? 0
-	readonly minLength =
-		this.prefix.length + this.minVariadicLength + this.postfix.length
-	readonly minLengthNode =
-		this.minLength === 0
-			? undefined
-			: this.$.node("minLength", this.minLength)
-	readonly maxLength = this.variadic
-		? undefined
-		: this.minLength + this.optional.length
-	readonly maxLengthNode =
-		this.maxLength === undefined
-			? undefined
-			: this.$.node("maxLength", this.maxLength)
-	readonly impliedSiblings = this.minLengthNode
-		? this.maxLengthNode
-			? [this.minLengthNode, this.maxLengthNode]
-			: [this.minLengthNode]
-		: this.maxLengthNode
-			? [this.maxLengthNode]
-			: undefined
-
-	protected childAtIndex(data: array, index: number): Schema {
-		if (index < this.prevariadic.length) return this.prevariadic[index]
-		const postfixStartIndex = data.length - this.postfix.length
-		if (index >= postfixStartIndex)
-			return this.postfix[index - postfixStartIndex]
-		return (
-			this.variadic ??
-			throwInternalError(
-				`Unexpected attempt to access index ${index} on ${this}`
-			)
-		)
-	}
-
-	// minLength/maxLength should be checked by Intersection before either traversal
-	traverseAllows: TraverseAllows<array> = (data, ctx) => {
-		for (let i = 0; i < data.length; i++) {
-			if (!this.childAtIndex(data, i).traverseAllows(data[i], ctx)) {
-				return false
-			}
-		}
-		return true
-	}
-
-	traverseApply: TraverseApply<array> = (data, ctx) => {
-		for (let i = 0; i < data.length; i++) {
-			ctx.path.push(i)
-			this.childAtIndex(data, i).traverseApply(data[i], ctx)
-			ctx.path.pop()
-		}
-	}
-
-	// minLength/maxLength compilation should be handled by Intersection
-	compile(js: NodeCompiler): void {
-		this.prefix.forEach((node, i) => js.checkReferenceKey(`${i}`, node))
-		this.optional.forEach((node, i) => {
-			const dataIndex = `${i + this.prefix.length}`
-			js.if(`${dataIndex} >= ${js.data}.length`, () =>
-				js.traversalKind === "Allows" ? js.return(true) : js.return()
-			)
-			js.checkReferenceKey(dataIndex, node)
-		})
-
-		if (this.variadic) {
-			js.const(
-				"lastVariadicIndex",
-				`${js.data}.length${
-					this.postfix ? `- ${this.postfix.length}` : ""
-				}`
-			)
-			js.for(
-				"i < lastVariadicIndex",
-				() => js.checkReferenceKey("i", this.variadic!),
-				this.prevariadic.length
-			)
-			this.postfix.forEach((node, i) =>
-				js.checkReferenceKey(`lastVariadicIndex + ${i + 1}`, node)
-			)
-		}
-
-		if (js.traversalKind === "Allows") {
-			js.return(true)
-		}
-	}
-
-	readonly tuple = sequenceInnerToTuple(this.inner)
-	// this depends on tuple so needs to come after it
-	readonly expression = this.description
-}
+export type SequenceNode = BaseNode<readonly unknown[], SequenceDeclaration>
 
 const sequenceInnerToTuple = (inner: SequenceInner): SequenceTuple => {
 	const tuple: mutable<SequenceTuple> = []
