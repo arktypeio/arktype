@@ -167,7 +167,7 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 	}
 })
 
-export type MorphNode<t = any, $ = any> = BaseSchema<"morph", t, $>
+export type MorphNode<t = any, $ = any> = BaseSchema<t, $, MorphDeclaration>
 
 export type inferMorphOut<morph extends Morph> = morph extends Morph<
 	never,

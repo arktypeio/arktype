@@ -55,9 +55,9 @@ export interface BaseSchemaAttachments<d extends BaseNodeDeclaration>
 	rawKeyOf(): Schema
 }
 
-export class BaseSchema<kind extends SchemaKind, t, $> extends BaseNode<
+export class BaseSchema<t, $, d extends BaseSchemaDeclaration> extends BaseNode<
 	t,
-	Declaration<kind>
+	d
 > {
 	readonly branches: readonly Node<UnionChildKind>[] = this.hasKind("union")
 		? this.inner.branches

@@ -13,6 +13,7 @@ import type {
 	PropKind,
 	kindLeftOf
 } from "../shared/implement.js"
+import { arkKind } from "../shared/utils.js"
 
 export type constraintKindLeftOf<kind extends ConstraintKind> = ConstraintKind &
 	kindLeftOf<kind>
@@ -58,6 +59,8 @@ export interface ConstraintAttachments {
 export class BaseConstraint<d extends BaseNodeDeclaration> extends BaseNode<
 	d["prerequisite"],
 	d
-> {}
+> {
+	readonly [arkKind] = "constraint"
+}
 
 export type PrimitiveConstraintKind = Exclude<ConstraintKind, PropKind>

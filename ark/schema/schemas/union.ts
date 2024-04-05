@@ -252,7 +252,7 @@ export const unionImplementation = implementNode<UnionDeclaration>({
 	}
 })
 
-export type UnionNode<t = any, $ = any> = BaseSchema<"union", t, $>
+export type UnionNode<t = any, $ = any> = BaseSchema<t, $, UnionDeclaration>
 
 const describeBranches = (descriptions: string[]) => {
 	if (descriptions.length === 0) {

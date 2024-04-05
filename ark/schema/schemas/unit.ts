@@ -97,7 +97,7 @@ export const unitImplementation = implementNode<UnitDeclaration>({
 	}
 })
 
-export type UnitNode<t = any, $ = any> = BaseSchema<"unit", t, $>
+export type UnitNode<t = any, $ = any> = BaseSchema<t, $, UnitDeclaration>
 
 const compileEqualityCheck = (
 	unit: unknown,

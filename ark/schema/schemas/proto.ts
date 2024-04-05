@@ -99,4 +99,4 @@ export const protoImplementation = implementNode<ProtoDeclaration>({
 	}
 })
 
-export type ProtoNode<t = any, $ = any> = BaseSchema<"proto", t, $>
+export type ProtoNode<t = any, $ = any> = BaseSchema<t, $, ProtoDeclaration>

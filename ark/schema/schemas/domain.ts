@@ -83,4 +83,4 @@ export const domainImplementation = implementNode<DomainDeclaration>({
 	}
 })
 
-export type DomainNode<t = any, $ = any> = BaseSchema<"domain", t, $>
+export type DomainNode<t = any, $ = any> = BaseSchema<t, $, DomainDeclaration>
