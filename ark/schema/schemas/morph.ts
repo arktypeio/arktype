@@ -24,7 +24,8 @@ import type {
 	TraverseApply
 } from "../shared/traversal.js"
 import {
-	BaseSchema,
+	type BaseSchema,
+	type BaseSchemaAttachments,
 	defineRightwardIntersections,
 	type schemaKindRightOf
 } from "./schema.js"
@@ -64,7 +65,13 @@ export type MorphDeclaration = declareNode<{
 	normalizedDef: MorphDef
 	inner: MorphInner
 	childKind: MorphChildKind
+	attachments: MorphAttachments
 }>
+
+export interface MorphAttachments
+	extends BaseSchemaAttachments<MorphDeclaration> {
+	serializedMorphs: array<string>
+}
 
 export const morphImplementation = implementNode<MorphDeclaration>({
 	kind: "morph",
@@ -126,54 +133,41 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 							in: inTersection
 						})
 		})
+	},
+	construct: (self) => {
+		const serializedMorphs = self.morphs.map((morph) => reference(morph))
+		return {
+			serializedMorphs,
+			expression: `(In: ${self.in.expression}) => Out<${self.out.expression}>`,
+			traverseAllows: (data, ctx) => self.in.traverseAllows(data, ctx),
+			traverseApply: (data, ctx) => {
+				self.morphs.forEach((morph) => ctx.queueMorph(morph))
+				self.in.traverseApply(data, ctx)
+			},
+			compile(js: NodeCompiler): void {
+				if (js.traversalKind === "Allows") {
+					js.return(js.invoke(this.in))
+					return
+				}
+				this.serializedMorphs.forEach((name) =>
+					js.line(`ctx.queueMorph(${name})`)
+				)
+				js.line(js.invoke(this.in))
+			},
+			get in() {
+				return this.inner.in
+			},
+			get out() {
+				return this.inner.out ?? tsKeywords.unknown
+			},
+			rawKeyOf(): Schema {
+				return this.in.rawKeyOf()
+			}
+		}
 	}
 })
 
-export class MorphNode<t = any, $ = any> extends BaseSchema<
-	t,
-	$,
-	MorphDeclaration
-> {
-	// TODO: recursively extract in?
-	static implementation: nodeImplementationOf<MorphDeclaration> =
-		morphImplementation
-
-	readonly expression =
-		`(In: ${this.in.expression}) => Out<${this.out.expression}>`
-
-	readonly serializedMorphs = this.morphs.map((morph) => reference(morph))
-
-	traverseAllows: TraverseAllows = (data, ctx) =>
-		this.in.traverseAllows(data, ctx)
-
-	traverseApply: TraverseApply = (data, ctx) => {
-		this.morphs.forEach((morph) => ctx.queueMorph(morph))
-		this.in.traverseApply(data, ctx)
-	}
-
-	compile(js: NodeCompiler): void {
-		if (js.traversalKind === "Allows") {
-			js.return(js.invoke(this.in))
-			return
-		}
-		this.serializedMorphs.forEach((name) =>
-			js.line(`ctx.queueMorph(${name})`)
-		)
-		js.line(js.invoke(this.in))
-	}
-
-	override get in(): Node<MorphChildKind, distillConstrainableIn<t>> {
-		return this.inner.in
-	}
-
-	override get out(): Node<MorphChildKind, distillConstrainableOut<t>> {
-		return this.inner.out ?? tsKeywords.unknown
-	}
-
-	rawKeyOf(): Schema {
-		return this.in.rawKeyOf()
-	}
-}
+export type MorphNode<t = any, $ = any> = BaseSchema<t, $, MorphDeclaration>
 
 export type inferMorphOut<morph extends Morph> = morph extends Morph<
 	never,

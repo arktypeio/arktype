@@ -2,19 +2,14 @@ import { appendUnique, groupBy, isArray } from "@arktype/util"
 import { type Node, type Schema, implementNode } from "../base.js"
 import { tsKeywords } from "../keywords/tsKeywords.js"
 import type { NodeDef } from "../kinds.js"
-import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { ArkTypeError } from "../shared/errors.js"
-import {
-	type SchemaKind,
-	type nodeImplementationOf,
-	schemaKindsRightOf
-} from "../shared/implement.js"
-import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
+import { type SchemaKind, schemaKindsRightOf } from "../shared/implement.js"
 import type { Discriminant } from "./discriminate.js"
 import {
-	BaseSchema,
+	type BaseSchema,
+	type BaseSchemaAttachments,
 	defineRightwardIntersections,
 	type schemaKindRightOf
 } from "./schema.js"
@@ -53,7 +48,14 @@ export type UnionDeclaration = declareNode<{
 	}
 	reducibleTo: SchemaKind
 	childKind: UnionChildKind
+	attachments: UnionAttachments
 }>
+
+export interface UnionAttachments
+	extends BaseSchemaAttachments<UnionDeclaration> {
+	discriminant: Discriminant | null
+	isBoolean: boolean
+}
 
 export const unionImplementation = implementNode<UnionDeclaration>({
 	kind: "union",
@@ -184,75 +186,73 @@ export const unionImplementation = implementNode<UnionDeclaration>({
 				l.ordered ? { branches, ordered: true } : { branches }
 			)
 		})
+	},
+	construct: (self) => {
+		const branches = self.branches
+		const isBoolean =
+			branches.length === 2 &&
+			branches[0].hasUnit(false) &&
+			branches[1].hasUnit(true)
+		return {
+			discriminant: null,
+			isBoolean,
+			expression: isBoolean
+				? "boolean"
+				: branches
+						.map((branch) => branch.nestableExpression)
+						.join(" | "),
+			traverseAllows: (data, ctx) =>
+				branches.some((b) => b.traverseAllows(data, ctx)),
+			traverseApply: (data, ctx) => {
+				const errors: ArkTypeError[] = []
+				for (let i = 0; i < branches.length; i++) {
+					ctx.pushBranch()
+					branches[i].traverseApply(data, ctx)
+					if (!ctx.hasError())
+						return ctx.morphs.push(...ctx.popBranch().morphs)
+					errors.push(ctx.popBranch().error!)
+				}
+				ctx.error({ code: "union", errors })
+			},
+			compile(js) {
+				if (js.traversalKind === "Apply") {
+					js.const("errors", "[]")
+					branches.forEach((branch) =>
+						js
+							.line("ctx.pushBranch()")
+							.line(js.invoke(branch))
+							.if("!ctx.hasError()", () =>
+								js.return(
+									"ctx.morphs.push(...ctx.popBranch().morphs)"
+								)
+							)
+							.line("errors.push(ctx.popBranch().error)")
+					)
+					js.line(`ctx.error({ code: "union", errors })`)
+				} else {
+					branches.forEach((branch) =>
+						js.if(`${js.invoke(branch)}`, () => js.return(true))
+					)
+					js.return(false)
+				}
+			},
+			rawKeyOf(): Schema {
+				return branches.reduce(
+					(result, branch) =>
+						result.intersectSatisfiable(branch.rawKeyOf()),
+					tsKeywords.unknown
+				)
+			},
+			get nestableExpression() {
+				// avoid adding unnecessary parentheses around boolean since it's
+				// already collapsed to a single keyword
+				return this.isBoolean ? "boolean" : super.nestableExpression
+			}
+		}
 	}
 })
 
-export class UnionNode<t = any, $ = any> extends BaseSchema<
-	t,
-	$,
-	UnionDeclaration
-> {
-	static implementation: nodeImplementationOf<UnionDeclaration> =
-		unionImplementation
-
-	readonly discriminant: Discriminant | null = null //discriminate(inner.branches)
-	readonly isBoolean =
-		this.branches.length === 2 &&
-		this.branches[0].hasUnit(false) &&
-		this.branches[1].hasUnit(true)
-	readonly expression = this.isBoolean
-		? "boolean"
-		: this.branches.map((branch) => branch.nestableExpression).join(" | ")
-
-	traverseAllows: TraverseAllows = (data, ctx) =>
-		this.branches.some((b) => b.traverseAllows(data, ctx))
-
-	traverseApply: TraverseApply = (data, ctx) => {
-		const errors: ArkTypeError[] = []
-		for (let i = 0; i < this.branches.length; i++) {
-			ctx.pushBranch()
-			this.branches[i].traverseApply(data, ctx)
-			if (!ctx.hasError())
-				return ctx.morphs.push(...ctx.popBranch().morphs)
-			errors.push(ctx.popBranch().error!)
-		}
-		ctx.error({ code: "union", errors })
-	}
-
-	compile(js: NodeCompiler): void {
-		if (js.traversalKind === "Apply") {
-			js.const("errors", "[]")
-			this.branches.forEach((branch) =>
-				js
-					.line("ctx.pushBranch()")
-					.line(js.invoke(branch))
-					.if("!ctx.hasError()", () =>
-						js.return("ctx.morphs.push(...ctx.popBranch().morphs)")
-					)
-					.line("errors.push(ctx.popBranch().error)")
-			)
-			js.line(`ctx.error({ code: "union", errors })`)
-		} else {
-			this.branches.forEach((branch) =>
-				js.if(`${js.invoke(branch)}`, () => js.return(true))
-			)
-			js.return(false)
-		}
-	}
-
-	rawKeyOf(): Schema {
-		return this.branches.reduce(
-			(result, branch) => result.intersectSatisfiable(branch.rawKeyOf()),
-			tsKeywords.unknown
-		)
-	}
-
-	get nestableExpression(): string {
-		// avoid adding unnecessary parentheses around boolean since it's
-		// already collapsed to a single keyword
-		return this.isBoolean ? "boolean" : super.nestableExpression
-	}
-}
+export type UnionNode<t = any, $ = any> = BaseSchema<t, $, UnionDeclaration>
 
 const describeBranches = (descriptions: string[]) => {
 	if (descriptions.length === 0) {

@@ -15,12 +15,12 @@ interface DeclarationInput {
 	def: unknown
 	normalizedDef: BaseMeta
 	inner: BaseMeta
+	attachments: object
 	reducibleTo?: NodeKind
 	intersectionIsOpen?: true
 	errorContext?: object
 	prerequisite?: unknown
 	childKind?: NodeKind
-	attachments?: object
 }
 
 export interface BaseErrorContext<kind extends NodeKind = NodeKind> {
@@ -44,8 +44,6 @@ export type declareNode<
 		childKind: never
 		reducibleTo: d["kind"]
 		errorContext: null
-		// TODO: remove
-		attachments: {}
 	},
 	d & {
 		errorContext: d["errorContext"] extends {}

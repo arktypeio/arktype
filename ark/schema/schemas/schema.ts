@@ -47,7 +47,7 @@ export const defineRightwardIntersections = <kind extends SchemaKind>(
 
 export interface BaseSchemaDeclaration extends BaseNodeDeclaration {
 	kind: SchemaKind
-	attachments: BaseSchemaAttachments<BaseSchemaDeclaration>
+	attachments: BaseSchemaAttachments<any>
 }
 
 export interface BaseSchemaAttachments<d extends BaseNodeDeclaration>

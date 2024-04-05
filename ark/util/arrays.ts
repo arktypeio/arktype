@@ -203,13 +203,13 @@ export const append = <
  * @param {elementOrList} elementOrList - The element or list to concatenate.
  */
 export const conflatenate = <element>(
-	to: readonly element[] | undefined,
-	elementOrList: listable<element> | undefined
+	to: readonly element[] | undefined | null,
+	elementOrList: listable<element> | undefined | null
 ): readonly element[] => {
-	if (elementOrList === undefined) {
+	if (elementOrList === undefined || elementOrList === null) {
 		return to ?? ([] as never)
 	}
-	if (to === undefined) {
+	if (to === undefined || to === null) {
 		return arrayFrom(elementOrList) as never
 	}
 	return to.concat(elementOrList) as never
@@ -222,7 +222,7 @@ export const conflatenate = <element>(
  * @param {elementsOrLists} elementsOrLists - The elements or lists to concatenate.
  */
 export const conflatenateAll = <element>(
-	...elementsOrLists: (listable<element> | undefined)[]
+	...elementsOrLists: (listable<element> | undefined | null)[]
 ): readonly element[] =>
 	elementsOrLists.reduce<readonly element[]>(conflatenate, [])
 

@@ -86,7 +86,7 @@ export interface UnknownAttachments {
 	readonly json: object
 	readonly typeJson: object
 	readonly collapsibleJson: JsonData
-	readonly children: Node[]
+	readonly children: BaseNode[]
 	readonly innerId: string
 	readonly typeId: string
 	readonly $: BaseScope

@@ -287,7 +287,7 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 		inner: d["inner"],
 		$: BaseScope
 	) => Node<d["reducibleTo"]> | Disjoint | undefined
-	construct?: (
+	construct: (
 		self: parsedAttachmentsOf<d>
 	) => d["attachments"] & ThisType<Node<d["kind"]>>
 }
