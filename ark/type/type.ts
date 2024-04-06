@@ -122,7 +122,7 @@ export class Type<t = unknown, $ = any> extends BaseSchema<t, $> {
 		public $: Scope<$>
 	) {
 		const root = $.parseTypeRoot(definition) as {} as Schema<t>
-		super(root.traverse as never, { bind: root })
+		super(root.traverse as never)
 	}
 
 	// get in(): Type<distillConstrainableIn<t>, $> {
