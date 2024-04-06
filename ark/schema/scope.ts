@@ -148,12 +148,6 @@ export type exportedNameOf<$> = Exclude<keyof $ & string, PrivateDeclaration>
 
 export type PrivateDeclaration<key extends string = string> = `#${key}`
 
-export interface SchemaWrapper extends Hkt.Kind {
-	f: (
-		args: conform<this[Hkt.args], readonly [t: unknown, $: unknown]>
-	) => BaseSchema<(typeof args)[0], (typeof args)[1]>
-}
-
 export class SchemaScope<$ = any> implements Hkt.Kind {
 	declare t: $
 	declare infer: distillOut<$>

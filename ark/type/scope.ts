@@ -4,27 +4,22 @@ import {
 	type NodeParseOptions,
 	type Schema,
 	SchemaScope,
-	type SchemaWrapper,
 	type ambient,
 	arkKind,
 	type destructuredExportContext,
 	type destructuredImportContext,
-	type exportedNameOf,
-	hasArkKind
+	type exportedNameOf
 } from "@arktype/schema"
 import {
 	type Dict,
 	DynamicBase,
 	type Hkt,
-	type conform,
 	domainOf,
 	type evaluate,
-	flatMorph,
 	hasDomain,
 	type nominal,
 	throwParseError
 } from "@arktype/util"
-import type { type } from "./ark.js"
 import { Generic } from "./generic.js"
 import { type MatchParser, createMatchParser } from "./match.js"
 import {
