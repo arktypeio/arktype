@@ -112,7 +112,7 @@ export class BaseSchema<
 	exclude(other: Schema): Schema {
 		return this.$.schema(
 			this.branches.filter((branch) => !branch.extends(other))
-		) as never
+		)
 	}
 
 	array(): BaseSchema<t[], $> {
