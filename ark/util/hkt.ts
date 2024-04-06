@@ -42,25 +42,25 @@ export namespace Hkt {
 
 	type validatePipedKinds<
 		kinds extends UnaryKind[],
-		out = Parameters<kinds[0]["f"]>[0]
+		Out = Parameters<kinds[0]["f"]>[0]
 	> = kinds extends readonly [
 		infer head extends UnaryKind,
 		...infer tail extends UnaryKind[]
 	]
-		? out extends Parameters<head["f"]>[0]
-			? [kinds[0], ...validatePipedKinds<tail, Hkt.apply<head, out>>]
-			: [Kind<(In: out) => unknown>, ...tail]
+		? Out extends Parameters<head["f"]>[0]
+			? [kinds[0], ...validatePipedKinds<tail, Hkt.apply<head, Out>>]
+			: [Kind<(In: Out) => unknown>, ...tail]
 		: []
 
 	type inferPipedReturn<
 		kinds extends UnaryKind[],
-		out
+		Out
 	> = kinds extends readonly [
 		infer head extends UnaryKind,
 		...infer tail extends UnaryKind[]
 	]
-		? inferPipedReturn<tail, Hkt.apply<head, out>>
-		: out
+		? inferPipedReturn<tail, Hkt.apply<head, Out>>
+		: Out
 
 	export type pipe<kinds extends UnaryKind[]> = <
 		In extends Parameters<kinds[0]["f"]>[0]
