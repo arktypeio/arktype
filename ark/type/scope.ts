@@ -14,6 +14,8 @@ import {
 import {
 	type Dict,
 	DynamicBase,
+	type Hkt,
+	type conform,
 	domainOf,
 	type evaluate,
 	flatMorph,
@@ -175,7 +177,13 @@ declare global {
 export const scope: ScopeParser = ((def: Dict, config: ArkConfig = {}) =>
 	new Scope(def, config)) as never
 
-export class Scope<$ = any> extends SchemaScope<$> {
+interface TypeWrap extends Hkt.Kind {
+	f: (
+		args: conform<this[Hkt.key], readonly [t: unknown, $: unknown]>
+	) => Type<(typeof args)[0], (typeof args)[1]>
+}
+
+export class Scope<$ = any> extends SchemaScope<$, TypeWrap> {
 	private parseCache: Record<string, Schema> = {}
 
 	constructor(def: Record<string, unknown>, config?: ArkConfig) {
@@ -258,28 +266,6 @@ export class Scope<$ = any> extends SchemaScope<$> {
 	> {
 		return super.export(...names) as never
 	}
-}
-
-type ExportCache = Record<string, Type | Generic | Module>
-
-const resolutionsOfModule = (typeSet: ExportCache) => {
-	const result: MergedResolutions = {}
-	for (const k in typeSet) {
-		const v = typeSet[k]
-		if (hasArkKind(v, "module")) {
-			const innerResolutions = resolutionsOfModule(v as never)
-			const prefixedResolutions = flatMorph(
-				innerResolutions,
-				(innerK, innerV) => [`${k}.${innerK}`, innerV]
-			)
-			Object.assign(result, prefixedResolutions)
-		} else if (hasArkKind(v, "generic")) {
-			result[k] = v
-		} else {
-			result[k] = v.root
-		}
-	}
-	return result
 }
 
 export const writeShallowCycleErrorMessage = (

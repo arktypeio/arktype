@@ -1,8 +1,10 @@
 import {
 	CompiledFunction,
 	type Dict,
+	type Hkt,
 	type Json,
 	type array,
+	type conform,
 	type evaluate,
 	flatMorph,
 	type flattenListable,
@@ -147,7 +149,16 @@ export type exportedNameOf<$> = Exclude<keyof $ & string, PrivateDeclaration>
 
 export type PrivateDeclaration<key extends string = string> = `#${key}`
 
-export class SchemaScope<$ = any> {
+interface SchemaWrap extends Hkt.Kind {
+	f: (
+		args: conform<this[Hkt.key], readonly [t: unknown, $: unknown]>
+	) => Schema<(typeof args)[0], (typeof args)[1]>
+}
+
+interface WrapNode
+	extends Hkt.Kind<(args: [t: unknown, $: unknown]) => unknown> {}
+
+export class SchemaScope<$ = any, wrap extends WrapNode = SchemaWrap> {
 	declare t: $
 	declare infer: distillOut<$>
 	declare inferIn: distillIn<$>
@@ -197,7 +208,7 @@ export class SchemaScope<$ = any> {
 	schema<const def extends SchemaDef>(
 		def: def,
 		opts?: NodeParseOptions
-	): instantiateSchema<def, $> {
+	): Hkt.apply<wrap, [instantiateSchema<def, $>["infer"], $]> {
 		return parseNode(schemaKindOf(def), def, this, opts) as never
 	}
 
