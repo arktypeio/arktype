@@ -4,6 +4,7 @@ import {
 	type NodeParseOptions,
 	type Schema,
 	SchemaScope,
+	type SchemaWrap,
 	type ambient,
 	arkKind,
 	type destructuredExportContext,
@@ -177,7 +178,7 @@ declare global {
 export const scope: ScopeParser = ((def: Dict, config: ArkConfig = {}) =>
 	new Scope(def, config)) as never
 
-interface TypeWrap extends Hkt.Kind {
+interface TypeWrap extends SchemaWrap {
 	f: (
 		args: conform<this[Hkt.key], readonly [t: unknown, $: unknown]>
 	) => Type<(typeof args)[0], (typeof args)[1]>

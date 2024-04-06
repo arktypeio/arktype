@@ -141,9 +141,9 @@ export class Type<t = unknown, $ = any> extends BaseSchema<t, $> {
 	// 	return new Type(super.out, this.$) as never
 	// }
 
-	keyof(): Type<keyof this["in"]["infer"], $> {
-		return new Type(super.keyof(), this.$) as never
-	}
+	// keyof(): Type<keyof this["in"]["infer"], $> {
+	// 	return new Type(super.keyof(), this.$) as never
+	// }
 
 	// intersect<r extends Type>(
 	// 	r: r

@@ -21,6 +21,7 @@ import {
 } from "./generic.js"
 import type { Ark } from "./keywords/keywords.js"
 import type { NodeDef, reducibleKindOf } from "./kinds.js"
+import type { BaseSchema } from "./main.js"
 import { SchemaModule } from "./module.js"
 import type { instantiateSchema, validateSchema } from "./parser/inference.js"
 import {
@@ -149,16 +150,13 @@ export type exportedNameOf<$> = Exclude<keyof $ & string, PrivateDeclaration>
 
 export type PrivateDeclaration<key extends string = string> = `#${key}`
 
-interface SchemaWrap extends Hkt.Kind {
+export interface SchemaWrap extends Hkt.Kind {
 	f: (
 		args: conform<this[Hkt.key], readonly [t: unknown, $: unknown]>
-	) => Schema<(typeof args)[0], (typeof args)[1]>
+	) => BaseSchema<(typeof args)[0], (typeof args)[1]>
 }
 
-interface WrapNode
-	extends Hkt.Kind<(args: [t: unknown, $: unknown]) => unknown> {}
-
-export class SchemaScope<$ = any, wrap extends WrapNode = SchemaWrap> {
+export class SchemaScope<$ = any, wrap extends SchemaWrap = SchemaWrap> {
 	declare t: $
 	declare infer: distillOut<$>
 	declare inferIn: distillIn<$>
