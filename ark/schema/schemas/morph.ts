@@ -17,12 +17,8 @@ import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { ArkResult, ArkTypeError } from "../shared/errors.js"
-import { basisKinds, type nodeImplementationOf } from "../shared/implement.js"
-import type {
-	TraversalContext,
-	TraverseAllows,
-	TraverseApply
-} from "../shared/traversal.js"
+import { basisKinds } from "../shared/implement.js"
+import type { TraversalContext } from "../shared/traversal.js"
 import {
 	type BaseSchema,
 	type BaseSchemaAttachments,

@@ -3,9 +3,13 @@ import {
 	BaseSchema,
 	Disjoint,
 	type Morph,
+	type NodeDef,
 	type Out,
 	type Predicate,
+	type PrimitiveConstraintKind,
 	type Schema,
+	type constrain,
+	type constraintKindOf,
 	type distillConstrainableIn,
 	type distillConstrainableOut,
 	type distillIn,
@@ -236,16 +240,6 @@ export class Type<t = unknown, $ = any> extends BaseSchema<t, $> {
 		const result = this(data)
 		return result.errors ? result.errors.throw() : result.out
 	}
-
-	// constrain<
-	// 	kind extends PrimitiveConstraintKind,
-	// 	const def extends NodeDef<kind>
-	// >(
-	// 	kind: conform<kind, constraintKindOf<this["in"]["infer"]>>,
-	// 	def: def
-	// ): Type<constrain<t, kind, def>, $> {
-	// 	return new Type(super.constrain(kind, def), this.$) as never
-	// }
 }
 
 export type DefinitionParser<$> = <def>(

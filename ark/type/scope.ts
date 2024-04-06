@@ -186,7 +186,8 @@ export class Scope<$ = any> extends SchemaScope<$> {
 		for (const k in def) {
 			const parsedKey = parseScopeKey(k)
 			aliases[parsedKey.name] = parsedKey.params.length
-				? new Generic(parsedKey.params, def[k], this)
+				? // TODO: this
+					new Generic(parsedKey.params, def[k], {} as never)
 				: def[k]
 		}
 		super(aliases, config)

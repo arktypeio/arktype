@@ -8,7 +8,6 @@ import {
 	type PartialRecord,
 	compileSerializedValue,
 	type conform,
-	type evaluate,
 	flatMorph,
 	includes,
 	isArray,
@@ -46,7 +45,6 @@ import type { UnitNode } from "./schemas/unit.js"
 import type { SchemaScope } from "./scope.js"
 import type { NodeCompiler } from "./shared/compile.js"
 import type {
-	BaseErrorContext,
 	BaseMeta,
 	BaseNodeDeclaration,
 	attachmentsOf
@@ -55,7 +53,6 @@ import { Disjoint } from "./shared/disjoint.js"
 import type { ArkResult } from "./shared/errors.js"
 import {
 	type BasisKind,
-	type ConstraintKind,
 	type NodeKind,
 	type PropKind,
 	type RefinementKind,
@@ -275,16 +272,6 @@ export class BaseNode<
 			}
 		}
 		return this.$.node(this.kind, ioInner)
-	}
-
-	protected createErrorContext<from>(
-		from: from
-	): evaluate<BaseErrorContext<d["kind"]> & from> {
-		return Object.freeze({
-			code: this.kind,
-			description: this.description,
-			...from
-		}) as never
 	}
 
 	toJSON(): Json {
