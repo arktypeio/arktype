@@ -4,7 +4,7 @@ import {
 	type NodeParseOptions,
 	type Schema,
 	SchemaScope,
-	type SchemaWrap,
+	type SchemaWrapper,
 	type ambient,
 	arkKind,
 	type destructuredExportContext,
@@ -178,13 +178,13 @@ declare global {
 export const scope: ScopeParser = ((def: Dict, config: ArkConfig = {}) =>
 	new Scope(def, config)) as never
 
-interface TypeWrap extends SchemaWrap {
+interface TypeWrapper extends SchemaWrapper {
 	f: (
 		args: conform<this[Hkt.key], readonly [t: unknown, $: unknown]>
 	) => Type<(typeof args)[0], (typeof args)[1]>
 }
 
-export class Scope<$ = any> extends SchemaScope<$, TypeWrap> {
+export class Scope<$ = any> extends SchemaScope<$, TypeWrapper> {
 	private parseCache: Record<string, Schema> = {}
 
 	constructor(def: Record<string, unknown>, config?: ArkConfig) {

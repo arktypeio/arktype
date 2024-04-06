@@ -14,7 +14,8 @@ import {
 	type inferNarrow,
 	keywordNodes,
 	makeRootAndArrayPropertiesMutable,
-	node
+	node,
+	schema
 } from "@arktype/schema"
 import {
 	type BuiltinObjectKind,
@@ -84,8 +85,7 @@ export const parseTupleLiteral = (def: array, ctx: ParseContext): Schema => {
 			)
 		}
 	}
-	return node(
-		"union",
+	return schema(
 		sequences.map(
 			(sequence) =>
 				({

@@ -9,30 +9,20 @@ import type {
 	instanceOf,
 	isAny
 } from "@arktype/util"
-import type { BaseNode, Node, Schema } from "../base.js"
-import type { NodeDef, Prerequisite, reducibleKindOf } from "../kinds.js"
-import type { DomainDef, DomainNode } from "../schemas/domain.js"
-import type {
-	IntersectionDef,
-	IntersectionNode
-} from "../schemas/intersection.js"
+import type { BaseNode } from "../base.js"
+import type { NodeDef, Prerequisite } from "../kinds.js"
+import type { DomainDef } from "../schemas/domain.js"
+import type { IntersectionDef } from "../schemas/intersection.js"
 import type {
 	Morph,
 	MorphChildDefinition,
-	MorphChildKind,
 	MorphDef,
-	MorphNode,
 	Out,
 	inferMorphOut
 } from "../schemas/morph.js"
-import type { ProtoDef, ProtoNode } from "../schemas/proto.js"
-import type {
-	NormalizedUnionDef,
-	UnionChildNode,
-	UnionDef,
-	UnionNode
-} from "../schemas/union.js"
-import type { UnitDef, UnitNode } from "../schemas/unit.js"
+import type { ProtoDef } from "../schemas/proto.js"
+import type { NormalizedUnionDef, UnionDef } from "../schemas/union.js"
+import type { UnitDef } from "../schemas/unit.js"
 import type { BasisKind, ConstraintKind } from "../shared/implement.js"
 import type { inferred } from "../shared/utils.js"
 
@@ -60,18 +50,15 @@ export type validateSchema<def, $> = def extends type.cast
 				>
 			: validateSchemaBranch<def, $>
 
-export type instantiateSchema<def, $> = def extends type.cast<infer to>
-	? Schema<to>
+export type inferSchema<def, $> = def extends type.cast<infer to>
+	? to
 	: def extends UnionDef<infer branches>
 		? branches["length"] extends 0
-			? UnionNode<never>
+			? never
 			: branches["length"] extends 1
-				? instantiateSchemaBranch<branches[0], $>
-				: Node<
-						reducibleKindOf<"union">,
-						instantiateSchemaBranch<branches[number], $>["infer"]
-					>
-		: instantiateSchemaBranch<def, $>
+				? inferSchemaBranch<branches[0], $>
+				: inferSchemaBranch<branches[number], $>
+		: inferSchemaBranch<def, $>
 
 type validateSchemaBranch<def, $> = def extends BaseNode
 	? def
@@ -79,13 +66,13 @@ type validateSchemaBranch<def, $> = def extends BaseNode
 		? validateMorphChild<def, $>
 		: validateMorphSchema<def, $>
 
-type instantiateSchemaBranch<def, $> = def extends BaseNode
-	? def
+type inferSchemaBranch<def, $> = def extends BaseNode
+	? def["infer"]
 	: def extends MorphDef
-		? instantiateMorphSchema<def, $>
+		? inferMorphSchema<def, $>
 		: def extends MorphChildDefinition
-			? instantiateMorphChild<def, $>
-			: UnionChildNode
+			? inferMorphChild<def, $>
+			: unknown
 
 type NonIntersectableBasisSchema = NonEnumerableDomain | Constructor | UnitDef
 
@@ -93,11 +80,11 @@ type validateMorphChild<def, $> = [def] extends [NonIntersectableBasisSchema]
 	? def
 	: validateIntersectionSchema<def, $>
 
-type instantiateMorphChild<def, $> = def extends NonIntersectableBasisSchema
-	? instantiateBasis<def, $>
+type inferMorphChild<def, $> = def extends NonIntersectableBasisSchema
+	? inferBasis<def, $>
 	: def extends IntersectionDef
-		? instantiateIntersectionSchema<def, $>
-		: Node<MorphChildKind>
+		? inferBasisOf<def, $>
+		: unknown
 
 type validateMorphSchema<def, $> = {
 	[k in keyof def]: k extends "in" | "out"
@@ -107,24 +94,18 @@ type validateMorphSchema<def, $> = {
 			: `'${k & string}' is not a valid morph schema key`
 }
 
-type instantiateMorphSchema<def, $> = def extends MorphDef
-	? MorphNode<
-			(
-				In: def["in"] extends {}
-					? instantiateMorphChild<def["in"], $>["infer"]
-					: unknown
-			) => def["out"] extends {}
-				? Out<instantiateMorphChild<def["out"], $>["infer"]>
-				: def["morphs"] extends infer morph extends Morph
-					? Out<inferMorphOut<morph>>
-					: def["morphs"] extends readonly [
-								...unknown[],
-								infer morph extends Morph
-							]
-						? Out<inferMorphOut<morph>>
-						: never
-		>
-	: never
+type inferMorphSchema<def extends MorphDef, $> = (
+	In: def["in"] extends {} ? inferMorphChild<def["in"], $> : unknown
+) => def["out"] extends {}
+	? Out<inferMorphChild<def["out"], $>>
+	: def["morphs"] extends infer morph extends Morph
+		? Out<inferMorphOut<morph>>
+		: def["morphs"] extends readonly [
+					...unknown[],
+					infer morph extends Morph
+				]
+			? Out<inferMorphOut<morph>>
+			: never
 
 type exactBasisMessageOnError<def, expected> = {
 	[k in keyof def]: k extends keyof expected
@@ -142,35 +123,26 @@ export type validateIntersectionSchema<def, $> = exactBasisMessageOnError<
 >
 
 type inferBasisOf<def, $> = "proto" extends keyof def
-	? instantiateBasis<conform<def["proto"], ProtoDef>, $>["infer"]
+	? inferBasis<conform<def["proto"], ProtoDef>, $>
 	: "domain" extends keyof def
-		? instantiateBasis<conform<def["domain"], DomainDef>, $>["infer"]
+		? inferBasis<conform<def["domain"], DomainDef>, $>
 		: unknown
 
-export type instantiateIntersectionSchema<def, $> = keyof def &
-	ConstraintKind extends never
-	? "proto" extends keyof def
-		? ProtoNode<inferBasisOf<def, $>>
-		: "domain" extends keyof def
-			? DomainNode<inferBasisOf<def, $>>
-			: IntersectionNode
-	: IntersectionNode<inferBasisOf<def, $>>
-
-export type instantiateBasis<
+export type inferBasis<
 	def extends NodeDef<BasisKind>,
 	$
 > = isAny<def> extends true //allow any to be used to access all constraints
 	? any
 	: def extends NonEnumerableDomain
-		? DomainNode<inferDomain<def>>
+		? inferDomain<def>
 		: def extends Constructor<infer instance>
-			? ProtoNode<instance>
+			? instance
 			: def extends DomainDef<infer domain>
-				? DomainNode<inferDomain<domain>>
+				? inferDomain<domain>
 				: def extends ProtoDef<infer proto>
-					? ProtoNode<instanceOf<proto>>
+					? instanceOf<proto>
 					: def extends UnitDef<infer is>
-						? UnitNode<is>
+						? is
 						: never
 
 // export type inferPropsInput<input extends PropsInput> =

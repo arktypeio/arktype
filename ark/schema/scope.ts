@@ -23,7 +23,7 @@ import type { Ark } from "./keywords/keywords.js"
 import type { NodeDef, reducibleKindOf } from "./kinds.js"
 import type { BaseSchema } from "./main.js"
 import { SchemaModule } from "./module.js"
-import type { instantiateSchema, validateSchema } from "./parser/inference.js"
+import type { inferSchema, validateSchema } from "./parser/inference.js"
 import {
 	type NodeParseOptions,
 	parseNode,
@@ -41,6 +41,7 @@ import type {
 	ProblemWriter
 } from "./shared/errors.js"
 import type {
+	ConstraintKind,
 	DescriptionWriter,
 	NodeKind,
 	SchemaKind
@@ -150,13 +151,16 @@ export type exportedNameOf<$> = Exclude<keyof $ & string, PrivateDeclaration>
 
 export type PrivateDeclaration<key extends string = string> = `#${key}`
 
-export interface SchemaWrap extends Hkt.Kind {
+export interface SchemaWrapper extends Hkt.Kind {
 	f: (
 		args: conform<this[Hkt.key], readonly [t: unknown, $: unknown]>
 	) => BaseSchema<(typeof args)[0], (typeof args)[1]>
 }
 
-export class SchemaScope<$ = any, wrap extends SchemaWrap = SchemaWrap> {
+export class SchemaScope<
+	$ = any,
+	wrapper extends SchemaWrapper = SchemaWrapper
+> {
 	declare t: $
 	declare infer: distillOut<$>
 	declare inferIn: distillIn<$>
@@ -164,7 +168,7 @@ export class SchemaScope<$ = any, wrap extends SchemaWrap = SchemaWrap> {
 	readonly config: ArkConfig
 	readonly resolvedConfig: ResolvedArkConfig
 
-	readonly nodeCache: { [innerId: string]: Node } = {}
+	readonly nodeCache: { [innerId: string]: BaseNode } = {}
 	readonly referencesByName: { [name: string]: BaseNode } = {}
 	references: readonly BaseNode[] = []
 	readonly resolutions: SchemaScopeResolutions = {}
@@ -206,7 +210,7 @@ export class SchemaScope<$ = any, wrap extends SchemaWrap = SchemaWrap> {
 	schema<const def extends SchemaDef>(
 		def: def,
 		opts?: NodeParseOptions
-	): Hkt.apply<wrap, [instantiateSchema<def, $>["infer"], $]> {
+	): Hkt.apply<wrapper, [inferSchema<def, $>, $]> {
 		return parseNode(schemaKindOf(def), def, this, opts) as never
 	}
 
@@ -217,10 +221,7 @@ export class SchemaScope<$ = any, wrap extends SchemaWrap = SchemaWrap> {
 	units<const branches extends array>(
 		values: branches,
 		opts?: NodeParseOptions
-	): branches["length"] extends 1
-		? UnionNode<branches[0]>
-		: UnionNode<branches[number]> | UnitNode<branches[number]>
-	units(values: array, opts?: NodeParseOptions): UnionNode | UnitNode {
+	): Hkt.apply<wrapper, [branches[number], $]> {
 		{
 			const uniqueValues: unknown[] = []
 			for (const value of values) {
@@ -430,7 +431,7 @@ export const writeMissingSubmoduleAccessMessage = <name extends string>(
 export type writeMissingSubmoduleAccessMessage<name extends string> =
 	`Reference to submodule '${name}' must specify an alias`
 
-const bindCompiledSpace = (references: readonly Node[]) => {
+const bindCompiledSpace = (references: readonly BaseNode[]) => {
 	const compiledTraversals = compileSpace(references)
 	for (const node of references) {
 		if (node.jit) {
@@ -450,7 +451,7 @@ const bindCompiledSpace = (references: readonly Node[]) => {
 	}
 }
 
-const compileSpace = (references: readonly Node[]) => {
+const compileSpace = (references: readonly BaseNode[]) => {
 	return new CompiledFunction()
 		.block("return", (js) => {
 			references.forEach((node) => {
@@ -477,10 +478,10 @@ export type validateAliases<aliases> = {
 }
 
 export type instantiateAliases<aliases> = {
-	[k in keyof aliases]: instantiateSchema<aliases[k], aliases>
+	[k in keyof aliases]: inferSchema<aliases[k], aliases>
 } & unknown
 
-export const schemaScope = <const aliases>(
+export declare const schemaScope: <const aliases>(
 	aliases: validateAliases<aliases>,
-	config: ArkConfig = {}
-): SchemaScope<instantiateAliases<aliases>> => {}
+	config?: ArkConfig
+) => SchemaScope<instantiateAliases<aliases>>

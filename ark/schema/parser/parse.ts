@@ -124,7 +124,7 @@ export const parseNode = (
 	schema: unknown,
 	$: SchemaScope,
 	opts?: NodeParseOptions
-): Node => {
+): BaseNode => {
 	const kind: NodeKind =
 		typeof kinds === "string" ? kinds : schemaKindOf(schema, kinds)
 	if (isNode(schema) && schema.kind === kind) {
@@ -163,7 +163,7 @@ export const parseNode = (
 						? -1
 						: 1
 	)
-	const children: Node[] = []
+	const children: BaseNode[] = []
 	for (const entry of schemaEntries) {
 		const k = entry[0]
 		const keyImpl = impl.keys[k] ?? baseKeys[k]
@@ -183,7 +183,7 @@ export const parseNode = (
 	entries.forEach(([k, v]) => {
 		const keyImpl = impl.keys[k] ?? baseKeys[k]
 		if (keyImpl.child) {
-			const listableNode = v as listable<Node>
+			const listableNode = v as listable<BaseNode>
 			if (isArray(listableNode)) {
 				json[k] = listableNode.map((node) => node.collapsibleJson)
 				children.push(...listableNode)
@@ -293,7 +293,7 @@ export const parseNode = (
 	attachments.description ??= $.resolvedConfig[kind].description(
 		attachments as never
 	)
-	const node: Node = includes(schemaKinds, kind)
+	const node: BaseNode = includes(schemaKinds, kind)
 		? new BaseSchema(attachments as never)
 		: (new BaseNode(attachments as never) as any)
 	$.nodeCache[innerId] = node

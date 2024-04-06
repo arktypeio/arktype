@@ -163,8 +163,7 @@ export const unionImplementation = implementNode<UnionDeclaration>({
 			if (resultBranches instanceof Disjoint) {
 				return resultBranches
 			}
-			return $.node(
-				"union",
+			return $.schema(
 				l.ordered || r.ordered
 					? {
 							branches: resultBranches,
@@ -181,8 +180,7 @@ export const unionImplementation = implementNode<UnionDeclaration>({
 			if (branches.length === 1) {
 				return branches[0]
 			}
-			return $.node(
-				"union",
+			return $.schema(
 				l.ordered ? { branches, ordered: true } : { branches }
 			)
 		})

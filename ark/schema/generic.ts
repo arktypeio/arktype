@@ -1,7 +1,7 @@
 import { Callable, type conform, flatMorph, type repeat } from "@arktype/util"
 import type { Schema, SchemaDef } from "./base.js"
 import { keywordNodes } from "./keywords/keywords.js"
-import type { instantiateSchema } from "./parser/inference.js"
+import type { BaseSchema, inferSchema } from "./main.js"
 import type { SchemaScope } from "./scope.js"
 import { arkKind, type inferred } from "./shared/utils.js"
 
@@ -11,13 +11,16 @@ export type GenericNodeInstantiation<
 	$ = any
 > = <args>(
 	...args: conform<args, repeat<[SchemaDef], params["length"]>>
-) => instantiateSchema<def, $ & bindGenericNodeInstantiation<params, $, args>>
+) => BaseSchema<
+	inferSchema<def, $ & bindGenericNodeInstantiation<params, $, args>>
+>
 
+// TODO: ????
 type bindGenericNodeInstantiation<params extends string[], $, args> = {
-	[i in keyof params & `${number}` as params[i]]: instantiateSchema<
+	[i in keyof params & `${number}` as params[i]]: inferSchema<
 		args[i & keyof args],
 		$
-	>[inferred]
+	>
 }
 
 export const validateUninstantiatedGenericNode = (

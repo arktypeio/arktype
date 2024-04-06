@@ -49,7 +49,8 @@ export interface BaseSchemaAttachments<d extends BaseNodeDeclaration>
 export class BaseSchema<
 	t = any,
 	$ = any,
-	d extends BaseSchemaDeclaration = BaseSchemaDeclaration
+	/** @ts-expect-error allow instantiation assignment to the base type */
+	out d extends BaseSchemaDeclaration = BaseSchemaDeclaration
 > extends BaseNode<t, d> {
 	declare $: SchemaScope<$>
 

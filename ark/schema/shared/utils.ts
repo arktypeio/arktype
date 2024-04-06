@@ -6,7 +6,7 @@ import {
 	literalPropAccess,
 	type mutable
 } from "@arktype/util"
-import type { Constraint, Node, Schema } from "../base.js"
+import type { BaseNode, Constraint, Node, Schema } from "../base.js"
 import type { GenericSchema } from "../generic.js"
 import type { SchemaModule } from "../module.js"
 import type { SchemaScope } from "../scope.js"
@@ -73,7 +73,7 @@ export const hasArkKind = <kind extends ArkKind>(
 	kind: kind
 ): value is ArkKinds[kind] => (value as any)?.[arkKind] === kind
 
-export const isNode = (value: unknown): value is Node =>
+export const isNode = (value: unknown): value is BaseNode =>
 	hasArkKind(value, "schema") || hasArkKind(value, "constraint")
 
 export type cast<to> = {

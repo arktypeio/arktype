@@ -53,7 +53,7 @@ export type writeInvalidOperandMessage<
 
 export interface ConstraintAttachments {
 	impliedBasis: Schema | null
-	impliedSiblings?: array<Node<ConstraintKind>> | null
+	impliedSiblings?: array<BaseConstraint> | null
 }
 
 export interface BaseConstraintDeclaration extends BaseNodeDeclaration {
@@ -61,11 +61,11 @@ export interface BaseConstraintDeclaration extends BaseNodeDeclaration {
 }
 
 export class BaseConstraint<
-	d extends BaseConstraintDeclaration
+	d extends BaseConstraintDeclaration = BaseConstraintDeclaration
 > extends BaseNode<d["prerequisite"], d> {
 	readonly [arkKind] = "constraint"
 
-	intersect<r extends Node<ConstraintKind>>(
+	intersect<r extends BaseConstraint>(
 		r: r
 	): intersectConstraintKinds<d["kind"], r["kind"]> {
 		return this.intersectInternal(r) as never

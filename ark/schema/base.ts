@@ -30,6 +30,7 @@ import type {
 	nodeImplementationsByKind,
 	reducibleKindOf
 } from "./kinds.js"
+import type { BaseConstraint, BaseSchema } from "./main.js"
 import type { DomainNode } from "./schemas/domain.js"
 import type { IntersectionNode } from "./schemas/intersection.js"
 import type {
@@ -86,7 +87,7 @@ export interface UnknownAttachments {
 	readonly json: object
 	readonly typeJson: object
 	readonly collapsibleJson: JsonData
-	readonly children: Node[]
+	readonly children: BaseNode[]
 	readonly innerId: string
 	readonly typeId: string
 	readonly $: SchemaScope
@@ -313,7 +314,7 @@ export class BaseNode<
 		return includes(propKinds, this.kind)
 	}
 
-	isSchema(): this is Schema {
+	isSchema(): this is BaseSchema {
 		return includes(schemaKinds, this.kind)
 	}
 
@@ -386,13 +387,13 @@ export class BaseNode<
 	}
 
 	firstReference<narrowed>(
-		filter: Guardable<Node, conform<narrowed, Node>>
+		filter: Guardable<BaseNode, conform<narrowed, BaseNode>>
 	): narrowed | undefined {
 		return this.references.find(filter as never) as never
 	}
 
-	firstReferenceOrThrow<narrowed extends Node>(
-		filter: Guardable<Node, narrowed>
+	firstReferenceOrThrow<narrowed extends BaseNode>(
+		filter: Guardable<BaseNode, narrowed>
 	): narrowed {
 		return (
 			this.firstReference(filter) ??
@@ -478,18 +479,10 @@ interface NodesByKind<t = any, $ = any> extends BoundNodesByKind {
 	sequence: SequenceNode
 }
 
-export type Node<
-	kind extends NodeKind = NodeKind,
-	t = any
-> = NodesByKind<t>[kind]
+export type Node<kind extends NodeKind, t = any> = NodesByKind<t>[kind]
 
-export type Schema<
-	t = any,
-	$ = any,
-	kind extends SchemaKind = SchemaKind
-> = NodesByKind<t, $>[kind]
+export type { BaseSchema as Schema } from "./schemas/schema.js"
 
 export type SchemaDef<kind extends SchemaKind = SchemaKind> = NodeDef<kind>
 
-export type Constraint<kind extends ConstraintKind = ConstraintKind> =
-	Node<kind>
+export type Constraint = BaseConstraint
