@@ -143,7 +143,7 @@ export type SchemaScopeResolutions = Record<
 	Schema | GenericSchema | undefined
 >
 
-export type exportedNameOf<$> = Exclude<keyof $, PrivateDeclaration>
+export type exportedNameOf<$> = Exclude<keyof $ & string, PrivateDeclaration>
 
 export type PrivateDeclaration<key extends string = string> = `#${key}`
 
@@ -268,7 +268,7 @@ export class SchemaScope<$ = any> {
 		const dotPrefix = name.slice(0, dotIndex)
 		const prefixDef = this.aliases[dotPrefix]
 		if (hasArkKind(prefixDef, "module")) {
-			const resolution = prefixDef[name.slice(dotIndex + 1)]?.root
+			const resolution = prefixDef[name.slice(dotIndex + 1)]
 			// if the first part of name is a submodule but the suffix is
 			// unresolvable, we can throw immediately
 			if (!resolution) {
@@ -291,9 +291,11 @@ export class SchemaScope<$ = any> {
 
 	import<names extends exportedNameOf<$>[]>(
 		...names: names
-	): destructuredImportContext<
-		$,
-		names extends [] ? exportedNameOf<$> : names[number]
+	): SchemaModule<
+		destructuredImportContext<
+			$,
+			names extends [] ? exportedNameOf<$> : names[number]
+		>
 	> {
 		return new SchemaModule(
 			flatMorph(this.export(...names) as Dict, (alias, value) => [
@@ -304,7 +306,7 @@ export class SchemaScope<$ = any> {
 	}
 
 	#exportedResolutions: SchemaScopeResolutions | undefined
-	#exportCache: NodeExportCache | undefined
+	#exportCache: SchemaExportCache | undefined
 	export<names extends exportedNameOf<$>[]>(
 		...names: names
 	): SchemaModule<
@@ -340,7 +342,7 @@ export class SchemaScope<$ = any> {
 			// TODO: add generic json
 			Object.assign(
 				this.json,
-				flatMorph(this.#exportedResolutions, (k, v) =>
+				flatMorph(this.#exportedResolutions as Dict, (k, v) =>
 					hasArkKind(v, "schema") ? [k, v.json] : []
 				)
 			)
@@ -367,10 +369,30 @@ export type destructuredImportContext<$, name extends exportedNameOf<$>> = {
 	[k in name as `#${k & string}`]: type.cast<$[k]>
 }
 
-export type NodeExportCache = Record<
+export type SchemaExportCache = Record<
 	string,
 	Schema | GenericSchema | SchemaModule | undefined
 >
+
+const resolutionsOfModule = (typeSet: SchemaExportCache) => {
+	const result: SchemaScopeResolutions = {}
+	for (const k in typeSet) {
+		const v = typeSet[k]
+		if (hasArkKind(v, "module")) {
+			const innerResolutions = resolutionsOfModule(v as never)
+			const prefixedResolutions = flatMorph(
+				innerResolutions,
+				(innerK, innerV) => [`${k}.${innerK}`, innerV]
+			)
+			Object.assign(result, prefixedResolutions)
+		} else if (hasArkKind(v, "generic")) {
+			result[k] = v
+		} else {
+			result[k] = v as Schema
+		}
+	}
+	return result
+}
 
 export const root: SchemaScope<{}> = new SchemaScope({})
 
