@@ -4,7 +4,10 @@ import { Hkt, type array, type conform, type evaluate } from "@arktype/util"
 describe("hkt", () => {
 	interface AppendKind extends Hkt.Kind {
 		f: (
-			args: conform<this[Hkt.key], readonly [element: unknown, to: array]>
+			args: conform<
+				this[Hkt.args],
+				readonly [element: unknown, to: array]
+			>
 		) => [...(typeof args)[1], (typeof args)[0]]
 	}
 	it("base", () => {
@@ -21,13 +24,13 @@ describe("hkt", () => {
 	})
 	const AddB = new (class AddB extends Hkt.UnaryKind {
 		f = (
-			args: conform<this[Hkt.key], { a: number }>
+			args: conform<this[Hkt.args], { a: number }>
 		): evaluate<typeof args & { b: (typeof args)["a"] }> =>
 			Object.assign(args, { b: args.a } as const)
 	})()
 	const AddC = new (class extends Hkt.UnaryKind {
 		f = (
-			args: conform<this[Hkt.key], { a: number; b: number }>
+			args: conform<this[Hkt.args], { a: number; b: number }>
 		): evaluate<
 			typeof args & { c: [(typeof args)["a"], (typeof args)["b"]] }
 		> => Object.assign(args, { c: [args.a, args.b] } as const) as never
@@ -52,7 +55,7 @@ describe("hkt", () => {
 	it("validates pipeable", () => {
 		const AddD = new (class AddD extends Hkt.UnaryKind {
 			f = (
-				args: conform<this[Hkt.key], { c: number }>
+				args: conform<this[Hkt.args], { c: number }>
 			): evaluate<typeof args & { d: (typeof args)["c"] }> => {
 				return Object.assign(args, { d: args.c } as const)
 			}

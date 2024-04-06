@@ -2,13 +2,13 @@ import type { conform } from "./generics.js"
 
 /** A small set of HKT utility types based on https://github.com/poteat/hkt-toolbelt */
 export namespace Hkt {
-	export declare const key: unique symbol
-	export type key = typeof key
+	export declare const args: unique symbol
+	export type args = typeof args
 
 	export abstract class Kind<
 		f extends (...args: any[]) => unknown = (...args: any[]) => unknown
 	> {
-		declare readonly [key]: unknown
+		declare readonly [args]: unknown
 		abstract readonly f: f
 	}
 
@@ -17,12 +17,12 @@ export namespace Hkt {
 		args extends Parameters<hkt["f"]>[0]
 	> = ReturnType<
 		(hkt & {
-			readonly [key]: args
+			readonly [args]: args
 		})["f"]
 	>
 
 	export interface Reify extends Kind {
-		f(In: conform<this[key], Kind>): reify<typeof In>
+		f(In: conform<this[args], Kind>): reify<typeof In>
 	}
 
 	export const reify = <def extends Kind>(def: def) => def.f as reify<def>
@@ -36,7 +36,7 @@ export namespace Hkt {
 	export abstract class UnaryKind<
 		f extends (In: never) => unknown = (In: any) => unknown
 	> {
-		declare readonly [key]: unknown
+		declare readonly [args]: unknown
 		abstract readonly f: f
 	}
 

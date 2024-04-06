@@ -150,7 +150,7 @@ export type PrivateDeclaration<key extends string = string> = `#${key}`
 
 export interface SchemaWrapper extends Hkt.Kind {
 	f: (
-		args: conform<this[Hkt.key], readonly [t: unknown, $: unknown]>
+		args: conform<this[Hkt.args], readonly [t: unknown, $: unknown]>
 	) => BaseSchema<(typeof args)[0], (typeof args)[1]>
 }
 
@@ -158,9 +158,9 @@ export class SchemaScope<$ = any> implements Hkt.Kind {
 	declare t: $
 	declare infer: distillOut<$>
 	declare inferIn: distillIn<$>
-	declare [Hkt.key]: [t: unknown, $: unknown]
+	declare [Hkt.args]: [t: unknown, $: unknown]
 	declare f: (
-		args: this[Hkt.key]
+		args: this[Hkt.args]
 	) => BaseSchema<(typeof args)[0], (typeof args)[1]>
 
 	readonly config: ArkConfig
