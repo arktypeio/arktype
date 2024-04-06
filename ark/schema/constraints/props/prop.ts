@@ -3,6 +3,7 @@ import {
 	type BaseAttachments,
 	type BaseNode,
 	type Node,
+	type Schema,
 	type SchemaDef,
 	implementNode
 } from "../../base.js"
@@ -24,7 +25,7 @@ export interface PropDef extends BaseMeta {
 
 export interface PropInner extends BaseMeta {
 	readonly key: Key
-	readonly value: Node<SchemaKind>
+	readonly value: Schema
 	readonly optional?: true
 }
 

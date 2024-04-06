@@ -58,10 +58,12 @@ export interface ConstraintAttachments {
 
 export interface BaseConstraintDeclaration extends BaseNodeDeclaration {
 	kind: ConstraintKind
+	attachments: ConstraintAttachments
 }
 
 export class BaseConstraint<
-	d extends BaseConstraintDeclaration = BaseConstraintDeclaration
+	/** @ts-expect-error allow instantiation assignment to the base type */
+	out d extends BaseConstraintDeclaration = BaseConstraintDeclaration
 > extends BaseNode<d["prerequisite"], d> {
 	readonly [arkKind] = "constraint"
 

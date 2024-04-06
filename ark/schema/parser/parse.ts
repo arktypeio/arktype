@@ -44,7 +44,7 @@ export type NodeParseOptions = {
 	 *
 	 * Useful for defining reductions like number|string|bigint|symbol|object|true|false|null|undefined => unknown
 	 **/
-	reduceTo?: Node
+	reduceTo?: BaseNode
 }
 
 export interface NodeParseContext extends NodeParseOptions {
