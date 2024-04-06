@@ -1,12 +1,12 @@
-import { arkKind, keywordNodes, type GenericProps } from "@arktype/schema"
-import { Callable, flatMorph, type conform } from "@arktype/util"
+import { type GenericProps, arkKind, keywordNodes } from "@arktype/schema"
+import { Callable, type conform, flatMorph } from "@arktype/util"
 import type { inferDefinition } from "./parser/definition.js"
 import type {
 	GenericParamsParseError,
 	parseGenericParams
 } from "./parser/generic.js"
 import type { Scope } from "./scope.js"
-import type { inferTypeRoot, Type, validateTypeRoot } from "./type.js"
+import type { Type, inferTypeRoot, validateTypeRoot } from "./type.js"
 
 export type validateParameterString<params extends string> =
 	parseGenericParams<params> extends GenericParamsParseError<infer message>
@@ -62,7 +62,7 @@ export class Generic<params extends string[] = string[], def = unknown, $ = any>
 		super((...args: unknown[]) => {
 			const argNodes = flatMorph(params, (i, param: string) => [
 				param,
-				$.parseTypeRoot(args[i]).root
+				$.parseTypeRoot(args[i])
 			])
 			return $.parseTypeRoot(def, { args: argNodes }) as never
 		})

@@ -125,15 +125,12 @@ export const createTypeParser = <$>($: Scope): TypeParser<$> => {
 }
 
 export class Type<t = unknown, $ = any> extends BaseSchema<t, $> {
-	root: Schema<t>
-
 	constructor(
 		public definition: unknown,
 		public $: Scope<$>
 	) {
 		const root = $.parseTypeRoot(definition) as {} as Schema<t>
 		super(root.traverse as never, { bind: root })
-		this.root = root
 	}
 
 	// get in(): Type<distillConstrainableIn<t>, $> {
@@ -165,10 +162,7 @@ export class Type<t = unknown, $ = any> extends BaseSchema<t, $> {
 	}
 
 	or<def>(def: validateTypeRoot<def, $>): Type<t | inferTypeRoot<def, $>, $> {
-		return new Type(
-			super.union(this.$.parseTypeRoot(def).root),
-			this.$
-		) as never
+		return new Type(super.union(this.$.parseTypeRoot(def)), this.$) as never
 	}
 
 	// get<key extends PropertyKey>(...path: readonly (key | Type<key>)[]): this {

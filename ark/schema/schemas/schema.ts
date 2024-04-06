@@ -3,16 +3,14 @@ import {
 	type BaseAttachments,
 	BaseNode,
 	type Node,
-	type Schema,
-	type SchemaDef
+	type Schema
 } from "../base.js"
 import type { constrain } from "../constraints/ast.js"
 import {
 	type PrimitiveConstraintKind,
 	throwInvalidOperandError
 } from "../constraints/constraint.js"
-import type { Declaration, NodeDef, reducibleKindOf } from "../kinds.js"
-import type { instantiateSchema } from "../parser/inference.js"
+import type { NodeDef, reducibleKindOf } from "../kinds.js"
 import type { SchemaScope } from "../scope.js"
 import type { BaseMeta, BaseNodeDeclaration } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -27,14 +25,6 @@ import {
 import type { inferIntersection } from "../shared/intersections.js"
 import { arkKind, type inferred } from "../shared/utils.js"
 import type { IntersectionNode, constraintKindOf } from "./intersection.js"
-import type {
-	Morph,
-	MorphNode,
-	Out,
-	distillConstrainableIn,
-	distillConstrainableOut,
-	inferMorphOut
-} from "./morph.js"
 import type { UnionChildKind, UnionNode } from "./union.js"
 
 export const defineRightwardIntersections = <kind extends SchemaKind>(
