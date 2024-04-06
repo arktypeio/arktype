@@ -98,11 +98,11 @@ export class BaseSchema<
 		return this.hasKind("union") && this.branches.length === 0
 	}
 
-	get<key extends PropertyKey>(
-		...path: readonly (key | Schema<key>)[]
-	): this {
-		return this
-	}
+	// get<key extends PropertyKey>(
+	// 	...path: readonly (key | Schema<key>)[]
+	// ): this {
+	// 	return this
+	// }
 
 	extract(other: Schema): Schema {
 		return this.$.schema(
@@ -144,11 +144,6 @@ export class BaseSchema<
 		return this.configure(description)
 	}
 
-	// TODO: should return out
-	from(literal: this["in"]["infer"]): this["out"]["infer"] {
-		return literal as never
-	}
-
 	// morph<
 	// 	morph extends Morph<this["infer"]>,
 	// 	outValidatorSchema extends SchemaDef = never
@@ -186,10 +181,10 @@ export class BaseSchema<
 	// 	})
 	// }
 
-	assert(data: unknown): this["infer"] {
-		const result = this.traverse(data)
-		return result.errors ? result.errors.throw() : result.out
-	}
+	// assert(data: unknown): this["infer"] {
+	// 	const result = this.traverse(data)
+	// 	return result.errors ? result.errors.throw() : result.out
+	// }
 
 	constrain<
 		kind extends PrimitiveConstraintKind,

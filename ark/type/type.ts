@@ -1,27 +1,19 @@
 import {
-	type Ark,
 	type BaseMeta,
 	BaseSchema,
-	type BaseSchemaDeclaration,
 	Disjoint,
 	type Morph,
-	type NodeDef,
 	type Out,
 	type Predicate,
-	type PrimitiveConstraintKind,
 	type Schema,
-	type constrain,
-	type constraintKindOf,
 	type distillConstrainableIn,
 	type distillConstrainableOut,
 	type distillIn,
 	type distillOut,
-	hasArkKind,
 	type includesMorphs,
 	type inferIntersection,
 	type inferMorphOut,
-	type inferNarrow,
-	type inferred
+	type inferNarrow
 } from "@arktype/schema"
 import type { Constructor, array, conform } from "@arktype/util"
 import {

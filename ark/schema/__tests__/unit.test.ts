@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import { schema } from "@arktype/schema"
+import { assertNodeKind, schema } from "@arktype/schema"
 import { reference } from "@arktype/util"
 
 describe("unit", () => {
@@ -14,6 +14,7 @@ describe("unit", () => {
 		const t = schema({ unit: 7n })
 		// serializes to string for JSON
 		attest(t.json).snap({ unit: "7n" })
+		assertNodeKind(t, "unit")
 		// preserves the bigint for context
 		attest(t.errorContext).equals({
 			code: "unit",
@@ -26,6 +27,7 @@ describe("unit", () => {
 	})
 	it("undefined", () => {
 		const t = schema({ unit: undefined })
+		assertNodeKind(t, "unit")
 		attest(t.json).snap({ unit: "undefined" })
 		attest(t.errorContext).equals({
 			code: "unit",
@@ -41,6 +43,7 @@ describe("unit", () => {
 		const s = Symbol("test")
 		const ref = reference(s)
 		const t = schema({ unit: s })
+		assertNodeKind(t, "unit")
 		// serializes to string for JSON
 		attest(t.json).snap({ unit: ref })
 		// preserves the symbol for context
@@ -57,6 +60,7 @@ describe("unit", () => {
 		const o = new Object()
 		const ref = reference(o)
 		const t = schema({ unit: o })
+		assertNodeKind(t, "unit")
 		attest(t.json).snap({ unit: ref })
 		attest(t.errorContext).equals({
 			code: "unit",

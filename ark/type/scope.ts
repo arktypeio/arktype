@@ -167,8 +167,6 @@ export interface ParseContext extends NodeParseOptions {
 	$: Scope
 }
 
-type MergedResolutions = Record<string, Schema | Generic>
-
 declare global {
 	export interface ArkRegistry {
 		ambient: Scope<ambient>
@@ -178,14 +176,10 @@ declare global {
 export const scope: ScopeParser = ((def: Dict, config: ArkConfig = {}) =>
 	new Scope(def, config)) as never
 
-interface TypeWrapper extends SchemaWrapper {
-	f: (
-		args: conform<this[Hkt.key], readonly [t: unknown, $: unknown]>
-	) => Type<(typeof args)[0], (typeof args)[1]>
-}
-
-export class Scope<$ = any> extends SchemaScope<$, TypeWrapper> {
+export class Scope<$ = any> extends SchemaScope<$> {
 	private parseCache: Record<string, Schema> = {}
+
+	declare f: (args: this[Hkt.key]) => Type<(typeof args)[0], (typeof args)[1]>
 
 	constructor(def: Record<string, unknown>, config?: ArkConfig) {
 		const aliases: Record<string, unknown> = {}
@@ -206,10 +200,10 @@ export class Scope<$ = any> extends SchemaScope<$, TypeWrapper> {
 
 	define: DefinitionParser<$> = (def) => def as never
 
-	// TODO: name?
-	get<name extends exportedNameOf<$>>(name: name): Type<$[name], $> {
-		return this.export()[name] as never
-	}
+	// // TODO: name?
+	// get<name extends exportedNameOf<$>>(name: name): Type<$[name], $> {
+	// 	return this.export()[name] as never
+	// }
 
 	parse(def: unknown, ctx: ParseContext): Schema {
 		if (typeof def === "string") {

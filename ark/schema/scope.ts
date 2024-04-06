@@ -30,8 +30,6 @@ import {
 	schemaKindOf
 } from "./parser/parse.js"
 import type { distillIn, distillOut } from "./schemas/morph.js"
-import type { UnionNode } from "./schemas/union.js"
-import type { UnitNode } from "./schemas/unit.js"
 import { NodeCompiler } from "./shared/compile.js"
 import type {
 	ActualWriter,
@@ -41,7 +39,6 @@ import type {
 	ProblemWriter
 } from "./shared/errors.js"
 import type {
-	ConstraintKind,
 	DescriptionWriter,
 	NodeKind,
 	SchemaKind
@@ -157,13 +154,14 @@ export interface SchemaWrapper extends Hkt.Kind {
 	) => BaseSchema<(typeof args)[0], (typeof args)[1]>
 }
 
-export class SchemaScope<
-	$ = any,
-	wrapper extends SchemaWrapper = SchemaWrapper
-> {
+export class SchemaScope<$ = any> implements Hkt.Kind {
 	declare t: $
 	declare infer: distillOut<$>
 	declare inferIn: distillIn<$>
+	declare [Hkt.key]: [t: unknown, $: unknown]
+	declare f: (
+		args: this[Hkt.key]
+	) => BaseSchema<(typeof args)[0], (typeof args)[1]>
 
 	readonly config: ArkConfig
 	readonly resolvedConfig: ResolvedArkConfig
@@ -210,7 +208,7 @@ export class SchemaScope<
 	schema<const def extends SchemaDef>(
 		def: def,
 		opts?: NodeParseOptions
-	): Hkt.apply<wrapper, [inferSchema<def, $>, $]> {
+	): Hkt.apply<this, [inferSchema<def, $>, $]> {
 		return parseNode(schemaKindOf(def), def, this, opts) as never
 	}
 
@@ -221,7 +219,7 @@ export class SchemaScope<
 	units<const branches extends array>(
 		values: branches,
 		opts?: NodeParseOptions
-	): Hkt.apply<wrapper, [branches[number], $]> {
+	): Hkt.apply<this, [branches[number], $]> {
 		{
 			const uniqueValues: unknown[] = []
 			for (const value of values) {
