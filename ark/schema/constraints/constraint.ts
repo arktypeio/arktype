@@ -56,11 +56,20 @@ export interface ConstraintAttachments {
 	impliedSiblings?: array<Node<ConstraintKind>> | null
 }
 
-export class BaseConstraint<d extends BaseNodeDeclaration> extends BaseNode<
-	d["prerequisite"],
-	d
-> {
+export interface BaseConstraintDeclaration extends BaseNodeDeclaration {
+	kind: ConstraintKind
+}
+
+export class BaseConstraint<
+	d extends BaseConstraintDeclaration
+> extends BaseNode<d["prerequisite"], d> {
 	readonly [arkKind] = "constraint"
+
+	intersect<r extends Node<ConstraintKind>>(
+		r: r
+	): intersectConstraintKinds<d["kind"], r["kind"]> {
+		return this.intersectInternal(r) as never
+	}
 }
 
 export type PrimitiveConstraintKind = Exclude<ConstraintKind, PropKind>

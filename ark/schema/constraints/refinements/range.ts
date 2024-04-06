@@ -75,7 +75,11 @@ export const deriveRangeAttachments = <d extends BaseRangeDeclaration = never>(
 	const comparator = compileComparator(self.kind, self.exclusive)
 	const numericLimit = self.rule.valueOf()
 
-	return {
+	return Object.assign(self, {
+		boundOperandKind,
+		compiledActual,
+		comparator,
+		numericLimit,
 		expression: `${comparator}${self.rule}`,
 		compiledCondition: `${compiledActual} ${comparator} ${numericLimit}`,
 		compiledNegation: `${compiledActual} ${negatedComparators[comparator]} ${numericLimit}`,
@@ -99,7 +103,7 @@ export const deriveRangeAttachments = <d extends BaseRangeDeclaration = never>(
 			)
 		},
 		overlapsRange(r) {
-			if (this.isStricterThan(r)) return false
+			if (this.isStricterThan(r as never)) return false
 			if (
 				this.numericLimit === r.numericLimit &&
 				(this.exclusive || r.exclusive)
@@ -114,7 +118,7 @@ export const deriveRangeAttachments = <d extends BaseRangeDeclaration = never>(
 				!r.exclusive
 			)
 		}
-	}
+	} satisfies DerivedRangeAttachments & ThisType<Node<RangeKind>>) as never
 }
 
 export interface BaseRangeInner extends BaseMeta {

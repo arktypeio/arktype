@@ -449,7 +449,7 @@ const intersectConstraints = (
 		if (result instanceof Disjoint) return result
 
 		if (!matched) {
-			if (result.isType()) s.types.push(result)
+			if (result.isSchema()) s.types.push(result)
 			else s.l[i] = result
 			matched = true
 		} else if (!s.l.includes(result as never)) {
