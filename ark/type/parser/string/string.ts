@@ -1,8 +1,8 @@
-import type { Schema } from "@arktype/schema"
+import type { Schema, ambient } from "@arktype/schema"
 import {
+	type ErrorMessage,
 	throwInternalError,
-	throwParseError,
-	type ErrorMessage
+	throwParseError
 } from "@arktype/util"
 import type { inferAstRoot } from "../semantic/infer.js"
 import type { DynamicState, DynamicStateWithRoot } from "./reduce/dynamic.js"
@@ -10,8 +10,8 @@ import type { StringifiablePrefixOperator } from "./reduce/shared.js"
 import type { StaticState, state } from "./reduce/static.js"
 import type { parseOperand } from "./shift/operand/operand.js"
 import {
-	writeUnexpectedCharacterMessage,
-	type parseOperator
+	type parseOperator,
+	writeUnexpectedCharacterMessage
 } from "./shift/operator/operator.js"
 
 /**
@@ -37,6 +37,7 @@ export type inferString<def extends string, $, args> = inferAstRoot<
 export type BaseCompletions<$, args, otherSuggestions extends string = never> =
 	| (keyof $ & string)
 	| (keyof args & string)
+	| (keyof ambient & string)
 	| StringifiablePrefixOperator
 	| otherSuggestions
 
