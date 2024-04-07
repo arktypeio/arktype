@@ -1,4 +1,4 @@
-import { isKeyOf, type Dict } from "@arktype/util"
+import { type Dict, isKeyOf } from "@arktype/util"
 import type { Comparator } from "../reduce/shared.js"
 
 export class Scanner<Lookahead extends string = string> {

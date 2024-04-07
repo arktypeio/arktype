@@ -43,7 +43,7 @@ export type validateAst<ast, $, args> = ast extends string
 					? validateGenericArgs<ast["2"], $, args>
 					: ErrorMessage<
 							writeUnexpectedExpressionMessage<astToString<ast>>
-						>
+						> & { ast: ast }
 
 type writeUnexpectedExpressionMessage<expression extends string> =
 	`Unexpectedly failed to parse the expression resulting from ${expression}`

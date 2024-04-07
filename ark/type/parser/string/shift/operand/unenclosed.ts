@@ -3,6 +3,7 @@ import {
 	type GenericProps,
 	type Schema,
 	type ambient,
+	arkKind,
 	hasArkKind,
 	type writeNonSubmoduleDotMessage,
 	writeUnresolvableMessage
@@ -18,6 +19,7 @@ import {
 	tryParseNumber,
 	tryParseWellFormedBigint
 } from "@arktype/util"
+import type { type } from "../../../../ark.js"
 import type { Generic } from "../../../../generic.js"
 import type { Module } from "../../../../scope.js"
 import type { GenericInstantiationAst } from "../../../semantic/infer.js"
@@ -53,7 +55,7 @@ export type parseUnenclosed<
 			? result extends ErrorMessage<infer message>
 				? state.error<message>
 				: result extends keyof $
-					? $[result] extends GenericProps
+					? $[result] extends { [arkKind]: "generic" }
 						? parseGenericInstantiation<
 								token,
 								$[result],

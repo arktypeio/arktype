@@ -30,7 +30,8 @@ export type inferConstrainableAst<ast, $, args> = ast extends array
 	: inferTerminal<ast, $, args>
 
 export type GenericInstantiationAst<
-	g extends GenericProps = GenericProps,
+	// TODO: why didn't constraining g to GenericProps work?
+	g = any,
 	argAsts extends unknown[] = unknown[]
 > = [g, "<>", argAsts]
 
