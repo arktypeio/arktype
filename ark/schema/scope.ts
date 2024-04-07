@@ -150,10 +150,9 @@ export class SchemaScope<$ = any> {
 	declare $: $
 	declare infer: distillOut<$>
 	declare inferIn: distillIn<$>
-
-	declare member: BaseSchema
-	declare module: SchemaModule
-	declare generic: GenericSchema
+	declare hktNode: BaseSchema
+	declare hktModule: SchemaModule
+	declare hktGeneric: GenericSchema
 
 	readonly config: ArkConfig
 	readonly resolvedConfig: ResolvedArkConfig
@@ -200,7 +199,7 @@ export class SchemaScope<$ = any> {
 	schema<const def extends SchemaDef>(
 		def: def,
 		opts?: NodeParseOptions
-	): instantiate<this["member"], [inferSchema<def, $>, $]> {
+	): instantiate<this["hktNode"], [inferSchema<def, $>, $]> {
 		return parseNode(schemaKindOf(def), def, this, opts) as never
 	}
 
@@ -211,7 +210,7 @@ export class SchemaScope<$ = any> {
 	units<const branches extends array>(
 		values: branches,
 		opts?: NodeParseOptions
-	): instantiate<this["member"], [branches[number], $]> {
+	): instantiate<this["hktNode"], [branches[number], $]> {
 		{
 			const uniqueValues: unknown[] = []
 			for (const value of values) {
@@ -292,18 +291,18 @@ export class SchemaScope<$ = any> {
 	import<names extends exportedNameOf<$>[]>(
 		...names: names
 	): instantiate<
-		this["module"],
+		this["hktModule"],
 		destructuredImportContext<
 			$,
 			names extends [] ? exportedNameOf<$> : names[number]
 		>
 	> {
 		return new SchemaModule(
-			flatMorph(this.export(...names) as Dict, (alias, value) => [
+			flatMorph(this.export(...names) as any, (alias, value) => [
 				`#${alias}`,
 				value
 			]) as never
-		)
+		) as never
 	}
 
 	#exportedResolutions: SchemaScopeResolutions | undefined
@@ -311,7 +310,7 @@ export class SchemaScope<$ = any> {
 	export<names extends exportedNameOf<$>[]>(
 		...names: names
 	): instantiate<
-		this["module"],
+		this["hktModule"],
 		destructuredExportContext<
 			$,
 			names extends [] ? exportedNameOf<$> : names[number]
@@ -362,7 +361,7 @@ export class SchemaScope<$ = any> {
 				name,
 				this.#exportCache![name]
 			]) as never
-		)
+		) as never
 	}
 }
 

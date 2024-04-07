@@ -10,7 +10,7 @@ import type { exportedNameOf } from "./scope.js"
 export type PreparsedNodeResolution = { [arkKind]: "generic" | "module" }
 
 export type exportScope<$, instance extends BaseSchema> = {
-	[k in exportedNameOf<$>]: $[k] extends PreparsedNodeResolution
+	[k in keyof $]: $[k] extends PreparsedNodeResolution
 		? isAnyOrNever<$[k]> extends true
 			? instantiate<instance, [$[k], $]>
 			: $[k]

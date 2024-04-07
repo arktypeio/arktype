@@ -3,6 +3,7 @@ import {
 	type GenericProps,
 	type NodeParseOptions,
 	type Schema,
+	type SchemaInstantiables,
 	SchemaModule,
 	SchemaScope,
 	type ambient,
@@ -19,6 +20,7 @@ import {
 	type evaluate,
 	hasDomain,
 	type nominal,
+	type satisfy,
 	throwParseError
 } from "@arktype/util"
 import { Generic } from "./generic.js"
@@ -50,24 +52,27 @@ export type ScopeParser = <const def>(
 ) => Scope<inferBootstrapped<bootstrapAliases<def>>>
 
 type validateScope<def> = {
-	[k in keyof def & string]: parseScopeKey<k>["params"] extends []
-		? // Not including Type here directly breaks inference
-			def[k] extends Type | PreparsedResolution
-			? def[k]
-			: validateDefinition<def[k], bootstrapAliases<def>, {}>
-		: parseScopeKey<k>["params"] extends GenericParamsParseError
-			? // use the full nominal type here to avoid an overlap between the
-				// error message and a possible value for the property
-				parseScopeKey<k>["params"][0]
-			: validateDefinition<
-					def[k],
-					bootstrapAliases<def>,
-					{
-						// once we support constraints on generic parameters, we'd use
-						// the base type here: https://github.com/arktypeio/arktype/issues/796
-						[param in parseScopeKey<k>["params"][number]]: unknown
-					}
-				>
+	[k in keyof def]: k extends symbol
+		? // this should only occur when importing/exporting modules, and those keys should be ignored
+			unknown
+		: parseScopeKey<k>["params"] extends []
+			? // Not including Type here directly breaks inference
+				def[k] extends Type | PreparsedResolution
+				? def[k]
+				: validateDefinition<def[k], bootstrapAliases<def>, {}>
+			: parseScopeKey<k>["params"] extends GenericParamsParseError
+				? // use the full nominal type here to avoid an overlap between the
+					// error message and a possible value for the property
+					parseScopeKey<k>["params"][0]
+				: validateDefinition<
+						def[k],
+						bootstrapAliases<def>,
+						{
+							// once we support constraints on generic parameters, we'd use
+							// the base type here: https://github.com/arktypeio/arktype/issues/796
+							[param in parseScopeKey<k>["params"][number]]: unknown
+						}
+					>
 }
 
 export type bindThis<def> = { this: Def<def> }
@@ -166,8 +171,9 @@ export const scope: ScopeParser = ((def: Dict, config: ArkConfig = {}) =>
 export class Scope<$ = any> extends SchemaScope<$> {
 	private parseCache: Record<string, Schema> = {}
 
-	declare member: Type
-	declare module: Module
+	declare hktNode: Type
+	declare hktModule: Module
+	declare hktGeneric: Generic
 
 	constructor(def: Record<string, unknown>, config?: ArkConfig) {
 		const aliases: Record<string, unknown> = {}
