@@ -8,6 +8,7 @@ import {
 	type evaluate,
 	flatMorph,
 	type flattenListable,
+	type instantiate,
 	isThunk,
 	type requireKeys,
 	throwParseError
@@ -149,13 +150,10 @@ export type exportedNameOf<$> = Exclude<keyof $ & string, PrivateDeclaration>
 export type PrivateDeclaration<key extends string = string> = `#${key}`
 
 export class SchemaScope<$ = any> implements Hkt.Kind {
-	declare t: $
 	declare infer: distillOut<$>
 	declare inferIn: distillIn<$>
-	declare [Hkt.args]: [t: unknown, $: unknown]
-	declare f: (
-		args: this[Hkt.args]
-	) => BaseSchema<(typeof args)[0], (typeof args)[1]>
+	declare [Hkt.args]: unknown
+	declare hkt: (t: this[Hkt.args]) => BaseSchema<typeof t, $>
 
 	readonly config: ArkConfig
 	readonly resolvedConfig: ResolvedArkConfig
@@ -202,7 +200,7 @@ export class SchemaScope<$ = any> implements Hkt.Kind {
 	schema<const def extends SchemaDef>(
 		def: def,
 		opts?: NodeParseOptions
-	): Hkt.apply<this, [inferSchema<def, $>, $]> {
+	): instantiate<this, inferSchema<def, $>> {
 		return parseNode(schemaKindOf(def), def, this, opts) as never
 	}
 
@@ -213,7 +211,7 @@ export class SchemaScope<$ = any> implements Hkt.Kind {
 	units<const branches extends array>(
 		values: branches,
 		opts?: NodeParseOptions
-	): Hkt.apply<this, [branches[number], $]> {
+	): instantiate<this, branches[number]> {
 		{
 			const uniqueValues: unknown[] = []
 			for (const value of values) {

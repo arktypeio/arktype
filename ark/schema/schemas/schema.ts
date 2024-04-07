@@ -2,6 +2,7 @@ import {
 	type Hkt,
 	type conform,
 	flatMorph,
+	type instantiate,
 	throwParseError
 } from "@arktype/util"
 import {
@@ -197,7 +198,7 @@ export class BaseSchema<
 	>(
 		kind: conform<kind, constraintKindOf<this["in"]["infer"]>>,
 		def: def
-	): Hkt.apply<this["$"], [constrain<t, kind, def>, $]> {
+	): instantiate<this["$"], constrain<t, kind, def>> {
 		return this.rawConstrain(kind, def) as never
 	}
 

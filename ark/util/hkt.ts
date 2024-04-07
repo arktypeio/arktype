@@ -1,53 +1,62 @@
 import type { conform } from "./generics.js"
 
+export type instantiate<
+	hkt extends Hkt.Kind,
+	args extends Parameters<hkt["hkt"]>[0]
+> = ReturnType<
+	(hkt & {
+		readonly [Hkt.args]: args
+	})["hkt"]
+>
+
 /** A small set of HKT utility types based on https://github.com/poteat/hkt-toolbelt */
 export namespace Hkt {
 	export declare const args: unique symbol
 	export type args = typeof args
 
 	export abstract class Kind<
-		f extends (...args: any[]) => unknown = (...args: any[]) => unknown
+		hkt extends (...args: any[]) => unknown = (...args: any[]) => unknown
 	> {
 		declare readonly [args]: unknown
-		abstract readonly f: f
+		abstract readonly hkt: hkt
 	}
 
 	export type apply<
 		hkt extends Kind,
-		args extends Parameters<hkt["f"]>[0]
+		args extends Parameters<hkt["hkt"]>[0]
 	> = ReturnType<
 		(hkt & {
 			readonly [args]: args
-		})["f"]
+		})["hkt"]
 	>
 
 	export interface Reify extends Kind {
-		f(In: conform<this[args], Kind>): reify<typeof In>
+		hkt(In: conform<this[args], Kind>): reify<typeof In>
 	}
 
-	export const reify = <def extends Kind>(def: def) => def.f as reify<def>
+	export const reify = <def extends Kind>(def: def) => def.hkt as reify<def>
 
 	export type reify<hkt extends Kind> = <
-		const In extends Parameters<hkt["f"]>[0]
+		const In extends Parameters<hkt["hkt"]>[0]
 	>(
 		In: In
 	) => Hkt.apply<hkt, In>
 
 	export abstract class UnaryKind<
-		f extends (In: never) => unknown = (In: any) => unknown
+		hkt extends (In: never) => unknown = (In: any) => unknown
 	> {
 		declare readonly [args]: unknown
-		abstract readonly f: f
+		abstract readonly hkt: hkt
 	}
 
 	type validatePipedKinds<
 		kinds extends UnaryKind[],
-		Out = Parameters<kinds[0]["f"]>[0]
+		Out = Parameters<kinds[0]["hkt"]>[0]
 	> = kinds extends readonly [
 		infer head extends UnaryKind,
 		...infer tail extends UnaryKind[]
 	]
-		? Out extends Parameters<head["f"]>[0]
+		? Out extends Parameters<head["hkt"]>[0]
 			? [kinds[0], ...validatePipedKinds<tail, Hkt.apply<head, Out>>]
 			: [Kind<(In: Out) => unknown>, ...tail]
 		: []
@@ -63,7 +72,7 @@ export namespace Hkt {
 		: Out
 
 	export type pipe<kinds extends UnaryKind[]> = <
-		In extends Parameters<kinds[0]["f"]>[0]
+		In extends Parameters<kinds[0]["hkt"]>[0]
 	>(
 		In: In
 	) => inferPipedReturn<kinds, In>
@@ -82,7 +91,8 @@ export namespace Hkt {
 		): pipe<kinds> =>
 		(In) =>
 			kinds.reduce(
-				(out, kind) => (kind as Hkt.UnaryKind<(_: any) => any>).f(out),
+				(out, kind) =>
+					(kind as Hkt.UnaryKind<(_: any) => any>).hkt(out),
 				In
 			)
 }

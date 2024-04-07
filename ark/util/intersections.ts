@@ -5,7 +5,7 @@ import type { Hkt } from "./hkt.js"
 import type { propValueOf, requiredKeyOf } from "./records.js"
 
 export interface AndPreserveUnknown extends Hkt.Kind {
-	f: (
+	hkt: (
 		args: conform<this[Hkt.args], [unknown, unknown]>
 	) => andPreserveUnknown<(typeof args)[0], (typeof args)[1]>
 }

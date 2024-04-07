@@ -42,7 +42,7 @@ export type inferIntersection<l, r> = [l] extends [never]
 									: l & r
 
 declare class MorphableIntersection extends Hkt.Kind {
-	f: (
+	hkt: (
 		In: conform<this[Hkt.args], [l: unknown, r: unknown]>
 	) => inferIntersection<(typeof In)[0], (typeof In)[1]>
 }

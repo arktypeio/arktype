@@ -171,14 +171,10 @@ declare global {
 export const scope: ScopeParser = ((def: Dict, config: ArkConfig = {}) =>
 	new Scope(def, config)) as never
 
-// export type instantiate<t, $ extends SchemaScope>
-
 export class Scope<$ = any> extends SchemaScope<$> {
 	private parseCache: Record<string, Schema> = {}
 
-	declare f: (
-		args: this[Hkt.args]
-	) => Type<(typeof args)[0], (typeof args)[1]>
+	declare hkt: (t: this[Hkt.args]) => Type<typeof t, $>
 
 	constructor(def: Record<string, unknown>, config?: ArkConfig) {
 		const aliases: Record<string, unknown> = {}

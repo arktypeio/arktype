@@ -3,7 +3,7 @@ import { Hkt, type array, type conform, type evaluate } from "@arktype/util"
 
 describe("hkt", () => {
 	interface AppendKind extends Hkt.Kind {
-		f: (
+		hkt: (
 			args: conform<
 				this[Hkt.args],
 				readonly [element: unknown, to: array]
@@ -23,13 +23,13 @@ describe("hkt", () => {
 		attest<[0, 1, 2]>(result)
 	})
 	const AddB = new (class AddB extends Hkt.UnaryKind {
-		f = (
+		hkt = (
 			args: conform<this[Hkt.args], { a: number }>
 		): evaluate<typeof args & { b: (typeof args)["a"] }> =>
 			Object.assign(args, { b: args.a } as const)
 	})()
 	const AddC = new (class extends Hkt.UnaryKind {
-		f = (
+		hkt = (
 			args: conform<this[Hkt.args], { a: number; b: number }>
 		): evaluate<
 			typeof args & { c: [(typeof args)["a"], (typeof args)["b"]] }
@@ -54,7 +54,7 @@ describe("hkt", () => {
 	})
 	it("validates pipeable", () => {
 		const AddD = new (class AddD extends Hkt.UnaryKind {
-			f = (
+			hkt = (
 				args: conform<this[Hkt.args], { c: number }>
 			): evaluate<typeof args & { d: (typeof args)["c"] }> => {
 				return Object.assign(args, { d: args.c } as const)
