@@ -3,12 +3,8 @@ import type { ErrorMessage } from "@arktype/util"
 import type { inferAstIn } from "./infer.js"
 import type { validateAst } from "./validate.js"
 
-export type validateDivisor<l, $, args> = inferAstIn<
-	l,
-	$,
-	args
-> extends infer data
+export type validateDivisor<l, $> = inferAstIn<l, $> extends infer data
 	? [data] extends [number]
-		? validateAst<l, $, args>
+		? validateAst<l, $>
 		: ErrorMessage<writeIndivisibleMessage<Schema<data>>>
 	: never

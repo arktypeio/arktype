@@ -1,18 +1,18 @@
 import {
-	keywordNodes,
 	type Node,
 	type Schema,
+	keywordNodes,
 	type writeInvalidPropertyKeyMessage
 } from "@arktype/schema"
 import {
-	printable,
-	stringAndSymbolicEntriesOf,
-	throwParseError,
 	type Dict,
 	type ErrorMessage,
 	type Key,
 	type evaluate,
-	type merge
+	type merge,
+	printable,
+	stringAndSymbolicEntriesOf,
+	throwParseError
 } from "@arktype/util"
 import type { ParseContext } from "../scope.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
@@ -87,58 +87,53 @@ export const nonLeadingSpreadError =
  * Infers the contents of an object literal, ignoring a spread definition
  * You probably want to use {@link inferObjectLiteral} instead.
  */
-type inferObjectLiteralInner<def extends object, $, args> = {
+type inferObjectLiteralInner<def extends object, $> = {
 	// since def is a const parameter, we remove the readonly modifier here
 	// support for builtin readonly tracked here:
 	// https://github.com/arktypeio/arktype/issues/808
-	-readonly [k in keyof def as nonOptionalKeyFrom<
-		k,
-		$,
-		args
-	>]: inferDefinition<def[k], $, args>
+	-readonly [k in keyof def as nonOptionalKeyFrom<k, $>]: inferDefinition<
+		def[k],
+		$
+	>
 } & {
 	-readonly [k in keyof def as optionalKeyFrom<k>]?: inferDefinition<
 		def[k],
-		$,
-		args
+		$
 	>
 }
 
-export type inferObjectLiteral<def extends object, $, args> = evaluate<
+export type inferObjectLiteral<def extends object, $> = evaluate<
 	"..." extends keyof def
-		? merge<
-				inferDefinition<def["..."], $, args>,
-				inferObjectLiteralInner<def, $, args>
-			>
-		: inferObjectLiteralInner<def, $, args>
+		? merge<inferDefinition<def["..."], $>, inferObjectLiteralInner<def, $>>
+		: inferObjectLiteralInner<def, $>
 >
 
-export type validateObjectLiteral<def, $, args> = {
+export type validateObjectLiteral<def, $> = {
 	[k in keyof def]: k extends IndexKey<infer indexDef>
-		? validateString<indexDef, $, args> extends ErrorMessage<infer message>
+		? validateString<indexDef, $> extends ErrorMessage<infer message>
 			? // add a nominal type here to avoid allowing the error message as input
 				indexParseError<message>
-			: inferDefinition<indexDef, $, args> extends PropertyKey
+			: inferDefinition<indexDef, $> extends PropertyKey
 				? // if the indexDef is syntactically and semantically valid,
 					// move on to the validating the value definition
-					validateDefinition<def[k], $, args>
+					validateDefinition<def[k], $>
 				: indexParseError<writeInvalidPropertyKeyMessage<indexDef>>
 		: k extends "..."
-			? inferDefinition<def[k], $, args> extends object
-				? validateDefinition<def[k], $, args>
+			? inferDefinition<def[k], $> extends object
+				? validateDefinition<def[k], $>
 				: indexParseError<
 						writeInvalidSpreadTypeMessage<astToString<def[k]>>
 					>
-			: validateDefinition<def[k], $, args>
+			: validateDefinition<def[k], $>
 }
 
-type nonOptionalKeyFrom<k, $, args> = parseKey<k> extends PreparsedKey<
+type nonOptionalKeyFrom<k, $> = parseKey<k> extends PreparsedKey<
 	"required",
 	infer inner
 >
 	? inner
 	: parseKey<k> extends PreparsedKey<"index", infer inner>
-		? inferDefinition<inner, $, args> & Key
+		? inferDefinition<inner, $> & Key
 		: // spread key is handled at the type root so is handled neither here nor in optionalKeyFrom
 			never
 

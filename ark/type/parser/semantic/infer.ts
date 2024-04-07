@@ -11,7 +11,7 @@ import type {
 	normalizeLimit,
 	string
 } from "@arktype/schema"
-import type { BigintLiteral, NumberLiteral, array } from "@arktype/util"
+import type { BigintLiteral, NumberLiteral, array, merge } from "@arktype/util"
 import type {
 	UnparsedScope,
 	resolve,
@@ -21,13 +21,13 @@ import type { inferDefinition } from "../definition.js"
 import type { Comparator, MinComparator } from "../string/reduce/shared.js"
 import type { StringLiteral } from "../string/shift/operand/enclosed.js"
 
-export type inferAstRoot<ast, $, args> = inferConstrainableAst<ast, $, args>
+export type inferAstRoot<ast, $> = inferConstrainableAst<ast, $>
 
-export type inferAstIn<ast, $, args> = distillIn<inferAstRoot<ast, $, args>>
+export type inferAstIn<ast, $> = distillIn<inferAstRoot<ast, $>>
 
-export type inferConstrainableAst<ast, $, args> = ast extends array
-	? inferExpression<ast, $, args>
-	: inferTerminal<ast, $, args>
+export type inferConstrainableAst<ast, $> = ast extends array
+	? inferExpression<ast, $>
+	: inferTerminal<ast, $>
 
 export type GenericInstantiationAst<
 	// TODO: why didn't constraining g to GenericProps work?
@@ -37,59 +37,59 @@ export type GenericInstantiationAst<
 
 export type inferExpression<
 	ast extends array,
-	$,
-	args
+	$
 > = ast extends GenericInstantiationAst
 	? inferDefinition<
 			ast[0]["def"],
-			ast[0]["$"]["t"] extends UnparsedScope
-				? // If the generic was defined in the current scope, its definition can be
-					// resolved using the same scope as that of the input args.
-					$
-				: // Otherwise, use the scope that was explicitly associated with it.
-					ast[0]["$"],
-			{
-				// Using keyof g["params"] & number here results in the element types
-				// being mixed- another reason TS should not have separate `${number}` and number keys!
-				[i in keyof ast[0]["params"] &
-					`${number}` as ast[0]["params"][i]]: inferConstrainableAst<
-					ast[2][i & keyof ast[2]],
-					$,
-					args
-				>
-			}
+			merge<
+				ast[0]["$"]["t"] extends UnparsedScope
+					? // If the generic was defined in the current scope, its definition can be
+						// resolved using the same scope as that of the input args.
+						$
+					: // Otherwise, use the scope that was explicitly associated with it.
+						ast[0]["$"],
+				{
+					// Using keyof g["params"] & number here results in the element types
+					// being mixed- another reason TS should not have separate `${number}` and number keys!
+					[i in keyof ast[0]["params"] &
+						`${number}` as ast[0]["params"][i]]: inferConstrainableAst<
+						ast[2][i & keyof ast[2]],
+						$
+					>
+				}
+			>
 		>
 	: ast[1] extends "[]"
-		? inferConstrainableAst<ast[0], $, args>[]
+		? inferConstrainableAst<ast[0], $>[]
 		: ast[1] extends "|"
 			?
-					| inferConstrainableAst<ast[0], $, args>
-					| inferConstrainableAst<ast[2], $, args>
+					| inferConstrainableAst<ast[0], $>
+					| inferConstrainableAst<ast[2], $>
 			: ast[1] extends "&"
 				? inferIntersection<
-						inferConstrainableAst<ast[0], $, args>,
-						inferConstrainableAst<ast[2], $, args>
+						inferConstrainableAst<ast[0], $>,
+						inferConstrainableAst<ast[2], $>
 					>
 				: ast[1] extends Comparator
 					? ast[0] extends LimitLiteral
 						? constrainBound<
-								inferConstrainableAst<ast[2], $, args>,
+								inferConstrainableAst<ast[2], $>,
 								ast[1],
 								ast[0]
 							>
 						: constrainBound<
-								inferConstrainableAst<ast[0], $, args>,
+								inferConstrainableAst<ast[0], $>,
 								ast[1],
 								ast[2]
 							>
 					: ast[1] extends "%"
 						? constrain<
-								inferConstrainableAst<ast[0], $, args>,
+								inferConstrainableAst<ast[0], $>,
 								"divisor",
 								ast[2] & number
 							>
 						: ast[0] extends "keyof"
-							? keyof inferConstrainableAst<ast[1], $, args>
+							? keyof inferConstrainableAst<ast[1], $>
 							: never
 
 export type constrainBound<
@@ -145,20 +145,18 @@ export type InfixExpression<
 	r = unknown
 > = [l, operator, r]
 
-export type inferTerminal<token, $, args> = token extends keyof args | keyof $
-	? resolve<token, $, args>
-	: token extends keyof ambient
-		? ambient[token]
-		: token extends StringLiteral<infer text>
-			? text
-			: token extends NumberLiteral<infer value>
+export type inferTerminal<token, $> = token extends keyof $
+	? resolve<token, $>
+	: token extends StringLiteral<infer text>
+		? text
+		: token extends NumberLiteral<infer value>
+			? value
+			: token extends BigintLiteral<infer value>
 				? value
-				: token extends BigintLiteral<infer value>
-					? value
-					: token extends RegexLiteral<infer source>
-						? string.matching<source>
-						: token extends DateLiteral<infer source>
-							? Date.literal<source>
-							: // doing this last allows us to infer never if it isn't valid rather than check
-								// if it's a valid submodule reference ahead of time
-								tryInferSubmoduleReference<$, token>
+				: token extends RegexLiteral<infer source>
+					? string.matching<source>
+					: token extends DateLiteral<infer source>
+						? Date.literal<source>
+						: // doing this last allows us to infer never if it isn't valid rather than check
+							// if it's a valid submodule reference ahead of time
+							tryInferSubmoduleReference<$, token>

@@ -30,21 +30,20 @@ export const parseOperand = (s: DynamicState): void =>
 
 export type parseOperand<
 	s extends StaticState,
-	$,
-	args
+	$
 > = s["unscanned"] extends Scanner.shift<infer lookahead, infer unscanned>
 	? lookahead extends "("
 		? state.reduceGroupOpen<s, unscanned>
 		: lookahead extends EnclosingStartToken
 			? parseEnclosed<s, lookahead, unscanned>
 			: lookahead extends Scanner.WhiteSpaceToken
-				? parseOperand<state.scanTo<s, unscanned>, $, args>
+				? parseOperand<state.scanTo<s, unscanned>, $>
 				: lookahead extends "d"
 					? unscanned extends Scanner.shift<
 							infer enclosing extends EnclosingQuote,
 							infer nextUnscanned
 						>
 						? parseEnclosed<s, `d${enclosing}`, nextUnscanned>
-						: parseUnenclosed<s, $, args>
-					: parseUnenclosed<s, $, args>
-	: state.completion<`${s["scanned"]}${BaseCompletions<$, args>}`>
+						: parseUnenclosed<s, $>
+					: parseUnenclosed<s, $>
+	: state.completion<`${s["scanned"]}${BaseCompletions<$>}`>
