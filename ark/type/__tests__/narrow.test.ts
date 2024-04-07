@@ -1,7 +1,7 @@
 import { attest } from "@arktype/attest"
-import type { Ark, Narrowed, of, Out, string } from "@arktype/schema"
-import { reference, type equals } from "@arktype/util"
-import { type, type Type } from "arktype"
+import type { Ark, Narrowed, Out, of, string } from "@arktype/schema"
+import { type equals, reference } from "@arktype/util"
+import { type Type, type } from "arktype"
 import { describe } from "mocha"
 
 describe("narrow", () => {
@@ -93,7 +93,7 @@ describe("narrow", () => {
 			.morph((s) => s.length)
 			.narrow((n): n is 5 => n === 5)
 
-		attest<Type<(In: string) => Out<of<5, Narrowed>>, Ark>>(t)
+		attest<Type<(In: string) => Out<of<5, Narrowed>>, {}>>(t)
 	})
 	it("expression", () => {
 		const t = type("string", ":", (s): s is `f${string}` => s[0] === "f")

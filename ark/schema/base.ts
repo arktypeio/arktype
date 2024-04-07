@@ -29,7 +29,12 @@ import type {
 	nodeImplementationsByKind,
 	reducibleKindOf
 } from "./kinds.js"
-import type { BaseConstraint, BaseSchema } from "./main.js"
+import type {
+	BaseConstraint,
+	BaseSchema,
+	ClosedNodeKind,
+	OpenNodeKind
+} from "./main.js"
 import type { DomainNode } from "./schemas/domain.js"
 import type { IntersectionNode } from "./schemas/intersection.js"
 import type {
@@ -310,7 +315,7 @@ export class BaseNode<
 		return this.hasKind("unit") && this.allows(value)
 	}
 
-	get intersectionIsOpen(): d["intersectionIsOpen"] {
+	hasOpenIntersection(): this is Node<OpenNodeKind> {
 		return this.impl.intersectionIsOpen as never
 	}
 

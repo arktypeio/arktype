@@ -106,7 +106,7 @@ const intersectionChildKeyParser =
 				.sort((l, r) => (l.innerId < r.innerId ? -1 : 1)) as never
 		}
 		const child = ctx.$.node(kind, def)
-		return child.intersectionIsOpen ? [child] : (child as any)
+		return child.hasOpenIntersection() ? [child] : (child as any)
 	}
 
 const intersectIntersections = (
@@ -489,7 +489,7 @@ const unflattenConstraints = (
 ): IntersectionInner => {
 	const inner: MutableInner<"intersection"> = {}
 	for (const constraint of constraints) {
-		if (constraint.intersectionIsOpen) {
+		if (constraint.hasOpenIntersection()) {
 			inner[constraint.kind] = append(
 				inner[constraint.kind],
 				constraint
