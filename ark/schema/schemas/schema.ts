@@ -1,5 +1,5 @@
 import {
-	type Hkt,
+	Hkt,
 	type conform,
 	flatMorph,
 	type instantiate,
@@ -59,6 +59,10 @@ export class BaseSchema<
 	out d extends BaseSchemaDeclaration = BaseSchemaDeclaration
 > extends BaseNode<t, d> {
 	declare $: SchemaScope<$>
+	declare [Hkt.args]: [t: unknown, $: unknown]
+	declare hkt: (
+		args: this[Hkt.args]
+	) => BaseSchema<(typeof args)[0], (typeof args)[1]>
 
 	readonly branches: readonly Node<UnionChildKind>[] = this.hasKind("union")
 		? this.inner.branches
@@ -198,7 +202,7 @@ export class BaseSchema<
 	>(
 		kind: conform<kind, constraintKindOf<this["in"]["infer"]>>,
 		def: def
-	): instantiate<this["$"], constrain<t, kind, def>> {
+	): instantiate<this, [constrain<t, kind, def>, $]> {
 		return this.rawConstrain(kind, def) as never
 	}
 

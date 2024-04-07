@@ -19,7 +19,7 @@ import {
 	type inferMorphOut,
 	type inferNarrow
 } from "@arktype/schema"
-import type { Constructor, array, conform } from "@arktype/util"
+import type { Constructor, Hkt, array, conform } from "@arktype/util"
 import {
 	Generic,
 	type validateParameterString,
@@ -128,6 +128,10 @@ export class Type<t = unknown, $ = any> extends BaseSchema<t, $> {
 		const root = $.parseTypeRoot(definition) as {} as Schema<t>
 		super(root.traverse as never)
 	}
+
+	declare hkt: (
+		args: this[Hkt.args]
+	) => Type<(typeof args)[0], (typeof args)[1]>
 
 	// get in(): Type<distillConstrainableIn<t>, $> {
 	// 	return new Type(super.in, this.$) as never

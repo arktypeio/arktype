@@ -46,6 +46,8 @@ export type andPreserveUnknown<l, r> = unknown extends l & r
 	? unknown
 	: evaluate<l & r>
 
+export type isAnyOrNever<t> = [unknown, t] extends [t, {}] ? true : isNever<t>
+
 export type isAny<t> = [unknown, t] extends [t, {}] ? true : false
 
 export type isNever<t> = [t] extends [never] ? true : false

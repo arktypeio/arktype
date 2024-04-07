@@ -1,18 +1,16 @@
 import {
 	CompiledFunction,
 	type Dict,
-	type Hkt,
 	type Json,
 	type array,
-	type conform,
 	type evaluate,
 	flatMorph,
 	type flattenListable,
+	type instantiate,
 	isThunk,
 	type requireKeys,
 	throwParseError
 } from "@arktype/util"
-import type { type } from "../type/ark.js"
 import type { BaseNode, Node, Schema, SchemaDef } from "./base.js"
 import { mergeConfigs } from "./config.js"
 import {
@@ -148,24 +146,14 @@ export type exportedNameOf<$> = Exclude<keyof $ & string, PrivateDeclaration>
 
 export type PrivateDeclaration<key extends string = string> = `#${key}`
 
-export type instantiate<
-	scope extends SchemaScope,
-	kind extends "hkt" | "module" | "generic",
-	args
-> = ReturnType<
-	(scope & {
-		readonly [Hkt.args]: args
-	})[kind]
->
-
-export class SchemaScope<$ = any> implements Hkt.Kind {
+export class SchemaScope<$ = any> {
 	declare $: $
 	declare infer: distillOut<$>
 	declare inferIn: distillIn<$>
-	declare [Hkt.args]: unknown
-	declare hkt: (t: this[Hkt.args]) => BaseSchema<typeof t, $>
-	declare module: (t: this[Hkt.args]) => SchemaModule<typeof t>
-	declare generic: (t: this[Hkt.args]) => GenericSchema<string[]>
+
+	declare member: BaseSchema
+	declare module: SchemaModule
+	declare generic: GenericSchema
 
 	readonly config: ArkConfig
 	readonly resolvedConfig: ResolvedArkConfig
@@ -212,7 +200,7 @@ export class SchemaScope<$ = any> implements Hkt.Kind {
 	schema<const def extends SchemaDef>(
 		def: def,
 		opts?: NodeParseOptions
-	): instantiate<this, "hkt", inferSchema<def, $>> {
+	): instantiate<this["member"], [inferSchema<def, $>, $]> {
 		return parseNode(schemaKindOf(def), def, this, opts) as never
 	}
 
@@ -223,7 +211,7 @@ export class SchemaScope<$ = any> implements Hkt.Kind {
 	units<const branches extends array>(
 		values: branches,
 		opts?: NodeParseOptions
-	): instantiate<this, "hkt", branches[number]> {
+	): instantiate<this["member"], [branches[number], $]> {
 		{
 			const uniqueValues: unknown[] = []
 			for (const value of values) {
@@ -304,8 +292,7 @@ export class SchemaScope<$ = any> implements Hkt.Kind {
 	import<names extends exportedNameOf<$>[]>(
 		...names: names
 	): instantiate<
-		this,
-		"module",
+		this["module"],
 		destructuredImportContext<
 			$,
 			names extends [] ? exportedNameOf<$> : names[number]
@@ -324,8 +311,7 @@ export class SchemaScope<$ = any> implements Hkt.Kind {
 	export<names extends exportedNameOf<$>[]>(
 		...names: names
 	): instantiate<
-		this,
-		"module",
+		this["module"],
 		destructuredExportContext<
 			$,
 			names extends [] ? exportedNameOf<$> : names[number]

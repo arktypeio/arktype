@@ -1,5 +1,6 @@
 import { attest } from "@arktype/attest"
 import {
+	schemaScope,
 	writeUnboundableMessage,
 	writeUnresolvableMessage
 } from "@arktype/schema"
