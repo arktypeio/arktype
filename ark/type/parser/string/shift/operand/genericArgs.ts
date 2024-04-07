@@ -23,8 +23,9 @@ export type parseGenericArgs<
 	name extends string,
 	params extends string[],
 	unscanned extends string,
-	$
-> = parseGenericArgsRecurse<name, params, unscanned, $, [], []>
+	$,
+	args
+> = parseGenericArgsRecurse<name, params, unscanned, $, args, [], []>
 
 const parseGenericArgsRecurse = (
 	name: string,
@@ -43,12 +44,12 @@ const parseGenericArgsRecurse = (
 				result: argNodes,
 				unscanned: argState.scanner.unscanned
 			}
+		} else {
+			return argState.error(
+				writeInvalidGenericArgsMessage(name, params, argDefs)
+			)
 		}
-		return argState.error(
-			writeInvalidGenericArgsMessage(name, params, argDefs)
-		)
-	}
-	if (argState.finalizer === ",") {
+	} else if (argState.finalizer === ",") {
 		return parseGenericArgsRecurse(name, params, s, argDefs, argNodes)
 	}
 	return argState.error(writeUnclosedGroupMessage(">"))
@@ -59,11 +60,13 @@ type parseGenericArgsRecurse<
 	params extends string[],
 	unscanned extends string,
 	$,
+	args,
 	argDefs extends string[],
 	argAsts extends unknown[]
 > = parseUntilFinalizer<
 	state.initialize<unscanned>,
-	$
+	$,
+	args
 > extends infer finalArgState extends StaticState
 	? {
 			defs: [
@@ -91,6 +94,7 @@ type parseGenericArgsRecurse<
 						params,
 						nextUnscanned,
 						$,
+						args,
 						nextDefs,
 						nextAsts
 					>
@@ -112,7 +116,7 @@ export const writeInvalidGenericArgsMessage = <
 	`${name}<${params.join(", ")}> requires exactly ${
 		params.length
 	} args (got ${argDefs.length}${
-		argDefs.length === 0 ? "" : `: ${argDefs.join(", ")}`
+		argDefs.length === 0 ? "" : ": " + argDefs.join(", ")
 	})` as never
 
 export type writeInvalidGenericArgsMessage<

@@ -18,7 +18,7 @@ import {
  * Try to parse the definition from right to left using the most common syntax.
  * This can be much more efficient for simple definitions.
  */
-export type parseString<def extends string, $> = def extends
+export type parseString<def extends string, $, args> = def extends
 	| keyof $
 	| keyof ambient
 	? // def could also be a generic reference here, in which case it will
@@ -27,16 +27,19 @@ export type parseString<def extends string, $> = def extends
 	: def extends `${infer child}[]`
 		? child extends keyof $ | keyof ambient
 			? [child, "[]"]
-			: fullStringParse<state.initialize<def>, $>
-		: fullStringParse<state.initialize<def>, $>
+			: fullStringParse<state.initialize<def>, $, args>
+		: fullStringParse<state.initialize<def>, $, args>
 
-export type inferString<def extends string, $> = inferAstRoot<
-	parseString<def, $>,
-	$
+export type inferString<def extends string, $, args> = inferAstRoot<
+	parseString<def, $, args>,
+	$,
+	args
 >
 
-export type BaseCompletions<$, otherSuggestions extends string = never> =
+export type BaseCompletions<$, args, otherSuggestions extends string = never> =
 	| (keyof $ & string)
+	| (keyof args & string)
+	| (keyof ambient & string)
 	| StringifiablePrefixOperator
 	| otherSuggestions
 
@@ -56,8 +59,8 @@ export const fullStringParse = (s: DynamicState): Schema => {
 	return result
 }
 
-type fullStringParse<s extends StaticState, $> = extractFinalizedResult<
-	parseUntilFinalizer<s, $>
+type fullStringParse<s extends StaticState, $, args> = extractFinalizedResult<
+	parseUntilFinalizer<s, $, args>
 >
 
 export const parseUntilFinalizer = (s: DynamicState): DynamicStateWithRoot => {
@@ -69,15 +72,18 @@ export const parseUntilFinalizer = (s: DynamicState): DynamicStateWithRoot => {
 
 export type parseUntilFinalizer<
 	s extends StaticState,
-	$
-> = s["finalizer"] extends undefined ? parseUntilFinalizer<next<s, $>, $> : s
+	$,
+	args
+> = s["finalizer"] extends undefined
+	? parseUntilFinalizer<next<s, $, args>, $, args>
+	: s
 
 const next = (s: DynamicState) =>
 	s.hasRoot() ? s.parseOperator() : s.parseOperand()
 
-type next<s extends StaticState, $> = s["root"] extends undefined
-	? parseOperand<s, $>
-	: parseOperator<s, $>
+type next<s extends StaticState, $, args> = s["root"] extends undefined
+	? parseOperand<s, $, args>
+	: parseOperator<s, $, args>
 
 export type extractFinalizedResult<s extends StaticState> =
 	s["finalizer"] extends ErrorMessage

@@ -55,7 +55,8 @@ export type parseBound<
 	s extends StaticState,
 	start extends ComparatorStartChar,
 	unscanned extends string,
-	$
+	$,
+	args
 > = shiftComparator<start, unscanned> extends infer shiftResultOrError
 	? shiftResultOrError extends Scanner.shiftResult<
 			infer comparator extends Comparator,
@@ -63,7 +64,12 @@ export type parseBound<
 		>
 		? s["root"] extends `${infer limit extends LimitLiteral}`
 			? state.reduceLeftBound<s, limit, comparator, nextUnscanned>
-			: parseRightBound<state.scanTo<s, nextUnscanned>, comparator, $>
+			: parseRightBound<
+					state.scanTo<s, nextUnscanned>,
+					comparator,
+					$,
+					args
+				>
 		: shiftResultOrError
 	: never
 
@@ -221,8 +227,9 @@ export const parseRightBound = (
 export type parseRightBound<
 	s extends StaticState,
 	comparator extends Comparator,
-	$
-> = parseOperand<s, $> extends infer nextState extends StaticState
+	$,
+	args
+> = parseOperand<s, $, args> extends infer nextState extends StaticState
 	? nextState["root"] extends `${infer limit extends LimitLiteral}`
 		? s["branches"]["leftBound"] extends {}
 			? comparator extends MaxComparator

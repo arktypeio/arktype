@@ -8,7 +8,6 @@ import {
 	type Predicate,
 	type PrimitiveConstraintKind,
 	type Schema,
-	type ambient,
 	type constrain,
 	type constraintKindOf,
 	type distillConstrainableIn,
@@ -78,7 +77,8 @@ export type TypeParser<$> = {
 		params: `<${validateParameterString<params>}>`,
 		def: validateDefinition<
 			def,
-			$ & {
+			$,
+			{
 				[param in parseGenericParams<params>[number]]: unknown
 			}
 		>
@@ -88,7 +88,7 @@ export type TypeParser<$> = {
 export type DeclarationParser<$> = <preinferred>() => {
 	// for some reason, making this a const parameter breaks preinferred validation
 	type: <def>(
-		def: validateDeclared<preinferred, def, $ & ambient & bindThis<def>>
+		def: validateDeclared<preinferred, def, $, bindThis<def>>
 	) => Type<preinferred, $>
 }
 
@@ -243,15 +243,9 @@ export class Type<t = unknown, $ = any> extends BaseSchema<t, $> {
 }
 
 export type DefinitionParser<$> = <def>(
-	def: validateDefinition<def, $ & ambient & bindThis<def>>
+	def: validateDefinition<def, $, bindThis<def>>
 ) => def
 
-export type validateTypeRoot<def, $> = validateDefinition<
-	def,
-	$ & ambient & bindThis<def>
->
+export type validateTypeRoot<def, $> = validateDefinition<def, $, bindThis<def>>
 
-export type inferTypeRoot<def, $> = inferDefinition<
-	def,
-	$ & ambient & bindThis<def>
->
+export type inferTypeRoot<def, $> = inferDefinition<def, $, bindThis<def>>

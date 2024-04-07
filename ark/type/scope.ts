@@ -53,19 +53,19 @@ type validateScope<def> = {
 		? // Not including Type here directly breaks inference
 			def[k] extends Type | PreparsedResolution
 			? def[k]
-			: validateDefinition<def[k], bootstrapAliases<def> & ambient>
+			: validateDefinition<def[k], bootstrapAliases<def>, {}>
 		: parseScopeKey<k>["params"] extends GenericParamsParseError
 			? // use the full nominal type here to avoid an overlap between the
 				// error message and a possible value for the property
 				parseScopeKey<k>["params"][0]
 			: validateDefinition<
 					def[k],
-					bootstrapAliases<def> &
-						ambient & {
-							// once we support constraints on generic parameters, we'd use
-							// the base type here: https://github.com/arktypeio/arktype/issues/796
-							[param in parseScopeKey<k>["params"][number]]: unknown
-						}
+					bootstrapAliases<def>,
+					{
+						// once we support constraints on generic parameters, we'd use
+						// the base type here: https://github.com/arktypeio/arktype/issues/796
+						[param in parseScopeKey<k>["params"][number]]: unknown
+					}
 				>
 }
 
@@ -100,7 +100,7 @@ type bootstrapAliases<def> = {
 
 type inferBootstrapped<$> = evaluate<{
 	[name in keyof $]: $[name] extends Def<infer def>
-		? inferDefinition<def, $ & ambient>
+		? inferDefinition<def, $, {}>
 		: $[name] extends GenericProps<infer params, infer def>
 			? // add the scope in which the generic was defined here
 				Generic<params, def, $>
@@ -119,14 +119,18 @@ type extractGenericParameters<k> = k extends GenericDeclaration<
 	? params
 	: never
 
-export type resolve<reference extends keyof $, $> = $[reference] extends Def<
-	infer def
->
-	? def extends null
-		? // handle resolution of any and never
-			$[reference]
-		: inferDefinition<def, $>
-	: $[reference]
+export type resolve<reference extends keyof $ | keyof args, $, args> = (
+	reference extends keyof args
+		? args[reference]
+		: $[reference & keyof $]
+) extends infer resolution
+	? resolution extends Def<infer def>
+		? def extends null
+			? // handle resolution of any and never
+				resolution
+			: inferDefinition<def, $, args>
+		: resolution
+	: never
 
 export type moduleKeyOf<$> = {
 	[k in keyof $]: $[k] extends Module ? k & string : never
