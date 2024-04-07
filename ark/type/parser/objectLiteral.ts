@@ -1,26 +1,27 @@
 import {
-	keywordNodes,
 	type Node,
 	type Schema,
+	keywordNodes,
 	type writeInvalidPropertyKeyMessage
 } from "@arktype/schema"
 import {
-	printable,
-	stringAndSymbolicEntriesOf,
-	throwParseError,
 	type Dict,
 	type ErrorMessage,
 	type Key,
 	type evaluate,
-	type merge
+	type merge,
+	printable,
+	stringAndSymbolicEntriesOf,
+	throwParseError
 } from "@arktype/util"
 import type { ParseContext } from "../scope.js"
+import type { Type } from "../type.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
 import type { astToString } from "./semantic/utils.js"
 import type { validateString } from "./semantic/validate.js"
 import { Scanner } from "./string/shift/scanner.js"
 
-export const parseObjectLiteral = (def: Dict, ctx: ParseContext): Schema => {
+export const parseObjectLiteral = (def: Dict, ctx: ParseContext): Type => {
 	const propNodes: Node<"prop">[] = []
 	const indexNodes: Node<"index">[] = []
 	// We only allow a spread operator to be used as the first key in an object

@@ -36,7 +36,8 @@ export type DynamicStateWithRoot = requireKeys<DynamicState, "root">
 
 export class DynamicState {
 	readonly scanner: Scanner
-	root: Schema | undefined
+	// set root type to `any` so that all constraints can be applied
+	root: Schema<any> | undefined
 	branches: BranchState = {
 		prefixes: [],
 		leftBound: null,
@@ -67,8 +68,8 @@ export class DynamicState {
 		return value
 	}
 
-	constrainRoot(...args: Parameters<Schema["constrain"]>): void {
-		this.root = this.root!.constrain(...args)
+	constrainRoot(...args: Parameters<Schema<any>["constrain"]>): void {
+		this.root = this.root!.constrain(args[0], args[1])
 	}
 
 	setRoot(root: Schema): void {

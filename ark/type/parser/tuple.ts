@@ -166,20 +166,20 @@ const maybeParseTupleExpression = (
 		: isIndexOneExpression(def)
 			? indexOneParsers[def[1]](def as never, ctx)
 			: undefined
-	if (tupleExpressionResult) {
-		if (def[0] === "schema") return tupleExpressionResult
-		return tupleExpressionResult.isNever()
-			? throwParseError(
-					writeUnsatisfiableExpressionError(
-						def
-							.map((def) =>
-								typeof def === "string" ? def : printable(def)
-							)
-							.join(" ")
-					)
-				)
-			: tupleExpressionResult
-	}
+	return tupleExpressionResult
+
+	// TODO: remove
+	// return tupleExpressionResult.isNever()
+	// 	? throwParseError(
+	// 			writeUnsatisfiableExpressionError(
+	// 				def
+	// 					.map((def) =>
+	// 						typeof def === "string" ? def : printable(def)
+	// 					)
+	// 					.join(" ")
+	// 			)
+	// 		)
+	// 	: tupleExpressionResult
 }
 
 // It is *extremely* important we use readonly any time we check a tuple against
@@ -537,7 +537,7 @@ export const parseMorphTuple: PostfixParser<"=>"> = (def, ctx) => {
 		)
 	}
 	// TODO: nested morphs?
-	return ctx.$.parse(def[0], ctx).morph(def[2] as Morph)
+	return ctx.$.parse(def[0], ctx).morphNode(def[2] as Morph)
 }
 
 export const writeMalformedFunctionalExpressionMessage = (

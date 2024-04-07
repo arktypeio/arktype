@@ -1,15 +1,10 @@
-import {
-	Hkt,
-	type conform,
-	flatMorph,
-	type instantiate,
-	throwParseError
-} from "@arktype/util"
+import { Hkt, type conform, flatMorph, type instantiate } from "@arktype/util"
 import {
 	type BaseAttachments,
 	BaseNode,
 	type Node,
-	type Schema
+	type Schema,
+	type SchemaDef
 } from "../base.js"
 import type { constrain } from "../constraints/ast.js"
 import {
@@ -17,6 +12,7 @@ import {
 	throwInvalidOperandError
 } from "../constraints/constraint.js"
 import type { NodeDef, reducibleKindOf } from "../kinds.js"
+import type { inferSchema } from "../parser/inference.js"
 import type { SchemaScope } from "../scope.js"
 import type { BaseMeta, BaseNodeDeclaration } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -30,8 +26,15 @@ import {
 } from "../shared/implement.js"
 import type { inferIntersection } from "../shared/intersections.js"
 import { arkKind, type inferred } from "../shared/utils.js"
-import type { IntersectionNode, constraintKindOf } from "./intersection.js"
-import type { UnionChildKind, UnionNode } from "./union.js"
+import type { constraintKindOf } from "./intersection.js"
+import type {
+	Morph,
+	Out,
+	distillConstrainableIn,
+	distillConstrainableOut,
+	inferMorphOut
+} from "./morph.js"
+import type { UnionChildKind } from "./union.js"
 
 export const defineRightwardIntersections = <kind extends SchemaKind>(
 	kind: kind,
@@ -158,42 +161,45 @@ export class BaseSchema<
 		return this.configure(description)
 	}
 
-	// morph<
-	// 	morph extends Morph<this["infer"]>,
-	// 	outValidatorSchema extends SchemaDef = never
-	// >(
-	// 	morph: morph,
-	// 	outValidator?: outValidatorSchema
-	// ): MorphNode<
-	// 	(
-	// 		In: distillConstrainableIn<t>
-	// 	) => Out<
-	// 		[outValidatorSchema] extends [never]
-	// 			? inferMorphOut<morph>
-	// 			: distillConstrainableOut<
-	// 					instantiateSchema<outValidatorSchema, $>["infer"]
-	// 				>
-	// 	>,
-	// 	$
-	// >
-	// morph(morph: Morph, outValidator?: unknown): unknown {
-	// 	if (this.hasKind("union")) {
-	// 		const branches = this.branches.map((node) =>
-	// 			node.morph(morph, outValidator as never)
-	// 		)
-	// 		return this.$.node("union", { ...this.inner, branches })
-	// 	}
-	// 	if (this.hasKind("morph")) {
-	// 		return this.$.node("morph", {
-	// 			...this.inner,
-	// 			morphs: [...this.morphs, morph]
-	// 		})
-	// 	}
-	// 	return this.$.node("morph", {
-	// 		in: this,
-	// 		morphs: [morph]
-	// 	})
-	// }
+	morphNode<
+		morph extends Morph<this["infer"]>,
+		outValidatorSchema extends SchemaDef = never
+	>(
+		morph: morph,
+		outValidator?: outValidatorSchema
+	): instantiate<
+		this,
+		[
+			(
+				In: distillConstrainableIn<t>
+			) => Out<
+				[outValidatorSchema] extends [never]
+					? inferMorphOut<morph>
+					: distillConstrainableOut<
+							inferSchema<outValidatorSchema, $>
+						>
+			>,
+			$
+		]
+	>
+	morphNode(morph: Morph, outValidator?: unknown): unknown {
+		if (this.hasKind("union")) {
+			const branches = this.branches.map((node) =>
+				node.morphNode(morph, outValidator as never)
+			)
+			return this.$.node("union", { ...this.inner, branches })
+		}
+		if (this.hasKind("morph")) {
+			return this.$.node("morph", {
+				...this.inner,
+				morphs: [...this.morphs, morph]
+			})
+		}
+		return this.$.node("morph", {
+			in: this,
+			morphs: [morph]
+		})
+	}
 
 	// assert(data: unknown): this["infer"] {
 	// 	const result = this.traverse(data)

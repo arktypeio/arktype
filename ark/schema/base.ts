@@ -239,9 +239,7 @@ export class BaseNode<
 		return this.traverseAllows(data as never, ctx)
 	}
 
-	traverse(
-		data: d["prerequisite"]
-	): ArkResult<this["in"]["infer"], this["infer"]> {
+	traverse(data: d["prerequisite"]): ArkResult<t> {
 		return this(data)
 	}
 

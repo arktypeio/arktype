@@ -169,11 +169,11 @@ export type inferMorphOut<morph extends Morph> = morph extends Morph<
 	never,
 	infer out
 >
-	? out extends ArkResult<unknown, infer innerOut>
+	? out extends ArkResult<infer t>
 		? out extends null
 			? // avoid treating any/never as ArkResult
 				out
-			: innerOut
+			: distillOut<t>
 		: Exclude<out, ArkTypeError>
 	: never
 
