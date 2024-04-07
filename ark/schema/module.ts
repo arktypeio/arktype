@@ -2,30 +2,29 @@ import {
 	DynamicBase,
 	type Hkt,
 	type instantiate,
-	type isAny,
 	type isAnyOrNever
 } from "@arktype/util"
-import type { Schema } from "./base.js"
-import type { GenericSchema } from "./generic.js"
 import type { BaseSchema, arkKind } from "./main.js"
 import type { exportedNameOf } from "./scope.js"
 
-export type PreparsedNodeResolution = GenericSchema | SchemaModule
+export type PreparsedNodeResolution = { [arkKind]: "generic" | "module" }
 
-export type exportScope<$, hkt extends Hkt.Kind> = {
+export type exportScope<$, instance extends BaseSchema> = {
 	[k in exportedNameOf<$>]: $[k] extends PreparsedNodeResolution
 		? isAnyOrNever<$[k]> extends true
-			? instantiate<hkt, [$[k], $]>
+			? instantiate<instance, [$[k], $]>
 			: $[k]
-		: instantiate<hkt, [$[k], $]>
+		: instantiate<instance, [$[k], $]>
 }
 
-export class SchemaModule<$ = any, hkt extends Hkt.Kind = BaseSchema>
-	extends DynamicBase<exportScope<$, hkt>>
-	implements Hkt.Kind
-{
+export class SchemaModule<
+	$ = any,
+	node extends BaseSchema = BaseSchema
+> extends DynamicBase<exportScope<$, node>> {
 	declare readonly [arkKind]: "module"
 
 	declare [Hkt.args]: unknown
-	declare hkt: (args: this[Hkt.args]) => SchemaModule<typeof args>
+	declare [Hkt.instantiate]: (
+		args: this[Hkt.args]
+	) => SchemaModule<typeof args>
 }

@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import { schema, type Ark } from "@arktype/schema"
+import { type Ark, schema } from "@arktype/schema"
 import { type } from "arktype"
 import { writeInvalidConstructorMessage } from "../parser/tuple.js"
 import type { Type } from "../type.js"
@@ -53,7 +53,7 @@ describe("instanceof", () => {
 				private isArk = true
 			}
 			const ark = type(["instanceof", ArkClass])
-			attest<Type<ArkClass, Ark>>(ark)
+			attest<Type<ArkClass, {}>>(ark)
 			// not expanded since there are no morphs
 			attest(ark.infer).type.toString("ArkClass")
 			attest(ark.in.infer).type.toString("ArkClass")
@@ -75,7 +75,7 @@ describe("instanceof", () => {
 				private isArk = true
 			}
 			const ark = type(["instanceof", ArkClass])
-			attest<Type<ArkClass, Ark>>(ark)
+			attest<Type<ArkClass, {}>>(ark)
 			// not expanded since there are no morphs
 			attest(ark.infer).type.toString("ArkClass")
 			attest(ark.in.infer).type.toString("ArkClass")

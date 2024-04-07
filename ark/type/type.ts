@@ -129,7 +129,7 @@ export class Type<t = unknown, $ = any> extends BaseSchema<t, $> {
 		super(root.traverse as never)
 	}
 
-	declare hkt: (
+	declare [Hkt.instantiate]: (
 		args: this[Hkt.args]
 	) => Type<(typeof args)[0], (typeof args)[1]>
 

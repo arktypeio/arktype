@@ -53,14 +53,17 @@ export interface BaseSchemaAttachments<d extends BaseNodeDeclaration>
 }
 
 export class BaseSchema<
-	t = any,
-	$ = any,
-	/** @ts-expect-error allow instantiation assignment to the base type */
-	out d extends BaseSchemaDeclaration = BaseSchemaDeclaration
-> extends BaseNode<t, d> {
+		t = any,
+		$ = any,
+		/** @ts-expect-error allow instantiation assignment to the base type */
+		out d extends BaseSchemaDeclaration = BaseSchemaDeclaration
+	>
+	extends BaseNode<t, d>
+	implements Hkt.Instantiable
+{
 	declare $: SchemaScope<$>
 	declare [Hkt.args]: [t: unknown, $: unknown]
-	declare hkt: (
+	declare [Hkt.instantiate]: (
 		args: this[Hkt.args]
 	) => BaseSchema<(typeof args)[0], (typeof args)[1]>
 

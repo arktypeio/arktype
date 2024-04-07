@@ -50,7 +50,7 @@ export type ScopeParser = <const def>(
 ) => Scope<inferBootstrapped<bootstrapAliases<def>>>
 
 type validateScope<def> = {
-	[k in keyof def]: parseScopeKey<k>["params"] extends []
+	[k in keyof def & string]: parseScopeKey<k>["params"] extends []
 		? // Not including Type here directly breaks inference
 			def[k] extends Type | PreparsedResolution
 			? def[k]
@@ -147,7 +147,7 @@ export type tryInferSubmoduleReference<$, token> =
 		: never
 
 export class Module<$ = any> extends SchemaModule<$, Type> {
-	declare hkt: (args: this[Hkt.args]) => Module<typeof args>
+	declare [Hkt.instantiate]: (args: this[Hkt.args]) => Module<typeof args>
 }
 
 export interface ParseContext extends NodeParseOptions {

@@ -35,7 +35,7 @@ describe("morph", () => {
 					name: string
 					age: number
 				}>,
-				Ark
+				{}
 			>
 		>(parsedUser)
 	})
