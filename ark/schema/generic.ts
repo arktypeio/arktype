@@ -3,7 +3,7 @@ import type { Schema, SchemaDef } from "./base.js"
 import { keywordNodes } from "./keywords/keywords.js"
 import type { BaseSchema, inferSchema } from "./main.js"
 import type { SchemaScope } from "./scope.js"
-import { arkKind, type inferred } from "./shared/utils.js"
+import { arkKind } from "./shared/utils.js"
 
 export type GenericNodeInstantiation<
 	params extends string[] = string[],
