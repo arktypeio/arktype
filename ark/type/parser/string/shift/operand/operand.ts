@@ -1,12 +1,12 @@
 import type { DynamicState } from "../../reduce/dynamic.js"
-import type { state, StaticState } from "../../reduce/static.js"
+import type { StaticState, state } from "../../reduce/static.js"
 import type { BaseCompletions } from "../../string.js"
 import { Scanner } from "../scanner.js"
 import {
-	enclosingChar,
-	parseEnclosed,
 	type EnclosingQuote,
-	type EnclosingStartToken
+	type EnclosingStartToken,
+	enclosingChar,
+	parseEnclosed
 } from "./enclosed.js"
 import { parseUnenclosed, writeMissingOperandMessage } from "./unenclosed.js"
 

@@ -18,12 +18,14 @@ import {
  * Try to parse the definition from right to left using the most common syntax.
  * This can be much more efficient for simple definitions.
  */
-export type parseString<def extends string, $, args> = def extends keyof $
+export type parseString<def extends string, $, args> = def extends
+	| keyof $
+	| keyof ambient
 	? // def could also be a generic reference here, in which case it will
 		// fail semantic validation because it has no args
 		def
 	: def extends `${infer child}[]`
-		? child extends keyof $
+		? child extends keyof $ | keyof ambient
 			? [child, "[]"]
 			: fullStringParse<state.initialize<def>, $, args>
 		: fullStringParse<state.initialize<def>, $, args>
