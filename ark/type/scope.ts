@@ -3,24 +3,17 @@ import {
 	type GenericProps,
 	type NodeParseOptions,
 	type Schema,
-	type SchemaInstantiables,
 	SchemaModule,
 	SchemaScope,
-	type ambient,
-	arkKind,
-	type destructuredExportContext,
-	type destructuredImportContext,
-	type exportedNameOf
+	type ambient
 } from "@arktype/schema"
 import {
 	type Dict,
-	DynamicBase,
 	type Hkt,
 	domainOf,
 	type evaluate,
 	hasDomain,
 	type nominal,
-	type satisfy,
 	throwParseError
 } from "@arktype/util"
 import { Generic } from "./generic.js"
@@ -172,8 +165,8 @@ export class Scope<$ = any> extends SchemaScope<$> {
 	private parseCache: Record<string, Schema> = {}
 
 	declare hktNode: Type
-	// declare hktModule: Module
-	// declare hktGeneric: Generic
+	declare hktModule: Module
+	declare hktGeneric: Generic
 
 	constructor(def: Record<string, unknown>, config?: ArkConfig) {
 		const aliases: Record<string, unknown> = {}

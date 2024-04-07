@@ -153,7 +153,7 @@ export class BaseNode<
 	/** @ts-expect-error allow instantiation assignment to the base type */
 	out d extends BaseNodeDeclaration = BaseNodeDeclaration
 > extends Callable<
-	(data: d["prerequisite"]) => ArkResult<distillIn<t>, distillOut<t>>,
+	(data: d["prerequisite"]) => ArkResult<t>,
 	attachmentsOf<d>
 > {
 	constructor(public attachments: UnknownAttachments) {

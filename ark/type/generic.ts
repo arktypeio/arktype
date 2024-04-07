@@ -1,5 +1,13 @@
-import { type GenericProps, arkKind, keywordNodes } from "@arktype/schema"
-import { Callable, type conform, flatMorph } from "@arktype/util"
+import {
+	type BaseSchema,
+	type GenericProps,
+	type SchemaDef,
+	arkKind,
+	type bindGenericNodeInstantiation,
+	type inferSchema,
+	keywordNodes
+} from "@arktype/schema"
+import { Callable, type conform, flatMorph, type repeat } from "@arktype/util"
 import type { inferDefinition } from "./parser/definition.js"
 import type {
 	GenericParamsParseError,
@@ -31,14 +39,24 @@ export type GenericInstantiation<
 	params extends string[] = string[],
 	def = unknown,
 	$ = any
-> = <args>(
-	...args: conform<
-		args,
-		{
-			[i in keyof params]: validateTypeRoot<args[i & keyof args], $>
-		}
+> = {
+	<args>(
+		...args: conform<
+			args,
+			{
+				[i in keyof params]: validateTypeRoot<args[i & keyof args], $>
+			}
+		>
+	): Type<
+		inferDefinition<def, $, bindGenericInstantiation<params, $, args>>,
+		$
 	>
-) => Type<inferDefinition<def, $, bindGenericInstantiation<params, $, args>>, $>
+	<args>(
+		...args: conform<args, repeat<[SchemaDef], params["length"]>>
+	): BaseSchema<
+		inferSchema<def, $ & bindGenericNodeInstantiation<params, $, args>>
+	>
+}
 
 // TODO: Fix external reference (i.e. if this is attached to a scope, then args are defined using it)
 type bindGenericInstantiation<params extends string[], $, args> = {

@@ -6,6 +6,7 @@ import {
 	type propwiseXor
 } from "@arktype/util"
 import type { Prerequisite, errorContext } from "../kinds.js"
+import type { distillIn, distillOut } from "../schemas/morph.js"
 import type { NodeKind } from "./implement.js"
 import type { TraversalContext } from "./traversal.js"
 import { type TraversalPath, arkKind, pathToPropString } from "./utils.js"
@@ -197,7 +198,7 @@ export type ActualWriter<code extends ArkErrorCode = ArkErrorCode> = (
 	data: getAssociatedDataForError<code>
 ) => string | null
 
-export type ArkResult<i = unknown, o = i> = propwiseXor<
-	{ data: i; out: o },
+export type ArkResult<t> = propwiseXor<
+	{ data: distillIn<t>; out: distillOut<t> },
 	{ errors: ArkErrors }
 >

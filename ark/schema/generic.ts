@@ -16,7 +16,7 @@ export type GenericNodeInstantiation<
 >
 
 // TODO: ????
-type bindGenericNodeInstantiation<params extends string[], $, args> = {
+export type bindGenericNodeInstantiation<params extends string[], $, args> = {
 	[i in keyof params & `${number}` as params[i]]: inferSchema<
 		args[i & keyof args],
 		$
