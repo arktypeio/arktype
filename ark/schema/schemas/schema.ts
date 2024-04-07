@@ -1,4 +1,9 @@
-import { type conform, flatMorph, throwParseError } from "@arktype/util"
+import {
+	type Hkt,
+	type conform,
+	flatMorph,
+	throwParseError
+} from "@arktype/util"
 import {
 	type BaseAttachments,
 	BaseNode,
@@ -192,7 +197,7 @@ export class BaseSchema<
 	>(
 		kind: conform<kind, constraintKindOf<this["in"]["infer"]>>,
 		def: def
-	): Schema<constrain<t, kind, def>> {
+	): Hkt.apply<this["$"], [constrain<t, kind, def>, $]> {
 		return this.rawConstrain(kind, def) as never
 	}
 
