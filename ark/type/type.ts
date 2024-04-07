@@ -119,8 +119,8 @@ export const createTypeParser = <$>($: Scope): TypeParser<$> => {
 	}
 	return parser as never
 }
-
-export class Type<t = unknown, $ = any> extends BaseSchema<t, $> {
+/** @ts-expect-error allow instantiation assignment to the base type */
+export class Type<out t = unknown, $ = any> extends BaseSchema<t, $> {
 	constructor(
 		public definition: unknown,
 		public $: Scope<$>
@@ -139,10 +139,6 @@ export class Type<t = unknown, $ = any> extends BaseSchema<t, $> {
 
 	// get out(): Type<distillConstrainableOut<t>, $> {
 	// 	return new Type(super.out, this.$) as never
-	// }
-
-	// keyof(): Type<keyof this["in"]["infer"], $> {
-	// 	return new Type(super.keyof(), this.$) as never
 	// }
 
 	// intersect<r extends Type>(
@@ -190,10 +186,6 @@ export class Type<t = unknown, $ = any> extends BaseSchema<t, $> {
 	// 		this.equals(intersection as never)
 	// 	)
 	// }
-
-	array(): Type<t[], $> {
-		return new Type(super.array(), this.$) as never
-	}
 
 	configure(configOrDescription: BaseMeta | string): this {
 		return new Type(

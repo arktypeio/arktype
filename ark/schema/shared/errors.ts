@@ -1,14 +1,14 @@
 import {
 	ReadonlyArray,
-	hasDefinedKey,
 	type evaluate,
+	hasDefinedKey,
 	type optionalizeKeys,
 	type propwiseXor
 } from "@arktype/util"
 import type { Prerequisite, errorContext } from "../kinds.js"
 import type { NodeKind } from "./implement.js"
 import type { TraversalContext } from "./traversal.js"
-import { arkKind, pathToPropString, type TraversalPath } from "./utils.js"
+import { type TraversalPath, arkKind, pathToPropString } from "./utils.js"
 
 export const throwArkError = (
 	...args: ConstructorParameters<typeof ArkError>
@@ -197,7 +197,7 @@ export type ActualWriter<code extends ArkErrorCode = ArkErrorCode> = (
 	data: getAssociatedDataForError<code>
 ) => string | null
 
-export type ArkResult<data = unknown, out = data> = propwiseXor<
-	{ data: data; out: out },
+export type ArkResult<i = unknown, o = i> = propwiseXor<
+	{ data: i; out: o },
 	{ errors: ArkErrors }
 >

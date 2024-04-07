@@ -172,8 +172,8 @@ export class Scope<$ = any> extends SchemaScope<$> {
 	private parseCache: Record<string, Schema> = {}
 
 	declare hktNode: Type
-	declare hktModule: Module
-	declare hktGeneric: Generic
+	// declare hktModule: Module
+	// declare hktGeneric: Generic
 
 	constructor(def: Record<string, unknown>, config?: ArkConfig) {
 		const aliases: Record<string, unknown> = {}

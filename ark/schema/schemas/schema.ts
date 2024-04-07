@@ -53,7 +53,8 @@ export interface BaseSchemaAttachments<d extends BaseNodeDeclaration>
 }
 
 export class BaseSchema<
-		t = any,
+		/** @ts-expect-error allow instantiation assignment to the base type */
+		out t = unknown,
 		$ = any,
 		/** @ts-expect-error allow instantiation assignment to the base type */
 		out d extends BaseSchemaDeclaration = BaseSchemaDeclaration
@@ -75,13 +76,13 @@ export class BaseSchema<
 
 	#keyofCache: Schema | undefined
 	keyof(): BaseSchema<keyof this["in"]["infer"], $> {
-		if (!this.#keyofCache) {
-			this.#keyofCache = this.rawKeyOf()
-			if (this.#keyofCache.isNever())
-				throwParseError(
-					`keyof ${this.expression} results in an unsatisfiable type`
-				)
-		}
+		// if (!this.#keyofCache) {
+		// 	this.#keyofCache = this.rawKeyOf()
+		// 	if (this.#keyofCache.isNever())
+		// 		throwParseError(
+		// 			`keyof ${this.expression} results in an unsatisfiable type`
+		// 		)
+		// }
 		return this.#keyofCache as never
 	}
 
@@ -103,13 +104,13 @@ export class BaseSchema<
 		return this.$.schema(branches) as never
 	}
 
-	isUnknown(): this is IntersectionNode<unknown> {
-		return this.hasKind("intersection") && this.children.length === 0
-	}
+	// isUnknown(): this is IntersectionNode<unknown> {
+	// 	return this.hasKind("intersection") && this.children.length === 0
+	// }
 
-	isNever(): this is UnionNode<never> {
-		return this.hasKind("union") && this.branches.length === 0
-	}
+	// isNever(): this is UnionNode<never> {
+	// 	return this.hasKind("union") && this.branches.length === 0
+	// }
 
 	// get<key extends PropertyKey>(
 	// 	...path: readonly (key | Schema<key>)[]
@@ -117,19 +118,19 @@ export class BaseSchema<
 	// 	return this
 	// }
 
-	extract(other: Schema): Schema {
-		return this.$.schema(
-			this.branches.filter((branch) => branch.extends(other))
-		)
-	}
+	// extract(other: Schema): Schema {
+	// 	return this.$.schema(
+	// 		this.branches.filter((branch) => branch.extends(other))
+	// 	)
+	// }
 
-	exclude(other: Schema): Schema {
-		return this.$.schema(
-			this.branches.filter((branch) => !branch.extends(other))
-		)
-	}
+	// exclude(other: Schema): Schema {
+	// 	return this.$.schema(
+	// 		this.branches.filter((branch) => !branch.extends(other))
+	// 	)
+	// }
 
-	array(): BaseSchema<t[], $> {
+	array(): instantiate<this, [t[], $]> {
 		return this.$.schema(
 			{
 				proto: Array,

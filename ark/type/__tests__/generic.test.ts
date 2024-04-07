@@ -5,7 +5,7 @@ import {
 	writeUnresolvableMessage
 } from "@arktype/schema"
 import { lazily } from "@arktype/util"
-import { keywords, scope, type } from "arktype"
+import { ark, scope, type } from "arktype"
 import { emptyGenericParameterMessage } from "../parser/generic.js"
 import { writeUnclosedGroupMessage } from "../parser/string/reduce/shared.js"
 import { writeInvalidGenericArgsMessage } from "../parser/string/shift/operand/genericArgs.js"
@@ -298,7 +298,7 @@ describe("generics", () => {
 	})
 	describe("builtins", () => {
 		it("record", () => {
-			const t = keywords.Record("string", "number")
+			const t = ark.Record("string", "number")
 			attest(t.json).equals(type("Record<string, number>").json)
 		})
 	})

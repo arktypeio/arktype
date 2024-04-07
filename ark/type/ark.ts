@@ -18,11 +18,11 @@ type TsGenericsExports<$ = Ark> = {
 
 export const tsGenerics = {} as Module<TsGenericsExports>
 
-export const ark: Scope<Ark> = scope({}) as never
+export const ambient: Scope<Ark> = scope({}) as never
 
-export const keywords: Module<Ark> = ark.export()
+export const ark: Module<Ark> = ambient.export()
 
-export const type: TypeParser<{}> = ark.type as never
+export const type: TypeParser<{}> = ambient.type as never
 
 export namespace type {
 	export type cast<to> = {
@@ -30,8 +30,8 @@ export namespace type {
 	}
 }
 
-export const match: MatchParser<{}> = ark.match as never
+export const match: MatchParser<{}> = ambient.match as never
 
-export const define: DefinitionParser<{}> = ark.define as never
+export const define: DefinitionParser<{}> = ambient.define as never
 
-export const declare: DeclarationParser<{}> = ark.declare as never
+export const declare: DeclarationParser<{}> = ambient.declare as never
