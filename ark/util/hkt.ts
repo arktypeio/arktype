@@ -1,14 +1,5 @@
 import type { conform } from "./generics.js"
 
-export type instantiate<
-	hkt extends Hkt.Kind,
-	args extends Parameters<hkt["hkt"]>[0]
-> = ReturnType<
-	(hkt & {
-		readonly [Hkt.args]: args
-	})["hkt"]
->
-
 /** A small set of HKT utility types based on https://github.com/poteat/hkt-toolbelt */
 export namespace Hkt {
 	export declare const args: unique symbol

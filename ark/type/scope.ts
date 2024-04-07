@@ -146,7 +146,7 @@ export type tryInferSubmoduleReference<$, token> =
 			: never
 		: never
 
-export class Module<$ = any> extends SchemaModule<Scope<$>> {}
+export class Module<$ = any> extends SchemaModule<$> {}
 
 export interface ParseContext extends NodeParseOptions {
 	$: Scope
@@ -165,6 +165,7 @@ export class Scope<$ = any> extends SchemaScope<$> {
 	private parseCache: Record<string, Schema> = {}
 
 	declare hkt: (t: this[Hkt.args]) => Type<typeof t, $>
+	declare module: (t: this[Hkt.args]) => Module<typeof t>
 
 	constructor(def: Record<string, unknown>, config?: ArkConfig) {
 		const aliases: Record<string, unknown> = {}

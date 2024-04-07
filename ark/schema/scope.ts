@@ -8,7 +8,6 @@ import {
 	type evaluate,
 	flatMorph,
 	type flattenListable,
-	type instantiate,
 	isThunk,
 	type requireKeys,
 	throwParseError
@@ -149,12 +148,24 @@ export type exportedNameOf<$> = Exclude<keyof $ & string, PrivateDeclaration>
 
 export type PrivateDeclaration<key extends string = string> = `#${key}`
 
+export type instantiate<
+	scope extends SchemaScope,
+	kind extends "hkt" | "module" | "generic",
+	args
+> = ReturnType<
+	(scope & {
+		readonly [Hkt.args]: args
+	})[kind]
+>
+
 export class SchemaScope<$ = any> implements Hkt.Kind {
 	declare $: $
 	declare infer: distillOut<$>
 	declare inferIn: distillIn<$>
 	declare [Hkt.args]: unknown
 	declare hkt: (t: this[Hkt.args]) => BaseSchema<typeof t, $>
+	declare module: (t: this[Hkt.args]) => SchemaModule<typeof t>
+	declare generic: (t: this[Hkt.args]) => GenericSchema<string[]>
 
 	readonly config: ArkConfig
 	readonly resolvedConfig: ResolvedArkConfig
@@ -201,7 +212,7 @@ export class SchemaScope<$ = any> implements Hkt.Kind {
 	schema<const def extends SchemaDef>(
 		def: def,
 		opts?: NodeParseOptions
-	): instantiate<this, inferSchema<def, $>> {
+	): instantiate<this, "hkt", inferSchema<def, $>> {
 		return parseNode(schemaKindOf(def), def, this, opts) as never
 	}
 
@@ -212,7 +223,7 @@ export class SchemaScope<$ = any> implements Hkt.Kind {
 	units<const branches extends array>(
 		values: branches,
 		opts?: NodeParseOptions
-	): instantiate<this, branches[number]> {
+	): instantiate<this, "hkt", branches[number]> {
 		{
 			const uniqueValues: unknown[] = []
 			for (const value of values) {
@@ -292,7 +303,9 @@ export class SchemaScope<$ = any> implements Hkt.Kind {
 
 	import<names extends exportedNameOf<$>[]>(
 		...names: names
-	): SchemaModule<
+	): instantiate<
+		this,
+		"module",
 		destructuredImportContext<
 			$,
 			names extends [] ? exportedNameOf<$> : names[number]
@@ -310,10 +323,13 @@ export class SchemaScope<$ = any> implements Hkt.Kind {
 	#exportCache: SchemaExportCache | undefined
 	export<names extends exportedNameOf<$>[]>(
 		...names: names
-	): SchemaModule<
-		names extends []
-			? exportedNameOf<$>
-			: destructuredExportContext<$, names[number]>
+	): instantiate<
+		this,
+		"module",
+		destructuredExportContext<
+			$,
+			names extends [] ? exportedNameOf<$> : names[number]
+		>
 	> {
 		if (!this.#exportCache) {
 			this.#exportCache = {}
@@ -366,11 +382,11 @@ export class SchemaScope<$ = any> implements Hkt.Kind {
 
 export type destructuredExportContext<$, name extends exportedNameOf<$>> = {
 	[k in name]: $[k]
-}
+} & unknown
 
 export type destructuredImportContext<$, name extends exportedNameOf<$>> = {
 	[k in name as `#${k & string}`]: $[k]
-}
+} & unknown
 
 export type SchemaExportCache = Record<
 	string,
