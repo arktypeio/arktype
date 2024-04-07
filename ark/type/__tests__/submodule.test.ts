@@ -5,7 +5,7 @@ import {
 	writeUnresolvableMessage
 } from "@arktype/schema"
 import { lazily } from "@arktype/util"
-import { scope, type, type Module, type Scope } from "arktype"
+import { type Module, type Scope, scope, type } from "arktype"
 
 const $ = lazily(() =>
 	scope({

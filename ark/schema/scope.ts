@@ -150,6 +150,7 @@ export type exportedNameOf<$> = Exclude<keyof $ & string, PrivateDeclaration>
 export type PrivateDeclaration<key extends string = string> = `#${key}`
 
 export class SchemaScope<$ = any> implements Hkt.Kind {
+	declare $: $
 	declare infer: distillOut<$>
 	declare inferIn: distillIn<$>
 	declare [Hkt.args]: unknown
@@ -310,7 +311,9 @@ export class SchemaScope<$ = any> implements Hkt.Kind {
 	export<names extends exportedNameOf<$>[]>(
 		...names: names
 	): SchemaModule<
-		names extends [] ? $ : destructuredExportContext<$, names[number]>
+		names extends []
+			? exportedNameOf<$>
+			: destructuredExportContext<$, names[number]>
 	> {
 		if (!this.#exportCache) {
 			this.#exportCache = {}
@@ -362,11 +365,11 @@ export class SchemaScope<$ = any> implements Hkt.Kind {
 }
 
 export type destructuredExportContext<$, name extends exportedNameOf<$>> = {
-	[k in name]: type.cast<$[k]>
+	[k in name]: $[k]
 }
 
 export type destructuredImportContext<$, name extends exportedNameOf<$>> = {
-	[k in name as `#${k & string}`]: type.cast<$[k]>
+	[k in name as `#${k & string}`]: $[k]
 }
 
 export type SchemaExportCache = Record<

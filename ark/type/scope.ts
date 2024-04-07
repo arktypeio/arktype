@@ -3,6 +3,7 @@ import {
 	type GenericProps,
 	type NodeParseOptions,
 	type Schema,
+	SchemaModule,
 	SchemaScope,
 	type ambient,
 	arkKind,
@@ -145,18 +146,7 @@ export type tryInferSubmoduleReference<$, token> =
 			: never
 		: never
 
-export class Module<$ = any> extends DynamicBase<exportScope<$>> {
-	private readonly [arkKind] = "module"
-}
-
-type exportScope<$ = any> = {
-	[k in exportedNameOf<$>]: $[k] extends PreparsedResolution
-		? [$[k]] extends [null]
-			? // handle `Type<any>` and `Type<never>`
-				Type<$[k], $>
-			: $[k]
-		: Type<$[k], $>
-}
+export class Module<$ = any> extends SchemaModule<Scope<$>> {}
 
 export interface ParseContext extends NodeParseOptions {
 	$: Scope
@@ -241,22 +231,22 @@ export class Scope<$ = any> extends SchemaScope<$> {
 		)
 	}
 
-	import<names extends exportedNameOf<$>[]>(
-		...names: names
-	): destructuredImportContext<
-		$,
-		names extends [] ? exportedNameOf<$> : names[number]
-	> {
-		return super.import(...names) as never
-	}
+	// import<names extends exportedNameOf<$>[]>(
+	// 	...names: names
+	// ): destructuredImportContext<
+	// 	$,
+	// 	names extends [] ? exportedNameOf<$> : names[number]
+	// > {
+	// 	return super.import(...names) as never
+	// }
 
-	export<names extends exportedNameOf<$>[]>(
-		...names: names
-	): Module<
-		names extends [] ? $ : destructuredExportContext<$, names[number]>
-	> {
-		return super.export(...names) as never
-	}
+	// export<names extends exportedNameOf<$>[]>(
+	// 	...names: names
+	// ): Module<
+	// 	names extends [] ? $ : destructuredExportContext<$, names[number]>
+	// > {
+	// 	return super.export(...names) as never
+	// }
 }
 
 export const writeShallowCycleErrorMessage = (
