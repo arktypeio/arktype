@@ -54,6 +54,16 @@ describe("scope", () => {
 		// TODO: API?
 		// attest<{ a: string }>($.in.infer)
 	})
+	// TODO: remove if not preserving
+	// it("scope.scope", () => {
+	// 	const $ = scope({
+	// 		a: "string"
+	// 	})
+	// 	const importer = $.scope({ b: "a[]" })
+	// 	attest<{ b: string[] }>(importer.infer)
+	// 	const t = importer.type("b")
+	// 	attest(t.json).equals(type("string[]").json)
+	// })
 	it("infers its own helpers", () => {
 		const $ = scope({
 			a: () => $.type("string"),
@@ -113,9 +123,7 @@ describe("scope", () => {
 				// @ts-expect-error
 				baz: "fo"
 			}).export()
-		}).completions({
-			fo: ["foobar"]
-		})
+		}).type.errors(`Type '"fo"' is not assignable to type '"foobar"'`)
 	})
 	it("cross-scope reference", () => {
 		const { Apple } = scope({
