@@ -9,6 +9,10 @@ import {
 	type join,
 	type NumberLiteral
 } from "@arktype/util"
+<<<<<<< Updated upstream
+=======
+import type { Generic } from "../../../../generic.js"
+>>>>>>> Stashed changes
 import type { Module } from "../../../../scope.js"
 import type { Generic, GenericProps } from "../../../../type.js"
 import { BaseType, type Type } from "../../../../types/type.js"
