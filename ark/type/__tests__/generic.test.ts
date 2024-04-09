@@ -208,12 +208,6 @@ describe("generics", () => {
 			attest<["on", "off"]>(fromCall.infer.swap.swap.swap.order)
 		})
 		it("self-reference no params", () => {
-			const z = scope({
-				"nest<t>": {
-					// @ts-expect-error
-					nest: "nest"
-				}
-			}).export()
 			attest(() =>
 				scope({
 					"nest<t>": {

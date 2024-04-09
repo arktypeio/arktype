@@ -1,7 +1,6 @@
 import type { GenericSchema } from "../generic.js"
 import type { SchemaModule } from "../module.js"
 import type { jsObjects } from "./jsObjects.js"
-import type { parsing } from "./parsing.js"
 import type { tsKeywords } from "./tsKeywords.js"
 import type { validation } from "./validation.js"
 
@@ -26,5 +25,5 @@ export interface Ark
 		jsObjects.exports,
 		validation.exports,
 		TsGenericsExports {
-	parse: SchemaModule<parsing.exports>
+	// parse: Module<parsing.exports>
 }

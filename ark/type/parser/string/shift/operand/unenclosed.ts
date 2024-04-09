@@ -19,6 +19,7 @@ import {
 	tryParseNumber,
 	tryParseWellFormedBigint
 } from "@arktype/util"
+import type { type } from "../../../../ark.js"
 import type { Generic } from "../../../../generic.js"
 import type { Module } from "../../../../scope.js"
 import type { GenericInstantiationAst } from "../../../semantic/infer.js"
