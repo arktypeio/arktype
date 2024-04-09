@@ -35,7 +35,7 @@ export const validateUninstantiatedGenericNode = (
 // Comparing to Generic directly doesn't work well, so we compare to only its props
 export interface GenericProps<
 	params extends string[] = string[],
-	def = unknown,
+	def = any,
 	$ = any
 > {
 	[arkKind]: "generic"
@@ -46,7 +46,7 @@ export interface GenericProps<
 
 export class GenericSchema<
 		params extends string[] = string[],
-		def = unknown,
+		def = any,
 		$ = any
 	>
 	extends Callable<GenericNodeInstantiation<params, def, $>>

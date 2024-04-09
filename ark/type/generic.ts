@@ -19,7 +19,7 @@ export type validateParameterString<params extends string> =
 
 export type GenericTypeInstantiation<
 	params extends string[] = string[],
-	def = unknown,
+	def = any,
 	$ = any
 > = <args>(
 	...args: conform<
@@ -32,7 +32,7 @@ export type GenericTypeInstantiation<
 
 export type GenericInstantiation<
 	params extends string[] = string[],
-	def = unknown,
+	def = any,
 	$ = any
 > = GenericTypeInstantiation<params, def, $> &
 	GenericNodeInstantiation<params, def, $>
