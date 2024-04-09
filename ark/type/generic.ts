@@ -1,13 +1,9 @@
 import {
-	type BaseSchema,
+	type GenericNodeInstantiation,
 	type GenericProps,
-	type SchemaDef,
-	arkKind,
-	type bindGenericNodeInstantiation,
-	type inferSchema,
-	keywordNodes
+	arkKind
 } from "@arktype/schema"
-import { Callable, type conform, flatMorph, type repeat } from "@arktype/util"
+import { Callable, type conform, flatMorph } from "@arktype/util"
 import type { inferDefinition } from "./parser/definition.js"
 import type {
 	GenericParamsParseError,
@@ -21,42 +17,25 @@ export type validateParameterString<params extends string> =
 		? message
 		: params
 
-export const validateUninstantiatedGeneric = (g: Generic): Generic => {
-	// the unconstrained instantiation of the generic is not used for now
-	// other than to eagerly validate that the def does not contain any errors
-	g.$.parseTypeRoot(
-		g.def,
-		// once we support constraints on generic parameters, we'd use
-		// the base type here: https://github.com/arktypeio/arktype/issues/796
+export type GenericTypeInstantiation<
+	params extends string[] = string[],
+	def = any,
+	$ = any
+> = <args>(
+	...args: conform<
+		args,
 		{
-			args: flatMorph(g.params, (_, name) => [name, keywordNodes.unknown])
+			[i in keyof params]: validateTypeRoot<args[i & keyof args], $>
 		}
-	)
-	return g
-}
+	>
+) => Type<inferDefinition<def, $, bindGenericInstantiation<params, $, args>>, $>
 
 export type GenericInstantiation<
 	params extends string[] = string[],
-	def = unknown,
+	def = any,
 	$ = any
-> = {
-	<args>(
-		...args: conform<
-			args,
-			{
-				[i in keyof params]: validateTypeRoot<args[i & keyof args], $>
-			}
-		>
-	): Type<
-		inferDefinition<def, $, bindGenericInstantiation<params, $, args>>,
-		$
-	>
-	<args>(
-		...args: conform<args, repeat<[SchemaDef], params["length"]>>
-	): BaseSchema<
-		inferSchema<def, $ & bindGenericNodeInstantiation<params, $, args>>
-	>
-}
+> = GenericTypeInstantiation<params, def, $> &
+	GenericNodeInstantiation<params, def, $>
 
 // TODO: Fix external reference (i.e. if this is attached to a scope, then args are defined using it)
 type bindGenericInstantiation<params extends string[], $, args> = {

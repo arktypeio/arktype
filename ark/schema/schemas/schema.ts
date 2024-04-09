@@ -163,6 +163,10 @@ export class BaseSchema<
 		return this.configure(description)
 	}
 
+	from(literal: this["in"]["infer"]): this["out"]["infer"] {
+		return literal as never
+	}
+
 	// morphNode<
 	// 	morph extends Morph<this["infer"]>,
 	// 	outValidatorSchema extends SchemaDef = never

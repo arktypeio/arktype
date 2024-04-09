@@ -16,11 +16,7 @@ import {
 	type inferNarrow
 } from "@arktype/schema"
 import type { Constructor, Hkt, array, conform } from "@arktype/util"
-import {
-	Generic,
-	type validateParameterString,
-	validateUninstantiatedGeneric
-} from "./generic.js"
+import { Generic, type validateParameterString } from "./generic.js"
 import type {
 	inferDefinition,
 	validateDeclared,
@@ -104,9 +100,8 @@ export const createTypeParser = <$>($: Scope): TypeParser<$> => {
 			// treat as a generic
 			const params = parseGenericParams(args[0].slice(1, -1))
 			const def = args[1]
-			return validateUninstantiatedGeneric(
-				new Generic(params, def, $) as never
-			)
+			// TODO: validateUninstantiatedGeneric
+			return new Generic(params, def, $) as never
 		}
 		// otherwise, treat as a tuple expression. technically, this also allows
 		// non-expression tuple definitions to be parsed, but it's not a supported
@@ -161,18 +156,6 @@ export class Type<out t = unknown, $ = any> extends BaseSchema<t, $> {
 	// 	return this
 	// }
 
-	// equals<r>(r: Type<r>): this is Type<r, $> {
-	// 	return super.equals(r.root)
-	// }
-
-	// extract(other: Type): Type<t, $> {
-	// 	return new Type(super.extract(other.root), this.$)
-	// }
-
-	// exclude(other: Type): Type<t, $> {
-	// 	return new Type(super.exclude(other.root), this.$)
-	// }
-
 	// // add the extra inferred intersection so that a variable of Type
 	// // can be narrowed without other branches becoming never
 	// extends<r>(other: Type<r>): this is Type<r, $> & { [inferred]?: r } {
@@ -182,11 +165,6 @@ export class Type<out t = unknown, $ = any> extends BaseSchema<t, $> {
 	// 		this.equals(intersection as never)
 	// 	)
 	// }
-
-	// TODO: should return out
-	from(literal: this["in"]["infer"]): this["out"]["infer"] {
-		return literal as never
-	}
 
 	morph<morph extends Morph<this["infer"]>, outValidatorDef = never>(
 		morph: morph,
