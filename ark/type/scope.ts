@@ -164,9 +164,9 @@ export const scope: ScopeParser = ((def: Dict, config: ArkConfig = {}) =>
 export class Scope<$ = any> extends SchemaScope<$> {
 	private parseCache: Record<string, Schema> = {}
 
-	declare hktNode: Type
-	declare hktModule: Module
-	declare hktGeneric: Generic
+	declare "~node": Type
+	declare "~module": Module
+	declare "~generic": Generic
 
 	constructor(def: Record<string, unknown>, config?: ArkConfig) {
 		const aliases: Record<string, unknown> = {}
@@ -232,32 +232,7 @@ export class Scope<$ = any> extends SchemaScope<$> {
 				fullStringParse(new DynamicState(def, ctx)))
 		)
 	}
-
-	// import<names extends exportedNameOf<$>[]>(
-	// 	...names: names
-	// ): destructuredImportContext<
-	// 	$,
-	// 	names extends [] ? exportedNameOf<$> : names[number]
-	// > {
-	// 	return super.import(...names) as never
-	// }
-
-	// export<names extends exportedNameOf<$>[]>(
-	// 	...names: names
-	// ): Module<
-	// 	names extends [] ? $ : destructuredExportContext<$, names[number]>
-	// > {
-	// 	return super.export(...names) as never
-	// }
 }
-
-export const writeShallowCycleErrorMessage = (
-	name: string,
-	seen: string[]
-): string =>
-	`Alias '${name}' has a shallow resolution cycle: ${[...seen, name].join(
-		":"
-	)}`
 
 export type ParsedScopeKey = {
 	name: string

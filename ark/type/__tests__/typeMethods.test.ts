@@ -1,12 +1,12 @@
+import { AssertionError } from "node:assert"
 import { attest } from "@arktype/attest"
 import { writeUnresolvableMessage } from "@arktype/schema"
 import { ArkError, define, scope, type } from "arktype"
-import { AssertionError } from "node:assert"
 
 describe("type methods", () => {
 	it("root discriminates", () => {
 		const t = type("string")
-		const { out, errors: errors } = t("")
+		const { out, errors } = t("")
 		if (errors) {
 			errors.throw()
 		} else {

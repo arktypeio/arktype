@@ -150,9 +150,9 @@ export class SchemaScope<$ = any> {
 	declare $: $
 	declare infer: distillOut<$>
 	declare inferIn: distillIn<$>
-	declare hktNode: BaseSchema
-	declare hktModule: SchemaModule
-	declare hktGeneric: GenericSchema
+	declare "~node": BaseSchema
+	declare "~module": SchemaModule
+	declare "~generic": GenericSchema
 
 	readonly config: ArkConfig
 	readonly resolvedConfig: ResolvedArkConfig
@@ -199,7 +199,7 @@ export class SchemaScope<$ = any> {
 	schema<const def extends SchemaDef>(
 		def: def,
 		opts?: NodeParseOptions
-	): instantiate<this["hktNode"], [inferSchema<def, $>, $]> {
+	): instantiate<this["~node"], [inferSchema<def, $>, $]> {
 		return parseNode(schemaKindOf(def), def, this, opts) as never
 	}
 
@@ -210,7 +210,7 @@ export class SchemaScope<$ = any> {
 	units<const branches extends array>(
 		values: branches,
 		opts?: NodeParseOptions
-	): instantiate<this["hktNode"], [branches[number], $]> {
+	): instantiate<this["~node"], [branches[number], $]> {
 		{
 			const uniqueValues: unknown[] = []
 			for (const value of values) {
@@ -291,7 +291,7 @@ export class SchemaScope<$ = any> {
 	import<names extends exportedNameOf<$>[]>(
 		...names: names
 	): instantiate<
-		this["hktModule"],
+		this["~module"],
 		destructuredImportContext<
 			$,
 			names extends [] ? exportedNameOf<$> : names[number]
@@ -310,7 +310,7 @@ export class SchemaScope<$ = any> {
 	export<names extends exportedNameOf<$>[]>(
 		...names: names
 	): instantiate<
-		this["hktModule"],
+		this["~module"],
 		destructuredExportContext<
 			$,
 			names extends [] ? exportedNameOf<$> : names[number]
@@ -377,6 +377,14 @@ export type SchemaExportCache = Record<
 	string,
 	Schema | GenericSchema | SchemaModule | undefined
 >
+
+export const writeShallowCycleErrorMessage = (
+	name: string,
+	seen: string[]
+): string =>
+	`Alias '${name}' has a shallow resolution cycle: ${[...seen, name].join(
+		":"
+	)}`
 
 const resolutionsOfModule = (typeSet: SchemaExportCache) => {
 	const result: SchemaScopeResolutions = {}
