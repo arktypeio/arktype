@@ -3,13 +3,9 @@ import {
 	BaseSchema,
 	Disjoint,
 	type Morph,
-	type NodeDef,
 	type Out,
 	type Predicate,
-	type PrimitiveConstraintKind,
 	type Schema,
-	type constrain,
-	type constraintKindOf,
 	type distillConstrainableIn,
 	type distillConstrainableOut,
 	type distillIn,
@@ -187,17 +183,6 @@ export class Type<out t = unknown, $ = any> extends BaseSchema<t, $> {
 	// 	)
 	// }
 
-	configure(configOrDescription: BaseMeta | string): this {
-		return new Type(
-			super.configureShallowDescendants(configOrDescription),
-			this.$
-		) as never
-	}
-
-	describe(description: string): this {
-		return this.configure(description)
-	}
-
 	// TODO: should return out
 	from(literal: this["in"]["infer"]): this["out"]["infer"] {
 		return literal as never
@@ -217,7 +202,7 @@ export class Type<out t = unknown, $ = any> extends BaseSchema<t, $> {
 		$
 	>
 	morph(morph: Morph, outValidator?: unknown): unknown {
-		return new Type(super.morph(morph, outValidator as never), this.$)
+		return new Type(super.morphNode(morph, outValidator as never), this.$)
 	}
 
 	// TODO: based on below, should maybe narrow morph output if used after

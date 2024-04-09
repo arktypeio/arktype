@@ -121,17 +121,19 @@ export class BaseSchema<
 	// 	return this
 	// }
 
-	// extract(other: Schema): Schema {
-	// 	return this.$.schema(
-	// 		this.branches.filter((branch) => branch.extends(other))
-	// 	)
-	// }
+	// TODO: i/o
+	extract(other: Schema): instantiate<this, [t, $]> {
+		return this.$.schema(
+			this.branches.filter((branch) => branch.extends(other))
+		) as never
+	}
 
-	// exclude(other: Schema): Schema {
-	// 	return this.$.schema(
-	// 		this.branches.filter((branch) => !branch.extends(other))
-	// 	)
-	// }
+	// TODO: i/o
+	exclude(other: Schema): instantiate<this, [t, $]> {
+		return this.$.schema(
+			this.branches.filter((branch) => !branch.extends(other))
+		) as never
+	}
 
 	array(): instantiate<this, [t[], $]> {
 		return this.$.schema(
