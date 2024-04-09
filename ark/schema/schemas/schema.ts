@@ -107,13 +107,33 @@ export class BaseSchema<
 		return this.$.schema(branches) as never
 	}
 
-	// isUnknown(): this is IntersectionNode<unknown> {
-	// 	return this.hasKind("intersection") && this.children.length === 0
+	// morph<morph extends Morph<this["infer"]>>(
+	// 	morph: morph
+	// ): instantiate<
+	// 	this,
+	// 	[(In: distillConstrainableIn<t>) => Out<inferMorphOut<morph>>, $]
+	// >
+	// morph(morph: Morph): unknown {
+	// 	if (this.hasKind("union")) {
+	// 		const branches = this.branches.map((node) => node.morph(morph))
+	// 		return this.$.node("union", { ...this.inner, branches })
+	// 	}
+	// 	if (this.hasKind("morph")) {
+	// 		return this.$.node("morph", {
+	// 			...this.inner,
+	// 			morphs: [...this.morphs, morph]
+	// 		})
+	// 	}
+	// 	return this.$.node("morph", {
+	// 		in: this,
+	// 		morphs: [morph]
+	// 	})
 	// }
 
-	// isNever(): this is UnionNode<never> {
-	// 	return this.hasKind("union") && this.branches.length === 0
-	// }
+	assert(data: unknown): this["infer"] {
+		const result = this.traverse(data)
+		return result.errors ? result.errors.throw() : result.out
+	}
 
 	// get<key extends PropertyKey>(
 	// 	...path: readonly (key | Schema<key>)[]
@@ -121,21 +141,21 @@ export class BaseSchema<
 	// 	return this
 	// }
 
-	// TODO: i/o
-	extract(other: Schema): instantiate<this, [t, $]> {
-		return this.$.schema(
-			this.branches.filter((branch) => branch.extends(other))
-		) as never
-	}
+	// // TODO: i/o
+	// extract(other: Schema): instantiate<this, [t, $]> {
+	// 	return this.$.schema(
+	// 		this.branches.filter((branch) => branch.extends(other))
+	// 	) as never
+	// }
 
-	// TODO: i/o
-	exclude(other: Schema): instantiate<this, [t, $]> {
-		return this.$.schema(
-			this.branches.filter((branch) => !branch.extends(other))
-		) as never
-	}
+	// // TODO: i/o
+	// exclude(other: Schema): instantiate<this, [t, $]> {
+	// 	return this.$.schema(
+	// 		this.branches.filter((branch) => !branch.extends(other))
+	// 	) as never
+	// }
 
-	array(): instantiate<this, [t[], $]> {
+	array(): Schema<t[], $> {
 		return this.$.schema(
 			{
 				proto: Array,
@@ -167,50 +187,40 @@ export class BaseSchema<
 		return literal as never
 	}
 
-	// morphNode<
-	// 	morph extends Morph<this["infer"]>,
-	// 	outValidatorSchema extends SchemaDef = never
-	// >(
-	// 	morph: morph,
-	// 	outValidator?: outValidatorSchema
-	// ): instantiate<
-	// 	this,
-	// 	[
-	// 		(
-	// 			In: distillConstrainableIn<t>
-	// 		) => Out<
-	// 			[outValidatorSchema] extends [never]
-	// 				? inferMorphOut<morph>
-	// 				: distillConstrainableOut<
-	// 						inferSchema<outValidatorSchema, $>
-	// 					>
-	// 		>,
-	// 		$
-	// 	]
-	// >
-	// morphNode(morph: Morph, outValidator?: unknown): unknown {
-	// 	if (this.hasKind("union")) {
-	// 		const branches = this.branches.map((node) =>
-	// 			node.morphNode(morph, outValidator as never)
-	// 		)
-	// 		return this.$.node("union", { ...this.inner, branches })
-	// 	}
-	// 	if (this.hasKind("morph")) {
-	// 		return this.$.node("morph", {
-	// 			...this.inner,
-	// 			morphs: [...this.morphs, morph]
-	// 		})
-	// 	}
-	// 	return this.$.node("morph", {
-	// 		in: this,
-	// 		morphs: [morph]
-	// 	})
-	// }
-
-	// assert(data: unknown): this["infer"] {
-	// 	const result = this.traverse(data)
-	// 	return result.errors ? result.errors.throw() : result.out
-	// }
+	morphNode<
+		morph extends Morph<this["infer"]>,
+		outValidatorSchema extends SchemaDef = never
+	>(
+		morph: morph,
+		outValidator?: outValidatorSchema
+	): Schema<
+		(
+			In: distillConstrainableIn<t>
+		) => Out<
+			[outValidatorSchema] extends [never]
+				? inferMorphOut<morph>
+				: distillConstrainableOut<inferSchema<outValidatorSchema, $>>
+		>,
+		$
+	>
+	morphNode(morph: Morph, outValidator?: unknown): unknown {
+		if (this.hasKind("union")) {
+			const branches = this.branches.map((node) =>
+				node.morphNode(morph, outValidator as never)
+			)
+			return this.$.node("union", { ...this.inner, branches })
+		}
+		if (this.hasKind("morph")) {
+			return this.$.node("morph", {
+				...this.inner,
+				morphs: [...this.morphs, morph]
+			})
+		}
+		return this.$.node("morph", {
+			in: this,
+			morphs: [morph]
+		})
+	}
 
 	constrain<
 		kind extends PrimitiveConstraintKind,

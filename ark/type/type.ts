@@ -124,23 +124,6 @@ export class Type<out t = unknown, $ = any> extends BaseSchema<t, $> {
 		args: this[Hkt.args]
 	) => Type<(typeof args)[0], (typeof args)[1]>
 
-	// get in(): Type<distillConstrainableIn<t>, $> {
-	// 	return new Type(super.in, this.$) as never
-	// }
-
-	// get out(): Type<distillConstrainableOut<t>, $> {
-	// 	return new Type(super.out, this.$) as never
-	// }
-
-	// intersect<r extends Type>(
-	// 	r: r
-	// ): Type<inferIntersection<this["infer"], r["infer"]>, t> | Disjoint {
-	// 	const result = super.intersect(r.root)
-	// 	return hasArkKind(result, "schema")
-	// 		? new Type(result, this.$)
-	// 		: (result as any)
-	// }
-
 	and<def>(
 		def: validateTypeRoot<def, $>
 	): Type<inferIntersection<t, inferTypeRoot<def, $>>, $> {
@@ -152,33 +135,12 @@ export class Type<out t = unknown, $ = any> extends BaseSchema<t, $> {
 		return new Type(super.union(this.$.parseTypeRoot(def)), this.$) as never
 	}
 
-	// get<key extends PropertyKey>(...path: readonly (key | Type<key>)[]): this {
-	// 	return this
-	// }
-
-	// // add the extra inferred intersection so that a variable of Type
-	// // can be narrowed without other branches becoming never
-	// extends<r>(other: Type<r>): this is Type<r, $> & { [inferred]?: r } {
-	// 	const intersection = this.intersect(other as never)
-	// 	return (
-	// 		!(intersection instanceof Disjoint) &&
-	// 		this.equals(intersection as never)
-	// 	)
-	// }
+	declare array: () => Type<t[], $>
 
 	morph<morph extends Morph<this["infer"]>, outValidatorDef = never>(
 		morph: morph,
 		outValidator?: validateTypeRoot<outValidatorDef, $>
-	): Type<
-		(
-			In: distillConstrainableIn<t>
-		) => Out<
-			[outValidatorDef] extends [never]
-				? inferMorphOut<morph>
-				: distillConstrainableOut<inferTypeRoot<outValidatorDef, $>>
-		>,
-		$
-	>
+	): Type<(In: distillConstrainableIn<t>) => Out<inferMorphOut<morph>>, $>
 	morph(morph: Morph, outValidator?: unknown): unknown {
 		return new Type(super.morphNode(morph, outValidator as never), this.$)
 	}
@@ -193,11 +155,6 @@ export class Type<out t = unknown, $ = any> extends BaseSchema<t, $> {
 		$
 	> {
 		return this.constrain("predicate" as any, def) as never
-	}
-
-	assert(data: unknown): this["infer"] {
-		const result = this(data)
-		return result.errors ? result.errors.throw() : result.out
 	}
 }
 
