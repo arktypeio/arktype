@@ -163,45 +163,45 @@ export class BaseSchema<
 		return this.configure(description)
 	}
 
-	morphNode<
-		morph extends Morph<this["infer"]>,
-		outValidatorSchema extends SchemaDef = never
-	>(
-		morph: morph,
-		outValidator?: outValidatorSchema
-	): instantiate<
-		this,
-		[
-			(
-				In: distillConstrainableIn<t>
-			) => Out<
-				[outValidatorSchema] extends [never]
-					? inferMorphOut<morph>
-					: distillConstrainableOut<
-							inferSchema<outValidatorSchema, $>
-						>
-			>,
-			$
-		]
-	>
-	morphNode(morph: Morph, outValidator?: unknown): unknown {
-		if (this.hasKind("union")) {
-			const branches = this.branches.map((node) =>
-				node.morphNode(morph, outValidator as never)
-			)
-			return this.$.node("union", { ...this.inner, branches })
-		}
-		if (this.hasKind("morph")) {
-			return this.$.node("morph", {
-				...this.inner,
-				morphs: [...this.morphs, morph]
-			})
-		}
-		return this.$.node("morph", {
-			in: this,
-			morphs: [morph]
-		})
-	}
+	// morphNode<
+	// 	morph extends Morph<this["infer"]>,
+	// 	outValidatorSchema extends SchemaDef = never
+	// >(
+	// 	morph: morph,
+	// 	outValidator?: outValidatorSchema
+	// ): instantiate<
+	// 	this,
+	// 	[
+	// 		(
+	// 			In: distillConstrainableIn<t>
+	// 		) => Out<
+	// 			[outValidatorSchema] extends [never]
+	// 				? inferMorphOut<morph>
+	// 				: distillConstrainableOut<
+	// 						inferSchema<outValidatorSchema, $>
+	// 					>
+	// 		>,
+	// 		$
+	// 	]
+	// >
+	// morphNode(morph: Morph, outValidator?: unknown): unknown {
+	// 	if (this.hasKind("union")) {
+	// 		const branches = this.branches.map((node) =>
+	// 			node.morphNode(morph, outValidator as never)
+	// 		)
+	// 		return this.$.node("union", { ...this.inner, branches })
+	// 	}
+	// 	if (this.hasKind("morph")) {
+	// 		return this.$.node("morph", {
+	// 			...this.inner,
+	// 			morphs: [...this.morphs, morph]
+	// 		})
+	// 	}
+	// 	return this.$.node("morph", {
+	// 		in: this,
+	// 		morphs: [morph]
+	// 	})
+	// }
 
 	// assert(data: unknown): this["infer"] {
 	// 	const result = this.traverse(data)
