@@ -213,7 +213,7 @@ export class Scope<$ = any> extends SchemaScope<$> {
 			: throwParseError(writeBadDefinitionTypeMessage(domainOf(def)))
 	}
 
-	parseTypeRoot(def: unknown, opts?: NodeParseOptions): Type {
+	parseRoot(def: unknown, opts?: NodeParseOptions): Type {
 		return new Type(
 			this.parse(def, {
 				args: { this: {} as Schema },

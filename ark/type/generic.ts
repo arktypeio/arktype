@@ -59,9 +59,9 @@ export class Generic<params extends string[] = string[], def = unknown, $ = any>
 		super((...args: unknown[]) => {
 			const argNodes = flatMorph(params, (i, param: string) => [
 				param,
-				$.parseTypeRoot(args[i])
+				$.parseRoot(args[i])
 			])
-			return $.parseTypeRoot(def, { args: argNodes }) as never
+			return $.parseRoot(def, { args: argNodes }) as never
 		})
 	}
 }

@@ -288,6 +288,10 @@ export class SchemaScope<$ = any> {
 		return hasArkKind(result, "schema") ? (result as never) : undefined
 	}
 
+	parseRoot(def: unknown, opts?: NodeParseOptions): this["~node"] {
+		return parseNode(schemaKindOf(def), def, this, opts) as never
+	}
+
 	import<names extends exportedNameOf<$>[]>(
 		...names: names
 	): instantiate<
@@ -333,13 +337,7 @@ export class SchemaScope<$ = any> {
 				if (hasArkKind(def, "module")) {
 					this.#exportCache[name] = def
 				} else {
-					this.#exportCache[name] = new Type(
-						this.parseTypeRoot(def, {
-							baseName: name,
-							args: {}
-						}),
-						this
-					)
+					this.#exportCache[name] = this.parseRoot(def)
 				}
 			}
 			this.#exportedResolutions = resolutionsOfModule(this.#exportCache)
