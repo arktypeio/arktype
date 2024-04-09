@@ -40,13 +40,14 @@ export const compileSerializedValue = (value: unknown): string => {
 
 const baseNameFor = (value: object | symbol) => {
 	switch (typeof value) {
-		case "object":
+		case "object": {
 			if (value === null) {
 				break
 			}
 			const prefix = objectKindOf(value) ?? "object"
 			// convert to camelCase
 			return prefix[0].toLowerCase() + prefix.slice(1)
+		}
 		case "function":
 			return isDotAccessible(value.name)
 				? value.name

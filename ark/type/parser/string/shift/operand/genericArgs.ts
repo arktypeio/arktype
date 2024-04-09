@@ -44,12 +44,12 @@ const parseGenericArgsRecurse = (
 				result: argNodes,
 				unscanned: argState.scanner.unscanned
 			}
-		} else {
-			return argState.error(
-				writeInvalidGenericArgsMessage(name, params, argDefs)
-			)
 		}
-	} else if (argState.finalizer === ",") {
+		return argState.error(
+			writeInvalidGenericArgsMessage(name, params, argDefs)
+		)
+	}
+	if (argState.finalizer === ",") {
 		return parseGenericArgsRecurse(name, params, s, argDefs, argNodes)
 	}
 	return argState.error(writeUnclosedGroupMessage(">"))
@@ -116,7 +116,7 @@ export const writeInvalidGenericArgsMessage = <
 	`${name}<${params.join(", ")}> requires exactly ${
 		params.length
 	} args (got ${argDefs.length}${
-		argDefs.length === 0 ? "" : ": " + argDefs.join(", ")
+		argDefs.length === 0 ? "" : `: ${argDefs.join(", ")}`
 	})` as never
 
 export type writeInvalidGenericArgsMessage<

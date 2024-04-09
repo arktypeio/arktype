@@ -54,7 +54,7 @@ type ParsedDayParts = {
 	d?: string
 }
 
-const isValidDateInstance = (date: Date) => !isNaN(date as any)
+const isValidDateInstance = (date: Date) => !Number.isNaN(+date)
 
 const writeFormattedExpected = (format: DateFormat) =>
 	`a ${format}-formatted date`
