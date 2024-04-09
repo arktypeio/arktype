@@ -3,11 +3,17 @@ import {
 	BaseSchema,
 	Disjoint,
 	type Morph,
+	type Out,
 	type Predicate,
 	type Schema,
+	type distillConstrainableIn,
+	type distillConstrainableOut,
 	type distillIn,
 	type distillOut,
-	type inferIntersection
+	type includesMorphs,
+	type inferIntersection,
+	type inferMorphOut,
+	type inferNarrow
 } from "@arktype/schema"
 import type { Constructor, Hkt, array, conform } from "@arktype/util"
 import { Generic, type validateParameterString } from "./generic.js"
@@ -104,12 +110,8 @@ export const createTypeParser = <$>($: Scope): TypeParser<$> => {
 	}
 	return parser as never
 }
-
-export class Type<
-	/** @ts-expect-error allow assignment from instances */
-	out t = unknown,
-	$ = any
-> extends BaseSchema<t, $> {
+/** @ts-expect-error allow instantiation assignment to the base type */
+export class Type<out t = unknown, $ = any> extends BaseSchema<t, $> {
 	constructor(
 		public definition: unknown,
 		public $: Scope<$>
@@ -122,6 +124,23 @@ export class Type<
 		args: this[Hkt.args]
 	) => Type<(typeof args)[0], (typeof args)[1]>
 
+	// get in(): Type<distillConstrainableIn<t>, $> {
+	// 	return new Type(super.in, this.$) as never
+	// }
+
+	// get out(): Type<distillConstrainableOut<t>, $> {
+	// 	return new Type(super.out, this.$) as never
+	// }
+
+	// intersect<r extends Type>(
+	// 	r: r
+	// ): Type<inferIntersection<this["infer"], r["infer"]>, t> | Disjoint {
+	// 	const result = super.intersect(r.root)
+	// 	return hasArkKind(result, "schema")
+	// 		? new Type(result, this.$)
+	// 		: (result as any)
+	// }
+
 	and<def>(
 		def: validateTypeRoot<def, $>
 	): Type<inferIntersection<t, inferTypeRoot<def, $>>, $> {
@@ -131,6 +150,54 @@ export class Type<
 
 	or<def>(def: validateTypeRoot<def, $>): Type<t | inferTypeRoot<def, $>, $> {
 		return new Type(super.union(this.$.parseTypeRoot(def)), this.$) as never
+	}
+
+	// get<key extends PropertyKey>(...path: readonly (key | Type<key>)[]): this {
+	// 	return this
+	// }
+
+	// // add the extra inferred intersection so that a variable of Type
+	// // can be narrowed without other branches becoming never
+	// extends<r>(other: Type<r>): this is Type<r, $> & { [inferred]?: r } {
+	// 	const intersection = this.intersect(other as never)
+	// 	return (
+	// 		!(intersection instanceof Disjoint) &&
+	// 		this.equals(intersection as never)
+	// 	)
+	// }
+
+	morph<morph extends Morph<this["infer"]>, outValidatorDef = never>(
+		morph: morph,
+		outValidator?: validateTypeRoot<outValidatorDef, $>
+	): Type<
+		(
+			In: distillConstrainableIn<t>
+		) => Out<
+			[outValidatorDef] extends [never]
+				? inferMorphOut<morph>
+				: distillConstrainableOut<inferTypeRoot<outValidatorDef, $>>
+		>,
+		$
+	>
+	morph(morph: Morph, outValidator?: unknown): unknown {
+		return new Type(super.morphNode(morph, outValidator as never), this.$)
+	}
+
+	// TODO: based on below, should maybe narrow morph output if used after
+	narrow<def extends Predicate<distillConstrainableOut<t>>>(
+		def: def
+	): Type<
+		includesMorphs<t> extends true
+			? (In: distillIn<t>) => Out<inferNarrow<this["infer"], def>>
+			: inferNarrow<this["infer"], def>,
+		$
+	> {
+		return this.constrain("predicate" as any, def) as never
+	}
+
+	assert(data: unknown): this["infer"] {
+		const result = this(data)
+		return result.errors ? result.errors.throw() : result.out
 	}
 }
 
