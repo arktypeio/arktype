@@ -24,21 +24,22 @@ describe("morph", () => {
 		const { out } = t(true)
 		attest<boolean | undefined>(out).equals(false)
 	})
-	it("validated output", () => {
-		const parsedUser = type("string").morph((s) => JSON.parse(s), {
-			name: "string",
-			age: "number"
-		})
-		attest<
-			Type<
-				(In: string) => Out<{
-					name: string
-					age: number
-				}>,
-				{}
-			>
-		>(parsedUser)
-	})
+	// TODO: New api?
+	// it("validated output", () => {
+	// 	const parsedUser = type("string").morph((s) => JSON.parse(s), {
+	// 		name: "string",
+	// 		age: "number"
+	// 	})
+	// 	attest<
+	// 		Type<
+	// 			(In: string) => Out<{
+	// 				name: string
+	// 				age: number
+	// 			}>,
+	// 			{}
+	// 		>
+	// 	>(parsedUser)
+	// })
 	it("any as out", () => {
 		const t = type("string", "=>", (s) => s as any)
 		attest<string>(t.in.infer)

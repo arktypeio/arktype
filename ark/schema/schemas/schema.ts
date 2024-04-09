@@ -3,16 +3,15 @@ import {
 	type BaseAttachments,
 	BaseNode,
 	type Node,
-	type Schema,
-	type SchemaDef
+	type Schema
 } from "../base.js"
 import type { constrain } from "../constraints/ast.js"
 import {
 	type PrimitiveConstraintKind,
 	throwInvalidOperandError
 } from "../constraints/constraint.js"
+import type { Predicate, inferNarrow } from "../constraints/predicate.js"
 import type { NodeDef, reducibleKindOf } from "../kinds.js"
-import type { inferSchema } from "../parser/inference.js"
 import type { SchemaScope } from "../scope.js"
 import type { BaseMeta, BaseNodeDeclaration } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -32,6 +31,8 @@ import type {
 	Out,
 	distillConstrainableIn,
 	distillConstrainableOut,
+	distillIn,
+	includesMorphs,
 	inferMorphOut
 } from "./morph.js"
 import type { UnionChildKind } from "./union.js"
@@ -107,14 +108,6 @@ export class BaseSchema<
 		return this.$.schema(branches) as never
 	}
 
-	// isUnknown(): this is IntersectionNode<unknown> {
-	// 	return this.hasKind("intersection") && this.children.length === 0
-	// }
-
-	// isNever(): this is UnionNode<never> {
-	// 	return this.hasKind("union") && this.branches.length === 0
-	// }
-
 	// get<key extends PropertyKey>(
 	// 	...path: readonly (key | Schema<key>)[]
 	// ): this {
@@ -167,50 +160,33 @@ export class BaseSchema<
 		return literal as never
 	}
 
-	// morphNode<
-	// 	morph extends Morph<this["infer"]>,
-	// 	outValidatorSchema extends SchemaDef = never
-	// >(
-	// 	morph: morph,
-	// 	outValidator?: outValidatorSchema
-	// ): instantiate<
-	// 	this,
-	// 	[
-	// 		(
-	// 			In: distillConstrainableIn<t>
-	// 		) => Out<
-	// 			[outValidatorSchema] extends [never]
-	// 				? inferMorphOut<morph>
-	// 				: distillConstrainableOut<
-	// 						inferSchema<outValidatorSchema, $>
-	// 					>
-	// 		>,
-	// 		$
-	// 	]
-	// >
-	// morphNode(morph: Morph, outValidator?: unknown): unknown {
-	// 	if (this.hasKind("union")) {
-	// 		const branches = this.branches.map((node) =>
-	// 			node.morphNode(morph, outValidator as never)
-	// 		)
-	// 		return this.$.node("union", { ...this.inner, branches })
-	// 	}
-	// 	if (this.hasKind("morph")) {
-	// 		return this.$.node("morph", {
-	// 			...this.inner,
-	// 			morphs: [...this.morphs, morph]
-	// 		})
-	// 	}
-	// 	return this.$.node("morph", {
-	// 		in: this,
-	// 		morphs: [morph]
-	// 	})
-	// }
+	morph<morph extends Morph<this["infer"]>>(
+		morph: morph
+	): instantiate<
+		this,
+		[(In: distillConstrainableIn<t>) => Out<inferMorphOut<morph>>, $]
+	>
+	morph(morph: Morph): unknown {
+		if (this.hasKind("union")) {
+			const branches = this.branches.map((node) => node.morph(morph))
+			return this.$.node("union", { ...this.inner, branches })
+		}
+		if (this.hasKind("morph")) {
+			return this.$.node("morph", {
+				...this.inner,
+				morphs: [...this.morphs, morph]
+			})
+		}
+		return this.$.node("morph", {
+			in: this,
+			morphs: [morph]
+		})
+	}
 
-	// assert(data: unknown): this["infer"] {
-	// 	const result = this.traverse(data)
-	// 	return result.errors ? result.errors.throw() : result.out
-	// }
+	assert(data: unknown): this["infer"] {
+		const result = this.traverse(data)
+		return result.errors ? result.errors.throw() : result.out
+	}
 
 	constrain<
 		kind extends PrimitiveConstraintKind,
@@ -220,6 +196,21 @@ export class BaseSchema<
 		def: def
 	): instantiate<this, [constrain<t, kind, def>, $]> {
 		return this.rawConstrain(kind, def) as never
+	}
+
+	// TODO: based on below, should maybe narrow morph output if used after
+	narrow<def extends Predicate<distillConstrainableOut<t>>>(
+		def: def
+	): instantiate<
+		this,
+		[
+			includesMorphs<t> extends true
+				? (In: distillIn<t>) => Out<inferNarrow<this["infer"], def>>
+				: inferNarrow<this["infer"], def>,
+			$
+		]
+	> {
+		return this.constrain("predicate" as any, def) as never
 	}
 
 	protected rawConstrain(kind: ConstraintKind, def: unknown): Schema {
