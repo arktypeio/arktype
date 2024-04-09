@@ -3,6 +3,7 @@ import * as tsvfs from "@typescript/vfs"
 import { readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import ts from "typescript"
+import { getConfig } from "../config.js"
 
 export class TsServer {
 	rootFiles!: string[]
@@ -99,13 +100,14 @@ export type TsconfigInfo = {
 }
 
 export const getTsConfigInfoOrThrow = (): TsconfigInfo => {
-	const configFilePath = ts.findConfigFile(
-		fromCwd(),
-		ts.sys.fileExists,
-		"tsconfig.json"
-	)
+	const config = getConfig()
+	const configFilePath =
+		config.tsconfig ??
+		ts.findConfigFile(fromCwd(), ts.sys.fileExists, "tsconfig.json")
 	if (!configFilePath) {
-		throw new Error(`File ${join(fromCwd(), "tsconfig.json")} must exist.`)
+		throw new Error(
+			`File ${config.tsconfig ?? join(fromCwd(), "tsconfig.json")} must exist.`
+		)
 	}
 
 	const configFileText = readFileSync(configFilePath).toString()

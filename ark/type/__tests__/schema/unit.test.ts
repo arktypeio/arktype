@@ -3,6 +3,20 @@ import { reference } from "@arktype/util"
 import { node } from "../../keywords/ark.js"
 
 describe("unit", () => {
+	it("string allows", () => {
+		const t = node({ unit: "foo" })
+		attest(t.json).snap({ unit: "foo" })
+		attest(t.allows("foo")).equals(true)
+		attest(t.allows("bar")).equals(false)
+	})
+
+	it("string apply", () => {
+		const t = node({ unit: "foo" })
+		attest(t.json).snap({ unit: "foo" })
+		attest(t("foo").errors).equals(undefined)
+		attest(t("bar").errors?.summary).snap('must be "foo" (was "bar")')
+		attest(t(5).errors?.summary).snap('must be "foo" (was 5)')
+	})
 	it("treats equivalent dates as equal", () => {
 		const l = node({ unit: new Date(1337) })
 		const r = node({ unit: new Date(1337) })
