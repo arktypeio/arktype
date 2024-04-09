@@ -44,12 +44,12 @@ const parseGenericArgsRecurse = (
 				result: argNodes,
 				unscanned: argState.scanner.unscanned
 			}
+		} else {
+			return argState.error(
+				writeInvalidGenericArgsMessage(name, params, argDefs)
+			)
 		}
-		return argState.error(
-			writeInvalidGenericArgsMessage(name, params, argDefs)
-		)
-	}
-	if (argState.finalizer === ",") {
+	} else if (argState.finalizer === ",") {
 		return parseGenericArgsRecurse(name, params, s, argDefs, argNodes)
 	}
 	return argState.error(writeUnclosedGroupMessage(">"))
@@ -111,17 +111,9 @@ export const writeInvalidGenericArgsMessage = <
 	params: params,
 	argDefs: argDefs
 ): writeInvalidGenericArgsMessage<name, params, argDefs> =>
-<<<<<<< Updated upstream
 	`${name}<${params.join(", ")}> requires exactly ${params.length} args (got ${
 		argDefs.length
 	}${argDefs.length === 0 ? "" : ": " + argDefs.join(", ")})` as never
-=======
-	`${name}<${params.join(", ")}> requires exactly ${
-		params.length
-	} args (got ${argDefs.length}${
-		argDefs.length === 0 ? "" : `: ${argDefs.join(", ")}`
-	})` as never
->>>>>>> Stashed changes
 
 export type writeInvalidGenericArgsMessage<
 	name extends string,

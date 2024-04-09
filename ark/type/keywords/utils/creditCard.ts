@@ -4,12 +4,12 @@ import { root } from "../root.js"
 export const isLuhnValid = (creditCardInput: string): boolean => {
 	const sanitized = creditCardInput.replace(/[- ]+/g, "")
 	let sum = 0
-	let digit: string
-	let tmpNum: number
-	let shouldDouble = false
+	let digit
+	let tmpNum
+	let shouldDouble
 	for (let i = sanitized.length - 1; i >= 0; i--) {
 		digit = sanitized.substring(i, i + 1)
-		tmpNum = Number.parseInt(digit, 10)
+		tmpNum = parseInt(digit, 10)
 		if (shouldDouble) {
 			tmpNum *= 2
 			if (tmpNum >= 10) {

@@ -106,7 +106,6 @@ export type DefinitionParser<$> = <def>(
 
 export type validateTypeRoot<def, $> = validateDefinition<def, $, bindThis<def>>
 
-<<<<<<< Updated upstream
 export type inferTypeRoot<def, $> = inferDefinition<def, $, bindThis<def>>
 
 type validateParameterString<params extends string> =
@@ -166,17 +165,6 @@ export type GenericProps<
 	definition: def
 	scope: Scope
 }
-=======
-	// // add the extra inferred intersection so that a variable of Type
-	// // can be narrowed without other branches becoming never
-	// extends<r>(other: Type<r>): this is Type<r, $> & { [inferred]?: r } {
-	// 	const intersection = this.intersect(other as never)
-	// 	return (
-	// 		!(intersection instanceof Disjoint) &&
-	// 		this.equals(intersection as never)
-	// 	)
-	// }
->>>>>>> Stashed changes
 
 export type BoundArgs = Record<string, Type>
 
