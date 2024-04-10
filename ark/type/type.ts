@@ -6,6 +6,7 @@ import {
 	type Out,
 	type Predicate,
 	type Schema,
+	type ambient,
 	type distillConstrainableIn,
 	type distillConstrainableOut,
 	type distillIn,
@@ -80,7 +81,7 @@ export type TypeParser<$> = {
 export type DeclarationParser<$> = <preinferred>() => {
 	// for some reason, making this a const parameter breaks preinferred validation
 	type: <def>(
-		def: validateDeclared<preinferred, def, $, bindThis<def>>
+		def: validateDeclared<preinferred, def, $ & ambient, bindThis<def>>
 	) => Type<preinferred, $>
 }
 
@@ -166,10 +167,16 @@ export class Type<out t = unknown, $ = any> extends BaseSchema<t, $> {
 	}
 }
 
-export type DefinitionParser<$> = <def>(
-	def: validateDefinition<def, $, bindThis<def>>
-) => def
+export type DefinitionParser<$> = <def>(def: validateTypeRoot<def, $>) => def
 
-export type validateTypeRoot<def, $> = validateDefinition<def, $, bindThis<def>>
+export type validateTypeRoot<def, $> = validateDefinition<
+	def,
+	$ & ambient,
+	bindThis<def>
+>
 
-export type inferTypeRoot<def, $> = inferDefinition<def, $, bindThis<def>>
+export type inferTypeRoot<def, $> = inferDefinition<
+	def,
+	$ & ambient,
+	bindThis<def>
+>

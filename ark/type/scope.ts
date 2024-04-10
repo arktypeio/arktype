@@ -52,14 +52,18 @@ type validateScope<def> = {
 			? // Not including Type here directly breaks inference
 				def[k] extends Type | PreparsedResolution
 				? def[k]
-				: validateDefinition<def[k], bootstrapAliases<def>, {}>
+				: validateDefinition<
+						def[k],
+						ambient & bootstrapAliases<def>,
+						{}
+					>
 			: parseScopeKey<k>["params"] extends GenericParamsParseError
 				? // use the full nominal type here to avoid an overlap between the
 					// error message and a possible value for the property
 					parseScopeKey<k>["params"][0]
 				: validateDefinition<
 						def[k],
-						bootstrapAliases<def>,
+						ambient & bootstrapAliases<def>,
 						{
 							// once we support constraints on generic parameters, we'd use
 							// the base type here: https://github.com/arktypeio/arktype/issues/796
@@ -100,7 +104,7 @@ type bootstrapAliases<def> = {
 
 type inferBootstrapped<$> = evaluate<{
 	[name in keyof $]: $[name] extends Def<infer def>
-		? inferDefinition<def, $, {}>
+		? inferDefinition<def, $ & ambient, {}>
 		: $[name] extends GenericProps<infer params, infer def>
 			? // add the scope in which the generic was defined here
 				Generic<params, def, $>
@@ -233,23 +237,6 @@ export class Scope<$ = any> extends SchemaScope<$> {
 				fullStringParse(new DynamicState(def, ctx)))
 		)
 	}
-
-	// import<names extends exportedNameOf<$>[]>(
-	// 	...names: names
-	// ): destructuredImportContext<
-	// 	$,
-	// 	names extends [] ? exportedNameOf<$> : names[number]
-	// > {
-	// 	return super.import(...names) as never
-	// }
-
-	// export<names extends exportedNameOf<$>[]>(
-	// 	...names: names
-	// ): Module<
-	// 	names extends [] ? $ : destructuredExportContext<$, names[number]>
-	// > {
-	// 	return super.export(...names) as never
-	// }
 }
 
 export const writeShallowCycleErrorMessage = (

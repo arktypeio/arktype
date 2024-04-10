@@ -1,4 +1,4 @@
-import type { Schema, ambient } from "@arktype/schema"
+import type { Schema } from "@arktype/schema"
 import {
 	type ErrorMessage,
 	throwInternalError,
@@ -18,14 +18,12 @@ import {
  * Try to parse the definition from right to left using the most common syntax.
  * This can be much more efficient for simple definitions.
  */
-export type parseString<def extends string, $, args> = def extends
-	| keyof $
-	| keyof ambient
+export type parseString<def extends string, $, args> = def extends keyof $
 	? // def could also be a generic reference here, in which case it will
 		// fail semantic validation because it has no args
 		def
 	: def extends `${infer child}[]`
-		? child extends keyof $ | keyof ambient
+		? child extends keyof $
 			? [child, "[]"]
 			: fullStringParse<state.initialize<def>, $, args>
 		: fullStringParse<state.initialize<def>, $, args>
@@ -39,7 +37,6 @@ export type inferString<def extends string, $, args> = inferAstRoot<
 export type BaseCompletions<$, args, otherSuggestions extends string = never> =
 	| (keyof $ & string)
 	| (keyof args & string)
-	| (keyof ambient & string)
 	| StringifiablePrefixOperator
 	| otherSuggestions
 

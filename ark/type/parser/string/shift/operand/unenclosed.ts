@@ -64,17 +64,7 @@ export type parseUnenclosed<
 								args
 							>
 						: state.setRoot<s, result, unscanned>
-					: result extends keyof ambient
-						? ambient[result] extends GenericProps
-							? parseGenericInstantiation<
-									token,
-									ambient[result],
-									state.scanTo<s, unscanned>,
-									$,
-									args
-								>
-							: state.setRoot<s, result, unscanned>
-						: state.setRoot<s, result, unscanned>
+					: state.setRoot<s, result, unscanned>
 			: never
 	: never
 
@@ -168,38 +158,36 @@ type tryResolve<
 	? token
 	: `#${token}` extends keyof $
 		? `#${token}`
-		: token extends keyof ambient
+		: token extends keyof args
 			? token
-			: token extends keyof args
+			: token extends NumberLiteral
 				? token
-				: token extends NumberLiteral
+				: token extends BigintLiteral
 					? token
-					: token extends BigintLiteral
-						? token
-						: token extends `${infer submodule extends keyof $ &
-									string}.${infer reference}`
-							? $[submodule] extends Module<infer sub$>
-								? reference extends keyof sub$
-									? token
-									: unknown extends sub$
-										? // not sure why I need the additional check here, but for now TS seems to
-											// hit this branch for a non-scope dot access rather than failing
-											// initially when we try to infer r. if this can be removed without breaking
-											// any submodule test cases, do it!
-											ErrorMessage<
-												writeNonSubmoduleDotMessage<submodule>
-											>
-										: unresolvableError<
-												s,
-												reference,
-												$[submodule],
-												args,
-												[submodule]
-											>
-								: ErrorMessage<
-										writeNonSubmoduleDotMessage<submodule>
-									>
-							: unresolvableError<s, token, $, args, []>
+					: token extends `${infer submodule extends keyof $ &
+								string}.${infer reference}`
+						? $[submodule] extends Module<infer sub$>
+							? reference extends keyof sub$
+								? token
+								: unknown extends sub$
+									? // not sure why I need the additional check here, but for now TS seems to
+										// hit this branch for a non-scope dot access rather than failing
+										// initially when we try to infer r. if this can be removed without breaking
+										// any submodule test cases, do it!
+										ErrorMessage<
+											writeNonSubmoduleDotMessage<submodule>
+										>
+									: unresolvableError<
+											s,
+											reference,
+											$[submodule],
+											args,
+											[submodule]
+										>
+							: ErrorMessage<
+									writeNonSubmoduleDotMessage<submodule>
+								>
+						: unresolvableError<s, token, $, args, []>
 
 /** Provide valid completions for the current token, or fallback to an
  * unresolvable error if there are none */

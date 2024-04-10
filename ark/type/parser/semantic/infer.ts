@@ -4,7 +4,6 @@ import type {
 	GenericProps,
 	LimitLiteral,
 	RegexLiteral,
-	ambient,
 	constrain,
 	distillIn,
 	inferIntersection,
@@ -147,18 +146,16 @@ export type InfixExpression<
 
 export type inferTerminal<token, $, args> = token extends keyof args | keyof $
 	? resolve<token, $, args>
-	: token extends keyof ambient
-		? ambient[token]
-		: token extends StringLiteral<infer text>
-			? text
-			: token extends NumberLiteral<infer value>
+	: token extends StringLiteral<infer text>
+		? text
+		: token extends NumberLiteral<infer value>
+			? value
+			: token extends BigintLiteral<infer value>
 				? value
-				: token extends BigintLiteral<infer value>
-					? value
-					: token extends RegexLiteral<infer source>
-						? string.matching<source>
-						: token extends DateLiteral<infer source>
-							? Date.literal<source>
-							: // doing this last allows us to infer never if it isn't valid rather than check
-								// if it's a valid submodule reference ahead of time
-								tryInferSubmoduleReference<$, token>
+				: token extends RegexLiteral<infer source>
+					? string.matching<source>
+					: token extends DateLiteral<infer source>
+						? Date.literal<source>
+						: // doing this last allows us to infer never if it isn't valid rather than check
+							// if it's a valid submodule reference ahead of time
+							tryInferSubmoduleReference<$, token>
