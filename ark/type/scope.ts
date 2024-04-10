@@ -2,10 +2,12 @@ import {
 	type ArkConfig,
 	type GenericProps,
 	type NodeParseOptions,
+	type PreparsedNodeResolution,
 	type Schema,
 	SchemaModule,
 	SchemaScope,
-	type ambient
+	type ambient,
+	arkKind
 } from "@arktype/schema"
 import {
 	type Dict,
@@ -81,7 +83,7 @@ type Def<def = {}> = nominal<def, "unparsed">
 export type UnparsedScope = "$"
 
 /** These are legal as values of a scope but not as definitions in other contexts */
-type PreparsedResolution = Module | GenericProps
+type PreparsedResolution = PreparsedNodeResolution
 
 type bootstrapAliases<def> = {
 	[k in Exclude<
@@ -137,13 +139,13 @@ export type resolve<reference extends keyof $ | keyof args, $, args> = (
 	: never
 
 export type moduleKeyOf<$> = {
-	[k in keyof $]: $[k] extends Module ? k & string : never
+	[k in keyof $]: $[k] extends { [arkKind]: "module" } ? k & string : never
 }[keyof $]
 
 export type tryInferSubmoduleReference<$, token> =
 	token extends `${infer submodule extends moduleKeyOf<$>}.${infer subalias}`
 		? subalias extends keyof $[submodule]
-			? $[submodule][subalias] extends Type<infer t>
+			? $[submodule][subalias] extends Schema<infer t>
 				? t
 				: never
 			: never

@@ -2,6 +2,7 @@ import {
 	BaseSchema,
 	type GenericProps,
 	type Schema,
+	type SchemaModule,
 	type ambient,
 	arkKind,
 	hasArkKind,
@@ -166,7 +167,9 @@ type tryResolve<
 					? token
 					: token extends `${infer submodule extends keyof $ &
 								string}.${infer reference}`
-						? $[submodule] extends Module<infer sub$>
+						? $[submodule] extends
+								| SchemaModule<infer sub$>
+								| Module<infer sub$>
 							? reference extends keyof sub$
 								? token
 								: unknown extends sub$

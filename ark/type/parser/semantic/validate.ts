@@ -1,5 +1,7 @@
 import type {
 	GenericProps,
+	SchemaModule,
+	arkKind,
 	writeMissingSubmoduleAccessMessage
 } from "@arktype/schema"
 import type {
@@ -9,7 +11,6 @@ import type {
 	NumberLiteral,
 	writeMalformedNumericLiteralMessage
 } from "@arktype/util"
-import type { Module } from "../../scope.js"
 import type { Comparator } from "../string/reduce/shared.js"
 import type { writeInvalidGenericArgsMessage } from "../string/shift/operand/genericArgs.js"
 import type { parseString } from "../string/string.js"
@@ -88,7 +89,7 @@ type validateStringAst<def extends string, $> = def extends NumberLiteral<
 								[]
 							>
 						>
-					: $[def] extends Module
+					: $[def] extends { [arkKind]: "module" }
 						? ErrorMessage<writeMissingSubmoduleAccessMessage<def>>
 						: undefined
 			: def extends ErrorMessage
