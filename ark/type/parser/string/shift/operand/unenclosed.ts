@@ -44,14 +44,13 @@ export const parseUnenclosed = (s: DynamicState): void => {
 
 export type parseUnenclosed<
 	s extends StaticState,
-	$,
-	args
+	$
 > = Scanner.shiftUntilNextTerminator<
 	s["unscanned"]
 > extends Scanner.shiftResult<infer token, infer unscanned>
 	? token extends "keyof"
 		? state.addPrefix<s, "keyof", unscanned>
-		: tryResolve<s, token, $, args> extends infer result
+		: tryResolve<s, token, $> extends infer result
 			? result extends ErrorMessage<infer message>
 				? state.error<message>
 				: result extends keyof $
@@ -60,8 +59,7 @@ export type parseUnenclosed<
 								token,
 								$[result],
 								state.scanTo<s, unscanned>,
-								$,
-								args
+								$
 							>
 						: state.setRoot<s, result, unscanned>
 					: state.setRoot<s, result, unscanned>
@@ -91,17 +89,10 @@ export type parseGenericInstantiation<
 	name extends string,
 	g extends GenericProps,
 	s extends StaticState,
-	$,
-	args
+	$
 	// have to skip whitespace here since TS allows instantiations like `Partial    <T>`
 > = Scanner.skipWhitespace<s["unscanned"]> extends `<${infer unscanned}`
-	? parseGenericArgs<
-			name,
-			g["params"],
-			unscanned,
-			$,
-			args
-		> extends infer result
+	? parseGenericArgs<name, g["params"], unscanned, $> extends infer result
 		? result extends ParsedArgs<infer argAsts, infer nextUnscanned>
 			? state.setRoot<
 					s,
@@ -152,44 +143,36 @@ const maybeParseUnenclosedLiteral = (
 type tryResolve<
 	s extends StaticState,
 	token extends string,
-	$,
-	args
+	$
 > = token extends keyof $
 	? token
 	: `#${token}` extends keyof $
 		? `#${token}`
-		: token extends keyof ambient
+		: token extends NumberLiteral
 			? token
-			: token extends keyof args
+			: token extends BigintLiteral
 				? token
-				: token extends NumberLiteral
-					? token
-					: token extends BigintLiteral
-						? token
-						: token extends `${infer submodule extends keyof $ &
-									string}.${infer reference}`
-							? $[submodule] extends Module<infer sub$>
-								? reference extends keyof sub$
-									? token
-									: unknown extends sub$
-										? // not sure why I need the additional check here, but for now TS seems to
-											// hit this branch for a non-scope dot access rather than failing
-											// initially when we try to infer r. if this can be removed without breaking
-											// any submodule test cases, do it!
-											ErrorMessage<
-												writeNonSubmoduleDotMessage<submodule>
-											>
-										: unresolvableError<
-												s,
-												reference,
-												$[submodule],
-												args,
-												[submodule]
-											>
-								: ErrorMessage<
+				: token extends `${infer submodule extends keyof $ &
+							string}.${infer reference}`
+					? $[submodule] extends Module<infer sub$>
+						? reference extends keyof sub$
+							? token
+							: unknown extends sub$
+								? // not sure why I need the additional check here, but for now TS seems to
+									// hit this branch for a non-scope dot access rather than failing
+									// initially when we try to infer r. if this can be removed without breaking
+									// any submodule test cases, do it!
+									ErrorMessage<
 										writeNonSubmoduleDotMessage<submodule>
 									>
-							: unresolvableError<s, token, $, args, []>
+								: unresolvableError<
+										s,
+										reference,
+										$[submodule],
+										[submodule]
+									>
+						: ErrorMessage<writeNonSubmoduleDotMessage<submodule>>
+					: unresolvableError<s, token, $, []>
 
 /** Provide valid completions for the current token, or fallback to an
  * unresolvable error if there are none */
@@ -197,14 +180,13 @@ export type unresolvableError<
 	s extends StaticState,
 	token extends string,
 	$,
-	args,
 	submodulePath extends string[]
-> = validReferenceFromToken<token, $, args, submodulePath> extends never
+> = validReferenceFromToken<token, $, submodulePath> extends never
 	? ErrorMessage<
 			writeUnresolvableMessage<qualifiedReference<token, submodulePath>>
 		>
 	: Completion<`${s["scanned"]}${qualifiedReference<
-			validReferenceFromToken<token, $, args, submodulePath>,
+			validReferenceFromToken<token, $, submodulePath>,
 			submodulePath
 		>}`>
 
@@ -216,10 +198,9 @@ type qualifiedReference<
 type validReferenceFromToken<
 	token extends string,
 	$,
-	args,
 	submodulePath extends string[]
 > = Extract<
-	submodulePath extends [] ? BaseCompletions<$, args> : keyof $,
+	submodulePath extends [] ? BaseCompletions<$> : keyof $,
 	`${token}${string}`
 >
 

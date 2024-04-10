@@ -16,31 +16,29 @@ export type validateRange<
 	l,
 	comparator extends Comparator,
 	r,
-	$,
-	args
+	$
 > = l extends LimitLiteral
-	? validateBound<r, InvertedComparators[comparator], l, "left", $, args>
+	? validateBound<r, InvertedComparators[comparator], l, "left", $>
 	: l extends [infer leftAst, Comparator, unknown]
 		? ErrorMessage<writeDoubleRightBoundMessage<astToString<leftAst>>>
-		: validateBound<l, comparator, r & LimitLiteral, "right", $, args>
+		: validateBound<l, comparator, r & LimitLiteral, "right", $>
 
 export type validateBound<
 	boundedAst,
 	comparator extends Comparator,
 	limit extends LimitLiteral,
 	boundKind extends BoundExpressionKind,
-	$,
-	args
-> = inferAstIn<boundedAst, $, args> extends infer bounded
+	$
+> = inferAstIn<boundedAst, $> extends infer bounded
 	? isNumericallyBoundable<bounded> extends true
 		? limit extends number
-			? validateAst<boundedAst, $, args>
+			? validateAst<boundedAst, $>
 			: ErrorMessage<
 					writeInvalidLimitMessage<comparator, limit, boundKind>
 				>
 		: bounded extends Date
 			? // allow numeric or date literal as a Date limit
-				validateAst<boundedAst, $, args>
+				validateAst<boundedAst, $>
 			: ErrorMessage<
 					writeUnboundableMessage<
 						astToString<

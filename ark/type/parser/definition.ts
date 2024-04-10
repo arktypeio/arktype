@@ -62,60 +62,62 @@ export const parseObject = (def: object, ctx: ParseContext): Schema => {
 	}
 }
 
-export type inferDefinition<def, $, args> = isAny<def> extends true
+export type inferDefinition<def, $> = isAny<def> extends true
 	? never
 	: def extends type.cast<infer t> | ThunkCast<infer t>
 		? t
 		: def extends string
-			? inferString<def, $, args>
+			? inferString<def, $>
 			: def extends array
-				? inferTuple<def, $, args>
+				? inferTuple<def, $>
 				: def extends RegExp
 					? string.matching<string>
 					: def extends object
-						? inferObjectLiteral<def, $, args>
+						? inferObjectLiteral<def, $>
 						: never
 
-export type validateDefinition<def, $, args> = null extends undefined
+export type validateDefinition<def, $> = null extends undefined
 	? ErrorMessage<`'strict' or 'strictNullChecks' must be set to true in your tsconfig's 'compilerOptions'`>
 	: [def] extends [Terminal]
 		? def
 		: def extends string
-			? validateString<def, $, args>
+			? validateString<def, $>
 			: def extends array
-				? validateTuple<def, $, args>
+				? validateTuple<def, $>
 				: def extends BadDefinitionType
 					? writeBadDefinitionTypeMessage<objectKindOrDomainOf<def>>
 					: isUnknown<def> extends true
 						? // this allows the initial list of autocompletions to be populated when a user writes "type()",
 							// before having specified a definition
-							BaseCompletions<$, args> | {}
-						: validateObjectLiteral<def, $, args>
+							BaseCompletions<$> | {}
+						: validateObjectLiteral<def, $>
 
-export type validateDeclared<declared, def, $, args> =
-	def extends validateDefinition<def, $, args>
-		? validateInference<def, declared, $, args>
-		: validateDefinition<def, $, args>
+export type validateDeclared<declared, def, $> = def extends validateDefinition<
+	def,
+	$
+>
+	? validateInference<def, declared, $>
+	: validateDefinition<def, $>
 
-type validateInference<def, declared, $, args> = def extends
+type validateInference<def, declared, $> = def extends
 	| RegExp
 	| type.cast<unknown>
 	| ThunkCast
 	| TupleExpression
-	? validateShallowInference<def, declared, $, args>
+	? validateShallowInference<def, declared, $>
 	: def extends array
 		? declared extends array
 			? {
 					[i in keyof declared]: i extends keyof def
-						? validateInference<def[i], declared[i], $, args>
+						? validateInference<def[i], declared[i], $>
 						: unknown
 				}
-			: evaluate<declarationMismatch<def, declared, $, args>>
+			: evaluate<declarationMismatch<def, declared, $>>
 		: def extends object
 			? evaluate<
 					{
 						[k in requiredKeyOf<declared>]: k extends keyof def
-							? validateInference<def[k], declared[k], $, args>
+							? validateInference<def[k], declared[k], $>
 							: unknown
 					} & {
 						[k in optionalKeyOf<declared> &
@@ -123,24 +125,23 @@ type validateInference<def, declared, $, args> = def extends
 							? validateInference<
 									def[`${k}?`],
 									defined<declared[k]>,
-									$,
-									args
+									$
 								>
 							: unknown
 					}
 				>
-			: validateShallowInference<def, declared, $, args>
+			: validateShallowInference<def, declared, $>
 
-type validateShallowInference<def, declared, $, args> = equals<
-	inferDefinition<def, $, args>,
+type validateShallowInference<def, declared, $> = equals<
+	inferDefinition<def, $>,
 	declared
 > extends true
 	? def
-	: evaluate<declarationMismatch<def, declared, $, args>>
+	: evaluate<declarationMismatch<def, declared, $>>
 
-type declarationMismatch<def, declared, $, args> = {
+type declarationMismatch<def, declared, $> = {
 	declared: declared
-	inferred: inferDefinition<def, $, args>
+	inferred: inferDefinition<def, $>
 }
 
 // functions are ignored in validation so that cyclic thunk definitions can be

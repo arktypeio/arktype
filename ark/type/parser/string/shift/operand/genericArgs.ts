@@ -23,9 +23,8 @@ export type parseGenericArgs<
 	name extends string,
 	params extends string[],
 	unscanned extends string,
-	$,
-	args
-> = parseGenericArgsRecurse<name, params, unscanned, $, args, [], []>
+	$
+> = parseGenericArgsRecurse<name, params, unscanned, $, [], []>
 
 const parseGenericArgsRecurse = (
 	name: string,
@@ -60,13 +59,11 @@ type parseGenericArgsRecurse<
 	params extends string[],
 	unscanned extends string,
 	$,
-	args,
 	argDefs extends string[],
 	argAsts extends unknown[]
 > = parseUntilFinalizer<
 	state.initialize<unscanned>,
-	$,
-	args
+	$
 > extends infer finalArgState extends StaticState
 	? {
 			defs: [
@@ -94,7 +91,6 @@ type parseGenericArgsRecurse<
 						params,
 						nextUnscanned,
 						$,
-						args,
 						nextDefs,
 						nextAsts
 					>

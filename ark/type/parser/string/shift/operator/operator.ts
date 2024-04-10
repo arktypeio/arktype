@@ -41,8 +41,7 @@ export const parseOperator = (s: DynamicStateWithRoot): void => {
 
 export type parseOperator<
 	s extends StaticState,
-	$,
-	args
+	$
 > = s["unscanned"] extends Scanner.shift<infer lookahead, infer unscanned>
 	? lookahead extends "["
 		? unscanned extends Scanner.shift<"]", infer nextUnscanned>
@@ -61,15 +60,11 @@ export type parseOperator<
 							lookahead & Scanner.FinalizingLookahead
 						>
 					: lookahead extends ComparatorStartChar
-						? parseBound<s, lookahead, unscanned, $, args>
+						? parseBound<s, lookahead, unscanned, $>
 						: lookahead extends "%"
 							? parseDivisor<s, unscanned>
 							: lookahead extends Scanner.WhiteSpaceToken
-								? parseOperator<
-										state.scanTo<s, unscanned>,
-										$,
-										args
-									>
+								? parseOperator<state.scanTo<s, unscanned>, $>
 								: state.error<
 										writeUnexpectedCharacterMessage<lookahead>
 									>

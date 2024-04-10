@@ -22,24 +22,24 @@ import type {
 } from "./infer.js"
 import type { astToString } from "./utils.js"
 
-export type validateAst<ast, $, args> = ast extends string
+export type validateAst<ast, $> = ast extends string
 	? validateStringAst<ast, $>
 	: ast extends PostfixExpression<infer operator, infer operand>
 		? operator extends "[]"
-			? validateAst<operand, $, args>
+			? validateAst<operand, $>
 			: never
 		: ast extends InfixExpression<infer operator, infer l, infer r>
 			? operator extends "&" | "|"
-				? validateInfix<ast, $, args>
+				? validateInfix<ast, $>
 				: operator extends Comparator
-					? validateRange<l, operator, r, $, args>
+					? validateRange<l, operator, r, $>
 					: operator extends "%"
-						? validateDivisor<l, $, args>
+						? validateDivisor<l, $>
 						: undefined
 			: ast extends readonly ["keyof", infer operand]
-				? validateAst<operand, $, args>
+				? validateAst<operand, $>
 				: ast extends GenericInstantiationAst
-					? validateGenericArgs<ast["2"], $, args>
+					? validateGenericArgs<ast["2"], $>
 					: ErrorMessage<
 							writeUnexpectedExpressionMessage<astToString<ast>>
 						> & { ast: ast }
@@ -47,13 +47,13 @@ export type validateAst<ast, $, args> = ast extends string
 type writeUnexpectedExpressionMessage<expression extends string> =
 	`Unexpectedly failed to parse the expression resulting from ${expression}`
 
-type validateGenericArgs<argAsts extends unknown[], $, args> = argAsts extends [
+type validateGenericArgs<argAsts extends unknown[], $> = argAsts extends [
 	infer head,
 	...infer tail
 ]
-	? validateAst<head, $, args> extends ErrorMessage<infer message>
+	? validateAst<head, $> extends ErrorMessage<infer message>
 		? ErrorMessage<message>
-		: validateGenericArgs<tail, $, args>
+		: validateGenericArgs<tail, $>
 	: undefined
 
 export const writeUnsatisfiableExpressionError = <expression extends string>(
@@ -95,22 +95,20 @@ type validateStringAst<def extends string, $> = def extends NumberLiteral<
 				? def
 				: undefined
 
-export type validateString<def extends string, $, args> = validateAst<
-	parseString<def, $, args>,
-	$,
-	args
+export type validateString<def extends string, $> = validateAst<
+	parseString<def, $>,
+	$
 > extends infer result extends ErrorMessage
 	? result extends Completion<infer text>
 		? text
 		: result
 	: def
 
-type validateInfix<ast extends InfixExpression, $, args> = validateAst<
+type validateInfix<ast extends InfixExpression, $> = validateAst<
 	ast[0],
-	$,
-	args
+	$
 > extends ErrorMessage<infer message>
 	? ErrorMessage<message>
-	: validateAst<ast[2], $, args> extends ErrorMessage<infer message>
+	: validateAst<ast[2], $> extends ErrorMessage<infer message>
 		? ErrorMessage<message>
 		: undefined
