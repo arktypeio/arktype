@@ -9,7 +9,6 @@ import type {
 	NumberLiteral,
 	writeMalformedNumericLiteralMessage
 } from "@arktype/util"
-import type { Generic } from "../../generic.js"
 import type { Module } from "../../scope.js"
 import type { Comparator } from "../string/reduce/shared.js"
 import type { writeInvalidGenericArgsMessage } from "../string/shift/operand/genericArgs.js"
