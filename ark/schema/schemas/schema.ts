@@ -1,4 +1,5 @@
 import {
+	type Callable,
 	Hkt,
 	type Json,
 	type conform,
@@ -21,6 +22,7 @@ import type { inferSchema } from "../parser/inference.js"
 import type { SchemaScope } from "../scope.js"
 import type { BaseMeta, BaseNodeDeclaration } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
+import type { ArkResult } from "../shared/errors.js"
 import {
 	type NodeKind,
 	type SchemaKind,
@@ -63,7 +65,7 @@ export interface Schema<
 	/** @ts-expect-error allow instantiation assignment to the base type */
 	out t = unknown,
 	$ = any
-> {
+> extends Callable<(data: unknown) => ArkResult<t>> {
 	$: SchemaScope<$>
 	infer: distillOut<t>
 	[inferred]: t
@@ -85,6 +87,8 @@ export interface Schema<
 	keyof(): Schema<keyof this["in"]["infer"], $>
 
 	allows(data: unknown): data is this["in"]["infer"]
+
+	traverse(data: unknown): ArkResult<t>
 
 	constrain<
 		kind extends PrimitiveConstraintKind,
@@ -145,7 +149,7 @@ export class BaseSchema<
 		/** @ts-expect-error allow instantiation assignment to the base type */
 		out d extends BaseSchemaDeclaration = BaseSchemaDeclaration
 	>
-	extends BaseNode<unknown, d>
+	extends BaseNode<d>
 	implements SchemaProps
 {
 	readonly branches: readonly Node<UnionChildKind>[] = this.hasKind("union")

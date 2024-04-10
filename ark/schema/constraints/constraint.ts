@@ -65,7 +65,7 @@ export interface BaseConstraintDeclaration extends BaseNodeDeclaration {
 export class BaseConstraint<
 	/** @ts-expect-error allow instantiation assignment to the base type */
 	out d extends BaseConstraintDeclaration = BaseConstraintDeclaration
-> extends BaseNode<d["prerequisite"], d> {
+> extends BaseNode<d> {
 	readonly [arkKind] = "constraint"
 
 	intersect<r extends BaseConstraint>(

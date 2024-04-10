@@ -142,7 +142,6 @@ export type BaseAttachments<d extends BaseNodeDeclaration> = {
 }
 
 export class BaseNode<
-	t = any,
 	/** @ts-expect-error allow instantiation assignment to the base type */
 	out d extends BaseNodeDeclaration = BaseNodeDeclaration
 > extends Callable<
@@ -236,14 +235,14 @@ export class BaseNode<
 		return this(data)
 	}
 
-	#inCache?: BaseNode<distillConstrainableOut<t>>
-	get in(): BaseNode<distillConstrainableIn<t>> {
+	#inCache?: BaseNode
+	get in(): BaseNode {
 		this.#inCache ??= this.#getIo("in")
 		return this.#inCache as never
 	}
 
 	#outCache?: BaseNode
-	get out(): BaseNode<distillConstrainableOut<t>> {
+	get out(): BaseNode {
 		this.#outCache ??= this.#getIo("out")
 		return this.#outCache as never
 	}
