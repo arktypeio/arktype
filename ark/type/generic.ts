@@ -1,7 +1,6 @@
 import {
 	type GenericNodeInstantiation,
 	type GenericProps,
-	type ambient,
 	arkKind
 } from "@arktype/schema"
 import { Callable, type conform, flatMorph } from "@arktype/util"
@@ -29,13 +28,7 @@ export type GenericTypeInstantiation<
 			[i in keyof params]: validateTypeRoot<args[i & keyof args], $>
 		}
 	>
-) => Type<
-	inferDefinition<
-		def,
-		$ & ambient & bindGenericInstantiation<params, $, args>
-	>,
-	$
->
+) => Type<inferDefinition<def, $, bindGenericInstantiation<params, $, args>>, $>
 
 export type GenericInstantiation<
 	params extends string[] = string[],

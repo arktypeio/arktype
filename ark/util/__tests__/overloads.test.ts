@@ -4,7 +4,7 @@ import type { conform } from "../generics.js"
 import type { overloadOf } from "../unionToTuple.js"
 
 declare const f: {
-	(): undefined
+	(): void
 	(a?: 1): 1
 	(a: 2, b: 2): 2
 }
@@ -21,7 +21,7 @@ describe("overloads", () => {
 	})
 	it("returns", () => {
 		const t = {} as ReturnType<overloadOf<typeof f>>
-		attest<undefined | 1 | 2>(t)
+		attest<void | 1 | 2>(t)
 	})
 	it("overload return", () => {
 		const limit = {} as ((s: string) => string) & ((n: number) => number)
