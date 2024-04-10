@@ -1,8 +1,7 @@
 import type { Json, array, flattenListable } from "@arktype/util"
 import type { BaseNode, Node, SchemaDef } from "../base.js"
 import type { NodeDef, reducibleKindOf } from "../kinds.js"
-import type { inferSchema } from "../parser/inference.js"
-import type { NodeParseOptions } from "../parser/parse.js"
+import type { NodeParseOptions } from "../parse.js"
 import type { distillIn, distillOut } from "../schemas/morph.js"
 import type { BaseSchema } from "../schemas/schema.js"
 import type {
@@ -12,8 +11,22 @@ import type {
 	exportedNameOf
 } from "../scope.js"
 import type { NodeKind, SchemaKind } from "../shared/implement.js"
+import type { inferSchema, validateSchema } from "./inference.js"
 import type { SchemaModule } from "./module.js"
 import type { Schema } from "./schema.js"
+
+export type validateAliases<aliases> = {
+	[k in keyof aliases]: validateSchema<aliases[k], aliases>
+}
+
+export type instantiateAliases<aliases> = {
+	[k in keyof aliases]: inferSchema<aliases[k], aliases>
+} & unknown
+
+export declare const schemaScope: <const aliases>(
+	aliases: validateAliases<aliases>,
+	config?: ArkConfig
+) => SchemaScope2<instantiateAliases<aliases>>
 
 export interface SchemaScope2<$ = any> {
 	$: $

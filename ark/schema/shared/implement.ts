@@ -14,18 +14,14 @@ import {
 import { type BaseAttachments, BaseNode, type Node } from "../base.js"
 import type { PropsGroupInput } from "../constraints/props/props.js"
 import type { Declaration, Inner, errorContext } from "../kinds.js"
-import type { NodeParseContext } from "../parser/parse.js"
+import type { NodeParseContext } from "../parse.js"
 import type { IntersectionInner } from "../schemas/intersection.js"
 import type {
 	BaseSchema,
 	schemaKindOrRightOf,
 	schemaKindRightOf
 } from "../schemas/schema.js"
-import type {
-	NodeConfig,
-	ParsedUnknownNodeConfig,
-	SchemaScope
-} from "../scope.js"
+import type { NodeConfig, ParsedUnknownNodeConfig, RawScope } from "../scope.js"
 import type {
 	BaseErrorContext,
 	BaseMeta,
@@ -157,11 +153,7 @@ type accumulateRightKinds<
 export type ConstraintIntersection<
 	lKind extends ConstraintKind,
 	rKind extends kindOrRightOf<lKind>
-> = (
-	l: Node<lKind>,
-	r: Node<rKind>,
-	$: SchemaScope
-) => BaseNode | Disjoint | null
+> = (l: Node<lKind>, r: Node<rKind>, $: RawScope) => BaseNode | Disjoint | null
 
 export type ConstraintIntersectionMap<kind extends ConstraintKind> = evaluate<
 	{
@@ -174,7 +166,7 @@ export type ConstraintIntersectionMap<kind extends ConstraintKind> = evaluate<
 export type TypeIntersection<
 	lKind extends SchemaKind,
 	rKind extends schemaKindOrRightOf<lKind>
-> = (l: Node<lKind>, r: Node<rKind>, $: SchemaScope) => BaseSchema | Disjoint
+> = (l: Node<lKind>, r: Node<rKind>, $: RawScope) => BaseSchema | Disjoint
 
 export type TypeIntersectionMap<kind extends SchemaKind> = {
 	[rKind in schemaKindOrRightOf<kind>]: TypeIntersection<kind, rKind>
@@ -188,7 +180,7 @@ export type UnknownIntersectionMap = {
 	[k in NodeKind]?: (
 		l: BaseNode,
 		r: BaseNode,
-		$: SchemaScope
+		$: RawScope
 	) => UnknownIntersectionResult
 }
 
@@ -289,7 +281,7 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	collapsibleKey?: keyof d["inner"]
 	reduce?: (
 		inner: d["inner"],
-		$: SchemaScope
+		$: RawScope
 	) => Node<d["reducibleTo"]> | Disjoint | undefined
 	construct: (
 		self: parsedAttachmentsOf<d>

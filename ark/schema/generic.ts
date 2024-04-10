@@ -1,9 +1,9 @@
 import { Callable, type conform, flatMorph, type repeat } from "@arktype/util"
+import type { inferSchema } from "./api/inference.js"
 import type { SchemaDef } from "./base.js"
 import { keywordNodes } from "./keywords/keywords.js"
-import type { inferSchema } from "./parser/inference.js"
 import type { BaseSchema, Schema } from "./schemas/schema.js"
-import type { SchemaScope } from "./scope.js"
+import type { RawScope } from "./scope.js"
 import { arkKind } from "./shared/utils.js"
 
 export type GenericNodeInstantiation<
@@ -31,6 +31,8 @@ export const validateUninstantiatedGenericNode = (
 	return g
 }
 
+const s: WeakSet<object> = new Set()
+
 // Comparing to Generic directly doesn't work well, so we compare to only its props
 export interface GenericProps<
 	params extends string[] = string[],
@@ -40,7 +42,7 @@ export interface GenericProps<
 	[arkKind]: "generic"
 	params: params
 	def: def
-	$: SchemaScope<$>
+	$: RawScope<$>
 }
 
 export class GenericSchema<
@@ -56,7 +58,7 @@ export class GenericSchema<
 	constructor(
 		public params: params,
 		public def: def,
-		public $: SchemaScope<$>
+		public $: RawScope<$>
 	) {
 		super((...args: SchemaDef[]) => {
 			const argNodes: Record<string, BaseSchema> = flatMorph(

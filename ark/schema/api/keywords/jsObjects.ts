@@ -1,4 +1,4 @@
-import type { SchemaModule } from "../api/module.js"
+import type { SchemaModule } from "../module.js"
 import { schemaScope } from "../scope.js"
 
 export namespace jsObjects {

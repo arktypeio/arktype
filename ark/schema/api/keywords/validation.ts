@@ -1,4 +1,4 @@
-import type { SchemaModule } from "../api/module.js"
+import type { SchemaModule } from "../module.js"
 import { root, schemaScope } from "../scope.js"
 import { creditCard } from "./utils/creditCard.js"
 

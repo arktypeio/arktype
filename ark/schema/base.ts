@@ -35,7 +35,7 @@ import type { MorphNode } from "./schemas/morph.js"
 import type { ProtoNode } from "./schemas/proto.js"
 import type { UnionNode } from "./schemas/union.js"
 import type { UnitNode } from "./schemas/unit.js"
-import type { SchemaScope } from "./scope.js"
+import type { RawScope } from "./scope.js"
 import type { NodeCompiler } from "./shared/compile.js"
 import type {
 	BaseMeta,
@@ -79,7 +79,7 @@ export interface UnknownAttachments {
 	readonly children: BaseNode[]
 	readonly innerId: string
 	readonly typeId: string
-	readonly $: SchemaScope
+	readonly $: RawScope
 	readonly description: string
 }
 

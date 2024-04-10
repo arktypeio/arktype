@@ -10,7 +10,7 @@ import type { SchemaModule } from "../api/module.js"
 import type { BaseNode, Constraint } from "../base.js"
 import type { GenericSchema } from "../generic.js"
 import type { Schema } from "../schemas/schema.js"
-import type { SchemaScope } from "../scope.js"
+import type { RawScope } from "../scope.js"
 import type { ArkTypeError } from "./errors.js"
 
 export const makeRootAndArrayPropertiesMutable = <o extends object>(
@@ -55,7 +55,7 @@ export const arkKind = Symbol("ArkTypeInternalKind")
 export interface ArkKinds {
 	constraint: Constraint
 	schema: Schema
-	scope: SchemaScope
+	scope: RawScope
 	generic: GenericSchema
 	module: SchemaModule
 	error: ArkTypeError

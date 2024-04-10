@@ -3,7 +3,7 @@ import {
 	wellFormedIntegerMatcher,
 	wellFormedNumberMatcher
 } from "@arktype/util"
-import type { SchemaModule } from "../api/module.js"
+import type { SchemaModule } from "../module.js"
 import type { Out } from "../schemas/morph.js"
 import { root, schemaScope } from "../scope.js"
 import { parsedDate } from "./utils/date.js"

@@ -1,5 +1,5 @@
-import type { SchemaModule } from "../api/module.js"
-import type { type } from "../parser/inference.js"
+import type { type } from "../inference.js"
+import type { SchemaModule } from "../module.js"
 import { schemaScope } from "../scope.js"
 
 export namespace tsKeywords {

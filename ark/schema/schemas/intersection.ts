@@ -21,8 +21,8 @@ import {
 } from "../constraints/props/props.js"
 import { tsKeywords } from "../keywords/tsKeywords.js"
 import type { Inner, MutableInner, NodeDef, Prerequisite } from "../kinds.js"
-import type { NodeParseContext } from "../parser/parse.js"
-import type { SchemaScope } from "../scope.js"
+import type { NodeParseContext } from "../parse.js"
+import type { RawScope } from "../scope.js"
 import { type BaseMeta, type declareNode, metaKeys } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { ArkTypeError } from "../shared/errors.js"
@@ -106,7 +106,7 @@ const intersectionChildKeyParser =
 const intersectIntersections = (
 	reduced: IntersectionInner,
 	raw: IntersectionInner,
-	$: SchemaScope
+	$: RawScope
 ): BaseSchema | Disjoint => {
 	// avoid treating adding instance keys as keys of lRoot, rRoot
 	if (reduced instanceof BaseSchema && reduced.hasKind("intersection"))
@@ -365,7 +365,7 @@ export const intersectionImplementation =
 
 export type IntersectionNode = BaseSchema<IntersectionDeclaration>
 
-const maybeCreatePropsGroup = (inner: IntersectionInner, $: SchemaScope) => {
+const maybeCreatePropsGroup = (inner: IntersectionInner, $: RawScope) => {
 	const propsInput = pick(inner, propKeys)
 	return isEmptyObject(propsInput) ? null : new PropsGroup(propsInput, $)
 }
@@ -411,7 +411,7 @@ type ConstraintIntersectionState = {
 	l: Constraint[]
 	r: Constraint[]
 	types: BaseSchema[]
-	$: SchemaScope
+	$: RawScope
 }
 
 const intersectConstraints = (

@@ -4,8 +4,8 @@ import {
 	type GenericProps,
 	type NodeParseOptions,
 	type PreparsedNodeResolution,
+	RawScope,
 	SchemaModule,
-	SchemaScope,
 	type ambient,
 	arkKind
 } from "@arktype/schema"
@@ -169,7 +169,7 @@ declare global {
 export const scope: ScopeParser = ((def: Dict, config: ArkConfig = {}) =>
 	new Scope(def, config)) as never
 
-export class Scope<$ = any> extends SchemaScope<$> {
+export class Scope<$ = any> extends RawScope<$> {
 	private parseCache: Record<string, BaseSchema> = {}
 
 	declare hktNode: Type

@@ -1,4 +1,4 @@
-import { root } from "../../scope.js"
+import { root } from "../scope.js"
 
 type DayDelimiter = "." | "/" | "-"
 

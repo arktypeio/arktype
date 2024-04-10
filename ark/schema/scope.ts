@@ -6,10 +6,8 @@ import {
 	type evaluate,
 	flatMorph,
 	type flattenListable,
-	type instantiate,
 	isThunk,
 	type requireKeys,
-	type satisfy,
 	throwParseError
 } from "@arktype/util"
 import { SchemaModule } from "./api/module.js"
@@ -22,14 +20,8 @@ import {
 } from "./generic.js"
 import type { Ark } from "./keywords/keywords.js"
 import type { NodeDef, reducibleKindOf } from "./kinds.js"
-import type { inferSchema, validateSchema } from "./parser/inference.js"
-import {
-	type NodeParseOptions,
-	parseNode,
-	schemaKindOf
-} from "./parser/parse.js"
-import type { distillIn, distillOut } from "./schemas/morph.js"
-import type { BaseSchema, Schema } from "./schemas/schema.js"
+import { type NodeParseOptions, parseNode, schemaKindOf } from "./parse.js"
+import type { BaseSchema } from "./schemas/schema.js"
 import { NodeCompiler } from "./shared/compile.js"
 import type {
 	ActualWriter,
@@ -148,7 +140,7 @@ export type exportedNameOf<$> = Exclude<keyof $ & string, PrivateDeclaration>
 
 export type PrivateDeclaration<key extends string = string> = `#${key}`
 
-export class SchemaScope<$ = any>
+export class RawScope<$ = any>
 	implements internalImplementationOf<SchemaScope2, "infer" | "inferIn" | "$">
 {
 	readonly config: ArkConfig
@@ -183,7 +175,7 @@ export class SchemaScope<$ = any>
 		) as never
 	}
 
-	static root: SchemaScope<{}> = new SchemaScope({})
+	static root: RawScope<{}> = new RawScope({})
 
 	node(kind: NodeKind, def: unknown, opts?: NodeParseOptions) {
 		return parseNode(kind, def, this, opts) as never
@@ -365,7 +357,7 @@ const resolutionsOfModule = (typeSet: SchemaExportCache) => {
 	return result
 }
 
-export const root: SchemaScope<{}> = new SchemaScope({})
+export const root: RawScope<{}> = new RawScope({})
 
 export const { schema, defineSchema, node, units } = root
 
@@ -433,16 +425,3 @@ const compileSpace = (references: readonly BaseNode[]) => {
 			}
 		>()()
 }
-
-export type validateAliases<aliases> = {
-	[k in keyof aliases]: validateSchema<aliases[k], aliases>
-}
-
-export type instantiateAliases<aliases> = {
-	[k in keyof aliases]: inferSchema<aliases[k], aliases>
-} & unknown
-
-export declare const schemaScope: <const aliases>(
-	aliases: validateAliases<aliases>,
-	config?: ArkConfig
-) => SchemaScope2<instantiateAliases<aliases>>

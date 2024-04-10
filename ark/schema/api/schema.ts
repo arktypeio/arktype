@@ -3,7 +3,6 @@ import type { SchemaDef } from "../base.js"
 import type { constrain } from "../constraints/ast.js"
 import type { PrimitiveConstraintKind } from "../constraints/constraint.js"
 import type { NodeDef } from "../kinds.js"
-import type { inferSchema } from "../parser/inference.js"
 import type { constraintKindOf } from "../schemas/intersection.js"
 import type {
 	Morph,
@@ -13,19 +12,20 @@ import type {
 	distillOut,
 	inferMorphOut
 } from "../schemas/morph.js"
-import type { SchemaScope } from "../scope.js"
+import type { RawScope } from "../scope.js"
 import type { BaseMeta } from "../shared/declare.js"
 import type { Disjoint } from "../shared/disjoint.js"
 import type { ArkResult } from "../shared/errors.js"
 import type { inferIntersection } from "../shared/intersections.js"
 import type { inferred } from "../shared/utils.js"
+import type { inferSchema } from "./inference.js"
 
 export interface Schema<
 	/** @ts-expect-error allow instantiation assignment to the base type */
 	out t = unknown,
 	$ = any
 > extends Callable<(data: unknown) => ArkResult<t>> {
-	$: SchemaScope<$>
+	$: RawScope<$>
 	infer: distillOut<t>
 	[inferred]: t
 	[Hkt.args]: [t: unknown, $: unknown]

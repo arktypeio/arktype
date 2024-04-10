@@ -8,7 +8,7 @@ import {
 import type { Node } from "../../base.js"
 import type { IntersectionNode } from "../../schemas/intersection.js"
 import type { BaseSchema } from "../../schemas/schema.js"
-import type { SchemaScope } from "../../scope.js"
+import type { RawScope } from "../../scope.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { PropKind } from "../../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/traversal.js"
@@ -26,7 +26,7 @@ export type PropsGroupInput = Pick<
 export class PropsGroup extends DynamicBase<PropsGroupInput> {
 	constructor(
 		public inner: PropsGroupInput,
-		public $: SchemaScope
+		public $: RawScope
 	) {
 		super(inner)
 	}

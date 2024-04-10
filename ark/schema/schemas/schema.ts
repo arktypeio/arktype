@@ -6,6 +6,7 @@ import {
 	flatMorph,
 	type instantiate
 } from "@arktype/util"
+import type { inferSchema } from "../api/inference.js"
 import type { Schema } from "../api/schema.js"
 import {
 	type BaseAttachments,
@@ -19,8 +20,7 @@ import {
 	throwInvalidOperandError
 } from "../constraints/constraint.js"
 import type { NodeDef, reducibleKindOf } from "../kinds.js"
-import type { inferSchema } from "../parser/inference.js"
-import type { SchemaScope } from "../scope.js"
+import type { RawScope } from "../scope.js"
 import type { BaseMeta, BaseNodeDeclaration } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { ArkResult } from "../shared/errors.js"

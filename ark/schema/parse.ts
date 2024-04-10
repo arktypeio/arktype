@@ -12,11 +12,11 @@ import {
 	type propValueOf,
 	throwParseError
 } from "@arktype/util"
-import { BaseNode, type UnknownAttachments } from "../base.js"
-import { BaseSchema } from "../schemas/schema.js"
-import type { SchemaScope } from "../scope.js"
-import type { BaseNodeDeclaration } from "../shared/declare.js"
-import { Disjoint } from "../shared/disjoint.js"
+import { BaseNode, type UnknownAttachments } from "./base.js"
+import { BaseSchema } from "./schemas/schema.js"
+import type { RawScope } from "./scope.js"
+import type { BaseNodeDeclaration } from "./shared/declare.js"
+import { Disjoint } from "./shared/disjoint.js"
 import {
 	type KeyDefinitions,
 	type NodeKind,
@@ -27,8 +27,8 @@ import {
 	isNodeKind,
 	precedenceOfKind,
 	schemaKinds
-} from "../shared/implement.js"
-import { hasArkKind, isNode } from "../shared/utils.js"
+} from "./shared/implement.js"
+import { hasArkKind, isNode } from "./shared/utils.js"
 
 export type NodeParseOptions = {
 	alias?: string
@@ -43,7 +43,7 @@ export type NodeParseOptions = {
 }
 
 export interface NodeParseContext extends NodeParseOptions {
-	$: SchemaScope
+	$: RawScope
 	raw: unknown
 }
 
@@ -117,7 +117,7 @@ const discriminateSchemaKind = (def: unknown): SchemaKind => {
 export const parseNode = (
 	kinds: NodeKind | array<SchemaKind>,
 	schema: unknown,
-	$: SchemaScope,
+	$: RawScope,
 	opts?: NodeParseOptions
 ): BaseNode => {
 	const kind: NodeKind =
