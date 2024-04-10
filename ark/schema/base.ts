@@ -25,23 +25,16 @@ import type { RegexNode } from "./constraints/refinements/regex.js"
 import type {
 	Inner,
 	NodeDef,
-	ioKindOf,
 	nodeImplementationsByKind,
 	reducibleKindOf
 } from "./kinds.js"
-import type {
-	BaseConstraint,
-	BaseSchema,
-	ClosedNodeKind,
-	OpenNodeKind
-} from "./main.js"
+import type { BaseConstraint, BaseSchema, OpenNodeKind } from "./main.js"
 import type { DomainNode } from "./schemas/domain.js"
 import type { IntersectionNode } from "./schemas/intersection.js"
 import type {
 	MorphNode,
 	distillConstrainableIn,
 	distillConstrainableOut,
-	distillIn,
 	distillOut
 } from "./schemas/morph.js"
 import type { ProtoNode } from "./schemas/proto.js"

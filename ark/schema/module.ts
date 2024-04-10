@@ -5,7 +5,6 @@ import {
 	type isAnyOrNever
 } from "@arktype/util"
 import type { BaseSchema, arkKind } from "./main.js"
-import type { exportedNameOf } from "./scope.js"
 
 export type PreparsedNodeResolution = { [arkKind]: "generic" | "module" }
 
