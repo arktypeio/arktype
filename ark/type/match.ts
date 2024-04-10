@@ -179,7 +179,7 @@ export const createMatchParser = <$>($: Scope): MatchParser<$> => {
 
 		const parser = {
 			when: (when: unknown, then: Morph) => {
-				handledCases.push({ when: $.parseTypeRoot(when, {}), then })
+				handledCases.push({ when: $.parseRoot(when, {}), then })
 
 				return parser
 			},

@@ -243,14 +243,14 @@ export class BaseNode<
 		return this(data)
 	}
 
-	#inCache?: BaseNode
-	get in(): Node<ioKindOf<d["kind"]>, distillConstrainableIn<t>> {
+	#inCache?: BaseNode<distillConstrainableOut<t>>
+	get in(): BaseNode<distillConstrainableIn<t>> {
 		this.#inCache ??= this.#getIo("in")
 		return this.#inCache as never
 	}
 
 	#outCache?: BaseNode
-	get out(): Node<ioKindOf<d["kind"]>, distillConstrainableOut<t>> {
+	get out(): BaseNode<distillConstrainableOut<t>> {
 		this.#outCache ??= this.#getIo("out")
 		return this.#outCache as never
 	}

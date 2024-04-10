@@ -236,6 +236,10 @@ export class SchemaScope<$ = any> {
 		return parseNode(kinds, schema, this, opts) as never
 	}
 
+	parseRoot(def: unknown, opts?: NodeParseOptions): Schema {
+		return this.schema(def as never, opts)
+	}
+
 	maybeResolve(name: string): Schema | GenericSchema | undefined {
 		const cached = this.resolutions[name]
 		if (cached) {
@@ -270,15 +274,13 @@ export class SchemaScope<$ = any> {
 			const resolution = prefixDef[name.slice(dotIndex + 1)]
 			// if the first part of name is a submodule but the suffix is
 			// unresolvable, we can throw immediately
-			if (!resolution) {
+			if (!resolution)
 				return throwParseError(writeUnresolvableMessage(name))
-			}
 			this.resolutions[name] = resolution
 			return resolution
 		}
-		if (prefixDef !== undefined) {
+		if (prefixDef !== undefined)
 			return throwParseError(writeNonSubmoduleDotMessage(dotPrefix))
-		}
 		// if the name includes ".", but the prefix is not an alias, it
 		// might be something like a decimal literal, so just fall through to return
 	}
@@ -333,13 +335,7 @@ export class SchemaScope<$ = any> {
 				if (hasArkKind(def, "module")) {
 					this.#exportCache[name] = def
 				} else {
-					this.#exportCache[name] = new Type(
-						this.parseTypeRoot(def, {
-							baseName: name,
-							args: {}
-						}),
-						this
-					)
+					this.#exportCache[name] = this.parseRoot(def)
 				}
 			}
 			this.#exportedResolutions = resolutionsOfModule(this.#exportCache)

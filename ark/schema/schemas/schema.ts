@@ -107,28 +107,13 @@ export class BaseSchema<
 		return this.$.schema(branches) as never
 	}
 
-	// morph<morph extends Morph<this["infer"]>>(
-	// 	morph: morph
-	// ): instantiate<
-	// 	this,
-	// 	[(In: distillConstrainableIn<t>) => Out<inferMorphOut<morph>>, $]
-	// >
-	// morph(morph: Morph): unknown {
-	// 	if (this.hasKind("union")) {
-	// 		const branches = this.branches.map((node) => node.morph(morph))
-	// 		return this.$.node("union", { ...this.inner, branches })
-	// 	}
-	// 	if (this.hasKind("morph")) {
-	// 		return this.$.node("morph", {
-	// 			...this.inner,
-	// 			morphs: [...this.morphs, morph]
-	// 		})
-	// 	}
-	// 	return this.$.node("morph", {
-	// 		in: this,
-	// 		morphs: [morph]
-	// 	})
-	// }
+	get in(): Schema<distillConstrainableIn<t>, $> {
+		return super.in as never
+	}
+
+	get out(): Schema<distillConstrainableOut<t>, $> {
+		return super.out as never
+	}
 
 	assert(data: unknown): this["infer"] {
 		const result = this.traverse(data)
@@ -141,19 +126,19 @@ export class BaseSchema<
 	// 	return this
 	// }
 
-	// // TODO: i/o
-	// extract(other: Schema): instantiate<this, [t, $]> {
-	// 	return this.$.schema(
-	// 		this.branches.filter((branch) => branch.extends(other))
-	// 	) as never
-	// }
+	// TODO: i/o
+	extract(other: Schema): Schema<t, $> {
+		return this.$.schema(
+			this.branches.filter((branch) => branch.extends(other))
+		) as never
+	}
 
-	// // TODO: i/o
-	// exclude(other: Schema): instantiate<this, [t, $]> {
-	// 	return this.$.schema(
-	// 		this.branches.filter((branch) => !branch.extends(other))
-	// 	) as never
-	// }
+	// TODO: i/o
+	exclude(other: Schema): Schema<t, $> {
+		return this.$.schema(
+			this.branches.filter((branch) => !branch.extends(other))
+		) as never
+	}
 
 	array(): Schema<t[], $> {
 		return this.$.schema(

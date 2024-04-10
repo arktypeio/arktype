@@ -88,7 +88,7 @@ export const createTypeParser = <$>($: Scope): TypeParser<$> => {
 	const parser = (...args: unknown[]): Type | Generic => {
 		if (args.length === 1) {
 			// treat as a simple definition
-			return $.parseTypeRoot(args[0])
+			return $.parseRoot(args[0])
 		}
 		if (
 			args.length === 2 &&
@@ -106,7 +106,7 @@ export const createTypeParser = <$>($: Scope): TypeParser<$> => {
 		// otherwise, treat as a tuple expression. technically, this also allows
 		// non-expression tuple definitions to be parsed, but it's not a supported
 		// part of the API as specified by the associated types
-		return $.parseTypeRoot(args)
+		return $.parseRoot(args)
 	}
 	return parser as never
 }
@@ -116,7 +116,7 @@ export class Type<out t = unknown, $ = any> extends BaseSchema<t, $> {
 		public definition: unknown,
 		public $: Scope<$>
 	) {
-		const root = $.parseTypeRoot(definition) as {} as Schema<t>
+		const root = $.parseRoot(definition) as {} as Schema<t>
 		super(root.traverse as never)
 	}
 
@@ -127,12 +127,20 @@ export class Type<out t = unknown, $ = any> extends BaseSchema<t, $> {
 	and<def>(
 		def: validateTypeRoot<def, $>
 	): Type<inferIntersection<t, inferTypeRoot<def, $>>, $> {
-		const result = this.intersect(this.$.parseTypeRoot(def))
+		const result = this.intersect(this.$.parseRoot(def))
 		return result instanceof Disjoint ? result.throw() : (result as never)
 	}
 
 	or<def>(def: validateTypeRoot<def, $>): Type<t | inferTypeRoot<def, $>, $> {
-		return new Type(super.union(this.$.parseTypeRoot(def)), this.$) as never
+		return new Type(super.union(this.$.parseRoot(def)), this.$) as never
+	}
+
+	get in(): Type<distillConstrainableIn<t>, $> {
+		return super.in as never
+	}
+
+	get out(): Type<distillConstrainableOut<t>, $> {
+		return super.out as never
 	}
 
 	declare array: () => Type<t[], $>
