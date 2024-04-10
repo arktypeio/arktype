@@ -149,7 +149,16 @@ export class Type<out t = unknown, $ = any> extends BaseSchema<t, $> {
 	morph<morph extends Morph<this["infer"]>, outValidatorDef = never>(
 		morph: morph,
 		outValidator?: validateTypeRoot<outValidatorDef, $>
-	): Type<(In: distillConstrainableIn<t>) => Out<inferMorphOut<morph>>, $>
+	): Type<
+		(
+			In: distillConstrainableIn<t>
+		) => Out<
+			[outValidatorDef] extends [never]
+				? inferMorphOut<morph>
+				: distillConstrainableOut<inferTypeRoot<outValidatorDef, $>>
+		>,
+		$
+	>
 	morph(morph: Morph, outValidator?: unknown): unknown {
 		return new Type(super.morphNode(morph, outValidator as never), this.$)
 	}

@@ -18,28 +18,27 @@ describe("morph", () => {
 		const { errors } = t("foo")
 		attest(errors?.summary).snap("must be a number (was string)")
 	})
-	it("endomorph", () => {
+	it("within type", () => {
 		const t = type(["boolean", "=>", (data) => !data])
 		attest<Type<(In: boolean) => Out<boolean>>>(t)
 		const { out } = t(true)
 		attest<boolean | undefined>(out).equals(false)
 	})
-	// TODO: chainable?
-	// it("validated output", () => {
-	// 	const parsedUser = type("string").morph((s) => JSON.parse(s), {
-	// 		name: "string",
-	// 		age: "number"
-	// 	})
-	// 	attest<
-	// 		Type<
-	// 			(In: string) => Out<{
-	// 				name: string
-	// 				age: number
-	// 			}>,
-	// 			{}
-	// 		>
-	// 	>(parsedUser)
-	// })
+	it("validated output", () => {
+		const parsedUser = type("string").morph((s) => JSON.parse(s), {
+			name: "string",
+			age: "number"
+		})
+		attest<
+			Type<
+				(In: string) => Out<{
+					name: string
+					age: number
+				}>,
+				{}
+			>
+		>(parsedUser)
+	})
 	it("any as out", () => {
 		const t = type("string", "=>", (s) => s as any)
 		attest<string>(t.in.infer)
