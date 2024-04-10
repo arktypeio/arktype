@@ -9,8 +9,11 @@ import {
 	type instantiate,
 	isThunk,
 	type requireKeys,
+	type satisfy,
 	throwParseError
 } from "@arktype/util"
+import { SchemaModule } from "./api/module.js"
+import type { SchemaScope2 } from "./api/scope.js"
 import type { BaseNode, Node, SchemaDef } from "./base.js"
 import { mergeConfigs } from "./config.js"
 import {
@@ -19,7 +22,6 @@ import {
 } from "./generic.js"
 import type { Ark } from "./keywords/keywords.js"
 import type { NodeDef, reducibleKindOf } from "./kinds.js"
-import { SchemaModule } from "./module.js"
 import type { inferSchema, validateSchema } from "./parser/inference.js"
 import {
 	type NodeParseOptions,
@@ -42,7 +44,7 @@ import type {
 	SchemaKind
 } from "./shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "./shared/traversal.js"
-import { hasArkKind } from "./shared/utils.js"
+import { hasArkKind, type internalImplementationOf } from "./shared/utils.js"
 
 export type nodeResolutions<keywords> = { [k in keyof keywords]: BaseSchema }
 
@@ -146,14 +148,9 @@ export type exportedNameOf<$> = Exclude<keyof $ & string, PrivateDeclaration>
 
 export type PrivateDeclaration<key extends string = string> = `#${key}`
 
-export class SchemaScope<$ = any> {
-	declare $: $
-	declare infer: distillOut<$>
-	declare inferIn: distillIn<$>
-	declare hktNode: BaseSchema
-	declare hktModule: SchemaModule
-	declare hktGeneric: GenericSchema
-
+export class SchemaScope<$ = any>
+	implements internalImplementationOf<SchemaScope2, "infer" | "inferIn" | "$">
+{
 	readonly config: ArkConfig
 	readonly resolvedConfig: ResolvedArkConfig
 
@@ -188,29 +185,19 @@ export class SchemaScope<$ = any> {
 
 	static root: SchemaScope<{}> = new SchemaScope({})
 
-	node<kind extends NodeKind, const def extends NodeDef<kind>>(
-		kind: kind,
-		def: def,
-		opts?: NodeParseOptions
-	): Node<reducibleKindOf<kind>> {
+	node(kind: NodeKind, def: unknown, opts?: NodeParseOptions) {
 		return parseNode(kind, def, this, opts) as never
 	}
 
-	schema<const def extends SchemaDef>(
-		def: def,
-		opts?: NodeParseOptions
-	): Schema<inferSchema<def, $>, $> {
+	schema(def: SchemaDef, opts?: NodeParseOptions): BaseSchema {
 		return parseNode(schemaKindOf(def), def, this, opts) as never
 	}
 
-	defineSchema<const def extends SchemaDef>(def: def): def {
+	defineSchema(def: SchemaDef): SchemaDef {
 		return def
 	}
 
-	units<const branches extends array>(
-		values: branches,
-		opts?: NodeParseOptions
-	): Schema<branches[number], $> {
+	units(values: unknown[], opts?: NodeParseOptions): BaseSchema {
 		{
 			const uniqueValues: unknown[] = []
 			for (const value of values) {
@@ -290,34 +277,18 @@ export class SchemaScope<$ = any> {
 		return hasArkKind(result, "schema") ? (result as never) : undefined
 	}
 
-	import<names extends exportedNameOf<$>[]>(
-		...names: names
-	): instantiate<
-		this["hktModule"],
-		destructuredImportContext<
-			$,
-			names extends [] ? exportedNameOf<$> : names[number]
-		>
-	> {
+	import(...names: string[]) {
 		return new SchemaModule(
 			flatMorph(this.export(...names) as any, (alias, value) => [
 				`#${alias}`,
 				value
 			]) as never
-		) as never
+		)
 	}
 
 	#exportedResolutions: SchemaScopeResolutions | undefined
 	#exportCache: SchemaExportCache | undefined
-	export<names extends exportedNameOf<$>[]>(
-		...names: names
-	): instantiate<
-		this["hktModule"],
-		destructuredExportContext<
-			$,
-			names extends [] ? exportedNameOf<$> : names[number]
-		>
-	> {
+	export(...names: string[]) {
 		if (!this.#exportCache) {
 			this.#exportCache = {}
 			for (const name of this.exportedNames) {
@@ -474,4 +445,4 @@ export type instantiateAliases<aliases> = {
 export declare const schemaScope: <const aliases>(
 	aliases: validateAliases<aliases>,
 	config?: ArkConfig
-) => SchemaScope<instantiateAliases<aliases>>
+) => SchemaScope2<instantiateAliases<aliases>>

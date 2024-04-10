@@ -6,6 +6,7 @@ import {
 	flatMorph,
 	type instantiate
 } from "@arktype/util"
+import type { Schema } from "../api/schema.js"
 import {
 	type BaseAttachments,
 	BaseNode,
@@ -30,7 +31,12 @@ import {
 	type kindRightOf,
 	schemaKindsRightOf
 } from "../shared/implement.js"
-import { arkKind, type inferred } from "../shared/utils.js"
+import type { inferIntersection } from "../shared/intersections.js"
+import {
+	arkKind,
+	type inferred,
+	type internalImplementationOf
+} from "../shared/utils.js"
 import type { constraintKindOf } from "./intersection.js"
 import type {
 	Morph,
@@ -61,96 +67,13 @@ export interface BaseSchemaAttachments<d extends BaseNodeDeclaration>
 	rawKeyOf(): BaseSchema
 }
 
-export interface Schema<
-	/** @ts-expect-error allow instantiation assignment to the base type */
-	out t = unknown,
-	$ = any
-> extends Callable<(data: unknown) => ArkResult<t>> {
-	$: SchemaScope<$>
-	infer: distillOut<t>
-	[inferred]: t
-	[Hkt.args]: [t: unknown, $: unknown]
-	[Hkt.instantiate]: (
-		args: this[Hkt.args]
-	) => Schema<(typeof args)[0], (typeof args)[1]>
-
-	json: Json
-	description: string
-	expression: string
-
-	get in(): Schema<distillConstrainableIn<t>, $>
-
-	get out(): Schema<distillConstrainableOut<t>, $>
-
-	assert(data: unknown): this["infer"]
-
-	keyof(): Schema<keyof this["in"]["infer"], $>
-
-	allows(data: unknown): data is this["in"]["infer"]
-
-	traverse(data: unknown): ArkResult<t>
-
-	constrain<
-		kind extends PrimitiveConstraintKind,
-		const def extends NodeDef<kind>
-	>(
-		kind: conform<kind, constraintKindOf<this["in"]["infer"]>>,
-		def: def
-	): instantiate<this, [constrain<t, kind, def>, $]>
-
-	// TODO: i/o
-	extract(other: BaseSchema): Schema<t, $>
-
-	// TODO: i/o
-	exclude(other: BaseSchema): Schema<t, $>
-
-	array(): Schema<t[], $>
-
-	// add the extra inferred intersection so that a variable of Type
-	// can be narrowed without other branches becoming never
-	extends<r>(other: Schema<r>): this is Schema<r> & { [inferred]?: r }
-
-	configure(configOrDescription: BaseMeta | string): this
-
-	describe(description: string): this
-
-	from(literal: this["in"]["infer"]): this["out"]["infer"]
-
-	morphNode<
-		morph extends Morph<this["infer"]>,
-		outValidatorSchema extends SchemaDef = never
-	>(
-		morph: morph,
-		outValidator?: outValidatorSchema
-	): Schema<
-		(
-			In: distillConstrainableIn<t>
-		) => Out<
-			[outValidatorSchema] extends [never]
-				? inferMorphOut<morph>
-				: distillConstrainableOut<inferSchema<outValidatorSchema, $>>
-		>,
-		$
-	>
-}
-
-type implementedSchemaKey = Exclude<keyof Schema, symbol | "infer">
-
-export type SchemaProps = {
-	// ensure functions accept compatible numbers of args
-	[k in implementedSchemaKey]: Schema[k] extends (
-		...args: infer args
-	) => unknown
-		? (...args: { [i in keyof args]: never }) => unknown
-		: unknown
-}
-
 export class BaseSchema<
 		/** @ts-expect-error allow instantiation assignment to the base type */
 		out d extends BaseSchemaDeclaration = BaseSchemaDeclaration
 	>
 	extends BaseNode<d>
-	implements SchemaProps
+	implements
+		internalImplementationOf<Schema, (keyof Schema & symbol) | "infer">
 {
 	readonly branches: readonly Node<UnionChildKind>[] = this.hasKind("union")
 		? this.inner.branches
@@ -235,8 +158,8 @@ export class BaseSchema<
 		return this.configure(description)
 	}
 
-	from(literal: this["in"]["infer"]): this["out"]["infer"] {
-		return literal as never
+	from(literal: unknown): unknown {
+		return literal
 	}
 
 	morphNode(morph: Morph, outValidator?: unknown): BaseSchema {

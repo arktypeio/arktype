@@ -31,12 +31,7 @@ import type {
 import type { BaseConstraint, BaseSchema, OpenNodeKind } from "./main.js"
 import type { DomainNode } from "./schemas/domain.js"
 import type { IntersectionNode } from "./schemas/intersection.js"
-import type {
-	MorphNode,
-	distillConstrainableIn,
-	distillConstrainableOut,
-	distillOut
-} from "./schemas/morph.js"
+import type { MorphNode } from "./schemas/morph.js"
 import type { ProtoNode } from "./schemas/proto.js"
 import type { UnionNode } from "./schemas/union.js"
 import type { UnitNode } from "./schemas/unit.js"
@@ -71,7 +66,6 @@ import {
 	type TraverseAllows,
 	type TraverseApply
 } from "./shared/traversal.js"
-import { inferred } from "./shared/utils.js"
 
 export interface UnknownAttachments {
 	alias?: string
@@ -144,10 +138,7 @@ export type BaseAttachments<d extends BaseNodeDeclaration> = {
 export class BaseNode<
 	/** @ts-expect-error allow instantiation assignment to the base type */
 	out d extends BaseNodeDeclaration = BaseNodeDeclaration
-> extends Callable<
-	(data: d["prerequisite"]) => ArkResult<t>,
-	attachmentsOf<d>
-> {
+> extends Callable<(data: d["prerequisite"]) => ArkResult, attachmentsOf<d>> {
 	constructor(public attachments: UnknownAttachments) {
 		super((data: any): ArkResult<any> => {
 			if (
@@ -169,9 +160,6 @@ export class BaseNode<
 			this.contributesReferencesByName
 		)
 	}
-
-	declare infer: distillOut<t>
-	declare [inferred]: t
 
 	// TODO: Remove
 	declare traverseAllows: TraverseAllows<d["prerequisite"]>
@@ -226,12 +214,12 @@ export class BaseNode<
 		return this.compiledErrorContextCache
 	}
 
-	allows = (data: d["prerequisite"]): data is this["in"]["infer"] => {
+	allows = (data: d["prerequisite"]): boolean => {
 		const ctx = new TraversalContext(data, this.$.resolvedConfig)
 		return this.traverseAllows(data as never, ctx)
 	}
 
-	traverse(data: d["prerequisite"]): ArkResult<t> {
+	traverse(data: d["prerequisite"]): ArkResult {
 		return this(data)
 	}
 

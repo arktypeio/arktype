@@ -6,9 +6,9 @@ import {
 	literalPropAccess,
 	type mutable
 } from "@arktype/util"
+import type { SchemaModule } from "../api/module.js"
 import type { BaseNode, Constraint } from "../base.js"
 import type { GenericSchema } from "../generic.js"
-import type { SchemaModule } from "../module.js"
 import type { Schema } from "../schemas/schema.js"
 import type { SchemaScope } from "../scope.js"
 import type { ArkTypeError } from "./errors.js"
@@ -25,6 +25,18 @@ export type makeRootAndArrayPropertiesMutable<inner> = {
 		? mutable<inner[k]>
 		: inner[k]
 } & unknown
+
+export type internalImplementationOf<
+	external,
+	typeOnlyKey extends keyof external = never
+> = {
+	// ensure functions accept compatible numbers of args
+	[k in Exclude<keyof external, typeOnlyKey>]: external[k] extends (
+		...args: infer args
+	) => unknown
+		? (...args: { [i in keyof args]: never }) => unknown
+		: unknown
+}
 
 export type TraversalPath = PropertyKey[]
 

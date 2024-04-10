@@ -163,7 +163,12 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 	}
 })
 
-export type MorphNode = BaseSchema<MorphDeclaration>
+export interface MorphNode extends BaseSchema<MorphDeclaration> {
+	// ensure these types are derived from MorphInner rather than those
+	// defined on BaseNode
+	get in(): MorphChildNode
+	get out(): MorphChildNode
+}
 
 export type inferMorphOut<morph extends Morph> = morph extends Morph<
 	never,

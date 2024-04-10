@@ -40,7 +40,6 @@ import type { ProtoDef, ProtoNode } from "./proto.js"
 import {
 	BaseSchema,
 	type BaseSchemaAttachments,
-	type Schema,
 	defineRightwardIntersections
 } from "./schema.js"
 

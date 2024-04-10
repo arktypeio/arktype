@@ -152,7 +152,7 @@ export type tryInferSubmoduleReference<$, token> =
 			: never
 		: never
 
-export class Module<$ = any> extends SchemaModule<$, Type> {
+export class Module<$ = any> extends SchemaModule<$> {
 	declare [Hkt.instantiate]: (args: this[Hkt.args]) => Module<typeof args>
 }
 

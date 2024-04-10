@@ -66,8 +66,8 @@ type validateSchemaBranch<def, $> = def extends BaseNode
 		? validateMorphChild<def, $>
 		: validateMorphSchema<def, $>
 
-type inferSchemaBranch<def, $> = def extends BaseNode
-	? def["infer"]
+type inferSchemaBranch<def, $> = def extends type.cast<infer to>
+	? to
 	: def extends MorphDef
 		? inferMorphSchema<def, $>
 		: def extends MorphChildDefinition
