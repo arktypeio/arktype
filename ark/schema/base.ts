@@ -302,7 +302,7 @@ export class BaseNode<
 		return includes(schemaKinds, this.kind)
 	}
 
-	hasUnit<value>(value: unknown): this is UnitNode<value> {
+	hasUnit<value>(value: unknown): this is UnitNode & { unit: value } {
 		return this.hasKind("unit") && this.allows(value)
 	}
 

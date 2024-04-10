@@ -9,7 +9,7 @@ import {
 import type { BaseNode, Constraint } from "../base.js"
 import type { GenericSchema } from "../generic.js"
 import type { SchemaModule } from "../module.js"
-import type { Schema2 } from "../schemas/schema.js"
+import type { Schema } from "../schemas/schema.js"
 import type { SchemaScope } from "../scope.js"
 import type { ArkTypeError } from "./errors.js"
 
@@ -42,7 +42,7 @@ export const arkKind = Symbol("ArkTypeInternalKind")
 
 export interface ArkKinds {
 	constraint: Constraint
-	schema: Schema2
+	schema: Schema
 	scope: SchemaScope
 	generic: GenericSchema
 	module: SchemaModule

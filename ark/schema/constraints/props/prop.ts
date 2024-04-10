@@ -5,7 +5,7 @@ import {
 	implementNode
 } from "../../base.js"
 import { tsKeywords } from "../../keywords/tsKeywords.js"
-import type { BaseSchema, Schema2 } from "../../schemas/schema.js"
+import type { BaseSchema, Schema } from "../../schemas/schema.js"
 import type {
 	BaseErrorContext,
 	BaseMeta,

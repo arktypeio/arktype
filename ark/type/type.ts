@@ -4,7 +4,7 @@ import {
 	type Morph,
 	type Out,
 	type Predicate,
-	type Schema2,
+	type Schema,
 	type ambient,
 	type distillConstrainableIn,
 	type distillConstrainableOut,
@@ -115,7 +115,7 @@ export interface Type<
 	/** @ts-expect-error allow instantiation assignment to the base type */
 	out t = unknown,
 	$ = any
-> extends Schema2<t, $> {
+> extends Schema<t, $> {
 	[Hkt.instantiate]: (
 		args: this[Hkt.args]
 	) => Type<(typeof args)[0], (typeof args)[1]>

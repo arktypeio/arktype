@@ -27,7 +27,7 @@ import {
 	schemaKindOf
 } from "./parser/parse.js"
 import type { distillIn, distillOut } from "./schemas/morph.js"
-import type { BaseSchema } from "./schemas/schema.js"
+import type { BaseSchema, Schema } from "./schemas/schema.js"
 import { NodeCompiler } from "./shared/compile.js"
 import type {
 	ActualWriter,
@@ -199,7 +199,7 @@ export class SchemaScope<$ = any> {
 	schema<const def extends SchemaDef>(
 		def: def,
 		opts?: NodeParseOptions
-	): instantiate<this["hktNode"], [inferSchema<def, $>, $]> {
+	): Schema<inferSchema<def, $>, $> {
 		return parseNode(schemaKindOf(def), def, this, opts) as never
 	}
 
@@ -210,7 +210,7 @@ export class SchemaScope<$ = any> {
 	units<const branches extends array>(
 		values: branches,
 		opts?: NodeParseOptions
-	): instantiate<this["hktNode"], [branches[number], $]> {
+	): Schema<branches[number], $> {
 		{
 			const uniqueValues: unknown[] = []
 			for (const value of values) {

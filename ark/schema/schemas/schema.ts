@@ -1,4 +1,10 @@
-import { Hkt, type conform, flatMorph, type instantiate } from "@arktype/util"
+import {
+	Hkt,
+	type Json,
+	type conform,
+	flatMorph,
+	type instantiate
+} from "@arktype/util"
 import {
 	type BaseAttachments,
 	BaseNode,
@@ -53,7 +59,7 @@ export interface BaseSchemaAttachments<d extends BaseNodeDeclaration>
 	rawKeyOf(): BaseSchema
 }
 
-export interface Schema2<
+export interface Schema<
 	/** @ts-expect-error allow instantiation assignment to the base type */
 	out t = unknown,
 	$ = any
@@ -64,15 +70,21 @@ export interface Schema2<
 	[Hkt.args]: [t: unknown, $: unknown]
 	[Hkt.instantiate]: (
 		args: this[Hkt.args]
-	) => Schema2<(typeof args)[0], (typeof args)[1]>
+	) => Schema<(typeof args)[0], (typeof args)[1]>
 
-	get in(): Schema2<distillConstrainableIn<t>, $>
+	json: Json
+	description: string
+	expression: string
 
-	get out(): Schema2<distillConstrainableOut<t>, $>
+	get in(): Schema<distillConstrainableIn<t>, $>
+
+	get out(): Schema<distillConstrainableOut<t>, $>
 
 	assert(data: unknown): this["infer"]
 
-	keyof(): Schema2<keyof this["in"]["infer"], $>
+	keyof(): Schema<keyof this["in"]["infer"], $>
+
+	allows(data: unknown): data is this["in"]["infer"]
 
 	constrain<
 		kind extends PrimitiveConstraintKind,
@@ -83,16 +95,16 @@ export interface Schema2<
 	): instantiate<this, [constrain<t, kind, def>, $]>
 
 	// TODO: i/o
-	extract(other: BaseSchema): Schema2<t, $>
+	extract(other: BaseSchema): Schema<t, $>
 
 	// TODO: i/o
-	exclude(other: BaseSchema): Schema2<t, $>
+	exclude(other: BaseSchema): Schema<t, $>
 
-	array(): Schema2<t[], $>
+	array(): Schema<t[], $>
 
 	// add the extra inferred intersection so that a variable of Type
 	// can be narrowed without other branches becoming never
-	extends<r>(other: Schema2<r>): this is Schema2<r> & { [inferred]?: r }
+	extends<r>(other: Schema<r>): this is Schema<r> & { [inferred]?: r }
 
 	configure(configOrDescription: BaseMeta | string): this
 
@@ -106,7 +118,7 @@ export interface Schema2<
 	>(
 		morph: morph,
 		outValidator?: outValidatorSchema
-	): Schema2<
+	): Schema<
 		(
 			In: distillConstrainableIn<t>
 		) => Out<
@@ -118,11 +130,11 @@ export interface Schema2<
 	>
 }
 
-type implementedSchemaKey = Exclude<keyof Schema2, symbol | "infer">
+type implementedSchemaKey = Exclude<keyof Schema, symbol | "infer">
 
 export type SchemaProps = {
 	// ensure functions accept compatible numbers of args
-	[k in implementedSchemaKey]: Schema2[k] extends (
+	[k in implementedSchemaKey]: Schema[k] extends (
 		...args: infer args
 	) => unknown
 		? (...args: { [i in keyof args]: never }) => unknown

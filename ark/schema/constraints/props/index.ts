@@ -6,7 +6,7 @@ import {
 } from "../../base.js"
 import { internalKeywords } from "../../keywords/internal.js"
 import { tsKeywords } from "../../keywords/tsKeywords.js"
-import type { BaseSchema, Schema2 } from "../../schemas/schema.js"
+import type { BaseSchema, Schema } from "../../schemas/schema.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import type { SchemaKind } from "../../shared/implement.js"
 import type { BaseConstraint, ConstraintAttachments } from "../constraint.js"
