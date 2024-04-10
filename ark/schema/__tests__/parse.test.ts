@@ -1,10 +1,10 @@
 import { attest } from "@arktype/attest"
-import { schema, type Schema } from "@arktype/schema"
+import { type BaseSchema, schema } from "@arktype/schema"
 
 describe("parse", () => {
 	it("single constraint", () => {
 		const t = schema({ domain: "string", regex: ".*" })
-		attest<Schema<string>>(t)
+		attest<BaseSchema<string>>(t)
 		attest(t.json).snap({ domain: "string", regex: [".*"] })
 	})
 	it("multiple constraints", () => {
@@ -18,7 +18,7 @@ describe("parse", () => {
 			divisor: 5
 		})
 		const result = l.intersectSatisfiable(r)
-		attest<Schema<number>>(result)
+		attest<BaseSchema<number>>(result)
 		attest(result.json).snap({
 			domain: "number",
 			divisor: 15,

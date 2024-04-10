@@ -13,13 +13,7 @@ import {
 	splitByKeys,
 	throwInternalError
 } from "@arktype/util"
-import {
-	BaseNode,
-	type Constraint,
-	type Node,
-	type Schema,
-	implementNode
-} from "../base.js"
+import { BaseNode, type Constraint, type Node, implementNode } from "../base.js"
 import {
 	type ExtraneousKeyBehavior,
 	type ExtraneousKeyRestriction,
@@ -46,6 +40,7 @@ import type { ProtoDef, ProtoNode } from "./proto.js"
 import {
 	BaseSchema,
 	type BaseSchemaAttachments,
+	type Schema2,
 	defineRightwardIntersections
 } from "./schema.js"
 
@@ -113,7 +108,7 @@ const intersectIntersections = (
 	reduced: IntersectionInner,
 	raw: IntersectionInner,
 	$: SchemaScope
-): Schema | Disjoint => {
+): BaseSchema | Disjoint => {
 	// avoid treating adding instance keys as keys of lRoot, rRoot
 	if (reduced instanceof BaseSchema && reduced.hasKind("intersection"))
 		return intersectIntersections(reduced.inner, raw, $)
@@ -363,13 +358,13 @@ export const intersectionImplementation =
 							? this.basis.rawKeyOf().union(this.props.rawKeyOf())
 							: this.basis.rawKeyOf()
 						: this.props?.rawKeyOf() ??
-								(tsKeywords.never as {} as Schema)
+								(tsKeywords.never as {} as BaseSchema)
 				}
 			}
 		}
 	})
 
-export type IntersectionNode<t = unknown, $ = any> = BaseSchema<
+export type IntersectionNode<t = unknown, $ = any> = Schema2<
 	t,
 	$,
 	IntersectionDeclaration
@@ -420,15 +415,15 @@ type ConstraintIntersectionState = {
 	root: IntersectionRoot
 	l: Constraint[]
 	r: Constraint[]
-	types: Schema[]
+	types: BaseSchema[]
 	$: SchemaScope
 }
 
 const intersectConstraints = (
 	s: ConstraintIntersectionState
-): Schema | Disjoint => {
+): BaseSchema | Disjoint => {
 	if (!s.r.length) {
-		let result: Schema | Disjoint = s.$.node(
+		let result: BaseSchema | Disjoint = s.$.node(
 			"intersection",
 			Object.assign(s.root, unflattenConstraints(s.l)),
 			{ prereduced: true }

@@ -11,7 +11,7 @@ import {
 	type requireKeys,
 	throwParseError
 } from "@arktype/util"
-import type { BaseNode, Node, Schema, SchemaDef } from "./base.js"
+import type { BaseNode, Node, SchemaDef } from "./base.js"
 import { mergeConfigs } from "./config.js"
 import {
 	type GenericSchema,
@@ -19,7 +19,6 @@ import {
 } from "./generic.js"
 import type { Ark } from "./keywords/keywords.js"
 import type { NodeDef, reducibleKindOf } from "./kinds.js"
-import type { BaseSchema } from "./main.js"
 import { SchemaModule } from "./module.js"
 import type { inferSchema, validateSchema } from "./parser/inference.js"
 import {
@@ -28,6 +27,7 @@ import {
 	schemaKindOf
 } from "./parser/parse.js"
 import type { distillIn, distillOut } from "./schemas/morph.js"
+import type { BaseSchema } from "./schemas/schema.js"
 import { NodeCompiler } from "./shared/compile.js"
 import type {
 	ActualWriter,
@@ -44,9 +44,9 @@ import type {
 import type { TraverseAllows, TraverseApply } from "./shared/traversal.js"
 import { hasArkKind } from "./shared/utils.js"
 
-export type nodeResolutions<keywords> = { [k in keyof keywords]: Schema }
+export type nodeResolutions<keywords> = { [k in keyof keywords]: BaseSchema }
 
-export type BaseResolutions = Record<string, Schema>
+export type BaseResolutions = Record<string, BaseSchema>
 
 declare global {
 	export interface StaticArkConfig {
@@ -139,7 +139,7 @@ export const resolveConfig = (
 
 export type SchemaScopeResolutions = Record<
 	string,
-	Schema | GenericSchema | undefined
+	BaseSchema | GenericSchema | undefined
 >
 
 export type exportedNameOf<$> = Exclude<keyof $ & string, PrivateDeclaration>
@@ -236,11 +236,11 @@ export class SchemaScope<$ = any> {
 		return parseNode(kinds, schema, this, opts) as never
 	}
 
-	parseRoot(def: unknown, opts?: NodeParseOptions): Schema {
+	parseRoot(def: unknown, opts?: NodeParseOptions): BaseSchema {
 		return this.schema(def as never, opts)
 	}
 
-	maybeResolve(name: string): Schema | GenericSchema | undefined {
+	maybeResolve(name: string): BaseSchema | GenericSchema | undefined {
 		const cached = this.resolutions[name]
 		if (cached) {
 			return cached
@@ -263,7 +263,7 @@ export class SchemaScope<$ = any> {
 	/** If name is a valid reference to a submodule alias, return its resolution  */
 	private maybeResolveSubalias(
 		name: string
-	): Schema | GenericSchema | undefined {
+	): BaseSchema | GenericSchema | undefined {
 		const dotIndex = name.indexOf(".")
 		if (dotIndex === -1) {
 			return
@@ -285,7 +285,7 @@ export class SchemaScope<$ = any> {
 		// might be something like a decimal literal, so just fall through to return
 	}
 
-	maybeResolveNode(name: string): Schema | undefined {
+	maybeResolveNode(name: string): BaseSchema | undefined {
 		const result = this.maybeResolve(name)
 		return hasArkKind(result, "schema") ? (result as never) : undefined
 	}
@@ -371,7 +371,7 @@ export type destructuredImportContext<$, name extends exportedNameOf<$>> = {
 
 export type SchemaExportCache = Record<
 	string,
-	Schema | GenericSchema | SchemaModule | undefined
+	BaseSchema | GenericSchema | SchemaModule | undefined
 >
 
 const resolutionsOfModule = (typeSet: SchemaExportCache) => {
@@ -388,7 +388,7 @@ const resolutionsOfModule = (typeSet: SchemaExportCache) => {
 		} else if (hasArkKind(v, "generic")) {
 			result[k] = v
 		} else {
-			result[k] = v as Schema
+			result[k] = v as BaseSchema
 		}
 	}
 	return result

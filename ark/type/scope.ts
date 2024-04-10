@@ -1,9 +1,9 @@
 import {
 	type ArkConfig,
+	type BaseSchema,
 	type GenericProps,
 	type NodeParseOptions,
 	type PreparsedNodeResolution,
-	type Schema,
 	SchemaModule,
 	SchemaScope,
 	type ambient,
@@ -146,7 +146,7 @@ export type moduleKeyOf<$> = {
 export type tryInferSubmoduleReference<$, token> =
 	token extends `${infer submodule extends moduleKeyOf<$>}.${infer subalias}`
 		? subalias extends keyof $[submodule]
-			? $[submodule][subalias] extends Schema<infer t>
+			? $[submodule][subalias] extends BaseSchema<infer t>
 				? t
 				: never
 			: never
@@ -170,7 +170,7 @@ export const scope: ScopeParser = ((def: Dict, config: ArkConfig = {}) =>
 	new Scope(def, config)) as never
 
 export class Scope<$ = any> extends SchemaScope<$> {
-	private parseCache: Record<string, Schema> = {}
+	private parseCache: Record<string, BaseSchema> = {}
 
 	declare hktNode: Type
 	declare hktModule: Module
@@ -201,7 +201,7 @@ export class Scope<$ = any> extends SchemaScope<$> {
 	// 	return this.export()[name] as never
 	// }
 
-	parse(def: unknown, ctx: ParseContext): Schema {
+	parse(def: unknown, ctx: ParseContext): BaseSchema {
 		if (typeof def === "string") {
 			if (
 				ctx.args &&
@@ -224,7 +224,7 @@ export class Scope<$ = any> extends SchemaScope<$> {
 	parseRoot(def: unknown, opts?: NodeParseOptions): Type {
 		return new Type(
 			this.parse(def, {
-				args: { this: {} as Schema },
+				args: { this: {} as BaseSchema },
 				$: this,
 				...opts
 			}),
@@ -232,7 +232,7 @@ export class Scope<$ = any> extends SchemaScope<$> {
 		)
 	}
 
-	parseString(def: string, ctx: ParseContext): Schema {
+	parseString(def: string, ctx: ParseContext): BaseSchema {
 		return (
 			this.maybeResolveNode(def) ??
 			((def.endsWith("[]") &&

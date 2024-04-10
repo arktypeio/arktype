@@ -8,7 +8,7 @@ import {
 	reference,
 	throwParseError
 } from "@arktype/util"
-import { type Node, type Schema, implementNode } from "../base.js"
+import { type BaseSchema, type Node, implementNode } from "../base.js"
 import type { of } from "../constraints/ast.js"
 import { tsKeywords } from "../keywords/tsKeywords.js"
 import type { NodeDef } from "../kinds.js"
@@ -156,7 +156,7 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 			get out() {
 				return this.inner.out ?? tsKeywords.unknown
 			},
-			rawKeyOf(): Schema {
+			rawKeyOf(): BaseSchema {
 				return this.in.rawKeyOf()
 			}
 		}

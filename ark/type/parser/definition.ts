@@ -1,4 +1,4 @@
-import { type Schema, hasArkKind, node, type string } from "@arktype/schema"
+import { type BaseSchema, hasArkKind, node, type string } from "@arktype/schema"
 import {
 	type Dict,
 	type ErrorMessage,
@@ -33,7 +33,7 @@ import {
 	type validateTuple
 } from "./tuple.js"
 
-export const parseObject = (def: object, ctx: ParseContext): Schema => {
+export const parseObject = (def: object, ctx: ParseContext): BaseSchema => {
 	const objectKind = objectKindOf(def)
 	switch (objectKind) {
 		case undefined:

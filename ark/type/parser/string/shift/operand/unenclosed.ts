@@ -1,7 +1,7 @@
 import {
 	BaseSchema,
 	type GenericProps,
-	type Schema,
+	type BaseSchema,
 	type SchemaModule,
 	type ambient,
 	arkKind,
@@ -73,7 +73,7 @@ export const parseGenericInstantiation = (
 	name: string,
 	g: Generic,
 	s: DynamicState
-): Schema => {
+): BaseSchema => {
 	s.scanner.shiftUntilNonWhitespace()
 	const lookahead = s.scanner.shift()
 	if (lookahead !== "<") {
@@ -114,7 +114,7 @@ export type parseGenericInstantiation<
 		: never
 	: state.error<writeInvalidGenericArgsMessage<name, g["params"], []>>
 
-const unenclosedToNode = (s: DynamicState, token: string): Schema =>
+const unenclosedToNode = (s: DynamicState, token: string): BaseSchema =>
 	maybeParseReference(s, token) ??
 	maybeParseUnenclosedLiteral(s, token) ??
 	s.error(
@@ -126,7 +126,7 @@ const unenclosedToNode = (s: DynamicState, token: string): Schema =>
 const maybeParseReference = (
 	s: DynamicState,
 	token: string
-): Schema | undefined => {
+): BaseSchema | undefined => {
 	if (s.ctx.args?.[token]) return s.ctx.args[token]
 	const resolution = s.ctx.$.maybeResolve(token)
 	if (resolution instanceof BaseSchema) return resolution
@@ -139,7 +139,7 @@ const maybeParseReference = (
 const maybeParseUnenclosedLiteral = (
 	s: DynamicState,
 	token: string
-): Schema | undefined => {
+): BaseSchema | undefined => {
 	const maybeNumber = tryParseNumber(token, { strict: true })
 	if (maybeNumber !== undefined) {
 		return s.ctx.$.node("unit", { unit: maybeNumber })
@@ -168,7 +168,8 @@ type tryResolve<
 					: token extends `${infer submodule extends keyof $ &
 								string}.${infer reference}`
 						? $[submodule] extends // TODO: shouldn't need both checks?
-							SchemaModule<infer sub$> | Module<infer sub$>
+								| SchemaModule<infer sub$>
+								| Module<infer sub$>
 							? reference extends keyof sub$
 								? token
 								: unknown extends sub$

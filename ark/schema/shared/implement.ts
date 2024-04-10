@@ -11,17 +11,13 @@ import {
 	printable,
 	type requireKeys
 } from "@arktype/util"
-import {
-	type BaseAttachments,
-	BaseNode,
-	type Node,
-	type Schema
-} from "../base.js"
+import { type BaseAttachments, BaseNode, type Node } from "../base.js"
 import type { PropsGroupInput } from "../constraints/props/props.js"
 import type { Declaration, Inner, errorContext } from "../kinds.js"
 import type { NodeParseContext } from "../parser/parse.js"
 import type { IntersectionInner } from "../schemas/intersection.js"
 import type {
+	Schema2,
 	schemaKindOrRightOf,
 	schemaKindRightOf
 } from "../schemas/schema.js"
@@ -178,7 +174,7 @@ export type ConstraintIntersectionMap<kind extends ConstraintKind> = evaluate<
 export type TypeIntersection<
 	lKind extends SchemaKind,
 	rKind extends schemaKindOrRightOf<lKind>
-> = (l: Node<lKind>, r: Node<rKind>, $: SchemaScope) => Schema | Disjoint
+> = (l: Node<lKind>, r: Node<rKind>, $: SchemaScope) => Schema2 | Disjoint
 
 export type TypeIntersectionMap<kind extends SchemaKind> = {
 	[rKind in schemaKindOrRightOf<kind>]: TypeIntersection<kind, rKind>

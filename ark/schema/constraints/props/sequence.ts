@@ -8,15 +8,14 @@ import {
 } from "@arktype/util"
 import {
 	type BaseAttachments,
-	type BaseNode,
 	type Node,
-	type Schema,
 	type SchemaDef,
 	implementNode
 } from "../../base.js"
 import { jsObjects } from "../../keywords/jsObjects.js"
 import { tsKeywords } from "../../keywords/tsKeywords.js"
 import type { MutableInner } from "../../kinds.js"
+import type { Schema2 } from "../../schemas/schema.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import type {
@@ -39,14 +38,14 @@ export type SequenceDef = NormalizedSequenceDef | SchemaDef
 
 export interface SequenceInner extends BaseMeta {
 	// a list of fixed position elements starting at index 0
-	readonly prefix?: array<Schema>
+	readonly prefix?: array<Schema2>
 	// a list of optional elements following prefix
-	readonly optional?: array<Schema>
+	readonly optional?: array<Schema2>
 	// the variadic element (only checked if all optional elements are present)
-	readonly variadic?: Schema
+	readonly variadic?: Schema2
 	readonly minVariadicLength?: number
 	// a list of fixed position elements, the last being the last element of the array
-	readonly postfix?: array<Schema>
+	readonly postfix?: array<Schema2>
 }
 
 export type SequenceDeclaration = declareNode<{
@@ -63,10 +62,10 @@ export type SequenceDeclaration = declareNode<{
 export interface SequenceAttachments
 	extends BaseAttachments<SequenceDeclaration>,
 		ConstraintAttachments {
-	prefix: array<Schema>
-	optional: array<Schema>
-	prevariadic: array<Schema>
-	postfix: array<Schema>
+	prefix: array<Schema2>
+	optional: array<Schema2>
+	prevariadic: array<Schema2>
+	postfix: array<Schema2>
 	isVariadicOnly: boolean
 	minVariadicLength: number
 	minLength: number
@@ -266,7 +265,7 @@ export const sequenceImplementation = implementNode<SequenceDeclaration>({
 				? [maxLengthNode]
 				: null
 		const expression = self.description
-		const _childAtIndex = (data: array, index: number): Schema => {
+		const _childAtIndex = (data: array, index: number): BaseSchema => {
 			if (index < prevariadic.length) return prevariadic[index]
 			const postfixStartIndex = data.length - postfix.length
 			if (index >= postfixStartIndex)
@@ -393,7 +392,7 @@ export type SequenceElementKind = satisfy<
 
 export type SequenceElement = {
 	kind: SequenceElementKind
-	node: Schema
+	node: BaseSchema
 }
 export type SequenceTuple = array<SequenceElement>
 

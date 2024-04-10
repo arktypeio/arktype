@@ -5,8 +5,9 @@ import {
 	flatMorph,
 	reference
 } from "@arktype/util"
-import type { Node, Schema } from "../../base.js"
+import type { Node } from "../../base.js"
 import type { IntersectionNode } from "../../schemas/intersection.js"
+import type { BaseSchema } from "../../schemas/schema.js"
 import type { SchemaScope } from "../../scope.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { PropKind } from "../../shared/implement.js"
@@ -45,8 +46,8 @@ export class PropsGroup extends DynamicBase<PropsGroupInput> {
 	readonly expression = describeProps(this, "expression")
 	readonly literalKeys = literalPropKeysOf(this.all)
 
-	private keyofCache: Schema | undefined
-	rawKeyOf(): Schema {
+	private keyofCache: BaseSchema | undefined
+	rawKeyOf(): BaseSchema {
 		if (!this.keyofCache) {
 			let branches = this.$.units(this.literalKeys).branches
 			this.index?.forEach(({ key }) => {

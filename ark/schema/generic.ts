@@ -1,7 +1,8 @@
 import { Callable, type conform, flatMorph, type repeat } from "@arktype/util"
-import type { Schema, SchemaDef } from "./base.js"
+import type { SchemaDef } from "./base.js"
 import { keywordNodes } from "./keywords/keywords.js"
-import type { BaseSchema, inferSchema } from "./main.js"
+import type { inferSchema } from "./parser/inference.js"
+import type { Schema2 } from "./schemas/schema.js"
 import type { SchemaScope } from "./scope.js"
 import { arkKind } from "./shared/utils.js"
 
@@ -11,7 +12,7 @@ export type GenericNodeInstantiation<
 	$ = any
 > = <args>(
 	...args: conform<args, repeat<[SchemaDef], params["length"]>>
-) => BaseSchema<
+) => Schema2<
 	inferSchema<def, $ & bindGenericNodeInstantiation<params, $, args>>
 >
 
@@ -63,7 +64,7 @@ export class GenericSchema<
 			const argNodes = flatMorph(params, (i, param) => [
 				param,
 				$.schema(args[i])
-			]) as Record<string, Schema>
+			]) as Record<string, BaseSchema>
 			return $.schema(def as never, { args: argNodes }) as never
 		})
 	}

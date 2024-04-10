@@ -1,6 +1,6 @@
 import {
+	type BaseSchema,
 	type Node,
-	type Schema,
 	keywordNodes,
 	type writeInvalidPropertyKeyMessage
 } from "@arktype/schema"

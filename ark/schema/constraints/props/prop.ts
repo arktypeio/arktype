@@ -1,13 +1,11 @@
 import { type Key, compileSerializedValue } from "@arktype/util"
 import {
 	type BaseAttachments,
-	type BaseNode,
-	type Node,
-	type Schema,
 	type SchemaDef,
 	implementNode
 } from "../../base.js"
 import { tsKeywords } from "../../keywords/tsKeywords.js"
+import type { Schema2 } from "../../schemas/schema.js"
 import type {
 	BaseErrorContext,
 	BaseMeta,
@@ -25,7 +23,7 @@ export interface PropDef extends BaseMeta {
 
 export interface PropInner extends BaseMeta {
 	readonly key: Key
-	readonly value: Schema
+	readonly value: Schema2
 	readonly optional?: true
 }
 

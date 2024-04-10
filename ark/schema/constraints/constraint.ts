@@ -4,7 +4,7 @@ import {
 	type describeExpression,
 	throwParseError
 } from "@arktype/util"
-import { BaseNode, type Node, type Schema } from "../base.js"
+import { BaseNode, type BaseSchema, type Node } from "../base.js"
 import type { Prerequisite } from "../kinds.js"
 import type { BaseNodeDeclaration } from "../shared/declare.js"
 import type { Disjoint } from "../shared/disjoint.js"
@@ -33,8 +33,8 @@ export const throwInvalidOperandError = (
 
 export const writeInvalidOperandMessage = <
 	kind extends ConstraintKind,
-	expected extends Schema,
-	actual extends Schema
+	expected extends BaseSchema,
+	actual extends BaseSchema
 >(
 	kind: kind,
 	expected: expected,
@@ -46,13 +46,13 @@ export const writeInvalidOperandMessage = <
 
 export type writeInvalidOperandMessage<
 	kind extends ConstraintKind,
-	actual extends Schema
+	actual extends BaseSchema
 > = `${Capitalize<kind>} operand must be ${describeExpression<
 	Prerequisite<kind>
 >} (was ${describeExpression<actual["infer"]>})`
 
 export interface ConstraintAttachments {
-	impliedBasis: Schema | null
+	impliedBasis: BaseSchema | null
 	impliedSiblings?: array<BaseConstraint> | null
 }
 

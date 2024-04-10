@@ -1,5 +1,6 @@
-import { type BaseAttachments, type Schema, implementNode } from "../../base.js"
+import { type BaseAttachments, implementNode } from "../../base.js"
 import { tsKeywords } from "../../keywords/tsKeywords.js"
+import type { Schema2 } from "../../schemas/schema.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import {
 	type PrimitiveAttachments,
@@ -65,12 +66,12 @@ export const divisorImplementation = implementNode<DivisorDeclaration>({
 
 export type DivisorNode = BaseConstraint<DivisorDeclaration>
 
-export const writeIndivisibleMessage = <node extends Schema>(
+export const writeIndivisibleMessage = <node extends Schema2>(
 	t: node
 ): writeIndivisibleMessage<node> =>
 	writeInvalidOperandMessage("divisor", tsKeywords.number, t)
 
-export type writeIndivisibleMessage<node extends Schema> =
+export type writeIndivisibleMessage<node extends Schema2> =
 	writeInvalidOperandMessage<"divisor", node>
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm

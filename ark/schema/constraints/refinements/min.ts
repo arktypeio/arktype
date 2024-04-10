@@ -1,4 +1,4 @@
-import { type BaseNode, implementNode } from "../../base.js"
+import { implementNode } from "../../base.js"
 import { internalKeywords } from "../../keywords/internal.js"
 import type { declareNode } from "../../shared/declare.js"
 import type { BaseConstraint } from "../constraint.js"

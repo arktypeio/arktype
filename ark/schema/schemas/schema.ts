@@ -3,7 +3,6 @@ import {
 	type BaseAttachments,
 	BaseNode,
 	type Node,
-	type Schema,
 	type SchemaDef
 } from "../base.js"
 import type { constrain } from "../constraints/ast.js"
@@ -17,14 +16,12 @@ import type { SchemaScope } from "../scope.js"
 import type { BaseMeta, BaseNodeDeclaration } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
-	type ConstraintKind,
 	type NodeKind,
 	type SchemaKind,
 	type TypeIntersection,
 	type kindRightOf,
 	schemaKindsRightOf
 } from "../shared/implement.js"
-import type { inferIntersection } from "../shared/intersections.js"
 import { arkKind, type inferred } from "../shared/utils.js"
 import type { constraintKindOf } from "./intersection.js"
 import type {
@@ -32,6 +29,7 @@ import type {
 	Out,
 	distillConstrainableIn,
 	distillConstrainableOut,
+	distillOut,
 	inferMorphOut
 } from "./morph.js"
 import type { UnionChildKind } from "./union.js"
@@ -52,33 +50,100 @@ export interface BaseSchemaDeclaration extends BaseNodeDeclaration {
 
 export interface BaseSchemaAttachments<d extends BaseNodeDeclaration>
 	extends BaseAttachments<d> {
-	rawKeyOf(): Schema
+	rawKeyOf(): BaseSchema
+}
+
+export interface Schema2<
+	/** @ts-expect-error allow instantiation assignment to the base type */
+	out t = unknown,
+	$ = any
+> {
+	$: SchemaScope<$>
+	infer: distillOut<t>
+	[inferred]: t
+	[Hkt.args]: [t: unknown, $: unknown]
+	[Hkt.instantiate]: (
+		args: this[Hkt.args]
+	) => Schema2<(typeof args)[0], (typeof args)[1]>
+
+	get in(): Schema2<distillConstrainableIn<t>, $>
+
+	get out(): Schema2<distillConstrainableOut<t>, $>
+
+	assert(data: unknown): this["infer"]
+
+	keyof(): Schema2<keyof this["in"]["infer"], $>
+
+	constrain<
+		kind extends PrimitiveConstraintKind,
+		const def extends NodeDef<kind>
+	>(
+		kind: conform<kind, constraintKindOf<this["in"]["infer"]>>,
+		def: def
+	): instantiate<this, [constrain<t, kind, def>, $]>
+
+	// TODO: i/o
+	extract(other: BaseSchema): Schema2<t, $>
+
+	// TODO: i/o
+	exclude(other: BaseSchema): Schema2<t, $>
+
+	array(): Schema2<t[], $>
+
+	// add the extra inferred intersection so that a variable of Type
+	// can be narrowed without other branches becoming never
+	extends<r>(other: Schema2<r>): this is Schema2<r> & { [inferred]?: r }
+
+	configure(configOrDescription: BaseMeta | string): this
+
+	describe(description: string): this
+
+	from(literal: this["in"]["infer"]): this["out"]["infer"]
+
+	morphNode<
+		morph extends Morph<this["infer"]>,
+		outValidatorSchema extends SchemaDef = never
+	>(
+		morph: morph,
+		outValidator?: outValidatorSchema
+	): Schema2<
+		(
+			In: distillConstrainableIn<t>
+		) => Out<
+			[outValidatorSchema] extends [never]
+				? inferMorphOut<morph>
+				: distillConstrainableOut<inferSchema<outValidatorSchema, $>>
+		>,
+		$
+	>
+}
+
+type implementedSchemaKey = Exclude<keyof Schema2, symbol | "infer">
+
+export type SchemaProps = {
+	// ensure functions accept compatible numbers of args
+	[k in implementedSchemaKey]: Schema2[k] extends (
+		...args: infer args
+	) => unknown
+		? (...args: { [i in keyof args]: never }) => unknown
+		: unknown
 }
 
 export class BaseSchema<
 		/** @ts-expect-error allow instantiation assignment to the base type */
-		out t = unknown,
-		$ = any,
-		/** @ts-expect-error allow instantiation assignment to the base type */
 		out d extends BaseSchemaDeclaration = BaseSchemaDeclaration
 	>
-	extends BaseNode<t, d>
-	implements Hkt.Instantiable
+	extends BaseNode<unknown, d>
+	implements SchemaProps
 {
-	declare $: SchemaScope<$>
-	declare [Hkt.args]: [t: unknown, $: unknown]
-	declare [Hkt.instantiate]: (
-		args: this[Hkt.args]
-	) => BaseSchema<(typeof args)[0], (typeof args)[1]>
-
 	readonly branches: readonly Node<UnionChildKind>[] = this.hasKind("union")
 		? this.inner.branches
 		: [this as never]
 
 	readonly [arkKind] = "schema"
 
-	#keyofCache: Schema | undefined
-	keyof(): BaseSchema<keyof this["in"]["infer"], $> {
+	#keyofCache: BaseSchema | undefined
+	keyof(): BaseSchema {
 		// if (!this.#keyofCache) {
 		// 	this.#keyofCache = this.rawKeyOf()
 		// 	if (this.#keyofCache.isNever())
@@ -89,33 +154,21 @@ export class BaseSchema<
 		return this.#keyofCache as never
 	}
 
-	intersect<r extends Schema>(
-		r: r
-	): Schema<inferIntersection<this["infer"], r["infer"]>> | Disjoint {
+	intersect(r: BaseSchema): BaseSchema | Disjoint {
 		return this.intersectInternal(r) as never
 	}
 
-	intersectSatisfiable<r extends Schema>(
-		r: r
-	): Schema<inferIntersection<this["infer"], r["infer"]>> {
+	intersectSatisfiable(r: BaseSchema): BaseSchema {
 		const result = this.intersect(r)
 		return result instanceof Disjoint ? result.throw() : (result as never)
 	}
 
-	union<r extends Schema>(r: r): Schema<t | r["infer"]> {
+	union(r: BaseSchema): BaseSchema {
 		const branches = [...this.branches, ...(r.branches as any)]
 		return this.$.schema(branches) as never
 	}
 
-	get in(): Schema<distillConstrainableIn<t>, $> {
-		return super.in as never
-	}
-
-	get out(): Schema<distillConstrainableOut<t>, $> {
-		return super.out as never
-	}
-
-	assert(data: unknown): this["infer"] {
+	assert(data: unknown) {
 		const result = this.traverse(data)
 		return result.errors ? result.errors.throw() : result.out
 	}
@@ -127,20 +180,20 @@ export class BaseSchema<
 	// }
 
 	// TODO: i/o
-	extract(other: Schema): Schema<t, $> {
+	extract(other: BaseSchema): BaseSchema {
 		return this.$.schema(
 			this.branches.filter((branch) => branch.extends(other))
 		) as never
 	}
 
 	// TODO: i/o
-	exclude(other: Schema): Schema<t, $> {
+	exclude(other: BaseSchema): BaseSchema {
 		return this.$.schema(
 			this.branches.filter((branch) => !branch.extends(other))
 		) as never
 	}
 
-	array(): Schema<t[], $> {
+	array(): BaseSchema {
 		return this.$.schema(
 			{
 				proto: Array,
@@ -150,9 +203,7 @@ export class BaseSchema<
 		) as never
 	}
 
-	// add the extra inferred intersection so that a variable of Type
-	// can be narrowed without other branches becoming never
-	extends<r>(other: Schema<r>): this is Schema<r> & { [inferred]?: r } {
+	extends(other: BaseSchema) {
 		const intersection = this.intersect(other as never)
 		return (
 			!(intersection instanceof Disjoint) &&
@@ -172,23 +223,7 @@ export class BaseSchema<
 		return literal as never
 	}
 
-	morphNode<
-		morph extends Morph<this["infer"]>,
-		outValidatorSchema extends SchemaDef = never
-	>(
-		morph: morph,
-		outValidator?: outValidatorSchema
-	): Schema<
-		(
-			In: distillConstrainableIn<t>
-		) => Out<
-			[outValidatorSchema] extends [never]
-				? inferMorphOut<morph>
-				: distillConstrainableOut<inferSchema<outValidatorSchema, $>>
-		>,
-		$
-	>
-	morphNode(morph: Morph, outValidator?: unknown): unknown {
+	morphNode(morph: Morph, outValidator?: unknown): BaseSchema {
 		if (this.hasKind("union")) {
 			const branches = this.branches.map((node) =>
 				node.morphNode(morph, outValidator as never)
@@ -207,17 +242,7 @@ export class BaseSchema<
 		})
 	}
 
-	constrain<
-		kind extends PrimitiveConstraintKind,
-		const def extends NodeDef<kind>
-	>(
-		kind: conform<kind, constraintKindOf<this["in"]["infer"]>>,
-		def: def
-	): instantiate<this, [constrain<t, kind, def>, $]> {
-		return this.rawConstrain(kind, def) as never
-	}
-
-	protected rawConstrain(kind: ConstraintKind, def: unknown): Schema {
+	constrain(kind: PrimitiveConstraintKind, def: unknown): BaseSchema {
 		const constraint = this.$.node(kind, def as never)
 		if (
 			constraint.impliedBasis &&

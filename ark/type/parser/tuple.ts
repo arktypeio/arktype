@@ -1,11 +1,11 @@
 import {
 	type BaseMeta,
+	type BaseSchema,
 	type Morph,
 	type MutableInner,
 	type Node,
 	type Out,
 	type Predicate,
-	type Schema,
 	type UnionChildKind,
 	type distillConstrainableIn,
 	type distillConstrainableOut,
@@ -35,10 +35,13 @@ import type { InfixOperator, PostfixExpression } from "./semantic/infer.js"
 import { writeMissingRightOperandMessage } from "./string/shift/operand/unenclosed.js"
 import type { BaseCompletions } from "./string/string.js"
 
-export const parseTuple = (def: array, ctx: ParseContext): Schema =>
+export const parseTuple = (def: array, ctx: ParseContext): BaseSchema =>
 	maybeParseTupleExpression(def, ctx) ?? parseTupleLiteral(def, ctx)
 
-export const parseTupleLiteral = (def: array, ctx: ParseContext): Schema => {
+export const parseTupleLiteral = (
+	def: array,
+	ctx: ParseContext
+): BaseSchema => {
 	let sequences: MutableInner<"sequence">[] = [{}]
 	let i = 0
 	while (i < def.length) {
@@ -99,7 +102,7 @@ type ElementKind = "optional" | "required" | "variadic"
 const appendElement = (
 	base: MutableInner<"sequence">,
 	kind: ElementKind,
-	element: Schema
+	element: BaseSchema
 ): MutableInner<"sequence"> => {
 	switch (kind) {
 		case "required":
@@ -158,7 +161,7 @@ const appendSpreadBranch = (
 const maybeParseTupleExpression = (
 	def: array,
 	ctx: ParseContext
-): Schema | undefined => {
+): BaseSchema | undefined => {
 	const tupleExpressionResult = isIndexZeroExpression(def)
 		? prefixParsers[def[0]](def as never, ctx)
 		: isIndexOneExpression(def)
@@ -504,12 +507,12 @@ const parseArrayTuple: PostfixParser<"[]"> = (def, ctx) =>
 export type PostfixParser<token extends IndexOneOperator> = (
 	def: IndexOneExpression<token>,
 	ctx: ParseContext
-) => Schema
+) => BaseSchema
 
 export type PrefixParser<token extends IndexZeroOperator> = (
 	def: IndexZeroExpression<token>,
 	ctx: ParseContext
-) => Schema
+) => BaseSchema
 
 export type TupleExpression = IndexZeroExpression | IndexOneExpression
 

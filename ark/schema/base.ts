@@ -465,8 +465,6 @@ interface NodesByKind<t = any, $ = any> extends BoundNodesByKind {
 
 export type Node<kind extends NodeKind, t = any> = NodesByKind<t>[kind]
 
-export type { BaseSchema as Schema } from "./schemas/schema.js"
-
 export type SchemaDef<kind extends SchemaKind = SchemaKind> = NodeDef<kind>
 
 export type Constraint = BaseConstraint
