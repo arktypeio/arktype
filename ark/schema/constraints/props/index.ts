@@ -6,7 +6,7 @@ import {
 } from "../../base.js"
 import { internalKeywords } from "../../keywords/internal.js"
 import { tsKeywords } from "../../keywords/tsKeywords.js"
-import type { Schema2 } from "../../schemas/schema.js"
+import type { BaseSchema, Schema2 } from "../../schemas/schema.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import type { SchemaKind } from "../../shared/implement.js"
 import type { BaseConstraint, ConstraintAttachments } from "../constraint.js"
@@ -17,8 +17,8 @@ export interface IndexDef extends BaseMeta {
 }
 
 export interface IndexInner extends BaseMeta {
-	readonly key: Schema2<Key>
-	readonly value: Schema2
+	readonly key: BaseSchema
+	readonly value: BaseSchema
 }
 
 export type IndexDeclaration = declareNode<{

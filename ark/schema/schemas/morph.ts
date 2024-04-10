@@ -8,7 +8,7 @@ import {
 	reference,
 	throwParseError
 } from "@arktype/util"
-import { type BaseSchema, type Node, implementNode } from "../base.js"
+import { type Node, implementNode } from "../base.js"
 import type { of } from "../constraints/ast.js"
 import { tsKeywords } from "../keywords/tsKeywords.js"
 import type { NodeDef } from "../kinds.js"
@@ -163,7 +163,7 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 	}
 })
 
-export type MorphNode<t = any, $ = any> = BaseSchema<t, $, MorphDeclaration>
+export type MorphNode = BaseSchema<MorphDeclaration>
 
 export type inferMorphOut<morph extends Morph> = morph extends Morph<
 	never,

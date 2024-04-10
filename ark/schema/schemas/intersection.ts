@@ -364,11 +364,7 @@ export const intersectionImplementation =
 		}
 	})
 
-export type IntersectionNode<t = unknown, $ = any> = Schema2<
-	t,
-	$,
-	IntersectionDeclaration
->
+export type IntersectionNode = BaseSchema<IntersectionDeclaration>
 
 const maybeCreatePropsGroup = (inner: IntersectionInner, $: SchemaScope) => {
 	const propsInput = pick(inner, propKeys)

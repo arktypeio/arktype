@@ -1,5 +1,5 @@
 import { appendUnique, groupBy, isArray } from "@arktype/util"
-import { type BaseSchema, type Node, implementNode } from "../base.js"
+import { type Node, implementNode } from "../base.js"
 import { tsKeywords } from "../keywords/tsKeywords.js"
 import type { NodeDef } from "../kinds.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"

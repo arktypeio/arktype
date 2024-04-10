@@ -5,7 +5,7 @@ import {
 	implementNode
 } from "../../base.js"
 import { tsKeywords } from "../../keywords/tsKeywords.js"
-import type { Schema2 } from "../../schemas/schema.js"
+import type { BaseSchema, Schema2 } from "../../schemas/schema.js"
 import type {
 	BaseErrorContext,
 	BaseMeta,
@@ -23,7 +23,7 @@ export interface PropDef extends BaseMeta {
 
 export interface PropInner extends BaseMeta {
 	readonly key: Key
-	readonly value: Schema2
+	readonly value: BaseSchema
 	readonly optional?: true
 }
 

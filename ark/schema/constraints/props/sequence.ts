@@ -15,7 +15,7 @@ import {
 import { jsObjects } from "../../keywords/jsObjects.js"
 import { tsKeywords } from "../../keywords/tsKeywords.js"
 import type { MutableInner } from "../../kinds.js"
-import type { Schema2 } from "../../schemas/schema.js"
+import type { BaseSchema } from "../../schemas/schema.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import type {
@@ -38,14 +38,14 @@ export type SequenceDef = NormalizedSequenceDef | SchemaDef
 
 export interface SequenceInner extends BaseMeta {
 	// a list of fixed position elements starting at index 0
-	readonly prefix?: array<Schema2>
+	readonly prefix?: array<BaseSchema>
 	// a list of optional elements following prefix
-	readonly optional?: array<Schema2>
+	readonly optional?: array<BaseSchema>
 	// the variadic element (only checked if all optional elements are present)
-	readonly variadic?: Schema2
+	readonly variadic?: BaseSchema
 	readonly minVariadicLength?: number
 	// a list of fixed position elements, the last being the last element of the array
-	readonly postfix?: array<Schema2>
+	readonly postfix?: array<BaseSchema>
 }
 
 export type SequenceDeclaration = declareNode<{
@@ -62,10 +62,10 @@ export type SequenceDeclaration = declareNode<{
 export interface SequenceAttachments
 	extends BaseAttachments<SequenceDeclaration>,
 		ConstraintAttachments {
-	prefix: array<Schema2>
-	optional: array<Schema2>
-	prevariadic: array<Schema2>
-	postfix: array<Schema2>
+	prefix: array<BaseSchema>
+	optional: array<BaseSchema>
+	prevariadic: array<BaseSchema>
+	postfix: array<BaseSchema>
 	isVariadicOnly: boolean
 	minVariadicLength: number
 	minLength: number
