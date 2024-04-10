@@ -90,7 +90,8 @@ type bootstrapAliases<def> = {
 			? thunkReturn
 			: Def<def[k]>
 } & {
-	[k in keyof def & GenericDeclaration as extractGenericName<k>]: Generic<
+	[k in keyof def &
+		GenericDeclaration as extractGenericName<k>]: GenericProps<
 		parseGenericParams<extractGenericParameters<k>>,
 		def[k],
 		UnparsedScope

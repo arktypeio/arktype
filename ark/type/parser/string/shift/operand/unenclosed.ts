@@ -55,7 +55,7 @@ export type parseUnenclosed<
 			? result extends ErrorMessage<infer message>
 				? state.error<message>
 				: result extends keyof $
-					? $[result] extends { [arkKind]: "generic" }
+					? $[result] extends GenericProps
 						? parseGenericInstantiation<
 								token,
 								$[result],
@@ -64,7 +64,17 @@ export type parseUnenclosed<
 								args
 							>
 						: state.setRoot<s, result, unscanned>
-					: state.setRoot<s, result, unscanned>
+					: result extends keyof ambient
+						? ambient[result] extends GenericProps
+							? parseGenericInstantiation<
+									token,
+									ambient[result],
+									state.scanTo<s, unscanned>,
+									$,
+									args
+								>
+							: state.setRoot<s, result, unscanned>
+						: state.setRoot<s, result, unscanned>
 			: never
 	: never
 
@@ -131,7 +141,7 @@ const maybeParseReference = (
 	if (resolution instanceof BaseSchema) return resolution
 	if (resolution === undefined) return
 	if (hasArkKind(resolution, "generic"))
-		return parseGenericInstantiation(token, resolution, s)
+		return parseGenericInstantiation(token, resolution as Generic, s)
 	return throwParseError(`Unexpected resolution ${printable(resolution)}`)
 }
 

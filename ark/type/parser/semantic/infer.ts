@@ -31,7 +31,7 @@ export type inferConstrainableAst<ast, $, args> = ast extends array
 
 export type GenericInstantiationAst<
 	// TODO: why didn't constraining g to GenericProps work?
-	g = any,
+	g extends GenericProps = GenericProps,
 	argAsts extends unknown[] = unknown[]
 > = [g, "<>", argAsts]
 
@@ -42,7 +42,7 @@ export type inferExpression<
 > = ast extends GenericInstantiationAst
 	? inferDefinition<
 			ast[0]["def"],
-			ast[0]["$"]["t"] extends UnparsedScope
+			ast[0]["$"]["$"] extends UnparsedScope
 				? // If the generic was defined in the current scope, its definition can be
 					// resolved using the same scope as that of the input args.
 					$
