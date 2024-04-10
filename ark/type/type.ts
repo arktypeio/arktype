@@ -1,11 +1,9 @@
 import {
 	type BaseMeta,
 	BaseSchema,
-	Disjoint,
 	type Morph,
 	type Out,
 	type Predicate,
-	type Schema,
 	type ambient,
 	type distillConstrainableIn,
 	type distillConstrainableOut,
@@ -111,40 +109,26 @@ export const createTypeParser = <$>($: Scope): TypeParser<$> => {
 	}
 	return parser as never
 }
-/** @ts-expect-error allow instantiation assignment to the base type */
-export class Type<out t = unknown, $ = any> extends BaseSchema<t, $> {
-	constructor(
-		public definition: unknown,
-		public $: Scope<$>
-	) {
-		const root = $.parseRoot(definition) as {} as Schema<t>
-		super(root.traverse as never)
-	}
 
-	declare [Hkt.instantiate]: (
+export interface Type<
+	/** @ts-expect-error allow instantiation assignment to the base type */
+	out t = unknown,
+	$ = any
+> extends BaseSchema<t, $> {
+	[Hkt.instantiate]: (
 		args: this[Hkt.args]
 	) => Type<(typeof args)[0], (typeof args)[1]>
 
 	and<def>(
 		def: validateTypeRoot<def, $>
-	): Type<inferIntersection<t, inferTypeRoot<def, $>>, $> {
-		const result = this.intersect(this.$.parseRoot(def))
-		return result instanceof Disjoint ? result.throw() : (result as never)
-	}
+	): Type<inferIntersection<t, inferTypeRoot<def, $>>, $>
 
-	or<def>(def: validateTypeRoot<def, $>): Type<t | inferTypeRoot<def, $>, $> {
-		return new Type(super.union(this.$.parseRoot(def)), this.$) as never
-	}
+	or<def>(def: validateTypeRoot<def, $>): Type<t | inferTypeRoot<def, $>, $>
 
-	get in(): Type<distillConstrainableIn<t>, $> {
-		return super.in as never
-	}
+	get in(): Type<distillConstrainableIn<t>, $>
+	get out(): Type<distillConstrainableOut<t>, $>
 
-	get out(): Type<distillConstrainableOut<t>, $> {
-		return super.out as never
-	}
-
-	declare array: () => Type<t[], $>
+	array(): Type<t[], $>
 
 	morph<morph extends Morph<this["infer"]>, outValidatorDef = never>(
 		morph: morph,
@@ -159,9 +143,6 @@ export class Type<out t = unknown, $ = any> extends BaseSchema<t, $> {
 		>,
 		$
 	>
-	morph(morph: Morph, outValidator?: unknown): unknown {
-		return new Type(super.morphNode(morph, outValidator as never), this.$)
-	}
 
 	// TODO: based on below, should maybe narrow morph output if used after
 	narrow<def extends Predicate<distillConstrainableOut<t>>>(
@@ -171,10 +152,15 @@ export class Type<out t = unknown, $ = any> extends BaseSchema<t, $> {
 			? (In: distillIn<t>) => Out<inferNarrow<this["infer"], def>>
 			: inferNarrow<this["infer"], def>,
 		$
-	> {
-		return this.constrain("predicate" as any, def) as never
-	}
+	>
 }
+
+export type TypeConstructor<t = unknown, $ = any> = new (
+	def: unknown,
+	$: Scope<$>
+) => Type<t, $>
+
+export const Type: TypeConstructor = BaseSchema as never
 
 export type DefinitionParser<$> = <def>(def: validateTypeRoot<def, $>) => def
 
