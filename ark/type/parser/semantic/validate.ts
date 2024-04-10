@@ -40,7 +40,7 @@ export type validateAst<ast, $, args> = ast extends string
 			: ast extends readonly ["keyof", infer operand]
 				? validateAst<operand, $, args>
 				: ast extends GenericInstantiationAst
-					? validateGenericArgs<ast["2"], $, args>
+					? validateGenericArgs<ast[2], $, args>
 					: ErrorMessage<
 							writeUnexpectedExpressionMessage<astToString<ast>>
 						> & { ast: ast }

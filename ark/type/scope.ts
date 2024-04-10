@@ -139,6 +139,7 @@ export type resolve<reference extends keyof $ | keyof args, $, args> = (
 	: never
 
 export type moduleKeyOf<$> = {
+	// TODO: check against module directly?
 	[k in keyof $]: $[k] extends { [arkKind]: "module" } ? k & string : never
 }[keyof $]
 

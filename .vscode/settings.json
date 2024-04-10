@@ -4,9 +4,12 @@
 		"editor.defaultFormatter": "biomejs.biome"
 	},
 	"editor.codeActionsOnSave": {
-		"quickfix.biome": "explicit",
+		// disabling this for now as it causes a noticeable delay on save.
+		// instead, it can be applied via a key bound action
+		// "quickfix.biome": "explicit",
 		"source.organizeImports.biome": "explicit"
 	},
+	"typescript.preferences.preferTypeOnlyAutoImports": true,
 	"typescript.preferences.autoImportFileExcludePatterns": [
 		"out",
 		// too many overlapping names, easy to import in schema/arktype where we don't want it

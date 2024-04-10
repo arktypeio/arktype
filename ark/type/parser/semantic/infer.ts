@@ -29,30 +29,29 @@ export type inferConstrainableAst<ast, $, args> = ast extends array
 	: inferTerminal<ast, $, args>
 
 export type GenericInstantiationAst<
-	// TODO: why didn't constraining g to GenericProps work?
-	g extends GenericProps = GenericProps,
+	generic extends GenericProps = GenericProps,
 	argAsts extends unknown[] = unknown[]
-> = [g, "<>", argAsts]
+> = [generic, "<>", argAsts]
 
 export type inferExpression<
 	ast extends array,
 	$,
 	args
-> = ast extends GenericInstantiationAst
+> = ast extends GenericInstantiationAst<infer generic, infer argAsts>
 	? inferDefinition<
-			ast[0]["def"],
-			ast[0]["$"]["$"] extends UnparsedScope
+			generic["def"],
+			generic["$"]["$"] extends UnparsedScope
 				? // If the generic was defined in the current scope, its definition can be
 					// resolved using the same scope as that of the input args.
 					$
 				: // Otherwise, use the scope that was explicitly associated with it.
-					ast[0]["$"],
+					generic["$"]["$"],
 			{
 				// Using keyof g["params"] & number here results in the element types
 				// being mixed- another reason TS should not have separate `${number}` and number keys!
-				[i in keyof ast[0]["params"] &
-					`${number}` as ast[0]["params"][i]]: inferConstrainableAst<
-					ast[2][i & keyof ast[2]],
+				[i in keyof generic["params"] &
+					`${number}` as generic["params"][i]]: inferConstrainableAst<
+					argAsts[i & keyof argAsts],
 					$,
 					args
 				>

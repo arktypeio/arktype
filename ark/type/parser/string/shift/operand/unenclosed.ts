@@ -167,9 +167,8 @@ type tryResolve<
 					? token
 					: token extends `${infer submodule extends keyof $ &
 								string}.${infer reference}`
-						? $[submodule] extends
-								| SchemaModule<infer sub$>
-								| Module<infer sub$>
+						? $[submodule] extends // TODO: shouldn't need both checks?
+							SchemaModule<infer sub$> | Module<infer sub$>
 							? reference extends keyof sub$
 								? token
 								: unknown extends sub$
