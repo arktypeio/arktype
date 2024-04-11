@@ -8,8 +8,8 @@ import {
 	objectKindOrDomainOf,
 	prototypeKeysOf
 } from "@arktype/util"
-import { tsKeywords } from "../api/keywords/tsKeywords.js"
 import { implementNode } from "../base.js"
+import { tsKeywords } from "../keywords/tsKeywords.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {

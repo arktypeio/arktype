@@ -1,13 +1,9 @@
 import {
 	type Callable,
-	Hkt,
 	type Json,
 	type conform,
-	flatMorph,
-	type instantiate
+	flatMorph
 } from "@arktype/util"
-import type { inferSchema } from "../api/inference.js"
-import type { Schema } from "../api/schema.js"
 import {
 	type BaseAttachments,
 	type Node,
@@ -19,8 +15,9 @@ import {
 	type PrimitiveConstraintKind,
 	throwInvalidOperandError
 } from "../constraints/constraint.js"
+import type { inferSchema } from "../inference.js"
 import type { NodeDef, reducibleKindOf } from "../kinds.js"
-import type { RawSchemaScope } from "../scope.js"
+import type { SchemaScope } from "../scope.js"
 import type { BaseMeta, RawNodeDeclaration } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { ArkResult } from "../shared/errors.js"
@@ -203,6 +200,87 @@ export class RawSchema<
 			})
 		) as never
 	}
+}
+
+export interface Schema<
+	/** @ts-expect-error allow instantiation assignment to the base type */
+	out t = unknown,
+	$ = any
+> extends Callable<(data: unknown) => ArkResult<t>> {
+	$: SchemaScope<$>
+	infer: distillOut<t>
+	[inferred]: t
+
+	json: Json
+	description: string
+	expression: string
+	innerId: string
+	raw: RawSchema
+
+	get in(): Schema<distillConstrainableIn<t>, $>
+
+	get out(): Schema<distillConstrainableOut<t>, $>
+
+	assert(data: unknown): this["infer"]
+
+	keyof(): Schema<keyof this["in"]["infer"], $>
+
+	allows(data: unknown): data is this["in"]["infer"]
+
+	traverse(data: unknown): ArkResult<t>
+
+	intersect<r extends Schema>(
+		r: r
+	): Schema<inferIntersection<this["infer"], r["infer"]>> | Disjoint
+
+	intersectSatisfiable<r extends Schema>(
+		r: r
+	): Schema<inferIntersection<this["infer"], r["infer"]>>
+
+	union<r extends Schema>(r: r): Schema<t | r["infer"]>
+
+	constrain<
+		kind extends PrimitiveConstraintKind,
+		const def extends NodeDef<kind>
+	>(
+		kind: conform<kind, constraintKindOf<this["in"]["infer"]>>,
+		def: def
+	): Schema<constrain<t, kind, def>, $>
+
+	equals<r>(r: Schema<r>): this is Schema<r>
+
+	// TODO: i/o
+	extract<r>(r: Schema<r>): Schema<t, $>
+	exclude<r>(r: Schema<r>): Schema<t, $>
+
+	array(): Schema<t[], $>
+
+	// add the extra inferred intersection so that a variable of Type
+	// can be narrowed without other branches becoming never
+	extends<r>(other: Schema<r>): this is Schema<r> & { [inferred]?: r }
+
+	configure(configOrDescription: BaseMeta | string): this
+
+	describe(description: string): this
+
+	from(literal: this["in"]["infer"]): this["out"]["infer"]
+
+	morphNode<
+		morph extends Morph<this["infer"]>,
+		outValidatorSchema extends SchemaDef = never
+	>(
+		morph: morph,
+		outValidator?: outValidatorSchema
+	): Schema<
+		(
+			In: distillConstrainableIn<t>
+		) => Out<
+			[outValidatorSchema] extends [never]
+				? inferMorphOut<morph>
+				: distillConstrainableOut<inferSchema<outValidatorSchema, $>>
+		>,
+		$
+	>
 }
 
 export type intersectSchema<l extends SchemaKind, r extends NodeKind> = [

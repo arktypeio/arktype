@@ -11,18 +11,19 @@ import {
 	type requireKeys,
 	throwParseError
 } from "@arktype/util"
+import type { Node, RawNode, SchemaDef } from "./base.js"
+import { mergeConfigs } from "./config.js"
 import {
 	type GenericSchema,
 	validateUninstantiatedGenericNode
-} from "./api/generic.js"
-import type { Ark } from "./api/keywords/keywords.js"
-import { SchemaModule } from "./api/module.js"
-import type { SchemaScope } from "./api/scope.js"
-import type { Node, RawNode, SchemaDef } from "./base.js"
-import { mergeConfigs } from "./config.js"
+} from "./generic.js"
+import type { inferSchema, validateSchema } from "./inference.js"
+import type { Ark } from "./keywords/keywords.js"
 import type { NodeDef, reducibleKindOf } from "./kinds.js"
+import { SchemaModule } from "./module.js"
 import { type NodeParseOptions, parseNode, schemaKindOf } from "./parse.js"
-import type { RawSchema } from "./schemas/schema.js"
+import type { distillIn, distillOut } from "./schemas/morph.js"
+import type { RawSchema, Schema } from "./schemas/schema.js"
 import { NodeCompiler } from "./shared/compile.js"
 import type {
 	ActualWriter,
@@ -144,12 +145,6 @@ export type RawSchemaResolutions = Record<
 export type exportedNameOf<$> = Exclude<keyof $ & string, PrivateDeclaration>
 
 export type PrivateDeclaration<key extends string = string> = `#${key}`
-
-export class RawSchemaModule<
-	resolutions extends RawSchemaResolutions = RawSchemaResolutions
-> extends DynamicBase<resolutions> {
-	declare readonly [arkKind]: "module"
-}
 
 export class RawSchemaScope<
 	$ extends RawSchemaResolutions = RawSchemaResolutions
@@ -340,6 +335,82 @@ export class RawSchemaScope<
 			]) as never
 		) as never
 	}
+}
+
+export type validateAliases<aliases> = {
+	[k in keyof aliases]: validateSchema<aliases[k], aliases>
+}
+
+export type instantiateAliases<aliases> = {
+	[k in keyof aliases]: inferSchema<aliases[k], aliases>
+} & unknown
+
+export declare const schemaScope: <const aliases>(
+	aliases: validateAliases<aliases>,
+	config?: ArkConfig
+) => SchemaScope<instantiateAliases<aliases>>
+
+export interface SchemaScope<$ = any> {
+	$: $
+	infer: distillOut<$>
+	inferIn: distillIn<$>
+
+	config: ArkConfig
+	references: readonly RawNode[]
+	json: Json
+	exportedNames: array<exportedNameOf<$>>
+
+	/** The set of names defined at the root-level of the scope mapped to their
+	 * corresponding definitions.**/
+	aliases: Record<string, unknown>
+
+	node<kind extends NodeKind, const def extends NodeDef<kind>>(
+		kind: kind,
+		def: def,
+		opts?: NodeParseOptions
+	): Node<reducibleKindOf<kind>>
+
+	schema<const def extends SchemaDef>(
+		def: def,
+		opts?: NodeParseOptions
+	): Schema<inferSchema<def, $>, $>
+
+	defineSchema<const def extends SchemaDef>(def: def): def
+
+	units<const branches extends array>(
+		values: branches,
+		opts?: NodeParseOptions
+	): Schema<branches[number], $>
+
+	parseNode<kinds extends NodeKind | array<SchemaKind>>(
+		kinds: kinds,
+		schema: NodeDef<flattenListable<kinds>>,
+		opts?: NodeParseOptions
+	): Node<reducibleKindOf<flattenListable<kinds>>>
+
+	parseRoot(def: unknown, opts?: NodeParseOptions): RawSchema
+
+	import<names extends exportedNameOf<$>[]>(
+		...names: names
+	): SchemaModule<destructuredImportContext<$, names>>
+
+	export<names extends exportedNameOf<$>[]>(
+		...names: names
+	): SchemaModule<destructuredExportContext<$, names>>
+}
+
+export const SchemaScope: new <$ = any>(
+	...args: ConstructorParameters<typeof RawSchemaScope>
+) => SchemaScope<$> = RawSchemaScope as never
+
+export const root: SchemaScope<{}> = new SchemaScope({})
+
+export const { schema, defineSchema, node, units } = root
+
+export class RawSchemaModule<
+	resolutions extends RawSchemaResolutions = RawSchemaResolutions
+> extends DynamicBase<resolutions> {
+	declare readonly [arkKind]: "module"
 }
 
 export type destructuredExportContext<$, names extends exportedNameOf<$>[]> = {

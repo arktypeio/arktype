@@ -6,9 +6,9 @@ import {
 	literalPropAccess,
 	type mutable
 } from "@arktype/util"
-import type { GenericSchema } from "../api/generic.js"
-import type { SchemaModule } from "../api/module.js"
 import type { Constraint, RawNode } from "../base.js"
+import type { GenericSchema } from "../generic.js"
+import type { SchemaModule } from "../module.js"
 import type { RawSchema } from "../schemas/schema.js"
 import type { RawSchemaModule, RawSchemaScope } from "../scope.js"
 import type { ArkTypeError } from "./errors.js"

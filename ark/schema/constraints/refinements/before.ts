@@ -1,5 +1,5 @@
-import { jsObjects } from "../../api/keywords/jsObjects.js"
-import { type RawNode, implementNode } from "../../base.js"
+import { implementNode } from "../../base.js"
+import { jsObjects } from "../../keywords/jsObjects.js"
 import type { declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import type { BaseConstraint } from "../constraint.js"

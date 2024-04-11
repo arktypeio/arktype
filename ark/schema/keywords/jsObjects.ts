@@ -1,3 +1,4 @@
+
 import type { SchemaModule } from "../module.js"
 import { schemaScope } from "../scope.js"
 

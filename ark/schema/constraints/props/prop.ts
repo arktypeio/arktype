@@ -1,10 +1,10 @@
 import { type Key, compileSerializedValue } from "@arktype/util"
-import { tsKeywords } from "../../api/keywords/tsKeywords.js"
 import {
 	type BaseAttachments,
 	type SchemaDef,
 	implementNode
 } from "../../base.js"
+import { tsKeywords } from "../../keywords/tsKeywords.js"
 import type { RawSchema } from "../../schemas/schema.js"
 import type {
 	BaseErrorContext,

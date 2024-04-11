@@ -1,5 +1,5 @@
-import { internalKeywords } from "../../api/keywords/internal.js"
 import { type BaseAttachments, implementNode } from "../../base.js"
+import { internalKeywords } from "../../keywords/internal.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import {

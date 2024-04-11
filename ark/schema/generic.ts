@@ -1,11 +1,10 @@
 import { Callable, type conform, flatMorph, type repeat } from "@arktype/util"
-import type { SchemaDef } from "../base.js"
-import type { RawSchema } from "../schemas/schema.js"
-import { arkKind } from "../shared/utils.js"
+import type { SchemaDef } from "./base.js"
 import type { inferSchema } from "./inference.js"
 import { keywordNodes } from "./keywords/keywords.js"
-import type { Schema } from "./schema.js"
+import type { RawSchema, Schema } from "./schemas/schema.js"
 import type { SchemaScope } from "./scope.js"
+import { arkKind } from "./shared/utils.js"
 
 export type GenericNodeInstantiation<
 	params extends string[] = string[],

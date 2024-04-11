@@ -6,6 +6,7 @@ import {
 	type RawSchema,
 	RawSchemaScope,
 	SchemaModule,
+	SchemaScope,
 	type ambient,
 	arkKind
 } from "@arktype/schema"
@@ -18,7 +19,6 @@ import {
 	type nominal,
 	throwParseError
 } from "@arktype/util"
-import { SchemaScope } from "../schema/api/scope.js"
 import { Generic } from "./generic.js"
 import { type MatchParser, createMatchParser } from "./match.js"
 import {
@@ -167,6 +167,8 @@ declare global {
 
 export const scope: ScopeParser = ((def: Dict, config: ArkConfig = {}) =>
 	new Scope(def, config)) as never
+
+export interface Scope2<$ = any> extends SchemaScope<$> {}
 
 export class Scope<$ = any> extends SchemaScope<$> {
 	private parseCache: Record<string, RawSchema> = {}

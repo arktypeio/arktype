@@ -13,13 +13,13 @@ import {
 	splitByKeys,
 	throwInternalError
 } from "@arktype/util"
-import { tsKeywords } from "../api/keywords/tsKeywords.js"
 import { type Constraint, type Node, RawNode, implementNode } from "../base.js"
 import {
 	type ExtraneousKeyBehavior,
 	type ExtraneousKeyRestriction,
 	PropsGroup
 } from "../constraints/props/props.js"
+import { tsKeywords } from "../keywords/tsKeywords.js"
 import type { Inner, MutableInner, NodeDef, Prerequisite } from "../kinds.js"
 import type { NodeParseContext } from "../parse.js"
 import type { RawSchemaScope } from "../scope.js"

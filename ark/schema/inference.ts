@@ -9,22 +9,22 @@ import type {
 	instanceOf,
 	isAny
 } from "@arktype/util"
-import type { RawNode } from "../base.js"
-import type { NodeDef, Prerequisite } from "../kinds.js"
-import type { DomainDef } from "../schemas/domain.js"
-import type { IntersectionDef } from "../schemas/intersection.js"
+import type { RawNode } from "./base.js"
+import type { NodeDef, Prerequisite } from "./kinds.js"
+import type { DomainDef } from "./schemas/domain.js"
+import type { IntersectionDef } from "./schemas/intersection.js"
 import type {
 	Morph,
 	MorphChildDefinition,
 	MorphDef,
 	Out,
 	inferMorphOut
-} from "../schemas/morph.js"
-import type { ProtoDef } from "../schemas/proto.js"
-import type { NormalizedUnionDef, UnionDef } from "../schemas/union.js"
-import type { UnitDef } from "../schemas/unit.js"
-import type { BasisKind, ConstraintKind } from "../shared/implement.js"
-import type { inferred } from "../shared/utils.js"
+} from "./schemas/morph.js"
+import type { ProtoDef } from "./schemas/proto.js"
+import type { NormalizedUnionDef, UnionDef } from "./schemas/union.js"
+import type { UnitDef } from "./schemas/unit.js"
+import type { BasisKind, ConstraintKind } from "./shared/implement.js"
+import type { inferred } from "./shared/utils.js"
 
 export namespace type {
 	export type cast<to = unknown> = {

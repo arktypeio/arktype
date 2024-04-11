@@ -1,11 +1,11 @@
 import { throwParseError } from "@arktype/util"
-import { internalKeywords } from "../../api/keywords/internal.js"
-import { tsKeywords } from "../../api/keywords/tsKeywords.js"
 import {
 	type BaseAttachments,
 	type SchemaDef,
 	implementNode
 } from "../../base.js"
+import { internalKeywords } from "../../keywords/internal.js"
+import { tsKeywords } from "../../keywords/tsKeywords.js"
 import type { RawSchema } from "../../schemas/schema.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import type { SchemaKind } from "../../shared/implement.js"

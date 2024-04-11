@@ -15,7 +15,6 @@ import {
 	printable,
 	throwError
 } from "@arktype/util"
-import type { Schema } from "./api/schema.js"
 import type { PredicateNode } from "./constraints/predicate.js"
 import type { IndexNode } from "./constraints/props/index.js"
 import type { PropNode } from "./constraints/props/prop.js"
@@ -34,6 +33,7 @@ import type { DomainNode } from "./schemas/domain.js"
 import type { IntersectionNode } from "./schemas/intersection.js"
 import type { MorphNode } from "./schemas/morph.js"
 import type { ProtoNode } from "./schemas/proto.js"
+import type { Schema } from "./schemas/schema.js"
 import type { UnionNode } from "./schemas/union.js"
 import type { UnitNode } from "./schemas/unit.js"
 import type { RawSchemaScope } from "./scope.js"
