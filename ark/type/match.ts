@@ -1,7 +1,7 @@
 import type {
-	RawSchema,
 	Morph,
 	Narrowed,
+	RawSchema,
 	distillOut,
 	inferIntersection
 } from "@arktype/schema"

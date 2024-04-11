@@ -146,6 +146,16 @@ export type exportedNameOf<$> = Exclude<keyof $ & string, PrivateDeclaration>
 
 export type PrivateDeclaration<key extends string = string> = `#${key}`
 
+type toRawScope<$> = RawSchemaScope<{
+	[k in keyof $]: $[k] extends { [arkKind]: infer kind }
+		? kind extends "generic"
+			? GenericSchema
+			: kind extends "module"
+				? RawSchemaModule
+				: never
+		: RawSchema
+}>
+
 export class RawSchemaScope<
 	$ extends RawSchemaResolutions = RawSchemaResolutions
 > implements internalImplementationOf<SchemaScope, "infer" | "inferIn" | "$">
@@ -180,6 +190,10 @@ export class RawSchemaScope<
 		this.exportedNames = Object.keys(this.aliases).filter(
 			(k) => k[0] !== "#"
 		) as never
+	}
+
+	get raw() {
+		return this
 	}
 
 	node<kind extends NodeKind>(
@@ -363,6 +377,7 @@ export interface SchemaScope<$ = any> {
 	/** The set of names defined at the root-level of the scope mapped to their
 	 * corresponding definitions.**/
 	aliases: Record<string, unknown>
+	raw: toRawScope<$>
 
 	node<kind extends NodeKind, const def extends NodeDef<kind>>(
 		kind: kind,
@@ -406,6 +421,13 @@ export const SchemaScope: new <$ = any>(
 export const root: SchemaScope<{}> = new SchemaScope({})
 
 export const { schema, defineSchema, node, units } = root
+
+export const {
+	schema: rawSchema,
+	defineSchema: defineRawSchema,
+	node: rawNode,
+	units: rawUnits
+} = root.raw
 
 export class RawSchemaModule<
 	resolutions extends RawSchemaResolutions = RawSchemaResolutions

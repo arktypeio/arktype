@@ -14,8 +14,7 @@ import {
 	type inferNarrow,
 	keywordNodes,
 	makeRootAndArrayPropertiesMutable,
-	node,
-	rawSchema
+	node
 } from "@arktype/schema"
 import {
 	type BuiltinObjectKind,
@@ -29,6 +28,8 @@ import {
 	objectKindOrDomainOf,
 	throwParseError
 } from "@arktype/util"
+import type { UnknownSchema } from "../../schema/schemas/schema.js"
+import { rawSchema, schema } from "../../schema/scope.js"
 import type { ParseContext } from "../scope.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
 import type { InfixOperator, PostfixExpression } from "./semantic/infer.js"
@@ -99,7 +100,7 @@ type ElementKind = "optional" | "required" | "variadic"
 const appendElement = (
 	base: MutableInner<"sequence">,
 	kind: ElementKind,
-	element: RawSchema
+	element: UnknownSchema
 ): MutableInner<"sequence"> => {
 	switch (kind) {
 		case "required":
@@ -133,7 +134,7 @@ const appendElement = (
 				// do nothing, second spread doesn't change the type
 			} else {
 				// e.g. [string, ...number[]]
-				base.variadic = element
+				base.variadic = element.raw
 			}
 			return base
 	}

@@ -1,10 +1,7 @@
 import {
-	RawSchema,
 	type GenericProps,
-	type RawSchema,
+	RawSchema,
 	type SchemaModule,
-	type ambient,
-	arkKind,
 	hasArkKind,
 	type writeNonSubmoduleDotMessage,
 	writeUnresolvableMessage
@@ -20,7 +17,6 @@ import {
 	tryParseNumber,
 	tryParseWellFormedBigint
 } from "@arktype/util"
-import type { type } from "../../../../ark.js"
 import type { Generic } from "../../../../generic.js"
 import type { Module } from "../../../../scope.js"
 import type { GenericInstantiationAst } from "../../../semantic/infer.js"
@@ -127,7 +123,7 @@ const maybeParseReference = (
 	s: DynamicState,
 	token: string
 ): RawSchema | undefined => {
-	if (s.ctx.args?.[token]) return s.ctx.args[token]
+	if (s.ctx.args?.[token]) return s.ctx.args[token].raw
 	const resolution = s.ctx.$.maybeResolve(token)
 	if (resolution instanceof RawSchema) return resolution
 	if (resolution === undefined) return

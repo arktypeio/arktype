@@ -4,21 +4,20 @@ import {
 	type NodeParseOptions,
 	type PreparsedNodeResolution,
 	type RawSchema,
-	RawSchemaScope,
 	SchemaModule,
-	SchemaScope,
+	type SchemaScope,
 	type ambient,
 	arkKind
 } from "@arktype/schema"
 import {
 	type Dict,
-	type Hkt,
 	domainOf,
 	type evaluate,
 	hasDomain,
 	type nominal,
 	throwParseError
 } from "@arktype/util"
+import { type RawSchemaResolutions, RawSchemaScope } from "../schema/scope.js"
 import { Generic } from "./generic.js"
 import { type MatchParser, createMatchParser } from "./match.js"
 import {
@@ -34,12 +33,11 @@ import {
 } from "./parser/generic.js"
 import { DynamicState } from "./parser/string/reduce/dynamic.js"
 import { fullStringParse } from "./parser/string/string.js"
-import {
-	type DeclarationParser,
-	type DefinitionParser,
+import type {
+	DeclarationParser,
+	DefinitionParser,
 	Type,
-	type TypeParser,
-	createTypeParser
+	TypeParser
 } from "./type.js"
 
 export type ScopeParser = <const def>(
@@ -156,7 +154,7 @@ export type tryInferSubmoduleReference<$, token> =
 export class Module<$ = any> extends SchemaModule<$> {}
 
 export interface ParseContext extends NodeParseOptions {
-	$: Scope
+	$: RawScope
 }
 
 declare global {
@@ -166,16 +164,22 @@ declare global {
 }
 
 export const scope: ScopeParser = ((def: Dict, config: ArkConfig = {}) =>
-	new Scope(def, config)) as never
+	new RawScope(def, config)) as never
 
-export interface Scope2<$ = any> extends SchemaScope<$> {}
+export interface Scope<$ = any> extends SchemaScope<$> {
+	type: TypeParser<$>
 
-export class Scope<$ = any> extends SchemaScope<$> {
+	match: MatchParser<$>
+
+	declare: DeclarationParser<$>
+
+	define: DefinitionParser<$>
+}
+
+export class RawScope<
+	$ extends RawSchemaResolutions = RawSchemaResolutions
+> extends RawSchemaScope<$> {
 	private parseCache: Record<string, RawSchema> = {}
-
-	declare hktNode: Type
-	declare hktModule: Module
-	declare hktGeneric: Generic
 
 	constructor(def: Record<string, unknown>, config?: ArkConfig) {
 		const aliases: Record<string, unknown> = {}
@@ -189,13 +193,39 @@ export class Scope<$ = any> extends SchemaScope<$> {
 		super(aliases, config)
 	}
 
-	type: TypeParser<$> = createTypeParser(this as never) as never
+	type(...args: unknown[]): RawSchema | Generic {
+		if (args.length === 1) {
+			// treat as a simple definition
+			return this.parseRoot(args[0])
+		}
+		if (
+			args.length === 2 &&
+			typeof args[0] === "string" &&
+			args[0][0] === "<" &&
+			args[0].at(-1) === ">"
+		) {
+			// if there are exactly two args, the first of which looks like <${string}>,
+			// treat as a generic
+			const params = parseGenericParams(args[0].slice(1, -1))
+			const def = args[1]
+			// TODO: validateUninstantiatedGeneric
+			return new Generic(params, def, this) as never
+		}
+		// otherwise, treat as a tuple expression. technically, this also allows
+		// non-expression tuple definitions to be parsed, but it's not a supported
+		// part of the API as specified by the associated types
+		return this.parseRoot(args)
+	}
 
 	match: MatchParser<$> = createMatchParser(this as never) as never
 
-	declare: DeclarationParser<$> = () => ({ type: this.type }) as never
+	declare() {
+		return { type: this.type }
+	}
 
-	define: DefinitionParser<$> = (def) => def as never
+	define(def: unknown) {
+		return def
+	}
 
 	// // TODO: name?
 	// get<name extends exportedNameOf<$>>(name: name): Type<$[name], $> {
@@ -222,15 +252,12 @@ export class Scope<$ = any> extends SchemaScope<$> {
 			: throwParseError(writeBadDefinitionTypeMessage(domainOf(def)))
 	}
 
-	parseRoot(def: unknown, opts?: NodeParseOptions): Type {
-		return new Type(
-			this.parse(def, {
-				args: { this: {} as RawSchema },
-				$: this,
-				...opts
-			}),
-			this
-		)
+	parseRoot(def: unknown, opts?: NodeParseOptions): RawSchema {
+		return this.parse(def, {
+			args: { this: {} as RawSchema },
+			$: this as never,
+			...opts
+		})
 	}
 
 	parseString(def: string, ctx: ParseContext): RawSchema {

@@ -264,6 +264,7 @@ export class RawNode<
 		return this.json
 	}
 
+	equals(other: UnknownNode): boolean
 	equals(other: RawNode): boolean {
 		return this.typeId === other.typeId
 	}

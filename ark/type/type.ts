@@ -20,13 +20,13 @@ import type { constrain } from "../schema/constraints/ast.js"
 import type { PrimitiveConstraintKind } from "../schema/constraints/constraint.js"
 import type { NodeDef } from "../schema/kinds.js"
 import type { constraintKindOf } from "../schema/schemas/intersection.js"
-import { Generic, type validateParameterString } from "./generic.js"
+import type { Generic, validateParameterString } from "./generic.js"
 import type {
 	inferDefinition,
 	validateDeclared,
 	validateDefinition
 } from "./parser/definition.js"
-import { parseGenericParams } from "./parser/generic.js"
+import type { parseGenericParams } from "./parser/generic.js"
 import type {
 	IndexOneOperator,
 	IndexZeroOperator,
@@ -86,33 +86,6 @@ export type DeclarationParser<$> = <preinferred>() => {
 	type: <def>(
 		def: validateDeclared<preinferred, def, $ & ambient, bindThis<def>>
 	) => Type<preinferred, $>
-}
-
-export const createTypeParser = <$>($: Scope): TypeParser<$> => {
-	const parser = (...args: unknown[]): Type | Generic => {
-		if (args.length === 1) {
-			// treat as a simple definition
-			return $.parseRoot(args[0])
-		}
-		if (
-			args.length === 2 &&
-			typeof args[0] === "string" &&
-			args[0][0] === "<" &&
-			args[0].at(-1) === ">"
-		) {
-			// if there are exactly two args, the first of which looks like <${string}>,
-			// treat as a generic
-			const params = parseGenericParams(args[0].slice(1, -1))
-			const def = args[1]
-			// TODO: validateUninstantiatedGeneric
-			return new Generic(params, def, $) as never
-		}
-		// otherwise, treat as a tuple expression. technically, this also allows
-		// non-expression tuple definitions to be parsed, but it's not a supported
-		// part of the API as specified by the associated types
-		return $.parseRoot(args)
-	}
-	return parser as never
 }
 
 export interface Type<
