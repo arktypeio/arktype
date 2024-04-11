@@ -194,7 +194,7 @@ export class RawSchemaScope<
 	static root: RawSchemaScope<{}> = new RawSchemaScope({})
 
 	node<kind extends NodeKind>(
-		kind: NodeKind,
+		kind: kind,
 		def: unknown,
 		opts?: NodeParseOptions
 	): Node<reducibleKindOf<kind>> {

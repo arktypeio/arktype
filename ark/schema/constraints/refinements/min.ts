@@ -1,5 +1,5 @@
+import { internalKeywords } from "../../api/keywords/internal.js"
 import { implementNode } from "../../base.js"
-import { internalKeywords } from "../../keywords/internal.js"
 import type { declareNode } from "../../shared/declare.js"
 import type { BaseConstraint } from "../constraint.js"
 import {
@@ -53,7 +53,7 @@ export const minImplementation = implementNode<MinDeclaration>({
 			traverseAllows: self.exclusive
 				? (data) => data > self.rule
 				: (data) => data >= self.rule,
-			impliedBasis: internalKeywords.lengthBoundable
+			impliedBasis: internalKeywords.lengthBoundable.raw
 		})
 })
 

@@ -1,6 +1,6 @@
 import { appendUnique, groupBy, isArray } from "@arktype/util"
+import { tsKeywords } from "../api/keywords/tsKeywords.js"
 import { type Node, implementNode } from "../base.js"
-import { tsKeywords } from "../keywords/tsKeywords.js"
 import type { NodeDef } from "../kinds.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -238,7 +238,7 @@ export const unionImplementation = implementNode<UnionDeclaration>({
 				return branches.reduce(
 					(result, branch) =>
 						result.intersectSatisfiable(branch.rawKeyOf()),
-					tsKeywords.unknown
+					tsKeywords.unknown.raw
 				)
 			},
 			get nestableExpression() {

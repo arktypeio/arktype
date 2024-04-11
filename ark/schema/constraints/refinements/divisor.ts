@@ -1,7 +1,6 @@
 import type { describeExpression } from "@arktype/util"
+import { tsKeywords } from "../../api/keywords/tsKeywords.js"
 import { type BaseAttachments, implementNode } from "../../base.js"
-import { tsKeywords } from "../../keywords/tsKeywords.js"
-import type { Schema } from "../../schemas/schema.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import {
 	type PrimitiveAttachments,
@@ -58,7 +57,7 @@ export const divisorImplementation = implementNode<DivisorDeclaration>({
 		return derivePrimitiveAttachments<DivisorDeclaration>(self, {
 			compiledCondition: `data % ${self.rule} === 0`,
 			compiledNegation: `data % ${self.rule} !== 0`,
-			impliedBasis: tsKeywords.number,
+			impliedBasis: tsKeywords.number.raw,
 			expression: `% ${self.rule}`,
 			traverseAllows: (data) => data % self.rule === 0
 		})
@@ -70,7 +69,7 @@ export type DivisorNode = BaseConstraint<DivisorDeclaration>
 export const writeIndivisibleMessage = <node extends Schema>(
 	t: node
 ): writeIndivisibleMessage<node> =>
-	writeInvalidOperandMessage("divisor", tsKeywords.number, t)
+	writeInvalidOperandMessage("divisor", tsKeywords.number.raw, t)
 
 export type writeIndivisibleMessage<node extends Schema> =
 	writeInvalidOperandMessage<"divisor", describeExpression<node["infer"]>>

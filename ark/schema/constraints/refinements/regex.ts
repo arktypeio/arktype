@@ -1,3 +1,4 @@
+import { tsKeywords } from "../../api/keywords/tsKeywords.js"
 import { type BaseAttachments, implementNode } from "../../base.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import {
@@ -67,7 +68,7 @@ export const regexImplementation = implementNode<RegexDeclaration>({
 			traverseAllows: instance.test.bind(instance),
 			compiledCondition: `${expression}.test(data)`,
 			compiledNegation: `!${compiledCondition}`,
-			impliedBasis: tsKeywords.string
+			impliedBasis: tsKeywords.string.raw
 		})
 	}
 })

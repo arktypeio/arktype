@@ -1,5 +1,5 @@
+import { internalKeywords } from "../../api/keywords/internal.js"
 import { type BaseAttachments, implementNode } from "../../base.js"
-import { internalKeywords } from "../../keywords/internal.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import {
@@ -74,7 +74,7 @@ export const exactLengthImplementation = implementNode<ExactLengthDeclaration>({
 		return derivePrimitiveAttachments<ExactLengthDeclaration>(self, {
 			compiledCondition: `data.length === ${self.rule}`,
 			compiledNegation: `data.length !== ${self.rule}`,
-			impliedBasis: internalKeywords.lengthBoundable,
+			impliedBasis: internalKeywords.lengthBoundable.raw,
 			expression: `{ length: ${self.rule} }`,
 			traverseAllows: (data) => data.length === self.rule
 		})

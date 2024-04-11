@@ -4,7 +4,7 @@ import {
 	type describeExpression,
 	throwParseError
 } from "@arktype/util"
-import { RawNode, type Node } from "../base.js"
+import { type Node, RawNode } from "../base.js"
 import type { Prerequisite } from "../kinds.js"
 import type { RawSchema, Schema } from "../schemas/schema.js"
 import type { RawNodeDeclaration } from "../shared/declare.js"
