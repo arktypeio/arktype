@@ -32,16 +32,6 @@ export declare const schemaScope: <const aliases>(
 	config?: ArkConfig
 ) => SchemaScope<instantiateAliases<aliases>>
 
-type toRawScope<$> = RawSchemaScope<{
-	[k in keyof $]: $[k] extends { [arkKind]: infer kind }
-		? kind extends "generic"
-			? GenericSchema
-			: kind extends "module"
-				? RawSchemaModule
-				: never
-		: RawSchema
-}>
-
 export interface SchemaScope<$ = any> {
 	$: $
 	infer: distillOut<$>
@@ -51,7 +41,6 @@ export interface SchemaScope<$ = any> {
 	references: readonly RawNode[]
 	json: Json
 	exportedNames: array<exportedNameOf<$>>
-	raw: toRawScope<$>
 
 	/** The set of names defined at the root-level of the scope mapped to their
 	 * corresponding definitions.**/

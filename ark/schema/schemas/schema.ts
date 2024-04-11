@@ -188,13 +188,10 @@ export class RawSchema<
 
 	constrain(kind: PrimitiveConstraintKind, def: unknown): RawSchema {
 		const constraint = this.$.node(kind, def)
-		if (
-			constraint.impliedBasis &&
-			!this.extends(constraint.impliedBasis as never)
-		) {
+		if (constraint.impliedBasis && !this.extends(constraint.impliedBasis)) {
 			return throwInvalidOperandError(
 				kind,
-				constraint.impliedBasis,
+				constraint.impliedBasis as never,
 				this as never
 			)
 		}

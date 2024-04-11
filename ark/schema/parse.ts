@@ -13,7 +13,7 @@ import {
 	throwParseError
 } from "@arktype/util"
 import { RawNode, type UnknownAttachments } from "./base.js"
-import { RawSchema } from "./schemas/schema.js"
+import { RawSchema, type UnknownSchema } from "./schemas/schema.js"
 import type { RawSchemaScope } from "./scope.js"
 import type { RawNodeDeclaration } from "./shared/declare.js"
 import { Disjoint } from "./shared/disjoint.js"
@@ -33,7 +33,7 @@ import { hasArkKind, isNode } from "./shared/utils.js"
 export type NodeParseOptions = {
 	alias?: string
 	prereduced?: boolean
-	args?: Record<string, RawSchema>
+	args?: Record<string, UnknownSchema>
 	/** Instead of creating the node, compute the innerId of the definition and
 	 * point it to the specified resolution.
 	 *

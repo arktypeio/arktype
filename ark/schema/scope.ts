@@ -167,10 +167,6 @@ export class RawSchemaScope<
 
 	protected resolved = false
 
-	get raw() {
-		return this
-	}
-
 	constructor(
 		/** The set of names defined at the root-level of the scope mapped to their
 		 * corresponding definitions.**/
@@ -182,7 +178,7 @@ export class RawSchemaScope<
 		if ($ark.ambient) {
 			// ensure exportedResolutions is populated
 			$ark.ambient.export()
-			this.resolutions = { ...$ark.ambient.resolutions! }
+			// this.resolutions = { ...$ark.ambient.resolutions! }
 		} else {
 			this.resolutions = {}
 		}
@@ -190,8 +186,6 @@ export class RawSchemaScope<
 			(k) => k[0] !== "#"
 		) as never
 	}
-
-	static root: RawSchemaScope<{}> = new RawSchemaScope({})
 
 	node<kind extends NodeKind>(
 		kind: kind,
