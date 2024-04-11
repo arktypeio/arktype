@@ -106,7 +106,6 @@ export const implementNode = <d extends RawNodeDeclaration = never>(
 	_: nodeImplementationInputOf<d>
 ): nodeImplementationOf<d> => {
 	const implementation: UnknownNodeImplementation = _ as never
-	$ark.nodeImplementationsByKind[implementation.kind] = this as never
 	if (implementation.hasAssociatedError) {
 		implementation.defaults.expected ??= (ctx) =>
 			"description" in ctx
@@ -126,6 +125,8 @@ export const implementNode = <d extends RawNodeDeclaration = never>(
 			return problemWithLocation
 		}
 	}
+	$ark.nodeImplementationsByKind[implementation.kind] =
+		implementation as never
 	return implementation as never
 }
 

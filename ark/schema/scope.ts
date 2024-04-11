@@ -19,7 +19,11 @@ import {
 } from "./generic.js"
 import type { inferSchema, validateSchema } from "./inference.js"
 import type { Ark } from "./keywords/keywords.js"
-import type { NodeDef, reducibleKindOf } from "./kinds.js"
+import {
+	type NodeDef,
+	nodeImplementationsByKind,
+	type reducibleKindOf
+} from "./kinds.js"
 import { SchemaModule } from "./module.js"
 import { type NodeParseOptions, parseNode, schemaKindOf } from "./parse.js"
 import type { distillIn, distillOut } from "./schemas/morph.js"
@@ -108,7 +112,7 @@ type resolveConfig<config extends ArkConfig> = {
 export type ResolvedArkConfig = resolveConfig<ArkConfig>
 
 export const defaultConfig: ResolvedArkConfig = Object.assign(
-	flatMorph($ark.nodeImplementationsByKind, (kind, implementation) => [
+	flatMorph(nodeImplementationsByKind, (kind, implementation) => [
 		kind,
 		implementation.defaults
 	]),
@@ -359,10 +363,10 @@ export type instantiateAliases<aliases> = {
 	[k in keyof aliases]: inferSchema<aliases[k], aliases>
 } & unknown
 
-export declare const schemaScope: <const aliases>(
+export const schemaScope = <const aliases>(
 	aliases: validateAliases<aliases>,
 	config?: ArkConfig
-) => SchemaScope<instantiateAliases<aliases>>
+): SchemaScope<instantiateAliases<aliases>> => new SchemaScope(aliases, config)
 
 export interface SchemaScope<$ = any> {
 	$: $

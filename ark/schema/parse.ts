@@ -13,6 +13,7 @@ import {
 	throwParseError
 } from "@arktype/util"
 import { RawNode, type UnknownAttachments } from "./base.js"
+import { nodeImplementationsByKind } from "./kinds.js"
 import { RawSchema, type UnknownSchema } from "./schemas/schema.js"
 import type { RawSchemaScope } from "./scope.js"
 import type { RawNodeDeclaration } from "./shared/declare.js"
@@ -131,7 +132,7 @@ export const parseNode = (
 			return parseNode(schemaKindOf(schema), branches as never, $, opts)
 		}
 	}
-	const impl: UnknownNodeImplementation = $ark.nodeImplementationsByKind[
+	const impl: UnknownNodeImplementation = nodeImplementationsByKind[
 		kind
 	] as never
 	const normalizedDefinition: any = impl.normalize?.(schema) ?? schema
