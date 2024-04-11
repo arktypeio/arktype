@@ -135,7 +135,7 @@ describe("morph", () => {
 		}).export()
 		attest<Type<boolean | ((In: number) => Out<string>)>>(types.aOrB)
 		const serializedMorphs =
-			types.aOrB.firstReferenceOfKindOrThrow("morph").serializedMorphs
+			types.aOrB.raw.firstReferenceOfKindOrThrow("morph").serializedMorphs
 		attest(types.aOrB.json).snap([
 			{ in: "number", morphs: serializedMorphs },
 			{ unit: false },

@@ -436,11 +436,11 @@ export class RawSchemaModule<
 }
 
 export type destructuredExportContext<$, names extends exportedNameOf<$>[]> = {
-	[k in names extends [] ? keyof $ : names[number]]: $[k]
+	[k in names extends [] ? exportedNameOf<$> : names[number]]: $[k]
 } & unknown
 
 export type destructuredImportContext<$, names extends exportedNameOf<$>[]> = {
-	[k in names extends [] ? keyof $ : exportedNameOf<$> as `#${k &
+	[k in names extends [] ? exportedNameOf<$> : names[number] as `#${k &
 		string}`]: $[k]
 } & unknown
 

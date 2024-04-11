@@ -8,5 +8,6 @@ export {
 	match,
 	type
 } from "./ark.js"
-export { scope, type Module, type Scope } from "./scope.js"
+export { scope, type Scope } from "./scope.js"
+export { Module } from "./module.js"
 export type { Type, inferTypeRoot, validateTypeRoot } from "./type.js"

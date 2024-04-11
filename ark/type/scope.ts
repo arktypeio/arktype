@@ -17,9 +17,16 @@ import {
 	type nominal,
 	throwParseError
 } from "@arktype/util"
-import { type RawSchemaResolutions, RawSchemaScope } from "../schema/scope.js"
+import {
+	type RawSchemaResolutions,
+	RawSchemaScope,
+	type destructuredExportContext,
+	type destructuredImportContext,
+	type exportedNameOf
+} from "../schema/scope.js"
 import { Generic } from "./generic.js"
 import { type MatchParser, createMatchParser } from "./match.js"
+import type { Module } from "./module.js"
 import {
 	type inferDefinition,
 	parseObject,
@@ -151,8 +158,6 @@ export type tryInferSubmoduleReference<$, token> =
 			: never
 		: never
 
-export class Module<$ = any> extends SchemaModule<$> {}
-
 export interface ParseContext extends NodeParseOptions {
 	$: RawScope
 }
@@ -174,6 +179,14 @@ export interface Scope<$ = any> extends SchemaScope<$> {
 	declare: DeclarationParser<$>
 
 	define: DefinitionParser<$>
+
+	import<names extends exportedNameOf<$>[]>(
+		...names: names
+	): Module<destructuredImportContext<$, names>>
+
+	export<names extends exportedNameOf<$>[]>(
+		...names: names
+	): Module<destructuredExportContext<$, names>>
 }
 
 export class RawScope<
@@ -208,8 +221,8 @@ export class RawScope<
 			// treat as a generic
 			const params = parseGenericParams(args[0].slice(1, -1))
 			const def = args[1]
-			// TODO: validateUninstantiatedGeneric
-			return new Generic(params, def, this) as never
+			// TODO: validateUninstantiatedGeneric, remove this cast
+			return new Generic(params, def, this as never) as never
 		}
 		// otherwise, treat as a tuple expression. technically, this also allows
 		// non-expression tuple definitions to be parsed, but it's not a supported

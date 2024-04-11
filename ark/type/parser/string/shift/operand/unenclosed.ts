@@ -18,7 +18,7 @@ import {
 	tryParseWellFormedBigint
 } from "@arktype/util"
 import type { Generic } from "../../../../generic.js"
-import type { Module } from "../../../../scope.js"
+import type { Module } from "../../../../module.js"
 import type { GenericInstantiationAst } from "../../../semantic/infer.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import type { StaticState, state } from "../../reduce/static.js"

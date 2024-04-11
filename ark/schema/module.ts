@@ -4,7 +4,7 @@ import type { Schema } from "./schemas/schema.js"
 
 export type PreparsedNodeResolution = { [arkKind]: "generic" | "module" }
 
-export type exportScope<$> = {
+type exportSchemaScope<$> = {
 	[k in keyof $]: $[k] extends PreparsedNodeResolution
 		? isAnyOrNever<$[k]> extends true
 			? Schema<$[k], $>
@@ -12,6 +12,6 @@ export type exportScope<$> = {
 		: Schema<$[k], $>
 }
 
-export class SchemaModule<$ = any> extends DynamicBase<exportScope<$>> {
+export class SchemaModule<$ = any> extends DynamicBase<exportSchemaScope<$>> {
 	declare readonly [arkKind]: "module"
 }
