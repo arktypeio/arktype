@@ -8,9 +8,9 @@ import {
 	type Dict,
 	type ErrorMessage,
 	type Key,
-	type evaluate,
 	type merge,
 	printable,
+	type show,
 	stringAndSymbolicEntriesOf,
 	throwParseError
 } from "@arktype/util"
@@ -104,7 +104,7 @@ type inferObjectLiteralInner<def extends object, $, args> = {
 	>
 }
 
-export type inferObjectLiteral<def extends object, $, args> = evaluate<
+export type inferObjectLiteral<def extends object, $, args> = show<
 	"..." extends keyof def
 		? merge<
 				inferDefinition<def["..."], $, args>,

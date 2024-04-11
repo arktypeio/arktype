@@ -4,12 +4,12 @@ import {
 	type array,
 	conflatenateAll,
 	entriesOf,
-	type evaluate,
 	isArray,
 	isEmptyObject,
 	type listable,
 	omit,
 	pick,
+	type show,
 	splitByKeys,
 	throwInternalError
 } from "@arktype/util"
@@ -45,7 +45,7 @@ import {
 
 export type IntersectionBasisKind = "domain" | "proto"
 
-export type IntersectionInner = evaluate<
+export type IntersectionInner = show<
 	BaseMeta & {
 		domain?: DomainNode
 		proto?: ProtoNode
@@ -54,7 +54,7 @@ export type IntersectionInner = evaluate<
 	}
 >
 
-export type IntersectionDef<inferredBasis = any> = evaluate<
+export type IntersectionDef<inferredBasis = any> = show<
 	BaseMeta & {
 		domain?: DomainDef
 		proto?: ProtoDef

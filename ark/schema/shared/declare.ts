@@ -1,4 +1,4 @@
-import type { evaluate, merge } from "@arktype/util"
+import type { merge, show } from "@arktype/util"
 import type { NarrowedAttachments, Node } from "../base.js"
 import type { reducibleKindOf } from "../kinds.js"
 import type { Disjoint } from "./disjoint.js"
@@ -27,7 +27,7 @@ export interface BaseErrorContext<kind extends NodeKind = NodeKind> {
 	code: kind
 }
 
-export type defaultErrorContext<d extends DeclarationInput> = evaluate<
+export type defaultErrorContext<d extends DeclarationInput> = show<
 	BaseErrorContext<d["kind"]> & d["inner"]
 >
 

@@ -23,7 +23,8 @@
 			},
 			"complexity": {
 				"noBannedTypes": "off",
-				"noForEach": "off"
+				"noForEach": "off",
+				"noThisInStatic": "off"
 			},
 			"style": {
 				"noNonNullAssertion": "off"

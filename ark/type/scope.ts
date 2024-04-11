@@ -4,26 +4,26 @@ import {
 	type NodeParseOptions,
 	type PreparsedNodeResolution,
 	type RawSchema,
-	SchemaModule,
 	type SchemaScope,
 	type ambient,
-	arkKind
+	arkKind,
+	type destructuredExportContext,
+	type destructuredImportContext
 } from "@arktype/schema"
 import {
 	type Dict,
 	domainOf,
-	type evaluate,
 	hasDomain,
 	type nominal,
+	type show,
 	throwParseError
 } from "@arktype/util"
 import {
 	type RawSchemaResolutions,
 	RawSchemaScope,
-	type destructuredExportContext,
-	type destructuredImportContext,
 	type exportedNameOf
 } from "../schema/scope.js"
+import type { type } from "./ark.js"
 import { Generic } from "./generic.js"
 import { type MatchParser, createMatchParser } from "./match.js"
 import type { Module } from "./module.js"
@@ -110,7 +110,7 @@ type bootstrapAliases<def> = {
 	>
 }
 
-type inferBootstrapped<$> = evaluate<{
+type inferBootstrapped<$> = show<{
 	[name in keyof $]: $[name] extends Def<infer def>
 		? inferDefinition<def, $ & ambient, {}>
 		: $[name] extends GenericProps<infer params, infer def>
@@ -152,7 +152,7 @@ export type moduleKeyOf<$> = {
 export type tryInferSubmoduleReference<$, token> =
 	token extends `${infer submodule extends moduleKeyOf<$>}.${infer subalias}`
 		? subalias extends keyof $[submodule]
-			? $[submodule][subalias] extends RawSchema<infer t>
+			? $[submodule][subalias] extends type.cast<infer t>
 				? t
 				: never
 			: never
@@ -182,11 +182,11 @@ export interface Scope<$ = any> extends SchemaScope<$> {
 
 	import<names extends exportedNameOf<$>[]>(
 		...names: names
-	): Module<destructuredImportContext<$, names>>
+	): Module<show<destructuredImportContext<$, names>>>
 
 	export<names extends exportedNameOf<$>[]>(
 		...names: names
-	): Module<destructuredExportContext<$, names>>
+	): Module<show<destructuredExportContext<$, names>>>
 }
 
 export class RawScope<

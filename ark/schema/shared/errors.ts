@@ -1,9 +1,9 @@
 import {
 	ReadonlyArray,
-	type evaluate,
 	hasDefinedKey,
 	type optionalizeKeys,
-	type propwiseXor
+	type propwiseXor,
+	type show
 } from "@arktype/util"
 import type { Prerequisite, errorContext } from "../kinds.js"
 import type { distillIn, distillOut } from "../schemas/morph.js"
@@ -169,7 +169,7 @@ type ErrorInputByCode = {
 	>
 }
 
-export type CustomErrorInput = evaluate<
+export type CustomErrorInput = show<
 	// ensure a custom error can be discriminated on the lack of a code
 	{ code?: undefined } & Partial<DerivableErrorContext>
 >

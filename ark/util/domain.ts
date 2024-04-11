@@ -1,4 +1,4 @@
-import type { evaluate } from "./generics.js"
+import type { show } from "./generics.js"
 import type { stringifyUnion } from "./unionToTuple.js"
 
 export const hasDomain = <data, domain extends Domain>(
@@ -21,7 +21,7 @@ export type inferDomain<kind extends Domain> = Domain extends kind
 	? unknown
 	: TypesByDomain[kind]
 
-export type Domain = evaluate<keyof TypesByDomain>
+export type Domain = show<keyof TypesByDomain>
 
 export type NullishDomain = "undefined" | "null"
 

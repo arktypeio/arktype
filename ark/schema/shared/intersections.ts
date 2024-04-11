@@ -2,9 +2,9 @@ import {
 	Hkt,
 	type array,
 	type conform,
-	type evaluate,
 	type intersectArrays,
-	type isAny
+	type isAny,
+	type show
 } from "@arktype/util"
 import type { of } from "../constraints/ast.js"
 import type { MorphAst, Out } from "../schemas/morph.js"
@@ -20,9 +20,9 @@ export type inferIntersection<l, r> = [l] extends [never]
 				: l extends MorphAst<infer lIn, infer lOut>
 					? r extends MorphAst
 						? never
-						: (In: evaluate<lIn & r>) => Out<lOut>
+						: (In: show<lIn & r>) => Out<lOut>
 					: r extends MorphAst<infer rIn, infer rOut>
-						? (In: evaluate<rIn & l>) => Out<rOut>
+						? (In: show<rIn & l>) => Out<rOut>
 						: l extends of<infer lBase, infer lConstraints>
 							? r extends of<infer rBase, infer rConstraints>
 								? of<
@@ -52,7 +52,7 @@ type intersectObjects<l, r> = [l, r] extends [
 	infer rList extends array
 ]
 	? intersectArrays<lList, rList, MorphableIntersection>
-	: evaluate<
+	: show<
 			{
 				[k in keyof l]: k extends keyof r
 					? inferIntersection<l[k], r[k]>

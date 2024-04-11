@@ -1,13 +1,13 @@
 import {
+	type Domain,
+	type SerializedPrimitive,
 	compileSerializedValue,
 	entriesOf,
 	isKeyOf,
-	throwInternalError,
-	type Domain,
-	type SerializedPrimitive,
-	type evaluate,
 	type keySet,
-	type mutable
+	type mutable,
+	type show,
+	throwInternalError
 } from "@arktype/util"
 import { Disjoint, type SerializedPath } from "../shared/disjoint.js"
 import type { UnionChildNode } from "./union.js"
@@ -46,7 +46,7 @@ const discriminantKinds: keySet<DiscriminantKind> = {
 	value: 1
 }
 
-export type DiscriminantKind = evaluate<keyof DiscriminantKinds>
+export type DiscriminantKind = show<keyof DiscriminantKinds>
 
 const parseDiscriminantKey = (key: DiscriminantKey) => {
 	const lastPathIndex = key.lastIndexOf("]")

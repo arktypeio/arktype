@@ -15,7 +15,7 @@ export type Stringifiable =
  *
  * Also works for some non-intersections, e.g. `keyof SomeObj` => `"a" | "b" | ...`
  */
-export type evaluate<t> = { [k in keyof t]: t[k] } & unknown
+export type show<t> = { [k in keyof t]: t[k] } & unknown
 
 export type exact<t extends object, u extends object> = {
 	[k in keyof t]: k extends keyof u ? conform<t[k], u[k]> : never
@@ -44,7 +44,7 @@ export type UnknownUnion =
  */
 export type andPreserveUnknown<l, r> = unknown extends l & r
 	? unknown
-	: evaluate<l & r>
+	: show<l & r>
 
 export type isAnyOrNever<t> = [unknown, t] extends [t, {}] ? true : isNever<t>
 

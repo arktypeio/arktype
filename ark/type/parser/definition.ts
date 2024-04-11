@@ -6,7 +6,6 @@ import {
 	type array,
 	type defined,
 	type equals,
-	type evaluate,
 	type isAny,
 	isThunk,
 	type isUnknown,
@@ -15,6 +14,7 @@ import {
 	type optionalKeyOf,
 	printable,
 	type requiredKeyOf,
+	type show,
 	throwParseError
 } from "@arktype/util"
 import type { type } from "../ark.js"
@@ -110,9 +110,9 @@ type validateInference<def, declared, $, args> = def extends
 						? validateInference<def[i], declared[i], $, args>
 						: unknown
 				}
-			: evaluate<declarationMismatch<def, declared, $, args>>
+			: show<declarationMismatch<def, declared, $, args>>
 		: def extends object
-			? evaluate<
+			? show<
 					{
 						[k in requiredKeyOf<declared>]: k extends keyof def
 							? validateInference<def[k], declared[k], $, args>
@@ -136,7 +136,7 @@ type validateShallowInference<def, declared, $, args> = equals<
 	declared
 > extends true
 	? def
-	: evaluate<declarationMismatch<def, declared, $, args>>
+	: show<declarationMismatch<def, declared, $, args>>
 
 type declarationMismatch<def, declared, $, args> = {
 	declared: declared

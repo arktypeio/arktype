@@ -24,8 +24,8 @@ import {
 	append,
 	type array,
 	type conform,
-	type evaluate,
 	objectKindOrDomainOf,
+	type show,
 	throwParseError
 } from "@arktype/util"
 import type { UnknownSchema } from "../../schema/schemas/schema.js"
@@ -481,12 +481,12 @@ export type UnparsedTupleExpressionInput = {
 	"===": unknown
 }
 
-export type UnparsedTupleOperator = evaluate<keyof UnparsedTupleExpressionInput>
+export type UnparsedTupleOperator = show<keyof UnparsedTupleExpressionInput>
 
 export const parseKeyOfTuple: PrefixParser<"keyof"> = (def, ctx) =>
 	ctx.$.parse(def[1], ctx).keyof()
 
-export type inferKeyOfExpression<operandDef, $, args> = evaluate<
+export type inferKeyOfExpression<operandDef, $, args> = show<
 	keyof inferDefinition<operandDef, $, args>
 >
 

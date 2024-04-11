@@ -1,8 +1,8 @@
 import type { array } from "./arrays.js"
 import { hasDomain } from "./domain.js"
-import type { conform, evaluate, satisfy } from "./generics.js"
+import type { conform, satisfy, show } from "./generics.js"
 import type { intersectParameters } from "./intersections.js"
-import { ancestorsOf, type Constructor } from "./objectKinds.js"
+import { type Constructor, ancestorsOf } from "./objectKinds.js"
 import { NoopBase } from "./records.js"
 
 export type TraitImplementation = <
@@ -259,17 +259,13 @@ type finalizeState<s extends CompositionState> = satisfy<
 		validated: s["validated"]
 		remaining: s["remaining"]
 		kind: s["kind"]
-		implemented: evaluate<s["implemented"]>
-		statics: evaluate<Omit<s["statics"], keyof typeof Trait>>
-		abstractMethods: evaluate<
+		implemented: show<s["implemented"]>
+		statics: show<Omit<s["statics"], keyof typeof Trait>>
+		abstractMethods: show<
 			Omit<s["abstractMethods"], keyof s["implemented"]>
 		>
-		abstractProps: evaluate<
-			Omit<s["abstractProps"], keyof s["implemented"]>
-		>
-		abstractStatics: evaluate<
-			Omit<s["abstractStatics"], keyof s["statics"]>
-		>
+		abstractProps: show<Omit<s["abstractProps"], keyof s["implemented"]>>
+		abstractStatics: show<Omit<s["abstractStatics"], keyof s["statics"]>>
 	}
 >
 

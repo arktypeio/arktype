@@ -4,11 +4,11 @@ import {
 	DynamicBase,
 	type Json,
 	type array,
-	type evaluate,
 	flatMorph,
 	type flattenListable,
 	isThunk,
 	type requireKeys,
+	type show,
 	throwParseError
 } from "@arktype/util"
 import type { Node, RawNode, SchemaDef } from "./base.js"
@@ -58,7 +58,7 @@ declare global {
 export type ambient = ReturnType<StaticArkConfig["ambient"]>
 
 type nodeConfigForKind<kind extends NodeKind> = Readonly<
-	evaluate<
+	show<
 		{
 			description?: DescriptionWriter<kind>
 		} & (kind extends ArkErrorCode
@@ -294,7 +294,7 @@ export class RawSchemaScope<
 
 	import<names extends exportedNameOf<$>[]>(
 		...names: names
-	): destructuredImportContext<$, names> {
+	): show<destructuredImportContext<$, names>> {
 		return new SchemaModule(
 			flatMorph(this.export(...names) as any, (alias, value) => [
 				`#${alias}`,
@@ -307,7 +307,7 @@ export class RawSchemaScope<
 	#exportCache: SchemaExportCache | undefined
 	export<names extends exportedNameOf<$>[]>(
 		...names: names
-	): destructuredExportContext<$, names> {
+	): show<destructuredExportContext<$, names>> {
 		if (!this.#exportCache) {
 			this.#exportCache = {}
 			for (const name of this.exportedNames) {
@@ -407,11 +407,11 @@ export interface SchemaScope<$ = any> {
 
 	import<names extends exportedNameOf<$>[]>(
 		...names: names
-	): SchemaModule<destructuredImportContext<$, names>>
+	): SchemaModule<show<destructuredImportContext<$, names>>>
 
 	export<names extends exportedNameOf<$>[]>(
 		...names: names
-	): SchemaModule<destructuredExportContext<$, names>>
+	): SchemaModule<show<destructuredExportContext<$, names>>>
 }
 
 export const SchemaScope: new <$ = any>(
@@ -437,12 +437,12 @@ export class RawSchemaModule<
 
 export type destructuredExportContext<$, names extends exportedNameOf<$>[]> = {
 	[k in names extends [] ? exportedNameOf<$> : names[number]]: $[k]
-} & unknown
+}
 
 export type destructuredImportContext<$, names extends exportedNameOf<$>[]> = {
 	[k in names extends [] ? exportedNameOf<$> : names[number] as `#${k &
 		string}`]: $[k]
-} & unknown
+}
 
 export type SchemaExportCache = Record<
 	string,

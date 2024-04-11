@@ -1,9 +1,9 @@
 import type { array, listable } from "./arrays.js"
-import type { evaluate } from "./generics.js"
+import type { show } from "./generics.js"
 import type { Entry, Key, entryOf, fromEntries } from "./records.js"
 import type { intersectUnion } from "./unionToTuple.js"
 
-type objectFromListableEntries<transformed extends readonly Entry[]> = evaluate<
+type objectFromListableEntries<transformed extends readonly Entry[]> = show<
 	intersectUnion<fromEntries<transformed>>
 >
 

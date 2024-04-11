@@ -3,13 +3,13 @@ import {
 	type JsonData,
 	compileSerializedValue,
 	type entryOf,
-	type evaluate,
 	flatMorph,
 	type indexOf,
 	type keySetOf,
 	type listable,
 	printable,
-	type requireKeys
+	type requireKeys,
+	type show
 } from "@arktype/util"
 import { type BaseAttachments, type Node, RawNode } from "../base.js"
 import type { PropsGroupInput } from "../constraints/props/props.js"
@@ -163,7 +163,7 @@ export type ConstraintIntersection<
 	$: RawSchemaScope
 ) => RawNode | Disjoint | null
 
-export type ConstraintIntersectionMap<kind extends ConstraintKind> = evaluate<
+export type ConstraintIntersectionMap<kind extends ConstraintKind> = show<
 	{
 		[_ in kind]: ConstraintIntersection<kind, kind>
 	} & {

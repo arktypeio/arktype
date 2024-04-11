@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import { Hkt, type array, type conform, type evaluate } from "@arktype/util"
+import { Hkt, type array, type conform, type show } from "@arktype/util"
 
 describe("hkt", () => {
 	interface AppendKind extends Hkt.Kind {
@@ -25,13 +25,13 @@ describe("hkt", () => {
 	const AddB = new (class AddB extends Hkt.UnaryKind {
 		hkt = (
 			args: conform<this[Hkt.args], { a: number }>
-		): evaluate<typeof args & { b: (typeof args)["a"] }> =>
+		): show<typeof args & { b: (typeof args)["a"] }> =>
 			Object.assign(args, { b: args.a } as const)
 	})()
 	const AddC = new (class extends Hkt.UnaryKind {
 		hkt = (
 			args: conform<this[Hkt.args], { a: number; b: number }>
-		): evaluate<
+		): show<
 			typeof args & { c: [(typeof args)["a"], (typeof args)["b"]] }
 		> => Object.assign(args, { c: [args.a, args.b] } as const) as never
 	})()
@@ -56,7 +56,7 @@ describe("hkt", () => {
 		const AddD = new (class AddD extends Hkt.UnaryKind {
 			hkt = (
 				args: conform<this[Hkt.args], { c: number }>
-			): evaluate<typeof args & { d: (typeof args)["c"] }> => {
+			): show<typeof args & { d: (typeof args)["c"] }> => {
 				return Object.assign(args, { d: args.c } as const)
 			}
 		})()

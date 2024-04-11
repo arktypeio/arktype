@@ -1,10 +1,10 @@
 import {
 	type array,
-	type evaluate,
 	flatMorph,
 	isArray,
 	literalPropAccess,
-	type mutable
+	type mutable,
+	type show
 } from "@arktype/util"
 import type { Constraint, RawNode } from "../base.js"
 import type { GenericSchema } from "../generic.js"
@@ -60,7 +60,7 @@ export interface ArkKinds {
 	error: ArkTypeError
 }
 
-export type ArkKind = evaluate<keyof ArkKinds>
+export type ArkKind = show<keyof ArkKinds>
 
 export const addArkKind = <kind extends ArkKind>(
 	value: Omit<ArkKinds[kind], arkKind> & {
