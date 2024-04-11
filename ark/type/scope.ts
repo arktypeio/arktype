@@ -18,6 +18,7 @@ import {
 	type nominal,
 	throwParseError
 } from "@arktype/util"
+import { SchemaScope } from "../schema/api/scope.js"
 import { Generic } from "./generic.js"
 import { type MatchParser, createMatchParser } from "./match.js"
 import {
@@ -152,9 +153,7 @@ export type tryInferSubmoduleReference<$, token> =
 			: never
 		: never
 
-export class Module<$ = any> extends SchemaModule<$> {
-	declare [Hkt.instantiate]: (args: this[Hkt.args]) => Module<typeof args>
-}
+export class Module<$ = any> extends SchemaModule<$> {}
 
 export interface ParseContext extends NodeParseOptions {
 	$: Scope
@@ -169,7 +168,7 @@ declare global {
 export const scope: ScopeParser = ((def: Dict, config: ArkConfig = {}) =>
 	new Scope(def, config)) as never
 
-export class Scope<$ = any> extends RawSchemaScope<$> {
+export class Scope<$ = any> extends SchemaScope<$> {
 	private parseCache: Record<string, RawSchema> = {}
 
 	declare hktNode: Type

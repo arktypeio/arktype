@@ -4,13 +4,13 @@ import type { NodeDef, reducibleKindOf } from "../kinds.js"
 import type { NodeParseOptions } from "../parse.js"
 import type { distillIn, distillOut } from "../schemas/morph.js"
 import type { RawSchema } from "../schemas/schema.js"
-import type {
-	ArkConfig,
-	RawSchemaModule,
+import {
+	type ArkConfig,
+	type RawSchemaModule,
 	RawSchemaScope,
-	destructuredExportContext,
-	destructuredImportContext,
-	exportedNameOf
+	type destructuredExportContext,
+	type destructuredImportContext,
+	type exportedNameOf
 } from "../scope.js"
 import type { NodeKind, SchemaKind } from "../shared/implement.js"
 import type { arkKind } from "../shared/utils.js"
@@ -101,3 +101,7 @@ export interface SchemaScope<$ = any> {
 		>
 	>
 }
+
+export const SchemaScope: new <$ = any>(
+	...args: ConstructorParameters<typeof RawSchemaScope>
+) => SchemaScope<$> = RawSchemaScope as never

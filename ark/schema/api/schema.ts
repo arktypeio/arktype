@@ -30,10 +30,6 @@ export interface Schema<
 	$: SchemaScope<$>
 	infer: distillOut<t>
 	[inferred]: t
-	[Hkt.args]: [t: unknown, $: unknown]
-	[Hkt.instantiate]: (
-		args: this[Hkt.args]
-	) => Schema<(typeof args)[0], (typeof args)[1]>
 
 	json: Json
 	description: string

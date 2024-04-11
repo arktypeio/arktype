@@ -1,9 +1,9 @@
 import {
 	type BaseMeta,
-	RawSchema,
 	type Morph,
 	type Out,
 	type Predicate,
+	RawSchema,
 	type Schema,
 	type ambient,
 	type distillConstrainableIn,
@@ -16,6 +16,10 @@ import {
 	type inferNarrow
 } from "@arktype/schema"
 import type { Constructor, Hkt, array, conform } from "@arktype/util"
+import type { constrain } from "../schema/constraints/ast.js"
+import type { PrimitiveConstraintKind } from "../schema/constraints/constraint.js"
+import type { NodeDef } from "../schema/kinds.js"
+import type { constraintKindOf } from "../schema/schemas/intersection.js"
 import { Generic, type validateParameterString } from "./generic.js"
 import type {
 	inferDefinition,
@@ -116,10 +120,6 @@ export interface Type<
 	out t = unknown,
 	$ = any
 > extends Schema<t, $> {
-	[Hkt.instantiate]: (
-		args: this[Hkt.args]
-	) => Type<(typeof args)[0], (typeof args)[1]>
-
 	and<def>(
 		def: validateTypeRoot<def, $>
 	): Type<inferIntersection<t, inferTypeRoot<def, $>>, $>
@@ -154,6 +154,14 @@ export interface Type<
 			: inferNarrow<this["infer"], def>,
 		$
 	>
+
+	constrain<
+		kind extends PrimitiveConstraintKind,
+		const def extends NodeDef<kind>
+	>(
+		kind: conform<kind, constraintKindOf<this["in"]["infer"]>>,
+		def: def
+	): Type<constrain<t, kind, def>, $>
 }
 
 export type TypeConstructor<t = unknown, $ = any> = new (
