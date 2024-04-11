@@ -152,7 +152,7 @@ export class RawSchemaModule<
 }
 
 export class RawSchemaScope<
-	resolutions extends RawSchemaResolutions = RawSchemaResolutions
+	$ extends RawSchemaResolutions = RawSchemaResolutions
 > implements internalImplementationOf<SchemaScope, "infer" | "inferIn" | "$">
 {
 	readonly config: ArkConfig
@@ -289,20 +289,22 @@ export class RawSchemaScope<
 		return hasArkKind(result, "schema") ? (result as never) : undefined
 	}
 
-	import(...names: string[]) {
+	import<names extends exportedNameOf<$>[]>(
+		...names: names
+	): destructuredImportContext<$, names> {
 		return new SchemaModule(
 			flatMorph(this.export(...names) as any, (alias, value) => [
 				`#${alias}`,
 				value
 			]) as never
-		)
+		) as never
 	}
 
 	#exportedResolutions: RawSchemaResolutions | undefined
 	#exportCache: SchemaExportCache | undefined
-	export<names extends (keyof resolutions & string)[]>(
+	export<names extends exportedNameOf<$>[]>(
 		...names: names
-	): Pick<resolutions, names[number]> {
+	): destructuredExportContext<$, names> {
 		if (!this.#exportCache) {
 			this.#exportCache = {}
 			for (const name of this.exportedNames) {
@@ -346,12 +348,13 @@ export class RawSchemaScope<
 	}
 }
 
-export type destructuredExportContext<$, name extends exportedNameOf<$>> = {
-	[k in name]: $[k]
+export type destructuredExportContext<$, names extends exportedNameOf<$>[]> = {
+	[k in names extends [] ? keyof $ : names[number]]: $[k]
 } & unknown
 
-export type destructuredImportContext<$, name extends exportedNameOf<$>> = {
-	[k in name as `#${k & string}`]: $[k]
+export type destructuredImportContext<$, names extends exportedNameOf<$>[]> = {
+	[k in names extends [] ? keyof $ : exportedNameOf<$> as `#${k &
+		string}`]: $[k]
 } & unknown
 
 export type SchemaExportCache = Record<
@@ -378,10 +381,6 @@ const resolutionsOfModule = (typeSet: SchemaExportCache) => {
 	}
 	return result
 }
-
-export const root: RawSchemaScope<{}> = new RawSchemaScope({})
-
-export const { schema, defineSchema, node, units } = root
 
 export const writeUnresolvableMessage = <token extends string>(
 	token: token

@@ -1,7 +1,7 @@
 import { attest } from "@arktype/attest"
 import {
 	keywordNodes,
-	schema,
+	rawSchema,
 	writeIndivisibleMessage,
 	writeUnresolvableMessage
 } from "@arktype/schema"
@@ -104,7 +104,7 @@ describe("union", () => {
 	})
 	describe("expressions", () => {
 		const expected = () =>
-			schema([
+			rawSchema([
 				{
 					domain: "object",
 					prop: {

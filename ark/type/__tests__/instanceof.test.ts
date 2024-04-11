@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import { type Ark, schema } from "@arktype/schema"
+import { type Ark, rawSchema } from "@arktype/schema"
 import { type } from "arktype"
 import { writeInvalidConstructorMessage } from "../parser/tuple.js"
 import type { Type } from "../type.js"
@@ -9,7 +9,7 @@ describe("instanceof", () => {
 		it("base", () => {
 			const t = type(["instanceof", Error])
 			attest<Error>(t.infer)
-			const expected = schema(Error)
+			const expected = rawSchema(Error)
 			attest(t.json).equals(expected.json)
 			const e = new Error()
 			attest(t(e).out).equals(e)

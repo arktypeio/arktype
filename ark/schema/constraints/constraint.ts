@@ -4,9 +4,10 @@ import {
 	type describeExpression,
 	throwParseError
 } from "@arktype/util"
+import type { Schema } from "../api/schema.js"
 import { type Node, RawNode } from "../base.js"
 import type { Prerequisite } from "../kinds.js"
-import type { RawSchema, Schema } from "../schemas/schema.js"
+import type { UnknownSchema } from "../schemas/schema.js"
 import type { RawNodeDeclaration } from "../shared/declare.js"
 import type { Disjoint } from "../shared/disjoint.js"
 import type {
@@ -53,7 +54,7 @@ export type writeInvalidOperandMessage<
 >} (was ${describeExpression<actual["infer"]>})`
 
 export interface ConstraintAttachments {
-	impliedBasis: RawSchema | null
+	impliedBasis: UnknownSchema | null
 	impliedSiblings?: array<BaseConstraint> | null
 }
 

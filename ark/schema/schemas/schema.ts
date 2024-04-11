@@ -67,6 +67,8 @@ export interface RawSchemaAttachments<d extends RawNodeDeclaration>
 	rawKeyOf(): RawSchema
 }
 
+export type UnknownSchema = Schema | RawSchema
+
 export class RawSchema<
 		/** @ts-expect-error allow instantiation assignment to the base type */
 		out d extends RawSchemaDeclaration = RawSchemaDeclaration
@@ -97,15 +99,16 @@ export class RawSchema<
 		return this.#keyofCache as never
 	}
 
-	intersect(r: RawSchema): RawSchema | Disjoint {
+	intersect(r: UnknownSchema): RawSchema | Disjoint {
 		return this.intersectInternal(r) as never
 	}
 
-	intersectSatisfiable(r: RawSchema): RawSchema {
+	intersectSatisfiable(r: UnknownSchema): RawSchema {
 		const result = this.intersect(r)
 		return result instanceof Disjoint ? result.throw() : (result as never)
 	}
 
+	union(r: UnknownSchema): RawSchema
 	union(r: RawSchema): RawSchema {
 		const branches = [...this.branches, ...(r.branches as any)]
 		return this.$.schema(branches) as never
@@ -122,15 +125,13 @@ export class RawSchema<
 	// 	return this
 	// }
 
-	// TODO: i/o
-	extract(other: RawSchema): RawSchema {
+	extract(other: UnknownSchema): RawSchema {
 		return this.$.schema(
 			this.branches.filter((branch) => branch.extends(other))
 		) as never
 	}
 
-	// TODO: i/o
-	exclude(other: RawSchema): RawSchema {
+	exclude(other: UnknownSchema): RawSchema {
 		return this.$.schema(
 			this.branches.filter((branch) => !branch.extends(other))
 		) as never
@@ -146,7 +147,7 @@ export class RawSchema<
 		) as never
 	}
 
-	extends(other: RawSchema) {
+	extends(other: UnknownSchema) {
 		const intersection = this.intersect(other as never)
 		return (
 			!(intersection instanceof Disjoint) &&

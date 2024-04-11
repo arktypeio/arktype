@@ -15,6 +15,7 @@ import {
 	printable,
 	throwError
 } from "@arktype/util"
+import type { Schema } from "./api/schema.js"
 import type { PredicateNode } from "./constraints/predicate.js"
 import type { IndexNode } from "./constraints/props/index.js"
 import type { PropNode } from "./constraints/props/prop.js"
@@ -134,6 +135,8 @@ export type BaseAttachments<d extends RawNodeDeclaration> = {
 	expression: string
 	compile: (js: NodeCompiler) => void
 }
+
+export type UnknownNode = RawNode | Schema
 
 export class RawNode<
 	/** @ts-expect-error allow instantiation assignment to the base type */
@@ -308,6 +311,7 @@ export class RawNode<
 		string,
 		UnknownIntersectionResult
 	> = {}
+	protected intersectInternal(r: UnknownNode): UnknownIntersectionResult
 	protected intersectInternal(
 		this: RawNode,
 		r: RawNode

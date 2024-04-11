@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import { type Ark, schema, writeUnresolvableMessage } from "@arktype/schema"
+import { type Ark, rawSchema, writeUnresolvableMessage } from "@arktype/schema"
 import { type Out, type Type, scope, type } from "arktype"
 import { writeMissingRightOperandMessage } from "../parser/string/shift/operand/unenclosed.js"
 
@@ -71,13 +71,13 @@ describe("root expression", () => {
 	it("instanceof single", () => {
 		const t = type("instanceof", RegExp)
 		attest<RegExp>(t.infer)
-		const expected = schema(RegExp)
+		const expected = rawSchema(RegExp)
 		attest(t.json).equals(expected.json)
 	})
 	it("instanceof branches", () => {
 		const t = type("instanceof", Array, Date)
 		attest<unknown[] | Date>(t.infer)
-		const expected = schema([Array, Date])
+		const expected = rawSchema([Array, Date])
 		attest(t.json).equals(expected.json)
 	})
 	it("postfix", () => {

@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import { type RawSchema, type Schema, schema } from "@arktype/schema"
+import { type Schema, schema } from "@arktype/schema"
 
 describe("parse", () => {
 	it("single constraint", () => {

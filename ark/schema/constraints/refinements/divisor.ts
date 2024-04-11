@@ -1,5 +1,6 @@
 import type { describeExpression } from "@arktype/util"
 import { tsKeywords } from "../../api/keywords/tsKeywords.js"
+import type { Schema } from "../../api/schema.js"
 import { type BaseAttachments, implementNode } from "../../base.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import {
@@ -69,10 +70,10 @@ export type DivisorNode = BaseConstraint<DivisorDeclaration>
 export const writeIndivisibleMessage = <node extends Schema>(
 	t: node
 ): writeIndivisibleMessage<node> =>
-	writeInvalidOperandMessage("divisor", tsKeywords.number.raw, t)
+	writeInvalidOperandMessage("divisor", tsKeywords.number, t)
 
 export type writeIndivisibleMessage<node extends Schema> =
-	writeInvalidOperandMessage<"divisor", describeExpression<node["infer"]>>
+	writeInvalidOperandMessage<"divisor", node>
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
 const greatestCommonDivisor = (l: number, r: number) => {

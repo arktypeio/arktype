@@ -1,10 +1,10 @@
 import { type Key, compileSerializedValue } from "@arktype/util"
+import { tsKeywords } from "../../api/keywords/tsKeywords.js"
 import {
 	type BaseAttachments,
 	type SchemaDef,
 	implementNode
 } from "../../base.js"
-import { tsKeywords } from "../../keywords/tsKeywords.js"
 import type { RawSchema } from "../../schemas/schema.js"
 import type {
 	BaseErrorContext,
@@ -85,7 +85,7 @@ export const propImplementation = implementNode<PropDeclaration>({
 			let value = l.value.intersect(r.value)
 			const optional = l.optional === true && r.optional === true
 			if (value instanceof Disjoint) {
-				if (optional) value = tsKeywords.never as never
+				if (optional) value = tsKeywords.never.raw
 				else return value.withPrefixKey(l.compiledKey)
 			}
 			return $.node("prop", {

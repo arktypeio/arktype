@@ -1,11 +1,11 @@
 import {
 	type BaseMeta,
-	type RawSchema,
 	type Morph,
 	type MutableInner,
 	type Node,
 	type Out,
 	type Predicate,
+	type RawSchema,
 	type UnionChildKind,
 	type distillConstrainableIn,
 	type distillConstrainableOut,
@@ -15,7 +15,7 @@ import {
 	keywordNodes,
 	makeRootAndArrayPropertiesMutable,
 	node,
-	schema
+	rawSchema
 } from "@arktype/schema"
 import {
 	type BuiltinObjectKind,
@@ -38,10 +38,7 @@ import type { BaseCompletions } from "./string/string.js"
 export const parseTuple = (def: array, ctx: ParseContext): RawSchema =>
 	maybeParseTupleExpression(def, ctx) ?? parseTupleLiteral(def, ctx)
 
-export const parseTupleLiteral = (
-	def: array,
-	ctx: ParseContext
-): RawSchema => {
+export const parseTupleLiteral = (def: array, ctx: ParseContext): RawSchema => {
 	let sequences: MutableInner<"sequence">[] = [{}]
 	let i = 0
 	while (i < def.length) {
@@ -86,7 +83,7 @@ export const parseTupleLiteral = (
 			)
 		}
 	}
-	return schema(
+	return rawSchema(
 		sequences.map(
 			(sequence) =>
 				({

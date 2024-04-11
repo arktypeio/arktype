@@ -85,23 +85,17 @@ export interface SchemaScope<$ = any> {
 
 	import<names extends exportedNameOf<$>[]>(
 		...names: names
-	): SchemaModule<
-		destructuredImportContext<
-			$,
-			names extends [] ? exportedNameOf<$> : names[number]
-		>
-	>
+	): SchemaModule<destructuredImportContext<$, names>>
 
 	export<names extends exportedNameOf<$>[]>(
 		...names: names
-	): SchemaModule<
-		destructuredExportContext<
-			$,
-			names extends [] ? exportedNameOf<$> : names[number]
-		>
-	>
+	): SchemaModule<destructuredExportContext<$, names>>
 }
 
 export const SchemaScope: new <$ = any>(
 	...args: ConstructorParameters<typeof RawSchemaScope>
 ) => SchemaScope<$> = RawSchemaScope as never
+
+export const root: SchemaScope<{}> = new SchemaScope({})
+
+export const { schema, defineSchema, node, units } = root

@@ -166,7 +166,10 @@ describe("bounds", () => {
 				attest(r.intersect(l)).instanceOf(Disjoint)
 			})
 			it("greater min is stricter", () => {
-				const lesser = schema({ ...basis, [min]: 3 } as IntersectionDef)
+				const lesser = schema({
+					...basis,
+					[min]: 3
+				} as IntersectionDef)
 				const greater = schema({
 					...basis,
 					[min]: 4
@@ -179,7 +182,10 @@ describe("bounds", () => {
 				)
 			})
 			it("lesser max is stricter", () => {
-				const lesser = schema({ ...basis, [max]: 3 } as IntersectionDef)
+				const lesser = schema({
+					...basis,
+					[max]: 3
+				} as IntersectionDef)
 				const greater = schema({
 					...basis,
 					[max]: { rule: 4, exclusive: true }

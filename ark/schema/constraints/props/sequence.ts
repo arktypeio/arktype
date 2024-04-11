@@ -6,14 +6,14 @@ import {
 	throwInternalError,
 	throwParseError
 } from "@arktype/util"
+import { jsObjects } from "../../api/keywords/jsObjects.js"
+import { tsKeywords } from "../../api/keywords/tsKeywords.js"
 import {
 	type BaseAttachments,
 	type Node,
 	type SchemaDef,
 	implementNode
 } from "../../base.js"
-import { jsObjects } from "../../keywords/jsObjects.js"
-import { tsKeywords } from "../../keywords/tsKeywords.js"
 import type { MutableInner } from "../../kinds.js"
 import type { RawSchema } from "../../schemas/schema.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
@@ -468,7 +468,7 @@ const intersectSequences = (
 			)
 			state.result = [
 				...state.result,
-				{ kind, node: tsKeywords.never as never }
+				{ kind, node: tsKeywords.never.raw }
 			]
 		} else if (kind === "optional") {
 			// if the element result is optional and unsatisfiable, the
