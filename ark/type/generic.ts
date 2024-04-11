@@ -1,6 +1,7 @@
 import {
 	type GenericNodeInstantiation,
 	type GenericProps,
+	type SchemaScope,
 	arkKind
 } from "@arktype/schema"
 import { Callable, type conform, flatMorph } from "@arktype/util"
@@ -54,7 +55,8 @@ export class Generic<params extends string[] = string[], def = unknown, $ = any>
 	constructor(
 		public params: params,
 		public def: def,
-		public $: Scope<$>
+		// TODO: should be Scope<$>, but breaks inference
+		public $: SchemaScope<$>
 	) {
 		super((...args: unknown[]) => {
 			const argNodes = flatMorph(params, (i, param: string) => [

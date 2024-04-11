@@ -169,7 +169,7 @@ type tryResolve<
 							? reference extends keyof sub$
 								? token
 								: unknown extends sub$
-									? // not sure why I need the additional check here, but for now TS seems to
+									? // not sure why we need the additional check here, but for now TS seems to
 										// hit this branch for a non-scope dot access rather than failing
 										// initially when we try to infer r. if this can be removed without breaking
 										// any submodule test cases, do it!
