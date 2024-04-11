@@ -1,6 +1,6 @@
 import {
 	type BaseMeta,
-	BaseSchema,
+	RawSchema,
 	type Morph,
 	type Out,
 	type Predicate,
@@ -161,7 +161,7 @@ export type TypeConstructor<t = unknown, $ = any> = new (
 	$: Scope<$>
 ) => Type<t, $>
 
-export const Type: TypeConstructor = BaseSchema as never
+export const Type: TypeConstructor = RawSchema as never
 
 export type DefinitionParser<$> = <def>(def: validateTypeRoot<def, $>) => def
 

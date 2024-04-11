@@ -1,4 +1,4 @@
-import type { SchemaModule } from "../api/module.js"
+import type { SchemaModule } from "../module.js"
 import type { GenericSchema } from "../generic.js"
 import type { jsObjects } from "./jsObjects.js"
 import type { parsing } from "./parsing.js"

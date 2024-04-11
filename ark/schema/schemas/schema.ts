@@ -10,8 +10,8 @@ import type { inferSchema } from "../api/inference.js"
 import type { Schema } from "../api/schema.js"
 import {
 	type BaseAttachments,
-	BaseNode,
 	type Node,
+	RawNode,
 	type SchemaDef
 } from "../base.js"
 import type { constrain } from "../constraints/ast.js"
@@ -20,8 +20,8 @@ import {
 	throwInvalidOperandError
 } from "../constraints/constraint.js"
 import type { NodeDef, reducibleKindOf } from "../kinds.js"
-import type { RawScope } from "../scope.js"
-import type { BaseMeta, BaseNodeDeclaration } from "../shared/declare.js"
+import type { RawSchemaScope } from "../scope.js"
+import type { BaseMeta, RawNodeDeclaration } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { ArkResult } from "../shared/errors.js"
 import {
@@ -57,21 +57,21 @@ export const defineRightwardIntersections = <kind extends SchemaKind>(
 		implementation
 	]) as never
 
-export interface BaseSchemaDeclaration extends BaseNodeDeclaration {
+export interface RawSchemaDeclaration extends RawNodeDeclaration {
 	kind: SchemaKind
-	attachments: BaseSchemaAttachments<this>
+	attachments: RawSchemaAttachments<this>
 }
 
-export interface BaseSchemaAttachments<d extends BaseNodeDeclaration>
+export interface RawSchemaAttachments<d extends RawNodeDeclaration>
 	extends BaseAttachments<d> {
-	rawKeyOf(): BaseSchema
+	rawKeyOf(): RawSchema
 }
 
-export class BaseSchema<
+export class RawSchema<
 		/** @ts-expect-error allow instantiation assignment to the base type */
-		out d extends BaseSchemaDeclaration = BaseSchemaDeclaration
+		out d extends RawSchemaDeclaration = RawSchemaDeclaration
 	>
-	extends BaseNode<d>
+	extends RawNode<d>
 	implements
 		internalImplementationOf<Schema, (keyof Schema & symbol) | "infer">
 {
@@ -81,8 +81,12 @@ export class BaseSchema<
 
 	readonly [arkKind] = "schema"
 
-	#keyofCache: BaseSchema | undefined
-	keyof(): BaseSchema {
+	get raw() {
+		return this
+	}
+
+	#keyofCache: RawSchema | undefined
+	keyof(): RawSchema {
 		// if (!this.#keyofCache) {
 		// 	this.#keyofCache = this.rawKeyOf()
 		// 	if (this.#keyofCache.isNever())
@@ -93,16 +97,16 @@ export class BaseSchema<
 		return this.#keyofCache as never
 	}
 
-	intersect(r: BaseSchema): BaseSchema | Disjoint {
+	intersect(r: RawSchema): RawSchema | Disjoint {
 		return this.intersectInternal(r) as never
 	}
 
-	intersectSatisfiable(r: BaseSchema): BaseSchema {
+	intersectSatisfiable(r: RawSchema): RawSchema {
 		const result = this.intersect(r)
 		return result instanceof Disjoint ? result.throw() : (result as never)
 	}
 
-	union(r: BaseSchema): BaseSchema {
+	union(r: RawSchema): RawSchema {
 		const branches = [...this.branches, ...(r.branches as any)]
 		return this.$.schema(branches) as never
 	}
@@ -119,20 +123,20 @@ export class BaseSchema<
 	// }
 
 	// TODO: i/o
-	extract(other: BaseSchema): BaseSchema {
+	extract(other: RawSchema): RawSchema {
 		return this.$.schema(
 			this.branches.filter((branch) => branch.extends(other))
 		) as never
 	}
 
 	// TODO: i/o
-	exclude(other: BaseSchema): BaseSchema {
+	exclude(other: RawSchema): RawSchema {
 		return this.$.schema(
 			this.branches.filter((branch) => !branch.extends(other))
 		) as never
 	}
 
-	array(): BaseSchema {
+	array(): RawSchema {
 		return this.$.schema(
 			{
 				proto: Array,
@@ -142,7 +146,7 @@ export class BaseSchema<
 		) as never
 	}
 
-	extends(other: BaseSchema) {
+	extends(other: RawSchema) {
 		const intersection = this.intersect(other as never)
 		return (
 			!(intersection instanceof Disjoint) &&
@@ -162,7 +166,7 @@ export class BaseSchema<
 		return literal
 	}
 
-	morphNode(morph: Morph, outValidator?: unknown): BaseSchema {
+	morphNode(morph: Morph, outValidator?: unknown): RawSchema {
 		if (this.hasKind("union")) {
 			const branches = this.branches.map((node) =>
 				node.morphNode(morph, outValidator as never)
@@ -181,8 +185,8 @@ export class BaseSchema<
 		})
 	}
 
-	constrain(kind: PrimitiveConstraintKind, def: unknown): BaseSchema {
-		const constraint = this.$.node(kind, def as never)
+	constrain(kind: PrimitiveConstraintKind, def: unknown): RawSchema {
+		const constraint = this.$.node(kind, def)
 		if (
 			constraint.impliedBasis &&
 			!this.extends(constraint.impliedBasis as never)

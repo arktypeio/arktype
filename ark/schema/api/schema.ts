@@ -12,20 +12,22 @@ import type {
 	distillOut,
 	inferMorphOut
 } from "../schemas/morph.js"
-import type { RawScope } from "../scope.js"
+import type { RawSchema } from "../schemas/schema.js"
+import type { RawSchemaScope } from "../scope.js"
 import type { BaseMeta } from "../shared/declare.js"
 import type { Disjoint } from "../shared/disjoint.js"
 import type { ArkResult } from "../shared/errors.js"
 import type { inferIntersection } from "../shared/intersections.js"
 import type { inferred } from "../shared/utils.js"
 import type { inferSchema } from "./inference.js"
+import type { SchemaScope } from "./scope.js"
 
 export interface Schema<
 	/** @ts-expect-error allow instantiation assignment to the base type */
 	out t = unknown,
 	$ = any
 > extends Callable<(data: unknown) => ArkResult<t>> {
-	$: RawScope<$>
+	$: SchemaScope<$>
 	infer: distillOut<t>
 	[inferred]: t
 	[Hkt.args]: [t: unknown, $: unknown]
@@ -37,6 +39,7 @@ export interface Schema<
 	description: string
 	expression: string
 	innerId: string
+	raw: RawSchema
 
 	get in(): Schema<distillConstrainableIn<t>, $>
 

@@ -13,16 +13,16 @@ import {
 	splitByKeys,
 	throwInternalError
 } from "@arktype/util"
-import { BaseNode, type Constraint, type Node, implementNode } from "../base.js"
+import { tsKeywords } from "../api/keywords/tsKeywords.js"
+import { type Constraint, type Node, RawNode, implementNode } from "../base.js"
 import {
 	type ExtraneousKeyBehavior,
 	type ExtraneousKeyRestriction,
 	PropsGroup
 } from "../constraints/props/props.js"
-import { tsKeywords } from "../keywords/tsKeywords.js"
 import type { Inner, MutableInner, NodeDef, Prerequisite } from "../kinds.js"
 import type { NodeParseContext } from "../parse.js"
-import type { RawScope } from "../scope.js"
+import type { RawSchemaScope } from "../scope.js"
 import { type BaseMeta, type declareNode, metaKeys } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { ArkTypeError } from "../shared/errors.js"
@@ -38,8 +38,8 @@ import {
 import type { DomainDef, DomainNode } from "./domain.js"
 import type { ProtoDef, ProtoNode } from "./proto.js"
 import {
-	BaseSchema,
-	type BaseSchemaAttachments,
+	RawSchema,
+	type RawSchemaAttachments,
 	defineRightwardIntersections
 } from "./schema.js"
 
@@ -75,7 +75,7 @@ export type IntersectionDeclaration = declareNode<{
 }>
 
 export interface IntersectionAttachments
-	extends BaseSchemaAttachments<IntersectionDeclaration> {
+	extends RawSchemaAttachments<IntersectionDeclaration> {
 	basis: DomainNode | ProtoNode | null
 	refinements: array<Node<RefinementKind>>
 	props: PropsGroup | null
@@ -106,12 +106,12 @@ const intersectionChildKeyParser =
 const intersectIntersections = (
 	reduced: IntersectionInner,
 	raw: IntersectionInner,
-	$: RawScope
-): BaseSchema | Disjoint => {
+	$: RawSchemaScope
+): RawSchema | Disjoint => {
 	// avoid treating adding instance keys as keys of lRoot, rRoot
-	if (reduced instanceof BaseSchema && reduced.hasKind("intersection"))
+	if (reduced instanceof RawSchema && reduced.hasKind("intersection"))
 		return intersectIntersections(reduced.inner, raw, $)
-	if (raw instanceof BaseSchema && raw.hasKind("intersection"))
+	if (raw instanceof RawSchema && raw.hasKind("intersection"))
 		return intersectIntersections(reduced, raw.inner, $)
 
 	const [reducedConstraintsInner, reducedRoot] = splitByKeys(
@@ -309,7 +309,7 @@ export const intersectionImplementation =
 				compile(js) {
 					if (js.traversalKind === "Allows") {
 						this.traversables.forEach((traversable) =>
-							traversable instanceof BaseNode
+							traversable instanceof RawNode
 								? js.check(traversable)
 								: traversable.compile(js)
 						)
@@ -356,16 +356,15 @@ export const intersectionImplementation =
 						? this.props
 							? this.basis.rawKeyOf().union(this.props.rawKeyOf())
 							: this.basis.rawKeyOf()
-						: this.props?.rawKeyOf() ??
-								(tsKeywords.never as {} as BaseSchema)
+						: this.props?.rawKeyOf() ?? tsKeywords.never.raw
 				}
 			}
 		}
 	})
 
-export type IntersectionNode = BaseSchema<IntersectionDeclaration>
+export type IntersectionNode = RawSchema<IntersectionDeclaration>
 
-const maybeCreatePropsGroup = (inner: IntersectionInner, $: RawScope) => {
+const maybeCreatePropsGroup = (inner: IntersectionInner, $: RawSchemaScope) => {
 	const propsInput = pick(inner, propKeys)
 	return isEmptyObject(propsInput) ? null : new PropsGroup(propsInput, $)
 }
@@ -410,15 +409,15 @@ type ConstraintIntersectionState = {
 	root: IntersectionRoot
 	l: Constraint[]
 	r: Constraint[]
-	types: BaseSchema[]
-	$: RawScope
+	types: RawSchema[]
+	$: RawSchemaScope
 }
 
 const intersectConstraints = (
 	s: ConstraintIntersectionState
-): BaseSchema | Disjoint => {
+): RawSchema | Disjoint => {
 	if (!s.r.length) {
-		let result: BaseSchema | Disjoint = s.$.node(
+		let result: RawSchema | Disjoint = s.$.node(
 			"intersection",
 			Object.assign(s.root, unflattenConstraints(s.l)),
 			{ prereduced: true }

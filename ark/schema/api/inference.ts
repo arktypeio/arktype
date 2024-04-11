@@ -9,7 +9,7 @@ import type {
 	instanceOf,
 	isAny
 } from "@arktype/util"
-import type { BaseNode } from "../base.js"
+import type { RawNode } from "../base.js"
 import type { NodeDef, Prerequisite } from "../kinds.js"
 import type { DomainDef } from "../schemas/domain.js"
 import type { IntersectionDef } from "../schemas/intersection.js"
@@ -60,7 +60,7 @@ export type inferSchema<def, $> = def extends type.cast<infer to>
 				: inferSchemaBranch<branches[number], $>
 		: inferSchemaBranch<def, $>
 
-type validateSchemaBranch<def, $> = def extends BaseNode
+type validateSchemaBranch<def, $> = def extends RawNode
 	? def
 	: keyof def & ("morph" | "in" | "out") extends never
 		? validateMorphChild<def, $>

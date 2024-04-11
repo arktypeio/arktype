@@ -1,6 +1,7 @@
 import {
 	CompiledFunction,
 	type Dict,
+	DynamicBase,
 	type Json,
 	type array,
 	type evaluate,
@@ -10,18 +11,18 @@ import {
 	type requireKeys,
 	throwParseError
 } from "@arktype/util"
-import { SchemaModule } from "./api/module.js"
-import type { SchemaScope2 } from "./api/scope.js"
-import type { BaseNode, Node, SchemaDef } from "./base.js"
-import { mergeConfigs } from "./config.js"
 import {
 	type GenericSchema,
 	validateUninstantiatedGenericNode
-} from "./generic.js"
-import type { Ark } from "./keywords/keywords.js"
+} from "./api/generic.js"
+import type { Ark } from "./api/keywords/keywords.js"
+import { SchemaModule } from "./api/module.js"
+import type { SchemaScope } from "./api/scope.js"
+import type { Node, RawNode, SchemaDef } from "./base.js"
+import { mergeConfigs } from "./config.js"
 import type { NodeDef, reducibleKindOf } from "./kinds.js"
 import { type NodeParseOptions, parseNode, schemaKindOf } from "./parse.js"
-import type { BaseSchema } from "./schemas/schema.js"
+import type { RawSchema } from "./schemas/schema.js"
 import { NodeCompiler } from "./shared/compile.js"
 import type {
 	ActualWriter,
@@ -36,11 +37,15 @@ import type {
 	SchemaKind
 } from "./shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "./shared/traversal.js"
-import { hasArkKind, type internalImplementationOf } from "./shared/utils.js"
+import {
+	type arkKind,
+	hasArkKind,
+	type internalImplementationOf
+} from "./shared/utils.js"
 
-export type nodeResolutions<keywords> = { [k in keyof keywords]: BaseSchema }
+export type nodeResolutions<keywords> = { [k in keyof keywords]: RawSchema }
 
-export type BaseResolutions = Record<string, BaseSchema>
+export type BaseResolutions = Record<string, RawSchema>
 
 declare global {
 	export interface StaticArkConfig {
@@ -131,29 +136,40 @@ export const resolveConfig = (
 	config: ArkConfig | undefined
 ): ResolvedArkConfig => extendConfig(defaultConfig, config) as never
 
-export type SchemaScopeResolutions = Record<
+export type RawSchemaResolutions = Record<
 	string,
-	BaseSchema | GenericSchema | undefined
+	RawSchema | GenericSchema | undefined
 >
 
 export type exportedNameOf<$> = Exclude<keyof $ & string, PrivateDeclaration>
 
 export type PrivateDeclaration<key extends string = string> = `#${key}`
 
-export class RawScope<$ = any>
-	implements internalImplementationOf<SchemaScope2, "infer" | "inferIn" | "$">
+export class RawSchemaModule<
+	resolutions extends RawSchemaResolutions = RawSchemaResolutions
+> extends DynamicBase<resolutions> {
+	declare readonly [arkKind]: "module"
+}
+
+export class RawSchemaScope<
+	resolutions extends RawSchemaResolutions = RawSchemaResolutions
+> implements internalImplementationOf<SchemaScope, "infer" | "inferIn" | "$">
 {
 	readonly config: ArkConfig
 	readonly resolvedConfig: ResolvedArkConfig
 
-	readonly nodeCache: { [innerId: string]: BaseNode } = {}
-	readonly referencesByName: { [name: string]: BaseNode } = {}
-	references: readonly BaseNode[] = []
-	readonly resolutions: SchemaScopeResolutions = {}
+	readonly nodeCache: { [innerId: string]: RawNode } = {}
+	readonly referencesByName: { [name: string]: RawNode } = {}
+	references: readonly RawNode[] = []
+	protected readonly resolutions: RawSchemaResolutions = {}
 	readonly json: Json = {}
-	exportedNames: array<exportedNameOf<$>>
+	exportedNames: string[]
 
 	protected resolved = false
+
+	get raw() {
+		return this
+	}
 
 	constructor(
 		/** The set of names defined at the root-level of the scope mapped to their
@@ -175,13 +191,17 @@ export class RawScope<$ = any>
 		) as never
 	}
 
-	static root: RawScope<{}> = new RawScope({})
+	static root: RawSchemaScope<{}> = new RawSchemaScope({})
 
-	node(kind: NodeKind, def: unknown, opts?: NodeParseOptions) {
+	node<kind extends NodeKind>(
+		kind: NodeKind,
+		def: unknown,
+		opts?: NodeParseOptions
+	): Node<reducibleKindOf<kind>> {
 		return parseNode(kind, def, this, opts) as never
 	}
 
-	schema(def: SchemaDef, opts?: NodeParseOptions): BaseSchema {
+	schema(def: SchemaDef, opts?: NodeParseOptions): RawSchema {
 		return parseNode(schemaKindOf(def), def, this, opts) as never
 	}
 
@@ -189,7 +209,7 @@ export class RawScope<$ = any>
 		return def
 	}
 
-	units(values: unknown[], opts?: NodeParseOptions): BaseSchema {
+	units(values: unknown[], opts?: NodeParseOptions): RawSchema {
 		{
 			const uniqueValues: unknown[] = []
 			for (const value of values) {
@@ -215,11 +235,11 @@ export class RawScope<$ = any>
 		return parseNode(kinds, schema, this, opts) as never
 	}
 
-	parseRoot(def: unknown, opts?: NodeParseOptions): BaseSchema {
+	parseRoot(def: unknown, opts?: NodeParseOptions): RawSchema {
 		return this.schema(def as never, opts)
 	}
 
-	maybeResolve(name: string): BaseSchema | GenericSchema | undefined {
+	maybeResolve(name: string): RawSchema | GenericSchema | undefined {
 		const cached = this.resolutions[name]
 		if (cached) {
 			return cached
@@ -242,7 +262,7 @@ export class RawScope<$ = any>
 	/** If name is a valid reference to a submodule alias, return its resolution  */
 	private maybeResolveSubalias(
 		name: string
-	): BaseSchema | GenericSchema | undefined {
+	): RawSchema | GenericSchema | undefined {
 		const dotIndex = name.indexOf(".")
 		if (dotIndex === -1) {
 			return
@@ -264,7 +284,7 @@ export class RawScope<$ = any>
 		// might be something like a decimal literal, so just fall through to return
 	}
 
-	maybeResolveNode(name: string): BaseSchema | undefined {
+	maybeResolveNode(name: string): RawSchema | undefined {
 		const result = this.maybeResolve(name)
 		return hasArkKind(result, "schema") ? (result as never) : undefined
 	}
@@ -278,9 +298,11 @@ export class RawScope<$ = any>
 		)
 	}
 
-	#exportedResolutions: SchemaScopeResolutions | undefined
+	#exportedResolutions: RawSchemaResolutions | undefined
 	#exportCache: SchemaExportCache | undefined
-	export(...names: string[]) {
+	export<names extends (keyof resolutions & string)[]>(
+		...names: names
+	): Pick<resolutions, names[number]> {
 		if (!this.#exportCache) {
 			this.#exportCache = {}
 			for (const name of this.exportedNames) {
@@ -334,11 +356,11 @@ export type destructuredImportContext<$, name extends exportedNameOf<$>> = {
 
 export type SchemaExportCache = Record<
 	string,
-	BaseSchema | GenericSchema | SchemaModule | undefined
+	RawSchema | GenericSchema | RawSchemaModule | undefined
 >
 
 const resolutionsOfModule = (typeSet: SchemaExportCache) => {
-	const result: SchemaScopeResolutions = {}
+	const result: RawSchemaResolutions = {}
 	for (const k in typeSet) {
 		const v = typeSet[k]
 		if (hasArkKind(v, "module")) {
@@ -351,13 +373,13 @@ const resolutionsOfModule = (typeSet: SchemaExportCache) => {
 		} else if (hasArkKind(v, "generic")) {
 			result[k] = v
 		} else {
-			result[k] = v as BaseSchema
+			result[k] = v as RawSchema
 		}
 	}
 	return result
 }
 
-export const root: RawScope<{}> = new RawScope({})
+export const root: RawSchemaScope<{}> = new RawSchemaScope({})
 
 export const { schema, defineSchema, node, units } = root
 
@@ -384,7 +406,7 @@ export const writeMissingSubmoduleAccessMessage = <name extends string>(
 export type writeMissingSubmoduleAccessMessage<name extends string> =
 	`Reference to submodule '${name}' must specify an alias`
 
-const bindCompiledSpace = (references: readonly BaseNode[]) => {
+const bindCompiledSpace = (references: readonly RawNode[]) => {
 	const compiledTraversals = compileSpace(references)
 	for (const node of references) {
 		if (node.jit) {
@@ -404,7 +426,7 @@ const bindCompiledSpace = (references: readonly BaseNode[]) => {
 	}
 }
 
-const compileSpace = (references: readonly BaseNode[]) => {
+const compileSpace = (references: readonly RawNode[]) => {
 	return new CompiledFunction()
 		.block("return", (js) => {
 			references.forEach((node) => {

@@ -16,8 +16,8 @@ import {
 	derivePrimitiveAttachments
 } from "../shared/implement.js"
 import {
-	type BaseSchema,
-	type BaseSchemaAttachments,
+	type RawSchema,
+	type RawSchemaAttachments,
 	defineRightwardIntersections
 } from "./schema.js"
 
@@ -37,7 +37,7 @@ export type UnitDeclaration = declareNode<{
 }>
 
 export interface UnitAttachments
-	extends BaseSchemaAttachments<UnitDeclaration>,
+	extends RawSchemaAttachments<UnitDeclaration>,
 		PrimitiveAttachments<UnitDeclaration> {
 	readonly literalKeys: array<Key>
 	readonly domain: Domain
@@ -97,7 +97,7 @@ export const unitImplementation = implementNode<UnitDeclaration>({
 	}
 })
 
-export type UnitNode = BaseSchema<UnitDeclaration>
+export type UnitNode = RawSchema<UnitDeclaration>
 
 const compileEqualityCheck = (
 	unit: unknown,

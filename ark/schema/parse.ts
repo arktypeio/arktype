@@ -12,10 +12,10 @@ import {
 	type propValueOf,
 	throwParseError
 } from "@arktype/util"
-import { BaseNode, type UnknownAttachments } from "./base.js"
-import { BaseSchema } from "./schemas/schema.js"
-import type { RawScope } from "./scope.js"
-import type { BaseNodeDeclaration } from "./shared/declare.js"
+import { RawNode, type UnknownAttachments } from "./base.js"
+import { RawSchema } from "./schemas/schema.js"
+import type { RawSchemaScope } from "./scope.js"
+import type { RawNodeDeclaration } from "./shared/declare.js"
 import { Disjoint } from "./shared/disjoint.js"
 import {
 	type KeyDefinitions,
@@ -33,17 +33,17 @@ import { hasArkKind, isNode } from "./shared/utils.js"
 export type NodeParseOptions = {
 	alias?: string
 	prereduced?: boolean
-	args?: Record<string, BaseSchema>
+	args?: Record<string, RawSchema>
 	/** Instead of creating the node, compute the innerId of the definition and
 	 * point it to the specified resolution.
 	 *
 	 * Useful for defining reductions like number|string|bigint|symbol|object|true|false|null|undefined => unknown
 	 **/
-	reduceTo?: BaseNode
+	reduceTo?: RawNode
 }
 
 export interface NodeParseContext extends NodeParseOptions {
-	$: RawScope
+	$: RawSchemaScope
 	raw: unknown
 }
 
@@ -51,7 +51,7 @@ const nodeCountsByPrefix: PartialRecord<string, number> = {}
 
 const baseKeys: PartialRecord<string, propValueOf<KeyDefinitions<any>>> = {
 	description: { meta: true }
-} satisfies KeyDefinitions<BaseNodeDeclaration> as never
+} satisfies KeyDefinitions<RawNodeDeclaration> as never
 
 export const schemaKindOf = <kind extends SchemaKind = SchemaKind>(
 	def: unknown,
@@ -117,9 +117,9 @@ const discriminateSchemaKind = (def: unknown): SchemaKind => {
 export const parseNode = (
 	kinds: NodeKind | array<SchemaKind>,
 	schema: unknown,
-	$: RawScope,
+	$: RawSchemaScope,
 	opts?: NodeParseOptions
-): BaseNode => {
+): RawNode => {
 	const kind: NodeKind =
 		typeof kinds === "string" ? kinds : schemaKindOf(schema, kinds)
 	if (isNode(schema) && schema.kind === kind) {
@@ -158,7 +158,7 @@ export const parseNode = (
 						? -1
 						: 1
 	)
-	const children: BaseNode[] = []
+	const children: RawNode[] = []
 	for (const entry of schemaEntries) {
 		const k = entry[0]
 		const keyImpl = impl.keys[k] ?? baseKeys[k]
@@ -178,7 +178,7 @@ export const parseNode = (
 	entries.forEach(([k, v]) => {
 		const keyImpl = impl.keys[k] ?? baseKeys[k]
 		if (keyImpl.child) {
-			const listableNode = v as listable<BaseNode>
+			const listableNode = v as listable<RawNode>
 			if (isArray(listableNode)) {
 				json[k] = listableNode.map((node) => node.collapsibleJson)
 				children.push(...listableNode)
@@ -288,9 +288,9 @@ export const parseNode = (
 	attachments.description ??= $.resolvedConfig[kind].description(
 		attachments as never
 	)
-	const node: BaseNode = includes(schemaKinds, kind)
-		? new BaseSchema(attachments as never)
-		: (new BaseNode(attachments as never) as any)
+	const node: RawNode = includes(schemaKinds, kind)
+		? new RawSchema(attachments as never)
+		: (new RawNode(attachments as never) as any)
 	$.nodeCache[innerId] = node
 	return node
 }

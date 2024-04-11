@@ -1,5 +1,5 @@
 import {
-	type BaseSchema,
+	type RawSchema,
 	type BoundKind,
 	type DateLiteral,
 	type LimitLiteral,
@@ -115,7 +115,7 @@ export const writeIncompatibleRangeMessage = (l: BoundKind, r: BoundKind) =>
 export const getBoundKinds = (
 	comparator: Comparator,
 	limit: LimitLiteral,
-	root: BaseSchema,
+	root: RawSchema,
 	boundKind: BoundExpressionKind
 ): BoundKind[] => {
 	if (root.extends(keywordNodes.number)) {

@@ -1,5 +1,5 @@
 import {
-	type BaseSchema,
+	type RawSchema,
 	type Node,
 	keywordNodes,
 	type writeInvalidPropertyKeyMessage

@@ -14,7 +14,7 @@ import {
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { TraverseAllows } from "../shared/traversal.js"
-import type { BaseSchema, BaseSchemaAttachments } from "./schema.js"
+import type { RawSchema, RawSchemaAttachments } from "./schema.js"
 
 export interface DomainInner<
 	domain extends NonEnumerableDomain = NonEnumerableDomain
@@ -41,7 +41,7 @@ export type DomainDeclaration = declareNode<{
 }>
 
 export interface DomainAttachments
-	extends BaseSchemaAttachments<DomainDeclaration>,
+	extends RawSchemaAttachments<DomainDeclaration>,
 		PrimitiveAttachments<DomainDeclaration> {
 	readonly literalKeys: array<Key>
 }
@@ -83,4 +83,4 @@ export const domainImplementation = implementNode<DomainDeclaration>({
 	}
 })
 
-export type DomainNode = BaseSchema<DomainDeclaration>
+export type DomainNode = RawSchema<DomainDeclaration>

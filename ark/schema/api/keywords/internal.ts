@@ -1,6 +1,6 @@
 import type { Key } from "@arktype/util"
-import type { SchemaModule } from "../api/module.js"
-import { schemaScope } from "../api/scope.js"
+import type { SchemaModule } from "../module.js"
+import { schemaScope } from "../scope.js"
 
 export namespace internalKeywords {
 	export interface exports {

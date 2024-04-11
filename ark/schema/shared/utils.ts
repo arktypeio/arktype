@@ -6,11 +6,11 @@ import {
 	literalPropAccess,
 	type mutable
 } from "@arktype/util"
+import type { GenericSchema } from "../api/generic.js"
 import type { SchemaModule } from "../api/module.js"
-import type { BaseNode, Constraint } from "../base.js"
-import type { GenericSchema } from "../generic.js"
-import type { Schema } from "../schemas/schema.js"
-import type { RawScope } from "../scope.js"
+import type { Constraint, RawNode } from "../base.js"
+import type { RawSchema } from "../schemas/schema.js"
+import type { RawSchemaModule, RawSchemaScope } from "../scope.js"
 import type { ArkTypeError } from "./errors.js"
 
 export const makeRootAndArrayPropertiesMutable = <o extends object>(
@@ -54,10 +54,10 @@ export const arkKind = Symbol("ArkTypeInternalKind")
 
 export interface ArkKinds {
 	constraint: Constraint
-	schema: Schema
-	scope: RawScope
+	schema: RawSchema
+	scope: RawSchemaScope
 	generic: GenericSchema
-	module: SchemaModule
+	module: RawSchemaModule
 	error: ArkTypeError
 }
 
@@ -86,7 +86,7 @@ export const hasArkKind = <kind extends ArkKind>(
 	kind: kind
 ): value is ArkKinds[kind] => (value as any)?.[arkKind] === kind
 
-export const isNode = (value: unknown): value is BaseNode =>
+export const isNode = (value: unknown): value is RawNode =>
 	hasArkKind(value, "schema") || hasArkKind(value, "constraint")
 
 // ideally this could be just declared since it is not used at runtime,

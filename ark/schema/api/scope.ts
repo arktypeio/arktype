@@ -1,16 +1,20 @@
 import type { Json, array, flattenListable } from "@arktype/util"
-import type { BaseNode, Node, SchemaDef } from "../base.js"
+import type { Node, RawNode, SchemaDef } from "../base.js"
 import type { NodeDef, reducibleKindOf } from "../kinds.js"
 import type { NodeParseOptions } from "../parse.js"
 import type { distillIn, distillOut } from "../schemas/morph.js"
-import type { BaseSchema } from "../schemas/schema.js"
+import type { RawSchema } from "../schemas/schema.js"
 import type {
 	ArkConfig,
+	RawSchemaModule,
+	RawSchemaScope,
 	destructuredExportContext,
 	destructuredImportContext,
 	exportedNameOf
 } from "../scope.js"
 import type { NodeKind, SchemaKind } from "../shared/implement.js"
+import type { arkKind } from "../shared/utils.js"
+import type { GenericSchema } from "./generic.js"
 import type { inferSchema, validateSchema } from "./inference.js"
 import type { SchemaModule } from "./module.js"
 import type { Schema } from "./schema.js"
@@ -26,17 +30,28 @@ export type instantiateAliases<aliases> = {
 export declare const schemaScope: <const aliases>(
 	aliases: validateAliases<aliases>,
 	config?: ArkConfig
-) => SchemaScope2<instantiateAliases<aliases>>
+) => SchemaScope<instantiateAliases<aliases>>
 
-export interface SchemaScope2<$ = any> {
+type toRawScope<$> = RawSchemaScope<{
+	[k in keyof $]: $[k] extends { [arkKind]: infer kind }
+		? kind extends "generic"
+			? GenericSchema
+			: kind extends "module"
+				? RawSchemaModule
+				: never
+		: RawSchema
+}>
+
+export interface SchemaScope<$ = any> {
 	$: $
 	infer: distillOut<$>
 	inferIn: distillIn<$>
 
 	config: ArkConfig
-	references: readonly BaseNode[]
+	references: readonly RawNode[]
 	json: Json
 	exportedNames: array<exportedNameOf<$>>
+	raw: toRawScope<$>
 
 	/** The set of names defined at the root-level of the scope mapped to their
 	 * corresponding definitions.**/
@@ -66,7 +81,7 @@ export interface SchemaScope2<$ = any> {
 		opts?: NodeParseOptions
 	): Node<reducibleKindOf<flattenListable<kinds>>>
 
-	parseRoot(def: unknown, opts?: NodeParseOptions): BaseSchema
+	parseRoot(def: unknown, opts?: NodeParseOptions): RawSchema
 
 	import<names extends exportedNameOf<$>[]>(
 		...names: names

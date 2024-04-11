@@ -56,13 +56,13 @@ type prerequisiteOf<d extends DeclarationInput> = "prerequisite" extends keyof d
 	? d["prerequisite"]
 	: unknown
 
-export type parsedAttachmentsOf<d extends BaseNodeDeclaration> =
+export type parsedAttachmentsOf<d extends RawNodeDeclaration> =
 	NarrowedAttachments<d> & d["inner"]
 
-export type attachmentsOf<d extends BaseNodeDeclaration> =
+export type attachmentsOf<d extends RawNodeDeclaration> =
 	parsedAttachmentsOf<d> & d["attachments"]
 
-export type BaseNodeDeclaration = {
+export type RawNodeDeclaration = {
 	kind: NodeKind
 	def: unknown
 	normalizedDef: BaseMeta
@@ -75,6 +75,6 @@ export type BaseNodeDeclaration = {
 	attachments: object
 }
 
-export type ownIntersectionResult<d extends BaseNodeDeclaration> =
+export type ownIntersectionResult<d extends RawNodeDeclaration> =
 	| Node<reducibleKindOf<d["kind"]>>
 	| Disjoint

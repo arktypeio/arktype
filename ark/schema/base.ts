@@ -28,18 +28,18 @@ import type {
 	nodeImplementationsByKind,
 	reducibleKindOf
 } from "./kinds.js"
-import type { BaseConstraint, BaseSchema, OpenNodeKind } from "./main.js"
+import type { BaseConstraint, OpenNodeKind, RawSchema } from "./main.js"
 import type { DomainNode } from "./schemas/domain.js"
 import type { IntersectionNode } from "./schemas/intersection.js"
 import type { MorphNode } from "./schemas/morph.js"
 import type { ProtoNode } from "./schemas/proto.js"
 import type { UnionNode } from "./schemas/union.js"
 import type { UnitNode } from "./schemas/unit.js"
-import type { RawScope } from "./scope.js"
+import type { RawSchemaScope } from "./scope.js"
 import type { NodeCompiler } from "./shared/compile.js"
 import type {
 	BaseMeta,
-	BaseNodeDeclaration,
+	RawNodeDeclaration,
 	attachmentsOf
 } from "./shared/declare.js"
 import { Disjoint } from "./shared/disjoint.js"
@@ -76,14 +76,14 @@ export interface UnknownAttachments {
 	readonly json: object
 	readonly typeJson: object
 	readonly collapsibleJson: JsonData
-	readonly children: BaseNode[]
+	readonly children: RawNode[]
 	readonly innerId: string
 	readonly typeId: string
-	readonly $: RawScope
+	readonly $: RawSchemaScope
 	readonly description: string
 }
 
-export interface NarrowedAttachments<d extends BaseNodeDeclaration>
+export interface NarrowedAttachments<d extends RawNodeDeclaration>
 	extends UnknownAttachments {
 	kind: d["kind"]
 	inner: d["inner"]
@@ -101,7 +101,7 @@ declare global {
 
 $ark.nodeImplementationsByKind = {} as typeof nodeImplementationsByKind
 
-export const implementNode = <d extends BaseNodeDeclaration = never>(
+export const implementNode = <d extends RawNodeDeclaration = never>(
 	_: nodeImplementationInputOf<d>
 ): nodeImplementationOf<d> => {
 	const implementation: UnknownNodeImplementation = _ as never
@@ -128,16 +128,16 @@ export const implementNode = <d extends BaseNodeDeclaration = never>(
 	return implementation as never
 }
 
-export type BaseAttachments<d extends BaseNodeDeclaration> = {
+export type BaseAttachments<d extends RawNodeDeclaration> = {
 	traverseAllows: TraverseAllows<d["prerequisite"]>
 	traverseApply: TraverseApply<d["prerequisite"]>
 	expression: string
 	compile: (js: NodeCompiler) => void
 }
 
-export class BaseNode<
+export class RawNode<
 	/** @ts-expect-error allow instantiation assignment to the base type */
-	out d extends BaseNodeDeclaration = BaseNodeDeclaration
+	out d extends RawNodeDeclaration = RawNodeDeclaration
 > extends Callable<(data: d["prerequisite"]) => ArkResult, attachmentsOf<d>> {
 	constructor(public attachments: UnknownAttachments) {
 		super((data: any): ArkResult<any> => {
@@ -177,16 +177,16 @@ export class BaseNode<
 		// if a predicate accepts exactly one arg, we can safely skip passing context
 		(this.hasKind("predicate") && this.inner.predicate.length !== 1) ||
 		this.children.some((child) => child.includesContextDependentPredicate)
-	readonly referencesByName: Record<string, BaseNode> = this.children.reduce(
+	readonly referencesByName: Record<string, RawNode> = this.children.reduce(
 		(result, child) =>
 			Object.assign(result, child.contributesReferencesByName),
 		{}
 	)
-	readonly references: readonly BaseNode[] = Object.values(
+	readonly references: readonly RawNode[] = Object.values(
 		this.referencesByName
 	)
-	readonly contributesReferencesByName: Record<string, BaseNode>
-	readonly contributesReferences: readonly BaseNode[]
+	readonly contributesReferencesByName: Record<string, RawNode>
+	readonly contributesReferences: readonly RawNode[]
 	readonly precedence = precedenceOfKind(this.kind)
 	jit = false
 
@@ -223,19 +223,19 @@ export class BaseNode<
 		return this(data)
 	}
 
-	#inCache?: BaseNode
-	get in(): BaseNode {
+	#inCache?: RawNode
+	get in(): RawNode {
 		this.#inCache ??= this.#getIo("in")
 		return this.#inCache as never
 	}
 
-	#outCache?: BaseNode
-	get out(): BaseNode {
+	#outCache?: RawNode
+	get out(): RawNode {
 		this.#outCache ??= this.#getIo("out")
 		return this.#outCache as never
 	}
 
-	#getIo(kind: "in" | "out"): BaseNode {
+	#getIo(kind: "in" | "out"): RawNode {
 		if (!this.includesMorph) {
 			return this as never
 		}
@@ -246,7 +246,7 @@ export class BaseNode<
 				continue
 			}
 			if (keyDefinition.child) {
-				const childValue = v as listable<BaseNode>
+				const childValue = v as listable<RawNode>
 				ioInner[k] = isArray(childValue)
 					? childValue.map((child) => child[kind])
 					: childValue[kind]
@@ -261,7 +261,7 @@ export class BaseNode<
 		return this.json
 	}
 
-	equals(other: BaseNode): boolean {
+	equals(other: RawNode): boolean {
 		return this.typeId === other.typeId
 	}
 
@@ -285,7 +285,7 @@ export class BaseNode<
 		return includes(propKinds, this.kind)
 	}
 
-	isSchema(): this is BaseSchema {
+	isSchema(): this is RawSchema {
 		return includes(schemaKinds, this.kind)
 	}
 
@@ -309,22 +309,22 @@ export class BaseNode<
 		UnknownIntersectionResult
 	> = {}
 	protected intersectInternal(
-		this: BaseNode,
-		r: BaseNode
+		this: RawNode,
+		r: RawNode
 	): UnknownIntersectionResult {
 		const lrCacheKey = `${this.typeId}&${r.typeId}`
-		if (BaseNode.intersectionCache[lrCacheKey]) {
-			return BaseNode.intersectionCache[lrCacheKey]!
+		if (RawNode.intersectionCache[lrCacheKey]) {
+			return RawNode.intersectionCache[lrCacheKey]!
 		}
 		const rlCacheKey = `${r.typeId}&${this.typeId}`
-		if (BaseNode.intersectionCache[rlCacheKey]) {
+		if (RawNode.intersectionCache[rlCacheKey]) {
 			// if the cached result was a Disjoint and the operands originally
 			// appeared in the opposite order, we need to invert it to match
-			const rlResult = BaseNode.intersectionCache[rlCacheKey]!
+			const rlResult = RawNode.intersectionCache[rlCacheKey]!
 			const lrResult =
 				rlResult instanceof Disjoint ? rlResult.invert() : rlResult
 			// add the lr result to the cache directly to bypass this check in the future
-			BaseNode.intersectionCache[lrCacheKey] = lrResult
+			RawNode.intersectionCache[lrCacheKey] = lrResult
 			return lrResult
 		}
 
@@ -346,25 +346,25 @@ export class BaseNode<
 					? implementation(this, r, this.$)
 					: implementation(r, this, this.$)
 
-		if (result instanceof BaseNode) {
+		if (result instanceof RawNode) {
 			// if the result equals one of the operands, preserve its metadata by
 			// returning the original reference
 			if (this.equals(result)) result = this as never
 			else if (r.equals(result)) result = r as never
 		}
 
-		BaseNode.intersectionCache[lrCacheKey] = result
+		RawNode.intersectionCache[lrCacheKey] = result
 		return result
 	}
 
 	firstReference<narrowed>(
-		filter: Guardable<BaseNode, conform<narrowed, BaseNode>>
+		filter: Guardable<RawNode, conform<narrowed, RawNode>>
 	): narrowed | undefined {
 		return this.references.find(filter as never) as never
 	}
 
-	firstReferenceOrThrow<narrowed extends BaseNode>(
-		filter: Guardable<BaseNode, narrowed>
+	firstReferenceOrThrow<narrowed extends RawNode>(
+		filter: Guardable<RawNode, narrowed>
 	): narrowed {
 		return (
 			this.firstReference(filter) ??
@@ -391,7 +391,7 @@ export class BaseNode<
 
 	transform(
 		mapper: DeepNodeTransformation,
-		shouldTransform: (node: BaseNode) => boolean
+		shouldTransform: (node: RawNode) => boolean
 	): Node<reducibleKindOf<this["kind"]>> {
 		if (!shouldTransform(this as never)) {
 			return this as never
@@ -403,12 +403,12 @@ export class BaseNode<
 				this.impl.keys[k].child
 					? isArray(v)
 						? v.map((node) =>
-								(node as BaseNode).transform(
+								(node as RawNode).transform(
 									mapper,
 									shouldTransform
 								)
 							)
-						: (v as BaseNode).transform(mapper, shouldTransform)
+						: (v as RawNode).transform(mapper, shouldTransform)
 					: v
 			]
 		)

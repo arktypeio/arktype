@@ -20,8 +20,8 @@ import type { ArkResult, ArkTypeError } from "../shared/errors.js"
 import { basisKinds } from "../shared/implement.js"
 import type { TraversalContext } from "../shared/traversal.js"
 import {
-	type BaseSchema,
-	type BaseSchemaAttachments,
+	type RawSchema,
+	type RawSchemaAttachments,
 	defineRightwardIntersections,
 	type schemaKindRightOf
 } from "./schema.js"
@@ -65,7 +65,7 @@ export type MorphDeclaration = declareNode<{
 }>
 
 export interface MorphAttachments
-	extends BaseSchemaAttachments<MorphDeclaration> {
+	extends RawSchemaAttachments<MorphDeclaration> {
 	serializedMorphs: array<string>
 }
 
@@ -156,16 +156,16 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 			get out() {
 				return this.inner.out ?? tsKeywords.unknown
 			},
-			rawKeyOf(): BaseSchema {
+			rawKeyOf(): RawSchema {
 				return this.in.rawKeyOf()
 			}
 		}
 	}
 })
 
-export interface MorphNode extends BaseSchema<MorphDeclaration> {
+export interface MorphNode extends RawSchema<MorphDeclaration> {
 	// ensure these types are derived from MorphInner rather than those
-	// defined on BaseNode
+	// defined on RawNode
 	get in(): MorphChildNode
 	get out(): MorphChildNode
 }

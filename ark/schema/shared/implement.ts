@@ -11,21 +11,25 @@ import {
 	printable,
 	type requireKeys
 } from "@arktype/util"
-import { type BaseAttachments, BaseNode, type Node } from "../base.js"
+import { type BaseAttachments, type Node, RawNode } from "../base.js"
 import type { PropsGroupInput } from "../constraints/props/props.js"
 import type { Declaration, Inner, errorContext } from "../kinds.js"
 import type { NodeParseContext } from "../parse.js"
 import type { IntersectionInner } from "../schemas/intersection.js"
 import type {
-	BaseSchema,
+	RawSchema,
 	schemaKindOrRightOf,
 	schemaKindRightOf
 } from "../schemas/schema.js"
-import type { NodeConfig, ParsedUnknownNodeConfig, RawScope } from "../scope.js"
+import type {
+	NodeConfig,
+	ParsedUnknownNodeConfig,
+	RawSchemaScope
+} from "../scope.js"
 import type {
 	BaseErrorContext,
 	BaseMeta,
-	BaseNodeDeclaration,
+	RawNodeDeclaration,
 	parsedAttachmentsOf
 } from "./declare.js"
 import type { Disjoint } from "./disjoint.js"
@@ -153,7 +157,11 @@ type accumulateRightKinds<
 export type ConstraintIntersection<
 	lKind extends ConstraintKind,
 	rKind extends kindOrRightOf<lKind>
-> = (l: Node<lKind>, r: Node<rKind>, $: RawScope) => BaseNode | Disjoint | null
+> = (
+	l: Node<lKind>,
+	r: Node<rKind>,
+	$: RawSchemaScope
+) => RawNode | Disjoint | null
 
 export type ConstraintIntersectionMap<kind extends ConstraintKind> = evaluate<
 	{
@@ -166,7 +174,7 @@ export type ConstraintIntersectionMap<kind extends ConstraintKind> = evaluate<
 export type TypeIntersection<
 	lKind extends SchemaKind,
 	rKind extends schemaKindOrRightOf<lKind>
-> = (l: Node<lKind>, r: Node<rKind>, $: RawScope) => BaseSchema | Disjoint
+> = (l: Node<lKind>, r: Node<rKind>, $: RawSchemaScope) => RawSchema | Disjoint
 
 export type TypeIntersectionMap<kind extends SchemaKind> = {
 	[rKind in schemaKindOrRightOf<kind>]: TypeIntersection<kind, rKind>
@@ -178,13 +186,13 @@ export type IntersectionMap<kind extends NodeKind> = kind extends SchemaKind
 
 export type UnknownIntersectionMap = {
 	[k in NodeKind]?: (
-		l: BaseNode,
-		r: BaseNode,
-		$: RawScope
+		l: RawNode,
+		r: RawNode,
+		$: RawSchemaScope
 	) => UnknownIntersectionResult
 }
 
-export type UnknownIntersectionResult = BaseNode | Disjoint | null
+export type UnknownIntersectionResult = RawNode | Disjoint | null
 
 type PrecedenceByKind = {
 	[i in indexOf<OrderedNodeKinds> as OrderedNodeKinds[i]]: i
@@ -202,7 +210,7 @@ export function assertNodeKind<kind extends NodeKind>(
 	value: unknown,
 	kind: kind
 ): asserts value is Node<kind> {
-	const isNode = value instanceof BaseNode
+	const isNode = value instanceof RawNode
 	if (!isNode || value.kind !== kind)
 		throwArkError(
 			`Expected node of kind ${kind} (was ${
@@ -224,11 +232,11 @@ export const schemaKindsRightOf = <kind extends SchemaKind>(
 ): schemaKindRightOf<kind>[] =>
 	schemaKinds.slice(precedenceOfKind(kind) + 1) as never
 
-export type KeyDefinitions<d extends BaseNodeDeclaration> = {
+export type KeyDefinitions<d extends RawNodeDeclaration> = {
 	[k in keyRequiringDefinition<d>]: NodeKeyImplementation<d, k>
 }
 
-type keyRequiringDefinition<d extends BaseNodeDeclaration> = Exclude<
+type keyRequiringDefinition<d extends RawNodeDeclaration> = Exclude<
 	keyof d["normalizedDef"],
 	keyof BaseMeta
 >
@@ -246,7 +254,7 @@ export const defaultValueSerializer = (v: unknown): JsonData => {
 }
 
 export type NodeKeyImplementation<
-	d extends BaseNodeDeclaration,
+	d extends RawNodeDeclaration,
 	k extends keyof d["normalizedDef"],
 	instantiated = k extends keyof d["inner"] ? d["inner"][k] : never
 > = requireKeys<
@@ -256,7 +264,7 @@ export type NodeKeyImplementation<
 		child?: true
 		implied?: true
 		serialize?: (
-			schema: instantiated extends listable<BaseNode> | undefined
+			schema: instantiated extends listable<RawNode> | undefined
 				? ErrorMessage<`Keys with node children cannot specify a custom serializer`>
 				: instantiated
 		) => JsonData
@@ -268,12 +276,10 @@ export type NodeKeyImplementation<
 	// require parse if we can't guarantee the schema value will be valid on inner
 	| (d["normalizedDef"][k] extends instantiated ? never : "parse")
 	// require keys containing children specify it
-	| ([instantiated] extends [listable<BaseNode> | undefined]
-			? "child"
-			: never)
+	| ([instantiated] extends [listable<RawNode> | undefined] ? "child" : never)
 >
 
-interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
+interface CommonNodeImplementationInput<d extends RawNodeDeclaration> {
 	kind: d["kind"]
 	keys: KeyDefinitions<d>
 	normalize: (schema: d["def"]) => d["normalizedDef"]
@@ -281,7 +287,7 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	collapsibleKey?: keyof d["inner"]
 	reduce?: (
 		inner: d["inner"],
-		$: RawScope
+		$: RawSchemaScope
 	) => Node<d["reducibleTo"]> | Disjoint | undefined
 	construct: (
 		self: parsedAttachmentsOf<d>
@@ -289,14 +295,14 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 }
 
 export interface UnknownNodeImplementation
-	extends CommonNodeImplementationInput<BaseNodeDeclaration> {
+	extends CommonNodeImplementationInput<RawNodeDeclaration> {
 	defaults: ParsedUnknownNodeConfig
 	intersectionIsOpen: boolean
 	intersections: UnknownIntersectionMap
 	keys: Record<string, NodeKeyImplementation<any, any>>
 }
 
-export interface PrimitiveNodeDeclaration extends BaseNodeDeclaration {
+export interface PrimitiveNodeDeclaration extends RawNodeDeclaration {
 	kind: PrimitiveKind
 	attachments: BaseAttachments<this> &
 		PrimitiveAttachments<PrimitiveNodeDeclaration>
@@ -349,14 +355,14 @@ export type DerivedPrimitiveAttachments<
 	d extends PrimitiveNodeDeclaration = PrimitiveNodeDeclaration
 > = Pick<d["attachments"], "errorContext" | "traverseApply" | "compile">
 
-export type nodeImplementationOf<d extends BaseNodeDeclaration> =
+export type nodeImplementationOf<d extends RawNodeDeclaration> =
 	nodeImplementationInputOf<d> & {
 		intersections: IntersectionMap<d["kind"]>
 		intersectionIsOpen: d["intersectionIsOpen"]
 		defaults: nodeDefaultsImplementationFor<d["kind"]>
 	}
 
-export type nodeImplementationInputOf<d extends BaseNodeDeclaration> =
+export type nodeImplementationInputOf<d extends RawNodeDeclaration> =
 	CommonNodeImplementationInput<d> & {
 		intersections: IntersectionMap<d["kind"]>
 		defaults: nodeDefaultsImplementationInputFor<d["kind"]>

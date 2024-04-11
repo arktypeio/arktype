@@ -1,4 +1,4 @@
-import type { BaseSchema, writeIndivisibleMessage } from "@arktype/schema"
+import type { RawSchema, writeIndivisibleMessage } from "@arktype/schema"
 import type { ErrorMessage } from "@arktype/util"
 import type { inferAstIn } from "./infer.js"
 import type { validateAst } from "./validate.js"
@@ -10,5 +10,5 @@ export type validateDivisor<l, $, args> = inferAstIn<
 > extends infer data
 	? [data] extends [number]
 		? validateAst<l, $, args>
-		: ErrorMessage<writeIndivisibleMessage<BaseSchema<data>>>
+		: ErrorMessage<writeIndivisibleMessage<RawSchema<data>>>
 	: never

@@ -8,8 +8,8 @@ import {
 	objectKindOrDomainOf,
 	prototypeKeysOf
 } from "@arktype/util"
+import { tsKeywords } from "../api/keywords/tsKeywords.js"
 import { implementNode } from "../base.js"
-import { tsKeywords } from "../keywords/tsKeywords.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
@@ -17,7 +17,7 @@ import {
 	defaultValueSerializer,
 	derivePrimitiveAttachments
 } from "../shared/implement.js"
-import type { BaseSchema, BaseSchemaAttachments } from "./schema.js"
+import type { RawSchema, RawSchemaAttachments } from "./schema.js"
 
 export interface ProtoInner<proto extends Constructor = Constructor>
 	extends BaseMeta {
@@ -32,7 +32,7 @@ export type ProtoDef<proto extends Constructor = Constructor> =
 	| NormalizedProtoDef<proto>
 
 export interface ProtoAttachments
-	extends BaseSchemaAttachments<ProtoDeclaration>,
+	extends RawSchemaAttachments<ProtoDeclaration>,
 		PrimitiveAttachments<ProtoDeclaration> {
 	readonly serializedConstructor: string
 	readonly domain: "object"
@@ -99,4 +99,4 @@ export const protoImplementation = implementNode<ProtoDeclaration>({
 	}
 })
 
-export type ProtoNode = BaseSchema<ProtoDeclaration>
+export type ProtoNode = RawSchema<ProtoDeclaration>

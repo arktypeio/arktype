@@ -4,10 +4,10 @@ import {
 	type describeExpression,
 	throwParseError
 } from "@arktype/util"
-import { BaseNode, type Node } from "../base.js"
+import { RawNode, type Node } from "../base.js"
 import type { Prerequisite } from "../kinds.js"
-import type { BaseSchema, Schema } from "../schemas/schema.js"
-import type { BaseNodeDeclaration } from "../shared/declare.js"
+import type { RawSchema, Schema } from "../schemas/schema.js"
+import type { RawNodeDeclaration } from "../shared/declare.js"
 import type { Disjoint } from "../shared/disjoint.js"
 import type {
 	ConstraintKind,
@@ -53,11 +53,11 @@ export type writeInvalidOperandMessage<
 >} (was ${describeExpression<actual["infer"]>})`
 
 export interface ConstraintAttachments {
-	impliedBasis: BaseSchema | null
+	impliedBasis: RawSchema | null
 	impliedSiblings?: array<BaseConstraint> | null
 }
 
-export interface BaseConstraintDeclaration extends BaseNodeDeclaration {
+export interface BaseConstraintDeclaration extends RawNodeDeclaration {
 	kind: ConstraintKind
 	attachments: ConstraintAttachments
 }
@@ -65,7 +65,7 @@ export interface BaseConstraintDeclaration extends BaseNodeDeclaration {
 export class BaseConstraint<
 	/** @ts-expect-error allow instantiation assignment to the base type */
 	out d extends BaseConstraintDeclaration = BaseConstraintDeclaration
-> extends BaseNode<d> {
+> extends RawNode<d> {
 	readonly [arkKind] = "constraint"
 
 	intersect<r extends BaseConstraint>(

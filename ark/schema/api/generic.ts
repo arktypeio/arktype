@@ -1,10 +1,10 @@
 import { Callable, type conform, flatMorph, type repeat } from "@arktype/util"
-import type { inferSchema } from "./api/inference.js"
-import type { SchemaDef } from "./base.js"
+import type { SchemaDef } from "../base.js"
+import type { RawSchema, Schema } from "../schemas/schema.js"
+import type { RawSchemaScope } from "../scope.js"
+import { arkKind } from "../shared/utils.js"
+import type { inferSchema } from "./inference.js"
 import { keywordNodes } from "./keywords/keywords.js"
-import type { BaseSchema, Schema } from "./schemas/schema.js"
-import type { RawScope } from "./scope.js"
-import { arkKind } from "./shared/utils.js"
 
 export type GenericNodeInstantiation<
 	params extends string[] = string[],
@@ -31,8 +31,6 @@ export const validateUninstantiatedGenericNode = (
 	return g
 }
 
-const s: WeakSet<object> = new Set()
-
 // Comparing to Generic directly doesn't work well, so we compare to only its props
 export interface GenericProps<
 	params extends string[] = string[],
@@ -42,7 +40,7 @@ export interface GenericProps<
 	[arkKind]: "generic"
 	params: params
 	def: def
-	$: RawScope<$>
+	$: RawSchemaScope<$>
 }
 
 export class GenericSchema<
@@ -58,10 +56,10 @@ export class GenericSchema<
 	constructor(
 		public params: params,
 		public def: def,
-		public $: RawScope<$>
+		public $: RawSchemaScope<$>
 	) {
 		super((...args: SchemaDef[]) => {
-			const argNodes: Record<string, BaseSchema> = flatMorph(
+			const argNodes: Record<string, RawSchema> = flatMorph(
 				params,
 				(i, param) => [param, $.schema(args[i])]
 			) as never

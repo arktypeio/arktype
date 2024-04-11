@@ -8,8 +8,8 @@ import type { ArkTypeError } from "../shared/errors.js"
 import { type SchemaKind, schemaKindsRightOf } from "../shared/implement.js"
 import type { Discriminant } from "./discriminate.js"
 import {
-	type BaseSchema,
-	type BaseSchemaAttachments,
+	type RawSchema,
+	type RawSchemaAttachments,
 	defineRightwardIntersections,
 	type schemaKindRightOf
 } from "./schema.js"
@@ -52,7 +52,7 @@ export type UnionDeclaration = declareNode<{
 }>
 
 export interface UnionAttachments
-	extends BaseSchemaAttachments<UnionDeclaration> {
+	extends RawSchemaAttachments<UnionDeclaration> {
 	discriminant: Discriminant | null
 	isBoolean: boolean
 }
@@ -234,7 +234,7 @@ export const unionImplementation = implementNode<UnionDeclaration>({
 					js.return(false)
 				}
 			},
-			rawKeyOf(): BaseSchema {
+			rawKeyOf(): RawSchema {
 				return branches.reduce(
 					(result, branch) =>
 						result.intersectSatisfiable(branch.rawKeyOf()),
@@ -250,7 +250,7 @@ export const unionImplementation = implementNode<UnionDeclaration>({
 	}
 })
 
-export type UnionNode = BaseSchema<UnionDeclaration>
+export type UnionNode = RawSchema<UnionDeclaration>
 
 const describeBranches = (descriptions: string[]) => {
 	if (descriptions.length === 0) {
@@ -355,9 +355,9 @@ export const intersectBranches = (
 	// If the corresponding r branch is identified as a subtype of an l branch, the
 	// value at rIndex is set to null so we can avoid including previous/future
 	// inersections in the reduced result.
-	const batchesByR: (BaseSchema[] | null)[] = r.map(() => [])
+	const batchesByR: (RawSchema[] | null)[] = r.map(() => [])
 	for (let lIndex = 0; lIndex < l.length; lIndex++) {
-		let candidatesByR: { [rIndex: number]: BaseSchema } = {}
+		let candidatesByR: { [rIndex: number]: RawSchema } = {}
 		for (let rIndex = 0; rIndex < r.length; rIndex++) {
 			if (batchesByR[rIndex] === null) {
 				// rBranch is a subtype of an lBranch and

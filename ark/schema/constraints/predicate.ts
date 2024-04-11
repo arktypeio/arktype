@@ -1,5 +1,5 @@
 import { compileSerializedValue } from "@arktype/util"
-import { type BaseAttachments, type BaseNode, implementNode } from "../base.js"
+import { type BaseAttachments, type RawNode, implementNode } from "../base.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import type { PrimitiveAttachments } from "../shared/implement.js"
 import type { TraversalContext } from "../shared/traversal.js"

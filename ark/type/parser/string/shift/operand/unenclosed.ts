@@ -1,7 +1,7 @@
 import {
-	BaseSchema,
+	RawSchema,
 	type GenericProps,
-	type BaseSchema,
+	type RawSchema,
 	type SchemaModule,
 	type ambient,
 	arkKind,
@@ -73,7 +73,7 @@ export const parseGenericInstantiation = (
 	name: string,
 	g: Generic,
 	s: DynamicState
-): BaseSchema => {
+): RawSchema => {
 	s.scanner.shiftUntilNonWhitespace()
 	const lookahead = s.scanner.shift()
 	if (lookahead !== "<") {
@@ -114,7 +114,7 @@ export type parseGenericInstantiation<
 		: never
 	: state.error<writeInvalidGenericArgsMessage<name, g["params"], []>>
 
-const unenclosedToNode = (s: DynamicState, token: string): BaseSchema =>
+const unenclosedToNode = (s: DynamicState, token: string): RawSchema =>
 	maybeParseReference(s, token) ??
 	maybeParseUnenclosedLiteral(s, token) ??
 	s.error(
@@ -126,10 +126,10 @@ const unenclosedToNode = (s: DynamicState, token: string): BaseSchema =>
 const maybeParseReference = (
 	s: DynamicState,
 	token: string
-): BaseSchema | undefined => {
+): RawSchema | undefined => {
 	if (s.ctx.args?.[token]) return s.ctx.args[token]
 	const resolution = s.ctx.$.maybeResolve(token)
-	if (resolution instanceof BaseSchema) return resolution
+	if (resolution instanceof RawSchema) return resolution
 	if (resolution === undefined) return
 	if (hasArkKind(resolution, "generic"))
 		return parseGenericInstantiation(token, resolution as Generic, s)
@@ -139,7 +139,7 @@ const maybeParseReference = (
 const maybeParseUnenclosedLiteral = (
 	s: DynamicState,
 	token: string
-): BaseSchema | undefined => {
+): RawSchema | undefined => {
 	const maybeNumber = tryParseNumber(token, { strict: true })
 	if (maybeNumber !== undefined) {
 		return s.ctx.$.node("unit", { unit: maybeNumber })

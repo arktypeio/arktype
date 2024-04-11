@@ -8,7 +8,7 @@ import {
 import type { BaseAttachments, Node } from "../../base.js"
 import type {
 	BaseMeta,
-	BaseNodeDeclaration,
+	RawNodeDeclaration,
 	parsedAttachmentsOf
 } from "../../shared/declare.js"
 import {
@@ -21,7 +21,7 @@ import {
 import type { Comparator } from "../ast.js"
 import type { ConstraintAttachments } from "../constraint.js"
 
-export interface BaseRangeDeclaration extends BaseNodeDeclaration {
+export interface BaseRangeDeclaration extends RawNodeDeclaration {
 	kind: RangeKind
 	inner: BaseRangeInner
 	normalizedDef: BaseNormalizedRangeSchema

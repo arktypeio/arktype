@@ -1,4 +1,4 @@
-import type { BaseSchema } from "@arktype/schema"
+import type { RawSchema } from "@arktype/schema"
 import {
 	type ErrorMessage,
 	throwInternalError,
@@ -40,7 +40,7 @@ export type BaseCompletions<$, args, otherSuggestions extends string = never> =
 	| StringifiablePrefixOperator
 	| otherSuggestions
 
-export const fullStringParse = (s: DynamicState): BaseSchema => {
+export const fullStringParse = (s: DynamicState): RawSchema => {
 	s.parseOperand()
 	const result = parseUntilFinalizer(s).root
 	if (!result) {

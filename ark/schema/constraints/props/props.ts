@@ -7,8 +7,8 @@ import {
 } from "@arktype/util"
 import type { Node } from "../../base.js"
 import type { IntersectionNode } from "../../schemas/intersection.js"
-import type { BaseSchema } from "../../schemas/schema.js"
-import type { RawScope } from "../../scope.js"
+import type { RawSchema } from "../../schemas/schema.js"
+import type { RawSchemaScope } from "../../scope.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { PropKind } from "../../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/traversal.js"
@@ -26,7 +26,7 @@ export type PropsGroupInput = Pick<
 export class PropsGroup extends DynamicBase<PropsGroupInput> {
 	constructor(
 		public inner: PropsGroupInput,
-		public $: RawScope
+		public $: RawSchemaScope
 	) {
 		super(inner)
 	}
@@ -46,8 +46,8 @@ export class PropsGroup extends DynamicBase<PropsGroupInput> {
 	readonly expression = describeProps(this, "expression")
 	readonly literalKeys = literalPropKeysOf(this.all)
 
-	private keyofCache: BaseSchema | undefined
-	rawKeyOf(): BaseSchema {
+	private keyofCache: RawSchema | undefined
+	rawKeyOf(): RawSchema {
 		if (!this.keyofCache) {
 			let branches = this.$.units(this.literalKeys).branches
 			this.index?.forEach(({ key }) => {

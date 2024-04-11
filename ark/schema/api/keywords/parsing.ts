@@ -4,9 +4,9 @@ import {
 	wellFormedNumberMatcher
 } from "@arktype/util"
 import type { SchemaModule } from "../module.js"
-import type { Out } from "../schemas/morph.js"
 import { root, schemaScope } from "../scope.js"
 import { parsedDate } from "./utils/date.js"
+import type { Out } from "../../schemas/morph.js"
 
 const number = root.defineSchema({
 	in: {

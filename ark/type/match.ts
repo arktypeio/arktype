@@ -1,5 +1,5 @@
 import type {
-	BaseSchema,
+	RawSchema,
 	Morph,
 	Narrowed,
 	distillOut,
@@ -174,7 +174,7 @@ export type MatchInvocation<ctx extends MatchInvocationContext> = <
 
 export const createMatchParser = <$>($: Scope): MatchParser<$> => {
 	const matchParser = (isRestricted: boolean) => {
-		const handledCases: { when: BaseSchema; then: Morph }[] = []
+		const handledCases: { when: RawSchema; then: Morph }[] = []
 		let defaultCase: ((x: unknown) => unknown) | null = null
 
 		const parser = {
