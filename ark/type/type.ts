@@ -1,11 +1,15 @@
 import {
 	type BaseMeta,
 	type Morph,
+	type NodeDef,
 	type Out,
 	type Predicate,
+	type PrimitiveConstraintKind,
 	RawSchema,
 	type Schema,
 	type ambient,
+	type constrain,
+	type constraintKindOf,
 	type distillConstrainableIn,
 	type distillConstrainableOut,
 	type distillIn,
@@ -15,11 +19,7 @@ import {
 	type inferMorphOut,
 	type inferNarrow
 } from "@arktype/schema"
-import type { Constructor, Hkt, array, conform } from "@arktype/util"
-import type { constrain } from "../schema/constraints/ast.js"
-import type { PrimitiveConstraintKind } from "../schema/constraints/constraint.js"
-import type { NodeDef } from "../schema/kinds.js"
-import type { constraintKindOf } from "../schema/schemas/intersection.js"
+import type { Constructor, array, conform } from "@arktype/util"
 import type { Generic, validateParameterString } from "./generic.js"
 import type {
 	inferDefinition,

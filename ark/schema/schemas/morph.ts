@@ -18,12 +18,12 @@ import { Disjoint } from "../shared/disjoint.js"
 import type { ArkResult, ArkTypeError } from "../shared/errors.js"
 import { basisKinds, implementNode } from "../shared/implement.js"
 import type { TraversalContext } from "../shared/traversal.js"
-import {
-	type RawSchema,
-	type RawSchemaAttachments,
-	defineRightwardIntersections,
-	type schemaKindRightOf
+import type {
+	RawSchema,
+	RawSchemaAttachments,
+	schemaKindRightOf
 } from "./schema.js"
+import { defineRightwardIntersections } from "./utils.js"
 
 export type MorphChildKind = schemaKindRightOf<"morph">
 

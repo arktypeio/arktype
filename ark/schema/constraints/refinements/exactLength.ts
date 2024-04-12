@@ -6,7 +6,8 @@ import {
 	derivePrimitiveAttachments,
 	implementNode
 } from "../../shared/implement.js"
-import type { ConstraintAttachments, RawConstraint } from "../constraint.js"
+import type { RawConstraint } from "../constraint.js"
+import type { ConstraintAttachments } from "../util.js"
 import type { LengthBoundableData } from "./range.js"
 
 export interface ExactLengthInner extends BaseMeta {

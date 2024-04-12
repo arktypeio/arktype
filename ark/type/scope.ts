@@ -4,11 +4,14 @@ import {
 	type NodeParseOptions,
 	type PreparsedNodeResolution,
 	type RawSchema,
+	type RawSchemaResolutions,
+	RawSchemaScope,
 	type SchemaScope,
 	type ambient,
-	arkKind,
+	type arkKind,
 	type destructuredExportContext,
-	type destructuredImportContext
+	type destructuredImportContext,
+	type exportedNameOf
 } from "@arktype/schema"
 import {
 	type Dict,
@@ -18,11 +21,6 @@ import {
 	type show,
 	throwParseError
 } from "@arktype/util"
-import {
-	type RawSchemaResolutions,
-	RawSchemaScope,
-	type exportedNameOf
-} from "../schema/scope.js"
 import type { type } from "./ark.js"
 import { Generic } from "./generic.js"
 import { type MatchParser, createMatchParser } from "./match.js"
@@ -223,18 +221,13 @@ export class RawScope<
 
 	match: MatchParser<$> = createMatchParser(this as never) as never
 
-	declare() {
+	declare(): { type: RawScope["type"] } {
 		return { type: this.type }
 	}
 
-	define(def: unknown) {
+	define(def: unknown): unknown {
 		return def
 	}
-
-	// // TODO: name?
-	// get<name extends exportedNameOf<$>>(name: name): Type<$[name], $> {
-	// 	return this.export()[name] as never
-	// }
 
 	parse(def: unknown, ctx: ParseContext): RawSchema {
 		if (typeof def === "string") {

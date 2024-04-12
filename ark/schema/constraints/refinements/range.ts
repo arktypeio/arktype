@@ -20,7 +20,7 @@ import {
 	derivePrimitiveAttachments
 } from "../../shared/implement.js"
 import type { Comparator } from "../ast.js"
-import type { ConstraintAttachments } from "../constraint.js"
+import type { ConstraintAttachments } from "../util.js"
 
 export interface BaseRangeDeclaration extends RawNodeDeclaration {
 	kind: RangeKind

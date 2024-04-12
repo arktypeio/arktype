@@ -19,7 +19,7 @@ import {
 	PropsGroup
 } from "../constraints/props/props.js"
 import type { Inner, MutableInner, NodeDef, Prerequisite } from "../kinds.js"
-import { type Constraint, type Node, RawNode } from "../node.js"
+import type { Constraint, Node } from "../node.js"
 import type { NodeParseContext } from "../parse.js"
 import type { RawSchemaScope } from "../scope.js"
 import { type BaseMeta, type declareNode, metaKeys } from "../shared/declare.js"
@@ -35,13 +35,11 @@ import {
 	implementNode,
 	propKeys
 } from "../shared/implement.js"
+import { hasArkKind, isNode } from "../shared/utils.js"
 import type { DomainDef, DomainNode } from "./domain.js"
 import type { ProtoDef, ProtoNode } from "./proto.js"
-import {
-	RawSchema,
-	type RawSchemaAttachments,
-	defineRightwardIntersections
-} from "./schema.js"
+import type { RawSchema, RawSchemaAttachments } from "./schema.js"
+import { defineRightwardIntersections } from "./utils.js"
 
 export type IntersectionBasisKind = "domain" | "proto"
 
@@ -109,9 +107,9 @@ const intersectIntersections = (
 	$: RawSchemaScope
 ): RawSchema | Disjoint => {
 	// avoid treating adding instance keys as keys of lRoot, rRoot
-	if (reduced instanceof RawSchema && reduced.hasKind("intersection"))
+	if (hasArkKind(reduced, "schema") && reduced.hasKind("intersection"))
 		return intersectIntersections(reduced.inner, raw, $)
-	if (raw instanceof RawSchema && raw.hasKind("intersection"))
+	if (hasArkKind(raw, "schema") && raw.hasKind("intersection"))
 		return intersectIntersections(reduced, raw.inner, $)
 
 	const [reducedConstraintsInner, reducedRoot] = splitByKeys(
@@ -305,7 +303,7 @@ export const intersectionImplementation =
 				compile(js) {
 					if (js.traversalKind === "Allows") {
 						this.traversables.forEach((traversable) =>
-							traversable instanceof RawNode ?
+							isNode(traversable) ?
 								js.check(traversable)
 							:	traversable.compile(js)
 						)

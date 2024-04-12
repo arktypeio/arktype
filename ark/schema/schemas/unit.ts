@@ -15,11 +15,8 @@ import {
 	derivePrimitiveAttachments,
 	implementNode
 } from "../shared/implement.js"
-import {
-	type RawSchema,
-	type RawSchemaAttachments,
-	defineRightwardIntersections
-} from "./schema.js"
+import type { RawSchema, RawSchemaAttachments } from "./schema.js"
+import { defineRightwardIntersections } from "./utils.js"
 
 export type UnitDef<value = unknown> = UnitInner<value>
 

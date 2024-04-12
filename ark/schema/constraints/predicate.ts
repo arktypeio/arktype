@@ -7,7 +7,8 @@ import {
 } from "../shared/implement.js"
 import type { TraversalContext } from "../shared/traversal.js"
 import type { constrain, of } from "./ast.js"
-import type { ConstraintAttachments, RawConstraint } from "./constraint.js"
+import type { RawConstraint } from "./constraint.js"
+import type { ConstraintAttachments } from "./util.js"
 
 export interface PredicateInner<rule extends Predicate<any> = Predicate<any>>
 	extends BaseMeta {

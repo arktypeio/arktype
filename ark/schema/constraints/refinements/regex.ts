@@ -5,7 +5,8 @@ import {
 	derivePrimitiveAttachments,
 	implementNode
 } from "../../shared/implement.js"
-import type { ConstraintAttachments, RawConstraint } from "../constraint.js"
+import type { RawConstraint } from "../constraint.js"
+import type { ConstraintAttachments } from "../util.js"
 
 export interface RegexInner extends BaseMeta {
 	readonly rule: string

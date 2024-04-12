@@ -10,12 +10,12 @@ import {
 	schemaKindsRightOf
 } from "../shared/implement.js"
 import type { Discriminant } from "./discriminate.js"
-import {
-	defineRightwardIntersections,
-	type RawSchema,
-	type RawSchemaAttachments,
-	type schemaKindRightOf
+import type {
+	RawSchema,
+	RawSchemaAttachments,
+	schemaKindRightOf
 } from "./schema.js"
+import { defineRightwardIntersections } from "./utils.js"
 
 export type UnionChildKind = schemaKindRightOf<"union">
 

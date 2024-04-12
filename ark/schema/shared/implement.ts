@@ -15,7 +15,7 @@ import {
 } from "@arktype/util"
 import type { PropsGroupInput } from "../constraints/props/props.js"
 import type { Declaration, Inner, errorContext } from "../kinds.js"
-import type { Node, NodeAttachments, RawNode } from "../node.js"
+import type { Node, RawNode } from "../node.js"
 import type { NodeParseContext } from "../parse.js"
 import type { IntersectionInner } from "../schemas/intersection.js"
 import type {

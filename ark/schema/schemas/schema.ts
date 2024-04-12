@@ -1,14 +1,9 @@
-import {
-	type Callable,
-	type Json,
-	type conform,
-	flatMorph
-} from "@arktype/util"
+import type { Callable, Json, conform } from "@arktype/util"
 import type { constrain } from "../constraints/ast.js"
 import {
 	type PrimitiveConstraintKind,
 	throwInvalidOperandError
-} from "../constraints/constraint.js"
+} from "../constraints/util.js"
 import type { inferSchema } from "../inference.js"
 import type { NodeDef, reducibleKindOf } from "../kinds.js"
 import { type Node, RawNode, type SchemaDef } from "../node.js"
@@ -16,13 +11,11 @@ import type { SchemaScope } from "../scope.js"
 import type { BaseMeta, RawNodeDeclaration } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { ArkResult } from "../shared/errors.js"
-import {
-	type NodeAttachments,
-	type NodeKind,
-	type SchemaKind,
-	type TypeIntersection,
-	type kindRightOf,
-	schemaKindsRightOf
+import type {
+	NodeAttachments,
+	NodeKind,
+	SchemaKind,
+	kindRightOf
 } from "../shared/implement.js"
 import type { inferIntersection } from "../shared/intersections.js"
 import {
@@ -40,15 +33,6 @@ import type {
 	inferMorphOut
 } from "./morph.js"
 import type { UnionChildKind } from "./union.js"
-
-export const defineRightwardIntersections = <kind extends SchemaKind>(
-	kind: kind,
-	implementation: TypeIntersection<kind, schemaKindRightOf<kind>>
-): { [k in schemaKindRightOf<kind>]: TypeIntersection<kind, k> } =>
-	flatMorph(schemaKindsRightOf(kind), (i, kind) => [
-		kind,
-		implementation
-	]) as never
 
 export interface RawSchemaDeclaration extends RawNodeDeclaration {
 	kind: SchemaKind
@@ -188,7 +172,7 @@ export class RawSchema<
 			this.$.node("intersection", {
 				[kind]: constraint
 			})
-		) as never
+		)
 	}
 }
 

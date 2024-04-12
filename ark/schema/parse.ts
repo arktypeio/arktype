@@ -13,7 +13,7 @@ import {
 	throwParseError
 } from "@arktype/util"
 import { nodeImplementationsByKind } from "./kinds.js"
-import { RawNode, type UnknownAttachments } from "./node.js"
+import { RawNode } from "./node.js"
 import { RawSchema, type UnknownSchema } from "./schemas/schema.js"
 import type { RawSchemaScope } from "./scope.js"
 import type { RawNodeDeclaration } from "./shared/declare.js"
@@ -22,6 +22,7 @@ import {
 	type KeyDefinitions,
 	type NodeKind,
 	type SchemaKind,
+	type UnknownAttachments,
 	defaultValueSerializer,
 	discriminatingIntersectionKeys,
 	isNodeKind,

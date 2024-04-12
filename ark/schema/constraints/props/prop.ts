@@ -12,7 +12,8 @@ import {
 	type NodeAttachments,
 	type SchemaKind
 } from "../../shared/implement.js"
-import type { ConstraintAttachments, RawConstraint } from "../constraint.js"
+import type { ConstraintAttachments } from "../util.js"
+import type { RawConstraint } from "../constraint.js"
 
 export interface PropDef extends BaseMeta {
 	readonly key: Key

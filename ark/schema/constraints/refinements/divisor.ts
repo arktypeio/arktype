@@ -6,11 +6,11 @@ import {
 	derivePrimitiveAttachments,
 	implementNode
 } from "../../shared/implement.js"
+import type { RawConstraint } from "../constraint.js"
 import {
 	type ConstraintAttachments,
-	type RawConstraint,
 	writeInvalidOperandMessage
-} from "../constraint.js"
+} from "../util.js"
 
 export interface DivisorInner extends BaseMeta {
 	readonly rule: number

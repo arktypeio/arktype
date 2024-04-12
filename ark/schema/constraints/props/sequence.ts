@@ -18,9 +18,10 @@ import {
 	type NodeKeyImplementation,
 	type SchemaKind
 } from "../../shared/implement.js"
-import type { ConstraintAttachments, RawConstraint } from "../constraint.js"
+import type { RawConstraint } from "../constraint.js"
 import type { MaxLengthNode } from "../refinements/maxLength.js"
 import type { MinLengthNode } from "../refinements/minLength.js"
+import type { ConstraintAttachments } from "../util.js"
 
 export interface NormalizedSequenceDef extends BaseMeta {
 	readonly prefix?: array<SchemaDef>

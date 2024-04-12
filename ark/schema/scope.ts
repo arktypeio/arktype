@@ -373,6 +373,11 @@ export class RawSchemaScope<
 			]) as never
 		) as never
 	}
+
+	// // TODO: name?
+	// get<name extends exportedNameOf<$>>(name: name): Type<$[name], $> {
+	// 	return this.export()[name] as never
+	// }
 }
 
 export type validateAliases<aliases> = {
