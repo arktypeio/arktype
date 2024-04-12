@@ -11,7 +11,7 @@ import {
 	type requireKeys,
 	type show
 } from "@arktype/util"
-import { type BaseAttachments, type Node, RawNode } from "../base.js"
+import type { BaseAttachments, Node, RawNode } from "../base.js"
 import type { PropsGroupInput } from "../constraints/props/props.js"
 import type { Declaration, Inner, errorContext } from "../kinds.js"
 import type { NodeParseContext } from "../parse.js"
@@ -34,6 +34,7 @@ import type {
 } from "./declare.js"
 import type { Disjoint } from "./disjoint.js"
 import { throwArkError } from "./errors.js"
+import { isNode } from "./utils.js"
 
 export const basisKinds = ["unit", "proto", "domain"] as const
 
@@ -99,9 +100,7 @@ export const nodeKinds = [
 ] as const satisfies NodeKind[]
 
 export type OpenNodeKind = {
-	[k in NodeKind]: Declaration<k>["intersectionIsOpen"] extends true
-		? k
-		: never
+	[k in NodeKind]: Declaration<k>["intersectionIsOpen"] extends true ? k : never
 }[NodeKind]
 
 export type ClosedNodeKind = Exclude<NodeKind, OpenNodeKind>
@@ -210,11 +209,11 @@ export function assertNodeKind<kind extends NodeKind>(
 	value: unknown,
 	kind: kind
 ): asserts value is Node<kind> {
-	const isNode = value instanceof RawNode
-	if (!isNode || value.kind !== kind)
+	const valueIsNode = isNode(value)
+	if (!valueIsNode || value.kind !== kind)
 		throwArkError(
 			`Expected node of kind ${kind} (was ${
-				isNode ? `${value.kind} node` : printable(value)
+				valueIsNode ? `${value.kind} node` : printable(value)
 			})`
 		)
 }
@@ -330,9 +329,7 @@ export const derivePrimitiveAttachments = <
 				ctx.error(errorContext as never)
 			}
 		},
-		compile(js) {
-			js.compilePrimitive(self as never)
-		}
+		compile: (js) => js.compilePrimitive(self as never)
 	} satisfies DerivedPrimitiveAttachments) as never
 }
 

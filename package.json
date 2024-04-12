@@ -27,8 +27,9 @@
 		"testRepo": "pnpm test && cd ./ark/test && pnpm test && pnpm testTsVersions",
 		"testTsVersions": "tsx ./ark/repo/testTsVersions.ts",
 		"typecheck": "tsc --noEmit",
-		"lint": "biome check .",
-		"format": "biome format --write .",
+		"lint": "eslint --max-warnings=0 .",
+		"format": "prettier --write --ignore-path ./ark/repo/.prettierignore .",
+		"checkFormat": "prettier --check --ignore-path ./ark/repo/.prettierignore .",
 		"knip": "knip",
 		"ci:publish": "changeset publish",
 		"ci:version": "tsx ./ark/repo/updateVersions.ts"
@@ -40,10 +41,20 @@
 		"@changesets/changelog-github": "0.5.0",
 		"@changesets/cli": "2.27.1",
 		"@types/mocha": "10.0.6",
-		"@types/node": "20.12.5",
-		"@biomejs/biome": "1.6.4",
+		"@types/node": "20.12.7",
+		"eslint": "8.57.0",
+		"eslint-config-prettier": "9.1.0",
+		"eslint-define-config": "2.1.0",
+		"eslint-import-resolver-typescript": "3.6.1",
+		"eslint-plugin-import": "2.29.1",
+		"eslint-plugin-mdx": "3.1.5",
+		"eslint-plugin-only-warn": "1.1.0",
+		"eslint-plugin-prefer-arrow-functions": "3.3.2",
+		"eslint-plugin-unused-imports": "3.1.0",
+		"@typescript-eslint/eslint-plugin": "7.6.0",
+		"@typescript-eslint/parser": "7.6.0",
 		"c8": "9.1.0",
-		"knip": "5.7.2",
+		"knip": "5.9.4",
 		"mocha": "10.4.0",
 		"tsx": "4.7.2",
 		"typescript": "5.4.2",
@@ -53,17 +64,31 @@
 	},
 	"mocha": {
 		"//": "IF YOU UPDATE THE MOCHA CONFIG HERE, PLEASE ALSO UPDATE ark/repo/mocha.jsonc AND .vscode/settings.json",
-		"spec": ["**/__tests__/**/*.test.*"],
+		"spec": [
+			"**/__tests__/**/*.test.*"
+		],
 		"ignore": "**/node_modules/**/*",
-		"node-option": ["import=tsx"],
+		"node-option": [
+			"import=tsx"
+		],
 		"require": "./ark/repo/mocha.fixtures.ts"
 	},
 	"c8": {
 		"checkCoverage": true,
 		"lines": 96,
 		"src": "./src",
-		"exclude": ["__tests__/**"],
+		"exclude": [
+			"__tests__/**"
+		],
 		"extension": ".ts",
 		"reporter": "lcovonly"
+	},
+	"prettier": {
+		"useTabs": true,
+		"semi": false,
+		"trailingComma": "none"
+	},
+	"eslintConfig": {
+		"extends": "./ark/repo/.eslintrc.cjs"
 	}
 }

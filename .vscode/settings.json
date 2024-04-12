@@ -1,22 +1,24 @@
 {
-	"editor.defaultFormatter": "biomejs.biome",
-	"[javascript]": {
-		"editor.defaultFormatter": "biomejs.biome"
-	},
-	"editor.codeActionsOnSave": {
-		// disabling this for now as it causes a noticeable delay on save.
-		// instead, it can be applied via a key bound action
-		// "quickfix.biome": "explicit",
-		"source.organizeImports.biome": "explicit"
-	},
+	"editor.defaultFormatter": "esbenp.prettier-vscode",
+	"editor.codeActionsOnSave": [
+		"editor.formatOnSave",
+		"source.fixAll.eslint",
+		"source.sortImports"
+	],
+	"eslint.codeActionsOnSave.rules": [
+		"object-shorthand",
+		"@typescript-eslint/consistent-type-imports",
+		"import/no-duplicates",
+		"@typescript-eslint/no-import-type-side-effects"
+	],
 	"typescript.preferences.preferTypeOnlyAutoImports": true,
 	"typescript.preferences.autoImportFileExcludePatterns": [
 		"out",
 		// too many overlapping names, easy to import in schema/arktype where we don't want it
 		// should just import as * as ts when we need it in attest
 		"typescript",
-		"./ark/type/main.ts"
-		// "./ark/schema/main.ts"
+		"./ark/type/main.ts",
+		"./ark/schema/main.ts"
 	],
 	"typescript.tsserver.experimental.enableProjectDiagnostics": true,
 	// IF YOU UPDATE THE MOCHA CONFIG HERE, PLEASE ALSO UPDATE package.json/mocha AND ark/repo/mocha.jsonc

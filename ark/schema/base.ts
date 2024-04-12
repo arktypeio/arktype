@@ -15,6 +15,7 @@ import {
 	printable,
 	throwError
 } from "@arktype/util"
+import type { RawConstraint } from "./constraints/constraint.js"
 import type { PredicateNode } from "./constraints/predicate.js"
 import type { IndexNode } from "./constraints/props/index.js"
 import type { PropNode } from "./constraints/props/prop.js"
@@ -23,12 +24,11 @@ import type { DivisorNode } from "./constraints/refinements/divisor.js"
 import type { BoundNodesByKind } from "./constraints/refinements/kinds.js"
 import type { RegexNode } from "./constraints/refinements/regex.js"
 import type { Inner, NodeDef, reducibleKindOf } from "./kinds.js"
-import type { OpenNodeKind, RawConstraint, RawSchema } from "./main.js"
 import type { DomainNode } from "./schemas/domain.js"
 import type { IntersectionNode } from "./schemas/intersection.js"
 import type { MorphNode } from "./schemas/morph.js"
 import type { ProtoNode } from "./schemas/proto.js"
-import type { Schema } from "./schemas/schema.js"
+import type { RawSchema, Schema } from "./schemas/schema.js"
 import type { UnionNode } from "./schemas/union.js"
 import type { UnitNode } from "./schemas/unit.js"
 import type { RawSchemaScope } from "./scope.js"
@@ -43,6 +43,7 @@ import type { ArkResult } from "./shared/errors.js"
 import {
 	type BasisKind,
 	type NodeKind,
+	type OpenNodeKind,
 	type PropKind,
 	type RefinementKind,
 	type SchemaKind,
@@ -98,7 +99,7 @@ export const implementNode = <d extends RawNodeDeclaration = never>(
 			"description" in ctx
 				? (ctx.description as string)
 				: // TODO: does passing ctx here work? or will some expect node?
-					implementation.defaults.description(ctx as never)
+				  implementation.defaults.description(ctx as never)
 		implementation.defaults.actual ??= (data) => printable(data)
 		implementation.defaults.problem ??= (ctx) =>
 			`must be ${ctx.expected}${ctx.actual ? ` (was ${ctx.actual})` : ""}`
@@ -145,29 +146,22 @@ export class RawNode<
 			this.name in this.referencesByName
 				? this.referencesByName
 				: { ...this.referencesByName, [this.name]: this as never }
-		this.contributesReferences = Object.values(
-			this.contributesReferencesByName
-		)
+		this.contributesReferences = Object.values(this.contributesReferencesByName)
 	}
 
-	protected readonly impl: UnknownNodeImplementation = (
-		this.constructor as any
-	).implementation
+	protected readonly impl: UnknownNodeImplementation = (this.constructor as any)
+		.implementation
 	readonly includesMorph: boolean =
-		this.kind === "morph" ||
-		this.children.some((child) => child.includesMorph)
+		this.kind === "morph" || this.children.some((child) => child.includesMorph)
 	readonly includesContextDependentPredicate: boolean =
 		// if a predicate accepts exactly one arg, we can safely skip passing context
 		(this.hasKind("predicate") && this.inner.predicate.length !== 1) ||
 		this.children.some((child) => child.includesContextDependentPredicate)
 	readonly referencesByName: Record<string, RawNode> = this.children.reduce(
-		(result, child) =>
-			Object.assign(result, child.contributesReferencesByName),
+		(result, child) => Object.assign(result, child.contributesReferencesByName),
 		{}
 	)
-	readonly references: readonly RawNode[] = Object.values(
-		this.referencesByName
-	)
+	readonly references: readonly RawNode[] = Object.values(this.referencesByName)
 	readonly contributesReferencesByName: Record<string, RawNode>
 	readonly contributesReferences: readonly RawNode[]
 	readonly precedence = precedenceOfKind(this.kind)
@@ -206,7 +200,7 @@ export class RawNode<
 		return this(data)
 	}
 
-	#inCache?: RawNode
+	#inCache?: RawNode;
 	get in(): RawNode {
 		this.#inCache ??= this.#getIo("in")
 		return this.#inCache as never
@@ -324,12 +318,12 @@ export class RawNode<
 		let result =
 			implementation === undefined
 				? // should be two ConstraintNodes that have no relation
-					// this could also happen if a user directly intersects a Type and a ConstraintNode,
-					// but that is not allowed by the external function signature
-					null
+				  // this could also happen if a user directly intersects a Type and a ConstraintNode,
+				  // but that is not allowed by the external function signature
+				  null
 				: leftmostKind === this.kind
-					? implementation(this, r, this.$)
-					: implementation(r, this, this.$)
+				? implementation(this, r, this.$)
+				: implementation(r, this, this.$)
 
 		if (result instanceof RawNode) {
 			// if the result equals one of the operands, preserve its metadata by
@@ -353,18 +347,14 @@ export class RawNode<
 	): narrowed {
 		return (
 			this.firstReference(filter) ??
-			throwError(
-				`${this.name} had no references matching predicate ${filter}`
-			)
+			throwError(`${this.name} had no references matching predicate ${filter}`)
 		)
 	}
 
 	firstReferenceOfKind<kind extends NodeKind>(
 		kind: kind
 	): Node<kind> | undefined {
-		return this.firstReference(
-			(node): node is Node<kind> => node.kind === kind
-		)
+		return this.firstReference((node): node is Node<kind> => node.kind === kind)
 	}
 
 	firstReferenceOfKindOrThrow<kind extends NodeKind>(kind: kind): Node<kind> {
@@ -388,11 +378,8 @@ export class RawNode<
 				this.impl.keys[k].child
 					? isArray(v)
 						? v.map((node) =>
-								(node as RawNode).transform(
-									mapper,
-									shouldTransform
-								)
-							)
+								(node as RawNode).transform(mapper, shouldTransform)
+						  )
 						: (v as RawNode).transform(mapper, shouldTransform)
 					: v
 			]
