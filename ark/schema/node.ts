@@ -1,10 +1,8 @@
 import {
 	Callable,
 	type Dict,
-	type Entry,
 	type Guardable,
 	type Json,
-	type JsonData,
 	type PartialRecord,
 	compileSerializedValue,
 	type conform,
@@ -12,7 +10,6 @@ import {
 	includes,
 	isArray,
 	type listable,
-	printable,
 	throwError
 } from "@arktype/util"
 import type { RawConstraint } from "./constraints/constraint.js"
@@ -23,7 +20,12 @@ import type { SequenceNode } from "./constraints/props/sequence.js"
 import type { DivisorNode } from "./constraints/refinements/divisor.js"
 import type { BoundNodesByKind } from "./constraints/refinements/kinds.js"
 import type { RegexNode } from "./constraints/refinements/regex.js"
-import type { Inner, NodeDef, reducibleKindOf } from "./kinds.js"
+import {
+	type Inner,
+	type NodeDef,
+	nodeImplementationsByKind,
+	type reducibleKindOf
+} from "./kinds.js"
 import type { DomainNode } from "./schemas/domain.js"
 import type { IntersectionNode } from "./schemas/intersection.js"
 import type { MorphNode } from "./schemas/morph.js"
@@ -31,8 +33,6 @@ import type { ProtoNode } from "./schemas/proto.js"
 import type { RawSchema, Schema } from "./schemas/schema.js"
 import type { UnionNode } from "./schemas/union.js"
 import type { UnitNode } from "./schemas/unit.js"
-import type { RawSchemaScope } from "./scope.js"
-import type { NodeCompiler } from "./shared/compile.js"
 import type {
 	BaseMeta,
 	RawNodeDeclaration,
@@ -47,81 +47,16 @@ import {
 	type PropKind,
 	type RefinementKind,
 	type SchemaKind,
+	type UnknownAttachments,
 	type UnknownIntersectionResult,
-	type UnknownNodeImplementation,
 	basisKinds,
 	constraintKinds,
-	type nodeImplementationInputOf,
-	type nodeImplementationOf,
 	precedenceOfKind,
 	propKinds,
 	refinementKinds,
 	schemaKinds
 } from "./shared/implement.js"
-import {
-	TraversalContext,
-	type TraverseAllows,
-	type TraverseApply
-} from "./shared/traversal.js"
-
-export interface UnknownAttachments {
-	alias?: string
-	readonly kind: NodeKind
-	readonly name: string
-	readonly inner: Record<string, any>
-	readonly entries: readonly Entry<string>[]
-	readonly json: object
-	readonly typeJson: object
-	readonly collapsibleJson: JsonData
-	readonly children: RawNode[]
-	readonly innerId: string
-	readonly typeId: string
-	readonly $: RawSchemaScope
-	readonly description: string
-}
-
-export interface NarrowedAttachments<d extends RawNodeDeclaration>
-	extends UnknownAttachments {
-	kind: d["kind"]
-	inner: d["inner"]
-	json: Json
-	typeJson: Json
-	collapsibleJson: JsonData
-	children: Node<d["childKind"]>[]
-}
-
-export const implementNode = <d extends RawNodeDeclaration = never>(
-	_: nodeImplementationInputOf<d>
-): nodeImplementationOf<d> => {
-	const implementation: UnknownNodeImplementation = _ as never
-	if (implementation.hasAssociatedError) {
-		implementation.defaults.expected ??= (ctx) =>
-			"description" in ctx ?
-				(ctx.description as string)
-				// TODO: does passing ctx here work? or will some expect node?
-			:	implementation.defaults.description(ctx as never)
-		implementation.defaults.actual ??= (data) => printable(data)
-		implementation.defaults.problem ??= (ctx) =>
-			`must be ${ctx.expected}${ctx.actual ? ` (was ${ctx.actual})` : ""}`
-		implementation.defaults.message ??= (ctx) => {
-			if (ctx.path.length === 0) return ctx.problem
-			const problemWithLocation = `${ctx.propString} ${ctx.problem}`
-			if (problemWithLocation[0] === "[") {
-				// clarify paths like [1], [0][1], and ["key!"] that could be confusing
-				return `value at ${problemWithLocation}`
-			}
-			return problemWithLocation
-		}
-	}
-	return implementation as never
-}
-
-export type BaseAttachments<d extends RawNodeDeclaration> = {
-	traverseAllows: TraverseAllows<d["prerequisite"]>
-	traverseApply: TraverseApply<d["prerequisite"]>
-	expression: string
-	compile: (js: NodeCompiler) => void
-}
+import { TraversalContext } from "./shared/traversal.js"
 
 export type UnknownNode = RawNode | Schema
 
@@ -149,8 +84,7 @@ export class RawNode<
 		this.contributesReferences = Object.values(this.contributesReferencesByName)
 	}
 
-	protected readonly impl: UnknownNodeImplementation = (this.constructor as any)
-		.implementation
+	protected readonly impl = nodeImplementationsByKind[this.kind]
 	readonly includesMorph: boolean =
 		this.kind === "morph" || this.children.some((child) => child.includesMorph)
 	readonly includesContextDependentPredicate: boolean =

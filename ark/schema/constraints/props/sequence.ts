@@ -6,20 +6,17 @@ import {
 	throwInternalError,
 	throwParseError
 } from "@arktype/util"
-import {
-	type BaseAttachments,
-	type Node,
-	type SchemaDef,
-	implementNode
-} from "../../base.js"
 import type { MutableInner } from "../../kinds.js"
+import type { Node, SchemaDef } from "../../node.js"
 import type { RawSchema } from "../../schemas/schema.js"
 import type { RawSchemaScope } from "../../scope.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
-import type {
-	NodeKeyImplementation,
-	SchemaKind
+import {
+	implementNode,
+	type NodeAttachments,
+	type NodeKeyImplementation,
+	type SchemaKind
 } from "../../shared/implement.js"
 import type { ConstraintAttachments, RawConstraint } from "../constraint.js"
 import type { MaxLengthNode } from "../refinements/maxLength.js"
@@ -59,7 +56,7 @@ export type SequenceDeclaration = declareNode<{
 }>
 
 export interface SequenceAttachments
-	extends BaseAttachments<SequenceDeclaration>,
+	extends NodeAttachments<SequenceDeclaration>,
 		ConstraintAttachments {
 	prefix: array<RawSchema>
 	optional: array<RawSchema>

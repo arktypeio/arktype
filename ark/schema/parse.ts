@@ -12,8 +12,8 @@ import {
 	type propValueOf,
 	throwParseError
 } from "@arktype/util"
-import { RawNode, type UnknownAttachments } from "./base.js"
 import { nodeImplementationsByKind } from "./kinds.js"
+import { RawNode, type UnknownAttachments } from "./node.js"
 import { RawSchema, type UnknownSchema } from "./schemas/schema.js"
 import type { RawSchemaScope } from "./scope.js"
 import type { RawNodeDeclaration } from "./shared/declare.js"
@@ -22,7 +22,6 @@ import {
 	type KeyDefinitions,
 	type NodeKind,
 	type SchemaKind,
-	type UnknownNodeImplementation,
 	defaultValueSerializer,
 	discriminatingIntersectionKeys,
 	isNodeKind,
@@ -248,7 +247,7 @@ export const parseNode = (
 	nodeCountsByPrefix[prefix] ??= 0
 	const name = `${prefix}${++nodeCountsByPrefix[prefix]!}`
 	const attachments = {
-		name: name,
+		name,
 		kind,
 		inner,
 		entries,
@@ -283,10 +282,11 @@ export const parseNode = (
 	attachments.description ??= $.resolvedConfig[kind].description(
 		attachments as never
 	)
+	impl.construct(attachments as never)
 	const node: RawNode =
 		includes(schemaKinds, kind) ?
 			new RawSchema(attachments as never)
-		:	(new RawNode(attachments as never) as any)
+		:	(new RawNode(attachments as never) as never)
 	$.nodeCache[innerId] = node
 	return node
 }

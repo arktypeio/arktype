@@ -1,9 +1,5 @@
-import { type Key, compileSerializedValue } from "@arktype/util"
-import {
-	type BaseAttachments,
-	type SchemaDef,
-	implementNode
-} from "../../base.js"
+import { compileSerializedValue, type Key } from "@arktype/util"
+import type { SchemaDef } from "../../node.js"
 import type { RawSchema } from "../../schemas/schema.js"
 import type {
 	BaseErrorContext,
@@ -11,7 +7,11 @@ import type {
 	declareNode
 } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
-import type { SchemaKind } from "../../shared/implement.js"
+import {
+	implementNode,
+	type NodeAttachments,
+	type SchemaKind
+} from "../../shared/implement.js"
 import type { ConstraintAttachments, RawConstraint } from "../constraint.js"
 
 export interface PropDef extends BaseMeta {
@@ -43,7 +43,7 @@ export interface PropErrorContext extends BaseErrorContext {
 }
 
 export interface PropAttachments
-	extends BaseAttachments<PropDeclaration>,
+	extends NodeAttachments<PropDeclaration>,
 		ConstraintAttachments {
 	required: boolean
 	compiledKey: string

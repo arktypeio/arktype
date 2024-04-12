@@ -13,13 +13,13 @@ import {
 	splitByKeys,
 	throwInternalError
 } from "@arktype/util"
-import { type Constraint, type Node, RawNode, implementNode } from "../base.js"
 import {
 	type ExtraneousKeyBehavior,
 	type ExtraneousKeyRestriction,
 	PropsGroup
 } from "../constraints/props/props.js"
 import type { Inner, MutableInner, NodeDef, Prerequisite } from "../kinds.js"
+import { type Constraint, type Node, RawNode } from "../node.js"
 import type { NodeParseContext } from "../parse.js"
 import type { RawSchemaScope } from "../scope.js"
 import { type BaseMeta, type declareNode, metaKeys } from "../shared/declare.js"
@@ -32,6 +32,7 @@ import {
 	type PropKind,
 	type RefinementKind,
 	constraintKeys,
+	implementNode,
 	propKeys
 } from "../shared/implement.js"
 import type { DomainDef, DomainNode } from "./domain.js"

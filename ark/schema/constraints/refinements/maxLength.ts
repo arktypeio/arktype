@@ -1,6 +1,6 @@
-import { implementNode } from "../../base.js"
 import type { declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
+import { implementNode } from "../../shared/implement.js"
 import type { RawConstraint } from "../constraint.js"
 import {
 	type BaseNormalizedRangeSchema,

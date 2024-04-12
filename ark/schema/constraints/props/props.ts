@@ -5,7 +5,7 @@ import {
 	flatMorph,
 	reference
 } from "@arktype/util"
-import type { Node } from "../../base.js"
+import type { Node } from "../../node.js"
 import type { IntersectionNode } from "../../schemas/intersection.js"
 import type { RawSchema } from "../../schemas/schema.js"
 import type { RawSchemaScope } from "../../scope.js"

@@ -4,13 +4,14 @@ import {
 	type describeExpression,
 	throwParseError
 } from "@arktype/util"
-import { type BaseAttachments, type Node, RawNode } from "../base.js"
 import type { Prerequisite } from "../kinds.js"
+import { type Node, RawNode } from "../node.js"
 import type { Schema, UnknownSchema } from "../schemas/schema.js"
 import type { RawNodeDeclaration } from "../shared/declare.js"
 import type { Disjoint } from "../shared/disjoint.js"
 import type {
 	ConstraintKind,
+	NodeAttachments,
 	PropKind,
 	kindLeftOf
 } from "../shared/implement.js"
@@ -59,7 +60,7 @@ export interface ConstraintAttachments {
 
 export interface BaseConstraintDeclaration extends RawNodeDeclaration {
 	kind: ConstraintKind
-	attachments: ConstraintAttachments & BaseAttachments<this>
+	attachments: ConstraintAttachments & NodeAttachments<this>
 }
 
 export class RawConstraint<

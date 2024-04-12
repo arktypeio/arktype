@@ -4,12 +4,6 @@ import {
 	type conform,
 	flatMorph
 } from "@arktype/util"
-import {
-	type BaseAttachments,
-	type Node,
-	RawNode,
-	type SchemaDef
-} from "../base.js"
 import type { constrain } from "../constraints/ast.js"
 import {
 	type PrimitiveConstraintKind,
@@ -17,11 +11,13 @@ import {
 } from "../constraints/constraint.js"
 import type { inferSchema } from "../inference.js"
 import type { NodeDef, reducibleKindOf } from "../kinds.js"
+import { type Node, RawNode, type SchemaDef } from "../node.js"
 import type { SchemaScope } from "../scope.js"
 import type { BaseMeta, RawNodeDeclaration } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { ArkResult } from "../shared/errors.js"
 import {
+	type NodeAttachments,
 	type NodeKind,
 	type SchemaKind,
 	type TypeIntersection,
@@ -60,7 +56,7 @@ export interface RawSchemaDeclaration extends RawNodeDeclaration {
 }
 
 export interface RawSchemaAttachments<d extends RawNodeDeclaration>
-	extends BaseAttachments<d> {
+	extends NodeAttachments<d> {
 	rawKeyOf(): RawSchema
 }
 
@@ -85,13 +81,9 @@ export class RawSchema<
 
 	#keyofCache: RawSchema | undefined
 	keyof(): RawSchema {
-		// if (!this.#keyofCache) {
-		// 	this.#keyofCache = this.rawKeyOf()
-		// 	if (this.#keyofCache.isNever())
-		// 		throwParseError(
-		// 			`keyof ${this.expression} results in an unsatisfiable type`
-		// 		)
-		// }
+		if (!this.#keyofCache) {
+			this.#keyofCache = this.rawKeyOf()
+		}
 		return this.#keyofCache as never
 	}
 

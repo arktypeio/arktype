@@ -1,8 +1,12 @@
 import type { merge, show } from "@arktype/util"
-import type { BaseAttachments, NarrowedAttachments, Node } from "../base.js"
 import type { reducibleKindOf } from "../kinds.js"
+import type { Node } from "../node.js"
 import type { Disjoint } from "./disjoint.js"
-import type { NodeKind } from "./implement.js"
+import type {
+	NarrowedAttachments,
+	NodeAttachments,
+	NodeKind
+} from "./implement.js"
 
 export interface BaseMeta {
 	readonly description?: string
@@ -69,7 +73,7 @@ export interface RawNodeDeclaration {
 	intersectionIsOpen: boolean
 	childKind: NodeKind
 	errorContext: BaseErrorContext | null
-	attachments: BaseAttachments<this>
+	attachments: NodeAttachments<RawNodeDeclaration>
 }
 
 export type ownIntersectionResult<d extends RawNodeDeclaration> =

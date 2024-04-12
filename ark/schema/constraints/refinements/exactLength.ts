@@ -1,9 +1,10 @@
-import { type BaseAttachments, implementNode } from "../../base.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import {
+	type NodeAttachments,
 	type PrimitiveAttachments,
-	derivePrimitiveAttachments
+	derivePrimitiveAttachments,
+	implementNode
 } from "../../shared/implement.js"
 import type { ConstraintAttachments, RawConstraint } from "../constraint.js"
 import type { LengthBoundableData } from "./range.js"
@@ -27,7 +28,7 @@ export type ExactLengthDeclaration = declareNode<{
 }>
 
 export interface ExactLengthAttachments
-	extends BaseAttachments<ExactLengthDeclaration>,
+	extends NodeAttachments<ExactLengthDeclaration>,
 		PrimitiveAttachments<ExactLengthDeclaration>,
 		ConstraintAttachments {}
 

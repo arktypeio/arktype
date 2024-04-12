@@ -9,8 +9,8 @@ import type {
 	instanceOf,
 	isAny
 } from "@arktype/util"
-import type { RawNode } from "./base.js"
 import type { NodeDef, Prerequisite } from "./kinds.js"
+import type { RawNode } from "./node.js"
 import type { DomainDef } from "./schemas/domain.js"
 import type { IntersectionDef } from "./schemas/intersection.js"
 import type {

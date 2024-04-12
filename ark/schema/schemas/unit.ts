@@ -1,19 +1,19 @@
 import {
+	type array,
 	type Domain,
+	type JsonPrimitive,
+	type Key,
 	domainOf,
 	printable,
 	prototypeKeysOf
 } from "@arktype/util"
-import type { array } from "../../util/arrays.js"
-import type { Key } from "../../util/records.js"
-import type { JsonPrimitive } from "../../util/serialize.js"
-import { implementNode } from "../base.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
 	type PrimitiveAttachments,
 	defaultValueSerializer,
-	derivePrimitiveAttachments
+	derivePrimitiveAttachments,
+	implementNode
 } from "../shared/implement.js"
 import {
 	type RawSchema,

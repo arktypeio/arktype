@@ -6,12 +6,12 @@ import {
 	domainOf,
 	getBaseDomainKeys
 } from "@arktype/util"
-import { implementNode } from "../base.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
 	type PrimitiveAttachments,
-	derivePrimitiveAttachments
+	derivePrimitiveAttachments,
+	implementNode
 } from "../shared/implement.js"
 import type { TraverseAllows } from "../shared/traversal.js"
 import type { RawSchema, RawSchemaAttachments } from "./schema.js"

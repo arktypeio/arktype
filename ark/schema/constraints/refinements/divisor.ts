@@ -1,9 +1,10 @@
-import { type BaseAttachments, implementNode } from "../../base.js"
 import type { Schema } from "../../schemas/schema.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import {
+	type NodeAttachments,
 	type PrimitiveAttachments,
-	derivePrimitiveAttachments
+	derivePrimitiveAttachments,
+	implementNode
 } from "../../shared/implement.js"
 import {
 	type ConstraintAttachments,
@@ -28,7 +29,7 @@ export type DivisorDeclaration = declareNode<{
 }>
 
 export interface DivisorAttachments
-	extends BaseAttachments<DivisorDeclaration>,
+	extends NodeAttachments<DivisorDeclaration>,
 		PrimitiveAttachments<DivisorDeclaration>,
 		ConstraintAttachments {}
 

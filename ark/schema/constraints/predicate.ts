@@ -1,7 +1,10 @@
 import { compileSerializedValue, type show } from "@arktype/util"
-import { type BaseAttachments, type RawNode, implementNode } from "../base.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
-import type { PrimitiveAttachments } from "../shared/implement.js"
+import {
+	implementNode,
+	type NodeAttachments,
+	type PrimitiveAttachments
+} from "../shared/implement.js"
 import type { TraversalContext } from "../shared/traversal.js"
 import type { constrain, of } from "./ast.js"
 import type { ConstraintAttachments, RawConstraint } from "./constraint.js"
@@ -26,7 +29,7 @@ export type PredicateDeclaration = declareNode<{
 }>
 
 export type PredicateAttachments = show<
-	BaseAttachments<PredicateDeclaration> &
+	NodeAttachments<PredicateDeclaration> &
 		PrimitiveAttachments<PredicateDeclaration> &
 		ConstraintAttachments & {
 			serializedPredicate: string

@@ -1,12 +1,12 @@
 import { throwParseError } from "@arktype/util"
-import {
-	type BaseAttachments,
-	type SchemaDef,
-	implementNode
-} from "../../base.js"
+import type { SchemaDef } from "../../node.js"
 import type { RawSchema } from "../../schemas/schema.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
-import type { SchemaKind } from "../../shared/implement.js"
+import {
+	implementNode,
+	type NodeAttachments,
+	type SchemaKind
+} from "../../shared/implement.js"
 import type { ConstraintAttachments, RawConstraint } from "../constraint.js"
 
 export interface IndexDef extends BaseMeta {
@@ -31,7 +31,7 @@ export type IndexDeclaration = declareNode<{
 }>
 
 export interface IndexAttachments
-	extends BaseAttachments<IndexDeclaration>,
+	extends NodeAttachments<IndexDeclaration>,
 		ConstraintAttachments {}
 
 export const indexImplementation = implementNode<IndexDeclaration>({

@@ -1,5 +1,7 @@
 import {
+	type Entry,
 	type ErrorMessage,
+	type Json,
 	type JsonData,
 	compileSerializedValue,
 	type entryOf,
@@ -11,9 +13,9 @@ import {
 	type requireKeys,
 	type show
 } from "@arktype/util"
-import type { BaseAttachments, Node, RawNode } from "../base.js"
 import type { PropsGroupInput } from "../constraints/props/props.js"
 import type { Declaration, Inner, errorContext } from "../kinds.js"
+import type { Node, NodeAttachments, RawNode } from "../node.js"
 import type { NodeParseContext } from "../parse.js"
 import type { IntersectionInner } from "../schemas/intersection.js"
 import type {
@@ -26,6 +28,7 @@ import type {
 	ParsedUnknownNodeConfig,
 	RawSchemaScope
 } from "../scope.js"
+import type { NodeCompiler } from "./compile.js"
 import type {
 	BaseErrorContext,
 	BaseMeta,
@@ -34,6 +37,7 @@ import type {
 } from "./declare.js"
 import type { Disjoint } from "./disjoint.js"
 import { throwArkError } from "./errors.js"
+import type { TraverseAllows, TraverseApply } from "./traversal.js"
 import { isNode } from "./utils.js"
 
 export const basisKinds = ["unit", "proto", "domain"] as const
@@ -300,7 +304,7 @@ export interface UnknownNodeImplementation
 
 export interface PrimitiveNodeDeclaration extends RawNodeDeclaration {
 	kind: PrimitiveKind
-	attachments: BaseAttachments<this> &
+	attachments: NodeAttachments<this> &
 		PrimitiveAttachments<PrimitiveNodeDeclaration>
 }
 
@@ -386,3 +390,62 @@ export type nodeDefaultsImplementationFor<kind extends NodeKind> = Required<
 export type DescriptionWriter<kind extends NodeKind = NodeKind> = (
 	node: Node<kind>
 ) => string
+
+export interface UnknownAttachments {
+	alias?: string
+	readonly kind: NodeKind
+	readonly name: string
+	readonly inner: Record<string, any>
+	readonly entries: readonly Entry<string>[]
+	readonly json: object
+	readonly typeJson: object
+	readonly collapsibleJson: JsonData
+	readonly children: RawNode[]
+	readonly innerId: string
+	readonly typeId: string
+	readonly $: RawSchemaScope
+	readonly description: string
+}
+
+export interface NarrowedAttachments<d extends RawNodeDeclaration>
+	extends UnknownAttachments {
+	kind: d["kind"]
+	inner: d["inner"]
+	json: Json
+	typeJson: Json
+	collapsibleJson: JsonData
+	children: Node<d["childKind"]>[]
+}
+
+export const implementNode = <d extends RawNodeDeclaration = never>(
+	_: nodeImplementationInputOf<d>
+): nodeImplementationOf<d> => {
+	const implementation: UnknownNodeImplementation = _ as never
+	if (implementation.hasAssociatedError) {
+		implementation.defaults.expected ??= (ctx) =>
+			"description" in ctx ?
+				(ctx.description as string)
+				// TODO: does passing ctx here work? or will some expect node?
+			:	implementation.defaults.description(ctx as never)
+		implementation.defaults.actual ??= (data) => printable(data)
+		implementation.defaults.problem ??= (ctx) =>
+			`must be ${ctx.expected}${ctx.actual ? ` (was ${ctx.actual})` : ""}`
+		implementation.defaults.message ??= (ctx) => {
+			if (ctx.path.length === 0) return ctx.problem
+			const problemWithLocation = `${ctx.propString} ${ctx.problem}`
+			if (problemWithLocation[0] === "[") {
+				// clarify paths like [1], [0][1], and ["key!"] that could be confusing
+				return `value at ${problemWithLocation}`
+			}
+			return problemWithLocation
+		}
+	}
+	return implementation as never
+}
+
+export type NodeAttachments<d extends RawNodeDeclaration> = {
+	traverseAllows: TraverseAllows<d["prerequisite"]>
+	traverseApply: TraverseApply<d["prerequisite"]>
+	expression: string
+	compile: (js: NodeCompiler) => void
+}

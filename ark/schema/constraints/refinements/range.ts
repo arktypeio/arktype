@@ -5,7 +5,7 @@ import {
 	isKeyOf,
 	type propValueOf
 } from "@arktype/util"
-import type { BaseAttachments, Node } from "../../base.js"
+import type { Node } from "../../node.js"
 import type {
 	BaseMeta,
 	RawNodeDeclaration,
@@ -14,6 +14,7 @@ import type {
 import {
 	type DerivedPrimitiveAttachments,
 	type KeyDefinitions,
+	type NodeAttachments,
 	type PrimitiveAttachments,
 	type RangeKind,
 	derivePrimitiveAttachments
@@ -47,7 +48,7 @@ export interface DerivedRangeAttachments<
 
 export interface RangeAttachments<
 	d extends BaseRangeDeclaration = BaseRangeDeclaration
-> extends BaseAttachments<d>,
+> extends NodeAttachments<d>,
 		PrimitiveAttachments<d>,
 		ConstraintAttachments,
 		DerivedRangeAttachments<d> {}

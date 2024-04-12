@@ -1,15 +1,19 @@
 import { appendUnique, groupBy, isArray } from "@arktype/util"
-import { type Node, implementNode } from "../base.js"
 import type { NodeDef } from "../kinds.js"
+import type { Node } from "../node.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { ArkTypeError } from "../shared/errors.js"
-import { type SchemaKind, schemaKindsRightOf } from "../shared/implement.js"
+import {
+	implementNode,
+	type SchemaKind,
+	schemaKindsRightOf
+} from "../shared/implement.js"
 import type { Discriminant } from "./discriminate.js"
 import {
+	defineRightwardIntersections,
 	type RawSchema,
 	type RawSchemaAttachments,
-	defineRightwardIntersections,
 	type schemaKindRightOf
 } from "./schema.js"
 

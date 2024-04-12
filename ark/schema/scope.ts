@@ -11,21 +11,23 @@ import {
 	type show,
 	throwParseError
 } from "@arktype/util"
-import type { Node, RawNode, SchemaDef } from "./base.js"
 import { mergeConfigs } from "./config.js"
 import {
 	type GenericSchema,
 	validateUninstantiatedGenericNode
 } from "./generic.js"
 import type { inferSchema, validateSchema } from "./inference.js"
+import type { internalKeywords } from "./keywords/internal.js"
+import type { jsObjects } from "./keywords/jsObjects.js"
 import type { Ark } from "./keywords/keywords.js"
+import type { tsKeywords } from "./keywords/tsKeywords.js"
 import {
 	type NodeDef,
 	nodeImplementationsByKind,
 	type reducibleKindOf
 } from "./kinds.js"
-import type { internalKeywords, jsObjects, tsKeywords } from "./main.js"
 import { type PreparsedNodeResolution, SchemaModule } from "./module.js"
+import type { Node, RawNode, SchemaDef } from "./node.js"
 import { type NodeParseOptions, parseNode, schemaKindOf } from "./parse.js"
 import type { distillIn, distillOut } from "./schemas/morph.js"
 import type { RawSchema, Schema } from "./schemas/schema.js"
@@ -213,7 +215,7 @@ export class RawSchemaScope<
 		) as never
 	}
 
-	get raw() {
+	get raw(): this {
 		return this
 	}
 
@@ -516,7 +518,7 @@ export const writeMissingSubmoduleAccessMessage = <name extends string>(
 export type writeMissingSubmoduleAccessMessage<name extends string> =
 	`Reference to submodule '${name}' must specify an alias`
 
-const bindCompiledSpace = (references: readonly RawNode[]) => {
+export const bindCompiledSpace = (references: readonly RawNode[]): void => {
 	const compiledTraversals = compileSpace(references)
 	for (const node of references) {
 		if (node.jit) {

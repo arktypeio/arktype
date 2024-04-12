@@ -1,8 +1,9 @@
-import { type BaseAttachments, implementNode } from "../../base.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import {
+	type NodeAttachments,
 	type PrimitiveAttachments,
-	derivePrimitiveAttachments
+	derivePrimitiveAttachments,
+	implementNode
 } from "../../shared/implement.js"
 import type { ConstraintAttachments, RawConstraint } from "../constraint.js"
 
@@ -27,7 +28,7 @@ export type RegexDeclaration = declareNode<{
 }>
 
 export interface RegexAttachments
-	extends BaseAttachments<RegexDeclaration>,
+	extends NodeAttachments<RegexDeclaration>,
 		PrimitiveAttachments<RegexDeclaration>,
 		ConstraintAttachments {
 	instance: RegExp

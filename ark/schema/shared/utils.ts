@@ -6,8 +6,8 @@ import {
 	type mutable,
 	type show
 } from "@arktype/util"
-import type { Constraint, RawNode } from "../base.js"
 import type { GenericSchema } from "../generic.js"
+import type { Constraint, RawNode } from "../node.js"
 import type { RawSchema } from "../schemas/schema.js"
 import type { RawSchemaModule, RawSchemaScope } from "../scope.js"
 import type { ArkTypeError } from "./errors.js"

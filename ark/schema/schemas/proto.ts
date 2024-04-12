@@ -8,13 +8,13 @@ import {
 	objectKindOrDomainOf,
 	prototypeKeysOf
 } from "@arktype/util"
-import { implementNode } from "../base.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
 	type PrimitiveAttachments,
 	defaultValueSerializer,
-	derivePrimitiveAttachments
+	derivePrimitiveAttachments,
+	implementNode
 } from "../shared/implement.js"
 import type { RawSchema, RawSchemaAttachments } from "./schema.js"
 

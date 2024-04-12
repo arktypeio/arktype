@@ -8,15 +8,15 @@ import {
 	reference,
 	throwParseError
 } from "@arktype/util"
-import { type Node, implementNode } from "../base.js"
 import type { of } from "../constraints/ast.js"
 import type { NodeDef } from "../kinds.js"
+import type { Node } from "../node.js"
 import type { StaticArkOption } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { ArkResult, ArkTypeError } from "../shared/errors.js"
-import { basisKinds } from "../shared/implement.js"
+import { basisKinds, implementNode } from "../shared/implement.js"
 import type { TraversalContext } from "../shared/traversal.js"
 import {
 	type RawSchema,

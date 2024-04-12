@@ -8,7 +8,7 @@ import {
 	throwInternalError,
 	throwParseError
 } from "@arktype/util"
-import type { Node } from "../base.js"
+import type { Node } from "../node.js"
 import type {
 	BoundKind,
 	IntersectionChildKind,
