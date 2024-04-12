@@ -23,7 +23,8 @@ export const keywordNodes: SchemaModule<Ark> = schemaScope({
 	...jsObjects,
 	...validation,
 	parse: parsing
-})
+	// TODO: remove cast
+}) as never
 
 // this type is redundant with the inferred definition of ark but allow types
 // derived from the default scope to be calulated more efficiently
