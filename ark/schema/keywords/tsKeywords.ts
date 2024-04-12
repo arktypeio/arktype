@@ -42,5 +42,5 @@ export const tsKeywords: tsKeywords = schemaScope(
 		void: { unit: undefined } as type.cast<void>,
 		undefined: { unit: undefined }
 	},
-	{ prereducedAliases: true }
+	{ prereducedAliases: true, registerKeywords: true }
 ).export()

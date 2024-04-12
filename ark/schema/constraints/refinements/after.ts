@@ -1,5 +1,4 @@
-import { type RawNode, implementNode } from "../../base.js"
-import { jsObjects } from "../../keywords/jsObjects.js"
+import { implementNode } from "../../base.js"
 import type { declareNode } from "../../shared/declare.js"
 import type { RawConstraint } from "../constraint.js"
 import {
@@ -66,7 +65,7 @@ export const afterImplementation = implementNode<AfterDeclaration>({
 			traverseAllows: self.exclusive
 				? (data) => data > self.rule
 				: (data) => data >= self.rule,
-			impliedBasis: jsObjects.Date.raw
+			impliedBasis: self.$.keywords.Date.raw
 		})
 })
 

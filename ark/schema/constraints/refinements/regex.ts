@@ -68,7 +68,7 @@ export const regexImplementation = implementNode<RegexDeclaration>({
 			traverseAllows: instance.test.bind(instance),
 			compiledCondition: `${expression}.test(data)`,
 			compiledNegation: `!${compiledCondition}`,
-			impliedBasis: tsKeywords.string.raw
+			impliedBasis: self.$.keywords.string
 		})
 	}
 })

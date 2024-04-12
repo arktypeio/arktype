@@ -12,10 +12,10 @@ import {
 	type SchemaDef,
 	implementNode
 } from "../../base.js"
-import { jsObjects } from "../../keywords/jsObjects.js"
 import { tsKeywords } from "../../keywords/tsKeywords.js"
 import type { MutableInner } from "../../kinds.js"
 import type { RawSchema } from "../../schemas/schema.js"
+import type { RawSchemaScope } from "../../scope.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import type {
@@ -216,7 +216,8 @@ export const sequenceImplementation = implementNode<SequenceDeclaration>({
 				r: r.tuple,
 				disjoint: new Disjoint({}),
 				result: [],
-				fixedVariants: []
+				fixedVariants: [],
+				$
 			})
 
 			const viableBranches = rootState.disjoint.isEmpty()
@@ -244,7 +245,7 @@ export const sequenceImplementation = implementNode<SequenceDeclaration>({
 		// they exist on
 	},
 	construct: (self) => {
-		const impliedBasis = jsObjects.Array
+		const impliedBasis = self.$.keywords.Array
 		const prefix = self.inner.prefix ?? []
 		const optional = self.inner.optional ?? []
 		const prevariadic = [...prefix, ...optional]
@@ -402,6 +403,7 @@ type SequenceIntersectionState = {
 	disjoint: Disjoint
 	result: SequenceTuple
 	fixedVariants: SequenceIntersectionState[]
+	$: RawSchemaScope
 }
 
 const intersectSequences = (
@@ -468,7 +470,7 @@ const intersectSequences = (
 			)
 			state.result = [
 				...state.result,
-				{ kind, node: tsKeywords.never.raw }
+				{ kind, node: state.$.keywords.never.raw }
 			]
 		} else if (kind === "optional") {
 			// if the element result is optional and unsatisfiable, the

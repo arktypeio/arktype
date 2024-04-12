@@ -1,4 +1,3 @@
-
 import type { SchemaModule } from "../module.js"
 import { schemaScope } from "../scope.js"
 
@@ -32,5 +31,5 @@ export const jsObjects: jsObjects = schemaScope(
 		WeakSet,
 		Promise
 	},
-	{ prereducedAliases: true }
+	{ prereducedAliases: true, registerKeywords: true }
 ).export()

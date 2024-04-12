@@ -238,7 +238,7 @@ export const unionImplementation = implementNode<UnionDeclaration>({
 				return branches.reduce(
 					(result, branch) =>
 						result.intersectSatisfiable(branch.rawKeyOf()),
-					tsKeywords.unknown.raw
+					self.$.keywords.unknown.raw
 				)
 			},
 			get nestableExpression() {

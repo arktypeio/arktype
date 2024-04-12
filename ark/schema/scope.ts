@@ -24,6 +24,7 @@ import {
 	nodeImplementationsByKind,
 	type reducibleKindOf
 } from "./kinds.js"
+import type { internalKeywords, jsObjects, tsKeywords } from "./main.js"
 import { type PreparsedNodeResolution, SchemaModule } from "./module.js"
 import { type NodeParseOptions, parseNode, schemaKindOf } from "./parse.js"
 import type { distillIn, distillOut } from "./schemas/morph.js"
@@ -102,6 +103,8 @@ export type StaticArkOption<k extends keyof StaticArkConfig> = ReturnType<
 
 export interface ArkConfig extends Partial<Readonly<NodeConfigsByKind>> {
 	/** @internal */
+	readonly registerKeywords?: boolean
+	/** @internal */
 	readonly prereducedAliases?: boolean
 }
 
@@ -117,13 +120,15 @@ export const defaultConfig: ResolvedArkConfig = Object.assign(
 		implementation.defaults
 	]),
 	{
+		registerKeywords: false,
 		prereducedAliases: false
 	} satisfies Omit<ResolvedArkConfig, NodeKind>
 ) as never
 
-const nonInheritedKeys = ["prereducedAliases"] as const satisfies array<
-	keyof ArkConfig
->
+const nonInheritedKeys = [
+	"registerKeywords",
+	"prereducedAliases"
+] as const satisfies array<keyof ArkConfig>
 
 export const extendConfig = (
 	base: ArkConfig,
@@ -160,6 +165,10 @@ type toRawScope<$> = RawSchemaScope<{
 		: RawSchema
 }>
 
+export type PrimitiveKeywords = typeof tsKeywords &
+	typeof jsObjects &
+	typeof internalKeywords
+
 export class RawSchemaScope<
 	$ extends RawSchemaResolutions = RawSchemaResolutions
 > implements internalImplementationOf<SchemaScope, "infer" | "inferIn" | "$">
@@ -175,6 +184,16 @@ export class RawSchemaScope<
 	exportedNames: string[]
 
 	protected resolved = false
+
+	// these allow builtin types to be accessed during parsing without cyclic imports
+	// they are populated as each scope is parsed with `registerKeywords` in its config
+	/** @internal */
+	static keywords = {} as PrimitiveKeywords
+
+	/** @internal */
+	get keywords(): PrimitiveKeywords {
+		return this.keywords
+	}
 
 	constructor(
 		/** The set of names defined at the root-level of the scope mapped to their
@@ -341,6 +360,11 @@ export class RawSchemaScope<
 				)
 			)
 			Object.assign(this.resolutions, this.#exportedResolutions)
+			if (this.config.registerKeywords)
+				Object.assign(
+					RawSchemaScope.keywords,
+					this.#exportedResolutions
+				)
 			this.references = Object.values(this.referencesByName)
 			// this.bindCompiledScope(this.references)
 			this.resolved = true

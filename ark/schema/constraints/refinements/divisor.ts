@@ -57,7 +57,7 @@ export const divisorImplementation = implementNode<DivisorDeclaration>({
 		return derivePrimitiveAttachments<DivisorDeclaration>(self, {
 			compiledCondition: `data % ${self.rule} === 0`,
 			compiledNegation: `data % ${self.rule} !== 0`,
-			impliedBasis: tsKeywords.number.raw,
+			impliedBasis: self.$.keywords.number,
 			expression: `% ${self.rule}`,
 			traverseAllows: (data) => data % self.rule === 0
 		})
@@ -69,7 +69,7 @@ export type DivisorNode = RawConstraint<DivisorDeclaration>
 export const writeIndivisibleMessage = <node extends Schema>(
 	t: node
 ): writeIndivisibleMessage<node> =>
-	writeInvalidOperandMessage("divisor", tsKeywords.number, t)
+	writeInvalidOperandMessage("divisor", t.$.raw.keywords.number, t)
 
 export type writeIndivisibleMessage<node extends Schema> =
 	writeInvalidOperandMessage<"divisor", node>

@@ -5,7 +5,6 @@ import {
 	implementNode
 } from "../../base.js"
 import { internalKeywords } from "../../keywords/internal.js"
-import { tsKeywords } from "../../keywords/tsKeywords.js"
 import type { RawSchema } from "../../schemas/schema.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import type { SchemaKind } from "../../shared/implement.js"
@@ -68,7 +67,7 @@ export const indexImplementation = implementNode<IndexDeclaration>({
 	construct: (self) => {
 		return {
 			expression: `[${self.key.expression}]: ${self.value.expression}`,
-			impliedBasis: tsKeywords.object,
+			impliedBasis: self.$.keywords.object,
 			traverseAllows(data, ctx) {
 				return Object.entries(data).every(
 					(entry) =>

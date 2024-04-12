@@ -154,7 +154,7 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 				return this.inner.in
 			},
 			get out() {
-				return this.inner.out ?? tsKeywords.unknown
+				return this.inner.out ?? self.$.keywords.unknown
 			},
 			rawKeyOf(): RawSchema {
 				return this.in.rawKeyOf()

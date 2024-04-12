@@ -6,7 +6,6 @@ import {
 	type RawSchema,
 	internalKeywords,
 	jsObjects,
-	keywordNodes,
 	tsKeywords,
 	writeUnboundableMessage
 } from "@arktype/schema"

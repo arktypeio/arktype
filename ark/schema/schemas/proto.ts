@@ -76,11 +76,11 @@ export const protoImplementation = implementNode<ProtoDeclaration>({
 				: constructorExtends(r.proto, l.proto)
 					? r
 					: Disjoint.from("proto", l, r),
-		domain: (proto, domain) =>
+		domain: (proto, domain, $) =>
 			domain.domain === "object"
 				? proto
 				: // TODO: infer node to avoid cast
-					Disjoint.from("domain", tsKeywords.object as never, domain)
+					Disjoint.from("domain", $.keywords.object as never, domain)
 	},
 	construct: (self): ProtoDeclaration["attachments"] => {
 		const serializedConstructor = (self.json as { proto: string }).proto

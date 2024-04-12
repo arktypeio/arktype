@@ -113,7 +113,7 @@ export const propImplementation = implementNode<PropDeclaration>({
 			expression: `${compiledKey}${self.optional ? "?" : ""}: ${
 				self.value.expression
 			}`,
-			impliedBasis: tsKeywords.object,
+			impliedBasis: self.$.keywords.object,
 			traverseAllows(data, ctx) {
 				if (this.key in data) {
 					// ctx will be undefined if this node doesn't have a context-dependent predicate

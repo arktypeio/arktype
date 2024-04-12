@@ -26,7 +26,8 @@ export const validateUninstantiatedGenericNode = (
 	g: GenericSchema
 ): GenericSchema => {
 	g.$.schema(g.def as never, {
-		args: flatMorph(g.params, (_, name) => [name, tsKeywords.unknown])
+		// TODO: probably don't need raw once this is fixed.
+		args: flatMorph(g.params, (_, name) => [name, g.$.raw.keywords.unknown])
 	})
 	return g
 }
