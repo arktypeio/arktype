@@ -1,9 +1,10 @@
 import type { GenericSchema } from "../generic.js"
 import type { SchemaModule } from "../module.js"
-import type { jsObjects } from "./jsObjects.js"
-import type { parsing } from "./parsing.js"
-import type { tsKeywords } from "./tsKeywords.js"
-import type { validation } from "./validation.js"
+import { schemaScope } from "../scope.js"
+import { jsObjects } from "./jsObjects.js"
+import { parsing } from "./parsing.js"
+import { tsKeywords } from "./tsKeywords.js"
+import { validation } from "./validation.js"
 
 type TsGenericsExports<$ = Ark> = {
 	Record: GenericSchema<
@@ -17,7 +18,12 @@ type TsGenericsExports<$ = Ark> = {
 	>
 }
 
-export const keywordNodes: SchemaModule<Ark> = {} as never
+export const keywordNodes: SchemaModule<Ark> = schemaScope({
+	...tsKeywords,
+	...jsObjects,
+	...validation,
+	parse: parsing
+})
 
 // this type is redundant with the inferred definition of ark but allow types
 // derived from the default scope to be calulated more efficiently

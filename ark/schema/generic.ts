@@ -1,7 +1,7 @@
 import { Callable, type conform, flatMorph, type repeat } from "@arktype/util"
 import type { SchemaDef } from "./base.js"
 import type { inferSchema } from "./inference.js"
-import { keywordNodes } from "./keywords/keywords.js"
+import { tsKeywords } from "./main.js"
 import type { RawSchema, Schema } from "./schemas/schema.js"
 import type { SchemaScope } from "./scope.js"
 import { arkKind } from "./shared/utils.js"
@@ -26,7 +26,7 @@ export const validateUninstantiatedGenericNode = (
 	g: GenericSchema
 ): GenericSchema => {
 	g.$.schema(g.def as never, {
-		args: flatMorph(g.params, (_, name) => [name, keywordNodes.unknown])
+		args: flatMorph(g.params, (_, name) => [name, tsKeywords.unknown])
 	})
 	return g
 }

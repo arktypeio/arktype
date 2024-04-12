@@ -69,7 +69,20 @@ type validateSchemaBranch<def, $> = def extends RawNode
 type inferSchemaBranch<def, $> = def extends type.cast<infer to>
 	? to
 	: def extends MorphDef
-		? inferMorphSchema<def, $>
+		? (
+				In: def["in"] extends {}
+					? inferMorphChild<def["in"], $>
+					: unknown
+			) => def["out"] extends {}
+				? Out<inferMorphChild<def["out"], $>>
+				: def["morphs"] extends infer morph extends Morph
+					? Out<inferMorphOut<morph>>
+					: def["morphs"] extends readonly [
+								...unknown[],
+								infer morph extends Morph
+							]
+						? Out<inferMorphOut<morph>>
+						: never
 		: def extends MorphChildDefinition
 			? inferMorphChild<def, $>
 			: unknown
@@ -93,19 +106,6 @@ type validateMorphSchema<def, $> = {
 			? MorphDef[k]
 			: `'${k & string}' is not a valid morph schema key`
 }
-
-type inferMorphSchema<def extends MorphDef, $> = (
-	In: def["in"] extends {} ? inferMorphChild<def["in"], $> : unknown
-) => def["out"] extends {}
-	? Out<inferMorphChild<def["out"], $>>
-	: def["morphs"] extends infer morph extends Morph
-		? Out<inferMorphOut<morph>>
-		: def["morphs"] extends readonly [
-					...unknown[],
-					infer morph extends Morph
-				]
-			? Out<inferMorphOut<morph>>
-			: never
 
 type exactBasisMessageOnError<def, expected> = {
 	[k in keyof def]: k extends keyof expected

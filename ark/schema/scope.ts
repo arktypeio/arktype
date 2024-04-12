@@ -24,7 +24,7 @@ import {
 	nodeImplementationsByKind,
 	type reducibleKindOf
 } from "./kinds.js"
-import { SchemaModule } from "./module.js"
+import { type PreparsedNodeResolution, SchemaModule } from "./module.js"
 import { type NodeParseOptions, parseNode, schemaKindOf } from "./parse.js"
 import type { distillIn, distillOut } from "./schemas/morph.js"
 import type { RawSchema, Schema } from "./schemas/schema.js"
@@ -356,11 +356,15 @@ export class RawSchemaScope<
 }
 
 export type validateAliases<aliases> = {
-	[k in keyof aliases]: validateSchema<aliases[k], aliases>
+	[k in keyof aliases]: aliases[k] extends PreparsedNodeResolution
+		? aliases[k]
+		: validateSchema<aliases[k], aliases>
 }
 
 export type instantiateAliases<aliases> = {
-	[k in keyof aliases]: inferSchema<aliases[k], aliases>
+	[k in keyof aliases]: aliases[k] extends PreparsedNodeResolution
+		? aliases[k]
+		: inferSchema<aliases[k], aliases>
 } & unknown
 
 export const schemaScope = <const aliases>(

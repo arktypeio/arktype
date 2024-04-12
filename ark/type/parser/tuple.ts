@@ -12,9 +12,10 @@ import {
 	type inferIntersection,
 	type inferMorphOut,
 	type inferNarrow,
-	keywordNodes,
+	jsObjects,
 	makeRootAndArrayPropertiesMutable,
-	node
+	node,
+	tsKeywords
 } from "@arktype/schema"
 import {
 	type BuiltinObjectKind,
@@ -29,7 +30,7 @@ import {
 	throwParseError
 } from "@arktype/util"
 import type { UnknownSchema } from "../../schema/schemas/schema.js"
-import { rawSchema, schema } from "../../schema/scope.js"
+import { rawSchema } from "../../schema/scope.js"
 import type { ParseContext } from "../scope.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
 import type { InfixOperator, PostfixExpression } from "./semantic/infer.js"
@@ -61,7 +62,7 @@ export const parseTupleLiteral = (def: array, ctx: ParseContext): RawSchema => {
 			i++
 		}
 		if (spread) {
-			if (!element.extends(keywordNodes.Array)) {
+			if (!element.extends(jsObjects.Array)) {
 				return throwParseError(
 					writeNonArraySpreadMessage(element.expression)
 				)
@@ -147,7 +148,7 @@ const appendSpreadBranch = (
 	const spread = branch.firstReferenceOfKind("sequence")
 	if (!spread) {
 		// the only array with no sequence reference is unknown[]
-		return appendElement(base, "variadic", keywordNodes.unknown)
+		return appendElement(base, "variadic", tsKeywords.unknown)
 	}
 	spread.prefix.forEach((node) => appendElement(base, "required", node))
 	spread.optional.forEach((node) => appendElement(base, "optional", node))

@@ -44,5 +44,3 @@ export const tsKeywords: tsKeywords = schemaScope(
 	},
 	{ prereducedAliases: true }
 ).export()
-
-export const tsKeywordNodes = tsKeywords

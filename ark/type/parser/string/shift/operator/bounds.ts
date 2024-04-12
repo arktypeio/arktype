@@ -1,11 +1,13 @@
 import {
-	type RawSchema,
 	type BoundKind,
 	type DateLiteral,
 	type LimitLiteral,
 	type NodeDef,
+	type RawSchema,
 	internalKeywords,
+	jsObjects,
 	keywordNodes,
+	tsKeywords,
 	writeUnboundableMessage
 } from "@arktype/schema"
 import { isKeyOf, type keySet, throwParseError } from "@arktype/util"
@@ -118,7 +120,7 @@ export const getBoundKinds = (
 	root: RawSchema,
 	boundKind: BoundExpressionKind
 ): BoundKind[] => {
-	if (root.extends(keywordNodes.number)) {
+	if (root.extends(tsKeywords.number)) {
 		if (typeof limit !== "number") {
 			return throwParseError(
 				writeInvalidLimitMessage(comparator, limit, boundKind)
@@ -142,7 +144,7 @@ export const getBoundKinds = (
 				? ["minLength"]
 				: ["maxLength"]
 	}
-	if (root.extends(keywordNodes.Date)) {
+	if (root.extends(jsObjects.Date)) {
 		// allow either numeric or date limits
 		return comparator === "=="
 			? ["after", "before"]

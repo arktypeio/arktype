@@ -4,7 +4,6 @@ import { schemaScope } from "../scope.js"
 
 export namespace internalKeywords {
 	export interface exports {
-		string: string
 		lengthBoundable: string | unknown[]
 		propertyKey: Key
 	}
