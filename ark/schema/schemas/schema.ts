@@ -79,7 +79,7 @@ export class RawSchema<
 
 	readonly [arkKind] = "schema"
 
-	get raw() {
+	get raw(): this {
 		return this
 	}
 
@@ -110,7 +110,7 @@ export class RawSchema<
 		return this.$.schema(branches) as never
 	}
 
-	assert(data: unknown) {
+	assert(data: unknown): unknown {
 		const result = this.traverse(data)
 		return result.errors ? result.errors.throw() : result.out
 	}
@@ -143,7 +143,7 @@ export class RawSchema<
 		) as never
 	}
 
-	extends(other: UnknownSchema) {
+	extends(other: UnknownSchema): boolean {
 		const intersection = this.intersect(other as never)
 		return (
 			!(intersection instanceof Disjoint) && this.equals(intersection as never)

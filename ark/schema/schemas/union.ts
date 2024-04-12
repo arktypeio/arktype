@@ -1,6 +1,5 @@
 import { appendUnique, groupBy, isArray } from "@arktype/util"
 import { type Node, implementNode } from "../base.js"
-import { tsKeywords } from "../keywords/tsKeywords.js"
 import type { NodeDef } from "../kinds.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -204,7 +203,7 @@ export const unionImplementation = implementNode<UnionDeclaration>({
 				}
 				ctx.error({ code: "union", errors })
 			},
-			compile(js) {
+			compile: (js) => {
 				if (js.traversalKind === "Apply") {
 					js.const("errors", "[]")
 					branches.forEach((branch) =>
@@ -224,7 +223,7 @@ export const unionImplementation = implementNode<UnionDeclaration>({
 					js.return(false)
 				}
 			},
-			rawKeyOf(): RawSchema {
+			rawKeyOf: (): RawSchema => {
 				return branches.reduce(
 					(result, branch) => result.intersectSatisfiable(branch.rawKeyOf()),
 					self.$.keywords.unknown.raw

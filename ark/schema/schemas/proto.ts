@@ -9,7 +9,6 @@ import {
 	prototypeKeysOf
 } from "@arktype/util"
 import { implementNode } from "../base.js"
-import { tsKeywords } from "../keywords/tsKeywords.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {

@@ -111,6 +111,8 @@ type inferBasisOf<def, $> =
 		inferBasis<conform<def["domain"], DomainDef>, $>
 	:	unknown
 
+// TODO: remove
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export type inferBasis<def extends NodeDef<BasisKind>, $> =
 	isAny<def> extends (
 		true //allow any to be used to access all constraints

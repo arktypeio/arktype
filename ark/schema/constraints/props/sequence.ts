@@ -12,7 +12,6 @@ import {
 	type SchemaDef,
 	implementNode
 } from "../../base.js"
-import { tsKeywords } from "../../keywords/tsKeywords.js"
 import type { MutableInner } from "../../kinds.js"
 import type { RawSchema } from "../../schemas/schema.js"
 import type { RawSchemaScope } from "../../scope.js"
@@ -291,7 +290,7 @@ export const sequenceImplementation = implementNode<SequenceDeclaration>({
 			// TODO: ensure this can work with resolution order
 			expression,
 			// minLength/maxLength should be checked by Intersection before either traversal
-			traverseAllows(data, ctx) {
+			traverseAllows: (data, ctx) => {
 				for (let i = 0; i < data.length; i++) {
 					if (!_childAtIndex(data, i).traverseAllows(data[i], ctx)) {
 						return false
@@ -299,7 +298,7 @@ export const sequenceImplementation = implementNode<SequenceDeclaration>({
 				}
 				return true
 			},
-			traverseApply(data, ctx) {
+			traverseApply: (data, ctx) => {
 				for (let i = 0; i < data.length; i++) {
 					ctx.path.push(i)
 					_childAtIndex(data, i).traverseApply(data[i], ctx)

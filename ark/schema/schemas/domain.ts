@@ -1,18 +1,18 @@
 import {
+	type Key,
 	type NonEnumerableDomain,
+	type array,
 	domainDescriptions,
 	domainOf,
 	getBaseDomainKeys
 } from "@arktype/util"
-import type { array } from "../../util/arrays.js"
-import type { Key } from "../../util/records.js"
 import { implementNode } from "../base.js"
+import type { BaseMeta, declareNode } from "../shared/declare.js"
+import { Disjoint } from "../shared/disjoint.js"
 import {
 	type PrimitiveAttachments,
 	derivePrimitiveAttachments
-} from "../main.js"
-import type { BaseMeta, declareNode } from "../shared/declare.js"
-import { Disjoint } from "../shared/disjoint.js"
+} from "../shared/implement.js"
 import type { TraverseAllows } from "../shared/traversal.js"
 import type { RawSchema, RawSchemaAttachments } from "./schema.js"
 

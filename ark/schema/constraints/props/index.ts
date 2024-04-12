@@ -4,7 +4,6 @@ import {
 	type SchemaDef,
 	implementNode
 } from "../../base.js"
-import { internalKeywords } from "../../keywords/internal.js"
 import type { RawSchema } from "../../schemas/schema.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import type { SchemaKind } from "../../shared/implement.js"
@@ -44,7 +43,7 @@ export const indexImplementation = implementNode<IndexDeclaration>({
 			child: true,
 			parse: (def, ctx) => {
 				const key = ctx.$.schema(def)
-				if (!key.extends(internalKeywords.propertyKey))
+				if (!key.extends(ctx.$.keywords.propertyKey))
 					return throwParseError(writeInvalidPropertyKeyMessage(key.expression))
 				return key
 			}
@@ -59,7 +58,7 @@ export const indexImplementation = implementNode<IndexDeclaration>({
 		description: (node) => `[${node.key.expression}]: ${node.value.description}`
 	},
 	intersections: {
-		index: (l, r) => l
+		index: (l) => l
 	},
 	construct: (self) => {
 		return {
@@ -79,7 +78,7 @@ export const indexImplementation = implementNode<IndexDeclaration>({
 					}
 				})
 			},
-			compile(js) {
+			compile: (js) => {
 				if (js.traversalKind === "Allows") {
 					js.return(true)
 				}

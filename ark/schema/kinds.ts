@@ -2,24 +2,30 @@ import {
 	type PredicateDeclaration,
 	predicateImplementation
 } from "./constraints/predicate.js"
-import type { IndexDeclaration } from "./constraints/props/index.js"
-import type { PropDeclaration } from "./constraints/props/prop.js"
+import {
+	type IndexDeclaration,
+	indexImplementation
+} from "./constraints/props/index.js"
+import {
+	type PropDeclaration,
+	propImplementation
+} from "./constraints/props/prop.js"
 import {
 	type SequenceDeclaration,
 	sequenceImplementation
 } from "./constraints/props/sequence.js"
-import type { DivisorDeclaration } from "./constraints/refinements/divisor.js"
+import {
+	type DivisorDeclaration,
+	divisorImplementation
+} from "./constraints/refinements/divisor.js"
 import {
 	type BoundDeclarations,
 	boundImplementationsByKind
 } from "./constraints/refinements/kinds.js"
-import type { RegexDeclaration } from "./constraints/refinements/regex.js"
 import {
-	divisorImplementation,
-	indexImplementation,
-	propImplementation,
+	type RegexDeclaration,
 	regexImplementation
-} from "./main.js"
+} from "./constraints/refinements/regex.js"
 import {
 	type DomainDeclaration,
 	domainImplementation

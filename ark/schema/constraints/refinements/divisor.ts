@@ -1,5 +1,4 @@
 import { type BaseAttachments, implementNode } from "../../base.js"
-import { tsKeywords } from "../../keywords/tsKeywords.js"
 import type { Schema } from "../../schemas/schema.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import {

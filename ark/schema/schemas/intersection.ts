@@ -19,7 +19,6 @@ import {
 	type ExtraneousKeyRestriction,
 	PropsGroup
 } from "../constraints/props/props.js"
-import { tsKeywords } from "../keywords/tsKeywords.js"
 import type { Inner, MutableInner, NodeDef, Prerequisite } from "../kinds.js"
 import type { NodeParseContext } from "../parse.js"
 import type { RawSchemaScope } from "../scope.js"

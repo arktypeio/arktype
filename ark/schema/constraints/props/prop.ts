@@ -4,7 +4,6 @@ import {
 	type SchemaDef,
 	implementNode
 } from "../../base.js"
-import { tsKeywords } from "../../keywords/tsKeywords.js"
 import type { RawSchema } from "../../schemas/schema.js"
 import type {
 	BaseErrorContext,
@@ -85,7 +84,7 @@ export const propImplementation = implementNode<PropDeclaration>({
 			let value = l.value.intersect(r.value)
 			const optional = l.optional === true && r.optional === true
 			if (value instanceof Disjoint) {
-				if (optional) value = tsKeywords.never.raw
+				if (optional) value = $.keywords.never.raw
 				else return value.withPrefixKey(l.compiledKey)
 			}
 			return $.node("prop", {

@@ -10,7 +10,6 @@ import {
 } from "@arktype/util"
 import { type Node, implementNode } from "../base.js"
 import type { of } from "../constraints/ast.js"
-import { tsKeywords } from "../keywords/tsKeywords.js"
 import type { NodeDef } from "../kinds.js"
 import type { StaticArkOption } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"

@@ -1,5 +1,4 @@
 import { implementNode } from "../../base.js"
-import { internalKeywords } from "../../keywords/internal.js"
 import type { declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import type { RawConstraint } from "../constraint.js"
@@ -66,7 +65,7 @@ export const maxLengthImplementation = implementNode<MaxLengthDeclaration>({
 				self.exclusive ?
 					(data) => data.length < self.rule
 				:	(data) => data.length <= self.rule,
-			impliedBasis: internalKeywords.lengthBoundable.raw
+			impliedBasis: self.$.keywords.lengthBoundable
 		})
 })
 
