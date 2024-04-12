@@ -89,18 +89,6 @@ export interface NarrowedAttachments<d extends RawNodeDeclaration>
 	children: Node<d["childKind"]>[]
 }
 
-declare global {
-	export interface ArkRegistry {
-		nodeImplementationsByKind: nodeImplementationsByKind
-	}
-}
-
-type nodeImplementationsByKind = {
-	[k in NodeKind]: UnknownNodeImplementation
-}
-
-$ark.nodeImplementationsByKind = {} as nodeImplementationsByKind
-
 export const implementNode = <d extends RawNodeDeclaration = never>(
 	_: nodeImplementationInputOf<d>
 ): nodeImplementationOf<d> => {
@@ -124,8 +112,6 @@ export const implementNode = <d extends RawNodeDeclaration = never>(
 			return problemWithLocation
 		}
 	}
-	$ark.nodeImplementationsByKind[implementation.kind] =
-		implementation as never
 	return implementation as never
 }
 

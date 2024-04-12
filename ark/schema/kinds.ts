@@ -36,7 +36,7 @@ import {
 import { type ProtoDeclaration, protoImplementation } from "./schemas/proto.js"
 import { type UnionDeclaration, unionImplementation } from "./schemas/union.js"
 import { type UnitDeclaration, unitImplementation } from "./schemas/unit.js"
-import type { NodeKind } from "./shared/implement.js"
+import type { NodeKind, UnknownNodeImplementation } from "./shared/implement.js"
 import type { makeRootAndArrayPropertiesMutable } from "./shared/utils.js"
 
 export interface NodeDeclarationsByKind extends BoundDeclarations {
@@ -53,6 +53,25 @@ export interface NodeDeclarationsByKind extends BoundDeclarations {
 	regex: RegexDeclaration
 	predicate: PredicateDeclaration
 }
+
+export const nodeImplementationsByKind: Record<
+	NodeKind,
+	UnknownNodeImplementation
+> = {
+	...boundImplementationsByKind,
+	domain: domainImplementation,
+	unit: unitImplementation,
+	proto: protoImplementation,
+	union: unionImplementation,
+	morph: morphImplementation,
+	intersection: intersectionImplementation,
+	divisor: divisorImplementation,
+	regex: regexImplementation,
+	predicate: predicateImplementation,
+	prop: propImplementation,
+	index: indexImplementation,
+	sequence: sequenceImplementation
+} satisfies Record<NodeKind, unknown> as never
 
 export type Declaration<kind extends NodeKind> = NodeDeclarationsByKind[kind]
 
