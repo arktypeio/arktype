@@ -1,10 +1,10 @@
 import { flatMorph } from "@arktype/util"
+import type { schemaKindRightOf } from "../schema.js"
 import {
 	type SchemaKind,
 	type TypeIntersection,
 	schemaKindsRightOf
 } from "../shared/implement.js"
-import type { schemaKindRightOf } from "./schema.js"
 
 export const defineRightwardIntersections = <kind extends SchemaKind>(
 	kind: kind,

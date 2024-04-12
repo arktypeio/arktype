@@ -8,7 +8,7 @@ import {
 } from "@arktype/util"
 import type { MutableInner } from "../../kinds.js"
 import type { Node, SchemaDef } from "../../node.js"
-import type { RawSchema } from "../../schemas/schema.js"
+import type { RawSchema } from "../../schema.js"
 import type { RawSchemaScope } from "../../scope.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"

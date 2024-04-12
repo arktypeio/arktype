@@ -21,6 +21,7 @@ import {
 import type { Inner, MutableInner, NodeDef, Prerequisite } from "../kinds.js"
 import type { Constraint, Node } from "../node.js"
 import type { NodeParseContext } from "../parse.js"
+import type { RawSchema, RawSchemaAttachments } from "../schema.js"
 import type { RawSchemaScope } from "../scope.js"
 import { type BaseMeta, type declareNode, metaKeys } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -38,7 +39,6 @@ import {
 import { hasArkKind, isNode } from "../shared/utils.js"
 import type { DomainDef, DomainNode } from "./domain.js"
 import type { ProtoDef, ProtoNode } from "./proto.js"
-import type { RawSchema, RawSchemaAttachments } from "./schema.js"
 import { defineRightwardIntersections } from "./utils.js"
 
 export type IntersectionBasisKind = "domain" | "proto"

@@ -6,8 +6,8 @@ import {
 	reference
 } from "@arktype/util"
 import type { Node } from "../../node.js"
+import type { RawSchema } from "../../schema.js"
 import type { IntersectionNode } from "../../schemas/intersection.js"
-import type { RawSchema } from "../../schemas/schema.js"
 import type { RawSchemaScope } from "../../scope.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { PropKind } from "../../shared/implement.js"

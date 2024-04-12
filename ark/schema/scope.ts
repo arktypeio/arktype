@@ -29,8 +29,8 @@ import {
 import { type PreparsedNodeResolution, SchemaModule } from "./module.js"
 import type { Node, RawNode, SchemaDef } from "./node.js"
 import { type NodeParseOptions, parseNode, schemaKindOf } from "./parse.js"
+import type { RawSchema, Schema } from "./schema.js"
 import type { distillIn, distillOut } from "./schemas/morph.js"
-import type { RawSchema, Schema } from "./schemas/schema.js"
 import { NodeCompiler } from "./shared/compile.js"
 import type {
 	ActualWriter,

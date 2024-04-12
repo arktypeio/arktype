@@ -29,7 +29,7 @@ import {
 	type show,
 	throwParseError
 } from "@arktype/util"
-import type { UnknownSchema } from "../../schema/schemas/schema.js"
+import type { UnknownSchema } from "../../schema/schema.js"
 import { rawSchema } from "../../schema/scope.js"
 import type { ParseContext } from "../scope.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"

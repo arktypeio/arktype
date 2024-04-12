@@ -1,6 +1,11 @@
 import { appendUnique, groupBy, isArray } from "@arktype/util"
 import type { NodeDef } from "../kinds.js"
 import type { Node } from "../node.js"
+import type {
+	RawSchema,
+	RawSchemaAttachments,
+	schemaKindRightOf
+} from "../schema.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { ArkTypeError } from "../shared/errors.js"
@@ -10,11 +15,6 @@ import {
 	schemaKindsRightOf
 } from "../shared/implement.js"
 import type { Discriminant } from "./discriminate.js"
-import type {
-	RawSchema,
-	RawSchemaAttachments,
-	schemaKindRightOf
-} from "./schema.js"
 import { defineRightwardIntersections } from "./utils.js"
 
 export type UnionChildKind = schemaKindRightOf<"union">

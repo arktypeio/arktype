@@ -11,6 +11,11 @@ import {
 import type { of } from "../constraints/ast.js"
 import type { NodeDef } from "../kinds.js"
 import type { Node } from "../node.js"
+import type {
+	RawSchema,
+	RawSchemaAttachments,
+	schemaKindRightOf
+} from "../schema.js"
 import type { StaticArkOption } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
@@ -18,11 +23,6 @@ import { Disjoint } from "../shared/disjoint.js"
 import type { ArkResult, ArkTypeError } from "../shared/errors.js"
 import { basisKinds, implementNode } from "../shared/implement.js"
 import type { TraversalContext } from "../shared/traversal.js"
-import type {
-	RawSchema,
-	RawSchemaAttachments,
-	schemaKindRightOf
-} from "./schema.js"
 import { defineRightwardIntersections } from "./utils.js"
 
 export type MorphChildKind = schemaKindRightOf<"morph">

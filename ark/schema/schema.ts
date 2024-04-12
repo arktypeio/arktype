@@ -1,29 +1,13 @@
 import type { Callable, Json, conform } from "@arktype/util"
-import type { constrain } from "../constraints/ast.js"
+import type { constrain } from "./constraints/ast.js"
 import {
 	type PrimitiveConstraintKind,
 	throwInvalidOperandError
-} from "../constraints/util.js"
-import type { inferSchema } from "../inference.js"
-import type { NodeDef, reducibleKindOf } from "../kinds.js"
-import { type Node, RawNode, type SchemaDef } from "../node.js"
-import type { SchemaScope } from "../scope.js"
-import type { BaseMeta, RawNodeDeclaration } from "../shared/declare.js"
-import { Disjoint } from "../shared/disjoint.js"
-import type { ArkResult } from "../shared/errors.js"
-import type {
-	NodeAttachments,
-	NodeKind,
-	SchemaKind,
-	kindRightOf
-} from "../shared/implement.js"
-import type { inferIntersection } from "../shared/intersections.js"
-import {
-	arkKind,
-	type inferred,
-	type internalImplementationOf
-} from "../shared/utils.js"
-import type { constraintKindOf } from "./intersection.js"
+} from "./constraints/util.js"
+import type { inferSchema } from "./inference.js"
+import type { NodeDef, reducibleKindOf } from "./kinds.js"
+import { type Node, RawNode, type SchemaDef } from "./node.js"
+import type { constraintKindOf } from "./schemas/intersection.js"
 import type {
 	Morph,
 	Out,
@@ -31,8 +15,24 @@ import type {
 	distillConstrainableOut,
 	distillOut,
 	inferMorphOut
-} from "./morph.js"
-import type { UnionChildKind } from "./union.js"
+} from "./schemas/morph.js"
+import type { UnionChildKind } from "./schemas/union.js"
+import type { SchemaScope } from "./scope.js"
+import type { BaseMeta, RawNodeDeclaration } from "./shared/declare.js"
+import { Disjoint } from "./shared/disjoint.js"
+import type { ArkResult } from "./shared/errors.js"
+import type {
+	NodeAttachments,
+	NodeKind,
+	SchemaKind,
+	kindRightOf
+} from "./shared/implement.js"
+import type { inferIntersection } from "./shared/intersections.js"
+import {
+	arkKind,
+	type inferred,
+	type internalImplementationOf
+} from "./shared/utils.js"
 
 export interface RawSchemaDeclaration extends RawNodeDeclaration {
 	kind: SchemaKind

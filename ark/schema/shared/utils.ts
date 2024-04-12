@@ -8,7 +8,7 @@ import {
 } from "@arktype/util"
 import type { GenericSchema } from "../generic.js"
 import type { Constraint, RawNode } from "../node.js"
-import type { RawSchema } from "../schemas/schema.js"
+import type { RawSchema } from "../schema.js"
 import type { RawSchemaModule, RawSchemaScope } from "../scope.js"
 import type { ArkTypeError } from "./errors.js"
 

@@ -8,6 +8,7 @@ import {
 	objectKindOrDomainOf,
 	prototypeKeysOf
 } from "@arktype/util"
+import type { RawSchema, RawSchemaAttachments } from "../schema.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
@@ -16,7 +17,6 @@ import {
 	derivePrimitiveAttachments,
 	implementNode
 } from "../shared/implement.js"
-import type { RawSchema, RawSchemaAttachments } from "./schema.js"
 
 export interface ProtoInner<proto extends Constructor = Constructor>
 	extends BaseMeta {

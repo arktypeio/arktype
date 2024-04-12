@@ -17,12 +17,12 @@ import type { PropsGroupInput } from "../constraints/props/props.js"
 import type { Declaration, Inner, errorContext } from "../kinds.js"
 import type { Node, RawNode } from "../node.js"
 import type { NodeParseContext } from "../parse.js"
-import type { IntersectionInner } from "../schemas/intersection.js"
 import type {
 	RawSchema,
 	schemaKindOrRightOf,
 	schemaKindRightOf
-} from "../schemas/schema.js"
+} from "../schema.js"
+import type { IntersectionInner } from "../schemas/intersection.js"
 import type {
 	NodeConfig,
 	ParsedUnknownNodeConfig,

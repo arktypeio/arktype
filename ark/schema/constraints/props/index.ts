@@ -1,6 +1,6 @@
 import { throwParseError } from "@arktype/util"
 import type { SchemaDef } from "../../node.js"
-import type { RawSchema } from "../../schemas/schema.js"
+import type { RawSchema } from "../../schema.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import {
 	implementNode,

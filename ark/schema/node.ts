@@ -26,11 +26,11 @@ import {
 	nodeImplementationsByKind,
 	type reducibleKindOf
 } from "./kinds.js"
+import type { RawSchema, Schema } from "./schema.js"
 import type { DomainNode } from "./schemas/domain.js"
 import type { IntersectionNode } from "./schemas/intersection.js"
 import type { MorphNode } from "./schemas/morph.js"
 import type { ProtoNode } from "./schemas/proto.js"
-import type { RawSchema, Schema } from "./schemas/schema.js"
 import type { UnionNode } from "./schemas/union.js"
 import type { UnitNode } from "./schemas/unit.js"
 import type {

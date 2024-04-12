@@ -1,6 +1,6 @@
 import { compileSerializedValue, type Key } from "@arktype/util"
 import type { SchemaDef } from "../../node.js"
-import type { RawSchema } from "../../schemas/schema.js"
+import type { RawSchema } from "../../schema.js"
 import type {
 	BaseErrorContext,
 	BaseMeta,
@@ -12,8 +12,8 @@ import {
 	type NodeAttachments,
 	type SchemaKind
 } from "../../shared/implement.js"
-import type { ConstraintAttachments } from "../util.js"
 import type { RawConstraint } from "../constraint.js"
+import type { ConstraintAttachments } from "../util.js"
 
 export interface PropDef extends BaseMeta {
 	readonly key: Key
