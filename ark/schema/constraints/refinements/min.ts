@@ -1,7 +1,7 @@
 import { implementNode } from "../../base.js"
 import { internalKeywords } from "../../keywords/internal.js"
 import type { declareNode } from "../../shared/declare.js"
-import type { BaseConstraint } from "../constraint.js"
+import type { RawConstraint } from "../constraint.js"
 import {
 	type BaseNormalizedRangeSchema,
 	type BaseRangeInner,
@@ -57,4 +57,4 @@ export const minImplementation = implementNode<MinDeclaration>({
 		})
 })
 
-export type MinNode = BaseConstraint<MinDeclaration>
+export type MinNode = RawConstraint<MinDeclaration>

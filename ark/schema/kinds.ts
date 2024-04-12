@@ -54,22 +54,6 @@ export interface NodeDeclarationsByKind extends BoundDeclarations {
 	predicate: PredicateDeclaration
 }
 
-export const nodeImplementationsByKind = {
-	...boundImplementationsByKind,
-	domain: domainImplementation,
-	unit: unitImplementation,
-	proto: protoImplementation,
-	union: unionImplementation,
-	morph: morphImplementation,
-	intersection: intersectionImplementation,
-	divisor: divisorImplementation,
-	regex: regexImplementation,
-	predicate: predicateImplementation,
-	prop: propImplementation,
-	index: indexImplementation,
-	sequence: sequenceImplementation
-}
-
 export type Declaration<kind extends NodeKind> = NodeDeclarationsByKind[kind]
 
 export type NodeDef<kind extends NodeKind> = Declaration<kind>["def"]

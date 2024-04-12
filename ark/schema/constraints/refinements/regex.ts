@@ -5,7 +5,7 @@ import {
 	type PrimitiveAttachments,
 	derivePrimitiveAttachments
 } from "../../shared/implement.js"
-import type { BaseConstraint, ConstraintAttachments } from "../constraint.js"
+import type { ConstraintAttachments, RawConstraint } from "../constraint.js"
 
 export interface RegexInner extends BaseMeta {
 	readonly rule: string
@@ -73,4 +73,4 @@ export const regexImplementation = implementNode<RegexDeclaration>({
 	}
 })
 
-export type RegexNode = BaseConstraint<RegexDeclaration>
+export type RegexNode = RawConstraint<RegexDeclaration>

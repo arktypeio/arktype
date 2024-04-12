@@ -1,10 +1,10 @@
-import { compileSerializedValue } from "@arktype/util"
+import { compileSerializedValue, type show } from "@arktype/util"
 import { type BaseAttachments, type RawNode, implementNode } from "../base.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import type { PrimitiveAttachments } from "../shared/implement.js"
 import type { TraversalContext } from "../shared/traversal.js"
 import type { constrain, of } from "./ast.js"
-import type { BaseConstraint, ConstraintAttachments } from "./constraint.js"
+import type { ConstraintAttachments, RawConstraint } from "./constraint.js"
 
 export interface PredicateInner<rule extends Predicate<any> = Predicate<any>>
 	extends BaseMeta {
@@ -25,12 +25,13 @@ export type PredicateDeclaration = declareNode<{
 	attachments: PredicateAttachments
 }>
 
-export interface PredicateAttachments
-	extends BaseAttachments<PredicateDeclaration>,
-		PrimitiveAttachments<PredicateDeclaration>,
-		ConstraintAttachments {
-	serializedPredicate: string
-}
+export type PredicateAttachments = show<
+	BaseAttachments<PredicateDeclaration> &
+		PrimitiveAttachments<PredicateDeclaration> &
+		ConstraintAttachments & {
+			serializedPredicate: string
+		}
+>
 
 // TODO: If node contains a predicate reference that doesn't take 1 arg, we need
 // to wrap it with traversal state for allows
@@ -90,7 +91,7 @@ export const predicateImplementation = implementNode<PredicateDeclaration>({
 	}
 })
 
-export type PredicateNode = BaseConstraint<PredicateDeclaration>
+export type PredicateNode = RawConstraint<PredicateDeclaration>
 
 export type Predicate<data = unknown> = (
 	data: data,

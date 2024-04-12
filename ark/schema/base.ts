@@ -22,13 +22,8 @@ import type { SequenceNode } from "./constraints/props/sequence.js"
 import type { DivisorNode } from "./constraints/refinements/divisor.js"
 import type { BoundNodesByKind } from "./constraints/refinements/kinds.js"
 import type { RegexNode } from "./constraints/refinements/regex.js"
-import type {
-	Inner,
-	NodeDef,
-	nodeImplementationsByKind,
-	reducibleKindOf
-} from "./kinds.js"
-import type { BaseConstraint, OpenNodeKind, RawSchema } from "./main.js"
+import type { Inner, NodeDef, reducibleKindOf } from "./kinds.js"
+import type { OpenNodeKind, RawConstraint, RawSchema } from "./main.js"
 import type { DomainNode } from "./schemas/domain.js"
 import type { IntersectionNode } from "./schemas/intersection.js"
 import type { MorphNode } from "./schemas/morph.js"
@@ -96,11 +91,15 @@ export interface NarrowedAttachments<d extends RawNodeDeclaration>
 
 declare global {
 	export interface ArkRegistry {
-		nodeImplementationsByKind: typeof nodeImplementationsByKind
+		nodeImplementationsByKind: nodeImplementationsByKind
 	}
 }
 
-$ark.nodeImplementationsByKind = {} as typeof nodeImplementationsByKind
+type nodeImplementationsByKind = {
+	[k in NodeKind]: UnknownNodeImplementation
+}
+
+$ark.nodeImplementationsByKind = {} as nodeImplementationsByKind
 
 export const implementNode = <d extends RawNodeDeclaration = never>(
 	_: nodeImplementationInputOf<d>
@@ -164,12 +163,6 @@ export class RawNode<
 			this.contributesReferencesByName
 		)
 	}
-
-	// TODO: Remove
-	declare traverseAllows: TraverseAllows<d["prerequisite"]>
-	declare traverseApply: TraverseApply<d["prerequisite"]>
-	declare compile: (js: NodeCompiler) => void
-	declare expression: string
 
 	protected readonly impl: UnknownNodeImplementation = (
 		this.constructor as any
@@ -460,4 +453,4 @@ export type Node<kind extends NodeKind> = NodesByKind[kind]
 
 export type SchemaDef<kind extends SchemaKind = SchemaKind> = NodeDef<kind>
 
-export type Constraint = BaseConstraint
+export type Constraint = RawConstraint

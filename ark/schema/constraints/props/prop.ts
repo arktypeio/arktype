@@ -13,7 +13,7 @@ import type {
 } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import type { SchemaKind } from "../../shared/implement.js"
-import type { BaseConstraint, ConstraintAttachments } from "../constraint.js"
+import type { ConstraintAttachments, RawConstraint } from "../constraint.js"
 
 export interface PropDef extends BaseMeta {
 	readonly key: Key
@@ -168,4 +168,4 @@ export const propImplementation = implementNode<PropDeclaration>({
 	}
 })
 
-export type PropNode = BaseConstraint<PropDeclaration>
+export type PropNode = RawConstraint<PropDeclaration>

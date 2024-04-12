@@ -7,8 +7,8 @@ import {
 	derivePrimitiveAttachments
 } from "../../shared/implement.js"
 import {
-	type BaseConstraint,
 	type ConstraintAttachments,
+	type RawConstraint,
 	writeInvalidOperandMessage
 } from "../constraint.js"
 
@@ -64,7 +64,7 @@ export const divisorImplementation = implementNode<DivisorDeclaration>({
 	}
 })
 
-export type DivisorNode = BaseConstraint<DivisorDeclaration>
+export type DivisorNode = RawConstraint<DivisorDeclaration>
 
 export const writeIndivisibleMessage = <node extends Schema>(
 	t: node

@@ -22,7 +22,7 @@ import type {
 	NodeKeyImplementation,
 	SchemaKind
 } from "../../shared/implement.js"
-import type { BaseConstraint, ConstraintAttachments } from "../constraint.js"
+import type { ConstraintAttachments, RawConstraint } from "../constraint.js"
 import type { MaxLengthNode } from "../refinements/maxLength.js"
 import type { MinLengthNode } from "../refinements/minLength.js"
 
@@ -353,7 +353,7 @@ export const sequenceImplementation = implementNode<SequenceDeclaration>({
 	}
 })
 
-export type SequenceNode = BaseConstraint<SequenceDeclaration>
+export type SequenceNode = RawConstraint<SequenceDeclaration>
 
 const sequenceInnerToTuple = (inner: SequenceInner): SequenceTuple => {
 	const tuple: mutable<SequenceTuple> = []
