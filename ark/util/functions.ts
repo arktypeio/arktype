@@ -51,6 +51,7 @@ export type DynamicFunction = new <f extends (...args: never[]) => unknown>(
 export type CallableOptions<attachments extends object> = {
 	attach?: attachments
 	bind?: object
+	name?: string
 }
 
 // @ts-expect-error required to cast function type
@@ -60,13 +61,21 @@ export class Callable<
 > extends NoopBase<f & attachments> {
 	constructor(f: f, opts?: CallableOptions<attachments>) {
 		super()
-		return Object.assign(
-			Object.setPrototypeOf(
-				f.bind(opts?.bind ?? this),
-				this.constructor.prototype
-			),
-			opts?.attach
+		const self = Object.setPrototypeOf(
+			f.bind(opts?.bind ?? this),
+			this.constructor.prototype
 		)
+
+		// ensure Function's readonly name can be set without crashing
+		if (opts?.name)
+			Object.defineProperty(self, "name", {
+				configurable: true,
+				value: opts.name
+			})
+
+		Object.assign(self, opts?.attach)
+
+		return self
 	}
 }
 

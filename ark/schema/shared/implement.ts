@@ -394,7 +394,6 @@ export type DescriptionWriter<kind extends NodeKind = NodeKind> = (
 export interface UnknownAttachments {
 	alias?: string
 	readonly kind: NodeKind
-	readonly name: string
 	readonly inner: Record<string, any>
 	readonly entries: readonly Entry<string>[]
 	readonly json: object

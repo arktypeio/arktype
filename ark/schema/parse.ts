@@ -48,8 +48,6 @@ export interface NodeParseContext extends NodeParseOptions {
 	raw: unknown
 }
 
-const nodeCountsByPrefix: PartialRecord<string, number> = {}
-
 const baseKeys: PartialRecord<string, propValueOf<KeyDefinitions<any>>> = {
 	description: { meta: true }
 } satisfies KeyDefinitions<RawNodeDeclaration> as never
@@ -244,11 +242,7 @@ export const parseNode = (
 	// since reduction can add impliedSiblings
 	if ($.nodeCache[innerId]) return $.nodeCache[innerId]
 
-	const prefix = opts?.alias ?? kind
-	nodeCountsByPrefix[prefix] ??= 0
-	const name = `${prefix}${++nodeCountsByPrefix[prefix]!}`
 	const attachments = {
-		name,
 		kind,
 		inner,
 		entries,

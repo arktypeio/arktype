@@ -60,23 +60,31 @@ import { TraversalContext } from "./shared/traversal.js"
 
 export type UnknownNode = RawNode | Schema
 
+const nodeCountsByPrefix: PartialRecord<string, number> = {}
+
 export class RawNode<
 	/** @ts-expect-error allow instantiation assignment to the base type */
 	out d extends RawNodeDeclaration = RawNodeDeclaration
 > extends Callable<(data: d["prerequisite"]) => ArkResult, attachmentsOf<d>> {
 	constructor(public attachments: UnknownAttachments) {
-		super((data: any): ArkResult<any> => {
-			if (
-				!this.includesMorph &&
-				!this.includesContextDependentPredicate &&
-				this.allows(data)
-			) {
-				return { data, out: data }
-			}
-			const ctx = new TraversalContext(data, this.$.resolvedConfig)
-			this.traverseApply(data, ctx)
-			return ctx.finalize()
-		}, attachments as never)
+		const prefix = attachments?.alias ?? attachments.kind
+		nodeCountsByPrefix[prefix] ??= 0
+		const name = `${prefix}${++nodeCountsByPrefix[prefix]!}`
+		super(
+			(data: any): ArkResult => {
+				if (
+					!this.includesMorph &&
+					!this.includesContextDependentPredicate &&
+					this.allows(data)
+				) {
+					return { data, out: data }
+				}
+				const ctx = new TraversalContext(data, this.$.resolvedConfig)
+				this.traverseApply(data, ctx)
+				return ctx.finalize()
+			},
+			{ attach: attachments as never, name }
+		)
 		this.contributesReferencesByName =
 			this.name in this.referencesByName ?
 				this.referencesByName
