@@ -109,14 +109,6 @@ export class RawNode<
 	readonly precedence = precedenceOfKind(this.kind)
 	jit = false
 
-	private descriptionCache?: string
-	get description(): string {
-		this.descriptionCache ??=
-			this.inner.description ??
-			this.$.resolvedConfig[this.kind].description?.(this as never)
-		return this.descriptionCache
-	}
-
 	private compiledErrorContextCache: string | undefined
 	get compiledErrorContext(): string {
 		if (!this.compiledErrorContextCache) {

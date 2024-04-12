@@ -192,7 +192,7 @@ export class RawSchemaScope<
 
 	/** @internal */
 	get keywords(): PrimitiveKeywords {
-		return this.keywords
+		return RawSchemaScope.keywords
 	}
 
 	constructor(
