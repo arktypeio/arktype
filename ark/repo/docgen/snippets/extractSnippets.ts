@@ -31,9 +31,10 @@ export const extractSnippets = (
 ): SnippetsByPath => {
 	const snippetsByPath: SnippetsByPath = {}
 	for (const path of sourcePaths) {
-		const fileText = tsFileMatcher.test(path)
-			? transformTsFileContents(path, project, config)
-			: readFile(path)
+		const fileText =
+			tsFileMatcher.test(path) ?
+				transformTsFileContents(path, project, config)
+			:	readFile(path)
 		snippetsByPath[path] = extractSnippetsFromFile(path, fileText)
 	}
 	return snippetsByPath
@@ -77,9 +78,7 @@ const extractLabeledSnippets = (
 					)
 				}
 				labeledSnippets[lastOpenBlock.id] = {
-					text: linesToOutput(
-						lines.slice(lastOpenBlock.lineNumber, lineNumber)
-					)
+					text: linesToOutput(lines.slice(lastOpenBlock.lineNumber, lineNumber))
 				}
 			} else {
 				labeledSnippets[parsedSnip.id] = {

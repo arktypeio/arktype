@@ -66,14 +66,14 @@ type nodeConfigForKind<kind extends NodeKind> = Readonly<
 	show<
 		{
 			description?: DescriptionWriter<kind>
-		} & (kind extends ArkErrorCode
-			? {
-					expected?: ExpectedWriter<kind>
-					actual?: ActualWriter<kind>
-					problem?: ProblemWriter<kind>
-					message?: MessageWriter<kind>
-				}
-			: {})
+		} & (kind extends ArkErrorCode ?
+			{
+				expected?: ExpectedWriter<kind>
+				actual?: ActualWriter<kind>
+				problem?: ProblemWriter<kind>
+				message?: MessageWriter<kind>
+			}
+		:	{})
 	>
 >
 
@@ -156,13 +156,11 @@ export type exportedNameOf<$> = Exclude<keyof $ & string, PrivateDeclaration>
 export type PrivateDeclaration<key extends string = string> = `#${key}`
 
 type toRawScope<$> = RawSchemaScope<{
-	[k in keyof $]: $[k] extends { [arkKind]: infer kind }
-		? kind extends "generic"
-			? GenericSchema
-			: kind extends "module"
-				? RawSchemaModule
-				: never
-		: RawSchema
+	[k in keyof $]: $[k] extends { [arkKind]: infer kind } ?
+		kind extends "generic" ? GenericSchema
+		: kind extends "module" ? RawSchemaModule
+		: never
+	:	RawSchema
 }>
 
 export type PrimitiveKeywords = typeof tsKeywords &
@@ -276,11 +274,11 @@ export class RawSchemaScope<
 			def = def()
 		}
 		// TODO: initialize here?
-		const resolution = hasArkKind(def, "generic")
-			? validateUninstantiatedGenericNode(def)
-			: hasArkKind(def, "module")
-				? throwParseError(writeMissingSubmoduleAccessMessage(name))
-				: this.schema(def as never, { args: {} })
+		const resolution =
+			hasArkKind(def, "generic") ? validateUninstantiatedGenericNode(def)
+			: hasArkKind(def, "module") ?
+				throwParseError(writeMissingSubmoduleAccessMessage(name))
+			:	this.schema(def as never, { args: {} })
 		this.resolutions[name] = resolution
 		return resolution
 	}
@@ -299,8 +297,7 @@ export class RawSchemaScope<
 			const resolution = prefixDef[name.slice(dotIndex + 1)]
 			// if the first part of name is a submodule but the suffix is
 			// unresolvable, we can throw immediately
-			if (!resolution)
-				return throwParseError(writeUnresolvableMessage(name))
+			if (!resolution) return throwParseError(writeUnresolvableMessage(name))
 			this.resolutions[name] = resolution
 			return resolution
 		}
@@ -361,10 +358,7 @@ export class RawSchemaScope<
 			)
 			Object.assign(this.resolutions, this.#exportedResolutions)
 			if (this.config.registerKeywords)
-				Object.assign(
-					RawSchemaScope.keywords,
-					this.#exportedResolutions
-				)
+				Object.assign(RawSchemaScope.keywords, this.#exportedResolutions)
 			this.references = Object.values(this.referencesByName)
 			// this.bindCompiledScope(this.references)
 			this.resolved = true
@@ -380,15 +374,13 @@ export class RawSchemaScope<
 }
 
 export type validateAliases<aliases> = {
-	[k in keyof aliases]: aliases[k] extends PreparsedNodeResolution
-		? aliases[k]
-		: validateSchema<aliases[k], aliases>
+	[k in keyof aliases]: aliases[k] extends PreparsedNodeResolution ? aliases[k]
+	:	validateSchema<aliases[k], aliases>
 }
 
 export type instantiateAliases<aliases> = {
-	[k in keyof aliases]: aliases[k] extends PreparsedNodeResolution
-		? aliases[k]
-		: inferSchema<aliases[k], aliases>
+	[k in keyof aliases]: aliases[k] extends PreparsedNodeResolution ? aliases[k]
+	:	inferSchema<aliases[k], aliases>
 } & unknown
 
 export const schemaScope = <const aliases>(
@@ -552,9 +544,9 @@ const compileSpace = (references: readonly RawNode[]) => {
 				node.compile(allowsCompiler)
 				const applyCompiler = new NodeCompiler("Apply").indent()
 				node.compile(applyCompiler)
-				js.line(
-					`${allowsCompiler.writeMethod(`${node.name}Allows`)},`
-				).line(`${applyCompiler.writeMethod(`${node.name}Apply`)},`)
+				js.line(`${allowsCompiler.writeMethod(`${node.name}Allows`)},`).line(
+					`${applyCompiler.writeMethod(`${node.name}Apply`)},`
+				)
 			})
 			return js
 		})

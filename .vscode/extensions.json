@@ -1,7 +1,7 @@
 {
 	"recommendations": [
-		"biomejs.biome",
-		"unifiedjs.vscode-mdx",
+		"esbenp.prettier-vscode",
+		"dbaeumer.vscode-eslint",
 		// Run/debug tests inline via VSCode's Test Explorer
 		"hbenl.vscode-mocha-test-adapter",
 		// Syntax highlighting for strings in ArkType definitions

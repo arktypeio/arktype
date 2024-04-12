@@ -137,9 +137,9 @@ export const parseNode = (
 	// check again after normalization in case a node is a valid collapsed
 	// schema for the kind (e.g. sequence can collapse to element accepting a Node)
 	if (isNode(normalizedDefinition)) {
-		return normalizedDefinition.kind === kind
-			? (normalizedDefinition as never)
-			: throwMismatchedNodeSchemaError(kind, normalizedDefinition.kind)
+		return normalizedDefinition.kind === kind ?
+				(normalizedDefinition as never)
+			:	throwMismatchedNodeSchemaError(kind, normalizedDefinition.kind)
 	}
 	const ctx: NodeParseContext = { $, raw: schema, ...opts }
 	const inner: Record<string, unknown> = {}
@@ -147,15 +147,12 @@ export const parseNode = (
 	// parsed first
 	const schemaEntries = entriesOf(normalizedDefinition).sort(
 		([lKey], [rKey]) =>
-			isNodeKind(lKey)
-				? isNodeKind(rKey)
-					? precedenceOfKind(lKey) - precedenceOfKind(rKey)
-					: 1
-				: isNodeKind(rKey)
-					? -1
-					: lKey < rKey
-						? -1
-						: 1
+			isNodeKind(lKey) ?
+				isNodeKind(rKey) ? precedenceOfKind(lKey) - precedenceOfKind(rKey)
+				:	1
+			: isNodeKind(rKey) ? -1
+			: lKey < rKey ? -1
+			: 1
 	)
 	const children: RawNode[] = []
 	for (const entry of schemaEntries) {
@@ -186,9 +183,8 @@ export const parseNode = (
 				children.push(listableNode)
 			}
 		} else {
-			json[k] = keyImpl.serialize
-				? keyImpl.serialize(v)
-				: defaultValueSerializer(v)
+			json[k] =
+				keyImpl.serialize ? keyImpl.serialize(v) : defaultValueSerializer(v)
 		}
 
 		if (!keyImpl.meta) {
@@ -287,19 +283,18 @@ export const parseNode = (
 	attachments.description ??= $.resolvedConfig[kind].description(
 		attachments as never
 	)
-	const node: RawNode = includes(schemaKinds, kind)
-		? new RawSchema(attachments as never)
-		: (new RawNode(attachments as never) as any)
+	const node: RawNode =
+		includes(schemaKinds, kind) ?
+			new RawSchema(attachments as never)
+		:	(new RawNode(attachments as never) as any)
 	$.nodeCache[innerId] = node
 	return node
 }
 
 const schemaBranchesOf = (schema: object) =>
-	isArray(schema)
-		? schema
-		: "branches" in schema && isArray(schema.branches)
-			? schema.branches
-			: undefined
+	isArray(schema) ? schema
+	: "branches" in schema && isArray(schema.branches) ? schema.branches
+	: undefined
 
 const throwMismatchedNodeSchemaError = (expected: NodeKind, actual: NodeKind) =>
 	throwParseError(

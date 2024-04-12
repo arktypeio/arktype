@@ -46,9 +46,7 @@ export const predicateImplementation = implementNode<PredicateDeclaration>({
 	normalize: (def) => (typeof def === "function" ? { predicate: def } : def),
 	defaults: {
 		description: (node) =>
-			`valid according to ${
-				node.predicate.name || "an anonymous predicate"
-			}`
+			`valid according to ${node.predicate.name || "an anonymous predicate"}`
 	},
 	intersectionIsOpen: true,
 	// TODO: ordering
@@ -103,11 +101,9 @@ export type PredicateCast<input = never, narrowed extends input = input> = (
 	ctx: TraversalContext
 ) => input is narrowed
 
-export type inferNarrow<In, predicate> = predicate extends (
-	data: any,
-	...args: any[]
-) => data is infer narrowed
-	? In extends of<unknown, infer constraints>
-		? constrain<of<narrowed, constraints>, "predicate", any>
-		: constrain<narrowed, "predicate", any>
-	: constrain<In, "predicate", any>
+export type inferNarrow<In, predicate> =
+	predicate extends (data: any, ...args: any[]) => data is infer narrowed ?
+		In extends of<unknown, infer constraints> ?
+			constrain<of<narrowed, constraints>, "predicate", any>
+		:	constrain<narrowed, "predicate", any>
+	:	constrain<In, "predicate", any>

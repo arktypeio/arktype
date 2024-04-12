@@ -15,9 +15,9 @@ export type MeasureComparison<Unit extends MeasureUnit = MeasureUnit> = {
 export type MarkMeasure = Partial<Record<StatName, Measure>>
 
 export const stringifyMeasure = ([value, units]: Measure) =>
-	units in TIME_UNIT_RATIOS
-		? stringifyTimeMeasure([value, units as TimeUnit])
-		: `${value}${units}`
+	units in TIME_UNIT_RATIOS ?
+		stringifyTimeMeasure([value, units as TimeUnit])
+	:	`${value}${units}`
 
 export const TYPE_UNITS = ["instantiations"] as const
 
@@ -59,10 +59,7 @@ export const createTimeMeasure = (ms: number) => {
 		if (!bestMatch) {
 			bestMatch = candidateMeasure
 		} else if (bestMatch[0] >= 1) {
-			if (
-				candidateMeasure[0] >= 1 &&
-				candidateMeasure[0] < bestMatch[0]
-			) {
+			if (candidateMeasure[0] >= 1 && candidateMeasure[0] < bestMatch[0]) {
 				bestMatch = candidateMeasure
 			}
 		} else {

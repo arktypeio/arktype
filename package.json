@@ -28,8 +28,8 @@
 		"testTsVersions": "tsx ./ark/repo/testTsVersions.ts",
 		"typecheck": "tsc --noEmit",
 		"lint": "eslint --max-warnings=0 .",
-		"format": "prettier --write --ignore-path ./ark/repo/.prettierignore .",
-		"checkFormat": "prettier --check --ignore-path ./ark/repo/.prettierignore .",
+		"format": "prettier --write .",
+		"checkFormat": "prettier --check .",
 		"knip": "knip",
 		"ci:publish": "changeset publish",
 		"ci:version": "tsx ./ark/repo/updateVersions.ts"
@@ -42,6 +42,7 @@
 		"@changesets/cli": "2.27.1",
 		"@types/mocha": "10.0.6",
 		"@types/node": "20.12.7",
+		"prettier": "3.2.5",
 		"eslint": "8.57.0",
 		"eslint-config-prettier": "9.1.0",
 		"eslint-define-config": "2.1.0",
@@ -86,7 +87,8 @@
 	"prettier": {
 		"useTabs": true,
 		"semi": false,
-		"trailingComma": "none"
+		"trailingComma": "none",
+		"experimentalTernaries": true
 	},
 	"eslintConfig": {
 		"extends": "./ark/repo/.eslintrc.cjs"

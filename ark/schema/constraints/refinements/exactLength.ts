@@ -51,20 +51,20 @@ export const exactLengthImplementation = implementNode<ExactLengthDeclaration>({
 			}),
 		minLength: (exactLength, minLength) =>
 			(
-				minLength.exclusive
-					? exactLength.rule > minLength.rule
-					: exactLength.rule >= minLength.rule
-			)
-				? exactLength
-				: Disjoint.from("range", exactLength, minLength),
+				minLength.exclusive ?
+					exactLength.rule > minLength.rule
+				:	exactLength.rule >= minLength.rule
+			) ?
+				exactLength
+			:	Disjoint.from("range", exactLength, minLength),
 		maxLength: (exactLength, maxLength) =>
 			(
-				maxLength.exclusive
-					? exactLength.rule < maxLength.rule
-					: exactLength.rule <= maxLength.rule
-			)
-				? exactLength
-				: Disjoint.from("range", exactLength, maxLength)
+				maxLength.exclusive ?
+					exactLength.rule < maxLength.rule
+				:	exactLength.rule <= maxLength.rule
+			) ?
+				exactLength
+			:	Disjoint.from("range", exactLength, maxLength)
 	},
 	hasAssociatedError: true,
 	defaults: {

@@ -90,17 +90,16 @@ type ParentsByKind = {
 
 export type parentKindOf<kind extends NodeKind> = ParentsByKind[kind]
 
-export type ioKindOf<kind extends NodeKind> = kind extends "morph"
-	? MorphChildKind
-	: reducibleKindOf<kind>
+export type ioKindOf<kind extends NodeKind> =
+	kind extends "morph" ? MorphChildKind : reducibleKindOf<kind>
 
 export type Prerequisite<kind extends NodeKind> =
 	Declaration<kind>["prerequisite"]
 
 export type reducibleKindOf<kind extends NodeKind> =
-	Declaration<kind>["reducibleTo"] extends NodeKind
-		? Declaration<kind>["reducibleTo"]
-		: kind
+	Declaration<kind>["reducibleTo"] extends NodeKind ?
+		Declaration<kind>["reducibleTo"]
+	:	kind
 
 export type Inner<kind extends NodeKind> = Declaration<kind>["inner"]
 

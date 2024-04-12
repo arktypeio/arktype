@@ -11,12 +11,13 @@ export const mergeConfigs = (
 	const result = { ...base }
 	let k: keyof ArkConfig
 	for (k in extensions) {
-		result[k] = isNodeKind(k)
-			? ({
+		result[k] =
+			isNodeKind(k) ?
+				({
 					...base[k],
 					...extensions[k]
 				} as never)
-			: (extensions[k]! as never)
+			:	(extensions[k]! as never)
 	}
 	return result
 }

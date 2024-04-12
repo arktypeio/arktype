@@ -75,9 +75,7 @@ describe("assertion errors", () => {
 		assert.throws(
 			() =>
 				// @ts-expect-error
-				attest(() => shouldThrow(null)).throwsAndHasTypeError(
-					"not assignable"
-				),
+				attest(() => shouldThrow(null)).throwsAndHasTypeError("not assignable"),
 			assert.AssertionError,
 			"didn't throw"
 		)

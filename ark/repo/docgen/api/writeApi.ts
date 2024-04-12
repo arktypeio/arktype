@@ -25,9 +25,9 @@ export const writeApi = (
 	for (const entryPoint of extractedData.api) {
 		const entryNames = entryPoint.exports.map((entry) => entry.name)
 		const entryPointOutDir =
-			entryPoint.subpath === "."
-				? apiConfig.outDir
-				: join(apiConfig.outDir, entryPoint.subpath)
+			entryPoint.subpath === "." ?
+				apiConfig.outDir
+			:	join(apiConfig.outDir, entryPoint.subpath)
 		ensureDir(entryPointOutDir)
 		writeEntryPoint(entryPoint, entryPointOutDir, entryNames)
 	}

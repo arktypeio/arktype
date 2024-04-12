@@ -47,32 +47,31 @@ export const beforeImplementation = implementNode<BeforeDeclaration>({
 		exclusive: parseExclusiveKey
 	},
 	normalize: (def) =>
-		typeof def === "number" ||
-		typeof def === "string" ||
-		def instanceof Date
-			? { rule: def }
-			: def,
+		typeof def === "number" || typeof def === "string" || def instanceof Date ?
+			{ rule: def }
+		:	def,
 	defaults: {
 		description: (node) =>
-			node.exclusive
-				? `before ${node.stringLimit}`
-				: `${node.stringLimit} or earlier`,
+			node.exclusive ?
+				`before ${node.stringLimit}`
+			:	`${node.stringLimit} or earlier`,
 		actual: (data) => data.toLocaleString()
 	},
 	intersections: {
 		before: (l, r) => (l.isStricterThan(r) ? l : r),
 		after: (before, after, $) =>
-			before.overlapsRange(after)
-				? before.overlapIsUnit(after)
-					? $.node("unit", { unit: before.rule })
-					: null
-				: Disjoint.from("range", before, after)
+			before.overlapsRange(after) ?
+				before.overlapIsUnit(after) ?
+					$.node("unit", { unit: before.rule })
+				:	null
+			:	Disjoint.from("range", before, after)
 	},
 	construct: (self) =>
 		deriveRangeAttachments<BeforeDeclaration>(self, {
-			traverseAllows: self.exclusive
-				? (data) => data < self.rule
-				: (data) => data <= self.rule,
+			traverseAllows:
+				self.exclusive ?
+					(data) => data < self.rule
+				:	(data) => data <= self.rule,
 			impliedBasis: self.$.keywords.Date.raw
 		})
 })

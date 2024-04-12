@@ -4,12 +4,9 @@ import type { Schema } from "../../../schema/schemas/schema.js"
 import type { inferAstIn } from "./infer.js"
 import type { validateAst } from "./validate.js"
 
-export type validateDivisor<l, $, args> = inferAstIn<
-	l,
-	$,
-	args
-> extends infer data
-	? [data] extends [number]
-		? validateAst<l, $, args>
-		: ErrorMessage<writeIndivisibleMessage<Schema<data>>>
-	: never
+export type validateDivisor<l, $, args> =
+	inferAstIn<l, $, args> extends infer data ?
+		[data] extends [number] ?
+			validateAst<l, $, args>
+		:	ErrorMessage<writeIndivisibleMessage<Schema<data>>>
+	:	never

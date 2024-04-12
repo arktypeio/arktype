@@ -67,11 +67,9 @@ export const deriveRangeAttachments = <d extends BaseRangeDeclaration = never>(
 	) as never
 	const boundOperandKind = operandKindsByBoundKind[self.kind]
 	const compiledActual =
-		boundOperandKind === "value"
-			? "data"
-			: boundOperandKind === "length"
-				? "data.length"
-				: "data.valueOf()"
+		boundOperandKind === "value" ? "data"
+		: boundOperandKind === "length" ? "data.length"
+		: "data.valueOf()"
 	const comparator = compileComparator(self.kind, self.exclusive)
 	const numericLimit = self.rule.valueOf()
 
@@ -86,15 +84,15 @@ export const deriveRangeAttachments = <d extends BaseRangeDeclaration = never>(
 		// we need to compute stringLimit before errorContext, which references it
 		// transitively through description for date bounds
 		stringLimit:
-			boundOperandKind === "date"
-				? dateLimitToString(numericLimit)
-				: `${numericLimit}`,
+			boundOperandKind === "date" ?
+				dateLimitToString(numericLimit)
+			:	`${numericLimit}`,
 		limitKind: comparator["0"] === "<" ? "upper" : "lower",
 		isStricterThan(r) {
 			const thisLimitIsStricter =
-				this.limitKind === "upper"
-					? this.numericLimit < r.numericLimit
-					: this.numericLimit > r.numericLimit
+				this.limitKind === "upper" ?
+					this.numericLimit < r.numericLimit
+				:	this.numericLimit > r.numericLimit
 			return (
 				thisLimitIsStricter ||
 				(this.numericLimit === r.numericLimit &&
@@ -113,9 +111,7 @@ export const deriveRangeAttachments = <d extends BaseRangeDeclaration = never>(
 		},
 		overlapIsUnit(r) {
 			return (
-				this.numericLimit === r.numericLimit &&
-				!this.exclusive &&
-				!r.exclusive
+				this.numericLimit === r.numericLimit && !this.exclusive && !r.exclusive
 			)
 		}
 	} satisfies DerivedRangeAttachments & ThisType<Node<RangeKind>>) as never
@@ -126,17 +122,11 @@ export interface BaseRangeInner extends BaseMeta {
 	readonly exclusive?: true
 }
 
-export type LimitSchemaValue<kind extends RangeKind = RangeKind> = kind extends
-	| "before"
-	| "after"
-	? Date | number | string
-	: number
+export type LimitSchemaValue<kind extends RangeKind = RangeKind> =
+	kind extends "before" | "after" ? Date | number | string : number
 
-export type LimitInnerValue<kind extends RangeKind = RangeKind> = kind extends
-	| "before"
-	| "after"
-	? Date
-	: number
+export type LimitInnerValue<kind extends RangeKind = RangeKind> =
+	kind extends "before" | "after" ? Date : number
 
 export interface BaseNormalizedRangeSchema extends BaseMeta {
 	readonly exclusive?: boolean
@@ -169,9 +159,8 @@ export const boundKindPairsByUpper = invert(boundKindPairsByLower)
 type BoundKindPairsByUpper = typeof boundKindPairsByUpper
 
 export type pairedRangeKind<kind extends RangeKind> =
-	kind extends LowerBoundKind
-		? BoundKindPairsByLower[kind]
-		: BoundKindPairsByUpper[kind & UpperBoundKind]
+	kind extends LowerBoundKind ? BoundKindPairsByLower[kind]
+	:	BoundKindPairsByUpper[kind & UpperBoundKind]
 
 export type LowerBoundKind = keyof typeof boundKindPairsByLower
 
@@ -192,9 +181,9 @@ export const parseExclusiveKey: KeyDefinitions<BaseRangeDeclaration>["exclusive"
 	}
 
 export const parseDateLimit = (limit: LimitSchemaValue): Date =>
-	typeof limit === "string" || typeof limit === "number"
-		? new Date(limit)
-		: limit
+	typeof limit === "string" || typeof limit === "number" ?
+		new Date(limit)
+	:	limit
 
 export const operandKindsByBoundKind = {
 	min: "value",

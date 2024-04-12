@@ -45,16 +45,14 @@ export const afterImplementation = implementNode<AfterDeclaration>({
 		exclusive: parseExclusiveKey
 	},
 	normalize: (def) =>
-		typeof def === "number" ||
-		typeof def === "string" ||
-		def instanceof Date
-			? { rule: def }
-			: def,
+		typeof def === "number" || typeof def === "string" || def instanceof Date ?
+			{ rule: def }
+		:	def,
 	defaults: {
 		description: (node) =>
-			node.exclusive
-				? `after ${node.stringLimit}`
-				: `${node.stringLimit} or later`,
+			node.exclusive ?
+				`after ${node.stringLimit}`
+			:	`${node.stringLimit} or later`,
 		actual: (data) => data.toLocaleString()
 	},
 	intersections: {
@@ -62,9 +60,10 @@ export const afterImplementation = implementNode<AfterDeclaration>({
 	},
 	construct: (self) =>
 		deriveRangeAttachments<AfterDeclaration>(self, {
-			traverseAllows: self.exclusive
-				? (data) => data > self.rule
-				: (data) => data >= self.rule,
+			traverseAllows:
+				self.exclusive ?
+					(data) => data > self.rule
+				:	(data) => data >= self.rule,
 			impliedBasis: self.$.keywords.Date.raw
 		})
 })

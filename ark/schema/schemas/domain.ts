@@ -56,8 +56,7 @@ export const domainImplementation = implementNode<DomainDeclaration>({
 	normalize: (def) => (typeof def === "string" ? { domain: def } : def),
 	defaults: {
 		description: (node) => domainDescriptions[node.domain],
-		actual: (data) =>
-			typeof data === "boolean" ? `${data}` : domainOf(data)
+		actual: (data) => (typeof data === "boolean" ? `${data}` : domainOf(data))
 	},
 	intersections: {
 		domain: (l, r) => Disjoint.from("domain", l, r)
@@ -70,13 +69,13 @@ export const domainImplementation = implementNode<DomainDeclaration>({
 			traverseAllows,
 			expression: self.domain,
 			compiledCondition:
-				self.domain === "object"
-					? `((typeof data === "object" && data !== null) || typeof data === "function")`
-					: `typeof data === "${self.domain}"`,
+				self.domain === "object" ?
+					`((typeof data === "object" && data !== null) || typeof data === "function")`
+				:	`typeof data === "${self.domain}"`,
 			compiledNegation:
-				self.domain === "object"
-					? `((typeof data !== "object" || data === null) && typeof data !== "function")`
-					: `typeof data !== "${self.domain}"`,
+				self.domain === "object" ?
+					`((typeof data !== "object" || data === null) && typeof data !== "function")`
+				:	`typeof data !== "${self.domain}"`,
 			literalKeys,
 			rawKeyOf: () => self.$.units(literalKeys)
 		})

@@ -53,31 +53,27 @@ export type ScopeParser = <const def>(
 ) => Scope<inferBootstrapped<bootstrapAliases<def>>>
 
 type validateScope<def> = {
-	[k in keyof def]: k extends symbol
-		? // this should only occur when importing/exporting modules, and those keys should be ignored
-			unknown
-		: parseScopeKey<k>["params"] extends []
-			? // Not including Type here directly breaks inference
-				def[k] extends Type | PreparsedResolution
-				? def[k]
-				: validateDefinition<
-						def[k],
-						ambient & bootstrapAliases<def>,
-						{}
-					>
-			: parseScopeKey<k>["params"] extends GenericParamsParseError
-				? // use the full nominal type here to avoid an overlap between the
-					// error message and a possible value for the property
-					parseScopeKey<k>["params"][0]
-				: validateDefinition<
-						def[k],
-						ambient & bootstrapAliases<def>,
-						{
-							// once we support constraints on generic parameters, we'd use
-							// the base type here: https://github.com/arktypeio/arktype/issues/796
-							[param in parseScopeKey<k>["params"][number]]: unknown
-						}
-					>
+	[k in keyof def]: k extends symbol ?
+		// this should only occur when importing/exporting modules, and those keys should be ignored
+		unknown
+	: parseScopeKey<k>["params"] extends [] ?
+		// Not including Type here directly breaks inference
+		def[k] extends Type | PreparsedResolution ?
+			def[k]
+		:	validateDefinition<def[k], ambient & bootstrapAliases<def>, {}>
+	: parseScopeKey<k>["params"] extends GenericParamsParseError ?
+		// use the full nominal type here to avoid an overlap between the
+		// error message and a possible value for the property
+		parseScopeKey<k>["params"][0]
+	:	validateDefinition<
+			def[k],
+			ambient & bootstrapAliases<def>,
+			{
+				// once we support constraints on generic parameters, we'd use
+				// the base type here: https://github.com/arktypeio/arktype/issues/796
+				[param in parseScopeKey<k>["params"][number]]: unknown
+			}
+		>
 }
 
 export type bindThis<def> = { this: Def<def> }
@@ -96,14 +92,12 @@ type bootstrapAliases<def> = {
 		keyof def,
 		// avoid inferring nominal symbols, e.g. arkKind from Module
 		GenericDeclaration | symbol
-	>]: def[k] extends PreparsedResolution
-		? def[k]
-		: def[k] extends (() => infer thunkReturn extends PreparsedResolution)
-			? thunkReturn
-			: Def<def[k]>
+	>]: def[k] extends PreparsedResolution ? def[k]
+	: def[k] extends (() => infer thunkReturn extends PreparsedResolution) ?
+		thunkReturn
+	:	Def<def[k]>
 } & {
-	[k in keyof def &
-		GenericDeclaration as extractGenericName<k>]: GenericProps<
+	[k in keyof def & GenericDeclaration as extractGenericName<k>]: GenericProps<
 		parseGenericParams<extractGenericParameters<k>>,
 		def[k],
 		UnparsedScope
@@ -111,38 +105,34 @@ type bootstrapAliases<def> = {
 }
 
 type inferBootstrapped<$> = show<{
-	[name in keyof $]: $[name] extends Def<infer def>
-		? inferDefinition<def, $ & ambient, {}>
-		: $[name] extends GenericProps<infer params, infer def>
-			? // add the scope in which the generic was defined here
-				Generic<params, def, $>
-			: // otherwise should be a submodule
-				$[name]
+	[name in keyof $]: $[name] extends Def<infer def> ?
+		inferDefinition<def, $ & ambient, {}>
+	: $[name] extends GenericProps<infer params, infer def> ?
+		// add the scope in which the generic was defined here
+		Generic<params, def, $>
+	:	// otherwise should be a submodule
+		$[name]
 }>
 
-type extractGenericName<k> = k extends GenericDeclaration<infer name>
-	? name
-	: never
+type extractGenericName<k> =
+	k extends GenericDeclaration<infer name> ? name : never
 
-type extractGenericParameters<k> = k extends GenericDeclaration<
-	string,
-	infer params
->
-	? params
-	: never
+type extractGenericParameters<k> =
+	k extends GenericDeclaration<string, infer params> ? params : never
 
-export type resolve<reference extends keyof $ | keyof args, $, args> = (
-	reference extends keyof args
-		? args[reference]
-		: $[reference & keyof $]
-) extends infer resolution
-	? resolution extends Def<infer def>
-		? def extends null
-			? // handle resolution of any and never
+export type resolve<reference extends keyof $ | keyof args, $, args> =
+	(
+		reference extends keyof args ?
+			args[reference]
+		:	$[reference & keyof $]
+	) extends infer resolution ?
+		resolution extends Def<infer def> ?
+			def extends null ?
+				// handle resolution of any and never
 				resolution
-			: inferDefinition<def, $, args>
-		: resolution
-	: never
+			:	inferDefinition<def, $, args>
+		:	resolution
+	:	never
 
 export type moduleKeyOf<$> = {
 	// TODO: check against module directly?
@@ -150,13 +140,13 @@ export type moduleKeyOf<$> = {
 }[keyof $]
 
 export type tryInferSubmoduleReference<$, token> =
-	token extends `${infer submodule extends moduleKeyOf<$>}.${infer subalias}`
-		? subalias extends keyof $[submodule]
-			? $[submodule][subalias] extends type.cast<infer t>
-				? t
-				: never
-			: never
-		: never
+	token extends `${infer submodule extends moduleKeyOf<$>}.${infer subalias}` ?
+		subalias extends keyof $[submodule] ?
+			$[submodule][subalias] extends type.cast<infer t> ?
+				t
+			:	never
+		:	never
+	:	never
 
 export interface ParseContext extends NodeParseOptions {
 	$: RawScope
@@ -198,10 +188,11 @@ export class RawScope<
 		const aliases: Record<string, unknown> = {}
 		for (const k in def) {
 			const parsedKey = parseScopeKey(k)
-			aliases[parsedKey.name] = parsedKey.params.length
-				? // TODO: this
+			aliases[parsedKey.name] =
+				parsedKey.params.length ?
+					// TODO: this
 					new Generic(parsedKey.params, def[k], {} as never)
-				: def[k]
+				:	def[k]
 		}
 		super(aliases, config)
 	}
@@ -247,10 +238,7 @@ export class RawScope<
 
 	parse(def: unknown, ctx: ParseContext): RawSchema {
 		if (typeof def === "string") {
-			if (
-				ctx.args &&
-				Object.keys(ctx.args).every((k) => !def.includes(k))
-			) {
+			if (ctx.args && Object.keys(ctx.args).every((k) => !def.includes(k))) {
 				// we can only rely on the cache if there are no contextual
 				// resolutions like "this" or generic args
 				return this.parseString(def, ctx)
@@ -260,9 +248,9 @@ export class RawScope<
 			}
 			return this.parseCache[def]
 		}
-		return hasDomain(def, "object")
-			? parseObject(def, ctx)
-			: throwParseError(writeBadDefinitionTypeMessage(domainOf(def)))
+		return hasDomain(def, "object") ?
+				parseObject(def, ctx)
+			:	throwParseError(writeBadDefinitionTypeMessage(domainOf(def)))
 	}
 
 	parseRoot(def: unknown, opts?: NodeParseOptions): RawSchema {
@@ -287,9 +275,7 @@ export const writeShallowCycleErrorMessage = (
 	name: string,
 	seen: string[]
 ): string =>
-	`Alias '${name}' has a shallow resolution cycle: ${[...seen, name].join(
-		":"
-	)}`
+	`Alias '${name}' has a shallow resolution cycle: ${[...seen, name].join(":")}`
 
 export type ParsedScopeKey = {
 	name: string
@@ -315,15 +301,13 @@ export const parseScopeKey = (k: string): ParsedScopeKey => {
 	}
 }
 
-export type parseScopeKey<k> = k extends GenericDeclaration<
-	infer name,
-	infer paramString
->
-	? {
+export type parseScopeKey<k> =
+	k extends GenericDeclaration<infer name, infer paramString> ?
+		{
 			name: name
 			params: parseGenericParams<paramString>
 		}
-	: {
+	:	{
 			name: k
 			params: []
 		}

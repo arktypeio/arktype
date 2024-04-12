@@ -53,8 +53,7 @@ export const compareToBaseline = (
 	if (result.baseline && !ctx.cfg.updateSnapshots) {
 		console.log(`⛳ Baseline: ${stringifyMeasure(result.baseline)}`)
 		const delta =
-			((result.updated[0] - result.baseline[0]) / result.baseline[0]) *
-			100
+			((result.updated[0] - result.baseline[0]) / result.baseline[0]) * 100
 		const formattedDelta = `${delta.toFixed(2)}%`
 		if (delta > ctx.cfg.benchPercentThreshold) {
 			handlePositiveDelta(formattedDelta, ctx)

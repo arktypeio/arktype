@@ -46,25 +46,26 @@ export const maxLengthImplementation = implementNode<MaxLengthDeclaration>({
 	normalize: (def) => (typeof def === "number" ? { rule: def } : def),
 	defaults: {
 		description: (node) =>
-			node.exclusive
-				? `less than length ${node.rule}`
-				: `at most length ${node.rule}`,
+			node.exclusive ?
+				`less than length ${node.rule}`
+			:	`at most length ${node.rule}`,
 		actual: (data) => `${data.length}`
 	},
 	intersections: {
 		maxLength: (l, r) => (l.isStricterThan(r) ? l : r),
 		minLength: (max, min, $) =>
-			max.overlapsRange(min)
-				? max.overlapIsUnit(min)
-					? $.node("exactLength", { rule: max.rule })
-					: null
-				: Disjoint.from("range", max, min)
+			max.overlapsRange(min) ?
+				max.overlapIsUnit(min) ?
+					$.node("exactLength", { rule: max.rule })
+				:	null
+			:	Disjoint.from("range", max, min)
 	},
 	construct: (self) =>
 		deriveRangeAttachments<MaxLengthDeclaration>(self, {
-			traverseAllows: self.exclusive
-				? (data) => data.length < self.rule
-				: (data) => data.length <= self.rule,
+			traverseAllows:
+				self.exclusive ?
+					(data) => data.length < self.rule
+				:	(data) => data.length <= self.rule,
 			impliedBasis: internalKeywords.lengthBoundable.raw
 		})
 })

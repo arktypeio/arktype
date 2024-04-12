@@ -49,20 +49,19 @@ export type parseEnclosed<
 	s extends StaticState,
 	enclosingStart extends EnclosingStartToken,
 	unscanned extends string
-> = Scanner.shiftUntil<
-	unscanned,
-	EnclosingTokens[enclosingStart]
-> extends Scanner.shiftResult<infer scanned, infer nextUnscanned>
-	? nextUnscanned extends ""
-		? state.error<writeUnterminatedEnclosedMessage<scanned, enclosingStart>>
-		: state.setRoot<
+> =
+	Scanner.shiftUntil<unscanned, EnclosingTokens[enclosingStart]> extends (
+		Scanner.shiftResult<infer scanned, infer nextUnscanned>
+	) ?
+		nextUnscanned extends "" ?
+			state.error<writeUnterminatedEnclosedMessage<scanned, enclosingStart>>
+		:	state.setRoot<
 				s,
 				`${enclosingStart}${scanned}${EnclosingTokens[enclosingStart]}`,
-				nextUnscanned extends Scanner.shift<string, infer unscanned>
-					? unscanned
-					: ""
+				nextUnscanned extends Scanner.shift<string, infer unscanned> ? unscanned
+				:	""
 			>
-	: never
+	:	never
 
 export const enclosingQuote = {
 	"'": 1,

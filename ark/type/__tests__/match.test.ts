@@ -141,9 +141,7 @@ describe("match", () => {
 		})
 
 		it("errors when attempting to `.finalize()` a non-exhaustive matcher", () => {
-			const matcher = match
-				.only<string | number>()
-				.when("string", (s) => s)
+			const matcher = match.only<string | number>().when("string", (s) => s)
 
 			// @ts-expect-error
 			attest(() => matcher.finalize()).throwsAndHasTypeError(

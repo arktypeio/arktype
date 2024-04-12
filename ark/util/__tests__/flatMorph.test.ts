@@ -4,12 +4,12 @@ import { flatMorph } from "@arktype/util"
 describe("flatMorph", () => {
 	it("object", () => {
 		const result = flatMorph({ a: true, b: false }, (k, v) =>
-			k === "a"
-				? ([
-						[k, v],
-						["c", "d"]
-					] as const)
-				: (["e", "f"] as const)
+			k === "a" ?
+				([
+					[k, v],
+					["c", "d"]
+				] as const)
+			:	(["e", "f"] as const)
 		)
 		attest<{
 			a: true
@@ -30,12 +30,12 @@ describe("flatMorph", () => {
 	it("object with index", () => {
 		// needs to be annotated for now due to a TS bug
 		const result = flatMorph({ a: true, b: false }, (k, v, i: number) =>
-			k === "a"
-				? ([
-						[k, v],
-						["c", "d"]
-					] as const)
-				: ([`${i}`, "f"] as const)
+			k === "a" ?
+				([
+					[k, v],
+					["c", "d"]
+				] as const)
+			:	([`${i}`, "f"] as const)
 		)
 
 		attest<{
@@ -54,10 +54,8 @@ describe("flatMorph", () => {
 
 	it("converts numeric key with index to array", () => {
 		// index needs to be annotated for now due to a TS bug
-		const result = flatMorph(
-			{ a: true, b: false, c: 5 },
-			(k, v, i: number) =>
-				k === "a" ? ([0, v] as const) : ([i, v] as const)
+		const result = flatMorph({ a: true, b: false, c: 5 }, (k, v, i: number) =>
+			k === "a" ? ([0, v] as const) : ([i, v] as const)
 		)
 		attest<(boolean | 5)[]>(result).equals([true, false, 5])
 	})

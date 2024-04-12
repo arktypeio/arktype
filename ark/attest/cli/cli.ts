@@ -17,9 +17,7 @@ const baseFileName = basename(fileName())
 const thisFileIndex = process.argv.findIndex((s) => s.endsWith(baseFileName))
 
 if (thisFileIndex === -1) {
-	throw new Error(
-		`Expected to find an argument ending with "${baseFileName}"`
-	)
+	throw new Error(`Expected to find an argument ending with "${baseFileName}"`)
 }
 
 const subcommand = process.argv[thisFileIndex + 1]

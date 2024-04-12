@@ -33,9 +33,9 @@ export const isDotAccessible = (keyName: string): boolean =>
 	/^[a-zA-Z_$][a-zA-Z_$0-9]*$/.test(keyName)
 
 export const compileSerializedValue = (value: unknown): string => {
-	return hasDomain(value, "object") || typeof value === "symbol"
-		? reference(value)
-		: serializePrimitive(value as SerializablePrimitive)
+	return hasDomain(value, "object") || typeof value === "symbol" ?
+			reference(value)
+		:	serializePrimitive(value as SerializablePrimitive)
 }
 
 const baseNameFor = (value: object | symbol) => {
@@ -49,13 +49,11 @@ const baseNameFor = (value: object | symbol) => {
 			return prefix[0].toLowerCase() + prefix.slice(1)
 		}
 		case "function":
-			return isDotAccessible(value.name)
-				? value.name
-				: "anonymousFunction"
+			return isDotAccessible(value.name) ? value.name : "anonymousFunction"
 		case "symbol":
-			return value.description && isDotAccessible(value.description)
-				? value.description
-				: "anonymousSymbol"
+			return value.description && isDotAccessible(value.description) ?
+					value.description
+				:	"anonymousSymbol"
 	}
 	return throwInternalError(
 		`Unexpected attempt to register serializable value of type ${domainOf(

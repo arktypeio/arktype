@@ -14,9 +14,9 @@ import type { Scope } from "./scope.js"
 import type { Type, inferTypeRoot, validateTypeRoot } from "./type.js"
 
 export type validateParameterString<params extends string> =
-	parseGenericParams<params> extends GenericParamsParseError<infer message>
-		? message
-		: params
+	parseGenericParams<params> extends GenericParamsParseError<infer message> ?
+		message
+	:	params
 
 export type GenericTypeInstantiation<
 	params extends string[] = string[],

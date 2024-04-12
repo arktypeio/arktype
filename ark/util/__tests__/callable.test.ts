@@ -76,12 +76,9 @@ describe("callable", () => {
 			attach
 		> {
 			constructor(attach: attach) {
-				super(
-					<k extends keyof attach>(k: k) => this.protoGetAttached(k),
-					{
-						attach
-					}
-				)
+				super(<k extends keyof attach>(k: k) => this.protoGetAttached(k), {
+					attach
+				})
 			}
 
 			protoGetAttached(k: PropertyKey) {

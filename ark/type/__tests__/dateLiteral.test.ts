@@ -27,8 +27,6 @@ describe("date literal", () => {
 		attest(t.allows(new Date(now.valueOf() + 1))).equals(false)
 	})
 	it("invalid date", () => {
-		attest(() => type("d'tuesday'")).throws(
-			writeInvalidDateMessage("tuesday")
-		)
+		attest(() => type("d'tuesday'")).throws(writeInvalidDateMessage("tuesday"))
 	})
 })

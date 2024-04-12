@@ -394,19 +394,17 @@ describe("morph", () => {
 			"=>",
 			(s) => s.length || undefined
 		])
-		attest<Type<(In: string) => Out<number | undefined>>>(
-			toUndefinableNumber
-		)
+		attest<Type<(In: string) => Out<number | undefined>>>(toUndefinableNumber)
 	})
 	it("null or undefined return", () => {
 		const toMaybeNumber = type([
 			"string",
 			"=>",
 			(s) =>
-				s.length === 0 ? undefined : s.length === 1 ? null : s.length
+				s.length === 0 ? undefined
+				: s.length === 1 ? null
+				: s.length
 		])
-		attest<Type<(In: string) => Out<number | null | undefined>>>(
-			toMaybeNumber
-		)
+		attest<Type<(In: string) => Out<number | null | undefined>>>(toMaybeNumber)
 	})
 })

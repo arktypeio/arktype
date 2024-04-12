@@ -99,37 +99,33 @@ export const unionImplementation = implementNode<UnionDeclaration>({
 		description: (node) => {
 			if (node.isBoolean) return "boolean"
 
-			return describeBranches(
-				node.branches.map((branch) => branch.description)
-			)
+			return describeBranches(node.branches.map((branch) => branch.description))
 		},
 		expected: (ctx) => {
 			const byPath = groupBy(ctx.errors, "propString") as Record<
 				string,
 				ArkTypeError[]
 			>
-			const pathDescriptions = Object.entries(byPath).map(
-				([path, errors]) => {
-					errors.map((_) => _.expected)
-					const branchesAtPath: string[] = []
-					errors.forEach((errorAtPath) =>
-						// avoid duplicate messages when multiple branches
-						// are invalid due to the same error
-						appendUnique(branchesAtPath, errorAtPath.expected)
-					)
-					const expected = describeBranches(branchesAtPath)
-					const actual = ctx.errors.reduce(
-						(acc, e) =>
-							e.actual && !acc.includes(e.actual)
-								? `${acc && `${acc}, `}${e.actual}`
-								: acc,
-						""
-					)
-					return `${path && `${path} `}must be ${expected}${
-						actual && ` (was ${actual})`
-					}`
-				}
-			)
+			const pathDescriptions = Object.entries(byPath).map(([path, errors]) => {
+				errors.map((_) => _.expected)
+				const branchesAtPath: string[] = []
+				errors.forEach((errorAtPath) =>
+					// avoid duplicate messages when multiple branches
+					// are invalid due to the same error
+					appendUnique(branchesAtPath, errorAtPath.expected)
+				)
+				const expected = describeBranches(branchesAtPath)
+				const actual = ctx.errors.reduce(
+					(acc, e) =>
+						e.actual && !acc.includes(e.actual) ?
+							`${acc && `${acc}, `}${e.actual}`
+						:	acc,
+					""
+				)
+				return `${path && `${path} `}must be ${expected}${
+					actual && ` (was ${actual})`
+				}`
+			})
 			return describeBranches(pathDescriptions)
 		},
 		problem: (ctx) => ctx.expected,
@@ -164,12 +160,12 @@ export const unionImplementation = implementNode<UnionDeclaration>({
 				return resultBranches
 			}
 			return $.schema(
-				l.ordered || r.ordered
-					? {
-							branches: resultBranches,
-							ordered: true as const
-						}
-					: { branches: resultBranches }
+				l.ordered || r.ordered ?
+					{
+						branches: resultBranches,
+						ordered: true as const
+					}
+				:	{ branches: resultBranches }
 			)
 		},
 		...defineRightwardIntersections("union", (l, r, $) => {
@@ -180,9 +176,7 @@ export const unionImplementation = implementNode<UnionDeclaration>({
 			if (branches.length === 1) {
 				return branches[0]
 			}
-			return $.schema(
-				l.ordered ? { branches, ordered: true } : { branches }
-			)
+			return $.schema(l.ordered ? { branches, ordered: true } : { branches })
 		})
 	},
 	construct: (self) => {
@@ -194,11 +188,10 @@ export const unionImplementation = implementNode<UnionDeclaration>({
 		return {
 			discriminant: null,
 			isBoolean,
-			expression: isBoolean
-				? "boolean"
-				: branches
-						.map((branch) => branch.nestableExpression)
-						.join(" | "),
+			expression:
+				isBoolean ? "boolean" : (
+					branches.map((branch) => branch.nestableExpression).join(" | ")
+				),
 			traverseAllows: (data, ctx) =>
 				branches.some((b) => b.traverseAllows(data, ctx)),
 			traverseApply: (data, ctx) => {
@@ -206,8 +199,7 @@ export const unionImplementation = implementNode<UnionDeclaration>({
 				for (let i = 0; i < branches.length; i++) {
 					ctx.pushBranch()
 					branches[i].traverseApply(data, ctx)
-					if (!ctx.hasError())
-						return ctx.morphs.push(...ctx.popBranch().morphs)
+					if (!ctx.hasError()) return ctx.morphs.push(...ctx.popBranch().morphs)
 					errors.push(ctx.popBranch().error!)
 				}
 				ctx.error({ code: "union", errors })
@@ -220,9 +212,7 @@ export const unionImplementation = implementNode<UnionDeclaration>({
 							.line("ctx.pushBranch()")
 							.line(js.invoke(branch))
 							.if("!ctx.hasError()", () =>
-								js.return(
-									"ctx.morphs.push(...ctx.popBranch().morphs)"
-								)
+								js.return("ctx.morphs.push(...ctx.popBranch().morphs)")
 							)
 							.line("errors.push(ctx.popBranch().error)")
 					)
@@ -236,8 +226,7 @@ export const unionImplementation = implementNode<UnionDeclaration>({
 			},
 			rawKeyOf(): RawSchema {
 				return branches.reduce(
-					(result, branch) =>
-						result.intersectSatisfiable(branch.rawKeyOf()),
+					(result, branch) => result.intersectSatisfiable(branch.rawKeyOf()),
 					self.$.keywords.unknown.raw
 				)
 			},
@@ -408,9 +397,9 @@ export const intersectBranches = (
 		// ensure unions returned from branchable intersections like sequence are flattened
 		(batch, i) => batch?.flatMap((branch) => branch.branches) ?? r[i]
 	)
-	return resultBranches.length === 0
-		? Disjoint.from("union", l, r)
-		: resultBranches
+	return resultBranches.length === 0 ?
+			Disjoint.from("union", l, r)
+		:	resultBranches
 }
 
 export const reduceBranches = ({

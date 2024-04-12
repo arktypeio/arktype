@@ -143,15 +143,12 @@ export type kindLeftOf<kind extends NodeKind> = Exclude<
 
 export type kindOrLeftOf<kind extends NodeKind> = kind | kindLeftOf<kind>
 
-type accumulateRightKinds<
-	remaining extends readonly NodeKind[],
-	result
-> = remaining extends readonly [
-	infer head extends NodeKind,
-	...infer tail extends NodeKind[]
-]
-	? accumulateRightKinds<tail, result & { [k in head]: tail[number] }>
-	: result
+type accumulateRightKinds<remaining extends readonly NodeKind[], result> =
+	remaining extends (
+		readonly [infer head extends NodeKind, ...infer tail extends NodeKind[]]
+	) ?
+		accumulateRightKinds<tail, result & { [k in head]: tail[number] }>
+	:	result
 
 export type ConstraintIntersection<
 	lKind extends ConstraintKind,
@@ -179,9 +176,9 @@ export type TypeIntersectionMap<kind extends SchemaKind> = {
 	[rKind in schemaKindOrRightOf<kind>]: TypeIntersection<kind, rKind>
 }
 
-export type IntersectionMap<kind extends NodeKind> = kind extends SchemaKind
-	? TypeIntersectionMap<kind>
-	: ConstraintIntersectionMap<kind & ConstraintKind>
+export type IntersectionMap<kind extends NodeKind> =
+	kind extends SchemaKind ? TypeIntersectionMap<kind>
+	:	ConstraintIntersectionMap<kind & ConstraintKind>
 
 export type UnknownIntersectionMap = {
 	[k in NodeKind]?: (
@@ -263,9 +260,9 @@ export type NodeKeyImplementation<
 		child?: true
 		implied?: true
 		serialize?: (
-			schema: instantiated extends listable<RawNode> | undefined
-				? ErrorMessage<`Keys with node children cannot specify a custom serializer`>
-				: instantiated
+			schema: instantiated extends listable<RawNode> | undefined ?
+				ErrorMessage<`Keys with node children cannot specify a custom serializer`>
+			:	instantiated
 		) => JsonData
 		parse?: (
 			schema: Exclude<d["normalizedDef"][k], undefined>,
@@ -363,9 +360,8 @@ export type nodeImplementationInputOf<d extends RawNodeDeclaration> =
 	CommonNodeImplementationInput<d> & {
 		intersections: IntersectionMap<d["kind"]>
 		defaults: nodeDefaultsImplementationInputFor<d["kind"]>
-	} & (d["intersectionIsOpen"] extends true
-			? { intersectionIsOpen: true }
-			: {}) &
+	} & (d["intersectionIsOpen"] extends true ? { intersectionIsOpen: true }
+		:	{}) &
 		// if the node is declared as reducible to a kind other than its own,
 		// there must be a reduce implementation
 		(d["reducibleTo"] extends d["kind"] ? {} : { reduce: {} })
@@ -376,12 +372,11 @@ type nodeDefaultsImplementationInputFor<kind extends NodeKind> = requireKeys<
 	// if the node's error context is distinct from its inner definition, ensure it is implemented.
 	// this occurs for nodes like `union` where the error that occurs is not 1:1 with the existing node,
 	// but rather a single failed condition for each branch.
-	| (Inner<kind> extends Omit<
-			errorContext<kind>,
-			keyof BaseErrorContext | "description"
-	  >
-			? never
-			: "expected" & keyof NodeConfig<kind>)
+	| (Inner<kind> extends (
+			Omit<errorContext<kind>, keyof BaseErrorContext | "description">
+	  ) ?
+			never
+	  :	"expected" & keyof NodeConfig<kind>)
 >
 
 export type nodeDefaultsImplementationFor<kind extends NodeKind> = Required<

@@ -29,8 +29,7 @@ export class NodeCompiler extends CompiledFunction<["data", "ctx"]> {
 
 	requiresContextFor(node: RawNode): boolean {
 		return (
-			this.traversalKind === "Apply" ||
-			node.includesContextDependentPredicate
+			this.traversalKind === "Apply" || node.includesContextDependentPredicate
 		)
 	}
 
@@ -49,9 +48,9 @@ export class NodeCompiler extends CompiledFunction<["data", "ctx"]> {
 	}
 
 	check(node: RawNode, opts?: InvokeOptions): this {
-		return this.traversalKind === "Allows"
-			? this.if(`!${this.invoke(node, opts)}`, () => this.return(false))
-			: this.line(this.invoke(node, opts))
+		return this.traversalKind === "Allows" ?
+				this.if(`!${this.invoke(node, opts)}`, () => this.return(false))
+			:	this.line(this.invoke(node, opts))
 	}
 
 	compilePrimitive(node: Node<PrimitiveKind>): this {
@@ -70,9 +69,9 @@ export class NodeCompiler extends CompiledFunction<["data", "ctx"]> {
 			this.discriminants.some(
 				(d) =>
 					d.path.join() === pathString &&
-					(node.kind === "domain"
-						? d.kind === "domain" || d.kind === "value"
-						: d.kind === "value")
+					(node.kind === "domain" ?
+						d.kind === "domain" || d.kind === "value"
+					:	d.kind === "value")
 			)
 		) {
 			// if the discriminant has already checked the domain at the current path

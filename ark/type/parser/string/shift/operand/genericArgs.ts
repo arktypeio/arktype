@@ -45,9 +45,7 @@ const parseGenericArgsRecurse = (
 				unscanned: argState.scanner.unscanned
 			}
 		}
-		return argState.error(
-			writeInvalidGenericArgsMessage(name, params, argDefs)
-		)
+		return argState.error(writeInvalidGenericArgsMessage(name, params, argDefs))
 	}
 	if (argState.finalizer === ",") {
 		return parseGenericArgsRecurse(name, params, s, argDefs, argNodes)
@@ -63,46 +61,43 @@ type parseGenericArgsRecurse<
 	args,
 	argDefs extends string[],
 	argAsts extends unknown[]
-> = parseUntilFinalizer<
-	state.initialize<unscanned>,
-	$,
-	args
-> extends infer finalArgState extends StaticState
-	? {
+> =
+	parseUntilFinalizer<state.initialize<unscanned>, $, args> extends (
+		infer finalArgState extends StaticState
+	) ?
+		{
 			defs: [
 				...argDefs,
-				finalArgState["scanned"] extends `${infer def}${"," | ">"}`
-					? def
-					: finalArgState["scanned"]
+				finalArgState["scanned"] extends `${infer def}${"," | ">"}` ? def
+				:	finalArgState["scanned"]
 			]
 			asts: [...argAsts, finalArgState["root"]]
 			unscanned: finalArgState["unscanned"]
-		} extends {
-			defs: infer nextDefs extends string[]
-			asts: infer nextAsts extends unknown[]
-			unscanned: infer nextUnscanned extends string
-		}
-		? finalArgState["finalizer"] extends ">"
-			? nextAsts["length"] extends params["length"]
-				? ParsedArgs<nextAsts, nextUnscanned>
-				: state.error<
-						writeInvalidGenericArgsMessage<name, params, nextDefs>
-					>
-			: finalArgState["finalizer"] extends ","
-				? parseGenericArgsRecurse<
-						name,
-						params,
-						nextUnscanned,
-						$,
-						args,
-						nextDefs,
-						nextAsts
-					>
-				: finalArgState["finalizer"] extends ErrorMessage
-					? finalArgState
-					: state.error<writeUnclosedGroupMessage<">">>
-		: never
-	: never
+		} extends (
+			{
+				defs: infer nextDefs extends string[]
+				asts: infer nextAsts extends unknown[]
+				unscanned: infer nextUnscanned extends string
+			}
+		) ?
+			finalArgState["finalizer"] extends ">" ?
+				nextAsts["length"] extends params["length"] ?
+					ParsedArgs<nextAsts, nextUnscanned>
+				:	state.error<writeInvalidGenericArgsMessage<name, params, nextDefs>>
+			: finalArgState["finalizer"] extends "," ?
+				parseGenericArgsRecurse<
+					name,
+					params,
+					nextUnscanned,
+					$,
+					args,
+					nextDefs,
+					nextAsts
+				>
+			: finalArgState["finalizer"] extends ErrorMessage ? finalArgState
+			: state.error<writeUnclosedGroupMessage<">">>
+		:	never
+	:	never
 
 export const writeInvalidGenericArgsMessage = <
 	name extends string,
@@ -126,6 +121,8 @@ export type writeInvalidGenericArgsMessage<
 > = `${name}<${join<
 	params,
 	", "
->}> requires exactly ${params["length"]} args (got ${argDefs["length"]}${argDefs["length"] extends 0
-	? ""
-	: `: ${join<argDefs, ",">}`})`
+>}> requires exactly ${params["length"]} args (got ${argDefs["length"]}${argDefs["length"] extends (
+	0
+) ?
+	""
+:	`: ${join<argDefs, ",">}`})`

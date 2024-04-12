@@ -57,9 +57,9 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 			const errorIntersection = createError(this.ctx, {
 				code: "intersection",
 				errors:
-					existing.code === "intersection"
-						? [...existing.errors, error]
-						: [existing, error]
+					existing.code === "intersection" ?
+						[...existing.errors, error]
+					:	[existing, error]
 			})
 			const existingIndex = this.indexOf(existing)
 			// If existing is found (which it always should be unless this was externally mutated),
@@ -120,17 +120,19 @@ export const createError = (
 			propString: pathToPropString(path),
 			data: "data" in input ? input.data : data,
 			actual:
-				input.actual !== undefined
-					? input.actual
-					: nodeConfig.actual?.(data as never),
+				input.actual !== undefined ?
+					input.actual
+				:	nodeConfig.actual?.(data as never),
 			expected
 		} satisfies ProblemContext as any
-		errCtx.problem = hasDefinedKey(input, "problem")
-			? input.problem
-			: nodeConfig.problem(errCtx as never)
-		errCtx.message = hasDefinedKey(input, "message")
-			? input.message
-			: nodeConfig.message(errCtx as never)
+		errCtx.problem =
+			hasDefinedKey(input, "problem") ?
+				input.problem
+			:	nodeConfig.problem(errCtx as never)
+		errCtx.message =
+			hasDefinedKey(input, "message") ?
+				input.message
+			:	nodeConfig.message(errCtx as never)
 	}
 	return new ArkTypeError(errCtx)
 }

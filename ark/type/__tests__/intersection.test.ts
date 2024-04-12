@@ -97,9 +97,7 @@ describe("intersection", () => {
 			).throwsAndHasTypeError(writeUnresolvableMessage("what"))
 		})
 		it("at path", () => {
-			attest(() =>
-				type({ a: "string" }).and({ a: "number" })
-			).throws.snap(
+			attest(() => type({ a: "string" }).and({ a: "number" })).throws.snap(
 				"ParseError: Intersection at a of string and number results in an unsatisfiable type"
 			)
 		})

@@ -175,9 +175,9 @@ const snapshotArgsToQueuedUpdate = ({
 }: SnapshotArgs): QueuedUpdate => {
 	const snapCall = findCallExpressionAncestor(position, snapFunctionName)
 	const newArgText =
-		typeof serializedValue === "string" && serializedValue.includes("\n")
-			? "`" + serializedValue.replaceAll("`", "\\`") + "`"
-			: JSON.stringify(serializedValue)
+		typeof serializedValue === "string" && serializedValue.includes("\n") ?
+			"`" + serializedValue.replaceAll("`", "\\`") + "`"
+		:	JSON.stringify(serializedValue)
 	return {
 		position,
 		snapCall,
@@ -201,11 +201,9 @@ export const writeUpdates = (queuedUpdates: QueuedUpdate[]): void => {
 		writeFileUpdates(
 			k,
 			updatesByFile[k].sort((l, r) =>
-				l.position.line > r.position.line
-					? 1
-					: r.position.line > l.position.line
-						? -1
-						: l.position.char - r.position.char
+				l.position.line > r.position.line ? 1
+				: r.position.line > l.position.line ? -1
+				: l.position.char - r.position.char
 			)
 		)
 	}
@@ -250,13 +248,15 @@ const summarizeSnapUpdate = (
 	let updateSummary = `${
 		originalArgs.length ? "🆙  Updated" : "📸  Established"
 	} `
-	updateSummary += update.baselinePath
-		? `baseline '${update.baselinePath.join("/")}' `
-		: `snap at ${getFileKey(update.position.file)}:${update.position.line} `
+	updateSummary +=
+		update.baselinePath ?
+			`baseline '${update.baselinePath.join("/")}' `
+		:	`snap at ${getFileKey(update.position.file)}:${update.position.line} `
 	const previousValue = update.snapCall.arguments[0]?.getText()
-	updateSummary += previousValue
-		? `from ${previousValue} to `
-		: `${update.baselinePath ? "at" : "as"} `
+	updateSummary +=
+		previousValue ?
+			`from ${previousValue} to `
+		:	`${update.baselinePath ? "at" : "as"} `
 
 	updateSummary += update.newArgText
 	console.log(updateSummary)

@@ -8,9 +8,7 @@ describe("cast", () => {
 	})
 	it("object", () => {
 		// definitions that are cast can't be validated
-		attest<Type<{ a: "foo" }>>(
-			type({ a: "string" } as type.cast<{ a: "foo" }>)
-		)
+		attest<Type<{ a: "foo" }>>(type({ a: "string" } as type.cast<{ a: "foo" }>))
 	})
 	it("primitive to object", () => {
 		attest<Type<{ a: "foo" }>>(type("string" as type.cast<{ a: "foo" }>))

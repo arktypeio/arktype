@@ -16,8 +16,13 @@
 		"vscode": "^1.0.0"
 	},
 	"icon": "icon.png",
-	"categories": ["Themes", "Programming Languages"],
-	"extensionDependencies": ["usernamehw.errorlens"],
+	"categories": [
+		"Themes",
+		"Programming Languages"
+	],
+	"extensionDependencies": [
+		"usernamehw.errorlens"
+	],
 	"contributes": {
 		"themes": [
 			{

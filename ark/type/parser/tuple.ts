@@ -63,9 +63,7 @@ export const parseTupleLiteral = (def: array, ctx: ParseContext): RawSchema => {
 		}
 		if (spread) {
 			if (!element.extends(jsObjects.Array)) {
-				return throwParseError(
-					writeNonArraySpreadMessage(element.expression)
-				)
+				return throwParseError(writeNonArraySpreadMessage(element.expression))
 			}
 			// a spread must be distributed over branches e.g.:
 			// def: [string, ...(number[] | [true, false])]
@@ -73,10 +71,7 @@ export const parseTupleLiteral = (def: array, ctx: ParseContext): RawSchema => {
 			sequences = sequences.flatMap((base) =>
 				// since appendElement mutates base, we have to shallow-ish clone it for each branch
 				element.branches.map((branch) =>
-					appendSpreadBranch(
-						makeRootAndArrayPropertiesMutable(base),
-						branch
-					)
+					appendSpreadBranch(makeRootAndArrayPropertiesMutable(base), branch)
 				)
 			)
 		} else {
@@ -161,11 +156,10 @@ const maybeParseTupleExpression = (
 	def: array,
 	ctx: ParseContext
 ): RawSchema | undefined => {
-	const tupleExpressionResult = isIndexZeroExpression(def)
-		? prefixParsers[def[0]](def as never, ctx)
-		: isIndexOneExpression(def)
-			? indexOneParsers[def[1]](def as never, ctx)
-			: undefined
+	const tupleExpressionResult =
+		isIndexZeroExpression(def) ? prefixParsers[def[0]](def as never, ctx)
+		: isIndexOneExpression(def) ? indexOneParsers[def[1]](def as never, ctx)
+		: undefined
 	return tupleExpressionResult
 
 	// TODO: remove
@@ -187,36 +181,21 @@ const maybeParseTupleExpression = (
 // def is declared as a const parameter.
 type InfixExpression = readonly [unknown, InfixOperator, ...unknown[]]
 
-export type validateTuple<
-	def extends array,
-	$,
-	args
-> = def extends IndexZeroExpression
-	? validatePrefixExpression<def, $, args>
-	: def extends PostfixExpression
-		? validatePostfixExpression<def, $, args>
-		: def extends InfixExpression
-			? validateInfixExpression<def, $, args>
-			: def extends
-						| readonly ["", ...unknown[]]
-						| readonly [unknown, "", ...unknown[]]
-				? readonly [
-						def[0] extends ""
-							? BaseCompletions<
-									$,
-									args,
-									IndexZeroOperator | "..."
-								>
-							: def[0],
-						def[1] extends ""
-							? BaseCompletions<
-									$,
-									args,
-									IndexOneOperator | "..." | "?"
-								>
-							: def[1]
-					]
-				: validateTupleLiteral<def, $, args>
+export type validateTuple<def extends array, $, args> =
+	def extends IndexZeroExpression ? validatePrefixExpression<def, $, args>
+	: def extends PostfixExpression ? validatePostfixExpression<def, $, args>
+	: def extends InfixExpression ? validateInfixExpression<def, $, args>
+	: def extends (
+		readonly ["", ...unknown[]] | readonly [unknown, "", ...unknown[]]
+	) ?
+		readonly [
+			def[0] extends "" ? BaseCompletions<$, args, IndexZeroOperator | "...">
+			:	def[0],
+			def[1] extends "" ?
+				BaseCompletions<$, args, IndexOneOperator | "..." | "?">
+			:	def[1]
+		]
+	:	validateTupleLiteral<def, $, args>
 
 export type validateTupleLiteral<def extends array, $, args> = parseSequence<
 	def,
@@ -258,105 +237,84 @@ namespace PreparsedElement {
 }
 
 type preparseNextElement<s extends SequenceParseState> =
-	s["unscanned"] extends readonly ["...", infer head, ...infer tail]
-		? tail extends readonly ["?", ...infer postOptionalTail]
-			? PreparsedElement.from<{
-					head: head
-					tail: postOptionalTail
-					// this will be an error we have to handle
-					optional: true
-					spread: true
-				}>
-			: PreparsedElement.from<{
-					head: head
-					tail: tail
-					optional: false
-					spread: true
-				}>
-		: s["unscanned"] extends readonly [infer head, "?", ...infer tail]
-			? PreparsedElement.from<{
-					head: head
-					tail: tail
-					optional: true
-					spread: false
-				}>
-			: s["unscanned"] extends readonly [infer head, ...infer tail]
-				? PreparsedElement.from<{
-						head: head
-						tail: tail
-						optional: false
-						spread: false
-					}>
-				: null
+	s["unscanned"] extends readonly ["...", infer head, ...infer tail] ?
+		tail extends readonly ["?", ...infer postOptionalTail] ?
+			PreparsedElement.from<{
+				head: head
+				tail: postOptionalTail
+				// this will be an error we have to handle
+				optional: true
+				spread: true
+			}>
+		:	PreparsedElement.from<{
+				head: head
+				tail: tail
+				optional: false
+				spread: true
+			}>
+	: s["unscanned"] extends readonly [infer head, "?", ...infer tail] ?
+		PreparsedElement.from<{
+			head: head
+			tail: tail
+			optional: true
+			spread: false
+		}>
+	: s["unscanned"] extends readonly [infer head, ...infer tail] ?
+		PreparsedElement.from<{
+			head: head
+			tail: tail
+			optional: false
+			spread: false
+		}>
+	:	null
 
-type parseNextElement<
-	s extends SequenceParseState,
-	$,
-	args
-> = preparseNextElement<s> extends infer next extends PreparsedElement
-	? parseNextElement<
+type parseNextElement<s extends SequenceParseState, $, args> =
+	preparseNextElement<s> extends infer next extends PreparsedElement ?
+		parseNextElement<
 			{
 				unscanned: next["tail"]
-				inferred: next["spread"] extends true
-					? [
-							...s["inferred"],
-							...conform<
-								inferDefinition<next["head"], $, args>,
-								array
-							>
-						]
-					: next["optional"] extends true
-						? [
-								...s["inferred"],
-								inferDefinition<next["head"], $, args>?
-							]
-						: [
-								...s["inferred"],
-								inferDefinition<next["head"], $, args>
-							]
+				inferred: next["spread"] extends true ?
+					[
+						...s["inferred"],
+						...conform<inferDefinition<next["head"], $, args>, array>
+					]
+				: next["optional"] extends true ?
+					[...s["inferred"], inferDefinition<next["head"], $, args>?]
+				:	[...s["inferred"], inferDefinition<next["head"], $, args>]
 				validated: [
 					...s["validated"],
-					...(next["spread"] extends true
-						? [
-								inferDefinition<
-									next["head"],
-									$,
-									args
-								> extends infer spreadOperand extends array
-									? [number, number] extends [
-											s["inferred"]["length"],
-											spreadOperand["length"]
-										]
-										? ErrorMessage<multipleVariadicMessage>
-										: "..."
-									: ErrorMessage<
-											writeNonArraySpreadMessage<
-												next["head"]
-											>
-										>
-							]
-						: []),
-					[next["optional"] | next["spread"], "?"] extends [
-						false,
-						s["validated"][number]
-					]
-						? ErrorMessage<requiredPostOptionalMessage>
-						: validateDefinition<next["head"], $, args>,
-					...(next["optional"] extends true
-						? [
-								next["spread"] extends true
-									? ErrorMessage<spreadOptionalMessage>
-									: number extends s["inferred"]["length"]
-										? ErrorMessage<optionalPostVariadicMessage>
-										: "?"
-							]
-						: [])
+					...(next["spread"] extends true ?
+						[
+							inferDefinition<next["head"], $, args> extends (
+								infer spreadOperand extends array
+							) ?
+								[number, number] extends (
+									[s["inferred"]["length"], spreadOperand["length"]]
+								) ?
+									ErrorMessage<multipleVariadicMessage>
+								:	"..."
+							:	ErrorMessage<writeNonArraySpreadMessage<next["head"]>>
+						]
+					:	[]),
+					[next["optional"] | next["spread"], "?"] extends (
+						[false, s["validated"][number]]
+					) ?
+						ErrorMessage<requiredPostOptionalMessage>
+					:	validateDefinition<next["head"], $, args>,
+					...(next["optional"] extends true ?
+						[
+							next["spread"] extends true ? ErrorMessage<spreadOptionalMessage>
+							: number extends s["inferred"]["length"] ?
+								ErrorMessage<optionalPostVariadicMessage>
+							:	"?"
+						]
+					:	[])
 				]
 			},
 			$,
 			args
 		>
-	: s
+	:	s
 
 export const writeNonArraySpreadMessage = <operand extends string>(
 	operand: operand
@@ -364,9 +322,8 @@ export const writeNonArraySpreadMessage = <operand extends string>(
 	`Spread element must be an array (was ${operand})` as never
 
 type writeNonArraySpreadMessage<operand> =
-	`Spread element must be an array${operand extends string
-		? `(was ${operand})`
-		: ""}`
+	`Spread element must be an array${operand extends string ? `(was ${operand})`
+	:	""}`
 
 export const multipleVariadicMesage =
 	"A tuple may have at most one variadic element"
@@ -387,56 +344,37 @@ export const spreadOptionalMessage = "A spread element cannot be optional"
 
 type spreadOptionalMessage = typeof optionalPostVariadicMessage
 
-export type inferTuple<def extends array, $, args> = def extends TupleExpression
-	? inferTupleExpression<def, $, args>
-	: inferTupleLiteral<def, $, args>
+export type inferTuple<def extends array, $, args> =
+	def extends TupleExpression ? inferTupleExpression<def, $, args>
+	:	inferTupleLiteral<def, $, args>
 
-export type inferTupleExpression<
-	def extends TupleExpression,
-	$,
-	args
-> = def[1] extends "[]"
-	? inferDefinition<def[0], $, args>[]
-	: def[1] extends "&"
-		? inferIntersection<
-				inferDefinition<def[0], $, args>,
-				inferDefinition<def[2], $, args>
-			>
-		: def[1] extends "|"
-			?
-					| inferDefinition<def[0], $, args>
-					| inferDefinition<def[2], $, args>
-			: def[1] extends ":"
-				? inferNarrow<inferDefinition<def[0], $, args>, def[2]>
-				: def[1] extends "=>"
-					? parseMorph<def[0], def[2], $, args>
-					: def[1] extends "@"
-						? inferDefinition<def[0], $, args>
-						: def extends readonly ["===", ...infer values]
-							? values[number]
-							: def extends readonly [
-										"instanceof",
-										...infer constructors extends
-											Constructor[]
-									]
-								? InstanceType<constructors[number]>
-								: def[0] extends "keyof"
-									? inferKeyOfExpression<def[1], $, args>
-									: never
+export type inferTupleExpression<def extends TupleExpression, $, args> =
+	def[1] extends "[]" ? inferDefinition<def[0], $, args>[]
+	: def[1] extends "&" ?
+		inferIntersection<
+			inferDefinition<def[0], $, args>,
+			inferDefinition<def[2], $, args>
+		>
+	: def[1] extends "|" ?
+		inferDefinition<def[0], $, args> | inferDefinition<def[2], $, args>
+	: def[1] extends ":" ? inferNarrow<inferDefinition<def[0], $, args>, def[2]>
+	: def[1] extends "=>" ? parseMorph<def[0], def[2], $, args>
+	: def[1] extends "@" ? inferDefinition<def[0], $, args>
+	: def extends readonly ["===", ...infer values] ? values[number]
+	: def extends (
+		readonly ["instanceof", ...infer constructors extends Constructor[]]
+	) ?
+		InstanceType<constructors[number]>
+	: def[0] extends "keyof" ? inferKeyOfExpression<def[1], $, args>
+	: never
 
-export type validatePrefixExpression<
-	def extends IndexZeroExpression,
-	$,
-	args
-> = def["length"] extends 1
-	? readonly [writeMissingRightOperandMessage<def[0]>]
-	: def[0] extends "keyof"
-		? readonly [def[0], validateDefinition<def[1], $, args>]
-		: def[0] extends "==="
-			? readonly [def[0], ...unknown[]]
-			: def[0] extends "instanceof"
-				? readonly [def[0], ...Constructor[]]
-				: never
+export type validatePrefixExpression<def extends IndexZeroExpression, $, args> =
+	def["length"] extends 1 ? readonly [writeMissingRightOperandMessage<def[0]>]
+	: def[0] extends "keyof" ?
+		readonly [def[0], validateDefinition<def[1], $, args>]
+	: def[0] extends "===" ? readonly [def[0], ...unknown[]]
+	: def[0] extends "instanceof" ? readonly [def[0], ...Constructor[]]
+	: never
 
 export type validatePostfixExpression<
 	def extends PostfixExpression,
@@ -446,35 +384,23 @@ export type validatePostfixExpression<
 	// expressions at index 1 after TS 5.1
 > = conform<def, readonly [validateDefinition<def[0], $, args>, "[]"]>
 
-export type validateInfixExpression<
-	def extends InfixExpression,
-	$,
-	args
-> = def["length"] extends 2
-	? readonly [def[0], writeMissingRightOperandMessage<def[1]>]
-	: readonly [
+export type validateInfixExpression<def extends InfixExpression, $, args> =
+	def["length"] extends 2 ?
+		readonly [def[0], writeMissingRightOperandMessage<def[1]>]
+	:	readonly [
 			validateDefinition<def[0], $, args>,
 			def[1],
-			def[1] extends "|"
-				? validateDefinition<def[2], $, args>
-				: def[1] extends "&"
-					? validateDefinition<def[2], $, args>
-					: def[1] extends ":"
-						? Predicate<
-								distillConstrainableIn<
-									inferDefinition<def[0], $, args>
-								>
-							>
-						: def[1] extends "=>"
-							? Morph<
-									distillConstrainableOut<
-										inferDefinition<def[0], $, args>
-									>,
-									unknown
-								>
-							: def[1] extends "@"
-								? BaseMeta | string
-								: validateDefinition<def[2], $, args>
+			def[1] extends "|" ? validateDefinition<def[2], $, args>
+			: def[1] extends "&" ? validateDefinition<def[2], $, args>
+			: def[1] extends ":" ?
+				Predicate<distillConstrainableIn<inferDefinition<def[0], $, args>>>
+			: def[1] extends "=>" ?
+				Morph<
+					distillConstrainableOut<inferDefinition<def[0], $, args>>,
+					unknown
+				>
+			: def[1] extends "@" ? BaseMeta | string
+			: validateDefinition<def[2], $, args>
 		]
 
 export type UnparsedTupleExpressionInput = {
@@ -548,11 +474,12 @@ export const writeMalformedFunctionalExpressionMessage = (
 		operator === ":" ? "Narrow" : "Morph"
 	} expression requires a function following '${operator}' (was ${typeof value})` as const
 
-export type parseMorph<inDef, morph, $, args> = morph extends Morph
-	? (
+export type parseMorph<inDef, morph, $, args> =
+	morph extends Morph ?
+		(
 			In: distillConstrainableIn<inferDefinition<inDef, $, args>>
 		) => Out<inferMorphOut<morph>>
-	: never
+	:	never
 
 export const parseNarrowTuple: PostfixParser<":"> = (def, ctx) => {
 	if (typeof def[2] !== "function") {
@@ -596,13 +523,11 @@ const prefixParsers: {
 		const branches = def
 			.slice(1)
 			.map((ctor) =>
-				typeof ctor === "function"
-					? node("proto", { proto: ctor as Constructor })
-					: throwParseError(
-							writeInvalidConstructorMessage(
-								objectKindOrDomainOf(ctor)
-							)
-						)
+				typeof ctor === "function" ?
+					node("proto", { proto: ctor as Constructor })
+				:	throwParseError(
+						writeInvalidConstructorMessage(objectKindOrDomainOf(ctor))
+					)
 			)
 		return branches.length === 1 ? branches[0] : node("union", { branches })
 	},

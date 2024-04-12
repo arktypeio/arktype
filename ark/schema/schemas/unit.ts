@@ -52,9 +52,7 @@ export const unitImplementation = implementNode<UnitDeclaration>({
 		unit: {
 			preserveUndefined: true,
 			serialize: (def) =>
-				def instanceof Date
-					? def.toISOString()
-					: defaultValueSerializer(def)
+				def instanceof Date ? def.toISOString() : defaultValueSerializer(def)
 		}
 	},
 	normalize: (def) => def,
@@ -70,9 +68,9 @@ export const unitImplementation = implementNode<UnitDeclaration>({
 	construct: (self) => {
 		const compiledValue: JsonPrimitive = (self.json as any).unit
 		const serializedValue: JsonPrimitive =
-			typeof self.unit === "string" || self.unit instanceof Date
-				? JSON.stringify(compiledValue)
-				: compiledValue
+			typeof self.unit === "string" || self.unit instanceof Date ?
+				JSON.stringify(compiledValue)
+			:	compiledValue
 		const literalKeys = prototypeKeysOf(self.unit)
 		return derivePrimitiveAttachments<UnitDeclaration>(self, {
 			compiledValue,
@@ -87,11 +85,10 @@ export const unitImplementation = implementNode<UnitDeclaration>({
 			domain: domainOf(self.unit),
 			literalKeys,
 			traverseAllows:
-				self.unit instanceof Date
-					? (data: unknown) =>
-							data instanceof Date &&
-							data.toISOString() === compiledValue
-					: (data: unknown) => data === self.unit,
+				self.unit instanceof Date ?
+					(data: unknown) =>
+						data instanceof Date && data.toISOString() === compiledValue
+				:	(data: unknown) => data === self.unit,
 			rawKeyOf: () => self.$.units(literalKeys) as never
 		})
 	}

@@ -50,9 +50,7 @@ export const hasTrait =
 		}
 		if (
 			implementedTraits in o.constructor &&
-			(o.constructor[implementedTraits] as Function[]).includes(
-				traitClass
-			)
+			(o.constructor[implementedTraits] as Function[]).includes(traitClass)
 		) {
 			return true
 		}
@@ -85,9 +83,9 @@ export abstract class Trait<
 	}
 
 	traitsOf(): readonly TraitConstructor[] {
-		return implementedTraits in this.constructor
-			? (this.constructor[implementedTraits] as TraitConstructor[])
-			: []
+		return implementedTraits in this.constructor ?
+				(this.constructor[implementedTraits] as TraitConstructor[])
+			:	[]
 	}
 }
 
@@ -114,15 +112,10 @@ export const compose: TraitComposition = ((...traits: TraitConstructor[]) => {
 		// copy static properties
 		Object.assign(base, trait)
 		// flatten and copy prototype
-		Object.defineProperties(
-			base.prototype,
-			collectPrototypeDescriptors(trait)
-		)
+		Object.defineProperties(base.prototype, collectPrototypeDescriptors(trait))
 		if (implementedTraits in trait) {
 			// add any ancestor traits from which the current trait was composed
-			for (const innerTrait of trait[
-				implementedTraits
-			] as TraitConstructor[]) {
+			for (const innerTrait of trait[implementedTraits] as TraitConstructor[]) {
 				if (!flatImplementedTraits.includes(innerTrait)) {
 					flatImplementedTraits.push(innerTrait)
 				}
@@ -161,9 +154,7 @@ export type TraitConstructor<
 	abstractProps extends object = {},
 	abstractStatics extends object = {}
 > = statics &
-	(new (
-		...args: params
-	) => Trait<{
+	(new (...args: params) => Trait<{
 		abstractMethods: abstractMethods
 		abstractProps: abstractProps
 		abstractStatics: abstractStatics
@@ -200,57 +191,54 @@ export type composeTraits<
 }>
 
 type intersectImplementations<l, r> = {
-	[k in keyof l]: k extends keyof r
-		? l[k] extends (...args: infer lArgs) => infer lReturn
-			? r[k] extends (...args: infer rArgs) => infer rReturn
-				? // ensure function intersections aren't handled as overloads which leads to unsafe behavior
-					(
-						...args: intersectParameters<lArgs, rArgs>
-					) => lReturn & rReturn
-				: l[k] & r[k]
-			: l[k] & r[k]
-		: l[k]
+	[k in keyof l]: k extends keyof r ?
+		l[k] extends (...args: infer lArgs) => infer lReturn ?
+			r[k] extends (...args: infer rArgs) => infer rReturn ?
+				// ensure function intersections aren't handled as overloads which leads to unsafe behavior
+				(...args: intersectParameters<lArgs, rArgs>) => lReturn & rReturn
+			:	l[k] & r[k]
+		:	l[k] & r[k]
+	:	l[k]
 } & Omit<r, keyof l>
 
 type composeRecurse<s extends CompositionState> =
-	s["remaining"] extends readonly [
-		TraitConstructor<
-			infer params,
-			infer instance,
-			infer statics,
-			infer abstractMethods,
-			infer abstractProps,
-			infer abstractStatics
-		>,
-		...infer tail
-	]
-		? composeRecurse<{
-				validated: [...s["validated"], s["remaining"][0]]
-				remaining: tail
-				kind: s["kind"]
-				params: intersectParameters<s["params"], params>
-				implemented: intersectImplementations<
-					s["implemented"],
-					Omit<instance, keyof abstractMethods | keyof abstractProps>
-				>
-				statics: intersectImplementations<
-					s["statics"],
-					Omit<statics, keyof abstractStatics>
-				>
-				abstractMethods: intersectImplementations<
-					s["abstractMethods"],
-					abstractMethods
-				>
-				abstractProps: intersectImplementations<
-					s["abstractProps"],
-					abstractProps
-				>
-				abstractStatics: intersectImplementations<
-					s["abstractStatics"],
-					abstractStatics
-				>
-			}>
-		: finalizeState<s>
+	s["remaining"] extends (
+		readonly [
+			TraitConstructor<
+				infer params,
+				infer instance,
+				infer statics,
+				infer abstractMethods,
+				infer abstractProps,
+				infer abstractStatics
+			>,
+			...infer tail
+		]
+	) ?
+		composeRecurse<{
+			validated: [...s["validated"], s["remaining"][0]]
+			remaining: tail
+			kind: s["kind"]
+			params: intersectParameters<s["params"], params>
+			implemented: intersectImplementations<
+				s["implemented"],
+				Omit<instance, keyof abstractMethods | keyof abstractProps>
+			>
+			statics: intersectImplementations<
+				s["statics"],
+				Omit<statics, keyof abstractStatics>
+			>
+			abstractMethods: intersectImplementations<
+				s["abstractMethods"],
+				abstractMethods
+			>
+			abstractProps: intersectImplementations<s["abstractProps"], abstractProps>
+			abstractStatics: intersectImplementations<
+				s["abstractStatics"],
+				abstractStatics
+			>
+		}>
+	:	finalizeState<s>
 
 type finalizeState<s extends CompositionState> = satisfy<
 	CompositionState,
@@ -261,9 +249,7 @@ type finalizeState<s extends CompositionState> = satisfy<
 		kind: s["kind"]
 		implemented: show<s["implemented"]>
 		statics: show<Omit<s["statics"], keyof typeof Trait>>
-		abstractMethods: show<
-			Omit<s["abstractMethods"], keyof s["implemented"]>
-		>
+		abstractMethods: show<Omit<s["abstractMethods"], keyof s["implemented"]>>
 		abstractProps: show<Omit<s["abstractProps"], keyof s["implemented"]>>
 		abstractStatics: show<Omit<s["abstractStatics"], keyof s["statics"]>>
 	}
@@ -271,13 +257,11 @@ type finalizeState<s extends CompositionState> = satisfy<
 
 export type implementationOf<s extends CompositionState> =
 	s["abstractMethods"] &
-		({} extends s["abstractProps"]
-			? {}
-			: {
-					construct: (...args: s["params"]) => s["abstractProps"]
-				}) &
-		({} extends s["abstractStatics"]
-			? {}
-			: {
-					statics: s["abstractStatics"]
-				})
+		({} extends s["abstractProps"] ? {}
+		:	{
+				construct: (...args: s["params"]) => s["abstractProps"]
+			}) &
+		({} extends s["abstractStatics"] ? {}
+		:	{
+				statics: s["abstractStatics"]
+			})

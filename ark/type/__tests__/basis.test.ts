@@ -18,12 +18,8 @@ describe("basis intersections", () => {
 		const a = [0]
 		const literal = type("===", a)
 		const cls = type("instanceof", Date)
-		attest(() => literal.and(cls)).throws(
-			writeUnsatisfiableExpressionError("")
-		)
-		attest(() => cls.and(literal)).throws(
-			writeUnsatisfiableExpressionError("")
-		)
+		attest(() => literal.and(cls)).throws(writeUnsatisfiableExpressionError(""))
+		attest(() => cls.and(literal)).throws(writeUnsatisfiableExpressionError(""))
 	})
 	it("domain & literal", () => {
 		const literal = type("'foo'")

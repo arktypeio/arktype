@@ -74,9 +74,8 @@ export class RawSchema<
 	implements
 		internalImplementationOf<Schema, (keyof Schema & symbol) | "infer">
 {
-	readonly branches: readonly Node<UnionChildKind>[] = this.hasKind("union")
-		? this.inner.branches
-		: [this as never]
+	readonly branches: readonly Node<UnionChildKind>[] =
+		this.hasKind("union") ? this.inner.branches : [this as never];
 
 	readonly [arkKind] = "schema"
 
@@ -147,8 +146,7 @@ export class RawSchema<
 	extends(other: UnknownSchema) {
 		const intersection = this.intersect(other as never)
 		return (
-			!(intersection instanceof Disjoint) &&
-			this.equals(intersection as never)
+			!(intersection instanceof Disjoint) && this.equals(intersection as never)
 		)
 	}
 
@@ -275,29 +273,23 @@ export interface Schema<
 		(
 			In: distillConstrainableIn<t>
 		) => Out<
-			[outValidatorSchema] extends [never]
-				? inferMorphOut<morph>
-				: distillConstrainableOut<inferSchema<outValidatorSchema, $>>
+			[outValidatorSchema] extends [never] ? inferMorphOut<morph>
+			:	distillConstrainableOut<inferSchema<outValidatorSchema, $>>
 		>,
 		$
 	>
 }
 
-export type intersectSchema<l extends SchemaKind, r extends NodeKind> = [
-	l,
-	r
-] extends [r, l]
-	? l
-	: asymmetricIntersectionOf<l, r> | asymmetricIntersectionOf<r, l>
+export type intersectSchema<l extends SchemaKind, r extends NodeKind> =
+	[l, r] extends [r, l] ? l
+	:	asymmetricIntersectionOf<l, r> | asymmetricIntersectionOf<r, l>
 
-type asymmetricIntersectionOf<
-	l extends NodeKind,
-	r extends NodeKind
-> = l extends unknown
-	? r extends kindRightOf<l>
-		? l | reducibleKindOf<l>
-		: never
-	: never
+type asymmetricIntersectionOf<l extends NodeKind, r extends NodeKind> =
+	l extends unknown ?
+		r extends kindRightOf<l> ?
+			l | reducibleKindOf<l>
+		:	never
+	:	never
 
 export type schemaKindRightOf<kind extends SchemaKind> = Extract<
 	kindRightOf<kind>,

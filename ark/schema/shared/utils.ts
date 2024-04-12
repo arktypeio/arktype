@@ -20,9 +20,9 @@ export const makeRootAndArrayPropertiesMutable = <o extends object>(
 	flatMorph(o as never, (k, v) => [k, isArray(v) ? [...v] : v]) as never
 
 export type makeRootAndArrayPropertiesMutable<inner> = {
-	-readonly [k in keyof inner]: inner[k] extends array | undefined
-		? mutable<inner[k]>
-		: inner[k]
+	-readonly [k in keyof inner]: inner[k] extends array | undefined ?
+		mutable<inner[k]>
+	:	inner[k]
 } & unknown
 
 export type internalImplementationOf<
@@ -31,10 +31,10 @@ export type internalImplementationOf<
 > = {
 	// ensure functions accept compatible numbers of args
 	[k in Exclude<keyof external, typeOnlyKey>]: external[k] extends (
-		...args: infer args
-	) => unknown
-		? (...args: { [i in keyof args]: never }) => unknown
-		: unknown
+		(...args: infer args) => unknown
+	) ?
+		(...args: { [i in keyof args]: never }) => unknown
+	:	unknown
 }
 
 export type TraversalPath = PropertyKey[]
@@ -44,9 +44,7 @@ export const pathToPropString = (path: TraversalPath): string => {
 		(s, segment) => s + literalPropAccess(segment),
 		""
 	)
-	return propAccessChain[0] === "."
-		? propAccessChain.slice(1)
-		: propAccessChain
+	return propAccessChain[0] === "." ? propAccessChain.slice(1) : propAccessChain
 }
 
 export const arkKind = Symbol("ArkTypeInternalKind")

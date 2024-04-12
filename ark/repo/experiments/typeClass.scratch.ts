@@ -6,9 +6,9 @@ import type { inferTypeRoot, validateTypeRoot } from "../../type/type.js"
 const Class = <def>(def: validateTypeRoot<def, Ark>) => {
 	const validator = type(def as never)
 
-	return class TypeConstructor<
-		t = inferTypeRoot<def, Ark>
-	> extends DynamicBase<t & object> {
+	return class TypeConstructor<t = inferTypeRoot<def, Ark>> extends DynamicBase<
+		t & object
+	> {
 		static infer: inferTypeRoot<def, Ark>
 
 		constructor(input: unknown) {

@@ -114,20 +114,21 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 		},
 		...defineRightwardIntersections("morph", (l, r, $) => {
 			const inTersection = l.in.intersect(r)
-			return inTersection instanceof Disjoint
-				? inTersection
-				: inTersection.kind === "union"
-					? $.node(
-							"union",
-							inTersection.branches.map((branch) => ({
-								...l.inner,
-								in: branch
-							}))
-						)
-					: $.node("morph", {
+			return (
+				inTersection instanceof Disjoint ? inTersection
+				: inTersection.kind === "union" ?
+					$.node(
+						"union",
+						inTersection.branches.map((branch) => ({
 							...l.inner,
-							in: inTersection
-						})
+							in: branch
+						}))
+					)
+				:	$.node("morph", {
+						...l.inner,
+						in: inTersection
+					})
+			)
 		})
 	},
 	construct: (self) => {
@@ -170,101 +171,89 @@ export interface MorphNode extends RawSchema<MorphDeclaration> {
 	get out(): MorphChildNode
 }
 
-export type inferMorphOut<morph extends Morph> = morph extends Morph<
-	never,
-	infer out
->
-	? out extends ArkResult<infer t>
-		? out extends null
-			? // avoid treating any/never as ArkResult
+export type inferMorphOut<morph extends Morph> =
+	morph extends Morph<never, infer out> ?
+		out extends ArkResult<infer t> ?
+			out extends null ?
+				// avoid treating any/never as ArkResult
 				out
-			: distillOut<t>
-		: Exclude<out, ArkTypeError>
-	: never
+			:	distillOut<t>
+		:	Exclude<out, ArkTypeError>
+	:	never
 
-export type distillIn<t> = includesMorphs<t> extends true
-	? distillRecurse<t, "in", "base">
-	: t
+export type distillIn<t> =
+	includesMorphs<t> extends true ? distillRecurse<t, "in", "base"> : t
 
-export type distillOut<t> = includesMorphs<t> extends true
-	? distillRecurse<t, "out", "base">
-	: t
+export type distillOut<t> =
+	includesMorphs<t> extends true ? distillRecurse<t, "out", "base"> : t
 
-export type distillConstrainableIn<t> = includesMorphs<t> extends true
-	? distillRecurse<t, "in", "constrainable">
-	: t
+export type distillConstrainableIn<t> =
+	includesMorphs<t> extends true ? distillRecurse<t, "in", "constrainable"> : t
 
-export type distillConstrainableOut<t> = includesMorphs<t> extends true
-	? distillRecurse<t, "out", "constrainable">
-	: t
+export type distillConstrainableOut<t> =
+	includesMorphs<t> extends true ? distillRecurse<t, "out", "constrainable"> : t
 
-export type includesMorphs<t> = [
-	t,
-	distillRecurse<t, "in", "base">,
-	t,
-	distillRecurse<t, "out", "base">
-] extends [
-	distillRecurse<t, "in", "base">,
-	t,
-	distillRecurse<t, "out", "base">,
-	t
-]
-	? false
-	: true
+export type includesMorphs<t> =
+	[
+		t,
+		distillRecurse<t, "in", "base">,
+		t,
+		distillRecurse<t, "out", "base">
+	] extends (
+		[distillRecurse<t, "in", "base">, t, distillRecurse<t, "out", "base">, t]
+	) ?
+		false
+	:	true
 
 type distillRecurse<
 	t,
 	io extends "in" | "out",
 	distilledKind extends "base" | "constrainable"
-> = unknown extends t
-	? unknown
-	: t extends MorphAst<infer i, infer o>
-		? io extends "in"
-			? i
-			: o
-		: t extends of<infer base, any>
-			? distilledKind extends "base"
-				? distillRecurse<base, io, distilledKind>
-				: t
-			: t extends TerminallyInferredObjectKind | Primitive
-				? t
-				: t extends array
-					? distillArray<t, io, distilledKind, []>
-					: {
-							[k in keyof t]: distillRecurse<
-								t[k],
-								io,
-								distilledKind
-							>
-						}
+> =
+	unknown extends t ? unknown
+	: t extends MorphAst<infer i, infer o> ?
+		io extends "in" ?
+			i
+		:	o
+	: t extends of<infer base, any> ?
+		distilledKind extends "base" ?
+			distillRecurse<base, io, distilledKind>
+		:	t
+	: t extends TerminallyInferredObjectKind | Primitive ? t
+	: t extends array ? distillArray<t, io, distilledKind, []>
+	: {
+			[k in keyof t]: distillRecurse<t[k], io, distilledKind>
+		}
 
 type distillArray<
 	t extends array,
 	io extends "in" | "out",
 	constraints extends "base" | "constrainable",
 	prefix extends array
-> = t extends readonly [infer head, ...infer tail]
-	? distillArray<
+> =
+	t extends readonly [infer head, ...infer tail] ?
+		distillArray<
 			tail,
 			io,
 			constraints,
 			[...prefix, distillRecurse<head, io, constraints>]
 		>
-	: [...prefix, ...distillPostfix<t, io, constraints>]
+	:	[...prefix, ...distillPostfix<t, io, constraints>]
 
 type distillPostfix<
 	t extends array,
 	io extends "in" | "out",
 	constraints extends "base" | "constrainable",
 	postfix extends array = []
-> = t extends readonly [...infer init, infer last]
-	? distillPostfix<
+> =
+	t extends readonly [...infer init, infer last] ?
+		distillPostfix<
 			init,
 			io,
 			constraints,
 			[distillRecurse<last, io, constraints>, ...postfix]
 		>
-	: [...{ [i in keyof t]: distillRecurse<t[i], io, constraints> }, ...postfix]
+	:	[...{ [i in keyof t]: distillRecurse<t[i], io, constraints> }, ...postfix]
 
 /** Objects we don't want to expand during inference like Date or Promise */
 type TerminallyInferredObjectKind =

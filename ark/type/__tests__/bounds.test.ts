@@ -126,9 +126,7 @@ describe("parsed bounds", () => {
 
 		it("single equals", () => {
 			// @ts-expect-error
-			attest(() => type("string=5")).throwsAndHasTypeError(
-				singleEqualsMessage
-			)
+			attest(() => type("string=5")).throwsAndHasTypeError(singleEqualsMessage)
 		})
 		it("invalid left comparator", () => {
 			// @ts-expect-error
@@ -148,9 +146,7 @@ describe("parsed bounds", () => {
 		})
 		it("unpaired left group", () => {
 			// @ts-expect-error
-			attest(() => type("(-1<=number)")).throws(
-				writeOpenRangeMessage(-1, ">=")
-			)
+			attest(() => type("(-1<=number)")).throws(writeOpenRangeMessage(-1, ">="))
 		})
 		it("double left", () => {
 			// @ts-expect-error

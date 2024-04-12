@@ -18,7 +18,11 @@
 			"default": "./out/*"
 		}
 	},
-	"files": ["out", "!__tests__", "**/*.ts"],
+	"files": [
+		"out",
+		"!__tests__",
+		"**/*.ts"
+	],
 	"scripts": {
 		"build": "tsx ../repo/build.ts",
 		"test": "tsx ../repo/testPackage.ts"

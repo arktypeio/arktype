@@ -50,9 +50,10 @@ export const minImplementation = implementNode<MinDeclaration>({
 	},
 	construct: (self) =>
 		deriveRangeAttachments<MinDeclaration>(self, {
-			traverseAllows: self.exclusive
-				? (data) => data > self.rule
-				: (data) => data >= self.rule,
+			traverseAllows:
+				self.exclusive ?
+					(data) => data > self.rule
+				:	(data) => data >= self.rule,
 			impliedBasis: internalKeywords.lengthBoundable.raw
 		})
 })

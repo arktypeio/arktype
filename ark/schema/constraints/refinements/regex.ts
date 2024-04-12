@@ -42,13 +42,12 @@ export const regexImplementation = implementNode<RegexDeclaration>({
 		flags: {}
 	},
 	normalize: (def) =>
-		typeof def === "string"
-			? { rule: def }
-			: def instanceof RegExp
-				? def.flags
-					? { rule: def.source, flags: def.flags }
-					: { rule: def.source }
-				: def,
+		typeof def === "string" ? { rule: def }
+		: def instanceof RegExp ?
+			def.flags ?
+				{ rule: def.source, flags: def.flags }
+			:	{ rule: def.source }
+		:	def,
 	hasAssociatedError: true,
 	intersectionIsOpen: true,
 	intersections: {

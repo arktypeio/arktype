@@ -45,13 +45,12 @@ export const minLengthImplementation = implementNode<MinLengthDeclaration>({
 	normalize: (def) => (typeof def === "number" ? { rule: def } : def),
 	defaults: {
 		description: (node) =>
-			node.exclusive
-				? node.rule === 0
-					? "non-empty"
-					: `more than length ${node.rule}`
-				: node.rule === 1
-					? "non-empty"
-					: `at least length ${node.rule}`,
+			node.exclusive ?
+				node.rule === 0 ?
+					"non-empty"
+				:	`more than length ${node.rule}`
+			: node.rule === 1 ? "non-empty"
+			: `at least length ${node.rule}`,
 		actual: (data) => `${data.length}`
 	},
 	intersections: {
@@ -59,9 +58,10 @@ export const minLengthImplementation = implementNode<MinLengthDeclaration>({
 	},
 	construct: (self) =>
 		deriveRangeAttachments<MinLengthDeclaration>(self, {
-			traverseAllows: self.exclusive
-				? (data) => data.length > self.rule
-				: (data) => data.length >= self.rule,
+			traverseAllows:
+				self.exclusive ?
+					(data) => data.length > self.rule
+				:	(data) => data.length >= self.rule,
 			impliedBasis: internalKeywords.lengthBoundable.raw
 		})
 })

@@ -42,31 +42,18 @@ export type TypeParser<$> = {
 	// Spread version of a tuple expression
 	<const zero, const one, const rest extends array>(
 		_0: zero extends IndexZeroOperator ? zero : validateTypeRoot<zero, $>,
-		_1: zero extends "keyof"
-			? validateTypeRoot<one, $>
-			: zero extends "instanceof"
-				? conform<one, Constructor>
-				: zero extends "==="
-					? conform<one, unknown>
-					: conform<one, IndexOneOperator>,
-		..._2: zero extends "==="
-			? rest
-			: zero extends "instanceof"
-				? conform<rest, readonly Constructor[]>
-				: one extends TupleInfixOperator
-					? one extends ":"
-						? [Predicate<distillIn<inferTypeRoot<zero, $>>>]
-						: one extends "=>"
-							? [
-									Morph<
-										distillOut<inferTypeRoot<zero, $>>,
-										unknown
-									>
-								]
-							: one extends "@"
-								? [string | BaseMeta]
-								: [validateTypeRoot<rest[0], $>]
-					: []
+		_1: zero extends "keyof" ? validateTypeRoot<one, $>
+		: zero extends "instanceof" ? conform<one, Constructor>
+		: zero extends "===" ? conform<one, unknown>
+		: conform<one, IndexOneOperator>,
+		..._2: zero extends "===" ? rest
+		: zero extends "instanceof" ? conform<rest, readonly Constructor[]>
+		: one extends TupleInfixOperator ?
+			one extends ":" ? [Predicate<distillIn<inferTypeRoot<zero, $>>>]
+			: one extends "=>" ? [Morph<distillOut<inferTypeRoot<zero, $>>, unknown>]
+			: one extends "@" ? [string | BaseMeta]
+			: [validateTypeRoot<rest[0], $>]
+		:	[]
 	): Type<inferTypeRoot<[zero, one, ...rest], $>, $>
 
 	<params extends string, const def>(
@@ -111,9 +98,8 @@ export interface Type<
 		(
 			In: distillConstrainableIn<t>
 		) => Out<
-			[outValidatorDef] extends [never]
-				? inferMorphOut<morph>
-				: distillConstrainableOut<inferTypeRoot<outValidatorDef, $>>
+			[outValidatorDef] extends [never] ? inferMorphOut<morph>
+			:	distillConstrainableOut<inferTypeRoot<outValidatorDef, $>>
 		>,
 		$
 	>
@@ -122,9 +108,9 @@ export interface Type<
 	narrow<def extends Predicate<distillConstrainableOut<t>>>(
 		def: def
 	): Type<
-		includesMorphs<t> extends true
-			? (In: distillIn<t>) => Out<inferNarrow<this["infer"], def>>
-			: inferNarrow<this["infer"], def>,
+		includesMorphs<t> extends true ?
+			(In: distillIn<t>) => Out<inferNarrow<this["infer"], def>>
+		:	inferNarrow<this["infer"], def>,
 		$
 	>
 

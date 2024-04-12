@@ -25,23 +25,15 @@ export type require<o, maxDepth extends number = 1> = requireRecurse<
 	maxDepth
 >
 
-type requireRecurse<
-	o,
-	depth extends 1[],
-	maxDepth extends number
-> = depth["length"] extends maxDepth
-	? o
-	: o extends object
-		? o extends (...args: never[]) => unknown
-			? o
-			: {
-					[k in keyof o]-?: requireRecurse<
-						o[k],
-						[...depth, 1],
-						maxDepth
-					>
-				}
-		: o
+type requireRecurse<o, depth extends 1[], maxDepth extends number> =
+	depth["length"] extends maxDepth ? o
+	: o extends object ?
+		o extends (...args: never[]) => unknown ?
+			o
+		:	{
+				[k in keyof o]-?: requireRecurse<o[k], [...depth, 1], maxDepth>
+			}
+	:	o
 
 export type PartialRecord<k extends PropertyKey = PropertyKey, v = unknown> = {
 	[_ in k]?: v
@@ -57,23 +49,15 @@ export type mutable<o, maxDepth extends number = 1> = mutableRecurse<
 	maxDepth
 >
 
-type mutableRecurse<
-	o,
-	depth extends 1[],
-	maxDepth extends number
-> = depth["length"] extends maxDepth
-	? o
-	: o extends object
-		? o extends (...args: never[]) => unknown
-			? o
-			: {
-					-readonly [k in keyof o]: mutableRecurse<
-						o[k],
-						[...depth, 1],
-						maxDepth
-					>
-				}
-		: o
+type mutableRecurse<o, depth extends 1[], maxDepth extends number> =
+	depth["length"] extends maxDepth ? o
+	: o extends object ?
+		o extends (...args: never[]) => unknown ?
+			o
+		:	{
+				-readonly [k in keyof o]: mutableRecurse<o[k], [...depth, 1], maxDepth>
+			}
+	:	o
 
 export type entryOf<o> = {
 	[k in keyof o]-?: [k, o[k] & ({} | null)]
@@ -99,16 +83,15 @@ export const fromEntries = <const entries extends readonly Entry[]>(
 ): fromEntries<entries> => Object.fromEntries(entries) as never
 
 /** Mimics the result of Object.keys(...) */
-export type keysOf<o> = o extends array
-	? number extends o["length"]
-		? `${number}`
-		: keyof o & `${number}`
-	: {
-			[K in keyof o]: K extends string
-				? K
-				: K extends number
-					? `${K}`
-					: never
+export type keysOf<o> =
+	o extends array ?
+		number extends o["length"] ?
+			`${number}`
+		:	keyof o & `${number}`
+	:	{
+			[K in keyof o]: K extends string ? K
+			: K extends number ? `${K}`
+			: never
 		}[keyof o]
 
 export const keysOf = <o extends object>(o: o): keysOf<o>[] =>
@@ -170,9 +153,7 @@ export const InnerDynamicBase = class {
 	constructor(properties: object) {
 		Object.assign(this, properties)
 	}
-} as new <t extends object>(
-	base: t
-) => t
+} as new <t extends object>(base: t) => t
 
 /** @ts-expect-error (needed to extend `t`, but safe given ShallowClone's implementation) **/
 export class DynamicBase<t extends object> extends InnerDynamicBase<t> {}

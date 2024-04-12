@@ -38,9 +38,8 @@ export class PropsGroup extends DynamicBase<PropsGroupInput> {
 		this.index,
 		this.sequence
 	)
-	readonly nameSet = this.prop
-		? flatMorph(this.prop, (i, node) => [node.key, 1] as const)
-		: {}
+	readonly nameSet =
+		this.prop ? flatMorph(this.prop, (i, node) => [node.key, 1] as const) : {}
 	readonly nameSetReference = reference(this.nameSet)
 	readonly description = describeProps(this, "description")
 	readonly expression = describeProps(this, "expression")
@@ -91,27 +90,22 @@ export class PropsGroup extends DynamicBase<PropsGroupInput> {
 				js.let("matched", false)
 			}
 			this.index?.forEach((node) => {
-				js.if(
-					`${js.invoke(node.key, { arg: "k", kind: "Allows" })}`,
-					() => {
-						if (js.traversalKind === "Allows") {
-							js.if(
-								`!${js.invoke(node.value, {
-									arg: `${js.data}[k]`
-								})}`,
-								() => js.return(false)
-							)
-						} else {
-							js.line(
-								js.invoke(node.value, { arg: `${js.data}[k]` })
-							)
-						}
-						if (this.onExtraneousKey) {
-							js.set("matched", true)
-						}
-						return js
+				js.if(`${js.invoke(node.key, { arg: "k", kind: "Allows" })}`, () => {
+					if (js.traversalKind === "Allows") {
+						js.if(
+							`!${js.invoke(node.value, {
+								arg: `${js.data}[k]`
+							})}`,
+							() => js.return(false)
+						)
+					} else {
+						js.line(js.invoke(node.value, { arg: `${js.data}[k]` }))
 					}
-				)
+					if (this.onExtraneousKey) {
+						js.set("matched", true)
+					}
+					return js
+				})
 			})
 			if (this.onExtraneousKey) {
 				if (this.prop?.length !== 0) {
@@ -148,9 +142,9 @@ const describeProps = (
 		const objectLiteralDescription = `${
 			inner.onExtraneousKey ? "exact " : ""
 		}{ ${parts.join(", ")} }`
-		return inner.sequence
-			? `${objectLiteralDescription} & ${inner.sequence.description}`
-			: objectLiteralDescription
+		return inner.sequence ?
+				`${objectLiteralDescription} & ${inner.sequence.description}`
+			:	objectLiteralDescription
 	}
 	return inner.sequence?.description ?? "{}"
 }

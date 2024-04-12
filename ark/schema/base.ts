@@ -96,10 +96,10 @@ export const implementNode = <d extends RawNodeDeclaration = never>(
 	const implementation: UnknownNodeImplementation = _ as never
 	if (implementation.hasAssociatedError) {
 		implementation.defaults.expected ??= (ctx) =>
-			"description" in ctx
-				? (ctx.description as string)
-				: // TODO: does passing ctx here work? or will some expect node?
-				  implementation.defaults.description(ctx as never)
+			"description" in ctx ?
+				(ctx.description as string)
+				// TODO: does passing ctx here work? or will some expect node?
+			:	implementation.defaults.description(ctx as never)
 		implementation.defaults.actual ??= (data) => printable(data)
 		implementation.defaults.problem ??= (ctx) =>
 			`must be ${ctx.expected}${ctx.actual ? ` (was ${ctx.actual})` : ""}`
@@ -143,9 +143,9 @@ export class RawNode<
 			return ctx.finalize()
 		}, attachments as never)
 		this.contributesReferencesByName =
-			this.name in this.referencesByName
-				? this.referencesByName
-				: { ...this.referencesByName, [this.name]: this as never }
+			this.name in this.referencesByName ?
+				this.referencesByName
+			:	{ ...this.referencesByName, [this.name]: this as never }
 		this.contributesReferences = Object.values(this.contributesReferencesByName)
 	}
 
@@ -224,9 +224,10 @@ export class RawNode<
 			}
 			if (keyDefinition.child) {
 				const childValue = v as listable<RawNode>
-				ioInner[k] = isArray(childValue)
-					? childValue.map((child) => child[kind])
-					: childValue[kind]
+				ioInner[k] =
+					isArray(childValue) ?
+						childValue.map((child) => child[kind])
+					:	childValue[kind]
 			} else {
 				ioInner[k] = v
 			}
@@ -276,10 +277,12 @@ export class RawNode<
 	}
 
 	get nestableExpression(): string {
-		return this.children.length > 1 &&
-			this.children.some((child) => !child.isBasis && !child.isProp())
-			? `(${this.expression})`
-			: this.expression
+		return (
+				this.children.length > 1 &&
+					this.children.some((child) => !child.isBasis && !child.isProp())
+			) ?
+				`(${this.expression})`
+			:	this.expression
 	}
 
 	private static intersectionCache: PartialRecord<
@@ -316,14 +319,13 @@ export class RawNode<
 			this.impl.intersections[r.kind] ?? r.impl.intersections[this.kind]
 
 		let result =
-			implementation === undefined
-				? // should be two ConstraintNodes that have no relation
-				  // this could also happen if a user directly intersects a Type and a ConstraintNode,
-				  // but that is not allowed by the external function signature
-				  null
-				: leftmostKind === this.kind
-				? implementation(this, r, this.$)
-				: implementation(r, this, this.$)
+			implementation === undefined ?
+				// should be two ConstraintNodes that have no relation
+				// this could also happen if a user directly intersects a Type and a ConstraintNode,
+				// but that is not allowed by the external function signature
+				null
+			: leftmostKind === this.kind ? implementation(this, r, this.$)
+			: implementation(r, this, this.$)
 
 		if (result instanceof RawNode) {
 			// if the result equals one of the operands, preserve its metadata by
@@ -375,13 +377,13 @@ export class RawNode<
 			this.inner as Dict,
 			(k, v) => [
 				k,
-				this.impl.keys[k].child
-					? isArray(v)
-						? v.map((node) =>
-								(node as RawNode).transform(mapper, shouldTransform)
-						  )
-						: (v as RawNode).transform(mapper, shouldTransform)
-					: v
+				this.impl.keys[k].child ?
+					isArray(v) ?
+						v.map((node) =>
+							(node as RawNode).transform(mapper, shouldTransform)
+						)
+					:	(v as RawNode).transform(mapper, shouldTransform)
+				:	v
 			]
 		)
 		return this.$.node(
@@ -392,9 +394,9 @@ export class RawNode<
 
 	configureShallowDescendants(configOrDescription: BaseMeta | string): this {
 		const config: BaseMeta =
-			typeof configOrDescription === "string"
-				? { description: configOrDescription }
-				: (configOrDescription as never)
+			typeof configOrDescription === "string" ?
+				{ description: configOrDescription }
+			:	(configOrDescription as never)
 		return this.transform(
 			(kind, inner) => ({ ...inner, ...config }),
 			(node) => !node.isProp()

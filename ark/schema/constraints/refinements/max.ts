@@ -49,17 +49,18 @@ export const maxImplementation = implementNode<MaxDeclaration>({
 	intersections: {
 		max: (l, r) => (l.isStricterThan(r) ? l : r),
 		min: (max, min, $) =>
-			max.overlapsRange(min)
-				? max.overlapIsUnit(min)
-					? $.node("unit", { unit: max.rule })
-					: null
-				: Disjoint.from("range", max, min)
+			max.overlapsRange(min) ?
+				max.overlapIsUnit(min) ?
+					$.node("unit", { unit: max.rule })
+				:	null
+			:	Disjoint.from("range", max, min)
 	},
 	construct: (self) =>
 		deriveRangeAttachments<MaxDeclaration>(self, {
-			traverseAllows: self.exclusive
-				? (data) => data < self.rule
-				: (data) => data <= self.rule,
+			traverseAllows:
+				self.exclusive ?
+					(data) => data < self.rule
+				:	(data) => data <= self.rule,
 			impliedBasis: internalKeywords.lengthBoundable.raw
 		})
 })

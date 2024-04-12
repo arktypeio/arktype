@@ -12,9 +12,7 @@ export const updateSnippetReferences = (
 	)
 	if (updatedPaths.length) {
 		shell(
-			`pnpm exec prettier --write --ignore-unknown ${updatedPaths.join(
-				" "
-			)}`
+			`pnpm exec prettier --write --ignore-unknown ${updatedPaths.join(" ")}`
 		)
 	}
 }
@@ -113,9 +111,7 @@ const getUpdatedLines = (
 		} else {
 			const embedArgs = pipe.match(EMBED_MATCHER)
 			if (embedArgs) {
-				lines = `${embedArgs[1]}${lines.join("\n")}${
-					embedArgs[2]
-				}`.split("\n")
+				lines = `${embedArgs[1]}${lines.join("\n")}${embedArgs[2]}`.split("\n")
 			}
 		}
 	}
@@ -133,9 +129,7 @@ const getLinesFromJsonFile = (
 		try {
 			result = result[segment]
 		} catch {
-			throw new Error(
-				`Path ${pathToData} does not exist in ${pathToFile}.`
-			)
+			throw new Error(`Path ${pathToData} does not exist in ${pathToFile}.`)
 		}
 	}
 	switch (token) {
@@ -162,9 +156,7 @@ const getSnippedBlockLines = (
 		if (!(label in fileSnippets)) {
 			throw new Error(
 				`No snippet with label ${label} exists in file at ${pathToFile}. ` +
-					`Available labels are ${Object.keys(fileSnippets).join(
-						", "
-					)}.`
+					`Available labels are ${Object.keys(fileSnippets).join(", ")}.`
 			)
 		}
 		snippetTextToCopy = fileSnippets[label].text

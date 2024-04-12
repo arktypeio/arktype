@@ -49,9 +49,7 @@ export const extractApi = (
 			{
 				subpath: ".",
 				exports: extractExportsFromDts(
-					project.addSourceFileAtPath(
-						join(packageRoot, "out", "main.d.ts")
-					)
+					project.addSourceFileAtPath(join(packageRoot, "out", "main.d.ts"))
 				)
 			}
 		]
@@ -84,9 +82,10 @@ const find = <t extends readonly unknown[], narrowed>(
 const findAssociatedDocs = (
 	declaration: ExportedDeclarations
 ): JSDoc[] | undefined => {
-	const possiblyDocumentedAncestor = isJSDocableNode(declaration)
-		? declaration
-		: find(declaration.getAncestors(), isJSDocableNode)
+	const possiblyDocumentedAncestor =
+		isJSDocableNode(declaration) ? declaration : (
+			find(declaration.getAncestors(), isJSDocableNode)
+		)
 
 	return possiblyDocumentedAncestor?.getJsDocs()
 }

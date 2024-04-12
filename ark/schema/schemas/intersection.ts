@@ -124,9 +124,8 @@ const intersectIntersections = (
 	// reduction, check for the case where r is empty so we can preserve
 	// metadata and save some time
 
-	const root = isEmptyObject(reduced)
-		? rawRoot
-		: intersectRootKeys(reducedRoot, rawRoot)
+	const root =
+		isEmptyObject(reduced) ? rawRoot : intersectRootKeys(reducedRoot, rawRoot)
 
 	if (root instanceof Disjoint) return root
 
@@ -222,12 +221,10 @@ export const intersectionImplementation =
 			>,
 		defaults: {
 			description: (node) =>
-				node.children.length === 0
-					? "unknown"
-					: node.props?.description ??
-						node.children
-							.map((child) => child.description)
-							.join(" and "),
+				node.children.length === 0 ?
+					"unknown"
+				:	node.props?.description ??
+					node.children.map((child) => child.description).join(" and "),
 			expected: (source) =>
 				`  • ${source.errors.map((e) => e.expected).join("\n  • ")}`,
 			problem: (ctx) => `must be...\n${ctx.expected}`
@@ -240,20 +237,21 @@ export const intersectionImplementation =
 
 				const basis = l.basis?.intersect(r) ?? r
 
-				return basis instanceof Disjoint
-					? basis
-					: l?.basis?.equals(basis)
-						? // if the basis doesn't change, return the original intesection
-							l
-						: // given we've already precluded l being unknown, the result must
-							// be an intersection with the new basis result integrated
-							l.$.node(
-								"intersection",
-								Object.assign(omit(l.inner, metaKeys), {
-									[basis.kind]: basis
-								}),
-								{ prereduced: true }
-							)
+				return (
+					basis instanceof Disjoint ? basis
+					: l?.basis?.equals(basis) ?
+						// if the basis doesn't change, return the original intesection
+						l
+						// given we've already precluded l being unknown, the result must
+						// be an intersection with the new basis result integrated
+					:	l.$.node(
+							"intersection",
+							Object.assign(omit(l.inner, metaKeys), {
+								[basis.kind]: basis
+							}),
+							{ prereduced: true }
+						)
+				)
 			})
 		},
 		construct: (self) => {
@@ -273,9 +271,7 @@ export const intersectionImplementation =
 				traversables,
 				expression:
 					props?.expression ||
-					self.children
-						.map((node) => node.nestableExpression)
-						.join(" & ") ||
+					self.children.map((node) => node.nestableExpression).join(" & ") ||
 					"unknown",
 				traverseAllows: (data, ctx) =>
 					traversables.every((traversable) =>
@@ -309,20 +305,17 @@ export const intersectionImplementation =
 				compile(js) {
 					if (js.traversalKind === "Allows") {
 						this.traversables.forEach((traversable) =>
-							traversable instanceof RawNode
-								? js.check(traversable)
-								: traversable.compile(js)
+							traversable instanceof RawNode ?
+								js.check(traversable)
+							:	traversable.compile(js)
 						)
 						js.return(true)
 						return
 					}
 
-					const returnIfFail = () =>
-						js.if("ctx.hasError()", () => js.return())
+					const returnIfFail = () => js.if("ctx.hasError()", () => js.return())
 					const returnIfFailFast = () =>
-						js.if("ctx.failFast && ctx.hasError()", () =>
-							js.return()
-						)
+						js.if("ctx.failFast && ctx.hasError()", () => js.return())
 
 					if (this.basis) {
 						js.check(this.basis)
@@ -352,11 +345,13 @@ export const intersectionImplementation =
 					}
 				},
 				rawKeyOf() {
-					return this.basis
-						? this.props
-							? this.basis.rawKeyOf().union(this.props.rawKeyOf())
-							: this.basis.rawKeyOf()
-						: this.props?.rawKeyOf() ?? self.$.keywords.never.raw
+					return (
+						this.basis ?
+							this.props ?
+								this.basis.rawKeyOf().union(this.props.rawKeyOf())
+							:	this.basis.rawKeyOf()
+						:	this.props?.rawKeyOf() ?? self.$.keywords.never.raw
+					)
 				}
 			}
 		}
@@ -379,11 +374,11 @@ const intersectRootKeys = (
 
 	const lBasis = l.proto ?? l.domain
 	const rBasis = r.proto ?? r.domain
-	const resultBasis = lBasis
-		? rBasis
-			? lBasis.intersect(rBasis)
-			: lBasis
-		: rBasis
+	const resultBasis =
+		lBasis ?
+			rBasis ? lBasis.intersect(rBasis)
+			:	lBasis
+		:	rBasis
 	if (resultBasis) {
 		if (resultBasis instanceof Disjoint) {
 			return resultBasis
@@ -398,9 +393,9 @@ const intersectRootKeys = (
 	}
 	if (l.onExtraneousKey || r.onExtraneousKey) {
 		result.onExtraneousKey =
-			l.onExtraneousKey === "throw" || r.onExtraneousKey === "throw"
-				? "throw"
-				: "prune"
+			l.onExtraneousKey === "throw" || r.onExtraneousKey === "throw" ?
+				"throw"
+			:	"prune"
 	}
 	return result
 }
@@ -461,13 +456,10 @@ const flattenConstraints = (inner: IntersectionInner): Constraint[] => {
 			k in constraintKeys ? (v as listable<Constraint>) : []
 		)
 		.sort((l, r) =>
-			l.precedence < r.precedence
-				? -1
-				: l.precedence > r.precedence
-					? 1
-					: l.innerId < r.innerId
-						? -1
-						: 1
+			l.precedence < r.precedence ? -1
+			: l.precedence > r.precedence ? 1
+			: l.innerId < r.innerId ? -1
+			: 1
 		)
 
 	return result
@@ -521,24 +513,19 @@ type conditionalIntersectionKeyOf<t> =
 // not sure why explicitly allowing Inner<k> is necessary in these cases,
 // but remove if it can be removed without creating type errors
 type intersectionChildSchemaValueOf<k extends IntersectionChildKind> =
-	k extends OpenNodeKind
-		? listable<NodeDef<k> | Inner<k>>
-		: NodeDef<k> | Inner<k>
+	k extends OpenNodeKind ? listable<NodeDef<k> | Inner<k>>
+	:	NodeDef<k> | Inner<k>
 
 type conditionalSchemaValueOfKey<k extends ConditionalIntersectionKey> =
-	k extends IntersectionChildKind
-		? intersectionChildSchemaValueOf<k>
-		: ConditionalTerminalIntersectionSchema[k &
-				ConditionalTerminalIntersectionKey]
+	k extends IntersectionChildKind ? intersectionChildSchemaValueOf<k>
+	:	ConditionalTerminalIntersectionSchema[k & ConditionalTerminalIntersectionKey]
 
 type intersectionChildInnerValueOf<k extends IntersectionChildKind> =
 	k extends OpenNodeKind ? readonly Node<k>[] : Node<k>
 
 type conditionalInnerValueOfKey<k extends ConditionalIntersectionKey> =
-	k extends IntersectionChildKind
-		? intersectionChildInnerValueOf<k>
-		: ConditionalTerminalIntersectionInner[k &
-				ConditionalTerminalIntersectionKey]
+	k extends IntersectionChildKind ? intersectionChildInnerValueOf<k>
+	:	ConditionalTerminalIntersectionInner[k & ConditionalTerminalIntersectionKey]
 
 export type conditionalSchemaOf<t> = {
 	[k in conditionalIntersectionKeyOf<t>]?: conditionalSchemaValueOfKey<k>

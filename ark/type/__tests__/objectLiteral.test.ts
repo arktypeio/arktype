@@ -187,9 +187,7 @@ describe("object literal", () => {
 			required: "'foo'",
 			"optional?": "'bar'"
 		})
-		attest<{ [x: string]: string; required: "foo"; optional?: "bar" }>(
-			o.infer
-		)
+		attest<{ [x: string]: string; required: "foo"; optional?: "bar" }>(o.infer)
 	})
 	it("index key from scope", () => {
 		const types = scope({

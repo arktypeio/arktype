@@ -4,10 +4,7 @@ import { Hkt, type array, type conform, type show } from "@arktype/util"
 describe("hkt", () => {
 	interface AppendKind extends Hkt.Kind {
 		hkt: (
-			args: conform<
-				this[Hkt.args],
-				readonly [element: unknown, to: array]
-			>
+			args: conform<this[Hkt.args], readonly [element: unknown, to: array]>
 		) => [...(typeof args)[1], (typeof args)[0]]
 	}
 	it("base", () => {
@@ -31,9 +28,8 @@ describe("hkt", () => {
 	const AddC = new (class extends Hkt.UnaryKind {
 		hkt = (
 			args: conform<this[Hkt.args], { a: number; b: number }>
-		): show<
-			typeof args & { c: [(typeof args)["a"], (typeof args)["b"]] }
-		> => Object.assign(args, { c: [args.a, args.b] } as const) as never
+		): show<typeof args & { c: [(typeof args)["a"], (typeof args)["b"]] }> =>
+			Object.assign(args, { c: [args.a, args.b] } as const) as never
 	})()
 	it("pipe", () => {
 		type result1 = Hkt.apply<typeof AddB, { a: 1 }>

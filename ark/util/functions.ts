@@ -15,9 +15,8 @@ export const cached = <T>(thunk: () => T): (() => T) => {
 
 export const isThunk = <value>(
 	value: value
-): value is Extract<value, Thunk> extends never
-	? value & Thunk
-	: Extract<value, Thunk> => typeof value === "function" && value.length === 0
+): value is Extract<value, Thunk> extends never ? value & Thunk
+:	Extract<value, Thunk> => typeof value === "function" && value.length === 0
 
 export type Thunk<ret = unknown> = () => ret
 

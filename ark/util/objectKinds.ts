@@ -33,17 +33,15 @@ export type BuiltinObjects = {
 export type objectKindOf<
 	data extends object,
 	kinds extends ObjectKindSet = BuiltinObjectConstructors
-> = object extends data
-	? keyof kinds | undefined
-	: data extends (...args: never[]) => unknown
-		? "Function"
-		: instantiableObjectKind<data, kinds> extends never
-			? keyof kinds | undefined
-			: instantiableObjectKind<data, kinds>
+> =
+	object extends data ? keyof kinds | undefined
+	: data extends (...args: never[]) => unknown ? "Function"
+	: instantiableObjectKind<data, kinds> extends never ? keyof kinds | undefined
+	: instantiableObjectKind<data, kinds>
 
-export type describeObject<o extends object> = objectKindOf<o> extends string
-	? objectKindDescriptions[objectKindOf<o>]
-	: domainDescriptions["object"]
+export type describeObject<o extends object> =
+	objectKindOf<o> extends string ? objectKindDescriptions[objectKindOf<o>]
+	:	domainDescriptions["object"]
 
 type instantiableObjectKind<
 	data extends object,
@@ -82,18 +80,19 @@ export const objectKindOrDomainOf = <
 	data: data,
 	kinds?: kinds
 ): (objectKindOf<data & object, kinds> & {}) | domainOf<data> =>
-	(typeof data === "object" && data !== null
-		? objectKindOf(data, kinds) ?? "object"
-		: domainOf(data)) as never
+	(typeof data === "object" && data !== null ?
+		objectKindOf(data, kinds) ?? "object"
+	:	domainOf(data)) as never
 
 export type objectKindOrDomainOf<
 	data,
 	kinds extends ObjectKindSet = BuiltinObjectConstructors
-> = data extends object
-	? objectKindOf<data, kinds> extends undefined
-		? "object"
-		: objectKindOf<data, kinds>
-	: domainOf<data>
+> =
+	data extends object ?
+		objectKindOf<data, kinds> extends undefined ?
+			"object"
+		:	objectKindOf<data, kinds>
+	:	domainOf<data>
 
 export const hasObjectKind = <
 	kind extends keyof kinds,
@@ -132,22 +131,21 @@ export const getExactBuiltinConstructorName = (
 	ctor: unknown
 ): BuiltinObjectKind | undefined => {
 	const constructorName: string | undefined = Object(ctor).name
-	return constructorName &&
-		isKeyOf(constructorName, builtinObjectKinds) &&
-		builtinObjectKinds[constructorName] === ctor
-		? constructorName
-		: undefined
+	return (
+			constructorName &&
+				isKeyOf(constructorName, builtinObjectKinds) &&
+				builtinObjectKinds[constructorName] === ctor
+		) ?
+			constructorName
+		:	undefined
 }
 
 export type Constructor<instance = {}> = abstract new (
 	...args: never[]
 ) => instance
 
-export type instanceOf<constructor> = constructor extends Constructor<
-	infer instance
->
-	? instance
-	: never
+export type instanceOf<constructor> =
+	constructor extends Constructor<infer instance> ? instance : never
 
 /**
  * Returns an array of constructors for all ancestors (i.e., prototypes) of a given object.
@@ -165,11 +163,12 @@ export const ancestorsOf = (o: object): Function[] => {
 	return result
 }
 
-export type normalizedKeyOf<t> = keyof t extends infer k
-	? k extends number
-		? `${k}`
-		: k
-	: never
+export type normalizedKeyOf<t> =
+	keyof t extends infer k ?
+		k extends number ?
+			`${k}`
+		:	k
+	:	never
 
 /** Mimics output of TS's keyof operator at runtime */
 export const prototypeKeysOf = <t>(value: t): normalizedKeyOf<t>[] => {

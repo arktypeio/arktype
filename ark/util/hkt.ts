@@ -25,7 +25,7 @@ export namespace Hkt {
 	}
 
 	export abstract class Instantiable {
-		declare readonly [args]: unknown
+		declare readonly [args]: unknown;
 
 		abstract readonly [instantiate]: (...args: never[]) => Instantiable
 	}
@@ -61,24 +61,21 @@ export namespace Hkt {
 	type validatePipedKinds<
 		kinds extends UnaryKind[],
 		Out = Parameters<kinds[0]["hkt"]>[0]
-	> = kinds extends readonly [
-		infer head extends UnaryKind,
-		...infer tail extends UnaryKind[]
-	]
-		? Out extends Parameters<head["hkt"]>[0]
-			? [kinds[0], ...validatePipedKinds<tail, Hkt.apply<head, Out>>]
-			: [Kind<(In: Out) => unknown>, ...tail]
-		: []
+	> =
+		kinds extends (
+			readonly [infer head extends UnaryKind, ...infer tail extends UnaryKind[]]
+		) ?
+			Out extends Parameters<head["hkt"]>[0] ?
+				[kinds[0], ...validatePipedKinds<tail, Hkt.apply<head, Out>>]
+			:	[Kind<(In: Out) => unknown>, ...tail]
+		:	[]
 
-	type inferPipedReturn<
-		kinds extends UnaryKind[],
-		Out
-	> = kinds extends readonly [
-		infer head extends UnaryKind,
-		...infer tail extends UnaryKind[]
-	]
-		? inferPipedReturn<tail, Hkt.apply<head, Out>>
-		: Out
+	type inferPipedReturn<kinds extends UnaryKind[], Out> =
+		kinds extends (
+			readonly [infer head extends UnaryKind, ...infer tail extends UnaryKind[]]
+		) ?
+			inferPipedReturn<tail, Hkt.apply<head, Out>>
+		:	Out
 
 	export type pipe<kinds extends UnaryKind[]> = <
 		In extends Parameters<kinds[0]["hkt"]>[0]
@@ -100,8 +97,7 @@ export namespace Hkt {
 		): pipe<kinds> =>
 		(In) =>
 			kinds.reduce(
-				(out, kind) =>
-					(kind as Hkt.UnaryKind<(_: any) => any>).hkt(out),
+				(out, kind) => (kind as Hkt.UnaryKind<(_: any) => any>).hkt(out),
 				In
 			)
 }

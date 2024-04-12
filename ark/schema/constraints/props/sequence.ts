@@ -82,11 +82,11 @@ const fixedSequenceKeyDefinition: NodeKeyImplementation<
 > = {
 	child: true,
 	parse: (def, ctx) =>
-		def.length === 0
-			? // empty affixes are omitted. an empty array should therefore
-				// be specified as `{ proto: Array, length: 0 }`
-				undefined
-			: def.map((element) => ctx.$.schema(element))
+		def.length === 0 ?
+			// empty affixes are omitted. an empty array should therefore
+			// be specified as `{ proto: Array, length: 0 }`
+			undefined
+		:	def.map((element) => ctx.$.schema(element))
 }
 
 export const sequenceImplementation = implementNode<SequenceDeclaration>({
@@ -195,15 +195,13 @@ export const sequenceImplementation = implementNode<SequenceDeclaration>({
 	},
 	defaults: {
 		description: (node) => {
-			if (node.isVariadicOnly)
-				return `${node.variadic!.nestableExpression}[]`
+			if (node.isVariadicOnly) return `${node.variadic!.nestableExpression}[]`
 			const innerDescription = node.tuple
 				.map((element) =>
-					element.kind === "optional"
-						? `${element.node.nestableExpression}?`
-						: element.kind === "variadic"
-							? `...${element.node.nestableExpression}[]`
-							: element.node.expression
+					element.kind === "optional" ? `${element.node.nestableExpression}?`
+					: element.kind === "variadic" ?
+						`...${element.node.nestableExpression}[]`
+					:	element.node.expression
 				)
 				.join(", ")
 			return `[${innerDescription}]`
@@ -220,24 +218,23 @@ export const sequenceImplementation = implementNode<SequenceDeclaration>({
 				$
 			})
 
-			const viableBranches = rootState.disjoint.isEmpty()
-				? [rootState, ...rootState.fixedVariants]
-				: rootState.fixedVariants
+			const viableBranches =
+				rootState.disjoint.isEmpty() ?
+					[rootState, ...rootState.fixedVariants]
+				:	rootState.fixedVariants
 
-			return viableBranches.length === 0
-				? rootState.disjoint!
-				: viableBranches.length === 1
-					? $.node(
-							"sequence",
-							sequenceTupleToInner(viableBranches[0].result)
-						)
-					: $.node(
-							"union",
-							viableBranches.map((state) => ({
-								proto: Array,
-								sequence: sequenceTupleToInner(state.result)
-							}))
-						)
+			return (
+				viableBranches.length === 0 ? rootState.disjoint!
+				: viableBranches.length === 1 ?
+					$.node("sequence", sequenceTupleToInner(viableBranches[0].result))
+				:	$.node(
+						"union",
+						viableBranches.map((state) => ({
+							proto: Array,
+							sequence: sequenceTupleToInner(state.result)
+						}))
+					)
+			)
 		}
 		// exactLength, minLength, and maxLength don't need to be defined
 		// here since impliedSiblings guarantees they will be added
@@ -258,19 +255,17 @@ export const sequenceImplementation = implementNode<SequenceDeclaration>({
 		const maxLength = self.variadic ? null : minLength + optional.length
 		const maxLengthNode =
 			maxLength === null ? null : self.$.node("maxLength", maxLength)
-		const impliedSiblings = minLengthNode
-			? maxLengthNode
-				? [minLengthNode, maxLengthNode]
-				: [minLengthNode]
-			: maxLengthNode
-				? [maxLengthNode]
-				: null
+		const impliedSiblings =
+			minLengthNode ?
+				maxLengthNode ? [minLengthNode, maxLengthNode]
+				:	[minLengthNode]
+			: maxLengthNode ? [maxLengthNode]
+			: null
 		const expression = self.description
 		const _childAtIndex = (data: array, index: number): RawSchema => {
 			if (index < prevariadic.length) return prevariadic[index]
 			const postfixStartIndex = data.length - postfix.length
-			if (index >= postfixStartIndex)
-				return postfix[index - postfixStartIndex]
+			if (index >= postfixStartIndex) return postfix[index - postfixStartIndex]
 			return (
 				self.variadic ??
 				throwInternalError(
@@ -313,15 +308,11 @@ export const sequenceImplementation = implementNode<SequenceDeclaration>({
 			},
 			// minLength/maxLength compilation should be handled by Intersection
 			compile(js) {
-				this.prefix.forEach((node, i) =>
-					js.checkReferenceKey(`${i}`, node)
-				)
+				this.prefix.forEach((node, i) => js.checkReferenceKey(`${i}`, node))
 				this.optional.forEach((node, i) => {
 					const dataIndex = `${i + this.prefix.length}`
 					js.if(`${dataIndex} >= ${js.data}.length`, () =>
-						js.traversalKind === "Allows"
-							? js.return(true)
-							: js.return()
+						js.traversalKind === "Allows" ? js.return(true) : js.return()
 					)
 					js.checkReferenceKey(dataIndex, node)
 				})
@@ -329,9 +320,7 @@ export const sequenceImplementation = implementNode<SequenceDeclaration>({
 				if (this.variadic) {
 					js.const(
 						"lastVariadicIndex",
-						`${js.data}.length${
-							this.postfix ? `- ${this.postfix.length}` : ""
-						}`
+						`${js.data}.length${this.postfix ? `- ${this.postfix.length}` : ""}`
 					)
 					js.for(
 						"i < lastVariadicIndex",
@@ -339,10 +328,7 @@ export const sequenceImplementation = implementNode<SequenceDeclaration>({
 						this.prevariadic.length
 					)
 					this.postfix.forEach((node, i) =>
-						js.checkReferenceKey(
-							`lastVariadicIndex + ${i + 1}`,
-							node
-						)
+						js.checkReferenceKey(`lastVariadicIndex + ${i + 1}`, node)
 					)
 				}
 
@@ -420,18 +406,16 @@ const intersectSequences = (
 	const rHasPostfix = rTail.at(-1)?.kind === "postfix"
 
 	const kind: SequenceElementKind =
-		lHead.kind === "prefix" || rHead.kind === "prefix"
-			? "prefix"
-			: lHead.kind === "optional" || rHead.kind === "optional"
-				? // if either operand has postfix elements, the full-length
-					// intersection can't include optional elements (though they may
-					// exist in some of the fixed length variants)
-					lHasPostfix || rHasPostfix
-					? "prefix"
-					: "optional"
-				: lHead.kind === "postfix" || rHead.kind === "postfix"
-					? "postfix"
-					: "variadic"
+		lHead.kind === "prefix" || rHead.kind === "prefix" ? "prefix"
+		: lHead.kind === "optional" || rHead.kind === "optional" ?
+			// if either operand has postfix elements, the full-length
+			// intersection can't include optional elements (though they may
+			// exist in some of the fixed length variants)
+			lHasPostfix || rHasPostfix ?
+				"prefix"
+			:	"optional"
+		: lHead.kind === "postfix" || rHead.kind === "postfix" ? "postfix"
+		: "variadic"
 
 	if (lHead.kind === "prefix" && rHead.kind === "variadic" && rHasPostfix) {
 		const postfixBranchResult = intersectSequences({
@@ -463,9 +447,7 @@ const intersectSequences = (
 			state.disjoint.add(
 				result.withPrefixKey(
 					// TODO: more precise path handling for Disjoints
-					kind === "prefix"
-						? `${state.result.length}`
-						: `-${lTail.length + 1}`
+					kind === "prefix" ? `${state.result.length}` : `-${lTail.length + 1}`
 				)
 			)
 			state.result = [

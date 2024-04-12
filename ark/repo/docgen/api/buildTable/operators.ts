@@ -15,9 +15,7 @@ export const getFormats = (tagData: TsTagData) => {
 	const formats: string[] = []
 	for (const possibleFormat of possibleFormats) {
 		const format =
-			tagData[possibleFormat] === undefined
-				? ""
-				: tagData[possibleFormat][0]
+			tagData[possibleFormat] === undefined ? "" : tagData[possibleFormat][0]
 		formats.push(format)
 	}
 	return formats

@@ -122,9 +122,7 @@ export class DynamicState {
 		this.finalizeBranches()
 		const topBranchState = this.groups.pop()
 		if (!topBranchState) {
-			return this.error(
-				writeUnmatchedGroupCloseMessage(this.scanner.unscanned)
-			)
+			return this.error(writeUnmatchedGroupCloseMessage(this.scanner.unscanned))
 		}
 		this.branches = topBranchState
 	}
@@ -137,9 +135,9 @@ export class DynamicState {
 		while (this.branches.prefixes.length) {
 			const lastPrefix = this.branches.prefixes.pop()!
 			this.root =
-				lastPrefix === "keyof"
-					? this.root!.keyof()
-					: throwInternalError(`Unexpected prefix '${lastPrefix}'`)
+				lastPrefix === "keyof" ?
+					this.root!.keyof()
+				:	throwInternalError(`Unexpected prefix '${lastPrefix}'`)
 		}
 	}
 
@@ -201,11 +199,9 @@ export class DynamicState {
 		return (
 			this.branches.leftBound?.comparator ??
 			this.branches.prefixes.at(-1) ??
-			(this.branches.intersection
-				? "&"
-				: this.branches.union
-					? "|"
-					: undefined)
+			(this.branches.intersection ? "&"
+			: this.branches.union ? "|"
+			: undefined)
 		)
 	}
 

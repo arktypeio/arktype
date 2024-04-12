@@ -13,24 +13,26 @@ export type join<
 	segments extends string[],
 	delimiter extends string,
 	result extends string = ""
-> = segments extends [infer head extends string, ...infer tail extends string[]]
-	? join<
+> =
+	segments extends [infer head extends string, ...infer tail extends string[]] ?
+		join<
 			tail,
 			delimiter,
 			result extends "" ? head : `${result}${delimiter}${head}`
 		>
-	: result
+	:	result
 
 export type split<
 	s extends string,
 	delimiter extends string,
 	current extends string = "",
 	result extends string[] = []
-> = s extends `${infer head}${infer tail}`
-	? head extends delimiter
-		? split<tail, delimiter, "", [...result, current]>
-		: split<tail, delimiter, `${current}${head}`, result>
-	: [...result, current]
+> =
+	s extends `${infer head}${infer tail}` ?
+		head extends delimiter ?
+			split<tail, delimiter, "", [...result, current]>
+		:	split<tail, delimiter, `${current}${head}`, result>
+	:	[...result, current]
 
 export const getPath = (root: unknown, path: string[]): unknown => {
 	let result: any = root
@@ -56,17 +58,14 @@ export const intersectUniqueLists = <item>(
 	return intersection
 }
 
-export type filter<
-	t extends array,
-	constraint,
-	result extends unknown[] = []
-> = t extends readonly [infer head, ...infer tail]
-	? filter<
+export type filter<t extends array, constraint, result extends unknown[] = []> =
+	t extends readonly [infer head, ...infer tail] ?
+		filter<
 			tail,
 			constraint,
 			head extends constraint ? [...result, head] : result
 		>
-	: result
+	:	result
 
 export type array<t = unknown> = readonly t[]
 
@@ -88,9 +87,9 @@ type repeatRecurse<
 	result extends array,
 	maxDepth extends number,
 	depth extends 1[]
-> = depth["length"] extends maxDepth
-	? result
-	: repeatRecurse<base, [...result, ...base], maxDepth, [...depth, 1]>
+> =
+	depth["length"] extends maxDepth ? result
+	:	repeatRecurse<base, [...result, ...base], maxDepth, [...depth, 1]>
 
 export type CollapsingList<t = unknown> =
 	| readonly []
@@ -99,41 +98,32 @@ export type CollapsingList<t = unknown> =
 
 export type headOf<t extends array> = t[0]
 
-export type tailOf<t extends array> = t extends readonly [
-	unknown,
-	...infer tail
-]
-	? tail
-	: never
+export type tailOf<t extends array> =
+	t extends readonly [unknown, ...infer tail] ? tail : never
 
 export type lastIndexOf<t extends array> = tailOf<t>["length"]
 
 export type lastOf<t extends array> = t[lastIndexOf<t>]
 
-export type initOf<t extends array> = t extends readonly [
-	...infer init,
-	unknown
-]
-	? init
-	: never
+export type initOf<t extends array> =
+	t extends readonly [...infer init, unknown] ? init : never
 
 export type numericStringKeyOf<t extends array> = Extract<
 	keyof t,
 	NumberLiteral
 >
 
-export type indexOf<a extends array> = keyof a extends infer k
-	? parseNonNegativeInteger<k & string>
-	: never
+export type indexOf<a extends array> =
+	keyof a extends infer k ? parseNonNegativeInteger<k & string> : never
 
 export const arrayFrom = <t>(
 	data: t
-): t extends array
-	? [t] extends [null]
-		? // check for any/never
-			t[]
-		: t
-	: t[] => (Array.isArray(data) ? data : [data]) as never
+): t extends array ?
+	[t] extends [null] ?
+		// check for any/never
+		t[]
+	:	t
+:	t[] => (Array.isArray(data) ? data : [data]) as never
 
 export const spliterate = <item, included extends item>(
 	list: readonly item[],
@@ -251,11 +241,11 @@ export type groupableKeyOf<t> = {
 }[keyof t]
 
 export type groupBy<element, discriminator extends groupableKeyOf<element>> = {
-	[k in element[discriminator] & PropertyKey]?: element extends unknown
-		? isDisjoint<element[discriminator], k> extends true
-			? never
-			: element[]
-		: never
+	[k in element[discriminator] & PropertyKey]?: element extends unknown ?
+		isDisjoint<element[discriminator], k> extends true ?
+			never
+		:	element[]
+	:	never
 } & unknown
 
 export const groupBy = <element, discriminator extends groupableKeyOf<element>>(

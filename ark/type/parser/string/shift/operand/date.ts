@@ -50,11 +50,9 @@ const maybeParseDate = <errorOnFail extends boolean | string>(
 			return numberParsedDate
 		}
 	}
-	return errorOnFail
-		? throwParseError(
-				errorOnFail === true
-					? writeInvalidDateMessage(source)
-					: errorOnFail
+	return errorOnFail ?
+			throwParseError(
+				errorOnFail === true ? writeInvalidDateMessage(source) : errorOnFail
 			)
-		: (undefined as never)
+		:	(undefined as never)
 }

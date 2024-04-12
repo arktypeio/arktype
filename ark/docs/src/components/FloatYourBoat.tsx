@@ -15,9 +15,7 @@ export const FloatYourBoat = () => {
 			bobFrames.push(i % 2 ? BOB_HEIGHT_PX : 0)
 		}
 		createRoot(
-			document
-				.getElementsByClassName("header")[0]
-				.appendChild(boatContainer)
+			document.getElementsByClassName("header")[0].appendChild(boatContainer)
 		).render(<Boat loopDuration={loopDuration} bobFrames={bobFrames} />)
 		return () => {
 			boatContainer.removeChild(boatContainer)

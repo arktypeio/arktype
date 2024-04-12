@@ -98,8 +98,7 @@ export const propImplementation = implementNode<PropDeclaration>({
 	construct: (self) => {
 		const required = !self.optional
 		const serializedKey = compileSerializedValue(self.key)
-		const compiledKey =
-			typeof self.key === "string" ? self.key : serializedKey
+		const compiledKey = typeof self.key === "string" ? self.key : serializedKey
 		const errorContext = Object.freeze({
 			code: "prop",
 			description: self.description,
@@ -150,9 +149,7 @@ export const propImplementation = implementNode<PropDeclaration>({
 				if (required) {
 					js.else(() => {
 						if (js.traversalKind === "Apply") {
-							return js.line(
-								`ctx.error(${this.compiledErrorContext})`
-							)
+							return js.line(`ctx.error(${this.compiledErrorContext})`)
 						}
 						if (requiresContext) {
 							js.line("ctx.path.pop()")

@@ -32,89 +32,72 @@ export namespace type {
 	}
 }
 
-export type validateSchema<def, $> = def extends type.cast
-	? def
-	: def extends array
-		? { [i in keyof def]: validateSchemaBranch<def[i], $> }
-		: def extends NormalizedUnionDef<infer branches>
-			? conform<
-					def,
-					NormalizedUnionDef & {
-						branches: {
-							[i in keyof branches]: validateSchemaBranch<
-								branches[i],
-								$
-							>
-						}
-					}
-				>
-			: validateSchemaBranch<def, $>
+export type validateSchema<def, $> =
+	def extends type.cast ? def
+	: def extends array ? { [i in keyof def]: validateSchemaBranch<def[i], $> }
+	: def extends NormalizedUnionDef<infer branches> ?
+		conform<
+			def,
+			NormalizedUnionDef & {
+				branches: {
+					[i in keyof branches]: validateSchemaBranch<branches[i], $>
+				}
+			}
+		>
+	:	validateSchemaBranch<def, $>
 
-export type inferSchema<def, $> = def extends type.cast<infer to>
-	? to
-	: def extends UnionDef<infer branches>
-		? branches["length"] extends 0
-			? never
-			: branches["length"] extends 1
-				? inferSchemaBranch<branches[0], $>
-				: inferSchemaBranch<branches[number], $>
-		: inferSchemaBranch<def, $>
+export type inferSchema<def, $> =
+	def extends type.cast<infer to> ? to
+	: def extends UnionDef<infer branches> ?
+		branches["length"] extends 0 ? never
+		: branches["length"] extends 1 ? inferSchemaBranch<branches[0], $>
+		: inferSchemaBranch<branches[number], $>
+	:	inferSchemaBranch<def, $>
 
-type validateSchemaBranch<def, $> = def extends RawNode
-	? def
-	: keyof def & ("morph" | "in" | "out") extends never
-		? validateMorphChild<def, $>
-		: validateMorphSchema<def, $>
+type validateSchemaBranch<def, $> =
+	def extends RawNode ? def
+	: keyof def & ("morph" | "in" | "out") extends never ?
+		validateMorphChild<def, $>
+	:	validateMorphSchema<def, $>
 
-type inferSchemaBranch<def, $> = def extends type.cast<infer to>
-	? to
-	: def extends MorphDef
-		? (
-				In: def["in"] extends {}
-					? inferMorphChild<def["in"], $>
-					: unknown
-			) => def["out"] extends {}
-				? Out<inferMorphChild<def["out"], $>>
-				: def["morphs"] extends infer morph extends Morph
-					? Out<inferMorphOut<morph>>
-					: def["morphs"] extends readonly [
-								...unknown[],
-								infer morph extends Morph
-							]
-						? Out<inferMorphOut<morph>>
-						: never
-		: def extends MorphChildDefinition
-			? inferMorphChild<def, $>
-			: unknown
+type inferSchemaBranch<def, $> =
+	def extends type.cast<infer to> ? to
+	: def extends MorphDef ?
+		(
+			In: def["in"] extends {} ? inferMorphChild<def["in"], $> : unknown
+		) => def["out"] extends {} ? Out<inferMorphChild<def["out"], $>>
+		: def["morphs"] extends infer morph extends Morph ?
+			Out<inferMorphOut<morph>>
+		: def["morphs"] extends readonly [...unknown[], infer morph extends Morph] ?
+			Out<inferMorphOut<morph>>
+		:	never
+	: def extends MorphChildDefinition ? inferMorphChild<def, $>
+	: unknown
 
 type NonIntersectableBasisSchema = NonEnumerableDomain | Constructor | UnitDef
 
-type validateMorphChild<def, $> = [def] extends [NonIntersectableBasisSchema]
-	? def
-	: validateIntersectionSchema<def, $>
+type validateMorphChild<def, $> =
+	[def] extends [NonIntersectableBasisSchema] ? def
+	:	validateIntersectionSchema<def, $>
 
-type inferMorphChild<def, $> = def extends NonIntersectableBasisSchema
-	? inferBasis<def, $>
-	: def extends IntersectionDef
-		? inferBasisOf<def, $>
-		: unknown
+type inferMorphChild<def, $> =
+	def extends NonIntersectableBasisSchema ? inferBasis<def, $>
+	: def extends IntersectionDef ? inferBasisOf<def, $>
+	: unknown
 
 type validateMorphSchema<def, $> = {
-	[k in keyof def]: k extends "in" | "out"
-		? validateMorphChild<def[k], $>
-		: k extends keyof MorphDef
-			? MorphDef[k]
-			: `'${k & string}' is not a valid morph schema key`
+	[k in keyof def]: k extends "in" | "out" ? validateMorphChild<def[k], $>
+	: k extends keyof MorphDef ? MorphDef[k]
+	: `'${k & string}' is not a valid morph schema key`
 }
 
 type exactBasisMessageOnError<def, expected> = {
-	[k in keyof def]: k extends keyof expected
-		? conform<def[k], expected[k]>
-		: ErrorMessage<
-				k extends ConstraintKind
-					? `${k} has a prerequisite of ${describe<Prerequisite<k>>}`
-					: `'${k & string}' is not on an intersection schema`
-			>
+	[k in keyof def]: k extends keyof expected ? conform<def[k], expected[k]>
+	:	ErrorMessage<
+			k extends ConstraintKind ?
+				`${k} has a prerequisite of ${describe<Prerequisite<k>>}`
+			:	`'${k & string}' is not on an intersection schema`
+		>
 }
 
 export type validateIntersectionSchema<def, $> = exactBasisMessageOnError<
@@ -122,28 +105,23 @@ export type validateIntersectionSchema<def, $> = exactBasisMessageOnError<
 	IntersectionDef<inferBasisOf<def, $>>
 >
 
-type inferBasisOf<def, $> = "proto" extends keyof def
-	? inferBasis<conform<def["proto"], ProtoDef>, $>
-	: "domain" extends keyof def
-		? inferBasis<conform<def["domain"], DomainDef>, $>
-		: unknown
+type inferBasisOf<def, $> =
+	"proto" extends keyof def ? inferBasis<conform<def["proto"], ProtoDef>, $>
+	: "domain" extends keyof def ?
+		inferBasis<conform<def["domain"], DomainDef>, $>
+	:	unknown
 
-export type inferBasis<
-	def extends NodeDef<BasisKind>,
-	$
-> = isAny<def> extends true //allow any to be used to access all constraints
-	? any
-	: def extends NonEnumerableDomain
-		? inferDomain<def>
-		: def extends Constructor<infer instance>
-			? instance
-			: def extends DomainDef<infer domain>
-				? inferDomain<domain>
-				: def extends ProtoDef<infer proto>
-					? instanceOf<proto>
-					: def extends UnitDef<infer is>
-						? is
-						: never
+export type inferBasis<def extends NodeDef<BasisKind>, $> =
+	isAny<def> extends (
+		true //allow any to be used to access all constraints
+	) ?
+		any
+	: def extends NonEnumerableDomain ? inferDomain<def>
+	: def extends Constructor<infer instance> ? instance
+	: def extends DomainDef<infer domain> ? inferDomain<domain>
+	: def extends ProtoDef<infer proto> ? instanceOf<proto>
+	: def extends UnitDef<infer is> ? is
+	: never
 
 // export type inferPropsInput<input extends PropsInput> =
 // 	input extends PropsInputTuple<infer named, infer indexed>

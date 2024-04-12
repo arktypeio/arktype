@@ -33,9 +33,8 @@ export type defaultErrorContext<d extends DeclarationInput> = show<
 
 export type declareNode<
 	d extends {
-		[k in keyof d]: k extends keyof DeclarationInput
-			? DeclarationInput[k]
-			: never
+		[k in keyof d]: k extends keyof DeclarationInput ? DeclarationInput[k]
+		:	never
 	} & DeclarationInput
 > = merge<
 	{
@@ -46,15 +45,13 @@ export type declareNode<
 		errorContext: null
 	},
 	d & {
-		errorContext: d["errorContext"] extends {}
-			? BaseErrorContext<d["kind"]>
-			: null
+		errorContext: d["errorContext"] extends {} ? BaseErrorContext<d["kind"]>
+		:	null
 	}
 >
 
-type prerequisiteOf<d extends DeclarationInput> = "prerequisite" extends keyof d
-	? d["prerequisite"]
-	: unknown
+type prerequisiteOf<d extends DeclarationInput> =
+	"prerequisite" extends keyof d ? d["prerequisite"] : unknown
 
 export type parsedAttachmentsOf<d extends RawNodeDeclaration> =
 	NarrowedAttachments<d> & d["inner"]

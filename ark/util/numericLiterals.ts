@@ -88,20 +88,15 @@ export const tryParseNumber = <errorOnFail extends boolean | string>(
 ): errorOnFail extends true | string ? number : number | undefined =>
 	parseNumeric(token, "number", options)
 
-export type tryParseNumber<
-	token extends string,
-	messageOnFail extends string
-> = token extends NumberLiteral<infer value>
-	? number extends value
-		? writeMalformedNumericLiteralMessage<token, "number">
-		: value
-	: messageOnFail
+export type tryParseNumber<token extends string, messageOnFail extends string> =
+	token extends NumberLiteral<infer value> ?
+		number extends value ?
+			writeMalformedNumericLiteralMessage<token, "number">
+		:	value
+	:	messageOnFail
 
-export type parseNumber<token extends string> = token extends NumberLiteral<
-	infer value
->
-	? value
-	: never
+export type parseNumber<token extends string> =
+	token extends NumberLiteral<infer value> ? value : never
 
 export const tryParseInteger = <errorOnFail extends boolean | string>(
 	token: string,
@@ -115,21 +110,19 @@ export const tryParseInteger = <errorOnFail extends boolean | string>(
 export type tryParseInteger<
 	token extends string,
 	messageOnFail extends string
-> = token extends IntegerLiteral<infer value>
-	? bigint extends value
-		? writeMalformedNumericLiteralMessage<token, "integer">
-		: `${value}` extends NumberLiteral<infer valueAsNumber>
-			? valueAsNumber
-			: never
-	: messageOnFail
-
-export type parseInteger<token extends string> = token extends IntegerLiteral<
-	infer value
->
-	? `${value}` extends NumberLiteral<infer valueAsNumber>
-		? valueAsNumber
+> =
+	token extends IntegerLiteral<infer value> ?
+		bigint extends value ? writeMalformedNumericLiteralMessage<token, "integer">
+		: `${value}` extends NumberLiteral<infer valueAsNumber> ? valueAsNumber
 		: never
-	: never
+	:	messageOnFail
+
+export type parseInteger<token extends string> =
+	token extends IntegerLiteral<infer value> ?
+		`${value}` extends NumberLiteral<infer valueAsNumber> ?
+			valueAsNumber
+		:	never
+	:	never
 
 export type parseNonNegativeInteger<token extends string> =
 	token extends `-${string}` ? never : parseInteger<token>
@@ -148,24 +141,21 @@ const parseNumeric = <errorOnFail extends boolean | string>(
 	if (!Number.isNaN(value)) {
 		if (isKindLike(token, kind)) {
 			if (options?.strict) {
-				return isWellFormed(token, kind)
-					? value
-					: throwParseError(
-							writeMalformedNumericLiteralMessage(token, kind)
-						)
+				return isWellFormed(token, kind) ? value : (
+						throwParseError(writeMalformedNumericLiteralMessage(token, kind))
+					)
 			}
 			return value
 		}
 	}
 	return (
-		options?.errorOnFail
-			? throwParseError(
-					options?.errorOnFail === true
-						? `Failed to parse ${numericLiteralDescriptions[kind]} from '${token}'`
-						: options?.errorOnFail
-				)
-			: undefined
-	) as never
+		options?.errorOnFail ?
+			throwParseError(
+				options?.errorOnFail === true ?
+					`Failed to parse ${numericLiteralDescriptions[kind]} from '${token}'`
+				:	options?.errorOnFail
+			)
+		:	undefined) as never
 }
 
 export const tryParseWellFormedBigint = (def: string): bigint | undefined => {
@@ -185,8 +175,6 @@ export const tryParseWellFormedBigint = (def: string): bigint | undefined => {
 	if (integerLikeMatcher.test(maybeIntegerLiteral)) {
 		// If the definition looks like a bigint but is
 		// not well-formed, throw.
-		return throwParseError(
-			writeMalformedNumericLiteralMessage(def, "bigint")
-		)
+		return throwParseError(writeMalformedNumericLiteralMessage(def, "bigint"))
 	}
 }

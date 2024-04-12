@@ -19,22 +19,19 @@ type fragment<part extends DayPart, delimiter extends DayDelimiter> =
 	| ""
 
 export type DayPattern<delimiter extends DayDelimiter = DayDelimiter> =
-	delimiter extends unknown
-		? {
-				[k1 in keyof DayPatterns]: {
-					[k2 in Exclude<
-						keyof DayPatterns,
-						k1
-					>]: `${DayPatterns[k1]}${fragment<
-						DayPatterns[k2],
-						delimiter
-					>}${fragment<
-						DayPatterns[Exclude<keyof DayPatterns, k1 | k2>],
-						delimiter
-					>}`
-				}[Exclude<keyof DayPatterns, k1>]
-			}[keyof DayPatterns]
-		: never
+	delimiter extends unknown ?
+		{
+			[k1 in keyof DayPatterns]: {
+				[k2 in Exclude<keyof DayPatterns, k1>]: `${DayPatterns[k1]}${fragment<
+					DayPatterns[k2],
+					delimiter
+				>}${fragment<
+					DayPatterns[Exclude<keyof DayPatterns, k1 | k2>],
+					delimiter
+				>}`
+			}[Exclude<keyof DayPatterns, k1>]
+		}[keyof DayPatterns]
+	:	never
 
 export type DateFormat = "iso8601" | DayPattern
 
@@ -68,9 +65,9 @@ export const tryParseDatePattern = (
 		return isValidDateInstance(result) ? result : "a valid date"
 	}
 	if (opts.format === "iso8601") {
-		return iso8601Matcher.test(data)
-			? new Date(data)
-			: writeFormattedExpected("iso8601")
+		return iso8601Matcher.test(data) ?
+				new Date(data)
+			:	writeFormattedExpected("iso8601")
 	}
 	const dataParts = data.split(dayDelimiterMatcher)
 	// will be the first delimiter matched, if there is one
