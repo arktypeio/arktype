@@ -11,12 +11,14 @@ import {
 	type arkKind,
 	type destructuredExportContext,
 	type destructuredImportContext,
-	type exportedNameOf
+	type exportedNameOf,
+	hasArkKind
 } from "@arktype/schema"
 import {
 	type Dict,
 	domainOf,
 	hasDomain,
+	isThunk,
 	type nominal,
 	type show,
 	throwParseError
@@ -226,6 +228,13 @@ export class RawScope<
 	}
 
 	define(def: unknown): unknown {
+		return def
+	}
+
+	preparseRoot(def: unknown): unknown {
+		if (isThunk(def) && !hasArkKind(def, "generic")) {
+			return def()
+		}
 		return def
 	}
 

@@ -1,8 +1,10 @@
 import { DynamicBase, type isAnyOrNever } from "@arktype/util"
-import type { arkKind } from "./main.js"
 import type { Schema } from "./schema.js"
+import type { arkKind } from "./shared/utils.js"
 
-export type PreparsedNodeResolution = { [arkKind]: "generic" | "module" }
+export type PreparsedNodeResolution = {
+	[arkKind]: "generic" | "module"
+}
 
 type exportSchemaScope<$> = {
 	[k in keyof $]: $[k] extends PreparsedNodeResolution ?

@@ -115,23 +115,23 @@ const discriminateSchemaKind = (def: unknown): SchemaKind => {
 
 export const parseNode = (
 	kinds: NodeKind | array<SchemaKind>,
-	schema: unknown,
+	def: unknown,
 	$: RawSchemaScope,
 	opts?: NodeParseOptions
 ): RawNode => {
 	const kind: NodeKind =
-		typeof kinds === "string" ? kinds : schemaKindOf(schema, kinds)
-	if (isNode(schema) && schema.kind === kind) {
-		return schema
+		typeof kinds === "string" ? kinds : schemaKindOf(def, kinds)
+	if (isNode(def) && def.kind === kind) {
+		return def
 	}
-	if (kind === "union" && hasDomain(schema, "object")) {
-		const branches = schemaBranchesOf(schema)
+	if (kind === "union" && hasDomain(def, "object")) {
+		const branches = schemaBranchesOf(def)
 		if (branches?.length === 1) {
-			return parseNode(schemaKindOf(schema), branches as never, $, opts)
+			return parseNode(schemaKindOf(def), branches as never, $, opts)
 		}
 	}
 	const impl = nodeImplementationsByKind[kind]
-	const normalizedDefinition: any = impl.normalize?.(schema) ?? schema
+	const normalizedDefinition: any = impl.normalize?.(def) ?? def
 	// check again after normalization in case a node is a valid collapsed
 	// schema for the kind (e.g. sequence can collapse to element accepting a Node)
 	if (isNode(normalizedDefinition)) {
@@ -139,7 +139,7 @@ export const parseNode = (
 				(normalizedDefinition as never)
 			:	throwMismatchedNodeSchemaError(kind, normalizedDefinition.kind)
 	}
-	const ctx: NodeParseContext = { $, raw: schema, ...opts }
+	const ctx: NodeParseContext = { $, raw: def, ...opts }
 	const inner: Record<string, unknown> = {}
 	// ensure node entries are parsed in order of precedence, with non-children
 	// parsed first

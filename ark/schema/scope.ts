@@ -6,9 +6,10 @@ import {
 	type array,
 	flatMorph,
 	type flattenListable,
-	isThunk,
+	printable,
 	type requireKeys,
 	type show,
+	throwInternalError,
 	throwParseError
 } from "@arktype/util"
 import { mergeConfigs } from "./config.js"
@@ -46,7 +47,7 @@ import type {
 } from "./shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "./shared/traversal.js"
 import {
-	type arkKind,
+	arkKind,
 	hasArkKind,
 	type internalImplementationOf
 } from "./shared/utils.js"
@@ -150,7 +151,7 @@ export const resolveConfig = (
 
 export type RawSchemaResolutions = Record<
 	string,
-	RawSchema | GenericSchema | undefined
+	RawSchema | GenericSchema | RawSchemaModule | undefined
 >
 
 export type exportedNameOf<$> = Exclude<keyof $ & string, PrivateDeclaration>
@@ -174,7 +175,8 @@ export class RawSchemaScope<
 > implements internalImplementationOf<SchemaScope, "infer" | "inferIn" | "$">
 {
 	readonly config: ArkConfig
-	readonly resolvedConfig: ResolvedArkConfig
+	readonly resolvedConfig: ResolvedArkConfig;
+	readonly [arkKind] = "scope"
 
 	readonly nodeCache: { [innerId: string]: RawNode } = {}
 	readonly referencesByName: { [name: string]: RawNode } = {}
@@ -265,53 +267,46 @@ export class RawSchemaScope<
 		return this.schema(def as never, opts)
 	}
 
-	maybeResolve(name: string): RawSchema | GenericSchema | undefined {
+	maybeResolveNode(name: string): RawSchema | undefined {
+		const result = this.maybeResolveGenericOrNode(name)
+		if (hasArkKind(result, "generic")) return
+		return result
+	}
+
+	maybeResolveGenericOrNode(
+		name: string
+	): RawSchema | GenericSchema | undefined {
+		const resolution = this.maybeResolve(name)
+		if (hasArkKind(resolution, "module"))
+			return throwParseError(writeMissingSubmoduleAccessMessage(name))
+		return resolution
+	}
+
+	preparseRoot(def: unknown): unknown {
+		return def
+	}
+
+	maybeResolve(
+		name: string
+	): RawSchema | GenericSchema | RawSchemaModule | undefined {
 		const cached = this.resolutions[name]
 		if (cached) {
 			return cached
 		}
 		let def = this.aliases[name]
 		if (!def) return this.maybeResolveSubalias(name)
-		if (isThunk(def) && !hasArkKind(def, "generic")) {
-			def = def()
-		}
-		// TODO: initialize here?
-		const resolution =
-			hasArkKind(def, "generic") ? validateUninstantiatedGenericNode(def)
-			: hasArkKind(def, "module") ?
-				throwParseError(writeMissingSubmoduleAccessMessage(name))
-			:	this.schema(def as never, { args: {} })
-		this.resolutions[name] = resolution
-		return resolution
+		def = this.preparseRoot(def)
+		if (hasArkKind(def, "generic"))
+			return (this.resolutions[name] = validateUninstantiatedGenericNode(def))
+		if (hasArkKind(def, "module")) return (this.resolutions[name] = def)
+		return (this.resolutions[name] = this.parseRoot(def, { args: {} }))
 	}
 
 	/** If name is a valid reference to a submodule alias, return its resolution  */
 	private maybeResolveSubalias(
 		name: string
 	): RawSchema | GenericSchema | undefined {
-		const dotIndex = name.indexOf(".")
-		if (dotIndex === -1) {
-			return
-		}
-		const dotPrefix = name.slice(0, dotIndex)
-		const prefixDef = this.aliases[dotPrefix]
-		if (hasArkKind(prefixDef, "module")) {
-			const resolution = prefixDef[name.slice(dotIndex + 1)]
-			// if the first part of name is a submodule but the suffix is
-			// unresolvable, we can throw immediately
-			if (!resolution) return throwParseError(writeUnresolvableMessage(name))
-			this.resolutions[name] = resolution
-			return resolution
-		}
-		if (prefixDef !== undefined)
-			return throwParseError(writeNonSubmoduleDotMessage(dotPrefix))
-		// if the name includes ".", but the prefix is not an alias, it
-		// might be something like a decimal literal, so just fall through to return
-	}
-
-	maybeResolveNode(name: string): RawSchema | undefined {
-		const result = this.maybeResolve(name)
-		return hasArkKind(result, "schema") ? (result as never) : undefined
+		return resolveSubaliasRecurse(this.aliases, name)
 	}
 
 	import<names extends exportedNameOf<$>[]>(
@@ -333,22 +328,7 @@ export class RawSchemaScope<
 		if (!this.#exportCache) {
 			this.#exportCache = {}
 			for (const name of this.exportedNames) {
-				let def = this.aliases[name]
-				if (hasArkKind(def, "generic")) {
-					this.#exportCache[name] = def
-					continue
-				}
-				// TODO: thunk generics?
-				// handle generics before invoking thunks, since they use
-				// varargs they will incorrectly be considered thunks
-				if (isThunk(def)) {
-					def = def()
-				}
-				if (hasArkKind(def, "module")) {
-					this.#exportCache[name] = def
-				} else {
-					this.#exportCache[name] = this.parseRoot(def)
-				}
+				this.#exportCache[name] = this.maybeResolve(name)
 			}
 			this.#exportedResolutions = resolutionsOfModule(this.#exportCache)
 			// TODO: add generic json
@@ -380,6 +360,40 @@ export class RawSchemaScope<
 	// }
 }
 
+const resolveSubaliasRecurse = (
+	base: Dict,
+	name: string
+): RawSchema | GenericSchema | undefined => {
+	const dotIndex = name.indexOf(".")
+	if (dotIndex === -1) {
+		return
+	}
+	const dotPrefix = name.slice(0, dotIndex)
+	const prefixDef = base[dotPrefix]
+	// if the name includes ".", but the prefix is not an alias, it
+	// might be something like a decimal literal, so just fall through to return
+	if (prefixDef === undefined) return
+	if (!hasArkKind(prefixDef, "module"))
+		return throwParseError(writeNonSubmoduleDotMessage(dotPrefix))
+
+	const subalias = name.slice(dotIndex + 1)
+	const resolution = prefixDef[subalias]
+	// if the first part of name is a submodule but the suffix is
+	// unresolvable, we can throw immediately
+	if (resolution === undefined) {
+		if (hasArkKind(resolution, "module"))
+			return resolveSubaliasRecurse(resolution, subalias)
+		return throwParseError(writeUnresolvableMessage(name))
+	}
+
+	if (hasArkKind(resolution, "schema") || hasArkKind(resolution, "generic"))
+		return resolution
+
+	throwInternalError(
+		`Unexpected resolution for alias '${name}': ${printable(resolution)}`
+	)
+}
+
 export type validateAliases<aliases> = {
 	[k in keyof aliases]: aliases[k] extends PreparsedNodeResolution ? aliases[k]
 	:	validateSchema<aliases[k], aliases>
@@ -400,6 +414,7 @@ export interface SchemaScope<$ = any> {
 	infer: distillOut<$>
 	inferIn: distillIn<$>
 
+	[arkKind]: "scope"
 	config: ArkConfig
 	references: readonly RawNode[]
 	json: Json
@@ -463,6 +478,7 @@ export const {
 export class RawSchemaModule<
 	resolutions extends RawSchemaResolutions = RawSchemaResolutions
 > extends DynamicBase<resolutions> {
+	// TODO: kind?
 	declare readonly [arkKind]: "module"
 }
 

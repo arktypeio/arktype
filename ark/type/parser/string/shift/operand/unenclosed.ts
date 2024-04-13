@@ -143,7 +143,9 @@ type tryResolve<s extends StaticState, token extends string, $, args> =
 	: token extends (
 		`${infer submodule extends keyof $ & string}.${infer reference}`
 	) ?
-		$[submodule] extends SchemaModule<infer sub$> | Module<infer sub$> ? // TODO: shouldn't need both checks?
+		$[submodule] extends (
+			SchemaModule<infer sub$> | Module<infer sub$> // TODO: shouldn't need both checks?
+		) ?
 			reference extends keyof sub$ ? token
 			: unknown extends sub$ ?
 				// not sure why we need the additional check here, but for now TS seems to
