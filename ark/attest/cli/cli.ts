@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { fileName } from "@arktype/fs"
 import { basename } from "path"
 import { precache } from "./precache.js"
