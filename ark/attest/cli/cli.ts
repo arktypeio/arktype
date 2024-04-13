@@ -15,7 +15,11 @@ type Subcommand = keyof typeof subcommands
 
 const baseFileName = basename(fileName())
 
-const thisFileIndex = process.argv.findIndex((s) => s.endsWith(baseFileName))
+const thisFileIndex = process.argv.findIndex(
+	// if running from build output in npm, will be a file called `attest`
+	// if running from build output in pnpm, will be cli.js in build output
+	(s) => s.endsWith(baseFileName) || s.endsWith("attest")
+)
 
 if (thisFileIndex === -1) {
 	throw new Error(`Expected to find an argument ending with "${baseFileName}"`)
