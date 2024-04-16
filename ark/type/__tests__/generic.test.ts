@@ -64,17 +64,16 @@ describe("generics", () => {
 				).json
 			)
 		})
-		// TODO: currently crashes TS compiler
-		// it("referenced in scope inline", () => {
-		// 	const $ = scope({
-		// 		one: "1",
-		// 		orOne: () => $.type("<t>", "t|one")
-		// 	})
-		// 	const types = $.export()
-		// 	const bit = types.orOne("0")
-		// 	attest<0 | 1>(bit.infer)
-		// 	attest(bit.json).equals(type("0|1").json)
-		// })
+		it("referenced in scope inline", () => {
+			const $ = scope({
+				one: "1",
+				orOne: () => $.type("<t>", "t|one")
+			})
+			const types = $.export()
+			const bit = types.orOne("0")
+			attest<0 | 1>(bit.infer)
+			attest(bit.json).equals(type("0|1").json)
+		})
 		it("referenced from other scope", () => {
 			const types = scope({
 				arrayOf: type("<t>", "t[]")
