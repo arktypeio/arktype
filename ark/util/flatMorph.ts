@@ -91,6 +91,6 @@ export function flatMorph(
 	})
 	const objectResult = Object.fromEntries(entries)
 	return typeof entries[0]?.[0] === "number" ?
-			Object.assign([], objectResult)
+			Object.values(objectResult)
 		:	objectResult
 }

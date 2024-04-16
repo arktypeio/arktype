@@ -28,7 +28,7 @@
 	"mochaExplorer.require": "ark/repo/mocha.fixtures.ts",
 	"mochaExplorer.timeout": 0,
 	"mochaExplorer.env": {
-		"ATTEST_CONFIG": "{ \"skipTypes\": true }"
+		"ATTEST_skipTypes": "true"
 	},
 	"testExplorer.useNativeTesting": true,
 	"editor.unicodeHighlight.allowedCharacters": {
