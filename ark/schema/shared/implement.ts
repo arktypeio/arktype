@@ -304,8 +304,7 @@ export interface UnknownNodeImplementation
 
 export interface PrimitiveNodeDeclaration extends RawNodeDeclaration {
 	kind: PrimitiveKind
-	attachments: NodeAttachments<this> &
-		PrimitiveAttachments<PrimitiveNodeDeclaration>
+	attachments: NodeAttachments<this> & PrimitiveAttachments
 }
 
 export const derivePrimitiveAttachments = <
@@ -314,24 +313,35 @@ export const derivePrimitiveAttachments = <
 	parsed: parsedAttachmentsOf<d>,
 	implemented: ImplementedPrimitiveAttachments<d>
 ): d["attachments"] => {
-	const self = Object.assign(
-		parsed,
-		implemented as {} as ImplementedPrimitiveAttachments
-	)
-	const errorContext = {
-		code: self.kind,
-		description: self.description,
-		...self.inner
-	}
-	return Object.assign(self, {
-		errorContext,
-		traverseApply: (data, ctx) => {
-			if (!self.traverseAllows(data, ctx)) {
-				ctx.error(errorContext as never)
+	return Object.assign(parsed, implemented, {
+		get errorContext(): d["errorContext"] {
+			return {
+				code: this.kind,
+				description: this.description,
+				...this.inner
 			}
 		},
-		compile: (js) => js.compilePrimitive(self as never)
-	} satisfies DerivedPrimitiveAttachments) as never
+		get compiledErrorContext(): string {
+			return compileErrorContext(this.errorContext)
+		},
+		traverseApply(data, ctx) {
+			if (!this.traverseAllows(data as never, ctx)) {
+				ctx.error(this.errorContext)
+			}
+		},
+		compile(js) {
+			js.compilePrimitive(this)
+		}
+	} satisfies DerivedPrimitiveAttachments &
+		ThisType<Node<PrimitiveKind>>) as never
+}
+
+export const compileErrorContext = (ctx: object): string => {
+	let result = "{ "
+	for (const [k, v] of Object.entries(ctx)) {
+		result += `${k}: ${compileSerializedValue(v)}, `
+	}
+	return result + " }"
 }
 
 export interface PrimitiveAttachments<
@@ -340,6 +350,7 @@ export interface PrimitiveAttachments<
 	compiledCondition: string
 	compiledNegation: string
 	errorContext: d["errorContext"]
+	compiledErrorContext: string
 }
 
 export type ImplementedPrimitiveAttachments<
@@ -351,13 +362,16 @@ export type ImplementedPrimitiveAttachments<
 
 export type DerivedPrimitiveAttachments<
 	d extends PrimitiveNodeDeclaration = PrimitiveNodeDeclaration
-> = Pick<d["attachments"], "errorContext" | "traverseApply" | "compile">
+> = Pick<
+	d["attachments"],
+	"errorContext" | "compiledErrorContext" | "traverseApply" | "compile"
+>
 
 export type nodeImplementationOf<d extends RawNodeDeclaration> =
 	nodeImplementationInputOf<d> & {
 		intersections: IntersectionMap<d["kind"]>
 		intersectionIsOpen: d["intersectionIsOpen"]
-		defaults: nodeDefaultsImplementationFor<d["kind"]>
+		defaults: Required<NodeConfig<d["kind"]>>
 	}
 
 export type nodeImplementationInputOf<d extends RawNodeDeclaration> =
@@ -381,10 +395,6 @@ type nodeDefaultsImplementationInputFor<kind extends NodeKind> = requireKeys<
 	  ) ?
 			never
 	  :	"expected" & keyof NodeConfig<kind>)
->
-
-export type nodeDefaultsImplementationFor<kind extends NodeKind> = Required<
-	NodeConfig<kind>
 >
 
 export type DescriptionWriter<kind extends NodeKind = NodeKind> = (
@@ -424,7 +434,6 @@ export const implementNode = <d extends RawNodeDeclaration = never>(
 		implementation.defaults.expected ??= (ctx) =>
 			"description" in ctx ?
 				(ctx.description as string)
-				// TODO: does passing ctx here work? or will some expect node?
 			:	implementation.defaults.description(ctx as never)
 		implementation.defaults.actual ??= (data) => printable(data)
 		implementation.defaults.problem ??= (ctx) =>

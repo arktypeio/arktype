@@ -1,4 +1,5 @@
 import { compileSerializedValue, type Key } from "@arktype/util"
+import type { errorContext } from "../../kinds.js"
 import type { SchemaDef } from "../../node.js"
 import type { RawSchema } from "../../schema.js"
 import type {
@@ -8,6 +9,7 @@ import type {
 } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import {
+	compileErrorContext,
 	implementNode,
 	type NodeAttachments,
 	type SchemaKind
@@ -39,7 +41,7 @@ export type PropDeclaration = declareNode<{
 	attachments: PropAttachments
 }>
 
-export interface PropErrorContext extends BaseErrorContext {
+export interface PropErrorContext extends BaseErrorContext<"prop"> {
 	key: Key
 }
 
@@ -50,6 +52,7 @@ export interface PropAttachments
 	compiledKey: string
 	serializedKey: string
 	errorContext: PropErrorContext
+	compiledErrorContext: string
 }
 
 export const propImplementation = implementNode<PropDeclaration>({
@@ -99,16 +102,20 @@ export const propImplementation = implementNode<PropDeclaration>({
 		const required = !self.optional
 		const serializedKey = compileSerializedValue(self.key)
 		const compiledKey = typeof self.key === "string" ? self.key : serializedKey
-		const errorContext = Object.freeze({
-			code: "prop",
-			description: self.description,
-			key: self.key
-		})
 		return {
 			required,
 			serializedKey,
 			compiledKey,
-			errorContext,
+			get errorContext(): errorContext<"prop"> {
+				return Object.freeze({
+					code: "prop",
+					description: this.description,
+					key: this.key
+				})
+			},
+			get compiledErrorContext() {
+				return compileErrorContext(this.errorContext)
+			},
 			expression: `${compiledKey}${self.optional ? "?" : ""}: ${
 				self.value.expression
 			}`,
@@ -131,7 +138,7 @@ export const propImplementation = implementNode<PropDeclaration>({
 				if (this.key in data) {
 					this.value.traverseApply((data as any)[this.key], ctx)
 				} else if (required) {
-					ctx.error(errorContext)
+					ctx.error(this.errorContext)
 				}
 				ctx.path.pop()
 			},

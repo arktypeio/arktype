@@ -4,7 +4,6 @@ import {
 	type Guardable,
 	type Json,
 	type PartialRecord,
-	compileSerializedValue,
 	type conform,
 	flatMorph,
 	includes,
@@ -108,22 +107,6 @@ export class RawNode<
 	readonly contributesReferences: readonly RawNode[]
 	readonly precedence = precedenceOfKind(this.kind)
 	jit = false
-
-	private compiledErrorContextCache: string | undefined
-	get compiledErrorContext(): string {
-		if (!this.compiledErrorContextCache) {
-			if ("errorContext" in this) {
-				let result = "{ "
-				for (const [k, v] of Object.entries(this.errorContext!)) {
-					result += `${k}: ${compileSerializedValue(v)}, `
-				}
-				this.compiledErrorContextCache = `${result} }`
-			} else {
-				this.compiledErrorContextCache = "{}"
-			}
-		}
-		return this.compiledErrorContextCache
-	}
 
 	allows = (data: d["prerequisite"]): boolean => {
 		const ctx = new TraversalContext(data, this.$.resolvedConfig)

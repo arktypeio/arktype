@@ -1,4 +1,5 @@
 import { compileSerializedValue, type show } from "@arktype/util"
+import type { errorContext } from "../kinds.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import {
 	implementNode,
@@ -15,6 +16,8 @@ export interface PredicateInner<rule extends Predicate<any> = Predicate<any>>
 	readonly predicate: rule
 }
 
+export type PredicateErrorContext = Partial<PredicateInner>
+
 export type NormalizedPredicateDef = PredicateInner
 
 export type PredicateDef = NormalizedPredicateDef | Predicate<any>
@@ -25,7 +28,7 @@ export type PredicateDeclaration = declareNode<{
 	normalizedDef: NormalizedPredicateDef
 	inner: PredicateInner
 	intersectionIsOpen: true
-	errorContext: {}
+	errorContext: PredicateErrorContext
 	attachments: PredicateAttachments
 }>
 
@@ -72,9 +75,14 @@ export const predicateImplementation = implementNode<PredicateDeclaration>({
 			compiledNegation,
 			expression: serializedPredicate,
 			traverseAllows: self.predicate,
-			errorContext: {
-				code: "predicate",
-				description: self.description
+			get errorContext(): errorContext<"predicate"> {
+				return {
+					code: "predicate",
+					description: this.description
+				}
+			},
+			get compiledErrorContext(): string {
+				return `{ code: "predicate", description: "${this.description}" }`
 			},
 			traverseApply(data, ctx) {
 				if (!this.predicate(data, ctx) && !ctx.hasError())
