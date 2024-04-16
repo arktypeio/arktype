@@ -59,25 +59,24 @@ export type ImplementedRangeAttachments<d extends BaseRangeDeclaration> = Omit<
 >
 
 export const deriveRangeAttachments = <d extends BaseRangeDeclaration = never>(
+	parsed: Omit<parsedAttachmentsOf<d>, "description">,
 	implemented: ImplementedRangeAttachments<d>
-): d["attachments"] & ThisType<Node<RangeKind>> => {
-	const self: parsedAttachmentsOf<d> = derivePrimitiveAttachments(
-		implemented as never
-	) as never
-	const boundOperandKind = operandKindsByBoundKind[self.kind]
+): d["attachments"] => {
+	const boundOperandKind = operandKindsByBoundKind[parsed.kind]
 	const compiledActual =
 		boundOperandKind === "value" ? "data"
 		: boundOperandKind === "length" ? "data.length"
 		: "data.valueOf()"
-	const comparator = compileComparator(self.kind, self.exclusive)
-	const numericLimit = self.rule.valueOf()
+	const comparator = compileComparator(parsed.kind, parsed.exclusive)
+	const numericLimit = parsed.rule.valueOf()
 
-	return Object.assign(self, {
+	return derivePrimitiveAttachments({
+		...implemented,
 		boundOperandKind,
 		compiledActual,
 		comparator,
 		numericLimit,
-		expression: `${comparator}${self.rule}`,
+		expression: `${comparator}${parsed.rule}`,
 		compiledCondition: `${compiledActual} ${comparator} ${numericLimit}`,
 		compiledNegation: `${compiledActual} ${negatedComparators[comparator]} ${numericLimit}`,
 		// we need to compute stringLimit before errorContext, which references it

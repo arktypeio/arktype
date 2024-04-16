@@ -55,7 +55,7 @@ export const maxImplementation = implementNode<MaxDeclaration>({
 			:	Disjoint.from("range", max, min)
 	},
 	construct: (self) =>
-		deriveRangeAttachments<MaxDeclaration>({
+		deriveRangeAttachments<MaxDeclaration>(self, {
 			traverseAllows:
 				self.exclusive ?
 					(data) => data < self.rule

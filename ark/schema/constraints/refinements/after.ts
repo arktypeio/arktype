@@ -59,7 +59,7 @@ export const afterImplementation = implementNode<AfterDeclaration>({
 		after: (l, r) => (l.isStricterThan(r) ? l : r)
 	},
 	construct: (self) =>
-		deriveRangeAttachments<AfterDeclaration>({
+		deriveRangeAttachments<AfterDeclaration>(self, {
 			traverseAllows:
 				self.exclusive ?
 					(data) => data > self.rule

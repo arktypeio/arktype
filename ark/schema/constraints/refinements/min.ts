@@ -48,7 +48,7 @@ export const minImplementation = implementNode<MinDeclaration>({
 			`${node.exclusive ? "more than" : "at least"} ${node.rule}`
 	},
 	construct: (self) =>
-		deriveRangeAttachments<MinDeclaration>({
+		deriveRangeAttachments<MinDeclaration>(self, {
 			traverseAllows:
 				self.exclusive ?
 					(data) => data > self.rule

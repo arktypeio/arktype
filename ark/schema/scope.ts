@@ -466,14 +466,21 @@ export const SchemaScope: new <$ = any>(
 
 export const root: SchemaScope<{}> = new SchemaScope({})
 
-export const { schema, defineSchema, node, units } = root
+export const schema = root.schema.bind(root)
 
-export const {
-	schema: rawSchema,
-	defineSchema: defineRawSchema,
-	node: rawNode,
-	units: rawUnits
-} = root.raw
+export const node = root.node.bind(root)
+
+export const defineSchema = root.defineSchema.bind(root)
+
+export const units = root.units.bind(root)
+
+export const rawSchema = root.raw.schema.bind(root)
+
+export const rawNode = root.raw.node.bind(root)
+
+export const defineRawSchema = root.raw.defineSchema.bind(root)
+
+export const rawUnits = root.raw.units.bind(root)
 
 export class RawSchemaModule<
 	resolutions extends RawSchemaResolutions = RawSchemaResolutions
