@@ -10,7 +10,6 @@ import {
 	type BigintLiteral,
 	type Completion,
 	type ErrorMessage,
-	type NumberLiteral,
 	type join,
 	printable,
 	throwParseError,
@@ -138,7 +137,7 @@ type tryResolve<s extends StaticState, token extends string, $, args> =
 	token extends keyof $ ? token
 	: `#${token}` extends keyof $ ? `#${token}`
 	: token extends keyof args ? token
-	: token extends NumberLiteral ? token
+	: token extends `${number}` ? token
 	: token extends BigintLiteral ? token
 	: token extends (
 		`${infer submodule extends keyof $ & string}.${infer reference}`

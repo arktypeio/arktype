@@ -1,4 +1,4 @@
-import { type NumberLiteral, tryParseInteger } from "@arktype/util"
+import { tryParseInteger } from "@arktype/util"
 import type { DynamicStateWithRoot } from "../../reduce/dynamic.js"
 import type { StaticState, state } from "../../reduce/static.js"
 import type { Scanner } from "../scanner.js"
@@ -18,7 +18,7 @@ export type parseDivisor<s extends StaticState, unscanned extends string> =
 	Scanner.shiftUntilNextTerminator<Scanner.skipWhitespace<unscanned>> extends (
 		Scanner.shiftResult<infer scanned, infer nextUnscanned>
 	) ?
-		scanned extends NumberLiteral<infer divisor> ?
+		scanned extends `${infer divisor extends number}` ?
 			divisor extends 0 ?
 				state.error<writeInvalidDivisorMessage<0>>
 			:	state.setRoot<s, [s["root"], "%", divisor], nextUnscanned>

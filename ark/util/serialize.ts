@@ -1,6 +1,6 @@
 import type { array } from "./arrays.js"
 import { type Primitive, domainOf, type inferDomain } from "./domain.js"
-import type { BigintLiteral, NumberLiteral } from "./numericLiterals.js"
+import type { BigintLiteral } from "./numericLiterals.js"
 import type { Dict } from "./records.js"
 
 export type SerializationOptions = {
@@ -105,7 +105,7 @@ type SerializedString<value extends string = string> = `"${value}"`
 
 export type SerializedPrimitives = {
 	string: SerializedString
-	number: NumberLiteral
+	number: `${number}`
 	bigint: BigintLiteral
 	boolean: "true" | "false"
 	null: "null"

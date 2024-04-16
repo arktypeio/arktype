@@ -1,6 +1,5 @@
 import type {
 	GenericProps,
-	SchemaModule,
 	arkKind,
 	writeMissingSubmoduleAccessMessage
 } from "@arktype/schema"
@@ -8,7 +7,6 @@ import type {
 	BigintLiteral,
 	Completion,
 	ErrorMessage,
-	NumberLiteral,
 	writeMalformedNumericLiteralMessage
 } from "@arktype/util"
 import type { Comparator } from "../string/reduce/shared.js"
@@ -60,12 +58,12 @@ export type writeUnsatisfiableExpressionError<expression extends string> =
 	`${expression} results in an unsatisfiable type`
 
 type validateStringAst<def extends string, $> =
-	def extends NumberLiteral<infer value> ?
-		number extends value ?
+	def extends `${infer n extends number}` ?
+		number extends n ?
 			ErrorMessage<writeMalformedNumericLiteralMessage<def, "number">>
 		:	undefined
-	: def extends BigintLiteral<infer value> ?
-		bigint extends value ?
+	: def extends BigintLiteral<infer b> ?
+		bigint extends b ?
 			ErrorMessage<writeMalformedNumericLiteralMessage<def, "bigint">>
 		:	undefined
 	: def extends keyof $ ?
