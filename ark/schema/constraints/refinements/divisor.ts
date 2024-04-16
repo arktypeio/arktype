@@ -54,7 +54,7 @@ export const divisorImplementation = implementNode<DivisorDeclaration>({
 			node.rule === 1 ? "an integer" : `a multiple of ${node.rule}`
 	},
 	construct: (self) => {
-		return derivePrimitiveAttachments<DivisorDeclaration>(self, {
+		return derivePrimitiveAttachments<DivisorDeclaration>({
 			compiledCondition: `data % ${self.rule} === 0`,
 			compiledNegation: `data % ${self.rule} !== 0`,
 			impliedBasis: self.$.keywords.number,

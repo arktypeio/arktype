@@ -290,7 +290,7 @@ interface CommonNodeImplementationInput<d extends RawNodeDeclaration> {
 		$: RawSchemaScope
 	) => Node<d["reducibleTo"]> | Disjoint | undefined
 	construct: (
-		self: parsedAttachmentsOf<d>
+		self: Omit<parsedAttachmentsOf<d>, "description">
 	) => d["attachments"] & ThisType<Node<d["kind"]>>
 }
 
@@ -310,10 +310,9 @@ export interface PrimitiveNodeDeclaration extends RawNodeDeclaration {
 export const derivePrimitiveAttachments = <
 	d extends PrimitiveNodeDeclaration = never
 >(
-	parsed: parsedAttachmentsOf<d>,
 	implemented: ImplementedPrimitiveAttachments<d>
 ): d["attachments"] => {
-	return Object.assign(parsed, implemented, {
+	return Object.assign(implemented, {
 		get errorContext(): d["errorContext"] {
 			return {
 				code: this.kind,
@@ -404,6 +403,7 @@ export type DescriptionWriter<kind extends NodeKind = NodeKind> = (
 export interface UnknownAttachments {
 	alias?: string
 	readonly kind: NodeKind
+	readonly name: string
 	readonly inner: Record<string, any>
 	readonly entries: readonly Entry<string>[]
 	readonly json: object

@@ -71,6 +71,7 @@ export interface SequenceAttachments
 	maxLengthNode: MaxLengthNode | null
 	impliedSiblings: array<Node<"minLength" | "maxLength">> | null
 	tuple: SequenceTuple
+	childAtIndex(data: array, index: number): RawSchema
 }
 
 const fixedSequenceKeyDefinition: NodeKeyImplementation<
@@ -258,20 +259,20 @@ export const sequenceImplementation = implementNode<SequenceDeclaration>({
 				:	[minLengthNode]
 			: maxLengthNode ? [maxLengthNode]
 			: null
-		const expression = self.description
-		const _childAtIndex = (data: array, index: number): RawSchema => {
-			if (index < prevariadic.length) return prevariadic[index]
-			const postfixStartIndex = data.length - postfix.length
-			if (index >= postfixStartIndex) return postfix[index - postfixStartIndex]
-			return (
-				self.variadic ??
-				throwInternalError(
-					`Unexpected attempt to access index ${index} on ${expression}`
-				)
-			)
-		}
 
 		return {
+			childAtIndex(data, index) {
+				if (index < prevariadic.length) return prevariadic[index]
+				const postfixStartIndex = data.length - postfix.length
+				if (index >= postfixStartIndex)
+					return postfix[index - postfixStartIndex]
+				return (
+					self.variadic ??
+					throwInternalError(
+						`Unexpected attempt to access index ${index} on ${this.expression}`
+					)
+				)
+			},
 			impliedBasis,
 			prefix,
 			optional,
@@ -285,21 +286,22 @@ export const sequenceImplementation = implementNode<SequenceDeclaration>({
 			maxLengthNode,
 			impliedSiblings,
 			tuple: sequenceInnerToTuple(self.inner),
-			// TODO: ensure this can work with resolution order
-			expression,
+			get expression(): string {
+				return this.description
+			},
 			// minLength/maxLength should be checked by Intersection before either traversal
-			traverseAllows: (data, ctx) => {
+			traverseAllows(data, ctx) {
 				for (let i = 0; i < data.length; i++) {
-					if (!_childAtIndex(data, i).traverseAllows(data[i], ctx)) {
+					if (!this.childAtIndex(data, i).traverseAllows(data[i], ctx)) {
 						return false
 					}
 				}
 				return true
 			},
-			traverseApply: (data, ctx) => {
+			traverseApply(data, ctx) {
 				for (let i = 0; i < data.length; i++) {
 					ctx.path.push(i)
-					_childAtIndex(data, i).traverseApply(data[i], ctx)
+					this.childAtIndex(data, i).traverseApply(data[i], ctx)
 					ctx.path.pop()
 				}
 			},

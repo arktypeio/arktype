@@ -134,7 +134,9 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 		const serializedMorphs = self.morphs.map((morph) => reference(morph))
 		return {
 			serializedMorphs,
-			expression: `(In: ${self.in.expression}) => Out<${self.out.expression}>`,
+			get expression() {
+				return `(In: ${this.in.expression}) => Out<${this.out.expression}>`
+			},
 			traverseAllows: (data, ctx) => self.in.traverseAllows(data, ctx),
 			traverseApply: (data, ctx) => {
 				self.morphs.forEach((morph) => ctx.queueMorph(morph))
@@ -150,10 +152,10 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 				)
 				js.line(js.invoke(this.in))
 			},
-			get in() {
+			get in(): MorphChildNode {
 				return this.inner.in
 			},
-			get out() {
+			get out(): MorphChildNode {
 				return this.inner.out ?? self.$.keywords.unknown
 			},
 			rawKeyOf(): RawSchema {

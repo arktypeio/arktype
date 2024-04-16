@@ -51,7 +51,6 @@ export type DynamicFunction = new <f extends (...args: never[]) => unknown>(
 export type CallableOptions<attachments extends object> = {
 	attach?: attachments
 	bind?: object
-	name?: string
 }
 
 // @ts-expect-error required to cast function type
@@ -66,14 +65,11 @@ export class Callable<
 			this.constructor.prototype
 		)
 
-		// ensure Function's readonly name can be set without crashing
-		if (opts?.name)
-			Object.defineProperty(self, "name", {
-				configurable: true,
-				value: opts.name
-			})
-
-		Object.assign(self, opts?.attach)
+		if (opts?.attach)
+			Object.defineProperties(
+				self,
+				Object.getOwnPropertyDescriptors(opts.attach)
+			)
 
 		return self
 	}

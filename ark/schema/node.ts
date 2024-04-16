@@ -59,16 +59,11 @@ import { TraversalContext } from "./shared/traversal.js"
 
 export type UnknownNode = RawNode | Schema
 
-const nodeCountsByPrefix: PartialRecord<string, number> = {}
-
 export class RawNode<
 	/** @ts-expect-error allow instantiation assignment to the base type */
 	out d extends RawNodeDeclaration = RawNodeDeclaration
 > extends Callable<(data: d["prerequisite"]) => ArkResult, attachmentsOf<d>> {
 	constructor(public attachments: UnknownAttachments) {
-		const prefix = attachments?.alias ?? attachments.kind
-		nodeCountsByPrefix[prefix] ??= 0
-		const name = `${prefix}${++nodeCountsByPrefix[prefix]!}`
 		super(
 			(data: any): ArkResult => {
 				if (
@@ -82,7 +77,7 @@ export class RawNode<
 				this.traverseApply(data, ctx)
 				return ctx.finalize()
 			},
-			{ attach: attachments as never, name }
+			{ attach: attachments as never }
 		)
 		this.contributesReferencesByName =
 			this.name in this.referencesByName ?

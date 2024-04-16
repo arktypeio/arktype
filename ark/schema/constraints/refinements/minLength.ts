@@ -56,7 +56,7 @@ export const minLengthImplementation = implementNode<MinLengthDeclaration>({
 		minLength: (l, r) => (l.isStricterThan(r) ? l : r)
 	},
 	construct: (self) =>
-		deriveRangeAttachments<MinLengthDeclaration>(self, {
+		deriveRangeAttachments<MinLengthDeclaration>({
 			traverseAllows:
 				self.exclusive ?
 					(data) => data.length > self.rule

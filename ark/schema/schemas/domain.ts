@@ -65,7 +65,7 @@ export const domainImplementation = implementNode<DomainDeclaration>({
 		const literalKeys = getBaseDomainKeys(self.domain)
 		const traverseAllows: TraverseAllows = (data) =>
 			domainOf(data) === self.domain
-		return derivePrimitiveAttachments<DomainDeclaration>(self, {
+		return derivePrimitiveAttachments<DomainDeclaration>({
 			traverseAllows,
 			expression: self.domain,
 			compiledCondition:

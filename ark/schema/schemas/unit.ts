@@ -69,7 +69,7 @@ export const unitImplementation = implementNode<UnitDeclaration>({
 				JSON.stringify(compiledValue)
 			:	compiledValue
 		const literalKeys = prototypeKeysOf(self.unit)
-		return derivePrimitiveAttachments<UnitDeclaration>(self, {
+		return derivePrimitiveAttachments<UnitDeclaration>({
 			compiledValue,
 			serializedValue,
 			compiledCondition: compileEqualityCheck(self.unit, serializedValue),

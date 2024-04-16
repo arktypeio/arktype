@@ -72,7 +72,7 @@ export const exactLengthImplementation = implementNode<ExactLengthDeclaration>({
 		description: (node) => `exactly length ${node.rule}`
 	},
 	construct: (self) => {
-		return derivePrimitiveAttachments<ExactLengthDeclaration>(self, {
+		return derivePrimitiveAttachments<ExactLengthDeclaration>({
 			compiledCondition: `data.length === ${self.rule}`,
 			compiledNegation: `data.length !== ${self.rule}`,
 			impliedBasis: self.$.keywords.lengthBoundable,

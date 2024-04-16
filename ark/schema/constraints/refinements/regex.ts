@@ -62,7 +62,7 @@ export const regexImplementation = implementNode<RegexDeclaration>({
 		const instance = new RegExp(self.rule, self.flags)
 		const expression = `${instance}`
 		const compiledCondition = expression
-		return derivePrimitiveAttachments<RegexDeclaration>(self, {
+		return derivePrimitiveAttachments<RegexDeclaration>({
 			instance,
 			expression,
 			traverseAllows: instance.test.bind(instance),

@@ -67,7 +67,7 @@ export const beforeImplementation = implementNode<BeforeDeclaration>({
 			:	Disjoint.from("range", before, after)
 	},
 	construct: (self) =>
-		deriveRangeAttachments<BeforeDeclaration>(self, {
+		deriveRangeAttachments<BeforeDeclaration>({
 			traverseAllows:
 				self.exclusive ?
 					(data) => data < self.rule

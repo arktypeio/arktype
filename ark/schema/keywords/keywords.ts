@@ -1,9 +1,12 @@
 import type { GenericSchema } from "../generic.js"
 import type { SchemaModule } from "../module.js"
 import { schemaScope } from "../scope.js"
+// the import ordering here is important so builtin keywords can be resolved
+// and used to bootstrap nodes with constraints
+import { tsKeywords } from "./tsKeywords.js"
+
 import { jsObjects } from "./jsObjects.js"
 import { parsing } from "./parsing.js"
-import { tsKeywords } from "./tsKeywords.js"
 import { validation } from "./validation.js"
 
 type TsGenericsExports<$ = Ark> = {

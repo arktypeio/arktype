@@ -82,7 +82,7 @@ export const protoImplementation = implementNode<ProtoDeclaration>({
 		const serializedConstructor = (self.json as { proto: string }).proto
 		const compiledCondition = `data instanceof ${serializedConstructor}`
 		const literalKeys = prototypeKeysOf(self.proto.prototype)
-		return derivePrimitiveAttachments<ProtoDeclaration>(self, {
+		return derivePrimitiveAttachments<ProtoDeclaration>({
 			traverseAllows: (data) => data instanceof self.proto,
 			expression: self.proto.name,
 			serializedConstructor,

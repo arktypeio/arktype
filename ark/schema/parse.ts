@@ -12,8 +12,9 @@ import {
 	type propValueOf,
 	throwParseError
 } from "@arktype/util"
+import { RawConstraint } from "./constraints/constraint.js"
 import { nodeImplementationsByKind } from "./kinds.js"
-import { RawNode } from "./node.js"
+import type { RawNode } from "./node.js"
 import { RawSchema, type UnknownSchema } from "./schema.js"
 import type { RawSchemaScope } from "./scope.js"
 import type { RawNodeDeclaration } from "./shared/declare.js"
@@ -112,6 +113,8 @@ const discriminateSchemaKind = (def: unknown): SchemaKind => {
 // 		},
 // 		{ reduceTo: this.parsePrereduced("intersection", {}) }
 // 	)
+
+const nodeCountsByPrefix: PartialRecord<string, number> = {}
 
 export const parseNode = (
 	kinds: NodeKind | array<SchemaKind>,
@@ -242,7 +245,11 @@ export const parseNode = (
 	// since reduction can add impliedSiblings
 	if ($.nodeCache[innerId]) return $.nodeCache[innerId]
 
+	const prefix = opts?.alias ?? kind
+	nodeCountsByPrefix[prefix] ??= 0
+	const name = `${prefix}${++nodeCountsByPrefix[prefix]!}`
 	const attachments = {
+		name,
 		kind,
 		inner,
 		entries,
@@ -274,14 +281,18 @@ export const parseNode = (
 	// 		Object.assign(this.referencesByName, node.contributesReferencesByName)
 	// 	}
 	// }
-	attachments.description ??= $.resolvedConfig[kind].description(
-		attachments as never
+	Object.defineProperties(
+		attachments,
+		Object.getOwnPropertyDescriptors(impl.construct(attachments as never))
 	)
-	impl.construct(attachments as never)
+
 	const node: RawNode =
 		includes(schemaKinds, kind) ?
 			new RawSchema(attachments as never)
-		:	(new RawNode(attachments as never) as never)
+		:	(new RawConstraint(attachments as never) as never)
+	;(node as any).description ??= $.resolvedConfig[kind].description(
+		node as never
+	)
 	$.nodeCache[innerId] = node
 	return node
 }

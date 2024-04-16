@@ -59,11 +59,9 @@ export type ImplementedRangeAttachments<d extends BaseRangeDeclaration> = Omit<
 >
 
 export const deriveRangeAttachments = <d extends BaseRangeDeclaration = never>(
-	parsed: parsedAttachmentsOf<d>,
 	implemented: ImplementedRangeAttachments<d>
 ): d["attachments"] & ThisType<Node<RangeKind>> => {
 	const self: parsedAttachmentsOf<d> = derivePrimitiveAttachments(
-		parsed,
 		implemented as never
 	) as never
 	const boundOperandKind = operandKindsByBoundKind[self.kind]
