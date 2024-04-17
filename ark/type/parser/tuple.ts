@@ -7,6 +7,7 @@ import {
 	type Predicate,
 	type RawSchema,
 	type UnionChildKind,
+	type UnknownSchema,
 	type distillConstrainableIn,
 	type distillConstrainableOut,
 	type inferIntersection,
@@ -14,7 +15,6 @@ import {
 	type inferNarrow,
 	jsObjects,
 	makeRootAndArrayPropertiesMutable,
-	node,
 	tsKeywords
 } from "@arktype/schema"
 import {
@@ -29,8 +29,6 @@ import {
 	type show,
 	throwParseError
 } from "@arktype/util"
-import type { UnknownSchema } from "../../schema/schema.js"
-import { rawSchema } from "../../schema/scope.js"
 import type { ParseContext } from "../scope.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
 import type { InfixOperator, PostfixExpression } from "./semantic/infer.js"
@@ -80,7 +78,7 @@ export const parseTupleLiteral = (def: array, ctx: ParseContext): RawSchema => {
 			)
 		}
 	}
-	return rawSchema(
+	return ctx.$.raw.schema(
 		sequences.map(
 			(sequence) =>
 				({
@@ -524,12 +522,14 @@ const prefixParsers: {
 			.slice(1)
 			.map((ctor) =>
 				typeof ctor === "function" ?
-					node("proto", { proto: ctor as Constructor })
+					ctx.$.node("proto", { proto: ctor as Constructor })
 				:	throwParseError(
 						writeInvalidConstructorMessage(objectKindOrDomainOf(ctor))
 					)
 			)
-		return branches.length === 1 ? branches[0] : node("union", { branches })
+		return branches.length === 1 ?
+				branches[0]
+			:	ctx.$.node("union", { branches })
 	},
 	"===": (def, ctx) => ctx.$.units(def.slice(1))
 }

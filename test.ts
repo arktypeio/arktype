@@ -1,6 +1,6 @@
-import { bench } from "@arktype/attest"
-import { type } from "arktype"
-import "./arkConfig.js"
+// import { bench } from "@arktype/attest"
+// import { type } from "arktype"
+// import "./arkConfig.js"
 
 // export const validData = Object.freeze({
 // 	number: 1,

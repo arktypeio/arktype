@@ -97,24 +97,6 @@ const discriminateSchemaKind = (def: unknown): SchemaKind => {
 	return throwParseError(`${printable(def)} is not a valid type schema`)
 }
 
-// 	this.parse(
-// 		"union",
-// 		{
-// 			branches: [
-// 				"string",
-// 				"number",
-// 				"object",
-// 				"bigint",
-// 				"symbol",
-// 				{ unit: true },
-// 				{ unit: false },
-// 				{ unit: null },
-// 				{ unit: undefined }
-// 			]
-// 		},
-// 		{ reduceTo: this.parsePrereduced("intersection", {}) }
-// 	)
-
 const nodeCountsByPrefix: PartialRecord<string, number> = {}
 
 export const parseNode = (

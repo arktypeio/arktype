@@ -1,12 +1,12 @@
 import type { GenericSchema } from "../generic.js"
 import type { SchemaModule } from "../module.js"
-import { schemaScope } from "../scope.js"
+import { schemaScope, type SchemaScope } from "../scope.js"
 // the import ordering here is important so builtin keywords can be resolved
 // and used to bootstrap nodes with constraints
 import { tsKeywords } from "./tsKeywords.js"
 
 import { jsObjects } from "./jsObjects.js"
-import { parsing } from "./parsing.js"
+import type { parsing } from "./parsing.js"
 import { validation } from "./validation.js"
 
 type TsGenericsExports<$ = Ark> = {
@@ -21,13 +21,15 @@ type TsGenericsExports<$ = Ark> = {
 	>
 }
 
-export const keywordNodes: SchemaModule<Ark> = schemaScope({
+export const ambientSchemaScope: SchemaScope<Ark> = schemaScope({
 	...tsKeywords,
 	...jsObjects,
-	...validation,
-	parse: parsing
+	...validation
+	// parse: parsing
 	// TODO: remove cast
 }) as never
+
+export const keywordNodes: SchemaModule<Ark> = ambientSchemaScope.export()
 
 // this type is redundant with the inferred definition of ark but allow types
 // derived from the default scope to be calulated more efficiently
