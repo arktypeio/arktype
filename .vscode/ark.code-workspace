@@ -1,0 +1,10 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"vitest.rootConfig": "ark/repo/vitest.extension.config.ts"
+	}
+}

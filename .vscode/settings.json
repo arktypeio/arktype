@@ -21,7 +21,7 @@
 		"./ark/schema/main.ts"
 	],
 	"typescript.tsserver.experimental.enableProjectDiagnostics": true,
-	"vitest.rootConfig": "ark/repo/vitest.config.ts",
+	"vitest.rootConfig": "ark/repo/vitest.extension.config.ts",
 	"vitest.nodeEnv": {
 		"ATTEST_skipTypes": "true"
 	},

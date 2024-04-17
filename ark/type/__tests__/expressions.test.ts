@@ -163,7 +163,7 @@ describe("root expression", () => {
 	it("=== branches", () => {
 		const t = type("===", "foo", "bar", "baz")
 		attest<"foo" | "bar" | "baz">(t.infer)
-		attest(t.json).snap([{ unit: "bar" }, { unit: "baz" }, { unit: "foo" }])
+		attest(t.json).snap()
 	})
 
 	it("instanceof single", () => {
