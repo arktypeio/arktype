@@ -1,5 +1,5 @@
 // import { attest } from "@arktype/attest"
-import { describe, it } from "vitest"
+import { describe } from "vitest"
 // import { scope, type } from "arktype"
 
 describe("discrimination", () => {

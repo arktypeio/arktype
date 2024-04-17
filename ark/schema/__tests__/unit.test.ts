@@ -11,6 +11,7 @@ describe("unit", () => {
 		attest(l.json).equals(r.json)
 		attest(l.equals(r)).equals(true)
 	})
+
 	it("bigint", () => {
 		const t = schema({ unit: 7n })
 		// serializes to string for JSON
@@ -26,6 +27,7 @@ describe("unit", () => {
 		attest(t.allows(7n)).equals(true)
 		attest(t.allows(8n)).equals(false)
 	})
+
 	it("undefined", () => {
 		const t = schema({ unit: undefined })
 		assertNodeKind(t, "unit")

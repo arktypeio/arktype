@@ -67,6 +67,7 @@ describe("flatMorph", () => {
 		)
 		attest<[5, ...(1 | 2 | 3)[]]>(result).equals([5, 1, 2, 3])
 	})
+
 	it("maps from array to object", () => {
 		const result = flatMorph(["a", "b", "c"], (i, v) => [v, i])
 		attest<{
@@ -75,6 +76,7 @@ describe("flatMorph", () => {
 			c: 0 | 2 | 1
 		}>(result).equals({ a: 0, b: 1, c: 2 })
 	})
+
 	it("filters array", () => {
 		const result = flatMorph([1, 2, 3] as const, (i, v) =>
 			v === 2 ? [] : [i, v]

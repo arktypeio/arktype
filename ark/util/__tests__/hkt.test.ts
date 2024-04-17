@@ -12,6 +12,7 @@ describe("hkt", () => {
 		type result = Hkt.apply<AppendKind, [2, [0, 1]]>
 		attest<[0, 1, 2], result>()
 	})
+
 	it("reify", () => {
 		const append = (([element, to]: [unknown, array]) => [
 			...to,
@@ -32,6 +33,7 @@ describe("hkt", () => {
 		): show<typeof args & { c: [(typeof args)["a"], (typeof args)["b"]] }> =>
 			Object.assign(args, { c: [args.a, args.b] } as const) as never
 	})()
+
 	it("pipe", () => {
 		type result1 = Hkt.apply<typeof AddB, { a: 1 }>
 		attest<{ a: 1; b: 1 }, result1>()
@@ -51,6 +53,7 @@ describe("hkt", () => {
 			"Argument of type '{}' is not assignable to parameter of type '{ a: number; }'.Property 'a' is missing in type '{}' but required in type '{ a: number; }'."
 		)
 	})
+
 	it("validates pipeable", () => {
 		const AddD = new (class AddD extends Hkt.UnaryKind {
 			hkt = (

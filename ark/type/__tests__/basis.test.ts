@@ -3,7 +3,7 @@ import { type } from "arktype"
 import { describe, it } from "vitest"
 import { writeUnsatisfiableExpressionError } from "../parser/semantic/validate.js"
 
-describe("basis intersections", () => {
+describe("intersections", () => {
 	it("class & literal", () => {
 		const a = [0]
 		const literal = type("===", a)
@@ -15,6 +15,7 @@ describe("basis intersections", () => {
 		attest<number[]>(rl.infer)
 		attest(rl.json).equals(literal.json)
 	})
+
 	it("unsatisfiable class & literal", () => {
 		const a = [0]
 		const literal = type("===", a)
@@ -22,12 +23,14 @@ describe("basis intersections", () => {
 		attest(() => literal.and(cls)).throws(writeUnsatisfiableExpressionError(""))
 		attest(() => cls.and(literal)).throws(writeUnsatisfiableExpressionError(""))
 	})
+
 	it("domain & literal", () => {
 		const literal = type("'foo'")
 		const domain = type("string")
 		attest(literal.and(domain).json).equals(literal.json)
 		attest(domain.and(literal).json).equals(literal.json)
 	})
+
 	it("unsatisfiable domain & literal", () => {
 		const literal = type("'foo'")
 		const domain = type("number")
@@ -38,6 +41,7 @@ describe("basis intersections", () => {
 			writeUnsatisfiableExpressionError("")
 		)
 	})
+
 	it("domain & class", () => {
 		const domain = type("object")
 		const cls = type("instanceof", Date)

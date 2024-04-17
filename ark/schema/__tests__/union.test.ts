@@ -29,6 +29,7 @@ describe("union", () => {
 		const n = schema(["number", {}, { unit: 5 }])
 		attest(n.json).snap({})
 	})
+
 	it("union of all types reduced to unknown", () => {
 		const n = schema([
 			"string",
@@ -43,11 +44,13 @@ describe("union", () => {
 		])
 		attest(n.json).snap({})
 	})
+
 	it("normalizes union order", () => {
 		const l = schema(["number", "string"])
 		const r = schema(["string", "number"])
 		attest(l.innerId).equals(r.innerId)
 	})
+
 	it("doesn't normalize ordered unions", () => {
 		const l = schema({
 			branches: ["string", "number"],

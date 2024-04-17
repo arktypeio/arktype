@@ -14,6 +14,7 @@ describe("errors", () => {
 			"must be a multiple of 3 (was 7)"
 		)
 	})
+
 	it("at path", () => {
 		const o = schema({
 			domain: "object",
@@ -30,6 +31,7 @@ describe("errors", () => {
 			"foo must be a multiple of 3 (was 7)"
 		)
 	})
+
 	it("array", () => {
 		const t = schema({
 			proto: Array,
@@ -40,6 +42,7 @@ describe("errors", () => {
 			"value at [1] must be a number (was string)"
 		)
 	})
+
 	it("custom description integrated with error", () => {
 		const superSpecialBigint = schema({
 			domain: "bigint",
@@ -50,6 +53,7 @@ describe("errors", () => {
 			"must be my special bigint (was number)"
 		)
 	})
+
 	it("custom description on parent doesn't affect children", () => {
 		const evenNumber = schema({
 			domain: "number",
@@ -63,6 +67,7 @@ describe("errors", () => {
 			"must be a multiple of 2 (was 5)"
 		)
 	})
+
 	it("can configure errors by kind at a scope level", () => {
 		const types = schemaScope(
 			{ superSpecialString: "string" },
@@ -80,6 +85,7 @@ describe("errors", () => {
 			"custom message custom problem custom expected string custom actual 5"
 		)
 	})
+
 	it("can configure description by kind at scope level", () => {
 		const types = schemaScope(
 			{ superSpecialNumber: "number" },
@@ -95,20 +101,21 @@ describe("errors", () => {
 			"must be my special number (was string)"
 		)
 	})
+
 	it("can apply a global config", () => {
 		configure({
 			domain: {
 				description: (inner) => `my special ${inner.domain}`
 			}
 		})
-		const mySpecialSymbol = schema("symbol")
+		const mySpecialSymbol = schemaScope({}).schema("symbol")
 		attest(mySpecialSymbol.traverse("foo").errors?.summary).snap(
 			"must be my special symbol (was string)"
 		)
 		configure({
 			domain: defaultConfig.domain
 		})
-		const myBoringSymbol = schema("symbol")
+		const myBoringSymbol = schemaScope({}).schema("symbol")
 		attest(myBoringSymbol.traverse("foo").errors?.summary).snap(
 			"must be a symbol (was string)"
 		)

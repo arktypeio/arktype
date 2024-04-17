@@ -67,6 +67,7 @@ describe("traits", () => {
 			withDefault instanceof Describable
 		]).equals([true, true, true])
 	})
+
 	it("works with subclasses", () => {
 		class Foo extends Boundable<number> {
 			getFoo() {
@@ -81,6 +82,7 @@ describe("traits", () => {
 		attest(b.check(3)).equals(false)
 		attest(b.getFoo()).equals("foo")
 	})
+
 	it("preserves static", () => {
 		class A extends Trait {
 			static readonly a = "a"

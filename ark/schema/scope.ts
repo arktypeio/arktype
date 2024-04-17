@@ -12,7 +12,7 @@ import {
 	throwInternalError,
 	throwParseError
 } from "@arktype/util"
-import { mergeConfigs } from "./config.js"
+import { globalConfig, mergeConfigs } from "./config.js"
 import {
 	type GenericSchema,
 	validateUninstantiatedGenericNode
@@ -147,7 +147,8 @@ export const extendConfig = (
 
 export const resolveConfig = (
 	config: ArkConfig | undefined
-): ResolvedArkConfig => extendConfig(defaultConfig, config) as never
+): ResolvedArkConfig =>
+	extendConfig(extendConfig(defaultConfig, globalConfig), config) as never
 
 export type RawSchemaResolutions = Record<
 	string,
