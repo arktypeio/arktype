@@ -13,7 +13,10 @@ import {
 	updateExternalSnapshot,
 	type SnapshotArgs
 } from "../cache/snapshots.js"
-import type { Completions } from "../cache/writeAssertionCache.js"
+import type {
+	Completions,
+	TypeAssertionData
+} from "../cache/writeAssertionCache.js"
 import { chainableNoOpProxy } from "../utils.js"
 import {
 	TypeAssertionMapping,
@@ -79,7 +82,6 @@ export class ChainableAssertions implements AssertionRecord {
 		assert.equal(this.actual, expected)
 		return this
 	}
-
 	equals(expected: unknown): this {
 		assertEquals(expected, this.actual, this.ctx)
 		return this
@@ -168,7 +170,7 @@ export class ChainableAssertions implements AssertionRecord {
 		})
 	}
 
-	get throws(): unknown {
+	get throws() {
 		const result = callAssertedFunction(this.actual as Function)
 		this.ctx.actual = getThrownMessage(result, this.ctx)
 		this.ctx.allowRegex = true
@@ -176,7 +178,7 @@ export class ChainableAssertions implements AssertionRecord {
 		return this.immediateOrChained()
 	}
 
-	throwsAndHasTypeError(matchValue: string | RegExp): void {
+	throwsAndHasTypeError(matchValue: string | RegExp) {
 		assertEqualOrMatching(
 			matchValue,
 			getThrownMessage(callAssertedFunction(this.actual as Function), this.ctx),
@@ -193,7 +195,21 @@ export class ChainableAssertions implements AssertionRecord {
 		}
 	}
 
-	get completions(): any {
+	instanceOf(expected: Constructor): this {
+		if (!(this.actual instanceof expected)) {
+			throwAssertionError({
+				ctx: this.ctx,
+				message: `Expected an instance of ${expected.name} (was ${
+					typeof this.actual === "object" && this.actual !== null ?
+						this.actual.constructor.name
+					:	this.serializedActual
+				})`
+			})
+		}
+		return this
+	}
+
+	get completions() {
 		if (this.ctx.cfg.skipTypes) return chainableNoOpProxy
 
 		this.ctx.actual = new TypeAssertionMapping(data => {

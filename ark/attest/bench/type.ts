@@ -1,20 +1,24 @@
-import { caller, filePath } from "@arktype/fs"
-import { throwInternalError } from "@arktype/util"
-import * as tsvfs from "@typescript/vfs"
+import { getTypeAssertionsAtPosition } from "@arktype/attest"
+import { caller, type LinePositionRange } from "@arktype/fs"
 import ts from "typescript"
 import {
 	TsServer,
 	getAbsolutePosition,
 	getAncestors,
 	getDescendants,
-	getInternalTypeChecker,
-	getTsConfigInfoOrThrow,
-	getTsLibFiles,
 	nearestCallExpressionChild
 } from "../cache/ts.js"
-import { getExpressionsByName } from "../cache/writeAssertionCache.js"
+import {
+	getCallExpressionsByName,
+	getInstantiationsContributedByNode
+} from "../cache/utils.js"
+import type {
+	Completions,
+	TypeRelationship
+} from "../cache/writeAssertionCache.js"
+import { getConfig } from "../config.js"
 import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.js"
-import type { BenchContext } from "./bench.js"
+import type { BenchAssertionContext, BenchContext } from "./bench.js"
 import {
 	createTypeComparison,
 	type Measure,
@@ -126,33 +130,79 @@ export const createBenchTypeAssertion = (
 ): BenchTypeAssertions => ({
 	types: (...args: [instantiations?: Measure<TypeUnit> | undefined]) => {
 		ctx.lastSnapCallPosition = caller()
-		const instance = TsServer.instance
-		const file = instance.getSourceFileOrThrow(ctx.benchCallPosition.file)
-
-		const benchNode = nearestCallExpressionChild(
-			file,
-			getAbsolutePosition(file, ctx.benchCallPosition)
-		)
-		const benchFn = getExpressionsByName(benchNode, ["bench"])
-		if (!benchFn) throw new Error("Unable to retrieve bench expression node.")
-
-		const benchBody = getDescendants(benchFn[0]).find(
-			node => ts.isArrowFunction(node) || ts.isFunctionExpression(node)
-		) as ts.ArrowFunction | ts.FunctionExpression | undefined
-
-		if (!benchBody) throw new Error("Unable to retrieve bench body node.")
-
-		const instantiationsContributed =
-			getInstantiationsContributedByNode(benchBody)
-
-		const comparison: MeasureComparison<TypeUnit> = createTypeComparison(
-			instantiationsContributed,
-			args[0]
-		)
-		compareToBaseline(comparison, ctx)
-		queueBaselineUpdateIfNeeded(comparison.updated, args[0], {
-			...ctx,
-			kind: "types"
-		})
+		instantiationDataHandler({ ...ctx, kind: "types" }, args[0])
 	}
 })
+
+export const getContributedInstantiations = (ctx: BenchContext): number => {
+	const expressionsToFind = getConfig().expressionsToFind
+	const instance = TsServer.instance
+	const file = instance.getSourceFileOrThrow(ctx.benchCallPosition.file)
+
+	const node = nearestCallExpressionChild(
+		file,
+		getAbsolutePosition(file, ctx.benchCallPosition)
+	)
+
+	const firstMatchingNamedCall = getAncestors(node).find(
+		call => getCallExpressionsByName(call, expressionsToFind).length
+	)
+
+	if (!firstMatchingNamedCall) {
+		throw new Error(
+			`No call expressions matching the name(s) '${expressionsToFind.join()}' were found`
+		)
+	}
+
+	const body = getDescendants(firstMatchingNamedCall).find(
+		node => ts.isArrowFunction(node) || ts.isFunctionExpression(node)
+	) as ts.ArrowFunction | ts.FunctionExpression | undefined
+	const benchNode = nearestCallExpressionChild(
+		file,
+		getAbsolutePosition(file, ctx.benchCallPosition)
+	)
+	const benchFn = getExpressionsByName(benchNode, ["bench"])
+	if (!benchFn) throw new Error("Unable to retrieve bench expression node.")
+
+	const benchBody = getDescendants(benchFn[0]).find(
+		node => ts.isArrowFunction(node) || ts.isFunctionExpression(node)
+	) as ts.ArrowFunction | ts.FunctionExpression | undefined
+
+	if (!body)
+		throw new Error("Unable to retrieve contents of the call expression")
+
+	return getInstantiationsContributedByNode(file, body)
+}
+
+export type ArgAssertionData = {
+	type: string
+	relationships: {
+		args: TypeRelationship[]
+		typeArgs: TypeRelationship[]
+	}
+}
+export type TypeAssertionData = {
+	location: LinePositionRange
+	args: ArgAssertionData[]
+	typeArgs: ArgAssertionData[]
+	errors: string[]
+	completions: Completions
+	count: number
+}
+
+export const instantiationDataHandler = (
+	ctx: BenchAssertionContext,
+	args?: Measure<TypeUnit>,
+	isBench = true
+): void => {
+	const instantiationsContributed =
+		isBench ?
+			getContributedInstantiations(ctx)
+		:	getTypeAssertionsAtPosition(ctx.benchCallPosition)[0][1].count!
+	const comparison: MeasureComparison<TypeUnit> = createTypeComparison(
+		instantiationsContributed,
+		args
+	)
+	compareToBaseline(comparison, ctx)
+	queueBaselineUpdateIfNeeded(comparison.updated, args, ctx)
+}

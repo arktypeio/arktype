@@ -36,10 +36,11 @@ export type BenchContext = {
 	benchCallPosition: SourcePosition
 	lastSnapCallPosition: SourcePosition | undefined
 	isAsync: boolean
+	isInlineBench: boolean
 }
 
 export type BenchAssertionContext = BenchContext & {
-	kind: TimeAssertionName | "types"
+	kind: TimeAssertionName | "types" | "instantiations"
 }
 
 export type BenchableFunction = () => unknown | Promise<unknown>
@@ -55,15 +56,12 @@ export const bench = <Fn extends BenchableFunction>(
 	options: BenchOptions = {}
 ): InitialBenchAssertions<Fn> => {
 	const qualifiedPath = [...currentSuitePath, name]
-	const ctx: BenchContext = {
+	const ctx = getBenchCtx(
 		qualifiedPath,
-		qualifiedName: qualifiedPath.join("/"),
-		options,
-		cfg: getConfig(),
-		benchCallPosition: caller(),
-		lastSnapCallPosition: undefined,
-		isAsync: fn.constructor.name === "AsyncFunction"
-	}
+		fn.constructor.name === "AsyncFunction",
+		options
+	)
+	ctx.benchCallPosition = caller()
 	ensureCacheDirs()
 	if (
 		typeof ctx.cfg.filter === "string" &&
@@ -79,4 +77,22 @@ export const bench = <Fn extends BenchableFunction>(
 	const assertions = new BenchAssertions(fn, ctx)
 	Object.assign(assertions, createBenchTypeAssertion(ctx))
 	return assertions as any
+}
+
+export const getBenchCtx = (
+	qualifiedPath: string[],
+	isAsync: boolean = false,
+	options: BenchOptions = {},
+	isInlineBench = false
+) => {
+	return {
+		qualifiedPath,
+		qualifiedName: qualifiedPath.join("/"),
+		options,
+		cfg: getConfig(),
+		benchCallPosition: caller(),
+		lastSnapCallPosition: undefined,
+		isAsync,
+		isInlineBench
+	} as BenchContext
 }
