@@ -208,7 +208,7 @@ export class RawSchemaScope<
 		if ($ark.ambient) {
 			// ensure exportedResolutions is populated
 			$ark.ambient.export()
-			// this.resolutions = { ...$ark.ambient.resolutions! }
+			this.resolutions = { ...$ark.ambient.raw.resolutions! }
 		} else {
 			this.resolutions = {}
 		}

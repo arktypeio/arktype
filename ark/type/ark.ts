@@ -1,4 +1,4 @@
-import type { Ark, inferred } from "@arktype/schema"
+import { type Ark, type inferred, keywordNodes } from "@arktype/schema"
 import type { Generic } from "./generic.js"
 import type { MatchParser } from "./match.js"
 import type { Module } from "./module.js"
@@ -19,11 +19,13 @@ type TsGenericsExports<$ = Ark> = {
 
 export const tsGenerics = {} as Module<TsGenericsExports>
 
-export const ambient: Scope<Ark> = scope({}) as never
+export const ambient: Scope<Ark> = scope(keywordNodes) as never
+
+$ark.ambient = ambient
 
 export const ark: Module<Ark> = ambient.export()
 
-export const type: TypeParser<{}> = ambient.type as never
+export const type: TypeParser<{}> = ambient.type.bind(ambient) as never
 
 export namespace type {
 	export type cast<to> = {
@@ -31,8 +33,12 @@ export namespace type {
 	}
 }
 
-export const match: MatchParser<{}> = ambient.match as never
+export const match: MatchParser<{}> = ambient.match.bind(ambient) as never
 
-export const define: DefinitionParser<{}> = ambient.define as never
+export const define: DefinitionParser<{}> = ambient.define.bind(
+	ambient
+) as never
 
-export const declare: DeclarationParser<{}> = ambient.declare as never
+export const declare: DeclarationParser<{}> = ambient.declare.bind(
+	ambient
+) as never
