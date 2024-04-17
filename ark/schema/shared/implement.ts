@@ -4,6 +4,7 @@ import {
 	type Json,
 	type JsonData,
 	compileSerializedValue,
+	defineProperties,
 	type entryOf,
 	flatMorph,
 	type indexOf,
@@ -312,7 +313,7 @@ export const derivePrimitiveAttachments = <
 >(
 	implemented: ImplementedPrimitiveAttachments<d>
 ): d["attachments"] => {
-	return Object.assign(implemented, {
+	return defineProperties(implemented, {
 		get errorContext(): d["errorContext"] {
 			return {
 				code: this.kind,

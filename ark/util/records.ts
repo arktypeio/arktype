@@ -205,6 +205,16 @@ export const stringAndSymbolicEntriesOf = (
 	...Object.getOwnPropertySymbols(o).map((k) => [k, o[k]] as const)
 ]
 
+/** Like Object.assign, but it will preserve getters instead of evaluating them. */
+export const defineProperties = <base extends object, merged extends object>(
+	base: base,
+	merged: merged
+): merge<base, merged> =>
+	Object.defineProperties(
+		base,
+		Object.getOwnPropertyDescriptors(merged)
+	) as never
+
 export type Key = string | symbol
 
 export type invert<t extends Record<PropertyKey, PropertyKey>> = {

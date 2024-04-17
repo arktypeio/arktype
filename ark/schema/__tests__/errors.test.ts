@@ -1,6 +1,6 @@
 import { attest } from "@arktype/attest"
 import { configure, defaultConfig, schema } from "@arktype/schema"
-import { scope } from "arktype"
+import { schemaScope } from "../scope.js"
 
 describe("errors", () => {
 	it("shallow", () => {
@@ -63,7 +63,7 @@ describe("errors", () => {
 		)
 	})
 	it("can configure errors by kind at a scope level", () => {
-		const types = scope(
+		const types = schemaScope(
 			{ superSpecialString: "string" },
 			{
 				domain: {
@@ -80,7 +80,7 @@ describe("errors", () => {
 		)
 	})
 	it("can configure description by kind at scope level", () => {
-		const types = scope(
+		const types = schemaScope(
 			{ superSpecialNumber: "number" },
 			{
 				domain: {

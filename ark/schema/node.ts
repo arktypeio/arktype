@@ -151,6 +151,10 @@ export class RawNode<
 		return this.json
 	}
 
+	toString(): string {
+		return this.expression
+	}
+
 	equals(other: UnknownNode): boolean
 	equals(other: RawNode): boolean {
 		return this.typeId === other.typeId

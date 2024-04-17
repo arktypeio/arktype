@@ -3,6 +3,7 @@ import {
 	type JsonData,
 	type PartialRecord,
 	type array,
+	defineProperties,
 	entriesOf,
 	hasDomain,
 	includes,
@@ -281,10 +282,7 @@ export const parseNode = (
 	// 		Object.assign(this.referencesByName, node.contributesReferencesByName)
 	// 	}
 	// }
-	Object.defineProperties(
-		attachments,
-		Object.getOwnPropertyDescriptors(impl.construct(attachments as never))
-	)
+	defineProperties(attachments, impl.construct(attachments as never))
 
 	const node: RawNode =
 		includes(schemaKinds, kind) ?
