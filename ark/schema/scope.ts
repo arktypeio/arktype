@@ -215,6 +215,24 @@ export class RawSchemaScope<
 		this.exportedNames = Object.keys(this.aliases).filter(
 			(k) => k[0] !== "#"
 		) as never
+		// TODO: move this out of scope initialization
+		this.parseNode(
+			"union",
+			{
+				branches: [
+					"string",
+					"number",
+					"object",
+					"bigint",
+					"symbol",
+					{ unit: true },
+					{ unit: false },
+					{ unit: null },
+					{ unit: undefined }
+				]
+			},
+			{ reduceTo: this.parseNode("intersection", {}, { prereduced: true }) }
+		)
 	}
 
 	get raw(): this {
