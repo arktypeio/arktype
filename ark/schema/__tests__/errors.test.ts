@@ -1,5 +1,6 @@
 import { attest } from "@arktype/attest"
 import { configure, defaultConfig, schema } from "@arktype/schema"
+import { describe, it } from "vitest"
 import { schemaScope } from "../scope.js"
 
 describe("errors", () => {

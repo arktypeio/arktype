@@ -1,6 +1,7 @@
 import { attest } from "@arktype/attest"
 import { writeUnresolvableMessage } from "@arktype/schema"
 import { scope, type } from "arktype"
+import { describe, it } from "vitest"
 import { writeBadDefinitionTypeMessage } from "../parser/definition.js"
 
 describe("thunk", () => {

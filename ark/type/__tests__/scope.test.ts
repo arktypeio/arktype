@@ -4,6 +4,7 @@ import {
 	writeUnresolvableMessage
 } from "@arktype/schema"
 import { scope, type } from "arktype"
+import { describe, it } from "vitest"
 import { writeUnexpectedCharacterMessage } from "../parser/string/shift/operator/operator.js"
 
 describe("scope", () => {

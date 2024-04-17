@@ -1,6 +1,6 @@
 import { attest } from "@arktype/attest"
 import { scope, type } from "arktype"
-import { it } from "mocha"
+import { describe, it } from "vitest"
 
 describe("traverse", () => {
 	it("divisible", () => {

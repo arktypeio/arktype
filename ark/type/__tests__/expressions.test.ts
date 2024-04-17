@@ -1,6 +1,7 @@
 import { attest } from "@arktype/attest"
 import { type Ark, rawSchema, writeUnresolvableMessage } from "@arktype/schema"
 import { type Out, type Type, scope, type } from "arktype"
+import { describe, it } from "vitest"
 import { writeMissingRightOperandMessage } from "../parser/string/shift/operand/unenclosed.js"
 
 describe("tuple expressions", () => {
@@ -10,9 +11,102 @@ describe("tuple expressions", () => {
 	})
 	it("autocompletion", () => {
 		// @ts-expect-error
-		attest(() => type([""])).completions()
+		attest(() => type([""])).completions({
+			"": [
+				"string",
+				"number",
+				"bigint",
+				"boolean",
+				"symbol",
+				"undefined",
+				"object",
+				"null",
+				"integer",
+				"Array",
+				"Date",
+				"Error",
+				"Function",
+				"Map",
+				"RegExp",
+				"Set",
+				"WeakMap",
+				"WeakSet",
+				"Promise",
+				"true",
+				"false",
+				"any",
+				"never",
+				"unknown",
+				"parse",
+				"keyof",
+				"void",
+				"url",
+				"alpha",
+				"alphanumeric",
+				"lowercase",
+				"uppercase",
+				"creditCard",
+				"email",
+				"uuid",
+				"semver",
+				"Record",
+				"instanceof",
+				"===",
+				"...",
+				"this"
+			]
+		})
 		// @ts-expect-error
-		attest(() => type(["string", ""])).completions()
+		attest(() => type(["string", ""])).completions({
+			"": [
+				"string",
+				"number",
+				"bigint",
+				"boolean",
+				"symbol",
+				"undefined",
+				"object",
+				"null",
+				"integer",
+				"Array",
+				"Date",
+				"Error",
+				"Function",
+				"Map",
+				"RegExp",
+				"Set",
+				"WeakMap",
+				"WeakSet",
+				"Promise",
+				"true",
+				"false",
+				"?",
+				"any",
+				"never",
+				"unknown",
+				"parse",
+				"keyof",
+				"void",
+				"[]",
+				"url",
+				"alpha",
+				"alphanumeric",
+				"lowercase",
+				"uppercase",
+				"creditCard",
+				"email",
+				"uuid",
+				"semver",
+				"Record",
+				"|",
+				"&",
+				":",
+				"=>",
+				"@",
+				"...",
+				"this"
+			]
+		})
 	})
 	describe("errors", () => {
 		it("missing right operand", () => {

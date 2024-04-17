@@ -21,16 +21,10 @@
 		"./ark/schema/main.ts"
 	],
 	"typescript.tsserver.experimental.enableProjectDiagnostics": true,
-	// IF YOU UPDATE THE MOCHA CONFIG HERE, PLEASE ALSO UPDATE package.json/mocha AND ark/repo/mocha.jsonc
-	"mochaExplorer.nodeArgv": ["--import=tsx"],
-	// ignore attest since it requires type information
-	"mochaExplorer.ignore": ["ark/attest/**/*"],
-	"mochaExplorer.require": "ark/repo/mocha.fixtures.ts",
-	"mochaExplorer.timeout": 0,
-	"mochaExplorer.env": {
+	"vitest.rootConfig": "ark/repo/vitest.config.ts",
+	"vitest.nodeEnv": {
 		"ATTEST_skipTypes": "true"
 	},
-	"testExplorer.useNativeTesting": true,
 	"editor.unicodeHighlight.allowedCharacters": {
 		// Hair Space: used as a sentinel for error messages
 		" ": true

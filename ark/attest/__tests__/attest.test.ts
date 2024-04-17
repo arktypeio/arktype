@@ -1,5 +1,6 @@
 import { attest } from "@arktype/attest"
 import * as assert from "node:assert/strict"
+import { describe, it } from "vitest"
 
 const o = { ark: "type" }
 

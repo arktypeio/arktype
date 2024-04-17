@@ -6,6 +6,7 @@ import {
 } from "@arktype/schema"
 import { printable, reference } from "@arktype/util"
 import { scope, type } from "arktype"
+import { describe, it } from "vitest"
 import { writeInvalidSpreadTypeMessage } from "../parser/objectLiteral.js"
 
 describe("object literal", () => {

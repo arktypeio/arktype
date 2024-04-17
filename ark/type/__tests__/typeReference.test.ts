@@ -1,6 +1,7 @@
 import { attest } from "@arktype/attest"
 import { writeUnresolvableMessage } from "@arktype/schema"
 import { ambient, scope, type } from "arktype"
+import { describe, it } from "vitest"
 
 describe("type references", () => {
 	it("shallow type reference", () => {

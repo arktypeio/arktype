@@ -1,7 +1,7 @@
 import { attest } from "@arktype/attest"
 import { hasDomain } from "@arktype/util"
 import assert from "assert"
-import { describe, test } from "mocha"
+import { describe, it } from "vitest"
 
 type Obj = {
 	prop1: string
@@ -19,7 +19,7 @@ type Arks = {
 }
 
 describe("completions", () => {
-	test("quote types", () => {
+	it("quote types", () => {
 		// @ts-expect-error
 		attest({ ark: "" } as Ark).completions({ "": ["type"] })
 		// prettier-ignore
@@ -28,35 +28,35 @@ describe("completions", () => {
 		//@ts-expect-error
 		attest({ ark: "ty" } as Ark).completions({ ty: ["type"] })
 	})
-	test(".type.completions", () => {
+	it(".type.completions", () => {
 		//@ts-expect-error
 		attest({ ark: "s" } as Arks).type.completions({
 			s: ["string", "symbol", "semver"]
 		})
 	})
-	test("keys", () => {
+	it("keys", () => {
 		//@ts-expect-error
 		attest({ "": "data" } as Obj).completions({
 			"": ["extra", "prop1", "prop2"]
 		})
 	})
-	test("index access", () => {
+	it("index access", () => {
 		//@ts-expect-error
 		attest(() => obj["p"]).type.completions({
 			p: ["prop1", "prop2"]
 		})
 	})
-	test("duplicate string error", () => {
+	it("duplicate string error", () => {
 		assert.throws(
 			() => attest({ "": "" }).type.completions({}),
 			Error,
 			"multiple completion candidates"
 		)
 	})
-	test("empty", () => {
+	it("empty", () => {
 		attest("").completions({})
 	})
-	test("external package", () => {
+	it("external package", () => {
 		hasDomain({}, "object")
 		// @ts-expect-error
 		attest(() => hasDomain({}, "b")).completions

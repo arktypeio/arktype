@@ -1,4 +1,5 @@
 import { attest } from "@arktype/attest"
+import { describe, it } from "vitest"
 import type { array } from "../arrays.js"
 import type { conform } from "../generics.js"
 import type { overloadOf } from "../unionToTuple.js"

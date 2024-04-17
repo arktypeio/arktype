@@ -1,5 +1,6 @@
 import { attest } from "@arktype/attest"
 import { declare, type } from "arktype"
+import { describe, it } from "vitest"
 
 describe("declared", () => {
 	it("shallow", () => {

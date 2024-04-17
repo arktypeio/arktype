@@ -2,6 +2,7 @@ import { attest } from "@arktype/attest"
 import { writeUnresolvableMessage } from "@arktype/schema"
 import { ArkError, define, scope, type } from "arktype"
 import { AssertionError } from "node:assert"
+import { describe, it } from "vitest"
 
 describe("type methods", () => {
 	it("root discriminates", () => {

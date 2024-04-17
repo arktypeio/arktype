@@ -5,6 +5,7 @@ import {
 	writeUnresolvableMessage
 } from "@arktype/schema"
 import { type } from "arktype"
+import { describe, it } from "vitest"
 import { writeMissingRightOperandMessage } from "../parser/string/shift/operand/unenclosed.js"
 
 describe("intersection", () => {

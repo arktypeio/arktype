@@ -1,5 +1,6 @@
 import { attest } from "@arktype/attest"
 import { Trait, compose, implement } from "@arktype/util"
+import { describe, it } from "vitest"
 
 export class Describable extends Trait<{
 	abstractMethods: {

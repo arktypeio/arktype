@@ -1,5 +1,6 @@
 import { attest } from "@arktype/attest"
 import { scope, type type } from "arktype"
+import { describe, it } from "vitest"
 
 class TimeStub {
 	declare readonly isoString: string

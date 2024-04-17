@@ -1,5 +1,6 @@
 import { attest } from "@arktype/attest"
 import { scope, type } from "arktype"
+import { describe, it } from "vitest"
 
 describe("config traversal", () => {
 	it("tuple expression", () => {

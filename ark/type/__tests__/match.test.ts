@@ -1,5 +1,6 @@
 import { attest } from "@arktype/attest"
 import { match, scope } from "arktype"
+import { describe, it } from "vitest"
 
 describe("match", () => {
 	it("cases only", () => {

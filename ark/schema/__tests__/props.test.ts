@@ -1,5 +1,6 @@
 import { attest } from "@arktype/attest"
 import { schema } from "@arktype/schema"
+import { describe, it } from "vitest"
 
 describe("props", () => {
 	it("normalizes prop order", () => {

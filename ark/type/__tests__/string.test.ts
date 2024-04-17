@@ -1,6 +1,7 @@
 import { attest } from "@arktype/attest"
 import { writeUnresolvableMessage } from "@arktype/schema"
 import { type } from "arktype"
+import { describe, it } from "vitest"
 import { writeUnterminatedEnclosedMessage } from "../parser/string/shift/operand/enclosed.js"
 import { writeExpressionExpectedMessage } from "../parser/string/shift/operand/unenclosed.js"
 

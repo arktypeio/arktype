@@ -1,6 +1,7 @@
 import { attest } from "@arktype/attest"
 import { schema } from "@arktype/schema"
 import { wellFormedNumberMatcher } from "@arktype/util"
+import { describe, it } from "vitest"
 
 describe("morphs", () => {
 	it("in/out", () => {

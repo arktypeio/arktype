@@ -1,5 +1,6 @@
 import { attest } from "@arktype/attest"
 import { flatMorph } from "@arktype/util"
+import { describe, it } from "vitest"
 
 describe("flatMorph", () => {
 	it("object", () => {

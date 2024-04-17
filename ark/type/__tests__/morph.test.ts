@@ -5,6 +5,7 @@ import {
 	writeUndiscriminableMorphUnionMessage
 } from "@arktype/schema"
 import { type Type, scope, type } from "arktype"
+import { describe, it } from "vitest"
 
 describe("morph", () => {
 	it("base", () => {

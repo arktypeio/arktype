@@ -1,5 +1,6 @@
 import { attest } from "@arktype/attest"
 import { scope } from "arktype"
+import { describe, it } from "vitest"
 
 const getCyclicScope = () =>
 	scope({

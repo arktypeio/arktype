@@ -1,5 +1,7 @@
 import { attest, getPrimaryTsVersionUnderTest } from "@arktype/attest"
 import { type } from "arktype"
+import { it } from "node:test"
+import { describe } from "vitest"
 
 // @arktype/attest assertions can be made from any unit test framework with a global setup/teardown
 describe("attest features", () => {

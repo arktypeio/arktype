@@ -1,6 +1,7 @@
 import { attest } from "@arktype/attest"
 import { reference } from "@arktype/util"
 import { type } from "arktype"
+import { describe, it } from "vitest"
 
 describe("literal", () => {
 	describe("tuple expression", () => {
