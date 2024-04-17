@@ -1,6 +1,5 @@
-import type { RawSchema, writeIndivisibleMessage } from "@arktype/schema"
+import type { Schema, writeIndivisibleMessage } from "@arktype/schema"
 import type { ErrorMessage } from "@arktype/util"
-import type { Schema } from "../../../schema/schema.js"
 import type { inferAstIn } from "./infer.js"
 import type { validateAst } from "./validate.js"
 

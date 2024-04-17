@@ -206,10 +206,10 @@ export class RawSchemaScope<
 	) {
 		this.config = config ?? {}
 		this.resolvedConfig = resolveConfig(config)
-		if ($ark.ambient) {
+		if ($ark.ambientSchemaScope) {
 			// ensure exportedResolutions is populated
-			$ark.ambient.export()
-			this.resolutions = { ...$ark.ambient.raw.resolutions! }
+			$ark.ambientSchemaScope.export()
+			this.resolutions = { ...$ark.ambientSchemaScope.raw.resolutions! }
 		} else {
 			this.resolutions = {}
 		}
@@ -477,6 +477,12 @@ export interface SchemaScope<$ = any> {
 	export<names extends exportedNameOf<$>[]>(
 		...names: names
 	): SchemaModule<show<destructuredExportContext<$, names>>>
+}
+
+declare global {
+	export interface ArkRegistry {
+		ambientSchemaScope: SchemaScope<ambient>
+	}
 }
 
 export const SchemaScope: new <$ = any>(

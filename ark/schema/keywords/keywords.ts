@@ -29,6 +29,8 @@ export const ambientSchemaScope: SchemaScope<Ark> = schemaScope({
 	// TODO: remove cast
 }) as never
 
+$ark.ambientSchemaScope = ambientSchemaScope
+
 export const keywordNodes: SchemaModule<Ark> = ambientSchemaScope.export()
 
 // this type is redundant with the inferred definition of ark but allow types
