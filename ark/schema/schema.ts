@@ -71,18 +71,19 @@ export class RawSchema<
 		return this.#keyofCache as never
 	}
 
-	intersect(r: UnknownSchema): RawSchema | Disjoint {
-		return this.intersectInternal(r) as never
+	intersect(r: unknown): RawSchema | Disjoint {
+		const rNode = this.$.parseRoot(r)
+		return this.intersectInternal(rNode) as never
 	}
 
-	intersectSatisfiable(r: UnknownSchema): RawSchema {
+	and(r: unknown): RawSchema {
 		const result = this.intersect(r)
 		return result instanceof Disjoint ? result.throw() : (result as never)
 	}
 
-	union(r: UnknownSchema): RawSchema
-	union(r: RawSchema): RawSchema {
-		const branches = [...this.branches, ...(r.branches as any)]
+	or(r: unknown): RawSchema {
+		const rNode = this.$.parseRoot(r)
+		const branches = [...this.branches, ...(rNode.branches as any)]
 		return this.$.schema(branches) as never
 	}
 
@@ -97,15 +98,17 @@ export class RawSchema<
 	// 	return this
 	// }
 
-	extract(other: UnknownSchema): RawSchema {
+	extract(r: unknown): RawSchema {
+		const rNode = this.$.parseRoot(r)
 		return this.$.schema(
-			this.branches.filter((branch) => branch.extends(other))
+			this.branches.filter((branch) => branch.extends(rNode))
 		) as never
 	}
 
-	exclude(other: UnknownSchema): RawSchema {
+	exclude(r: UnknownSchema): RawSchema {
+		const rNode = this.$.parseRoot(r)
 		return this.$.schema(
-			this.branches.filter((branch) => !branch.extends(other))
+			this.branches.filter((branch) => !branch.extends(rNode))
 		) as never
 	}
 
@@ -119,8 +122,8 @@ export class RawSchema<
 		) as never
 	}
 
-	extends(other: UnknownSchema): boolean {
-		const intersection = this.intersect(other as never)
+	extends(r: UnknownSchema): boolean {
+		const intersection = this.intersect(r as never)
 		return (
 			!(intersection instanceof Disjoint) && this.equals(intersection as never)
 		)
@@ -167,7 +170,7 @@ export class RawSchema<
 			)
 		}
 
-		return this.intersectSatisfiable(
+		return this.and(
 			// TODO: not an intersection
 			this.$.node("intersection", {
 				[kind]: constraint
@@ -207,11 +210,11 @@ export interface Schema<
 		r: r
 	): Schema<inferIntersection<this["infer"], r["infer"]>> | Disjoint
 
-	intersectSatisfiable<r extends Schema>(
+	and<r extends Schema>(
 		r: r
 	): Schema<inferIntersection<this["infer"], r["infer"]>>
 
-	union<r extends Schema>(r: r): Schema<t | r["infer"]>
+	or<r extends Schema>(r: r): Schema<t | r["infer"]>
 
 	constrain<
 		kind extends PrimitiveConstraintKind,

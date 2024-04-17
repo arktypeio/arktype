@@ -1,4 +1,4 @@
-import type { RawSchema, LimitLiteral } from "@arktype/schema"
+import type { LimitLiteral, RawSchema } from "@arktype/schema"
 import {
 	isKeyOf,
 	type requireKeys,
@@ -145,11 +145,10 @@ export class DynamicState {
 		this.assertRangeUnset()
 		this.applyPrefixes()
 		const root = this.root!
-		this.branches.intersection =
-			this.branches.intersection?.intersectSatisfiable(root) ?? root
+		this.branches.intersection = this.branches.intersection?.and(root) ?? root
 		if (token === "|") {
 			this.branches.union =
-				this.branches.union?.union(this.branches.intersection) ??
+				this.branches.union?.or(this.branches.intersection) ??
 				this.branches.intersection
 			this.branches.intersection = null
 		}

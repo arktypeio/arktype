@@ -73,7 +73,7 @@ describe("parse", () => {
 	it("overlapping", () => {
 		// @ts-expect-error
 		attest(() => type("(number|string)%10")).throwsAndHasTypeError(
-			writeIndivisibleMessage(keywordNodes.number.union(keywordNodes.string))
+			writeIndivisibleMessage(keywordNodes.number.or(keywordNodes.string))
 		)
 	})
 })

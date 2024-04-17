@@ -80,11 +80,15 @@ export interface Type<
 	out t = unknown,
 	$ = any
 > extends Schema<t, $> {
-	and<def>(
+	and: (<def>(
 		def: validateTypeRoot<def, $>
-	): Type<inferIntersection<t, inferTypeRoot<def, $>>, $>
+	) => Type<inferIntersection<t, inferTypeRoot<def, $>>, $>) &
+		Schema<t, $>["and"]
 
-	or<def>(def: validateTypeRoot<def, $>): Type<t | inferTypeRoot<def, $>, $>
+	or: (<def>(
+		def: validateTypeRoot<def, $>
+	) => Type<t | inferTypeRoot<def, $>, $>) &
+		Schema<t, $>["or"]
 
 	get in(): Type<distillConstrainableIn<t>, $>
 	get out(): Type<distillConstrainableOut<t>, $>

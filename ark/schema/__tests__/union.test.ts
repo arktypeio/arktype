@@ -18,7 +18,7 @@ describe("union", () => {
 			domain: "number",
 			divisor: 5
 		})
-		const result = l.intersectSatisfiable(r)
+		const result = l.and(r)
 		attest(result.json).snap([
 			{ domain: "number", divisor: 10 },
 			{ domain: "number", divisor: 15 }
@@ -66,7 +66,7 @@ describe("union", () => {
 	it("reducible intersection with union", () => {
 		const l = validation.email
 		const r = schema(["string", Array])
-		const result = l.intersectSatisfiable(r)
+		const result = l.and(r)
 		attest(result.json).equals(l.json)
 	})
 })

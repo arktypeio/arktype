@@ -346,7 +346,7 @@ export const intersectionImplementation =
 					return (
 						this.basis ?
 							this.props ?
-								this.basis.rawKeyOf().union(this.props.rawKeyOf())
+								this.basis.rawKeyOf().or(this.props.rawKeyOf())
 							:	this.basis.rawKeyOf()
 						:	this.props?.rawKeyOf() ?? self.$.keywords.never.raw
 					)

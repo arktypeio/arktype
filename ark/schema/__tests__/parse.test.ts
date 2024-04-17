@@ -18,7 +18,7 @@ it("multiple constraints", () => {
 		domain: "number",
 		divisor: 5
 	})
-	const result = l.intersectSatisfiable(r)
+	const result = l.and(r)
 	attest<Schema<number>>(result)
 	attest(result.json).snap({
 		domain: "number",

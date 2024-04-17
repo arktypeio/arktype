@@ -229,7 +229,7 @@ export const unionImplementation = implementNode<UnionDeclaration>({
 			},
 			rawKeyOf: (): RawSchema => {
 				return branches.reduce(
-					(result, branch) => result.intersectSatisfiable(branch.rawKeyOf()),
+					(result, branch) => result.and(branch.rawKeyOf()),
 					self.$.keywords.unknown.raw
 				)
 			},

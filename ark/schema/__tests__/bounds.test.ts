@@ -130,8 +130,8 @@ entriesOf(boundKindPairsByLower).forEach(([min, max]) => {
 						unit: new Date(6)
 					})
 
-			attest(l.intersectSatisfiable(r).json).equals(expected.json)
-			attest(r.intersectSatisfiable(l).json).equals(expected.json)
+			attest(l.and(r).json).equals(expected.json)
+			attest(r.and(l).json).equals(expected.json)
 		})
 
 		it("non-overlapping exclusive", () => {
@@ -171,8 +171,8 @@ entriesOf(boundKindPairsByLower).forEach(([min, max]) => {
 				...basis,
 				[min]: 4
 			} as IntersectionDef)
-			attest(lesser.intersectSatisfiable(greater).json).equals(greater.json)
-			attest(greater.intersectSatisfiable(lesser).json).equals(greater.json)
+			attest(lesser.and(greater).json).equals(greater.json)
+			attest(greater.and(lesser).json).equals(greater.json)
 		})
 
 		it("lesser max is stricter", () => {
@@ -184,8 +184,8 @@ entriesOf(boundKindPairsByLower).forEach(([min, max]) => {
 				...basis,
 				[max]: { rule: 4, exclusive: true }
 			} as IntersectionDef)
-			attest(lesser.intersectSatisfiable(greater).json).equals(lesser.json)
-			attest(greater.intersectSatisfiable(lesser).json).equals(lesser.json)
+			attest(lesser.and(greater).json).equals(lesser.json)
+			attest(greater.and(lesser).json).equals(lesser.json)
 		})
 
 		it("exclusive wins if limits equal", () => {
@@ -197,12 +197,8 @@ entriesOf(boundKindPairsByLower).forEach(([min, max]) => {
 				...basis,
 				[max]: 3
 			} as IntersectionDef)
-			attest(exclusive.intersectSatisfiable(inclusive).json).equals(
-				exclusive.json
-			)
-			attest(inclusive.intersectSatisfiable(exclusive).json).equals(
-				exclusive.json
-			)
+			attest(exclusive.and(inclusive).json).equals(exclusive.json)
+			attest(inclusive.and(exclusive).json).equals(exclusive.json)
 		})
 	})
 })
