@@ -1,11 +1,11 @@
-import { defineConfig, mergeConfig } from "vitest/config"
+import { defaultExclude, defineConfig, mergeConfig } from "vitest/config"
 import baseConfig from "./vitest.config.js"
 
 export default mergeConfig(
 	baseConfig,
 	defineConfig({
 		test: {
-			exclude: ["**/attest/**"]
+			exclude: [...defaultExclude, "**/attest/**"]
 		}
 	})
 )
