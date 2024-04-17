@@ -113,7 +113,7 @@ export const parseNode = (
 	if (kind === "union" && hasDomain(def, "object")) {
 		const branches = schemaBranchesOf(def)
 		if (branches?.length === 1) {
-			return parseNode(schemaKindOf(def), branches as never, $, opts)
+			return parseNode(schemaKindOf(branches[0]), branches[0], $, opts)
 		}
 	}
 	const impl = nodeImplementationsByKind[kind]

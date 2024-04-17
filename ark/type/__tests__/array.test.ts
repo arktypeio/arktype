@@ -49,24 +49,6 @@ describe("non-tuple", () => {
 		attest(t.json).equals(type("string[]").json)
 	})
 
-	it("optional tuple", () => {
-		const t = type(["string", "?"])
-		attest<[string?]>(t.infer)
-		attest(t([]).errors).equals(undefined)
-		attest(t(["foo"]).errors).equals(undefined)
-		attest(t([5]).errors?.summary).snap(
-			"value at [0] must be a string (was number)"
-		)
-		attest(t(["foo", "bar"]).errors?.summary).snap(
-			"must be at most length 1 (was 2)"
-		)
-	})
-
-	it("nested optional tuple", () => {
-		const t = type([["string", "?"], "string", "?"])
-		attest<[[string?], string?]>(t.infer)
-	})
-
 	it("root expression", () => {
 		const t = type("string", "[]")
 		attest<string[]>(t.infer)
@@ -90,6 +72,7 @@ describe("non-tuple", () => {
 		)
 	})
 })
+
 describe("non-variadic tuple", () => {
 	it("shallow", () => {
 		const t = type(["string", "number"])
@@ -150,6 +133,24 @@ value at [1] must be a number (was false)`)
 		attest(t(invalid).errors?.summary).snap(
 			"value at [1][0].b[0] must be null (was undefined)"
 		)
+	})
+
+	it("optional tuple", () => {
+		const t = type(["string", "?"])
+		attest<[string?]>(t.infer)
+		attest(t([]).errors).equals(undefined)
+		attest(t(["foo"]).errors).equals(undefined)
+		attest(t([5]).errors?.summary).snap(
+			"value at [0] must be a string (was number)"
+		)
+		attest(t(["foo", "bar"]).errors?.summary).snap(
+			"must be at most length 1 (was 2)"
+		)
+	})
+
+	it("nested optional tuple", () => {
+		const t = type([["string", "?"], "string", "?"])
+		attest<[[string?], string?]>(t.infer)
 	})
 })
 
