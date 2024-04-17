@@ -5,7 +5,8 @@ export default mergeConfig(
 	baseConfig,
 	defineConfig({
 		test: {
-			exclude: [...defaultExclude, "**/attest/**"]
+			exclude: [...defaultExclude, "**/attest/**"],
+			pool: "forks"
 		}
 	})
 )

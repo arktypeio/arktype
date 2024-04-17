@@ -174,6 +174,17 @@ describe("variadic tuple", () => {
 		attest(t.json).equals(expected.json)
 	})
 
+	it("distributes spread union tuples", () => {
+		const counting = ["2", "3", "4"] as const
+		const fibbing = ["1", "2", "3", "5", "8"] as const
+		const countOrFib = type(counting, "|", fibbing)
+		attest<[2, 3, 4] | [1, 2, 3, 5, 8]>(countOrFib.infer)
+		const t = type(["1", "...", countOrFib])
+		attest<[1, 2, 3, 4] | [1, 1, 2, 3, 5, 8]>(t.infer)
+		const expected = type(["1", ...counting]).or(["1", ...fibbing])
+		attest(t.json).equals(expected.json)
+	})
+
 	it("allows array keyword", () => {
 		const types = scope({
 			myArrayKeyword: "boolean[]",

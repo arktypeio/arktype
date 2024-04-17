@@ -195,11 +195,9 @@ export type validateTuple<def extends array, $, args> =
 		]
 	:	validateTupleLiteral<def, $, args>
 
-export type validateTupleLiteral<def extends array, $, args> = parseSequence<
-	def,
-	$,
-	args
->["validated"]
+export type validateTupleLiteral<def extends array, $, args> = Readonly<
+	parseSequence<def, $, args>["validated"]
+>
 
 type inferTupleLiteral<def extends array, $, args> = parseSequence<
 	def,
