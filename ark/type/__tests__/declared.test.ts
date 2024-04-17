@@ -1,6 +1,5 @@
 import { attest } from "@arktype/attest"
 import { declare, type } from "arktype"
-import { it } from "vitest"
 
 it("shallow", () => {
 	const shallow = declare<number>().type("number")

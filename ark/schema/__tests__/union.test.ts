@@ -1,6 +1,5 @@
 import { attest } from "@arktype/attest"
 import { schema, validation } from "@arktype/schema"
-import { describe, it } from "vitest"
 
 describe("union", () => {
 	it("union", () => {

@@ -1,7 +1,6 @@
 import { attest } from "@arktype/attest"
 import { writeUnresolvableMessage } from "@arktype/schema"
 import { ambient, scope, type } from "arktype"
-import { it } from "vitest"
 
 it("shallow type reference", () => {
 	const t = type(type("boolean"))

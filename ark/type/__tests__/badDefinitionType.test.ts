@@ -1,6 +1,5 @@
 import { attest } from "@arktype/attest"
 import { type } from "arktype"
-import { it } from "vitest"
 import { writeBadDefinitionTypeMessage } from "../parser/definition.js"
 
 it("undefined", () => {

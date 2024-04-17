@@ -61,7 +61,19 @@
 		"vite-tsconfig-paths": "4.3.2",
 		"typescript-52": "npm:typescript@5.2",
 		"typescript-53": "npm:typescript@5.3",
-		"typescript-55": "npm:typescript@next"
+		"typescript-55": "npm:typescript@next",
+		"mocha": "10.4.0",
+		"@types/mocha": "10.0.6"
+	},
+	"mocha": {
+		"spec": [
+			"**/__tests__/**/*.test.*"
+		],
+		"ignore": "**/node_modules/**/*",
+		"node-option": [
+			"import=tsx"
+		],
+		"require": "./ark/repo/mocha.globalSetup.ts"
 	},
 	"c8": {
 		"checkCoverage": true,

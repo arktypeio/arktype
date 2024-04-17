@@ -224,7 +224,7 @@ export class RawScope<
 	match: MatchParser<$> = createMatchParser(this as never) as never
 
 	declare(): { type: RawScope["type"] } {
-		return { type: this.type }
+		return { type: this.type.bind(this) }
 	}
 
 	define(def: unknown): unknown {

@@ -1,7 +1,6 @@
 import { attest } from "@arktype/attest"
 import { hasDomain } from "@arktype/util"
 import assert from "assert"
-import { it } from "vitest"
 
 type Obj = {
 	prop1: string

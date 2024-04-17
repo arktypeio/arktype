@@ -1,6 +1,5 @@
 import { attest } from "@arktype/attest"
 import { type Schema, schema } from "@arktype/schema"
-import { it } from "vitest"
 
 it("single constraint", () => {
 	const t = schema({ domain: "string", regex: ".*" })

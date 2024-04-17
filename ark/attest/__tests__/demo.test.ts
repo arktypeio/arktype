@@ -1,5 +1,4 @@
 import { attest } from "@arktype/attest"
-import { describe, it } from "vitest"
 
 const o = { ark: "type" } as const
 const shouldThrow = (a: false) => {

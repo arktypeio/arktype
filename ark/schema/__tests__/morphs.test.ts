@@ -1,7 +1,6 @@
 import { attest } from "@arktype/attest"
 import { schema } from "@arktype/schema"
 import { wellFormedNumberMatcher } from "@arktype/util"
-import { it } from "vitest"
 
 it("in/out", () => {
 	const parseNumber = schema({

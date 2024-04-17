@@ -1,6 +1,5 @@
 import { attest } from "@arktype/attest"
 import { Hkt, type array, type conform, type show } from "@arktype/util"
-import { describe, it } from "vitest"
 
 describe("hkt", () => {
 	interface AppendKind extends Hkt.Kind {

@@ -1,7 +1,6 @@
 import { attest } from "@arktype/attest"
 import { schema } from "@arktype/schema"
 import { entriesOf, flatMorph } from "@arktype/util"
-import { describe, it } from "vitest"
 import { boundKindPairsByLower } from "../constraints/refinements/range.js"
 import type { IntersectionDef } from "../schemas/intersection.js"
 import { Disjoint } from "../shared/disjoint.js"

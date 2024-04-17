@@ -1,6 +1,5 @@
 import { attest } from "@arktype/attest"
 import { deepClone } from "@arktype/util"
-import { describe, it } from "vitest"
 
 describe("deepClone", () => {
 	it("should return a deep clone of a simple object", () => {

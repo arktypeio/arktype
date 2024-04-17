@@ -1,6 +1,5 @@
 import { attest } from "@arktype/attest"
 import { type } from "arktype"
-import { describe, it } from "vitest"
 
 describe("intersection", () => {
 	it("distinct strings", () => {

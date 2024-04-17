@@ -21,10 +21,20 @@
 		"./ark/schema/main.ts"
 	],
 	"typescript.tsserver.experimental.enableProjectDiagnostics": true,
+
 	"vitest.rootConfig": "ark/repo/vitest.extension.config.ts",
 	"vitest.nodeEnv": {
 		"ATTEST_skipTypes": "true"
 	},
+	"mochaExplorer.nodeArgv": ["--import=tsx"],
+	// ignore attest since it requires type information
+	"mochaExplorer.ignore": ["ark/attest/**/*"],
+	"mochaExplorer.require": "ark/repo/mocha.globalSetup.ts",
+	"mochaExplorer.timeout": 0,
+	"mochaExplorer.env": {
+		"ATTEST_skipTypes": "true"
+	},
+	"testExplorer.useNativeTesting": true,
 	"editor.unicodeHighlight.allowedCharacters": {
 		// Hair Space: used as a sentinel for error messages
 		" ": true

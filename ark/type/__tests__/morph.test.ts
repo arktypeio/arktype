@@ -5,7 +5,6 @@ import {
 	writeUndiscriminableMorphUnionMessage
 } from "@arktype/schema"
 import { type Type, scope, type } from "arktype"
-import { it } from "vitest"
 
 it("base", () => {
 	const t = type("number").morph((data) => `${data}`)

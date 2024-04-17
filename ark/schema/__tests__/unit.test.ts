@@ -1,7 +1,6 @@
 import { attest } from "@arktype/attest"
 import { assertNodeKind, schema } from "@arktype/schema"
 import { reference } from "@arktype/util"
-import { describe, it } from "vitest"
 
 describe("unit", () => {
 	it("treats equivalent dates as equal", () => {

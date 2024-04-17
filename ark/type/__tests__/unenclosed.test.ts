@@ -2,7 +2,6 @@ import { attest } from "@arktype/attest"
 import { writeUnresolvableMessage } from "@arktype/schema"
 import { writeMalformedNumericLiteralMessage } from "@arktype/util"
 import { scope, type } from "arktype"
-import { describe, it } from "vitest"
 
 describe("identifier", () => {
 	it("keyword", () => {

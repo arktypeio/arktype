@@ -1,6 +1,5 @@
 import { attest } from "@arktype/attest"
 import { type } from "arktype"
-import { it } from "vitest"
 import { writeUnterminatedEnclosedMessage } from "../parser/string/shift/operand/enclosed.js"
 
 it("with spaces", () => {

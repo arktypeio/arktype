@@ -5,6 +5,8 @@ export default mergeConfig(
 	baseConfig,
 	defineConfig({
 		test: {
+			// temporarily disabling Vitest Explorer while some crashes are resolved
+			include: [],
 			exclude: [...defaultExclude, "**/attest/**"],
 			pool: "forks"
 		}

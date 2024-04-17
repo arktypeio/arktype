@@ -2,7 +2,6 @@ import { attest } from "@arktype/attest"
 import { fileName } from "@arktype/fs"
 import * as assert from "node:assert/strict"
 import { basename } from "node:path"
-import { it } from "vitest"
 
 const n = 5
 const o = { re: "do" }

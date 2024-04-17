@@ -2,7 +2,6 @@ import { attest } from "@arktype/attest"
 import { rawSchema, writeUnboundableMessage } from "@arktype/schema"
 import { writeMalformedNumericLiteralMessage } from "@arktype/util"
 import { type } from "arktype"
-import { describe, it } from "vitest"
 import { writeDoubleRightBoundMessage } from "../parser/semantic/bounds.js"
 import {
 	writeMultipleLeftBoundsMessage,

@@ -1,6 +1,5 @@
 import { attest } from "@arktype/attest"
 import { match, scope } from "arktype"
-import { describe, it } from "vitest"
 
 it("cases only", () => {
 	const sizeOf = match({

@@ -6,6 +6,7 @@ export default defineConfig({
 	plugins: [tsconfigPaths()],
 	test: {
 		root: fromHere("..", ".."),
+		globals: true,
 		globalSetup: fromHere("vitest.globalSetup.ts"),
 		isolate: false,
 		fileParallelism: false,

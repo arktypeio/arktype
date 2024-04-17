@@ -6,7 +6,6 @@ import {
 } from "@arktype/schema"
 import { lazily } from "@arktype/util"
 import { type Module, type Scope, scope, type } from "arktype"
-import { it } from "vitest"
 
 const $ = lazily(() =>
 	scope({

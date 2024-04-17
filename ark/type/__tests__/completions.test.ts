@@ -1,6 +1,5 @@
 import { attest } from "@arktype/attest"
 import { scope, type } from "arktype"
-import { it } from "vitest"
 
 it("completes standalone keyword", () => {
 	// @ts-expect-error

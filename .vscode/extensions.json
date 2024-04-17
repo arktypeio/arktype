@@ -2,7 +2,8 @@
 	"recommendations": [
 		"esbenp.prettier-vscode",
 		"dbaeumer.vscode-eslint",
-		"vitest.explorer",
+		// Run/debug tests inline via VSCode's Test Explorer
+		"hbenl.vscode-mocha-test-adapter",
 		// Syntax highlighting for strings in ArkType definitions
 		"arktypeio.arkdark",
 		// Playground-like version dropdown for TypeScript versions

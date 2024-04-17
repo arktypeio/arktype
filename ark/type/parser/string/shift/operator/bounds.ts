@@ -177,7 +177,7 @@ export const parseRightBound = (
 		previousScannerIndex,
 		s.scanner.location
 	)
-	s.setRoot(previousRoot)
+	s.root = previousRoot
 	if (
 		!limitNode.hasKind("unit") ||
 		(typeof limitNode.unit !== "number" && !(limitNode.unit instanceof Date))

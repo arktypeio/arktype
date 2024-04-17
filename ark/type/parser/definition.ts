@@ -1,4 +1,4 @@
-import { type RawSchema, hasArkKind, node, type string } from "@arktype/schema"
+import { type RawSchema, hasArkKind, type string } from "@arktype/schema"
 import {
 	type Dict,
 	type ErrorMessage,
@@ -42,7 +42,7 @@ export const parseObject = (def: object, ctx: ParseContext): RawSchema => {
 		case "Array":
 			return parseTuple(def as array, ctx)
 		case "RegExp":
-			return node(
+			return ctx.$.node(
 				"intersection",
 				{
 					domain: "string",

@@ -1,6 +1,5 @@
 import { attest } from "@arktype/attest"
 import { groupBy } from "@arktype/util"
-import { describe, it } from "vitest"
 
 type PinkLady = { group: "apple"; kind: "Pink Lady" }
 type Gala = { group: "apple"; kind: "Gala" }

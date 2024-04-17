@@ -1,7 +1,6 @@
 import { attest } from "@arktype/attest"
 import { rawSchema } from "@arktype/schema"
 import { type } from "arktype"
-import { describe, it } from "vitest"
 
 describe("jsObjects", () => {
 	it("Function", () => {

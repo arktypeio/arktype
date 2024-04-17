@@ -1,7 +1,6 @@
 import { attest } from "@arktype/attest"
 import { ArkError, type } from "arktype"
 import { AssertionError } from "node:assert"
-import { it } from "vitest"
 
 it("root discriminates", () => {
 	const t = type("string")

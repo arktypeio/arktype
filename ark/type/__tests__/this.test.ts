@@ -1,7 +1,6 @@
 import { attest } from "@arktype/attest"
 import { writeUnresolvableMessage } from "@arktype/schema"
 import { scope, type } from "arktype"
-import { it } from "vitest"
 
 it("resolves from type", () => {
 	const disappointingGift = type({

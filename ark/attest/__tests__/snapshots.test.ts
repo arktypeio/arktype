@@ -1,6 +1,5 @@
 import { fromHere, readFile } from "@arktype/fs"
 import { equal } from "node:assert/strict"
-import { it } from "vitest"
 import { runThenGetContents } from "./utils.js"
 
 const benchTemplate = fromHere("benchTemplate.ts")

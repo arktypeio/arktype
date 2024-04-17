@@ -1,6 +1,5 @@
 import { attest } from "@arktype/attest"
 import { type } from "arktype"
-import { it } from "vitest"
 import { writeInvalidDateMessage } from "../parser/string/shift/operand/date.js"
 
 it("base", () => {

@@ -22,7 +22,8 @@
 			"@arktype/fs": ["./ark/fs/main.ts"],
 			"@arktype/attest": ["./ark/attest/main.ts"],
 			"@arktype/schema": ["./ark/schema/main.ts"]
-		}
+		},
+		"types": ["mocha"]
 	},
 	"exclude": ["**/out", "node_modules", "./ark/docs"]
 }

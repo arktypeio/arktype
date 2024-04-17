@@ -61,6 +61,9 @@ export class DynamicState {
 	hasRoot(): this is DynamicStateWithRoot {
 		return this.root !== undefined
 	}
+	setRoot(root: RawSchema): void {
+		this.root = root
+	}
 
 	unsetRoot(): this["root"] {
 		const value = this.root
@@ -70,10 +73,6 @@ export class DynamicState {
 
 	constrainRoot(...args: Parameters<RawSchema<any>["constrain"]>): void {
 		this.root = this.root!.constrain(args[0], args[1])
-	}
-
-	setRoot(root: RawSchema): void {
-		this.root = root
 	}
 
 	finalize(finalizer: Scanner.FinalizingLookahead): void {

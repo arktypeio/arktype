@@ -1,6 +1,5 @@
 import { attest } from "@arktype/attest"
 import type { intersectArrays, intersectParameters } from "@arktype/util"
-import { describe, it } from "vitest"
 
 describe("intersectParameters", () => {
 	it("both empty", () => {

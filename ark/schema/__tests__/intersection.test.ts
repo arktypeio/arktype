@@ -1,6 +1,5 @@
 import { attest } from "@arktype/attest"
 import { schema } from "@arktype/schema"
-import { it } from "vitest"
 
 it("normalizes refinement order", () => {
 	const l = schema({

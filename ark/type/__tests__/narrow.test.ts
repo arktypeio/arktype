@@ -2,7 +2,6 @@ import { attest } from "@arktype/attest"
 import type { Narrowed, Out, of, string } from "@arktype/schema"
 import { type equals, reference } from "@arktype/util"
 import { type Type, type } from "arktype"
-import { describe, it } from "vitest"
 
 describe("narrow", () => {
 	it("implicit problem", () => {
