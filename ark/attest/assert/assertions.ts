@@ -1,6 +1,12 @@
-import { printable, throwInternalError } from "@arktype/util"
+import {
+	ReadonlyArray,
+	isArray,
+	printable,
+	throwInternalError
+} from "@arktype/util"
 import { AssertionError } from "node:assert"
 import * as assert from "node:assert/strict"
+import type { VersionedTypeAssertion } from "../cache/getCachedAssertions.js"
 import type { TypeAssertionData } from "../cache/writeAssertionCache.js"
 import type { AssertionContext } from "./attest.js"
 
@@ -52,7 +58,7 @@ export const versionableAssertion =
 			for (const [version, data] of ctx.typeAssertionEntries!) {
 				let errorMessage = ""
 				try {
-					const mapped = actual.fn(data, ctx)
+					const mapped = actual.fn(data as TypeAssertionData, ctx)
 					if (mapped !== null) {
 						fn(
 							"expected" in mapped ? mapped.expected : expected,
@@ -151,7 +157,7 @@ export type AssertedFnCallResult = {
 export const getThrownMessage = (
 	result: AssertedFnCallResult,
 	ctx: AssertionContext
-): string | undefined => {
+) => {
 	if (!("threw" in result)) {
 		throwAssertionError({ message: "Function didn't throw.", ctx })
 	}

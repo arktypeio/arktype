@@ -8,8 +8,7 @@ import {
 	writeJson,
 	type SourcePosition
 } from "@arktype/fs"
-import { randomUUID } from "node:crypto"
-import { existsSync, readdirSync, rmSync } from "node:fs"
+import { existsSync } from "node:fs"
 import { basename, dirname, isAbsolute, join } from "node:path"
 import type ts from "typescript"
 import { getConfig } from "../config.js"
@@ -19,7 +18,7 @@ import {
 	getAbsolutePosition,
 	nearestCallExpressionChild
 } from "./ts.js"
-import { getExpressionsByName } from "./writeAssertionCache.js"
+import { getCallExpressionsByName } from "./utils.js"
 
 export type SnapshotArgs = {
 	position: SourcePosition
@@ -31,7 +30,7 @@ export type SnapshotArgs = {
 export const resolveSnapshotPath = (
 	testFile: string,
 	customPath: string | undefined
-): string => {
+) => {
 	if (customPath && isAbsolute(customPath)) {
 		return customPath
 	}
@@ -42,7 +41,7 @@ export const getSnapshotByName = (
 	file: string,
 	name: string,
 	customPath: string | undefined
-): object => {
+) => {
 	const snapshotPath = resolveSnapshotPath(file, customPath)
 	return readJson(snapshotPath)?.[basename(file)]?.[name]
 }
@@ -51,19 +50,10 @@ export const getSnapshotByName = (
  * Writes the update and position to cacheDir, which will eventually be read and copied to the source
  * file by a cleanup process after all tests have completed.
  */
-export const queueSnapshotUpdate = (args: SnapshotArgs): void => {
-	const isBench = args.baselinePath
+export const queueSnapshotUpdate = (args: SnapshotArgs) => {
 	const config = getConfig()
-	writeJson(
-		join(
-			isBench ? config.benchSnapCacheDir : config.snapCacheDir,
-			`snap-${randomUUID()}.json`
-		),
-		args
-	)
-	if (isBench) {
-		writeSnapshotUpdatesOnExit()
-	}
+	writeSnapUpdate(config.defaultAssertionCachePath, args)
+	writeSnapshotUpdatesOnExit()
 }
 
 export type QueuedUpdate = {
@@ -87,7 +77,7 @@ const findCallExpressionAncestor = (
 	const file = server.getSourceFileOrThrow(position.file)
 	const absolutePosition = getAbsolutePosition(file, position)
 	const startNode = nearestCallExpressionChild(file, absolutePosition)
-	const calls = getExpressionsByName(startNode, [functionName], true)
+	const calls = getCallExpressionsByName(startNode, [functionName], true)
 	if (calls.length) {
 		return startNode
 	}
@@ -103,7 +93,7 @@ export const updateExternalSnapshot = ({
 	position,
 	name,
 	customPath
-}: ExternalSnapshotArgs): void => {
+}: ExternalSnapshotArgs) => {
 	const snapshotPath = resolveSnapshotPath(position.file, customPath)
 	const snapshotData = readJson(snapshotPath) ?? {}
 	const fileKey = basename(position.file)
@@ -115,7 +105,7 @@ export const updateExternalSnapshot = ({
 }
 
 let snapshotsWillBeWritten = false
-export const writeSnapshotUpdatesOnExit = (): void => {
+export const writeSnapshotUpdatesOnExit = () => {
 	if (snapshotsWillBeWritten) {
 		return
 	}
@@ -123,47 +113,52 @@ export const writeSnapshotUpdatesOnExit = (): void => {
 	snapshotsWillBeWritten = true
 }
 
-/**
- * This will fail if you have a sub process that writes cached snapshots and then deletes the snapshot cache that the root
- * process is using
- */
 const writeCachedInlineSnapshotUpdates = () => {
 	const config = getConfig()
 	const updates: QueuedUpdate[] = []
-	if (existsSync(config.snapCacheDir)) {
-		updates.push(...getQueuedUpdates(config.snapCacheDir))
-	}
-	if (existsSync(config.benchSnapCacheDir)) {
-		updates.push(...getQueuedUpdates(config.benchSnapCacheDir))
+
+	if (existsSync(config.assertionCacheDir)) {
+		updates.push(...getQueuedUpdates(config.defaultAssertionCachePath))
 	}
 	writeUpdates(updates)
-	rmSync(config.snapCacheDir, { recursive: true, force: true })
-	rmSync(config.benchSnapCacheDir, { recursive: true, force: true })
+	writeSnapUpdate(config.defaultAssertionCachePath)
 }
 
-const getQueuedUpdates = (dir: string) => {
-	const queuedUpdates: QueuedUpdate[] = []
-	for (const updateFile of readdirSync(dir)) {
-		if (/snap.*\.json$/.test(updateFile)) {
-			let snapshotData: SnapshotArgs | undefined
-			try {
-				snapshotData = readJson(join(dir, updateFile))
-			} catch {
-				// If we can't read the snapshot, log an error and move onto the next update
-				console.error(
-					`Unable to read snapshot data from expected location ${updateFile}.`
-				)
-			}
-			if (snapshotData) {
-				try {
-					queuedUpdates.push(snapshotArgsToQueuedUpdate(snapshotData))
-				} catch (error) {
-					// If writeInlineSnapshotToFile throws an error, log it and move on to the next update
-					console.error(String(error))
-				}
-			}
+const writeSnapUpdate = (path: string, update?: SnapshotArgs) => {
+	const assertions = readJson(path)
+	const updates = assertions.updates ?? []
+	if (update !== undefined) {
+		assertions.updates = [...updates, update]
+	} else {
+		assertions.updates = []
+	}
+	writeJson(path, assertions)
+}
+const updateQueue = (queue: QueuedUpdate[], path: string) => {
+	let snapshotData: SnapshotArgs[] | undefined
+	try {
+		snapshotData = readJson(path).updates
+	} catch {
+		// If we can't read the snapshot, log an error and move onto the next update
+		console.error(
+			`Unable to read snapshot data from expected location ${path}.`
+		)
+	}
+	if (snapshotData) {
+		try {
+			snapshotData.forEach((snapshot) =>
+				queue.push(snapshotArgsToQueuedUpdate(snapshot))
+			)
+		} catch (error) {
+			// If writeInlineSnapshotToFile throws an error, log it and move on to the next update
+			console.error(String(error))
 		}
 	}
+}
+
+const getQueuedUpdates = (path: string) => {
+	const queuedUpdates: QueuedUpdate[] = []
+	updateQueue(queuedUpdates, path)
 	return queuedUpdates
 }
 
@@ -188,7 +183,7 @@ const snapshotArgsToQueuedUpdate = ({
 }
 
 // Waiting until process exit to write snapshots avoids invalidating existing source positions
-export const writeUpdates = (queuedUpdates: QueuedUpdate[]): void => {
+export const writeUpdates = (queuedUpdates: QueuedUpdate[]) => {
 	if (!queuedUpdates.length) {
 		return
 	}
@@ -209,11 +204,15 @@ export const writeUpdates = (queuedUpdates: QueuedUpdate[]): void => {
 			)
 		)
 	}
-	runPrettierIfAvailable(queuedUpdates)
+	runFormatterIfAvailable(queuedUpdates)
 }
 
-const runPrettierIfAvailable = (queuedUpdates: QueuedUpdate[]) => {
+const runFormatterIfAvailable = (queuedUpdates: QueuedUpdate[]) => {
 	try {
+		const { formatter, shouldFormat } = getConfig()
+		if (!shouldFormat) {
+			throw new Error()
+		}
 		const updatedPaths = [
 			...new Set(
 				queuedUpdates.map((update) =>
@@ -221,9 +220,9 @@ const runPrettierIfAvailable = (queuedUpdates: QueuedUpdate[]) => {
 				)
 			)
 		]
-		shell(`npm exec --no -- prettier --write ${updatedPaths.join(" ")}`)
+		shell(`${formatter} ${updatedPaths.join(" ")}`)
 	} catch {
-		// If prettier is unavailable, do nothing.
+		// If formatter is unavailable or skipped, do nothing.
 	}
 }
 

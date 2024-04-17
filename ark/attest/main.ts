@@ -4,7 +4,6 @@ export { bench } from "./bench/bench.js"
 export { getTypeAssertionsAtPosition } from "./cache/getCachedAssertions.js"
 export type {
 	ArgAssertionData,
-	LinePositionRange,
 	TypeAssertionData,
 	TypeRelationship
 } from "./cache/writeAssertionCache.js"

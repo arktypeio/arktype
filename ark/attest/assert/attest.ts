@@ -1,8 +1,12 @@
 import { caller, getCallStack, type SourcePosition } from "@arktype/fs"
+import { getBenchCtx } from "../bench/bench.js"
+import type { Measure, TypeUnit } from "../bench/measure.js"
+import { instantiationDataHandler } from "../bench/type.js"
 import {
 	getTypeAssertionsAtPosition,
 	type VersionedTypeAssertion
 } from "../cache/getCachedAssertions.js"
+import type { TypeAssertionData } from "../cache/writeAssertionCache.js"
 import { getConfig, type AttestConfig } from "../config.js"
 import { assertEquals, typeEqualityMapping } from "./assertions.js"
 import {
@@ -54,7 +58,7 @@ export const attestInternal = (
 	}
 	if (!cfg.skipTypes) {
 		ctx.typeAssertionEntries = getTypeAssertionsAtPosition(position)
-		if (ctx.typeAssertionEntries[0]?.[1].typeArgs[0]) {
+		if ((ctx.typeAssertionEntries[0]?.[1] as TypeAssertionData).typeArgs[0]) {
 			// if there is an expected type arg, check it immediately
 			assertEquals(undefined, typeEqualityMapping, ctx)
 		}
@@ -62,4 +66,24 @@ export const attestInternal = (
 	return new ChainableAssertions(ctx)
 }
 
-export const attest = attestInternal as AttestFn
+const instantiations = () => ({
+	instantiations: (
+		...args: [instantiations?: Measure<TypeUnit> | undefined]
+	) => {
+		const attestConfig = getConfig()
+		if (attestConfig.skipInlineInstantiations) {
+			return
+		}
+		const calledFrom = caller()
+		const ctx = getBenchCtx([calledFrom.file])
+		ctx.isInlineBench = true
+		ctx.benchCallPosition = calledFrom
+		ctx.lastSnapCallPosition = calledFrom
+		instantiationDataHandler({ ...ctx, kind: "instantiations" }, args[0], false)
+	}
+})
+
+export const attest = Object.assign(
+	attestInternal as AttestFn,
+	instantiations()
+)

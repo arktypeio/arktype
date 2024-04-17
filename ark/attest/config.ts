@@ -32,10 +32,15 @@ type BaseAttestConfig = {
 	 */
 	tsVersions: TsVersionAliases | TsVersionData[]
 	skipTypes: boolean
+	skipInlineInstantiations: boolean
 	attestAliases: string[]
 	benchPercentThreshold: number
 	benchErrorOnThresholdExceeded: boolean
 	filter: string | undefined
+	expressionsToFind: string[]
+	inlineInstantiationMatcher: RegExp
+	formatter: string
+	shouldFormat: true
 }
 
 export type AttestConfig = Partial<BaseAttestConfig>
@@ -48,10 +53,15 @@ export const getDefaultAttestConfig = (): BaseAttestConfig => {
 		attestAliases: ["attest", "attestInternal"],
 		updateSnapshots: false,
 		skipTypes: false,
+		skipInlineInstantiations: false,
 		tsVersions: "typescript",
 		benchPercentThreshold: 20,
 		benchErrorOnThresholdExceeded: false,
-		filter: undefined
+		filter: undefined,
+		expressionsToFind: ["bench", "it"],
+		inlineInstantiationMatcher: /attest.instantiations\(.*/g,
+		formatter: `npm exec --no -- prettier --write`,
+		shouldFormat: true
 	}
 }
 
@@ -99,24 +109,21 @@ const addEnvConfig = (config: BaseAttestConfig) => {
 
 export interface ParsedAttestConfig extends Readonly<BaseAttestConfig> {
 	cacheDir: string
-	snapCacheDir: string
-	benchSnapCacheDir: string
 	assertionCacheDir: string
+	defaultAssertionCachePath: string
 	tsVersions: TsVersionData[]
 }
 
 const parseConfig = (): ParsedAttestConfig => {
 	const baseConfig = addEnvConfig(getDefaultAttestConfig())
 	const cacheDir = resolve(".attest")
-	const snapCacheDir = join(cacheDir, "snaps")
-	const benchSnapCacheDir = join(cacheDir, "benchSnaps")
 	const assertionCacheDir = join(cacheDir, "assertions")
+	const defaultAssertionCachePath = join(assertionCacheDir, "typescript.json")
 
 	return Object.assign(baseConfig, {
 		cacheDir,
-		snapCacheDir,
-		benchSnapCacheDir,
 		assertionCacheDir,
+		defaultAssertionCachePath,
 		tsVersions: baseConfig.skipTypes
 			? []
 			: isTsVersionAliases(baseConfig.tsVersions)
@@ -154,7 +161,5 @@ export const getConfig = (): ParsedAttestConfig => cachedConfig
 
 export const ensureCacheDirs = (): void => {
 	ensureDir(cachedConfig.cacheDir)
-	ensureDir(cachedConfig.snapCacheDir)
-	ensureDir(cachedConfig.benchSnapCacheDir)
 	ensureDir(cachedConfig.assertionCacheDir)
 }
