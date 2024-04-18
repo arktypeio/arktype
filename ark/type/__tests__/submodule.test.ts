@@ -4,17 +4,14 @@ import {
 	writeNonSubmoduleDotMessage,
 	writeUnresolvableMessage
 } from "@arktype/schema"
-import { lazily } from "@arktype/util"
 import { type Module, type Scope, scope, type } from "arktype"
 
 contextualize(() => {
-	const $ = lazily(() =>
-		scope({
-			a: "string",
-			b: "sub.alias",
-			sub: scope({ alias: "number" }).export()
-		})
-	)
+	const $ = scope({
+		a: "string",
+		b: "sub.alias",
+		sub: scope({ alias: "number" }).export()
+	})
 
 	it("base", () => {
 		const types = $.export()
@@ -78,7 +75,7 @@ contextualize(() => {
 		)
 	})
 
-	it("autocompletion", () => {
+	it("completions", () => {
 		const base = scope({ foo: "true" }).export()
 		// @ts-expect-error
 		attest(() => scope({ base, reference: "base." }).export())

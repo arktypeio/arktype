@@ -1,6 +1,6 @@
 import { DynamicBase, type isAnyOrNever } from "@arktype/util"
 import type { Schema } from "./schema.js"
-import type { arkKind } from "./shared/utils.js"
+import { addArkKind, type arkKind } from "./shared/utils.js"
 
 export type PreparsedNodeResolution = {
 	[arkKind]: "generic" | "module"
@@ -16,4 +16,10 @@ type exportSchemaScope<$> = {
 
 export class SchemaModule<$ = any> extends DynamicBase<exportSchemaScope<$>> {
 	declare readonly [arkKind]: "module"
+
+	constructor(types: exportSchemaScope<$>) {
+		super(types)
+		// ensure `[arkKind]` is non-enumerable so it doesn't get spread on import/export
+		addArkKind(this as never, "module")
+	}
 }
