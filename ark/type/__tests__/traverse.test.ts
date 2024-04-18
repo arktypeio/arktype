@@ -102,14 +102,14 @@ contextualize(() => {
 
 	it("multiple switch", () => {
 		const types = scope({
-			a: { a: "string" },
-			b: { a: "number" },
-			c: { a: "Function" },
+			a: { foo: "string" },
+			b: { foo: "number" },
+			c: { foo: "Function" },
 			d: "a|b|c"
 		}).export()
-		attest(types.d({}).errors?.summary).snap("a must be defined")
-		attest(types.d({ a: null }).errors?.summary).snap(
-			"a must be a function, a number or a string (was null)"
+		attest(types.d({}).errors?.summary).snap("foo must be defined")
+		attest(types.d({ foo: null }).errors?.summary).snap(
+			"foo must be a function, a number or a string (was null)"
 		)
 	})
 
