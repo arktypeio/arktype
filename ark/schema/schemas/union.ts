@@ -227,10 +227,10 @@ export const unionImplementation = implementNode<UnionDeclaration>({
 					js.return(false)
 				}
 			},
-			rawKeyOf: (): RawSchema => {
+			rawKeyOf() {
 				return branches.reduce(
 					(result, branch) => result.and(branch.rawKeyOf()),
-					self.$.keywords.unknown.raw
+					this.$.keywords.unknown.raw
 				)
 			},
 			get nestableExpression() {

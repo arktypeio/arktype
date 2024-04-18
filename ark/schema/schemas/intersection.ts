@@ -348,7 +348,7 @@ export const intersectionImplementation =
 							this.props ?
 								this.basis.rawKeyOf().or(this.props.rawKeyOf())
 							:	this.basis.rawKeyOf()
-						:	this.props?.rawKeyOf() ?? self.$.keywords.never.raw
+						:	this.props?.rawKeyOf() ?? this.$.keywords.never.raw
 					)
 				}
 			}

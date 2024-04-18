@@ -41,6 +41,7 @@ module.exports = defineConfig({
 		 * General restrictions
 		 */
 		eqeqeq: "warn",
+		"no-lone-blocks": "warn",
 		"object-shorthand": "warn",
 		/**
 		 * Require the use of arrow functions where possible

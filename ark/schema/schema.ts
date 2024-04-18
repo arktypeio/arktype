@@ -1,4 +1,9 @@
-import type { Callable, Json, conform } from "@arktype/util"
+import {
+	type Callable,
+	type Json,
+	type conform,
+	throwParseError
+} from "@arktype/util"
 import type { constrain } from "./constraints/ast.js"
 import {
 	type PrimitiveConstraintKind,
@@ -67,6 +72,10 @@ export class RawSchema<
 	keyof(): RawSchema {
 		if (!this.#keyofCache) {
 			this.#keyofCache = this.rawKeyOf()
+			if (this.#keyofCache.branches.length === 0)
+				throwParseError(
+					`keyof ${this.expression} results in an unsatisfiable type`
+				)
 		}
 		return this.#keyofCache as never
 	}

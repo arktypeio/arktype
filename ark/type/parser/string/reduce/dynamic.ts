@@ -61,6 +61,7 @@ export class DynamicState {
 	hasRoot(): this is DynamicStateWithRoot {
 		return this.root !== undefined
 	}
+
 	setRoot(root: RawSchema): void {
 		this.root = root
 	}

@@ -265,21 +265,19 @@ export class RawSchemaScope<
 	}
 
 	units(values: unknown[], opts?: NodeParseOptions): RawSchema {
-		{
-			const uniqueValues: unknown[] = []
-			for (const value of values) {
-				if (!uniqueValues.includes(value)) {
-					uniqueValues.push(value)
-				}
+		const uniqueValues: unknown[] = []
+		for (const value of values) {
+			if (!uniqueValues.includes(value)) {
+				uniqueValues.push(value)
 			}
-			const branches = uniqueValues.map((unit) =>
-				this.node("unit", { unit }, opts)
-			)
-			return this.node("union", branches, {
-				...opts,
-				prereduced: true
-			})
 		}
+		const branches = uniqueValues.map((unit) =>
+			this.node("unit", { unit }, opts)
+		)
+		return this.node("union", branches, {
+			...opts,
+			prereduced: true
+		})
 	}
 
 	node<kinds extends NodeKind | array<SchemaKind>>(

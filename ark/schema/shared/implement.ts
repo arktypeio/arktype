@@ -311,7 +311,7 @@ export interface PrimitiveNodeDeclaration extends RawNodeDeclaration {
 export const derivePrimitiveAttachments = <
 	d extends PrimitiveNodeDeclaration = never
 >(
-	implemented: ImplementedPrimitiveAttachments<d>
+	implemented: ImplementedPrimitiveAttachments<d> & ThisType<Node<d["kind"]>>
 ): d["attachments"] => {
 	return defineProperties(implemented, {
 		get errorContext(): d["errorContext"] {
