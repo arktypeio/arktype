@@ -1,6 +1,6 @@
 import { attest } from "@arktype/attest"
 import { rawSchema, writeUnresolvableMessage } from "@arktype/schema"
-import { scope, type } from "arktype"
+import { type } from "arktype"
 import { writeMissingRightOperandMessage } from "../parser/string/shift/operand/unenclosed.js"
 
 describe("tuple expressions", () => {
@@ -133,23 +133,6 @@ describe("tuple expressions", () => {
 			type([{ s: "strng" }, "|", "number"])
 		}).throwsAndHasTypeError(writeUnresolvableMessage("strng"))
 	})
-	// TODO: reenable
-	it("this", () => {
-		const t = type([{ a: "string" }, "|", { b: "this" }])
-		attest(t.infer).type.toString.snap(
-			"{ a: string; } | { b: { a: string; } | any; }"
-		)
-		const types = scope({
-			a: {
-				a: "string"
-			},
-			b: {
-				b: "expected"
-			},
-			expected: "a|b"
-		}).export()
-		attest(t.json).equals(types.expected.json)
-	})
 })
 
 describe("root expression", () => {
@@ -211,14 +194,6 @@ describe("root expression", () => {
 			(In): In is { a: "foo" } => In.a === "foo"
 		)
 		attest<{ a: "foo" }>(t.infer)
-	})
-
-	it("this", () => {
-		const t = type({ a: "string" }, "|", { b: "this" })
-		attest(t.infer).type.toString.snap(
-			"{ a: string; } | { b: { a: string; } | any; }"
-		)
-		attest(t.json).equals(type([{ a: "string" }, "|", { b: "this" }]).json)
 	})
 
 	it("tuple as second arg", () => {

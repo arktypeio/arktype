@@ -3,7 +3,6 @@ import {
 	type GenericProps,
 	type NodeParseOptions,
 	type PreparsedNodeResolution,
-	type RawResolution,
 	type RawSchema,
 	type RawSchemaResolutions,
 	RawSchemaScope,
@@ -153,12 +152,6 @@ export interface ParseContext extends NodeParseOptions {
 	$: RawScope
 }
 
-declare global {
-	export interface ArkRegistry {
-		ambient: Scope<ambient>
-	}
-}
-
 export const scope: ScopeParser = ((def: Dict, config: ArkConfig = {}) =>
 	new RawScope(def, config)) as never
 
@@ -245,13 +238,6 @@ export class RawScope<
 			$: this as never,
 			...opts
 		})
-	}
-
-	protected override maybeResolveAmbient(
-		name: string
-	): RawResolution | undefined {
-		if (!$ark.ambient || $ark.ambient === (this as never)) return
-		return $ark.ambient.raw.maybeResolve(name)
 	}
 
 	parse(def: unknown, ctx: ParseContext): RawSchema {

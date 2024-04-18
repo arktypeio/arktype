@@ -2,7 +2,7 @@ import { type Ark, type inferred, keywordNodes } from "@arktype/schema"
 import type { Generic } from "./generic.js"
 import type { MatchParser } from "./match.js"
 import type { Module } from "./module.js"
-import { type Scope, scope } from "./scope.js"
+import { RawScope, type Scope, scope } from "./scope.js"
 import type { DeclarationParser, DefinitionParser, TypeParser } from "./type.js"
 
 type TsGenericsExports<$ = Ark> = {
@@ -21,7 +21,7 @@ export const tsGenerics = {} as Module<TsGenericsExports>
 
 export const ambient: Scope<Ark> = scope(keywordNodes) as never
 
-$ark.ambient = ambient
+RawScope.ambient = ambient.raw
 
 export const ark: Module<Ark> = ambient.export()
 

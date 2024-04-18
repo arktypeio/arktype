@@ -1,6 +1,6 @@
 import type { GenericSchema } from "../generic.js"
 import type { SchemaModule } from "../module.js"
-import { schemaScope, type SchemaScope } from "../scope.js"
+import { RawSchemaScope, schemaScope, type SchemaScope } from "../scope.js"
 // the import ordering here is important so builtin keywords can be resolved
 // and used to bootstrap nodes with constraints
 import { tsKeywords } from "./tsKeywords.js"
@@ -29,7 +29,7 @@ export const ambientSchemaScope: SchemaScope<Ark> = schemaScope({
 	// TODO: remove cast
 }) as never
 
-$ark.ambientSchemaScope = ambientSchemaScope
+RawSchemaScope.ambient = ambientSchemaScope.raw
 
 export const keywordNodes: SchemaModule<Ark> = ambientSchemaScope.export()
 

@@ -74,11 +74,11 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 	keys: {
 		in: {
 			child: true,
-			parse: (def, ctx) => ctx.$.parseNode(morphChildKinds, def)
+			parse: (def, ctx) => ctx.$.node(morphChildKinds, def)
 		},
 		out: {
 			child: true,
-			parse: (def, ctx) => ctx.$.parseNode(morphChildKinds, def)
+			parse: (def, ctx) => ctx.$.node(morphChildKinds, def)
 		},
 		morphs: {
 			parse: arrayFrom,

@@ -70,7 +70,7 @@ export const unionImplementation = implementNode<UnionDeclaration>({
 			child: true,
 			parse: (def, ctx) => {
 				const branches = def.map((branch) =>
-					ctx.$.parseNode(unionChildKinds, branch)
+					ctx.$.node(unionChildKinds, branch)
 				)
 				const raw = ctx.raw as UnionDef
 				if (isArray(raw) || raw.ordered !== true) {

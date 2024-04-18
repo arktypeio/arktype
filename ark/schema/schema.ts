@@ -160,7 +160,10 @@ export class RawSchema<
 		})
 	}
 
-	constrain(kind: PrimitiveConstraintKind, def: unknown): RawSchema {
+	constrain<kind extends PrimitiveConstraintKind>(
+		kind: kind,
+		def: NodeDef<kind>
+	): RawSchema {
 		const constraint = this.$.node(kind, def)
 		if (constraint.impliedBasis && !this.extends(constraint.impliedBasis)) {
 			return throwInvalidOperandError(

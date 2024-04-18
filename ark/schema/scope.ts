@@ -200,6 +200,13 @@ export class RawSchemaScope<
 		return RawSchemaScope.keywords
 	}
 
+	static ambient: RawSchemaScope
+	// readonly ambient = (this.constructor as typeof RawSchemaScope).ambient
+
+	get ambient(): RawSchemaScope {
+		return (this.constructor as typeof RawSchemaScope).ambient
+	}
+
 	constructor(
 		/** The set of names defined at the root-level of the scope mapped to their
 		 * corresponding definitions.**/
@@ -211,8 +218,22 @@ export class RawSchemaScope<
 		this.exportedNames = Object.keys(this.aliases).filter(
 			(k) => k[0] !== "#"
 		) as never
+		if (this.ambient) {
+			// ensure exportedResolutions is populated
+			this.ambient.export()
+			// TODO: generics and modules
+			this.resolutions = flatMorph(
+				this.ambient.resolutions,
+				(alias, resolution) => [
+					alias,
+					hasArkKind(resolution, "schema") ?
+						resolution.bindScope(this)
+					:	resolution
+				]
+			)
+		}
 		// TODO: move this out of scope initialization
-		this.parseNode(
+		this.node(
 			"union",
 			{
 				branches: [
@@ -227,20 +248,12 @@ export class RawSchemaScope<
 					{ unit: undefined }
 				]
 			},
-			{ reduceTo: this.parseNode("intersection", {}, { prereduced: true }) }
+			{ reduceTo: this.node("intersection", {}, { prereduced: true }) }
 		)
 	}
 
 	get raw(): this {
 		return this
-	}
-
-	node<kind extends NodeKind>(
-		kind: kind,
-		def: unknown,
-		opts?: NodeParseOptions
-	): Node<reducibleKindOf<kind>> {
-		return parseNode(kind, def, this, opts).bindScope(this) as never
 	}
 
 	schema(def: SchemaDef, opts?: NodeParseOptions): RawSchema {
@@ -269,12 +282,12 @@ export class RawSchemaScope<
 		}
 	}
 
-	parseNode<kinds extends NodeKind | array<SchemaKind>>(
+	node<kinds extends NodeKind | array<SchemaKind>>(
 		kinds: kinds,
 		schema: NodeDef<flattenListable<kinds>>,
 		opts?: NodeParseOptions
 	): Node<reducibleKindOf<flattenListable<kinds>>> {
-		return parseNode(kinds, schema, this, opts) as never
+		return parseNode(kinds, schema, this, opts).bindScope(this) as never
 	}
 
 	parseRoot(def: unknown, opts?: NodeParseOptions): RawSchema {
@@ -306,22 +319,12 @@ export class RawSchemaScope<
 			return cached
 		}
 		let def = this.aliases[name]
-		if (!def) {
-			const ambientResolution = this.maybeResolveAmbient(name)
-			if (ambientResolution) return ambientResolution
-			return this.maybeResolveSubalias(name)
-		}
+		if (!def) return this.maybeResolveSubalias(name)
 		def = this.preparseRoot(def)
 		if (hasArkKind(def, "generic"))
 			return (this.resolutions[name] = validateUninstantiatedGenericNode(def))
 		if (hasArkKind(def, "module")) return (this.resolutions[name] = def)
 		return (this.resolutions[name] = this.parseRoot(def, { args: {} }))
-	}
-
-	protected maybeResolveAmbient(name: string): RawResolution | undefined {
-		if (!$ark.ambientSchemaScope || $ark.ambientSchemaScope === (this as never))
-			return
-		return $ark.ambientSchemaScope.raw.maybeResolve(name)
 	}
 
 	/** If name is a valid reference to a submodule alias, return its resolution  */
@@ -447,12 +450,6 @@ export interface SchemaScope<$ = any> {
 	aliases: Record<string, unknown>
 	raw: toRawScope<$>
 
-	node<kind extends NodeKind, const def extends NodeDef<kind>>(
-		kind: kind,
-		def: def,
-		opts?: NodeParseOptions
-	): Node<reducibleKindOf<kind>>
-
 	schema<const def extends SchemaDef>(
 		def: def,
 		opts?: NodeParseOptions
@@ -465,7 +462,7 @@ export interface SchemaScope<$ = any> {
 		opts?: NodeParseOptions
 	): Schema<branches[number], $>
 
-	parseNode<kinds extends NodeKind | array<SchemaKind>>(
+	node<kinds extends NodeKind | array<SchemaKind>>(
 		kinds: kinds,
 		schema: NodeDef<flattenListable<kinds>>,
 		opts?: NodeParseOptions
@@ -480,12 +477,6 @@ export interface SchemaScope<$ = any> {
 	export<names extends exportedNameOf<$>[]>(
 		...names: names
 	): SchemaModule<show<destructuredExportContext<$, names>>>
-}
-
-declare global {
-	export interface ArkRegistry {
-		ambientSchemaScope: SchemaScope<ambient>
-	}
 }
 
 export const SchemaScope: new <$ = any>(

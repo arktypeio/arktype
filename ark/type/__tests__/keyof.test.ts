@@ -83,7 +83,9 @@ describe("keyof", () => {
 
 	it("intersection precedence", () => {
 		const t = type("keyof symbol & symbol")
+		const a = t.$
 		attest<typeof Symbol.toStringTag | typeof Symbol.toPrimitive>(t.infer)
+		// should be reference equal as it should just re-use the cached node
 		attest(t.json).is(type("===", Symbol.toStringTag, Symbol.toPrimitive).json)
 	})
 
