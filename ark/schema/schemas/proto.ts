@@ -1,7 +1,9 @@
 import {
+	type BuiltinObjectKind,
 	type Constructor,
 	type Key,
 	type array,
+	builtinObjectKinds,
 	constructorExtends,
 	getExactBuiltinConstructorName,
 	objectKindDescriptions,
@@ -26,14 +28,22 @@ export interface ProtoInner<proto extends Constructor = Constructor>
 export type NormalizedProtoDef<proto extends Constructor = Constructor> =
 	ProtoInner<proto>
 
-export type ProtoDef<proto extends Constructor = Constructor> =
+export type ProtoReference = Constructor | BuiltinObjectKind
+
+export interface ExpandedProtoDef<proto extends ProtoReference = ProtoReference>
+	extends BaseMeta {
+	readonly proto: proto
+}
+
+export type ProtoDef<proto extends ProtoReference = ProtoReference> =
 	| proto
-	| NormalizedProtoDef<proto>
+	| ExpandedProtoDef<proto>
 
 export interface ProtoAttachments
 	extends RawSchemaAttachments<ProtoDeclaration>,
 		PrimitiveAttachments<ProtoDeclaration> {
 	readonly serializedConstructor: string
+	readonly builtinName: BuiltinObjectKind | null
 	readonly domain: "object"
 	readonly literalKeys: array<Key>
 }
@@ -57,14 +67,17 @@ export const protoImplementation = implementNode<ProtoDeclaration>({
 				getExactBuiltinConstructorName(ctor) ?? defaultValueSerializer(ctor)
 		}
 	},
-	normalize: (def) => (typeof def === "function" ? { proto: def } : def),
+	normalize: (def) =>
+		typeof def === "string" ? { proto: builtinObjectKinds[def] }
+		: typeof def === "function" ? { proto: def }
+		: typeof def.proto === "string" ?
+			{ ...def, proto: builtinObjectKinds[def.proto] }
+		:	(def as ExpandedProtoDef<Constructor>),
 	defaults: {
-		description: (node) => {
-			const knownObjectKind = getExactBuiltinConstructorName(node.proto)
-			return knownObjectKind ?
-					objectKindDescriptions[knownObjectKind]
-				:	`an instance of ${node.proto.name}`
-		},
+		description: (node) =>
+			node.builtinName ?
+				objectKindDescriptions[node.builtinName]
+			:	`an instance of ${node.proto.name}`,
 		actual: (data) => objectKindOrDomainOf(data)
 	},
 	intersections: {
@@ -75,14 +88,15 @@ export const protoImplementation = implementNode<ProtoDeclaration>({
 		domain: (proto, domain, $) =>
 			domain.domain === "object" ?
 				proto
-				// TODO: infer node to avoid cast
 			:	Disjoint.from("domain", $.keywords.object as never, domain)
 	},
 	construct: (self): ProtoDeclaration["attachments"] => {
+		const builtinName = getExactBuiltinConstructorName(self.proto)
 		const serializedConstructor = (self.json as { proto: string }).proto
 		const compiledCondition = `data instanceof ${serializedConstructor}`
 		const literalKeys = prototypeKeysOf(self.proto.prototype)
 		return derivePrimitiveAttachments<ProtoDeclaration>({
+			builtinName,
 			traverseAllows: (data) => data instanceof self.proto,
 			expression: self.proto.name,
 			serializedConstructor,

@@ -129,15 +129,15 @@ export type objectKindDescriptions = typeof objectKindDescriptions
 // example TypeError would return undefined not 'Error'
 export const getExactBuiltinConstructorName = (
 	ctor: unknown
-): BuiltinObjectKind | undefined => {
-	const constructorName: string | undefined = Object(ctor).name
+): BuiltinObjectKind | null => {
+	const constructorName: string | null = Object(ctor).name ?? null
 	return (
 			constructorName &&
 				isKeyOf(constructorName, builtinObjectKinds) &&
 				builtinObjectKinds[constructorName] === ctor
 		) ?
 			constructorName
-		:	undefined
+		:	null
 }
 
 export type Constructor<instance = {}> = abstract new (
