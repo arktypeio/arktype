@@ -112,7 +112,8 @@ const maybeParseReference = (
 ): RawSchema | undefined => {
 	if (s.ctx.args?.[token]) return s.ctx.args[token].raw
 	const resolution = s.ctx.$.maybeResolve(token)
-	if (resolution instanceof RawSchema) return resolution
+	// TODO: centralize member creation
+	if (resolution instanceof RawSchema) return resolution.bindScope(s.ctx.$)
 	if (resolution === undefined) return
 	if (hasArkKind(resolution, "generic"))
 		return parseGenericInstantiation(token, resolution as Generic, s)

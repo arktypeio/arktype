@@ -46,12 +46,12 @@ contextualize(() => {
 			{ isEven: "number%2" },
 			{
 				divisor: {
-					expected: (inner) => `a multiple of ${inner.rule}`,
-					problem: (ctx) => `${ctx.actual} is not ${ctx.expected}!`
+					expected: (ctx) => `% ${ctx.rule} !== 0`,
+					problem: (ctx) => `${ctx.actual} ${ctx.expected}`
 				}
 			}
 		).export()
-		attest(types.isEven(3).errors?.summary).snap("3 is not a multiple of 2!")
+		attest(types.isEven(3).errors?.summary).snap("3 % 2 !== 0")
 	})
 
 	it("domains", () => {
@@ -117,16 +117,16 @@ contextualize(() => {
 		const naturalNumber = type("integer>0")
 		attest(naturalNumber(-1.2).errors?.summary).snap(
 			`must be...
-	  • an integer
-	  • more than 0`
+  • an integer
+  • more than 0`
 		)
 		const naturalAtPath = type({
 			natural: naturalNumber
 		})
 		attest(naturalAtPath({ natural: -0.1 }).errors?.summary).snap(
 			`natural must be...
-	  • an integer
-	  • more than 0`
+  • an integer
+  • more than 0`
 		)
 	})
 })

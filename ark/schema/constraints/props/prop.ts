@@ -131,7 +131,7 @@ export const propImplementation = implementNode<PropDeclaration>({
 					ctx?.path.pop()
 					return allowed
 				}
-				return required
+				return !required
 			},
 			traverseApply(data, ctx) {
 				ctx.path.push(this.key)

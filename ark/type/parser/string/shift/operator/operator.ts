@@ -3,9 +3,9 @@ import type { DynamicStateWithRoot } from "../../reduce/dynamic.js"
 import type { StaticState, state } from "../../reduce/static.js"
 import { Scanner } from "../scanner.js"
 import {
-	type ComparatorStartChar,
 	comparatorStartChars,
-	parseBound
+	parseBound,
+	type ComparatorStartChar
 } from "./bounds.js"
 import { parseDivisor } from "./divisor.js"
 
