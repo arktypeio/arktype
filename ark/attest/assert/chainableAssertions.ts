@@ -1,5 +1,11 @@
 import { caller } from "@arktype/fs"
-import { printable, snapshot, type Constructor } from "@arktype/util"
+import {
+	printable,
+	snapshot,
+	type Constructor,
+	type Guardable
+} from "@arktype/util"
+import { type, type inferTypeRoot, type validateTypeRoot } from "arktype"
 import * as assert from "node:assert/strict"
 import { isDeepStrictEqual } from "node:util"
 import {
@@ -52,6 +58,22 @@ export class ChainableAssertions implements AssertionRecord {
 			// to the snap even though it will serialize to the same value as the (nonexistent) first arg
 			this.actual === undefined
 		)
+	}
+
+	assert(def: unknown): never {
+		return type(def as never).assert(this.actual)
+	}
+
+	narrow(predicate: Guardable, messageOnError?: string): never {
+		if (!predicate(this.actual)) {
+			throwAssertionError({
+				ctx: this.ctx,
+				message:
+					messageOnError ??
+					`${this.serializedActual} failed to satisfy predicate${predicate.name ? ` ${predicate.name}` : ""}`
+			})
+		}
+		return this.actual as never
 	}
 
 	get unknown(): this {
@@ -281,6 +303,11 @@ export type comparableValueAssertion<expected, kind extends AssertionKind> = {
 	instanceOf: (constructor: Constructor) => nextAssertions<kind>
 	is: (value: expected) => nextAssertions<kind>
 	completions: (value?: Completions) => void
+	narrow<narrowed>(
+		predicate: (data: unknown) => data is narrowed,
+		messageOnError?: string
+	): narrowed
+	assert<def>(def: validateTypeRoot<def>): inferTypeRoot<def>
 	// This can be used to assert values without type constraints
 	unknown: Omit<comparableValueAssertion<unknown, kind>, "unknown">
 }

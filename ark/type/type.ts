@@ -137,13 +137,13 @@ export const Type: TypeConstructor = RawSchema as never
 
 export type DefinitionParser<$> = <def>(def: validateTypeRoot<def, $>) => def
 
-export type validateTypeRoot<def, $> = validateDefinition<
+export type validateTypeRoot<def, $ = {}> = validateDefinition<
 	def,
 	$ & ambient,
 	bindThis<def>
 >
 
-export type inferTypeRoot<def, $> = inferDefinition<
+export type inferTypeRoot<def, $ = {}> = inferDefinition<
 	def,
 	$ & ambient,
 	bindThis<def>

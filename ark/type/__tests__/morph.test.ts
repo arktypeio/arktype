@@ -172,6 +172,7 @@ contextualize(() => {
 				  }
 			>
 		>(types.c)
+		const s = attest(types.a).assert("string")
 		assertNodeKind(types.a, "morph")
 		attest(types.c.json).snap([
 			{ domain: "object", prop: [{ key: "a", value: "Function" }] },
