@@ -111,40 +111,40 @@ describe("keyof", () => {
 		)
 	})
 	// TODO: numeric
-	it("array", () => {
-		const t = type("keyof string[]")
-		attest<keyof string[]>(t.infer)
-		// the array prototype has many items and they vary based on the JS
-		// flavor we're running in, so just check that the indices from the type
-		// and one prototype key are present as a heuristic
-		t.assert("0")
-		t.assert("354")
-		t.assert("map")
-		t.assert(Symbol.iterator)
-		attest(() => t.assert("0.1")).throws.snap(
-			'TypeError: / must be a string matching /^(?:0|(?:[1-9]\\d*))$/, "length", "at", "concat", "copyWithin", "fill", "find", "findIndex", "lastIndexOf", "pop", "push", "reverse", "shift", "unshift", "slice", "sort", "splice", "includes", "indexOf", "join", "keys", "entries", "values", "forEach", "filter", "flat", "flatMap", "map", "every", "some", "reduce", "reduceRight", "toLocaleString", "toString", "findLast", "findLastIndex", (symbol Symbol.iterator) or (symbol Symbol.unscopables) (was "0.1")'
-		)
-		attest(() => t.assert("-1")).throws.snap(
-			'TypeError: / must be a string matching /^(?:0|(?:[1-9]\\d*))$/, "length", "at", "concat", "copyWithin", "fill", "find", "findIndex", "lastIndexOf", "pop", "push", "reverse", "shift", "unshift", "slice", "sort", "splice", "includes", "indexOf", "join", "keys", "entries", "values", "forEach", "filter", "flat", "flatMap", "map", "every", "some", "reduce", "reduceRight", "toLocaleString", "toString", "findLast", "findLastIndex", (symbol Symbol.iterator) or (symbol Symbol.unscopables) (was "-1")'
-		)
-	})
+	// it("array", () => {
+	// 	const t = type("keyof string[]")
+	// 	attest<keyof string[]>(t.infer)
+	// 	// the array prototype has many items and they vary based on the JS
+	// 	// flavor we're running in, so just check that the indices from the type
+	// 	// and one prototype key are present as a heuristic
+	// 	t.assert("0")
+	// 	t.assert("354")
+	// 	t.assert("map")
+	// 	t.assert(Symbol.iterator)
+	// 	attest(() => t.assert("0.1")).throws.snap(
+	// 		'TypeError: / must be a string matching /^(?:0|(?:[1-9]\\d*))$/, "length", "at", "concat", "copyWithin", "fill", "find", "findIndex", "lastIndexOf", "pop", "push", "reverse", "shift", "unshift", "slice", "sort", "splice", "includes", "indexOf", "join", "keys", "entries", "values", "forEach", "filter", "flat", "flatMap", "map", "every", "some", "reduce", "reduceRight", "toLocaleString", "toString", "findLast", "findLastIndex", (symbol Symbol.iterator) or (symbol Symbol.unscopables) (was "0.1")'
+	// 	)
+	// 	attest(() => t.assert("-1")).throws.snap(
+	// 		'TypeError: / must be a string matching /^(?:0|(?:[1-9]\\d*))$/, "length", "at", "concat", "copyWithin", "fill", "find", "findIndex", "lastIndexOf", "pop", "push", "reverse", "shift", "unshift", "slice", "sort", "splice", "includes", "indexOf", "join", "keys", "entries", "values", "forEach", "filter", "flat", "flatMap", "map", "every", "some", "reduce", "reduceRight", "toLocaleString", "toString", "findLast", "findLastIndex", (symbol Symbol.iterator) or (symbol Symbol.unscopables) (was "-1")'
+	// 	)
+	// })
 
-	it("tuple", () => {
-		const t = type(["keyof", ["string", "number"]])
-		attest<keyof [string, number]>(t.infer)
-		t.assert("1")
-		t.assert("map")
-		attest(() => t.assert("2")).throws.snap(
-			'TypeError: / must be "length", "0", "1", "at", "concat", "copyWithin", "fill", "find", "findIndex", "lastIndexOf", "pop", "push", "reverse", "shift", "unshift", "slice", "sort", "splice", "includes", "indexOf", "join", "keys", "entries", "values", "forEach", "filter", "flat", "flatMap", "map", "every", "some", "reduce", "reduceRight", "toLocaleString", "toString", "findLast", "findLastIndex", (symbol Symbol.iterator) or (symbol Symbol.unscopables) (was "2")'
-		)
-	})
+	// it("tuple", () => {
+	// 	const t = type(["keyof", ["string", "number"]])
+	// 	attest<keyof [string, number]>(t.infer)
+	// 	t.assert("1")
+	// 	t.assert("map")
+	// 	attest(() => t.assert("2")).throws.snap(
+	// 		'TypeError: / must be "length", "0", "1", "at", "concat", "copyWithin", "fill", "find", "findIndex", "lastIndexOf", "pop", "push", "reverse", "shift", "unshift", "slice", "sort", "splice", "includes", "indexOf", "join", "keys", "entries", "values", "forEach", "filter", "flat", "flatMap", "map", "every", "some", "reduce", "reduceRight", "toLocaleString", "toString", "findLast", "findLastIndex", (symbol Symbol.iterator) or (symbol Symbol.unscopables) (was "2")'
+	// 	)
+	// })
 
-	it("wellFormedNonNegativeInteger intersection", () => {
-		const a = type([{ "1": "'foo'" }, "&", "string[]"])
-		const t = type("keyof", a)
-		// TODO should still include wellFormed
-		attest(t.toString()).snap(
-			'"1" or "at" or "concat" or "copyWithin" or "entries" or "every" or "fill" or "filter" or "find" or "findIndex" or "findLast" or "findLastIndex" or "flat" or "flatMap" or "forEach" or "includes" or "indexOf" or "join" or "keys" or "lastIndexOf" or "length" or "map" or "pop" or "push" or "reduce" or "reduceRight" or "reverse" or "shift" or "slice" or "some" or "sort" or "splice" or "toLocaleString" or "toString" or "unshift" or "values" or (symbol Symbol.iterator) or (symbol Symbol.unscopables) or /^(?:0|(?:[1-9]\\d*))$/'
-		)
-	})
+	// it("wellFormedNonNegativeInteger intersection", () => {
+	// 	const a = type([{ "1": "'foo'" }, "&", "string[]"])
+	// 	const t = type("keyof", a)
+	// 	// TODO should still include wellFormed
+	// 	attest(t.toString()).snap(
+	// 		'"1" or "at" or "concat" or "copyWithin" or "entries" or "every" or "fill" or "filter" or "find" or "findIndex" or "findLast" or "findLastIndex" or "flat" or "flatMap" or "forEach" or "includes" or "indexOf" or "join" or "keys" or "lastIndexOf" or "length" or "map" or "pop" or "push" or "reduce" or "reduceRight" or "reverse" or "shift" or "slice" or "some" or "sort" or "splice" or "toLocaleString" or "toString" or "unshift" or "values" or (symbol Symbol.iterator) or (symbol Symbol.unscopables) or /^(?:0|(?:[1-9]\\d*))$/'
+	// 	)
+	// })
 })

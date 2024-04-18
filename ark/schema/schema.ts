@@ -150,10 +150,10 @@ export class RawSchema<
 		return literal
 	}
 
-	morphNode(morph: Morph, outValidator?: unknown): RawSchema {
+	morph(morph: Morph, outValidator?: unknown): RawSchema {
 		if (this.hasKind("union")) {
 			const branches = this.branches.map((node) =>
-				node.morphNode(morph, outValidator as never)
+				node.morph(morph, outValidator as never)
 			)
 			return this.$.node("union", { ...this.inner, branches })
 		}
@@ -254,7 +254,7 @@ export interface Schema<
 
 	from(literal: this["in"]["infer"]): this["out"]["infer"]
 
-	morphNode<
+	morph<
 		morph extends Morph<this["infer"]>,
 		outValidatorSchema extends SchemaDef = never
 	>(

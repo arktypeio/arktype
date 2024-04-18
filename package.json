@@ -22,8 +22,8 @@
 		"build": "pnpm -r build",
 		"buildCjs": "ARKTYPE_CJS=1 pnpm -r build",
 		"docgen": "tsx ./ark/repo/docgen.ts",
-		"test": "vitest run --config ark/repo/vitest.config.ts",
-		"tnt": "ATTEST_skipTypes=1 vitest run --config ark/repo/vitest.config.ts --exclude '**/attest/**'",
+		"test": "mocha",
+		"tnt": "mocha --skipTypes",
 		"testRepo": "pnpm test && cd ./ark/test && pnpm test && pnpm testTsVersions",
 		"testTsVersions": "tsx ./ark/repo/testTsVersions.ts",
 		"typecheck": "tsc --noEmit",
@@ -57,8 +57,6 @@
 		"knip": "5.9.4",
 		"tsx": "4.7.2",
 		"typescript": "5.4.2",
-		"vitest": "1.5.0",
-		"vite-tsconfig-paths": "4.3.2",
 		"typescript-52": "npm:typescript@5.2",
 		"typescript-53": "npm:typescript@5.3",
 		"typescript-55": "npm:typescript@next",
@@ -66,6 +64,7 @@
 		"@types/mocha": "10.0.6"
 	},
 	"mocha": {
+		"//": "IF YOU UPDATE THE MOCHA CONFIG HERE, PLEASE ALSO UPDATE ark/repo/mocha.jsonc AND .vscode/settings.json",
 		"spec": [
 			"**/__tests__/**/*.test.*"
 		],

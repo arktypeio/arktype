@@ -1,7 +1,7 @@
 import { fromHere, shell } from "@arktype/fs"
 
 shell(
-	`pnpm vitest --config ${fromHere("vitest.config.ts")} ${process.argv
+	`pnpm mocha --config ${fromHere("mocha.package.jsonc")} ${process.argv
 		.slice(2)
 		.join(" ")}`
 )

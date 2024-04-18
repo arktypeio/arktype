@@ -23,7 +23,7 @@
 			"@arktype/attest": ["./ark/attest/main.ts"],
 			"@arktype/schema": ["./ark/schema/main.ts"]
 		},
-		"types": ["mocha"]
+		"types": ["mocha", "node"]
 	},
 	"exclude": ["**/out", "node_modules", "./ark/docs"]
 }

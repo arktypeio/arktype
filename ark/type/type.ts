@@ -95,10 +95,10 @@ export interface Type<
 
 	array(): Type<t[], $>
 
-	morph<morph extends Morph<this["infer"]>, outValidatorDef = never>(
+	morph: (<morph extends Morph<this["infer"]>, outValidatorDef = never>(
 		morph: morph,
 		outValidator?: validateTypeRoot<outValidatorDef, $>
-	): Type<
+	) => Type<
 		(
 			In: distillConstrainableIn<t>
 		) => Out<
@@ -106,7 +106,8 @@ export interface Type<
 			:	distillConstrainableOut<inferTypeRoot<outValidatorDef, $>>
 		>,
 		$
-	>
+	>) &
+		Schema<t, $>["morph"]
 
 	// TODO: based on below, should maybe narrow morph output if used after
 	narrow<def extends Predicate<distillConstrainableOut<t>>>(
