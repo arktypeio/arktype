@@ -58,7 +58,7 @@ export class RawSchema<
 	>
 	extends RawNode<d>
 	implements
-		internalImplementationOf<Schema, (keyof Schema & symbol) | "infer">
+		internalImplementationOf<Schema, (keyof Schema & symbol) | "infer" | "t">
 {
 	readonly branches: readonly Node<UnionChildKind>[] =
 		this.hasKind("union") ? this.inner.branches : [this as never];
@@ -202,6 +202,7 @@ export interface Schema<
 	$ = any
 > extends Callable<(data: unknown) => ArkResult<t>> {
 	$: SchemaScope<$>
+	t: t
 	infer: distillOut<t>
 	[inferred]: t
 

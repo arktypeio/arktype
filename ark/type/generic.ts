@@ -10,9 +10,7 @@ import type {
 	GenericParamsParseError,
 	parseGenericParams
 } from "./parser/generic.js"
-import type { Scope } from "./scope.js"
 import type { Type, inferTypeRoot, validateTypeRoot } from "./type.js"
-
 export type validateParameterString<params extends string> =
 	parseGenericParams<params> extends GenericParamsParseError<infer message> ?
 		message
