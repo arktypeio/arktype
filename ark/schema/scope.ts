@@ -186,7 +186,7 @@ export class RawSchemaScope<
 	protected readonly resolutions: RawSchemaResolutions = {}
 	readonly json: Json = {}
 	exportedNames: string[]
-
+	readonly aliases: Record<string, unknown> = {}
 	protected resolved = false
 
 	// these allow builtin types to be accessed during parsing without cyclic imports
@@ -209,14 +209,19 @@ export class RawSchemaScope<
 	constructor(
 		/** The set of names defined at the root-level of the scope mapped to their
 		 * corresponding definitions.**/
-		public aliases: Record<string, unknown>,
+		def: Record<string, unknown>,
 		config?: ArkConfig
 	) {
 		this.config = config ?? {}
 		this.resolvedConfig = resolveConfig(config)
-		this.exportedNames = Object.keys(this.aliases).filter(
-			(k) => k[0] !== "#"
-		) as never
+		this.exportedNames = Object.keys(def).filter((k) => {
+			if (k[0] === "#") {
+				this.aliases[k.slice(1)] = def[k]
+				return false
+			}
+			this.aliases[k] = def[k]
+			return true
+		}) as never
 		if (this.ambient) {
 			// ensure exportedResolutions is populated
 			this.ambient.export()
@@ -531,10 +536,9 @@ const resolutionsOfModule = ($: RawSchemaScope, typeSet: SchemaExportCache) => {
 			)
 			Object.assign(result, prefixedResolutions)
 		} else if (hasArkKind(v, "generic")) {
-			// TODO: bind
 			result[k] = v
 		} else if (hasArkKind(v, "schema")) {
-			result[k] = v.bindScope($)
+			result[k] = v
 		} else throwInternalError(`Unexpected scope resolution ${printable(v)}`)
 	}
 	return result

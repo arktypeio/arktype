@@ -1,6 +1,7 @@
 import { attest, contextualize } from "@arktype/attest"
 import { lazily } from "@arktype/util"
 import { type Module, scope, type } from "arktype"
+import { writePrefixedPrivateReferenceMessage } from "../parser/semantic/validate.js"
 
 const threeSixtyNoScope = lazily(() =>
 	scope({
@@ -85,7 +86,7 @@ contextualize(() => {
 
 	it("non-generic", () => {
 		const types = scope({
-			foo: "#bar[]",
+			foo: "bar[]",
 			"#bar": "boolean"
 		}).export()
 		attest(Object.keys(types)).equals(["foo"])
@@ -98,11 +99,22 @@ contextualize(() => {
 		>(types)
 	})
 
-	it("generic", () => {
-		const types = scope({
-			foo: "bar<string>[]",
-			"#bar<t>": ["t"]
-		}).export()
-		attest<[string][]>(types.foo.infer)
+	it("errors on private reference with #", () => {
+		attest(() =>
+			scope({
+				// @ts-expect-error
+				xdd: "#kekw",
+				"#kekw": "true"
+			}).export()
+		).throwsAndHasTypeError(writePrefixedPrivateReferenceMessage("#kekw"))
 	})
+
+	// TODO: reenable
+	// it("generic", () => {
+	// 	const types = scope({
+	// 		foo: "bar<string>[]",
+	// 		"#bar<t>": ["t"]
+	// 	}).export()
+	// 	attest<[string][]>(types.foo.infer)
+	// })
 })

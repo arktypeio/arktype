@@ -1,5 +1,6 @@
 import {
 	type GenericProps,
+	type PrivateDeclaration,
 	RawSchema,
 	type SchemaModule,
 	hasArkKind,
@@ -19,6 +20,7 @@ import {
 import type { Generic } from "../../../../generic.js"
 import type { Module } from "../../../../module.js"
 import type { GenericInstantiationAst } from "../../../semantic/infer.js"
+import { writePrefixedPrivateReferenceMessage } from "../../../semantic/validate.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import type { StaticState, state } from "../../reduce/static.js"
 import type { BaseCompletions } from "../../string.js"
@@ -101,8 +103,9 @@ const unenclosedToNode = (s: DynamicState, token: string): RawSchema =>
 	maybeParseReference(s, token) ??
 	maybeParseUnenclosedLiteral(s, token) ??
 	s.error(
-		token === "" ?
-			writeMissingOperandMessage(s)
+		token === "" ? writeMissingOperandMessage(s)
+		: token[0] === "#" ?
+			writePrefixedPrivateReferenceMessage(token as PrivateDeclaration)
 		:	writeUnresolvableMessage(token)
 	)
 
@@ -136,7 +139,7 @@ const maybeParseUnenclosedLiteral = (
 
 type tryResolve<s extends StaticState, token extends string, $, args> =
 	token extends keyof $ ? token
-	: `#${token}` extends keyof $ ? `#${token}`
+	: `#${token}` extends keyof $ ? token
 	: token extends keyof args ? token
 	: token extends `${number}` ? token
 	: token extends BigintLiteral ? token

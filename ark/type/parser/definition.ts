@@ -37,7 +37,7 @@ export const parseObject = (def: object, ctx: ParseContext): RawSchema => {
 	const objectKind = objectKindOf(def)
 	switch (objectKind) {
 		case undefined:
-			if (hasArkKind(def, "schema")) return def.bindScope(ctx.$)
+			if (hasArkKind(def, "schema")) return def
 			return parseObjectLiteral(def as Dict, ctx)
 		case "Array":
 			return parseTuple(def as array, ctx)

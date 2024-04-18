@@ -26,7 +26,8 @@ export type inferAstIn<ast, $, args> = distillIn<inferAstRoot<ast, $, args>>
 
 export type inferConstrainableAst<ast, $, args> =
 	ast extends array ? inferExpression<ast, $, args>
-	:	inferTerminal<ast, $, args>
+	: ast extends string ? inferTerminal<ast, $, args>
+	: never
 
 export type GenericInstantiationAst<
 	generic extends GenericProps = GenericProps,
@@ -127,8 +128,9 @@ export type InfixExpression<
 	r = unknown
 > = [l, operator, r]
 
-export type inferTerminal<token, $, args> =
+export type inferTerminal<token extends string, $, args> =
 	token extends keyof args | keyof $ ? resolve<token, $, args>
+	: `#${token}` extends keyof $ ? resolve<`#${token}`, $, args>
 	: token extends StringLiteral<infer text> ? text
 	: token extends `${infer n extends number}` ? n
 	: token extends BigintLiteral<infer b> ? b

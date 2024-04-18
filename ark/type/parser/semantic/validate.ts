@@ -1,10 +1,12 @@
 import type {
-	GenericProps,
 	arkKind,
+	GenericProps,
+	PrivateDeclaration,
 	writeMissingSubmoduleAccessMessage
 } from "@arktype/schema"
 import type {
 	BigintLiteral,
+	charsAfterFirst,
 	Completion,
 	ErrorMessage,
 	writeMalformedNumericLiteralMessage
@@ -57,6 +59,18 @@ export const writeUnsatisfiableExpressionError = <expression extends string>(
 export type writeUnsatisfiableExpressionError<expression extends string> =
 	`${expression} results in an unsatisfiable type`
 
+export const writePrefixedPrivateReferenceMessage = <
+	def extends PrivateDeclaration
+>(
+	def: def
+): writePrefixedPrivateReferenceMessage<def> =>
+	`Private type references should not include '#'. Use '${def.slice(1) as charsAfterFirst<def>}' instead.`
+
+export type writePrefixedPrivateReferenceMessage<
+	def extends PrivateDeclaration
+> =
+	`Private type references should not include '#'. Use '${charsAfterFirst<def>}' instead.`
+
 type validateStringAst<def extends string, $> =
 	def extends `${infer n extends number}` ?
 		number extends n ?
@@ -66,19 +80,26 @@ type validateStringAst<def extends string, $> =
 		bigint extends b ?
 			ErrorMessage<writeMalformedNumericLiteralMessage<def, "bigint">>
 		:	undefined
-	: def extends keyof $ ?
-		$[def] extends null ?
+	: maybeExtractAlias<def, $> extends infer alias extends keyof $ ?
+		$[alias] extends null ?
 			// handle any/never
 			def
+		: def extends PrivateDeclaration ?
+			ErrorMessage<writePrefixedPrivateReferenceMessage<def>>
 		: // these problems would've been caught during a fullStringParse, but it's most
 		// efficient to check for them here in case the string was naively parsed
-		$[def] extends GenericProps ?
-			ErrorMessage<writeInvalidGenericArgsMessage<def, $[def]["params"], []>>
-		: $[def] extends { [arkKind]: "module" } ?
+		$[alias] extends GenericProps ?
+			ErrorMessage<writeInvalidGenericArgsMessage<def, $[alias]["params"], []>>
+		: $[alias] extends { [arkKind]: "module" } ?
 			ErrorMessage<writeMissingSubmoduleAccessMessage<def>>
 		:	undefined
 	: def extends ErrorMessage ? def
 	: undefined
+
+export type maybeExtractAlias<def extends string, $> =
+	def extends keyof $ ? def
+	: `#${def}` extends keyof $ ? `#${def}`
+	: null
 
 export type validateString<def extends string, $, args> =
 	validateAst<parseString<def, $, args>, $, args> extends (

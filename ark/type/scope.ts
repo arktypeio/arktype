@@ -237,7 +237,7 @@ export class RawScope<
 			args: { this: {} as RawSchema },
 			$: this as never,
 			...opts
-		})
+		}).bindScope(this)
 	}
 
 	parse(def: unknown, ctx: ParseContext): RawSchema {
