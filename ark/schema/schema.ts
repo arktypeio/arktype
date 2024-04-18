@@ -5,6 +5,7 @@ import {
 	throwParseError
 } from "@arktype/util"
 import type { constrain } from "./constraints/ast.js"
+import type { Predicate } from "./constraints/predicate.js"
 import {
 	type PrimitiveConstraintKind,
 	throwInvalidOperandError
@@ -167,6 +168,10 @@ export class RawSchema<
 			in: this,
 			morphs: [morph]
 		})
+	}
+
+	narrow(predicate: Predicate): RawSchema {
+		return this.constrain("predicate", predicate)
 	}
 
 	constrain<kind extends PrimitiveConstraintKind>(
