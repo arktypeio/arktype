@@ -23,7 +23,7 @@
 		"buildCjs": "ARKTYPE_CJS=1 pnpm -r build",
 		"docgen": "tsx ./ark/repo/docgen.ts",
 		"test": "mocha",
-		"tnt": "mocha --skipTypes",
+		"tnt": "mocha --skipTypes --exclude 'ark/attest/**/*.test.*'",
 		"testRepo": "pnpm test && cd ./ark/test && pnpm test && pnpm testTsVersions",
 		"testTsVersions": "tsx ./ark/repo/testTsVersions.ts",
 		"typecheck": "tsc --noEmit",
