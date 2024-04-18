@@ -106,9 +106,9 @@ export const typeEqualityMapping = new TypeAssertionMapping((data) => {
 		return {
 			expected: expected.type,
 			actual:
-				expected.type === actual.type
-					? "(serializes to same value)"
-					: actual.type
+				expected.type === actual.type ?
+					"(serializes to same value)"
+				:	actual.type
 		}
 	}
 	return null

@@ -1,22 +1,21 @@
 import { attest } from "@arktype/attest"
+import { rawSchema, writeUnresolvableMessage } from "@arktype/schema"
 import { type } from "arktype"
-import { node } from "../keywords/ark.js"
-import {
-	writeMissingRightOperandMessage,
-	writeUnresolvableMessage
-} from "../parser/string/shift/operand/unenclosed.js"
+import { writeMissingRightOperandMessage } from "../parser/string/shift/operand/unenclosed.js"
 
 describe("keyof", () => {
 	it("autocompletion", () => {
 		// @ts-expect-error
-		attest(() => type("k")).completions()
+		attest(() => type("k")).completions({ k: ["keyof"] })
 	})
+
 	it("root expression", () => {
 		const t = type("keyof", "Date")
 		attest<keyof Date>(t.infer)
-		const expected = node(Date).keyof()
+		const expected = rawSchema(Date).keyof()
 		attest(t.json).equals(expected.json)
 	})
+
 	it("primitive", () => {
 		const t = type("keyof bigint")
 		attest<keyof bigint>(t.infer)
@@ -29,11 +28,13 @@ describe("keyof", () => {
 		)
 		attest(t.json).equals(expected.json)
 	})
+
 	it("object literal", () => {
 		const t = type({ a: "123", b: "123" }).keyof()
 		attest<"a" | "b">(t.infer)
 		attest(t.json).equals(type("'a'|'b'").json)
 	})
+
 	it("overlapping union", () => {
 		const t = type({ a: "number", b: "boolean" })
 			.or({ b: "number", c: "string" })
@@ -41,31 +42,37 @@ describe("keyof", () => {
 		attest<"b">(t.infer)
 		attest(t.json).equals(type("'b'").json)
 	})
+
 	it("non-overlapping union", () => {
 		attest(() => type({ a: "number" }).or({ b: "number" }).keyof()).throws(
 			'Intersection of "a" and "b" results in an unsatisfiable type'
 		)
 	})
+
 	it("tuple expression", () => {
 		const t = type(["keyof", { a: "string" }])
 		attest<"a">(t.infer)
 		attest(t.json).equals(type("'a'").json)
 	})
+
 	it("union including non-object", () => {
 		attest(() => type({ a: "number" }).or("boolean").keyof()).throws.snap(
 			'ParseError: Intersection of "toString" | "valueOf" and "a" results in an unsatisfiable type'
 		)
 	})
+
 	it("unsatisfiable", () => {
 		attest(() => type("keyof undefined")).throws.snap(
 			"ParseError: keyof undefined results in an unsatisfiable type"
 		)
 	})
+
 	it("multiple keyofs", () => {
 		const t = type("keyof keyof string")
 		attest<"toString" | "valueOf">(t.infer)
 		attest(t.json).equals(type("===", "toString", "valueOf").json)
 	})
+
 	it("groupable", () => {
 		const t = type("(keyof symbol & string)[]")
 		attest<("toString" | "valueOf" | "description")[]>(t.infer)
@@ -73,11 +80,13 @@ describe("keyof", () => {
 			type("===", "toString", "valueOf", "description").array().json
 		)
 	})
+
 	it("intersection precedence", () => {
 		const t = type("keyof symbol & symbol")
 		attest<typeof Symbol.toStringTag | typeof Symbol.toPrimitive>(t.infer)
 		attest(t.json).is(type("===", Symbol.toStringTag, Symbol.toPrimitive).json)
 	})
+
 	it("union precedence", () => {
 		const t = type("keyof boolean | number")
 		attest<"valueOf" | number>(t.infer)
@@ -85,6 +94,7 @@ describe("keyof", () => {
 		// given it is included in keyof string, it seems like an anomaly, but we include it
 		attest(t.json).equals(type("number | 'valueOf' | 'toString'").json)
 	})
+
 	it("missing operand", () => {
 		// @ts-expect-error
 		attest(() => type("keyof "))
@@ -92,6 +102,7 @@ describe("keyof", () => {
 			// it tries to autocomplete, so this is just a possible completion that would be included
 			.type.errors("keyof bigint")
 	})
+
 	it("invalid operand", () => {
 		// @ts-expect-error
 		attest(() => type("keyof nope")).throwsAndHasTypeError(
@@ -116,6 +127,7 @@ describe("keyof", () => {
 			'TypeError: / must be a string matching /^(?:0|(?:[1-9]\\d*))$/, "length", "at", "concat", "copyWithin", "fill", "find", "findIndex", "lastIndexOf", "pop", "push", "reverse", "shift", "unshift", "slice", "sort", "splice", "includes", "indexOf", "join", "keys", "entries", "values", "forEach", "filter", "flat", "flatMap", "map", "every", "some", "reduce", "reduceRight", "toLocaleString", "toString", "findLast", "findLastIndex", (symbol Symbol.iterator) or (symbol Symbol.unscopables) (was "-1")'
 		)
 	})
+
 	it("tuple", () => {
 		const t = type(["keyof", ["string", "number"]])
 		attest<keyof [string, number]>(t.infer)
@@ -125,6 +137,7 @@ describe("keyof", () => {
 			'TypeError: / must be "length", "0", "1", "at", "concat", "copyWithin", "fill", "find", "findIndex", "lastIndexOf", "pop", "push", "reverse", "shift", "unshift", "slice", "sort", "splice", "includes", "indexOf", "join", "keys", "entries", "values", "forEach", "filter", "flat", "flatMap", "map", "every", "some", "reduce", "reduceRight", "toLocaleString", "toString", "findLast", "findLastIndex", (symbol Symbol.iterator) or (symbol Symbol.unscopables) (was "2")'
 		)
 	})
+
 	it("wellFormedNonNegativeInteger intersection", () => {
 		const a = type([{ "1": "'foo'" }, "&", "string[]"])
 		const t = type("keyof", a)

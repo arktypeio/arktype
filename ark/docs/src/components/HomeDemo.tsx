@@ -75,32 +75,31 @@ export const HomeDemo = () => {
 	const [loaded, setLoaded] = useState(false)
 	const monaco = useMonaco()
 	if (monaco && !loaded) setupMonaco(monaco).then(() => setLoaded(true))
-	return loaded ? (
-		<Editor
-			height="30vh"
-			defaultLanguage="typescript"
-			defaultValue={syntax}
-			theme="arkdark"
-			options={{
-				minimap: { enabled: false },
-				scrollBeyondLastLine: false
-			}}
-			onMount={(editor, monaco) => {
-				const editorElement = editor.getDomNode()
-				if (editorElement) {
-					editorElement.style.borderRadius = "16px"
-					editorElement.style.boxShadow =
-						"0 10px 15px 0 rgba(0, 0, 0, 0.3), 0 15px 30px 0 rgba(0, 0, 0, 0.22)"
-					editorElement.style.transition = "all 0.3s cubic-bezier(.25,.8,.25,1)"
-					editorElement.style.backdropFilter = "blur(16px)"
-					const guard = editorElement?.querySelector(
-						".overflow-guard"
-					) as HTMLElement | null
-					guard!.style.borderRadius = "16px"
-				}
-			}}
-		/>
-	) : (
-		"Loading..."
-	)
+	return loaded ?
+			<Editor
+				height="30vh"
+				defaultLanguage="typescript"
+				defaultValue={syntax}
+				theme="arkdark"
+				options={{
+					minimap: { enabled: false },
+					scrollBeyondLastLine: false
+				}}
+				onMount={(editor, monaco) => {
+					const editorElement = editor.getDomNode()
+					if (editorElement) {
+						editorElement.style.borderRadius = "16px"
+						editorElement.style.boxShadow =
+							"0 10px 15px 0 rgba(0, 0, 0, 0.3), 0 15px 30px 0 rgba(0, 0, 0, 0.22)"
+						editorElement.style.transition =
+							"all 0.3s cubic-bezier(.25,.8,.25,1)"
+						editorElement.style.backdropFilter = "blur(16px)"
+						const guard = editorElement?.querySelector(
+							".overflow-guard"
+						) as HTMLElement | null
+						guard!.style.borderRadius = "16px"
+					}
+				}}
+			/>
+		:	"Loading..."
 }

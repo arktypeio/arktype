@@ -1,23 +1,26 @@
 import {
-	printable,
-	stringAndSymbolicEntriesOf,
-	throwParseError,
+	type Node,
+	type RawSchema,
+	tsKeywords,
+	type writeInvalidPropertyKeyMessage
+} from "@arktype/schema"
+import {
 	type Dict,
 	type ErrorMessage,
 	type Key,
-	type evaluate,
-	type merge
+	type merge,
+	printable,
+	type show,
+	stringAndSymbolicEntriesOf,
+	throwParseError
 } from "@arktype/util"
-import type { Node } from "../base.js"
-import type { writeInvalidPropertyKeyMessage } from "../constraints/props/index.js"
 import type { ParseContext } from "../scope.js"
-import type { Type } from "../types/type.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
 import type { astToString } from "./semantic/utils.js"
 import type { validateString } from "./semantic/validate.js"
 import { Scanner } from "./string/shift/scanner.js"
 
-export const parseObjectLiteral = (def: Dict, ctx: ParseContext): Type => {
+export const parseObjectLiteral = (def: Dict, ctx: ParseContext): RawSchema => {
 	const propNodes: Node<"prop">[] = []
 	const indexNodes: Node<"index">[] = []
 	// We only allow a spread operator to be used as the first key in an object
@@ -32,7 +35,7 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): Type => {
 		const spreadNode = ctx.$.parse(spreadEntry.value, ctx)
 		if (
 			!spreadNode.hasKind("intersection") ||
-			!spreadNode.extends(ctx.$.keywords.object)
+			!spreadNode.extends(tsKeywords.object)
 		) {
 			return throwParseError(
 				writeInvalidSpreadTypeMessage(printable(spreadEntry.value))
@@ -53,13 +56,6 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): Type => {
 		if (entry.kind === "spread") {
 			return throwParseError(nonLeadingSpreadError)
 		}
-		ctx.path.push(
-			`${
-				typeof entry.inner === "symbol"
-					? `[${printable(entry.inner)}]`
-					: entry.inner
-			}`
-		)
 
 		if (entry.kind === "index") {
 			// handle key parsing first to match type behavior
@@ -76,9 +72,8 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): Type => {
 			})
 			propNodes.push(propNode)
 		}
-		ctx.path.pop()
 	}
-	return ctx.$.node({
+	return ctx.$.schema({
 		domain: "object",
 		prop: propNodes,
 		index: indexNodes
@@ -109,48 +104,41 @@ type inferObjectLiteralInner<def extends object, $, args> = {
 	>
 }
 
-export type inferObjectLiteral<def extends object, $, args> = evaluate<
-	"..." extends keyof def
-		? merge<
-				inferDefinition<def["..."], $, args>,
-				inferObjectLiteralInner<def, $, args>
-		  >
-		: inferObjectLiteralInner<def, $, args>
+export type inferObjectLiteral<def extends object, $, args> = show<
+	"..." extends keyof def ?
+		merge<
+			inferDefinition<def["..."], $, args>,
+			inferObjectLiteralInner<def, $, args>
+		>
+	:	inferObjectLiteralInner<def, $, args>
 >
 
 export type validateObjectLiteral<def, $, args> = {
-	[k in keyof def]: k extends IndexKey<infer indexDef>
-		? validateString<indexDef, $, args> extends ErrorMessage<infer message>
-			? // add a nominal type here to avoid allowing the error message as input
-			  indexParseError<message>
-			: inferDefinition<indexDef, $, args> extends PropertyKey
-			? // if the indexDef is syntactically and semantically valid,
-			  // move on to the validating the value definition
-			  validateDefinition<def[k], $, args>
-			: indexParseError<writeInvalidPropertyKeyMessage<indexDef>>
-		: k extends "..."
-		? inferDefinition<def[k], $, args> extends object
-			? validateDefinition<def[k], $, args>
-			: indexParseError<writeInvalidSpreadTypeMessage<astToString<def[k]>>>
-		: validateDefinition<def[k], $, args>
+	[k in keyof def]: k extends IndexKey<infer indexDef> ?
+		validateString<indexDef, $, args> extends ErrorMessage<infer message> ?
+			// add a nominal type here to avoid allowing the error message as input
+			indexParseError<message>
+		: inferDefinition<indexDef, $, args> extends PropertyKey ?
+			// if the indexDef is syntactically and semantically valid,
+			// move on to the validating the value definition
+			validateDefinition<def[k], $, args>
+		:	indexParseError<writeInvalidPropertyKeyMessage<indexDef>>
+	: k extends "..." ?
+		inferDefinition<def[k], $, args> extends object ?
+			validateDefinition<def[k], $, args>
+		:	indexParseError<writeInvalidSpreadTypeMessage<astToString<def[k]>>>
+	:	validateDefinition<def[k], $, args>
 }
 
-type nonOptionalKeyFrom<k, $, args> = parseKey<k> extends PreparsedKey<
-	"required",
-	infer inner
->
-	? inner
-	: parseKey<k> extends PreparsedKey<"index", infer inner>
-	? inferDefinition<inner, $, args> & Key
-	: // spread key is handled at the type root so is handled neither here nor in optionalKeyFrom
-	  never
+type nonOptionalKeyFrom<k, $, args> =
+	parseKey<k> extends PreparsedKey<"required", infer inner> ? inner
+	: parseKey<k> extends PreparsedKey<"index", infer inner> ?
+		inferDefinition<inner, $, args> & Key
+	:	// spread key is handled at the type root so is handled neither here nor in optionalKeyFrom
+		never
 
-type optionalKeyFrom<k> = parseKey<k> extends PreparsedKey<
-	"optional",
-	infer inner
->
-	? inner
-	: never
+type optionalKeyFrom<k> =
+	parseKey<k> extends PreparsedKey<"optional", infer inner> ? inner : never
 
 type PreparsedKey<
 	kind extends ParsedKeyKind = ParsedKeyKind,
@@ -174,49 +162,47 @@ export const parseEntry = (entry: readonly [Key, unknown]): PreparsedEntry =>
 	Object.assign(parseKey(entry[0]), { value: entry[1] })
 
 const parseKey = (key: Key): PreparsedKey =>
-	typeof key === "symbol"
-		? { inner: key, kind: "required" }
-		: key.at(-1) === "?"
-		? key.at(-2) === Scanner.escapeToken
-			? { inner: `${key.slice(0, -2)}?`, kind: "required" }
-			: {
-					inner: key.slice(0, -1),
-					kind: "optional"
-			  }
-		: key[0] === "[" && key.at(-1) === "]"
-		? { inner: key.slice(1, -1), kind: "index" }
-		: key === "..."
-		? { inner: "...", kind: "spread" }
-		: { inner: key === "\\..." ? "..." : key, kind: "required" }
+	typeof key === "symbol" ? { inner: key, kind: "required" }
+	: key.at(-1) === "?" ?
+		key.at(-2) === Scanner.escapeToken ?
+			{ inner: `${key.slice(0, -2)}?`, kind: "required" }
+		:	{
+				inner: key.slice(0, -1),
+				kind: "optional"
+			}
+	: key[0] === "[" && key.at(-1) === "]" ?
+		{ inner: key.slice(1, -1), kind: "index" }
+	: key === "..." ? { inner: "...", kind: "spread" }
+	: { inner: key === "\\..." ? "..." : key, kind: "required" }
 
-type parseKey<k> = k extends `${infer inner}?`
-	? inner extends `${infer baseName}${Scanner.EscapeToken}`
-		? PreparsedKey.from<{
+type parseKey<k> =
+	k extends `${infer inner}?` ?
+		inner extends `${infer baseName}${Scanner.EscapeToken}` ?
+			PreparsedKey.from<{
 				kind: "required"
 				inner: `${baseName}?`
-		  }>
-		: PreparsedKey.from<{
+			}>
+		:	PreparsedKey.from<{
 				kind: "optional"
 				inner: inner
-		  }>
-	: k extends "..."
-	? PreparsedKey.from<{ kind: "spread"; inner: "..." }>
-	: k extends `${Scanner.EscapeToken}...`
-	? PreparsedKey.from<{ kind: "required"; inner: "..." }>
-	: k extends IndexKey<infer def>
-	? PreparsedKey.from<{
+			}>
+	: k extends "..." ? PreparsedKey.from<{ kind: "spread"; inner: "..." }>
+	: k extends `${Scanner.EscapeToken}...` ?
+		PreparsedKey.from<{ kind: "required"; inner: "..." }>
+	: k extends IndexKey<infer def> ?
+		PreparsedKey.from<{
 			kind: "index"
 			inner: def
-	  }>
-	: PreparsedKey.from<{
+		}>
+	:	PreparsedKey.from<{
 			kind: "required"
-			inner: k extends `${Scanner.EscapeToken}${infer escapedIndexKey extends
-				IndexKey}`
-				? escapedIndexKey
-				: k extends Key
-				? k
-				: `${k & number}`
-	  }>
+			inner: k extends (
+				`${Scanner.EscapeToken}${infer escapedIndexKey extends IndexKey}`
+			) ?
+				escapedIndexKey
+			: k extends Key ? k
+			: `${k & number}`
+		}>
 
 declare const indexParseSymbol: unique symbol
 

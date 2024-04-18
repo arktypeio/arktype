@@ -15,9 +15,8 @@ export const cached = <T>(thunk: () => T): (() => T) => {
 
 export const isThunk = <value>(
 	value: value
-): value is Extract<value, Thunk> extends never
-	? value & Thunk
-	: Extract<value, Thunk> => typeof value === "function" && value.length === 0
+): value is Extract<value, Thunk> extends never ? value & Thunk
+:	Extract<value, Thunk> => typeof value === "function" && value.length === 0
 
 export type Thunk<ret = unknown> = () => ret
 
@@ -61,13 +60,18 @@ export class Callable<
 > extends NoopBase<f & attachments> {
 	constructor(f: f, opts?: CallableOptions<attachments>) {
 		super()
-		return Object.assign(
-			Object.setPrototypeOf(
-				f.bind(opts?.bind ?? this),
-				this.constructor.prototype
-			),
-			opts?.attach
+		const self = Object.setPrototypeOf(
+			f.bind(opts?.bind ?? this),
+			this.constructor.prototype
 		)
+
+		if (opts?.attach)
+			Object.defineProperties(
+				self,
+				Object.getOwnPropertyDescriptors(opts.attach)
+			)
+
+		return self
 	}
 }
 

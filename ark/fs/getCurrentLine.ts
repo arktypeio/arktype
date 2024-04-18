@@ -149,13 +149,13 @@ const getLocationWithOffset = (locations: Array<Location>, offset: Offset) => {
 		// the current location matches the offset
 		if (
 			(offset.file &&
-				(typeof offset.file === "string"
-					? location.file.includes(offset.file)
-					: offset.file.test(location.file))) ||
+				(typeof offset.file === "string" ?
+					location.file.includes(offset.file)
+				:	offset.file.test(location.file))) ||
 			(offset.method &&
-				(typeof offset.method === "string"
-					? location.method.includes(offset.method)
-					: offset.method.test(location.method)))
+				(typeof offset.method === "string" ?
+					location.method.includes(offset.method)
+				:	offset.method.test(location.method)))
 		) {
 			// we are found, and we should exit immediatelyg, so return with the frame offset applied
 			if (offset.immediate) {

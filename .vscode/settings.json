@@ -3,7 +3,6 @@
 	"editor.codeActionsOnSave": [
 		"editor.formatOnSave",
 		"source.fixAll.eslint",
-		"source.addMissingImports",
 		"source.sortImports"
 	],
 	"eslint.codeActionsOnSave.rules": [
@@ -12,33 +11,28 @@
 		"import/no-duplicates",
 		"@typescript-eslint/no-import-type-side-effects"
 	],
-	"eslint.codeActionsOnSave.mode": "problems",
-	"eslint.run": "onSave",
-	"eslint.rules.customizations": [
-		// These will still be caught when run from the CLI, but I see them too
-		// often I'm in the middle of writing something.
-		{ "rule": "@typescript-eslint/no-unused-vars", "severity": "off" },
-		{ "rule": "unused-imports/no-unused-imports", "severity": "off" },
-		{ "rule": "no-empty", "severity": "off" }
-	],
+	"typescript.preferences.preferTypeOnlyAutoImports": true,
 	"typescript.preferences.autoImportFileExcludePatterns": [
 		"out",
 		// too many overlapping names, easy to import in schema/arktype where we don't want it
 		// should just import as * as ts when we need it in attest
 		"typescript",
-		"./ark/type/main.ts"
+		"./ark/type/main.ts",
+		"./ark/schema/main.ts"
 	],
 	"typescript.tsserver.experimental.enableProjectDiagnostics": true,
-	"prettier.ignorePath": "ark/repo/.prettierignore",
-	"prettier.prettierPath": "./node_modules/prettier/index.cjs",
-	// IF YOU UPDATE THE MOCHA CONFIG HERE, PLEASE ALSO UPDATE package.json/mocha AND ark/repo/mocha.jsonc
+
+	"vitest.rootConfig": "ark/repo/vitest.extension.config.ts",
+	"vitest.nodeEnv": {
+		"ATTEST_skipTypes": "true"
+	},
 	"mochaExplorer.nodeArgv": ["--import=tsx"],
 	// ignore attest since it requires type information
 	"mochaExplorer.ignore": ["ark/attest/**/*"],
-	"mochaExplorer.require": "ark/repo/mocha.fixtures.ts",
+	"mochaExplorer.require": "ark/repo/mocha.globalSetup.ts",
 	"mochaExplorer.timeout": 0,
 	"mochaExplorer.env": {
-		"ATTEST_CONFIG": "{ \"skipTypes\": true }"
+		"ATTEST_skipTypes": "true"
 	},
 	"testExplorer.useNativeTesting": true,
 	"editor.unicodeHighlight.allowedCharacters": {

@@ -1,32 +1,33 @@
+import type { RawSchema } from "@arktype/schema"
 import {
+	type ErrorMessage,
 	throwInternalError,
-	throwParseError,
-	type ErrorMessage
+	throwParseError
 } from "@arktype/util"
-import type { Type } from "../../types/type.js"
 import type { inferAstRoot } from "../semantic/infer.js"
 import type { DynamicState, DynamicStateWithRoot } from "./reduce/dynamic.js"
 import type { StringifiablePrefixOperator } from "./reduce/shared.js"
 import type { StaticState, state } from "./reduce/static.js"
 import type { parseOperand } from "./shift/operand/operand.js"
 import {
-	writeUnexpectedCharacterMessage,
-	type parseOperator
+	type parseOperator,
+	writeUnexpectedCharacterMessage
 } from "./shift/operator/operator.js"
 
 /**
  * Try to parse the definition from right to left using the most common syntax.
  * This can be much more efficient for simple definitions.
  */
-export type parseString<def extends string, $, args> = def extends keyof $
-	? // def could also be a generic reference here, in which case it will
-	  // fail semantic validation because it has no args
-	  def
-	: def extends `${infer child}[]`
-	? child extends keyof $
-		? [child, "[]"]
-		: fullStringParse<state.initialize<def>, $, args>
-	: fullStringParse<state.initialize<def>, $, args>
+export type parseString<def extends string, $, args> =
+	def extends keyof $ ?
+		// def could also be a generic reference here, in which case it will
+		// fail semantic validation because it has no args
+		def
+	: def extends `${infer child}[]` ?
+		child extends keyof $ ?
+			[child, "[]"]
+		:	fullStringParse<state.initialize<def>, $, args>
+	:	fullStringParse<state.initialize<def>, $, args>
 
 export type inferString<def extends string, $, args> = inferAstRoot<
 	parseString<def, $, args>,
@@ -40,7 +41,7 @@ export type BaseCompletions<$, args, otherSuggestions extends string = never> =
 	| StringifiablePrefixOperator
 	| otherSuggestions
 
-export const fullStringParse = (s: DynamicState): Type => {
+export const fullStringParse = (s: DynamicState): RawSchema => {
 	s.parseOperand()
 	const result = parseUntilFinalizer(s).root
 	if (!result) {
@@ -67,24 +68,19 @@ export const parseUntilFinalizer = (s: DynamicState): DynamicStateWithRoot => {
 	return s as DynamicStateWithRoot
 }
 
-export type parseUntilFinalizer<
-	s extends StaticState,
-	$,
-	args
-> = s["finalizer"] extends undefined
-	? parseUntilFinalizer<next<s, $, args>, $, args>
-	: s
+export type parseUntilFinalizer<s extends StaticState, $, args> =
+	s["finalizer"] extends undefined ?
+		parseUntilFinalizer<next<s, $, args>, $, args>
+	:	s
 
 const next = (s: DynamicState) =>
 	s.hasRoot() ? s.parseOperator() : s.parseOperand()
 
-type next<s extends StaticState, $, args> = s["root"] extends undefined
-	? parseOperand<s, $, args>
-	: parseOperator<s, $, args>
+type next<s extends StaticState, $, args> =
+	s["root"] extends undefined ? parseOperand<s, $, args>
+	:	parseOperator<s, $, args>
 
 export type extractFinalizedResult<s extends StaticState> =
-	s["finalizer"] extends ErrorMessage
-		? s["finalizer"]
-		: s["finalizer"] extends ""
-		? s["root"]
-		: state.error<writeUnexpectedCharacterMessage<`${s["finalizer"]}`>>
+	s["finalizer"] extends ErrorMessage ? s["finalizer"]
+	: s["finalizer"] extends "" ? s["root"]
+	: state.error<writeUnexpectedCharacterMessage<`${s["finalizer"]}`>>

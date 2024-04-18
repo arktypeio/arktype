@@ -156,15 +156,14 @@ const getCompletions = (attestCall: ts.CallExpression) => {
 
 			if (prefix in completions) {
 				return `Encountered multiple completion candidates for string(s) '${prefix}'. Assertions on the same prefix must be split into multiple attest calls so the results can be distinguished.`
-			} else {
-				completions[prefix] = []
-				for (const entry of entries) {
-					if (
-						entry.name.startsWith(prefix) &&
-						entry.name.length > prefix.length
-					) {
-						completions[prefix].push(entry.name)
-					}
+			}
+			completions[prefix] = []
+			for (const entry of entries) {
+				if (
+					entry.name.startsWith(prefix) &&
+					entry.name.length > prefix.length
+				) {
+					completions[prefix].push(entry.name)
 				}
 			}
 		}
@@ -259,27 +258,22 @@ export const compareTsTypes = (
 ): TypeRelationship => {
 	const lString = l.toString()
 	const rString = r.toString()
-	if (l.isUnresolvable || r.isUnresolvable) {
-		// Ensure two unresolvable types are not treated as equivalent
-		return "none"
-	} else if (lString === "any") {
-		// Treat `any` as a supertype of every other type
-		return rString === "any" ? "equality" : "supertype"
-	} else if (rString === "any") {
-		return "subtype"
-	} else {
-		// Otherwise, determine if the types are equivalent by checking mutual assignability
-		const checker = getInternalTypeChecker()
-		const isSubtype = checker.isTypeAssignableTo(l, r)
-		const isSupertype = checker.isTypeAssignableTo(r, l)
-		return isSubtype
-			? isSupertype
-				? "equality"
-				: "subtype"
-			: isSupertype
-			? "supertype"
-			: "none"
-	}
+	// Ensure two unresolvable types are not treated as equivalent
+	if (l.isUnresolvable || r.isUnresolvable) return "none"
+	// Treat `any` as a supertype of every other type
+	if (lString === "any") return rString === "any" ? "equality" : "supertype"
+	if (rString === "any") return "subtype"
+	// Otherwise, determine if the types are equivalent by checking mutual assignability
+	const checker = getInternalTypeChecker()
+	const isSubtype = checker.isTypeAssignableTo(l, r)
+	const isSupertype = checker.isTypeAssignableTo(r, l)
+	return (
+		isSubtype ?
+			isSupertype ? "equality"
+			:	"subtype"
+		: isSupertype ? "supertype"
+		: "none"
+	)
 }
 
 export const checkDiagnosticMessages = (

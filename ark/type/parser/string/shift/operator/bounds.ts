@@ -1,24 +1,30 @@
-import { isKeyOf, throwParseError, type keySet } from "@arktype/util"
-import type { DateLiteral, LimitLiteral } from "../../../../constraints/ast.js"
-import { writeUnboundableMessage } from "../../../../constraints/refinements/range.js"
-import type { Schema } from "../../../../kinds.js"
-import type { BoundKind } from "../../../../shared/implement.js"
-import type { Type } from "../../../../types/type.js"
+import {
+	type BoundKind,
+	type DateLiteral,
+	type LimitLiteral,
+	type NodeDef,
+	type RawSchema,
+	internalKeywords,
+	jsObjects,
+	tsKeywords,
+	writeUnboundableMessage
+} from "@arktype/schema"
+import { isKeyOf, type keySet, throwParseError } from "@arktype/util"
 import type { astToString } from "../../../semantic/utils.js"
 import type {
 	DynamicState,
 	DynamicStateWithRoot
 } from "../../reduce/dynamic.js"
 import {
-	invertedComparators,
-	maxComparators,
-	writeUnpairableComparatorMessage,
 	type Comparator,
 	type InvertedComparators,
 	type MaxComparator,
-	type OpenLeftBound
+	type OpenLeftBound,
+	invertedComparators,
+	maxComparators,
+	writeUnpairableComparatorMessage
 } from "../../reduce/shared.js"
-import type { state, StaticState } from "../../reduce/static.js"
+import type { StaticState, state } from "../../reduce/static.js"
 import { extractDateLiteralSource, isDateLiteral } from "../operand/date.js"
 import type { parseOperand } from "../operand/operand.js"
 import type { Scanner } from "../scanner.js"
@@ -52,16 +58,19 @@ export type parseBound<
 	unscanned extends string,
 	$,
 	args
-> = shiftComparator<start, unscanned> extends infer shiftResultOrError
-	? shiftResultOrError extends Scanner.shiftResult<
-			infer comparator extends Comparator,
-			infer nextUnscanned
-	  >
-		? s["root"] extends `${infer limit extends LimitLiteral}`
-			? state.reduceLeftBound<s, limit, comparator, nextUnscanned>
-			: parseRightBound<state.scanTo<s, nextUnscanned>, comparator, $, args>
-		: shiftResultOrError
-	: never
+> =
+	shiftComparator<start, unscanned> extends infer shiftResultOrError ?
+		shiftResultOrError extends (
+			Scanner.shiftResult<
+				infer comparator extends Comparator,
+				infer nextUnscanned
+			>
+		) ?
+			s["root"] extends `${infer limit extends LimitLiteral}` ?
+				state.reduceLeftBound<s, limit, comparator, nextUnscanned>
+			:	parseRightBound<state.scanTo<s, nextUnscanned>, comparator, $, args>
+		:	shiftResultOrError
+	:	never
 
 const oneCharComparators = {
 	"<": true,
@@ -70,9 +79,8 @@ const oneCharComparators = {
 
 type OneCharComparator = keyof typeof oneCharComparators
 
-export type ComparatorStartChar = Comparator extends `${infer char}${string}`
-	? char
-	: never
+export type ComparatorStartChar =
+	Comparator extends `${infer char}${string}` ? char : never
 
 export const comparatorStartChars: keySet<ComparatorStartChar> = {
 	"<": 1,
@@ -84,19 +92,16 @@ const shiftComparator = (
 	s: DynamicState,
 	start: ComparatorStartChar
 ): Comparator =>
-	s.scanner.lookaheadIs("=")
-		? `${start}${s.scanner.shift()}`
-		: isKeyOf(start, oneCharComparators)
-		? start
-		: s.error(singleEqualsMessage)
+	s.scanner.lookaheadIs("=") ? `${start}${s.scanner.shift()}`
+	: isKeyOf(start, oneCharComparators) ? start
+	: s.error(singleEqualsMessage)
 
 type shiftComparator<
 	start extends ComparatorStartChar,
 	unscanned extends string
-> = unscanned extends `=${infer nextUnscanned}`
-	? [`${start}=`, nextUnscanned]
-	: start extends OneCharComparator
-	? [start, unscanned]
+> =
+	unscanned extends `=${infer nextUnscanned}` ? [`${start}=`, nextUnscanned]
+	: start extends OneCharComparator ? [start, unscanned]
 	: state.error<singleEqualsMessage>
 
 export const writeIncompatibleRangeMessage = (l: BoundKind, r: BoundKind) =>
@@ -105,56 +110,55 @@ export const writeIncompatibleRangeMessage = (l: BoundKind, r: BoundKind) =>
 export const getBoundKinds = (
 	comparator: Comparator,
 	limit: LimitLiteral,
-	root: Type,
+	root: RawSchema,
 	boundKind: BoundExpressionKind
 ): BoundKind[] => {
-	if (root.extends(root.$.keywords.number)) {
+	if (root.extends(tsKeywords.number)) {
 		if (typeof limit !== "number") {
 			return throwParseError(
 				writeInvalidLimitMessage(comparator, limit, boundKind)
 			)
 		}
-		return comparator === "=="
-			? ["min", "max"]
-			: comparator[0] === ">"
-			? ["min"]
+		return (
+			comparator === "==" ? ["min", "max"]
+			: comparator[0] === ">" ? ["min"]
 			: ["max"]
+		)
 	}
-	if (
-		root.extends(root.$.keywords.string) ||
-		root.extends(root.$.keywords.Array)
-	) {
+	if (root.extends(internalKeywords.lengthBoundable)) {
 		if (typeof limit !== "number") {
 			return throwParseError(
 				writeInvalidLimitMessage(comparator, limit, boundKind)
 			)
 		}
-		return comparator === "=="
-			? ["minLength", "maxLength"]
-			: comparator[0] === ">"
-			? ["minLength"]
+		return (
+			comparator === "==" ? ["minLength", "maxLength"]
+			: comparator[0] === ">" ? ["minLength"]
 			: ["maxLength"]
+		)
 	}
-	if (root.extends(root.$.keywords.Date)) {
+	if (root.extends(jsObjects.Date)) {
 		// allow either numeric or date limits
-		return comparator === "=="
-			? ["after", "before"]
-			: comparator[0] === ">"
-			? ["after"]
+		return (
+			comparator === "==" ? ["after", "before"]
+			: comparator[0] === ">" ? ["after"]
 			: ["before"]
+		)
 	}
 	return throwParseError(writeUnboundableMessage(root.expression))
 }
 
-export const singleEqualsMessage = `= is not a valid comparator. Use == to check for equality`
+export const singleEqualsMessage =
+	"= is not a valid comparator. Use == to check for equality"
 type singleEqualsMessage = typeof singleEqualsMessage
 
 const openLeftBoundToSchema = (
 	leftBound: OpenLeftBound
-): Schema<BoundKind> => ({
-	rule: isDateLiteral(leftBound.limit)
-		? extractDateLiteralSource(leftBound.limit)
-		: leftBound.limit,
+): NodeDef<BoundKind> => ({
+	rule:
+		isDateLiteral(leftBound.limit) ?
+			extractDateLiteralSource(leftBound.limit)
+		:	leftBound.limit,
 	exclusive: leftBound.comparator.length === 1
 })
 
@@ -173,7 +177,7 @@ export const parseRightBound = (
 		previousScannerIndex,
 		s.scanner.location
 	)
-	s.setRoot(previousRoot)
+	s.root = previousRoot
 	if (
 		!limitNode.hasKind("unit") ||
 		(typeof limitNode.unit !== "number" && !(limitNode.unit instanceof Date))
@@ -210,7 +214,7 @@ export const parseRightBound = (
 		lowerBoundKind[0],
 		openLeftBoundToSchema(s.branches.leftBound)
 	)
-	delete s.branches.leftBound
+	s.branches.leftBound = null
 }
 
 export type parseRightBound<
@@ -218,28 +222,29 @@ export type parseRightBound<
 	comparator extends Comparator,
 	$,
 	args
-> = parseOperand<s, $, args> extends infer nextState extends StaticState
-	? nextState["root"] extends `${infer limit extends LimitLiteral}`
-		? s["branches"]["leftBound"] extends {}
-			? comparator extends MaxComparator
-				? state.reduceRange<
+> =
+	parseOperand<s, $, args> extends infer nextState extends StaticState ?
+		nextState["root"] extends `${infer limit extends LimitLiteral}` ?
+			s["branches"]["leftBound"] extends {} ?
+				comparator extends MaxComparator ?
+					state.reduceRange<
 						s,
 						s["branches"]["leftBound"]["limit"],
 						s["branches"]["leftBound"]["comparator"],
 						comparator,
 						limit,
 						nextState["unscanned"]
-				  >
-				: state.error<writeUnpairableComparatorMessage<comparator>>
-			: state.reduceSingleBound<s, comparator, limit, nextState["unscanned"]>
-		: state.error<
+					>
+				:	state.error<writeUnpairableComparatorMessage<comparator>>
+			:	state.reduceSingleBound<s, comparator, limit, nextState["unscanned"]>
+		:	state.error<
 				writeInvalidLimitMessage<
 					comparator,
 					astToString<nextState["root"]>,
 					"right"
 				>
-		  >
-	: never
+			>
+	:	never
 
 export const writeInvalidLimitMessage = <
 	comparator extends Comparator,
@@ -260,10 +265,8 @@ export type writeInvalidLimitMessage<
 	comparator extends Comparator,
 	limit extends string | number,
 	boundKind extends BoundExpressionKind
-> = `Comparator ${boundKind extends "left"
-	? InvertedComparators[comparator]
-	: comparator} must be ${boundKind extends "left"
-	? "preceded"
-	: "followed"} by a corresponding literal (was '${limit}')`
+> = `Comparator ${boundKind extends "left" ? InvertedComparators[comparator]
+:	comparator} must be ${boundKind extends "left" ? "preceded"
+:	"followed"} by a corresponding literal (was '${limit}')`
 
 export type BoundExpressionKind = "left" | "right"

@@ -1,0 +1,41 @@
+{
+	// we're not currently using Biome by default due to a delay on applying
+	// lint fixes in editor and the lack of a cyclic imports rule.
+	// if these are addressed, I'd love to migrate back.
+	"$schema": "../../node_modules/@biomejs/biome/configuration_schema.json",
+	"files": {
+		"ignore": ["lib.*.d.ts"]
+	},
+	"formatter": {
+		"indentWidth": 4,
+		"formatWithErrors": true
+	},
+	"javascript": {
+		"formatter": {
+			"semicolons": "asNeeded",
+			"trailingComma": "none"
+		}
+	},
+	"linter": {
+		"rules": {
+			"suspicious": {
+				"noExplicitAny": "off",
+				"noRedeclare": "off",
+				"noEmptyInterface": "off",
+				"noShadowRestrictedNames": "off"
+			},
+			"complexity": {
+				"noBannedTypes": "off",
+				"noForEach": "off",
+				"noThisInStatic": "off"
+			},
+			"style": {
+				"noNonNullAssertion": "off"
+			},
+			"correctness": {
+				"noVoidTypeReturn": "off",
+				"noInvalidUseBeforeDeclaration": "off"
+			}
+		}
+	}
+}

@@ -1,4 +1,3 @@
-
 // TODO: reenable
 // describe("key traversal", () => {
 // 	const getExtraneousB = () => ({ a: "ok", b: "why?" })
@@ -9,6 +8,7 @@
 // 		const dataWithExtraneousB = getExtraneousB()
 // 		attest(t(dataWithExtraneousB).out).equals(dataWithExtraneousB)
 // 	})
+//
 // 	it("invalid union", () => {
 // 		const o = type([{ a: "string" }, "|", { b: "boolean" }]).configure({
 // 			keys: "strict"
@@ -17,6 +17,7 @@
 // 			'a must be a string or removed (was {"a":2})'
 // 		)
 // 	})
+//
 // 	it("distilled type", () => {
 // 		const t = type({
 // 			a: "string"
@@ -24,6 +25,7 @@
 // 		attest(t({ a: "ok" }).out).equals({ a: "ok" })
 // 		attest(t(getExtraneousB()).out).snap({ a: "ok" })
 // 	})
+//
 // 	it("distilled array", () => {
 // 		const o = type({ a: "email[]" }).configure({
 // 			keys: "distilled"
@@ -37,6 +39,7 @@
 // 		// can handle missing keys
 // 		attest(o({ b: ["shawn"] }).errors?.summary).snap("a must be defined")
 // 	})
+//
 // 	it("distilled union", () => {
 // 		const o = type([{ a: "string" }, "|", { b: "boolean" }]).configure({
 // 			keys: "distilled"
@@ -50,6 +53,7 @@
 // 			'a must be a string or b must be defined (was {"a":2})'
 // 		)
 // 	})
+//
 // 	it("strict type", () => {
 // 		const t = type({
 // 			a: "string"
@@ -57,6 +61,7 @@
 // 		attest(t({ a: "ok" }).out).equals({ a: "ok" })
 // 		attest(t(getExtraneousB()).errors?.summary).snap("b must be removed")
 // 	})
+//
 // 	it("strict array", () => {
 // 		const o = type({ a: "string[]" }).configure({
 // 			keys: "strict"

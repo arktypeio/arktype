@@ -8,9 +8,7 @@ const expectedOutput = readFile(fromHere("benchExpectedOutput.ts")).replaceAll(
 	"\n"
 )
 
-describe("bench", () => {
-	it("populates file", () => {
-		const actual = runThenGetContents(benchTemplate)
-		equal(actual, expectedOutput)
-	}).timeout(120000)
+it("populates file", () => {
+	const actual = runThenGetContents(benchTemplate)
+	equal(actual, expectedOutput)
 })

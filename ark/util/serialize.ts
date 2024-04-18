@@ -1,6 +1,6 @@
-import { domainOf, type inferDomain, type Primitive } from "./domain.js"
-import type { array } from "./lists.js"
-import type { BigintLiteral, NumberLiteral } from "./numericLiterals.js"
+import type { array } from "./arrays.js"
+import { type Primitive, domainOf, type inferDomain } from "./domain.js"
+import type { BigintLiteral } from "./numericLiterals.js"
 import type { Dict } from "./records.js"
 
 export type SerializationOptions = {
@@ -16,35 +16,30 @@ export type Json =
 	  }
 	| JsonData[]
 
-export type JsonData = string | boolean | number | null | Json
+export type JsonPrimitive = string | boolean | number | null
+
+export type JsonData = Json | JsonPrimitive
 
 export const snapshot = <t>(
 	data: t,
 	opts: SerializationOptions = { onUndefined: "(undefined)" }
 ): snapshot<t> => serializeRecurse(data, opts, []) as never
 
-export type snapshot<t, depth extends 1[] = []> = unknown extends t
-	? unknown
-	: t extends Primitive
-	? snapshotPrimitive<t>
-	: t extends Function
-	? `(function${string})`
-	: t extends Date
-	? string
-	: depth["length"] extends 10
-	? unknown
-	: t extends array<infer item>
-	? array<snapshot<item, [...depth, 1]>>
+export type snapshot<t, depth extends 1[] = []> =
+	unknown extends t ? unknown
+	: t extends Primitive ? snapshotPrimitive<t>
+	: t extends Function ? `(function${string})`
+	: t extends Date ? string
+	: depth["length"] extends 10 ? unknown
+	: t extends array<infer item> ? array<snapshot<item, [...depth, 1]>>
 	: {
 			[k in keyof t]: snapshot<t[k], [...depth, 1]>
-	  }
+		}
 
-type snapshotPrimitive<t> = t extends undefined
-	? "(undefined)"
-	: t extends bigint
-	? `${t}n`
-	: t extends symbol
-	? `(symbol${string})`
+type snapshotPrimitive<t> =
+	t extends undefined ? "(undefined)"
+	: t extends bigint ? `${t}n`
+	: t extends symbol ? `(symbol${string})`
 	: t
 
 export const print = (data: unknown, indent?: number): void =>
@@ -53,13 +48,9 @@ export const print = (data: unknown, indent?: number): void =>
 export const printable = (data: unknown, indent?: number): string => {
 	switch (domainOf(data)) {
 		case "object":
-			return data instanceof Date
-				? data.toDateString()
-				: JSON.stringify(
-						serializeRecurse(data, printableOpts, []),
-						null,
-						indent
-				  )
+			return data instanceof Date ?
+					data.toDateString()
+				:	JSON.stringify(serializeRecurse(data, printableOpts, []), null, indent)
 		case "symbol":
 			return printableOpts.onSymbol(data as symbol)
 		default:
@@ -79,7 +70,7 @@ const serializeRecurse = (
 	seen: unknown[]
 ): unknown => {
 	switch (domainOf(data)) {
-		case "object":
+		case "object": {
 			if (typeof data === "function") {
 				return printableOpts.onFunction(data)
 			}
@@ -98,6 +89,7 @@ const serializeRecurse = (
 				result[k] = serializeRecurse((data as any)[k], opts, nextSeen)
 			}
 			return result
+		}
 		case "symbol":
 			return printableOpts.onSymbol(data as symbol)
 		case "bigint":
@@ -113,7 +105,7 @@ type SerializedString<value extends string = string> = `"${value}"`
 
 export type SerializedPrimitives = {
 	string: SerializedString
-	number: NumberLiteral
+	number: `${number}`
 	bigint: BigintLiteral
 	boolean: "true" | "false"
 	null: "null"
@@ -128,15 +120,11 @@ export type SerializablePrimitive = inferDomain<keyof SerializedPrimitives>
 export const serializePrimitive = <value extends SerializablePrimitive>(
 	value: value
 ): serializePrimitive<value> =>
-	(typeof value === "string"
-		? JSON.stringify(value)
-		: typeof value === "bigint"
-		? `${value}n`
-		: `${value}`) as never
+	(typeof value === "string" ? JSON.stringify(value)
+	: typeof value === "bigint" ? `${value}n`
+	: `${value}`) as never
 
 export type serializePrimitive<value extends SerializablePrimitive> =
-	value extends string
-		? `"${value}"`
-		: value extends bigint
-		? `${value}n`
-		: `${value}`
+	value extends string ? `"${value}"`
+	: value extends bigint ? `${value}n`
+	: `${value}`

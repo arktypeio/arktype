@@ -82,9 +82,10 @@ const find = <t extends readonly unknown[], narrowed>(
 const findAssociatedDocs = (
 	declaration: ExportedDeclarations
 ): JSDoc[] | undefined => {
-	const possiblyDocumentedAncestor = isJSDocableNode(declaration)
-		? declaration
-		: find(declaration.getAncestors(), isJSDocableNode)
+	const possiblyDocumentedAncestor =
+		isJSDocableNode(declaration) ? declaration : (
+			find(declaration.getAncestors(), isJSDocableNode)
+		)
 
 	return possiblyDocumentedAncestor?.getJsDocs()
 }

@@ -1,5 +1,5 @@
+import type { DateLiteral } from "@arktype/schema"
 import { throwParseError, tryParseNumber } from "@arktype/util"
-import type { DateLiteral } from "../../../../constraints/ast.js"
 
 export const isDateLiteral = (value: unknown): value is DateLiteral =>
 	typeof value === "string" &&
@@ -50,9 +50,9 @@ const maybeParseDate = <errorOnFail extends boolean | string>(
 			return numberParsedDate
 		}
 	}
-	return errorOnFail
-		? throwParseError(
+	return errorOnFail ?
+			throwParseError(
 				errorOnFail === true ? writeInvalidDateMessage(source) : errorOnFail
-		  )
-		: (undefined as never)
+			)
+		:	(undefined as never)
 }

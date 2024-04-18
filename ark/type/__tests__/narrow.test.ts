@@ -1,10 +1,7 @@
 import { attest } from "@arktype/attest"
-import { reference, type equals } from "@arktype/util"
-import { type, type Type } from "arktype"
-import { describe } from "mocha"
-import type { Narrowed, of, string } from "../constraints/ast.js"
-import type { Ark } from "../keywords/ark.js"
-import type { Out } from "../types/morph.js"
+import type { Narrowed, Out, of, string } from "@arktype/schema"
+import { type equals, reference } from "@arktype/util"
+import { type Type, type } from "arktype"
 
 describe("narrow", () => {
 	it("implicit problem", () => {
@@ -18,12 +15,14 @@ describe("narrow", () => {
 			"must be valid according to isOdd (was 2)"
 		)
 	})
+
 	it("implicit problem anonymous", () => {
 		const even = type("number", ":", (n) => n % 2 === 0)
 		attest(even(1).errors?.summary).snap(
 			"must be valid according to an anonymous predicate (was 1)"
 		)
 	})
+
 	it("explicit problem", () => {
 		const even = type([
 			"number",
@@ -32,6 +31,7 @@ describe("narrow", () => {
 		])
 		attest(even(1).errors?.summary).snap("must be divisible by 3 (was 1)")
 	})
+
 	it("problem at path", () => {
 		const abEqual = type([
 			{
@@ -53,10 +53,12 @@ describe("narrow", () => {
 			'a must be equal to b (was {"a":1,"b":2})\nb must be equal to a (was {"a":1,"b":2})'
 		)
 	})
+
 	it("functional predicate", () => {
 		const one = type(["number", ":", (n): n is 1 => n === 1])
 		attest<1>(one.infer)
 	})
+
 	it("functional parameter inference", () => {
 		type Expected = number | boolean[]
 		const validateNumberOrBooleanList = <t>(
@@ -74,6 +76,7 @@ describe("narrow", () => {
 			type(["number|boolean[]", ":", (data: number | string[]) => !!data])
 		}).type.errors("Type 'boolean' is not assignable to type 'string'.")
 	})
+
 	it("narrow problem", () => {
 		const palindrome = type([
 			"string",
@@ -87,13 +90,15 @@ describe("narrow", () => {
 			'must be a palindrome (was "david")'
 		)
 	})
+
 	it("narrows the output type of a morph", () => {
 		const t = type("string")
 			.morph((s) => s.length)
 			.narrow((n): n is 5 => n === 5)
 
-		attest<Type<(In: string) => Out<of<5, Narrowed>>, Ark>>(t)
+		attest<Type<(In: string) => Out<of<5, Narrowed>>, {}>>(t)
 	})
+
 	it("expression", () => {
 		const t = type("string", ":", (s): s is `f${string}` => s[0] === "f")
 		attest<`f${string}`>(t.infer)

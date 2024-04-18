@@ -18,6 +18,7 @@ describe("callable", () => {
 		attest(f("ff")).snap("Hello: Mr. ff")
 		attest(f.doSomething()).snap("Mr. doSomething")
 	})
+
 	it("subclasses can be chained", () => {
 		class SecondSub extends Sub {
 			salutation = "Ms."
@@ -29,12 +30,14 @@ describe("callable", () => {
 		attest(f("ff")).snap("Hello: Ms.ff")
 		attest(f.doSomething()).snap("Ms.doSomething")
 	})
+
 	it("can attach properties", () => {
 		const s = new Callable(() => 1, { attach: { a: 2 } })
 
 		attest(s()).equals(1)
 		attest(s.a).equals(2)
 	})
+
 	it("can attach properties", () => {
 		// inferred directly from constructor
 		const s = new Callable(() => 1 as const, { attach: { a: 2 } } as const)
@@ -42,6 +45,7 @@ describe("callable", () => {
 		attest<1>(s()).equals(1)
 		attest<2>(s.a).equals(2)
 	})
+
 	it("can attach properties to a subclass", () => {
 		class Foo<attach extends object> extends Callable<() => 0, attach> {
 			constructor(attach: attach) {

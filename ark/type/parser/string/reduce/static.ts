@@ -1,5 +1,5 @@
-import type { Completion, defined, ErrorMessage } from "@arktype/util"
-import type { LimitLiteral } from "../../../constraints/ast.js"
+import type { LimitLiteral } from "@arktype/schema"
+import type { Completion, ErrorMessage, defined } from "@arktype/util"
 import type { Scanner } from "../shift/scanner.js"
 import type {
 	Comparator,
@@ -72,9 +72,10 @@ export namespace state {
 		previousScanned extends string,
 		previousUnscanned extends string,
 		updatedUnscanned extends string
-	> = previousUnscanned extends `${infer justScanned}${updatedUnscanned}`
-		? `${previousScanned}${justScanned}`
-		: previousScanned
+	> =
+		previousUnscanned extends `${infer justScanned}${updatedUnscanned}` ?
+			`${previousScanned}${justScanned}`
+		:	previousScanned
 
 	export type setRoot<
 		s extends StaticState,
@@ -111,9 +112,10 @@ export namespace state {
 		s extends StaticState,
 		token extends "|" | "&",
 		unscanned extends string
-	> = s["branches"]["leftBound"] extends {}
-		? openRangeError<s["branches"]["leftBound"]>
-		: from<{
+	> =
+		s["branches"]["leftBound"] extends {} ?
+			openRangeError<s["branches"]["leftBound"]>
+		:	from<{
 				root: undefined
 				branches: {
 					prefixes: []
@@ -125,24 +127,25 @@ export namespace state {
 				finalizer: s["finalizer"]
 				scanned: updateScanned<s["scanned"], s["unscanned"], unscanned>
 				unscanned: unscanned
-		  }>
+			}>
 
 	export type reduceLeftBound<
 		s extends StaticState,
 		limit extends LimitLiteral,
 		comparator extends Comparator,
 		unscanned extends string
-	> = comparator extends "<" | "<="
-		? s["branches"]["leftBound"] extends {}
-			? state.error<
+	> =
+		comparator extends "<" | "<=" ?
+			s["branches"]["leftBound"] extends {} ?
+				state.error<
 					writeMultipleLeftBoundsMessage<
 						s["branches"]["leftBound"]["limit"],
 						s["branches"]["leftBound"]["comparator"],
 						limit,
 						InvertedComparators[comparator]
 					>
-			  >
-			: from<{
+				>
+			:	from<{
 					root: undefined
 					branches: {
 						prefixes: s["branches"]["prefixes"]
@@ -157,8 +160,8 @@ export namespace state {
 					finalizer: s["finalizer"]
 					scanned: updateScanned<s["scanned"], s["unscanned"], unscanned>
 					unscanned: unscanned
-			  }>
-		: state.error<writeUnpairableComparatorMessage<comparator>>
+				}>
+		:	state.error<writeUnpairableComparatorMessage<comparator>>
 
 	export type reduceRange<
 		s extends StaticState,
@@ -201,42 +204,39 @@ export namespace state {
 	}>
 
 	type mergeToUnion<s extends StaticState> =
-		s["branches"]["union"] extends undefined
-			? mergeToIntersection<s>
-			: [s["branches"]["union"], "|", mergeToIntersection<s>]
+		s["branches"]["union"] extends undefined ? mergeToIntersection<s>
+		:	[s["branches"]["union"], "|", mergeToIntersection<s>]
 
 	type mergeToIntersection<s extends StaticState> =
-		s["branches"]["intersection"] extends undefined
-			? mergePrefixes<s>
-			: [s["branches"]["intersection"], "&", mergePrefixes<s>]
+		s["branches"]["intersection"] extends undefined ? mergePrefixes<s>
+		:	[s["branches"]["intersection"], "&", mergePrefixes<s>]
 
 	type mergePrefixes<
 		s extends StaticState,
 		remaining extends unknown[] = s["branches"]["prefixes"]
-	> = remaining extends [infer head, ...infer tail]
-		? [head, mergePrefixes<s, tail>]
-		: s["root"]
+	> =
+		remaining extends [infer head, ...infer tail] ?
+			[head, mergePrefixes<s, tail>]
+		:	s["root"]
 
 	type popGroup<stack extends BranchState[], top extends BranchState> = [
 		...stack,
 		top
 	]
 
-	export type finalizeGroup<
-		s extends StaticState,
-		unscanned extends string
-	> = s["branches"]["leftBound"] extends {}
-		? openRangeError<s["branches"]["leftBound"]>
-		: s["groups"] extends popGroup<infer stack, infer top>
-		? from<{
+	export type finalizeGroup<s extends StaticState, unscanned extends string> =
+		s["branches"]["leftBound"] extends {} ?
+			openRangeError<s["branches"]["leftBound"]>
+		: s["groups"] extends popGroup<infer stack, infer top> ?
+			from<{
 				groups: stack
 				branches: top
 				root: mergeToUnion<s>
 				finalizer: s["finalizer"]
 				scanned: updateScanned<s["scanned"], s["unscanned"], unscanned>
 				unscanned: unscanned
-		  }>
-		: state.error<writeUnmatchedGroupCloseMessage<unscanned>>
+			}>
+		:	state.error<writeUnmatchedGroupCloseMessage<unscanned>>
 
 	export type reduceGroupOpen<
 		s extends StaticState,
@@ -253,35 +253,33 @@ export namespace state {
 	export type finalize<
 		s extends StaticState,
 		finalizer extends Scanner.FinalizingLookahead
-	> = s["groups"] extends []
-		? s["branches"]["leftBound"] extends {}
-			? openRangeError<s["branches"]["leftBound"]>
-			: from<{
+	> =
+		s["groups"] extends [] ?
+			s["branches"]["leftBound"] extends {} ?
+				openRangeError<s["branches"]["leftBound"]>
+			:	from<{
 					root: mergeToUnion<s>
 					groups: s["groups"]
 					branches: initialBranches
 					finalizer: finalizer
 					scanned: s["scanned"]
 					unscanned: s["unscanned"]
-			  }>
-		: state.error<writeUnclosedGroupMessage<")">>
+				}>
+		:	state.error<writeUnclosedGroupMessage<")">>
 
 	type openRangeError<range extends defined<BranchState["leftBound"]>> =
 		state.error<writeOpenRangeMessage<range["limit"], range["comparator"]>>
 
 	export type previousOperator<s extends StaticState> =
-		s["branches"]["leftBound"] extends {}
-			? s["branches"]["leftBound"]["comparator"]
-			: s["branches"]["prefixes"] extends [
-					...unknown[],
-					infer tail extends string
-			  ]
-			? tail
-			: s["branches"]["intersection"] extends {}
-			? "&"
-			: s["branches"]["union"] extends {}
-			? "|"
-			: undefined
+		s["branches"]["leftBound"] extends {} ?
+			s["branches"]["leftBound"]["comparator"]
+		: s["branches"]["prefixes"] extends (
+			[...unknown[], infer tail extends string]
+		) ?
+			tail
+		: s["branches"]["intersection"] extends {} ? "&"
+		: s["branches"]["union"] extends {} ? "|"
+		: undefined
 
 	export type scanTo<s extends StaticState, unscanned extends string> = from<{
 		root: s["root"]

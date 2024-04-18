@@ -1,5 +1,5 @@
 import { attest } from "@arktype/attest"
-import { scope, type type } from "../keywords/ark.js"
+import { scope, type type } from "arktype"
 
 class TimeStub {
 	declare readonly isoString: string
@@ -34,29 +34,27 @@ class TimeStub {
 	declare toString: () => string
 }
 
-describe("real world", () => {
-	it("time stub w/ private constructor", () => {
-		const types = scope({
-			timeStub: ["instanceof", TimeStub] as type.cast<TimeStub>,
-			account: "clientDocument&accountData",
-			clientDocument: {
-				"id?": "string",
-				"coll?": "string",
-				"ts?": "timeStub",
-				"ttl?": "timeStub"
-			},
-			accountData: {
-				user: "user|timeStub",
-				provider: "provider",
-				providerUserId: "string"
-			},
-			user: {
-				name: "string",
-				"accounts?": "account[]"
-			},
-			provider: "'GitHub'|'Google'"
-		}).export()
+it("time stub w/ private constructor", () => {
+	const types = scope({
+		timeStub: ["instanceof", TimeStub] as type.cast<TimeStub>,
+		account: "clientDocument&accountData",
+		clientDocument: {
+			"id?": "string",
+			"coll?": "string",
+			"ts?": "timeStub",
+			"ttl?": "timeStub"
+		},
+		accountData: {
+			user: "user|timeStub",
+			provider: "provider",
+			providerUserId: "string"
+		},
+		user: {
+			name: "string",
+			"accounts?": "account[]"
+		},
+		provider: "'GitHub'|'Google'"
+	}).export()
 
-		attest(types.account.infer).type.toString.snap()
-	})
+	attest(types.account.infer).type.toString.snap()
 })

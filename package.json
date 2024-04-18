@@ -18,24 +18,20 @@
 	"type": "module",
 	"private": true,
 	"scripts": {
-		"prChecks": "pnpm install && pnpm lint && pnpm checkFormat && pnpm testRepo && pnpm buildRepo",
+		"prChecks": "pnpm install && pnpm lint && pnpm testRepo && pnpm buildRepo",
 		"build": "pnpm -r build",
 		"buildCjs": "ARKTYPE_CJS=1 pnpm -r build",
 		"docgen": "tsx ./ark/repo/docgen.ts",
-		"test": "mocha",
-		"tnt": "mocha --skipTypes",
-		"bench": "tsx ./ark/schema/__tests__/comparison.bench.ts",
+		"test": "vitest run --config ark/repo/vitest.config.ts",
+		"tnt": "ATTEST_skipTypes=1 vitest run --config ark/repo/vitest.config.ts",
 		"testRepo": "pnpm test && cd ./ark/test && pnpm test && pnpm testTsVersions",
 		"testTsVersions": "tsx ./ark/repo/testTsVersions.ts",
 		"typecheck": "tsc --noEmit",
-		"tsin": "tsc --noEmit --extendedDiagnostics --composite false --declarationMap false",
-		"tsperf": "pnpm tstrace && analyze-trace .tstrace",
-		"tstrace": "tsc --noEmit --extendedDiagnostics --composite false --declarationMap false --generateTrace .tstrace",
 		"lint": "eslint --max-warnings=0 .",
-		"format": "prettier --write --ignore-path ./ark/repo/.prettierignore .",
-		"checkFormat": "prettier --check --ignore-path ./ark/repo/.prettierignore .",
+		"format": "prettier --write .",
+		"checkFormat": "prettier --check .",
 		"knip": "knip",
-		"ci:publish": "pnpm changeset publish",
+		"ci:publish": "changeset publish",
 		"ci:version": "tsx ./ark/repo/updateVersions.ts"
 	},
 	"devDependencies": {
@@ -44,12 +40,8 @@
 		"@arktype/repo": "workspace:*",
 		"@changesets/changelog-github": "0.5.0",
 		"@changesets/cli": "2.27.1",
-		"@swc/core": "1.4.6",
-		"@types/mocha": "10.0.6",
-		"@types/node": "20.11.24",
-		"@typescript-eslint/eslint-plugin": "7.1.1",
-		"@typescript-eslint/parser": "7.1.1",
-		"c8": "9.1.0",
+		"@types/node": "20.12.7",
+		"prettier": "3.2.5",
 		"eslint": "8.57.0",
 		"eslint-config-prettier": "9.1.0",
 		"eslint-define-config": "2.1.0",
@@ -59,18 +51,21 @@
 		"eslint-plugin-only-warn": "1.1.0",
 		"eslint-plugin-prefer-arrow-functions": "3.3.2",
 		"eslint-plugin-unused-imports": "3.1.0",
-		"knip": "5.0.3",
-		"mocha": "10.3.0",
-		"prettier": "3.0.3",
-		"prettier-plugin-jsdoc": "1.3.0",
-		"tsx": "4.7.1",
+		"@typescript-eslint/eslint-plugin": "7.6.0",
+		"@typescript-eslint/parser": "7.6.0",
+		"c8": "9.1.0",
+		"knip": "5.9.4",
+		"tsx": "4.7.2",
 		"typescript": "5.4.2",
+		"vitest": "1.5.0",
+		"vite-tsconfig-paths": "4.3.2",
 		"typescript-52": "npm:typescript@5.2",
 		"typescript-53": "npm:typescript@5.3",
-		"typescript-55": "npm:typescript@next"
+		"typescript-55": "npm:typescript@next",
+		"mocha": "10.4.0",
+		"@types/mocha": "10.0.6"
 	},
 	"mocha": {
-		"//": "IF YOU UPDATE THE MOCHA CONFIG HERE, PLEASE ALSO UPDATE ark/repo/mocha.jsonc AND .vscode/settings.json",
 		"spec": [
 			"**/__tests__/**/*.test.*"
 		],
@@ -78,7 +73,7 @@
 		"node-option": [
 			"import=tsx"
 		],
-		"require": "./ark/repo/mocha.fixtures.ts"
+		"require": "./ark/repo/mocha.globalSetup.ts"
 	},
 	"c8": {
 		"checkCoverage": true,
@@ -90,15 +85,11 @@
 		"extension": ".ts",
 		"reporter": "lcovonly"
 	},
-	"quokka": {
-		"recycle": false,
-		"stdEsm": false,
-		"nativeEsm": true
-	},
 	"prettier": {
 		"useTabs": true,
 		"semi": false,
-		"trailingComma": "none"
+		"trailingComma": "none",
+		"experimentalTernaries": true
 	},
 	"eslintConfig": {
 		"extends": "./ark/repo/.eslintrc.cjs"

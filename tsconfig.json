@@ -20,8 +20,10 @@
 			"arktype": ["./ark/type/main.ts"],
 			"@arktype/util": ["./ark/util/main.ts"],
 			"@arktype/fs": ["./ark/fs/main.ts"],
-			"@arktype/attest": ["./ark/attest/main.ts"]
-		}
+			"@arktype/attest": ["./ark/attest/main.ts"],
+			"@arktype/schema": ["./ark/schema/main.ts"]
+		},
+		"types": ["mocha"]
 	},
 	"exclude": ["**/out", "node_modules", "./ark/docs"]
 }

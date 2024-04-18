@@ -14,9 +14,8 @@ import {
 export type AttestFn = {
 	<expected, actual extends expected = never>(
 		...args: [actual] extends [never] ? [value: expected] : []
-	): [expected] extends [never]
-		? rootAssertions<unknown, AssertionKind>
-		: rootAssertions<expected, AssertionKind>
+	): [expected] extends [never] ? rootAssertions<unknown, AssertionKind>
+	:	rootAssertions<expected, AssertionKind>
 }
 
 export type AssertionContext = {
@@ -32,9 +31,8 @@ export type AssertionContext = {
 }
 
 export type InternalAssertionHooks = {
-	[k in keyof AssertionContext]?: k extends "cfg"
-		? Partial<AttestConfig>
-		: AssertionContext[k]
+	[k in keyof AssertionContext]?: k extends "cfg" ? Partial<AttestConfig>
+	:	AssertionContext[k]
 }
 
 export const attestInternal = (

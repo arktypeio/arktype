@@ -1,5 +1,5 @@
+import type { RawSchema } from "@arktype/schema"
 import type { ErrorMessage, join } from "@arktype/util"
-import type { Type } from "../../../../types/type.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import { writeUnclosedGroupMessage } from "../../reduce/shared.js"
 import type { StaticState, state } from "../../reduce/static.js"
@@ -17,7 +17,7 @@ export const parseGenericArgs = (
 	name: string,
 	params: string[],
 	s: DynamicState
-): ParsedArgs<Type[]> => parseGenericArgsRecurse(name, params, s, [], [])
+): ParsedArgs<RawSchema[]> => parseGenericArgsRecurse(name, params, s, [], [])
 
 export type parseGenericArgs<
 	name extends string,
@@ -32,8 +32,8 @@ const parseGenericArgsRecurse = (
 	params: string[],
 	s: DynamicState,
 	argDefs: string[],
-	argNodes: Type[]
-): ParsedArgs<Type[]> => {
+	argNodes: RawSchema[]
+): ParsedArgs<RawSchema[]> => {
 	const argState = s.parseUntilFinalizer()
 	// remove the finalizing token from the argDef
 	argDefs.push(argState.scanner.scanned.slice(0, -1))
@@ -44,12 +44,10 @@ const parseGenericArgsRecurse = (
 				result: argNodes,
 				unscanned: argState.scanner.unscanned
 			}
-		} else {
-			return argState.error(
-				writeInvalidGenericArgsMessage(name, params, argDefs)
-			)
 		}
-	} else if (argState.finalizer === ",") {
+		return argState.error(writeInvalidGenericArgsMessage(name, params, argDefs))
+	}
+	if (argState.finalizer === ",") {
 		return parseGenericArgsRecurse(name, params, s, argDefs, argNodes)
 	}
 	return argState.error(writeUnclosedGroupMessage(">"))
@@ -63,31 +61,31 @@ type parseGenericArgsRecurse<
 	args,
 	argDefs extends string[],
 	argAsts extends unknown[]
-> = parseUntilFinalizer<
-	state.initialize<unscanned>,
-	$,
-	args
-> extends infer finalArgState extends StaticState
-	? {
+> =
+	parseUntilFinalizer<state.initialize<unscanned>, $, args> extends (
+		infer finalArgState extends StaticState
+	) ?
+		{
 			defs: [
 				...argDefs,
-				finalArgState["scanned"] extends `${infer def}${"," | ">"}`
-					? def
-					: finalArgState["scanned"]
+				finalArgState["scanned"] extends `${infer def}${"," | ">"}` ? def
+				:	finalArgState["scanned"]
 			]
 			asts: [...argAsts, finalArgState["root"]]
 			unscanned: finalArgState["unscanned"]
-	  } extends {
-			defs: infer nextDefs extends string[]
-			asts: infer nextAsts extends unknown[]
-			unscanned: infer nextUnscanned extends string
-	  }
-		? finalArgState["finalizer"] extends ">"
-			? nextAsts["length"] extends params["length"]
-				? ParsedArgs<nextAsts, nextUnscanned>
-				: state.error<writeInvalidGenericArgsMessage<name, params, nextDefs>>
-			: finalArgState["finalizer"] extends ","
-			? parseGenericArgsRecurse<
+		} extends (
+			{
+				defs: infer nextDefs extends string[]
+				asts: infer nextAsts extends unknown[]
+				unscanned: infer nextUnscanned extends string
+			}
+		) ?
+			finalArgState["finalizer"] extends ">" ?
+				nextAsts["length"] extends params["length"] ?
+					ParsedArgs<nextAsts, nextUnscanned>
+				:	state.error<writeInvalidGenericArgsMessage<name, params, nextDefs>>
+			: finalArgState["finalizer"] extends "," ?
+				parseGenericArgsRecurse<
 					name,
 					params,
 					nextUnscanned,
@@ -95,12 +93,11 @@ type parseGenericArgsRecurse<
 					args,
 					nextDefs,
 					nextAsts
-			  >
-			: finalArgState["finalizer"] extends ErrorMessage
-			? finalArgState
+				>
+			: finalArgState["finalizer"] extends ErrorMessage ? finalArgState
 			: state.error<writeUnclosedGroupMessage<">">>
-		: never
-	: never
+		:	never
+	:	never
 
 export const writeInvalidGenericArgsMessage = <
 	name extends string,
@@ -111,9 +108,11 @@ export const writeInvalidGenericArgsMessage = <
 	params: params,
 	argDefs: argDefs
 ): writeInvalidGenericArgsMessage<name, params, argDefs> =>
-	`${name}<${params.join(", ")}> requires exactly ${params.length} args (got ${
-		argDefs.length
-	}${argDefs.length === 0 ? "" : ": " + argDefs.join(", ")})` as never
+	`${name}<${params.join(", ")}> requires exactly ${
+		params.length
+	} args (got ${argDefs.length}${
+		argDefs.length === 0 ? "" : `: ${argDefs.join(", ")}`
+	})` as never
 
 export type writeInvalidGenericArgsMessage<
 	name extends string,
@@ -122,6 +121,8 @@ export type writeInvalidGenericArgsMessage<
 > = `${name}<${join<
 	params,
 	", "
->}> requires exactly ${params["length"]} args (got ${argDefs["length"]}${argDefs["length"] extends 0
-	? ""
-	: `: ${join<argDefs, ",">}`})`
+>}> requires exactly ${params["length"]} args (got ${argDefs["length"]}${argDefs["length"] extends (
+	0
+) ?
+	""
+:	`: ${join<argDefs, ",">}`})`

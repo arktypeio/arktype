@@ -4,12 +4,12 @@ import { flatMorph } from "@arktype/util"
 describe("flatMorph", () => {
 	it("object", () => {
 		const result = flatMorph({ a: true, b: false }, (k, v) =>
-			k === "a"
-				? ([
-						[k, v],
-						["c", "d"]
-				  ] as const)
-				: (["e", "f"] as const)
+			k === "a" ?
+				([
+					[k, v],
+					["c", "d"]
+				] as const)
+			:	(["e", "f"] as const)
 		)
 		attest<{
 			a: true
@@ -30,12 +30,12 @@ describe("flatMorph", () => {
 	it("object with index", () => {
 		// needs to be annotated for now due to a TS bug
 		const result = flatMorph({ a: true, b: false }, (k, v, i: number) =>
-			k === "a"
-				? ([
-						[k, v],
-						["c", "d"]
-				  ] as const)
-				: ([`${i}`, "f"] as const)
+			k === "a" ?
+				([
+					[k, v],
+					["c", "d"]
+				] as const)
+			:	([`${i}`, "f"] as const)
 		)
 
 		attest<{
@@ -66,6 +66,7 @@ describe("flatMorph", () => {
 		)
 		attest<[5, ...(1 | 2 | 3)[]]>(result).equals([5, 1, 2, 3])
 	})
+
 	it("maps from array to object", () => {
 		const result = flatMorph(["a", "b", "c"], (i, v) => [v, i])
 		attest<{
@@ -74,6 +75,7 @@ describe("flatMorph", () => {
 			c: 0 | 2 | 1
 		}>(result).equals({ a: 0, b: 1, c: 2 })
 	})
+
 	it("filters array", () => {
 		const result = flatMorph([1, 2, 3] as const, (i, v) =>
 			v === 2 ? [] : [i, v]

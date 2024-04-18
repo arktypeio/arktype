@@ -29,69 +29,67 @@ const defaultSnapContentsAtCustomPath = {
 	}
 }
 
-describe("snapToFile", () => {
-	beforeEach(() => {
-		writeJson(defaultSnapPath, defaultSnapFileContents)
-		writeJson(customSnapPath, defaultSnapContentsAtCustomPath)
-	})
+beforeEach(() => {
+	writeJson(defaultSnapPath, defaultSnapFileContents)
+	writeJson(customSnapPath, defaultSnapContentsAtCustomPath)
+})
 
-	afterEach(() => {
-		rmSync(defaultSnapPath, { force: true })
-		rmSync(customSnapPath, { force: true })
-	})
+afterEach(() => {
+	rmSync(defaultSnapPath, { force: true })
+	rmSync(customSnapPath, { force: true })
+})
 
-	it("create", () => {
-		attest(o).snap.toFile("toFile")
-		assert.throws(
-			() => attest({ re: "kt" }).snap.toFile("toFile"),
-			assert.AssertionError,
-			"kt"
-		)
-		attest(1337).snap.toFile("toFileNew")
-		const contents = readJson(defaultSnapPath)
-		attest(contents).equals({
-			[testFile]: {
-				...defaultSnapFileContents[testFile],
-				toFileNew: 1337
-			}
-		})
-	})
-	it("update existing", () => {
-		attestInternal(
-			{ re: "dew" },
-			{ cfg: { updateSnapshots: true } }
-		).snap.toFile("toFileUpdate")
-		const updatedContents = readJson(defaultSnapPath)
-		const expectedContents = {
-			[testFile]: {
-				...defaultSnapFileContents[testFile],
-				toFileUpdate: { re: "dew" }
-			}
+it("create", () => {
+	attest(o).snap.toFile("toFile")
+	assert.throws(
+		() => attest({ re: "kt" }).snap.toFile("toFile"),
+		assert.AssertionError,
+		"kt"
+	)
+	attest(1337).snap.toFile("toFileNew")
+	const contents = readJson(defaultSnapPath)
+	attest(contents).equals({
+		[testFile]: {
+			...defaultSnapFileContents[testFile],
+			toFileNew: 1337
 		}
-		assert.deepEqual(updatedContents, expectedContents)
 	})
+})
 
-	it("with path", () => {
-		attest(o).snap.toFile("toCustomFile", {
-			path: customFileName
-		})
-		assert.throws(
-			() =>
-				attest({ re: "kt" }).snap.toFile("toCustomFile", {
-					path: customFileName
-				}),
-			assert.AssertionError,
-			"kt"
-		)
-		attest(null).snap.toFile("toCustomFileNew", {
-			path: customFileName
-		})
-		const contents = readJson(customSnapPath)
-		attest(contents).equals({
-			[testFile]: {
-				...defaultSnapContentsAtCustomPath[testFile],
-				toCustomFileNew: null
-			}
-		})
+it("update existing", () => {
+	attestInternal({ re: "dew" }, { cfg: { updateSnapshots: true } }).snap.toFile(
+		"toFileUpdate"
+	)
+	const updatedContents = readJson(defaultSnapPath)
+	const expectedContents = {
+		[testFile]: {
+			...defaultSnapFileContents[testFile],
+			toFileUpdate: { re: "dew" }
+		}
+	}
+	assert.deepEqual(updatedContents, expectedContents)
+})
+
+it("with path", () => {
+	attest(o).snap.toFile("toCustomFile", {
+		path: customFileName
+	})
+	assert.throws(
+		() =>
+			attest({ re: "kt" }).snap.toFile("toCustomFile", {
+				path: customFileName
+			}),
+		assert.AssertionError,
+		"kt"
+	)
+	attest(null).snap.toFile("toCustomFileNew", {
+		path: customFileName
+	})
+	const contents = readJson(customSnapPath)
+	attest(contents).equals({
+		[testFile]: {
+			...defaultSnapContentsAtCustomPath[testFile],
+			toCustomFileNew: null
+		}
 	})
 })

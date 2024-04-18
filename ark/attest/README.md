@@ -133,9 +133,9 @@ Benches are run separately from tests and don't require any special setup. If th
 
 ```ts
 // Combinatorial template literals often result in expensive types- let's benchmark this one!
-type makeComplexType<s extends string> = s extends `${infer head}${infer tail}`
-	? head | tail | makeComplexType<tail>
-	: s
+type makeComplexType<s extends string> =
+	s extends `${infer head}${infer tail}` ? head | tail | makeComplexType<tail>
+	:	s
 
 bench("bench type", () => {
 	return {} as makeComplexType<"defenestration">

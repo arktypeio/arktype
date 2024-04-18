@@ -35,10 +35,10 @@ export class ChainableAssertions implements AssertionRecord {
 	}
 
 	private get actual() {
-		return this.ctx.actual instanceof TypeAssertionMapping
-			? this.ctx.actual.fn(this.ctx.typeAssertionEntries![0][1], this.ctx)!
+		return this.ctx.actual instanceof TypeAssertionMapping ?
+				this.ctx.actual.fn(this.ctx.typeAssertionEntries![0][1], this.ctx)!
 					.actual
-			: this.ctx.actual
+			:	this.ctx.actual
 	}
 
 	private get serializedActual() {
@@ -73,9 +73,9 @@ export class ChainableAssertions implements AssertionRecord {
 			throwAssertionError({
 				ctx: this.ctx,
 				message: `Expected an instance of ${expected.name} (was ${
-					typeof this.actual === "object" && this.actual !== null
-						? this.actual.constructor.name
-						: this.serializedActual
+					typeof this.actual === "object" && this.actual !== null ?
+						this.actual.constructor.name
+					:	this.serializedActual
 				})`
 			})
 		}
@@ -239,9 +239,8 @@ export type valueAssertions<
 > = comparableValueAssertion<t, kind> &
 	(t extends () => unknown ? functionAssertions<kind> : {})
 
-export type nextAssertions<kind extends AssertionKind> = "type" extends kind
-	? TypeAssertionsRoot
-	: {}
+export type nextAssertions<kind extends AssertionKind> =
+	"type" extends kind ? TypeAssertionsRoot : {}
 
 export type inferredAssertions<
 	argsType extends [value: any, ...rest: any[]],
@@ -257,11 +256,11 @@ export type ChainContext = {
 
 export type functionAssertions<kind extends AssertionKind> = {
 	throws: inferredAssertions<[message: string | RegExp], kind, string>
-} & ("type" extends kind
-	? {
-			throwsAndHasTypeError: (message: string | RegExp) => undefined
-	  }
-	: {})
+} & ("type" extends kind ?
+	{
+		throwsAndHasTypeError: (message: string | RegExp) => undefined
+	}
+:	{})
 
 export type valueFromTypeAssertion<
 	expected,

@@ -11,9 +11,9 @@ const extractLinkDetails = (regexMatch: RegExpMatchArray): LinkDetails => {
 	const BASE_NAME = 1
 	const ALIAS = 2
 	const BASE_NAME_NO_ALIAS = 3
-	return regexMatch[BASE_NAME_NO_ALIAS]
-		? [regexMatch[BASE_NAME_NO_ALIAS].trim()]
-		: [regexMatch[BASE_NAME].trim(), regexMatch[ALIAS].trim()]
+	return regexMatch[BASE_NAME_NO_ALIAS] ?
+			[regexMatch[BASE_NAME_NO_ALIAS].trim()]
+		:	[regexMatch[BASE_NAME].trim(), regexMatch[ALIAS].trim()]
 }
 
 export const transformLinkTagToURL = (
