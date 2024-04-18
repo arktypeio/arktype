@@ -3,13 +3,19 @@ import { attest } from "@arktype/attest"
 import { type } from "arktype"
 import "./arkConfig.js"
 
-declare const data: unknown
+declare const unknownData: unknown
 
-const narrowed = attest(data).assert({ ids: "string[]" })
+attest(unknownData, { ids: "string" })
 
-attest(narrowed.ids.length).assert("number>5")
+unknownData //=>?
 
-const size = attest(narrowed.ids.length).narrow((l): l is 5 => true)
+type Matchable = { isA: true; kind: "a" } | { isB: true; kind: "b" }
+
+declare const narrowableData: Matchable
+
+attest(narrowableData, { kind: "'a'" })
+
+narrowableData
 
 // export const validData = Object.freeze({
 // 	number: 1,

@@ -1,4 +1,5 @@
 import { caller, getCallStack, type SourcePosition } from "@arktype/fs"
+import type { inferTypeRoot, validateTypeRoot } from "arktype"
 import {
 	getTypeAssertionsAtPosition,
 	type VersionedTypeAssertion
@@ -16,6 +17,11 @@ export type AttestFn = {
 		...args: [actual] extends [never] ? [value: expected] : []
 	): [expected] extends [never] ? rootAssertions<unknown, AssertionKind>
 	:	rootAssertions<expected, AssertionKind>
+	<actual, def>(
+		actual: actual,
+		def: validateTypeRoot<def>
+	): asserts actual is unknown extends actual ? inferTypeRoot<def> & actual
+	:	Extract<actual, inferTypeRoot<def>>
 }
 
 export type AssertionContext = {
@@ -60,4 +66,4 @@ export const attestInternal = (
 	return new ChainableAssertions(ctx)
 }
 
-export const attest = attestInternal as AttestFn
+export const attest: AttestFn = attestInternal as never

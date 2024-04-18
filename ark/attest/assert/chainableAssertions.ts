@@ -5,7 +5,6 @@ import {
 	type Constructor,
 	type Guardable
 } from "@arktype/util"
-import { type, type inferTypeRoot, type validateTypeRoot } from "arktype"
 import * as assert from "node:assert/strict"
 import { isDeepStrictEqual } from "node:util"
 import {
@@ -58,10 +57,6 @@ export class ChainableAssertions implements AssertionRecord {
 			// to the snap even though it will serialize to the same value as the (nonexistent) first arg
 			this.actual === undefined
 		)
-	}
-
-	assert(def: unknown): never {
-		return type(def as never).assert(this.actual)
 	}
 
 	narrow(predicate: Guardable, messageOnError?: string): never {
@@ -307,7 +302,6 @@ export type comparableValueAssertion<expected, kind extends AssertionKind> = {
 		predicate: (data: unknown) => data is narrowed,
 		messageOnError?: string
 	): narrowed
-	assert<def>(def: validateTypeRoot<def>): inferTypeRoot<def>
 	// This can be used to assert values without type constraints
 	unknown: Omit<comparableValueAssertion<unknown, kind>, "unknown">
 }
