@@ -414,7 +414,6 @@ export interface UnknownAttachments {
 	readonly innerId: string
 	readonly typeId: string
 	readonly $: RawSchemaScope
-	readonly description: string
 }
 
 export interface NarrowedAttachments<d extends RawNodeDeclaration>

@@ -171,6 +171,8 @@ export type PrimitiveKeywords = typeof tsKeywords &
 	typeof jsObjects &
 	typeof internalKeywords
 
+export type RawResolution = RawSchema | GenericSchema | RawSchemaModule
+
 export class RawSchemaScope<
 	$ extends RawSchemaResolutions = RawSchemaResolutions
 > implements internalImplementationOf<SchemaScope, "infer" | "inferIn" | "$">
@@ -206,13 +208,6 @@ export class RawSchemaScope<
 	) {
 		this.config = config ?? {}
 		this.resolvedConfig = resolveConfig(config)
-		if ($ark.ambientSchemaScope) {
-			// ensure exportedResolutions is populated
-			$ark.ambientSchemaScope.export()
-			this.resolutions = { ...$ark.ambientSchemaScope.raw.resolutions! }
-		} else {
-			this.resolutions = {}
-		}
 		this.exportedNames = Object.keys(this.aliases).filter(
 			(k) => k[0] !== "#"
 		) as never
@@ -245,11 +240,11 @@ export class RawSchemaScope<
 		def: unknown,
 		opts?: NodeParseOptions
 	): Node<reducibleKindOf<kind>> {
-		return parseNode(kind, def, this, opts) as never
+		return parseNode(kind, def, this, opts).bindScope(this) as never
 	}
 
 	schema(def: SchemaDef, opts?: NodeParseOptions): RawSchema {
-		return parseNode(schemaKindOf(def), def, this, opts) as never
+		return this.node(schemaKindOf(def), def, opts)
 	}
 
 	defineSchema(def: SchemaDef): SchemaDef {
@@ -265,12 +260,12 @@ export class RawSchemaScope<
 				}
 			}
 			const branches = uniqueValues.map((unit) =>
-				parseNode("unit", { unit }, this, opts)
+				this.node("unit", { unit }, opts)
 			)
-			return parseNode("union", branches, this, {
+			return this.node("union", branches, {
 				...opts,
 				prereduced: true
-			}) as never
+			})
 		}
 	}
 
@@ -305,15 +300,17 @@ export class RawSchemaScope<
 		return def
 	}
 
-	maybeResolve(
-		name: string
-	): RawSchema | GenericSchema | RawSchemaModule | undefined {
+	maybeResolve(name: string): RawResolution | undefined {
 		const cached = this.resolutions[name]
 		if (cached) {
 			return cached
 		}
 		let def = this.aliases[name]
-		if (!def) return this.maybeResolveSubalias(name)
+		if (!def) {
+			const ambientResolution = this.maybeResolveAmbient(name)
+			if (ambientResolution) return ambientResolution
+			return this.maybeResolveSubalias(name)
+		}
 		def = this.preparseRoot(def)
 		if (hasArkKind(def, "generic"))
 			return (this.resolutions[name] = validateUninstantiatedGenericNode(def))
@@ -321,8 +318,14 @@ export class RawSchemaScope<
 		return (this.resolutions[name] = this.parseRoot(def, { args: {} }))
 	}
 
+	protected maybeResolveAmbient(name: string): RawResolution | undefined {
+		if (!$ark.ambientSchemaScope || $ark.ambientSchemaScope === (this as never))
+			return
+		return $ark.ambientSchemaScope.raw.maybeResolve(name)
+	}
+
 	/** If name is a valid reference to a submodule alias, return its resolution  */
-	private maybeResolveSubalias(
+	protected maybeResolveSubalias(
 		name: string
 	): RawSchema | GenericSchema | undefined {
 		return resolveSubaliasRecurse(this.aliases, name)
@@ -349,7 +352,7 @@ export class RawSchemaScope<
 			for (const name of this.exportedNames) {
 				this.#exportCache[name] = this.maybeResolve(name)
 			}
-			this.#exportedResolutions = resolutionsOfModule(this.#exportCache)
+			this.#exportedResolutions = resolutionsOfModule(this, this.#exportCache)
 			// TODO: add generic json
 			Object.assign(
 				this.json,
@@ -528,22 +531,23 @@ export type SchemaExportCache = Record<
 	RawSchema | GenericSchema | RawSchemaModule | undefined
 >
 
-const resolutionsOfModule = (typeSet: SchemaExportCache) => {
+const resolutionsOfModule = ($: RawSchemaScope, typeSet: SchemaExportCache) => {
 	const result: RawSchemaResolutions = {}
 	for (const k in typeSet) {
 		const v = typeSet[k]
 		if (hasArkKind(v, "module")) {
-			const innerResolutions = resolutionsOfModule(v as never)
+			const innerResolutions = resolutionsOfModule($, v as never)
 			const prefixedResolutions = flatMorph(
 				innerResolutions,
 				(innerK, innerV) => [`${k}.${innerK}`, innerV]
 			)
 			Object.assign(result, prefixedResolutions)
 		} else if (hasArkKind(v, "generic")) {
+			// TODO: bind
 			result[k] = v
-		} else {
-			result[k] = v as RawSchema
-		}
+		} else if (hasArkKind(v, "schema")) {
+			result[k] = v.bindScope($)
+		} else throwInternalError(`Unexpected scope resolution ${printable(v)}`)
 	}
 	return result
 }

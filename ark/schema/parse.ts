@@ -243,16 +243,17 @@ export const parseNode = (
 		innerId,
 		typeId,
 		$
-	} satisfies Omit<UnknownAttachments, "description"> as Record<string, any>
+	} satisfies UnknownAttachments as Record<string, any>
 	if (opts?.alias) {
 		attachments.alias = opts.alias
 	}
 	for (const k in inner) {
 		// avoid conflict with builtin cached getters
-		if (k !== "in" && k !== "out") {
+		if (k !== "in" && k !== "out" && k !== "description") {
 			attachments[k] = inner[k]
 		}
 	}
+	// TODO: ?
 	// if (opts?.root) {
 	// 	if (this.resolved) {
 	// 		// this node was not part of the original scope, so compile an anonymous scope
@@ -270,9 +271,6 @@ export const parseNode = (
 		includes(schemaKinds, kind) ?
 			new RawSchema(attachments as never)
 		:	(new RawConstraint(attachments as never) as never)
-	;(node as any).description ??= $.resolvedConfig[kind].description(
-		node as never
-	)
 	$.nodeCache[innerId] = node
 	return node
 }

@@ -3,6 +3,7 @@ import {
 	type GenericProps,
 	type NodeParseOptions,
 	type PreparsedNodeResolution,
+	type RawResolution,
 	type RawSchema,
 	type RawSchemaResolutions,
 	RawSchemaScope,
@@ -231,11 +232,26 @@ export class RawScope<
 		return def
 	}
 
-	preparseRoot(def: unknown): unknown {
+	override preparseRoot(def: unknown): unknown {
 		if (isThunk(def) && !hasArkKind(def, "generic")) {
 			return def()
 		}
 		return def
+	}
+
+	override parseRoot(def: unknown, opts?: NodeParseOptions): RawSchema {
+		return this.parse(def, {
+			args: { this: {} as RawSchema },
+			$: this as never,
+			...opts
+		})
+	}
+
+	protected override maybeResolveAmbient(
+		name: string
+	): RawResolution | undefined {
+		if (!$ark.ambient || $ark.ambient === (this as never)) return
+		return $ark.ambient.raw.maybeResolve(name)
 	}
 
 	parse(def: unknown, ctx: ParseContext): RawSchema {
@@ -253,14 +269,6 @@ export class RawScope<
 		return hasDomain(def, "object") ?
 				parseObject(def, ctx)
 			:	throwParseError(writeBadDefinitionTypeMessage(domainOf(def)))
-	}
-
-	parseRoot(def: unknown, opts?: NodeParseOptions): RawSchema {
-		return this.parse(def, {
-			args: { this: {} as RawSchema },
-			$: this as never,
-			...opts
-		})
 	}
 
 	parseString(def: string, ctx: ParseContext): RawSchema {

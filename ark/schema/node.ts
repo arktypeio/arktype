@@ -9,6 +9,7 @@ import {
 	includes,
 	isArray,
 	type listable,
+	shallowClone,
 	throwError
 } from "@arktype/util"
 import type { RawConstraint } from "./constraints/constraint.js"
@@ -32,6 +33,7 @@ import type { MorphNode } from "./schemas/morph.js"
 import type { ProtoNode } from "./schemas/proto.js"
 import type { UnionNode } from "./schemas/union.js"
 import type { UnitNode } from "./schemas/unit.js"
+import type { RawSchemaScope } from "./scope.js"
 import type {
 	BaseMeta,
 	RawNodeDeclaration,
@@ -147,6 +149,14 @@ export class RawNode<
 		return this.$.node(this.kind, ioInner)
 	}
 
+	private descriptionCache?: string
+	get description(): string {
+		this.descriptionCache ??=
+			this.inner.description ??
+			this.$.resolvedConfig[this.kind].description?.(this as never)
+		return this.descriptionCache
+	}
+
 	toJSON(): Json {
 		return this.json
 	}
@@ -252,6 +262,13 @@ export class RawNode<
 
 		RawNode.intersectionCache[lrCacheKey] = result
 		return result
+	}
+
+	bindScope($: RawSchemaScope): this {
+		if (this.$ === $) return this as never
+		return new (this.constructor as any)(
+			Object.assign(shallowClone(this.attachments), { $ })
+		)
 	}
 
 	firstReference<narrowed>(
