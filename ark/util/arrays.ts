@@ -72,21 +72,21 @@ export type flattenListable<t> = t extends array<infer element> ? element : t
 
 export type NonEmptyList<t = unknown> = readonly [t, ...t[]]
 
-export type repeat<t extends array, count extends number> = repeatRecurse<
+export type repeat<t extends array, count extends number> = $repeat<
 	t,
 	[],
 	count,
 	[]
 >
 
-type repeatRecurse<
+type $repeat<
 	base extends array,
 	result extends array,
 	maxDepth extends number,
 	depth extends 1[]
 > =
 	depth["length"] extends maxDepth ? result
-	:	repeatRecurse<base, [...result, ...base], maxDepth, [...depth, 1]>
+	:	$repeat<base, [...result, ...base], maxDepth, [...depth, 1]>
 
 export type CollapsingList<t = unknown> =
 	| readonly []

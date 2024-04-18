@@ -17,7 +17,7 @@ export const parseGenericArgs = (
 	name: string,
 	params: string[],
 	s: DynamicState
-): ParsedArgs<RawSchema[]> => parseGenericArgsRecurse(name, params, s, [], [])
+): ParsedArgs<RawSchema[]> => $parseGenericArgs(name, params, s, [], [])
 
 export type parseGenericArgs<
 	name extends string,
@@ -25,9 +25,9 @@ export type parseGenericArgs<
 	unscanned extends string,
 	$,
 	args
-> = parseGenericArgsRecurse<name, params, unscanned, $, args, [], []>
+> = $parseGenericArgs<name, params, unscanned, $, args, [], []>
 
-const parseGenericArgsRecurse = (
+const $parseGenericArgs = (
 	name: string,
 	params: string[],
 	s: DynamicState,
@@ -48,12 +48,12 @@ const parseGenericArgsRecurse = (
 		return argState.error(writeInvalidGenericArgsMessage(name, params, argDefs))
 	}
 	if (argState.finalizer === ",") {
-		return parseGenericArgsRecurse(name, params, s, argDefs, argNodes)
+		return $parseGenericArgs(name, params, s, argDefs, argNodes)
 	}
 	return argState.error(writeUnclosedGroupMessage(">"))
 }
 
-type parseGenericArgsRecurse<
+type $parseGenericArgs<
 	name extends string,
 	params extends string[],
 	unscanned extends string,
@@ -85,7 +85,7 @@ type parseGenericArgsRecurse<
 					ParsedArgs<nextAsts, nextUnscanned>
 				:	state.error<writeInvalidGenericArgsMessage<name, params, nextDefs>>
 			: finalArgState["finalizer"] extends "," ?
-				parseGenericArgsRecurse<
+				$parseGenericArgs<
 					name,
 					params,
 					nextUnscanned,

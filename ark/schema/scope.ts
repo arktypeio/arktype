@@ -181,7 +181,6 @@ export class RawSchemaScope<
 	readonly resolvedConfig: ResolvedArkConfig;
 	readonly [arkKind] = "scope"
 
-	readonly nodeCache: { [innerId: string]: RawNode } = {}
 	readonly referencesByName: { [name: string]: RawNode } = {}
 	references: readonly RawNode[] = []
 	protected readonly resolutions: RawSchemaResolutions = {}
@@ -285,7 +284,7 @@ export class RawSchemaScope<
 		schema: NodeDef<flattenListable<kinds>>,
 		opts?: NodeParseOptions
 	): Node<reducibleKindOf<flattenListable<kinds>>> {
-		return parseNode(kinds, schema, this, opts).bindScope(this) as never
+		return parseNode(kinds, schema, this, opts) as never
 	}
 
 	parseRoot(def: unknown, opts?: NodeParseOptions): RawSchema {
@@ -329,7 +328,7 @@ export class RawSchemaScope<
 	protected maybeResolveSubalias(
 		name: string
 	): RawSchema | GenericSchema | undefined {
-		return resolveSubaliasRecurse(this.aliases, name)
+		return $resolveSubalias(this.aliases, name)
 	}
 
 	import<names extends exportedNameOf<$>[]>(
@@ -383,7 +382,7 @@ export class RawSchemaScope<
 	// }
 }
 
-const resolveSubaliasRecurse = (
+const $resolveSubalias = (
 	base: Dict,
 	name: string
 ): RawSchema | GenericSchema | undefined => {
@@ -405,7 +404,7 @@ const resolveSubaliasRecurse = (
 	// unresolvable, we can throw immediately
 	if (resolution === undefined) {
 		if (hasArkKind(resolution, "module"))
-			return resolveSubaliasRecurse(resolution, subalias)
+			return $resolveSubalias(resolution, subalias)
 		return throwParseError(writeUnresolvableMessage(name))
 	}
 

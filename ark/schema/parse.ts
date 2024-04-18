@@ -98,6 +98,7 @@ const discriminateSchemaKind = (def: unknown): SchemaKind => {
 }
 
 const nodeCountsByPrefix: PartialRecord<string, number> = {}
+const nodeCache: { [innerId: string]: RawNode } = {}
 
 export const parseNode = (
 	kinds: NodeKind | array<SchemaKind>,
@@ -113,9 +114,19 @@ export const parseNode = (
 	if (kind === "union" && hasDomain(def, "object")) {
 		const branches = schemaBranchesOf(def)
 		if (branches?.length === 1) {
-			return parseNode(schemaKindOf(branches[0]), branches[0], $, opts)
+			return $parseNode(schemaKindOf(branches[0]), branches[0], $, opts)
 		}
 	}
+	const node = $parseNode(kind, def, $, opts)
+	return node.bindScope($)
+}
+
+const $parseNode = (
+	kind: NodeKind,
+	def: unknown,
+	$: RawSchemaScope,
+	opts?: NodeParseOptions
+): RawNode => {
 	const impl = nodeImplementationsByKind[kind]
 	const normalizedDefinition: any = impl.normalize?.(def) ?? def
 	// check again after normalization in case a node is a valid collapsed
@@ -201,7 +212,7 @@ export const parseNode = (
 
 	const innerId = JSON.stringify({ kind, ...json })
 	if (opts?.reduceTo) {
-		$.nodeCache[innerId] = opts.reduceTo
+		nodeCache[innerId] = opts.reduceTo
 		return opts.reduceTo
 	}
 
@@ -226,7 +237,7 @@ export const parseNode = (
 
 	// we have to wait until after reduction to return a cached entry,
 	// since reduction can add impliedSiblings
-	if ($.nodeCache[innerId]) return $.nodeCache[innerId]
+	if (nodeCache[innerId]) return nodeCache[innerId]
 
 	const prefix = opts?.alias ?? kind
 	nodeCountsByPrefix[prefix] ??= 0
@@ -271,7 +282,7 @@ export const parseNode = (
 		includes(schemaKinds, kind) ?
 			new RawSchema(attachments as never)
 		:	(new RawConstraint(attachments as never) as never)
-	$.nodeCache[innerId] = node
+	nodeCache[innerId] = node
 	return node
 }
 

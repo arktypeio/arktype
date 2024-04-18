@@ -23,7 +23,7 @@ export type JsonData = Json | JsonPrimitive
 export const snapshot = <t>(
 	data: t,
 	opts: SerializationOptions = { onUndefined: "(undefined)" }
-): snapshot<t> => serializeRecurse(data, opts, []) as never
+): snapshot<t> => $serialize(data, opts, []) as never
 
 export type snapshot<t, depth extends 1[] = []> =
 	unknown extends t ? unknown
@@ -50,7 +50,7 @@ export const printable = (data: unknown, indent?: number): string => {
 		case "object":
 			return data instanceof Date ?
 					data.toDateString()
-				:	JSON.stringify(serializeRecurse(data, printableOpts, []), null, indent)
+				:	JSON.stringify($serialize(data, printableOpts, []), null, indent)
 		case "symbol":
 			return printableOpts.onSymbol(data as symbol)
 		default:
@@ -64,7 +64,7 @@ const printableOpts = {
 	onFunction: (v) => `(function ${v.name ?? "anonymous"})`
 } satisfies SerializationOptions
 
-const serializeRecurse = (
+const $serialize = (
 	data: unknown,
 	opts: SerializationOptions,
 	seen: unknown[]
@@ -79,14 +79,14 @@ const serializeRecurse = (
 			}
 			const nextSeen = [...seen, data]
 			if (Array.isArray(data)) {
-				return data.map((item) => serializeRecurse(item, opts, nextSeen))
+				return data.map((item) => $serialize(item, opts, nextSeen))
 			}
 			if (data instanceof Date) {
 				return data.toDateString()
 			}
 			const result: Record<string, unknown> = {}
 			for (const k in data as Dict) {
-				result[k] = serializeRecurse((data as any)[k], opts, nextSeen)
+				result[k] = $serialize((data as any)[k], opts, nextSeen)
 			}
 			return result
 		}
