@@ -1,8 +1,8 @@
-import { attest } from "@arktype/attest"
+import { attest, contextualize } from "@arktype/attest"
 import { assertNodeKind, schema } from "@arktype/schema"
 import { reference } from "@arktype/util"
 
-describe("unit", () => {
+contextualize(() => {
 	it("string allows", () => {
 		const t = schema({ unit: "foo" })
 		attest(t.json).snap({ unit: "foo" })

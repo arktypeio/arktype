@@ -1,7 +1,7 @@
-import { attest } from "@arktype/attest"
+import { attest, contextualize } from "@arktype/attest"
 import { Hkt, type array, type conform, type show } from "@arktype/util"
 
-describe("hkt", () => {
+contextualize(() => {
 	interface AppendKind extends Hkt.Kind {
 		hkt: (
 			args: conform<this[Hkt.args], readonly [element: unknown, to: array]>

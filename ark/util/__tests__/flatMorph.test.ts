@@ -1,7 +1,7 @@
-import { attest } from "@arktype/attest"
+import { attest, contextualize } from "@arktype/attest"
 import { flatMorph } from "@arktype/util"
 
-describe("flatMorph", () => {
+contextualize(() => {
 	it("object", () => {
 		const result = flatMorph({ a: true, b: false }, (k, v) =>
 			k === "a" ?

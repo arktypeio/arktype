@@ -1,7 +1,7 @@
-import { attest } from "@arktype/attest"
+import { attest, contextualize } from "@arktype/attest"
 import { schema } from "@arktype/schema"
 
-describe("props", () => {
+contextualize(() => {
 	it("normalizes prop order", () => {
 		const l = schema({
 			domain: "object",

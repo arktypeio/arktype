@@ -1,7 +1,7 @@
-import { attest } from "@arktype/attest"
+import { attest, contextualize } from "@arktype/attest"
 import { deepClone } from "@arktype/util"
 
-describe("deepClone", () => {
+contextualize(() => {
 	it("should return a deep clone of a simple object", () => {
 		const obj = { a: 1, b: 2, c: 3 }
 		const cloned = deepClone(obj)

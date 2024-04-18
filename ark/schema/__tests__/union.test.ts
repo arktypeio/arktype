@@ -1,8 +1,8 @@
-import { attest } from "@arktype/attest"
+import { attest, contextualize } from "@arktype/attest"
 import { schema, validation } from "@arktype/schema"
 
-describe("union", () => {
-	it("union", () => {
+contextualize(() => {
+	it("binary", () => {
 		const l = schema([
 			{
 				domain: "number",

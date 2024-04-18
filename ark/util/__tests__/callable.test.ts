@@ -1,7 +1,7 @@
-import { attest } from "@arktype/attest"
+import { attest, contextualize } from "@arktype/attest"
 import { Callable } from "@arktype/util"
 
-describe("callable", () => {
+contextualize(() => {
 	class Sub extends Callable<(name: string) => string> {
 		constructor() {
 			super((name: string) => "Hello: " + this.salutation + name)

@@ -1,4 +1,4 @@
-import { attest } from "@arktype/attest"
+import { attest, contextualize } from "@arktype/attest"
 import { Trait, compose, implement } from "@arktype/util"
 
 export class Describable extends Trait<{
@@ -29,8 +29,8 @@ export class Boundable<data> extends Trait<{
 	}
 }
 
-describe("traits", () => {
-	it("compose", () => {
+contextualize(() => {
+	it("implement", () => {
 		class StringChecker extends implement(Describable, Boundable<string>, {
 			writeDefaultDescription: () => "foo",
 			sizeOf: (data: string) => data.length

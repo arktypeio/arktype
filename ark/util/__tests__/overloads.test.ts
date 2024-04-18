@@ -1,4 +1,4 @@
-import { attest } from "@arktype/attest"
+import { attest, contextualize } from "@arktype/attest"
 import type { array } from "../arrays.js"
 import type { conform } from "../generics.js"
 import type { overloadOf } from "../unionToTuple.js"
@@ -14,7 +14,7 @@ const pipe = <f extends (...args: any[]) => unknown, args extends array>(
 	f: f
 ): ReturnType<overloadOf<f, args>> => f(...args) as never
 
-describe("overloads", () => {
+contextualize(() => {
 	it("parameters", () => {
 		const t = {} as Parameters<overloadOf<typeof f>>
 		attest<[a: 2, b: 2] | [a?: 1 | undefined] | []>(t)

@@ -1,8 +1,8 @@
-import { attest } from "@arktype/attest"
+import { attest, contextualize } from "@arktype/attest"
 import { configure, defaultConfig, schema } from "@arktype/schema"
 import { schemaScope } from "../scope.js"
 
-describe("errors", () => {
+contextualize(() => {
 	it("shallow", () => {
 		const n = schema({
 			domain: "number",
