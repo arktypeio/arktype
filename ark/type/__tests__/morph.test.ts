@@ -1,6 +1,7 @@
 import { attest, contextualize } from "@arktype/attest"
 import { type Out, assertNodeKind } from "@arktype/schema"
 import { type Type, scope, type } from "arktype"
+import { RawSchema } from "../../schema/schema.js"
 
 contextualize(() => {
 	it("base", () => {
@@ -172,8 +173,10 @@ contextualize(() => {
 				  }
 			>
 		>(types.c)
-		const s = attest(types.a).assert("string")
-		assertNodeKind(types.a, "morph")
+
+		const serializedMorphs =
+			types.a.raw.firstReferenceOfKindOrThrow("morph").serializedMorphs
+
 		attest(types.c.json).snap([
 			{ domain: "object", prop: [{ key: "a", value: "Function" }] },
 			{
@@ -186,7 +189,7 @@ contextualize(() => {
 								domain: "number",
 								min: { exclusive: true, rule: 0 }
 							},
-							morphs: types.a.serializedMorphs
+							morphs: serializedMorphs
 						}
 					}
 				]
