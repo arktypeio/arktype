@@ -1,7 +1,6 @@
 import { attest, contextualize } from "@arktype/attest"
 import { type Out, assertNodeKind } from "@arktype/schema"
 import { type Type, scope, type } from "arktype"
-import { RawSchema } from "../../schema/schema.js"
 
 contextualize(() => {
 	it("base", () => {
