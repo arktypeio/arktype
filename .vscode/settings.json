@@ -21,11 +21,6 @@
 		"./ark/schema/main.ts"
 	],
 	"typescript.tsserver.experimental.enableProjectDiagnostics": true,
-
-	"vitest.rootConfig": "ark/repo/vitest.extension.config.ts",
-	"vitest.nodeEnv": {
-		"ATTEST_skipTypes": "true"
-	},
 	// IF YOU UPDATE THE MOCHA CONFIG HERE, PLEASE ALSO UPDATE package.json/mocha AND ark/repo/mocha.jsonc
 	"mochaExplorer.nodeArgv": ["--import=tsx"],
 	// ignore attest since it requires type information
