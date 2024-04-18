@@ -146,31 +146,3 @@
 // 		"{ a: { b: { c: { b: any; c: any; }; }; }; b: { c: { b: any; c: any; }; }; }"
 // 	)
 // })
-
-// describe("this", () => {
-// 	it("root expression", () => {
-// 		const t = type({ a: "string" }, "|", { b: "this" })
-// 		attest(t.infer).type.toString.snap(
-// 			"{ a: string; } | { b: { a: string; } | any; }"
-// 		)
-// 		attest(t.json).equals(type([{ a: "string" }, "|", { b: "this" }]).json)
-// 	})
-
-// 	// TODO: reenable
-// 	it("tuple expression", () => {
-// 		const t = type([{ a: "string" }, "|", { b: "this" }])
-// 		attest(t.infer).type.toString.snap(
-// 			"{ a: string; } | { b: { a: string; } | any; }"
-// 		)
-// 		const types = scope({
-// 			a: {
-// 				a: "string"
-// 			},
-// 			b: {
-// 				b: "expected"
-// 			},
-// 			expected: "a|b"
-// 		}).export()
-// 		attest(t.json).equals(types.expected.json)
-// 	})
-// })

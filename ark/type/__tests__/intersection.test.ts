@@ -1,4 +1,4 @@
-import { attest } from "@arktype/attest"
+import { attest, contextualize } from "@arktype/attest"
 import {
 	keywordNodes,
 	writeIndivisibleMessage,
@@ -7,7 +7,7 @@ import {
 import { type } from "arktype"
 import { writeMissingRightOperandMessage } from "../parser/string/shift/operand/unenclosed.js"
 
-describe("intersection", () => {
+contextualize(() => {
 	it("two types", () => {
 		const t = type("boolean&true")
 		attest<true>(t.infer)
@@ -65,46 +65,44 @@ describe("intersection", () => {
 
 		attest<{ a: number; b: boolean[]; c: "hello" }>(t.infer)
 	})
-	describe("errors", () => {
-		it("bad reference", () => {
+	it("bad reference", () => {
+		// @ts-expect-error
+		attest(() => type("boolean&tru"))
+			.throws(writeUnresolvableMessage("tru"))
+			.type.errors("boolean&true")
+	})
+	it("double and", () => {
+		// @ts-expect-error
+		attest(() => type("boolean&&true")).throws(
+			writeMissingRightOperandMessage("&", "&true")
+		)
+	})
+	it("implicit never", () => {
+		attest(() => type("string&number")).throws.snap(
+			"ParseError: Intersection of string and number results in an unsatisfiable type"
+		)
+	})
+	it("left semantic error", () => {
+		// @ts-expect-error
+		attest(() => type("string%2&'foo'")).throwsAndHasTypeError(
+			writeIndivisibleMessage(keywordNodes.string)
+		)
+	})
+	it("right semantic error", () => {
+		// @ts-expect-error
+		attest(() => type("'foo'&string%2")).throwsAndHasTypeError(
+			writeIndivisibleMessage(keywordNodes.string)
+		)
+	})
+	it("chained validation error", () => {
+		attest(() =>
 			// @ts-expect-error
-			attest(() => type("boolean&tru"))
-				.throws(writeUnresolvableMessage("tru"))
-				.type.errors("boolean&true")
-		})
-		it("double and", () => {
-			// @ts-expect-error
-			attest(() => type("boolean&&true")).throws(
-				writeMissingRightOperandMessage("&", "&true")
-			)
-		})
-		it("implicit never", () => {
-			attest(() => type("string&number")).throws.snap(
-				"ParseError: Intersection of string and number results in an unsatisfiable type"
-			)
-		})
-		it("left semantic error", () => {
-			// @ts-expect-error
-			attest(() => type("string%2&'foo'")).throwsAndHasTypeError(
-				writeIndivisibleMessage(keywordNodes.string)
-			)
-		})
-		it("right semantic error", () => {
-			// @ts-expect-error
-			attest(() => type("'foo'&string%2")).throwsAndHasTypeError(
-				writeIndivisibleMessage(keywordNodes.string)
-			)
-		})
-		it("chained validation", () => {
-			attest(() =>
-				// @ts-expect-error
-				type({ a: "string" }).and({ b: "what" })
-			).throwsAndHasTypeError(writeUnresolvableMessage("what"))
-		})
-		it("at path", () => {
-			attest(() => type({ a: "string" }).and({ a: "number" })).throws.snap(
-				"ParseError: Intersection at a of string and number results in an unsatisfiable type"
-			)
-		})
+			type({ a: "string" }).and({ b: "what" })
+		).throwsAndHasTypeError(writeUnresolvableMessage("what"))
+	})
+	it("error at path", () => {
+		attest(() => type({ a: "string" }).and({ a: "number" })).throws.snap(
+			"ParseError: Intersection at a of string and number results in an unsatisfiable type"
+		)
 	})
 })

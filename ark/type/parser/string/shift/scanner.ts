@@ -128,7 +128,8 @@ export namespace Scanner {
 
 	export const whiteSpaceTokens = {
 		" ": true,
-		"\n": true
+		"\n": true,
+		"\t": true
 	} as const
 
 	export type WhiteSpaceToken = keyof typeof whiteSpaceTokens

@@ -1,9 +1,9 @@
-import { attest } from "@arktype/attest"
+import { attest, contextualize } from "@arktype/attest"
 import type { Narrowed, Out, of, string } from "@arktype/schema"
 import { type equals, reference } from "@arktype/util"
 import { type Type, type } from "arktype"
 
-describe("narrow", () => {
+contextualize(() => {
 	it("implicit problem", () => {
 		const isOdd = (n: number) => n % 2 === 1
 		const isOddRef = reference(isOdd)

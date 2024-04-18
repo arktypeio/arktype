@@ -1,75 +1,80 @@
-import { attest } from "@arktype/attest"
+import { attest, contextualize } from "@arktype/attest"
 import { rawSchema } from "@arktype/schema"
 import { type } from "arktype"
 
-describe("jsObjects", () => {
-	it("Function", () => {
-		// should not be treated as a morph
-		attest<Function>(type("Function").infer)
-	})
+contextualize(
+	"jsObjects",
+	() => {
+		it("Function", () => {
+			// should not be treated as a morph
+			attest<Function>(type("Function").infer)
+		})
 
-	it("Date", () => {
-		// should not expand built-in classes
-		attest(type("Date").infer).type.toString.snap("Date")
-	})
-})
-describe("tsKeywords", () => {
-	it("string strings", () => {
-		/**
-		 * 	In honor of @ark-expect-beta aka log(n):
-		 * 		- Zirco author https://github.com/zirco-lang/zrc
-		 * 		- Shameless Rust stan
-		 * 		- Occasional user of ArkType libraries
-		 * 		- Frequent user of ArkType Discord
-		 * 		- Universally renowned two-finger speed typist
-		 */
-		const string = type("string")
-		attest<string>(string.infer)
-		attest(string("string").out).snap("string")
-	})
+		it("Date", () => {
+			// should not expand built-in classes
+			attest(type("Date").infer).type.toString.snap("Date")
+		})
+	},
+	"tsKeywords",
+	() => {
+		it("string strings", () => {
+			/**
+			 * 	In honor of @ark-expect-beta aka log(n):
+			 * 		- Zirco author https://github.com/zirco-lang/zrc
+			 * 		- Shameless Rust stan
+			 * 		- Occasional user of ArkType libraries
+			 * 		- Frequent user of ArkType Discord
+			 * 		- Universally renowned two-finger speed typist
+			 */
+			const string = type("string")
+			attest<string>(string.infer)
+			attest(string("string").out).snap("string")
+		})
 
-	it("any", () => {
-		const any = type("any")
-		// equivalent to unknown at runtime
-		attest(any.json).equals(type("unknown").json)
-		// inferred as any
-		attest<any>(any.infer)
-	})
+		it("any", () => {
+			const any = type("any")
+			// equivalent to unknown at runtime
+			attest(any.json).equals(type("unknown").json)
+			// inferred as any
+			attest<any>(any.infer)
+		})
 
-	it("boolean", () => {
-		const boolean = type("boolean")
-		attest<boolean>(boolean.infer)
-		const expected = rawSchema([{ unit: false }, { unit: true }])
-		// should be simplified to simple checks for true and false literals
-		attest(boolean.json).equals(expected.json)
-		// TODO:
-		// 			attest(boolean.json).snap(`if( $arkRoot !== false && $arkRoot !== true) {
-		//     return false
-		// }`)
-	})
+		it("boolean", () => {
+			const boolean = type("boolean")
+			attest<boolean>(boolean.infer)
+			const expected = rawSchema([{ unit: false }, { unit: true }])
+			// should be simplified to simple checks for true and false literals
+			attest(boolean.json).equals(expected.json)
+			// TODO:
+			// 			attest(boolean.json).snap(`if( $arkRoot !== false && $arkRoot !== true) {
+			//     return false
+			// }`)
+		})
 
-	it("never", () => {
-		const never = type("never")
-		attest<never>(never.infer)
-		const expected = rawSchema([])
-		// should be equivalent to a zero-branch union
-		attest(never.json).equals(expected.json)
-	})
+		it("never", () => {
+			const never = type("never")
+			attest<never>(never.infer)
+			const expected = rawSchema([])
+			// should be equivalent to a zero-branch union
+			attest(never.json).equals(expected.json)
+		})
 
-	it("unknown", () => {
-		const expected = rawSchema({})
-		// should be equivalent to an unconstrained predicate
-		attest(type("unknown").json).equals(expected.json)
-	})
+		it("unknown", () => {
+			const expected = rawSchema({})
+			// should be equivalent to an unconstrained predicate
+			attest(type("unknown").json).equals(expected.json)
+		})
 
-	it("void", () => {
-		const t = type("void")
-		attest<void>(t.infer)
-		const expected = type("undefined")
-		//should be treated as undefined at runtime
-		attest(t.json).equals(expected.json)
-	})
-})
+		it("void", () => {
+			const t = type("void")
+			attest<void>(t.infer)
+			const expected = type("undefined")
+			//should be treated as undefined at runtime
+			attest(t.json).equals(expected.json)
+		})
+	}
+)
+
 // describe("validation", () => {
 // it("integer", () => {
 //     const integer = type("integer")

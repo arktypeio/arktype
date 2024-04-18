@@ -1,8 +1,8 @@
-import { attest } from "@arktype/attest"
+import { attest, contextualize } from "@arktype/attest"
 import { type } from "arktype"
 import { writeUnsatisfiableExpressionError } from "../parser/semantic/validate.js"
 
-describe("intersections", () => {
+contextualize("intersections", () => {
 	it("class & literal", () => {
 		const a = [0]
 		const literal = type("===", a)
