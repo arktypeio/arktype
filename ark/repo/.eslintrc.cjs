@@ -34,7 +34,7 @@ module.exports = defineConfig({
 		"**/generated/**",
 		"**/experiments/**",
 		"*.astro",
-		"*.scratch.ts"
+		"*scratch.ts"
 	],
 	rules: {
 		/**
