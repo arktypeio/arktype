@@ -105,19 +105,22 @@ export interface Type<
 		def: def
 	): Type<
 		includesMorphs<t> extends true ?
-			(In: distillIn<t>) => Out<inferNarrow<this["infer"], def>>
+			(In: distillConstrainableIn<t>) => Out<inferNarrow<this["infer"], def>>
 		:	inferNarrow<this["infer"], def>,
 		$
 	>
 
-	pipe<def>(
-		def: validateTypeRoot<def, $>
+	pipe<to extends Type>(
+		outTransform: (out: this["out"]) => to
 	): Type<
 		includesMorphs<t> extends true ?
-			(In: distillIn<t>) => Out<inferTypeRoot<def, $>>
-		:	inferIntersection<t, inferTypeRoot<def, $>>,
+			(In: distillConstrainableIn<t>) => distillConstrainableOut<to["t"]>
+		:	distillConstrainableOut<to["t"]>,
 		$
 	>
+	pipe<def>(
+		def: validateTypeRoot<def, $>
+	): Type<inferIntersection<t, inferTypeRoot<def, $>, true>, $>
 
 	constrain<
 		kind extends PrimitiveConstraintKind,

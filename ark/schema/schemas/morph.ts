@@ -9,7 +9,6 @@ import {
 	throwParseError
 } from "@arktype/util"
 import type { of } from "../constraints/ast.js"
-import type { type } from "../inference.js"
 import type { NodeDef } from "../kinds.js"
 import type { Node } from "../node.js"
 import type {
@@ -173,14 +172,10 @@ export interface MorphNode extends RawSchema<MorphDeclaration> {
 	get out(): MorphChildNode
 }
 
-export type inferMorphOut<morph extends Morph> =
-	morph extends type.cast<infer t> ?
-		// avoid treating any/never as chained
-		t extends null ?
-			t
-		:	distillOut<t>
-	: morph extends Morph<never, infer out> ? Exclude<out, ArkTypeError>
-	: never
+export type inferMorphOut<morph extends Morph> = Exclude<
+	ReturnType<morph>,
+	ArkTypeError
+>
 
 export type distillIn<t> =
 	includesMorphs<t> extends true ? $distill<t, "in", "base"> : t

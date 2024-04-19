@@ -21,31 +21,6 @@ contextualize(() => {
 		attest<boolean | undefined>(out).equals(false)
 	})
 
-	it("type instance reference", () => {
-		const user = type({
-			name: "string",
-			age: "number"
-		})
-		const parsedUser = type("string")
-			.morph((s) => JSON.parse(s))
-			.morph(user)
-		attest<
-			Type<
-				(In: string) => Out<{
-					name: string
-					age: number
-				}>,
-				{}
-			>
-		>(parsedUser)
-		attest(
-			parsedUser(JSON.stringify({ name: "David", age: 30 })).errors
-		).equals(undefined)
-		attest(parsedUser(JSON.stringify({ name: "David" })).errors?.summary).snap(
-			"sometng"
-		)
-	})
-
 	it("any as out", () => {
 		const t = type("string", "=>", (s) => s as any)
 		attest<string>(t.in.infer)
