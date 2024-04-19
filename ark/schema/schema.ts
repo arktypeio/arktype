@@ -147,8 +147,10 @@ export class RawSchema<
 		return this.configure(description)
 	}
 
-	from(literal: unknown): unknown {
-		return literal
+	from(input: unknown): unknown {
+		// ideally we wouldn't validate here but for now we need to do determine
+		// which morphs to apply
+		return this.assert(input)
 	}
 
 	morph(morph: Morph, outValidator?: unknown): RawSchema {
@@ -260,21 +262,9 @@ export interface Schema<
 
 	from(literal: this["in"]["infer"]): this["out"]["infer"]
 
-	morph<
-		morph extends Morph<this["infer"]>,
-		outValidatorSchema extends SchemaDef = never
-	>(
-		morph: morph,
-		outValidator?: outValidatorSchema
-	): Schema<
-		(
-			In: distillConstrainableIn<t>
-		) => Out<
-			[outValidatorSchema] extends [never] ? inferMorphOut<morph>
-			:	distillConstrainableOut<inferSchema<outValidatorSchema, $>>
-		>,
-		$
-	>
+	morph<morph extends Morph<this["infer"]>>(
+		morph: morph
+	): Schema<(In: distillConstrainableIn<t>) => Out<inferMorphOut<morph>>, $>
 }
 
 export type intersectSchema<l extends SchemaKind, r extends NodeKind> =

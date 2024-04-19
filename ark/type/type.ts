@@ -95,18 +95,9 @@ export interface Type<
 
 	array(): Type<t[], $>
 
-	morph: (<morph extends Morph<this["infer"]>, outValidatorDef = never>(
-		morph: morph,
-		outValidator?: validateTypeRoot<outValidatorDef, $>
-	) => Type<
-		(
-			In: distillConstrainableIn<t>
-		) => Out<
-			[outValidatorDef] extends [never] ? inferMorphOut<morph>
-			:	distillConstrainableOut<inferTypeRoot<outValidatorDef, $>>
-		>,
-		$
-	>) &
+	morph: (<morph extends Morph<this["infer"]>>(
+		morph: morph
+	) => Type<(In: distillConstrainableIn<t>) => Out<inferMorphOut<morph>>, $>) &
 		Schema<t, $>["morph"]
 
 	// TODO: based on below, should maybe narrow morph output if used after
@@ -116,6 +107,15 @@ export interface Type<
 		includesMorphs<t> extends true ?
 			(In: distillIn<t>) => Out<inferNarrow<this["infer"], def>>
 		:	inferNarrow<this["infer"], def>,
+		$
+	>
+
+	pipe<def>(
+		def: validateTypeRoot<def, $>
+	): Type<
+		includesMorphs<t> extends true ?
+			(In: distillIn<t>) => Out<inferTypeRoot<def, $>>
+		:	inferIntersection<t, inferTypeRoot<def, $>>,
 		$
 	>
 

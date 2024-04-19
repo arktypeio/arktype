@@ -27,7 +27,7 @@ contextualize(() => {
 		const even = type([
 			"number",
 			":",
-			(n, ctx) => n % 3 === 0 || ctx.invalid({ expected: "divisible by 3" })
+			(n, ctx) => n % 3 === 0 || ctx.invalid("divisible by 3")
 		])
 		attest(even(1).errors?.summary).snap("must be divisible by 3 (was 1)")
 	})

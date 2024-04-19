@@ -3,20 +3,6 @@ import { attest } from "@arktype/attest"
 import { type } from "arktype"
 import "./arkConfig.js"
 
-declare const unknownData: unknown
-
-attest(unknownData, { ids: "string" })
-
-unknownData //=>?
-
-type Matchable = { isA: true; kind: "a" } | { isB: true; kind: "b" }
-
-declare const narrowableData: Matchable
-
-attest(narrowableData, { kind: "'a'" })
-
-narrowableData
-
 // export const validData = Object.freeze({
 // 	number: 1,
 // 	negNumber: -1,

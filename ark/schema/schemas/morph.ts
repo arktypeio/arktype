@@ -1,14 +1,15 @@
 import {
-	type BuiltinObjectKind,
-	type BuiltinObjects,
-	type Primitive,
 	type array,
 	arrayFrom,
+	type BuiltinObjectKind,
+	type BuiltinObjects,
 	type listable,
+	type Primitive,
 	reference,
 	throwParseError
 } from "@arktype/util"
 import type { of } from "../constraints/ast.js"
+import type { type } from "../inference.js"
 import type { NodeDef } from "../kinds.js"
 import type { Node } from "../node.js"
 import type {
@@ -20,7 +21,7 @@ import type { StaticArkOption } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { ArkResult, ArkTypeError } from "../shared/errors.js"
+import type { ArkTypeError } from "../shared/errors.js"
 import { basisKinds, implementNode } from "../shared/implement.js"
 import type { TraversalContext } from "../shared/traversal.js"
 import { defineRightwardIntersections } from "./utils.js"
@@ -173,14 +174,13 @@ export interface MorphNode extends RawSchema<MorphDeclaration> {
 }
 
 export type inferMorphOut<morph extends Morph> =
-	morph extends Morph<never, infer out> ?
-		out extends ArkResult<infer t> ?
-			out extends null ?
-				// avoid treating any/never as ArkResult
-				out
-			:	distillOut<t>
-		:	Exclude<out, ArkTypeError>
-	:	never
+	morph extends type.cast<infer t> ?
+		// avoid treating any/never as chained
+		t extends null ?
+			t
+		:	distillOut<t>
+	: morph extends Morph<never, infer out> ? Exclude<out, ArkTypeError>
+	: never
 
 export type distillIn<t> =
 	includesMorphs<t> extends true ? $distill<t, "in", "base"> : t
