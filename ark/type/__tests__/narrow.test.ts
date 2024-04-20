@@ -1,7 +1,7 @@
 import { attest, contextualize } from "@arktype/attest"
 import type { Narrowed, Out, of, string } from "@arktype/schema"
-import { type equals, reference } from "@arktype/util"
-import { type Type, type } from "arktype"
+import { reference, type equals } from "@arktype/util"
+import { type, type Type } from "arktype"
 
 contextualize(() => {
 	it("implicit problem", () => {
@@ -10,15 +10,13 @@ contextualize(() => {
 		const odd = type(["number", ":", isOdd])
 		attest<number>(odd.infer)
 		attest(odd.json).equals({ domain: "number", predicate: [isOddRef] })
-		attest(odd(1).out).equals(1)
-		attest(odd(2).errors?.summary).snap(
-			"must be valid according to isOdd (was 2)"
-		)
+		attest(odd(1)).equals(1)
+		attest(odd(2).toString()).snap("must be valid according to isOdd (was 2)")
 	})
 
 	it("implicit problem anonymous", () => {
 		const even = type("number", ":", (n) => n % 2 === 0)
-		attest(even(1).errors?.summary).snap(
+		attest(even(1).toString()).snap(
 			"must be valid according to an anonymous predicate (was 1)"
 		)
 	})
@@ -29,7 +27,7 @@ contextualize(() => {
 			":",
 			(n, ctx) => n % 3 === 0 || ctx.invalid("divisible by 3")
 		])
-		attest(even(1).errors?.summary).snap("must be divisible by 3 (was 1)")
+		attest(even(1).toString()).snap("must be divisible by 3 (was 1)")
 	})
 
 	it("problem at path", () => {
@@ -48,8 +46,8 @@ contextualize(() => {
 				return false
 			}
 		])
-		attest(abEqual({ a: 1, b: 1 }).out).equals({ a: 1, b: 1 })
-		attest(abEqual({ a: 1, b: 2 }).errors?.summary).snap(
+		attest(abEqual({ a: 1, b: 1 })).equals({ a: 1, b: 1 })
+		attest(abEqual({ a: 1, b: 2 }).toString()).snap(
 			'a must be equal to b (was {"a":1,"b":2})\nb must be equal to a (was {"a":1,"b":2})'
 		)
 	})
@@ -85,8 +83,8 @@ contextualize(() => {
 				s === [...s].reverse().join("") ? true : ctx.invalid("a palindrome")
 		])
 		attest<Type<string.narrowed>>(palindrome)
-		attest(palindrome("dad").out).snap("dad")
-		attest(palindrome("david").errors?.summary).snap(
+		attest(palindrome("dad")).snap("dad")
+		attest(palindrome("david").toString()).snap(
 			'must be a palindrome (was "david")'
 		)
 	})

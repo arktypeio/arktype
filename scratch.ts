@@ -1,7 +1,16 @@
 // import { bench } from "@arktype/attest"
 import { attest } from "@arktype/attest"
 import { type } from "arktype"
+import { ArkErrors, ArkTypeError } from "./ark/schema/shared/errors.js"
 import "./arkConfig.js"
+
+declare const out: { a: 1 } | ArkErrors
+
+if (out instanceof ArkErrors) {
+	out
+} else {
+	out
+}
 
 // export const validData = Object.freeze({
 // 	number: 1,

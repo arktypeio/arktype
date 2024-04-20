@@ -5,9 +5,9 @@ import { AssertionError } from "node:assert"
 contextualize(() => {
 	it("root discriminates", () => {
 		const t = type("string")
-		const { out, errors: errors } = t("")
-		if (errors) {
-			errors.throw()
+		const out = t("")
+		if (out instanceof type.error) {
+			out.throw()
 		} else {
 			attest<string>(out)
 		}
@@ -25,10 +25,12 @@ contextualize(() => {
 		attest(t.allows(5)).equals(false)
 	})
 
+	// TODO: ?
 	it("errors can be thrown", () => {
 		const t = type("number")
 		try {
-			attest(t("invalid").errors?.throw())
+			const result = t("invalid")
+			attest(result instanceof type.error && result.throw())
 		} catch (e) {
 			attest(e instanceof ArkError).equals(true)
 			return

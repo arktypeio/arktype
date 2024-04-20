@@ -23,6 +23,7 @@ import type {
 import type { ProtoDef } from "./schemas/proto.js"
 import type { NormalizedUnionDef, UnionDef } from "./schemas/union.js"
 import type { UnitDef } from "./schemas/unit.js"
+import type { ArkErrors } from "./shared/errors.js"
 import type { BasisKind, ConstraintKind } from "./shared/implement.js"
 import type { inferred } from "./shared/utils.js"
 
@@ -30,6 +31,8 @@ export namespace type {
 	export type cast<to = unknown> = {
 		[inferred]?: to
 	}
+
+	export type errors = ArkErrors
 }
 
 export type validateSchema<def, $> =

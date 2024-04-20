@@ -2,14 +2,12 @@ import {
 	ReadonlyArray,
 	hasDefinedKey,
 	type optionalizeKeys,
-	type propwiseXor,
 	type show
 } from "@arktype/util"
 import type { Prerequisite, errorContext } from "../kinds.js"
-import type { distillIn, distillOut } from "../schemas/morph.js"
 import type { NodeKind } from "./implement.js"
 import type { TraversalContext } from "./traversal.js"
-import { type TraversalPath, arkKind, pathToPropString } from "./utils.js"
+import { arkKind, pathToPropString, type TraversalPath } from "./utils.js"
 
 export const throwArkError = (
 	...args: ConstructorParameters<typeof ArkError>
@@ -199,8 +197,3 @@ export type ExpectedWriter<code extends ArkErrorCode = ArkErrorCode> = (
 export type ActualWriter<code extends ArkErrorCode = ArkErrorCode> = (
 	data: getAssociatedDataForError<code>
 ) => string | null
-
-export type ArkResult<t = unknown> = propwiseXor<
-	{ data: distillIn<t>; out: distillOut<t> },
-	{ errors: ArkErrors }
->

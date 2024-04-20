@@ -101,7 +101,7 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 			if (inTersection instanceof Disjoint) {
 				return inTersection
 			}
-			const outTersection = l.out.intersect(r.out)
+			const outTersection = l.out.intersect(r)
 			if (outTersection instanceof Disjoint) {
 				return outTersection
 			}

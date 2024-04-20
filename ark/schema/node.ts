@@ -40,7 +40,6 @@ import type {
 	attachmentsOf
 } from "./shared/declare.js"
 import { Disjoint } from "./shared/disjoint.js"
-import type { ArkResult } from "./shared/errors.js"
 import {
 	type BasisKind,
 	type NodeKind,
@@ -64,16 +63,16 @@ export type UnknownNode = RawNode | Schema
 export class RawNode<
 	/** @ts-expect-error allow instantiation assignment to the base type */
 	out d extends RawNodeDeclaration = RawNodeDeclaration
-> extends Callable<(data: d["prerequisite"]) => ArkResult, attachmentsOf<d>> {
+> extends Callable<(data: d["prerequisite"]) => unknown, attachmentsOf<d>> {
 	constructor(public attachments: UnknownAttachments) {
 		super(
-			(data: any): ArkResult => {
+			(data: any) => {
 				if (
 					!this.includesMorph &&
 					!this.includesContextDependentPredicate &&
 					this.allows(data)
 				) {
-					return { data, out: data }
+					return data
 				}
 				const ctx = new TraversalContext(data, this.$.resolvedConfig)
 				this.traverseApply(data, ctx)
@@ -110,7 +109,7 @@ export class RawNode<
 		return this.traverseAllows(data as never, ctx)
 	}
 
-	traverse(data: d["prerequisite"]): ArkResult {
+	traverse(data: d["prerequisite"]): unknown {
 		return this(data)
 	}
 

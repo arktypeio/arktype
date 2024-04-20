@@ -14,8 +14,8 @@ contextualize(() => {
 		const t = schema({ unit: "foo" })
 		attest(t.json).snap({ unit: "foo" })
 		attest(t("foo").errors).equals(undefined)
-		attest(t("bar").errors?.summary).snap('must be "foo" (was "bar")')
-		attest(t(5).errors?.summary).snap('must be "foo" (was 5)')
+		attest(t("bar").toString()).snap('must be "foo" (was "bar")')
+		attest(t(5).toString()).snap('must be "foo" (was 5)')
 	})
 	it("treats equivalent dates as equal", () => {
 		const l = schema({ unit: new Date(1337) })

@@ -10,9 +10,8 @@ import {
 	type PrimitiveConstraintKind,
 	throwInvalidOperandError
 } from "./constraints/util.js"
-import type { inferSchema } from "./inference.js"
 import type { NodeDef, reducibleKindOf } from "./kinds.js"
-import { type Node, RawNode, type SchemaDef } from "./node.js"
+import { type Node, RawNode } from "./node.js"
 import type { constraintKindOf } from "./schemas/intersection.js"
 import type {
 	Morph,
@@ -26,7 +25,7 @@ import type { UnionChildKind } from "./schemas/union.js"
 import type { SchemaScope } from "./scope.js"
 import type { BaseMeta, RawNodeDeclaration } from "./shared/declare.js"
 import { Disjoint } from "./shared/disjoint.js"
-import type { ArkResult } from "./shared/errors.js"
+import { ArkErrors } from "./shared/errors.js"
 import type {
 	NodeAttachments,
 	NodeKind,
@@ -99,7 +98,7 @@ export class RawSchema<
 
 	assert(data: unknown): unknown {
 		const result = this.traverse(data)
-		return result.errors ? result.errors.throw() : result.out
+		return result instanceof ArkErrors ? result.throw() : result
 	}
 
 	// get<key extends PropertyKey>(
@@ -202,7 +201,7 @@ export interface Schema<
 	/** @ts-expect-error allow instantiation assignment to the base type */
 	out t = unknown,
 	$ = any
-> extends Callable<(data: unknown) => ArkResult<t>> {
+> extends Callable<(data: unknown) => distillOut<t> | ArkErrors> {
 	$: SchemaScope<$>
 	t: t
 	infer: distillOut<t>
@@ -224,7 +223,7 @@ export interface Schema<
 
 	allows(data: unknown): data is this["in"]["infer"]
 
-	traverse(data: unknown): ArkResult<t>
+	traverse(data: unknown): distillOut<t> | ArkErrors
 
 	intersect<r extends Schema>(
 		r: r

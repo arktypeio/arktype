@@ -15,8 +15,8 @@ contextualize(
 			const s = Symbol()
 			const t = type(["===", s])
 			attest<symbol>(t.infer)
-			attest(t(s).out).equals(s)
-			attest(t("test").errors?.summary).snap(
+			attest(t(s)).equals(s)
+			attest(t("test").toString()).snap(
 				'must be (symbol anonymous) (was "test")'
 			)
 		})

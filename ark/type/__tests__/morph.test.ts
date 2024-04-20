@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@arktype/attest"
-import { type Out, assertNodeKind } from "@arktype/schema"
-import { type Type, scope, type } from "arktype"
+import { assertNodeKind, type Out } from "@arktype/schema"
+import { scope, type, type Type } from "arktype"
 
 contextualize(() => {
 	it("base", () => {
@@ -8,16 +8,16 @@ contextualize(() => {
 		attest<Type<(In: number) => Out<string>>>(t)
 		attest<string>(t.infer)
 		attest<number>(t.in.infer)
-		const { out } = t(5)
-		attest<string | undefined>(out).equals("5")
-		const { errors } = t("foo")
+		const out = t(5)
+		attest<string | type.error>(out).equals("5")
+		const errors = t("foo")
 		attest(errors?.summary).snap("must be a number (was string)")
 	})
 
 	it("within type", () => {
 		const t = type(["boolean", "=>", (data) => !data])
 		attest<Type<(In: boolean) => Out<boolean>>>(t)
-		const { out } = t(true)
+		const out = t(true)
 		attest<boolean | undefined>(out).equals(false)
 	})
 
@@ -38,8 +38,8 @@ contextualize(() => {
 			n !== 0 ? 100 / n : ctx.error("non-zero")
 		)
 		attest<Type<(In: number) => Out<number>>>(divide100By)
-		attest(divide100By(5).out).equals(20)
-		attest(divide100By(0).errors?.summary).snap("must be non-zero (was 0)")
+		attest(divide100By(5)).equals(20)
+		attest(divide100By(0).toString()).snap("must be non-zero (was 0)")
 	})
 
 	it("at path", () => {
@@ -48,14 +48,9 @@ contextualize(() => {
 
 		const input = { a: "four" }
 
-		const { data, out } = t(input)
+		const out = t(input)
 
-		attest<{ a: number } | undefined>(out).equals({ a: 4 })
-		attest<{ a: string } | undefined>(data).snap({ a: "four" })
-		// out is cloned before the morph
-		attest(out === (input as never)).equals(false)
-		// data has the original reference + data
-		attest(data === input).equals(true)
+		attest<{ a: number } | type.error>(out).equals({ a: 4 })
 	})
 
 	it("in array", () => {
@@ -273,8 +268,8 @@ contextualize(() => {
 			}
 		])
 		attest<Type<(In: string) => Out<number>>>(parsedInt)
-		attest(parsedInt("5").out).snap(5)
-		attest(parsedInt("five").errors?.summary).snap(
+		attest(parsedInt("5")).snap(5)
+		attest(parsedInt("five").toString()).snap(
 			'must be an integer string (was "five")'
 		)
 	})

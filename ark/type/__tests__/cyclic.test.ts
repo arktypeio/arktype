@@ -77,7 +77,7 @@
 // it("allows valid", () => {
 // 	const types = getCyclicScope().export()
 // 	const data = getCyclicData()
-// 	attest(types.package(data).out).snap({
+// 	attest(types.package(data)).snap({
 // 		name: "arktype",
 // 		dependencies: [{ name: "typescript" }, "(cycle)" as any as Package],
 // 		contributors: [{ email: "david@arktype.io" }]
@@ -88,7 +88,7 @@
 // 	const types = getCyclicScope().export()
 // 	const data = getCyclicData()
 // 	data.contributors[0].email = "ssalbdivad"
-// 	attest(types.package(data).errors?.summary).snap(
+// 	attest(types.package(data).toString()).snap(
 // 		"dependencies/1/contributors/0/email must be a valid email (was 'ssalbdivad')\ncontributors/0/email must be a valid email (was 'ssalbdivad')"
 // 	)
 // })
@@ -100,7 +100,7 @@
 // 		":",
 // 		(p) => !p.dependencies?.some((d) => d.name === p.name)
 // 	])
-// 	attest(nonSelfDependent(data).errors?.summary).snap(
+// 	attest(nonSelfDependent(data).toString()).snap(
 // 		'must be valid (was {"name":"arktype","dependencies":[{"name":"typescript"},"(cycle)"],"contributors":[{"email":"david@arktype.io"}]})'
 // 	)
 // })

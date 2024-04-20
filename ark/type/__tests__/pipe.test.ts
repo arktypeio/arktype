@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@arktype/attest"
 import type { Out, number } from "@arktype/schema"
-import { type Type, type } from "arktype"
+import { type, type Type } from "arktype"
 
 contextualize(() => {
 	it("transform out", () => {
@@ -8,9 +8,9 @@ contextualize(() => {
 			n.constrain("min", 1)
 		)
 		attest<Type<(In: string) => number.atLeast<1>, {}>>(parsedPositive)
-		attest(parsedPositive("5").errors).equals(undefined)
-		attest(parsedPositive(5).errors?.summary).snap("sometng")
-		attest(parsedPositive("-5").errors?.summary).snap("sometng")
+		attest(parsedPositive("5")).equals(5)
+		attest(parsedPositive(5).toString()).snap("sometng")
+		attest(parsedPositive("-5").toString()).snap("sometng")
 	})
 	it("from morph", () => {
 		const parsedUser = type("string")
@@ -30,7 +30,7 @@ contextualize(() => {
 		attest(
 			parsedUser(JSON.stringify({ name: "David", age: 30 })).errors
 		).equals(undefined)
-		attest(parsedUser(JSON.stringify({ name: "David" })).errors?.summary).snap(
+		attest(parsedUser(JSON.stringify({ name: "David" })).toString()).snap(
 			"sometng"
 		)
 	})

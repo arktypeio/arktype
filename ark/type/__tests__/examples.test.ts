@@ -6,7 +6,7 @@
 // 		version: string
 // 		contributors?: string[]
 // 	}
-// 	attest(typeSnippet.errors?.summary).snap(
+// 	attest(typeSnippet.toString()).snap(
 // 		"contributors must be more than 1 items long (was 1)"
 // 	)
 // })
@@ -19,7 +19,7 @@
 // 			version?: number
 // 		}
 // 	}
-// 	attest(typeSnippet.errors?.summary).snap(
+// 	attest(typeSnippet.toString()).snap(
 // 		"device/platform must be 'android' or 'ios' (was 'enigma')"
 // 	)
 // })
@@ -34,7 +34,7 @@
 // //             packages?: any[]
 // //         }[]
 // //     }
-// //     attest(scopeSnippet.errors?.summary).snap(
+// //     attest(scopeSnippet.toString()).snap(
 // //         "dependencies/0/dependencies/0/contributors/0/email must be a valid email (was 'david@sharktypeio')\ncontributors/0/email must be a valid email (was 'david@sharktypeio')"
 // //     )
 // // })

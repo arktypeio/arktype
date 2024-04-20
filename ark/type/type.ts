@@ -1,4 +1,5 @@
 import {
+	type ArkErrors,
 	type BaseMeta,
 	type Morph,
 	type NodeDef,
@@ -66,6 +67,8 @@ export type TypeParser<$> = {
 			}
 		>
 	): Generic<parseGenericParams<params>, def, $>
+
+	error: typeof ArkErrors
 }
 
 export type DeclarationParser<$> = <preinferred>() => {

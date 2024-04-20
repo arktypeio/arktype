@@ -12,11 +12,11 @@ contextualize(() => {
 		}).export()
 		attest<string>(types.a.infer)
 		attest(types.a.description).equals(description)
-		attest(types.a(1).errors?.summary).snap(
+		attest(types.a(1).toString()).snap(
 			"must be a series of characters (was number)"
 		)
 		attest<{ a: string }>(types.b.infer)
-		attest(types.b({ a: true }).errors?.summary).snap(
+		attest(types.b({ a: true }).toString()).snap(
 			"a must be a series of characters (was true)"
 		)
 	})
@@ -30,7 +30,7 @@ contextualize(() => {
 		attest(t.description).snap(
 			"{ monster: the number of dimensions in the monster group }"
 		)
-		attest(t({ monster: 196882 }).errors?.summary).snap(
+		attest(t({ monster: 196882 }).toString()).snap(
 			"monster must be the number of dimensions in the monster group (was 196882)"
 		)
 	})
@@ -38,13 +38,13 @@ contextualize(() => {
 	it("anonymous type config", () => {
 		const t = type(type("true", "@", { description: "unfalse" }))
 		attest<true>(t.infer)
-		attest(t(false).errors?.summary).snap("must be unfalse (was false)")
+		attest(t(false).toString()).snap("must be unfalse (was false)")
 	})
 
 	it("anonymous type config at path", () => {
 		const unfalse = type("true", "@", { description: "unfalse" })
 		const t = type({ myKey: unfalse })
-		attest(t({ myKey: "500" }).errors?.summary).snap(
+		attest(t({ myKey: "500" }).toString()).snap(
 			`myKey must be unfalse (was "500")`
 		)
 	})
@@ -60,7 +60,7 @@ contextualize(() => {
 			myKey: () => type("false", "@", { description: "untrue" })
 		})
 		attest<{ myKey: false }>(t.infer)
-		attest(t({ myKey: true }).errors?.summary).snap(
+		attest(t({ myKey: true }).toString()).snap(
 			"myKey must be untrue (was true)"
 		)
 	})
@@ -76,10 +76,10 @@ contextualize(() => {
 			user({
 				name: "david",
 				age: true
-			}).errors?.summary
+			}).toString()
 		).snap("age must be a number (was true)")
 
 		// should give the shallow custom error
-		attest(user(null).errors?.summary).snap("must be a valid user (was null)")
+		attest(user(null).toString()).snap("must be a valid user (was null)")
 	})
 })

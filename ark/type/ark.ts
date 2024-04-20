@@ -1,4 +1,9 @@
-import { type Ark, type inferred, keywordNodes } from "@arktype/schema"
+import {
+	type Ark,
+	type ArkErrors,
+	type inferred,
+	keywordNodes
+} from "@arktype/schema"
 import type { Generic } from "./generic.js"
 import type { MatchParser } from "./match.js"
 import type { Module } from "./module.js"
@@ -31,6 +36,8 @@ export namespace type {
 	export type cast<to> = {
 		[inferred]?: to
 	}
+
+	export type error = ArkErrors
 }
 
 export const match: MatchParser<{}> = ambient.match.bind(ambient) as never
