@@ -39,6 +39,6 @@
 	},
 	"dependencies": {
 		"@arktype/util": "workspace:*",
-		"@arktype/schema": "workspace*"
+		"@arktype/schema": "workspace:*"
 	}
 }

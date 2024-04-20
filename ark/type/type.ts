@@ -83,25 +83,20 @@ export interface Type<
 	out t = unknown,
 	$ = any
 > extends Schema<t, $> {
-	and: (<def>(
+	and: <def>(
 		def: validateTypeRoot<def, $>
-	) => Type<inferIntersection<t, inferTypeRoot<def, $>>, $>) &
-		Schema<t, $>["and"]
+	) => Type<inferIntersection<t, inferTypeRoot<def, $>>, $>
 
-	or: (<def>(
-		def: validateTypeRoot<def, $>
-	) => Type<t | inferTypeRoot<def, $>, $>) &
-		Schema<t, $>["or"]
+	or: <def>(def: validateTypeRoot<def, $>) => Type<t | inferTypeRoot<def, $>, $>
 
 	get in(): Type<distillConstrainableIn<t>, $>
 	get out(): Type<distillConstrainableOut<t>, $>
 
 	array(): Type<t[], $>
 
-	morph: (<morph extends Morph<this["infer"]>>(
+	morph: <morph extends Morph<this["infer"]>>(
 		morph: morph
-	) => Type<(In: distillConstrainableIn<t>) => Out<inferMorphOut<morph>>, $>) &
-		Schema<t, $>["morph"]
+	) => Type<(In: distillConstrainableIn<t>) => Out<inferMorphOut<morph>>, $>
 
 	// TODO: based on below, should maybe narrow morph output if used after
 	narrow<def extends Predicate<distillConstrainableOut<t>>>(
