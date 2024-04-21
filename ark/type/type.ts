@@ -19,7 +19,8 @@ import {
 	type includesMorphs,
 	type inferIntersection,
 	type inferMorphOut,
-	type inferNarrow
+	type inferNarrow,
+	type inferPipe
 } from "@arktype/schema"
 import type { Constructor, array, conform } from "@arktype/util"
 import type { Generic, validateParameterString } from "./generic.js"
@@ -82,7 +83,7 @@ export type DeclarationParser<$> = <preinferred>() => {
 // this is declared as a class internally so we can ensure all "abstract"
 // methods of BaseRoot are overridden, but we end up exporting it as an interface
 // to ensure it is not accessed as a runtime value
-export declare class $Type<t = unknown, $ = any> extends BaseRoot<t, $> {
+declare class $Type<t = unknown, $ = any> extends BaseRoot<t, $> {
 	$: Scope<$>;
 
 	get in(): Type<this["tIn"], $>
@@ -111,7 +112,7 @@ export declare class $Type<t = unknown, $ = any> extends BaseRoot<t, $> {
 		def: def
 	): Type<
 		includesMorphs<t> extends true ?
-			(In: distillConstrainableIn<t>) => Out<inferNarrow<this["infer"], def>>
+			(In: this["tIn"]) => Out<inferNarrow<this["infer"], def>>
 		:	inferNarrow<this["infer"], def>,
 		$
 	>
@@ -130,14 +131,13 @@ export declare class $Type<t = unknown, $ = any> extends BaseRoot<t, $> {
 	pipe<to extends Type>(
 		outTransform: (out: this["out"]) => to
 	): Type<
-		includesMorphs<t> extends true ?
-			(In: distillConstrainableIn<t>) => distillConstrainableOut<to["t"]>
-		:	distillConstrainableOut<to["t"]>,
+		includesMorphs<t> extends true ? (In: this["tIn"]) => to["tOut"]
+		:	to["tOut"],
 		$
 	>
 	pipe<def>(
 		def: validateTypeRoot<def, $>
-	): Type<inferIntersection<t, inferTypeRoot<def, $>, true>, $>
+	): Type<inferPipe<t, inferTypeRoot<def, $>>, $>
 
 	constrain<
 		kind extends PrimitiveConstraintKind,
