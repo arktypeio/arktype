@@ -43,7 +43,8 @@ export namespace Hkt {
 		hkt(In: conform<this[args], Kind>): reify<typeof In>
 	}
 
-	export const reify = <def extends Kind>(def: def) => def.hkt as reify<def>
+	export const reify = <def extends Kind>(def: def): reify<def> =>
+		def.hkt as never
 
 	export type reify<hkt extends Kind> = <
 		const In extends Parameters<hkt["hkt"]>[0]
