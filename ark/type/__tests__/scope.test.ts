@@ -151,8 +151,8 @@ contextualize(() => {
 			X: Apple
 		}).export()
 
-		const { out: data } = X({ pear: { tasty: true } })
-		attest(data).snap({ pear: { tasty: true } })
+		const out = X({ pear: { tasty: true } })
+		attest(out).snap({ pear: { tasty: true } })
 	})
 	describe("define", () => {
 		it("ark", () => {

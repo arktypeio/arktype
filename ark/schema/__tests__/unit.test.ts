@@ -13,7 +13,7 @@ contextualize(() => {
 	it("string apply", () => {
 		const t = schema({ unit: "foo" })
 		attest(t.json).snap({ unit: "foo" })
-		attest(t("foo").errors).equals(undefined)
+		attest(t("foo")).equals("foo")
 		attest(t("bar").toString()).snap('must be "foo" (was "bar")')
 		attest(t(5).toString()).snap('must be "foo" (was 5)')
 	})

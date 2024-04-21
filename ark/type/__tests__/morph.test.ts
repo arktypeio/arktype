@@ -10,15 +10,15 @@ contextualize(() => {
 		attest<number>(t.in.infer)
 		const out = t(5)
 		attest<string | type.error>(out).equals("5")
-		const errors = t("foo")
-		attest(errors?.summary).snap("must be a number (was string)")
+		const result = t("foo")
+		attest(result.toString()).snap("must be a number (was string)")
 	})
 
 	it("within type", () => {
 		const t = type(["boolean", "=>", (data) => !data])
 		attest<Type<(In: boolean) => Out<boolean>>>(t)
 		const out = t(true)
-		attest<boolean | undefined>(out).equals(false)
+		attest<boolean | type.error>(out).equals(false)
 	})
 
 	it("any as out", () => {
@@ -59,15 +59,14 @@ contextualize(() => {
 			mapToLengths: "lengthOfString[]"
 		}).export()
 		attest<Type<((In: string) => Out<number>)[]>>(types.mapToLengths)
-		const { out } = types.mapToLengths(["1", "22", "333"])
-		attest<number[] | undefined>(out).equals([1, 2, 3])
+		const out = types.mapToLengths(["1", "22", "333"])
+		attest<number[] | type.error>(out).equals([1, 2, 3])
 	})
 
 	it("object to string", () => {
 		const t = type([{ a: "string" }, "=>", (data) => JSON.stringify(data)])
-		const { data, out } = t({ a: "foo" })
-		attest<{ a: string } | undefined>(data).snap({ a: "foo" })
-		attest<string | undefined>(out).snap('{"a":"foo"}')
+		const out = t({ a: "foo" })
+		attest<string | type.error>(out).snap('{"a":"foo"}')
 	})
 
 	it("intersection", () => {

@@ -53,7 +53,7 @@ export type CallableOptions<attachments extends object> = {
 	bind?: object
 }
 
-// @ts-expect-error required to cast function type
+/** @ts-expect-error required to cast function type */
 export class Callable<
 	f extends (...args: never[]) => unknown,
 	attachments extends object = {}

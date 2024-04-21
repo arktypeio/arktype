@@ -111,10 +111,12 @@ export type extractDefinedKey<o extends object, k extends unionKeyOf<o>> = show<
 	extractKeyed<o, k> & { [_ in k]: {} | null }
 >
 
-export const hasDefinedKey = <o extends object, k extends unionKeyOf<o>>(
+// must be defined this way to avoid https://github.com/microsoft/TypeScript/issues/55049
+export const hasDefinedKey: <o extends object, k extends unionKeyOf<o>>(
 	o: o,
 	k: k
-): o is extractDefinedKey<o, k> => (o as any)[k] !== undefined
+) => o is extractDefinedKey<o, k> = (o, k): o is any =>
+	(o as any)[k] !== undefined
 
 export type requiredKeyOf<o> = {
 	[k in keyof o]-?: o extends { [_ in k]-?: o[k] } ? k : never
@@ -198,10 +200,11 @@ export const stringAndSymbolicEntriesOf = (
 ]
 
 /** Like Object.assign, but it will preserve getters instead of evaluating them. */
-export const defineProperties = <base extends object, merged extends object>(
+export const defineProperties: <base extends object, merged extends object>(
 	base: base,
 	merged: merged
-): merge<base, merged> =>
+) => merge<base, merged> = (base, merged) =>
+	// declared like this to avoid https://github.com/microsoft/TypeScript/issues/55049
 	Object.defineProperties(
 		base,
 		Object.getOwnPropertyDescriptors(merged)

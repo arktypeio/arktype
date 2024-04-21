@@ -8,7 +8,7 @@ contextualize(() => {
 			domain: "number",
 			divisor: 3
 		})
-		attest(n.traverse(6)).snap({ data: 6, out: 6 })
+		attest(n.traverse(6)).snap(6)
 		attest(n.traverse(7).toString()).snap("must be a multiple of 3 (was 7)")
 	})
 

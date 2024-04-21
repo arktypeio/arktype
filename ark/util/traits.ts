@@ -65,7 +65,7 @@ export type TraitDeclaration = {
 	dynamicBase?: object
 }
 
-// @ts-expect-error required to extend NoopBase
+/** @ts-expect-error required to extend NoopBase */
 export abstract class Trait<
 	d extends TraitDeclaration = {},
 	// we have to enumerate these for TS to understand extending their intersection

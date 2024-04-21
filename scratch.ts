@@ -1,6 +1,6 @@
 // import { bench } from "@arktype/attest"
 import { attest } from "@arktype/attest"
-import { type } from "arktype"
+import { scope, type } from "arktype"
 import { ArkErrors, ArkTypeError } from "./ark/schema/shared/errors.js"
 import "./arkConfig.js"
 
@@ -11,6 +11,17 @@ if (out instanceof ArkErrors) {
 } else {
 	out
 }
+
+const types = scope({
+	baseReturn: {
+		type: `'return'`,
+		path: "string",
+		args: "unknown",
+		id: "number",
+		callTime: "number",
+		time: "number"
+	}
+})
 
 // export const validData = Object.freeze({
 // 	number: 1,

@@ -12,9 +12,9 @@ const Class = <def>(def: validateTypeRoot<def, Ark>) => {
 		static infer: inferTypeRoot<def, Ark>
 
 		constructor(input: unknown) {
-			const { out, errors } = validator(input)
-			if (errors) {
-				return errors.throw()
+			const out = validator(input)
+			if (out instanceof type.error) {
+				return out.throw()
 			}
 			super(out as never)
 		}
