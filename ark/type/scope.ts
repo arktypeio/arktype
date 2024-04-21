@@ -40,11 +40,12 @@ import {
 } from "./parser/generic.js"
 import { DynamicState } from "./parser/string/reduce/dynamic.js"
 import { fullStringParse } from "./parser/string/string.js"
-import type {
-	DeclarationParser,
-	DefinitionParser,
-	Type,
-	TypeParser
+import {
+	type DeclarationParser,
+	type DefinitionParser,
+	RawTypeParser,
+	type Type,
+	type TypeParser
 } from "./type.js"
 
 export type ScopeParser = <const def>(
@@ -191,34 +192,12 @@ export class RawScope<
 		super(aliases, config)
 	}
 
-	type(...args: unknown[]): RawSchema | Generic {
-		if (args.length === 1) {
-			// treat as a simple definition
-			return this.parseRoot(args[0])
-		}
-		if (
-			args.length === 2 &&
-			typeof args[0] === "string" &&
-			args[0][0] === "<" &&
-			args[0].at(-1) === ">"
-		) {
-			// if there are exactly two args, the first of which looks like <${string}>,
-			// treat as a generic
-			const params = parseGenericParams(args[0].slice(1, -1))
-			const def = args[1]
-			// TODO: validateUninstantiatedGeneric, remove this cast
-			return new Generic(params, def, this as never) as never
-		}
-		// otherwise, treat as a tuple expression. technically, this also allows
-		// non-expression tuple definitions to be parsed, but it's not a supported
-		// part of the API as specified by the associated types
-		return this.parseRoot(args)
-	}
+	type = new RawTypeParser(this as never)
 
 	match: MatchParser<$> = createMatchParser(this as never) as never
 
 	declare(): { type: RawScope["type"] } {
-		return { type: this.type.bind(this) }
+		return { type: this.type }
 	}
 
 	define(def: unknown): unknown {

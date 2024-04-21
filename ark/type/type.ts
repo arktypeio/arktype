@@ -1,5 +1,5 @@
 import {
-	type ArkErrors,
+	ArkErrors,
 	type BaseMeta,
 	type BaseRoot,
 	type Disjoint,
@@ -22,22 +22,31 @@ import {
 	type inferNarrow,
 	type inferPipe
 } from "@arktype/schema"
-import type { Constructor, array, conform } from "@arktype/util"
-import type { Generic, validateParameterString } from "./generic.js"
+import {
+	Callable,
+	type Constructor,
+	type array,
+	type conform
+} from "@arktype/util"
+import { Generic, type validateParameterString } from "./generic.js"
 import type {
 	inferDefinition,
 	validateDeclared,
 	validateDefinition
 } from "./parser/definition.js"
-import type { parseGenericParams } from "./parser/generic.js"
+import { parseGenericParams } from "./parser/generic.js"
 import type {
 	IndexOneOperator,
 	IndexZeroOperator,
 	TupleInfixOperator
 } from "./parser/tuple.js"
-import type { Scope, bindThis } from "./scope.js"
+import type { RawScope, Scope, bindThis } from "./scope.js"
 
-export type TypeParser<$> = {
+export interface TypeParserAttachments {
+	errors: typeof ArkErrors
+}
+
+export interface TypeParser<$> extends TypeParserAttachments {
 	// Parse and check the definition, returning either the original input for a
 	// valid definition or a string representing an error message.
 	<const def>(def: validateTypeRoot<def, $>): Type<inferTypeRoot<def, $>, $>
@@ -69,8 +78,44 @@ export type TypeParser<$> = {
 			}
 		>
 	): Generic<parseGenericParams<params>, def, $>
+}
 
-	error: typeof ArkErrors
+const typeParserAttachments = Object.freeze({
+	errors: ArkErrors
+} satisfies TypeParserAttachments)
+
+export class RawTypeParser extends Callable<
+	(...args: unknown[]) => RawSchema | Generic,
+	TypeParserAttachments
+> {
+	constructor($: RawScope) {
+		super(
+			(...args) => {
+				if (args.length === 1) {
+					// treat as a simple definition
+					return $.parseRoot(args[0])
+				}
+				if (
+					args.length === 2 &&
+					typeof args[0] === "string" &&
+					args[0][0] === "<" &&
+					args[0].at(-1) === ">"
+				) {
+					// if there are exactly two args, the first of which looks like <${string}>,
+					// treat as a generic
+					const params = parseGenericParams(args[0].slice(1, -1))
+					const def = args[1]
+					// TODO: validateUninstantiatedGeneric, remove this cast
+					return new Generic(params, def, $ as never) as never
+				}
+				// otherwise, treat as a tuple expression. technically, this also allows
+				// non-expression tuple definitions to be parsed, but it's not a supported
+				// part of the API as specified by the associated types
+				return $.parseRoot(args)
+			},
+			{ bind: $, attach: typeParserAttachments }
+		)
+	}
 }
 
 export type DeclarationParser<$> = <preinferred>() => {

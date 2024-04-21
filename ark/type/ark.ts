@@ -30,14 +30,14 @@ RawScope.ambient = ambient.raw
 
 export const ark: Module<Ark> = ambient.export()
 
-export const type: TypeParser<{}> = ambient.type.bind(ambient) as never
+export const type: TypeParser<{}> = ambient.type as never
 
 export namespace type {
-	export type cast<to> = {
-		[inferred]?: to
+	export type cast<t> = {
+		[inferred]?: t
 	}
 
-	export type error = ArkErrors
+	export type errors = ArkErrors
 }
 
 export const match: MatchParser<{}> = ambient.match.bind(ambient) as never

@@ -28,15 +28,15 @@ import type { BasisKind, ConstraintKind } from "./shared/implement.js"
 import type { inferred } from "./shared/utils.js"
 
 export namespace type {
-	export type cast<to = unknown> = {
-		[inferred]?: to
+	export type cast<t> = {
+		[inferred]?: t
 	}
 
 	export type errors = ArkErrors
 }
 
 export type validateSchema<def, $> =
-	def extends type.cast ? def
+	def extends type.cast<unknown> ? def
 	: def extends array ? { [i in keyof def]: validateSchemaBranch<def[i], $> }
 	: def extends NormalizedUnionDef<infer branches> ?
 		conform<

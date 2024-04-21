@@ -6,7 +6,7 @@ contextualize(() => {
 	it("root discriminates", () => {
 		const t = type("string")
 		const out = t("")
-		if (out instanceof type.error) {
+		if (out instanceof type.errors) {
 			out.throw()
 		} else {
 			attest<string>(out)
@@ -30,7 +30,7 @@ contextualize(() => {
 		const t = type("number")
 		try {
 			const result = t("invalid")
-			attest(result instanceof type.error && result.throw())
+			attest(result instanceof type.errors && result.throw())
 		} catch (e) {
 			attest(e instanceof ArkError).equals(true)
 			return
