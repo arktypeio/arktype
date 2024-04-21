@@ -260,15 +260,12 @@ export class RawSchemaScope<
 		return this
 	}
 
-	schema(def: SchemaDef, opts?: NodeParseOptions): RawSchema {
-		return this.node(schemaKindOf(def), def, opts)
-	}
+	schema = ((def: SchemaDef, opts?: NodeParseOptions): RawSchema =>
+		this.node(schemaKindOf(def), def, opts)).bind(this)
 
-	defineSchema(def: SchemaDef): SchemaDef {
-		return def
-	}
+	defineSchema = ((def: SchemaDef) => def).bind(this)
 
-	units(values: unknown[], opts?: NodeParseOptions): RawSchema {
+	units = ((values: unknown[], opts?: NodeParseOptions): RawSchema => {
 		const uniqueValues: unknown[] = []
 		for (const value of values) {
 			if (!uniqueValues.includes(value)) {
@@ -282,15 +279,14 @@ export class RawSchemaScope<
 			...opts,
 			prereduced: true
 		})
-	}
+	}).bind(this)
 
-	node<kinds extends NodeKind | array<SchemaKind>>(
+	node = (<kinds extends NodeKind | array<SchemaKind>>(
 		kinds: kinds,
 		schema: NodeDef<flattenListable<kinds>>,
 		opts?: NodeParseOptions
-	): Node<reducibleKindOf<flattenListable<kinds>>> {
-		return parseNode(kinds, schema, this, opts) as never
-	}
+	): Node<reducibleKindOf<flattenListable<kinds>>> =>
+		parseNode(kinds, schema, this, opts) as never).bind(this)
 
 	parseRoot(def: unknown, opts?: NodeParseOptions): RawSchema {
 		return this.schema(def as never, opts)
@@ -487,21 +483,14 @@ export const SchemaScope: new <$ = any>(
 
 export const root: SchemaScope<{}> = new SchemaScope({})
 
-export const schema = root.schema.bind(root)
-
-export const node = root.node.bind(root)
-
-export const defineSchema = root.defineSchema.bind(root)
-
-export const units = root.units.bind(root)
-
-export const rawSchema = root.raw.schema.bind(root)
-
-export const rawNode = root.raw.node.bind(root)
-
-export const defineRawSchema = root.raw.defineSchema.bind(root)
-
-export const rawUnits = root.raw.units.bind(root)
+export const schema = root.schema
+export const node = root.node
+export const defineSchema = root.defineSchema
+export const units = root.units
+export const rawSchema = root.raw.schema
+export const rawNode = root.raw.node
+export const defineRawSchema = root.raw.defineSchema
+export const rawUnits = root.raw.units
 
 export class RawSchemaModule<
 	resolutions extends RawSchemaResolutions = RawSchemaResolutions

@@ -40,12 +40,8 @@ export namespace type {
 	export type errors = ArkErrors
 }
 
-export const match: MatchParser<{}> = ambient.match.bind(ambient) as never
+export const match: MatchParser<{}> = ambient.match as never
 
-export const define: DefinitionParser<{}> = ambient.define.bind(
-	ambient
-) as never
+export const define: DefinitionParser<{}> = ambient.define as never
 
-export const declare: DeclarationParser<{}> = ambient.declare.bind(
-	ambient
-) as never
+export const declare: DeclarationParser<{}> = ambient.declare as never

@@ -196,13 +196,11 @@ export class RawScope<
 
 	match: MatchParser<$> = createMatchParser(this as never) as never
 
-	declare(): { type: RawScope["type"] } {
-		return { type: this.type }
-	}
+	declare = (() => ({
+		type: this.type
+	})).bind(this)
 
-	define(def: unknown): unknown {
-		return def
-	}
+	define = ((def: unknown) => def).bind(this)
 
 	override preparseRoot(def: unknown): unknown {
 		if (isThunk(def) && !hasArkKind(def, "generic")) {
