@@ -200,7 +200,6 @@ export class RawSchemaScope<
 	}
 
 	static ambient: RawSchemaScope
-	// readonly ambient = (this.constructor as typeof RawSchemaScope).ambient
 
 	get ambient(): RawSchemaScope {
 		return (this.constructor as typeof RawSchemaScope).ambient

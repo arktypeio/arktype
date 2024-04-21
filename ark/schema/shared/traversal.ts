@@ -55,7 +55,7 @@ export class TraversalContext {
 					this.path = []
 					// if the morph applies to the root, just assign to it directly
 					const result = morph(out, this)
-					if (this.hasError()) return { errors: this.errors }
+					if (this.hasError()) this.errors
 					out = result
 					continue
 				}
@@ -69,7 +69,7 @@ export class TraversalContext {
 				const key = path.at(-1)!
 				this.path = path
 				const result = morph(parent[key], this)
-				if (this.hasError()) return { errors: this.errors }
+				if (this.hasError()) return this.errors
 				parent[key] = result
 			}
 		}
