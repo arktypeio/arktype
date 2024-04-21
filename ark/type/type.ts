@@ -1,13 +1,14 @@
 import {
 	type ArkErrors,
 	type BaseMeta,
+	type BaseRoot,
+	type Disjoint,
 	type Morph,
 	type NodeDef,
 	type Out,
 	type Predicate,
 	type PrimitiveConstraintKind,
 	RawSchema,
-	type Schema,
 	type ambient,
 	type constrain,
 	type constraintKindOf,
@@ -78,25 +79,32 @@ export type DeclarationParser<$> = <preinferred>() => {
 	) => Type<preinferred, $>
 }
 
-export interface Type<
-	/** @ts-expect-error allow instantiation assignment to the base type */
-	out t = unknown,
-	$ = any
-> extends Schema<t, $> {
-	and: <def>(
+// this is declared as a class internally so we can ensure all "abstract"
+// methods of BaseRoot are overridden, but we end up exporting it as an interface
+// to ensure it is not accessed as a runtime value
+export declare class $Type<t = unknown, $ = any> extends BaseRoot<t, $> {
+	$: Scope<$>;
+
+	get in(): Type<this["tIn"], $>
+	get out(): Type<this["tOut"], $>
+
+	intersect<def>(
 		def: validateTypeRoot<def, $>
-	) => Type<inferIntersection<t, inferTypeRoot<def, $>>, $>
+	): Type<inferIntersection<t, inferTypeRoot<def, $>>> | Disjoint
 
-	or: <def>(def: validateTypeRoot<def, $>) => Type<t | inferTypeRoot<def, $>, $>
+	and<def>(
+		def: validateTypeRoot<def, $>
+	): Type<inferIntersection<t, inferTypeRoot<def, $>>, $>
 
-	get in(): Type<distillConstrainableIn<t>, $>
-	get out(): Type<distillConstrainableOut<t>, $>
+	or<def>(def: validateTypeRoot<def, $>): Type<t | inferTypeRoot<def, $>, $>
 
 	array(): Type<t[], $>
 
-	morph: <morph extends Morph<this["infer"]>>(
+	keyof(): Type<keyof this["inferIn"], $>
+
+	morph<morph extends Morph<this["infer"]>>(
 		morph: morph
-	) => Type<(In: distillConstrainableIn<t>) => Out<inferMorphOut<morph>>, $>
+	): Type<(In: distillConstrainableIn<t>) => Out<inferMorphOut<morph>>, $>
 
 	// TODO: based on below, should maybe narrow morph output if used after
 	narrow<def extends Predicate<distillConstrainableOut<t>>>(
@@ -107,6 +115,17 @@ export interface Type<
 		:	inferNarrow<this["infer"], def>,
 		$
 	>
+
+	equals<def>(
+		def: validateTypeRoot<def, $>
+	): this is Type<inferTypeRoot<def>, $>
+
+	// TODO: i/o
+	extract<def>(r: validateTypeRoot<def, $>): Type<t, $>
+	exclude<def>(r: validateTypeRoot<def, $>): Type<t, $>
+	extends<def>(
+		other: validateTypeRoot<def, $>
+	): this is Type<inferTypeRoot<def>, $>
 
 	pipe<to extends Type>(
 		outTransform: (out: this["out"]) => to
@@ -124,10 +143,16 @@ export interface Type<
 		kind extends PrimitiveConstraintKind,
 		const def extends NodeDef<kind>
 	>(
-		kind: conform<kind, constraintKindOf<this["in"]["infer"]>>,
+		kind: conform<kind, constraintKindOf<this["inferIn"]>>,
 		def: def
 	): Type<constrain<t, kind, def>, $>
 }
+
+export interface Type<
+	/** @ts-expect-error allow instantiation assignment to the base type */
+	out t = unknown,
+	$ = any
+> extends $Type<t, $> {}
 
 export type TypeConstructor<t = unknown, $ = any> = new (
 	def: unknown,

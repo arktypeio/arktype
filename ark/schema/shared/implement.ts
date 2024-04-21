@@ -208,7 +208,7 @@ export const isNodeKind = (value: unknown): value is NodeKind =>
 	typeof value === "string" && value in precedenceByKind
 
 export function assertNodeKind<kind extends NodeKind>(
-	value: unknown,
+	value: RawNode,
 	kind: kind
 ): asserts value is Node<kind> {
 	const valueIsNode = isNode(value)

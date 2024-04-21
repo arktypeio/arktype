@@ -18,6 +18,7 @@ import type {
 	Out,
 	distillConstrainableIn,
 	distillConstrainableOut,
+	distillIn,
 	distillOut,
 	inferMorphOut
 } from "./schemas/morph.js"
@@ -57,7 +58,10 @@ export class RawSchema<
 	>
 	extends RawNode<d>
 	implements
-		internalImplementationOf<Schema, (keyof Schema & symbol) | "infer" | "t">
+		internalImplementationOf<
+			Schema,
+			(keyof Schema & symbol) | "infer" | "inferIn" | "t" | "tIn" | "tOut"
+		>
 {
 	readonly branches: readonly Node<UnionChildKind>[] =
 		this.hasKind("union") ? this.inner.branches : [this as never];
@@ -197,14 +201,14 @@ export class RawSchema<
 	}
 }
 
-export interface Schema<
-	/** @ts-expect-error allow instantiation assignment to the base type */
-	out t = unknown,
-	$ = any
-> extends Callable<(data: unknown) => distillOut<t> | ArkErrors> {
-	$: SchemaScope<$>
+export declare abstract class BaseRoot<t = unknown, $ = any> extends Callable<
+	(data: unknown) => distillOut<t> | ArkErrors
+> {
 	t: t
+	tIn: distillConstrainableIn<t>
+	tOut: distillConstrainableOut<t>
 	infer: distillOut<t>
+	inferIn: distillIn<t>;
 	[inferred]: t
 
 	json: Json
@@ -213,33 +217,61 @@ export interface Schema<
 	innerId: string
 	raw: RawSchema
 
-	get in(): Schema<distillConstrainableIn<t>, $>
-
-	get out(): Schema<distillConstrainableOut<t>, $>
+	abstract $: SchemaScope<$>;
+	abstract get in(): unknown
+	abstract get out(): unknown
+	abstract keyof(): unknown
+	abstract intersect(r: never): unknown | Disjoint
+	abstract and(r: never): unknown
+	abstract or(r: never): unknown
+	abstract constrain(kind: never, def: never): unknown
+	abstract equals(r: never): this is unknown
+	abstract extract(r: never): unknown
+	abstract exclude(r: never): unknown
+	abstract extends(r: never): this is unknown
+	abstract array(): unknown
+	abstract morph(morph: Morph): unknown
 
 	assert(data: unknown): this["infer"]
 
-	keyof(): Schema<keyof this["in"]["infer"], $>
-
-	allows(data: unknown): data is this["in"]["infer"]
+	allows(data: unknown): data is this["inferIn"]
 
 	traverse(data: unknown): distillOut<t> | ArkErrors
 
+	configure(configOrDescription: BaseMeta | string): this
+
+	describe(description: string): this
+
+	from(literal: this["inferIn"]): this["infer"]
+}
+
+// this is declared as a class internally so we can ensure all "abstract"
+// methods of BaseRoot are overridden, but we end up exporting it as an interface
+// to ensure it is not accessed as a runtime value
+declare class $Schema<t = unknown, $ = any> extends BaseRoot<t, $> {
+	$: SchemaScope<$>;
+
+	get in(): Schema<this["tIn"], $>
+
+	get out(): Schema<this["tOut"], $>
+
+	keyof(): Schema<keyof this["inferIn"], $>
+
 	intersect<r extends Schema>(
 		r: r
-	): Schema<inferIntersection<this["infer"], r["infer"]>> | Disjoint
+	): Schema<inferIntersection<t, r["t"]>> | Disjoint
 
-	and<r extends Schema>(
-		r: r
-	): Schema<inferIntersection<this["infer"], r["infer"]>>
+	and<r extends Schema>(r: r): Schema<inferIntersection<t, r["t"]>>
 
-	or<r extends Schema>(r: r): Schema<t | r["infer"]>
+	or<r extends Schema>(r: r): Schema<t | r["t"]>
+
+	array(): Schema<t[], $>
 
 	constrain<
 		kind extends PrimitiveConstraintKind,
 		const def extends NodeDef<kind>
 	>(
-		kind: conform<kind, constraintKindOf<this["in"]["infer"]>>,
+		kind: conform<kind, constraintKindOf<this["inferIn"]>>,
 		def: def
 	): Schema<constrain<t, kind, def>, $>
 
@@ -249,22 +281,20 @@ export interface Schema<
 	extract<r>(r: Schema<r>): Schema<t, $>
 	exclude<r>(r: Schema<r>): Schema<t, $>
 
-	array(): Schema<t[], $>
-
 	// add the extra inferred intersection so that a variable of Type
 	// can be narrowed without other branches becoming never
 	extends<r>(other: Schema<r>): this is Schema<r> & { [inferred]?: r }
-
-	configure(configOrDescription: BaseMeta | string): this
-
-	describe(description: string): this
-
-	from(literal: this["in"]["infer"]): this["out"]["infer"]
 
 	morph<morph extends Morph<this["infer"]>>(
 		morph: morph
 	): Schema<(In: distillConstrainableIn<t>) => Out<inferMorphOut<morph>>, $>
 }
+
+export interface Schema<
+	/** @ts-expect-error allow instantiation assignment to the base type */
+	out t = unknown,
+	$ = any
+> extends $Schema<t, $> {}
 
 export type intersectSchema<l extends SchemaKind, r extends NodeKind> =
 	[l, r] extends [r, l] ? l
