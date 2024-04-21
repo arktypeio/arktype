@@ -86,7 +86,7 @@ export const unitImplementation = implementNode<UnitDeclaration>({
 					(data: unknown) =>
 						data instanceof Date && data.toISOString() === compiledValue
 				:	(data: unknown) => data === self.unit,
-			_keyof() {
+			rawKeyOf() {
 				return this.$.units(literalKeys)
 			}
 		})

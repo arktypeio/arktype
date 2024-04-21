@@ -77,7 +77,7 @@ export const domainImplementation = implementNode<DomainDeclaration>({
 					`((typeof data !== "object" || data === null) && typeof data !== "function")`
 				:	`typeof data !== "${self.domain}"`,
 			literalKeys,
-			_keyof() {
+			rawKeyOf() {
 				return this.$.units(literalKeys)
 			}
 		})

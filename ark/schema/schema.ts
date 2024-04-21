@@ -1,7 +1,6 @@
 import {
 	type Callable,
 	type Json,
-	cached,
 	type conform,
 	throwParseError
 } from "@arktype/util"
@@ -48,7 +47,7 @@ export interface RawSchemaDeclaration extends RawNodeDeclaration {
 
 export interface RawSchemaAttachments<d extends RawNodeDeclaration>
 	extends NodeAttachments<d> {
-	_keyof(): RawSchema
+	rawKeyOf(): RawSchema
 }
 
 export type UnknownSchema = Schema | RawSchema
@@ -73,12 +72,16 @@ export class RawSchema<
 		return this
 	}
 
-	@cached
+	#keyofCache: RawSchema | undefined
 	keyof(): RawSchema {
-		const result = this._keyof()
-		if (result.branches.length === 0)
-			throwParseError(`keyof ${this} results in an unsatisfiable type`)
-		return result
+		if (!this.#keyofCache) {
+			this.#keyofCache = this.rawKeyOf()
+			if (this.#keyofCache.branches.length === 0)
+				throwParseError(
+					`keyof ${this.expression} results in an unsatisfiable type`
+				)
+		}
+		return this.#keyofCache as never
 	}
 
 	intersect(r: unknown): RawSchema | Disjoint {
@@ -122,7 +125,6 @@ export class RawSchema<
 		) as never
 	}
 
-	@cached
 	array(): RawSchema {
 		return this.$.schema(
 			{

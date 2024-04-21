@@ -342,12 +342,12 @@ export const intersectionImplementation =
 						js.check(this.predicate.at(-1)!)
 					}
 				},
-				_keyof() {
+				rawKeyOf() {
 					return (
 						this.basis ?
 							this.props ?
-								this.basis._keyof().or(this.props.rawKeyOf())
-							:	this.basis._keyof()
+								this.basis.rawKeyOf().or(this.props.rawKeyOf())
+							:	this.basis.rawKeyOf()
 						:	this.props?.rawKeyOf() ?? this.$.keywords.never.raw
 					)
 				}

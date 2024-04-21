@@ -227,9 +227,9 @@ export const unionImplementation = implementNode<UnionDeclaration>({
 					js.return(false)
 				}
 			},
-			_keyof() {
+			rawKeyOf() {
 				return branches.reduce(
-					(result, branch) => result.and(branch._keyof()),
+					(result, branch) => result.and(branch.rawKeyOf()),
 					this.$.keywords.unknown.raw
 				)
 			},

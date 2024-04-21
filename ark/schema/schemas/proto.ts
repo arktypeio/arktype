@@ -104,7 +104,7 @@ export const protoImplementation = implementNode<ProtoDeclaration>({
 			compiledCondition,
 			compiledNegation: `!(${compiledCondition})`,
 			literalKeys,
-			_keyof() {
+			rawKeyOf() {
 				return this.$.units(literalKeys)
 			}
 		})
