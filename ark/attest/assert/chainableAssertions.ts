@@ -42,6 +42,7 @@ export class ChainableAssertions implements AssertionRecord {
 		return snapshot(value)
 	}
 
+	//todoshawn unsafe casting maybe
 	private get actual() {
 		return this.ctx.actual instanceof TypeAssertionMapping ?
 				this.ctx.actual.fn(this.ctx.typeAssertionEntries![0][1], this.ctx)!
@@ -178,7 +179,7 @@ export class ChainableAssertions implements AssertionRecord {
 		return this.immediateOrChained()
 	}
 
-	throwsAndHasTypeError(matchValue: string | RegExp) {
+	throwsAndHasTypeError(matchValue: string | RegExp): void {
 		assertEqualOrMatching(
 			matchValue,
 			getThrownMessage(callAssertedFunction(this.actual as Function), this.ctx),

@@ -10,7 +10,7 @@ export class TsServer {
 	rootFiles!: string[]
 	virtualEnv!: tsvfs.VirtualTypeScriptEnvironment
 
-	private static _instance: TsServer | null = null
+	static #instance: TsServer | null = null
 	static get instance(): TsServer {
 		return new TsServer()
 	}
@@ -145,8 +145,7 @@ export const getTsConfigInfoOrThrow = (): TsconfigInfo => {
 		parsed: configParseResult
 	}
 }
-
-export type TsLibFiles = {
+type TsLibFiles = {
 	defaultMapFromNodeModules: Map<string, string>
 	resolvedPaths: string[]
 }
@@ -180,7 +179,8 @@ export interface InternalTypeChecker extends ts.TypeChecker {
 
 export const getInternalTypeChecker = (
 	env?: tsvfs.VirtualTypeScriptEnvironment
-): InternalTypeChecker => getProgram(env).getTypeChecker() as never
+): InternalTypeChecker =>
+	getProgram(env).getTypeChecker() as InternalTypeChecker
 
 export interface StringifiableType extends ts.Type {
 	toString(): string
@@ -222,14 +222,10 @@ const getDescendantsRecurse = (node: ts.Node): ts.Node[] => [
 
 export const getAncestors = (node: ts.Node): ts.Node[] => {
 	const ancestors: ts.Node[] = []
-	let baseNode = node
-	if (baseNode.parent) {
-		baseNode = baseNode.parent
-		ancestors.push(baseNode)
-	}
+	let baseNode = node.parent
 	while (baseNode.parent !== undefined) {
-		baseNode = baseNode.parent
 		ancestors.push(baseNode)
+		baseNode = baseNode.parent
 	}
 	return ancestors
 }
@@ -237,8 +233,8 @@ export const getAncestors = (node: ts.Node): ts.Node[] => {
 export const getFirstAncestorByKindOrThrow = (
 	node: ts.Node,
 	kind: ts.SyntaxKind
-) =>
-	getAncestors(node).find((ancestor) => ancestor.kind === kind) ??
+): ts.Node =>
+	getAncestors(node).find(ancestor => ancestor.kind === kind) ??
 	throwInternalError(
 		`Could not find an ancestor of kind ${ts.SyntaxKind[kind]}`
 	)

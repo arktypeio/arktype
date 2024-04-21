@@ -40,7 +40,7 @@ export const getSnapshotByName = (
 	file: string,
 	name: string,
 	customPath: string | undefined
-) => {
+): any => {
 	const snapshotPath = resolveSnapshotPath(file, customPath)
 	return readJson(snapshotPath)?.[basename(file)]?.[name]
 }
@@ -49,7 +49,7 @@ export const getSnapshotByName = (
  * Writes the update and position to cacheDir, which will eventually be read and copied to the source
  * file by a cleanup process after all tests have completed.
  */
-export const queueSnapshotUpdate = (args: SnapshotArgs) => {
+export const queueSnapshotUpdate = (args: SnapshotArgs): void => {
 	const config = getConfig()
 	writeSnapUpdate(config.defaultAssertionCachePath, args)
 	writeSnapshotUpdatesOnExit()
@@ -91,7 +91,7 @@ export const updateExternalSnapshot = ({
 	position,
 	name,
 	customPath
-}: ExternalSnapshotArgs) => {
+}: ExternalSnapshotArgs): void => {
 	const snapshotPath = resolveSnapshotPath(position.file, customPath)
 	const snapshotData = readJson(snapshotPath) ?? {}
 	const fileKey = basename(position.file)
@@ -122,10 +122,11 @@ const writeCachedInlineSnapshotUpdates = () => {
 }
 
 const writeSnapUpdate = (path: string, update?: SnapshotArgs) => {
-	const assertions = readJson(path)
-	const updates = assertions.updates ?? []
-	if (update !== undefined) assertions.updates = [...updates, update]
-	else assertions.updates = []
+	const assertions =
+		existsSync(path) ? readJson(path) : { updates: [] as SnapshotArgs[] }
+
+	assertions.updates =
+		update !== undefined ? [...(assertions.updates ?? []), update] : []
 
 	writeJson(path, assertions)
 }
@@ -200,10 +201,9 @@ export const writeUpdates = (queuedUpdates: QueuedUpdate[]): void => {
 }
 
 const runFormatterIfAvailable = (queuedUpdates: QueuedUpdate[]) => {
+	const { formatter, shouldFormat } = getConfig()
+	if (!shouldFormat) return
 	try {
-		const { formatter, shouldFormat } = getConfig()
-		if (!shouldFormat) throw new Error()
-
 		const updatedPaths = [
 			...new Set(
 				queuedUpdates.map(update =>

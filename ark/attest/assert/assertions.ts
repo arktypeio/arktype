@@ -1,12 +1,6 @@
-import {
-	ReadonlyArray,
-	isArray,
-	printable,
-	throwInternalError
-} from "@arktype/util"
+import { printable, throwInternalError } from "@arktype/util"
 import { AssertionError } from "node:assert"
 import * as assert from "node:assert/strict"
-import type { VersionedTypeAssertion } from "../cache/getCachedAssertions.js"
 import type { TypeAssertionData } from "../cache/writeAssertionCache.js"
 import type { AssertionContext } from "./attest.js"
 
@@ -58,7 +52,7 @@ export const versionableAssertion =
 			for (const [version, data] of ctx.typeAssertionEntries!) {
 				let errorMessage = ""
 				try {
-					const mapped = actual.fn(data as TypeAssertionData, ctx)
+					const mapped = actual.fn(data, ctx)
 					if (mapped !== null) {
 						fn(
 							"expected" in mapped ? mapped.expected : expected,
@@ -114,7 +108,10 @@ export const typeEqualityMapping = new TypeAssertionMapping(data => {
 	}
 	return null
 })
-
+/**
+ * todoshawn
+ * extract entires -> should just be an array should be type assertion data
+ */
 export const assertEqualOrMatching = versionableAssertion(
 	(expected, actual, ctx) => {
 		const assertionArgs = { actual, expected, ctx }

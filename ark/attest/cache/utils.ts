@@ -1,4 +1,4 @@
-import { filePath, type LinePositionRange } from "@arktype/fs"
+import { filePath } from "@arktype/fs"
 import { throwInternalError } from "@arktype/util"
 import * as tsvfs from "@typescript/vfs"
 import ts from "typescript"
@@ -11,7 +11,10 @@ import {
 	getTsConfigInfoOrThrow,
 	getTsLibFiles
 } from "./ts.js"
-import type { AssertionsByFile } from "./writeAssertionCache.js"
+import type {
+	AssertionsByFile,
+	LinePositionRange
+} from "./writeAssertionCache.js"
 
 export const getCallLocationFromCallExpression = (
 	callExpression: ts.CallExpression
@@ -38,47 +41,53 @@ export const getCallLocationFromCallExpression = (
 	return location
 }
 
+let attestAliasInstantiationMethodCalls: string[]
 export const gatherInlineInstantiationData = (
 	file: ts.SourceFile,
-	fileAssertions: AssertionsByFile,
-	inlineInsantiationMatcher: RegExp
+	fileAssertions: AssertionsByFile
 ): void => {
-	const fileText = file.getFullText()
-	const methodCall = "attest.instantiations"
-	if (inlineInsantiationMatcher.test(fileText)) {
-		const expressions = getCallExpressionsByName(file, [methodCall])
-		const enclosingFunctions = expressions.map((expression) => {
-			const attestInstantiationsExpression = getFirstAncestorByKindOrThrow(
-				expression,
-				ts.SyntaxKind.ExpressionStatement
-			)
-			return {
-				ancestor: getFirstAncestorByKindOrThrow(
-					attestInstantiationsExpression,
-					ts.SyntaxKind.ExpressionStatement
-				),
-				position: getCallLocationFromCallExpression(expression)
-			}
-		})
-		const instantiationInfo = enclosingFunctions.map((enclosingFunction) => {
-			const body = getDescendants(enclosingFunction.ancestor).find(
-				(node) => ts.isArrowFunction(node) || ts.isFunctionExpression(node)
-			) as ts.ArrowFunction | ts.FunctionExpression | undefined
-			if (!body) {
-				throw new Error("Unable to find file contents")
-			}
-
-			return {
-				location: enclosingFunction.position,
-				count: getInstantiationsContributedByNode(file, body)
-			}
-		})
-		const assertions = fileAssertions[getFileKey(file.fileName)] ?? []
-		fileAssertions[getFileKey(file.fileName)] = [
-			...assertions,
-			...instantiationInfo
-		]
+	const { attestAliases } = getConfig()
+	attestAliasInstantiationMethodCalls ??= attestAliases.map(
+		(alias) => `${alias}.instantiations`
+	)
+	const expressions = getCallExpressionsByName(
+		file,
+		attestAliasInstantiationMethodCalls
+	)
+	if (!expressions.length) {
+		return
 	}
+	const enclosingFunctions = expressions.map((expression) => {
+		const attestInstantiationsExpression = getFirstAncestorByKindOrThrow(
+			expression,
+			ts.SyntaxKind.ExpressionStatement
+		)
+		return {
+			ancestor: getFirstAncestorByKindOrThrow(
+				attestInstantiationsExpression,
+				ts.SyntaxKind.ExpressionStatement
+			),
+			position: getCallLocationFromCallExpression(expression)
+		}
+	})
+	const instantiationInfo = enclosingFunctions.map((enclosingFunction) => {
+		const body = getDescendants(enclosingFunction.ancestor).find(
+			(node) => ts.isArrowFunction(node) || ts.isFunctionExpression(node)
+		) as ts.ArrowFunction | ts.FunctionExpression | undefined
+		if (!body) {
+			throw new Error("Unable to find file contents")
+		}
+
+		return {
+			location: enclosingFunction.position,
+			count: getInstantiationsContributedByNode(file, body)
+		}
+	})
+	const assertions = fileAssertions[getFileKey(file.fileName)] ?? []
+	fileAssertions[getFileKey(file.fileName)] = [
+		...assertions,
+		...instantiationInfo
+	]
 }
 
 export const getCallExpressionsByName = (
@@ -111,15 +120,11 @@ export const getInstantiationsContributedByNode = (
 ): number => {
 	const originalPath = filePath(file.fileName)
 	const fakePath = originalPath + ".nonexistent.ts"
-	const inlineInsantiationMatcher = getConfig().inlineInstantiationMatcher
 
 	const baselineFile = getBaselineSourceFile(file)
 
 	const baselineFileWithBenchBlock =
-		baselineFile +
-		`\nconst $attestIsolatedBench = ${benchBlock
-			.getFullText()
-			.replaceAll(inlineInsantiationMatcher, "")}`
+		baselineFile + `\nconst $attestIsolatedBench = ${benchBlock.getFullText()}`
 
 	if (!instantiationsByPath[fakePath]) {
 		console.log(`⏳ attest: Analyzing type assertions...`)
@@ -187,7 +192,7 @@ export const getIsolatedEnv = (): tsvfs.VirtualTypeScriptEnvironment => {
 }
 
 const getBaselineSourceFile = (originalFile: ts.SourceFile): string => {
-	const functionNames = getConfig().expressionsToFind
+	const functionNames = getConfig().testDeclarationAliases
 
 	const calls = getCallExpressionsByName(originalFile, functionNames)
 

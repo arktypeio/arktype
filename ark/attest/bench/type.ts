@@ -1,6 +1,6 @@
-import { getTypeAssertionsAtPosition } from "@arktype/attest"
-import { caller, type LinePositionRange } from "@arktype/fs"
+import { caller } from "@arktype/fs"
 import ts from "typescript"
+import { getTypeAssertionsAtPosition } from "../cache/getCachedAssertions.js"
 import {
 	TsServer,
 	getAbsolutePosition,
@@ -12,10 +12,7 @@ import {
 	getCallExpressionsByName,
 	getInstantiationsContributedByNode
 } from "../cache/utils.js"
-import type {
-	Completions,
-	TypeRelationship
-} from "../cache/writeAssertionCache.js"
+import type { TypeRelationship } from "../cache/writeAssertionCache.js"
 import { getConfig } from "../config.js"
 import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.js"
 import type { BenchAssertionContext, BenchContext } from "./bench.js"
@@ -30,101 +27,6 @@ export type BenchTypeAssertions = {
 	types: (instantiations?: Measure<TypeUnit>) => void
 }
 
-const getIsolatedEnv = () => {
-	const tsconfigInfo = getTsConfigInfoOrThrow()
-	const libFiles = getTsLibFiles(tsconfigInfo.parsed.options)
-	const projectRoot = process.cwd()
-	const system = tsvfs.createFSBackedSystem(
-		libFiles.defaultMapFromNodeModules,
-		projectRoot,
-		ts
-	)
-	return tsvfs.createVirtualTypeScriptEnvironment(
-		system,
-		[],
-		ts,
-		tsconfigInfo.parsed.options
-	)
-}
-
-const createFile = (
-	env: tsvfs.VirtualTypeScriptEnvironment,
-	fileName: string,
-	fileText: string
-) => {
-	env.createFile(fileName, fileText)
-	return env.getSourceFile(fileName)
-}
-
-const getProgram = (env?: tsvfs.VirtualTypeScriptEnvironment) => {
-	return env?.languageService.getProgram()
-}
-const getInstantiationsWithFile = (fileText: string, fileName: string) => {
-	const env = getIsolatedEnv()
-	const file = createFile(env, fileName, fileText)
-	getProgram(env)?.emit(file)
-	const instantiationCount = getInternalTypeChecker(env).getInstantiationCount()
-	return instantiationCount
-}
-
-const getFirstAncestorByKindOrThrow = (node: ts.Node, kind: ts.SyntaxKind) =>
-	getAncestors(node).find(ancestor => ancestor.kind === kind) ??
-	throwInternalError(
-		`Could not find an ancestor of kind ${ts.SyntaxKind[kind]}`
-	)
-
-const getBaselineSourceFile = (originalFile: ts.SourceFile): string => {
-	const benchCalls = getExpressionsByName(originalFile, ["bench"])
-
-	const benchExpressions = benchCalls.map(node =>
-		getFirstAncestorByKindOrThrow(node, ts.SyntaxKind.ExpressionStatement)
-	)
-
-	let baselineSourceFileText = originalFile.getFullText()
-
-	benchExpressions.forEach(benchExpression => {
-		baselineSourceFileText = baselineSourceFileText.replace(
-			benchExpression.getFullText(),
-			""
-		)
-	})
-
-	return baselineSourceFileText
-}
-
-const instantiationsByPath: { [path: string]: number } = {}
-
-const getInstantiationsContributedByNode = (
-	benchBlock: ts.FunctionExpression | ts.ArrowFunction
-) => {
-	const originalFile = benchBlock.getSourceFile()
-	const originalPath = filePath(originalFile.fileName)
-	const fakePath = originalPath + ".nonexistent.ts"
-
-	const baselineFile = getBaselineSourceFile(originalFile)
-
-	const baselineFileWithBenchBlock =
-		baselineFile + `\nconst $attestIsolatedBench = ${benchBlock.getFullText()}`
-
-	if (!instantiationsByPath[fakePath]) {
-		console.log(`⏳ attest: Analyzing type assertions...`)
-		const instantiationsWithoutNode = getInstantiationsWithFile(
-			baselineFile,
-			fakePath
-		)
-
-		instantiationsByPath[fakePath] = instantiationsWithoutNode
-		console.log(`⏳ Cached type assertions \n`)
-	}
-
-	const instantiationsWithNode = getInstantiationsWithFile(
-		baselineFileWithBenchBlock,
-		fakePath
-	)
-
-	return instantiationsWithNode - instantiationsByPath[fakePath]
-}
-
 export const createBenchTypeAssertion = (
 	ctx: BenchContext
 ): BenchTypeAssertions => ({
@@ -135,7 +37,7 @@ export const createBenchTypeAssertion = (
 })
 
 export const getContributedInstantiations = (ctx: BenchContext): number => {
-	const expressionsToFind = getConfig().expressionsToFind
+	const testDeclarationAliases = getConfig().testDeclarationAliases
 	const instance = TsServer.instance
 	const file = instance.getSourceFileOrThrow(ctx.benchCallPosition.file)
 
@@ -145,12 +47,12 @@ export const getContributedInstantiations = (ctx: BenchContext): number => {
 	)
 
 	const firstMatchingNamedCall = getAncestors(node).find(
-		call => getCallExpressionsByName(call, expressionsToFind).length
+		call => getCallExpressionsByName(call, testDeclarationAliases).length
 	)
 
 	if (!firstMatchingNamedCall) {
 		throw new Error(
-			`No call expressions matching the name(s) '${expressionsToFind.join()}' were found`
+			`No call expressions matching the name(s) '${testDeclarationAliases.join()}' were found`
 		)
 	}
 
@@ -180,14 +82,6 @@ export type ArgAssertionData = {
 		args: TypeRelationship[]
 		typeArgs: TypeRelationship[]
 	}
-}
-export type TypeAssertionData = {
-	location: LinePositionRange
-	args: ArgAssertionData[]
-	typeArgs: ArgAssertionData[]
-	errors: string[]
-	completions: Completions
-	count: number
 }
 
 export const instantiationDataHandler = (

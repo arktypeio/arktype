@@ -21,11 +21,6 @@ export type LinePosition = {
 	char: number
 }
 
-export type LinePositionRange = {
-	start: LinePosition
-	end: LinePosition
-}
-
 export type SourcePosition = LinePosition & {
 	file: string
 	method: string
