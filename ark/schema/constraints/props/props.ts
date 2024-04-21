@@ -31,8 +31,6 @@ export class PropsGroup extends DynamicBase<PropsGroupInput> {
 		super(inner)
 	}
 
-	readonly exhaustive =
-		this.onExtraneousKey !== undefined || this.index !== undefined
 	readonly all = conflatenateAll<Node<PropKind>>(
 		this.prop,
 		this.index,
@@ -62,6 +60,9 @@ export class PropsGroup extends DynamicBase<PropsGroupInput> {
 
 	traverseApply: TraverseApply<object> = (data, ctx) =>
 		this.all.forEach((prop) => prop.traverseApply(data as never, ctx))
+
+	readonly exhaustive =
+		this.onExtraneousKey !== undefined || this.index !== undefined
 
 	compile(js: NodeCompiler): void {
 		if (this.exhaustive) {
