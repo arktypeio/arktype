@@ -1,17 +1,17 @@
 import { throwInternalError } from "./errors.js"
 import { NoopBase } from "./records.js"
 
-export const cached = <T>(thunk: () => T): (() => T) => {
-	let isCached = false
-	let result: T | undefined
-	return () => {
-		if (!isCached) {
-			result = thunk()
-			isCached = true
-		}
-		return result as T
-	}
-}
+// export const cached = <T>(thunk: () => T): (() => T) => {
+// 	let isCached = false
+// 	let result: T | undefined
+// 	return () => {
+// 		if (!isCached) {
+// 			result = thunk()
+// 			isCached = true
+// 		}
+// 		return result as T
+// 	}
+// }
 
 export const isThunk = <value>(
 	value: value
@@ -47,6 +47,33 @@ export type DynamicFunction = new <f extends (...args: never[]) => unknown>(
 
 	call(thisArg: null, ...args: Parameters<f>): ReturnType<f>
 }
+
+export type CachedDecorator = {
+	<self, returns>(
+		target: (this: self) => returns,
+		ctx: ClassGetterDecoratorContext<self, returns>
+	): (this: self) => returns
+
+	<self, returns>(
+		target: (this: self) => returns,
+		ctx: ClassMethodDecoratorContext<self, () => returns>
+	): (this: self) => returns
+}
+
+export const cached: CachedDecorator = (target, ctx) =>
+	function () {
+		const value = target.call(this)
+		Object.defineProperty(
+			this,
+			ctx.name,
+			ctx.kind === "getter" ?
+				{ value, enumerable: true }
+			:	{
+					value: (() => value).bind(this)
+				}
+		)
+		return value
+	}
 
 export type CallableOptions<attachments extends object> = {
 	attach?: attachments

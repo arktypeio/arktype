@@ -4,6 +4,7 @@ import {
 	type Guardable,
 	type Json,
 	type PartialRecord,
+	cached,
 	type conform,
 	flatMorph,
 	includes,
@@ -113,16 +114,14 @@ export class RawNode<
 		return this(data)
 	}
 
-	#inCache?: RawNode;
+	@cached
 	get in(): RawNode {
-		this.#inCache ??= this.#getIo("in")
-		return this.#inCache as never
+		return this.#getIo("in")
 	}
 
-	#outCache?: RawNode
+	@cached
 	get out(): RawNode {
-		this.#outCache ??= this.#getIo("out")
-		return this.#outCache as never
+		return this.#getIo("out")
 	}
 
 	#getIo(kind: "in" | "out"): RawNode {
@@ -148,12 +147,12 @@ export class RawNode<
 		return this.$.node(this.kind, ioInner)
 	}
 
-	private descriptionCache?: string
+	@cached
 	get description(): string {
-		this.descriptionCache ??=
+		return (
 			this.inner.description ??
 			this.$.resolvedConfig[this.kind].description?.(this as never)
-		return this.descriptionCache
+		)
 	}
 
 	toJSON(): Json {
