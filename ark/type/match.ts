@@ -157,7 +157,7 @@ export type MatchInvocation<ctx extends MatchInvocationContext> = <
 }[numericStringKeyOf<ctx["thens"]>]
 
 export const createMatchParser = <$>($: Scope): MatchParser<$> => {
-	return {} as never
+	return (() => {}) as never
 	// const matchParser = (isRestricted: boolean) => {
 	// 	const handledCases: { when: RawSchema; then: Morph }[] = []
 	// 	let defaultCase: ((x: unknown) => unknown) | null = null
