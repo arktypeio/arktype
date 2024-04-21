@@ -1,6 +1,6 @@
-import { getTypeAssertionsAtPosition } from "@arktype/attest"
-import { caller, type LinePositionRange } from "@arktype/fs"
+import { caller } from "@arktype/fs"
 import ts from "typescript"
+import { getTypeAssertionsAtPosition } from "../cache/getCachedAssertions.js"
 import {
 	TsServer,
 	getAbsolutePosition,
@@ -12,10 +12,7 @@ import {
 	getCallExpressionsByName,
 	getInstantiationsContributedByNode
 } from "../cache/utils.js"
-import type {
-	Completions,
-	TypeRelationship
-} from "../cache/writeAssertionCache.js"
+import type { TypeRelationship } from "../cache/writeAssertionCache.js"
 import { getConfig } from "../config.js"
 import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.js"
 import type { BenchAssertionContext, BenchContext } from "./bench.js"
@@ -40,7 +37,7 @@ export const createBenchTypeAssertion = (
 })
 
 export const getContributedInstantiations = (ctx: BenchContext): number => {
-	const expressionsToFind = getConfig().expressionsToFind
+	const testDeclarationAliases = getConfig().testDeclarationAliases
 	const instance = TsServer.instance
 	const file = instance.getSourceFileOrThrow(ctx.benchCallPosition.file)
 
@@ -50,12 +47,12 @@ export const getContributedInstantiations = (ctx: BenchContext): number => {
 	)
 
 	const firstMatchingNamedCall = getAncestors(node).find(
-		(call) => getCallExpressionsByName(call, expressionsToFind).length
+		(call) => getCallExpressionsByName(call, testDeclarationAliases).length
 	)
 
 	if (!firstMatchingNamedCall) {
 		throw new Error(
-			`No call expressions matching the name(s) '${expressionsToFind.join()}' were found`
+			`No call expressions matching the name(s) '${testDeclarationAliases.join()}' were found`
 		)
 	}
 
@@ -76,14 +73,6 @@ export type ArgAssertionData = {
 		args: TypeRelationship[]
 		typeArgs: TypeRelationship[]
 	}
-}
-export type TypeAssertionData = {
-	location: LinePositionRange
-	args: ArgAssertionData[]
-	typeArgs: ArgAssertionData[]
-	errors: string[]
-	completions: Completions
-	count: number
 }
 
 export const instantiationDataHandler = (

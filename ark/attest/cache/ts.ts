@@ -11,7 +11,7 @@ export class TsServer {
 	virtualEnv!: tsvfs.VirtualTypeScriptEnvironment
 
 	static #instance: TsServer | null = null
-	static get instance() {
+	static get instance(): TsServer {
 		return new TsServer()
 	}
 
@@ -41,7 +41,7 @@ export class TsServer {
 		TsServer.#instance = this
 	}
 
-	getSourceFileOrThrow(path: string) {
+	getSourceFileOrThrow(path: string): ts.SourceFile {
 		const file = this.virtualEnv.getSourceFile(path)
 		if (!file) {
 			throw new Error(`Could not find ${path}.`)
@@ -80,7 +80,7 @@ const nearestBoundingCallExpression = (
 export const getAbsolutePosition = (
 	file: ts.SourceFile,
 	position: SourcePosition
-) => {
+): number => {
 	const pos = ts.getPositionOfLineAndCharacter(
 		file,
 		// TS uses 0-based line and char #s
@@ -147,8 +147,14 @@ export const getTsConfigInfoOrThrow = (): TsconfigInfo => {
 		parsed: configParseResult
 	}
 }
+type TsLibFiles = {
+	defaultMapFromNodeModules: Map<string, string>
+	resolvedPaths: string[]
+}
 
-export const getTsLibFiles = (tsconfigOptions: ts.CompilerOptions) => {
+export const getTsLibFiles = (
+	tsconfigOptions: ts.CompilerOptions
+): TsLibFiles => {
 	const defaultMapFromNodeModules =
 		tsvfs.createDefaultMapFromNodeModules(tsconfigOptions)
 	const libPath = dirname(ts.getDefaultLibFilePath(tsconfigOptions))
@@ -160,7 +166,9 @@ export const getTsLibFiles = (tsconfigOptions: ts.CompilerOptions) => {
 	}
 }
 
-export const getProgram = (env?: tsvfs.VirtualTypeScriptEnvironment) =>
+export const getProgram = (
+	env?: tsvfs.VirtualTypeScriptEnvironment
+): ts.Program =>
 	env?.languageService.getProgram() ??
 	TsServer.instance.virtualEnv.languageService.getProgram()!
 
@@ -173,7 +181,8 @@ export interface InternalTypeChecker extends ts.TypeChecker {
 
 export const getInternalTypeChecker = (
 	env?: tsvfs.VirtualTypeScriptEnvironment
-) => getProgram(env).getTypeChecker() as InternalTypeChecker
+): InternalTypeChecker =>
+	getProgram(env).getTypeChecker() as InternalTypeChecker
 
 export interface StringifiableType extends ts.Type {
 	toString(): string
@@ -213,16 +222,12 @@ const getDescendantsRecurse = (node: ts.Node): ts.Node[] => [
 	...node.getChildren().flatMap((child) => getDescendantsRecurse(child))
 ]
 
-export const getAncestors = (node: ts.Node) => {
+export const getAncestors = (node: ts.Node): ts.Node[] => {
 	const ancestors: ts.Node[] = []
-	let baseNode = node
-	if (baseNode.parent) {
-		baseNode = baseNode.parent
-		ancestors.push(baseNode)
-	}
+	let baseNode = node.parent
 	while (baseNode.parent !== undefined) {
-		baseNode = baseNode.parent
 		ancestors.push(baseNode)
+		baseNode = baseNode.parent
 	}
 	return ancestors
 }
@@ -230,7 +235,7 @@ export const getAncestors = (node: ts.Node) => {
 export const getFirstAncestorByKindOrThrow = (
 	node: ts.Node,
 	kind: ts.SyntaxKind
-) =>
+): ts.Node =>
 	getAncestors(node).find((ancestor) => ancestor.kind === kind) ??
 	throwInternalError(
 		`Could not find an ancestor of kind ${ts.SyntaxKind[kind]}`

@@ -1,4 +1,4 @@
-import type { LinePositionRange } from "@arktype/fs"
+import type { LinePosition } from "@arktype/fs"
 import { flatMorph } from "@arktype/util"
 import ts from "typescript"
 
@@ -20,7 +20,7 @@ import {
 
 export type AssertionsByFile = Record<
 	string,
-	(TypeAssertionData | LocationAndCountAssertionData)[]
+	(TypeAssertionData | TypeBenchmarkingAssertionData)[]
 >
 
 export type LocationAndCountAssertionData = Pick<
@@ -45,13 +45,7 @@ export const analyzeProjectAssertions = (): AssertionsByFile => {
 			assertionsByFile[getFileKey(file.fileName)] = assertionsInFile
 		}
 		if (!config.skipInlineInstantiations) {
-			if (path.endsWith(".test.ts")) {
-				gatherInlineInstantiationData(
-					file,
-					assertionsByFile,
-					config.inlineInstantiationMatcher
-				)
-			}
+			gatherInlineInstantiationData(file, assertionsByFile)
 		}
 	}
 	return assertionsByFile
@@ -69,7 +63,7 @@ export const getAssertionsInFile = (
 export const analyzeAssertCall = (
 	assertCall: ts.CallExpression,
 	diagnosticsByFile: DiagnosticsByFile
-): TypeAssertionData => {
+): TypeRelationshipAssertionData => {
 	const types = extractArgumentTypesFromCall(assertCall)
 	const location = getCallLocationFromCallExpression(assertCall)
 	const args = types.args.map((arg) => serializeArg(arg, types))
@@ -210,13 +204,28 @@ export type ArgAssertionData = {
 	}
 }
 
-export type TypeAssertionData = {
+/**
+ * todoshawn typeassertiondata should be it's own union
+ * typerelationshipassertiondata
+ * typebenchmarkingassertiondata
+ */
+export type TypeRelationshipAssertionData = {
 	location: LinePositionRange
 	args: ArgAssertionData[]
 	typeArgs: ArgAssertionData[]
 	errors: string[]
 	completions: Completions
-	count?: number
+}
+export type TypeBenchmarkingAssertionData = {
+	location: LinePositionRange
+	count: number
+}
+export type TypeAssertionData = TypeRelationshipAssertionData &
+	TypeBenchmarkingAssertionData
+
+export type LinePositionRange = {
+	start: LinePosition
+	end: LinePosition
 }
 
 export type TypeRelationship = "subtype" | "supertype" | "equality" | "none"

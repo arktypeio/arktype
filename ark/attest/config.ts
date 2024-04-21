@@ -37,10 +37,9 @@ type BaseAttestConfig = {
 	benchPercentThreshold: number
 	benchErrorOnThresholdExceeded: boolean
 	filter: string | undefined
-	expressionsToFind: string[]
-	inlineInstantiationMatcher: RegExp
+	testDeclarationAliases: string[]
 	formatter: string
-	shouldFormat: true
+	shouldFormat: boolean
 }
 
 export type AttestConfig = Partial<BaseAttestConfig>
@@ -58,8 +57,7 @@ export const getDefaultAttestConfig = (): BaseAttestConfig => {
 		benchPercentThreshold: 20,
 		benchErrorOnThresholdExceeded: false,
 		filter: undefined,
-		expressionsToFind: ["bench", "it"],
-		inlineInstantiationMatcher: /attest.instantiations\(.*/g,
+		testDeclarationAliases: ["bench", "it"],
 		formatter: `npm exec --no -- prettier --write`,
 		shouldFormat: true
 	}

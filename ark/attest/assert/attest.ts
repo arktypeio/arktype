@@ -1,6 +1,6 @@
 import { caller, getCallStack, type SourcePosition } from "@arktype/fs"
 import { getBenchCtx } from "../bench/bench.js"
-import type { Measure, TypeUnit } from "../bench/measure.js"
+import type { Measure } from "../bench/measure.js"
 import { instantiationDataHandler } from "../bench/type.js"
 import {
 	getTypeAssertionsAtPosition,
@@ -21,6 +21,8 @@ export type AttestFn = {
 	): [expected] extends [never]
 		? rootAssertions<unknown, AssertionKind>
 		: rootAssertions<expected, AssertionKind>
+
+	instantiations: (count?: Measure<"instantiations"> | undefined) => void
 }
 
 export type AssertionContext = {
@@ -58,7 +60,8 @@ export const attestInternal = (
 	}
 	if (!cfg.skipTypes) {
 		ctx.typeAssertionEntries = getTypeAssertionsAtPosition(position)
-		if ((ctx.typeAssertionEntries[0]?.[1] as TypeAssertionData).typeArgs[0]) {
+		//todoshawn is this one ok to cast
+		if ((ctx.typeAssertionEntries[0][1] as TypeAssertionData).typeArgs[0]) {
 			// if there is an expected type arg, check it immediately
 			assertEquals(undefined, typeEqualityMapping, ctx)
 		}
@@ -66,24 +69,19 @@ export const attestInternal = (
 	return new ChainableAssertions(ctx)
 }
 
-const instantiations = () => ({
-	instantiations: (
-		...args: [instantiations?: Measure<TypeUnit> | undefined]
-	) => {
-		const attestConfig = getConfig()
-		if (attestConfig.skipInlineInstantiations) {
-			return
-		}
-		const calledFrom = caller()
-		const ctx = getBenchCtx([calledFrom.file])
-		ctx.isInlineBench = true
-		ctx.benchCallPosition = calledFrom
-		ctx.lastSnapCallPosition = calledFrom
-		instantiationDataHandler({ ...ctx, kind: "instantiations" }, args[0], false)
+attestInternal.instantiations = (
+	args: Measure<"instantiations"> | undefined
+) => {
+	const attestConfig = getConfig()
+	if (attestConfig.skipInlineInstantiations) {
+		return
 	}
-})
+	const calledFrom = caller()
+	const ctx = getBenchCtx([calledFrom.file])
+	ctx.isInlineBench = true
+	ctx.benchCallPosition = calledFrom
+	ctx.lastSnapCallPosition = calledFrom
+	instantiationDataHandler({ ...ctx, kind: "instantiations" }, args, false)
+}
 
-export const attest = Object.assign(
-	attestInternal as AttestFn,
-	instantiations()
-)
+export const attest = attestInternal as AttestFn

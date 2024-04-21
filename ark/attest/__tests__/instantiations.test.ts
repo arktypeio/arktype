@@ -8,8 +8,7 @@ type makeComplexType<S extends string> = S extends `${infer head}${infer tail}`
 
 describe("instantiations", () => {
 	it("Can give me instantiations", () => {
-		const a = {} as makeComplexType<"defenestration">
-		attest(type({ a: "Promise" })).snap("(function bound )")
-		attest.instantiations([6906, "instantiations"])
+		type("string")
+		attest.instantiations([4766, "instantiations"])
 	})
 })

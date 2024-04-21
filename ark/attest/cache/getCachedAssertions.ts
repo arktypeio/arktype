@@ -1,26 +1,22 @@
-import {
-	readJson,
-	type LinePosition,
-	type LinePositionRange,
-	type SourcePosition
-} from "@arktype/fs"
+import { readJson, type LinePosition, type SourcePosition } from "@arktype/fs"
 import { existsSync, readdirSync } from "node:fs"
 import { join } from "node:path"
 import { getConfig } from "../config.js"
 import { getFileKey } from "../utils.js"
 import type {
 	AssertionsByFile,
-	LocationAndCountAssertionData,
-	TypeAssertionData
+	LinePositionRange,
+	TypeBenchmarkingAssertionData,
+	TypeRelationshipAssertionData
 } from "./writeAssertionCache.js"
 
-export type VerionedAssertionsByFile = [
+export type VersionedAssertionsByFile = [
 	tsVersion: string,
 	assertions: AssertionsByFile
 ]
 
-let assertionEntries: VerionedAssertionsByFile[] | undefined
-export const getCachedAssertionEntries = (): VerionedAssertionsByFile[] => {
+let assertionEntries: VersionedAssertionsByFile[] | undefined
+export const getCachedAssertionEntries = (): VersionedAssertionsByFile[] => {
 	if (!assertionEntries) {
 		const config = getConfig()
 		if (!existsSync(config.assertionCacheDir)) {
@@ -59,9 +55,14 @@ const isPositionWithinRange = (
 	return true
 }
 
+/**
+ * todoshawn typeassertiondata should be it's own union
+ * typerelationshipassertiondata
+ * typebenchmarkingassertiondata
+ */
 export type VersionedTypeAssertion = [
 	tsVersion: string,
-	assertionData: TypeAssertionData | LocationAndCountAssertionData
+	assertionData: TypeBenchmarkingAssertionData | TypeRelationshipAssertionData
 ]
 
 export const getTypeAssertionsAtPosition = (

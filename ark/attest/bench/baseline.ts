@@ -13,7 +13,7 @@ export const queueBaselineUpdateIfNeeded = (
 	updated: Measure | MarkMeasure,
 	baseline: Measure | MarkMeasure | undefined,
 	ctx: BenchAssertionContext
-) => {
+): void => {
 	// If we already have a baseline and the user didn't pass an update flag, do nothing
 	if (baseline && !ctx.cfg.updateSnapshots) {
 		return
@@ -36,7 +36,7 @@ export const queueBaselineUpdateIfNeeded = (
 export const compareToBaseline = (
 	result: MeasureComparison,
 	ctx: BenchContext
-) => {
+): void => {
 	console.log(`🏌️ Result: ${stringifyMeasure(result.updated)}`)
 	if (result.baseline && !ctx.cfg.updateSnapshots) {
 		console.log(`⛳ Baseline: ${stringifyMeasure(result.baseline)}`)
