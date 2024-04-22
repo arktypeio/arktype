@@ -9,7 +9,7 @@ import { root, schemaScope } from "../scope.js"
 import { parsedDate } from "./utils/date.js"
 
 const number = root.defineSchema({
-	in: {
+	from: {
 		domain: "string",
 		regex: wellFormedNumberMatcher,
 		description: "a well-formed numeric string"
@@ -18,7 +18,7 @@ const number = root.defineSchema({
 })
 
 const integer = root.defineSchema({
-	in: {
+	from: {
 		domain: "string",
 		regex: wellFormedIntegerMatcher
 	},
@@ -36,7 +36,7 @@ const integer = root.defineSchema({
 })
 
 const url = root.defineSchema({
-	in: {
+	from: {
 		domain: "string",
 		description: "a valid URL"
 	},
@@ -50,7 +50,7 @@ const url = root.defineSchema({
 })
 
 const json = root.defineSchema({
-	in: {
+	from: {
 		domain: "string",
 		description: "a JSON-parsable string"
 	},

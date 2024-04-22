@@ -82,7 +82,7 @@ contextualize(() => {
 
 		attest<Type<(In: 3.14) => Out<string>>>(types.aAndB)
 		attest(types.aAndB.json).snap({
-			in: { unit: 3.14 },
+			from: { unit: 3.14 },
 			morphs: types.aAndB.raw.serializedMorphs
 		})
 		attest<typeof types.aAndB>(types.bAndA)
@@ -100,7 +100,7 @@ contextualize(() => {
 		// attest<Type<(In: { a: 1; b: 2 }) => string>>(types.c)
 		assertNodeKind(types.c.raw, "morph")
 		attest(types.c.json).snap({
-			in: {
+			from: {
 				domain: "object",
 				prop: [
 					{ key: "a", value: { unit: 1 } },
@@ -122,7 +122,7 @@ contextualize(() => {
 		const serializedMorphs =
 			types.aOrB.raw.firstReferenceOfKindOrThrow("morph").serializedMorphs
 		attest(types.aOrB.json).snap([
-			{ in: "number", morphs: serializedMorphs },
+			{ from: "number", morphs: serializedMorphs },
 			{ unit: false },
 			{ unit: true }
 		])
@@ -163,7 +163,7 @@ contextualize(() => {
 					{
 						key: "a",
 						value: {
-							in: {
+							from: {
 								domain: "number",
 								min: { exclusive: true, rule: 0 }
 							},
@@ -184,7 +184,7 @@ contextualize(() => {
 		attest<Type<(In: string) => Out<boolean>>>(types.b)
 		assertNodeKind(types.b.raw, "morph")
 		attest(types.b.json).snap({
-			in: "string",
+			from: "string",
 			morphs: types.b.raw.serializedMorphs
 		})
 	})
@@ -200,13 +200,13 @@ contextualize(() => {
 		assertNodeKind(types.b.raw, "morph")
 		assertNodeKind(types.a.raw, "morph")
 		attest(types.b.json).snap({
-			in: {
+			from: {
 				domain: "object",
 				prop: [
 					{
 						key: "a",
 						value: {
-							in: "string",
+							from: "string",
 							morphs: types.a.raw.serializedMorphs
 						}
 					}
@@ -229,13 +229,13 @@ contextualize(() => {
 		assertNodeKind(t.raw, "morph")
 		const nestedMorph = t.raw.firstReferenceOfKindOrThrow("morph")
 		attest(t.json).snap({
-			in: {
+			from: {
 				domain: "object",
 				prop: [
 					{
 						key: "a",
 						value: {
-							in: "string",
+							from: "string",
 							morphs: nestedMorph.serializedMorphs
 						}
 					}

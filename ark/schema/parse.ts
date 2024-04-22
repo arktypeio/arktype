@@ -258,12 +258,7 @@ const $parseNode = (
 	if (opts?.alias) {
 		attachments.alias = opts.alias
 	}
-	for (const k in inner) {
-		// avoid conflict with builtin cached getters
-		if (k !== "in" && k !== "out" && k !== "description") {
-			attachments[k] = inner[k]
-		}
-	}
+	Object.assign(attachments, inner)
 	// TODO: ?
 	// if (opts?.root) {
 	// 	if (this.resolved) {

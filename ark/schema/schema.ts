@@ -177,7 +177,7 @@ export class RawSchema<
 			})
 		}
 		return this.$.node("morph", {
-			in: this,
+			from: this,
 			morphs: [morph]
 		})
 	}

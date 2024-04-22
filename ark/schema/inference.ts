@@ -59,16 +59,15 @@ export type inferSchema<def, $> =
 
 type validateSchemaBranch<def, $> =
 	def extends RawNode ? def
-	: keyof def & ("morph" | "in" | "out") extends never ?
-		validateMorphChild<def, $>
-	:	validateMorphSchema<def, $>
+	: "morphs" extends keyof def ? validateMorphSchema<def, $>
+	: validateMorphChild<def, $>
 
 type inferSchemaBranch<def, $> =
 	def extends type.cast<infer to> ? to
 	: def extends MorphDef ?
 		(
-			In: def["in"] extends {} ? inferMorphChild<def["in"], $> : unknown
-		) => def["out"] extends {} ? Out<inferMorphChild<def["out"], $>>
+			In: def["from"] extends {} ? inferMorphChild<def["from"], $> : unknown
+		) => def["to"] extends {} ? Out<inferMorphChild<def["to"], $>>
 		: def["morphs"] extends infer morph extends Morph ?
 			Out<inferMorphOut<morph>>
 		: def["morphs"] extends readonly [...unknown[], infer morph extends Morph] ?
@@ -89,7 +88,7 @@ type inferMorphChild<def, $> =
 	: unknown
 
 type validateMorphSchema<def, $> = {
-	[k in keyof def]: k extends "in" | "out" ? validateMorphChild<def[k], $>
+	[k in keyof def]: k extends "from" | "to" ? validateMorphChild<def[k], $>
 	: k extends keyof MorphDef ? MorphDef[k]
 	: `'${k & string}' is not a valid morph schema key`
 }

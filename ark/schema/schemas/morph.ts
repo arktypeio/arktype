@@ -44,14 +44,14 @@ export type Out<o = any> = ["=>", o]
 export type MorphAst<i = any, o = any> = (In: i) => Out<o>
 
 export interface MorphInner extends BaseMeta {
-	readonly in: MorphInputNode
-	readonly out?: RawSchema
+	readonly from: MorphInputNode
+	readonly to?: RawSchema
 	readonly morphs: readonly Morph[]
 }
 
 export interface MorphDef extends BaseMeta {
-	readonly in: MorphInputDef
-	readonly out?: SchemaDef
+	readonly from: MorphInputDef
+	readonly to?: SchemaDef
 	readonly morphs: listable<Morph>
 }
 
@@ -73,18 +73,18 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 	kind: "morph",
 	hasAssociatedError: false,
 	keys: {
-		in: {
+		from: {
 			child: true,
 			parse: (def, ctx) => ctx.$.node(morphInputKinds, def)
 		},
-		out: {
+		to: {
 			child: true,
 			parse: (def, ctx) => {
-				const out = ctx.$.parseRoot(def)
-				return out.kind === "intersection" && out.children.length === 0 ?
+				const to = ctx.$.parseRoot(def)
+				return to.kind === "intersection" && to.children.length === 0 ?
 						// ignore unknown as an output validator
 						undefined
-					:	out
+					:	to
 			}
 		},
 		morphs: {
@@ -109,8 +109,8 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 			if (outTersection instanceof Disjoint) return outTersection
 			return ctx.$.node("morph", {
 				morphs: l.morphs,
-				in: inTersection,
-				out: outTersection
+				from: inTersection,
+				to: outTersection
 			})
 		},
 		...defineRightwardIntersections("morph", (l, r, ctx) => {
@@ -122,12 +122,12 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 						"union",
 						inTersection.branches.map((branch) => ({
 							...l.inner,
-							in: branch
+							from: branch
 						}))
 					)
 				:	ctx.$.node("morph", {
 						...l.inner,
-						in: inTersection
+						from: inTersection
 					})
 			)
 		})
@@ -135,7 +135,7 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 	construct: (self) => {
 		const serializedMorphs = self.morphs.map((morph) => reference(morph))
 		const compiledMorphs = JSON.stringify(serializedMorphs)
-		const out = self.inner.out
+		const out = self.inner.to
 		const outValidator = out?.traverseApply ?? null
 		const outValidatorReference =
 			out ? new NodeCompiler("Apply").reference(out) : "null"
@@ -144,10 +144,10 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 			get expression() {
 				return `(In: ${this.in.expression}) => Out<${this.out.expression}>`
 			},
-			traverseAllows: (data, ctx) => self.in.traverseAllows(data, ctx),
+			traverseAllows: (data, ctx) => self.from.traverseAllows(data, ctx),
 			traverseApply: (data, ctx) => {
 				ctx.queueMorphs(self.morphs, outValidator)
-				self.in.traverseApply(data, ctx)
+				self.from.traverseApply(data, ctx)
 			},
 			compile(js: NodeCompiler): void {
 				if (js.traversalKind === "Allows") {
@@ -157,12 +157,8 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 				js.line(`ctx.queueMorphs(${compiledMorphs}, ${outValidatorReference})`)
 				js.line(js.invoke(this.in))
 			},
-			get in(): MorphInputNode {
-				return this.inner.in
-			},
-			get out(): RawSchema {
-				return this.inner.out ?? self.$.keywords.unknown.raw
-			},
+			in: self.inner.from,
+			out: self.inner.to?.out ?? self.$.keywords.unknown.raw,
 			rawKeyOf(): RawSchema {
 				return this.in.rawKeyOf()
 			}
@@ -174,7 +170,7 @@ export interface MorphNode extends RawSchema<MorphDeclaration> {
 	// ensure these types are derived from MorphInner rather than those
 	// defined on RawNode
 	get in(): MorphInputNode
-	get out(): MorphInputNode
+	get out(): RawSchema
 }
 
 export type inferMorphOut<morph extends Morph> = Exclude<

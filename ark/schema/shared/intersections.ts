@@ -163,8 +163,8 @@ export const pipeFromMorph = (
 	if (out instanceof Disjoint) return out
 	return ctx.$.node("morph", {
 		morphs: from.morphs,
-		in: from.in,
-		out
+		from: from.in,
+		to: out
 	})
 }
 
@@ -177,7 +177,7 @@ export const pipeToMorph = (
 	if (inTersection instanceof Disjoint) return inTersection
 	return ctx.$.node("morph", {
 		morphs: to.morphs,
-		in: inTersection,
-		out: to.out
+		from: inTersection,
+		to: to.out
 	})
 }
