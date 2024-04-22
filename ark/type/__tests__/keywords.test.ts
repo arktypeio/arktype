@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@arktype/attest"
 import { rawSchema } from "@arktype/schema"
-import { type } from "arktype"
+import { ark, type } from "arktype"
 
 contextualize(
 	"jsObjects",
@@ -57,6 +57,13 @@ contextualize(
 			const expected = rawSchema([])
 			// should be equivalent to a zero-branch union
 			attest(never.json).equals(expected.json)
+		})
+
+		// TODO: ??
+		it("never in union", () => {
+			const t = type("string|never")
+			attest<string>(t.infer)
+			attest(t.json).equals(ark.string.json)
 		})
 
 		it("unknown", () => {

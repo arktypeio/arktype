@@ -157,7 +157,7 @@ export class RawSchema<
 		return this.configure(description)
 	}
 
-	from(input: unknown): unknown {
+	create(input: unknown): unknown {
 		// ideally we wouldn't validate here but for now we need to do determine
 		// which morphs to apply
 		return this.assert(input)
@@ -254,7 +254,7 @@ export declare abstract class BaseRoot<t = unknown, $ = any> extends Callable<
 
 	describe(description: string): this
 
-	from(literal: this["inferIn"]): this["infer"]
+	create(literal: this["inferIn"]): this["infer"]
 }
 
 // this is declared as a class internally so we can ensure all "abstract"

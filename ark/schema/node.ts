@@ -112,17 +112,17 @@ export class RawNode<
 
 	#inCache?: RawNode;
 	get in(): RawNode {
-		this.#inCache ??= this.#getIo("in")
+		this.#inCache ??= this.getIo("in")
 		return this.#inCache as never
 	}
 
 	#outCache?: RawNode
 	get out(): RawNode {
-		this.#outCache ??= this.#getIo("out")
+		this.#outCache ??= this.getIo("out")
 		return this.#outCache as never
 	}
 
-	#getIo(kind: "in" | "out"): RawNode {
+	getIo(kind: "in" | "out"): RawNode {
 		if (!this.includesMorph) {
 			return this as never
 		}
@@ -147,9 +147,9 @@ export class RawNode<
 
 	private descriptionCache?: string
 	get description(): string {
-		this.descriptionCache ??=
-			this.inner.description ??
-			this.$.resolvedConfig[this.kind].description?.(this as never)
+		this.descriptionCache ??= this.$.resolvedConfig[this.kind].description?.(
+			this as never
+		)
 		return this.descriptionCache
 	}
 

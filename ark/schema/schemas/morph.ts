@@ -10,7 +10,7 @@ import {
 } from "@arktype/util"
 import type { of } from "../constraints/ast.js"
 import type { NodeDef } from "../kinds.js"
-import type { Node, SchemaDef } from "../node.js"
+import type { Node, RawNode, SchemaDef } from "../node.js"
 import type {
 	RawSchema,
 	RawSchemaAttachments,
@@ -51,7 +51,7 @@ export interface MorphInner extends BaseMeta {
 
 export interface MorphDef extends BaseMeta {
 	readonly from: MorphInputDef
-	readonly to?: SchemaDef
+	readonly to?: SchemaDef | undefined
 	readonly morphs: listable<Morph>
 }
 
@@ -67,6 +67,7 @@ export type MorphDeclaration = declareNode<{
 export interface MorphAttachments
 	extends RawSchemaAttachments<MorphDeclaration> {
 	serializedMorphs: array<string>
+	getIo: RawNode["getIo"]
 }
 
 export const morphImplementation = implementNode<MorphDeclaration>({
@@ -80,6 +81,7 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 		to: {
 			child: true,
 			parse: (def, ctx) => {
+				if (def === undefined) return
 				const to = ctx.$.parseRoot(def)
 				return to.kind === "intersection" && to.children.length === 0 ?
 						// ignore unknown as an output validator
@@ -103,31 +105,42 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 				// TODO: is this always a parse error? what about for union reduction etc.
 				// TODO: check in for union reduction
 				return throwParseError("Invalid intersection of morphs")
-			const inTersection = intersectNodes(l.in, r.in, ctx)
-			if (inTersection instanceof Disjoint) return inTersection
-			const outTersection = intersectNodes(l.out, r.out, ctx)
-			if (outTersection instanceof Disjoint) return outTersection
-			return ctx.$.node("morph", {
-				morphs: l.morphs,
-				from: inTersection,
-				to: outTersection
-			})
+			const from = intersectNodes(l.from, r.from, ctx)
+			if (from instanceof Disjoint) return from
+			const to =
+				l.to ?
+					r.to ?
+						intersectNodes(l.to, r.to, ctx)
+					:	l.to
+				:	r.to
+			if (to instanceof Disjoint) return to
+			// in case from is a union, we need to distribute the branches
+			// to can be a union as any schema is allowed
+			return ctx.$.parseRoot(
+				from.branches.map((fromBranch) =>
+					ctx.$.node("morph", {
+						morphs: l.morphs,
+						from: fromBranch,
+						to
+					})
+				)
+			)
 		},
 		...defineRightwardIntersections("morph", (l, r, ctx) => {
-			const inTersection = intersectNodes(l.in, r, ctx)
+			const from = intersectNodes(l.from, r, ctx)
 			return (
-				inTersection instanceof Disjoint ? inTersection
-				: inTersection.kind === "union" ?
+				from instanceof Disjoint ? from
+				: from.kind === "union" ?
 					ctx.$.node(
 						"union",
-						inTersection.branches.map((branch) => ({
+						from.branches.map((branch) => ({
 							...l.inner,
 							from: branch
 						}))
 					)
 				:	ctx.$.node("morph", {
 						...l.inner,
-						from: inTersection
+						from
 					})
 			)
 		})
@@ -135,14 +148,13 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 	construct: (self) => {
 		const serializedMorphs = self.morphs.map((morph) => reference(morph))
 		const compiledMorphs = JSON.stringify(serializedMorphs)
-		const out = self.inner.to
-		const outValidator = out?.traverseApply ?? null
+		const outValidator = self.to?.traverseApply ?? null
 		const outValidatorReference =
-			out ? new NodeCompiler("Apply").reference(out) : "null"
+			self.to ? new NodeCompiler("Apply").reference(self.to) : "null"
 		return {
 			serializedMorphs,
-			get expression() {
-				return `(In: ${this.in.expression}) => Out<${this.out.expression}>`
+			get expression(): string {
+				return `(In: ${this.from.expression}) => Out<${this.to?.expression ?? "unknown"}>`
 			},
 			traverseAllows: (data, ctx) => self.from.traverseAllows(data, ctx),
 			traverseApply: (data, ctx) => {
@@ -151,27 +163,25 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 			},
 			compile(js: NodeCompiler): void {
 				if (js.traversalKind === "Allows") {
-					js.return(js.invoke(this.in))
+					js.return(js.invoke(this.from))
 					return
 				}
 				js.line(`ctx.queueMorphs(${compiledMorphs}, ${outValidatorReference})`)
-				js.line(js.invoke(this.in))
+				js.line(js.invoke(this.from))
 			},
-			in: self.inner.from,
-			out: self.inner.to?.out ?? self.$.keywords.unknown.raw,
+			getIo(kind) {
+				return kind === "in" ?
+						this.from
+					:	this.to?.out ?? this.$.keywords.unknown.raw
+			},
 			rawKeyOf(): RawSchema {
-				return this.in.rawKeyOf()
+				return this.from.rawKeyOf()
 			}
 		}
 	}
 })
 
-export interface MorphNode extends RawSchema<MorphDeclaration> {
-	// ensure these types are derived from MorphInner rather than those
-	// defined on RawNode
-	get in(): MorphInputNode
-	get out(): RawSchema
-}
+export interface MorphNode extends RawSchema<MorphDeclaration> {}
 
 export type inferMorphOut<morph extends Morph> = Exclude<
 	ReturnType<morph>,

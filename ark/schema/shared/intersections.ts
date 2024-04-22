@@ -159,7 +159,7 @@ export const pipeFromMorph = (
 	to: RawSchema,
 	ctx: IntersectionContext
 ): MorphNode | Disjoint => {
-	const out = intersectNodes(from.out, to, ctx)
+	const out = from?.to ? intersectNodes(from.to, to, ctx) : to
 	if (out instanceof Disjoint) return out
 	return ctx.$.node("morph", {
 		morphs: from.morphs,
@@ -173,11 +173,11 @@ export const pipeToMorph = (
 	to: MorphNode,
 	ctx: IntersectionContext
 ): MorphNode | Disjoint => {
-	const inTersection = intersectNodes(from, to.in, ctx)
-	if (inTersection instanceof Disjoint) return inTersection
+	const result = intersectNodes(from, to.from, ctx)
+	if (result instanceof Disjoint) return result
 	return ctx.$.node("morph", {
 		morphs: to.morphs,
-		from: inTersection,
+		from: result,
 		to: to.out
 	})
 }
