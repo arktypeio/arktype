@@ -284,8 +284,19 @@ export class RawSchemaScope<
 		kinds: kinds,
 		schema: NodeDef<flattenListable<kinds>>,
 		opts?: NodeParseOptions
-	): Node<reducibleKindOf<flattenListable<kinds>>> =>
-		parseNode(kinds, schema, this, opts) as never).bind(this)
+	): Node<reducibleKindOf<flattenListable<kinds>>> => {
+		const node = parseNode(kinds, schema, this, opts)
+		if (this.resolved) {
+			// this node was not part of the original scope, so compile an anonymous scope
+			// including only its references
+			bindCompiledScope(node.contributesReferences)
+		} else {
+			// we're still parsing the scope itself, so defer compilation but
+			// add the node as a reference
+			Object.assign(this.referencesByName, node.contributesReferencesByName)
+		}
+		return node as never
+	}).bind(this)
 
 	parseRoot(def: unknown, opts?: NodeParseOptions): RawSchema {
 		return this.schema(def as never, opts)
@@ -364,7 +375,7 @@ export class RawSchemaScope<
 			if (this.config.registerKeywords)
 				Object.assign(RawSchemaScope.keywords, this.#exportedResolutions)
 			this.references = Object.values(this.referencesByName)
-			// this.bindCompiledScope(this.references)
+			bindCompiledScope(this.references)
 			this.resolved = true
 		}
 		const namesToExport = names.length ? names : this.exportedNames
@@ -555,8 +566,8 @@ export const writeMissingSubmoduleAccessMessage = <name extends string>(
 export type writeMissingSubmoduleAccessMessage<name extends string> =
 	`Reference to submodule '${name}' must specify an alias`
 
-export const bindCompiledSpace = (references: readonly RawNode[]): void => {
-	const compiledTraversals = compileSpace(references)
+export const bindCompiledScope = (references: readonly RawNode[]): void => {
+	const compiledTraversals = compileScope(references)
 	for (const node of references) {
 		if (node.jit) {
 			// if node has already been bound to another scope or anonymous type, don't rebind it
@@ -575,7 +586,7 @@ export const bindCompiledSpace = (references: readonly RawNode[]): void => {
 	}
 }
 
-const compileSpace = (references: readonly RawNode[]) => {
+const compileScope = (references: readonly RawNode[]) => {
 	return new CompiledFunction()
 		.block("return", (js) => {
 			references.forEach((node) => {

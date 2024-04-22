@@ -181,7 +181,7 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 	}
 })
 
-export interface MorphNode extends RawSchema<MorphDeclaration> {}
+export type MorphNode = RawSchema<MorphDeclaration>
 
 export type inferMorphOut<morph extends Morph> = Exclude<
 	ReturnType<morph>,

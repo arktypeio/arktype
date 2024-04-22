@@ -259,24 +259,13 @@ const $parseNode = (
 		attachments.alias = opts.alias
 	}
 	Object.assign(attachments, inner)
-	// TODO: ?
-	// if (opts?.root) {
-	// 	if (this.resolved) {
-	// 		// this node was not part of the original scope, so compile an anonymous scope
-	// 		// including only its references
-	// 		this.bindCompiledScope(node.contributesReferences)
-	// 	} else {
-	// 		// we're still parsing the scope itself, so defer compilation but
-	// 		// add the node as a reference
-	// 		Object.assign(this.referencesByName, node.contributesReferencesByName)
-	// 	}
-	// }
 	defineProperties(attachments, impl.construct(attachments as never))
 
 	const node: RawNode =
 		includes(schemaKinds, kind) ?
 			new RawSchema(attachments as never)
 		:	(new RawConstraint(attachments as never) as never)
+
 	nodeCache[innerId] = node
 	return node
 }
