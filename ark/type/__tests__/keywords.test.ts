@@ -39,6 +39,12 @@ contextualize(
 			attest<any>(any.infer)
 		})
 
+		it("any in expression", () => {
+			const t = type("string&any")
+			attest<any>(t.infer)
+			attest(t.json).equals(ark.string.json)
+		})
+
 		it("boolean", () => {
 			const boolean = type("boolean")
 			attest<boolean>(boolean.infer)

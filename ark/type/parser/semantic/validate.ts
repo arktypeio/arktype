@@ -9,6 +9,7 @@ import type {
 	charsAfterFirst,
 	Completion,
 	ErrorMessage,
+	isAnyOrNever,
 	writeMalformedNumericLiteralMessage
 } from "@arktype/util"
 import type { Comparator } from "../string/reduce/shared.js"
@@ -81,9 +82,7 @@ type validateStringAst<def extends string, $> =
 			ErrorMessage<writeMalformedNumericLiteralMessage<def, "bigint">>
 		:	undefined
 	: maybeExtractAlias<def, $> extends infer alias extends keyof $ ?
-		$[alias] extends null ?
-			// handle any/never
-			def
+		isAnyOrNever<$[alias]> extends true ? def
 		: def extends PrivateDeclaration ?
 			ErrorMessage<writePrefixedPrivateReferenceMessage<def>>
 		: // these problems would've been caught during a fullStringParse, but it's most

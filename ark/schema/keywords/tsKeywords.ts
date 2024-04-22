@@ -16,7 +16,6 @@ export namespace tsKeywords {
 		symbol: symbol
 		true: true
 		unknown: unknown
-		// biome-ignore lint/suspicious/noConfusingVoidType:
 		void: void
 		undefined: undefined
 	}

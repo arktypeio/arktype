@@ -19,6 +19,7 @@ import {
 	type Dict,
 	domainOf,
 	hasDomain,
+	type isAnyOrNever,
 	isThunk,
 	type nominal,
 	type show,
@@ -128,12 +129,9 @@ export type resolve<reference extends keyof $ | keyof args, $, args> =
 			args[reference]
 		:	$[reference & keyof $]
 	) extends infer resolution ?
-		resolution extends Def<infer def> ?
-			def extends null ?
-				// handle resolution of any and never
-				resolution
-			:	inferDefinition<def, $, args>
-		:	resolution
+		isAnyOrNever<resolution> extends true ? resolution
+		: resolution extends Def<infer def> ? inferDefinition<def, $, args>
+		: resolution
 	:	never
 
 export type moduleKeyOf<$> = {
