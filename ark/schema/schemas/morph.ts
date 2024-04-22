@@ -66,7 +66,7 @@ export type MorphDeclaration = declareNode<{
 
 export interface MorphAttachments
 	extends RawSchemaAttachments<MorphDeclaration> {
-	serializedMorphs: string
+	serializedMorphs: array<string>
 }
 
 export const morphImplementation = implementNode<MorphDeclaration>({
@@ -133,9 +133,8 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 		})
 	},
 	construct: (self) => {
-		const serializedMorphs = JSON.stringify(
-			self.morphs.map((morph) => reference(morph))
-		)
+		const serializedMorphs = self.morphs.map((morph) => reference(morph))
+		const compiledMorphs = JSON.stringify(serializedMorphs)
 		const out = self.inner.out
 		const outValidator = out?.traverseApply ?? null
 		const outValidatorReference =
@@ -155,9 +154,7 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 					js.return(js.invoke(this.in))
 					return
 				}
-				js.line(
-					`ctx.queueMorphs(${this.serializedMorphs}, ${outValidatorReference})`
-				)
+				js.line(`ctx.queueMorphs(${compiledMorphs}, ${outValidatorReference})`)
 				js.line(js.invoke(this.in))
 			},
 			get in(): MorphInputNode {

@@ -13,7 +13,7 @@ import type { TraversalPath } from "./utils.js"
 export type QueuedMorphs = {
 	path: TraversalPath
 	morphs: array<Morph>
-	outValidator: TraverseApply | null
+	to: TraverseApply | null
 }
 
 export type BranchTraversalContext = {
@@ -43,7 +43,7 @@ export class TraversalContext {
 		const input: QueuedMorphs = {
 			path: [...this.path],
 			morphs,
-			outValidator
+			to: outValidator
 		}
 		this.currentBranch?.queuedMorphs.push(input) ??
 			this.queuedMorphs.push(input)
@@ -55,15 +55,15 @@ export class TraversalContext {
 		let out: any = this.root
 		if (this.queuedMorphs.length) {
 			for (let i = 0; i < this.queuedMorphs.length; i++) {
-				const { path, morphs, outValidator } = this.queuedMorphs[i]
+				const { path, morphs, to } = this.queuedMorphs[i]
 				if (path.length === 0) {
 					this.path = []
 					// if the morph applies to the root, just assign to it directly
-					morphs.forEach((morph) => {
+					for (const morph of morphs) {
 						const result = morph(out, this)
 						if (this.hasError()) return this.errors
 						out = result
-					})
+					}
 				} else {
 					// find the object on which the key to be morphed exists
 					let parent = out
@@ -73,15 +73,16 @@ export class TraversalContext {
 					// apply the morph function and assign the result to the corresponding property
 					const key = path.at(-1)!
 					this.path = path
-					morphs.forEach((morph) => {
+					for (const morph of morphs) {
 						const result = morph(parent[key], this)
 						if (this.hasError()) return this.errors
 						parent[key] = result
-					})
+					}
 				}
-				if (outValidator) {
-					outValidator(out, this)
-					if (this.hasError()) return this.errors
+				if (to) {
+					const toCtx = new TraversalContext(out, this.config)
+					to(out, toCtx)
+					return toCtx.finalize()
 				}
 			}
 		}
