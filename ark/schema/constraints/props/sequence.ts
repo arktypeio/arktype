@@ -9,15 +9,16 @@ import {
 import type { MutableInner } from "../../kinds.js"
 import type { Node, SchemaDef } from "../../node.js"
 import type { RawSchema } from "../../schema.js"
-import type { RawSchemaScope } from "../../scope.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import {
 	implementNode,
+	type IntersectionContext,
 	type NodeAttachments,
 	type NodeKeyImplementation,
 	type SchemaKind
 } from "../../shared/implement.js"
+import { intersectNodes } from "../../shared/intersections.js"
 import type { RawConstraint } from "../constraint.js"
 import type { MaxLengthNode } from "../refinements/maxLength.js"
 import type { MinLengthNode } from "../refinements/minLength.js"
@@ -206,14 +207,14 @@ export const sequenceImplementation = implementNode<SequenceDeclaration>({
 		}
 	},
 	intersections: {
-		sequence: (l, r, $) => {
+		sequence: (l, r, ctx) => {
 			const rootState = intersectSequences({
 				l: l.tuple,
 				r: r.tuple,
 				disjoint: new Disjoint({}),
 				result: [],
 				fixedVariants: [],
-				$
+				ctx
 			})
 
 			const viableBranches =
@@ -224,8 +225,8 @@ export const sequenceImplementation = implementNode<SequenceDeclaration>({
 			return (
 				viableBranches.length === 0 ? rootState.disjoint!
 				: viableBranches.length === 1 ?
-					$.node("sequence", sequenceTupleToInner(viableBranches[0].result))
-				:	$.node(
+					ctx.$.node("sequence", sequenceTupleToInner(viableBranches[0].result))
+				:	ctx.$.node(
 						"union",
 						viableBranches.map((state) => ({
 							proto: Array,
@@ -388,17 +389,17 @@ type SequenceIntersectionState = {
 	disjoint: Disjoint
 	result: SequenceTuple
 	fixedVariants: SequenceIntersectionState[]
-	$: RawSchemaScope
+	ctx: IntersectionContext
 }
 
 const intersectSequences = (
-	state: SequenceIntersectionState
+	s: SequenceIntersectionState
 ): SequenceIntersectionState => {
-	const [lHead, ...lTail] = state.l
-	const [rHead, ...rTail] = state.r
+	const [lHead, ...lTail] = s.l
+	const [rHead, ...rTail] = s.r
 
 	if (!lHead || !rHead) {
-		return state
+		return s
 	}
 
 	const lHasPostfix = lTail.at(-1)?.kind === "postfix"
@@ -418,12 +419,12 @@ const intersectSequences = (
 
 	if (lHead.kind === "prefix" && rHead.kind === "variadic" && rHasPostfix) {
 		const postfixBranchResult = intersectSequences({
-			...state,
+			...s,
 			fixedVariants: [],
 			r: rTail.map((element) => ({ ...element, kind: "prefix" }))
 		})
 		if (postfixBranchResult.disjoint.isEmpty()) {
-			state.fixedVariants.push(postfixBranchResult)
+			s.fixedVariants.push(postfixBranchResult)
 		}
 	} else if (
 		rHead.kind === "prefix" &&
@@ -431,39 +432,36 @@ const intersectSequences = (
 		lHasPostfix
 	) {
 		const postfixBranchResult = intersectSequences({
-			...state,
+			...s,
 			fixedVariants: [],
 			l: lTail.map((element) => ({ ...element, kind: "prefix" }))
 		})
 		if (postfixBranchResult.disjoint.isEmpty()) {
-			state.fixedVariants.push(postfixBranchResult)
+			s.fixedVariants.push(postfixBranchResult)
 		}
 	}
 
-	const result = lHead.node.intersect(rHead.node)
+	const result = intersectNodes(lHead.node, rHead.node, s.ctx)
 	if (result instanceof Disjoint) {
 		if (kind === "prefix" || kind === "postfix") {
-			state.disjoint.add(
+			s.disjoint.add(
 				result.withPrefixKey(
 					// TODO: more precise path handling for Disjoints
-					kind === "prefix" ? `${state.result.length}` : `-${lTail.length + 1}`
+					kind === "prefix" ? `${s.result.length}` : `-${lTail.length + 1}`
 				)
 			)
-			state.result = [
-				...state.result,
-				{ kind, node: state.$.keywords.never.raw }
-			]
+			s.result = [...s.result, { kind, node: s.ctx.$.keywords.never.raw }]
 		} else if (kind === "optional") {
 			// if the element result is optional and unsatisfiable, the
 			// intersection can still be satisfied as long as the tuple
 			// ends before the disjoint element would occur
-			return state
+			return s
 		} else {
 			// if the element is variadic and unsatisfiable, the intersection
 			// can be satisfied with a fixed length variant including zero
 			// variadic elements
 			return intersectSequences({
-				...state,
+				...s,
 				fixedVariants: [],
 				// if there were any optional elements, there will be no postfix elements
 				// so this mapping will never occur (which would be illegal otherwise)
@@ -472,18 +470,18 @@ const intersectSequences = (
 			})
 		}
 	} else {
-		state.result = [...state.result, { kind, node: result }]
+		s.result = [...s.result, { kind, node: result }]
 	}
 
-	const lRemaining = state.l.length
-	const rRemaining = state.r.length
+	const lRemaining = s.l.length
+	const rRemaining = s.r.length
 
 	if (
 		lHead.kind !== "variadic" ||
 		(lRemaining >= rRemaining &&
 			(rHead.kind === "variadic" || rRemaining === 1))
 	) {
-		state.l = lTail
+		s.l = lTail
 	}
 
 	if (
@@ -491,8 +489,8 @@ const intersectSequences = (
 		(rRemaining >= lRemaining &&
 			(lHead.kind === "variadic" || lRemaining === 1))
 	) {
-		state.r = rTail
+		s.r = rTail
 	}
 
-	return intersectSequences(state)
+	return intersectSequences(s)
 }

@@ -321,7 +321,7 @@ export class RawSchemaScope<
 		if (hasArkKind(def, "generic"))
 			return (this.resolutions[name] = validateUninstantiatedGenericNode(def))
 		if (hasArkKind(def, "module")) return (this.resolutions[name] = def)
-		return (this.resolutions[name] = this.parseRoot(def, { args: {} }))
+		return (this.resolutions[name] = this.parseRoot(def))
 	}
 
 	/** If name is a valid reference to a submodule alias, return its resolution  */

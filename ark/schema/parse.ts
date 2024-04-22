@@ -36,7 +36,6 @@ import { hasArkKind, isNode } from "./shared/utils.js"
 export type NodeParseOptions = {
 	alias?: string
 	prereduced?: boolean
-	args?: Record<string, UnknownSchema>
 	/** Instead of creating the node, compute the innerId of the definition and
 	 * point it to the specified resolution.
 	 *
@@ -47,6 +46,7 @@ export type NodeParseOptions = {
 
 export interface NodeParseContext extends NodeParseOptions {
 	$: RawSchemaScope
+	args?: Record<string, UnknownSchema>
 	raw: unknown
 }
 

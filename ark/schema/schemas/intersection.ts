@@ -29,6 +29,7 @@ import type { ArkTypeError } from "../shared/errors.js"
 import {
 	type ConstraintKind,
 	type IntersectionChildKind,
+	type IntersectionContext,
 	type OpenNodeKind,
 	type PropKind,
 	type RefinementKind,
@@ -36,6 +37,7 @@ import {
 	implementNode,
 	propKeys
 } from "../shared/implement.js"
+import { intersectNodes } from "../shared/intersections.js"
 import { hasArkKind, isNode } from "../shared/utils.js"
 import type { DomainDef, DomainNode } from "./domain.js"
 import type { ProtoDef, ProtoNode } from "./proto.js"
@@ -104,13 +106,13 @@ const intersectionChildKeyParser =
 const intersectIntersections = (
 	reduced: IntersectionInner,
 	raw: IntersectionInner,
-	$: RawSchemaScope
+	ctx: IntersectionContext
 ): RawSchema | Disjoint => {
 	// avoid treating adding instance keys as keys of lRoot, rRoot
 	if (hasArkKind(reduced, "schema") && reduced.hasKind("intersection"))
-		return intersectIntersections(reduced.inner, raw, $)
+		return intersectIntersections(reduced.inner, raw, ctx)
 	if (hasArkKind(raw, "schema") && raw.hasKind("intersection"))
-		return intersectIntersections(reduced, raw.inner, $)
+		return intersectIntersections(reduced, raw.inner, ctx)
 
 	const [reducedConstraintsInner, reducedRoot] = splitByKeys(
 		reduced,
@@ -123,7 +125,9 @@ const intersectIntersections = (
 	// metadata and save some time
 
 	const root =
-		isEmptyObject(reduced) ? rawRoot : intersectRootKeys(reducedRoot, rawRoot)
+		isEmptyObject(reduced) ? rawRoot : (
+			intersectRootKeys(reducedRoot, rawRoot, ctx)
+		)
 
 	if (root instanceof Disjoint) return root
 
@@ -135,7 +139,7 @@ const intersectIntersections = (
 		l: lConstraints,
 		r: rConstraints,
 		types: [],
-		$
+		ctx
 	})
 }
 
@@ -214,7 +218,7 @@ export const intersectionImplementation =
 		reduce: (inner, $) =>
 			// we cast union out of the result here since that only occurs when intersecting two sequences
 			// that cannot occur when reducing a single intersection schema using unknown
-			intersectIntersections({}, inner, $) as Node<
+			intersectIntersections({}, inner, { $, piped: false }) as Node<
 				"intersection" | IntersectionBasisKind
 			>,
 		defaults: {
@@ -229,11 +233,11 @@ export const intersectionImplementation =
 		},
 		intersections: {
 			intersection: intersectIntersections,
-			...defineRightwardIntersections("intersection", (l, r) => {
+			...defineRightwardIntersections("intersection", (l, r, ctx) => {
 				// if l is unknown, return r
 				if (l.children.length === 0) return r
 
-				const basis = l.basis?.intersect(r) ?? r
+				const basis = l.basis ? intersectNodes(l.basis, r, ctx) : r
 
 				return (
 					basis instanceof Disjoint ? basis
@@ -366,7 +370,8 @@ type IntersectionRoot = Omit<IntersectionInner, ConstraintKind>
 
 const intersectRootKeys = (
 	l: IntersectionRoot,
-	r: IntersectionRoot
+	r: IntersectionRoot,
+	ctx: IntersectionContext
 ): MutableInner<"intersection"> | Disjoint => {
 	const result: IntersectionRoot = {}
 
@@ -374,7 +379,7 @@ const intersectRootKeys = (
 	const rBasis = r.proto ?? r.domain
 	const resultBasis =
 		lBasis ?
-			rBasis ? lBasis.intersect(rBasis)
+			rBasis ? intersectNodes(lBasis, rBasis, ctx)
 			:	lBasis
 		:	rBasis
 	if (resultBasis) {
@@ -403,14 +408,14 @@ type ConstraintIntersectionState = {
 	l: Constraint[]
 	r: Constraint[]
 	types: RawSchema[]
-	$: RawSchemaScope
+	ctx: IntersectionContext
 }
 
 const intersectConstraints = (
 	s: ConstraintIntersectionState
 ): RawSchema | Disjoint => {
 	if (!s.r.length) {
-		let result: RawSchema | Disjoint = s.$.node(
+		let result: RawSchema | Disjoint = s.ctx.$.node(
 			"intersection",
 			Object.assign(s.root, unflattenConstraints(s.l)),
 			{ prereduced: true }
@@ -419,14 +424,14 @@ const intersectConstraints = (
 			if (result instanceof Disjoint) {
 				return result
 			}
-			result = type.intersect(result)
+			result = intersectNodes(type, result, s.ctx)
 		}
 		return result
 	}
 	const head = s.r.shift()!
 	let matched = false
 	for (let i = 0; i < s.l.length; i++) {
-		const result = s.l[i].intersect(head)
+		const result = intersectNodes(s.l[i], head, s.ctx)
 		if (result === null) continue
 		if (result instanceof Disjoint) return result
 

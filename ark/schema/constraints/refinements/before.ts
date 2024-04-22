@@ -59,10 +59,10 @@ export const beforeImplementation = implementNode<BeforeDeclaration>({
 	},
 	intersections: {
 		before: (l, r) => (l.isStricterThan(r) ? l : r),
-		after: (before, after, $) =>
+		after: (before, after, ctx) =>
 			before.overlapsRange(after) ?
 				before.overlapIsUnit(after) ?
-					$.node("unit", { unit: before.rule })
+					ctx.$.node("unit", { unit: before.rule })
 				:	null
 			:	Disjoint.from("range", before, after)
 	},

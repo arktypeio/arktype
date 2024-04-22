@@ -11,9 +11,11 @@ import { Disjoint } from "../shared/disjoint.js"
 import type { ArkTypeError } from "../shared/errors.js"
 import {
 	implementNode,
+	type IntersectionContext,
 	type SchemaKind,
 	schemaKindsRightOf
 } from "../shared/implement.js"
+import { intersectNodes } from "../shared/intersections.js"
 import type { Discriminant } from "./discriminate.js"
 import { defineRightwardIntersections } from "./utils.js"
 
@@ -135,7 +137,7 @@ export const unionImplementation = implementNode<UnionDeclaration>({
 		message: (ctx) => ctx.problem
 	},
 	intersections: {
-		union: (l, r, $) => {
+		union: (l, r, ctx) => {
 			if (
 				(l.branches.length === 0 || r.branches.length === 0) &&
 				l.branches.length !== r.branches.length
@@ -152,17 +154,17 @@ export const unionImplementation = implementNode<UnionDeclaration>({
 				if (r.ordered) {
 					return Disjoint.from("indiscriminableMorphs", l, r)
 				}
-				resultBranches = intersectBranches(r.branches, l.branches)
+				resultBranches = intersectBranches(r.branches, l.branches, ctx)
 				if (resultBranches instanceof Disjoint) {
 					resultBranches.invert()
 				}
 			} else {
-				resultBranches = intersectBranches(l.branches, r.branches)
+				resultBranches = intersectBranches(l.branches, r.branches, ctx)
 			}
 			if (resultBranches instanceof Disjoint) {
 				return resultBranches
 			}
-			return $.schema(
+			return ctx.$.schema(
 				l.ordered || r.ordered ?
 					{
 						branches: resultBranches,
@@ -171,15 +173,17 @@ export const unionImplementation = implementNode<UnionDeclaration>({
 				:	{ branches: resultBranches }
 			)
 		},
-		...defineRightwardIntersections("union", (l, r, $) => {
-			const branches = intersectBranches(l.branches, [r])
+		...defineRightwardIntersections("union", (l, r, ctx) => {
+			const branches = intersectBranches(l.branches, [r], ctx)
 			if (branches instanceof Disjoint) {
 				return branches
 			}
 			if (branches.length === 1) {
 				return branches[0]
 			}
-			return $.schema(l.ordered ? { branches, ordered: true } : { branches })
+			return ctx.$.schema(
+				l.ordered ? { branches, ordered: true } : { branches }
+			)
 		})
 	},
 	construct: (self) => {
@@ -342,7 +346,8 @@ const describeBranches = (descriptions: string[]) => {
 
 export const intersectBranches = (
 	l: readonly UnionChildNode[],
-	r: readonly UnionChildNode[]
+	r: readonly UnionChildNode[],
+	ctx: IntersectionContext
 ): readonly UnionChildNode[] | Disjoint => {
 	// If the corresponding r branch is identified as a subtype of an l branch, the
 	// value at rIndex is set to null so we can avoid including previous/future
@@ -362,7 +367,7 @@ export const intersectBranches = (
 				candidatesByR = {}
 				break
 			}
-			const branchIntersection = l[lIndex].intersect(r[rIndex])
+			const branchIntersection = intersectNodes(l[lIndex], r[rIndex], ctx)
 			if (branchIntersection instanceof Disjoint) {
 				// Doesn't tell us anything useful about their relationships
 				// with other branches
@@ -413,6 +418,7 @@ export const reduceBranches = ({
 		return branches
 	}
 	const uniquenessByIndex: Record<number, boolean> = branches.map(() => true)
+	const ctx: IntersectionContext = { $: branches[0].$, piped: false }
 	for (let i = 0; i < branches.length; i++) {
 		for (
 			let j = i + 1;
@@ -426,7 +432,7 @@ export const reduceBranches = ({
 				uniquenessByIndex[j] = false
 				continue
 			}
-			const intersection = branches[i].intersect(branches[j])
+			const intersection = intersectNodes(branches[i], branches[j], ctx)
 			if (intersection instanceof Disjoint) {
 				continue
 			}

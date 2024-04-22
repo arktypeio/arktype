@@ -41,12 +41,12 @@ export const exactLengthImplementation = implementNode<ExactLengthDeclaration>({
 	},
 	normalize: (def) => (typeof def === "number" ? { rule: def } : def),
 	intersections: {
-		exactLength: (l, r, $) =>
+		exactLength: (l, r, ctx) =>
 			new Disjoint({
 				"[length]": {
 					unit: {
-						l: $.node("unit", { unit: l.rule }),
-						r: $.node("unit", { unit: r.rule })
+						l: ctx.$.node("unit", { unit: l.rule }),
+						r: ctx.$.node("unit", { unit: r.rule })
 					}
 				}
 			}),

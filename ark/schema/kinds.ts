@@ -35,9 +35,9 @@ import {
 	intersectionImplementation
 } from "./schemas/intersection.js"
 import {
-	type MorphChildKind,
 	type MorphDeclaration,
-	morphImplementation
+	morphImplementation,
+	type MorphInputKind
 } from "./schemas/morph.js"
 import { type ProtoDeclaration, protoImplementation } from "./schemas/proto.js"
 import { type UnionDeclaration, unionImplementation } from "./schemas/union.js"
@@ -97,7 +97,7 @@ type ParentsByKind = {
 export type parentKindOf<kind extends NodeKind> = ParentsByKind[kind]
 
 export type ioKindOf<kind extends NodeKind> =
-	kind extends "morph" ? MorphChildKind : reducibleKindOf<kind>
+	kind extends "morph" ? MorphInputKind : reducibleKindOf<kind>
 
 export type Prerequisite<kind extends NodeKind> =
 	Declaration<kind>["prerequisite"]

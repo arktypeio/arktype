@@ -41,8 +41,8 @@ export const divisorImplementation = implementNode<DivisorDeclaration>({
 	},
 	normalize: (def) => (typeof def === "number" ? { rule: def } : def),
 	intersections: {
-		divisor: (l, r, $) =>
-			$.node("divisor", {
+		divisor: (l, r, ctx) =>
+			ctx.$.node("divisor", {
 				rule: Math.abs(
 					(l.rule * r.rule) / greatestCommonDivisor(l.rule, r.rule)
 				)

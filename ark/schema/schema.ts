@@ -10,8 +10,9 @@ import {
 	type PrimitiveConstraintKind,
 	throwInvalidOperandError
 } from "./constraints/util.js"
+import type { inferSchema } from "./inference.js"
 import type { NodeDef, reducibleKindOf } from "./kinds.js"
-import { type Node, RawNode } from "./node.js"
+import { type Node, RawNode, type SchemaDef } from "./node.js"
 import type { constraintKindOf } from "./schemas/intersection.js"
 import type {
 	Morph,
@@ -33,7 +34,11 @@ import type {
 	SchemaKind,
 	kindRightOf
 } from "./shared/implement.js"
-import type { inferIntersection } from "./shared/intersections.js"
+import {
+	type inferIntersection,
+	type inferPipe,
+	intersectNodes
+} from "./shared/intersections.js"
 import {
 	arkKind,
 	type inferred,
@@ -84,9 +89,10 @@ export class RawSchema<
 		return this.#keyofCache as never
 	}
 
+	// TODO: can it be enforced that this is not called internally and instead intersectNodes is used?
 	intersect(r: unknown): RawSchema | Disjoint {
 		const rNode = this.$.parseRoot(r)
-		return this.intersectInternal(rNode) as never
+		return intersectNodes(this, rNode, { $: this.$, piped: false }) as never
 	}
 
 	and(r: unknown): RawSchema {
@@ -199,6 +205,11 @@ export class RawSchema<
 			})
 		)
 	}
+
+	pipe(def: unknown): RawSchema {
+		const to = this.$.parseRoot(def)
+		return intersectNodes(this, to, { $: this.$, piped: true }) as never
+	}
 }
 
 export declare abstract class BaseRoot<t = unknown, $ = any> extends Callable<
@@ -288,6 +299,10 @@ declare class $Schema<t = unknown, $ = any> extends BaseRoot<t, $> {
 	morph<morph extends Morph<this["infer"]>>(
 		morph: morph
 	): Schema<(In: distillConstrainableIn<t>) => Out<inferMorphOut<morph>>, $>
+
+	pipe<def extends SchemaDef>(
+		def: def
+	): Schema<inferPipe<t, inferSchema<def, $>>, $>
 }
 
 export interface Schema<

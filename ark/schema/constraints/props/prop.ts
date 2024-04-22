@@ -14,6 +14,7 @@ import {
 	type NodeAttachments,
 	type SchemaKind
 } from "../../shared/implement.js"
+import { intersectNodes } from "../../shared/intersections.js"
 import type { RawConstraint } from "../constraint.js"
 import type { ConstraintAttachments } from "../util.js"
 
@@ -80,18 +81,18 @@ export const propImplementation = implementNode<PropDeclaration>({
 		actual: () => null
 	},
 	intersections: {
-		prop: (l, r, $) => {
+		prop: (l, r, ctx) => {
 			if (l.key !== r.key) {
 				return null
 			}
 			const key = l.key
-			let value = l.value.intersect(r.value)
+			let value = intersectNodes(l.value, r.value, ctx)
 			const optional = l.optional === true && r.optional === true
 			if (value instanceof Disjoint) {
-				if (optional) value = $.keywords.never.raw
+				if (optional) value = ctx.$.keywords.never.raw
 				else return value.withPrefixKey(l.compiledKey)
 			}
-			return $.node("prop", {
+			return ctx.$.node("prop", {
 				key,
 				value,
 				optional

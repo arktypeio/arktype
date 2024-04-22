@@ -10,7 +10,7 @@ import {
 } from "@arktype/util"
 import type { of } from "../constraints/ast.js"
 import type { NodeDef } from "../kinds.js"
-import type { Node } from "../node.js"
+import type { Node, SchemaDef } from "../node.js"
 import type {
 	RawSchema,
 	RawSchemaAttachments,
@@ -22,19 +22,20 @@ import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { ArkTypeError } from "../shared/errors.js"
 import { basisKinds, implementNode } from "../shared/implement.js"
+import { intersectNodes } from "../shared/intersections.js"
 import type { TraversalContext } from "../shared/traversal.js"
 import { defineRightwardIntersections } from "./utils.js"
 
-export type MorphChildKind = schemaKindRightOf<"morph">
+export type MorphInputKind = schemaKindRightOf<"morph">
 
-export const morphChildKinds = [
+export const morphInputKinds = [
 	"intersection",
 	...basisKinds
-] as const satisfies readonly MorphChildKind[]
+] as const satisfies readonly MorphInputKind[]
 
-export type MorphChildNode = Node<MorphChildKind>
+export type MorphInputNode = Node<MorphInputKind>
 
-export type MorphChildDefinition = NodeDef<MorphChildKind>
+export type MorphInputDef = NodeDef<MorphInputKind>
 
 export type Morph<i = any, o = unknown> = (In: i, ctx: TraversalContext) => o
 
@@ -43,14 +44,14 @@ export type Out<o = any> = ["=>", o]
 export type MorphAst<i = any, o = any> = (In: i) => Out<o>
 
 export interface MorphInner extends BaseMeta {
-	readonly in: MorphChildNode
-	readonly out: MorphChildNode
+	readonly in: MorphInputNode
+	readonly out: RawSchema
 	readonly morphs: readonly Morph[]
 }
 
 export interface MorphDef extends BaseMeta {
-	readonly in: MorphChildDefinition
-	readonly out?: MorphChildDefinition
+	readonly in: MorphInputDef
+	readonly out?: SchemaDef
 	readonly morphs: listable<Morph>
 }
 
@@ -59,7 +60,7 @@ export type MorphDeclaration = declareNode<{
 	def: MorphDef
 	normalizedDef: MorphDef
 	inner: MorphInner
-	childKind: MorphChildKind
+	childKind: MorphInputKind
 	attachments: MorphAttachments
 }>
 
@@ -74,11 +75,11 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 	keys: {
 		in: {
 			child: true,
-			parse: (def, ctx) => ctx.$.node(morphChildKinds, def)
+			parse: (def, ctx) => ctx.$.node(morphInputKinds, def)
 		},
 		out: {
 			child: true,
-			parse: (def, ctx) => ctx.$.node(morphChildKinds, def)
+			parse: (def, ctx) => ctx.$.parseRoot(def)
 		},
 		morphs: {
 			parse: arrayFrom,
@@ -91,39 +92,39 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 			`a morph from ${node.in.description} to ${node.out.description}`
 	},
 	intersections: {
-		morph: (l, r, $) => {
+		morph: (l, r, ctx) => {
 			if (l.morphs.some((morph, i) => morph !== r.morphs[i])) {
 				// TODO: is this always a parse error? what about for union reduction etc.
 				// TODO: check in for union reduction
 				return throwParseError("Invalid intersection of morphs")
 			}
-			const inTersection = l.in.intersect(r.in)
+			const inTersection = intersectNodes(l.in, r.in, ctx)
 			if (inTersection instanceof Disjoint) {
 				return inTersection
 			}
-			const outTersection = l.out.intersect(r)
+			const outTersection = intersectNodes(l.out, r.out, ctx)
 			if (outTersection instanceof Disjoint) {
 				return outTersection
 			}
-			return $.node("morph", {
+			return ctx.$.node("morph", {
 				morphs: l.morphs,
 				in: inTersection,
 				out: outTersection
 			})
 		},
-		...defineRightwardIntersections("morph", (l, r, $) => {
-			const inTersection = l.in.intersect(r)
+		...defineRightwardIntersections("morph", (l, r, ctx) => {
+			const inTersection = intersectNodes(l.in, r, ctx)
 			return (
 				inTersection instanceof Disjoint ? inTersection
 				: inTersection.kind === "union" ?
-					$.node(
+					ctx.$.node(
 						"union",
 						inTersection.branches.map((branch) => ({
 							...l.inner,
 							in: branch
 						}))
 					)
-				:	$.node("morph", {
+				:	ctx.$.node("morph", {
 						...l.inner,
 						in: inTersection
 					})
@@ -152,10 +153,10 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 				)
 				js.line(js.invoke(this.in))
 			},
-			get in(): MorphChildNode {
+			get in(): MorphInputNode {
 				return this.inner.in
 			},
-			get out(): MorphChildNode {
+			get out(): RawSchema {
 				return this.inner.out ?? self.$.keywords.unknown
 			},
 			rawKeyOf(): RawSchema {
@@ -168,8 +169,8 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 export interface MorphNode extends RawSchema<MorphDeclaration> {
 	// ensure these types are derived from MorphInner rather than those
 	// defined on RawNode
-	get in(): MorphChildNode
-	get out(): MorphChildNode
+	get in(): MorphInputNode
+	get out(): MorphInputNode
 }
 
 export type inferMorphOut<morph extends Morph> = Exclude<

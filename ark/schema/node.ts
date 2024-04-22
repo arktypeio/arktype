@@ -3,7 +3,6 @@ import {
 	type Dict,
 	type Guardable,
 	type Json,
-	type PartialRecord,
 	type conform,
 	flatMorph,
 	includes,
@@ -39,7 +38,6 @@ import type {
 	RawNodeDeclaration,
 	attachmentsOf
 } from "./shared/declare.js"
-import { Disjoint } from "./shared/disjoint.js"
 import {
 	type BasisKind,
 	type NodeKind,
@@ -48,7 +46,6 @@ import {
 	type RefinementKind,
 	type SchemaKind,
 	type UnknownAttachments,
-	type UnknownIntersectionResult,
 	basisKinds,
 	constraintKinds,
 	precedenceOfKind,
@@ -87,7 +84,7 @@ export class RawNode<
 		this.contributesReferences = Object.values(this.contributesReferencesByName)
 	}
 
-	protected readonly impl = nodeImplementationsByKind[this.kind]
+	readonly impl = nodeImplementationsByKind[this.kind]
 	readonly includesMorph: boolean =
 		this.kind === "morph" || this.children.some((child) => child.includesMorph)
 	readonly includesContextDependentPredicate: boolean =
@@ -208,59 +205,6 @@ export class RawNode<
 			) ?
 				`(${this.expression})`
 			:	this.expression
-	}
-
-	private static intersectionCache: PartialRecord<
-		string,
-		UnknownIntersectionResult
-	> = {}
-	protected intersectInternal(r: UnknownNode): UnknownIntersectionResult
-	protected intersectInternal(
-		this: RawNode,
-		r: RawNode
-	): UnknownIntersectionResult {
-		const lrCacheKey = `${this.typeId}&${r.typeId}`
-		if (RawNode.intersectionCache[lrCacheKey]) {
-			return RawNode.intersectionCache[lrCacheKey]!
-		}
-		const rlCacheKey = `${r.typeId}&${this.typeId}`
-		if (RawNode.intersectionCache[rlCacheKey]) {
-			// if the cached result was a Disjoint and the operands originally
-			// appeared in the opposite order, we need to invert it to match
-			const rlResult = RawNode.intersectionCache[rlCacheKey]!
-			const lrResult =
-				rlResult instanceof Disjoint ? rlResult.invert() : rlResult
-			// add the lr result to the cache directly to bypass this check in the future
-			RawNode.intersectionCache[lrCacheKey] = lrResult
-			return lrResult
-		}
-
-		if (this.equals(r as never)) {
-			return this as never
-		}
-
-		const leftmostKind = this.precedence < r.precedence ? this.kind : r.kind
-		const implementation =
-			this.impl.intersections[r.kind] ?? r.impl.intersections[this.kind]
-
-		let result =
-			implementation === undefined ?
-				// should be two ConstraintNodes that have no relation
-				// this could also happen if a user directly intersects a Type and a ConstraintNode,
-				// but that is not allowed by the external function signature
-				null
-			: leftmostKind === this.kind ? implementation(this, r, this.$)
-			: implementation(r, this, this.$)
-
-		if (result instanceof RawNode) {
-			// if the result equals one of the operands, preserve its metadata by
-			// returning the original reference
-			if (this.equals(result)) result = this as never
-			else if (r.equals(result)) result = r as never
-		}
-
-		RawNode.intersectionCache[lrCacheKey] = result
-		return result
 	}
 
 	bindScope($: RawSchemaScope): this {

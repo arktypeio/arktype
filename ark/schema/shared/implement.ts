@@ -155,13 +155,21 @@ type accumulateRightKinds<remaining extends readonly NodeKind[], result> =
 		accumulateRightKinds<tail, result & { [k in head]: tail[number] }>
 	:	result
 
+export interface InternalIntersectionOptions {
+	piped: boolean
+}
+
+export interface IntersectionContext extends InternalIntersectionOptions {
+	$: RawSchemaScope
+}
+
 export type ConstraintIntersection<
 	lKind extends ConstraintKind,
 	rKind extends kindOrRightOf<lKind>
 > = (
 	l: Node<lKind>,
 	r: Node<rKind>,
-	$: RawSchemaScope
+	ctx: IntersectionContext
 ) => RawNode | Disjoint | null
 
 export type ConstraintIntersectionMap<kind extends ConstraintKind> = show<
@@ -175,7 +183,11 @@ export type ConstraintIntersectionMap<kind extends ConstraintKind> = show<
 export type TypeIntersection<
 	lKind extends SchemaKind,
 	rKind extends schemaKindOrRightOf<lKind>
-> = (l: Node<lKind>, r: Node<rKind>, $: RawSchemaScope) => RawSchema | Disjoint
+> = (
+	l: Node<lKind>,
+	r: Node<rKind>,
+	ctx: IntersectionContext
+) => RawSchema | Disjoint
 
 export type TypeIntersectionMap<kind extends SchemaKind> = {
 	[rKind in schemaKindOrRightOf<kind>]: TypeIntersection<kind, rKind>
@@ -189,7 +201,7 @@ export type UnknownIntersectionMap = {
 	[k in NodeKind]?: (
 		l: RawNode,
 		r: RawNode,
-		$: RawSchemaScope
+		ctx: IntersectionContext
 	) => UnknownIntersectionResult
 }
 

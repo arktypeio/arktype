@@ -15,8 +15,8 @@ import type { DomainDef } from "./schemas/domain.js"
 import type { IntersectionDef } from "./schemas/intersection.js"
 import type {
 	Morph,
-	MorphChildDefinition,
 	MorphDef,
+	MorphInputDef,
 	Out,
 	inferMorphOut
 } from "./schemas/morph.js"
@@ -74,7 +74,7 @@ type inferSchemaBranch<def, $> =
 		: def["morphs"] extends readonly [...unknown[], infer morph extends Morph] ?
 			Out<inferMorphOut<morph>>
 		:	never
-	: def extends MorphChildDefinition ? inferMorphChild<def, $>
+	: def extends MorphInputDef ? inferMorphChild<def, $>
 	: unknown
 
 type NonIntersectableBasisSchema = NonEnumerableDomain | Constructor | UnitDef

@@ -85,10 +85,10 @@ export const protoImplementation = implementNode<ProtoDeclaration>({
 			constructorExtends(l.proto, r.proto) ? l
 			: constructorExtends(r.proto, l.proto) ? r
 			: Disjoint.from("proto", l, r),
-		domain: (proto, domain, $) =>
+		domain: (proto, domain, ctx) =>
 			domain.domain === "object" ?
 				proto
-			:	Disjoint.from("domain", $.keywords.object as never, domain)
+			:	Disjoint.from("domain", ctx.$.keywords.object as never, domain)
 	},
 	construct: (self): ProtoDeclaration["attachments"] => {
 		const builtinName = getExactBuiltinConstructorName(self.proto)

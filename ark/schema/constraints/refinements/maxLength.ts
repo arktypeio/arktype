@@ -52,10 +52,10 @@ export const maxLengthImplementation = implementNode<MaxLengthDeclaration>({
 	},
 	intersections: {
 		maxLength: (l, r) => (l.isStricterThan(r) ? l : r),
-		minLength: (max, min, $) =>
+		minLength: (max, min, ctx) =>
 			max.overlapsRange(min) ?
 				max.overlapIsUnit(min) ?
-					$.node("exactLength", { rule: max.rule })
+					ctx.$.node("exactLength", { rule: max.rule })
 				:	null
 			:	Disjoint.from("range", max, min)
 	},

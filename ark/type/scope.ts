@@ -1,6 +1,7 @@
 import {
 	type ArkConfig,
 	type GenericProps,
+	type NodeParseContext,
 	type NodeParseOptions,
 	type PreparsedNodeResolution,
 	type RawSchema,
@@ -149,7 +150,7 @@ export type tryInferSubmoduleReference<$, token> =
 		:	never
 	:	never
 
-export interface ParseContext extends NodeParseOptions {
+export interface ParseContext extends NodeParseContext {
 	$: RawScope
 }
 
@@ -210,9 +211,10 @@ export class RawScope<
 	}
 
 	override parseRoot(def: unknown, opts?: NodeParseOptions): RawSchema {
+		// args: { this: {} as RawSchema },
 		return this.parse(def, {
-			args: { this: {} as RawSchema },
 			$: this as never,
+			raw: def,
 			...opts
 		}).bindScope(this)
 	}
