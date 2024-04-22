@@ -30,6 +30,8 @@ contextualize(() => {
 		const validUser = { name: "David", age: 30 }
 		attest(parsedUser(JSON.stringify(validUser))).equals(validUser)
 		const missingKey = { name: "David" }
-		attest(parsedUser(JSON.stringify(missingKey)).toString()).snap("sometng")
+		attest(parsedUser(JSON.stringify(missingKey)).toString()).snap(
+			"age must be defined"
+		)
 	})
 })

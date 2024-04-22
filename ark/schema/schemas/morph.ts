@@ -17,7 +17,7 @@ import type {
 	schemaKindRightOf
 } from "../schema.js"
 import type { StaticArkOption } from "../scope.js"
-import type { NodeCompiler } from "../shared/compile.js"
+import { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { ArkTypeError } from "../shared/errors.js"
@@ -45,7 +45,7 @@ export type MorphAst<i = any, o = any> = (In: i) => Out<o>
 
 export interface MorphInner extends BaseMeta {
 	readonly in: MorphInputNode
-	readonly out: RawSchema
+	readonly out?: RawSchema
 	readonly morphs: readonly Morph[]
 }
 
@@ -66,7 +66,7 @@ export type MorphDeclaration = declareNode<{
 
 export interface MorphAttachments
 	extends RawSchemaAttachments<MorphDeclaration> {
-	serializedMorphs: array<string>
+	serializedMorphs: string
 }
 
 export const morphImplementation = implementNode<MorphDeclaration>({
@@ -79,7 +79,13 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 		},
 		out: {
 			child: true,
-			parse: (def, ctx) => ctx.$.parseRoot(def)
+			parse: (def, ctx) => {
+				const out = ctx.$.parseRoot(def)
+				return out.kind === "intersection" && out.children.length === 0 ?
+						// ignore unknown as an output validator
+						undefined
+					:	out
+			}
 		},
 		morphs: {
 			parse: arrayFrom,
@@ -93,19 +99,14 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 	},
 	intersections: {
 		morph: (l, r, ctx) => {
-			if (l.morphs.some((morph, i) => morph !== r.morphs[i])) {
+			if (l.morphs.some((morph, i) => morph !== r.morphs[i]))
 				// TODO: is this always a parse error? what about for union reduction etc.
 				// TODO: check in for union reduction
 				return throwParseError("Invalid intersection of morphs")
-			}
 			const inTersection = intersectNodes(l.in, r.in, ctx)
-			if (inTersection instanceof Disjoint) {
-				return inTersection
-			}
+			if (inTersection instanceof Disjoint) return inTersection
 			const outTersection = intersectNodes(l.out, r.out, ctx)
-			if (outTersection instanceof Disjoint) {
-				return outTersection
-			}
+			if (outTersection instanceof Disjoint) return outTersection
 			return ctx.$.node("morph", {
 				morphs: l.morphs,
 				in: inTersection,
@@ -132,7 +133,13 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 		})
 	},
 	construct: (self) => {
-		const serializedMorphs = self.morphs.map((morph) => reference(morph))
+		const serializedMorphs = JSON.stringify(
+			self.morphs.map((morph) => reference(morph))
+		)
+		const out = self.inner.out
+		const outValidator = out?.traverseApply ?? null
+		const outValidatorReference =
+			out ? new NodeCompiler("Apply").reference(out) : "null"
 		return {
 			serializedMorphs,
 			get expression() {
@@ -140,7 +147,7 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 			},
 			traverseAllows: (data, ctx) => self.in.traverseAllows(data, ctx),
 			traverseApply: (data, ctx) => {
-				self.morphs.forEach((morph) => ctx.queueMorph(morph))
+				ctx.queueMorphs(self.morphs, outValidator)
 				self.in.traverseApply(data, ctx)
 			},
 			compile(js: NodeCompiler): void {
@@ -148,8 +155,8 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 					js.return(js.invoke(this.in))
 					return
 				}
-				this.serializedMorphs.forEach((name) =>
-					js.line(`ctx.queueMorph(${name})`)
+				js.line(
+					`ctx.queueMorphs(${this.serializedMorphs}, ${outValidatorReference})`
 				)
 				js.line(js.invoke(this.in))
 			},
@@ -157,7 +164,7 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 				return this.inner.in
 			},
 			get out(): RawSchema {
-				return this.inner.out ?? self.$.keywords.unknown
+				return this.inner.out ?? self.$.keywords.unknown.raw
 			},
 			rawKeyOf(): RawSchema {
 				return this.in.rawKeyOf()

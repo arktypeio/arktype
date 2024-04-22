@@ -156,11 +156,12 @@ type accumulateRightKinds<remaining extends readonly NodeKind[], result> =
 	:	result
 
 export interface InternalIntersectionOptions {
-	piped: boolean
+	pipe: boolean
 }
 
 export interface IntersectionContext extends InternalIntersectionOptions {
 	$: RawSchemaScope
+	invert: boolean
 }
 
 export type ConstraintIntersection<

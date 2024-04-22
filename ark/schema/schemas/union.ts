@@ -15,7 +15,7 @@ import {
 	type SchemaKind,
 	schemaKindsRightOf
 } from "../shared/implement.js"
-import { intersectNodes } from "../shared/intersections.js"
+import { intersectNodes, intersectNodesRoot } from "../shared/intersections.js"
 import type { Discriminant } from "./discriminate.js"
 import { defineRightwardIntersections } from "./utils.js"
 
@@ -206,7 +206,8 @@ export const unionImplementation = implementNode<UnionDeclaration>({
 				for (let i = 0; i < branches.length; i++) {
 					ctx.pushBranch()
 					branches[i].traverseApply(data, ctx)
-					if (!ctx.hasError()) return ctx.morphs.push(...ctx.popBranch().morphs)
+					if (!ctx.hasError())
+						return ctx.queuedMorphs.push(...ctx.popBranch().queuedMorphs)
 					errors.push(ctx.popBranch().error!)
 				}
 				ctx.error({ code: "union", errors })
@@ -418,7 +419,6 @@ export const reduceBranches = ({
 		return branches
 	}
 	const uniquenessByIndex: Record<number, boolean> = branches.map(() => true)
-	const ctx: IntersectionContext = { $: branches[0].$, piped: false }
 	for (let i = 0; i < branches.length; i++) {
 		for (
 			let j = i + 1;
@@ -432,7 +432,11 @@ export const reduceBranches = ({
 				uniquenessByIndex[j] = false
 				continue
 			}
-			const intersection = intersectNodes(branches[i], branches[j], ctx)
+			const intersection = intersectNodesRoot(
+				branches[i],
+				branches[j],
+				branches[0].$
+			)
 			if (intersection instanceof Disjoint) {
 				continue
 			}

@@ -10,7 +10,7 @@ import {
 	throwInternalError
 } from "@arktype/util"
 import { Disjoint, type SerializedPath } from "../shared/disjoint.js"
-import { intersectNodes } from "../shared/intersections.js"
+import { intersectNodesRoot } from "../shared/intersections.js"
 import type { UnionChildNode } from "./union.js"
 
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
@@ -92,7 +92,7 @@ export const discriminate = (
 		const l = branches[lIndex]
 		for (let rIndex = lIndex + 1; rIndex < branches.length; rIndex++) {
 			const r = branches[rIndex]
-			const result = intersectNodes(l, r, { $: l.$, piped: false })
+			const result = intersectNodesRoot(l, r, l.$)
 			if (!(result instanceof Disjoint)) {
 				continue
 			}

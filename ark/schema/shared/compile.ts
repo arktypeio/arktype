@@ -4,8 +4,11 @@ import type { Discriminant } from "../schemas/discriminate.js"
 import type { PrimitiveKind } from "./implement.js"
 import type { TraversalKind } from "./traversal.js"
 
-export type InvokeOptions = {
+export interface InvokeOptions extends ReferenceOptions {
 	arg?: string
+}
+
+export interface ReferenceOptions {
 	kind?: TraversalKind
 }
 
@@ -18,13 +21,16 @@ export class NodeCompiler extends CompiledFunction<["data", "ctx"]> {
 	}
 
 	invoke(node: RawNode, opts?: InvokeOptions): string {
-		const invokedKind = opts?.kind ?? this.traversalKind
-		const method = `${node.name}${invokedKind}`
 		const arg = opts?.arg ?? this.data
 		if (this.requiresContextFor(node)) {
-			return `this.${method}(${arg}, ${this.ctx})`
+			return `${this.reference(node, opts)}(${arg}, ${this.ctx})`
 		}
-		return `this.${method}(${arg})`
+		return `${this.reference(node, opts)}(${arg})`
+	}
+
+	reference(node: RawNode, opts?: ReferenceOptions): string {
+		const invokedKind = opts?.kind ?? this.traversalKind
+		return `this.${node.name}${invokedKind}`
 	}
 
 	requiresContextFor(node: RawNode): boolean {

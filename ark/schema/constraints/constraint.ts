@@ -1,5 +1,5 @@
 import { RawNode } from "../node.js"
-import { intersectNodes } from "../shared/intersections.js"
+import { intersectNodesRoot } from "../shared/intersections.js"
 import { arkKind } from "../shared/utils.js"
 import type {
 	BaseConstraintDeclaration,
@@ -15,6 +15,6 @@ export class RawConstraint<
 	intersect<r extends RawConstraint>(
 		r: r
 	): intersectConstraintKinds<d["kind"], r["kind"]> {
-		return intersectNodes(this, r, { $: this.$, piped: false }) as never
+		return intersectNodesRoot(this, r, this.$) as never
 	}
 }

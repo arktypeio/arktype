@@ -37,7 +37,8 @@ import type {
 import {
 	type inferIntersection,
 	type inferPipe,
-	intersectNodes
+	intersectNodesRoot,
+	pipeNodesRoot
 } from "./shared/intersections.js"
 import {
 	arkKind,
@@ -92,7 +93,7 @@ export class RawSchema<
 	// TODO: can it be enforced that this is not called internally and instead intersectNodes is used?
 	intersect(r: unknown): RawSchema | Disjoint {
 		const rNode = this.$.parseRoot(r)
-		return intersectNodes(this, rNode, { $: this.$, piped: false }) as never
+		return intersectNodesRoot(this, rNode, this.$) as never
 	}
 
 	and(r: unknown): RawSchema {
@@ -208,7 +209,7 @@ export class RawSchema<
 
 	pipe(def: unknown): RawSchema {
 		const to = this.$.parseRoot(def)
-		return intersectNodes(this, to, { $: this.$, piped: true }) as never
+		return pipeNodesRoot(this, to, this.$) as never
 	}
 }
 

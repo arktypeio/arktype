@@ -218,9 +218,11 @@ export const intersectionImplementation =
 		reduce: (inner, $) =>
 			// we cast union out of the result here since that only occurs when intersecting two sequences
 			// that cannot occur when reducing a single intersection schema using unknown
-			intersectIntersections({}, inner, { $, piped: false }) as Node<
-				"intersection" | IntersectionBasisKind
-			>,
+			intersectIntersections({}, inner, {
+				$,
+				invert: false,
+				pipe: false
+			}) as Node<"intersection" | IntersectionBasisKind>,
 		defaults: {
 			description: (node) =>
 				node.children.length === 0 ?
