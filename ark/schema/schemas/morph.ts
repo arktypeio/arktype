@@ -10,12 +10,8 @@ import {
 } from "@arktype/util"
 import type { of } from "../constraints/ast.js"
 import type { NodeDef } from "../kinds.js"
-import type { Node, RawNode, SchemaDef } from "../node.js"
-import {
-	RawSchema,
-	type RawSchemaAttachments,
-	type schemaKindRightOf
-} from "../schema.js"
+import type { Node, SchemaDef } from "../node.js"
+import { RawSchema, type schemaKindRightOf } from "../schema.js"
 import type { StaticArkOption } from "../scope.js"
 import { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
@@ -65,14 +61,7 @@ export type MorphDeclaration = declareNode<{
 	normalizedDef: MorphDef
 	inner: MorphInner
 	childKind: MorphInputKind
-	attachments: MorphAttachments
 }>
-
-export interface MorphAttachments
-	extends RawSchemaAttachments<MorphDeclaration> {
-	serializedMorphs: array<string>
-	getIo: RawNode["getIo"]
-}
 
 export const morphImplementation = implementNode<MorphDeclaration>({
 	kind: "morph",
@@ -153,7 +142,7 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 
 export class MorphNode extends RawSchema<MorphDeclaration> {
 	serializedMorphs = this.morphs.map((morph) => reference(morph))
-	compiledMorphs = JSON.stringify(this.serializedMorphs)
+	compiledMorphs = `[${this.serializedMorphs}]`
 	outValidator = this.to?.traverseApply ?? null
 	outValidatorReference: string =
 		this.to ? new NodeCompiler("Apply").reference(this.to) : "null"

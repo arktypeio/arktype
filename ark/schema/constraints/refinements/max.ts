@@ -6,7 +6,6 @@ import {
 	type BaseNormalizedRangeSchema,
 	BaseRange,
 	type BaseRangeInner,
-	type RangeAttachments,
 	parseExclusiveKey
 } from "./range.js"
 
@@ -27,10 +26,7 @@ export type MaxDeclaration = declareNode<{
 	inner: MaxInner
 	prerequisite: number
 	errorContext: MaxInner
-	attachments: MaxAttachments
 }>
-
-export interface MaxAttachments extends RangeAttachments<MaxDeclaration> {}
 
 export const maxImplementation = implementNode<MaxDeclaration>({
 	kind: "max",

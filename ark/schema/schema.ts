@@ -28,12 +28,7 @@ import type { SchemaScope } from "./scope.js"
 import type { BaseMeta, RawNodeDeclaration } from "./shared/declare.js"
 import { Disjoint } from "./shared/disjoint.js"
 import { ArkErrors } from "./shared/errors.js"
-import type {
-	NodeAttachments,
-	NodeKind,
-	SchemaKind,
-	kindRightOf
-} from "./shared/implement.js"
+import type { NodeKind, SchemaKind, kindRightOf } from "./shared/implement.js"
 import {
 	type inferIntersection,
 	type inferPipe,
@@ -48,12 +43,6 @@ import {
 
 export interface RawSchemaDeclaration extends RawNodeDeclaration {
 	kind: SchemaKind
-	attachments: RawSchemaAttachments<this>
-}
-
-export interface RawSchemaAttachments<d extends RawNodeDeclaration>
-	extends NodeAttachments<d> {
-	rawKeyOf(): RawSchema
 }
 
 export type UnknownSchema = Schema | RawSchema
@@ -77,6 +66,8 @@ export abstract class RawSchema<
 	get raw(): this {
 		return this
 	}
+
+	abstract rawKeyOf(): RawSchema
 
 	#keyofCache: RawSchema | undefined
 	keyof(): RawSchema {

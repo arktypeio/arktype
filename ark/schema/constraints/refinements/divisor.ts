@@ -1,16 +1,9 @@
 import type { Schema } from "../../schema.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
-import {
-	type NodeAttachments,
-	type PrimitiveAttachments,
-	implementNode
-} from "../../shared/implement.js"
+import { implementNode } from "../../shared/implement.js"
 import type { TraverseAllows } from "../../shared/traversal.js"
 import { RawPrimitiveConstraint } from "../constraint.js"
-import {
-	type ConstraintAttachments,
-	writeInvalidOperandMessage
-} from "../util.js"
+import { writeInvalidOperandMessage } from "../util.js"
 
 export interface DivisorInner extends BaseMeta {
 	readonly rule: number
@@ -25,13 +18,7 @@ export type DivisorDeclaration = declareNode<{
 	inner: DivisorInner
 	prerequisite: number
 	errorContext: DivisorInner
-	attachments: DivisorAttachments
 }>
-
-export interface DivisorAttachments
-	extends NodeAttachments<DivisorDeclaration>,
-		PrimitiveAttachments<DivisorDeclaration>,
-		ConstraintAttachments {}
 
 export const divisorImplementation = implementNode<DivisorDeclaration>({
 	kind: "divisor",

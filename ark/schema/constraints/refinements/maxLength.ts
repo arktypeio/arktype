@@ -7,7 +7,6 @@ import {
 	BaseRange,
 	type BaseRangeInner,
 	type LengthBoundableData,
-	type RangeAttachments,
 	parseExclusiveKey
 } from "./range.js"
 
@@ -28,11 +27,7 @@ export type MaxLengthDeclaration = declareNode<{
 	inner: MaxLengthInner
 	prerequisite: LengthBoundableData
 	errorContext: MaxLengthInner
-	attachments: MaxLengthAttachments
 }>
-
-export interface MaxLengthAttachments
-	extends RangeAttachments<MaxLengthDeclaration> {}
 
 export const maxLengthImplementation = implementNode<MaxLengthDeclaration>({
 	kind: "maxLength",

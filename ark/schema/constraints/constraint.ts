@@ -1,6 +1,7 @@
 import { RawNode } from "../node.js"
 import type { RawSchema } from "../schema.js"
 import type { NodeCompiler } from "../shared/compile.js"
+import type { RawNodeDeclaration } from "../shared/declare.js"
 import {
 	compileErrorContext,
 	type ConstraintKind,
@@ -9,10 +10,11 @@ import {
 import { intersectNodesRoot } from "../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 import { arkKind } from "../shared/utils.js"
-import type {
-	BaseConstraintDeclaration,
-	intersectConstraintKinds
-} from "./util.js"
+import type { intersectConstraintKinds } from "./util.js"
+
+export interface BaseConstraintDeclaration extends RawNodeDeclaration {
+	kind: ConstraintKind
+}
 
 export abstract class RawConstraint<
 	/** @ts-expect-error allow instantiation assignment to the base type */

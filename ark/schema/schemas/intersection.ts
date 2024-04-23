@@ -21,7 +21,7 @@ import {
 import type { Inner, MutableInner, NodeDef, Prerequisite } from "../kinds.js"
 import type { Constraint, Node } from "../node.js"
 import type { NodeParseContext } from "../parse.js"
-import { RawSchema, type RawSchemaAttachments } from "../schema.js"
+import { RawSchema } from "../schema.js"
 import type { RawSchemaScope } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import { type BaseMeta, type declareNode, metaKeys } from "../shared/declare.js"
@@ -73,18 +73,7 @@ export type IntersectionDeclaration = declareNode<{
 		errors: readonly ArkTypeError[]
 	}
 	childKind: IntersectionChildKind
-	attachments: IntersectionAttachments
 }>
-
-export interface IntersectionAttachments
-	extends RawSchemaAttachments<IntersectionDeclaration> {
-	basis: DomainNode | ProtoNode | null
-	refinements: array<Node<RefinementKind>>
-	props: PropsGroup | null
-	traversables: array<
-		Node<Exclude<IntersectionChildKind, PropKind>> | PropsGroup
-	>
-}
 
 export class IntersectionNode extends RawSchema<IntersectionDeclaration> {
 	basis = this.domain ?? this.proto ?? null

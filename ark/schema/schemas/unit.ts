@@ -1,20 +1,12 @@
 import {
-	type array,
-	type Domain,
 	type JsonPrimitive,
-	type Key,
 	domainOf,
 	printable,
 	prototypeKeysOf
 } from "@arktype/util"
-import type { RawSchemaAttachments } from "../schema.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
-import {
-	type PrimitiveAttachments,
-	defaultValueSerializer,
-	implementNode
-} from "../shared/implement.js"
+import { defaultValueSerializer, implementNode } from "../shared/implement.js"
 import { RawBasis } from "./basis.js"
 import { defineRightwardIntersections } from "./utils.js"
 
@@ -30,17 +22,7 @@ export type UnitDeclaration = declareNode<{
 	normalizedDef: UnitDef
 	inner: UnitInner
 	errorContext: UnitInner
-	attachments: UnitAttachments
 }>
-
-export interface UnitAttachments
-	extends RawSchemaAttachments<UnitDeclaration>,
-		PrimitiveAttachments<UnitDeclaration> {
-	readonly literalKeys: array<Key>
-	readonly domain: Domain
-	readonly compiledValue: JsonPrimitive
-	readonly serializedValue: JsonPrimitive
-}
 
 export const unitImplementation = implementNode<UnitDeclaration>({
 	kind: "unit",

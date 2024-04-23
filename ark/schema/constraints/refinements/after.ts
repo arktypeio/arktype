@@ -6,7 +6,6 @@ import {
 	BaseRange,
 	type BaseRangeInner,
 	type LimitSchemaValue,
-	type RangeAttachments,
 	parseDateLimit,
 	parseExclusiveKey
 } from "./range.js"
@@ -28,10 +27,7 @@ export type AfterDeclaration = declareNode<{
 	inner: AfterInner
 	prerequisite: Date
 	errorContext: AfterInner
-	attachments: AfterAttachments
 }>
-
-export interface AfterAttachments extends RangeAttachments<AfterDeclaration> {}
 
 export const afterImplementation = implementNode<AfterDeclaration>({
 	kind: "after",

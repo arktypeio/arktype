@@ -7,52 +7,14 @@ import {
 } from "@arktype/util"
 import type { Node } from "../../node.js"
 import type { BaseMeta, RawNodeDeclaration } from "../../shared/declare.js"
-import type {
-	DerivedPrimitiveAttachments,
-	KeyDefinitions,
-	NodeAttachments,
-	PrimitiveAttachments,
-	RangeKind
-} from "../../shared/implement.js"
-import type { Comparator } from "../ast.js"
+import type { KeyDefinitions, RangeKind } from "../../shared/implement.js"
 import { RawPrimitiveConstraint } from "../constraint.js"
-import type { ConstraintAttachments } from "../util.js"
 
 export interface BaseRangeDeclaration extends RawNodeDeclaration {
 	kind: RangeKind
 	inner: BaseRangeInner
 	normalizedDef: BaseNormalizedRangeSchema
-	attachments: RangeAttachments<any>
 }
-
-export interface DerivedRangeAttachments<
-	d extends BaseRangeDeclaration = BaseRangeDeclaration
-> {
-	expression: string
-	boundOperandKind: BoundOperandKind
-	compiledActual: string
-	compiledCondition: string
-	compiledNegation: string
-	comparator: Comparator
-	numericLimit: number
-	stringLimit: string
-	limitKind: LimitKind
-	isStricterThan(r: Node<d["kind"] | pairedRangeKind<d["kind"]>>): boolean
-	overlapsRange(r: Node<pairedRangeKind<d["kind"]>>): boolean
-	overlapIsUnit(r: Node<pairedRangeKind<d["kind"]>>): boolean
-}
-
-export interface RangeAttachments<
-	d extends BaseRangeDeclaration = BaseRangeDeclaration
-> extends NodeAttachments<d>,
-		PrimitiveAttachments<d>,
-		ConstraintAttachments,
-		DerivedRangeAttachments<d> {}
-
-export type ImplementedRangeAttachments<d extends BaseRangeDeclaration> = Omit<
-	d["attachments"],
-	keyof DerivedRangeAttachments | keyof DerivedPrimitiveAttachments
->
 
 export abstract class BaseRange<
 	d extends BaseRangeDeclaration

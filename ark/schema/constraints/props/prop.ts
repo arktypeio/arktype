@@ -9,14 +9,13 @@ import type {
 } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import {
+	compileErrorContext,
 	implementNode,
-	type NodeAttachments,
 	type SchemaKind
 } from "../../shared/implement.js"
 import { intersectNodes } from "../../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/traversal.js"
 import { RawConstraint } from "../constraint.js"
-import type { ConstraintAttachments } from "../util.js"
 
 export interface PropDef extends BaseMeta {
 	readonly key: Key
@@ -39,21 +38,10 @@ export type PropDeclaration = declareNode<{
 	prerequisite: object
 	intersectionIsOpen: true
 	childKind: SchemaKind
-	attachments: PropAttachments
 }>
 
 export interface PropErrorContext extends BaseErrorContext<"prop"> {
 	key: Key
-}
-
-export interface PropAttachments
-	extends NodeAttachments<PropDeclaration>,
-		ConstraintAttachments {
-	required: boolean
-	compiledKey: string
-	serializedKey: string
-	errorContext: PropErrorContext
-	compiledErrorContext: string
 }
 
 export const propImplementation = implementNode<PropDeclaration>({
@@ -102,20 +90,21 @@ export const propImplementation = implementNode<PropDeclaration>({
 })
 
 export class PropNode extends RawConstraint<PropDeclaration> {
-	readonly required = !this.optional
-	readonly impliedBasis = this.$.keywords.object.raw
-	readonly serializedKey = compileSerializedValue(this.key)
-	readonly compiledKey =
-		typeof this.key === "string" ? this.key : this.serializedKey
-	readonly expression = `${this.compiledKey}${this.optional ? "?" : ""}: ${
+	required = !this.optional
+	impliedBasis = this.$.keywords.object.raw
+	serializedKey = compileSerializedValue(this.key)
+	compiledKey = typeof this.key === "string" ? this.key : this.serializedKey
+	expression = `${this.compiledKey}${this.optional ? "?" : ""}: ${
 		this.value.expression
 	}`
 
-	readonly errorContext = Object.freeze({
+	errorContext = Object.freeze({
 		code: "prop",
 		description: this.description,
 		key: this.key
 	})
+
+	compiledErrorContext: string = compileErrorContext(this.errorContext)
 
 	traverseAllows: TraverseAllows<object> = (data, ctx) => {
 		if (this.key in data) {

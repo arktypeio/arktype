@@ -1,8 +1,6 @@
 import {
 	type BuiltinObjectKind,
 	type Constructor,
-	type Key,
-	type array,
 	builtinObjectKinds,
 	constructorExtends,
 	getExactBuiltinConstructorName,
@@ -10,14 +8,9 @@ import {
 	objectKindOrDomainOf,
 	prototypeKeysOf
 } from "@arktype/util"
-import type { RawSchemaAttachments } from "../schema.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
-import {
-	type PrimitiveAttachments,
-	defaultValueSerializer,
-	implementNode
-} from "../shared/implement.js"
+import { defaultValueSerializer, implementNode } from "../shared/implement.js"
 import type { TraverseAllows } from "../shared/traversal.js"
 import { RawBasis } from "./basis.js"
 
@@ -40,22 +33,12 @@ export type ProtoDef<proto extends ProtoReference = ProtoReference> =
 	| proto
 	| ExpandedProtoDef<proto>
 
-export interface ProtoAttachments
-	extends RawSchemaAttachments<ProtoDeclaration>,
-		PrimitiveAttachments<ProtoDeclaration> {
-	readonly serializedConstructor: string
-	readonly builtinName: BuiltinObjectKind | null
-	readonly domain: "object"
-	readonly literalKeys: array<Key>
-}
-
 export type ProtoDeclaration = declareNode<{
 	kind: "proto"
 	def: ProtoDef
 	normalizedDef: NormalizedProtoDef
 	inner: ProtoInner
 	errorContext: ProtoInner
-	attachments: ProtoAttachments
 }>
 
 export const protoImplementation = implementNode<ProtoDeclaration>({

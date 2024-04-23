@@ -1,13 +1,8 @@
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
-import {
-	implementNode,
-	type NodeAttachments,
-	type PrimitiveAttachments
-} from "../../shared/implement.js"
+import { implementNode } from "../../shared/implement.js"
 import type { TraverseAllows } from "../../shared/traversal.js"
 import { RawPrimitiveConstraint } from "../constraint.js"
-import type { ConstraintAttachments } from "../util.js"
 import type { LengthBoundableData } from "./range.js"
 
 export interface ExactLengthInner extends BaseMeta {
@@ -25,13 +20,7 @@ export type ExactLengthDeclaration = declareNode<{
 	inner: ExactLengthInner
 	prerequisite: LengthBoundableData
 	errorContext: ExactLengthInner
-	attachments: ExactLengthAttachments
 }>
-
-export interface ExactLengthAttachments
-	extends NodeAttachments<ExactLengthDeclaration>,
-		PrimitiveAttachments<ExactLengthDeclaration>,
-		ConstraintAttachments {}
 
 export const exactLengthImplementation = implementNode<ExactLengthDeclaration>({
 	kind: "exactLength",

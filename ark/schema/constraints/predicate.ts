@@ -1,16 +1,11 @@
-import { compileSerializedValue, type show } from "@arktype/util"
+import { compileSerializedValue } from "@arktype/util"
 import type { errorContext } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
-import {
-	implementNode,
-	type NodeAttachments,
-	type PrimitiveAttachments
-} from "../shared/implement.js"
+import { implementNode } from "../shared/implement.js"
 import type { TraversalContext, TraverseApply } from "../shared/traversal.js"
 import type { constrain, of } from "./ast.js"
 import { RawConstraint } from "./constraint.js"
-import type { ConstraintAttachments } from "./util.js"
 
 export interface PredicateInner<rule extends Predicate<any> = Predicate<any>>
 	extends BaseMeta {
@@ -30,16 +25,7 @@ export type PredicateDeclaration = declareNode<{
 	inner: PredicateInner
 	intersectionIsOpen: true
 	errorContext: PredicateErrorContext
-	attachments: PredicateAttachments
 }>
-
-export type PredicateAttachments = show<
-	NodeAttachments<PredicateDeclaration> &
-		PrimitiveAttachments<PredicateDeclaration> &
-		ConstraintAttachments & {
-			serializedPredicate: string
-		}
->
 
 // TODO: If node contains a predicate reference that doesn't take 1 arg, we need
 // to wrap it with traversal state for allows

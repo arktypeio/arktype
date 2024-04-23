@@ -7,7 +7,6 @@ import {
 	BaseRange,
 	type BaseRangeInner,
 	type LimitSchemaValue,
-	type RangeAttachments,
 	parseDateLimit,
 	parseExclusiveKey
 } from "./range.js"
@@ -29,11 +28,7 @@ export type BeforeDeclaration = declareNode<{
 	inner: BeforeInner
 	prerequisite: Date
 	errorContext: BeforeInner
-	attachments: BeforeAttachments
 }>
-
-export interface BeforeAttachments
-	extends RangeAttachments<BeforeDeclaration> {}
 
 export const beforeImplementation = implementNode<BeforeDeclaration>({
 	kind: "before",

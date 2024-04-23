@@ -7,7 +7,7 @@ import {
 	throwParseError
 } from "@arktype/util"
 import type { MutableInner } from "../../kinds.js"
-import type { Node, SchemaDef } from "../../node.js"
+import type { SchemaDef } from "../../node.js"
 import type { RawSchema } from "../../schema.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
@@ -15,16 +15,12 @@ import { Disjoint } from "../../shared/disjoint.js"
 import {
 	implementNode,
 	type IntersectionContext,
-	type NodeAttachments,
 	type NodeKeyImplementation,
 	type SchemaKind
 } from "../../shared/implement.js"
 import { intersectNodes } from "../../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/traversal.js"
 import { RawConstraint } from "../constraint.js"
-import type { MaxLengthNode } from "../refinements/maxLength.js"
-import type { MinLengthNode } from "../refinements/minLength.js"
-import type { ConstraintAttachments } from "../util.js"
 
 export interface NormalizedSequenceDef extends BaseMeta {
 	readonly prefix?: array<SchemaDef>
@@ -56,25 +52,7 @@ export type SequenceDeclaration = declareNode<{
 	prerequisite: array
 	reducibleTo: "sequence"
 	childKind: SchemaKind
-	attachments: SequenceAttachments
 }>
-
-export interface SequenceAttachments
-	extends NodeAttachments<SequenceDeclaration>,
-		ConstraintAttachments {
-	prefix: array<RawSchema>
-	optional: array<RawSchema>
-	prevariadic: array<RawSchema>
-	postfix: array<RawSchema>
-	isVariadicOnly: boolean
-	minVariadicLength: number
-	minLength: number
-	minLengthNode: MinLengthNode | null
-	maxLength: number | null
-	maxLengthNode: MaxLengthNode | null
-	impliedSiblings: array<Node<"minLength" | "maxLength">> | null
-	tuple: SequenceTuple
-}
 
 const fixedSequenceKeyDefinition: NodeKeyImplementation<
 	SequenceDeclaration,
@@ -244,22 +222,20 @@ export const sequenceImplementation = implementNode<SequenceDeclaration>({
 })
 
 export class SequenceNode extends RawConstraint<SequenceDeclaration> {
-	readonly impliedBasis = this.$.keywords.Array.raw
-	readonly prefix = this.inner.prefix ?? []
-	readonly optional = this.inner.optional ?? []
-	readonly prevariadic = [...this.prefix, ...this.optional]
-	readonly postfix = this.inner.postfix ?? []
-	readonly isVariadicOnly = this.prevariadic.length + this.postfix.length === 0
-	readonly minVariadicLength = this.inner.minVariadicLength ?? 0
-	readonly minLength =
-		this.prefix.length + this.minVariadicLength + this.postfix.length
-	readonly minLengthNode =
+	impliedBasis = this.$.keywords.Array.raw
+	prefix = this.inner.prefix ?? []
+	optional = this.inner.optional ?? []
+	prevariadic = [...this.prefix, ...this.optional]
+	postfix = this.inner.postfix ?? []
+	isVariadicOnly = this.prevariadic.length + this.postfix.length === 0
+	minVariadicLength = this.inner.minVariadicLength ?? 0
+	minLength = this.prefix.length + this.minVariadicLength + this.postfix.length
+	minLengthNode =
 		this.minLength === 0 ? null : this.$.node("minLength", this.minLength)
-	readonly maxLength =
-		this.variadic ? null : this.minLength + this.optional.length
-	readonly maxLengthNode =
+	maxLength = this.variadic ? null : this.minLength + this.optional.length
+	maxLengthNode =
 		this.maxLength === null ? null : this.$.node("maxLength", this.maxLength)
-	readonly impliedSiblings =
+	impliedSiblings =
 		this.minLengthNode ?
 			this.maxLengthNode ?
 				[this.minLengthNode, this.maxLengthNode]
@@ -329,9 +305,9 @@ export class SequenceNode extends RawConstraint<SequenceDeclaration> {
 		}
 	}
 
-	readonly tuple = sequenceInnerToTuple(this.inner)
+	tuple = sequenceInnerToTuple(this.inner)
 	// this depends on tuple so needs to come after it
-	readonly expression = this.description
+	expression = this.description
 }
 
 const sequenceInnerToTuple = (inner: SequenceInner): SequenceTuple => {

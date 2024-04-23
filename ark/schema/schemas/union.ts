@@ -1,11 +1,7 @@
 import { appendUnique, groupBy, isArray } from "@arktype/util"
 import type { NodeDef } from "../kinds.js"
 import type { Node } from "../node.js"
-import {
-	RawSchema,
-	type RawSchemaAttachments,
-	type schemaKindRightOf
-} from "../schema.js"
+import { RawSchema, type schemaKindRightOf } from "../schema.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -18,7 +14,6 @@ import {
 } from "../shared/implement.js"
 import { intersectNodes, intersectNodesRoot } from "../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
-import type { Discriminant } from "./discriminate.js"
 import { defineRightwardIntersections } from "./utils.js"
 
 export type UnionChildKind = schemaKindRightOf<"union">
@@ -55,14 +50,7 @@ export type UnionDeclaration = declareNode<{
 	}
 	reducibleTo: SchemaKind
 	childKind: UnionChildKind
-	attachments: UnionAttachments
 }>
-
-export interface UnionAttachments
-	extends RawSchemaAttachments<UnionDeclaration> {
-	discriminant: Discriminant | null
-	isBoolean: boolean
-}
 
 export const unionImplementation = implementNode<UnionDeclaration>({
 	kind: "union",
@@ -224,7 +212,7 @@ export class UnionNode extends RawSchema<UnionDeclaration> {
 					.line("ctx.pushBranch()")
 					.line(js.invoke(branch))
 					.if("!ctx.hasError()", () =>
-						js.return("ctx.morphs.push(...ctx.popBranch().morphs)")
+						js.return("ctx.queuedMorphs.push(...ctx.popBranch().queuedMorphs)")
 					)
 					.line("errors.push(ctx.popBranch().error)")
 			)

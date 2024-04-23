@@ -1,18 +1,12 @@
 import {
-	type Key,
 	type NonEnumerableDomain,
-	type array,
 	domainDescriptions,
 	domainOf,
 	getBaseDomainKeys
 } from "@arktype/util"
-import type { RawSchemaAttachments } from "../schema.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
-import {
-	type PrimitiveAttachments,
-	implementNode
-} from "../shared/implement.js"
+import { implementNode } from "../shared/implement.js"
 import type { TraverseAllows } from "../shared/traversal.js"
 import { RawBasis } from "./basis.js"
 
@@ -37,14 +31,7 @@ export type DomainDeclaration = declareNode<{
 	normalizedDef: NormalizedDomainDef
 	inner: DomainInner
 	errorContext: DomainInner
-	attachments: DomainAttachments
 }>
-
-export interface DomainAttachments
-	extends RawSchemaAttachments<DomainDeclaration>,
-		PrimitiveAttachments<DomainDeclaration> {
-	readonly literalKeys: array<Key>
-}
 
 export class DomainNode extends RawBasis<DomainDeclaration> {
 	traverseAllows: TraverseAllows = (data) => domainOf(data) === this.domain

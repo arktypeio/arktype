@@ -1,11 +1,6 @@
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
-import {
-	implementNode,
-	type NodeAttachments,
-	type PrimitiveAttachments
-} from "../../shared/implement.js"
+import { implementNode } from "../../shared/implement.js"
 import { RawPrimitiveConstraint } from "../constraint.js"
-import type { ConstraintAttachments } from "../util.js"
 
 export interface RegexInner extends BaseMeta {
 	readonly rule: string
@@ -24,15 +19,7 @@ export type RegexDeclaration = declareNode<{
 	intersectionIsOpen: true
 	prerequisite: string
 	errorContext: RegexInner
-	attachments: RegexAttachments
 }>
-
-export interface RegexAttachments
-	extends NodeAttachments<RegexDeclaration>,
-		PrimitiveAttachments<RegexDeclaration>,
-		ConstraintAttachments {
-	instance: RegExp
-}
 
 export const regexImplementation = implementNode<RegexDeclaration>({
 	kind: "regex",

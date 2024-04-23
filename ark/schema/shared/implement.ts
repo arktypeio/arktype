@@ -4,7 +4,6 @@ import {
 	type Json,
 	type JsonData,
 	compileSerializedValue,
-	defineProperties,
 	type entryOf,
 	flatMorph,
 	type indexOf,
@@ -29,16 +28,13 @@ import type {
 	ParsedUnknownNodeConfig,
 	RawSchemaScope
 } from "../scope.js"
-import type { NodeCompiler } from "./compile.js"
 import type {
 	BaseErrorContext,
 	BaseMeta,
-	RawNodeDeclaration,
-	parsedAttachmentsOf
+	RawNodeDeclaration
 } from "./declare.js"
 import type { Disjoint } from "./disjoint.js"
 import { throwArkError } from "./errors.js"
-import type { TraverseAllows, TraverseApply } from "./traversal.js"
 import { isNode } from "./utils.js"
 
 export const basisKinds = ["unit", "proto", "domain"] as const
@@ -313,39 +309,6 @@ export interface UnknownNodeImplementation
 	keys: Record<string, NodeKeyImplementation<any, any>>
 }
 
-export interface PrimitiveNodeDeclaration extends RawNodeDeclaration {
-	kind: PrimitiveKind
-	attachments: NodeAttachments<this> & PrimitiveAttachments
-}
-
-export const derivePrimitiveAttachments = <
-	d extends PrimitiveNodeDeclaration = never
->(
-	implemented: ImplementedPrimitiveAttachments<d> & ThisType<Node<d["kind"]>>
-): d["attachments"] => {
-	return defineProperties(implemented, {
-		get errorContext(): d["errorContext"] {
-			return {
-				code: this.kind,
-				description: this.description,
-				...this.inner
-			}
-		},
-		get compiledErrorContext(): string {
-			return compileErrorContext(this.errorContext)
-		},
-		traverseApply(data, ctx) {
-			if (!this.traverseAllows(data as never, ctx)) {
-				ctx.error(this.errorContext)
-			}
-		},
-		compile(js) {
-			js.compilePrimitive(this)
-		}
-	} satisfies DerivedPrimitiveAttachments &
-		ThisType<Node<PrimitiveKind>>) as never
-}
-
 export const compileErrorContext = (ctx: object): string => {
 	let result = "{ "
 	for (const [k, v] of Object.entries(ctx)) {
@@ -353,29 +316,6 @@ export const compileErrorContext = (ctx: object): string => {
 	}
 	return result + " }"
 }
-
-export interface PrimitiveAttachments<
-	d extends PrimitiveNodeDeclaration = PrimitiveNodeDeclaration
-> {
-	compiledCondition: string
-	compiledNegation: string
-	errorContext: d["errorContext"]
-	compiledErrorContext: string
-}
-
-export type ImplementedPrimitiveAttachments<
-	d extends PrimitiveNodeDeclaration = PrimitiveNodeDeclaration
-> = Omit<
-	d["attachments"],
-	keyof parsedAttachmentsOf<d> | keyof DerivedPrimitiveAttachments
->
-
-export type DerivedPrimitiveAttachments<
-	d extends PrimitiveNodeDeclaration = PrimitiveNodeDeclaration
-> = Pick<
-	d["attachments"],
-	"errorContext" | "compiledErrorContext" | "traverseApply" | "compile"
->
 
 export type nodeImplementationOf<d extends RawNodeDeclaration> =
 	nodeImplementationInputOf<d> & {
@@ -460,11 +400,4 @@ export const implementNode = <d extends RawNodeDeclaration = never>(
 		}
 	}
 	return implementation as never
-}
-
-export type NodeAttachments<d extends RawNodeDeclaration> = {
-	traverseAllows: TraverseAllows<d["prerequisite"]>
-	traverseApply: TraverseApply<d["prerequisite"]>
-	expression: string
-	compile(js: NodeCompiler): void
 }

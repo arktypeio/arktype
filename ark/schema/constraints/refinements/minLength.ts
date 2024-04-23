@@ -6,7 +6,6 @@ import {
 	BaseRange,
 	type BaseRangeInner,
 	type LengthBoundableData,
-	type RangeAttachments,
 	parseExclusiveKey
 } from "./range.js"
 
@@ -27,11 +26,7 @@ export type MinLengthDeclaration = declareNode<{
 	inner: MinLengthInner
 	prerequisite: LengthBoundableData
 	errorContext: MinLengthInner
-	attachments: MinLengthAttachments
 }>
-
-export interface MinLengthAttachments
-	extends RangeAttachments<MinLengthDeclaration> {}
 
 export const minLengthImplementation = implementNode<MinLengthDeclaration>({
 	kind: "minLength",

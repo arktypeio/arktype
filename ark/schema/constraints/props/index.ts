@@ -3,14 +3,9 @@ import type { SchemaDef } from "../../node.js"
 import type { RawSchema } from "../../schema.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
-import {
-	implementNode,
-	type NodeAttachments,
-	type SchemaKind
-} from "../../shared/implement.js"
+import { implementNode, type SchemaKind } from "../../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/traversal.js"
 import { RawConstraint } from "../constraint.js"
-import type { ConstraintAttachments } from "../util.js"
 
 export interface IndexDef extends BaseMeta {
 	readonly key: SchemaDef
@@ -30,12 +25,7 @@ export type IndexDeclaration = declareNode<{
 	prerequisite: object
 	intersectionIsOpen: true
 	childKind: SchemaKind
-	attachments: IndexAttachments
 }>
-
-export interface IndexAttachments
-	extends NodeAttachments<IndexDeclaration>,
-		ConstraintAttachments {}
 
 export const indexImplementation = implementNode<IndexDeclaration>({
 	kind: "index",
@@ -66,8 +56,8 @@ export const indexImplementation = implementNode<IndexDeclaration>({
 })
 
 export class IndexNode extends RawConstraint<IndexDeclaration> {
-	readonly impliedBasis = this.$.keywords.object.raw
-	readonly expression = `[${this.key.expression}]: ${this.value.expression}`
+	impliedBasis = this.$.keywords.object.raw
+	expression = `[${this.key.expression}]: ${this.value.expression}`
 
 	traverseAllows: TraverseAllows<object> = (data, ctx) =>
 		Object.entries(data).every(

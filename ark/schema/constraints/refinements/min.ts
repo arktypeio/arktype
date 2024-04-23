@@ -5,7 +5,6 @@ import {
 	type BaseNormalizedRangeSchema,
 	BaseRange,
 	type BaseRangeInner,
-	type RangeAttachments,
 	parseExclusiveKey
 } from "./range.js"
 
@@ -26,10 +25,7 @@ export type MinDeclaration = declareNode<{
 	inner: MinInner
 	prerequisite: number
 	errorContext: MinInner
-	attachments: MinAttachments
 }>
-
-export interface MinAttachments extends RangeAttachments<MinDeclaration> {}
 
 export const minImplementation = implementNode<MinDeclaration>({
 	kind: "min",
