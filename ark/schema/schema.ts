@@ -73,10 +73,11 @@ export abstract class RawSchema<
 	keyof(): RawSchema {
 		if (!this.#keyofCache) {
 			this.#keyofCache = this.rawKeyOf()
-			if (this.#keyofCache.branches.length === 0)
-				{throwParseError(
+			if (this.#keyofCache.branches.length === 0) {
+				throwParseError(
 					`keyof ${this.expression} results in an unsatisfiable type`
-				)}
+				)
+			}
 		}
 		return this.#keyofCache as never
 	}
@@ -112,14 +113,14 @@ export abstract class RawSchema<
 	extract(r: unknown): RawSchema {
 		const rNode = this.$.parseRoot(r)
 		return this.$.schema(
-			this.branches.filter((branch) => branch.extends(rNode))
+			this.branches.filter(branch => branch.extends(rNode))
 		) as never
 	}
 
 	exclude(r: UnknownSchema): RawSchema {
 		const rNode = this.$.parseRoot(r)
 		return this.$.schema(
-			this.branches.filter((branch) => !branch.extends(rNode))
+			this.branches.filter(branch => !branch.extends(rNode))
 		) as never
 	}
 
@@ -156,7 +157,7 @@ export abstract class RawSchema<
 
 	morph(morph: Morph, outValidator?: unknown): RawSchema {
 		if (this.hasKind("union")) {
-			const branches = this.branches.map((node) =>
+			const branches = this.branches.map(node =>
 				node.morph(morph, outValidator as never)
 			)
 			return this.$.node("union", { ...this.inner, branches })

@@ -37,20 +37,20 @@ export const beforeImplementation = implementNode<BeforeDeclaration>({
 	keys: {
 		rule: {
 			parse: parseDateLimit,
-			serialize: (def) => def.toISOString()
+			serialize: def => def.toISOString()
 		},
 		exclusive: parseExclusiveKey
 	},
-	normalize: (def) =>
+	normalize: def =>
 		typeof def === "number" || typeof def === "string" || def instanceof Date ?
 			{ rule: def }
 		:	def,
 	defaults: {
-		description: (node) =>
+		description: node =>
 			node.exclusive ?
 				`before ${node.stringLimit}`
 			:	`${node.stringLimit} or earlier`,
-		actual: (data) => data.toLocaleString()
+		actual: data => data.toLocaleString()
 	},
 	intersections: {
 		before: (l, r) => (l.isStricterThan(r) ? l : r),
@@ -65,7 +65,7 @@ export const beforeImplementation = implementNode<BeforeDeclaration>({
 
 export class BeforeNode extends BaseRange<BeforeDeclaration> {
 	traverseAllows: TraverseAllows<Date> =
-		this.exclusive ? (data) => data < this.rule : (data) => data <= this.rule
+		this.exclusive ? data => data < this.rule : data => data <= this.rule
 
 	impliedBasis = this.$.keywords.Date.raw
 }

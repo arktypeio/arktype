@@ -64,7 +64,7 @@ const fixedSequenceKeyDefinition: NodeKeyImplementation<
 			// empty affixes are omitted. an empty array should therefore
 			// be specified as `{ proto: Array, length: 0 }`
 			undefined
-		:	def.map((element) => ctx.$.schema(element))
+		:	def.map(element => ctx.$.schema(element))
 }
 
 export const sequenceImplementation = implementNode<SequenceDeclaration>({
@@ -83,14 +83,13 @@ export const sequenceImplementation = implementNode<SequenceDeclaration>({
 			// but not its IntersectionNode parent since it is superceded by the minLength
 			// node it implies
 			implied: true,
-			parse: (min) => (min === 0 ? undefined : min)
+			parse: min => (min === 0 ? undefined : min)
 		},
 		postfix: fixedSequenceKeyDefinition
 	},
-	normalize: (def) => {
-		if (typeof def === "string") 
-			return { variadic: def }
-		
+	normalize: def => {
+		if (typeof def === "string") return { variadic: def }
+
 		if (
 			"variadic" in def ||
 			"prefix" in def ||
@@ -99,12 +98,10 @@ export const sequenceImplementation = implementNode<SequenceDeclaration>({
 			"minVariadicLength" in def
 		) {
 			if (def.postfix?.length) {
-				if (!def.variadic) 
-					return throwParseError(postfixWithoutVariadicMessage)
-				
-				if (def.optional?.length) 
+				if (!def.variadic) return throwParseError(postfixWithoutVariadicMessage)
+
+				if (def.optional?.length)
 					return throwParseError(postfixFollowingOptionalMessage)
-				
 			}
 			if (def.minVariadicLength && !def.variadic) {
 				return throwParseError(
@@ -122,9 +119,7 @@ export const sequenceImplementation = implementNode<SequenceDeclaration>({
 		const postfix = raw.postfix?.slice() ?? []
 		if (raw.variadic) {
 			// optional elements equivalent to the variadic parameter are redundant
-			while (optional.at(-1)?.equals(raw.variadic)) 
-				optional.pop()
-			
+			while (optional.at(-1)?.equals(raw.variadic)) optional.pop()
 
 			if (optional.length === 0) {
 				// If there are no optional, normalize prefix
@@ -172,10 +167,10 @@ export const sequenceImplementation = implementNode<SequenceDeclaration>({
 		}
 	},
 	defaults: {
-		description: (node) => {
+		description: node => {
 			if (node.isVariadicOnly) return `${node.variadic!.nestableExpression}[]`
 			const innerDescription = node.tuple
-				.map((element) =>
+				.map(element =>
 					element.kind === "optional" ? `${element.node.nestableExpression}?`
 					: element.kind === "variadic" ?
 						`...${element.node.nestableExpression}[]`
@@ -207,7 +202,7 @@ export const sequenceImplementation = implementNode<SequenceDeclaration>({
 					ctx.$.node("sequence", sequenceTupleToInner(viableBranches[0].result))
 				:	ctx.$.node(
 						"union",
-						viableBranches.map((state) => ({
+						viableBranches.map(state => ({
 							proto: Array,
 							sequence: sequenceTupleToInner(state.result)
 						}))
@@ -259,9 +254,7 @@ export class SequenceNode extends RawConstraint<SequenceDeclaration> {
 	// minLength/maxLength should be checked by Intersection before either traversal
 	traverseAllows: TraverseAllows<array> = (data, ctx) => {
 		for (let i = 0; i < data.length; i++) {
-			if (!this.childAtIndex(data, i).traverseAllows(data[i], ctx)) 
-				return false
-			
+			if (!this.childAtIndex(data, i).traverseAllows(data[i], ctx)) return false
 		}
 		return true
 	}
@@ -300,9 +293,7 @@ export class SequenceNode extends RawConstraint<SequenceDeclaration> {
 			)
 		}
 
-		if (js.traversalKind === "Allows") 
-			js.return(true)
-		
+		if (js.traversalKind === "Allows") js.return(true)
 	}
 
 	tuple = sequenceInnerToTuple(this.inner)
@@ -312,20 +303,18 @@ export class SequenceNode extends RawConstraint<SequenceDeclaration> {
 
 const sequenceInnerToTuple = (inner: SequenceInner): SequenceTuple => {
 	const tuple: mutable<SequenceTuple> = []
-	inner.prefix?.forEach((node) => tuple.push({ kind: "prefix", node }))
-	inner.optional?.forEach((node) => tuple.push({ kind: "optional", node }))
+	inner.prefix?.forEach(node => tuple.push({ kind: "prefix", node }))
+	inner.optional?.forEach(node => tuple.push({ kind: "optional", node }))
 	if (inner.variadic) tuple.push({ kind: "variadic", node: inner.variadic })
-	inner.postfix?.forEach((node) => tuple.push({ kind: "postfix", node }))
+	inner.postfix?.forEach(node => tuple.push({ kind: "postfix", node }))
 	return tuple
 }
 
 const sequenceTupleToInner = (tuple: SequenceTuple): SequenceInner =>
 	tuple.reduce<MutableInner<"sequence">>((result, node) => {
-		if (node.kind === "variadic") 
-			result.variadic = node.node
-		 else 
-			result[node.kind] = append(result[node.kind], node.node)
-		
+		if (node.kind === "variadic") result.variadic = node.node
+		else result[node.kind] = append(result[node.kind], node.node)
+
 		return result
 	}, {})
 
@@ -366,9 +355,7 @@ const intersectSequences = (
 	const [lHead, ...lTail] = s.l
 	const [rHead, ...rTail] = s.r
 
-	if (!lHead || !rHead) 
-		return s
-	
+	if (!lHead || !rHead) return s
 
 	const lHasPostfix = lTail.at(-1)?.kind === "postfix"
 	const rHasPostfix = rTail.at(-1)?.kind === "postfix"
@@ -389,11 +376,10 @@ const intersectSequences = (
 		const postfixBranchResult = intersectSequences({
 			...s,
 			fixedVariants: [],
-			r: rTail.map((element) => ({ ...element, kind: "prefix" }))
+			r: rTail.map(element => ({ ...element, kind: "prefix" }))
 		})
-		if (postfixBranchResult.disjoint.isEmpty()) 
+		if (postfixBranchResult.disjoint.isEmpty())
 			s.fixedVariants.push(postfixBranchResult)
-		
 	} else if (
 		rHead.kind === "prefix" &&
 		lHead.kind === "variadic" &&
@@ -402,11 +388,10 @@ const intersectSequences = (
 		const postfixBranchResult = intersectSequences({
 			...s,
 			fixedVariants: [],
-			l: lTail.map((element) => ({ ...element, kind: "prefix" }))
+			l: lTail.map(element => ({ ...element, kind: "prefix" }))
 		})
-		if (postfixBranchResult.disjoint.isEmpty()) 
+		if (postfixBranchResult.disjoint.isEmpty())
 			s.fixedVariants.push(postfixBranchResult)
-		
 	}
 
 	const result = intersectNodes(lHead.node, rHead.node, s.ctx)
@@ -433,13 +418,11 @@ const intersectSequences = (
 				fixedVariants: [],
 				// if there were any optional elements, there will be no postfix elements
 				// so this mapping will never occur (which would be illegal otherwise)
-				l: lTail.map((element) => ({ ...element, kind: "prefix" })),
-				r: lTail.map((element) => ({ ...element, kind: "prefix" }))
+				l: lTail.map(element => ({ ...element, kind: "prefix" })),
+				r: lTail.map(element => ({ ...element, kind: "prefix" }))
 			})
 		}
-	} else 
-		s.result = [...s.result, { kind, node: result }]
-	
+	} else s.result = [...s.result, { kind, node: result }]
 
 	const lRemaining = s.l.length
 	const rRemaining = s.r.length
@@ -448,17 +431,15 @@ const intersectSequences = (
 		lHead.kind !== "variadic" ||
 		(lRemaining >= rRemaining &&
 			(rHead.kind === "variadic" || rRemaining === 1))
-	) 
+	)
 		s.l = lTail
-	
 
 	if (
 		rHead.kind !== "variadic" ||
 		(rRemaining >= lRemaining &&
 			(lHead.kind === "variadic" || lRemaining === 1))
-	) 
+	)
 		s.r = rTail
-	
 
 	return intersectSequences(s)
 }

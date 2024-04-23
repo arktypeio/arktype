@@ -36,9 +36,9 @@ export const maxImplementation = implementNode<MaxDeclaration>({
 		rule: {},
 		exclusive: parseExclusiveKey
 	},
-	normalize: (def) => (typeof def === "number" ? { rule: def } : def),
+	normalize: def => (typeof def === "number" ? { rule: def } : def),
 	defaults: {
-		description: (node) =>
+		description: node =>
 			`${node.exclusive ? "less than" : "at most"} ${node.rule}`
 	},
 	intersections: {
@@ -56,5 +56,5 @@ export class MaxNode extends BaseRange<MaxDeclaration> {
 	impliedBasis = this.$.keywords.number.raw
 
 	traverseAllows: TraverseAllows<number> =
-		this.exclusive ? (data) => data < this.rule : (data) => data <= this.rule
+		this.exclusive ? data => data < this.rule : data => data <= this.rule
 }

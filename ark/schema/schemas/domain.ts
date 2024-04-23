@@ -34,7 +34,7 @@ export type DomainDeclaration = declareNode<{
 }>
 
 export class DomainNode extends RawBasis<DomainDeclaration> {
-	traverseAllows: TraverseAllows = (data) => domainOf(data) === this.domain
+	traverseAllows: TraverseAllows = data => domainOf(data) === this.domain
 
 	readonly compiledCondition =
 		this.domain === "object" ?
@@ -57,10 +57,10 @@ export const domainImplementation = implementNode<DomainDeclaration>({
 	keys: {
 		domain: {}
 	},
-	normalize: (def) => (typeof def === "string" ? { domain: def } : def),
+	normalize: def => (typeof def === "string" ? { domain: def } : def),
 	defaults: {
-		description: (node) => domainDescriptions[node.domain],
-		actual: (data) => (typeof data === "boolean" ? `${data}` : domainOf(data))
+		description: node => domainDescriptions[node.domain],
+		actual: data => (typeof data === "boolean" ? `${data}` : domainOf(data))
 	},
 	intersections: {
 		domain: (l, r) => Disjoint.from("domain", l, r)

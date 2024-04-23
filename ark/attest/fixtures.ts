@@ -11,16 +11,15 @@ export const setup = (options: Partial<AttestConfig> = {}): void => {
 	Object.assign(config, options)
 	rmSync(config.cacheDir, { recursive: true, force: true })
 	ensureCacheDirs()
-	if (config.skipTypes) 
-		return
-	
+	if (config.skipTypes) return
+
 	if (
 		config.tsVersions.length === 1 &&
 		config.tsVersions[0].alias === "typescript"
-	) 
+	)
 		writeAssertionData(join(config.assertionCacheDir, "typescript.json"))
-	 else {
-		forTypeScriptVersions(config.tsVersions, (version) =>
+	else {
+		forTypeScriptVersions(config.tsVersions, version =>
 			shell(
 				`npm exec -c "attestPrecache ${join(
 					config.assertionCacheDir,

@@ -8,9 +8,8 @@ export const parseDivisor = (s: DynamicStateWithRoot): void => {
 	const divisor = tryParseInteger(divisorToken, {
 		errorOnFail: writeInvalidDivisorMessage(divisorToken)
 	})
-	if (divisor === 0) 
-		s.error(writeInvalidDivisorMessage(0))
-	
+	if (divisor === 0) s.error(writeInvalidDivisorMessage(0))
+
 	s.root = s.root.constrain("divisor", divisor)
 }
 

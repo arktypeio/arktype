@@ -37,13 +37,13 @@ export const maxLengthImplementation = implementNode<MaxLengthDeclaration>({
 		rule: {},
 		exclusive: parseExclusiveKey
 	},
-	normalize: (def) => (typeof def === "number" ? { rule: def } : def),
+	normalize: def => (typeof def === "number" ? { rule: def } : def),
 	defaults: {
-		description: (node) =>
+		description: node =>
 			node.exclusive ?
 				`less than length ${node.rule}`
 			:	`at most length ${node.rule}`,
-		actual: (data) => `${data.length}`
+		actual: data => `${data.length}`
 	},
 	intersections: {
 		maxLength: (l, r) => (l.isStricterThan(r) ? l : r),
@@ -61,6 +61,6 @@ export class MaxLengthNode extends BaseRange<MaxLengthDeclaration> {
 
 	traverseAllows: TraverseAllows<LengthBoundableData> =
 		this.exclusive ?
-			(data) => data.length < this.rule
-		:	(data) => data.length <= this.rule
+			data => data.length < this.rule
+		:	data => data.length <= this.rule
 }

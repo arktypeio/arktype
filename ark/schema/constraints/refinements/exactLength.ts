@@ -28,7 +28,7 @@ export const exactLengthImplementation = implementNode<ExactLengthDeclaration>({
 	keys: {
 		rule: {}
 	},
-	normalize: (def) => (typeof def === "number" ? { rule: def } : def),
+	normalize: def => (typeof def === "number" ? { rule: def } : def),
 	intersections: {
 		exactLength: (l, r, ctx) =>
 			new Disjoint({
@@ -58,12 +58,12 @@ export const exactLengthImplementation = implementNode<ExactLengthDeclaration>({
 	},
 	hasAssociatedError: true,
 	defaults: {
-		description: (node) => `exactly length ${node.rule}`
+		description: node => `exactly length ${node.rule}`
 	}
 })
 
 export class ExactLengthNode extends RawPrimitiveConstraint<ExactLengthDeclaration> {
-	traverseAllows: TraverseAllows<LengthBoundableData> = (data) =>
+	traverseAllows: TraverseAllows<LengthBoundableData> = data =>
 		data.length === this.rule
 
 	readonly compiledCondition = `data.length === ${this.rule}`

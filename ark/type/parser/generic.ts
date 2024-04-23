@@ -29,9 +29,8 @@ export type emptyGenericParameterMessage = typeof emptyGenericParameterMessage
 
 const $parseGenericParams = (scanner: Scanner): string[] => {
 	const param = scanner.shiftUntilNextTerminator()
-	if (param === "") 
-		throwParseError(emptyGenericParameterMessage)
-	
+	if (param === "") throwParseError(emptyGenericParameterMessage)
+
 	scanner.shiftUntilNonWhitespace()
 	const nextNonWhitespace = scanner.shift()
 	return (

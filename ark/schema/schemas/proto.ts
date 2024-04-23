@@ -47,22 +47,22 @@ export const protoImplementation = implementNode<ProtoDeclaration>({
 	collapsibleKey: "proto",
 	keys: {
 		proto: {
-			serialize: (ctor) =>
+			serialize: ctor =>
 				getExactBuiltinConstructorName(ctor) ?? defaultValueSerializer(ctor)
 		}
 	},
-	normalize: (def) =>
+	normalize: def =>
 		typeof def === "string" ? { proto: builtinObjectKinds[def] }
 		: typeof def === "function" ? { proto: def }
 		: typeof def.proto === "string" ?
 			{ ...def, proto: builtinObjectKinds[def.proto] }
 		:	(def as ExpandedProtoDef<Constructor>),
 	defaults: {
-		description: (node) =>
+		description: node =>
 			node.builtinName ?
 				objectKindDescriptions[node.builtinName]
 			:	`an instance of ${node.proto.name}`,
-		actual: (data) => objectKindOrDomainOf(data)
+		actual: data => objectKindOrDomainOf(data)
 	},
 	intersections: {
 		proto: (l, r) =>
@@ -83,7 +83,7 @@ export class ProtoNode extends RawBasis<ProtoDeclaration> {
 	compiledNegation = `!(${this.compiledCondition})`
 	literalKeys = prototypeKeysOf(this.proto.prototype)
 
-	traverseAllows: TraverseAllows = (data) => data instanceof this.proto
+	traverseAllows: TraverseAllows = data => data instanceof this.proto
 	expression = this.proto.name
 	readonly domain = "object"
 }

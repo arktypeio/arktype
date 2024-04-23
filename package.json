@@ -85,7 +85,8 @@
 		"useTabs": true,
 		"semi": false,
 		"trailingComma": "none",
-		"experimentalTernaries": true
+		"experimentalTernaries": true,
+		"arrowParens": "avoid"
 	},
 	"eslintConfig": {
 		"extends": "./ark/repo/.eslintrc.cjs"

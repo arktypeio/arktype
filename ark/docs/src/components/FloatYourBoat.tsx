@@ -11,9 +11,9 @@ export const FloatYourBoat = () => {
 		const width = window.innerWidth
 		const loopDuration = width / BOB_WIDTH_PX
 		const bobFrames: number[] = []
-		for (let i = 0; i < loopDuration; i++) 
+		for (let i = 0; i < loopDuration; i++)
 			bobFrames.push(i % 2 ? BOB_HEIGHT_PX : 0)
-		
+
 		createRoot(
 			document.getElementsByClassName("header")[0].appendChild(boatContainer)
 		).render(<Boat loopDuration={loopDuration} bobFrames={bobFrames} />)

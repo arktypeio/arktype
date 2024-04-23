@@ -61,9 +61,7 @@ export const unionImplementation = implementNode<UnionDeclaration>({
 		branches: {
 			child: true,
 			parse: (def, ctx) => {
-				const branches = def.map((branch) =>
-					ctx.$.node(unionChildKinds, branch)
-				)
+				const branches = def.map(branch => ctx.$.node(unionChildKinds, branch))
 				const raw = ctx.raw as UnionDef
 				if (isArray(raw) || raw.ordered !== true)
 					branches.sort((l, r) => (l.innerId < r.innerId ? -1 : 1))
@@ -72,7 +70,7 @@ export const unionImplementation = implementNode<UnionDeclaration>({
 			}
 		}
 	},
-	normalize: (def) => (isArray(def) ? { branches: def } : def),
+	normalize: def => (isArray(def) ? { branches: def } : def),
 	reduce: (inner, $) => {
 		const reducedBranches = reduceBranches(inner)
 		if (reducedBranches.length === 1) return reducedBranches[0]
@@ -89,20 +87,17 @@ export const unionImplementation = implementNode<UnionDeclaration>({
 		)
 	},
 	defaults: {
-		description: (node) => {
-			if (node.isBoolean) return "boolean"
-
-			return describeBranches(node.branches.map((branch) => branch.description))
+		description: node => {
+			return describeBranches(node.branches.map(branch => branch.description))
 		},
-		expected: (ctx) => {
-			const byPath = groupBy(ctx.errors, "propString") as Record<
-				string,
-				ArkTypeError[]
-			>
+		expected: ctx => {
+			const byPath = groupBy(
+				ctx.errors.flatMap(e => e),
+				"propString"
+			) as Record<string, ArkTypeError[]>
 			const pathDescriptions = Object.entries(byPath).map(([path, errors]) => {
-				errors.map((_) => _.expected)
 				const branchesAtPath: string[] = []
-				errors.forEach((errorAtPath) =>
+				errors.forEach(errorAtPath =>
 					// avoid duplicate messages when multiple branches
 					// are invalid due to the same error
 					appendUnique(branchesAtPath, errorAtPath.expected)
@@ -121,8 +116,8 @@ export const unionImplementation = implementNode<UnionDeclaration>({
 			})
 			return describeBranches(pathDescriptions)
 		},
-		problem: (ctx) => ctx.expected,
-		message: (ctx) => ctx.problem
+		problem: ctx => ctx.expected,
+		message: ctx => ctx.problem
 	},
 	intersections: {
 		union: (l, r, ctx) => {
@@ -178,10 +173,10 @@ export class UnionNode extends RawSchema<UnionDeclaration> {
 	discriminant = null
 	expression =
 		this.isBoolean ? "boolean" : (
-			this.branches.map((branch) => branch.nestableExpression).join(" | ")
+			this.branches.map(branch => branch.nestableExpression).join(" | ")
 		)
 	traverseAllows: TraverseAllows = (data, ctx) =>
-		this.branches.some((b) => b.traverseAllows(data, ctx))
+		this.branches.some(b => b.traverseAllows(data, ctx))
 
 	traverseApply: TraverseApply = (data, ctx) => {
 		const errors: ArkTypeError[] = []
@@ -198,7 +193,7 @@ export class UnionNode extends RawSchema<UnionDeclaration> {
 	compile(js: NodeCompiler): void {
 		if (js.traversalKind === "Apply") {
 			js.const("errors", "[]")
-			this.branches.forEach((branch) =>
+			this.branches.forEach(branch =>
 				js
 					.line("ctx.pushBranch()")
 					.line(js.invoke(branch))
@@ -209,7 +204,7 @@ export class UnionNode extends RawSchema<UnionDeclaration> {
 			)
 			js.line(`ctx.error({ code: "union", errors })`)
 		} else {
-			this.branches.forEach((branch) =>
+			this.branches.forEach(branch =>
 				js.if(`${js.invoke(branch)}`, () => js.return(true))
 			)
 			js.return(false)
@@ -233,14 +228,14 @@ export class UnionNode extends RawSchema<UnionDeclaration> {
 const describeBranches = (descriptions: string[]) => {
 	if (descriptions.length === 0) return "never"
 
-	if (descriptions.length === 1) descriptions[0]
+	if (descriptions.length === 1) return descriptions[0]
 	if (
 		(descriptions.length === 2 &&
 			descriptions[0] === "false" &&
 			descriptions[1] === "true") ||
 		(descriptions[0] === "true" && descriptions[1] === "false")
 	)
-		"a boolean"
+		return "boolean"
 	let description = ""
 	for (let i = 0; i < descriptions.length - 1; i++) {
 		description += descriptions[i]
@@ -387,7 +382,7 @@ export const intersectBranches = (
 	// 		2. Original r branches corresponding to indices with a null batch (subtypes of l)
 	const resultBranches = batchesByR.flatMap(
 		// ensure unions returned from branchable intersections like sequence are flattened
-		(batch, i) => batch?.flatMap((branch) => branch.branches) ?? r[i]
+		(batch, i) => batch?.flatMap(branch => branch.branches) ?? r[i]
 	)
 	return resultBranches.length === 0 ?
 			Disjoint.from("union", l, r)

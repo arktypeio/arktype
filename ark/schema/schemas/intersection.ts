@@ -87,11 +87,11 @@ export class IntersectionNode extends RawSchema<IntersectionDeclaration> {
 
 	expression =
 		this.props?.expression ||
-		this.children.map((node) => node.nestableExpression).join(" & ") ||
+		this.children.map(node => node.nestableExpression).join(" & ") ||
 		"unknown"
 
 	traverseAllows: TraverseAllows = (data, ctx) =>
-		this.traversables.every((traversable) =>
+		this.traversables.every(traversable =>
 			traversable.traverseAllows(data as never, ctx)
 		)
 
@@ -123,7 +123,7 @@ export class IntersectionNode extends RawSchema<IntersectionDeclaration> {
 
 	compile(js: NodeCompiler): void {
 		if (js.traversalKind === "Allows") {
-			this.traversables.forEach((traversable) =>
+			this.traversables.forEach(traversable =>
 				isNode(traversable) ? js.check(traversable) : traversable.compile(js)
 			)
 			js.return(true)
@@ -185,7 +185,7 @@ const intersectionChildKeyParser =
 				return
 			}
 			return def
-				.map((schema) => ctx.$.node(kind, schema as never))
+				.map(schema => ctx.$.node(kind, schema as never))
 				.sort((l, r) => (l.innerId < r.innerId ? -1 : 1)) as never
 		}
 		const child = ctx.$.node(kind, def)
@@ -236,7 +236,7 @@ export const intersectionImplementation =
 	implementNode<IntersectionDeclaration>({
 		kind: "intersection",
 		hasAssociatedError: true,
-		normalize: (schema) => schema,
+		normalize: schema => schema,
 		keys: {
 			domain: {
 				child: true,
@@ -299,7 +299,7 @@ export const intersectionImplementation =
 				parse: intersectionChildKeyParser("sequence")
 			},
 			onExtraneousKey: {
-				parse: (def) => (def === "ignore" ? undefined : def)
+				parse: def => (def === "ignore" ? undefined : def)
 			}
 		},
 		// leverage reduction logic from intersection and identity to ensure initial
@@ -313,14 +313,14 @@ export const intersectionImplementation =
 				pipe: false
 			}) as Node<"intersection" | IntersectionBasisKind>,
 		defaults: {
-			description: (node) =>
+			description: node =>
 				node.children.length === 0 ?
 					"unknown"
 				:	node.props?.description ??
-					node.children.map((child) => child.description).join(" and "),
-			expected: (source) =>
-				`  • ${source.errors.map((e) => e.expected).join("\n  • ")}`,
-			problem: (ctx) => `must be...\n${ctx.expected}`
+					node.children.map(child => child.description).join(" and "),
+			expected: source =>
+				`  • ${source.errors.map(e => e.expected).join("\n  • ")}`,
+			problem: ctx => `must be...\n${ctx.expected}`
 		},
 		intersections: {
 			intersection: intersectIntersections,
@@ -433,7 +433,7 @@ const intersectConstraints = (
 	}
 	if (!matched) s.l.push(head)
 
-	head.impliedSiblings?.forEach((node) => appendUnique(s.r, node))
+	head.impliedSiblings?.forEach(node => appendUnique(s.r, node))
 	return intersectConstraints(s)
 }
 

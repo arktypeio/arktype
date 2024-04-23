@@ -26,7 +26,7 @@ export const divisorImplementation = implementNode<DivisorDeclaration>({
 	keys: {
 		rule: {}
 	},
-	normalize: (def) => (typeof def === "number" ? { rule: def } : def),
+	normalize: def => (typeof def === "number" ? { rule: def } : def),
 	intersections: {
 		divisor: (l, r, ctx) =>
 			ctx.$.node("divisor", {
@@ -37,13 +37,13 @@ export const divisorImplementation = implementNode<DivisorDeclaration>({
 	},
 	hasAssociatedError: true,
 	defaults: {
-		description: (node) =>
+		description: node =>
 			node.rule === 1 ? "an integer" : `a multiple of ${node.rule}`
 	}
 })
 
 export class DivisorNode extends RawPrimitiveConstraint<DivisorDeclaration> {
-	traverseAllows: TraverseAllows<number> = (data) => data % this.rule === 0
+	traverseAllows: TraverseAllows<number> = data => data % this.rule === 0
 
 	readonly compiledCondition = `data % ${this.rule} === 0`
 	readonly compiledNegation = `data % ${this.rule} !== 0`

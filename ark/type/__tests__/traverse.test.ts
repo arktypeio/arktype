@@ -48,8 +48,8 @@ contextualize(() => {
 			{ isEven: "number%2" },
 			{
 				divisor: {
-					expected: (ctx) => `% ${ctx.rule} !== 0`,
-					problem: (ctx) => `${ctx.actual} ${ctx.expected}`
+					expected: ctx => `% ${ctx.rule} !== 0`,
+					problem: ctx => `${ctx.actual} ${ctx.expected}`
 				}
 			}
 		).export()

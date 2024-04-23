@@ -12,14 +12,10 @@ export const isLuhnValid = (creditCardInput: string): boolean => {
 		tmpNum = Number.parseInt(digit, 10)
 		if (shouldDouble) {
 			tmpNum *= 2
-			if (tmpNum >= 10) 
-				sum += (tmpNum % 10) + 1
-			 else 
-				sum += tmpNum
-			
-		} else 
-			sum += tmpNum
-		
+			if (tmpNum >= 10) sum += (tmpNum % 10) + 1
+			else sum += tmpNum
+		} else sum += tmpNum
+
 		shouldDouble = !shouldDouble
 	}
 	return !!(sum % 10 === 0 ? sanitized : false)

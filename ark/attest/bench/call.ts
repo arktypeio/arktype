@@ -191,12 +191,12 @@ export class BenchAssertions<
 		:	Measure<TimeUnit> | undefined
 	) {
 		if (this.ctx.isAsync) {
-			return new Promise((resolve) => {
+			return new Promise(resolve => {
 				this.callTimesAsync().then(
-					(callTimes) => {
+					callTimes => {
 						resolve(this.createAssertion(name, baseline, callTimes))
 					},
-					(e) => {
+					e => {
 						this.addUnhandledBenchException(e)
 						resolve(chainableNoOpProxy)
 					}

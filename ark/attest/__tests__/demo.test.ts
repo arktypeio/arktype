@@ -7,9 +7,7 @@ import { type } from "arktype"
 
 const o = { ark: "type" } as const
 const shouldThrow = (a: false) => {
-	if (a) 
-		throw new Error(`${a} is not assignable to false`)
-	
+	if (a) throw new Error(`${a} is not assignable to false`)
 }
 
 contextualize(() => {

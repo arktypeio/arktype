@@ -19,7 +19,7 @@ let inThrowInternalCall = false
 const stack = []
 const throwInternalRegex = /throwInternal.*\(/
 
-CovSource.prototype._parseIgnore = (lineStr) => {
+CovSource.prototype._parseIgnore = lineStr => {
 	if (throwInternalRegex.test(lineStr)) {
 		inThrowInternalCall = true
 	}
@@ -33,11 +33,11 @@ CovSource.prototype._parseIgnore = (lineStr) => {
 	}
 }
 
-const isBalanced = (lineStr) => {
+const isBalanced = lineStr => {
 	const filteredMatchers = lineStr
 		.split(" ")
 		.filter(
-			(section) =>
+			section =>
 				throwInternalRegex.test(section) |
 				section.includes("(") |
 				section.includes(")") |

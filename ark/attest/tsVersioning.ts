@@ -28,9 +28,8 @@ export const forTypeScriptVersions = (
 	const nodeModules = join(findPackageRoot(process.cwd()), "node_modules")
 	const tsPrimaryPath = join(nodeModules, "typescript")
 	const tsTemporaryPath = join(nodeModules, "typescript-temp")
-	if (existsSync(tsPrimaryPath)) 
-		renameSync(tsPrimaryPath, tsTemporaryPath)
-	
+	if (existsSync(tsPrimaryPath)) renameSync(tsPrimaryPath, tsTemporaryPath)
+
 	try {
 		for (const version of versions) {
 			const targetPath =
@@ -46,9 +45,8 @@ export const forTypeScriptVersions = (
 			)
 
 			try {
-				if (existsSync(tsPrimaryPath)) 
-					unlinkSync(tsPrimaryPath)
-				
+				if (existsSync(tsPrimaryPath)) unlinkSync(tsPrimaryPath)
+
 				symlinkSync(targetPath, tsPrimaryPath)
 				fn(version)
 				passedVersions.push(version)
@@ -61,13 +59,13 @@ export const forTypeScriptVersions = (
 		if (failedVersions.length !== 0) {
 			throw new Error(
 				`❌ The following TypeScript versions threw: ${failedVersions
-					.map((v) => `${v.alias} (${v.version})`)
+					.map(v => `${v.alias} (${v.version})`)
 					.join(", ")}`
 			)
 		}
 		console.log(
 			`✅ Successfully ran TypeScript versions ${passedVersions
-				.map((v) => `${v.alias} (${v.version})`)
+				.map(v => `${v.alias} (${v.version})`)
 				.join(", ")}`
 		)
 	} finally {
@@ -119,9 +117,8 @@ export const findAttestTypeScriptVersions = (): TsVersionData[] => {
 			...packageJson.devDependencies
 		}
 		for (const alias in dependencies) {
-			if (!alias.startsWith("typescript")) 
-				continue
-			
+			if (!alias.startsWith("typescript")) continue
+
 			const path = join(nodeModulesPath, alias)
 			if (!existsSync(path)) {
 				throw Error(

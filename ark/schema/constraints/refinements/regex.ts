@@ -28,7 +28,7 @@ export const regexImplementation = implementNode<RegexDeclaration>({
 		rule: {},
 		flags: {}
 	},
-	normalize: (def) =>
+	normalize: def =>
 		typeof def === "string" ? { rule: def }
 		: def instanceof RegExp ?
 			def.flags ?
@@ -42,7 +42,7 @@ export const regexImplementation = implementNode<RegexDeclaration>({
 		regex: () => null
 	},
 	defaults: {
-		description: (node) => `matched by ${node.rule}`
+		description: node => `matched by ${node.rule}`
 	}
 })
 

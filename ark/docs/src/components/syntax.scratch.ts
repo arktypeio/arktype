@@ -32,7 +32,7 @@ export const validationSyntax = type({
 	divisibility: "number%10", // a multiple of 10
 	bound: "alpha>10", // an alpha-only string with more than 10 characters
 	range: "1<=email[]<100", // a list of 1 to 99 emails
-	narrows: ["number", ":", (n) => n % 2 === 1], // an odd integer
+	narrows: ["number", ":", n => n % 2 === 1], // an odd integer
 	morphs: ["string", "=>", parseFloat] // validates a string input then parses it to a number
 })
 
@@ -48,7 +48,7 @@ export const parseBigintLiteral = type({ value: "string" })
 	.narrow((data): data is { value: `${string}n`; format: "bigint" } =>
 		data.value.endsWith("n")
 	)
-	.morph((data) => BigInt(data.value.slice(-1)))
+	.morph(data => BigInt(data.value.slice(-1)))
 
 export const out = parseBigintLiteral("999n")
 //             ^?

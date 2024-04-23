@@ -4,7 +4,7 @@ import { scope, type, type Type } from "arktype"
 
 contextualize(() => {
 	it("base", () => {
-		const t = type("number").morph((data) => `${data}`)
+		const t = type("number").morph(data => `${data}`)
 		attest<Type<(In: number) => Out<string>>>(t)
 		attest<string>(t.infer)
 		attest<number>(t.in.infer)
@@ -15,20 +15,20 @@ contextualize(() => {
 	})
 
 	it("within type", () => {
-		const t = type(["boolean", "=>", (data) => !data])
+		const t = type(["boolean", "=>", data => !data])
 		attest<Type<(In: boolean) => Out<boolean>>>(t)
 		const out = t(true)
 		attest<boolean | type.errors>(out).equals(false)
 	})
 
 	it("any as out", () => {
-		const t = type("string", "=>", (s) => s as any)
+		const t = type("string", "=>", s => s as any)
 		attest<string>(t.in.infer)
 		attest<any>(t.infer)
 	})
 
 	it("never as out", () => {
-		const t = type("string", "=>", (s) => s as never)
+		const t = type("string", "=>", s => s as never)
 		attest<string>(t.in.infer)
 		attest<never>(t.infer)
 	})
@@ -43,7 +43,7 @@ contextualize(() => {
 	})
 
 	it("at path", () => {
-		const t = type({ a: ["string", "=>", (data) => data.length] })
+		const t = type({ a: ["string", "=>", data => data.length] })
 		attest<Type<{ a: (In: string) => Out<number> }>>(t)
 
 		const input = { a: "four" }
@@ -55,7 +55,7 @@ contextualize(() => {
 
 	it("in array", () => {
 		const types = scope({
-			lengthOfString: ["string", "=>", (data) => data.length],
+			lengthOfString: ["string", "=>", data => data.length],
 			mapToLengths: "lengthOfString[]"
 		}).export()
 		attest<Type<((In: string) => Out<number>)[]>>(types.mapToLengths)
@@ -64,7 +64,7 @@ contextualize(() => {
 	})
 
 	it("object to string", () => {
-		const t = type([{ a: "string" }, "=>", (data) => JSON.stringify(data)])
+		const t = type([{ a: "string" }, "=>", data => JSON.stringify(data)])
 		const out = t({ a: "foo" })
 		attest<string | type.errors>(out).snap('{"a":"foo"}')
 	})
@@ -72,7 +72,7 @@ contextualize(() => {
 	it("intersection", () => {
 		const $ = scope({
 			b: "3.14",
-			a: ["number", "=>", (data) => `${data}`],
+			a: ["number", "=>", data => `${data}`],
 			aAndB: () => $.type("a&b"),
 			bAndA: () => $.type("b&a")
 		})
@@ -91,7 +91,7 @@ contextualize(() => {
 
 	it("object intersection", () => {
 		const $ = scope({
-			a: [{ a: "1" }, "=>", (data) => `${data}`],
+			a: [{ a: "1" }, "=>", data => `${data}`],
 			b: { b: "2" },
 			c: "a&b"
 		})
@@ -113,7 +113,7 @@ contextualize(() => {
 
 	it("union", () => {
 		const types = scope({
-			a: ["number", "=>", (data) => `${data}`],
+			a: ["number", "=>", data => `${data}`],
 			b: "boolean",
 			aOrB: "a|b",
 			bOrA: "b|a"
@@ -137,7 +137,7 @@ contextualize(() => {
 
 	it("deep union", () => {
 		const types = scope({
-			a: { a: ["number>0", "=>", (data) => `${data}`] },
+			a: { a: ["number>0", "=>", data => `${data}`] },
 			b: { a: "Function" },
 			c: "a|b"
 		}).export()
@@ -177,8 +177,8 @@ contextualize(() => {
 
 	it("chained reference", () => {
 		const $ = scope({
-			a: type("string").morph((s) => s.length),
-			b: () => $.type("a").morph((n) => n === 0)
+			a: type("string").morph(s => s.length),
+			b: () => $.type("a").morph(n => n === 0)
 		})
 		const types = $.export()
 		attest<Type<(In: string) => Out<boolean>>>(types.b)
@@ -191,7 +191,7 @@ contextualize(() => {
 
 	it("chained nested", () => {
 		const $ = scope({
-			a: type("string").morph((s) => s.length),
+			a: type("string").morph(s => s.length),
 			b: () => $.type({ a: "a" }).morph(({ a }) => a === 0)
 		})
 
@@ -219,7 +219,7 @@ contextualize(() => {
 	it("directly nested", () => {
 		const t = type([
 			{
-				a: ["string", "=>", (s) => s.length]
+				a: ["string", "=>", s => s.length]
 			},
 			"=>",
 			({ a }) => a === 0
@@ -247,7 +247,7 @@ contextualize(() => {
 
 	it("discriminable tuple union", () => {
 		const $ = scope({
-			a: () => $.type(["string"]).morph((s) => [...s, "!"]),
+			a: () => $.type(["string"]).morph(s => [...s, "!"]),
 			b: ["boolean"],
 			c: () => $.type("a|b")
 		})
@@ -261,9 +261,8 @@ contextualize(() => {
 			"=>",
 			(s, ctx) => {
 				const result = Number.parseInt(s)
-				if (Number.isNaN(result)) 
-					return ctx.error("an integer string")
-				
+				if (Number.isNaN(result)) return ctx.error("an integer string")
+
 				return result
 			}
 		])
@@ -275,7 +274,7 @@ contextualize(() => {
 	})
 
 	it("nullable return", () => {
-		const toNullableNumber = type(["string", "=>", (s) => s.length || null])
+		const toNullableNumber = type(["string", "=>", s => s.length || null])
 		attest<Type<(In: string) => Out<number | null>>>(toNullableNumber)
 	})
 
@@ -283,7 +282,7 @@ contextualize(() => {
 		const toUndefinableNumber = type([
 			"string",
 			"=>",
-			(s) => s.length || undefined
+			s => s.length || undefined
 		])
 		attest<Type<(In: string) => Out<number | undefined>>>(toUndefinableNumber)
 	})
@@ -292,7 +291,7 @@ contextualize(() => {
 		const toMaybeNumber = type([
 			"string",
 			"=>",
-			(s) =>
+			s =>
 				s.length === 0 ? undefined
 				: s.length === 1 ? null
 				: s.length

@@ -56,12 +56,12 @@ export const propImplementation = implementNode<PropDeclaration>({
 		},
 		optional: {
 			// normalize { optional: false } to {}
-			parse: (def) => def || undefined
+			parse: def => def || undefined
 		}
 	},
-	normalize: (def) => def,
+	normalize: def => def,
 	defaults: {
-		description: (node) =>
+		description: node =>
 			`${node.compiledKey}${node.optional ? "?" : ""}: ${
 				node.value.description
 			}`,

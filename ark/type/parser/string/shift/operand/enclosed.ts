@@ -93,9 +93,9 @@ export const untilLookaheadIsClosing: Record<
 	EnclosingEndToken,
 	Scanner.UntilCondition
 > = {
-	"'": (scanner) => scanner.lookahead === `'`,
-	'"': (scanner) => scanner.lookahead === `"`,
-	"/": (scanner) => scanner.lookahead === `/`
+	"'": scanner => scanner.lookahead === `'`,
+	'"': scanner => scanner.lookahead === `"`,
+	"/": scanner => scanner.lookahead === `/`
 }
 
 const enclosingCharDescriptions = {

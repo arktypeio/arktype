@@ -60,8 +60,8 @@ export const printable = (data: unknown, indent?: number): string => {
 
 const printableOpts = {
 	onCycle: () => "(cycle)",
-	onSymbol: (v) => `(symbol ${v.description ?? "anonymous"})`,
-	onFunction: (v) => `(function ${v.name ?? "anonymous"})`
+	onSymbol: v => `(symbol ${v.description ?? "anonymous"})`,
+	onFunction: v => `(function ${v.name ?? "anonymous"})`
 } satisfies SerializationOptions
 
 const $serialize = (
@@ -71,23 +71,20 @@ const $serialize = (
 ): unknown => {
 	switch (domainOf(data)) {
 		case "object": {
-			if (typeof data === "function") 
-				return printableOpts.onFunction(data)
-			
-			if (seen.includes(data)) 
-				return "(cycle)"
-			
+			if (typeof data === "function") return printableOpts.onFunction(data)
+
+			if (seen.includes(data)) return "(cycle)"
+
 			const nextSeen = [...seen, data]
-			if (Array.isArray(data)) 
-				return data.map((item) => $serialize(item, opts, nextSeen))
-			
-			if (data instanceof Date) 
-				return data.toDateString()
-			
+			if (Array.isArray(data))
+				return data.map(item => $serialize(item, opts, nextSeen))
+
+			if (data instanceof Date) return data.toDateString()
+
 			const result: Record<string, unknown> = {}
-			for (const k in data as Dict) 
+			for (const k in data as Dict)
 				result[k] = $serialize((data as any)[k], opts, nextSeen)
-			
+
 			return result
 		}
 		case "symbol":

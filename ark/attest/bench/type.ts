@@ -64,7 +64,7 @@ const getInstantiationsWithFile = (fileText: string, fileName: string) => {
 }
 
 const getFirstAncestorByKindOrThrow = (node: ts.Node, kind: ts.SyntaxKind) =>
-	getAncestors(node).find((ancestor) => ancestor.kind === kind) ??
+	getAncestors(node).find(ancestor => ancestor.kind === kind) ??
 	throwInternalError(
 		`Could not find an ancestor of kind ${ts.SyntaxKind[kind]}`
 	)
@@ -72,13 +72,13 @@ const getFirstAncestorByKindOrThrow = (node: ts.Node, kind: ts.SyntaxKind) =>
 const getBaselineSourceFile = (originalFile: ts.SourceFile): string => {
 	const benchCalls = getExpressionsByName(originalFile, ["bench"])
 
-	const benchExpressions = benchCalls.map((node) =>
+	const benchExpressions = benchCalls.map(node =>
 		getFirstAncestorByKindOrThrow(node, ts.SyntaxKind.ExpressionStatement)
 	)
 
 	let baselineSourceFileText = originalFile.getFullText()
 
-	benchExpressions.forEach((benchExpression) => {
+	benchExpressions.forEach(benchExpression => {
 		baselineSourceFileText = baselineSourceFileText.replace(
 			benchExpression.getFullText(),
 			""
@@ -134,17 +134,13 @@ export const createBenchTypeAssertion = (
 			getAbsolutePosition(file, ctx.benchCallPosition)
 		)
 		const benchFn = getExpressionsByName(benchNode, ["bench"])
-		if (!benchFn) 
-			throw new Error("Unable to retrieve bench expression node.")
-		
+		if (!benchFn) throw new Error("Unable to retrieve bench expression node.")
 
 		const benchBody = getDescendants(benchFn[0]).find(
-			(node) => ts.isArrowFunction(node) || ts.isFunctionExpression(node)
+			node => ts.isArrowFunction(node) || ts.isFunctionExpression(node)
 		) as ts.ArrowFunction | ts.FunctionExpression | undefined
 
-		if (!benchBody) 
-			throw new Error("Unable to retrieve bench body node.")
-		
+		if (!benchBody) throw new Error("Unable to retrieve bench body node.")
 
 		const instantiationsContributed =
 			getInstantiationsContributedByNode(benchBody)

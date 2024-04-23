@@ -168,11 +168,8 @@ export const splitByKeys = <o extends object, leftKeys extends keySetOf<o>>(
 	const r: any = {}
 	let k: keyof o
 	for (k in o) {
-		if (k in leftKeys) 
-			l[k] = o[k]
-		 else 
-			r[k] = o[k]
-		
+		if (k in leftKeys) l[k] = o[k]
+		else r[k] = o[k]
 	}
 	return [l, r]
 }
@@ -196,7 +193,7 @@ export const stringAndSymbolicEntriesOf = (
 	o: Record<Key, unknown>
 ): Entry<Key>[] => [
 	...Object.entries(o),
-	...Object.getOwnPropertySymbols(o).map((k) => [k, o[k]] as const)
+	...Object.getOwnPropertySymbols(o).map(k => [k, o[k]] as const)
 ]
 
 /** Like Object.assign, but it will preserve getters instead of evaluating them. */

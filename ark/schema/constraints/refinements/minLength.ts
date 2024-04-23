@@ -36,16 +36,16 @@ export const minLengthImplementation = implementNode<MinLengthDeclaration>({
 		rule: {},
 		exclusive: parseExclusiveKey
 	},
-	normalize: (def) => (typeof def === "number" ? { rule: def } : def),
+	normalize: def => (typeof def === "number" ? { rule: def } : def),
 	defaults: {
-		description: (node) =>
+		description: node =>
 			node.exclusive ?
 				node.rule === 0 ?
 					"non-empty"
 				:	`more than length ${node.rule}`
 			: node.rule === 1 ? "non-empty"
 			: `at least length ${node.rule}`,
-		actual: (data) => `${data.length}`
+		actual: data => `${data.length}`
 	},
 	intersections: {
 		minLength: (l, r) => (l.isStricterThan(r) ? l : r)
@@ -55,8 +55,8 @@ export const minLengthImplementation = implementNode<MinLengthDeclaration>({
 export class MinLengthNode extends BaseRange<MinLengthDeclaration> {
 	traverseAllows: TraverseAllows<LengthBoundableData> =
 		this.exclusive ?
-			(data) => data.length > this.rule
-		:	(data) => data.length >= this.rule
+			data => data.length > this.rule
+		:	data => data.length >= this.rule
 
 	readonly impliedBasis = this.$.keywords.lengthBoundable.raw
 }

@@ -105,19 +105,16 @@ export class TraversalContext {
 		input extends { code: ArkErrorCode } ? input["code"] : "predicate"
 	> {
 		const error = createError(this, input)
-		if (this.currentBranch) 
-			this.currentBranch.error = error
-		 else 
-			this.errors.add(error)
-		
+		if (this.currentBranch) this.currentBranch.error = error
+		else this.errors.add(error)
+
 		return error
 	}
 
 	get data(): unknown {
 		let result: any = this.root
-		for (const segment of this.path) 
-			result = result?.[segment]
-		
+		for (const segment of this.path) result = result?.[segment]
+
 		return result
 	}
 

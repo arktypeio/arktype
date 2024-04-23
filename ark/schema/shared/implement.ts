@@ -221,12 +221,13 @@ export function assertNodeKind<kind extends NodeKind>(
 	kind: kind
 ): asserts value is Node<kind> {
 	const valueIsNode = isNode(value)
-	if (!valueIsNode || value.kind !== kind)
-		{throwArkError(
+	if (!valueIsNode || value.kind !== kind) {
+		throwArkError(
 			`Expected node of kind ${kind} (was ${
 				valueIsNode ? `${value.kind} node` : printable(value)
 			})`
-		)}
+		)
+	}
 }
 
 export type precedenceOfKind<kind extends NodeKind> = PrecedenceByKind[kind]
@@ -257,9 +258,9 @@ export const defaultValueSerializer = (v: unknown): JsonData => {
 		typeof v === "boolean" ||
 		typeof v === "number" ||
 		v === null
-	) 
+	)
 		return v
-	
+
 	return compileSerializedValue(v)
 }
 
@@ -311,9 +312,9 @@ export interface UnknownNodeImplementation
 
 export const compileErrorContext = (ctx: object): string => {
 	let result = "{ "
-	for (const [k, v] of Object.entries(ctx)) 
+	for (const [k, v] of Object.entries(ctx))
 		result += `${k}: ${compileSerializedValue(v)}, `
-	
+
 	return result + " }"
 }
 
@@ -382,14 +383,14 @@ export const implementNode = <d extends RawNodeDeclaration = never>(
 ): nodeImplementationOf<d> => {
 	const implementation: UnknownNodeImplementation = _ as never
 	if (implementation.hasAssociatedError) {
-		implementation.defaults.expected ??= (ctx) =>
+		implementation.defaults.expected ??= ctx =>
 			"description" in ctx ?
 				(ctx.description as string)
 			:	implementation.defaults.description(ctx as never)
-		implementation.defaults.actual ??= (data) => printable(data)
-		implementation.defaults.problem ??= (ctx) =>
+		implementation.defaults.actual ??= data => printable(data)
+		implementation.defaults.problem ??= ctx =>
 			`must be ${ctx.expected}${ctx.actual ? ` (was ${ctx.actual})` : ""}`
-		implementation.defaults.message ??= (ctx) => {
+		implementation.defaults.message ??= ctx => {
 			if (ctx.path.length === 0) return ctx.problem
 			const problemWithLocation = `${ctx.propString} ${ctx.problem}`
 			if (problemWithLocation[0] === "[") {

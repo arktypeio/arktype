@@ -63,19 +63,14 @@ export const versionableAssertion =
 				} catch (e) {
 					errorMessage += `❌TypeScript@${version}:${e}\n`
 				}
-				if (errorMessage) 
-					throw new AssertionError({ message: errorMessage })
-				
+				if (errorMessage) throw new AssertionError({ message: errorMessage })
 			}
-		} else 
-			fn(expected, actual, ctx)
-		
+		} else fn(expected, actual, ctx)
 	}
 
 const unversionedAssertEquals: AssertFn = (expected, actual, ctx) => {
-	if (expected === actual) 
-		return
-	
+	if (expected === actual) return
+
 	if (typeof expected === "object" && typeof actual === "object") {
 		try {
 			assert.deepStrictEqual(actual, expected)
@@ -96,12 +91,12 @@ const unversionedAssertEquals: AssertFn = (expected, actual, ctx) => {
 
 export const assertEquals = versionableAssertion(unversionedAssertEquals)
 
-export const typeEqualityMapping = new TypeAssertionMapping((data) => {
+export const typeEqualityMapping = new TypeAssertionMapping(data => {
 	const expected = data.typeArgs[0]
 	const actual = data.typeArgs[1] ?? data.args[0]
-	if (!expected || !actual) 
+	if (!expected || !actual)
 		throwInternalError(`Unexpected type data ${printable(data)}`)
-	
+
 	if (actual.relationships.typeArgs[0] !== "equality") {
 		return {
 			expected: expected.type,
@@ -152,9 +147,9 @@ export const getThrownMessage = (
 	result: AssertedFnCallResult,
 	ctx: AssertionContext
 ): string | undefined => {
-	if (!("threw" in result)) 
+	if (!("threw" in result))
 		throwAssertionError({ message: "Function didn't throw.", ctx })
-	
+
 	return result.threw
 }
 export const callAssertedFunction = (

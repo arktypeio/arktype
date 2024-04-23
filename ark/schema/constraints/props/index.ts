@@ -46,12 +46,12 @@ export const indexImplementation = implementNode<IndexDeclaration>({
 			parse: (def, ctx) => ctx.$.schema(def)
 		}
 	},
-	normalize: (def) => def,
+	normalize: def => def,
 	defaults: {
-		description: (node) => `[${node.key.expression}]: ${node.value.description}`
+		description: node => `[${node.key.expression}]: ${node.value.description}`
 	},
 	intersections: {
-		index: (l) => l
+		index: l => l
 	}
 })
 
@@ -61,22 +61,19 @@ export class IndexNode extends RawConstraint<IndexDeclaration> {
 
 	traverseAllows: TraverseAllows<object> = (data, ctx) =>
 		Object.entries(data).every(
-			(entry) =>
+			entry =>
 				!this.key.traverseAllows(entry[0], ctx) ||
 				this.value.traverseAllows(entry[1], ctx)
 		)
 
 	traverseApply: TraverseApply<object> = (data, ctx) =>
-		Object.entries(data).forEach((entry) => {
-			if (this.key.traverseAllows(entry[0], ctx)) 
+		Object.entries(data).forEach(entry => {
+			if (this.key.traverseAllows(entry[0], ctx))
 				this.value.traverseApply(entry[1], ctx)
-			
 		})
 
 	compile(js: NodeCompiler): void {
-		if (js.traversalKind === "Allows") 
-			js.return(true)
-		
+		if (js.traversalKind === "Allows") js.return(true)
 	}
 }
 

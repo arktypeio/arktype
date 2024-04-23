@@ -42,9 +42,9 @@ contextualize(() => {
 	})
 
 	it("chained deep intersections", () => {
-		const b = type({ b: "boolean" }, "=>", (o) => [o.b])
+		const b = type({ b: "boolean" }, "=>", o => [o.b])
 		const t = type({
-			a: ["string", "=>", (s) => s.length]
+			a: ["string", "=>", s => s.length]
 		})
 			.and({
 				// unable to inline this due to:

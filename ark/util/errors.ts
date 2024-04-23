@@ -1,6 +1,6 @@
 export class InternalArktypeError extends Error {}
 
-export const throwInternalError: (message: string) => never = (message) =>
+export const throwInternalError: (message: string) => never = message =>
 	throwError(message, InternalArktypeError)
 
 export const throwError: (
@@ -14,7 +14,7 @@ export class ParseError extends Error {
 	name = "ParseError"
 }
 
-export const throwParseError: (message: string) => never = (message) =>
+export const throwParseError: (message: string) => never = message =>
 	throwError(message, ParseError)
 
 // Using "Hair Space" as a non-rendered sentinel for an error message string:

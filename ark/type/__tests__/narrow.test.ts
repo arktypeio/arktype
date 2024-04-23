@@ -15,7 +15,7 @@ contextualize(() => {
 	})
 
 	it("implicit problem anonymous", () => {
-		const even = type("number", ":", (n) => n % 2 === 0)
+		const even = type("number", ":", n => n % 2 === 0)
 		attest(even(1).toString()).snap(
 			"must be valid according to an anonymous predicate (was 1)"
 		)
@@ -38,9 +38,8 @@ contextualize(() => {
 			},
 			":",
 			({ a, b }, ctx) => {
-				if (a === b) 
-					return true
-				
+				if (a === b) return true
+
 				ctx.error({ expected: "equal to b", path: ["a"] })
 				ctx.error({ expected: "equal to a", path: ["b"] })
 				return false
@@ -63,11 +62,8 @@ contextualize(() => {
 			t: equals<t, Expected> extends true ? t : Expected
 		) => true
 		attest<number | boolean[]>(
-			type([
-				"number|boolean[]",
-				":",
-				(data) => validateNumberOrBooleanList(data)
-			]).infer
+			type(["number|boolean[]", ":", data => validateNumberOrBooleanList(data)])
+				.infer
 		)
 		attest(() => {
 			// @ts-expect-error
@@ -91,7 +87,7 @@ contextualize(() => {
 
 	it("narrows the output type of a morph", () => {
 		const t = type("string")
-			.morph((s) => s.length)
+			.morph(s => s.length)
 			.narrow((n): n is 5 => n === 5)
 
 		attest<Type<(In: string) => Out<of<5, Narrowed>>, {}>>(t)

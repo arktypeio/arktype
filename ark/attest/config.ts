@@ -57,26 +57,22 @@ export const getDefaultAttestConfig = (): BaseAttestConfig => {
 }
 
 const hasFlag = (flag: keyof AttestConfig) =>
-	process.argv.some((arg) => arg.includes(flag))
+	process.argv.some(arg => arg.includes(flag))
 
 const getParamValue = (param: keyof AttestConfig) => {
-	const paramIndex = process.argv.findIndex((arg) => arg.includes(param))
-	if (paramIndex === -1) 
-		return undefined
-	
+	const paramIndex = process.argv.findIndex(arg => arg.includes(param))
+	if (paramIndex === -1) return undefined
+
 	const raw = process.argv[paramIndex + 1]
-	if (raw === "true") 
-		return true
-	
-	if (raw === "false") 
-		return false
-	
-	if (param === "benchPercentThreshold") 
+	if (raw === "true") return true
+
+	if (raw === "false") return false
+
+	if (param === "benchPercentThreshold")
 		return tryParseNumber(raw, { errorOnFail: true })
-	
-	if (param === "tsVersions" || param === "attestAliases") 
-		return raw.split(",")
-	
+
+	if (param === "tsVersions" || param === "attestAliases") return raw.split(",")
+
 	return raw
 }
 
@@ -92,13 +88,10 @@ const addEnvConfig = (config: BaseAttestConfig) => {
 	})
 	let k: keyof BaseAttestConfig
 	for (k in config) {
-		if (config[k] === false) 
-			config[k] = hasFlag(k) as never
-		 else {
+		if (config[k] === false) config[k] = hasFlag(k) as never
+		else {
 			const value = getParamValue(k)
-			if (value !== undefined) 
-				config[k] = value as never
-			
+			if (value !== undefined) config[k] = value as never
 		}
 	}
 	return config
@@ -139,11 +132,10 @@ const isTsVersionAliases = (
 
 const parseTsVersions = (aliases: TsVersionAliases): TsVersionData[] => {
 	const versions = findAttestTypeScriptVersions()
-	if (aliases === "*") 
-		return versions
-	
-	return arrayFrom(aliases).map((alias) => {
-		const matching = versions.find((v) => v.alias === alias)
+	if (aliases === "*") return versions
+
+	return arrayFrom(aliases).map(alias => {
+		const matching = versions.find(v => v.alias === alias)
 		if (!matching) {
 			throw new Error(
 				`Specified TypeScript version ${alias} does not exist.` +

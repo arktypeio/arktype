@@ -90,11 +90,11 @@ export abstract class RawNode<
 	abstract compile(js: NodeCompiler): void
 
 	readonly includesMorph: boolean =
-		this.kind === "morph" || this.children.some((child) => child.includesMorph)
+		this.kind === "morph" || this.children.some(child => child.includesMorph)
 	readonly includesContextDependentPredicate: boolean =
 		// if a predicate accepts exactly one arg, we can safely skip passing context
 		(this.hasKind("predicate") && this.inner.predicate.length !== 1) ||
-		this.children.some((child) => child.includesContextDependentPredicate)
+		this.children.some(child => child.includesContextDependentPredicate)
 	readonly referencesByName: Record<string, RawNode> = this.children.reduce(
 		(result, child) => Object.assign(result, child.contributesReferencesByName),
 		{}
@@ -138,7 +138,7 @@ export abstract class RawNode<
 				const childValue = v as listable<RawNode>
 				ioInner[k] =
 					isArray(childValue) ?
-						childValue.map((child) => child[kind])
+						childValue.map(child => child[kind])
 					:	childValue[kind]
 			} else ioInner[k] = v
 		}
@@ -201,7 +201,7 @@ export abstract class RawNode<
 	get nestableExpression(): string {
 		return (
 				this.children.length > 1 &&
-					this.children.some((child) => !child.isBasis && !child.isProp())
+					this.children.some(child => !child.isBasis && !child.isProp())
 			) ?
 				`(${this.expression})`
 			:	this.expression
@@ -239,7 +239,7 @@ export abstract class RawNode<
 
 	firstReferenceOfKindOrThrow<kind extends NodeKind>(kind: kind): Node<kind> {
 		return (
-			this.firstReference((node) => node.kind === kind) ??
+			this.firstReference(node => node.kind === kind) ??
 			throwError(`${this.baseName} had no ${kind} references`)
 		)
 	}
@@ -256,9 +256,7 @@ export abstract class RawNode<
 				k,
 				this.impl.keys[k].child ?
 					isArray(v) ?
-						v.map((node) =>
-							(node as RawNode).transform(mapper, shouldTransform)
-						)
+						v.map(node => (node as RawNode).transform(mapper, shouldTransform))
 					:	(v as RawNode).transform(mapper, shouldTransform)
 				:	v
 			]
@@ -276,7 +274,7 @@ export abstract class RawNode<
 			:	(configOrDescription as never)
 		return this.transform(
 			(kind, inner) => ({ ...inner, ...config }),
-			(node) => !node.isProp()
+			node => !node.isProp()
 		) as never
 	}
 }

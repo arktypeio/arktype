@@ -56,13 +56,12 @@ const parseTsDiagnosticsOutput = (output: string): TypePerfStats => {
 	}
 
 	for (const line of lines) {
-		if (line.startsWith("Check time:")) 
+		if (line.startsWith("Check time:"))
 			results.checkTime = parseFloat(line.split(":")[1].trim())
-		 else if (line.startsWith("Types:")) 
+		else if (line.startsWith("Types:"))
 			results.types = parseInt(line.split(":")[1].trim(), 10)
-		 else if (line.startsWith("Instantiations:")) 
+		else if (line.startsWith("Instantiations:"))
 			results.instantiations = parseInt(line.split(":")[1].trim(), 10)
-		
 	}
 	return results
 }

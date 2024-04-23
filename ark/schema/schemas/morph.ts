@@ -84,12 +84,12 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 		},
 		morphs: {
 			parse: arrayFrom,
-			serialize: (morphs) => morphs.map(reference)
+			serialize: morphs => morphs.map(reference)
 		}
 	},
-	normalize: (def) => def,
+	normalize: def => def,
 	defaults: {
-		description: (node) =>
+		description: node =>
 			`a morph from ${node.from.description} to ${node.to?.description ?? "unknown"}`
 	},
 	intersections: {
@@ -109,7 +109,7 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 			// in case from is a union, we need to distribute the branches
 			// to can be a union as any schema is allowed
 			return ctx.$.parseRoot(
-				from.branches.map((fromBranch) =>
+				from.branches.map(fromBranch =>
 					ctx.$.node("morph", {
 						morphs: l.morphs,
 						from: fromBranch,
@@ -125,7 +125,7 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 				: from.kind === "union" ?
 					ctx.$.node(
 						"union",
-						from.branches.map((branch) => ({
+						from.branches.map(branch => ({
 							...l.inner,
 							from: branch
 						}))
@@ -140,7 +140,7 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 })
 
 export class MorphNode extends RawSchema<MorphDeclaration> {
-	serializedMorphs = this.morphs.map((morph) => reference(morph))
+	serializedMorphs = this.morphs.map(morph => reference(morph))
 	compiledMorphs = `[${this.serializedMorphs}]`
 	outValidator = this.to?.traverseApply ?? null
 	outValidatorReference: string =

@@ -96,7 +96,7 @@ export namespace Hkt {
 				>
 			}
 		): pipe<kinds> =>
-		(In) =>
+		In =>
 			kinds.reduce(
 				(out, kind) => (kind as Hkt.UnaryKind<(_: any) => any>).hkt(out),
 				In

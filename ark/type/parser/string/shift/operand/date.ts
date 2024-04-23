@@ -40,15 +40,12 @@ const maybeParseDate = <errorOnFail extends boolean | string>(
 	errorOnFail?: errorOnFail
 ): DateParseResult<errorOnFail> => {
 	const stringParsedDate = new Date(source)
-	if (isValidDate(stringParsedDate)) 
-		return stringParsedDate
-	
+	if (isValidDate(stringParsedDate)) return stringParsedDate
+
 	const epochMillis = tryParseNumber(source)
 	if (epochMillis !== undefined) {
 		const numberParsedDate = new Date(epochMillis)
-		if (isValidDate(numberParsedDate)) 
-			return numberParsedDate
-		
+		if (isValidDate(numberParsedDate)) return numberParsedDate
 	}
 	return errorOnFail ?
 			throwParseError(

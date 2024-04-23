@@ -37,9 +37,9 @@ export const predicateImplementation = implementNode<PredicateDeclaration>({
 	keys: {
 		predicate: {}
 	},
-	normalize: (def) => (typeof def === "function" ? { predicate: def } : def),
+	normalize: def => (typeof def === "function" ? { predicate: def } : def),
 	defaults: {
-		description: (node) =>
+		description: node =>
 			`valid according to ${node.predicate.name || "an anonymous predicate"}`
 	},
 	intersectionIsOpen: true,

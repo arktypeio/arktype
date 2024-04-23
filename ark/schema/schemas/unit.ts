@@ -30,13 +30,13 @@ export const unitImplementation = implementNode<UnitDeclaration>({
 	keys: {
 		unit: {
 			preserveUndefined: true,
-			serialize: (def) =>
+			serialize: def =>
 				def instanceof Date ? def.toISOString() : defaultValueSerializer(def)
 		}
 	},
-	normalize: (def) => def,
+	normalize: def => def,
 	defaults: {
-		description: (node) => printable(node.unit)
+		description: node => printable(node.unit)
 	},
 	intersections: {
 		unit: (l, r) => Disjoint.from("unit", l, r),
