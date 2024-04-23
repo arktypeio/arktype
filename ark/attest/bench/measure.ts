@@ -14,7 +14,7 @@ export type MeasureComparison<Unit extends MeasureUnit = MeasureUnit> = {
 
 export type MarkMeasure = Partial<Record<StatName, Measure>>
 
-export const stringifyMeasure = ([value, units]: Measure) =>
+export const stringifyMeasure = ([value, units]: Measure): string =>
 	units in TIME_UNIT_RATIOS ?
 		stringifyTimeMeasure([value, units as TimeUnit])
 	:	`${value}${units}`
@@ -42,8 +42,10 @@ export const TIME_UNIT_RATIOS = Object.freeze({
 
 export type TimeUnit = keyof typeof TIME_UNIT_RATIOS
 
-export const stringifyTimeMeasure = ([value, unit]: Measure<TimeUnit>) =>
-	`${value.toFixed(2)}${unit}`
+export const stringifyTimeMeasure = ([
+	value,
+	unit
+]: Measure<TimeUnit>): string => `${value.toFixed(2)}${unit}`
 
 const convertTimeUnit = (n: number, from: TimeUnit, to: TimeUnit) => {
 	return round((n * TIME_UNIT_RATIOS[from]) / TIME_UNIT_RATIOS[to], 2)
@@ -52,21 +54,15 @@ const convertTimeUnit = (n: number, from: TimeUnit, to: TimeUnit) => {
 /**
  * Establish a new baseline using the most appropriate time unit
  */
-export const createTimeMeasure = (ms: number) => {
+export const createTimeMeasure = (ms: number): Measure<TimeUnit> => {
 	let bestMatch: Measure<TimeUnit> | undefined
 	for (const u in TIME_UNIT_RATIOS) {
 		const candidateMeasure = createTimeMeasureForUnit(ms, u as TimeUnit)
-		if (!bestMatch) {
-			bestMatch = candidateMeasure
-		} else if (bestMatch[0] >= 1) {
-			if (candidateMeasure[0] >= 1 && candidateMeasure[0] < bestMatch[0]) {
+		if (!bestMatch) bestMatch = candidateMeasure
+		else if (bestMatch[0] >= 1) {
+			if (candidateMeasure[0] >= 1 && candidateMeasure[0] < bestMatch[0])
 				bestMatch = candidateMeasure
-			}
-		} else {
-			if (candidateMeasure[0] >= bestMatch[0]) {
-				bestMatch = candidateMeasure
-			}
-		}
+		} else if (candidateMeasure[0] >= bestMatch[0]) bestMatch = candidateMeasure
 	}
 	return bestMatch!
 }

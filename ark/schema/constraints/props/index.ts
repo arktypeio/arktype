@@ -68,15 +68,15 @@ export class IndexNode extends RawConstraint<IndexDeclaration> {
 
 	traverseApply: TraverseApply<object> = (data, ctx) =>
 		Object.entries(data).forEach((entry) => {
-			if (this.key.traverseAllows(entry[0], ctx)) {
+			if (this.key.traverseAllows(entry[0], ctx)) 
 				this.value.traverseApply(entry[1], ctx)
-			}
+			
 		})
 
 	compile(js: NodeCompiler): void {
-		if (js.traversalKind === "Allows") {
+		if (js.traversalKind === "Allows") 
 			js.return(true)
-		}
+		
 	}
 }
 

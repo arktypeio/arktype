@@ -86,6 +86,8 @@ export const HomeDemo = () => {
 					scrollBeyondLastLine: false
 				}}
 				onMount={(editor, monaco) => {
+					// TODO: ?
+					monaco
 					const editorElement = editor.getDomNode()
 					if (editorElement) {
 						editorElement.style.borderRadius = "16px"

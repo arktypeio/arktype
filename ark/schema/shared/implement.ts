@@ -222,11 +222,11 @@ export function assertNodeKind<kind extends NodeKind>(
 ): asserts value is Node<kind> {
 	const valueIsNode = isNode(value)
 	if (!valueIsNode || value.kind !== kind)
-		throwArkError(
+		{throwArkError(
 			`Expected node of kind ${kind} (was ${
 				valueIsNode ? `${value.kind} node` : printable(value)
 			})`
-		)
+		)}
 }
 
 export type precedenceOfKind<kind extends NodeKind> = PrecedenceByKind[kind]
@@ -257,9 +257,9 @@ export const defaultValueSerializer = (v: unknown): JsonData => {
 		typeof v === "boolean" ||
 		typeof v === "number" ||
 		v === null
-	) {
+	) 
 		return v
-	}
+	
 	return compileSerializedValue(v)
 }
 
@@ -311,9 +311,9 @@ export interface UnknownNodeImplementation
 
 export const compileErrorContext = (ctx: object): string => {
 	let result = "{ "
-	for (const [k, v] of Object.entries(ctx)) {
+	for (const [k, v] of Object.entries(ctx)) 
 		result += `${k}: ${compileSerializedValue(v)}, `
-	}
+	
 	return result + " }"
 }
 

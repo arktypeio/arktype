@@ -47,9 +47,9 @@ const $parseGenericArgs = (
 		}
 		return argState.error(writeInvalidGenericArgsMessage(name, params, argDefs))
 	}
-	if (argState.finalizer === ",") {
+	if (argState.finalizer === ",") 
 		return $parseGenericArgs(name, params, s, argDefs, argNodes)
-	}
+	
 	return argState.error(writeUnclosedGroupMessage(">"))
 }
 

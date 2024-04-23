@@ -98,9 +98,9 @@ export const intersectNodes: InternalNodeIntersection<IntersectionContext> = (
 ) => {
 	const operator = ctx.pipe ? "|>" : "&"
 	const lrCacheKey = `${l.typeId}${operator}${r.typeId}`
-	if (intersectionCache[lrCacheKey]) {
+	if (intersectionCache[lrCacheKey]) 
 		return intersectionCache[lrCacheKey]! as never
-	}
+	
 	if (!ctx.pipe) {
 		// we can only use this for the commutative & operator
 		const rlCacheKey = `${r.typeId}${operator}${l.typeId}`
@@ -120,15 +120,15 @@ export const intersectNodes: InternalNodeIntersection<IntersectionContext> = (
 	let result: UnknownIntersectionResult
 
 	if (ctx.pipe && l.hasKind("morph"))
-		result =
+		{result =
 			ctx.invert ?
 				pipeToMorph(r as never, l, ctx)
-			:	pipeFromMorph(l, r as never, ctx)
+			:	pipeFromMorph(l, r as never, ctx)}
 	else if (ctx.pipe && r.hasKind("morph"))
-		result =
+		{result =
 			ctx.invert ?
 				pipeFromMorph(r, l as never, ctx)
-			:	pipeToMorph(l as never, r, ctx)
+			:	pipeToMorph(l as never, r, ctx)}
 	else {
 		const leftmostKind = l.precedence < r.precedence ? l.kind : r.kind
 		const implementation =

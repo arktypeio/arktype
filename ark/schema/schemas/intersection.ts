@@ -371,12 +371,11 @@ const intersectRootKeys = (
 			:	lBasis
 		:	rBasis
 	if (resultBasis) {
-		if (resultBasis instanceof Disjoint) {
-			return resultBasis
-		}
-		if (resultBasis.kind === "domain" || resultBasis.kind === "proto") {
+		if (resultBasis instanceof Disjoint) return resultBasis
+
+		if (resultBasis.kind === "domain" || resultBasis.kind === "proto")
 			result[resultBasis.kind] = resultBasis as never
-		} else {
+		else {
 			return throwInternalError(
 				`Unexpected intersection basis intersection ${resultBasis}`
 			)
@@ -409,9 +408,8 @@ const intersectConstraints = (
 			{ prereduced: true }
 		)
 		for (const type of s.types) {
-			if (result instanceof Disjoint) {
-				return result
-			}
+			if (result instanceof Disjoint) return result
+
 			result = intersectNodes(type, result, s.ctx)
 		}
 		return result
@@ -433,9 +431,7 @@ const intersectConstraints = (
 			)
 		}
 	}
-	if (!matched) {
-		s.l.push(head)
-	}
+	if (!matched) s.l.push(head)
 
 	head.impliedSiblings?.forEach((node) => appendUnique(s.r, node))
 	return intersectConstraints(s)

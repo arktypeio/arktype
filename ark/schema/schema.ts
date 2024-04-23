@@ -74,9 +74,9 @@ export abstract class RawSchema<
 		if (!this.#keyofCache) {
 			this.#keyofCache = this.rawKeyOf()
 			if (this.#keyofCache.branches.length === 0)
-				throwParseError(
+				{throwParseError(
 					`keyof ${this.expression} results in an unsatisfiable type`
-				)
+				)}
 		}
 		return this.#keyofCache as never
 	}

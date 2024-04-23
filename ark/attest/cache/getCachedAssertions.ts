@@ -18,9 +18,9 @@ let assertionEntries: VersionedAssertionsByFile[] | undefined
 export const getCachedAssertionEntries = (): VersionedAssertionsByFile[] => {
 	if (!assertionEntries) {
 		const config = getConfig()
-		if (!existsSync(config.assertionCacheDir)) {
+		if (!existsSync(config.assertionCacheDir)) 
 			throwMissingAssertionDataError(config.assertionCacheDir)
-		}
+		
 		const assertionFiles = readdirSync(config.assertionCacheDir)
 		assertionEntries = assertionFiles.map((file) => [
 			// remove .json extension
@@ -42,15 +42,15 @@ const isPositionWithinRange = (
 	{ line, char }: LinePosition,
 	{ start, end }: LinePositionRange
 ) => {
-	if (line < start.line || line > end.line) {
+	if (line < start.line || line > end.line) 
 		return false
-	}
-	if (line === start.line) {
+	
+	if (line === start.line) 
 		return char >= start.char
-	}
-	if (line === end.line) {
+	
+	if (line === end.line) 
 		return char <= end.char
-	}
+	
 	return true
 }
 

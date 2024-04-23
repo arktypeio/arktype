@@ -6,11 +6,11 @@ contextualize(() => {
 	it("root discriminates", () => {
 		const t = type("string")
 		const out = t("")
-		if (out instanceof type.errors) {
+		if (out instanceof type.errors) 
 			out.throw()
-		} else {
+		 else 
 			attest<string>(out)
-		}
+		
 	})
 
 	it("allows", () => {
@@ -19,9 +19,9 @@ contextualize(() => {
 		if (t.allows(data)) {
 			// narrows correctly
 			attest<number>(data)
-		} else {
+		} else 
 			throw new Error()
-		}
+		
 		attest(t.allows(5)).equals(false)
 	})
 

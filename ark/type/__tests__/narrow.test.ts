@@ -38,9 +38,9 @@ contextualize(() => {
 			},
 			":",
 			({ a, b }, ctx) => {
-				if (a === b) {
+				if (a === b) 
 					return true
-				}
+				
 				ctx.error({ expected: "equal to b", path: ["a"] })
 				ctx.error({ expected: "equal to a", path: ["b"] })
 				return false

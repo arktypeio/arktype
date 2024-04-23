@@ -21,9 +21,9 @@ const thisFileIndex = process.argv.findIndex(
 	(s) => s.endsWith(baseFileName) || s.endsWith("attest")
 )
 
-if (thisFileIndex === -1) {
+if (thisFileIndex === -1) 
 	throw new Error(`Expected to find an argument ending with "${baseFileName}"`)
-}
+
 
 const subcommand = process.argv[thisFileIndex + 1]
 

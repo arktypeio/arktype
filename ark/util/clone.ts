@@ -5,13 +5,13 @@ export const shallowClone = <input extends object>(input: input): input =>
 	)
 
 export const deepClone = <input>(input: input, seen = new Map()): input => {
-	if (typeof input !== "object" || input === null) {
+	if (typeof input !== "object" || input === null) 
 		return input
-	}
+	
 
-	if (seen.has(input)) {
+	if (seen.has(input)) 
 		return seen.get(input)
-	}
+	
 
 	const cloned =
 		Array.isArray(input) ?

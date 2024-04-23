@@ -27,9 +27,9 @@ export const analyzeProjectAssertions = (): AssertionsByFile => {
 			diagnosticsByFile,
 			config.attestAliases
 		)
-		if (assertionsInFile.length) {
+		if (assertionsInFile.length) 
 			assertionsByFile[getFileKey(file.fileName)] = assertionsInFile
-		}
+		
 	}
 	return assertionsByFile
 }
@@ -79,14 +79,14 @@ export const getExpressionsByName = (
 	const calls: ts.CallExpression[] = []
 	const visit = (node: ts.Node) => {
 		if (ts.isCallExpression(node)) {
-			if (names.includes(node.expression.getText())) {
+			if (names.includes(node.expression.getText())) 
 				calls.push(node)
-			}
+			
 		} else if (isSnapCall) {
 			if (ts.isIdentifier(node)) {
-				if (names.includes(node.getText())) {
+				if (names.includes(node.getText())) 
 					calls.push(node as any as ts.CallExpression)
-				}
+				
 			}
 		}
 		ts.forEachChild(node, visit)
@@ -129,9 +129,9 @@ export type Completions = Record<string, string[]> | string
 
 const getCompletions = (attestCall: ts.CallExpression) => {
 	const arg = attestCall.arguments[0]
-	if (arg === undefined) {
+	if (arg === undefined) 
 		return {}
-	}
+	
 	const descendants = getDescendants(arg)
 	const file = attestCall.getSourceFile()
 	const text = file.getFullText()
@@ -154,17 +154,17 @@ const getCompletions = (attestCall: ts.CallExpression) => {
 
 			const entries = completionData?.entries ?? []
 
-			if (prefix in completions) {
+			if (prefix in completions) 
 				return `Encountered multiple completion candidates for string(s) '${prefix}'. Assertions on the same prefix must be split into multiple attest calls so the results can be distinguished.`
-			}
+			
 			completions[prefix] = []
 			for (const entry of entries) {
 				if (
 					entry.name.startsWith(prefix) &&
 					entry.name.length > prefix.length
-				) {
+				) 
 					completions[prefix].push(entry.name)
-				}
+				
 			}
 		}
 	}
@@ -185,9 +185,9 @@ export type DiagnosticsByFile = Record<string, DiagnosticData[]>
 export const getDiagnosticsByFile = (): DiagnosticsByFile => {
 	const diagnosticsByFile: DiagnosticsByFile = {}
 	const diagnostics: ts.Diagnostic[] = getInternalTypeChecker().getDiagnostics()
-	for (const diagnostic of diagnostics) {
+	for (const diagnostic of diagnostics) 
 		addDiagnosticDataFrom(diagnostic, diagnosticsByFile)
-	}
+	
 	return diagnosticsByFile
 }
 
@@ -196,26 +196,26 @@ const addDiagnosticDataFrom = (
 	diagnosticsByFile: DiagnosticsByFile
 ) => {
 	const filePath = diagnostic.file?.fileName
-	if (!filePath) {
+	if (!filePath) 
 		return
-	}
+	
 	const fileKey = getFileKey(filePath)
 	const start = diagnostic.start ?? -1
 	const end = start + (diagnostic.length ?? 0)
 	let message = diagnostic.messageText
-	if (typeof message === "object") {
+	if (typeof message === "object") 
 		message = concatenateChainedErrors([message])
-	}
+	
 	const data: DiagnosticData = {
 		start,
 		end,
 		message
 	}
-	if (diagnosticsByFile[fileKey]) {
+	if (diagnosticsByFile[fileKey]) 
 		diagnosticsByFile[fileKey].push(data)
-	} else {
+	 else 
 		diagnosticsByFile[fileKey] = [data]
-	}
+	
 }
 
 const concatenateChainedErrors = (
@@ -282,17 +282,17 @@ export const checkDiagnosticMessages = (
 ): string[] => {
 	const fileKey = getFileKey(attestCall.getSourceFile().fileName)
 	const fileDiagnostics = diagnosticsByFile[fileKey]
-	if (!fileDiagnostics) {
+	if (!fileDiagnostics) 
 		return []
-	}
+	
 	const diagnosticMessagesInArgRange: string[] = []
 	for (const diagnostic of fileDiagnostics) {
 		if (
 			diagnostic.start >= attestCall.getStart() &&
 			diagnostic.end <= attestCall.getEnd()
-		) {
+		) 
 			diagnosticMessagesInArgRange.push(diagnostic.message)
-		}
+		
 	}
 	return diagnosticMessagesInArgRange
 }

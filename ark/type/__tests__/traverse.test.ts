@@ -38,7 +38,9 @@ contextualize(() => {
 			name: "Shawn",
 			age: 99
 		})
-		attest(t({ name: "Shawn" }).toString()).snap("age must be defined")
+		attest(t({ name: "Shawn" }).toString()).snap(
+			"age must be a number (was undefined)"
+		)
 	})
 
 	it("customized builtin problem", () => {
@@ -74,7 +76,9 @@ contextualize(() => {
 		const t = type([{ a: "string" }, "|", { b: "boolean" }])
 		attest(t({ a: "ok" })).snap({ a: "ok" })
 		attest(t({ b: true })).snap({ b: true })
-		attest(t({}).toString()).snap("a must be defined or b must be defined")
+		attest(t({}).toString()).snap(
+			"a must be a string (was undefined) or b must be b must be false or true (was undefined) (was undefined)"
+		)
 	})
 
 	it("branches at path", () => {
@@ -82,7 +86,7 @@ contextualize(() => {
 		attest(t({ key: { a: "ok" } })).snap({ key: { a: "ok" } })
 		attest(t({ key: { b: true } })).snap({ key: { b: true } })
 		attest(t({ key: {} }).toString()).snap(
-			"key.a must be defined or key.b must be defined"
+			"key.a must be a string (was undefined) or key.b must be key.b must be false or true (was undefined) (was undefined)"
 		)
 	})
 
@@ -91,7 +95,9 @@ contextualize(() => {
 		attest(t({ a: "ok" })).snap({ a: "ok" })
 		attest(t({ a: 5 })).snap({ a: 5 })
 		// value isn't present
-		attest(t({}).toString()).snap("a must be defined")
+		attest(t({}).toString()).snap(
+			"a must be a number, a string or null (was undefined)"
+		)
 		// unsatisfying value
 		attest(t({ a: false }).toString()).snap(
 			"a must be a number, a string or null (was false)"
@@ -105,7 +111,9 @@ contextualize(() => {
 			c: { foo: "Function" },
 			d: "a|b|c"
 		}).export()
-		attest(types.d({}).toString()).snap("foo must be defined")
+		attest(types.d({}).toString()).snap(
+			"foo must be a function, a number or a string (was undefined)"
+		)
 		attest(types.d({ foo: null }).toString()).snap(
 			"foo must be a function, a number or a string (was null)"
 		)

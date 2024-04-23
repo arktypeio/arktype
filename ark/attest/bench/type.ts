@@ -134,17 +134,17 @@ export const createBenchTypeAssertion = (
 			getAbsolutePosition(file, ctx.benchCallPosition)
 		)
 		const benchFn = getExpressionsByName(benchNode, ["bench"])
-		if (!benchFn) {
+		if (!benchFn) 
 			throw new Error("Unable to retrieve bench expression node.")
-		}
+		
 
 		const benchBody = getDescendants(benchFn[0]).find(
 			(node) => ts.isArrowFunction(node) || ts.isFunctionExpression(node)
 		) as ts.ArrowFunction | ts.FunctionExpression | undefined
 
-		if (!benchBody) {
+		if (!benchBody) 
 			throw new Error("Unable to retrieve bench body node.")
-		}
+		
 
 		const instantiationsContributed =
 			getInstantiationsContributedByNode(benchBody)

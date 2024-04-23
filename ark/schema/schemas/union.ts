@@ -65,9 +65,9 @@ export const unionImplementation = implementNode<UnionDeclaration>({
 					ctx.$.node(unionChildKinds, branch)
 				)
 				const raw = ctx.raw as UnionDef
-				if (isArray(raw) || raw.ordered !== true) {
+				if (isArray(raw) || raw.ordered !== true)
 					branches.sort((l, r) => (l.innerId < r.innerId ? -1 : 1))
-				}
+
 				return branches
 			}
 		}
@@ -75,12 +75,10 @@ export const unionImplementation = implementNode<UnionDeclaration>({
 	normalize: (def) => (isArray(def) ? { branches: def } : def),
 	reduce: (inner, $) => {
 		const reducedBranches = reduceBranches(inner)
-		if (reducedBranches.length === 1) {
-			return reducedBranches[0]
-		}
-		if (reducedBranches.length === inner.branches.length) {
-			return
-		}
+		if (reducedBranches.length === 1) return reducedBranches[0]
+
+		if (reducedBranches.length === inner.branches.length) return
+
 		return $.node(
 			"union",
 			{
@@ -141,19 +139,14 @@ export const unionImplementation = implementNode<UnionDeclaration>({
 			}
 			let resultBranches: readonly UnionChildNode[] | Disjoint
 			if (l.ordered) {
-				if (r.ordered) {
-					return Disjoint.from("indiscriminableMorphs", l, r)
-				}
+				if (r.ordered) return Disjoint.from("indiscriminableMorphs", l, r)
+
 				resultBranches = intersectBranches(r.branches, l.branches, ctx)
-				if (resultBranches instanceof Disjoint) {
-					resultBranches.invert()
-				}
-			} else {
-				resultBranches = intersectBranches(l.branches, r.branches, ctx)
-			}
-			if (resultBranches instanceof Disjoint) {
-				return resultBranches
-			}
+				if (resultBranches instanceof Disjoint) resultBranches.invert()
+			} else resultBranches = intersectBranches(l.branches, r.branches, ctx)
+
+			if (resultBranches instanceof Disjoint) return resultBranches
+
 			return ctx.$.schema(
 				l.ordered || r.ordered ?
 					{
@@ -165,12 +158,10 @@ export const unionImplementation = implementNode<UnionDeclaration>({
 		},
 		...defineRightwardIntersections("union", (l, r, ctx) => {
 			const branches = intersectBranches(l.branches, [r], ctx)
-			if (branches instanceof Disjoint) {
-				return branches
-			}
-			if (branches.length === 1) {
-				return branches[0]
-			}
+			if (branches instanceof Disjoint) return branches
+
+			if (branches.length === 1) return branches[0]
+
 			return ctx.$.schema(
 				l.ordered ? { branches, ordered: true } : { branches }
 			)
@@ -240,18 +231,20 @@ export class UnionNode extends RawSchema<UnionDeclaration> {
 }
 
 const describeBranches = (descriptions: string[]) => {
-	if (descriptions.length === 0) {
-		return "never"
-	}
-	if (descriptions.length === 1) {
-		return descriptions[0]
-	}
+	if (descriptions.length === 0) return "never"
+
+	if (descriptions.length === 1) descriptions[0]
+	if (
+		(descriptions.length === 2 &&
+			descriptions[0] === "false" &&
+			descriptions[1] === "true") ||
+		(descriptions[0] === "true" && descriptions[1] === "false")
+	)
+		"a boolean"
 	let description = ""
 	for (let i = 0; i < descriptions.length - 1; i++) {
 		description += descriptions[i]
-		if (i < descriptions.length - 2) {
-			description += ", "
-		}
+		if (i < descriptions.length - 2) description += ", "
 	}
 	description += ` or ${descriptions[descriptions.length - 1]}`
 	return description
@@ -405,9 +398,8 @@ export const reduceBranches = ({
 	branches,
 	ordered
 }: UnionInner): readonly UnionChildNode[] => {
-	if (branches.length < 2) {
-		return branches
-	}
+	if (branches.length < 2) return branches
+
 	const uniquenessByIndex: Record<number, boolean> = branches.map(() => true)
 	for (let i = 0; i < branches.length; i++) {
 		for (
@@ -427,17 +419,14 @@ export const reduceBranches = ({
 				branches[j],
 				branches[0].$
 			)
-			if (intersection instanceof Disjoint) {
-				continue
-			}
+			if (intersection instanceof Disjoint) continue
+
 			if (intersection.equals(branches[i])) {
 				if (!ordered) {
 					// preserve ordered branches that are a subtype of a subsequent branch
 					uniquenessByIndex[i] = false
 				}
-			} else if (intersection.equals(branches[j])) {
-				uniquenessByIndex[j] = false
-			}
+			} else if (intersection.equals(branches[j])) uniquenessByIndex[j] = false
 		}
 	}
 	return branches.filter((_, i) => uniquenessByIndex[i])

@@ -17,9 +17,9 @@ export abstract class RawBasis<
 	}
 
 	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
-		if (!this.traverseAllows(data, ctx)) {
+		if (!this.traverseAllows(data, ctx)) 
 			ctx.error(this.errorContext as never)
-		}
+		
 	}
 
 	get errorContext(): d["errorContext"] {

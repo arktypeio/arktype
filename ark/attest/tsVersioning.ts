@@ -28,9 +28,9 @@ export const forTypeScriptVersions = (
 	const nodeModules = join(findPackageRoot(process.cwd()), "node_modules")
 	const tsPrimaryPath = join(nodeModules, "typescript")
 	const tsTemporaryPath = join(nodeModules, "typescript-temp")
-	if (existsSync(tsPrimaryPath)) {
+	if (existsSync(tsPrimaryPath)) 
 		renameSync(tsPrimaryPath, tsTemporaryPath)
-	}
+	
 	try {
 		for (const version of versions) {
 			const targetPath =
@@ -46,9 +46,9 @@ export const forTypeScriptVersions = (
 			)
 
 			try {
-				if (existsSync(tsPrimaryPath)) {
+				if (existsSync(tsPrimaryPath)) 
 					unlinkSync(tsPrimaryPath)
-				}
+				
 				symlinkSync(targetPath, tsPrimaryPath)
 				fn(version)
 				passedVersions.push(version)
@@ -119,9 +119,9 @@ export const findAttestTypeScriptVersions = (): TsVersionData[] => {
 			...packageJson.devDependencies
 		}
 		for (const alias in dependencies) {
-			if (!alias.startsWith("typescript")) {
+			if (!alias.startsWith("typescript")) 
 				continue
-			}
+			
 			const path = join(nodeModulesPath, alias)
 			if (!existsSync(path)) {
 				throw Error(

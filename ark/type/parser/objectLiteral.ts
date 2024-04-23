@@ -53,9 +53,9 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): RawSchema => {
 		)
 	}
 	for (const entry of parsedEntries) {
-		if (entry.kind === "spread") {
+		if (entry.kind === "spread") 
 			return throwParseError(nonLeadingSpreadError)
-		}
+		
 
 		if (entry.kind === "index") {
 			// handle key parsing first to match type behavior

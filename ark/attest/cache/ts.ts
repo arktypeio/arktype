@@ -15,9 +15,9 @@ export class TsServer {
 	}
 
 	private constructor(private tsConfigInfo = getTsConfigInfoOrThrow()) {
-		if (TsServer.#instance) {
+		if (TsServer.#instance) 
 			return TsServer.#instance
-		}
+		
 		const tsLibPaths = getTsLibFiles(tsConfigInfo.parsed.options)
 
 		this.rootFiles = tsConfigInfo.parsed.fileNames.filter((path) =>
@@ -42,9 +42,9 @@ export class TsServer {
 
 	getSourceFileOrThrow(path: string): ts.SourceFile {
 		const file = this.virtualEnv.getSourceFile(path)
-		if (!file) {
+		if (!file) 
 			throw new Error(`Could not find ${path}.`)
-		}
+		
 		return file
 	}
 }

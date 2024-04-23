@@ -23,9 +23,9 @@ const integer = root.defineSchema({
 		regex: wellFormedIntegerMatcher
 	},
 	morphs: (s: string, ctx) => {
-		if (!isWellFormedInteger(s)) {
+		if (!isWellFormedInteger(s)) 
 			return ctx.error("a well-formed integer string")
-		}
+		
 		const parsed = Number.parseInt(s)
 		return Number.isSafeInteger(parsed) ? parsed : (
 				ctx.error(

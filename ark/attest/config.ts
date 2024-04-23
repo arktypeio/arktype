@@ -61,22 +61,22 @@ const hasFlag = (flag: keyof AttestConfig) =>
 
 const getParamValue = (param: keyof AttestConfig) => {
 	const paramIndex = process.argv.findIndex((arg) => arg.includes(param))
-	if (paramIndex === -1) {
+	if (paramIndex === -1) 
 		return undefined
-	}
+	
 	const raw = process.argv[paramIndex + 1]
-	if (raw === "true") {
+	if (raw === "true") 
 		return true
-	}
-	if (raw === "false") {
+	
+	if (raw === "false") 
 		return false
-	}
-	if (param === "benchPercentThreshold") {
+	
+	if (param === "benchPercentThreshold") 
 		return tryParseNumber(raw, { errorOnFail: true })
-	}
-	if (param === "tsVersions" || param === "attestAliases") {
+	
+	if (param === "tsVersions" || param === "attestAliases") 
 		return raw.split(",")
-	}
+	
 	return raw
 }
 
@@ -92,13 +92,13 @@ const addEnvConfig = (config: BaseAttestConfig) => {
 	})
 	let k: keyof BaseAttestConfig
 	for (k in config) {
-		if (config[k] === false) {
+		if (config[k] === false) 
 			config[k] = hasFlag(k) as never
-		} else {
+		 else {
 			const value = getParamValue(k)
-			if (value !== undefined) {
+			if (value !== undefined) 
 				config[k] = value as never
-			}
+			
 		}
 	}
 	return config
@@ -139,9 +139,9 @@ const isTsVersionAliases = (
 
 const parseTsVersions = (aliases: TsVersionAliases): TsVersionData[] => {
 	const versions = findAttestTypeScriptVersions()
-	if (aliases === "*") {
+	if (aliases === "*") 
 		return versions
-	}
+	
 	return arrayFrom(aliases).map((alias) => {
 		const matching = versions.find((v) => v.alias === alias)
 		if (!matching) {

@@ -1,10 +1,10 @@
 import { caller } from "@arktype/fs"
 import { performance } from "node:perf_hooks"
 import { chainableNoOpProxy } from "../utils.js"
+import { await1K } from "./await1k.js"
 import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.js"
 import type { BenchContext, BenchableFunction, UntilOptions } from "./bench.js"
-import { await1K } from "./generated/await1k.js"
-import { call1K } from "./generated/call1k.js"
+import { call1K } from "./call1k.js"
 import {
 	createTimeComparison,
 	createTimeMeasure,
@@ -19,11 +19,11 @@ export type StatName = keyof typeof stats
 export type TimeAssertionName = StatName | "mark"
 
 export const stats = {
-	mean: (callTimes: number[]) => {
+	mean: (callTimes: number[]): number => {
 		const totalCallMs = callTimes.reduce((sum, duration) => sum + duration, 0)
 		return totalCallMs / callTimes.length
 	},
-	median: (callTimes: number[]) => {
+	median: (callTimes: number[]): number => {
 		const middleIndex = Math.floor(callTimes.length / 2)
 		const ms =
 			callTimes.length % 2 === 0 ?
@@ -138,9 +138,8 @@ export class BenchAssertions<
 		:	Measure<TimeUnit> | undefined,
 		callTimes: number[]
 	) {
-		if (name === "mark") {
-			return this.markAssertion(baseline as any, callTimes)
-		}
+		if (name === "mark") return this.markAssertion(baseline as any, callTimes)
+
 		const ms: number = stats[name as StatName](callTimes)
 		const comparison = createTimeComparison(ms, baseline as Measure<TimeUnit>)
 		console.group(`${this.label} (${name}):`)
@@ -221,26 +220,19 @@ export class BenchAssertions<
 		unhandledExceptionMessages.push(message)
 	}
 
-	median(baseline?: Measure<TimeUnit>) {
+	median(baseline?: Measure<TimeUnit>): ReturnedAssertions {
 		this.ctx.lastSnapCallPosition = caller()
-		const assertions = this.createStatMethod(
-			"median",
-			baseline
-		) as any as ReturnedAssertions
-		return assertions
+		return this.createStatMethod("median", baseline)
 	}
 
-	mean(baseline?: Measure<TimeUnit>) {
+	mean(baseline?: Measure<TimeUnit>): ReturnedAssertions {
 		this.ctx.lastSnapCallPosition = caller()
-		return this.createStatMethod("mean", baseline) as any as ReturnedAssertions
+		return this.createStatMethod("mean", baseline)
 	}
 
-	mark(baseline?: MarkMeasure) {
+	mark(baseline?: MarkMeasure): ReturnedAssertions {
 		this.ctx.lastSnapCallPosition = caller()
-		return this.createStatMethod(
-			"mark",
-			baseline as any
-		) as any as ReturnedAssertions
+		return this.createStatMethod("mark", baseline as any)
 	}
 }
 

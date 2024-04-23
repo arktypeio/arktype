@@ -10,9 +10,7 @@ try {
 		symlinkSync(`../repo/tsconfig.cjs.json`, "tsconfig.build.json")
 	}
 	shell("pnpm tsc --project tsconfig.build.json")
-	if (isCjs) {
-		writeJson(fromCwd("out", "package.json"), { type: "commonjs" })
-	}
+	if (isCjs) writeJson(fromCwd("out", "package.json"), { type: "commonjs" })
 } finally {
 	if (isCjs) {
 		unlinkSync("tsconfig.build.json")

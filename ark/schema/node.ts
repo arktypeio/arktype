@@ -68,9 +68,9 @@ export abstract class RawNode<
 					!this.includesMorph &&
 					!this.includesContextDependentPredicate &&
 					this.allows(data)
-				) {
+				)
 					return data
-				}
+
 				const ctx = new TraversalContext(data, this.$.resolvedConfig)
 				this.traverseApply(data, ctx)
 				return ctx.finalize()
@@ -127,24 +127,20 @@ export abstract class RawNode<
 	}
 
 	getIo(kind: "in" | "out"): RawNode {
-		if (!this.includesMorph) {
-			return this as never
-		}
+		if (!this.includesMorph) return this as never
+
 		const ioInner: Record<any, unknown> = {}
 		for (const [k, v] of this.entries) {
 			const keyDefinition = this.impl.keys[k]
-			if (keyDefinition.meta) {
-				continue
-			}
+			if (keyDefinition.meta) continue
+
 			if (keyDefinition.child) {
 				const childValue = v as listable<RawNode>
 				ioInner[k] =
 					isArray(childValue) ?
 						childValue.map((child) => child[kind])
 					:	childValue[kind]
-			} else {
-				ioInner[k] = v
-			}
+			} else ioInner[k] = v
 		}
 		return this.$.node(this.kind, ioInner)
 	}
@@ -252,9 +248,8 @@ export abstract class RawNode<
 		mapper: DeepNodeTransformation,
 		shouldTransform: (node: RawNode) => boolean
 	): Node<reducibleKindOf<this["kind"]>> {
-		if (!shouldTransform(this as never)) {
-			return this as never
-		}
+		if (!shouldTransform(this as never)) return this as never
+
 		const innerWithTransformedChildren = flatMorph(
 			this.inner as Dict,
 			(k, v) => [

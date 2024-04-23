@@ -53,16 +53,16 @@ export const parseTupleLiteral = (def: array, ctx: ParseContext): RawSchema => {
 
 		i++
 		if (def[i] === "?") {
-			if (spread) {
+			if (spread) 
 				return throwParseError(spreadOptionalMessage)
-			}
+			
 			optional = true
 			i++
 		}
 		if (spread) {
-			if (!element.extends(jsObjects.Array)) {
+			if (!element.extends(jsObjects.Array)) 
 				return throwParseError(writeNonArraySpreadMessage(element.expression))
-			}
+			
 			// a spread must be distributed over branches e.g.:
 			// def: [string, ...(number[] | [true, false])]
 			// nodes: [string, ...number[]] | [string, true, false]
@@ -414,9 +414,9 @@ export type inferKeyOfExpression<operandDef, $, args> = show<
 >
 
 const parseBranchTuple: PostfixParser<"|" | "&"> = (def, ctx) => {
-	if (def[2] === undefined) {
+	if (def[2] === undefined) 
 		return throwParseError(writeMissingRightOperandMessage(def[1], ""))
-	}
+	
 	const l = ctx.$.parse(def[0], ctx)
 	const r = ctx.$.parse(def[2], ctx)
 	return def[1] === "&" ? l.and(r) : l.or(r)

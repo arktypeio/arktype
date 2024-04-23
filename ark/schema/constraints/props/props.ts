@@ -65,11 +65,11 @@ export class PropsGroup extends DynamicBase<PropsGroupInput> {
 		this.onExtraneousKey !== undefined || this.index !== undefined
 
 	compile(js: NodeCompiler): void {
-		if (this.exhaustive) {
+		if (this.exhaustive) 
 			this.compileExhaustive(js)
-		} else {
+		 else 
 			this.compileEnumerable(js)
-		}
+		
 	}
 
 	protected compileEnumerable(js: NodeCompiler): void {
@@ -77,9 +77,9 @@ export class PropsGroup extends DynamicBase<PropsGroupInput> {
 			this.all.forEach((node) =>
 				js.if(`!${js.invoke(node)}`, () => js.return(false))
 			)
-		} else {
+		} else 
 			this.all.forEach((node) => js.line(js.invoke(node)))
-		}
+		
 	}
 
 	protected compileExhaustive(js: NodeCompiler): void {
@@ -87,9 +87,9 @@ export class PropsGroup extends DynamicBase<PropsGroupInput> {
 		this.sequence?.compile(js)
 		if (this.sequence) js.check(this.sequence)
 		js.forIn(js.data, () => {
-			if (this.onExtraneousKey) {
+			if (this.onExtraneousKey) 
 				js.let("matched", false)
-			}
+			
 			this.index?.forEach((node) => {
 				js.if(`${js.invoke(node.key, { arg: "k", kind: "Allows" })}`, () => {
 					if (js.traversalKind === "Allows") {
@@ -99,22 +99,22 @@ export class PropsGroup extends DynamicBase<PropsGroupInput> {
 							})}`,
 							() => js.return(false)
 						)
-					} else {
+					} else 
 						js.line(js.invoke(node.value, { arg: `${js.data}[k]` }))
-					}
-					if (this.onExtraneousKey) {
+					
+					if (this.onExtraneousKey) 
 						js.set("matched", true)
-					}
+					
 					return js
 				})
 			})
 			if (this.onExtraneousKey) {
-				if (this.prop?.length !== 0) {
+				if (this.prop?.length !== 0) 
 					js.line(`matched ||= k in ${this.nameSetReference}`)
-				}
-				if (this.sequence) {
+				
+				if (this.sequence) 
 					js.line(`matched ||= ${arrayIndexMatcherReference}.test(k)`)
-				}
+				
 				// TODO: replace error
 				js.if("!matched", () => js.line(`throw new Error("strict")`))
 			}

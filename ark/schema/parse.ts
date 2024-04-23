@@ -104,14 +104,14 @@ export const parseNode = (
 ): RawNode => {
 	const kind: NodeKind =
 		typeof kinds === "string" ? kinds : schemaKindOf(def, kinds)
-	if (isNode(def) && def.kind === kind) {
+	if (isNode(def) && def.kind === kind) 
 		return def
-	}
+	
 	if (kind === "union" && hasDomain(def, "object")) {
 		const branches = schemaBranchesOf(def)
-		if (branches?.length === 1) {
+		if (branches?.length === 1) 
 			return $parseNode(schemaKindOf(branches[0]), branches[0], $, opts)
-		}
+		
 	}
 	const node = $parseNode(kind, def, $, opts)
 	return node.bindScope($)
@@ -149,13 +149,13 @@ const $parseNode = (
 	for (const entry of schemaEntries) {
 		const k = entry[0]
 		const keyImpl = impl.keys[k] ?? baseKeys[k]
-		if (!keyImpl) {
+		if (!keyImpl) 
 			return throwParseError(`Key ${k} is not valid on ${kind} schema`)
-		}
+		
 		const v = keyImpl.parse ? keyImpl.parse(entry[1], ctx) : entry[1]
-		if (v !== undefined || keyImpl.preserveUndefined) {
+		if (v !== undefined || keyImpl.preserveUndefined) 
 			inner[k] = v
-		}
+		
 	}
 	const entries = entriesOf(inner)
 
@@ -178,12 +178,12 @@ const $parseNode = (
 				keyImpl.serialize ? keyImpl.serialize(v) : defaultValueSerializer(v)
 		}
 
-		if (!keyImpl.meta) {
+		if (!keyImpl.meta) 
 			typeJson[k] = json[k]
-		}
-		if (!keyImpl.implied) {
+		
+		if (!keyImpl.implied) 
 			collapsibleJson[k] = json[k]
-		}
+		
 	})
 
 	// check keys on collapsibleJson instead of schema in case one or more keys is
@@ -222,9 +222,9 @@ const $parseNode = (
 			// if we're defining the resolution of an alias and the result is
 			// reduced to another node, add the alias to that node if it doesn't
 			// already have one.
-			if (opts?.alias) {
+			if (opts?.alias) 
 				reduced.alias ??= opts.alias
-			}
+			
 			// we can't cache this reduction for now in case the reduction involved
 			// impliedSiblings
 			return reduced
@@ -252,14 +252,14 @@ const $parseNode = (
 		typeId,
 		$
 	} satisfies UnknownAttachments as Record<string, any>
-	if (opts?.alias) {
+	if (opts?.alias) 
 		attachments.alias = opts.alias
-	}
+	
 
 	for (const k in inner) {
-		if (k !== "description") {
+		if (k !== "description") 
 			attachments[k] = inner[k]
-		}
+		
 	}
 
 	const node: RawNode = new nodeClassesByKind[kind](attachments as never)

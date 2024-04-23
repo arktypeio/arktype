@@ -63,13 +63,13 @@ export type ContextualizeBlock = {
 export const contextualize: ContextualizeBlock = (...args: any[]) => {
 	if (globalThis.describe as unknown) {
 		const fileName = basename(caller().file)
-		if (typeof args[0] === "function") {
+		if (typeof args[0] === "function") 
 			globalThis.describe(fileName, args[0])
-		} else {
+		 else {
 			globalThis.describe(fileName, () => {
-				for (let i = 0; i < args.length; i = i + 2) {
+				for (let i = 0; i < args.length; i = i + 2) 
 					globalThis.describe(args[i], args[i + 1])
-				}
+				
 			})
 		}
 	}

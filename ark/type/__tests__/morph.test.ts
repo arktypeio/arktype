@@ -261,9 +261,9 @@ contextualize(() => {
 			"=>",
 			(s, ctx) => {
 				const result = Number.parseInt(s)
-				if (Number.isNaN(result)) {
+				if (Number.isNaN(result)) 
 					return ctx.error("an integer string")
-				}
+				
 				return result
 			}
 		])

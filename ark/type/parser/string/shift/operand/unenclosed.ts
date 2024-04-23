@@ -33,11 +33,11 @@ import {
 
 export const parseUnenclosed = (s: DynamicState): void => {
 	const token = s.scanner.shiftUntilNextTerminator()
-	if (token === "keyof") {
+	if (token === "keyof") 
 		s.addPrefix("keyof")
-	} else {
+	 else 
 		s.root = unenclosedToNode(s, token)
-	}
+	
 }
 
 export type parseUnenclosed<s extends StaticState, $, args> =
@@ -70,9 +70,9 @@ export const parseGenericInstantiation = (
 ): RawSchema => {
 	s.scanner.shiftUntilNonWhitespace()
 	const lookahead = s.scanner.shift()
-	if (lookahead !== "<") {
+	if (lookahead !== "<") 
 		return s.error(writeInvalidGenericArgsMessage(name, g.params, []))
-	}
+	
 	const parsedArgs = parseGenericArgs(name, g.params, s)
 	const remainingChars = parsedArgs.unscanned.length
 	// set the scanner position to where the args scanner left off
@@ -130,13 +130,13 @@ const maybeParseUnenclosedLiteral = (
 	token: string
 ): RawSchema | undefined => {
 	const maybeNumber = tryParseNumber(token, { strict: true })
-	if (maybeNumber !== undefined) {
+	if (maybeNumber !== undefined) 
 		return s.ctx.$.node("unit", { unit: maybeNumber })
-	}
+	
 	const maybeBigint = tryParseWellFormedBigint(token)
-	if (maybeBigint !== undefined) {
+	if (maybeBigint !== undefined) 
 		return s.ctx.$.node("unit", { unit: maybeBigint })
-	}
+	
 }
 
 type tryResolve<s extends StaticState, token extends string, $, args> =

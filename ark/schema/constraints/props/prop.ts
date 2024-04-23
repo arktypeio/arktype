@@ -70,9 +70,8 @@ export const propImplementation = implementNode<PropDeclaration>({
 	},
 	intersections: {
 		prop: (l, r, ctx) => {
-			if (l.key !== r.key) {
-				return null
-			}
+			if (l.key !== r.key) return null
+
 			const key = l.key
 			let value = intersectNodes(l.value, r.value, ctx)
 			const optional = l.optional === true && r.optional === true
@@ -119,39 +118,30 @@ export class PropNode extends RawConstraint<PropDeclaration> {
 
 	traverseApply: TraverseApply<object> = (data, ctx) => {
 		ctx.path.push(this.key)
-		if (this.key in data) {
-			this.value.traverseApply((data as any)[this.key], ctx)
-		} else if (this.required) {
-			ctx.error(this.errorContext)
-		}
+		if (this.key in data) this.value.traverseApply((data as any)[this.key], ctx)
+		else if (this.required) ctx.error(this.errorContext)
 		ctx.path.pop()
 	}
 
 	compile(js: NodeCompiler): void {
 		const requiresContext = js.requiresContextFor(this.value)
-		if (requiresContext) {
-			js.line(`ctx.path.push(${this.serializedKey})`)
-		}
 
-		js.if(`${this.serializedKey} in ${js.data}`, () =>
+		if (requiresContext) js.line(`ctx.path.push(${this.serializedKey})`)
+
+		if (this.optional) {
+			js.if(`${this.serializedKey} in ${js.data}`, () =>
+				js.check(this.value, {
+					arg: `${js.data}${js.prop(this.key)}`
+				})
+			)
+		} else {
 			js.check(this.value, {
 				arg: `${js.data}${js.prop(this.key)}`
-			})
-		)
-		if (this.required) {
-			js.else(() => {
-				if (js.traversalKind === "Apply") {
-					return js.line(`ctx.error(${this.compiledErrorContext})`)
-				} else {
-					if (requiresContext) {
-						js.line(`ctx.path.pop()`)
-					}
-					return js.return(false)
-				}
 			})
 		}
 
 		if (requiresContext) js.line(`ctx.path.pop()`)
-		else js.return(true)
+
+		if (js.traversalKind === "Allows") js.return(true)
 	}
 }

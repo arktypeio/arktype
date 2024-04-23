@@ -202,9 +202,9 @@ export class RawScope<
 	define = ((def: unknown) => def).bind(this)
 
 	override preparseRoot(def: unknown): unknown {
-		if (isThunk(def) && !hasArkKind(def, "generic")) {
+		if (isThunk(def) && !hasArkKind(def, "generic")) 
 			return def()
-		}
+		
 		return def
 	}
 
@@ -224,9 +224,9 @@ export class RawScope<
 				// resolutions like "this" or generic args
 				return this.parseString(def, ctx)
 			}
-			if (!this.parseCache[def]) {
+			if (!this.parseCache[def]) 
 				this.parseCache[def] = this.parseString(def, ctx)
-			}
+			
 			return this.parseCache[def]
 		}
 		return hasDomain(def, "object") ?

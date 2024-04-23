@@ -14,9 +14,9 @@ export const populateDemo = ({ data, type, errors }: PopulateDemoArgs) => {
 	defElement.innerHTML = recolor(defElement.innerHTML)
 
 	const resultElement = document.querySelector("#output")!
-	if (errors) {
+	if (errors) 
 		resultElement.textContent = `❌ errors:\n\n${errors}`
-	} else {
+	 else {
 		resultElement.textContent = `✅ out:\n\n${printable(data, 2)}`
 		resultElement.innerHTML = recolor(resultElement.innerHTML)
 	}
@@ -29,9 +29,9 @@ const recolor = (input: string) => {
 		if (line.includes(":")) {
 			const [key, ...values] = line.split(":")
 			fixedInput.push(`${buildKey(key)}: ${buildVal(values.join(":"))}`)
-		} else {
+		} else 
 			fixedInput.push(addArkdarkStyles(line))
-		}
+		
 	}
 	fixedInput.push("</span>")
 	return fixedInput.join("\\n")
@@ -42,11 +42,11 @@ const buildKey = (key: string) => {
 }
 const buildVal = (val: string) => {
 	const formatted = addArkdarkStyles(val.trim())
-	if (formatted[formatted.length - 1] === ",") {
+	if (formatted[formatted.length - 1] === ",") 
 		return `${formatted.replace(",", "")},`
-	} else if (formatted[formatted.length - 1] === "{") {
+	 else if (formatted[formatted.length - 1] === "{") 
 		return "{"
-	}
+	
 	return `${formatted}`
 }
 const addArkdarkStyles = (line: string) => {

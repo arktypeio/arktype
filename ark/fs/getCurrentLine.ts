@@ -71,14 +71,14 @@ export const getFramesFromError = (error: Error): string[] => {
 
 	// Handle different stack formats
 	if (stack) {
-		if (Array.isArray(stack)) {
+		if (Array.isArray(stack)) 
 			frames = Array(stack)
-		} else {
+		 else 
 			frames = stack.toString().split("\n")
-		}
-	} else {
+		
+	} else 
 		frames = []
-	}
+	
 
 	// Parse our frames
 	return frames
@@ -100,9 +100,9 @@ const getLocationsFromFrames = (frames: string[]): Location[] => {
 		const line = (frame || "").toString()
 
 		// skip empty lines
-		if (line.length === 0) {
+		if (line.length === 0) 
 			continue
-		}
+		
 
 		// Error
 		// at file:///Users/balupton/Projects/active/get-current-line/asd.js:1:13

@@ -68,14 +68,14 @@ export const bench = <Fn extends BenchableFunction>(
 	if (
 		typeof ctx.cfg.filter === "string" &&
 		!qualifiedPath.includes(ctx.cfg.filter)
-	) {
+	) 
 		return chainableNoOpProxy
-	} else if (
+	 else if (
 		Array.isArray(ctx.cfg.filter) &&
 		ctx.cfg.filter.some((segment, i) => segment !== qualifiedPath[i])
-	) {
+	) 
 		return chainableNoOpProxy
-	}
+	
 	const assertions = new BenchAssertions(fn, ctx)
 	Object.assign(assertions, createBenchTypeAssertion(ctx))
 	return assertions as any

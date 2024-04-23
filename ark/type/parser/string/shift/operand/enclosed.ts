@@ -21,11 +21,11 @@ export const parseEnclosed = (
 	const enclosed = s.scanner.shiftUntil(
 		untilLookaheadIsClosing[enclosingTokens[enclosing]]
 	)
-	if (s.scanner.lookahead === "") {
+	if (s.scanner.lookahead === "")
 		return s.error(writeUnterminatedEnclosedMessage(enclosed, enclosing))
-	}
+
 	// Shift the scanner one additional time for the second enclosing token
-	const token = `${enclosing}${enclosed}${s.scanner.shift()}`
+	s.scanner.shift()
 	if (enclosing === "/") {
 		// fail parsing if the regex is invalid
 		new RegExp(enclosed)
@@ -37,9 +37,9 @@ export const parseEnclosed = (
 			},
 			{ prereduced: true }
 		)
-	} else if (isKeyOf(enclosing, enclosingQuote)) {
+	} else if (isKeyOf(enclosing, enclosingQuote))
 		s.root = s.ctx.$.node("unit", { unit: enclosed })
-	} else {
+	else {
 		const date = tryParseDate(enclosed, writeInvalidDateMessage(enclosed))
 		s.root = s.ctx.$.node("unit", { unit: date, description: enclosed })
 	}

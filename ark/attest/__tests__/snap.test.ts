@@ -3,9 +3,9 @@ import * as assert from "node:assert/strict"
 
 const o = { re: "do" }
 const shouldThrow = (a: false) => {
-	if (a) {
+	if (a) 
 		throw new Error(`${a} is not assignable to false`)
-	}
+	
 }
 const throwError = () => {
 	throw new Error("Test error.")

@@ -27,11 +27,11 @@ export class Scanner<Lookahead extends string = string> {
 		let shifted = ""
 		while (this.lookahead) {
 			if (condition(this, shifted)) {
-				if (shifted[shifted.length - 1] === Scanner.escapeToken) {
+				if (shifted[shifted.length - 1] === Scanner.escapeToken) 
 					shifted = shifted.slice(0, -1)
-				} else {
+				 else 
 					break
-				}
+				
 			}
 			shifted += this.shift()
 		}

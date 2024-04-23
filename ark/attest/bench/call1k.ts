@@ -1,4 +1,4 @@
-export const call1K = (fn: () => void) => {
+export const call1K = (fn: () => void): void => {
 	fn()
 	fn()
 	fn()

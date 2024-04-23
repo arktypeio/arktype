@@ -32,9 +32,9 @@ export const resolveSnapshotPath = (
 	testFile: string,
 	customPath: string | undefined
 ): string => {
-	if (customPath && isAbsolute(customPath)) {
+	if (customPath && isAbsolute(customPath)) 
 		return customPath
-	}
+	
 	return join(dirname(testFile), customPath ?? "assert.snapshots.json")
 }
 
@@ -61,9 +61,9 @@ export const queueSnapshotUpdate = (args: SnapshotArgs): void => {
 		),
 		args
 	)
-	if (isBench) {
+	if (isBench) 
 		writeSnapshotUpdatesOnExit()
-	}
+	
 }
 
 export type QueuedUpdate = {
@@ -88,9 +88,9 @@ const findCallExpressionAncestor = (
 	const absolutePosition = getAbsolutePosition(file, position)
 	const startNode = nearestCallExpressionChild(file, absolutePosition)
 	const calls = getExpressionsByName(startNode, [functionName], true)
-	if (calls.length) {
+	if (calls.length) 
 		return startNode
-	}
+	
 	throw new Error(
 		`Unable to locate expected inline ${functionName} call from assertion at ${positionToString(
 			position
@@ -116,9 +116,9 @@ export const updateExternalSnapshot = ({
 
 let snapshotsWillBeWritten = false
 export const writeSnapshotUpdatesOnExit = (): void => {
-	if (snapshotsWillBeWritten) {
+	if (snapshotsWillBeWritten) 
 		return
-	}
+	
 	process.on("exit", writeCachedInlineSnapshotUpdates)
 	snapshotsWillBeWritten = true
 }
@@ -130,12 +130,12 @@ export const writeSnapshotUpdatesOnExit = (): void => {
 const writeCachedInlineSnapshotUpdates = () => {
 	const config = getConfig()
 	const updates: QueuedUpdate[] = []
-	if (existsSync(config.snapCacheDir)) {
+	if (existsSync(config.snapCacheDir)) 
 		updates.push(...getQueuedUpdates(config.snapCacheDir))
-	}
-	if (existsSync(config.benchSnapCacheDir)) {
+	
+	if (existsSync(config.benchSnapCacheDir)) 
 		updates.push(...getQueuedUpdates(config.benchSnapCacheDir))
-	}
+	
 	writeUpdates(updates)
 	rmSync(config.snapCacheDir, { recursive: true, force: true })
 	rmSync(config.benchSnapCacheDir, { recursive: true, force: true })
@@ -189,9 +189,9 @@ const snapshotArgsToQueuedUpdate = ({
 
 // Waiting until process exit to write snapshots avoids invalidating existing source positions
 export const writeUpdates = (queuedUpdates: QueuedUpdate[]): void => {
-	if (!queuedUpdates.length) {
+	if (!queuedUpdates.length) 
 		return
-	}
+	
 	const updatesByFile: Record<string, QueuedUpdate[]> = {}
 	for (const update of queuedUpdates) {
 		updatesByFile[update.position.file] ??= []

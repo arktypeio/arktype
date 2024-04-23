@@ -115,9 +115,9 @@ export const literalPropAccess = (
 	key: PropertyKey,
 	optional = false
 ): string => {
-	if (typeof key === "string" && isDotAccessible(key)) {
+	if (typeof key === "string" && isDotAccessible(key)) 
 		return `${optional ? "?" : ""}.${key}`
-	}
+	
 	return indexPropAccess(serializeLiteralKey(key), optional)
 }
 

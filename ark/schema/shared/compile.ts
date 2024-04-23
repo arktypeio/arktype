@@ -23,9 +23,9 @@ export class NodeCompiler extends CompiledFunction<["data", "ctx"]> {
 
 	invoke(node: RawNode, opts?: InvokeOptions): string {
 		const arg = opts?.arg ?? this.data
-		if (this.requiresContextFor(node)) {
+		if (this.requiresContextFor(node)) 
 			return `${this.reference(node, opts)}(${arg}, ${this.ctx})`
-		}
+		
 		return `${this.reference(node, opts)}(${arg})`
 	}
 
@@ -43,15 +43,15 @@ export class NodeCompiler extends CompiledFunction<["data", "ctx"]> {
 
 	checkReferenceKey(keyExpression: string, node: RawNode): this {
 		const requiresContext = this.requiresContextFor(node)
-		if (requiresContext) {
+		if (requiresContext) 
 			this.line(`${this.ctx}.path.push(${keyExpression})`)
-		}
+		
 		this.check(node, {
 			arg: `${this.data}${this.index(keyExpression)}`
 		})
-		if (requiresContext) {
+		if (requiresContext) 
 			this.line(`${this.ctx}.path.pop()`)
-		}
+		
 		return this
 	}
 
@@ -86,9 +86,9 @@ export class NodeCompiler extends CompiledFunction<["data", "ctx"]> {
 			// (or an exact value, implying a domain), we don't need to recheck it
 			return this
 		}
-		if (this.traversalKind === "Allows") {
+		if (this.traversalKind === "Allows") 
 			return this.return(node.compiledCondition)
-		}
+		
 		return this.if(node.compiledNegation, () =>
 			this.line(`${this.ctx}.error(${node.compiledErrorContext})`)
 		)

@@ -267,9 +267,9 @@ export class RawSchemaScope<
 	units = ((values: unknown[], opts?: NodeParseOptions): RawSchema => {
 		const uniqueValues: unknown[] = []
 		for (const value of values) {
-			if (!uniqueValues.includes(value)) {
+			if (!uniqueValues.includes(value)) 
 				uniqueValues.push(value)
-			}
+			
 		}
 		const branches = uniqueValues.map((unit) =>
 			this.node("unit", { unit }, opts)
@@ -323,9 +323,9 @@ export class RawSchemaScope<
 
 	maybeResolve(name: string): RawResolution | undefined {
 		const cached = this.resolutions[name]
-		if (cached) {
+		if (cached) 
 			return cached
-		}
+		
 		let def = this.aliases[name]
 		if (!def) return this.maybeResolveSubalias(name)
 		def = this.preparseRoot(def)
@@ -360,9 +360,9 @@ export class RawSchemaScope<
 	): show<destructuredExportContext<$, names>> {
 		if (!this.#exportCache) {
 			this.#exportCache = {}
-			for (const name of this.exportedNames) {
+			for (const name of this.exportedNames) 
 				this.#exportCache[name] = this.maybeResolve(name)
-			}
+			
 			this.#exportedResolutions = resolutionsOfModule(this, this.#exportCache)
 			// TODO: add generic json
 			Object.assign(
@@ -398,9 +398,9 @@ const $resolveSubalias = (
 	name: string
 ): RawSchema | GenericSchema | undefined => {
 	const dotIndex = name.indexOf(".")
-	if (dotIndex === -1) {
+	if (dotIndex === -1) 
 		return
-	}
+	
 	const dotPrefix = name.slice(0, dotIndex)
 	const prefixDef = base[dotPrefix]
 	// if the name includes ".", but the prefix is not an alias, it
@@ -534,11 +534,11 @@ const resolutionsOfModule = ($: RawSchemaScope, typeSet: SchemaExportCache) => {
 				(innerK, innerV) => [`${k}.${innerK}`, innerV]
 			)
 			Object.assign(result, prefixedResolutions)
-		} else if (hasArkKind(v, "generic")) {
+		} else if (hasArkKind(v, "generic")) 
 			result[k] = v
-		} else if (hasArkKind(v, "schema")) {
+		 else if (hasArkKind(v, "schema")) 
 			result[k] = v
-		} else throwInternalError(`Unexpected scope resolution ${printable(v)}`)
+		 else throwInternalError(`Unexpected scope resolution ${printable(v)}`)
 	}
 	return result
 }

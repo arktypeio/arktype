@@ -168,11 +168,11 @@ export const splitByKeys = <o extends object, leftKeys extends keySetOf<o>>(
 	const r: any = {}
 	let k: keyof o
 	for (k in o) {
-		if (k in leftKeys) {
+		if (k in leftKeys) 
 			l[k] = o[k]
-		} else {
+		 else 
 			r[k] = o[k]
-		}
+		
 	}
 	return [l, r]
 }

@@ -18,11 +18,10 @@ export const queueBaselineUpdateIfNeeded = (
 	updated: Measure | MarkMeasure,
 	baseline: Measure | MarkMeasure | undefined,
 	ctx: BenchAssertionContext
-) => {
+): void => {
 	// If we already have a baseline and the user didn't pass an update flag, do nothing
-	if (baseline && !ctx.cfg.updateSnapshots) {
-		return
-	}
+	if (baseline && !ctx.cfg.updateSnapshots) return
+
 	const serializedValue = snapshot(updated)
 	if (!ctx.lastSnapCallPosition) {
 		throw new Error(
@@ -48,20 +47,18 @@ export const queueBaselineUpdateIfNeeded = (
 export const compareToBaseline = (
 	result: MeasureComparison,
 	ctx: BenchContext
-) => {
+): void => {
 	console.log(`🏌️ Result: ${stringifyMeasure(result.updated)}`)
 	if (result.baseline && !ctx.cfg.updateSnapshots) {
 		console.log(`⛳ Baseline: ${stringifyMeasure(result.baseline)}`)
 		const delta =
 			((result.updated[0] - result.baseline[0]) / result.baseline[0]) * 100
 		const formattedDelta = `${delta.toFixed(2)}%`
-		if (delta > ctx.cfg.benchPercentThreshold) {
+		if (delta > ctx.cfg.benchPercentThreshold)
 			handlePositiveDelta(formattedDelta, ctx)
-		} else if (delta < -ctx.cfg.benchPercentThreshold) {
+		else if (delta < -ctx.cfg.benchPercentThreshold)
 			handleNegativeDelta(formattedDelta, ctx)
-		} else {
-			console.log(`📊 Delta: ${delta > 0 ? "+" : ""}${formattedDelta}`)
-		}
+		else console.log(`📊 Delta: ${delta > 0 ? "+" : ""}${formattedDelta}`)
 	}
 }
 

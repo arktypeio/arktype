@@ -77,18 +77,18 @@ export class DynamicState {
 	}
 
 	finalize(finalizer: Scanner.FinalizingLookahead): void {
-		if (this.groups.length) {
+		if (this.groups.length) 
 			return this.error(writeUnclosedGroupMessage(")"))
-		}
+		
 		this.finalizeBranches()
 		this.finalizer = finalizer
 	}
 
 	reduceLeftBound(limit: LimitLiteral, comparator: Comparator): void {
 		const invertedComparator = invertedComparators[comparator]
-		if (!isKeyOf(invertedComparator, minComparators)) {
+		if (!isKeyOf(invertedComparator, minComparators)) 
 			return this.error(writeUnpairableComparatorMessage(comparator))
-		}
+		
 		if (this.branches.leftBound) {
 			return this.error(
 				writeMultipleLeftBoundsMessage(
@@ -113,17 +113,17 @@ export class DynamicState {
 		} else if (this.branches.intersection) {
 			this.pushRootToBranch("&")
 			this.root = this.branches.intersection
-		} else {
+		} else 
 			this.applyPrefixes()
-		}
+		
 	}
 
 	finalizeGroup(): void {
 		this.finalizeBranches()
 		const topBranchState = this.groups.pop()
-		if (!topBranchState) {
+		if (!topBranchState) 
 			return this.error(writeUnmatchedGroupCloseMessage(this.scanner.unscanned))
-		}
+		
 		this.branches = topBranchState
 	}
 

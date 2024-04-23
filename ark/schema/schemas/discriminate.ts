@@ -65,13 +65,13 @@ const discriminantCache = new Map<
 export const discriminate = (
 	branches: readonly UnionChildNode[]
 ): Discriminant | null => {
-	if (branches.length < 2) {
+	if (branches.length < 2) 
 		return null
-	}
+	
 	const cached = discriminantCache.get(branches)
-	if (cached !== undefined) {
+	if (cached !== undefined) 
 		return cached
-	}
+	
 	// const pureValueBranches = branches.flatMap((branch) =>
 	// 	branch.unit ? branch.unit : []
 	// )
@@ -93,13 +93,13 @@ export const discriminate = (
 		for (let rIndex = lIndex + 1; rIndex < branches.length; rIndex++) {
 			const r = branches[rIndex]
 			const result = intersectNodesRoot(l, r, l.$)
-			if (!(result instanceof Disjoint)) {
+			if (!(result instanceof Disjoint)) 
 				continue
-			}
+			
 			for (const { path, kind, disjoint } of result.flat) {
-				if (!isKeyOf(kind, discriminantKinds)) {
+				if (!isKeyOf(kind, discriminantKinds)) 
 					continue
-				}
+				
 				const qualifiedDiscriminant: DiscriminantKey = `${path}${kind}`
 				let lSerialized: string
 				let rSerialized: string
@@ -122,16 +122,16 @@ export const discriminate = (
 					continue
 				}
 				const cases = casesBySpecifier[qualifiedDiscriminant]!
-				if (!isKeyOf(lSerialized, cases)) {
+				if (!isKeyOf(lSerialized, cases)) 
 					cases[lSerialized] = [l]
-				} else if (!cases[lSerialized].includes(l)) {
+				 else if (!cases[lSerialized].includes(l)) 
 					cases[lSerialized].push(l)
-				}
-				if (!isKeyOf(rSerialized, cases)) {
+				
+				if (!isKeyOf(rSerialized, cases)) 
 					cases[rSerialized] = [r]
-				} else if (!cases[rSerialized].includes(r)) {
+				 else if (!cases[rSerialized].includes(r)) 
 					cases[rSerialized].push(r)
-				}
+				
 			}
 		}
 	}

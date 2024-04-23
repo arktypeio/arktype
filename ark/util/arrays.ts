@@ -34,9 +34,9 @@ export type split<
 export const getPath = (root: unknown, path: string[]): unknown => {
 	let result: any = root
 	for (const segment of path) {
-		if (typeof result !== "object" || result === null) {
+		if (typeof result !== "object" || result === null) 
 			return undefined
-		}
+		
 		result = result[segment]
 	}
 	return result
@@ -48,9 +48,9 @@ export const intersectUniqueLists = <item>(
 ): item[] => {
 	const intersection = [...l]
 	for (const item of r) {
-		if (!l.includes(item)) {
+		if (!l.includes(item)) 
 			intersection.push(item)
-		}
+		
 	}
 	return intersection
 }
@@ -166,17 +166,17 @@ export const append = <
 	value: value,
 	opts?: AppendOptions
 ): Exclude<to, undefined> | Extract<value & to, undefined> => {
-	if (value === undefined) {
+	if (value === undefined) 
 		return to ?? ([] as any)
-	}
-	if (to === undefined) {
+	
+	if (to === undefined) 
 		return value === undefined ? [] : ([value] as any)
-	}
-	if (opts?.prepend) {
+	
+	if (opts?.prepend) 
 		to.unshift(value)
-	} else {
+	 else 
 		to.push(value)
-	}
+	
 	return to as never
 }
 
@@ -190,12 +190,12 @@ export const conflatenate = <element>(
 	to: readonly element[] | undefined | null,
 	elementOrList: listable<element> | undefined | null
 ): readonly element[] => {
-	if (elementOrList === undefined || elementOrList === null) {
+	if (elementOrList === undefined || elementOrList === null) 
 		return to ?? ([] as never)
-	}
-	if (to === undefined || to === null) {
+	
+	if (to === undefined || to === null) 
 		return arrayFrom(elementOrList) as never
-	}
+	
 	return to.concat(elementOrList) as never
 }
 
@@ -221,12 +221,12 @@ export const appendUnique = <to extends unknown[]>(
 	to: to | undefined,
 	value: to[number]
 ): to => {
-	if (to === undefined) {
+	if (to === undefined) 
 		return [value] as never
-	}
-	if (!to.includes(value)) {
+	
+	if (!to.includes(value)) 
 		to.push(value)
-	}
+	
 	return to
 }
 

@@ -17,9 +17,9 @@ const nameCounts: Record<string, number | undefined> = {}
 
 export const reference = (value: object | symbol): `$ark.${string}` => {
 	const existingName = namesByResolution.get(value)
-	if (existingName) {
+	if (existingName) 
 		return `$ark.${existingName}`
-	}
+	
 
 	const baseName = baseNameFor(value)
 	nameCounts[baseName] ??= 1
@@ -41,9 +41,9 @@ export const compileSerializedValue = (value: unknown): string => {
 const baseNameFor = (value: object | symbol) => {
 	switch (typeof value) {
 		case "object": {
-			if (value === null) {
+			if (value === null) 
 				break
-			}
+			
 			const prefix = objectKindOf(value) ?? "object"
 			// convert to camelCase
 			return prefix[0].toLowerCase() + prefix.slice(1)
