@@ -114,16 +114,16 @@ export abstract class RawNode<
 		return this(data)
 	}
 
-	#inCache?: RawNode;
+	private inCache?: RawNode;
 	get in(): RawNode {
-		this.#inCache ??= this.getIo("in")
-		return this.#inCache as never
+		this.inCache ??= this.getIo("in")
+		return this.inCache as never
 	}
 
-	#outCache?: RawNode
+	private outCache?: RawNode
 	get out(): RawNode {
-		this.#outCache ??= this.getIo("out")
-		return this.#outCache as never
+		this.outCache ??= this.getIo("out")
+		return this.outCache as never
 	}
 
 	getIo(kind: "in" | "out"): RawNode {

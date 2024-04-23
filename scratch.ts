@@ -1,7 +1,5 @@
-// import { bench } from "@arktype/attest"
-import { attest, bench } from "@arktype/attest"
-import { scope, type } from "arktype"
-import { ArkErrors, ArkTypeError } from "./ark/schema/shared/errors.js"
+import { bench } from "@arktype/attest"
+import { type } from "arktype"
 import "./arkConfig.js"
 
 export const validData = Object.freeze({
