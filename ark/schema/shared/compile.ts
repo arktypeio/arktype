@@ -10,6 +10,7 @@ export interface InvokeOptions extends ReferenceOptions {
 
 export interface ReferenceOptions {
 	kind?: TraversalKind
+	bind?: string
 }
 
 export class NodeCompiler extends CompiledFunction<["data", "ctx"]> {
@@ -30,7 +31,8 @@ export class NodeCompiler extends CompiledFunction<["data", "ctx"]> {
 
 	reference(node: RawNode, opts?: ReferenceOptions): string {
 		const invokedKind = opts?.kind ?? this.traversalKind
-		return `this.${node.baseName}${invokedKind}`
+		const base = `this.${node.baseName}${invokedKind}`
+		return opts?.bind ? `${base}.bind(${opts?.bind})` : base
 	}
 
 	requiresContextFor(node: RawNode): boolean {

@@ -90,12 +90,11 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 	normalize: (def) => def,
 	defaults: {
 		description: (node) =>
-			`a morph from ${node.in.description} to ${node.out.description}`
+			`a morph from ${node.from.description} to ${node.to?.description ?? "unknown"}`
 	},
 	intersections: {
 		morph: (l, r, ctx) => {
 			if (l.morphs.some((morph, i) => morph !== r.morphs[i]))
-				// TODO: is this always a parse error? what about for union reduction etc.
 				// TODO: check in for union reduction
 				return throwParseError("Invalid intersection of morphs")
 			const from = intersectNodes(l.from, r.from, ctx)
@@ -145,7 +144,9 @@ export class MorphNode extends RawSchema<MorphDeclaration> {
 	compiledMorphs = `[${this.serializedMorphs}]`
 	outValidator = this.to?.traverseApply ?? null
 	outValidatorReference: string =
-		this.to ? new NodeCompiler("Apply").reference(this.to) : "null"
+		this.to ?
+			new NodeCompiler("Apply").reference(this.to, { bind: "this" })
+		:	"null"
 
 	traverseAllows: TraverseAllows = (data, ctx) =>
 		this.from.traverseAllows(data, ctx)
