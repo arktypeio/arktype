@@ -246,7 +246,7 @@ export const sequenceImplementation = implementNode<SequenceDeclaration>({
 export class SequenceNode extends RawConstraint<SequenceDeclaration> {
 	readonly impliedBasis = this.$.keywords.Array.raw
 	readonly prefix = this.inner.prefix ?? []
-	readonly optionals = this.inner.optional ?? []
+	readonly optional = this.inner.optional ?? []
 	readonly prevariadic = [...this.prefix, ...this.optional]
 	readonly postfix = this.inner.postfix ?? []
 	readonly isVariadicOnly = this.prevariadic.length + this.postfix.length === 0

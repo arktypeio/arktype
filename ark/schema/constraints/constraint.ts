@@ -48,11 +48,11 @@ export abstract class RawPrimitiveConstraint<
 		js.compilePrimitive(this as never)
 	}
 
-	errorContext: d["errorContext"] = {
-		code: this.kind,
-		description: this.description,
-		...this.inner
+	get errorContext(): d["errorContext"] {
+		return { code: this.kind, description: this.description, ...this.inner }
 	}
 
-	compiledErrorContext = compileErrorContext(this.errorContext!)
+	get compiledErrorContext(): string {
+		return compileErrorContext(this.errorContext!)
+	}
 }

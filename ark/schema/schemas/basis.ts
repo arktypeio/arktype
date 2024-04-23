@@ -22,13 +22,13 @@ export abstract class RawBasis<
 		}
 	}
 
-	errorContext: d["errorContext"] = {
-		code: this.kind,
-		description: this.description,
-		...this.inner
+	get errorContext(): d["errorContext"] {
+		return { code: this.kind, description: this.description, ...this.inner }
 	}
 
-	compiledErrorContext = compileErrorContext(this.errorContext!)
+	get compiledErrorContext(): string {
+		return compileErrorContext(this.errorContext!)
+	}
 
 	compile(js: NodeCompiler): void {
 		js.compilePrimitive(this as never)

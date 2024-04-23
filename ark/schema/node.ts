@@ -151,9 +151,9 @@ export abstract class RawNode<
 
 	private descriptionCache?: string
 	get description(): string {
-		this.descriptionCache ??= this.$.resolvedConfig[this.kind].description?.(
-			this as never
-		)
+		this.descriptionCache ??=
+			this.inner.description ??
+			this.$.resolvedConfig[this.kind].description?.(this as never)
 		return this.descriptionCache
 	}
 

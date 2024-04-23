@@ -125,7 +125,7 @@ export class PropNode extends RawConstraint<PropDeclaration> {
 			ctx?.path.pop()
 			return allowed
 		}
-		return this.required
+		return !this.required
 	}
 
 	traverseApply: TraverseApply<object> = (data, ctx) => {
