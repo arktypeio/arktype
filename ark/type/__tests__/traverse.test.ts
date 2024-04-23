@@ -38,9 +38,7 @@ contextualize(() => {
 			name: "Shawn",
 			age: 99
 		})
-		attest(t({ name: "Shawn" }).toString()).snap(
-			"age must be a number (was undefined)"
-		)
+		attest(t({ name: "Shawn" }).toString()).snap("age must be defined")
 	})
 
 	it("customized builtin problem", () => {
@@ -73,11 +71,12 @@ contextualize(() => {
 	})
 
 	it("branches", () => {
-		const t = type([{ a: "string" }, "|", { b: "boolean" }])
-		attest(t({ a: "ok" })).snap({ a: "ok" })
-		attest(t({ b: true })).snap({ b: true })
-		attest(t({}).toString()).snap(
-			"a must be a string (was undefined) or b must be b must be false or true (was undefined) (was undefined)"
+		const t = type({ bar: "boolean" }, "|", { foo: "string" })
+		attest(t({ foo: "ok" })).snap({ foo: "ok" })
+		attest(t({ bar: true })).snap({ bar: true })
+		attest(t({}).toString()).snap("bar must be defined or foo must be defined")
+		attest(t({ bar: "swapped", foo: true }).toString()).snap(
+			'bar must be boolean (was "swapped") or foo must be a string (was true)'
 		)
 	})
 
@@ -86,7 +85,7 @@ contextualize(() => {
 		attest(t({ key: { a: "ok" } })).snap({ key: { a: "ok" } })
 		attest(t({ key: { b: true } })).snap({ key: { b: true } })
 		attest(t({ key: {} }).toString()).snap(
-			"key.a must be a string (was undefined) or key.b must be key.b must be false or true (was undefined) (was undefined)"
+			"key.a must be defined or key.b must be defined"
 		)
 	})
 
@@ -95,9 +94,7 @@ contextualize(() => {
 		attest(t({ a: "ok" })).snap({ a: "ok" })
 		attest(t({ a: 5 })).snap({ a: 5 })
 		// value isn't present
-		attest(t({}).toString()).snap(
-			"a must be a number, a string or null (was undefined)"
-		)
+		attest(t({}).toString()).snap("a must be defined")
 		// unsatisfying value
 		attest(t({ a: false }).toString()).snap(
 			"a must be a number, a string or null (was false)"
@@ -111,9 +108,7 @@ contextualize(() => {
 			c: { foo: "Function" },
 			d: "a|b|c"
 		}).export()
-		attest(types.d({}).toString()).snap(
-			"foo must be a function, a number or a string (was undefined)"
-		)
+		attest(types.d({}).toString()).snap("foo must be defined")
 		attest(types.d({ foo: null }).toString()).snap(
 			"foo must be a function, a number or a string (was null)"
 		)

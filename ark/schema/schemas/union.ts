@@ -103,7 +103,7 @@ export const unionImplementation = implementNode<UnionDeclaration>({
 					appendUnique(branchesAtPath, errorAtPath.expected)
 				)
 				const expected = describeBranches(branchesAtPath)
-				const actual = ctx.errors.reduce(
+				const actual = errors.reduce(
 					(acc, e) =>
 						e.actual && !acc.includes(e.actual) ?
 							`${acc && `${acc}, `}${e.actual}`
