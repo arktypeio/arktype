@@ -106,12 +106,6 @@ export const createError = (
 		errCtx.message = nodeConfig.message(errCtx as never)
 	} else {
 		const code = input.code ?? "predicate"
-		if (input.code === "union") {
-			// flatten union errors to avoid repeating context like "foo must be foo must be"...
-			input.errors = input.errors.flatMap(e =>
-				e.code === "union" ? e.errors : e
-			)
-		}
 		const nodeConfig = ctx.config[code]
 		const expected = input.expected ?? nodeConfig.expected?.(input as never)
 		const path = input.path ?? [...ctx.path]

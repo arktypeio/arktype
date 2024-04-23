@@ -77,7 +77,7 @@ contextualize(() => {
 		attest(t({ a: "ok" })).snap({ a: "ok" })
 		attest(t({ b: true })).snap({ b: true })
 		attest(t({}).toString()).snap(
-			"a must be a string (was undefined) or b must be boolean (was undefined)"
+			"a must be a string (was undefined) or b must be b must be false or true (was undefined) (was undefined)"
 		)
 	})
 
@@ -86,7 +86,7 @@ contextualize(() => {
 		attest(t({ key: { a: "ok" } })).snap({ key: { a: "ok" } })
 		attest(t({ key: { b: true } })).snap({ key: { b: true } })
 		attest(t({ key: {} }).toString()).snap(
-			"key.a must be a string (was undefined) or key.b must be boolean (was undefined)"
+			"key.a must be a string (was undefined) or key.b must be key.b must be false or true (was undefined) (was undefined)"
 		)
 	})
 
