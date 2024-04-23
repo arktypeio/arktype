@@ -7,13 +7,13 @@ export type stringifyUnion<
 > = join<unionToTuple<t>, delimiter>
 
 export type unionToTuple<t> =
-	$unionToTuple<t, []> extends infer result ? conform<result, t[]> : never
+	_unionToTuple<t, []> extends infer result ? conform<result, t[]> : never
 
-type $unionToTuple<t, result extends unknown[]> =
+type _unionToTuple<t, result extends unknown[]> =
 	getLastBranch<t> extends infer current ?
 		[t] extends [never] ?
 			result
-		:	$unionToTuple<Exclude<t, current>, [current, ...result]>
+		:	_unionToTuple<Exclude<t, current>, [current, ...result]>
 	:	never
 
 type getLastBranch<t> =

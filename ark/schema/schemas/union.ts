@@ -91,10 +91,10 @@ export const unionImplementation = implementNode<UnionDeclaration>({
 			return describeBranches(node.branches.map(branch => branch.description))
 		},
 		expected: ctx => {
-			const byPath = groupBy(
-				ctx.errors.flatMap(e => e),
-				"propString"
-			) as Record<string, ArkTypeError[]>
+			const byPath = groupBy(ctx.errors, "propString") as Record<
+				string,
+				ArkTypeError[]
+			>
 			const pathDescriptions = Object.entries(byPath).map(([path, errors]) => {
 				const branchesAtPath: string[] = []
 				errors.forEach(errorAtPath =>

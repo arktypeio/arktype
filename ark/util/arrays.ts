@@ -46,9 +46,8 @@ export const intersectUniqueLists = <item>(
 	r: readonly item[]
 ): item[] => {
 	const intersection = [...l]
-	for (const item of r) {
-		if (!l.includes(item)) intersection.push(item)
-	}
+	for (const item of r) if (!l.includes(item)) intersection.push(item)
+
 	return intersection
 }
 
@@ -69,21 +68,21 @@ export type flattenListable<t> = t extends array<infer element> ? element : t
 
 export type NonEmptyList<t = unknown> = readonly [t, ...t[]]
 
-export type repeat<t extends array, count extends number> = $repeat<
+export type repeat<t extends array, count extends number> = _repeat<
 	t,
 	[],
 	count,
 	[]
 >
 
-type $repeat<
+type _repeat<
 	base extends array,
 	result extends array,
 	maxDepth extends number,
 	depth extends 1[]
 > =
 	depth["length"] extends maxDepth ? result
-	:	$repeat<base, [...result, ...base], maxDepth, [...depth, 1]>
+	:	_repeat<base, [...result, ...base], maxDepth, [...depth, 1]>
 
 export type CollapsingList<t = unknown> =
 	| readonly []

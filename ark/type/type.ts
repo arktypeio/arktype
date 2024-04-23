@@ -128,7 +128,7 @@ export type DeclarationParser<$> = <preinferred>() => {
 // this is declared as a class internally so we can ensure all "abstract"
 // methods of BaseRoot are overridden, but we end up exporting it as an interface
 // to ensure it is not accessed as a runtime value
-declare class $Type<t = unknown, $ = any> extends BaseRoot<t, $> {
+declare class _Type<t = unknown, $ = any> extends BaseRoot<t, $> {
 	$: Scope<$>;
 
 	get in(): Type<this["tIn"], $>
@@ -197,7 +197,7 @@ export interface Type<
 	/** @ts-expect-error allow instantiation assignment to the base type */
 	out t = unknown,
 	$ = any
-> extends $Type<t, $> {}
+> extends _Type<t, $> {}
 
 export type TypeConstructor<t = unknown, $ = any> = new (
 	def: unknown,

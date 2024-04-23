@@ -266,9 +266,9 @@ export class RawSchemaScope<
 
 	units = ((values: unknown[], opts?: NodeParseOptions): RawSchema => {
 		const uniqueValues: unknown[] = []
-		for (const value of values) {
+		for (const value of values)
 			if (!uniqueValues.includes(value)) uniqueValues.push(value)
-		}
+
 		const branches = uniqueValues.map(unit => this.node("unit", { unit }, opts))
 		return this.node("union", branches, {
 			...opts,
@@ -348,27 +348,27 @@ export class RawSchemaScope<
 		) as never
 	}
 
-	#exportedResolutions: RawSchemaResolutions | undefined
-	#exportCache: SchemaExportCache | undefined
+	private _exportedResolutions: RawSchemaResolutions | undefined
+	private _exports: SchemaExportCache | undefined
 	export<names extends exportedNameOf<$>[]>(
 		...names: names
 	): show<destructuredExportContext<$, names>> {
-		if (!this.#exportCache) {
-			this.#exportCache = {}
+		if (!this._exports) {
+			this._exports = {}
 			for (const name of this.exportedNames)
-				this.#exportCache[name] = this.maybeResolve(name)
+				this._exports[name] = this.maybeResolve(name)
 
-			this.#exportedResolutions = resolutionsOfModule(this, this.#exportCache)
+			this._exportedResolutions = resolutionsOfModule(this, this._exports)
 			// TODO: add generic json
 			Object.assign(
 				this.json,
-				flatMorph(this.#exportedResolutions as Dict, (k, v) =>
+				flatMorph(this._exportedResolutions as Dict, (k, v) =>
 					hasArkKind(v, "schema") ? [k, v.json] : []
 				)
 			)
-			Object.assign(this.resolutions, this.#exportedResolutions)
+			Object.assign(this.resolutions, this._exportedResolutions)
 			if (this.config.registerKeywords)
-				Object.assign(RawSchemaScope.keywords, this.#exportedResolutions)
+				Object.assign(RawSchemaScope.keywords, this._exportedResolutions)
 			this.references = Object.values(this.referencesByName)
 			bindCompiledScope(this.references)
 			this.resolved = true
@@ -377,7 +377,7 @@ export class RawSchemaScope<
 		return new SchemaModule(
 			flatMorph(namesToExport, (_, name) => [
 				name,
-				this.#exportCache![name]
+				this._exports![name]
 			]) as never
 		) as never
 	}

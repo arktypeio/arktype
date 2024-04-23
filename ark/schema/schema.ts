@@ -69,17 +69,17 @@ export abstract class RawSchema<
 
 	abstract rawKeyOf(): RawSchema
 
-	#keyofCache: RawSchema | undefined
+	private _keyof: RawSchema | undefined
 	keyof(): RawSchema {
-		if (!this.#keyofCache) {
-			this.#keyofCache = this.rawKeyOf()
-			if (this.#keyofCache.branches.length === 0) {
+		if (!this._keyof) {
+			this._keyof = this.rawKeyOf()
+			if (this._keyof.branches.length === 0) {
 				throwParseError(
 					`keyof ${this.expression} results in an unsatisfiable type`
 				)
 			}
 		}
-		return this.#keyofCache as never
+		return this._keyof as never
 	}
 
 	// TODO: can it be enforced that this is not called internally and instead intersectNodes is used?
@@ -306,7 +306,7 @@ export declare abstract class BaseRoot<t = unknown, $ = any> extends Callable<
 // this is declared as a class internally so we can ensure all "abstract"
 // methods of BaseRoot are overridden, but we end up exporting it as an interface
 // to ensure it is not accessed as a runtime value
-declare class $Schema<t = unknown, $ = any> extends BaseRoot<t, $> {
+declare class _Schema<t = unknown, $ = any> extends BaseRoot<t, $> {
 	$: SchemaScope<$>;
 
 	get in(): Schema<this["tIn"], $>
@@ -356,7 +356,7 @@ export interface Schema<
 	/** @ts-expect-error allow instantiation assignment to the base type */
 	out t = unknown,
 	$ = any
-> extends $Schema<t, $> {}
+> extends _Schema<t, $> {}
 
 export type intersectSchema<l extends SchemaKind, r extends NodeKind> =
 	[l, r] extends [r, l] ? l

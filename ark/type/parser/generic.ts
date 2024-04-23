@@ -13,10 +13,10 @@ export type GenericParamsParseError<message extends string = string> = [
 ]
 
 export const parseGenericParams = (def: string): string[] =>
-	$parseGenericParams(new Scanner(def))
+	_parseGenericParams(new Scanner(def))
 
 export type parseGenericParams<def extends string> =
-	$parseParams<def, "", []> extends infer result extends string[] ?
+	_parseParams<def, "", []> extends infer result extends string[] ?
 		"" extends result[number] ?
 			GenericParamsParseError<emptyGenericParameterMessage>
 		:	result
@@ -27,7 +27,7 @@ export const emptyGenericParameterMessage =
 
 export type emptyGenericParameterMessage = typeof emptyGenericParameterMessage
 
-const $parseGenericParams = (scanner: Scanner): string[] => {
+const _parseGenericParams = (scanner: Scanner): string[] => {
 	const param = scanner.shiftUntilNextTerminator()
 	if (param === "") throwParseError(emptyGenericParameterMessage)
 
@@ -35,32 +35,32 @@ const $parseGenericParams = (scanner: Scanner): string[] => {
 	const nextNonWhitespace = scanner.shift()
 	return (
 		nextNonWhitespace === "" ? [param]
-		: nextNonWhitespace === "," ? [param, ...$parseGenericParams(scanner)]
+		: nextNonWhitespace === "," ? [param, ..._parseGenericParams(scanner)]
 		: throwParseError(writeUnexpectedCharacterMessage(nextNonWhitespace, ","))
 	)
 }
 
-type $parseParams<
+type _parseParams<
 	unscanned extends string,
 	param extends string,
 	result extends string[]
 > =
 	unscanned extends `${infer lookahead}${infer nextUnscanned}` ?
-		lookahead extends "," ? $parseParams<nextUnscanned, "", [...result, param]>
+		lookahead extends "," ? _parseParams<nextUnscanned, "", [...result, param]>
 		: lookahead extends Scanner.WhiteSpaceToken ?
 			param extends "" ?
 				// if the next char is whitespace and we aren't in the middle of a param, skip to the next one
-				$parseParams<Scanner.skipWhitespace<nextUnscanned>, "", result>
+				_parseParams<Scanner.skipWhitespace<nextUnscanned>, "", result>
 			: Scanner.skipWhitespace<nextUnscanned> extends (
 				`${infer nextNonWhitespace}${infer rest}`
 			) ?
 				nextNonWhitespace extends "," ?
-					$parseParams<rest, "", [...result, param]>
+					_parseParams<rest, "", [...result, param]>
 				:	GenericParamsParseError<
 						writeUnexpectedCharacterMessage<nextNonWhitespace, ",">
 					>
 			:	// params end with a single whitespace character, add the current token
 				[...result, param]
-		:	$parseParams<nextUnscanned, `${param}${lookahead}`, result>
+		:	_parseParams<nextUnscanned, `${param}${lookahead}`, result>
 	: param extends "" ? result
 	: [...result, param]

@@ -174,7 +174,7 @@ export type TraitCompositionKind = "abstract" | "implementation"
 export type composeTraits<
 	traits extends array,
 	kind extends TraitCompositionKind
-> = $compose<{
+> = _compose<{
 	validated: []
 	remaining: traits
 	kind: kind
@@ -197,7 +197,7 @@ type intersectImplementations<l, r> = {
 	:	l[k]
 } & Omit<r, keyof l>
 
-type $compose<s extends CompositionState> =
+type _compose<s extends CompositionState> =
 	s["remaining"] extends (
 		readonly [
 			TraitConstructor<
@@ -211,7 +211,7 @@ type $compose<s extends CompositionState> =
 			...infer tail
 		]
 	) ?
-		$compose<{
+		_compose<{
 			validated: [...s["validated"], s["remaining"][0]]
 			remaining: tail
 			kind: s["kind"]

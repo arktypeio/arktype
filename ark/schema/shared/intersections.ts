@@ -21,11 +21,11 @@ import type {
 } from "./implement.js"
 import { isNode } from "./utils.js"
 
-export type inferIntersection<l, r> = $inferIntersection<l, r, false>
+export type inferIntersection<l, r> = _inferIntersection<l, r, false>
 
-export type inferPipe<l, r> = $inferIntersection<l, r, true>
+export type inferPipe<l, r> = _inferIntersection<l, r, true>
 
-type $inferIntersection<l, r, piped extends boolean> =
+type _inferIntersection<l, r, piped extends boolean> =
 	[l] extends [never] ? never
 	: [r] extends [never] ? never
 	: [l & r] extends [never] ? never
@@ -37,15 +37,15 @@ type $inferIntersection<l, r, piped extends boolean> =
 			:	// a commutative intersection between two morphs is a ParseError
 				never
 		: piped extends true ? (In: lIn) => Out<r>
-		: (In: $inferIntersection<lIn, r, false>) => Out<lOut>
+		: (In: _inferIntersection<lIn, r, false>) => Out<lOut>
 	: r extends MorphAst<infer rIn, infer rOut> ?
-		(In: $inferIntersection<rIn, l, false>) => Out<rOut>
+		(In: _inferIntersection<rIn, l, false>) => Out<rOut>
 	: l extends of<infer lBase, infer lConstraints> ?
 		r extends of<infer rBase, infer rConstraints> ?
-			of<$inferIntersection<lBase, rBase, piped>, lConstraints & rConstraints>
-		:	of<$inferIntersection<lBase, r, piped>, lConstraints>
+			of<_inferIntersection<lBase, rBase, piped>, lConstraints & rConstraints>
+		:	of<_inferIntersection<lBase, r, piped>, lConstraints>
 	: r extends of<infer rBase, infer rConstraints> ?
-		of<$inferIntersection<l, rBase, piped>, rConstraints>
+		of<_inferIntersection<l, rBase, piped>, rConstraints>
 	: [l, r] extends [object, object] ?
 		// adding this intermediate infer result avoids extra instantiations
 		intersectObjects<l, r, piped> extends infer result ?
@@ -56,7 +56,7 @@ type $inferIntersection<l, r, piped extends boolean> =
 declare class MorphableIntersection<piped extends boolean> extends Hkt.Kind {
 	hkt: (
 		In: conform<this[Hkt.args], [l: unknown, r: unknown]>
-	) => $inferIntersection<(typeof In)[0], (typeof In)[1], piped>
+	) => _inferIntersection<(typeof In)[0], (typeof In)[1], piped>
 }
 
 type intersectObjects<l, r, piped extends boolean> =
@@ -65,7 +65,7 @@ type intersectObjects<l, r, piped extends boolean> =
 	:	show<
 			{
 				[k in keyof l]: k extends keyof r ?
-					$inferIntersection<l[k], r[k], piped>
+					_inferIntersection<l[k], r[k], piped>
 				:	l[k]
 			} & Omit<r, keyof l>
 		>

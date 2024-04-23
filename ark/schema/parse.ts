@@ -109,13 +109,13 @@ export const parseNode = (
 	if (kind === "union" && hasDomain(def, "object")) {
 		const branches = schemaBranchesOf(def)
 		if (branches?.length === 1)
-			return $parseNode(schemaKindOf(branches[0]), branches[0], $, opts)
+			return _parseNode(schemaKindOf(branches[0]), branches[0], $, opts)
 	}
-	const node = $parseNode(kind, def, $, opts)
+	const node = _parseNode(kind, def, $, opts)
 	return node.bindScope($)
 }
 
-const $parseNode = (
+const _parseNode = (
 	kind: NodeKind,
 	def: unknown,
 	$: RawSchemaScope,
@@ -246,9 +246,7 @@ const $parseNode = (
 	} satisfies UnknownAttachments as Record<string, any>
 	if (opts?.alias) attachments.alias = opts.alias
 
-	for (const k in inner) {
-		if (k !== "description") attachments[k] = inner[k]
-	}
+	for (const k in inner) if (k !== "description") attachments[k] = inner[k]
 
 	const node: RawNode = new nodeClassesByKind[kind](attachments as never)
 

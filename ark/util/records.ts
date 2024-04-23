@@ -19,15 +19,15 @@ export type requireKeys<o, key extends keyof o> = o & {
 	[requiredKey in key]-?: defined<o[requiredKey]>
 }
 
-export type require<o, maxDepth extends number = 1> = $require<o, [], maxDepth>
+export type require<o, maxDepth extends number = 1> = _require<o, [], maxDepth>
 
-type $require<o, depth extends 1[], maxDepth extends number> =
+type _require<o, depth extends 1[], maxDepth extends number> =
 	depth["length"] extends maxDepth ? o
 	: o extends object ?
 		o extends (...args: never[]) => unknown ?
 			o
 		:	{
-				[k in keyof o]-?: $require<o[k], [...depth, 1], maxDepth>
+				[k in keyof o]-?: _require<o[k], [...depth, 1], maxDepth>
 			}
 	:	o
 
@@ -39,15 +39,15 @@ export type keySet<key extends string = string> = { readonly [_ in key]?: 1 }
 
 export type keySetOf<o extends object> = keySet<Extract<keyof o, string>>
 
-export type mutable<o, maxDepth extends number = 1> = $mutable<o, [], maxDepth>
+export type mutable<o, maxDepth extends number = 1> = _mutable<o, [], maxDepth>
 
-type $mutable<o, depth extends 1[], maxDepth extends number> =
+type _mutable<o, depth extends 1[], maxDepth extends number> =
 	depth["length"] extends maxDepth ? o
 	: o extends object ?
 		o extends (...args: never[]) => unknown ?
 			o
 		:	{
-				-readonly [k in keyof o]: $mutable<o[k], [...depth, 1], maxDepth>
+				-readonly [k in keyof o]: _mutable<o[k], [...depth, 1], maxDepth>
 			}
 	:	o
 

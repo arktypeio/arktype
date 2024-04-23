@@ -185,25 +185,25 @@ export type inferMorphOut<morph extends Morph> = Exclude<
 >
 
 export type distillIn<t> =
-	includesMorphs<t> extends true ? $distill<t, "in", "base"> : t
+	includesMorphs<t> extends true ? _distill<t, "in", "base"> : t
 
 export type distillOut<t> =
-	includesMorphs<t> extends true ? $distill<t, "out", "base"> : t
+	includesMorphs<t> extends true ? _distill<t, "out", "base"> : t
 
 export type distillConstrainableIn<t> =
-	includesMorphs<t> extends true ? $distill<t, "in", "constrainable"> : t
+	includesMorphs<t> extends true ? _distill<t, "in", "constrainable"> : t
 
 export type distillConstrainableOut<t> =
-	includesMorphs<t> extends true ? $distill<t, "out", "constrainable"> : t
+	includesMorphs<t> extends true ? _distill<t, "out", "constrainable"> : t
 
 export type includesMorphs<t> =
-	[t, $distill<t, "in", "base">, t, $distill<t, "out", "base">] extends (
-		[$distill<t, "in", "base">, t, $distill<t, "out", "base">, t]
+	[t, _distill<t, "in", "base">, t, _distill<t, "out", "base">] extends (
+		[_distill<t, "in", "base">, t, _distill<t, "out", "base">, t]
 	) ?
 		false
 	:	true
 
-type $distill<
+type _distill<
 	t,
 	io extends "in" | "out",
 	distilledKind extends "base" | "constrainable"
@@ -215,12 +215,12 @@ type $distill<
 		:	o
 	: t extends of<infer base, any> ?
 		distilledKind extends "base" ?
-			$distill<base, io, distilledKind>
+			_distill<base, io, distilledKind>
 		:	t
 	: t extends TerminallyInferredObjectKind | Primitive ? t
 	: t extends array ? distillArray<t, io, distilledKind, []>
 	: {
-			[k in keyof t]: $distill<t[k], io, distilledKind>
+			[k in keyof t]: _distill<t[k], io, distilledKind>
 		}
 
 type distillArray<
@@ -234,7 +234,7 @@ type distillArray<
 			tail,
 			io,
 			constraints,
-			[...prefix, $distill<head, io, constraints>]
+			[...prefix, _distill<head, io, constraints>]
 		>
 	:	[...prefix, ...distillPostfix<t, io, constraints>]
 
@@ -249,9 +249,9 @@ type distillPostfix<
 			init,
 			io,
 			constraints,
-			[$distill<last, io, constraints>, ...postfix]
+			[_distill<last, io, constraints>, ...postfix]
 		>
-	:	[...{ [i in keyof t]: $distill<t[i], io, constraints> }, ...postfix]
+	:	[...{ [i in keyof t]: _distill<t[i], io, constraints> }, ...postfix]
 
 /** Objects we don't want to expand during inference like Date or Promise */
 type TerminallyInferredObjectKind =

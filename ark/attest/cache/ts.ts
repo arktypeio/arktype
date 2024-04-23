@@ -9,13 +9,13 @@ export class TsServer {
 	rootFiles!: string[]
 	virtualEnv!: tsvfs.VirtualTypeScriptEnvironment
 
-	static #instance: TsServer | null = null
+	private static _instance: TsServer | null = null
 	static get instance(): TsServer {
 		return new TsServer()
 	}
 
 	private constructor(private tsConfigInfo = getTsConfigInfoOrThrow()) {
-		if (TsServer.#instance) return TsServer.#instance
+		if (TsServer._instance) return TsServer._instance
 
 		const tsLibPaths = getTsLibFiles(tsConfigInfo.parsed.options)
 
@@ -36,7 +36,7 @@ export class TsServer {
 			this.tsConfigInfo.parsed.options
 		)
 
-		TsServer.#instance = this
+		TsServer._instance = this
 	}
 
 	getSourceFileOrThrow(path: string): ts.SourceFile {
