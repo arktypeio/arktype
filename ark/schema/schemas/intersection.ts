@@ -21,8 +21,9 @@ import {
 import type { Inner, MutableInner, NodeDef, Prerequisite } from "../kinds.js"
 import type { Constraint, Node } from "../node.js"
 import type { NodeParseContext } from "../parse.js"
-import type { RawSchema, RawSchemaAttachments } from "../schema.js"
+import { RawSchema, type RawSchemaAttachments } from "../schema.js"
 import type { RawSchemaScope } from "../scope.js"
+import type { NodeCompiler } from "../shared/compile.js"
 import { type BaseMeta, type declareNode, metaKeys } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { ArkTypeError } from "../shared/errors.js"
@@ -38,6 +39,7 @@ import {
 	propKeys
 } from "../shared/implement.js"
 import { intersectNodes } from "../shared/intersections.js"
+import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 import { hasArkKind, isNode } from "../shared/utils.js"
 import type { DomainDef, DomainNode } from "./domain.js"
 import type { ProtoDef, ProtoNode } from "./proto.js"
@@ -82,6 +84,104 @@ export interface IntersectionAttachments
 	traversables: array<
 		Node<Exclude<IntersectionChildKind, PropKind>> | PropsGroup
 	>
+}
+
+export class IntersectionNode extends RawSchema<IntersectionDeclaration> {
+	basis = this.domain ?? this.proto ?? null
+	refinements = this.children.filter((node): node is Node<RefinementKind> =>
+		node.isRefinement()
+	)
+	props = maybeCreatePropsGroup(this.inner, this.$)
+	traversables = conflatenateAll<
+		Node<Exclude<IntersectionChildKind, PropKind>> | PropsGroup
+	>(this.basis, this.refinements, this.props, this.predicate)
+
+	expression =
+		this.props?.expression ||
+		this.children.map((node) => node.nestableExpression).join(" & ") ||
+		"unknown"
+
+	traverseAllows: TraverseAllows = (data, ctx) =>
+		this.traversables.every((traversable) =>
+			traversable.traverseAllows(data as never, ctx)
+		)
+
+	traverseApply: TraverseApply = (data, ctx) => {
+		if (this.basis) {
+			this.basis.traverseApply(data, ctx)
+			if (ctx.hasError()) return
+		}
+		if (this.refinements.length) {
+			for (let i = 0; i < this.refinements.length - 1; i++) {
+				this.refinements[i].traverseApply(data as never, ctx)
+				if (ctx.failFast && ctx.hasError()) return
+			}
+			this.refinements.at(-1)!.traverseApply(data as never, ctx)
+			if (ctx.hasError()) return
+		}
+		if (this.props) {
+			this.props.traverseApply(data as never, ctx)
+			if (ctx.hasError()) return
+		}
+		if (this.predicate) {
+			for (let i = 0; i < this.predicate.length - 1; i++) {
+				this.predicate[i].traverseApply(data as never, ctx)
+				if (ctx.failFast && ctx.hasError()) return
+			}
+			this.predicate.at(-1)!.traverseApply(data as never, ctx)
+		}
+	}
+
+	compile(js: NodeCompiler): void {
+		if (js.traversalKind === "Allows") {
+			this.traversables.forEach((traversable) =>
+				isNode(traversable) ? js.check(traversable) : traversable.compile(js)
+			)
+			js.return(true)
+			return
+		}
+
+		const returnIfFail = () => js.if("ctx.hasError()", () => js.return())
+		const returnIfFailFast = () =>
+			js.if("ctx.failFast && ctx.hasError()", () => js.return())
+
+		if (this.basis) {
+			js.check(this.basis)
+			// we only have to return conditionally if this is not the last check
+			if (this.traversables.length > 1) returnIfFail()
+		}
+		if (this.refinements.length) {
+			for (let i = 0; i < this.refinements.length - 1; i++) {
+				js.check(this.refinements[i])
+				returnIfFailFast()
+			}
+			js.check(this.refinements.at(-1)!)
+			if (this.props || this.predicate) returnIfFail()
+		}
+		if (this.props) {
+			this.props.compile(js)
+			if (this.predicate) returnIfFail()
+		}
+		if (this.predicate) {
+			for (let i = 0; i < this.predicate.length - 1; i++) {
+				js.check(this.predicate[i])
+				// since predicates can be chained, we have to fail immediately
+				// if one fails
+				returnIfFail()
+			}
+			js.check(this.predicate.at(-1)!)
+		}
+	}
+
+	rawKeyOf(): RawSchema {
+		return (
+			this.basis ?
+				this.props ?
+					this.basis.rawKeyOf().or(this.props.rawKeyOf())
+				:	this.basis.rawKeyOf()
+			:	this.props?.rawKeyOf() ?? this.$.keywords.never.raw
+		)
+	}
 }
 
 const intersectionChildKeyParser =
@@ -360,8 +460,6 @@ export const intersectionImplementation =
 			}
 		}
 	})
-
-export type IntersectionNode = RawSchema<IntersectionDeclaration>
 
 const maybeCreatePropsGroup = (inner: IntersectionInner, $: RawSchemaScope) => {
 	const propsInput = pick(inner, propKeys)

@@ -11,10 +11,10 @@ import {
 import type { of } from "../constraints/ast.js"
 import type { NodeDef } from "../kinds.js"
 import type { Node, RawNode, SchemaDef } from "../node.js"
-import type {
+import {
 	RawSchema,
-	RawSchemaAttachments,
-	schemaKindRightOf
+	type RawSchemaAttachments,
+	type schemaKindRightOf
 } from "../schema.js"
 import type { StaticArkOption } from "../scope.js"
 import { NodeCompiler } from "../shared/compile.js"
@@ -23,7 +23,11 @@ import { Disjoint } from "../shared/disjoint.js"
 import type { ArkTypeError } from "../shared/errors.js"
 import { basisKinds, implementNode } from "../shared/implement.js"
 import { intersectNodes } from "../shared/intersections.js"
-import type { TraversalContext } from "../shared/traversal.js"
+import type {
+	TraversalContext,
+	TraverseAllows,
+	TraverseApply
+} from "../shared/traversal.js"
 import { defineRightwardIntersections } from "./utils.js"
 
 export type MorphInputKind = schemaKindRightOf<"morph">
@@ -181,7 +185,43 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 	}
 })
 
-export type MorphNode = RawSchema<MorphDeclaration>
+export class MorphNode extends RawSchema<MorphDeclaration> {
+	serializedMorphs = this.morphs.map((morph) => reference(morph))
+	compiledMorphs = JSON.stringify(this.serializedMorphs)
+	outValidator = this.to?.traverseApply ?? null
+	outValidatorReference: string =
+		this.to ? new NodeCompiler("Apply").reference(this.to) : "null"
+
+	traverseAllows: TraverseAllows = (data, ctx) =>
+		this.from.traverseAllows(data, ctx)
+	traverseApply: TraverseApply = (data, ctx) => {
+		ctx.queueMorphs(this.morphs, this.outValidator)
+		this.from.traverseApply(data, ctx)
+	}
+
+	expression = `(In: ${this.from.expression}) => Out<${this.to?.expression ?? "unknown"}>`
+
+	compile(js: NodeCompiler): void {
+		if (js.traversalKind === "Allows") {
+			js.return(js.invoke(this.from))
+			return
+		}
+		js.line(
+			`ctx.queueMorphs(${this.compiledMorphs}, ${this.outValidatorReference})`
+		)
+		js.line(js.invoke(this.from))
+	}
+
+	getIo(kind: "in" | "out"): RawSchema {
+		return kind === "in" ?
+				this.from
+			:	(this.to?.out as RawSchema) ?? this.$.keywords.unknown.raw
+	}
+
+	rawKeyOf(): RawSchema {
+		return this.from.rawKeyOf()
+	}
+}
 
 export type inferMorphOut<morph extends Morph> = Exclude<
 	ReturnType<morph>,

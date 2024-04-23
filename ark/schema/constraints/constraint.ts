@@ -6,6 +6,7 @@ import type {
 	intersectConstraintKinds
 } from "./util.js"
 
+// @ts-expect-error: TODO: REMOVE
 export class RawConstraint<
 	/** @ts-expect-error allow instantiation assignment to the base type */
 	out d extends BaseConstraintDeclaration = BaseConstraintDeclaration

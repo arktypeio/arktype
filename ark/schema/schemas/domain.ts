@@ -6,7 +6,7 @@ import {
 	domainOf,
 	getBaseDomainKeys
 } from "@arktype/util"
-import type { RawSchema, RawSchemaAttachments } from "../schema.js"
+import type { RawSchemaAttachments } from "../schema.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
@@ -15,6 +15,7 @@ import {
 	implementNode
 } from "../shared/implement.js"
 import type { TraverseAllows } from "../shared/traversal.js"
+import { RawBasis } from "./basis.js"
 
 export interface DomainInner<
 	domain extends NonEnumerableDomain = NonEnumerableDomain
@@ -44,6 +45,23 @@ export interface DomainAttachments
 	extends RawSchemaAttachments<DomainDeclaration>,
 		PrimitiveAttachments<DomainDeclaration> {
 	readonly literalKeys: array<Key>
+}
+
+export class DomainNode extends RawBasis<DomainDeclaration> {
+	traverseAllows: TraverseAllows = (data) => domainOf(data) === this.domain
+
+	readonly compiledCondition =
+		this.domain === "object" ?
+			`((typeof data === "object" && data !== null) || typeof data === "function")`
+		:	`typeof data === "${this.domain}"`
+
+	readonly compiledNegation =
+		this.domain === "object" ?
+			`((typeof data !== "object" || data === null) && typeof data !== "function")`
+		:	`typeof data !== "${this.domain}"`
+
+	readonly expression = this.domain
+	readonly literalKeys = getBaseDomainKeys(this.domain)
 }
 
 export const domainImplementation = implementNode<DomainDeclaration>({
@@ -83,5 +101,3 @@ export const domainImplementation = implementNode<DomainDeclaration>({
 		})
 	}
 })
-
-export type DomainNode = RawSchema<DomainDeclaration>

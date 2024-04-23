@@ -30,7 +30,7 @@ export class NodeCompiler extends CompiledFunction<["data", "ctx"]> {
 
 	reference(node: RawNode, opts?: ReferenceOptions): string {
 		const invokedKind = opts?.kind ?? this.traversalKind
-		return `this.${node.name}${invokedKind}`
+		return `this.${node.baseName}${invokedKind}`
 	}
 
 	requiresContextFor(node: RawNode): boolean {

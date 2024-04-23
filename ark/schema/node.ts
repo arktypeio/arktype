@@ -19,12 +19,7 @@ import type { SequenceNode } from "./constraints/props/sequence.js"
 import type { DivisorNode } from "./constraints/refinements/divisor.js"
 import type { BoundNodesByKind } from "./constraints/refinements/kinds.js"
 import type { RegexNode } from "./constraints/refinements/regex.js"
-import {
-	type Inner,
-	type NodeDef,
-	nodeImplementationsByKind,
-	type reducibleKindOf
-} from "./kinds.js"
+import type { Inner, NodeDef, reducibleKindOf } from "./kinds.js"
 import type { RawSchema, Schema } from "./schema.js"
 import type { DomainNode } from "./schemas/domain.js"
 import type { IntersectionNode } from "./schemas/intersection.js"
@@ -33,6 +28,7 @@ import type { ProtoNode } from "./schemas/proto.js"
 import type { UnionNode } from "./schemas/union.js"
 import type { UnitNode } from "./schemas/unit.js"
 import type { RawSchemaScope } from "./scope.js"
+import type { NodeCompiler } from "./shared/compile.js"
 import type {
 	BaseMeta,
 	RawNodeDeclaration,
@@ -53,11 +49,15 @@ import {
 	refinementKinds,
 	schemaKinds
 } from "./shared/implement.js"
-import { TraversalContext } from "./shared/traversal.js"
+import {
+	TraversalContext,
+	type TraverseAllows,
+	type TraverseApply
+} from "./shared/traversal.js"
 
 export type UnknownNode = RawNode | Schema
 
-export class RawNode<
+export abstract class RawNode<
 	/** @ts-expect-error allow instantiation assignment to the base type */
 	out d extends RawNodeDeclaration = RawNodeDeclaration
 > extends Callable<(data: d["prerequisite"]) => unknown, attachmentsOf<d>> {
@@ -78,13 +78,17 @@ export class RawNode<
 			{ attach: attachments as never }
 		)
 		this.contributesReferencesByName =
-			this.name in this.referencesByName ?
+			this.baseName in this.referencesByName ?
 				this.referencesByName
-			:	{ ...this.referencesByName, [this.name]: this as never }
+			:	{ ...this.referencesByName, [this.baseName]: this as never }
 		this.contributesReferences = Object.values(this.contributesReferencesByName)
 	}
 
-	readonly impl = nodeImplementationsByKind[this.kind]
+	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
+	abstract traverseApply: TraverseApply<d["prerequisite"]>
+	abstract expression: string
+	abstract compile(js: NodeCompiler): void
+
 	readonly includesMorph: boolean =
 		this.kind === "morph" || this.children.some((child) => child.includesMorph)
 	readonly includesContextDependentPredicate: boolean =
@@ -225,7 +229,9 @@ export class RawNode<
 	): narrowed {
 		return (
 			this.firstReference(filter) ??
-			throwError(`${this.name} had no references matching predicate ${filter}`)
+			throwError(
+				`${this.baseName} had no references matching predicate ${filter}`
+			)
 		)
 	}
 
@@ -238,7 +244,7 @@ export class RawNode<
 	firstReferenceOfKindOrThrow<kind extends NodeKind>(kind: kind): Node<kind> {
 		return (
 			this.firstReference((node) => node.kind === kind) ??
-			throwError(`${this.name} had no ${kind} references`)
+			throwError(`${this.baseName} had no ${kind} references`)
 		)
 	}
 

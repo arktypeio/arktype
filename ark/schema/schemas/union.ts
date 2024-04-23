@@ -1,11 +1,12 @@
 import { appendUnique, groupBy, isArray } from "@arktype/util"
 import type { NodeDef } from "../kinds.js"
 import type { Node } from "../node.js"
-import type {
+import {
 	RawSchema,
-	RawSchemaAttachments,
-	schemaKindRightOf
+	type RawSchemaAttachments,
+	type schemaKindRightOf
 } from "../schema.js"
+import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { ArkTypeError } from "../shared/errors.js"
@@ -16,6 +17,7 @@ import {
 	schemaKindsRightOf
 } from "../shared/implement.js"
 import { intersectNodes, intersectNodesRoot } from "../shared/intersections.js"
+import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 import type { Discriminant } from "./discriminate.js"
 import { defineRightwardIntersections } from "./utils.js"
 
@@ -237,17 +239,76 @@ export const unionImplementation = implementNode<UnionDeclaration>({
 					(result, branch) => result.and(branch.rawKeyOf()),
 					this.$.keywords.unknown.raw
 				)
-			},
-			get nestableExpression() {
-				// avoid adding unnecessary parentheses around boolean since it's
-				// already collapsed to a single keyword
-				return this.isBoolean ? "boolean" : super.nestableExpression
 			}
+			// get nestableExpression() {
+			// 	// avoid adding unnecessary parentheses around boolean since it's
+			// 	// already collapsed to a single keyword
+			// 	return this.isBoolean ? "boolean" : super.nestableExpression
+			// }
 		}
 	}
 })
 
-export type UnionNode = RawSchema<UnionDeclaration>
+export class UnionNode extends RawSchema<UnionDeclaration> {
+	isBoolean =
+		this.branches.length === 2 &&
+		this.branches[0].hasUnit(false) &&
+		this.branches[1].hasUnit(true)
+
+	discriminant = null
+	expression =
+		this.isBoolean ? "boolean" : (
+			this.branches.map((branch) => branch.nestableExpression).join(" | ")
+		)
+	traverseAllows: TraverseAllows = (data, ctx) =>
+		this.branches.some((b) => b.traverseAllows(data, ctx))
+
+	traverseApply: TraverseApply = (data, ctx) => {
+		const errors: ArkTypeError[] = []
+		for (let i = 0; i < this.branches.length; i++) {
+			ctx.pushBranch()
+			this.branches[i].traverseApply(data, ctx)
+			if (!ctx.hasError())
+				return ctx.queuedMorphs.push(...ctx.popBranch().queuedMorphs)
+			errors.push(ctx.popBranch().error!)
+		}
+		ctx.error({ code: "union", errors })
+	}
+
+	compile(js: NodeCompiler): void {
+		if (js.traversalKind === "Apply") {
+			js.const("errors", "[]")
+			this.branches.forEach((branch) =>
+				js
+					.line("ctx.pushBranch()")
+					.line(js.invoke(branch))
+					.if("!ctx.hasError()", () =>
+						js.return("ctx.morphs.push(...ctx.popBranch().morphs)")
+					)
+					.line("errors.push(ctx.popBranch().error)")
+			)
+			js.line(`ctx.error({ code: "union", errors })`)
+		} else {
+			this.branches.forEach((branch) =>
+				js.if(`${js.invoke(branch)}`, () => js.return(true))
+			)
+			js.return(false)
+		}
+	}
+
+	rawKeyOf(): RawSchema {
+		return this.branches.reduce(
+			(result, branch) => result.and(branch.rawKeyOf()),
+			this.$.keywords.unknown.raw
+		)
+	}
+
+	get nestableExpression(): string {
+		// avoid adding unnecessary parentheses around boolean since it's
+		// already collapsed to a single keyword
+		return this.isBoolean ? "boolean" : super.nestableExpression
+	}
+}
 
 const describeBranches = (descriptions: string[]) => {
 	if (descriptions.length === 0) {

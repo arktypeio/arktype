@@ -575,14 +575,14 @@ export const bindCompiledScope = (references: readonly RawNode[]): void => {
 		}
 		node.jit = true
 		node.traverseAllows =
-			compiledTraversals[`${node.name}Allows`].bind(compiledTraversals)
+			compiledTraversals[`${node.baseName}Allows`].bind(compiledTraversals)
 		if (node.isSchema() && !node.includesContextDependentPredicate) {
 			// if the reference doesn't require context, we can assign over
 			// it directly to avoid having to initialize it
 			node.allows = node.traverseAllows as never
 		}
 		node.traverseApply =
-			compiledTraversals[`${node.name}Apply`].bind(compiledTraversals)
+			compiledTraversals[`${node.baseName}Apply`].bind(compiledTraversals)
 	}
 }
 
@@ -594,9 +594,9 @@ const compileScope = (references: readonly RawNode[]) => {
 				node.compile(allowsCompiler)
 				const applyCompiler = new NodeCompiler("Apply").indent()
 				node.compile(applyCompiler)
-				js.line(`${allowsCompiler.writeMethod(`${node.name}Allows`)},`).line(
-					`${applyCompiler.writeMethod(`${node.name}Apply`)},`
-				)
+				js.line(
+					`${allowsCompiler.writeMethod(`${node.baseName}Allows`)},`
+				).line(`${applyCompiler.writeMethod(`${node.baseName}Apply`)},`)
 			})
 			return js
 		})

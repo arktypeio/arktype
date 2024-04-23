@@ -417,7 +417,8 @@ export type DescriptionWriter<kind extends NodeKind = NodeKind> = (
 export interface UnknownAttachments {
 	alias?: string
 	readonly kind: NodeKind
-	readonly name: string
+	readonly impl: UnknownNodeImplementation
+	readonly baseName: string
 	readonly inner: Record<string, any>
 	readonly entries: readonly Entry<string>[]
 	readonly json: object
@@ -468,5 +469,5 @@ export type NodeAttachments<d extends RawNodeDeclaration> = {
 	traverseAllows: TraverseAllows<d["prerequisite"]>
 	traverseApply: TraverseApply<d["prerequisite"]>
 	expression: string
-	compile: (js: NodeCompiler) => void
+	compile(js: NodeCompiler): void
 }

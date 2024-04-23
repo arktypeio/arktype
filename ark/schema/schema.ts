@@ -58,7 +58,7 @@ export interface RawSchemaAttachments<d extends RawNodeDeclaration>
 
 export type UnknownSchema = Schema | RawSchema
 
-export class RawSchema<
+export abstract class RawSchema<
 		/** @ts-expect-error allow instantiation assignment to the base type */
 		out d extends RawSchemaDeclaration = RawSchemaDeclaration
 	>
@@ -211,6 +211,60 @@ export class RawSchema<
 		const to = this.$.parseRoot(def)
 		return pipeNodesRoot(this, to, this.$) as never
 	}
+
+	// divisibleBy<
+	// 	const schema extends validateConstraintArg<"divisor", this["infer"]>
+	// >(schema: schema): Type<applySchema<t, "divisor", schema>, $> {
+	// 	return this.rawConstrain("divisor", schema as never) as never
+	// }
+
+	// atLeast<const schema extends validateConstraintArg<"min", this["infer"]>>(
+	// 	schema: schema
+	// ): Type<applySchema<t, "min", schema>, $> {
+	// 	return this.rawConstrain("min", schema as never) as never
+	// }
+
+	// atMost<const schema extends validateConstraintArg<"max", this["infer"]>>(
+	// 	schema: schema
+	// ): Type<applySchema<t, "max", schema>, $> {
+	// 	return this.rawConstrain("max", schema as never) as never
+	// }
+
+	// moreThan<const schema extends validateConstraintArg<"min", this["infer"]>>(
+	// 	schema: schema
+	// ): Type<applySchema<t, "min", schema>, $> {
+	// 	return this.rawConstrain("min", schema as never) as never
+	// }
+
+	// lessThan<const schema extends validateConstraintArg<"max", this["infer"]>>(
+	// 	schema: schema
+	// ): Type<applySchema<t, "max", schema>, $> {
+	// 	return this.rawConstrain("max", schema as never) as never
+	// }
+
+	// atLeastLength<
+	// 	const schema extends validateConstraintArg<"minLength", this["infer"]>
+	// >(schema: schema): Type<applySchema<t, "minLength", schema>, $> {
+	// 	return this.rawConstrain("minLength", schema as never) as never
+	// }
+
+	// atMostLength<
+	// 	const schema extends validateConstraintArg<"maxLength", this["infer"]>
+	// >(schema: schema): Type<applySchema<t, "maxLength", schema>, $> {
+	// 	return this.rawConstrain("maxLength", schema as never) as never
+	// }
+
+	// earlierThan<
+	// 	const schema extends validateConstraintArg<"before", this["infer"]>
+	// >(schema: schema): Type<applySchema<t, "before", schema>, $> {
+	// 	return this.rawConstrain("before", schema as never) as never
+	// }
+
+	// laterThan<const schema extends validateConstraintArg<"after", this["infer"]>>(
+	// 	schema: schema
+	// ): Type<applySchema<t, "after", schema>, $> {
+	// 	return this.rawConstrain("after", schema as never) as never
+	// }
 }
 
 export declare abstract class BaseRoot<t = unknown, $ = any> extends Callable<

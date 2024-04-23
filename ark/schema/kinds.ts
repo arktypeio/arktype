@@ -26,23 +26,43 @@ import {
 	type RegexDeclaration,
 	regexImplementation
 } from "./constraints/refinements/regex.js"
+import type { RawSchema } from "./schema.js"
 import {
 	type DomainDeclaration,
-	domainImplementation
+	domainImplementation,
+	DomainNode
 } from "./schemas/domain.js"
 import {
 	type IntersectionDeclaration,
-	intersectionImplementation
+	intersectionImplementation,
+	IntersectionNode
 } from "./schemas/intersection.js"
 import {
 	type MorphDeclaration,
 	morphImplementation,
-	type MorphInputKind
+	type MorphInputKind,
+	MorphNode
 } from "./schemas/morph.js"
-import { type ProtoDeclaration, protoImplementation } from "./schemas/proto.js"
-import { type UnionDeclaration, unionImplementation } from "./schemas/union.js"
-import { type UnitDeclaration, unitImplementation } from "./schemas/unit.js"
-import type { NodeKind, UnknownNodeImplementation } from "./shared/implement.js"
+import {
+	type ProtoDeclaration,
+	protoImplementation,
+	ProtoNode
+} from "./schemas/proto.js"
+import {
+	type UnionDeclaration,
+	unionImplementation,
+	UnionNode
+} from "./schemas/union.js"
+import {
+	type UnitDeclaration,
+	unitImplementation,
+	UnitNode
+} from "./schemas/unit.js"
+import type {
+	NodeKind,
+	SchemaKind,
+	UnknownNodeImplementation
+} from "./shared/implement.js"
 import type { makeRootAndArrayPropertiesMutable } from "./shared/utils.js"
 
 export interface NodeDeclarationsByKind extends BoundDeclarations {
@@ -78,6 +98,15 @@ export const nodeImplementationsByKind: Record<
 	index: indexImplementation,
 	sequence: sequenceImplementation
 } satisfies Record<NodeKind, unknown> as never
+
+export const schemaClassesByKind = {
+	domain: DomainNode,
+	unit: UnitNode,
+	proto: ProtoNode,
+	union: UnionNode,
+	morph: MorphNode,
+	intersection: IntersectionNode
+} satisfies Record<SchemaKind, typeof RawSchema<any>>
 
 export type Declaration<kind extends NodeKind> = NodeDeclarationsByKind[kind]
 

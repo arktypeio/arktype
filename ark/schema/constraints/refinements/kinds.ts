@@ -55,3 +55,13 @@ export const boundImplementationsByKind = {
 	after: afterImplementation,
 	before: beforeImplementation
 }
+
+// export const boundClassesByKind: Record<BoundKind, typeof RawConstraint> = {
+// 	min: MinNode,
+// 	max: MaxNode,
+// 	minLength: MinLengthNode,
+// 	maxLength: MaxLengthNode,
+// 	exactLength: ExactLengthNode,
+// 	after: AfterNode,
+// 	before: BeforeNode
+// }

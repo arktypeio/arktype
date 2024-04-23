@@ -10,7 +10,7 @@ import {
 	objectKindOrDomainOf,
 	prototypeKeysOf
 } from "@arktype/util"
-import type { RawSchema, RawSchemaAttachments } from "../schema.js"
+import type { RawSchemaAttachments } from "../schema.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
@@ -19,6 +19,8 @@ import {
 	derivePrimitiveAttachments,
 	implementNode
 } from "../shared/implement.js"
+import type { TraverseAllows } from "../shared/traversal.js"
+import { RawBasis } from "./basis.js"
 
 export interface ProtoInner<proto extends Constructor = Constructor>
 	extends BaseMeta {
@@ -111,4 +113,14 @@ export const protoImplementation = implementNode<ProtoDeclaration>({
 	}
 })
 
-export type ProtoNode = RawSchema<ProtoDeclaration>
+export class ProtoNode extends RawBasis<ProtoDeclaration> {
+	builtinName = getExactBuiltinConstructorName(this.proto)
+	serializedConstructor = (this.json as { proto: string }).proto
+	compiledCondition = `data instanceof ${this.serializedConstructor}`
+	compiledNegation = `!(${this.compiledCondition})`
+	literalKeys = prototypeKeysOf(this.proto.prototype)
+
+	traverseAllows: TraverseAllows = (data) => data instanceof this.proto
+	expression = this.proto.name
+	readonly domain = "object"
+}

@@ -3,7 +3,6 @@ import {
 	type JsonData,
 	type PartialRecord,
 	type array,
-	defineProperties,
 	entriesOf,
 	hasDomain,
 	includes,
@@ -14,9 +13,9 @@ import {
 	throwParseError
 } from "@arktype/util"
 import { RawConstraint } from "./constraints/constraint.js"
-import { nodeImplementationsByKind } from "./kinds.js"
+import { nodeImplementationsByKind, schemaClassesByKind } from "./kinds.js"
 import type { RawNode } from "./node.js"
-import { RawSchema, type UnknownSchema } from "./schema.js"
+import type { UnknownSchema } from "./schema.js"
 import type { RawSchemaScope } from "./scope.js"
 import type { RawNodeDeclaration } from "./shared/declare.js"
 import { Disjoint } from "./shared/disjoint.js"
@@ -241,10 +240,11 @@ const $parseNode = (
 
 	const prefix = opts?.alias ?? kind
 	nodeCountsByPrefix[prefix] ??= 0
-	const name = `${prefix}${++nodeCountsByPrefix[prefix]!}`
+	const baseName = `${prefix}${++nodeCountsByPrefix[prefix]!}`
 	const attachments = {
-		name,
+		baseName,
 		kind,
+		impl,
 		inner,
 		entries,
 		json: json as Json,
@@ -258,13 +258,22 @@ const $parseNode = (
 	if (opts?.alias) {
 		attachments.alias = opts.alias
 	}
-	Object.assign(attachments, inner)
-	defineProperties(attachments, impl.construct(attachments as never))
+
+	for (const k in inner) {
+		if (k !== "description") {
+			attachments[k] = inner[k]
+		}
+	}
 
 	const node: RawNode =
 		includes(schemaKinds, kind) ?
-			new RawSchema(attachments as never)
-		:	(new RawConstraint(attachments as never) as never)
+			new schemaClassesByKind[kind](attachments as never)
+		:	new RawConstraint(
+				Object.assign(
+					attachments,
+					impl.construct(attachments as never)
+				) as never
+			)
 
 	nodeCache[innerId] = node
 	return node

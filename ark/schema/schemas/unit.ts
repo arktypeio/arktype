@@ -7,7 +7,7 @@ import {
 	printable,
 	prototypeKeysOf
 } from "@arktype/util"
-import type { RawSchema, RawSchemaAttachments } from "../schema.js"
+import type { RawSchemaAttachments } from "../schema.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
@@ -16,6 +16,7 @@ import {
 	derivePrimitiveAttachments,
 	implementNode
 } from "../shared/implement.js"
+import { RawBasis } from "./basis.js"
 import { defineRightwardIntersections } from "./utils.js"
 
 export type UnitDef<value = unknown> = UnitInner<value>
@@ -93,7 +94,29 @@ export const unitImplementation = implementNode<UnitDeclaration>({
 	}
 })
 
-export type UnitNode = RawSchema<UnitDeclaration>
+export class UnitNode extends RawBasis<UnitDeclaration> {
+	compiledValue: JsonPrimitive = (this.json as any).unit
+	serializedValue: JsonPrimitive =
+		typeof this.unit === "string" || this.unit instanceof Date ?
+			JSON.stringify(this.compiledValue)
+		:	this.compiledValue
+	literalKeys = prototypeKeysOf(this.unit)
+
+	compiledCondition = compileEqualityCheck(this.unit, this.serializedValue)
+	compiledNegation = compileEqualityCheck(
+		this.unit,
+		this.serializedValue,
+		"negated"
+	)
+	expression = printable(this.unit)
+	domain = domainOf(this.unit)
+
+	traverseAllows =
+		this.unit instanceof Date ?
+			(data: unknown) =>
+				data instanceof Date && data.toISOString() === this.compiledValue
+		:	(data: unknown) => data === this.unit
+}
 
 const compileEqualityCheck = (
 	unit: unknown,
