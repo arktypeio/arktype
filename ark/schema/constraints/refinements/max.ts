@@ -1,12 +1,12 @@
 import type { declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import { implementNode } from "../../shared/implement.js"
-import type { RawConstraint } from "../constraint.js"
+import type { TraverseAllows } from "../../shared/traversal.js"
 import {
 	type BaseNormalizedRangeSchema,
+	BaseRange,
 	type BaseRangeInner,
 	type RangeAttachments,
-	deriveRangeAttachments,
 	parseExclusiveKey
 } from "./range.js"
 
@@ -53,15 +53,12 @@ export const maxImplementation = implementNode<MaxDeclaration>({
 					ctx.$.node("unit", { unit: max.rule })
 				:	null
 			:	Disjoint.from("range", max, min)
-	},
-	construct: (self) =>
-		deriveRangeAttachments<MaxDeclaration>(self, {
-			traverseAllows:
-				self.exclusive ?
-					(data) => data < self.rule
-				:	(data) => data <= self.rule,
-			impliedBasis: self.$.keywords.number
-		})
+	}
 })
 
-export type MaxNode = RawConstraint<MaxDeclaration>
+export class MaxNode extends BaseRange<MaxDeclaration> {
+	impliedBasis = this.$.keywords.number.raw
+
+	traverseAllows: TraverseAllows<number> =
+		this.exclusive ? (data) => data < this.rule : (data) => data <= this.rule
+}

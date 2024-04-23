@@ -1,12 +1,12 @@
 import type { declareNode } from "../../shared/declare.js"
 import { implementNode } from "../../shared/implement.js"
-import type { RawConstraint } from "../constraint.js"
+import type { TraverseAllows } from "../../shared/traversal.js"
 import {
 	type BaseNormalizedRangeSchema,
+	BaseRange,
 	type BaseRangeInner,
 	type LimitSchemaValue,
 	type RangeAttachments,
-	deriveRangeAttachments,
 	parseDateLimit,
 	parseExclusiveKey
 } from "./range.js"
@@ -57,15 +57,12 @@ export const afterImplementation = implementNode<AfterDeclaration>({
 	},
 	intersections: {
 		after: (l, r) => (l.isStricterThan(r) ? l : r)
-	},
-	construct: (self) =>
-		deriveRangeAttachments<AfterDeclaration>(self, {
-			traverseAllows:
-				self.exclusive ?
-					(data) => data > self.rule
-				:	(data) => data >= self.rule,
-			impliedBasis: self.$.keywords.Date.raw
-		})
+	}
 })
 
-export type AfterNode = RawConstraint<AfterDeclaration>
+export class AfterNode extends BaseRange<AfterDeclaration> {
+	traverseAllows: TraverseAllows<Date> =
+		this.exclusive ? (data) => data > this.rule : (data) => data >= this.rule
+
+	impliedBasis = this.$.keywords.Date.raw
+}

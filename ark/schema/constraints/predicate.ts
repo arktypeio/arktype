@@ -1,14 +1,15 @@
 import { compileSerializedValue, type show } from "@arktype/util"
 import type { errorContext } from "../kinds.js"
+import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import {
 	implementNode,
 	type NodeAttachments,
 	type PrimitiveAttachments
 } from "../shared/implement.js"
-import type { TraversalContext } from "../shared/traversal.js"
+import type { TraversalContext, TraverseApply } from "../shared/traversal.js"
 import type { constrain, of } from "./ast.js"
-import type { RawConstraint } from "./constraint.js"
+import { RawConstraint } from "./constraint.js"
 import type { ConstraintAttachments } from "./util.js"
 
 export interface PredicateInner<rule extends Predicate<any> = Predicate<any>>
@@ -63,45 +64,41 @@ export const predicateImplementation = implementNode<PredicateDeclaration>({
 		// in the order they're specified, checking them in the order
 		// resulting from this intersection should also be safe.
 		predicate: () => null
-	},
-	construct: (self) => {
-		const serializedPredicate = compileSerializedValue(self.predicate)
-		const compiledCondition = `${serializedPredicate}(data, ctx)`
-		const compiledNegation = `!${compiledCondition}`
-		return {
-			impliedBasis: null,
-			serializedPredicate,
-			compiledCondition,
-			compiledNegation,
-			expression: serializedPredicate,
-			traverseAllows: self.predicate,
-			get errorContext(): errorContext<"predicate"> {
-				return {
-					code: "predicate",
-					description: this.description
-				}
-			},
-			get compiledErrorContext(): string {
-				return `{ code: "predicate", description: "${this.description}" }`
-			},
-			traverseApply(data, ctx) {
-				if (!this.predicate(data, ctx) && !ctx.hasError())
-					ctx.error(this.errorContext)
-			},
-			compile(js) {
-				if (js.traversalKind === "Allows") {
-					js.return(this.compiledCondition)
-					return
-				}
-				js.if(`${this.compiledNegation} && !ctx.hasError()`, () =>
-					js.line(`ctx.error(${this.compiledErrorContext})`)
-				)
-			}
-		}
 	}
 })
 
-export type PredicateNode = RawConstraint<PredicateDeclaration>
+export class PredicateNode extends RawConstraint<PredicateDeclaration> {
+	serializedPredicate = compileSerializedValue(this.predicate)
+	compiledCondition = `${this.serializedPredicate}(data, ctx)`
+	compiledNegation = `!${this.compiledCondition}`
+
+	impliedBasis = null
+
+	expression = this.serializedPredicate
+	traverseAllows = this.predicate
+
+	errorContext: errorContext<"predicate"> = {
+		code: "predicate",
+		description: this.description
+	}
+
+	compiledErrorContext = `{ code: "predicate", description: "${this.description}" }`
+
+	traverseApply: TraverseApply = (data, ctx) => {
+		if (!this.predicate(data, ctx) && !ctx.hasError())
+			ctx.error(this.errorContext)
+	}
+
+	compile(js: NodeCompiler): void {
+		if (js.traversalKind === "Allows") {
+			js.return(this.compiledCondition)
+			return
+		}
+		js.if(`${this.compiledNegation} && !ctx.hasError()`, () =>
+			js.line(`ctx.error(${this.compiledErrorContext})`)
+		)
+	}
+}
 
 export type Predicate<data = unknown> = (
 	data: data,

@@ -1,13 +1,15 @@
 import { throwParseError } from "@arktype/util"
 import type { SchemaDef } from "../../node.js"
 import type { RawSchema } from "../../schema.js"
+import type { NodeCompiler } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import {
 	implementNode,
 	type NodeAttachments,
 	type SchemaKind
 } from "../../shared/implement.js"
-import type { RawConstraint } from "../constraint.js"
+import type { TraverseAllows, TraverseApply } from "../../shared/traversal.js"
+import { RawConstraint } from "../constraint.js"
 import type { ConstraintAttachments } from "../util.js"
 
 export interface IndexDef extends BaseMeta {
@@ -60,35 +62,33 @@ export const indexImplementation = implementNode<IndexDeclaration>({
 	},
 	intersections: {
 		index: (l) => l
-	},
-	construct: (self) => {
-		return {
-			expression: `[${self.key.expression}]: ${self.value.expression}`,
-			impliedBasis: self.$.keywords.object,
-			traverseAllows(data, ctx) {
-				return Object.entries(data).every(
-					(entry) =>
-						!this.key.traverseAllows(entry[0], ctx) ||
-						this.value.traverseAllows(entry[1], ctx)
-				)
-			},
-			traverseApply(data, ctx) {
-				return Object.entries(data).forEach((entry) => {
-					if (this.key.traverseAllows(entry[0], ctx)) {
-						this.value.traverseApply(entry[1], ctx)
-					}
-				})
-			},
-			compile: (js) => {
-				if (js.traversalKind === "Allows") {
-					js.return(true)
-				}
-			}
-		}
 	}
 })
 
-export type IndexNode = RawConstraint<IndexDeclaration>
+export class IndexNode extends RawConstraint<IndexDeclaration> {
+	readonly impliedBasis = this.$.keywords.object.raw
+	readonly expression = `[${this.key.expression}]: ${this.value.expression}`
+
+	traverseAllows: TraverseAllows<object> = (data, ctx) =>
+		Object.entries(data).every(
+			(entry) =>
+				!this.key.traverseAllows(entry[0], ctx) ||
+				this.value.traverseAllows(entry[1], ctx)
+		)
+
+	traverseApply: TraverseApply<object> = (data, ctx) =>
+		Object.entries(data).forEach((entry) => {
+			if (this.key.traverseAllows(entry[0], ctx)) {
+				this.value.traverseApply(entry[1], ctx)
+			}
+		})
+
+	compile(js: NodeCompiler): void {
+		if (js.traversalKind === "Allows") {
+			js.return(true)
+		}
+	}
+}
 
 export const writeInvalidPropertyKeyMessage = <indexDef extends string>(
 	indexDef: indexDef

@@ -303,9 +303,6 @@ interface CommonNodeImplementationInput<d extends RawNodeDeclaration> {
 		inner: d["inner"],
 		$: RawSchemaScope
 	) => Node<d["reducibleTo"]> | Disjoint | undefined
-	construct: (
-		self: Omit<parsedAttachmentsOf<d>, "description">
-	) => d["attachments"] & ThisType<Node<d["kind"]>>
 }
 
 export interface UnknownNodeImplementation

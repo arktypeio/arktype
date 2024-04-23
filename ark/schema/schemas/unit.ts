@@ -13,7 +13,6 @@ import { Disjoint } from "../shared/disjoint.js"
 import {
 	type PrimitiveAttachments,
 	defaultValueSerializer,
-	derivePrimitiveAttachments,
 	implementNode
 } from "../shared/implement.js"
 import { RawBasis } from "./basis.js"
@@ -62,35 +61,6 @@ export const unitImplementation = implementNode<UnitDeclaration>({
 		...defineRightwardIntersections("unit", (l, r) =>
 			r.allows(l.unit) ? l : Disjoint.from("assignability", l.unit, r)
 		)
-	},
-	construct: (self) => {
-		const compiledValue: JsonPrimitive = (self.json as any).unit
-		const serializedValue: JsonPrimitive =
-			typeof self.unit === "string" || self.unit instanceof Date ?
-				JSON.stringify(compiledValue)
-			:	compiledValue
-		const literalKeys = prototypeKeysOf(self.unit)
-		return derivePrimitiveAttachments<UnitDeclaration>({
-			compiledValue,
-			serializedValue,
-			compiledCondition: compileEqualityCheck(self.unit, serializedValue),
-			compiledNegation: compileEqualityCheck(
-				self.unit,
-				serializedValue,
-				"negated"
-			),
-			expression: printable(self.unit),
-			domain: domainOf(self.unit),
-			literalKeys,
-			traverseAllows:
-				self.unit instanceof Date ?
-					(data: unknown) =>
-						data instanceof Date && data.toISOString() === compiledValue
-				:	(data: unknown) => data === self.unit,
-			rawKeyOf() {
-				return this.$.units(literalKeys)
-			}
-		})
 	}
 })
 

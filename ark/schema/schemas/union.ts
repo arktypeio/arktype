@@ -187,65 +187,6 @@ export const unionImplementation = implementNode<UnionDeclaration>({
 				l.ordered ? { branches, ordered: true } : { branches }
 			)
 		})
-	},
-	construct: (self) => {
-		const branches = self.branches
-		const isBoolean =
-			branches.length === 2 &&
-			branches[0].hasUnit(false) &&
-			branches[1].hasUnit(true)
-		return {
-			discriminant: null,
-			isBoolean,
-			expression:
-				isBoolean ? "boolean" : (
-					branches.map((branch) => branch.nestableExpression).join(" | ")
-				),
-			traverseAllows: (data, ctx) =>
-				branches.some((b) => b.traverseAllows(data, ctx)),
-			traverseApply: (data, ctx) => {
-				const errors: ArkTypeError[] = []
-				for (let i = 0; i < branches.length; i++) {
-					ctx.pushBranch()
-					branches[i].traverseApply(data, ctx)
-					if (!ctx.hasError())
-						return ctx.queuedMorphs.push(...ctx.popBranch().queuedMorphs)
-					errors.push(ctx.popBranch().error!)
-				}
-				ctx.error({ code: "union", errors })
-			},
-			compile: (js) => {
-				if (js.traversalKind === "Apply") {
-					js.const("errors", "[]")
-					branches.forEach((branch) =>
-						js
-							.line("ctx.pushBranch()")
-							.line(js.invoke(branch))
-							.if("!ctx.hasError()", () =>
-								js.return("ctx.morphs.push(...ctx.popBranch().morphs)")
-							)
-							.line("errors.push(ctx.popBranch().error)")
-					)
-					js.line(`ctx.error({ code: "union", errors })`)
-				} else {
-					branches.forEach((branch) =>
-						js.if(`${js.invoke(branch)}`, () => js.return(true))
-					)
-					js.return(false)
-				}
-			},
-			rawKeyOf() {
-				return branches.reduce(
-					(result, branch) => result.and(branch.rawKeyOf()),
-					this.$.keywords.unknown.raw
-				)
-			}
-			// get nestableExpression() {
-			// 	// avoid adding unnecessary parentheses around boolean since it's
-			// 	// already collapsed to a single keyword
-			// 	return this.isBoolean ? "boolean" : super.nestableExpression
-			// }
-		}
 	}
 })
 

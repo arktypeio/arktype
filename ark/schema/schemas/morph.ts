@@ -148,40 +148,6 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 					})
 			)
 		})
-	},
-	construct: (self) => {
-		const serializedMorphs = self.morphs.map((morph) => reference(morph))
-		const compiledMorphs = JSON.stringify(serializedMorphs)
-		const outValidator = self.to?.traverseApply ?? null
-		const outValidatorReference =
-			self.to ? new NodeCompiler("Apply").reference(self.to) : "null"
-		return {
-			serializedMorphs,
-			get expression(): string {
-				return `(In: ${this.from.expression}) => Out<${this.to?.expression ?? "unknown"}>`
-			},
-			traverseAllows: (data, ctx) => self.from.traverseAllows(data, ctx),
-			traverseApply: (data, ctx) => {
-				ctx.queueMorphs(self.morphs, outValidator)
-				self.from.traverseApply(data, ctx)
-			},
-			compile(js: NodeCompiler): void {
-				if (js.traversalKind === "Allows") {
-					js.return(js.invoke(this.from))
-					return
-				}
-				js.line(`ctx.queueMorphs(${compiledMorphs}, ${outValidatorReference})`)
-				js.line(js.invoke(this.from))
-			},
-			getIo(kind) {
-				return kind === "in" ?
-						this.from
-					:	this.to?.out ?? this.$.keywords.unknown.raw
-			},
-			rawKeyOf(): RawSchema {
-				return this.from.rawKeyOf()
-			}
-		}
 	}
 })
 

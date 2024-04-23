@@ -5,15 +5,13 @@ import {
 	type array,
 	entriesOf,
 	hasDomain,
-	includes,
 	isArray,
 	type listable,
 	printable,
 	type propValueOf,
 	throwParseError
 } from "@arktype/util"
-import { RawConstraint } from "./constraints/constraint.js"
-import { nodeImplementationsByKind, schemaClassesByKind } from "./kinds.js"
+import { nodeClassesByKind, nodeImplementationsByKind } from "./kinds.js"
 import type { RawNode } from "./node.js"
 import type { UnknownSchema } from "./schema.js"
 import type { RawSchemaScope } from "./scope.js"
@@ -27,8 +25,7 @@ import {
 	defaultValueSerializer,
 	discriminatingIntersectionKeys,
 	isNodeKind,
-	precedenceOfKind,
-	schemaKinds
+	precedenceOfKind
 } from "./shared/implement.js"
 import { hasArkKind, isNode } from "./shared/utils.js"
 
@@ -265,15 +262,7 @@ const $parseNode = (
 		}
 	}
 
-	const node: RawNode =
-		includes(schemaKinds, kind) ?
-			new schemaClassesByKind[kind](attachments as never)
-		:	new RawConstraint(
-				Object.assign(
-					attachments,
-					impl.construct(attachments as never)
-				) as never
-			)
+	const node: RawNode = new nodeClassesByKind[kind](attachments as never)
 
 	nodeCache[innerId] = node
 	return node

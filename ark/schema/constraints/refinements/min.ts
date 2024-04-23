@@ -1,11 +1,11 @@
 import type { declareNode } from "../../shared/declare.js"
 import { implementNode } from "../../shared/implement.js"
-import type { RawConstraint } from "../constraint.js"
+import type { TraverseAllows } from "../../shared/traversal.js"
 import {
 	type BaseNormalizedRangeSchema,
+	BaseRange,
 	type BaseRangeInner,
 	type RangeAttachments,
-	deriveRangeAttachments,
 	parseExclusiveKey
 } from "./range.js"
 
@@ -46,15 +46,12 @@ export const minImplementation = implementNode<MinDeclaration>({
 	defaults: {
 		description: (node) =>
 			`${node.exclusive ? "more than" : "at least"} ${node.rule}`
-	},
-	construct: (self) =>
-		deriveRangeAttachments<MinDeclaration>(self, {
-			traverseAllows:
-				self.exclusive ?
-					(data) => data > self.rule
-				:	(data) => data >= self.rule,
-			impliedBasis: self.$.keywords.number
-		})
+	}
 })
 
-export type MinNode = RawConstraint<MinDeclaration>
+export class MinNode extends BaseRange<MinDeclaration> {
+	readonly impliedBasis = this.$.keywords.number.raw
+
+	traverseAllows: TraverseAllows<number> =
+		this.exclusive ? (data) => data > this.rule : (data) => data >= this.rule
+}

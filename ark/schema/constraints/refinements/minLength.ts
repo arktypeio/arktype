@@ -1,12 +1,12 @@
 import type { declareNode } from "../../shared/declare.js"
 import { implementNode } from "../../shared/implement.js"
-import type { RawConstraint } from "../constraint.js"
+import type { TraverseAllows } from "../../shared/traversal.js"
 import {
 	type BaseNormalizedRangeSchema,
+	BaseRange,
 	type BaseRangeInner,
 	type LengthBoundableData,
 	type RangeAttachments,
-	deriveRangeAttachments,
 	parseExclusiveKey
 } from "./range.js"
 
@@ -54,15 +54,14 @@ export const minLengthImplementation = implementNode<MinLengthDeclaration>({
 	},
 	intersections: {
 		minLength: (l, r) => (l.isStricterThan(r) ? l : r)
-	},
-	construct: (self) =>
-		deriveRangeAttachments<MinLengthDeclaration>(self, {
-			traverseAllows:
-				self.exclusive ?
-					(data) => data.length > self.rule
-				:	(data) => data.length >= self.rule,
-			impliedBasis: self.$.keywords.lengthBoundable
-		})
+	}
 })
 
-export type MinLengthNode = RawConstraint<MinLengthDeclaration>
+export class MinLengthNode extends BaseRange<MinLengthDeclaration> {
+	traverseAllows: TraverseAllows<LengthBoundableData> =
+		this.exclusive ?
+			(data) => data.length > this.rule
+		:	(data) => data.length >= this.rule
+
+	readonly impliedBasis = this.$.keywords.lengthBoundable.raw
+}

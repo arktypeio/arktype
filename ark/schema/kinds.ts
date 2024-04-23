@@ -1,32 +1,39 @@
 import {
 	type PredicateDeclaration,
-	predicateImplementation
+	predicateImplementation,
+	PredicateNode
 } from "./constraints/predicate.js"
 import {
 	type IndexDeclaration,
-	indexImplementation
+	indexImplementation,
+	IndexNode
 } from "./constraints/props/index.js"
 import {
 	type PropDeclaration,
-	propImplementation
+	propImplementation,
+	PropNode
 } from "./constraints/props/prop.js"
 import {
 	type SequenceDeclaration,
-	sequenceImplementation
+	sequenceImplementation,
+	SequenceNode
 } from "./constraints/props/sequence.js"
 import {
 	type DivisorDeclaration,
-	divisorImplementation
+	divisorImplementation,
+	DivisorNode
 } from "./constraints/refinements/divisor.js"
 import {
+	boundClassesByKind,
 	type BoundDeclarations,
 	boundImplementationsByKind
 } from "./constraints/refinements/kinds.js"
 import {
 	type RegexDeclaration,
-	regexImplementation
+	regexImplementation,
+	RegexNode
 } from "./constraints/refinements/regex.js"
-import type { RawSchema } from "./schema.js"
+import type { RawNode } from "./node.js"
 import {
 	type DomainDeclaration,
 	domainImplementation,
@@ -58,11 +65,7 @@ import {
 	unitImplementation,
 	UnitNode
 } from "./schemas/unit.js"
-import type {
-	NodeKind,
-	SchemaKind,
-	UnknownNodeImplementation
-} from "./shared/implement.js"
+import type { NodeKind, UnknownNodeImplementation } from "./shared/implement.js"
 import type { makeRootAndArrayPropertiesMutable } from "./shared/utils.js"
 
 export interface NodeDeclarationsByKind extends BoundDeclarations {
@@ -99,14 +102,24 @@ export const nodeImplementationsByKind: Record<
 	sequence: sequenceImplementation
 } satisfies Record<NodeKind, unknown> as never
 
-export const schemaClassesByKind = {
+export const nodeClassesByKind: Record<
+	NodeKind,
+	new (attachments: never) => RawNode
+> = {
+	...boundClassesByKind,
 	domain: DomainNode,
 	unit: UnitNode,
 	proto: ProtoNode,
 	union: UnionNode,
 	morph: MorphNode,
-	intersection: IntersectionNode
-} satisfies Record<SchemaKind, typeof RawSchema<any>>
+	intersection: IntersectionNode,
+	divisor: DivisorNode,
+	regex: RegexNode,
+	predicate: PredicateNode,
+	prop: PropNode,
+	index: IndexNode,
+	sequence: SequenceNode
+} satisfies Record<NodeKind, typeof RawNode<any>> as never
 
 export type Declaration<kind extends NodeKind> = NodeDeclarationsByKind[kind]
 

@@ -1,13 +1,13 @@
 import type { declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import { implementNode } from "../../shared/implement.js"
-import type { RawConstraint } from "../constraint.js"
+import type { TraverseAllows } from "../../shared/traversal.js"
 import {
 	type BaseNormalizedRangeSchema,
+	BaseRange,
 	type BaseRangeInner,
 	type LengthBoundableData,
 	type RangeAttachments,
-	deriveRangeAttachments,
 	parseExclusiveKey
 } from "./range.js"
 
@@ -58,15 +58,14 @@ export const maxLengthImplementation = implementNode<MaxLengthDeclaration>({
 					ctx.$.node("exactLength", { rule: max.rule })
 				:	null
 			:	Disjoint.from("range", max, min)
-	},
-	construct: (self) =>
-		deriveRangeAttachments<MaxLengthDeclaration>(self, {
-			traverseAllows:
-				self.exclusive ?
-					(data) => data.length < self.rule
-				:	(data) => data.length <= self.rule,
-			impliedBasis: self.$.keywords.lengthBoundable
-		})
+	}
 })
 
-export type MaxLengthNode = RawConstraint<MaxLengthDeclaration>
+export class MaxLengthNode extends BaseRange<MaxLengthDeclaration> {
+	readonly impliedBasis = this.$.keywords.lengthBoundable.raw
+
+	traverseAllows: TraverseAllows<LengthBoundableData> =
+		this.exclusive ?
+			(data) => data.length < this.rule
+		:	(data) => data.length <= this.rule
+}

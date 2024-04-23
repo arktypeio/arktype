@@ -6,20 +6,16 @@ import {
 	type propValueOf
 } from "@arktype/util"
 import type { Node } from "../../node.js"
+import type { BaseMeta, RawNodeDeclaration } from "../../shared/declare.js"
 import type {
-	BaseMeta,
-	RawNodeDeclaration,
-	parsedAttachmentsOf
-} from "../../shared/declare.js"
-import {
-	type DerivedPrimitiveAttachments,
-	type KeyDefinitions,
-	type NodeAttachments,
-	type PrimitiveAttachments,
-	type RangeKind,
-	derivePrimitiveAttachments
+	DerivedPrimitiveAttachments,
+	KeyDefinitions,
+	NodeAttachments,
+	PrimitiveAttachments,
+	RangeKind
 } from "../../shared/implement.js"
 import type { Comparator } from "../ast.js"
+import { RawPrimitiveConstraint } from "../constraint.js"
 import type { ConstraintAttachments } from "../util.js"
 
 export interface BaseRangeDeclaration extends RawNodeDeclaration {
@@ -58,61 +54,56 @@ export type ImplementedRangeAttachments<d extends BaseRangeDeclaration> = Omit<
 	keyof DerivedRangeAttachments | keyof DerivedPrimitiveAttachments
 >
 
-export const deriveRangeAttachments = <d extends BaseRangeDeclaration = never>(
-	parsed: Omit<parsedAttachmentsOf<d>, "description">,
-	implemented: ImplementedRangeAttachments<d>
-): d["attachments"] => {
-	const boundOperandKind = operandKindsByBoundKind[parsed.kind]
-	const compiledActual =
-		boundOperandKind === "value" ? "data"
-		: boundOperandKind === "length" ? "data.length"
-		: "data.valueOf()"
-	const comparator = compileComparator(parsed.kind, parsed.exclusive)
-	const numericLimit = parsed.rule.valueOf()
+export abstract class BaseRange<
+	d extends BaseRangeDeclaration
+> extends RawPrimitiveConstraint<d> {
+	readonly boundOperandKind = operandKindsByBoundKind[this.kind]
+	readonly compiledActual =
+		this.boundOperandKind === "value" ? `data`
+		: this.boundOperandKind === "length" ? `data.length`
+		: `data.valueOf()`
+	readonly comparator = compileComparator(this.kind, this.exclusive)
+	readonly numericLimit = this.rule.valueOf()
+	readonly expression = `${this.comparator}${this.rule}`
+	readonly compiledCondition = `${this.compiledActual} ${this.comparator} ${this.numericLimit}`
+	readonly compiledNegation = `${this.compiledActual} ${
+		negatedComparators[this.comparator]
+	} ${this.numericLimit}`
 
-	return derivePrimitiveAttachments({
-		...implemented,
-		boundOperandKind,
-		compiledActual,
-		comparator,
-		numericLimit,
-		expression: `${comparator}${parsed.rule}`,
-		compiledCondition: `${compiledActual} ${comparator} ${numericLimit}`,
-		compiledNegation: `${compiledActual} ${negatedComparators[comparator]} ${numericLimit}`,
-		// we need to compute stringLimit before errorContext, which references it
-		// transitively through description for date bounds
-		stringLimit:
-			boundOperandKind === "date" ?
-				dateLimitToString(numericLimit)
-			:	`${numericLimit}`,
-		limitKind: comparator["0"] === "<" ? "upper" : "lower",
-		isStricterThan(r) {
-			const thisLimitIsStricter =
-				this.limitKind === "upper" ?
-					this.numericLimit < r.numericLimit
-				:	this.numericLimit > r.numericLimit
-			return (
-				thisLimitIsStricter ||
-				(this.numericLimit === r.numericLimit &&
-					this.exclusive === true &&
-					!r.exclusive)
-			)
-		},
-		overlapsRange(r) {
-			if (this.isStricterThan(r as never)) return false
-			if (
-				this.numericLimit === r.numericLimit &&
-				(this.exclusive || r.exclusive)
-			)
-				return false
-			return true
-		},
-		overlapIsUnit(r) {
-			return (
-				this.numericLimit === r.numericLimit && !this.exclusive && !r.exclusive
-			)
-		}
-	} satisfies DerivedRangeAttachments & ThisType<Node<RangeKind>>) as never
+	// we need to compute stringLimit before errorContext, which references it
+	// transitively through description for date bounds
+	readonly stringLimit =
+		this.boundOperandKind === "date" ?
+			dateLimitToString(this.numericLimit)
+		:	`${this.numericLimit}`
+	readonly limitKind: LimitKind =
+		this.comparator["0"] === "<" ? "upper" : "lower"
+
+	isStricterThan(r: Node<d["kind"] | pairedRangeKind<d["kind"]>>): boolean {
+		const thisLimitIsStricter =
+			this.limitKind === "upper" ?
+				this.numericLimit < r.numericLimit
+			:	this.numericLimit > r.numericLimit
+		return (
+			thisLimitIsStricter ||
+			(this.numericLimit === r.numericLimit &&
+				this.exclusive === true &&
+				!r.exclusive)
+		)
+	}
+
+	overlapsRange(r: Node<pairedRangeKind<d["kind"]>>): boolean {
+		if (this.isStricterThan(r)) return false
+		if (this.numericLimit === r.numericLimit && (this.exclusive || r.exclusive))
+			return false
+		return true
+	}
+
+	overlapIsUnit(r: Node<pairedRangeKind<d["kind"]>>): boolean {
+		return (
+			this.numericLimit === r.numericLimit && !this.exclusive && !r.exclusive
+		)
+	}
 }
 
 export interface BaseRangeInner extends BaseMeta {

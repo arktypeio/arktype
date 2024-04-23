@@ -1,13 +1,13 @@
 import type { declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import { implementNode } from "../../shared/implement.js"
-import type { RawConstraint } from "../constraint.js"
+import type { TraverseAllows } from "../../shared/traversal.js"
 import {
 	type BaseNormalizedRangeSchema,
+	BaseRange,
 	type BaseRangeInner,
 	type LimitSchemaValue,
 	type RangeAttachments,
-	deriveRangeAttachments,
 	parseDateLimit,
 	parseExclusiveKey
 } from "./range.js"
@@ -65,15 +65,12 @@ export const beforeImplementation = implementNode<BeforeDeclaration>({
 					ctx.$.node("unit", { unit: before.rule })
 				:	null
 			:	Disjoint.from("range", before, after)
-	},
-	construct: (self) =>
-		deriveRangeAttachments<BeforeDeclaration>(self, {
-			traverseAllows:
-				self.exclusive ?
-					(data) => data < self.rule
-				:	(data) => data <= self.rule,
-			impliedBasis: self.$.keywords.Date.raw
-		})
+	}
 })
 
-export type BeforeNode = RawConstraint<BeforeDeclaration>
+export class BeforeNode extends BaseRange<BeforeDeclaration> {
+	traverseAllows: TraverseAllows<Date> =
+		this.exclusive ? (data) => data < this.rule : (data) => data <= this.rule
+
+	impliedBasis = this.$.keywords.Date.raw
+}

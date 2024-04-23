@@ -11,7 +11,6 @@ import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
 	type PrimitiveAttachments,
-	derivePrimitiveAttachments,
 	implementNode
 } from "../shared/implement.js"
 import type { TraverseAllows } from "../shared/traversal.js"
@@ -78,26 +77,5 @@ export const domainImplementation = implementNode<DomainDeclaration>({
 	},
 	intersections: {
 		domain: (l, r) => Disjoint.from("domain", l, r)
-	},
-	construct: (self): DomainDeclaration["attachments"] => {
-		const literalKeys = getBaseDomainKeys(self.domain)
-		const traverseAllows: TraverseAllows = (data) =>
-			domainOf(data) === self.domain
-		return derivePrimitiveAttachments<DomainDeclaration>({
-			traverseAllows,
-			expression: self.domain,
-			compiledCondition:
-				self.domain === "object" ?
-					`((typeof data === "object" && data !== null) || typeof data === "function")`
-				:	`typeof data === "${self.domain}"`,
-			compiledNegation:
-				self.domain === "object" ?
-					`((typeof data !== "object" || data === null) && typeof data !== "function")`
-				:	`typeof data !== "${self.domain}"`,
-			literalKeys,
-			rawKeyOf() {
-				return this.$.units(literalKeys)
-			}
-		})
 	}
 })
