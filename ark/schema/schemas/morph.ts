@@ -16,7 +16,7 @@ import type { StaticArkOption } from "../scope.js"
 import { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { ArkTypeError } from "../shared/errors.js"
+import type { ArkErrors, ArkTypeError } from "../shared/errors.js"
 import { basisKinds, implementNode } from "../shared/implement.js"
 import { intersectNodes } from "../shared/intersections.js"
 import type {
@@ -181,7 +181,7 @@ export class MorphNode extends RawSchema<MorphDeclaration> {
 
 export type inferMorphOut<morph extends Morph> = Exclude<
 	ReturnType<morph>,
-	ArkTypeError
+	ArkTypeError | ArkErrors
 >
 
 export type distillIn<t> =

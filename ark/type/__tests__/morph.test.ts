@@ -21,6 +21,59 @@ contextualize(() => {
 		attest<boolean | type.errors>(out).equals(false)
 	})
 
+	it("type instance reference", () => {
+		const user = type({
+			name: "string",
+			age: "number"
+		})
+		const parsedUser = type("string")
+			.morph(s => JSON.parse(s))
+			.morph(user)
+		attest<
+			Type<
+				(In: string) => Out<{
+					name: string
+					age: number
+				}>
+			>
+		>(parsedUser)
+
+		const validUser = { name: "David", age: 30 }
+		attest(parsedUser(JSON.stringify(validUser))).equals(validUser)
+		const missingKey = { name: "David" }
+		attest(parsedUser(JSON.stringify(missingKey)).toString()).snap(
+			"age must be defined"
+		)
+	})
+
+	it("uses pipe for consecutive types", () => {
+		const bar = type({ bar: "number" })
+		const t = type({ foo: "string" }).morph(bar)
+		// doesn't understand it ends up being a pipe at a type-level
+		// it potentially could
+		attest<
+			Type<
+				(In: { foo: string }) => Out<{
+					bar: number
+				}>
+			>
+		>(t)
+		const expected = type({ foo: "string", bar: "number" })
+		attest(t.json).equals(expected.json)
+	})
+
+	it("two morphs", () => {
+		const inefficientStringIsEmpty = type("string").morph(
+			s => s.length,
+			length => length === 0
+		)
+
+		attest<Type<(In: string) => Out<boolean>>>(inefficientStringIsEmpty)
+		attest(inefficientStringIsEmpty("")).equals(true)
+		attest(inefficientStringIsEmpty("foo")).equals(false)
+		attest(inefficientStringIsEmpty(0).toString()).snap()
+	})
+
 	it("any as out", () => {
 		const t = type("string", "=>", s => s as any)
 		attest<string>(t.in.infer)
@@ -33,7 +86,7 @@ contextualize(() => {
 		attest<never>(t.infer)
 	})
 
-	it("return problem", () => {
+	it("return error", () => {
 		const divide100By = type("number", "=>", (n, ctx) =>
 			n !== 0 ? 100 / n : ctx.error("non-zero")
 		)

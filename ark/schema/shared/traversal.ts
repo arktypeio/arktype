@@ -5,7 +5,7 @@ import {
 	type ArkErrorCode,
 	type ArkErrorInput,
 	ArkErrors,
-	type ArkTypeError,
+	ArkTypeError,
 	createError
 } from "./errors.js"
 import type { TraversalPath } from "./utils.js"
@@ -61,7 +61,14 @@ export class TraversalContext {
 					// if the morph applies to the root, just assign to it directly
 					for (const morph of morphs) {
 						const result = morph(out, this)
+						if (result instanceof ArkErrors) return result
 						if (this.hasError()) return this.errors
+						if (result instanceof ArkTypeError) {
+							// if an ArkTypeError was returned but wasn't added to these
+							// errors, add it then return
+							this.error(result)
+							return this.errors
+						}
 						out = result
 					}
 				} else {
@@ -75,7 +82,12 @@ export class TraversalContext {
 					this.path = path
 					for (const morph of morphs) {
 						const result = morph(parent[key], this)
+						if (result instanceof ArkErrors) return result
 						if (this.hasError()) return this.errors
+						if (result instanceof ArkTypeError) {
+							this.error(result)
+							return this.errors
+						}
 						parent[key] = result
 					}
 				}

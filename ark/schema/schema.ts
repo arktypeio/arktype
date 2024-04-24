@@ -37,6 +37,7 @@ import {
 } from "./shared/intersections.js"
 import {
 	arkKind,
+	hasArkKind,
 	type inferred,
 	type internalImplementationOf
 } from "./shared/utils.js"
@@ -155,11 +156,10 @@ export abstract class RawSchema<
 		return this.assert(input)
 	}
 
-	morph(morph: Morph, outValidator?: unknown): RawSchema {
+	morph(morph: Morph): RawSchema {
+		if (hasArkKind(morph, "schema")) return this.pipe(morph)
 		if (this.hasKind("union")) {
-			const branches = this.branches.map(node =>
-				node.morph(morph, outValidator as never)
-			)
+			const branches = this.branches.map(node => node.morph(morph))
 			return this.$.node("union", { ...this.inner, branches })
 		}
 		if (this.hasKind("morph")) {
@@ -176,6 +176,11 @@ export abstract class RawSchema<
 
 	narrow(predicate: Predicate): RawSchema {
 		return this.constrain("predicate", predicate)
+	}
+
+	pipe(def: unknown): RawSchema {
+		const to = this.$.parseRoot(def)
+		return pipeNodesRoot(this, to, this.$) as never
 	}
 
 	constrain<kind extends PrimitiveConstraintKind>(
@@ -197,11 +202,6 @@ export abstract class RawSchema<
 				[kind]: constraint
 			})
 		)
-	}
-
-	pipe(def: unknown): RawSchema {
-		const to = this.$.parseRoot(def)
-		return pipeNodesRoot(this, to, this.$) as never
 	}
 
 	// divisibleBy<
@@ -345,7 +345,7 @@ declare class _Schema<t = unknown, $ = any> extends BaseRoot<t, $> {
 
 	morph<morph extends Morph<this["infer"]>>(
 		morph: morph
-	): Schema<(In: distillConstrainableIn<t>) => Out<inferMorphOut<morph>>, $>
+	): Schema<(In: this["tIn"]) => Out<inferMorphOut<morph>>, $>
 
 	pipe<def extends SchemaDef>(
 		def: def

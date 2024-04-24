@@ -12,7 +12,6 @@ import {
 	type ambient,
 	type constrain,
 	type constraintKindOf,
-	type distillConstrainableIn,
 	type distillConstrainableOut,
 	type distillIn,
 	type distillOut,
@@ -41,7 +40,6 @@ import type {
 	TupleInfixOperator
 } from "./parser/tuple.js"
 import type { RawScope, Scope, bindThis } from "./scope.js"
-
 export interface TypeParserAttachments {
 	errors: typeof ArkErrors
 }
@@ -150,7 +148,14 @@ declare class _Type<t = unknown, $ = any> extends BaseRoot<t, $> {
 
 	morph<morph extends Morph<this["infer"]>>(
 		morph: morph
-	): Type<(In: distillConstrainableIn<t>) => Out<inferMorphOut<morph>>, $>
+	): Type<(In: this["tIn"]) => Out<inferMorphOut<morph>>, $>
+	morph<
+		morph extends Morph<this["infer"]>,
+		morphB extends Morph<inferMorphOut<morph>>
+	>(
+		morph: morph,
+		b: morphB
+	): Type<(In: this["tIn"]) => Out<inferMorphOut<morphB>>, $>
 
 	// TODO: based on below, should maybe narrow morph output if used after
 	narrow<def extends Predicate<distillConstrainableOut<t>>>(
