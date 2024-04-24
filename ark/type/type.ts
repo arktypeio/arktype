@@ -42,7 +42,6 @@ import type {
 	TupleInfixOperator
 } from "./parser/tuple.js"
 import type { RawScope, Scope, bindThis } from "./scope.js"
-
 export interface TypeParserAttachments {
 	errors: typeof ArkErrors
 }
