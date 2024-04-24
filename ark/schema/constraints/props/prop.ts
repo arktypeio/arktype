@@ -1,5 +1,4 @@
 import { compileSerializedValue, type Key } from "@arktype/util"
-import type { SchemaDef } from "../../node.js"
 import type { RawSchema } from "../../schema.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type {
@@ -16,10 +15,11 @@ import {
 import { intersectNodes } from "../../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/traversal.js"
 import { RawConstraint } from "../constraint.js"
+import type { ChildSchemaDef } from "./shared.js"
 
 export interface PropDef extends BaseMeta {
 	readonly key: Key
-	readonly value: SchemaDef
+	readonly value: ChildSchemaDef
 	readonly optional?: boolean
 }
 
