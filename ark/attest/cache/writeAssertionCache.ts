@@ -18,15 +18,7 @@ import {
 	getCallLocationFromCallExpression
 } from "./utils.js"
 
-export type AssertionsByFile = Record<
-	string,
-	(TypeAssertionData | TypeBenchmarkingAssertionData)[]
->
-
-export type LocationAndCountAssertionData = Pick<
-	TypeAssertionData,
-	"location" | "count"
->
+export type AssertionsByFile = Record<string, TypeAssertionData[]>
 
 export const analyzeProjectAssertions = (): AssertionsByFile => {
 	const config = getConfig()
@@ -34,6 +26,9 @@ export const analyzeProjectAssertions = (): AssertionsByFile => {
 	const filePaths = instance.rootFiles
 	const diagnosticsByFile = getDiagnosticsByFile()
 	const assertionsByFile: AssertionsByFile = {}
+	const attestAliasInstantiationMethodCalls = config.attestAliases.map(
+		(alias) => `${alias}.instantiations`
+	)
 	for (const path of filePaths) {
 		const file = instance.getSourceFileOrThrow(path)
 		const assertionsInFile = getAssertionsInFile(
@@ -45,7 +40,11 @@ export const analyzeProjectAssertions = (): AssertionsByFile => {
 			assertionsByFile[getFileKey(file.fileName)] = assertionsInFile
 		}
 		if (!config.skipInlineInstantiations) {
-			gatherInlineInstantiationData(file, assertionsByFile)
+			gatherInlineInstantiationData(
+				file,
+				assertionsByFile,
+				attestAliasInstantiationMethodCalls
+			)
 		}
 	}
 	return assertionsByFile
@@ -63,7 +62,7 @@ export const getAssertionsInFile = (
 export const analyzeAssertCall = (
 	assertCall: ts.CallExpression,
 	diagnosticsByFile: DiagnosticsByFile
-): TypeRelationshipAssertionData => {
+): TypeAssertionData => {
 	const types = extractArgumentTypesFromCall(assertCall)
 	const location = getCallLocationFromCallExpression(assertCall)
 	const args = types.args.map((arg) => serializeArg(arg, types))
@@ -121,15 +120,14 @@ const getCompletions = (attestCall: ts.CallExpression) => {
 
 			if (prefix in completions) {
 				return `Encountered multiple completion candidates for string(s) '${prefix}'. Assertions on the same prefix must be split into multiple attest calls so the results can be distinguished.`
-			} else {
-				completions[prefix] = []
-				for (const entry of entries) {
-					if (
-						entry.name.startsWith(prefix) &&
-						entry.name.length > prefix.length
-					) {
-						completions[prefix].push(entry.name)
-					}
+			}
+			completions[prefix] = []
+			for (const entry of entries) {
+				if (
+					entry.name.startsWith(prefix) &&
+					entry.name.length > prefix.length
+				) {
+					completions[prefix].push(entry.name)
 				}
 			}
 		}
@@ -204,11 +202,6 @@ export type ArgAssertionData = {
 	}
 }
 
-/**
- * todoshawn typeassertiondata should be it's own union
- * typerelationshipassertiondata
- * typebenchmarkingassertiondata
- */
 export type TypeRelationshipAssertionData = {
 	location: LinePositionRange
 	args: ArgAssertionData[]
@@ -216,12 +209,15 @@ export type TypeRelationshipAssertionData = {
 	errors: string[]
 	completions: Completions
 }
+
 export type TypeBenchmarkingAssertionData = {
 	location: LinePositionRange
 	count: number
 }
-export type TypeAssertionData = TypeRelationshipAssertionData &
-	TypeBenchmarkingAssertionData
+
+export type TypeAssertionData =
+	| TypeRelationshipAssertionData
+	| TypeBenchmarkingAssertionData
 
 export type LinePositionRange = {
 	start: LinePosition
@@ -236,27 +232,22 @@ export const compareTsTypes = (
 ): TypeRelationship => {
 	const lString = l.toString()
 	const rString = r.toString()
-	if (l.isUnresolvable || r.isUnresolvable) {
-		// Ensure two unresolvable types are not treated as equivalent
-		return "none"
-	} else if (lString === "any") {
-		// Treat `any` as a supertype of every other type
-		return rString === "any" ? "equality" : "supertype"
-	} else if (rString === "any") {
-		return "subtype"
-	} else {
-		// Otherwise, determine if the types are equivalent by checking mutual assignability
-		const checker = getInternalTypeChecker()
-		const isSubtype = checker.isTypeAssignableTo(l, r)
-		const isSupertype = checker.isTypeAssignableTo(r, l)
-		return isSubtype
-			? isSupertype
-				? "equality"
-				: "subtype"
-			: isSupertype
-			? "supertype"
-			: "none"
-	}
+	// Ensure two unresolvable types are not treated as equivalent
+	if (l.isUnresolvable || r.isUnresolvable) return "none"
+	// Treat `any` as a supertype of every other type
+	if (lString === "any") return rString === "any" ? "equality" : "supertype"
+	if (rString === "any") return "subtype"
+	// Otherwise, determine if the types are equivalent by checking mutual assignability
+	const checker = getInternalTypeChecker()
+	const isSubtype = checker.isTypeAssignableTo(l, r)
+	const isSupertype = checker.isTypeAssignableTo(r, l)
+	return (
+		isSubtype ?
+			isSupertype ? "equality"
+			:	"subtype"
+		: isSupertype ? "supertype"
+		: "none"
+	)
 }
 
 export const checkDiagnosticMessages = (

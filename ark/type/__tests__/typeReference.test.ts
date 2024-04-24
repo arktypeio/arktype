@@ -1,8 +1,8 @@
-import { attest } from "@arktype/attest"
-import { ark, scope, type } from "arktype"
-import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclosed.js"
+import { attest, contextualize } from "@arktype/attest"
+import { writeUnresolvableMessage } from "@arktype/schema"
+import { ambient, scope, type } from "arktype"
 
-describe("type references", () => {
+contextualize(() => {
 	it("shallow type reference", () => {
 		const t = type(type("boolean"))
 		attest<boolean>(t.infer)
@@ -25,7 +25,7 @@ describe("type references", () => {
 		const $ = scope({ a })
 		const types = $.export()
 		attest(types.a.json).equals(a.json)
-		attest(a.$.json).equals(ark.json)
+		attest(a.$.json).equals(ambient.json)
 		attest(types.a.$.json).equals($.json)
 		attest<{ a: string }>(types.a.infer)
 	})

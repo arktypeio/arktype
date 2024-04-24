@@ -1,10 +1,10 @@
-import { attest } from "@arktype/attest"
+import { attest, contextualize } from "@arktype/attest"
+import { writeUnresolvableMessage } from "@arktype/schema"
 import { scope, type } from "arktype"
 import { writeBadDefinitionTypeMessage } from "../parser/definition.js"
-import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclosed.js"
 
-describe("thunk", () => {
-	it("thunk", () => {
+contextualize(() => {
+	it("in type", () => {
 		const t = type(() => type("boolean"))
 		attest<boolean>(t.infer)
 		attest(() => {
@@ -12,7 +12,8 @@ describe("thunk", () => {
 			type(() => type("moolean"))
 		}).throwsAndHasTypeError(writeUnresolvableMessage("moolean"))
 	})
-	it("thunks in scope", () => {
+
+	it("in scope", () => {
 		const $ = scope({
 			a: () => $.type({ b: "b" }),
 			b: () => $.type({ a: "string" })
@@ -42,6 +43,7 @@ describe("thunk", () => {
 		//     object: { props: { a: { object: { props: { a: "string" } } } } }
 		// })
 	})
+
 	it("expression from thunk", () => {
 		const $ = scope({
 			a: () => $.type({ a: "string" }),
@@ -54,22 +56,26 @@ describe("thunk", () => {
 		//     object: { props: { a: "string", b: "boolean" } }
 		// })
 	})
-	it("shallow thunk in type", () => {
+
+	it("shallow in type", () => {
 		const t = type(() => type("string"))
 		attest(t.json).equals(type("string").json)
 		attest<string>(t.infer)
 	})
-	it("deep thunk in type", () => {
+
+	it("deep in type", () => {
 		const t = type({ a: () => type("string") })
 		attest(t.json).equals(type({ a: "string" }).json)
 		attest<{ a: string }>(t.infer)
 	})
+
 	it("non-type thunk in scope", () => {
 		const $ = scope({
 			a: () => 42
 		})
 		attest(() => $.export()).throws(writeBadDefinitionTypeMessage("number"))
 	})
+
 	it("parse error in thunk in scope", () => {
 		const $ = scope({
 			// @ts-expect-error

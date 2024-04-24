@@ -61,7 +61,7 @@ export const getFramesFromError = (error: Error): string[] => {
 		stack = error.stack
 	} catch (error1) {
 		try {
-			// @ts-expect-error
+			/** @ts-expect-error https://github.com/winstonjs/winston/issues/401#issuecomment-61913086 */
 			const previous = err.__previous__ || err.__previous
 			stack = previous && previous.stack
 		} catch (error2) {
@@ -149,13 +149,13 @@ const getLocationWithOffset = (locations: Array<Location>, offset: Offset) => {
 		// the current location matches the offset
 		if (
 			(offset.file &&
-				(typeof offset.file === "string"
-					? location.file.includes(offset.file)
-					: offset.file.test(location.file))) ||
+				(typeof offset.file === "string" ?
+					location.file.includes(offset.file)
+				:	offset.file.test(location.file))) ||
 			(offset.method &&
-				(typeof offset.method === "string"
-					? location.method.includes(offset.method)
-					: offset.method.test(location.method)))
+				(typeof offset.method === "string" ?
+					location.method.includes(offset.method)
+				:	offset.method.test(location.method)))
 		) {
 			// we are found, and we should exit immediatelyg, so return with the frame offset applied
 			if (offset.immediate) {

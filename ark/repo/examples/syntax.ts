@@ -50,5 +50,5 @@ export const parseBigintLiteral = type({ value: "string" })
 	)
 	.morph((data) => BigInt(data.value.slice(-1)))
 
-export const { out, errors: errors } = parseBigintLiteral("999n")
+export const out = parseBigintLiteral("999n")
 //             ^?

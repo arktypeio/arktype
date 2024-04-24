@@ -3,7 +3,7 @@ import { existsSync } from "fs"
 import { join } from "path"
 import { baseDiagnosticTscCmd } from "./shared.js"
 
-export const trace = async (args: string[]) => {
+export const trace = async (args: string[]): Promise<void> => {
 	const packageDir = args[0] ?? process.cwd()
 
 	if (!existsSync(packageDir)) {

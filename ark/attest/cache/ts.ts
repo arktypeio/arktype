@@ -147,6 +147,7 @@ export const getTsConfigInfoOrThrow = (): TsconfigInfo => {
 		parsed: configParseResult
 	}
 }
+
 type TsLibFiles = {
 	defaultMapFromNodeModules: Map<string, string>
 	resolvedPaths: string[]

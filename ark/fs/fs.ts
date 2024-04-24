@@ -3,8 +3,8 @@ import {
 	existsSync,
 	lstatSync,
 	mkdirSync,
-	readdirSync,
 	readFileSync,
+	readdirSync,
 	rmSync,
 	statSync,
 	writeFileSync
@@ -12,7 +12,7 @@ import {
 import { homedir } from "node:os"
 import { dirname, join, parse } from "node:path"
 import * as process from "node:process"
-import { fileURLToPath, URL } from "node:url"
+import { URL, fileURLToPath } from "node:url"
 import { caller } from "./caller.js"
 import { shell } from "./shell.js"
 export { rmSync } from "node:fs"
@@ -37,7 +37,7 @@ export const readJson = (path: string): any =>
 	JSON.parse(readFileSync(path, { encoding: "utf8" }))
 
 export const writeJson = (path: string, data: object): void =>
-	writeFileSync(path, JSON.stringify(data, null, 4) + "\n")
+	writeFileSync(path, `${JSON.stringify(data, null, 4)}\n`)
 
 export const rmRf = (target: string): void =>
 	rmSync(target, { recursive: true, force: true })
@@ -76,12 +76,13 @@ export const walkPaths = (dir: string, options: WalkOptions = {}): string[] =>
 			options.exclude?.(path) ||
 			(options.include && !options.include(path))
 		const nestedPaths = isDir ? walkPaths(path, options) : []
-		return [...paths, ...(excludeCurrent ? [] : [path]), ...nestedPaths]
+		paths.push(...(excludeCurrent ? [] : [path]), ...nestedPaths)
+		return paths
 	}, [])
 
 /** Fetch the file and directory paths from a path, uri, or `import.meta.url` */
 export const filePath = (path: string): string => {
-	let file
+	let file: string
 	if (path.includes("://")) {
 		// is a url, e.g. file://, or https://
 		const url = new URL(path)

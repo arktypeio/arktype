@@ -6,8 +6,7 @@ import { getFileKey } from "../utils.js"
 import type {
 	AssertionsByFile,
 	LinePositionRange,
-	TypeBenchmarkingAssertionData,
-	TypeRelationshipAssertionData
+	TypeAssertionData
 } from "./writeAssertionCache.js"
 
 export type VersionedAssertionsByFile = [
@@ -55,14 +54,9 @@ const isPositionWithinRange = (
 	return true
 }
 
-/**
- * todoshawn typeassertiondata should be it's own union
- * typerelationshipassertiondata
- * typebenchmarkingassertiondata
- */
 export type VersionedTypeAssertion = [
 	tsVersion: string,
-	assertionData: TypeBenchmarkingAssertionData | TypeRelationshipAssertionData
+	assertionData: TypeAssertionData
 ]
 
 export const getTypeAssertionsAtPosition = (

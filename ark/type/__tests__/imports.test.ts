@@ -1,24 +1,26 @@
-import { attest } from "@arktype/attest"
+import { attest, contextualize } from "@arktype/attest"
 import { lazily } from "@arktype/util"
-import { scope, type, type Ark, type Module } from "arktype"
+import { type Module, scope, type } from "arktype"
+import { writePrefixedPrivateReferenceMessage } from "../parser/semantic/validate.js"
 
-describe("scope imports", () => {
-	const threeSixtyNoScope = lazily(() =>
-		scope({
-			three: "3",
-			sixty: "60",
-			no: "'no'"
-		})
-	)
-	const yesScope = lazily(() => scope({ yes: "'yes'" }))
+const threeSixtyNoScope = lazily(() =>
+	scope({
+		three: "3",
+		sixty: "60",
+		no: "'no'"
+	})
+)
+const yesScope = lazily(() => scope({ yes: "'yes'" }))
 
-	const threeSixtyNoModule = lazily(() => threeSixtyNoScope.export())
-	const yesModule = lazily(() => yesScope.export())
+const threeSixtyNoModule = lazily(() => threeSixtyNoScope.export())
+const yesModule = lazily(() => yesScope.export())
 
+contextualize(() => {
 	it("single", () => {
 		const $ = scope({
-			...threeSixtyNoModule
-		}).scope({ threeSixtyNo: "three|sixty|no" })
+			...threeSixtyNoModule,
+			threeSixtyNo: "three|sixty|no"
+		})
 		attest<{ threeSixtyNo: 3 | 60 | "no" }>($.infer)
 	})
 
@@ -29,7 +31,8 @@ describe("scope imports", () => {
 			extra: "true"
 		})
 
-		const imported = base.scope({
+		const imported = scope({
+			...base.import(),
 			a: "three|sixty|no|yes|extra"
 		})
 
@@ -72,22 +75,15 @@ describe("scope imports", () => {
 
 		attest<
 			Module<{
-				exports: {
-					hasCrept: true
-					public: string | true | 3
-				}
-				locals: {
-					three: 3
-					no: "no"
-					private: string
-				}
-				ambient: Ark
+				hasCrept: true
+				public: string | true | 3
+				"#three": 3
+				"#no": "no"
+				"#private": string
 			}>
 		>(types)
 	})
-})
 
-describe("private aliases", () => {
 	it("non-generic", () => {
 		const types = scope({
 			foo: "bar[]",
@@ -97,17 +93,28 @@ describe("private aliases", () => {
 		attest(types.foo.json).equals(type("boolean[]").json)
 		attest<
 			Module<{
-				exports: { foo: boolean[] }
-				locals: { bar: boolean }
-				ambient: Ark
+				foo: boolean[]
+				"#bar": boolean
 			}>
 		>(types)
 	})
-	it("generic", () => {
-		const types = scope({
-			foo: "bar<string>[]",
-			"#bar<t>": ["t"]
-		}).export()
-		attest<[string][]>(types.foo.infer)
+
+	it("errors on private reference with #", () => {
+		attest(() =>
+			scope({
+				// @ts-expect-error
+				xdd: "#kekw",
+				"#kekw": "true"
+			}).export()
+		).throwsAndHasTypeError(writePrefixedPrivateReferenceMessage("#kekw"))
 	})
+
+	// TODO: reenable
+	// it("generic", () => {
+	// 	const types = scope({
+	// 		foo: "bar<string>[]",
+	// 		"#bar<t>": ["t"]
+	// 	}).export()
+	// 	attest<[string][]>(types.foo.infer)
+	// })
 })

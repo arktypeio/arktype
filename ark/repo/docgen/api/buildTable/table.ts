@@ -10,9 +10,10 @@ export const constructRow = (
 	let row = "| "
 	for (const index in rowData) {
 		const alteredData = convertToHTML(rowData)
-		row += indexesToWrap.includes(index)
-			? `\`${alteredData[index]}\`|`
-			: `${alteredData[index]} |`
+		row +=
+			indexesToWrap.includes(index) ?
+				`\`${alteredData[index]}\`|`
+			:	`${alteredData[index]} |`
 	}
 	return row
 }

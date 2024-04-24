@@ -1,5 +1,7 @@
 import { caller } from "@arktype/fs"
+import { throwInternalError } from "@arktype/util"
 import ts from "typescript"
+import { isBenchData } from "../assert/assertions.js"
 import { getTypeAssertionsAtPosition } from "../cache/getCachedAssertions.js"
 import {
 	TsServer,
@@ -78,11 +80,25 @@ export type ArgAssertionData = {
 export const instantiationDataHandler = (
 	ctx: BenchAssertionContext,
 	args?: Measure<TypeUnit>,
-	isBench = true
+	isBenchFunction = true
 ): void => {
-	const instantiationsContributed = isBench
-		? getContributedInstantiations(ctx)
-		: getTypeAssertionsAtPosition(ctx.benchCallPosition)[0][1].count!
+	/**
+	 * todoshawn all we care about here is bench data
+	 */
+	let instantiationsContributed
+	if (isBenchFunction) {
+		instantiationsContributed = getContributedInstantiations(ctx)
+	} else {
+		const assertionEntry = getTypeAssertionsAtPosition(
+			ctx.benchCallPosition
+		)[0][1]
+		if (isBenchData(assertionEntry)) {
+			instantiationsContributed = assertionEntry.count
+		} else {
+			//todoshawn
+			throwInternalError("Assertion data of the wrong kind was encountered")
+		}
+	}
 	const comparison: MeasureComparison<TypeUnit> = createTypeComparison(
 		instantiationsContributed,
 		args

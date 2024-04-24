@@ -1,11 +1,14 @@
-import { attest } from "@arktype/attest"
+import { attest, contextualize } from "@arktype/attest"
 import { scope, type } from "arktype"
 
-describe("completions", () => {
+contextualize(() => {
 	it("completes standalone keyword", () => {
 		// @ts-expect-error
-		attest(() => type("s")).completions({ s: ["string", "symbol", "semver"] })
+		attest(() => type("s")).completions({
+			s: ["string", "symbol", "semver"]
+		})
 	})
+
 	it("completes within objects", () => {
 		// @ts-expect-error
 		attest(() => type({ a: "a", b: "b" })).completions({
@@ -13,12 +16,14 @@ describe("completions", () => {
 			b: ["bigint", "boolean"]
 		})
 	})
+
 	it("completes within expressions", () => {
 		// @ts-expect-error
 		attest(() => type("string|n")).completions({
 			"string|n": ["string|number", "string|null", "string|never"]
 		})
 	})
+
 	it("completes user-defined aliases", () => {
 		const $ = scope({
 			over9000: "number>9000",

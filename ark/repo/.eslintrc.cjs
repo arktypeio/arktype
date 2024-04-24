@@ -34,13 +34,14 @@ module.exports = defineConfig({
 		"**/generated/**",
 		"**/experiments/**",
 		"*.astro",
-		"*.scratch.ts"
+		"*scratch.ts"
 	],
 	rules: {
 		/**
 		 * General restrictions
 		 */
 		eqeqeq: "warn",
+		"no-lone-blocks": "warn",
 		"object-shorthand": "warn",
 		/**
 		 * Require the use of arrow functions where possible
@@ -142,7 +143,8 @@ module.exports = defineConfig({
 			rules: {
 				// Assignment to a variable is required to ensure types are parsed
 				"@typescript-eslint/no-unused-vars": "off",
-				"@typescript-eslint/ban-ts-comment": "off"
+				"@typescript-eslint/ban-ts-comment": "off",
+				"@typescript-eslint/explicit-module-boundary-types": "off"
 			}
 		}
 	]

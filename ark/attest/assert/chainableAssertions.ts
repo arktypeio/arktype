@@ -1,5 +1,10 @@
 import { caller } from "@arktype/fs"
-import { printable, snapshot, type Constructor } from "@arktype/util"
+import {
+	printable,
+	snapshot,
+	type Constructor,
+	type Guardable
+} from "@arktype/util"
 import * as assert from "node:assert/strict"
 import { isDeepStrictEqual } from "node:util"
 import {
@@ -8,10 +13,7 @@ import {
 	updateExternalSnapshot,
 	type SnapshotArgs
 } from "../cache/snapshots.js"
-import type {
-	Completions,
-	TypeAssertionData
-} from "../cache/writeAssertionCache.js"
+import type { Completions } from "../cache/writeAssertionCache.js"
 import { chainableNoOpProxy } from "../utils.js"
 import {
 	TypeAssertionMapping,
@@ -19,6 +21,7 @@ import {
 	assertEquals,
 	callAssertedFunction,
 	getThrownMessage,
+	isAssertionData,
 	throwAssertionError
 } from "./assertions.js"
 import type { AssertionContext } from "./attest.js"
@@ -37,12 +40,14 @@ export class ChainableAssertions implements AssertionRecord {
 		return snapshot(value)
 	}
 
-	//todoshawn unsafe casting maybe
 	private get actual() {
-		return this.ctx.actual instanceof TypeAssertionMapping
-			? this.ctx.actual.fn(this.ctx.typeAssertionEntries![0][1], this.ctx)!
-					.actual
-			: this.ctx.actual
+		if (this.ctx.actual instanceof TypeAssertionMapping) {
+			const assertionEntry = this.ctx.typeAssertionEntries![0][1]
+			if (isAssertionData(assertionEntry)) {
+				return this.ctx.actual.fn(assertionEntry, this.ctx)!.actual
+			}
+		}
+		return this.ctx.actual
 	}
 
 	private get serializedActual() {
@@ -58,6 +63,20 @@ export class ChainableAssertions implements AssertionRecord {
 		)
 	}
 
+	narrow(predicate: Guardable, messageOnError?: string): never {
+		if (!predicate(this.actual)) {
+			throwAssertionError({
+				ctx: this.ctx,
+				message:
+					messageOnError ??
+					`${this.serializedActual} failed to satisfy predicate${
+						predicate.name ? ` ${predicate.name}` : ""
+					}`
+			})
+		}
+		return this.actual as never
+	}
+
 	get unknown(): this {
 		return this
 	}
@@ -68,6 +87,20 @@ export class ChainableAssertions implements AssertionRecord {
 	}
 	equals(expected: unknown): this {
 		assertEquals(expected, this.actual, this.ctx)
+		return this
+	}
+
+	instanceOf(expected: Constructor): this {
+		if (!(this.actual instanceof expected)) {
+			throwAssertionError({
+				ctx: this.ctx,
+				message: `Expected an instance of ${expected.name} (was ${
+					typeof this.actual === "object" && this.actual !== null ?
+						this.actual.constructor.name
+					:	this.serializedActual
+				})`
+			})
+		}
 		return this
 	}
 
@@ -170,20 +203,6 @@ export class ChainableAssertions implements AssertionRecord {
 		}
 	}
 
-	instanceOf(expected: Constructor): this {
-		if (!(this.actual instanceof expected)) {
-			throwAssertionError({
-				ctx: this.ctx,
-				message: `Expected an instance of ${expected.name} (was ${
-					typeof this.actual === "object" && this.actual !== null
-						? this.actual.constructor.name
-						: this.serializedActual
-				})`
-			})
-		}
-		return this
-	}
-
 	get completions() {
 		if (this.ctx.cfg.skipTypes) {
 			return chainableNoOpProxy
@@ -242,9 +261,8 @@ export type valueAssertions<
 > = comparableValueAssertion<t, kind> &
 	(t extends () => unknown ? functionAssertions<kind> : {})
 
-export type nextAssertions<kind extends AssertionKind> = "type" extends kind
-	? TypeAssertionsRoot
-	: {}
+export type nextAssertions<kind extends AssertionKind> =
+	"type" extends kind ? TypeAssertionsRoot : {}
 
 export type inferredAssertions<
 	argsType extends [value: any, ...rest: any[]],
@@ -260,11 +278,11 @@ export type ChainContext = {
 
 export type functionAssertions<kind extends AssertionKind> = {
 	throws: inferredAssertions<[message: string | RegExp], kind, string>
-} & ("type" extends kind
-	? {
-			throwsAndHasTypeError: (message: string | RegExp) => undefined
-	  }
-	: {})
+} & ("type" extends kind ?
+	{
+		throwsAndHasTypeError: (message: string | RegExp) => undefined
+	}
+:	{})
 
 export type valueFromTypeAssertion<
 	expected,
@@ -285,6 +303,10 @@ export type comparableValueAssertion<expected, kind extends AssertionKind> = {
 	instanceOf: (constructor: Constructor) => nextAssertions<kind>
 	is: (value: expected) => nextAssertions<kind>
 	completions: (value?: Completions) => void
+	narrow<narrowed>(
+		predicate: (data: unknown) => data is narrowed,
+		messageOnError?: string
+	): narrowed
 	// This can be used to assert values without type constraints
 	unknown: Omit<comparableValueAssertion<unknown, kind>, "unknown">
 }

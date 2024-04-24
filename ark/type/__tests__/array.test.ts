@@ -1,27 +1,28 @@
-import { attest } from "@arktype/attest"
+import { attest, contextualize } from "@arktype/attest"
+import { writeUnresolvableMessage } from "@arktype/schema"
 import { scope, type } from "arktype"
-import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclosed.js"
 import { incompleteArrayTokenMessage } from "../parser/string/shift/operator/operator.js"
 import {
 	multipleVariadicMesage,
 	writeNonArraySpreadMessage
 } from "../parser/tuple.js"
 
-describe("array", () => {
-	describe("non-tuple", () => {
+contextualize(
+	"non-tuple",
+	() => {
 		it("allows and apply", () => {
 			const t = type("string[]")
 			attest<string[]>(t.infer)
 			attest(t.allows([])).equals(true)
-			attest(t([]).out).snap([])
+			attest(t([])).snap([])
 			attest(t.allows(["foo", "bar"])).equals(true)
-			attest(t(["foo", "bar"]).out).snap(["foo", "bar"])
+			attest(t(["foo", "bar"])).snap(["foo", "bar"])
 			attest(t.allows(["foo", "bar", 5])).equals(false)
-			attest(t(["foo", "bar", 5]).errors?.summary).snap(
+			attest(t(["foo", "bar", 5]).toString()).snap(
 				"value at [2] must be a string (was number)"
 			)
 			attest(t.allows([5, "foo", "bar"])).equals(false)
-			attest(t([5, "foo", "bar"]).errors?.summary).snap(
+			attest(t([5, "foo", "bar"]).toString()).snap(
 				"value at [0] must be a string (was number)"
 			)
 		})
@@ -30,15 +31,15 @@ describe("array", () => {
 			const t = type("string[][]")
 			attest<string[][]>(t.infer)
 			attest(t.allows([])).equals(true)
-			attest(t([]).out).snap([])
+			attest(t([])).snap([])
 			attest(t.allows([["foo"]])).equals(true)
-			attest(t([["foo"]]).out).snap([["foo"]])
+			attest(t([["foo"]])).snap([["foo"]])
 			attest(t.allows(["foo"])).equals(false)
-			attest(t(["foo"]).errors?.summary).snap(
+			attest(t(["foo"]).toString()).snap(
 				"value at [0] must be an array (was string)"
 			)
 			attest(t.allows([["foo", 5]])).equals(false)
-			attest(t([["foo", 5]]).errors?.summary).snap(
+			attest(t([["foo", 5]]).toString()).snap(
 				"value at [0][1] must be a string (was number)"
 			)
 		})
@@ -47,23 +48,6 @@ describe("array", () => {
 			const t = type(["string", "[]"])
 			attest<string[]>(t.infer)
 			attest(t.json).equals(type("string[]").json)
-		})
-
-		it("optional tuple", () => {
-			const t = type(["string", "?"])
-			attest<[string?]>(t.infer)
-			attest(t([]).errors).equals(undefined)
-			attest(t(["foo"]).errors).equals(undefined)
-			attest(t([5]).errors?.summary).snap(
-				"value at [0] must be a string (was number)"
-			)
-			attest(t(["foo", "bar"]).errors?.summary).snap(
-				"must be at most length 1 (was 2)"
-			)
-		})
-		it("nested optional tuple", () => {
-			const t = type([["string", "?"], "string", "?"])
-			attest<[[string?], string?]>(t.infer)
 		})
 
 		it("root expression", () => {
@@ -81,35 +65,35 @@ describe("array", () => {
 				writeUnresolvableMessage("hmm")
 			)
 		})
+
 		it("incomplete token", () => {
 			// @ts-expect-error
 			attest(() => type("string[")).throwsAndHasTypeError(
 				incompleteArrayTokenMessage
 			)
 		})
-	})
-	describe("non-variadic tuple", () => {
+	},
+	"non-variadic tuple",
+	() => {
 		it("shallow", () => {
 			const t = type(["string", "number"])
 			attest<[string, number]>(t.infer)
 			attest(t.allows(["", 0])).equals(true)
-			attest(t(["", 0]).out).snap(["", 0])
+			attest(t(["", 0])).snap(["", 0])
 			attest(t.allows([true, 0])).equals(false)
-			attest(t([true, 0]).errors?.summary).snap(
+			attest(t([true, 0]).toString()).snap(
 				"value at [0] must be a string (was true)"
 			)
 			attest(t.allows([0, false])).equals(false)
-			attest(t([0, false]).errors?.summary)
+			attest(t([0, false]).toString())
 				.snap(`value at [0] must be a string (was number)
 value at [1] must be a number (was false)`)
 			// too short
 			attest(t.allows([""])).equals(false)
-			attest(t([""]).errors?.summary).snap(
-				'must be exactly length 2 (was [""])'
-			)
+			attest(t([""]).toString()).snap('must be exactly length 2 (was [""])')
 			// too long
 			attest(t.allows(["", 0, 1])).equals(false)
-			attest(t(["", 0, 1]).errors?.summary).snap(
+			attest(t(["", 0, 1]).toString()).snap(
 				'must be exactly length 2 (was ["",0,1])'
 			)
 			// non-array
@@ -125,7 +109,7 @@ value at [1] must be a number (was false)`)
 					length: 2,
 					0: "",
 					1: 0
-				}).errors?.summary
+				}).toString()
 			).snap("must be an array (was object)")
 		})
 
@@ -144,31 +128,64 @@ value at [1] must be a number (was false)`)
 			>(t.infer)
 			const valid: typeof t.infer = [["", 0], [{ a: 0n, b: [null] }]]
 			attest(t.allows(valid)).equals(true)
-			attest(t(valid).out).equals(valid)
+			attest(t(valid)).equals(valid)
 			const invalid = [["", 0], [{ a: 0n, b: [undefined] }]]
 			attest(t.allows(invalid)).equals(false)
-			attest(t(invalid).errors?.summary).snap(
+			attest(t(invalid).toString()).snap(
 				"value at [1][0].b[0] must be null (was undefined)"
 			)
 		})
-	})
-	describe("variadic tuple", () => {
+
+		it("optional tuple", () => {
+			const t = type(["string", "?"])
+			attest<[string?]>(t.infer)
+			attest(t([])).equals([])
+			attest(t(["foo"])).equals(["foo"])
+			attest(t([5]).toString()).snap(
+				"value at [0] must be a string (was number)"
+			)
+			attest(t(["foo", "bar"]).toString()).snap(
+				"must be at most length 1 (was 2)"
+			)
+		})
+
+		it("nested optional tuple", () => {
+			const t = type([["string", "?"], "string", "?"])
+			attest<[[string?], string?]>(t.infer)
+		})
+	},
+	"variadic tuple",
+	() => {
 		it("spreads simple arrays", () => {
 			const wellRested = type(["string", "...", "number[]"])
 			attest<[string, ...number[]]>(wellRested.infer)
-			attest(wellRested(["foo"]).out).equals(["foo"])
-			attest(wellRested(["foo", 1, 2]).out).equals(["foo", 1, 2])
+			attest(wellRested(["foo"])).equals(["foo"])
+			attest(wellRested(["foo", 1, 2])).equals(["foo", 1, 2])
 		})
+
 		it("spreads array expressions", () => {
 			const greatSpread = type(["0", "...", "(Date|RegExp)[]"])
 			attest<[0, ...(RegExp | Date)[]]>(greatSpread.infer)
 		})
+
 		it("distributes spread unions", () => {
 			const t = type(["1", "...", "(Date[] | RegExp[])"])
 			attest<[1, ...(Date[] | RegExp[])]>(t.infer)
 			const expected = type(["1", "...", "Date[]"]).or(["1", "...", "RegExp[]"])
 			attest(t.json).equals(expected.json)
 		})
+
+		it("distributes spread union tuples", () => {
+			const counting = ["2", "3", "4"] as const
+			const fibbing = ["1", "2", "3", "5", "8"] as const
+			const countOrFib = type(counting, "|", fibbing)
+			attest<[2, 3, 4] | [1, 2, 3, 5, 8]>(countOrFib.infer)
+			const t = type(["1", "...", countOrFib])
+			attest<[1, 2, 3, 4] | [1, 1, 2, 3, 5, 8]>(t.infer)
+			const expected = type(["1", ...counting]).or(["1", ...fibbing])
+			attest(t.json).equals(expected.json)
+		})
+
 		it("allows array keyword", () => {
 			const types = scope({
 				myArrayKeyword: "boolean[]",
@@ -176,12 +193,14 @@ value at [1] must be a number (was false)`)
 			}).export()
 			attest<[string, ...boolean[]]>(types.myVariadicKeyword.infer)
 		})
+
 		it("errors on non-array", () => {
 			attest(() =>
 				// @ts-expect-error
 				type(["number", "...", "string"])
 			).throwsAndHasTypeError(writeNonArraySpreadMessage("string"))
 		})
+
 		it("allows multiple fixed spreads", () => {
 			const t = type([
 				"string",
@@ -204,6 +223,7 @@ value at [1] must be a number (was false)`)
 			attest<typeof expected.infer>(t.infer)
 			attest(t.json).equals(expected.json)
 		})
+
 		it("errors on multiple variadic", () => {
 			attest(() =>
 				type([
@@ -215,24 +235,28 @@ value at [1] must be a number (was false)`)
 				])
 			).throwsAndHasTypeError(multipleVariadicMesage)
 		})
-	})
-	describe("intersection", () => {
+	},
+	"intersection",
+	() => {
 		it("shallow array intersection", () => {
 			const t = type("string[]&'foo'[]")
 			const expected = type("'foo'[]")
 			attest(t.json).equals(expected.json)
 		})
+
 		it("deep array intersection", () => {
 			const t = type([{ a: "string" }, "[]"]).and([{ b: "number" }, "[]"])
 			const expected = type([{ a: "string", b: "number" }, "[]"])
 			attest(t.json).equals(expected.json)
 		})
+
 		it("tuple intersection", () => {
 			const t = type([[{ a: "string" }], "&", [{ b: "boolean" }]])
 			const expected = type([{ a: "string", b: "boolean" }])
 			attest<typeof expected>(t)
 			attest(t.json).equals(expected.json)
 		})
+
 		it("tuple and array", () => {
 			const tupleAndArray = type([
 				[{ a: "string" }],
@@ -253,6 +277,7 @@ value at [1] must be a number (was false)`)
 			attest(tupleAndArray.json).equals(expected.json)
 			attest(arrayAndTuple.json).equals(expected.json)
 		})
+
 		it("variadic and tuple", () => {
 			const b = type([{ b: "boolean" }, "[]"])
 			const t = type([{ a: "string" }, "...", b]).and([
@@ -265,6 +290,7 @@ value at [1] must be a number (was false)`)
 			])
 			attest(t.json).equals(expected.json)
 		})
+
 		it("variadic and array", () => {
 			const b = type({ b: "boolean" }, "[]")
 			const t = type([{ a: "string" }, "...", b]).and([{ c: "number" }, "[]"])
@@ -276,6 +302,7 @@ value at [1] must be a number (was false)`)
 			attest<typeof expected.infer>(t.infer)
 			attest(t.json).equals(expected.json)
 		})
+
 		// based on the equivalent type-level test from @arktype/util
 		it("kitchen sink", () => {
 			const l = type([
@@ -314,6 +341,7 @@ value at [1] must be a number (was false)`)
 			attest<typeof expected>(result)
 			attest(result.json).equals(expected.json)
 		})
+
 		it("prefix and postfix", () => {
 			const l = type(["...", [{ a: "0" }, "[]"], { b: "0" }, { c: "0" }])
 			const r = type([{ x: "0" }, { y: "0" }, "...", [{ z: "0" }, "[]"]])
@@ -343,19 +371,21 @@ value at [1] must be a number (was false)`)
 			const rlResult = r.and(l)
 			attest(rlResult.json).snap(expected.json)
 		})
+
 		it("reduces minLength", () => {
 			const t = type(["number", "number", "...", "number[]", "number"])
 			const expected = type("number[]>=3")
 			attest(t.json).equals(expected.json)
 		})
-	})
-	// TODO: reenable
-	// describe("traversal", () => {
-	//     it("multiple errors", () => {
-	//         const stringArray = type("string[]")
-	//         attest(stringArray([1, 2]).errors?.summary).snap(
-	//             "Item at index 0 must be a string (was number)\nItem at index 1 must be a string (was number)"
-	//         )
-	//     })
-	// })
-})
+	}
+)
+
+// TODO: reenable
+// describe("traversal", () => {
+//     it("multiple errors", () => {
+//         const stringArray = type("string[]")
+//         attest(stringArray([1, 2]).toString()).snap(
+//             "Item at index 0 must be a string (was number)\nItem at index 1 must be a string (was number)"
+//         )
+//     })
+// })

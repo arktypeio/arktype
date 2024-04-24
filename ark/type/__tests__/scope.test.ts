@@ -1,10 +1,12 @@
-import { attest } from "@arktype/attest"
-import { scope, type } from "arktype"
-import { writeUnboundableMessage } from "../constraints/refinements/range.js"
-import { writeUnresolvableMessage } from "../parser/string/shift/operand/unenclosed.js"
+import { attest, contextualize } from "@arktype/attest"
+import {
+	writeUnboundableMessage,
+	writeUnresolvableMessage
+} from "@arktype/schema"
+import { define, scope, type } from "arktype"
 import { writeUnexpectedCharacterMessage } from "../parser/string/shift/operator/operator.js"
 
-describe("scope", () => {
+contextualize(() => {
 	it("base definition", () => {
 		const types = scope({ a: "string" }).export()
 		attest<string>(types.a.infer)
@@ -13,6 +15,7 @@ describe("scope", () => {
 			scope({ a: "strong" }).export()
 		).throwsAndHasTypeError(writeUnresolvableMessage("strong"))
 	})
+
 	it("type definition", () => {
 		const types = scope({ a: type("string") }).export()
 		attest<string>(types.a.infer)
@@ -21,6 +24,7 @@ describe("scope", () => {
 			scope({ a: type("strong") })
 		).throwsAndHasTypeError(writeUnresolvableMessage("strong"))
 	})
+
 	it("interdependent", () => {
 		const types = scope({
 			a: "string>5",
@@ -29,6 +33,7 @@ describe("scope", () => {
 		}).export()
 		attest<string>(types.c.infer)
 	})
+
 	it("object array", () => {
 		const types = scope({ a: "string", b: [{ c: "a" }] }).export()
 		attest<
@@ -39,11 +44,13 @@ describe("scope", () => {
 			]
 		>(types.b.infer)
 	})
+
 	it("doesn't try to validate any in scope", () => {
 		const $ = scope({ a: {} as any })
 		attest<{ a: never }>($.infer)
 		attest<[number, never]>($.type(["number", "a"]).infer)
 	})
+
 	it("infers input and output", () => {
 		const $ = scope({
 			a: ["string", "=>", (s) => s.length]
@@ -52,15 +59,17 @@ describe("scope", () => {
 		// TODO: API?
 		// attest<{ a: string }>($.in.infer)
 	})
-	it("scope.scope", () => {
-		const $ = scope({
-			a: "string"
-		})
-		const importer = $.scope({ b: "a[]" })
-		attest<{ b: string[] }>(importer.infer)
-		const t = importer.type("b")
-		attest(t.json).equals(type("string[]").json)
-	})
+	// TODO: remove if not preserving
+	// it("scope.scope", () => {
+	// 	const $ = scope({
+	// 		a: "string"
+	// 	})
+	// 	const importer = $.scope({ b: "a[]" })
+	// 	attest<{ b: string[] }>(importer.infer)
+	// 	const t = importer.type("b")
+	// 	attest(t.json).equals(type("string[]").json)
+	// })
+
 	it("infers its own helpers", () => {
 		const $ = scope({
 			a: () => $.type("string"),
@@ -70,6 +79,7 @@ describe("scope", () => {
 		attest<string>(types.a.infer)
 		attest<number>(types.b.infer)
 	})
+
 	it("allows semantically valid helpers", () => {
 		const $ = scope({
 			n: () => $.type("number"),
@@ -79,6 +89,7 @@ describe("scope", () => {
 		attest<number>(types.n.infer)
 		attest<number>(types.lessThan10.infer)
 	})
+
 	it("errors on helper parse error", () => {
 		attest(() => {
 			const $ = scope({
@@ -88,6 +99,7 @@ describe("scope", () => {
 			$.export()
 		}).throwsAndHasTypeError(writeUnresolvableMessage("kung"))
 	})
+
 	it("errors on semantically invalid helper", () => {
 		attest(() => {
 			const $ = scope({
@@ -100,6 +112,7 @@ describe("scope", () => {
 			.throws(writeUnboundableMessage("boolean"))
 			.type.errors(writeUnboundableMessage("'b'"))
 	})
+
 	it("errors on ridiculous unexpected alias scenario", () => {
 		attest(() =>
 			scope({
@@ -113,6 +126,7 @@ describe("scope", () => {
 			}).export()
 		).throwsAndHasTypeError(writeUnexpectedCharacterMessage("c"))
 	})
+
 	it("autocompletion", () => {
 		attest(() => {
 			scope({
@@ -122,6 +136,7 @@ describe("scope", () => {
 			}).export()
 		}).type.errors(`Type '"fo"' is not assignable to type '"foobar"'`)
 	})
+
 	it("cross-scope reference", () => {
 		const { Apple } = scope({
 			Apple: {
@@ -136,7 +151,37 @@ describe("scope", () => {
 			X: Apple
 		}).export()
 
-		const { out: data } = X({ pear: { tasty: true } })
-		attest(data).snap({ pear: { tasty: true } })
+		const out = X({ pear: { tasty: true } })
+		attest(out).snap({ pear: { tasty: true } })
+	})
+	describe("define", () => {
+		it("ark", () => {
+			const def = define({
+				a: "string|number",
+				b: ["boolean"],
+				c: "this"
+			})
+			attest<{ a: "string|number"; b: ["boolean"]; c: "this" }>(def)
+		})
+
+		it("ark error", () => {
+			// currently is a no-op, so only has type error
+			// @ts-expect-error
+			attest(define({ a: "boolean|foo" })).type.errors(
+				writeUnresolvableMessage("foo")
+			)
+		})
+
+		it("custom scope", () => {
+			const $ = scope({
+				a: "string[]"
+			})
+			const ok = $.define(["a[]|boolean"])
+			attest<["a[]|boolean"]>(ok)
+			// @ts-expect-error
+			attest($.define({ not: "ok" })).type.errors(
+				writeUnresolvableMessage("ok")
+			)
+		})
 	})
 })

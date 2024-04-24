@@ -1,7 +1,7 @@
-import { attest } from "@arktype/attest"
+import { attest, contextualize } from "@arktype/attest"
 import { declare, type } from "arktype"
 
-describe("declared", () => {
+contextualize(() => {
 	it("shallow", () => {
 		const shallow = declare<number>().type("number")
 		attest<number>(shallow.infer)

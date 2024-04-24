@@ -24,9 +24,8 @@ export const keywordTable = (text: string, tags: TsTagData) => {
 	for (const prop of scopeAliases) {
 		const keyword = prop.trim().match(/^([^:]+):(.+)$/)
 		if (keyword) {
-			const description = descriptionsByKeyword
-				? descriptionsByKeyword[keyword[1]] ?? ""
-				: ""
+			const description =
+				descriptionsByKeyword ? descriptionsByKeyword[keyword[1]] ?? "" : ""
 			const row = constructRow([keyword[1], keyword[2], description], ["1"])
 			table.push(row)
 		}

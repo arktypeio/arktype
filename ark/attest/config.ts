@@ -1,7 +1,7 @@
 import { ensureDir, fromCwd } from "@arktype/fs"
 import {
+	arrayFrom,
 	isArray,
-	listFrom,
 	tryParseNumber,
 	type autocomplete
 } from "@arktype/util"
@@ -87,10 +87,16 @@ const getParamValue = (param: keyof AttestConfig) => {
 	return raw
 }
 
+export const attestEnvPrefix = "ATTEST_"
+
 const addEnvConfig = (config: BaseAttestConfig) => {
-	if (process.env.ATTEST_CONFIG) {
-		Object.assign(config, JSON.parse(process.env.ATTEST_CONFIG))
-	}
+	Object.entries(process.env as Record<string, string>).forEach(([k, v]) => {
+		if (k.startsWith(attestEnvPrefix)) {
+			const optionName = k.slice(attestEnvPrefix.length)
+			if (optionName === "CONFIG") Object.assign(config, JSON.parse(v))
+			else (config as any)[optionName] = JSON.parse(v)
+		}
+	})
 	let k: keyof BaseAttestConfig
 	for (k in config) {
 		if (config[k] === false) {
@@ -140,7 +146,7 @@ const parseTsVersions = (aliases: TsVersionAliases): TsVersionData[] => {
 	if (aliases === "*") {
 		return versions
 	}
-	return listFrom(aliases).map((alias) => {
+	return arrayFrom(aliases).map((alias) => {
 		const matching = versions.find((v) => v.alias === alias)
 		if (!matching) {
 			throw new Error(

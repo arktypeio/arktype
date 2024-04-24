@@ -22,6 +22,35 @@ export type StatName = keyof typeof stats
 
 export type TimeAssertionName = StatName | "mark"
 
+export const bench = <Fn extends BenchableFunction>(
+	name: string,
+	fn: Fn,
+	options: BenchOptions = {}
+): InitialBenchAssertions<Fn> => {
+	const qualifiedPath = [...currentSuitePath, name]
+	const ctx = getBenchCtx(
+		qualifiedPath,
+		fn.constructor.name === "AsyncFunction",
+		options
+	)
+	ctx.benchCallPosition = caller()
+	ensureCacheDirs()
+	if (
+		typeof ctx.cfg.filter === "string" &&
+		!qualifiedPath.includes(ctx.cfg.filter)
+	) {
+		return chainableNoOpProxy
+	} else if (
+		Array.isArray(ctx.cfg.filter) &&
+		ctx.cfg.filter.some((segment, i) => segment !== qualifiedPath[i])
+	) {
+		return chainableNoOpProxy
+	}
+	const assertions = new BenchAssertions(fn, ctx)
+	Object.assign(assertions, createBenchTypeAssertion(ctx))
+	return assertions as any
+}
+
 export const stats = {
 	mean: (callTimes: number[]): number => {
 		const totalCallMs = callTimes.reduce((sum, duration) => sum + duration, 0)
@@ -293,35 +322,6 @@ export type InitialBenchAssertions<Fn extends BenchableFunction> =
 	BenchAssertions<Fn> & BenchTypeAssertions
 
 const currentSuitePath: string[] = []
-
-export const bench = <Fn extends BenchableFunction>(
-	name: string,
-	fn: Fn,
-	options: BenchOptions = {}
-): InitialBenchAssertions<Fn> => {
-	const qualifiedPath = [...currentSuitePath, name]
-	const ctx = getBenchCtx(
-		qualifiedPath,
-		fn.constructor.name === "AsyncFunction",
-		options
-	)
-	ctx.benchCallPosition = caller()
-	ensureCacheDirs()
-	if (
-		typeof ctx.cfg.filter === "string" &&
-		!qualifiedPath.includes(ctx.cfg.filter)
-	) {
-		return chainableNoOpProxy
-	} else if (
-		Array.isArray(ctx.cfg.filter) &&
-		ctx.cfg.filter.some((segment, i) => segment !== qualifiedPath[i])
-	) {
-		return chainableNoOpProxy
-	}
-	const assertions = new BenchAssertions(fn, ctx)
-	Object.assign(assertions, createBenchTypeAssertion(ctx))
-	return assertions as any
-}
 
 process.on("beforeExit", () => {
 	if (unhandledExceptionMessages.length) {

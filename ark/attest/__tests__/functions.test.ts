@@ -1,4 +1,4 @@
-import { attest } from "@arktype/attest"
+import { attest, contextualize } from "@arktype/attest"
 import { fileName } from "@arktype/fs"
 import * as assert from "node:assert/strict"
 import { basename } from "node:path"
@@ -16,7 +16,7 @@ const throwError = () => {
 	throw new Error("Test error.")
 }
 
-describe("assertion errors", () => {
+contextualize(() => {
 	it("valid type errors", () => {
 		// @ts-expect-error
 		attest(o.re.length.nonexistent).type.errors(
@@ -28,6 +28,7 @@ describe("assertion errors", () => {
 			"Expected 1 arguments, but got 2."
 		)
 	})
+
 	it("bad type errors", () => {
 		assert.throws(
 			() => attest(o).type.errors(/This error doesn't exist/),
@@ -44,6 +45,7 @@ describe("assertion errors", () => {
 			"not assignable"
 		)
 	})
+
 	it("chainable", () => {
 		attest<{ re: string }>(o).equals({ re: "do" })
 		// @ts-expect-error
@@ -51,6 +53,7 @@ describe("assertion errors", () => {
 			.throws("Test error.")
 			.type.errors("Expected 0 arguments, but got 1.")
 	})
+
 	it("bad chainable", () => {
 		assert.throws(
 			() =>
@@ -66,6 +69,7 @@ describe("assertion errors", () => {
 			"7"
 		)
 	})
+
 	it("throwsAndHasTypeError", () => {
 		// @ts-expect-error
 		attest(() => shouldThrow(true)).throwsAndHasTypeError(
@@ -89,6 +93,7 @@ describe("assertion errors", () => {
 			"not assignable"
 		)
 	})
+
 	it("throws empty", () => {
 		attest(throwError).throws()
 		assert.throws(

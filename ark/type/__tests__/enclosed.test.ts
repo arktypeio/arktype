@@ -1,13 +1,14 @@
-import { attest } from "@arktype/attest"
+import { attest, contextualize } from "@arktype/attest"
 import { type } from "arktype"
 import { writeUnterminatedEnclosedMessage } from "../parser/string/shift/operand/enclosed.js"
 
-describe("parse enclosed", () => {
+contextualize(() => {
 	it("with spaces", () => {
 		const t = type("'this has spaces'")
 		attest<"this has spaces">(t.infer)
 		attest(t.json).snap({ unit: "this has spaces" })
 	})
+
 	it("with neighbors", () => {
 		const t = type("'foo'|/.*/[]")
 		attest<"foo" | string[]>(t.infer)
@@ -16,58 +17,66 @@ describe("parse enclosed", () => {
 			{ unit: "foo" }
 		])
 	})
-	describe("errors", () => {
-		describe("unterminated", () => {
-			it("regex", () => {
-				// @ts-expect-error
-				attest(() => type("/.*")).throwsAndHasTypeError(
-					writeUnterminatedEnclosedMessage(".*", "/")
-				)
-			})
-			it("single-quote", () => {
-				// @ts-expect-error
-				attest(() => type("'.*")).throwsAndHasTypeError(
-					writeUnterminatedEnclosedMessage(".*", "'")
-				)
-			})
-			it("double-quote", () => {
-				// @ts-expect-error
-				attest(() => type('".*')).throwsAndHasTypeError(
-					writeUnterminatedEnclosedMessage(".*", '"')
-				)
-			})
-		})
+
+	it("unterminated regex", () => {
+		// @ts-expect-error
+		attest(() => type("/.*")).throwsAndHasTypeError(
+			writeUnterminatedEnclosedMessage(".*", "/")
+		)
 	})
+
+	it("unterminated single-quote", () => {
+		// @ts-expect-error
+		attest(() => type("'.*")).throwsAndHasTypeError(
+			writeUnterminatedEnclosedMessage(".*", "'")
+		)
+	})
+
+	it("unterminated double-quote", () => {
+		// @ts-expect-error
+		attest(() => type('".*')).throwsAndHasTypeError(
+			writeUnterminatedEnclosedMessage(".*", '"')
+		)
+	})
+
 	it("single-quoted", () => {
 		const t = type("'hello'")
 		attest<"hello">(t.infer)
 		attest(t.json).snap({ unit: "hello" })
 	})
+
 	it("double-quoted", () => {
 		attest<"goodbye">(type('"goodbye"').infer)
 	})
+
 	it("regex literal", () => {
 		attest<string>(type("/.*/").infer)
 	})
+
 	it("invalid regex", () => {
 		attest(() => type("/[/")).throws(
 			"Invalid regular expression: /[/: Unterminated character class"
 		)
 	})
+
 	it("mixed quote types", () => {
 		attest<"'single-quoted'">(type(`"'single-quoted'"`).infer)
 		attest<'"double-quoted"'>(type(`'"double-quoted"'`).infer)
 	})
+
 	it("ignores enclosed operators", () => {
 		attest<"yes|no|maybe">(type("'yes|no|maybe'").infer)
 	})
+
 	it("mix of enclosed and unenclosed operators", () => {
 		attest<"yes|no" | "true|false">(type("'yes|no'|'true|false'").infer)
 	})
+
 	it("escaped enclosing", () => {
 		const t = type("'don\\'t'")
 		attest<"don't">(t.infer)
 	})
+
 	it("string literal stress", () => {
 		const s = `"3.
 14159265358979323846264338327950288419716939937510

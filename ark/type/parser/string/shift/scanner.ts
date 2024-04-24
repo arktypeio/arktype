@@ -1,4 +1,4 @@
-import { isKeyOf, type Dict } from "@arktype/util"
+import { type Dict, isKeyOf } from "@arktype/util"
 import type { Comparator } from "../reduce/shared.js"
 
 export class Scanner<Lookahead extends string = string> {
@@ -128,7 +128,8 @@ export namespace Scanner {
 
 	export const whiteSpaceTokens = {
 		" ": true,
-		"\n": true
+		"\n": true,
+		"\t": true
 	} as const
 
 	export type WhiteSpaceToken = keyof typeof whiteSpaceTokens
@@ -137,32 +138,32 @@ export namespace Scanner {
 		lookahead: string,
 		unscanned: string
 	): lookahead is ">" | "," =>
-		lookahead === ">"
-			? unscanned[0] === "="
-				? // >== would only occur in an expression like Array<number>==5
-				  // otherwise, >= would only occur as part of a bound like number>=5
-				  unscanned[1] === "="
-				: // if > is the end of a generic instantiation, the next token will be an operator or the end of the string
-				  unscanned.trimStart() === "" ||
-				  isKeyOf(unscanned.trimStart()[0], Scanner.terminatingChars)
-			: // if the lookahead is a finalizing token but not >, it's unambiguously a finalizer (currently just ",")
-			  lookahead === ","
+		lookahead === ">" ?
+			unscanned[0] === "=" ?
+				// >== would only occur in an expression like Array<number>==5
+				// otherwise, >= would only occur as part of a bound like number>=5
+				unscanned[1] === "="
+				// if > is the end of a generic instantiation, the next token will be an operator or the end of the string
+			:	unscanned.trimStart() === "" ||
+				isKeyOf(unscanned.trimStart()[0], Scanner.terminatingChars)
+			// if the lookahead is a finalizing token but not >, it's unambiguously a finalizer (currently just ",")
+		:	lookahead === ","
 
 	export type lookaheadIsFinalizing<
 		lookahead extends string,
 		unscanned extends string
-	> = lookahead extends ">"
-		? unscanned extends `=${infer nextUnscanned}`
-			? nextUnscanned extends `=${string}`
-				? true
-				: false
-			: Scanner.skipWhitespace<unscanned> extends
-					| ""
-					| `${TerminatingChar}${string}`
-			? true
-			: false
-		: lookahead extends ","
-		? true
+	> =
+		lookahead extends ">" ?
+			unscanned extends `=${infer nextUnscanned}` ?
+				nextUnscanned extends `=${string}` ?
+					true
+				:	false
+			: Scanner.skipWhitespace<unscanned> extends (
+				"" | `${TerminatingChar}${string}`
+			) ?
+				true
+			:	false
+		: lookahead extends "," ? true
 		: false
 
 	export type shift<
@@ -174,23 +175,25 @@ export namespace Scanner {
 		unscanned extends string,
 		terminator extends string,
 		scanned extends string = ""
-	> = unscanned extends shift<infer lookahead, infer nextUnscanned>
-		? lookahead extends terminator
-			? scanned extends `${infer base}${EscapeToken}`
-				? shiftUntil<nextUnscanned, terminator, `${base}${lookahead}`>
-				: [scanned, unscanned]
-			: shiftUntil<nextUnscanned, terminator, `${scanned}${lookahead}`>
-		: [scanned, ""]
+	> =
+		unscanned extends shift<infer lookahead, infer nextUnscanned> ?
+			lookahead extends terminator ?
+				scanned extends `${infer base}${EscapeToken}` ?
+					shiftUntil<nextUnscanned, terminator, `${base}${lookahead}`>
+				:	[scanned, unscanned]
+			:	shiftUntil<nextUnscanned, terminator, `${scanned}${lookahead}`>
+		:	[scanned, ""]
 
 	export type shiftUntilNot<
 		unscanned extends string,
 		nonTerminator extends string,
 		scanned extends string = ""
-	> = unscanned extends shift<infer lookahead, infer nextUnscanned>
-		? lookahead extends nonTerminator
-			? shiftUntilNot<nextUnscanned, nonTerminator, `${scanned}${lookahead}`>
-			: [scanned, unscanned]
-		: [scanned, ""]
+	> =
+		unscanned extends shift<infer lookahead, infer nextUnscanned> ?
+			lookahead extends nonTerminator ?
+				shiftUntilNot<nextUnscanned, nonTerminator, `${scanned}${lookahead}`>
+			:	[scanned, unscanned]
+		:	[scanned, ""]
 
 	export type shiftUntilNextTerminator<unscanned extends string> = shiftUntil<
 		unscanned,

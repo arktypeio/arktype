@@ -1,23 +1,26 @@
-import { attest } from "@arktype/attest"
+import { attest, contextualize } from "@arktype/attest"
 import { reference } from "@arktype/util"
 import { type } from "arktype"
 
-describe("literal", () => {
-	describe("tuple expression", () => {
+contextualize(
+	"tuple expression",
+	() => {
 		it("literal", () => {
 			const t = type(["===", 5])
 			attest<5>(t.infer)
 			attest(t.json).equals(type("5").json)
 		})
+
 		it("non-serializable", () => {
 			const s = Symbol()
 			const t = type(["===", s])
 			attest<symbol>(t.infer)
-			attest(t(s).out).equals(s)
-			attest(t("test").errors?.summary).snap(
+			attest(t(s)).equals(s)
+			attest(t("test").toString()).snap(
 				'must be (symbol anonymous) (was "test")'
 			)
 		})
+
 		it("branches", () => {
 			const o = { ark: true }
 			const oReference = reference(o)
@@ -38,13 +41,15 @@ describe("literal", () => {
 				{ unit: true }
 			])
 		})
-	})
-	describe("root expression", () => {
+	},
+	"root expression",
+	() => {
 		it("single", () => {
 			const t = type("===", true)
 			attest<true>(t.infer)
 			attest(t.json).equals(type("true").json)
 		})
+
 		it("branches", () => {
 			const o = { ark: true }
 			const oReference = reference(o)
@@ -65,5 +70,5 @@ describe("literal", () => {
 				{ unit: true }
 			])
 		})
-	})
-})
+	}
+)

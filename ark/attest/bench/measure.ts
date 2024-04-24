@@ -15,9 +15,9 @@ export type MeasureComparison<Unit extends MeasureUnit = MeasureUnit> = {
 export type MarkMeasure = Partial<Record<StatName, Measure>>
 
 export const stringifyMeasure = ([value, units]: Measure) =>
-	units in TIME_UNIT_RATIOS
-		? stringifyTimeMeasure([value, units as TimeUnit])
-		: `${value}${units}`
+	units in TIME_UNIT_RATIOS ?
+		stringifyTimeMeasure([value, units as TimeUnit])
+	:	`${value}${units}`
 
 export const TYPE_UNITS = ["instantiations"] as const
 

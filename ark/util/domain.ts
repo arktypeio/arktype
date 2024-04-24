@@ -1,4 +1,4 @@
-import type { evaluate } from "./generics.js"
+import type { show } from "./generics.js"
 import type { stringifyUnion } from "./unionToTuple.js"
 
 export const hasDomain = <data, domain extends Domain>(
@@ -17,11 +17,10 @@ type TypesByDomain = {
 	null: null
 }
 
-export type inferDomain<kind extends Domain> = Domain extends kind
-	? unknown
-	: TypesByDomain[kind]
+export type inferDomain<kind extends Domain> =
+	Domain extends kind ? unknown : TypesByDomain[kind]
 
-export type Domain = evaluate<keyof TypesByDomain>
+export type Domain = show<keyof TypesByDomain>
 
 export type NullishDomain = "undefined" | "null"
 
@@ -31,37 +30,27 @@ export type PrimitiveDomain = Exclude<Domain, "object">
 
 export type Primitive = inferDomain<PrimitiveDomain>
 
-export type domainOf<data> = unknown extends data
-	? Domain
-	: data extends object
-	? "object"
-	: data extends string
-	? "string"
-	: data extends number
-	? "number"
-	: data extends boolean
-	? "boolean"
-	: data extends undefined
-	? "undefined"
-	: data extends null
-	? "null"
-	: data extends bigint
-	? "bigint"
-	: data extends symbol
-	? "symbol"
+export type domainOf<data> =
+	unknown extends data ? Domain
+	: data extends object ? "object"
+	: data extends string ? "string"
+	: data extends number ? "number"
+	: data extends boolean ? "boolean"
+	: data extends undefined ? "undefined"
+	: data extends null ? "null"
+	: data extends bigint ? "bigint"
+	: data extends symbol ? "symbol"
 	: never
 
 export const domainOf = <data>(data: data): domainOf<data> => {
 	const builtinType = typeof data
 	return (
-		builtinType === "object"
-			? data === null
-				? "null"
-				: "object"
-			: builtinType === "function"
-			? "object"
-			: builtinType
-	) as domainOf<data>
+		builtinType === "object" ?
+			data === null ?
+				"null"
+			:	"object"
+		: builtinType === "function" ? "object"
+		: builtinType) as domainOf<data>
 }
 
 const enumerableDomainDescriptions = {

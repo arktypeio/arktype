@@ -1,7 +1,11 @@
 import { printable, throwInternalError } from "@arktype/util"
 import { AssertionError } from "node:assert"
 import * as assert from "node:assert/strict"
-import type { TypeAssertionData } from "../cache/writeAssertionCache.js"
+import type {
+	TypeAssertionData,
+	TypeBenchmarkingAssertionData,
+	TypeRelationshipAssertionData
+} from "../cache/writeAssertionCache.js"
 import type { AssertionContext } from "./attest.js"
 
 export type ThrowAssertionErrorContext = {
@@ -34,12 +38,23 @@ export type MappedTypeAssertionResult = {
 export class TypeAssertionMapping {
 	constructor(
 		public fn: (
-			data: TypeAssertionData,
+			data: TypeRelationshipAssertionData,
 			ctx: AssertionContext
 		) => MappedTypeAssertionResult
 	) {}
 }
 
+export const isAssertionData = (
+	data: TypeAssertionData
+): data is TypeRelationshipAssertionData =>
+	(data as TypeRelationshipAssertionData).args !== undefined
+
+export const isBenchData = (
+	data: TypeAssertionData
+): data is TypeBenchmarkingAssertionData =>
+	(data as TypeBenchmarkingAssertionData).count !== undefined
+
+//todoshawn
 export const versionableAssertion =
 	(fn: AssertFn): AssertFn =>
 	(expected, actual, ctx) => {
@@ -49,22 +64,27 @@ export const versionableAssertion =
 					`Unexpected missing typeAssertionEntries when passed a TypeAssertionMapper`
 				)
 			}
-			for (const [version, data] of ctx.typeAssertionEntries!) {
-				let errorMessage = ""
-				try {
-					const mapped = actual.fn(data, ctx)
-					if (mapped !== null) {
-						fn(
-							"expected" in mapped ? mapped.expected : expected,
-							mapped.actual,
-							ctx
-						)
+			for (const [version, data] of ctx.typeAssertionEntries) {
+				if (isAssertionData(data)) {
+					let errorMessage = ""
+					try {
+						const mapped = actual.fn(data, ctx)
+						if (mapped !== null) {
+							fn(
+								"expected" in mapped ? mapped.expected : expected,
+								mapped.actual,
+								ctx
+							)
+						}
+					} catch (e) {
+						errorMessage += `❌TypeScript@${version}:${e}\n`
 					}
-				} catch (e) {
-					errorMessage += `❌TypeScript@${version}:${e}\n`
-				}
-				if (errorMessage) {
-					throw new AssertionError({ message: errorMessage })
+					if (errorMessage) {
+						throw new AssertionError({ message: errorMessage })
+					}
+				} else {
+					//todoshawn
+					throwInternalError("Assertion data of the wrong kind was encountered")
 				}
 			}
 		} else {
@@ -106,17 +126,14 @@ export const typeEqualityMapping = new TypeAssertionMapping((data) => {
 		return {
 			expected: expected.type,
 			actual:
-				expected.type === actual.type
-					? "(serializes to same value)"
-					: actual.type
+				expected.type === actual.type ?
+					"(serializes to same value)"
+				:	actual.type
 		}
 	}
 	return null
 })
-/**
- * todoshawn
- * extract entires -> should just be an array should be type assertion data
- */
+
 export const assertEqualOrMatching = versionableAssertion(
 	(expected, actual, ctx) => {
 		const assertionArgs = { actual, expected, ctx }

@@ -1,6 +1,7 @@
+import type { Ark } from "@arktype/schema"
 import { DynamicBase } from "@arktype/util"
-import { ark, type, type Ark } from "../../type/keywords/ark.js"
-import { type inferTypeRoot, type validateTypeRoot } from "../../type/type.js"
+import { ambient, type } from "../../type/ark.js"
+import type { inferTypeRoot, validateTypeRoot } from "../../type/type.js"
 
 const Class = <def>(def: validateTypeRoot<def, Ark>) => {
 	const validator = type(def as never)
@@ -11,9 +12,9 @@ const Class = <def>(def: validateTypeRoot<def, Ark>) => {
 		static infer: inferTypeRoot<def, Ark>
 
 		constructor(input: unknown) {
-			const { out, errors: errors } = validator(input)
-			if (errors) {
-				return errors.throw()
+			const out = validator(input)
+			if (out instanceof type.error) {
+				return out.throw()
 			}
 			super(out as never)
 		}

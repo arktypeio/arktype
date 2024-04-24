@@ -1,19 +1,20 @@
-import { attest } from "@arktype/attest"
+import { attest, contextualize } from "@arktype/attest"
+import { rawSchema } from "@arktype/schema"
 import { type } from "arktype"
-import { node, type Ark } from "../keywords/ark.js"
 import { writeInvalidConstructorMessage } from "../parser/tuple.js"
-import type { Type } from "../types/type.js"
+import type { Type } from "../type.js"
 
-describe("instanceof", () => {
-	describe("tuple expression", () => {
+contextualize(
+	"tuple expression",
+	() => {
 		it("base", () => {
 			const t = type(["instanceof", Error])
 			attest<Error>(t.infer)
-			const expected = node(Error)
+			const expected = rawSchema(Error)
 			attest(t.json).equals(expected.json)
 			const e = new Error()
-			attest(t(e).out).equals(e)
-			attest(t({}).errors?.summary).snap("must be an Error (was object)")
+			attest(t(e)).equals(e)
+			attest(t({}).toString()).snap("must be an Error (was object)")
 		})
 		it("inherited", () => {
 			const t = type(["instanceof", TypeError])
@@ -21,8 +22,8 @@ describe("instanceof", () => {
 			// for some reason the return of TypeError's constructor is actually
 			// inferred as Error? Disabling this check for now, seems like an anomaly.
 			// attest<TypeError>(t.infer)
-			attest(t(e).out).equals(e)
-			attest(t(new Error()).errors?.summary).snap(
+			attest(t(e)).equals(e)
+			attest(t(new Error()).toString()).snap(
 				"must be an instance of TypeError (was Error)"
 			)
 		})
@@ -36,7 +37,7 @@ describe("instanceof", () => {
 			const t = type(["instanceof", Base])
 			attest<Base>(t.infer)
 			const sub = new Sub()
-			attest(t(sub).out).equals(sub)
+			attest(t(sub)).equals(sub)
 		})
 		it("multiple branches", () => {
 			const t = type(["instanceof", Date, Array])
@@ -53,13 +54,13 @@ describe("instanceof", () => {
 				private isArk = true
 			}
 			const ark = type(["instanceof", ArkClass])
-			attest<Type<ArkClass, Ark>>(ark)
+			attest<Type<ArkClass, {}>>(ark)
 			// not expanded since there are no morphs
 			attest(ark.infer).type.toString("ArkClass")
 			attest(ark.in.infer).type.toString("ArkClass")
 			const a = new ArkClass()
-			attest(ark(a).out).equals(a)
-			attest(ark({}).errors?.summary).snap(
+			attest(ark(a)).equals(a)
+			attest(ark({}).toString()).snap(
 				"must be an instance of ArkClass (was object)"
 			)
 		})
@@ -75,13 +76,14 @@ describe("instanceof", () => {
 				private isArk = true
 			}
 			const ark = type(["instanceof", ArkClass])
-			attest<Type<ArkClass, Ark>>(ark)
+			attest<Type<ArkClass, {}>>(ark)
 			// not expanded since there are no morphs
 			attest(ark.infer).type.toString("ArkClass")
 			attest(ark.in.infer).type.toString("ArkClass")
 		})
-	})
-	describe("root expression", () => {
+	},
+	"root expression",
+	() => {
 		it("class", () => {
 			const t = type("instanceof", Error)
 			attest<Error>(t.infer)
@@ -98,5 +100,5 @@ describe("instanceof", () => {
 				writeInvalidConstructorMessage("Error")
 			)
 		})
-	})
-})
+	}
+)

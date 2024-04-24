@@ -41,15 +41,11 @@ export const getCallLocationFromCallExpression = (
 	return location
 }
 
-let attestAliasInstantiationMethodCalls: string[]
 export const gatherInlineInstantiationData = (
 	file: ts.SourceFile,
-	fileAssertions: AssertionsByFile
+	fileAssertions: AssertionsByFile,
+	attestAliasInstantiationMethodCalls: string[]
 ): void => {
-	const { attestAliases } = getConfig()
-	attestAliasInstantiationMethodCalls ??= attestAliases.map(
-		(alias) => `${alias}.instantiations`
-	)
 	const expressions = getCallExpressionsByName(
 		file,
 		attestAliasInstantiationMethodCalls
@@ -150,9 +146,9 @@ export const createOrUpdateFile = (
 	fileName: string,
 	fileText: string
 ): ts.SourceFile | undefined => {
-	env.sys.fileExists(fileName)
-		? env.updateFile(fileName, fileText)
-		: env.createFile(fileName, fileText)
+	env.sys.fileExists(fileName) ?
+		env.updateFile(fileName, fileText)
+	:	env.createFile(fileName, fileText)
 	return env.getSourceFile(fileName)
 }
 

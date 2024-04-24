@@ -1,4 +1,4 @@
-import { attest } from "@arktype/attest"
+import { attest, contextualize } from "@arktype/attest"
 import { Trait, compose, implement } from "@arktype/util"
 
 export class Describable extends Trait<{
@@ -29,8 +29,8 @@ export class Boundable<data> extends Trait<{
 	}
 }
 
-describe("traits", () => {
-	it("compose", () => {
+contextualize(() => {
+	it("implement", () => {
 		class StringChecker extends implement(Describable, Boundable<string>, {
 			writeDefaultDescription: () => "foo",
 			sizeOf: (data: string) => data.length
@@ -66,6 +66,7 @@ describe("traits", () => {
 			withDefault instanceof Describable
 		]).equals([true, true, true])
 	})
+
 	it("works with subclasses", () => {
 		class Foo extends Boundable<number> {
 			getFoo() {
@@ -80,6 +81,7 @@ describe("traits", () => {
 		attest(b.check(3)).equals(false)
 		attest(b.getFoo()).equals("foo")
 	})
+
 	it("preserves static", () => {
 		class A extends Trait {
 			static readonly a = "a"

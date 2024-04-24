@@ -56,6 +56,6 @@ bench(
 
 bench("arktype type", () => {
 	type("string")
-}).types([4766, "instantiations"])
+}).types([1923, "instantiations"])
 
 bench("empty", () => {}).types([0, "instantiations"])

@@ -1,4 +1,4 @@
-import { attest } from "@arktype/attest"
+import { attest, contextualize } from "@arktype/attest"
 import { groupBy } from "@arktype/util"
 
 type PinkLady = { group: "apple"; kind: "Pink Lady" }
@@ -24,7 +24,7 @@ const bengal: Bengal = { group: "lychee", kind: "Bengal" }
 
 const fruits: Fruit[] = [pinkLady, visionPro, bengal]
 
-describe("list", () => {
+contextualize(() => {
 	it("groupBy", () => {
 		const grouped = groupBy(fruits, "group")
 		attest<{

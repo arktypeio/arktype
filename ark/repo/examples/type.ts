@@ -10,7 +10,7 @@ export const user = type({
 })
 
 // Validators return typed data or clear, customizable errors.
-export const { out, errors: errors } = user({
+export const out = user({
 	name: "Alan Turing",
 	device: {
 		// errors.summary: "device/platform must be 'android' or 'ios' (was 'enigma')"

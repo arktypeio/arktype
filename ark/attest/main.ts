@@ -14,3 +14,4 @@ export {
 	findAttestTypeScriptVersions,
 	getPrimaryTsVersionUnderTest
 } from "./tsVersioning.js"
+export { contextualize } from "./utils.js"

@@ -1,17 +1,6 @@
-export type { of } from "./constraints/ast.js"
-export {
-	ark,
-	declare,
-	define,
-	keywords,
-	match,
-	schema,
-	scope,
-	type,
-	type Ark
-} from "./keywords/ark.js"
-export type { Module, Scope } from "./scope.js"
-export { ArkError, ArkErrors, ArkTypeError } from "./shared/errors.js"
-export type { inferTypeRoot, validateTypeRoot } from "./type.js"
-export type { Out } from "./types/morph.js"
-export type { Type } from "./types/type.js"
+export { ArkError, ArkErrors, ArkTypeError } from "@arktype/schema"
+export type { Ark, ArkConfig, Out } from "@arktype/schema"
+export { ambient, ark, declare, define, match, type } from "./ark.js"
+export { Module } from "./module.js"
+export { scope, type Scope } from "./scope.js"
+export { Type, type inferTypeRoot, type validateTypeRoot } from "./type.js"

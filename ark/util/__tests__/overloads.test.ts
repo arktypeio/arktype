@@ -1,6 +1,6 @@
-import { attest } from "@arktype/attest"
+import { attest, contextualize } from "@arktype/attest"
+import type { array } from "../arrays.js"
 import type { conform } from "../generics.js"
-import type { array } from "../lists.js"
 import type { overloadOf } from "../unionToTuple.js"
 
 declare const f: {
@@ -14,15 +14,17 @@ const pipe = <f extends (...args: any[]) => unknown, args extends array>(
 	f: f
 ): ReturnType<overloadOf<f, args>> => f(...args) as never
 
-describe("overloads", () => {
+contextualize(() => {
 	it("parameters", () => {
 		const t = {} as Parameters<overloadOf<typeof f>>
 		attest<[a: 2, b: 2] | [a?: 1 | undefined] | []>(t)
 	})
+
 	it("returns", () => {
 		const t = {} as ReturnType<overloadOf<typeof f>>
 		attest<void | 1 | 2>(t)
 	})
+
 	it("overload return", () => {
 		const limit = {} as ((s: string) => string) & ((n: number) => number)
 		type fromNumber = ReturnType<overloadOf<typeof limit, [number]>>
@@ -31,6 +33,7 @@ describe("overloads", () => {
 		// type fromString = overloadOf<typeof limit, ["foo"]>
 		// attest<string, fromString>()
 	})
+
 	it("()=>never", () => {
 		type result = Parameters<
 			overloadOf<{
@@ -42,6 +45,7 @@ describe("overloads", () => {
 		>
 		attest<[a: 2, b: 2] | [a?: 1 | undefined] | [], result>()
 	})
+
 	it("pipe", () => {
 		const limit = ((_) => _) as ((s: string) => string) &
 			((n: number) => number)

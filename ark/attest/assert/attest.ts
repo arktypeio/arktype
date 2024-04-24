@@ -1,4 +1,5 @@
 import { caller, getCallStack, type SourcePosition } from "@arktype/fs"
+import type { inferTypeRoot, validateTypeRoot } from "arktype"
 import { getBenchCtx } from "../bench/bench.js"
 import type { Measure } from "../bench/measure.js"
 import { instantiationDataHandler } from "../bench/type.js"
@@ -6,9 +7,12 @@ import {
 	getTypeAssertionsAtPosition,
 	type VersionedTypeAssertion
 } from "../cache/getCachedAssertions.js"
-import type { TypeAssertionData } from "../cache/writeAssertionCache.js"
 import { getConfig, type AttestConfig } from "../config.js"
-import { assertEquals, typeEqualityMapping } from "./assertions.js"
+import {
+	assertEquals,
+	isAssertionData,
+	typeEqualityMapping
+} from "./assertions.js"
 import {
 	ChainableAssertions,
 	type AssertionKind,
@@ -18,9 +22,13 @@ import {
 export type AttestFn = {
 	<expected, actual extends expected = never>(
 		...args: [actual] extends [never] ? [value: expected] : []
-	): [expected] extends [never]
-		? rootAssertions<unknown, AssertionKind>
-		: rootAssertions<expected, AssertionKind>
+	): [expected] extends [never] ? rootAssertions<unknown, AssertionKind>
+	:	rootAssertions<expected, AssertionKind>
+	<actual, def>(
+		actual: actual,
+		def: validateTypeRoot<def>
+	): asserts actual is unknown extends actual ? inferTypeRoot<def> & actual
+	:	Extract<actual, inferTypeRoot<def>>
 
 	instantiations: (count?: Measure<"instantiations"> | undefined) => void
 }
@@ -38,9 +46,8 @@ export type AssertionContext = {
 }
 
 export type InternalAssertionHooks = {
-	[k in keyof AssertionContext]?: k extends "cfg"
-		? Partial<AttestConfig>
-		: AssertionContext[k]
+	[k in keyof AssertionContext]?: k extends "cfg" ? Partial<AttestConfig>
+	:	AssertionContext[k]
 }
 
 export const attestInternal = (
@@ -60,8 +67,11 @@ export const attestInternal = (
 	}
 	if (!cfg.skipTypes) {
 		ctx.typeAssertionEntries = getTypeAssertionsAtPosition(position)
-		//todoshawn is this one ok to cast
-		if ((ctx.typeAssertionEntries[0][1] as TypeAssertionData).typeArgs[0]) {
+		/**
+		 * todoshawn assertiondata
+		 */
+		const assertionEntry = ctx.typeAssertionEntries[0][1]
+		if (isAssertionData(assertionEntry) && assertionEntry.typeArgs[0]) {
 			// if there is an expected type arg, check it immediately
 			assertEquals(undefined, typeEqualityMapping, ctx)
 		}
@@ -84,4 +94,19 @@ attestInternal.instantiations = (
 	instantiationDataHandler({ ...ctx, kind: "instantiations" }, args, false)
 }
 
-export const attest = attestInternal as AttestFn
+attestInternal.instantiations = (
+	args: Measure<"instantiations"> | undefined
+) => {
+	const attestConfig = getConfig()
+	if (attestConfig.skipInlineInstantiations) {
+		return
+	}
+	const calledFrom = caller()
+	const ctx = getBenchCtx([calledFrom.file])
+	ctx.isInlineBench = true
+	ctx.benchCallPosition = calledFrom
+	ctx.lastSnapCallPosition = calledFrom
+	instantiationDataHandler({ ...ctx, kind: "instantiations" }, args, false)
+}
+
+export const attest: AttestFn = attestInternal as AttestFn

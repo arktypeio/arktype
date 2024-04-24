@@ -5,9 +5,9 @@ export const throwInternalError: (message: string) => never = (message) =>
 
 export const throwError: (
 	message: string,
-	constructor?: new (message: string) => Error
-) => never = (message, constructor = Error) => {
-	throw new constructor(message)
+	ctor?: new (message: string) => Error
+) => never = (message, ctor = Error) => {
+	throw new ctor(message)
 }
 
 export class ParseError extends Error {

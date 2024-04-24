@@ -1,18 +1,20 @@
 import type {
+	Morph,
+	Narrowed,
+	RawSchema,
+	distillOut,
+	inferIntersection
+} from "@arktype/schema"
+import type {
 	ErrorMessage,
-	UnknownUnion,
 	isDisjoint,
 	numericStringKeyOf,
 	override,
-	unionToTuple,
-	valueOf
+	propValueOf,
+	unionToTuple
 } from "@arktype/util"
-import type { Narrowed } from "./constraints/ast.js"
 import type { Scope } from "./scope.js"
-import type { inferIntersection } from "./shared/intersections.js"
 import type { inferTypeRoot, validateTypeRoot } from "./type.js"
-import type { Morph, distillOut } from "./types/morph.js"
-import type { Type } from "./types/type.js"
 
 type MatchParserContext = {
 	thens: readonly ((In: unknown) => unknown)[]
@@ -50,12 +52,7 @@ type getHandledBranches<ctx extends MatchParserContext> = Exclude<
 >
 
 type getUnhandledBranches<ctx extends MatchParserContext> = distillOut<
-	Exclude<
-		unknown extends ctx["exhaustiveOver"]
-			? UnknownUnion
-			: ctx["exhaustiveOver"],
-		getHandledBranches<ctx>
-	>
+	Exclude<ctx["exhaustiveOver"], getHandledBranches<ctx>>
 >
 
 type addBranches<
@@ -63,14 +60,12 @@ type addBranches<
 	branches extends unknown[]
 > = override<ctx, { thens: [...ctx["thens"], ...branches] }>
 
-type validateWhenDefinition<
-	def,
-	ctx extends MatchParserContext
-> = def extends validateTypeRoot<def, ctx["$"]>
-	? inferMatchBranch<def, ctx> extends getHandledBranches<ctx>
-		? ErrorMessage<"This branch is redundant and will never be reached">
-		: def
-	: validateTypeRoot<def, ctx["$"]>
+type validateWhenDefinition<def, ctx extends MatchParserContext> =
+	def extends validateTypeRoot<def, ctx["$"]> ?
+		inferMatchBranch<def, ctx> extends getHandledBranches<ctx> ?
+			ErrorMessage<"This branch is redundant and will never be reached">
+		:	def
+	:	validateTypeRoot<def, ctx["$"]>
 
 // infer the types handled by a match branch, which is identical to `inferTypeRoot` while properly
 // excluding cases that are already handled by other branches
@@ -94,9 +89,8 @@ export type ChainableMatchParser<ctx extends MatchParserContext> = {
 	>
 	default: MatchParserDefaultInvocation<ctx>
 	finalize: (
-		this: getUnhandledBranches<ctx> extends never
-			? ChainableMatchParser<ctx>
-			: ErrorMessage<"Cannot manually finalize a non-exhaustive matcher: consider adding a `.default` case, using one of the `.orX` methods, or using `match.only<T>`">
+		this: getUnhandledBranches<ctx> extends never ? ChainableMatchParser<ctx>
+		:	ErrorMessage<"Cannot manually finalize a non-exhaustive matcher: consider adding a `.default` case, using one of the `.orX` methods, or using `match.only<T>`">
 	) => finalizeMatchParser<ctx>
 }
 
@@ -108,19 +102,19 @@ type MatchParserDefaultInvocation<ctx extends MatchParserContext> = {
 }
 
 type validateCases<cases, ctx extends MatchParserContext> = {
-	[def in keyof cases | keyof ctx["$"] | "default"]?: def extends "default"
-		? (In: getUnhandledBranches<ctx>) => unknown
-		: def extends validateWhenDefinition<def, ctx>
-		? (In: inferMatchBranch<def, ctx>) => unknown
-		: validateWhenDefinition<def, ctx>
+	[def in keyof cases | keyof ctx["$"] | "default"]?: def extends "default" ?
+		(In: getUnhandledBranches<ctx>) => unknown
+	: def extends validateWhenDefinition<def, ctx> ?
+		(In: inferMatchBranch<def, ctx>) => unknown
+	:	validateWhenDefinition<def, ctx>
 }
 
 type errorCases<cases, ctx extends MatchParserContext> = {
-	[def in keyof cases]?: def extends "default"
-		? (In: getUnhandledBranches<ctx>) => unknown
-		: def extends validateWhenDefinition<def, ctx>
-		? (In: inferMatchBranch<def, ctx>) => unknown
-		: validateWhenDefinition<def, ctx>
+	[def in keyof cases]?: def extends "default" ?
+		(In: getUnhandledBranches<ctx>) => unknown
+	: def extends validateWhenDefinition<def, ctx> ?
+		(In: inferMatchBranch<def, ctx>) => unknown
+	:	validateWhenDefinition<def, ctx>
 } & {
 	[k in Exclude<keyof ctx["$"], keyof cases>]?: (
 		In: distillOut<inferIntersection<getUnhandledBranches<ctx>, ctx["$"][k]>>
@@ -129,18 +123,14 @@ type errorCases<cases, ctx extends MatchParserContext> = {
 	default?: (In: getUnhandledBranches<ctx>) => unknown
 }
 
-export type CaseMatchParser<ctx extends MatchParserContext> = {
-	<cases>(
-		def: cases extends validateCases<cases, ctx>
-			? cases
-			: errorCases<cases, ctx>
-	): cases extends { default: (...args: never[]) => infer defaultReturn }
-		? finalizeWithDefault<
-				addBranches<ctx, unionToTuple<cases[Exclude<keyof cases, "default">]>>,
-				defaultReturn
-		  >
-		: ChainableMatchParser<addBranches<ctx, unionToTuple<valueOf<cases>>>>
-}
+export type CaseMatchParser<ctx extends MatchParserContext> = <cases>(
+	def: cases extends validateCases<cases, ctx> ? cases : errorCases<cases, ctx>
+) => cases extends { default: (...args: never[]) => infer defaultReturn } ?
+	finalizeWithDefault<
+		addBranches<ctx, unionToTuple<cases[Exclude<keyof cases, "default">]>>,
+		defaultReturn
+	>
+:	ChainableMatchParser<addBranches<ctx, unionToTuple<propValueOf<cases>>>>
 
 type finalizeWithDefault<
 	ctx extends MatchParserContext,
@@ -167,19 +157,19 @@ export type MatchInvocation<ctx extends MatchInvocationContext> = <
 	[i in numericStringKeyOf<ctx["thens"]>]: isDisjoint<
 		data,
 		Parameters<ctx["thens"][i]>[0]
-	> extends true
-		? never
-		: ReturnType<ctx["thens"][i]>
+	> extends true ?
+		never
+	:	ReturnType<ctx["thens"][i]>
 }[numericStringKeyOf<ctx["thens"]>]
 
 export const createMatchParser = <$>($: Scope): MatchParser<$> => {
 	const matchParser = (isRestricted: boolean) => {
-		const handledCases: { when: Type; then: Morph }[] = []
+		const handledCases: { when: RawSchema; then: Morph }[] = []
 		let defaultCase: ((x: unknown) => unknown) | null = null
 
 		const parser = {
 			when: (when: unknown, then: Morph) => {
-				handledCases.push({ when: $.parseTypeRoot(when, {}), then })
+				handledCases.push({ when: $.parseRoot(when, {}), then })
 
 				return parser
 			},
