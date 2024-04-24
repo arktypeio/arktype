@@ -56,19 +56,9 @@ contextualize(() => {
 			a: ["string", "=>", s => s.length]
 		})
 		attest<{ a: number }>($.infer)
-		// TODO: API?
-		// attest<{ a: string }>($.in.infer)
+
+		attest<{ a: string }>($.inferIn)
 	})
-	// TODO: remove if not preserving
-	// it("scope.scope", () => {
-	// 	const $ = scope({
-	// 		a: "string"
-	// 	})
-	// 	const importer = $.scope({ b: "a[]" })
-	// 	attest<{ b: string[] }>(importer.infer)
-	// 	const t = importer.type("b")
-	// 	attest(t.json).equals(type("string[]").json)
-	// })
 
 	it("infers its own helpers", () => {
 		const $ = scope({

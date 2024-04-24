@@ -253,9 +253,9 @@ export class SequenceNode extends RawConstraint<SequenceDeclaration> {
 
 	// minLength/maxLength should be checked by Intersection before either traversal
 	traverseAllows: TraverseAllows<array> = (data, ctx) => {
-		for (let i = 0; i < data.length; i++) {
+		for (let i = 0; i < data.length; i++)
 			if (!this.childAtIndex(data, i).traverseAllows(data[i], ctx)) return false
-		}
+
 		return true
 	}
 

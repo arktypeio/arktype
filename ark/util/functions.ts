@@ -67,18 +67,6 @@ export class Callable<
 			),
 			opts?.attach
 		)
-		// const self = Object.setPrototypeOf(
-		// 	f.bind(opts?.bind ?? this),
-		// 	this.constructor.prototype
-		// )
-
-		// if (opts?.attach)
-		// 	// Object.defineProperties(
-		// 	// 	self,
-		// 	// 	Object.getOwnPropertyDescriptors(opts.attach)
-		// 	// )
-
-		// return self
 	}
 }
 

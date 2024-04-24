@@ -334,7 +334,7 @@ export class RawSchemaScope<
 	protected maybeResolveSubalias(
 		name: string
 	): RawSchema | GenericSchema | undefined {
-		return $resolveSubalias(this.aliases, name)
+		return resolveSubalias(this.aliases, name)
 	}
 
 	import<names extends exportedNameOf<$>[]>(
@@ -388,7 +388,7 @@ export class RawSchemaScope<
 	// }
 }
 
-const $resolveSubalias = (
+const resolveSubalias = (
 	base: Dict,
 	name: string
 ): RawSchema | GenericSchema | undefined => {
@@ -409,7 +409,7 @@ const $resolveSubalias = (
 	// unresolvable, we can throw immediately
 	if (resolution === undefined) {
 		if (hasArkKind(resolution, "module"))
-			return $resolveSubalias(resolution, subalias)
+			return resolveSubalias(resolution, subalias)
 		return throwParseError(writeUnresolvableMessage(name))
 	}
 
