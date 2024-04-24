@@ -9,6 +9,7 @@ import {
 	type Predicate,
 	type PrimitiveConstraintKind,
 	RawSchema,
+	type Schema,
 	type ambient,
 	type constrain,
 	type constraintKindOf,
@@ -19,7 +20,8 @@ import {
 	type inferIntersection,
 	type inferMorphOut,
 	type inferNarrow,
-	type inferPipe
+	type inferPipes,
+	type internalImplementationOf
 } from "@arktype/schema"
 import {
 	Callable,
@@ -126,7 +128,10 @@ export type DeclarationParser<$> = <preinferred>() => {
 // this is declared as a class internally so we can ensure all "abstract"
 // methods of BaseRoot are overridden, but we end up exporting it as an interface
 // to ensure it is not accessed as a runtime value
-declare class _Type<t = unknown, $ = any> extends BaseRoot<t, $> {
+declare class _Type<t = unknown, $ = any>
+	extends BaseRoot<t, $>
+	implements internalImplementationOf<Schema>
+{
 	$: Scope<$>;
 
 	get in(): Type<this["tIn"], $>
@@ -146,18 +151,61 @@ declare class _Type<t = unknown, $ = any> extends BaseRoot<t, $> {
 
 	keyof(): Type<keyof this["inferIn"], $>
 
-	pipe<a extends Morph<this["infer"]>>(
-		a: a
-	): Type<(In: this["tIn"]) => Out<inferMorphOut<a>>, $>
+	pipe<a extends Morph<this["infer"]>>(a: a): Type<inferPipes<t, [a]>, $>
 	pipe<a extends Morph<this["infer"]>, b extends Morph<inferMorphOut<a>>>(
 		a: a,
 		b: b
-	): Type<(In: this["tIn"]) => Out<inferMorphOut<b>>, $>
+	): Type<inferPipes<t, [a, b]>, $>
 	pipe<
 		a extends Morph<this["infer"]>,
 		b extends Morph<inferMorphOut<a>>,
 		c extends Morph<inferMorphOut<b>>
-	>(a: a, b: b, c: c): Type<(In: this["tIn"]) => Out<inferMorphOut<c>>, $>
+	>(a: a, b: b, c: c): Type<inferPipes<t, [a, b, c]>, $>
+	pipe<
+		a extends Morph<this["infer"]>,
+		b extends Morph<inferMorphOut<a>>,
+		c extends Morph<inferMorphOut<b>>,
+		d extends Morph<inferMorphOut<c>>
+	>(a: a, b: b, c: c, d: d): Type<inferPipes<t, [a, b, c, d]>, $>
+	pipe<
+		a extends Morph<this["infer"]>,
+		b extends Morph<inferMorphOut<a>>,
+		c extends Morph<inferMorphOut<b>>,
+		d extends Morph<inferMorphOut<c>>,
+		e extends Morph<inferMorphOut<d>>
+	>(a: a, b: b, c: c, d: d, e: e): Type<inferPipes<t, [a, b, c, d, e]>, $>
+	pipe<
+		a extends Morph<this["infer"]>,
+		b extends Morph<inferMorphOut<a>>,
+		c extends Morph<inferMorphOut<b>>,
+		d extends Morph<inferMorphOut<c>>,
+		e extends Morph<inferMorphOut<d>>,
+		f extends Morph<inferMorphOut<e>>
+	>(
+		a: a,
+		b: b,
+		c: c,
+		d: d,
+		e: e,
+		f: f
+	): Type<inferPipes<t, [a, b, c, d, e, f]>, $>
+	pipe<
+		a extends Morph<this["infer"]>,
+		b extends Morph<inferMorphOut<a>>,
+		c extends Morph<inferMorphOut<b>>,
+		d extends Morph<inferMorphOut<c>>,
+		e extends Morph<inferMorphOut<d>>,
+		f extends Morph<inferMorphOut<e>>,
+		g extends Morph<inferMorphOut<f>>
+	>(
+		a: a,
+		b: b,
+		c: c,
+		d: d,
+		e: e,
+		f: f,
+		g: g
+	): Type<inferPipes<t, [a, b, c, d, e, f, g]>, $>
 
 	// TODO: based on below, should maybe narrow morph output if used after
 	narrow<def extends Predicate<distillConstrainableOut<t>>>(
@@ -179,17 +227,6 @@ declare class _Type<t = unknown, $ = any> extends BaseRoot<t, $> {
 	extends<def>(
 		other: validateTypeRoot<def, $>
 	): this is Type<inferTypeRoot<def>, $>
-
-	pipeToType<to extends Type>(
-		outTransform: (out: this["out"]) => to
-	): Type<
-		includesMorphs<t> extends true ? (In: this["tIn"]) => to["tOut"]
-		:	to["tOut"],
-		$
-	>
-	pipeToType<def>(
-		def: validateTypeRoot<def, $>
-	): Type<inferPipe<t, inferTypeRoot<def, $>>, $>
 
 	constrain<
 		kind extends PrimitiveConstraintKind,

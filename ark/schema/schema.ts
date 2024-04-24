@@ -10,18 +10,17 @@ import {
 	type PrimitiveConstraintKind,
 	throwInvalidOperandError
 } from "./constraints/util.js"
-import type { inferSchema } from "./inference.js"
 import type { NodeDef, reducibleKindOf } from "./kinds.js"
-import { type Node, RawNode, type SchemaDef } from "./node.js"
+import { type Node, RawNode } from "./node.js"
 import type { constraintKindOf } from "./schemas/intersection.js"
 import type {
 	Morph,
-	Out,
 	distillConstrainableIn,
 	distillConstrainableOut,
 	distillIn,
 	distillOut,
-	inferMorphOut
+	inferMorphOut,
+	inferPipes
 } from "./schemas/morph.js"
 import type { UnionChildKind } from "./schemas/union.js"
 import type { SchemaScope } from "./scope.js"
@@ -31,7 +30,6 @@ import { ArkErrors } from "./shared/errors.js"
 import type { NodeKind, SchemaKind, kindRightOf } from "./shared/implement.js"
 import {
 	type inferIntersection,
-	type inferPipe,
 	intersectNodesRoot,
 	pipeNodesRoot
 } from "./shared/intersections.js"
@@ -48,16 +46,20 @@ export interface RawSchemaDeclaration extends RawNodeDeclaration {
 
 export type UnknownSchema = Schema | RawSchema
 
+export type TypeOnlySchemaKey =
+	| (keyof Schema & symbol)
+	| "infer"
+	| "inferIn"
+	| "t"
+	| "tIn"
+	| "tOut"
+
 export abstract class RawSchema<
 		/** @ts-expect-error allow instantiation assignment to the base type */
 		out d extends RawSchemaDeclaration = RawSchemaDeclaration
 	>
 	extends RawNode<d>
-	implements
-		internalImplementationOf<
-			Schema,
-			(keyof Schema & symbol) | "infer" | "inferIn" | "t" | "tIn" | "tOut"
-		>
+	implements internalImplementationOf<Schema, TypeOnlySchemaKey>
 {
 	readonly branches: readonly Node<UnionChildKind>[] =
 		this.hasKind("union") ? this.inner.branches : [this as never];
@@ -156,8 +158,13 @@ export abstract class RawSchema<
 		return this.assert(input)
 	}
 
-	pipe(morph: Morph): RawSchema {
-		if (hasArkKind(morph, "schema")) return this.pipeToType(morph)
+	pipe(...morphs: Morph[]): RawSchema {
+		return morphs.reduce<RawSchema>((acc, morph) => acc.pipeOnce(morph), this)
+	}
+
+	private pipeOnce(morph: Morph): RawSchema {
+		if (hasArkKind(morph, "schema"))
+			return pipeNodesRoot(this, morph, this.$) as never
 		if (this.hasKind("union")) {
 			const branches = this.branches.map(node => node.pipe(morph))
 			return this.$.node("union", { ...this.inner, branches })
@@ -176,11 +183,6 @@ export abstract class RawSchema<
 
 	narrow(predicate: Predicate): RawSchema {
 		return this.constrain("predicate", predicate)
-	}
-
-	pipeToType(def: unknown): RawSchema {
-		const to = this.$.parseRoot(def)
-		return pipeNodesRoot(this, to, this.$) as never
 	}
 
 	constrain<kind extends PrimitiveConstraintKind>(
@@ -343,13 +345,61 @@ declare class _Schema<t = unknown, $ = any> extends BaseRoot<t, $> {
 	// can be narrowed without other branches becoming never
 	extends<r>(other: Schema<r>): this is Schema<r> & { [inferred]?: r }
 
-	pipe<morph extends Morph<this["infer"]>>(
-		morph: morph
-	): Schema<(In: this["tIn"]) => Out<inferMorphOut<morph>>, $>
-
-	pipeToType<def extends SchemaDef>(
-		def: def
-	): Schema<inferPipe<t, inferSchema<def, $>>, $>
+	pipe<a extends Morph<this["infer"]>>(a: a): Schema<inferPipes<t, [a]>, $>
+	pipe<a extends Morph<this["infer"]>, b extends Morph<inferMorphOut<a>>>(
+		a: a,
+		b: b
+	): Schema<inferPipes<t, [a, b]>, $>
+	pipe<
+		a extends Morph<this["infer"]>,
+		b extends Morph<inferMorphOut<a>>,
+		c extends Morph<inferMorphOut<b>>
+	>(a: a, b: b, c: c): Schema<inferPipes<t, [a, b, c]>, $>
+	pipe<
+		a extends Morph<this["infer"]>,
+		b extends Morph<inferMorphOut<a>>,
+		c extends Morph<inferMorphOut<b>>,
+		d extends Morph<inferMorphOut<c>>
+	>(a: a, b: b, c: c, d: d): Schema<inferPipes<t, [a, b, c, d]>, $>
+	pipe<
+		a extends Morph<this["infer"]>,
+		b extends Morph<inferMorphOut<a>>,
+		c extends Morph<inferMorphOut<b>>,
+		d extends Morph<inferMorphOut<c>>,
+		e extends Morph<inferMorphOut<d>>
+	>(a: a, b: b, c: c, d: d, e: e): Schema<inferPipes<t, [a, b, c, d, e]>, $>
+	pipe<
+		a extends Morph<this["infer"]>,
+		b extends Morph<inferMorphOut<a>>,
+		c extends Morph<inferMorphOut<b>>,
+		d extends Morph<inferMorphOut<c>>,
+		e extends Morph<inferMorphOut<d>>,
+		f extends Morph<inferMorphOut<e>>
+	>(
+		a: a,
+		b: b,
+		c: c,
+		d: d,
+		e: e,
+		f: f
+	): Schema<inferPipes<t, [a, b, c, d, e, f]>, $>
+	pipe<
+		a extends Morph<this["infer"]>,
+		b extends Morph<inferMorphOut<a>>,
+		c extends Morph<inferMorphOut<b>>,
+		d extends Morph<inferMorphOut<c>>,
+		e extends Morph<inferMorphOut<d>>,
+		f extends Morph<inferMorphOut<e>>,
+		g extends Morph<inferMorphOut<f>>
+	>(
+		a: a,
+		b: b,
+		c: c,
+		d: d,
+		e: e,
+		f: f,
+		g: g
+	): Schema<inferPipes<t, [a, b, c, d, e, f, g]>, $>
 }
 
 export interface Schema<

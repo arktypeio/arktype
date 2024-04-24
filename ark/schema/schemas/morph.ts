@@ -9,6 +9,7 @@ import {
 	throwParseError
 } from "@arktype/util"
 import type { of } from "../constraints/ast.js"
+import type { type } from "../inference.js"
 import type { NodeDef } from "../kinds.js"
 import type { Node, SchemaDef } from "../node.js"
 import { RawSchema, type schemaKindRightOf } from "../schema.js"
@@ -18,7 +19,7 @@ import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { ArkErrors, ArkTypeError } from "../shared/errors.js"
 import { basisKinds, implementNode } from "../shared/implement.js"
-import { intersectNodes } from "../shared/intersections.js"
+import { type inferPipe, intersectNodes } from "../shared/intersections.js"
 import type {
 	TraversalContext,
 	TraverseAllows,
@@ -178,6 +179,15 @@ export class MorphNode extends RawSchema<MorphDeclaration> {
 		return this.from.rawKeyOf()
 	}
 }
+
+export type inferPipes<t, pipes extends Morph[]> =
+	pipes extends [infer head extends Morph, ...infer tail extends Morph[]] ?
+		inferPipes<
+			head extends type.cast<infer tPipe> ? inferPipe<t, tPipe>
+			:	(In: distillConstrainableIn<t>) => Out<inferMorphOut<head>>,
+			tail
+		>
+	:	t
 
 export type inferMorphOut<morph extends Morph> = Exclude<
 	ReturnType<morph>,
