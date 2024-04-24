@@ -48,7 +48,7 @@ export const parseBigintLiteral = type({ value: "string" })
 	.narrow((data): data is { value: `${string}n`; format: "bigint" } =>
 		data.value.endsWith("n")
 	)
-	.morph(data => BigInt(data.value.slice(-1)))
+	.pipe(data => BigInt(data.value.slice(-1)))
 
 export const out = parseBigintLiteral("999n")
 //             ^?

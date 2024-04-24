@@ -146,16 +146,18 @@ declare class _Type<t = unknown, $ = any> extends BaseRoot<t, $> {
 
 	keyof(): Type<keyof this["inferIn"], $>
 
-	morph<morph extends Morph<this["infer"]>>(
-		morph: morph
-	): Type<(In: this["tIn"]) => Out<inferMorphOut<morph>>, $>
-	morph<
-		morph extends Morph<this["infer"]>,
-		morphB extends Morph<inferMorphOut<morph>>
-	>(
-		morph: morph,
-		b: morphB
-	): Type<(In: this["tIn"]) => Out<inferMorphOut<morphB>>, $>
+	pipe<a extends Morph<this["infer"]>>(
+		a: a
+	): Type<(In: this["tIn"]) => Out<inferMorphOut<a>>, $>
+	pipe<a extends Morph<this["infer"]>, b extends Morph<inferMorphOut<a>>>(
+		a: a,
+		b: b
+	): Type<(In: this["tIn"]) => Out<inferMorphOut<b>>, $>
+	pipe<
+		a extends Morph<this["infer"]>,
+		b extends Morph<inferMorphOut<a>>,
+		c extends Morph<inferMorphOut<b>>
+	>(a: a, b: b, c: c): Type<(In: this["tIn"]) => Out<inferMorphOut<c>>, $>
 
 	// TODO: based on below, should maybe narrow morph output if used after
 	narrow<def extends Predicate<distillConstrainableOut<t>>>(
@@ -178,14 +180,14 @@ declare class _Type<t = unknown, $ = any> extends BaseRoot<t, $> {
 		other: validateTypeRoot<def, $>
 	): this is Type<inferTypeRoot<def>, $>
 
-	pipe<to extends Type>(
+	pipeToType<to extends Type>(
 		outTransform: (out: this["out"]) => to
 	): Type<
 		includesMorphs<t> extends true ? (In: this["tIn"]) => to["tOut"]
 		:	to["tOut"],
 		$
 	>
-	pipe<def>(
+	pipeToType<def>(
 		def: validateTypeRoot<def, $>
 	): Type<inferPipe<t, inferTypeRoot<def, $>>, $>
 

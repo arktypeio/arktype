@@ -4,7 +4,7 @@ import { scope, type, type Type } from "arktype"
 
 contextualize(() => {
 	it("base", () => {
-		const t = type("number").morph(data => `${data}`)
+		const t = type("number").pipe(data => `${data}`)
 		attest<Type<(In: number) => Out<string>>>(t)
 		attest<string>(t.infer)
 		attest<number>(t.in.infer)
@@ -27,8 +27,8 @@ contextualize(() => {
 			age: "number"
 		})
 		const parsedUser = type("string")
-			.morph(s => JSON.parse(s))
-			.morph(user)
+			.pipe(s => JSON.parse(s))
+			.pipe(user)
 		attest<
 			Type<
 				(In: string) => Out<{
@@ -48,7 +48,7 @@ contextualize(() => {
 
 	it("uses pipe for consecutive types", () => {
 		const bar = type({ bar: "number" })
-		const t = type({ foo: "string" }).morph(bar)
+		const t = type({ foo: "string" }).pipe(bar)
 		// doesn't understand it ends up being a pipe at a type-level
 		// it potentially could
 		attest<
@@ -63,7 +63,7 @@ contextualize(() => {
 	})
 
 	it("two morphs", () => {
-		const inefficientStringIsEmpty = type("string").morph(
+		const inefficientStringIsEmpty = type("string").pipe(
 			s => s.length,
 			length => length === 0
 		)
@@ -72,6 +72,16 @@ contextualize(() => {
 		attest(inefficientStringIsEmpty("")).equals(true)
 		attest(inefficientStringIsEmpty("foo")).equals(false)
 		attest(inefficientStringIsEmpty(0).toString()).snap()
+	})
+
+	it("many pipes", () => {
+		const pipeAlphabet = type("'a'").pipe(
+			s => `${s}b` as const,
+			s => `${s}c` as const,
+			s => `${s}d` as const
+		)
+		attest<"abcd">(pipeAlphabet.infer)
+		attest(pipeAlphabet("a")).equals("abcd")
 	})
 
 	it("any as out", () => {
@@ -230,8 +240,8 @@ contextualize(() => {
 
 	it("chained reference", () => {
 		const $ = scope({
-			a: type("string").morph(s => s.length),
-			b: () => $.type("a").morph(n => n === 0)
+			a: type("string").pipe(s => s.length),
+			b: () => $.type("a").pipe(n => n === 0)
 		})
 		const types = $.export()
 		attest<Type<(In: string) => Out<boolean>>>(types.b)
@@ -244,8 +254,8 @@ contextualize(() => {
 
 	it("chained nested", () => {
 		const $ = scope({
-			a: type("string").morph(s => s.length),
-			b: () => $.type({ a: "a" }).morph(({ a }) => a === 0)
+			a: type("string").pipe(s => s.length),
+			b: () => $.type({ a: "a" }).pipe(({ a }) => a === 0)
 		})
 
 		const types = $.export()
@@ -300,7 +310,7 @@ contextualize(() => {
 
 	it("discriminable tuple union", () => {
 		const $ = scope({
-			a: () => $.type(["string"]).morph(s => [...s, "!"]),
+			a: () => $.type(["string"]).pipe(s => [...s, "!"]),
 			b: ["boolean"],
 			c: () => $.type("a|b")
 		})

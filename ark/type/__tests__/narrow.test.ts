@@ -87,7 +87,7 @@ contextualize(() => {
 
 	it("narrows the output type of a morph", () => {
 		const t = type("string")
-			.morph(s => s.length)
+			.pipe(s => s.length)
 			.narrow((n): n is 5 => n === 5)
 
 		attest<Type<(In: string) => Out<of<5, Narrowed>>, {}>>(t)

@@ -14,8 +14,8 @@ contextualize(() => {
 	})
 	it("from morph", () => {
 		const parsedUser = type("string")
-			.morph(s => JSON.parse(s))
-			.pipe({
+			.pipe(s => JSON.parse(s))
+			.pipeToType({
 				name: "string",
 				age: "number"
 			})

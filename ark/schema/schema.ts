@@ -156,10 +156,10 @@ export abstract class RawSchema<
 		return this.assert(input)
 	}
 
-	morph(morph: Morph): RawSchema {
-		if (hasArkKind(morph, "schema")) return this.pipe(morph)
+	pipe(morph: Morph): RawSchema {
+		if (hasArkKind(morph, "schema")) return this.pipeToType(morph)
 		if (this.hasKind("union")) {
-			const branches = this.branches.map(node => node.morph(morph))
+			const branches = this.branches.map(node => node.pipe(morph))
 			return this.$.node("union", { ...this.inner, branches })
 		}
 		if (this.hasKind("morph")) {
@@ -178,7 +178,7 @@ export abstract class RawSchema<
 		return this.constrain("predicate", predicate)
 	}
 
-	pipe(def: unknown): RawSchema {
+	pipeToType(def: unknown): RawSchema {
 		const to = this.$.parseRoot(def)
 		return pipeNodesRoot(this, to, this.$) as never
 	}
@@ -288,7 +288,7 @@ export declare abstract class BaseRoot<t = unknown, $ = any> extends Callable<
 	abstract exclude(r: never): unknown
 	abstract extends(r: never): this is unknown
 	abstract array(): unknown
-	abstract morph(morph: Morph): unknown
+	abstract pipe(morph: Morph): unknown
 
 	assert(data: unknown): this["infer"]
 
@@ -343,11 +343,11 @@ declare class _Schema<t = unknown, $ = any> extends BaseRoot<t, $> {
 	// can be narrowed without other branches becoming never
 	extends<r>(other: Schema<r>): this is Schema<r> & { [inferred]?: r }
 
-	morph<morph extends Morph<this["infer"]>>(
+	pipe<morph extends Morph<this["infer"]>>(
 		morph: morph
 	): Schema<(In: this["tIn"]) => Out<inferMorphOut<morph>>, $>
 
-	pipe<def extends SchemaDef>(
+	pipeToType<def extends SchemaDef>(
 		def: def
 	): Schema<inferPipe<t, inferSchema<def, $>>, $>
 }
