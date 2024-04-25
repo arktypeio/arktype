@@ -16,10 +16,11 @@ import {
 import { intersectNodes } from "../../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/traversal.js"
 import { RawConstraint } from "../constraint.js"
+import type { ChildSchemaReference } from "./shared.js"
 
 export interface PropDef extends BaseMeta {
 	readonly key: Key
-	readonly value: SchemaDef
+	readonly value: SchemaDef | ChildSchemaReference
 	readonly optional?: boolean
 }
 
