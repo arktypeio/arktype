@@ -53,10 +53,7 @@
 		"c8": "9.1.0",
 		"knip": "5.9.4",
 		"tsx": "4.7.2",
-		"typescript": "5.4.2",
-		"typescript-52": "npm:typescript@5.2",
-		"typescript-53": "npm:typescript@5.3",
-		"typescript-55": "npm:typescript@next",
+		"typescript": "5.5.0-beta",
 		"mocha": "10.4.0",
 		"@types/mocha": "10.0.6"
 	},

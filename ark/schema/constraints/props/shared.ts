@@ -4,6 +4,9 @@ import type { RawSchema } from "../../schema.js"
 
 export type ChildSchemaReference<$ = any> = `$${keyof $ & string}`
 
+export const isSchemaReference = (def: unknown): def is ChildSchemaReference =>
+	typeof def === "string" && def[0] === "$"
+
 export type ChildSchema<$ = any> = RawSchema | ChildSchemaReference<$>
 
 export type ChildSchemaDef<$ = any> = SchemaDef | ChildSchemaReference<$>

@@ -39,8 +39,7 @@
 		"@typescript/analyze-trace": "0.10.1"
 	},
 	"devDependencies": {
-		"typescript": "5.4.2",
-		"typescript-next": "npm:typescript@next"
+		"typescript": "5.5.0-beta"
 	},
 	"peerDependencies": {
 		"typescript": "*"

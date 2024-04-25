@@ -150,10 +150,7 @@ export const resolveConfig = (
 ): ResolvedArkConfig =>
 	extendConfig(extendConfig(defaultConfig, globalConfig), config) as never
 
-export type RawSchemaResolutions = Record<
-	string,
-	RawSchema | GenericSchema | RawSchemaModule | undefined
->
+export type RawSchemaResolutions = Record<string, RawResolution | undefined>
 
 export type exportedNameOf<$> = Exclude<keyof $ & string, PrivateDeclaration>
 
@@ -171,7 +168,7 @@ export type PrimitiveKeywords = typeof tsKeywords &
 	typeof jsObjects &
 	typeof internalKeywords
 
-export type RawResolution = RawSchema | GenericSchema | RawSchemaModule
+export type RawResolution = string | RawSchema | GenericSchema | RawSchemaModule
 
 export class RawSchemaScope<
 	$ extends RawSchemaResolutions = RawSchemaResolutions
@@ -298,7 +295,7 @@ export class RawSchemaScope<
 		return this.schema(def as never, opts)
 	}
 
-	maybeResolveNode(name: string): RawSchema | undefined {
+	maybeResolveNode(name: string): string | RawSchema | undefined {
 		const result = this.maybeResolveGenericOrNode(name)
 		if (hasArkKind(result, "generic")) return
 		return result
@@ -306,7 +303,7 @@ export class RawSchemaScope<
 
 	maybeResolveGenericOrNode(
 		name: string
-	): RawSchema | GenericSchema | undefined {
+	): string | RawSchema | GenericSchema | undefined {
 		const resolution = this.maybeResolve(name)
 		if (hasArkKind(resolution, "module"))
 			return throwParseError(writeMissingSubmoduleAccessMessage(name))
@@ -327,6 +324,7 @@ export class RawSchemaScope<
 		if (hasArkKind(def, "generic"))
 			return (this.resolutions[name] = validateUninstantiatedGenericNode(def))
 		if (hasArkKind(def, "module")) return (this.resolutions[name] = def)
+		this.resolutions[name] = name
 		return (this.resolutions[name] = this.parseRoot(def))
 	}
 
@@ -356,7 +354,7 @@ export class RawSchemaScope<
 		if (!this._exports) {
 			this._exports = {}
 			for (const name of this.exportedNames)
-				this._exports[name] = this.maybeResolve(name)
+				this._exports[name] = this.maybeResolve(name) as never
 
 			this._exportedResolutions = resolutionsOfModule(this, this._exports)
 			// TODO: add generic json
