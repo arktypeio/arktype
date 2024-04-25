@@ -174,4 +174,129 @@ contextualize(() => {
 			)
 		})
 	})
+	describe("cyclic", () => {
+		it("base", () => {
+			const types = scope({ a: { b: "b" }, b: { a: "a" } }).export()
+
+			const a = {} as { b: typeof b }
+			const b = { a }
+			a.b = b
+
+			attest(types.a(a)).equals(a)
+			attest(types.a({ b: { a: { b: { a: 5 } } } }).toString()).snap()
+
+			// Type hint displays as "..." on hitting cycle (or any if "noErrorTruncation" is true)
+			attest(types.a.infer).type.toString.snap()
+			attest(types.b.infer.a.b.a.b.a.b.a).type.toString.snap()
+
+			// @ts-expect-error
+			attest(types.a.infer.b.a.b.c).type.errors.snap(
+				`Property 'c' does not exist on type '{ a: { b: ...; }; }'.`
+			)
+		})
+
+		const getCyclicScope = () =>
+			scope({
+				package: {
+					name: "string",
+					"dependencies?": "package[]",
+					"contributors?": "contributor[]"
+				},
+				contributor: {
+					email: "email",
+					"packages?": "package[]"
+				}
+			})
+
+		type Package = ReturnType<typeof getCyclicScope>["infer"]["package"]
+
+		const getCyclicData = () => {
+			const packageData = {
+				name: "arktype",
+				dependencies: [{ name: "typescript" }],
+				contributors: [{ email: "david@arktype.io" }]
+			} satisfies Package
+			packageData.dependencies.push(packageData)
+			return packageData
+		}
+
+		it("cyclic union", () => {
+			const $ = scope({
+				a: { b: "b|false" },
+				b: { a: "a|true" }
+			})
+			attest($.infer).type.toString.snap(
+				"{ a: { b: false | { a: true | any; }; }; b: { a: true | { b: false | any; }; }; }"
+			)
+		})
+
+		it("cyclic intersection", () => {
+			const $ = scope({
+				a: { b: "b&a" },
+				b: { a: "a&b" }
+			})
+			attest($.infer).type.toString.snap(
+				"{ a: { b: { a: { b: any; a: any; }; b: any; }; }; b: { a: { b: { a: any; b: any; }; a: any; }; }; }"
+			)
+		})
+
+		it("allows valid", () => {
+			const types = getCyclicScope().export()
+			const data = getCyclicData()
+			attest(types.package(data)).snap({
+				name: "arktype",
+				dependencies: [{ name: "typescript" }, "(cycle)" as any as Package],
+				contributors: [{ email: "david@arktype.io" }]
+			})
+		})
+
+		it("adds errors on invalid", () => {
+			const types = getCyclicScope().export()
+			const data = getCyclicData()
+			data.contributors[0].email = "ssalbdivad"
+			attest(types.package(data).toString()).snap(
+				"dependencies/1/contributors/0/email must be a valid email (was 'ssalbdivad')\ncontributors/0/email must be a valid email (was 'ssalbdivad')"
+			)
+		})
+
+		it("can include cyclic data in message", () => {
+			const data = getCyclicData()
+			const nonSelfDependent = getCyclicScope().type([
+				"package",
+				":",
+				p => !p.dependencies?.some(d => d.name === p.name)
+			])
+			attest(nonSelfDependent(data).toString()).snap(
+				'must be valid (was {"name":"arktype","dependencies":[{"name":"typescript"},"(cycle)"],"contributors":[{"email":"david@arktype.io"}]})'
+			)
+		})
+
+		it("union cyclic reference", () => {
+			const types = scope({
+				a: {
+					b: "b"
+				},
+				b: {
+					a: "a|3"
+				}
+			})
+			attest(types.infer).type.toString.snap(
+				"{ a: { b: { a: 3 | any; }; }; b: { a: 3 | { b: any; }; }; }"
+			)
+		})
+
+		it("intersect cyclic reference", () => {
+			const types = scope({
+				a: {
+					b: "b"
+				},
+				b: {
+					c: "a&b"
+				}
+			})
+			attest(types.infer).type.toString.snap(
+				"{ a: { b: { c: { b: any; c: any; }; }; }; b: { c: { b: any; c: any; }; }; }"
+			)
+		})
+	})
 })
