@@ -212,7 +212,9 @@ export class RawScope<
 		return this.parse(def, {
 			$: this as never,
 			args: {}
-		})
+			// type parsing can bypass nodes if it hits the cache,
+			// so bind it directly (could be optimized)
+		}).bindScope(this)
 	}
 
 	parse(def: unknown, ctx: ParseContext): RawSchema {

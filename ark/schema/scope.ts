@@ -322,7 +322,7 @@ export class RawSchemaScope<
 		// schema for the kind (e.g. sequence can collapse to element accepting a Node)
 		if (isNode(normalizedDef)) {
 			return normalizedDef.kind === kind ?
-					(normalizedDef as never)
+					(normalizedDef.bindScope(this) as never)
 				:	throwMismatchedNodeSchemaError(kind, normalizedDef.kind)
 		}
 
