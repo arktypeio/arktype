@@ -31,7 +31,7 @@ export class NodeCompiler extends CompiledFunction<["data", "ctx"]> {
 
 	reference(node: RawNode, opts?: ReferenceOptions): string {
 		const invokedKind = opts?.kind ?? this.traversalKind
-		const base = `this.${node.baseName}${invokedKind}`
+		const base = `this.${node.id}${invokedKind}`
 		return opts?.bind ? `${base}.bind(${opts?.bind})` : base
 	}
 

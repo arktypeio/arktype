@@ -36,24 +36,22 @@ export class AliasNode extends RawSchema<AliasDeclaration> {
 	}
 
 	traverseAllows: TraverseAllows = (data, ctx) => {
-		const seen = ctx.seen[this.baseName]
+		const seen = ctx.seen[this.id]
 		if (seen?.includes(data as object)) return true
-		ctx.seen[this.baseName] = append(seen, data)
+		ctx.seen[this.id] = append(seen, data)
 		return this.resolution.traverseAllows(data, ctx)
 	}
 
 	traverseApply: TraverseApply = (data, ctx) => {
-		const seen = ctx.seen[this.baseName]
+		const seen = ctx.seen[this.id]
 		if (seen?.includes(data as object)) return
-		ctx.seen[this.baseName] = append(seen, data)
+		ctx.seen[this.id] = append(seen, data)
 		this.resolution.traverseApply(data, ctx)
 	}
 
 	compile(js: NodeCompiler): void {
-		js.if(`ctx.seen.${this.baseName}?.includes(data)`, () => js.return(true))
-		js.line(`ctx.seen.${this.baseName} ??= []`).line(
-			`ctx.seen.${this.baseName}.push(data)`
-		)
+		js.if(`ctx.seen.${this.id}?.includes(data)`, () => js.return(true))
+		js.line(`ctx.seen.${this.id} ??= []`).line(`ctx.seen.${this.id}.push(data)`)
 		js.return(js.invoke(this.resolution))
 	}
 }

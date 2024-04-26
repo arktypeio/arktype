@@ -33,7 +33,7 @@ import { hasArkKind, isNode } from "./shared/utils.js"
 export type NodeParseOptions = {
 	alias?: string
 	prereduced?: boolean
-	/** Instead of creating the node, compute the innerId of the definition and
+	/** Instead of creating the node, compute the innerHash of the definition and
 	 * point it to the specified resolution.
 	 *
 	 * Useful for defining reductions like number|string|bigint|symbol|object|true|false|null|undefined => unknown
@@ -97,7 +97,7 @@ const discriminateSchemaKind = (def: unknown): SchemaKind => {
 }
 
 const nodeCountsByPrefix: PartialRecord<string, number> = {}
-const nodeCache: { [innerId: string]: RawNode } = {}
+const nodeCache: { [innerHash: string]: RawNode } = {}
 
 export const parseNode = (
 	kinds: NodeKind | array<SchemaKind>,
@@ -204,9 +204,9 @@ const _parseNode = (
 		}
 	}
 
-	const innerId = JSON.stringify({ kind, ...json })
+	const innerHash = JSON.stringify({ kind, ...json })
 	if (opts?.reduceTo) {
-		nodeCache[innerId] = opts.reduceTo
+		nodeCache[innerHash] = opts.reduceTo
 		return opts.reduceTo
 	}
 
@@ -230,13 +230,13 @@ const _parseNode = (
 
 	// we have to wait until after reduction to return a cached entry,
 	// since reduction can add impliedSiblings
-	if (nodeCache[innerId]) return nodeCache[innerId]
+	if (nodeCache[innerHash]) return nodeCache[innerHash]
 
 	const prefix = opts?.alias ?? kind
 	nodeCountsByPrefix[prefix] ??= 0
 	const baseName = `${prefix}${++nodeCountsByPrefix[prefix]!}`
 	const attachments = {
-		baseName,
+		id: baseName,
 		kind,
 		impl,
 		inner,
@@ -245,8 +245,8 @@ const _parseNode = (
 		typeJson: typeJson as Json,
 		collapsibleJson: collapsibleJson as JsonData,
 		children,
-		innerId,
-		typeId,
+		innerHash,
+		typeHash: typeId,
 		$
 	} satisfies UnknownAttachments as Record<string, any>
 	if (opts?.alias) attachments.alias = opts.alias
@@ -255,7 +255,7 @@ const _parseNode = (
 
 	const node: RawNode = new nodeClassesByKind[kind](attachments as never)
 
-	nodeCache[innerId] = node
+	nodeCache[innerHash] = node
 	return node
 }
 

@@ -274,7 +274,6 @@ export declare abstract class BaseRoot<t = unknown, $ = any> extends Callable<
 	json: Json
 	description: string
 	expression: string
-	innerId: string
 	raw: RawSchema
 
 	abstract $: SchemaScope<$>;

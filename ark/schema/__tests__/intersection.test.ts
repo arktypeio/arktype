@@ -13,7 +13,7 @@ contextualize(() => {
 			min: 5,
 			divisor: 3
 		})
-		attest(l.innerId).equals(r.innerId)
+		attest(l.json).equals(r.json)
 	})
 
 	it("multiple constraints", () => {

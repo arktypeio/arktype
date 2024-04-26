@@ -186,7 +186,7 @@ const intersectionChildKeyParser =
 			}
 			return def
 				.map(schema => ctx.$.node(kind, schema as never))
-				.sort((l, r) => (l.innerId < r.innerId ? -1 : 1)) as never
+				.sort((l, r) => (l.innerHash < r.innerHash ? -1 : 1)) as never
 		}
 		const child = ctx.$.node(kind, def)
 		return child.hasOpenIntersection() ? [child] : (child as any)
@@ -445,7 +445,7 @@ const flattenConstraints = (inner: IntersectionInner): Constraint[] => {
 		.sort((l, r) =>
 			l.precedence < r.precedence ? -1
 			: l.precedence > r.precedence ? 1
-			: l.innerId < r.innerId ? -1
+			: l.innerHash < r.innerHash ? -1
 			: 1
 		)
 

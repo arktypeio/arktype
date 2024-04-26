@@ -79,9 +79,9 @@ export abstract class RawNode<
 			{ attach: attachments as never }
 		)
 		this.contributesReferencesByName =
-			this.baseName in this.referencesByName ?
+			this.id in this.referencesByName ?
 				this.referencesByName
-			:	{ ...this.referencesByName, [this.baseName]: this as never }
+			:	{ ...this.referencesByName, [this.id]: this as never }
 		this.contributesReferences = Object.values(this.contributesReferencesByName)
 	}
 
@@ -170,7 +170,7 @@ export abstract class RawNode<
 
 	equals(other: UnknownNode): boolean
 	equals(other: RawNode): boolean {
-		return this.typeId === other.typeId
+		return this.typeHash === other.typeHash
 	}
 
 	hasKind<kind extends NodeKind>(kind: kind): this is Node<kind> {
@@ -232,9 +232,7 @@ export abstract class RawNode<
 	): narrowed {
 		return (
 			this.firstReference(filter) ??
-			throwError(
-				`${this.baseName} had no references matching predicate ${filter}`
-			)
+			throwError(`${this.id} had no references matching predicate ${filter}`)
 		)
 	}
 
@@ -247,7 +245,7 @@ export abstract class RawNode<
 	firstReferenceOfKindOrThrow<kind extends NodeKind>(kind: kind): Node<kind> {
 		return (
 			this.firstReference(node => node.kind === kind) ??
-			throwError(`${this.baseName} had no ${kind} references`)
+			throwError(`${this.id} had no ${kind} references`)
 		)
 	}
 

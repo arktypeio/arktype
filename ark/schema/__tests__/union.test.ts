@@ -47,7 +47,7 @@ contextualize(() => {
 	it("normalizes union order", () => {
 		const l = schema(["number", "string"])
 		const r = schema(["string", "number"])
-		attest(l.innerId).equals(r.innerId)
+		attest(l.json).equals(r.json)
 	})
 
 	it("doesn't normalize ordered unions", () => {

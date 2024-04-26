@@ -17,6 +17,6 @@ contextualize(() => {
 				{ key: "a", value: "string" }
 			]
 		})
-		attest(l.innerId).equals(r.innerId)
+		attest(l.json).equals(r.json)
 	})
 })

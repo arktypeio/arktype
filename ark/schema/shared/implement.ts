@@ -357,15 +357,15 @@ export interface UnknownAttachments {
 	alias?: string
 	readonly kind: NodeKind
 	readonly impl: UnknownNodeImplementation
-	readonly baseName: string
+	readonly id: string
 	readonly inner: Record<string, any>
 	readonly entries: readonly Entry<string>[]
 	readonly json: object
 	readonly typeJson: object
 	readonly collapsibleJson: JsonData
 	readonly children: RawNode[]
-	readonly innerId: string
-	readonly typeId: string
+	readonly innerHash: string
+	readonly typeHash: string
 	readonly $: RawSchemaScope
 }
 
