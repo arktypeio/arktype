@@ -25,6 +25,7 @@ import type { DomainNode } from "./schemas/domain.js"
 import type { IntersectionNode } from "./schemas/intersection.js"
 import type { MorphNode } from "./schemas/morph.js"
 import type { ProtoNode } from "./schemas/proto.js"
+import type { AliasNode } from "./schemas/reference.js"
 import type { UnionNode } from "./schemas/union.js"
 import type { UnitNode } from "./schemas/unit.js"
 import type { RawSchemaScope } from "./scope.js"
@@ -285,6 +286,7 @@ export type DeepNodeTransformation = <kind extends NodeKind>(
 ) => Inner<kind>
 
 interface NodesByKind extends BoundNodesByKind {
+	alias: AliasNode
 	union: UnionNode
 	morph: MorphNode
 	intersection: IntersectionNode

@@ -73,6 +73,7 @@ export const constraintKinds = [
 export type ConstraintKind = (typeof constraintKinds)[number]
 
 export const schemaKinds = [
+	"alias",
 	"union",
 	"morph",
 	"unit",

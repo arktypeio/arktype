@@ -55,6 +55,7 @@ import {
 	protoImplementation,
 	ProtoNode
 } from "./schemas/proto.js"
+import { type AliasDeclaration, AliasNode } from "./schemas/reference.js"
 import {
 	type UnionDeclaration,
 	unionImplementation,
@@ -69,6 +70,7 @@ import type { NodeKind, UnknownNodeImplementation } from "./shared/implement.js"
 import type { makeRootAndArrayPropertiesMutable } from "./shared/utils.js"
 
 export interface NodeDeclarationsByKind extends BoundDeclarations {
+	alias: AliasDeclaration
 	domain: DomainDeclaration
 	unit: UnitDeclaration
 	proto: ProtoDeclaration
@@ -88,6 +90,7 @@ export const nodeImplementationsByKind: Record<
 	UnknownNodeImplementation
 > = {
 	...boundImplementationsByKind,
+	alias: AliasNode,
 	domain: domainImplementation,
 	unit: unitImplementation,
 	proto: protoImplementation,
@@ -107,6 +110,7 @@ export const nodeClassesByKind: Record<
 	new (attachments: never) => RawNode
 > = {
 	...boundClassesByKind,
+	alias: AliasNode,
 	domain: DomainNode,
 	unit: UnitNode,
 	proto: ProtoNode,

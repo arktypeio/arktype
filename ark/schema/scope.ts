@@ -295,6 +295,13 @@ export class RawSchemaScope<
 		return this.schema(def as never, opts)
 	}
 
+	fullyResolveNode(name: string): RawSchema {
+		const resolution = this.resolveNode(name)
+		return typeof resolution === "string" ?
+				throwParseError(`Unable to fully resolve ${name}`)
+			:	resolution
+	}
+
 	resolveNode(name: string): string | RawSchema {
 		return (
 			this.maybeResolveNode(name) ??
