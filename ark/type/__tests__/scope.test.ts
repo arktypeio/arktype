@@ -299,8 +299,46 @@ contextualize(() => {
 			}).export()
 			attest(types.a.infer).type.toString.snap()
 			attest(types.b.infer).type.toString.snap()
-			attest(types.a.json).snap()
-			attest(types.b.json).snap()
+
+			const expectedCJson =
+				types.a.raw.firstReferenceOfKindOrThrow("alias").json
+
+			attest(types.a.json).snap({
+				domain: "object",
+				prop: [
+					{
+						key: "b",
+						value: {
+							domain: "object",
+							prop: [
+								{
+									key: "c",
+									value: expectedCJson
+								}
+							]
+						}
+					}
+				]
+			})
+			const a = {} as typeof types.a.infer
+			const b = { c: {} } as typeof types.b.infer
+			a.b = b
+			b.c.b = b
+			b.c.c = b.c
+
+			attest(types.a(a)).equals(a)
+			attest(types.a({ b: { c: {} } }).toString()).snap(`b.c.b must be defined
+b.c.c must be defined`)
+
+			attest(types.b.json).snap({
+				domain: "object",
+				prop: [
+					{
+						key: "c",
+						value: expectedCJson
+					}
+				]
+			})
 		})
 	})
 })

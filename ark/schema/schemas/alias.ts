@@ -1,7 +1,9 @@
 import { append } from "@arktype/util"
 import { RawSchema, type RawSchemaDeclaration } from "../schema.js"
+import type { RawSchemaScope } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
+import { Disjoint } from "../shared/disjoint.js"
 import { implementNode } from "../shared/implement.js"
 import { intersectNodes } from "../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
@@ -9,11 +11,18 @@ import { defineRightwardIntersections } from "./utils.js"
 
 export interface AliasInner<alias extends string = string> extends BaseMeta {
 	readonly alias: alias
+	readonly resolve: () => RawSchema
+}
+
+export interface NormalizedAliasDef<alias extends string = string>
+	extends BaseMeta {
+	readonly alias: alias
+	readonly resolve?: () => RawSchema
 }
 
 export type AliasDef<alias extends string = string> =
 	| `$${alias}`
-	| AliasInner<alias>
+	| NormalizedAliasDef<alias>
 
 export type AliasDeclaration = declareNode<{
 	kind: "alias"
@@ -27,7 +36,7 @@ export class AliasNode extends RawSchema<AliasDeclaration> {
 
 	private _resolution: RawSchema | undefined
 	get resolution(): RawSchema {
-		this._resolution ??= this.$.resolveNode(this.alias)
+		this._resolution ??= this.resolve()
 		return this._resolution
 	}
 
@@ -56,8 +65,14 @@ export class AliasNode extends RawSchema<AliasDeclaration> {
 	}
 }
 
-export const normalizeAliasDef = (def: AliasDef): AliasInner =>
-	typeof def === "string" ? { alias: def.slice(1) } : def
+export const normalizeAliasDef = (
+	def: AliasDef,
+	$: RawSchemaScope
+): AliasInner =>
+	typeof def === "string" ?
+		{ alias: def.slice(1), resolve: () => $.resolveSchema(def.slice(1)) }
+	: def.resolve ? (def as AliasInner)
+	: { alias: def.alias, resolve: () => $.resolveSchema(def.alias) }
 
 export const aliasImplementation = implementNode<AliasDeclaration>({
 	kind: "alias",
@@ -66,16 +81,25 @@ export const aliasImplementation = implementNode<AliasDeclaration>({
 	keys: {
 		alias: {
 			serialize: def => `$${def}`
-		}
+		},
+		resolve: {}
 	},
 	normalize: normalizeAliasDef,
 	defaults: {
 		description: node => node.alias
 	},
 	intersections: {
-		alias: (l, r, ctx) => intersectNodes(l.resolution, r.resolution, ctx),
+		alias: (l, r, ctx) =>
+			ctx.$.lazilyResolve(`${l.id}${ctx.pipe ? "|>" : "&"}${r.id}`, () =>
+				throwIfDisjoint(intersectNodes(l.resolution, r.resolution, ctx))
+			),
 		...defineRightwardIntersections("alias", (l, r, ctx) =>
-			intersectNodes(l.resolution, r, ctx)
+			ctx.$.lazilyResolve(`${l.id}${ctx.pipe ? "|>" : "&"}${r.id}`, () =>
+				throwIfDisjoint(intersectNodes(l.resolution, r, ctx))
+			)
 		)
 	}
 })
+
+const throwIfDisjoint = (result: RawSchema | Disjoint): RawSchema =>
+	result instanceof Disjoint ? result.throw() : result

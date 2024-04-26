@@ -236,9 +236,9 @@ export class RawScope<
 
 	parseString(def: string, ctx: ParseContext): RawSchema {
 		return (
-			this.maybeResolveNode(def) ??
+			this.maybeResolveSchema(def) ??
 			((def.endsWith("[]") &&
-				this.maybeResolveNode(def.slice(0, -2))?.array()) ||
+				this.maybeResolveSchema(def.slice(0, -2))?.array()) ||
 				fullStringParse(new DynamicState(def, ctx)))
 		)
 	}

@@ -1,3 +1,4 @@
+import { bench } from "@arktype/attest"
 import { type } from "arktype"
 import "./arkConfig.js"
 
@@ -30,10 +31,10 @@ export const t = type({
 	}
 })
 
-// bench("allows", () => {
-// 	t.allows(validData)
-// }).median([5.59, "ns"])
+bench("allows", () => {
+	t.allows(validData)
+}).median([5.59, "ns"])
 
-// bench("apply", () => {
-// 	t(validData)
-// }).median([7.01, "ns"])
+bench("apply", () => {
+	t(validData)
+}).median([7.01, "ns"])

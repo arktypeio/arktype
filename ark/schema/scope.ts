@@ -34,7 +34,7 @@ import { type PreparsedNodeResolution, SchemaModule } from "./module.js"
 import type { Node, RawNode, SchemaDef } from "./node.js"
 import { type NodeParseOptions, parseNode, schemaKindOf } from "./parse.js"
 import type { RawSchema, Schema } from "./schema.js"
-import { normalizeAliasDef } from "./schemas/alias.js"
+import { type AliasNode, normalizeAliasDef } from "./schemas/alias.js"
 import type { distillIn, distillOut } from "./schemas/morph.js"
 import { NodeCompiler } from "./shared/compile.js"
 import type {
@@ -189,6 +189,8 @@ const throwMismatchedNodeSchemaError = (expected: NodeKind, actual: NodeKind) =>
 
 const nodeCountsByPrefix: PartialRecord<string, number> = {}
 
+const nodesById: Record<string, RawNode | undefined> = {}
+
 export class RawSchemaScope<
 	$ extends RawSchemaResolutions = RawSchemaResolutions
 > implements internalImplementationOf<SchemaScope, "infer" | "inferIn" | "$">
@@ -276,17 +278,36 @@ export class RawSchemaScope<
 		})
 	}).bind(this)
 
+	protected lazyResolutions: AliasNode[] = []
+	lazilyResolve(syntheticAlias: string, resolve: () => RawSchema): AliasNode {
+		const node = this.node(
+			"alias",
+			{
+				alias: syntheticAlias,
+				resolve
+			},
+			{ prereduced: true }
+		)
+		this.lazyResolutions.push(node)
+		return node
+	}
+
 	node = (<kinds extends NodeKind | array<SchemaKind>>(
 		kinds: kinds,
-		rawDef: NodeDef<flattenListable<kinds>>,
+		nodeDef: NodeDef<flattenListable<kinds>>,
 		opts?: NodeParseOptions
 	): Node<reducibleKindOf<flattenListable<kinds>>> => {
 		let kind: NodeKind =
-			typeof kinds === "string" ? kinds : schemaKindOf(rawDef, kinds)
-		let def: unknown = rawDef
+			typeof kinds === "string" ? kinds : schemaKindOf(nodeDef, kinds)
+
+		let def: unknown = nodeDef
+
+		if (isNode(def) && def.kind === kind) return def.bindScope(this) as never
 
 		if (kind === "alias" && !opts?.prereduced) {
-			const resolution = this.resolveNode(normalizeAliasDef(def as never).alias)
+			const resolution = this.resolveSchema(
+				normalizeAliasDef(def as never, this).alias
+			)
 			def = resolution
 			kind = resolution.kind
 		} else if (kind === "union" && hasDomain(def, "object")) {
@@ -297,9 +318,8 @@ export class RawSchemaScope<
 			}
 		}
 
-		if (isNode(def) && def.kind === kind) return def.bindScope(this) as never
 		const impl = nodeImplementationsByKind[kind]
-		const normalizedDef = impl.normalize?.(def) ?? def
+		const normalizedDef = impl.normalize?.(def, this) ?? def
 		// check again after normalization in case a node is a valid collapsed
 		// schema for the kind (e.g. sequence can collapse to element accepting a Node)
 		if (isNode(normalizedDef)) {
@@ -319,15 +339,17 @@ export class RawSchemaScope<
 			def: normalizedDef
 		}).bindScope(this)
 
-		// if (this.resolved) {
-		// 	// this node was not part of the original scope, so compile an anonymous scope
-		// 	// including only its references
-		// 	bindCompiledScope(node.contributesReferences)
-		// } else {
-		// 	// we're still parsing the scope itself, so defer compilation but
-		// 	// add the node as a reference
-		// 	Object.assign(this.referencesByName, node.contributesReferencesByName)
-		// }
+		nodesById[id] = node
+
+		if (this.resolved) {
+			// this node was not part of the original scope, so compile an anonymous scope
+			// including only its references
+			bindCompiledScope(node.contributesReferences)
+		} else {
+			// we're still parsing the scope itself, so defer compilation but
+			// add the node as a reference
+			Object.assign(this.referencesByName, node.contributesReferencesByName)
+		}
 
 		return node as never
 	}).bind(this)
@@ -336,20 +358,20 @@ export class RawSchemaScope<
 		return this.schema(def as never, opts)
 	}
 
-	resolveNode(name: string): RawSchema {
+	resolveSchema(name: string): RawSchema {
 		return (
-			this.maybeResolveNode(name) ??
+			this.maybeResolveSchema(name) ??
 			throwParseError(writeUnresolvableMessage(name))
 		)
 	}
 
-	maybeResolveNode(name: string): RawSchema | undefined {
-		const result = this.maybeResolveGenericOrNode(name)
+	maybeResolveSchema(name: string): RawSchema | undefined {
+		const result = this.maybeResolveGenericOrSchema(name)
 		if (hasArkKind(result, "generic")) return
 		return result
 	}
 
-	maybeResolveGenericOrNode(
+	maybeResolveGenericOrSchema(
 		name: string
 	): RawSchema | GenericSchema | undefined {
 		const resolution = this.maybeResolve(name)
@@ -409,6 +431,7 @@ export class RawSchemaScope<
 			this._exports = {}
 			for (const name of this.exportedNames)
 				this._exports[name] = this.maybeResolve(name) as never
+			this.lazyResolutions.forEach(node => node.resolution)
 
 			this._exportedResolutions = resolutionsOfModule(this, this._exports)
 			// TODO: add generic json
