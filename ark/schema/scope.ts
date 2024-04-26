@@ -397,10 +397,11 @@ export class RawSchemaScope<
 		) as never
 	}
 
-	// // TODO: name?
-	// get<name extends exportedNameOf<$>>(name: name): Type<$[name], $> {
-	// 	return this.export()[name] as never
-	// }
+	resolve<name extends exportedNameOf<$>>(
+		name: name
+	): destructuredExportContext<$, []>[name] {
+		return this.export()[name] as never
+	}
 }
 
 const resolveSubalias = (
@@ -494,6 +495,10 @@ export interface SchemaScope<$ = any> {
 	export<names extends exportedNameOf<$>[]>(
 		...names: names
 	): SchemaModule<show<destructuredExportContext<$, names>>>
+
+	resolve<name extends exportedNameOf<$>>(
+		name: name
+	): destructuredExportContext<$, []>[name]
 }
 
 export const SchemaScope: new <$ = any>(
