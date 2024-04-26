@@ -283,15 +283,15 @@ export class RawSchemaScope<
 		opts?: NodeParseOptions
 	): Node<reducibleKindOf<flattenListable<kinds>>> => {
 		const node = parseNode(kinds, schema, this, opts)
-		// if (this.resolved) {
-		// 	// this node was not part of the original scope, so compile an anonymous scope
-		// 	// including only its references
-		// 	bindCompiledScope(node.contributesReferences)
-		// } else {
-		// 	// we're still parsing the scope itself, so defer compilation but
-		// 	// add the node as a reference
-		// 	Object.assign(this.referencesByName, node.contributesReferencesByName)
-		// }
+		if (this.resolved) {
+			// this node was not part of the original scope, so compile an anonymous scope
+			// including only its references
+			bindCompiledScope(node.contributesReferences)
+		} else {
+			// we're still parsing the scope itself, so defer compilation but
+			// add the node as a reference
+			Object.assign(this.referencesByName, node.contributesReferencesByName)
+		}
 		return node as never
 	}).bind(this)
 
@@ -583,7 +583,7 @@ export const bindCompiledScope = (references: readonly RawNode[]): void => {
 		node.jit = true
 		node.traverseAllows =
 			compiledTraversals[`${node.baseName}Allows`].bind(compiledTraversals)
-		if (node.isSchema() && !node.includesContextDependentPredicate) {
+		if (node.isSchema() && !node.allowsRequiresContext) {
 			// if the reference doesn't require context, we can assign over
 			// it directly to avoid having to initialize it
 			node.allows = node.traverseAllows as never

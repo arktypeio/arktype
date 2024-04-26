@@ -67,7 +67,7 @@ export abstract class RawNode<
 			(data: any) => {
 				if (
 					!this.includesMorph &&
-					!this.includesContextDependentPredicate &&
+					!this.allowsRequiresContext &&
 					this.allows(data)
 				)
 					return data
@@ -92,10 +92,11 @@ export abstract class RawNode<
 
 	readonly includesMorph: boolean =
 		this.kind === "morph" || this.children.some(child => child.includesMorph)
-	readonly includesContextDependentPredicate: boolean =
+	readonly allowsRequiresContext: boolean =
 		// if a predicate accepts exactly one arg, we can safely skip passing context
 		(this.hasKind("predicate") && this.inner.predicate.length !== 1) ||
-		this.children.some(child => child.includesContextDependentPredicate)
+		this.kind === "alias" ||
+		this.children.some(child => child.allowsRequiresContext)
 	readonly referencesByName: Record<string, RawNode> = this.children.reduce(
 		(result, child) => Object.assign(result, child.contributesReferencesByName),
 		{}
@@ -107,8 +108,13 @@ export abstract class RawNode<
 	jit = false
 
 	allows = (data: d["prerequisite"]): boolean => {
-		const ctx = new TraversalContext(data, this.$.resolvedConfig)
-		return this.traverseAllows(data as never, ctx)
+		if (this.allowsRequiresContext) {
+			return this.traverseAllows(
+				data as never,
+				new TraversalContext(data, this.$.resolvedConfig)
+			)
+		}
+		return (this.traverseAllows as any)(data as never)
 	}
 
 	traverse(data: d["prerequisite"]): unknown {

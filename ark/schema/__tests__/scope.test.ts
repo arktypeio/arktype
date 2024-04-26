@@ -58,8 +58,14 @@ contextualize(() => {
 		const b = { a }
 		a.b = b
 
+		const almostB = { a: { b: { a: { b: "whoops" } } } }
+
+		attest(types.a.allows(a)).equals(true)
 		attest(types.a(a)).equals(a)
-		attest(types.b({ a: { b: { a: { b: "whoops" } } } }).toString()).snap(
+		attest(types.b(b)).equals(b)
+		attest(types.b.allows(b)).equals(true)
+		attest(types.b.allows(almostB)).equals(false)
+		attest(types.b(almostB).toString()).snap(
 			"a.b.a.b must be an object (was string)"
 		)
 	})

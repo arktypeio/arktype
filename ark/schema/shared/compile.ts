@@ -36,9 +36,7 @@ export class NodeCompiler extends CompiledFunction<["data", "ctx"]> {
 	}
 
 	requiresContextFor(node: RawNode): boolean {
-		return (
-			this.traversalKind === "Apply" || node.includesContextDependentPredicate
-		)
+		return this.traversalKind === "Apply" || node.allowsRequiresContext
 	}
 
 	checkReferenceKey(keyExpression: string, node: RawNode): this {

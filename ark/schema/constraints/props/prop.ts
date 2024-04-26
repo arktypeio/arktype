@@ -107,7 +107,7 @@ export class PropNode extends RawConstraint<PropDeclaration> {
 
 	traverseAllows: TraverseAllows<object> = (data, ctx) => {
 		if (this.key in data) {
-			// ctx will be undefined if this node doesn't have a context-dependent predicate
+			// ctx will be undefined if this node isn't context-dependent
 			ctx?.path.push(this.key)
 			const allowed = this.value.traverseAllows((data as any)[this.key], ctx)
 			ctx?.path.pop()
@@ -145,6 +145,6 @@ export class PropNode extends RawConstraint<PropDeclaration> {
 		}
 
 		if (requiresContext) js.line(`ctx.path.pop()`)
-		else js.return(true)
+		if (js.traversalKind === "Allows") js.return(true)
 	}
 }

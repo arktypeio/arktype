@@ -50,7 +50,11 @@ export class AliasNode extends RawSchema<AliasDeclaration> {
 	}
 
 	compile(js: NodeCompiler): void {
-		js
+		js.if(`ctx.seen.${this.baseName}?.includes(data)`, () => js.return(true))
+		js.line(`ctx.seen.${this.baseName} ??= []`).line(
+			`ctx.seen.${this.baseName}.push(data)`
+		)
+		js.return(js.invoke(this.resolution))
 	}
 }
 
