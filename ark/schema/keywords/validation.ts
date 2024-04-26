@@ -6,15 +6,17 @@ import { creditCard } from "./utils/creditCard.js"
 
 const url = root.defineSchema({
 	domain: "string",
-	predicate: (s: string) => {
-		try {
-			new URL(s)
-		} catch {
-			return false
-		}
-		return true
-	},
-	description: "a valid URL"
+	predicate: {
+		predicate: (s: string) => {
+			try {
+				new URL(s)
+			} catch {
+				return false
+			}
+			return true
+		},
+		description: "a valid URL"
+	}
 })
 
 // https://www.regular-expressions.info/email.html
@@ -22,8 +24,10 @@ const emailMatcher = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/
 
 const email = root.defineSchema({
 	domain: "string",
-	regex: emailMatcher,
-	description: "a valid email"
+	regex: {
+		rule: emailMatcher.source,
+		description: "a valid email"
+	}
 })
 
 const uuidMatcher =
@@ -32,8 +36,10 @@ const uuidMatcher =
 // https://github.com/validatorjs/validator.js/blob/master/src/lib/isUUID.js
 const uuid = root.defineSchema({
 	domain: "string",
-	regex: uuidMatcher,
-	description: "a valid UUID"
+	regex: {
+		rule: uuidMatcher.source,
+		description: "a valid UUID"
+	}
 })
 
 const semverMatcher =
@@ -42,8 +48,10 @@ const semverMatcher =
 // https://semver.org/
 const semver = root.defineSchema({
 	domain: "string",
-	regex: semverMatcher,
-	description: "a valid semantic version (see https://semver.org/)"
+	regex: {
+		rule: semverMatcher.source,
+		description: "a valid semantic version (see https://semver.org/)"
+	}
 })
 
 export namespace validation {
@@ -72,18 +80,24 @@ export const validation: validation = schemaScope(
 		},
 		alphanumeric: {
 			domain: "string",
-			regex: /^[A-Za-z\d]*$/,
-			description: "only letters and digits"
+			regex: {
+				rule: /^[A-Za-z\d]*$/.source,
+				description: "only letters and digits"
+			}
 		},
 		lowercase: {
 			domain: "string",
-			regex: /^[a-z]*$/,
-			description: "only lowercase letters"
+			regex: {
+				rule: /^[a-z]*$/.source,
+				description: "only lowercase letters"
+			}
 		},
 		uppercase: {
 			domain: "string",
-			regex: /^[A-Za-z]*$/,
-			description: "only uppercase letters"
+			regex: {
+				rule: /^[A-Za-z]*$/.source,
+				description: "only uppercase letters"
+			}
 		},
 		creditCard,
 		email,
@@ -92,8 +106,7 @@ export const validation: validation = schemaScope(
 		semver,
 		integer: {
 			domain: "number",
-			divisor: 1,
-			description: "an integer"
+			divisor: 1
 		}
 	},
 	{ prereducedAliases: true }

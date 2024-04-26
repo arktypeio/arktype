@@ -183,14 +183,16 @@ contextualize(() => {
 			a.b = b
 
 			attest(types.a(a)).equals(a)
-			attest(types.a({ b: { a: { b: { a: 5 } } } }).toString()).snap()
+			attest(types.a({ b: { a: { b: { a: 5 } } } }).toString()).snap(
+				"b.a.b.a must be an object (was number)"
+			)
 
 			// Type hint displays as "..." on hitting cycle (or any if "noErrorTruncation" is true)
-			attest(types.a.infer).type.toString.snap()
-			attest(types.b.infer.a.b.a.b.a.b.a).type.toString.snap()
+			attest({} as typeof types.a.infer).type.toString.snap()
+			attest({} as typeof types.b.infer.a.b.a.b.a.b.a).type.toString.snap()
 
 			// @ts-expect-error
-			attest(types.a.infer.b.a.b.c).type.errors.snap(
+			attest({} as typeof types.a.infer.b.a.b.c).type.errors.snap(
 				`Property 'c' does not exist on type '{ a: { b: ...; }; }'.`
 			)
 		})
@@ -245,7 +247,7 @@ contextualize(() => {
 			const data = getCyclicData()
 			attest(types.package(data)).snap({
 				name: "arktype",
-				dependencies: [{ name: "typescript" }, "(cycle)" as any as Package],
+				dependencies: [{ name: "typescript" }, "(cycle)" as never],
 				contributors: [{ email: "david@arktype.io" }]
 			})
 		})
@@ -255,7 +257,7 @@ contextualize(() => {
 			const data = getCyclicData()
 			data.contributors[0].email = "ssalbdivad"
 			attest(types.package(data).toString()).snap(
-				"dependencies/1/contributors/0/email must be a valid email (was 'ssalbdivad')\ncontributors/0/email must be a valid email (was 'ssalbdivad')"
+				'contributors[0].email must be a valid email (was "ssalbdivad")'
 			)
 		})
 
@@ -267,7 +269,7 @@ contextualize(() => {
 				p => !p.dependencies?.some(d => d.name === p.name)
 			])
 			attest(nonSelfDependent(data).toString()).snap(
-				'must be valid (was {"name":"arktype","dependencies":[{"name":"typescript"},"(cycle)"],"contributors":[{"email":"david@arktype.io"}]})'
+				'must be valid according to an anonymous predicate (was {"name":"arktype","dependencies":[{"name":"typescript"},"(cycle)"],"contributors":[{"email":"david@arktype.io"}]})'
 			)
 		})
 
@@ -279,10 +281,11 @@ contextualize(() => {
 				b: {
 					a: "a|3"
 				}
-			})
-			attest(types.infer).type.toString.snap(
-				"{ a: { b: { a: 3 | any; }; }; b: { a: 3 | { b: any; }; }; }"
-			)
+			}).export()
+			attest(types.a.infer).type.toString.snap("{ b: { a: 3 | any; }")
+			attest(types.a.json).snap()
+			attest(types.b.infer).type.toString.snap("{ a: 3 | { b: any; }; }")
+			attest(types.b.json).snap()
 		})
 
 		it("intersect cyclic reference", () => {
@@ -293,10 +296,11 @@ contextualize(() => {
 				b: {
 					c: "a&b"
 				}
-			})
-			attest(types.infer).type.toString.snap(
-				"{ a: { b: { c: { b: any; c: any; }; }; }; b: { c: { b: any; c: any; }; }; }"
-			)
+			}).export()
+			attest(types.a.infer).type.toString.snap()
+			attest(types.b.infer).type.toString.snap()
+			attest(types.a.json).snap()
+			attest(types.b.json).snap()
 		})
 	})
 })
