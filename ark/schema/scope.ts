@@ -3,9 +3,12 @@ import {
 	type Dict,
 	DynamicBase,
 	type Json,
+	type PartialRecord,
 	type array,
 	flatMorph,
 	type flattenListable,
+	hasDomain,
+	isArray,
 	printable,
 	type requireKeys,
 	type show,
@@ -31,6 +34,7 @@ import { type PreparsedNodeResolution, SchemaModule } from "./module.js"
 import type { Node, RawNode, SchemaDef } from "./node.js"
 import { type NodeParseOptions, parseNode, schemaKindOf } from "./parse.js"
 import type { RawSchema, Schema } from "./schema.js"
+import { normalizeAliasDef } from "./schemas/alias.js"
 import type { distillIn, distillOut } from "./schemas/morph.js"
 import { NodeCompiler } from "./shared/compile.js"
 import type {
@@ -49,7 +53,8 @@ import type { TraverseAllows, TraverseApply } from "./shared/traversal.js"
 import {
 	arkKind,
 	hasArkKind,
-	type internalImplementationOf
+	type internalImplementationOf,
+	isNode
 } from "./shared/utils.js"
 
 export type nodeResolutions<keywords> = { [k in keyof keywords]: RawSchema }
@@ -172,6 +177,18 @@ export type RawResolution = RawSchema | GenericSchema | RawSchemaModule
 
 type CachedResolution = string | RawResolution
 
+const schemaBranchesOf = (schema: object) =>
+	isArray(schema) ? schema
+	: "branches" in schema && isArray(schema.branches) ? schema.branches
+	: undefined
+
+const throwMismatchedNodeSchemaError = (expected: NodeKind, actual: NodeKind) =>
+	throwParseError(
+		`Node of kind ${actual} is not valid as a ${expected} definition`
+	)
+
+const nodeCountsByPrefix: PartialRecord<string, number> = {}
+
 export class RawSchemaScope<
 	$ extends RawSchemaResolutions = RawSchemaResolutions
 > implements internalImplementationOf<SchemaScope, "infer" | "inferIn" | "$">
@@ -279,19 +296,57 @@ export class RawSchemaScope<
 
 	node = (<kinds extends NodeKind | array<SchemaKind>>(
 		kinds: kinds,
-		schema: NodeDef<flattenListable<kinds>>,
+		rawDef: NodeDef<flattenListable<kinds>>,
 		opts?: NodeParseOptions
 	): Node<reducibleKindOf<flattenListable<kinds>>> => {
-		const node = parseNode(kinds, schema, this, opts)
-		if (this.resolved) {
-			// this node was not part of the original scope, so compile an anonymous scope
-			// including only its references
-			bindCompiledScope(node.contributesReferences)
-		} else {
-			// we're still parsing the scope itself, so defer compilation but
-			// add the node as a reference
-			Object.assign(this.referencesByName, node.contributesReferencesByName)
+		let kind: NodeKind =
+			typeof kinds === "string" ? kinds : schemaKindOf(rawDef, kinds)
+		let def: unknown = rawDef
+
+		if (kind === "alias" && !opts?.prereduced) {
+			const resolution = this.resolveNode(normalizeAliasDef(def as never).alias)
+			def = resolution
+			kind = resolution.kind
+		} else if (kind === "union" && hasDomain(def, "object")) {
+			const branches = schemaBranchesOf(def)
+			if (branches?.length === 1) {
+				def = branches[0]
+				kind = schemaKindOf(def)
+			}
 		}
+
+		if (isNode(def) && def.kind === kind) return def.bindScope(this) as never
+		const impl = nodeImplementationsByKind[kind]
+		const normalizedDef = impl.normalize?.(def) ?? def
+		// check again after normalization in case a node is a valid collapsed
+		// schema for the kind (e.g. sequence can collapse to element accepting a Node)
+		if (isNode(normalizedDef)) {
+			return normalizedDef.kind === kind ?
+					(normalizedDef as never)
+				:	throwMismatchedNodeSchemaError(kind, normalizedDef.kind)
+		}
+
+		const prefix = opts?.alias ?? kind
+		nodeCountsByPrefix[prefix] ??= 0
+		const id = `${prefix}${++nodeCountsByPrefix[prefix]!}`
+
+		const node = parseNode(kind, {
+			...opts,
+			id,
+			$: this,
+			def: normalizedDef
+		}).bindScope(this)
+
+		// if (this.resolved) {
+		// 	// this node was not part of the original scope, so compile an anonymous scope
+		// 	// including only its references
+		// 	bindCompiledScope(node.contributesReferences)
+		// } else {
+		// 	// we're still parsing the scope itself, so defer compilation but
+		// 	// add the node as a reference
+		// 	Object.assign(this.referencesByName, node.contributesReferencesByName)
+		// }
+
 		return node as never
 	}).bind(this)
 

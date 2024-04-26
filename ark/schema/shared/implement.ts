@@ -282,7 +282,7 @@ export type NodeKeyImplementation<
 		) => JsonData
 		parse?: (
 			schema: Exclude<d["normalizedDef"][k], undefined>,
-			ctx: NodeParseContext
+			ctx: NodeParseContext<d["kind"]>
 		) => instantiated
 	},
 	// require parse if we can't guarantee the schema value will be valid on inner

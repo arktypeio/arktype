@@ -133,7 +133,7 @@ export type Declaration<kind extends NodeKind> = NodeDeclarationsByKind[kind]
 
 export type NodeDef<kind extends NodeKind> = Declaration<kind>["def"]
 
-export type NormalizedSchema<kind extends NodeKind> =
+export type NormalizedDef<kind extends NodeKind> =
 	Declaration<kind>["normalizedDef"]
 
 export type childKindOf<kind extends NodeKind> = Declaration<kind>["childKind"]
@@ -164,7 +164,7 @@ export type MutableInner<kind extends NodeKind> =
 	makeRootAndArrayPropertiesMutable<Inner<kind>>
 
 export type MutableNormalizedSchema<kind extends NodeKind> =
-	makeRootAndArrayPropertiesMutable<NormalizedSchema<kind>>
+	makeRootAndArrayPropertiesMutable<NormalizedDef<kind>>
 
 export type errorContext<kind extends NodeKind> = Readonly<
 	Declaration<kind>["errorContext"]

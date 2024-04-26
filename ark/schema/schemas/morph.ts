@@ -76,7 +76,7 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 			child: true,
 			parse: (def, ctx) => {
 				if (def === undefined) return
-				const to = ctx.$.parseRoot(def)
+				const to = ctx.$.schema(def)
 				return to.kind === "intersection" && to.children.length === 0 ?
 						// ignore unknown as an output validator
 						undefined
@@ -109,7 +109,7 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 			if (to instanceof Disjoint) return to
 			// in case from is a union, we need to distribute the branches
 			// to can be a union as any schema is allowed
-			return ctx.$.parseRoot(
+			return ctx.$.schema(
 				from.branches.map(fromBranch =>
 					ctx.$.node("morph", {
 						morphs: l.morphs,

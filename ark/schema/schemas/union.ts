@@ -62,8 +62,8 @@ export const unionImplementation = implementNode<UnionDeclaration>({
 			child: true,
 			parse: (def, ctx) => {
 				const branches = def.map(branch => ctx.$.node(unionChildKinds, branch))
-				const raw = ctx.raw as UnionDef
-				if (isArray(raw) || raw.ordered !== true)
+
+				if (!ctx.def.ordered)
 					branches.sort((l, r) => (l.innerHash < r.innerHash ? -1 : 1))
 
 				return branches

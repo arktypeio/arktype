@@ -1,13 +1,12 @@
 import {
 	type ArkConfig,
 	type GenericProps,
-	type NodeParseContext,
-	type NodeParseOptions,
 	type PreparsedNodeResolution,
 	type RawSchema,
 	type RawSchemaResolutions,
 	RawSchemaScope,
 	type SchemaScope,
+	type UnknownSchema,
 	type ambient,
 	type arkKind,
 	type destructuredExportContext,
@@ -148,8 +147,9 @@ export type tryInferSubmoduleReference<$, token> =
 		:	never
 	:	never
 
-export interface ParseContext extends NodeParseContext {
+export interface ParseContext {
 	$: RawScope
+	args?: Record<string, UnknownSchema>
 }
 
 export const scope: ScopeParser = ((def: Dict, config: ArkConfig = {}) =>
@@ -207,13 +207,12 @@ export class RawScope<
 		return def
 	}
 
-	override parseRoot(def: unknown, opts?: NodeParseOptions): RawSchema {
+	override parseRoot(def: unknown): RawSchema {
 		// args: { this: {} as RawSchema },
 		return this.parse(def, {
 			$: this as never,
-			raw: def,
-			...opts
-		}).bindScope(this)
+			args: {}
+		})
 	}
 
 	parse(def: unknown, ctx: ParseContext): RawSchema {

@@ -1,8 +1,8 @@
 import {
+	type Dict,
 	type Json,
 	type JsonData,
 	type PartialRecord,
-	type array,
 	entriesOf,
 	hasDomain,
 	isArray,
@@ -11,10 +11,13 @@ import {
 	type propValueOf,
 	throwParseError
 } from "@arktype/util"
-import { nodeClassesByKind, nodeImplementationsByKind } from "./kinds.js"
+import {
+	type NormalizedDef,
+	nodeClassesByKind,
+	nodeImplementationsByKind
+} from "./kinds.js"
 import type { RawNode } from "./node.js"
 import type { UnknownSchema } from "./schema.js"
-import { normalizeAliasDef } from "./schemas/alias.js"
 import type { RawSchemaScope } from "./scope.js"
 import type { RawNodeDeclaration } from "./shared/declare.js"
 import { Disjoint } from "./shared/disjoint.js"
@@ -28,7 +31,7 @@ import {
 	isNodeKind,
 	precedenceOfKind
 } from "./shared/implement.js"
-import { hasArkKind, isNode } from "./shared/utils.js"
+import { hasArkKind } from "./shared/utils.js"
 
 export type NodeParseOptions = {
 	alias?: string
@@ -41,10 +44,12 @@ export type NodeParseOptions = {
 	reduceTo?: RawNode
 }
 
-export interface NodeParseContext extends NodeParseOptions {
+export interface NodeParseContext<kind extends NodeKind = NodeKind>
+	extends NodeParseOptions {
 	$: RawSchemaScope
+	id: string
 	args?: Record<string, UnknownSchema>
-	raw: unknown
+	def: NormalizedDef<kind>
 }
 
 const baseKeys: PartialRecord<string, propValueOf<KeyDefinitions<any>>> = {
@@ -96,57 +101,20 @@ const discriminateSchemaKind = (def: unknown): SchemaKind => {
 	return throwParseError(`${printable(def)} is not a valid type schema`)
 }
 
-const nodeCountsByPrefix: PartialRecord<string, number> = {}
 const nodeCache: { [innerHash: string]: RawNode } = {}
 
-export const parseNode = (
-	kinds: NodeKind | array<SchemaKind>,
-	def: unknown,
-	$: RawSchemaScope,
-	opts?: NodeParseOptions
-): RawNode => {
-	const kind: NodeKind =
-		typeof kinds === "string" ? kinds : schemaKindOf(def, kinds)
-	if (isNode(def) && def.kind === kind) return def
-	if (kind === "alias" && !opts?.prereduced)
-		return $.resolveNode(normalizeAliasDef(def as never).alias)
-
-	if (kind === "union" && hasDomain(def, "object")) {
-		const branches = schemaBranchesOf(def)
-		if (branches?.length === 1)
-			return _parseNode(schemaKindOf(branches[0]), branches[0], $, opts)
-	}
-	const node = _parseNode(kind, def, $, opts)
-	return node.bindScope($)
-}
-
-const _parseNode = (
-	kind: NodeKind,
-	def: unknown,
-	$: RawSchemaScope,
-	opts?: NodeParseOptions
-): RawNode => {
+export const parseNode = (kind: NodeKind, ctx: NodeParseContext): RawNode => {
 	const impl = nodeImplementationsByKind[kind]
-	const normalizedDefinition: any = impl.normalize?.(def) ?? def
-	// check again after normalization in case a node is a valid collapsed
-	// schema for the kind (e.g. sequence can collapse to element accepting a Node)
-	if (isNode(normalizedDefinition)) {
-		return normalizedDefinition.kind === kind ?
-				(normalizedDefinition as never)
-			:	throwMismatchedNodeSchemaError(kind, normalizedDefinition.kind)
-	}
-	const ctx: NodeParseContext = { $, raw: def, ...opts }
 	const inner: Record<string, unknown> = {}
 	// ensure node entries are parsed in order of precedence, with non-children
 	// parsed first
-	const schemaEntries = entriesOf(normalizedDefinition).sort(
-		([lKey], [rKey]) =>
-			isNodeKind(lKey) ?
-				isNodeKind(rKey) ? precedenceOfKind(lKey) - precedenceOfKind(rKey)
-				:	1
-			: isNodeKind(rKey) ? -1
-			: lKey < rKey ? -1
-			: 1
+	const schemaEntries = entriesOf(ctx.def as Dict).sort(([lKey], [rKey]) =>
+		isNodeKind(lKey) ?
+			isNodeKind(rKey) ? precedenceOfKind(lKey) - precedenceOfKind(rKey)
+			:	1
+		: isNodeKind(rKey) ? -1
+		: lKey < rKey ? -1
+		: 1
 	)
 	const children: RawNode[] = []
 	for (const entry of schemaEntries) {
@@ -205,22 +173,22 @@ const _parseNode = (
 	}
 
 	const innerHash = JSON.stringify({ kind, ...json })
-	if (opts?.reduceTo) {
-		nodeCache[innerHash] = opts.reduceTo
-		return opts.reduceTo
+	if (ctx.reduceTo) {
+		nodeCache[innerHash] = ctx.reduceTo
+		return ctx.reduceTo
 	}
 
-	const typeId = JSON.stringify({ kind, ...typeJson })
+	const typeHash = JSON.stringify({ kind, ...typeJson })
 
-	if (impl.reduce && !opts?.prereduced) {
-		const reduced = impl.reduce(inner, $)
+	if (impl.reduce && !ctx.prereduced) {
+		const reduced = impl.reduce(inner, ctx.$)
 		if (reduced) {
 			if (reduced instanceof Disjoint) return reduced.throw()
 
 			// if we're defining the resolution of an alias and the result is
 			// reduced to another node, add the alias to that node if it doesn't
 			// already have one.
-			if (opts?.alias) reduced.alias ??= opts.alias
+			if (ctx.alias) reduced.alias ??= ctx.alias
 
 			// we can't cache this reduction for now in case the reduction involved
 			// impliedSiblings
@@ -232,11 +200,8 @@ const _parseNode = (
 	// since reduction can add impliedSiblings
 	if (nodeCache[innerHash]) return nodeCache[innerHash]
 
-	const prefix = opts?.alias ?? kind
-	nodeCountsByPrefix[prefix] ??= 0
-	const baseName = `${prefix}${++nodeCountsByPrefix[prefix]!}`
 	const attachments = {
-		id: baseName,
+		id: ctx.id,
 		kind,
 		impl,
 		inner,
@@ -246,10 +211,10 @@ const _parseNode = (
 		collapsibleJson: collapsibleJson as JsonData,
 		children,
 		innerHash,
-		typeHash: typeId,
-		$
+		typeHash,
+		$: ctx.$
 	} satisfies UnknownAttachments as Record<string, any>
-	if (opts?.alias) attachments.alias = opts.alias
+	if (ctx.alias) attachments.alias = ctx.alias
 
 	for (const k in inner) if (k !== "description") attachments[k] = inner[k]
 
@@ -258,13 +223,3 @@ const _parseNode = (
 	nodeCache[innerHash] = node
 	return node
 }
-
-const schemaBranchesOf = (schema: object) =>
-	isArray(schema) ? schema
-	: "branches" in schema && isArray(schema.branches) ? schema.branches
-	: undefined
-
-const throwMismatchedNodeSchemaError = (expected: NodeKind, actual: NodeKind) =>
-	throwParseError(
-		`Node of kind ${actual} is not valid as a ${expected} definition`
-	)
