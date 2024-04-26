@@ -326,13 +326,15 @@ export class RawSchemaScope<
 	}
 
 	maybeResolve(name: string): RawResolution | undefined {
-		const cached = this.resolutions[name]
-		if (cached) {
-			return typeof cached === "string" ?
-					this.node("alias", { alias: cached })
-				:	cached
-		}
+		const resolution = this.maybeShallowResolve(name)
+		return typeof resolution === "string" ?
+				this.node("alias", { alias: resolution }, { prereduced: true })
+			:	resolution
+	}
 
+	maybeShallowResolve(name: string): CachedResolution | undefined {
+		const cached = this.resolutions[name]
+		if (cached) return cached
 		let def = this.aliases[name]
 		if (!def) return this.maybeResolveSubalias(name)
 		def = this.preparseRoot(def)

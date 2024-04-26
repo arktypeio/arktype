@@ -14,6 +14,7 @@ import {
 import { nodeClassesByKind, nodeImplementationsByKind } from "./kinds.js"
 import type { RawNode } from "./node.js"
 import type { UnknownSchema } from "./schema.js"
+import { normalizeAliasDef } from "./schemas/alias.js"
 import type { RawSchemaScope } from "./scope.js"
 import type { RawNodeDeclaration } from "./shared/declare.js"
 import { Disjoint } from "./shared/disjoint.js"
@@ -107,6 +108,8 @@ export const parseNode = (
 	const kind: NodeKind =
 		typeof kinds === "string" ? kinds : schemaKindOf(def, kinds)
 	if (isNode(def) && def.kind === kind) return def
+	if (kind === "alias" && !opts?.prereduced)
+		return $.resolveNode(normalizeAliasDef(def as never).alias)
 
 	if (kind === "union" && hasDomain(def, "object")) {
 		const branches = schemaBranchesOf(def)

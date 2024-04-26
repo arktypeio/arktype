@@ -45,6 +45,9 @@ export class AliasNode extends RawSchema<AliasDeclaration> {
 	}
 }
 
+export const normalizeAliasDef = (def: AliasDef): AliasInner =>
+	typeof def === "string" ? { alias: def.slice(1) } : def
+
 export const aliasImplementation = implementNode<AliasDeclaration>({
 	kind: "alias",
 	hasAssociatedError: false,
@@ -54,7 +57,7 @@ export const aliasImplementation = implementNode<AliasDeclaration>({
 			serialize: def => `$${def}`
 		}
 	},
-	normalize: def => (typeof def === "string" ? { alias: def.slice(1) } : def),
+	normalize: normalizeAliasDef,
 	defaults: {
 		description: node => node.alias
 	},
