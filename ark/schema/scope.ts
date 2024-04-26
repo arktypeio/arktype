@@ -283,15 +283,15 @@ export class RawSchemaScope<
 		opts?: NodeParseOptions
 	): Node<reducibleKindOf<flattenListable<kinds>>> => {
 		const node = parseNode(kinds, schema, this, opts)
-		if (this.resolved) {
-			// this node was not part of the original scope, so compile an anonymous scope
-			// including only its references
-			bindCompiledScope(node.contributesReferences)
-		} else {
-			// we're still parsing the scope itself, so defer compilation but
-			// add the node as a reference
-			Object.assign(this.referencesByName, node.contributesReferencesByName)
-		}
+		// if (this.resolved) {
+		// 	// this node was not part of the original scope, so compile an anonymous scope
+		// 	// including only its references
+		// 	bindCompiledScope(node.contributesReferences)
+		// } else {
+		// 	// we're still parsing the scope itself, so defer compilation but
+		// 	// add the node as a reference
+		// 	Object.assign(this.referencesByName, node.contributesReferencesByName)
+		// }
 		return node as never
 	}).bind(this)
 

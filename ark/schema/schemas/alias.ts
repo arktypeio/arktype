@@ -1,3 +1,4 @@
+import { append } from "@arktype/util"
 import { RawSchema, type RawSchemaDeclaration } from "../schema.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
@@ -34,11 +35,19 @@ export class AliasNode extends RawSchema<AliasDeclaration> {
 		return this.resolution.keyof()
 	}
 
-	traverseAllows: TraverseAllows = (data, ctx) =>
-		this.resolution.traverseAllows(data, ctx)
+	traverseAllows: TraverseAllows = (data, ctx) => {
+		const seen = ctx.seen[this.baseName]
+		if (seen?.includes(data as object)) return true
+		ctx.seen[this.baseName] = append(seen, data)
+		return this.resolution.traverseAllows(data, ctx)
+	}
 
-	traverseApply: TraverseApply = (data, ctx) =>
+	traverseApply: TraverseApply = (data, ctx) => {
+		const seen = ctx.seen[this.baseName]
+		if (seen?.includes(data as object)) return
+		ctx.seen[this.baseName] = append(seen, data)
 		this.resolution.traverseApply(data, ctx)
+	}
 
 	compile(js: NodeCompiler): void {
 		js

@@ -54,10 +54,13 @@ contextualize(() => {
 			prop: [{ key: "a", value: "$a" }]
 		})
 
-		// const a = {} as { b: typeof b }
-		// const b = { a }
-		// a.b = b
+		const a = {} as { b: typeof b }
+		const b = { a }
+		a.b = b
 
-		// attest(types.a(a)).equals(a)
+		attest(types.a(a)).equals(a)
+		attest(types.b({ a: { b: { a: { b: "whoops" } } } }).toString()).snap(
+			"a.b.a.b must be an object (was string)"
+		)
 	})
 })
