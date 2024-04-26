@@ -253,24 +253,6 @@ export class RawSchemaScope<
 				]
 			)
 		}
-		// TODO: move this out of scope initialization
-		this.node(
-			"union",
-			{
-				branches: [
-					"string",
-					"number",
-					"object",
-					"bigint",
-					"symbol",
-					{ unit: true },
-					{ unit: false },
-					{ unit: null },
-					{ unit: undefined }
-				]
-			},
-			{ reduceTo: this.node("intersection", {}, { prereduced: true }) }
-		)
 	}
 
 	get raw(): this {
