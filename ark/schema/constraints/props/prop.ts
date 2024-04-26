@@ -1,8 +1,4 @@
-import {
-	compileSerializedValue,
-	throwParseError,
-	type Key
-} from "@arktype/util"
+import { compileSerializedValue, type Key } from "@arktype/util"
 import type { SchemaDef } from "../../node.js"
 import type { RawSchema } from "../../schema.js"
 import type { NodeCompiler } from "../../shared/compile.js"
@@ -20,17 +16,16 @@ import {
 import { intersectNodes } from "../../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/traversal.js"
 import { RawConstraint } from "../constraint.js"
-import { isSchemaReference, type ChildSchemaReference } from "./shared.js"
 
 export interface PropDef extends BaseMeta {
 	readonly key: Key
-	readonly value: SchemaDef | ChildSchemaReference
+	readonly value: SchemaDef
 	readonly optional?: boolean
 }
 
 export interface PropInner extends BaseMeta {
 	readonly key: Key
-	readonly value: RawSchema | ChildSchemaReference
+	readonly value: RawSchema
 	readonly optional?: true
 }
 
@@ -57,11 +52,7 @@ export const propImplementation = implementNode<PropDeclaration>({
 		key: {},
 		value: {
 			child: true,
-			parse: (def, ctx) => {
-				if (!isSchemaReference(def)) return ctx.$.schema(def)
-				const resolution = ctx.$.resolveNode(def.slice(1))
-				return typeof resolution === "string" ? `$${resolution}` : resolution
-			}
+			parse: (def, ctx) => ctx.$.schema(def)
 		},
 		optional: {
 			// normalize { optional: false } to {}
@@ -72,7 +63,7 @@ export const propImplementation = implementNode<PropDeclaration>({
 	defaults: {
 		description: node =>
 			`${node.compiledKey}${node.optional ? "?" : ""}: ${
-				typeof node.value === "string" ? node.value : node.value.description
+				node.value.description
 			}`,
 		expected: () => "defined",
 		actual: () => null
@@ -82,7 +73,7 @@ export const propImplementation = implementNode<PropDeclaration>({
 			if (l.key !== r.key) return null
 
 			const key = l.key
-			let value = intersectNodes(l.resolvedValue, r.resolvedValue, ctx)
+			let value = intersectNodes(l.value, r.value, ctx)
 			const optional = l.optional === true && r.optional === true
 			if (value instanceof Disjoint) {
 				if (optional) value = ctx.$.keywords.never.raw
@@ -98,24 +89,12 @@ export const propImplementation = implementNode<PropDeclaration>({
 })
 
 export class PropNode extends RawConstraint<PropDeclaration> {
-	valueReference =
-		typeof this.value === "string" ? this.value.slice(1) : this.value.baseName
-	get resolvedValue(): RawSchema {
-		const result =
-			typeof this.value === "string" ?
-				this.$.maybeResolveNode(this.valueReference)!
-			:	this.value
-		if (typeof result === "string")
-			throwParseError(`Unable to resolve cyclic type ${this.baseName}`)
-		return result
-	}
-
 	required = !this.optional
 	impliedBasis = this.$.keywords.object.raw
 	serializedKey = compileSerializedValue(this.key)
 	compiledKey = typeof this.key === "string" ? this.key : this.serializedKey
 	expression = `${this.compiledKey}${this.optional ? "?" : ""}: ${
-		typeof this.value === "string" ? this.value : this.value.expression
+		this.value.expression
 	}`
 
 	errorContext = Object.freeze({
@@ -130,10 +109,7 @@ export class PropNode extends RawConstraint<PropDeclaration> {
 		if (this.key in data) {
 			// ctx will be undefined if this node doesn't have a context-dependent predicate
 			ctx?.path.push(this.key)
-			const allowed = this.resolvedValue.traverseAllows(
-				(data as any)[this.key],
-				ctx
-			)
+			const allowed = this.value.traverseAllows((data as any)[this.key], ctx)
 			ctx?.path.pop()
 			return allowed
 		}
@@ -142,18 +118,17 @@ export class PropNode extends RawConstraint<PropDeclaration> {
 
 	traverseApply: TraverseApply<object> = (data, ctx) => {
 		ctx.path.push(this.key)
-		if (this.key in data)
-			this.resolvedValue.traverseApply((data as any)[this.key], ctx)
+		if (this.key in data) this.value.traverseApply((data as any)[this.key], ctx)
 		else if (this.required) ctx.error(this.errorContext)
 		ctx.path.pop()
 	}
 
 	compile(js: NodeCompiler): void {
-		const requiresContext = js.requiresContextFor(this.resolvedValue)
+		const requiresContext = js.requiresContextFor(this.value)
 		if (requiresContext) js.line(`ctx.path.push(${this.serializedKey})`)
 
 		js.if(`${this.serializedKey} in ${js.data}`, () =>
-			js.check(this.resolvedValue, {
+			js.check(this.value, {
 				arg: `${js.data}${js.prop(this.key)}`
 			})
 		)

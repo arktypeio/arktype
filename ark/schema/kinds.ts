@@ -35,6 +35,11 @@ import {
 } from "./constraints/refinements/regex.js"
 import type { RawNode } from "./node.js"
 import {
+	type AliasDeclaration,
+	aliasImplementation,
+	AliasNode
+} from "./schemas/alias.js"
+import {
 	type DomainDeclaration,
 	domainImplementation,
 	DomainNode
@@ -55,7 +60,6 @@ import {
 	protoImplementation,
 	ProtoNode
 } from "./schemas/proto.js"
-import { type AliasDeclaration, AliasNode } from "./schemas/reference.js"
 import {
 	type UnionDeclaration,
 	unionImplementation,
@@ -90,7 +94,7 @@ export const nodeImplementationsByKind: Record<
 	UnknownNodeImplementation
 > = {
 	...boundImplementationsByKind,
-	alias: AliasNode,
+	alias: aliasImplementation,
 	domain: domainImplementation,
 	unit: unitImplementation,
 	proto: protoImplementation,

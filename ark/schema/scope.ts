@@ -168,7 +168,9 @@ export type PrimitiveKeywords = typeof tsKeywords &
 	typeof jsObjects &
 	typeof internalKeywords
 
-export type RawResolution = string | RawSchema | GenericSchema | RawSchemaModule
+export type RawResolution = RawSchema | GenericSchema | RawSchemaModule
+
+type CachedResolution = string | RawResolution
 
 export class RawSchemaScope<
 	$ extends RawSchemaResolutions = RawSchemaResolutions
@@ -180,7 +182,9 @@ export class RawSchemaScope<
 
 	readonly referencesByName: { [name: string]: RawNode } = {}
 	references: readonly RawNode[] = []
-	protected readonly resolutions: RawSchemaResolutions = {}
+	protected readonly resolutions: {
+		[alias: string]: CachedResolution | undefined
+	} = {}
 	readonly json: Json = {}
 	exportedNames: string[]
 	readonly aliases: Record<string, unknown> = {}
@@ -295,21 +299,14 @@ export class RawSchemaScope<
 		return this.schema(def as never, opts)
 	}
 
-	fullyResolveNode(name: string): RawSchema {
-		const resolution = this.resolveNode(name)
-		return typeof resolution === "string" ?
-				throwParseError(`Unable to fully resolve ${name}`)
-			:	resolution
-	}
-
-	resolveNode(name: string): string | RawSchema {
+	resolveNode(name: string): RawSchema {
 		return (
 			this.maybeResolveNode(name) ??
 			throwParseError(writeUnresolvableMessage(name))
 		)
 	}
 
-	maybeResolveNode(name: string): string | RawSchema | undefined {
+	maybeResolveNode(name: string): RawSchema | undefined {
 		const result = this.maybeResolveGenericOrNode(name)
 		if (hasArkKind(result, "generic")) return
 		return result
@@ -317,7 +314,7 @@ export class RawSchemaScope<
 
 	maybeResolveGenericOrNode(
 		name: string
-	): string | RawSchema | GenericSchema | undefined {
+	): RawSchema | GenericSchema | undefined {
 		const resolution = this.maybeResolve(name)
 		if (hasArkKind(resolution, "module"))
 			return throwParseError(writeMissingSubmoduleAccessMessage(name))
@@ -330,7 +327,11 @@ export class RawSchemaScope<
 
 	maybeResolve(name: string): RawResolution | undefined {
 		const cached = this.resolutions[name]
-		if (cached) return cached
+		if (cached) {
+			return typeof cached === "string" ?
+					this.node("alias", { alias: cached })
+				:	cached
+		}
 
 		let def = this.aliases[name]
 		if (!def) return this.maybeResolveSubalias(name)

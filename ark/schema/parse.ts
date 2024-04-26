@@ -66,7 +66,7 @@ export const schemaKindOf = <kind extends SchemaKind = SchemaKind>(
 const discriminateSchemaKind = (def: unknown): SchemaKind => {
 	switch (typeof def) {
 		case "string":
-			return "domain"
+			return def[0] === "$" ? "alias" : "domain"
 		case "function":
 			return hasArkKind(def, "schema") ? def.kind : "proto"
 		case "object": {
@@ -78,6 +78,8 @@ const discriminateSchemaKind = (def: unknown): SchemaKind => {
 			if ("branches" in def || isArray(def)) return "union"
 
 			if ("unit" in def) return "unit"
+
+			if ("alias" in def) return "alias"
 
 			const schemaKeys = Object.keys(def)
 
@@ -161,19 +163,13 @@ const _parseNode = (
 	entries.forEach(([k, v]) => {
 		const keyImpl = impl.keys[k] ?? baseKeys[k]
 		if (keyImpl.child) {
-			const listableNode = v as listable<RawNode | string>
-			// TODO: better string handling here
+			const listableNode = v as listable<RawNode>
 			if (isArray(listableNode)) {
-				json[k] = listableNode.map(node =>
-					typeof node === "string" ? node : node.collapsibleJson
-				)
-				children.push(...listableNode.filter(node => typeof node === "object"))
+				json[k] = listableNode.map(node => node.collapsibleJson)
+				children.push(...listableNode)
 			} else {
-				json[k] =
-					typeof listableNode === "string" ? listableNode : (
-						listableNode.collapsibleJson
-					)
-				if (typeof listableNode === "object") children.push(listableNode)
+				json[k] = listableNode.collapsibleJson
+				children.push(listableNode)
 			}
 		} else {
 			json[k] =
