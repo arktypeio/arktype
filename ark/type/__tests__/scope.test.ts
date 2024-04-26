@@ -283,9 +283,38 @@ contextualize(() => {
 				}
 			}).export()
 			attest(types.a.infer).type.toString.snap("{ b: { a: 3 | any; }")
-			attest(types.a.json).snap()
+
+			attest(types.a.json).snap({
+				domain: "object",
+				prop: [
+					{
+						key: "b",
+						value: {
+							domain: "object",
+							prop: [{ key: "a", value: ["$a", { unit: 3 }] }]
+						}
+					}
+				]
+			})
+
+			const valid: typeof types.a.infer = { b: { a: 3 } }
+
+			attest(types.a(valid)).equals(valid)
+
+			valid.b.a = valid
+
+			// check cyclic
+			attest(types.a(valid)).equals(valid)
+
+			attest(types.a({ b: { a: { b: { a: 4 } } } }).toString()).snap(
+				'b.a.b.a must be an object or 3 (was number, 4) or b.a must be 3 (was {"b":{"a":4}})'
+			)
+
 			attest(types.b.infer).type.toString.snap("{ a: 3 | { b: any; }; }")
-			attest(types.b.json).snap()
+			attest(types.b.json).snap({
+				domain: "object",
+				prop: [{ key: "a", value: ["$a", { unit: 3 }] }]
+			})
 		})
 
 		it("intersect cyclic reference", () => {
@@ -300,7 +329,7 @@ contextualize(() => {
 			attest(types.a.infer).type.toString.snap()
 			attest(types.b.infer).type.toString.snap()
 
-			const expectedCJson =
+			const expectedCyclicJson =
 				types.a.raw.firstReferenceOfKindOrThrow("alias").json
 
 			attest(types.a.json).snap({
@@ -313,7 +342,7 @@ contextualize(() => {
 							prop: [
 								{
 									key: "c",
-									value: expectedCJson
+									value: expectedCyclicJson
 								}
 							]
 						}
@@ -335,7 +364,7 @@ b.c.c must be defined`)
 				prop: [
 					{
 						key: "c",
-						value: expectedCJson
+						value: expectedCyclicJson
 					}
 				]
 			})

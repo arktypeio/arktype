@@ -294,7 +294,7 @@ export type NodeKeyImplementation<
 interface CommonNodeImplementationInput<d extends RawNodeDeclaration> {
 	kind: d["kind"]
 	keys: KeyDefinitions<d>
-	normalize: (schema: d["def"], $: RawSchemaScope) => d["normalizedDef"]
+	normalize: (schema: d["def"]) => d["normalizedDef"]
 	hasAssociatedError: d["errorContext"] extends null ? false : true
 	collapsibleKey?: keyof d["inner"]
 	reduce?: (

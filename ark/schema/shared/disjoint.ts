@@ -9,11 +9,8 @@ import {
 	throwParseError
 } from "@arktype/util"
 import type { Node } from "../node.js"
-import type {
-	BoundKind,
-	IntersectionChildKind,
-	kindRightOf
-} from "./implement.js"
+import type { RawSchema } from "../schema.js"
+import type { BoundKind, IntersectionChildKind } from "./implement.js"
 import { hasArkKind } from "./utils.js"
 
 type DisjointKinds = {
@@ -53,8 +50,8 @@ type DisjointKinds = {
 				r: unknown
 		  }
 	union?: {
-		l: readonly Node<kindRightOf<"union">>[]
-		r: readonly Node<kindRightOf<"union">>[]
+		l: readonly RawSchema[]
+		r: readonly RawSchema[]
 	}
 	indiscriminableMorphs?: {
 		l: Node<"union">

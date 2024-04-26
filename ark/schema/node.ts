@@ -78,11 +78,11 @@ export abstract class RawNode<
 			},
 			{ attach: attachments as never }
 		)
-		this.contributesReferencesByName =
+		this.contributesReferencesById =
 			this.id in this.referencesByName ?
 				this.referencesByName
 			:	{ ...this.referencesByName, [this.id]: this as never }
-		this.contributesReferences = Object.values(this.contributesReferencesByName)
+		this.contributesReferences = Object.values(this.contributesReferencesById)
 	}
 
 	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
@@ -98,11 +98,11 @@ export abstract class RawNode<
 		this.kind === "alias" ||
 		this.children.some(child => child.allowsRequiresContext)
 	readonly referencesByName: Record<string, RawNode> = this.children.reduce(
-		(result, child) => Object.assign(result, child.contributesReferencesByName),
+		(result, child) => Object.assign(result, child.contributesReferencesById),
 		{}
 	)
 	readonly references: readonly RawNode[] = Object.values(this.referencesByName)
-	readonly contributesReferencesByName: Record<string, RawNode>
+	readonly contributesReferencesById: Record<string, RawNode>
 	readonly contributesReferences: readonly RawNode[]
 	readonly precedence = precedenceOfKind(this.kind)
 	jit = false

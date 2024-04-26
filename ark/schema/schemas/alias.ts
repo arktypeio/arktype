@@ -11,18 +11,12 @@ import { defineRightwardIntersections } from "./utils.js"
 
 export interface AliasInner<alias extends string = string> extends BaseMeta {
 	readonly alias: alias
-	readonly resolve: () => RawSchema
-}
-
-export interface NormalizedAliasDef<alias extends string = string>
-	extends BaseMeta {
-	readonly alias: alias
 	readonly resolve?: () => RawSchema
 }
 
 export type AliasDef<alias extends string = string> =
 	| `$${alias}`
-	| NormalizedAliasDef<alias>
+	| AliasInner<alias>
 
 export type AliasDeclaration = declareNode<{
 	kind: "alias"
@@ -36,7 +30,7 @@ export class AliasNode extends RawSchema<AliasDeclaration> {
 
 	private _resolution: RawSchema | undefined
 	get resolution(): RawSchema {
-		this._resolution ??= this.resolve()
+		this._resolution ??= this.resolve?.() ?? this.$.resolveSchema(this.alias)
 		return this._resolution
 	}
 
@@ -65,14 +59,8 @@ export class AliasNode extends RawSchema<AliasDeclaration> {
 	}
 }
 
-export const normalizeAliasDef = (
-	def: AliasDef,
-	$: RawSchemaScope
-): AliasInner =>
-	typeof def === "string" ?
-		{ alias: def.slice(1), resolve: () => $.resolveSchema(def.slice(1)) }
-	: def.resolve ? (def as AliasInner)
-	: { alias: def.alias, resolve: () => $.resolveSchema(def.alias) }
+export const normalizeAliasDef = (def: AliasDef): AliasInner =>
+	typeof def === "string" ? { alias: def.slice(1) } : def
 
 export const aliasImplementation = implementNode<AliasDeclaration>({
 	kind: "alias",
@@ -91,15 +79,17 @@ export const aliasImplementation = implementNode<AliasDeclaration>({
 	intersections: {
 		alias: (l, r, ctx) =>
 			ctx.$.lazilyResolve(`${l.id}${ctx.pipe ? "|>" : "&"}${r.id}`, () =>
-				throwIfDisjoint(intersectNodes(l.resolution, r.resolution, ctx))
+				neverIfDisjoint(intersectNodes(l.resolution, r.resolution, ctx), ctx.$)
 			),
 		...defineRightwardIntersections("alias", (l, r, ctx) =>
 			ctx.$.lazilyResolve(`${l.id}${ctx.pipe ? "|>" : "&"}${r.id}`, () =>
-				throwIfDisjoint(intersectNodes(l.resolution, r, ctx))
+				neverIfDisjoint(intersectNodes(l.resolution, r, ctx), ctx.$)
 			)
 		)
 	}
 })
 
-const throwIfDisjoint = (result: RawSchema | Disjoint): RawSchema =>
-	result instanceof Disjoint ? result.throw() : result
+const neverIfDisjoint = (
+	result: RawSchema | Disjoint,
+	$: RawSchemaScope
+): RawSchema => (result instanceof Disjoint ? $.keywords.never.raw : result)

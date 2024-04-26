@@ -199,7 +199,7 @@ export class RawSchemaScope<
 	readonly resolvedConfig: ResolvedArkConfig;
 	readonly [arkKind] = "scope"
 
-	readonly referencesByName: { [name: string]: RawNode } = {}
+	readonly referencesById: { [name: string]: RawNode } = {}
 	references: readonly RawNode[] = []
 	protected readonly resolutions: {
 		[alias: string]: CachedResolution | undefined
@@ -306,7 +306,7 @@ export class RawSchemaScope<
 
 		if (kind === "alias" && !opts?.prereduced) {
 			const resolution = this.resolveSchema(
-				normalizeAliasDef(def as never, this).alias
+				normalizeAliasDef(def as never).alias
 			)
 			def = resolution
 			kind = resolution.kind
@@ -319,7 +319,7 @@ export class RawSchemaScope<
 		}
 
 		const impl = nodeImplementationsByKind[kind]
-		const normalizedDef = impl.normalize?.(def, this) ?? def
+		const normalizedDef = impl.normalize?.(def) ?? def
 		// check again after normalization in case a node is a valid collapsed
 		// schema for the kind (e.g. sequence can collapse to element accepting a Node)
 		if (isNode(normalizedDef)) {
@@ -348,7 +348,7 @@ export class RawSchemaScope<
 		} else {
 			// we're still parsing the scope itself, so defer compilation but
 			// add the node as a reference
-			Object.assign(this.referencesByName, node.contributesReferencesByName)
+			Object.assign(this.referencesById, node.contributesReferencesById)
 		}
 
 		return node as never
@@ -444,7 +444,7 @@ export class RawSchemaScope<
 			Object.assign(this.resolutions, this._exportedResolutions)
 			if (this.config.registerKeywords)
 				Object.assign(RawSchemaScope.keywords, this._exportedResolutions)
-			this.references = Object.values(this.referencesByName)
+			this.references = Object.values(this.referencesById)
 			bindCompiledScope(this.references)
 			this.resolved = true
 		}

@@ -1,7 +1,7 @@
 import { appendUnique, groupBy, isArray } from "@arktype/util"
 import type { NodeDef } from "../kinds.js"
 import type { Node } from "../node.js"
-import { RawSchema, type schemaKindRightOf } from "../schema.js"
+import { RawSchema } from "../schema.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -16,9 +16,12 @@ import { intersectNodes, intersectNodesRoot } from "../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 import { defineRightwardIntersections } from "./utils.js"
 
-export type UnionChildKind = schemaKindRightOf<"union">
+export type UnionChildKind = (typeof unionChildKinds)[number]
 
-export const unionChildKinds = schemaKindsRightOf("union")
+export const unionChildKinds = [
+	...schemaKindsRightOf("union"),
+	"alias"
+] as const
 
 export type UnionChildDef = NodeDef<UnionChildKind>
 
