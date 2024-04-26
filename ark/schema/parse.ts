@@ -161,13 +161,19 @@ const _parseNode = (
 	entries.forEach(([k, v]) => {
 		const keyImpl = impl.keys[k] ?? baseKeys[k]
 		if (keyImpl.child) {
-			const listableNode = v as listable<RawNode>
+			const listableNode = v as listable<RawNode | string>
+			// TODO: better string handling here
 			if (isArray(listableNode)) {
-				json[k] = listableNode.map(node => node.collapsibleJson)
-				children.push(...listableNode)
+				json[k] = listableNode.map(node =>
+					typeof node === "string" ? node : node.collapsibleJson
+				)
+				children.push(...listableNode.filter(node => typeof node === "object"))
 			} else {
-				json[k] = listableNode.collapsibleJson
-				children.push(listableNode)
+				json[k] =
+					typeof listableNode === "string" ? listableNode : (
+						listableNode.collapsibleJson
+					)
+				if (typeof listableNode === "object") children.push(listableNode)
 			}
 		} else {
 			json[k] =

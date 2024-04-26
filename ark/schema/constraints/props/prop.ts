@@ -59,8 +59,7 @@ export const propImplementation = implementNode<PropDeclaration>({
 			child: true,
 			parse: (def, ctx) => {
 				if (!isSchemaReference(def)) return ctx.$.schema(def)
-
-				const resolution = ctx.$.maybeResolveNode(def.slice(1))!
+				const resolution = ctx.$.resolveNode(def.slice(1))
 				return typeof resolution === "string" ? `$${resolution}` : resolution
 			}
 		},

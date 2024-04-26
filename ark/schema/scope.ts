@@ -295,6 +295,13 @@ export class RawSchemaScope<
 		return this.schema(def as never, opts)
 	}
 
+	resolveNode(name: string): string | RawSchema {
+		return (
+			this.maybeResolveNode(name) ??
+			throwParseError(writeUnresolvableMessage(name))
+		)
+	}
+
 	maybeResolveNode(name: string): string | RawSchema | undefined {
 		const result = this.maybeResolveGenericOrNode(name)
 		if (hasArkKind(result, "generic")) return

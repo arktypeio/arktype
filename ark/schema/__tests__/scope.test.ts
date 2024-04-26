@@ -44,17 +44,14 @@ contextualize(() => {
 			prop: [
 				{
 					key: "b",
-					value: {
-						domain: "object",
-						prop: [{ key: "a", value: "(undefined)" }]
-					}
+					value: { domain: "object", prop: [{ key: "a", value: "$a" }] }
 				}
 			]
 		})
 
 		attest(types.b.json).snap({
 			domain: "object",
-			prop: [{ key: "a", value: "(undefined)" }]
+			prop: [{ key: "a", value: "$a" }]
 		})
 
 		// const a = {} as { b: typeof b }
