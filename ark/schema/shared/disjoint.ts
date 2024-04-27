@@ -5,6 +5,7 @@ import {
 	fromEntries,
 	isArray,
 	printable,
+	register,
 	throwInternalError,
 	throwParseError
 } from "@arktype/util"
@@ -175,11 +176,11 @@ export class Disjoint {
 		)
 	}
 
-	withPrefixKey(key: string): Disjoint {
+	withPrefixKey(key: string | symbol): Disjoint {
 		const entriesWithPrefix = entriesOf(this.sources).map(
 			([path, disjoints]): DisjointSourceEntry => {
 				const segments = JSON.parse(path) as string[]
-				segments.unshift(key)
+				segments.unshift(typeof key === "symbol" ? register(key) : key)
 				const pathWithPrefix = JSON.stringify(segments) as `[${string}]`
 				return [pathWithPrefix, disjoints]
 			}

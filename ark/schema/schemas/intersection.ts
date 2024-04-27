@@ -29,15 +29,15 @@ import { type BaseMeta, type declareNode, metaKeys } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { ArkTypeError } from "../shared/errors.js"
 import {
+	constraintKeys,
 	type ConstraintKind,
+	implementNode,
 	type IntersectionChildKind,
 	type IntersectionContext,
 	type OpenNodeKind,
+	propKeys,
 	type PropKind,
-	type RefinementKind,
-	constraintKeys,
-	implementNode,
-	propKeys
+	type RefinementKind
 } from "../shared/implement.js"
 import { intersectNodes } from "../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
@@ -167,9 +167,9 @@ export class IntersectionNode extends RawSchema<IntersectionDeclaration> {
 		return (
 			this.basis ?
 				this.props ?
-					this.basis.rawKeyOf().or(this.props.rawKeyOf())
+					this.basis.rawKeyOf().or(this.props.keyof())
 				:	this.basis.rawKeyOf()
-			:	this.props?.rawKeyOf() ?? this.$.keywords.never.raw
+			:	this.props?.keyof() ?? this.$.keywords.never.raw
 		)
 	}
 }
@@ -224,13 +224,28 @@ const intersectIntersections = (
 	const lConstraints = flattenConstraints(reducedConstraintsInner)
 	const rConstraints = flattenConstraints(rawConstraintsInner)
 
-	return intersectConstraints({
-		root,
+	const constraintResult = intersectConstraints({
 		l: lConstraints,
 		r: rConstraints,
 		types: [],
 		ctx
 	})
+
+	if (constraintResult instanceof Disjoint) return constraintResult
+
+	let result: RawSchema | Disjoint = constraintResult.ctx.$.node(
+		"intersection",
+		Object.assign(root, unflattenConstraints(constraintResult.l)),
+		{ prereduced: true }
+	)
+
+	for (const type of constraintResult.types) {
+		if (result instanceof Disjoint) return result
+
+		result = intersectNodes(type, result, constraintResult.ctx)
+	}
+
+	return result
 }
 
 export const intersectionImplementation =
@@ -324,7 +339,33 @@ export const intersectionImplementation =
 			problem: ctx => `must be...\n${ctx.expected}`
 		},
 		intersections: {
-			intersection: intersectIntersections,
+			intersection: (l, r, ctx) => {
+				if (l.props && r.props) {
+					if (l.onExtraneousKey) {
+						const lKey = l.props.keyof()
+						const disjointRKeys = r.props.requiredLiteralKeys.filter(
+							k => !lKey.allows(k)
+						)
+						if (disjointRKeys.length) {
+							return Disjoint.from("presence", true, false).withPrefixKey(
+								disjointRKeys[0]
+							)
+						}
+					}
+					if (r.onExtraneousKey) {
+						const rKey = r.props.keyof()
+						const disjointLKeys = l.props.requiredLiteralKeys.filter(
+							k => !rKey.allows(k)
+						)
+						if (disjointLKeys.length) {
+							return Disjoint.from("presence", true, false).withPrefixKey(
+								disjointLKeys[0]
+							)
+						}
+					}
+				}
+				return intersectIntersections(l, r, ctx)
+			},
 			...defineRightwardIntersections("intersection", (l, r, ctx) => {
 				// if l is unknown, return r
 				if (l.children.length === 0) return r
@@ -376,12 +417,9 @@ const intersectRootKeys = (
 
 		if (resultBasis.kind === "domain" || resultBasis.kind === "proto")
 			result[resultBasis.kind] = resultBasis as never
-		else {
-			return throwInternalError(
-				`Unexpected intersection basis intersection ${resultBasis}`
-			)
-		}
+		else throwInternalError(`Unexpected basis intersection ${resultBasis}`)
 	}
+
 	if (l.onExtraneousKey || r.onExtraneousKey) {
 		result.onExtraneousKey =
 			l.onExtraneousKey === "throw" || r.onExtraneousKey === "throw" ?
@@ -392,7 +430,6 @@ const intersectRootKeys = (
 }
 
 type ConstraintIntersectionState = {
-	root: IntersectionRoot
 	l: Constraint[]
 	r: Constraint[]
 	types: RawSchema[]
@@ -401,21 +438,9 @@ type ConstraintIntersectionState = {
 
 const intersectConstraints = (
 	s: ConstraintIntersectionState
-): RawSchema | Disjoint => {
-	if (!s.r.length) {
-		let result: RawSchema | Disjoint = s.ctx.$.node(
-			"intersection",
-			Object.assign(s.root, unflattenConstraints(s.l)),
-			{ prereduced: true }
-		)
-		for (const type of s.types) {
-			if (result instanceof Disjoint) return result
-
-			result = intersectNodes(type, result, s.ctx)
-		}
-		return result
-	}
-	const head = s.r.shift()!
+): ConstraintIntersectionState | Disjoint => {
+	const head = s.r.shift()
+	if (!head) return s
 	let matched = false
 	for (let i = 0; i < s.l.length; i++) {
 		const result = intersectNodes(s.l[i], head, s.ctx)

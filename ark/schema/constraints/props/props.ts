@@ -24,27 +24,47 @@ export type PropsGroupInput = Pick<
 >
 
 export class PropsGroup extends DynamicBase<PropsGroupInput> {
-	constructor(
-		public inner: PropsGroupInput,
-		public $: RawSchemaScope
-	) {
-		super(inner)
-	}
+	readonly requiredLiteralKeys: Key[] = []
+	readonly optionalLiteralKeys: Key[] = []
+	readonly literalKeys: Key[]
 
 	readonly all = conflatenateAll<Node<PropKind>>(
 		this.prop,
 		this.index,
 		this.sequence
 	)
+
+	constructor(
+		public inner: PropsGroupInput,
+		public $: RawSchemaScope
+	) {
+		super(inner)
+		this.all.forEach(node => {
+			if (node.kind === "index") return
+			if (node.kind === "prop") {
+				if (node.required) this.requiredLiteralKeys.push(node.key)
+				else this.optionalLiteralKeys.push(node.key)
+			} else {
+				node.prevariadic.forEach((_, i) => {
+					if (i < node.minLength) this.requiredLiteralKeys.push(`${i}`)
+					else this.optionalLiteralKeys.push(`${i}`)
+				})
+			}
+		})
+		this.literalKeys = [
+			...this.requiredLiteralKeys,
+			...this.optionalLiteralKeys
+		]
+	}
+
 	readonly nameSet =
 		this.prop ? flatMorph(this.prop, (i, node) => [node.key, 1] as const) : {}
 	readonly nameSetReference = registeredReference(this.nameSet)
 	readonly description = describeProps(this, "description")
 	readonly expression = describeProps(this, "expression")
-	readonly literalKeys = literalPropKeysOf(this.all)
 
 	private keyofCache: RawSchema | undefined
-	rawKeyOf(): RawSchema {
+	keyof(): RawSchema {
 		if (!this.keyofCache) {
 			let branches = this.$.units(this.literalKeys).branches
 			this.index?.forEach(({ key }) => {
@@ -114,16 +134,6 @@ export class PropsGroup extends DynamicBase<PropsGroupInput> {
 
 		return js
 	}
-}
-
-const literalPropKeysOf = (all: readonly Node<PropKind>[]) => {
-	const keys: Key[] = []
-	all.forEach(node => {
-		if (node.kind === "index") return
-		if (node.kind === "prop") return keys.push(node.key)
-		node.prevariadic.forEach((_, i) => keys.push(`${i}`))
-	})
-	return keys
 }
 
 const describeProps = (
