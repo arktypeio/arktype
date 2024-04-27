@@ -372,15 +372,14 @@ other must be a string (was bigint)`)
 			type Key = symbol | "foo" | "bar" | "baz"
 			attest<Key>(types.key.infer)
 			attest<Record<Key, string>>(types.obj.infer)
-			attest(types.obj.json).snap({
-				domain: "object",
-				index: [
-					{
-						key: ["symbol", { unit: "bar" }, { unit: "baz" }, { unit: "foo" }],
-						value: "string"
-					}
-				]
+
+			const expected = type({ "[symbol]": "string" }).and({
+				foo: "string",
+				bar: "string",
+				baz: "string"
 			})
+
+			attest(types.obj.json).snap(expected.json)
 		})
 
 		it("syntax error in index definition", () => {

@@ -110,10 +110,11 @@ export type StaticArkOption<k extends keyof StaticArkConfig> = ReturnType<
 >
 
 export interface ArkConfig extends Partial<Readonly<NodeConfigsByKind>> {
+	jitless?: boolean
 	/** @internal */
-	readonly registerKeywords?: boolean
+	registerKeywords?: boolean
 	/** @internal */
-	readonly prereducedAliases?: boolean
+	prereducedAliases?: boolean
 }
 
 type resolveConfig<config extends ArkConfig> = {
@@ -128,6 +129,7 @@ export const defaultConfig: ResolvedArkConfig = Object.assign(
 		implementation.defaults
 	]),
 	{
+		jitless: false,
 		registerKeywords: false,
 		prereducedAliases: false
 	} satisfies Omit<ResolvedArkConfig, NodeKind>
@@ -292,11 +294,17 @@ export class RawSchemaScope<
 		return node
 	}
 
-	node = (<kinds extends NodeKind | array<SchemaKind>>(
+	node = (<
+		kinds extends NodeKind | array<SchemaKind>,
+		prereduced extends boolean = false
+	>(
 		kinds: kinds,
 		nodeDef: NodeDef<flattenListable<kinds>>,
-		opts?: NodeParseOptions
-	): Node<reducibleKindOf<flattenListable<kinds>>> => {
+		opts?: NodeParseOptions<prereduced>
+	): Node<
+		prereduced extends true ? flattenListable<kinds>
+		:	reducibleKindOf<flattenListable<kinds>>
+	> => {
 		let kind: NodeKind =
 			typeof kinds === "string" ? kinds : schemaKindOf(nodeDef, kinds)
 
@@ -344,7 +352,8 @@ export class RawSchemaScope<
 		if (this.resolved) {
 			// this node was not part of the original scope, so compile an anonymous scope
 			// including only its references
-			bindCompiledScope(node.contributesReferences)
+			if (!this.resolvedConfig.jitless)
+				bindCompiledScope(node.contributesReferences)
 		} else {
 			// we're still parsing the scope itself, so defer compilation but
 			// add the node as a reference
@@ -445,7 +454,7 @@ export class RawSchemaScope<
 			if (this.config.registerKeywords)
 				Object.assign(RawSchemaScope.keywords, this._exportedResolutions)
 			this.references = Object.values(this.referencesById)
-			bindCompiledScope(this.references)
+			if (!this.resolvedConfig.jitless) bindCompiledScope(this.references)
 			this.resolved = true
 		}
 		const namesToExport = names.length ? names : this.exportedNames

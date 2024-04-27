@@ -8,7 +8,6 @@ import {
 	type show
 } from "@arktype/util"
 import type { of } from "../constraints/ast.js"
-import type { RawConstraint } from "../constraints/constraint.js"
 import type { RawNode } from "../node.js"
 import type { RawSchema } from "../schema.js"
 import type { MorphAst, MorphNode, Out } from "../schemas/morph.js"
@@ -77,7 +76,7 @@ type InternalNodeIntersection<ctx> = <l extends RawNode, r extends RawNode>(
 	r: r,
 	ctx: ctx
 ) => l["kind"] | r["kind"] extends SchemaKind ? RawSchema | Disjoint
-:	RawConstraint | Disjoint | null
+:	RawNode | Disjoint | null
 
 export const intersectNodesRoot: InternalNodeIntersection<RawSchemaScope> = (
 	l,

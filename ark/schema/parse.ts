@@ -33,9 +33,9 @@ import {
 } from "./shared/implement.js"
 import { hasArkKind } from "./shared/utils.js"
 
-export type NodeParseOptions = {
+export type NodeParseOptions<prereduced extends boolean = boolean> = {
 	alias?: string
-	prereduced?: boolean
+	prereduced?: prereduced
 	/** Instead of creating the node, compute the innerHash of the definition and
 	 * point it to the specified resolution.
 	 *

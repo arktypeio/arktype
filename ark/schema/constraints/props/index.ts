@@ -1,5 +1,9 @@
-import { stringAndSymbolicEntriesOf, throwParseError } from "@arktype/util"
-import type { SchemaDef } from "../../node.js"
+import {
+	printable,
+	stringAndSymbolicEntriesOf,
+	throwParseError
+} from "@arktype/util"
+import type { Node, SchemaDef } from "../../node.js"
 import type { RawSchema } from "../../schema.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
@@ -8,13 +12,17 @@ import { intersectNodes } from "../../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/traversal.js"
 import { RawConstraint } from "../constraint.js"
 
+export type IndexKeyKind = Exclude<SchemaKind, "unit">
+
+export type IndexKeyNode = Node<IndexKeyKind>
+
 export interface IndexDef extends BaseMeta {
-	readonly key: SchemaDef
+	readonly key: SchemaDef<IndexKeyKind>
 	readonly value: SchemaDef
 }
 
 export interface IndexInner extends BaseMeta {
-	readonly key: RawSchema
+	readonly key: IndexKeyNode
 	readonly value: RawSchema
 }
 
@@ -39,7 +47,15 @@ export const indexImplementation = implementNode<IndexDeclaration>({
 				const key = ctx.$.schema(def)
 				if (!key.extends(ctx.$.keywords.propertyKey))
 					return throwParseError(writeInvalidPropertyKeyMessage(key.expression))
-				return key
+				const enumerableBranches = key.branches.filter(b => b.hasKind("unit"))
+				if (enumerableBranches.length) {
+					return throwParseError(
+						writeEnumerableIndexBranches(
+							enumerableBranches.map(b => printable(b.unit))
+						)
+					)
+				}
+				return key as IndexKeyNode
 			}
 		},
 		value: {
@@ -102,6 +118,9 @@ export class IndexNode extends RawConstraint<IndexDeclaration> {
 		// this is currently handled by the props group
 	}
 }
+
+export const writeEnumerableIndexBranches = (keys: string[]): string =>
+	`Index keys ${keys.join(", ")} should be specified as named props.`
 
 export const writeInvalidPropertyKeyMessage = <indexDef extends string>(
 	indexDef: indexDef

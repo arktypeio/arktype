@@ -1,5 +1,5 @@
 import {
-	type Node,
+	type NodeDef,
 	type RawSchema,
 	tsKeywords,
 	type writeInvalidPropertyKeyMessage
@@ -11,6 +11,7 @@ import {
 	type merge,
 	printable,
 	type show,
+	spliterate,
 	stringAndSymbolicEntriesOf,
 	throwParseError
 } from "@arktype/util"
@@ -21,8 +22,8 @@ import type { validateString } from "./semantic/validate.js"
 import { Scanner } from "./string/shift/scanner.js"
 
 export const parseObjectLiteral = (def: Dict, ctx: ParseContext): RawSchema => {
-	const propNodes: Node<"prop">[] = []
-	const indexNodes: Node<"index">[] = []
+	const propNodes: NodeDef<"prop">[] = []
+	const indexNodes: NodeDef<"index">[] = []
 	// We only allow a spread operator to be used as the first key in an object
 	// because to match JS behavior any keys before the spread are overwritten
 	// by the values in the target object, so there'd be no useful purpose in having it
@@ -59,18 +60,31 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): RawSchema => {
 			// handle key parsing first to match type behavior
 			const key = ctx.$.parse(entry.inner, ctx)
 			const value = ctx.$.parse(entry.value, ctx)
-			const indexNode = ctx.$.node("index", { key, value })
-			indexNodes.push(indexNode)
+
+			// extract enumerable named props from the index signature
+			const [enumerable, nonEnumerable] = spliterate(key.branches, k =>
+				k.hasKind("unit")
+			)
+
+			if (enumerable.length) {
+				propNodes.push(
+					...enumerable.map(k =>
+						ctx.$.node("prop", { key: k.unit as Key, value })
+					)
+				)
+				if (nonEnumerable.length)
+					indexNodes.push(ctx.$.node("index", { key: nonEnumerable, value }))
+			} else indexNodes.push(ctx.$.node("index", { key, value }))
 		} else {
 			const value = ctx.$.parse(entry.value, ctx)
-			const propNode = ctx.$.node("prop", {
+			propNodes.push({
 				key: entry.inner,
 				value,
 				optional: entry.kind === "optional"
 			})
-			propNodes.push(propNode)
 		}
 	}
+
 	return ctx.$.schema({
 		domain: "object",
 		prop: propNodes,
