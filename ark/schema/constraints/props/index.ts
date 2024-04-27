@@ -1,7 +1,6 @@
-import { throwParseError } from "@arktype/util"
+import { stringAndSymbolicEntriesOf, throwParseError } from "@arktype/util"
 import type { SchemaDef } from "../../node.js"
 import type { RawSchema } from "../../schema.js"
-import type { NodeCompiler } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { implementNode, type SchemaKind } from "../../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/traversal.js"
@@ -60,20 +59,28 @@ export class IndexNode extends RawConstraint<IndexDeclaration> {
 	expression = `[${this.key.expression}]: ${this.value.expression}`
 
 	traverseAllows: TraverseAllows<object> = (data, ctx) =>
-		Object.entries(data).every(
-			entry =>
-				!this.key.traverseAllows(entry[0], ctx) ||
-				this.value.traverseAllows(entry[1], ctx)
-		)
-
-	traverseApply: TraverseApply<object> = (data, ctx) =>
-		Object.entries(data).forEach(entry => {
-			if (this.key.traverseAllows(entry[0], ctx))
-				this.value.traverseApply(entry[1], ctx)
+		stringAndSymbolicEntriesOf(data).every(entry => {
+			if (this.key.traverseAllows(entry[0], ctx)) {
+				// ctx will be undefined if this node isn't context-dependent
+				ctx?.path.push(entry[0])
+				const allowed = this.value.traverseAllows(entry[1], ctx)
+				ctx?.path.pop()
+				return allowed
+			}
+			return true
 		})
 
-	compile(js: NodeCompiler): void {
-		if (js.traversalKind === "Allows") js.return(true)
+	traverseApply: TraverseApply<object> = (data, ctx) =>
+		stringAndSymbolicEntriesOf(data).forEach(entry => {
+			if (this.key.traverseAllows(entry[0], ctx)) {
+				ctx.path.push(entry[0])
+				this.value.traverseApply(entry[1], ctx)
+				ctx.path.pop()
+			}
+		})
+
+	compile(): void {
+		// this is currently handled by the props group
 	}
 }
 

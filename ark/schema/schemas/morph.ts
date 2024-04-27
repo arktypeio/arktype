@@ -6,6 +6,7 @@ import {
 	type listable,
 	type Primitive,
 	reference,
+	registeredReference,
 	throwParseError
 } from "@arktype/util"
 import type { of } from "../constraints/ast.js"
@@ -85,7 +86,7 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 		},
 		morphs: {
 			parse: arrayFrom,
-			serialize: morphs => morphs.map(reference)
+			serialize: morphs => morphs.map(registeredReference)
 		}
 	},
 	normalize: def => def,
@@ -141,8 +142,8 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 })
 
 export class MorphNode extends RawSchema<MorphDeclaration> {
-	serializedMorphs = this.morphs.map(morph => reference(morph))
-	compiledMorphs = `[${this.serializedMorphs}]`
+	serializedMorphs: string[] = (this.json as any).morphs
+	compiledMorphs = `[${this.serializedMorphs.map(reference)}]`
 	outValidator = this.to?.traverseApply ?? null
 	outValidatorReference: string =
 		this.to ?

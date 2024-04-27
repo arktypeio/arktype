@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@arktype/attest"
 import { assertNodeKind, schema } from "@arktype/schema"
-import { reference } from "@arktype/util"
+import { registeredReference } from "@arktype/util"
 
 contextualize(() => {
 	it("string allows", () => {
@@ -56,25 +56,25 @@ contextualize(() => {
 	})
 
 	it("symbol", () => {
-		const s = Symbol("test")
-		const ref = reference(s)
-		const t = schema({ unit: s })
+		// this symbol description should not be reused in other tests
+		const status = Symbol("status")
+		const t = schema({ unit: status })
 		assertNodeKind(t.raw, "unit")
 		// serializes to string for JSON
-		attest(t.json).snap({ unit: ref })
+		attest(t.json).snap({ unit: "$ark.status" })
 		// preserves the symbol for context
 		attest(t.raw.errorContext).equals({
 			code: "unit",
-			description: "(symbol test)",
-			unit: s
+			description: "Symbol(status)",
+			unit: status
 		})
-		attest(t.allows(s)).equals(true)
+		attest(t.allows(status)).equals(true)
 		attest(t.allows(Symbol("test"))).equals(false)
 	})
 
 	it("object reference", () => {
 		const o = new Object()
-		const ref = reference(o)
+		const ref = registeredReference(o)
 		const t = schema({ unit: o })
 		assertNodeKind(t.raw, "unit")
 		attest(t.json).snap({ unit: ref })

@@ -1,12 +1,12 @@
 import { attest, contextualize } from "@arktype/attest"
 import type { Narrowed, Out, of, string } from "@arktype/schema"
-import { reference, type equals } from "@arktype/util"
+import { registeredReference, type equals } from "@arktype/util"
 import { type, type Type } from "arktype"
 
 contextualize(() => {
 	it("implicit problem", () => {
 		const isOdd = (n: number) => n % 2 === 1
-		const isOddRef = reference(isOdd)
+		const isOddRef = registeredReference(isOdd)
 		const odd = type(["number", ":", isOdd])
 		attest<number>(odd.infer)
 		attest(odd.json).equals({ domain: "number", predicate: [isOddRef] })

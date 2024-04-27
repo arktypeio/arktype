@@ -1,6 +1,6 @@
 import { DynamicFunction } from "./functions.js"
 import { CastableBase } from "./records.js"
-import { isDotAccessible, reference } from "./registry.js"
+import { isDotAccessible, registeredReference } from "./registry.js"
 
 export type CoercibleValue = string | number | boolean | null | undefined
 
@@ -37,7 +37,7 @@ export class CompiledFunction<
 	}
 
 	prop(key: PropertyKey, optional = false): string {
-		return literalPropAccess(key, optional)
+		return compileLiteralPropAccess(key, optional)
 	}
 
 	index(key: string, optional = false): string {
@@ -111,7 +111,7 @@ export class CompiledFunction<
 	}
 }
 
-export const literalPropAccess = (
+export const compileLiteralPropAccess = (
 	key: PropertyKey,
 	optional = false
 ): string => {
@@ -122,7 +122,7 @@ export const literalPropAccess = (
 }
 
 export const serializeLiteralKey = (key: PropertyKey): string =>
-	typeof key === "symbol" ? reference(key) : JSON.stringify(key)
+	typeof key === "symbol" ? registeredReference(key) : JSON.stringify(key)
 
 export const indexPropAccess = (key: string, optional = false) =>
 	`${optional ? "?." : ""}[${key}]` as const

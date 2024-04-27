@@ -2,8 +2,9 @@ import {
 	type array,
 	flatMorph,
 	isArray,
-	literalPropAccess,
+	isDotAccessible,
 	type mutable,
+	printable,
 	type show
 } from "@arktype/util"
 import type { GenericSchema } from "../generic.js"
@@ -41,7 +42,11 @@ export type TraversalPath = PropertyKey[]
 
 export const pathToPropString = (path: TraversalPath): string => {
 	const propAccessChain = path.reduce<string>(
-		(s, segment) => s + literalPropAccess(segment),
+		(s, k) =>
+			typeof k === "string" && isDotAccessible(k) ?
+				`${s}.${k}`
+			:	`${s}[${printable(k)}]`,
+
 		""
 	)
 	return propAccessChain[0] === "." ? propAccessChain.slice(1) : propAccessChain

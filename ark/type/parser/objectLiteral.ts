@@ -170,6 +170,8 @@ const parseKey = (key: Key): PreparsedKey =>
 			}
 	: key[0] === "[" && key.at(-1) === "]" ?
 		{ inner: key.slice(1, -1), kind: "index" }
+	: key[0] === Scanner.escapeToken && key[1] === "[" && key.at(-1) === "]" ?
+		{ inner: key.slice(1), kind: "required" }
 	: key === "..." ? { inner: "...", kind: "spread" }
 	: { inner: key === "\\..." ? "..." : key, kind: "required" }
 

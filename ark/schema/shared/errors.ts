@@ -49,8 +49,7 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 	private mutable: ArkTypeError[] = this as never
 
 	add(error: ArkTypeError): void {
-		const pathKey = error.path.join(".")
-		const existing = this.byPath[pathKey]
+		const existing = this.byPath[error.propString]
 		if (existing) {
 			const errorIntersection = createError(this.ctx, {
 				code: "intersection",
@@ -65,9 +64,9 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 			// just append the intersection.
 			this.mutable[existingIndex === -1 ? this.length : existingIndex] =
 				errorIntersection
-			this.byPath[pathKey] = errorIntersection
+			this.byPath[error.propString] = errorIntersection
 		} else {
-			this.byPath[pathKey] = error
+			this.byPath[error.propString] = error
 			this.mutable.push(error)
 		}
 		this.count++

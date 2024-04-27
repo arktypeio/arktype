@@ -189,11 +189,9 @@ export type EmptyObject = Record<PropertyKey, never>
 export const isEmptyObject = (o: object): o is EmptyObject =>
 	Object.keys(o).length === 0
 
-export const stringAndSymbolicEntriesOf = (
-	o: Record<Key, unknown>
-): Entry<Key>[] => [
+export const stringAndSymbolicEntriesOf = (o: object): Entry<Key>[] => [
 	...Object.entries(o),
-	...Object.getOwnPropertySymbols(o).map(k => [k, o[k]] as const)
+	...Object.getOwnPropertySymbols(o).map(k => [k, (o as any)[k]] as const)
 ]
 
 /** Like Object.assign, but it will preserve getters instead of evaluating them. */

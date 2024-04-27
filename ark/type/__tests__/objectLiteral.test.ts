@@ -4,7 +4,7 @@ import {
 	writeUnboundableMessage,
 	writeUnresolvableMessage
 } from "@arktype/schema"
-import { printable, reference } from "@arktype/util"
+import { printable, registeredReference } from "@arktype/util"
 import { scope, type } from "arktype"
 import { writeInvalidSpreadTypeMessage } from "../parser/objectLiteral.js"
 
@@ -42,7 +42,7 @@ contextualize(
 
 		it("symbol key", () => {
 			const s = Symbol()
-			const name = reference(s)
+			const name = registeredReference(s)
 			const t = type({
 				[s]: "string"
 			})
@@ -89,9 +89,16 @@ contextualize(
 			attest<{ "a?": string }>(t.infer)
 		})
 
-		// TODO: reenable
-		// it("traverse optional", () => {
-		// 	const o = type({ "a?": "string" }).configure({ keys: "strict" })
+		it("traverse optional", () => {
+			const o = type({ "a?": "string" })
+			attest(o({ a: "a" })).snap({ a: "a" })
+			attest(o({})).snap({})
+			attest(o({ a: 1 }).toString()).snap("a must be a string (was number)")
+		})
+
+		// it("traverse strict optional", () => {
+		// 	// TODO: strict
+		// 	const o = type({ "a?": "string" })
 		// 	attest(o({ a: "a" })).snap({ a: "a" })
 		// 	attest(o({})).snap({})
 		// 	attest(o({ a: 1 }).toString()).snap("a must be a string (was number)")
@@ -217,19 +224,75 @@ contextualize(
 	},
 	"index",
 	() => {
-		it("index", () => {
+		it("string index", () => {
 			const o = type({ "[string]": "string" })
 			attest<{ [x: string]: string }>(o.infer)
+			attest(o.json).snap({
+				domain: "object",
+				index: [{ key: "string", value: "string" }]
+			})
+
+			attest(o({})).equals({})
+			attest(o({ a: "a", b: "b" })).equals({ a: "a", b: "b" })
+
+			const validWithSymbol = { a: "a", [Symbol()]: null }
+			attest(validWithSymbol).equals(validWithSymbol)
+
+			attest(o({ a: 1 }).toString()).snap("a must be a string (was number)")
+			attest(o({ a: true, b: false }).toString())
+				.snap(`a must be a string (was true)
+b must be a string (was false)`)
+		})
+
+		it("symbol index", () => {
+			const o = type({ "[symbol]": "1" })
+			attest<{ [x: symbol]: 1 }>(o.infer)
+			attest(o.json).snap({
+				domain: "object",
+				index: [{ key: "symbol", value: { unit: 1 } }]
+			})
+
+			attest(o({})).equals({})
+
+			attest(o({ a: 999 })).unknown.snap({ a: 999 })
+
+			const zildjian = Symbol()
+			const zildjianName = printable(zildjian)
+
+			// I've been dope, suspenseful with a pencil
+			// Ever since...
+			const prince = Symbol()
+			const princeName = printable(prince)
+
+			attest(o({ [zildjian]: 1, [prince]: 1 })).equals({
+				[zildjian]: 1,
+				[prince]: 1
+			})
+
+			attest({ a: 0, [zildjian]: 1 }).equals({ a: 0, [zildjian]: 1 })
+
+			attest(o({ [zildjian]: 0 }).toString()).equals(
+				`value at [${zildjianName}] must be 1 (was 0)`
+			)
+			attest(o({ [prince]: null, [zildjian]: undefined }).toString())
+				.snap(`value at [${princeName}] must be 1 (was null)
+value at [${zildjianName}] must be 1 (was undefined)`)
 		})
 
 		it("enumerable indexed union", () => {
 			const o = type({ "['foo' | 'bar']": "string" })
-			attest<{ foo: string; bar: string }>(o.infer)
+			const expected = type({ foo: "string", bar: "string" })
+			attest<typeof expected>(o)
+			attest(o.json).equals(expected.json)
 		})
 
 		it("non-enumerable indexed union", () => {
 			const o = type({ "[string | symbol]": "string" })
 			attest<{ [x: string]: string; [x: symbol]: string }>(o.infer)
+			attest(o.json).snap({
+				domain: "object",
+				index: [{ key: ["string", "symbol"], value: "string" }]
+			})
 		})
 
 		it("multiple indexed", () => {
@@ -238,6 +301,13 @@ contextualize(
 				"[symbol]": "number"
 			})
 			attest<{ [x: string]: string; [x: symbol]: number }>(o.infer)
+			attest(o.json).snap({
+				domain: "object",
+				index: [
+					{ key: "string", value: "string" },
+					{ key: "symbol", value: "number" }
+				]
+			})
 		})
 
 		it("all key kinds", () => {
@@ -249,6 +319,14 @@ contextualize(
 			attest<{ [x: string]: string; required: "foo"; optional?: "bar" }>(
 				o.infer
 			)
+			attest(o.json).snap({
+				domain: "object",
+				prop: [
+					{ key: "optional", optional: true, value: { unit: "bar" } },
+					{ key: "required", value: { unit: "foo" } }
+				],
+				index: [{ key: "string", value: "string" }]
+			})
 		})
 
 		it("index key from scope", () => {
@@ -261,6 +339,15 @@ contextualize(
 			type Key = symbol | "foo" | "bar" | "baz"
 			attest<Key>(types.key.infer)
 			attest<Record<Key, string>>(types.obj.infer)
+			attest(types.obj.json).snap({
+				domain: "object",
+				index: [
+					{
+						key: ["symbol", { unit: "bar" }, { unit: "baz" }, { unit: "foo" }],
+						value: "string"
+					}
+				]
+			})
 		})
 
 		it("syntax error in index definition", () => {
@@ -314,6 +401,10 @@ contextualize(
 		it("escaped index", () => {
 			const o = type({ "\\[string]": "string" })
 			attest<{ "[string]": string }>(o.infer)
+			attest(o.json).snap({
+				domain: "object",
+				prop: [{ key: "[string]", value: "string" }]
+			})
 		})
 	}
 )

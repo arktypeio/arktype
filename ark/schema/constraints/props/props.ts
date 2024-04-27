@@ -3,7 +3,7 @@ import {
 	type Key,
 	conflatenateAll,
 	flatMorph,
-	reference
+	registeredReference
 } from "@arktype/util"
 import type { Node } from "../../node.js"
 import type { RawSchema } from "../../schema.js"
@@ -38,7 +38,7 @@ export class PropsGroup extends DynamicBase<PropsGroupInput> {
 	)
 	readonly nameSet =
 		this.prop ? flatMorph(this.prop, (i, node) => [node.key, 1] as const) : {}
-	readonly nameSetReference = reference(this.nameSet)
+	readonly nameSetReference = registeredReference(this.nameSet)
 	readonly description = describeProps(this, "description")
 	readonly expression = describeProps(this, "expression")
 	readonly literalKeys = literalPropKeysOf(this.all)
