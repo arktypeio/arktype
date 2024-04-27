@@ -2,7 +2,9 @@ import { stringAndSymbolicEntriesOf, throwParseError } from "@arktype/util"
 import type { SchemaDef } from "../../node.js"
 import type { RawSchema } from "../../schema.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
+import { Disjoint } from "../../shared/disjoint.js"
 import { implementNode, type SchemaKind } from "../../shared/implement.js"
+import { intersectNodes } from "../../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/traversal.js"
 import { RawConstraint } from "../constraint.js"
 
@@ -50,7 +52,24 @@ export const indexImplementation = implementNode<IndexDeclaration>({
 		description: node => `[${node.key.expression}]: ${node.value.description}`
 	},
 	intersections: {
-		index: l => l
+		index: (l, r, ctx) => {
+			if (l.key.equals(r.key)) {
+				const valueIntersection = intersectNodes(l.value, r.value, ctx)
+				const value =
+					valueIntersection instanceof Disjoint ?
+						ctx.$.keywords.never.raw
+					:	valueIntersection
+				return ctx.$.node("index", { key: l.key, value })
+			}
+
+			// if r constrains all of l's keys to a subtype of l's value, r is a subtype of l
+			if (l.key.extends(r.key) && l.value.subsumes(r.value)) return r
+			// if l constrains all of r's keys to a subtype of r's value, l is a subtype of r
+			if (r.key.extends(l.key) && r.value.subsumes(l.value)) return l
+
+			// other relationships between index signatures can't be generally reduced
+			return null
+		}
 	}
 })
 

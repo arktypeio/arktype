@@ -308,6 +308,28 @@ value at [${zildjianName}] must be 1 (was undefined)`)
 					{ key: "symbol", value: "number" }
 				]
 			})
+
+			attest(o({})).equals({})
+			attest(o({ foo: "f" })).equals({ foo: "f" })
+
+			const sym = Symbol()
+
+			const symName = printable(sym)
+
+			const validWithStringsAndSymbols = {
+				str: "string",
+				[sym]: 8675309
+			}
+
+			attest(o(validWithStringsAndSymbols)).equals(validWithStringsAndSymbols)
+
+			attest(
+				o({
+					str: 100,
+					[sym]: "💯"
+				}).toString()
+			).snap(`str must be a string (was number)
+value at [${symName}] must be a number (was string)`)
 		})
 
 		it("all key kinds", () => {
@@ -327,6 +349,17 @@ value at [${zildjianName}] must be 1 (was undefined)`)
 				],
 				index: [{ key: "string", value: "string" }]
 			})
+
+			const valid: typeof o.infer = { required: "foo", other: "bar" }
+			attest(o(valid)).equals(valid)
+			attest(
+				o({
+					optional: "wrongString",
+					other: 0n
+				}).toString()
+			).snap(`optional must be "bar" (was "wrongString")
+required must be "foo" (was missing)
+other must be a string (was bigint)`)
 		})
 
 		it("index key from scope", () => {
