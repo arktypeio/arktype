@@ -88,12 +88,12 @@ export class CompiledFunction<
 		return this.block(`for (const k in ${object})`, body)
 	}
 
-	block(prefix: string, contents: (self: this) => this): this {
+	block(prefix: string, contents: (self: this) => this, suffix = ""): this {
 		this.line(`${prefix} {`)
 		this.indent()
 		contents(this)
 		this.dedent()
-		return this.line("}")
+		return this.line(`}${suffix}`)
 	}
 
 	return(expression: CoercibleValue = ""): this {

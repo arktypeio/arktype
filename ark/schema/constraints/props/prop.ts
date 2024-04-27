@@ -41,7 +41,7 @@ export type PropDeclaration = declareNode<{
 }>
 
 export interface PropErrorContext extends BaseErrorContext<"prop"> {
-	key: Key
+	missingValueDescription: string
 }
 
 export const propImplementation = implementNode<PropDeclaration>({
@@ -65,8 +65,8 @@ export const propImplementation = implementNode<PropDeclaration>({
 			`${node.compiledKey}${node.optional ? "?" : ""}: ${
 				node.value.description
 			}`,
-		expected: () => "defined",
-		actual: () => null
+		expected: ctx => ctx.missingValueDescription,
+		actual: () => "missing"
 	},
 	intersections: {
 		prop: (l, r, ctx) => {
@@ -99,9 +99,8 @@ export class PropNode extends RawConstraint<PropDeclaration> {
 
 	errorContext = Object.freeze({
 		code: "prop",
-		description: this.description,
-		key: this.key
-	})
+		missingValueDescription: this.value.description
+	} satisfies PropErrorContext)
 
 	compiledErrorContext: string = compileErrorContext(this.errorContext)
 

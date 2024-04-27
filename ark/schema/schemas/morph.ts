@@ -5,7 +5,6 @@ import {
 	type BuiltinObjects,
 	type listable,
 	type Primitive,
-	reference,
 	registeredReference,
 	throwParseError
 } from "@arktype/util"
@@ -143,7 +142,7 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 
 export class MorphNode extends RawSchema<MorphDeclaration> {
 	serializedMorphs: string[] = (this.json as any).morphs
-	compiledMorphs = `[${this.serializedMorphs.map(reference)}]`
+	compiledMorphs = `[${this.serializedMorphs}]`
 	outValidator = this.to?.traverseApply ?? null
 	outValidatorReference: string =
 		this.to ?

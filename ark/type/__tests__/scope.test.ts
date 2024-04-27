@@ -356,8 +356,9 @@ contextualize(() => {
 			b.c.c = b.c
 
 			attest(types.a(a)).equals(a)
-			attest(types.a({ b: { c: {} } }).toString()).snap(`b.c.b must be defined
-b.c.c must be defined`)
+			attest(types.a({ b: { c: {} } }).toString())
+				.snap(`b.c.b must be { c: a&b } (was missing)
+b.c.c must be a&b (was missing)`)
 
 			attest(types.b.json).snap({
 				domain: "object",

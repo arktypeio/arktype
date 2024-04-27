@@ -81,37 +81,38 @@ export class PropsGroup extends DynamicBase<PropsGroupInput> {
 		this.prop?.forEach(prop => js.check(prop))
 		this.sequence?.compile(js)
 		if (this.sequence) js.check(this.sequence)
-		js.forIn(js.data, () => {
-			if (this.onExtraneousKey) js.let("matched", false)
+		Object.getOwnPropertySymbols
+		js.const("keys", "Object.keys(data)")
+		js.const("symbols", "Object.getOwnPropertySymbols(data)")
+		js.if("symbols.length", () => js.line("keys.push(...symbols)"))
+		js.for("i < keys.length", () => this.compileExhaustiveEntry(js))
+	}
 
-			this.index?.forEach(node => {
-				js.if(`${js.invoke(node.key, { arg: "k", kind: "Allows" })}`, () => {
-					if (js.traversalKind === "Allows") {
-						js.if(
-							`!${js.invoke(node.value, {
-								arg: `${js.data}[k]`
-							})}`,
-							() => js.return(false)
-						)
-					} else js.line(js.invoke(node.value, { arg: `${js.data}[k]` }))
+	protected compileExhaustiveEntry(js: NodeCompiler): NodeCompiler {
+		js.const("k", "keys[i]")
 
-					if (this.onExtraneousKey) js.set("matched", true)
+		if (this.onExtraneousKey) js.let("matched", false)
 
-					return js
-				})
+		this.index?.forEach(node => {
+			js.if(`${js.invoke(node.key, { arg: "k", kind: "Allows" })}`, () => {
+				js.checkReferenceKey("k", node.value)
+				if (this.onExtraneousKey) js.set("matched", true)
+				return js
 			})
-			if (this.onExtraneousKey) {
-				if (this.prop?.length !== 0)
-					js.line(`matched ||= k in ${this.nameSetReference}`)
-
-				if (this.sequence)
-					js.line(`matched ||= ${arrayIndexMatcherReference}.test(k)`)
-
-				// TODO: replace error
-				js.if("!matched", () => js.line(`throw new Error("strict")`))
-			}
-			return js
 		})
+
+		if (this.onExtraneousKey) {
+			if (this.prop?.length !== 0)
+				js.line(`matched ||= k in ${this.nameSetReference}`)
+
+			if (this.sequence)
+				js.line(`matched ||= ${arrayIndexMatcherReference}.test(k)`)
+
+			// TODO: replace error
+			js.if("!matched", () => js.line(`throw new Error("strict")`))
+		}
+
+		return js
 	}
 }
 
