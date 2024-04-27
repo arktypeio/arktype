@@ -17,7 +17,10 @@ import type { DivisorNode } from "./constraints/refinement/divisor.js"
 import type { BoundNodesByKind } from "./constraints/refinement/kinds.js"
 import type { RegexNode } from "./constraints/refinement/regex.js"
 import type { IndexNode } from "./constraints/structural/index.js"
-import type { PropNode } from "./constraints/structural/prop.js"
+import type {
+	OptionalNode,
+	RequiredNode
+} from "./constraints/structural/prop.js"
 import type { SequenceNode } from "./constraints/structural/sequence.js"
 import type { StructureNode } from "./constraints/structural/structure.js"
 import type { Inner, NodeDef, reducibleKindOf } from "./kinds.js"
@@ -301,7 +304,8 @@ interface NodesByKind extends BoundNodesByKind {
 	divisor: DivisorNode
 	regex: RegexNode
 	predicate: PredicateNode
-	prop: PropNode
+	required: RequiredNode
+	optional: OptionalNode
 	index: IndexNode
 	sequence: SequenceNode
 	structure: StructureNode

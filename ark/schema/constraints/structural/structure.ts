@@ -16,8 +16,8 @@ export type ExtraneousKeyBehavior = "ignore" | ExtraneousKeyRestriction
 export type ExtraneousKeyRestriction = "throw" | "prune"
 
 export interface StructureDef extends BaseMeta {
-	optional?: readonly PropDef<"optional">[]
-	required?: readonly PropDef<"required">[]
+	optional?: readonly PropDef[]
+	required?: readonly PropDef[]
 	index?: readonly IndexDef[]
 	sequence?: SequenceDef
 	onExtraneousKey?: ExtraneousKeyBehavior

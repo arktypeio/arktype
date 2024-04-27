@@ -41,7 +41,12 @@ export const basisKinds = ["unit", "proto", "domain"] as const
 
 export type BasisKind = (typeof basisKinds)[number]
 
-export const structuralKinds = ["prop", "index", "sequence"] as const
+export const structuralKinds = [
+	"required",
+	"optional",
+	"index",
+	"sequence"
+] as const
 
 export type StructuralKind = (typeof structuralKinds)[number]
 

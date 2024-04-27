@@ -24,9 +24,12 @@ import {
 	IndexNode
 } from "./constraints/structural/index.js"
 import {
-	type PropDeclaration,
-	propImplementation,
-	PropNode
+	type OptionalDeclaration,
+	optionalImplementation,
+	OptionalNode,
+	type RequiredDeclaration,
+	requiredImplementation,
+	RequiredNode
 } from "./constraints/structural/prop.js"
 import {
 	type SequenceDeclaration,
@@ -89,7 +92,8 @@ export interface NodeDeclarationsByKind extends BoundDeclarations {
 	structure: StructureDeclaration
 	sequence: SequenceDeclaration
 	divisor: DivisorDeclaration
-	prop: PropDeclaration
+	required: RequiredDeclaration
+	optional: OptionalDeclaration
 	index: IndexDeclaration
 	regex: RegexDeclaration
 	predicate: PredicateDeclaration
@@ -110,7 +114,8 @@ export const nodeImplementationsByKind: Record<
 	divisor: divisorImplementation,
 	regex: regexImplementation,
 	predicate: predicateImplementation,
-	prop: propImplementation,
+	required: requiredImplementation,
+	optional: optionalImplementation,
 	index: indexImplementation,
 	sequence: sequenceImplementation,
 	structure: structureImplementation
@@ -131,7 +136,8 @@ export const nodeClassesByKind: Record<
 	divisor: DivisorNode,
 	regex: RegexNode,
 	predicate: PredicateNode,
-	prop: PropNode,
+	required: RequiredNode,
+	optional: OptionalNode,
 	index: IndexNode,
 	sequence: SequenceNode,
 	structure: StructureNode

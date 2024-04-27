@@ -11,6 +11,7 @@ import { Disjoint } from "../../shared/disjoint.js"
 import {
 	compileErrorContext,
 	implementNode,
+	type ConstraintIntersection,
 	type SchemaKind
 } from "../../shared/implement.js"
 import { intersectNodes } from "../../shared/intersections.js"
@@ -19,95 +20,54 @@ import { RawConstraint } from "../constraint.js"
 
 export type PropKind = "required" | "optional"
 
-export interface PropDef<propKind extends PropKind = PropKind>
-	extends BaseMeta {
+export interface PropDef extends BaseMeta {
 	readonly key: Key
 	readonly value: SchemaDef
-	readonly optional?: propKind extends "optional" ? true : false
 }
 
-export interface PropInner<propKind extends PropKind = PropKind>
-	extends PropDef<propKind> {
+export interface PropInner extends PropDef {
 	readonly value: RawSchema
 }
 
-export type PropDeclaration<propKind extends PropKind = PropKind> =
-	declareNode<{
-		kind: "prop"
-		def: PropDef<propKind>
-		normalizedDef: PropDef<propKind>
-		inner: PropInner<propKind>
-		errorContext: PropErrorContext
-		prerequisite: object
-		intersectionIsOpen: true
-		childKind: SchemaKind
-	}>
-
-export interface PropErrorContext extends BaseErrorContext<"prop"> {
-	missingValueDescription: string
+type BasePropDeclaration<kind extends PropKind = PropKind> = {
+	kind: kind
+	def: PropDef
+	normalizedDef: PropDef
+	inner: PropInner
+	prerequisite: object
+	intersectionIsOpen: true
+	childKind: SchemaKind
 }
 
-export const propImplementation = implementNode<PropDeclaration>({
-	kind: "prop",
-	hasAssociatedError: true,
-	intersectionIsOpen: true,
-	keys: {
-		key: {},
-		value: {
-			child: true,
-			parse: (def, ctx) => ctx.$.schema(def)
-		},
-		optional: {
-			// normalize { optional: false } to {}
-			parse: def => def || undefined
-		}
-	},
-	normalize: def => def,
-	defaults: {
-		description: node =>
-			`${node.compiledKey}${node.optional ? "?" : ""}: ${
-				node.value.description
-			}`,
-		expected: ctx => ctx.missingValueDescription,
-		actual: () => "missing"
-	},
-	intersections: {
-		prop: (l, r, ctx) => {
-			if (l.key !== r.key) return null
+export const intersectProps: ConstraintIntersection<PropKind, PropKind> = (
+	l,
+	r,
+	ctx
+) => {
+	if (l.key !== r.key) return null
 
-			const key = l.key
-			let value = intersectNodes(l.value, r.value, ctx)
-			const optional = l.optional === true && r.optional === true
-			if (value instanceof Disjoint) {
-				if (optional) value = ctx.$.keywords.never.raw
-				else return value.withPrefixKey(l.compiledKey)
-			}
-			return ctx.$.node("prop", {
-				key,
-				value,
-				optional
-			})
-		}
+	const key = l.key
+	let value = intersectNodes(l.value, r.value, ctx)
+	const kind: PropKind = l.required || r.required ? "required" : "optional"
+	if (value instanceof Disjoint) {
+		if (kind === "optional") value = ctx.$.keywords.never.raw
+		else return value.withPrefixKey(l.compiledKey)
 	}
-})
+	return ctx.$.node(kind, {
+		key,
+		value
+	})
+}
 
-export class PropNode<
-	propKind extends PropKind = PropKind
-> extends RawConstraint<PropDeclaration<propKind>> {
-	required = !this.optional
+export abstract class PropNode<
+	kind extends PropKind = PropKind
+> extends RawConstraint<
+	kind extends "required" ? RequiredDeclaration : OptionalDeclaration
+> {
+	required = this.kind === "required"
 	impliedBasis = this.$.keywords.object.raw
 	serializedKey = compileSerializedValue(this.key)
 	compiledKey = typeof this.key === "string" ? this.key : this.serializedKey
-	expression = `${this.compiledKey}${this.optional ? "?" : ""}: ${
-		this.value.expression
-	}`
-
-	errorContext = Object.freeze({
-		code: "prop",
-		missingValueDescription: this.value.description
-	} satisfies PropErrorContext)
-
-	compiledErrorContext: string = compileErrorContext(this.errorContext)
 
 	traverseAllows: TraverseAllows<object> = (data, ctx) => {
 		if (this.key in data) {
@@ -123,7 +83,7 @@ export class PropNode<
 	traverseApply: TraverseApply<object> = (data, ctx) => {
 		ctx.path.push(this.key)
 		if (this.key in data) this.value.traverseApply((data as any)[this.key], ctx)
-		else if (this.required) ctx.error(this.errorContext)
+		else if (this.hasKind("required")) ctx.error(this.errorContext)
 		ctx.path.pop()
 	}
 
@@ -136,7 +96,7 @@ export class PropNode<
 				arg: `${js.data}${js.prop(this.key)}`
 			})
 		)
-		if (this.required) {
+		if (this.hasKind("required")) {
 			js.else(() => {
 				if (js.traversalKind === "Apply")
 					return js.line(`ctx.error(${this.compiledErrorContext})`)
@@ -151,4 +111,72 @@ export class PropNode<
 		if (requiresContext) js.line(`ctx.path.pop()`)
 		if (js.traversalKind === "Allows") js.return(true)
 	}
+}
+
+export interface RequiredErrorContext extends BaseErrorContext<"required"> {
+	missingValueDescription: string
+}
+
+export type RequiredDeclaration = declareNode<
+	BasePropDeclaration<"required"> & { errorContext: RequiredErrorContext }
+>
+
+export class RequiredNode extends PropNode<"required"> {
+	expression = `${this.compiledKey}: ${this.value.expression}`
+
+	errorContext = Object.freeze({
+		code: "required",
+		missingValueDescription: this.value.description
+	} satisfies RequiredErrorContext)
+
+	compiledErrorContext: string = compileErrorContext(this.errorContext)
+}
+
+export const requiredImplementation = implementNode<RequiredDeclaration>({
+	kind: "required",
+	hasAssociatedError: true,
+	intersectionIsOpen: true,
+	keys: {
+		key: {},
+		value: {
+			child: true,
+			parse: (def, ctx) => ctx.$.schema(def)
+		}
+	},
+	normalize: def => def,
+	defaults: {
+		description: node => `${node.compiledKey}: ${node.value.description}`,
+		expected: ctx => ctx.missingValueDescription,
+		actual: () => "missing"
+	},
+	intersections: {
+		required: intersectProps,
+		optional: intersectProps
+	}
+})
+
+export const optionalImplementation = implementNode<OptionalDeclaration>({
+	kind: "optional",
+	hasAssociatedError: false,
+	intersectionIsOpen: true,
+	keys: {
+		key: {},
+		value: {
+			child: true,
+			parse: (def, ctx) => ctx.$.schema(def)
+		}
+	},
+	normalize: def => def,
+	defaults: {
+		description: node => `${node.compiledKey}?: ${node.value.description}`
+	},
+	intersections: {
+		optional: intersectProps
+	}
+})
+
+export type OptionalDeclaration = declareNode<BasePropDeclaration<"optional">>
+
+export class OptionalNode extends PropNode<"optional"> {
+	expression = `${this.compiledKey}?: ${this.value.expression}`
 }

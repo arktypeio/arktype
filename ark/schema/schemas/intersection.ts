@@ -302,9 +302,13 @@ export const intersectionImplementation =
 				child: true,
 				parse: intersectionChildKeyParser("predicate")
 			},
-			prop: {
+			required: {
 				child: true,
-				parse: intersectionChildKeyParser("prop")
+				parse: intersectionChildKeyParser("required")
+			},
+			optional: {
+				child: true,
+				parse: intersectionChildKeyParser("optional")
 			},
 			index: {
 				child: true,
