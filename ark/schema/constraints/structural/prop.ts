@@ -19,28 +19,29 @@ import { RawConstraint } from "../constraint.js"
 
 export type PropKind = "required" | "optional"
 
-export interface PropDef<kind extends PropKind = PropKind> extends BaseMeta {
+export interface PropDef<propKind extends PropKind = PropKind>
+	extends BaseMeta {
 	readonly key: Key
 	readonly value: SchemaDef
-	readonly optional?: kind extends "optional" ? true : false
+	readonly optional?: propKind extends "optional" ? true : false
 }
 
-export interface PropInner extends BaseMeta {
-	readonly key: Key
+export interface PropInner<propKind extends PropKind = PropKind>
+	extends PropDef<propKind> {
 	readonly value: RawSchema
-	readonly optional?: true
 }
 
-export type PropDeclaration = declareNode<{
-	kind: "prop"
-	def: PropDef
-	normalizedDef: PropDef
-	inner: PropInner
-	errorContext: PropErrorContext
-	prerequisite: object
-	intersectionIsOpen: true
-	childKind: SchemaKind
-}>
+export type PropDeclaration<propKind extends PropKind = PropKind> =
+	declareNode<{
+		kind: "prop"
+		def: PropDef<propKind>
+		normalizedDef: PropDef<propKind>
+		inner: PropInner<propKind>
+		errorContext: PropErrorContext
+		prerequisite: object
+		intersectionIsOpen: true
+		childKind: SchemaKind
+	}>
 
 export interface PropErrorContext extends BaseErrorContext<"prop"> {
 	missingValueDescription: string
@@ -90,7 +91,9 @@ export const propImplementation = implementNode<PropDeclaration>({
 	}
 })
 
-export class PropNode extends RawConstraint<PropDeclaration> {
+export class PropNode<
+	propKind extends PropKind = PropKind
+> extends RawConstraint<PropDeclaration<propKind>> {
 	required = !this.optional
 	impliedBasis = this.$.keywords.object.raw
 	serializedKey = compileSerializedValue(this.key)

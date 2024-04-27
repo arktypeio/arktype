@@ -7,37 +7,37 @@ import {
 	type DivisorDeclaration,
 	divisorImplementation,
 	DivisorNode
-} from "./constraints/refinements/divisor.js"
+} from "./constraints/refinement/divisor.js"
 import {
 	boundClassesByKind,
 	type BoundDeclarations,
 	boundImplementationsByKind
-} from "./constraints/refinements/kinds.js"
+} from "./constraints/refinement/kinds.js"
 import {
 	type RegexDeclaration,
 	regexImplementation,
 	RegexNode
-} from "./constraints/refinements/regex.js"
+} from "./constraints/refinement/regex.js"
 import {
 	type IndexDeclaration,
 	indexImplementation,
 	IndexNode
-} from "./constraints/structures/index.js"
+} from "./constraints/structural/index.js"
 import {
 	type PropDeclaration,
 	propImplementation,
 	PropNode
-} from "./constraints/structures/prop.js"
+} from "./constraints/structural/prop.js"
 import {
 	type SequenceDeclaration,
 	sequenceImplementation,
 	SequenceNode
-} from "./constraints/structures/sequence.js"
+} from "./constraints/structural/sequence.js"
 import {
 	type StructureDeclaration,
 	structureImplementation,
 	StructureNode
-} from "./constraints/structures/structure.js"
+} from "./constraints/structural/structure.js"
 import type { RawNode } from "./node.js"
 import {
 	type AliasDeclaration,

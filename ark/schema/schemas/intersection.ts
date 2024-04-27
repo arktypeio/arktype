@@ -17,7 +17,7 @@ import type {
 	ExtraneousKeyBehavior,
 	ExtraneousKeyRestriction,
 	StructureNode
-} from "../constraints/structures/structure.js"
+} from "../constraints/structural/structure.js"
 import type { Inner, MutableInner, NodeDef, Prerequisite } from "../kinds.js"
 import type { Constraint, Node } from "../node.js"
 import type { NodeParseContext } from "../parse.js"
