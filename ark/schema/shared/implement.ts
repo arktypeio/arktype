@@ -13,7 +13,7 @@ import {
 	type requireKeys,
 	type show
 } from "@arktype/util"
-import type { StructureInner } from "../constraints/structural/structure.js"
+import type { StructureInner } from "../constraints/structure/structure.js"
 import type { Declaration, Inner, errorContext } from "../kinds.js"
 import type { Node, RawNode } from "../node.js"
 import type { NodeParseContext } from "../parse.js"
@@ -22,7 +22,7 @@ import type {
 	schemaKindOrRightOf,
 	schemaKindRightOf
 } from "../schema.js"
-import type { IntersectionInner } from "../schemas/intersection.js"
+import type { IntersectionDef } from "../schemas/intersection.js"
 import type {
 	NodeConfig,
 	ParsedUnknownNodeConfig,
@@ -136,7 +136,7 @@ export const structuralKeys = flatMorph(
 export const discriminatingIntersectionKeys = {
 	...constraintKeys,
 	onExtraneousKey: 1
-} as const satisfies keySetOf<IntersectionInner>
+} as const satisfies keySetOf<IntersectionDef>
 
 type RightsByKind = accumulateRightKinds<OrderedNodeKinds, {}>
 
@@ -300,6 +300,7 @@ interface CommonNodeImplementationInput<d extends RawNodeDeclaration> {
 	keys: KeyDefinitions<d>
 	normalize: (schema: d["def"]) => d["normalizedDef"]
 	hasAssociatedError: d["errorContext"] extends null ? false : true
+	finalizeJson?: (json: { [k in keyof d["inner"]]: JsonData }) => Json
 	collapsibleKey?: keyof d["inner"]
 	reduce?: (
 		inner: d["inner"],

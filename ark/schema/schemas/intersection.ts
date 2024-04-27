@@ -4,20 +4,26 @@ import {
 	type array,
 	conflatenateAll,
 	entriesOf,
+	flatMorph,
+	hasDomain,
 	isArray,
 	isEmptyObject,
 	type listable,
+	type mutable,
 	omit,
 	type show,
 	splitByKeys,
 	throwInternalError
 } from "@arktype/util"
 import type { BaseConstraintNode } from "../constraints/constraint.js"
+import type { PredicateNode } from "../constraints/predicate.js"
+import type { PropKind } from "../constraints/structure/prop.js"
 import type {
 	ExtraneousKeyBehavior,
 	ExtraneousKeyRestriction,
+	StructureDef,
 	StructureNode
-} from "../constraints/structural/structure.js"
+} from "../constraints/structure/structure.js"
 import type { Inner, MutableInner, NodeDef, Prerequisite } from "../kinds.js"
 import type { Constraint, Node } from "../node.js"
 import type { NodeParseContext } from "../parse.js"
@@ -34,6 +40,7 @@ import {
 	type IntersectionContext,
 	type OpenNodeKind,
 	type RefinementKind,
+	structuralKeys,
 	type StructuralKind
 } from "../shared/implement.js"
 import { intersectNodes } from "../shared/intersections.js"
@@ -49,9 +56,16 @@ export type IntersectionInner = show<
 	BaseMeta & {
 		domain?: DomainNode
 		proto?: ProtoNode
+		structure?: StructureNode
+		predicate?: array<PredicateNode>
 	} & {
-		[k in ConditionalIntersectionKey]?: conditionalInnerValueOfKey<k>
+		[k in RefinementKind]?: intersectionChildInnerValueOf<k>
 	}
+>
+
+export type NormalizedIntersectionDef = Omit<
+	IntersectionDef,
+	StructuralKind | "onExtraneousKey"
 >
 
 export type IntersectionDef<inferredBasis = any> = show<
@@ -64,7 +78,7 @@ export type IntersectionDef<inferredBasis = any> = show<
 export type IntersectionDeclaration = declareNode<{
 	kind: "intersection"
 	def: IntersectionDef
-	normalizedDef: IntersectionDef
+	normalizedDef: NormalizedIntersectionDef
 	inner: IntersectionInner
 	reducibleTo: "intersection" | IntersectionBasisKind
 	errorContext: {
@@ -248,7 +262,20 @@ export const intersectionImplementation =
 	implementNode<IntersectionDeclaration>({
 		kind: "intersection",
 		hasAssociatedError: true,
-		normalize: schema => schema,
+		normalize: def => {
+			const structure: mutable<StructureDef> = {}
+			const normalized = flatMorph(def, (k, v) => {
+				if (k in structuralKeys) {
+					;(structure as any)[k] = v
+					return []
+				}
+				return [k, v]
+			}) as mutable<NormalizedIntersectionDef>
+			if (!isEmptyObject(structure)) normalized.structure = structure
+			return normalized
+		},
+		finalizeJson: ({ structure, ...rest }) =>
+			hasDomain(structure, "object") ? { ...structure, ...rest } : rest,
 		keys: {
 			domain: {
 				child: true,
@@ -301,25 +328,6 @@ export const intersectionImplementation =
 			predicate: {
 				child: true,
 				parse: intersectionChildKeyParser("predicate")
-			},
-			required: {
-				child: true,
-				parse: intersectionChildKeyParser("required")
-			},
-			optional: {
-				child: true,
-				parse: intersectionChildKeyParser("optional")
-			},
-			index: {
-				child: true,
-				parse: intersectionChildKeyParser("index")
-			},
-			sequence: {
-				child: true,
-				parse: intersectionChildKeyParser("sequence")
-			},
-			onExtraneousKey: {
-				parse: def => (def === "ignore" ? undefined : def)
 			}
 		},
 		// leverage reduction logic from intersection and identity to ensure initial
@@ -344,30 +352,6 @@ export const intersectionImplementation =
 		},
 		intersections: {
 			intersection: (l, r, ctx) => {
-				if (l.structure && r.structure) {
-					if (l.onExtraneousKey) {
-						const lKey = l.structure.keyof()
-						const disjointRKeys = r.structure.requiredLiteralKeys.filter(
-							k => !lKey.allows(k)
-						)
-						if (disjointRKeys.length) {
-							return Disjoint.from("presence", true, false).withPrefixKey(
-								disjointRKeys[0]
-							)
-						}
-					}
-					if (r.onExtraneousKey) {
-						const rKey = r.structure.keyof()
-						const disjointLKeys = l.structure.requiredLiteralKeys.filter(
-							k => !rKey.allows(k)
-						)
-						if (disjointLKeys.length) {
-							return Disjoint.from("presence", true, false).withPrefixKey(
-								disjointLKeys[0]
-							)
-						}
-					}
-				}
 				return intersectIntersections(l, r, ctx)
 			},
 			...defineRightwardIntersections("intersection", (l, r, ctx) => {
@@ -419,12 +403,6 @@ const intersectRootKeys = (
 		else throwInternalError(`Unexpected basis intersection ${resultBasis}`)
 	}
 
-	if (l.onExtraneousKey || r.onExtraneousKey) {
-		result.onExtraneousKey =
-			l.onExtraneousKey === "throw" || r.onExtraneousKey === "throw" ?
-				"throw"
-			:	"prune"
-	}
 	return result
 }
 
@@ -534,10 +512,6 @@ type conditionalSchemaValueOfKey<k extends ConditionalIntersectionKey> =
 
 type intersectionChildInnerValueOf<k extends IntersectionChildKind> =
 	k extends OpenNodeKind ? readonly Node<k>[] : Node<k>
-
-type conditionalInnerValueOfKey<k extends ConditionalIntersectionKey> =
-	k extends IntersectionChildKind ? intersectionChildInnerValueOf<k>
-	:	ConditionalTerminalIntersectionInner[k & ConditionalTerminalIntersectionKey]
 
 export type conditionalSchemaOf<t> = {
 	[k in conditionalIntersectionKeyOf<t>]?: conditionalSchemaValueOfKey<k>
