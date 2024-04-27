@@ -1,17 +1,9 @@
-import { flatMorph, omit, registeredReference, type Key } from "@arktype/util"
-import type { Node } from "../../node.js"
+import { flatMorph, registeredReference, type Key } from "@arktype/util"
 import type { RawSchema } from "../../schema.js"
-import type { IntersectionBasisKind } from "../../schemas/intersection.js"
-import { defineRightwardIntersections } from "../../schemas/utils.js"
 import type { NodeCompiler } from "../../shared/compile.js"
-import {
-	metaKeys,
-	type BaseMeta,
-	type declareNode
-} from "../../shared/declare.js"
+import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import { implementNode, type PropKind } from "../../shared/implement.js"
-import { intersectNodes } from "../../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/traversal.js"
 import { RawConstraint } from "../constraint.js"
 import type { IndexDef, IndexNode } from "./index.js"
@@ -52,7 +44,7 @@ export class StructureNode extends RawConstraint<StructureDeclaration> {
 	nameSet =
 		this.prop ? flatMorph(this.prop, (i, node) => [node.key, 1] as const) : {}
 	nameSetReference = registeredReference(this.nameSet)
-	expression = structureToString(this, "expression")
+	expression = structureExpression(this)
 
 	requiredLiteralKeys: Key[] = flatMorph(this.children, (i, node) =>
 		node.hasKind("prop") && node.required ? [i, node.key]
@@ -72,16 +64,16 @@ export class StructureNode extends RawConstraint<StructureDeclaration> {
 		...this.optionalLiteralKeys
 	]
 
-	private keyofCache: RawSchema | undefined
+	private _keyofCache: RawSchema | undefined
 	keyof(): RawSchema {
-		if (!this.keyofCache) {
+		if (!this._keyofCache) {
 			let branches = this.$.units(this.literalKeys).branches
 			this.index?.forEach(({ key }) => {
 				branches = branches.concat(key.branches)
 			})
-			this.keyofCache = this.$.node("union", branches)
+			this._keyofCache = this.$.node("union", branches)
 		}
-		return this.keyofCache
+		return this._keyofCache
 	}
 
 	traverseAllows: TraverseAllows<object> = (data, ctx) =>
@@ -145,6 +137,25 @@ export class StructureNode extends RawConstraint<StructureDeclaration> {
 	}
 }
 
+const _structureToString =
+	(childStringProp: "expression" | "description") =>
+	(inner: StructureInner) => {
+		if (inner.prop || inner.index) {
+			const parts = inner.index?.map(String) ?? []
+			inner.prop?.forEach(node => parts.push(node[childStringProp]))
+			const objectLiteralDescription = `${
+				inner.onExtraneousKey ? "exact " : ""
+			}{ ${parts.join(", ")} }`
+			return inner.sequence ?
+					`${objectLiteralDescription} & ${inner.sequence.description}`
+				:	objectLiteralDescription
+		}
+		return inner.sequence?.description ?? "{}"
+	}
+
+const structureDescription = _structureToString("description")
+const structureExpression = _structureToString("expression")
+
 export const structureImplementation = implementNode<StructureDeclaration>({
 	kind: "structure",
 	hasAssociatedError: false,
@@ -167,7 +178,7 @@ export const structureImplementation = implementNode<StructureDeclaration>({
 		}
 	},
 	defaults: {
-		description: describeStructure
+		description: structureDescription
 	},
 	intersections: {
 		structure: (l, r, ctx) => {
@@ -194,22 +205,3 @@ export const structureImplementation = implementNode<StructureDeclaration>({
 		}
 	}
 })
-
-const structureToString =
-	(childStringProp: "expression" | "description") =>
-	(inner: StructureInner) => {
-		if (inner.prop || inner.index) {
-			const parts = inner.index?.map(String) ?? []
-			inner.prop?.forEach(node => parts.push(node[childStringProp]))
-			const objectLiteralDescription = `${
-				inner.onExtraneousKey ? "exact " : ""
-			}{ ${parts.join(", ")} }`
-			return inner.sequence ?
-					`${objectLiteralDescription} & ${inner.sequence.description}`
-				:	objectLiteralDescription
-		}
-		return inner.sequence?.description ?? "{}"
-	}
-
-const describeStructure = structureToString("description")
-const structureExpression = structureToString("expression")
