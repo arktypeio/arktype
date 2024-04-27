@@ -77,7 +77,7 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): RawSchema => {
 			}
 		} else {
 			const value = ctx.$.parse(entry.value, ctx)
-			append(structure[entry.kind], {
+			structure[entry.kind] = append(structure[entry.kind], {
 				key: entry.inner,
 				value
 			})

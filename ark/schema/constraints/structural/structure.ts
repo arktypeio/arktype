@@ -1,10 +1,17 @@
-import { flatMorph, registeredReference, type Key } from "@arktype/util"
+import {
+	append,
+	flatMorph,
+	registeredReference,
+	type array,
+	type Key
+} from "@arktype/util"
 import type { RawSchema } from "../../schema.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import { implementNode, type StructuralKind } from "../../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/traversal.js"
+import { makeRootAndArrayPropertiesMutable } from "../../shared/utils.js"
 import { BaseConstraintNode } from "../constraint.js"
 import type { IndexDef, IndexNode } from "./index.js"
 import type { BasePropNode, PropDef } from "./prop.js"
@@ -16,19 +23,19 @@ export type ExtraneousKeyBehavior = "ignore" | ExtraneousKeyRestriction
 export type ExtraneousKeyRestriction = "throw" | "prune"
 
 export interface StructureDef extends BaseMeta {
-	optional?: readonly PropDef[]
-	required?: readonly PropDef[]
-	index?: readonly IndexDef[]
-	sequence?: SequenceDef
-	onExtraneousKey?: ExtraneousKeyBehavior
+	readonly optional?: readonly PropDef[]
+	readonly required?: readonly PropDef[]
+	readonly index?: readonly IndexDef[]
+	readonly sequence?: SequenceDef
+	readonly onExtraneousKey?: ExtraneousKeyBehavior
 }
 
 export interface StructureInner extends BaseMeta {
-	optional?: readonly BasePropNode[]
-	required?: readonly BasePropNode[]
-	index?: readonly IndexNode[]
-	sequence?: SequenceNode
-	onExtraneousKey?: ExtraneousKeyRestriction
+	readonly optional?: readonly BasePropNode[]
+	readonly required?: readonly BasePropNode[]
+	readonly index?: readonly IndexNode[]
+	readonly sequence?: SequenceNode
+	readonly onExtraneousKey?: ExtraneousKeyRestriction
 }
 
 export type StructureDeclaration = declareNode<{
@@ -50,8 +57,8 @@ export class StructureNode extends BaseConstraintNode<StructureDeclaration> {
 			:	this.required
 		:	this.optional ?? []
 
-	keySet = flatMorph(this.props, (i, node) => [node.key, 1] as const)
-	keySetReference = registeredReference(this.keySet)
+	propsByKey = flatMorph(this.props, (i, node) => [node.key, node] as const)
+	propsByKeyReference = registeredReference(this.propsByKey)
 	expression = structuralExpression(this)
 
 	requiredLiteralKeys: Key[] = this.required?.map(node => node.key) ?? []
@@ -63,16 +70,16 @@ export class StructureNode extends BaseConstraintNode<StructureDeclaration> {
 		...this.optionalLiteralKeys
 	]
 
-	private _keyofCache: RawSchema | undefined
+	private _keyof: RawSchema | undefined
 	keyof(): RawSchema {
-		if (!this._keyofCache) {
+		if (!this._keyof) {
 			let branches = this.$.units(this.literalKeys).branches
 			this.index?.forEach(({ index }) => {
 				branches = branches.concat(index.branches)
 			})
-			this._keyofCache = this.$.node("union", branches)
+			this._keyof = this.$.node("union", branches)
 		}
-		return this._keyofCache
+		return this._keyof
 	}
 
 	traverseAllows: TraverseAllows<object> = (data, ctx) =>
@@ -89,8 +96,21 @@ export class StructureNode extends BaseConstraintNode<StructureDeclaration> {
 		else this.compileEnumerable(js)
 	}
 
+	omit(...keys: array<RawSchema | Key>): StructureNode {
+		return this.$.node("structure", omitFromInner(this.inner, keys))
+	}
+
 	merge(r: StructureNode): StructureNode {
-		return r
+		const inner = makeRootAndArrayPropertiesMutable(
+			omitFromInner(r.inner, [r.keyof()])
+		)
+		if (r.required) inner.required = append(inner.required, r.required)
+		if (r.optional) inner.optional = append(inner.optional, r.optional)
+		if (r.index) inner.index = append(inner.index, r.index)
+		if (r.sequence) inner.sequence = r.sequence
+		if (r.onExtraneousKey) inner.onExtraneousKey = r.onExtraneousKey
+		else delete inner.onExtraneousKey
+		return this.$.node("structure", inner)
 	}
 
 	protected compileEnumerable(js: NodeCompiler): void {
@@ -126,7 +146,7 @@ export class StructureNode extends BaseConstraintNode<StructureDeclaration> {
 
 		if (this.onExtraneousKey) {
 			if (this.props?.length !== 0)
-				js.line(`matched ||= k in ${this.keySetReference}`)
+				js.line(`matched ||= k in ${this.propsByKeyReference}`)
 
 			if (this.sequence)
 				js.line(`matched ||= ${arrayIndexMatcherReference}.test(k)`)
@@ -137,6 +157,31 @@ export class StructureNode extends BaseConstraintNode<StructureDeclaration> {
 
 		return js
 	}
+}
+
+const omitFromInner = (
+	inner: StructureInner,
+	keys: array<RawSchema | Key>
+): StructureInner => {
+	const result = { ...inner }
+	keys.forEach(k => {
+		if (result.required) {
+			result.required = result.required.filter(b =>
+				typeof k === "function" ? k.allows(b.key) : k === b.key
+			)
+		}
+		if (result.optional) {
+			result.optional = result.optional.filter(b =>
+				typeof k === "function" ? k.allows(b.key) : k === b.key
+			)
+		}
+		if (result.index && typeof k === "function") {
+			// we only have to filter index nodes if the input was a node, as
+			// literal keys should never subsume an index
+			result.index = result.index.filter(n => !n.index.extends(k))
+		}
+	})
+	return result
 }
 
 const createStructuralWriter =

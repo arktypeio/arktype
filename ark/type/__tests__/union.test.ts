@@ -113,14 +113,14 @@ contextualize(() => {
 		rawSchema([
 			{
 				domain: "object",
-				prop: {
+				required: {
 					key: "a",
 					value: { domain: "string" }
 				}
 			},
 			{
 				domain: "object",
-				prop: {
+				required: {
 					key: "b",
 					value: { domain: "number" }
 				}

@@ -23,8 +23,16 @@ import {
 	indexImplementation,
 	IndexNode
 } from "./constraints/structural/index.js"
-import { type OptionalDeclaration, optionalImplementation, OptionalNode } from "./constraints/structural/optional.js"
-import { type RequiredDeclaration, requiredImplementation, RequiredNode } from "./constraints/structural/required.js"
+import {
+	type OptionalDeclaration,
+	optionalImplementation,
+	OptionalNode
+} from "./constraints/structural/optional.js"
+import {
+	type RequiredDeclaration,
+	requiredImplementation,
+	RequiredNode
+} from "./constraints/structural/required.js"
 import {
 	type SequenceDeclaration,
 	sequenceImplementation,
