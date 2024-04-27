@@ -5,9 +5,9 @@ import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import { implementNode, type StructuralKind } from "../../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/traversal.js"
-import { RawConstraint } from "../constraint.js"
+import { BaseConstraintNode } from "../constraint.js"
 import type { IndexDef, IndexNode } from "./index.js"
-import type { PropDef, PropNode } from "./prop.js"
+import type { BasePropNode, PropDef } from "./prop.js"
 import type { SequenceDef, SequenceNode } from "./sequence.js"
 import { arrayIndexMatcherReference } from "./shared.js"
 
@@ -24,8 +24,8 @@ export interface StructureDef extends BaseMeta {
 }
 
 export interface StructureInner extends BaseMeta {
-	optional?: readonly PropNode[]
-	required?: readonly PropNode[]
+	optional?: readonly BasePropNode[]
+	required?: readonly BasePropNode[]
 	index?: readonly IndexNode[]
 	sequence?: SequenceNode
 	onExtraneousKey?: ExtraneousKeyRestriction
@@ -40,7 +40,7 @@ export type StructureDeclaration = declareNode<{
 	childKind: StructuralKind
 }>
 
-export class StructureNode extends RawConstraint<StructureDeclaration> {
+export class StructureNode extends BaseConstraintNode<StructureDeclaration> {
 	impliedBasis = this.$.keywords.object.raw
 
 	props =
@@ -87,6 +87,10 @@ export class StructureNode extends RawConstraint<StructureDeclaration> {
 	compile(js: NodeCompiler): void {
 		if (this.exhaustive) this.compileExhaustive(js)
 		else this.compileEnumerable(js)
+	}
+
+	merge(r: StructureNode): StructureNode {
+		return r
 	}
 
 	protected compileEnumerable(js: NodeCompiler): void {

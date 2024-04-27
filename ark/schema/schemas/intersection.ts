@@ -12,7 +12,7 @@ import {
 	splitByKeys,
 	throwInternalError
 } from "@arktype/util"
-import type { RawConstraint } from "../constraints/constraint.js"
+import type { BaseConstraintNode } from "../constraints/constraint.js"
 import type {
 	ExtraneousKeyBehavior,
 	ExtraneousKeyRestriction,
@@ -448,7 +448,7 @@ const intersectConstraints = (
 
 		if (!matched) {
 			if (result.isSchema()) s.types.push(result)
-			else s.l[i] = result as RawConstraint
+			else s.l[i] = result as BaseConstraintNode
 			matched = true
 		} else if (!s.l.includes(result as never)) {
 			return throwInternalError(

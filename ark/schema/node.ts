@@ -11,16 +11,14 @@ import {
 	shallowClone,
 	throwError
 } from "@arktype/util"
-import type { RawConstraint } from "./constraints/constraint.js"
+import type { BaseConstraintNode } from "./constraints/constraint.js"
 import type { PredicateNode } from "./constraints/predicate.js"
 import type { DivisorNode } from "./constraints/refinement/divisor.js"
 import type { BoundNodesByKind } from "./constraints/refinement/kinds.js"
 import type { RegexNode } from "./constraints/refinement/regex.js"
 import type { IndexNode } from "./constraints/structural/index.js"
-import type {
-	OptionalNode,
-	RequiredNode
-} from "./constraints/structural/prop.js"
+import type { OptionalNode } from "./constraints/structural/optional.js"
+import type { RequiredNode } from "./constraints/structural/required.js"
 import type { SequenceNode } from "./constraints/structural/sequence.js"
 import type { StructureNode } from "./constraints/structural/structure.js"
 import type { Inner, NodeDef, reducibleKindOf } from "./kinds.js"
@@ -315,4 +313,4 @@ export type Node<kind extends NodeKind> = NodesByKind[kind]
 
 export type SchemaDef<kind extends SchemaKind = SchemaKind> = NodeDef<kind>
 
-export type Constraint = RawConstraint
+export type Constraint = BaseConstraintNode

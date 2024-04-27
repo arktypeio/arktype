@@ -16,15 +16,15 @@ export interface BaseConstraintDeclaration extends RawNodeDeclaration {
 	kind: ConstraintKind
 }
 
-export abstract class RawConstraint<
+export abstract class BaseConstraintNode<
 	/** @ts-expect-error allow instantiation assignment to the base type */
 	out d extends BaseConstraintDeclaration = BaseConstraintDeclaration
 > extends RawNode<d> {
 	readonly [arkKind] = "constraint"
 	abstract readonly impliedBasis: RawSchema | null
-	readonly impliedSiblings?: RawConstraint[] | null
+	readonly impliedSiblings?: BaseConstraintNode[] | null
 
-	intersect<r extends RawConstraint>(
+	intersect<r extends BaseConstraintNode>(
 		r: r
 	): intersectConstraintKinds<d["kind"], r["kind"]> {
 		return intersectNodesRoot(this, r, this.$) as never
@@ -35,7 +35,7 @@ export type PrimitiveConstraintKind = Exclude<ConstraintKind, StructuralKind>
 
 export abstract class RawPrimitiveConstraint<
 	d extends BaseConstraintDeclaration
-> extends RawConstraint<d> {
+> extends BaseConstraintNode<d> {
 	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
 	abstract readonly compiledCondition: string
 	abstract readonly compiledNegation: string

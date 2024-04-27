@@ -2,21 +2,17 @@ import { compileSerializedValue, type Key } from "@arktype/util"
 import type { SchemaDef } from "../../node.js"
 import type { RawSchema } from "../../schema.js"
 import type { NodeCompiler } from "../../shared/compile.js"
-import type {
-	BaseErrorContext,
-	BaseMeta,
-	declareNode
-} from "../../shared/declare.js"
+import type { BaseMeta } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
-import {
-	compileErrorContext,
-	implementNode,
-	type ConstraintIntersection,
-	type SchemaKind
+import type {
+	ConstraintIntersection,
+	SchemaKind
 } from "../../shared/implement.js"
 import { intersectNodes } from "../../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/traversal.js"
-import { RawConstraint } from "../constraint.js"
+import { BaseConstraintNode } from "../constraint.js"
+import type { OptionalDeclaration } from "./optional.js"
+import type { RequiredDeclaration } from "./required.js"
 
 export type PropKind = "required" | "optional"
 
@@ -29,7 +25,7 @@ export interface PropInner extends PropDef {
 	readonly value: RawSchema
 }
 
-type BasePropDeclaration<kind extends PropKind = PropKind> = {
+export type BasePropDeclaration<kind extends PropKind = PropKind> = {
 	kind: kind
 	def: PropDef
 	normalizedDef: PropDef
@@ -59,9 +55,9 @@ export const intersectProps: ConstraintIntersection<PropKind, PropKind> = (
 	})
 }
 
-export abstract class PropNode<
+export abstract class BasePropNode<
 	kind extends PropKind = PropKind
-> extends RawConstraint<
+> extends BaseConstraintNode<
 	kind extends "required" ? RequiredDeclaration : OptionalDeclaration
 > {
 	required = this.kind === "required"
@@ -111,72 +107,4 @@ export abstract class PropNode<
 		if (requiresContext) js.line(`ctx.path.pop()`)
 		if (js.traversalKind === "Allows") js.return(true)
 	}
-}
-
-export interface RequiredErrorContext extends BaseErrorContext<"required"> {
-	missingValueDescription: string
-}
-
-export type RequiredDeclaration = declareNode<
-	BasePropDeclaration<"required"> & { errorContext: RequiredErrorContext }
->
-
-export class RequiredNode extends PropNode<"required"> {
-	expression = `${this.compiledKey}: ${this.value.expression}`
-
-	errorContext = Object.freeze({
-		code: "required",
-		missingValueDescription: this.value.description
-	} satisfies RequiredErrorContext)
-
-	compiledErrorContext: string = compileErrorContext(this.errorContext)
-}
-
-export const requiredImplementation = implementNode<RequiredDeclaration>({
-	kind: "required",
-	hasAssociatedError: true,
-	intersectionIsOpen: true,
-	keys: {
-		key: {},
-		value: {
-			child: true,
-			parse: (def, ctx) => ctx.$.schema(def)
-		}
-	},
-	normalize: def => def,
-	defaults: {
-		description: node => `${node.compiledKey}: ${node.value.description}`,
-		expected: ctx => ctx.missingValueDescription,
-		actual: () => "missing"
-	},
-	intersections: {
-		required: intersectProps,
-		optional: intersectProps
-	}
-})
-
-export const optionalImplementation = implementNode<OptionalDeclaration>({
-	kind: "optional",
-	hasAssociatedError: false,
-	intersectionIsOpen: true,
-	keys: {
-		key: {},
-		value: {
-			child: true,
-			parse: (def, ctx) => ctx.$.schema(def)
-		}
-	},
-	normalize: def => def,
-	defaults: {
-		description: node => `${node.compiledKey}?: ${node.value.description}`
-	},
-	intersections: {
-		optional: intersectProps
-	}
-})
-
-export type OptionalDeclaration = declareNode<BasePropDeclaration<"optional">>
-
-export class OptionalNode extends PropNode<"optional"> {
-	expression = `${this.compiledKey}?: ${this.value.expression}`
 }

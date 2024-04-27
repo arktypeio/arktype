@@ -1,14 +1,16 @@
-import {
-	type NodeDef,
-	type RawSchema,
-	tsKeywords,
-	type writeInvalidPropertyKeyMessage
+import type {
+	NodeDef,
+	RawSchema,
+	StructureNode,
+	writeInvalidPropertyKeyMessage
 } from "@arktype/schema"
 import {
+	append,
 	type Dict,
 	type ErrorMessage,
 	type Key,
 	type merge,
+	type mutable,
 	printable,
 	type show,
 	spliterate,
@@ -22,8 +24,8 @@ import type { validateString } from "./semantic/validate.js"
 import { Scanner } from "./string/shift/scanner.js"
 
 export const parseObjectLiteral = (def: Dict, ctx: ParseContext): RawSchema => {
-	const propNodes: NodeDef<"prop">[] = []
-	const indexNodes: NodeDef<"index">[] = []
+	let spread: StructureNode | undefined
+	const structure: mutable<NodeDef<"structure">, 2> = {}
 	// We only allow a spread operator to be used as the first key in an object
 	// because to match JS behavior any keys before the spread are overwritten
 	// by the values in the target object, so there'd be no useful purpose in having it
@@ -34,24 +36,12 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): RawSchema => {
 		// expecting non-spread entries
 		const spreadEntry = parsedEntries.shift()!
 		const spreadNode = ctx.$.parse(spreadEntry.value, ctx)
-		if (
-			!spreadNode.hasKind("intersection") ||
-			!spreadNode.extends(tsKeywords.object)
-		) {
+		if (!spreadNode.hasKind("intersection") || !spreadNode.structure) {
 			return throwParseError(
 				writeInvalidSpreadTypeMessage(printable(spreadEntry.value))
 			)
 		}
-		// TODO: move to props group merge in schema
-		// For each key on spreadNode, add it to our object.
-		// We filter out keys from the spreadNode that will be defined later on this same object
-		// because the currently parsed definition will overwrite them.
-		spreadNode.prop?.forEach(
-			spreadRequired =>
-				!parsedEntries.some(
-					({ inner: innerKey }) => innerKey === spreadRequired.key
-				) && propNodes.push(spreadRequired)
-		)
+		spread = spreadNode.structure
 	}
 	for (const entry of parsedEntries) {
 		if (entry.kind === "spread") return throwParseError(nonLeadingSpreadError)
@@ -67,28 +57,38 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): RawSchema => {
 			)
 
 			if (enumerable.length) {
-				propNodes.push(
-					...enumerable.map(k =>
-						ctx.$.node("prop", { key: k.unit as Key, value })
+				structure.required = append(
+					structure.required,
+					enumerable.map(k =>
+						ctx.$.node("required", { key: k.unit as Key, value })
 					)
 				)
-				if (nonEnumerable.length)
-					indexNodes.push(ctx.$.node("index", { index: nonEnumerable, value }))
-			} else indexNodes.push(ctx.$.node("index", { index: key, value }))
+				if (nonEnumerable.length) {
+					structure.index = append(
+						structure.index,
+						ctx.$.node("index", { index: nonEnumerable, value })
+					)
+				}
+			} else {
+				structure.index = append(
+					structure.index,
+					ctx.$.node("index", { index: key, value })
+				)
+			}
 		} else {
 			const value = ctx.$.parse(entry.value, ctx)
-			propNodes.push({
+			append(structure[entry.kind], {
 				key: entry.inner,
-				value,
-				optional: entry.kind === "optional"
+				value
 			})
 		}
 	}
 
+	const structureNode = ctx.$.node("structure", structure)
+
 	return ctx.$.schema({
 		domain: "object",
-		prop: propNodes,
-		index: indexNodes
+		structure: spread?.merge(structureNode) ?? structureNode
 	})
 }
 

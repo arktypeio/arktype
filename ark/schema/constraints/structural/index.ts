@@ -10,7 +10,7 @@ import { Disjoint } from "../../shared/disjoint.js"
 import { implementNode, type SchemaKind } from "../../shared/implement.js"
 import { intersectNodes } from "../../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/traversal.js"
-import { RawConstraint } from "../constraint.js"
+import { BaseConstraintNode } from "../constraint.js"
 
 export type IndexKeyKind = Exclude<SchemaKind, "unit">
 
@@ -89,7 +89,7 @@ export const indexImplementation = implementNode<IndexDeclaration>({
 	}
 })
 
-export class IndexNode extends RawConstraint<IndexDeclaration> {
+export class IndexNode extends BaseConstraintNode<IndexDeclaration> {
 	impliedBasis = this.$.keywords.object.raw
 	expression = `[${this.index.expression}]: ${this.value.expression}`
 
