@@ -73,8 +73,8 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): RawSchema => {
 					)
 				)
 				if (nonEnumerable.length)
-					indexNodes.push(ctx.$.node("index", { key: nonEnumerable, value }))
-			} else indexNodes.push(ctx.$.node("index", { key, value }))
+					indexNodes.push(ctx.$.node("index", { index: nonEnumerable, value }))
+			} else indexNodes.push(ctx.$.node("index", { index: key, value }))
 		} else {
 			const value = ctx.$.parse(entry.value, ctx)
 			propNodes.push({

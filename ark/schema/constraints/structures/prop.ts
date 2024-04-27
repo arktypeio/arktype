@@ -17,10 +17,12 @@ import { intersectNodes } from "../../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/traversal.js"
 import { RawConstraint } from "../constraint.js"
 
-export interface PropDef extends BaseMeta {
+export type PropKind = "required" | "optional"
+
+export interface PropDef<kind extends PropKind = PropKind> extends BaseMeta {
 	readonly key: Key
 	readonly value: SchemaDef
-	readonly optional?: boolean
+	readonly optional?: kind extends "optional" ? true : false
 }
 
 export interface PropInner extends BaseMeta {

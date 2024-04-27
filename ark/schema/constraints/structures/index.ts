@@ -17,12 +17,12 @@ export type IndexKeyKind = Exclude<SchemaKind, "unit">
 export type IndexKeyNode = Node<IndexKeyKind>
 
 export interface IndexDef extends BaseMeta {
-	readonly key: SchemaDef<IndexKeyKind>
+	readonly index: SchemaDef<IndexKeyKind>
 	readonly value: SchemaDef
 }
 
 export interface IndexInner extends BaseMeta {
-	readonly key: IndexKeyNode
+	readonly index: IndexKeyNode
 	readonly value: RawSchema
 }
 
@@ -41,7 +41,7 @@ export const indexImplementation = implementNode<IndexDeclaration>({
 	hasAssociatedError: false,
 	intersectionIsOpen: true,
 	keys: {
-		key: {
+		index: {
 			child: true,
 			parse: (def, ctx) => {
 				const key = ctx.$.schema(def)
@@ -65,23 +65,23 @@ export const indexImplementation = implementNode<IndexDeclaration>({
 	},
 	normalize: def => def,
 	defaults: {
-		description: node => `[${node.key.expression}]: ${node.value.description}`
+		description: node => `[${node.index.expression}]: ${node.value.description}`
 	},
 	intersections: {
 		index: (l, r, ctx) => {
-			if (l.key.equals(r.key)) {
+			if (l.index.equals(r.index)) {
 				const valueIntersection = intersectNodes(l.value, r.value, ctx)
 				const value =
 					valueIntersection instanceof Disjoint ?
 						ctx.$.keywords.never.raw
 					:	valueIntersection
-				return ctx.$.node("index", { key: l.key, value })
+				return ctx.$.node("index", { index: l.index, value })
 			}
 
 			// if r constrains all of l's keys to a subtype of l's value, r is a subtype of l
-			if (l.key.extends(r.key) && l.value.subsumes(r.value)) return r
+			if (l.index.extends(r.index) && l.value.subsumes(r.value)) return r
 			// if l constrains all of r's keys to a subtype of r's value, l is a subtype of r
-			if (r.key.extends(l.key) && r.value.subsumes(l.value)) return l
+			if (r.index.extends(l.index) && r.value.subsumes(l.value)) return l
 
 			// other relationships between index signatures can't be generally reduced
 			return null
@@ -91,11 +91,11 @@ export const indexImplementation = implementNode<IndexDeclaration>({
 
 export class IndexNode extends RawConstraint<IndexDeclaration> {
 	impliedBasis = this.$.keywords.object.raw
-	expression = `[${this.key.expression}]: ${this.value.expression}`
+	expression = `[${this.index.expression}]: ${this.value.expression}`
 
 	traverseAllows: TraverseAllows<object> = (data, ctx) =>
 		stringAndSymbolicEntriesOf(data).every(entry => {
-			if (this.key.traverseAllows(entry[0], ctx)) {
+			if (this.index.traverseAllows(entry[0], ctx)) {
 				// ctx will be undefined if this node isn't context-dependent
 				ctx?.path.push(entry[0])
 				const allowed = this.value.traverseAllows(entry[1], ctx)
@@ -107,7 +107,7 @@ export class IndexNode extends RawConstraint<IndexDeclaration> {
 
 	traverseApply: TraverseApply<object> = (data, ctx) =>
 		stringAndSymbolicEntriesOf(data).forEach(entry => {
-			if (this.key.traverseAllows(entry[0], ctx)) {
+			if (this.index.traverseAllows(entry[0], ctx)) {
 				ctx.path.push(entry[0])
 				this.value.traverseApply(entry[1], ctx)
 				ctx.path.pop()

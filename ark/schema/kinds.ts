@@ -4,26 +4,6 @@ import {
 	PredicateNode
 } from "./constraints/predicate.js"
 import {
-	type IndexDeclaration,
-	indexImplementation,
-	IndexNode
-} from "./constraints/props/index.js"
-import {
-	type PropDeclaration,
-	propImplementation,
-	PropNode
-} from "./constraints/props/prop.js"
-import {
-	type SequenceDeclaration,
-	sequenceImplementation,
-	SequenceNode
-} from "./constraints/props/sequence.js"
-import {
-	type StructureDeclaration,
-	structureImplementation,
-	StructureNode
-} from "./constraints/props/structure.js"
-import {
 	type DivisorDeclaration,
 	divisorImplementation,
 	DivisorNode
@@ -38,6 +18,26 @@ import {
 	regexImplementation,
 	RegexNode
 } from "./constraints/refinements/regex.js"
+import {
+	type IndexDeclaration,
+	indexImplementation,
+	IndexNode
+} from "./constraints/structures/index.js"
+import {
+	type PropDeclaration,
+	propImplementation,
+	PropNode
+} from "./constraints/structures/prop.js"
+import {
+	type SequenceDeclaration,
+	sequenceImplementation,
+	SequenceNode
+} from "./constraints/structures/sequence.js"
+import {
+	type StructureDeclaration,
+	structureImplementation,
+	StructureNode
+} from "./constraints/structures/structure.js"
 import type { RawNode } from "./node.js"
 import {
 	type AliasDeclaration,

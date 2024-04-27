@@ -13,13 +13,13 @@ import {
 } from "@arktype/util"
 import type { RawConstraint } from "./constraints/constraint.js"
 import type { PredicateNode } from "./constraints/predicate.js"
-import type { IndexNode } from "./constraints/props/index.js"
-import type { PropNode } from "./constraints/props/prop.js"
-import type { SequenceNode } from "./constraints/props/sequence.js"
-import type { StructureNode } from "./constraints/props/structure.js"
 import type { DivisorNode } from "./constraints/refinements/divisor.js"
 import type { BoundNodesByKind } from "./constraints/refinements/kinds.js"
 import type { RegexNode } from "./constraints/refinements/regex.js"
+import type { IndexNode } from "./constraints/structures/index.js"
+import type { PropNode } from "./constraints/structures/prop.js"
+import type { SequenceNode } from "./constraints/structures/sequence.js"
+import type { StructureNode } from "./constraints/structures/structure.js"
 import type { Inner, NodeDef, reducibleKindOf } from "./kinds.js"
 import type { RawSchema, Schema } from "./schema.js"
 import type { AliasNode } from "./schemas/alias.js"
@@ -40,16 +40,16 @@ import {
 	type BasisKind,
 	type NodeKind,
 	type OpenNodeKind,
-	type PropKind,
 	type RefinementKind,
 	type SchemaKind,
+	type StructuralKind,
 	type UnknownAttachments,
 	basisKinds,
 	constraintKinds,
 	precedenceOfKind,
-	propKinds,
 	refinementKinds,
-	schemaKinds
+	schemaKinds,
+	structuralKinds
 } from "./shared/implement.js"
 import {
 	TraversalContext,
@@ -190,8 +190,8 @@ export abstract class RawNode<
 		return includes(refinementKinds, this.kind)
 	}
 
-	isProp(): this is Node<PropKind> {
-		return includes(propKinds, this.kind)
+	isProp(): this is Node<StructuralKind> {
+		return includes(structuralKinds, this.kind)
 	}
 
 	isSchema(): this is RawSchema {

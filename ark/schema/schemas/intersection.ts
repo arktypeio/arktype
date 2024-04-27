@@ -17,7 +17,7 @@ import type {
 	ExtraneousKeyBehavior,
 	ExtraneousKeyRestriction,
 	StructureNode
-} from "../constraints/props/structure.js"
+} from "../constraints/structures/structure.js"
 import type { Inner, MutableInner, NodeDef, Prerequisite } from "../kinds.js"
 import type { Constraint, Node } from "../node.js"
 import type { NodeParseContext } from "../parse.js"
@@ -33,8 +33,8 @@ import {
 	type IntersectionChildKind,
 	type IntersectionContext,
 	type OpenNodeKind,
-	type PropKind,
-	type RefinementKind
+	type RefinementKind,
+	type StructuralKind
 } from "../shared/implement.js"
 import { intersectNodes } from "../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
@@ -79,7 +79,7 @@ export class IntersectionNode extends RawSchema<IntersectionDeclaration> {
 		node.isRefinement()
 	)
 	traversables = conflatenateAll<
-		Node<Exclude<IntersectionChildKind, PropKind>> | StructureNode
+		Node<Exclude<IntersectionChildKind, StructuralKind>> | StructureNode
 	>(this.basis, this.refinements, this.structure, this.predicate)
 
 	expression =

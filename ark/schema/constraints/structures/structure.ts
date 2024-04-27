@@ -3,7 +3,7 @@ import type { RawSchema } from "../../schema.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
-import { implementNode, type PropKind } from "../../shared/implement.js"
+import { implementNode, type StructuralKind } from "../../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/traversal.js"
 import { RawConstraint } from "../constraint.js"
 import type { IndexDef, IndexNode } from "./index.js"
@@ -16,14 +16,16 @@ export type ExtraneousKeyBehavior = "ignore" | ExtraneousKeyRestriction
 export type ExtraneousKeyRestriction = "throw" | "prune"
 
 export interface StructureDef extends BaseMeta {
-	prop?: readonly PropDef[]
+	optional?: readonly PropDef<"optional">[]
+	required?: readonly PropDef<"required">[]
 	index?: readonly IndexDef[]
 	sequence?: SequenceDef
 	onExtraneousKey?: ExtraneousKeyBehavior
 }
 
 export interface StructureInner extends BaseMeta {
-	prop?: readonly PropNode[]
+	optional?: readonly PropNode[]
+	required?: readonly PropNode[]
 	index?: readonly IndexNode[]
 	sequence?: SequenceNode
 	onExtraneousKey?: ExtraneousKeyRestriction
@@ -35,29 +37,26 @@ export type StructureDeclaration = declareNode<{
 	normalizedDef: StructureDef
 	inner: StructureInner
 	prerequisite: object
-	childKind: PropKind
+	childKind: StructuralKind
 }>
 
 export class StructureNode extends RawConstraint<StructureDeclaration> {
 	impliedBasis = this.$.keywords.object.raw
 
-	nameSet =
-		this.prop ? flatMorph(this.prop, (i, node) => [node.key, 1] as const) : {}
-	nameSetReference = registeredReference(this.nameSet)
-	expression = structureExpression(this)
+	props =
+		this.required ?
+			this.optional ?
+				[...this.required, ...this.optional]
+			:	this.required
+		:	this.optional ?? []
 
-	requiredLiteralKeys: Key[] = flatMorph(this.children, (i, node) =>
-		node.hasKind("prop") && node.required ? [i, node.key]
-		: node.hasKind("sequence") ? node.prefix.map((el, i) => [i, `${i}`])
-		: []
-	)
+	keySet = flatMorph(this.props, (i, node) => [node.key, 1] as const)
+	keySetReference = registeredReference(this.keySet)
+	expression = structuralExpression(this)
 
-	optionalLiteralKeys: Key[] = flatMorph(this.children, (i, node) =>
-		node.hasKind("prop") && node.optional ? [i, node.key]
-		: node.hasKind("sequence") ?
-			node.optional.map((el, i) => [i, `${i + node.minLength}`])
-		:	[]
-	)
+	requiredLiteralKeys: Key[] = this.required?.map(node => node.key) ?? []
+
+	optionalLiteralKeys: Key[] = this.optional?.map(node => node.key) ?? []
 
 	literalKeys: Key[] = [
 		...this.requiredLiteralKeys,
@@ -68,8 +67,8 @@ export class StructureNode extends RawConstraint<StructureDeclaration> {
 	keyof(): RawSchema {
 		if (!this._keyofCache) {
 			let branches = this.$.units(this.literalKeys).branches
-			this.index?.forEach(({ key }) => {
-				branches = branches.concat(key.branches)
+			this.index?.forEach(({ index }) => {
+				branches = branches.concat(index.branches)
 			})
 			this._keyofCache = this.$.node("union", branches)
 		}
@@ -99,10 +98,9 @@ export class StructureNode extends RawConstraint<StructureDeclaration> {
 	}
 
 	protected compileExhaustive(js: NodeCompiler): void {
-		this.prop?.forEach(prop => js.check(prop))
-		this.sequence?.compile(js)
+		this.props.forEach(prop => js.check(prop))
 		if (this.sequence) js.check(this.sequence)
-		Object.getOwnPropertySymbols
+
 		js.const("keys", "Object.keys(data)")
 		js.const("symbols", "Object.getOwnPropertySymbols(data)")
 		js.if("symbols.length", () => js.line("keys.push(...symbols)"))
@@ -115,7 +113,7 @@ export class StructureNode extends RawConstraint<StructureDeclaration> {
 		if (this.onExtraneousKey) js.let("matched", false)
 
 		this.index?.forEach(node => {
-			js.if(`${js.invoke(node.key, { arg: "k", kind: "Allows" })}`, () => {
+			js.if(`${js.invoke(node.index, { arg: "k", kind: "Allows" })}`, () => {
 				js.checkReferenceKey("k", node.value)
 				if (this.onExtraneousKey) js.set("matched", true)
 				return js
@@ -123,8 +121,8 @@ export class StructureNode extends RawConstraint<StructureDeclaration> {
 		})
 
 		if (this.onExtraneousKey) {
-			if (this.prop?.length !== 0)
-				js.line(`matched ||= k in ${this.nameSetReference}`)
+			if (this.props?.length !== 0)
+				js.line(`matched ||= k in ${this.keySetReference}`)
 
 			if (this.sequence)
 				js.line(`matched ||= ${arrayIndexMatcherReference}.test(k)`)
@@ -137,31 +135,34 @@ export class StructureNode extends RawConstraint<StructureDeclaration> {
 	}
 }
 
-const _structureToString =
-	(childStringProp: "expression" | "description") =>
-	(inner: StructureInner) => {
-		if (inner.prop || inner.index) {
-			const parts = inner.index?.map(String) ?? []
-			inner.prop?.forEach(node => parts.push(node[childStringProp]))
+const createStructuralWriter =
+	(childStringProp: "expression" | "description") => (node: StructureNode) => {
+		if (node.props.length || node.index) {
+			const parts = node.index?.map(String) ?? []
+			node.props.forEach(node => parts.push(node[childStringProp]))
 			const objectLiteralDescription = `${
-				inner.onExtraneousKey ? "exact " : ""
+				node.onExtraneousKey ? "exact " : ""
 			}{ ${parts.join(", ")} }`
-			return inner.sequence ?
-					`${objectLiteralDescription} & ${inner.sequence.description}`
+			return node.sequence ?
+					`${objectLiteralDescription} & ${node.sequence.description}`
 				:	objectLiteralDescription
 		}
-		return inner.sequence?.description ?? "{}"
+		return node.sequence?.description ?? "{}"
 	}
 
-const structureDescription = _structureToString("description")
-const structureExpression = _structureToString("expression")
+const structuralDescription = createStructuralWriter("description")
+const structuralExpression = createStructuralWriter("expression")
 
 export const structureImplementation = implementNode<StructureDeclaration>({
 	kind: "structure",
 	hasAssociatedError: false,
 	normalize: schema => schema,
 	keys: {
-		prop: {
+		required: {
+			child: true,
+			parse: intersectionChildKeyParser("prop")
+		},
+		optional: {
 			child: true,
 			parse: intersectionChildKeyParser("prop")
 		},
@@ -178,7 +179,7 @@ export const structureImplementation = implementNode<StructureDeclaration>({
 		}
 	},
 	defaults: {
-		description: structureDescription
+		description: structuralDescription
 	},
 	intersections: {
 		structure: (l, r, ctx) => {
