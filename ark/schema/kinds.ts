@@ -19,6 +19,11 @@ import {
 	SequenceNode
 } from "./constraints/props/sequence.js"
 import {
+	type StructureDeclaration,
+	structureImplementation,
+	StructureNode
+} from "./constraints/props/structure.js"
+import {
 	type DivisorDeclaration,
 	divisorImplementation,
 	DivisorNode
@@ -81,6 +86,7 @@ export interface NodeDeclarationsByKind extends BoundDeclarations {
 	union: UnionDeclaration
 	morph: MorphDeclaration
 	intersection: IntersectionDeclaration
+	structure: StructureDeclaration
 	sequence: SequenceDeclaration
 	divisor: DivisorDeclaration
 	prop: PropDeclaration
@@ -106,7 +112,8 @@ export const nodeImplementationsByKind: Record<
 	predicate: predicateImplementation,
 	prop: propImplementation,
 	index: indexImplementation,
-	sequence: sequenceImplementation
+	sequence: sequenceImplementation,
+	structure: structureImplementation
 } satisfies Record<NodeKind, unknown> as never
 
 export const nodeClassesByKind: Record<
@@ -126,7 +133,8 @@ export const nodeClassesByKind: Record<
 	predicate: PredicateNode,
 	prop: PropNode,
 	index: IndexNode,
-	sequence: SequenceNode
+	sequence: SequenceNode,
+	structure: StructureNode
 } satisfies Record<NodeKind, typeof RawNode<any>> as never
 
 export type Declaration<kind extends NodeKind> = NodeDeclarationsByKind[kind]

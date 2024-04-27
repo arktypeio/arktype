@@ -16,6 +16,7 @@ import type { PredicateNode } from "./constraints/predicate.js"
 import type { IndexNode } from "./constraints/props/index.js"
 import type { PropNode } from "./constraints/props/prop.js"
 import type { SequenceNode } from "./constraints/props/sequence.js"
+import type { StructureNode } from "./constraints/props/structure.js"
 import type { DivisorNode } from "./constraints/refinements/divisor.js"
 import type { BoundNodesByKind } from "./constraints/refinements/kinds.js"
 import type { RegexNode } from "./constraints/refinements/regex.js"
@@ -303,6 +304,7 @@ interface NodesByKind extends BoundNodesByKind {
 	prop: PropNode
 	index: IndexNode
 	sequence: SequenceNode
+	structure: StructureNode
 }
 
 export type Node<kind extends NodeKind> = NodesByKind[kind]
