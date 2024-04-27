@@ -228,8 +228,8 @@ contextualize(
 			const o = type({ "[string]": "string" })
 			attest<{ [x: string]: string }>(o.infer)
 			attest(o.json).snap({
-				domain: "object",
-				index: [{ key: "string", value: "string" }]
+				index: [{ value: "string", index: "string" }],
+				domain: "object"
 			})
 
 			attest(o({})).equals({})

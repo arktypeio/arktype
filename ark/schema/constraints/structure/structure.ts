@@ -6,6 +6,7 @@ import {
 	type Key
 } from "@arktype/util"
 import type { RawSchema } from "../../schema.js"
+import { intersectionChildKeyParser } from "../../schemas/intersection.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
@@ -209,11 +210,11 @@ export const structureImplementation = implementNode<StructureDeclaration>({
 	keys: {
 		required: {
 			child: true,
-			parse: intersectionChildKeyParser("prop")
+			parse: intersectionChildKeyParser("required")
 		},
 		optional: {
 			child: true,
-			parse: intersectionChildKeyParser("prop")
+			parse: intersectionChildKeyParser("optional")
 		},
 		index: {
 			child: true,
@@ -231,7 +232,7 @@ export const structureImplementation = implementNode<StructureDeclaration>({
 		description: structuralDescription
 	},
 	intersections: {
-		structure: (l, r, ctx) => {
+		structure: (l, r) => {
 			if (l.onExtraneousKey) {
 				const lKey = l.keyof()
 				const disjointRKeys = r.requiredLiteralKeys.filter(k => !lKey.allows(k))
@@ -251,7 +252,7 @@ export const structureImplementation = implementNode<StructureDeclaration>({
 				}
 			}
 
-			return intersectIntersections(l, r, ctx)
+			return r
 		}
 	}
 })

@@ -172,6 +172,8 @@ export const parseNode = (kind: NodeKind, ctx: NodeParseContext): RawNode => {
 		}
 	}
 
+	if (impl.finalizeJson) json = impl.finalizeJson(json) as never
+
 	const innerHash = JSON.stringify({ kind, ...json })
 	if (ctx.reduceTo) {
 		nodeCache[innerHash] = ctx.reduceTo

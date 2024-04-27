@@ -184,7 +184,7 @@ export class IntersectionNode extends RawSchema<IntersectionDeclaration> {
 	}
 }
 
-const intersectionChildKeyParser =
+export const intersectionChildKeyParser =
 	<kind extends IntersectionChildKind>(kind: kind) =>
 	(
 		def: listable<NodeDef<kind>>,
