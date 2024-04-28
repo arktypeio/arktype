@@ -38,7 +38,7 @@
 		"test": "tsx ../repo/testPackage.ts"
 	},
 	"dependencies": {
-		"@arktype/util": "0.0.36",
-		"@arktype/schema": "0.1.1"
+		"@arktype/util": "workspace:*",
+		"@arktype/schema": "workspace:*"
 	}
 }
