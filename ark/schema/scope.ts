@@ -189,6 +189,14 @@ const throwMismatchedNodeSchemaError = (expected: NodeKind, actual: NodeKind) =>
 		`Node of kind ${actual} is not valid as a ${expected} definition`
 	)
 
+export const writeDuplicateAliasError = <alias extends string>(
+	alias: alias
+): writeDuplicateAliasError<alias> =>
+	`#${alias} duplicates public alias ${alias}`
+
+export type writeDuplicateAliasError<alias extends string> =
+	`#${alias} duplicates public alias ${alias}`
+
 const nodeCountsByPrefix: PartialRecord<string, number> = {}
 
 const nodesById: Record<string, RawNode | undefined> = {}
@@ -237,9 +245,13 @@ export class RawSchemaScope<
 		this.resolvedConfig = resolveConfig(config)
 		this.exportedNames = Object.keys(def).filter(k => {
 			if (k[0] === "#") {
-				this.aliases[k.slice(1)] = def[k]
+				const name = k.slice(1)
+				if (name in this.aliases)
+					throwParseError(writeDuplicateAliasError(name))
+				this.aliases[name] = def[k]
 				return false
 			}
+			if (k in this.aliases) throwParseError(writeDuplicateAliasError(k))
 			this.aliases[k] = def[k]
 			return true
 		}) as never

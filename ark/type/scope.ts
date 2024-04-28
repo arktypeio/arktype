@@ -2,6 +2,7 @@ import {
 	type ArkConfig,
 	type GenericProps,
 	type PreparsedNodeResolution,
+	type PrivateDeclaration,
 	type RawSchema,
 	type RawSchemaResolutions,
 	RawSchemaScope,
@@ -12,7 +13,8 @@ import {
 	type destructuredExportContext,
 	type destructuredImportContext,
 	type exportedNameOf,
-	hasArkKind
+	hasArkKind,
+	type writeDuplicateAliasError
 } from "@arktype/schema"
 import {
 	type Dict,
@@ -20,6 +22,7 @@ import {
 	hasDomain,
 	type isAnyOrNever,
 	isThunk,
+	type keyError,
 	type nominal,
 	type show,
 	throwParseError
@@ -56,12 +59,14 @@ export type ScopeParser = <const def>(
 
 type validateScope<def> = {
 	[k in keyof def]: k extends symbol ?
-		// this should only occur when importing/exporting modules, and those keys should be ignored
+		// this should only occur when importing/exporting modules, and those
+		// keys should be ignored
 		unknown
 	: parseScopeKey<k>["params"] extends [] ?
 		// Not including Type here directly breaks inference
-		def[k] extends Type | PreparsedResolution ?
-			def[k]
+		def[k] extends Type | PreparsedResolution ? def[k]
+		: k extends PrivateDeclaration<infer name extends keyof def & string> ?
+			keyError<writeDuplicateAliasError<name>>
 		:	validateDefinition<def[k], ambient & bootstrapAliases<def>, {}>
 	: parseScopeKey<k>["params"] extends GenericParamsParseError ?
 		// use the full nominal type here to avoid an overlap between the

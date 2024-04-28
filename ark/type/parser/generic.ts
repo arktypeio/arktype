@@ -1,4 +1,4 @@
-import { type nominal, throwParseError } from "@arktype/util"
+import { type keyError, throwParseError } from "@arktype/util"
 import { writeUnexpectedCharacterMessage } from "./string/shift/operator/operator.js"
 import { Scanner } from "./string/shift/scanner.js"
 
@@ -9,7 +9,7 @@ export type GenericDeclaration<
 
 // we put the error in a tuple so that parseGenericParams always returns a string[]
 export type GenericParamsParseError<message extends string = string> = [
-	nominal<message, "InvalidGenericParameters">
+	keyError<message>
 ]
 
 export const parseGenericParams = (def: string): string[] =>
