@@ -9,7 +9,6 @@
 		"strict": true,
 		"sourceMap": true,
 		"declaration": true,
-		"declarationMap": true,
 		"verbatimModuleSyntax": true,
 		"esModuleInterop": true,
 		"resolveJsonModule": true,
