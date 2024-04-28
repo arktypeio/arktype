@@ -5,13 +5,13 @@ template: splash
 hero:
   tagline: TypeScript's 1:1 validator, optimized from editor to runtime
   actions:
-    - text: Example Guide
-      link: /guides/example/
+    - text: Meet 2.0
+      link: /intro/why/
       icon: right-arrow
       variant: primary
-    - text: Read more
-      link: https://starlight.astro.build
-      icon: external
+    # - text: Read more
+    #   link: https://starlight.astro.build
+    #   icon: external
 ---
 
 import { Card, CardGrid } from "@astrojs/starlight/components"
@@ -20,7 +20,6 @@ import { HomeDemo } from "../../components/HomeDemo.tsx"
 
 <div class="not-content">
 	<HeroContents client:only />
-	<HomeDemo client:only />
 </div>
 
 ## v2 is coming
@@ -31,7 +30,8 @@ However, most of our effort has been diverted to shipping an ambitious v2 releas
 
 We coudn't be more excited to share it with you.
 
-## Highlights
+{/* prettier-ignore */}
+{/* ## Highlights
 
 <CardGrid stagger>
 	<Card title="Update content" icon="pencil">
@@ -46,5 +46,4 @@ We coudn't be more excited to share it with you.
 	<Card title="Read the docs" icon="open-book">
 		Learn more in [the Starlight Docs](https://starlight.astro.build/).
 	</Card>
-</CardGrid>
-../../components/HomeDemo.tsx
+</CardGrid> */}

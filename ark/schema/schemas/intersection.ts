@@ -422,8 +422,8 @@ const intersectRootKeys = (
 
 	if (l.onExtraneousKey || r.onExtraneousKey) {
 		result.onExtraneousKey =
-			l.onExtraneousKey === "throw" || r.onExtraneousKey === "throw" ?
-				"throw"
+			l.onExtraneousKey === "error" || r.onExtraneousKey === "error" ?
+				"error"
 			:	"prune"
 	}
 	return result

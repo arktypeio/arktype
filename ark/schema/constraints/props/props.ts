@@ -16,7 +16,7 @@ import { arrayIndexMatcherReference } from "./shared.js"
 
 export type ExtraneousKeyBehavior = "ignore" | ExtraneousKeyRestriction
 
-export type ExtraneousKeyRestriction = "throw" | "prune"
+export type ExtraneousKeyRestriction = "error" | "prune"
 
 export type PropsGroupInput = Pick<
 	IntersectionNode,
@@ -128,8 +128,8 @@ export class PropsGroup extends DynamicBase<PropsGroupInput> {
 			if (this.sequence)
 				js.line(`matched ||= ${arrayIndexMatcherReference}.test(k)`)
 
-			// TODO: replace error
-			js.if("!matched", () => js.line(`throw new Error("strict")`))
+			// // TODO: replace error
+			// js.if("!matched", () => js.line(`throw new Error("strict")`))
 		}
 
 		return js

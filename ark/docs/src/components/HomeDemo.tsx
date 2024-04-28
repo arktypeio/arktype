@@ -7,7 +7,7 @@ import onigasm from "onigasm/lib/onigasm.wasm?url"
 import React, { useState } from "react"
 import "../styles.css"
 import arkdarkColors from "./arkdark.json"
-import syntax from "./syntax.ts?raw"
+// import syntax from "./syntax.ts?raw"
 import arktypeTextmate from "./tsWithArkType.tmLanguage.json"
 
 interface IVSCodeTheme {
@@ -79,7 +79,7 @@ export const HomeDemo = () => {
 			<Editor
 				height="30vh"
 				defaultLanguage="typescript"
-				defaultValue={syntax}
+				defaultValue=""
 				theme="arkdark"
 				options={{
 					minimap: { enabled: false },

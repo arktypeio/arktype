@@ -21,15 +21,16 @@ export default defineConfig({
 			},
 			sidebar: [
 				{
-					label: "Guides",
-					items: [
-						// Each item here is one entry in the navigation menu.
-						{ label: "Example Guide", link: "/guides/example/" }
-					]
+					label: "Intro",
+					items: [{ label: "Why ArkType?", link: "/intro/why/" }]
 				},
 				{
 					label: "Reference",
-					autogenerate: { directory: "reference" }
+					items: [
+						{ label: "Your first type", link: "/reference/your-first-type/" },
+						{ label: "Scopes", link: "/reference/scopes/" },
+						{ label: "Cheat sheet", link: "/reference/cheat-sheet/" }
+					]
 				}
 			]
 		}),

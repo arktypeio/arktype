@@ -1,7 +1,11 @@
-import { type } from "arktype"
-import type { Out } from "../../schema/schemas/morph.js"
-import type { Type } from "../../type/type.js"
+---
+title: 2.0 API cheat sheet
+order: 3
+---
 
+Lots more docs are on the way, but I want to highlight some of the most useful synatx patterns/features that are carried over from alpha as well as those new to the 2.0 release.
+
+```ts
 // Syntax carried over from 1.0 + TS
 export const currentTsSyntax = type({
 	keyword: "null",
@@ -68,3 +72,6 @@ if (maybeMe instanceof type.errors) {
 	// "age must be a number (was missing)"
 	console.log(maybeMe.summary)
 }
+```
+
+There's so much more I want to share but I want to get at least an initial version of the 2.0 branch merged tonight so look forward to that next week!
