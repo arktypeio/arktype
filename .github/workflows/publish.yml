@@ -4,9 +4,11 @@ on:
   push:
     branches: [main]
 
-defaults:
-  run:
-    shell: bash
+# Allow this job to clone the repo and create a page deployment
+permissions:
+  contents: read
+  pages: write
+  id-token: write
 
 jobs:
   update-gh-pages:
@@ -21,11 +23,23 @@ jobs:
       - name: Setup repo
         uses: ./.github/actions/setup
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+      - name: Install, build, and upload your site
+        uses: withastro/action@v2
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./ark/docs/out
+          path: ./ark/docs # The root location of your Astro project inside the repository. (optional)
+          # node-version: 20 # The specific version of Node that should be used to build your site. Defaults to 20. (optional)
+          package-manager: pnpm@latest # The Node package manager that should be used to install dependencies and build your site. Automatically detected based on your lockfile. (optional)
+
+  deploy:
+    needs: update-gh-pages
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
 
   create-release-pr:
     runs-on: ubuntu-latest
@@ -44,7 +58,6 @@ jobs:
         with:
           commit: "chore: update versions"
           title: "chore: update versions"
-          cwd: "./dev"
           version: pnpm ci:version
           publish: pnpm ci:publish
         env:
