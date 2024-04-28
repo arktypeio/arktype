@@ -54,22 +54,20 @@ const semver = root.defineSchema({
 	}
 })
 
-export namespace validation {
-	export interface exports {
-		alpha: string
-		alphanumeric: string
-		lowercase: string
-		uppercase: string
-		creditCard: string
-		email: string
-		uuid: string
-		url: string
-		semver: string
-		integer: number
-	}
+export interface validationExports {
+	alpha: string
+	alphanumeric: string
+	lowercase: string
+	uppercase: string
+	creditCard: string
+	email: string
+	uuid: string
+	url: string
+	semver: string
+	integer: number
 }
 
-export type validation = SchemaModule<validation.exports>
+export type validation = SchemaModule<validationExports>
 
 export const validation: validation = schemaScope(
 	{

@@ -2,26 +2,24 @@ import type { type } from "../inference.js"
 import type { SchemaModule } from "../module.js"
 import { schemaScope } from "../scope.js"
 
-export namespace tsKeywords {
-	export interface exports {
-		any: any
-		bigint: bigint
-		boolean: boolean
-		false: false
-		never: never
-		null: null
-		number: number
-		object: object
-		string: string
-		symbol: symbol
-		true: true
-		unknown: unknown
-		void: void
-		undefined: undefined
-	}
+export interface tsKeywordExports {
+	any: any
+	bigint: bigint
+	boolean: boolean
+	false: false
+	never: never
+	null: null
+	number: number
+	object: object
+	string: string
+	symbol: symbol
+	true: true
+	unknown: unknown
+	void: void
+	undefined: undefined
 }
 
-export type tsKeywords = SchemaModule<tsKeywords.exports>
+export type tsKeywords = SchemaModule<tsKeywordExports>
 
 export const tsKeywords: tsKeywords = schemaScope(
 	{

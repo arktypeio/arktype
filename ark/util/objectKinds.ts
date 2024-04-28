@@ -174,12 +174,12 @@ export const prototypeKeysOf = <t>(value: t): normalizedKeyOf<t>[] => {
 	const result: Key[] = []
 	let curr = value
 	while (curr !== Object.prototype && curr !== null && curr !== undefined) {
-		for (const k of Object.getOwnPropertyNames(curr)) {
+		for (const k of Object.getOwnPropertyNames(curr))
 			if (k !== "constructor" && !result.includes(k)) result.push(k)
-		}
-		for (const symbol of Object.getOwnPropertySymbols(curr)) {
+
+		for (const symbol of Object.getOwnPropertySymbols(curr))
 			if (!result.includes(symbol)) result.push(symbol)
-		}
+
 		curr = Object.getPrototypeOf(curr)
 	}
 	return result as never

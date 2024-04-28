@@ -2,6 +2,7 @@ import {
 	type GenericProps,
 	type PrivateDeclaration,
 	RawSchema,
+	type arkKind,
 	hasArkKind,
 	type writeNonSubmoduleDotMessage,
 	writeUnresolvableMessage
@@ -18,7 +19,6 @@ import {
 	tryParseWellFormedBigint
 } from "@arktype/util"
 import type { Generic } from "../../../../generic.js"
-import type { Module } from "../../../../module.js"
 import type { GenericInstantiationAst } from "../../../semantic/infer.js"
 import { writePrefixedPrivateReferenceMessage } from "../../../semantic/validate.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
@@ -143,8 +143,8 @@ type tryResolve<s extends StaticState, token extends string, $, args> =
 	: token extends (
 		`${infer submodule extends keyof $ & string}.${infer reference}`
 	) ?
-		$[submodule] extends Module<infer sub$> ?
-			reference extends keyof sub$ ?
+		$[submodule] extends { [arkKind]: "module" } ?
+			reference extends keyof $[submodule] ?
 				token
 			:	unresolvableError<s, reference, $[submodule], args, [submodule]>
 		:	ErrorMessage<writeNonSubmoduleDotMessage<submodule>>

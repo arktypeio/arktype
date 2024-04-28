@@ -1,13 +1,12 @@
 {
 	"compilerOptions": {
 		"module": "NodeNext",
-		"target": "ES2022",
+		"target": "ESNext",
 		"moduleResolution": "NodeNext",
 		"lib": ["ESNext"],
 		"noEmit": true,
 		"skipLibCheck": true,
 		"strict": true,
-		"sourceMap": true,
 		"declaration": true,
 		"verbatimModuleSyntax": true,
 		"esModuleInterop": true,
@@ -15,14 +14,14 @@
 		"exactOptionalPropertyTypes": true,
 		"noFallthroughCasesInSwitch": true,
 		"stripInternal": true,
-		"paths": {
-			"arktype": ["./ark/type/main.ts"],
-			"@arktype/util": ["./ark/util/main.ts"],
-			"@arktype/fs": ["./ark/fs/main.ts"],
-			"@arktype/attest": ["./ark/attest/main.ts"],
-			"@arktype/schema": ["./ark/schema/main.ts"]
-		},
+		// "paths": {
+		// 	"arktype": ["./ark/type/main.ts"],
+		// 	"@arktype/util": ["./ark/util/main.ts"],
+		// 	"@arktype/fs": ["./ark/fs/main.ts"],
+		// 	"@arktype/attest": ["./ark/attest/main.ts"],
+		// 	"@arktype/schema": ["./ark/schema/main.ts"]
+		// },
 		"types": ["mocha", "node"]
 	},
-	"exclude": ["**/out", "node_modules", "./ark/docs"]
+	"exclude": ["**/out", "node_modules", "./ark/docs", "./ark/repo"]
 }

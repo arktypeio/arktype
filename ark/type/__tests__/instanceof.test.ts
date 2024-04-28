@@ -1,8 +1,7 @@
 import { attest, contextualize } from "@arktype/attest"
 import { rawSchema } from "@arktype/schema"
-import { type } from "arktype"
+import { type Type, type } from "arktype"
 import { writeInvalidConstructorMessage } from "../parser/tuple.js"
-import type { Type } from "../type.js"
 
 contextualize(
 	"tuple expression",
@@ -76,6 +75,7 @@ contextualize(
 				private isArk = true
 			}
 			const ark = type(["instanceof", ArkClass])
+
 			attest<Type<ArkClass, {}>>(ark)
 			// not expanded since there are no morphs
 			attest(ark.infer).type.toString("ArkClass")

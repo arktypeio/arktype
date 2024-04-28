@@ -59,17 +59,15 @@ const json = root.defineSchema({
 
 const date = parsedDate
 
-export namespace parsing {
-	export type exports = {
-		url: (In: string) => Out<URL>
-		number: (In: string) => Out<number>
-		integer: (In: string) => Out<number>
-		date: (In: string) => Out<Date>
-		json: (In: string) => Out<unknown>
-	}
+export type parsingExports = {
+	url: (In: string) => Out<URL>
+	number: (In: string) => Out<number>
+	integer: (In: string) => Out<number>
+	date: (In: string) => Out<Date>
+	json: (In: string) => Out<unknown>
 }
 
-export type parsing = SchemaModule<parsing.exports>
+export type parsing = SchemaModule<parsingExports>
 
 export const parsing: parsing = schemaScope({
 	url,

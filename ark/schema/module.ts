@@ -1,6 +1,6 @@
 import { DynamicBase, type isAnyOrNever } from "@arktype/util"
 import type { Schema } from "./schema.js"
-import { addArkKind, type arkKind } from "./shared/utils.js"
+import { addArkKind, arkKind } from "./shared/utils.js"
 
 export type PreparsedNodeResolution = {
 	[arkKind]: "generic" | "module"

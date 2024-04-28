@@ -2,7 +2,6 @@ import { attest, contextualize } from "@arktype/attest"
 import { schema } from "@arktype/schema"
 import { entriesOf, flatMorph } from "@arktype/util"
 import { boundKindPairsByLower } from "../constraints/refinements/range.js"
-import type { IntersectionDef } from "../schemas/intersection.js"
 import { Disjoint } from "../shared/disjoint.js"
 
 const numericCases = {
@@ -100,7 +99,7 @@ contextualize(() => {
 					...basis,
 					[min]: { rule: 5, exclusive: true },
 					[max]: { rule: 10 }
-				} as IntersectionDef)
+				} as never)
 
 				attest(t.allows(cases.lessThanMin)).equals(false)
 				attest(t.allows(cases.equalToExclusiveMin)).equals(false)
@@ -115,13 +114,13 @@ contextualize(() => {
 					[min]: {
 						rule: 6
 					}
-				} as IntersectionDef)
+				} as never)
 				const r = schema({
 					...basis,
 					[max]: {
 						rule: 6
 					}
-				} as IntersectionDef)
+				} as never)
 				const expected =
 					min === "min" ?
 						schema({
@@ -131,7 +130,7 @@ contextualize(() => {
 						schema({
 							...basis,
 							exactLength: 6
-						} as IntersectionDef)
+						} as never)
 					:	schema({
 							unit: new Date(6)
 						})
@@ -146,24 +145,24 @@ contextualize(() => {
 					[min]: {
 						rule: 3
 					}
-				} as IntersectionDef)
+				} as never)
 				const r = schema({
 					...basis,
 					[max]: {
 						rule: 3,
 						exclusive: true
 					}
-				} as IntersectionDef)
+				} as never)
 				attest(l.intersect(r)).instanceOf(Disjoint)
 				attest(r.intersect(l)).instanceOf(Disjoint)
 			})
 
 			it("non-overlapping limits", () => {
-				const l = schema({ ...basis, [min]: 3 } as IntersectionDef)
+				const l = schema({ ...basis, [min]: 3 } as never)
 				const r = schema({
 					...basis,
 					[max]: 1
-				} as IntersectionDef)
+				} as never)
 				attest(l.intersect(r)).instanceOf(Disjoint)
 				attest(r.intersect(l)).instanceOf(Disjoint)
 			})
@@ -172,11 +171,11 @@ contextualize(() => {
 				const lesser = schema({
 					...basis,
 					[min]: 3
-				} as IntersectionDef)
+				} as never)
 				const greater = schema({
 					...basis,
 					[min]: 4
-				} as IntersectionDef)
+				} as never)
 				attest(lesser.and(greater).json).equals(greater.json)
 				attest(greater.and(lesser).json).equals(greater.json)
 			})
@@ -185,11 +184,11 @@ contextualize(() => {
 				const lesser = schema({
 					...basis,
 					[max]: 3
-				} as IntersectionDef)
+				} as never)
 				const greater = schema({
 					...basis,
 					[max]: { rule: 4, exclusive: true }
-				} as IntersectionDef)
+				} as never)
 				attest(lesser.and(greater).json).equals(lesser.json)
 				attest(greater.and(lesser).json).equals(lesser.json)
 			})
@@ -198,11 +197,11 @@ contextualize(() => {
 				const exclusive = schema({
 					...basis,
 					[max]: { rule: 3, exclusive: true }
-				} as IntersectionDef)
+				} as never)
 				const inclusive = schema({
 					...basis,
 					[max]: 3
-				} as IntersectionDef)
+				} as never)
 				attest(exclusive.and(inclusive).json).equals(exclusive.json)
 				attest(inclusive.and(exclusive).json).equals(exclusive.json)
 			})
