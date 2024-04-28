@@ -1,11 +1,5 @@
 <h1 align="center">ArkType <sub><sup>TypeScript's 1:1 validator</sup></sub></h1>
 
-[<img src="./ark/docs/src/assets/arktype.gif">](https://arktype.io/try)
-<sub>
-<i>`typescript@4.9.5` in VS Code— no extensions or plugins required (<a href="#how">how?</a>) (<a href="https://arktype.io/try">try in-browser</a>)</i>
-</sub>
-<br />
-
 ## What is it?
 
 <p>ArkType is a runtime validation library that can infer <b>TypeScript definitions 1:1</b> and reuse them as <b>highly-optimized validators</b> for your data.</p>
@@ -14,7 +8,7 @@
 
 <p>This result exactly mirrors what you can expect to happen at runtime down to the punctuation of the error message- <b>no plugins required</b>.</p>
 
-Check out [how it works](#how), [try it in-browser](https://arktype.io/docs/#your-first-type), or [scroll slightly](#install) to read about installation.
+Check out [how it works](#how) or [scroll slightly](#install) to read about installation.
 
 <a id="install" />
 
