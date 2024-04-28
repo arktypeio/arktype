@@ -1,30 +1,46 @@
 {
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "editor.formatOnSave": true,
-    "editor.codeActionsOnSave": ["source.fixAll.eslint"],
-    "editor.quickSuggestions": {
-        "strings": true
-    },
-    "eslint.codeActionsOnSave.rules": [
-        "import/order",
-        "sort-imports",
-        "import/no-duplicates",
-        "unicorn/prefer-node-protocol",
-        "@typescript-eslint/consistent-type-imports",
-        "object-shorthand"
-    ],
-    "typescript.preferences.autoImportFileExcludePatterns": ["dist"],
-    "typescript.enablePromptUseWorkspaceTsdk": true,
-    "typescript.tsdk": "./node_modules/typescript/lib",
-    "typescript.tsserver.experimental.enableProjectDiagnostics": true,
-    "typescript.preferences.importModuleSpecifierEnding": "js",
-    "prettier.ignorePath": "dev/configs/.prettierignore",
-    "mochaExplorer.nodeArgv": [
-        "--loader=ts-node/esm",
-        "--no-warnings=ExperimentalWarning"
-    ],
-    "mochaExplorer.env": {
-        "ATTEST_CONFIG": "{ \"skipTypes\": true }"
-    },
-    "testExplorer.useNativeTesting": true
+	"editor.defaultFormatter": "esbenp.prettier-vscode",
+	"editor.codeActionsOnSave": [
+		"editor.formatOnSave",
+		"source.fixAll.eslint",
+		"source.sortImports"
+	],
+	"eslint.codeActionsOnSave.rules": [
+		"object-shorthand",
+		"@typescript-eslint/consistent-type-imports",
+		"import/no-duplicates",
+		"@typescript-eslint/no-import-type-side-effects",
+		"curly"
+	],
+	"typescript.preferences.preferTypeOnlyAutoImports": true,
+	"typescript.preferences.autoImportFileExcludePatterns": [
+		"out",
+		// too many overlapping names, easy to import in schema/arktype where we don't want it
+		// should just import as * as ts when we need it in attest
+		"typescript",
+		"./ark/type/main.ts",
+		"./ark/schema/main.ts"
+	],
+	"typescript.tsserver.experimental.enableProjectDiagnostics": true,
+	// IF YOU UPDATE THE MOCHA CONFIG HERE, PLEASE ALSO UPDATE package.json/mocha AND ark/repo/mocha.jsonc
+	"mochaExplorer.nodeArgv": ["--import=tsx"],
+	// ignore attest since it requires type information
+	"mochaExplorer.ignore": ["ark/attest/**/*"],
+	"mochaExplorer.require": "ark/repo/mocha.globalSetup.ts",
+	"mochaExplorer.timeout": 0,
+	"mochaExplorer.env": {
+		"ATTEST_skipTypes": "true"
+	},
+	"testExplorer.useNativeTesting": true,
+	"editor.unicodeHighlight.allowedCharacters": {
+		// Hair Space: used as a sentinel for error messages
+		" ": true
+	},
+	"astro.language-server.ls-path": "ark/docs/node_modules/astro",
+	"search.exclude": {
+		"**/out": true
+	},
+	"debug.javascript.terminalOptions": {
+		"skipFiles": ["<node_internals>/**", "**/node_modules/**"]
+	}
 }

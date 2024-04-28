@@ -1,5 +1,2 @@
 packages:
-    - "."
-    - "./dev/attest"
-    - "./dev/scripts"
-    - "./dev/arktype.io"
+  - "ark/*"

@@ -1,0 +1,44 @@
+{
+	"name": "@arktype/schema",
+	"version": "0.1.1",
+	"license": "MIT",
+	"author": {
+		"name": "David Blass",
+		"email": "david@arktype.io",
+		"url": "https://arktype.io"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/arktypeio/arktype.git"
+	},
+	"type": "module",
+	"main": "./out/main.js",
+	"types": "./out/main.d.ts",
+	"exports": {
+		".": {
+			"types": "./out/main.d.ts",
+			"default": "./out/main.js"
+		},
+		"./config": {
+			"types": "./out/config.d.ts",
+			"default": "./out/config.js"
+		},
+		"./internal/*": {
+			"default": "./out/*"
+		}
+	},
+	"files": [
+		"out",
+		"!__tests__",
+		"**/*.ts"
+	],
+	"scripts": {
+		"build": "tsx ../repo/build.ts",
+		"bench": "tsx ./__tests__/comparison.bench.ts",
+		"test": "tsx ../repo/testPackage.ts",
+		"tnt": "tsx ../repo/testPackage.ts --skipTypes"
+	},
+	"dependencies": {
+		"@arktype/util": "workspace:*"
+	}
+}

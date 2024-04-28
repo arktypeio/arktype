@@ -1,6 +1,6 @@
 # Contributing
 
-ArkType values the time of its users and contributors as much as its maintainers, so our goal is for the process to be as efficient and straightforward as possible. Whether this is your first pull request or you're a seasoned open source contributor, this guide is the perfect place to start. If you have any other questions, please don't hesitate to [create an issue on GitHub](https://github.com/arktypeio/arktype/issues/new) or reach out [on our Discord](https://discord.gg/WSNF3Kc4xh).
+ArkType values the time of its users and contributors as much as its maintainers, so our goal is for the process to be as efficient and straightforward as possible. Whether this is your first pull request or you're a seasoned open source contributor, this guide is the perfect place to start. If you have any other questions, please don't hesitate to [create an issue on GitHub](https://github.com/arktypeio/arktype/issues/new) or reach out [on our Discord](https://arktype.io/discord).
 
 ## Sending a Pull Request
 
@@ -48,27 +48,27 @@ git checkout -b amazing-feature
 
 6. Do your best to write code that is stylistically consistent with its context. The linter will help with this, but it won't catch everything. Here's a few general guidelines:
 
-    - Favor functions over classes
-    - Favor arrow functions outside of classes
-    - Favor types over interfaces
-    - Favor mutation over copying objects in perf-sensitive contexts
-    - Favor clarity in naming with the following exceptions:
-        - Ubiquitous variables/types. For example, use `s` over `dynamicParserState` for a variable of type DynamicParserState that is used in the same way across many functions.
-        - Ephemeral variables whose contents can be trivially inferred from context. For example, prefer `rawKeyDefinitions.map(_ => _.trim())` to `rawKeyDefinitions.map(rawKeyDefinition => rawKeyDefinition.trim())`.
+   - Favor functions over classes
+   - Favor arrow functions outside of classes
+   - Favor types over interfaces
+   - Favor mutation over copying objects in perf-sensitive contexts
+   - Favor clarity in naming with the following exceptions:
+     - Ubiquitous variables/types. For example, use `s` over `dynamicParserState` for a variable of type DynamicParserState that is used in the same way across many functions.
+     - Ephemeral variables whose contents can be trivially inferred from context. For example, prefer `rawKeyDefinitions.map(_ => _.trim())` to `rawKeyDefinitions.map(rawKeyDefinition => rawKeyDefinition.trim())`.
 
 We also have some unique casing rules for our TypeScript types to making writing isomorphic code easier:
 
--   Use `CapitalCase` for...
+- Use `CapitalCase` for...
 
-    -   Non-generic types (e.g. `SomeData`)
-    -   Generic types with noun names, like `Array<t>`. As a rule of thumb, your generic should be named this way if all its parameters have defaults (unfortunately TS's builtin `Array` type doesn't have a default parameter, but it should have been `unknown`!)
+  - Non-generic types (e.g. `SomeData`)
+  - Generic types with noun names, like `Array<t>`. As a rule of thumb, your generic should be named this way if all its parameters have defaults (unfortunately TS's builtin `Array` type doesn't have a default parameter, but it should have been `unknown`!)
 
--   Use `camelCase` for...
+- Use `camelCase` for...
 
-    -   Generic types with verb names like `inferDomain<t>`. Types named this way should always have at least one required parameter.
-    -   Parameter names, e.g. `t` in `Array<t>`
+  - Generic types with verb names like `inferDomain<t>`. Types named this way should always have at least one required parameter.
+  - Parameter names, e.g. `t` in `Array<t>`
 
-7. Once you've made the changes you want to and added corresponding unit tests, run the `prChecks` command in the project root and address any problems:
+7. Once you've made the changes you want to and added corresponding unit tests, run the `prChecks` command in the project root and address any errors:
 
 ```sh
 pnpm prChecks
@@ -77,7 +77,7 @@ pnpm prChecks
 You can also run any of these commands individually:
 
 ```sh @lineFrom:package.json:scripts/prChecks
-"pnpm install && pnpm lint && pnpm checkFormat && pnpm testRepo && pnpm buildRepo"
+"pnpm install && pnpm lint && pnpm testRepo && pnpm buildRepo"
 ```
 
 All of these commands will run as part of our CI process and must succeed in order for us to accept your Pull Request.

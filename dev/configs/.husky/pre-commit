@@ -1,7 +1,0 @@
-#!/usr/bin/env sh
-
-[ -n "$CI" ] && exit 0
-
-. "$(dirname -- "$0")/_/husky.sh"
-
-pnpm pretty-quick --staged --ignore-path ./dev/configs/.prettierignore

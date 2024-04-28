@@ -1,0 +1,14 @@
+{
+	"name": "@arktype/repo",
+	"private": true,
+	"type": "module",
+	"dependencies": {
+		"arktype": "workspace:*",
+		"@arktype/attest": "workspace:*",
+		"@arktype/fs": "workspace:*",
+		"ts-morph": "20.0.0"
+	},
+	"scripts": {
+		"build": "echo No build required!"
+	}
+}
