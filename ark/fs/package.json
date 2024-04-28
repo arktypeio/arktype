@@ -1,0 +1,29 @@
+{
+	"name": "@arktype/fs",
+	"version": "0.0.17",
+	"author": {
+		"name": "David Blass",
+		"email": "david@arktype.io",
+		"url": "https://arktype.io"
+	},
+	"type": "module",
+	"main": "./out/main.js",
+	"types": "./out/main.d.ts",
+	"exports": {
+		".": {
+			"types": "./out/main.d.ts",
+			"default": "./out/main.js"
+		},
+		"./internal/*": {
+			"default": "./out/*"
+		}
+	},
+	"scripts": {
+		"build": "tsx ../repo/build.ts"
+	},
+	"files": [
+		"out",
+		"!__tests__",
+		"**/*.ts"
+	]
+}

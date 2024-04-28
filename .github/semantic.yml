@@ -1,4 +1,9 @@
 titleOnly: true
 scopes:
-    - attest
-    - arktype.io
+  - attest
+  - dark
+  - fs
+  - repo
+  - schema
+  - type
+  - utils

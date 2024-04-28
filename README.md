@@ -1,6 +1,6 @@
 <h1 align="center">ArkType <sub><sup>TypeScript's 1:1 validator</sup></sub></h1>
 
-[<img src="./dev/arktype.io/static/img/arktype.gif">](https://arktype.io/try)
+[<img src="./ark/docs/src/assets/arktype.gif">](https://arktype.io/try)
 <sub>
 <i>`typescript@4.9.5` in VS Code— no extensions or plugins required (<a href="#how">how?</a>) (<a href="https://arktype.io/try">try in-browser</a>)</i>
 </sub>
@@ -8,159 +8,142 @@
 
 ## What is it?
 
-<!-- @snipStart:intro -->
-
 <p>ArkType is a runtime validation library that can infer <b>TypeScript definitions 1:1</b> and reuse them as <b>highly-optimized validators</b> for your data.</p>
 
 <p>With each character you type, you'll get <b>immediate feedback from your editor</b> in the form of either a fully-inferred <code>Type</code> or a specific and helpful <code>ParseError</code>.</p>
 
 <p>This result exactly mirrors what you can expect to happen at runtime down to the punctuation of the error message- <b>no plugins required</b>.</p>
 
-<!-- @snipEnd -->
+Check out [how it works](#how), [try it in-browser](https://arktype.io/docs/#your-first-type), or [scroll slightly](#install) to read about installation.
+
+<a id="install" />
+
+## Install
+
+<img src="./ark/docs/src/assets/npm.svg" alt="Npm Icon" height="16px" /> <code>npm install arktype</code>
+<sub>(or whatever package manager you prefer)</sub>
+<br />
+
+Our types are tested in [strict-mode](https://www.typescriptlang.org/tsconfig#strict) with TypeScript version `5.4+`, although you will likely have success with other versions after 5.0.
+
+If your types work but you notice errors in node_modules, this could be due to `tsconfig` incompatibilities- please enable `compilerOptions/skipLibCheck` ([docs](https://www.typescriptlang.org/tsconfig/#skipLibCheck)).
+
+## Your first type
+
+Defining basic types in ArkType is just like TypeScript, so if you already know how to do that, congratulations! You already know most of ArkType's syntax 🎉
+
+For an ever better in-editor developer experience, try the [ArkDark VSCode extension](https://marketplace.visualstudio.com/items?itemName=arktypeio.arkdark) for syntax highlighting.
 
 ```ts @blockFrom:dev/test/examples/type.ts
 import { type } from "arktype"
 
 // Definitions are statically parsed and inferred as TS.
 export const user = type({
-    name: "string",
-    device: {
-        platform: "'android'|'ios'",
-        "version?": "number"
-    }
+	name: "string",
+	device: {
+		platform: "'android'|'ios'",
+		"version?": "number"
+	}
 })
 
 // Validators return typed data or clear, customizable errors.
-export const { data, problems } = user({
-    name: "Alan Turing",
-    device: {
-        // problems.summary: "device/platform must be 'android' or 'ios' (was 'enigma')"
-        platform: "enigma"
-    }
+export const out = user({
+	name: "Alan Turing",
+	device: {
+		// errors.summary: "device/platform must be 'android' or 'ios' (was 'enigma')"
+		platform: "enigma"
+	}
 })
-```
 
-Check out [how it works](#how), [try it in-browser](https://arktype.io/docs/#your-first-type), or [scroll slightly](#install) to read about installation.
-
-<a id="install" />
-
-<!-- @snipStart:install -->
-
-## Install <sub><sub>📦`12KB` gzipped, `0` dependencies</sub></sub>
-
-<img src="./dev/arktype.io/static/img/npm.svg" alt="Npm Icon" height="16px" /> <code>npm install arktype</code>
-<sub>(or whatever package manager you prefer)</sub>
-<br />
-
-Our types are tested in [strict-mode](https://www.typescriptlang.org/tsconfig#strict) with TypeScript version `4.8` or greater.
-
-_Our APIs have mostly stabilized, but details may still change during the alpha/beta stages of our 1.0 release. If you have suggestions that may require a breaking change, now is the time to let us know!_ ⛵
-
-<!-- @snipEnd -->
-
-### Scopes
-
-[Try this example in-browser.](https://arktype.io/docs/scopes)
-
-```ts @blockFrom:dev/test/examples/scope.ts
-import { scope } from "arktype"
-
-// Scopes are collections of types that can reference each other.
-export const types = scope({
-    package: {
-        name: "string",
-        "dependencies?": "package[]",
-        "contributors?": "contributor[]"
-    },
-    contributor: {
-        // Subtypes like 'email' are inferred like 'string' but provide additional validation at runtime.
-        email: "email",
-        "packages?": "package[]"
-    }
-}).compile()
-
-// Cyclic types are inferred to arbitrary depth...
-export type Package = typeof types.package.infer
-
-// And can validate cyclic data.
-const packageData: Package = {
-    name: "arktype",
-    dependencies: [{ name: "typescript" }],
-    contributors: [{ email: "david@sharktypeio" }]
+if (out instanceof type.errors) {
+	// a clear, user-ready error message, even for complex unions and intersections
+	console.log(out.summary)
+} else {
+	// your valid data!
+	console.log(out)
 }
-packageData.dependencies![0].dependencies = [packageData]
-
-export const { data, problems } = types.package(packageData)
 ```
 
-## Syntax
+## Example syntax
 
-This is an informal, non-exhaustive list of current and upcoming ArkType syntax.
-
-There are some subjects it doesn't cover, primarily tuple expressions and scopes. As mentioned below, keep an eye out for comprehensive docs coming with the upcoming beta release. In the meantime, join [our Discord](https://discord.gg/xEzdc3fJQC) or head to our [GitHub Discussions](https://github.com/arktypeio/arktype/discussions) to ask a question and there's a good chance you'll see a response within the hour 😊
+Lots more docs are on the way, but I want to highlight some of the most useful syntax patterns/features that are carried over from alpha as well as those new to the 2.0 release.
 
 ```ts
+// Syntax carried over from 1.0 + TS
 export const currentTsSyntax = type({
-    keyword: "null",
-    stringLiteral: "'TS'",
-    numberLiteral: "5",
-    bigintLiteral: "5n",
-    union: "string|number",
-    intersection: "boolean&true",
-    array: "Date[]",
-    grouping: "(0|1)[]",
-    objectLiteral: {
-        nested: "string",
-        "optional?": "number"
-    },
-    tuple: ["number", "number"]
+	keyword: "null",
+	stringLiteral: "'TS'",
+	numberLiteral: "5",
+	bigintLiteral: "5n",
+	union: "string|number",
+	intersection: "boolean&true",
+	array: "Date[]",
+	grouping: "(0|1)[]",
+	objectLiteral: {
+		nested: "string",
+		"optional?": "number"
+	},
+	tuple: ["number", "number"]
 })
 
-// these features will be available in the upcoming release
+// available syntax new to 2.0
 
 export const upcomingTsSyntax = type({
-    keyof: "keyof bigint",
-    thisKeyword: "this", // recurses to the root of the current type
-    variadicTuples: ["true", "...false[]"]
+	keyof: "keyof bigint",
+	variadicTuples: ["true", "...", "false[]"]
 })
+
+// runtime-specific syntax and builtin keywords with great error messages
 
 export const validationSyntax = type({
-    keywords: "email|uuid|creditCard|integer", // and many more
-    builtinParsers: "parsedDate", // parses a Date from a string
-    nativeRegexLiteral: /@arktype\.io/,
-    embeddedRegexLiteral: "email&/@arktype\\.io/",
-    divisibility: "number%10", // a multiple of 10
-    bound: "alpha>10", // an alpha-only string with more than 10 characters
-    range: "1<=email[]<99", // a list of 1 to 99 emails
-    narrows: ["number", "=>", (n) => n % 2 === 1], // an odd integer
-    morphs: ["string", "|>", parseFloat] // validates a string input then parses it to a number
+	keywords: "email|uuid|creditCard|integer", // and many more
+	builtinParsers: "parse.date", // parses a Date from a string
+	nativeRegexLiteral: /@arktype\.io/,
+	embeddedRegexLiteral: "email&/@arktype\\.io/",
+	divisibility: "number%10", // a multiple of 10
+	bound: "alpha>10", // an alpha-only string with more than 10 characters
+	range: "1<=email[]<100", // a list of 1 to 99 emails
+	narrows: ["number", ":", n => n % 2 === 1], // an odd integer
+	morphs: ["string", "=>", parseFloat] // validates a string input then parses it to a number
 })
 
-// in the upcoming release, you can use chaining to define expressions directly
-// that use objects or functions that can't be embedded in strings
+// root-level expressions
 
-export const parseBigintLiteral = type({ value: "string" })
-    .and({
-        format: "'bigint'"
-    })
-    .narrow((data): data is { value: `${string}n`; format: "bigint" } =>
-        data.value.endsWith("n")
-    )
-    .morph((data) => BigInt(data.value.slice(-1)))
+const intersected = type({ value: "string" }, "&", { format: "'bigint'" })
 
-export const { data, problems } = parseBigintLiteral("999n")
-//             ^ bigint | undefined
+// chained expressions via .or, .and, .narrow, .pipe and much more
+//  (these replace previous helper methods like union and intersection)
+
+const user = type({
+	name: "string",
+	age: "number"
+})
+
+const parseUser = type("string").pipe(s => JSON.parse(s), user)
+
+// type is fully introspectable and traversable, displayed as:
+type ParseUser = Type<
+	(In: string) => Out<{
+		name: string
+		age: number
+	}>
+>
+
+const maybeMe = parseUser('{ "name": "David" }')
+
+if (maybeMe instanceof type.errors) {
+	// "age must be a number (was missing)"
+	console.log(maybeMe.summary)
+}
 ```
 
-## API
+There's so much more I want to share but I want to get at least an initial version of the 2.0 branch merged tonight so look forward to that next week!
 
-<!--@snipStart:api -->
+## API
 
 ArkType supports many of TypeScript's built-in types and operators, as well as some new ones dedicated exclusively to runtime validation. In fact, we got a little ahead of ourselves and built a ton of cool features, but we're still working on getting caught up syntax and API docs. Keep an eye out for more in the next couple weeks ⛵
 
 In the meantime, check out the examples here and use the type hints you get to learn how you can customize your types and scopes. If you want to explore some of the more advanced features, take a look at [our unit tests](./dev/test) or ask us [on Discord](https://discord.gg/xEzdc3fJQC) if your functionality is supported. If not, [create a GitHub issue](https://github.com/arktypeio/arktype/issues/new) so we can prioritize it!
-
-<!--@snipEnd -->
 
 ## Integrations
 
@@ -188,44 +171,38 @@ If you're curious, below is an example of what that looks like under the hood. I
 
 ```ts @blockFrom:src/parse/string/shift/operator/operator.ts:parseOperator
 export const parseOperator = (s: DynamicState): void => {
-    const lookahead = s.scanner.shift()
-    return lookahead === ""
-        ? s.finalize()
-        : lookahead === "["
-        ? s.scanner.shift() === "]"
-            ? s.rootToArray()
-            : s.error(incompleteArrayTokenMessage)
-        : isKeyOf(lookahead, Scanner.branchTokens)
-        ? s.pushRootToBranch(lookahead)
-        : lookahead === ")"
-        ? s.finalizeGroup()
-        : isKeyOf(lookahead, Scanner.comparatorStartChars)
-        ? parseBound(s, lookahead)
-        : lookahead === "%"
-        ? parseDivisor(s)
-        : lookahead === " "
-        ? parseOperator(s)
-        : throwInternalError(writeUnexpectedCharacterMessage(lookahead))
+	const lookahead = s.scanner.shift()
+	return (
+		lookahead === "" ? s.finalize()
+		: lookahead === "[" ?
+			s.scanner.shift() === "]" ?
+				s.rootToArray()
+			:	s.error(incompleteArrayTokenMessage)
+		: isKeyOf(lookahead, Scanner.branchTokens) ? s.pushRootToBranch(lookahead)
+		: lookahead === ")" ? s.finalizeGroup()
+		: isKeyOf(lookahead, Scanner.comparatorStartChars) ?
+			parseBound(s, lookahead)
+		: lookahead === "%" ? parseDivisor(s)
+		: lookahead === " " ? parseOperator(s)
+		: throwInternalError(writeUnexpectedCharacterMessage(lookahead))
+	)
 }
 
 export type parseOperator<s extends StaticState> =
-    s["unscanned"] extends Scanner.shift<infer lookahead, infer unscanned>
-        ? lookahead extends "["
-            ? unscanned extends Scanner.shift<"]", infer nextUnscanned>
-                ? state.setRoot<s, [s["root"], "[]"], nextUnscanned>
-                : error<incompleteArrayTokenMessage>
-            : lookahead extends Scanner.BranchToken
-            ? state.reduceBranch<s, lookahead, unscanned>
-            : lookahead extends ")"
-            ? state.finalizeGroup<s, unscanned>
-            : lookahead extends Scanner.ComparatorStartChar
-            ? parseBound<s, lookahead, unscanned>
-            : lookahead extends "%"
-            ? parseDivisor<s, unscanned>
-            : lookahead extends " "
-            ? parseOperator<state.scanTo<s, unscanned>>
-            : error<writeUnexpectedCharacterMessage<lookahead>>
-        : state.finalize<s>
+	s["unscanned"] extends Scanner.shift<infer lookahead, infer unscanned> ?
+		lookahead extends "[" ?
+			unscanned extends Scanner.shift<"]", infer nextUnscanned> ?
+				state.setRoot<s, [s["root"], "[]"], nextUnscanned>
+			:	error<incompleteArrayTokenMessage>
+		: lookahead extends Scanner.BranchToken ?
+			state.reduceBranch<s, lookahead, unscanned>
+		: lookahead extends ")" ? state.finalizeGroup<s, unscanned>
+		: lookahead extends Scanner.ComparatorStartChar ?
+			parseBound<s, lookahead, unscanned>
+		: lookahead extends "%" ? parseDivisor<s, unscanned>
+		: lookahead extends " " ? parseOperator<state.scanTo<s, unscanned>>
+		: error<writeUnexpectedCharacterMessage<lookahead>>
+	:	state.finalize<s>
 ```
 
 ## Contributions

@@ -1,0 +1,13 @@
+// This is the per-package config for running mocha tests without including
+// context from the entire workspace.
+
+// Other than require which has its relative path changed, it should be identical
+// to the repo root's mocha config from the root package.json
+
+// IF YOU UPDATE THE MOCHA CONFIG HERE, PLEASE ALSO UPDATE package.json/mocha AND .vscode/settings.json
+{
+	"spec": ["__tests__/*.test.*"],
+	"ignore": "node_modules/**/*",
+	"node-option": ["import=tsx"],
+	"require": "../repo/mocha.globalSetup.ts"
+}
