@@ -5,7 +5,8 @@ import { defineConfig } from "astro/config"
 // https://astro.build/config
 export default defineConfig({
 	site: "https://arktype.io",
-	outDir: "out",
+	// cannot configure out dir to out to match other packges since dist is hard
+	// coded into: https://github.com/withastro/action/blob/main/action.yml
 	integrations: [
 		starlight({
 			title: "ArkType",
