@@ -248,8 +248,8 @@ b must be a string (was false)`)
 			const o = type({ "[symbol]": "1" })
 			attest<{ [x: symbol]: 1 }>(o.infer)
 			attest(o.json).snap({
-				domain: "object",
-				index: [{ key: "symbol", value: { unit: 1 } }]
+				index: [{ value: { unit: 1 }, index: "symbol" }],
+				domain: "object"
 			})
 
 			attest(o({})).equals({})

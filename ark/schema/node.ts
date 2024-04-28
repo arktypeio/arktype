@@ -13,9 +13,10 @@ import {
 } from "@arktype/util"
 import type { BaseConstraintNode } from "./constraints/constraint.js"
 import type { PredicateNode } from "./constraints/predicate.js"
-import type { DivisorNode } from "./constraints/refinements/divisor.js"
-import type { BoundNodesByKind } from "./constraints/refinements/kinds.js"
-import type { RegexNode } from "./constraints/refinements/regex.js"
+import type { DivisorNode } from "./constraints/refinement/divisor.js"
+import type { BoundNodesByKind } from "./constraints/refinement/kinds.js"
+import type { RefinementNode } from "./constraints/refinement/refinement.js"
+import type { RegexNode } from "./constraints/refinement/regex.js"
 import type { IndexNode } from "./constraints/structure/index.js"
 import type { OptionalNode } from "./constraints/structure/optional.js"
 import type { RequiredNode } from "./constraints/structure/required.js"
@@ -307,6 +308,7 @@ interface NodesByKind extends BoundNodesByKind {
 	index: IndexNode
 	sequence: SequenceNode
 	structure: StructureNode
+	refinement: RefinementNode
 }
 
 export type Node<kind extends NodeKind> = NodesByKind[kind]

@@ -6,14 +6,13 @@ import {
 	type Key
 } from "@arktype/util"
 import type { RawSchema } from "../../schema.js"
-import { intersectionChildKeyParser } from "../../schemas/intersection.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import { implementNode, type StructuralKind } from "../../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/traversal.js"
 import { makeRootAndArrayPropertiesMutable } from "../../shared/utils.js"
-import { BaseConstraintNode } from "../constraint.js"
+import { BaseConstraintNode, constraintKeyParser } from "../constraint.js"
 import type { IndexDef, IndexNode } from "./index.js"
 import type { BasePropNode, PropDef } from "./prop.js"
 import type { SequenceDef, SequenceNode } from "./sequence.js"
@@ -210,19 +209,19 @@ export const structureImplementation = implementNode<StructureDeclaration>({
 	keys: {
 		required: {
 			child: true,
-			parse: intersectionChildKeyParser("required")
+			parse: constraintKeyParser("required")
 		},
 		optional: {
 			child: true,
-			parse: intersectionChildKeyParser("optional")
+			parse: constraintKeyParser("optional")
 		},
 		index: {
 			child: true,
-			parse: intersectionChildKeyParser("index")
+			parse: constraintKeyParser("index")
 		},
 		sequence: {
 			child: true,
-			parse: intersectionChildKeyParser("sequence")
+			parse: constraintKeyParser("sequence")
 		},
 		onExtraneousKey: {
 			parse: def => (def === "ignore" ? undefined : def)

@@ -73,7 +73,8 @@ export const constraintKinds = [
 	...refinementKinds,
 	...structuralKinds,
 	"predicate",
-	"structure"
+	"structure",
+	"refinement"
 ] as const
 
 export type ConstraintKind = (typeof constraintKinds)[number]

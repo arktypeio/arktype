@@ -1,3 +1,4 @@
+import type { array, listable } from "@arktype/util"
 import {
 	type PredicateDeclaration,
 	predicateImplementation,
@@ -7,17 +8,22 @@ import {
 	type DivisorDeclaration,
 	divisorImplementation,
 	DivisorNode
-} from "./constraints/refinements/divisor.js"
+} from "./constraints/refinement/divisor.js"
 import {
 	boundClassesByKind,
 	type BoundDeclarations,
 	boundImplementationsByKind
-} from "./constraints/refinements/kinds.js"
+} from "./constraints/refinement/kinds.js"
+import {
+	type RefinementDeclaration,
+	refinementImplementation,
+	RefinementNode
+} from "./constraints/refinement/refinement.js"
 import {
 	type RegexDeclaration,
 	regexImplementation,
 	RegexNode
-} from "./constraints/refinements/regex.js"
+} from "./constraints/refinement/regex.js"
 import {
 	type IndexDeclaration,
 	indexImplementation,
@@ -43,7 +49,7 @@ import {
 	structureImplementation,
 	StructureNode
 } from "./constraints/structure/structure.js"
-import type { RawNode } from "./node.js"
+import type { Node, RawNode } from "./node.js"
 import {
 	type AliasDeclaration,
 	aliasImplementation,
@@ -62,7 +68,6 @@ import {
 import {
 	type MorphDeclaration,
 	morphImplementation,
-	type MorphInputKind,
 	MorphNode
 } from "./schemas/morph.js"
 import {
@@ -80,7 +85,12 @@ import {
 	unitImplementation,
 	UnitNode
 } from "./schemas/unit.js"
-import type { NodeKind, UnknownNodeImplementation } from "./shared/implement.js"
+import type {
+	ConstraintKind,
+	NodeKind,
+	OpenNodeKind,
+	UnknownNodeImplementation
+} from "./shared/implement.js"
 import type { makeRootAndArrayPropertiesMutable } from "./shared/utils.js"
 
 export interface NodeDeclarationsByKind extends BoundDeclarations {
@@ -99,6 +109,7 @@ export interface NodeDeclarationsByKind extends BoundDeclarations {
 	index: IndexDeclaration
 	regex: RegexDeclaration
 	predicate: PredicateDeclaration
+	refinement: RefinementDeclaration
 }
 
 export const nodeImplementationsByKind: Record<
@@ -120,7 +131,8 @@ export const nodeImplementationsByKind: Record<
 	optional: optionalImplementation,
 	index: indexImplementation,
 	sequence: sequenceImplementation,
-	structure: structureImplementation
+	structure: structureImplementation,
+	refinement: refinementImplementation
 } satisfies Record<NodeKind, unknown> as never
 
 export const nodeClassesByKind: Record<
@@ -142,7 +154,8 @@ export const nodeClassesByKind: Record<
 	optional: OptionalNode,
 	index: IndexNode,
 	sequence: SequenceNode,
-	structure: StructureNode
+	structure: StructureNode,
+	refinement: RefinementNode
 } satisfies Record<NodeKind, typeof RawNode<any>> as never
 
 export type Declaration<kind extends NodeKind> = NodeDeclarationsByKind[kind]
@@ -154,17 +167,6 @@ export type NormalizedDef<kind extends NodeKind> =
 
 export type childKindOf<kind extends NodeKind> = Declaration<kind>["childKind"]
 
-type ParentsByKind = {
-	[k in NodeKind]: {
-		[pKind in NodeKind]: k extends childKindOf<pKind> ? pKind : never
-	}[NodeKind]
-}
-
-export type parentKindOf<kind extends NodeKind> = ParentsByKind[kind]
-
-export type ioKindOf<kind extends NodeKind> =
-	kind extends "morph" ? MorphInputKind : reducibleKindOf<kind>
-
 export type Prerequisite<kind extends NodeKind> =
 	Declaration<kind>["prerequisite"]
 
@@ -174,6 +176,12 @@ export type reducibleKindOf<kind extends NodeKind> =
 	:	kind
 
 export type Inner<kind extends NodeKind> = Declaration<kind>["inner"]
+
+export type defAttachedAs<kind extends ConstraintKind> =
+	kind extends OpenNodeKind ? listable<NodeDef<kind>> : NodeDef<kind>
+
+export type innerAttachedAs<kind extends ConstraintKind> =
+	kind extends OpenNodeKind ? array<Node<kind>> : Node<kind>
 
 /** make nested arrays mutable while keeping nested nodes immutable */
 export type MutableInner<kind extends NodeKind> =
