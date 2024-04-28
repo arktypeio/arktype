@@ -4,6 +4,7 @@ import { defineConfig } from "astro/config"
 
 // https://astro.build/config
 export default defineConfig({
+	site: "https://arktype.io",
 	outDir: "out",
 	integrations: [
 		starlight({
@@ -35,6 +36,5 @@ export default defineConfig({
 			]
 		}),
 		react()
-	],
-	site: "https://arktype.io"
+	]
 })
