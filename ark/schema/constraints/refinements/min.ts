@@ -1,11 +1,10 @@
 import type { declareNode } from "../../shared/declare.js"
 import { implementNode } from "../../shared/implement.js"
-import type { RawConstraint } from "../constraint.js"
+import type { TraverseAllows } from "../../shared/traversal.js"
 import {
 	type BaseNormalizedRangeSchema,
+	BaseRange,
 	type BaseRangeInner,
-	type RangeAttachments,
-	deriveRangeAttachments,
 	parseExclusiveKey
 } from "./range.js"
 
@@ -26,10 +25,7 @@ export type MinDeclaration = declareNode<{
 	inner: MinInner
 	prerequisite: number
 	errorContext: MinInner
-	attachments: MinAttachments
 }>
-
-export interface MinAttachments extends RangeAttachments<MinDeclaration> {}
 
 export const minImplementation = implementNode<MinDeclaration>({
 	kind: "min",
@@ -39,22 +35,19 @@ export const minImplementation = implementNode<MinDeclaration>({
 		rule: {},
 		exclusive: parseExclusiveKey
 	},
-	normalize: (def) => (typeof def === "number" ? { rule: def } : def),
+	normalize: def => (typeof def === "number" ? { rule: def } : def),
 	intersections: {
 		min: (l, r) => (l.isStricterThan(r) ? l : r)
 	},
 	defaults: {
-		description: (node) =>
+		description: node =>
 			`${node.exclusive ? "more than" : "at least"} ${node.rule}`
-	},
-	construct: (self) =>
-		deriveRangeAttachments<MinDeclaration>(self, {
-			traverseAllows:
-				self.exclusive ?
-					(data) => data > self.rule
-				:	(data) => data >= self.rule,
-			impliedBasis: self.$.keywords.number
-		})
+	}
 })
 
-export type MinNode = RawConstraint<MinDeclaration>
+export class MinNode extends BaseRange<MinDeclaration> {
+	readonly impliedBasis = this.$.keywords.number.raw
+
+	traverseAllows: TraverseAllows<number> =
+		this.exclusive ? data => data > this.rule : data => data >= this.rule
+}

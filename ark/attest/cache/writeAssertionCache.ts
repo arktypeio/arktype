@@ -27,7 +27,7 @@ export const analyzeProjectAssertions = (): AssertionsByFile => {
 	const diagnosticsByFile = getDiagnosticsByFile()
 	const assertionsByFile: AssertionsByFile = {}
 	const attestAliasInstantiationMethodCalls = config.attestAliases.map(
-		(alias) => `${alias}.instantiations`
+		alias => `${alias}.instantiations`
 	)
 	for (const path of filePaths) {
 		const file = instance.getSourceFileOrThrow(path)
@@ -36,9 +36,8 @@ export const analyzeProjectAssertions = (): AssertionsByFile => {
 			diagnosticsByFile,
 			config.attestAliases
 		)
-		if (assertionsInFile.length) {
+		if (assertionsInFile.length)
 			assertionsByFile[getFileKey(file.fileName)] = assertionsInFile
-		}
 		if (!config.skipInlineInstantiations) {
 			gatherInlineInstantiationData(
 				file,
@@ -56,7 +55,7 @@ export const getAssertionsInFile = (
 	attestAliases: string[]
 ): TypeAssertionData[] => {
 	const assertCalls = getCallExpressionsByName(file, attestAliases)
-	return assertCalls.map((call) => analyzeAssertCall(call, diagnosticsByFile))
+	return assertCalls.map(call => analyzeAssertCall(call, diagnosticsByFile))
 }
 
 export const analyzeAssertCall = (
@@ -65,8 +64,8 @@ export const analyzeAssertCall = (
 ): TypeAssertionData => {
 	const types = extractArgumentTypesFromCall(assertCall)
 	const location = getCallLocationFromCallExpression(assertCall)
-	const args = types.args.map((arg) => serializeArg(arg, types))
-	const typeArgs = types.typeArgs.map((typeArg) => serializeArg(typeArg, types))
+	const args = types.args.map(arg => serializeArg(arg, types))
+	const typeArgs = types.typeArgs.map(typeArg => serializeArg(typeArg, types))
 	const errors = checkDiagnosticMessages(assertCall, diagnosticsByFile)
 	const completions = getCompletions(assertCall)
 	return {
@@ -84,8 +83,8 @@ const serializeArg = (
 ): ArgAssertionData => ({
 	type: arg.toString(),
 	relationships: {
-		args: context.args.map((other) => compareTsTypes(arg, other)),
-		typeArgs: context.typeArgs.map((other) => compareTsTypes(arg, other))
+		args: context.args.map(other => compareTsTypes(arg, other)),
+		typeArgs: context.typeArgs.map(other => compareTsTypes(arg, other))
 	}
 })
 
@@ -93,9 +92,8 @@ export type Completions = Record<string, string[]> | string
 
 const getCompletions = (attestCall: ts.CallExpression) => {
 	const arg = attestCall.arguments[0]
-	if (arg === undefined) {
-		return {}
-	}
+	if (arg === undefined) return {}
+
 	const descendants = getDescendants(arg)
 	const file = attestCall.getSourceFile()
 	const text = file.getFullText()
@@ -118,17 +116,13 @@ const getCompletions = (attestCall: ts.CallExpression) => {
 
 			const entries = completionData?.entries ?? []
 
-			if (prefix in completions) {
+			if (prefix in completions)
 				return `Encountered multiple completion candidates for string(s) '${prefix}'. Assertions on the same prefix must be split into multiple attest calls so the results can be distinguished.`
-			}
+
 			completions[prefix] = []
 			for (const entry of entries) {
-				if (
-					entry.name.startsWith(prefix) &&
-					entry.name.length > prefix.length
-				) {
+				if (entry.name.startsWith(prefix) && entry.name.length > prefix.length)
 					completions[prefix].push(entry.name)
-				}
 			}
 		}
 	}
@@ -149,9 +143,9 @@ export type DiagnosticsByFile = Record<string, DiagnosticData[]>
 export const getDiagnosticsByFile = (): DiagnosticsByFile => {
 	const diagnosticsByFile: DiagnosticsByFile = {}
 	const diagnostics: ts.Diagnostic[] = getInternalTypeChecker().getDiagnostics()
-	for (const diagnostic of diagnostics) {
+	for (const diagnostic of diagnostics)
 		addDiagnosticDataFrom(diagnostic, diagnosticsByFile)
-	}
+
 	return diagnosticsByFile
 }
 
@@ -160,26 +154,21 @@ const addDiagnosticDataFrom = (
 	diagnosticsByFile: DiagnosticsByFile
 ) => {
 	const filePath = diagnostic.file?.fileName
-	if (!filePath) {
-		return
-	}
+	if (!filePath) return
+
 	const fileKey = getFileKey(filePath)
 	const start = diagnostic.start ?? -1
 	const end = start + (diagnostic.length ?? 0)
 	let message = diagnostic.messageText
-	if (typeof message === "object") {
-		message = concatenateChainedErrors([message])
-	}
+	if (typeof message === "object") message = concatenateChainedErrors([message])
+
 	const data: DiagnosticData = {
 		start,
 		end,
 		message
 	}
-	if (diagnosticsByFile[fileKey]) {
-		diagnosticsByFile[fileKey].push(data)
-	} else {
-		diagnosticsByFile[fileKey] = [data]
-	}
+	if (diagnosticsByFile[fileKey]) diagnosticsByFile[fileKey].push(data)
+	else diagnosticsByFile[fileKey] = [data]
 }
 
 const concatenateChainedErrors = (
@@ -187,7 +176,7 @@ const concatenateChainedErrors = (
 ): string =>
 	diagnostics
 		.map(
-			(msg) =>
+			msg =>
 				`${msg.messageText}${
 					msg.next ? concatenateChainedErrors(msg.next) : ""
 				}`
@@ -256,17 +245,15 @@ export const checkDiagnosticMessages = (
 ): string[] => {
 	const fileKey = getFileKey(attestCall.getSourceFile().fileName)
 	const fileDiagnostics = diagnosticsByFile[fileKey]
-	if (!fileDiagnostics) {
-		return []
-	}
+	if (!fileDiagnostics) return []
+
 	const diagnosticMessagesInArgRange: string[] = []
 	for (const diagnostic of fileDiagnostics) {
 		if (
 			diagnostic.start >= attestCall.getStart() &&
 			diagnostic.end <= attestCall.getEnd()
-		) {
+		)
 			diagnosticMessagesInArgRange.push(diagnostic.message)
-		}
 	}
 	return diagnosticMessagesInArgRange
 }

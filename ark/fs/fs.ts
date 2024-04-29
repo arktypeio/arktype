@@ -19,12 +19,10 @@ export { rmSync } from "node:fs"
 
 export const ensureDir = (path: string): string => {
 	if (existsSync(path)) {
-		if (!statSync(path).isDirectory()) {
+		if (!statSync(path).isDirectory())
 			throw new Error(`${path} exists and is not a directory.`)
-		}
-	} else {
-		mkdirSync(path, { recursive: true })
-	}
+	} else mkdirSync(path, { recursive: true })
+
 	return path
 }
 
@@ -64,12 +62,10 @@ export const walkPaths = (dir: string, options: WalkOptions = {}): string[] =>
 		const path = join(dir, item)
 		const isDir = lstatSync(path).isDirectory()
 		const isFile = lstatSync(path).isFile()
-		if (isDir && options.ignoreDirsMatching?.test(path)) {
-			return paths
-		}
-		if (isFile && options.ignoreFilesMatching?.test(path)) {
-			return paths
-		}
+		if (isDir && options.ignoreDirsMatching?.test(path)) return paths
+
+		if (isFile && options.ignoreFilesMatching?.test(path)) return paths
+
 		const excludeCurrent =
 			(options.excludeDirs && isDir) ||
 			(options.excludeFiles && !isDir) ||
@@ -125,9 +121,7 @@ export const findPackageRoot = (fromDir?: string): string => {
 			 * If the file is just a stub with no package name, don't consider
 			 * it a package root
 			 */
-			if ("name" in contents) {
-				return dirToCheck
-			}
+			if ("name" in contents) return dirToCheck
 		} catch {
 			// If the file doesn't exist, go up another level
 		}
@@ -149,12 +143,12 @@ export const getSourceControlPaths = (): string[] =>
 	})!
 		.toString()
 		.split("\n")
-		.filter((path) => existsSync(path) && statSync(path).isFile())
+		.filter(path => existsSync(path) && statSync(path).isFile())
 
 export const tsFileMatcher = /^.*\.(c|m)?tsx?$/
 
 const inFileFilter: WalkOptions = {
-	include: (path) => tsFileMatcher.test(path),
+	include: path => tsFileMatcher.test(path),
 	ignoreDirsMatching: /node_modules|out|dist|docgen/
 }
 
@@ -164,7 +158,7 @@ export const getSourceFilePaths = (dir = "."): string[] =>
 export type SourceFileEntry = [path: string, contents: string]
 
 export const getSourceFileEntries = (dir = "."): SourceFileEntry[] =>
-	getSourceFilePaths(dir).map((path) => [path, readFile(path)])
+	getSourceFilePaths(dir).map(path => [path, readFile(path)])
 
 export type ReplacementDictionary = Record<
 	string,
@@ -181,7 +175,7 @@ export type Matcher = {
  * replace all will replace
  */
 const findReplace: (matchers: Matchers) => (input: string) => string =
-	(matchers) => (input) =>
+	matchers => input =>
 		matchers.reduce((acc, m) => acc.replaceAll(m.pattern, m.replacement), input)
 
 /**
@@ -192,7 +186,7 @@ const findReplace: (matchers: Matchers) => (input: string) => string =
 const findReplaceMany =
 	(matchers: Matchers) =>
 	(files: readonly string[] = []): void =>
-		void files.forEach((file) => {
+		void files.forEach(file => {
 			writeFile(file, findReplace(matchers)(readFile(file)))
 		})
 

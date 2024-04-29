@@ -13,7 +13,7 @@ const Class = <def>(def: validateTypeRoot<def, Ark>) => {
 
 		constructor(input: unknown) {
 			const out = validator(input)
-			if (out instanceof type.error) {
+			if (out instanceof type.errors) {
 				return out.throw()
 			}
 			super(out as never)

@@ -1,4 +1,4 @@
-export const await1K = async (fn: () => Promise<void>) => {
+export const await1K = async (fn: () => Promise<void>): Promise<void> => {
 	await fn()
 	await fn()
 	await fn()

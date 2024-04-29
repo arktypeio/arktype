@@ -21,7 +21,6 @@ import {
 	assertEquals,
 	callAssertedFunction,
 	getThrownMessage,
-	isAssertionData,
 	throwAssertionError
 } from "./assertions.js"
 import type { AssertionContext } from "./attest.js"
@@ -42,10 +41,8 @@ export class ChainableAssertions implements AssertionRecord {
 
 	private get actual() {
 		if (this.ctx.actual instanceof TypeAssertionMapping) {
-			const assertionEntry = this.ctx.typeAssertionEntries![0][1]
-			if (isAssertionData(assertionEntry)) {
-				return this.ctx.actual.fn(assertionEntry, this.ctx)!.actual
-			}
+			const assertionEntry = this.ctx.typeRelationshipAssertionEntries![0][1]
+			return this.ctx.actual.fn(assertionEntry, this.ctx)!.actual
 		}
 		return this.ctx.actual
 	}
@@ -85,6 +82,7 @@ export class ChainableAssertions implements AssertionRecord {
 		assert.equal(this.actual, expected)
 		return this
 	}
+
 	equals(expected: unknown): this {
 		assertEquals(expected, this.actual, this.ctx)
 		return this
@@ -123,9 +121,8 @@ export class ChainableAssertions implements AssertionRecord {
 				// to give a clearer error message. This avoid problems with objects
 				// like subtypes of array that do not pass node's deep equality test
 				// but serialize to the same value.
-				if (printable(args[0]) !== printable(this.actual)) {
+				if (printable(args[0]) !== printable(this.actual))
 					assertEquals(expectedSerialized, this.serializedActual, this.ctx)
-				}
 			}
 			return this
 		}
@@ -144,9 +141,8 @@ export class ChainableAssertions implements AssertionRecord {
 						customPath: opts?.path
 					})
 				}
-			} else {
-				assertEquals(expectedSnapshot, this.serializedActual, this.ctx)
-			}
+			} else assertEquals(expectedSnapshot, this.serializedActual, this.ctx)
+
 			return this
 		}
 		return Object.assign(inline, { toFile })
@@ -155,22 +151,19 @@ export class ChainableAssertions implements AssertionRecord {
 	private immediateOrChained() {
 		const immediateAssertion = (...args: [expected: unknown]) => {
 			let expected
-			if (args.length) {
-				expected = args[0]
-			} else {
-				if ("defaultExpected" in this.ctx) {
-					expected = this.ctx.defaultExpected
-				} else {
+			if (args.length) expected = args[0]
+			else {
+				if ("defaultExpected" in this.ctx) expected = this.ctx.defaultExpected
+				else {
 					throw new Error(
 						`Assertion call requires an arg representing the expected value.`
 					)
 				}
 			}
-			if (this.ctx.allowRegex) {
+			if (this.ctx.allowRegex)
 				assertEqualOrMatching(expected, this.actual, this.ctx)
-			} else {
-				assertEquals(expected, this.actual, this.ctx)
-			}
+			else assertEquals(expected, this.actual, this.ctx)
+
 			return this
 		}
 		return new Proxy(immediateAssertion, {
@@ -178,7 +171,7 @@ export class ChainableAssertions implements AssertionRecord {
 		})
 	}
 
-	get throws() {
+	get throws(): unknown {
 		const result = callAssertedFunction(this.actual as Function)
 		this.ctx.actual = getThrownMessage(result, this.ctx)
 		this.ctx.allowRegex = true
@@ -195,7 +188,7 @@ export class ChainableAssertions implements AssertionRecord {
 		if (!this.ctx.cfg.skipTypes) {
 			assertEqualOrMatching(
 				matchValue,
-				new TypeAssertionMapping((data) => ({
+				new TypeAssertionMapping(data => ({
 					actual: data.errors.join("\n")
 				})),
 				this.ctx
@@ -203,11 +196,10 @@ export class ChainableAssertions implements AssertionRecord {
 		}
 	}
 
-	get completions() {
-		if (this.ctx.cfg.skipTypes) {
-			return chainableNoOpProxy
-		}
-		this.ctx.actual = new TypeAssertionMapping((data) => {
+	get completions(): any {
+		if (this.ctx.cfg.skipTypes) return chainableNoOpProxy
+
+		this.ctx.actual = new TypeAssertionMapping(data => {
 			checkCompletionsForErrors(data.completions)
 			return { actual: data.completions }
 		})
@@ -215,21 +207,20 @@ export class ChainableAssertions implements AssertionRecord {
 		return this.snap
 	}
 
-	get type() {
-		if (this.ctx.cfg.skipTypes) {
-			return chainableNoOpProxy
-		}
+	get type(): any {
+		if (this.ctx.cfg.skipTypes) return chainableNoOpProxy
+
 		// We need to bind this to return an object with getters
 		const self = this
 		return {
 			get toString() {
-				self.ctx.actual = new TypeAssertionMapping((data) => ({
+				self.ctx.actual = new TypeAssertionMapping(data => ({
 					actual: data.args[0].type
 				}))
 				return self.immediateOrChained()
 			},
 			get errors() {
-				self.ctx.actual = new TypeAssertionMapping((data) => ({
+				self.ctx.actual = new TypeAssertionMapping(data => ({
 					actual: data.errors.join("\n")
 				}))
 				self.ctx.allowRegex = true
@@ -242,9 +233,7 @@ export class ChainableAssertions implements AssertionRecord {
 	}
 }
 const checkCompletionsForErrors = (completions?: Completions) => {
-	if (typeof completions === "string") {
-		throw new Error(completions)
-	}
+	if (typeof completions === "string") throw new Error(completions)
 }
 
 export type AssertionKind = "value" | "type"

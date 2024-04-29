@@ -1,8 +1,6 @@
 import { caller } from "@arktype/fs"
-import { throwInternalError } from "@arktype/util"
 import ts from "typescript"
-import { isBenchData } from "../assert/assertions.js"
-import { getTypeAssertionsAtPosition } from "../cache/getCachedAssertions.js"
+import { getTypeBenchAssertionsAtPosition } from "../cache/getCachedAssertions.js"
 import {
 	TsServer,
 	getAbsolutePosition,
@@ -49,7 +47,7 @@ export const getContributedInstantiations = (ctx: BenchContext): number => {
 	)
 
 	const firstMatchingNamedCall = getAncestors(node).find(
-		(call) => getCallExpressionsByName(call, testDeclarationAliases).length
+		call => getCallExpressionsByName(call, testDeclarationAliases).length
 	)
 
 	if (!firstMatchingNamedCall) {
@@ -59,12 +57,11 @@ export const getContributedInstantiations = (ctx: BenchContext): number => {
 	}
 
 	const body = getDescendants(firstMatchingNamedCall).find(
-		(node) => ts.isArrowFunction(node) || ts.isFunctionExpression(node)
+		node => ts.isArrowFunction(node) || ts.isFunctionExpression(node)
 	) as ts.ArrowFunction | ts.FunctionExpression | undefined
 
-	if (!body) {
+	if (!body)
 		throw new Error("Unable to retrieve contents of the call expression")
-	}
 
 	return getInstantiationsContributedByNode(file, body)
 }
@@ -82,23 +79,11 @@ export const instantiationDataHandler = (
 	args?: Measure<TypeUnit>,
 	isBenchFunction = true
 ): void => {
-	/**
-	 * todoshawn all we care about here is bench data
-	 */
-	let instantiationsContributed
-	if (isBenchFunction) {
-		instantiationsContributed = getContributedInstantiations(ctx)
-	} else {
-		const assertionEntry = getTypeAssertionsAtPosition(
-			ctx.benchCallPosition
-		)[0][1]
-		if (isBenchData(assertionEntry)) {
-			instantiationsContributed = assertionEntry.count
-		} else {
-			//todoshawn
-			throwInternalError("Assertion data of the wrong kind was encountered")
-		}
-	}
+	const instantiationsContributed =
+		isBenchFunction ?
+			getContributedInstantiations(ctx)
+		:	getTypeBenchAssertionsAtPosition(ctx.benchCallPosition)[0][1].count
+
 	const comparison: MeasureComparison<TypeUnit> = createTypeComparison(
 		instantiationsContributed,
 		args

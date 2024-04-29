@@ -31,9 +31,8 @@ export const resolveSnapshotPath = (
 	testFile: string,
 	customPath: string | undefined
 ): string => {
-	if (customPath && isAbsolute(customPath)) {
-		return customPath
-	}
+	if (customPath && isAbsolute(customPath)) return customPath
+
 	return join(dirname(testFile), customPath ?? "assert.snapshots.json")
 }
 
@@ -78,9 +77,8 @@ const findCallExpressionAncestor = (
 	const absolutePosition = getAbsolutePosition(file, position)
 	const startNode = nearestCallExpressionChild(file, absolutePosition)
 	const calls = getCallExpressionsByName(startNode, [functionName], true)
-	if (calls.length) {
-		return startNode
-	}
+	if (calls.length) return startNode
+
 	throw new Error(
 		`Unable to locate expected inline ${functionName} call from assertion at ${positionToString(
 			position
@@ -106,9 +104,8 @@ export const updateExternalSnapshot = ({
 
 let snapshotsWillBeWritten = false
 export const writeSnapshotUpdatesOnExit = (): void => {
-	if (snapshotsWillBeWritten) {
-		return
-	}
+	if (snapshotsWillBeWritten) return
+
 	process.on("exit", writeCachedInlineSnapshotUpdates)
 	snapshotsWillBeWritten = true
 }
@@ -117,17 +114,16 @@ const writeCachedInlineSnapshotUpdates = () => {
 	const config = getConfig()
 	const updates: QueuedUpdate[] = []
 
-	if (existsSync(config.assertionCacheDir)) {
+	if (existsSync(config.assertionCacheDir))
 		updates.push(...getQueuedUpdates(config.defaultAssertionCachePath))
-	}
+
 	writeUpdates(updates)
 	writeSnapUpdate(config.defaultAssertionCachePath)
 }
 
 const writeSnapUpdate = (path: string, update?: SnapshotArgs) => {
-	const assertions = existsSync(path)
-		? readJson(path)
-		: { updates: [] as SnapshotArgs[] }
+	const assertions =
+		existsSync(path) ? readJson(path) : { updates: [] as SnapshotArgs[] }
 
 	assertions.updates =
 		update !== undefined ? [...(assertions.updates ?? []), update] : []
@@ -146,7 +142,7 @@ const updateQueue = (queue: QueuedUpdate[], path: string) => {
 	}
 	if (snapshotData) {
 		try {
-			snapshotData.forEach((snapshot) =>
+			snapshotData.forEach(snapshot =>
 				queue.push(snapshotArgsToQueuedUpdate(snapshot))
 			)
 		} catch (error) {
@@ -170,9 +166,9 @@ const snapshotArgsToQueuedUpdate = ({
 }: SnapshotArgs): QueuedUpdate => {
 	const snapCall = findCallExpressionAncestor(position, snapFunctionName)
 	const newArgText =
-		typeof serializedValue === "string" && serializedValue.includes("\n")
-			? "`" + serializedValue.replaceAll("`", "\\`") + "`"
-			: JSON.stringify(serializedValue)
+		typeof serializedValue === "string" && serializedValue.includes("\n") ?
+			"`" + serializedValue.replaceAll("`", "\\`") + "`"
+		:	JSON.stringify(serializedValue)
 	return {
 		position,
 		snapCall,
@@ -184,9 +180,8 @@ const snapshotArgsToQueuedUpdate = ({
 
 // Waiting until process exit to write snapshots avoids invalidating existing source positions
 export const writeUpdates = (queuedUpdates: QueuedUpdate[]): void => {
-	if (!queuedUpdates.length) {
-		return
-	}
+	if (!queuedUpdates.length) return
+
 	const updatesByFile: Record<string, QueuedUpdate[]> = {}
 	for (const update of queuedUpdates) {
 		updatesByFile[update.position.file] ??= []
@@ -196,11 +191,9 @@ export const writeUpdates = (queuedUpdates: QueuedUpdate[]): void => {
 		writeFileUpdates(
 			k,
 			updatesByFile[k].sort((l, r) =>
-				l.position.line > r.position.line
-					? 1
-					: r.position.line > l.position.line
-					? -1
-					: l.position.char - r.position.char
+				l.position.line > r.position.line ? 1
+				: r.position.line > l.position.line ? -1
+				: l.position.char - r.position.char
 			)
 		)
 	}
@@ -209,13 +202,12 @@ export const writeUpdates = (queuedUpdates: QueuedUpdate[]): void => {
 
 const runFormatterIfAvailable = (queuedUpdates: QueuedUpdate[]) => {
 	const { formatter, shouldFormat } = getConfig()
-	if (!shouldFormat) {
-		return
-	}
+	if (!shouldFormat) return
+
 	try {
 		const updatedPaths = [
 			...new Set(
-				queuedUpdates.map((update) =>
+				queuedUpdates.map(update =>
 					filePath(update.snapCall.getSourceFile().fileName)
 				)
 			)
@@ -249,13 +241,15 @@ const summarizeSnapUpdate = (
 	let updateSummary = `${
 		originalArgs.length ? "🆙  Updated" : "📸  Established"
 	} `
-	updateSummary += update.baselinePath
-		? `baseline '${update.baselinePath.join("/")}' `
-		: `snap at ${getFileKey(update.position.file)}:${update.position.line} `
+	updateSummary +=
+		update.baselinePath ?
+			`baseline '${update.baselinePath.join("/")}' `
+		:	`snap at ${getFileKey(update.position.file)}:${update.position.line} `
 	const previousValue = update.snapCall.arguments[0]?.getText()
-	updateSummary += previousValue
-		? `from ${previousValue} to `
-		: `${update.baselinePath ? "at" : "as"} `
+	updateSummary +=
+		previousValue ?
+			`from ${previousValue} to `
+		:	`${update.baselinePath ? "at" : "as"} `
 
 	updateSummary += update.newArgText
 	console.log(updateSummary)

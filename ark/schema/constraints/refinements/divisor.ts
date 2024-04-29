@@ -1,16 +1,9 @@
 import type { Schema } from "../../schema.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
-import {
-	type NodeAttachments,
-	type PrimitiveAttachments,
-	derivePrimitiveAttachments,
-	implementNode
-} from "../../shared/implement.js"
-import type { RawConstraint } from "../constraint.js"
-import {
-	type ConstraintAttachments,
-	writeInvalidOperandMessage
-} from "../util.js"
+import { implementNode } from "../../shared/implement.js"
+import type { TraverseAllows } from "../../shared/traversal.js"
+import { RawPrimitiveConstraint } from "../constraint.js"
+import { writeInvalidOperandMessage } from "../util.js"
 
 export interface DivisorInner extends BaseMeta {
 	readonly rule: number
@@ -25,13 +18,7 @@ export type DivisorDeclaration = declareNode<{
 	inner: DivisorInner
 	prerequisite: number
 	errorContext: DivisorInner
-	attachments: DivisorAttachments
 }>
-
-export interface DivisorAttachments
-	extends NodeAttachments<DivisorDeclaration>,
-		PrimitiveAttachments<DivisorDeclaration>,
-		ConstraintAttachments {}
 
 export const divisorImplementation = implementNode<DivisorDeclaration>({
 	kind: "divisor",
@@ -39,10 +26,10 @@ export const divisorImplementation = implementNode<DivisorDeclaration>({
 	keys: {
 		rule: {}
 	},
-	normalize: (def) => (typeof def === "number" ? { rule: def } : def),
+	normalize: def => (typeof def === "number" ? { rule: def } : def),
 	intersections: {
-		divisor: (l, r, $) =>
-			$.node("divisor", {
+		divisor: (l, r, ctx) =>
+			ctx.$.node("divisor", {
 				rule: Math.abs(
 					(l.rule * r.rule) / greatestCommonDivisor(l.rule, r.rule)
 				)
@@ -50,21 +37,19 @@ export const divisorImplementation = implementNode<DivisorDeclaration>({
 	},
 	hasAssociatedError: true,
 	defaults: {
-		description: (node) =>
+		description: node =>
 			node.rule === 1 ? "an integer" : `a multiple of ${node.rule}`
-	},
-	construct: (self) => {
-		return derivePrimitiveAttachments<DivisorDeclaration>({
-			compiledCondition: `data % ${self.rule} === 0`,
-			compiledNegation: `data % ${self.rule} !== 0`,
-			impliedBasis: self.$.keywords.number,
-			expression: `% ${self.rule}`,
-			traverseAllows: (data) => data % self.rule === 0
-		})
 	}
 })
 
-export type DivisorNode = RawConstraint<DivisorDeclaration>
+export class DivisorNode extends RawPrimitiveConstraint<DivisorDeclaration> {
+	traverseAllows: TraverseAllows<number> = data => data % this.rule === 0
+
+	readonly compiledCondition = `data % ${this.rule} === 0`
+	readonly compiledNegation = `data % ${this.rule} !== 0`
+	readonly impliedBasis = this.$.keywords.number.raw
+	readonly expression = `% ${this.rule}`
+}
 
 export const writeIndivisibleMessage = <node extends Schema>(
 	t: node

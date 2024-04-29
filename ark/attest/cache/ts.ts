@@ -10,18 +10,17 @@ export class TsServer {
 	rootFiles!: string[]
 	virtualEnv!: tsvfs.VirtualTypeScriptEnvironment
 
-	static #instance: TsServer | null = null
+	private static _instance: TsServer | null = null
 	static get instance(): TsServer {
 		return new TsServer()
 	}
 
 	private constructor(private tsConfigInfo = getTsConfigInfoOrThrow()) {
-		if (TsServer.#instance) {
-			return TsServer.#instance
-		}
+		if (TsServer._instance) return TsServer._instance
+
 		const tsLibPaths = getTsLibFiles(tsConfigInfo.parsed.options)
 
-		this.rootFiles = tsConfigInfo.parsed.fileNames.filter((path) =>
+		this.rootFiles = tsConfigInfo.parsed.fileNames.filter(path =>
 			path.startsWith(fromCwd())
 		)
 
@@ -38,14 +37,13 @@ export class TsServer {
 			this.tsConfigInfo.parsed.options
 		)
 
-		TsServer.#instance = this
+		TsServer._instance = this
 	}
 
 	getSourceFileOrThrow(path: string): ts.SourceFile {
 		const file = this.virtualEnv.getSourceFile(path)
-		if (!file) {
-			throw new Error(`Could not find ${path}.`)
-		}
+		if (!file) throw new Error(`Could not find ${path}.`)
+
 		return file
 	}
 }
@@ -69,13 +67,13 @@ const nearestBoundingCallExpression = (
 	node: ts.Node,
 	position: number
 ): ts.CallExpression | undefined =>
-	node.pos <= position && node.end >= position
-		? node
-				.getChildren()
-				.flatMap(
-					(child) => nearestBoundingCallExpression(child, position) ?? []
-				)[0] ?? (ts.isCallExpression(node) ? node : undefined)
-		: undefined
+	node.pos <= position && node.end >= position ?
+		node
+			.getChildren()
+			.flatMap(
+				child => nearestBoundingCallExpression(child, position) ?? []
+			)[0] ?? (ts.isCallExpression(node) ? node : undefined)
+	:	undefined
 
 export const getAbsolutePosition = (
 	file: ts.SourceFile,
@@ -115,7 +113,7 @@ export const getTsConfigInfoOrThrow = (): TsconfigInfo => {
 	if (result.error) {
 		throw new Error(
 			ts.formatDiagnostics([result.error], {
-				getCanonicalFileName: (fileName) => fileName,
+				getCanonicalFileName: fileName => fileName,
 				getCurrentDirectory: process.cwd,
 				getNewLine: () => ts.sys.newLine
 			})
@@ -135,7 +133,7 @@ export const getTsConfigInfoOrThrow = (): TsconfigInfo => {
 	if (configParseResult.errors.length > 0) {
 		throw new Error(
 			ts.formatDiagnostics(configParseResult.errors, {
-				getCanonicalFileName: (fileName) => fileName,
+				getCanonicalFileName: fileName => fileName,
 				getCurrentDirectory: process.cwd,
 				getNewLine: () => ts.sys.newLine
 			})
@@ -161,7 +159,7 @@ export const getTsLibFiles = (
 	const libPath = dirname(ts.getDefaultLibFilePath(tsconfigOptions))
 	return {
 		defaultMapFromNodeModules,
-		resolvedPaths: [...defaultMapFromNodeModules.keys()].map((path) =>
+		resolvedPaths: [...defaultMapFromNodeModules.keys()].map(path =>
 			join(libPath, path)
 		)
 	}
@@ -210,9 +208,9 @@ export type ArgumentTypes = {
 export const extractArgumentTypesFromCall = (
 	call: ts.CallExpression
 ): ArgumentTypes => ({
-	args: call.arguments.map((arg) => getStringifiableType(arg)),
+	args: call.arguments.map(arg => getStringifiableType(arg)),
 	typeArgs:
-		call.typeArguments?.map((typeArg) => getStringifiableType(typeArg)) ?? []
+		call.typeArguments?.map(typeArg => getStringifiableType(typeArg)) ?? []
 })
 
 export const getDescendants = (node: ts.Node): ts.Node[] =>
@@ -220,7 +218,7 @@ export const getDescendants = (node: ts.Node): ts.Node[] =>
 
 const getDescendantsRecurse = (node: ts.Node): ts.Node[] => [
 	node,
-	...node.getChildren().flatMap((child) => getDescendantsRecurse(child))
+	...node.getChildren().flatMap(child => getDescendantsRecurse(child))
 ]
 
 export const getAncestors = (node: ts.Node): ts.Node[] => {
@@ -237,7 +235,7 @@ export const getFirstAncestorByKindOrThrow = (
 	node: ts.Node,
 	kind: ts.SyntaxKind
 ): ts.Node =>
-	getAncestors(node).find((ancestor) => ancestor.kind === kind) ??
+	getAncestors(node).find(ancestor => ancestor.kind === kind) ??
 	throwInternalError(
 		`Could not find an ancestor of kind ${ts.SyntaxKind[kind]}`
 	)

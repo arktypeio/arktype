@@ -34,9 +34,8 @@ export type split<
 export const getPath = (root: unknown, path: string[]): unknown => {
 	let result: any = root
 	for (const segment of path) {
-		if (typeof result !== "object" || result === null) {
-			return undefined
-		}
+		if (typeof result !== "object" || result === null) return undefined
+
 		result = result[segment]
 	}
 	return result
@@ -47,11 +46,8 @@ export const intersectUniqueLists = <item>(
 	r: readonly item[]
 ): item[] => {
 	const intersection = [...l]
-	for (const item of r) {
-		if (!l.includes(item)) {
-			intersection.push(item)
-		}
-	}
+	for (const item of r) if (!l.includes(item)) intersection.push(item)
+
 	return intersection
 }
 
@@ -72,21 +68,21 @@ export type flattenListable<t> = t extends array<infer element> ? element : t
 
 export type NonEmptyList<t = unknown> = readonly [t, ...t[]]
 
-export type repeat<t extends array, count extends number> = $repeat<
+export type repeat<t extends array, count extends number> = _repeat<
 	t,
 	[],
 	count,
 	[]
 >
 
-type $repeat<
+type _repeat<
 	base extends array,
 	result extends array,
 	maxDepth extends number,
 	depth extends 1[]
 > =
 	depth["length"] extends maxDepth ? result
-	:	$repeat<base, [...result, ...base], maxDepth, [...depth, 1]>
+	:	_repeat<base, [...result, ...base], maxDepth, [...depth, 1]>
 
 export type CollapsingList<t = unknown> =
 	| readonly []
@@ -166,17 +162,13 @@ export const append = <
 	value: value,
 	opts?: AppendOptions
 ): Exclude<to, undefined> | Extract<value & to, undefined> => {
-	if (value === undefined) {
-		return to ?? ([] as any)
-	}
-	if (to === undefined) {
-		return value === undefined ? [] : ([value] as any)
-	}
-	if (opts?.prepend) {
-		to.unshift(value)
-	} else {
-		to.push(value)
-	}
+	if (value === undefined) return to ?? ([] as any)
+
+	if (to === undefined) return value === undefined ? [] : ([value] as any)
+
+	if (opts?.prepend) to.unshift(value)
+	else to.push(value)
+
 	return to as never
 }
 
@@ -190,12 +182,11 @@ export const conflatenate = <element>(
 	to: readonly element[] | undefined | null,
 	elementOrList: listable<element> | undefined | null
 ): readonly element[] => {
-	if (elementOrList === undefined || elementOrList === null) {
+	if (elementOrList === undefined || elementOrList === null)
 		return to ?? ([] as never)
-	}
-	if (to === undefined || to === null) {
-		return arrayFrom(elementOrList) as never
-	}
+
+	if (to === undefined || to === null) return arrayFrom(elementOrList) as never
+
 	return to.concat(elementOrList) as never
 }
 
@@ -221,12 +212,10 @@ export const appendUnique = <to extends unknown[]>(
 	to: to | undefined,
 	value: to[number]
 ): to => {
-	if (to === undefined) {
-		return [value] as never
-	}
-	if (!to.includes(value)) {
-		to.push(value)
-	}
+	if (to === undefined) return [value] as never
+
+	if (!to.includes(value)) to.push(value)
+
 	return to
 }
 

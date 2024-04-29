@@ -62,9 +62,8 @@ type fullStringParse<s extends StaticState, $, args> = extractFinalizedResult<
 >
 
 export const parseUntilFinalizer = (s: DynamicState): DynamicStateWithRoot => {
-	while (s.finalizer === undefined) {
-		next(s)
-	}
+	while (s.finalizer === undefined) next(s)
+
 	return s as DynamicStateWithRoot
 }
 

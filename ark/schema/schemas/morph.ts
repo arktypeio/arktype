@@ -9,32 +9,34 @@ import {
 	throwParseError
 } from "@arktype/util"
 import type { of } from "../constraints/ast.js"
+import type { type } from "../inference.js"
 import type { NodeDef } from "../kinds.js"
-import type { Node } from "../node.js"
-import type {
-	RawSchema,
-	RawSchemaAttachments,
-	schemaKindRightOf
-} from "../schema.js"
+import type { Node, SchemaDef } from "../node.js"
+import { RawSchema, type schemaKindRightOf } from "../schema.js"
 import type { StaticArkOption } from "../scope.js"
-import type { NodeCompiler } from "../shared/compile.js"
+import { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { ArkTypeError } from "../shared/errors.js"
+import type { ArkErrors, ArkTypeError } from "../shared/errors.js"
 import { basisKinds, implementNode } from "../shared/implement.js"
-import type { TraversalContext } from "../shared/traversal.js"
+import { type inferPipe, intersectNodes } from "../shared/intersections.js"
+import type {
+	TraversalContext,
+	TraverseAllows,
+	TraverseApply
+} from "../shared/traversal.js"
 import { defineRightwardIntersections } from "./utils.js"
 
-export type MorphChildKind = schemaKindRightOf<"morph">
+export type MorphInputKind = schemaKindRightOf<"morph">
 
-export const morphChildKinds = [
+export const morphInputKinds = [
 	"intersection",
 	...basisKinds
-] as const satisfies readonly MorphChildKind[]
+] as const satisfies readonly MorphInputKind[]
 
-export type MorphChildNode = Node<MorphChildKind>
+export type MorphInputNode = Node<MorphInputKind>
 
-export type MorphChildDefinition = NodeDef<MorphChildKind>
+export type MorphInputDef = NodeDef<MorphInputKind>
 
 export type Morph<i = any, o = unknown> = (In: i, ctx: TraversalContext) => o
 
@@ -43,14 +45,14 @@ export type Out<o = any> = ["=>", o]
 export type MorphAst<i = any, o = any> = (In: i) => Out<o>
 
 export interface MorphInner extends BaseMeta {
-	readonly in: MorphChildNode
-	readonly out: MorphChildNode
+	readonly from: MorphInputNode
+	readonly to?: RawSchema
 	readonly morphs: readonly Morph[]
 }
 
 export interface MorphDef extends BaseMeta {
-	readonly in: MorphChildDefinition
-	readonly out?: MorphChildDefinition
+	readonly from: MorphInputDef
+	readonly to?: SchemaDef | undefined
 	readonly morphs: listable<Morph>
 }
 
@@ -59,144 +61,159 @@ export type MorphDeclaration = declareNode<{
 	def: MorphDef
 	normalizedDef: MorphDef
 	inner: MorphInner
-	childKind: MorphChildKind
-	attachments: MorphAttachments
+	childKind: MorphInputKind
 }>
-
-export interface MorphAttachments
-	extends RawSchemaAttachments<MorphDeclaration> {
-	serializedMorphs: array<string>
-}
 
 export const morphImplementation = implementNode<MorphDeclaration>({
 	kind: "morph",
 	hasAssociatedError: false,
 	keys: {
-		in: {
+		from: {
 			child: true,
-			parse: (def, ctx) => ctx.$.node(morphChildKinds, def)
+			parse: (def, ctx) => ctx.$.node(morphInputKinds, def)
 		},
-		out: {
+		to: {
 			child: true,
-			parse: (def, ctx) => ctx.$.node(morphChildKinds, def)
+			parse: (def, ctx) => {
+				if (def === undefined) return
+				const to = ctx.$.parseRoot(def)
+				return to.kind === "intersection" && to.children.length === 0 ?
+						// ignore unknown as an output validator
+						undefined
+					:	to
+			}
 		},
 		morphs: {
 			parse: arrayFrom,
-			serialize: (morphs) => morphs.map(reference)
+			serialize: morphs => morphs.map(reference)
 		}
 	},
-	normalize: (def) => def,
+	normalize: def => def,
 	defaults: {
-		description: (node) =>
-			`a morph from ${node.in.description} to ${node.out.description}`
+		description: node =>
+			`a morph from ${node.from.description} to ${node.to?.description ?? "unknown"}`
 	},
 	intersections: {
-		morph: (l, r, $) => {
-			if (l.morphs.some((morph, i) => morph !== r.morphs[i])) {
-				// TODO: is this always a parse error? what about for union reduction etc.
+		morph: (l, r, ctx) => {
+			if (l.morphs.some((morph, i) => morph !== r.morphs[i]))
 				// TODO: check in for union reduction
 				return throwParseError("Invalid intersection of morphs")
-			}
-			const inTersection = l.in.intersect(r.in)
-			if (inTersection instanceof Disjoint) {
-				return inTersection
-			}
-			const outTersection = l.out.intersect(r)
-			if (outTersection instanceof Disjoint) {
-				return outTersection
-			}
-			return $.node("morph", {
-				morphs: l.morphs,
-				in: inTersection,
-				out: outTersection
-			})
+			const from = intersectNodes(l.from, r.from, ctx)
+			if (from instanceof Disjoint) return from
+			const to =
+				l.to ?
+					r.to ?
+						intersectNodes(l.to, r.to, ctx)
+					:	l.to
+				:	r.to
+			if (to instanceof Disjoint) return to
+			// in case from is a union, we need to distribute the branches
+			// to can be a union as any schema is allowed
+			return ctx.$.parseRoot(
+				from.branches.map(fromBranch =>
+					ctx.$.node("morph", {
+						morphs: l.morphs,
+						from: fromBranch,
+						to
+					})
+				)
+			)
 		},
-		...defineRightwardIntersections("morph", (l, r, $) => {
-			const inTersection = l.in.intersect(r)
+		...defineRightwardIntersections("morph", (l, r, ctx) => {
+			const from = intersectNodes(l.from, r, ctx)
 			return (
-				inTersection instanceof Disjoint ? inTersection
-				: inTersection.kind === "union" ?
-					$.node(
+				from instanceof Disjoint ? from
+				: from.kind === "union" ?
+					ctx.$.node(
 						"union",
-						inTersection.branches.map((branch) => ({
+						from.branches.map(branch => ({
 							...l.inner,
-							in: branch
+							from: branch
 						}))
 					)
-				:	$.node("morph", {
+				:	ctx.$.node("morph", {
 						...l.inner,
-						in: inTersection
+						from
 					})
 			)
 		})
-	},
-	construct: (self) => {
-		const serializedMorphs = self.morphs.map((morph) => reference(morph))
-		return {
-			serializedMorphs,
-			get expression() {
-				return `(In: ${this.in.expression}) => Out<${this.out.expression}>`
-			},
-			traverseAllows: (data, ctx) => self.in.traverseAllows(data, ctx),
-			traverseApply: (data, ctx) => {
-				self.morphs.forEach((morph) => ctx.queueMorph(morph))
-				self.in.traverseApply(data, ctx)
-			},
-			compile(js: NodeCompiler): void {
-				if (js.traversalKind === "Allows") {
-					js.return(js.invoke(this.in))
-					return
-				}
-				this.serializedMorphs.forEach((name) =>
-					js.line(`ctx.queueMorph(${name})`)
-				)
-				js.line(js.invoke(this.in))
-			},
-			get in(): MorphChildNode {
-				return this.inner.in
-			},
-			get out(): MorphChildNode {
-				return this.inner.out ?? self.$.keywords.unknown
-			},
-			rawKeyOf(): RawSchema {
-				return this.in.rawKeyOf()
-			}
-		}
 	}
 })
 
-export interface MorphNode extends RawSchema<MorphDeclaration> {
-	// ensure these types are derived from MorphInner rather than those
-	// defined on RawNode
-	get in(): MorphChildNode
-	get out(): MorphChildNode
+export class MorphNode extends RawSchema<MorphDeclaration> {
+	serializedMorphs = this.morphs.map(morph => reference(morph))
+	compiledMorphs = `[${this.serializedMorphs}]`
+	outValidator = this.to?.traverseApply ?? null
+	outValidatorReference: string =
+		this.to ?
+			new NodeCompiler("Apply").reference(this.to, { bind: "this" })
+		:	"null"
+
+	traverseAllows: TraverseAllows = (data, ctx) =>
+		this.from.traverseAllows(data, ctx)
+	traverseApply: TraverseApply = (data, ctx) => {
+		ctx.queueMorphs(this.morphs, this.outValidator)
+		this.from.traverseApply(data, ctx)
+	}
+
+	expression = `(In: ${this.from.expression}) => Out<${this.to?.expression ?? "unknown"}>`
+
+	compile(js: NodeCompiler): void {
+		if (js.traversalKind === "Allows") {
+			js.return(js.invoke(this.from))
+			return
+		}
+		js.line(
+			`ctx.queueMorphs(${this.compiledMorphs}, ${this.outValidatorReference})`
+		)
+		js.line(js.invoke(this.from))
+	}
+
+	getIo(kind: "in" | "out"): RawSchema {
+		return kind === "in" ?
+				this.from
+			:	(this.to?.out as RawSchema) ?? this.$.keywords.unknown.raw
+	}
+
+	rawKeyOf(): RawSchema {
+		return this.from.rawKeyOf()
+	}
 }
+
+export type inferPipes<t, pipes extends Morph[]> =
+	pipes extends [infer head extends Morph, ...infer tail extends Morph[]] ?
+		inferPipes<
+			head extends type.cast<infer tPipe> ? inferPipe<t, tPipe>
+			:	(In: distillConstrainableIn<t>) => Out<inferMorphOut<head>>,
+			tail
+		>
+	:	t
 
 export type inferMorphOut<morph extends Morph> = Exclude<
 	ReturnType<morph>,
-	ArkTypeError
+	ArkTypeError | ArkErrors
 >
 
 export type distillIn<t> =
-	includesMorphs<t> extends true ? $distill<t, "in", "base"> : t
+	includesMorphs<t> extends true ? _distill<t, "in", "base"> : t
 
 export type distillOut<t> =
-	includesMorphs<t> extends true ? $distill<t, "out", "base"> : t
+	includesMorphs<t> extends true ? _distill<t, "out", "base"> : t
 
 export type distillConstrainableIn<t> =
-	includesMorphs<t> extends true ? $distill<t, "in", "constrainable"> : t
+	includesMorphs<t> extends true ? _distill<t, "in", "constrainable"> : t
 
 export type distillConstrainableOut<t> =
-	includesMorphs<t> extends true ? $distill<t, "out", "constrainable"> : t
+	includesMorphs<t> extends true ? _distill<t, "out", "constrainable"> : t
 
 export type includesMorphs<t> =
-	[t, $distill<t, "in", "base">, t, $distill<t, "out", "base">] extends (
-		[$distill<t, "in", "base">, t, $distill<t, "out", "base">, t]
+	[t, _distill<t, "in", "base">, t, _distill<t, "out", "base">] extends (
+		[_distill<t, "in", "base">, t, _distill<t, "out", "base">, t]
 	) ?
 		false
 	:	true
 
-type $distill<
+type _distill<
 	t,
 	io extends "in" | "out",
 	distilledKind extends "base" | "constrainable"
@@ -208,12 +225,12 @@ type $distill<
 		:	o
 	: t extends of<infer base, any> ?
 		distilledKind extends "base" ?
-			$distill<base, io, distilledKind>
+			_distill<base, io, distilledKind>
 		:	t
 	: t extends TerminallyInferredObjectKind | Primitive ? t
 	: t extends array ? distillArray<t, io, distilledKind, []>
 	: {
-			[k in keyof t]: $distill<t[k], io, distilledKind>
+			[k in keyof t]: _distill<t[k], io, distilledKind>
 		}
 
 type distillArray<
@@ -227,7 +244,7 @@ type distillArray<
 			tail,
 			io,
 			constraints,
-			[...prefix, $distill<head, io, constraints>]
+			[...prefix, _distill<head, io, constraints>]
 		>
 	:	[...prefix, ...distillPostfix<t, io, constraints>]
 
@@ -242,9 +259,9 @@ type distillPostfix<
 			init,
 			io,
 			constraints,
-			[$distill<last, io, constraints>, ...postfix]
+			[_distill<last, io, constraints>, ...postfix]
 		>
-	:	[...{ [i in keyof t]: $distill<t[i], io, constraints> }, ...postfix]
+	:	[...{ [i in keyof t]: _distill<t[i], io, constraints> }, ...postfix]
 
 /** Objects we don't want to expand during inference like Date or Promise */
 type TerminallyInferredObjectKind =

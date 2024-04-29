@@ -2,7 +2,6 @@ import {
 	type GenericProps,
 	type PrivateDeclaration,
 	RawSchema,
-	type SchemaModule,
 	hasArkKind,
 	type writeNonSubmoduleDotMessage,
 	writeUnresolvableMessage
@@ -11,6 +10,7 @@ import {
 	type BigintLiteral,
 	type Completion,
 	type ErrorMessage,
+	type isAnyOrNever,
 	type join,
 	printable,
 	throwParseError,
@@ -33,11 +33,8 @@ import {
 
 export const parseUnenclosed = (s: DynamicState): void => {
 	const token = s.scanner.shiftUntilNextTerminator()
-	if (token === "keyof") {
-		s.addPrefix("keyof")
-	} else {
-		s.root = unenclosedToNode(s, token)
-	}
+	if (token === "keyof") s.addPrefix("keyof")
+	else s.root = unenclosedToNode(s, token)
 }
 
 export type parseUnenclosed<s extends StaticState, $, args> =
@@ -48,7 +45,9 @@ export type parseUnenclosed<s extends StaticState, $, args> =
 		: tryResolve<s, token, $, args> extends infer result ?
 			result extends ErrorMessage<infer message> ? state.error<message>
 			: result extends keyof $ ?
-				$[result] extends GenericProps ?
+				isAnyOrNever<$[result]> extends true ?
+					state.setRoot<s, result, unscanned>
+				: $[result] extends GenericProps ?
 					parseGenericInstantiation<
 						token,
 						$[result],
@@ -68,9 +67,9 @@ export const parseGenericInstantiation = (
 ): RawSchema => {
 	s.scanner.shiftUntilNonWhitespace()
 	const lookahead = s.scanner.shift()
-	if (lookahead !== "<") {
+	if (lookahead !== "<")
 		return s.error(writeInvalidGenericArgsMessage(name, g.params, []))
-	}
+
 	const parsedArgs = parseGenericArgs(name, g.params, s)
 	const remainingChars = parsedArgs.unscanned.length
 	// set the scanner position to where the args scanner left off
@@ -128,13 +127,12 @@ const maybeParseUnenclosedLiteral = (
 	token: string
 ): RawSchema | undefined => {
 	const maybeNumber = tryParseNumber(token, { strict: true })
-	if (maybeNumber !== undefined) {
+	if (maybeNumber !== undefined)
 		return s.ctx.$.node("unit", { unit: maybeNumber })
-	}
+
 	const maybeBigint = tryParseWellFormedBigint(token)
-	if (maybeBigint !== undefined) {
+	if (maybeBigint !== undefined)
 		return s.ctx.$.node("unit", { unit: maybeBigint })
-	}
 }
 
 type tryResolve<s extends StaticState, token extends string, $, args> =
@@ -146,16 +144,9 @@ type tryResolve<s extends StaticState, token extends string, $, args> =
 	: token extends (
 		`${infer submodule extends keyof $ & string}.${infer reference}`
 	) ?
-		$[submodule] extends (
-			SchemaModule<infer sub$> | Module<infer sub$> // TODO: shouldn't need both checks?
-		) ?
-			reference extends keyof sub$ ? token
-			: unknown extends sub$ ?
-				// not sure why we need the additional check here, but for now TS seems to
-				// hit this branch for a non-scope dot access rather than failing
-				// initially when we try to infer r. if this can be removed without breaking
-				// any submodule test cases, do it!
-				ErrorMessage<writeNonSubmoduleDotMessage<submodule>>
+		$[submodule] extends Module<infer sub$> ?
+			reference extends keyof sub$ ?
+				token
 			:	unresolvableError<s, reference, $[submodule], args, [submodule]>
 		:	ErrorMessage<writeNonSubmoduleDotMessage<submodule>>
 	:	unresolvableError<s, token, $, args, []>

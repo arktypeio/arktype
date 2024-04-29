@@ -139,7 +139,7 @@ export const extendConfig = (
 ): ArkConfig => {
 	if (!extension) return base
 	const result = mergeConfigs(base, extension)
-	nonInheritedKeys.forEach((k) => {
+	nonInheritedKeys.forEach(k => {
 		if (!(k in extension)) delete result[k]
 	})
 	return result
@@ -200,7 +200,6 @@ export class RawSchemaScope<
 	}
 
 	static ambient: RawSchemaScope
-	// readonly ambient = (this.constructor as typeof RawSchemaScope).ambient
 
 	get ambient(): RawSchemaScope {
 		return (this.constructor as typeof RawSchemaScope).ambient
@@ -214,7 +213,7 @@ export class RawSchemaScope<
 	) {
 		this.config = config ?? {}
 		this.resolvedConfig = resolveConfig(config)
-		this.exportedNames = Object.keys(def).filter((k) => {
+		this.exportedNames = Object.keys(def).filter(k => {
 			if (k[0] === "#") {
 				this.aliases[k.slice(1)] = def[k]
 				return false
@@ -260,37 +259,40 @@ export class RawSchemaScope<
 		return this
 	}
 
-	schema(def: SchemaDef, opts?: NodeParseOptions): RawSchema {
-		return this.node(schemaKindOf(def), def, opts)
-	}
+	schema = ((def: SchemaDef, opts?: NodeParseOptions): RawSchema =>
+		this.node(schemaKindOf(def), def, opts)).bind(this)
 
-	defineSchema(def: SchemaDef): SchemaDef {
-		return def
-	}
+	defineSchema = ((def: SchemaDef) => def).bind(this)
 
-	units(values: unknown[], opts?: NodeParseOptions): RawSchema {
+	units = ((values: unknown[], opts?: NodeParseOptions): RawSchema => {
 		const uniqueValues: unknown[] = []
-		for (const value of values) {
-			if (!uniqueValues.includes(value)) {
-				uniqueValues.push(value)
-			}
-		}
-		const branches = uniqueValues.map((unit) =>
-			this.node("unit", { unit }, opts)
-		)
+		for (const value of values)
+			if (!uniqueValues.includes(value)) uniqueValues.push(value)
+
+		const branches = uniqueValues.map(unit => this.node("unit", { unit }, opts))
 		return this.node("union", branches, {
 			...opts,
 			prereduced: true
 		})
-	}
+	}).bind(this)
 
-	node<kinds extends NodeKind | array<SchemaKind>>(
+	node = (<kinds extends NodeKind | array<SchemaKind>>(
 		kinds: kinds,
 		schema: NodeDef<flattenListable<kinds>>,
 		opts?: NodeParseOptions
-	): Node<reducibleKindOf<flattenListable<kinds>>> {
-		return parseNode(kinds, schema, this, opts) as never
-	}
+	): Node<reducibleKindOf<flattenListable<kinds>>> => {
+		const node = parseNode(kinds, schema, this, opts)
+		if (this.resolved) {
+			// this node was not part of the original scope, so compile an anonymous scope
+			// including only its references
+			bindCompiledScope(node.contributesReferences)
+		} else {
+			// we're still parsing the scope itself, so defer compilation but
+			// add the node as a reference
+			Object.assign(this.referencesByName, node.contributesReferencesByName)
+		}
+		return node as never
+	}).bind(this)
 
 	parseRoot(def: unknown, opts?: NodeParseOptions): RawSchema {
 		return this.schema(def as never, opts)
@@ -317,16 +319,15 @@ export class RawSchemaScope<
 
 	maybeResolve(name: string): RawResolution | undefined {
 		const cached = this.resolutions[name]
-		if (cached) {
-			return cached
-		}
+		if (cached) return cached
+
 		let def = this.aliases[name]
 		if (!def) return this.maybeResolveSubalias(name)
 		def = this.preparseRoot(def)
 		if (hasArkKind(def, "generic"))
 			return (this.resolutions[name] = validateUninstantiatedGenericNode(def))
 		if (hasArkKind(def, "module")) return (this.resolutions[name] = def)
-		return (this.resolutions[name] = this.parseRoot(def, { args: {} }))
+		return (this.resolutions[name] = this.parseRoot(def))
 	}
 
 	/** If name is a valid reference to a submodule alias, return its resolution  */
@@ -347,36 +348,36 @@ export class RawSchemaScope<
 		) as never
 	}
 
-	#exportedResolutions: RawSchemaResolutions | undefined
-	#exportCache: SchemaExportCache | undefined
+	private _exportedResolutions: RawSchemaResolutions | undefined
+	private _exports: SchemaExportCache | undefined
 	export<names extends exportedNameOf<$>[]>(
 		...names: names
 	): show<destructuredExportContext<$, names>> {
-		if (!this.#exportCache) {
-			this.#exportCache = {}
-			for (const name of this.exportedNames) {
-				this.#exportCache[name] = this.maybeResolve(name)
-			}
-			this.#exportedResolutions = resolutionsOfModule(this, this.#exportCache)
+		if (!this._exports) {
+			this._exports = {}
+			for (const name of this.exportedNames)
+				this._exports[name] = this.maybeResolve(name)
+
+			this._exportedResolutions = resolutionsOfModule(this, this._exports)
 			// TODO: add generic json
 			Object.assign(
 				this.json,
-				flatMorph(this.#exportedResolutions as Dict, (k, v) =>
+				flatMorph(this._exportedResolutions as Dict, (k, v) =>
 					hasArkKind(v, "schema") ? [k, v.json] : []
 				)
 			)
-			Object.assign(this.resolutions, this.#exportedResolutions)
+			Object.assign(this.resolutions, this._exportedResolutions)
 			if (this.config.registerKeywords)
-				Object.assign(RawSchemaScope.keywords, this.#exportedResolutions)
+				Object.assign(RawSchemaScope.keywords, this._exportedResolutions)
 			this.references = Object.values(this.referencesByName)
-			// this.bindCompiledScope(this.references)
+			bindCompiledScope(this.references)
 			this.resolved = true
 		}
 		const namesToExport = names.length ? names : this.exportedNames
 		return new SchemaModule(
 			flatMorph(namesToExport, (_, name) => [
 				name,
-				this.#exportCache![name]
+				this._exports![name]
 			]) as never
 		) as never
 	}
@@ -392,9 +393,8 @@ const $resolveSubalias = (
 	name: string
 ): RawSchema | GenericSchema | undefined => {
 	const dotIndex = name.indexOf(".")
-	if (dotIndex === -1) {
-		return
-	}
+	if (dotIndex === -1) return
+
 	const dotPrefix = name.slice(0, dotIndex)
 	const prefixDef = base[dotPrefix]
 	// if the name includes ".", but the prefix is not an alias, it
@@ -487,21 +487,14 @@ export const SchemaScope: new <$ = any>(
 
 export const root: SchemaScope<{}> = new SchemaScope({})
 
-export const schema = root.schema.bind(root)
-
-export const node = root.node.bind(root)
-
-export const defineSchema = root.defineSchema.bind(root)
-
-export const units = root.units.bind(root)
-
-export const rawSchema = root.raw.schema.bind(root)
-
-export const rawNode = root.raw.node.bind(root)
-
-export const defineRawSchema = root.raw.defineSchema.bind(root)
-
-export const rawUnits = root.raw.units.bind(root)
+export const schema = root.schema
+export const node = root.node
+export const defineSchema = root.defineSchema
+export const units = root.units
+export const rawSchema = root.raw.schema
+export const rawNode = root.raw.node
+export const defineRawSchema = root.raw.defineSchema
+export const rawUnits = root.raw.units
 
 export class RawSchemaModule<
 	resolutions extends RawSchemaResolutions = RawSchemaResolutions
@@ -535,11 +528,9 @@ const resolutionsOfModule = ($: RawSchemaScope, typeSet: SchemaExportCache) => {
 				(innerK, innerV) => [`${k}.${innerK}`, innerV]
 			)
 			Object.assign(result, prefixedResolutions)
-		} else if (hasArkKind(v, "generic")) {
-			result[k] = v
-		} else if (hasArkKind(v, "schema")) {
-			result[k] = v
-		} else throwInternalError(`Unexpected scope resolution ${printable(v)}`)
+		} else if (hasArkKind(v, "generic")) result[k] = v
+		else if (hasArkKind(v, "schema")) result[k] = v
+		else throwInternalError(`Unexpected scope resolution ${printable(v)}`)
 	}
 	return result
 }
@@ -567,8 +558,8 @@ export const writeMissingSubmoduleAccessMessage = <name extends string>(
 export type writeMissingSubmoduleAccessMessage<name extends string> =
 	`Reference to submodule '${name}' must specify an alias`
 
-export const bindCompiledSpace = (references: readonly RawNode[]): void => {
-	const compiledTraversals = compileSpace(references)
+export const bindCompiledScope = (references: readonly RawNode[]): void => {
+	const compiledTraversals = compileScope(references)
 	for (const node of references) {
 		if (node.jit) {
 			// if node has already been bound to another scope or anonymous type, don't rebind it
@@ -576,28 +567,28 @@ export const bindCompiledSpace = (references: readonly RawNode[]): void => {
 		}
 		node.jit = true
 		node.traverseAllows =
-			compiledTraversals[`${node.name}Allows`].bind(compiledTraversals)
+			compiledTraversals[`${node.baseName}Allows`].bind(compiledTraversals)
 		if (node.isSchema() && !node.includesContextDependentPredicate) {
 			// if the reference doesn't require context, we can assign over
 			// it directly to avoid having to initialize it
 			node.allows = node.traverseAllows as never
 		}
 		node.traverseApply =
-			compiledTraversals[`${node.name}Apply`].bind(compiledTraversals)
+			compiledTraversals[`${node.baseName}Apply`].bind(compiledTraversals)
 	}
 }
 
-const compileSpace = (references: readonly RawNode[]) => {
+const compileScope = (references: readonly RawNode[]) => {
 	return new CompiledFunction()
-		.block("return", (js) => {
-			references.forEach((node) => {
+		.block("return", js => {
+			references.forEach(node => {
 				const allowsCompiler = new NodeCompiler("Allows").indent()
 				node.compile(allowsCompiler)
 				const applyCompiler = new NodeCompiler("Apply").indent()
 				node.compile(applyCompiler)
-				js.line(`${allowsCompiler.writeMethod(`${node.name}Allows`)},`).line(
-					`${applyCompiler.writeMethod(`${node.name}Apply`)},`
-				)
+				js.line(
+					`${allowsCompiler.writeMethod(`${node.baseName}Allows`)},`
+				).line(`${applyCompiler.writeMethod(`${node.baseName}Apply`)},`)
 			})
 			return js
 		})

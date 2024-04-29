@@ -15,8 +15,8 @@ import type { DomainDef } from "./schemas/domain.js"
 import type { IntersectionDef } from "./schemas/intersection.js"
 import type {
 	Morph,
-	MorphChildDefinition,
 	MorphDef,
+	MorphInputDef,
 	Out,
 	inferMorphOut
 } from "./schemas/morph.js"
@@ -28,15 +28,15 @@ import type { BasisKind, ConstraintKind } from "./shared/implement.js"
 import type { inferred } from "./shared/utils.js"
 
 export namespace type {
-	export type cast<to = unknown> = {
-		[inferred]?: to
+	export type cast<t> = {
+		[inferred]?: t
 	}
 
 	export type errors = ArkErrors
 }
 
 export type validateSchema<def, $> =
-	def extends type.cast ? def
+	def extends type.cast<unknown> ? def
 	: def extends array ? { [i in keyof def]: validateSchemaBranch<def[i], $> }
 	: def extends NormalizedUnionDef<infer branches> ?
 		conform<
@@ -59,22 +59,21 @@ export type inferSchema<def, $> =
 
 type validateSchemaBranch<def, $> =
 	def extends RawNode ? def
-	: keyof def & ("morph" | "in" | "out") extends never ?
-		validateMorphChild<def, $>
-	:	validateMorphSchema<def, $>
+	: "morphs" extends keyof def ? validateMorphSchema<def, $>
+	: validateMorphChild<def, $>
 
 type inferSchemaBranch<def, $> =
 	def extends type.cast<infer to> ? to
 	: def extends MorphDef ?
 		(
-			In: def["in"] extends {} ? inferMorphChild<def["in"], $> : unknown
-		) => def["out"] extends {} ? Out<inferMorphChild<def["out"], $>>
+			In: def["from"] extends {} ? inferMorphChild<def["from"], $> : unknown
+		) => def["to"] extends {} ? Out<inferMorphChild<def["to"], $>>
 		: def["morphs"] extends infer morph extends Morph ?
 			Out<inferMorphOut<morph>>
 		: def["morphs"] extends readonly [...unknown[], infer morph extends Morph] ?
 			Out<inferMorphOut<morph>>
 		:	never
-	: def extends MorphChildDefinition ? inferMorphChild<def, $>
+	: def extends MorphInputDef ? inferMorphChild<def, $>
 	: unknown
 
 type NonIntersectableBasisSchema = NonEnumerableDomain | Constructor | UnitDef
@@ -89,7 +88,7 @@ type inferMorphChild<def, $> =
 	: unknown
 
 type validateMorphSchema<def, $> = {
-	[k in keyof def]: k extends "in" | "out" ? validateMorphChild<def[k], $>
+	[k in keyof def]: k extends "from" | "to" ? validateMorphChild<def[k], $>
 	: k extends keyof MorphDef ? MorphDef[k]
 	: `'${k & string}' is not a valid morph schema key`
 }

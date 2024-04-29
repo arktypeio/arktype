@@ -8,9 +8,6 @@
 		"email": "david@arktype.io",
 		"url": "https://arktype.io"
 	},
-	"engines": {
-		"node": ">=18"
-	},
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/arktypeio/arktype.git"
@@ -88,7 +85,8 @@
 		"useTabs": true,
 		"semi": false,
 		"trailingComma": "none",
-		"experimentalTernaries": true
+		"experimentalTernaries": true,
+		"arrowParens": "avoid"
 	},
 	"eslintConfig": {
 		"extends": "./ark/repo/.eslintrc.cjs"

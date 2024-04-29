@@ -63,13 +63,12 @@ export const objectKindOf = <
 		prototype?.constructor &&
 		(!kindSet[prototype.constructor.name] ||
 			!(data instanceof kindSet[prototype.constructor.name]))
-	) {
+	)
 		prototype = Object.getPrototypeOf(prototype)
-	}
+
 	const name = prototype?.constructor?.name
-	if (name === undefined || name === "Object") {
-		return undefined
-	}
+	if (name === undefined || name === "Object") return undefined
+
 	return name as never
 }
 
@@ -176,14 +175,10 @@ export const prototypeKeysOf = <t>(value: t): normalizedKeyOf<t>[] => {
 	let curr = value
 	while (curr !== Object.prototype && curr !== null && curr !== undefined) {
 		for (const k of Object.getOwnPropertyNames(curr)) {
-			if (k !== "constructor" && !result.includes(k)) {
-				result.push(k)
-			}
+			if (k !== "constructor" && !result.includes(k)) result.push(k)
 		}
 		for (const symbol of Object.getOwnPropertySymbols(curr)) {
-			if (!result.includes(symbol)) {
-				result.push(symbol)
-			}
+			if (!result.includes(symbol)) result.push(symbol)
 		}
 		curr = Object.getPrototypeOf(curr)
 	}
@@ -213,9 +208,7 @@ export const constructorExtends = (
 	let current = ctor.prototype
 
 	while (current !== null) {
-		if (current === base.prototype) {
-			return true
-		}
+		if (current === base.prototype) return true
 
 		current = Object.getPrototypeOf(current)
 	}

@@ -46,16 +46,14 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): RawSchema => {
 		// We filter out keys from the spreadNode that will be defined later on this same object
 		// because the currently parsed definition will overwrite them.
 		spreadNode.prop?.forEach(
-			(spreadRequired) =>
+			spreadRequired =>
 				!parsedEntries.some(
 					({ inner: innerKey }) => innerKey === spreadRequired.key
 				) && propNodes.push(spreadRequired)
 		)
 	}
 	for (const entry of parsedEntries) {
-		if (entry.kind === "spread") {
-			return throwParseError(nonLeadingSpreadError)
-		}
+		if (entry.kind === "spread") return throwParseError(nonLeadingSpreadError)
 
 		if (entry.kind === "index") {
 			// handle key parsing first to match type behavior

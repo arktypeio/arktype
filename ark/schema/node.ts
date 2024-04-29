@@ -3,7 +3,6 @@ import {
 	type Dict,
 	type Guardable,
 	type Json,
-	type PartialRecord,
 	type conform,
 	flatMorph,
 	includes,
@@ -20,12 +19,7 @@ import type { SequenceNode } from "./constraints/props/sequence.js"
 import type { DivisorNode } from "./constraints/refinements/divisor.js"
 import type { BoundNodesByKind } from "./constraints/refinements/kinds.js"
 import type { RegexNode } from "./constraints/refinements/regex.js"
-import {
-	type Inner,
-	type NodeDef,
-	nodeImplementationsByKind,
-	type reducibleKindOf
-} from "./kinds.js"
+import type { Inner, NodeDef, reducibleKindOf } from "./kinds.js"
 import type { RawSchema, Schema } from "./schema.js"
 import type { DomainNode } from "./schemas/domain.js"
 import type { IntersectionNode } from "./schemas/intersection.js"
@@ -34,12 +28,12 @@ import type { ProtoNode } from "./schemas/proto.js"
 import type { UnionNode } from "./schemas/union.js"
 import type { UnitNode } from "./schemas/unit.js"
 import type { RawSchemaScope } from "./scope.js"
+import type { NodeCompiler } from "./shared/compile.js"
 import type {
 	BaseMeta,
 	RawNodeDeclaration,
 	attachmentsOf
 } from "./shared/declare.js"
-import { Disjoint } from "./shared/disjoint.js"
 import {
 	type BasisKind,
 	type NodeKind,
@@ -48,7 +42,6 @@ import {
 	type RefinementKind,
 	type SchemaKind,
 	type UnknownAttachments,
-	type UnknownIntersectionResult,
 	basisKinds,
 	constraintKinds,
 	precedenceOfKind,
@@ -56,11 +49,15 @@ import {
 	refinementKinds,
 	schemaKinds
 } from "./shared/implement.js"
-import { TraversalContext } from "./shared/traversal.js"
+import {
+	TraversalContext,
+	type TraverseAllows,
+	type TraverseApply
+} from "./shared/traversal.js"
 
 export type UnknownNode = RawNode | Schema
 
-export class RawNode<
+export abstract class RawNode<
 	/** @ts-expect-error allow instantiation assignment to the base type */
 	out d extends RawNodeDeclaration = RawNodeDeclaration
 > extends Callable<(data: d["prerequisite"]) => unknown, attachmentsOf<d>> {
@@ -71,9 +68,9 @@ export class RawNode<
 					!this.includesMorph &&
 					!this.includesContextDependentPredicate &&
 					this.allows(data)
-				) {
+				)
 					return data
-				}
+
 				const ctx = new TraversalContext(data, this.$.resolvedConfig)
 				this.traverseApply(data, ctx)
 				return ctx.finalize()
@@ -81,19 +78,23 @@ export class RawNode<
 			{ attach: attachments as never }
 		)
 		this.contributesReferencesByName =
-			this.name in this.referencesByName ?
+			this.baseName in this.referencesByName ?
 				this.referencesByName
-			:	{ ...this.referencesByName, [this.name]: this as never }
+			:	{ ...this.referencesByName, [this.baseName]: this as never }
 		this.contributesReferences = Object.values(this.contributesReferencesByName)
 	}
 
-	protected readonly impl = nodeImplementationsByKind[this.kind]
+	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
+	abstract traverseApply: TraverseApply<d["prerequisite"]>
+	abstract expression: string
+	abstract compile(js: NodeCompiler): void
+
 	readonly includesMorph: boolean =
-		this.kind === "morph" || this.children.some((child) => child.includesMorph)
+		this.kind === "morph" || this.children.some(child => child.includesMorph)
 	readonly includesContextDependentPredicate: boolean =
 		// if a predicate accepts exactly one arg, we can safely skip passing context
 		(this.hasKind("predicate") && this.inner.predicate.length !== 1) ||
-		this.children.some((child) => child.includesContextDependentPredicate)
+		this.children.some(child => child.includesContextDependentPredicate)
 	readonly referencesByName: Record<string, RawNode> = this.children.reduce(
 		(result, child) => Object.assign(result, child.contributesReferencesByName),
 		{}
@@ -113,37 +114,33 @@ export class RawNode<
 		return this(data)
 	}
 
-	#inCache?: RawNode;
+	private inCache?: RawNode;
 	get in(): RawNode {
-		this.#inCache ??= this.#getIo("in")
-		return this.#inCache as never
+		this.inCache ??= this.getIo("in")
+		return this.inCache as never
 	}
 
-	#outCache?: RawNode
+	private outCache?: RawNode
 	get out(): RawNode {
-		this.#outCache ??= this.#getIo("out")
-		return this.#outCache as never
+		this.outCache ??= this.getIo("out")
+		return this.outCache as never
 	}
 
-	#getIo(kind: "in" | "out"): RawNode {
-		if (!this.includesMorph) {
-			return this as never
-		}
+	getIo(kind: "in" | "out"): RawNode {
+		if (!this.includesMorph) return this as never
+
 		const ioInner: Record<any, unknown> = {}
 		for (const [k, v] of this.entries) {
 			const keyDefinition = this.impl.keys[k]
-			if (keyDefinition.meta) {
-				continue
-			}
+			if (keyDefinition.meta) continue
+
 			if (keyDefinition.child) {
 				const childValue = v as listable<RawNode>
 				ioInner[k] =
 					isArray(childValue) ?
-						childValue.map((child) => child[kind])
+						childValue.map(child => child[kind])
 					:	childValue[kind]
-			} else {
-				ioInner[k] = v
-			}
+			} else ioInner[k] = v
 		}
 		return this.$.node(this.kind, ioInner)
 	}
@@ -204,63 +201,10 @@ export class RawNode<
 	get nestableExpression(): string {
 		return (
 				this.children.length > 1 &&
-					this.children.some((child) => !child.isBasis && !child.isProp())
+					this.children.some(child => !child.isBasis && !child.isProp())
 			) ?
 				`(${this.expression})`
 			:	this.expression
-	}
-
-	private static intersectionCache: PartialRecord<
-		string,
-		UnknownIntersectionResult
-	> = {}
-	protected intersectInternal(r: UnknownNode): UnknownIntersectionResult
-	protected intersectInternal(
-		this: RawNode,
-		r: RawNode
-	): UnknownIntersectionResult {
-		const lrCacheKey = `${this.typeId}&${r.typeId}`
-		if (RawNode.intersectionCache[lrCacheKey]) {
-			return RawNode.intersectionCache[lrCacheKey]!
-		}
-		const rlCacheKey = `${r.typeId}&${this.typeId}`
-		if (RawNode.intersectionCache[rlCacheKey]) {
-			// if the cached result was a Disjoint and the operands originally
-			// appeared in the opposite order, we need to invert it to match
-			const rlResult = RawNode.intersectionCache[rlCacheKey]!
-			const lrResult =
-				rlResult instanceof Disjoint ? rlResult.invert() : rlResult
-			// add the lr result to the cache directly to bypass this check in the future
-			RawNode.intersectionCache[lrCacheKey] = lrResult
-			return lrResult
-		}
-
-		if (this.equals(r as never)) {
-			return this as never
-		}
-
-		const leftmostKind = this.precedence < r.precedence ? this.kind : r.kind
-		const implementation =
-			this.impl.intersections[r.kind] ?? r.impl.intersections[this.kind]
-
-		let result =
-			implementation === undefined ?
-				// should be two ConstraintNodes that have no relation
-				// this could also happen if a user directly intersects a Type and a ConstraintNode,
-				// but that is not allowed by the external function signature
-				null
-			: leftmostKind === this.kind ? implementation(this, r, this.$)
-			: implementation(r, this, this.$)
-
-		if (result instanceof RawNode) {
-			// if the result equals one of the operands, preserve its metadata by
-			// returning the original reference
-			if (this.equals(result)) result = this as never
-			else if (r.equals(result)) result = r as never
-		}
-
-		RawNode.intersectionCache[lrCacheKey] = result
-		return result
 	}
 
 	bindScope($: RawSchemaScope): this {
@@ -281,7 +225,9 @@ export class RawNode<
 	): narrowed {
 		return (
 			this.firstReference(filter) ??
-			throwError(`${this.name} had no references matching predicate ${filter}`)
+			throwError(
+				`${this.baseName} had no references matching predicate ${filter}`
+			)
 		)
 	}
 
@@ -293,8 +239,8 @@ export class RawNode<
 
 	firstReferenceOfKindOrThrow<kind extends NodeKind>(kind: kind): Node<kind> {
 		return (
-			this.firstReference((node) => node.kind === kind) ??
-			throwError(`${this.name} had no ${kind} references`)
+			this.firstReference(node => node.kind === kind) ??
+			throwError(`${this.baseName} had no ${kind} references`)
 		)
 	}
 
@@ -302,18 +248,15 @@ export class RawNode<
 		mapper: DeepNodeTransformation,
 		shouldTransform: (node: RawNode) => boolean
 	): Node<reducibleKindOf<this["kind"]>> {
-		if (!shouldTransform(this as never)) {
-			return this as never
-		}
+		if (!shouldTransform(this as never)) return this as never
+
 		const innerWithTransformedChildren = flatMorph(
 			this.inner as Dict,
 			(k, v) => [
 				k,
 				this.impl.keys[k].child ?
 					isArray(v) ?
-						v.map((node) =>
-							(node as RawNode).transform(mapper, shouldTransform)
-						)
+						v.map(node => (node as RawNode).transform(mapper, shouldTransform))
 					:	(v as RawNode).transform(mapper, shouldTransform)
 				:	v
 			]
@@ -331,7 +274,7 @@ export class RawNode<
 			:	(configOrDescription as never)
 		return this.transform(
 			(kind, inner) => ({ ...inner, ...config }),
-			(node) => !node.isProp()
+			node => !node.isProp()
 		) as never
 	}
 }

@@ -47,8 +47,7 @@ contextualize(() => {
 	})
 
 	it("pipe", () => {
-		const limit = ((_) => _) as ((s: string) => string) &
-			((n: number) => number)
+		const limit = (_ => _) as ((s: string) => string) & ((n: number) => number)
 		const n = pipe([5], limit)
 		attest<number>(n)
 		const s = pipe(["foo"], limit)

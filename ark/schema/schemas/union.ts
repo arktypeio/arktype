@@ -1,20 +1,19 @@
 import { appendUnique, groupBy, isArray } from "@arktype/util"
 import type { NodeDef } from "../kinds.js"
 import type { Node } from "../node.js"
-import type {
-	RawSchema,
-	RawSchemaAttachments,
-	schemaKindRightOf
-} from "../schema.js"
+import { RawSchema, type schemaKindRightOf } from "../schema.js"
+import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { ArkTypeError } from "../shared/errors.js"
 import {
 	implementNode,
+	type IntersectionContext,
 	type SchemaKind,
 	schemaKindsRightOf
 } from "../shared/implement.js"
-import type { Discriminant } from "./discriminate.js"
+import { intersectNodes, intersectNodesRoot } from "../shared/intersections.js"
+import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 import { defineRightwardIntersections } from "./utils.js"
 
 export type UnionChildKind = schemaKindRightOf<"union">
@@ -51,14 +50,7 @@ export type UnionDeclaration = declareNode<{
 	}
 	reducibleTo: SchemaKind
 	childKind: UnionChildKind
-	attachments: UnionAttachments
 }>
-
-export interface UnionAttachments
-	extends RawSchemaAttachments<UnionDeclaration> {
-	discriminant: Discriminant | null
-	isBoolean: boolean
-}
 
 export const unionImplementation = implementNode<UnionDeclaration>({
 	kind: "union",
@@ -69,26 +61,22 @@ export const unionImplementation = implementNode<UnionDeclaration>({
 		branches: {
 			child: true,
 			parse: (def, ctx) => {
-				const branches = def.map((branch) =>
-					ctx.$.node(unionChildKinds, branch)
-				)
+				const branches = def.map(branch => ctx.$.node(unionChildKinds, branch))
 				const raw = ctx.raw as UnionDef
-				if (isArray(raw) || raw.ordered !== true) {
+				if (isArray(raw) || raw.ordered !== true)
 					branches.sort((l, r) => (l.innerId < r.innerId ? -1 : 1))
-				}
+
 				return branches
 			}
 		}
 	},
-	normalize: (def) => (isArray(def) ? { branches: def } : def),
+	normalize: def => (isArray(def) ? { branches: def } : def),
 	reduce: (inner, $) => {
 		const reducedBranches = reduceBranches(inner)
-		if (reducedBranches.length === 1) {
-			return reducedBranches[0]
-		}
-		if (reducedBranches.length === inner.branches.length) {
-			return
-		}
+		if (reducedBranches.length === 1) return reducedBranches[0]
+
+		if (reducedBranches.length === inner.branches.length) return
+
 		return $.node(
 			"union",
 			{
@@ -99,26 +87,23 @@ export const unionImplementation = implementNode<UnionDeclaration>({
 		)
 	},
 	defaults: {
-		description: (node) => {
-			if (node.isBoolean) return "boolean"
-
-			return describeBranches(node.branches.map((branch) => branch.description))
+		description: node => {
+			return describeBranches(node.branches.map(branch => branch.description))
 		},
-		expected: (ctx) => {
+		expected: ctx => {
 			const byPath = groupBy(ctx.errors, "propString") as Record<
 				string,
 				ArkTypeError[]
 			>
 			const pathDescriptions = Object.entries(byPath).map(([path, errors]) => {
-				errors.map((_) => _.expected)
 				const branchesAtPath: string[] = []
-				errors.forEach((errorAtPath) =>
+				errors.forEach(errorAtPath =>
 					// avoid duplicate messages when multiple branches
 					// are invalid due to the same error
 					appendUnique(branchesAtPath, errorAtPath.expected)
 				)
 				const expected = describeBranches(branchesAtPath)
-				const actual = ctx.errors.reduce(
+				const actual = errors.reduce(
 					(acc, e) =>
 						e.actual && !acc.includes(e.actual) ?
 							`${acc && `${acc}, `}${e.actual}`
@@ -131,11 +116,11 @@ export const unionImplementation = implementNode<UnionDeclaration>({
 			})
 			return describeBranches(pathDescriptions)
 		},
-		problem: (ctx) => ctx.expected,
-		message: (ctx) => ctx.problem
+		problem: ctx => ctx.expected,
+		message: ctx => ctx.problem
 	},
 	intersections: {
-		union: (l, r, $) => {
+		union: (l, r, ctx) => {
 			if (
 				(l.branches.length === 0 || r.branches.length === 0) &&
 				l.branches.length !== r.branches.length
@@ -149,20 +134,15 @@ export const unionImplementation = implementNode<UnionDeclaration>({
 			}
 			let resultBranches: readonly UnionChildNode[] | Disjoint
 			if (l.ordered) {
-				if (r.ordered) {
-					return Disjoint.from("indiscriminableMorphs", l, r)
-				}
-				resultBranches = intersectBranches(r.branches, l.branches)
-				if (resultBranches instanceof Disjoint) {
-					resultBranches.invert()
-				}
-			} else {
-				resultBranches = intersectBranches(l.branches, r.branches)
-			}
-			if (resultBranches instanceof Disjoint) {
-				return resultBranches
-			}
-			return $.schema(
+				if (r.ordered) return Disjoint.from("indiscriminableMorphs", l, r)
+
+				resultBranches = intersectBranches(r.branches, l.branches, ctx)
+				if (resultBranches instanceof Disjoint) resultBranches.invert()
+			} else resultBranches = intersectBranches(l.branches, r.branches, ctx)
+
+			if (resultBranches instanceof Disjoint) return resultBranches
+
+			return ctx.$.schema(
 				l.ordered || r.ordered ?
 					{
 						branches: resultBranches,
@@ -171,92 +151,95 @@ export const unionImplementation = implementNode<UnionDeclaration>({
 				:	{ branches: resultBranches }
 			)
 		},
-		...defineRightwardIntersections("union", (l, r, $) => {
-			const branches = intersectBranches(l.branches, [r])
-			if (branches instanceof Disjoint) {
-				return branches
-			}
-			if (branches.length === 1) {
-				return branches[0]
-			}
-			return $.schema(l.ordered ? { branches, ordered: true } : { branches })
+		...defineRightwardIntersections("union", (l, r, ctx) => {
+			const branches = intersectBranches(l.branches, [r], ctx)
+			if (branches instanceof Disjoint) return branches
+
+			if (branches.length === 1) return branches[0]
+
+			return ctx.$.schema(
+				l.ordered ? { branches, ordered: true } : { branches }
+			)
 		})
-	},
-	construct: (self) => {
-		const branches = self.branches
-		const isBoolean =
-			branches.length === 2 &&
-			branches[0].hasUnit(false) &&
-			branches[1].hasUnit(true)
-		return {
-			discriminant: null,
-			isBoolean,
-			expression:
-				isBoolean ? "boolean" : (
-					branches.map((branch) => branch.nestableExpression).join(" | ")
-				),
-			traverseAllows: (data, ctx) =>
-				branches.some((b) => b.traverseAllows(data, ctx)),
-			traverseApply: (data, ctx) => {
-				const errors: ArkTypeError[] = []
-				for (let i = 0; i < branches.length; i++) {
-					ctx.pushBranch()
-					branches[i].traverseApply(data, ctx)
-					if (!ctx.hasError()) return ctx.morphs.push(...ctx.popBranch().morphs)
-					errors.push(ctx.popBranch().error!)
-				}
-				ctx.error({ code: "union", errors })
-			},
-			compile: (js) => {
-				if (js.traversalKind === "Apply") {
-					js.const("errors", "[]")
-					branches.forEach((branch) =>
-						js
-							.line("ctx.pushBranch()")
-							.line(js.invoke(branch))
-							.if("!ctx.hasError()", () =>
-								js.return("ctx.morphs.push(...ctx.popBranch().morphs)")
-							)
-							.line("errors.push(ctx.popBranch().error)")
-					)
-					js.line(`ctx.error({ code: "union", errors })`)
-				} else {
-					branches.forEach((branch) =>
-						js.if(`${js.invoke(branch)}`, () => js.return(true))
-					)
-					js.return(false)
-				}
-			},
-			rawKeyOf() {
-				return branches.reduce(
-					(result, branch) => result.and(branch.rawKeyOf()),
-					this.$.keywords.unknown.raw
-				)
-			},
-			get nestableExpression() {
-				// avoid adding unnecessary parentheses around boolean since it's
-				// already collapsed to a single keyword
-				return this.isBoolean ? "boolean" : super.nestableExpression
-			}
-		}
 	}
 })
 
-export type UnionNode = RawSchema<UnionDeclaration>
+export class UnionNode extends RawSchema<UnionDeclaration> {
+	isBoolean =
+		this.branches.length === 2 &&
+		this.branches[0].hasUnit(false) &&
+		this.branches[1].hasUnit(true)
+
+	discriminant = null
+	expression =
+		this.isBoolean ? "boolean" : (
+			this.branches.map(branch => branch.nestableExpression).join(" | ")
+		)
+	traverseAllows: TraverseAllows = (data, ctx) =>
+		this.branches.some(b => b.traverseAllows(data, ctx))
+
+	traverseApply: TraverseApply = (data, ctx) => {
+		const errors: ArkTypeError[] = []
+		for (let i = 0; i < this.branches.length; i++) {
+			ctx.pushBranch()
+			this.branches[i].traverseApply(data, ctx)
+			if (!ctx.hasError())
+				return ctx.queuedMorphs.push(...ctx.popBranch().queuedMorphs)
+			errors.push(ctx.popBranch().error!)
+		}
+		ctx.error({ code: "union", errors })
+	}
+
+	compile(js: NodeCompiler): void {
+		if (js.traversalKind === "Apply") {
+			js.const("errors", "[]")
+			this.branches.forEach(branch =>
+				js
+					.line("ctx.pushBranch()")
+					.line(js.invoke(branch))
+					.if("!ctx.hasError()", () =>
+						js.return("ctx.queuedMorphs.push(...ctx.popBranch().queuedMorphs)")
+					)
+					.line("errors.push(ctx.popBranch().error)")
+			)
+			js.line(`ctx.error({ code: "union", errors })`)
+		} else {
+			this.branches.forEach(branch =>
+				js.if(`${js.invoke(branch)}`, () => js.return(true))
+			)
+			js.return(false)
+		}
+	}
+
+	rawKeyOf(): RawSchema {
+		return this.branches.reduce(
+			(result, branch) => result.and(branch.rawKeyOf()),
+			this.$.keywords.unknown.raw
+		)
+	}
+
+	get nestableExpression(): string {
+		// avoid adding unnecessary parentheses around boolean since it's
+		// already collapsed to a single keyword
+		return this.isBoolean ? "boolean" : super.nestableExpression
+	}
+}
 
 const describeBranches = (descriptions: string[]) => {
-	if (descriptions.length === 0) {
-		return "never"
-	}
-	if (descriptions.length === 1) {
-		return descriptions[0]
-	}
+	if (descriptions.length === 0) return "never"
+
+	if (descriptions.length === 1) return descriptions[0]
+	if (
+		(descriptions.length === 2 &&
+			descriptions[0] === "false" &&
+			descriptions[1] === "true") ||
+		(descriptions[0] === "true" && descriptions[1] === "false")
+	)
+		return "boolean"
 	let description = ""
 	for (let i = 0; i < descriptions.length - 1; i++) {
 		description += descriptions[i]
-		if (i < descriptions.length - 2) {
-			description += ", "
-		}
+		if (i < descriptions.length - 2) description += ", "
 	}
 	description += ` or ${descriptions[descriptions.length - 1]}`
 	return description
@@ -342,7 +325,8 @@ const describeBranches = (descriptions: string[]) => {
 
 export const intersectBranches = (
 	l: readonly UnionChildNode[],
-	r: readonly UnionChildNode[]
+	r: readonly UnionChildNode[],
+	ctx: IntersectionContext
 ): readonly UnionChildNode[] | Disjoint => {
 	// If the corresponding r branch is identified as a subtype of an l branch, the
 	// value at rIndex is set to null so we can avoid including previous/future
@@ -362,7 +346,7 @@ export const intersectBranches = (
 				candidatesByR = {}
 				break
 			}
-			const branchIntersection = l[lIndex].intersect(r[rIndex])
+			const branchIntersection = intersectNodes(l[lIndex], r[rIndex], ctx)
 			if (branchIntersection instanceof Disjoint) {
 				// Doesn't tell us anything useful about their relationships
 				// with other branches
@@ -398,7 +382,7 @@ export const intersectBranches = (
 	// 		2. Original r branches corresponding to indices with a null batch (subtypes of l)
 	const resultBranches = batchesByR.flatMap(
 		// ensure unions returned from branchable intersections like sequence are flattened
-		(batch, i) => batch?.flatMap((branch) => branch.branches) ?? r[i]
+		(batch, i) => batch?.flatMap(branch => branch.branches) ?? r[i]
 	)
 	return resultBranches.length === 0 ?
 			Disjoint.from("union", l, r)
@@ -409,9 +393,8 @@ export const reduceBranches = ({
 	branches,
 	ordered
 }: UnionInner): readonly UnionChildNode[] => {
-	if (branches.length < 2) {
-		return branches
-	}
+	if (branches.length < 2) return branches
+
 	const uniquenessByIndex: Record<number, boolean> = branches.map(() => true)
 	for (let i = 0; i < branches.length; i++) {
 		for (
@@ -426,18 +409,19 @@ export const reduceBranches = ({
 				uniquenessByIndex[j] = false
 				continue
 			}
-			const intersection = branches[i].intersect(branches[j])
-			if (intersection instanceof Disjoint) {
-				continue
-			}
+			const intersection = intersectNodesRoot(
+				branches[i],
+				branches[j],
+				branches[0].$
+			)
+			if (intersection instanceof Disjoint) continue
+
 			if (intersection.equals(branches[i])) {
 				if (!ordered) {
 					// preserve ordered branches that are a subtype of a subsequent branch
 					uniquenessByIndex[i] = false
 				}
-			} else if (intersection.equals(branches[j])) {
-				uniquenessByIndex[j] = false
-			}
+			} else if (intersection.equals(branches[j])) uniquenessByIndex[j] = false
 		}
 	}
 	return branches.filter((_, i) => uniquenessByIndex[i])

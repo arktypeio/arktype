@@ -53,7 +53,7 @@ contextualize(() => {
 
 	it("infers input and output", () => {
 		const $ = scope({
-			a: ["string", "=>", (s) => s.length]
+			a: ["string", "=>", s => s.length]
 		})
 		attest<{ a: number }>($.infer)
 		// TODO: API?

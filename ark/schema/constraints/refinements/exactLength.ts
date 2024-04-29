@@ -1,13 +1,8 @@
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
-import {
-	type NodeAttachments,
-	type PrimitiveAttachments,
-	derivePrimitiveAttachments,
-	implementNode
-} from "../../shared/implement.js"
-import type { RawConstraint } from "../constraint.js"
-import type { ConstraintAttachments } from "../util.js"
+import { implementNode } from "../../shared/implement.js"
+import type { TraverseAllows } from "../../shared/traversal.js"
+import { RawPrimitiveConstraint } from "../constraint.js"
 import type { LengthBoundableData } from "./range.js"
 
 export interface ExactLengthInner extends BaseMeta {
@@ -25,13 +20,7 @@ export type ExactLengthDeclaration = declareNode<{
 	inner: ExactLengthInner
 	prerequisite: LengthBoundableData
 	errorContext: ExactLengthInner
-	attachments: ExactLengthAttachments
 }>
-
-export interface ExactLengthAttachments
-	extends NodeAttachments<ExactLengthDeclaration>,
-		PrimitiveAttachments<ExactLengthDeclaration>,
-		ConstraintAttachments {}
 
 export const exactLengthImplementation = implementNode<ExactLengthDeclaration>({
 	kind: "exactLength",
@@ -39,14 +28,14 @@ export const exactLengthImplementation = implementNode<ExactLengthDeclaration>({
 	keys: {
 		rule: {}
 	},
-	normalize: (def) => (typeof def === "number" ? { rule: def } : def),
+	normalize: def => (typeof def === "number" ? { rule: def } : def),
 	intersections: {
-		exactLength: (l, r, $) =>
+		exactLength: (l, r, ctx) =>
 			new Disjoint({
 				"[length]": {
 					unit: {
-						l: $.node("unit", { unit: l.rule }),
-						r: $.node("unit", { unit: r.rule })
+						l: ctx.$.node("unit", { unit: l.rule }),
+						r: ctx.$.node("unit", { unit: r.rule })
 					}
 				}
 			}),
@@ -69,17 +58,16 @@ export const exactLengthImplementation = implementNode<ExactLengthDeclaration>({
 	},
 	hasAssociatedError: true,
 	defaults: {
-		description: (node) => `exactly length ${node.rule}`
-	},
-	construct: (self) => {
-		return derivePrimitiveAttachments<ExactLengthDeclaration>({
-			compiledCondition: `data.length === ${self.rule}`,
-			compiledNegation: `data.length !== ${self.rule}`,
-			impliedBasis: self.$.keywords.lengthBoundable,
-			expression: `{ length: ${self.rule} }`,
-			traverseAllows: (data) => data.length === self.rule
-		})
+		description: node => `exactly length ${node.rule}`
 	}
 })
 
-export type ExactLengthNode = RawConstraint<ExactLengthDeclaration>
+export class ExactLengthNode extends RawPrimitiveConstraint<ExactLengthDeclaration> {
+	traverseAllows: TraverseAllows<LengthBoundableData> = data =>
+		data.length === this.rule
+
+	readonly compiledCondition = `data.length === ${this.rule}`
+	readonly compiledNegation = `data.length !== ${this.rule}`
+	readonly impliedBasis = this.$.keywords.lengthBoundable.raw
+	readonly expression = `{ length: ${this.rule} }`
+}

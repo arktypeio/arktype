@@ -181,9 +181,8 @@ export const parseRightBound = (
 	if (
 		!limitNode.hasKind("unit") ||
 		(typeof limitNode.unit !== "number" && !(limitNode.unit instanceof Date))
-	) {
+	)
 		return s.error(writeInvalidLimitMessage(comparator, limitToken, "right"))
-	}
 
 	const limit = limitNode.unit
 	// apply the newly-parsed right bound
@@ -194,16 +193,15 @@ export const parseRightBound = (
 		typeof limit === "number" ? limit : (limitToken as DateLiteral),
 		previousRoot,
 		"right"
-	)) {
+	))
 		s.constrainRoot(kind, { rule: limit, exclusive })
-	}
-	if (!s.branches.leftBound) {
-		return
-	}
+
+	if (!s.branches.leftBound) return
+
 	// if there's an open left bound, perform additional validation and apply it
-	if (!isKeyOf(comparator, maxComparators)) {
+	if (!isKeyOf(comparator, maxComparators))
 		return s.error(writeUnpairableComparatorMessage(comparator))
-	}
+
 	const lowerBoundKind = getBoundKinds(
 		s.branches.leftBound.comparator,
 		s.branches.leftBound.limit,

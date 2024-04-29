@@ -70,10 +70,10 @@ contextualize(() => {
 			{ superSpecialString: "string" },
 			{
 				domain: {
-					expected: (inner) => `custom expected ${inner.domain}`,
-					actual: (data) => `custom actual ${data}`,
-					problem: (ctx) => `custom problem ${ctx.expected} ${ctx.actual}`,
-					message: (ctx) => `custom message ${ctx.problem}`
+					expected: inner => `custom expected ${inner.domain}`,
+					actual: data => `custom actual ${data}`,
+					problem: ctx => `custom problem ${ctx.expected} ${ctx.actual}`,
+					message: ctx => `custom message ${ctx.problem}`
 				}
 			}
 		).export()
@@ -88,7 +88,7 @@ contextualize(() => {
 			{ superSpecialNumber: "number" },
 			{
 				domain: {
-					description: (inner) => `my special ${inner.domain}`
+					description: inner => `my special ${inner.domain}`
 				}
 			}
 		).export()
@@ -102,7 +102,7 @@ contextualize(() => {
 	it("can apply a global config", () => {
 		configure({
 			domain: {
-				description: (inner) => `my special ${inner.domain}`
+				description: inner => `my special ${inner.domain}`
 			}
 		})
 		const mySpecialSymbol = schemaScope({}).schema("symbol")

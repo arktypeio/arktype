@@ -155,9 +155,8 @@ const parseNumeric = <errorOnFail extends boolean | string>(
 }
 
 export const tryParseWellFormedBigint = (def: string): bigint | undefined => {
-	if (def[def.length - 1] !== "n") {
-		return
-	}
+	if (def[def.length - 1] !== "n") return
+
 	const maybeIntegerLiteral = def.slice(0, -1)
 	let value
 	try {
@@ -165,9 +164,8 @@ export const tryParseWellFormedBigint = (def: string): bigint | undefined => {
 	} catch {
 		return
 	}
-	if (wellFormedIntegerMatcher.test(maybeIntegerLiteral)) {
-		return value
-	}
+	if (wellFormedIntegerMatcher.test(maybeIntegerLiteral)) return value
+
 	if (integerLikeMatcher.test(maybeIntegerLiteral)) {
 		// If the definition looks like a bigint but is
 		// not well-formed, throw.

@@ -1,7 +1,10 @@
 export { caller, type CallerOfOptions } from "@arktype/fs"
 export { attest } from "./assert/attest.js"
 export { bench } from "./bench/bench.js"
-export { getTypeAssertionsAtPosition } from "./cache/getCachedAssertions.js"
+export {
+	getTypeBenchAssertionsAtPosition,
+	getTypeRelationshipAssertionsAtPosition
+} from "./cache/getCachedAssertions.js"
 export type {
 	ArgAssertionData,
 	LinePositionRange,

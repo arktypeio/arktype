@@ -1,12 +1,11 @@
 import type { declareNode } from "../../shared/declare.js"
 import { implementNode } from "../../shared/implement.js"
-import type { RawConstraint } from "../constraint.js"
+import type { TraverseAllows } from "../../shared/traversal.js"
 import {
 	type BaseNormalizedRangeSchema,
+	BaseRange,
 	type BaseRangeInner,
 	type LengthBoundableData,
-	type RangeAttachments,
-	deriveRangeAttachments,
 	parseExclusiveKey
 } from "./range.js"
 
@@ -27,11 +26,7 @@ export type MinLengthDeclaration = declareNode<{
 	inner: MinLengthInner
 	prerequisite: LengthBoundableData
 	errorContext: MinLengthInner
-	attachments: MinLengthAttachments
 }>
-
-export interface MinLengthAttachments
-	extends RangeAttachments<MinLengthDeclaration> {}
 
 export const minLengthImplementation = implementNode<MinLengthDeclaration>({
 	kind: "minLength",
@@ -41,28 +36,27 @@ export const minLengthImplementation = implementNode<MinLengthDeclaration>({
 		rule: {},
 		exclusive: parseExclusiveKey
 	},
-	normalize: (def) => (typeof def === "number" ? { rule: def } : def),
+	normalize: def => (typeof def === "number" ? { rule: def } : def),
 	defaults: {
-		description: (node) =>
+		description: node =>
 			node.exclusive ?
 				node.rule === 0 ?
 					"non-empty"
 				:	`more than length ${node.rule}`
 			: node.rule === 1 ? "non-empty"
 			: `at least length ${node.rule}`,
-		actual: (data) => `${data.length}`
+		actual: data => `${data.length}`
 	},
 	intersections: {
 		minLength: (l, r) => (l.isStricterThan(r) ? l : r)
-	},
-	construct: (self) =>
-		deriveRangeAttachments<MinLengthDeclaration>(self, {
-			traverseAllows:
-				self.exclusive ?
-					(data) => data.length > self.rule
-				:	(data) => data.length >= self.rule,
-			impliedBasis: self.$.keywords.lengthBoundable
-		})
+	}
 })
 
-export type MinLengthNode = RawConstraint<MinLengthDeclaration>
+export class MinLengthNode extends BaseRange<MinLengthDeclaration> {
+	traverseAllows: TraverseAllows<LengthBoundableData> =
+		this.exclusive ?
+			data => data.length > this.rule
+		:	data => data.length >= this.rule
+
+	readonly impliedBasis = this.$.keywords.lengthBoundable.raw
+}

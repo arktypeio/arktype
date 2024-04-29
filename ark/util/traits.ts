@@ -45,15 +45,14 @@ const implementedTraits = Symbol("implementedTraits")
 export const hasTrait =
 	(traitClass: Constructor) =>
 	(o: unknown): boolean => {
-		if (!hasDomain(o, "object")) {
-			return false
-		}
+		if (!hasDomain(o, "object")) return false
+
 		if (
 			implementedTraits in o.constructor &&
 			(o.constructor[implementedTraits] as Function[]).includes(traitClass)
-		) {
+		)
 			return true
-		}
+
 		// emulate standard instanceof behavior
 		return ancestorsOf(o).includes(traitClass)
 	}
@@ -116,14 +115,12 @@ export const compose: TraitComposition = ((...traits: TraitConstructor[]) => {
 		if (implementedTraits in trait) {
 			// add any ancestor traits from which the current trait was composed
 			for (const innerTrait of trait[implementedTraits] as TraitConstructor[]) {
-				if (!flatImplementedTraits.includes(innerTrait)) {
+				if (!flatImplementedTraits.includes(innerTrait))
 					flatImplementedTraits.push(innerTrait)
-				}
 			}
 		}
-		if (!flatImplementedTraits.includes(trait)) {
+		if (!flatImplementedTraits.includes(trait))
 			flatImplementedTraits.push(trait)
-		}
 	}
 	Object.defineProperty(base, implementedTraits, {
 		value: flatImplementedTraits,
@@ -133,9 +130,8 @@ export const compose: TraitComposition = ((...traits: TraitConstructor[]) => {
 }) as TraitComposition
 
 export const implement: TraitImplementation = (...args) => {
-	if (args.at(-1) instanceof Trait) {
-		return compose(...(args as never)) as never
-	}
+	if (args.at(-1) instanceof Trait) return compose(...(args as never)) as never
+
 	const implementation = args.at(-1)
 	const base = compose(...(args.slice(0, -1) as never))
 	// copy implementation last since it overrides traits
@@ -178,7 +174,7 @@ export type TraitCompositionKind = "abstract" | "implementation"
 export type composeTraits<
 	traits extends array,
 	kind extends TraitCompositionKind
-> = $compose<{
+> = _compose<{
 	validated: []
 	remaining: traits
 	kind: kind
@@ -201,7 +197,7 @@ type intersectImplementations<l, r> = {
 	:	l[k]
 } & Omit<r, keyof l>
 
-type $compose<s extends CompositionState> =
+type _compose<s extends CompositionState> =
 	s["remaining"] extends (
 		readonly [
 			TraitConstructor<
@@ -215,7 +211,7 @@ type $compose<s extends CompositionState> =
 			...infer tail
 		]
 	) ?
-		$compose<{
+		_compose<{
 			validated: [...s["validated"], s["remaining"][0]]
 			remaining: tail
 			kind: s["kind"]

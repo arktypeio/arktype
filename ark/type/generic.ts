@@ -4,7 +4,7 @@ import {
 	type SchemaScope,
 	arkKind
 } from "@arktype/schema"
-import { Callable, type conform, flatMorph } from "@arktype/util"
+import { Callable, type conform } from "@arktype/util"
 import type { inferDefinition } from "./parser/definition.js"
 import type {
 	GenericParamsParseError,
@@ -57,11 +57,13 @@ export class Generic<params extends string[] = string[], def = unknown, $ = any>
 		public $: SchemaScope<$>
 	) {
 		super((...args: unknown[]) => {
-			const argNodes = flatMorph(params, (i, param: string) => [
-				param,
-				$.parseRoot(args[i])
-			])
-			return $.parseRoot(def, { args: argNodes }) as never
+			// const argNodes = flatMorph(params, (i, param: string) => [
+			// 	param,
+			// 	$.parseRoot(args[i])
+			// ])
+			// { args: argNodes }
+			args
+			return $.parseRoot(def) as never
 		})
 	}
 }

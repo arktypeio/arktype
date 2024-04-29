@@ -53,26 +53,24 @@ export const formatFilePath = (
 	{ relative, separator }: FormatFilePathOptions
 ): string => {
 	let formatted = original
-	if (original.startsWith("file:///")) {
-		formatted = fileURLToPath(original)
-	}
+	if (original.startsWith("file:///")) formatted = fileURLToPath(original)
+
 	if (relative) {
 		formatted = path.relative(
 			typeof relative === "string" ? relative : process.cwd(),
 			formatted
 		)
 	}
-	if (separator) {
+	if (separator)
 		formatted = formatted.replace(new RegExp(`\\${path.sep}`, "g"), separator)
-	}
+
 	return formatted
 }
 
 export const caller = (options: CallerOfOptions = {}): SourcePosition => {
 	let upStackBy = options.upStackBy ?? 0
-	if (!options.methodName && !options.upStackBy) {
-		upStackBy = 3
-	}
+	if (!options.methodName && !options.upStackBy) upStackBy = 3
+
 	let match: SourcePosition | undefined
 	while (!match) {
 		const location = getCurrentLine({
@@ -90,15 +88,11 @@ export const caller = (options: CallerOfOptions = {}): SourcePosition => {
 			...location,
 			file: formatFilePath(location.file, options.formatPath ?? {})
 		}
-		if (options.skip?.(candidate)) {
-			upStackBy++
-		} else {
-			match = candidate
-		}
+		if (options.skip?.(candidate)) upStackBy++
+		else match = candidate
 	}
-	if (match.file.startsWith("file:///")) {
-		match.file = fileURLToPath(match.file)
-	}
+	if (match.file.startsWith("file:///")) match.file = fileURLToPath(match.file)
+
 	return match
 }
 

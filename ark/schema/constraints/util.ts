@@ -7,11 +7,9 @@ import {
 import type { Prerequisite } from "../kinds.js"
 import type { Node } from "../node.js"
 import type { Schema, UnknownSchema } from "../schema.js"
-import type { RawNodeDeclaration } from "../shared/declare.js"
 import type { Disjoint } from "../shared/disjoint.js"
 import type {
 	ConstraintKind,
-	NodeAttachments,
 	PropKind,
 	kindLeftOf
 } from "../shared/implement.js"
@@ -56,11 +54,6 @@ export type writeInvalidOperandMessage<
 export interface ConstraintAttachments {
 	impliedBasis: UnknownSchema | null
 	impliedSiblings?: array<RawConstraint> | null
-}
-
-export interface BaseConstraintDeclaration extends RawNodeDeclaration {
-	kind: ConstraintKind
-	attachments: ConstraintAttachments & NodeAttachments<this>
 }
 
 export type PrimitiveConstraintKind = Exclude<ConstraintKind, PropKind>

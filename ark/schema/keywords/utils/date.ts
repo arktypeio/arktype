@@ -74,9 +74,8 @@ export const tryParseDatePattern = (
 	const delimiter: string | undefined = data[dataParts[0].length]
 	const formatParts = delimiter ? opts.format.split(delimiter) : [opts.format]
 
-	if (dataParts.length !== formatParts.length) {
+	if (dataParts.length !== formatParts.length)
 		return writeFormattedExpected(opts.format)
-	}
 
 	const parsedParts: ParsedDayParts = {}
 	for (let i = 0; i < formatParts.length; i++) {
@@ -84,22 +83,21 @@ export const tryParseDatePattern = (
 			dataParts[i].length !== formatParts[i].length &&
 			// if format is "m" or "d", data is allowed to be 1 or 2 characters
 			!(formatParts[i].length === 1 && dataParts[i].length === 2)
-		) {
+		)
 			return writeFormattedExpected(opts.format)
-		}
+
 		parsedParts[formatParts[i][0] as PartKey] = dataParts[i]
 	}
 
 	const date = new Date(`${parsedParts.m}/${parsedParts.d}/${parsedParts.y}`)
 
-	if (`${date.getDate()}` === parsedParts.d) {
-		return date
-	}
+	if (`${date.getDate()}` === parsedParts.d) return date
+
 	return writeFormattedExpected(opts.format)
 }
 
 export const parsedDate = root.defineSchema({
-	in: "string",
+	from: "string",
 	morphs: (s: string, ctx) => {
 		const result = tryParseDatePattern(s)
 		return typeof result === "string" ? ctx.error(result) : result

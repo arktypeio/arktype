@@ -1,12 +1,11 @@
 import type { declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import { implementNode } from "../../shared/implement.js"
-import type { RawConstraint } from "../constraint.js"
+import type { TraverseAllows } from "../../shared/traversal.js"
 import {
 	type BaseNormalizedRangeSchema,
+	BaseRange,
 	type BaseRangeInner,
-	type RangeAttachments,
-	deriveRangeAttachments,
 	parseExclusiveKey
 } from "./range.js"
 
@@ -27,10 +26,7 @@ export type MaxDeclaration = declareNode<{
 	inner: MaxInner
 	prerequisite: number
 	errorContext: MaxInner
-	attachments: MaxAttachments
 }>
-
-export interface MaxAttachments extends RangeAttachments<MaxDeclaration> {}
 
 export const maxImplementation = implementNode<MaxDeclaration>({
 	kind: "max",
@@ -40,28 +36,25 @@ export const maxImplementation = implementNode<MaxDeclaration>({
 		rule: {},
 		exclusive: parseExclusiveKey
 	},
-	normalize: (def) => (typeof def === "number" ? { rule: def } : def),
+	normalize: def => (typeof def === "number" ? { rule: def } : def),
 	defaults: {
-		description: (node) =>
+		description: node =>
 			`${node.exclusive ? "less than" : "at most"} ${node.rule}`
 	},
 	intersections: {
 		max: (l, r) => (l.isStricterThan(r) ? l : r),
-		min: (max, min, $) =>
+		min: (max, min, ctx) =>
 			max.overlapsRange(min) ?
 				max.overlapIsUnit(min) ?
-					$.node("unit", { unit: max.rule })
+					ctx.$.node("unit", { unit: max.rule })
 				:	null
 			:	Disjoint.from("range", max, min)
-	},
-	construct: (self) =>
-		deriveRangeAttachments<MaxDeclaration>(self, {
-			traverseAllows:
-				self.exclusive ?
-					(data) => data < self.rule
-				:	(data) => data <= self.rule,
-			impliedBasis: self.$.keywords.number
-		})
+	}
 })
 
-export type MaxNode = RawConstraint<MaxDeclaration>
+export class MaxNode extends BaseRange<MaxDeclaration> {
+	impliedBasis = this.$.keywords.number.raw
+
+	traverseAllows: TraverseAllows<number> =
+		this.exclusive ? data => data < this.rule : data => data <= this.rule
+}

@@ -1,28 +1,30 @@
+import type { BoundKind } from "../../shared/implement.js"
+import type { RawConstraint } from "../constraint.js"
 import {
 	type AfterDeclaration,
-	type AfterNode,
+	AfterNode,
 	afterImplementation
 } from "./after.js"
 import {
 	type BeforeDeclaration,
-	type BeforeNode,
+	BeforeNode,
 	beforeImplementation
 } from "./before.js"
 import {
 	type ExactLengthDeclaration,
-	type ExactLengthNode,
+	ExactLengthNode,
 	exactLengthImplementation
 } from "./exactLength.js"
-import { type MaxDeclaration, type MaxNode, maxImplementation } from "./max.js"
+import { type MaxDeclaration, MaxNode, maxImplementation } from "./max.js"
 import {
 	type MaxLengthDeclaration,
-	type MaxLengthNode,
+	MaxLengthNode,
 	maxLengthImplementation
 } from "./maxLength.js"
-import { type MinDeclaration, type MinNode, minImplementation } from "./min.js"
+import { type MinDeclaration, MinNode, minImplementation } from "./min.js"
 import {
 	type MinLengthDeclaration,
-	type MinLengthNode,
+	MinLengthNode,
 	minLengthImplementation
 } from "./minLength.js"
 
@@ -55,3 +57,14 @@ export const boundImplementationsByKind = {
 	after: afterImplementation,
 	before: beforeImplementation
 }
+
+export const boundClassesByKind: Record<BoundKind, typeof RawConstraint<any>> =
+	{
+		min: MinNode,
+		max: MaxNode,
+		minLength: MinLengthNode,
+		maxLength: MaxLengthNode,
+		exactLength: ExactLengthNode,
+		after: AfterNode,
+		before: BeforeNode
+	}

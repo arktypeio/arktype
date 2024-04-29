@@ -1,5 +1,5 @@
 import {
-	type ArkErrors,
+	ArkErrors,
 	type BaseMeta,
 	type BaseRoot,
 	type Disjoint,
@@ -9,34 +9,44 @@ import {
 	type Predicate,
 	type PrimitiveConstraintKind,
 	RawSchema,
+	type Schema,
 	type ambient,
 	type constrain,
 	type constraintKindOf,
-	type distillConstrainableIn,
 	type distillConstrainableOut,
 	type distillIn,
 	type distillOut,
 	type includesMorphs,
 	type inferIntersection,
 	type inferMorphOut,
-	type inferNarrow
+	type inferNarrow,
+	type inferPipes,
+	type internalImplementationOf
 } from "@arktype/schema"
-import type { Constructor, array, conform } from "@arktype/util"
-import type { Generic, validateParameterString } from "./generic.js"
+import {
+	Callable,
+	type Constructor,
+	type array,
+	type conform
+} from "@arktype/util"
+import { Generic, type validateParameterString } from "./generic.js"
 import type {
 	inferDefinition,
 	validateDeclared,
 	validateDefinition
 } from "./parser/definition.js"
-import type { parseGenericParams } from "./parser/generic.js"
+import { parseGenericParams } from "./parser/generic.js"
 import type {
 	IndexOneOperator,
 	IndexZeroOperator,
 	TupleInfixOperator
 } from "./parser/tuple.js"
-import type { Scope, bindThis } from "./scope.js"
+import type { RawScope, Scope, bindThis } from "./scope.js"
+export interface TypeParserAttachments {
+	errors: typeof ArkErrors
+}
 
-export type TypeParser<$> = {
+export interface TypeParser<$> extends TypeParserAttachments {
 	// Parse and check the definition, returning either the original input for a
 	// valid definition or a string representing an error message.
 	<const def>(def: validateTypeRoot<def, $>): Type<inferTypeRoot<def, $>, $>
@@ -68,8 +78,44 @@ export type TypeParser<$> = {
 			}
 		>
 	): Generic<parseGenericParams<params>, def, $>
+}
 
-	error: typeof ArkErrors
+const typeParserAttachments = Object.freeze({
+	errors: ArkErrors
+} satisfies TypeParserAttachments)
+
+export class RawTypeParser extends Callable<
+	(...args: unknown[]) => RawSchema | Generic,
+	TypeParserAttachments
+> {
+	constructor($: RawScope) {
+		super(
+			(...args) => {
+				if (args.length === 1) {
+					// treat as a simple definition
+					return $.parseRoot(args[0])
+				}
+				if (
+					args.length === 2 &&
+					typeof args[0] === "string" &&
+					args[0][0] === "<" &&
+					args[0].at(-1) === ">"
+				) {
+					// if there are exactly two args, the first of which looks like <${string}>,
+					// treat as a generic
+					const params = parseGenericParams(args[0].slice(1, -1))
+					const def = args[1]
+					// TODO: validateUninstantiatedGeneric, remove this cast
+					return new Generic(params, def, $ as never) as never
+				}
+				// otherwise, treat as a tuple expression. technically, this also allows
+				// non-expression tuple definitions to be parsed, but it's not a supported
+				// part of the API as specified by the associated types
+				return $.parseRoot(args)
+			},
+			{ bind: $, attach: typeParserAttachments }
+		)
+	}
 }
 
 export type DeclarationParser<$> = <preinferred>() => {
@@ -82,7 +128,10 @@ export type DeclarationParser<$> = <preinferred>() => {
 // this is declared as a class internally so we can ensure all "abstract"
 // methods of BaseRoot are overridden, but we end up exporting it as an interface
 // to ensure it is not accessed as a runtime value
-export declare class $Type<t = unknown, $ = any> extends BaseRoot<t, $> {
+declare class _Type<t = unknown, $ = any>
+	extends BaseRoot<t, $>
+	implements internalImplementationOf<Schema>
+{
 	$: Scope<$>;
 
 	get in(): Type<this["tIn"], $>
@@ -102,16 +151,68 @@ export declare class $Type<t = unknown, $ = any> extends BaseRoot<t, $> {
 
 	keyof(): Type<keyof this["inferIn"], $>
 
-	morph<morph extends Morph<this["infer"]>>(
-		morph: morph
-	): Type<(In: distillConstrainableIn<t>) => Out<inferMorphOut<morph>>, $>
+	pipe<a extends Morph<this["infer"]>>(a: a): Type<inferPipes<t, [a]>, $>
+	pipe<a extends Morph<this["infer"]>, b extends Morph<inferMorphOut<a>>>(
+		a: a,
+		b: b
+	): Type<inferPipes<t, [a, b]>, $>
+	pipe<
+		a extends Morph<this["infer"]>,
+		b extends Morph<inferMorphOut<a>>,
+		c extends Morph<inferMorphOut<b>>
+	>(a: a, b: b, c: c): Type<inferPipes<t, [a, b, c]>, $>
+	pipe<
+		a extends Morph<this["infer"]>,
+		b extends Morph<inferMorphOut<a>>,
+		c extends Morph<inferMorphOut<b>>,
+		d extends Morph<inferMorphOut<c>>
+	>(a: a, b: b, c: c, d: d): Type<inferPipes<t, [a, b, c, d]>, $>
+	pipe<
+		a extends Morph<this["infer"]>,
+		b extends Morph<inferMorphOut<a>>,
+		c extends Morph<inferMorphOut<b>>,
+		d extends Morph<inferMorphOut<c>>,
+		e extends Morph<inferMorphOut<d>>
+	>(a: a, b: b, c: c, d: d, e: e): Type<inferPipes<t, [a, b, c, d, e]>, $>
+	pipe<
+		a extends Morph<this["infer"]>,
+		b extends Morph<inferMorphOut<a>>,
+		c extends Morph<inferMorphOut<b>>,
+		d extends Morph<inferMorphOut<c>>,
+		e extends Morph<inferMorphOut<d>>,
+		f extends Morph<inferMorphOut<e>>
+	>(
+		a: a,
+		b: b,
+		c: c,
+		d: d,
+		e: e,
+		f: f
+	): Type<inferPipes<t, [a, b, c, d, e, f]>, $>
+	pipe<
+		a extends Morph<this["infer"]>,
+		b extends Morph<inferMorphOut<a>>,
+		c extends Morph<inferMorphOut<b>>,
+		d extends Morph<inferMorphOut<c>>,
+		e extends Morph<inferMorphOut<d>>,
+		f extends Morph<inferMorphOut<e>>,
+		g extends Morph<inferMorphOut<f>>
+	>(
+		a: a,
+		b: b,
+		c: c,
+		d: d,
+		e: e,
+		f: f,
+		g: g
+	): Type<inferPipes<t, [a, b, c, d, e, f, g]>, $>
 
 	// TODO: based on below, should maybe narrow morph output if used after
 	narrow<def extends Predicate<distillConstrainableOut<t>>>(
 		def: def
 	): Type<
 		includesMorphs<t> extends true ?
-			(In: distillConstrainableIn<t>) => Out<inferNarrow<this["infer"], def>>
+			(In: this["tIn"]) => Out<inferNarrow<this["infer"], def>>
 		:	inferNarrow<this["infer"], def>,
 		$
 	>
@@ -127,18 +228,6 @@ export declare class $Type<t = unknown, $ = any> extends BaseRoot<t, $> {
 		other: validateTypeRoot<def, $>
 	): this is Type<inferTypeRoot<def>, $>
 
-	pipe<to extends Type>(
-		outTransform: (out: this["out"]) => to
-	): Type<
-		includesMorphs<t> extends true ?
-			(In: distillConstrainableIn<t>) => distillConstrainableOut<to["t"]>
-		:	distillConstrainableOut<to["t"]>,
-		$
-	>
-	pipe<def>(
-		def: validateTypeRoot<def, $>
-	): Type<inferIntersection<t, inferTypeRoot<def, $>, true>, $>
-
 	constrain<
 		kind extends PrimitiveConstraintKind,
 		const def extends NodeDef<kind>
@@ -152,7 +241,7 @@ export interface Type<
 	/** @ts-expect-error allow instantiation assignment to the base type */
 	out t = unknown,
 	$ = any
-> extends $Type<t, $> {}
+> extends _Type<t, $> {}
 
 export type TypeConstructor<t = unknown, $ = any> = new (
 	def: unknown,

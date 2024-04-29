@@ -227,11 +227,14 @@ The most flexible attest APIs are `getTypeAssertionsAtPosition` and `caller`.
 Here's an example of how you might use them in your own API:
 
 ```ts
-import { getTypeAssertionsAtPosition, caller } from "@arktype/attest"
+import {
+	getTypeRelationshipAssertionsAtPosition,
+	caller
+} from "@arktype/attest"
 
 const yourCustomAssert = <expectedType>(actualValue: expectedType) => {
 	const position = caller()
-	const types = getTypeAssertionsAtPosition(position)
+	const types = getTypeRelationshipAssertionsAtPosition(position)
 	// assert that the type of actualValue is the same as the type of expectedType
 	const relationship = types[0].args[0].relationships.typeArgs[0]
 	if (relationship === undefined) {

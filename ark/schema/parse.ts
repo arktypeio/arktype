@@ -3,20 +3,17 @@ import {
 	type JsonData,
 	type PartialRecord,
 	type array,
-	defineProperties,
 	entriesOf,
 	hasDomain,
-	includes,
 	isArray,
 	type listable,
 	printable,
 	type propValueOf,
 	throwParseError
 } from "@arktype/util"
-import { RawConstraint } from "./constraints/constraint.js"
-import { nodeImplementationsByKind } from "./kinds.js"
+import { nodeClassesByKind, nodeImplementationsByKind } from "./kinds.js"
 import type { RawNode } from "./node.js"
-import { RawSchema, type UnknownSchema } from "./schema.js"
+import type { UnknownSchema } from "./schema.js"
 import type { RawSchemaScope } from "./scope.js"
 import type { RawNodeDeclaration } from "./shared/declare.js"
 import { Disjoint } from "./shared/disjoint.js"
@@ -28,15 +25,13 @@ import {
 	defaultValueSerializer,
 	discriminatingIntersectionKeys,
 	isNodeKind,
-	precedenceOfKind,
-	schemaKinds
+	precedenceOfKind
 } from "./shared/implement.js"
 import { hasArkKind, isNode } from "./shared/utils.js"
 
 export type NodeParseOptions = {
 	alias?: string
 	prereduced?: boolean
-	args?: Record<string, UnknownSchema>
 	/** Instead of creating the node, compute the innerId of the definition and
 	 * point it to the specified resolution.
 	 *
@@ -47,6 +42,7 @@ export type NodeParseOptions = {
 
 export interface NodeParseContext extends NodeParseOptions {
 	$: RawSchemaScope
+	args?: Record<string, UnknownSchema>
 	raw: unknown
 }
 
@@ -87,7 +83,7 @@ const discriminateSchemaKind = (def: unknown): SchemaKind => {
 
 			if (
 				schemaKeys.length === 0 ||
-				schemaKeys.some((k) => k in discriminatingIntersectionKeys)
+				schemaKeys.some(k => k in discriminatingIntersectionKeys)
 			)
 				return "intersection"
 			if ("proto" in def) return "proto"
@@ -108,20 +104,18 @@ export const parseNode = (
 ): RawNode => {
 	const kind: NodeKind =
 		typeof kinds === "string" ? kinds : schemaKindOf(def, kinds)
-	if (isNode(def) && def.kind === kind) {
-		return def
-	}
+	if (isNode(def) && def.kind === kind) return def
+
 	if (kind === "union" && hasDomain(def, "object")) {
 		const branches = schemaBranchesOf(def)
-		if (branches?.length === 1) {
-			return $parseNode(schemaKindOf(branches[0]), branches[0], $, opts)
-		}
+		if (branches?.length === 1)
+			return _parseNode(schemaKindOf(branches[0]), branches[0], $, opts)
 	}
-	const node = $parseNode(kind, def, $, opts)
+	const node = _parseNode(kind, def, $, opts)
 	return node.bindScope($)
 }
 
-const $parseNode = (
+const _parseNode = (
 	kind: NodeKind,
 	def: unknown,
 	$: RawSchemaScope,
@@ -153,13 +147,11 @@ const $parseNode = (
 	for (const entry of schemaEntries) {
 		const k = entry[0]
 		const keyImpl = impl.keys[k] ?? baseKeys[k]
-		if (!keyImpl) {
+		if (!keyImpl)
 			return throwParseError(`Key ${k} is not valid on ${kind} schema`)
-		}
+
 		const v = keyImpl.parse ? keyImpl.parse(entry[1], ctx) : entry[1]
-		if (v !== undefined || keyImpl.preserveUndefined) {
-			inner[k] = v
-		}
+		if (v !== undefined || keyImpl.preserveUndefined) inner[k] = v
 	}
 	const entries = entriesOf(inner)
 
@@ -171,7 +163,7 @@ const $parseNode = (
 		if (keyImpl.child) {
 			const listableNode = v as listable<RawNode>
 			if (isArray(listableNode)) {
-				json[k] = listableNode.map((node) => node.collapsibleJson)
+				json[k] = listableNode.map(node => node.collapsibleJson)
 				children.push(...listableNode)
 			} else {
 				json[k] = listableNode.collapsibleJson
@@ -182,12 +174,9 @@ const $parseNode = (
 				keyImpl.serialize ? keyImpl.serialize(v) : defaultValueSerializer(v)
 		}
 
-		if (!keyImpl.meta) {
-			typeJson[k] = json[k]
-		}
-		if (!keyImpl.implied) {
-			collapsibleJson[k] = json[k]
-		}
+		if (!keyImpl.meta) typeJson[k] = json[k]
+
+		if (!keyImpl.implied) collapsibleJson[k] = json[k]
 	})
 
 	// check keys on collapsibleJson instead of schema in case one or more keys is
@@ -226,9 +215,8 @@ const $parseNode = (
 			// if we're defining the resolution of an alias and the result is
 			// reduced to another node, add the alias to that node if it doesn't
 			// already have one.
-			if (opts?.alias) {
-				reduced.alias ??= opts.alias
-			}
+			if (opts?.alias) reduced.alias ??= opts.alias
+
 			// we can't cache this reduction for now in case the reduction involved
 			// impliedSiblings
 			return reduced
@@ -241,10 +229,11 @@ const $parseNode = (
 
 	const prefix = opts?.alias ?? kind
 	nodeCountsByPrefix[prefix] ??= 0
-	const name = `${prefix}${++nodeCountsByPrefix[prefix]!}`
+	const baseName = `${prefix}${++nodeCountsByPrefix[prefix]!}`
 	const attachments = {
-		name,
+		baseName,
 		kind,
+		impl,
 		inner,
 		entries,
 		json: json as Json,
@@ -255,33 +244,12 @@ const $parseNode = (
 		typeId,
 		$
 	} satisfies UnknownAttachments as Record<string, any>
-	if (opts?.alias) {
-		attachments.alias = opts.alias
-	}
-	for (const k in inner) {
-		// avoid conflict with builtin cached getters
-		if (k !== "in" && k !== "out" && k !== "description") {
-			attachments[k] = inner[k]
-		}
-	}
-	// TODO: ?
-	// if (opts?.root) {
-	// 	if (this.resolved) {
-	// 		// this node was not part of the original scope, so compile an anonymous scope
-	// 		// including only its references
-	// 		this.bindCompiledScope(node.contributesReferences)
-	// 	} else {
-	// 		// we're still parsing the scope itself, so defer compilation but
-	// 		// add the node as a reference
-	// 		Object.assign(this.referencesByName, node.contributesReferencesByName)
-	// 	}
-	// }
-	defineProperties(attachments, impl.construct(attachments as never))
+	if (opts?.alias) attachments.alias = opts.alias
 
-	const node: RawNode =
-		includes(schemaKinds, kind) ?
-			new RawSchema(attachments as never)
-		:	(new RawConstraint(attachments as never) as never)
+	for (const k in inner) if (k !== "description") attachments[k] = inner[k]
+
+	const node: RawNode = new nodeClassesByKind[kind](attachments as never)
+
 	nodeCache[innerId] = node
 	return node
 }

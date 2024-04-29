@@ -1,13 +1,12 @@
 import type { declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import { implementNode } from "../../shared/implement.js"
-import type { RawConstraint } from "../constraint.js"
+import type { TraverseAllows } from "../../shared/traversal.js"
 import {
 	type BaseNormalizedRangeSchema,
+	BaseRange,
 	type BaseRangeInner,
 	type LengthBoundableData,
-	type RangeAttachments,
-	deriveRangeAttachments,
 	parseExclusiveKey
 } from "./range.js"
 
@@ -28,11 +27,7 @@ export type MaxLengthDeclaration = declareNode<{
 	inner: MaxLengthInner
 	prerequisite: LengthBoundableData
 	errorContext: MaxLengthInner
-	attachments: MaxLengthAttachments
 }>
-
-export interface MaxLengthAttachments
-	extends RangeAttachments<MaxLengthDeclaration> {}
 
 export const maxLengthImplementation = implementNode<MaxLengthDeclaration>({
 	kind: "maxLength",
@@ -42,31 +37,30 @@ export const maxLengthImplementation = implementNode<MaxLengthDeclaration>({
 		rule: {},
 		exclusive: parseExclusiveKey
 	},
-	normalize: (def) => (typeof def === "number" ? { rule: def } : def),
+	normalize: def => (typeof def === "number" ? { rule: def } : def),
 	defaults: {
-		description: (node) =>
+		description: node =>
 			node.exclusive ?
 				`less than length ${node.rule}`
 			:	`at most length ${node.rule}`,
-		actual: (data) => `${data.length}`
+		actual: data => `${data.length}`
 	},
 	intersections: {
 		maxLength: (l, r) => (l.isStricterThan(r) ? l : r),
-		minLength: (max, min, $) =>
+		minLength: (max, min, ctx) =>
 			max.overlapsRange(min) ?
 				max.overlapIsUnit(min) ?
-					$.node("exactLength", { rule: max.rule })
+					ctx.$.node("exactLength", { rule: max.rule })
 				:	null
 			:	Disjoint.from("range", max, min)
-	},
-	construct: (self) =>
-		deriveRangeAttachments<MaxLengthDeclaration>(self, {
-			traverseAllows:
-				self.exclusive ?
-					(data) => data.length < self.rule
-				:	(data) => data.length <= self.rule,
-			impliedBasis: self.$.keywords.lengthBoundable
-		})
+	}
 })
 
-export type MaxLengthNode = RawConstraint<MaxLengthDeclaration>
+export class MaxLengthNode extends BaseRange<MaxLengthDeclaration> {
+	readonly impliedBasis = this.$.keywords.lengthBoundable.raw
+
+	traverseAllows: TraverseAllows<LengthBoundableData> =
+		this.exclusive ?
+			data => data.length < this.rule
+		:	data => data.length <= this.rule
+}

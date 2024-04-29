@@ -53,34 +53,33 @@ export const parseTupleLiteral = (def: array, ctx: ParseContext): RawSchema => {
 
 		i++
 		if (def[i] === "?") {
-			if (spread) {
-				return throwParseError(spreadOptionalMessage)
-			}
+			if (spread) return throwParseError(spreadOptionalMessage)
+
 			optional = true
 			i++
 		}
 		if (spread) {
-			if (!element.extends(jsObjects.Array)) {
+			if (!element.extends(jsObjects.Array))
 				return throwParseError(writeNonArraySpreadMessage(element.expression))
-			}
+
 			// a spread must be distributed over branches e.g.:
 			// def: [string, ...(number[] | [true, false])]
 			// nodes: [string, ...number[]] | [string, true, false]
-			sequences = sequences.flatMap((base) =>
+			sequences = sequences.flatMap(base =>
 				// since appendElement mutates base, we have to shallow-ish clone it for each branch
-				element.branches.map((branch) =>
+				element.branches.map(branch =>
 					appendSpreadBranch(makeRootAndArrayPropertiesMutable(base), branch)
 				)
 			)
 		} else {
-			sequences = sequences.map((base) =>
+			sequences = sequences.map(base =>
 				appendElement(base, optional ? "optional" : "required", element)
 			)
 		}
 	}
 	return ctx.$.raw.schema(
 		sequences.map(
-			(sequence) =>
+			sequence =>
 				({
 					proto: Array,
 					sequence
@@ -143,10 +142,10 @@ const appendSpreadBranch = (
 		// the only array with no sequence reference is unknown[]
 		return appendElement(base, "variadic", tsKeywords.unknown)
 	}
-	spread.prefix.forEach((node) => appendElement(base, "required", node))
-	spread.optional.forEach((node) => appendElement(base, "optional", node))
+	spread.prefix.forEach(node => appendElement(base, "required", node))
+	spread.optional.forEach(node => appendElement(base, "optional", node))
 	spread.variadic && appendElement(base, "variadic", spread.variadic)
-	spread.postfix.forEach((node) => appendElement(base, "required", node))
+	spread.postfix.forEach(node => appendElement(base, "required", node))
 	return base
 }
 
@@ -414,9 +413,9 @@ export type inferKeyOfExpression<operandDef, $, args> = show<
 >
 
 const parseBranchTuple: PostfixParser<"|" | "&"> = (def, ctx) => {
-	if (def[2] === undefined) {
+	if (def[2] === undefined)
 		return throwParseError(writeMissingRightOperandMessage(def[1], ""))
-	}
+
 	const l = ctx.$.parse(def[0], ctx)
 	const r = ctx.$.parse(def[2], ctx)
 	return def[1] === "&" ? l.and(r) : l.or(r)
@@ -459,7 +458,7 @@ export const parseMorphTuple: PostfixParser<"=>"> = (def, ctx) => {
 		)
 	}
 	// TODO: nested morphs?
-	return ctx.$.parse(def[0], ctx).morph(def[2] as Morph)
+	return ctx.$.parse(def[0], ctx).pipe(def[2] as Morph)
 }
 
 export const writeMalformedFunctionalExpressionMessage = (
@@ -518,7 +517,7 @@ const prefixParsers: {
 		}
 		const branches = def
 			.slice(1)
-			.map((ctor) =>
+			.map(ctor =>
 				typeof ctor === "function" ?
 					ctx.$.node("proto", { proto: ctor as Constructor })
 				:	throwParseError(

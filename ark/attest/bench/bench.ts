@@ -6,9 +6,9 @@ import {
 	type ParsedAttestConfig
 } from "../config.js"
 import { chainableNoOpProxy } from "../utils.js"
+import { await1K } from "./await1k.js"
 import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.js"
-import { await1K } from "./generated/await1k.js"
-import { call1K } from "./generated/call1k.js"
+import { call1K } from "./call1k.js"
 import {
 	createTimeComparison,
 	createTimeMeasure,
@@ -38,14 +38,14 @@ export const bench = <Fn extends BenchableFunction>(
 	if (
 		typeof ctx.cfg.filter === "string" &&
 		!qualifiedPath.includes(ctx.cfg.filter)
-	) {
+	)
 		return chainableNoOpProxy
-	} else if (
+	else if (
 		Array.isArray(ctx.cfg.filter) &&
 		ctx.cfg.filter.some((segment, i) => segment !== qualifiedPath[i])
-	) {
+	)
 		return chainableNoOpProxy
-	}
+
 	const assertions = new BenchAssertions(fn, ctx)
 	Object.assign(assertions, createBenchTypeAssertion(ctx))
 	return assertions as any
@@ -59,9 +59,9 @@ export const stats = {
 	median: (callTimes: number[]): number => {
 		const middleIndex = Math.floor(callTimes.length / 2)
 		const ms =
-			callTimes.length % 2 === 0
-				? (callTimes[middleIndex - 1] + callTimes[middleIndex]) / 2
-				: callTimes[middleIndex]
+			callTimes.length % 2 === 0 ?
+				(callTimes[middleIndex - 1] + callTimes[middleIndex]) / 2
+			:	callTimes[middleIndex]
 		return ms
 	}
 }
@@ -124,9 +124,8 @@ const loopAsyncCalls = async (fn: () => Promise<void>, ctx: BenchContext) => {
 export class BenchAssertions<
 	Fn extends BenchableFunction,
 	NextAssertions = BenchTypeAssertions,
-	ReturnedAssertions = Fn extends () => Promise<void>
-		? Promise<NextAssertions>
-		: NextAssertions
+	ReturnedAssertions = Fn extends () => Promise<void> ? Promise<NextAssertions>
+	:	NextAssertions
 > {
 	private label: string
 	private lastCallTimes: number[] | undefined
@@ -140,9 +139,9 @@ export class BenchAssertions<
 	private applyCallTimeHooks() {
 		if (this.ctx.options.fakeCallMs !== undefined) {
 			const fakeMs =
-				this.ctx.options.fakeCallMs === "count"
-					? this.lastCallTimes!.length
-					: this.ctx.options.fakeCallMs
+				this.ctx.options.fakeCallMs === "count" ?
+					this.lastCallTimes!.length
+				:	this.ctx.options.fakeCallMs
 			this.lastCallTimes = this.lastCallTimes!.map(() => fakeMs)
 		}
 	}
@@ -167,14 +166,13 @@ export class BenchAssertions<
 
 	private createAssertion<Name extends TimeAssertionName>(
 		name: Name,
-		baseline: Name extends "mark"
-			? Record<StatName, Measure<TimeUnit>> | undefined
-			: Measure<TimeUnit> | undefined,
+		baseline: Name extends "mark" ?
+			Record<StatName, Measure<TimeUnit>> | undefined
+		:	Measure<TimeUnit> | undefined,
 		callTimes: number[]
 	) {
-		if (name === "mark") {
-			return this.markAssertion(baseline as any, callTimes)
-		}
+		if (name === "mark") return this.markAssertion(baseline as any, callTimes)
+
 		const ms: number = stats[name as StatName](callTimes)
 		const comparison = createTimeComparison(ms, baseline as Measure<TimeUnit>)
 		console.group(`${this.label} (${name}):`)
@@ -193,11 +191,10 @@ export class BenchAssertions<
 	) {
 		console.group(`${this.label}:`)
 		const markEntries: [StatName, Measure<TimeUnit> | undefined][] = (
-			baseline
-				? Object.entries(baseline)
-				: // If nothing was passed, gather all available baselines by setting their values to undefined.
-				  Object.entries(stats).map(([kind]) => [kind, undefined])
-		) as any
+			baseline ?
+				Object.entries(baseline)
+				// If nothing was passed, gather all available baselines by setting their values to undefined.
+			:	Object.entries(stats).map(([kind]) => [kind, undefined])) as any
 		const markResults = Object.fromEntries(
 			markEntries.map(([kind, kindBaseline]) => {
 				console.group(kind)
@@ -222,17 +219,17 @@ export class BenchAssertions<
 
 	private createStatMethod<Name extends TimeAssertionName>(
 		name: Name,
-		baseline: Name extends "mark"
-			? Record<StatName, Measure<TimeUnit>> | undefined
-			: Measure<TimeUnit> | undefined
+		baseline: Name extends "mark" ?
+			Record<StatName, Measure<TimeUnit>> | undefined
+		:	Measure<TimeUnit> | undefined
 	) {
 		if (this.ctx.isAsync) {
-			return new Promise((resolve) => {
+			return new Promise(resolve => {
 				this.callTimesAsync().then(
-					(callTimes) => {
+					callTimes => {
 						resolve(this.createAssertion(name, baseline, callTimes))
 					},
-					(e) => {
+					e => {
 						this.addUnhandledBenchException(e)
 						resolve(chainableNoOpProxy)
 					}

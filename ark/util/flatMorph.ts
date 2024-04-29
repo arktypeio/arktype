@@ -9,9 +9,9 @@ type objectFromListableEntries<transformed extends readonly Entry[]> = show<
 
 type arrayFromListableEntries<transformed extends Entry> =
 	Entry<number, never> extends transformed ? transformed[1][]
-	:	$arrayFromListableEntries<transformed, []>
+	:	_arrayFromListableEntries<transformed, []>
 
-type $arrayFromListableEntries<
+type _arrayFromListableEntries<
 	transformed extends Entry,
 	result extends unknown[]
 > =
@@ -22,7 +22,7 @@ type $arrayFromListableEntries<
 		Exclude<transformed, next> extends infer remaining extends Entry ?
 			[transformed] extends [remaining] ?
 				[...result, ...transformed[1][]]
-			:	$arrayFromListableEntries<remaining, [...result, next[1]]>
+			:	_arrayFromListableEntries<remaining, [...result, next[1]]>
 		:	never
 	:	[...result, ...transformed[1][]]
 

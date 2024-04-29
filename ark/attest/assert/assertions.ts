@@ -1,11 +1,7 @@
-import { printable, throwInternalError } from "@arktype/util"
+import { hasKey, printable, throwInternalError } from "@arktype/util"
 import { AssertionError } from "node:assert"
 import * as assert from "node:assert/strict"
-import type {
-	TypeAssertionData,
-	TypeBenchmarkingAssertionData,
-	TypeRelationshipAssertionData
-} from "../cache/writeAssertionCache.js"
+import type { TypeRelationshipAssertionData } from "../cache/writeAssertionCache.js"
 import type { AssertionContext } from "./attest.js"
 
 export type ThrowAssertionErrorContext = {
@@ -44,28 +40,17 @@ export class TypeAssertionMapping {
 	) {}
 }
 
-export const isAssertionData = (
-	data: TypeAssertionData
-): data is TypeRelationshipAssertionData =>
-	(data as TypeRelationshipAssertionData).args !== undefined
-
-export const isBenchData = (
-	data: TypeAssertionData
-): data is TypeBenchmarkingAssertionData =>
-	(data as TypeBenchmarkingAssertionData).count !== undefined
-
-//todoshawn
 export const versionableAssertion =
 	(fn: AssertFn): AssertFn =>
 	(expected, actual, ctx) => {
 		if (actual instanceof TypeAssertionMapping) {
-			if (!ctx.typeAssertionEntries) {
+			if (!ctx.typeRelationshipAssertionEntries) {
 				throwInternalError(
 					`Unexpected missing typeAssertionEntries when passed a TypeAssertionMapper`
 				)
 			}
-			for (const [version, data] of ctx.typeAssertionEntries) {
-				if (isAssertionData(data)) {
+			for (const [version, data] of ctx.typeRelationshipAssertionEntries) {
+				if (hasKey(data, "args")) {
 					let errorMessage = ""
 					try {
 						const mapped = actual.fn(data, ctx)
@@ -79,23 +64,16 @@ export const versionableAssertion =
 					} catch (e) {
 						errorMessage += `❌TypeScript@${version}:${e}\n`
 					}
-					if (errorMessage) {
-						throw new AssertionError({ message: errorMessage })
-					}
-				} else {
-					//todoshawn
+					if (errorMessage) throw new AssertionError({ message: errorMessage })
+				} else
 					throwInternalError("Assertion data of the wrong kind was encountered")
-				}
 			}
-		} else {
-			fn(expected, actual, ctx)
-		}
+		} else fn(expected, actual, ctx)
 	}
 
 const unversionedAssertEquals: AssertFn = (expected, actual, ctx) => {
-	if (expected === actual) {
-		return
-	}
+	if (expected === actual) return
+
 	if (typeof expected === "object" && typeof actual === "object") {
 		try {
 			assert.deepStrictEqual(actual, expected)
@@ -116,12 +94,12 @@ const unversionedAssertEquals: AssertFn = (expected, actual, ctx) => {
 
 export const assertEquals = versionableAssertion(unversionedAssertEquals)
 
-export const typeEqualityMapping = new TypeAssertionMapping((data) => {
+export const typeEqualityMapping = new TypeAssertionMapping(data => {
 	const expected = data.typeArgs[0]
 	const actual = data.typeArgs[1] ?? data.args[0]
-	if (!expected || !actual) {
+	if (!expected || !actual)
 		throwInternalError(`Unexpected type data ${printable(data)}`)
-	}
+
 	if (actual.relationships.typeArgs[0] !== "equality") {
 		return {
 			expected: expected.type,
@@ -172,9 +150,9 @@ export const getThrownMessage = (
 	result: AssertedFnCallResult,
 	ctx: AssertionContext
 ): string | undefined => {
-	if (!("threw" in result)) {
+	if (!("threw" in result))
 		throwAssertionError({ message: "Function didn't throw.", ctx })
-	}
+
 	return result.threw
 }
 export const callAssertedFunction = (

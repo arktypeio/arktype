@@ -1,7 +1,7 @@
-import { Callable, type conform, flatMorph, type repeat } from "@arktype/util"
+import { Callable, type conform, type repeat } from "@arktype/util"
 import type { inferSchema } from "./inference.js"
 import type { SchemaDef } from "./node.js"
-import type { RawSchema, Schema } from "./schema.js"
+import type { Schema } from "./schema.js"
 import type { SchemaScope } from "./scope.js"
 import { arkKind } from "./shared/utils.js"
 
@@ -25,8 +25,8 @@ export const validateUninstantiatedGenericNode = (
 	g: GenericSchema
 ): GenericSchema => {
 	g.$.schema(g.def as never, {
-		// TODO: probably don't need raw once this is fixed.
-		args: flatMorph(g.params, (_, name) => [name, g.$.raw.keywords.unknown])
+		// // TODO: probably don't need raw once this is fixed.
+		// args: flatMorph(g.params, (_, name) => [name, g.$.raw.keywords.unknown])
 	})
 	return g
 }
@@ -59,11 +59,13 @@ export class GenericSchema<
 		public $: SchemaScope<$>
 	) {
 		super((...args: SchemaDef[]) => {
-			const argNodes: Record<string, RawSchema> = flatMorph(
-				params,
-				(i, param) => [param, $.schema(args[i])]
-			) as never
-			return $.schema(def as never, { args: argNodes }) as never
+			args
+			// const argNodes: Record<string, RawSchema> = flatMorph(
+			// 	params,
+			// 	(i, param) => [param, $.schema(args[i])]
+			// ) as never
+			// { args: argNodes }
+			return $.schema(def as never) as never
 		})
 	}
 }

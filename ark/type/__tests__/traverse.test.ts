@@ -46,8 +46,8 @@ contextualize(() => {
 			{ isEven: "number%2" },
 			{
 				divisor: {
-					expected: (ctx) => `% ${ctx.rule} !== 0`,
-					problem: (ctx) => `${ctx.actual} ${ctx.expected}`
+					expected: ctx => `% ${ctx.rule} !== 0`,
+					problem: ctx => `${ctx.actual} ${ctx.expected}`
 				}
 			}
 		).export()
@@ -71,10 +71,13 @@ contextualize(() => {
 	})
 
 	it("branches", () => {
-		const t = type([{ a: "string" }, "|", { b: "boolean" }])
-		attest(t({ a: "ok" })).snap({ a: "ok" })
-		attest(t({ b: true })).snap({ b: true })
-		attest(t({}).toString()).snap("a must be defined or b must be defined")
+		const t = type({ bar: "boolean" }, "|", { foo: "string" })
+		attest(t({ foo: "ok" })).snap({ foo: "ok" })
+		attest(t({ bar: true })).snap({ bar: true })
+		attest(t({}).toString()).snap("bar must be defined or foo must be defined")
+		attest(t({ bar: "swapped", foo: true }).toString()).snap(
+			'bar must be boolean (was "swapped") or foo must be a string (was true)'
+		)
 	})
 
 	it("branches at path", () => {

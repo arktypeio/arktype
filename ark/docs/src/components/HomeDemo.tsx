@@ -33,9 +33,9 @@ const translateVSCodeTheme = (
 		base: "vs-dark",
 		inherit: false,
 		colors: theme.colors,
-		rules: theme.tokenColors.flatMap((c) => {
+		rules: theme.tokenColors.flatMap(c => {
 			if (Array.isArray(c.scope)) {
-				return c.scope.map((sub) => {
+				return c.scope.map(sub => {
 					return {
 						token: sub,
 						background: c.settings.background,
@@ -86,6 +86,8 @@ export const HomeDemo = () => {
 					scrollBeyondLastLine: false
 				}}
 				onMount={(editor, monaco) => {
+					// TODO: ?
+					monaco
 					const editorElement = editor.getDomNode()
 					if (editorElement) {
 						editorElement.style.borderRadius = "16px"

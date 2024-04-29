@@ -1,12 +1,6 @@
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
-import {
-	type NodeAttachments,
-	type PrimitiveAttachments,
-	derivePrimitiveAttachments,
-	implementNode
-} from "../../shared/implement.js"
-import type { RawConstraint } from "../constraint.js"
-import type { ConstraintAttachments } from "../util.js"
+import { implementNode } from "../../shared/implement.js"
+import { RawPrimitiveConstraint } from "../constraint.js"
 
 export interface RegexInner extends BaseMeta {
 	readonly rule: string
@@ -25,15 +19,7 @@ export type RegexDeclaration = declareNode<{
 	intersectionIsOpen: true
 	prerequisite: string
 	errorContext: RegexInner
-	attachments: RegexAttachments
 }>
-
-export interface RegexAttachments
-	extends NodeAttachments<RegexDeclaration>,
-		PrimitiveAttachments<RegexDeclaration>,
-		ConstraintAttachments {
-	instance: RegExp
-}
 
 export const regexImplementation = implementNode<RegexDeclaration>({
 	kind: "regex",
@@ -42,7 +28,7 @@ export const regexImplementation = implementNode<RegexDeclaration>({
 		rule: {},
 		flags: {}
 	},
-	normalize: (def) =>
+	normalize: def =>
 		typeof def === "string" ? { rule: def }
 		: def instanceof RegExp ?
 			def.flags ?
@@ -56,21 +42,16 @@ export const regexImplementation = implementNode<RegexDeclaration>({
 		regex: () => null
 	},
 	defaults: {
-		description: (node) => `matched by ${node.rule}`
-	},
-	construct: (self) => {
-		const instance = new RegExp(self.rule, self.flags)
-		const expression = `${instance}`
-		const compiledCondition = expression
-		return derivePrimitiveAttachments<RegexDeclaration>({
-			instance,
-			expression,
-			traverseAllows: instance.test.bind(instance),
-			compiledCondition: `${expression}.test(data)`,
-			compiledNegation: `!${compiledCondition}`,
-			impliedBasis: self.$.keywords.string
-		})
+		description: node => `matched by ${node.rule}`
 	}
 })
 
-export type RegexNode = RawConstraint<RegexDeclaration>
+export class RegexNode extends RawPrimitiveConstraint<RegexDeclaration> {
+	readonly instance = new RegExp(this.rule, this.flags)
+	readonly expression = `${this.instance}`
+	traverseAllows = this.instance.test.bind(this.instance)
+
+	readonly compiledCondition = `${this.expression}.test(data)`
+	readonly compiledNegation = `!${this.compiledCondition}`
+	readonly impliedBasis = this.$.keywords.string.raw
+}

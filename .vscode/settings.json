@@ -9,7 +9,8 @@
 		"object-shorthand",
 		"@typescript-eslint/consistent-type-imports",
 		"import/no-duplicates",
-		"@typescript-eslint/no-import-type-side-effects"
+		"@typescript-eslint/no-import-type-side-effects",
+		"curly"
 	],
 	"typescript.preferences.preferTypeOnlyAutoImports": true,
 	"typescript.preferences.autoImportFileExcludePatterns": [

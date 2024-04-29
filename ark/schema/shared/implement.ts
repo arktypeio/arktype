@@ -4,7 +4,6 @@ import {
 	type Json,
 	type JsonData,
 	compileSerializedValue,
-	defineProperties,
 	type entryOf,
 	flatMorph,
 	type indexOf,
@@ -29,16 +28,13 @@ import type {
 	ParsedUnknownNodeConfig,
 	RawSchemaScope
 } from "../scope.js"
-import type { NodeCompiler } from "./compile.js"
 import type {
 	BaseErrorContext,
 	BaseMeta,
-	RawNodeDeclaration,
-	parsedAttachmentsOf
+	RawNodeDeclaration
 } from "./declare.js"
 import type { Disjoint } from "./disjoint.js"
 import { throwArkError } from "./errors.js"
-import type { TraverseAllows, TraverseApply } from "./traversal.js"
 import { isNode } from "./utils.js"
 
 export const basisKinds = ["unit", "proto", "domain"] as const
@@ -155,13 +151,22 @@ type accumulateRightKinds<remaining extends readonly NodeKind[], result> =
 		accumulateRightKinds<tail, result & { [k in head]: tail[number] }>
 	:	result
 
+export interface InternalIntersectionOptions {
+	pipe: boolean
+}
+
+export interface IntersectionContext extends InternalIntersectionOptions {
+	$: RawSchemaScope
+	invert: boolean
+}
+
 export type ConstraintIntersection<
 	lKind extends ConstraintKind,
 	rKind extends kindOrRightOf<lKind>
 > = (
 	l: Node<lKind>,
 	r: Node<rKind>,
-	$: RawSchemaScope
+	ctx: IntersectionContext
 ) => RawNode | Disjoint | null
 
 export type ConstraintIntersectionMap<kind extends ConstraintKind> = show<
@@ -175,7 +180,11 @@ export type ConstraintIntersectionMap<kind extends ConstraintKind> = show<
 export type TypeIntersection<
 	lKind extends SchemaKind,
 	rKind extends schemaKindOrRightOf<lKind>
-> = (l: Node<lKind>, r: Node<rKind>, $: RawSchemaScope) => RawSchema | Disjoint
+> = (
+	l: Node<lKind>,
+	r: Node<rKind>,
+	ctx: IntersectionContext
+) => RawSchema | Disjoint
 
 export type TypeIntersectionMap<kind extends SchemaKind> = {
 	[rKind in schemaKindOrRightOf<kind>]: TypeIntersection<kind, rKind>
@@ -189,7 +198,7 @@ export type UnknownIntersectionMap = {
 	[k in NodeKind]?: (
 		l: RawNode,
 		r: RawNode,
-		$: RawSchemaScope
+		ctx: IntersectionContext
 	) => UnknownIntersectionResult
 }
 
@@ -212,12 +221,13 @@ export function assertNodeKind<kind extends NodeKind>(
 	kind: kind
 ): asserts value is Node<kind> {
 	const valueIsNode = isNode(value)
-	if (!valueIsNode || value.kind !== kind)
+	if (!valueIsNode || value.kind !== kind) {
 		throwArkError(
 			`Expected node of kind ${kind} (was ${
 				valueIsNode ? `${value.kind} node` : printable(value)
 			})`
 		)
+	}
 }
 
 export type precedenceOfKind<kind extends NodeKind> = PrecedenceByKind[kind]
@@ -248,9 +258,9 @@ export const defaultValueSerializer = (v: unknown): JsonData => {
 		typeof v === "boolean" ||
 		typeof v === "number" ||
 		v === null
-	) {
+	)
 		return v
-	}
+
 	return compileSerializedValue(v)
 }
 
@@ -290,9 +300,6 @@ interface CommonNodeImplementationInput<d extends RawNodeDeclaration> {
 		inner: d["inner"],
 		$: RawSchemaScope
 	) => Node<d["reducibleTo"]> | Disjoint | undefined
-	construct: (
-		self: Omit<parsedAttachmentsOf<d>, "description">
-	) => d["attachments"] & ThisType<Node<d["kind"]>>
 }
 
 export interface UnknownNodeImplementation
@@ -303,69 +310,13 @@ export interface UnknownNodeImplementation
 	keys: Record<string, NodeKeyImplementation<any, any>>
 }
 
-export interface PrimitiveNodeDeclaration extends RawNodeDeclaration {
-	kind: PrimitiveKind
-	attachments: NodeAttachments<this> & PrimitiveAttachments
-}
-
-export const derivePrimitiveAttachments = <
-	d extends PrimitiveNodeDeclaration = never
->(
-	implemented: ImplementedPrimitiveAttachments<d> & ThisType<Node<d["kind"]>>
-): d["attachments"] => {
-	return defineProperties(implemented, {
-		get errorContext(): d["errorContext"] {
-			return {
-				code: this.kind,
-				description: this.description,
-				...this.inner
-			}
-		},
-		get compiledErrorContext(): string {
-			return compileErrorContext(this.errorContext)
-		},
-		traverseApply(data, ctx) {
-			if (!this.traverseAllows(data as never, ctx)) {
-				ctx.error(this.errorContext)
-			}
-		},
-		compile(js) {
-			js.compilePrimitive(this)
-		}
-	} satisfies DerivedPrimitiveAttachments &
-		ThisType<Node<PrimitiveKind>>) as never
-}
-
 export const compileErrorContext = (ctx: object): string => {
 	let result = "{ "
-	for (const [k, v] of Object.entries(ctx)) {
+	for (const [k, v] of Object.entries(ctx))
 		result += `${k}: ${compileSerializedValue(v)}, `
-	}
+
 	return result + " }"
 }
-
-export interface PrimitiveAttachments<
-	d extends PrimitiveNodeDeclaration = PrimitiveNodeDeclaration
-> {
-	compiledCondition: string
-	compiledNegation: string
-	errorContext: d["errorContext"]
-	compiledErrorContext: string
-}
-
-export type ImplementedPrimitiveAttachments<
-	d extends PrimitiveNodeDeclaration = PrimitiveNodeDeclaration
-> = Omit<
-	d["attachments"],
-	keyof parsedAttachmentsOf<d> | keyof DerivedPrimitiveAttachments
->
-
-export type DerivedPrimitiveAttachments<
-	d extends PrimitiveNodeDeclaration = PrimitiveNodeDeclaration
-> = Pick<
-	d["attachments"],
-	"errorContext" | "compiledErrorContext" | "traverseApply" | "compile"
->
 
 export type nodeImplementationOf<d extends RawNodeDeclaration> =
 	nodeImplementationInputOf<d> & {
@@ -404,7 +355,8 @@ export type DescriptionWriter<kind extends NodeKind = NodeKind> = (
 export interface UnknownAttachments {
 	alias?: string
 	readonly kind: NodeKind
-	readonly name: string
+	readonly impl: UnknownNodeImplementation
+	readonly baseName: string
 	readonly inner: Record<string, any>
 	readonly entries: readonly Entry<string>[]
 	readonly json: object
@@ -431,14 +383,14 @@ export const implementNode = <d extends RawNodeDeclaration = never>(
 ): nodeImplementationOf<d> => {
 	const implementation: UnknownNodeImplementation = _ as never
 	if (implementation.hasAssociatedError) {
-		implementation.defaults.expected ??= (ctx) =>
+		implementation.defaults.expected ??= ctx =>
 			"description" in ctx ?
 				(ctx.description as string)
 			:	implementation.defaults.description(ctx as never)
-		implementation.defaults.actual ??= (data) => printable(data)
-		implementation.defaults.problem ??= (ctx) =>
+		implementation.defaults.actual ??= data => printable(data)
+		implementation.defaults.problem ??= ctx =>
 			`must be ${ctx.expected}${ctx.actual ? ` (was ${ctx.actual})` : ""}`
-		implementation.defaults.message ??= (ctx) => {
+		implementation.defaults.message ??= ctx => {
 			if (ctx.path.length === 0) return ctx.problem
 			const problemWithLocation = `${ctx.propString} ${ctx.problem}`
 			if (problemWithLocation[0] === "[") {
@@ -449,11 +401,4 @@ export const implementNode = <d extends RawNodeDeclaration = never>(
 		}
 	}
 	return implementation as never
-}
-
-export type NodeAttachments<d extends RawNodeDeclaration> = {
-	traverseAllows: TraverseAllows<d["prerequisite"]>
-	traverseApply: TraverseApply<d["prerequisite"]>
-	expression: string
-	compile: (js: NodeCompiler) => void
 }

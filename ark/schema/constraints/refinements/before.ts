@@ -1,13 +1,12 @@
 import type { declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import { implementNode } from "../../shared/implement.js"
-import type { RawConstraint } from "../constraint.js"
+import type { TraverseAllows } from "../../shared/traversal.js"
 import {
 	type BaseNormalizedRangeSchema,
+	BaseRange,
 	type BaseRangeInner,
 	type LimitSchemaValue,
-	type RangeAttachments,
-	deriveRangeAttachments,
 	parseDateLimit,
 	parseExclusiveKey
 } from "./range.js"
@@ -29,11 +28,7 @@ export type BeforeDeclaration = declareNode<{
 	inner: BeforeInner
 	prerequisite: Date
 	errorContext: BeforeInner
-	attachments: BeforeAttachments
 }>
-
-export interface BeforeAttachments
-	extends RangeAttachments<BeforeDeclaration> {}
 
 export const beforeImplementation = implementNode<BeforeDeclaration>({
 	kind: "before",
@@ -42,38 +37,35 @@ export const beforeImplementation = implementNode<BeforeDeclaration>({
 	keys: {
 		rule: {
 			parse: parseDateLimit,
-			serialize: (def) => def.toISOString()
+			serialize: def => def.toISOString()
 		},
 		exclusive: parseExclusiveKey
 	},
-	normalize: (def) =>
+	normalize: def =>
 		typeof def === "number" || typeof def === "string" || def instanceof Date ?
 			{ rule: def }
 		:	def,
 	defaults: {
-		description: (node) =>
+		description: node =>
 			node.exclusive ?
 				`before ${node.stringLimit}`
 			:	`${node.stringLimit} or earlier`,
-		actual: (data) => data.toLocaleString()
+		actual: data => data.toLocaleString()
 	},
 	intersections: {
 		before: (l, r) => (l.isStricterThan(r) ? l : r),
-		after: (before, after, $) =>
+		after: (before, after, ctx) =>
 			before.overlapsRange(after) ?
 				before.overlapIsUnit(after) ?
-					$.node("unit", { unit: before.rule })
+					ctx.$.node("unit", { unit: before.rule })
 				:	null
 			:	Disjoint.from("range", before, after)
-	},
-	construct: (self) =>
-		deriveRangeAttachments<BeforeDeclaration>(self, {
-			traverseAllows:
-				self.exclusive ?
-					(data) => data < self.rule
-				:	(data) => data <= self.rule,
-			impliedBasis: self.$.keywords.Date.raw
-		})
+	}
 })
 
-export type BeforeNode = RawConstraint<BeforeDeclaration>
+export class BeforeNode extends BaseRange<BeforeDeclaration> {
+	traverseAllows: TraverseAllows<Date> =
+		this.exclusive ? data => data < this.rule : data => data <= this.rule
+
+	impliedBasis = this.$.keywords.Date.raw
+}

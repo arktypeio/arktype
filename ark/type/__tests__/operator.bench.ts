@@ -106,25 +106,25 @@ bench("divisor", () => {
 	.types([1023, "instantiations"])
 
 bench("filter-tuple", () => {
-	const _ = type(["boolean", ":", (b) => b])
+	const _ = type(["boolean", ":", b => b])
 })
 	.median([8.04, "us"])
 	.types([583, "instantiations"])
 
 bench("filter-chain", () => {
-	const _ = type("boolean").narrow((b) => b)
+	const _ = type("boolean").narrow(b => b)
 })
 	.median([12.19, "us"])
 	.types([42, "instantiations"])
 
 bench("morph-tuple", () => {
-	const _ = type(["boolean", "=>", (b) => b])
+	const _ = type(["boolean", "=>", b => b])
 })
 	.median([8.96, "us"])
 	.types([562, "instantiations"])
 
 bench("morph-chain", () => {
-	const _ = type("boolean").morph((b) => b)
+	const _ = type("boolean").pipe(b => b)
 })
 	.median([2.98, "us"])
 	.types([26, "instantiations"])

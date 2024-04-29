@@ -7,9 +7,7 @@ const n = 5
 const o = { re: "do" }
 
 const shouldThrow = (a: false) => {
-	if (a) {
-		throw new Error(`${a} is not assignable to false`)
-	}
+	if (a) throw new Error(`${a} is not assignable to false`)
 }
 
 const throwError = () => {
@@ -107,9 +105,7 @@ contextualize(() => {
 		try {
 			f()
 		} catch (e) {
-			if (e instanceof Error) {
-				return e
-			}
+			if (e instanceof Error) return e
 		}
 		throw new Error("Expected function to throw an error.")
 	}

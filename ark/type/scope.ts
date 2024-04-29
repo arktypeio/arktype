@@ -1,6 +1,7 @@
 import {
 	type ArkConfig,
 	type GenericProps,
+	type NodeParseContext,
 	type NodeParseOptions,
 	type PreparsedNodeResolution,
 	type RawSchema,
@@ -18,6 +19,7 @@ import {
 	type Dict,
 	domainOf,
 	hasDomain,
+	type isAnyOrNever,
 	isThunk,
 	type nominal,
 	type show,
@@ -40,11 +42,12 @@ import {
 } from "./parser/generic.js"
 import { DynamicState } from "./parser/string/reduce/dynamic.js"
 import { fullStringParse } from "./parser/string/string.js"
-import type {
-	DeclarationParser,
-	DefinitionParser,
-	Type,
-	TypeParser
+import {
+	type DeclarationParser,
+	type DefinitionParser,
+	RawTypeParser,
+	type Type,
+	type TypeParser
 } from "./type.js"
 
 export type ScopeParser = <const def>(
@@ -126,12 +129,9 @@ export type resolve<reference extends keyof $ | keyof args, $, args> =
 			args[reference]
 		:	$[reference & keyof $]
 	) extends infer resolution ?
-		resolution extends Def<infer def> ?
-			def extends null ?
-				// handle resolution of any and never
-				resolution
-			:	inferDefinition<def, $, args>
-		:	resolution
+		isAnyOrNever<resolution> extends true ? resolution
+		: resolution extends Def<infer def> ? inferDefinition<def, $, args>
+		: resolution
 	:	never
 
 export type moduleKeyOf<$> = {
@@ -148,7 +148,7 @@ export type tryInferSubmoduleReference<$, token> =
 		:	never
 	:	never
 
-export interface ParseContext extends NodeParseOptions {
+export interface ParseContext extends NodeParseContext {
 	$: RawScope
 }
 
@@ -191,65 +191,41 @@ export class RawScope<
 		super(aliases, config)
 	}
 
-	type(...args: unknown[]): RawSchema | Generic {
-		if (args.length === 1) {
-			// treat as a simple definition
-			return this.parseRoot(args[0])
-		}
-		if (
-			args.length === 2 &&
-			typeof args[0] === "string" &&
-			args[0][0] === "<" &&
-			args[0].at(-1) === ">"
-		) {
-			// if there are exactly two args, the first of which looks like <${string}>,
-			// treat as a generic
-			const params = parseGenericParams(args[0].slice(1, -1))
-			const def = args[1]
-			// TODO: validateUninstantiatedGeneric, remove this cast
-			return new Generic(params, def, this as never) as never
-		}
-		// otherwise, treat as a tuple expression. technically, this also allows
-		// non-expression tuple definitions to be parsed, but it's not a supported
-		// part of the API as specified by the associated types
-		return this.parseRoot(args)
-	}
+	type = new RawTypeParser(this as never)
 
 	match: MatchParser<$> = createMatchParser(this as never) as never
 
-	declare(): { type: RawScope["type"] } {
-		return { type: this.type.bind(this) }
-	}
+	declare = (() => ({
+		type: this.type
+	})).bind(this)
 
-	define(def: unknown): unknown {
-		return def
-	}
+	define = ((def: unknown) => def).bind(this)
 
 	override preparseRoot(def: unknown): unknown {
-		if (isThunk(def) && !hasArkKind(def, "generic")) {
-			return def()
-		}
+		if (isThunk(def) && !hasArkKind(def, "generic")) return def()
+
 		return def
 	}
 
 	override parseRoot(def: unknown, opts?: NodeParseOptions): RawSchema {
+		// args: { this: {} as RawSchema },
 		return this.parse(def, {
-			args: { this: {} as RawSchema },
 			$: this as never,
+			raw: def,
 			...opts
 		}).bindScope(this)
 	}
 
 	parse(def: unknown, ctx: ParseContext): RawSchema {
 		if (typeof def === "string") {
-			if (ctx.args && Object.keys(ctx.args).every((k) => !def.includes(k))) {
+			if (ctx.args && Object.keys(ctx.args).every(k => !def.includes(k))) {
 				// we can only rely on the cache if there are no contextual
 				// resolutions like "this" or generic args
 				return this.parseString(def, ctx)
 			}
-			if (!this.parseCache[def]) {
+			if (!this.parseCache[def])
 				this.parseCache[def] = this.parseString(def, ctx)
-			}
+
 			return this.parseCache[def]
 		}
 		return hasDomain(def, "object") ?

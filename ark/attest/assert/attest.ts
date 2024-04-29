@@ -4,15 +4,15 @@ import { getBenchCtx } from "../bench/bench.js"
 import type { Measure } from "../bench/measure.js"
 import { instantiationDataHandler } from "../bench/type.js"
 import {
-	getTypeAssertionsAtPosition,
+	getTypeRelationshipAssertionsAtPosition,
 	type VersionedTypeAssertion
 } from "../cache/getCachedAssertions.js"
+import type {
+	TypeBenchmarkingAssertionData,
+	TypeRelationshipAssertionData
+} from "../cache/writeAssertionCache.js"
 import { getConfig, type AttestConfig } from "../config.js"
-import {
-	assertEquals,
-	isAssertionData,
-	typeEqualityMapping
-} from "./assertions.js"
+import { assertEquals, typeEqualityMapping } from "./assertions.js"
 import {
 	ChainableAssertions,
 	type AssertionKind,
@@ -41,7 +41,8 @@ export type AssertionContext = {
 	position: SourcePosition
 	defaultExpected?: unknown
 	assertionStack: string
-	typeAssertionEntries?: VersionedTypeAssertion[]
+	typeRelationshipAssertionEntries?: VersionedTypeAssertion<TypeRelationshipAssertionData>[]
+	typeBenchmarkingAssertionEntries?: VersionedTypeAssertion<TypeBenchmarkingAssertionData>[]
 	lastSnapName?: string
 }
 
@@ -55,7 +56,7 @@ export const attestInternal = (
 	{ cfg: cfgHooks, ...ctxHooks }: InternalAssertionHooks = {}
 ): ChainableAssertions => {
 	const position = caller()
-	const cfg = { ...getConfig(), ...cfgHooks }
+	const cfg = { ...getConfig(), ...ctxHooks }
 	const ctx: AssertionContext = {
 		actual: value,
 		allowRegex: false,
@@ -66,12 +67,9 @@ export const attestInternal = (
 		...ctxHooks
 	}
 	if (!cfg.skipTypes) {
-		ctx.typeAssertionEntries = getTypeAssertionsAtPosition(position)
-		/**
-		 * todoshawn assertiondata
-		 */
-		const assertionEntry = ctx.typeAssertionEntries[0][1]
-		if (isAssertionData(assertionEntry) && assertionEntry.typeArgs[0]) {
+		ctx.typeRelationshipAssertionEntries =
+			getTypeRelationshipAssertionsAtPosition(position)
+		if (ctx.typeRelationshipAssertionEntries[0][1].typeArgs[0]) {
 			// if there is an expected type arg, check it immediately
 			assertEquals(undefined, typeEqualityMapping, ctx)
 		}
@@ -83,9 +81,8 @@ attestInternal.instantiations = (
 	args: Measure<"instantiations"> | undefined
 ) => {
 	const attestConfig = getConfig()
-	if (attestConfig.skipInlineInstantiations) {
-		return
-	}
+	if (attestConfig.skipInlineInstantiations) return
+
 	const calledFrom = caller()
 	const ctx = getBenchCtx([calledFrom.file])
 	ctx.isInlineBench = true
@@ -98,9 +95,8 @@ attestInternal.instantiations = (
 	args: Measure<"instantiations"> | undefined
 ) => {
 	const attestConfig = getConfig()
-	if (attestConfig.skipInlineInstantiations) {
-		return
-	}
+	if (attestConfig.skipInlineInstantiations) return
+
 	const calledFrom = caller()
 	const ctx = getBenchCtx([calledFrom.file])
 	ctx.isInlineBench = true
