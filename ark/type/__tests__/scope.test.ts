@@ -56,19 +56,9 @@ contextualize(() => {
 			a: ["string", "=>", s => s.length]
 		})
 		attest<{ a: number }>($.infer)
-		// TODO: API?
-		// attest<{ a: string }>($.in.infer)
+
+		attest<{ a: string }>($.inferIn)
 	})
-	// TODO: remove if not preserving
-	// it("scope.scope", () => {
-	// 	const $ = scope({
-	// 		a: "string"
-	// 	})
-	// 	const importer = $.scope({ b: "a[]" })
-	// 	attest<{ b: string[] }>(importer.infer)
-	// 	const t = importer.type("b")
-	// 	attest(t.json).equals(type("string[]").json)
-	// })
 
 	it("infers its own helpers", () => {
 		const $ = scope({
@@ -182,6 +172,203 @@ contextualize(() => {
 			attest($.define({ not: "ok" })).type.errors(
 				writeUnresolvableMessage("ok")
 			)
+		})
+	})
+	describe("cyclic", () => {
+		it("base", () => {
+			const types = scope({ a: { b: "b" }, b: { a: "a" } }).export()
+
+			const a = {} as { b: typeof b }
+			const b = { a }
+			a.b = b
+
+			attest(types.a(a)).equals(a)
+			attest(types.a({ b: { a: { b: { a: 5 } } } }).toString()).snap(
+				"b.a.b.a must be an object (was number)"
+			)
+
+			// Type hint displays as "..." on hitting cycle (or any if "noErrorTruncation" is true)
+			attest({} as typeof types.a.infer).type.toString.snap()
+			attest({} as typeof types.b.infer.a.b.a.b.a.b.a).type.toString.snap()
+
+			// @ts-expect-error
+			attest({} as typeof types.a.infer.b.a.b.c).type.errors.snap(
+				`Property 'c' does not exist on type '{ a: { b: ...; }; }'.`
+			)
+		})
+
+		const getCyclicScope = () =>
+			scope({
+				package: {
+					name: "string",
+					"dependencies?": "package[]",
+					"contributors?": "contributor[]"
+				},
+				contributor: {
+					email: "email",
+					"packages?": "package[]"
+				}
+			})
+
+		type Package = ReturnType<typeof getCyclicScope>["infer"]["package"]
+
+		const getCyclicData = () => {
+			const packageData = {
+				name: "arktype",
+				dependencies: [{ name: "typescript" }],
+				contributors: [{ email: "david@arktype.io" }]
+			} satisfies Package
+			packageData.dependencies.push(packageData)
+			return packageData
+		}
+
+		it("cyclic union", () => {
+			const $ = scope({
+				a: { b: "b|false" },
+				b: { a: "a|true" }
+			})
+			attest($.infer).type.toString.snap(
+				"{ a: { b: false | { a: true | any; }; }; b: { a: true | { b: false | any; }; }; }"
+			)
+		})
+
+		it("cyclic intersection", () => {
+			const $ = scope({
+				a: { b: "b&a" },
+				b: { a: "a&b" }
+			})
+			attest($.infer).type.toString.snap(
+				"{ a: { b: { a: { b: any; a: any; }; b: any; }; }; b: { a: { b: { a: any; b: any; }; a: any; }; }; }"
+			)
+		})
+
+		it("allows valid", () => {
+			const types = getCyclicScope().export()
+			const data = getCyclicData()
+			attest(types.package(data)).snap({
+				name: "arktype",
+				dependencies: [{ name: "typescript" }, "(cycle)" as never],
+				contributors: [{ email: "david@arktype.io" }]
+			})
+		})
+
+		it("adds errors on invalid", () => {
+			const types = getCyclicScope().export()
+			const data = getCyclicData()
+			data.contributors[0].email = "ssalbdivad"
+			attest(types.package(data).toString()).snap(
+				'contributors[0].email must be a valid email (was "ssalbdivad")'
+			)
+		})
+
+		it("can include cyclic data in message", () => {
+			const data = getCyclicData()
+			const nonSelfDependent = getCyclicScope().type([
+				"package",
+				":",
+				p => !p.dependencies?.some(d => d.name === p.name)
+			])
+			attest(nonSelfDependent(data).toString()).snap(
+				'must be valid according to an anonymous predicate (was {"name":"arktype","dependencies":[{"name":"typescript"},"(cycle)"],"contributors":[{"email":"david@arktype.io"}]})'
+			)
+		})
+
+		it("union cyclic reference", () => {
+			const types = scope({
+				a: {
+					b: "b"
+				},
+				b: {
+					a: "a|3"
+				}
+			}).export()
+			attest(types.a.infer).type.toString.snap("{ b: { a: 3 | any; }")
+
+			attest(types.a.json).snap({
+				domain: "object",
+				prop: [
+					{
+						key: "b",
+						value: {
+							domain: "object",
+							prop: [{ key: "a", value: ["$a", { unit: 3 }] }]
+						}
+					}
+				]
+			})
+
+			const valid: typeof types.a.infer = { b: { a: 3 } }
+
+			attest(types.a(valid)).equals(valid)
+
+			valid.b.a = valid
+
+			// check cyclic
+			attest(types.a(valid)).equals(valid)
+
+			attest(types.a({ b: { a: { b: { a: 4 } } } }).toString()).snap(
+				'b.a.b.a must be an object or 3 (was number, 4) or b.a must be 3 (was {"b":{"a":4}})'
+			)
+
+			attest(types.b.infer).type.toString.snap("{ a: 3 | { b: any; }; }")
+			attest(types.b.json).snap({
+				domain: "object",
+				prop: [{ key: "a", value: ["$a", { unit: 3 }] }]
+			})
+		})
+
+		it("intersect cyclic reference", () => {
+			const types = scope({
+				a: {
+					b: "b"
+				},
+				b: {
+					c: "a&b"
+				}
+			}).export()
+			attest(types.a.infer).type.toString.snap()
+			attest(types.b.infer).type.toString.snap()
+
+			const expectedCyclicJson =
+				types.a.raw.firstReferenceOfKindOrThrow("alias").json
+
+			attest(types.a.json).snap({
+				domain: "object",
+				prop: [
+					{
+						key: "b",
+						value: {
+							domain: "object",
+							prop: [
+								{
+									key: "c",
+									value: expectedCyclicJson
+								}
+							]
+						}
+					}
+				]
+			})
+			const a = {} as typeof types.a.infer
+			const b = { c: {} } as typeof types.b.infer
+			a.b = b
+			b.c.b = b
+			b.c.c = b.c
+
+			attest(types.a(a)).equals(a)
+			attest(types.a({ b: { c: {} } }).toString())
+				.snap(`b.c.b must be { c: a&b } (was missing)
+b.c.c must be a&b (was missing)`)
+
+			attest(types.b.json).snap({
+				domain: "object",
+				prop: [
+					{
+						key: "c",
+						value: expectedCyclicJson
+					}
+				]
+			})
 		})
 	})
 })

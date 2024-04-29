@@ -144,6 +144,10 @@ export abstract class RawSchema<
 		)
 	}
 
+	subsumes(r: UnknownSchema): boolean {
+		return r.extends(this as never)
+	}
+
 	configure(configOrDescription: BaseMeta | string): this {
 		return this.configureShallowDescendants(configOrDescription)
 	}
@@ -274,7 +278,6 @@ export declare abstract class BaseRoot<t = unknown, $ = any> extends Callable<
 	json: Json
 	description: string
 	expression: string
-	innerId: string
 	raw: RawSchema
 
 	abstract $: SchemaScope<$>;

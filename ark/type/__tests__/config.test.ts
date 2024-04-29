@@ -82,4 +82,15 @@ contextualize(() => {
 		// should give the shallow custom error
 		attest(user(null).toString()).snap("must be a valid user (was null)")
 	})
+
+	it("jitless", () => {
+		const types = scope(
+			{
+				fast: "false"
+			},
+			{ jitless: true }
+		).export()
+
+		attest(types.fast.raw.jit).equals(false)
+	})
 })

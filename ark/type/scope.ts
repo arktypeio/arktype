@@ -1,19 +1,20 @@
 import {
 	type ArkConfig,
 	type GenericProps,
-	type NodeParseContext,
-	type NodeParseOptions,
 	type PreparsedNodeResolution,
+	type PrivateDeclaration,
 	type RawSchema,
 	type RawSchemaResolutions,
 	RawSchemaScope,
 	type SchemaScope,
+	type UnknownSchema,
 	type ambient,
 	type arkKind,
 	type destructuredExportContext,
 	type destructuredImportContext,
 	type exportedNameOf,
-	hasArkKind
+	hasArkKind,
+	type writeDuplicateAliasError
 } from "@arktype/schema"
 import {
 	type Dict,
@@ -21,6 +22,7 @@ import {
 	hasDomain,
 	type isAnyOrNever,
 	isThunk,
+	type keyError,
 	type nominal,
 	type show,
 	throwParseError
@@ -57,12 +59,14 @@ export type ScopeParser = <const def>(
 
 type validateScope<def> = {
 	[k in keyof def]: k extends symbol ?
-		// this should only occur when importing/exporting modules, and those keys should be ignored
+		// this should only occur when importing/exporting modules, and those
+		// keys should be ignored
 		unknown
 	: parseScopeKey<k>["params"] extends [] ?
 		// Not including Type here directly breaks inference
-		def[k] extends Type | PreparsedResolution ?
-			def[k]
+		def[k] extends Type | PreparsedResolution ? def[k]
+		: k extends PrivateDeclaration<infer name extends keyof def & string> ?
+			keyError<writeDuplicateAliasError<name>>
 		:	validateDefinition<def[k], ambient & bootstrapAliases<def>, {}>
 	: parseScopeKey<k>["params"] extends GenericParamsParseError ?
 		// use the full nominal type here to avoid an overlap between the
@@ -148,8 +152,9 @@ export type tryInferSubmoduleReference<$, token> =
 		:	never
 	:	never
 
-export interface ParseContext extends NodeParseContext {
+export interface ParseContext {
 	$: RawScope
+	args?: Record<string, UnknownSchema>
 }
 
 export const scope: ScopeParser = ((def: Dict, config: ArkConfig = {}) =>
@@ -207,12 +212,13 @@ export class RawScope<
 		return def
 	}
 
-	override parseRoot(def: unknown, opts?: NodeParseOptions): RawSchema {
+	override parseRoot(def: unknown): RawSchema {
 		// args: { this: {} as RawSchema },
 		return this.parse(def, {
 			$: this as never,
-			raw: def,
-			...opts
+			args: {}
+			// type parsing can bypass nodes if it hits the cache,
+			// so bind it directly (could be optimized)
 		}).bindScope(this)
 	}
 
@@ -235,9 +241,9 @@ export class RawScope<
 
 	parseString(def: string, ctx: ParseContext): RawSchema {
 		return (
-			this.maybeResolveNode(def) ??
+			this.maybeResolveSchema(def) ??
 			((def.endsWith("[]") &&
-				this.maybeResolveNode(def.slice(0, -2))?.array()) ||
+				this.maybeResolveSchema(def.slice(0, -2))?.array()) ||
 				fullStringParse(new DynamicState(def, ctx)))
 		)
 	}

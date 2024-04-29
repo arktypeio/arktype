@@ -1,39 +1,60 @@
+import type { array, listable } from "@arktype/util"
 import {
 	type PredicateDeclaration,
 	predicateImplementation,
 	PredicateNode
 } from "./constraints/predicate.js"
 import {
-	type IndexDeclaration,
-	indexImplementation,
-	IndexNode
-} from "./constraints/props/index.js"
-import {
-	type PropDeclaration,
-	propImplementation,
-	PropNode
-} from "./constraints/props/prop.js"
-import {
-	type SequenceDeclaration,
-	sequenceImplementation,
-	SequenceNode
-} from "./constraints/props/sequence.js"
-import {
 	type DivisorDeclaration,
 	divisorImplementation,
 	DivisorNode
-} from "./constraints/refinements/divisor.js"
+} from "./constraints/refinement/divisor.js"
 import {
 	boundClassesByKind,
 	type BoundDeclarations,
 	boundImplementationsByKind
-} from "./constraints/refinements/kinds.js"
+} from "./constraints/refinement/kinds.js"
+import {
+	type RefinementDeclaration,
+	refinementImplementation,
+	RefinementNode
+} from "./constraints/refinement/refinement.js"
 import {
 	type RegexDeclaration,
 	regexImplementation,
 	RegexNode
-} from "./constraints/refinements/regex.js"
-import type { RawNode } from "./node.js"
+} from "./constraints/refinement/regex.js"
+import {
+	type IndexDeclaration,
+	indexImplementation,
+	IndexNode
+} from "./constraints/structure/index.js"
+import {
+	type OptionalDeclaration,
+	optionalImplementation,
+	OptionalNode
+} from "./constraints/structure/optional.js"
+import {
+	type RequiredDeclaration,
+	requiredImplementation,
+	RequiredNode
+} from "./constraints/structure/required.js"
+import {
+	type SequenceDeclaration,
+	sequenceImplementation,
+	SequenceNode
+} from "./constraints/structure/sequence.js"
+import {
+	type StructureDeclaration,
+	structureImplementation,
+	StructureNode
+} from "./constraints/structure/structure.js"
+import type { Node, RawNode } from "./node.js"
+import {
+	type AliasDeclaration,
+	aliasImplementation,
+	AliasNode
+} from "./schemas/alias.js"
 import {
 	type DomainDeclaration,
 	domainImplementation,
@@ -47,7 +68,6 @@ import {
 import {
 	type MorphDeclaration,
 	morphImplementation,
-	type MorphInputKind,
 	MorphNode
 } from "./schemas/morph.js"
 import {
@@ -65,22 +85,31 @@ import {
 	unitImplementation,
 	UnitNode
 } from "./schemas/unit.js"
-import type { NodeKind, UnknownNodeImplementation } from "./shared/implement.js"
+import type {
+	ConstraintKind,
+	NodeKind,
+	OpenNodeKind,
+	UnknownNodeImplementation
+} from "./shared/implement.js"
 import type { makeRootAndArrayPropertiesMutable } from "./shared/utils.js"
 
 export interface NodeDeclarationsByKind extends BoundDeclarations {
+	alias: AliasDeclaration
 	domain: DomainDeclaration
 	unit: UnitDeclaration
 	proto: ProtoDeclaration
 	union: UnionDeclaration
 	morph: MorphDeclaration
 	intersection: IntersectionDeclaration
+	structure: StructureDeclaration
 	sequence: SequenceDeclaration
 	divisor: DivisorDeclaration
-	prop: PropDeclaration
+	required: RequiredDeclaration
+	optional: OptionalDeclaration
 	index: IndexDeclaration
 	regex: RegexDeclaration
 	predicate: PredicateDeclaration
+	refinement: RefinementDeclaration
 }
 
 export const nodeImplementationsByKind: Record<
@@ -88,6 +117,7 @@ export const nodeImplementationsByKind: Record<
 	UnknownNodeImplementation
 > = {
 	...boundImplementationsByKind,
+	alias: aliasImplementation,
 	domain: domainImplementation,
 	unit: unitImplementation,
 	proto: protoImplementation,
@@ -97,9 +127,12 @@ export const nodeImplementationsByKind: Record<
 	divisor: divisorImplementation,
 	regex: regexImplementation,
 	predicate: predicateImplementation,
-	prop: propImplementation,
+	required: requiredImplementation,
+	optional: optionalImplementation,
 	index: indexImplementation,
-	sequence: sequenceImplementation
+	sequence: sequenceImplementation,
+	structure: structureImplementation,
+	refinement: refinementImplementation
 } satisfies Record<NodeKind, unknown> as never
 
 export const nodeClassesByKind: Record<
@@ -107,6 +140,7 @@ export const nodeClassesByKind: Record<
 	new (attachments: never) => RawNode
 > = {
 	...boundClassesByKind,
+	alias: AliasNode,
 	domain: DomainNode,
 	unit: UnitNode,
 	proto: ProtoNode,
@@ -116,30 +150,22 @@ export const nodeClassesByKind: Record<
 	divisor: DivisorNode,
 	regex: RegexNode,
 	predicate: PredicateNode,
-	prop: PropNode,
+	required: RequiredNode,
+	optional: OptionalNode,
 	index: IndexNode,
-	sequence: SequenceNode
+	sequence: SequenceNode,
+	structure: StructureNode,
+	refinement: RefinementNode
 } satisfies Record<NodeKind, typeof RawNode<any>> as never
 
 export type Declaration<kind extends NodeKind> = NodeDeclarationsByKind[kind]
 
 export type NodeDef<kind extends NodeKind> = Declaration<kind>["def"]
 
-export type NormalizedSchema<kind extends NodeKind> =
+export type NormalizedDef<kind extends NodeKind> =
 	Declaration<kind>["normalizedDef"]
 
 export type childKindOf<kind extends NodeKind> = Declaration<kind>["childKind"]
-
-type ParentsByKind = {
-	[k in NodeKind]: {
-		[pKind in NodeKind]: k extends childKindOf<pKind> ? pKind : never
-	}[NodeKind]
-}
-
-export type parentKindOf<kind extends NodeKind> = ParentsByKind[kind]
-
-export type ioKindOf<kind extends NodeKind> =
-	kind extends "morph" ? MorphInputKind : reducibleKindOf<kind>
 
 export type Prerequisite<kind extends NodeKind> =
 	Declaration<kind>["prerequisite"]
@@ -151,12 +177,18 @@ export type reducibleKindOf<kind extends NodeKind> =
 
 export type Inner<kind extends NodeKind> = Declaration<kind>["inner"]
 
+export type defAttachedAs<kind extends ConstraintKind> =
+	kind extends OpenNodeKind ? listable<NodeDef<kind>> : NodeDef<kind>
+
+export type innerAttachedAs<kind extends ConstraintKind> =
+	kind extends OpenNodeKind ? array<Node<kind>> : Node<kind>
+
 /** make nested arrays mutable while keeping nested nodes immutable */
 export type MutableInner<kind extends NodeKind> =
 	makeRootAndArrayPropertiesMutable<Inner<kind>>
 
 export type MutableNormalizedSchema<kind extends NodeKind> =
-	makeRootAndArrayPropertiesMutable<NormalizedSchema<kind>>
+	makeRootAndArrayPropertiesMutable<NormalizedDef<kind>>
 
 export type errorContext<kind extends NodeKind> = Readonly<
 	Declaration<kind>["errorContext"]

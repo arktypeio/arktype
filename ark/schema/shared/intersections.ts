@@ -8,7 +8,6 @@ import {
 	type show
 } from "@arktype/util"
 import type { of } from "../constraints/ast.js"
-import type { RawConstraint } from "../constraints/constraint.js"
 import type { RawNode } from "../node.js"
 import type { RawSchema } from "../schema.js"
 import type { MorphAst, MorphNode, Out } from "../schemas/morph.js"
@@ -77,7 +76,7 @@ type InternalNodeIntersection<ctx> = <l extends RawNode, r extends RawNode>(
 	r: r,
 	ctx: ctx
 ) => l["kind"] | r["kind"] extends SchemaKind ? RawSchema | Disjoint
-:	RawConstraint | Disjoint | null
+:	RawNode | Disjoint | null
 
 export const intersectNodesRoot: InternalNodeIntersection<RawSchemaScope> = (
 	l,
@@ -97,13 +96,13 @@ export const intersectNodes: InternalNodeIntersection<IntersectionContext> = (
 	ctx
 ) => {
 	const operator = ctx.pipe ? "|>" : "&"
-	const lrCacheKey = `${l.typeId}${operator}${r.typeId}`
+	const lrCacheKey = `${l.typeHash}${operator}${r.typeHash}`
 	if (intersectionCache[lrCacheKey])
 		return intersectionCache[lrCacheKey]! as never
 
 	if (!ctx.pipe) {
 		// we can only use this for the commutative & operator
-		const rlCacheKey = `${r.typeId}${operator}${l.typeId}`
+		const rlCacheKey = `${r.typeHash}${operator}${l.typeHash}`
 		if (intersectionCache[rlCacheKey]) {
 			// if the cached result was a Disjoint and the operands originally
 			// appeared in the opposite order, we need to invert it to match

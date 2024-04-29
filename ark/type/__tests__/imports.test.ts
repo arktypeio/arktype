@@ -1,4 +1,5 @@
 import { attest, contextualize } from "@arktype/attest"
+import { writeDuplicateAliasError } from "@arktype/schema"
 import { lazily } from "@arktype/util"
 import { type Module, scope, type } from "arktype"
 import { writePrefixedPrivateReferenceMessage } from "../parser/semantic/validate.js"
@@ -38,18 +39,6 @@ contextualize(() => {
 
 		attest<{ a: 3 | 60 | "no" | "yes" | true }>(imported.infer)
 	})
-
-	// TODO: fix, tests for more duplicate scenarios
-	// it("duplicate alias", () => {
-	//     attest(() =>
-	//         scope({ a: "boolean" })
-	//             .scope(
-	//                 // @ts-expect-error
-	//                 { a: "string" }
-	//             )
-	//             .export()
-	//     ).throwsAndHasTypeError(writeDuplicateAliasesMessage("a"))
-	// })
 
 	it("import & export", () => {
 		const threeSixtyNoScope = scope({
@@ -107,6 +96,23 @@ contextualize(() => {
 				"#kekw": "true"
 			}).export()
 		).throwsAndHasTypeError(writePrefixedPrivateReferenceMessage("#kekw"))
+	})
+
+	it("errors on public and private refrence with same name", () => {
+		attest(() =>
+			scope({
+				kekw: "1",
+				// @ts-expect-error
+				"#kekw": "1"
+			}).export()
+		).throwsAndHasTypeError(writeDuplicateAliasError("kekw"))
+		attest(() =>
+			scope({
+				// @ts-expect-error
+				"#kekw": "1",
+				kekw: "1"
+			}).export()
+		).throwsAndHasTypeError(writeDuplicateAliasError("kekw"))
 	})
 
 	// TODO: reenable

@@ -1,7 +1,7 @@
 {
 	"name": "arktype",
 	"description": "TypeScript's 1:1 validator, optimized from editor to runtime",
-	"version": "2.0.0-dev.7",
+	"version": "2.0.0-dev.8",
 	"license": "MIT",
 	"author": {
 		"name": "David Blass",
@@ -35,7 +35,9 @@
 	],
 	"scripts": {
 		"build": "tsx ../repo/build.ts",
-		"test": "tsx ../repo/testPackage.ts"
+		"test": "tsx ../repo/testPackage.ts",
+		"latest": "npm dist-tag add arktype@1.0.29-alpha latest",
+		"devtag": "npm dist-tag add arktype@2.0.0-dev.8 dev"
 	},
 	"dependencies": {
 		"@arktype/util": "workspace:*",

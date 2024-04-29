@@ -10,10 +10,10 @@ import type { Schema, UnknownSchema } from "../schema.js"
 import type { Disjoint } from "../shared/disjoint.js"
 import type {
 	ConstraintKind,
-	PropKind,
+	StructuralKind,
 	kindLeftOf
 } from "../shared/implement.js"
-import type { RawConstraint } from "./constraint.js"
+import type { BaseConstraintNode } from "./constraint.js"
 
 export type constraintKindLeftOf<kind extends ConstraintKind> = ConstraintKind &
 	kindLeftOf<kind>
@@ -53,7 +53,7 @@ export type writeInvalidOperandMessage<
 
 export interface ConstraintAttachments {
 	impliedBasis: UnknownSchema | null
-	impliedSiblings?: array<RawConstraint> | null
+	impliedSiblings?: array<BaseConstraintNode> | null
 }
 
-export type PrimitiveConstraintKind = Exclude<ConstraintKind, PropKind>
+export type PrimitiveConstraintKind = Exclude<ConstraintKind, StructuralKind>

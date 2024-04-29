@@ -11,16 +11,20 @@ import {
 	shallowClone,
 	throwError
 } from "@arktype/util"
-import type { RawConstraint } from "./constraints/constraint.js"
+import type { BaseConstraintNode } from "./constraints/constraint.js"
 import type { PredicateNode } from "./constraints/predicate.js"
-import type { IndexNode } from "./constraints/props/index.js"
-import type { PropNode } from "./constraints/props/prop.js"
-import type { SequenceNode } from "./constraints/props/sequence.js"
-import type { DivisorNode } from "./constraints/refinements/divisor.js"
-import type { BoundNodesByKind } from "./constraints/refinements/kinds.js"
-import type { RegexNode } from "./constraints/refinements/regex.js"
+import type { DivisorNode } from "./constraints/refinement/divisor.js"
+import type { BoundNodesByKind } from "./constraints/refinement/kinds.js"
+import type { RefinementNode } from "./constraints/refinement/refinement.js"
+import type { RegexNode } from "./constraints/refinement/regex.js"
+import type { IndexNode } from "./constraints/structure/index.js"
+import type { OptionalNode } from "./constraints/structure/optional.js"
+import type { RequiredNode } from "./constraints/structure/required.js"
+import type { SequenceNode } from "./constraints/structure/sequence.js"
+import type { StructureNode } from "./constraints/structure/structure.js"
 import type { Inner, NodeDef, reducibleKindOf } from "./kinds.js"
 import type { RawSchema, Schema } from "./schema.js"
+import type { AliasNode } from "./schemas/alias.js"
 import type { DomainNode } from "./schemas/domain.js"
 import type { IntersectionNode } from "./schemas/intersection.js"
 import type { MorphNode } from "./schemas/morph.js"
@@ -38,16 +42,16 @@ import {
 	type BasisKind,
 	type NodeKind,
 	type OpenNodeKind,
-	type PropKind,
 	type RefinementKind,
 	type SchemaKind,
+	type StructuralKind,
 	type UnknownAttachments,
 	basisKinds,
 	constraintKinds,
 	precedenceOfKind,
-	propKinds,
 	refinementKinds,
-	schemaKinds
+	schemaKinds,
+	structuralKinds
 } from "./shared/implement.js"
 import {
 	TraversalContext,
@@ -66,7 +70,7 @@ export abstract class RawNode<
 			(data: any) => {
 				if (
 					!this.includesMorph &&
-					!this.includesContextDependentPredicate &&
+					!this.allowsRequiresContext &&
 					this.allows(data)
 				)
 					return data
@@ -77,11 +81,11 @@ export abstract class RawNode<
 			},
 			{ attach: attachments as never }
 		)
-		this.contributesReferencesByName =
-			this.baseName in this.referencesByName ?
+		this.contributesReferencesById =
+			this.id in this.referencesByName ?
 				this.referencesByName
-			:	{ ...this.referencesByName, [this.baseName]: this as never }
-		this.contributesReferences = Object.values(this.contributesReferencesByName)
+			:	{ ...this.referencesByName, [this.id]: this as never }
+		this.contributesReferences = Object.values(this.contributesReferencesById)
 	}
 
 	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
@@ -91,23 +95,29 @@ export abstract class RawNode<
 
 	readonly includesMorph: boolean =
 		this.kind === "morph" || this.children.some(child => child.includesMorph)
-	readonly includesContextDependentPredicate: boolean =
+	readonly allowsRequiresContext: boolean =
 		// if a predicate accepts exactly one arg, we can safely skip passing context
 		(this.hasKind("predicate") && this.inner.predicate.length !== 1) ||
-		this.children.some(child => child.includesContextDependentPredicate)
+		this.kind === "alias" ||
+		this.children.some(child => child.allowsRequiresContext)
 	readonly referencesByName: Record<string, RawNode> = this.children.reduce(
-		(result, child) => Object.assign(result, child.contributesReferencesByName),
+		(result, child) => Object.assign(result, child.contributesReferencesById),
 		{}
 	)
 	readonly references: readonly RawNode[] = Object.values(this.referencesByName)
-	readonly contributesReferencesByName: Record<string, RawNode>
+	readonly contributesReferencesById: Record<string, RawNode>
 	readonly contributesReferences: readonly RawNode[]
 	readonly precedence = precedenceOfKind(this.kind)
 	jit = false
 
 	allows = (data: d["prerequisite"]): boolean => {
-		const ctx = new TraversalContext(data, this.$.resolvedConfig)
-		return this.traverseAllows(data as never, ctx)
+		if (this.allowsRequiresContext) {
+			return this.traverseAllows(
+				data as never,
+				new TraversalContext(data, this.$.resolvedConfig)
+			)
+		}
+		return (this.traverseAllows as any)(data as never)
 	}
 
 	traverse(data: d["prerequisite"]): unknown {
@@ -163,7 +173,7 @@ export abstract class RawNode<
 
 	equals(other: UnknownNode): boolean
 	equals(other: RawNode): boolean {
-		return this.typeId === other.typeId
+		return this.typeHash === other.typeHash
 	}
 
 	hasKind<kind extends NodeKind>(kind: kind): this is Node<kind> {
@@ -182,8 +192,8 @@ export abstract class RawNode<
 		return includes(refinementKinds, this.kind)
 	}
 
-	isProp(): this is Node<PropKind> {
-		return includes(propKinds, this.kind)
+	isProp(): this is Node<StructuralKind> {
+		return includes(structuralKinds, this.kind)
 	}
 
 	isSchema(): this is RawSchema {
@@ -225,9 +235,7 @@ export abstract class RawNode<
 	): narrowed {
 		return (
 			this.firstReference(filter) ??
-			throwError(
-				`${this.baseName} had no references matching predicate ${filter}`
-			)
+			throwError(`${this.id} had no references matching predicate ${filter}`)
 		)
 	}
 
@@ -240,7 +248,7 @@ export abstract class RawNode<
 	firstReferenceOfKindOrThrow<kind extends NodeKind>(kind: kind): Node<kind> {
 		return (
 			this.firstReference(node => node.kind === kind) ??
-			throwError(`${this.baseName} had no ${kind} references`)
+			throwError(`${this.id} had no ${kind} references`)
 		)
 	}
 
@@ -285,6 +293,7 @@ export type DeepNodeTransformation = <kind extends NodeKind>(
 ) => Inner<kind>
 
 interface NodesByKind extends BoundNodesByKind {
+	alias: AliasNode
 	union: UnionNode
 	morph: MorphNode
 	intersection: IntersectionNode
@@ -294,13 +303,16 @@ interface NodesByKind extends BoundNodesByKind {
 	divisor: DivisorNode
 	regex: RegexNode
 	predicate: PredicateNode
-	prop: PropNode
+	required: RequiredNode
+	optional: OptionalNode
 	index: IndexNode
 	sequence: SequenceNode
+	structure: StructureNode
+	refinement: RefinementNode
 }
 
 export type Node<kind extends NodeKind> = NodesByKind[kind]
 
 export type SchemaDef<kind extends SchemaKind = SchemaKind> = NodeDef<kind>
 
-export type Constraint = RawConstraint
+export type Constraint = BaseConstraintNode

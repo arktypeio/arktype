@@ -1,7 +1,8 @@
 import type { array } from "./arrays.js"
-import { type Primitive, domainOf, type inferDomain } from "./domain.js"
-import type { BigintLiteral } from "./numericLiterals.js"
+import { domainOf, type Primitive } from "./domain.js"
+import { serializePrimitive, type SerializablePrimitive } from "./primitive.js"
 import type { Dict } from "./records.js"
+import { register } from "./registry.js"
 
 export type SerializationOptions = {
 	onCycle?: (value: object) => string
@@ -60,8 +61,8 @@ export const printable = (data: unknown, indent?: number): string => {
 
 const printableOpts = {
 	onCycle: () => "(cycle)",
-	onSymbol: v => `(symbol ${v.description ?? "anonymous"})`,
-	onFunction: v => `(function ${v.name ?? "anonymous"})`
+	onSymbol: v => `Symbol(${register(v)})`,
+	onFunction: v => `Function(${register(v)})`
 } satisfies SerializationOptions
 
 const _serialize = (
@@ -97,31 +98,3 @@ const _serialize = (
 			return data
 	}
 }
-
-type SerializedString<value extends string = string> = `"${value}"`
-
-export type SerializedPrimitives = {
-	string: SerializedString
-	number: `${number}`
-	bigint: BigintLiteral
-	boolean: "true" | "false"
-	null: "null"
-	undefined: "undefined"
-}
-
-export type SerializedPrimitive =
-	SerializedPrimitives[keyof SerializedPrimitives]
-
-export type SerializablePrimitive = inferDomain<keyof SerializedPrimitives>
-
-export const serializePrimitive = <value extends SerializablePrimitive>(
-	value: value
-): serializePrimitive<value> =>
-	(typeof value === "string" ? JSON.stringify(value)
-	: typeof value === "bigint" ? `${value}n`
-	: `${value}`) as never
-
-export type serializePrimitive<value extends SerializablePrimitive> =
-	value extends string ? `"${value}"`
-	: value extends bigint ? `${value}n`
-	: `${value}`

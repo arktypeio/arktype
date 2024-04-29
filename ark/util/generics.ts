@@ -68,7 +68,11 @@ export const id = Symbol("id")
 export type id = typeof id
 
 export type nominal<t, id extends string> = t & {
-	readonly [id]: id
+	[id]: id
+}
+
+export type keyError<message extends string> = ErrorMessage<message> & {
+	[id]: "KeyError"
 }
 
 export type satisfy<base, t extends base> = t

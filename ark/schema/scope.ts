@@ -3,9 +3,12 @@ import {
 	type Dict,
 	DynamicBase,
 	type Json,
+	type PartialRecord,
 	type array,
 	flatMorph,
 	type flattenListable,
+	hasDomain,
+	isArray,
 	printable,
 	type requireKeys,
 	type show,
@@ -31,6 +34,7 @@ import { type PreparsedNodeResolution, SchemaModule } from "./module.js"
 import type { Node, RawNode, SchemaDef } from "./node.js"
 import { type NodeParseOptions, parseNode, schemaKindOf } from "./parse.js"
 import type { RawSchema, Schema } from "./schema.js"
+import { type AliasNode, normalizeAliasDef } from "./schemas/alias.js"
 import type { distillIn, distillOut } from "./schemas/morph.js"
 import { NodeCompiler } from "./shared/compile.js"
 import type {
@@ -49,7 +53,8 @@ import type { TraverseAllows, TraverseApply } from "./shared/traversal.js"
 import {
 	arkKind,
 	hasArkKind,
-	type internalImplementationOf
+	type internalImplementationOf,
+	isNode
 } from "./shared/utils.js"
 
 export type nodeResolutions<keywords> = { [k in keyof keywords]: RawSchema }
@@ -105,10 +110,11 @@ export type StaticArkOption<k extends keyof StaticArkConfig> = ReturnType<
 >
 
 export interface ArkConfig extends Partial<Readonly<NodeConfigsByKind>> {
+	jitless?: boolean
 	/** @internal */
-	readonly registerKeywords?: boolean
+	registerKeywords?: boolean
 	/** @internal */
-	readonly prereducedAliases?: boolean
+	prereducedAliases?: boolean
 }
 
 type resolveConfig<config extends ArkConfig> = {
@@ -123,6 +129,7 @@ export const defaultConfig: ResolvedArkConfig = Object.assign(
 		implementation.defaults
 	]),
 	{
+		jitless: false,
 		registerKeywords: false,
 		prereducedAliases: false
 	} satisfies Omit<ResolvedArkConfig, NodeKind>
@@ -150,10 +157,7 @@ export const resolveConfig = (
 ): ResolvedArkConfig =>
 	extendConfig(extendConfig(defaultConfig, globalConfig), config) as never
 
-export type RawSchemaResolutions = Record<
-	string,
-	RawSchema | GenericSchema | RawSchemaModule | undefined
->
+export type RawSchemaResolutions = Record<string, RawResolution | undefined>
 
 export type exportedNameOf<$> = Exclude<keyof $ & string, PrivateDeclaration>
 
@@ -173,6 +177,30 @@ export type PrimitiveKeywords = typeof tsKeywords &
 
 export type RawResolution = RawSchema | GenericSchema | RawSchemaModule
 
+type CachedResolution = string | RawResolution
+
+const schemaBranchesOf = (schema: object) =>
+	isArray(schema) ? schema
+	: "branches" in schema && isArray(schema.branches) ? schema.branches
+	: undefined
+
+const throwMismatchedNodeSchemaError = (expected: NodeKind, actual: NodeKind) =>
+	throwParseError(
+		`Node of kind ${actual} is not valid as a ${expected} definition`
+	)
+
+export const writeDuplicateAliasError = <alias extends string>(
+	alias: alias
+): writeDuplicateAliasError<alias> =>
+	`#${alias} duplicates public alias ${alias}`
+
+export type writeDuplicateAliasError<alias extends string> =
+	`#${alias} duplicates public alias ${alias}`
+
+const nodeCountsByPrefix: PartialRecord<string, number> = {}
+
+const nodesById: Record<string, RawNode | undefined> = {}
+
 export class RawSchemaScope<
 	$ extends RawSchemaResolutions = RawSchemaResolutions
 > implements internalImplementationOf<SchemaScope, "infer" | "inferIn" | "$">
@@ -181,9 +209,11 @@ export class RawSchemaScope<
 	readonly resolvedConfig: ResolvedArkConfig;
 	readonly [arkKind] = "scope"
 
-	readonly referencesByName: { [name: string]: RawNode } = {}
+	readonly referencesById: { [name: string]: RawNode } = {}
 	references: readonly RawNode[] = []
-	protected readonly resolutions: RawSchemaResolutions = {}
+	protected readonly resolutions: {
+		[alias: string]: CachedResolution | undefined
+	} = {}
 	readonly json: Json = {}
 	exportedNames: string[]
 	readonly aliases: Record<string, unknown> = {}
@@ -215,9 +245,13 @@ export class RawSchemaScope<
 		this.resolvedConfig = resolveConfig(config)
 		this.exportedNames = Object.keys(def).filter(k => {
 			if (k[0] === "#") {
-				this.aliases[k.slice(1)] = def[k]
+				const name = k.slice(1)
+				if (name in this.aliases)
+					throwParseError(writeDuplicateAliasError(name))
+				this.aliases[name] = def[k]
 				return false
 			}
+			if (`#${k}` in this.aliases) throwParseError(writeDuplicateAliasError(k))
 			this.aliases[k] = def[k]
 			return true
 		}) as never
@@ -235,24 +269,6 @@ export class RawSchemaScope<
 				]
 			)
 		}
-		// TODO: move this out of scope initialization
-		this.node(
-			"union",
-			{
-				branches: [
-					"string",
-					"number",
-					"object",
-					"bigint",
-					"symbol",
-					{ unit: true },
-					{ unit: false },
-					{ unit: null },
-					{ unit: undefined }
-				]
-			},
-			{ reduceTo: this.node("intersection", {}, { prereduced: true }) }
-		)
 	}
 
 	get raw(): this {
@@ -276,21 +292,86 @@ export class RawSchemaScope<
 		})
 	}).bind(this)
 
-	node = (<kinds extends NodeKind | array<SchemaKind>>(
+	protected lazyResolutions: AliasNode[] = []
+	lazilyResolve(syntheticAlias: string, resolve: () => RawSchema): AliasNode {
+		const node = this.node(
+			"alias",
+			{
+				alias: syntheticAlias,
+				resolve
+			},
+			{ prereduced: true }
+		)
+		this.lazyResolutions.push(node)
+		return node
+	}
+
+	node = (<
+		kinds extends NodeKind | array<SchemaKind>,
+		prereduced extends boolean = false
+	>(
 		kinds: kinds,
-		schema: NodeDef<flattenListable<kinds>>,
-		opts?: NodeParseOptions
-	): Node<reducibleKindOf<flattenListable<kinds>>> => {
-		const node = parseNode(kinds, schema, this, opts)
+		nodeDef: NodeDef<flattenListable<kinds>>,
+		opts?: NodeParseOptions<prereduced>
+	): Node<
+		prereduced extends true ? flattenListable<kinds>
+		:	reducibleKindOf<flattenListable<kinds>>
+	> => {
+		let kind: NodeKind =
+			typeof kinds === "string" ? kinds : schemaKindOf(nodeDef, kinds)
+
+		let def: unknown = nodeDef
+
+		if (isNode(def) && def.kind === kind) return def.bindScope(this) as never
+
+		if (kind === "alias" && !opts?.prereduced) {
+			const resolution = this.resolveSchema(
+				normalizeAliasDef(def as never).alias
+			)
+			def = resolution
+			kind = resolution.kind
+		} else if (kind === "union" && hasDomain(def, "object")) {
+			const branches = schemaBranchesOf(def)
+			if (branches?.length === 1) {
+				def = branches[0]
+				kind = schemaKindOf(def)
+			}
+		}
+
+		const impl = nodeImplementationsByKind[kind]
+		const normalizedDef = impl.normalize?.(def) ?? def
+		// check again after normalization in case a node is a valid collapsed
+		// schema for the kind (e.g. sequence can collapse to element accepting a Node)
+		if (isNode(normalizedDef)) {
+			return normalizedDef.kind === kind ?
+					(normalizedDef.bindScope(this) as never)
+				:	throwMismatchedNodeSchemaError(kind, normalizedDef.kind)
+		}
+
+		const prefix = opts?.alias ?? kind
+		nodeCountsByPrefix[prefix] ??= 0
+		const id = `${prefix}${++nodeCountsByPrefix[prefix]!}`
+
+		const node = parseNode(kind, {
+			...opts,
+			id,
+			$: this,
+			def: normalizedDef
+		}).bindScope(this)
+
+		nodesById[id] = node
+
 		if (this.resolved) {
 			// this node was not part of the original scope, so compile an anonymous scope
 			// including only its references
-			bindCompiledScope(node.contributesReferences)
+			if (!this.resolvedConfig.jitless)
+				bindCompiledScope(node.contributesReferences)
 		} else {
 			// we're still parsing the scope itself, so defer compilation but
 			// add the node as a reference
-			Object.assign(this.referencesByName, node.contributesReferencesByName)
+			Object.assign(this.referencesById, node.contributesReferencesById)
 		}
+
 		return node as never
 	}).bind(this)
 
@@ -298,13 +379,20 @@ export class RawSchemaScope<
 		return this.schema(def as never, opts)
 	}
 
-	maybeResolveNode(name: string): RawSchema | undefined {
-		const result = this.maybeResolveGenericOrNode(name)
+	resolveSchema(name: string): RawSchema {
+		return (
+			this.maybeResolveSchema(name) ??
+			throwParseError(writeUnresolvableMessage(name))
+		)
+	}
+
+	maybeResolveSchema(name: string): RawSchema | undefined {
+		const result = this.maybeResolveGenericOrSchema(name)
 		if (hasArkKind(result, "generic")) return
 		return result
 	}
 
-	maybeResolveGenericOrNode(
+	maybeResolveGenericOrSchema(
 		name: string
 	): RawSchema | GenericSchema | undefined {
 		const resolution = this.maybeResolve(name)
@@ -318,15 +406,22 @@ export class RawSchemaScope<
 	}
 
 	maybeResolve(name: string): RawResolution | undefined {
+		const resolution = this.maybeShallowResolve(name)
+		return typeof resolution === "string" ?
+				this.node("alias", { alias: resolution }, { prereduced: true })
+			:	resolution
+	}
+
+	maybeShallowResolve(name: string): CachedResolution | undefined {
 		const cached = this.resolutions[name]
 		if (cached) return cached
-
 		let def = this.aliases[name]
 		if (!def) return this.maybeResolveSubalias(name)
 		def = this.preparseRoot(def)
 		if (hasArkKind(def, "generic"))
 			return (this.resolutions[name] = validateUninstantiatedGenericNode(def))
 		if (hasArkKind(def, "module")) return (this.resolutions[name] = def)
+		this.resolutions[name] = name
 		return (this.resolutions[name] = this.parseRoot(def))
 	}
 
@@ -334,7 +429,7 @@ export class RawSchemaScope<
 	protected maybeResolveSubalias(
 		name: string
 	): RawSchema | GenericSchema | undefined {
-		return $resolveSubalias(this.aliases, name)
+		return resolveSubalias(this.aliases, name)
 	}
 
 	import<names extends exportedNameOf<$>[]>(
@@ -356,7 +451,8 @@ export class RawSchemaScope<
 		if (!this._exports) {
 			this._exports = {}
 			for (const name of this.exportedNames)
-				this._exports[name] = this.maybeResolve(name)
+				this._exports[name] = this.maybeResolve(name) as never
+			this.lazyResolutions.forEach(node => node.resolution)
 
 			this._exportedResolutions = resolutionsOfModule(this, this._exports)
 			// TODO: add generic json
@@ -369,8 +465,8 @@ export class RawSchemaScope<
 			Object.assign(this.resolutions, this._exportedResolutions)
 			if (this.config.registerKeywords)
 				Object.assign(RawSchemaScope.keywords, this._exportedResolutions)
-			this.references = Object.values(this.referencesByName)
-			bindCompiledScope(this.references)
+			this.references = Object.values(this.referencesById)
+			if (!this.resolvedConfig.jitless) bindCompiledScope(this.references)
 			this.resolved = true
 		}
 		const namesToExport = names.length ? names : this.exportedNames
@@ -382,13 +478,14 @@ export class RawSchemaScope<
 		) as never
 	}
 
-	// // TODO: name?
-	// get<name extends exportedNameOf<$>>(name: name): Type<$[name], $> {
-	// 	return this.export()[name] as never
-	// }
+	resolve<name extends exportedNameOf<$>>(
+		name: name
+	): destructuredExportContext<$, []>[name] {
+		return this.export()[name] as never
+	}
 }
 
-const $resolveSubalias = (
+const resolveSubalias = (
 	base: Dict,
 	name: string
 ): RawSchema | GenericSchema | undefined => {
@@ -409,7 +506,7 @@ const $resolveSubalias = (
 	// unresolvable, we can throw immediately
 	if (resolution === undefined) {
 		if (hasArkKind(resolution, "module"))
-			return $resolveSubalias(resolution, subalias)
+			return resolveSubalias(resolution, subalias)
 		return throwParseError(writeUnresolvableMessage(name))
 	}
 
@@ -479,6 +576,10 @@ export interface SchemaScope<$ = any> {
 	export<names extends exportedNameOf<$>[]>(
 		...names: names
 	): SchemaModule<show<destructuredExportContext<$, names>>>
+
+	resolve<name extends exportedNameOf<$>>(
+		name: name
+	): destructuredExportContext<$, []>[name]
 }
 
 export const SchemaScope: new <$ = any>(
@@ -567,14 +668,14 @@ export const bindCompiledScope = (references: readonly RawNode[]): void => {
 		}
 		node.jit = true
 		node.traverseAllows =
-			compiledTraversals[`${node.baseName}Allows`].bind(compiledTraversals)
-		if (node.isSchema() && !node.includesContextDependentPredicate) {
+			compiledTraversals[`${node.id}Allows`].bind(compiledTraversals)
+		if (node.isSchema() && !node.allowsRequiresContext) {
 			// if the reference doesn't require context, we can assign over
 			// it directly to avoid having to initialize it
 			node.allows = node.traverseAllows as never
 		}
 		node.traverseApply =
-			compiledTraversals[`${node.baseName}Apply`].bind(compiledTraversals)
+			compiledTraversals[`${node.id}Apply`].bind(compiledTraversals)
 	}
 }
 
@@ -586,9 +687,9 @@ const compileScope = (references: readonly RawNode[]) => {
 				node.compile(allowsCompiler)
 				const applyCompiler = new NodeCompiler("Apply").indent()
 				node.compile(applyCompiler)
-				js.line(
-					`${allowsCompiler.writeMethod(`${node.baseName}Allows`)},`
-				).line(`${applyCompiler.writeMethod(`${node.baseName}Apply`)},`)
+				js.line(`${allowsCompiler.writeMethod(`${node.id}Allows`)},`).line(
+					`${applyCompiler.writeMethod(`${node.id}Apply`)},`
+				)
 			})
 			return js
 		})

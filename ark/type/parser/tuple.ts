@@ -97,7 +97,7 @@ const appendElement = (
 ): MutableInner<"sequence"> => {
 	switch (kind) {
 		case "required":
-			if (base.optional)
+			if (base.optionals)
 				// e.g. [string?, number]
 				return throwParseError(requiredPostOptionalMessage)
 			if (base.variadic) {
@@ -113,7 +113,7 @@ const appendElement = (
 				// e.g. [...string[], number?]
 				return throwParseError(optionalPostVariadicMessage)
 			// e.g. [string, number?]
-			base.optional = append(base.optional, element)
+			base.optionals = append(base.optionals, element)
 			return base
 		case "variadic":
 			// e.g. [...string[], number, ...string[]]
@@ -143,7 +143,7 @@ const appendSpreadBranch = (
 		return appendElement(base, "variadic", tsKeywords.unknown)
 	}
 	spread.prefix.forEach(node => appendElement(base, "required", node))
-	spread.optional.forEach(node => appendElement(base, "optional", node))
+	spread.optionals.forEach(node => appendElement(base, "optional", node))
 	spread.variadic && appendElement(base, "variadic", spread.variadic)
 	spread.postfix.forEach(node => appendElement(base, "required", node))
 	return base

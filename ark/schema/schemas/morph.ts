@@ -5,7 +5,7 @@ import {
 	type BuiltinObjects,
 	type listable,
 	type Primitive,
-	reference,
+	registeredReference,
 	throwParseError
 } from "@arktype/util"
 import type { of } from "../constraints/ast.js"
@@ -76,7 +76,7 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 			child: true,
 			parse: (def, ctx) => {
 				if (def === undefined) return
-				const to = ctx.$.parseRoot(def)
+				const to = ctx.$.schema(def)
 				return to.kind === "intersection" && to.children.length === 0 ?
 						// ignore unknown as an output validator
 						undefined
@@ -85,7 +85,7 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 		},
 		morphs: {
 			parse: arrayFrom,
-			serialize: morphs => morphs.map(reference)
+			serialize: morphs => morphs.map(registeredReference)
 		}
 	},
 	normalize: def => def,
@@ -109,7 +109,7 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 			if (to instanceof Disjoint) return to
 			// in case from is a union, we need to distribute the branches
 			// to can be a union as any schema is allowed
-			return ctx.$.parseRoot(
+			return ctx.$.schema(
 				from.branches.map(fromBranch =>
 					ctx.$.node("morph", {
 						morphs: l.morphs,
@@ -141,7 +141,7 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 })
 
 export class MorphNode extends RawSchema<MorphDeclaration> {
-	serializedMorphs = this.morphs.map(morph => reference(morph))
+	serializedMorphs: string[] = (this.json as any).morphs
 	compiledMorphs = `[${this.serializedMorphs}]`
 	outValidator = this.to?.traverseApply ?? null
 	outValidatorReference: string =

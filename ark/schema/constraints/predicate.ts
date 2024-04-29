@@ -1,11 +1,11 @@
-import { compileSerializedValue } from "@arktype/util"
+import { registeredReference } from "@arktype/util"
 import type { errorContext } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { implementNode } from "../shared/implement.js"
 import type { TraversalContext, TraverseApply } from "../shared/traversal.js"
 import type { constrain, of } from "./ast.js"
-import { RawConstraint } from "./constraint.js"
+import { BaseConstraintNode } from "./constraint.js"
 
 export interface PredicateInner<rule extends Predicate<any> = Predicate<any>>
 	extends BaseMeta {
@@ -27,9 +27,6 @@ export type PredicateDeclaration = declareNode<{
 	errorContext: PredicateErrorContext
 }>
 
-// TODO: If node contains a predicate reference that doesn't take 1 arg, we need
-// to wrap it with traversal state for allows
-
 export const predicateImplementation = implementNode<PredicateDeclaration>({
 	kind: "predicate",
 	hasAssociatedError: true,
@@ -43,7 +40,6 @@ export const predicateImplementation = implementNode<PredicateDeclaration>({
 			`valid according to ${node.predicate.name || "an anonymous predicate"}`
 	},
 	intersectionIsOpen: true,
-	// TODO: ordering
 	intersections: {
 		// TODO: allow changed order to be the same type
 		// as long as the narrows in l and r are individually safe to check
@@ -53,8 +49,8 @@ export const predicateImplementation = implementNode<PredicateDeclaration>({
 	}
 })
 
-export class PredicateNode extends RawConstraint<PredicateDeclaration> {
-	serializedPredicate = compileSerializedValue(this.predicate)
+export class PredicateNode extends BaseConstraintNode<PredicateDeclaration> {
+	serializedPredicate = registeredReference(this.predicate)
 	compiledCondition = `${this.serializedPredicate}(data, ctx)`
 	compiledNegation = `!${this.compiledCondition}`
 

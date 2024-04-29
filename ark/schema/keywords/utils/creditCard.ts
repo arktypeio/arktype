@@ -27,7 +27,12 @@ const creditCardMatcher =
 
 export const creditCard = root.defineSchema({
 	domain: "string",
-	regex: creditCardMatcher,
-	predicate: isLuhnValid,
-	description: "a valid credit card number"
+	regex: {
+		rule: creditCardMatcher.source,
+		description: "a valid credit card number"
+	},
+	predicate: {
+		predicate: isLuhnValid,
+		description: "a valid credit card number"
+	}
 })

@@ -13,7 +13,7 @@ import {
 	type requireKeys,
 	type show
 } from "@arktype/util"
-import type { PropsGroupInput } from "../constraints/props/props.js"
+import type { StructureInner } from "../constraints/structure/structure.js"
 import type { Declaration, Inner, errorContext } from "../kinds.js"
 import type { Node, RawNode } from "../node.js"
 import type { NodeParseContext } from "../parse.js"
@@ -22,7 +22,7 @@ import type {
 	schemaKindOrRightOf,
 	schemaKindRightOf
 } from "../schema.js"
-import type { IntersectionInner } from "../schemas/intersection.js"
+import type { IntersectionDef } from "../schemas/intersection.js"
 import type {
 	NodeConfig,
 	ParsedUnknownNodeConfig,
@@ -41,9 +41,14 @@ export const basisKinds = ["unit", "proto", "domain"] as const
 
 export type BasisKind = (typeof basisKinds)[number]
 
-export const propKinds = ["prop", "index", "sequence"] as const
+export const structuralKinds = [
+	"required",
+	"optional",
+	"index",
+	"sequence"
+] as const
 
-export type PropKind = (typeof propKinds)[number]
+export type StructuralKind = (typeof structuralKinds)[number]
 
 export const rangeKinds = [
 	"max",
@@ -66,13 +71,16 @@ export type RefinementKind = (typeof refinementKinds)[number]
 
 export const constraintKinds = [
 	...refinementKinds,
-	...propKinds,
-	"predicate"
+	...structuralKinds,
+	"predicate",
+	"structure",
+	"refinement"
 ] as const
 
 export type ConstraintKind = (typeof constraintKinds)[number]
 
 export const schemaKinds = [
+	"alias",
 	"union",
 	"morph",
 	"unit",
@@ -95,9 +103,7 @@ export type NodeKind = SchemaKind | ConstraintKind
 
 export const nodeKinds = [
 	...schemaKinds,
-	...refinementKinds,
-	...propKinds,
-	"predicate"
+	...constraintKinds
 ] as const satisfies NodeKind[]
 
 export type OpenNodeKind = {
@@ -123,15 +129,15 @@ export const constraintKeys = flatMorph(
 	(i, kind) => [kind, 1] as const
 )
 
-export const propKeys = flatMorph(
-	[...propKinds, "onExtraneousKey"] satisfies (keyof PropsGroupInput)[],
+export const structuralKeys = flatMorph(
+	[...structuralKinds, "onExtraneousKey"] satisfies (keyof StructureInner)[],
 	(i, k) => [k, 1] as const
 )
 
 export const discriminatingIntersectionKeys = {
 	...constraintKeys,
 	onExtraneousKey: 1
-} as const satisfies keySetOf<IntersectionInner>
+} as const satisfies keySetOf<IntersectionDef>
 
 type RightsByKind = accumulateRightKinds<OrderedNodeKinds, {}>
 
@@ -281,7 +287,7 @@ export type NodeKeyImplementation<
 		) => JsonData
 		parse?: (
 			schema: Exclude<d["normalizedDef"][k], undefined>,
-			ctx: NodeParseContext
+			ctx: NodeParseContext<d["kind"]>
 		) => instantiated
 	},
 	// require parse if we can't guarantee the schema value will be valid on inner
@@ -295,6 +301,7 @@ interface CommonNodeImplementationInput<d extends RawNodeDeclaration> {
 	keys: KeyDefinitions<d>
 	normalize: (schema: d["def"]) => d["normalizedDef"]
 	hasAssociatedError: d["errorContext"] extends null ? false : true
+	finalizeJson?: (json: { [k in keyof d["inner"]]: JsonData }) => Json
 	collapsibleKey?: keyof d["inner"]
 	reduce?: (
 		inner: d["inner"],
@@ -356,15 +363,15 @@ export interface UnknownAttachments {
 	alias?: string
 	readonly kind: NodeKind
 	readonly impl: UnknownNodeImplementation
-	readonly baseName: string
+	readonly id: string
 	readonly inner: Record<string, any>
 	readonly entries: readonly Entry<string>[]
 	readonly json: object
 	readonly typeJson: object
 	readonly collapsibleJson: JsonData
 	readonly children: RawNode[]
-	readonly innerId: string
-	readonly typeId: string
+	readonly innerHash: string
+	readonly typeHash: string
 	readonly $: RawSchemaScope
 }
 

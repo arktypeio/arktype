@@ -5,15 +5,13 @@ import {
 	fromEntries,
 	isArray,
 	printable,
+	register,
 	throwInternalError,
 	throwParseError
 } from "@arktype/util"
 import type { Node } from "../node.js"
-import type {
-	BoundKind,
-	IntersectionChildKind,
-	kindRightOf
-} from "./implement.js"
+import type { RawSchema } from "../schema.js"
+import type { BoundKind, IntersectionChildKind } from "./implement.js"
 import { hasArkKind } from "./utils.js"
 
 type DisjointKinds = {
@@ -53,8 +51,8 @@ type DisjointKinds = {
 				r: unknown
 		  }
 	union?: {
-		l: readonly Node<kindRightOf<"union">>[]
-		r: readonly Node<kindRightOf<"union">>[]
+		l: readonly RawSchema[]
+		r: readonly RawSchema[]
 	}
 	indiscriminableMorphs?: {
 		l: Node<"union">
@@ -178,11 +176,11 @@ export class Disjoint {
 		)
 	}
 
-	withPrefixKey(key: string): Disjoint {
+	withPrefixKey(key: string | symbol): Disjoint {
 		const entriesWithPrefix = entriesOf(this.sources).map(
 			([path, disjoints]): DisjointSourceEntry => {
 				const segments = JSON.parse(path) as string[]
-				segments.unshift(key)
+				segments.unshift(typeof key === "symbol" ? register(key) : key)
 				const pathWithPrefix = JSON.stringify(segments) as `[${string}]`
 				return [pathWithPrefix, disjoints]
 			}

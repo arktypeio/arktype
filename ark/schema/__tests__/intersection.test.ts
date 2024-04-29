@@ -13,7 +13,7 @@ contextualize(() => {
 			min: 5,
 			divisor: 3
 		})
-		attest(l.innerId).equals(r.innerId)
+		attest(l.json).equals(r.json)
 	})
 
 	it("multiple constraints", () => {
@@ -26,24 +26,4 @@ contextualize(() => {
 		attest(n.allows(4)).snap(false)
 		attest(n.allows(7)).snap(false)
 	})
-
-	// TODO:
-	// it("strict intersection", () => {
-	// 	const T = type(
-	// 		{
-	// 			a: "number",
-	// 			b: "number"
-	// 		},
-	// 		{ keys: "strict" }
-	// 	)
-	// 	const U = type(
-	// 		{
-	// 			a: "number"
-	// 		},
-	// 		{ keys: "strict" }
-	// 	)
-
-	// 	const i = intersection(T, U)
-	// 	//  const i: Type<{ a: number; b: number;}>
-	// })
 })

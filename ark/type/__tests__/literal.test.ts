@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@arktype/attest"
-import { reference } from "@arktype/util"
+import { printable, registeredReference } from "@arktype/util"
 import { type } from "arktype"
 
 contextualize(
@@ -11,28 +11,44 @@ contextualize(
 			attest(t.json).equals(type("5").json)
 		})
 
-		it("non-serializable", () => {
-			const s = Symbol()
-			const t = type(["===", s])
+		it("symbol with description", () => {
+			// if another symbol with the description "ism" is used in a test,
+			// the snapshotted errors below could break, but I want to test the
+			// actual display format.
+			// if you're here for that reason, choose another symbol name :P
+			const ism = Symbol("ism")
+			const t = type(["===", ism])
+			attest(t(ism)).equals(ism)
+
+			// same with ick- don't use it
+			const ick = Symbol("ick")
+
+			attest(t(ick).toString()).snap("must be Symbol(ism) (was Symbol(ick))")
+		})
+
+		it("anonymous symbol", () => {
+			const anon = Symbol()
+			// An anonymous symbol will definitely have a suffix so we need to
+			// get the name ahead of time
+			const anonName = printable(anon)
+			const t = type(["===", anon])
 			attest<symbol>(t.infer)
-			attest(t(s)).equals(s)
-			attest(t("test").toString()).snap(
-				'must be (symbol anonymous) (was "test")'
-			)
+			attest(t(anon)).equals(anon)
+			attest(t("test").toString()).equals(`must be ${anonName} (was "test")`)
 		})
 
 		it("branches", () => {
 			const o = { ark: true }
-			const oReference = reference(o)
+			const oReference = registeredReference(o)
 			const s = Symbol()
-			const sReference = reference(s)
+			const sReference = registeredReference(s)
 			const t = type(["===", true, "foo", 5, 1n, null, undefined, o, s])
 			attest<
 				true | "foo" | 5 | 1n | null | undefined | { ark: boolean } | typeof s
 			>(t.infer)
 			attest(t.json).equals([
-				{ unit: sReference },
 				{ unit: oReference },
+				{ unit: sReference },
 				{ unit: "1n" },
 				{ unit: "foo" },
 				{ unit: "undefined" },
@@ -52,16 +68,16 @@ contextualize(
 
 		it("branches", () => {
 			const o = { ark: true }
-			const oReference = reference(o)
+			const oReference = registeredReference(o)
 			const s = Symbol()
-			const sReference = reference(s)
+			const sReference = registeredReference(s)
 			const t = type("===", "foo", 5, true, null, 1n, undefined, o, s)
 			attest<
 				true | "foo" | 5 | 1n | null | undefined | { ark: boolean } | typeof s
 			>(t.infer)
 			attest(t.json).equals([
-				{ unit: sReference },
 				{ unit: oReference },
+				{ unit: sReference },
 				{ unit: "1n" },
 				{ unit: "foo" },
 				{ unit: "undefined" },
