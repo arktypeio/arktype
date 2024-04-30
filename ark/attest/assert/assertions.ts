@@ -49,7 +49,7 @@ export const versionableAssertion =
 					`Unexpected missing typeAssertionEntries when passed a TypeAssertionMapper`
 				)
 			}
-			for (const [version, data] of ctx.typeAssertionEntries!) {
+			for (const [version, data] of ctx.typeRelationshipAssertionEntries) {
 				let errorMessage = ""
 				try {
 					const mapped = actual.fn(data, ctx)

@@ -54,8 +54,4 @@ bench(
 	.mean([2, "ms"])
 	.types([344, "instantiations"])
 
-bench("arktype type", () => {
-	type("string")
-}).types([4766, "instantiations"])
-
 bench("empty", () => {}).types([0, "instantiations"])
