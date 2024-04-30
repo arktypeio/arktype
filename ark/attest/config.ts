@@ -46,9 +46,10 @@ export type AttestConfig = Partial<BaseAttestConfig>
 
 export const getDefaultAttestConfig = (): BaseAttestConfig => {
 	return {
-		tsconfig: existsSync(fromCwd("tsconfig.json"))
-			? fromCwd("tsconfig.json")
-			: undefined,
+		tsconfig:
+			existsSync(fromCwd("tsconfig.json")) ?
+				fromCwd("tsconfig.json")
+			:	undefined,
 		attestAliases: ["attest", "attestInternal"],
 		updateSnapshots: false,
 		skipTypes: false,
@@ -121,11 +122,11 @@ const parseConfig = (): ParsedAttestConfig => {
 		cacheDir,
 		assertionCacheDir,
 		defaultAssertionCachePath,
-		tsVersions: baseConfig.skipTypes
-			? []
-			: isTsVersionAliases(baseConfig.tsVersions)
-			? parseTsVersions(baseConfig.tsVersions)
-			: baseConfig.tsVersions
+		tsVersions:
+			baseConfig.skipTypes ? []
+			: isTsVersionAliases(baseConfig.tsVersions) ?
+				parseTsVersions(baseConfig.tsVersions)
+			:	baseConfig.tsVersions
 	})
 }
 
