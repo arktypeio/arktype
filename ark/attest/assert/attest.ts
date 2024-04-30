@@ -56,7 +56,7 @@ export const attestInternal = (
 	{ cfg: cfgHooks, ...ctxHooks }: InternalAssertionHooks = {}
 ): ChainableAssertions => {
 	const position = caller()
-	const cfg = { ...getConfig(), ...ctxHooks }
+	const cfg = { ...getConfig(), ...cfgHooks }
 	const ctx: AssertionContext = {
 		actual: value,
 		allowRegex: false,

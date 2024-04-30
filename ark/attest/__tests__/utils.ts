@@ -16,6 +16,5 @@ export const runThenGetContents = (templatePath: string): string => {
 
 // type is used in benchTemplate.ts to test compatibility with external modules
 export type makeComplexType<S extends string> =
-	S extends `${infer head}${infer tail}`
-		? head | tail | makeComplexType<tail>
-		: S
+	S extends `${infer head}${infer tail}` ? head | tail | makeComplexType<tail>
+	:	S

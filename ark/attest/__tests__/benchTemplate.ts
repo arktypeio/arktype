@@ -1,5 +1,4 @@
 import { bench } from "@arktype/attest"
-import { type } from "arktype"
 import type { makeComplexType as externalmakeComplexType } from "./utils.js"
 
 const fakeCallOptions = {
@@ -32,9 +31,9 @@ bench(
 	fakeCallOptions
 ).mark()
 
-type makeComplexType<S extends string> = S extends `${infer head}${infer tail}`
-	? head | tail | makeComplexType<tail>
-	: S
+type makeComplexType<S extends string> =
+	S extends `${infer head}${infer tail}` ? head | tail | makeComplexType<tail>
+	:	S
 
 bench("bench type", () => {
 	return {} as makeComplexType<"defenestration">
@@ -53,9 +52,5 @@ bench(
 )
 	.mean()
 	.types()
-
-bench("arktype type", () => {
-	type("string")
-}).types()
 
 bench("empty", () => {}).types()

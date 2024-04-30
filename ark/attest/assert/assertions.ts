@@ -50,23 +50,20 @@ export const versionableAssertion =
 				)
 			}
 			for (const [version, data] of ctx.typeRelationshipAssertionEntries) {
-				if (hasKey(data, "args")) {
-					let errorMessage = ""
-					try {
-						const mapped = actual.fn(data, ctx)
-						if (mapped !== null) {
-							fn(
-								"expected" in mapped ? mapped.expected : expected,
-								mapped.actual,
-								ctx
-							)
-						}
-					} catch (e) {
-						errorMessage += `❌TypeScript@${version}:${e}\n`
+				let errorMessage = ""
+				try {
+					const mapped = actual.fn(data, ctx)
+					if (mapped !== null) {
+						fn(
+							"expected" in mapped ? mapped.expected : expected,
+							mapped.actual,
+							ctx
+						)
 					}
-					if (errorMessage) throw new AssertionError({ message: errorMessage })
-				} else
-					throwInternalError("Assertion data of the wrong kind was encountered")
+				} catch (e) {
+					errorMessage += `❌TypeScript@${version}:${e}\n`
+				}
+				if (errorMessage) throw new AssertionError({ message: errorMessage })
 			}
 		} else fn(expected, actual, ctx)
 	}
