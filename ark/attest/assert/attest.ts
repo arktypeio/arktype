@@ -91,18 +91,4 @@ attestInternal.instantiations = (
 	instantiationDataHandler({ ...ctx, kind: "instantiations" }, args, false)
 }
 
-attestInternal.instantiations = (
-	args: Measure<"instantiations"> | undefined
-) => {
-	const attestConfig = getConfig()
-	if (attestConfig.skipInlineInstantiations) return
-
-	const calledFrom = caller()
-	const ctx = getBenchCtx([calledFrom.file])
-	ctx.isInlineBench = true
-	ctx.benchCallPosition = calledFrom
-	ctx.lastSnapCallPosition = calledFrom
-	instantiationDataHandler({ ...ctx, kind: "instantiations" }, args, false)
-}
-
 export const attest: AttestFn = attestInternal as AttestFn
