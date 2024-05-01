@@ -1,4 +1,5 @@
 import { fromCwd, type SourcePosition } from "@arktype/fs"
+import { throwInternalError } from "@arktype/util"
 import * as tsvfs from "@typescript/vfs"
 import { readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
@@ -98,13 +99,12 @@ export type TsconfigInfo = {
 }
 
 export const getTsConfigInfoOrThrow = (): TsconfigInfo => {
-	const config = getConfig()
+	const config = getConfig().tsconfig
 	const configFilePath =
-		config.tsconfig ??
-		ts.findConfigFile(fromCwd(), ts.sys.fileExists, "tsconfig.json")
+		config ?? ts.findConfigFile(fromCwd(), ts.sys.fileExists, "tsconfig.json")
 	if (!configFilePath) {
 		throw new Error(
-			`File ${config.tsconfig ?? join(fromCwd(), "tsconfig.json")} must exist.`
+			`File ${config ?? join(fromCwd(), "tsconfig.json")} must exist.`
 		)
 	}
 
@@ -128,10 +128,8 @@ export const getTsConfigInfoOrThrow = (): TsconfigInfo => {
 		{},
 		configFilePath
 	)
-
 	// ensure type.toString is as precise as possible
 	configParseResult.options.noErrorTruncation = true
-
 	if (configParseResult.errors.length > 0) {
 		throw new Error(
 			ts.formatDiagnostics(configParseResult.errors, {
@@ -148,7 +146,7 @@ export const getTsConfigInfoOrThrow = (): TsconfigInfo => {
 	}
 }
 
-export type TsLibFiles = {
+type TsLibFiles = {
 	defaultMapFromNodeModules: Map<string, string>
 	resolvedPaths: string[]
 }
@@ -182,7 +180,8 @@ export interface InternalTypeChecker extends ts.TypeChecker {
 
 export const getInternalTypeChecker = (
 	env?: tsvfs.VirtualTypeScriptEnvironment
-): InternalTypeChecker => getProgram(env).getTypeChecker() as never
+): InternalTypeChecker =>
+	getProgram(env).getTypeChecker() as InternalTypeChecker
 
 export interface StringifiableType extends ts.Type {
 	toString(): string
@@ -224,9 +223,19 @@ const getDescendantsRecurse = (node: ts.Node): ts.Node[] => [
 
 export const getAncestors = (node: ts.Node): ts.Node[] => {
 	const ancestors: ts.Node[] = []
-	while (node.parent) {
-		ancestors.push(node)
-		node = node.parent
+	let baseNode = node.parent
+	while (baseNode.parent !== undefined) {
+		ancestors.push(baseNode)
+		baseNode = baseNode.parent
 	}
 	return ancestors
 }
+
+export const getFirstAncestorByKindOrThrow = (
+	node: ts.Node,
+	kind: ts.SyntaxKind
+): ts.Node =>
+	getAncestors(node).find(ancestor => ancestor.kind === kind) ??
+	throwInternalError(
+		`Could not find an ancestor of kind ${ts.SyntaxKind[kind]}`
+	)

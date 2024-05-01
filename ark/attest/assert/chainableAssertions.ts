@@ -40,10 +40,13 @@ export class ChainableAssertions implements AssertionRecord {
 	}
 
 	private get actual() {
-		return this.ctx.actual instanceof TypeAssertionMapping ?
-				this.ctx.actual.fn(this.ctx.typeAssertionEntries![0][1], this.ctx)!
-					.actual
-			:	this.ctx.actual
+		if (this.ctx.actual instanceof TypeAssertionMapping) {
+			return this.ctx.actual.fn(
+				this.ctx.typeRelationshipAssertionEntries![0][1],
+				this.ctx
+			)!.actual
+		}
+		return this.ctx.actual
 	}
 
 	private get serializedActual() {
@@ -65,7 +68,9 @@ export class ChainableAssertions implements AssertionRecord {
 				ctx: this.ctx,
 				message:
 					messageOnError ??
-					`${this.serializedActual} failed to satisfy predicate${predicate.name ? ` ${predicate.name}` : ""}`
+					`${this.serializedActual} failed to satisfy predicate${
+						predicate.name ? ` ${predicate.name}` : ""
+					}`
 			})
 		}
 		return this.actual as never

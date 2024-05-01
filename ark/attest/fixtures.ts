@@ -17,7 +17,7 @@ export const setup = (options: Partial<AttestConfig> = {}): void => {
 		config.tsVersions.length === 1 &&
 		config.tsVersions[0].alias === "typescript"
 	)
-		writeAssertionData(join(config.assertionCacheDir, "typescript.json"))
+		writeAssertionData(config.defaultAssertionCachePath)
 	else {
 		forTypeScriptVersions(config.tsVersions, version =>
 			shell(

@@ -3,7 +3,7 @@ import * as assert from "node:assert/strict"
 
 const o = { ark: "type" }
 
-specify(() => {
+specify("type assertions", () => {
 	it("type parameter", () => {
 		attest<{ ark: string }>(o)
 		assert.throws(
