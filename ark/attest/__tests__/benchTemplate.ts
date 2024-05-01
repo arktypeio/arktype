@@ -1,5 +1,4 @@
 import { bench } from "@arktype/attest"
-import { type } from "arktype"
 import type { makeComplexType as externalmakeComplexType } from "./utils.js"
 
 const fakeCallOptions = {

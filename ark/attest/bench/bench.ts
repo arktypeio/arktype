@@ -306,7 +306,6 @@ export type BenchContext = {
 	benchCallPosition: SourcePosition
 	lastSnapCallPosition: SourcePosition | undefined
 	isAsync: boolean
-	isInlineBench: boolean
 }
 
 export type BenchAssertionContext = BenchContext & {
@@ -328,11 +327,11 @@ process.on("beforeExit", () => {
 		process.exit(1)
 	}
 })
+
 export const getBenchCtx = (
 	qualifiedPath: string[],
 	isAsync: boolean = false,
-	options: BenchOptions = {},
-	isInlineBench = false
+	options: BenchOptions = {}
 ): BenchContext => {
 	return {
 		qualifiedPath,
@@ -341,7 +340,6 @@ export const getBenchCtx = (
 		cfg: getConfig(),
 		benchCallPosition: caller(),
 		lastSnapCallPosition: undefined,
-		isAsync,
-		isInlineBench
+		isAsync
 	} as BenchContext
 }

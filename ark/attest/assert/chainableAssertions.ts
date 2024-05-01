@@ -41,8 +41,10 @@ export class ChainableAssertions implements AssertionRecord {
 
 	private get actual() {
 		if (this.ctx.actual instanceof TypeAssertionMapping) {
-			const assertionEntry = this.ctx.typeRelationshipAssertionEntries![0][1]
-			return this.ctx.actual.fn(assertionEntry, this.ctx)!.actual
+			return this.ctx.actual.fn(
+				this.ctx.typeRelationshipAssertionEntries![0][1],
+				this.ctx
+			)!.actual
 		}
 		return this.ctx.actual
 	}

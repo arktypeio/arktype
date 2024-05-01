@@ -85,7 +85,6 @@ attestInternal.instantiations = (
 
 	const calledFrom = caller()
 	const ctx = getBenchCtx([calledFrom.file])
-	ctx.isInlineBench = true
 	ctx.benchCallPosition = calledFrom
 	ctx.lastSnapCallPosition = calledFrom
 	instantiationDataHandler({ ...ctx, kind: "instantiations" }, args, false)
