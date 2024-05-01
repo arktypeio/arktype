@@ -1,6 +1,7 @@
 import type { LinePosition } from "@arktype/fs"
 import { flatMorph } from "@arktype/util"
 import ts from "typescript"
+
 import { getConfig } from "../config.js"
 import { getFileKey } from "../utils.js"
 import {
@@ -11,6 +12,11 @@ import {
 	type ArgumentTypes,
 	type StringifiableType
 } from "./ts.js"
+import {
+	gatherInlineInstantiationData,
+	getCallExpressionsByName,
+	getCallLocationFromCallExpression
+} from "./utils.js"
 
 export type AssertionsByFile = Record<string, TypeAssertionData[]>
 
@@ -20,6 +26,9 @@ export const analyzeProjectAssertions = (): AssertionsByFile => {
 	const filePaths = instance.rootFiles
 	const diagnosticsByFile = getDiagnosticsByFile()
 	const assertionsByFile: AssertionsByFile = {}
+	const attestAliasInstantiationMethodCalls = config.attestAliases.map(
+		alias => `${alias}.instantiations`
+	)
 	for (const path of filePaths) {
 		const file = instance.getSourceFileOrThrow(path)
 		const assertionsInFile = getAssertionsInFile(
@@ -29,6 +38,13 @@ export const analyzeProjectAssertions = (): AssertionsByFile => {
 		)
 		if (assertionsInFile.length)
 			assertionsByFile[getFileKey(file.fileName)] = assertionsInFile
+		if (!config.skipInlineInstantiations) {
+			gatherInlineInstantiationData(
+				file,
+				assertionsByFile,
+				attestAliasInstantiationMethodCalls
+			)
+		}
 	}
 	return assertionsByFile
 }
@@ -38,57 +54,8 @@ export const getAssertionsInFile = (
 	diagnosticsByFile: DiagnosticsByFile,
 	attestAliases: string[]
 ): TypeAssertionData[] => {
-	const assertCalls = getExpressionsByName(file, attestAliases)
+	const assertCalls = getCallExpressionsByName(file, attestAliases)
 	return assertCalls.map(call => analyzeAssertCall(call, diagnosticsByFile))
-}
-
-export const getAssertCallLocation = (
-	assertCall: ts.CallExpression
-): LinePositionRange => {
-	const start = ts.getLineAndCharacterOfPosition(
-		assertCall.getSourceFile(),
-		assertCall.getStart()
-	)
-	const end = ts.getLineAndCharacterOfPosition(
-		assertCall.getSourceFile(),
-		assertCall.getEnd()
-	)
-	// Add 1 to everything, since trace positions are 1-based and TS positions are 0-based.
-	return {
-		start: {
-			line: start.line + 1,
-			char: start.character + 1
-		},
-		end: {
-			line: end.line + 1,
-			char: end.character + 1
-		}
-	}
-}
-
-export const getExpressionsByName = (
-	startNode: ts.Node,
-	names: string[],
-	isSnapCall = false
-): ts.CallExpression[] => {
-	/*
-	 * We get might get some extraneous calls to other "attest" functions,
-	 * but they won't be referenced at runtime so shouldn't matter.
-	 */
-	const calls: ts.CallExpression[] = []
-	const visit = (node: ts.Node) => {
-		if (ts.isCallExpression(node)) {
-			if (names.includes(node.expression.getText())) calls.push(node)
-		} else if (isSnapCall) {
-			if (ts.isIdentifier(node)) {
-				if (names.includes(node.getText()))
-					calls.push(node as any as ts.CallExpression)
-			}
-		}
-		ts.forEachChild(node, visit)
-	}
-	visit(startNode)
-	return calls
 }
 
 export const analyzeAssertCall = (
@@ -96,7 +63,7 @@ export const analyzeAssertCall = (
 	diagnosticsByFile: DiagnosticsByFile
 ): TypeAssertionData => {
 	const types = extractArgumentTypesFromCall(assertCall)
-	const location = getAssertCallLocation(assertCall)
+	const location = getCallLocationFromCallExpression(assertCall)
 	const args = types.args.map(arg => serializeArg(arg, types))
 	const typeArgs = types.typeArgs.map(typeArg => serializeArg(typeArg, types))
 	const errors = checkDiagnosticMessages(assertCall, diagnosticsByFile)
@@ -216,11 +183,6 @@ const concatenateChainedErrors = (
 		)
 		.join("\n")
 
-export type LinePositionRange = {
-	start: LinePosition
-	end: LinePosition
-}
-
 export type ArgAssertionData = {
 	type: string
 	relationships: {
@@ -228,12 +190,27 @@ export type ArgAssertionData = {
 		typeArgs: TypeRelationship[]
 	}
 }
-export type TypeAssertionData = {
+
+export type TypeRelationshipAssertionData = {
 	location: LinePositionRange
 	args: ArgAssertionData[]
 	typeArgs: ArgAssertionData[]
 	errors: string[]
 	completions: Completions
+}
+
+export type TypeBenchmarkingAssertionData = {
+	location: LinePositionRange
+	count: number
+}
+
+export type TypeAssertionData =
+	| TypeRelationshipAssertionData
+	| TypeBenchmarkingAssertionData
+
+export type LinePositionRange = {
+	start: LinePosition
+	end: LinePosition
 }
 
 export type TypeRelationship = "subtype" | "supertype" | "equality" | "none"

@@ -9,10 +9,10 @@ attest(5).snap()
 attest({ re: "do" }).snap()
 
 // @ts-expect-error (using internal updateSnapshots hook)
-attest({ re: "dew" }, { updateSnapshots: true }).snap()
+attest({ re: "dew" }, { cfg: { updateSnapshots: true } }).snap({ re: "do" })
 
 // @ts-expect-error (using internal updateSnapshots hook)
-attest(5, { updateSnapshots: true }).snap(6)
+attest(5, { cfg: { updateSnapshots: true } }).snap(6)
 
 attest(undefined).snap()
 
