@@ -1,6 +1,6 @@
 import { cleanup, setup } from "@arktype/attest"
 
-process.env.TZ = "America/New_York"
+process.env.TZ = "Etc/GMT" //"America/New_York"
 
 export const mochaGlobalSetup = setup
 

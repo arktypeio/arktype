@@ -1,15 +1,15 @@
 import {
 	Callable,
+	flatMorph,
+	includes,
+	isArray,
+	shallowClone,
+	throwError,
 	type Dict,
 	type Guardable,
 	type Json,
 	type conform,
-	flatMorph,
-	includes,
-	isArray,
-	type listable,
-	shallowClone,
-	throwError
+	type listable
 } from "@arktype/util"
 import type { RawConstraint } from "./constraints/constraint.js"
 import type { PredicateNode } from "./constraints/predicate.js"
@@ -36,19 +36,19 @@ import type {
 	attachmentsOf
 } from "./shared/declare.js"
 import {
+	basisKinds,
+	constraintKinds,
+	precedenceOfKind,
+	propKinds,
+	refinementKinds,
+	schemaKinds,
 	type BasisKind,
 	type NodeKind,
 	type OpenNodeKind,
 	type PropKind,
 	type RefinementKind,
 	type SchemaKind,
-	type UnknownAttachments,
-	basisKinds,
-	constraintKinds,
-	precedenceOfKind,
-	propKinds,
-	refinementKinds,
-	schemaKinds
+	type UnknownAttachments
 } from "./shared/implement.js"
 import {
 	TraversalContext,
@@ -59,7 +59,8 @@ import {
 export type UnknownNode = RawNode | Schema
 
 export abstract class RawNode<
-	/** @ts-expect-error allow instantiation assignment to the base type */
+	/** uses -ignore rather than -expect-error because this is not an error in .d.ts
+	 * @ts-ignore allow instantiation assignment to the base type */
 	out d extends RawNodeDeclaration = RawNodeDeclaration
 > extends Callable<(data: d["prerequisite"]) => unknown, attachmentsOf<d>> {
 	constructor(public attachments: UnknownAttachments) {

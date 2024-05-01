@@ -1,17 +1,17 @@
 import {
+	throwParseError,
 	type Callable,
 	type Json,
-	type conform,
-	throwParseError
+	type conform
 } from "@arktype/util"
 import type { constrain } from "./constraints/ast.js"
 import type { Predicate } from "./constraints/predicate.js"
 import {
-	type PrimitiveConstraintKind,
-	throwInvalidOperandError
+	throwInvalidOperandError,
+	type PrimitiveConstraintKind
 } from "./constraints/util.js"
 import type { NodeDef, reducibleKindOf } from "./kinds.js"
-import { type Node, RawNode } from "./node.js"
+import { RawNode, type Node } from "./node.js"
 import type { constraintKindOf } from "./schemas/intersection.js"
 import type {
 	Morph,
@@ -29,9 +29,9 @@ import { Disjoint } from "./shared/disjoint.js"
 import { ArkErrors } from "./shared/errors.js"
 import type { NodeKind, SchemaKind, kindRightOf } from "./shared/implement.js"
 import {
-	type inferIntersection,
 	intersectNodesRoot,
-	pipeNodesRoot
+	pipeNodesRoot,
+	type inferIntersection
 } from "./shared/intersections.js"
 import {
 	arkKind,
@@ -55,7 +55,8 @@ export type TypeOnlySchemaKey =
 	| "tOut"
 
 export abstract class RawSchema<
-		/** @ts-expect-error allow instantiation assignment to the base type */
+		/** uses -ignore rather than -expect-error because this is not an error in .d.ts
+		 * @ts-ignore allow instantiation assignment to the base type */
 		out d extends RawSchemaDeclaration = RawSchemaDeclaration
 	>
 	extends RawNode<d>
