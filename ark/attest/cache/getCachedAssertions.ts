@@ -75,20 +75,17 @@ export type VersionedTypeAssertion<
 	data extends TypeAssertionData = TypeAssertionData
 > = [tsVersion: string, assertionData: data]
 
-enum Assertion {
-	Bench,
-	Type
-}
+type AssertionKind = "bench" | "type"
 
 const getTypeAssertionsAtPosition = <T extends TypeAssertionData>(
 	position: SourcePosition,
-	assertionType: Assertion
+	assertionType: AssertionKind
 ): VersionedTypeAssertion<T>[] => {
 	const fileKey = getFileKey(position.file)
 	return getCachedAssertionEntries().map(
 		([version, typeRelationshipAssertions, BenchAssertionAssertions]) => {
 			const assertions =
-				assertionType === Assertion.Type ?
+				assertionType === "type" ?
 					typeRelationshipAssertions
 				:	BenchAssertionAssertions
 			if (!assertions[fileKey]) {
@@ -122,7 +119,7 @@ export const getTypeRelationshipAssertionsAtPosition = (
 ): VersionedTypeAssertion<TypeRelationshipAssertionData>[] => {
 	return getTypeAssertionsAtPosition<TypeRelationshipAssertionData>(
 		position,
-		Assertion.Type
+		"type"
 	)
 }
 
@@ -131,6 +128,6 @@ export const getTypeBenchAssertionsAtPosition = (
 ): VersionedTypeAssertion<TypeBenchmarkingAssertionData>[] => {
 	return getTypeAssertionsAtPosition<TypeBenchmarkingAssertionData>(
 		position,
-		Assertion.Bench
+		"bench"
 	)
 }
