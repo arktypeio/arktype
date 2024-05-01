@@ -3,7 +3,7 @@ import type { Digit } from "@arktype/util"
 import { existsSync, renameSync, symlinkSync, unlinkSync } from "fs"
 import { dirname } from "path"
 import { join } from "path/posix"
-import * as ts from "typescript"
+import ts from "typescript"
 
 /**
  * Executes a provided function for an installed set of TypeScript versions.

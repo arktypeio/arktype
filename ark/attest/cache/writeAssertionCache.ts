@@ -1,6 +1,6 @@
 import type { LinePosition } from "@arktype/fs"
 import { flatMorph } from "@arktype/util"
-import * as ts from "typescript"
+import ts from "typescript"
 
 import { getConfig } from "../config.js"
 import { getFileKey } from "../utils.js"

@@ -23,5 +23,5 @@
 		},
 		"types": ["mocha", "node"]
 	},
-	"exclude": ["**/out", "node_modules", "./ark/docs", "./ark/repo"]
+	"exclude": ["**/out", "**/node_modules", "./ark/docs", "./ark/repo"]
 }

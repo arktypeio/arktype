@@ -1,5 +1,5 @@
 import { caller } from "@arktype/fs"
-import * as ts from "typescript"
+import ts from "typescript"
 import { getBenchAssertionsAtPosition } from "../cache/getCachedAssertions.js"
 import {
 	TsServer,
