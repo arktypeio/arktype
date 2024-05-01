@@ -9,9 +9,11 @@ runs:
   using: composite
   steps:
     - name: Setup pnpm
-      uses: pnpm/action-setup@v2
+      uses: pnpm/action-setup@v3
       with:
-        version: 8.3.1
+        version: 9
+        run_install:
+          - args: [--no-frozen-lockfile]
 
     - name: Setup Node (${{ inputs.node }})
       uses: actions/setup-node@v3
