@@ -4,10 +4,13 @@ import { getBenchCtx } from "../bench/bench.js"
 import type { Measure } from "../bench/measure.js"
 import { instantiationDataHandler } from "../bench/type.js"
 import {
-	getTypeAssertionsAtPosition,
+	getTypeRelationshipAssertionsAtPosition,
 	type VersionedTypeAssertion
 } from "../cache/getCachedAssertions.js"
-import type { TypeAssertionData } from "../cache/writeAssertionCache.js"
+import type {
+	TypeBenchmarkingAssertionData,
+	TypeRelationshipAssertionData
+} from "../cache/writeAssertionCache.js"
 import { getConfig, type AttestConfig } from "../config.js"
 import { assertEquals, typeEqualityMapping } from "./assertions.js"
 import {
@@ -38,7 +41,8 @@ export type AssertionContext = {
 	position: SourcePosition
 	defaultExpected?: unknown
 	assertionStack: string
-	typeAssertionEntries?: VersionedTypeAssertion[]
+	typeRelationshipAssertionEntries?: VersionedTypeAssertion<TypeRelationshipAssertionData>[]
+	typeBenchmarkingAssertionEntries?: VersionedTypeAssertion<TypeBenchmarkingAssertionData>[]
 	lastSnapName?: string
 }
 
@@ -63,9 +67,9 @@ export const attestInternal = (
 		...ctxHooks
 	}
 	if (!cfg.skipTypes) {
-		ctx.typeAssertionEntries = getTypeAssertionsAtPosition(position)
-		//todoshawn is this one ok to cast
-		if ((ctx.typeAssertionEntries[0][1] as TypeAssertionData).typeArgs[0]) {
+		ctx.typeRelationshipAssertionEntries =
+			getTypeRelationshipAssertionsAtPosition(position)
+		if (ctx.typeRelationshipAssertionEntries[0][1].typeArgs[0]) {
 			// if there is an expected type arg, check it immediately
 			assertEquals(undefined, typeEqualityMapping, ctx)
 		}
@@ -87,4 +91,4 @@ attestInternal.instantiations = (
 	instantiationDataHandler({ ...ctx, kind: "instantiations" }, args, false)
 }
 
-export const attest = attestInternal as AttestFn
+export const attest: AttestFn = attestInternal as AttestFn

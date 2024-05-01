@@ -13,10 +13,7 @@ import {
 	updateExternalSnapshot,
 	type SnapshotArgs
 } from "../cache/snapshots.js"
-import type {
-	Completions,
-	TypeAssertionData
-} from "../cache/writeAssertionCache.js"
+import type { Completions } from "../cache/writeAssertionCache.js"
 import { chainableNoOpProxy } from "../utils.js"
 import {
 	TypeAssertionMapping,
@@ -42,12 +39,12 @@ export class ChainableAssertions implements AssertionRecord {
 		return snapshot(value)
 	}
 
-	//todoshawn unsafe casting maybe
 	private get actual() {
-		return this.ctx.actual instanceof TypeAssertionMapping ?
-				this.ctx.actual.fn(this.ctx.typeAssertionEntries![0][1], this.ctx)!
-					.actual
-			:	this.ctx.actual
+		if (this.ctx.actual instanceof TypeAssertionMapping) {
+			const assertionEntry = this.ctx.typeRelationshipAssertionEntries![0][1]
+			return this.ctx.actual.fn(assertionEntry, this.ctx)!.actual
+		}
+		return this.ctx.actual
 	}
 
 	private get serializedActual() {
@@ -69,7 +66,9 @@ export class ChainableAssertions implements AssertionRecord {
 				ctx: this.ctx,
 				message:
 					messageOnError ??
-					`${this.serializedActual} failed to satisfy predicate${predicate.name ? ` ${predicate.name}` : ""}`
+					`${this.serializedActual} failed to satisfy predicate${
+						predicate.name ? ` ${predicate.name}` : ""
+					}`
 			})
 		}
 		return this.actual as never
@@ -83,6 +82,7 @@ export class ChainableAssertions implements AssertionRecord {
 		assert.equal(this.actual, expected)
 		return this
 	}
+
 	equals(expected: unknown): this {
 		assertEquals(expected, this.actual, this.ctx)
 		return this
@@ -171,7 +171,7 @@ export class ChainableAssertions implements AssertionRecord {
 		})
 	}
 
-	get throws() {
+	get throws(): unknown {
 		const result = callAssertedFunction(this.actual as Function)
 		this.ctx.actual = getThrownMessage(result, this.ctx)
 		this.ctx.allowRegex = true
@@ -196,21 +196,7 @@ export class ChainableAssertions implements AssertionRecord {
 		}
 	}
 
-	instanceOf(expected: Constructor): this {
-		if (!(this.actual instanceof expected)) {
-			throwAssertionError({
-				ctx: this.ctx,
-				message: `Expected an instance of ${expected.name} (was ${
-					typeof this.actual === "object" && this.actual !== null ?
-						this.actual.constructor.name
-					:	this.serializedActual
-				})`
-			})
-		}
-		return this
-	}
-
-	get completions() {
+	get completions(): any {
 		if (this.ctx.cfg.skipTypes) return chainableNoOpProxy
 
 		this.ctx.actual = new TypeAssertionMapping(data => {

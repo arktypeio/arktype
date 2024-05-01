@@ -18,15 +18,7 @@ import {
 	getCallLocationFromCallExpression
 } from "./utils.js"
 
-export type AssertionsByFile = Record<
-	string,
-	(TypeAssertionData | TypeBenchmarkingAssertionData)[]
->
-
-export type LocationAndCountAssertionData = Pick<
-	TypeAssertionData,
-	"location" | "count"
->
+export type AssertionsByFile = Record<string, TypeAssertionData[]>
 
 export const analyzeProjectAssertions = (): AssertionsByFile => {
 	const config = getConfig()
@@ -34,6 +26,9 @@ export const analyzeProjectAssertions = (): AssertionsByFile => {
 	const filePaths = instance.rootFiles
 	const diagnosticsByFile = getDiagnosticsByFile()
 	const assertionsByFile: AssertionsByFile = {}
+	const attestAliasInstantiationMethodCalls = config.attestAliases.map(
+		alias => `${alias}.instantiations`
+	)
 	for (const path of filePaths) {
 		const file = instance.getSourceFileOrThrow(path)
 		const assertionsInFile = getAssertionsInFile(
@@ -43,9 +38,12 @@ export const analyzeProjectAssertions = (): AssertionsByFile => {
 		)
 		if (assertionsInFile.length)
 			assertionsByFile[getFileKey(file.fileName)] = assertionsInFile
-		}
 		if (!config.skipInlineInstantiations) {
-			gatherInlineInstantiationData(file, assertionsByFile)
+			gatherInlineInstantiationData(
+				file,
+				assertionsByFile,
+				attestAliasInstantiationMethodCalls
+			)
 		}
 	}
 	return assertionsByFile
@@ -63,7 +61,7 @@ export const getAssertionsInFile = (
 export const analyzeAssertCall = (
 	assertCall: ts.CallExpression,
 	diagnosticsByFile: DiagnosticsByFile
-): TypeRelationshipAssertionData => {
+): TypeAssertionData => {
 	const types = extractArgumentTypesFromCall(assertCall)
 	const location = getCallLocationFromCallExpression(assertCall)
 	const args = types.args.map(arg => serializeArg(arg, types))
@@ -193,11 +191,6 @@ export type ArgAssertionData = {
 	}
 }
 
-/**
- * todoshawn typeassertiondata should be it's own union
- * typerelationshipassertiondata
- * typebenchmarkingassertiondata
- */
 export type TypeRelationshipAssertionData = {
 	location: LinePositionRange
 	args: ArgAssertionData[]
@@ -205,12 +198,15 @@ export type TypeRelationshipAssertionData = {
 	errors: string[]
 	completions: Completions
 }
+
 export type TypeBenchmarkingAssertionData = {
 	location: LinePositionRange
 	count: number
 }
-export type TypeAssertionData = TypeRelationshipAssertionData &
-	TypeBenchmarkingAssertionData
+
+export type TypeAssertionData =
+	| TypeRelationshipAssertionData
+	| TypeBenchmarkingAssertionData
 
 export type LinePositionRange = {
 	start: LinePosition

@@ -1,6 +1,6 @@
 import { caller } from "@arktype/fs"
 import ts from "typescript"
-import { getTypeAssertionsAtPosition } from "../cache/getCachedAssertions.js"
+import { getTypeBenchAssertionsAtPosition } from "../cache/getCachedAssertions.js"
 import {
 	TsServer,
 	getAbsolutePosition,
@@ -59,16 +59,6 @@ export const getContributedInstantiations = (ctx: BenchContext): number => {
 	const body = getDescendants(firstMatchingNamedCall).find(
 		node => ts.isArrowFunction(node) || ts.isFunctionExpression(node)
 	) as ts.ArrowFunction | ts.FunctionExpression | undefined
-	const benchNode = nearestCallExpressionChild(
-		file,
-		getAbsolutePosition(file, ctx.benchCallPosition)
-	)
-	const benchFn = getExpressionsByName(benchNode, ["bench"])
-	if (!benchFn) throw new Error("Unable to retrieve bench expression node.")
-
-	const benchBody = getDescendants(benchFn[0]).find(
-		node => ts.isArrowFunction(node) || ts.isFunctionExpression(node)
-	) as ts.ArrowFunction | ts.FunctionExpression | undefined
 
 	if (!body)
 		throw new Error("Unable to retrieve contents of the call expression")
@@ -87,12 +77,13 @@ export type ArgAssertionData = {
 export const instantiationDataHandler = (
 	ctx: BenchAssertionContext,
 	args?: Measure<TypeUnit>,
-	isBench = true
+	isBenchFunction = true
 ): void => {
 	const instantiationsContributed =
-		isBench ?
+		isBenchFunction ?
 			getContributedInstantiations(ctx)
-		:	getTypeAssertionsAtPosition(ctx.benchCallPosition)[0][1].count!
+		:	getTypeBenchAssertionsAtPosition(ctx.benchCallPosition)[0][1].count
+
 	const comparison: MeasureComparison<TypeUnit> = createTypeComparison(
 		instantiationsContributed,
 		args

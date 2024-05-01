@@ -10,7 +10,7 @@ export class TsServer {
 	rootFiles!: string[]
 	virtualEnv!: tsvfs.VirtualTypeScriptEnvironment
 
-	static #instance: TsServer | null = null
+	private static _instance: TsServer | null = null
 	static get instance(): TsServer {
 		return new TsServer()
 	}
@@ -145,6 +145,7 @@ export const getTsConfigInfoOrThrow = (): TsconfigInfo => {
 		parsed: configParseResult
 	}
 }
+
 type TsLibFiles = {
 	defaultMapFromNodeModules: Map<string, string>
 	resolvedPaths: string[]

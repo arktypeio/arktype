@@ -41,23 +41,18 @@ export const getCallLocationFromCallExpression = (
 	return location
 }
 
-let attestAliasInstantiationMethodCalls: string[]
 export const gatherInlineInstantiationData = (
 	file: ts.SourceFile,
-	fileAssertions: AssertionsByFile
+	fileAssertions: AssertionsByFile,
+	attestAliasInstantiationMethodCalls: string[]
 ): void => {
-	const { attestAliases } = getConfig()
-	attestAliasInstantiationMethodCalls ??= attestAliases.map(
-		(alias) => `${alias}.instantiations`
-	)
 	const expressions = getCallExpressionsByName(
 		file,
 		attestAliasInstantiationMethodCalls
 	)
-	if (!expressions.length) {
-		return
-	}
-	const enclosingFunctions = expressions.map((expression) => {
+	if (!expressions.length) return
+
+	const enclosingFunctions = expressions.map(expression => {
 		const attestInstantiationsExpression = getFirstAncestorByKindOrThrow(
 			expression,
 			ts.SyntaxKind.ExpressionStatement
@@ -70,13 +65,11 @@ export const gatherInlineInstantiationData = (
 			position: getCallLocationFromCallExpression(expression)
 		}
 	})
-	const instantiationInfo = enclosingFunctions.map((enclosingFunction) => {
+	const instantiationInfo = enclosingFunctions.map(enclosingFunction => {
 		const body = getDescendants(enclosingFunction.ancestor).find(
-			(node) => ts.isArrowFunction(node) || ts.isFunctionExpression(node)
+			node => ts.isArrowFunction(node) || ts.isFunctionExpression(node)
 		) as ts.ArrowFunction | ts.FunctionExpression | undefined
-		if (!body) {
-			throw new Error("Unable to find file contents")
-		}
+		if (!body) throw new Error("Unable to find file contents")
 
 		return {
 			location: enclosingFunction.position,
@@ -96,16 +89,14 @@ export const getCallExpressionsByName = (
 	isSnapCall = false
 ): ts.CallExpression[] => {
 	const calls: ts.CallExpression[] = []
-	getDescendants(startNode).forEach((descendant) => {
+	getDescendants(startNode).forEach(descendant => {
 		if (ts.isCallExpression(descendant)) {
-			if (names.includes(descendant.expression.getText()) || !names.length) {
+			if (names.includes(descendant.expression.getText()) || !names.length)
 				calls.push(descendant)
-			}
 		} else if (isSnapCall) {
 			if (ts.isIdentifier(descendant)) {
-				if (names.includes(descendant.getText()) || !names.length) {
+				if (names.includes(descendant.getText()) || !names.length)
 					calls.push(descendant as any as ts.CallExpression)
-				}
 			}
 		}
 	})
@@ -150,9 +141,9 @@ export const createOrUpdateFile = (
 	fileName: string,
 	fileText: string
 ): ts.SourceFile | undefined => {
-	env.sys.fileExists(fileName)
-		? env.updateFile(fileName, fileText)
-		: env.createFile(fileName, fileText)
+	env.sys.fileExists(fileName) ?
+		env.updateFile(fileName, fileText)
+	:	env.createFile(fileName, fileText)
 	return env.getSourceFile(fileName)
 }
 
@@ -162,18 +153,17 @@ const getInstantiationsWithFile = (fileText: string, fileName: string) => {
 	const program = getProgram(env)
 	program.emit(file)
 	const count = program.getInstantiationCount()
-	if (count === undefined) {
+	if (count === undefined)
 		throwInternalError(`Unable to gather instantiation count for ${fileText}`)
-	}
+
 	return count
 }
 
 let virtualEnv: tsvfs.VirtualTypeScriptEnvironment | undefined = undefined
 
 export const getIsolatedEnv = (): tsvfs.VirtualTypeScriptEnvironment => {
-	if (virtualEnv !== undefined) {
-		return virtualEnv
-	}
+	if (virtualEnv !== undefined) return virtualEnv
+
 	const tsconfigInfo = getTsConfigInfoOrThrow()
 	const libFiles = getTsLibFiles(tsconfigInfo.parsed.options)
 	const projectRoot = process.cwd()
@@ -198,7 +188,7 @@ const getBaselineSourceFile = (originalFile: ts.SourceFile): string => {
 
 	let baselineSourceFileText = originalFile.getFullText()
 
-	calls.forEach((call) => {
+	calls.forEach(call => {
 		baselineSourceFileText = baselineSourceFileText.replace(
 			call.getFullText(),
 			""

@@ -203,6 +203,7 @@ export const writeUpdates = (queuedUpdates: QueuedUpdate[]): void => {
 const runFormatterIfAvailable = (queuedUpdates: QueuedUpdate[]) => {
 	const { formatter, shouldFormat } = getConfig()
 	if (!shouldFormat) return
+
 	try {
 		const updatedPaths = [
 			...new Set(

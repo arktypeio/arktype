@@ -1,7 +1,7 @@
-import { printable, throwInternalError } from "@arktype/util"
+import { hasKey, printable, throwInternalError } from "@arktype/util"
 import { AssertionError } from "node:assert"
 import * as assert from "node:assert/strict"
-import type { TypeAssertionData } from "../cache/writeAssertionCache.js"
+import type { TypeRelationshipAssertionData } from "../cache/writeAssertionCache.js"
 import type { AssertionContext } from "./attest.js"
 
 export type ThrowAssertionErrorContext = {
@@ -34,7 +34,7 @@ export type MappedTypeAssertionResult = {
 export class TypeAssertionMapping {
 	constructor(
 		public fn: (
-			data: TypeAssertionData,
+			data: TypeRelationshipAssertionData,
 			ctx: AssertionContext
 		) => MappedTypeAssertionResult
 	) {}
@@ -44,7 +44,7 @@ export const versionableAssertion =
 	(fn: AssertFn): AssertFn =>
 	(expected, actual, ctx) => {
 		if (actual instanceof TypeAssertionMapping) {
-			if (!ctx.typeAssertionEntries) {
+			if (!ctx.typeRelationshipAssertionEntries) {
 				throwInternalError(
 					`Unexpected missing typeAssertionEntries when passed a TypeAssertionMapper`
 				)
@@ -108,10 +108,7 @@ export const typeEqualityMapping = new TypeAssertionMapping(data => {
 	}
 	return null
 })
-/**
- * todoshawn
- * extract entires -> should just be an array should be type assertion data
- */
+
 export const assertEqualOrMatching = versionableAssertion(
 	(expected, actual, ctx) => {
 		const assertionArgs = { actual, expected, ctx }
