@@ -1,6 +1,6 @@
 import { caller } from "@arktype/fs"
 import ts from "typescript"
-import { getTypeBenchAssertionsAtPosition } from "../cache/getCachedAssertions.js"
+import { getBenchAssertionsAtPosition } from "../cache/getCachedAssertions.js"
 import {
 	TsServer,
 	getAbsolutePosition,
@@ -82,7 +82,7 @@ export const instantiationDataHandler = (
 	const instantiationsContributed =
 		isBenchFunction ?
 			getContributedInstantiations(ctx)
-		:	getTypeBenchAssertionsAtPosition(ctx.benchCallPosition)[0][1].count
+		:	getBenchAssertionsAtPosition(ctx.benchCallPosition)[0][1].count
 
 	const comparison: MeasureComparison<TypeUnit> = createTypeComparison(
 		instantiationsContributed,
