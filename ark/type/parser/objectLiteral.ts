@@ -1,19 +1,20 @@
 import {
+	tsKeywords,
 	type NodeDef,
 	type RawSchema,
-	tsKeywords,
+	type UnitNode,
 	type writeInvalidPropertyKeyMessage
 } from "@arktype/schema"
 import {
+	printable,
+	spliterate,
+	stringAndSymbolicEntriesOf,
+	throwParseError,
 	type Dict,
 	type ErrorMessage,
 	type Key,
 	type merge,
-	printable,
-	type show,
-	spliterate,
-	stringAndSymbolicEntriesOf,
-	throwParseError
+	type show
 } from "@arktype/util"
 import type { ParseContext } from "../scope.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
@@ -62,8 +63,10 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): RawSchema => {
 			const value = ctx.$.parse(entry.value, ctx)
 
 			// extract enumerable named props from the index signature
-			const [enumerable, nonEnumerable] = spliterate(key.branches, k =>
-				k.hasKind("unit")
+			// TODO: remove explicit annotation once we can use TS 5.5
+			const [enumerable, nonEnumerable] = spliterate(
+				key.branches,
+				(k): k is UnitNode => k.hasKind("unit")
 			)
 
 			if (enumerable.length) {
