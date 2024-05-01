@@ -7,8 +7,7 @@ import type {
 	AssertionsByFile,
 	LinePositionRange,
 	TypeAssertionData,
-	TypeBenchmarkingAssertionData,
-	TypeRelationshipAssertionData
+	TypeAssertionKind
 } from "./writeAssertionCache.js"
 
 export type VersionedAssertionsByFile = [
@@ -72,22 +71,18 @@ const isPositionWithinRange = (
 }
 
 export type VersionedTypeAssertion<
-	data extends TypeAssertionData = TypeAssertionData
-> = [tsVersion: string, assertionData: data]
+	kind extends TypeAssertionKind = TypeAssertionKind
+> = [tsVersion: string, assertionData: TypeAssertionData<kind>]
 
-type AssertionKind = "bench" | "type"
-
-const getTypeAssertionsAtPosition = <T extends TypeAssertionData>(
+const getAssertionsOfKindAtPosition = <kind extends TypeAssertionKind>(
 	position: SourcePosition,
-	assertionType: AssertionKind
-): VersionedTypeAssertion<T>[] => {
+	kind: kind
+): VersionedTypeAssertion<kind>[] => {
 	const fileKey = getFileKey(position.file)
 	return getCachedAssertionEntries().map(
 		([version, typeRelationshipAssertions, BenchAssertionAssertions]) => {
 			const assertions =
-				assertionType === "type" ?
-					typeRelationshipAssertions
-				:	BenchAssertionAssertions
+				kind === "type" ? typeRelationshipAssertions : BenchAssertionAssertions
 			if (!assertions[fileKey]) {
 				throw new Error(
 					`Found no assertion data for '${fileKey}' for TypeScript version ${version}.`
@@ -109,25 +104,17 @@ const getTypeAssertionsAtPosition = <T extends TypeAssertionData>(
 	Are sourcemaps enabled and working properly?`
 				)
 			}
-			return [version, matchingAssertion] as VersionedTypeAssertion<T>
+			return [version, matchingAssertion] as VersionedTypeAssertion<kind>
 		}
 	)
 }
 
-export const getTypeRelationshipAssertionsAtPosition = (
+export const getTypeAssertionsAtPosition = (
 	position: SourcePosition
-): VersionedTypeAssertion<TypeRelationshipAssertionData>[] => {
-	return getTypeAssertionsAtPosition<TypeRelationshipAssertionData>(
-		position,
-		"type"
-	)
-}
+): VersionedTypeAssertion<"type">[] =>
+	getAssertionsOfKindAtPosition(position, "type")
 
-export const getTypeBenchAssertionsAtPosition = (
+export const getBenchAssertionsAtPosition = (
 	position: SourcePosition
-): VersionedTypeAssertion<TypeBenchmarkingAssertionData>[] => {
-	return getTypeAssertionsAtPosition<TypeBenchmarkingAssertionData>(
-		position,
-		"bench"
-	)
-}
+): VersionedTypeAssertion<"bench">[] =>
+	getAssertionsOfKindAtPosition(position, "bench")

@@ -204,9 +204,13 @@ export type TypeBenchmarkingAssertionData = {
 	count: number
 }
 
-export type TypeAssertionData =
-	| TypeRelationshipAssertionData
-	| TypeBenchmarkingAssertionData
+export type TypeAssertionKind = "bench" | "type"
+
+export type TypeAssertionData<
+	kind extends TypeAssertionKind = TypeAssertionKind
+> =
+	kind extends "bench" ? TypeBenchmarkingAssertionData
+	:	TypeRelationshipAssertionData
 
 export type LinePositionRange = {
 	start: LinePosition

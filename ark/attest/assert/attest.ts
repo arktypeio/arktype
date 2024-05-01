@@ -4,13 +4,9 @@ import { getBenchCtx } from "../bench/bench.js"
 import type { Measure } from "../bench/measure.js"
 import { instantiationDataHandler } from "../bench/type.js"
 import {
-	getTypeRelationshipAssertionsAtPosition,
+	getTypeAssertionsAtPosition,
 	type VersionedTypeAssertion
 } from "../cache/getCachedAssertions.js"
-import type {
-	TypeBenchmarkingAssertionData,
-	TypeRelationshipAssertionData
-} from "../cache/writeAssertionCache.js"
 import { getConfig, type AttestConfig } from "../config.js"
 import { assertEquals, typeEqualityMapping } from "./assertions.js"
 import {
@@ -41,8 +37,8 @@ export type AssertionContext = {
 	position: SourcePosition
 	defaultExpected?: unknown
 	assertionStack: string
-	typeRelationshipAssertionEntries?: VersionedTypeAssertion<TypeRelationshipAssertionData>[]
-	typeBenchmarkingAssertionEntries?: VersionedTypeAssertion<TypeBenchmarkingAssertionData>[]
+	typeRelationshipAssertionEntries?: VersionedTypeAssertion<"type">[]
+	typeBenchmarkingAssertionEntries?: VersionedTypeAssertion<"bench">[]
 	lastSnapName?: string
 }
 
@@ -67,8 +63,7 @@ export const attestInternal = (
 		...ctxHooks
 	}
 	if (!cfg.skipTypes) {
-		ctx.typeRelationshipAssertionEntries =
-			getTypeRelationshipAssertionsAtPosition(position)
+		ctx.typeRelationshipAssertionEntries = getTypeAssertionsAtPosition(position)
 		if (ctx.typeRelationshipAssertionEntries[0][1].typeArgs[0]) {
 			// if there is an expected type arg, check it immediately
 			assertEquals(undefined, typeEqualityMapping, ctx)
