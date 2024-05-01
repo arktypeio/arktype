@@ -3,7 +3,7 @@ import { throwInternalError } from "@arktype/util"
 import * as tsvfs from "@typescript/vfs"
 import { readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
-import ts from "typescript"
+import * as ts from "typescript"
 import { getConfig } from "../config.js"
 
 export class TsServer {
