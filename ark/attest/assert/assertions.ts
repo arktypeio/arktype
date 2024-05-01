@@ -1,4 +1,4 @@
-import { hasKey, printable, throwInternalError } from "@arktype/util"
+import { printable, throwInternalError } from "@arktype/util"
 import { AssertionError } from "node:assert"
 import * as assert from "node:assert/strict"
 import type { TypeRelationshipAssertionData } from "../cache/writeAssertionCache.js"
