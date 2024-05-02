@@ -12,7 +12,7 @@ runs:
       uses: pnpm/action-setup@v3
       with:
         version: 9
-        run_install:
+        run_install: |
           - args: [--no-frozen-lockfile]
 
     - name: Setup Node (${{ inputs.node }})
