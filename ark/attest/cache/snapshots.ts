@@ -51,8 +51,15 @@ export const getSnapshotByName = (
  */
 export const queueSnapshotUpdate = (args: SnapshotArgs): void => {
 	const config = getConfig()
-	writeSnapUpdate(config.defaultAssertionCachePath, args)
-	writeSnapshotUpdatesOnExit()
+	const path = config.defaultAssertionCachePath
+	if (existsSync(path)) {
+		const existing = readJson(path)
+		writeJson(path, {
+			...existing,
+			updates:
+				Array.isArray(existing.updates) ? [...existing.updates, args] : [args]
+		})
+	} else writeJson(path, { updates: [args] })
 }
 
 export type QueuedUpdate = {
@@ -112,50 +119,29 @@ export const writeSnapshotUpdatesOnExit = (): void => {
 
 const writeCachedInlineSnapshotUpdates = () => {
 	const config = getConfig()
-	const updates: QueuedUpdate[] = []
 
-	if (existsSync(config.assertionCacheDir))
-		updates.push(...getQueuedUpdates(config.defaultAssertionCachePath))
-
-	writeUpdates(updates)
-	writeSnapUpdate(config.defaultAssertionCachePath)
-}
-
-const writeSnapUpdate = (path: string, update?: SnapshotArgs) => {
-	const assertions =
-		existsSync(path) ? readJson(path) : { updates: [] as SnapshotArgs[] }
-
-	assertions.updates =
-		update !== undefined ? [...(assertions.updates ?? []), update] : []
-
-	writeJson(path, assertions)
-}
-const updateQueue = (queue: QueuedUpdate[], path: string) => {
 	let snapshotData: SnapshotArgs[] | undefined
+
+	if (!existsSync(config.defaultAssertionCachePath)) return
+
 	try {
-		snapshotData = readJson(path).updates
+		snapshotData = readJson(config.defaultAssertionCachePath).updates
 	} catch {
 		// If we can't read the snapshot, log an error and move onto the next update
 		console.error(
-			`Unable to read snapshot data from expected location ${path}.`
+			`Unable to read snapshot data from expected location ${config.defaultAssertionCachePath}.`
 		)
 	}
 	if (snapshotData) {
 		try {
-			snapshotData.forEach(snapshot =>
-				queue.push(snapshotArgsToQueuedUpdate(snapshot))
+			writeUpdates(
+				snapshotData.map(snapshot => snapshotArgsToQueuedUpdate(snapshot))
 			)
 		} catch (error) {
 			// If writeInlineSnapshotToFile throws an error, log it and move on to the next update
 			console.error(String(error))
 		}
 	}
-}
-
-const getQueuedUpdates = (path: string) => {
-	const queuedUpdates: QueuedUpdate[] = []
-	updateQueue(queuedUpdates, path)
-	return queuedUpdates
 }
 
 const snapshotArgsToQueuedUpdate = ({

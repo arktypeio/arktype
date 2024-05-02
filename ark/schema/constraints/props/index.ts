@@ -5,6 +5,7 @@ import {
 } from "@arktype/util"
 import type { Node, SchemaDef } from "../../node.js"
 import type { RawSchema } from "../../schema.js"
+import type { UnitNode } from "../../schemas/unit.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import { implementNode, type SchemaKind } from "../../shared/implement.js"
@@ -47,7 +48,10 @@ export const indexImplementation = implementNode<IndexDeclaration>({
 				const key = ctx.$.schema(def)
 				if (!key.extends(ctx.$.keywords.propertyKey))
 					return throwParseError(writeInvalidPropertyKeyMessage(key.expression))
-				const enumerableBranches = key.branches.filter(b => b.hasKind("unit"))
+				// TODO: explicit manual annotation once we can upgrade to 5.5
+				const enumerableBranches = key.branches.filter((b): b is UnitNode =>
+					b.hasKind("unit")
+				)
 				if (enumerableBranches.length) {
 					return throwParseError(
 						writeEnumerableIndexBranches(

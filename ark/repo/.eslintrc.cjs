@@ -118,7 +118,13 @@ module.exports = defineConfig({
 		"no-case-declarations": "off",
 		/** In tests we use expect-error constantly, but in src if we
 		 * ever have to there should be an explanation */
-		"@typescript-eslint/ban-ts-comment": "warn"
+		"@typescript-eslint/ban-ts-comment": [
+			"warn",
+			{
+				// some errors are environment dependent or e.g. don't appear in build output
+				"ts-ignore": "allow-with-description"
+			}
+		]
 	},
 	overrides: [
 		{

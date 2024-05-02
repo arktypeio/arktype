@@ -1,6 +1,9 @@
 import { snapshot } from "@arktype/util"
 import process from "node:process"
-import { queueSnapshotUpdate } from "../cache/snapshots.js"
+import {
+	queueSnapshotUpdate,
+	writeSnapshotUpdatesOnExit
+} from "../cache/snapshots.js"
 import type { BenchAssertionContext, BenchContext } from "./bench.js"
 import {
 	stringifyMeasure,
@@ -29,6 +32,8 @@ export const queueBaselineUpdateIfNeeded = (
 		snapFunctionName: ctx.kind,
 		baselinePath: ctx.qualifiedPath
 	})
+
+	if (ctx.kind === "types") writeSnapshotUpdatesOnExit()
 }
 
 /** Pretty print comparison and set the process.exitCode to 1 if delta threshold is exceeded */

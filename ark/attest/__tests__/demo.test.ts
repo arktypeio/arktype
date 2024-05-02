@@ -1,8 +1,4 @@
-import {
-	attest,
-	contextualize,
-	getPrimaryTsVersionUnderTest
-} from "@arktype/attest"
+import { attest, contextualize } from "@arktype/attest"
 import { type } from "arktype"
 
 const o = { ark: "type" } as const

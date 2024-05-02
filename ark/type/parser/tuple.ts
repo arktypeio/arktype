@@ -1,4 +1,7 @@
 import {
+	jsObjects,
+	makeRootAndArrayPropertiesMutable,
+	tsKeywords,
 	type BaseMeta,
 	type Morph,
 	type MutableInner,
@@ -12,22 +15,19 @@ import {
 	type distillConstrainableOut,
 	type inferIntersection,
 	type inferMorphOut,
-	type inferNarrow,
-	jsObjects,
-	makeRootAndArrayPropertiesMutable,
-	tsKeywords
+	type inferNarrow
 } from "@arktype/schema"
 import {
+	append,
+	objectKindOrDomainOf,
+	throwParseError,
 	type BuiltinObjectKind,
 	type Constructor,
 	type Domain,
 	type ErrorMessage,
-	append,
 	type array,
 	type conform,
-	objectKindOrDomainOf,
-	type show,
-	throwParseError
+	type show
 } from "@arktype/util"
 import type { ParseContext } from "../scope.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
@@ -194,15 +194,15 @@ export type validateTuple<def extends array, $, args> =
 		]
 	:	validateTupleLiteral<def, $, args>
 
-export type validateTupleLiteral<def extends array, $, args> = Readonly<
-	parseSequence<def, $, args>["validated"]
->
+export type validateTupleLiteral<def extends array, $, args> =
+	parseSequence<def, $, args> extends infer s extends SequenceParseState ?
+		Readonly<s["validated"]>
+	:	never
 
-type inferTupleLiteral<def extends array, $, args> = parseSequence<
-	def,
-	$,
-	args
->["inferred"]
+type inferTupleLiteral<def extends array, $, args> =
+	parseSequence<def, $, args> extends infer s extends SequenceParseState ?
+		s["inferred"]
+	:	never
 
 type SequenceParseState = {
 	unscanned: array

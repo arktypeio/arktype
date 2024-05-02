@@ -1,11 +1,11 @@
-import { readFile, shell } from "@arktype/fs"
+import { dirName, readFile, shell } from "@arktype/fs"
 import { copyFileSync, rmSync } from "node:fs"
 
 export const runThenGetContents = (templatePath: string): string => {
 	const tempPath = templatePath + ".temp.ts"
 	copyFileSync(templatePath, tempPath)
 	try {
-		shell(`pnpm tsx ${tempPath}`)
+		shell(`node --import=tsx ${tempPath}`, { cwd: dirName() })
 	} catch (e) {
 		console.error(e)
 	}

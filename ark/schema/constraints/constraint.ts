@@ -17,7 +17,8 @@ export interface BaseConstraintDeclaration extends RawNodeDeclaration {
 }
 
 export abstract class RawConstraint<
-	/** @ts-expect-error allow instantiation assignment to the base type */
+	/** uses -ignore rather than -expect-error because this is not an error in .d.ts
+	 * @ts-ignore allow instantiation assignment to the base type */
 	out d extends BaseConstraintDeclaration = BaseConstraintDeclaration
 > extends RawNode<d> {
 	readonly [arkKind] = "constraint"
