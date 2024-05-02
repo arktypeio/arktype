@@ -188,8 +188,12 @@ contextualize(() => {
 			)
 
 			// Type hint displays as "..." on hitting cycle (or any if "noErrorTruncation" is true)
-			attest({} as typeof types.a.infer).type.toString.snap()
-			attest({} as typeof types.b.infer.a.b.a.b.a.b.a).type.toString.snap()
+			attest({} as typeof types.a.infer).type.toString.snap(
+				"{ b: { a: any; }; }"
+			)
+			attest({} as typeof types.b.infer.a.b.a.b.a.b.a).type.toString.snap(
+				"{ b: { a: any; }; }"
+			)
 
 			// @ts-expect-error
 			attest({} as typeof types.a.infer.b.a.b.c).type.errors.snap(
@@ -326,8 +330,10 @@ contextualize(() => {
 					c: "a&b"
 				}
 			}).export()
-			attest(types.a.infer).type.toString.snap()
-			attest(types.b.infer).type.toString.snap()
+			attest(types.a.infer).type.toString.snap(
+				"{ b: { c: { b: any; c: any; }; }; }"
+			)
+			attest(types.b.infer).type.toString.snap("{ c: { b: any; c: any; }; }")
 
 			const expectedCyclicJson =
 				types.a.raw.firstReferenceOfKindOrThrow("alias").json

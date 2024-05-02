@@ -39,7 +39,9 @@ contextualize(() => {
 			provider: "'GitHub'|'Google'"
 		}).export()
 
-		attest(types.account.infer).type.toString.snap()
+		attest(types.account.infer).type.toString.snap(
+			'{ id?: string; coll?: string; ts?: TimeStub; ttl?: TimeStub; user: TimeStub | { name: string; accounts?: any[]; }; provider: "GitHub" | "Google"; providerUserId: string; }'
+		)
 		attest(types.account.json).snap({
 			domain: "object",
 			prop: [
