@@ -63,7 +63,7 @@ export const parseObject = (def: object, ctx: ParseContext): RawSchema => {
 }
 
 export type inferDefinition<def, $, args> =
-	isAny<def> extends true ? never
+	isAny<def> extends true ? any
 	: def extends type.cast<infer t> | ThunkCast<infer t> ? t
 	: def extends string ? inferString<def, $, args>
 	: def extends array ? inferTuple<def, $, args>

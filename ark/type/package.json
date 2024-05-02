@@ -29,9 +29,7 @@
 		}
 	},
 	"files": [
-		"out",
-		"!__tests__",
-		"**/*.ts"
+		"out"
 	],
 	"scripts": {
 		"build": "tsx ../repo/build.ts",

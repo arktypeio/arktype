@@ -19,9 +19,7 @@
 		}
 	},
 	"files": [
-		"out",
-		"!__tests__",
-		"**/*.ts"
+		"out"
 	],
 	"bin": {
 		"attest": "./out/cli/cli.js"

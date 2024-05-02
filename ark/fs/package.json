@@ -22,8 +22,6 @@
 		"build": "tsx ../repo/build.ts"
 	},
 	"files": [
-		"out",
-		"!__tests__",
-		"**/*.ts"
+		"out"
 	]
 }
