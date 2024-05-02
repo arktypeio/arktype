@@ -47,7 +47,7 @@ contextualize(() => {
 
 	it("doesn't try to validate any in scope", () => {
 		const $ = scope({ a: {} as any })
-		attest<{ a: any }>($.infer)
+		attest<any>($.resolve("a").infer)
 		attest<[number, any]>($.type(["number", "a"]).infer)
 	})
 
@@ -55,9 +55,9 @@ contextualize(() => {
 		const $ = scope({
 			a: ["string", "=>", s => s.length]
 		})
-		attest<{ a: number }>($.infer)
+		attest<number>($.resolve("a").infer)
 
-		attest<{ a: string }>($.inferIn)
+		attest<string>($.resolve("a").in.infer)
 	})
 
 	it("infers its own helpers", () => {
@@ -214,7 +214,7 @@ contextualize(() => {
 				}
 			})
 
-		type Package = ReturnType<typeof getCyclicScope>["infer"]["package"]
+		type Package = ReturnType<typeof getCyclicScope>["$"]["package"]
 
 		const getCyclicData = () => {
 			const packageData = {
@@ -227,23 +227,19 @@ contextualize(() => {
 		}
 
 		it("cyclic union", () => {
-			const $ = scope({
+			const types = scope({
 				a: { b: "b|false" },
 				b: { a: "a|true" }
-			})
-			attest($.infer).type.toString.snap(
-				"{ a: { b: false | { a: true | ...; }; }; b: { a: true | { b: false | ...; }; }; }"
-			)
+			}).export()
+			attest(types).type.toString.snap()
 		})
 
 		it("cyclic intersection", () => {
-			const $ = scope({
+			const types = scope({
 				a: { b: "b&a" },
 				b: { a: "a&b" }
-			})
-			attest($.infer).type.toString.snap(
-				"{ a: { b: { a: { b: ...; a: ...; }; b: ...; }; }; b: { a: { b: { a: ...; b: ...; }; a: ...; }; }; }"
-			)
+			}).export()
+			attest(types).type.toString.snap()
 		})
 
 		it("allows valid", () => {
@@ -314,7 +310,7 @@ contextualize(() => {
 				'b.a.b.a must be an object or 3 (was number, 4) or b.a must be 3 (was {"b":{"a":4}})'
 			)
 
-			attest(types.b.infer).type.toString.snap("{ a: 3 | { b: any; }; }")
+			attest(types.b.infer).type.toString.snap("{ a: 3 | { b: ...; }; }")
 			attest(types.b.json).snap({
 				domain: "object",
 				prop: [{ key: "a", value: ["$a", { unit: 3 }] }]

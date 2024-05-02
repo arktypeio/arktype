@@ -35,7 +35,6 @@ import type { Node, RawNode, SchemaDef } from "./node.js"
 import { type NodeParseOptions, parseNode, schemaKindOf } from "./parse.js"
 import type { RawSchema, Schema } from "./schema.js"
 import { type AliasNode, normalizeAliasDef } from "./schemas/alias.js"
-import type { distillIn, distillOut } from "./schemas/morph.js"
 import { NodeCompiler } from "./shared/compile.js"
 import type {
 	ActualWriter,
@@ -203,7 +202,7 @@ const nodesById: Record<string, RawNode | undefined> = {}
 
 export class RawSchemaScope<
 	$ extends RawSchemaResolutions = RawSchemaResolutions
-> implements internalImplementationOf<SchemaScope, "infer" | "inferIn" | "$">
+> implements internalImplementationOf<SchemaScope, "$">
 {
 	readonly config: ArkConfig
 	readonly resolvedConfig: ResolvedArkConfig;
@@ -535,9 +534,6 @@ export const schemaScope = <const aliases>(
 
 export interface SchemaScope<$ = any> {
 	$: $
-	infer: distillOut<$>
-	inferIn: distillIn<$>
-
 	[arkKind]: "scope"
 	config: ArkConfig
 	references: readonly RawNode[]
@@ -579,7 +575,7 @@ export interface SchemaScope<$ = any> {
 
 	resolve<name extends exportedNameOf<$>>(
 		name: name
-	): destructuredExportContext<$, []>[name]
+	): $[name] extends PreparsedNodeResolution ? $[name] : Schema<$[name], $>
 }
 
 export const SchemaScope: new <$ = any>(

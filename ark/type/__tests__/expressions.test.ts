@@ -39,8 +39,9 @@ contextualize(
 					"any",
 					"never",
 					"unknown",
-					"parse",
 					"keyof",
+					"parse",
+					"this",
 					"void",
 					"url",
 					"alpha",
@@ -54,8 +55,7 @@ contextualize(
 					"Record",
 					"instanceof",
 					"===",
-					"...",
-					"this"
+					"..."
 				]
 			})
 			// @ts-expect-error
@@ -86,8 +86,10 @@ contextualize(
 					"any",
 					"never",
 					"unknown",
-					"parse",
+					"&",
 					"keyof",
+					"parse",
+					"this",
 					"void",
 					"[]",
 					"url",
@@ -101,12 +103,10 @@ contextualize(
 					"semver",
 					"Record",
 					"|",
-					"&",
 					":",
 					"=>",
 					"@",
-					"...",
-					"this"
+					"..."
 				]
 			})
 		})
