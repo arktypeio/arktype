@@ -48,15 +48,12 @@ git checkout -b amazing-feature
 
 6. Do your best to write code that is stylistically consistent with its context. The linter will help with this, but it won't catch everything. Here's a few general guidelines:
 
-   - Favor functions over classes
-   - Favor arrow functions outside of classes
-   - Favor types over interfaces
    - Favor mutation over copying objects in perf-sensitive contexts
    - Favor clarity in naming with the following exceptions:
      - Ubiquitous variables/types. For example, use `s` over `dynamicParserState` for a variable of type DynamicParserState that is used in the same way across many functions.
      - Ephemeral variables whose contents can be trivially inferred from context. For example, prefer `rawKeyDefinitions.map(_ => _.trim())` to `rawKeyDefinitions.map(rawKeyDefinition => rawKeyDefinition.trim())`.
 
-We also have some unique casing rules for our TypeScript types to making writing isomorphic code easier:
+We also have some unique casing rules for our TypeScript types to facilitate type-level code that can parallel its runtime implementation and be easily understood:
 
 - Use `CapitalCase` for...
 

@@ -300,15 +300,15 @@ contextualize(() => {
 	})
 
 	it("directly nested", () => {
-		const t = type([
+		const t = type(
 			{
-				a: ["string", "=>", s => s.length]
+				// doesn't work with a nested tuple expression here due to a TS limitation
+				a: type("string", "=>", s => s.length)
 			},
 			"=>",
 			({ a }) => a === 0
-		])
-		// TODO: check
-		// attest<Type<(In: { a: string }) => Out<boolean>>>(t)
+		)
+		attest<Type<(In: { a: string }) => Out<boolean>>>(t)
 		assertNodeKind(t.raw, "morph")
 		const nestedMorph = t.raw.firstReferenceOfKindOrThrow("morph")
 		attest(t.json).snap({
