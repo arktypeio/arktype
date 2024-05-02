@@ -59,8 +59,10 @@ export type isUnknown<t> =
 
 export type conform<t, base> = t extends base ? t : base
 
-export type equals<t, u> =
-	(<_>() => _ extends t ? 1 : 2) extends <_>() => _ extends u ? 1 : 2 ? true
+export type equals<l, r> = [l, r] extends [r, l] ? true : false
+
+export type exactEquals<l, r> =
+	(<_>() => _ extends l ? 1 : 2) extends <_>() => _ extends r ? 1 : 2 ? true
 	:	false
 
 export const id = Symbol("id")

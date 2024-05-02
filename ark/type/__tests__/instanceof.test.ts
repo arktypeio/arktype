@@ -78,7 +78,7 @@ contextualize(
 			}
 			const ark = type(["instanceof", ArkClass])
 
-			attest<Type<ArkClass, {}>>(ark)
+			attest<Type<ArkClass>>(ark)
 			// not expanded since there are no morphs
 			attest(ark.infer).type.toString("ArkClass")
 			attest(ark.in.infer).type.toString("ArkClass")

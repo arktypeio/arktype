@@ -40,7 +40,7 @@ contextualize(() => {
 		}).export()
 
 		attest(types.account.infer).type.toString.snap(
-			'{ id?: string; coll?: string; ts?: TimeStub; ttl?: TimeStub; user: TimeStub | { name: string; accounts?: any[]; }; provider: "GitHub" | "Google"; providerUserId: string; }'
+			'{ id?: string; coll?: string; ts?: TimeStub; ttl?: TimeStub; user: TimeStub | { name: string; accounts?: ...[]; }; provider: "GitHub" | "Google"; providerUserId: string; }'
 		)
 		attest(types.account.json).snap({
 			domain: "object",

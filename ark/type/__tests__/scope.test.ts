@@ -100,7 +100,7 @@ contextualize(() => {
 			$.export()
 		})
 			.throws(writeUnboundableMessage("boolean"))
-			.type.errors(writeUnboundableMessage("'b'"))
+			.type.errors(writeUnboundableMessage("b"))
 	})
 
 	it("errors on ridiculous unexpected alias scenario", () => {
@@ -189,15 +189,15 @@ contextualize(() => {
 
 			// Type hint displays as "..." on hitting cycle (or any if "noErrorTruncation" is true)
 			attest({} as typeof types.a.infer).type.toString.snap(
-				"{ b: { a: any; }; }"
+				"{ b: { a: ...; }; }"
 			)
 			attest({} as typeof types.b.infer.a.b.a.b.a.b.a).type.toString.snap(
-				"{ b: { a: any; }; }"
+				"{ b: { a: ...; }; }"
 			)
 
 			// @ts-expect-error
 			attest({} as typeof types.a.infer.b.a.b.c).type.errors.snap(
-				`Property 'c' does not exist on type '{ a: { b: ...; }; }'.`
+				"Property 'c' does not exist on type '{ a: { b: ...; }; }'."
 			)
 		})
 
@@ -232,7 +232,7 @@ contextualize(() => {
 				b: { a: "a|true" }
 			})
 			attest($.infer).type.toString.snap(
-				"{ a: { b: false | { a: true | any; }; }; b: { a: true | { b: false | any; }; }; }"
+				"{ a: { b: false | { a: true | ...; }; }; b: { a: true | { b: false | ...; }; }; }"
 			)
 		})
 
@@ -242,7 +242,7 @@ contextualize(() => {
 				b: { a: "a&b" }
 			})
 			attest($.infer).type.toString.snap(
-				"{ a: { b: { a: { b: any; a: any; }; b: any; }; }; b: { a: { b: { a: any; b: any; }; a: any; }; }; }"
+				"{ a: { b: { a: { b: ...; a: ...; }; b: ...; }; }; b: { a: { b: { a: ...; b: ...; }; a: ...; }; }; }"
 			)
 		})
 
@@ -286,7 +286,7 @@ contextualize(() => {
 					a: "a|3"
 				}
 			}).export()
-			attest(types.a.infer).type.toString.snap("{ b: { a: 3 | any; }")
+			attest(types.a.infer).type.toString.snap("{ b: { a: 3 | ...; }; }")
 
 			attest(types.a.json).snap({
 				domain: "object",
@@ -331,9 +331,9 @@ contextualize(() => {
 				}
 			}).export()
 			attest(types.a.infer).type.toString.snap(
-				"{ b: { c: { b: any; c: any; }; }; }"
+				"{ b: { c: { b: ...; c: ...; }; }; }"
 			)
-			attest(types.b.infer).type.toString.snap("{ c: { b: any; c: any; }; }")
+			attest(types.b.infer).type.toString.snap("{ c: { b: ...; c: ...; }; }")
 
 			const expectedCyclicJson =
 				types.a.raw.firstReferenceOfKindOrThrow("alias").json
