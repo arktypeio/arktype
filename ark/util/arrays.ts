@@ -224,11 +224,11 @@ export type groupableKeyOf<t> = {
 }[keyof t]
 
 export type groupBy<element, discriminator extends groupableKeyOf<element>> = {
-	[k in element[discriminator] & PropertyKey]?: element extends unknown ?
+	[k in element[discriminator] & PropertyKey]?: (element extends unknown ?
 		isDisjoint<element[discriminator], k> extends true ?
 			never
-		:	element[]
-	:	never
+		:	element
+	:	never)[]
 } & unknown
 
 export const groupBy = <element, discriminator extends groupableKeyOf<element>>(

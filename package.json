@@ -18,7 +18,7 @@
 		"prChecks": "pnpm install && pnpm lint && pnpm format && pnpm tnt && pnpm build",
 		"build": "pnpm -r build",
 		"buildCjs": "ARKTYPE_CJS=1 pnpm -r build",
-		"test": "pnpm test-typed --skipTypes",
+		"test": "pnpm testTyped --skipTypes",
 		"testTyped": "mocha --exclude 'ark/attest/**/*.test.*'",
 		"testRepo": "pnpm test-typed && cd ./ark/test && pnpm test && pnpm testTsVersions",
 		"testTsVersions": "tsx ./ark/repo/testTsVersions.ts",

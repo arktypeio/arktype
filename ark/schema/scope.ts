@@ -202,7 +202,7 @@ const nodesById: Record<string, RawNode | undefined> = {}
 
 export class RawSchemaScope<
 	$ extends RawSchemaResolutions = RawSchemaResolutions
-> implements internalImplementationOf<SchemaScope, "$">
+> implements internalImplementationOf<SchemaScope, "t">
 {
 	readonly config: ArkConfig
 	readonly resolvedConfig: ResolvedArkConfig;
@@ -533,7 +533,7 @@ export const schemaScope = <const aliases>(
 ): SchemaScope<instantiateAliases<aliases>> => new SchemaScope(aliases, config)
 
 export interface SchemaScope<$ = any> {
-	$: $
+	t: $
 	[arkKind]: "scope"
 	config: ArkConfig
 	references: readonly RawNode[]

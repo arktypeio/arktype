@@ -214,7 +214,7 @@ contextualize(() => {
 				}
 			})
 
-		type Package = ReturnType<typeof getCyclicScope>["$"]["package"]
+		type Package = ReturnType<typeof getCyclicScope>["t"]["package"]
 
 		const getCyclicData = () => {
 			const packageData = {
@@ -231,7 +231,9 @@ contextualize(() => {
 				a: { b: "b|false" },
 				b: { a: "a|true" }
 			}).export()
-			attest(types).type.toString.snap()
+			attest(types).type.toString.snap(
+				"Module<{ a: { b: false | { a: true | ...; }; }; b: { a: true | { b: false | ...; }; }; }>"
+			)
 		})
 
 		it("cyclic intersection", () => {
@@ -239,7 +241,9 @@ contextualize(() => {
 				a: { b: "b&a" },
 				b: { a: "a&b" }
 			}).export()
-			attest(types).type.toString.snap()
+			attest(types).type.toString.snap(
+				"Module<{ a: { b: { a: { b: ...; a: ...; }; b: ...; }; }; b: { a: { b: { a: ...; b: ...; }; a: ...; }; }; }>"
+			)
 		})
 
 		it("allows valid", () => {
