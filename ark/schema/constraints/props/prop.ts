@@ -99,7 +99,7 @@ export class PropNode extends RawConstraint<PropDeclaration> {
 
 	errorContext = Object.freeze({
 		code: "prop",
-		missingValueDescription: this.value.description
+		missingValueDescription: this.value.in.description
 	} satisfies PropErrorContext)
 
 	compiledErrorContext: string = compileErrorContext(this.errorContext)

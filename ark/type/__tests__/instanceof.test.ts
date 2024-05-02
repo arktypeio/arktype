@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@arktype/attest"
 import { rawSchema } from "@arktype/schema"
-import { type Type, type } from "arktype"
+import { type, type Type } from "arktype"
 import { writeInvalidConstructorMessage } from "../parser/tuple.js"
 
 contextualize(
@@ -13,7 +13,9 @@ contextualize(
 			attest(t.json).equals(expected.json)
 			const e = new Error()
 			attest(t(e)).equals(e)
+			attest(t(e)).equals(e)
 			attest(t({}).toString()).snap("must be an Error (was object)")
+			attest(t(undefined).toString()).snap("must be an Error (was undefined)")
 		})
 		it("inherited", () => {
 			const t = type(["instanceof", TypeError])

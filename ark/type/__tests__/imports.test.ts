@@ -1,7 +1,7 @@
 import { attest, contextualize } from "@arktype/attest"
 import { writeDuplicateAliasError } from "@arktype/schema"
 import { lazily } from "@arktype/util"
-import { type Module, scope, type } from "arktype"
+import { scope, type, type Module } from "arktype"
 import { writePrefixedPrivateReferenceMessage } from "../parser/semantic/validate.js"
 
 const threeSixtyNoScope = lazily(() =>
