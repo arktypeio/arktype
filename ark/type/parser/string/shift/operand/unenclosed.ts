@@ -11,7 +11,7 @@ import {
 	type BigintLiteral,
 	type Completion,
 	type ErrorMessage,
-	type isAnyOrNever,
+	type anyOrNever,
 	type join,
 	printable,
 	throwParseError,
@@ -45,8 +45,7 @@ export type parseUnenclosed<s extends StaticState, $, args> =
 		: tryResolve<s, token, $, args> extends infer result ?
 			result extends ErrorMessage<infer message> ? state.error<message>
 			: result extends keyof $ ?
-				isAnyOrNever<$[result]> extends true ?
-					state.setRoot<s, result, unscanned>
+				[$[result]] extends [anyOrNever] ? state.setRoot<s, result, unscanned>
 				: $[result] extends GenericProps ?
 					parseGenericInstantiation<
 						token,

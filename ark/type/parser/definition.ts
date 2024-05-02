@@ -3,10 +3,10 @@ import {
 	type Dict,
 	type ErrorMessage,
 	type Primitive,
+	type anyOrNever,
 	type array,
 	type defined,
 	type equals,
-	type isAny,
 	isThunk,
 	type isUnknown,
 	objectKindOf,
@@ -63,7 +63,7 @@ export const parseObject = (def: object, ctx: ParseContext): RawSchema => {
 }
 
 export type inferDefinition<def, $, args> =
-	isAny<def> extends true ? any
+	[def] extends [anyOrNever] ? def
 	: def extends type.cast<infer t> | ThunkCast<infer t> ? t
 	: def extends string ? inferString<def, $, args>
 	: def extends array ? inferTuple<def, $, args>

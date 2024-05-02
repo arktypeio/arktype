@@ -1,4 +1,4 @@
-import { DynamicBase, type isAnyOrNever } from "@arktype/util"
+import { DynamicBase, type anyOrNever } from "@arktype/util"
 import type { Schema } from "./schema.js"
 import { addArkKind, arkKind } from "./shared/utils.js"
 
@@ -8,7 +8,7 @@ export type PreparsedNodeResolution = {
 
 type exportSchemaScope<$> = {
 	[k in keyof $]: $[k] extends PreparsedNodeResolution ?
-		isAnyOrNever<$[k]> extends true ?
+		[$[k]] extends [anyOrNever] ?
 			Schema<$[k], $>
 		:	$[k]
 	:	Schema<$[k], $>

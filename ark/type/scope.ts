@@ -18,9 +18,9 @@ import {
 } from "@arktype/schema"
 import {
 	type Dict,
+	type anyOrNever,
 	domainOf,
 	hasDomain,
-	type isAnyOrNever,
 	isThunk,
 	type keyError,
 	type nominal,
@@ -133,7 +133,7 @@ export type resolve<reference extends keyof $ | keyof args, $, args> =
 			args[reference]
 		:	$[reference & keyof $]
 	) extends infer resolution ?
-		isAnyOrNever<resolution> extends true ? resolution
+		[resolution] extends [anyOrNever] ? resolution
 		: resolution extends Def<infer def> ? inferDefinition<def, $, args>
 		: resolution
 	:	never

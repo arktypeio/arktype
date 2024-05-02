@@ -44,7 +44,9 @@ export type UnknownUnion =
 export type andPreserveUnknown<l, r> =
 	unknown extends l & r ? unknown : show<l & r>
 
-export type isAnyOrNever<t> = [unknown, t] extends [t, {}] ? true : isNever<t>
+declare const anyOrNever: unique symbol
+
+export type anyOrNever = typeof anyOrNever
 
 export type isAny<t> = [unknown, t] extends [t, {}] ? true : false
 
