@@ -13,6 +13,7 @@ import {
 	type Dict,
 	type ErrorMessage,
 	type Key,
+	type keyError,
 	type merge,
 	type show
 } from "@arktype/util"
@@ -132,16 +133,16 @@ export type validateObjectLiteral<def, $, args> = {
 	[k in keyof def]: k extends IndexKey<infer indexDef> ?
 		validateString<indexDef, $, args> extends ErrorMessage<infer message> ?
 			// add a nominal type here to avoid allowing the error message as input
-			indexParseError<message>
+			keyError<message>
 		: inferDefinition<indexDef, $, args> extends PropertyKey ?
 			// if the indexDef is syntactically and semantically valid,
 			// move on to the validating the value definition
 			validateDefinition<def[k], $, args>
-		:	indexParseError<writeInvalidPropertyKeyMessage<indexDef>>
+		:	keyError<writeInvalidPropertyKeyMessage<indexDef>>
 	: k extends "..." ?
 		inferDefinition<def[k], $, args> extends object ?
 			validateDefinition<def[k], $, args>
-		:	indexParseError<writeInvalidSpreadTypeMessage<astToString<def[k]>>>
+		:	keyError<writeInvalidSpreadTypeMessage<astToString<def[k]>>>
 	:	validateDefinition<def[k], $, args>
 }
 
@@ -220,12 +221,6 @@ type parseKey<k> =
 			: k extends Key ? k
 			: `${k & number}`
 		}>
-
-declare const indexParseSymbol: unique symbol
-
-export type indexParseError<message extends string = string> = {
-	[indexParseSymbol]: message
-}
 
 export const writeInvalidSpreadTypeMessage = <def extends string>(
 	def: def

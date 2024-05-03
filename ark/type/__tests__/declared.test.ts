@@ -106,7 +106,7 @@ contextualize(() => {
 				a: "string"
 			})
 		).type.errors(
-			`Property '"b?"' is missing in type '{ a: "string"; }' but required in type '{ a: "string"; "b?": number | undefined ; }'.`
+			`Property '"b?"' is missing in type '{ a: "string"; }' but required in type '{ a: "string"; "b?": number | undefined; }'.`
 		)
 	})
 

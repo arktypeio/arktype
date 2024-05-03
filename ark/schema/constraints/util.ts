@@ -42,14 +42,14 @@ export const writeInvalidOperandMessage = <
 ): writeInvalidOperandMessage<kind, actual> =>
 	`${capitalize(kind)} operand must be ${
 		expected.description
-	} (was ${actual.exclude(expected)})` as never
+	} (was ${actual.exclude(expected).description})` as never
 
 export type writeInvalidOperandMessage<
 	kind extends ConstraintKind,
 	actual extends Schema
 > = `${Capitalize<kind>} operand must be ${describeExpression<
 	Prerequisite<kind>
->} (was ${describeExpression<actual["infer"]>})`
+>} (was ${describeExpression<Exclude<actual["infer"], Prerequisite<kind>>>})`
 
 export interface ConstraintAttachments {
 	impliedBasis: UnknownSchema | null

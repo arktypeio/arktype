@@ -30,7 +30,6 @@ contextualize(() => {
 	})
 
 	it("multiple subtypes pruned", () => {
-		// TODO: check base type union reduction
 		const t = type("'foo'|'bar'|string|'baz'|/.*/")
 		const expected = type("string")
 		attest<string>(t.infer)
@@ -154,13 +153,13 @@ contextualize(() => {
 
 	it("root autocompletions", () => {
 		// @ts-expect-error
-		attest(() => type({ a: "s" }, "|", { b: "boolean" })).type.errors(
-			`Type '"s"' is not assignable to type '"string" | "symbol" | "semver"'`
-		)
+		attest(() => type({ a: "s" }, "|", { b: "boolean" })).completions({
+			s: ["string", "symbol", "semver"]
+		})
 		// @ts-expect-error
-		attest(() => type({ a: "string" }, "|", { b: "b" })).type.errors(
-			`Type '"b"' is not assignable to type '"bigint" | "boolean"'`
-		)
+		attest(() => type({ a: "string" }, "|", { b: "b" })).completions({
+			b: ["bigint", "boolean"]
+		})
 	})
 
 	it("bad reference", () => {

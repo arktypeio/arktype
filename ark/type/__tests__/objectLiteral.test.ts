@@ -201,7 +201,7 @@ contextualize(
 		it("with non-object", () => {
 			// @ts-expect-error
 			attest(() => type({ "...": "string" })).throwsAndHasTypeError(
-				writeInvalidSpreadTypeMessage(printable("string"))
+				writeInvalidSpreadTypeMessage("string")
 			)
 		})
 
