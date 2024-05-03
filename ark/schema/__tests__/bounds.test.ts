@@ -1,7 +1,7 @@
 import { attest, contextualize } from "@arktype/attest"
 import { schema } from "@arktype/schema"
 import { entriesOf, flatMorph } from "@arktype/util"
-import { boundKindPairsByLower } from "../constraints/refinement/range.js"
+import { boundKindPairsByLower } from "../refinements/range.js"
 import { Disjoint } from "../shared/disjoint.js"
 
 const numericCases = {

@@ -8,7 +8,7 @@ import {
 	registeredReference,
 	throwParseError
 } from "@arktype/util"
-import type { of } from "../constraints/ast.js"
+import type { of } from "../ast.js"
 import type { type } from "../inference.js"
 import type { Node, NodeDef, SchemaDef } from "../kinds.js"
 import { BaseSchema, type schemaKindRightOf } from "../schema.js"

@@ -1,11 +1,11 @@
 import { registeredReference } from "@arktype/util"
-import type { errorContext } from "../kinds.js"
-import type { NodeCompiler } from "../shared/compile.js"
-import type { BaseMeta, declareNode } from "../shared/declare.js"
-import { implementNode } from "../shared/implement.js"
-import type { TraversalContext, TraverseApply } from "../shared/traversal.js"
 import type { constrain, of } from "./ast.js"
 import { BaseConstraint } from "./constraint.js"
+import type { errorContext } from "./kinds.js"
+import type { NodeCompiler } from "./shared/compile.js"
+import type { BaseMeta, declareNode } from "./shared/declare.js"
+import { implementNode } from "./shared/implement.js"
+import type { TraversalContext, TraverseApply } from "./shared/traversal.js"
 
 export interface PredicateInner<rule extends Predicate<any> = Predicate<any>>
 	extends BaseMeta {

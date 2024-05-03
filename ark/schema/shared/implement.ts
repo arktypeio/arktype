@@ -13,7 +13,6 @@ import {
 	type requireKeys,
 	type show
 } from "@arktype/util"
-import type { StructureInner } from "../constraints/structure/structure.js"
 import type { Declaration, Inner, Node, errorContext } from "../kinds.js"
 import type { BaseNode } from "../node.js"
 import type { NodeParseContext } from "../parse.js"
@@ -28,6 +27,7 @@ import type {
 	ParsedUnknownNodeConfig,
 	RawSchemaScope
 } from "../scope.js"
+import type { StructureInner } from "../structure/structure.js"
 import type {
 	BaseErrorContext,
 	BaseMeta,

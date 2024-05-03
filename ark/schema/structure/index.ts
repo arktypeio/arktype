@@ -3,15 +3,15 @@ import {
 	stringAndSymbolicEntriesOf,
 	throwParseError
 } from "@arktype/util"
-import type { Node, SchemaDef } from "../../kinds.js"
-import type { BaseSchema } from "../../schema.js"
-import type { UnitNode } from "../../schemas/unit.js"
-import type { BaseMeta, declareNode } from "../../shared/declare.js"
-import { Disjoint } from "../../shared/disjoint.js"
-import { implementNode, type SchemaKind } from "../../shared/implement.js"
-import { intersectNodes } from "../../shared/intersections.js"
-import type { TraverseAllows, TraverseApply } from "../../shared/traversal.js"
 import { BaseConstraint } from "../constraint.js"
+import type { Node, SchemaDef } from "../kinds.js"
+import type { BaseSchema } from "../schema.js"
+import type { UnitNode } from "../schemas/unit.js"
+import type { BaseMeta, declareNode } from "../shared/declare.js"
+import { Disjoint } from "../shared/disjoint.js"
+import { type SchemaKind, implementNode } from "../shared/implement.js"
+import { intersectNodes } from "../shared/intersections.js"
+import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 
 export type IndexKeyKind = Exclude<SchemaKind, "unit">
 

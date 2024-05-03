@@ -6,20 +6,20 @@ import {
 	throwInternalError,
 	throwParseError
 } from "@arktype/util"
-import type { MutableInner, SchemaDef } from "../../kinds.js"
-import type { BaseSchema } from "../../schema.js"
-import type { NodeCompiler } from "../../shared/compile.js"
-import type { BaseMeta, declareNode } from "../../shared/declare.js"
-import { Disjoint } from "../../shared/disjoint.js"
+import { BaseConstraint } from "../constraint.js"
+import type { MutableInner, SchemaDef } from "../kinds.js"
+import type { BaseSchema } from "../schema.js"
+import type { NodeCompiler } from "../shared/compile.js"
+import type { BaseMeta, declareNode } from "../shared/declare.js"
+import { Disjoint } from "../shared/disjoint.js"
 import {
 	implementNode,
 	type IntersectionContext,
 	type NodeKeyImplementation,
 	type SchemaKind
-} from "../../shared/implement.js"
-import { intersectNodes } from "../../shared/intersections.js"
-import type { TraverseAllows, TraverseApply } from "../../shared/traversal.js"
-import { BaseConstraint } from "../constraint.js"
+} from "../shared/implement.js"
+import { intersectNodes } from "../shared/intersections.js"
+import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 
 export interface NormalizedSequenceDef extends BaseMeta {
 	readonly prefix?: array<SchemaDef>

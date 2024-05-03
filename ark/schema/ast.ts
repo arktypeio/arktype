@@ -1,7 +1,7 @@
 import type { conform } from "@arktype/util"
-import type { NodeDef } from "../kinds.js"
-import type { constraintKindOf } from "../schemas/intersection.js"
 import type { PrimitiveConstraintKind } from "./constraint.js"
+import type { NodeDef } from "./kinds.js"
+import type { constraintKindOf } from "./schemas/intersection.js"
 
 export type Comparator = "<" | "<=" | ">" | ">=" | "=="
 

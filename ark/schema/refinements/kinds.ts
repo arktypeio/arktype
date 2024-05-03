@@ -1,5 +1,5 @@
-import type { BoundKind } from "../../shared/implement.js"
 import type { BaseConstraint } from "../constraint.js"
+import type { BoundKind } from "../shared/implement.js"
 import {
 	type AfterDeclaration,
 	AfterNode,

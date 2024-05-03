@@ -4,14 +4,14 @@ import {
 	type Json,
 	type conform
 } from "@arktype/util"
-import type { constrain } from "./constraints/ast.js"
+import type { constrain } from "./ast.js"
 import {
 	throwInvalidOperandError,
 	type PrimitiveConstraintKind
-} from "./constraints/constraint.js"
-import type { Predicate } from "./constraints/predicate.js"
+} from "./constraint.js"
 import type { Node, NodeDef, reducibleKindOf } from "./kinds.js"
 import { BaseNode } from "./node.js"
+import type { Predicate } from "./predicate.js"
 import type { constraintKindOf } from "./schemas/intersection.js"
 import type {
 	Morph,

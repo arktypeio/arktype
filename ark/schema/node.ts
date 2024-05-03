@@ -11,7 +11,7 @@ import {
 	type conform,
 	type listable
 } from "@arktype/util"
-import type { BaseConstraint } from "./constraints/constraint.js"
+import type { BaseConstraint } from "./constraint.js"
 import type { Inner, Node, reducibleKindOf } from "./kinds.js"
 import type { BaseSchema, Schema } from "./schema.js"
 import type { UnitNode } from "./schemas/unit.js"

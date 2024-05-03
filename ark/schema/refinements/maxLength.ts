@@ -1,7 +1,7 @@
-import type { declareNode } from "../../shared/declare.js"
-import { Disjoint } from "../../shared/disjoint.js"
-import { implementNode } from "../../shared/implement.js"
-import type { TraverseAllows } from "../../shared/traversal.js"
+import type { declareNode } from "../shared/declare.js"
+import { Disjoint } from "../shared/disjoint.js"
+import { implementNode } from "../shared/implement.js"
+import type { TraverseAllows } from "../shared/traversal.js"
 import {
 	type BaseNormalizedRangeSchema,
 	BaseRange,

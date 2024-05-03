@@ -1,5 +1,5 @@
-import type { declareNode } from "../../shared/declare.js"
-import { implementNode } from "../../shared/implement.js"
+import type { declareNode } from "../shared/declare.js"
+import { implementNode } from "../shared/implement.js"
 import {
 	BasePropNode,
 	intersectProps,

@@ -1,8 +1,8 @@
-import type { BaseMeta, declareNode } from "../../shared/declare.js"
-import { Disjoint } from "../../shared/disjoint.js"
-import { implementNode } from "../../shared/implement.js"
-import type { TraverseAllows } from "../../shared/traversal.js"
 import { RawPrimitiveConstraint } from "../constraint.js"
+import type { BaseMeta, declareNode } from "../shared/declare.js"
+import { Disjoint } from "../shared/disjoint.js"
+import { implementNode } from "../shared/implement.js"
+import type { TraverseAllows } from "../shared/traversal.js"
 import type { LengthBoundableData } from "./range.js"
 
 export interface ExactLengthInner extends BaseMeta {

@@ -13,12 +13,7 @@ import {
 	flattenConstraints,
 	intersectConstraints,
 	unflattenConstraints
-} from "../constraints/constraint.js"
-import type { PredicateNode } from "../constraints/predicate.js"
-import type {
-	ExtraneousKeyBehavior,
-	StructureNode
-} from "../constraints/structure/structure.js"
+} from "../constraint.js"
 import type {
 	Inner,
 	MutableInner,
@@ -26,6 +21,7 @@ import type {
 	NodeDef,
 	Prerequisite
 } from "../kinds.js"
+import type { PredicateNode } from "../predicate.js"
 import { BaseSchema } from "../schema.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import { type BaseMeta, type declareNode, metaKeys } from "../shared/declare.js"
@@ -44,6 +40,10 @@ import {
 import { intersectNodes } from "../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 import { hasArkKind, isNode } from "../shared/utils.js"
+import type {
+	ExtraneousKeyBehavior,
+	StructureNode
+} from "../structure/structure.js"
 import type { DomainDef, DomainNode } from "./domain.js"
 import type { ProtoDef, ProtoNode } from "./proto.js"
 import { defineRightwardIntersections } from "./utils.js"

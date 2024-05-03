@@ -7,7 +7,7 @@ import {
 	type PartialRecord,
 	type show
 } from "@arktype/util"
-import type { of } from "../constraints/ast.js"
+import type { of } from "../ast.js"
 import type { BaseNode } from "../node.js"
 import type { BaseSchema } from "../schema.js"
 import type { MorphAst, MorphNode, Out } from "../schemas/morph.js"

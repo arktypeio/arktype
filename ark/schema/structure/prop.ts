@@ -1,16 +1,13 @@
 import { compileSerializedValue, type Key } from "@arktype/util"
-import type { SchemaDef } from "../../kinds.js"
-import type { BaseSchema } from "../../schema.js"
-import type { NodeCompiler } from "../../shared/compile.js"
-import type { BaseMeta } from "../../shared/declare.js"
-import { Disjoint } from "../../shared/disjoint.js"
-import type {
-	ConstraintIntersection,
-	SchemaKind
-} from "../../shared/implement.js"
-import { intersectNodes } from "../../shared/intersections.js"
-import type { TraverseAllows, TraverseApply } from "../../shared/traversal.js"
 import { BaseConstraint } from "../constraint.js"
+import type { SchemaDef } from "../kinds.js"
+import type { BaseSchema } from "../schema.js"
+import type { NodeCompiler } from "../shared/compile.js"
+import type { BaseMeta } from "../shared/declare.js"
+import { Disjoint } from "../shared/disjoint.js"
+import type { ConstraintIntersection, SchemaKind } from "../shared/implement.js"
+import { intersectNodes } from "../shared/intersections.js"
+import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 import type { OptionalDeclaration } from "./optional.js"
 import type { RequiredDeclaration } from "./required.js"
 

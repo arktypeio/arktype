@@ -1,51 +1,26 @@
 import type { array, listable } from "@arktype/util"
+import type { BaseNode } from "./node.js"
 import {
 	type PredicateDeclaration,
 	predicateImplementation,
 	PredicateNode
-} from "./constraints/predicate.js"
+} from "./predicate.js"
 import {
 	type DivisorDeclaration,
 	divisorImplementation,
 	DivisorNode
-} from "./constraints/refinement/divisor.js"
+} from "./refinements/divisor.js"
 import {
 	boundClassesByKind,
 	type BoundDeclarations,
 	boundImplementationsByKind,
 	type BoundNodesByKind
-} from "./constraints/refinement/kinds.js"
+} from "./refinements/kinds.js"
 import {
 	type RegexDeclaration,
 	regexImplementation,
 	RegexNode
-} from "./constraints/refinement/regex.js"
-import {
-	type IndexDeclaration,
-	indexImplementation,
-	IndexNode
-} from "./constraints/structure/index.js"
-import {
-	type OptionalDeclaration,
-	optionalImplementation,
-	OptionalNode
-} from "./constraints/structure/optional.js"
-import {
-	type RequiredDeclaration,
-	requiredImplementation,
-	RequiredNode
-} from "./constraints/structure/required.js"
-import {
-	type SequenceDeclaration,
-	sequenceImplementation,
-	SequenceNode
-} from "./constraints/structure/sequence.js"
-import {
-	type StructureDeclaration,
-	structureImplementation,
-	StructureNode
-} from "./constraints/structure/structure.js"
-import type { BaseNode } from "./node.js"
+} from "./refinements/regex.js"
 import {
 	type AliasDeclaration,
 	aliasImplementation,
@@ -89,6 +64,31 @@ import type {
 	UnknownNodeImplementation
 } from "./shared/implement.js"
 import type { makeRootAndArrayPropertiesMutable } from "./shared/utils.js"
+import {
+	type IndexDeclaration,
+	indexImplementation,
+	IndexNode
+} from "./structure/index.js"
+import {
+	type OptionalDeclaration,
+	optionalImplementation,
+	OptionalNode
+} from "./structure/optional.js"
+import {
+	type RequiredDeclaration,
+	requiredImplementation,
+	RequiredNode
+} from "./structure/required.js"
+import {
+	type SequenceDeclaration,
+	sequenceImplementation,
+	SequenceNode
+} from "./structure/sequence.js"
+import {
+	type StructureDeclaration,
+	structureImplementation,
+	StructureNode
+} from "./structure/structure.js"
 
 export interface NodeDeclarationsByKind extends BoundDeclarations {
 	alias: AliasDeclaration

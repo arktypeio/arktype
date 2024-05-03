@@ -5,10 +5,10 @@ import {
 	isKeyOf,
 	type propValueOf
 } from "@arktype/util"
-import type { Node } from "../../kinds.js"
-import type { BaseMeta, RawNodeDeclaration } from "../../shared/declare.js"
-import type { KeyDefinitions, RangeKind } from "../../shared/implement.js"
 import { RawPrimitiveConstraint } from "../constraint.js"
+import type { Node } from "../kinds.js"
+import type { BaseMeta, RawNodeDeclaration } from "../shared/declare.js"
+import type { KeyDefinitions, RangeKind } from "../shared/implement.js"
 
 export interface BaseRangeDeclaration extends RawNodeDeclaration {
 	kind: RangeKind

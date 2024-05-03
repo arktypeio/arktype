@@ -18,14 +18,14 @@ import type {
 	NodeDef,
 	Prerequisite,
 	innerAttachedAs
-} from "../kinds.js"
-import { BaseNode } from "../node.js"
-import type { NodeParseContext } from "../parse.js"
-import type { BaseSchema, Schema, UnknownSchema } from "../schema.js"
-import type { IntersectionInner } from "../schemas/intersection.js"
-import type { NodeCompiler } from "../shared/compile.js"
-import type { RawNodeDeclaration } from "../shared/declare.js"
-import { Disjoint } from "../shared/disjoint.js"
+} from "./kinds.js"
+import { BaseNode } from "./node.js"
+import type { NodeParseContext } from "./parse.js"
+import type { BaseSchema, Schema, UnknownSchema } from "./schema.js"
+import type { IntersectionInner } from "./schemas/intersection.js"
+import type { NodeCompiler } from "./shared/compile.js"
+import type { RawNodeDeclaration } from "./shared/declare.js"
+import { Disjoint } from "./shared/disjoint.js"
 import {
 	compileErrorContext,
 	constraintKeys,
@@ -33,10 +33,10 @@ import {
 	type IntersectionContext,
 	type StructuralKind,
 	type kindLeftOf
-} from "../shared/implement.js"
-import { intersectNodes, intersectNodesRoot } from "../shared/intersections.js"
-import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
-import { arkKind } from "../shared/utils.js"
+} from "./shared/implement.js"
+import { intersectNodes, intersectNodesRoot } from "./shared/intersections.js"
+import type { TraverseAllows, TraverseApply } from "./shared/traversal.js"
+import { arkKind } from "./shared/utils.js"
 
 export interface BaseConstraintDeclaration extends RawNodeDeclaration {
 	kind: ConstraintKind

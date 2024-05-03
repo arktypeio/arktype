@@ -1,5 +1,5 @@
-import type { BaseErrorContext, declareNode } from "../../shared/declare.js"
-import { compileErrorContext, implementNode } from "../../shared/implement.js"
+import type { BaseErrorContext, declareNode } from "../shared/declare.js"
+import { compileErrorContext, implementNode } from "../shared/implement.js"
 import {
 	BasePropNode,
 	intersectProps,
