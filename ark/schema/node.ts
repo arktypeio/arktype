@@ -127,10 +127,10 @@ export abstract class BaseNode<
 
 		const ioInner: Record<any, unknown> = {}
 		for (const [k, v] of this.entries) {
-			const keyDefinition = this.impl.keys[k]
-			if (keyDefinition.meta) continue
+			const keySchemainition = this.impl.keys[k]
+			if (keySchemainition.meta) continue
 
-			if (keyDefinition.child) {
+			if (keySchemainition.child) {
 				const childValue = v as listable<BaseNode>
 				ioInner[k] =
 					isArray(childValue) ?

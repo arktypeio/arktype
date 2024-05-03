@@ -1,6 +1,6 @@
 import { Callable, type conform, type repeat } from "@arktype/util"
 import type { inferRoot } from "./inference.js"
-import type { RootDef } from "./kinds.js"
+import type { RootSchema } from "./kinds.js"
 import type { Root } from "./roots/root.js"
 import type { RootScope } from "./scope.js"
 import { arkKind } from "./shared/utils.js"
@@ -10,7 +10,7 @@ export type GenericNodeInstantiation<
 	def = unknown,
 	$ = any
 > = <args>(
-	...args: conform<args, repeat<[RootDef], params["length"]>>
+	...args: conform<args, repeat<[RootSchema], params["length"]>>
 ) => Root<inferRoot<def, $ & bindGenericNodeInstantiation<params, $, args>>>
 
 // TODO: ????
@@ -54,7 +54,7 @@ export class GenericRoot<params extends string[] = string[], def = any, $ = any>
 		public def: def,
 		public $: RootScope<$>
 	) {
-		super((...args: RootDef[]) => {
+		super((...args: RootSchema[]) => {
 			args
 			// const argNodes: Record<string, RawRoot> = flatMorph(
 			// 	params,

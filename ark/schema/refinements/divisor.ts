@@ -11,12 +11,12 @@ export interface DivisorInner extends BaseMeta {
 	readonly rule: number
 }
 
-export type DivisorDef = DivisorInner | number
+export type DivisorSchema = DivisorInner | number
 
 export type DivisorDeclaration = declareNode<{
 	kind: "divisor"
-	def: DivisorDef
-	normalizedDef: DivisorInner
+	schema: DivisorSchema
+	normalizedSchema: DivisorInner
 	inner: DivisorInner
 	prerequisite: number
 	errorContext: DivisorInner
@@ -28,7 +28,7 @@ export const divisorImplementation = implementNode<DivisorDeclaration>({
 	keys: {
 		rule: {}
 	},
-	normalize: def => (typeof def === "number" ? { rule: def } : def),
+	normalize: schema => (typeof schema === "number" ? { rule: schema } : schema),
 	intersections: {
 		divisor: (l, r, ctx) =>
 			ctx.$.node("divisor", {

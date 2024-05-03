@@ -9,14 +9,14 @@ export interface ExactLengthInner extends BaseMeta {
 	readonly rule: number
 }
 
-export type NormalizedExactLengthDef = ExactLengthInner
+export type NormalizedExactLengthSchema = ExactLengthInner
 
-export type ExactLengthDef = NormalizedExactLengthDef | number
+export type ExactLengthSchema = NormalizedExactLengthSchema | number
 
 export type ExactLengthDeclaration = declareNode<{
 	kind: "exactLength"
-	def: ExactLengthDef
-	normalizedDef: NormalizedExactLengthDef
+	schema: ExactLengthSchema
+	normalizedSchema: NormalizedExactLengthSchema
 	inner: ExactLengthInner
 	prerequisite: LengthBoundableData
 	errorContext: ExactLengthInner
@@ -28,7 +28,7 @@ export const exactLengthImplementation = implementNode<ExactLengthDeclaration>({
 	keys: {
 		rule: {}
 	},
-	normalize: def => (typeof def === "number" ? { rule: def } : def),
+	normalize: schema => (typeof schema === "number" ? { rule: schema } : schema),
 	intersections: {
 		exactLength: (l, r, ctx) =>
 			new Disjoint({

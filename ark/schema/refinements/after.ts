@@ -14,16 +14,16 @@ export interface AfterInner extends BaseRangeInner {
 	rule: Date
 }
 
-export interface NormalizedAfterDef extends BaseNormalizedRangeRoot {
+export interface NormalizedAfterSchema extends BaseNormalizedRangeRoot {
 	rule: LimitRootValue
 }
 
-export type AfterDef = NormalizedAfterDef | LimitRootValue
+export type AfterSchema = NormalizedAfterSchema | LimitRootValue
 
 export type AfterDeclaration = declareNode<{
 	kind: "after"
-	def: AfterDef
-	normalizedDef: NormalizedAfterDef
+	schema: AfterSchema
+	normalizedSchema: NormalizedAfterSchema
 	inner: AfterInner
 	prerequisite: Date
 	errorContext: AfterInner
@@ -36,14 +36,18 @@ export const afterImplementation = implementNode<AfterDeclaration>({
 	keys: {
 		rule: {
 			parse: parseDateLimit,
-			serialize: def => def.toISOString()
+			serialize: schema => schema.toISOString()
 		},
 		exclusive: parseExclusiveKey
 	},
-	normalize: def =>
-		typeof def === "number" || typeof def === "string" || def instanceof Date ?
-			{ rule: def }
-		:	def,
+	normalize: schema =>
+		(
+			typeof schema === "number" ||
+			typeof schema === "string" ||
+			schema instanceof Date
+		) ?
+			{ rule: schema }
+		:	schema,
 	defaults: {
 		description: node =>
 			node.exclusive ?

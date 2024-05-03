@@ -20,8 +20,8 @@ export type MinRoot = NormalizedMinRoot | number
 
 export type MinDeclaration = declareNode<{
 	kind: "min"
-	def: MinRoot
-	normalizedDef: NormalizedMinRoot
+	schema: MinRoot
+	normalizedSchema: NormalizedMinRoot
 	inner: MinInner
 	prerequisite: number
 	errorContext: MinInner
@@ -35,7 +35,7 @@ export const minImplementation = implementNode<MinDeclaration>({
 		rule: {},
 		exclusive: parseExclusiveKey
 	},
-	normalize: def => (typeof def === "number" ? { rule: def } : def),
+	normalize: schema => (typeof schema === "number" ? { rule: schema } : schema),
 	intersections: {
 		min: (l, r) => (l.isStricterThan(r) ? l : r)
 	},

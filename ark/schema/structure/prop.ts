@@ -1,6 +1,6 @@
 import { compileSerializedValue, type Key } from "@arktype/util"
 import { BaseConstraint } from "../constraint.js"
-import type { RootDef } from "../kinds.js"
+import type { RootSchema } from "../kinds.js"
 import type { BaseRoot } from "../roots/root.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta } from "../shared/declare.js"
@@ -13,19 +13,19 @@ import type { RequiredDeclaration } from "./required.js"
 
 export type PropKind = "required" | "optional"
 
-export interface PropDef extends BaseMeta {
+export interface PropSchema extends BaseMeta {
 	readonly key: Key
-	readonly value: RootDef
+	readonly value: RootSchema
 }
 
-export interface PropInner extends PropDef {
+export interface PropInner extends PropSchema {
 	readonly value: BaseRoot
 }
 
 export type BasePropDeclaration<kind extends PropKind = PropKind> = {
 	kind: kind
-	def: PropDef
-	normalizedDef: PropDef
+	schema: PropSchema
+	normalizedSchema: PropSchema
 	inner: PropInner
 	prerequisite: object
 	intersectionIsOpen: true

@@ -7,7 +7,7 @@ import {
 	throwParseError
 } from "@arktype/util"
 import { BaseConstraint } from "../constraint.js"
-import type { MutableInner, RootDef } from "../kinds.js"
+import type { MutableInner, RootSchema } from "../kinds.js"
 import type { BaseRoot } from "../roots/root.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
@@ -21,15 +21,15 @@ import {
 import { intersectNodes } from "../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 
-export interface NormalizedSequenceDef extends BaseMeta {
-	readonly prefix?: array<RootDef>
-	readonly optionals?: array<RootDef>
-	readonly variadic?: RootDef
+export interface NormalizedSequenceSchema extends BaseMeta {
+	readonly prefix?: array<RootSchema>
+	readonly optionals?: array<RootSchema>
+	readonly variadic?: RootSchema
 	readonly minVariadicLength?: number
-	readonly postfix?: array<RootDef>
+	readonly postfix?: array<RootSchema>
 }
 
-export type SequenceDef = NormalizedSequenceDef | RootDef
+export type SequenceSchema = NormalizedSequenceSchema | RootSchema
 
 export interface SequenceInner extends BaseMeta {
 	// a list of fixed position elements starting at index 0
@@ -45,25 +45,25 @@ export interface SequenceInner extends BaseMeta {
 
 export type SequenceDeclaration = declareNode<{
 	kind: "sequence"
-	def: SequenceDef
-	normalizedDef: NormalizedSequenceDef
+	schema: SequenceSchema
+	normalizedSchema: NormalizedSequenceSchema
 	inner: SequenceInner
 	prerequisite: array
 	reducibleTo: "sequence"
 	childKind: RootKind
 }>
 
-const fixedSequenceKeyDefinition: NodeKeyImplementation<
+const fixedSequenceKeySchemainition: NodeKeyImplementation<
 	SequenceDeclaration,
 	"prefix" | "postfix" | "optionals"
 > = {
 	child: true,
-	parse: (def, ctx) =>
-		def.length === 0 ?
+	parse: (schema, ctx) =>
+		schema.length === 0 ?
 			// empty affixes are omitted. an empty array should therefore
 			// be specified as `{ proto: Array, length: 0 }`
 			undefined
-		:	def.map(element => ctx.$.schema(element))
+		:	schema.map(element => ctx.$.schema(element))
 }
 
 export const sequenceImplementation = implementNode<SequenceDeclaration>({
@@ -71,11 +71,11 @@ export const sequenceImplementation = implementNode<SequenceDeclaration>({
 	hasAssociatedError: false,
 	collapsibleKey: "variadic",
 	keys: {
-		prefix: fixedSequenceKeyDefinition,
-		optionals: fixedSequenceKeyDefinition,
+		prefix: fixedSequenceKeySchemainition,
+		optionals: fixedSequenceKeySchemainition,
 		variadic: {
 			child: true,
-			parse: (def, ctx) => ctx.$.schema(def, ctx)
+			parse: (schema, ctx) => ctx.$.schema(schema, ctx)
 		},
 		minVariadicLength: {
 			// minVariadicLength is reflected in the id of this node,
@@ -84,32 +84,33 @@ export const sequenceImplementation = implementNode<SequenceDeclaration>({
 			implied: true,
 			parse: min => (min === 0 ? undefined : min)
 		},
-		postfix: fixedSequenceKeyDefinition
+		postfix: fixedSequenceKeySchemainition
 	},
-	normalize: def => {
-		if (typeof def === "string") return { variadic: def }
+	normalize: schema => {
+		if (typeof schema === "string") return { variadic: schema }
 
 		if (
-			"variadic" in def ||
-			"prefix" in def ||
-			"optionals" in def ||
-			"postfix" in def ||
-			"minVariadicLength" in def
+			"variadic" in schema ||
+			"prefix" in schema ||
+			"optionals" in schema ||
+			"postfix" in schema ||
+			"minVariadicLength" in schema
 		) {
-			if (def.postfix?.length) {
-				if (!def.variadic) return throwParseError(postfixWithoutVariadicMessage)
+			if (schema.postfix?.length) {
+				if (!schema.variadic)
+					return throwParseError(postfixWithoutVariadicMessage)
 
-				if (def.optionals?.length)
+				if (schema.optionals?.length)
 					return throwParseError(postfixFollowingOptionalMessage)
 			}
-			if (def.minVariadicLength && !def.variadic) {
+			if (schema.minVariadicLength && !schema.variadic) {
 				return throwParseError(
 					"minVariadicLength may not be specified without a variadic element"
 				)
 			}
-			return def
+			return schema
 		}
-		return { variadic: def }
+		return { variadic: schema }
 	},
 	reduce: (raw, $) => {
 		let minVariadicLength = raw.minVariadicLength ?? 0

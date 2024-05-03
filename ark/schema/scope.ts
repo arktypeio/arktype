@@ -27,15 +27,15 @@ import type { Ark } from "./keywords/keywords.js"
 import type { tsKeywords } from "./keywords/tsKeywords.js"
 import {
 	type Node,
-	type NodeDef,
 	nodeImplementationsByKind,
+	type NodeSchema,
 	type reducibleKindOf,
-	type RootDef
+	type RootSchema
 } from "./kinds.js"
 import { type PreparsedNodeResolution, RootModule } from "./module.js"
 import type { BaseNode } from "./node.js"
 import { type NodeParseOptions, parseNode, schemaKindOf } from "./parse.js"
-import { type AliasNode, normalizeAliasDef } from "./roots/alias.js"
+import { type AliasNode, normalizeAliasSchema } from "./roots/alias.js"
 import type { BaseRoot, Root } from "./roots/root.js"
 import { NodeCompiler } from "./shared/compile.js"
 import type {
@@ -275,10 +275,10 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 		return this
 	}
 
-	schema = ((def: RootDef, opts?: NodeParseOptions): BaseRoot =>
+	schema = ((def: RootSchema, opts?: NodeParseOptions): BaseRoot =>
 		this.node(schemaKindOf(def), def, opts)).bind(this)
 
-	defineRoot = ((def: RootDef) => def).bind(this)
+	defineRoot = ((def: RootSchema) => def).bind(this)
 
 	units = ((values: unknown[], opts?: NodeParseOptions): BaseRoot => {
 		const uniqueValues: unknown[] = []
@@ -311,39 +311,42 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 		prereduced extends boolean = false
 	>(
 		kinds: kinds,
-		nodeDef: NodeDef<flattenListable<kinds>>,
+		nodeSchema: NodeSchema<flattenListable<kinds>>,
 		opts?: NodeParseOptions<prereduced>
 	): Node<
 		prereduced extends true ? flattenListable<kinds>
 		:	reducibleKindOf<flattenListable<kinds>>
 	> => {
 		let kind: NodeKind =
-			typeof kinds === "string" ? kinds : schemaKindOf(nodeDef, kinds)
+			typeof kinds === "string" ? kinds : schemaKindOf(nodeSchema, kinds)
 
-		let def: unknown = nodeDef
+		let schema: unknown = nodeSchema
 
-		if (isNode(def) && def.kind === kind) return def.bindScope(this) as never
+		if (isNode(schema) && schema.kind === kind)
+			return schema.bindScope(this) as never
 
 		if (kind === "alias" && !opts?.prereduced) {
-			const resolution = this.resolveRoot(normalizeAliasDef(def as never).alias)
-			def = resolution
+			const resolution = this.resolveRoot(
+				normalizeAliasSchema(schema as never).alias
+			)
+			schema = resolution
 			kind = resolution.kind
-		} else if (kind === "union" && hasDomain(def, "object")) {
-			const branches = schemaBranchesOf(def)
+		} else if (kind === "union" && hasDomain(schema, "object")) {
+			const branches = schemaBranchesOf(schema)
 			if (branches?.length === 1) {
-				def = branches[0]
-				kind = schemaKindOf(def)
+				schema = branches[0]
+				kind = schemaKindOf(schema)
 			}
 		}
 
 		const impl = nodeImplementationsByKind[kind]
-		const normalizedDef = impl.normalize?.(def) ?? def
+		const normalizedSchema = impl.normalize?.(schema) ?? schema
 		// check again after normalization in case a node is a valid collapsed
 		// schema for the kind (e.g. sequence can collapse to element accepting a Node)
-		if (isNode(normalizedDef)) {
-			return normalizedDef.kind === kind ?
-					(normalizedDef.bindScope(this) as never)
-				:	throwMismatchedNodeRootError(kind, normalizedDef.kind)
+		if (isNode(normalizedSchema)) {
+			return normalizedSchema.kind === kind ?
+					(normalizedSchema.bindScope(this) as never)
+				:	throwMismatchedNodeRootError(kind, normalizedSchema.kind)
 		}
 
 		const prefix = opts?.alias ?? kind
@@ -354,7 +357,7 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 			...opts,
 			id,
 			$: this,
-			def: normalizedDef
+			schema: normalizedSchema
 		}).bindScope(this)
 
 		nodesById[id] = node
@@ -489,15 +492,15 @@ const resolveSubalias = (
 	if (dotIndex === -1) return
 
 	const dotPrefix = name.slice(0, dotIndex)
-	const prefixDef = base[dotPrefix]
+	const prefixSchema = base[dotPrefix]
 	// if the name includes ".", but the prefix is not an alias, it
 	// might be something like a decimal literal, so just fall through to return
-	if (prefixDef === undefined) return
-	if (!hasArkKind(prefixDef, "module"))
+	if (prefixSchema === undefined) return
+	if (!hasArkKind(prefixSchema, "module"))
 		return throwParseError(writeNonSubmoduleDotMessage(dotPrefix))
 
 	const subalias = name.slice(dotIndex + 1)
-	const resolution = prefixDef[subalias]
+	const resolution = prefixSchema[subalias]
 	// if the first part of name is a submodule but the suffix is
 	// unresolvable, we can throw immediately
 	if (resolution === undefined) {
@@ -542,12 +545,12 @@ export interface RootScope<$ = any> {
 	aliases: Record<string, unknown>
 	raw: toRawScope<$>
 
-	schema<const def extends RootDef>(
-		def: def,
+	schema<const def extends RootSchema>(
+		schema: def,
 		opts?: NodeParseOptions
 	): Root<inferRoot<def, $>, $>
 
-	defineRoot<const def extends RootDef>(def: def): def
+	defineRoot<const def extends RootSchema>(schema: def): def
 
 	units<const branches extends array>(
 		values: branches,
@@ -556,11 +559,11 @@ export interface RootScope<$ = any> {
 
 	node<kinds extends NodeKind | array<RootKind>>(
 		kinds: kinds,
-		schema: NodeDef<flattenListable<kinds>>,
+		schema: NodeSchema<flattenListable<kinds>>,
 		opts?: NodeParseOptions
 	): Node<reducibleKindOf<flattenListable<kinds>>>
 
-	parseRoot(def: unknown, opts?: NodeParseOptions): BaseRoot
+	parseRoot(schema: unknown, opts?: NodeParseOptions): BaseRoot
 
 	import<names extends exportedNameOf<$>[]>(
 		...names: names

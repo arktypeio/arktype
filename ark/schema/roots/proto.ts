@@ -19,24 +19,25 @@ export interface ProtoInner<proto extends Constructor = Constructor>
 	readonly proto: proto
 }
 
-export type NormalizedProtoDef<proto extends Constructor = Constructor> =
+export type NormalizedProtoSchema<proto extends Constructor = Constructor> =
 	ProtoInner<proto>
 
 export type ProtoReference = Constructor | BuiltinObjectKind
 
-export interface ExpandedProtoDef<proto extends ProtoReference = ProtoReference>
-	extends BaseMeta {
+export interface ExpandedProtoSchema<
+	proto extends ProtoReference = ProtoReference
+> extends BaseMeta {
 	readonly proto: proto
 }
 
-export type ProtoDef<proto extends ProtoReference = ProtoReference> =
+export type ProtoSchema<proto extends ProtoReference = ProtoReference> =
 	| proto
-	| ExpandedProtoDef<proto>
+	| ExpandedProtoSchema<proto>
 
 export type ProtoDeclaration = declareNode<{
 	kind: "proto"
-	def: ProtoDef
-	normalizedDef: NormalizedProtoDef
+	schema: ProtoSchema
+	normalizedSchema: NormalizedProtoSchema
 	inner: ProtoInner
 	errorContext: ProtoInner
 }>
@@ -51,12 +52,12 @@ export const protoImplementation = implementNode<ProtoDeclaration>({
 				getExactBuiltinConstructorName(ctor) ?? defaultValueSerializer(ctor)
 		}
 	},
-	normalize: def =>
-		typeof def === "string" ? { proto: builtinObjectKinds[def] }
-		: typeof def === "function" ? { proto: def }
-		: typeof def.proto === "string" ?
-			{ ...def, proto: builtinObjectKinds[def.proto] }
-		:	(def as ExpandedProtoDef<Constructor>),
+	normalize: schema =>
+		typeof schema === "string" ? { proto: builtinObjectKinds[schema] }
+		: typeof schema === "function" ? { proto: schema }
+		: typeof schema.proto === "string" ?
+			{ ...schema, proto: builtinObjectKinds[schema.proto] }
+		:	(schema as ExpandedProtoSchema<Constructor>),
 	defaults: {
 		description: node =>
 			node.builtinName ?

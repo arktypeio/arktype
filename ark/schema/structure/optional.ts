@@ -14,10 +14,10 @@ export const optionalImplementation = implementNode<OptionalDeclaration>({
 		key: {},
 		value: {
 			child: true,
-			parse: (def, ctx) => ctx.$.schema(def)
+			parse: (schema, ctx) => ctx.$.schema(schema)
 		}
 	},
-	normalize: def => def,
+	normalize: schema => schema,
 	defaults: {
 		description: node => `${node.compiledKey}?: ${node.value.description}`
 	},

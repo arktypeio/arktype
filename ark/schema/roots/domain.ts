@@ -16,19 +16,19 @@ export interface DomainInner<
 	readonly domain: domain
 }
 
-export type DomainDef<
+export type DomainSchema<
 	// only domains with an infinite number of values are allowed as bases
 	domain extends NonEnumerableDomain = NonEnumerableDomain
-> = domain | NormalizedDomainDef<domain>
+> = domain | NormalizedDomainSchema<domain>
 
-export type NormalizedDomainDef<
+export type NormalizedDomainSchema<
 	domain extends NonEnumerableDomain = NonEnumerableDomain
 > = DomainInner<domain>
 
 export type DomainDeclaration = declareNode<{
 	kind: "domain"
-	def: DomainDef
-	normalizedDef: NormalizedDomainDef
+	schema: DomainSchema
+	normalizedSchema: NormalizedDomainSchema
 	inner: DomainInner
 	errorContext: DomainInner
 }>
@@ -57,7 +57,8 @@ export const domainImplementation = implementNode<DomainDeclaration>({
 	keys: {
 		domain: {}
 	},
-	normalize: def => (typeof def === "string" ? { domain: def } : def),
+	normalize: schema =>
+		typeof schema === "string" ? { domain: schema } : schema,
 	defaults: {
 		description: node => domainDescriptions[node.domain],
 		actual: data => (typeof data === "boolean" ? `${data}` : domainOf(data))

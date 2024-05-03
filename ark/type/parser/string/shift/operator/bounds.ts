@@ -3,7 +3,7 @@ import {
 	type BoundKind,
 	type DateLiteral,
 	type LimitLiteral,
-	type NodeDef,
+	type NodeSchema,
 	internalKeywords,
 	jsObjects,
 	tsKeywords,
@@ -152,7 +152,9 @@ export const singleEqualsMessage =
 	"= is not a valid comparator. Use == to check for equality"
 type singleEqualsMessage = typeof singleEqualsMessage
 
-const openLeftBoundToRoot = (leftBound: OpenLeftBound): NodeDef<BoundKind> => ({
+const openLeftBoundToRoot = (
+	leftBound: OpenLeftBound
+): NodeSchema<BoundKind> => ({
 	rule:
 		isDateLiteral(leftBound.limit) ?
 			extractDateLiteralSource(leftBound.limit)

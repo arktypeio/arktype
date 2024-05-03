@@ -10,7 +10,7 @@ import {
 } from "@arktype/util"
 import type { of } from "../ast.js"
 import type { type } from "../inference.js"
-import type { Node, NodeDef, RootDef } from "../kinds.js"
+import type { Node, NodeSchema, RootSchema } from "../kinds.js"
 import type { StaticArkOption } from "../scope.js"
 import { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
@@ -35,7 +35,7 @@ export const morphInputKinds = [
 
 export type MorphInputNode = Node<MorphInputKind>
 
-export type MorphInputDef = NodeDef<MorphInputKind>
+export type MorphInputSchema = NodeSchema<MorphInputKind>
 
 export type Morph<i = any, o = unknown> = (In: i, ctx: TraversalContext) => o
 
@@ -49,16 +49,16 @@ export interface MorphInner extends BaseMeta {
 	readonly morphs: readonly Morph[]
 }
 
-export interface MorphDef extends BaseMeta {
-	readonly from: MorphInputDef
-	readonly to?: RootDef | undefined
+export interface MorphSchema extends BaseMeta {
+	readonly from: MorphInputSchema
+	readonly to?: RootSchema | undefined
 	readonly morphs: listable<Morph>
 }
 
 export type MorphDeclaration = declareNode<{
 	kind: "morph"
-	def: MorphDef
-	normalizedDef: MorphDef
+	schema: MorphSchema
+	normalizedSchema: MorphSchema
 	inner: MorphInner
 	childKind: MorphInputKind
 }>
@@ -69,13 +69,13 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 	keys: {
 		from: {
 			child: true,
-			parse: (def, ctx) => ctx.$.node(morphInputKinds, def)
+			parse: (schema, ctx) => ctx.$.node(morphInputKinds, schema)
 		},
 		to: {
 			child: true,
-			parse: (def, ctx) => {
-				if (def === undefined) return
-				const to = ctx.$.schema(def)
+			parse: (schema, ctx) => {
+				if (schema === undefined) return
+				const to = ctx.$.schema(schema)
 				return to.kind === "intersection" && to.children.length === 0 ?
 						// ignore unknown as an output validator
 						undefined
@@ -87,7 +87,7 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 			serialize: morphs => morphs.map(registeredReference)
 		}
 	},
-	normalize: def => def,
+	normalize: schema => schema,
 	defaults: {
 		description: node =>
 			`a morph from ${node.from.description} to ${node.to?.description ?? "unknown"}`

@@ -1,6 +1,6 @@
 import type { conform } from "@arktype/util"
 import type { PrimitiveConstraintKind } from "./constraint.js"
-import type { NodeDef } from "./kinds.js"
+import type { NodeSchema } from "./kinds.js"
 import type { constraintKindOf } from "./roots/intersection.js"
 
 export type Comparator = "<" | "<=" | ">" | ">=" | "=="
@@ -94,15 +94,15 @@ export namespace number {
 
 	export type constrain<
 		kind extends PrimitiveConstraintKind,
-		def extends NodeDef<kind>
+		schema extends NodeSchema<kind>
 	> =
-		normalizePrimitiveConstraintRoot<def> extends infer rule ?
+		normalizePrimitiveConstraintRoot<schema> extends infer rule ?
 			kind extends "min" ?
-				def extends { exclusive: true } ?
+				schema extends { exclusive: true } ?
 					moreThan<rule & number>
 				:	atLeast<rule & number>
 			: kind extends "max" ?
-				def extends { exclusive: true } ?
+				schema extends { exclusive: true } ?
 					lessThan<rule & number>
 				:	atMost<rule & number>
 			: kind extends "divisor" ? divisibleBy<rule & number>
@@ -152,7 +152,7 @@ export namespace string {
 
 	export type constrain<
 		kind extends PrimitiveConstraintKind,
-		schema extends NodeDef<kind>
+		schema extends NodeSchema<kind>
 	> =
 		normalizePrimitiveConstraintRoot<schema> extends infer rule ?
 			kind extends "minLength" ?
@@ -207,7 +207,7 @@ export namespace Date {
 
 	export type constrain<
 		kind extends PrimitiveConstraintKind,
-		schema extends NodeDef<kind>
+		schema extends NodeSchema<kind>
 	> =
 		normalizePrimitiveConstraintRoot<schema> extends infer rule ?
 			kind extends "after" ?
@@ -225,9 +225,9 @@ export namespace Date {
 export type constrain<
 	t,
 	kind extends PrimitiveConstraintKind,
-	def extends NodeDef<kind>
+	schema extends NodeSchema<kind>
 > =
-	schemaToConstraint<kind, def> extends infer constraint ?
+	schemaToConstraint<kind, schema> extends infer constraint ?
 		t extends of<infer base, infer constraints> ?
 			[number, base] extends [base, number] ?
 				number.is<constraint & constraints>
@@ -235,48 +235,48 @@ export type constrain<
 				string.is<constraint & constraints>
 			: [Date, base] extends [base, Date] ? Date.is<constraint & constraints>
 			: of<base, constraints & constraint>
-		: [number, t] extends [t, number] ? number.constrain<kind, def>
-		: [string, t] extends [t, string] ? string.constrain<kind, def>
-		: [Date, t] extends [t, Date] ? Date.constrain<kind, def>
+		: [number, t] extends [t, number] ? number.constrain<kind, schema>
+		: [string, t] extends [t, string] ? string.constrain<kind, schema>
+		: [Date, t] extends [t, Date] ? Date.constrain<kind, schema>
 		: of<t, conform<constraint, Constraints>>
 	:	never
 
 export type normalizePrimitiveConstraintRoot<
-	def extends NodeDef<PrimitiveConstraintKind>
+	schema extends NodeSchema<PrimitiveConstraintKind>
 > =
-	"rule" extends keyof def ? conform<def["rule"], string | number>
-	:	conform<def, string | number>
+	"rule" extends keyof schema ? conform<schema["rule"], string | number>
+	:	conform<schema, string | number>
 
 export type schemaToConstraint<
 	kind extends PrimitiveConstraintKind,
-	def extends NodeDef<kind>
+	schema extends NodeSchema<kind>
 > =
-	normalizePrimitiveConstraintRoot<def> extends infer rule ?
+	normalizePrimitiveConstraintRoot<schema> extends infer rule ?
 		kind extends "regex" ? Matching<rule & string>
 		: kind extends "divisor" ? DivisibleBy<rule & number>
 		: kind extends "exactLength" ? Length<rule & number>
 		: kind extends "min" ?
-			def extends { exclusive: true } ?
+			schema extends { exclusive: true } ?
 				MoreThan<rule & number>
 			:	AtLeast<rule & number>
 		: kind extends "max" ?
-			def extends { exclusive: true } ?
+			schema extends { exclusive: true } ?
 				LessThan<rule & number>
 			:	AtMost<rule & number>
 		: kind extends "minLength" ?
-			def extends { exclusive: true } ?
+			schema extends { exclusive: true } ?
 				MoreThanLength<rule & number>
 			:	AtLeastLength<rule & number>
 		: kind extends "maxLength" ?
-			def extends { exclusive: true } ?
+			schema extends { exclusive: true } ?
 				LessThanLength<rule & number>
 			:	AtMostLength<rule & number>
 		: kind extends "after" ?
-			def extends { exclusive: true } ?
+			schema extends { exclusive: true } ?
 				After<normalizeLimit<rule>>
 			:	AtOrAfter<normalizeLimit<rule>>
 		: kind extends "before" ?
-			def extends { exclusive: true } ?
+			schema extends { exclusive: true } ?
 				Before<normalizeLimit<rule>>
 			:	AtOrBefore<normalizeLimit<rule>>
 		:	Narrowed

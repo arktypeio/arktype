@@ -15,7 +15,7 @@ import type {
 	Inner,
 	MutableInner,
 	Node,
-	NodeDef,
+	NodeSchema,
 	Prerequisite,
 	innerAttachedAs
 } from "./kinds.js"
@@ -85,19 +85,19 @@ export abstract class RawPrimitiveConstraint<
 export const constraintKeyParser =
 	<kind extends ConstraintKind>(kind: kind) =>
 	(
-		def: listable<NodeDef<kind>>,
+		schema: listable<NodeSchema<kind>>,
 		ctx: NodeParseContext
 	): innerAttachedAs<kind> | undefined => {
-		if (isArray(def)) {
-			if (def.length === 0) {
+		if (isArray(schema)) {
+			if (schema.length === 0) {
 				// Omit empty lists as input
 				return
 			}
-			return def
+			return schema
 				.map(schema => ctx.$.node(kind, schema as never))
 				.sort((l, r) => (l.innerHash < r.innerHash ? -1 : 1)) as never
 		}
-		const child = ctx.$.node(kind, def)
+		const child = ctx.$.node(kind, schema)
 		return child.hasOpenIntersection() ? [child] : (child as any)
 	}
 

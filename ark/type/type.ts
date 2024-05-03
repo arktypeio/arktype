@@ -5,7 +5,7 @@ import {
 	type Disjoint,
 	type InnerRoot,
 	type Morph,
-	type NodeDef,
+	type NodeSchema,
 	type Out,
 	type Predicate,
 	type PrimitiveConstraintKind,
@@ -231,7 +231,7 @@ declare class _Type<t = unknown, $ = any>
 
 	constrain<
 		kind extends PrimitiveConstraintKind,
-		const def extends NodeDef<kind>
+		const def extends NodeSchema<kind>
 	>(
 		kind: conform<kind, constraintKindOf<this["inferIn"]>>,
 		def: def

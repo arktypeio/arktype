@@ -10,7 +10,7 @@ import { defaultValueSerializer, implementNode } from "../shared/implement.js"
 import { RawBasis } from "./basis.js"
 import { defineRightwardIntersections } from "./utils.js"
 
-export type UnitDef<value = unknown> = UnitInner<value>
+export type UnitSchema<value = unknown> = UnitInner<value>
 
 export interface UnitInner<value = unknown> extends BaseMeta {
 	readonly unit: value
@@ -18,8 +18,8 @@ export interface UnitInner<value = unknown> extends BaseMeta {
 
 export type UnitDeclaration = declareNode<{
 	kind: "unit"
-	def: UnitDef
-	normalizedDef: UnitDef
+	schema: UnitSchema
+	normalizedSchema: UnitSchema
 	inner: UnitInner
 	errorContext: UnitInner
 }>
@@ -30,11 +30,13 @@ export const unitImplementation = implementNode<UnitDeclaration>({
 	keys: {
 		unit: {
 			preserveUndefined: true,
-			serialize: def =>
-				def instanceof Date ? def.toISOString() : defaultValueSerializer(def)
+			serialize: schema =>
+				schema instanceof Date ?
+					schema.toISOString()
+				:	defaultValueSerializer(schema)
 		}
 	},
-	normalize: def => def,
+	normalize: schema => schema,
 	defaults: {
 		description: node => printable(node.unit)
 	},

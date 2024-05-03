@@ -4,7 +4,7 @@ import {
 	throwParseError
 } from "@arktype/util"
 import { BaseConstraint } from "../constraint.js"
-import type { Node, RootDef } from "../kinds.js"
+import type { Node, RootSchema } from "../kinds.js"
 import type { BaseRoot } from "../roots/root.js"
 import type { UnitNode } from "../roots/unit.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
@@ -17,9 +17,9 @@ export type IndexKeyKind = Exclude<RootKind, "unit">
 
 export type IndexKeyNode = Node<IndexKeyKind>
 
-export interface IndexDef extends BaseMeta {
-	readonly index: RootDef<IndexKeyKind>
-	readonly value: RootDef
+export interface IndexSchema extends BaseMeta {
+	readonly index: RootSchema<IndexKeyKind>
+	readonly value: RootSchema
 }
 
 export interface IndexInner extends BaseMeta {
@@ -29,8 +29,8 @@ export interface IndexInner extends BaseMeta {
 
 export type IndexDeclaration = declareNode<{
 	kind: "index"
-	def: IndexDef
-	normalizedDef: IndexDef
+	schema: IndexSchema
+	normalizedSchema: IndexSchema
 	inner: IndexInner
 	prerequisite: object
 	intersectionIsOpen: true
@@ -44,8 +44,8 @@ export const indexImplementation = implementNode<IndexDeclaration>({
 	keys: {
 		index: {
 			child: true,
-			parse: (def, ctx) => {
-				const key = ctx.$.schema(def)
+			parse: (schema, ctx) => {
+				const key = ctx.$.schema(schema)
 				if (!key.extends(ctx.$.keywords.propertyKey))
 					return throwParseError(writeInvalidPropertyKeyMessage(key.expression))
 				// TODO: explicit manual annotation once we can upgrade to 5.5
@@ -64,10 +64,10 @@ export const indexImplementation = implementNode<IndexDeclaration>({
 		},
 		value: {
 			child: true,
-			parse: (def, ctx) => ctx.$.schema(def)
+			parse: (schema, ctx) => ctx.$.schema(schema)
 		}
 	},
-	normalize: def => def,
+	normalize: schema => schema,
 	defaults: {
 		description: node => `[${node.index.expression}]: ${node.value.description}`
 	},
@@ -126,10 +126,10 @@ export class IndexNode extends BaseConstraint<IndexDeclaration> {
 export const writeEnumerableIndexBranches = (keys: string[]): string =>
 	`Index keys ${keys.join(", ")} should be specified as named props.`
 
-export const writeInvalidPropertyKeyMessage = <indexDef extends string>(
-	indexDef: indexDef
-): writeInvalidPropertyKeyMessage<indexDef> =>
-	`Indexed key definition '${indexDef}' must be a string, number or symbol`
+export const writeInvalidPropertyKeyMessage = <indexSchema extends string>(
+	indexSchema: indexSchema
+): writeInvalidPropertyKeyMessage<indexSchema> =>
+	`Indexed key definition '${indexSchema}' must be a string, number or symbol`
 
-export type writeInvalidPropertyKeyMessage<indexDef extends string> =
-	`Indexed key definition '${indexDef}' must be a string, number or symbol`
+export type writeInvalidPropertyKeyMessage<indexSchema extends string> =
+	`Indexed key definition '${indexSchema}' must be a string, number or symbol`

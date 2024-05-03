@@ -12,7 +12,7 @@ import {
 	throwParseError
 } from "@arktype/util"
 import {
-	type NormalizedDef,
+	type NormalizedSchema,
 	nodeClassesByKind,
 	nodeImplementationsByKind
 } from "./kinds.js"
@@ -22,7 +22,7 @@ import type { RawRootScope } from "./scope.js"
 import type { RawNodeDeclaration } from "./shared/declare.js"
 import { Disjoint } from "./shared/disjoint.js"
 import {
-	type KeyDefinitions,
+	type KeySchemainitions,
 	type NodeKind,
 	type RootKind,
 	type UnknownAttachments,
@@ -49,18 +49,18 @@ export interface NodeParseContext<kind extends NodeKind = NodeKind>
 	$: RawRootScope
 	id: string
 	args?: Record<string, UnknownRoot>
-	def: NormalizedDef<kind>
+	schema: NormalizedSchema<kind>
 }
 
-const baseKeys: PartialRecord<string, propValueOf<KeyDefinitions<any>>> = {
+const baseKeys: PartialRecord<string, propValueOf<KeySchemainitions<any>>> = {
 	description: { meta: true }
-} satisfies KeyDefinitions<RawNodeDeclaration> as never
+} satisfies KeySchemainitions<RawNodeDeclaration> as never
 
 export const schemaKindOf = <kind extends RootKind = RootKind>(
-	def: unknown,
+	schema: unknown,
 	allowedKinds?: readonly kind[]
 ): kind => {
-	const kind = discriminateRootKind(def)
+	const kind = discriminateRootKind(schema)
 	if (allowedKinds && !allowedKinds.includes(kind as never)) {
 		return throwParseError(
 			`Root of kind ${kind} should be one of ${allowedKinds}`
@@ -69,36 +69,36 @@ export const schemaKindOf = <kind extends RootKind = RootKind>(
 	return kind as never
 }
 
-const discriminateRootKind = (def: unknown): RootKind => {
-	switch (typeof def) {
+const discriminateRootKind = (schema: unknown): RootKind => {
+	switch (typeof schema) {
 		case "string":
-			return def[0] === "$" ? "alias" : "domain"
+			return schema[0] === "$" ? "alias" : "domain"
 		case "function":
-			return hasArkKind(def, "schema") ? def.kind : "proto"
+			return hasArkKind(schema, "schema") ? schema.kind : "proto"
 		case "object": {
 			// throw at end of function
-			if (def === null) break
+			if (schema === null) break
 
-			if ("morphs" in def) return "morph"
+			if ("morphs" in schema) return "morph"
 
-			if ("branches" in def || isArray(def)) return "union"
+			if ("branches" in schema || isArray(schema)) return "union"
 
-			if ("unit" in def) return "unit"
+			if ("unit" in schema) return "unit"
 
-			if ("alias" in def) return "alias"
+			if ("alias" in schema) return "alias"
 
-			const schemaKeys = Object.keys(def)
+			const schemaKeys = Object.keys(schema)
 
 			if (
 				schemaKeys.length === 0 ||
 				schemaKeys.some(k => k in discriminatingIntersectionKeys)
 			)
 				return "intersection"
-			if ("proto" in def) return "proto"
-			if ("domain" in def) return "domain"
+			if ("proto" in schema) return "proto"
+			if ("domain" in schema) return "domain"
 		}
 	}
-	return throwParseError(`${printable(def)} is not a valid type schema`)
+	return throwParseError(`${printable(schema)} is not a valid type schema`)
 }
 
 const nodeCache: { [innerHash: string]: BaseNode } = {}
@@ -108,7 +108,7 @@ export const parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
 	const inner: Record<string, unknown> = {}
 	// ensure node entries are parsed in order of precedence, with non-children
 	// parsed first
-	const schemaEntries = entriesOf(ctx.def as Dict).sort(([lKey], [rKey]) =>
+	const schemaEntries = entriesOf(ctx.schema as Dict).sort(([lKey], [rKey]) =>
 		isNodeKind(lKey) ?
 			isNodeKind(rKey) ? precedenceOfKind(lKey) - precedenceOfKind(rKey)
 			:	1

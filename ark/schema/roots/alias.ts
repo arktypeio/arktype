@@ -14,14 +14,14 @@ export interface AliasInner<alias extends string = string> extends BaseMeta {
 	readonly resolve?: () => BaseRoot
 }
 
-export type AliasDef<alias extends string = string> =
+export type AliasSchema<alias extends string = string> =
 	| `$${alias}`
 	| AliasInner<alias>
 
 export type AliasDeclaration = declareNode<{
 	kind: "alias"
-	def: AliasDef
-	normalizedDef: AliasInner
+	schema: AliasSchema
+	normalizedSchema: AliasInner
 	inner: AliasInner
 }>
 
@@ -59,8 +59,8 @@ export class AliasNode extends BaseRoot<AliasDeclaration> {
 	}
 }
 
-export const normalizeAliasDef = (def: AliasDef): AliasInner =>
-	typeof def === "string" ? { alias: def.slice(1) } : def
+export const normalizeAliasSchema = (schema: AliasSchema): AliasInner =>
+	typeof schema === "string" ? { alias: schema.slice(1) } : schema
 
 export const aliasImplementation = implementNode<AliasDeclaration>({
 	kind: "alias",
@@ -68,11 +68,11 @@ export const aliasImplementation = implementNode<AliasDeclaration>({
 	collapsibleKey: "alias",
 	keys: {
 		alias: {
-			serialize: def => `$${def}`
+			serialize: schema => `$${schema}`
 		},
 		resolve: {}
 	},
-	normalize: normalizeAliasDef,
+	normalize: normalizeAliasSchema,
 	defaults: {
 		description: node => node.alias
 	},

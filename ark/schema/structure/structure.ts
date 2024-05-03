@@ -13,20 +13,20 @@ import { Disjoint } from "../shared/disjoint.js"
 import { implementNode, type StructuralKind } from "../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 import { makeRootAndArrayPropertiesMutable } from "../shared/utils.js"
-import type { IndexDef, IndexNode } from "./index.js"
-import type { BasePropNode, PropDef } from "./prop.js"
-import type { SequenceDef, SequenceNode } from "./sequence.js"
+import type { IndexNode, IndexSchema } from "./index.js"
+import type { BasePropNode, PropSchema } from "./prop.js"
+import type { SequenceNode, SequenceSchema } from "./sequence.js"
 import { arrayIndexMatcherReference } from "./shared.js"
 
 export type ExtraneousKeyBehavior = "ignore" | ExtraneousKeyRestriction
 
 export type ExtraneousKeyRestriction = "error" | "prune"
 
-export interface StructureDef extends BaseMeta {
-	readonly optional?: readonly PropDef[]
-	readonly required?: readonly PropDef[]
-	readonly index?: readonly IndexDef[]
-	readonly sequence?: SequenceDef
+export interface StructureSchema extends BaseMeta {
+	readonly optional?: readonly PropSchema[]
+	readonly required?: readonly PropSchema[]
+	readonly index?: readonly IndexSchema[]
+	readonly sequence?: SequenceSchema
 	readonly onExtraneousKey?: ExtraneousKeyBehavior
 }
 
@@ -40,8 +40,8 @@ export interface StructureInner extends BaseMeta {
 
 export type StructureDeclaration = declareNode<{
 	kind: "structure"
-	def: StructureDef
-	normalizedDef: StructureDef
+	schema: StructureSchema
+	normalizedSchema: StructureSchema
 	inner: StructureInner
 	prerequisite: object
 	childKind: StructuralKind
@@ -224,7 +224,7 @@ export const structureImplementation = implementNode<StructureDeclaration>({
 			parse: constraintKeyParser("sequence")
 		},
 		onExtraneousKey: {
-			parse: def => (def === "ignore" ? undefined : def)
+			parse: behavior => (behavior === "ignore" ? undefined : behavior)
 		}
 	},
 	defaults: {

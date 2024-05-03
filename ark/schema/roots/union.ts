@@ -1,5 +1,5 @@
 import { appendUnique, groupBy, isArray } from "@arktype/util"
-import type { Node, NodeDef } from "../kinds.js"
+import type { Node, NodeSchema } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -22,16 +22,16 @@ export const unionChildKinds = [
 	"alias"
 ] as const
 
-export type UnionChildDef = NodeDef<UnionChildKind>
+export type UnionChildSchema = NodeSchema<UnionChildKind>
 
 export type UnionChildNode = Node<UnionChildKind>
 
-export type UnionDef<
-	branches extends readonly UnionChildDef[] = readonly UnionChildDef[]
-> = NormalizedUnionDef<branches> | branches
+export type UnionSchema<
+	branches extends readonly UnionChildSchema[] = readonly UnionChildSchema[]
+> = NormalizedUnionSchema<branches> | branches
 
-export interface NormalizedUnionDef<
-	branches extends readonly UnionChildDef[] = readonly UnionChildDef[]
+export interface NormalizedUnionSchema<
+	branches extends readonly UnionChildSchema[] = readonly UnionChildSchema[]
 > extends BaseMeta {
 	readonly branches: branches
 	readonly ordered?: true
@@ -44,8 +44,8 @@ export interface UnionInner extends BaseMeta {
 
 export type UnionDeclaration = declareNode<{
 	kind: "union"
-	def: UnionDef
-	normalizedDef: NormalizedUnionDef
+	schema: UnionSchema
+	normalizedSchema: NormalizedUnionSchema
 	inner: UnionInner
 	errorContext: {
 		errors: readonly ArkTypeError[]
@@ -62,17 +62,19 @@ export const unionImplementation = implementNode<UnionDeclaration>({
 		ordered: {},
 		branches: {
 			child: true,
-			parse: (def, ctx) => {
-				const branches = def.map(branch => ctx.$.node(unionChildKinds, branch))
+			parse: (schema, ctx) => {
+				const branches = schema.map(branch =>
+					ctx.$.node(unionChildKinds, branch)
+				)
 
-				if (!ctx.def.ordered)
+				if (!ctx.schema.ordered)
 					branches.sort((l, r) => (l.innerHash < r.innerHash ? -1 : 1))
 
 				return branches
 			}
 		}
 	},
-	normalize: def => (isArray(def) ? { branches: def } : def),
+	normalize: schema => (isArray(schema) ? { branches: schema } : schema),
 	reduce: (inner, $) => {
 		const reducedBranches = reduceBranches(inner)
 		if (reducedBranches.length === 1) return reducedBranches[0]

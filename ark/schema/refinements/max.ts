@@ -13,16 +13,16 @@ export interface MaxInner extends BaseRangeInner {
 	rule: number
 }
 
-export interface NormalizedMaxDef extends BaseNormalizedRangeRoot {
+export interface NormalizedMaxSchema extends BaseNormalizedRangeRoot {
 	rule: number
 }
 
-export type MaxDef = NormalizedMaxDef | number
+export type MaxSchema = NormalizedMaxSchema | number
 
 export type MaxDeclaration = declareNode<{
 	kind: "max"
-	def: MaxDef
-	normalizedDef: NormalizedMaxDef
+	schema: MaxSchema
+	normalizedSchema: NormalizedMaxSchema
 	inner: MaxInner
 	prerequisite: number
 	errorContext: MaxInner
@@ -36,7 +36,7 @@ export const maxImplementation = implementNode<MaxDeclaration>({
 		rule: {},
 		exclusive: parseExclusiveKey
 	},
-	normalize: def => (typeof def === "number" ? { rule: def } : def),
+	normalize: schema => (typeof schema === "number" ? { rule: schema } : schema),
 	defaults: {
 		description: node =>
 			`${node.exclusive ? "less than" : "at most"} ${node.rule}`

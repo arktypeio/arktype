@@ -7,14 +7,14 @@ export interface RegexInner extends BaseMeta {
 	readonly flags?: string
 }
 
-export type NormalizedRegexDef = RegexInner
+export type NormalizedRegexSchema = RegexInner
 
-export type RegexDef = NormalizedRegexDef | string | RegExp
+export type RegexSchema = NormalizedRegexSchema | string | RegExp
 
 export type RegexDeclaration = declareNode<{
 	kind: "regex"
-	def: RegexDef
-	normalizedDef: NormalizedRegexDef
+	schema: RegexSchema
+	normalizedSchema: NormalizedRegexSchema
 	inner: RegexInner
 	intersectionIsOpen: true
 	prerequisite: string
@@ -28,13 +28,13 @@ export const regexImplementation = implementNode<RegexDeclaration>({
 		rule: {},
 		flags: {}
 	},
-	normalize: def =>
-		typeof def === "string" ? { rule: def }
-		: def instanceof RegExp ?
-			def.flags ?
-				{ rule: def.source, flags: def.flags }
-			:	{ rule: def.source }
-		:	def,
+	normalize: schema =>
+		typeof schema === "string" ? { rule: schema }
+		: schema instanceof RegExp ?
+			schema.flags ?
+				{ rule: schema.source, flags: schema.flags }
+			:	{ rule: schema.source }
+		:	schema,
 	hasAssociatedError: true,
 	intersectionIsOpen: true,
 	intersections: {

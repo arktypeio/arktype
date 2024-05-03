@@ -247,12 +247,12 @@ export const schemaKindsRightOf = <kind extends RootKind>(
 ): schemaKindRightOf<kind>[] =>
 	schemaKinds.slice(precedenceOfKind(kind) + 1) as never
 
-export type KeyDefinitions<d extends RawNodeDeclaration> = {
-	[k in keyRequiringDefinition<d>]: NodeKeyImplementation<d, k>
+export type KeySchemainitions<d extends RawNodeDeclaration> = {
+	[k in keyRequiringSchemainition<d>]: NodeKeyImplementation<d, k>
 }
 
-type keyRequiringDefinition<d extends RawNodeDeclaration> = Exclude<
-	keyof d["normalizedDef"],
+type keyRequiringSchemainition<d extends RawNodeDeclaration> = Exclude<
+	keyof d["normalizedSchema"],
 	keyof BaseMeta
 >
 
@@ -270,7 +270,7 @@ export const defaultValueSerializer = (v: unknown): JsonData => {
 
 export type NodeKeyImplementation<
 	d extends RawNodeDeclaration,
-	k extends keyof d["normalizedDef"],
+	k extends keyof d["normalizedSchema"],
 	instantiated = k extends keyof d["inner"] ? d["inner"][k] : never
 > = requireKeys<
 	{
@@ -284,20 +284,20 @@ export type NodeKeyImplementation<
 			:	instantiated
 		) => JsonData
 		parse?: (
-			schema: Exclude<d["normalizedDef"][k], undefined>,
+			schema: Exclude<d["normalizedSchema"][k], undefined>,
 			ctx: NodeParseContext<d["kind"]>
 		) => instantiated
 	},
 	// require parse if we can't guarantee the schema value will be valid on inner
-	| (d["normalizedDef"][k] extends instantiated ? never : "parse")
+	| (d["normalizedSchema"][k] extends instantiated ? never : "parse")
 	// require keys containing children specify it
 	| ([instantiated] extends [listable<BaseNode> | undefined] ? "child" : never)
 >
 
 interface CommonNodeImplementationInput<d extends RawNodeDeclaration> {
 	kind: d["kind"]
-	keys: KeyDefinitions<d>
-	normalize: (schema: d["def"]) => d["normalizedDef"]
+	keys: KeySchemainitions<d>
+	normalize: (schema: d["schema"]) => d["normalizedSchema"]
 	hasAssociatedError: d["errorContext"] extends null ? false : true
 	collapsibleKey?: keyof d["inner"]
 	reduce?: (
@@ -332,14 +332,14 @@ export type nodeImplementationOf<d extends RawNodeDeclaration> =
 export type nodeImplementationInputOf<d extends RawNodeDeclaration> =
 	CommonNodeImplementationInput<d> & {
 		intersections: IntersectionMap<d["kind"]>
-		defaults: nodeDefaultsImplementationInputFor<d["kind"]>
+		defaults: nodeSchemaaultsImplementationInputFor<d["kind"]>
 	} & (d["intersectionIsOpen"] extends true ? { intersectionIsOpen: true }
 		:	{}) &
 		// if the node is declared as reducible to a kind other than its own,
 		// there must be a reduce implementation
 		(d["reducibleTo"] extends d["kind"] ? {} : { reduce: {} })
 
-type nodeDefaultsImplementationInputFor<kind extends NodeKind> = requireKeys<
+type nodeSchemaaultsImplementationInputFor<kind extends NodeKind> = requireKeys<
 	NodeConfig<kind>,
 	| "description"
 	// if the node's error context is distinct from its inner definition, ensure it is implemented.

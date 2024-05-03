@@ -9,7 +9,7 @@ import {
 	throwInvalidOperandError,
 	type PrimitiveConstraintKind
 } from "../constraint.js"
-import type { Node, NodeDef, reducibleKindOf } from "../kinds.js"
+import type { Node, NodeSchema, reducibleKindOf } from "../kinds.js"
 import { BaseNode } from "../node.js"
 import type { Predicate } from "../predicate.js"
 import type { RootScope } from "../scope.js"
@@ -192,9 +192,9 @@ export abstract class BaseRoot<
 
 	constrain<kind extends PrimitiveConstraintKind>(
 		kind: kind,
-		def: NodeDef<kind>
+		schema: NodeSchema<kind>
 	): BaseRoot {
-		const constraint = this.$.node(kind, def)
+		const constraint = this.$.node(kind, schema)
 		if (constraint.impliedBasis && !this.extends(constraint.impliedBasis)) {
 			return throwInvalidOperandError(
 				kind,
@@ -288,7 +288,7 @@ export declare abstract class InnerRoot<t = unknown, $ = any> extends Callable<
 	abstract intersect(r: never): unknown | Disjoint
 	abstract and(r: never): unknown
 	abstract or(r: never): unknown
-	abstract constrain(kind: never, def: never): unknown
+	abstract constrain(kind: never, schema: never): unknown
 	abstract equals(r: never): this is unknown
 	abstract extract(r: never): unknown
 	abstract exclude(r: never): unknown
@@ -331,11 +331,11 @@ declare class _Root<t = unknown, $ = any> extends InnerRoot<t, $> {
 
 	constrain<
 		kind extends PrimitiveConstraintKind,
-		const def extends NodeDef<kind>
+		const schema extends NodeSchema<kind>
 	>(
 		kind: conform<kind, constraintKindOf<this["inferIn"]>>,
-		def: def
-	): Root<constrain<t, kind, def>, $>
+		schema: schema
+	): Root<constrain<t, kind, schema>, $>
 
 	equals<r>(r: Root<r>): this is Root<r>
 

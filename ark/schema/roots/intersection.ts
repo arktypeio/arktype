@@ -18,7 +18,7 @@ import type {
 	Inner,
 	MutableInner,
 	Node,
-	NodeDef,
+	NodeSchema,
 	Prerequisite
 } from "../kinds.js"
 import type { PredicateNode } from "../predicate.js"
@@ -43,8 +43,8 @@ import type {
 	ExtraneousKeyBehavior,
 	StructureNode
 } from "../structure/structure.js"
-import type { DomainDef, DomainNode } from "./domain.js"
-import type { ProtoDef, ProtoNode } from "./proto.js"
+import type { DomainNode, DomainSchema } from "./domain.js"
+import type { ProtoNode, ProtoSchema } from "./proto.js"
 import { BaseRoot } from "./root.js"
 import { defineRightwardIntersections } from "./utils.js"
 
@@ -61,22 +61,22 @@ export type IntersectionInner = show<
 	}
 >
 
-export type NormalizedIntersectionDef = Omit<
-	IntersectionDef,
+export type NormalizedIntersectionSchema = Omit<
+	IntersectionSchema,
 	StructuralKind | "onExtraneousKey"
 >
 
-export type IntersectionDef<inferredBasis = any> = show<
+export type IntersectionSchema<inferredBasis = any> = show<
 	BaseMeta & {
-		domain?: DomainDef
-		proto?: ProtoDef
+		domain?: DomainSchema
+		proto?: ProtoSchema
 	} & conditionalRootOf<inferredBasis>
 >
 
 export type IntersectionDeclaration = declareNode<{
 	kind: "intersection"
-	def: IntersectionDef
-	normalizedDef: NormalizedIntersectionDef
+	schema: IntersectionSchema
+	normalizedSchema: NormalizedIntersectionSchema
 	inner: IntersectionInner
 	reducibleTo: "intersection" | IntersectionBasisKind
 	errorContext: {
@@ -245,15 +245,15 @@ export const intersectionImplementation =
 		keys: {
 			domain: {
 				child: true,
-				parse: (def, ctx) => ctx.$.node("domain", def)
+				parse: (schema, ctx) => ctx.$.node("domain", schema)
 			},
 			proto: {
 				child: true,
-				parse: (def, ctx) => ctx.$.node("proto", def)
+				parse: (schema, ctx) => ctx.$.node("proto", schema)
 			},
 			structure: {
 				child: true,
-				parse: (def, ctx) => ctx.$.node("structure", def)
+				parse: (schema, ctx) => ctx.$.node("structure", schema)
 			},
 			divisor: {
 				child: true,
@@ -394,8 +394,8 @@ type conditionalIntersectionKeyOf<t> =
 // not sure why explicitly allowing Inner<k> is necessary in these cases,
 // but remove if it can be removed without creating type errors
 type intersectionChildRootValueOf<k extends IntersectionChildKind> =
-	k extends OpenNodeKind ? listable<NodeDef<k> | Inner<k>>
-	:	NodeDef<k> | Inner<k>
+	k extends OpenNodeKind ? listable<NodeSchema<k> | Inner<k>>
+	:	NodeSchema<k> | Inner<k>
 
 type conditionalRootValueOfKey<k extends ConditionalIntersectionKey> =
 	k extends IntersectionChildKind ? intersectionChildRootValueOf<k>

@@ -14,14 +14,14 @@ export interface PredicateInner<rule extends Predicate<any> = Predicate<any>>
 
 export type PredicateErrorContext = Partial<PredicateInner>
 
-export type NormalizedPredicateDef = PredicateInner
+export type NormalizedPredicateSchema = PredicateInner
 
-export type PredicateDef = NormalizedPredicateDef | Predicate<any>
+export type PredicateSchema = NormalizedPredicateSchema | Predicate<any>
 
 export type PredicateDeclaration = declareNode<{
 	kind: "predicate"
-	def: PredicateDef
-	normalizedDef: NormalizedPredicateDef
+	schema: PredicateSchema
+	normalizedSchema: NormalizedPredicateSchema
 	inner: PredicateInner
 	intersectionIsOpen: true
 	errorContext: PredicateErrorContext
@@ -34,7 +34,8 @@ export const predicateImplementation = implementNode<PredicateDeclaration>({
 	keys: {
 		predicate: {}
 	},
-	normalize: def => (typeof def === "function" ? { predicate: def } : def),
+	normalize: schema =>
+		typeof schema === "function" ? { predicate: schema } : schema,
 	defaults: {
 		description: node =>
 			`valid according to ${node.predicate.name || "an anonymous predicate"}`
