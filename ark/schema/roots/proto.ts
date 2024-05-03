@@ -61,10 +61,10 @@ export const protoImplementation: nodeImplementationOf<ProtoDeclaration> =
 			}
 		},
 		normalize: schema =>
-			typeof schema === "string" ? { proto: builtinObjectKinds[schema] }
+			typeof schema === "string" ? { proto: builtinConstructors[schema] }
 			: typeof schema === "function" ? { proto: schema }
 			: typeof schema.proto === "string" ?
-				{ ...schema, proto: builtinObjectKinds[schema.proto] }
+				{ ...schema, proto: builtinConstructors[schema.proto] }
 			:	(schema as ExpandedProtoSchema<Constructor>),
 		defaults: {
 			description: node =>

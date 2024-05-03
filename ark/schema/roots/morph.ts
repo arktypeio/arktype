@@ -1,8 +1,8 @@
 import {
 	type array,
 	arrayFrom,
-	type builtinConstructors,
 	type BuiltinObjectKind,
+	type BuiltinObjects,
 	type listable,
 	type Primitive,
 	registeredReference,
@@ -273,4 +273,4 @@ type distillPostfix<
 /** Objects we don't want to expand during inference like Date or Promise */
 type TerminallyInferredObjectKind =
 	| StaticArkOption<"preserve">
-	| builtinConstructors[Exclude<BuiltinObjectKind, "Array">]
+	| BuiltinObjects[Exclude<BuiltinObjectKind, "Array">]

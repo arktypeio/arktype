@@ -36,8 +36,6 @@ export const builtinConstructors: builtinConstructors = {
 	Promise
 }
 
-export type ObjectKindSet = Record<string, Constructor>
-
 export type BuiltinObjectConstructors = typeof builtinConstructors
 
 export type BuiltinObjectKind = keyof BuiltinObjectConstructors
@@ -46,39 +44,33 @@ export type BuiltinObjects = {
 	[kind in BuiltinObjectKind]: InstanceType<BuiltinObjectConstructors[kind]>
 }
 
-export type objectKindOf<
-	data extends object,
-	kinds extends ObjectKindSet = builtinConstructors
-> =
-	object extends data ? keyof kinds | undefined
+export type objectKindOf<data extends object> =
+	object extends data ? keyof builtinConstructors | undefined
 	: data extends (...args: never[]) => unknown ? "Function"
-	: instantiableObjectKind<data, kinds> extends never ? keyof kinds | undefined
-	: instantiableObjectKind<data, kinds>
+	: instantiableObjectKind<data> extends never ?
+		keyof builtinConstructors | undefined
+	:	instantiableObjectKind<data>
 
 export type describeObject<o extends object> =
 	objectKindOf<o> extends string ? objectKindDescriptions[objectKindOf<o>]
 	:	domainDescriptions["object"]
 
-type instantiableObjectKind<
-	data extends object,
-	kinds extends ObjectKindSet
-> = {
-	[kind in keyof kinds]: data extends InstanceType<kinds[kind]> ? kind : never
-}[keyof kinds]
+type instantiableObjectKind<data extends object> = {
+	[kind in keyof builtinConstructors]: data extends (
+		InstanceType<builtinConstructors[kind]>
+	) ?
+		kind
+	:	never
+}[keyof builtinConstructors]
 
-export const objectKindOf = <
-	data extends object,
-	kinds extends ObjectKindSet = BuiltinObjectConstructors
->(
-	data: data,
-	kinds?: kinds
-): objectKindOf<data, kinds> | undefined => {
-	const kindSet: ObjectKindSet = kinds ?? builtinConstructors
+export const objectKindOf = <data extends object>(
+	data: data
+): objectKindOf<data> | undefined => {
 	let prototype: Partial<Object> | null = Object.getPrototypeOf(data)
 	while (
 		prototype?.constructor &&
-		(!kindSet[prototype.constructor.name] ||
-			!(data instanceof kindSet[prototype.constructor.name]))
+		(!isKeyOf(prototype.constructor.name, builtinConstructors) ||
+			!(data instanceof builtinConstructors[prototype.constructor.name]))
 	)
 		prototype = Object.getPrototypeOf(prototype)
 
@@ -88,36 +80,25 @@ export const objectKindOf = <
 	return name as never
 }
 
-export const objectKindOrDomainOf = <
-	data,
-	kinds extends ObjectKindSet = BuiltinObjectConstructors
->(
-	data: data,
-	kinds?: kinds
-): (objectKindOf<data & object, kinds> & {}) | domainOf<data> =>
+export const objectKindOrDomainOf = <data>(
+	data: data
+): (objectKindOf<data & object> & {}) | domainOf<data> =>
 	(typeof data === "object" && data !== null ?
-		objectKindOf(data, kinds) ?? "object"
+		objectKindOf(data) ?? "object"
 	:	domainOf(data)) as never
 
-export type objectKindOrDomainOf<
-	data,
-	kinds extends ObjectKindSet = BuiltinObjectConstructors
-> =
+export type objectKindOrDomainOf<data> =
 	data extends object ?
-		objectKindOf<data, kinds> extends undefined ?
+		objectKindOf<data> extends undefined ?
 			"object"
-		:	objectKindOf<data, kinds>
+		:	objectKindOf<data>
 	:	domainOf<data>
 
-export const hasObjectKind = <
-	kind extends keyof kinds,
-	kinds extends ObjectKindSet = BuiltinObjectConstructors
->(
+export const hasObjectKind = <kind extends keyof builtinConstructors>(
 	data: object,
-	kind: kind,
-	kinds?: kinds
-): data is InstanceType<kinds[kind]> =>
-	objectKindOf(data, kinds) === (kind as never)
+	kind: kind
+): data is InstanceType<builtinConstructors[kind]> =>
+	objectKindOf(data) === (kind as never)
 
 export const isArray = (data: unknown): data is array => Array.isArray(data)
 
