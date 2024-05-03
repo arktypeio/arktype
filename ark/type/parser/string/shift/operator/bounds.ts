@@ -257,7 +257,7 @@ export const writeInvalidLimitMessage = <
 		boundKind === "left" ? invertedComparators[comparator] : (comparator as any)
 	} must be ${
 		boundKind === "left" ? "preceded" : ("followed" as any)
-	} by a corresponding literal (was '${limit}')`
+	} by a corresponding literal (was ${limit})`
 
 export type writeInvalidLimitMessage<
 	comparator extends Comparator,
@@ -265,6 +265,6 @@ export type writeInvalidLimitMessage<
 	boundKind extends BoundExpressionKind
 > = `Comparator ${boundKind extends "left" ? InvertedComparators[comparator]
 :	comparator} must be ${boundKind extends "left" ? "preceded"
-:	"followed"} by a corresponding literal (was '${limit}')`
+:	"followed"} by a corresponding literal (was ${limit})`
 
 export type BoundExpressionKind = "left" | "right"

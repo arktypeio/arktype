@@ -317,7 +317,7 @@ export const writeNonArraySpreadMessage = <operand extends string>(
 	`Spread element must be an array (was ${operand})` as never
 
 type writeNonArraySpreadMessage<operand> =
-	`Spread element must be an array${operand extends string ? `(was ${operand})`
+	`Spread element must be an array${operand extends string ? ` (was ${operand})`
 	:	""}`
 
 export const multipleVariadicMesage =

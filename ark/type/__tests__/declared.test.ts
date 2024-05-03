@@ -43,7 +43,7 @@ contextualize(() => {
 		attest(
 			// @ts-expect-error
 			declare<[string, number]>().type(["string", "number", "number"])
-		).type.errors(`Source has 3 element(s) but target requires 2`)
+		).type.errors(`Source has 3 element(s) but target allows only 2`)
 	})
 
 	it("tuple expression", () => {
@@ -95,7 +95,7 @@ contextualize(() => {
 				a: "string"
 			})
 		).type.errors(
-			`Property 'b' is missing in type '{ a: "string"; }' but required in type '{ a: "string"; "b?": unknown; }'.`
+			`Property 'b' is missing in type '{ a: "string"; }' but required in type '{ a: "string"; b: number; }'.`
 		)
 	})
 
@@ -106,7 +106,7 @@ contextualize(() => {
 				a: "string"
 			})
 		).type.errors(
-			`Property '"b?"' is missing in type '{ a: "string"; }' but required in type '{ a: "string"; "b?": unknown; }'.`
+			`Property '"b?"' is missing in type '{ a: "string"; }' but required in type '{ a: "string"; "b?": number | undefined ; }'.`
 		)
 	})
 

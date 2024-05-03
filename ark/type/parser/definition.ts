@@ -98,7 +98,7 @@ type validateInference<def, declared, $, args> =
 			{
 				[i in keyof declared]: i extends keyof def ?
 					validateInference<def[i], declared[i], $, args>
-				:	unknown
+				:	declared[i]
 			}
 		:	show<declarationMismatch<def, declared, $, args>>
 	: def extends object ?
@@ -106,13 +106,13 @@ type validateInference<def, declared, $, args> =
 			{
 				[k in requiredKeyOf<declared>]: k extends keyof def ?
 					validateInference<def[k], declared[k], $, args>
-				:	unknown
+				:	declared[k]
 			} & {
 				[k in optionalKeyOf<declared> & string as `${k}?`]: `${k}?` extends (
 					keyof def
 				) ?
 					validateInference<def[`${k}?`], defined<declared[k]>, $, args>
-				:	unknown
+				:	declared[k]
 			}
 		>
 	:	validateShallowInference<def, declared, $, args>

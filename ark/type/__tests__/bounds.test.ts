@@ -209,7 +209,7 @@ contextualize(
 		})
 
 		it("number", () => {
-			attest<number>(type("number==-3.14159").infer)
+			attest<-3.14159>(type("number==-3.14159").infer)
 		})
 
 		it("string", () => {
