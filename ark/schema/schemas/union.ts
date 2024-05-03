@@ -1,7 +1,6 @@
 import { appendUnique, groupBy, isArray } from "@arktype/util"
-import type { NodeDef } from "../kinds.js"
-import type { Node } from "../node.js"
-import { RawSchema } from "../schema.js"
+import type { Node, NodeDef } from "../kinds.js"
+import { BaseSchema } from "../schema.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -167,7 +166,7 @@ export const unionImplementation = implementNode<UnionDeclaration>({
 	}
 })
 
-export class UnionNode extends RawSchema<UnionDeclaration> {
+export class UnionNode extends BaseSchema<UnionDeclaration> {
 	isBoolean =
 		this.branches.length === 2 &&
 		this.branches[0].hasUnit(false) &&
@@ -214,7 +213,7 @@ export class UnionNode extends RawSchema<UnionDeclaration> {
 		}
 	}
 
-	rawKeyOf(): RawSchema {
+	rawKeyOf(): BaseSchema {
 		return this.branches.reduce(
 			(result, branch) => result.and(branch.rawKeyOf()),
 			this.$.keywords.unknown.raw
@@ -334,9 +333,9 @@ export const intersectBranches = (
 	// If the corresponding r branch is identified as a subtype of an l branch, the
 	// value at rIndex is set to null so we can avoid including previous/future
 	// inersections in the reduced result.
-	const batchesByR: (RawSchema[] | null)[] = r.map(() => [])
+	const batchesByR: (BaseSchema[] | null)[] = r.map(() => [])
 	for (let lIndex = 0; lIndex < l.length; lIndex++) {
-		let candidatesByR: { [rIndex: number]: RawSchema } = {}
+		let candidatesByR: { [rIndex: number]: BaseSchema } = {}
 		for (let rIndex = 0; rIndex < r.length; rIndex++) {
 			if (batchesByR[rIndex] === null) {
 				// rBranch is a subtype of an lBranch and

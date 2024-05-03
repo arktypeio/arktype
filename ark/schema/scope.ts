@@ -26,14 +26,15 @@ import type { jsObjects } from "./keywords/jsObjects.js"
 import type { Ark } from "./keywords/keywords.js"
 import type { tsKeywords } from "./keywords/tsKeywords.js"
 import {
+	type Node,
 	type NodeDef,
 	nodeImplementationsByKind,
 	type reducibleKindOf
 } from "./kinds.js"
 import { type PreparsedNodeResolution, SchemaModule } from "./module.js"
-import type { Node, RawNode, SchemaDef } from "./node.js"
+import type { BaseNode, SchemaDef } from "./node.js"
 import { type NodeParseOptions, parseNode, schemaKindOf } from "./parse.js"
-import type { RawSchema, Schema } from "./schema.js"
+import type { BaseSchema, Schema } from "./schema.js"
 import { type AliasNode, normalizeAliasDef } from "./schemas/alias.js"
 import { NodeCompiler } from "./shared/compile.js"
 import type {
@@ -56,9 +57,9 @@ import {
 	isNode
 } from "./shared/utils.js"
 
-export type nodeResolutions<keywords> = { [k in keyof keywords]: RawSchema }
+export type nodeResolutions<keywords> = { [k in keyof keywords]: BaseSchema }
 
-export type BaseResolutions = Record<string, RawSchema>
+export type BaseResolutions = Record<string, BaseSchema>
 
 declare global {
 	export interface StaticArkConfig {
@@ -167,14 +168,14 @@ type toRawScope<$> = RawSchemaScope<{
 		kind extends "generic" ? GenericSchema
 		: kind extends "module" ? RawSchemaModule
 		: never
-	:	RawSchema
+	:	BaseSchema
 }>
 
 export type PrimitiveKeywords = typeof tsKeywords &
 	typeof jsObjects &
 	typeof internalKeywords
 
-export type RawResolution = RawSchema | GenericSchema | RawSchemaModule
+export type RawResolution = BaseSchema | GenericSchema | RawSchemaModule
 
 type CachedResolution = string | RawResolution
 
@@ -198,7 +199,7 @@ export type writeDuplicateAliasError<alias extends string> =
 
 const nodeCountsByPrefix: PartialRecord<string, number> = {}
 
-const nodesById: Record<string, RawNode | undefined> = {}
+const nodesById: Record<string, BaseNode | undefined> = {}
 
 export class RawSchemaScope<
 	$ extends RawSchemaResolutions = RawSchemaResolutions
@@ -208,8 +209,8 @@ export class RawSchemaScope<
 	readonly resolvedConfig: ResolvedArkConfig;
 	readonly [arkKind] = "scope"
 
-	readonly referencesById: { [name: string]: RawNode } = {}
-	references: readonly RawNode[] = []
+	readonly referencesById: { [name: string]: BaseNode } = {}
+	references: readonly BaseNode[] = []
 	protected readonly resolutions: {
 		[alias: string]: CachedResolution | undefined
 	} = {}
@@ -274,12 +275,12 @@ export class RawSchemaScope<
 		return this
 	}
 
-	schema = ((def: SchemaDef, opts?: NodeParseOptions): RawSchema =>
+	schema = ((def: SchemaDef, opts?: NodeParseOptions): BaseSchema =>
 		this.node(schemaKindOf(def), def, opts)).bind(this)
 
 	defineSchema = ((def: SchemaDef) => def).bind(this)
 
-	units = ((values: unknown[], opts?: NodeParseOptions): RawSchema => {
+	units = ((values: unknown[], opts?: NodeParseOptions): BaseSchema => {
 		const uniqueValues: unknown[] = []
 		for (const value of values)
 			if (!uniqueValues.includes(value)) uniqueValues.push(value)
@@ -292,7 +293,7 @@ export class RawSchemaScope<
 	}).bind(this)
 
 	protected lazyResolutions: AliasNode[] = []
-	lazilyResolve(syntheticAlias: string, resolve: () => RawSchema): AliasNode {
+	lazilyResolve(syntheticAlias: string, resolve: () => BaseSchema): AliasNode {
 		const node = this.node(
 			"alias",
 			{
@@ -374,18 +375,18 @@ export class RawSchemaScope<
 		return node as never
 	}).bind(this)
 
-	parseRoot(def: unknown, opts?: NodeParseOptions): RawSchema {
+	parseRoot(def: unknown, opts?: NodeParseOptions): BaseSchema {
 		return this.schema(def as never, opts)
 	}
 
-	resolveSchema(name: string): RawSchema {
+	resolveSchema(name: string): BaseSchema {
 		return (
 			this.maybeResolveSchema(name) ??
 			throwParseError(writeUnresolvableMessage(name))
 		)
 	}
 
-	maybeResolveSchema(name: string): RawSchema | undefined {
+	maybeResolveSchema(name: string): BaseSchema | undefined {
 		const result = this.maybeResolveGenericOrSchema(name)
 		if (hasArkKind(result, "generic")) return
 		return result
@@ -393,7 +394,7 @@ export class RawSchemaScope<
 
 	maybeResolveGenericOrSchema(
 		name: string
-	): RawSchema | GenericSchema | undefined {
+	): BaseSchema | GenericSchema | undefined {
 		const resolution = this.maybeResolve(name)
 		if (hasArkKind(resolution, "module"))
 			return throwParseError(writeMissingSubmoduleAccessMessage(name))
@@ -427,7 +428,7 @@ export class RawSchemaScope<
 	/** If name is a valid reference to a submodule alias, return its resolution  */
 	protected maybeResolveSubalias(
 		name: string
-	): RawSchema | GenericSchema | undefined {
+	): BaseSchema | GenericSchema | undefined {
 		return resolveSubalias(this.aliases, name)
 	}
 
@@ -487,7 +488,7 @@ export class RawSchemaScope<
 const resolveSubalias = (
 	base: Dict,
 	name: string
-): RawSchema | GenericSchema | undefined => {
+): BaseSchema | GenericSchema | undefined => {
 	const dotIndex = name.indexOf(".")
 	if (dotIndex === -1) return
 
@@ -536,7 +537,7 @@ export interface SchemaScope<$ = any> {
 	t: $
 	[arkKind]: "scope"
 	config: ArkConfig
-	references: readonly RawNode[]
+	references: readonly BaseNode[]
 	json: Json
 	exportedNames: array<exportedNameOf<$>>
 
@@ -563,7 +564,7 @@ export interface SchemaScope<$ = any> {
 		opts?: NodeParseOptions
 	): Node<reducibleKindOf<flattenListable<kinds>>>
 
-	parseRoot(def: unknown, opts?: NodeParseOptions): RawSchema
+	parseRoot(def: unknown, opts?: NodeParseOptions): BaseSchema
 
 	import<names extends exportedNameOf<$>[]>(
 		...names: names
@@ -611,7 +612,7 @@ export type destructuredImportContext<$, names extends exportedNameOf<$>[]> = {
 
 export type SchemaExportCache = Record<
 	string,
-	RawSchema | GenericSchema | RawSchemaModule | undefined
+	BaseSchema | GenericSchema | RawSchemaModule | undefined
 >
 
 const resolutionsOfModule = ($: RawSchemaScope, typeSet: SchemaExportCache) => {
@@ -655,7 +656,7 @@ export const writeMissingSubmoduleAccessMessage = <name extends string>(
 export type writeMissingSubmoduleAccessMessage<name extends string> =
 	`Reference to submodule '${name}' must specify an alias`
 
-export const bindCompiledScope = (references: readonly RawNode[]): void => {
+export const bindCompiledScope = (references: readonly BaseNode[]): void => {
 	const compiledTraversals = compileScope(references)
 	for (const node of references) {
 		if (node.jit) {
@@ -675,7 +676,7 @@ export const bindCompiledScope = (references: readonly RawNode[]): void => {
 	}
 }
 
-const compileScope = (references: readonly RawNode[]) => {
+const compileScope = (references: readonly BaseNode[]) => {
 	return new CompiledFunction()
 		.block("return", js => {
 			references.forEach(node => {

@@ -5,7 +5,7 @@ import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { implementNode } from "../shared/implement.js"
 import type { TraversalContext, TraverseApply } from "../shared/traversal.js"
 import type { constrain, of } from "./ast.js"
-import { RawConstraint } from "./constraint.js"
+import { BaseConstraint } from "./constraint.js"
 
 export interface PredicateInner<rule extends Predicate<any> = Predicate<any>>
 	extends BaseMeta {
@@ -49,7 +49,7 @@ export const predicateImplementation = implementNode<PredicateDeclaration>({
 	}
 })
 
-export class PredicateNode extends RawConstraint<PredicateDeclaration> {
+export class PredicateNode extends BaseConstraint<PredicateDeclaration> {
 	serializedPredicate = registeredReference(this.predicate)
 	compiledCondition = `${this.serializedPredicate}(data, ctx)`
 	compiledNegation = `!${this.compiledCondition}`

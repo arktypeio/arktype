@@ -1,6 +1,6 @@
 import { compileSerializedValue, type Key } from "@arktype/util"
 import type { SchemaDef } from "../../node.js"
-import type { RawSchema } from "../../schema.js"
+import type { BaseSchema } from "../../schema.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { BaseMeta } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
@@ -10,7 +10,7 @@ import type {
 } from "../../shared/implement.js"
 import { intersectNodes } from "../../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/traversal.js"
-import { RawConstraint } from "../constraint.js"
+import { BaseConstraint } from "../constraint.js"
 import type { OptionalDeclaration } from "./optional.js"
 import type { RequiredDeclaration } from "./required.js"
 
@@ -22,7 +22,7 @@ export interface PropDef extends BaseMeta {
 }
 
 export interface PropInner extends PropDef {
-	readonly value: RawSchema
+	readonly value: BaseSchema
 }
 
 export type BasePropDeclaration<kind extends PropKind = PropKind> = {
@@ -57,7 +57,7 @@ export const intersectProps: ConstraintIntersection<PropKind, PropKind> = (
 
 export abstract class BasePropNode<
 	kind extends PropKind = PropKind
-> extends RawConstraint<
+> extends BaseConstraint<
 	kind extends "required" ? RequiredDeclaration : OptionalDeclaration
 > {
 	required = this.kind === "required"

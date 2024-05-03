@@ -13,16 +13,22 @@ import {
 	splitByKeys,
 	throwInternalError
 } from "@arktype/util"
-import type { RawConstraint } from "../constraints/constraint.js"
+import type { BaseConstraint } from "../constraints/constraint.js"
 import {
 	type ExtraneousKeyBehavior,
 	type ExtraneousKeyRestriction,
-	StructureGroup
+	StructureNode
 } from "../constraints/structure/structure.js"
-import type { Inner, MutableInner, NodeDef, Prerequisite } from "../kinds.js"
-import type { Constraint, Node } from "../node.js"
+import type {
+	Inner,
+	MutableInner,
+	Node,
+	NodeDef,
+	Prerequisite
+} from "../kinds.js"
+import type { Constraint } from "../node.js"
 import type { NodeParseContext } from "../parse.js"
-import { RawSchema } from "../schema.js"
+import { BaseSchema } from "../schema.js"
 import type { RawSchemaScope } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import { type BaseMeta, type declareNode, metaKeys } from "../shared/declare.js"
@@ -76,14 +82,14 @@ export type IntersectionDeclaration = declareNode<{
 	childKind: IntersectionChildKind
 }>
 
-export class IntersectionNode extends RawSchema<IntersectionDeclaration> {
+export class IntersectionNode extends BaseSchema<IntersectionDeclaration> {
 	basis = this.domain ?? this.proto ?? null
 	refinements = this.children.filter((node): node is Node<RefinementKind> =>
 		node.isRefinement()
 	)
 	structure = maybeCreateStructure(this.inner, this.$)
 	traversables = conflatenateAll<
-		Node<Exclude<IntersectionChildKind, StructuralKind>> | StructureGroup
+		Node<Exclude<IntersectionChildKind, StructuralKind>> | StructureNode
 	>(this.basis, this.refinements, this.structure, this.predicate)
 
 	expression =
@@ -163,7 +169,7 @@ export class IntersectionNode extends RawSchema<IntersectionDeclaration> {
 		}
 	}
 
-	rawKeyOf(): RawSchema {
+	rawKeyOf(): BaseSchema {
 		return (
 			this.basis ?
 				this.structure ?
@@ -197,7 +203,7 @@ const intersectIntersections = (
 	reduced: IntersectionInner,
 	raw: IntersectionInner,
 	ctx: IntersectionContext
-): RawSchema | Disjoint => {
+): BaseSchema | Disjoint => {
 	// avoid treating adding instance keys as keys of lRoot, rRoot
 	if (hasArkKind(reduced, "schema") && reduced.hasKind("intersection"))
 		return intersectIntersections(reduced.inner, raw, ctx)
@@ -233,7 +239,7 @@ const intersectIntersections = (
 
 	if (constraintResult instanceof Disjoint) return constraintResult
 
-	let result: RawSchema | Disjoint = constraintResult.ctx.$.node(
+	let result: BaseSchema | Disjoint = constraintResult.ctx.$.node(
 		"intersection",
 		Object.assign(root, unflattenConstraints(constraintResult.l)),
 		{ prereduced: true }
@@ -397,7 +403,7 @@ export const intersectionImplementation =
 
 const maybeCreateStructure = (inner: IntersectionInner, $: RawSchemaScope) => {
 	const propsInput = pick(inner, structureKeys)
-	return isEmptyObject(propsInput) ? null : new StructureGroup(propsInput, $)
+	return isEmptyObject(propsInput) ? null : new StructureNode(propsInput, $)
 }
 
 type IntersectionRoot = Omit<IntersectionInner, ConstraintKind>
@@ -436,7 +442,7 @@ const intersectRootKeys = (
 type ConstraintIntersectionState = {
 	l: Constraint[]
 	r: Constraint[]
-	types: RawSchema[]
+	types: BaseSchema[]
 	ctx: IntersectionContext
 }
 
@@ -453,7 +459,7 @@ const intersectConstraints = (
 
 		if (!matched) {
 			if (result.isSchema()) s.types.push(result)
-			else s.l[i] = result as RawConstraint
+			else s.l[i] = result as BaseConstraint
 			matched = true
 		} else if (!s.l.includes(result as never)) {
 			return throwInternalError(

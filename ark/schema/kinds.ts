@@ -12,7 +12,8 @@ import {
 import {
 	boundClassesByKind,
 	type BoundDeclarations,
-	boundImplementationsByKind
+	boundImplementationsByKind,
+	type BoundNodesByKind
 } from "./constraints/refinement/kinds.js"
 import {
 	type RegexDeclaration,
@@ -39,7 +40,12 @@ import {
 	sequenceImplementation,
 	SequenceNode
 } from "./constraints/structure/sequence.js"
-import type { Node, RawNode } from "./node.js"
+import {
+	type StructureDeclaration,
+	structureImplementation,
+	StructureNode
+} from "./constraints/structure/structure.js"
+import type { BaseNode } from "./node.js"
 import {
 	type AliasDeclaration,
 	aliasImplementation,
@@ -98,6 +104,7 @@ export interface NodeDeclarationsByKind extends BoundDeclarations {
 	index: IndexDeclaration
 	regex: RegexDeclaration
 	predicate: PredicateDeclaration
+	structure: StructureDeclaration
 }
 
 export const nodeImplementationsByKind: Record<
@@ -118,12 +125,13 @@ export const nodeImplementationsByKind: Record<
 	required: requiredImplementation,
 	optional: optionalImplementation,
 	index: indexImplementation,
-	sequence: sequenceImplementation
+	sequence: sequenceImplementation,
+	structure: structureImplementation
 } satisfies Record<NodeKind, unknown> as never
 
 export const nodeClassesByKind: Record<
 	NodeKind,
-	new (attachments: never) => RawNode
+	new (attachments: never) => BaseNode
 > = {
 	...boundClassesByKind,
 	alias: AliasNode,
@@ -139,8 +147,29 @@ export const nodeClassesByKind: Record<
 	required: RequiredNode,
 	optional: OptionalNode,
 	index: IndexNode,
+	sequence: SequenceNode,
+	structure: StructureNode
+} satisfies Record<NodeKind, typeof BaseNode<any>> as never
+
+interface NodesByKind extends BoundNodesByKind {
+	alias: AliasNode
+	union: UnionNode
+	morph: MorphNode
+	intersection: IntersectionNode
+	unit: UnitNode
+	proto: ProtoNode
+	domain: DomainNode
+	divisor: DivisorNode
+	regex: RegexNode
+	predicate: PredicateNode
+	required: RequiredNode
+	optional: OptionalNode
+	index: IndexNode
 	sequence: SequenceNode
-} satisfies Record<NodeKind, typeof RawNode<any>> as never
+	structure: StructureNode
+}
+
+export type Node<kind extends NodeKind> = NodesByKind[kind]
 
 export type Declaration<kind extends NodeKind> = NodeDeclarationsByKind[kind]
 

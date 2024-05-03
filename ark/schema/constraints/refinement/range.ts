@@ -5,7 +5,7 @@ import {
 	isKeyOf,
 	type propValueOf
 } from "@arktype/util"
-import type { Node } from "../../node.js"
+import type { Node } from "../../kinds.js"
 import type { BaseMeta, RawNodeDeclaration } from "../../shared/declare.js"
 import type { KeyDefinitions, RangeKind } from "../../shared/implement.js"
 import { RawPrimitiveConstraint } from "../constraint.js"

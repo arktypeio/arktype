@@ -1,5 +1,5 @@
-import { RawNode } from "../node.js"
-import type { RawSchema } from "../schema.js"
+import { BaseNode } from "../node.js"
+import type { BaseSchema } from "../schema.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { RawNodeDeclaration } from "../shared/declare.js"
 import {
@@ -16,16 +16,16 @@ export interface BaseConstraintDeclaration extends RawNodeDeclaration {
 	kind: ConstraintKind
 }
 
-export abstract class RawConstraint<
+export abstract class BaseConstraint<
 	/** uses -ignore rather than -expect-error because this is not an error in .d.ts
 	 * @ts-ignore allow instantiation assignment to the base type */
 	out d extends BaseConstraintDeclaration = BaseConstraintDeclaration
-> extends RawNode<d> {
+> extends BaseNode<d> {
 	readonly [arkKind] = "constraint"
-	abstract readonly impliedBasis: RawSchema | null
-	readonly impliedSiblings?: RawConstraint[] | null
+	abstract readonly impliedBasis: BaseSchema | null
+	readonly impliedSiblings?: BaseConstraint[] | null
 
-	intersect<r extends RawConstraint>(
+	intersect<r extends BaseConstraint>(
 		r: r
 	): intersectConstraintKinds<d["kind"], r["kind"]> {
 		return intersectNodesRoot(this, r, this.$) as never
@@ -36,7 +36,7 @@ export type PrimitiveConstraintKind = Exclude<ConstraintKind, StructuralKind>
 
 export abstract class RawPrimitiveConstraint<
 	d extends BaseConstraintDeclaration
-> extends RawConstraint<d> {
+> extends BaseConstraint<d> {
 	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
 	abstract readonly compiledCondition: string
 	abstract readonly compiledNegation: string

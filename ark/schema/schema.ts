@@ -10,8 +10,8 @@ import {
 	throwInvalidOperandError,
 	type PrimitiveConstraintKind
 } from "./constraints/util.js"
-import type { NodeDef, reducibleKindOf } from "./kinds.js"
-import { RawNode, type Node } from "./node.js"
+import type { Node, NodeDef, reducibleKindOf } from "./kinds.js"
+import { BaseNode } from "./node.js"
 import type { constraintKindOf } from "./schemas/intersection.js"
 import type {
 	Morph,
@@ -44,7 +44,7 @@ export interface RawSchemaDeclaration extends RawNodeDeclaration {
 	kind: SchemaKind
 }
 
-export type UnknownSchema = Schema | RawSchema
+export type UnknownSchema = Schema | BaseSchema
 
 export type TypeOnlySchemaKey =
 	| (keyof Schema & symbol)
@@ -54,12 +54,12 @@ export type TypeOnlySchemaKey =
 	| "tIn"
 	| "tOut"
 
-export abstract class RawSchema<
+export abstract class BaseSchema<
 		/** uses -ignore rather than -expect-error because this is not an error in .d.ts
 		 * @ts-ignore allow instantiation assignment to the base type */
 		out d extends RawSchemaDeclaration = RawSchemaDeclaration
 	>
-	extends RawNode<d>
+	extends BaseNode<d>
 	implements internalImplementationOf<Schema, TypeOnlySchemaKey>
 {
 	readonly branches: readonly Node<UnionChildKind>[] =
@@ -71,10 +71,10 @@ export abstract class RawSchema<
 		return this
 	}
 
-	abstract rawKeyOf(): RawSchema
+	abstract rawKeyOf(): BaseSchema
 
-	private _keyof: RawSchema | undefined
-	keyof(): RawSchema {
+	private _keyof: BaseSchema | undefined
+	keyof(): BaseSchema {
 		if (!this._keyof) {
 			this._keyof = this.rawKeyOf()
 			if (this._keyof.branches.length === 0) {
@@ -87,17 +87,17 @@ export abstract class RawSchema<
 	}
 
 	// TODO: can it be enforced that this is not called internally and instead intersectNodes is used?
-	intersect(r: unknown): RawSchema | Disjoint {
+	intersect(r: unknown): BaseSchema | Disjoint {
 		const rNode = this.$.parseRoot(r)
 		return intersectNodesRoot(this, rNode, this.$) as never
 	}
 
-	and(r: unknown): RawSchema {
+	and(r: unknown): BaseSchema {
 		const result = this.intersect(r)
 		return result instanceof Disjoint ? result.throw() : (result as never)
 	}
 
-	or(r: unknown): RawSchema {
+	or(r: unknown): BaseSchema {
 		const rNode = this.$.parseRoot(r)
 		const branches = [...this.branches, ...(rNode.branches as any)]
 		return this.$.schema(branches) as never
@@ -114,21 +114,21 @@ export abstract class RawSchema<
 	// 	return this
 	// }
 
-	extract(r: unknown): RawSchema {
+	extract(r: unknown): BaseSchema {
 		const rNode = this.$.parseRoot(r)
 		return this.$.schema(
 			this.branches.filter(branch => branch.extends(rNode))
 		) as never
 	}
 
-	exclude(r: UnknownSchema): RawSchema {
+	exclude(r: UnknownSchema): BaseSchema {
 		const rNode = this.$.parseRoot(r)
 		return this.$.schema(
 			this.branches.filter(branch => !branch.extends(rNode))
 		) as never
 	}
 
-	array(): RawSchema {
+	array(): BaseSchema {
 		return this.$.schema(
 			{
 				proto: Array,
@@ -163,11 +163,11 @@ export abstract class RawSchema<
 		return this.assert(input)
 	}
 
-	pipe(...morphs: Morph[]): RawSchema {
-		return morphs.reduce<RawSchema>((acc, morph) => acc.pipeOnce(morph), this)
+	pipe(...morphs: Morph[]): BaseSchema {
+		return morphs.reduce<BaseSchema>((acc, morph) => acc.pipeOnce(morph), this)
 	}
 
-	private pipeOnce(morph: Morph): RawSchema {
+	private pipeOnce(morph: Morph): BaseSchema {
 		if (hasArkKind(morph, "schema"))
 			return pipeNodesRoot(this, morph, this.$) as never
 		if (this.hasKind("union")) {
@@ -186,14 +186,14 @@ export abstract class RawSchema<
 		})
 	}
 
-	narrow(predicate: Predicate): RawSchema {
+	narrow(predicate: Predicate): BaseSchema {
 		return this.constrain("predicate", predicate)
 	}
 
 	constrain<kind extends PrimitiveConstraintKind>(
 		kind: kind,
 		def: NodeDef<kind>
-	): RawSchema {
+	): BaseSchema {
 		const constraint = this.$.node(kind, def)
 		if (constraint.impliedBasis && !this.extends(constraint.impliedBasis)) {
 			return throwInvalidOperandError(
@@ -279,7 +279,7 @@ export declare abstract class BaseRoot<t = unknown, $ = any> extends Callable<
 	json: Json
 	description: string
 	expression: string
-	raw: RawSchema
+	raw: BaseSchema
 
 	abstract $: SchemaScope<$>;
 	abstract get in(): unknown

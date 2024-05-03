@@ -11,23 +11,9 @@ import {
 	type conform,
 	type listable
 } from "@arktype/util"
-import type { RawConstraint } from "./constraints/constraint.js"
-import type { PredicateNode } from "./constraints/predicate.js"
-import type { DivisorNode } from "./constraints/refinement/divisor.js"
-import type { BoundNodesByKind } from "./constraints/refinement/kinds.js"
-import type { RegexNode } from "./constraints/refinement/regex.js"
-import type { IndexNode } from "./constraints/structure/index.js"
-import type { OptionalNode } from "./constraints/structure/optional.js"
-import type { RequiredNode } from "./constraints/structure/required.js"
-import type { SequenceNode } from "./constraints/structure/sequence.js"
-import type { Inner, NodeDef, reducibleKindOf } from "./kinds.js"
-import type { RawSchema, Schema } from "./schema.js"
-import type { AliasNode } from "./schemas/alias.js"
-import type { DomainNode } from "./schemas/domain.js"
-import type { IntersectionNode } from "./schemas/intersection.js"
-import type { MorphNode } from "./schemas/morph.js"
-import type { ProtoNode } from "./schemas/proto.js"
-import type { UnionNode } from "./schemas/union.js"
+import type { BaseConstraint } from "./constraints/constraint.js"
+import type { Inner, Node, NodeDef, reducibleKindOf } from "./kinds.js"
+import type { BaseSchema, Schema } from "./schema.js"
 import type { UnitNode } from "./schemas/unit.js"
 import type { RawSchemaScope } from "./scope.js"
 import type { NodeCompiler } from "./shared/compile.js"
@@ -57,9 +43,9 @@ import {
 	type TraverseApply
 } from "./shared/traversal.js"
 
-export type UnknownNode = RawNode | Schema
+export type UnknownNode = BaseNode | Schema
 
-export abstract class RawNode<
+export abstract class BaseNode<
 	/** uses -ignore rather than -expect-error because this is not an error in .d.ts
 	 * @ts-ignore allow instantiation assignment to the base type */
 	out d extends RawNodeDeclaration = RawNodeDeclaration
@@ -99,13 +85,15 @@ export abstract class RawNode<
 		(this.hasKind("predicate") && this.inner.predicate.length !== 1) ||
 		this.kind === "alias" ||
 		this.children.some(child => child.allowsRequiresContext)
-	readonly referencesByName: Record<string, RawNode> = this.children.reduce(
+	readonly referencesByName: Record<string, BaseNode> = this.children.reduce(
 		(result, child) => Object.assign(result, child.contributesReferencesById),
 		{}
 	)
-	readonly references: readonly RawNode[] = Object.values(this.referencesByName)
-	readonly contributesReferencesById: Record<string, RawNode>
-	readonly contributesReferences: readonly RawNode[]
+	readonly references: readonly BaseNode[] = Object.values(
+		this.referencesByName
+	)
+	readonly contributesReferencesById: Record<string, BaseNode>
+	readonly contributesReferences: readonly BaseNode[]
 	readonly precedence = precedenceOfKind(this.kind)
 	jit = false
 
@@ -123,19 +111,19 @@ export abstract class RawNode<
 		return this(data)
 	}
 
-	private inCache?: RawNode;
-	get in(): RawNode {
+	private inCache?: BaseNode;
+	get in(): BaseNode {
 		this.inCache ??= this.getIo("in")
 		return this.inCache as never
 	}
 
-	private outCache?: RawNode
-	get out(): RawNode {
+	private outCache?: BaseNode
+	get out(): BaseNode {
 		this.outCache ??= this.getIo("out")
 		return this.outCache as never
 	}
 
-	getIo(kind: "in" | "out"): RawNode {
+	getIo(kind: "in" | "out"): BaseNode {
 		if (!this.includesMorph) return this as never
 
 		const ioInner: Record<any, unknown> = {}
@@ -144,7 +132,7 @@ export abstract class RawNode<
 			if (keyDefinition.meta) continue
 
 			if (keyDefinition.child) {
-				const childValue = v as listable<RawNode>
+				const childValue = v as listable<BaseNode>
 				ioInner[k] =
 					isArray(childValue) ?
 						childValue.map(child => child[kind])
@@ -171,7 +159,7 @@ export abstract class RawNode<
 	}
 
 	equals(other: UnknownNode): boolean
-	equals(other: RawNode): boolean {
+	equals(other: BaseNode): boolean {
 		return this.typeHash === other.typeHash
 	}
 
@@ -195,7 +183,7 @@ export abstract class RawNode<
 		return includes(structuralKinds, this.kind)
 	}
 
-	isSchema(): this is RawSchema {
+	isSchema(): this is BaseSchema {
 		return includes(schemaKinds, this.kind)
 	}
 
@@ -224,13 +212,13 @@ export abstract class RawNode<
 	}
 
 	firstReference<narrowed>(
-		filter: Guardable<RawNode, conform<narrowed, RawNode>>
+		filter: Guardable<BaseNode, conform<narrowed, BaseNode>>
 	): narrowed | undefined {
 		return this.references.find(filter as never) as never
 	}
 
-	firstReferenceOrThrow<narrowed extends RawNode>(
-		filter: Guardable<RawNode, narrowed>
+	firstReferenceOrThrow<narrowed extends BaseNode>(
+		filter: Guardable<BaseNode, narrowed>
 	): narrowed {
 		return (
 			this.firstReference(filter) ??
@@ -253,7 +241,7 @@ export abstract class RawNode<
 
 	transform(
 		mapper: DeepNodeTransformation,
-		shouldTransform: (node: RawNode) => boolean
+		shouldTransform: (node: BaseNode) => boolean
 	): Node<reducibleKindOf<this["kind"]>> {
 		if (!shouldTransform(this as never)) return this as never
 
@@ -263,8 +251,8 @@ export abstract class RawNode<
 				k,
 				this.impl.keys[k].child ?
 					isArray(v) ?
-						v.map(node => (node as RawNode).transform(mapper, shouldTransform))
-					:	(v as RawNode).transform(mapper, shouldTransform)
+						v.map(node => (node as BaseNode).transform(mapper, shouldTransform))
+					:	(v as BaseNode).transform(mapper, shouldTransform)
 				:	v
 			]
 		)
@@ -291,25 +279,6 @@ export type DeepNodeTransformation = <kind extends NodeKind>(
 	inner: Inner<kind>
 ) => Inner<kind>
 
-interface NodesByKind extends BoundNodesByKind {
-	alias: AliasNode
-	union: UnionNode
-	morph: MorphNode
-	intersection: IntersectionNode
-	unit: UnitNode
-	proto: ProtoNode
-	domain: DomainNode
-	divisor: DivisorNode
-	regex: RegexNode
-	predicate: PredicateNode
-	required: RequiredNode
-	optional: OptionalNode
-	index: IndexNode
-	sequence: SequenceNode
-}
-
-export type Node<kind extends NodeKind> = NodesByKind[kind]
-
 export type SchemaDef<kind extends SchemaKind = SchemaKind> = NodeDef<kind>
 
-export type Constraint = RawConstraint
+export type Constraint = BaseConstraint

@@ -10,9 +10,9 @@ import {
 } from "@arktype/util"
 import type { of } from "../constraints/ast.js"
 import type { type } from "../inference.js"
-import type { NodeDef } from "../kinds.js"
-import type { Node, SchemaDef } from "../node.js"
-import { RawSchema, type schemaKindRightOf } from "../schema.js"
+import type { Node, NodeDef } from "../kinds.js"
+import type { SchemaDef } from "../node.js"
+import { BaseSchema, type schemaKindRightOf } from "../schema.js"
 import type { StaticArkOption } from "../scope.js"
 import { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
@@ -46,7 +46,7 @@ export type MorphAst<i = any, o = any> = (In: i) => Out<o>
 
 export interface MorphInner extends BaseMeta {
 	readonly from: MorphInputNode
-	readonly to?: RawSchema
+	readonly to?: BaseSchema
 	readonly morphs: readonly Morph[]
 }
 
@@ -140,7 +140,7 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 	}
 })
 
-export class MorphNode extends RawSchema<MorphDeclaration> {
+export class MorphNode extends BaseSchema<MorphDeclaration> {
 	serializedMorphs: string[] = (this.json as any).morphs
 	compiledMorphs = `[${this.serializedMorphs}]`
 	outValidator = this.to?.traverseApply ?? null
@@ -169,13 +169,13 @@ export class MorphNode extends RawSchema<MorphDeclaration> {
 		js.line(js.invoke(this.from))
 	}
 
-	getIo(kind: "in" | "out"): RawSchema {
+	getIo(kind: "in" | "out"): BaseSchema {
 		return kind === "in" ?
 				this.from
-			:	(this.to?.out as RawSchema) ?? this.$.keywords.unknown.raw
+			:	(this.to?.out as BaseSchema) ?? this.$.keywords.unknown.raw
 	}
 
-	rawKeyOf(): RawSchema {
+	rawKeyOf(): BaseSchema {
 		return this.from.rawKeyOf()
 	}
 }

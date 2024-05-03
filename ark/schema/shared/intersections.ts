@@ -8,8 +8,8 @@ import {
 	type show
 } from "@arktype/util"
 import type { of } from "../constraints/ast.js"
-import type { RawNode } from "../node.js"
-import type { RawSchema } from "../schema.js"
+import type { BaseNode } from "../node.js"
+import type { BaseSchema } from "../schema.js"
 import type { MorphAst, MorphNode, Out } from "../schemas/morph.js"
 import type { RawSchemaScope } from "../scope.js"
 import { Disjoint } from "./disjoint.js"
@@ -71,12 +71,12 @@ type intersectObjects<l, r, piped extends boolean> =
 
 const intersectionCache: PartialRecord<string, UnknownIntersectionResult> = {}
 
-type InternalNodeIntersection<ctx> = <l extends RawNode, r extends RawNode>(
+type InternalNodeIntersection<ctx> = <l extends BaseNode, r extends BaseNode>(
 	l: l,
 	r: r,
 	ctx: ctx
-) => l["kind"] | r["kind"] extends SchemaKind ? RawSchema | Disjoint
-:	RawNode | Disjoint | null
+) => l["kind"] | r["kind"] extends SchemaKind ? BaseSchema | Disjoint
+:	BaseNode | Disjoint | null
 
 export const intersectNodesRoot: InternalNodeIntersection<RawSchemaScope> = (
 	l,
@@ -157,7 +157,7 @@ export const intersectNodes: InternalNodeIntersection<IntersectionContext> = (
 
 export const pipeFromMorph = (
 	from: MorphNode,
-	to: RawSchema,
+	to: BaseSchema,
 	ctx: IntersectionContext
 ): MorphNode | Disjoint => {
 	const out = from?.to ? intersectNodes(from.to, to, ctx) : to
@@ -170,7 +170,7 @@ export const pipeFromMorph = (
 }
 
 export const pipeToMorph = (
-	from: RawSchema,
+	from: BaseSchema,
 	to: MorphNode,
 	ctx: IntersectionContext
 ): MorphNode | Disjoint => {

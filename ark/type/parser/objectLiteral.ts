@@ -1,6 +1,6 @@
 import {
 	keywordNodes,
-	type RawSchema,
+	type BaseSchema,
 	type writeInvalidPropertyKeyMessage
 } from "@arktype/schema"
 import type {
@@ -17,7 +17,10 @@ import type { astToString } from "./semantic/utils.js"
 import type { validateString } from "./semantic/validate.js"
 import { Scanner } from "./string/shift/scanner.js"
 
-export const parseObjectLiteral = (def: Dict, ctx: ParseContext): RawSchema => {
+export const parseObjectLiteral = (
+	def: Dict,
+	ctx: ParseContext
+): BaseSchema => {
 	def
 	ctx
 	return keywordNodes.object as never

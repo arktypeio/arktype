@@ -1,5 +1,6 @@
 import {
 	ArkErrors,
+	BaseSchema,
 	type BaseMeta,
 	type BaseRoot,
 	type Disjoint,
@@ -8,7 +9,6 @@ import {
 	type Out,
 	type Predicate,
 	type PrimitiveConstraintKind,
-	RawSchema,
 	type Schema,
 	type ambient,
 	type constrain,
@@ -86,7 +86,7 @@ const typeParserAttachments = Object.freeze({
 } satisfies TypeParserAttachments)
 
 export class RawTypeParser extends Callable<
-	(...args: unknown[]) => RawSchema | Generic,
+	(...args: unknown[]) => BaseSchema | Generic,
 	TypeParserAttachments
 > {
 	constructor($: RawScope) {
@@ -249,7 +249,7 @@ export type TypeConstructor<t = unknown, $ = any> = new (
 	$: Scope<$>
 ) => Type<t, $>
 
-export const Type: TypeConstructor = RawSchema as never
+export const Type: TypeConstructor = BaseSchema as never
 
 export type DefinitionParser<$> = <def>(def: validateTypeRoot<def, $>) => def
 

@@ -3,15 +3,16 @@ import {
 	stringAndSymbolicEntriesOf,
 	throwParseError
 } from "@arktype/util"
-import type { Node, SchemaDef } from "../../node.js"
-import type { RawSchema } from "../../schema.js"
+import type { Node } from "../../kinds.js"
+import type { SchemaDef } from "../../node.js"
+import type { BaseSchema } from "../../schema.js"
 import type { UnitNode } from "../../schemas/unit.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
 import { implementNode, type SchemaKind } from "../../shared/implement.js"
 import { intersectNodes } from "../../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/traversal.js"
-import { RawConstraint } from "../constraint.js"
+import { BaseConstraint } from "../constraint.js"
 
 export type IndexKeyKind = Exclude<SchemaKind, "unit">
 
@@ -24,7 +25,7 @@ export interface IndexDef extends BaseMeta {
 
 export interface IndexInner extends BaseMeta {
 	readonly index: IndexKeyNode
-	readonly value: RawSchema
+	readonly value: BaseSchema
 }
 
 export type IndexDeclaration = declareNode<{
@@ -93,7 +94,7 @@ export const indexImplementation = implementNode<IndexDeclaration>({
 	}
 })
 
-export class IndexNode extends RawConstraint<IndexDeclaration> {
+export class IndexNode extends BaseConstraint<IndexDeclaration> {
 	impliedBasis = this.$.keywords.object.raw
 	expression = `[${this.index.expression}]: ${this.value.expression}`
 

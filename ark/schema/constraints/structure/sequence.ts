@@ -8,7 +8,7 @@ import {
 } from "@arktype/util"
 import type { MutableInner } from "../../kinds.js"
 import type { SchemaDef } from "../../node.js"
-import type { RawSchema } from "../../schema.js"
+import type { BaseSchema } from "../../schema.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
@@ -20,7 +20,7 @@ import {
 } from "../../shared/implement.js"
 import { intersectNodes } from "../../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/traversal.js"
-import { RawConstraint } from "../constraint.js"
+import { BaseConstraint } from "../constraint.js"
 
 export interface NormalizedSequenceDef extends BaseMeta {
 	readonly prefix?: array<SchemaDef>
@@ -34,14 +34,14 @@ export type SequenceDef = NormalizedSequenceDef | SchemaDef
 
 export interface SequenceInner extends BaseMeta {
 	// a list of fixed position elements starting at index 0
-	readonly prefix?: array<RawSchema>
+	readonly prefix?: array<BaseSchema>
 	// a list of optional elements following prefix
-	readonly optionals?: array<RawSchema>
+	readonly optionals?: array<BaseSchema>
 	// the variadic element (only checked if all optional elements are present)
-	readonly variadic?: RawSchema
+	readonly variadic?: BaseSchema
 	readonly minVariadicLength?: number
 	// a list of fixed position elements, the last being the last element of the array
-	readonly postfix?: array<RawSchema>
+	readonly postfix?: array<BaseSchema>
 }
 
 export type SequenceDeclaration = declareNode<{
@@ -216,7 +216,7 @@ export const sequenceImplementation = implementNode<SequenceDeclaration>({
 	}
 })
 
-export class SequenceNode extends RawConstraint<SequenceDeclaration> {
+export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 	impliedBasis = this.$.keywords.Array.raw
 	prefix = this.inner.prefix ?? []
 	optionals = this.inner.optionals ?? []
@@ -238,7 +238,7 @@ export class SequenceNode extends RawConstraint<SequenceDeclaration> {
 		: this.maxLengthNode ? [this.maxLengthNode]
 		: null
 
-	protected childAtIndex(data: array, index: number): RawSchema {
+	protected childAtIndex(data: array, index: number): BaseSchema {
 		if (index < this.prevariadic.length) return this.prevariadic[index]
 		const postfixStartIndex = data.length - this.postfix.length
 		if (index >= postfixStartIndex)
@@ -336,7 +336,7 @@ export type SequenceElementKind = satisfy<
 
 export type SequenceElement = {
 	kind: SequenceElementKind
-	node: RawSchema
+	node: BaseSchema
 }
 export type SequenceTuple = array<SequenceElement>
 

@@ -1,26 +1,27 @@
-import {
-	DynamicBase,
-	type Key,
-	type array,
-	flatMorph,
-	registeredReference
-} from "@arktype/util"
-import type { Node } from "../../node.js"
-import type { RawSchema } from "../../schema.js"
-import type { RawSchemaScope } from "../../scope.js"
+import { flatMorph, registeredReference, type Key } from "@arktype/util"
+import type { BaseSchema } from "../../schema.js"
 import type { NodeCompiler } from "../../shared/compile.js"
-import type { BaseMeta } from "../../shared/declare.js"
-import type { StructuralKind } from "../../shared/implement.js"
+import type { BaseMeta, declareNode } from "../../shared/declare.js"
+import { Disjoint } from "../../shared/disjoint.js"
+import { implementNode, type StructuralKind } from "../../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/traversal.js"
-import { isNode } from "../../shared/utils.js"
-import type { IndexNode } from "./index.js"
-import type { BasePropNode } from "./prop.js"
-import type { SequenceNode } from "./sequence.js"
+import { BaseConstraint } from "../constraint.js"
+import type { IndexDef, IndexNode } from "./index.js"
+import type { BasePropNode, PropDef } from "./prop.js"
+import type { SequenceDef, SequenceNode } from "./sequence.js"
 import { arrayIndexMatcherReference } from "./shared.js"
 
 export type ExtraneousKeyBehavior = "ignore" | ExtraneousKeyRestriction
 
 export type ExtraneousKeyRestriction = "error" | "prune"
+
+export interface StructureDef extends BaseMeta {
+	readonly optional?: readonly PropDef[]
+	readonly required?: readonly PropDef[]
+	readonly index?: readonly IndexDef[]
+	readonly sequence?: SequenceDef
+	readonly onExtraneousKey?: ExtraneousKeyBehavior
+}
 
 export interface StructureInner extends BaseMeta {
 	readonly optional?: readonly BasePropNode[]
@@ -30,18 +31,17 @@ export interface StructureInner extends BaseMeta {
 	readonly onExtraneousKey?: ExtraneousKeyRestriction
 }
 
-export class StructureGroup extends DynamicBase<StructureInner> {
-	children: array<Node<StructuralKind>>
+export type StructureDeclaration = declareNode<{
+	kind: "structure"
+	def: StructureDef
+	normalizedDef: StructureDef
+	inner: StructureInner
+	prerequisite: object
+	childKind: StructuralKind
+}>
 
-	constructor(
-		public inner: StructureInner,
-		public $: RawSchemaScope
-	) {
-		super(inner)
-		this.children = Object.values(inner).filter(
-			(v): v is Node<StructuralKind> => isNode(v)
-		)
-	}
+export class StructureNode extends BaseConstraint<StructureDeclaration> {
+	impliedBasis = this.$.keywords.object.raw
 
 	props =
 		this.required ?
@@ -64,8 +64,8 @@ export class StructureGroup extends DynamicBase<StructureInner> {
 		...this.optionalLiteralKeys
 	]
 
-	private _keyof: RawSchema | undefined
-	keyof(): RawSchema {
+	private _keyof: BaseSchema | undefined
+	keyof(): BaseSchema {
 		if (!this._keyof) {
 			let branches = this.$.units(this.literalKeys).branches
 			this.index?.forEach(({ index }) => {
@@ -179,7 +179,7 @@ export class StructureGroup extends DynamicBase<StructureInner> {
 // }
 
 const createStructuralWriter =
-	(childStringProp: "expression" | "description") => (node: StructureGroup) => {
+	(childStringProp: "expression" | "description") => (node: StructureNode) => {
 		if (node.props.length || node.index) {
 			const parts = node.index?.map(String) ?? []
 			node.props.forEach(node => parts.push(node[childStringProp]))
@@ -196,37 +196,64 @@ const createStructuralWriter =
 const structuralDescription = createStructuralWriter("description")
 const structuralExpression = createStructuralWriter("expression")
 
-// export const intersectStructure = (
-// 	l: StructureGroup,
-// 	r: StructureGroup,
-// 	ctx: IntersectionContext
-// ) => {
-// 	// TODO: improve these intersections
-// 	if (l.onExtraneousKey) {
-// 		const lKey = l.keyof()
-// 		const disjointRKeys = r.requiredLiteralKeys.filter(k => !lKey.allows(k))
-// 		if (disjointRKeys.length) {
-// 			return Disjoint.from("presence", true, false).withPrefixKey(
-// 				disjointRKeys[0]
-// 			)
-// 		}
-// 	}
-// 	if (r.onExtraneousKey) {
-// 		const rKey = r.keyof()
-// 		const disjointLKeys = l.requiredLiteralKeys.filter(k => !rKey.allows(k))
-// 		if (disjointLKeys.length) {
-// 			return Disjoint.from("presence", true, false).withPrefixKey(
-// 				disjointLKeys[0]
-// 			)
-// 		}
-// 	}
+export const structureImplementation = implementNode<StructureDeclaration>({
+	kind: "structure",
+	hasAssociatedError: false,
+	normalize: schema => schema,
+	keys: {
+		required: {
+			child: true,
+			parse: constraintKeyParser("required")
+		},
+		optional: {
+			child: true,
+			parse: constraintKeyParser("optional")
+		},
+		index: {
+			child: true,
+			parse: constraintKeyParser("index")
+		},
+		sequence: {
+			child: true,
+			parse: constraintKeyParser("sequence")
+		},
+		onExtraneousKey: {
+			parse: def => (def === "ignore" ? undefined : def)
+		}
+	},
+	defaults: {
+		description: structuralDescription
+	},
+	intersections: {
+		structure: (l, r, ctx) => {
+			// TODO: improve these intersections
+			if (l.onExtraneousKey) {
+				const lKey = l.keyof()
+				const disjointRKeys = r.requiredLiteralKeys.filter(k => !lKey.allows(k))
+				if (disjointRKeys.length) {
+					return Disjoint.from("presence", true, false).withPrefixKey(
+						disjointRKeys[0]
+					)
+				}
+			}
+			if (r.onExtraneousKey) {
+				const rKey = r.keyof()
+				const disjointLKeys = l.requiredLiteralKeys.filter(k => !rKey.allows(k))
+				if (disjointLKeys.length) {
+					return Disjoint.from("presence", true, false).withPrefixKey(
+						disjointLKeys[0]
+					)
+				}
+			}
 
-// 	const constraintResult = intersectConstraints({
-// 		l: l.children,
-// 		r: r.children,
-// 		types: [],
-// 		ctx
-// 	})
+			const constraintResult = intersectConstraints({
+				l: l.children,
+				r: r.children,
+				types: [],
+				ctx
+			})
 
-// 	return r
-// }
+			return r
+		}
+	}
+})

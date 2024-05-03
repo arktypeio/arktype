@@ -1,5 +1,5 @@
 import type { BoundKind } from "../../shared/implement.js"
-import type { RawConstraint } from "../constraint.js"
+import type { BaseConstraint } from "../constraint.js"
 import {
 	type AfterDeclaration,
 	AfterNode,
@@ -58,7 +58,7 @@ export const boundImplementationsByKind = {
 	before: beforeImplementation
 }
 
-export const boundClassesByKind: Record<BoundKind, typeof RawConstraint<any>> =
+export const boundClassesByKind: Record<BoundKind, typeof BaseConstraint<any>> =
 	{
 		min: MinNode,
 		max: MaxNode,

@@ -16,7 +16,7 @@ import {
 	nodeClassesByKind,
 	nodeImplementationsByKind
 } from "./kinds.js"
-import type { RawNode } from "./node.js"
+import type { BaseNode } from "./node.js"
 import type { UnknownSchema } from "./schema.js"
 import type { RawSchemaScope } from "./scope.js"
 import type { RawNodeDeclaration } from "./shared/declare.js"
@@ -41,7 +41,7 @@ export type NodeParseOptions<prereduced extends boolean = boolean> = {
 	 *
 	 * Useful for defining reductions like number|string|bigint|symbol|object|true|false|null|undefined => unknown
 	 **/
-	reduceTo?: RawNode
+	reduceTo?: BaseNode
 }
 
 export interface NodeParseContext<kind extends NodeKind = NodeKind>
@@ -101,9 +101,9 @@ const discriminateSchemaKind = (def: unknown): SchemaKind => {
 	return throwParseError(`${printable(def)} is not a valid type schema`)
 }
 
-const nodeCache: { [innerHash: string]: RawNode } = {}
+const nodeCache: { [innerHash: string]: BaseNode } = {}
 
-export const parseNode = (kind: NodeKind, ctx: NodeParseContext): RawNode => {
+export const parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
 	const impl = nodeImplementationsByKind[kind]
 	const inner: Record<string, unknown> = {}
 	// ensure node entries are parsed in order of precedence, with non-children
@@ -116,7 +116,7 @@ export const parseNode = (kind: NodeKind, ctx: NodeParseContext): RawNode => {
 		: lKey < rKey ? -1
 		: 1
 	)
-	const children: RawNode[] = []
+	const children: BaseNode[] = []
 	for (const entry of schemaEntries) {
 		const k = entry[0]
 		const keyImpl = impl.keys[k] ?? baseKeys[k]
@@ -134,7 +134,7 @@ export const parseNode = (kind: NodeKind, ctx: NodeParseContext): RawNode => {
 	entries.forEach(([k, v]) => {
 		const keyImpl = impl.keys[k] ?? baseKeys[k]
 		if (keyImpl.child) {
-			const listableNode = v as listable<RawNode>
+			const listableNode = v as listable<BaseNode>
 			if (isArray(listableNode)) {
 				json[k] = listableNode.map(node => node.collapsibleJson)
 				children.push(...listableNode)
@@ -218,7 +218,7 @@ export const parseNode = (kind: NodeKind, ctx: NodeParseContext): RawNode => {
 
 	for (const k in inner) if (k !== "description") attachments[k] = inner[k]
 
-	const node: RawNode = new nodeClassesByKind[kind](attachments as never)
+	const node: BaseNode = new nodeClassesByKind[kind](attachments as never)
 
 	nodeCache[innerHash] = node
 	return node

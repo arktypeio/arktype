@@ -1,9 +1,9 @@
 import {
 	type ArkConfig,
+	type BaseSchema,
 	type GenericProps,
 	type PreparsedNodeResolution,
 	type PrivateDeclaration,
-	type RawSchema,
 	type RawSchemaResolutions,
 	RawSchemaScope,
 	type SchemaScope,
@@ -181,7 +181,7 @@ export interface Scope<$ = any> extends SchemaScope<$> {
 export class RawScope<
 	$ extends RawSchemaResolutions = RawSchemaResolutions
 > extends RawSchemaScope<$> {
-	private parseCache: Record<string, RawSchema> = {}
+	private parseCache: Record<string, BaseSchema> = {}
 
 	constructor(def: Record<string, unknown>, config?: ArkConfig) {
 		const aliases: Record<string, unknown> = {}
@@ -212,7 +212,7 @@ export class RawScope<
 		return def
 	}
 
-	override parseRoot(def: unknown): RawSchema {
+	override parseRoot(def: unknown): BaseSchema {
 		// args: { this: {} as RawSchema },
 		return this.parse(def, {
 			$: this as never,
@@ -222,7 +222,7 @@ export class RawScope<
 		}).bindScope(this)
 	}
 
-	parse(def: unknown, ctx: ParseContext): RawSchema {
+	parse(def: unknown, ctx: ParseContext): BaseSchema {
 		if (typeof def === "string") {
 			if (ctx.args && Object.keys(ctx.args).every(k => !def.includes(k))) {
 				// we can only rely on the cache if there are no contextual
@@ -239,7 +239,7 @@ export class RawScope<
 			:	throwParseError(writeBadDefinitionTypeMessage(domainOf(def)))
 	}
 
-	parseString(def: string, ctx: ParseContext): RawSchema {
+	parseString(def: string, ctx: ParseContext): BaseSchema {
 		return (
 			this.maybeResolveSchema(def) ??
 			((def.endsWith("[]") &&

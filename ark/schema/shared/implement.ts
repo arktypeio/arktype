@@ -14,11 +14,11 @@ import {
 	type show
 } from "@arktype/util"
 import type { StructureInner } from "../constraints/structure/structure.js"
-import type { Declaration, Inner, errorContext } from "../kinds.js"
-import type { Node, RawNode } from "../node.js"
+import type { Declaration, Inner, Node, errorContext } from "../kinds.js"
+import type { BaseNode } from "../node.js"
 import type { NodeParseContext } from "../parse.js"
 import type {
-	RawSchema,
+	BaseSchema,
 	schemaKindOrRightOf,
 	schemaKindRightOf
 } from "../schema.js"
@@ -72,6 +72,7 @@ export type RefinementKind = (typeof refinementKinds)[number]
 export const constraintKinds = [
 	...refinementKinds,
 	...structuralKinds,
+	"structure",
 	"predicate"
 ] as const
 
@@ -101,9 +102,7 @@ export type NodeKind = SchemaKind | ConstraintKind
 
 export const nodeKinds = [
 	...schemaKinds,
-	...refinementKinds,
-	...structuralKinds,
-	"predicate"
+	...constraintKinds
 ] as const satisfies NodeKind[]
 
 export type OpenNodeKind = {
@@ -173,7 +172,7 @@ export type ConstraintIntersection<
 	l: Node<lKind>,
 	r: Node<rKind>,
 	ctx: IntersectionContext
-) => RawNode | Disjoint | null
+) => BaseNode | Disjoint | null
 
 export type ConstraintIntersectionMap<kind extends ConstraintKind> = show<
 	{
@@ -190,7 +189,7 @@ export type TypeIntersection<
 	l: Node<lKind>,
 	r: Node<rKind>,
 	ctx: IntersectionContext
-) => RawSchema | Disjoint
+) => BaseSchema | Disjoint
 
 export type TypeIntersectionMap<kind extends SchemaKind> = {
 	[rKind in schemaKindOrRightOf<kind>]: TypeIntersection<kind, rKind>
@@ -202,13 +201,13 @@ export type IntersectionMap<kind extends NodeKind> =
 
 export type UnknownIntersectionMap = {
 	[k in NodeKind]?: (
-		l: RawNode,
-		r: RawNode,
+		l: BaseNode,
+		r: BaseNode,
 		ctx: IntersectionContext
 	) => UnknownIntersectionResult
 }
 
-export type UnknownIntersectionResult = RawNode | Disjoint | null
+export type UnknownIntersectionResult = BaseNode | Disjoint | null
 
 type PrecedenceByKind = {
 	[i in indexOf<OrderedNodeKinds> as OrderedNodeKinds[i]]: i
@@ -223,7 +222,7 @@ export const isNodeKind = (value: unknown): value is NodeKind =>
 	typeof value === "string" && value in precedenceByKind
 
 export function assertNodeKind<kind extends NodeKind>(
-	value: RawNode,
+	value: BaseNode,
 	kind: kind
 ): asserts value is Node<kind> {
 	const valueIsNode = isNode(value)
@@ -281,7 +280,7 @@ export type NodeKeyImplementation<
 		child?: true
 		implied?: true
 		serialize?: (
-			schema: instantiated extends listable<RawNode> | undefined ?
+			schema: instantiated extends listable<BaseNode> | undefined ?
 				ErrorMessage<`Keys with node children cannot specify a custom serializer`>
 			:	instantiated
 		) => JsonData
@@ -293,7 +292,7 @@ export type NodeKeyImplementation<
 	// require parse if we can't guarantee the schema value will be valid on inner
 	| (d["normalizedDef"][k] extends instantiated ? never : "parse")
 	// require keys containing children specify it
-	| ([instantiated] extends [listable<RawNode> | undefined] ? "child" : never)
+	| ([instantiated] extends [listable<BaseNode> | undefined] ? "child" : never)
 >
 
 interface CommonNodeImplementationInput<d extends RawNodeDeclaration> {
@@ -368,7 +367,7 @@ export interface UnknownAttachments {
 	readonly json: object
 	readonly typeJson: object
 	readonly collapsibleJson: JsonData
-	readonly children: RawNode[]
+	readonly children: BaseNode[]
 	readonly innerHash: string
 	readonly typeHash: string
 	readonly $: RawSchemaScope

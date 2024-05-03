@@ -1,5 +1,5 @@
 import { append } from "@arktype/util"
-import { RawSchema, type RawSchemaDeclaration } from "../schema.js"
+import { BaseSchema, type RawSchemaDeclaration } from "../schema.js"
 import type { RawSchemaScope } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
@@ -11,7 +11,7 @@ import { defineRightwardIntersections } from "./utils.js"
 
 export interface AliasInner<alias extends string = string> extends BaseMeta {
 	readonly alias: alias
-	readonly resolve?: () => RawSchema
+	readonly resolve?: () => BaseSchema
 }
 
 export type AliasDef<alias extends string = string> =
@@ -25,16 +25,16 @@ export type AliasDeclaration = declareNode<{
 	inner: AliasInner
 }>
 
-export class AliasNode extends RawSchema<AliasDeclaration> {
+export class AliasNode extends BaseSchema<AliasDeclaration> {
 	readonly expression = this.alias
 
-	private _resolution: RawSchema | undefined
-	get resolution(): RawSchema {
+	private _resolution: BaseSchema | undefined
+	get resolution(): BaseSchema {
 		this._resolution ??= this.resolve?.() ?? this.$.resolveSchema(this.alias)
 		return this._resolution
 	}
 
-	rawKeyOf(): RawSchema<RawSchemaDeclaration> {
+	rawKeyOf(): BaseSchema<RawSchemaDeclaration> {
 		return this.resolution.keyof()
 	}
 
@@ -90,6 +90,6 @@ export const aliasImplementation = implementNode<AliasDeclaration>({
 })
 
 const neverIfDisjoint = (
-	result: RawSchema | Disjoint,
+	result: BaseSchema | Disjoint,
 	$: RawSchemaScope
-): RawSchema => (result instanceof Disjoint ? $.keywords.never.raw : result)
+): BaseSchema => (result instanceof Disjoint ? $.keywords.never.raw : result)

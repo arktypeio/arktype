@@ -13,7 +13,7 @@ import type {
 	StructuralKind,
 	kindLeftOf
 } from "../shared/implement.js"
-import type { RawConstraint } from "./constraint.js"
+import type { BaseConstraint } from "./constraint.js"
 
 export type constraintKindLeftOf<kind extends ConstraintKind> = ConstraintKind &
 	kindLeftOf<kind>
@@ -53,7 +53,7 @@ export type writeInvalidOperandMessage<
 
 export interface ConstraintAttachments {
 	impliedBasis: UnknownSchema | null
-	impliedSiblings?: array<RawConstraint> | null
+	impliedSiblings?: array<BaseConstraint> | null
 }
 
 export type PrimitiveConstraintKind = Exclude<ConstraintKind, StructuralKind>
