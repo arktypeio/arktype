@@ -7,7 +7,8 @@ import {
 	throwParseError,
 	type array,
 	type describeExpression,
-	type listable
+	type listable,
+	type satisfy
 } from "@arktype/util"
 import type {
 	Inner,
@@ -32,6 +33,8 @@ import {
 	constraintKeys,
 	type ConstraintKind,
 	type IntersectionContext,
+	type NodeKind,
+	type RootKind,
 	type StructuralKind,
 	type kindLeftOf
 } from "./shared/implement.js"
@@ -107,18 +110,38 @@ export const constraintKeyParser =
 		return child.hasOpenIntersection() ? [child] : (child as any)
 	}
 
-type ConstraintIntersectionState = {
+type ConstraintGroupKind = satisfy<NodeKind, "intersection" | "structure">
+
+interface ConstraintIntersectionState<
+	kind extends ConstraintGroupKind = ConstraintGroupKind
+> {
+	kind: kind
+	baseInner: Record<string, unknown>
 	l: BaseConstraint[]
 	r: BaseConstraint[]
-	types: BaseRoot[]
+	roots: BaseRoot[]
 	ctx: IntersectionContext
 }
 
-export const intersectConstraints = (
-	s: ConstraintIntersectionState
-): ConstraintIntersectionState | Disjoint => {
+export const intersectConstraints = <kind extends ConstraintGroupKind>(
+	s: ConstraintIntersectionState<kind>
+): Node<RootKind | Extract<kind, "structure">> | Disjoint => {
 	const head = s.r.shift()
-	if (!head) return s
+	if (!head) {
+		let result: BaseNode | Disjoint = s.ctx.$.node(
+			s.kind,
+			Object.assign(s.baseInner, unflattenConstraints(s.l)),
+			{ prereduced: true }
+		)
+
+		for (const root of s.roots) {
+			if (result instanceof Disjoint) return result
+
+			result = intersectNodes(root, result, s.ctx)!
+		}
+
+		return result as never
+	}
 	let matched = false
 	for (let i = 0; i < s.l.length; i++) {
 		const result = intersectNodes(s.l[i], head, s.ctx)
@@ -126,7 +149,7 @@ export const intersectConstraints = (
 		if (result instanceof Disjoint) return result
 
 		if (!matched) {
-			if (result.isRoot()) s.types.push(result)
+			if (result.isRoot()) s.roots.push(result)
 			else s.l[i] = result as BaseConstraint
 			matched = true
 		} else if (!s.l.includes(result as never)) {

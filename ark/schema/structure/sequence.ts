@@ -1,10 +1,10 @@
 import {
 	append,
+	throwInternalError,
+	throwParseError,
 	type array,
 	type mutable,
-	type satisfy,
-	throwInternalError,
-	throwParseError
+	type satisfy
 } from "@arktype/util"
 import type { MutableInner, RootSchema } from "../kinds.js"
 import { BaseNode } from "../node.js"
@@ -17,9 +17,9 @@ import { Disjoint } from "../shared/disjoint.js"
 import {
 	implementNode,
 	type IntersectionContext,
-	type nodeImplementationOf,
 	type NodeKeyImplementation,
-	type RootKind
+	type RootKind,
+	type nodeImplementationOf
 } from "../shared/implement.js"
 import { intersectNodes } from "../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
@@ -216,12 +216,12 @@ export const sequenceImplementation: nodeImplementationOf<SequenceDeclaration> =
 							}))
 						)
 				)
-
-				// exactLength, minLength, and maxLength don't need to be defined
-				// here since impliedSiblings guarantees they will be added
-				// directly to the IntersectionNode parent of the SequenceNode
-				// they exist on
 			}
+
+			// exactLength, minLength, and maxLength don't need to be defined
+			// here since impliedSiblings guarantees they will be added
+			// directly to the IntersectionNode parent of the SequenceNode
+			// they exist on
 		}
 	})
 

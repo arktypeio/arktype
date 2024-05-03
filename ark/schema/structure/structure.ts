@@ -6,10 +6,17 @@ import {
 	type Key,
 	type RegisteredReference
 } from "@arktype/util"
-import { BaseConstraint, constraintKeyParser } from "../constraint.js"
+import {
+	BaseConstraint,
+	constraintKeyParser,
+	flattenConstraints,
+	intersectConstraints
+} from "../constraint.js"
+import type { MutableInner } from "../kinds.js"
 import type { BaseRoot } from "../roots/root.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
+import { Disjoint } from "../shared/disjoint.js"
 import {
 	implementNode,
 	type nodeImplementationOf,
@@ -23,7 +30,6 @@ import type { PropNode, PropSchema } from "./prop.js"
 import type { RequiredNode } from "./required.js"
 import type { SequenceNode, SequenceSchema } from "./sequence.js"
 import { arrayIndexMatcherReference } from "./shared.js"
-import { Disjoint } from "../shared/disjoint.js"
 
 export type ExtraneousKeyBehavior = "ignore" | ExtraneousKeyRestriction
 
@@ -247,7 +253,7 @@ export const structureImplementation: nodeImplementationOf<StructureDeclaration>
 			description: structuralDescription
 		},
 		intersections: {
-			structure: (l, r) => {
+			structure: (l, r, ctx) => {
 				if (l.onExtraneousKey) {
 					const lKey = l.keyof()
 					const disjointRKeys = r.requiredLiteralKeys.filter(
@@ -271,14 +277,23 @@ export const structureImplementation: nodeImplementationOf<StructureDeclaration>
 					}
 				}
 
-				// const constraintResult = intersectConstraints({
-				// 	l: l.children,
-				// 	r: r.children,
-				// 	types: [],
-				// 	ctx
-				// })
+				const baseInner: MutableInner<"structure"> = {}
 
-				return r
+				if (l.onExtraneousKey || r.onExtraneousKey) {
+					baseInner.onExtraneousKey =
+						l.onExtraneousKey === "error" || r.onExtraneousKey === "error" ?
+							"error"
+						:	"prune"
+				}
+
+				return intersectConstraints({
+					kind: "structure",
+					baseInner,
+					l: flattenConstraints(l.inner),
+					r: flattenConstraints(r.inner),
+					roots: [],
+					ctx
+				})
 			}
 		}
 	})

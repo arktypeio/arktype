@@ -14,8 +14,7 @@ import {
 import {
 	constraintKeyParser,
 	flattenConstraints,
-	intersectConstraints,
-	unflattenConstraints
+	intersectConstraints
 } from "../constraint.js"
 import type {
 	Inner,
@@ -215,38 +214,21 @@ const intersectIntersections = (
 		:	rBasis
 	if (basisResult instanceof Disjoint) return basisResult
 
-	const root: MutableIntersectionInner =
+	const baseInner: MutableIntersectionInner =
 		basisResult ?
 			{
 				[basisResult.kind]: basisResult
 			}
 		:	{}
 
-	const lConstraints = flattenConstraints(l)
-	const rConstraints = flattenConstraints(r)
-
-	const constraintResult = intersectConstraints({
-		l: lConstraints,
-		r: rConstraints,
-		types: [],
+	return intersectConstraints({
+		kind: "intersection",
+		baseInner,
+		l: flattenConstraints(l),
+		r: flattenConstraints(r),
+		roots: [],
 		ctx
 	})
-
-	if (constraintResult instanceof Disjoint) return constraintResult
-
-	let result: BaseRoot | Disjoint = constraintResult.ctx.$.node(
-		"intersection",
-		Object.assign(root, unflattenConstraints(constraintResult.l)),
-		{ prereduced: true }
-	)
-
-	for (const type of constraintResult.types) {
-		if (result instanceof Disjoint) return result
-
-		result = intersectNodes(type, result, constraintResult.ctx)
-	}
-
-	return result
 }
 
 export const intersectionImplementation: nodeImplementationOf<IntersectionDeclaration> =
