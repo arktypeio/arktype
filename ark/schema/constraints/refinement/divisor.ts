@@ -2,8 +2,10 @@ import type { Schema } from "../../schema.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"
 import { implementNode } from "../../shared/implement.js"
 import type { TraverseAllows } from "../../shared/traversal.js"
-import { RawPrimitiveConstraint } from "../constraint.js"
-import { writeInvalidOperandMessage } from "../util.js"
+import {
+	RawPrimitiveConstraint,
+	writeInvalidOperandMessage
+} from "../constraint.js"
 
 export interface DivisorInner extends BaseMeta {
 	readonly rule: number

@@ -134,8 +134,7 @@ export const structureKeys = flatMorph(
 )
 
 export const discriminatingIntersectionKeys = {
-	...constraintKeys,
-	onExtraneousKey: 1
+	...constraintKeys
 } as const satisfies keySetOf<IntersectionInner>
 
 type RightsByKind = accumulateRightKinds<OrderedNodeKinds, {}>

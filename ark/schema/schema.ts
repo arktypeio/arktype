@@ -5,11 +5,11 @@ import {
 	type conform
 } from "@arktype/util"
 import type { constrain } from "./constraints/ast.js"
-import type { Predicate } from "./constraints/predicate.js"
 import {
 	throwInvalidOperandError,
 	type PrimitiveConstraintKind
-} from "./constraints/util.js"
+} from "./constraints/constraint.js"
+import type { Predicate } from "./constraints/predicate.js"
 import type { Node, NodeDef, reducibleKindOf } from "./kinds.js"
 import { BaseNode } from "./node.js"
 import type { constraintKindOf } from "./schemas/intersection.js"

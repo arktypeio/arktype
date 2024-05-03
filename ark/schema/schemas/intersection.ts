@@ -318,30 +318,6 @@ export const intersectionImplementation =
 		},
 		intersections: {
 			intersection: (l, r, ctx) => {
-				if (l.structure && r.structure) {
-					if (l.onExtraneousKey) {
-						const lKey = l.structure.keyof()
-						const disjointRKeys = r.structure.requiredLiteralKeys.filter(
-							k => !lKey.allows(k)
-						)
-						if (disjointRKeys.length) {
-							return Disjoint.from("presence", true, false).withPrefixKey(
-								disjointRKeys[0]
-							)
-						}
-					}
-					if (r.onExtraneousKey) {
-						const rKey = r.structure.keyof()
-						const disjointLKeys = l.structure.requiredLiteralKeys.filter(
-							k => !rKey.allows(k)
-						)
-						if (disjointLKeys.length) {
-							return Disjoint.from("presence", true, false).withPrefixKey(
-								disjointLKeys[0]
-							)
-						}
-					}
-				}
 				return intersectIntersections(l, r, ctx)
 			},
 			...defineRightwardIntersections("intersection", (l, r, ctx) => {
