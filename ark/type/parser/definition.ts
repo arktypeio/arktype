@@ -37,7 +37,7 @@ export const parseObject = (def: object, ctx: ParseContext): BaseRoot => {
 	const objectKind = objectKindOf(def)
 	switch (objectKind) {
 		case undefined:
-			if (hasArkKind(def, "schema")) return def
+			if (hasArkKind(def, "root")) return def
 			return parseObjectLiteral(def as Dict, ctx)
 		case "Array":
 			return parseTuple(def as array, ctx)
@@ -52,7 +52,7 @@ export const parseObject = (def: object, ctx: ParseContext): BaseRoot => {
 			)
 		case "Function": {
 			const resolvedDef = isThunk(def) ? def() : def
-			if (hasArkKind(resolvedDef, "schema")) return resolvedDef
+			if (hasArkKind(resolvedDef, "root")) return resolvedDef
 			return throwParseError(writeBadDefinitionTypeMessage("Function"))
 		}
 		default:

@@ -200,9 +200,9 @@ const intersectIntersections = (
 	ctx: IntersectionContext
 ): BaseRoot | Disjoint => {
 	// avoid treating adding instance keys as keys of lRoot, rRoot
-	if (hasArkKind(l, "schema") && l.hasKind("intersection"))
+	if (hasArkKind(l, "root") && l.hasKind("intersection"))
 		return intersectIntersections(l.inner, r, ctx)
-	if (hasArkKind(r, "schema") && r.hasKind("intersection"))
+	if (hasArkKind(r, "root") && r.hasKind("intersection"))
 		return intersectIntersections(l, r.inner, ctx)
 
 	const lBasis = l.proto ?? l.domain

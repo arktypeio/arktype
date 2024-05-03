@@ -263,7 +263,7 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 				this.ambient.resolutions,
 				(alias, resolution) => [
 					alias,
-					hasArkKind(resolution, "schema") ?
+					hasArkKind(resolution, "root") ?
 						resolution.bindScope(this)
 					:	resolution
 				]
@@ -473,7 +473,7 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 			Object.assign(
 				this.json,
 				flatMorph(this._exportedResolutions as Dict, (k, v) =>
-					hasArkKind(v, "schema") ? [k, v.json] : []
+					hasArkKind(v, "root") ? [k, v.json] : []
 				)
 			)
 			Object.assign(this.resolutions, this._exportedResolutions)
@@ -524,7 +524,7 @@ const resolveSubalias = (
 		return throwParseError(writeUnresolvableMessage(name))
 	}
 
-	if (hasArkKind(resolution, "schema") || hasArkKind(resolution, "generic"))
+	if (hasArkKind(resolution, "root") || hasArkKind(resolution, "generic"))
 		return resolution
 
 	throwInternalError(
@@ -641,7 +641,7 @@ const resolutionsOfModule = ($: RawRootScope, typeSet: RootExportCache) => {
 			)
 			Object.assign(result, prefixedResolutions)
 		} else if (hasArkKind(v, "generic")) result[k] = v
-		else if (hasArkKind(v, "schema")) result[k] = v
+		else if (hasArkKind(v, "root")) result[k] = v
 		else throwInternalError(`Unexpected scope resolution ${printable(v)}`)
 	}
 	return result

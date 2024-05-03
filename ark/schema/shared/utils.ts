@@ -57,7 +57,7 @@ export const arkKind: unique symbol = Symbol("ArkTypeInternalKind")
 
 export interface ArkKinds {
 	constraint: BaseConstraint
-	schema: BaseRoot
+	root: BaseRoot
 	scope: RawRootScope
 	generic: GenericRoot
 	module: RawRootModule
@@ -88,7 +88,7 @@ export const hasArkKind = <kind extends ArkKind>(
 ): value is ArkKinds[kind] => (value as any)?.[arkKind] === kind
 
 export const isNode = (value: unknown): value is BaseNode =>
-	hasArkKind(value, "schema") || hasArkKind(value, "constraint")
+	hasArkKind(value, "root") || hasArkKind(value, "constraint")
 
 // ideally this could be just declared since it is not used at runtime,
 // but it doesn't play well with typescript-eslint: https://github.com/typescript-eslint/typescript-eslint/issues/4608

@@ -1,20 +1,20 @@
 import {
+	entriesOf,
+	hasDomain,
+	isArray,
+	printable,
+	throwParseError,
 	type Dict,
 	type Json,
 	type JsonData,
 	type PartialRecord,
-	entriesOf,
-	hasDomain,
-	isArray,
 	type listable,
-	printable,
-	type propValueOf,
-	throwParseError
+	type propValueOf
 } from "@arktype/util"
 import {
-	type NormalizedSchema,
 	nodeClassesByKind,
-	nodeImplementationsByKind
+	nodeImplementationsByKind,
+	type NormalizedSchema
 } from "./kinds.js"
 import type { BaseNode } from "./node.js"
 import type { UnknownRoot } from "./roots/root.js"
@@ -22,14 +22,14 @@ import type { RawRootScope } from "./scope.js"
 import type { RawNodeDeclaration } from "./shared/declare.js"
 import { Disjoint } from "./shared/disjoint.js"
 import {
-	type KeySchemainitions,
-	type NodeKind,
-	type RootKind,
-	type UnknownAttachments,
 	constraintKeys,
 	defaultValueSerializer,
 	isNodeKind,
-	precedenceOfKind
+	precedenceOfKind,
+	type KeySchemainitions,
+	type NodeKind,
+	type RootKind,
+	type UnknownAttachments
 } from "./shared/implement.js"
 import { hasArkKind } from "./shared/utils.js"
 
@@ -74,7 +74,7 @@ const discriminateRootKind = (schema: unknown): RootKind => {
 		case "string":
 			return schema[0] === "$" ? "alias" : "domain"
 		case "function":
-			return hasArkKind(schema, "schema") ? schema.kind : "proto"
+			return hasArkKind(schema, "root") ? schema.kind : "proto"
 		case "object": {
 			// throw at end of function
 			if (schema === null) break

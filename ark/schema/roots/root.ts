@@ -66,7 +66,7 @@ export abstract class BaseRoot<
 	readonly branches: readonly Node<UnionChildKind>[] =
 		this.hasKind("union") ? this.inner.branches : [this as never];
 
-	readonly [arkKind] = "schema"
+	readonly [arkKind] = "root"
 
 	get raw(): this {
 		return this
@@ -168,7 +168,7 @@ export abstract class BaseRoot<
 	}
 
 	private pipeOnce(morph: Morph): BaseRoot {
-		if (hasArkKind(morph, "schema"))
+		if (hasArkKind(morph, "root"))
 			return pipeNodesRoot(this, morph, this.$) as never
 		if (this.hasKind("union")) {
 			const branches = this.branches.map(node => node.pipe(morph))
