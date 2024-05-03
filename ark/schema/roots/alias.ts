@@ -84,17 +84,17 @@ export const aliasImplementation: nodeImplementationOf<AliasDeclaration> =
 		intersections: {
 			alias: (l, r, ctx) =>
 				ctx.$.lazilyResolve(
-					`${l.alias}${ctx.pipe ? "|>" : "&"}${r.alias}`,
 					() =>
 						neverIfDisjoint(
 							intersectNodes(l.resolution, r.resolution, ctx),
 							ctx.$
-						)
+						),
+					`${l.alias}${ctx.pipe ? "|>" : "&"}${r.alias}`
 				),
 			...defineRightwardIntersections("alias", (l, r, ctx) =>
 				ctx.$.lazilyResolve(
-					`${l.alias}${ctx.pipe ? "|>" : "&"}${r.alias}`,
-					() => neverIfDisjoint(intersectNodes(l.resolution, r, ctx), ctx.$)
+					() => neverIfDisjoint(intersectNodes(l.resolution, r, ctx), ctx.$),
+					`${l.alias}${ctx.pipe ? "|>" : "&"}${r.alias}`
 				)
 			)
 		}

@@ -52,10 +52,11 @@ export const indexImplementation: nodeImplementationOf<IndexDeclaration> =
 				child: true,
 				parse: (schema, ctx) => {
 					const key = ctx.$.schema(schema)
-					if (!key.extends(ctx.$.keywords.propertyKey))
+					if (!key.extends(ctx.$.keywords.propertyKey)) {
 						return throwParseError(
 							writeInvalidPropertyKeyMessage(key.expression)
 						)
+					}
 					// TODO: explicit manual annotation once we can upgrade to 5.5
 					const enumerableBranches = key.branches.filter((b): b is UnitNode =>
 						b.hasKind("unit")

@@ -301,7 +301,12 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 	).bind(this)
 
 	protected lazyResolutions: AliasNode[] = []
-	lazilyResolve(syntheticAlias: string, resolve: () => BaseRoot): AliasNode {
+	lazilyResolve(resolve: () => BaseRoot, syntheticAlias?: string): AliasNode {
+		if (!syntheticAlias) {
+			nodeCountsByPrefix.synthetic ??= 0
+			syntheticAlias = `synthetic${++nodeCountsByPrefix.synthetic}`
+		}
+
 		const node = this.node(
 			"alias",
 			{

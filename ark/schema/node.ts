@@ -28,12 +28,10 @@ import {
 	precedenceOfKind,
 	refinementKinds,
 	rootKinds,
-	structuralKinds,
 	type BasisKind,
 	type NodeKind,
 	type OpenNodeKind,
 	type RefinementKind,
-	type StructuralKind,
 	type UnknownAttachments
 } from "./shared/implement.js"
 import {
@@ -178,10 +176,6 @@ export abstract class BaseNode<
 		return includes(refinementKinds, this.kind)
 	}
 
-	isProp(): this is Node<StructuralKind> {
-		return includes(structuralKinds, this.kind)
-	}
-
 	isRoot(): this is BaseRoot {
 		return includes(rootKinds, this.kind)
 	}
@@ -195,12 +189,7 @@ export abstract class BaseNode<
 	}
 
 	get nestableExpression(): string {
-		return (
-				this.children.length > 1 &&
-					this.children.some(child => !child.isBasis && !child.isProp())
-			) ?
-				`(${this.expression})`
-			:	this.expression
+		return this.expression
 	}
 
 	bindScope($: RawRootScope): this {
@@ -240,9 +229,24 @@ export abstract class BaseNode<
 
 	transform(
 		mapper: DeepNodeTransformation,
-		shouldTransform: (node: BaseNode) => boolean
+		shouldTransform: ShouldTransformFn
 	): Node<reducibleKindOf<this["kind"]>> {
-		if (!shouldTransform(this as never)) return this as never
+		return this._transform(mapper, shouldTransform, { seen: {} }) as never
+	}
+
+	private _transform(
+		mapper: DeepNodeTransformation,
+		shouldTransform: ShouldTransformFn,
+		ctx: DeepNodeTransformationContext
+	): BaseNode {
+		if (ctx.seen[this.id])
+			// TODO: remove cast by making lazilyResolve more flexible
+			// TODO: if each transform has a unique base id, could ensure
+			// these don't create duplicates
+			return this.$.lazilyResolve(ctx.seen[this.id]! as never)
+		if (!shouldTransform(this as never, ctx)) return this
+
+		ctx.seen[this.id] = () => node
 
 		const innerWithTransformedChildren = flatMorph(
 			this.inner as Dict,
@@ -250,15 +254,20 @@ export abstract class BaseNode<
 				k,
 				this.impl.keys[k].child ?
 					isArray(v) ?
-						v.map(node => (node as BaseNode).transform(mapper, shouldTransform))
-					:	(v as BaseNode).transform(mapper, shouldTransform)
+						v.map(node =>
+							(node as BaseNode)._transform(mapper, shouldTransform, ctx)
+						)
+					:	(v as BaseNode)._transform(mapper, shouldTransform, ctx)
 				:	v
 			]
 		)
-		return this.$.node(
+
+		const node = this.$.node(
 			this.kind,
-			mapper(this.kind, innerWithTransformedChildren as never) as never
-		) as never
+			mapper(this.kind, innerWithTransformedChildren as never, ctx) as never
+		)
+
+		return node
 	}
 
 	configureShallowDescendants(configOrDescription: BaseMeta | string): this {
@@ -268,12 +277,22 @@ export abstract class BaseNode<
 			:	(configOrDescription as never)
 		return this.transform(
 			(kind, inner) => ({ ...inner, ...config }),
-			node => !node.isProp()
+			node => node.kind !== "structure"
 		) as never
 	}
 }
 
+export type ShouldTransformFn = (
+	node: BaseNode,
+	ctx: DeepNodeTransformationContext
+) => boolean
+
+export type DeepNodeTransformationContext = {
+	seen: { [originalId: string]: (() => BaseNode) | undefined }
+}
+
 export type DeepNodeTransformation = <kind extends NodeKind>(
 	kind: kind,
-	inner: Inner<kind>
+	inner: Inner<kind>,
+	ctx: DeepNodeTransformationContext
 ) => Inner<kind>

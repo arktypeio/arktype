@@ -69,9 +69,11 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 		this.props,
 		(i, node) => [node.key, node] as const
 	)
+
 	propsByKeyReference: RegisteredReference = registeredReference(
 		this.propsByKey
 	)
+
 	expression: string = structuralExpression(this)
 
 	requiredLiteralKeys: Key[] = this.required?.map(node => node.key) ?? []
