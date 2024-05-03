@@ -21,7 +21,7 @@ contextualize(
 			attest<{ a: string; b: number }>(o.infer)
 			attest(o.json).snap({
 				domain: "object",
-				prop: [
+				required: [
 					{ key: "a", value: "string" },
 					{ key: "b", value: "number" }
 				]
@@ -33,10 +33,8 @@ contextualize(
 			attest<{ a?: string; b: number }>(o.infer)
 			attest(o.json).snap({
 				domain: "object",
-				prop: [
-					{ key: "a", optional: true, value: "string" },
-					{ key: "b", value: "number" }
-				]
+				required: [{ key: "b", value: "number" }],
+				optional: [{ key: "a", value: "string" }]
 			})
 		})
 
@@ -49,7 +47,7 @@ contextualize(
 			attest<{ [s]: string }>(t.infer)
 			attest(t.json).snap({
 				domain: "object",
-				prop: [{ key: name, value: "string" }]
+				required: [{ key: name, value: "string" }]
 			})
 		})
 
@@ -137,7 +135,7 @@ contextualize(
 			attest<{ isAdmin: true; name: string }>(s.admin.infer)
 			attest(s.admin.json).equals({
 				domain: "object",
-				prop: [
+				required: [
 					{ key: "isAdmin", value: { unit: true } },
 					{ key: "name", value: "string" }
 				]
@@ -151,7 +149,7 @@ contextualize(
 			attest<{ isAdmin: true; name: string }>(admin.infer)
 			attest(admin.json).snap({
 				domain: "object",
-				prop: [
+				required: [
 					{ key: "isAdmin", value: { unit: true } },
 					{ key: "name", value: "string" }
 				]
@@ -175,7 +173,7 @@ contextualize(
 
 			attest(t.json).snap({
 				domain: "object",
-				prop: [
+				required: [
 					{
 						key: "inherited",
 						value: [{ unit: false }, { unit: true }]
@@ -194,7 +192,7 @@ contextualize(
 
 			attest(t.json).snap({
 				domain: "object",
-				prop: [{ key: "...", value: "string" }]
+				required: [{ key: "...", value: "string" }]
 			})
 		})
 
@@ -215,7 +213,7 @@ contextualize(
 			attest<{ isAdmin: true; name: string }>(adminUser.infer)
 			attest(adminUser.json).snap({
 				domain: "object",
-				prop: [
+				required: [
 					{ key: "isAdmin", value: { unit: true } },
 					{ key: "name", value: "string" }
 				]
@@ -229,7 +227,7 @@ contextualize(
 			attest<{ [x: string]: string }>(o.infer)
 			attest(o.json).snap({
 				domain: "object",
-				index: [{ key: "string", value: "string" }]
+				index: [{ index: "string", value: "string" }]
 			})
 
 			attest(o({})).equals({})
@@ -249,7 +247,7 @@ b must be a string (was false)`)
 			attest<{ [x: symbol]: 1 }>(o.infer)
 			attest(o.json).snap({
 				domain: "object",
-				index: [{ key: "symbol", value: { unit: 1 } }]
+				index: [{ index: "symbol", value: { unit: 1 } }]
 			})
 
 			attest(o({})).equals({})
@@ -291,7 +289,7 @@ value at [${zildjianName}] must be 1 (was undefined)`)
 			attest<{ [x: string]: string; [x: symbol]: string }>(o.infer)
 			attest(o.json).snap({
 				domain: "object",
-				index: [{ key: ["string", "symbol"], value: "string" }]
+				index: [{ index: ["string", "symbol"], value: "string" }]
 			})
 		})
 
@@ -304,8 +302,8 @@ value at [${zildjianName}] must be 1 (was undefined)`)
 			attest(o.json).snap({
 				domain: "object",
 				index: [
-					{ key: "string", value: "string" },
-					{ key: "symbol", value: "number" }
+					{ index: "string", value: "string" },
+					{ index: "symbol", value: "number" }
 				]
 			})
 
@@ -343,11 +341,9 @@ value at [${symName}] must be a number (was string)`)
 			)
 			attest(o.json).snap({
 				domain: "object",
-				prop: [
-					{ key: "optional", optional: true, value: { unit: "bar" } },
-					{ key: "required", value: { unit: "foo" } }
-				],
-				index: [{ key: "string", value: "string" }]
+				required: [{ key: "required", value: { unit: "foo" } }],
+				optional: [{ key: "optional", value: { unit: "bar" } }],
+				index: [{ index: "string", value: "string" }]
 			})
 
 			const valid: typeof o.infer = { required: "foo", other: "bar" }
@@ -435,7 +431,7 @@ other must be a string (was bigint)`)
 			attest<{ "[string]": string }>(o.infer)
 			attest(o.json).snap({
 				domain: "object",
-				prop: [{ key: "[string]", value: "string" }]
+				required: [{ key: "[string]", value: "string" }]
 			})
 		})
 	}

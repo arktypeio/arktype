@@ -17,7 +17,7 @@ contextualize(() => {
 		}).export()
 		attest(types.a.json).snap({
 			domain: "object",
-			prop: [{ key: "b", value: "string" }]
+			required: [{ key: "b", value: "string" }]
 		})
 		attest(types.b.json).snap({ domain: "string" })
 	})
@@ -41,17 +41,17 @@ contextualize(() => {
 
 		attest(types.a.json).snap({
 			domain: "object",
-			prop: [
+			required: [
 				{
 					key: "b",
-					value: { domain: "object", prop: [{ key: "a", value: "$a" }] }
+					value: { domain: "object", required: [{ key: "a", value: "$a" }] }
 				}
 			]
 		})
 
 		attest(types.b.json).snap({
 			domain: "object",
-			prop: [{ key: "a", value: "$a" }]
+			required: [{ key: "a", value: "$a" }]
 		})
 
 		const a = {} as { b: typeof b }

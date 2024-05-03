@@ -185,7 +185,7 @@ contextualize(() => {
 		attest(types.c.json).snap({
 			from: {
 				domain: "object",
-				prop: [
+				required: [
 					{ key: "a", value: { unit: 1 } },
 					{ key: "b", value: { unit: 2 } }
 				]
@@ -239,10 +239,10 @@ contextualize(() => {
 			types.a.raw.firstReferenceOfKindOrThrow("morph").serializedMorphs
 
 		attest(types.c.json).snap([
-			{ domain: "object", prop: [{ key: "a", value: "Function" }] },
+			{ domain: "object", required: [{ key: "a", value: "Function" }] },
 			{
 				domain: "object",
-				prop: [
+				required: [
 					{
 						key: "a",
 						value: {
@@ -285,7 +285,7 @@ contextualize(() => {
 		attest(types.b.json).snap({
 			from: {
 				domain: "object",
-				prop: [
+				required: [
 					{
 						key: "a",
 						value: {
@@ -314,7 +314,7 @@ contextualize(() => {
 		attest(t.json).snap({
 			from: {
 				domain: "object",
-				prop: [
+				required: [
 					{
 						key: "a",
 						value: {

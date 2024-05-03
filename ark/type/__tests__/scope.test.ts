@@ -290,12 +290,12 @@ contextualize(() => {
 
 			attest(types.a.json).snap({
 				domain: "object",
-				prop: [
+				required: [
 					{
 						key: "b",
 						value: {
 							domain: "object",
-							prop: [{ key: "a", value: ["$a", { unit: 3 }] }]
+							required: [{ key: "a", value: ["$a", { unit: 3 }] }]
 						}
 					}
 				]
@@ -317,7 +317,7 @@ contextualize(() => {
 			attest(types.b.infer).type.toString.snap("{ a: 3 | { b: ...; }; }")
 			attest(types.b.json).snap({
 				domain: "object",
-				prop: [{ key: "a", value: ["$a", { unit: 3 }] }]
+				required: [{ key: "a", value: ["$a", { unit: 3 }] }]
 			})
 		})
 
@@ -340,12 +340,12 @@ contextualize(() => {
 
 			attest(types.a.json).snap({
 				domain: "object",
-				prop: [
+				required: [
 					{
 						key: "b",
 						value: {
 							domain: "object",
-							prop: [
+							required: [
 								{
 									key: "c",
 									value: expectedCyclicJson
@@ -368,7 +368,7 @@ b.c.c must be a&b (was missing)`)
 
 			attest(types.b.json).snap({
 				domain: "object",
-				prop: [
+				required: [
 					{
 						key: "c",
 						value: expectedCyclicJson

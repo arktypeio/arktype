@@ -44,7 +44,7 @@ contextualize(() => {
 		)
 		attest(types.account.json).snap({
 			domain: "object",
-			prop: [
+			required: [
 				{ key: "coll", optional: true, value: "string" },
 				{ key: "id", optional: true, value: "string" },
 				{ key: "provider", value: [{ unit: "GitHub" }, { unit: "Google" }] },
@@ -56,7 +56,7 @@ contextualize(() => {
 					value: [
 						{
 							domain: "object",
-							prop: [
+							required: [
 								{
 									key: "accounts",
 									optional: true,
@@ -188,17 +188,17 @@ contextualize(() => {
 
 		attest(C.json).snap({
 			domain: "object",
-			prop: [
+			required: [
 				{
 					key: "b",
 					value: {
 						domain: "object",
-						prop: [
+						required: [
 							{
 								key: "a",
 								value: {
 									domain: "object",
-									prop: [
+									required: [
 										{
 											key: "required",
 											value: [{ unit: false }, { unit: true }]

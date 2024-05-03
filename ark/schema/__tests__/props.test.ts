@@ -5,7 +5,7 @@ contextualize(() => {
 	it("normalizes prop order", () => {
 		const l = schema({
 			domain: "object",
-			prop: [
+			required: [
 				{ key: "a", value: "string" },
 				{ key: "b", value: "number" }
 			]
@@ -22,14 +22,14 @@ contextualize(() => {
 	it("strict intersection", () => {
 		const l = schema({
 			domain: "object",
-			prop: [
+			required: [
 				{ key: "a", value: "string" },
 				{ key: "b", value: "number" }
 			]
 		})
 		const r = schema({
 			domain: "object",
-			prop: [{ key: "a", value: "string" }],
+			required: [{ key: "a", value: "string" }],
 			onExtraneousKey: "throw"
 		})
 

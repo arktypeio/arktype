@@ -1,24 +1,24 @@
 import {
-	type array,
 	CompiledFunction,
-	type Dict,
 	DynamicBase,
 	flatMorph,
-	type flattenListable,
 	hasDomain,
 	isArray,
+	printable,
+	throwInternalError,
+	throwParseError,
+	type Dict,
 	type Json,
 	type PartialRecord,
-	printable,
+	type array,
+	type flattenListable,
 	type requireKeys,
-	type show,
-	throwInternalError,
-	throwParseError
+	type show
 } from "@arktype/util"
 import { globalConfig, mergeConfigs } from "./config.js"
 import {
-	type GenericRoot,
-	validateUninstantiatedGenericNode
+	validateUninstantiatedGenericNode,
+	type GenericRoot
 } from "./generic.js"
 import type { inferRoot, validateRoot } from "./inference.js"
 import type { internalKeywords } from "./keywords/internal.js"
@@ -26,16 +26,16 @@ import type { jsObjects } from "./keywords/jsObjects.js"
 import type { Ark } from "./keywords/keywords.js"
 import type { tsKeywords } from "./keywords/tsKeywords.js"
 import {
-	type Node,
 	nodeImplementationsByKind,
+	type Node,
 	type NodeSchema,
-	type reducibleKindOf,
-	type RootSchema
+	type RootSchema,
+	type reducibleKindOf
 } from "./kinds.js"
-import { type PreparsedNodeResolution, RootModule } from "./module.js"
+import { RootModule, type PreparsedNodeResolution } from "./module.js"
 import type { BaseNode } from "./node.js"
-import { type NodeParseOptions, parseNode, schemaKindOf } from "./parse.js"
-import { type AliasNode, normalizeAliasSchema } from "./roots/alias.js"
+import { parseNode, schemaKindOf, type NodeParseOptions } from "./parse.js"
+import { normalizeAliasSchema, type AliasNode } from "./roots/alias.js"
 import type { BaseRoot, Root } from "./roots/root.js"
 import { NodeCompiler } from "./shared/compile.js"
 import type {
@@ -54,8 +54,8 @@ import type { TraverseAllows, TraverseApply } from "./shared/traversal.js"
 import {
 	arkKind,
 	hasArkKind,
-	type internalImplementationOf,
-	isNode
+	isNode,
+	type internalImplementationOf
 } from "./shared/utils.js"
 
 export type nodeResolutions<keywords> = { [k in keyof keywords]: BaseRoot }
@@ -354,7 +354,8 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 			}
 
 			const impl = nodeImplementationsByKind[kind]
-			const normalizedSchema = impl.normalize?.(schema) ?? schema
+			const normalizedSchema =
+				isNode(schema) ? schema : impl.normalize?.(schema) ?? schema
 			// check again after normalization in case a node is a valid collapsed
 			// schema for the kind (e.g. sequence can collapse to element accepting a Node)
 			if (isNode(normalizedSchema)) {
