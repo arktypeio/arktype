@@ -17,8 +17,8 @@ import type { RawConstraint } from "../constraints/constraint.js"
 import {
 	type ExtraneousKeyBehavior,
 	type ExtraneousKeyRestriction,
-	PropsGroup
-} from "../constraints/props/props.js"
+	StructureGroup
+} from "../constraints/structure/structure.js"
 import type { Inner, MutableInner, NodeDef, Prerequisite } from "../kinds.js"
 import type { Constraint, Node } from "../node.js"
 import type { NodeParseContext } from "../parse.js"
@@ -35,9 +35,9 @@ import {
 	type IntersectionChildKind,
 	type IntersectionContext,
 	type OpenNodeKind,
-	propKeys,
-	type PropKind,
-	type RefinementKind
+	type RefinementKind,
+	type StructuralKind,
+	structureKeys
 } from "../shared/implement.js"
 import { intersectNodes } from "../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
@@ -81,13 +81,13 @@ export class IntersectionNode extends RawSchema<IntersectionDeclaration> {
 	refinements = this.children.filter((node): node is Node<RefinementKind> =>
 		node.isRefinement()
 	)
-	props = maybeCreatePropsGroup(this.inner, this.$)
+	structure = maybeCreateStructure(this.inner, this.$)
 	traversables = conflatenateAll<
-		Node<Exclude<IntersectionChildKind, PropKind>> | PropsGroup
-	>(this.basis, this.refinements, this.props, this.predicate)
+		Node<Exclude<IntersectionChildKind, StructuralKind>> | StructureGroup
+	>(this.basis, this.refinements, this.structure, this.predicate)
 
 	expression =
-		this.props?.expression ||
+		this.structure?.expression ||
 		this.children.map(node => node.nestableExpression).join(" & ") ||
 		"unknown"
 
@@ -109,8 +109,8 @@ export class IntersectionNode extends RawSchema<IntersectionDeclaration> {
 			this.refinements.at(-1)!.traverseApply(data as never, ctx)
 			if (ctx.hasError()) return
 		}
-		if (this.props) {
-			this.props.traverseApply(data as never, ctx)
+		if (this.structure) {
+			this.structure.traverseApply(data as never, ctx)
 			if (ctx.hasError()) return
 		}
 		if (this.predicate) {
@@ -146,10 +146,10 @@ export class IntersectionNode extends RawSchema<IntersectionDeclaration> {
 				returnIfFailFast()
 			}
 			js.check(this.refinements.at(-1)!)
-			if (this.props || this.predicate) returnIfFail()
+			if (this.structure || this.predicate) returnIfFail()
 		}
-		if (this.props) {
-			this.props.compile(js)
+		if (this.structure) {
+			this.structure.compile(js)
 			if (this.predicate) returnIfFail()
 		}
 		if (this.predicate) {
@@ -166,10 +166,10 @@ export class IntersectionNode extends RawSchema<IntersectionDeclaration> {
 	rawKeyOf(): RawSchema {
 		return (
 			this.basis ?
-				this.props ?
-					this.basis.rawKeyOf().or(this.props.keyof())
+				this.structure ?
+					this.basis.rawKeyOf().or(this.structure.keyof())
 				:	this.basis.rawKeyOf()
-			:	this.props?.keyof() ?? this.$.keywords.never.raw
+			:	this.structure?.keyof() ?? this.$.keywords.never.raw
 		)
 	}
 }
@@ -302,9 +302,13 @@ export const intersectionImplementation =
 				child: true,
 				parse: intersectionChildKeyParser("predicate")
 			},
-			prop: {
+			required: {
 				child: true,
-				parse: intersectionChildKeyParser("prop")
+				parse: intersectionChildKeyParser("required")
+			},
+			optional: {
+				child: true,
+				parse: intersectionChildKeyParser("optional")
 			},
 			index: {
 				child: true,
@@ -332,7 +336,7 @@ export const intersectionImplementation =
 			description: node =>
 				node.children.length === 0 ?
 					"unknown"
-				:	node.props?.description ??
+				:	node.structure?.description ??
 					node.children.map(child => child.description).join(" and "),
 			expected: source =>
 				`  • ${source.errors.map(e => e.expected).join("\n  • ")}`,
@@ -340,10 +344,10 @@ export const intersectionImplementation =
 		},
 		intersections: {
 			intersection: (l, r, ctx) => {
-				if (l.props && r.props) {
+				if (l.structure && r.structure) {
 					if (l.onExtraneousKey) {
-						const lKey = l.props.keyof()
-						const disjointRKeys = r.props.requiredLiteralKeys.filter(
+						const lKey = l.structure.keyof()
+						const disjointRKeys = r.structure.requiredLiteralKeys.filter(
 							k => !lKey.allows(k)
 						)
 						if (disjointRKeys.length) {
@@ -353,8 +357,8 @@ export const intersectionImplementation =
 						}
 					}
 					if (r.onExtraneousKey) {
-						const rKey = r.props.keyof()
-						const disjointLKeys = l.props.requiredLiteralKeys.filter(
+						const rKey = r.structure.keyof()
+						const disjointLKeys = l.structure.requiredLiteralKeys.filter(
 							k => !rKey.allows(k)
 						)
 						if (disjointLKeys.length) {
@@ -391,9 +395,9 @@ export const intersectionImplementation =
 		}
 	})
 
-const maybeCreatePropsGroup = (inner: IntersectionInner, $: RawSchemaScope) => {
-	const propsInput = pick(inner, propKeys)
-	return isEmptyObject(propsInput) ? null : new PropsGroup(propsInput, $)
+const maybeCreateStructure = (inner: IntersectionInner, $: RawSchemaScope) => {
+	const propsInput = pick(inner, structureKeys)
+	return isEmptyObject(propsInput) ? null : new StructureGroup(propsInput, $)
 }
 
 type IntersectionRoot = Omit<IntersectionInner, ConstraintKind>

@@ -6,7 +6,7 @@ contextualize(() => {
 		const types = schemaScope({
 			a: {
 				domain: "object",
-				prop: {
+				required: {
 					key: "b",
 					value: "$b"
 				}
@@ -25,14 +25,14 @@ contextualize(() => {
 		const types = schemaScope({
 			a: {
 				domain: "object",
-				prop: {
+				required: {
 					key: "b",
 					value: "$b"
 				}
 			},
 			b: {
 				domain: "object",
-				prop: {
+				required: {
 					key: "a",
 					value: "$a"
 				}

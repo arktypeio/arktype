@@ -5,7 +5,7 @@ import type { RawNodeDeclaration } from "../shared/declare.js"
 import {
 	compileErrorContext,
 	type ConstraintKind,
-	type PropKind
+	type StructuralKind
 } from "../shared/implement.js"
 import { intersectNodesRoot } from "../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
@@ -32,7 +32,7 @@ export abstract class RawConstraint<
 	}
 }
 
-export type PrimitiveConstraintKind = Exclude<ConstraintKind, PropKind>
+export type PrimitiveConstraintKind = Exclude<ConstraintKind, StructuralKind>
 
 export abstract class RawPrimitiveConstraint<
 	d extends BaseConstraintDeclaration

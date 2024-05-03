@@ -2,107 +2,68 @@ import { compileSerializedValue, type Key } from "@arktype/util"
 import type { SchemaDef } from "../../node.js"
 import type { RawSchema } from "../../schema.js"
 import type { NodeCompiler } from "../../shared/compile.js"
-import type {
-	BaseErrorContext,
-	BaseMeta,
-	declareNode
-} from "../../shared/declare.js"
+import type { BaseMeta } from "../../shared/declare.js"
 import { Disjoint } from "../../shared/disjoint.js"
-import {
-	compileErrorContext,
-	implementNode,
-	type SchemaKind
+import type {
+	ConstraintIntersection,
+	SchemaKind
 } from "../../shared/implement.js"
 import { intersectNodes } from "../../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../../shared/traversal.js"
 import { RawConstraint } from "../constraint.js"
+import type { OptionalDeclaration } from "./optional.js"
+import type { RequiredDeclaration } from "./required.js"
+
+export type PropKind = "required" | "optional"
 
 export interface PropDef extends BaseMeta {
 	readonly key: Key
 	readonly value: SchemaDef
-	readonly optional?: boolean
 }
 
-export interface PropInner extends BaseMeta {
-	readonly key: Key
+export interface PropInner extends PropDef {
 	readonly value: RawSchema
-	readonly optional?: true
 }
 
-export type PropDeclaration = declareNode<{
-	kind: "prop"
+export type BasePropDeclaration<kind extends PropKind = PropKind> = {
+	kind: kind
 	def: PropDef
 	normalizedDef: PropDef
 	inner: PropInner
-	errorContext: PropErrorContext
 	prerequisite: object
 	intersectionIsOpen: true
 	childKind: SchemaKind
-}>
-
-export interface PropErrorContext extends BaseErrorContext<"prop"> {
-	missingValueDescription: string
 }
 
-export const propImplementation = implementNode<PropDeclaration>({
-	kind: "prop",
-	hasAssociatedError: true,
-	intersectionIsOpen: true,
-	keys: {
-		key: {},
-		value: {
-			child: true,
-			parse: (def, ctx) => ctx.$.schema(def)
-		},
-		optional: {
-			// normalize { optional: false } to {}
-			parse: def => def || undefined
-		}
-	},
-	normalize: def => def,
-	defaults: {
-		description: node =>
-			`${node.compiledKey}${node.optional ? "?" : ""}: ${
-				node.value.description
-			}`,
-		expected: ctx => ctx.missingValueDescription,
-		actual: () => "missing"
-	},
-	intersections: {
-		prop: (l, r, ctx) => {
-			if (l.key !== r.key) return null
+export const intersectProps: ConstraintIntersection<PropKind, PropKind> = (
+	l,
+	r,
+	ctx
+) => {
+	if (l.key !== r.key) return null
 
-			const key = l.key
-			let value = intersectNodes(l.value, r.value, ctx)
-			const optional = l.optional === true && r.optional === true
-			if (value instanceof Disjoint) {
-				if (optional) value = ctx.$.keywords.never.raw
-				else return value.withPrefixKey(l.compiledKey)
-			}
-			return ctx.$.node("prop", {
-				key,
-				value,
-				optional
-			})
-		}
+	const key = l.key
+	let value = intersectNodes(l.value, r.value, ctx)
+	const kind: PropKind = l.required || r.required ? "required" : "optional"
+	if (value instanceof Disjoint) {
+		if (kind === "optional") value = ctx.$.keywords.never.raw
+		else return value.withPrefixKey(l.compiledKey)
 	}
-})
+	return ctx.$.node(kind, {
+		key,
+		value
+	})
+}
 
-export class PropNode extends RawConstraint<PropDeclaration> {
-	required = !this.optional
+export abstract class BasePropNode<
+	kind extends PropKind = PropKind
+> extends RawConstraint<
+	kind extends "required" ? RequiredDeclaration : OptionalDeclaration
+> {
+	required = this.kind === "required"
 	impliedBasis = this.$.keywords.object.raw
 	serializedKey = compileSerializedValue(this.key)
 	compiledKey = typeof this.key === "string" ? this.key : this.serializedKey
-	expression = `${this.compiledKey}${this.optional ? "?" : ""}: ${
-		this.value.expression
-	}`
-
-	errorContext = Object.freeze({
-		code: "prop",
-		missingValueDescription: this.value.in.description
-	} satisfies PropErrorContext)
-
-	compiledErrorContext: string = compileErrorContext(this.errorContext)
 
 	traverseAllows: TraverseAllows<object> = (data, ctx) => {
 		if (this.key in data) {
@@ -118,7 +79,7 @@ export class PropNode extends RawConstraint<PropDeclaration> {
 	traverseApply: TraverseApply<object> = (data, ctx) => {
 		ctx.path.push(this.key)
 		if (this.key in data) this.value.traverseApply((data as any)[this.key], ctx)
-		else if (this.required) ctx.error(this.errorContext)
+		else if (this.hasKind("required")) ctx.error(this.errorContext)
 		ctx.path.pop()
 	}
 
@@ -131,7 +92,7 @@ export class PropNode extends RawConstraint<PropDeclaration> {
 				arg: `${js.data}${js.prop(this.key)}`
 			})
 		)
-		if (this.required) {
+		if (this.hasKind("required")) {
 			js.else(() => {
 				if (js.traversalKind === "Apply")
 					return js.line(`ctx.error(${this.compiledErrorContext})`)

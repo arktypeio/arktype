@@ -24,7 +24,7 @@ import { RawConstraint } from "../constraint.js"
 
 export interface NormalizedSequenceDef extends BaseMeta {
 	readonly prefix?: array<SchemaDef>
-	readonly optional?: array<SchemaDef>
+	readonly optionals?: array<SchemaDef>
 	readonly variadic?: SchemaDef
 	readonly minVariadicLength?: number
 	readonly postfix?: array<SchemaDef>
@@ -36,7 +36,7 @@ export interface SequenceInner extends BaseMeta {
 	// a list of fixed position elements starting at index 0
 	readonly prefix?: array<RawSchema>
 	// a list of optional elements following prefix
-	readonly optional?: array<RawSchema>
+	readonly optionals?: array<RawSchema>
 	// the variadic element (only checked if all optional elements are present)
 	readonly variadic?: RawSchema
 	readonly minVariadicLength?: number
@@ -56,7 +56,7 @@ export type SequenceDeclaration = declareNode<{
 
 const fixedSequenceKeyDefinition: NodeKeyImplementation<
 	SequenceDeclaration,
-	"prefix" | "postfix" | "optional"
+	"prefix" | "postfix" | "optionals"
 > = {
 	child: true,
 	parse: (def, ctx) =>
@@ -73,7 +73,7 @@ export const sequenceImplementation = implementNode<SequenceDeclaration>({
 	collapsibleKey: "variadic",
 	keys: {
 		prefix: fixedSequenceKeyDefinition,
-		optional: fixedSequenceKeyDefinition,
+		optionals: fixedSequenceKeyDefinition,
 		variadic: {
 			child: true,
 			parse: (def, ctx) => ctx.$.schema(def, ctx)
@@ -93,14 +93,14 @@ export const sequenceImplementation = implementNode<SequenceDeclaration>({
 		if (
 			"variadic" in def ||
 			"prefix" in def ||
-			"optional" in def ||
+			"optionals" in def ||
 			"postfix" in def ||
 			"minVariadicLength" in def
 		) {
 			if (def.postfix?.length) {
 				if (!def.variadic) return throwParseError(postfixWithoutVariadicMessage)
 
-				if (def.optional?.length)
+				if (def.optionals?.length)
 					return throwParseError(postfixFollowingOptionalMessage)
 			}
 			if (def.minVariadicLength && !def.variadic) {
@@ -115,7 +115,7 @@ export const sequenceImplementation = implementNode<SequenceDeclaration>({
 	reduce: (raw, $) => {
 		let minVariadicLength = raw.minVariadicLength ?? 0
 		const prefix = raw.prefix?.slice() ?? []
-		const optional = raw.optional?.slice() ?? []
+		const optional = raw.optionals?.slice() ?? []
 		const postfix = raw.postfix?.slice() ?? []
 		if (raw.variadic) {
 			// optional elements equivalent to the variadic parameter are redundant
@@ -159,7 +159,7 @@ export const sequenceImplementation = implementNode<SequenceDeclaration>({
 					// empty lists will be omitted during parsing
 					prefix,
 					postfix,
-					optional,
+					optionals: optional,
 					minVariadicLength
 				},
 				{ prereduced: true }
@@ -171,7 +171,7 @@ export const sequenceImplementation = implementNode<SequenceDeclaration>({
 			if (node.isVariadicOnly) return `${node.variadic!.nestableExpression}[]`
 			const innerDescription = node.tuple
 				.map(element =>
-					element.kind === "optional" ? `${element.node.nestableExpression}?`
+					element.kind === "optionals" ? `${element.node.nestableExpression}?`
 					: element.kind === "variadic" ?
 						`...${element.node.nestableExpression}[]`
 					:	element.node.expression
@@ -219,15 +219,15 @@ export const sequenceImplementation = implementNode<SequenceDeclaration>({
 export class SequenceNode extends RawConstraint<SequenceDeclaration> {
 	impliedBasis = this.$.keywords.Array.raw
 	prefix = this.inner.prefix ?? []
-	optional = this.inner.optional ?? []
-	prevariadic = [...this.prefix, ...this.optional]
+	optionals = this.inner.optionals ?? []
+	prevariadic = [...this.prefix, ...this.optionals]
 	postfix = this.inner.postfix ?? []
 	isVariadicOnly = this.prevariadic.length + this.postfix.length === 0
 	minVariadicLength = this.inner.minVariadicLength ?? 0
 	minLength = this.prefix.length + this.minVariadicLength + this.postfix.length
 	minLengthNode =
 		this.minLength === 0 ? null : this.$.node("minLength", this.minLength)
-	maxLength = this.variadic ? null : this.minLength + this.optional.length
+	maxLength = this.variadic ? null : this.minLength + this.optionals.length
 	maxLengthNode =
 		this.maxLength === null ? null : this.$.node("maxLength", this.maxLength)
 	impliedSiblings =
@@ -270,7 +270,7 @@ export class SequenceNode extends RawConstraint<SequenceDeclaration> {
 	// minLength/maxLength compilation should be handled by Intersection
 	compile(js: NodeCompiler): void {
 		this.prefix.forEach((node, i) => js.checkReferenceKey(`${i}`, node))
-		this.optional.forEach((node, i) => {
+		this.optionals.forEach((node, i) => {
 			const dataIndex = `${i + this.prefix.length}`
 			js.if(`${dataIndex} >= ${js.data}.length`, () =>
 				js.traversalKind === "Allows" ? js.return(true) : js.return()
@@ -304,7 +304,7 @@ export class SequenceNode extends RawConstraint<SequenceDeclaration> {
 const sequenceInnerToTuple = (inner: SequenceInner): SequenceTuple => {
 	const tuple: mutable<SequenceTuple> = []
 	inner.prefix?.forEach(node => tuple.push({ kind: "prefix", node }))
-	inner.optional?.forEach(node => tuple.push({ kind: "optional", node }))
+	inner.optionals?.forEach(node => tuple.push({ kind: "optionals", node }))
 	if (inner.variadic) tuple.push({ kind: "variadic", node: inner.variadic })
 	inner.postfix?.forEach(node => tuple.push({ kind: "postfix", node }))
 	return tuple
@@ -331,7 +331,7 @@ export type postfixWithoutVariadicMessage = typeof postfixWithoutVariadicMessage
 
 export type SequenceElementKind = satisfy<
 	keyof SequenceInner,
-	"prefix" | "optional" | "variadic" | "postfix"
+	"prefix" | "optionals" | "variadic" | "postfix"
 >
 
 export type SequenceElement = {
@@ -362,13 +362,13 @@ const intersectSequences = (
 
 	const kind: SequenceElementKind =
 		lHead.kind === "prefix" || rHead.kind === "prefix" ? "prefix"
-		: lHead.kind === "optional" || rHead.kind === "optional" ?
+		: lHead.kind === "optionals" || rHead.kind === "optionals" ?
 			// if either operand has postfix elements, the full-length
 			// intersection can't include optional elements (though they may
 			// exist in some of the fixed length variants)
 			lHasPostfix || rHasPostfix ?
 				"prefix"
-			:	"optional"
+			:	"optionals"
 		: lHead.kind === "postfix" || rHead.kind === "postfix" ? "postfix"
 		: "variadic"
 
@@ -404,7 +404,7 @@ const intersectSequences = (
 				)
 			)
 			s.result = [...s.result, { kind, node: s.ctx.$.keywords.never.raw }]
-		} else if (kind === "optional") {
+		} else if (kind === "optionals") {
 			// if the element result is optional and unsatisfiable, the
 			// intersection can still be satisfied as long as the tuple
 			// ends before the disjoint element would occur

@@ -13,12 +13,13 @@ import {
 } from "@arktype/util"
 import type { RawConstraint } from "./constraints/constraint.js"
 import type { PredicateNode } from "./constraints/predicate.js"
-import type { IndexNode } from "./constraints/props/index.js"
-import type { PropNode } from "./constraints/props/prop.js"
-import type { SequenceNode } from "./constraints/props/sequence.js"
-import type { DivisorNode } from "./constraints/refinements/divisor.js"
-import type { BoundNodesByKind } from "./constraints/refinements/kinds.js"
-import type { RegexNode } from "./constraints/refinements/regex.js"
+import type { DivisorNode } from "./constraints/refinement/divisor.js"
+import type { BoundNodesByKind } from "./constraints/refinement/kinds.js"
+import type { RegexNode } from "./constraints/refinement/regex.js"
+import type { IndexNode } from "./constraints/structure/index.js"
+import type { OptionalNode } from "./constraints/structure/optional.js"
+import type { RequiredNode } from "./constraints/structure/required.js"
+import type { SequenceNode } from "./constraints/structure/sequence.js"
 import type { Inner, NodeDef, reducibleKindOf } from "./kinds.js"
 import type { RawSchema, Schema } from "./schema.js"
 import type { AliasNode } from "./schemas/alias.js"
@@ -39,15 +40,15 @@ import {
 	basisKinds,
 	constraintKinds,
 	precedenceOfKind,
-	propKinds,
 	refinementKinds,
 	schemaKinds,
+	structuralKinds,
 	type BasisKind,
 	type NodeKind,
 	type OpenNodeKind,
-	type PropKind,
 	type RefinementKind,
 	type SchemaKind,
+	type StructuralKind,
 	type UnknownAttachments
 } from "./shared/implement.js"
 import {
@@ -190,8 +191,8 @@ export abstract class RawNode<
 		return includes(refinementKinds, this.kind)
 	}
 
-	isProp(): this is Node<PropKind> {
-		return includes(propKinds, this.kind)
+	isProp(): this is Node<StructuralKind> {
+		return includes(structuralKinds, this.kind)
 	}
 
 	isSchema(): this is RawSchema {
@@ -301,7 +302,8 @@ interface NodesByKind extends BoundNodesByKind {
 	divisor: DivisorNode
 	regex: RegexNode
 	predicate: PredicateNode
-	prop: PropNode
+	required: RequiredNode
+	optional: OptionalNode
 	index: IndexNode
 	sequence: SequenceNode
 }

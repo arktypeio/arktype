@@ -13,7 +13,7 @@ import {
 	type requireKeys,
 	type show
 } from "@arktype/util"
-import type { PropsGroupInput } from "../constraints/props/props.js"
+import type { StructureInner } from "../constraints/structure/structure.js"
 import type { Declaration, Inner, errorContext } from "../kinds.js"
 import type { Node, RawNode } from "../node.js"
 import type { NodeParseContext } from "../parse.js"
@@ -41,9 +41,14 @@ export const basisKinds = ["unit", "proto", "domain"] as const
 
 export type BasisKind = (typeof basisKinds)[number]
 
-export const propKinds = ["prop", "index", "sequence"] as const
+export const structuralKinds = [
+	"required",
+	"optional",
+	"index",
+	"sequence"
+] as const
 
-export type PropKind = (typeof propKinds)[number]
+export type StructuralKind = (typeof structuralKinds)[number]
 
 export const rangeKinds = [
 	"max",
@@ -66,7 +71,7 @@ export type RefinementKind = (typeof refinementKinds)[number]
 
 export const constraintKinds = [
 	...refinementKinds,
-	...propKinds,
+	...structuralKinds,
 	"predicate"
 ] as const
 
@@ -97,7 +102,7 @@ export type NodeKind = SchemaKind | ConstraintKind
 export const nodeKinds = [
 	...schemaKinds,
 	...refinementKinds,
-	...propKinds,
+	...structuralKinds,
 	"predicate"
 ] as const satisfies NodeKind[]
 
@@ -124,8 +129,8 @@ export const constraintKeys = flatMorph(
 	(i, kind) => [kind, 1] as const
 )
 
-export const propKeys = flatMorph(
-	[...propKinds, "onExtraneousKey"] satisfies (keyof PropsGroupInput)[],
+export const structureKeys = flatMorph(
+	[...structuralKinds, "onExtraneousKey"] satisfies (keyof StructureInner)[],
 	(i, k) => [k, 1] as const
 )
 
