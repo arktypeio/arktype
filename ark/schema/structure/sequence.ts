@@ -23,6 +23,7 @@ import {
 } from "../shared/implement.js"
 import { intersectNodes } from "../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
+
 export interface NormalizedSequenceSchema extends BaseMeta {
 	readonly prefix?: array<RootSchema>
 	readonly optionals?: array<RootSchema>

@@ -1,16 +1,16 @@
 import {
+	compileSerializedValue,
+	flatMorph,
+	printable,
 	type Entry,
 	type ErrorMessage,
 	type Json,
 	type JsonData,
-	compileSerializedValue,
 	type entryOf,
-	flatMorph,
 	type indexOf,
 	type keySet,
 	type keySetOf,
 	type listable,
-	printable,
 	type requireKeys,
 	type show
 } from "@arktype/util"
