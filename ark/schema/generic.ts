@@ -1,6 +1,6 @@
 import { Callable, type conform, type repeat } from "@arktype/util"
 import type { inferSchema } from "./inference.js"
-import type { SchemaDef } from "./node.js"
+import type { SchemaDef } from "./kinds.js"
 import type { Schema } from "./schema.js"
 import type { SchemaScope } from "./scope.js"
 import { arkKind } from "./shared/utils.js"

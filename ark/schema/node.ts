@@ -12,7 +12,7 @@ import {
 	type listable
 } from "@arktype/util"
 import type { BaseConstraint } from "./constraints/constraint.js"
-import type { Inner, Node, NodeDef, reducibleKindOf } from "./kinds.js"
+import type { Inner, Node, reducibleKindOf } from "./kinds.js"
 import type { BaseSchema, Schema } from "./schema.js"
 import type { UnitNode } from "./schemas/unit.js"
 import type { RawSchemaScope } from "./scope.js"
@@ -33,7 +33,6 @@ import {
 	type NodeKind,
 	type OpenNodeKind,
 	type RefinementKind,
-	type SchemaKind,
 	type StructuralKind,
 	type UnknownAttachments
 } from "./shared/implement.js"
@@ -171,7 +170,7 @@ export abstract class BaseNode<
 		return includes(basisKinds, this.kind)
 	}
 
-	isConstraint(): this is Constraint {
+	isConstraint(): this is BaseConstraint {
 		return includes(constraintKinds, this.kind)
 	}
 
@@ -278,7 +277,3 @@ export type DeepNodeTransformation = <kind extends NodeKind>(
 	kind: kind,
 	inner: Inner<kind>
 ) => Inner<kind>
-
-export type SchemaDef<kind extends SchemaKind = SchemaKind> = NodeDef<kind>
-
-export type Constraint = BaseConstraint

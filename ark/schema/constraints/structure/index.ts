@@ -3,8 +3,7 @@ import {
 	stringAndSymbolicEntriesOf,
 	throwParseError
 } from "@arktype/util"
-import type { Node } from "../../kinds.js"
-import type { SchemaDef } from "../../node.js"
+import type { Node, SchemaDef } from "../../kinds.js"
 import type { BaseSchema } from "../../schema.js"
 import type { UnitNode } from "../../schemas/unit.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"

@@ -4,8 +4,7 @@ import {
 	type describeExpression,
 	throwParseError
 } from "@arktype/util"
-import type { Prerequisite } from "../kinds.js"
-import type { Node } from "../node.js"
+import type { Node, Prerequisite } from "../kinds.js"
 import type { Schema, UnknownSchema } from "../schema.js"
 import type { Disjoint } from "../shared/disjoint.js"
 import type {

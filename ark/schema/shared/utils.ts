@@ -7,8 +7,9 @@ import {
 	printable,
 	type show
 } from "@arktype/util"
+import type { BaseConstraint } from "../constraints/constraint.js"
 import type { GenericSchema } from "../generic.js"
-import type { BaseNode, Constraint } from "../node.js"
+import type { BaseNode } from "../node.js"
 import type { BaseSchema } from "../schema.js"
 import type { RawSchemaModule, RawSchemaScope } from "../scope.js"
 import type { ArkTypeError } from "./errors.js"
@@ -55,7 +56,7 @@ export const pathToPropString = (path: TraversalPath): string => {
 export const arkKind = Symbol("ArkTypeInternalKind")
 
 export interface ArkKinds {
-	constraint: Constraint
+	constraint: BaseConstraint
 	schema: BaseSchema
 	scope: RawSchemaScope
 	generic: GenericSchema

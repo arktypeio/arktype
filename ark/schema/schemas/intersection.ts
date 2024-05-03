@@ -1,22 +1,22 @@
 import {
-	append,
-	appendUnique,
 	type array,
 	conflatenateAll,
-	entriesOf,
-	isArray,
 	isEmptyObject,
 	type listable,
 	omit,
-	pick,
 	type show,
 	splitByKeys,
 	throwInternalError
 } from "@arktype/util"
-import type { BaseConstraint } from "../constraints/constraint.js"
 import {
-	type ExtraneousKeyBehavior,
-	type ExtraneousKeyRestriction,
+	constraintKeyParser,
+	flattenConstraints,
+	intersectConstraints,
+	unflattenConstraints
+} from "../constraints/constraint.js"
+import type { PredicateNode } from "../constraints/predicate.js"
+import type {
+	ExtraneousKeyBehavior,
 	StructureNode
 } from "../constraints/structure/structure.js"
 import type {
@@ -26,10 +26,7 @@ import type {
 	NodeDef,
 	Prerequisite
 } from "../kinds.js"
-import type { Constraint } from "../node.js"
-import type { NodeParseContext } from "../parse.js"
 import { BaseSchema } from "../schema.js"
-import type { RawSchemaScope } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import { type BaseMeta, type declareNode, metaKeys } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -42,8 +39,7 @@ import {
 	type IntersectionContext,
 	type OpenNodeKind,
 	type RefinementKind,
-	type StructuralKind,
-	structureKeys
+	type StructuralKind
 } from "../shared/implement.js"
 import { intersectNodes } from "../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
@@ -58,9 +54,16 @@ export type IntersectionInner = show<
 	BaseMeta & {
 		domain?: DomainNode
 		proto?: ProtoNode
+		structure?: StructureNode
+		predicate?: array<PredicateNode>
 	} & {
-		[k in ConditionalIntersectionKey]?: conditionalInnerValueOfKey<k>
+		[k in RefinementKind]?: intersectionChildInnerValueOf<k>
 	}
+>
+
+export type NormalizedIntersectionDef = Omit<
+	IntersectionDef,
+	StructuralKind | "onExtraneousKey"
 >
 
 export type IntersectionDef<inferredBasis = any> = show<
@@ -73,7 +76,7 @@ export type IntersectionDef<inferredBasis = any> = show<
 export type IntersectionDeclaration = declareNode<{
 	kind: "intersection"
 	def: IntersectionDef
-	normalizedDef: IntersectionDef
+	normalizedDef: NormalizedIntersectionDef
 	inner: IntersectionInner
 	reducibleTo: "intersection" | IntersectionBasisKind
 	errorContext: {
@@ -87,7 +90,6 @@ export class IntersectionNode extends BaseSchema<IntersectionDeclaration> {
 	refinements = this.children.filter((node): node is Node<RefinementKind> =>
 		node.isRefinement()
 	)
-	structure = maybeCreateStructure(this.inner, this.$)
 	traversables = conflatenateAll<
 		Node<Exclude<IntersectionChildKind, StructuralKind>> | StructureNode
 	>(this.basis, this.refinements, this.structure, this.predicate)
@@ -180,25 +182,6 @@ export class IntersectionNode extends BaseSchema<IntersectionDeclaration> {
 	}
 }
 
-const intersectionChildKeyParser =
-	<kind extends IntersectionChildKind>(kind: kind) =>
-	(
-		def: listable<NodeDef<kind>>,
-		ctx: NodeParseContext
-	): intersectionChildInnerValueOf<kind> | undefined => {
-		if (isArray(def)) {
-			if (def.length === 0) {
-				// Omit empty lists as input
-				return
-			}
-			return def
-				.map(schema => ctx.$.node(kind, schema as never))
-				.sort((l, r) => (l.innerHash < r.innerHash ? -1 : 1)) as never
-		}
-		const child = ctx.$.node(kind, def)
-		return child.hasOpenIntersection() ? [child] : (child as any)
-	}
-
 const intersectIntersections = (
 	reduced: IntersectionInner,
 	raw: IntersectionInner,
@@ -262,70 +245,55 @@ export const intersectionImplementation =
 		keys: {
 			domain: {
 				child: true,
-				parse: intersectionChildKeyParser("domain")
+				parse: (def, ctx) => ctx.$.node("domain", def)
 			},
 			proto: {
 				child: true,
-				parse: intersectionChildKeyParser("proto")
+				parse: (def, ctx) => ctx.$.node("proto", def)
+			},
+			structure: {
+				child: true,
+				parse: (def, ctx) => ctx.$.node("structure", def)
 			},
 			divisor: {
 				child: true,
-				parse: intersectionChildKeyParser("divisor")
+				parse: constraintKeyParser("divisor")
 			},
 			max: {
 				child: true,
-				parse: intersectionChildKeyParser("max")
+				parse: constraintKeyParser("max")
 			},
 			min: {
 				child: true,
-				parse: intersectionChildKeyParser("min")
+				parse: constraintKeyParser("min")
 			},
 			maxLength: {
 				child: true,
-				parse: intersectionChildKeyParser("maxLength")
+				parse: constraintKeyParser("maxLength")
 			},
 			minLength: {
 				child: true,
-				parse: intersectionChildKeyParser("minLength")
+				parse: constraintKeyParser("minLength")
 			},
 			exactLength: {
 				child: true,
-				parse: intersectionChildKeyParser("exactLength")
+				parse: constraintKeyParser("exactLength")
 			},
 			before: {
 				child: true,
-				parse: intersectionChildKeyParser("before")
+				parse: constraintKeyParser("before")
 			},
 			after: {
 				child: true,
-				parse: intersectionChildKeyParser("after")
+				parse: constraintKeyParser("after")
 			},
 			regex: {
 				child: true,
-				parse: intersectionChildKeyParser("regex")
+				parse: constraintKeyParser("regex")
 			},
 			predicate: {
 				child: true,
-				parse: intersectionChildKeyParser("predicate")
-			},
-			required: {
-				child: true,
-				parse: intersectionChildKeyParser("required")
-			},
-			optional: {
-				child: true,
-				parse: intersectionChildKeyParser("optional")
-			},
-			index: {
-				child: true,
-				parse: intersectionChildKeyParser("index")
-			},
-			sequence: {
-				child: true,
-				parse: intersectionChildKeyParser("sequence")
-			},
-			onExtraneousKey: {
-				parse: def => (def === "ignore" ? undefined : def)
+				parse: constraintKeyParser("predicate")
 			}
 		},
 		// leverage reduction logic from intersection and identity to ensure initial
@@ -401,11 +369,6 @@ export const intersectionImplementation =
 		}
 	})
 
-const maybeCreateStructure = (inner: IntersectionInner, $: RawSchemaScope) => {
-	const propsInput = pick(inner, structureKeys)
-	return isEmptyObject(propsInput) ? null : new StructureNode(propsInput, $)
-}
-
 type IntersectionRoot = Omit<IntersectionInner, ConstraintKind>
 
 const intersectRootKeys = (
@@ -430,100 +393,19 @@ const intersectRootKeys = (
 		else throwInternalError(`Unexpected basis intersection ${resultBasis}`)
 	}
 
-	if (l.onExtraneousKey || r.onExtraneousKey) {
-		result.onExtraneousKey =
-			l.onExtraneousKey === "error" || r.onExtraneousKey === "error" ?
-				"error"
-			:	"prune"
-	}
 	return result
-}
-
-type ConstraintIntersectionState = {
-	l: Constraint[]
-	r: Constraint[]
-	types: BaseSchema[]
-	ctx: IntersectionContext
-}
-
-const intersectConstraints = (
-	s: ConstraintIntersectionState
-): ConstraintIntersectionState | Disjoint => {
-	const head = s.r.shift()
-	if (!head) return s
-	let matched = false
-	for (let i = 0; i < s.l.length; i++) {
-		const result = intersectNodes(s.l[i], head, s.ctx)
-		if (result === null) continue
-		if (result instanceof Disjoint) return result
-
-		if (!matched) {
-			if (result.isSchema()) s.types.push(result)
-			else s.l[i] = result as BaseConstraint
-			matched = true
-		} else if (!s.l.includes(result as never)) {
-			return throwInternalError(
-				`Unexpectedly encountered multiple distinct intersection results for refinement ${result}`
-			)
-		}
-	}
-	if (!matched) s.l.push(head)
-
-	head.impliedSiblings?.forEach(node => appendUnique(s.r, node))
-	return intersectConstraints(s)
-}
-
-const flattenConstraints = (inner: IntersectionInner): Constraint[] => {
-	const result = entriesOf(inner)
-		.flatMap(([k, v]) =>
-			k in constraintKeys ? (v as listable<Constraint>) : []
-		)
-		.sort((l, r) =>
-			l.precedence < r.precedence ? -1
-			: l.precedence > r.precedence ? 1
-			: l.innerHash < r.innerHash ? -1
-			: 1
-		)
-
-	return result
-}
-
-const unflattenConstraints = (
-	constraints: array<Constraint>
-): IntersectionInner => {
-	const inner: MutableInner<"intersection"> = {}
-	for (const constraint of constraints) {
-		if (constraint.hasOpenIntersection()) {
-			inner[constraint.kind] = append(
-				inner[constraint.kind],
-				constraint
-			) as never
-		} else {
-			if (inner[constraint.kind]) {
-				return throwInternalError(
-					`Unexpected intersection of closed refinements of kind ${constraint.kind}`
-				)
-			}
-			inner[constraint.kind] = constraint as never
-		}
-	}
-	return inner
 }
 
 export type ConditionalTerminalIntersectionSchema = {
 	onExtraneousKey?: ExtraneousKeyBehavior
 }
 
-export type ConditionalTerminalIntersectionInner = {
-	onExtraneousKey?: ExtraneousKeyRestriction
-}
-
 type ConditionalTerminalIntersectionKey =
-	keyof ConditionalTerminalIntersectionInner
+	keyof ConditionalTerminalIntersectionSchema
 
 type ConditionalIntersectionKey =
 	| ConstraintKind
-	| keyof ConditionalTerminalIntersectionInner
+	| ConditionalTerminalIntersectionKey
 
 export type constraintKindOf<t> = {
 	[k in ConstraintKind]: t extends Prerequisite<k> ? k : never
@@ -545,10 +427,6 @@ type conditionalSchemaValueOfKey<k extends ConditionalIntersectionKey> =
 
 type intersectionChildInnerValueOf<k extends IntersectionChildKind> =
 	k extends OpenNodeKind ? readonly Node<k>[] : Node<k>
-
-type conditionalInnerValueOfKey<k extends ConditionalIntersectionKey> =
-	k extends IntersectionChildKind ? intersectionChildInnerValueOf<k>
-	:	ConditionalTerminalIntersectionInner[k & ConditionalTerminalIntersectionKey]
 
 export type conditionalSchemaOf<t> = {
 	[k in conditionalIntersectionKeyOf<t>]?: conditionalSchemaValueOfKey<k>

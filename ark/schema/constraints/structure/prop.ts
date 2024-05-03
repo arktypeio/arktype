@@ -1,5 +1,5 @@
 import { compileSerializedValue, type Key } from "@arktype/util"
-import type { SchemaDef } from "../../node.js"
+import type { SchemaDef } from "../../kinds.js"
 import type { BaseSchema } from "../../schema.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { BaseMeta } from "../../shared/declare.js"

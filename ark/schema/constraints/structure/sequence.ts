@@ -6,8 +6,7 @@ import {
 	throwInternalError,
 	throwParseError
 } from "@arktype/util"
-import type { MutableInner } from "../../kinds.js"
-import type { SchemaDef } from "../../node.js"
+import type { MutableInner, SchemaDef } from "../../kinds.js"
 import type { BaseSchema } from "../../schema.js"
 import type { NodeCompiler } from "../../shared/compile.js"
 import type { BaseMeta, declareNode } from "../../shared/declare.js"

@@ -85,6 +85,7 @@ import type {
 	ConstraintKind,
 	NodeKind,
 	OpenNodeKind,
+	SchemaKind,
 	UnknownNodeImplementation
 } from "./shared/implement.js"
 import type { makeRootAndArrayPropertiesMutable } from "./shared/utils.js"
@@ -174,6 +175,8 @@ export type Node<kind extends NodeKind> = NodesByKind[kind]
 export type Declaration<kind extends NodeKind> = NodeDeclarationsByKind[kind]
 
 export type NodeDef<kind extends NodeKind> = Declaration<kind>["def"]
+
+export type SchemaDef<kind extends SchemaKind = SchemaKind> = NodeDef<kind>
 
 export type NormalizedDef<kind extends NodeKind> =
 	Declaration<kind>["normalizedDef"]

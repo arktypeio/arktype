@@ -1,14 +1,14 @@
 import {
+	type array,
 	CompiledFunction,
 	type Dict,
 	DynamicBase,
-	type Json,
-	type PartialRecord,
-	type array,
 	flatMorph,
 	type flattenListable,
 	hasDomain,
 	isArray,
+	type Json,
+	type PartialRecord,
 	printable,
 	type requireKeys,
 	type show,
@@ -29,10 +29,11 @@ import {
 	type Node,
 	type NodeDef,
 	nodeImplementationsByKind,
-	type reducibleKindOf
+	type reducibleKindOf,
+	type SchemaDef
 } from "./kinds.js"
 import { type PreparsedNodeResolution, SchemaModule } from "./module.js"
-import type { BaseNode, SchemaDef } from "./node.js"
+import type { BaseNode } from "./node.js"
 import { type NodeParseOptions, parseNode, schemaKindOf } from "./parse.js"
 import type { BaseSchema, Schema } from "./schema.js"
 import { type AliasNode, normalizeAliasDef } from "./schemas/alias.js"
