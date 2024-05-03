@@ -2,11 +2,9 @@ import {
 	append,
 	appendUnique,
 	capitalize,
-	entriesOf,
 	isArray,
 	throwInternalError,
 	throwParseError,
-	type Dict,
 	type array,
 	type describeExpression,
 	type listable
@@ -143,8 +141,8 @@ export const intersectConstraints = (
 	return intersectConstraints(s)
 }
 
-export const flattenConstraints = (inner: Dict): BaseConstraint[] => {
-	const result = entriesOf(inner)
+export const flattenConstraints = (inner: object): BaseConstraint[] => {
+	const result = Object.entries(inner)
 		.flatMap(([k, v]) =>
 			k in constraintKeys ? (v as listable<BaseConstraint>) : []
 		)

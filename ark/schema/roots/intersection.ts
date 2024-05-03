@@ -1,5 +1,4 @@
 import {
-	append,
 	type array,
 	conflatenateAll,
 	type listable,
@@ -35,11 +34,7 @@ import {
 } from "../shared/implement.js"
 import { intersectNodes } from "../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
-import {
-	hasArkKind,
-	isNode,
-	makeRootAndArrayPropertiesMutable
-} from "../shared/utils.js"
+import { hasArkKind, isNode } from "../shared/utils.js"
 import type {
 	ExtraneousKeyBehavior,
 	StructureNode
@@ -215,8 +210,8 @@ const intersectIntersections = (
 		[basisResult!.kind as IntersectionBasisKind]: basisResult
 	}
 
-	const lConstraints = flattenConstraints(reducedConstraintsInner)
-	const rConstraints = flattenConstraints(rawConstraintsInner)
+	const lConstraints = flattenConstraints(l)
+	const rConstraints = flattenConstraints(r)
 
 	const constraintResult = intersectConstraints({
 		l: lConstraints,
