@@ -1,11 +1,11 @@
 import { compileSerializedValue, type Key } from "@arktype/util"
-import { BaseConstraint } from "../constraint.js"
 import type { Node, RootSchema } from "../kinds.js"
+import { BaseNode } from "../node.js"
 import type { BaseRoot } from "../roots/root.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { ConstraintIntersection, RootKind } from "../shared/implement.js"
+import type { IntersectionContext, RootKind } from "../shared/implement.js"
 import { intersectNodes } from "../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 import type { OptionalDeclaration } from "./optional.js"
@@ -34,11 +34,11 @@ export type BasePropDeclaration<kind extends PropKind = PropKind> = {
 	childKind: RootKind
 }
 
-export const intersectProps: ConstraintIntersection<PropKind, PropKind> = (
-	l,
-	r,
-	ctx
-) => {
+export const intersectProps = (
+	l: Node<PropKind>,
+	r: Node<PropKind>,
+	ctx: IntersectionContext
+): Node<PropKind> | Disjoint | null => {
 	if (l.key !== r.key) return null
 
 	const key = l.key
@@ -56,7 +56,7 @@ export const intersectProps: ConstraintIntersection<PropKind, PropKind> = (
 
 export abstract class BaseProp<
 	kind extends PropKind = PropKind
-> extends BaseConstraint<
+> extends BaseNode<
 	kind extends "required" ? RequiredDeclaration : OptionalDeclaration
 > {
 	required: boolean = this.kind === "required"

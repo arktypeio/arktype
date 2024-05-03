@@ -54,9 +54,6 @@ export const minLengthImplementation: nodeImplementationOf<MinLengthDeclaration>
 				: node.rule === 1 ? "non-empty"
 				: `at least length ${node.rule}`,
 			actual: data => `${data.length}`
-		},
-		intersections: {
-			minLength: (l, r) => (l.isStricterThan(r) ? l : r)
 		}
 	})
 

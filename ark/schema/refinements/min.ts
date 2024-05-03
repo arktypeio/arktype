@@ -44,9 +44,6 @@ export const minImplementation: nodeImplementationOf<MinDeclaration> =
 		},
 		normalize: schema =>
 			typeof schema === "number" ? { rule: schema } : schema,
-		intersections: {
-			min: (l, r) => (l.isStricterThan(r) ? l : r)
-		},
 		defaults: {
 			description: node =>
 				`${node.exclusive ? "more than" : "at least"} ${node.rule}`

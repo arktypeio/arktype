@@ -61,9 +61,6 @@ export const afterImplementation: nodeImplementationOf<AfterDeclaration> =
 					`after ${node.stringLimit}`
 				:	`${node.stringLimit} or later`,
 			actual: data => data.toLocaleString()
-		},
-		intersections: {
-			after: (l, r) => (l.isStricterThan(r) ? l : r)
 		}
 	})
 

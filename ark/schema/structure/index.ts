@@ -3,13 +3,14 @@ import {
 	stringAndSymbolicEntriesOf,
 	throwParseError
 } from "@arktype/util"
-import { BaseConstraint } from "../constraint.js"
 import type { Node, RootSchema } from "../kinds.js"
+import { BaseNode } from "../node.js"
 import type { BaseRoot } from "../roots/root.js"
 import type { UnitNode } from "../roots/unit.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
+	type IntersectionContext,
 	type RootKind,
 	implementNode,
 	type nodeImplementationOf
@@ -80,30 +81,10 @@ export const indexImplementation: nodeImplementationOf<IndexDeclaration> =
 		defaults: {
 			description: node =>
 				`[${node.index.expression}]: ${node.value.description}`
-		},
-		intersections: {
-			index: (l, r, ctx) => {
-				if (l.index.equals(r.index)) {
-					const valueIntersection = intersectNodes(l.value, r.value, ctx)
-					const value =
-						valueIntersection instanceof Disjoint ?
-							ctx.$.keywords.never.raw
-						:	valueIntersection
-					return ctx.$.node("index", { index: l.index, value })
-				}
-
-				// if r constrains all of l's keys to a subtype of l's value, r is a subtype of l
-				if (l.index.extends(r.index) && l.value.subsumes(r.value)) return r
-				// if l constrains all of r's keys to a subtype of r's value, l is a subtype of r
-				if (r.index.extends(l.index) && r.value.subsumes(l.value)) return l
-
-				// other relationships between index signatures can't be generally reduced
-				return null
-			}
 		}
 	})
 
-export class IndexNode extends BaseConstraint<IndexDeclaration> {
+export class IndexNode extends BaseNode<IndexDeclaration> {
 	impliedBasis: BaseRoot = this.$.keywords.object.raw
 	expression = `[${this.index.expression}]: ${this.value.expression}`
 
@@ -129,7 +110,26 @@ export class IndexNode extends BaseConstraint<IndexDeclaration> {
 		})
 
 	compile(): void {
-		// this is currently handled by the props group
+		// this is currently handled by StructureNode
+	}
+
+	intersect(r: IndexNode, ctx: IntersectionContext): IndexNode | null {
+		if (this.index.equals(r.index)) {
+			const valueIntersection = intersectNodes(this.value, r.value, ctx)
+			const value =
+				valueIntersection instanceof Disjoint ?
+					ctx.$.keywords.never.raw
+				:	valueIntersection
+			return ctx.$.node("index", { index: this.index, value })
+		}
+
+		// if r constrains all of l's keys to a subtype of l's value, r is a subtype of l
+		if (this.index.extends(r.index) && this.value.subsumes(r.value)) return r
+		// if l constrains all of r's keys to a subtype of r's value, l is a subtype of r
+		if (r.index.extends(this.index) && r.value.subsumes(this.value)) return this
+
+		// other relationships between index signatures can't be generally reduced
+		return null
 	}
 }
 

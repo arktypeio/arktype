@@ -6,8 +6,8 @@ import {
 	throwInternalError,
 	throwParseError
 } from "@arktype/util"
-import { BaseConstraint } from "../constraint.js"
 import type { MutableInner, RootSchema } from "../kinds.js"
+import { BaseNode } from "../node.js"
 import type { MaxLengthNode } from "../refinements/maxLength.js"
 import type { MinLengthNode } from "../refinements/minLength.js"
 import type { BaseRoot } from "../roots/root.js"
@@ -184,47 +184,48 @@ export const sequenceImplementation: nodeImplementationOf<SequenceDeclaration> =
 					.join(", ")
 				return `[${innerDescription}]`
 			}
-		},
-		intersections: {
-			sequence: (l, r, ctx) => {
-				const rootState = intersectSequences({
-					l: l.tuple,
-					r: r.tuple,
-					disjoint: new Disjoint({}),
-					result: [],
-					fixedVariants: [],
-					ctx
-				})
-
-				const viableBranches =
-					rootState.disjoint.isEmpty() ?
-						[rootState, ...rootState.fixedVariants]
-					:	rootState.fixedVariants
-
-				return (
-					viableBranches.length === 0 ? rootState.disjoint!
-					: viableBranches.length === 1 ?
-						ctx.$.node(
-							"sequence",
-							sequenceTupleToInner(viableBranches[0].result)
-						)
-					:	ctx.$.node(
-							"union",
-							viableBranches.map(state => ({
-								proto: Array,
-								sequence: sequenceTupleToInner(state.result)
-							}))
-						)
-				)
-			}
-			// exactLength, minLength, and maxLength don't need to be defined
-			// here since impliedSiblings guarantees they will be added
-			// directly to the IntersectionNode parent of the SequenceNode
-			// they exist on
 		}
 	})
 
-export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
+export const intersectSequences = (
+	l: SequenceNode,
+	r: SequenceNode,
+	ctx: IntersectionContext
+): BaseRoot | SequenceNode | Disjoint => {
+	const rootState = _intersectSequences({
+		l: l.tuple,
+		r: r.tuple,
+		disjoint: new Disjoint({}),
+		result: [],
+		fixedVariants: [],
+		ctx
+	})
+
+	const viableBranches =
+		rootState.disjoint.isEmpty() ?
+			[rootState, ...rootState.fixedVariants]
+		:	rootState.fixedVariants
+
+	return (
+		viableBranches.length === 0 ? rootState.disjoint!
+		: viableBranches.length === 1 ?
+			ctx.$.node("sequence", sequenceTupleToInner(viableBranches[0].result))
+		:	ctx.$.node(
+				"union",
+				viableBranches.map(state => ({
+					proto: Array,
+					sequence: sequenceTupleToInner(state.result)
+				}))
+			)
+	)
+
+	// exactLength, minLength, and maxLength don't need to be defined
+	// here since impliedSiblings guarantees they will be added
+	// directly to the IntersectionNode parent of the SequenceNode
+	// they exist on
+}
+
+export class SequenceNode extends BaseNode<SequenceDeclaration> {
 	impliedBasis: BaseRoot = this.$.keywords.Array.raw
 	prefix: array<BaseRoot> = this.inner.prefix ?? []
 	optionals: array<BaseRoot> = this.inner.optionals ?? []
@@ -359,7 +360,7 @@ type SequenceIntersectionState = {
 	ctx: IntersectionContext
 }
 
-const intersectSequences = (
+const _intersectSequences = (
 	s: SequenceIntersectionState
 ): SequenceIntersectionState => {
 	const [lHead, ...lTail] = s.l
@@ -383,7 +384,7 @@ const intersectSequences = (
 		: "variadic"
 
 	if (lHead.kind === "prefix" && rHead.kind === "variadic" && rHasPostfix) {
-		const postfixBranchResult = intersectSequences({
+		const postfixBranchResult = _intersectSequences({
 			...s,
 			fixedVariants: [],
 			r: rTail.map(element => ({ ...element, kind: "prefix" }))
@@ -395,7 +396,7 @@ const intersectSequences = (
 		lHead.kind === "variadic" &&
 		lHasPostfix
 	) {
-		const postfixBranchResult = intersectSequences({
+		const postfixBranchResult = _intersectSequences({
 			...s,
 			fixedVariants: [],
 			l: lTail.map(element => ({ ...element, kind: "prefix" }))
@@ -423,7 +424,7 @@ const intersectSequences = (
 			// if the element is variadic and unsatisfiable, the intersection
 			// can be satisfied with a fixed length variant including zero
 			// variadic elements
-			return intersectSequences({
+			return _intersectSequences({
 				...s,
 				fixedVariants: [],
 				// if there were any optional elements, there will be no postfix elements
@@ -451,5 +452,5 @@ const intersectSequences = (
 	)
 		s.r = rTail
 
-	return intersectSequences(s)
+	return _intersectSequences(s)
 }

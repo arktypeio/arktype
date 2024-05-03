@@ -63,15 +63,6 @@ export const beforeImplementation: nodeImplementationOf<BeforeDeclaration> =
 					`before ${node.stringLimit}`
 				:	`${node.stringLimit} or earlier`,
 			actual: data => data.toLocaleString()
-		},
-		intersections: {
-			before: (l, r) => (l.isStricterThan(r) ? l : r),
-			after: (before, after, ctx) =>
-				before.overlapsRange(after) ?
-					before.overlapIsUnit(after) ?
-						ctx.$.node("unit", { unit: before.rule })
-					:	null
-				:	Disjoint.from("range", before, after)
 		}
 	})
 

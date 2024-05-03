@@ -36,33 +36,6 @@ export const exactLengthImplementation: nodeImplementationOf<ExactLengthDeclarat
 		},
 		normalize: schema =>
 			typeof schema === "number" ? { rule: schema } : schema,
-		intersections: {
-			exactLength: (l, r, ctx) =>
-				new Disjoint({
-					"[length]": {
-						unit: {
-							l: ctx.$.node("unit", { unit: l.rule }),
-							r: ctx.$.node("unit", { unit: r.rule })
-						}
-					}
-				}),
-			minLength: (exactLength, minLength) =>
-				(
-					minLength.exclusive ?
-						exactLength.rule > minLength.rule
-					:	exactLength.rule >= minLength.rule
-				) ?
-					exactLength
-				:	Disjoint.from("range", exactLength, minLength),
-			maxLength: (exactLength, maxLength) =>
-				(
-					maxLength.exclusive ?
-						exactLength.rule < maxLength.rule
-					:	exactLength.rule <= maxLength.rule
-				) ?
-					exactLength
-				:	Disjoint.from("range", exactLength, maxLength)
-		},
 		hasAssociatedError: true,
 		defaults: {
 			description: node => `exactly length ${node.rule}`

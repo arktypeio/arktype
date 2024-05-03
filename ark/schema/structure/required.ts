@@ -4,7 +4,7 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.js"
-import { BaseProp, intersectProps, type BasePropDeclaration } from "./prop.js"
+import { BaseProp, type BasePropDeclaration } from "./prop.js"
 
 export interface RequiredErrorContext extends BaseErrorContext<"required"> {
 	missingValueDescription: string
@@ -42,9 +42,5 @@ export const requiredImplementation: nodeImplementationOf<RequiredDeclaration> =
 			description: node => `${node.compiledKey}: ${node.value.description}`,
 			expected: ctx => ctx.missingValueDescription,
 			actual: () => "missing"
-		},
-		intersections: {
-			required: intersectProps,
-			optional: intersectProps
 		}
 	})

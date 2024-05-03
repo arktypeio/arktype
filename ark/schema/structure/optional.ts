@@ -3,7 +3,7 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.js"
-import { BaseProp, intersectProps, type BasePropDeclaration } from "./prop.js"
+import { BaseProp, type BasePropDeclaration } from "./prop.js"
 
 export type OptionalDeclaration = declareNode<BasePropDeclaration<"optional">>
 
@@ -22,9 +22,6 @@ export const optionalImplementation: nodeImplementationOf<OptionalDeclaration> =
 		normalize: schema => schema,
 		defaults: {
 			description: node => `${node.compiledKey}?: ${node.value.description}`
-		},
-		intersections: {
-			optional: intersectProps
 		}
 	})
 

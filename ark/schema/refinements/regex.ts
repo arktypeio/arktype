@@ -44,10 +44,6 @@ export const regexImplementation: nodeImplementationOf<RegexDeclaration> =
 			:	schema,
 		hasAssociatedError: true,
 		intersectionIsOpen: true,
-		intersections: {
-			// for now, non-equal regex are naively intersected
-			regex: () => null
-		},
 		defaults: {
 			description: node => `matched by ${node.rule}`
 		}
@@ -65,6 +61,8 @@ export class RegexNode extends RawPrimitiveConstraint<RegexDeclaration> {
 	readonly impliedBasis: BaseRoot = this.$.keywords.string.raw
 
 	reduceIntersection(acc: MutableIntersectionInner): MutableIntersectionInner {
+		// for now, non-equal regex are naively intersected:
+		// https://github.com/arktypeio/arktype/issues/853
 		if (acc.regex) {
 			if (!acc.regex.some(n => n.equals(this))) acc.regex.push(this)
 		} else acc.regex = [this]

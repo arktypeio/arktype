@@ -49,15 +49,6 @@ export const maxImplementation: nodeImplementationOf<MaxDeclaration> =
 		defaults: {
 			description: node =>
 				`${node.exclusive ? "less than" : "at most"} ${node.rule}`
-		},
-		intersections: {
-			max: (l, r) => (l.isStricterThan(r) ? l : r),
-			min: (max, min, ctx) =>
-				max.overlapsRange(min) ?
-					max.overlapIsUnit(min) ?
-						ctx.$.node("unit", { unit: max.rule })
-					:	null
-				:	Disjoint.from("range", max, min)
 		}
 	})
 

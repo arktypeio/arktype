@@ -36,14 +36,6 @@ export const divisorImplementation: nodeImplementationOf<DivisorDeclaration> =
 		},
 		normalize: schema =>
 			typeof schema === "number" ? { rule: schema } : schema,
-		intersections: {
-			divisor: (l, r, ctx) =>
-				ctx.$.node("divisor", {
-					rule: Math.abs(
-						(l.rule * r.rule) / greatestCommonDivisor(l.rule, r.rule)
-					)
-				})
-		},
 		hasAssociatedError: true,
 		defaults: {
 			description: node =>
