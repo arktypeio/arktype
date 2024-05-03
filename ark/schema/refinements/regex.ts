@@ -1,5 +1,4 @@
 import { RawPrimitiveConstraint } from "../constraint.js"
-import type { MutableIntersectionInner } from "../roots/intersection.js"
 import type { BaseRoot } from "../roots/root.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import {
@@ -46,6 +45,11 @@ export const regexImplementation: nodeImplementationOf<RegexDeclaration> =
 		intersectionIsOpen: true,
 		defaults: {
 			description: node => `matched by ${node.rule}`
+		},
+		intersections: {
+			// for now, non-equal regex are naively intersected:
+			// https://github.com/arktypeio/arktype/issues/853
+			regex: () => null
 		}
 	})
 
@@ -59,13 +63,4 @@ export class RegexNode extends RawPrimitiveConstraint<RegexDeclaration> {
 	readonly compiledCondition: string = `${this.expression}.test(data)`
 	readonly compiledNegation: string = `!${this.compiledCondition}`
 	readonly impliedBasis: BaseRoot = this.$.keywords.string.raw
-
-	reduceIntersection(acc: MutableIntersectionInner): MutableIntersectionInner {
-		// for now, non-equal regex are naively intersected:
-		// https://github.com/arktypeio/arktype/issues/853
-		if (acc.regex) {
-			if (!acc.regex.some(n => n.equals(this))) acc.regex.push(this)
-		} else acc.regex = [this]
-		return acc
-	}
 }

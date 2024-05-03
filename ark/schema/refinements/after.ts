@@ -1,4 +1,3 @@
-import type { MutableIntersectionInner } from "../roots/intersection.js"
 import type { BaseRoot } from "../roots/root.js"
 import type { declareNode } from "../shared/declare.js"
 import {
@@ -61,6 +60,9 @@ export const afterImplementation: nodeImplementationOf<AfterDeclaration> =
 					`after ${node.stringLimit}`
 				:	`${node.stringLimit} or later`,
 			actual: data => data.toLocaleString()
+		},
+		intersections: {
+			after: (l, r) => (l.isStricterThan(r) ? l : r)
 		}
 	})
 
@@ -69,9 +71,4 @@ export class AfterNode extends BaseRange<AfterDeclaration> {
 
 	traverseAllows: TraverseAllows<Date> =
 		this.exclusive ? data => data > this.rule : data => data >= this.rule
-
-	reduceIntersection(acc: MutableIntersectionInner): MutableIntersectionInner {
-		if (!acc.after || this.isStricterThan(acc.after)) acc.after = this
-		return acc
-	}
 }

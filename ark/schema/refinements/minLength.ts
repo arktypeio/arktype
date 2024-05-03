@@ -1,4 +1,3 @@
-import type { MutableIntersectionInner } from "../roots/intersection.js"
 import type { BaseRoot } from "../roots/root.js"
 import type { declareNode } from "../shared/declare.js"
 import {
@@ -54,6 +53,9 @@ export const minLengthImplementation: nodeImplementationOf<MinLengthDeclaration>
 				: node.rule === 1 ? "non-empty"
 				: `at least length ${node.rule}`,
 			actual: data => `${data.length}`
+		},
+		intersections: {
+			minLength: (l, r) => (l.isStricterThan(r) ? l : r)
 		}
 	})
 
@@ -64,10 +66,4 @@ export class MinLengthNode extends BaseRange<MinLengthDeclaration> {
 		this.exclusive ?
 			data => data.length > this.rule
 		:	data => data.length >= this.rule
-
-	reduceIntersection(acc: MutableIntersectionInner): MutableIntersectionInner {
-		if (!acc.minLength || this.isStricterThan(acc.minLength))
-			acc.minLength = this
-		return acc
-	}
 }

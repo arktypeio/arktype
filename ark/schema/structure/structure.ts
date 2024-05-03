@@ -10,7 +10,6 @@ import { BaseConstraint, constraintKeyParser } from "../constraint.js"
 import type { BaseRoot } from "../roots/root.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
-import { Disjoint } from "../shared/disjoint.js"
 import {
 	implementNode,
 	type nodeImplementationOf,
@@ -24,6 +23,7 @@ import type { PropNode, PropSchema } from "./prop.js"
 import type { RequiredNode } from "./required.js"
 import type { SequenceNode, SequenceSchema } from "./sequence.js"
 import { arrayIndexMatcherReference } from "./shared.js"
+import { Disjoint } from "../shared/disjoint.js"
 
 export type ExtraneousKeyBehavior = "ignore" | ExtraneousKeyRestriction
 
@@ -245,5 +245,40 @@ export const structureImplementation: nodeImplementationOf<StructureDeclaration>
 		},
 		defaults: {
 			description: structuralDescription
+		},
+		intersections: {
+			structure: (l, r) => {
+				if (l.onExtraneousKey) {
+					const lKey = l.keyof()
+					const disjointRKeys = r.requiredLiteralKeys.filter(
+						k => !lKey.allows(k)
+					)
+					if (disjointRKeys.length) {
+						return Disjoint.from("presence", true, false).withPrefixKey(
+							disjointRKeys[0]
+						)
+					}
+				}
+				if (r.onExtraneousKey) {
+					const rKey = r.keyof()
+					const disjointLKeys = l.requiredLiteralKeys.filter(
+						k => !rKey.allows(k)
+					)
+					if (disjointLKeys.length) {
+						return Disjoint.from("presence", true, false).withPrefixKey(
+							disjointLKeys[0]
+						)
+					}
+				}
+
+				// const constraintResult = intersectConstraints({
+				// 	l: l.children,
+				// 	r: r.children,
+				// 	types: [],
+				// 	ctx
+				// })
+
+				return r
+			}
 		}
 	})

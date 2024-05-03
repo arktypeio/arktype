@@ -1,6 +1,4 @@
-import type { MutableIntersectionInner } from "../roots/intersection.js"
 import type { BaseRoot } from "../roots/root.js"
-import type { UnitNode } from "../roots/unit.js"
 import type { declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
@@ -53,6 +51,15 @@ export const maxLengthImplementation: nodeImplementationOf<MaxLengthDeclaration>
 					`less than length ${node.rule}`
 				:	`at most length ${node.rule}`,
 			actual: data => `${data.length}`
+		},
+		intersections: {
+			maxLength: (l, r) => (l.isStricterThan(r) ? l : r),
+			minLength: (max, min, ctx) =>
+				max.overlapsRange(min) ?
+					max.overlapIsUnit(min) ?
+						ctx.$.node("exactLength", { rule: max.rule })
+					:	null
+				:	Disjoint.from("range", max, min)
 		}
 	})
 
@@ -63,20 +70,4 @@ export class MaxLengthNode extends BaseRange<MaxLengthDeclaration> {
 		this.exclusive ?
 			data => data.length < this.rule
 		:	data => data.length <= this.rule
-
-	reduceIntersection(
-		acc: MutableIntersectionInner
-	): MutableIntersectionInner | Disjoint | UnitNode {
-		if (acc.maxLength) {
-			if (this.isStricterThan(acc.maxLength)) acc.maxLength = this
-			else return acc
-		}
-		if (acc.minLength) {
-			if (this.overlapsRange(acc.minLength)) {
-				if (this.overlapIsUnit(acc.minLength))
-					acc.exactLength = this.$.node("exactLength", { rule: this.rule })
-			} else return Disjoint.from("range", this, acc.minLength)
-		}
-		return acc
-	}
 }

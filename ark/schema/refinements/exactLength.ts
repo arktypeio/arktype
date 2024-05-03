@@ -1,5 +1,4 @@
 import { RawPrimitiveConstraint } from "../constraint.js"
-import type { MutableIntersectionInner } from "../roots/intersection.js"
 import type { BaseRoot } from "../roots/root.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -39,6 +38,33 @@ export const exactLengthImplementation: nodeImplementationOf<ExactLengthDeclarat
 		hasAssociatedError: true,
 		defaults: {
 			description: node => `exactly length ${node.rule}`
+		},
+		intersections: {
+			exactLength: (l, r, ctx) =>
+				new Disjoint({
+					"[length]": {
+						unit: {
+							l: ctx.$.node("unit", { unit: l.rule }),
+							r: ctx.$.node("unit", { unit: r.rule })
+						}
+					}
+				}),
+			minLength: (exactLength, minLength) =>
+				(
+					minLength.exclusive ?
+						exactLength.rule > minLength.rule
+					:	exactLength.rule >= minLength.rule
+				) ?
+					exactLength
+				:	Disjoint.from("range", exactLength, minLength),
+			maxLength: (exactLength, maxLength) =>
+				(
+					maxLength.exclusive ?
+						exactLength.rule < maxLength.rule
+					:	exactLength.rule <= maxLength.rule
+				) ?
+					exactLength
+				:	Disjoint.from("range", exactLength, maxLength)
 		}
 	})
 
@@ -50,37 +76,4 @@ export class ExactLengthNode extends RawPrimitiveConstraint<ExactLengthDeclarati
 	readonly compiledNegation: string = `data.length !== ${this.rule}`
 	readonly impliedBasis: BaseRoot = this.$.keywords.lengthBoundable.raw
 	readonly expression: string = `{ length: ${this.rule} }`
-
-	reduceIntersection(
-		acc: MutableIntersectionInner
-	): MutableIntersectionInner | Disjoint {
-		if (acc.exactLength) {
-			if (this.equals(acc.exactLength)) return acc
-			return new Disjoint({
-				"[length]": {
-					unit: {
-						l: this.$.node("unit", { unit: acc.exactLength.rule }),
-						r: this.$.node("unit", { unit: this.rule })
-					}
-				}
-			})
-		} else acc.exactLength = this
-		if (acc.minLength) {
-			if (
-				this.rule < acc.minLength.rule ||
-				(acc.minLength.exclusive && this.rule === acc.minLength.rule)
-			)
-				return Disjoint.from("range", this, acc.minLength)
-			delete acc.minLength
-		}
-		if (acc.maxLength) {
-			if (
-				this.rule > acc.maxLength.rule ||
-				(acc.maxLength.exclusive && this.rule === acc.maxLength.rule)
-			)
-				return Disjoint.from("range", this, acc.maxLength)
-			delete acc.maxLength
-		}
-		return acc
-	}
 }

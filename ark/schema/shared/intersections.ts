@@ -13,7 +13,11 @@ import type { MorphAst, MorphNode, Out } from "../roots/morph.js"
 import type { BaseRoot } from "../roots/root.js"
 import type { RawRootScope } from "../scope.js"
 import { Disjoint } from "./disjoint.js"
-import type { IntersectionContext, RootKind } from "./implement.js"
+import type {
+	IntersectionContext,
+	RootKind,
+	UnknownIntersectionResult
+} from "./implement.js"
 import { isNode } from "./utils.js"
 
 export type inferIntersection<l, r> = _inferIntersection<l, r, false>
@@ -65,7 +69,7 @@ type intersectObjects<l, r, piped extends boolean> =
 			} & Omit<r, keyof l>
 		>
 
-const intersectionCache: PartialRecord<string, BaseRoot | Disjoint> = {}
+const intersectionCache: PartialRecord<string, UnknownIntersectionResult> = {}
 
 type InternalNodeIntersection<ctx> = <l extends BaseNode, r extends BaseNode>(
 	l: l,

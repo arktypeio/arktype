@@ -12,7 +12,7 @@ contextualize(() => {
 		})
 		const r = schema({
 			domain: "object",
-			prop: [
+			required: [
 				{ key: "b", value: "number" },
 				{ key: "a", value: "string" }
 			]

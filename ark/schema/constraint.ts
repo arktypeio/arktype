@@ -59,11 +59,6 @@ export abstract class BaseConstraint<
 	): intersectConstraintKinds<d["kind"], r["kind"]> {
 		return intersectNodesRoot(this, r, this.$) as never
 	}
-
-	abstract reduceIntersection(
-		acc: IntersectionInner,
-		ctx: IntersectionContext
-	): ConstraintReductionResult
 }
 
 export type ConstraintReductionResult =

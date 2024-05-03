@@ -11,7 +11,8 @@ import {
 	type keySetOf,
 	type listable,
 	printable,
-	type requireKeys
+	type requireKeys,
+	type show
 } from "@arktype/util"
 import type { Declaration, Inner, Node, errorContext } from "../kinds.js"
 import type { BaseNode } from "../node.js"
@@ -150,6 +151,23 @@ export interface IntersectionContext extends InternalIntersectionOptions {
 	invert: boolean
 }
 
+export type ConstraintIntersection<
+	lKind extends ConstraintKind,
+	rKind extends kindOrRightOf<lKind>
+> = (
+	l: Node<lKind>,
+	r: Node<rKind>,
+	ctx: IntersectionContext
+) => BaseNode | Disjoint | null
+
+export type ConstraintIntersectionMap<kind extends ConstraintKind> = show<
+	{
+		[_ in kind]: ConstraintIntersection<kind, kind>
+	} & {
+		[rKind in kindRightOf<kind>]?: ConstraintIntersection<kind, rKind>
+	}
+>
+
 export type RootIntersection<
 	lKind extends RootKind,
 	rKind extends schemaKindOrRightOf<lKind>
@@ -159,9 +177,23 @@ export type RootIntersection<
 	ctx: IntersectionContext
 ) => BaseRoot | Disjoint
 
-export type RootIntersectionMap<kind extends RootKind = "alias"> = {
+export type TypeIntersectionMap<kind extends RootKind> = {
 	[rKind in schemaKindOrRightOf<kind>]: RootIntersection<kind, rKind>
 }
+
+export type IntersectionMap<kind extends NodeKind> =
+	kind extends RootKind ? TypeIntersectionMap<kind>
+	:	ConstraintIntersectionMap<kind & ConstraintKind>
+
+export type UnknownIntersectionMap = {
+	[k in NodeKind]?: (
+		l: BaseNode,
+		r: BaseNode,
+		ctx: IntersectionContext
+	) => UnknownIntersectionResult
+}
+
+export type UnknownIntersectionResult = BaseNode | Disjoint | null
 
 type PrecedenceByKind = {
 	[i in indexOf<OrderedNodeKinds> as OrderedNodeKinds[i]]: i
@@ -265,7 +297,7 @@ export interface UnknownNodeImplementation
 	extends CommonNodeImplementationInput<RawNodeDeclaration> {
 	defaults: ParsedUnknownNodeConfig
 	intersectionIsOpen: boolean
-	intersections: RootIntersectionMap
+	intersections: UnknownIntersectionMap
 	keys: Record<string, NodeKeyImplementation<any, any>>
 }
 
@@ -279,21 +311,20 @@ export const compileErrorContext = (ctx: object): string => {
 
 export type nodeImplementationOf<d extends RawNodeDeclaration> =
 	nodeImplementationInputOf<d> & {
+		intersections: IntersectionMap<d["kind"]>
 		intersectionIsOpen: d["intersectionIsOpen"]
 		defaults: Required<NodeConfig<d["kind"]>>
 	}
 
 export type nodeImplementationInputOf<d extends RawNodeDeclaration> =
 	CommonNodeImplementationInput<d> & {
+		intersections: IntersectionMap<d["kind"]>
 		defaults: nodeSchemaaultsImplementationInputFor<d["kind"]>
 	} & (d["intersectionIsOpen"] extends true ? { intersectionIsOpen: true }
 		:	{}) &
 		// if the node is declared as reducible to a kind other than its own,
 		// there must be a reduce implementation
-		(d["reducibleTo"] extends d["kind"] ? {} : { reduce: {} }) &
-		(d["kind"] extends RootKind ?
-			{ intersections: RootIntersectionMap<d["kind"]> }
-		:	{})
+		(d["reducibleTo"] extends d["kind"] ? {} : { reduce: {} })
 
 type nodeSchemaaultsImplementationInputFor<kind extends NodeKind> = requireKeys<
 	NodeConfig<kind>,

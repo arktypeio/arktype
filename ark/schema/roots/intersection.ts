@@ -6,7 +6,12 @@ import {
 	omit,
 	type show
 } from "@arktype/util"
-import { constraintKeyParser, flattenConstraints } from "../constraint.js"
+import {
+	constraintKeyParser,
+	flattenConstraints,
+	intersectConstraints,
+	unflattenConstraints
+} from "../constraint.js"
 import type {
 	Inner,
 	MutableInner,
@@ -48,16 +53,16 @@ export type IntersectionBasisKind = "domain" | "proto"
 
 export type IntersectionChildKind = IntersectionBasisKind | ConstraintKind
 
-export type IntersectionInner = show<
-	BaseMeta & {
-		domain?: DomainNode
-		proto?: ProtoNode
-		structure?: StructureNode
-		predicate?: array<PredicateNode>
-	} & {
-		[k in RefinementKind]?: intersectionChildInnerValueOf<k>
-	}
->
+export type RefinementsInner = {
+	[k in RefinementKind]?: intersectionChildInnerValueOf<k>
+}
+
+export interface IntersectionInner extends BaseMeta, RefinementsInner {
+	domain?: DomainNode
+	proto?: ProtoNode
+	structure?: StructureNode
+	predicate?: array<PredicateNode>
+}
 
 export type MutableIntersectionInner = MutableInner<"intersection">
 
@@ -206,30 +211,35 @@ const intersectIntersections = (
 		:	rBasis
 	if (basisResult instanceof Disjoint) return basisResult
 
-	let acc: MutableIntersectionInner = makeRootAndArrayPropertiesMutable(l)
-
-	acc[basisResult!.kind as IntersectionBasisKind] = basisResult as never
-
-	let roots: BaseRoot[] | undefined
-
-	for (const constraint of flattenConstraints(r)) {
-		const next = constraint.reduceIntersection(acc, ctx)
-		if (next instanceof Disjoint) return next
-		if (isNode(next)) roots = append(roots, next)
-		else acc = next
+	const root: MutableIntersectionInner = {
+		[basisResult!.kind as IntersectionBasisKind]: basisResult
 	}
 
-	let node: BaseRoot = ctx.$.node("intersection", acc, { prereduced: true })
+	const lConstraints = flattenConstraints(reducedConstraintsInner)
+	const rConstraints = flattenConstraints(rawConstraintsInner)
 
-	if (roots) {
-		for (const root of roots) {
-			const next = intersectNodes(node, root, ctx)
-			if (next instanceof Disjoint) return next
-			node = next
-		}
+	const constraintResult = intersectConstraints({
+		l: lConstraints,
+		r: rConstraints,
+		types: [],
+		ctx
+	})
+
+	if (constraintResult instanceof Disjoint) return constraintResult
+
+	let result: BaseRoot | Disjoint = constraintResult.ctx.$.node(
+		"intersection",
+		Object.assign(root, unflattenConstraints(constraintResult.l)),
+		{ prereduced: true }
+	)
+
+	for (const type of constraintResult.types) {
+		if (result instanceof Disjoint) return result
+
+		result = intersectNodes(type, result, constraintResult.ctx)
 	}
 
-	return node
+	return result
 }
 
 export const intersectionImplementation: nodeImplementationOf<IntersectionDeclaration> =

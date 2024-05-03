@@ -184,46 +184,46 @@ export const sequenceImplementation: nodeImplementationOf<SequenceDeclaration> =
 					.join(", ")
 				return `[${innerDescription}]`
 			}
+		},
+		intersections: {
+			sequence: (l, r, ctx) => {
+				const rootState = _intersectSequences({
+					l: l.tuple,
+					r: r.tuple,
+					disjoint: new Disjoint({}),
+					result: [],
+					fixedVariants: [],
+					ctx
+				})
+
+				const viableBranches =
+					rootState.disjoint.isEmpty() ?
+						[rootState, ...rootState.fixedVariants]
+					:	rootState.fixedVariants
+
+				return (
+					viableBranches.length === 0 ? rootState.disjoint!
+					: viableBranches.length === 1 ?
+						ctx.$.node(
+							"sequence",
+							sequenceTupleToInner(viableBranches[0].result)
+						)
+					:	ctx.$.node(
+							"union",
+							viableBranches.map(state => ({
+								proto: Array,
+								sequence: sequenceTupleToInner(state.result)
+							}))
+						)
+				)
+
+				// exactLength, minLength, and maxLength don't need to be defined
+				// here since impliedSiblings guarantees they will be added
+				// directly to the IntersectionNode parent of the SequenceNode
+				// they exist on
+			}
 		}
 	})
-
-export const intersectSequences = (
-	l: SequenceNode,
-	r: SequenceNode,
-	ctx: IntersectionContext
-): BaseRoot | SequenceNode | Disjoint => {
-	const rootState = _intersectSequences({
-		l: l.tuple,
-		r: r.tuple,
-		disjoint: new Disjoint({}),
-		result: [],
-		fixedVariants: [],
-		ctx
-	})
-
-	const viableBranches =
-		rootState.disjoint.isEmpty() ?
-			[rootState, ...rootState.fixedVariants]
-		:	rootState.fixedVariants
-
-	return (
-		viableBranches.length === 0 ? rootState.disjoint!
-		: viableBranches.length === 1 ?
-			ctx.$.node("sequence", sequenceTupleToInner(viableBranches[0].result))
-		:	ctx.$.node(
-				"union",
-				viableBranches.map(state => ({
-					proto: Array,
-					sequence: sequenceTupleToInner(state.result)
-				}))
-			)
-	)
-
-	// exactLength, minLength, and maxLength don't need to be defined
-	// here since impliedSiblings guarantees they will be added
-	// directly to the IntersectionNode parent of the SequenceNode
-	// they exist on
-}
 
 export class SequenceNode extends BaseNode<SequenceDeclaration> {
 	impliedBasis: BaseRoot = this.$.keywords.Array.raw

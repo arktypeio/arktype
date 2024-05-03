@@ -1,6 +1,4 @@
-import type { MutableIntersectionInner } from "../roots/intersection.js"
 import type { BaseRoot } from "../roots/root.js"
-import type { UnitNode } from "../roots/unit.js"
 import type { declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
@@ -63,6 +61,15 @@ export const beforeImplementation: nodeImplementationOf<BeforeDeclaration> =
 					`before ${node.stringLimit}`
 				:	`${node.stringLimit} or earlier`,
 			actual: data => data.toLocaleString()
+		},
+		intersections: {
+			before: (l, r) => (l.isStricterThan(r) ? l : r),
+			after: (before, after, ctx) =>
+				before.overlapsRange(after) ?
+					before.overlapIsUnit(after) ?
+						ctx.$.node("unit", { unit: before.rule })
+					:	null
+				:	Disjoint.from("range", before, after)
 		}
 	})
 
@@ -71,20 +78,4 @@ export class BeforeNode extends BaseRange<BeforeDeclaration> {
 		this.exclusive ? data => data < this.rule : data => data <= this.rule
 
 	impliedBasis: BaseRoot = this.$.keywords.Date.raw
-
-	reduceIntersection(
-		acc: MutableIntersectionInner
-	): MutableIntersectionInner | Disjoint | UnitNode {
-		if (acc.before) {
-			if (this.isStricterThan(acc.before)) acc.before = this
-			else return acc
-		}
-		if (acc.after) {
-			if (this.overlapsRange(acc.after)) {
-				if (this.overlapIsUnit(acc.after))
-					return this.$.node("unit", { unit: this.rule })
-			} else return Disjoint.from("range", this, acc.after)
-		}
-		return acc
-	}
 }

@@ -1,8 +1,8 @@
 import { flatMorph } from "@arktype/util"
 import {
+	schemaKindsRightOf,
 	type RootIntersection,
-	type RootKind,
-	schemaKindsRightOf
+	type RootKind
 } from "../shared/implement.js"
 import type { schemaKindRightOf } from "./root.js"
 
