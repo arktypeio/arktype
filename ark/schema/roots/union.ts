@@ -1,4 +1,4 @@
-import { appendUnique, groupBy, isArray } from "@arktype/util"
+import { appendUnique, groupBy, isArray, type array } from "@arktype/util"
 import type { Node, NodeSchema } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
@@ -6,21 +6,22 @@ import { Disjoint } from "../shared/disjoint.js"
 import type { ArkTypeError } from "../shared/errors.js"
 import {
 	implementNode,
+	schemaKindsRightOf,
 	type IntersectionContext,
-	type RootKind,
-	schemaKindsRightOf
+	type nodeImplementationOf,
+	type RootKind
 } from "../shared/implement.js"
 import { intersectNodes, intersectNodesRoot } from "../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
-import { BaseRoot } from "./root.js"
+import { BaseRoot, type schemaKindRightOf } from "./root.js"
 import { defineRightwardIntersections } from "./utils.js"
 
-export type UnionChildKind = (typeof unionChildKinds)[number]
+export type UnionChildKind = schemaKindRightOf<"union"> | "alias"
 
-export const unionChildKinds = [
+const unionChildKinds: array<UnionChildKind> = [
 	...schemaKindsRightOf("union"),
 	"alias"
-] as const
+]
 
 export type UnionChildSchema = NodeSchema<UnionChildKind>
 
@@ -42,143 +43,148 @@ export interface UnionInner extends BaseMeta {
 	readonly ordered?: true
 }
 
-export type UnionDeclaration = declareNode<{
-	kind: "union"
-	schema: UnionSchema
-	normalizedSchema: NormalizedUnionSchema
-	inner: UnionInner
-	errorContext: {
-		errors: readonly ArkTypeError[]
-	}
-	reducibleTo: RootKind
-	childKind: UnionChildKind
-}>
-
-export const unionImplementation = implementNode<UnionDeclaration>({
-	kind: "union",
-	hasAssociatedError: true,
-	collapsibleKey: "branches",
-	keys: {
-		ordered: {},
-		branches: {
-			child: true,
-			parse: (schema, ctx) => {
-				const branches = schema.map(branch =>
-					ctx.$.node(unionChildKinds, branch)
-				)
-
-				if (!ctx.schema.ordered)
-					branches.sort((l, r) => (l.innerHash < r.innerHash ? -1 : 1))
-
-				return branches
-			}
+export interface UnionDeclaration
+	extends declareNode<{
+		kind: "union"
+		schema: UnionSchema
+		normalizedSchema: NormalizedUnionSchema
+		inner: UnionInner
+		errorContext: {
+			errors: readonly ArkTypeError[]
 		}
-	},
-	normalize: schema => (isArray(schema) ? { branches: schema } : schema),
-	reduce: (inner, $) => {
-		const reducedBranches = reduceBranches(inner)
-		if (reducedBranches.length === 1) return reducedBranches[0]
+		reducibleTo: RootKind
+		childKind: UnionChildKind
+	}> {}
 
-		if (reducedBranches.length === inner.branches.length) return
+export const unionImplementation: nodeImplementationOf<UnionDeclaration> =
+	implementNode<UnionDeclaration>({
+		kind: "union",
+		hasAssociatedError: true,
+		collapsibleKey: "branches",
+		keys: {
+			ordered: {},
+			branches: {
+				child: true,
+				parse: (schema, ctx) => {
+					const branches = schema.map(branch =>
+						ctx.$.node(unionChildKinds, branch)
+					)
 
-		return $.node(
-			"union",
-			{
-				...inner,
-				branches: reducedBranches
-			},
-			{ prereduced: true }
-		)
-	},
-	defaults: {
-		description: node => {
-			return describeBranches(node.branches.map(branch => branch.description))
-		},
-		expected: ctx => {
-			const byPath = groupBy(ctx.errors, "propString") as Record<
-				string,
-				ArkTypeError[]
-			>
-			const pathDescriptions = Object.entries(byPath).map(([path, errors]) => {
-				const branchesAtPath: string[] = []
-				errors.forEach(errorAtPath =>
-					// avoid duplicate messages when multiple branches
-					// are invalid due to the same error
-					appendUnique(branchesAtPath, errorAtPath.expected)
-				)
-				const expected = describeBranches(branchesAtPath)
-				const actual = errors.reduce(
-					(acc, e) =>
-						e.actual && !acc.includes(e.actual) ?
-							`${acc && `${acc}, `}${e.actual}`
-						:	acc,
-					""
-				)
-				return `${path && `${path} `}must be ${expected}${
-					actual && ` (was ${actual})`
-				}`
-			})
-			return describeBranches(pathDescriptions)
-		},
-		problem: ctx => ctx.expected,
-		message: ctx => ctx.problem
-	},
-	intersections: {
-		union: (l, r, ctx) => {
-			if (
-				(l.branches.length === 0 || r.branches.length === 0) &&
-				l.branches.length !== r.branches.length
-			) {
-				// if exactly one operand is never, we can use it to discriminate based on presence
-				return Disjoint.from(
-					"presence",
-					l.branches.length !== 0,
-					r.branches.length !== 0
-				)
+					if (!ctx.schema.ordered)
+						branches.sort((l, r) => (l.innerHash < r.innerHash ? -1 : 1))
+
+					return branches
+				}
 			}
-			let resultBranches: readonly UnionChildNode[] | Disjoint
-			if (l.ordered) {
-				if (r.ordered) return Disjoint.from("indiscriminableMorphs", l, r)
+		},
+		normalize: schema => (isArray(schema) ? { branches: schema } : schema),
+		reduce: (inner, $) => {
+			const reducedBranches = reduceBranches(inner)
+			if (reducedBranches.length === 1) return reducedBranches[0]
 
-				resultBranches = intersectBranches(r.branches, l.branches, ctx)
-				if (resultBranches instanceof Disjoint) resultBranches.invert()
-			} else resultBranches = intersectBranches(l.branches, r.branches, ctx)
+			if (reducedBranches.length === inner.branches.length) return
 
-			if (resultBranches instanceof Disjoint) return resultBranches
-
-			return ctx.$.schema(
-				l.ordered || r.ordered ?
-					{
-						branches: resultBranches,
-						ordered: true as const
-					}
-				:	{ branches: resultBranches }
+			return $.node(
+				"union",
+				{
+					...inner,
+					branches: reducedBranches
+				},
+				{ prereduced: true }
 			)
 		},
-		...defineRightwardIntersections("union", (l, r, ctx) => {
-			const branches = intersectBranches(l.branches, [r], ctx)
-			if (branches instanceof Disjoint) return branches
+		defaults: {
+			description: node => {
+				return describeBranches(node.branches.map(branch => branch.description))
+			},
+			expected: ctx => {
+				const byPath = groupBy(ctx.errors, "propString") as Record<
+					string,
+					ArkTypeError[]
+				>
+				const pathDescriptions = Object.entries(byPath).map(
+					([path, errors]) => {
+						const branchesAtPath: string[] = []
+						errors.forEach(errorAtPath =>
+							// avoid duplicate messages when multiple branches
+							// are invalid due to the same error
+							appendUnique(branchesAtPath, errorAtPath.expected)
+						)
+						const expected = describeBranches(branchesAtPath)
+						const actual = errors.reduce(
+							(acc, e) =>
+								e.actual && !acc.includes(e.actual) ?
+									`${acc && `${acc}, `}${e.actual}`
+								:	acc,
+							""
+						)
+						return `${path && `${path} `}must be ${expected}${
+							actual && ` (was ${actual})`
+						}`
+					}
+				)
+				return describeBranches(pathDescriptions)
+			},
+			problem: ctx => ctx.expected,
+			message: ctx => ctx.problem
+		},
+		intersections: {
+			union: (l, r, ctx) => {
+				if (
+					(l.branches.length === 0 || r.branches.length === 0) &&
+					l.branches.length !== r.branches.length
+				) {
+					// if exactly one operand is never, we can use it to discriminate based on presence
+					return Disjoint.from(
+						"presence",
+						l.branches.length !== 0,
+						r.branches.length !== 0
+					)
+				}
+				let resultBranches: readonly UnionChildNode[] | Disjoint
+				if (l.ordered) {
+					if (r.ordered) return Disjoint.from("indiscriminableMorphs", l, r)
 
-			if (branches.length === 1) return branches[0]
+					resultBranches = intersectBranches(r.branches, l.branches, ctx)
+					if (resultBranches instanceof Disjoint) resultBranches.invert()
+				} else resultBranches = intersectBranches(l.branches, r.branches, ctx)
 
-			return ctx.$.schema(
-				l.ordered ? { branches, ordered: true } : { branches }
-			)
-		})
-	}
-})
+				if (resultBranches instanceof Disjoint) return resultBranches
+
+				return ctx.$.schema(
+					l.ordered || r.ordered ?
+						{
+							branches: resultBranches,
+							ordered: true as const
+						}
+					:	{ branches: resultBranches }
+				)
+			},
+			...defineRightwardIntersections("union", (l, r, ctx) => {
+				const branches = intersectBranches(l.branches, [r], ctx)
+				if (branches instanceof Disjoint) return branches
+
+				if (branches.length === 1) return branches[0]
+
+				return ctx.$.schema(
+					l.ordered ? { branches, ordered: true } : { branches }
+				)
+			})
+		}
+	})
 
 export class UnionNode extends BaseRoot<UnionDeclaration> {
-	isBoolean =
+	isBoolean: boolean =
 		this.branches.length === 2 &&
 		this.branches[0].hasUnit(false) &&
 		this.branches[1].hasUnit(true)
 
 	discriminant = null
-	expression =
+	expression: string =
 		this.isBoolean ? "boolean" : (
 			this.branches.map(branch => branch.nestableExpression).join(" | ")
 		)
+
 	traverseAllows: TraverseAllows = (data, ctx) =>
 		this.branches.some(b => b.traverseAllows(data, ctx))
 

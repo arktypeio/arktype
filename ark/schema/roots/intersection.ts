@@ -88,10 +88,14 @@ export type IntersectionDeclaration = declareNode<{
 
 export class IntersectionNode extends BaseRoot<IntersectionDeclaration> {
 	basis: Node<IntersectionBasisKind> | null = this.domain ?? this.proto ?? null
-	refinements = this.children.filter((node): node is Node<RefinementKind> =>
-		node.isRefinement()
+
+	refinements: array<Node<RefinementKind>> = this.children.filter(
+		(node): node is Node<RefinementKind> => node.isRefinement()
 	)
-	traversables = conflatenateAll<
+
+	traversables: array<
+		Node<Exclude<IntersectionChildKind, StructuralKind>> | StructureNode
+	> = conflatenateAll<
 		Node<Exclude<IntersectionChildKind, StructuralKind>> | StructureNode
 	>(this.basis, this.refinements, this.structure, this.predicate)
 

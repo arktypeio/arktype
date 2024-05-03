@@ -67,7 +67,7 @@ export type exactEquals<l, r> =
 	(<_>() => _ extends l ? 1 : 2) extends <_>() => _ extends r ? 1 : 2 ? true
 	:	false
 
-export const id = Symbol("id")
+export const id: unique symbol = Symbol("id")
 
 export type nominal<t, id extends string> = t & {
 	readonly [id]: id

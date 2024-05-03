@@ -93,7 +93,7 @@ export abstract class BaseNode<
 	)
 	readonly contributesReferencesById: Record<string, BaseNode>
 	readonly contributesReferences: readonly BaseNode[]
-	readonly precedence = precedenceOfKind(this.kind)
+	readonly precedence: number = precedenceOfKind(this.kind)
 	jit = false
 
 	allows = (data: d["prerequisite"]): boolean => {

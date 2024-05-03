@@ -464,10 +464,10 @@ export const parseMorphTuple: PostfixParser<"=>"> = (def, ctx) => {
 export const writeMalformedFunctionalExpressionMessage = (
 	operator: ":" | "=>",
 	value: unknown
-) =>
+): string =>
 	`${
 		operator === ":" ? "Narrow" : "Morph"
-	} expression requires a function following '${operator}' (was ${typeof value})` as const
+	} expression requires a function following '${operator}' (was ${typeof value})`
 
 export type parseMorph<inDef, morph, $, args> =
 	morph extends Morph ?
@@ -538,5 +538,5 @@ export const writeInvalidConstructorMessage = <
 	actual extends Domain | BuiltinObjectKind
 >(
 	actual: actual
-) =>
-	`Expected a constructor following 'instanceof' operator (was ${actual})` as const
+): string =>
+	`Expected a constructor following 'instanceof' operator (was ${actual})`

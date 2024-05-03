@@ -1,8 +1,8 @@
 import {
 	type array,
 	arrayFrom,
+	type builtinConstructors,
 	type BuiltinObjectKind,
-	type BuiltinObjects,
 	type listable,
 	type Primitive,
 	registeredReference,
@@ -16,7 +16,10 @@ import { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { ArkErrors, ArkTypeError } from "../shared/errors.js"
-import { basisKinds, implementNode } from "../shared/implement.js"
+import {
+	implementNode,
+	type nodeImplementationOf
+} from "../shared/implement.js"
 import { type inferPipe, intersectNodes } from "../shared/intersections.js"
 import type {
 	TraversalContext,
@@ -28,10 +31,12 @@ import { defineRightwardIntersections } from "./utils.js"
 
 export type MorphInputKind = schemaKindRightOf<"morph">
 
-export const morphInputKinds = [
+const morphInputKinds: array<MorphInputKind> = [
 	"intersection",
-	...basisKinds
-] as const satisfies readonly MorphInputKind[]
+	"unit",
+	"domain",
+	"proto"
+]
 
 export type MorphInputNode = Node<MorphInputKind>
 
@@ -55,94 +60,96 @@ export interface MorphSchema extends BaseMeta {
 	readonly morphs: listable<Morph>
 }
 
-export type MorphDeclaration = declareNode<{
-	kind: "morph"
-	schema: MorphSchema
-	normalizedSchema: MorphSchema
-	inner: MorphInner
-	childKind: MorphInputKind
-}>
+export interface MorphDeclaration
+	extends declareNode<{
+		kind: "morph"
+		schema: MorphSchema
+		normalizedSchema: MorphSchema
+		inner: MorphInner
+		childKind: MorphInputKind
+	}> {}
 
-export const morphImplementation = implementNode<MorphDeclaration>({
-	kind: "morph",
-	hasAssociatedError: false,
-	keys: {
-		from: {
-			child: true,
-			parse: (schema, ctx) => ctx.$.node(morphInputKinds, schema)
-		},
-		to: {
-			child: true,
-			parse: (schema, ctx) => {
-				if (schema === undefined) return
-				const to = ctx.$.schema(schema)
-				return to.kind === "intersection" && to.children.length === 0 ?
-						// ignore unknown as an output validator
-						undefined
-					:	to
+export const morphImplementation: nodeImplementationOf<MorphDeclaration> =
+	implementNode<MorphDeclaration>({
+		kind: "morph",
+		hasAssociatedError: false,
+		keys: {
+			from: {
+				child: true,
+				parse: (schema, ctx) => ctx.$.node(morphInputKinds, schema)
+			},
+			to: {
+				child: true,
+				parse: (schema, ctx) => {
+					if (schema === undefined) return
+					const to = ctx.$.schema(schema)
+					return to.kind === "intersection" && to.children.length === 0 ?
+							// ignore unknown as an output validator
+							undefined
+						:	to
+				}
+			},
+			morphs: {
+				parse: arrayFrom,
+				serialize: morphs => morphs.map(registeredReference)
 			}
 		},
-		morphs: {
-			parse: arrayFrom,
-			serialize: morphs => morphs.map(registeredReference)
-		}
-	},
-	normalize: schema => schema,
-	defaults: {
-		description: node =>
-			`a morph from ${node.from.description} to ${node.to?.description ?? "unknown"}`
-	},
-	intersections: {
-		morph: (l, r, ctx) => {
-			if (l.morphs.some((morph, i) => morph !== r.morphs[i]))
-				// TODO: check in for union reduction
-				return throwParseError("Invalid intersection of morphs")
-			const from = intersectNodes(l.from, r.from, ctx)
-			if (from instanceof Disjoint) return from
-			const to =
-				l.to ?
-					r.to ?
-						intersectNodes(l.to, r.to, ctx)
-					:	l.to
-				:	r.to
-			if (to instanceof Disjoint) return to
-			// in case from is a union, we need to distribute the branches
-			// to can be a union as any schema is allowed
-			return ctx.$.schema(
-				from.branches.map(fromBranch =>
-					ctx.$.node("morph", {
-						morphs: l.morphs,
-						from: fromBranch,
-						to
-					})
-				)
-			)
+		normalize: schema => schema,
+		defaults: {
+			description: node =>
+				`a morph from ${node.from.description} to ${node.to?.description ?? "unknown"}`
 		},
-		...defineRightwardIntersections("morph", (l, r, ctx) => {
-			const from = intersectNodes(l.from, r, ctx)
-			return (
-				from instanceof Disjoint ? from
-				: from.kind === "union" ?
-					ctx.$.node(
-						"union",
-						from.branches.map(branch => ({
-							...l.inner,
-							from: branch
-						}))
+		intersections: {
+			morph: (l, r, ctx) => {
+				if (l.morphs.some((morph, i) => morph !== r.morphs[i]))
+					// TODO: check in for union reduction
+					return throwParseError("Invalid intersection of morphs")
+				const from = intersectNodes(l.from, r.from, ctx)
+				if (from instanceof Disjoint) return from
+				const to =
+					l.to ?
+						r.to ?
+							intersectNodes(l.to, r.to, ctx)
+						:	l.to
+					:	r.to
+				if (to instanceof Disjoint) return to
+				// in case from is a union, we need to distribute the branches
+				// to can be a union as any schema is allowed
+				return ctx.$.schema(
+					from.branches.map(fromBranch =>
+						ctx.$.node("morph", {
+							morphs: l.morphs,
+							from: fromBranch,
+							to
+						})
 					)
-				:	ctx.$.node("morph", {
-						...l.inner,
-						from
-					})
-			)
-		})
-	}
-})
+				)
+			},
+			...defineRightwardIntersections("morph", (l, r, ctx) => {
+				const from = intersectNodes(l.from, r, ctx)
+				return (
+					from instanceof Disjoint ? from
+					: from.kind === "union" ?
+						ctx.$.node(
+							"union",
+							from.branches.map(branch => ({
+								...l.inner,
+								from: branch
+							}))
+						)
+					:	ctx.$.node("morph", {
+							...l.inner,
+							from
+						})
+				)
+			})
+		}
+	})
 
 export class MorphNode extends BaseRoot<MorphDeclaration> {
 	serializedMorphs: string[] = (this.json as any).morphs
 	compiledMorphs = `[${this.serializedMorphs}]`
-	outValidator = this.to?.traverseApply ?? null
+	outValidator: TraverseApply | null = this.to?.traverseApply ?? null
 	outValidatorReference: string =
 		this.to ?
 			new NodeCompiler("Apply").reference(this.to, { bind: "this" })
@@ -150,6 +157,7 @@ export class MorphNode extends BaseRoot<MorphDeclaration> {
 
 	traverseAllows: TraverseAllows = (data, ctx) =>
 		this.from.traverseAllows(data, ctx)
+
 	traverseApply: TraverseApply = (data, ctx) => {
 		ctx.queueMorphs(this.morphs, this.outValidator)
 		this.from.traverseApply(data, ctx)
@@ -265,4 +273,4 @@ type distillPostfix<
 /** Objects we don't want to expand during inference like Date or Promise */
 type TerminallyInferredObjectKind =
 	| StaticArkOption<"preserve">
-	| BuiltinObjects[Exclude<BuiltinObjectKind, "Array">]
+	| builtinConstructors[Exclude<BuiltinObjectKind, "Array">]

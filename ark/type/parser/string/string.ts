@@ -72,7 +72,7 @@ export type parseUntilFinalizer<s extends StaticState, $, args> =
 		parseUntilFinalizer<next<s, $, args>, $, args>
 	:	s
 
-const next = (s: DynamicState) =>
+const next = (s: DynamicState): void =>
 	s.hasRoot() ? s.parseOperator() : s.parseOperand()
 
 type next<s extends StaticState, $, args> =

@@ -9,11 +9,11 @@ export class Rectangle extends Trait {
 		super()
 	}
 
-	area() {
+	area(): number {
 		return this.length * this.width
 	}
 
-	perimeter() {
+	perimeter(): number {
 		return 2 * (this.length + this.width)
 	}
 }
@@ -31,7 +31,7 @@ export class Rhombus extends Trait<{
 		super()
 	}
 
-	perimeter() {
+	perimeter(): number {
 		return this.side * 4
 	}
 }

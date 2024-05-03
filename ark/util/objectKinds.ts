@@ -2,9 +2,25 @@ import type { array } from "./arrays.js"
 import { type Domain, type domainDescriptions, domainOf } from "./domain.js"
 import { type Key, isKeyOf } from "./records.js"
 
+export type builtinConstructors = {
+	Array: ArrayConstructor
+	Date: DateConstructor
+	Error: ErrorConstructor
+	Function: FunctionConstructor
+	Map: MapConstructor
+	RegExp: RegExpConstructor
+	Set: SetConstructor
+	String: StringConstructor
+	Number: NumberConstructor
+	Boolean: BooleanConstructor
+	WeakMap: WeakMapConstructor
+	WeakSet: WeakSetConstructor
+	Promise: PromiseConstructor
+}
+
 // Built-in object constructors based on a subset of:
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
-export const builtinObjectKinds = {
+export const builtinConstructors: builtinConstructors = {
 	Array,
 	Date,
 	Error,
@@ -18,11 +34,11 @@ export const builtinObjectKinds = {
 	WeakMap,
 	WeakSet,
 	Promise
-} as const satisfies ObjectKindSet
+}
 
 export type ObjectKindSet = Record<string, Constructor>
 
-export type BuiltinObjectConstructors = typeof builtinObjectKinds
+export type BuiltinObjectConstructors = typeof builtinConstructors
 
 export type BuiltinObjectKind = keyof BuiltinObjectConstructors
 
@@ -32,7 +48,7 @@ export type BuiltinObjects = {
 
 export type objectKindOf<
 	data extends object,
-	kinds extends ObjectKindSet = BuiltinObjectConstructors
+	kinds extends ObjectKindSet = builtinConstructors
 > =
 	object extends data ? keyof kinds | undefined
 	: data extends (...args: never[]) => unknown ? "Function"
@@ -57,7 +73,7 @@ export const objectKindOf = <
 	data: data,
 	kinds?: kinds
 ): objectKindOf<data, kinds> | undefined => {
-	const kindSet: ObjectKindSet = kinds ?? builtinObjectKinds
+	const kindSet: ObjectKindSet = kinds ?? builtinConstructors
 	let prototype: Partial<Object> | null = Object.getPrototypeOf(data)
 	while (
 		prototype?.constructor &&
@@ -132,8 +148,8 @@ export const getExactBuiltinConstructorName = (
 	const constructorName: string | null = Object(ctor).name ?? null
 	return (
 			constructorName &&
-				isKeyOf(constructorName, builtinObjectKinds) &&
-				builtinObjectKinds[constructorName] === ctor
+				isKeyOf(constructorName, builtinConstructors) &&
+				builtinConstructors[constructorName] === ctor
 		) ?
 			constructorName
 		:	null

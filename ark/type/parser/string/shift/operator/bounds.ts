@@ -104,8 +104,10 @@ type shiftComparator<
 	: start extends OneCharComparator ? [start, unscanned]
 	: state.error<singleEqualsMessage>
 
-export const writeIncompatibleRangeMessage = (l: BoundKind, r: BoundKind) =>
-	`Bound kinds ${l} and ${r} are incompatible` as const
+export const writeIncompatibleRangeMessage = (
+	l: BoundKind,
+	r: BoundKind
+): string => `Bound kinds ${l} and ${r} are incompatible`
 
 export const getBoundKinds = (
 	comparator: Comparator,
