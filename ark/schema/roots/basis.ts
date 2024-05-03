@@ -1,4 +1,4 @@
-import type { Key } from "@arktype/util"
+import type { array, Key } from "@arktype/util"
 
 import type { NodeCompiler } from "../shared/compile.js"
 import { compileErrorContext } from "../shared/implement.js"
@@ -10,7 +10,7 @@ export abstract class RawBasis<
 > extends BaseRoot<d> {
 	abstract compiledCondition: string
 	abstract compiledNegation: string
-	abstract literalKeys: Key[]
+	abstract literalKeys: array<Key>
 
 	rawKeyOf(): BaseRoot {
 		return this.$.units(this.literalKeys)

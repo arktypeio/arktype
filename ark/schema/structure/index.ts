@@ -9,7 +9,11 @@ import type { BaseRoot } from "../roots/root.js"
 import type { UnitNode } from "../roots/unit.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
-import { type RootKind, implementNode } from "../shared/implement.js"
+import {
+	type RootKind,
+	implementNode,
+	type nodeImplementationOf
+} from "../shared/implement.js"
 import { intersectNodes } from "../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 
@@ -27,74 +31,79 @@ export interface IndexInner extends BaseMeta {
 	readonly value: BaseRoot
 }
 
-export type IndexDeclaration = declareNode<{
-	kind: "index"
-	schema: IndexSchema
-	normalizedSchema: IndexSchema
-	inner: IndexInner
-	prerequisite: object
-	intersectionIsOpen: true
-	childKind: RootKind
-}>
+export interface IndexDeclaration
+	extends declareNode<{
+		kind: "index"
+		schema: IndexSchema
+		normalizedSchema: IndexSchema
+		inner: IndexInner
+		prerequisite: object
+		intersectionIsOpen: true
+		childKind: RootKind
+	}> {}
 
-export const indexImplementation = implementNode<IndexDeclaration>({
-	kind: "index",
-	hasAssociatedError: false,
-	intersectionIsOpen: true,
-	keys: {
-		index: {
-			child: true,
-			parse: (schema, ctx) => {
-				const key = ctx.$.schema(schema)
-				if (!key.extends(ctx.$.keywords.propertyKey))
-					return throwParseError(writeInvalidPropertyKeyMessage(key.expression))
-				// TODO: explicit manual annotation once we can upgrade to 5.5
-				const enumerableBranches = key.branches.filter((b): b is UnitNode =>
-					b.hasKind("unit")
-				)
-				if (enumerableBranches.length) {
-					return throwParseError(
-						writeEnumerableIndexBranches(
-							enumerableBranches.map(b => printable(b.unit))
+export const indexImplementation: nodeImplementationOf<IndexDeclaration> =
+	implementNode<IndexDeclaration>({
+		kind: "index",
+		hasAssociatedError: false,
+		intersectionIsOpen: true,
+		keys: {
+			index: {
+				child: true,
+				parse: (schema, ctx) => {
+					const key = ctx.$.schema(schema)
+					if (!key.extends(ctx.$.keywords.propertyKey))
+						return throwParseError(
+							writeInvalidPropertyKeyMessage(key.expression)
 						)
+					// TODO: explicit manual annotation once we can upgrade to 5.5
+					const enumerableBranches = key.branches.filter((b): b is UnitNode =>
+						b.hasKind("unit")
 					)
+					if (enumerableBranches.length) {
+						return throwParseError(
+							writeEnumerableIndexBranches(
+								enumerableBranches.map(b => printable(b.unit))
+							)
+						)
+					}
+					return key as IndexKeyNode
 				}
-				return key as IndexKeyNode
+			},
+			value: {
+				child: true,
+				parse: (schema, ctx) => ctx.$.schema(schema)
 			}
 		},
-		value: {
-			child: true,
-			parse: (schema, ctx) => ctx.$.schema(schema)
-		}
-	},
-	normalize: schema => schema,
-	defaults: {
-		description: node => `[${node.index.expression}]: ${node.value.description}`
-	},
-	intersections: {
-		index: (l, r, ctx) => {
-			if (l.index.equals(r.index)) {
-				const valueIntersection = intersectNodes(l.value, r.value, ctx)
-				const value =
-					valueIntersection instanceof Disjoint ?
-						ctx.$.keywords.never.raw
-					:	valueIntersection
-				return ctx.$.node("index", { index: l.index, value })
+		normalize: schema => schema,
+		defaults: {
+			description: node =>
+				`[${node.index.expression}]: ${node.value.description}`
+		},
+		intersections: {
+			index: (l, r, ctx) => {
+				if (l.index.equals(r.index)) {
+					const valueIntersection = intersectNodes(l.value, r.value, ctx)
+					const value =
+						valueIntersection instanceof Disjoint ?
+							ctx.$.keywords.never.raw
+						:	valueIntersection
+					return ctx.$.node("index", { index: l.index, value })
+				}
+
+				// if r constrains all of l's keys to a subtype of l's value, r is a subtype of l
+				if (l.index.extends(r.index) && l.value.subsumes(r.value)) return r
+				// if l constrains all of r's keys to a subtype of r's value, l is a subtype of r
+				if (r.index.extends(l.index) && r.value.subsumes(l.value)) return l
+
+				// other relationships between index signatures can't be generally reduced
+				return null
 			}
-
-			// if r constrains all of l's keys to a subtype of l's value, r is a subtype of l
-			if (l.index.extends(r.index) && l.value.subsumes(r.value)) return r
-			// if l constrains all of r's keys to a subtype of r's value, l is a subtype of r
-			if (r.index.extends(l.index) && r.value.subsumes(l.value)) return l
-
-			// other relationships between index signatures can't be generally reduced
-			return null
 		}
-	}
-})
+	})
 
 export class IndexNode extends BaseConstraint<IndexDeclaration> {
-	impliedBasis = this.$.keywords.object.raw
+	impliedBasis: BaseRoot = this.$.keywords.object.raw
 	expression = `[${this.index.expression}]: ${this.value.expression}`
 
 	traverseAllows: TraverseAllows<object> = (data, ctx) =>

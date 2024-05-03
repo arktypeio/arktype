@@ -1,15 +1,14 @@
 import {
-	type PartialRecord,
 	type array,
 	invert,
 	isKeyOf,
-	type propValueOf
+	type propValueOf,
+	type satisfy
 } from "@arktype/util"
 import { RawPrimitiveConstraint } from "../constraint.js"
 import type { Node } from "../kinds.js"
 import type { BaseMeta, RawNodeDeclaration } from "../shared/declare.js"
 import type { KeySchemainitions, RangeKind } from "../shared/implement.js"
-
 export interface BaseRangeDeclaration extends RawNodeDeclaration {
 	kind: RangeKind
 	inner: BaseRangeInner
@@ -19,22 +18,26 @@ export interface BaseRangeDeclaration extends RawNodeDeclaration {
 export abstract class BaseRange<
 	d extends BaseRangeDeclaration
 > extends RawPrimitiveConstraint<d> {
-	readonly boundOperandKind = operandKindsByBoundKind[this.kind]
-	readonly compiledActual =
+	readonly boundOperandKind: OperandKindsByBoundKind[d["kind"]] =
+		operandKindsByBoundKind[this.kind]
+	readonly compiledActual: string =
 		this.boundOperandKind === "value" ? `data`
 		: this.boundOperandKind === "length" ? `data.length`
 		: `data.valueOf()`
-	readonly comparator = compileComparator(this.kind, this.exclusive)
-	readonly numericLimit = this.rule.valueOf()
-	readonly expression = `${this.comparator}${this.rule}`
-	readonly compiledCondition = `${this.compiledActual} ${this.comparator} ${this.numericLimit}`
-	readonly compiledNegation = `${this.compiledActual} ${
+	readonly comparator: RelativeComparator = compileComparator(
+		this.kind,
+		this.exclusive
+	)
+	readonly numericLimit: number = this.rule.valueOf()
+	readonly expression: string = `${this.comparator}${this.rule}`
+	readonly compiledCondition: string = `${this.compiledActual} ${this.comparator} ${this.numericLimit}`
+	readonly compiledNegation: string = `${this.compiledActual} ${
 		negatedComparators[this.comparator]
 	} ${this.numericLimit}`
 
 	// we need to compute stringLimit before errorContext, which references it
 	// transitively through description for date bounds
-	readonly stringLimit =
+	readonly stringLimit: string =
 		this.boundOperandKind === "date" ?
 			dateLimitToString(this.numericLimit)
 		:	`${this.numericLimit}`
@@ -90,24 +93,34 @@ export type RelativeComparator<kind extends LimitKind = LimitKind> = {
 	upper: "<" | "<="
 }[kind]
 
-export const negatedComparators = {
+const negatedComparators = {
 	"<": ">=",
 	"<=": ">",
 	">": "<=",
 	">=": "<"
 } as const satisfies Record<RelativeComparator, RelativeComparator>
 
-export const boundKindPairsByLower = {
+export const boundKindPairsByLower: BoundKindPairsByLower = {
 	min: "max",
 	minLength: "maxLength",
 	after: "before"
-} as const satisfies PartialRecord<RangeKind, RangeKind>
+}
 
-type BoundKindPairsByLower = typeof boundKindPairsByLower
+type BoundKindPairsByLower = {
+	min: "max"
+	minLength: "maxLength"
+	after: "before"
+}
 
-export const boundKindPairsByUpper = invert(boundKindPairsByLower)
+const boundKindPairsByUpper: BoundKindPairsByUpper = invert(
+	boundKindPairsByLower
+)
 
-type BoundKindPairsByUpper = typeof boundKindPairsByUpper
+type BoundKindPairsByUpper = {
+	max: "min"
+	maxLength: "minLength"
+	before: "after"
+}
 
 export type pairedRangeKind<kind extends RangeKind> =
 	kind extends LowerBoundKind ? BoundKindPairsByLower[kind]
@@ -136,19 +149,31 @@ export const parseDateLimit = (limit: LimitRootValue): Date =>
 		new Date(limit)
 	:	limit
 
-export const operandKindsByBoundKind = {
+type OperandKindsByBoundKind = satisfy<
+	Record<RangeKind, BoundOperandKind>,
+	{
+		min: "value"
+		max: "value"
+		minLength: "length"
+		maxLength: "length"
+		after: "date"
+		before: "date"
+	}
+>
+
+const operandKindsByBoundKind: OperandKindsByBoundKind = {
 	min: "value",
 	max: "value",
 	minLength: "length",
 	maxLength: "length",
 	after: "date",
 	before: "date"
-} as const satisfies Record<RangeKind, BoundOperandKind>
+} as const
 
 export const compileComparator = (
 	kind: RangeKind,
 	exclusive: boolean | undefined
-) =>
+): RelativeComparator =>
 	`${isKeyOf(kind, boundKindPairsByLower) ? ">" : "<"}${
 		exclusive ? "" : "="
 	}` as const

@@ -1,6 +1,6 @@
 import type { RootModule } from "../module.js"
 import { root, schemaScope } from "../scope.js"
-import { creditCard } from "./utils/creditCard.js"
+import { creditCardMatcher, isLuhnValid } from "./utils/creditCard.js"
 
 // Non-trivial expressions should have an explanation or attribution
 
@@ -51,6 +51,18 @@ const semver = root.defineRoot({
 	regex: {
 		rule: semverMatcher.source,
 		description: "a valid semantic version (see https://semver.org/)"
+	}
+})
+
+const creditCard = root.defineRoot({
+	domain: "string",
+	regex: {
+		rule: creditCardMatcher.source,
+		description: "a valid credit card number"
+	},
+	predicate: {
+		predicate: isLuhnValid,
+		description: "a valid credit card number"
 	}
 })
 

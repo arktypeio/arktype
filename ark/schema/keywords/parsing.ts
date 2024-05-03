@@ -6,7 +6,7 @@ import {
 import type { RootModule } from "../module.js"
 import type { Out } from "../roots/morph.js"
 import { root, schemaScope } from "../scope.js"
-import { parsedDate } from "./utils/date.js"
+import { tryParseDatePattern } from "./utils/date.js"
 
 const number = root.defineRoot({
 	from: {
@@ -57,7 +57,13 @@ const json = root.defineRoot({
 	morphs: (s: string): unknown => JSON.parse(s)
 })
 
-const date = parsedDate
+const date = root.defineRoot({
+	from: "string",
+	morphs: (s: string, ctx) => {
+		const result = tryParseDatePattern(s)
+		return typeof result === "string" ? ctx.error(result) : result
+	}
+})
 
 export type parsingExports = {
 	url: (In: string) => Out<URL>

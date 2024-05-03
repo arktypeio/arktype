@@ -32,6 +32,7 @@ import {
 	implementNode,
 	type IntersectionChildKind,
 	type IntersectionContext,
+	type nodeImplementationOf,
 	type OpenNodeKind,
 	type RefinementKind,
 	type StructuralKind
@@ -237,7 +238,7 @@ const intersectIntersections = (
 	return result
 }
 
-export const intersectionImplementation =
+export const intersectionImplementation: nodeImplementationOf<IntersectionDeclaration> =
 	implementNode<IntersectionDeclaration>({
 		kind: "intersection",
 		hasAssociatedError: true,

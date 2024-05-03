@@ -212,7 +212,7 @@ type PrecedenceByKind = {
 	[i in indexOf<OrderedNodeKinds> as OrderedNodeKinds[i]]: i
 }
 
-export const precedenceByKind = flatMorph(
+export const precedenceByKind: PrecedenceByKind = flatMorph(
 	nodeKinds,
 	(i, kind) => [kind, i] as entryOf<PrecedenceByKind>
 )

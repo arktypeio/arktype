@@ -109,7 +109,7 @@ export const fromCwd = (...joinWith: string[]): string =>
 export const fromHome = (...joinWith: string[]): string =>
 	join(homedir()!, ...joinWith)
 
-export const fsRoot = parse(process.cwd()).root
+export const fsRoot: string = parse(process.cwd()).root
 
 export const findPackageRoot = (fromDir?: string): string => {
 	const startDir = fromDir ?? dirOfCaller()
@@ -145,7 +145,7 @@ export const getSourceControlPaths = (): string[] =>
 		.split("\n")
 		.filter(path => existsSync(path) && statSync(path).isFile())
 
-export const tsFileMatcher = /^.*\.(c|m)?tsx?$/
+export const tsFileMatcher: RegExp = /^.*\.(c|m)?tsx?$/
 
 const inFileFilter: WalkOptions = {
 	include: path => tsFileMatcher.test(path),

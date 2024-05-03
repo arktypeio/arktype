@@ -1,5 +1,5 @@
 import type { BaseConstraint } from "../constraint.js"
-import type { BoundKind } from "../shared/implement.js"
+import type { BoundKind, nodeImplementationOf } from "../shared/implement.js"
 import {
 	type AfterDeclaration,
 	AfterNode,
@@ -48,7 +48,11 @@ export interface BoundNodesByKind {
 	before: BeforeNode
 }
 
-export const boundImplementationsByKind = {
+export type boundImplementationsByKind = {
+	[k in BoundKind]: nodeImplementationOf<BoundDeclarations[k]>
+}
+
+export const boundImplementationsByKind: boundImplementationsByKind = {
 	min: minImplementation,
 	max: maxImplementation,
 	minLength: minLengthImplementation,

@@ -51,7 +51,7 @@
 		"c8": "9.1.0",
 		"knip": "5.11.0",
 		"tsx": "4.8.2",
-		"typescript": "5.4.5",
+		"typescript": "5.5.0-beta",
 		"typescript-min": "npm:typescript@5.1.6",
 		"typescript-nightly": "npm:typescript@next",
 		"mocha": "10.4.0",

@@ -49,7 +49,7 @@ export abstract class BaseConstraint<
 > extends BaseNode<d> {
 	readonly [arkKind] = "constraint"
 	abstract readonly impliedBasis: BaseRoot | null
-	readonly impliedSiblings?: BaseConstraint[] | null
+	readonly impliedSiblings?: array<BaseConstraint> | null
 
 	intersect<r extends BaseConstraint>(
 		r: r

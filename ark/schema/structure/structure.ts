@@ -3,18 +3,25 @@ import {
 	flatMorph,
 	registeredReference,
 	type array,
-	type Key
+	type Key,
+	type RegisteredReference
 } from "@arktype/util"
 import { BaseConstraint, constraintKeyParser } from "../constraint.js"
 import type { BaseRoot } from "../roots/root.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
-import { implementNode, type StructuralKind } from "../shared/implement.js"
+import {
+	implementNode,
+	type nodeImplementationOf,
+	type StructuralKind
+} from "../shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 import { makeRootAndArrayPropertiesMutable } from "../shared/utils.js"
 import type { IndexNode, IndexSchema } from "./index.js"
-import type { BasePropNode, PropSchema } from "./prop.js"
+import type { OptionalNode } from "./optional.js"
+import type { PropNode, PropSchema } from "./prop.js"
+import type { RequiredNode } from "./required.js"
 import type { SequenceNode, SequenceSchema } from "./sequence.js"
 import { arrayIndexMatcherReference } from "./shared.js"
 
@@ -31,35 +38,41 @@ export interface StructureSchema extends BaseMeta {
 }
 
 export interface StructureInner extends BaseMeta {
-	readonly optional?: readonly BasePropNode[]
-	readonly required?: readonly BasePropNode[]
+	readonly optional?: readonly OptionalNode[]
+	readonly required?: readonly RequiredNode[]
 	readonly index?: readonly IndexNode[]
 	readonly sequence?: SequenceNode
 	readonly onExtraneousKey?: ExtraneousKeyRestriction
 }
 
-export type StructureDeclaration = declareNode<{
-	kind: "structure"
-	schema: StructureSchema
-	normalizedSchema: StructureSchema
-	inner: StructureInner
-	prerequisite: object
-	childKind: StructuralKind
-}>
+export interface StructureDeclaration
+	extends declareNode<{
+		kind: "structure"
+		schema: StructureSchema
+		normalizedSchema: StructureSchema
+		inner: StructureInner
+		prerequisite: object
+		childKind: StructuralKind
+	}> {}
 
 export class StructureNode extends BaseConstraint<StructureDeclaration> {
-	impliedBasis = this.$.keywords.object.raw
+	impliedBasis: BaseRoot = this.$.keywords.object.raw
 
-	props =
+	props: array<PropNode> =
 		this.required ?
 			this.optional ?
 				[...this.required, ...this.optional]
 			:	this.required
 		:	this.optional ?? []
 
-	propsByKey = flatMorph(this.props, (i, node) => [node.key, node] as const)
-	propsByKeyReference = registeredReference(this.propsByKey)
-	expression = structuralExpression(this)
+	propsByKey: Record<Key, PropNode | undefined> = flatMorph(
+		this.props,
+		(i, node) => [node.key, node] as const
+	)
+	propsByKeyReference: RegisteredReference = registeredReference(
+		this.propsByKey
+	)
+	expression: string = structuralExpression(this)
 
 	requiredLiteralKeys: Key[] = this.required?.map(node => node.key) ?? []
 
@@ -88,7 +101,7 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 	traverseApply: TraverseApply<object> = (data, ctx) =>
 		this.children.forEach(prop => prop.traverseApply(data as never, ctx))
 
-	readonly exhaustive =
+	readonly exhaustive: boolean =
 		this.onExtraneousKey !== undefined || this.index !== undefined
 
 	compile(js: NodeCompiler): void {
@@ -202,63 +215,68 @@ const createStructuralWriter =
 const structuralDescription = createStructuralWriter("description")
 const structuralExpression = createStructuralWriter("expression")
 
-export const structureImplementation = implementNode<StructureDeclaration>({
-	kind: "structure",
-	hasAssociatedError: false,
-	normalize: schema => schema,
-	keys: {
-		required: {
-			child: true,
-			parse: constraintKeyParser("required")
-		},
-		optional: {
-			child: true,
-			parse: constraintKeyParser("optional")
-		},
-		index: {
-			child: true,
-			parse: constraintKeyParser("index")
-		},
-		sequence: {
-			child: true,
-			parse: constraintKeyParser("sequence")
-		},
-		onExtraneousKey: {
-			parse: behavior => (behavior === "ignore" ? undefined : behavior)
-		}
-	},
-	defaults: {
-		description: structuralDescription
-	},
-	intersections: {
-		structure: (l, r) => {
-			if (l.onExtraneousKey) {
-				const lKey = l.keyof()
-				const disjointRKeys = r.requiredLiteralKeys.filter(k => !lKey.allows(k))
-				if (disjointRKeys.length) {
-					return Disjoint.from("presence", true, false).withPrefixKey(
-						disjointRKeys[0]
-					)
-				}
+export const structureImplementation: nodeImplementationOf<StructureDeclaration> =
+	implementNode<StructureDeclaration>({
+		kind: "structure",
+		hasAssociatedError: false,
+		normalize: schema => schema,
+		keys: {
+			required: {
+				child: true,
+				parse: constraintKeyParser("required")
+			},
+			optional: {
+				child: true,
+				parse: constraintKeyParser("optional")
+			},
+			index: {
+				child: true,
+				parse: constraintKeyParser("index")
+			},
+			sequence: {
+				child: true,
+				parse: constraintKeyParser("sequence")
+			},
+			onExtraneousKey: {
+				parse: behavior => (behavior === "ignore" ? undefined : behavior)
 			}
-			if (r.onExtraneousKey) {
-				const rKey = r.keyof()
-				const disjointLKeys = l.requiredLiteralKeys.filter(k => !rKey.allows(k))
-				if (disjointLKeys.length) {
-					return Disjoint.from("presence", true, false).withPrefixKey(
-						disjointLKeys[0]
+		},
+		defaults: {
+			description: structuralDescription
+		},
+		intersections: {
+			structure: (l, r) => {
+				if (l.onExtraneousKey) {
+					const lKey = l.keyof()
+					const disjointRKeys = r.requiredLiteralKeys.filter(
+						k => !lKey.allows(k)
 					)
+					if (disjointRKeys.length) {
+						return Disjoint.from("presence", true, false).withPrefixKey(
+							disjointRKeys[0]
+						)
+					}
 				}
+				if (r.onExtraneousKey) {
+					const rKey = r.keyof()
+					const disjointLKeys = l.requiredLiteralKeys.filter(
+						k => !rKey.allows(k)
+					)
+					if (disjointLKeys.length) {
+						return Disjoint.from("presence", true, false).withPrefixKey(
+							disjointLKeys[0]
+						)
+					}
+				}
+
+				// const constraintResult = intersectConstraints({
+				// 	l: l.children,
+				// 	r: r.children,
+				// 	types: [],
+				// 	ctx
+				// })
+
+				return r
 			}
-
-			// const constraintResult = intersectConstraints({
-			// 	l: l.children,
-			// 	r: r.children,
-			// 	types: [],
-			// 	ctx
-			// })
-
-			return r
 		}
-	}
-})
+	})

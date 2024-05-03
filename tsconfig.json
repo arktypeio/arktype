@@ -11,6 +11,7 @@
 		"verbatimModuleSyntax": true,
 		"esModuleInterop": true,
 		"resolveJsonModule": true,
+		"isolatedDeclarations": true,
 		"exactOptionalPropertyTypes": true,
 		"noFallthroughCasesInSwitch": true,
 		"stripInternal": true,
@@ -23,5 +24,11 @@
 		},
 		"types": ["mocha", "node"]
 	},
-	"exclude": ["**/out", "**/node_modules", "./ark/docs", "./ark/repo"]
+	"exclude": [
+		"**/out",
+		"**/node_modules",
+		"./ark/docs",
+		"./ark/repo",
+		"**/*.scratch.ts"
+	]
 }

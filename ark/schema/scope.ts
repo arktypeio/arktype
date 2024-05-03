@@ -280,7 +280,7 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 
 	defineRoot = ((def: RootSchema) => def).bind(this)
 
-	units = ((values: unknown[], opts?: NodeParseOptions): BaseRoot => {
+	units = ((values: array, opts?: NodeParseOptions): BaseRoot => {
 		const uniqueValues: unknown[] = []
 		for (const value of values)
 			if (!uniqueValues.includes(value)) uniqueValues.push(value)

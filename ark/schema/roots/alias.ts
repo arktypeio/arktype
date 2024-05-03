@@ -3,7 +3,10 @@ import type { RawRootScope } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
-import { implementNode } from "../shared/implement.js"
+import {
+	implementNode,
+	type nodeImplementationOf
+} from "../shared/implement.js"
 import { intersectNodes } from "../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 import { BaseRoot, type RawRootDeclaration } from "./root.js"
@@ -18,15 +21,16 @@ export type AliasSchema<alias extends string = string> =
 	| `$${alias}`
 	| AliasInner<alias>
 
-export type AliasDeclaration = declareNode<{
-	kind: "alias"
-	schema: AliasSchema
-	normalizedSchema: AliasInner
-	inner: AliasInner
-}>
+export interface AliasDeclaration
+	extends declareNode<{
+		kind: "alias"
+		schema: AliasSchema
+		normalizedSchema: AliasInner
+		inner: AliasInner
+	}> {}
 
 export class AliasNode extends BaseRoot<AliasDeclaration> {
-	readonly expression = this.alias
+	readonly expression: string = this.alias
 
 	private _resolution: BaseRoot | undefined
 	get resolution(): BaseRoot {
@@ -62,32 +66,39 @@ export class AliasNode extends BaseRoot<AliasDeclaration> {
 export const normalizeAliasSchema = (schema: AliasSchema): AliasInner =>
 	typeof schema === "string" ? { alias: schema.slice(1) } : schema
 
-export const aliasImplementation = implementNode<AliasDeclaration>({
-	kind: "alias",
-	hasAssociatedError: false,
-	collapsibleKey: "alias",
-	keys: {
-		alias: {
-			serialize: schema => `$${schema}`
+export const aliasImplementation: nodeImplementationOf<AliasDeclaration> =
+	implementNode<AliasDeclaration>({
+		kind: "alias",
+		hasAssociatedError: false,
+		collapsibleKey: "alias",
+		keys: {
+			alias: {
+				serialize: schema => `$${schema}`
+			},
+			resolve: {}
 		},
-		resolve: {}
-	},
-	normalize: normalizeAliasSchema,
-	defaults: {
-		description: node => node.alias
-	},
-	intersections: {
-		alias: (l, r, ctx) =>
-			ctx.$.lazilyResolve(`${l.alias}${ctx.pipe ? "|>" : "&"}${r.alias}`, () =>
-				neverIfDisjoint(intersectNodes(l.resolution, r.resolution, ctx), ctx.$)
-			),
-		...defineRightwardIntersections("alias", (l, r, ctx) =>
-			ctx.$.lazilyResolve(`${l.alias}${ctx.pipe ? "|>" : "&"}${r.alias}`, () =>
-				neverIfDisjoint(intersectNodes(l.resolution, r, ctx), ctx.$)
+		normalize: normalizeAliasSchema,
+		defaults: {
+			description: node => node.alias
+		},
+		intersections: {
+			alias: (l, r, ctx) =>
+				ctx.$.lazilyResolve(
+					`${l.alias}${ctx.pipe ? "|>" : "&"}${r.alias}`,
+					() =>
+						neverIfDisjoint(
+							intersectNodes(l.resolution, r.resolution, ctx),
+							ctx.$
+						)
+				),
+			...defineRightwardIntersections("alias", (l, r, ctx) =>
+				ctx.$.lazilyResolve(
+					`${l.alias}${ctx.pipe ? "|>" : "&"}${r.alias}`,
+					() => neverIfDisjoint(intersectNodes(l.resolution, r, ctx), ctx.$)
+				)
 			)
-		)
-	}
-})
+		}
+	})
 
 const neverIfDisjoint = (
 	result: BaseRoot | Disjoint,

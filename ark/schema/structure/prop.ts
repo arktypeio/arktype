@@ -1,6 +1,6 @@
 import { compileSerializedValue, type Key } from "@arktype/util"
 import { BaseConstraint } from "../constraint.js"
-import type { RootSchema } from "../kinds.js"
+import type { Node, RootSchema } from "../kinds.js"
 import type { BaseRoot } from "../roots/root.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta } from "../shared/declare.js"
@@ -12,6 +12,8 @@ import type { OptionalDeclaration } from "./optional.js"
 import type { RequiredDeclaration } from "./required.js"
 
 export type PropKind = "required" | "optional"
+
+export type PropNode = Node<PropKind>
 
 export interface PropSchema extends BaseMeta {
 	readonly key: Key
@@ -52,15 +54,16 @@ export const intersectProps: ConstraintIntersection<PropKind, PropKind> = (
 	})
 }
 
-export abstract class BasePropNode<
+export abstract class BaseProp<
 	kind extends PropKind = PropKind
 > extends BaseConstraint<
 	kind extends "required" ? RequiredDeclaration : OptionalDeclaration
 > {
-	required = this.kind === "required"
-	impliedBasis = this.$.keywords.object.raw
-	serializedKey = compileSerializedValue(this.key)
-	compiledKey = typeof this.key === "string" ? this.key : this.serializedKey
+	required: boolean = this.kind === "required"
+	impliedBasis: BaseRoot = this.$.keywords.object.raw
+	serializedKey: string = compileSerializedValue(this.key)
+	compiledKey: string =
+		typeof this.key === "string" ? this.key : this.serializedKey
 
 	traverseAllows: TraverseAllows<object> = (data, ctx) => {
 		if (this.key in data) {

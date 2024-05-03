@@ -95,11 +95,3 @@ export const tryParseDatePattern = (
 
 	return writeFormattedExpected(opts.format)
 }
-
-export const parsedDate = root.defineRoot({
-	from: "string",
-	morphs: (s: string, ctx) => {
-		const result = tryParseDatePattern(s)
-		return typeof result === "string" ? ctx.error(result) : result
-	}
-})
