@@ -275,22 +275,30 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 		return this
 	}
 
-	schema = ((def: RootSchema, opts?: NodeParseOptions): BaseRoot =>
-		this.node(schemaKindOf(def), def, opts)).bind(this)
+	schema: (def: RootSchema, opts?: NodeParseOptions) => BaseRoot = (
+		((def, opts) =>
+			this.node(schemaKindOf(def), def, opts)) satisfies this["schema"]
+	).bind(this)
 
-	defineRoot = ((def: RootSchema) => def).bind(this)
+	defineRoot: (def: RootSchema) => RootSchema = (
+		(def => def) satisfies this["defineRoot"]
+	).bind(this)
 
-	units = ((values: array, opts?: NodeParseOptions): BaseRoot => {
-		const uniqueValues: unknown[] = []
-		for (const value of values)
-			if (!uniqueValues.includes(value)) uniqueValues.push(value)
+	units: (values: array, opts?: NodeParseOptions) => BaseRoot = (
+		((values, opts) => {
+			const uniqueValues: unknown[] = []
+			for (const value of values)
+				if (!uniqueValues.includes(value)) uniqueValues.push(value)
 
-		const branches = uniqueValues.map(unit => this.node("unit", { unit }, opts))
-		return this.node("union", branches, {
-			...opts,
-			prereduced: true
-		})
-	}).bind(this)
+			const branches = uniqueValues.map(unit =>
+				this.node("unit", { unit }, opts)
+			)
+			return this.node("union", branches, {
+				...opts,
+				prereduced: true
+			})
+		}) satisfies this["units"]
+	).bind(this)
 
 	protected lazyResolutions: AliasNode[] = []
 	lazilyResolve(syntheticAlias: string, resolve: () => BaseRoot): AliasNode {
@@ -306,75 +314,77 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 		return node
 	}
 
-	node = (<
+	node: <
 		kinds extends NodeKind | array<RootKind>,
 		prereduced extends boolean = false
 	>(
 		kinds: kinds,
 		nodeSchema: NodeSchema<flattenListable<kinds>>,
 		opts?: NodeParseOptions<prereduced>
-	): Node<
+	) => Node<
 		prereduced extends true ? flattenListable<kinds>
 		:	reducibleKindOf<flattenListable<kinds>>
-	> => {
-		let kind: NodeKind =
-			typeof kinds === "string" ? kinds : schemaKindOf(nodeSchema, kinds)
+	> = (
+		((kinds, nodeSchema, opts) => {
+			let kind: NodeKind =
+				typeof kinds === "string" ? kinds : schemaKindOf(nodeSchema, kinds)
 
-		let schema: unknown = nodeSchema
+			let schema: unknown = nodeSchema
 
-		if (isNode(schema) && schema.kind === kind)
-			return schema.bindScope(this) as never
+			if (isNode(schema) && schema.kind === kind)
+				return schema.bindScope(this) as never
 
-		if (kind === "alias" && !opts?.prereduced) {
-			const resolution = this.resolveRoot(
-				normalizeAliasSchema(schema as never).alias
-			)
-			schema = resolution
-			kind = resolution.kind
-		} else if (kind === "union" && hasDomain(schema, "object")) {
-			const branches = schemaBranchesOf(schema)
-			if (branches?.length === 1) {
-				schema = branches[0]
-				kind = schemaKindOf(schema)
+			if (kind === "alias" && !opts?.prereduced) {
+				const resolution = this.resolveRoot(
+					normalizeAliasSchema(schema as never).alias
+				)
+				schema = resolution
+				kind = resolution.kind
+			} else if (kind === "union" && hasDomain(schema, "object")) {
+				const branches = schemaBranchesOf(schema)
+				if (branches?.length === 1) {
+					schema = branches[0]
+					kind = schemaKindOf(schema)
+				}
 			}
-		}
 
-		const impl = nodeImplementationsByKind[kind]
-		const normalizedSchema = impl.normalize?.(schema) ?? schema
-		// check again after normalization in case a node is a valid collapsed
-		// schema for the kind (e.g. sequence can collapse to element accepting a Node)
-		if (isNode(normalizedSchema)) {
-			return normalizedSchema.kind === kind ?
-					(normalizedSchema.bindScope(this) as never)
-				:	throwMismatchedNodeRootError(kind, normalizedSchema.kind)
-		}
+			const impl = nodeImplementationsByKind[kind]
+			const normalizedSchema = impl.normalize?.(schema) ?? schema
+			// check again after normalization in case a node is a valid collapsed
+			// schema for the kind (e.g. sequence can collapse to element accepting a Node)
+			if (isNode(normalizedSchema)) {
+				return normalizedSchema.kind === kind ?
+						(normalizedSchema.bindScope(this) as never)
+					:	throwMismatchedNodeRootError(kind, normalizedSchema.kind)
+			}
 
-		const prefix = opts?.alias ?? kind
-		nodeCountsByPrefix[prefix] ??= 0
-		const id = `${prefix}${++nodeCountsByPrefix[prefix]!}`
+			const prefix = opts?.alias ?? kind
+			nodeCountsByPrefix[prefix] ??= 0
+			const id = `${prefix}${++nodeCountsByPrefix[prefix]!}`
 
-		const node = parseNode(kind, {
-			...opts,
-			id,
-			$: this,
-			schema: normalizedSchema
-		}).bindScope(this)
+			const node = parseNode(kind, {
+				...opts,
+				id,
+				$: this,
+				schema: normalizedSchema
+			}).bindScope(this)
 
-		nodesById[id] = node
+			nodesById[id] = node
 
-		if (this.resolved) {
-			// this node was not part of the original scope, so compile an anonymous scope
-			// including only its references
-			if (!this.resolvedConfig.jitless)
-				bindCompiledScope(node.contributesReferences)
-		} else {
-			// we're still parsing the scope itself, so defer compilation but
-			// add the node as a reference
-			Object.assign(this.referencesById, node.contributesReferencesById)
-		}
+			if (this.resolved) {
+				// this node was not part of the original scope, so compile an anonymous scope
+				// including only its references
+				if (!this.resolvedConfig.jitless)
+					bindCompiledScope(node.contributesReferences)
+			} else {
+				// we're still parsing the scope itself, so defer compilation but
+				// add the node as a reference
+				Object.assign(this.referencesById, node.contributesReferencesById)
+			}
 
-		return node as never
-	}).bind(this)
+			return node as never
+		}) satisfies this["node"]
+	).bind(this)
 
 	parseRoot(def: unknown, opts?: NodeParseOptions): BaseRoot {
 		return this.schema(def as never, opts)
@@ -584,14 +594,14 @@ export const RootScope: new <$ = any>(
 
 export const root: RootScope<{}> = new RootScope({})
 
-export const schema = root.schema
-export const node = root.node
-export const defineRoot = root.defineRoot
-export const units = root.units
-export const rawRoot = root.raw.schema
-export const rawNode = root.raw.node
-export const defineRawRoot = root.raw.defineRoot
-export const rawUnits = root.raw.units
+export const schema: RootScope["schema"] = root.schema
+export const node: RootScope["node"] = root.node
+export const defineRoot: RootScope["defineRoot"] = root.defineRoot
+export const units: RootScope["units"] = root.units
+export const rawRoot: RawRootScope["schema"] = root.raw.schema
+export const rawNode: RawRootScope["node"] = root.raw.node
+export const defineRawRoot: RawRootScope["defineRoot"] = root.raw.defineRoot
+export const rawUnits: RawRootScope["units"] = root.raw.units
 
 export class RawRootModule<
 	resolutions extends RawRootResolutions = RawRootResolutions

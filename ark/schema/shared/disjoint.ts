@@ -11,7 +11,7 @@ import {
 } from "@arktype/util"
 import type { Node } from "../kinds.js"
 import type { BaseRoot } from "../roots/root.js"
-import type { BoundKind, IntersectionChildKind } from "./implement.js"
+import type { BoundKind, PrimitiveKind } from "./implement.js"
 import { hasArkKind } from "./utils.js"
 
 type DisjointKinds = {
@@ -44,10 +44,10 @@ type DisjointKinds = {
 	assignability?:
 		| {
 				l: unknown
-				r: Node<IntersectionChildKind>
+				r: Node<PrimitiveKind>
 		  }
 		| {
-				l: Node<IntersectionChildKind>
+				l: Node<PrimitiveKind>
 				r: unknown
 		  }
 	union?: {

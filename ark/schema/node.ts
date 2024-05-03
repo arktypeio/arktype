@@ -27,7 +27,7 @@ import {
 	constraintKinds,
 	precedenceOfKind,
 	refinementKinds,
-	schemaKinds,
+	rootKinds,
 	structuralKinds,
 	type BasisKind,
 	type NodeKind,
@@ -183,7 +183,7 @@ export abstract class BaseNode<
 	}
 
 	isRoot(): this is BaseRoot {
-		return includes(schemaKinds, this.kind)
+		return includes(rootKinds, this.kind)
 	}
 
 	hasUnit<value>(value: unknown): this is UnitNode & { unit: value } {

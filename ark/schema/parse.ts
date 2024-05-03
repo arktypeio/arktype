@@ -26,8 +26,8 @@ import {
 	type NodeKind,
 	type RootKind,
 	type UnknownAttachments,
+	constraintKeys,
 	defaultValueSerializer,
-	discriminatingIntersectionKeys,
 	isNodeKind,
 	precedenceOfKind
 } from "./shared/implement.js"
@@ -89,10 +89,7 @@ const discriminateRootKind = (schema: unknown): RootKind => {
 
 			const schemaKeys = Object.keys(schema)
 
-			if (
-				schemaKeys.length === 0 ||
-				schemaKeys.some(k => k in discriminatingIntersectionKeys)
-			)
+			if (schemaKeys.length === 0 || schemaKeys.some(k => k in constraintKeys))
 				return "intersection"
 			if ("proto" in schema) return "proto"
 			if ("domain" in schema) return "domain"

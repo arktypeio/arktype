@@ -7,6 +7,7 @@ import {
 	type entryOf,
 	flatMorph,
 	type indexOf,
+	type keySet,
 	type keySetOf,
 	type listable,
 	printable,
@@ -16,7 +17,6 @@ import {
 import type { Declaration, Inner, Node, errorContext } from "../kinds.js"
 import type { BaseNode } from "../node.js"
 import type { NodeParseContext } from "../parse.js"
-import type { IntersectionInner } from "../roots/intersection.js"
 import type {
 	BaseRoot,
 	schemaKindOrRightOf,
@@ -50,7 +50,14 @@ export const structuralKinds = [
 
 export type StructuralKind = (typeof structuralKinds)[number]
 
-export const rangeKinds = [
+export type RangeKind = Exclude<BoundKind, "exactLength">
+
+export type BoundKind = Exclude<RefinementKind, "regex" | "divisor">
+
+export const refinementKinds = [
+	"regex",
+	"divisor",
+	"exactLength",
 	"max",
 	"min",
 	"maxLength",
@@ -59,26 +66,25 @@ export const rangeKinds = [
 	"after"
 ] as const
 
-export type RangeKind = (typeof rangeKinds)[number]
-
-export const boundKinds = ["exactLength", ...rangeKinds] as const
-
-export type BoundKind = (typeof boundKinds)[number]
-
-export const refinementKinds = ["regex", "divisor", ...boundKinds] as const
-
 export type RefinementKind = (typeof refinementKinds)[number]
 
-export const constraintKinds = [
+type orderedConstraintKinds = [
+	...typeof refinementKinds,
+	...typeof structuralKinds,
+	"structure",
+	"predicate"
+]
+
+export const constraintKinds: orderedConstraintKinds = [
 	...refinementKinds,
 	...structuralKinds,
 	"structure",
 	"predicate"
-] as const
+]
 
 export type ConstraintKind = (typeof constraintKinds)[number]
 
-export const schemaKinds = [
+export const rootKinds = [
 	"alias",
 	"union",
 	"morph",
@@ -88,22 +94,13 @@ export const schemaKinds = [
 	"domain"
 ] as const
 
-export type RootKind = (typeof schemaKinds)[number]
-
-export const intersectionChildKinds = [
-	"proto",
-	"domain",
-	...constraintKinds
-] as const
-
-export type IntersectionChildKind = (typeof intersectionChildKinds)[number]
+export type RootKind = (typeof rootKinds)[number]
 
 export type NodeKind = RootKind | ConstraintKind
 
-export const nodeKinds = [
-	...schemaKinds,
-	...constraintKinds
-] as const satisfies NodeKind[]
+type orderedNodeKinds = [...typeof rootKinds, ...typeof constraintKinds]
+
+export const nodeKinds: orderedNodeKinds = [...rootKinds, ...constraintKinds]
 
 export type OpenNodeKind = {
 	[k in NodeKind]: Declaration<k>["intersectionIsOpen"] extends true ? k : never
@@ -111,31 +108,21 @@ export type OpenNodeKind = {
 
 export type ClosedNodeKind = Exclude<NodeKind, OpenNodeKind>
 
-export const primitiveKinds = [
-	...basisKinds,
-	...refinementKinds,
-	"predicate"
-] as const
-
-export type PrimitiveKind = (typeof primitiveKinds)[number]
+export type PrimitiveKind = RefinementKind | BasisKind | "predicate"
 
 export type CompositeKind = Exclude<NodeKind, PrimitiveKind>
 
 export type OrderedNodeKinds = typeof nodeKinds
 
-export const constraintKeys = flatMorph(
+export const constraintKeys: keySet<ConstraintKind> = flatMorph(
 	constraintKinds,
 	(i, kind) => [kind, 1] as const
 )
 
-export const structureKeys = flatMorph(
-	[...structuralKinds, "onExtraneousKey"] satisfies (keyof StructureInner)[],
+export const structureKeys: keySetOf<StructureInner> = flatMorph(
+	[...structuralKinds, "onExtraneousKey"],
 	(i, k) => [k, 1] as const
 )
-
-export const discriminatingIntersectionKeys = {
-	...constraintKeys
-} as const satisfies keySetOf<IntersectionInner>
 
 type RightsByKind = accumulateRightKinds<OrderedNodeKinds, {}>
 
@@ -245,7 +232,7 @@ export type kindRightOf<kind extends NodeKind> = RightsByKind[kind]
 export const schemaKindsRightOf = <kind extends RootKind>(
 	kind: kind
 ): schemaKindRightOf<kind>[] =>
-	schemaKinds.slice(precedenceOfKind(kind) + 1) as never
+	rootKinds.slice(precedenceOfKind(kind) + 1) as never
 
 export type KeySchemainitions<d extends RawNodeDeclaration> = {
 	[k in keyRequiringSchemainition<d>]: NodeKeyImplementation<d, k>

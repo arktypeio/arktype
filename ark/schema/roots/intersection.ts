@@ -30,7 +30,6 @@ import {
 	constraintKeys,
 	type ConstraintKind,
 	implementNode,
-	type IntersectionChildKind,
 	type IntersectionContext,
 	type nodeImplementationOf,
 	type OpenNodeKind,
@@ -50,6 +49,8 @@ import { BaseRoot } from "./root.js"
 import { defineRightwardIntersections } from "./utils.js"
 
 export type IntersectionBasisKind = "domain" | "proto"
+
+export type IntersectionChildKind = IntersectionBasisKind | ConstraintKind
 
 export type IntersectionInner = show<
 	BaseMeta & {
