@@ -3,12 +3,12 @@ import {
 	wellFormedIntegerMatcher,
 	wellFormedNumberMatcher
 } from "@arktype/util"
-import type { SchemaModule } from "../module.js"
-import type { Out } from "../schemas/morph.js"
+import type { RootModule } from "../module.js"
+import type { Out } from "../roots/morph.js"
 import { root, schemaScope } from "../scope.js"
 import { parsedDate } from "./utils/date.js"
 
-const number = root.defineSchema({
+const number = root.defineRoot({
 	from: {
 		domain: "string",
 		regex: wellFormedNumberMatcher,
@@ -17,7 +17,7 @@ const number = root.defineSchema({
 	morphs: (s: string) => Number.parseFloat(s)
 })
 
-const integer = root.defineSchema({
+const integer = root.defineRoot({
 	from: {
 		domain: "string",
 		regex: wellFormedIntegerMatcher
@@ -35,7 +35,7 @@ const integer = root.defineSchema({
 	}
 })
 
-const url = root.defineSchema({
+const url = root.defineRoot({
 	from: {
 		domain: "string",
 		description: "a valid URL"
@@ -49,7 +49,7 @@ const url = root.defineSchema({
 	}
 })
 
-const json = root.defineSchema({
+const json = root.defineRoot({
 	from: {
 		domain: "string",
 		description: "a JSON-parsable string"
@@ -67,7 +67,7 @@ export type parsingExports = {
 	json: (In: string) => Out<unknown>
 }
 
-export type parsing = SchemaModule<parsingExports>
+export type parsing = RootModule<parsingExports>
 
 export const parsing: parsing = schemaScope({
 	url,

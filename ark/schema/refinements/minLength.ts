@@ -2,7 +2,7 @@ import type { declareNode } from "../shared/declare.js"
 import { implementNode } from "../shared/implement.js"
 import type { TraverseAllows } from "../shared/traversal.js"
 import {
-	type BaseNormalizedRangeSchema,
+	type BaseNormalizedRangeRoot,
 	BaseRange,
 	type BaseRangeInner,
 	type LengthBoundableData,
@@ -13,7 +13,7 @@ export interface MinLengthInner extends BaseRangeInner {
 	rule: number
 }
 
-export interface NormalizedMinLengthDef extends BaseNormalizedRangeSchema {
+export interface NormalizedMinLengthDef extends BaseNormalizedRangeRoot {
 	rule: number
 }
 

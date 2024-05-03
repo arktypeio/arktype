@@ -1,15 +1,15 @@
 import {
 	ArkErrors,
-	BaseSchema,
+	BaseRoot,
 	type BaseMeta,
-	type BaseRoot,
 	type Disjoint,
+	type InnerRoot,
 	type Morph,
 	type NodeDef,
 	type Out,
 	type Predicate,
 	type PrimitiveConstraintKind,
-	type Schema,
+	type Root,
 	type ambient,
 	type constrain,
 	type constraintKindOf,
@@ -86,7 +86,7 @@ const typeParserAttachments = Object.freeze({
 } satisfies TypeParserAttachments)
 
 export class RawTypeParser extends Callable<
-	(...args: unknown[]) => BaseSchema | Generic,
+	(...args: unknown[]) => BaseRoot | Generic,
 	TypeParserAttachments
 > {
 	constructor($: RawScope) {
@@ -130,8 +130,8 @@ export type DeclarationParser<$> = <preinferred>() => {
 // methods of BaseRoot are overridden, but we end up exporting it as an interface
 // to ensure it is not accessed as a runtime value
 declare class _Type<t = unknown, $ = any>
-	extends BaseRoot<t, $>
-	implements internalImplementationOf<Schema>
+	extends InnerRoot<t, $>
+	implements internalImplementationOf<Root>
 {
 	$: Scope<$>;
 
@@ -249,7 +249,7 @@ export type TypeConstructor<t = unknown, $ = any> = new (
 	$: Scope<$>
 ) => Type<t, $>
 
-export const Type: TypeConstructor = BaseSchema as never
+export const Type: TypeConstructor = BaseRoot as never
 
 export type DefinitionParser<$> = <def>(def: validateTypeRoot<def, $>) => def
 

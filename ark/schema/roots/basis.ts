@@ -1,18 +1,18 @@
 import type { Key } from "@arktype/util"
 
-import { BaseSchema, type RawSchemaDeclaration } from "../schema.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import { compileErrorContext } from "../shared/implement.js"
 import type { TraverseApply } from "../shared/traversal.js"
+import { BaseRoot, type RawRootDeclaration } from "./root.js"
 
 export abstract class RawBasis<
-	d extends RawSchemaDeclaration = RawSchemaDeclaration
-> extends BaseSchema<d> {
+	d extends RawRootDeclaration = RawRootDeclaration
+> extends BaseRoot<d> {
 	abstract compiledCondition: string
 	abstract compiledNegation: string
 	abstract literalKeys: Key[]
 
-	rawKeyOf(): BaseSchema {
+	rawKeyOf(): BaseRoot {
 		return this.$.units(this.literalKeys)
 	}
 

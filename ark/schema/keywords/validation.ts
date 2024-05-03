@@ -1,10 +1,10 @@
-import type { SchemaModule } from "../module.js"
+import type { RootModule } from "../module.js"
 import { root, schemaScope } from "../scope.js"
 import { creditCard } from "./utils/creditCard.js"
 
 // Non-trivial expressions should have an explanation or attribution
 
-const url = root.defineSchema({
+const url = root.defineRoot({
 	domain: "string",
 	predicate: {
 		predicate: (s: string) => {
@@ -22,7 +22,7 @@ const url = root.defineSchema({
 // https://www.regular-expressions.info/email.html
 const emailMatcher = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/
 
-const email = root.defineSchema({
+const email = root.defineRoot({
 	domain: "string",
 	regex: {
 		rule: emailMatcher.source,
@@ -34,7 +34,7 @@ const uuidMatcher =
 	/^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$/
 
 // https://github.com/validatorjs/validator.js/blob/master/src/lib/isUUID.js
-const uuid = root.defineSchema({
+const uuid = root.defineRoot({
 	domain: "string",
 	regex: {
 		rule: uuidMatcher.source,
@@ -46,7 +46,7 @@ const semverMatcher =
 	/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
 
 // https://semver.org/
-const semver = root.defineSchema({
+const semver = root.defineRoot({
 	domain: "string",
 	regex: {
 		rule: semverMatcher.source,
@@ -67,7 +67,7 @@ export interface validationExports {
 	integer: number
 }
 
-export type validation = SchemaModule<validationExports>
+export type validation = RootModule<validationExports>
 
 export const validation: validation = schemaScope(
 	{

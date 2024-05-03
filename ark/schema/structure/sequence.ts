@@ -7,8 +7,8 @@ import {
 	throwParseError
 } from "@arktype/util"
 import { BaseConstraint } from "../constraint.js"
-import type { MutableInner, SchemaDef } from "../kinds.js"
-import type { BaseSchema } from "../schema.js"
+import type { MutableInner, RootDef } from "../kinds.js"
+import type { BaseRoot } from "../roots/root.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -16,31 +16,31 @@ import {
 	implementNode,
 	type IntersectionContext,
 	type NodeKeyImplementation,
-	type SchemaKind
+	type RootKind
 } from "../shared/implement.js"
 import { intersectNodes } from "../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 
 export interface NormalizedSequenceDef extends BaseMeta {
-	readonly prefix?: array<SchemaDef>
-	readonly optionals?: array<SchemaDef>
-	readonly variadic?: SchemaDef
+	readonly prefix?: array<RootDef>
+	readonly optionals?: array<RootDef>
+	readonly variadic?: RootDef
 	readonly minVariadicLength?: number
-	readonly postfix?: array<SchemaDef>
+	readonly postfix?: array<RootDef>
 }
 
-export type SequenceDef = NormalizedSequenceDef | SchemaDef
+export type SequenceDef = NormalizedSequenceDef | RootDef
 
 export interface SequenceInner extends BaseMeta {
 	// a list of fixed position elements starting at index 0
-	readonly prefix?: array<BaseSchema>
+	readonly prefix?: array<BaseRoot>
 	// a list of optional elements following prefix
-	readonly optionals?: array<BaseSchema>
+	readonly optionals?: array<BaseRoot>
 	// the variadic element (only checked if all optional elements are present)
-	readonly variadic?: BaseSchema
+	readonly variadic?: BaseRoot
 	readonly minVariadicLength?: number
 	// a list of fixed position elements, the last being the last element of the array
-	readonly postfix?: array<BaseSchema>
+	readonly postfix?: array<BaseRoot>
 }
 
 export type SequenceDeclaration = declareNode<{
@@ -50,7 +50,7 @@ export type SequenceDeclaration = declareNode<{
 	inner: SequenceInner
 	prerequisite: array
 	reducibleTo: "sequence"
-	childKind: SchemaKind
+	childKind: RootKind
 }>
 
 const fixedSequenceKeyDefinition: NodeKeyImplementation<
@@ -237,7 +237,7 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 		: this.maxLengthNode ? [this.maxLengthNode]
 		: null
 
-	protected childAtIndex(data: array, index: number): BaseSchema {
+	protected childAtIndex(data: array, index: number): BaseRoot {
 		if (index < this.prevariadic.length) return this.prevariadic[index]
 		const postfixStartIndex = data.length - this.postfix.length
 		if (index >= postfixStartIndex)
@@ -335,7 +335,7 @@ export type SequenceElementKind = satisfy<
 
 export type SequenceElement = {
 	kind: SequenceElementKind
-	node: BaseSchema
+	node: BaseRoot
 }
 export type SequenceTuple = array<SequenceElement>
 

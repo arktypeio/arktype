@@ -1,4 +1,4 @@
-import type { BaseSchema, LimitLiteral } from "@arktype/schema"
+import type { BaseRoot, LimitLiteral } from "@arktype/schema"
 import {
 	isKeyOf,
 	type requireKeys,
@@ -28,8 +28,8 @@ import {
 type BranchState = {
 	prefixes: StringifiablePrefixOperator[]
 	leftBound: OpenLeftBound | null
-	intersection: BaseSchema | null
-	union: BaseSchema | null
+	intersection: BaseRoot | null
+	union: BaseRoot | null
 }
 
 export type DynamicStateWithRoot = requireKeys<DynamicState, "root">
@@ -37,7 +37,7 @@ export type DynamicStateWithRoot = requireKeys<DynamicState, "root">
 export class DynamicState {
 	readonly scanner: Scanner
 	// set root type to `any` so that all constraints can be applied
-	root: BaseSchema<any> | undefined
+	root: BaseRoot<any> | undefined
 	branches: BranchState = {
 		prefixes: [],
 		leftBound: null,
@@ -62,7 +62,7 @@ export class DynamicState {
 		return this.root !== undefined
 	}
 
-	setRoot(root: BaseSchema): void {
+	setRoot(root: BaseRoot): void {
 		this.root = root
 	}
 
@@ -72,7 +72,7 @@ export class DynamicState {
 		return value
 	}
 
-	constrainRoot(...args: Parameters<BaseSchema<any>["constrain"]>): void {
+	constrainRoot(...args: Parameters<BaseRoot<any>["constrain"]>): void {
 		this.root = this.root!.constrain(args[0], args[1])
 	}
 

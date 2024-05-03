@@ -11,18 +11,18 @@ import type {
 } from "@arktype/util"
 import type { NodeDef, Prerequisite } from "./kinds.js"
 import type { BaseNode } from "./node.js"
-import type { DomainDef } from "./schemas/domain.js"
-import type { IntersectionDef } from "./schemas/intersection.js"
+import type { DomainDef } from "./roots/domain.js"
+import type { IntersectionDef } from "./roots/intersection.js"
 import type {
 	Morph,
 	MorphDef,
 	MorphInputDef,
 	Out,
 	inferMorphOut
-} from "./schemas/morph.js"
-import type { ProtoDef } from "./schemas/proto.js"
-import type { NormalizedUnionDef, UnionDef } from "./schemas/union.js"
-import type { UnitDef } from "./schemas/unit.js"
+} from "./roots/morph.js"
+import type { ProtoDef } from "./roots/proto.js"
+import type { NormalizedUnionDef, UnionDef } from "./roots/union.js"
+import type { UnitDef } from "./roots/unit.js"
 import type { ArkErrors } from "./shared/errors.js"
 import type { BasisKind, ConstraintKind } from "./shared/implement.js"
 import type { inferred } from "./shared/utils.js"
@@ -35,34 +35,34 @@ export namespace type {
 	export type errors = ArkErrors
 }
 
-export type validateSchema<def, $> =
+export type validateRoot<def, $> =
 	def extends type.cast<unknown> ? def
-	: def extends array ? { [i in keyof def]: validateSchemaBranch<def[i], $> }
+	: def extends array ? { [i in keyof def]: validateRootBranch<def[i], $> }
 	: def extends NormalizedUnionDef<infer branches> ?
 		conform<
 			def,
 			NormalizedUnionDef & {
 				branches: {
-					[i in keyof branches]: validateSchemaBranch<branches[i], $>
+					[i in keyof branches]: validateRootBranch<branches[i], $>
 				}
 			}
 		>
-	:	validateSchemaBranch<def, $>
+	:	validateRootBranch<def, $>
 
-export type inferSchema<def, $> =
+export type inferRoot<def, $> =
 	def extends type.cast<infer to> ? to
 	: def extends UnionDef<infer branches> ?
 		branches["length"] extends 0 ? never
-		: branches["length"] extends 1 ? inferSchemaBranch<branches[0], $>
-		: inferSchemaBranch<branches[number], $>
-	:	inferSchemaBranch<def, $>
+		: branches["length"] extends 1 ? inferRootBranch<branches[0], $>
+		: inferRootBranch<branches[number], $>
+	:	inferRootBranch<def, $>
 
-type validateSchemaBranch<def, $> =
+type validateRootBranch<def, $> =
 	def extends BaseNode ? def
-	: "morphs" extends keyof def ? validateMorphSchema<def, $>
+	: "morphs" extends keyof def ? validateMorphRoot<def, $>
 	: validateMorphChild<def, $>
 
-type inferSchemaBranch<def, $> =
+type inferRootBranch<def, $> =
 	def extends type.cast<infer to> ? to
 	: def extends MorphDef ?
 		(
@@ -76,18 +76,18 @@ type inferSchemaBranch<def, $> =
 	: def extends MorphInputDef ? inferMorphChild<def, $>
 	: unknown
 
-type NonIntersectableBasisSchema = NonEnumerableDomain | Constructor | UnitDef
+type NonIntersectableBasisRoot = NonEnumerableDomain | Constructor | UnitDef
 
 type validateMorphChild<def, $> =
-	[def] extends [NonIntersectableBasisSchema] ? def
-	:	validateIntersectionSchema<def, $>
+	[def] extends [NonIntersectableBasisRoot] ? def
+	:	validateIntersectionRoot<def, $>
 
 type inferMorphChild<def, $> =
-	def extends NonIntersectableBasisSchema ? inferBasis<def, $>
+	def extends NonIntersectableBasisRoot ? inferBasis<def, $>
 	: def extends IntersectionDef ? inferBasisOf<def, $>
 	: unknown
 
-type validateMorphSchema<def, $> = {
+type validateMorphRoot<def, $> = {
 	[k in keyof def]: k extends "from" | "to" ? validateMorphChild<def[k], $>
 	: k extends keyof MorphDef ? MorphDef[k]
 	: `'${k & string}' is not a valid morph schema key`
@@ -102,7 +102,7 @@ type exactBasisMessageOnError<def, expected> = {
 		>
 }
 
-export type validateIntersectionSchema<def, $> = exactBasisMessageOnError<
+export type validateIntersectionRoot<def, $> = exactBasisMessageOnError<
 	def,
 	IntersectionDef<inferBasisOf<def, $>>
 >

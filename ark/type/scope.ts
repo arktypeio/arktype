@@ -1,13 +1,13 @@
 import {
 	type ArkConfig,
-	type BaseSchema,
+	type BaseRoot,
 	type GenericProps,
 	type PreparsedNodeResolution,
 	type PrivateDeclaration,
-	type RawSchemaResolutions,
-	RawSchemaScope,
-	type SchemaScope,
-	type UnknownSchema,
+	type RawRootResolutions,
+	RawRootScope,
+	type RootScope,
+	type UnknownRoot,
 	type ambient,
 	type arkKind,
 	type destructuredExportContext,
@@ -154,13 +154,13 @@ export type tryInferSubmoduleReference<$, token> =
 
 export interface ParseContext {
 	$: RawScope
-	args?: Record<string, UnknownSchema>
+	args?: Record<string, UnknownRoot>
 }
 
 export const scope: ScopeParser = ((def: Dict, config: ArkConfig = {}) =>
 	new RawScope(def, config)) as never
 
-export interface Scope<$ = any> extends SchemaScope<$> {
+export interface Scope<$ = any> extends RootScope<$> {
 	type: TypeParser<$>
 
 	match: MatchParser<$>
@@ -179,9 +179,9 @@ export interface Scope<$ = any> extends SchemaScope<$> {
 }
 
 export class RawScope<
-	$ extends RawSchemaResolutions = RawSchemaResolutions
-> extends RawSchemaScope<$> {
-	private parseCache: Record<string, BaseSchema> = {}
+	$ extends RawRootResolutions = RawRootResolutions
+> extends RawRootScope<$> {
+	private parseCache: Record<string, BaseRoot> = {}
 
 	constructor(def: Record<string, unknown>, config?: ArkConfig) {
 		const aliases: Record<string, unknown> = {}
@@ -212,8 +212,8 @@ export class RawScope<
 		return def
 	}
 
-	override parseRoot(def: unknown): BaseSchema {
-		// args: { this: {} as RawSchema },
+	override parseRoot(def: unknown): BaseRoot {
+		// args: { this: {} as RawRoot },
 		return this.parse(def, {
 			$: this as never,
 			args: {}
@@ -222,7 +222,7 @@ export class RawScope<
 		}).bindScope(this)
 	}
 
-	parse(def: unknown, ctx: ParseContext): BaseSchema {
+	parse(def: unknown, ctx: ParseContext): BaseRoot {
 		if (typeof def === "string") {
 			if (ctx.args && Object.keys(ctx.args).every(k => !def.includes(k))) {
 				// we can only rely on the cache if there are no contextual
@@ -239,11 +239,11 @@ export class RawScope<
 			:	throwParseError(writeBadDefinitionTypeMessage(domainOf(def)))
 	}
 
-	parseString(def: string, ctx: ParseContext): BaseSchema {
+	parseString(def: string, ctx: ParseContext): BaseRoot {
 		return (
-			this.maybeResolveSchema(def) ??
+			this.maybeResolveRoot(def) ??
 			((def.endsWith("[]") &&
-				this.maybeResolveSchema(def.slice(0, -2))?.array()) ||
+				this.maybeResolveRoot(def.slice(0, -2))?.array()) ||
 				fullStringParse(new DynamicState(def, ctx)))
 		)
 	}

@@ -22,7 +22,6 @@ import type {
 	Prerequisite
 } from "../kinds.js"
 import type { PredicateNode } from "../predicate.js"
-import { BaseSchema } from "../schema.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import { type BaseMeta, type declareNode, metaKeys } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -46,6 +45,7 @@ import type {
 } from "../structure/structure.js"
 import type { DomainDef, DomainNode } from "./domain.js"
 import type { ProtoDef, ProtoNode } from "./proto.js"
+import { BaseRoot } from "./root.js"
 import { defineRightwardIntersections } from "./utils.js"
 
 export type IntersectionBasisKind = "domain" | "proto"
@@ -70,7 +70,7 @@ export type IntersectionDef<inferredBasis = any> = show<
 	BaseMeta & {
 		domain?: DomainDef
 		proto?: ProtoDef
-	} & conditionalSchemaOf<inferredBasis>
+	} & conditionalRootOf<inferredBasis>
 >
 
 export type IntersectionDeclaration = declareNode<{
@@ -85,7 +85,7 @@ export type IntersectionDeclaration = declareNode<{
 	childKind: IntersectionChildKind
 }>
 
-export class IntersectionNode extends BaseSchema<IntersectionDeclaration> {
+export class IntersectionNode extends BaseRoot<IntersectionDeclaration> {
 	basis = this.domain ?? this.proto ?? null
 	refinements = this.children.filter((node): node is Node<RefinementKind> =>
 		node.isRefinement()
@@ -171,7 +171,7 @@ export class IntersectionNode extends BaseSchema<IntersectionDeclaration> {
 		}
 	}
 
-	rawKeyOf(): BaseSchema {
+	rawKeyOf(): BaseRoot {
 		return (
 			this.basis ?
 				this.structure ?
@@ -186,7 +186,7 @@ const intersectIntersections = (
 	reduced: IntersectionInner,
 	raw: IntersectionInner,
 	ctx: IntersectionContext
-): BaseSchema | Disjoint => {
+): BaseRoot | Disjoint => {
 	// avoid treating adding instance keys as keys of lRoot, rRoot
 	if (hasArkKind(reduced, "schema") && reduced.hasKind("intersection"))
 		return intersectIntersections(reduced.inner, raw, ctx)
@@ -222,7 +222,7 @@ const intersectIntersections = (
 
 	if (constraintResult instanceof Disjoint) return constraintResult
 
-	let result: BaseSchema | Disjoint = constraintResult.ctx.$.node(
+	let result: BaseRoot | Disjoint = constraintResult.ctx.$.node(
 		"intersection",
 		Object.assign(root, unflattenConstraints(constraintResult.l)),
 		{ prereduced: true }
@@ -372,12 +372,12 @@ const intersectRootKeys = (
 	return result
 }
 
-export type ConditionalTerminalIntersectionSchema = {
+export type ConditionalTerminalIntersectionRoot = {
 	onExtraneousKey?: ExtraneousKeyBehavior
 }
 
 type ConditionalTerminalIntersectionKey =
-	keyof ConditionalTerminalIntersectionSchema
+	keyof ConditionalTerminalIntersectionRoot
 
 type ConditionalIntersectionKey =
 	| ConstraintKind
@@ -393,17 +393,17 @@ type conditionalIntersectionKeyOf<t> =
 
 // not sure why explicitly allowing Inner<k> is necessary in these cases,
 // but remove if it can be removed without creating type errors
-type intersectionChildSchemaValueOf<k extends IntersectionChildKind> =
+type intersectionChildRootValueOf<k extends IntersectionChildKind> =
 	k extends OpenNodeKind ? listable<NodeDef<k> | Inner<k>>
 	:	NodeDef<k> | Inner<k>
 
-type conditionalSchemaValueOfKey<k extends ConditionalIntersectionKey> =
-	k extends IntersectionChildKind ? intersectionChildSchemaValueOf<k>
-	:	ConditionalTerminalIntersectionSchema[k & ConditionalTerminalIntersectionKey]
+type conditionalRootValueOfKey<k extends ConditionalIntersectionKey> =
+	k extends IntersectionChildKind ? intersectionChildRootValueOf<k>
+	:	ConditionalTerminalIntersectionRoot[k & ConditionalTerminalIntersectionKey]
 
 type intersectionChildInnerValueOf<k extends IntersectionChildKind> =
 	k extends OpenNodeKind ? readonly Node<k>[] : Node<k>
 
-export type conditionalSchemaOf<t> = {
-	[k in conditionalIntersectionKeyOf<t>]?: conditionalSchemaValueOfKey<k>
+export type conditionalRootOf<t> = {
+	[k in conditionalIntersectionKeyOf<t>]?: conditionalRootValueOfKey<k>
 }

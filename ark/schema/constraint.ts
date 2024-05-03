@@ -21,8 +21,8 @@ import type {
 } from "./kinds.js"
 import { BaseNode } from "./node.js"
 import type { NodeParseContext } from "./parse.js"
-import type { BaseSchema, Schema, UnknownSchema } from "./schema.js"
-import type { IntersectionInner } from "./schemas/intersection.js"
+import type { IntersectionInner } from "./roots/intersection.js"
+import type { BaseRoot, Root, UnknownRoot } from "./roots/root.js"
 import type { NodeCompiler } from "./shared/compile.js"
 import type { RawNodeDeclaration } from "./shared/declare.js"
 import { Disjoint } from "./shared/disjoint.js"
@@ -48,7 +48,7 @@ export abstract class BaseConstraint<
 	out d extends BaseConstraintDeclaration = BaseConstraintDeclaration
 > extends BaseNode<d> {
 	readonly [arkKind] = "constraint"
-	abstract readonly impliedBasis: BaseSchema | null
+	abstract readonly impliedBasis: BaseRoot | null
 	readonly impliedSiblings?: BaseConstraint[] | null
 
 	intersect<r extends BaseConstraint>(
@@ -104,7 +104,7 @@ export const constraintKeyParser =
 type ConstraintIntersectionState = {
 	l: BaseConstraint[]
 	r: BaseConstraint[]
-	types: BaseSchema[]
+	types: BaseRoot[]
 	ctx: IntersectionContext
 }
 
@@ -120,7 +120,7 @@ export const intersectConstraints = (
 		if (result instanceof Disjoint) return result
 
 		if (!matched) {
-			if (result.isSchema()) s.types.push(result)
+			if (result.isRoot()) s.types.push(result)
 			else s.l[i] = result as BaseConstraint
 			matched = true
 		} else if (!s.l.includes(result as never)) {
@@ -191,8 +191,8 @@ export const throwInvalidOperandError = (
 
 export const writeInvalidOperandMessage = <
 	kind extends ConstraintKind,
-	expected extends Schema,
-	actual extends Schema
+	expected extends Root,
+	actual extends Root
 >(
 	kind: kind,
 	expected: expected,
@@ -204,13 +204,13 @@ export const writeInvalidOperandMessage = <
 
 export type writeInvalidOperandMessage<
 	kind extends ConstraintKind,
-	actual extends Schema
+	actual extends Root
 > = `${Capitalize<kind>} operand must be ${describeExpression<
 	Prerequisite<kind>
 >} (was ${describeExpression<Exclude<actual["infer"], Prerequisite<kind>>>})`
 
 export interface ConstraintAttachments {
-	impliedBasis: UnknownSchema | null
+	impliedBasis: UnknownRoot | null
 	impliedSiblings?: array<BaseConstraint> | null
 }
 

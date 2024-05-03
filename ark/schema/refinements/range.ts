@@ -13,7 +13,7 @@ import type { KeyDefinitions, RangeKind } from "../shared/implement.js"
 export interface BaseRangeDeclaration extends RawNodeDeclaration {
 	kind: RangeKind
 	inner: BaseRangeInner
-	normalizedDef: BaseNormalizedRangeSchema
+	normalizedDef: BaseNormalizedRangeRoot
 }
 
 export abstract class BaseRange<
@@ -73,13 +73,13 @@ export interface BaseRangeInner extends BaseMeta {
 	readonly exclusive?: true
 }
 
-export type LimitSchemaValue<kind extends RangeKind = RangeKind> =
+export type LimitRootValue<kind extends RangeKind = RangeKind> =
 	kind extends "before" | "after" ? Date | number | string : number
 
 export type LimitInnerValue<kind extends RangeKind = RangeKind> =
 	kind extends "before" | "after" ? Date : number
 
-export interface BaseNormalizedRangeSchema extends BaseMeta {
+export interface BaseNormalizedRangeRoot extends BaseMeta {
 	readonly exclusive?: boolean
 }
 
@@ -131,7 +131,7 @@ export const parseExclusiveKey: KeyDefinitions<BaseRangeDeclaration>["exclusive"
 		parse: (flag: boolean) => flag || undefined
 	}
 
-export const parseDateLimit = (limit: LimitSchemaValue): Date =>
+export const parseDateLimit = (limit: LimitRootValue): Date =>
 	typeof limit === "string" || typeof limit === "number" ?
 		new Date(limit)
 	:	limit
@@ -159,7 +159,7 @@ export type LengthBoundableData = string | array
 
 export type DateRangeKind = "before" | "after"
 
-export const dateLimitToString = (limit: LimitSchemaValue): string =>
+export const dateLimitToString = (limit: LimitRootValue): string =>
 	typeof limit === "string" ? limit : new Date(limit).toLocaleString()
 
 export const writeUnboundableMessage = <root extends string>(

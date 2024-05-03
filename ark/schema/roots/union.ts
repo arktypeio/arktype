@@ -1,6 +1,5 @@
 import { appendUnique, groupBy, isArray } from "@arktype/util"
 import type { Node, NodeDef } from "../kinds.js"
-import { BaseSchema } from "../schema.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -8,11 +7,12 @@ import type { ArkTypeError } from "../shared/errors.js"
 import {
 	implementNode,
 	type IntersectionContext,
-	type SchemaKind,
+	type RootKind,
 	schemaKindsRightOf
 } from "../shared/implement.js"
 import { intersectNodes, intersectNodesRoot } from "../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
+import { BaseRoot } from "./root.js"
 import { defineRightwardIntersections } from "./utils.js"
 
 export type UnionChildKind = (typeof unionChildKinds)[number]
@@ -50,7 +50,7 @@ export type UnionDeclaration = declareNode<{
 	errorContext: {
 		errors: readonly ArkTypeError[]
 	}
-	reducibleTo: SchemaKind
+	reducibleTo: RootKind
 	childKind: UnionChildKind
 }>
 
@@ -166,7 +166,7 @@ export const unionImplementation = implementNode<UnionDeclaration>({
 	}
 })
 
-export class UnionNode extends BaseSchema<UnionDeclaration> {
+export class UnionNode extends BaseRoot<UnionDeclaration> {
 	isBoolean =
 		this.branches.length === 2 &&
 		this.branches[0].hasUnit(false) &&
@@ -213,7 +213,7 @@ export class UnionNode extends BaseSchema<UnionDeclaration> {
 		}
 	}
 
-	rawKeyOf(): BaseSchema {
+	rawKeyOf(): BaseRoot {
 		return this.branches.reduce(
 			(result, branch) => result.and(branch.rawKeyOf()),
 			this.$.keywords.unknown.raw
@@ -333,9 +333,9 @@ export const intersectBranches = (
 	// If the corresponding r branch is identified as a subtype of an l branch, the
 	// value at rIndex is set to null so we can avoid including previous/future
 	// inersections in the reduced result.
-	const batchesByR: (BaseSchema[] | null)[] = r.map(() => [])
+	const batchesByR: (BaseRoot[] | null)[] = r.map(() => [])
 	for (let lIndex = 0; lIndex < l.length; lIndex++) {
-		let candidatesByR: { [rIndex: number]: BaseSchema } = {}
+		let candidatesByR: { [rIndex: number]: BaseRoot } = {}
 		for (let rIndex = 0; rIndex < r.length; rIndex++) {
 			if (batchesByR[rIndex] === null) {
 				// rBranch is a subtype of an lBranch and

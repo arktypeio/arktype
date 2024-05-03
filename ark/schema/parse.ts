@@ -17,14 +17,14 @@ import {
 	nodeImplementationsByKind
 } from "./kinds.js"
 import type { BaseNode } from "./node.js"
-import type { UnknownSchema } from "./schema.js"
-import type { RawSchemaScope } from "./scope.js"
+import type { UnknownRoot } from "./roots/root.js"
+import type { RawRootScope } from "./scope.js"
 import type { RawNodeDeclaration } from "./shared/declare.js"
 import { Disjoint } from "./shared/disjoint.js"
 import {
 	type KeyDefinitions,
 	type NodeKind,
-	type SchemaKind,
+	type RootKind,
 	type UnknownAttachments,
 	defaultValueSerializer,
 	discriminatingIntersectionKeys,
@@ -46,9 +46,9 @@ export type NodeParseOptions<prereduced extends boolean = boolean> = {
 
 export interface NodeParseContext<kind extends NodeKind = NodeKind>
 	extends NodeParseOptions {
-	$: RawSchemaScope
+	$: RawRootScope
 	id: string
-	args?: Record<string, UnknownSchema>
+	args?: Record<string, UnknownRoot>
 	def: NormalizedDef<kind>
 }
 
@@ -56,20 +56,20 @@ const baseKeys: PartialRecord<string, propValueOf<KeyDefinitions<any>>> = {
 	description: { meta: true }
 } satisfies KeyDefinitions<RawNodeDeclaration> as never
 
-export const schemaKindOf = <kind extends SchemaKind = SchemaKind>(
+export const schemaKindOf = <kind extends RootKind = RootKind>(
 	def: unknown,
 	allowedKinds?: readonly kind[]
 ): kind => {
-	const kind = discriminateSchemaKind(def)
+	const kind = discriminateRootKind(def)
 	if (allowedKinds && !allowedKinds.includes(kind as never)) {
 		return throwParseError(
-			`Schema of kind ${kind} should be one of ${allowedKinds}`
+			`Root of kind ${kind} should be one of ${allowedKinds}`
 		)
 	}
 	return kind as never
 }
 
-const discriminateSchemaKind = (def: unknown): SchemaKind => {
+const discriminateRootKind = (def: unknown): RootKind => {
 	switch (typeof def) {
 		case "string":
 			return def[0] === "$" ? "alias" : "domain"

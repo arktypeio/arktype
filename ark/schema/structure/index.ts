@@ -4,27 +4,27 @@ import {
 	throwParseError
 } from "@arktype/util"
 import { BaseConstraint } from "../constraint.js"
-import type { Node, SchemaDef } from "../kinds.js"
-import type { BaseSchema } from "../schema.js"
-import type { UnitNode } from "../schemas/unit.js"
+import type { Node, RootDef } from "../kinds.js"
+import type { BaseRoot } from "../roots/root.js"
+import type { UnitNode } from "../roots/unit.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
-import { type SchemaKind, implementNode } from "../shared/implement.js"
+import { type RootKind, implementNode } from "../shared/implement.js"
 import { intersectNodes } from "../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 
-export type IndexKeyKind = Exclude<SchemaKind, "unit">
+export type IndexKeyKind = Exclude<RootKind, "unit">
 
 export type IndexKeyNode = Node<IndexKeyKind>
 
 export interface IndexDef extends BaseMeta {
-	readonly index: SchemaDef<IndexKeyKind>
-	readonly value: SchemaDef
+	readonly index: RootDef<IndexKeyKind>
+	readonly value: RootDef
 }
 
 export interface IndexInner extends BaseMeta {
 	readonly index: IndexKeyNode
-	readonly value: BaseSchema
+	readonly value: BaseRoot
 }
 
 export type IndexDeclaration = declareNode<{
@@ -34,7 +34,7 @@ export type IndexDeclaration = declareNode<{
 	inner: IndexInner
 	prerequisite: object
 	intersectionIsOpen: true
-	childKind: SchemaKind
+	childKind: RootKind
 }>
 
 export const indexImplementation = implementNode<IndexDeclaration>({

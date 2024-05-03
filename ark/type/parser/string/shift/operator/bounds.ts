@@ -1,5 +1,5 @@
 import {
-	type BaseSchema,
+	type BaseRoot,
 	type BoundKind,
 	type DateLiteral,
 	type LimitLiteral,
@@ -110,7 +110,7 @@ export const writeIncompatibleRangeMessage = (l: BoundKind, r: BoundKind) =>
 export const getBoundKinds = (
 	comparator: Comparator,
 	limit: LimitLiteral,
-	root: BaseSchema,
+	root: BaseRoot,
 	boundKind: BoundExpressionKind
 ): BoundKind[] => {
 	if (root.extends(tsKeywords.number)) {
@@ -152,9 +152,7 @@ export const singleEqualsMessage =
 	"= is not a valid comparator. Use == to check for equality"
 type singleEqualsMessage = typeof singleEqualsMessage
 
-const openLeftBoundToSchema = (
-	leftBound: OpenLeftBound
-): NodeDef<BoundKind> => ({
+const openLeftBoundToRoot = (leftBound: OpenLeftBound): NodeDef<BoundKind> => ({
 	rule:
 		isDateLiteral(leftBound.limit) ?
 			extractDateLiteralSource(leftBound.limit)
@@ -208,10 +206,7 @@ export const parseRightBound = (
 		previousRoot,
 		"left"
 	)
-	s.constrainRoot(
-		lowerBoundKind[0],
-		openLeftBoundToSchema(s.branches.leftBound)
-	)
+	s.constrainRoot(lowerBoundKind[0], openLeftBoundToRoot(s.branches.leftBound))
 	s.branches.leftBound = null
 }
 

@@ -1,7 +1,7 @@
 import { CompiledFunction } from "@arktype/util"
 import type { Node } from "../kinds.js"
 import type { BaseNode } from "../node.js"
-import type { Discriminant } from "../schemas/discriminate.js"
+import type { Discriminant } from "../roots/discriminate.js"
 import type { PrimitiveKind } from "./implement.js"
 import type { TraversalKind } from "./traversal.js"
 

@@ -10,8 +10,7 @@ import {
 } from "@arktype/util"
 import type { of } from "../ast.js"
 import type { type } from "../inference.js"
-import type { Node, NodeDef, SchemaDef } from "../kinds.js"
-import { BaseSchema, type schemaKindRightOf } from "../schema.js"
+import type { Node, NodeDef, RootDef } from "../kinds.js"
 import type { StaticArkOption } from "../scope.js"
 import { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
@@ -24,6 +23,7 @@ import type {
 	TraverseAllows,
 	TraverseApply
 } from "../shared/traversal.js"
+import { BaseRoot, type schemaKindRightOf } from "./root.js"
 import { defineRightwardIntersections } from "./utils.js"
 
 export type MorphInputKind = schemaKindRightOf<"morph">
@@ -45,13 +45,13 @@ export type MorphAst<i = any, o = any> = (In: i) => Out<o>
 
 export interface MorphInner extends BaseMeta {
 	readonly from: MorphInputNode
-	readonly to?: BaseSchema
+	readonly to?: BaseRoot
 	readonly morphs: readonly Morph[]
 }
 
 export interface MorphDef extends BaseMeta {
 	readonly from: MorphInputDef
-	readonly to?: SchemaDef | undefined
+	readonly to?: RootDef | undefined
 	readonly morphs: listable<Morph>
 }
 
@@ -139,7 +139,7 @@ export const morphImplementation = implementNode<MorphDeclaration>({
 	}
 })
 
-export class MorphNode extends BaseSchema<MorphDeclaration> {
+export class MorphNode extends BaseRoot<MorphDeclaration> {
 	serializedMorphs: string[] = (this.json as any).morphs
 	compiledMorphs = `[${this.serializedMorphs}]`
 	outValidator = this.to?.traverseApply ?? null
@@ -168,13 +168,13 @@ export class MorphNode extends BaseSchema<MorphDeclaration> {
 		js.line(js.invoke(this.from))
 	}
 
-	getIo(kind: "in" | "out"): BaseSchema {
+	getIo(kind: "in" | "out"): BaseRoot {
 		return kind === "in" ?
 				this.from
-			:	(this.to?.out as BaseSchema) ?? this.$.keywords.unknown.raw
+			:	(this.to?.out as BaseRoot) ?? this.$.keywords.unknown.raw
 	}
 
-	rawKeyOf(): BaseSchema {
+	rawKeyOf(): BaseRoot {
 		return this.from.rawKeyOf()
 	}
 }

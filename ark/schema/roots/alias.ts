@@ -1,17 +1,17 @@
 import { append } from "@arktype/util"
-import { BaseSchema, type RawSchemaDeclaration } from "../schema.js"
-import type { RawSchemaScope } from "../scope.js"
+import type { RawRootScope } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import { implementNode } from "../shared/implement.js"
 import { intersectNodes } from "../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
+import { BaseRoot, type RawRootDeclaration } from "./root.js"
 import { defineRightwardIntersections } from "./utils.js"
 
 export interface AliasInner<alias extends string = string> extends BaseMeta {
 	readonly alias: alias
-	readonly resolve?: () => BaseSchema
+	readonly resolve?: () => BaseRoot
 }
 
 export type AliasDef<alias extends string = string> =
@@ -25,16 +25,16 @@ export type AliasDeclaration = declareNode<{
 	inner: AliasInner
 }>
 
-export class AliasNode extends BaseSchema<AliasDeclaration> {
+export class AliasNode extends BaseRoot<AliasDeclaration> {
 	readonly expression = this.alias
 
-	private _resolution: BaseSchema | undefined
-	get resolution(): BaseSchema {
-		this._resolution ??= this.resolve?.() ?? this.$.resolveSchema(this.alias)
+	private _resolution: BaseRoot | undefined
+	get resolution(): BaseRoot {
+		this._resolution ??= this.resolve?.() ?? this.$.resolveRoot(this.alias)
 		return this._resolution
 	}
 
-	rawKeyOf(): BaseSchema<RawSchemaDeclaration> {
+	rawKeyOf(): BaseRoot<RawRootDeclaration> {
 		return this.resolution.keyof()
 	}
 
@@ -90,6 +90,6 @@ export const aliasImplementation = implementNode<AliasDeclaration>({
 })
 
 const neverIfDisjoint = (
-	result: BaseSchema | Disjoint,
-	$: RawSchemaScope
-): BaseSchema => (result instanceof Disjoint ? $.keywords.never.raw : result)
+	result: BaseRoot | Disjoint,
+	$: RawRootScope
+): BaseRoot => (result instanceof Disjoint ? $.keywords.never.raw : result)

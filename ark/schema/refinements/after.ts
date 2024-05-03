@@ -2,10 +2,10 @@ import type { declareNode } from "../shared/declare.js"
 import { implementNode } from "../shared/implement.js"
 import type { TraverseAllows } from "../shared/traversal.js"
 import {
-	type BaseNormalizedRangeSchema,
+	type BaseNormalizedRangeRoot,
 	BaseRange,
 	type BaseRangeInner,
-	type LimitSchemaValue,
+	type LimitRootValue,
 	parseDateLimit,
 	parseExclusiveKey
 } from "./range.js"
@@ -14,11 +14,11 @@ export interface AfterInner extends BaseRangeInner {
 	rule: Date
 }
 
-export interface NormalizedAfterDef extends BaseNormalizedRangeSchema {
-	rule: LimitSchemaValue
+export interface NormalizedAfterDef extends BaseNormalizedRangeRoot {
+	rule: LimitRootValue
 }
 
-export type AfterDef = NormalizedAfterDef | LimitSchemaValue
+export type AfterDef = NormalizedAfterDef | LimitRootValue
 
 export type AfterDeclaration = declareNode<{
 	kind: "after"

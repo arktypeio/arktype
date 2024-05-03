@@ -25,42 +25,42 @@ import {
 	type AliasDeclaration,
 	aliasImplementation,
 	AliasNode
-} from "./schemas/alias.js"
+} from "./roots/alias.js"
 import {
 	type DomainDeclaration,
 	domainImplementation,
 	DomainNode
-} from "./schemas/domain.js"
+} from "./roots/domain.js"
 import {
 	type IntersectionDeclaration,
 	intersectionImplementation,
 	IntersectionNode
-} from "./schemas/intersection.js"
+} from "./roots/intersection.js"
 import {
 	type MorphDeclaration,
 	morphImplementation,
 	MorphNode
-} from "./schemas/morph.js"
+} from "./roots/morph.js"
 import {
 	type ProtoDeclaration,
 	protoImplementation,
 	ProtoNode
-} from "./schemas/proto.js"
+} from "./roots/proto.js"
 import {
 	type UnionDeclaration,
 	unionImplementation,
 	UnionNode
-} from "./schemas/union.js"
+} from "./roots/union.js"
 import {
 	type UnitDeclaration,
 	unitImplementation,
 	UnitNode
-} from "./schemas/unit.js"
+} from "./roots/unit.js"
 import type {
 	ConstraintKind,
 	NodeKind,
 	OpenNodeKind,
-	SchemaKind,
+	RootKind,
 	UnknownNodeImplementation
 } from "./shared/implement.js"
 import type { makeRootAndArrayPropertiesMutable } from "./shared/utils.js"
@@ -176,7 +176,7 @@ export type Declaration<kind extends NodeKind> = NodeDeclarationsByKind[kind]
 
 export type NodeDef<kind extends NodeKind> = Declaration<kind>["def"]
 
-export type SchemaDef<kind extends SchemaKind = SchemaKind> = NodeDef<kind>
+export type RootDef<kind extends RootKind = RootKind> = NodeDef<kind>
 
 export type NormalizedDef<kind extends NodeKind> =
 	Declaration<kind>["normalizedDef"]
@@ -203,7 +203,7 @@ export type innerAttachedAs<kind extends ConstraintKind> =
 export type MutableInner<kind extends NodeKind> =
 	makeRootAndArrayPropertiesMutable<Inner<kind>>
 
-export type MutableNormalizedSchema<kind extends NodeKind> =
+export type MutableNormalizedRoot<kind extends NodeKind> =
 	makeRootAndArrayPropertiesMutable<NormalizedDef<kind>>
 
 export type errorContext<kind extends NodeKind> = Readonly<

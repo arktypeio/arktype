@@ -159,7 +159,7 @@ export type MatchInvocation<ctx extends MatchInvocationContext> = <
 export const createMatchParser = <$>($: Scope): MatchParser<$> => {
 	return (() => {}).bind($) as never
 	// const matchParser = (isRestricted: boolean) => {
-	// 	const handledCases: { when: RawSchema; then: Morph }[] = []
+	// 	const handledCases: { when: RawRoot; then: Morph }[] = []
 	// 	let defaultCase: ((x: unknown) => unknown) | null = null
 
 	// 	const parser = {

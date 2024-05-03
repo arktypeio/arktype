@@ -1,7 +1,7 @@
 import type { conform } from "@arktype/util"
 import type { PrimitiveConstraintKind } from "./constraint.js"
 import type { NodeDef } from "./kinds.js"
-import type { constraintKindOf } from "./schemas/intersection.js"
+import type { constraintKindOf } from "./roots/intersection.js"
 
 export type Comparator = "<" | "<=" | ">" | ">=" | "=="
 
@@ -96,7 +96,7 @@ export namespace number {
 		kind extends PrimitiveConstraintKind,
 		def extends NodeDef<kind>
 	> =
-		normalizePrimitiveConstraintSchema<def> extends infer rule ?
+		normalizePrimitiveConstraintRoot<def> extends infer rule ?
 			kind extends "min" ?
 				def extends { exclusive: true } ?
 					moreThan<rule & number>
@@ -154,7 +154,7 @@ export namespace string {
 		kind extends PrimitiveConstraintKind,
 		schema extends NodeDef<kind>
 	> =
-		normalizePrimitiveConstraintSchema<schema> extends infer rule ?
+		normalizePrimitiveConstraintRoot<schema> extends infer rule ?
 			kind extends "minLength" ?
 				schema extends { exclusive: true } ?
 					moreThanLength<rule & number>
@@ -209,7 +209,7 @@ export namespace Date {
 		kind extends PrimitiveConstraintKind,
 		schema extends NodeDef<kind>
 	> =
-		normalizePrimitiveConstraintSchema<schema> extends infer rule ?
+		normalizePrimitiveConstraintRoot<schema> extends infer rule ?
 			kind extends "after" ?
 				schema extends { exclusive: true } ?
 					after<normalizeLimit<rule>>
@@ -241,7 +241,7 @@ export type constrain<
 		: of<t, conform<constraint, Constraints>>
 	:	never
 
-export type normalizePrimitiveConstraintSchema<
+export type normalizePrimitiveConstraintRoot<
 	def extends NodeDef<PrimitiveConstraintKind>
 > =
 	"rule" extends keyof def ? conform<def["rule"], string | number>
@@ -251,7 +251,7 @@ export type schemaToConstraint<
 	kind extends PrimitiveConstraintKind,
 	def extends NodeDef<kind>
 > =
-	normalizePrimitiveConstraintSchema<def> extends infer rule ?
+	normalizePrimitiveConstraintRoot<def> extends infer rule ?
 		kind extends "regex" ? Matching<rule & string>
 		: kind extends "divisor" ? DivisibleBy<rule & number>
 		: kind extends "exactLength" ? Length<rule & number>

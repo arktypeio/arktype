@@ -2,7 +2,7 @@ import {
 	RawPrimitiveConstraint,
 	writeInvalidOperandMessage
 } from "../constraint.js"
-import type { Schema } from "../schema.js"
+import type { Root } from "../roots/root.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { implementNode } from "../shared/implement.js"
 import type { TraverseAllows } from "../shared/traversal.js"
@@ -53,12 +53,12 @@ export class DivisorNode extends RawPrimitiveConstraint<DivisorDeclaration> {
 	readonly expression = `% ${this.rule}`
 }
 
-export const writeIndivisibleMessage = <node extends Schema>(
+export const writeIndivisibleMessage = <node extends Root>(
 	t: node
 ): writeIndivisibleMessage<node> =>
 	writeInvalidOperandMessage("divisor", t.$.raw.keywords.number, t)
 
-export type writeIndivisibleMessage<node extends Schema> =
+export type writeIndivisibleMessage<node extends Root> =
 	writeInvalidOperandMessage<"divisor", node>
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm

@@ -3,14 +3,14 @@ import {
 	makeRootAndArrayPropertiesMutable,
 	tsKeywords,
 	type BaseMeta,
-	type BaseSchema,
+	type BaseRoot,
 	type Morph,
 	type MutableInner,
 	type Node,
 	type Out,
 	type Predicate,
 	type UnionChildKind,
-	type UnknownSchema,
+	type UnknownRoot,
 	type distillConstrainableIn,
 	type distillConstrainableOut,
 	type inferIntersection,
@@ -35,13 +35,10 @@ import type { InfixOperator, PostfixExpression } from "./semantic/infer.js"
 import { writeMissingRightOperandMessage } from "./string/shift/operand/unenclosed.js"
 import type { BaseCompletions } from "./string/string.js"
 
-export const parseTuple = (def: array, ctx: ParseContext): BaseSchema =>
+export const parseTuple = (def: array, ctx: ParseContext): BaseRoot =>
 	maybeParseTupleExpression(def, ctx) ?? parseTupleLiteral(def, ctx)
 
-export const parseTupleLiteral = (
-	def: array,
-	ctx: ParseContext
-): BaseSchema => {
+export const parseTupleLiteral = (def: array, ctx: ParseContext): BaseRoot => {
 	let sequences: MutableInner<"sequence">[] = [{}]
 	let i = 0
 	while (i < def.length) {
@@ -96,7 +93,7 @@ type ElementKind = "optional" | "required" | "variadic"
 const appendElement = (
 	base: MutableInner<"sequence">,
 	kind: ElementKind,
-	element: UnknownSchema
+	element: UnknownRoot
 ): MutableInner<"sequence"> => {
 	switch (kind) {
 		case "required":
@@ -155,7 +152,7 @@ const appendSpreadBranch = (
 const maybeParseTupleExpression = (
 	def: array,
 	ctx: ParseContext
-): BaseSchema | undefined => {
+): BaseRoot | undefined => {
 	const tupleExpressionResult =
 		isIndexZeroExpression(def) ? prefixParsers[def[0]](def as never, ctx)
 		: isIndexOneExpression(def) ? indexOneParsers[def[1]](def as never, ctx)
@@ -430,12 +427,12 @@ const parseArrayTuple: PostfixParser<"[]"> = (def, ctx) =>
 export type PostfixParser<token extends IndexOneOperator> = (
 	def: IndexOneExpression<token>,
 	ctx: ParseContext
-) => BaseSchema
+) => BaseRoot
 
 export type PrefixParser<token extends IndexZeroOperator> = (
 	def: IndexZeroExpression<token>,
 	ctx: ParseContext
-) => BaseSchema
+) => BaseRoot
 
 export type TupleExpression = IndexZeroExpression | IndexOneExpression
 

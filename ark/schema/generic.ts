@@ -1,8 +1,8 @@
 import { Callable, type conform, type repeat } from "@arktype/util"
-import type { inferSchema } from "./inference.js"
-import type { SchemaDef } from "./kinds.js"
-import type { Schema } from "./schema.js"
-import type { SchemaScope } from "./scope.js"
+import type { inferRoot } from "./inference.js"
+import type { RootDef } from "./kinds.js"
+import type { Root } from "./roots/root.js"
+import type { RootScope } from "./scope.js"
 import { arkKind } from "./shared/utils.js"
 
 export type GenericNodeInstantiation<
@@ -10,20 +10,20 @@ export type GenericNodeInstantiation<
 	def = unknown,
 	$ = any
 > = <args>(
-	...args: conform<args, repeat<[SchemaDef], params["length"]>>
-) => Schema<inferSchema<def, $ & bindGenericNodeInstantiation<params, $, args>>>
+	...args: conform<args, repeat<[RootDef], params["length"]>>
+) => Root<inferRoot<def, $ & bindGenericNodeInstantiation<params, $, args>>>
 
 // TODO: ????
 export type bindGenericNodeInstantiation<params extends string[], $, args> = {
-	[i in keyof params & `${number}` as params[i]]: inferSchema<
+	[i in keyof params & `${number}` as params[i]]: inferRoot<
 		args[i & keyof args],
 		$
 	>
 }
 
 export const validateUninstantiatedGenericNode = (
-	g: GenericSchema
-): GenericSchema => {
+	g: GenericRoot
+): GenericRoot => {
 	g.$.schema(g.def as never, {
 		// // TODO: probably don't need raw once this is fixed.
 		// args: flatMorph(g.params, (_, name) => [name, g.$.raw.keywords.unknown])
@@ -40,14 +40,10 @@ export interface GenericProps<
 	[arkKind]: "generic"
 	params: params
 	def: def
-	$: SchemaScope<$>
+	$: RootScope<$>
 }
 
-export class GenericSchema<
-		params extends string[] = string[],
-		def = any,
-		$ = any
-	>
+export class GenericRoot<params extends string[] = string[], def = any, $ = any>
 	extends Callable<GenericNodeInstantiation<params, def, $>>
 	implements GenericProps
 {
@@ -56,11 +52,11 @@ export class GenericSchema<
 	constructor(
 		public params: params,
 		public def: def,
-		public $: SchemaScope<$>
+		public $: RootScope<$>
 	) {
-		super((...args: SchemaDef[]) => {
+		super((...args: RootDef[]) => {
 			args
-			// const argNodes: Record<string, RawSchema> = flatMorph(
+			// const argNodes: Record<string, RawRoot> = flatMorph(
 			// 	params,
 			// 	(i, param) => [param, $.schema(args[i])]
 			// ) as never

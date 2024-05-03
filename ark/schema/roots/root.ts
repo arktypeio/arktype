@@ -4,15 +4,31 @@ import {
 	type Json,
 	type conform
 } from "@arktype/util"
-import type { constrain } from "./ast.js"
+import type { constrain } from "../ast.js"
 import {
 	throwInvalidOperandError,
 	type PrimitiveConstraintKind
-} from "./constraint.js"
-import type { Node, NodeDef, reducibleKindOf } from "./kinds.js"
-import { BaseNode } from "./node.js"
-import type { Predicate } from "./predicate.js"
-import type { constraintKindOf } from "./schemas/intersection.js"
+} from "../constraint.js"
+import type { Node, NodeDef, reducibleKindOf } from "../kinds.js"
+import { BaseNode } from "../node.js"
+import type { Predicate } from "../predicate.js"
+import type { RootScope } from "../scope.js"
+import type { BaseMeta, RawNodeDeclaration } from "../shared/declare.js"
+import { Disjoint } from "../shared/disjoint.js"
+import { ArkErrors } from "../shared/errors.js"
+import type { NodeKind, RootKind, kindRightOf } from "../shared/implement.js"
+import {
+	intersectNodesRoot,
+	pipeNodesRoot,
+	type inferIntersection
+} from "../shared/intersections.js"
+import {
+	arkKind,
+	hasArkKind,
+	type inferred,
+	type internalImplementationOf
+} from "../shared/utils.js"
+import type { constraintKindOf } from "./intersection.js"
 import type {
 	Morph,
 	distillConstrainableIn,
@@ -21,46 +37,30 @@ import type {
 	distillOut,
 	inferMorphOut,
 	inferPipes
-} from "./schemas/morph.js"
-import type { UnionChildKind } from "./schemas/union.js"
-import type { SchemaScope } from "./scope.js"
-import type { BaseMeta, RawNodeDeclaration } from "./shared/declare.js"
-import { Disjoint } from "./shared/disjoint.js"
-import { ArkErrors } from "./shared/errors.js"
-import type { NodeKind, SchemaKind, kindRightOf } from "./shared/implement.js"
-import {
-	intersectNodesRoot,
-	pipeNodesRoot,
-	type inferIntersection
-} from "./shared/intersections.js"
-import {
-	arkKind,
-	hasArkKind,
-	type inferred,
-	type internalImplementationOf
-} from "./shared/utils.js"
+} from "./morph.js"
+import type { UnionChildKind } from "./union.js"
 
-export interface RawSchemaDeclaration extends RawNodeDeclaration {
-	kind: SchemaKind
+export interface RawRootDeclaration extends RawNodeDeclaration {
+	kind: RootKind
 }
 
-export type UnknownSchema = Schema | BaseSchema
+export type UnknownRoot = Root | BaseRoot
 
-export type TypeOnlySchemaKey =
-	| (keyof Schema & symbol)
+export type TypeOnlyRootKey =
+	| (keyof Root & symbol)
 	| "infer"
 	| "inferIn"
 	| "t"
 	| "tIn"
 	| "tOut"
 
-export abstract class BaseSchema<
+export abstract class BaseRoot<
 		/** uses -ignore rather than -expect-error because this is not an error in .d.ts
 		 * @ts-ignore allow instantiation assignment to the base type */
-		out d extends RawSchemaDeclaration = RawSchemaDeclaration
+		out d extends RawRootDeclaration = RawRootDeclaration
 	>
 	extends BaseNode<d>
-	implements internalImplementationOf<Schema, TypeOnlySchemaKey>
+	implements internalImplementationOf<Root, TypeOnlyRootKey>
 {
 	readonly branches: readonly Node<UnionChildKind>[] =
 		this.hasKind("union") ? this.inner.branches : [this as never];
@@ -71,10 +71,10 @@ export abstract class BaseSchema<
 		return this
 	}
 
-	abstract rawKeyOf(): BaseSchema
+	abstract rawKeyOf(): BaseRoot
 
-	private _keyof: BaseSchema | undefined
-	keyof(): BaseSchema {
+	private _keyof: BaseRoot | undefined
+	keyof(): BaseRoot {
 		if (!this._keyof) {
 			this._keyof = this.rawKeyOf()
 			if (this._keyof.branches.length === 0) {
@@ -87,17 +87,17 @@ export abstract class BaseSchema<
 	}
 
 	// TODO: can it be enforced that this is not called internally and instead intersectNodes is used?
-	intersect(r: unknown): BaseSchema | Disjoint {
+	intersect(r: unknown): BaseRoot | Disjoint {
 		const rNode = this.$.parseRoot(r)
 		return intersectNodesRoot(this, rNode, this.$) as never
 	}
 
-	and(r: unknown): BaseSchema {
+	and(r: unknown): BaseRoot {
 		const result = this.intersect(r)
 		return result instanceof Disjoint ? result.throw() : (result as never)
 	}
 
-	or(r: unknown): BaseSchema {
+	or(r: unknown): BaseRoot {
 		const rNode = this.$.parseRoot(r)
 		const branches = [...this.branches, ...(rNode.branches as any)]
 		return this.$.schema(branches) as never
@@ -109,26 +109,26 @@ export abstract class BaseSchema<
 	}
 
 	// get<key extends PropertyKey>(
-	// 	...path: readonly (key | Schema<key>)[]
+	// 	...path: readonly (key | Root<key>)[]
 	// ): this {
 	// 	return this
 	// }
 
-	extract(r: unknown): BaseSchema {
+	extract(r: unknown): BaseRoot {
 		const rNode = this.$.parseRoot(r)
 		return this.$.schema(
 			this.branches.filter(branch => branch.extends(rNode))
 		) as never
 	}
 
-	exclude(r: UnknownSchema): BaseSchema {
+	exclude(r: UnknownRoot): BaseRoot {
 		const rNode = this.$.parseRoot(r)
 		return this.$.schema(
 			this.branches.filter(branch => !branch.extends(rNode))
 		) as never
 	}
 
-	array(): BaseSchema {
+	array(): BaseRoot {
 		return this.$.schema(
 			{
 				proto: Array,
@@ -138,14 +138,14 @@ export abstract class BaseSchema<
 		) as never
 	}
 
-	extends(r: UnknownSchema): boolean {
+	extends(r: UnknownRoot): boolean {
 		const intersection = this.intersect(r as never)
 		return (
 			!(intersection instanceof Disjoint) && this.equals(intersection as never)
 		)
 	}
 
-	subsumes(r: UnknownSchema): boolean {
+	subsumes(r: UnknownRoot): boolean {
 		return r.extends(this as never)
 	}
 
@@ -163,11 +163,11 @@ export abstract class BaseSchema<
 		return this.assert(input)
 	}
 
-	pipe(...morphs: Morph[]): BaseSchema {
-		return morphs.reduce<BaseSchema>((acc, morph) => acc.pipeOnce(morph), this)
+	pipe(...morphs: Morph[]): BaseRoot {
+		return morphs.reduce<BaseRoot>((acc, morph) => acc.pipeOnce(morph), this)
 	}
 
-	private pipeOnce(morph: Morph): BaseSchema {
+	private pipeOnce(morph: Morph): BaseRoot {
 		if (hasArkKind(morph, "schema"))
 			return pipeNodesRoot(this, morph, this.$) as never
 		if (this.hasKind("union")) {
@@ -186,14 +186,14 @@ export abstract class BaseSchema<
 		})
 	}
 
-	narrow(predicate: Predicate): BaseSchema {
+	narrow(predicate: Predicate): BaseRoot {
 		return this.constrain("predicate", predicate)
 	}
 
 	constrain<kind extends PrimitiveConstraintKind>(
 		kind: kind,
 		def: NodeDef<kind>
-	): BaseSchema {
+	): BaseRoot {
 		const constraint = this.$.node(kind, def)
 		if (constraint.impliedBasis && !this.extends(constraint.impliedBasis)) {
 			return throwInvalidOperandError(
@@ -213,60 +213,60 @@ export abstract class BaseSchema<
 
 	// divisibleBy<
 	// 	const schema extends validateConstraintArg<"divisor", this["infer"]>
-	// >(schema: schema): Type<applySchema<t, "divisor", schema>, $> {
+	// >(schema: schema): Type<applyRoot<t, "divisor", schema>, $> {
 	// 	return this.rawConstrain("divisor", schema as never) as never
 	// }
 
 	// atLeast<const schema extends validateConstraintArg<"min", this["infer"]>>(
 	// 	schema: schema
-	// ): Type<applySchema<t, "min", schema>, $> {
+	// ): Type<applyRoot<t, "min", schema>, $> {
 	// 	return this.rawConstrain("min", schema as never) as never
 	// }
 
 	// atMost<const schema extends validateConstraintArg<"max", this["infer"]>>(
 	// 	schema: schema
-	// ): Type<applySchema<t, "max", schema>, $> {
+	// ): Type<applyRoot<t, "max", schema>, $> {
 	// 	return this.rawConstrain("max", schema as never) as never
 	// }
 
 	// moreThan<const schema extends validateConstraintArg<"min", this["infer"]>>(
 	// 	schema: schema
-	// ): Type<applySchema<t, "min", schema>, $> {
+	// ): Type<applyRoot<t, "min", schema>, $> {
 	// 	return this.rawConstrain("min", schema as never) as never
 	// }
 
 	// lessThan<const schema extends validateConstraintArg<"max", this["infer"]>>(
 	// 	schema: schema
-	// ): Type<applySchema<t, "max", schema>, $> {
+	// ): Type<applyRoot<t, "max", schema>, $> {
 	// 	return this.rawConstrain("max", schema as never) as never
 	// }
 
 	// atLeastLength<
 	// 	const schema extends validateConstraintArg<"minLength", this["infer"]>
-	// >(schema: schema): Type<applySchema<t, "minLength", schema>, $> {
+	// >(schema: schema): Type<applyRoot<t, "minLength", schema>, $> {
 	// 	return this.rawConstrain("minLength", schema as never) as never
 	// }
 
 	// atMostLength<
 	// 	const schema extends validateConstraintArg<"maxLength", this["infer"]>
-	// >(schema: schema): Type<applySchema<t, "maxLength", schema>, $> {
+	// >(schema: schema): Type<applyRoot<t, "maxLength", schema>, $> {
 	// 	return this.rawConstrain("maxLength", schema as never) as never
 	// }
 
 	// earlierThan<
 	// 	const schema extends validateConstraintArg<"before", this["infer"]>
-	// >(schema: schema): Type<applySchema<t, "before", schema>, $> {
+	// >(schema: schema): Type<applyRoot<t, "before", schema>, $> {
 	// 	return this.rawConstrain("before", schema as never) as never
 	// }
 
 	// laterThan<const schema extends validateConstraintArg<"after", this["infer"]>>(
 	// 	schema: schema
-	// ): Type<applySchema<t, "after", schema>, $> {
+	// ): Type<applyRoot<t, "after", schema>, $> {
 	// 	return this.rawConstrain("after", schema as never) as never
 	// }
 }
 
-export declare abstract class BaseRoot<t = unknown, $ = any> extends Callable<
+export declare abstract class InnerRoot<t = unknown, $ = any> extends Callable<
 	(data: unknown) => distillOut<t> | ArkErrors
 > {
 	t: t
@@ -279,9 +279,9 @@ export declare abstract class BaseRoot<t = unknown, $ = any> extends Callable<
 	json: Json
 	description: string
 	expression: string
-	raw: BaseSchema
+	raw: BaseRoot
 
-	abstract $: SchemaScope<$>;
+	abstract $: RootScope<$>;
 	abstract get in(): unknown
 	abstract get out(): unknown
 	abstract keyof(): unknown
@@ -312,24 +312,22 @@ export declare abstract class BaseRoot<t = unknown, $ = any> extends Callable<
 // this is declared as a class internally so we can ensure all "abstract"
 // methods of BaseRoot are overridden, but we end up exporting it as an interface
 // to ensure it is not accessed as a runtime value
-declare class _Schema<t = unknown, $ = any> extends BaseRoot<t, $> {
-	$: SchemaScope<$>;
+declare class _Root<t = unknown, $ = any> extends InnerRoot<t, $> {
+	$: RootScope<$>;
 
-	get in(): Schema<this["tIn"], $>
+	get in(): Root<this["tIn"], $>
 
-	get out(): Schema<this["tOut"], $>
+	get out(): Root<this["tOut"], $>
 
-	keyof(): Schema<keyof this["inferIn"], $>
+	keyof(): Root<keyof this["inferIn"], $>
 
-	intersect<r extends Schema>(
-		r: r
-	): Schema<inferIntersection<t, r["t"]>> | Disjoint
+	intersect<r extends Root>(r: r): Root<inferIntersection<t, r["t"]>> | Disjoint
 
-	and<r extends Schema>(r: r): Schema<inferIntersection<t, r["t"]>>
+	and<r extends Root>(r: r): Root<inferIntersection<t, r["t"]>>
 
-	or<r extends Schema>(r: r): Schema<t | r["t"]>
+	or<r extends Root>(r: r): Root<t | r["t"]>
 
-	array(): Schema<t[], $>
+	array(): Root<t[], $>
 
 	constrain<
 		kind extends PrimitiveConstraintKind,
@@ -337,41 +335,41 @@ declare class _Schema<t = unknown, $ = any> extends BaseRoot<t, $> {
 	>(
 		kind: conform<kind, constraintKindOf<this["inferIn"]>>,
 		def: def
-	): Schema<constrain<t, kind, def>, $>
+	): Root<constrain<t, kind, def>, $>
 
-	equals<r>(r: Schema<r>): this is Schema<r>
+	equals<r>(r: Root<r>): this is Root<r>
 
 	// TODO: i/o
-	extract<r>(r: Schema<r>): Schema<t, $>
-	exclude<r>(r: Schema<r>): Schema<t, $>
+	extract<r>(r: Root<r>): Root<t, $>
+	exclude<r>(r: Root<r>): Root<t, $>
 
 	// add the extra inferred intersection so that a variable of Type
 	// can be narrowed without other branches becoming never
-	extends<r>(other: Schema<r>): this is Schema<r> & { [inferred]?: r }
+	extends<r>(other: Root<r>): this is Root<r> & { [inferred]?: r }
 
-	pipe<a extends Morph<this["infer"]>>(a: a): Schema<inferPipes<t, [a]>, $>
+	pipe<a extends Morph<this["infer"]>>(a: a): Root<inferPipes<t, [a]>, $>
 	pipe<a extends Morph<this["infer"]>, b extends Morph<inferMorphOut<a>>>(
 		a: a,
 		b: b
-	): Schema<inferPipes<t, [a, b]>, $>
+	): Root<inferPipes<t, [a, b]>, $>
 	pipe<
 		a extends Morph<this["infer"]>,
 		b extends Morph<inferMorphOut<a>>,
 		c extends Morph<inferMorphOut<b>>
-	>(a: a, b: b, c: c): Schema<inferPipes<t, [a, b, c]>, $>
+	>(a: a, b: b, c: c): Root<inferPipes<t, [a, b, c]>, $>
 	pipe<
 		a extends Morph<this["infer"]>,
 		b extends Morph<inferMorphOut<a>>,
 		c extends Morph<inferMorphOut<b>>,
 		d extends Morph<inferMorphOut<c>>
-	>(a: a, b: b, c: c, d: d): Schema<inferPipes<t, [a, b, c, d]>, $>
+	>(a: a, b: b, c: c, d: d): Root<inferPipes<t, [a, b, c, d]>, $>
 	pipe<
 		a extends Morph<this["infer"]>,
 		b extends Morph<inferMorphOut<a>>,
 		c extends Morph<inferMorphOut<b>>,
 		d extends Morph<inferMorphOut<c>>,
 		e extends Morph<inferMorphOut<d>>
-	>(a: a, b: b, c: c, d: d, e: e): Schema<inferPipes<t, [a, b, c, d, e]>, $>
+	>(a: a, b: b, c: c, d: d, e: e): Root<inferPipes<t, [a, b, c, d, e]>, $>
 	pipe<
 		a extends Morph<this["infer"]>,
 		b extends Morph<inferMorphOut<a>>,
@@ -386,7 +384,7 @@ declare class _Schema<t = unknown, $ = any> extends BaseRoot<t, $> {
 		d: d,
 		e: e,
 		f: f
-	): Schema<inferPipes<t, [a, b, c, d, e, f]>, $>
+	): Root<inferPipes<t, [a, b, c, d, e, f]>, $>
 	pipe<
 		a extends Morph<this["infer"]>,
 		b extends Morph<inferMorphOut<a>>,
@@ -403,16 +401,16 @@ declare class _Schema<t = unknown, $ = any> extends BaseRoot<t, $> {
 		e: e,
 		f: f,
 		g: g
-	): Schema<inferPipes<t, [a, b, c, d, e, f, g]>, $>
+	): Root<inferPipes<t, [a, b, c, d, e, f, g]>, $>
 }
 
-export interface Schema<
+export interface Root<
 	/** @ts-expect-error allow instantiation assignment to the base type */
 	out t = unknown,
 	$ = any
-> extends _Schema<t, $> {}
+> extends _Root<t, $> {}
 
-export type intersectSchema<l extends SchemaKind, r extends NodeKind> =
+export type intersectRoot<l extends RootKind, r extends NodeKind> =
 	[l, r] extends [r, l] ? l
 	:	asymmetricIntersectionOf<l, r> | asymmetricIntersectionOf<r, l>
 
@@ -423,11 +421,11 @@ type asymmetricIntersectionOf<l extends NodeKind, r extends NodeKind> =
 		:	never
 	:	never
 
-export type schemaKindRightOf<kind extends SchemaKind> = Extract<
+export type schemaKindRightOf<kind extends RootKind> = Extract<
 	kindRightOf<kind>,
-	SchemaKind
+	RootKind
 >
 
-export type schemaKindOrRightOf<kind extends SchemaKind> =
+export type schemaKindOrRightOf<kind extends RootKind> =
 	| kind
 	| schemaKindRightOf<kind>

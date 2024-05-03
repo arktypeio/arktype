@@ -2,7 +2,7 @@ import type { declareNode } from "../shared/declare.js"
 import { implementNode } from "../shared/implement.js"
 import type { TraverseAllows } from "../shared/traversal.js"
 import {
-	type BaseNormalizedRangeSchema,
+	type BaseNormalizedRangeRoot,
 	BaseRange,
 	type BaseRangeInner,
 	parseExclusiveKey
@@ -12,16 +12,16 @@ export interface MinInner extends BaseRangeInner {
 	rule: number
 }
 
-export interface NormalizedMinSchema extends BaseNormalizedRangeSchema {
+export interface NormalizedMinRoot extends BaseNormalizedRangeRoot {
 	rule: number
 }
 
-export type MinSchema = NormalizedMinSchema | number
+export type MinRoot = NormalizedMinRoot | number
 
 export type MinDeclaration = declareNode<{
 	kind: "min"
-	def: MinSchema
-	normalizedDef: NormalizedMinSchema
+	def: MinRoot
+	normalizedDef: NormalizedMinRoot
 	inner: MinInner
 	prerequisite: number
 	errorContext: MinInner

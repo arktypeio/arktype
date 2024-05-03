@@ -1,4 +1,4 @@
-import type { BaseSchema } from "@arktype/schema"
+import type { BaseRoot } from "@arktype/schema"
 import type { ErrorMessage, join } from "@arktype/util"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import { writeUnclosedGroupMessage } from "../../reduce/shared.js"
@@ -17,7 +17,7 @@ export const parseGenericArgs = (
 	name: string,
 	params: string[],
 	s: DynamicState
-): ParsedArgs<BaseSchema[]> => _parseGenericArgs(name, params, s, [], [])
+): ParsedArgs<BaseRoot[]> => _parseGenericArgs(name, params, s, [], [])
 
 export type parseGenericArgs<
 	name extends string,
@@ -32,8 +32,8 @@ const _parseGenericArgs = (
 	params: string[],
 	s: DynamicState,
 	argDefs: string[],
-	argNodes: BaseSchema[]
-): ParsedArgs<BaseSchema[]> => {
+	argNodes: BaseRoot[]
+): ParsedArgs<BaseRoot[]> => {
 	const argState = s.parseUntilFinalizer()
 	// remove the finalizing token from the argDef
 	argDefs.push(argState.scanner.scanned.slice(0, -1))

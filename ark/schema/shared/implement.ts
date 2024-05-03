@@ -16,16 +16,16 @@ import {
 import type { Declaration, Inner, Node, errorContext } from "../kinds.js"
 import type { BaseNode } from "../node.js"
 import type { NodeParseContext } from "../parse.js"
+import type { IntersectionInner } from "../roots/intersection.js"
 import type {
-	BaseSchema,
+	BaseRoot,
 	schemaKindOrRightOf,
 	schemaKindRightOf
-} from "../schema.js"
-import type { IntersectionInner } from "../schemas/intersection.js"
+} from "../roots/root.js"
 import type {
 	NodeConfig,
 	ParsedUnknownNodeConfig,
-	RawSchemaScope
+	RawRootScope
 } from "../scope.js"
 import type { StructureInner } from "../structure/structure.js"
 import type {
@@ -88,7 +88,7 @@ export const schemaKinds = [
 	"domain"
 ] as const
 
-export type SchemaKind = (typeof schemaKinds)[number]
+export type RootKind = (typeof schemaKinds)[number]
 
 export const intersectionChildKinds = [
 	"proto",
@@ -98,7 +98,7 @@ export const intersectionChildKinds = [
 
 export type IntersectionChildKind = (typeof intersectionChildKinds)[number]
 
-export type NodeKind = SchemaKind | ConstraintKind
+export type NodeKind = RootKind | ConstraintKind
 
 export const nodeKinds = [
 	...schemaKinds,
@@ -160,7 +160,7 @@ export interface InternalIntersectionOptions {
 }
 
 export interface IntersectionContext extends InternalIntersectionOptions {
-	$: RawSchemaScope
+	$: RawRootScope
 	invert: boolean
 }
 
@@ -182,20 +182,20 @@ export type ConstraintIntersectionMap<kind extends ConstraintKind> = show<
 >
 
 export type TypeIntersection<
-	lKind extends SchemaKind,
+	lKind extends RootKind,
 	rKind extends schemaKindOrRightOf<lKind>
 > = (
 	l: Node<lKind>,
 	r: Node<rKind>,
 	ctx: IntersectionContext
-) => BaseSchema | Disjoint
+) => BaseRoot | Disjoint
 
-export type TypeIntersectionMap<kind extends SchemaKind> = {
+export type TypeIntersectionMap<kind extends RootKind> = {
 	[rKind in schemaKindOrRightOf<kind>]: TypeIntersection<kind, rKind>
 }
 
 export type IntersectionMap<kind extends NodeKind> =
-	kind extends SchemaKind ? TypeIntersectionMap<kind>
+	kind extends RootKind ? TypeIntersectionMap<kind>
 	:	ConstraintIntersectionMap<kind & ConstraintKind>
 
 export type UnknownIntersectionMap = {
@@ -242,7 +242,7 @@ export const precedenceOfKind = <kind extends NodeKind>(
 
 export type kindRightOf<kind extends NodeKind> = RightsByKind[kind]
 
-export const schemaKindsRightOf = <kind extends SchemaKind>(
+export const schemaKindsRightOf = <kind extends RootKind>(
 	kind: kind
 ): schemaKindRightOf<kind>[] =>
 	schemaKinds.slice(precedenceOfKind(kind) + 1) as never
@@ -302,7 +302,7 @@ interface CommonNodeImplementationInput<d extends RawNodeDeclaration> {
 	collapsibleKey?: keyof d["inner"]
 	reduce?: (
 		inner: d["inner"],
-		$: RawSchemaScope
+		$: RawRootScope
 	) => Node<d["reducibleTo"]> | Disjoint | undefined
 }
 
@@ -369,7 +369,7 @@ export interface UnknownAttachments {
 	readonly children: BaseNode[]
 	readonly innerHash: string
 	readonly typeHash: string
-	readonly $: RawSchemaScope
+	readonly $: RawRootScope
 }
 
 export interface NarrowedAttachments<d extends RawNodeDeclaration>

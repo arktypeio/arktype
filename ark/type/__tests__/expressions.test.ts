@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@arktype/attest"
-import { rawSchema, writeUnresolvableMessage } from "@arktype/schema"
+import { rawRoot, writeUnresolvableMessage } from "@arktype/schema"
 import { type } from "arktype"
 import { writeMissingRightOperandMessage } from "../parser/string/shift/operand/unenclosed.js"
 
@@ -153,14 +153,14 @@ contextualize(
 		it("instanceof single", () => {
 			const t = type("instanceof", RegExp)
 			attest<RegExp>(t.infer)
-			const expected = rawSchema(RegExp)
+			const expected = rawRoot(RegExp)
 			attest(t.json).equals(expected.json)
 		})
 
 		it("instanceof branches", () => {
 			const t = type("instanceof", Array, Date)
 			attest<unknown[] | Date>(t.infer)
-			const expected = rawSchema([Array, Date])
+			const expected = rawRoot([Array, Date])
 			attest(t.json).equals(expected.json)
 		})
 

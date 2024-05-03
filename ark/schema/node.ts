@@ -13,9 +13,9 @@ import {
 } from "@arktype/util"
 import type { BaseConstraint } from "./constraint.js"
 import type { Inner, Node, reducibleKindOf } from "./kinds.js"
-import type { BaseSchema, Schema } from "./schema.js"
-import type { UnitNode } from "./schemas/unit.js"
-import type { RawSchemaScope } from "./scope.js"
+import type { BaseRoot, Root } from "./roots/root.js"
+import type { UnitNode } from "./roots/unit.js"
+import type { RawRootScope } from "./scope.js"
 import type { NodeCompiler } from "./shared/compile.js"
 import type {
 	BaseMeta,
@@ -42,7 +42,7 @@ import {
 	type TraverseApply
 } from "./shared/traversal.js"
 
-export type UnknownNode = BaseNode | Schema
+export type UnknownNode = BaseNode | Root
 
 export abstract class BaseNode<
 	/** uses -ignore rather than -expect-error because this is not an error in .d.ts
@@ -182,7 +182,7 @@ export abstract class BaseNode<
 		return includes(structuralKinds, this.kind)
 	}
 
-	isSchema(): this is BaseSchema {
+	isRoot(): this is BaseRoot {
 		return includes(schemaKinds, this.kind)
 	}
 
@@ -203,7 +203,7 @@ export abstract class BaseNode<
 			:	this.expression
 	}
 
-	bindScope($: RawSchemaScope): this {
+	bindScope($: RawRootScope): this {
 		if (this.$ === $) return this as never
 		return new (this.constructor as any)(
 			Object.assign(shallowClone(this.attachments), { $ })

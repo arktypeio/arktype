@@ -8,10 +8,10 @@ import {
 	type show
 } from "@arktype/util"
 import type { BaseConstraint } from "../constraint.js"
-import type { GenericSchema } from "../generic.js"
+import type { GenericRoot } from "../generic.js"
 import type { BaseNode } from "../node.js"
-import type { BaseSchema } from "../schema.js"
-import type { RawSchemaModule, RawSchemaScope } from "../scope.js"
+import type { BaseRoot } from "../roots/root.js"
+import type { RawRootModule, RawRootScope } from "../scope.js"
 import type { ArkTypeError } from "./errors.js"
 
 export const makeRootAndArrayPropertiesMutable = <o extends object>(
@@ -57,10 +57,10 @@ export const arkKind = Symbol("ArkTypeInternalKind")
 
 export interface ArkKinds {
 	constraint: BaseConstraint
-	schema: BaseSchema
-	scope: RawSchemaScope
-	generic: GenericSchema
-	module: RawSchemaModule
+	schema: BaseRoot
+	scope: RawRootScope
+	generic: GenericRoot
+	module: RawRootModule
 	error: ArkTypeError
 }
 

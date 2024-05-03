@@ -3,7 +3,7 @@ import { Disjoint } from "../shared/disjoint.js"
 import { implementNode } from "../shared/implement.js"
 import type { TraverseAllows } from "../shared/traversal.js"
 import {
-	type BaseNormalizedRangeSchema,
+	type BaseNormalizedRangeRoot,
 	BaseRange,
 	type BaseRangeInner,
 	type LengthBoundableData,
@@ -14,7 +14,7 @@ export interface MaxLengthInner extends BaseRangeInner {
 	rule: number
 }
 
-export interface NormalizedMaxLengthDef extends BaseNormalizedRangeSchema {
+export interface NormalizedMaxLengthDef extends BaseNormalizedRangeRoot {
 	rule: number
 }
 

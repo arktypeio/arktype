@@ -1,11 +1,11 @@
 import { compileSerializedValue, type Key } from "@arktype/util"
 import { BaseConstraint } from "../constraint.js"
-import type { SchemaDef } from "../kinds.js"
-import type { BaseSchema } from "../schema.js"
+import type { RootDef } from "../kinds.js"
+import type { BaseRoot } from "../roots/root.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { ConstraintIntersection, SchemaKind } from "../shared/implement.js"
+import type { ConstraintIntersection, RootKind } from "../shared/implement.js"
 import { intersectNodes } from "../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 import type { OptionalDeclaration } from "./optional.js"
@@ -15,11 +15,11 @@ export type PropKind = "required" | "optional"
 
 export interface PropDef extends BaseMeta {
 	readonly key: Key
-	readonly value: SchemaDef
+	readonly value: RootDef
 }
 
 export interface PropInner extends PropDef {
-	readonly value: BaseSchema
+	readonly value: BaseRoot
 }
 
 export type BasePropDeclaration<kind extends PropKind = PropKind> = {
@@ -29,7 +29,7 @@ export type BasePropDeclaration<kind extends PropKind = PropKind> = {
 	inner: PropInner
 	prerequisite: object
 	intersectionIsOpen: true
-	childKind: SchemaKind
+	childKind: RootKind
 }
 
 export const intersectProps: ConstraintIntersection<PropKind, PropKind> = (

@@ -6,7 +6,7 @@ import {
 	type Key
 } from "@arktype/util"
 import { BaseConstraint, constraintKeyParser } from "../constraint.js"
-import type { BaseSchema } from "../schema.js"
+import type { BaseRoot } from "../roots/root.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -70,8 +70,8 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 		...this.optionalLiteralKeys
 	]
 
-	private _keyof: BaseSchema | undefined
-	keyof(): BaseSchema {
+	private _keyof: BaseRoot | undefined
+	keyof(): BaseRoot {
 		if (!this._keyof) {
 			let branches = this.$.units(this.literalKeys).branches
 			this.index?.forEach(({ index }) => {
@@ -96,7 +96,7 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 		else this.compileEnumerable(js)
 	}
 
-	omit(...keys: array<BaseSchema | Key>): StructureNode {
+	omit(...keys: array<BaseRoot | Key>): StructureNode {
 		return this.$.node("structure", omitFromInner(this.inner, keys))
 	}
 
@@ -161,7 +161,7 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 
 const omitFromInner = (
 	inner: StructureInner,
-	keys: array<BaseSchema | Key>
+	keys: array<BaseRoot | Key>
 ): StructureInner => {
 	const result = { ...inner }
 	keys.forEach(k => {

@@ -1,7 +1,7 @@
 import { attest, contextualize } from "@arktype/attest"
 import {
 	keywordNodes,
-	rawSchema,
+	rawRoot,
 	writeIndivisibleMessage,
 	writeUnresolvableMessage
 } from "@arktype/schema"
@@ -109,7 +109,7 @@ contextualize(() => {
 	})
 
 	const expected = () =>
-		rawSchema([
+		rawRoot([
 			{
 				domain: "object",
 				required: {

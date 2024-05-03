@@ -3,10 +3,10 @@ import { Disjoint } from "../shared/disjoint.js"
 import { implementNode } from "../shared/implement.js"
 import type { TraverseAllows } from "../shared/traversal.js"
 import {
-	type BaseNormalizedRangeSchema,
+	type BaseNormalizedRangeRoot,
 	BaseRange,
 	type BaseRangeInner,
-	type LimitSchemaValue,
+	type LimitRootValue,
 	parseDateLimit,
 	parseExclusiveKey
 } from "./range.js"
@@ -15,11 +15,11 @@ export interface BeforeInner extends BaseRangeInner {
 	rule: Date
 }
 
-export interface NormalizedBeforeDef extends BaseNormalizedRangeSchema {
-	rule: LimitSchemaValue
+export interface NormalizedBeforeDef extends BaseNormalizedRangeRoot {
+	rule: LimitRootValue
 }
 
-export type BeforeDef = NormalizedBeforeDef | LimitSchemaValue
+export type BeforeDef = NormalizedBeforeDef | LimitRootValue
 
 export type BeforeDeclaration = declareNode<{
 	kind: "before"
