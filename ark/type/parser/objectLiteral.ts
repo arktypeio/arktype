@@ -99,11 +99,19 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): RawSchema => {
 export const nonLeadingSpreadError =
 	"Spread operator may only be used as the first key in an object"
 
+export type inferObjectLiteral<def extends object, $, args> = show<
+	"..." extends keyof def ?
+		merge<
+			inferDefinition<def["..."], $, args>,
+			_inferObjectLiteral<def, $, args>
+		>
+	:	_inferObjectLiteral<def, $, args>
+>
+
 /**
  * Infers the contents of an object literal, ignoring a spread definition
- * You probably want to use {@link inferObjectLiteral} instead.
  */
-type inferObjectLiteralInner<def extends object, $, args> = {
+type _inferObjectLiteral<def extends object, $, args> = {
 	// since def is a const parameter, we remove the readonly modifier here
 	// support for builtin readonly tracked here:
 	// https://github.com/arktypeio/arktype/issues/808
@@ -119,15 +127,6 @@ type inferObjectLiteralInner<def extends object, $, args> = {
 		args
 	>
 }
-
-export type inferObjectLiteral<def extends object, $, args> = show<
-	"..." extends keyof def ?
-		merge<
-			inferDefinition<def["..."], $, args>,
-			inferObjectLiteralInner<def, $, args>
-		>
-	:	inferObjectLiteralInner<def, $, args>
->
 
 export type validateObjectLiteral<def, $, args> = {
 	[k in keyof def]: k extends IndexKey<infer indexDef> ?
