@@ -1,15 +1,15 @@
 import {
-	type array,
 	conflatenateAll,
 	flatMorph,
 	hasDomain,
 	isEmptyObject,
 	isKeyOf,
+	omit,
+	throwParseError,
+	type array,
 	type listable,
 	type mutable,
-	omit,
-	type show,
-	throwParseError
+	type show
 } from "@arktype/util"
 import {
 	constraintKeyParser,
@@ -26,18 +26,18 @@ import type {
 } from "../kinds.js"
 import type { PredicateNode } from "../predicate.js"
 import type { NodeCompiler } from "../shared/compile.js"
-import { type BaseMeta, type declareNode, metaKeys } from "../shared/declare.js"
+import { metaKeys, type BaseMeta, type declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { ArkTypeError } from "../shared/errors.js"
 import {
-	type ConstraintKind,
 	implementNode,
+	structureKeys,
+	type ConstraintKind,
 	type IntersectionContext,
-	type nodeImplementationOf,
 	type OpenNodeKind,
 	type RefinementKind,
 	type StructuralKind,
-	structureKeys
+	type nodeImplementationOf
 } from "../shared/implement.js"
 import { intersectNodes } from "../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
@@ -253,7 +253,9 @@ export const intersectionImplementation: nodeImplementationOf<IntersectionDeclar
 	implementNode<IntersectionDeclaration>({
 		kind: "intersection",
 		hasAssociatedError: true,
-		normalize: ({ structure, ...schema }) => {
+		normalize: rawSchema => {
+			if (isNode(rawSchema)) return rawSchema
+			const { structure, ...schema } = rawSchema
 			const hasRootStructureKey = !!structure
 			const normalizedStructure = (structure as mutable<StructureSchema>) ?? {}
 			const normalized = flatMorph(schema, (k, v) => {

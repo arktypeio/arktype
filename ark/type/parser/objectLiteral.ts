@@ -1,15 +1,23 @@
-import {
-	keywordNodes,
-	type BaseRoot,
-	type writeInvalidPropertyKeyMessage
-} from "@arktype/schema"
 import type {
-	Dict,
-	ErrorMessage,
-	Key,
-	keyError,
-	merge,
-	show
+	BaseRoot,
+	NodeSchema,
+	StructureNode,
+	UnitNode,
+	writeInvalidPropertyKeyMessage
+} from "@arktype/schema"
+import {
+	append,
+	printable,
+	spliterate,
+	stringAndSymbolicEntriesOf,
+	throwParseError,
+	type Dict,
+	type ErrorMessage,
+	type Key,
+	type keyError,
+	type merge,
+	type mutable,
+	type show
 } from "@arktype/util"
 import type { ParseContext } from "../scope.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
@@ -18,79 +26,73 @@ import type { validateString } from "./semantic/validate.js"
 import { Scanner } from "./string/shift/scanner.js"
 
 export const parseObjectLiteral = (def: Dict, ctx: ParseContext): BaseRoot => {
-	def
-	ctx
-	return keywordNodes.object as never
-	// const propNodes: NodeDef<"prop">[] = []
-	// const indexNodes: NodeDef<"index">[] = []
-	// // We only allow a spread operator to be used as the first key in an object
-	// // because to match JS behavior any keys before the spread are overwritten
-	// // by the values in the target object, so there'd be no useful purpose in having it
-	// // anywhere except for the beginning.
-	// const parsedEntries = stringAndSymbolicEntriesOf(def).map(parseEntry)
-	// if (parsedEntries[0]?.kind === "spread") {
-	// 	// remove the spread entry so we can iterate over the remaining entries
-	// 	// expecting non-spread entries
-	// 	const spreadEntry = parsedEntries.shift()!
-	// 	const spreadNode = ctx.$.parse(spreadEntry.value, ctx)
-	// 	if (
-	// 		!spreadNode.hasKind("intersection") ||
-	// 		!spreadNode.extends(tsKeywords.object)
-	// 	) {
-	// 		return throwParseError(
-	// 			writeInvalidSpreadTypeMessage(printable(spreadEntry.value))
-	// 		)
-	// 	}
-	// 	// TODO: move to props group merge in schema
-	// 	// For each key on spreadNode, add it to our object.
-	// 	// We filter out keys from the spreadNode that will be defined later on this same object
-	// 	// because the currently parsed definition will overwrite them.
-	// 	spreadNode.prop?.forEach(
-	// 		spreadRequired =>
-	// 			!parsedEntries.some(
-	// 				({ inner: innerKey }) => innerKey === spreadRequired.key
-	// 			) && propNodes.push(spreadRequired)
-	// 	)
-	// }
-	// for (const entry of parsedEntries) {
-	// 	if (entry.kind === "spread") return throwParseError(nonLeadingSpreadError)
+	let spread: StructureNode | undefined
+	const structure: mutable<NodeSchema<"structure">, 2> = {}
+	// We only allow a spread operator to be used as the first key in an object
+	// because to match JS behavior any keys before the spread are overwritten
+	// by the values in the target object, so there'd be no useful purpose in having it
+	// anywhere except for the beginning.
+	const parsedEntries = stringAndSymbolicEntriesOf(def).map(parseEntry)
+	if (parsedEntries[0]?.kind === "spread") {
+		// remove the spread entry so we can iterate over the remaining entries
+		// expecting non-spread entries
+		const spreadEntry = parsedEntries.shift()!
+		const spreadNode = ctx.$.parse(spreadEntry.value, ctx)
+		if (!spreadNode.hasKind("intersection") || !spreadNode.structure) {
+			return throwParseError(
+				writeInvalidSpreadTypeMessage(printable(spreadEntry.value))
+			)
+		}
+		spread = spreadNode.structure
+	}
+	for (const entry of parsedEntries) {
+		if (entry.kind === "spread") return throwParseError(nonLeadingSpreadError)
 
-	// 	if (entry.kind === "index") {
-	// 		// handle key parsing first to match type behavior
-	// 		const key = ctx.$.parse(entry.inner, ctx)
-	// 		const value = ctx.$.parse(entry.value, ctx)
+		if (entry.kind === "index") {
+			// handle key parsing first to match type behavior
+			const key = ctx.$.parse(entry.inner, ctx)
+			const value = ctx.$.parse(entry.value, ctx)
 
-	// 		// extract enumerable named props from the index signature
-	// 		// TODO: remove explicit annotation once we can use TS 5.5
-	// 		const [enumerable, nonEnumerable] = spliterate(
-	// 			key.branches,
-	// 			(k): k is UnitNode => k.hasKind("unit")
-	// 		)
+			// extract enumerable named props from the index signature
+			const [enumerable, nonEnumerable] = spliterate(
+				key.branches,
+				(k): k is UnitNode => k.hasKind("unit")
+			)
 
-	// 		if (enumerable.length) {
-	// 			propNodes.push(
-	// 				...enumerable.map(k =>
-	// 					ctx.$.node("prop", { index: k.unit as Key, value })
-	// 				)
-	// 			)
-	// 			if (nonEnumerable.length)
-	// 				indexNodes.push(ctx.$.node("index", { index: nonEnumerable, value }))
-	// 		} else indexNodes.push(ctx.$.node("index", { index: key, value }))
-	// 	} else {
-	// 		const value = ctx.$.parse(entry.value, ctx)
-	// 		propNodes.push({
-	// 			key: entry.inner,
-	// 			value,
-	// 			optional: entry.kind === "optional"
-	// 		})
-	// 	}
-	// }
+			if (enumerable.length) {
+				structure.required = append(
+					structure.required,
+					enumerable.map(k =>
+						ctx.$.node("required", { key: k.unit as Key, value })
+					)
+				)
+				if (nonEnumerable.length) {
+					structure.index = append(
+						structure.index,
+						ctx.$.node("index", { index: nonEnumerable, value })
+					)
+				}
+			} else {
+				structure.index = append(
+					structure.index,
+					ctx.$.node("index", { index: key, value })
+				)
+			}
+		} else {
+			const value = ctx.$.parse(entry.value, ctx)
+			structure[entry.kind] = append(structure[entry.kind], {
+				key: entry.inner,
+				value
+			})
+		}
+	}
 
-	// return ctx.$.schema({
-	// 	domain: "object",
-	// 	prop: propNodes,
-	// 	index: indexNodes
-	// })
+	const structureNode = ctx.$.node("structure", structure)
+
+	return ctx.$.schema({
+		domain: "object",
+		structure: spread?.merge(structureNode) ?? structureNode
+	})
 }
 
 export const nonLeadingSpreadError =
