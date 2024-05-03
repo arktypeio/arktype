@@ -1,9 +1,15 @@
 import {
 	type array,
 	conflatenateAll,
+	flatMorph,
+	hasDomain,
+	isEmptyObject,
+	isKeyOf,
 	type listable,
+	type mutable,
 	omit,
-	type show
+	type show,
+	throwParseError
 } from "@arktype/util"
 import {
 	constraintKeyParser,
@@ -30,14 +36,16 @@ import {
 	type nodeImplementationOf,
 	type OpenNodeKind,
 	type RefinementKind,
-	type StructuralKind
+	type StructuralKind,
+	structureKeys
 } from "../shared/implement.js"
 import { intersectNodes } from "../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 import { hasArkKind, isNode } from "../shared/utils.js"
 import type {
 	ExtraneousKeyBehavior,
-	StructureNode
+	StructureNode,
+	StructureSchema
 } from "../structure/structure.js"
 import type { DomainNode, DomainSchema } from "./domain.js"
 import type { ProtoNode, ProtoSchema } from "./proto.js"
@@ -201,14 +209,18 @@ const intersectIntersections = (
 	const rBasis = r.proto ?? r.domain
 	const basisResult =
 		lBasis ?
-			rBasis ? intersectNodes(lBasis, rBasis, ctx)
+			rBasis ?
+				(intersectNodes(lBasis, rBasis, ctx) as Node<IntersectionBasisKind>)
 			:	lBasis
 		:	rBasis
 	if (basisResult instanceof Disjoint) return basisResult
 
-	const root: MutableIntersectionInner = {
-		[basisResult!.kind as IntersectionBasisKind]: basisResult
-	}
+	const root: MutableIntersectionInner =
+		basisResult ?
+			{
+				[basisResult.kind]: basisResult
+			}
+		:	{}
 
 	const lConstraints = flattenConstraints(l)
 	const rConstraints = flattenConstraints(r)
@@ -241,7 +253,27 @@ export const intersectionImplementation: nodeImplementationOf<IntersectionDeclar
 	implementNode<IntersectionDeclaration>({
 		kind: "intersection",
 		hasAssociatedError: true,
-		normalize: schema => schema,
+		normalize: ({ structure, ...schema }) => {
+			const hasRootStructureKey = !!structure
+			const normalizedStructure = (structure as mutable<StructureSchema>) ?? {}
+			const normalized = flatMorph(schema, (k, v) => {
+				if (isKeyOf(k, structureKeys)) {
+					if (hasRootStructureKey) {
+						throwParseError(
+							`Flattened structure key ${k} cannot be specified alongside a root 'structure' key.`
+						)
+					}
+					normalizedStructure[k] = v as never
+					return []
+				}
+				return [k, v]
+			}) as mutable<NormalizedIntersectionSchema>
+			if (!isEmptyObject(normalizedStructure))
+				normalized.structure = normalizedStructure
+			return normalized
+		},
+		finalizeJson: ({ structure, ...rest }) =>
+			hasDomain(structure, "object") ? { ...structure, ...rest } : rest,
 		keys: {
 			domain: {
 				child: true,

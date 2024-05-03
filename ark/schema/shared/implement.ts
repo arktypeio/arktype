@@ -286,6 +286,7 @@ interface CommonNodeImplementationInput<d extends RawNodeDeclaration> {
 	keys: KeySchemainitions<d>
 	normalize: (schema: d["schema"]) => d["normalizedSchema"]
 	hasAssociatedError: d["errorContext"] extends null ? false : true
+	finalizeJson?: (json: { [k in keyof d["inner"]]: JsonData }) => Json
 	collapsibleKey?: keyof d["inner"]
 	reduce?: (
 		inner: d["inner"],

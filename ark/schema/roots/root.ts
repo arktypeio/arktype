@@ -60,7 +60,8 @@ export abstract class BaseRoot<
 		out d extends RawRootDeclaration = RawRootDeclaration
 	>
 	extends BaseNode<d>
-	implements internalImplementationOf<Root, TypeOnlyRootKey>
+	// don't require intersect so we can make it protected to ensure it is not called internally
+	implements internalImplementationOf<Root, TypeOnlyRootKey | "intersect">
 {
 	readonly branches: readonly Node<UnionChildKind>[] =
 		this.hasKind("union") ? this.inner.branches : [this as never];
@@ -86,8 +87,7 @@ export abstract class BaseRoot<
 		return this._keyof as never
 	}
 
-	// TODO: can it be enforced that this is not called internally and instead intersectNodes is used?
-	intersect(r: unknown): BaseRoot | Disjoint {
+	protected intersect(r: unknown): BaseRoot | Disjoint {
 		const rNode = this.$.parseRoot(r)
 		return intersectNodesRoot(this, rNode, this.$) as never
 	}
