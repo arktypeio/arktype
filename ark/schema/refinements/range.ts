@@ -1,6 +1,5 @@
 import {
 	type array,
-	invert,
 	isKeyOf,
 	type propValueOf,
 	type satisfy
@@ -111,10 +110,6 @@ type BoundKindPairsByLower = {
 	minLength: "maxLength"
 	after: "before"
 }
-
-const boundKindPairsByUpper: BoundKindPairsByUpper = invert(
-	boundKindPairsByLower
-)
 
 type BoundKindPairsByUpper = {
 	max: "min"

@@ -21,7 +21,10 @@ import type {
 } from "./kinds.js"
 import { BaseNode } from "./node.js"
 import type { NodeParseContext } from "./parse.js"
-import type { IntersectionInner } from "./roots/intersection.js"
+import type {
+	IntersectionInner,
+	MutableIntersectionInner
+} from "./roots/intersection.js"
 import type { BaseRoot, Root, UnknownRoot } from "./roots/root.js"
 import type { NodeCompiler } from "./shared/compile.js"
 import type { RawNodeDeclaration } from "./shared/declare.js"
@@ -56,7 +59,17 @@ export abstract class BaseConstraint<
 	): intersectConstraintKinds<d["kind"], r["kind"]> {
 		return intersectNodesRoot(this, r, this.$) as never
 	}
+
+	abstract reduceIntersection(
+		acc: IntersectionInner,
+		ctx: IntersectionContext
+	): ConstraintReductionResult
 }
+
+export type ConstraintReductionResult =
+	| BaseRoot
+	| Disjoint
+	| MutableIntersectionInner
 
 export abstract class RawPrimitiveConstraint<
 	d extends BaseConstraintDeclaration
@@ -154,7 +167,7 @@ export const flattenConstraints = (inner: Dict): BaseConstraint[] => {
 export const unflattenConstraints = (
 	constraints: array<BaseConstraint>
 ): IntersectionInner & Inner<"structure"> => {
-	const inner: MutableInner<"intersection"> & MutableInner<"structure"> = {}
+	const inner: MutableIntersectionInner & MutableInner<"structure"> = {}
 	for (const constraint of constraints) {
 		if (constraint.hasOpenIntersection()) {
 			inner[constraint.kind] = append(

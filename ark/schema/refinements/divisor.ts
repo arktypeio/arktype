@@ -2,6 +2,7 @@ import {
 	RawPrimitiveConstraint,
 	writeInvalidOperandMessage
 } from "../constraint.js"
+import type { MutableIntersectionInner } from "../roots/intersection.js"
 import type { BaseRoot, RawRootDeclaration, Root } from "../roots/root.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import {
@@ -58,6 +59,18 @@ export class DivisorNode extends RawPrimitiveConstraint<DivisorDeclaration> {
 	readonly impliedBasis: BaseRoot<RawRootDeclaration> =
 		this.$.keywords.number.raw
 	readonly expression: string = `% ${this.rule}`
+
+	reduceIntersection(acc: MutableIntersectionInner): MutableIntersectionInner {
+		if (acc.divisor) {
+			acc.divisor = this.$.node("divisor", {
+				rule: Math.abs(
+					(this.rule * acc.divisor.rule) /
+						greatestCommonDivisor(this.rule, acc.divisor.rule)
+				)
+			})
+		} else acc.divisor = this
+		return acc
+	}
 }
 
 export const writeIndivisibleMessage = <node extends Root>(

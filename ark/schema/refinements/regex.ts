@@ -1,5 +1,6 @@
 import { RawPrimitiveConstraint } from "../constraint.js"
-import type { BaseRoot, RawRootDeclaration } from "../roots/root.js"
+import type { MutableIntersectionInner } from "../roots/intersection.js"
+import type { BaseRoot } from "../roots/root.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import {
 	implementNode,
@@ -62,4 +63,11 @@ export class RegexNode extends RawPrimitiveConstraint<RegexDeclaration> {
 	readonly compiledCondition: string = `${this.expression}.test(data)`
 	readonly compiledNegation: string = `!${this.compiledCondition}`
 	readonly impliedBasis: BaseRoot = this.$.keywords.string.raw
+
+	reduceIntersection(acc: MutableIntersectionInner): MutableIntersectionInner {
+		if (acc.regex) {
+			if (!acc.regex.some(n => n.equals(this))) acc.regex.push(this)
+		} else acc.regex = [this]
+		return acc
+	}
 }

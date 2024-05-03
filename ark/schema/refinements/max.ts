@@ -1,4 +1,6 @@
+import type { MutableIntersectionInner } from "../roots/intersection.js"
 import type { BaseRoot } from "../roots/root.js"
+import type { UnitNode } from "../roots/unit.js"
 import type { declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
@@ -64,4 +66,20 @@ export class MaxNode extends BaseRange<MaxDeclaration> {
 
 	traverseAllows: TraverseAllows<number> =
 		this.exclusive ? data => data < this.rule : data => data <= this.rule
+
+	reduceIntersection(
+		acc: MutableIntersectionInner
+	): MutableIntersectionInner | Disjoint | UnitNode {
+		if (acc.max) {
+			if (this.isStricterThan(acc.max)) acc.max = this
+			else return acc
+		}
+		if (acc.min) {
+			if (this.overlapsRange(acc.min)) {
+				if (this.overlapIsUnit(acc.min))
+					return this.$.node("unit", { unit: this.rule })
+			} else return Disjoint.from("range", this, acc.min)
+		}
+		return acc
+	}
 }

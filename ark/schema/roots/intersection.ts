@@ -1,19 +1,12 @@
 import {
+	append,
 	type array,
 	conflatenateAll,
-	isEmptyObject,
 	type listable,
 	omit,
-	type show,
-	splitByKeys,
-	throwInternalError
+	type show
 } from "@arktype/util"
-import {
-	constraintKeyParser,
-	flattenConstraints,
-	intersectConstraints,
-	unflattenConstraints
-} from "../constraint.js"
+import { constraintKeyParser, flattenConstraints } from "../constraint.js"
 import type {
 	Inner,
 	MutableInner,
@@ -27,7 +20,6 @@ import { type BaseMeta, type declareNode, metaKeys } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { ArkTypeError } from "../shared/errors.js"
 import {
-	constraintKeys,
 	type ConstraintKind,
 	implementNode,
 	type IntersectionContext,
@@ -38,7 +30,11 @@ import {
 } from "../shared/implement.js"
 import { intersectNodes } from "../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
-import { hasArkKind, isNode } from "../shared/utils.js"
+import {
+	hasArkKind,
+	isNode,
+	makeRootAndArrayPropertiesMutable
+} from "../shared/utils.js"
 import type {
 	ExtraneousKeyBehavior,
 	StructureNode
@@ -62,6 +58,8 @@ export type IntersectionInner = show<
 		[k in RefinementKind]?: intersectionChildInnerValueOf<k>
 	}
 >
+
+export type MutableIntersectionInner = MutableInner<"intersection">
 
 export type NormalizedIntersectionSchema = Omit<
 	IntersectionSchema,
@@ -189,58 +187,49 @@ export class IntersectionNode extends BaseRoot<IntersectionDeclaration> {
 }
 
 const intersectIntersections = (
-	reduced: IntersectionInner,
-	raw: IntersectionInner,
+	l: IntersectionInner,
+	r: IntersectionInner,
 	ctx: IntersectionContext
 ): BaseRoot | Disjoint => {
 	// avoid treating adding instance keys as keys of lRoot, rRoot
-	if (hasArkKind(reduced, "schema") && reduced.hasKind("intersection"))
-		return intersectIntersections(reduced.inner, raw, ctx)
-	if (hasArkKind(raw, "schema") && raw.hasKind("intersection"))
-		return intersectIntersections(reduced, raw.inner, ctx)
+	if (hasArkKind(l, "schema") && l.hasKind("intersection"))
+		return intersectIntersections(l.inner, r, ctx)
+	if (hasArkKind(r, "schema") && r.hasKind("intersection"))
+		return intersectIntersections(l, r.inner, ctx)
 
-	const [reducedConstraintsInner, reducedRoot] = splitByKeys(
-		reduced,
-		constraintKeys
-	)
-	const [rawConstraintsInner, rawRoot] = splitByKeys(raw, constraintKeys)
+	const lBasis = l.proto ?? l.domain
+	const rBasis = r.proto ?? r.domain
+	const basisResult =
+		lBasis ?
+			rBasis ? intersectNodes(lBasis, rBasis, ctx)
+			:	lBasis
+		:	rBasis
+	if (basisResult instanceof Disjoint) return basisResult
 
-	// since intersection with a left operand of unknown is leveraged for
-	// reduction, check for the case where r is empty so we can preserve
-	// metadata and save some time
+	let acc: MutableIntersectionInner = makeRootAndArrayPropertiesMutable(l)
 
-	const root =
-		isEmptyObject(reduced) ? rawRoot : (
-			intersectRootKeys(reducedRoot, rawRoot, ctx)
-		)
+	acc[basisResult!.kind as IntersectionBasisKind] = basisResult as never
 
-	if (root instanceof Disjoint) return root
+	let roots: BaseRoot[] | undefined
 
-	const lConstraints = flattenConstraints(reducedConstraintsInner)
-	const rConstraints = flattenConstraints(rawConstraintsInner)
-
-	const constraintResult = intersectConstraints({
-		l: lConstraints,
-		r: rConstraints,
-		types: [],
-		ctx
-	})
-
-	if (constraintResult instanceof Disjoint) return constraintResult
-
-	let result: BaseRoot | Disjoint = constraintResult.ctx.$.node(
-		"intersection",
-		Object.assign(root, unflattenConstraints(constraintResult.l)),
-		{ prereduced: true }
-	)
-
-	for (const type of constraintResult.types) {
-		if (result instanceof Disjoint) return result
-
-		result = intersectNodes(type, result, constraintResult.ctx)
+	for (const constraint of flattenConstraints(r)) {
+		const next = constraint.reduceIntersection(acc, ctx)
+		if (next instanceof Disjoint) return next
+		if (isNode(next)) roots = append(roots, next)
+		else acc = next
 	}
 
-	return result
+	let node: BaseRoot = ctx.$.node("intersection", acc, { prereduced: true })
+
+	if (roots) {
+		for (const root of roots) {
+			const next = intersectNodes(node, root, ctx)
+			if (next instanceof Disjoint) return next
+			node = next
+		}
+	}
+
+	return node
 }
 
 export const intersectionImplementation: nodeImplementationOf<IntersectionDeclaration> =
@@ -350,33 +339,6 @@ export const intersectionImplementation: nodeImplementationOf<IntersectionDeclar
 			})
 		}
 	})
-
-type IntersectionRoot = Omit<IntersectionInner, ConstraintKind>
-
-const intersectRootKeys = (
-	l: IntersectionRoot,
-	r: IntersectionRoot,
-	ctx: IntersectionContext
-): MutableInner<"intersection"> | Disjoint => {
-	const result: IntersectionRoot = {}
-
-	const lBasis = l.proto ?? l.domain
-	const rBasis = r.proto ?? r.domain
-	const resultBasis =
-		lBasis ?
-			rBasis ? intersectNodes(lBasis, rBasis, ctx)
-			:	lBasis
-		:	rBasis
-	if (resultBasis) {
-		if (resultBasis instanceof Disjoint) return resultBasis
-
-		if (resultBasis.kind === "domain" || resultBasis.kind === "proto")
-			result[resultBasis.kind] = resultBasis as never
-		else throwInternalError(`Unexpected basis intersection ${resultBasis}`)
-	}
-
-	return result
-}
 
 export type ConditionalTerminalIntersectionRoot = {
 	onExtraneousKey?: ExtraneousKeyBehavior
