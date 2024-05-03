@@ -3,15 +3,15 @@ import {
 	stringAndSymbolicEntriesOf,
 	throwParseError
 } from "@arktype/util"
+import { BaseConstraint } from "../constraint.js"
 import type { Node, RootSchema } from "../kinds.js"
-import { BaseNode } from "../node.js"
 import type { BaseRoot } from "../roots/root.js"
 import type { UnitNode } from "../roots/unit.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
-	type RootKind,
 	implementNode,
+	type RootKind,
 	type nodeImplementationOf
 } from "../shared/implement.js"
 import { intersectNodes } from "../shared/intersections.js"
@@ -103,7 +103,7 @@ export const indexImplementation: nodeImplementationOf<IndexDeclaration> =
 		}
 	})
 
-export class IndexNode extends BaseNode<IndexDeclaration> {
+export class IndexNode extends BaseConstraint<IndexDeclaration> {
 	impliedBasis: BaseRoot = this.$.keywords.object.raw
 	expression = `[${this.index.expression}]: ${this.value.expression}`
 

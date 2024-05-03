@@ -6,8 +6,8 @@ import {
 	type mutable,
 	type satisfy
 } from "@arktype/util"
+import { BaseConstraint } from "../constraint.js"
 import type { MutableInner, RootSchema } from "../kinds.js"
-import { BaseNode } from "../node.js"
 import type { MaxLengthNode } from "../refinements/maxLength.js"
 import type { MinLengthNode } from "../refinements/minLength.js"
 import type { BaseRoot } from "../roots/root.js"
@@ -23,7 +23,6 @@ import {
 } from "../shared/implement.js"
 import { intersectNodes } from "../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
-
 export interface NormalizedSequenceSchema extends BaseMeta {
 	readonly prefix?: array<RootSchema>
 	readonly optionals?: array<RootSchema>
@@ -225,7 +224,7 @@ export const sequenceImplementation: nodeImplementationOf<SequenceDeclaration> =
 		}
 	})
 
-export class SequenceNode extends BaseNode<SequenceDeclaration> {
+export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 	impliedBasis: BaseRoot = this.$.keywords.Array.raw
 	prefix: array<BaseRoot> = this.inner.prefix ?? []
 	optionals: array<BaseRoot> = this.inner.optionals ?? []

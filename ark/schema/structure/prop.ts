@@ -1,6 +1,6 @@
 import { compileSerializedValue, type Key } from "@arktype/util"
+import { BaseConstraint } from "../constraint.js"
 import type { Node, RootSchema } from "../kinds.js"
-import { BaseNode } from "../node.js"
 import type { BaseRoot } from "../roots/root.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta } from "../shared/declare.js"
@@ -56,7 +56,7 @@ export const intersectProps = (
 
 export abstract class BaseProp<
 	kind extends PropKind = PropKind
-> extends BaseNode<
+> extends BaseConstraint<
 	kind extends "required" ? RequiredDeclaration : OptionalDeclaration
 > {
 	required: boolean = this.kind === "required"
