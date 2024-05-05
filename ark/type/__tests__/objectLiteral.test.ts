@@ -378,6 +378,15 @@ other must be a string (was bigint)`)
 			attest(types.obj.json).snap(expected.json)
 		})
 
+		it("intersection", () => {
+			const t = type({ "[string]": "4" }).and({ "a?": "1" })
+			attest<{
+				[k: string]: 4
+				a?: never
+			}>(t.infer)
+			attest(t.json).snap()
+		})
+
 		it("syntax error in index definition", () => {
 			attest(() =>
 				type({
