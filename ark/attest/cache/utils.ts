@@ -118,14 +118,12 @@ export const getInstantiationsContributedByNode = (
 		baselineFile + `\nconst $attestIsolatedBench = ${benchBlock.getFullText()}`
 
 	if (!instantiationsByPath[fakePath]) {
-		console.log(`⏳ attest: Analyzing type assertions...`)
 		const instantiationsWithoutNode = getInstantiationsWithFile(
 			baselineFile,
 			fakePath
 		)
 
 		instantiationsByPath[fakePath] = instantiationsWithoutNode
-		console.log(`⏳ Cached type assertions \n`)
 	}
 
 	const instantiationsWithNode = getInstantiationsWithFile(
