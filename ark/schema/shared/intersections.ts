@@ -62,11 +62,17 @@ type intersectObjects<l, r, piped extends boolean> =
 	[l, r] extends [infer lList extends array, infer rList extends array] ?
 		intersectArrays<lList, rList, MorphableIntersection<piped>>
 	:	show<
+			// this looks redundant, but should hit the cache anyways and
+			// preserves index signature + optional keys correctly
 			{
 				[k in keyof l]: k extends keyof r ?
 					_inferIntersection<l[k], r[k], piped>
 				:	l[k]
-			} & Omit<r, keyof l>
+			} & {
+				[k in keyof r]: k extends keyof l ?
+					_inferIntersection<l[k], r[k], piped>
+				:	r[k]
+			}
 		>
 
 const intersectionCache: PartialRecord<string, UnknownIntersectionResult> = {}

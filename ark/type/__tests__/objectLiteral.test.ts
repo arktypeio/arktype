@@ -378,13 +378,26 @@ other must be a string (was bigint)`)
 			attest(types.obj.json).snap(expected.json)
 		})
 
-		it("intersection", () => {
+		it("intersection with named", () => {
 			const t = type({ "[string]": "4" }).and({ "a?": "1" })
 			attest<{
 				[k: string]: 4
 				a?: never
 			}>(t.infer)
-			attest(t.json).snap()
+			attest(t.json).snap({
+				optional: [{ key: "a", value: { unit: 1 } }],
+				index: [{ value: { unit: 4 }, index: "string" }],
+				domain: "object"
+			})
+		})
+
+		it("intersction with right required", () => {
+			const t = type({ "a?": "true" }).and({ a: "boolean" })
+			attest<{ a: true }>(t.infer)
+			const expected = type({
+				a: "true"
+			})
+			attest(t.json).equals(expected.json)
 		})
 
 		it("syntax error in index definition", () => {
