@@ -17,7 +17,7 @@ export type MarkMeasure = Partial<Record<StatName, Measure>>
 export const stringifyMeasure = ([value, units]: Measure): string =>
 	units in timeUnitRatios ?
 		stringifyTimeMeasure([value, units as TimeUnit])
-	:	`${value}${units}`
+	:	`${value} ${units}`
 
 export const TYPE_UNITS = ["instantiations"] as const
 

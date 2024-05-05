@@ -28,6 +28,7 @@ export const bench = <Fn extends BenchableFunction>(
 	options: BenchOptions = {}
 ): InitialBenchAssertions<Fn> => {
 	const qualifiedPath = [...currentSuitePath, name]
+	console.log(`🏌️  ${qualifiedPath.join("/")}`)
 	const ctx = getBenchCtx(
 		qualifiedPath,
 		fn.constructor.name === "AsyncFunction",
