@@ -11,7 +11,7 @@
 		"verbatimModuleSyntax": true,
 		"esModuleInterop": true,
 		"resolveJsonModule": true,
-		"isolatedDeclarations": true,
+		// "isolatedDeclarations": true,
 		"exactOptionalPropertyTypes": true,
 		"noFallthroughCasesInSwitch": true,
 		"stripInternal": true,

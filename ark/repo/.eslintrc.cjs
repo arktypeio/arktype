@@ -92,7 +92,7 @@ module.exports = defineConfig({
 						message: `Use a specifier like '@arktype/util' to import from a package`
 					},
 					{
-						group: ["**/main.js"],
+						group: ["**/api.js"],
 						message: `Use a path like '../original/definition.js' instead of a package entrypoint`
 					}
 				]
