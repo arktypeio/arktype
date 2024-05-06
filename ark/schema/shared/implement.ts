@@ -3,7 +3,6 @@ import {
 	flatMorph,
 	printable,
 	type Entry,
-	type ErrorMessage,
 	type Json,
 	type JsonData,
 	type entryOf,
@@ -258,27 +257,24 @@ export const defaultValueSerializer = (v: unknown): JsonData => {
 export type NodeKeyImplementation<
 	d extends RawNodeDeclaration,
 	k extends keyof d["normalizedSchema"],
-	instantiated = k extends keyof d["inner"] ? d["inner"][k] : never
+	instantiated = k extends keyof d["inner"] ? Exclude<d["inner"][k], undefined>
+	:	never
 > = requireKeys<
 	{
 		preserveUndefined?: true
 		meta?: true
 		child?: true
-		implied?: true
-		serialize?: (
-			schema: instantiated extends listable<BaseNode> | undefined ?
-				ErrorMessage<`Keys with node children cannot specify a custom serializer`>
-			:	instantiated
-		) => JsonData
+		serialize?: (schema: instantiated) => JsonData
 		parse?: (
 			schema: Exclude<d["normalizedSchema"][k], undefined>,
 			ctx: NodeParseContext<d["kind"]>
-		) => instantiated
+		) => instantiated | undefined
 	},
 	// require parse if we can't guarantee the schema value will be valid on inner
-	| (d["normalizedSchema"][k] extends instantiated ? never : "parse")
+	| (d["normalizedSchema"][k] extends instantiated | undefined ? never
+	  :	"parse")
 	// require keys containing children specify it
-	| ([instantiated] extends [listable<BaseNode> | undefined] ? "child" : never)
+	| ([instantiated] extends [listable<BaseNode>] ? "child" : never)
 >
 
 interface CommonNodeImplementationInput<d extends RawNodeDeclaration> {

@@ -1,4 +1,5 @@
 import {
+	append,
 	entriesOf,
 	hasDomain,
 	isArray,
@@ -100,6 +101,11 @@ const discriminateRootKind = (schema: unknown): RootKind => {
 
 const nodeCache: { [innerHash: string]: BaseNode } = {}
 
+const serializeListableChild = (listableNode: listable<BaseNode>) =>
+	isArray(listableNode) ?
+		listableNode.map(node => node.collapsibleJson)
+	:	listableNode.collapsibleJson
+
 export const parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
 	const impl = nodeImplementationsByKind[kind]
 	const inner: Record<string, unknown> = {}
@@ -127,30 +133,26 @@ export const parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
 
 	let json: Record<string, unknown> = {}
 	let typeJson: Record<string, unknown> = {}
-	let collapsibleJson: Record<string, unknown> = {}
 	entries.forEach(([k, v]) => {
+		const listableNode = v as listable<BaseNode>
 		const keyImpl = impl.keys[k] ?? baseKeys[k]
-		if (keyImpl.child) {
-			const listableNode = v as listable<BaseNode>
-			if (isArray(listableNode)) {
-				json[k] = listableNode.map(node => node.collapsibleJson)
-				children.push(...listableNode)
-			} else {
-				json[k] = listableNode.collapsibleJson
-				children.push(listableNode)
-			}
-		} else {
-			json[k] =
-				keyImpl.serialize ? keyImpl.serialize(v) : defaultValueSerializer(v)
-		}
+		const serialize =
+			keyImpl.serialize ??
+			(keyImpl.child ? serializeListableChild : defaultValueSerializer)
 
+		json[k] = serialize(listableNode)
+
+		if (keyImpl.child) append(children, listableNode)
 		if (!keyImpl.meta) typeJson[k] = json[k]
-
-		if (!keyImpl.implied) collapsibleJson[k] = json[k]
 	})
 
-	// check keys on collapsibleJson instead of schema in case one or more keys is
-	// implied, e.g. minVariadicLength on a SequenceNode
+	if (impl.finalizeJson) {
+		json = impl.finalizeJson(json) as never
+		typeJson = impl.finalizeJson(typeJson) as never
+	}
+
+	let collapsibleJson = json
+
 	const collapsibleKeys = Object.keys(collapsibleJson)
 	if (
 		collapsibleKeys.length === 1 &&
@@ -168,8 +170,6 @@ export const parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
 			typeJson = collapsibleJson
 		}
 	}
-
-	if (impl.finalizeJson) json = impl.finalizeJson(json) as never
 
 	const innerHash = JSON.stringify({ kind, ...json })
 	if (ctx.reduceTo) {

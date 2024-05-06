@@ -86,7 +86,6 @@ export const sequenceImplementation: nodeImplementationOf<SequenceDeclaration> =
 				// minVariadicLength is reflected in the id of this node,
 				// but not its IntersectionNode parent since it is superceded by the minLength
 				// node it implies
-				implied: true,
 				parse: min => (min === 0 ? undefined : min)
 			},
 			postfix: fixedSequenceKeySchemainition

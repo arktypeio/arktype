@@ -269,7 +269,8 @@ export const intersectionImplementation: nodeImplementationOf<IntersectionDeclar
 			},
 			structure: {
 				child: true,
-				parse: (schema, ctx) => ctx.$.node("structure", schema)
+				parse: (schema, ctx) => ctx.$.node("structure", schema),
+				serialize: node => node.json
 			},
 			divisor: {
 				child: true,

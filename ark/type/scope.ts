@@ -1,11 +1,12 @@
 import {
+	RawRootScope,
+	hasArkKind,
 	type ArkConfig,
 	type BaseRoot,
 	type GenericProps,
 	type PreparsedNodeResolution,
 	type PrivateDeclaration,
 	type RawRootResolutions,
-	RawRootScope,
 	type RootScope,
 	type UnknownRoot,
 	type ambient,
@@ -13,41 +14,40 @@ import {
 	type destructuredExportContext,
 	type destructuredImportContext,
 	type exportedNameOf,
-	hasArkKind,
 	type writeDuplicateAliasError
 } from "@arktype/schema"
 import {
-	type Dict,
-	type anyOrNever,
 	domainOf,
 	hasDomain,
 	isThunk,
+	throwParseError,
+	type Dict,
+	type anyOrNever,
 	type keyError,
 	type nominal,
-	type show,
-	throwParseError
+	type show
 } from "@arktype/util"
 import type { type } from "./ark.js"
 import { Generic } from "./generic.js"
-import { type MatchParser, createMatchParser } from "./match.js"
+import { createMatchParser, type MatchParser } from "./match.js"
 import type { Module } from "./module.js"
 import {
-	type inferDefinition,
 	parseObject,
-	type validateDefinition,
-	writeBadDefinitionTypeMessage
+	writeBadDefinitionTypeMessage,
+	type inferDefinition,
+	type validateDefinition
 } from "./parser/definition.js"
 import {
+	parseGenericParams,
 	type GenericDeclaration,
-	type GenericParamsParseError,
-	parseGenericParams
+	type GenericParamsParseError
 } from "./parser/generic.js"
 import { DynamicState } from "./parser/string/reduce/dynamic.js"
 import { fullStringParse } from "./parser/string/string.js"
 import {
+	RawTypeParser,
 	type DeclarationParser,
 	type DefinitionParser,
-	RawTypeParser,
 	type Type,
 	type TypeParser
 } from "./type.js"
