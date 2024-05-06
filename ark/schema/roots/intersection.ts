@@ -5,6 +5,7 @@ import {
 	isEmptyObject,
 	isKeyOf,
 	omit,
+	pick,
 	throwParseError,
 	type array,
 	type listable,
@@ -205,6 +206,9 @@ const intersectIntersections = (
 	if (hasArkKind(r, "root") && r.hasKind("intersection"))
 		return intersectIntersections(l, r.inner, ctx)
 
+	const baseInner: MutableIntersectionInner =
+		isEmptyObject(l) ? pick(r, metaKeys) : {}
+
 	const lBasis = l.proto ?? l.domain
 	const rBasis = r.proto ?? r.domain
 	const basisResult =
@@ -215,12 +219,7 @@ const intersectIntersections = (
 		:	rBasis
 	if (basisResult instanceof Disjoint) return basisResult
 
-	const baseInner: MutableIntersectionInner =
-		basisResult ?
-			{
-				[basisResult.kind]: basisResult
-			}
-		:	{}
+	if (basisResult) baseInner[basisResult.kind] = basisResult as never
 
 	return intersectConstraints({
 		kind: "intersection",
@@ -275,7 +274,7 @@ export const intersectionImplementation: nodeImplementationOf<IntersectionDeclar
 					if (!node.sequence?.minLength) return node.collapsibleJson
 					const { sequence, ...structureJson } = node.collapsibleJson as any
 					const { minVariadicLength, ...sequenceJson } =
-						sequence.collapsibleJson as NormalizedSequenceSchema
+						sequence as NormalizedSequenceSchema
 					const collapsibleSequenceJson =
 						sequenceJson.variadic && Object.keys(sequenceJson).length === 1 ?
 							sequenceJson.variadic

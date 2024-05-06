@@ -43,32 +43,33 @@ contextualize(() => {
 			'{ id?: string; coll?: string; ts?: TimeStub; ttl?: TimeStub; user: TimeStub | { name: string; accounts?: ...[]; }; provider: "GitHub" | "Google"; providerUserId: string; }'
 		)
 		attest(types.account.json).snap({
-			domain: "object",
 			required: [
-				{ key: "coll", optional: true, value: "string" },
-				{ key: "id", optional: true, value: "string" },
 				{ key: "provider", value: [{ unit: "GitHub" }, { unit: "Google" }] },
 				{ key: "providerUserId", value: "string" },
-				{ key: "ts", optional: true, value: "$ark.TimeStub" },
-				{ key: "ttl", optional: true, value: "$ark.TimeStub" },
 				{
 					key: "user",
 					value: [
 						{
-							domain: "object",
-							required: [
+							required: [{ key: "name", value: "string" }],
+							optional: [
 								{
 									key: "accounts",
-									optional: true,
-									value: { proto: "Array", sequence: "$account" }
-								},
-								{ key: "name", value: "string" }
-							]
+									value: { sequence: "$account", proto: "Array" }
+								}
+							],
+							domain: "object"
 						},
 						"$ark.TimeStub"
 					]
 				}
-			]
+			],
+			optional: [
+				{ key: "coll", value: "string" },
+				{ key: "id", value: "string" },
+				{ key: "ts", value: "$ark.TimeStub" },
+				{ key: "ttl", value: "$ark.TimeStub" }
+			],
+			domain: "object"
 		})
 	})
 	it("nested bound traversal", () => {
