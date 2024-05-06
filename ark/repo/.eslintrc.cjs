@@ -59,6 +59,10 @@ module.exports = defineConfig({
 			}
 		],
 		"unused-imports/no-unused-imports": "warn",
+		"@typescript-eslint/explicit-module-boundary-types": [
+			"warn",
+			{ allowDirectConstAssertionInArrowFunctions: true }
+		],
 		"@typescript-eslint/default-param-last": "warn",
 		"@typescript-eslint/no-empty-interface": "off",
 		/**
@@ -137,6 +141,12 @@ module.exports = defineConfig({
 			files: ["**/ark/attest/**", "**/ark/fs/**", "**/ark/docs/**"],
 			rules: {
 				"import/no-extraneous-dependencies": "warn"
+			}
+		},
+		{
+			files: ["**/ark/repo/**", "**/ark/docs/**"],
+			rules: {
+				"@typescript-eslint/explicit-module-boundary-types": "off"
 			}
 		},
 		{

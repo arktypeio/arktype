@@ -1,16 +1,21 @@
 import {
-	append,
-	appendUnique,
 	conflatenateAll,
+	flatMorph,
+	hasDomain,
 	isEmptyObject,
+	isKeyOf,
 	omit,
-	pick,
-	throwInternalError,
+	throwParseError,
 	type array,
 	type listable,
+	type mutable,
 	type show
 } from "@arktype/util"
-import { constraintKeyParser, type BaseConstraint } from "../constraint.js"
+import {
+	constraintKeyParser,
+	flattenConstraints,
+	intersectConstraints
+} from "../constraint.js"
 import type {
 	Inner,
 	MutableInner,
@@ -18,32 +23,28 @@ import type {
 	NodeSchema,
 	Prerequisite
 } from "../kinds.js"
-import type { BaseNode } from "../node.js"
 import type { PredicateNode } from "../predicate.js"
-import type { RawRootScope } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import { metaKeys, type BaseMeta, type declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { ArkTypeError } from "../shared/errors.js"
 import {
-	constraintKeys,
 	implementNode,
 	structureKeys,
 	type ConstraintKind,
 	type IntersectionContext,
 	type OpenNodeKind,
 	type RefinementKind,
-	type RootKind,
 	type StructuralKind,
 	type nodeImplementationOf
 } from "../shared/implement.js"
 import { intersectNodes } from "../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 import { hasArkKind, isNode } from "../shared/utils.js"
-import {
-	StructureGroup,
-	type ExtraneousKeyBehavior,
-	type StructureInner
+import type {
+	ExtraneousKeyBehavior,
+	StructureNode,
+	StructureSchema
 } from "../structure/structure.js"
 import type { DomainNode, DomainSchema } from "./domain.js"
 import type { ProtoNode, ProtoSchema } from "./proto.js"
@@ -58,14 +59,19 @@ export type RefinementsInner = {
 	[k in RefinementKind]?: intersectionChildInnerValueOf<k>
 }
 
-export interface IntersectionInner
-	extends BaseMeta,
-		RefinementsInner,
-		StructureInner {
+export interface IntersectionInner extends BaseMeta, RefinementsInner {
 	domain?: DomainNode
 	proto?: ProtoNode
+	structure?: StructureNode
 	predicate?: array<PredicateNode>
 }
+
+export type MutableIntersectionInner = MutableInner<"intersection">
+
+export type NormalizedIntersectionSchema = Omit<
+	IntersectionSchema,
+	StructuralKind | "onExtraneousKey"
+>
 
 export type IntersectionSchema<inferredBasis = any> = show<
 	BaseMeta & {
@@ -77,7 +83,7 @@ export type IntersectionSchema<inferredBasis = any> = show<
 export type IntersectionDeclaration = declareNode<{
 	kind: "intersection"
 	schema: IntersectionSchema
-	normalizedSchema: IntersectionSchema
+	normalizedSchema: NormalizedIntersectionSchema
 	inner: IntersectionInner
 	reducibleTo: "intersection" | IntersectionBasisKind
 	errorContext: {
@@ -93,12 +99,10 @@ export class IntersectionNode extends BaseRoot<IntersectionDeclaration> {
 		(node): node is Node<RefinementKind> => node.isRefinement()
 	)
 
-	structure = maybeCreatePropsGroup(this.inner, this.$)
-
 	traversables: array<
-		Node<Exclude<IntersectionChildKind, StructuralKind>> | StructureGroup
+		Node<Exclude<IntersectionChildKind, StructuralKind>> | StructureNode
 	> = conflatenateAll<
-		Node<Exclude<IntersectionChildKind, StructuralKind>> | StructureGroup
+		Node<Exclude<IntersectionChildKind, StructuralKind>> | StructureNode
 	>(this.basis, this.refinements, this.structure, this.predicate)
 
 	expression: string =
@@ -210,7 +214,7 @@ const intersectIntersections = (
 		:	rBasis
 	if (basisResult instanceof Disjoint) return basisResult
 
-	const baseInner: IntersectionInner =
+	const baseInner: MutableIntersectionInner =
 		basisResult ?
 			{
 				[basisResult.kind]: basisResult
@@ -218,6 +222,7 @@ const intersectIntersections = (
 		:	{}
 
 	return intersectConstraints({
+		kind: "intersection",
 		baseInner,
 		l: flattenConstraints(l),
 		r: flattenConstraints(r),
@@ -230,7 +235,29 @@ export const intersectionImplementation: nodeImplementationOf<IntersectionDeclar
 	implementNode<IntersectionDeclaration>({
 		kind: "intersection",
 		hasAssociatedError: true,
-		normalize: rawSchema => rawSchema,
+		normalize: rawSchema => {
+			if (isNode(rawSchema)) return rawSchema
+			const { structure, ...schema } = rawSchema
+			const hasRootStructureKey = !!structure
+			const normalizedStructure = (structure as mutable<StructureSchema>) ?? {}
+			const normalized = flatMorph(schema, (k, v) => {
+				if (isKeyOf(k, structureKeys)) {
+					if (hasRootStructureKey) {
+						throwParseError(
+							`Flattened structure key ${k} cannot be specified alongside a root 'structure' key.`
+						)
+					}
+					normalizedStructure[k] = v as never
+					return []
+				}
+				return [k, v]
+			}) as mutable<NormalizedIntersectionSchema>
+			if (!isEmptyObject(normalizedStructure))
+				normalized.structure = normalizedStructure
+			return normalized
+		},
+		finalizeJson: ({ structure, ...rest }) =>
+			hasDomain(structure, "object") ? { ...structure, ...rest } : rest,
 		keys: {
 			domain: {
 				child: true,
@@ -239,6 +266,10 @@ export const intersectionImplementation: nodeImplementationOf<IntersectionDeclar
 			proto: {
 				child: true,
 				parse: (schema, ctx) => ctx.$.node("proto", schema)
+			},
+			structure: {
+				child: true,
+				parse: (schema, ctx) => ctx.$.node("structure", schema)
 			},
 			divisor: {
 				child: true,
@@ -279,25 +310,6 @@ export const intersectionImplementation: nodeImplementationOf<IntersectionDeclar
 			predicate: {
 				child: true,
 				parse: constraintKeyParser("predicate")
-			},
-			required: {
-				child: true,
-				parse: constraintKeyParser("required")
-			},
-			optional: {
-				child: true,
-				parse: constraintKeyParser("optional")
-			},
-			index: {
-				child: true,
-				parse: constraintKeyParser("index")
-			},
-			sequence: {
-				child: true,
-				parse: constraintKeyParser("sequence")
-			},
-			onExtraneousKey: {
-				parse: behavior => (behavior === "ignore" ? undefined : behavior)
 			}
 		},
 		// leverage reduction logic from intersection and identity to ensure initial
@@ -348,98 +360,6 @@ export const intersectionImplementation: nodeImplementationOf<IntersectionDeclar
 			})
 		}
 	})
-
-const maybeCreatePropsGroup = (inner: IntersectionInner, $: RawRootScope) => {
-	const propsInput = pick(inner, structureKeys)
-	return isEmptyObject(propsInput) ? null : new StructureGroup(propsInput, $)
-}
-
-interface ConstraintIntersectionState {
-	baseInner: IntersectionInner
-	l: BaseConstraint[]
-	r: BaseConstraint[]
-	roots: BaseRoot[]
-	ctx: IntersectionContext
-}
-
-export const intersectConstraints = (
-	s: ConstraintIntersectionState
-): Node<RootKind> | Disjoint => {
-	const head = s.r.shift()
-	if (!head) {
-		let result: BaseNode | Disjoint = s.ctx.$.node(
-			"intersection",
-			Object.assign(s.baseInner, unflattenConstraints(s.l)),
-			{ prereduced: true }
-		)
-
-		for (const root of s.roots) {
-			if (result instanceof Disjoint) return result
-
-			result = intersectNodes(root, result, s.ctx)!
-		}
-
-		return result as never
-	}
-	let matched = false
-	for (let i = 0; i < s.l.length; i++) {
-		const result = intersectNodes(s.l[i], head, s.ctx)
-		if (result === null) continue
-		if (result instanceof Disjoint) return result
-
-		if (!matched) {
-			if (result.isRoot()) s.roots.push(result)
-			else s.l[i] = result as BaseConstraint
-			matched = true
-		} else if (!s.l.includes(result as never)) {
-			return throwInternalError(
-				`Unexpectedly encountered multiple distinct intersection results for refinement ${result}`
-			)
-		}
-	}
-	if (!matched) s.l.push(head)
-
-	head.impliedSiblings?.forEach(node => appendUnique(s.r, node))
-	return intersectConstraints(s)
-}
-
-export const flattenConstraints = (inner: object): BaseConstraint[] => {
-	const result = Object.entries(inner)
-		.flatMap(([k, v]) =>
-			k in constraintKeys ? (v as listable<BaseConstraint>) : []
-		)
-		.sort((l, r) =>
-			l.precedence < r.precedence ? -1
-			: l.precedence > r.precedence ? 1
-			: l.innerHash < r.innerHash ? -1
-			: 1
-		)
-
-	return result
-}
-
-// TODO: Fix type
-export const unflattenConstraints = (
-	constraints: array<BaseConstraint>
-): IntersectionInner => {
-	const inner: MutableInner<"intersection"> = {}
-	for (const constraint of constraints) {
-		if (constraint.hasOpenIntersection()) {
-			inner[constraint.kind] = append(
-				inner[constraint.kind],
-				constraint
-			) as never
-		} else {
-			if (inner[constraint.kind]) {
-				return throwInternalError(
-					`Unexpected intersection of closed refinements of kind ${constraint.kind}`
-				)
-			}
-			inner[constraint.kind] = constraint as never
-		}
-	}
-	return inner
-}
 
 export type ConditionalTerminalIntersectionRoot = {
 	onExtraneousKey?: ExtraneousKeyBehavior

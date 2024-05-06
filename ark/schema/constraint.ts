@@ -1,12 +1,17 @@
 import {
+	append,
+	appendUnique,
 	capitalize,
 	isArray,
+	throwInternalError,
 	throwParseError,
 	type array,
 	type describeExpression,
-	type listable
+	type listable,
+	type satisfy
 } from "@arktype/util"
 import type {
+	Inner,
 	MutableInner,
 	Node,
 	NodeSchema,
@@ -15,17 +20,25 @@ import type {
 } from "./kinds.js"
 import { BaseNode } from "./node.js"
 import type { NodeParseContext } from "./parse.js"
+import type {
+	IntersectionInner,
+	MutableIntersectionInner
+} from "./roots/intersection.js"
 import type { BaseRoot, Root, UnknownRoot } from "./roots/root.js"
 import type { NodeCompiler } from "./shared/compile.js"
 import type { RawNodeDeclaration } from "./shared/declare.js"
-import type { Disjoint } from "./shared/disjoint.js"
+import { Disjoint } from "./shared/disjoint.js"
 import {
 	compileErrorContext,
+	constraintKeys,
 	type ConstraintKind,
+	type IntersectionContext,
+	type NodeKind,
+	type RootKind,
 	type StructuralKind,
 	type kindLeftOf
 } from "./shared/implement.js"
-import { intersectNodesRoot } from "./shared/intersections.js"
+import { intersectNodes, intersectNodesRoot } from "./shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "./shared/traversal.js"
 import { arkKind } from "./shared/utils.js"
 
@@ -52,7 +65,7 @@ export abstract class BaseConstraint<
 export type ConstraintReductionResult =
 	| BaseRoot
 	| Disjoint
-	| MutableInner<"intersection">
+	| MutableIntersectionInner
 
 export abstract class RawPrimitiveConstraint<
 	d extends BaseConstraintDeclaration
@@ -96,6 +109,99 @@ export const constraintKeyParser =
 		const child = ctx.$.node(kind, schema)
 		return child.hasOpenIntersection() ? [child] : (child as any)
 	}
+
+type ConstraintGroupKind = satisfy<NodeKind, "intersection" | "structure">
+
+interface ConstraintIntersectionState<
+	kind extends ConstraintGroupKind = ConstraintGroupKind
+> {
+	kind: kind
+	baseInner: Record<string, unknown>
+	l: BaseConstraint[]
+	r: BaseConstraint[]
+	roots: BaseRoot[]
+	ctx: IntersectionContext
+}
+
+export const intersectConstraints = <kind extends ConstraintGroupKind>(
+	s: ConstraintIntersectionState<kind>
+): Node<RootKind | Extract<kind, "structure">> | Disjoint => {
+	const head = s.r.shift()
+	if (!head) {
+		let result: BaseNode | Disjoint = s.ctx.$.node(
+			s.kind,
+			Object.assign(s.baseInner, unflattenConstraints(s.l)),
+			{ prereduced: true }
+		)
+
+		for (const root of s.roots) {
+			if (result instanceof Disjoint) return result
+
+			result = intersectNodes(root, result, s.ctx)!
+		}
+
+		return result as never
+	}
+	let matched = false
+	for (let i = 0; i < s.l.length; i++) {
+		const result = intersectNodes(s.l[i], head, s.ctx)
+		if (result === null) continue
+		if (result instanceof Disjoint) return result
+
+		if (!matched) {
+			if (result.isRoot()) s.roots.push(result)
+			else s.l[i] = result as BaseConstraint
+			matched = true
+		} else if (!s.l.includes(result as never)) {
+			return throwInternalError(
+				`Unexpectedly encountered multiple distinct intersection results for refinement ${result}`
+			)
+		}
+	}
+	if (!matched) s.l.push(head)
+
+	if (s.kind === "intersection")
+		head.impliedSiblings?.forEach(node => appendUnique(s.r, node))
+	return intersectConstraints(s)
+}
+
+export const flattenConstraints = (inner: object): BaseConstraint[] => {
+	const result = Object.entries(inner)
+		.flatMap(([k, v]) =>
+			k in constraintKeys ? (v as listable<BaseConstraint>) : []
+		)
+		.sort((l, r) =>
+			l.precedence < r.precedence ? -1
+			: l.precedence > r.precedence ? 1
+			: l.innerHash < r.innerHash ? -1
+			: 1
+		)
+
+	return result
+}
+
+// TODO: Fix type
+export const unflattenConstraints = (
+	constraints: array<BaseConstraint>
+): IntersectionInner & Inner<"structure"> => {
+	const inner: MutableIntersectionInner & MutableInner<"structure"> = {}
+	for (const constraint of constraints) {
+		if (constraint.hasOpenIntersection()) {
+			inner[constraint.kind] = append(
+				inner[constraint.kind],
+				constraint
+			) as never
+		} else {
+			if (inner[constraint.kind]) {
+				return throwInternalError(
+					`Unexpected intersection of closed refinements of kind ${constraint.kind}`
+				)
+			}
+			inner[constraint.kind] = constraint as never
+		}
+	}
+	return inner
+}
 
 export type constraintKindLeftOf<kind extends ConstraintKind> = ConstraintKind &
 	kindLeftOf<kind>
