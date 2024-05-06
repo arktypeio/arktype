@@ -37,12 +37,12 @@ export default defineConfig({
 `setupVitest.ts`
 
 ```ts
-import { setup, teardown } from "@arktype/attest"
+import * as attest from "@arktype/attest"
 
 // config options can be passed here
-export const setup = () => setup({})
+export const setup = () => attest.setup({})
 
-export const teardown = teardown
+export const teardown = attest.teardown
 ```
 
 ### Mocha
