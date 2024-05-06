@@ -353,8 +353,8 @@ value at [${symName}] must be a number (was string)`)
 					optional: "wrongString",
 					other: 0n
 				}).toString()
-			).snap(`optional must be "bar" (was "wrongString")
-required must be "foo" (was missing)
+			).snap(`required must be "foo" (was missing)
+optional must be "bar" (was "wrongString")
 other must be a string (was bigint)`)
 		})
 

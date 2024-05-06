@@ -241,13 +241,13 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 		this.variadic ? null : this.minLength + this.optionals.length
 	maxLengthNode: MaxLengthNode | null =
 		this.maxLength === null ? null : this.$.node("maxLength", this.maxLength)
-	impliedSiblings: array<MaxLengthNode | MinLengthNode> | null =
+	impliedSiblings: array<MaxLengthNode | MinLengthNode> =
 		this.minLengthNode ?
 			this.maxLengthNode ?
 				[this.minLengthNode, this.maxLengthNode]
 			:	[this.minLengthNode]
 		: this.maxLengthNode ? [this.maxLengthNode]
-		: null
+		: []
 
 	protected childAtIndex(data: array, index: number): BaseRoot {
 		if (index < this.prevariadic.length) return this.prevariadic[index]

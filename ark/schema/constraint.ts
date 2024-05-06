@@ -53,7 +53,7 @@ export abstract class BaseConstraint<
 > extends BaseNode<d> {
 	readonly [arkKind] = "constraint"
 	abstract readonly impliedBasis: BaseRoot | null
-	readonly impliedSiblings?: array<BaseConstraint> | null
+	readonly impliedSiblings?: array<BaseConstraint>
 
 	intersect<r extends BaseConstraint>(
 		r: r
@@ -160,7 +160,8 @@ export const intersectConstraints = <kind extends ConstraintGroupKind>(
 	}
 	if (!matched) s.l.push(head)
 
-	head.impliedSiblings?.forEach(node => appendUnique(s.r, node))
+	if (s.kind === "intersection")
+		head.impliedSiblings?.forEach(node => appendUnique(s.r, node))
 	return intersectConstraints(s)
 }
 

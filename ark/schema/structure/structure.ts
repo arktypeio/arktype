@@ -63,6 +63,9 @@ export interface StructureDeclaration
 
 export class StructureNode extends BaseConstraint<StructureDeclaration> {
 	impliedBasis: BaseRoot = this.$.keywords.object.raw
+	impliedSiblings = this.children.flatMap(
+		n => (n.impliedSiblings as BaseConstraint[]) ?? []
+	)
 
 	props: array<PropNode> =
 		this.required ?
