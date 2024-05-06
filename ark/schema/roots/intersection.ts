@@ -41,6 +41,7 @@ import {
 import { intersectNodes } from "../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 import { hasArkKind, isNode } from "../shared/utils.js"
+import type { NormalizedSequenceSchema } from "../structure/sequence.js"
 import type {
 	ExtraneousKeyBehavior,
 	StructureNode,
@@ -270,7 +271,17 @@ export const intersectionImplementation: nodeImplementationOf<IntersectionDeclar
 			structure: {
 				child: true,
 				parse: (schema, ctx) => ctx.$.node("structure", schema),
-				serialize: node => node.json
+				serialize: node => {
+					if (!node.sequence?.minLength) return node.collapsibleJson
+					const { sequence, ...structureJson } = node.collapsibleJson as any
+					const { minVariadicLength, ...sequenceJson } =
+						sequence.collapsibleJson as NormalizedSequenceSchema
+					const collapsibleSequenceJson =
+						sequenceJson.variadic && Object.keys(sequenceJson).length === 1 ?
+							sequenceJson.variadic
+						:	sequenceJson
+					return { ...structureJson, sequence: collapsibleSequenceJson }
+				}
 			},
 			divisor: {
 				child: true,

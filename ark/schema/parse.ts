@@ -1,5 +1,4 @@
 import {
-	append,
 	entriesOf,
 	hasDomain,
 	isArray,
@@ -142,7 +141,10 @@ export const parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
 
 		json[k] = serialize(listableNode)
 
-		if (keyImpl.child) append(children, listableNode)
+		if (keyImpl.child) {
+			if (isArray(listableNode)) children.push(...listableNode)
+			else children.push(listableNode)
+		}
 		if (!keyImpl.meta) typeJson[k] = json[k]
 	})
 
