@@ -300,11 +300,11 @@ value at [${zildjianName}] must be 1 (was undefined)`)
 			})
 			attest<{ [x: string]: string; [x: symbol]: number }>(o.infer)
 			attest(o.json).snap({
-				domain: "object",
 				index: [
-					{ index: "string", value: "string" },
-					{ index: "symbol", value: "number" }
-				]
+					{ value: "number", index: "symbol" },
+					{ value: "string", index: "string" }
+				],
+				domain: "object"
 			})
 
 			attest(o({})).equals({})

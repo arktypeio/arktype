@@ -40,7 +40,11 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): BaseRoot => {
 		const spreadNode = ctx.$.parse(spreadEntry.value, ctx)
 		if (!spreadNode.hasKind("intersection") || !spreadNode.structure) {
 			return throwParseError(
-				writeInvalidSpreadTypeMessage(printable(spreadEntry.value))
+				writeInvalidSpreadTypeMessage(
+					typeof spreadEntry.value === "string" ?
+						spreadEntry.value
+					:	printable(spreadEntry.value)
+				)
 			)
 		}
 		spread = spreadNode.structure

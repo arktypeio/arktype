@@ -144,8 +144,7 @@ export type AppendOptions = {
 }
 
 /**
- * Adds a value to an array, returning the array
- * (based on the implementation from TypeScript's codebase)
+ * Adds a value or array to an array, returning the concatenated result
  *
  * @param to The array to which `value` is to be added. If `to` is `undefined`, a new array
  * is created as `[value]` if value was not undefined, otherwise `[]`.
@@ -156,7 +155,7 @@ export type AppendOptions = {
 export const append = <
 	to extends element[] | undefined,
 	element,
-	value extends element | undefined
+	value extends listable<element> | undefined
 >(
 	to: to,
 	value: value,
@@ -164,10 +163,17 @@ export const append = <
 ): Exclude<to, undefined> | Extract<value & to, undefined> => {
 	if (value === undefined) return to ?? ([] as any)
 
-	if (to === undefined) return value === undefined ? [] : ([value] as any)
+	if (to === undefined) {
+		return (
+			value === undefined ? []
+			: Array.isArray(value) ? value
+			: ([value] as any)
+		)
+	}
 
-	if (opts?.prepend) to.unshift(value)
-	else to.push(value)
+	if (opts?.prepend)
+		Array.isArray(value) ? to.unshift(...value) : to.unshift(value as never)
+	else Array.isArray(value) ? to.push(...value) : to.push(value as never)
 
 	return to as never
 }

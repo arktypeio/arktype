@@ -126,7 +126,7 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 
 	merge(r: StructureNode): StructureNode {
 		const inner = makeRootAndArrayPropertiesMutable(
-			omitFromInner(r.inner, [r.keyof()])
+			omitFromInner(this.inner, [r.keyof()])
 		)
 		if (r.required) inner.required = append(inner.required, r.required)
 		if (r.optional) inner.optional = append(inner.optional, r.optional)
@@ -192,12 +192,12 @@ const omitFromInner = (
 	keys.forEach(k => {
 		if (result.required) {
 			result.required = result.required.filter(b =>
-				typeof k === "function" ? k.allows(b.key) : k === b.key
+				typeof k === "function" ? !k.allows(b.key) : k !== b.key
 			)
 		}
 		if (result.optional) {
 			result.optional = result.optional.filter(b =>
-				typeof k === "function" ? k.allows(b.key) : k === b.key
+				typeof k === "function" ? !k.allows(b.key) : k !== b.key
 			)
 		}
 		if (result.index && typeof k === "function") {
