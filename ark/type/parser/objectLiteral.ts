@@ -1,9 +1,10 @@
-import type {
-	BaseRoot,
-	NodeSchema,
-	StructureNode,
-	UnitNode,
-	writeInvalidPropertyKeyMessage
+import {
+	StructureGroup,
+	type BaseRoot,
+	type StructureInner,
+	type UnitNode,
+	type makeRootAndArrayPropertiesMutable,
+	type writeInvalidPropertyKeyMessage
 } from "@arktype/schema"
 import {
 	append,
@@ -16,7 +17,6 @@ import {
 	type Key,
 	type keyError,
 	type merge,
-	type mutable,
 	type show
 } from "@arktype/util"
 import type { ParseContext } from "../scope.js"
@@ -26,8 +26,8 @@ import type { validateString } from "./semantic/validate.js"
 import { Scanner } from "./string/shift/scanner.js"
 
 export const parseObjectLiteral = (def: Dict, ctx: ParseContext): BaseRoot => {
-	let spread: StructureNode | undefined
-	const structure: mutable<NodeSchema<"structure">, 2> = {}
+	let spread: StructureGroup | undefined
+	const structure: makeRootAndArrayPropertiesMutable<StructureInner> = {}
 	// We only allow a spread operator to be used as the first key in an object
 	// because to match JS behavior any keys before the spread are overwritten
 	// by the values in the target object, so there'd be no useful purpose in having it
@@ -83,15 +83,18 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): BaseRoot => {
 			structure[entry.kind] = append(structure[entry.kind], {
 				key: entry.inner,
 				value
-			})
+			}) as never
 		}
 	}
 
-	const structureNode = ctx.$.node("structure", structure)
+	const structureNode = new StructureGroup(structure, ctx.$)
+
+	const structureInner =
+		spread?.merge(structureNode).inner ?? structureNode.inner
 
 	return ctx.$.schema({
 		domain: "object",
-		structure: spread?.merge(structureNode) ?? structureNode
+		...structureInner
 	})
 }
 

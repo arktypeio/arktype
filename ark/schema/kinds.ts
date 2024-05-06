@@ -1,60 +1,60 @@
 import type { array, listable } from "@arktype/util"
 import type { BaseNode } from "./node.js"
 import {
-	type PredicateDeclaration,
+	PredicateNode,
 	predicateImplementation,
-	PredicateNode
+	type PredicateDeclaration
 } from "./predicate.js"
 import {
-	type DivisorDeclaration,
+	DivisorNode,
 	divisorImplementation,
-	DivisorNode
+	type DivisorDeclaration
 } from "./refinements/divisor.js"
 import {
 	boundClassesByKind,
-	type BoundDeclarations,
 	boundImplementationsByKind,
+	type BoundDeclarations,
 	type BoundNodesByKind
 } from "./refinements/kinds.js"
 import {
-	type RegexDeclaration,
+	RegexNode,
 	regexImplementation,
-	RegexNode
+	type RegexDeclaration
 } from "./refinements/regex.js"
 import {
-	type AliasDeclaration,
+	AliasNode,
 	aliasImplementation,
-	AliasNode
+	type AliasDeclaration
 } from "./roots/alias.js"
 import {
-	type DomainDeclaration,
+	DomainNode,
 	domainImplementation,
-	DomainNode
+	type DomainDeclaration
 } from "./roots/domain.js"
 import {
-	type IntersectionDeclaration,
+	IntersectionNode,
 	intersectionImplementation,
-	IntersectionNode
+	type IntersectionDeclaration
 } from "./roots/intersection.js"
 import {
-	type MorphDeclaration,
+	MorphNode,
 	morphImplementation,
-	MorphNode
+	type MorphDeclaration
 } from "./roots/morph.js"
 import {
-	type ProtoDeclaration,
+	ProtoNode,
 	protoImplementation,
-	ProtoNode
+	type ProtoDeclaration
 } from "./roots/proto.js"
 import {
-	type UnionDeclaration,
+	UnionNode,
 	unionImplementation,
-	UnionNode
+	type UnionDeclaration
 } from "./roots/union.js"
 import {
-	type UnitDeclaration,
+	UnitNode,
 	unitImplementation,
-	UnitNode
+	type UnitDeclaration
 } from "./roots/unit.js"
 import type {
 	ConstraintKind,
@@ -65,30 +65,25 @@ import type {
 } from "./shared/implement.js"
 import type { makeRootAndArrayPropertiesMutable } from "./shared/utils.js"
 import {
-	type IndexDeclaration,
+	IndexNode,
 	indexImplementation,
-	IndexNode
+	type IndexDeclaration
 } from "./structure/index.js"
 import {
-	type OptionalDeclaration,
+	OptionalNode,
 	optionalImplementation,
-	OptionalNode
+	type OptionalDeclaration
 } from "./structure/optional.js"
 import {
-	type RequiredDeclaration,
+	RequiredNode,
 	requiredImplementation,
-	RequiredNode
+	type RequiredDeclaration
 } from "./structure/required.js"
 import {
-	type SequenceDeclaration,
+	SequenceNode,
 	sequenceImplementation,
-	SequenceNode
+	type SequenceDeclaration
 } from "./structure/sequence.js"
-import {
-	type StructureDeclaration,
-	structureImplementation,
-	StructureNode
-} from "./structure/structure.js"
 
 export interface NodeDeclarationsByKind extends BoundDeclarations {
 	alias: AliasDeclaration
@@ -105,7 +100,6 @@ export interface NodeDeclarationsByKind extends BoundDeclarations {
 	index: IndexDeclaration
 	regex: RegexDeclaration
 	predicate: PredicateDeclaration
-	structure: StructureDeclaration
 }
 
 export const nodeImplementationsByKind: Record<
@@ -126,8 +120,7 @@ export const nodeImplementationsByKind: Record<
 	required: requiredImplementation,
 	optional: optionalImplementation,
 	index: indexImplementation,
-	sequence: sequenceImplementation,
-	structure: structureImplementation
+	sequence: sequenceImplementation
 } satisfies Record<NodeKind, unknown> as never
 
 export const nodeClassesByKind: Record<
@@ -148,8 +141,7 @@ export const nodeClassesByKind: Record<
 	required: RequiredNode,
 	optional: OptionalNode,
 	index: IndexNode,
-	sequence: SequenceNode,
-	structure: StructureNode
+	sequence: SequenceNode
 } satisfies Record<NodeKind, typeof BaseNode<any>> as never
 
 interface NodesByKind extends BoundNodesByKind {
@@ -167,7 +159,6 @@ interface NodesByKind extends BoundNodesByKind {
 	optional: OptionalNode
 	index: IndexNode
 	sequence: SequenceNode
-	structure: StructureNode
 }
 
 export type Node<kind extends NodeKind> = NodesByKind[kind]

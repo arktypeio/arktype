@@ -28,10 +28,12 @@ import {
 	precedenceOfKind,
 	refinementKinds,
 	rootKinds,
+	structuralKinds,
 	type BasisKind,
 	type NodeKind,
 	type OpenNodeKind,
 	type RefinementKind,
+	type StructuralKind,
 	type UnknownAttachments
 } from "./shared/implement.js"
 import {
@@ -176,6 +178,10 @@ export abstract class BaseNode<
 		return includes(refinementKinds, this.kind)
 	}
 
+	isStructural(): this is Node<StructuralKind> {
+		return includes(structuralKinds, this.kind)
+	}
+
 	isRoot(): this is BaseRoot {
 		return includes(rootKinds, this.kind)
 	}
@@ -277,7 +283,7 @@ export abstract class BaseNode<
 			:	(configOrDescription as never)
 		return this.transform(
 			(kind, inner) => ({ ...inner, ...config }),
-			node => node.kind !== "structure"
+			node => !node.isStructural()
 		) as never
 	}
 }
