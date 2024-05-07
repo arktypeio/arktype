@@ -57,7 +57,7 @@ export interface SequenceDeclaration
 		childKind: RootKind
 	}> {}
 
-const fixedSequenceKeySchemainition: NodeKeyImplementation<
+const fixedSequenceKeySchemaDefinition: NodeKeyImplementation<
 	SequenceDeclaration,
 	"prefix" | "postfix" | "optionals"
 > = {
@@ -76,8 +76,8 @@ export const sequenceImplementation: nodeImplementationOf<SequenceDeclaration> =
 		hasAssociatedError: false,
 		collapsibleKey: "variadic",
 		keys: {
-			prefix: fixedSequenceKeySchemainition,
-			optionals: fixedSequenceKeySchemainition,
+			prefix: fixedSequenceKeySchemaDefinition,
+			optionals: fixedSequenceKeySchemaDefinition,
 			variadic: {
 				child: true,
 				parse: (schema, ctx) => ctx.$.schema(schema, ctx)
@@ -88,7 +88,7 @@ export const sequenceImplementation: nodeImplementationOf<SequenceDeclaration> =
 				// node it implies
 				parse: min => (min === 0 ? undefined : min)
 			},
-			postfix: fixedSequenceKeySchemainition
+			postfix: fixedSequenceKeySchemaDefinition
 		},
 		normalize: schema => {
 			if (typeof schema === "string") return { variadic: schema }

@@ -128,11 +128,14 @@ export const intersectConstraints = <kind extends ConstraintGroupKind>(
 ): Node<RootKind | Extract<kind, "structure">> | Disjoint => {
 	const head = s.r.shift()
 	if (!head) {
-		let result: BaseNode | Disjoint = s.ctx.$.node(
-			s.kind,
-			Object.assign(s.baseInner, unflattenConstraints(s.l)),
-			{ prereduced: true }
-		)
+		let result: BaseNode | Disjoint =
+			s.l.length === 0 && s.kind === "structure" ?
+				s.ctx.$.keywords.unknown.raw
+			:	s.ctx.$.node(
+					s.kind,
+					Object.assign(s.baseInner, unflattenConstraints(s.l)),
+					{ prereduced: true }
+				)
 
 		for (const root of s.roots) {
 			if (result instanceof Disjoint) return result
@@ -149,8 +152,12 @@ export const intersectConstraints = <kind extends ConstraintGroupKind>(
 		if (result instanceof Disjoint) return result
 
 		if (!matched) {
-			if (result.isRoot()) s.roots.push(result)
-			else s.l[i] = result as BaseConstraint
+			if (result.isRoot()) {
+				s.roots.push(result)
+				s.l.splice(i)
+				return intersectConstraints(s)
+			}
+			s.l[i] = result as BaseConstraint
 			matched = true
 		} else if (!s.l.includes(result as never)) {
 			return throwInternalError(
