@@ -202,11 +202,16 @@ const nodeCountsByPrefix: PartialRecord<string, number> = {}
 
 const nodesById: Record<string, BaseNode | undefined> = {}
 
+let scopeCount = 0
+
+const scopesById: Record<string, RawRootScope | undefined> = {}
+
 export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 	implements internalImplementationOf<RootScope, "t">
 {
 	readonly config: ArkConfig
-	readonly resolvedConfig: ResolvedArkConfig;
+	readonly resolvedConfig: ResolvedArkConfig
+	readonly id = `$${++scopeCount}`;
 	readonly [arkKind] = "scope"
 
 	readonly referencesById: { [name: string]: BaseNode } = {}
@@ -269,6 +274,7 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 				]
 			)
 		}
+		scopesById[this.id] = this
 	}
 
 	get raw(): this {

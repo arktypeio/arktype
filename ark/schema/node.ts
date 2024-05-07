@@ -75,6 +75,7 @@ export abstract class BaseNode<
 	abstract expression: string
 	abstract compile(js: NodeCompiler): void
 
+	readonly qualifiedId = `${this.$.id}${this.id}`
 	readonly includesMorph: boolean =
 		this.kind === "morph" || this.children.some(child => child.includesMorph)
 	readonly allowsRequiresContext: boolean =

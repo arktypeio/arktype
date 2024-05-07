@@ -323,22 +323,22 @@ contextualize(() => {
 
 		it("intersect cyclic reference", () => {
 			const types = scope({
-				a: {
-					b: "b"
+				arf: {
+					b: "bork"
 				},
-				b: {
-					c: "a&b"
+				bork: {
+					c: "arf&bork"
 				}
 			}).export()
-			attest(types.a.infer).type.toString.snap(
+			attest(types.arf.infer).type.toString.snap(
 				"{ b: { c: { b: ...; c: ...; }; }; }"
 			)
-			attest(types.b.infer).type.toString.snap("{ c: { b: ...; c: ...; }; }")
+			attest(types.bork.infer).type.toString.snap("{ c: { b: ...; c: ...; }; }")
 
 			const expectedCyclicJson =
-				types.a.raw.firstReferenceOfKindOrThrow("alias").json
+				types.arf.raw.firstReferenceOfKindOrThrow("alias").json
 
-			attest(types.a.json).snap({
+			attest(types.arf.json).snap({
 				domain: "object",
 				required: [
 					{
@@ -355,18 +355,18 @@ contextualize(() => {
 					}
 				]
 			})
-			const a = {} as typeof types.a.infer
-			const b = { c: {} } as typeof types.b.infer
+			const a = {} as typeof types.arf.infer
+			const b = { c: {} } as typeof types.bork.infer
 			a.b = b
 			b.c.b = b
 			b.c.c = b.c
 
-			attest(types.a(a)).equals(a)
-			attest(types.a({ b: { c: {} } }).toString())
-				.snap(`b.c.b must be { c: a&b } (was missing)
-b.c.c must be a&b (was missing)`)
+			attest(types.arf(a)).equals(a)
+			attest(types.arf({ b: { c: {} } }).toString())
+				.snap(`b.c.b must be { c: arf&bork } (was missing)
+b.c.c must be arf&bork (was missing)`)
 
-			attest(types.b.json).snap({
+			attest(types.bork.json).snap({
 				domain: "object",
 				required: [
 					{
@@ -376,5 +376,19 @@ b.c.c must be a&b (was missing)`)
 				]
 			})
 		})
+		// https://github.com/arktypeio/arktype/issues/930
+		// 		it("intersect cyclic reference with repeat name", () => {
+		// 			const types = scope({
+		// 				arf: {
+		// 					b: "bork"
+		// 				},
+		// 				bork: {
+		// 					c: "arf&bork"
+		// 				}
+		// 			}).export()
+		// 			attest(types.arf({ b: { c: {} } }).toString())
+		// 				.snap(`b.c.b must be { c: arf&bork } (was missing)
+		// b.c.c must be arf&bork (was missing)`)
+		// 		})
 	})
 })
