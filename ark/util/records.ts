@@ -219,20 +219,18 @@ export const invert = <t extends Record<PropertyKey, PropertyKey>>(
 
 /**
  *  For each keyof o that also exists on jsDocSource, add associated JsDoc annotations to o.
- *  Cannot presrve modifiers on o like optionality.
+ *  Does not preserve modifiers on o like optionality.
  */
-export type withJsDoc<o, jsDocSource> = merge<
-	o,
-	Pick<
-		{ [k in keyof jsDocSource]: k extends keyof o ? o[k] : never },
-		keyof o & keyof jsDocSource
-	>
+export type withJsDoc<o, jsDocSource> = show<
+	keyof o extends keyof jsDocSource ?
+		keyof jsDocSource extends keyof o ?
+			_withJsDoc<o, jsDocSource>
+		:	Pick<_withJsDoc<o, jsDocSource>, keyof o & keyof jsDocSource>
+	:	Pick<_withJsDoc<o, jsDocSource>, keyof o & keyof jsDocSource> & {
+			[k in Exclude<keyof o, keyof jsDocSource>]: o[k]
+		}
 >
 
-/**
- *  For each key of jsDocSource, returns the value of o with JsDoc annotations from jsDocSource.
- *  Works best when o will always have identical keys to jsDocSource.
- */
-export type withExactJsDoc<o, jsDocSource> = {
-	[k in keyof jsDocSource]: o[k & keyof o]
+type _withJsDoc<o, jsDocSource> = {
+	[k in keyof jsDocSource]-?: o[k & keyof o]
 }
