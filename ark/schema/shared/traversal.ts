@@ -27,11 +27,7 @@ export class TraversalContext {
 	errors: ArkErrors = new ArkErrors(this)
 	branches: BranchTraversalContext[] = []
 
-	// Each cyclic alias adds objects it encounters to this map with a
-	// corresponding value of the length of shortest path at which the value was
-	// encountered. This allows us to include only the error message
-	// corresponding to the shortest path.
-	seen: { [name in string]?: Map<object, number> } = {}
+	seen: { [id in string]?: object[] } = {}
 
 	constructor(
 		public root: unknown,
