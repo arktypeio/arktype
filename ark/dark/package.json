@@ -2,7 +2,7 @@
 	"name": "arkdark",
 	"displayName": "ArkDark",
 	"description": "ArkType syntax highlighting and theme⛵",
-	"version": "5.0.0",
+	"version": "5.0.1",
 	"publisher": "arktypeio",
 	"type": "module",
 	"scripts": {
@@ -55,15 +55,11 @@
 					"message": "$1"
 				},
 				{
-					"matcher": "not assignable to type '\"(.*\\u200A)\"'\\.$",
+					"matcher": "not assignable to type '(\".*\")'\\.$",
 					"message": "$1"
 				},
 				{
 					"matcher": "[^]*\n([^\n]*)$",
-					"message": "$1"
-				},
-				{
-					"matcher": "not assignable to type '(\".*\")'\\.$",
 					"message": "$1"
 				}
 			]
