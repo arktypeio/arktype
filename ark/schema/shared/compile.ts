@@ -40,6 +40,20 @@ export class NodeCompiler extends CompiledFunction<["data", "ctx"]> {
 		return this.traversalKind === "Apply" || node.allowsRequiresContext
 	}
 
+	initializeErrorCount(): this {
+		return this.const("errorCount", "ctx.currentErrorCount")
+	}
+
+	returnIfFail(): this {
+		return this.if("ctx.currentErrorCount > errorCount", () => this.return())
+	}
+
+	returnIfFailFast(): this {
+		return this.if("ctx.failFast && ctx.currentErrorCount > errorCount", () =>
+			this.return()
+		)
+	}
+
 	checkReferenceKey(keyExpression: string, node: BaseNode): this {
 		const requiresContext = this.requiresContextFor(node)
 		if (requiresContext) this.line(`${this.ctx}.path.push(${keyExpression})`)

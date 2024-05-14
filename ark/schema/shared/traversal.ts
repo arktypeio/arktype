@@ -2,11 +2,11 @@ import type { array } from "@arktype/util"
 import type { Morph } from "../roots/morph.js"
 import type { ResolvedArkConfig } from "../scope.js"
 import {
-	type ArkErrorCode,
-	type ArkErrorInput,
 	ArkErrors,
 	ArkTypeError,
-	createError
+	createError,
+	type ArkErrorCode,
+	type ArkErrorInput
 } from "./errors.js"
 import type { TraversalPath } from "./utils.js"
 
@@ -27,8 +27,11 @@ export class TraversalContext {
 	errors: ArkErrors = new ArkErrors(this)
 	branches: BranchTraversalContext[] = []
 
-	// Qualified
-	seen: { [name in string]?: object[] } = {}
+	// Each cyclic alias adds objects it encounters to this map with a
+	// corresponding value of the length of shortest path at which the value was
+	// encountered. This allows us to include only the error message
+	// corresponding to the shortest path.
+	seen: { [name in string]?: Map<object, number> } = {}
 
 	constructor(
 		public root: unknown,
@@ -101,10 +104,18 @@ export class TraversalContext {
 		return out
 	}
 
+	get currentErrorCount(): number {
+		return (
+			this.currentBranch ?
+				this.currentBranch.error ?
+					1
+				:	0
+			:	this.errors.count
+		)
+	}
+
 	hasError(): boolean {
-		return this.currentBranch ?
-				this.currentBranch.error !== undefined
-			:	this.errors.count !== 0
+		return this.currentErrorCount !== 0
 	}
 
 	get failFast(): boolean {

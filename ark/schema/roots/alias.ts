@@ -50,10 +50,15 @@ export class AliasNode extends BaseRoot<AliasDeclaration> {
 	}
 
 	traverseApply: TraverseApply = (data, ctx) => {
-		const seen = ctx.seen[this.id]
+		const seen = (ctx.seen[this.id] ??= new Map())
+		const seenPathLength = seen.get(data)
+		if (seenPathLength === undefined) {
+			seen.set(data, ctx.path.length)
+			this.resolution.traverseApply(data, ctx)
+		}
+
 		if (seen?.includes(data as object)) return
 		ctx.seen[this.id] = append(seen, data)
-		this.resolution.traverseApply(data, ctx)
 	}
 
 	compile(js: NodeCompiler): void {

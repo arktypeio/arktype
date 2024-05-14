@@ -1,5 +1,4 @@
 import {
-	conflatenateAll,
 	flatMorph,
 	hasDomain,
 	isEmptyObject,
@@ -101,43 +100,36 @@ export class IntersectionNode extends BaseRoot<IntersectionDeclaration> {
 		(node): node is Node<RefinementKind> => node.isRefinement()
 	)
 
-	traversables: array<
-		Node<Exclude<IntersectionChildKind, StructuralKind>> | StructureNode
-	> = conflatenateAll<
-		Node<Exclude<IntersectionChildKind, StructuralKind>> | StructureNode
-	>(this.basis, this.refinements, this.structure, this.predicate)
-
 	expression: string =
 		this.structure?.expression ||
 		this.children.map(node => node.nestableExpression).join(" & ") ||
 		"unknown"
 
 	traverseAllows: TraverseAllows = (data, ctx) =>
-		this.traversables.every(traversable =>
-			traversable.traverseAllows(data as never, ctx)
-		)
+		this.children.every(child => child.traverseAllows(data as never, ctx))
 
 	traverseApply: TraverseApply = (data, ctx) => {
+		const errorCount = ctx.currentErrorCount
 		if (this.basis) {
 			this.basis.traverseApply(data, ctx)
-			if (ctx.hasError()) return
+			if (ctx.currentErrorCount > errorCount) return
 		}
 		if (this.refinements.length) {
 			for (let i = 0; i < this.refinements.length - 1; i++) {
 				this.refinements[i].traverseApply(data as never, ctx)
-				if (ctx.failFast && ctx.hasError()) return
+				if (ctx.failFast && ctx.currentErrorCount > errorCount) return
 			}
 			this.refinements.at(-1)!.traverseApply(data as never, ctx)
-			if (ctx.hasError()) return
+			if (ctx.currentErrorCount > errorCount) return
 		}
 		if (this.structure) {
 			this.structure.traverseApply(data as never, ctx)
-			if (ctx.hasError()) return
+			if (ctx.currentErrorCount > errorCount) return
 		}
 		if (this.predicate) {
 			for (let i = 0; i < this.predicate.length - 1; i++) {
 				this.predicate[i].traverseApply(data as never, ctx)
-				if (ctx.failFast && ctx.hasError()) return
+				if (ctx.failFast && ctx.currentErrorCount > errorCount) return
 			}
 			this.predicate.at(-1)!.traverseApply(data as never, ctx)
 		}
@@ -145,40 +137,36 @@ export class IntersectionNode extends BaseRoot<IntersectionDeclaration> {
 
 	compile(js: NodeCompiler): void {
 		if (js.traversalKind === "Allows") {
-			this.traversables.forEach(traversable =>
-				isNode(traversable) ? js.check(traversable) : traversable.compile(js)
-			)
+			this.children.forEach(child => js.check(child))
 			js.return(true)
 			return
 		}
 
-		const returnIfFail = () => js.if("ctx.hasError()", () => js.return())
-		const returnIfFailFast = () =>
-			js.if("ctx.failFast && ctx.hasError()", () => js.return())
+		js.initializeErrorCount()
 
 		if (this.basis) {
 			js.check(this.basis)
 			// we only have to return conditionally if this is not the last check
-			if (this.traversables.length > 1) returnIfFail()
+			if (this.children.length > 1) js.returnIfFail()
 		}
 		if (this.refinements.length) {
 			for (let i = 0; i < this.refinements.length - 1; i++) {
 				js.check(this.refinements[i])
-				returnIfFailFast()
+				js.returnIfFailFast()
 			}
 			js.check(this.refinements.at(-1)!)
-			if (this.structure || this.predicate) returnIfFail()
+			if (this.structure || this.predicate) js.returnIfFail()
 		}
 		if (this.structure) {
-			this.structure.compile(js)
-			if (this.predicate) returnIfFail()
+			js.check(this.structure)
+			if (this.predicate) js.returnIfFail()
 		}
 		if (this.predicate) {
 			for (let i = 0; i < this.predicate.length - 1; i++) {
 				js.check(this.predicate[i])
 				// since predicates can be chained, we have to fail immediately
 				// if one fails
-				returnIfFail()
+				js.returnIfFail()
 			}
 			js.check(this.predicate.at(-1)!)
 		}

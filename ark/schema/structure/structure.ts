@@ -109,8 +109,14 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 	traverseAllows: TraverseAllows<object> = (data, ctx) =>
 		this.children.every(prop => prop.traverseAllows(data as never, ctx))
 
-	traverseApply: TraverseApply<object> = (data, ctx) =>
-		this.children.forEach(prop => prop.traverseApply(data as never, ctx))
+	traverseApply: TraverseApply<object> = (data, ctx) => {
+		const errorCount = ctx.currentErrorCount
+		for (let i = 0; i < this.children.length - 1; i++) {
+			this.children[i].traverseApply(data as never, ctx)
+			if (ctx.failFast && ctx.currentErrorCount > errorCount) return
+		}
+		this.children.at(-1)?.traverseApply(data as never, ctx)
+	}
 
 	readonly exhaustive: boolean =
 		this.onExtraneousKey !== undefined || this.index !== undefined
@@ -143,7 +149,10 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 				js.if(`!${js.invoke(node)}`, () => js.return(false))
 			)
 			js.return(true)
-		} else this.children.forEach(node => js.line(js.invoke(node)))
+		} else {
+			js.initializeErrorCount()
+			this.children.forEach(node => js.line(js.invoke(node)).returnIfFailFast())
+		}
 	}
 
 	protected compileExhaustive(js: NodeCompiler): void {
