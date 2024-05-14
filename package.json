@@ -20,7 +20,7 @@
 		"buildCjs": "ARKTYPE_CJS=1 pnpm -r build",
 		"test": "pnpm testTyped --skipTypes",
 		"testTyped": "mocha --exclude 'ark/attest/**/*.test.*'",
-		"testRepo": "pnpm test-typed && cd ./ark/test && pnpm test && pnpm testTsVersions",
+		"testRepo": "pnpm testTyped && cd ./ark/test && pnpm test && pnpm testTsVersions",
 		"testTsVersions": "tsx ./ark/repo/testTsVersions.ts",
 		"typecheck": "tsc --noEmit",
 		"lint": "eslint --max-warnings=0 .",

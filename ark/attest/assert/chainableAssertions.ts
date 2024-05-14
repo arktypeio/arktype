@@ -1,10 +1,5 @@
 import { caller } from "@arktype/fs"
-import {
-	printable,
-	snapshot,
-	type Constructor,
-	type Guardable
-} from "@arktype/util"
+import { printable, snapshot, type Constructor } from "@arktype/util"
 import * as assert from "node:assert/strict"
 import { isDeepStrictEqual } from "node:util"
 import {
@@ -39,7 +34,7 @@ export class ChainableAssertions implements AssertionRecord {
 		return snapshot(value)
 	}
 
-	private get actual() {
+	private get unversionedActual() {
 		if (this.ctx.actual instanceof TypeAssertionMapping) {
 			return this.ctx.actual.fn(
 				this.ctx.typeRelationshipAssertionEntries![0][1],
@@ -50,7 +45,7 @@ export class ChainableAssertions implements AssertionRecord {
 	}
 
 	private get serializedActual() {
-		return this.serialize(this.actual)
+		return this.serialize(this.unversionedActual)
 	}
 
 	private snapRequiresUpdate(expectedSerialized: unknown) {
@@ -58,22 +53,8 @@ export class ChainableAssertions implements AssertionRecord {
 			!isDeepStrictEqual(this.serializedActual, expectedSerialized) ||
 			// If actual is undefined, we still need to write the "undefined" literal
 			// to the snap even though it will serialize to the same value as the (nonexistent) first arg
-			this.actual === undefined
+			this.unversionedActual === undefined
 		)
-	}
-
-	narrow(predicate: Guardable, messageOnError?: string): never {
-		if (!predicate(this.actual)) {
-			throwAssertionError({
-				ctx: this.ctx,
-				message:
-					messageOnError ??
-					`${this.serializedActual} failed to satisfy predicate${
-						predicate.name ? ` ${predicate.name}` : ""
-					}`
-			})
-		}
-		return this.actual as never
 	}
 
 	get unknown(): this {
@@ -81,22 +62,22 @@ export class ChainableAssertions implements AssertionRecord {
 	}
 
 	is(expected: unknown): this {
-		assert.equal(this.actual, expected)
+		assert.equal(this.unversionedActual, expected)
 		return this
 	}
 
 	equals(expected: unknown): this {
-		assertEquals(expected, this.actual, this.ctx)
+		assertEquals(expected, this.ctx.actual, this.ctx)
 		return this
 	}
 
 	instanceOf(expected: Constructor): this {
-		if (!(this.actual instanceof expected)) {
+		if (!(this.ctx.actual instanceof expected)) {
 			throwAssertionError({
 				ctx: this.ctx,
 				message: `Expected an instance of ${expected.name} (was ${
-					typeof this.actual === "object" && this.actual !== null ?
-						this.actual.constructor.name
+					typeof this.ctx.actual === "object" && this.ctx.actual !== null ?
+						this.ctx.actual.constructor.name
 					:	this.serializedActual
 				})`
 			})
@@ -123,7 +104,7 @@ export class ChainableAssertions implements AssertionRecord {
 				// to give a clearer error message. This avoid problems with objects
 				// like subtypes of array that do not pass node's deep equality test
 				// but serialize to the same value.
-				if (printable(args[0]) !== printable(this.actual))
+				if (printable(args[0]) !== printable(this.unversionedActual))
 					assertEquals(expectedSerialized, this.serializedActual, this.ctx)
 			}
 			return this
@@ -163,8 +144,8 @@ export class ChainableAssertions implements AssertionRecord {
 				}
 			}
 			if (this.ctx.allowRegex)
-				assertEqualOrMatching(expected, this.actual, this.ctx)
-			else assertEquals(expected, this.actual, this.ctx)
+				assertEqualOrMatching(expected, this.ctx.actual, this.ctx)
+			else assertEquals(expected, this.ctx.actual, this.ctx)
 
 			return this
 		}
@@ -174,7 +155,7 @@ export class ChainableAssertions implements AssertionRecord {
 	}
 
 	get throws(): unknown {
-		const result = callAssertedFunction(this.actual as Function)
+		const result = callAssertedFunction(this.unversionedActual as Function)
 		this.ctx.actual = getThrownMessage(result, this.ctx)
 		this.ctx.allowRegex = true
 		this.ctx.defaultExpected = ""
@@ -184,7 +165,10 @@ export class ChainableAssertions implements AssertionRecord {
 	throwsAndHasTypeError(matchValue: string | RegExp): void {
 		assertEqualOrMatching(
 			matchValue,
-			getThrownMessage(callAssertedFunction(this.actual as Function), this.ctx),
+			getThrownMessage(
+				callAssertedFunction(this.unversionedActual as Function),
+				this.ctx
+			),
 			this.ctx
 		)
 		if (!this.ctx.cfg.skipTypes) {
@@ -294,10 +278,6 @@ export type comparableValueAssertion<expected, kind extends AssertionKind> = {
 	instanceOf: (constructor: Constructor) => nextAssertions<kind>
 	is: (value: expected) => nextAssertions<kind>
 	completions: (value?: Completions) => void
-	narrow<narrowed>(
-		predicate: (data: unknown) => data is narrowed,
-		messageOnError?: string
-	): narrowed
 	// This can be used to assert values without type constraints
 	unknown: Omit<comparableValueAssertion<unknown, kind>, "unknown">
 }

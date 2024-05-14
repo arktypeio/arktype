@@ -1,7 +1,9 @@
-import { dirName, readFile, shell } from "@arktype/fs"
+import { dirName, fromHere, readFile, shell } from "@arktype/fs"
 import { copyFileSync, rmSync } from "node:fs"
 
 export const runThenGetContents = (templatePath: string): string => {
+	rmSync(fromHere(".attest"), { force: true, recursive: true })
+
 	const tempPath = templatePath + ".temp.ts"
 	copyFileSync(templatePath, tempPath)
 	try {

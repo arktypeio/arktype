@@ -155,6 +155,12 @@ bench(
 	.types([337, "instantiations"])
 ```
 
+If you'd like to fail in CI above a threshold, you can add flags like the following (default value is 20%, but it will not throw unless `--benchErrorOnThresholdExceeded` is set):
+
+```
+ tsx ./p99/within-limit/p99-tall-simple.bench.ts  --benchErrorOnThresholdExceeded --benchPercentThreshold 10
+```
+
 ## CLI
 
 Attest also includes a builtin `attest` CLI including the following commands:
