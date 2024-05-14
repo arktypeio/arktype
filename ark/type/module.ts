@@ -11,6 +11,6 @@ type exportScope<$> = {
 }
 
 export const Module: new <$ = {}>(types: exportScope<$>) => Module<$> =
-	RootModule
+	RootModule as never
 
-export interface Module<$ = {}> extends RootModule<exportScope<$>> {}
+export type Module<$ = {}> = RootModule<exportScope<$>>

@@ -1,22 +1,22 @@
 import {
 	BaseRoot,
+	hasArkKind,
+	writeUnresolvableMessage,
 	type GenericProps,
 	type PrivateDeclaration,
 	type arkKind,
-	hasArkKind,
-	type writeNonSubmoduleDotMessage,
-	writeUnresolvableMessage
+	type writeNonSubmoduleDotMessage
 } from "@arktype/schema"
 import {
+	printable,
+	throwParseError,
+	tryParseNumber,
+	tryParseWellFormedBigint,
 	type BigintLiteral,
 	type Completion,
 	type ErrorMessage,
 	type anyOrNever,
-	type join,
-	printable,
-	throwParseError,
-	tryParseNumber,
-	tryParseWellFormedBigint
+	type join
 } from "@arktype/util"
 import type { Generic } from "../../../../generic.js"
 import type { GenericInstantiationAst } from "../../../semantic/infer.js"
@@ -26,9 +26,9 @@ import type { StaticState, state } from "../../reduce/static.js"
 import type { BaseCompletions } from "../../string.js"
 import type { Scanner } from "../scanner.js"
 import {
-	type ParsedArgs,
 	parseGenericArgs,
-	writeInvalidGenericArgsMessage
+	writeInvalidGenericArgsMessage,
+	type ParsedArgs
 } from "./genericArgs.js"
 
 export const parseUnenclosed = (s: DynamicState): void => {
