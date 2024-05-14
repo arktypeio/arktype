@@ -260,9 +260,11 @@ contextualize(() => {
 			const types = getCyclicScope().export()
 			const data = getCyclicData()
 			data.contributors[0].email = "ssalbdivad"
-			attest(types.package(data).toString()).snap(
-				'contributors[0].email must be a valid email (was "ssalbdivad")'
-			)
+			// ideally would only include one error, see:
+			// https://github.com/arktypeio/arktype/issues/924
+			attest(types.package(data).toString())
+				.snap(`contributors[0].email must be a valid email (was "ssalbdivad")
+dependencies[1].contributors[0].email must be a valid email (was "ssalbdivad")`)
 		})
 
 		it("can include cyclic data in message", () => {
