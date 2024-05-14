@@ -1,5 +1,9 @@
-import { type BaseRoot, hasArkKind, type string } from "@arktype/schema"
+import { hasArkKind, type BaseRoot, type string } from "@arktype/schema"
 import {
+	isThunk,
+	objectKindOf,
+	printable,
+	throwParseError,
 	type Dict,
 	type ErrorMessage,
 	type Primitive,
@@ -7,29 +11,25 @@ import {
 	type array,
 	type defined,
 	type equals,
-	isThunk,
 	type isUnknown,
-	objectKindOf,
 	type objectKindOrDomainOf,
 	type optionalKeyOf,
-	printable,
 	type requiredKeyOf,
-	type show,
-	throwParseError
+	type show
 } from "@arktype/util"
 import type { type } from "../ark.js"
 import type { ParseContext } from "../scope.js"
 import {
-	type inferObjectLiteral,
 	parseObjectLiteral,
+	type inferObjectLiteral,
 	type validateObjectLiteral
 } from "./objectLiteral.js"
 import type { validateString } from "./semantic/validate.js"
 import type { BaseCompletions, inferString } from "./string/string.js"
 import {
+	parseTuple,
 	type TupleExpression,
 	type inferTuple,
-	parseTuple,
 	type validateTuple
 } from "./tuple.js"
 
@@ -78,7 +78,7 @@ export type validateDefinition<def, $, args> =
 	: def extends string ? validateString<def, $, args>
 	: def extends array ? validateTuple<def, $, args>
 	: def extends BadDefinitionType ?
-		writeBadDefinitionTypeMessage<objectKindOrDomainOf<def>>
+		ErrorMessage<writeBadDefinitionTypeMessage<objectKindOrDomainOf<def>>>
 	: isUnknown<def> extends true ?
 		// this allows the initial list of autocompletions to be populated when a user writes "type()",
 		// before having specified a definition
