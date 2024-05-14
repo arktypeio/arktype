@@ -2,6 +2,7 @@ import {
 	compileSerializedValue,
 	flatMorph,
 	printable,
+	throwParseError,
 	type Entry,
 	type Json,
 	type JsonData,
@@ -33,7 +34,6 @@ import type {
 	RawNodeDeclaration
 } from "./declare.js"
 import type { Disjoint } from "./disjoint.js"
-import { throwArkError } from "./errors.js"
 import { isNode } from "./utils.js"
 
 export const basisKinds = ["unit", "proto", "domain"] as const
@@ -212,7 +212,7 @@ export function assertNodeKind<kind extends NodeKind>(
 ): asserts value is Node<kind> {
 	const valueIsNode = isNode(value)
 	if (!valueIsNode || value.kind !== kind) {
-		throwArkError(
+		throwParseError(
 			`Expected node of kind ${kind} (was ${
 				valueIsNode ? `${value.kind} node` : printable(value)
 			})`

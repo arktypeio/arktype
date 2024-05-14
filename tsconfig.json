@@ -15,9 +15,8 @@
 		"exactOptionalPropertyTypes": true,
 		"noFallthroughCasesInSwitch": true,
 		"stripInternal": true,
-		// this should be set to false by default, but we keep it here as a
-		// convenience for toggling
-		"noErrorTruncation": true,
+		// should be off by default, but here as a convenience to toggle
+		// "noErrorTruncation": true,
 		// "isolatedDeclarations": true,
 		"paths": {
 			"arktype": ["./ark/type/api.ts"],

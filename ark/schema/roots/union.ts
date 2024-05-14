@@ -3,13 +3,13 @@ import type { Node, NodeSchema } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { ArkTypeError } from "../shared/errors.js"
+import type { ArkError } from "../shared/errors.js"
 import {
 	implementNode,
 	schemaKindsRightOf,
 	type IntersectionContext,
-	type nodeImplementationOf,
-	type RootKind
+	type RootKind,
+	type nodeImplementationOf
 } from "../shared/implement.js"
 import { intersectNodes, intersectNodesRoot } from "../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
@@ -50,7 +50,7 @@ export interface UnionDeclaration
 		normalizedSchema: NormalizedUnionSchema
 		inner: UnionInner
 		errorContext: {
-			errors: readonly ArkTypeError[]
+			errors: readonly ArkError[]
 		}
 		reducibleTo: RootKind
 		childKind: UnionChildKind
@@ -100,7 +100,7 @@ export const unionImplementation: nodeImplementationOf<UnionDeclaration> =
 			expected: ctx => {
 				const byPath = groupBy(ctx.errors, "propString") as Record<
 					string,
-					ArkTypeError[]
+					ArkError[]
 				>
 				const pathDescriptions = Object.entries(byPath).map(
 					([path, errors]) => {
@@ -189,7 +189,7 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 		this.branches.some(b => b.traverseAllows(data, ctx))
 
 	traverseApply: TraverseApply = (data, ctx) => {
-		const errors: ArkTypeError[] = []
+		const errors: ArkError[] = []
 		for (let i = 0; i < this.branches.length; i++) {
 			ctx.pushBranch()
 			this.branches[i].traverseApply(data, ctx)

@@ -12,7 +12,7 @@ import type { GenericRoot } from "../generic.js"
 import type { BaseNode } from "../node.js"
 import type { BaseRoot } from "../roots/root.js"
 import type { RawRootModule, RawRootScope } from "../scope.js"
-import type { ArkTypeError } from "./errors.js"
+import type { ArkError } from "./errors.js"
 
 export const makeRootAndArrayPropertiesMutable = <o extends object>(
 	o: o
@@ -61,7 +61,7 @@ export interface ArkKinds {
 	scope: RawRootScope
 	generic: GenericRoot
 	module: RawRootModule
-	error: ArkTypeError
+	error: ArkError
 }
 
 export type ArkKind = show<keyof ArkKinds>

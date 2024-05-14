@@ -88,7 +88,8 @@ contextualize(() => {
 			score: 0
 		})
 
-		attest(out.toString()).snap('email must be a valid email (was "")')
+		attest(out.toString()).snap(`email must be a valid email (was "")
+tags must be at least length 3 (was 2)`)
 	})
 
 	it("multiple refinement errors", () => {

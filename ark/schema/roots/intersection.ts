@@ -27,7 +27,7 @@ import type { PredicateNode } from "../predicate.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import { metaKeys, type BaseMeta, type declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { ArkTypeError } from "../shared/errors.js"
+import type { ArkError } from "../shared/errors.js"
 import {
 	implementNode,
 	structureKeys,
@@ -88,7 +88,7 @@ export type IntersectionDeclaration = declareNode<{
 	inner: IntersectionInner
 	reducibleTo: "intersection" | IntersectionBasisKind
 	errorContext: {
-		errors: readonly ArkTypeError[]
+		errors: readonly ArkError[]
 	}
 	childKind: IntersectionChildKind
 }>

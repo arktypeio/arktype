@@ -1,12 +1,12 @@
 import {
-	type array,
 	arrayFrom,
+	registeredReference,
+	throwParseError,
 	type BuiltinObjectKind,
 	type BuiltinObjects,
-	type listable,
 	type Primitive,
-	registeredReference,
-	throwParseError
+	type array,
+	type listable
 } from "@arktype/util"
 import type { of } from "../ast.js"
 import type { type } from "../inference.js"
@@ -15,12 +15,12 @@ import type { StaticArkOption } from "../scope.js"
 import { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { ArkErrors, ArkTypeError } from "../shared/errors.js"
+import type { ArkError, ArkErrors } from "../shared/errors.js"
 import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.js"
-import { type inferPipe, intersectNodes } from "../shared/intersections.js"
+import { intersectNodes, type inferPipe } from "../shared/intersections.js"
 import type {
 	TraversalContext,
 	TraverseAllows,
@@ -198,7 +198,7 @@ export type inferPipes<t, pipes extends Morph[]> =
 
 export type inferMorphOut<morph extends Morph> = Exclude<
 	ReturnType<morph>,
-	ArkTypeError | ArkErrors
+	ArkError | ArkErrors
 >
 
 export type distillIn<t> =

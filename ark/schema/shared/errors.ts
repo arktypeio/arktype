@@ -5,21 +5,9 @@ import type { NodeKind } from "./implement.js"
 import type { TraversalContext } from "./traversal.js"
 import { arkKind, pathToPropString, type TraversalPath } from "./utils.js"
 
-export const throwArkError = (message: string): never => {
-	throw new ArkError(message)
-}
+export type ArkErrorResult = ArkError | ArkErrors
 
-export class ArkError extends TypeError {
-	toString(): string {
-		return this.message
-	}
-
-	throw(): never {
-		throw this
-	}
-}
-
-export class ArkTypeError<
+export class ArkError<
 	code extends ArkErrorCode = ArkErrorCode
 > extends DynamicBase<ArkErrorContextInput<code>> {
 	readonly [arkKind] = "error"
@@ -44,7 +32,7 @@ export class ArkTypeError<
 		this.data = "data" in input ? input.data : data
 	}
 
-	hasCode<code extends ArkErrorCode>(code: code): this is ArkTypeError<code> {
+	hasCode<code extends ArkErrorCode>(code: code): this is ArkError<code> {
 		return this.code === code
 	}
 
@@ -73,21 +61,29 @@ export class ArkTypeError<
 	get message(): string {
 		return this.input.message ?? this.nodeConfig.message(this as never)
 	}
+
+	toString(): string {
+		return this.message
+	}
+
+	throw(): never {
+		throw this
+	}
 }
 
-export class ArkErrors extends ReadonlyArray<ArkTypeError> {
+export class ArkErrors extends ReadonlyArray<ArkError> {
 	constructor(protected ctx: TraversalContext) {
 		super()
 	}
 
-	byPath: Record<string, ArkTypeError> = {}
+	byPath: Record<string, ArkError> = {}
 	count = 0
-	private mutable: ArkTypeError[] = this as never
+	private mutable: ArkError[] = this as never
 
-	add(error: ArkTypeError): void {
+	add(error: ArkError): void {
 		const existing = this.byPath[error.propString]
 		if (existing) {
-			const errorIntersection = new ArkTypeError(
+			const errorIntersection = new ArkError(
 				{
 					code: "intersection",
 					errors:
@@ -115,12 +111,16 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 		return this.toString()
 	}
 
+	get message(): string {
+		return this.toString()
+	}
+
 	toString(): string {
 		return this.join("\n")
 	}
 
 	throw(): never {
-		throw new ArkError(`${this}`, { cause: this })
+		throw this
 	}
 }
 
@@ -149,7 +149,7 @@ export type ArkErrorContextInput<code extends ArkErrorCode = ArkErrorCode> =
 	ArkErrorContextInputsByCode[code]
 
 export type MessageContext<code extends ArkErrorCode = ArkErrorCode> = Omit<
-	ArkTypeError<code>,
+	ArkError<code>,
 	"message"
 >
 

@@ -2,8 +2,8 @@ import type { array } from "@arktype/util"
 import type { Morph } from "../roots/morph.js"
 import type { ResolvedArkConfig } from "../scope.js"
 import {
+	ArkError,
 	ArkErrors,
-	ArkTypeError,
 	type ArkErrorCode,
 	type ArkErrorContextInput,
 	type ArkErrorInput
@@ -17,7 +17,7 @@ export type QueuedMorphs = {
 }
 
 export type BranchTraversalContext = {
-	error: ArkTypeError | undefined
+	error: ArkError | undefined
 	queuedMorphs: QueuedMorphs[]
 }
 
@@ -66,7 +66,7 @@ export class TraversalContext {
 						const result = morph(out, this)
 						if (result instanceof ArkErrors) return result
 						if (this.hasError()) return this.errors
-						if (result instanceof ArkTypeError) {
+						if (result instanceof ArkError) {
 							// if an ArkTypeError was returned but wasn't added to these
 							// errors, add it then return
 							this.error(result)
@@ -87,7 +87,7 @@ export class TraversalContext {
 						const result = morph(parent[key], this)
 						if (result instanceof ArkErrors) return result
 						if (this.hasError()) return this.errors
-						if (result instanceof ArkTypeError) {
+						if (result instanceof ArkError) {
 							this.error(result)
 							return this.errors
 						}
@@ -124,7 +124,7 @@ export class TraversalContext {
 
 	error<input extends ArkErrorInput>(
 		input: input
-	): ArkTypeError<
+	): ArkError<
 		input extends { code: ArkErrorCode } ? input["code"] : "predicate"
 	> {
 		const errCtx: ArkErrorContextInput =
@@ -133,7 +133,7 @@ export class TraversalContext {
 					input
 				:	{ ...input, code: "predicate" }
 			:	{ code: "predicate", expected: input }
-		const error = new ArkTypeError(errCtx, this)
+		const error = new ArkError(errCtx, this)
 		if (this.currentBranch) this.currentBranch.error = error
 		else this.errors.add(error)
 
