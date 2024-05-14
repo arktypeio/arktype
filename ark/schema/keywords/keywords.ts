@@ -1,5 +1,5 @@
 import type { GenericRoot } from "../generic.js"
-import type { RootModule } from "../module.js"
+import type { RootModule, SchemaModule } from "../module.js"
 import { RawRootScope, schemaScope, type RootScope } from "../scope.js"
 // the import ordering here is important so builtin keywords can be resolved
 // and used to bootstrap nodes with constraints
@@ -31,7 +31,7 @@ export const ambientRootScope: RootScope<Ark> = schemaScope({
 
 RawRootScope.ambient = ambientRootScope.raw
 
-export const keywordNodes: RootModule<Ark> = ambientRootScope.export()
+export const keywordNodes: SchemaModule<Ark> = ambientRootScope.export()
 
 // this type is redundant with the inferred definition of ark but allow types
 // derived from the default scope to be calulated more efficiently

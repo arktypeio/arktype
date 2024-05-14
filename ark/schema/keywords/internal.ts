@@ -1,5 +1,5 @@
 import type { Key } from "@arktype/util"
-import type { RootModule } from "../module.js"
+import type { SchemaModule } from "../module.js"
 import { root, schemaScope } from "../scope.js"
 
 export interface internalKeywordExports {
@@ -7,7 +7,7 @@ export interface internalKeywordExports {
 	propertyKey: Key
 }
 
-export type internalKeywords = RootModule<internalKeywordExports>
+export type internalKeywords = SchemaModule<internalKeywordExports>
 
 export const internalKeywords: internalKeywords = schemaScope(
 	{

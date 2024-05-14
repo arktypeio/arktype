@@ -1,4 +1,4 @@
-import type { RootModule } from "../module.js"
+import type { SchemaModule } from "../module.js"
 import { schemaScope } from "../scope.js"
 
 export interface jsObjectExports {
@@ -14,7 +14,7 @@ export interface jsObjectExports {
 	Promise: Promise<unknown>
 }
 
-export type jsObjects = RootModule<jsObjectExports>
+export type jsObjects = SchemaModule<jsObjectExports>
 
 export const jsObjects: jsObjects = schemaScope(
 	{

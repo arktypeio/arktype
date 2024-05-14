@@ -3,7 +3,7 @@ import {
 	wellFormedIntegerMatcher,
 	wellFormedNumberMatcher
 } from "@arktype/util"
-import type { RootModule } from "../module.js"
+import type { SchemaModule } from "../module.js"
 import type { Out } from "../roots/morph.js"
 import { root, schemaScope } from "../scope.js"
 import { tryParseDatePattern } from "./utils/date.js"
@@ -73,7 +73,7 @@ export type parsingExports = {
 	json: (In: string) => Out<unknown>
 }
 
-export type parsing = RootModule<parsingExports>
+export type parsing = SchemaModule<parsingExports>
 
 export const parsing: parsing = schemaScope({
 	url,

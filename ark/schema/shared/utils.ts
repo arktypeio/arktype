@@ -1,10 +1,10 @@
 import {
-	type array,
 	flatMorph,
 	isArray,
 	isDotAccessible,
-	type mutable,
 	printable,
+	type array,
+	type mutable,
 	type show
 } from "@arktype/util"
 import type { BaseConstraint } from "../constraint.js"
@@ -65,22 +65,6 @@ export interface ArkKinds {
 }
 
 export type ArkKind = show<keyof ArkKinds>
-
-export const addArkKind = <kind extends ArkKind>(
-	value: Omit<ArkKinds[kind], typeof arkKind> & {
-		[arkKind]?: kind
-	},
-	kind: kind
-): ArkKinds[kind] =>
-	Object.defineProperty(value, arkKind, {
-		value: kind,
-		enumerable: false
-	}) as never
-
-export type addArkKind<
-	kind extends ArkKind,
-	t extends Omit<ArkKinds[kind], typeof arkKind>
-> = t & { [arkKind]: kind }
 
 export const hasArkKind = <kind extends ArkKind>(
 	value: unknown,

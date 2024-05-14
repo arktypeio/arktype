@@ -1,5 +1,5 @@
 import type { type } from "../inference.js"
-import type { RootModule } from "../module.js"
+import type { SchemaModule } from "../module.js"
 import { schemaScope } from "../scope.js"
 
 export interface tsKeywordExports {
@@ -19,7 +19,7 @@ export interface tsKeywordExports {
 	undefined: undefined
 }
 
-export type tsKeywords = RootModule<tsKeywordExports>
+export type tsKeywords = SchemaModule<tsKeywordExports>
 
 export const tsKeywords: tsKeywords = schemaScope(
 	{

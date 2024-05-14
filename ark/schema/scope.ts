@@ -32,7 +32,11 @@ import {
 	type RootSchema,
 	type reducibleKindOf
 } from "./kinds.js"
-import { RootModule, type PreparsedNodeResolution } from "./module.js"
+import {
+	RootModule,
+	type PreparsedNodeResolution,
+	type SchemaModule
+} from "./module.js"
 import type { BaseNode } from "./node.js"
 import { parseNode, schemaKindOf, type NodeParseOptions } from "./parse.js"
 import { normalizeAliasSchema, type AliasNode } from "./roots/alias.js"
@@ -588,11 +592,11 @@ export interface RootScope<$ = any> {
 
 	import<names extends exportedNameOf<$>[]>(
 		...names: names
-	): RootModule<show<destructuredImportContext<$, names>>>
+	): SchemaModule<show<destructuredImportContext<$, names>>>
 
 	export<names extends exportedNameOf<$>[]>(
 		...names: names
-	): RootModule<show<destructuredExportContext<$, names>>>
+	): SchemaModule<show<destructuredExportContext<$, names>>>
 
 	resolve<name extends exportedNameOf<$>>(
 		name: name

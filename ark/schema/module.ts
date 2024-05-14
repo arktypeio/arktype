@@ -1,12 +1,21 @@
 import { DynamicBase, type anyOrNever } from "@arktype/util"
 import type { Root } from "./roots/root.js"
-import { addArkKind, arkKind } from "./shared/utils.js"
+import { arkKind } from "./shared/utils.js"
 
 export type PreparsedNodeResolution = {
 	[arkKind]: "generic" | "module"
 }
 
-type exportRootScope<$> = {
+export class RootModule<
+	exports extends object = {}
+> extends DynamicBase<exports> {
+	// ensure `[arkKind]` is non-enumerable so it doesn't get spread on import/export
+	get [arkKind](): "module" {
+		return "module"
+	}
+}
+
+type exportSchemaScope<$> = {
 	[k in keyof $]: $[k] extends PreparsedNodeResolution ?
 		[$[k]] extends [anyOrNever] ?
 			Root<$[k], $>
@@ -14,12 +23,9 @@ type exportRootScope<$> = {
 	:	Root<$[k], $>
 }
 
-export class RootModule<$ = any> extends DynamicBase<exportRootScope<$>> {
-	declare readonly [arkKind]: "module"
+export const SchemaModule: new <$ = {}>(
+	types: exportSchemaScope<$>
+) => SchemaModule<$> = RootModule
 
-	constructor(types: exportRootScope<$>) {
-		super(types)
-		// ensure `[arkKind]` is non-enumerable so it doesn't get spread on import/export
-		addArkKind(this as never, "module")
-	}
-}
+export interface SchemaModule<$ = {}>
+	extends RootModule<exportSchemaScope<$>> {}

@@ -1,4 +1,4 @@
-import type { RootModule } from "../module.js"
+import type { SchemaModule } from "../module.js"
 import { root, schemaScope } from "../scope.js"
 import { creditCardMatcher, isLuhnValid } from "./utils/creditCard.js"
 
@@ -79,7 +79,7 @@ export interface validationExports {
 	integer: number
 }
 
-export type validation = RootModule<validationExports>
+export type validation = SchemaModule<validationExports>
 
 export const validation: validation = schemaScope(
 	{
