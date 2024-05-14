@@ -4,8 +4,8 @@ import type { ResolvedArkConfig } from "../scope.js"
 import {
 	ArkErrors,
 	ArkTypeError,
-	createError,
 	type ArkErrorCode,
+	type ArkErrorContextInput,
 	type ArkErrorInput
 } from "./errors.js"
 import type { TraversalPath } from "./utils.js"
@@ -127,11 +127,17 @@ export class TraversalContext {
 	): ArkTypeError<
 		input extends { code: ArkErrorCode } ? input["code"] : "predicate"
 	> {
-		const error = createError(this, input)
+		const errCtx: ArkErrorContextInput =
+			typeof input === "object" ?
+				input.code ?
+					input
+				:	{ ...input, code: "predicate" }
+			:	{ code: "predicate", expected: input }
+		const error = new ArkTypeError(errCtx, this)
 		if (this.currentBranch) this.currentBranch.error = error
 		else this.errors.add(error)
 
-		return error
+		return error as never
 	}
 
 	get data(): unknown {

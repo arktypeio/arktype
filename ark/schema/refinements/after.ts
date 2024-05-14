@@ -6,12 +6,12 @@ import {
 } from "../shared/implement.js"
 import type { TraverseAllows } from "../shared/traversal.js"
 import {
-	type BaseNormalizedRangeRoot,
 	BaseRange,
-	type BaseRangeInner,
-	type LimitRootValue,
 	parseDateLimit,
-	parseExclusiveKey
+	parseExclusiveKey,
+	type BaseNormalizedRangeRoot,
+	type BaseRangeInner,
+	type LimitRootValue
 } from "./range.js"
 
 export interface AfterInner extends BaseRangeInner {

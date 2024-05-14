@@ -124,12 +124,6 @@ export type requiredKeyOf<o> = {
 
 export type optionalKeyOf<o> = Exclude<keyof o, requiredKeyOf<o>>
 
-export type optionalizeKeys<o, keys extends keyof o> = show<
-	{ [k in Exclude<requiredKeyOf<o>, keys>]: o[k] } & {
-		[k in optionalKeyOf<o> | keys]?: o[k]
-	}
->
-
 export type merge<base, merged> = show<
 	{
 		[k in Exclude<keyof base, keyof merged>]: base[k]

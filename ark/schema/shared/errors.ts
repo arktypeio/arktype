@@ -1,10 +1,6 @@
-import {
-	ReadonlyArray,
-	hasDefinedKey,
-	type optionalizeKeys,
-	type show
-} from "@arktype/util"
+import { DynamicBase, ReadonlyArray, type show } from "@arktype/util"
 import type { Prerequisite, errorContext } from "../kinds.js"
+import type { ResolvedArkConfig } from "../scope.js"
 import type { NodeKind } from "./implement.js"
 import type { TraversalContext } from "./traversal.js"
 import { arkKind, pathToPropString, type TraversalPath } from "./utils.js"
@@ -23,19 +19,61 @@ export class ArkError extends TypeError {
 	}
 }
 
-export type ArkTypeError<code extends ArkErrorCode = ArkErrorCode> = ArkError &
-	ArkErrorContext<code>
-
-export const ArkTypeError: new <code extends ArkErrorCode = ArkErrorCode>(
-	context: ArkErrorContext<code>
-) => ArkTypeError<code> = class extends ArkError {
+export class ArkTypeError<
+	code extends ArkErrorCode = ArkErrorCode
+> extends DynamicBase<ArkErrorContextInput<code>> {
 	readonly [arkKind] = "error"
+	path: TraversalPath
+	data: Prerequisite<code>
+	private nodeConfig: ResolvedArkConfig[code]
 
-	constructor(context: ArkErrorContext) {
-		super(context.message)
-		Object.assign(this, context)
+	constructor(
+		protected input: ArkErrorContextInput<code>,
+		ctx: TraversalContext
+	) {
+		super(input)
+		const data = ctx.data
+		if (input.code === "union") {
+			// flatten union errors to avoid repeating context like "foo must be foo must be"...
+			input.errors = input.errors.flatMap(e =>
+				e.hasCode("union") ? e.errors : e
+			)
+		}
+		this.nodeConfig = ctx.config[this.code] as never
+		this.path = input.path ?? [...ctx.path]
+		this.data = "data" in input ? input.data : data
 	}
-} as never
+
+	hasCode<code extends ArkErrorCode>(code: code): this is ArkTypeError<code> {
+		return this.code === code
+	}
+
+	get propString(): string {
+		return pathToPropString(this.path)
+	}
+
+	get expected(): string {
+		return (
+			this.input.expected ?? this.nodeConfig.expected?.(this.input as never)
+		)
+	}
+
+	get actual(): string | null {
+		// null is a valid value of actual meaning it should be omitted, so
+		// check for undefined explicitly
+		return this.input.actual !== undefined ?
+				this.input.actual
+			:	this.nodeConfig.actual?.(this.data as never)
+	}
+
+	get problem(): string {
+		return this.input.problem ?? this.nodeConfig.problem(this as never)
+	}
+
+	get message(): string {
+		return this.input.message ?? this.nodeConfig.message(this as never)
+	}
+}
 
 export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 	constructor(protected ctx: TraversalContext) {
@@ -49,13 +87,16 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 	add(error: ArkTypeError): void {
 		const existing = this.byPath[error.propString]
 		if (existing) {
-			const errorIntersection = createError(this.ctx, {
-				code: "intersection",
-				errors:
-					existing.code === "intersection" ?
-						[...existing.errors, error]
-					:	[existing, error]
-			})
+			const errorIntersection = new ArkTypeError(
+				{
+					code: "intersection",
+					errors:
+						existing.hasCode("intersection") ?
+							[...existing.errors, error]
+						:	[existing, error]
+				},
+				this.ctx
+			)
 			const existingIndex = this.indexOf(existing)
 			// If existing is found (which it always should be unless this was externally mutated),
 			// replace it with the new problem intersection. In case it isn't for whatever reason,
@@ -83,67 +124,14 @@ export class ArkErrors extends ReadonlyArray<ArkTypeError> {
 	}
 }
 
-export const createError = (
-	ctx: TraversalContext,
-	input: ArkErrorInput
-): ArkTypeError => {
-	let errCtx: ArkErrorContext
-	const data = ctx.data
-	const nodeConfig = ctx.config.predicate
-	if (typeof input === "string") {
-		errCtx = {
-			code: "predicate",
-			path: [...ctx.path],
-			propString: pathToPropString(ctx.path),
-			data,
-			actual: nodeConfig.actual(data),
-			expected: input
-		} satisfies ProblemContext as any
-		errCtx.problem = nodeConfig.problem(errCtx as never)
-		errCtx.message = nodeConfig.message(errCtx as never)
-	} else {
-		const code = input.code ?? "predicate"
-		if (input.code === "union") {
-			// flatten union errors to avoid repeating context like "foo must be foo must be"...
-			input.errors = input.errors.flatMap(e =>
-				e.code === "union" ? e.errors : e
-			)
-		}
-		const nodeConfig = ctx.config[code]
-		const expected = input.expected ?? nodeConfig.expected?.(input as never)
-		const path = input.path ?? [...ctx.path]
-		errCtx = {
-			...input,
-			// prioritize these over the raw user provided values so we can
-			// check for keys with values like undefined
-			code,
-			path,
-			propString: pathToPropString(path),
-			data: "data" in input ? input.data : data,
-			actual:
-				input.actual !== undefined ?
-					input.actual
-				:	nodeConfig.actual?.(data as never),
-			expected
-		} satisfies ProblemContext as any
-		errCtx.problem =
-			hasDefinedKey(input, "problem") ?
-				input.problem
-			:	nodeConfig.problem(errCtx as never)
-		errCtx.message =
-			hasDefinedKey(input, "message") ?
-				input.message
-			:	nodeConfig.message(errCtx as never)
-	}
-	return new ArkTypeError(errCtx)
-}
-
-export interface DerivableErrorContext<data = unknown> {
+export interface DerivableErrorContext<
+	code extends ArkErrorCode = ArkErrorCode
+> {
 	expected: string
 	actual: string | null
 	problem: string
 	message: string
-	data: data
+	data: Prerequisite<code>
 	path: TraversalPath
 	propString: string
 }
@@ -152,11 +140,16 @@ export type ArkErrorCode = {
 	[kind in NodeKind]: errorContext<kind> extends null ? never : kind
 }[NodeKind]
 
-export type ArkErrorContext<code extends ArkErrorCode = ArkErrorCode> =
-	errorContext<code> & DerivableErrorContext<Prerequisite<code>>
+type ArkErrorContextInputsByCode = {
+	[code in ArkErrorCode]: errorContext<code> &
+		Partial<DerivableErrorContext<code>>
+}
+
+export type ArkErrorContextInput<code extends ArkErrorCode = ArkErrorCode> =
+	ArkErrorContextInputsByCode[code]
 
 export type MessageContext<code extends ArkErrorCode = ArkErrorCode> = Omit<
-	ArkErrorContext<code>,
+	ArkTypeError<code>,
 	"message"
 >
 
@@ -165,22 +158,12 @@ export type ProblemContext<code extends ArkErrorCode = ArkErrorCode> = Omit<
 	"problem"
 >
 
-type ErrorInputByCode = {
-	[code in ArkErrorCode]: optionalizeKeys<
-		ArkErrorContext<code>,
-		keyof DerivableErrorContext
-	>
-}
-
 export type CustomErrorInput = show<
 	// ensure a custom error can be discriminated on the lack of a code
 	{ code?: undefined } & Partial<DerivableErrorContext>
 >
 
-export type ArkErrorInput =
-	| string
-	| ErrorInputByCode[ArkErrorCode]
-	| CustomErrorInput
+export type ArkErrorInput = string | ArkErrorContextInput | CustomErrorInput
 
 export type ProblemWriter<code extends ArkErrorCode = ArkErrorCode> = (
 	context: ProblemContext<code>

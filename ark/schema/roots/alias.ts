@@ -1,4 +1,3 @@
-import { append } from "@arktype/util"
 import type { RawRootScope } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
@@ -44,8 +43,8 @@ export class AliasNode extends BaseRoot<AliasDeclaration> {
 
 	traverseAllows: TraverseAllows = (data, ctx) => {
 		const seen = ctx.seen[this.id]
-		if (seen?.includes(data as object)) return true
-		ctx.seen[this.id] = append(seen, data)
+		// if (seen?.includes(data as object)) return true
+		// ctx.seen[this.id] = append(seen, data)
 		return this.resolution.traverseAllows(data, ctx)
 	}
 
@@ -57,8 +56,8 @@ export class AliasNode extends BaseRoot<AliasDeclaration> {
 			this.resolution.traverseApply(data, ctx)
 		}
 
-		if (seen?.includes(data as object)) return
-		ctx.seen[this.id] = append(seen, data)
+		// if (seen?.includes(data as object)) return
+		// ctx.seen[this.id] = append(seen, data)
 	}
 
 	compile(js: NodeCompiler): void {

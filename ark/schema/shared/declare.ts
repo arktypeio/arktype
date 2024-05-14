@@ -40,7 +40,6 @@ export type declareNode<
 		prerequisite: prerequisiteOf<d>
 		childKind: never
 		reducibleTo: d["kind"]
-		errorContext: null
 	},
 	d & {
 		errorContext: d["errorContext"] extends {} ? BaseErrorContext<d["kind"]>
