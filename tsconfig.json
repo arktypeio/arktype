@@ -17,10 +17,12 @@
 		"stripInternal": true,
 		"paths": {
 			"arktype": ["./ark/type/api.ts"],
+			"arktype/config": ["./ark/type/config.ts"],
 			"@arktype/util": ["./ark/util/api.ts"],
 			"@arktype/fs": ["./ark/fs/api.ts"],
 			"@arktype/attest": ["./ark/attest/api.ts"],
-			"@arktype/schema": ["./ark/schema/api.ts"]
+			"@arktype/schema": ["./ark/schema/api.ts"],
+			"@arktype/schema/config": ["./ark/schema/config.ts"]
 		},
 		"types": ["mocha", "node"]
 	},
