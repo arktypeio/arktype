@@ -2,7 +2,7 @@
 	"name": "arkdark",
 	"displayName": "ArkDark",
 	"description": "ArkType syntax highlighting and theme⛵",
-	"version": "5.0.1",
+	"version": "5.0.2",
 	"publisher": "arktypeio",
 	"type": "module",
 	"scripts": {
@@ -51,12 +51,16 @@
 			},
 			"errorLens.replace": [
 				{
-					"matcher": "not assignable to type 'keyError<\"(.*)\">'\\.$",
+					"matcher": "^(?:Type|Argument of type) '.*' is not assignable to type 'keyError<\"(.*)\">'\\.$",
 					"message": "$1"
 				},
 				{
-					"matcher": "not assignable to type '(\".*\")'\\.$",
+					"matcher": "^(?:Type|Argument of type) '.*' is not assignable to type '\"(.*\\u200A)\"'\\.$",
 					"message": "$1"
+				},
+				{
+					"matcher": "^(?:Type|Argument of type) '\"(.*)\"' is not assignable to type '(\"\\1.*\")'\\.$",
+					"message": "$2"
 				},
 				{
 					"matcher": "[^]*\n([^\n]*)$",

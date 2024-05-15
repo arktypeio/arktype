@@ -20,6 +20,9 @@
 		"./config": "./out/config.js",
 		"./internal/*": "./out/*"
 	},
+	"imports": {
+		"#foo": "../schema/api.ts"
+	},
 	"files": [
 		"out"
 	],
