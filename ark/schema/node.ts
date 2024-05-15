@@ -110,14 +110,27 @@ export abstract class BaseNode<
 		return this(data)
 	}
 
-	@cached
+	// unfortunately we can't use the @cached
+	// decorator from @arktype/util on these for now
+	// as they cause a deopt in V8
+	private _in?: BaseNode;
 	get in(): BaseNode {
-		return this.getIo("in")
+		this._in ??= this.getIo("in")
+		return this._in as never
 	}
 
-	@cached
+	private _out?: BaseNode
 	get out(): BaseNode {
-		return this.getIo("out")
+		this._out ??= this.getIo("out")
+		return this._out as never
+	}
+
+	private _description?: string
+	get description(): string {
+		this._description ??=
+			this.inner.description ??
+			this.$.resolvedConfig[this.kind].description?.(this as never)
+		return this._description
 	}
 
 	getIo(kind: "in" | "out"): BaseNode {
@@ -137,14 +150,6 @@ export abstract class BaseNode<
 			} else ioInner[k] = v
 		}
 		return this.$.node(this.kind, ioInner)
-	}
-
-	@cached
-	get description(): string {
-		return (
-			this.inner.description ??
-			this.$.resolvedConfig[this.kind].description?.(this as never)
-		)
 	}
 
 	toJSON(): Json {

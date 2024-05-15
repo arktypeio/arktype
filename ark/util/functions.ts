@@ -6,8 +6,6 @@ export const bound = (
 	ctx: ClassMemberDecoratorContext
 ): void => {
 	ctx.addInitializer(function (this: any) {
-		console.log(this)
-		console.log(ctx.name)
 		this[ctx.name] = this[ctx.name].bind(this)
 	})
 }
