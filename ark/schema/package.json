@@ -15,17 +15,9 @@
 	"main": "./out/api.js",
 	"types": "./out/api.d.ts",
 	"exports": {
-		".": {
-			"types": "./out/api.d.ts",
-			"default": "./out/api.js"
-		},
-		"./config": {
-			"types": "./out/config.d.ts",
-			"default": "./out/config.js"
-		},
-		"./internal/*": {
-			"default": "./out/*"
-		}
+		".": "./out/api.js",
+		"./config": "./out/config.js",
+		"./internal/*": "./out/*"
 	},
 	"files": [
 		"out"

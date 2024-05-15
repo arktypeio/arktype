@@ -10,13 +10,8 @@
 	"main": "./out/api.js",
 	"types": "./out/api.d.ts",
 	"exports": {
-		".": {
-			"types": "./out/api.d.ts",
-			"default": "./out/api.js"
-		},
-		"./internal/*": {
-			"default": "./out/*"
-		}
+		".": "./out/api.js",
+		"./internal/*": "./out/*"
 	},
 	"files": [
 		"out"
