@@ -1,5 +1,6 @@
 import {
 	append,
+	cached,
 	flatMorph,
 	registeredReference,
 	type array,
@@ -94,16 +95,13 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 		...this.optionalLiteralKeys
 	]
 
-	private _keyof: BaseRoot | undefined
+	@cached
 	keyof(): BaseRoot {
-		if (!this._keyof) {
-			let branches = this.$.units(this.literalKeys).branches
-			this.index?.forEach(({ index }) => {
-				branches = branches.concat(index.branches)
-			})
-			this._keyof = this.$.node("union", branches)
-		}
-		return this._keyof
+		let branches = this.$.units(this.literalKeys).branches
+		this.index?.forEach(({ index }) => {
+			branches = branches.concat(index.branches)
+		})
+		return this.$.node("union", branches)
 	}
 
 	// TODO: normalize this to match compiled check order

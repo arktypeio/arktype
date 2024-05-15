@@ -7,8 +7,7 @@ module.exports = defineConfig({
 		"@typescript-eslint",
 		"import",
 		"only-warn",
-		"prefer-arrow-functions",
-		"unused-imports"
+		"prefer-arrow-functions"
 	],
 	extends: [
 		"eslint:recommended",
@@ -55,10 +54,11 @@ module.exports = defineConfig({
 		"@typescript-eslint/no-unused-vars": [
 			"warn",
 			{
+				args: "after-used",
+				argsIgnorePattern: "^_",
 				ignoreRestSiblings: true
 			}
 		],
-		"unused-imports/no-unused-imports": "warn",
 		"@typescript-eslint/explicit-module-boundary-types": [
 			"warn",
 			{ allowDirectConstAssertionInArrowFunctions: true }

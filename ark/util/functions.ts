@@ -1,17 +1,37 @@
 import { throwInternalError } from "./errors.js"
 import { NoopBase } from "./records.js"
 
-export const cached = <T>(thunk: () => T): (() => T) => {
-	let isCached = false
-	let result: T | undefined
-	return () => {
-		if (!isCached) {
-			result = thunk()
-			isCached = true
-		}
-		return result as T
-	}
+export const bound = (
+	target: Function,
+	ctx: ClassMemberDecoratorContext
+): void => {
+	ctx.addInitializer(function (this: any) {
+		console.log(this)
+		console.log(ctx.name)
+		this[ctx.name] = this[ctx.name].bind(this)
+	})
 }
+
+export const cached = <self>(
+	target: (this: self) => any,
+	context:
+		| ClassGetterDecoratorContext<self, any>
+		| ClassMethodDecoratorContext<self, (this: self) => any>
+) =>
+	function (this: self): any {
+		const value = target.call(this)
+		Object.defineProperty(
+			this,
+			context.name,
+			context.kind === "getter" ?
+				{ value }
+			:	{
+					value: () => value,
+					enumerable: false
+				}
+		)
+		return value
+	}
 
 export const isThunk = <value>(
 	value: value

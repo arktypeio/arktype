@@ -85,7 +85,7 @@ const typeParserAttachments = Object.freeze({
 	errors: ArkErrors
 } satisfies TypeParserAttachments)
 
-export class _TypeParser extends Callable<
+export class RawTypeParser extends Callable<
 	(...args: unknown[]) => BaseRoot | Generic,
 	TypeParserAttachments
 > {

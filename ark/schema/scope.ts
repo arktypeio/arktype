@@ -1,6 +1,7 @@
 import {
 	CompiledFunction,
 	DynamicBase,
+	bound,
 	flatMorph,
 	hasDomain,
 	isArray,
@@ -285,30 +286,28 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 		return this
 	}
 
-	schema: (def: RootSchema, opts?: NodeParseOptions) => BaseRoot = (
-		((def, opts) =>
-			this.node(schemaKindOf(def), def, opts)) satisfies this["schema"]
-	).bind(this)
+	@bound
+	schema(def: RootSchema, opts?: NodeParseOptions): BaseRoot {
+		return this.node(schemaKindOf(def), def, opts)
+	}
 
-	defineRoot: (def: RootSchema) => RootSchema = (
-		(def => def) satisfies this["defineRoot"]
-	).bind(this)
+	@bound
+	defineRoot(def: RootSchema): RootSchema {
+		return def
+	}
 
-	units: (values: array, opts?: NodeParseOptions) => BaseRoot = (
-		((values, opts) => {
-			const uniqueValues: unknown[] = []
-			for (const value of values)
-				if (!uniqueValues.includes(value)) uniqueValues.push(value)
+	@bound
+	units(values: array, opts?: NodeParseOptions): BaseRoot {
+		const uniqueValues: unknown[] = []
+		for (const value of values)
+			if (!uniqueValues.includes(value)) uniqueValues.push(value)
 
-			const branches = uniqueValues.map(unit =>
-				this.node("unit", { unit }, opts)
-			)
-			return this.node("union", branches, {
-				...opts,
-				prereduced: true
-			})
-		}) satisfies this["units"]
-	).bind(this)
+		const branches = uniqueValues.map(unit => this.node("unit", { unit }, opts))
+		return this.node("union", branches, {
+			...opts,
+			prereduced: true
+		})
+	}
 
 	protected lazyResolutions: AliasNode[] = []
 	lazilyResolve(resolve: () => BaseRoot, syntheticAlias?: string): AliasNode {

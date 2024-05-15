@@ -35,7 +35,7 @@
 		"@arktype/repo": "workspace:*",
 		"@changesets/changelog-github": "0.5.0",
 		"@changesets/cli": "2.27.1",
-		"@types/node": "20.12.8",
+		"@types/node": "20.12.12",
 		"prettier": "3.2.5",
 		"eslint": "8.57.0",
 		"eslint-config-prettier": "9.1.0",
@@ -45,17 +45,21 @@
 		"eslint-plugin-mdx": "3.1.5",
 		"eslint-plugin-only-warn": "1.1.0",
 		"eslint-plugin-prefer-arrow-functions": "3.3.2",
-		"eslint-plugin-unused-imports": "3.2.0",
-		"@typescript-eslint/eslint-plugin": "7.8.0",
-		"@typescript-eslint/parser": "7.8.0",
+		"@typescript-eslint/eslint-plugin": "7.9.0",
+		"@typescript-eslint/parser": "7.9.0",
 		"c8": "9.1.0",
-		"knip": "5.12.0",
-		"tsx": "4.8.2",
+		"knip": "5.16.0",
+		"tsx": "4.10.2",
 		"typescript": "5.4.5",
 		"typescript-min": "npm:typescript@5.1.6",
 		"typescript-nightly": "npm:typescript@next",
 		"mocha": "10.4.0",
 		"@types/mocha": "10.0.6"
+	},
+	"pnpm": {
+		"overrides": {
+			"esbuild": "0.21.2"
+		}
 	},
 	"mocha": {
 		"//": "IF YOU UPDATE THE MOCHA CONFIG HERE, PLEASE ALSO UPDATE ark/repo/mocha.jsonc AND .vscode/settings.json",

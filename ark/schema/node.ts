@@ -1,5 +1,6 @@
 import {
 	Callable,
+	cached,
 	flatMorph,
 	includes,
 	isArray,
@@ -109,16 +110,14 @@ export abstract class BaseNode<
 		return this(data)
 	}
 
-	private inCache?: BaseNode;
+	@cached
 	get in(): BaseNode {
-		this.inCache ??= this.getIo("in")
-		return this.inCache as never
+		return this.getIo("in")
 	}
 
-	private outCache?: BaseNode
+	@cached
 	get out(): BaseNode {
-		this.outCache ??= this.getIo("out")
-		return this.outCache as never
+		return this.getIo("out")
 	}
 
 	getIo(kind: "in" | "out"): BaseNode {
@@ -140,12 +139,12 @@ export abstract class BaseNode<
 		return this.$.node(this.kind, ioInner)
 	}
 
-	private descriptionCache?: string
+	@cached
 	get description(): string {
-		this.descriptionCache ??=
+		return (
 			this.inner.description ??
 			this.$.resolvedConfig[this.kind].description?.(this as never)
-		return this.descriptionCache
+		)
 	}
 
 	toJSON(): Json {

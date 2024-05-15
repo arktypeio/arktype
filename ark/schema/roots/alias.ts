@@ -1,4 +1,4 @@
-import { append } from "@arktype/util"
+import { append, cached } from "@arktype/util"
 import type { RawRootScope } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
@@ -32,10 +32,9 @@ export interface AliasDeclaration
 export class AliasNode extends BaseRoot<AliasDeclaration> {
 	readonly expression: string = this.alias
 
-	private _resolution: BaseRoot | undefined
+	@cached
 	get resolution(): BaseRoot {
-		this._resolution ??= this.resolve?.() ?? this.$.resolveRoot(this.alias)
-		return this._resolution
+		return this.resolve?.() ?? this.$.resolveRoot(this.alias)
 	}
 
 	rawKeyOf(): BaseRoot<RawRootDeclaration> {

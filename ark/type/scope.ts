@@ -45,7 +45,7 @@ import {
 import { DynamicState } from "./parser/string/reduce/dynamic.js"
 import { fullStringParse } from "./parser/string/string.js"
 import {
-	_TypeParser,
+	RawTypeParser,
 	type DeclarationParser,
 	type DefinitionParser,
 	type Type,
@@ -196,11 +196,11 @@ export class RawScope<
 		super(aliases, config)
 	}
 
-	type: _TypeParser = new _TypeParser(this as never)
+	type: RawTypeParser = new RawTypeParser(this as never)
 
 	match: MatchParser<$> = createMatchParser(this as never) as never
 
-	declare: () => { type: _TypeParser } = (() => ({
+	declare: () => { type: RawTypeParser } = (() => ({
 		type: this.type
 	})).bind(this)
 
