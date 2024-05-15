@@ -6,12 +6,12 @@ import { analyzeProjectAssertions } from "./cache/writeAssertionCache.js"
 import { ensureCacheDirs, getConfig, type AttestConfig } from "./config.js"
 import { forTypeScriptVersions } from "./tsVersioning.js"
 
-export const setup = (options: Partial<AttestConfig> = {}): void => {
+export const setup = (options: Partial<AttestConfig> = {}): typeof teardown => {
 	const config = getConfig()
 	Object.assign(config, options)
 	rmSync(config.cacheDir, { recursive: true, force: true })
 	ensureCacheDirs()
-	if (config.skipTypes) return
+	if (config.skipTypes) return teardown
 
 	if (
 		config.tsVersions.length === 1 &&
@@ -28,6 +28,7 @@ export const setup = (options: Partial<AttestConfig> = {}): void => {
 			)
 		)
 	}
+	return teardown
 }
 
 export const writeAssertionData = (toPath: string): void => {

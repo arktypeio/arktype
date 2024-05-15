@@ -37,12 +37,10 @@ export default defineConfig({
 `setupVitest.ts`
 
 ```ts
-import * as attest from "@arktype/attest"
+import { setup, teardown } from "@arktype/attest"
 
 // config options can be passed here
-export const setup = () => attest.setup({})
-
-export const teardown = attest.teardown
+export default () => setup({})
 ```
 
 ### Mocha
@@ -123,6 +121,21 @@ describe("attest features", () => {
 			// this assertion will only occur when testing TypeScript 5+!
 			attest<(number | bigint)[]>(numericArray.infer)
 		}
+	})
+
+	it("integrated type performance benchmarking", () => {
+		const user = type({
+			kind: "'admin'",
+			"powers?": "string[]"
+		})
+			.or({
+				kind: "'superadmin'",
+				"superpowers?": "string[]"
+			})
+			.or({
+				kind: "'pleb'"
+			})
+		attest.instantiations([7574, "instantiations"])
 	})
 })
 ```
