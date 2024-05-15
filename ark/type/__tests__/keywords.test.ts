@@ -65,7 +65,6 @@ contextualize(
 			attest(never.json).equals(expected.json)
 		})
 
-		// TODO: ??
 		it("never in union", () => {
 			const t = type("string|never")
 			attest<string>(t.infer)

@@ -23,25 +23,30 @@ import {
 	type nodeImplementationOf,
 	type StructuralKind
 } from "../shared/implement.js"
-import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
+import type {
+	TraversalContext,
+	TraversalKind,
+	TraverseAllows,
+	TraverseApply
+} from "../shared/traversal.js"
 import { makeRootAndArrayPropertiesMutable } from "../shared/utils.js"
 import type { IndexNode, IndexSchema } from "./index.js"
 import type { OptionalNode } from "./optional.js"
 import type { PropNode, PropSchema } from "./prop.js"
 import type { RequiredNode } from "./required.js"
 import type { SequenceNode, SequenceSchema } from "./sequence.js"
-import { arrayIndexMatcherReference } from "./shared.js"
+import { arrayIndexMatcher, arrayIndexMatcherReference } from "./shared.js"
 
-export type ExtraneousKeyBehavior = "ignore" | ExtraneousKeyRestriction
+export type UndeclaredKeyBehavior = "ignore" | UndeclaredKeyHandling
 
-export type ExtraneousKeyRestriction = "error" | "prune"
+export type UndeclaredKeyHandling = "reject" | "delete"
 
 export interface StructureSchema extends BaseMeta {
 	readonly optional?: readonly PropSchema[]
 	readonly required?: readonly PropSchema[]
 	readonly index?: readonly IndexSchema[]
 	readonly sequence?: SequenceSchema
-	readonly onExtraneousKey?: ExtraneousKeyBehavior
+	readonly undeclared?: UndeclaredKeyBehavior
 }
 
 export interface StructureInner extends BaseMeta {
@@ -49,7 +54,7 @@ export interface StructureInner extends BaseMeta {
 	readonly required?: readonly RequiredNode[]
 	readonly index?: readonly IndexNode[]
 	readonly sequence?: SequenceNode
-	readonly onExtraneousKey?: ExtraneousKeyRestriction
+	readonly undeclared?: UndeclaredKeyHandling
 }
 
 export interface StructureDeclaration
@@ -104,26 +109,8 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 		return this.$.node("union", branches)
 	}
 
-	// TODO: normalize this to match compiled check order
-	traverseAllows: TraverseAllows<object> = (data, ctx) =>
-		this.children.every(prop => prop.traverseAllows(data as never, ctx))
-
-	traverseApply: TraverseApply<object> = (data, ctx) => {
-		const errorCount = ctx.currentErrorCount
-		for (let i = 0; i < this.children.length - 1; i++) {
-			this.children[i].traverseApply(data as never, ctx)
-			if (ctx.failFast && ctx.currentErrorCount > errorCount) return
-		}
-		this.children.at(-1)?.traverseApply(data as never, ctx)
-	}
-
 	readonly exhaustive: boolean =
-		this.onExtraneousKey !== undefined || this.index !== undefined
-
-	compile(js: NodeCompiler): void {
-		if (this.exhaustive) this.compileExhaustive(js)
-		else this.compileEnumerable(js)
-	}
+		this.undeclared !== undefined || this.index !== undefined
 
 	omit(...keys: array<BaseRoot | Key>): StructureNode {
 		return this.$.node("structure", omitFromInner(this.inner, keys))
@@ -137,55 +124,146 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 		if (r.optional) inner.optional = append(inner.optional, r.optional)
 		if (r.index) inner.index = append(inner.index, r.index)
 		if (r.sequence) inner.sequence = r.sequence
-		if (r.onExtraneousKey) inner.onExtraneousKey = r.onExtraneousKey
-		else delete inner.onExtraneousKey
+		if (r.undeclared) inner.undeclared = r.undeclared
+		else delete inner.undeclared
 		return this.$.node("structure", inner)
 	}
 
-	protected compileEnumerable(js: NodeCompiler): void {
-		if (js.traversalKind === "Allows") {
-			this.children.forEach(node =>
-				js.if(`!${js.invoke(node)}`, () => js.return(false))
-			)
-			js.return(true)
-		} else {
-			js.initializeErrorCount()
-			this.children.forEach(node => js.line(js.invoke(node)).returnIfFailFast())
+	traverseAllows: TraverseAllows<object> = (data, ctx) =>
+		this._traverse("Allows", data, ctx)
+
+	traverseApply: TraverseApply<object> = (data, ctx) =>
+		this._traverse("Apply", data, ctx)
+
+	protected _traverse = (
+		traversalKind: TraversalKind,
+		data: object,
+		ctx: TraversalContext
+	): boolean => {
+		const errorCount = ctx?.currentErrorCount ?? 0
+		for (let i = 0; i < this.props.length; i++) {
+			if (traversalKind === "Allows") {
+				if (!this.props[i].traverseAllows(data, ctx)) return false
+			} else {
+				this.props[i].traverseApply(data as never, ctx)
+				if (ctx.failFast && ctx.currentErrorCount > errorCount) return false
+			}
 		}
+
+		if (this.sequence) {
+			if (traversalKind === "Allows") {
+				if (!this.sequence.traverseAllows(data as never, ctx)) return false
+			} else {
+				this.sequence.traverseApply(data as never, ctx)
+				if (ctx.failFast && ctx.currentErrorCount > errorCount) return false
+			}
+		}
+
+		if (!this.exhaustive) return true
+
+		const keys: Key[] = Object.keys(data)
+		keys.push(...Object.getOwnPropertySymbols(data))
+
+		for (let i = 0; i < keys.length; i++) {
+			const k = keys[i]
+
+			let matched = false
+
+			if (this.index) {
+				for (const node of this.index) {
+					if (node.index.traverseAllows(k, ctx)) {
+						ctx?.path.push(k)
+						if (traversalKind === "Allows") {
+							const result = node.value.traverseAllows(data[k as never], ctx)
+							ctx?.path.pop()
+							if (!result) return false
+						} else {
+							node.value.traverseApply(data[k as never], ctx)
+							if (ctx.failFast && ctx.currentErrorCount > errorCount) {
+								ctx.path.pop()
+								return false
+							}
+						}
+
+						matched = true
+					}
+				}
+			}
+
+			if (this.undeclared) {
+				matched ||= k in this.propsByKey
+				matched ||=
+					this.sequence !== undefined &&
+					typeof k === "string" &&
+					arrayIndexMatcher.test(k)
+				if (!matched) {
+					if (traversalKind === "Allows") return false
+					ctx.path.push(k)
+					ctx.error("removed")
+					ctx.path.pop()
+					if (ctx.failFast) return false
+				}
+			}
+
+			ctx?.path.pop()
+		}
+
+		return true
 	}
 
-	protected compileExhaustive(js: NodeCompiler): void {
-		this.props.forEach(prop => js.check(prop))
-		if (this.sequence) js.check(this.sequence)
+	compile(js: NodeCompiler): void {
+		if (js.traversalKind === "Apply") js.initializeErrorCount()
 
-		js.const("keys", "Object.keys(data)")
-		js.const("symbols", "Object.getOwnPropertySymbols(data)")
-		js.if("symbols.length", () => js.line("keys.push(...symbols)"))
-		js.for("i < keys.length", () => this.compileExhaustiveEntry(js))
+		this.props.forEach(prop => {
+			js.check(prop)
+			if (js.traversalKind === "Apply") js.returnIfFailFast()
+		})
+
+		if (this.sequence) {
+			js.check(this.sequence)
+			if (js.traversalKind === "Apply") js.returnIfFailFast()
+		}
+
+		if (this.exhaustive) {
+			js.const("keys", "Object.keys(data)")
+			js.line("keys.push(...Object.getOwnPropertySymbols(data))")
+			js.for("i < keys.length", () => this.compileExhaustiveEntry(js))
+		}
+
+		if (js.traversalKind === "Allows") js.return(true)
 	}
 
 	protected compileExhaustiveEntry(js: NodeCompiler): NodeCompiler {
 		js.const("k", "keys[i]")
 
-		if (this.onExtraneousKey) js.let("matched", false)
+		if (this.undeclared) js.let("matched", false)
 
 		this.index?.forEach(node => {
 			js.if(`${js.invoke(node.index, { arg: "k", kind: "Allows" })}`, () => {
 				js.checkReferenceKey("k", node.value)
-				if (this.onExtraneousKey) js.set("matched", true)
+				if (this.undeclared) js.set("matched", true)
 				return js
 			})
 		})
 
-		if (this.onExtraneousKey) {
+		if (this.undeclared) {
 			if (this.props?.length !== 0)
 				js.line(`matched ||= k in ${this.propsByKeyReference}`)
 
-			if (this.sequence)
-				js.line(`matched ||= ${arrayIndexMatcherReference}.test(k)`)
+			if (this.sequence) {
+				js.line(
+					`matched ||= typeof k === "string" && ${arrayIndexMatcherReference}.test(k)`
+				)
+			}
 
-			// TODO: replace error
-			js.if("!matched", () => js.line(`throw new Error("strict")`))
+			js.if("!matched", () => {
+				if (js.traversalKind === "Allows") return js.return(false)
+				return js
+					.line("ctx.path.push(k)")
+					.line(`ctx.error("removed")`)
+					.line("ctx.path.pop()")
+					.if("ctx.failFast", () => js.return())
+			})
 		}
 
 		return js
@@ -223,7 +301,7 @@ const createStructuralWriter =
 			const parts = node.index?.map(String) ?? []
 			node.props.forEach(node => parts.push(node[childStringProp]))
 			const objectLiteralDescription = `${
-				node.onExtraneousKey ? "exact " : ""
+				node.undeclared ? "exact " : ""
 			}{ ${parts.join(", ")} }`
 			return node.sequence ?
 					`${objectLiteralDescription} & ${node.sequence.description}`
@@ -257,7 +335,7 @@ export const structureImplementation: nodeImplementationOf<StructureDeclaration>
 				child: true,
 				parse: constraintKeyParser("sequence")
 			},
-			onExtraneousKey: {
+			undeclared: {
 				parse: behavior => (behavior === "ignore" ? undefined : behavior)
 			}
 		},
@@ -266,7 +344,7 @@ export const structureImplementation: nodeImplementationOf<StructureDeclaration>
 		},
 		intersections: {
 			structure: (l, r, ctx) => {
-				if (l.onExtraneousKey) {
+				if (l.undeclared) {
 					const lKey = l.keyof()
 					const disjointRKeys = r.requiredLiteralKeys.filter(
 						k => !lKey.allows(k)
@@ -277,7 +355,7 @@ export const structureImplementation: nodeImplementationOf<StructureDeclaration>
 						)
 					}
 				}
-				if (r.onExtraneousKey) {
+				if (r.undeclared) {
 					const rKey = r.keyof()
 					const disjointLKeys = l.requiredLiteralKeys.filter(
 						k => !rKey.allows(k)
@@ -291,11 +369,11 @@ export const structureImplementation: nodeImplementationOf<StructureDeclaration>
 
 				const baseInner: MutableInner<"structure"> = {}
 
-				if (l.onExtraneousKey || r.onExtraneousKey) {
-					baseInner.onExtraneousKey =
-						l.onExtraneousKey === "error" || r.onExtraneousKey === "error" ?
-							"error"
-						:	"prune"
+				if (l.undeclared || r.undeclared) {
+					baseInner.undeclared =
+						l.undeclared === "reject" || r.undeclared === "reject" ?
+							"reject"
+						:	"delete"
 				}
 
 				return intersectConstraints({

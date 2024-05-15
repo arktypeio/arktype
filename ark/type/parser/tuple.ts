@@ -158,19 +158,6 @@ const maybeParseTupleExpression = (
 		: isIndexOneExpression(def) ? indexOneParsers[def[1]](def as never, ctx)
 		: undefined
 	return tupleExpressionResult
-
-	// TODO: remove
-	// return tupleExpressionResult.isNever()
-	// 	? throwParseError(
-	// 			writeUnsatisfiableExpressionError(
-	// 				def
-	// 					.map((def) =>
-	// 						typeof def === "string" ? def : printable(def)
-	// 					)
-	// 					.join(" ")
-	// 			)
-	// 		)
-	// 	: tupleExpressionResult
 }
 
 // It is *extremely* important we use readonly any time we check a tuple against

@@ -2,6 +2,7 @@ import type {
 	BaseRoot,
 	NodeSchema,
 	StructureNode,
+	UndeclaredKeyBehavior,
 	UnitNode,
 	writeInvalidPropertyKeyMessage
 } from "@arktype/schema"
@@ -33,7 +34,7 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): BaseRoot => {
 	// by the values in the target object, so there'd be no useful purpose in having it
 	// anywhere except for the beginning.
 	const parsedEntries = stringAndSymbolicEntriesOf(def).map(parseEntry)
-	if (parsedEntries[0]?.kind === "spread") {
+	if (parsedEntries[0]?.kind === "...") {
 		// remove the spread entry so we can iterate over the remaining entries
 		// expecting non-spread entries
 		const spreadEntry = parsedEntries.shift()!
@@ -50,8 +51,17 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): BaseRoot => {
 		spread = spreadNode.structure
 	}
 	for (const entry of parsedEntries) {
-		if (entry.kind === "spread") return throwParseError(nonLeadingSpreadError)
-
+		if (entry.kind === "...") return throwParseError(nonLeadingSpreadError)
+		if (entry.kind === "+") {
+			if (
+				entry.value !== "reject" &&
+				entry.value !== "delete" &&
+				entry.value !== "ignore"
+			)
+				throwParseError(writeInvalidUndeclaredBehaviorMessage(entry.value))
+			structure.undeclared = entry.value
+			continue
+		}
 		if (entry.kind === "index") {
 			// handle key parsing first to match type behavior
 			const key = ctx.$.parse(entry.inner, ctx)
@@ -99,6 +109,11 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): BaseRoot => {
 	})
 }
 
+export const writeInvalidUndeclaredBehaviorMessage = (
+	actual: unknown
+): string =>
+	`Value of '+' key must be 'reject', 'delete', or 'ignore' (was ${printable(actual)})`
+
 export const nonLeadingSpreadError =
 	"Spread operator may only be used as the first key in an object"
 
@@ -145,14 +160,16 @@ export type validateObjectLiteral<def, $, args> = {
 		inferDefinition<def[k], $, args> extends object ?
 			validateDefinition<def[k], $, args>
 		:	keyError<writeInvalidSpreadTypeMessage<astToString<def[k]>>>
-	:	validateDefinition<def[k], $, args>
+	: k extends "+" ? UndeclaredKeyBehavior
+	: validateDefinition<def[k], $, args>
 }
 
 type nonOptionalKeyFrom<k, $, args> =
 	parseKey<k> extends PreparsedKey<"required", infer inner> ? inner
 	: parseKey<k> extends PreparsedKey<"index", infer inner> ?
 		inferDefinition<inner, $, args> & Key
-	:	// spread key is handled at the type root so is handled neither here nor in optionalKeyFrom
+	:	// "..." is handled at the type root so is handled neither here nor in optionalKeyFrom
+		// "+" has no effect on inference
 		never
 
 type optionalKeyFrom<k> =
@@ -170,7 +187,9 @@ namespace PreparsedKey {
 	export type from<t extends PreparsedKey> = t
 }
 
-type ParsedKeyKind = "required" | "optional" | "index" | "spread"
+type ParsedKeyKind = "required" | "optional" | "index" | MetaKey
+
+export type MetaKey = "..." | "+"
 
 export type IndexKey<def extends string = string> = `[${def}]`
 
@@ -192,8 +211,14 @@ const parseKey = (key: Key): PreparsedKey =>
 		{ inner: key.slice(1, -1), kind: "index" }
 	: key[0] === Scanner.escapeToken && key[1] === "[" && key.at(-1) === "]" ?
 		{ inner: key.slice(1), kind: "required" }
-	: key === "..." ? { inner: "...", kind: "spread" }
-	: { inner: key === "\\..." ? "..." : key, kind: "required" }
+	: key === "..." || key === "+" ? { inner: key, kind: key }
+	: {
+			inner:
+				key === "\\..." ? "..."
+				: key === "\\+" ? "+"
+				: key,
+			kind: "required"
+		}
 
 type parseKey<k> =
 	k extends `${infer inner}?` ?
@@ -206,9 +231,9 @@ type parseKey<k> =
 				kind: "optional"
 				inner: inner
 			}>
-	: k extends "..." ? PreparsedKey.from<{ kind: "spread"; inner: "..." }>
-	: k extends `${Scanner.EscapeToken}...` ?
-		PreparsedKey.from<{ kind: "required"; inner: "..." }>
+	: k extends MetaKey ? PreparsedKey.from<{ kind: k; inner: k }>
+	: k extends `${Scanner.EscapeToken}${infer escapedMeta extends MetaKey}` ?
+		PreparsedKey.from<{ kind: "required"; inner: escapedMeta }>
 	: k extends IndexKey<infer def> ?
 		PreparsedKey.from<{
 			kind: "index"

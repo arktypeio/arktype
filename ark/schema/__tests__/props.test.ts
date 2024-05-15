@@ -30,7 +30,7 @@ contextualize(() => {
 		const r = schema({
 			domain: "object",
 			required: [{ key: "a", value: "string" }],
-			onExtraneousKey: "throw"
+			undeclared: "reject"
 		})
 
 		attest(() => l.and(r)).throws.snap(

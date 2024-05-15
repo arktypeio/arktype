@@ -6,7 +6,10 @@ import {
 } from "@arktype/schema"
 import { printable, registeredReference } from "@arktype/util"
 import { scope, type } from "arktype"
-import { writeInvalidSpreadTypeMessage } from "../parser/objectLiteral.js"
+import {
+	writeInvalidSpreadTypeMessage,
+	writeInvalidUndeclaredBehaviorMessage
+} from "../parser/objectLiteral.js"
 
 contextualize(
 	"named",
@@ -454,6 +457,28 @@ other must be a string (was bigint)`)
 			attest(o.json).snap({
 				domain: "object",
 				required: [{ key: "[string]", value: "string" }]
+			})
+		})
+	},
+	"undeclared",
+	() => {
+		it("can parse an undeclared restriction", () => {
+			const t = type({ "+": "reject" })
+			attest<{}>(t.infer)
+			attest(t.json).snap({ undeclared: "reject", domain: "object" })
+		})
+		it("fails on type definition for undeclared", () => {
+			// @ts-expect-error
+			attest(() => type({ "+": "string" }))
+				.throws(writeInvalidUndeclaredBehaviorMessage("string"))
+				.type.errors.snap()
+		})
+		it("can escape undeclared meta key", () => {
+			const t = type({ "\\+": "string" })
+			attest<{ "+": string }>(t.infer)
+			attest(t.json).snap({
+				required: [{ key: "+", value: "string" }],
+				domain: "object"
 			})
 		})
 	}

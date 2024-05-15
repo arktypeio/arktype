@@ -43,9 +43,9 @@ import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 import { hasArkKind, isNode } from "../shared/utils.js"
 import type { NormalizedSequenceSchema } from "../structure/sequence.js"
 import type {
-	ExtraneousKeyBehavior,
 	StructureNode,
-	StructureSchema
+	StructureSchema,
+	UndeclaredKeyBehavior
 } from "../structure/structure.js"
 import type { DomainNode, DomainSchema } from "./domain.js"
 import type { ProtoNode, ProtoSchema } from "./proto.js"
@@ -71,7 +71,7 @@ export type MutableIntersectionInner = MutableInner<"intersection">
 
 export type NormalizedIntersectionSchema = Omit<
 	IntersectionSchema,
-	StructuralKind | "onExtraneousKey"
+	StructuralKind | "undeclared"
 >
 
 export type IntersectionSchema<inferredBasis = any> = show<
@@ -361,7 +361,7 @@ export const intersectionImplementation: nodeImplementationOf<IntersectionDeclar
 	})
 
 export type ConditionalTerminalIntersectionRoot = {
-	onExtraneousKey?: ExtraneousKeyBehavior
+	undeclared?: UndeclaredKeyBehavior
 }
 
 type ConditionalTerminalIntersectionKey =
@@ -377,7 +377,7 @@ export type constraintKindOf<t> = {
 
 type conditionalIntersectionKeyOf<t> =
 	| constraintKindOf<t>
-	| (t extends object ? "onExtraneousKey" : never)
+	| (t extends object ? "undeclared" : never)
 
 // not sure why explicitly allowing Inner<k> is necessary in these cases,
 // but remove if it can be removed without creating type errors

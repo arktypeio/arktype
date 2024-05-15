@@ -119,7 +119,7 @@ export const constraintKeys: keySet<ConstraintKind> = flatMorph(
 )
 
 export const structureKeys: keySetOf<StructureInner> = flatMorph(
-	[...structuralKinds, "onExtraneousKey"],
+	[...structuralKinds, "undeclared"],
 	(i, k) => [k, 1] as const
 )
 
