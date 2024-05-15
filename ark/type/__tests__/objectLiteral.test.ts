@@ -88,6 +88,10 @@ contextualize(
 		it("escaped optional token", () => {
 			const t = type({ "a\\?": "string" })
 			attest<{ "a?": string }>(t.infer)
+			attest(t.json).snap({
+				required: [{ key: "a?", value: "string" }],
+				domain: "object"
+			})
 		})
 
 		it("traverse optional", () => {
