@@ -1,4 +1,9 @@
-import { DynamicBase, ReadonlyArray, type show } from "@arktype/util"
+import {
+	CastableBase,
+	ReadonlyArray,
+	defineProperties,
+	type show
+} from "@arktype/util"
 import type { Prerequisite, errorContext } from "../kinds.js"
 import type { ResolvedArkConfig } from "../scope.js"
 import type { NodeKind } from "./implement.js"
@@ -9,7 +14,7 @@ export type ArkErrorResult = ArkError | ArkErrors
 
 export class ArkError<
 	code extends ArkErrorCode = ArkErrorCode
-> extends DynamicBase<ArkErrorContextInput<code>> {
+> extends CastableBase<ArkErrorContextInput<code>> {
 	readonly [arkKind] = "error"
 	path: TraversalPath
 	data: Prerequisite<code>
@@ -19,7 +24,8 @@ export class ArkError<
 		protected input: ArkErrorContextInput<code>,
 		ctx: TraversalContext
 	) {
-		super(input)
+		super()
+		defineProperties(this, input)
 		const data = ctx.data
 		if (input.code === "union") {
 			// flatten union errors to avoid repeating context like "foo must be foo must be"...

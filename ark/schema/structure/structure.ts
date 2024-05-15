@@ -106,6 +106,7 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 		return this._keyof
 	}
 
+	// TODO: normalize this to match compiled check order
 	traverseAllows: TraverseAllows<object> = (data, ctx) =>
 		this.children.every(prop => prop.traverseAllows(data as never, ctx))
 
