@@ -174,17 +174,17 @@ export const createMatchParser = <$>($: Scope): MatchParser<$> => {
 	// 			const branches = handledCases.flatMap(({ when, then }) => {
 	// 				if (when.kind === "union") {
 	// 					return when.branches.map((branch) => ({
-	// 						from: branch,
+	// 						in: branch,
 	// 						morph: then
 	// 					}))
 	// 				}
 	// 				if (when.kind === "morph") {
-	// 					return [{ from: when, morph: [when.morph, then] }]
+	// 					return [{ in: when, morph: [when.morph, then] }]
 	// 				}
-	// 				return [{ from: when, morph: then }]
+	// 				return [{ in: when, morph: then }]
 	// 			})
 	// 			if (defaultCase) {
-	// 				branches.push({ from: keywordNodes.unknown, morph: defaultCase })
+	// 				branches.push({ in: keywordNodes.unknown, morph: defaultCase })
 	// 			}
 	// 			const matchers = $.node("union", {
 	// 				branches,

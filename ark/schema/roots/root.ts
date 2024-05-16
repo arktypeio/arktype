@@ -192,7 +192,7 @@ export abstract class BaseRoot<
 			})
 		}
 		return this.$.node("morph", {
-			from: this,
+			in: this,
 			morphs: [morph]
 		})
 	}

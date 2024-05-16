@@ -240,7 +240,7 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 
 		this.index?.forEach(node => {
 			js.if(`${js.invoke(node.index, { arg: "k", kind: "Allows" })}`, () => {
-				js.traverseKey("data[k]", node.value)
+				js.traverseKey("k", "data[k]", node.value)
 				if (this.undeclared) js.set("matched", true)
 				return js
 			})

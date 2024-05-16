@@ -217,7 +217,10 @@ export const parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
 	} satisfies UnknownAttachments as Record<string, any>
 	if (ctx.alias) attachments.alias = ctx.alias
 
-	for (const k in inner) if (k !== "description") attachments[k] = inner[k]
+	for (const k in inner) {
+		if (k !== "description" && k !== "in" && k !== "out")
+			attachments[k] = inner[k]
+	}
 
 	const node: BaseNode = new nodeClassesByKind[kind](attachments as never)
 

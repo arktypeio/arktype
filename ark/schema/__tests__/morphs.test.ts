@@ -5,7 +5,7 @@ import { wellFormedNumberMatcher } from "@arktype/util"
 contextualize(() => {
 	it("in/out", () => {
 		const parseNumber = schema({
-			from: {
+			in: {
 				domain: "string",
 				regex: wellFormedNumberMatcher,
 				description: "a well-formed numeric string"
@@ -23,7 +23,7 @@ contextualize(() => {
 	it("in/out union", () => {
 		const n = schema([
 			{
-				from: "string",
+				in: "string",
 				morphs: (s: string) => Number.parseFloat(s)
 			},
 			"number"

@@ -9,7 +9,7 @@ import { root, schemaScope } from "../scope.js"
 import { tryParseDatePattern } from "./utils/date.js"
 
 const number = root.defineRoot({
-	from: {
+	in: {
 		domain: "string",
 		regex: wellFormedNumberMatcher,
 		description: "a well-formed numeric string"
@@ -18,7 +18,7 @@ const number = root.defineRoot({
 })
 
 const integer = root.defineRoot({
-	from: {
+	in: {
 		domain: "string",
 		regex: wellFormedIntegerMatcher
 	},
@@ -36,7 +36,7 @@ const integer = root.defineRoot({
 })
 
 const url = root.defineRoot({
-	from: {
+	in: {
 		domain: "string",
 		description: "a valid URL"
 	},
@@ -50,7 +50,7 @@ const url = root.defineRoot({
 })
 
 const json = root.defineRoot({
-	from: {
+	in: {
 		domain: "string",
 		description: "a JSON-parsable string"
 	},
@@ -58,7 +58,7 @@ const json = root.defineRoot({
 })
 
 const date = root.defineRoot({
-	from: "string",
+	in: "string",
 	morphs: (s: string, ctx) => {
 		const result = tryParseDatePattern(s)
 		return typeof result === "string" ? ctx.error(result) : result

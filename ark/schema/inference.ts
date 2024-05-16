@@ -67,9 +67,8 @@ type inferRootBranch<schema, $> =
 	schema extends type.cast<infer to> ? to
 	: schema extends MorphSchema ?
 		(
-			In: schema["from"] extends {} ? inferMorphChild<schema["from"], $>
-			:	unknown
-		) => schema["to"] extends {} ? Out<inferMorphChild<schema["to"], $>>
+			In: schema["in"] extends {} ? inferMorphChild<schema["in"], $> : unknown
+		) => schema["out"] extends {} ? Out<inferMorphChild<schema["out"], $>>
 		: schema["morphs"] extends infer morph extends Morph ?
 			Out<inferMorphOut<morph>>
 		: schema["morphs"] extends (

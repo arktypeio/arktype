@@ -54,12 +54,16 @@ export class NodeCompiler extends CompiledFunction<["data", "ctx"]> {
 		)
 	}
 
-	traverseKey(propExpression: string, node: BaseNode): this {
+	traverseKey(
+		keyExpression: string,
+		accessExpression: string,
+		node: BaseNode
+	): this {
 		const requiresContext = this.requiresContextFor(node)
-		if (requiresContext) this.line(`${this.ctx}.path.push(${propExpression})`)
+		if (requiresContext) this.line(`${this.ctx}.path.push(${keyExpression})`)
 
 		this.check(node, {
-			arg: `${this.data}${this.index(propExpression)}`
+			arg: accessExpression
 		})
 		if (requiresContext) this.line(`${this.ctx}.path.pop()`)
 

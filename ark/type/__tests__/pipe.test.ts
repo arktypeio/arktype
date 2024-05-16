@@ -165,7 +165,7 @@ contextualize(() => {
 
 		attest<Type<(In: 3.14) => Out<string>>>(types.aAndB)
 		attest(types.aAndB.json).snap({
-			from: { unit: 3.14 },
+			in: { unit: 3.14 },
 			morphs: types.aAndB.raw.serializedMorphs
 		})
 		attest<typeof types.aAndB>(types.bAndA)
@@ -183,7 +183,7 @@ contextualize(() => {
 		// attest<Type<(In: { a: 1; b: 2 }) => string>>(types.c)
 		assertNodeKind(types.c.raw, "morph")
 		attest(types.c.json).snap({
-			from: {
+			in: {
 				domain: "object",
 				required: [
 					{ key: "a", value: { unit: 1 } },
@@ -205,7 +205,7 @@ contextualize(() => {
 		const serializedMorphs =
 			types.aOrB.raw.firstReferenceOfKindOrThrow("morph").serializedMorphs
 		attest(types.aOrB.json).snap([
-			{ from: "number", morphs: serializedMorphs },
+			{ in: "number", morphs: serializedMorphs },
 			{ unit: false },
 			{ unit: true }
 		])
@@ -246,7 +246,7 @@ contextualize(() => {
 					{
 						key: "a",
 						value: {
-							from: {
+							in: {
 								domain: "number",
 								min: { exclusive: true, rule: 0 }
 							},
@@ -267,7 +267,7 @@ contextualize(() => {
 		attest<Type<(In: string) => Out<boolean>>>(types.b)
 		assertNodeKind(types.b.raw, "morph")
 		attest(types.b.json).snap({
-			from: "string",
+			in: "string",
 			morphs: types.b.raw.serializedMorphs
 		})
 	})
@@ -283,13 +283,13 @@ contextualize(() => {
 		assertNodeKind(types.b.raw, "morph")
 		assertNodeKind(types.a.raw, "morph")
 		attest(types.b.json).snap({
-			from: {
+			in: {
 				domain: "object",
 				required: [
 					{
 						key: "a",
 						value: {
-							from: "string",
+							in: "string",
 							morphs: types.a.raw.serializedMorphs
 						}
 					}
@@ -312,13 +312,13 @@ contextualize(() => {
 		assertNodeKind(t.raw, "morph")
 		const nestedMorph = t.raw.firstReferenceOfKindOrThrow("morph")
 		attest(t.json).snap({
-			from: {
+			in: {
 				domain: "object",
 				required: [
 					{
 						key: "a",
 						value: {
-							from: "string",
+							in: "string",
 							morphs: nestedMorph.serializedMorphs
 						}
 					}

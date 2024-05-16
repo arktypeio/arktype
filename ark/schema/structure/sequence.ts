@@ -250,9 +250,9 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 
 	protected childAtIndex(data: array, index: number): BaseRoot {
 		if (index < this.prevariadic.length) return this.prevariadic[index]
-		const postfixStartIndex = data.length - this.postfix.length
-		if (index >= postfixStartIndex)
-			return this.postfix[index - postfixStartIndex]
+		const firstPostfixIndex = data.length - this.postfix.length
+		if (index >= firstPostfixIndex)
+			return this.postfix[index - firstPostfixIndex]
 		return (
 			this.variadic ??
 			throwInternalError(
@@ -279,28 +279,31 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 
 	// minLength/maxLength compilation should be handled by Intersection
 	compile(js: NodeCompiler): void {
-		this.prefix.forEach((node, i) => js.traverseKey(`data[${i}]`, node))
+		this.prefix.forEach((node, i) => js.traverseKey(`${i}`, `data[${i}]`, node))
 		this.optionals.forEach((node, i) => {
-			const dataIndex = `data[${i + this.prefix.length}]`
+			const dataIndex = `${i + this.prefix.length}`
 			js.if(`${dataIndex} >= ${js.data}.length`, () =>
 				js.traversalKind === "Allows" ? js.return(true) : js.return()
 			)
-			js.traverseKey(dataIndex, node)
+			js.traverseKey(dataIndex, `data[${dataIndex}]`, node)
 		})
 
 		if (this.variadic) {
-			js.const(
-				"lastVariadicIndex",
-				`${js.data}.length${this.postfix ? `- ${this.postfix.length}` : ""}`
-			)
+			if (this.postfix.length) {
+				js.const(
+					"firstPostfixIndex",
+					`${js.data}.length${this.postfix.length ? `- ${this.postfix.length}` : ""}`
+				)
+			}
 			js.for(
-				"i < lastVariadicIndex",
-				() => js.traverseKey("data[i]", this.variadic!),
+				`i < ${this.postfix.length ? "firstPostfixIndex" : "data.length"}`,
+				() => js.traverseKey("i", "data[i]", this.variadic!),
 				this.prevariadic.length
 			)
-			this.postfix.forEach((node, i) =>
-				js.traverseKey(`data[lastVariadicIndex + ${i + 1}]`, node)
-			)
+			this.postfix.forEach((node, i) => {
+				const keyExpression = `firstPostfixIndex + ${i}`
+				js.traverseKey(keyExpression, `data[${keyExpression}]`, node)
+			})
 		}
 
 		if (js.traversalKind === "Allows") js.return(true)
