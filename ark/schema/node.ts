@@ -79,6 +79,7 @@ export abstract class BaseNode<
 	readonly includesMorph: boolean =
 		this.kind === "morph" ||
 		(this.hasKind("optional") && "default" in this) ||
+		(this.hasKind("structure") && this.undeclared === "delete") ||
 		this.children.some(child => child.includesMorph)
 	readonly allowsRequiresContext: boolean =
 		// if a predicate accepts exactly one arg, we can safely skip passing context

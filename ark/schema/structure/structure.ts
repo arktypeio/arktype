@@ -172,17 +172,17 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 			if (this.index) {
 				for (const node of this.index) {
 					if (node.index.traverseAllows(k, ctx)) {
-						ctx?.path.push(k)
 						if (traversalKind === "Allows") {
+							ctx?.path.push(k)
 							const result = node.value.traverseAllows(data[k as never], ctx)
 							ctx?.path.pop()
 							if (!result) return false
 						} else {
+							ctx.path.push(k)
 							node.value.traverseApply(data[k as never], ctx)
-							if (ctx.failFast && ctx.currentErrorCount > errorCount) {
-								ctx.path.pop()
+							ctx.path.pop()
+							if (ctx.failFast && ctx.currentErrorCount > errorCount)
 								return false
-							}
 						}
 
 						matched = true
@@ -198,9 +198,17 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 					arrayIndexMatcher.test(k)
 				if (!matched) {
 					if (traversalKind === "Allows") return false
-					ctx.path.push(k)
-					ctx.error({ expected: "removed", actual: null })
-					ctx.path.pop()
+					if (this.undeclared === "reject")
+						ctx.error({ expected: "removed", actual: null, relativePath: [k] })
+					else {
+						ctx.queueMorphs([
+							data => {
+								delete data[k]
+								return data
+							}
+						])
+					}
+
 					if (ctx.failFast) return false
 				}
 			}
@@ -258,11 +266,13 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 
 			js.if("!matched", () => {
 				if (js.traversalKind === "Allows") return js.return(false)
-				return js
-					.line("ctx.path.push(k)")
-					.line(`ctx.error({ expected: "removed", actual: null })`)
-					.line("ctx.path.pop()")
-					.if("ctx.failFast", () => js.return())
+				return this.undeclared === "reject" ?
+						js
+							.line(
+								`ctx.error({ expected: "removed", actual: null, relativePath: [k] })`
+							)
+							.if("ctx.failFast", () => js.return())
+					:	js.line(`ctx.queueMorphs([data => { delete data[k]; return data }])`)
 			})
 		}
 

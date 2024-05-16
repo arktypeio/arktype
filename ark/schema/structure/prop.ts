@@ -5,17 +5,14 @@ import {
 } from "@arktype/util"
 import { BaseConstraint } from "../constraint.js"
 import type { Node, RootSchema } from "../kinds.js"
+import type { Morph } from "../roots/morph.js"
 import type { BaseRoot } from "../roots/root.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { IntersectionContext, RootKind } from "../shared/implement.js"
 import { intersectNodes } from "../shared/intersections.js"
-import type {
-	TraversalContext,
-	TraverseAllows,
-	TraverseApply
-} from "../shared/traversal.js"
+import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 import type { OptionalDeclaration, OptionalNode } from "./optional.js"
 import type { RequiredDeclaration } from "./required.js"
 
@@ -70,14 +67,13 @@ export abstract class BaseProp<
 	compiledKey: string =
 		typeof this.key === "string" ? this.key : this.serializedKey
 
-	private defaultValueArgs: Parameters<TraversalContext["queueMorphs"]> = [
-		[data => (data[this.key] = (this as OptionalNode).default)],
-		{
-			relativePath: [this.key]
-		}
+	private defaultValueMorphs: Morph[] = [
+		data => (data[this.key] = (this as OptionalNode).default)
 	]
 
-	private defaultValueArgsReference = registeredReference(this.defaultValueArgs)
+	private defaultValueMorphsReference = registeredReference(
+		this.defaultValueMorphs
+	)
 
 	traverseAllows: TraverseAllows<object> = (data, ctx) => {
 		if (this.key in data) {
@@ -96,7 +92,7 @@ export abstract class BaseProp<
 			this.value.traverseApply((data as any)[this.key], ctx)
 			ctx.path.pop()
 		} else if (this.hasKind("required")) ctx.error(this.errorContext)
-		else if ("default" in this) ctx.queueMorphs(...this.defaultValueArgs)
+		else if ("default" in this) ctx.queueMorphs(this.defaultValueMorphs)
 	}
 
 	compile(js: NodeCompiler): void {
@@ -112,7 +108,7 @@ export abstract class BaseProp<
 			})
 		} else if (js.traversalKind === "Apply" && "default" in this) {
 			js.else(() =>
-				js.line(`ctx.queueMorphs(...${this.defaultValueArgsReference})`)
+				js.line(`ctx.queueMorphs(${this.defaultValueMorphsReference})`)
 			)
 		}
 

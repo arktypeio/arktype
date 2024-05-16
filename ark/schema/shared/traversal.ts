@@ -23,7 +23,6 @@ export type BranchTraversalContext = {
 
 export type QueueMorphOptions = {
 	outValidator?: TraverseApply
-	relativePath?: TraversalPath
 }
 
 export class TraversalContext {
@@ -49,7 +48,6 @@ export class TraversalContext {
 			morphs
 		}
 		if (opts?.outValidator) input.to = opts?.outValidator
-		if (opts?.relativePath) input.path.push(...opts.relativePath)
 		this.currentBranch?.queuedMorphs.push(input) ??
 			this.queuedMorphs.push(input)
 	}

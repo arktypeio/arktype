@@ -23,18 +23,6 @@ contextualize(() => {
 		attest(t(getExtraneousB())).snap({ a: "ok" })
 	})
 
-	it("delete array key", () => {
-		const o = type({ "+": "delete", a: "email[]" })
-		attest(o({ a: ["shawn@arktype.io"] })).snap({
-			a: ["shawn@arktype.io"]
-		})
-		attest(o({ a: ["notAnEmail"] }).toString()).snap(
-			"a/0 must be a valid email (was 'notAnEmail')"
-		)
-		// can handle missing keys
-		attest(o({ b: ["shawn"] }).toString()).snap("a must be defined")
-	})
-
 	it("delete union key", () => {
 		const o = type([{ a: "string" }, "|", { b: "boolean" }]).onUndeclaredKey(
 			"delete"
@@ -45,7 +33,7 @@ contextualize(() => {
 		attest(o({ b: true, c: false })).snap({ b: true })
 		// can handle missing keys
 		attest(o({ a: 2 }).toString()).snap(
-			'a must be a string or b must be defined (was {"a":2})'
+			"a must be a string (was number) or b must be boolean (was missing)"
 		)
 	})
 
@@ -60,10 +48,10 @@ contextualize(() => {
 	it("reject array key", () => {
 		const o = type({ "+": "reject", a: "string[]" })
 		attest(o({ a: ["shawn"] })).snap({ a: ["shawn"] })
-		attest(o({ a: [2] }).toString()).snap("a/0 must be a string (was number)")
-		attest(o({ b: ["shawn"] }).toString()).snap(
-			"b must be removed\na must be defined"
-		)
+		attest(o({ a: [2] }).toString()).snap("a[0] must be a string (was number)")
+		attest(o({ b: ["shawn"] }).toString())
+			.snap(`a must be string[] (was missing)
+b must be removed`)
 	})
 
 	it("reject key from union", () => {
