@@ -1,4 +1,6 @@
 import {
+	includes,
+	omit,
 	throwParseError,
 	type Callable,
 	type Json,
@@ -16,7 +18,12 @@ import type { RootScope } from "../scope.js"
 import type { BaseMeta, RawNodeDeclaration } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import { ArkErrors } from "../shared/errors.js"
-import type { NodeKind, RootKind, kindRightOf } from "../shared/implement.js"
+import {
+	structuralKinds,
+	type NodeKind,
+	type RootKind,
+	type kindRightOf
+} from "../shared/implement.js"
 import {
 	intersectNodesRoot,
 	pipeNodesRoot,
@@ -28,6 +35,10 @@ import {
 	type inferred,
 	type internalImplementationOf
 } from "../shared/utils.js"
+import type {
+	StructureInner,
+	UndeclaredKeyBehavior
+} from "../structure/structure.js"
 import type { constraintKindOf } from "./intersection.js"
 import type {
 	Morph,
@@ -211,6 +222,18 @@ export abstract class BaseRoot<
 		)
 	}
 
+	onUndeclaredKey(undeclared: UndeclaredKeyBehavior): BaseRoot {
+		return this.transform(
+			(kind, inner) =>
+				kind === "structure" ?
+					undeclared === "ignore" ?
+						omit(inner as StructureInner, { undeclared: 1 })
+					:	{ ...inner, undeclared }
+				:	inner,
+			node => !includes(structuralKinds, node.kind)
+		)
+	}
+
 	// divisibleBy<
 	// 	const schema extends validateConstraintArg<"divisor", this["infer"]>
 	// >(schema: schema): Type<applyRoot<t, "divisor", schema>, $> {
@@ -305,6 +328,8 @@ export declare abstract class InnerRoot<t = unknown, $ = any> extends Callable<
 	configure(configOrDescription: BaseMeta | string): this
 
 	describe(description: string): this
+
+	onUndeclaredKey(behavior: UndeclaredKeyBehavior): this
 
 	create(literal: this["inferIn"]): this["infer"]
 }

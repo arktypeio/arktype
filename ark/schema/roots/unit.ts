@@ -1,11 +1,11 @@
 import {
+	domainOf,
+	printable,
+	prototypeKeysOf,
 	type Domain,
 	type JsonPrimitive,
 	type Key,
-	type array,
-	domainOf,
-	printable,
-	prototypeKeysOf
+	type array
 } from "@arktype/util"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"

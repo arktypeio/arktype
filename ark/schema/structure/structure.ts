@@ -199,7 +199,7 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 				if (!matched) {
 					if (traversalKind === "Allows") return false
 					ctx.path.push(k)
-					ctx.error("removed")
+					ctx.error({ expected: "removed", actual: null })
 					ctx.path.pop()
 					if (ctx.failFast) return false
 				}
@@ -260,7 +260,7 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 				if (js.traversalKind === "Allows") return js.return(false)
 				return js
 					.line("ctx.path.push(k)")
-					.line(`ctx.error("removed")`)
+					.line(`ctx.error({ expected: "removed", actual: null })`)
 					.line("ctx.path.pop()")
 					.if("ctx.failFast", () => js.return())
 			})

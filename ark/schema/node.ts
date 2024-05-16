@@ -1,6 +1,5 @@
 import {
 	Callable,
-	cached,
 	flatMorph,
 	includes,
 	isArray,
@@ -266,6 +265,8 @@ export abstract class BaseNode<
 				:	v
 			]
 		)
+
+		delete ctx.seen[this.id]
 
 		const node = this.$.node(
 			this.kind,
