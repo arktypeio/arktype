@@ -104,8 +104,8 @@ export const morphImplementation: nodeImplementationOf<MorphDeclaration> =
 				if (l.morphs.some((morph, i) => morph !== r.morphs[i]))
 					// TODO: check in for union reduction
 					return throwParseError("Invalid intersection of morphs")
-				const from = intersectNodes(l.from, r.from, ctx)
-				if (from instanceof Disjoint) return from
+				const inTersection = intersectNodes(l.from, r.from, ctx)
+				if (inTersection instanceof Disjoint) return inTersection
 				const to =
 					l.to ?
 						r.to ?
@@ -116,30 +116,30 @@ export const morphImplementation: nodeImplementationOf<MorphDeclaration> =
 				// in case from is a union, we need to distribute the branches
 				// to can be a union as any schema is allowed
 				return ctx.$.schema(
-					from.branches.map(fromBranch =>
+					inTersection.branches.map(inBranch =>
 						ctx.$.node("morph", {
 							morphs: l.morphs,
-							from: fromBranch,
+							from: inBranch,
 							to
 						})
 					)
 				)
 			},
 			...defineRightwardIntersections("morph", (l, r, ctx) => {
-				const from = intersectNodes(l.from, r, ctx)
+				const inTersection = intersectNodes(l.from, r, ctx)
 				return (
-					from instanceof Disjoint ? from
-					: from.kind === "union" ?
+					inTersection instanceof Disjoint ? inTersection
+					: inTersection.kind === "union" ?
 						ctx.$.node(
 							"union",
-							from.branches.map(branch => ({
+							inTersection.branches.map(branch => ({
 								...l.inner,
 								from: branch
 							}))
 						)
 					:	ctx.$.node("morph", {
 							...l.inner,
-							from
+							from: inTersection
 						})
 				)
 			})
@@ -159,7 +159,10 @@ export class MorphNode extends BaseRoot<MorphDeclaration> {
 		this.from.traverseAllows(data, ctx)
 
 	traverseApply: TraverseApply = (data, ctx) => {
-		ctx.queueMorphs(this.morphs, this.outValidator)
+		ctx.queueMorphs(
+			this.morphs,
+			this.outValidator ? { outValidator: this.outValidator } : undefined
+		)
 		this.from.traverseApply(data, ctx)
 	}
 

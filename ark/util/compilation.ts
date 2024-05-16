@@ -40,8 +40,8 @@ export class CompiledFunction<
 		return compileLiteralPropAccess(key, optional)
 	}
 
-	index(key: string, optional = false): string {
-		return indexPropAccess(key, optional)
+	index(key: string | number, optional = false): string {
+		return indexPropAccess(`${key}`, optional)
 	}
 
 	line(statement: string): this {

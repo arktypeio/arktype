@@ -13,12 +13,17 @@ import type { TraversalPath } from "./utils.js"
 export type QueuedMorphs = {
 	path: TraversalPath
 	morphs: array<Morph>
-	to: TraverseApply | null
+	to?: TraverseApply
 }
 
 export type BranchTraversalContext = {
 	error: ArkError | undefined
 	queuedMorphs: QueuedMorphs[]
+}
+
+export type QueueMorphOptions = {
+	outValidator?: TraverseApply
+	relativePath?: TraversalPath
 }
 
 export class TraversalContext {
@@ -38,12 +43,13 @@ export class TraversalContext {
 		return this.branches.at(-1)
 	}
 
-	queueMorphs(morphs: array<Morph>, outValidator: TraverseApply | null): void {
+	queueMorphs(morphs: array<Morph>, opts?: QueueMorphOptions): void {
 		const input: QueuedMorphs = {
 			path: [...this.path],
-			morphs,
-			to: outValidator
+			morphs
 		}
+		if (opts?.outValidator) input.to = opts?.outValidator
+		if (opts?.relativePath) input.path.push(...opts.relativePath)
 		this.currentBranch?.queuedMorphs.push(input) ??
 			this.queuedMorphs.push(input)
 	}

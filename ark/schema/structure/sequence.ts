@@ -279,13 +279,13 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 
 	// minLength/maxLength compilation should be handled by Intersection
 	compile(js: NodeCompiler): void {
-		this.prefix.forEach((node, i) => js.checkReferenceKey(`${i}`, node))
+		this.prefix.forEach((node, i) => js.traverseKey(`data[${i}]`, node))
 		this.optionals.forEach((node, i) => {
-			const dataIndex = `${i + this.prefix.length}`
+			const dataIndex = `data[${i + this.prefix.length}]`
 			js.if(`${dataIndex} >= ${js.data}.length`, () =>
 				js.traversalKind === "Allows" ? js.return(true) : js.return()
 			)
-			js.checkReferenceKey(dataIndex, node)
+			js.traverseKey(dataIndex, node)
 		})
 
 		if (this.variadic) {
@@ -295,11 +295,11 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 			)
 			js.for(
 				"i < lastVariadicIndex",
-				() => js.checkReferenceKey("i", this.variadic!),
+				() => js.traverseKey("data[i]", this.variadic!),
 				this.prevariadic.length
 			)
 			this.postfix.forEach((node, i) =>
-				js.checkReferenceKey(`lastVariadicIndex + ${i + 1}`, node)
+				js.traverseKey(`data[lastVariadicIndex + ${i + 1}]`, node)
 			)
 		}
 

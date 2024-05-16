@@ -1,4 +1,5 @@
 import type { BaseErrorContext, declareNode } from "../shared/declare.js"
+import type { ArkErrorContextInput } from "../shared/errors.js"
 import {
 	compileErrorContext,
 	implementNode,
@@ -32,9 +33,10 @@ export type RequiredDeclaration = declareNode<
 export class RequiredNode extends BaseProp<"required"> {
 	expression = `${this.compiledKey}: ${this.value.expression}`
 
-	errorContext: RequiredErrorContext = Object.freeze({
+	errorContext: ArkErrorContextInput<"required"> = Object.freeze({
 		code: "required",
-		missingValueDescription: this.value.description
+		missingValueDescription: this.value.description,
+		relativePath: [this.key]
 	})
 
 	compiledErrorContext: string = compileErrorContext(this.errorContext)

@@ -54,12 +54,12 @@ export class NodeCompiler extends CompiledFunction<["data", "ctx"]> {
 		)
 	}
 
-	checkReferenceKey(keyExpression: string, node: BaseNode): this {
+	traverseKey(propExpression: string, node: BaseNode): this {
 		const requiresContext = this.requiresContextFor(node)
-		if (requiresContext) this.line(`${this.ctx}.path.push(${keyExpression})`)
+		if (requiresContext) this.line(`${this.ctx}.path.push(${propExpression})`)
 
 		this.check(node, {
-			arg: `${this.data}${this.index(keyExpression)}`
+			arg: `${this.data}${this.index(propExpression)}`
 		})
 		if (requiresContext) this.line(`${this.ctx}.path.pop()`)
 

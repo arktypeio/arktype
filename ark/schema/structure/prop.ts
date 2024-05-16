@@ -1,4 +1,8 @@
-import { compileSerializedValue, type Key } from "@arktype/util"
+import {
+	compileSerializedValue,
+	registeredReference,
+	type Key
+} from "@arktype/util"
 import { BaseConstraint } from "../constraint.js"
 import type { Node, RootSchema } from "../kinds.js"
 import type { BaseRoot } from "../roots/root.js"
@@ -7,8 +11,12 @@ import type { BaseMeta } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { IntersectionContext, RootKind } from "../shared/implement.js"
 import { intersectNodes } from "../shared/intersections.js"
-import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
-import type { OptionalDeclaration } from "./optional.js"
+import type {
+	TraversalContext,
+	TraverseAllows,
+	TraverseApply
+} from "../shared/traversal.js"
+import type { OptionalDeclaration, OptionalNode } from "./optional.js"
 import type { RequiredDeclaration } from "./required.js"
 
 export type PropKind = "required" | "optional"
@@ -62,6 +70,15 @@ export abstract class BaseProp<
 	compiledKey: string =
 		typeof this.key === "string" ? this.key : this.serializedKey
 
+	private defaultValueArgs: Parameters<TraversalContext["queueMorphs"]> = [
+		[data => (data[this.key] = (this as OptionalNode).default)],
+		{
+			relativePath: [this.key]
+		}
+	]
+
+	private defaultValueArgsReference = registeredReference(this.defaultValueArgs)
+
 	traverseAllows: TraverseAllows<object> = (data, ctx) => {
 		if (this.key in data) {
 			// ctx will be undefined if this node isn't context-dependent
@@ -74,36 +91,31 @@ export abstract class BaseProp<
 	}
 
 	traverseApply: TraverseApply<object> = (data, ctx) => {
-		ctx.path.push(this.key)
-		if (this.key in data) this.value.traverseApply((data as any)[this.key], ctx)
-		else if (this.hasKind("required")) ctx.error(this.errorContext)
-		else if ("default" in this)
-			ctx.queueMorphs([data => (data[this.key] = this.default)], null)
-		ctx.path.pop()
+		if (this.key in data) {
+			ctx.path.push(this.key)
+			this.value.traverseApply((data as any)[this.key], ctx)
+			ctx.path.pop()
+		} else if (this.hasKind("required")) ctx.error(this.errorContext)
+		else if ("default" in this) ctx.queueMorphs(...this.defaultValueArgs)
 	}
 
 	compile(js: NodeCompiler): void {
-		const requiresContext = js.requiresContextFor(this.value)
-		if (requiresContext) js.line(`ctx.path.push(${this.serializedKey})`)
-
-		js.if(`${this.serializedKey} in ${js.data}`, () =>
-			js.check(this.value, {
-				arg: `${js.data}${js.prop(this.key)}`
-			})
+		js.if(`${this.serializedKey} in data`, () =>
+			js.traverseKey(js.prop(this.key), this.value)
 		)
+
 		if (this.hasKind("required")) {
 			js.else(() => {
 				if (js.traversalKind === "Apply")
 					return js.line(`ctx.error(${this.compiledErrorContext})`)
-				else {
-					if (requiresContext) js.line(`ctx.path.pop()`)
-
-					return js.return(false)
-				}
+				else return js.return(false)
 			})
+		} else if (js.traversalKind === "Apply" && "default" in this) {
+			js.else(() =>
+				js.line(`ctx.queueMorphs(...${this.defaultValueArgsReference})`)
+			)
 		}
 
-		if (requiresContext) js.line(`ctx.path.pop()`)
 		if (js.traversalKind === "Allows") js.return(true)
 	}
 }
