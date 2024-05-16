@@ -2,6 +2,7 @@ import {
 	CastableBase,
 	ReadonlyArray,
 	defineProperties,
+	type propwiseXor,
 	type show
 } from "@arktype/util"
 import type { Prerequisite, errorContext } from "../kinds.js"
@@ -35,6 +36,7 @@ export class ArkError<
 		}
 		this.nodeConfig = ctx.config[this.code] as never
 		this.path = input.path ?? [...ctx.path]
+		if (input.relativePath) this.path.push(...input.relativePath)
 		this.data = "data" in input ? input.data : data
 	}
 
@@ -142,13 +144,17 @@ export interface DerivableErrorContext<
 	propString: string
 }
 
+export type DerivableErrorContextInput<
+	code extends ArkErrorCode = ArkErrorCode
+> = Partial<DerivableErrorContext<code>> &
+	propwiseXor<{ path?: TraversalPath }, { relativePath?: TraversalPath }>
+
 export type ArkErrorCode = {
 	[kind in NodeKind]: errorContext<kind> extends null ? never : kind
 }[NodeKind]
 
 type ArkErrorContextInputsByCode = {
-	[code in ArkErrorCode]: errorContext<code> &
-		Partial<DerivableErrorContext<code>>
+	[code in ArkErrorCode]: errorContext<code> & DerivableErrorContextInput<code>
 }
 
 export type ArkErrorContextInput<code extends ArkErrorCode = ArkErrorCode> =
@@ -166,7 +172,7 @@ export type ProblemContext<code extends ArkErrorCode = ArkErrorCode> = Omit<
 
 export type CustomErrorInput = show<
 	// ensure a custom error can be discriminated on the lack of a code
-	{ code?: undefined } & Partial<DerivableErrorContext>
+	{ code?: undefined } & DerivableErrorContextInput
 >
 
 export type ArkErrorInput = string | ArkErrorContextInput | CustomErrorInput

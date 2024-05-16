@@ -3,9 +3,29 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.js"
-import { BaseProp, intersectProps, type BasePropDeclaration } from "./prop.js"
+import {
+	BaseProp,
+	intersectProps,
+	type BasePropDeclaration,
+	type BasePropInner,
+	type BasePropSchema
+} from "./prop.js"
 
-export type OptionalDeclaration = declareNode<BasePropDeclaration<"optional">>
+export interface OptionalSchema extends BasePropSchema {
+	default?: unknown
+}
+
+export interface OptionalInner extends BasePropInner {
+	default?: unknown
+}
+
+export type OptionalDeclaration = declareNode<
+	BasePropDeclaration<"optional"> & {
+		schema: OptionalSchema
+		normalizedSchema: OptionalSchema
+		inner: OptionalInner
+	}
+>
 
 export const optionalImplementation: nodeImplementationOf<OptionalDeclaration> =
 	implementNode<OptionalDeclaration>({
@@ -17,7 +37,8 @@ export const optionalImplementation: nodeImplementationOf<OptionalDeclaration> =
 			value: {
 				child: true,
 				parse: (schema, ctx) => ctx.$.schema(schema)
-			}
+			},
+			default: {}
 		},
 		normalize: schema => schema,
 		defaults: {

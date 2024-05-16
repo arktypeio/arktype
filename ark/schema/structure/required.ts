@@ -4,14 +4,29 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.js"
-import { BaseProp, intersectProps, type BasePropDeclaration } from "./prop.js"
+import {
+	BaseProp,
+	intersectProps,
+	type BasePropDeclaration,
+	type BasePropInner,
+	type BasePropSchema
+} from "./prop.js"
 
 export interface RequiredErrorContext extends BaseErrorContext<"required"> {
 	missingValueDescription: string
 }
 
+export interface RequiredSchema extends BasePropSchema {}
+
+export interface RequiredInner extends BasePropInner {}
+
 export type RequiredDeclaration = declareNode<
-	BasePropDeclaration<"required"> & { errorContext: RequiredErrorContext }
+	BasePropDeclaration<"required"> & {
+		schema: RequiredSchema
+		normalizedSchema: RequiredSchema
+		inner: RequiredInner
+		errorContext: RequiredErrorContext
+	}
 >
 
 export class RequiredNode extends BaseProp<"required"> {

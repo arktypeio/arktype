@@ -15,20 +15,17 @@ export type PropKind = "required" | "optional"
 
 export type PropNode = Node<PropKind>
 
-export interface PropSchema extends BaseMeta {
+export interface BasePropSchema extends BaseMeta {
 	readonly key: Key
 	readonly value: RootSchema
 }
 
-export interface PropInner extends PropSchema {
+export interface BasePropInner extends BasePropSchema {
 	readonly value: BaseRoot
 }
 
 export type BasePropDeclaration<kind extends PropKind = PropKind> = {
 	kind: kind
-	schema: PropSchema
-	normalizedSchema: PropSchema
-	inner: PropInner
 	prerequisite: object
 	intersectionIsOpen: true
 	childKind: RootKind
@@ -80,6 +77,8 @@ export abstract class BaseProp<
 		ctx.path.push(this.key)
 		if (this.key in data) this.value.traverseApply((data as any)[this.key], ctx)
 		else if (this.hasKind("required")) ctx.error(this.errorContext)
+		else if ("default" in this)
+			ctx.queueMorphs([data => (data[this.key] = this.default)], null)
 		ctx.path.pop()
 	}
 

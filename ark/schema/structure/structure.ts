@@ -31,9 +31,9 @@ import type {
 } from "../shared/traversal.js"
 import { makeRootAndArrayPropertiesMutable } from "../shared/utils.js"
 import type { IndexNode, IndexSchema } from "./index.js"
-import type { OptionalNode } from "./optional.js"
-import type { PropNode, PropSchema } from "./prop.js"
-import type { RequiredNode } from "./required.js"
+import type { OptionalNode, OptionalSchema } from "./optional.js"
+import type { PropNode } from "./prop.js"
+import type { RequiredNode, RequiredSchema } from "./required.js"
 import type { SequenceNode, SequenceSchema } from "./sequence.js"
 import { arrayIndexMatcher, arrayIndexMatcherReference } from "./shared.js"
 
@@ -42,8 +42,8 @@ export type UndeclaredKeyBehavior = "ignore" | UndeclaredKeyHandling
 export type UndeclaredKeyHandling = "reject" | "delete"
 
 export interface StructureSchema extends BaseMeta {
-	readonly optional?: readonly PropSchema[]
-	readonly required?: readonly PropSchema[]
+	readonly optional?: readonly OptionalSchema[]
+	readonly required?: readonly RequiredSchema[]
 	readonly index?: readonly IndexSchema[]
 	readonly sequence?: SequenceSchema
 	readonly undeclared?: UndeclaredKeyBehavior
