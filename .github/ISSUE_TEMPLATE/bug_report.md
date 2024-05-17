@@ -18,23 +18,18 @@ assignees: "ssalbdivad"
 ### 🧩 Context
 
 - ArkType version:
-- TypeScript version (4.8, 4.9, or 5.0):
-- Other context you think may be relevant (Node version, OS, etc.):
+- TypeScript version (5.1+):
+- Other context you think may be relevant (JS flavor, OS, etc.):
 
 ### 🧑‍💻 Repro
 
 <!--
-1. Update the template link below so that it reproduces the problem you're having.
-2. Add comments to describe differences between actual and expected behavior.
-3. Click "Fork" in the top-left corner of StackBlitz
-4. Copy the new URL and use it to replace the template URL below.
-5. Copy the source code you used to repro the bug and paste it into the code block below.
+
+Please do your best to write the simplest code you can that reproduces the issue!
+
+If it requires other dependencies besides arktype, it's probably either not a minimal repro or not an arktype bug.
 -->
 
-https://stackblitz.com/edit/arktype-bug?devToolsHeight=33&file=demo.ts
-
 ```ts
-import { type, scope } from "arktype"
-
 // Paste reproduction code here
 ```

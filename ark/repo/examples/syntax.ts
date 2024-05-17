@@ -1,6 +1,5 @@
-import { type } from "arktype"
-import type { Out } from "../../schema/schemas/morph.js"
-import type { Type } from "../../type/type.js"
+import type { Out } from "@arktype/schema"
+import { type, type Type } from "arktype"
 
 // Syntax carried over from 1.0 + TS
 export const currentTsSyntax = type({
@@ -30,7 +29,7 @@ export const upcomingTsSyntax = type({
 
 export const validationSyntax = type({
 	keywords: "email|uuid|creditCard|integer", // and many more
-	builtinParsers: "parse.date", // parses a Date from a string
+	// builtinParsers: "parse.date", // parses a Date from a string
 	nativeRegexLiteral: /@arktype\.io/,
 	embeddedRegexLiteral: "email&/@arktype\\.io/",
 	divisibility: "number%10", // a multiple of 10

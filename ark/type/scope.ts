@@ -1,53 +1,53 @@
 import {
+	RawRootScope,
+	hasArkKind,
 	type ArkConfig,
+	type BaseRoot,
 	type GenericProps,
 	type PreparsedNodeResolution,
 	type PrivateDeclaration,
-	type RawSchema,
-	type RawSchemaResolutions,
-	RawSchemaScope,
-	type SchemaScope,
-	type UnknownSchema,
+	type RawRootResolutions,
+	type RootScope,
+	type UnknownRoot,
 	type ambient,
 	type arkKind,
 	type destructuredExportContext,
 	type destructuredImportContext,
 	type exportedNameOf,
-	hasArkKind,
 	type writeDuplicateAliasError
 } from "@arktype/schema"
 import {
-	type Dict,
 	domainOf,
 	hasDomain,
-	type isAnyOrNever,
 	isThunk,
+	throwParseError,
+	type Dict,
+	type anyOrNever,
 	type keyError,
 	type nominal,
-	type show,
-	throwParseError
+	type show
 } from "@arktype/util"
 import type { type } from "./ark.js"
 import { Generic } from "./generic.js"
-import { type MatchParser, createMatchParser } from "./match.js"
+import { createMatchParser, type MatchParser } from "./match.js"
 import type { Module } from "./module.js"
 import {
-	type inferDefinition,
 	parseObject,
-	type validateDefinition,
-	writeBadDefinitionTypeMessage
+	writeBadDefinitionTypeMessage,
+	type inferDefinition,
+	type validateDefinition
 } from "./parser/definition.js"
 import {
+	parseGenericParams,
 	type GenericDeclaration,
-	type GenericParamsParseError,
-	parseGenericParams
+	type GenericParamsParseError
 } from "./parser/generic.js"
 import { DynamicState } from "./parser/string/reduce/dynamic.js"
 import { fullStringParse } from "./parser/string/string.js"
 import {
+	RawTypeParser,
 	type DeclarationParser,
 	type DefinitionParser,
-	RawTypeParser,
 	type Type,
 	type TypeParser
 } from "./type.js"
@@ -133,7 +133,7 @@ export type resolve<reference extends keyof $ | keyof args, $, args> =
 			args[reference]
 		:	$[reference & keyof $]
 	) extends infer resolution ?
-		isAnyOrNever<resolution> extends true ? resolution
+		[resolution] extends [anyOrNever] ? resolution
 		: resolution extends Def<infer def> ? inferDefinition<def, $, args>
 		: resolution
 	:	never
@@ -154,13 +154,13 @@ export type tryInferSubmoduleReference<$, token> =
 
 export interface ParseContext {
 	$: RawScope
-	args?: Record<string, UnknownSchema>
+	args?: Record<string, UnknownRoot>
 }
 
 export const scope: ScopeParser = ((def: Dict, config: ArkConfig = {}) =>
 	new RawScope(def, config)) as never
 
-export interface Scope<$ = any> extends SchemaScope<$> {
+export interface Scope<$ = any> extends RootScope<$> {
 	type: TypeParser<$>
 
 	match: MatchParser<$>
@@ -179,9 +179,9 @@ export interface Scope<$ = any> extends SchemaScope<$> {
 }
 
 export class RawScope<
-	$ extends RawSchemaResolutions = RawSchemaResolutions
-> extends RawSchemaScope<$> {
-	private parseCache: Record<string, RawSchema> = {}
+	$ extends RawRootResolutions = RawRootResolutions
+> extends RawRootScope<$> {
+	private parseCache: Record<string, BaseRoot> = {}
 
 	constructor(def: Record<string, unknown>, config?: ArkConfig) {
 		const aliases: Record<string, unknown> = {}
@@ -196,15 +196,15 @@ export class RawScope<
 		super(aliases, config)
 	}
 
-	type = new RawTypeParser(this as never)
+	type: RawTypeParser = new RawTypeParser(this as never)
 
 	match: MatchParser<$> = createMatchParser(this as never) as never
 
-	declare = (() => ({
+	declare: () => { type: RawTypeParser } = (() => ({
 		type: this.type
 	})).bind(this)
 
-	define = ((def: unknown) => def).bind(this)
+	define: (def: unknown) => unknown = ((def: unknown) => def).bind(this)
 
 	override preparseRoot(def: unknown): unknown {
 		if (isThunk(def) && !hasArkKind(def, "generic")) return def()
@@ -212,8 +212,8 @@ export class RawScope<
 		return def
 	}
 
-	override parseRoot(def: unknown): RawSchema {
-		// args: { this: {} as RawSchema },
+	override parseRoot(def: unknown): BaseRoot {
+		// args: { this: {} as RawRoot },
 		return this.parse(def, {
 			$: this as never,
 			args: {}
@@ -222,7 +222,7 @@ export class RawScope<
 		}).bindScope(this)
 	}
 
-	parse(def: unknown, ctx: ParseContext): RawSchema {
+	parse(def: unknown, ctx: ParseContext): BaseRoot {
 		if (typeof def === "string") {
 			if (ctx.args && Object.keys(ctx.args).every(k => !def.includes(k))) {
 				// we can only rely on the cache if there are no contextual
@@ -239,11 +239,11 @@ export class RawScope<
 			:	throwParseError(writeBadDefinitionTypeMessage(domainOf(def)))
 	}
 
-	parseString(def: string, ctx: ParseContext): RawSchema {
+	parseString(def: string, ctx: ParseContext): BaseRoot {
 		return (
-			this.maybeResolveSchema(def) ??
+			this.maybeResolveRoot(def) ??
 			((def.endsWith("[]") &&
-				this.maybeResolveSchema(def.slice(0, -2))?.array()) ||
+				this.maybeResolveRoot(def.slice(0, -2))?.array()) ||
 				fullStringParse(new DynamicState(def, ctx)))
 		)
 	}

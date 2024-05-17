@@ -28,10 +28,13 @@ export const register = (value: object | symbol): string => {
 	return name
 }
 
-export const reference = (name: string): `$ark.${string}` => `$ark.${name}`
+export const reference = (name: string): RegisteredReference => `$ark.${name}`
 
-export const registeredReference = (value: object | symbol): `$ark.${string}` =>
-	reference(register(value))
+export const registeredReference = (
+	value: object | symbol
+): RegisteredReference => reference(register(value))
+
+export type RegisteredReference<to extends string = string> = `$ark.${to}`
 
 export const isDotAccessible = (keyName: string): boolean =>
 	/^[a-zA-Z_$][a-zA-Z_$0-9]*$/.test(keyName)

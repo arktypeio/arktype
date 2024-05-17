@@ -4,12 +4,12 @@ import {
 	wellFormedNumberMatcher
 } from "@arktype/util"
 import type { SchemaModule } from "../module.js"
-import type { Out } from "../schemas/morph.js"
+import type { Out } from "../roots/morph.js"
 import { root, schemaScope } from "../scope.js"
-import { parsedDate } from "./utils/date.js"
+import { tryParseDatePattern } from "./utils/date.js"
 
-const number = root.defineSchema({
-	from: {
+const number = root.defineRoot({
+	in: {
 		domain: "string",
 		regex: wellFormedNumberMatcher,
 		description: "a well-formed numeric string"
@@ -17,8 +17,8 @@ const number = root.defineSchema({
 	morphs: (s: string) => Number.parseFloat(s)
 })
 
-const integer = root.defineSchema({
-	from: {
+const integer = root.defineRoot({
+	in: {
 		domain: "string",
 		regex: wellFormedIntegerMatcher
 	},
@@ -35,8 +35,8 @@ const integer = root.defineSchema({
 	}
 })
 
-const url = root.defineSchema({
-	from: {
+const url = root.defineRoot({
+	in: {
 		domain: "string",
 		description: "a valid URL"
 	},
@@ -49,15 +49,21 @@ const url = root.defineSchema({
 	}
 })
 
-const json = root.defineSchema({
-	from: {
+const json = root.defineRoot({
+	in: {
 		domain: "string",
 		description: "a JSON-parsable string"
 	},
 	morphs: (s: string): unknown => JSON.parse(s)
 })
 
-const date = parsedDate
+const date = root.defineRoot({
+	in: "string",
+	morphs: (s: string, ctx) => {
+		const result = tryParseDatePattern(s)
+		return typeof result === "string" ? ctx.error(result) : result
+	}
+})
 
 export type parsingExports = {
 	url: (In: string) => Out<URL>

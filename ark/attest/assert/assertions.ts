@@ -89,27 +89,30 @@ const unversionedAssertEquals: AssertFn = (expected, actual, ctx) => {
 	}
 }
 
-export const assertEquals = versionableAssertion(unversionedAssertEquals)
+export const assertEquals: AssertFn = versionableAssertion(
+	unversionedAssertEquals
+)
 
-export const typeEqualityMapping = new TypeAssertionMapping(data => {
-	const expected = data.typeArgs[0]
-	const actual = data.typeArgs[1] ?? data.args[0]
-	if (!expected || !actual)
-		throwInternalError(`Unexpected type data ${printable(data)}`)
+export const typeEqualityMapping: TypeAssertionMapping =
+	new TypeAssertionMapping(data => {
+		const expected = data.typeArgs[0]
+		const actual = data.typeArgs[1] ?? data.args[0]
+		if (!expected || !actual)
+			throwInternalError(`Unexpected type data ${printable(data)}`)
 
-	if (actual.relationships.typeArgs[0] !== "equality") {
-		return {
-			expected: expected.type,
-			actual:
-				expected.type === actual.type ?
-					"(serializes to same value)"
-				:	actual.type
+		if (actual.relationships.typeArgs[0] !== "equality") {
+			return {
+				expected: expected.type,
+				actual:
+					expected.type === actual.type ?
+						"(serializes to same value)"
+					:	actual.type
+			}
 		}
-	}
-	return null
-})
+		return null
+	})
 
-export const assertEqualOrMatching = versionableAssertion(
+export const assertEqualOrMatching: AssertFn = versionableAssertion(
 	(expected, actual, ctx) => {
 		const assertionArgs = { actual, expected, ctx }
 		if (typeof actual !== "string") {

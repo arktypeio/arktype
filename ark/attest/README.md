@@ -37,12 +37,10 @@ export default defineConfig({
 `setupVitest.ts`
 
 ```ts
-import * as attest from "@arktype/attest"
+import { setup, teardown } from "@arktype/attest"
 
 // config options can be passed here
-export const setup = () => attest.setup({})
-
-export const teardown = attest.teardown
+export default () => setup({})
 ```
 
 ### Mocha
@@ -124,6 +122,21 @@ describe("attest features", () => {
 			attest<(number | bigint)[]>(numericArray.infer)
 		}
 	})
+
+	it("integrated type performance benchmarking", () => {
+		const user = type({
+			kind: "'admin'",
+			"powers?": "string[]"
+		})
+			.or({
+				kind: "'superadmin'",
+				"superpowers?": "string[]"
+			})
+			.or({
+				kind: "'pleb'"
+			})
+		attest.instantiations([7574, "instantiations"])
+	})
 })
 ```
 
@@ -153,6 +166,12 @@ bench(
 	.mean([2, "ms"])
 	// Seems like our type is O(n) with respect to the length of the input- not bad!
 	.types([337, "instantiations"])
+```
+
+If you'd like to fail in CI above a threshold, you can add flags like the following (default value is 20%, but it will not throw unless `--benchErrorOnThresholdExceeded` is set):
+
+```
+ tsx ./p99/within-limit/p99-tall-simple.bench.ts  --benchErrorOnThresholdExceeded --benchPercentThreshold 10
 ```
 
 ## CLI

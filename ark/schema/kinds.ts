@@ -1,77 +1,94 @@
+import type { array, listable } from "@arktype/util"
+import type { BaseNode } from "./node.js"
 import {
-	type PredicateDeclaration,
+	PredicateNode,
 	predicateImplementation,
-	PredicateNode
-} from "./constraints/predicate.js"
+	type PredicateDeclaration
+} from "./predicate.js"
 import {
-	type IndexDeclaration,
-	indexImplementation,
-	IndexNode
-} from "./constraints/props/index.js"
-import {
-	type PropDeclaration,
-	propImplementation,
-	PropNode
-} from "./constraints/props/prop.js"
-import {
-	type SequenceDeclaration,
-	sequenceImplementation,
-	SequenceNode
-} from "./constraints/props/sequence.js"
-import {
-	type DivisorDeclaration,
+	DivisorNode,
 	divisorImplementation,
-	DivisorNode
-} from "./constraints/refinements/divisor.js"
+	type DivisorDeclaration
+} from "./refinements/divisor.js"
 import {
 	boundClassesByKind,
+	boundImplementationsByKind,
 	type BoundDeclarations,
-	boundImplementationsByKind
-} from "./constraints/refinements/kinds.js"
+	type BoundNodesByKind
+} from "./refinements/kinds.js"
 import {
-	type RegexDeclaration,
+	RegexNode,
 	regexImplementation,
-	RegexNode
-} from "./constraints/refinements/regex.js"
-import type { RawNode } from "./node.js"
+	type RegexDeclaration
+} from "./refinements/regex.js"
 import {
-	type AliasDeclaration,
+	AliasNode,
 	aliasImplementation,
-	AliasNode
-} from "./schemas/alias.js"
+	type AliasDeclaration
+} from "./roots/alias.js"
 import {
-	type DomainDeclaration,
+	DomainNode,
 	domainImplementation,
-	DomainNode
-} from "./schemas/domain.js"
+	type DomainDeclaration
+} from "./roots/domain.js"
 import {
-	type IntersectionDeclaration,
+	IntersectionNode,
 	intersectionImplementation,
-	IntersectionNode
-} from "./schemas/intersection.js"
+	type IntersectionDeclaration
+} from "./roots/intersection.js"
 import {
-	type MorphDeclaration,
+	MorphNode,
 	morphImplementation,
-	type MorphInputKind,
-	MorphNode
-} from "./schemas/morph.js"
+	type MorphDeclaration
+} from "./roots/morph.js"
 import {
-	type ProtoDeclaration,
+	ProtoNode,
 	protoImplementation,
-	ProtoNode
-} from "./schemas/proto.js"
+	type ProtoDeclaration
+} from "./roots/proto.js"
 import {
-	type UnionDeclaration,
+	UnionNode,
 	unionImplementation,
-	UnionNode
-} from "./schemas/union.js"
+	type UnionDeclaration
+} from "./roots/union.js"
 import {
-	type UnitDeclaration,
+	UnitNode,
 	unitImplementation,
-	UnitNode
-} from "./schemas/unit.js"
-import type { NodeKind, UnknownNodeImplementation } from "./shared/implement.js"
+	type UnitDeclaration
+} from "./roots/unit.js"
+import type {
+	ConstraintKind,
+	NodeKind,
+	OpenNodeKind,
+	RootKind,
+	UnknownNodeImplementation
+} from "./shared/implement.js"
 import type { makeRootAndArrayPropertiesMutable } from "./shared/utils.js"
+import {
+	IndexNode,
+	indexImplementation,
+	type IndexDeclaration
+} from "./structure/index.js"
+import {
+	OptionalNode,
+	optionalImplementation,
+	type OptionalDeclaration
+} from "./structure/optional.js"
+import {
+	RequiredNode,
+	requiredImplementation,
+	type RequiredDeclaration
+} from "./structure/required.js"
+import {
+	SequenceNode,
+	sequenceImplementation,
+	type SequenceDeclaration
+} from "./structure/sequence.js"
+import {
+	StructureNode,
+	structureImplementation,
+	type StructureDeclaration
+} from "./structure/structure.js"
 
 export interface NodeDeclarationsByKind extends BoundDeclarations {
 	alias: AliasDeclaration
@@ -83,10 +100,12 @@ export interface NodeDeclarationsByKind extends BoundDeclarations {
 	intersection: IntersectionDeclaration
 	sequence: SequenceDeclaration
 	divisor: DivisorDeclaration
-	prop: PropDeclaration
+	required: RequiredDeclaration
+	optional: OptionalDeclaration
 	index: IndexDeclaration
 	regex: RegexDeclaration
 	predicate: PredicateDeclaration
+	structure: StructureDeclaration
 }
 
 export const nodeImplementationsByKind: Record<
@@ -104,14 +123,16 @@ export const nodeImplementationsByKind: Record<
 	divisor: divisorImplementation,
 	regex: regexImplementation,
 	predicate: predicateImplementation,
-	prop: propImplementation,
+	required: requiredImplementation,
+	optional: optionalImplementation,
 	index: indexImplementation,
-	sequence: sequenceImplementation
+	sequence: sequenceImplementation,
+	structure: structureImplementation
 } satisfies Record<NodeKind, unknown> as never
 
 export const nodeClassesByKind: Record<
 	NodeKind,
-	new (attachments: never) => RawNode
+	new (attachments: never) => BaseNode
 > = {
 	...boundClassesByKind,
 	alias: AliasNode,
@@ -124,30 +145,43 @@ export const nodeClassesByKind: Record<
 	divisor: DivisorNode,
 	regex: RegexNode,
 	predicate: PredicateNode,
-	prop: PropNode,
+	required: RequiredNode,
+	optional: OptionalNode,
 	index: IndexNode,
+	sequence: SequenceNode,
+	structure: StructureNode
+} satisfies Record<NodeKind, typeof BaseNode<any>> as never
+
+interface NodesByKind extends BoundNodesByKind {
+	alias: AliasNode
+	union: UnionNode
+	morph: MorphNode
+	intersection: IntersectionNode
+	unit: UnitNode
+	proto: ProtoNode
+	domain: DomainNode
+	divisor: DivisorNode
+	regex: RegexNode
+	predicate: PredicateNode
+	required: RequiredNode
+	optional: OptionalNode
+	index: IndexNode
 	sequence: SequenceNode
-} satisfies Record<NodeKind, typeof RawNode<any>> as never
+	structure: StructureNode
+}
+
+export type Node<kind extends NodeKind> = NodesByKind[kind]
 
 export type Declaration<kind extends NodeKind> = NodeDeclarationsByKind[kind]
 
-export type NodeDef<kind extends NodeKind> = Declaration<kind>["def"]
+export type NodeSchema<kind extends NodeKind> = Declaration<kind>["schema"]
 
-export type NormalizedDef<kind extends NodeKind> =
-	Declaration<kind>["normalizedDef"]
+export type RootSchema<kind extends RootKind = RootKind> = NodeSchema<kind>
+
+export type NormalizedSchema<kind extends NodeKind> =
+	Declaration<kind>["normalizedSchema"]
 
 export type childKindOf<kind extends NodeKind> = Declaration<kind>["childKind"]
-
-type ParentsByKind = {
-	[k in NodeKind]: {
-		[pKind in NodeKind]: k extends childKindOf<pKind> ? pKind : never
-	}[NodeKind]
-}
-
-export type parentKindOf<kind extends NodeKind> = ParentsByKind[kind]
-
-export type ioKindOf<kind extends NodeKind> =
-	kind extends "morph" ? MorphInputKind : reducibleKindOf<kind>
 
 export type Prerequisite<kind extends NodeKind> =
 	Declaration<kind>["prerequisite"]
@@ -159,13 +193,18 @@ export type reducibleKindOf<kind extends NodeKind> =
 
 export type Inner<kind extends NodeKind> = Declaration<kind>["inner"]
 
+export type defAttachedAs<kind extends ConstraintKind> =
+	kind extends OpenNodeKind ? listable<NodeSchema<kind>> : NodeSchema<kind>
+
+export type innerAttachedAs<kind extends ConstraintKind> =
+	kind extends OpenNodeKind ? array<Node<kind>> : Node<kind>
+
 /** make nested arrays mutable while keeping nested nodes immutable */
 export type MutableInner<kind extends NodeKind> =
 	makeRootAndArrayPropertiesMutable<Inner<kind>>
 
-export type MutableNormalizedSchema<kind extends NodeKind> =
-	makeRootAndArrayPropertiesMutable<NormalizedDef<kind>>
+export type MutableNormalizedRoot<kind extends NodeKind> =
+	makeRootAndArrayPropertiesMutable<NormalizedSchema<kind>>
 
-export type errorContext<kind extends NodeKind> = Readonly<
+export type errorContext<kind extends NodeKind> =
 	Declaration<kind>["errorContext"]
->

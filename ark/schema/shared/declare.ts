@@ -1,6 +1,5 @@
 import type { merge, show } from "@arktype/util"
-import type { reducibleKindOf } from "../kinds.js"
-import type { Node } from "../node.js"
+import type { Node, reducibleKindOf } from "../kinds.js"
 import type { Disjoint } from "./disjoint.js"
 import type { NarrowedAttachments, NodeKind } from "./implement.js"
 
@@ -12,8 +11,8 @@ export const metaKeys: { [k in keyof BaseMeta]: 1 } = { description: 1 }
 
 interface DeclarationInput {
 	kind: NodeKind
-	def: unknown
-	normalizedDef: BaseMeta
+	schema: unknown
+	normalizedSchema: BaseMeta
 	inner: BaseMeta
 	reducibleTo?: NodeKind
 	intersectionIsOpen?: true
@@ -41,7 +40,6 @@ export type declareNode<
 		prerequisite: prerequisiteOf<d>
 		childKind: never
 		reducibleTo: d["kind"]
-		errorContext: null
 	},
 	d & {
 		errorContext: d["errorContext"] extends {} ? BaseErrorContext<d["kind"]>
@@ -57,8 +55,8 @@ export type attachmentsOf<d extends RawNodeDeclaration> =
 
 export interface RawNodeDeclaration {
 	kind: NodeKind
-	def: unknown
-	normalizedDef: BaseMeta
+	schema: unknown
+	normalizedSchema: BaseMeta
 	inner: BaseMeta
 	reducibleTo: NodeKind
 	prerequisite: any

@@ -128,8 +128,7 @@ export const getTsConfigInfoOrThrow = (): TsconfigInfo => {
 		{},
 		configFilePath
 	)
-	// ensure type.toString is as precise as possible
-	configParseResult.options.noErrorTruncation = true
+
 	if (configParseResult.errors.length > 0) {
 		throw new Error(
 			ts.formatDiagnostics(configParseResult.errors, {

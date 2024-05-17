@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@arktype/attest"
-import { rawSchema } from "@arktype/schema"
+import { rawRoot } from "@arktype/schema"
 import { ark, type } from "arktype"
 
 contextualize(
@@ -48,7 +48,7 @@ contextualize(
 		it("boolean", () => {
 			const boolean = type("boolean")
 			attest<boolean>(boolean.infer)
-			const expected = rawSchema([{ unit: false }, { unit: true }])
+			const expected = rawRoot([{ unit: false }, { unit: true }])
 			// should be simplified to simple checks for true and false literals
 			attest(boolean.json).equals(expected.json)
 			// TODO:
@@ -60,12 +60,11 @@ contextualize(
 		it("never", () => {
 			const never = type("never")
 			attest<never>(never.infer)
-			const expected = rawSchema([])
+			const expected = rawRoot([])
 			// should be equivalent to a zero-branch union
 			attest(never.json).equals(expected.json)
 		})
 
-		// TODO: ??
 		it("never in union", () => {
 			const t = type("string|never")
 			attest<string>(t.infer)
@@ -73,7 +72,7 @@ contextualize(
 		})
 
 		it("unknown", () => {
-			const expected = rawSchema({})
+			const expected = rawRoot({})
 			// should be equivalent to an unconstrained predicate
 			attest(type("unknown").json).equals(expected.json)
 		})

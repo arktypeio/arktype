@@ -1,0 +1,17 @@
+{
+	"compilerOptions": {
+		"module": "NodeNext",
+		"target": "ES2022",
+		"moduleResolution": "NodeNext",
+		"lib": ["ESNext"],
+		"noEmit": true,
+		"skipLibCheck": true,
+		"strict": true,
+		"declaration": true,
+		"verbatimModuleSyntax": true,
+		"esModuleInterop": true,
+		"resolveJsonModule": true,
+		"exactOptionalPropertyTypes": true,
+		"stripInternal": true
+	}
+}

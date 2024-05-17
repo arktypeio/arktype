@@ -34,9 +34,8 @@ jobs:
         include:
           - os: ubuntu-latest
             node: lts/-1
-          # https://github.com/arktypeio/arktype/issues/738
-          # - os: ubuntu-latest
-          #   node: latest
+          - os: ubuntu-latest
+            node: latest
       fail-fast: false
 
     runs-on: ${{ matrix.os }}
@@ -51,8 +50,10 @@ jobs:
         with:
           node: ${{ matrix.node }}
 
-      # - name: Test
-      #   run: pnpm testRepo
+      # To test node and OS versions, we don't care about rechecking types
+      # so just check runtime behavior
+      - name: Test
+        run: pnpm testRepo
 
   prChecks:
     needs: compatibility

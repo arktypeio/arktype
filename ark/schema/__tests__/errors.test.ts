@@ -15,7 +15,7 @@ contextualize(() => {
 	it("at path", () => {
 		const o = schema({
 			domain: "object",
-			prop: {
+			required: {
 				key: "foo",
 				value: {
 					domain: "number",

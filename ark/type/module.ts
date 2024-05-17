@@ -1,15 +1,16 @@
-import type { PreparsedNodeResolution, arkKind } from "@arktype/schema"
-import { DynamicBase, type isAnyOrNever } from "@arktype/util"
+import { RootModule, type PreparsedNodeResolution } from "@arktype/schema"
+import type { anyOrNever } from "@arktype/util"
 import type { Type } from "./type.js"
 
 type exportScope<$> = {
 	[k in keyof $]: $[k] extends PreparsedNodeResolution ?
-		isAnyOrNever<$[k]> extends true ?
+		[$[k]] extends [anyOrNever] ?
 			Type<$[k], $>
 		:	$[k]
 	:	Type<$[k], $>
 }
 
-export class Module<$ = any> extends DynamicBase<exportScope<$>> {
-	declare readonly [arkKind]: "module"
-}
+export const Module: new <$ = {}>(types: exportScope<$>) => Module<$> =
+	RootModule as never
+
+export type Module<$ = {}> = RootModule<exportScope<$>>

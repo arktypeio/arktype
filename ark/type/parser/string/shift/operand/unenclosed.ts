@@ -1,22 +1,22 @@
 import {
+	BaseRoot,
+	hasArkKind,
+	writeUnresolvableMessage,
 	type GenericProps,
 	type PrivateDeclaration,
-	RawSchema,
 	type arkKind,
-	hasArkKind,
-	type writeNonSubmoduleDotMessage,
-	writeUnresolvableMessage
+	type writeNonSubmoduleDotMessage
 } from "@arktype/schema"
 import {
-	type BigintLiteral,
-	type Completion,
-	type ErrorMessage,
-	type isAnyOrNever,
-	type join,
 	printable,
 	throwParseError,
 	tryParseNumber,
-	tryParseWellFormedBigint
+	tryParseWellFormedBigint,
+	type BigintLiteral,
+	type Completion,
+	type ErrorMessage,
+	type anyOrNever,
+	type join
 } from "@arktype/util"
 import type { Generic } from "../../../../generic.js"
 import type { GenericInstantiationAst } from "../../../semantic/infer.js"
@@ -26,9 +26,9 @@ import type { StaticState, state } from "../../reduce/static.js"
 import type { BaseCompletions } from "../../string.js"
 import type { Scanner } from "../scanner.js"
 import {
-	type ParsedArgs,
 	parseGenericArgs,
-	writeInvalidGenericArgsMessage
+	writeInvalidGenericArgsMessage,
+	type ParsedArgs
 } from "./genericArgs.js"
 
 export const parseUnenclosed = (s: DynamicState): void => {
@@ -45,8 +45,7 @@ export type parseUnenclosed<s extends StaticState, $, args> =
 		: tryResolve<s, token, $, args> extends infer result ?
 			result extends ErrorMessage<infer message> ? state.error<message>
 			: result extends keyof $ ?
-				isAnyOrNever<$[result]> extends true ?
-					state.setRoot<s, result, unscanned>
+				[$[result]] extends [anyOrNever] ? state.setRoot<s, result, unscanned>
 				: $[result] extends GenericProps ?
 					parseGenericInstantiation<
 						token,
@@ -64,7 +63,7 @@ export const parseGenericInstantiation = (
 	name: string,
 	g: Generic,
 	s: DynamicState
-): RawSchema => {
+): BaseRoot => {
 	s.scanner.shiftUntilNonWhitespace()
 	const lookahead = s.scanner.shift()
 	if (lookahead !== "<")
@@ -98,7 +97,7 @@ export type parseGenericInstantiation<
 		:	never
 	:	state.error<writeInvalidGenericArgsMessage<name, g["params"], []>>
 
-const unenclosedToNode = (s: DynamicState, token: string): RawSchema =>
+const unenclosedToNode = (s: DynamicState, token: string): BaseRoot =>
 	maybeParseReference(s, token) ??
 	maybeParseUnenclosedLiteral(s, token) ??
 	s.error(
@@ -111,10 +110,10 @@ const unenclosedToNode = (s: DynamicState, token: string): RawSchema =>
 const maybeParseReference = (
 	s: DynamicState,
 	token: string
-): RawSchema | undefined => {
+): BaseRoot | undefined => {
 	if (s.ctx.args?.[token]) return s.ctx.args[token].raw
 	const resolution = s.ctx.$.maybeResolve(token)
-	if (resolution instanceof RawSchema) return resolution
+	if (resolution instanceof BaseRoot) return resolution
 	if (resolution === undefined) return
 	if (hasArkKind(resolution, "generic"))
 		return parseGenericInstantiation(token, resolution as Generic, s)
@@ -124,7 +123,7 @@ const maybeParseReference = (
 const maybeParseUnenclosedLiteral = (
 	s: DynamicState,
 	token: string
-): RawSchema | undefined => {
+): BaseRoot | undefined => {
 	const maybeNumber = tryParseNumber(token, { strict: true })
 	if (maybeNumber !== undefined)
 		return s.ctx.$.node("unit", { unit: maybeNumber })
