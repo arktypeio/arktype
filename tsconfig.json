@@ -1,19 +1,6 @@
 {
+	"extends": "./ark/util/tsconfig.base.json",
 	"compilerOptions": {
-		"module": "NodeNext",
-		"target": "ES2022",
-		"moduleResolution": "NodeNext",
-		"lib": ["ESNext"],
-		"noEmit": true,
-		"skipLibCheck": true,
-		"strict": true,
-		"declaration": true,
-		"verbatimModuleSyntax": true,
-		"esModuleInterop": true,
-		"resolveJsonModule": true,
-		"exactOptionalPropertyTypes": true,
-		"noFallthroughCasesInSwitch": true,
-		"stripInternal": true,
 		// should be off by default, but here as a convenience to toggle
 		// "noErrorTruncation": true,
 		// "isolatedDeclarations": true,
