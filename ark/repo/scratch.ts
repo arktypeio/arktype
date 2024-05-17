@@ -1,23 +1,16 @@
+// this must come first
+import "./arkConfig.js"
+
 import { type } from "arktype"
 
-// type Z = Type<{ age: number.default<5> }>
-
-const f = (arg?: string) => {}
+// create and validate types
 
 const user = type({
-	"+": "delete",
-	name: "string>10",
-	email: "email"
-	// age: ["number", "=", 5]
+	name: "string",
+	age: "number"
 })
 
 const out = user({
-	name: "test",
-	email: ""
+	name: "David",
+	age: 30
 })
-
-if (out instanceof type.errors) {
-	console.log(out.summary)
-} else {
-	console.log(out)
-}
