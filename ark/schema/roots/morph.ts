@@ -231,7 +231,8 @@ type _distill<
 	io extends "in" | "out",
 	distilledKind extends "base" | "constrainable"
 > =
-	unknown extends t ? unknown
+	t extends TerminallyInferredObjectKind | Primitive ? t
+	: unknown extends t ? unknown
 	: t extends MorphAst<infer i, infer o> ?
 		io extends "in" ?
 			_distill<i, io, distilledKind>
@@ -241,21 +242,26 @@ type _distill<
 		distilledKind extends "base" ?
 			_distill<base, io, distilledKind>
 		:	t
-	: t extends TerminallyInferredObjectKind | Primitive ? t
 	: t extends array ? distillArray<t, io, distilledKind, []>
-	: io extends "in" ?
-		show<
-			{
-				[k in keyof t as k extends defaultableKeyOf<t> ? never : k]: _distill<
-					t[k],
-					io,
-					distilledKind
-				>
-			} & { [k in defaultableKeyOf<t>]?: _distill<t[k], io, distilledKind> }
-		>
-	:	{
-			[k in keyof t]: _distill<t[k], io, distilledKind>
-		}
+	: // we excluded this from TerminallyInferredObjectKind so that those types could be
+	// inferred before checking morphs/defaults, which extend Function
+	t extends Function ? t
+	: // avoid recursing into classes with private props etc.
+	{ [k in keyof t]: t[k] } extends t ?
+		io extends "in" ?
+			show<
+				{
+					[k in keyof t as k extends defaultableKeyOf<t> ? never : k]: _distill<
+						t[k],
+						io,
+						distilledKind
+					>
+				} & { [k in defaultableKeyOf<t>]?: _distill<t[k], io, distilledKind> }
+			>
+		:	{
+				[k in keyof t]: _distill<t[k], io, distilledKind>
+			}
+	:	t
 
 type defaultableKeyOf<t> = {
 	[k in keyof t]: [t[k]] extends [anyOrNever] ? never
@@ -296,4 +302,4 @@ type distillPostfix<
 /** Objects we don't want to expand during inference like Date or Promise */
 type TerminallyInferredObjectKind =
 	| StaticArkOption<"preserve">
-	| BuiltinObjects[Exclude<BuiltinObjectKind, "Array">]
+	| BuiltinObjects[Exclude<BuiltinObjectKind, "Array" | "Function">]

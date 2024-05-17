@@ -458,7 +458,9 @@ other must be a string (was bigint)`)
 			// @ts-expect-error
 			attest(() => type({ "+": "string" }))
 				.throws(writeInvalidUndeclaredBehaviorMessage("string"))
-				.type.errors.snap()
+				.type.errors.snap(
+					"Type '\"string\"' is not assignable to type 'UndeclaredKeyBehavior'."
+				)
 		})
 		it("can escape undeclared meta key", () => {
 			const t = type({ "\\+": "string" })
