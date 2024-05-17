@@ -246,4 +246,40 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			]
 		})
 	})
+
+	// https://github.com/arktypeio/arktype/issues/947
+	it("chained inline type expression inference", () => {
+		const a = type({
+			action: "'a' | 'b'"
+		}).or({
+			action: "'c'"
+		})
+
+		const referenced = type({
+			someField: "string"
+		}).and(a)
+
+		attest<
+			| {
+					someField: string
+					action: "a" | "b"
+			  }
+			| {
+					someField: string
+					action: "c"
+			  }
+		>(referenced.infer)
+
+		const inlined = type({
+			someField: "string"
+		}).and(
+			type({
+				action: "'a' | 'b'"
+			}).or({
+				action: "'c'"
+			})
+		)
+
+		attest<typeof referenced>(inlined)
+	})
 })

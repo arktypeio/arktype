@@ -63,7 +63,10 @@ export const parseObject = (def: object, ctx: ParseContext): BaseRoot => {
 }
 
 export type inferDefinition<def, $, args> =
-	[def] extends [anyOrNever] ? def
+	[def] extends [anyOrNever] ?
+		def extends never ?
+			never
+		:	any
 	: def extends type.cast<infer t> | ThunkCast<infer t> ? t
 	: def extends string ? inferString<def, $, args>
 	: def extends array ? inferTuple<def, $, args>

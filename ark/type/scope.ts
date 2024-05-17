@@ -127,6 +127,19 @@ type extractGenericName<k> =
 type extractGenericParameters<k> =
 	k extends GenericDeclaration<string, infer params> ? params : never
 
+// type isAnyOrNever<t> = isAny<t> | isNever<t> extends false ? false : true
+
+// export type resolve<reference extends keyof $ | keyof args, $, args> =
+// 	(
+// 		reference extends keyof args ?
+// 			args[reference]
+// 		:	$[reference & keyof $]
+// 	) extends infer resolution ?
+// 		isAnyOrNever<resolution> extends true ? resolution
+// 		: resolution extends Def<infer def> ? inferDefinition<def, $, args>
+// 		: resolution
+// 	:	never
+
 export type resolve<reference extends keyof $ | keyof args, $, args> =
 	(
 		reference extends keyof args ?
