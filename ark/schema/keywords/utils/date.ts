@@ -1,5 +1,3 @@
-import { root } from "../../scope.js"
-
 type DayDelimiter = "." | "/" | "-"
 
 const dayDelimiterMatcher = /^[./-]$/
