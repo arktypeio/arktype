@@ -48,7 +48,9 @@ export const unitImplementation: nodeImplementationOf<UnitDeclaration> =
 		},
 		normalize: schema => schema,
 		defaults: {
-			description: node => printable(node.unit)
+			description: node => printable(node.unit),
+			problem: ({ expected, actual }) =>
+				`${expected === actual ? `must be reference equal to ${expected} (serialized to the same value)` : `must be ${expected} (was ${actual})`}`
 		},
 		intersections: {
 			unit: (l, r) => Disjoint.from("unit", l, r),
