@@ -15,7 +15,6 @@ import {
 	intersectConstraints
 } from "../constraint.js"
 import type { MutableInner } from "../kinds.js"
-import type { BaseNode } from "../node.js"
 import type { BaseRoot } from "../roots/root.js"
 import type { UnitNode } from "../roots/unit.js"
 import type { RawRootScope } from "../scope.js"
@@ -385,23 +384,14 @@ export const structureImplementation: nodeImplementationOf<StructureDeclaration>
 							if (n.signature.extends(lKey)) return n
 							const indexOverlap = intersectNodesRoot(lKey, n.signature, ctx.$)
 							if (indexOverlap instanceof Disjoint) return []
-							const normalized = normalizeIndexKey(indexOverlap, ctx.$)
-							if (normalized.enumerable) {
-								const additionalRequiredNodes = normalized.enumerable.map(key =>
-									ctx.$.node("required", { key, value: n.value })
-								)
+							const normalized = normalizeIndex(indexOverlap, n.value, ctx.$)
+							if (normalized.required) {
 								rInner.required =
 									rInner.required ?
-										[...rInner.required, ...additionalRequiredNodes]
-									:	additionalRequiredNodes
+										[...rInner.required, ...normalized.required]
+									:	normalized.required
 							}
-							if (normalized.nonEnumerable) {
-								return ctx.$.node("index", {
-									...n.inner,
-									signature: normalized.nonEnumerable
-								})
-							}
-							return []
+							return normalized.index ?? []
 						})
 					}
 				}
@@ -425,23 +415,14 @@ export const structureImplementation: nodeImplementationOf<StructureDeclaration>
 							if (n.signature.extends(rKey)) return n
 							const indexOverlap = intersectNodesRoot(rKey, n.signature, ctx.$)
 							if (indexOverlap instanceof Disjoint) return []
-							const normalized = normalizeIndexKey(indexOverlap, ctx.$)
-							if (normalized.enumerable) {
-								const additionalRequiredNodes = normalized.enumerable.map(key =>
-									ctx.$.node("required", { key, value: n.value })
-								)
+							const normalized = normalizeIndex(indexOverlap, n.value, ctx.$)
+							if (normalized.required) {
 								lInner.required =
 									lInner.required ?
-										[...lInner.required, ...additionalRequiredNodes]
-									:	additionalRequiredNodes
+										[...lInner.required, ...normalized.required]
+									:	normalized.required
 							}
-							if (normalized.nonEnumerable) {
-								return ctx.$.node("index", {
-									...n.inner,
-									signature: normalized.nonEnumerable
-								})
-							}
-							return []
+							return normalized.index ?? []
 						})
 					}
 				}
@@ -467,28 +448,36 @@ export const structureImplementation: nodeImplementationOf<StructureDeclaration>
 		}
 	})
 
-export type NormalizedIndexKey = {
-	nonEnumerable?: BaseNode
-	enumerable?: Key[]
+export type NormalizedIndex = {
+	index?: IndexNode
+	required?: RequiredNode[]
 }
 
 /** extract enumerable named props from an index signature */
-export const normalizeIndexKey = (
-	key: BaseRoot,
+export const normalizeIndex = (
+	signature: BaseRoot,
+	value: BaseRoot,
 	$: RawRootScope
-): NormalizedIndexKey => {
+): NormalizedIndex => {
 	const [enumerableBranches, nonEnumerableBranches] = spliterate(
-		key.branches,
+		signature.branches,
 		(k): k is UnitNode => k.hasKind("unit")
 	)
 
-	if (!enumerableBranches.length) return { nonEnumerable: key }
+	if (!enumerableBranches.length)
+		return { index: $.node("index", { signature, value }) }
 
-	const normalized: NormalizedIndexKey = {}
+	const normalized: NormalizedIndex = {}
 
-	normalized.enumerable = enumerableBranches.map(n => n.unit as Key)
-	if (nonEnumerableBranches.length)
-		normalized.nonEnumerable = $.node("union", nonEnumerableBranches)
+	normalized.required = enumerableBranches.map(n =>
+		$.node("required", { key: n.unit as Key, value })
+	)
+	if (nonEnumerableBranches.length) {
+		normalized.index = $.node("index", {
+			signature: nonEnumerableBranches,
+			value
+		})
+	}
 
 	return normalized
 }

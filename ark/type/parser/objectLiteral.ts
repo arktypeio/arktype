@@ -1,5 +1,6 @@
 import {
 	ArkErrors,
+	normalizeIndex,
 	type BaseRoot,
 	type Default,
 	type MutableInner,
@@ -7,14 +8,12 @@ import {
 	type PropKind,
 	type StructureNode,
 	type UndeclaredKeyBehavior,
-	type UnitNode,
 	type writeInvalidPropertyKeyMessage
 } from "@arktype/schema"
 import {
 	append,
 	isArray,
 	printable,
-	spliterate,
 	stringAndSymbolicEntriesOf,
 	throwParseError,
 	unset,
@@ -74,31 +73,15 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): BaseRoot => {
 			const key = ctx.$.parse(entry.key, ctx)
 			const value = ctx.$.parse(entry.value, ctx)
 
-			// extract enumerable named props from the index signature
-			const [enumerable, nonEnumerable] = spliterate(
-				key.branches,
-				(k): k is UnitNode => k.hasKind("unit")
-			)
-
-			if (enumerable.length) {
+			const normalizedSignature = normalizeIndex(key, value, ctx.$)
+			if (normalizedSignature.required) {
 				structure.required = append(
 					structure.required,
-					enumerable.map(k =>
-						ctx.$.node("required", { key: k.unit as Key, value })
-					)
-				)
-				if (nonEnumerable.length) {
-					structure.index = append(
-						structure.index,
-						ctx.$.node("index", { signature: nonEnumerable, value })
-					)
-				}
-			} else {
-				structure.index = append(
-					structure.index,
-					ctx.$.node("index", { signature: key, value })
+					normalizedSignature.required
 				)
 			}
+			if (normalizedSignature.index)
+				structure.index = append(structure.index, normalizedSignature.index)
 		} else {
 			const value = ctx.$.parse(entry.value, ctx)
 			const inner: MutableInner<PropKind> = { key: entry.key, value }
@@ -255,11 +238,6 @@ export const parseEntry = ([key, value]: readonly [
 export const invalidDefaultKeyKindMessage = `Only required keys may specify default values, e.g. { ark: ['string', '=', '⛵'] }`
 
 export type invalidDefaultKeyKindMessage = typeof invalidDefaultKeyKindMessage
-
-export const defaultedIndexSignatureMessage = "An index signature "
-
-export const defaultedOptionalMessage =
-	"An optional key cannot specify a default value"
 
 const parseKey = (key: Key): PreparsedKey =>
 	typeof key === "symbol" ? { kind: "required", key }

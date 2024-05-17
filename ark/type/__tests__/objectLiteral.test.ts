@@ -217,7 +217,7 @@ contextualize(
 			attest<{ [x: string]: string }>(o.infer)
 			attest(o.json).snap({
 				domain: "object",
-				index: [{ index: "string", value: "string" }]
+				index: [{ signature: "string", value: "string" }]
 			})
 
 			attest(o({})).equals({})
@@ -237,7 +237,7 @@ b must be a string (was false)`)
 			attest<{ [x: symbol]: 1 }>(o.infer)
 			attest(o.json).snap({
 				domain: "object",
-				index: [{ index: "symbol", value: { unit: 1 } }]
+				index: [{ signature: "symbol", value: { unit: 1 } }]
 			})
 
 			attest(o({})).equals({})
@@ -279,7 +279,7 @@ value at [${zildjianName}] must be 1 (was undefined)`)
 			attest<{ [x: string]: string; [x: symbol]: string }>(o.infer)
 			attest(o.json).snap({
 				domain: "object",
-				index: [{ index: ["string", "symbol"], value: "string" }]
+				index: [{ signature: ["string", "symbol"], value: "string" }]
 			})
 		})
 
@@ -291,8 +291,8 @@ value at [${zildjianName}] must be 1 (was undefined)`)
 			attest<{ [x: string]: string; [x: symbol]: number }>(o.infer)
 			attest(o.json).snap({
 				index: [
-					{ value: "number", index: "symbol" },
-					{ value: "string", index: "string" }
+					{ value: "string", signature: "string" },
+					{ value: "number", signature: "symbol" }
 				],
 				domain: "object"
 			})
@@ -333,7 +333,7 @@ value at [${symName}] must be a number (was string)`)
 				domain: "object",
 				required: [{ key: "required", value: { unit: "foo" } }],
 				optional: [{ key: "optional", value: { unit: "bar" } }],
-				index: [{ index: "string", value: "string" }]
+				index: [{ signature: "string", value: "string" }]
 			})
 
 			const valid: typeof o.infer = { required: "foo", other: "bar" }
@@ -376,7 +376,7 @@ other must be a string (was bigint)`)
 			}>(t.infer)
 			attest(t.json).snap({
 				optional: [{ key: "a", value: { unit: 1 } }],
-				index: [{ value: { unit: 4 }, index: "string" }],
+				index: [{ value: { unit: 4 }, signature: "string" }],
 				domain: "object"
 			})
 		})
