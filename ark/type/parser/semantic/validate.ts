@@ -5,11 +5,11 @@ import type {
 	writeMissingSubmoduleAccessMessage
 } from "@arktype/schema"
 import type {
+	anyOrNever,
 	BigintLiteral,
 	charsAfterFirst,
 	Completion,
 	ErrorMessage,
-	isAnyOrNever,
 	writeMalformedNumericLiteralMessage
 } from "@arktype/util"
 import type { Comparator } from "../string/reduce/shared.js"
@@ -82,7 +82,7 @@ type validateStringAst<def extends string, $> =
 			ErrorMessage<writeMalformedNumericLiteralMessage<def, "bigint">>
 		:	undefined
 	: maybeExtractAlias<def, $> extends infer alias extends keyof $ ?
-		isAnyOrNever<$[alias]> extends true ? def
+		[$[alias]] extends [anyOrNever] ? def
 		: def extends PrivateDeclaration ?
 			ErrorMessage<writePrefixedPrivateReferenceMessage<def>>
 		: // these problems would've been caught during a fullStringParse, but it's most

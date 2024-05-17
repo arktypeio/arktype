@@ -4,4 +4,4 @@ import { shell } from "@arktype/fs"
 process.env.ATTEST_CONFIG = JSON.stringify({
 	tsVersions: "*"
 } satisfies AttestConfig)
-shell("pnpm test")
+shell("pnpm testTyped")

@@ -1,14 +1,10 @@
 {
+	"extends": "../../tsconfig.json",
 	"compilerOptions": {
-		"target": "ES2022",
 		"module": "CommonJS",
 		"moduleResolution": "Node",
-		"esModuleInterop": true,
-		"sourceMap": true,
-		"composite": true,
-		"declarationMap": true,
-		"skipLibCheck": true,
-		"strict": true,
+		"verbatimModuleSyntax": false,
+		"rootDir": ".",
 		"outDir": "out",
 		"noEmit": false,
 		"paths": {}

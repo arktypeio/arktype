@@ -27,7 +27,7 @@ contextualize(() => {
 			b: {
 				a: string
 			}
-		}>($.infer)
+		}>($["t"])
 
 		const types = $.export()
 		attest<{

@@ -1,28 +1,26 @@
 import { attest, contextualize } from "@arktype/attest"
 import { writeDuplicateAliasError } from "@arktype/schema"
-import { lazily } from "@arktype/util"
 import { type Module, scope, type } from "arktype"
 import { writePrefixedPrivateReferenceMessage } from "../parser/semantic/validate.js"
 
-const threeSixtyNoScope = lazily(() =>
-	scope({
-		three: "3",
-		sixty: "60",
-		no: "'no'"
-	})
-)
-const yesScope = lazily(() => scope({ yes: "'yes'" }))
+const threeSixtyNoScope = scope({
+	three: "3",
+	sixty: "60",
+	no: "'no'"
+})
 
-const threeSixtyNoModule = lazily(() => threeSixtyNoScope.export())
-const yesModule = lazily(() => yesScope.export())
+const yesScope = scope({ yes: "'yes'" })
+
+const threeSixtyNoModule = threeSixtyNoScope.export()
+const yesModule = yesScope.export()
 
 contextualize(() => {
 	it("single", () => {
-		const $ = scope({
+		const types = scope({
 			...threeSixtyNoModule,
 			threeSixtyNo: "three|sixty|no"
-		})
-		attest<{ threeSixtyNo: 3 | 60 | "no" }>($.infer)
+		}).export()
+		attest<Module<{ threeSixtyNo: 3 | 60 | "no" }>>(types)
 	})
 
 	it("multiple", () => {
@@ -37,7 +35,9 @@ contextualize(() => {
 			a: "three|sixty|no|yes|extra"
 		})
 
-		attest<{ a: 3 | 60 | "no" | "yes" | true }>(imported.infer)
+		const exports = imported.export()
+
+		attest<Module<{ a: 3 | 60 | "no" | "yes" | true }>>(exports)
 	})
 
 	it("import & export", () => {

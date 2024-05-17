@@ -44,7 +44,9 @@ export type UnknownUnion =
 export type andPreserveUnknown<l, r> =
 	unknown extends l & r ? unknown : show<l & r>
 
-export type isAnyOrNever<t> = [unknown, t] extends [t, {}] ? true : isNever<t>
+declare const anyOrNever: unique symbol
+
+export type anyOrNever = typeof anyOrNever
 
 export type isAny<t> = [unknown, t] extends [t, {}] ? true : false
 
@@ -59,11 +61,13 @@ export type isUnknown<t> =
 
 export type conform<t, base> = t extends base ? t : base
 
-export type equals<t, u> =
-	(<_>() => _ extends t ? 1 : 2) extends <_>() => _ extends u ? 1 : 2 ? true
+export type equals<l, r> = [l, r] extends [r, l] ? true : false
+
+export type exactEquals<l, r> =
+	(<_>() => _ extends l ? 1 : 2) extends <_>() => _ extends r ? 1 : 2 ? true
 	:	false
 
-export const id = Symbol("id")
+export const id: unique symbol = Symbol("id")
 
 export type nominal<t, id extends string> = t & {
 	readonly [id]: id

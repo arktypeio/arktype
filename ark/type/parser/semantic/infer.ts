@@ -38,12 +38,12 @@ export type inferExpression<ast extends array, $, args> =
 	ast extends GenericInstantiationAst<infer generic, infer argAsts> ?
 		inferDefinition<
 			generic["def"],
-			generic["$"]["$"] extends UnparsedScope ?
+			generic["$"]["t"] extends UnparsedScope ?
 				// If the generic was defined in the current scope, its definition can be
 				// resolved using the same scope as that of the input args.
 				$
 			:	// Otherwise, use the scope that was explicitly associated with it.
-				generic["$"]["$"],
+				generic["$"]["t"],
 			{
 				// Using keyof g["params"] & number here results in the element types
 				// being mixed- another reason TS should not have separate `${number}` and number keys!

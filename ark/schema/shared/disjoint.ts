@@ -1,17 +1,17 @@
 import {
 	entriesOf,
-	type entryOf,
 	flatMorph,
 	fromEntries,
 	isArray,
 	printable,
 	register,
 	throwInternalError,
-	throwParseError
+	throwParseError,
+	type entryOf
 } from "@arktype/util"
-import type { Node } from "../node.js"
-import type { RawSchema } from "../schema.js"
-import type { BoundKind, IntersectionChildKind } from "./implement.js"
+import type { Node } from "../kinds.js"
+import type { BaseRoot } from "../roots/root.js"
+import type { BoundKind, PrimitiveKind } from "./implement.js"
 import { hasArkKind } from "./utils.js"
 
 type DisjointKinds = {
@@ -27,16 +27,10 @@ type DisjointKinds = {
 		l: Node<"proto">
 		r: Node<"proto">
 	}
-	// TODO: test
-	presence?:
-		| {
-				l: true
-				r: false
-		  }
-		| {
-				l: false
-				r: true
-		  }
+	presence?: {
+		l: BaseRoot
+		r: BaseRoot
+	}
 	range?: {
 		l: Node<BoundKind>
 		r: Node<BoundKind>
@@ -44,15 +38,15 @@ type DisjointKinds = {
 	assignability?:
 		| {
 				l: unknown
-				r: Node<IntersectionChildKind>
+				r: Node<PrimitiveKind>
 		  }
 		| {
-				l: Node<IntersectionChildKind>
+				l: Node<PrimitiveKind>
 				r: unknown
 		  }
 	union?: {
-		l: readonly RawSchema[]
-		r: readonly RawSchema[]
+		l: readonly BaseRoot[]
+		r: readonly BaseRoot[]
 	}
 	indiscriminableMorphs?: {
 		l: Node<"union">
@@ -78,10 +72,12 @@ export type DisjointsAtPath = {
 
 export type DisjointSourceEntry = entryOf<DisjointsSources>
 
+export type DisjointSource = Required<DisjointKinds>[DisjointKind]
+
 export type FlatDisjointEntry = {
 	path: SerializedPath
 	kind: DisjointKind
-	disjoint: Required<DisjointKinds>[DisjointKind]
+	disjoint: DisjointSource
 }
 
 export type DisjointKind = keyof DisjointKinds
@@ -134,17 +130,10 @@ export class Disjoint {
 			const pathString = JSON.parse(path).join(".")
 			return `Intersection${
 				pathString && ` at ${pathString}`
-			} of ${describeReason(disjoint.l)} and ${describeReason(
-				disjoint.r
-			)} results in an unsatisfiable type`
+			} of ${describeReasons(disjoint)} results in an unsatisfiable type`
 		}
 		return `The following intersections result in unsatisfiable types:\n• ${reasons
-			.map(
-				({ path, disjoint }) =>
-					`${path}: ${describeReason(
-						disjoint.l
-					)} and ${describeReason(disjoint.r)}`
-			)
+			.map(({ path, disjoint }) => `${path}: ${describeReasons(disjoint)}`)
 			.join("\n• ")}`
 	}
 
@@ -193,7 +182,10 @@ export class Disjoint {
 	}
 }
 
+const describeReasons = (source: DisjointSource): string =>
+	`${describeReason(source.l)} and ${describeReason(source.r)}`
+
 const describeReason = (value: unknown): string =>
-	hasArkKind(value, "schema") ? value.expression
+	hasArkKind(value, "root") ? value.expression
 	: isArray(value) ? value.map(describeReason).join(" | ")
 	: String(value)

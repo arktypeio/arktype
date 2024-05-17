@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@arktype/attest"
-import { rawSchema } from "@arktype/schema"
-import { type Type, type } from "arktype"
+import { rawRoot } from "@arktype/schema"
+import { type, type Type } from "arktype"
 import { writeInvalidConstructorMessage } from "../parser/tuple.js"
 
 contextualize(
@@ -9,11 +9,13 @@ contextualize(
 		it("base", () => {
 			const t = type(["instanceof", Error])
 			attest<Error>(t.infer)
-			const expected = rawSchema(Error)
+			const expected = rawRoot(Error)
 			attest(t.json).equals(expected.json)
 			const e = new Error()
 			attest(t(e)).equals(e)
+			attest(t(e)).equals(e)
 			attest(t({}).toString()).snap("must be an Error (was object)")
+			attest(t(undefined).toString()).snap("must be an Error (was undefined)")
 		})
 		it("inherited", () => {
 			const t = type(["instanceof", TypeError])
@@ -53,7 +55,7 @@ contextualize(
 				private isArk = true
 			}
 			const ark = type(["instanceof", ArkClass])
-			attest<Type<ArkClass, {}>>(ark)
+			attest<Type<ArkClass>>(ark)
 			// not expanded since there are no morphs
 			attest(ark.infer).type.toString("ArkClass")
 			attest(ark.in.infer).type.toString("ArkClass")
@@ -76,7 +78,7 @@ contextualize(
 			}
 			const ark = type(["instanceof", ArkClass])
 
-			attest<Type<ArkClass, {}>>(ark)
+			attest<Type<ArkClass>>(ark)
 			// not expanded since there are no morphs
 			attest(ark.infer).type.toString("ArkClass")
 			attest(ark.in.infer).type.toString("ArkClass")

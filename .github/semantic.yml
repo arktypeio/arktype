@@ -1,9 +1,0 @@
-titleOnly: true
-scopes:
-  - attest
-  - dark
-  - fs
-  - repo
-  - schema
-  - type
-  - utils

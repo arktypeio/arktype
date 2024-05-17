@@ -20,12 +20,11 @@ export type BigintLiteral<value extends bigint = bigint> = `${value}n`
  *    3. If the value includes a decimal, its last digit may not be 0
  *    4. The value may not be "-0"
  */
-export const wellFormedNumberMatcher =
+export const wellFormedNumberMatcher: RegExp =
 	/^(?!^-0$)-?(?:0|[1-9]\d*)(?:\.\d*[1-9])?$/
 
-export const isWellFormedNumber = wellFormedNumberMatcher.test.bind(
-	wellFormedNumberMatcher
-)
+export const isWellFormedNumber: RegExp["test"] =
+	wellFormedNumberMatcher.test.bind(wellFormedNumberMatcher)
 
 const numberLikeMatcher = /^-?\d*\.?\d*$/
 const isNumberLike = (s: string) => s.length !== 0 && numberLikeMatcher.test(s)
@@ -35,10 +34,9 @@ const isNumberLike = (s: string) => s.length !== 0 && numberLikeMatcher.test(s)
  *    1. must begin with an integer, the first digit of which cannot be 0 unless the entire value is 0
  *    2. The value may not be "-0"
  */
-export const wellFormedIntegerMatcher = /^(?:0|(?:-?[1-9]\d*))$/
-export const isWellFormedInteger = wellFormedIntegerMatcher.test.bind(
-	wellFormedIntegerMatcher
-)
+export const wellFormedIntegerMatcher: RegExp = /^(?:0|(?:-?[1-9]\d*))$/
+export const isWellFormedInteger: RegExp["test"] =
+	wellFormedIntegerMatcher.test.bind(wellFormedIntegerMatcher)
 
 const integerLikeMatcher = /^-?\d+$/
 const isIntegerLike = integerLikeMatcher.test.bind(integerLikeMatcher)

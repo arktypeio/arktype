@@ -1,35 +1,36 @@
 import {
+	entriesOf,
+	hasDomain,
+	isArray,
+	printable,
+	throwParseError,
+	unset,
 	type Dict,
 	type Json,
 	type JsonData,
 	type PartialRecord,
-	entriesOf,
-	hasDomain,
-	isArray,
 	type listable,
-	printable,
-	type propValueOf,
-	throwParseError
+	type propValueOf
 } from "@arktype/util"
 import {
-	type NormalizedDef,
 	nodeClassesByKind,
-	nodeImplementationsByKind
+	nodeImplementationsByKind,
+	type NormalizedSchema
 } from "./kinds.js"
-import type { RawNode } from "./node.js"
-import type { UnknownSchema } from "./schema.js"
-import type { RawSchemaScope } from "./scope.js"
+import type { BaseNode } from "./node.js"
+import type { UnknownRoot } from "./roots/root.js"
+import type { RawRootScope } from "./scope.js"
 import type { RawNodeDeclaration } from "./shared/declare.js"
 import { Disjoint } from "./shared/disjoint.js"
 import {
-	type KeyDefinitions,
-	type NodeKind,
-	type SchemaKind,
-	type UnknownAttachments,
+	constraintKeys,
 	defaultValueSerializer,
-	discriminatingIntersectionKeys,
 	isNodeKind,
-	precedenceOfKind
+	precedenceOfKind,
+	type KeySchemainitions,
+	type NodeKind,
+	type RootKind,
+	type UnknownAttachments
 } from "./shared/implement.js"
 import { hasArkKind } from "./shared/utils.js"
 
@@ -41,74 +42,76 @@ export type NodeParseOptions<prereduced extends boolean = boolean> = {
 	 *
 	 * Useful for defining reductions like number|string|bigint|symbol|object|true|false|null|undefined => unknown
 	 **/
-	reduceTo?: RawNode
+	reduceTo?: BaseNode
 }
 
 export interface NodeParseContext<kind extends NodeKind = NodeKind>
 	extends NodeParseOptions {
-	$: RawSchemaScope
+	$: RawRootScope
 	id: string
-	args?: Record<string, UnknownSchema>
-	def: NormalizedDef<kind>
+	args?: Record<string, UnknownRoot>
+	schema: NormalizedSchema<kind>
 }
 
-const baseKeys: PartialRecord<string, propValueOf<KeyDefinitions<any>>> = {
+const baseKeys: PartialRecord<string, propValueOf<KeySchemainitions<any>>> = {
 	description: { meta: true }
-} satisfies KeyDefinitions<RawNodeDeclaration> as never
+} satisfies KeySchemainitions<RawNodeDeclaration> as never
 
-export const schemaKindOf = <kind extends SchemaKind = SchemaKind>(
-	def: unknown,
+export const schemaKindOf = <kind extends RootKind = RootKind>(
+	schema: unknown,
 	allowedKinds?: readonly kind[]
 ): kind => {
-	const kind = discriminateSchemaKind(def)
+	const kind = discriminateRootKind(schema)
 	if (allowedKinds && !allowedKinds.includes(kind as never)) {
 		return throwParseError(
-			`Schema of kind ${kind} should be one of ${allowedKinds}`
+			`Root of kind ${kind} should be one of ${allowedKinds}`
 		)
 	}
 	return kind as never
 }
 
-const discriminateSchemaKind = (def: unknown): SchemaKind => {
-	switch (typeof def) {
+const discriminateRootKind = (schema: unknown): RootKind => {
+	switch (typeof schema) {
 		case "string":
-			return def[0] === "$" ? "alias" : "domain"
+			return schema[0] === "$" ? "alias" : "domain"
 		case "function":
-			return hasArkKind(def, "schema") ? def.kind : "proto"
+			return hasArkKind(schema, "root") ? schema.kind : "proto"
 		case "object": {
 			// throw at end of function
-			if (def === null) break
+			if (schema === null) break
 
-			if ("morphs" in def) return "morph"
+			if ("morphs" in schema) return "morph"
 
-			if ("branches" in def || isArray(def)) return "union"
+			if ("branches" in schema || isArray(schema)) return "union"
 
-			if ("unit" in def) return "unit"
+			if ("unit" in schema) return "unit"
 
-			if ("alias" in def) return "alias"
+			if ("alias" in schema) return "alias"
 
-			const schemaKeys = Object.keys(def)
+			const schemaKeys = Object.keys(schema)
 
-			if (
-				schemaKeys.length === 0 ||
-				schemaKeys.some(k => k in discriminatingIntersectionKeys)
-			)
+			if (schemaKeys.length === 0 || schemaKeys.some(k => k in constraintKeys))
 				return "intersection"
-			if ("proto" in def) return "proto"
-			if ("domain" in def) return "domain"
+			if ("proto" in schema) return "proto"
+			if ("domain" in schema) return "domain"
 		}
 	}
-	return throwParseError(`${printable(def)} is not a valid type schema`)
+	return throwParseError(`${printable(schema)} is not a valid type schema`)
 }
 
-const nodeCache: { [innerHash: string]: RawNode } = {}
+const nodeCache: { [innerHash: string]: BaseNode } = {}
 
-export const parseNode = (kind: NodeKind, ctx: NodeParseContext): RawNode => {
+const serializeListableChild = (listableNode: listable<BaseNode>) =>
+	isArray(listableNode) ?
+		listableNode.map(node => node.collapsibleJson)
+	:	listableNode.collapsibleJson
+
+export const parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
 	const impl = nodeImplementationsByKind[kind]
 	const inner: Record<string, unknown> = {}
 	// ensure node entries are parsed in order of precedence, with non-children
 	// parsed first
-	const schemaEntries = entriesOf(ctx.def as Dict).sort(([lKey], [rKey]) =>
+	const schemaEntries = entriesOf(ctx.schema as Dict).sort(([lKey], [rKey]) =>
 		isNodeKind(lKey) ?
 			isNodeKind(rKey) ? precedenceOfKind(lKey) - precedenceOfKind(rKey)
 			:	1
@@ -116,7 +119,7 @@ export const parseNode = (kind: NodeKind, ctx: NodeParseContext): RawNode => {
 		: lKey < rKey ? -1
 		: 1
 	)
-	const children: RawNode[] = []
+	const children: BaseNode[] = []
 	for (const entry of schemaEntries) {
 		const k = entry[0]
 		const keyImpl = impl.keys[k] ?? baseKeys[k]
@@ -124,36 +127,36 @@ export const parseNode = (kind: NodeKind, ctx: NodeParseContext): RawNode => {
 			return throwParseError(`Key ${k} is not valid on ${kind} schema`)
 
 		const v = keyImpl.parse ? keyImpl.parse(entry[1], ctx) : entry[1]
-		if (v !== undefined || keyImpl.preserveUndefined) inner[k] = v
+		if (v !== unset && (v !== undefined || keyImpl.preserveUndefined))
+			inner[k] = v
 	}
 	const entries = entriesOf(inner)
 
 	let json: Record<string, unknown> = {}
 	let typeJson: Record<string, unknown> = {}
-	let collapsibleJson: Record<string, unknown> = {}
 	entries.forEach(([k, v]) => {
+		const listableNode = v as listable<BaseNode>
 		const keyImpl = impl.keys[k] ?? baseKeys[k]
+		const serialize =
+			keyImpl.serialize ??
+			(keyImpl.child ? serializeListableChild : defaultValueSerializer)
+
+		json[k] = serialize(listableNode)
+
 		if (keyImpl.child) {
-			const listableNode = v as listable<RawNode>
-			if (isArray(listableNode)) {
-				json[k] = listableNode.map(node => node.collapsibleJson)
-				children.push(...listableNode)
-			} else {
-				json[k] = listableNode.collapsibleJson
-				children.push(listableNode)
-			}
-		} else {
-			json[k] =
-				keyImpl.serialize ? keyImpl.serialize(v) : defaultValueSerializer(v)
+			if (isArray(listableNode)) children.push(...listableNode)
+			else children.push(listableNode)
 		}
-
 		if (!keyImpl.meta) typeJson[k] = json[k]
-
-		if (!keyImpl.implied) collapsibleJson[k] = json[k]
 	})
 
-	// check keys on collapsibleJson instead of schema in case one or more keys is
-	// implied, e.g. minVariadicLength on a SequenceNode
+	if (impl.finalizeJson) {
+		json = impl.finalizeJson(json) as never
+		typeJson = impl.finalizeJson(typeJson) as never
+	}
+
+	let collapsibleJson = json
+
 	const collapsibleKeys = Object.keys(collapsibleJson)
 	if (
 		collapsibleKeys.length === 1 &&
@@ -216,9 +219,12 @@ export const parseNode = (kind: NodeKind, ctx: NodeParseContext): RawNode => {
 	} satisfies UnknownAttachments as Record<string, any>
 	if (ctx.alias) attachments.alias = ctx.alias
 
-	for (const k in inner) if (k !== "description") attachments[k] = inner[k]
+	for (const k in inner) {
+		if (k !== "description" && k !== "in" && k !== "out")
+			attachments[k] = inner[k]
+	}
 
-	const node: RawNode = new nodeClassesByKind[kind](attachments as never)
+	const node: BaseNode = new nodeClassesByKind[kind](attachments as never)
 
 	nodeCache[innerHash] = node
 	return node

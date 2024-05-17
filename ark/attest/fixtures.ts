@@ -6,12 +6,12 @@ import { analyzeProjectAssertions } from "./cache/writeAssertionCache.js"
 import { ensureCacheDirs, getConfig, type AttestConfig } from "./config.js"
 import { forTypeScriptVersions } from "./tsVersioning.js"
 
-export const setup = (options: Partial<AttestConfig> = {}): void => {
+export const setup = (options: Partial<AttestConfig> = {}): typeof teardown => {
 	const config = getConfig()
 	Object.assign(config, options)
 	rmSync(config.cacheDir, { recursive: true, force: true })
 	ensureCacheDirs()
-	if (config.skipTypes) return
+	if (config.skipTypes) return teardown
 
 	if (
 		config.tsVersions.length === 1 &&
@@ -21,13 +21,14 @@ export const setup = (options: Partial<AttestConfig> = {}): void => {
 	else {
 		forTypeScriptVersions(config.tsVersions, version =>
 			shell(
-				`npm exec -c "attestPrecache ${join(
+				`npm exec -c "attest precache ${join(
 					config.assertionCacheDir,
 					version.alias + ".json"
 				)}"`
 			)
 		)
 	}
+	return teardown
 }
 
 export const writeAssertionData = (toPath: string): void => {
@@ -40,4 +41,4 @@ export const writeAssertionData = (toPath: string): void => {
 export const cleanup = (): void => writeSnapshotUpdatesOnExit()
 
 /** alias for cleanup to align with vitest and others */
-export const teardown = cleanup
+export const teardown: () => void = cleanup

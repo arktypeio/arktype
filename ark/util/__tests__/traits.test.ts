@@ -24,7 +24,7 @@ export class Boundable<data> extends Trait<{
 		this.limit = rule.limit
 	}
 
-	check(data: data) {
+	check(data: data): boolean {
 		return this.limit === undefined || this.sizeOf(data) <= this.limit
 	}
 }

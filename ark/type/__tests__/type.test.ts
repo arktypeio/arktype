@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@arktype/attest"
-import { ArkError, type } from "arktype"
+import { type } from "arktype"
 import { AssertionError } from "node:assert"
 
 contextualize(() => {
@@ -21,14 +21,13 @@ contextualize(() => {
 		attest(t.allows(5)).equals(false)
 	})
 
-	// TODO: ?
 	it("errors can be thrown", () => {
 		const t = type("number")
 		try {
 			const result = t("invalid")
 			attest(result instanceof type.errors && result.throw())
 		} catch (e) {
-			attest(e instanceof ArkError).equals(true)
+			attest(e instanceof type.errors).equals(true)
 			return
 		}
 		throw new AssertionError({ message: "Expected to throw" })

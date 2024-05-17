@@ -17,22 +17,30 @@ export const maxComparators = {
 export type MaxComparator = keyof typeof maxComparators
 
 export const comparators = {
-	...minComparators,
-	...maxComparators,
+	">": true,
+	">=": true,
+	"<": true,
+	"<=": true,
 	"==": true
 }
 
 export type Comparator = keyof typeof comparators
 
-export const invertedComparators = {
+export const invertedComparators: InvertedComparators = {
 	"<": ">",
 	">": "<",
 	"<=": ">=",
 	">=": "<=",
 	"==": "=="
-} as const satisfies Record<Comparator, Comparator>
+}
 
-export type InvertedComparators = typeof invertedComparators
+export type InvertedComparators = {
+	"<": ">"
+	">": "<"
+	"<=": ">="
+	">=": "<="
+	"==": "=="
+}
 
 export type OpenLeftBound = { limit: LimitLiteral; comparator: MinComparator }
 

@@ -32,7 +32,7 @@ contextualize(
 			// get the name ahead of time
 			const anonName = printable(anon)
 			const t = type(["===", anon])
-			attest<symbol>(t.infer)
+			attest<typeof anon>(t.infer)
 			attest(t(anon)).equals(anon)
 			attest(t("test").toString()).equals(`must be ${anonName} (was "test")`)
 		})

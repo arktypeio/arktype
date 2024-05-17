@@ -34,9 +34,8 @@ jobs:
         include:
           - os: ubuntu-latest
             node: lts/-1
-          # https://github.com/arktypeio/arktype/issues/738
-          # - os: ubuntu-latest
-          #   node: latest
+          - os: ubuntu-latest
+            node: latest
       fail-fast: false
 
     runs-on: ${{ matrix.os }}

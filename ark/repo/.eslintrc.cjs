@@ -7,8 +7,7 @@ module.exports = defineConfig({
 		"@typescript-eslint",
 		"import",
 		"only-warn",
-		"prefer-arrow-functions",
-		"unused-imports"
+		"prefer-arrow-functions"
 	],
 	extends: [
 		"eslint:recommended",
@@ -55,12 +54,11 @@ module.exports = defineConfig({
 		"@typescript-eslint/no-unused-vars": [
 			"warn",
 			{
+				args: "after-used",
+				argsIgnorePattern: "^_",
 				ignoreRestSiblings: true
 			}
 		],
-		"unused-imports/no-unused-imports": "warn",
-		// Can be replaced by --isolatedDeclarations in tsconfig once it's released:
-		// https://github.com/microsoft/TypeScript/pull/53463
 		"@typescript-eslint/explicit-module-boundary-types": [
 			"warn",
 			{ allowDirectConstAssertionInArrowFunctions: true }
@@ -94,7 +92,7 @@ module.exports = defineConfig({
 						message: `Use a specifier like '@arktype/util' to import from a package`
 					},
 					{
-						group: ["**/main.js"],
+						group: ["**/api.js"],
 						message: `Use a path like '../original/definition.js' instead of a package entrypoint`
 					}
 				]

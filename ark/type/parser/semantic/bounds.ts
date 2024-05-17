@@ -1,9 +1,6 @@
 import type { LimitLiteral, writeUnboundableMessage } from "@arktype/schema"
 import type { ErrorMessage, array } from "@arktype/util"
-import type {
-	Comparator,
-	InvertedComparators
-} from "../string/reduce/shared.js"
+import type { Comparator } from "../string/reduce/shared.js"
 import type {
 	BoundExpressionKind,
 	writeInvalidLimitMessage
@@ -13,8 +10,7 @@ import type { astToString } from "./utils.js"
 import type { validateAst } from "./validate.js"
 
 export type validateRange<l, comparator extends Comparator, r, $, args> =
-	l extends LimitLiteral ?
-		validateBound<r, InvertedComparators[comparator], l, "left", $, args>
+	l extends LimitLiteral ? validateBound<r, comparator, l, "left", $, args>
 	: l extends [infer leftAst, Comparator, unknown] ?
 		ErrorMessage<writeDoubleRightBoundMessage<astToString<leftAst>>>
 	:	validateBound<l, comparator, r & LimitLiteral, "right", $, args>

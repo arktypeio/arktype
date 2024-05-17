@@ -1,6 +1,7 @@
 import { CompiledFunction } from "@arktype/util"
-import type { Node, RawNode } from "../node.js"
-import type { Discriminant } from "../schemas/discriminate.js"
+import type { Node } from "../kinds.js"
+import type { BaseNode } from "../node.js"
+import type { Discriminant } from "../roots/discriminate.js"
 import type { PrimitiveKind } from "./implement.js"
 import type { TraversalKind } from "./traversal.js"
 
@@ -21,7 +22,7 @@ export class NodeCompiler extends CompiledFunction<["data", "ctx"]> {
 		super("data", "ctx")
 	}
 
-	invoke(node: RawNode, opts?: InvokeOptions): string {
+	invoke(node: BaseNode, opts?: InvokeOptions): string {
 		const arg = opts?.arg ?? this.data
 		if (this.requiresContextFor(node))
 			return `${this.reference(node, opts)}(${arg}, ${this.ctx})`
@@ -29,29 +30,47 @@ export class NodeCompiler extends CompiledFunction<["data", "ctx"]> {
 		return `${this.reference(node, opts)}(${arg})`
 	}
 
-	reference(node: RawNode, opts?: ReferenceOptions): string {
+	reference(node: BaseNode, opts?: ReferenceOptions): string {
 		const invokedKind = opts?.kind ?? this.traversalKind
 		const base = `this.${node.id}${invokedKind}`
 		return opts?.bind ? `${base}.bind(${opts?.bind})` : base
 	}
 
-	requiresContextFor(node: RawNode): boolean {
+	requiresContextFor(node: BaseNode): boolean {
 		return this.traversalKind === "Apply" || node.allowsRequiresContext
 	}
 
-	checkReferenceKey(keyExpression: string, node: RawNode): this {
+	initializeErrorCount(): this {
+		return this.const("errorCount", "ctx.currentErrorCount")
+	}
+
+	returnIfFail(): this {
+		return this.if("ctx.currentErrorCount > errorCount", () => this.return())
+	}
+
+	returnIfFailFast(): this {
+		return this.if("ctx.failFast && ctx.currentErrorCount > errorCount", () =>
+			this.return()
+		)
+	}
+
+	traverseKey(
+		keyExpression: string,
+		accessExpression: string,
+		node: BaseNode
+	): this {
 		const requiresContext = this.requiresContextFor(node)
 		if (requiresContext) this.line(`${this.ctx}.path.push(${keyExpression})`)
 
 		this.check(node, {
-			arg: `${this.data}${this.index(keyExpression)}`
+			arg: accessExpression
 		})
 		if (requiresContext) this.line(`${this.ctx}.path.pop()`)
 
 		return this
 	}
 
-	check(node: RawNode, opts?: InvokeOptions): this {
+	check(node: BaseNode, opts?: InvokeOptions): this {
 		return this.traversalKind === "Allows" ?
 				this.if(`!${this.invoke(node, opts)}`, () => this.return(false))
 			:	this.line(this.invoke(node, opts))
