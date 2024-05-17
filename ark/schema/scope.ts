@@ -2,6 +2,7 @@ import {
 	CompiledFunction,
 	DynamicBase,
 	bound,
+	envHasCsp,
 	flatMorph,
 	hasDomain,
 	isArray,
@@ -135,7 +136,7 @@ export const defaultConfig: ResolvedArkConfig = Object.assign(
 		implementation.defaults
 	]),
 	{
-		jitless: false,
+		jitless: envHasCsp(),
 		registerKeywords: false,
 		prereducedAliases: false
 	} satisfies Omit<ResolvedArkConfig, NodeKind>
