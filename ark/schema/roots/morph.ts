@@ -5,8 +5,10 @@ import {
 	type BuiltinObjectKind,
 	type BuiltinObjects,
 	type Primitive,
+	type anyOrNever,
 	type array,
-	type listable
+	type listable,
+	type show
 } from "@arktype/util"
 import type { of } from "../ast.js"
 import type { type } from "../inference.js"
@@ -26,6 +28,7 @@ import type {
 	TraverseAllows,
 	TraverseApply
 } from "../shared/traversal.js"
+import type { DefaultableAst } from "../structure/optional.js"
 import { BaseRoot, type schemaKindRightOf } from "./root.js"
 import { defineRightwardIntersections } from "./utils.js"
 
@@ -231,17 +234,34 @@ type _distill<
 	unknown extends t ? unknown
 	: t extends MorphAst<infer i, infer o> ?
 		io extends "in" ?
-			i
-		:	o
+			_distill<i, io, distilledKind>
+		:	_distill<o, io, distilledKind>
+	: t extends DefaultableAst<infer t> ? _distill<t, io, distilledKind>
 	: t extends of<infer base, any> ?
 		distilledKind extends "base" ?
 			_distill<base, io, distilledKind>
 		:	t
 	: t extends TerminallyInferredObjectKind | Primitive ? t
 	: t extends array ? distillArray<t, io, distilledKind, []>
-	: {
+	: io extends "in" ?
+		show<
+			{
+				[k in keyof t as k extends defaultableKeyOf<t> ? never : k]: _distill<
+					t[k],
+					io,
+					distilledKind
+				>
+			} & { [k in defaultableKeyOf<t>]?: _distill<t[k], io, distilledKind> }
+		>
+	:	{
 			[k in keyof t]: _distill<t[k], io, distilledKind>
 		}
+
+type defaultableKeyOf<t> = {
+	[k in keyof t]: [t[k]] extends [anyOrNever] ? never
+	: t[k] extends DefaultableAst ? k
+	: never
+}[keyof t]
 
 type distillArray<
 	t extends array,

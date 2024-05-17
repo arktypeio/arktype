@@ -4,6 +4,7 @@ import {
 	isArray,
 	printable,
 	throwParseError,
+	unset,
 	type Dict,
 	type Json,
 	type JsonData,
@@ -126,7 +127,8 @@ export const parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
 			return throwParseError(`Key ${k} is not valid on ${kind} schema`)
 
 		const v = keyImpl.parse ? keyImpl.parse(entry[1], ctx) : entry[1]
-		if (v !== undefined || keyImpl.preserveUndefined) inner[k] = v
+		if (v !== unset && (v !== undefined || keyImpl.preserveUndefined))
+			inner[k] = v
 	}
 	const entries = entriesOf(inner)
 

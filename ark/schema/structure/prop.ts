@@ -1,6 +1,9 @@
 import {
 	compileSerializedValue,
+	printable,
 	registeredReference,
+	throwParseError,
+	unset,
 	type Key
 } from "@arktype/util"
 import { BaseConstraint } from "../constraint.js"
@@ -50,9 +53,31 @@ export const intersectProps = (
 		if (kind === "optional") value = ctx.$.keywords.never.raw
 		else return value.withPrefixKey(l.compiledKey)
 	}
-	return ctx.$.node(kind, {
+
+	if (kind === "required") {
+		return ctx.$.node("required", {
+			key,
+			value
+		})
+	}
+
+	const defaultIntersection =
+		l.hasDefault() ?
+			r.hasDefault() ?
+				l.default === r.default ?
+					l.default
+				:	throwParseError(
+						`Invalid intersection of default values ${printable(l.default)} & ${printable(r.default)}`
+					)
+			:	l.default
+		: r.hasDefault() ? r.default
+		: unset
+
+	return ctx.$.node("optional", {
 		key,
-		value
+		value,
+		// unset is stripped during parsing
+		default: defaultIntersection
 	})
 }
 
@@ -68,12 +93,19 @@ export abstract class BaseProp<
 		typeof this.key === "string" ? this.key : this.serializedKey
 
 	private defaultValueMorphs: Morph[] = [
-		data => (data[this.key] = (this as OptionalNode).default)
+		data => {
+			data[this.key] = (this as OptionalNode).default
+			return data
+		}
 	]
 
 	private defaultValueMorphsReference = registeredReference(
 		this.defaultValueMorphs
 	)
+
+	hasDefault(): this is OptionalNode & { default: unknown } {
+		return "default" in this
+	}
 
 	traverseAllows: TraverseAllows<object> = (data, ctx) => {
 		if (this.key in data) {
@@ -92,7 +124,8 @@ export abstract class BaseProp<
 			this.value.traverseApply((data as any)[this.key], ctx)
 			ctx.path.pop()
 		} else if (this.hasKind("required")) ctx.error(this.errorContext)
-		else if ("default" in this) ctx.queueMorphs(this.defaultValueMorphs)
+		else if (this.hasKind("optional") && this.hasDefault())
+			ctx.queueMorphs(this.defaultValueMorphs)
 	}
 
 	compile(js: NodeCompiler): void {

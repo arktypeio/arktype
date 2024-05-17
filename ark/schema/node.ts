@@ -78,7 +78,7 @@ export abstract class BaseNode<
 	readonly qualifiedId = `${this.$.id}${this.id}`
 	readonly includesMorph: boolean =
 		this.kind === "morph" ||
-		(this.hasKind("optional") && "default" in this) ||
+		(this.hasKind("optional") && this.hasDefault()) ||
 		(this.hasKind("structure") && this.undeclared === "delete") ||
 		this.children.some(child => child.includesMorph)
 	readonly allowsRequiresContext: boolean =

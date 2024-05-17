@@ -1,20 +1,27 @@
-import type {
-	BaseRoot,
-	NodeSchema,
-	StructureNode,
-	UndeclaredKeyBehavior,
-	UnitNode,
-	writeInvalidPropertyKeyMessage
+import {
+	ArkErrors,
+	type BaseRoot,
+	type Default,
+	type MutableInner,
+	type NodeSchema,
+	type PropKind,
+	type StructureNode,
+	type UndeclaredKeyBehavior,
+	type UnitNode,
+	type writeInvalidPropertyKeyMessage
 } from "@arktype/schema"
 import {
 	append,
+	isArray,
 	printable,
 	spliterate,
 	stringAndSymbolicEntriesOf,
 	throwParseError,
+	unset,
 	type Dict,
 	type ErrorMessage,
 	type Key,
+	type anyOrNever,
 	type keyError,
 	type merge,
 	type mutable,
@@ -64,7 +71,7 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): BaseRoot => {
 		}
 		if (entry.kind === "index") {
 			// handle key parsing first to match type behavior
-			const key = ctx.$.parse(entry.inner, ctx)
+			const key = ctx.$.parse(entry.key, ctx)
 			const value = ctx.$.parse(entry.value, ctx)
 
 			// extract enumerable named props from the index signature
@@ -94,10 +101,17 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): BaseRoot => {
 			}
 		} else {
 			const value = ctx.$.parse(entry.value, ctx)
-			structure[entry.kind] = append(structure[entry.kind], {
-				key: entry.inner,
-				value
-			})
+			const inner: MutableInner<PropKind> = { key: entry.key, value }
+			if (entry.default !== unset) {
+				const out = value(entry.default)
+				if (out instanceof ArkErrors)
+					throwParseError(`Default value at ${printable(entry.key)} ${out}`)
+
+				value.assert(entry.default)
+				;(inner as MutableInner<"optional">).default = entry.default
+			}
+
+			structure[entry.kind] = append(structure[entry.kind], inner)
 		}
 	}
 
@@ -133,11 +147,13 @@ type _inferObjectLiteral<def extends object, $, args> = {
 	// since def is a const parameter, we remove the readonly modifier here
 	// support for builtin readonly tracked here:
 	// https://github.com/arktypeio/arktype/issues/808
-	-readonly [k in keyof def as nonOptionalKeyFrom<k, $, args>]: inferDefinition<
-		def[k],
-		$,
-		args
-	>
+	-readonly [k in keyof def as nonOptionalKeyFrom<k, $, args>]: def[k] extends (
+		readonly [infer defaultableDef, "=", infer v]
+	) ?
+		def[k] extends anyOrNever ?
+			def[k]
+		:	(In?: inferDefinition<defaultableDef, $, args>) => Default<v>
+	:	inferDefinition<def[k], $, args>
 } & {
 	-readonly [k in keyof def as optionalKeyFrom<k>]?: inferDefinition<
 		def[k],
@@ -161,8 +177,19 @@ export type validateObjectLiteral<def, $, args> = {
 			validateDefinition<def[k], $, args>
 		:	keyError<writeInvalidSpreadTypeMessage<astToString<def[k]>>>
 	: k extends "+" ? UndeclaredKeyBehavior
-	: validateDefinition<def[k], $, args>
+	: validatePossibleDefaultValue<def, k, $, args>
 }
+
+type validatePossibleDefaultValue<def, k extends keyof def, $, args> =
+	def[k] extends readonly [infer defaultDef, "=", unknown] ?
+		parseKey<k>["kind"] extends "required" ?
+			readonly [
+				validateDefinition<defaultDef, $, args>,
+				"=",
+				inferDefinition<defaultDef, $, args>
+			]
+		:	ErrorMessage<invalidDefaultKeyKindMessage>
+	:	validateDefinition<def[k], $, args>
 
 type nonOptionalKeyFrom<k, $, args> =
 	parseKey<k> extends PreparsedKey<"required", infer inner> ? inner
@@ -180,7 +207,7 @@ type PreparsedKey<
 	inner extends Key = Key
 > = {
 	kind: kind
-	inner: inner
+	key: inner
 }
 
 namespace PreparsedKey {
@@ -193,31 +220,67 @@ export type MetaKey = "..." | "+"
 
 export type IndexKey<def extends string = string> = `[${def}]`
 
-type PreparsedEntry = PreparsedKey & { value: unknown }
+interface PreparsedEntry extends PreparsedKey {
+	value: unknown
+	default: unknown
+}
 
-export const parseEntry = (entry: readonly [Key, unknown]): PreparsedEntry =>
-	Object.assign(parseKey(entry[0]), { value: entry[1] })
+export const parseEntry = ([key, value]: readonly [
+	Key,
+	unknown
+]): PreparsedEntry => {
+	const parsedKey = parseKey(key)
+
+	if (isArray(value) && value[1] === "=") {
+		if (parsedKey.kind !== "required")
+			throwParseError(invalidDefaultKeyKindMessage)
+
+		return {
+			kind: "optional",
+			key: parsedKey.key,
+			value: value[0],
+			default: value[2]
+		}
+	}
+
+	return {
+		kind: parsedKey.kind,
+		key: parsedKey.key,
+		value,
+		default: unset
+	}
+}
+
+// single quote use here is better for TypeScript's inlined error to avoid escapes
+export const invalidDefaultKeyKindMessage = `Only required keys may specify default values, e.g. { ark: ['string', '=', '⛵'] }`
+
+export type invalidDefaultKeyKindMessage = typeof invalidDefaultKeyKindMessage
+
+export const defaultedIndexSignatureMessage = "An index signature "
+
+export const defaultedOptionalMessage =
+	"An optional key cannot specify a default value"
 
 const parseKey = (key: Key): PreparsedKey =>
-	typeof key === "symbol" ? { inner: key, kind: "required" }
+	typeof key === "symbol" ? { kind: "required", key }
 	: key.at(-1) === "?" ?
 		key.at(-2) === Scanner.escapeToken ?
-			{ inner: `${key.slice(0, -2)}?`, kind: "required" }
+			{ kind: "required", key: `${key.slice(0, -2)}?` }
 		:	{
-				inner: key.slice(0, -1),
-				kind: "optional"
+				kind: "optional",
+				key: key.slice(0, -1)
 			}
 	: key[0] === "[" && key.at(-1) === "]" ?
-		{ inner: key.slice(1, -1), kind: "index" }
+		{ kind: "index", key: key.slice(1, -1) }
 	: key[0] === Scanner.escapeToken && key[1] === "[" && key.at(-1) === "]" ?
-		{ inner: key.slice(1), kind: "required" }
-	: key === "..." || key === "+" ? { inner: key, kind: key }
+		{ kind: "required", key: key.slice(1) }
+	: key === "..." || key === "+" ? { kind: key, key }
 	: {
-			inner:
+			kind: "required",
+			key:
 				key === "\\..." ? "..."
 				: key === "\\+" ? "+"
-				: key,
-			kind: "required"
+				: key
 		}
 
 type parseKey<k> =
@@ -225,23 +288,23 @@ type parseKey<k> =
 		inner extends `${infer baseName}${Scanner.EscapeToken}` ?
 			PreparsedKey.from<{
 				kind: "required"
-				inner: `${baseName}?`
+				key: `${baseName}?`
 			}>
 		:	PreparsedKey.from<{
 				kind: "optional"
-				inner: inner
+				key: inner
 			}>
-	: k extends MetaKey ? PreparsedKey.from<{ kind: k; inner: k }>
+	: k extends MetaKey ? PreparsedKey.from<{ kind: k; key: k }>
 	: k extends `${Scanner.EscapeToken}${infer escapedMeta extends MetaKey}` ?
-		PreparsedKey.from<{ kind: "required"; inner: escapedMeta }>
+		PreparsedKey.from<{ kind: "required"; key: escapedMeta }>
 	: k extends IndexKey<infer def> ?
 		PreparsedKey.from<{
 			kind: "index"
-			inner: def
+			key: def
 		}>
 	:	PreparsedKey.from<{
 			kind: "required"
-			inner: k extends (
+			key: k extends (
 				`${Scanner.EscapeToken}${infer escapedIndexKey extends IndexKey}`
 			) ?
 				escapedIndexKey

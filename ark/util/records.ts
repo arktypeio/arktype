@@ -207,6 +207,10 @@ export const invert = <t extends Record<PropertyKey, PropertyKey>>(
 	t: t
 ): invert<t> => flatMorph(t as any, (k, v) => [v, k]) as never
 
+export const unset = Symbol("represents an uninitialized value")
+
+export type unset = typeof unset
+
 /**
  *  For each keyof o that also exists on jsDocSource, add associated JsDoc annotations to o.
  *  Does not preserve modifiers on o like optionality.

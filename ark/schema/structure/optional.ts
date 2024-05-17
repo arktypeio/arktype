@@ -19,6 +19,10 @@ export interface OptionalInner extends BasePropInner {
 	default?: unknown
 }
 
+export type Default<v = any> = ["=", v]
+
+export type DefaultableAst<t = any, v = any> = (In?: t) => Default<v>
+
 export type OptionalDeclaration = declareNode<
 	BasePropDeclaration<"optional"> & {
 		schema: OptionalSchema
@@ -38,7 +42,9 @@ export const optionalImplementation: nodeImplementationOf<OptionalDeclaration> =
 				child: true,
 				parse: (schema, ctx) => ctx.$.schema(schema)
 			},
-			default: {}
+			default: {
+				preserveUndefined: true
+			}
 		},
 		normalize: schema => schema,
 		defaults: {
