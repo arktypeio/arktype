@@ -50,8 +50,10 @@ jobs:
         with:
           node: ${{ matrix.node }}
 
-      # - name: Test
-      #   run: pnpm testRepo
+      # To test node and OS versions, we don't care about rechecking types
+      # so just check runtime behavior
+      - name: Test
+        run: pnpm testRepo
 
   prChecks:
     needs: compatibility
