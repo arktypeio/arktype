@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@arktype/attest"
-import { rawSchema, writeUnresolvableMessage } from "@arktype/schema"
+import { rawRoot, writeUnresolvableMessage } from "@arktype/schema"
 import { type } from "arktype"
 import { writeMissingRightOperandMessage } from "../parser/string/shift/operand/unenclosed.js"
 
@@ -12,7 +12,7 @@ contextualize(() => {
 	it("root expression", () => {
 		const t = type("keyof", "Date")
 		attest<keyof Date>(t.infer)
-		const expected = rawSchema(Date).keyof()
+		const expected = rawRoot(Date).keyof()
 		attest(t.json).equals(expected.json)
 	})
 

@@ -72,17 +72,15 @@ export const attestInternal = (
 	return new ChainableAssertions(ctx)
 }
 
-attestInternal.instantiations = (
-	args: Measure<"instantiations"> | undefined
-) => {
-	const attestConfig = getConfig()
-	if (attestConfig.skipInlineInstantiations) return
+export const attest: AttestFn = Object.assign(attestInternal, {
+	instantiations: (args: Measure<"instantiations"> | undefined) => {
+		const attestConfig = getConfig()
+		if (attestConfig.skipInlineInstantiations) return
 
-	const calledFrom = caller()
-	const ctx = getBenchCtx([calledFrom.file])
-	ctx.benchCallPosition = calledFrom
-	ctx.lastSnapCallPosition = calledFrom
-	instantiationDataHandler({ ...ctx, kind: "instantiations" }, args, false)
-}
-
-export const attest: AttestFn = attestInternal as AttestFn
+		const calledFrom = caller()
+		const ctx = getBenchCtx([calledFrom.file])
+		ctx.benchCallPosition = calledFrom
+		ctx.lastSnapCallPosition = calledFrom
+		instantiationDataHandler({ ...ctx, kind: "instantiations" }, args, false)
+	}
+})

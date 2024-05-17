@@ -1,25 +1,31 @@
-import { DynamicBase, type isAnyOrNever } from "@arktype/util"
-import type { Schema } from "./schema.js"
-import { addArkKind, arkKind } from "./shared/utils.js"
+import { DynamicBase, type anyOrNever } from "@arktype/util"
+import type { Root } from "./roots/root.js"
+import { arkKind } from "./shared/utils.js"
 
 export type PreparsedNodeResolution = {
 	[arkKind]: "generic" | "module"
 }
 
-type exportSchemaScope<$> = {
-	[k in keyof $]: $[k] extends PreparsedNodeResolution ?
-		isAnyOrNever<$[k]> extends true ?
-			Schema<$[k], $>
-		:	$[k]
-	:	Schema<$[k], $>
-}
-
-export class SchemaModule<$ = any> extends DynamicBase<exportSchemaScope<$>> {
-	declare readonly [arkKind]: "module"
-
-	constructor(types: exportSchemaScope<$>) {
-		super(types)
-		// ensure `[arkKind]` is non-enumerable so it doesn't get spread on import/export
-		addArkKind(this as never, "module")
+export class RootModule<
+	exports extends object = {}
+> extends DynamicBase<exports> {
+	// ensure `[arkKind]` is non-enumerable so it doesn't get spread on import/export
+	get [arkKind](): "module" {
+		return "module"
 	}
 }
+
+type exportSchemaScope<$> = {
+	[k in keyof $]: $[k] extends PreparsedNodeResolution ?
+		[$[k]] extends [anyOrNever] ?
+			Root<$[k], $>
+		:	$[k]
+	:	Root<$[k], $>
+}
+
+export const SchemaModule: new <$ = {}>(
+	types: exportSchemaScope<$>
+) => SchemaModule<$> = RootModule
+
+export interface SchemaModule<$ = {}>
+	extends RootModule<exportSchemaScope<$>> {}

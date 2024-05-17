@@ -7,15 +7,15 @@ import {
 	type PartialRecord,
 	type show
 } from "@arktype/util"
-import type { of } from "../constraints/ast.js"
-import type { RawNode } from "../node.js"
-import type { RawSchema } from "../schema.js"
-import type { MorphAst, MorphNode, Out } from "../schemas/morph.js"
-import type { RawSchemaScope } from "../scope.js"
+import type { of } from "../ast.js"
+import type { BaseNode } from "../node.js"
+import type { MorphAst, MorphNode, Out } from "../roots/morph.js"
+import type { BaseRoot } from "../roots/root.js"
+import type { RawRootScope } from "../scope.js"
 import { Disjoint } from "./disjoint.js"
 import type {
 	IntersectionContext,
-	SchemaKind,
+	RootKind,
 	UnknownIntersectionResult
 } from "./implement.js"
 import { isNode } from "./utils.js"
@@ -62,29 +62,35 @@ type intersectObjects<l, r, piped extends boolean> =
 	[l, r] extends [infer lList extends array, infer rList extends array] ?
 		intersectArrays<lList, rList, MorphableIntersection<piped>>
 	:	show<
+			// this looks redundant, but should hit the cache anyways and
+			// preserves index signature + optional keys correctly
 			{
 				[k in keyof l]: k extends keyof r ?
 					_inferIntersection<l[k], r[k], piped>
 				:	l[k]
-			} & Omit<r, keyof l>
+			} & {
+				[k in keyof r]: k extends keyof l ?
+					_inferIntersection<l[k], r[k], piped>
+				:	r[k]
+			}
 		>
 
 const intersectionCache: PartialRecord<string, UnknownIntersectionResult> = {}
 
-type InternalNodeIntersection<ctx> = <l extends RawNode, r extends RawNode>(
+type InternalNodeIntersection<ctx> = <l extends BaseNode, r extends BaseNode>(
 	l: l,
 	r: r,
 	ctx: ctx
-) => l["kind"] | r["kind"] extends SchemaKind ? RawSchema | Disjoint
-:	RawNode | Disjoint | null
+) => l["kind"] | r["kind"] extends RootKind ? BaseRoot | Disjoint
+:	BaseNode | Disjoint | null
 
-export const intersectNodesRoot: InternalNodeIntersection<RawSchemaScope> = (
+export const intersectNodesRoot: InternalNodeIntersection<RawRootScope> = (
 	l,
 	r,
 	$
 ) => intersectNodes(l, r, { $, invert: false, pipe: false })
 
-export const pipeNodesRoot: InternalNodeIntersection<RawSchemaScope> = (
+export const pipeNodesRoot: InternalNodeIntersection<RawRootScope> = (
 	l,
 	r,
 	$
@@ -97,13 +103,13 @@ export const intersectNodes: InternalNodeIntersection<IntersectionContext> = (
 ) => {
 	const operator = ctx.pipe ? "|>" : "&"
 	const lrCacheKey = `${l.typeHash}${operator}${r.typeHash}`
-	if (intersectionCache[lrCacheKey])
+	if (intersectionCache[lrCacheKey] !== undefined)
 		return intersectionCache[lrCacheKey]! as never
 
 	if (!ctx.pipe) {
 		// we can only use this for the commutative & operator
 		const rlCacheKey = `${r.typeHash}${operator}${l.typeHash}`
-		if (intersectionCache[rlCacheKey]) {
+		if (intersectionCache[rlCacheKey] !== undefined) {
 			// if the cached result was a Disjoint and the operands originally
 			// appeared in the opposite order, we need to invert it to match
 			const rlResult = intersectionCache[rlCacheKey]!
@@ -157,28 +163,28 @@ export const intersectNodes: InternalNodeIntersection<IntersectionContext> = (
 
 export const pipeFromMorph = (
 	from: MorphNode,
-	to: RawSchema,
+	to: BaseRoot,
 	ctx: IntersectionContext
 ): MorphNode | Disjoint => {
-	const out = from?.to ? intersectNodes(from.to, to, ctx) : to
+	const out = from?.out ? intersectNodes(from.out, to, ctx) : to
 	if (out instanceof Disjoint) return out
 	return ctx.$.node("morph", {
 		morphs: from.morphs,
-		from: from.in,
-		to: out
+		in: from.in,
+		out
 	})
 }
 
 export const pipeToMorph = (
-	from: RawSchema,
+	from: BaseRoot,
 	to: MorphNode,
 	ctx: IntersectionContext
 ): MorphNode | Disjoint => {
-	const result = intersectNodes(from, to.from, ctx)
+	const result = intersectNodes(from, to.in, ctx)
 	if (result instanceof Disjoint) return result
 	return ctx.$.node("morph", {
 		morphs: to.morphs,
-		from: result,
-		to: to.out
+		in: result,
+		out: to.out
 	})
 }

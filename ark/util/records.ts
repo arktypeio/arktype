@@ -124,17 +124,7 @@ export type requiredKeyOf<o> = {
 
 export type optionalKeyOf<o> = Exclude<keyof o, requiredKeyOf<o>>
 
-export type optionalizeKeys<o, keys extends keyof o> = show<
-	{ [k in Exclude<requiredKeyOf<o>, keys>]: o[k] } & {
-		[k in optionalKeyOf<o> | keys]?: o[k]
-	}
->
-
-export type merge<base, merged> = show<
-	{
-		[k in Exclude<keyof base, keyof merged>]: base[k]
-	} & merged
->
+export type merge<base, merged> = show<Omit<base, keyof merged> & merged>
 
 export type override<
 	base,
@@ -216,3 +206,25 @@ export type invert<t extends Record<PropertyKey, PropertyKey>> = {
 export const invert = <t extends Record<PropertyKey, PropertyKey>>(
 	t: t
 ): invert<t> => flatMorph(t as any, (k, v) => [v, k]) as never
+
+export const unset = Symbol("represents an uninitialized value")
+
+export type unset = typeof unset
+
+/**
+ *  For each keyof o that also exists on jsDocSource, add associated JsDoc annotations to o.
+ *  Does not preserve modifiers on o like optionality.
+ */
+export type withJsDoc<o, jsDocSource> = show<
+	keyof o extends keyof jsDocSource ?
+		keyof jsDocSource extends keyof o ?
+			_withJsDoc<o, jsDocSource>
+		:	Pick<_withJsDoc<o, jsDocSource>, keyof o & keyof jsDocSource>
+	:	Pick<_withJsDoc<o, jsDocSource>, keyof o & keyof jsDocSource> & {
+			[k in Exclude<keyof o, keyof jsDocSource>]: o[k]
+		}
+>
+
+type _withJsDoc<o, jsDocSource> = {
+	[k in keyof jsDocSource]-?: o[k & keyof o]
+}

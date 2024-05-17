@@ -6,7 +6,10 @@ import {
 } from "@arktype/schema"
 import { printable, registeredReference } from "@arktype/util"
 import { scope, type } from "arktype"
-import { writeInvalidSpreadTypeMessage } from "../parser/objectLiteral.js"
+import {
+	writeInvalidSpreadTypeMessage,
+	writeInvalidUndeclaredBehaviorMessage
+} from "../parser/objectLiteral.js"
 
 contextualize(
 	"named",
@@ -21,7 +24,7 @@ contextualize(
 			attest<{ a: string; b: number }>(o.infer)
 			attest(o.json).snap({
 				domain: "object",
-				prop: [
+				required: [
 					{ key: "a", value: "string" },
 					{ key: "b", value: "number" }
 				]
@@ -33,10 +36,8 @@ contextualize(
 			attest<{ a?: string; b: number }>(o.infer)
 			attest(o.json).snap({
 				domain: "object",
-				prop: [
-					{ key: "a", optional: true, value: "string" },
-					{ key: "b", value: "number" }
-				]
+				required: [{ key: "b", value: "number" }],
+				optional: [{ key: "a", value: "string" }]
 			})
 		})
 
@@ -49,7 +50,7 @@ contextualize(
 			attest<{ [s]: string }>(t.infer)
 			attest(t.json).snap({
 				domain: "object",
-				prop: [{ key: name, value: "string" }]
+				required: [{ key: name, value: "string" }]
 			})
 		})
 
@@ -87,6 +88,10 @@ contextualize(
 		it("escaped optional token", () => {
 			const t = type({ "a\\?": "string" })
 			attest<{ "a?": string }>(t.infer)
+			attest(t.json).snap({
+				required: [{ key: "a?", value: "string" }],
+				domain: "object"
+			})
 		})
 
 		it("traverse optional", () => {
@@ -95,23 +100,6 @@ contextualize(
 			attest(o({})).snap({})
 			attest(o({ a: 1 }).toString()).snap("a must be a string (was number)")
 		})
-
-		// it("traverse strict optional", () => {
-		// 	// TODO: strict
-		// 	const o = type({ "a?": "string" })
-		// 	attest(o({ a: "a" })).snap({ a: "a" })
-		// 	attest(o({})).snap({})
-		// 	attest(o({ a: 1 }).toString()).snap("a must be a string (was number)")
-		// })
-
-		// it("multiple bad strict", () => {
-		// 	const t = type({ a: "string", b: "boolean" }).configure({
-		// 		keys: "strict"
-		// 	})
-		// 	attest(t({ a: 1, b: 2 }).toString()).snap(
-		// 		"a must be a string (was number)\nb must be boolean (was number)"
-		// 	)
-		// })
 
 		// it("optional symbol", () => {
 		// 	const s = Symbol()
@@ -137,7 +125,7 @@ contextualize(
 			attest<{ isAdmin: true; name: string }>(s.admin.infer)
 			attest(s.admin.json).equals({
 				domain: "object",
-				prop: [
+				required: [
 					{ key: "isAdmin", value: { unit: true } },
 					{ key: "name", value: "string" }
 				]
@@ -151,7 +139,7 @@ contextualize(
 			attest<{ isAdmin: true; name: string }>(admin.infer)
 			attest(admin.json).snap({
 				domain: "object",
-				prop: [
+				required: [
 					{ key: "isAdmin", value: { unit: true } },
 					{ key: "name", value: "string" }
 				]
@@ -175,7 +163,7 @@ contextualize(
 
 			attest(t.json).snap({
 				domain: "object",
-				prop: [
+				required: [
 					{
 						key: "inherited",
 						value: [{ unit: false }, { unit: true }]
@@ -194,14 +182,14 @@ contextualize(
 
 			attest(t.json).snap({
 				domain: "object",
-				prop: [{ key: "...", value: "string" }]
+				required: [{ key: "...", value: "string" }]
 			})
 		})
 
 		it("with non-object", () => {
 			// @ts-expect-error
 			attest(() => type({ "...": "string" })).throwsAndHasTypeError(
-				writeInvalidSpreadTypeMessage(printable("string"))
+				writeInvalidSpreadTypeMessage("string")
 			)
 		})
 
@@ -215,7 +203,7 @@ contextualize(
 			attest<{ isAdmin: true; name: string }>(adminUser.infer)
 			attest(adminUser.json).snap({
 				domain: "object",
-				prop: [
+				required: [
 					{ key: "isAdmin", value: { unit: true } },
 					{ key: "name", value: "string" }
 				]
@@ -229,7 +217,7 @@ contextualize(
 			attest<{ [x: string]: string }>(o.infer)
 			attest(o.json).snap({
 				domain: "object",
-				index: [{ key: "string", value: "string" }]
+				index: [{ signature: "string", value: "string" }]
 			})
 
 			attest(o({})).equals({})
@@ -249,7 +237,7 @@ b must be a string (was false)`)
 			attest<{ [x: symbol]: 1 }>(o.infer)
 			attest(o.json).snap({
 				domain: "object",
-				index: [{ key: "symbol", value: { unit: 1 } }]
+				index: [{ signature: "symbol", value: { unit: 1 } }]
 			})
 
 			attest(o({})).equals({})
@@ -291,7 +279,7 @@ value at [${zildjianName}] must be 1 (was undefined)`)
 			attest<{ [x: string]: string; [x: symbol]: string }>(o.infer)
 			attest(o.json).snap({
 				domain: "object",
-				index: [{ key: ["string", "symbol"], value: "string" }]
+				index: [{ signature: ["string", "symbol"], value: "string" }]
 			})
 		})
 
@@ -302,11 +290,11 @@ value at [${zildjianName}] must be 1 (was undefined)`)
 			})
 			attest<{ [x: string]: string; [x: symbol]: number }>(o.infer)
 			attest(o.json).snap({
-				domain: "object",
 				index: [
-					{ key: "string", value: "string" },
-					{ key: "symbol", value: "number" }
-				]
+					{ value: "string", signature: "string" },
+					{ value: "number", signature: "symbol" }
+				],
+				domain: "object"
 			})
 
 			attest(o({})).equals({})
@@ -343,11 +331,9 @@ value at [${symName}] must be a number (was string)`)
 			)
 			attest(o.json).snap({
 				domain: "object",
-				prop: [
-					{ key: "optional", optional: true, value: { unit: "bar" } },
-					{ key: "required", value: { unit: "foo" } }
-				],
-				index: [{ key: "string", value: "string" }]
+				required: [{ key: "required", value: { unit: "foo" } }],
+				optional: [{ key: "optional", value: { unit: "bar" } }],
+				index: [{ signature: "string", value: "string" }]
 			})
 
 			const valid: typeof o.infer = { required: "foo", other: "bar" }
@@ -357,8 +343,8 @@ value at [${symName}] must be a number (was string)`)
 					optional: "wrongString",
 					other: 0n
 				}).toString()
-			).snap(`optional must be "bar" (was "wrongString")
-required must be "foo" (was missing)
+			).snap(`required must be "foo" (was missing)
+optional must be "bar" (was "wrongString")
 other must be a string (was bigint)`)
 		})
 
@@ -380,6 +366,28 @@ other must be a string (was bigint)`)
 			})
 
 			attest(types.obj.json).snap(expected.json)
+		})
+
+		it("intersection with named", () => {
+			const t = type({ "[string]": "4" }).and({ "a?": "1" })
+			attest<{
+				[k: string]: 4
+				a?: never
+			}>(t.infer)
+			attest(t.json).snap({
+				optional: [{ key: "a", value: { unit: 1 } }],
+				index: [{ value: { unit: 4 }, signature: "string" }],
+				domain: "object"
+			})
+		})
+
+		it("intersction with right required", () => {
+			const t = type({ "a?": "true" }).and({ a: "boolean" })
+			attest<{ a: true }>(t.infer)
+			const expected = type({
+				a: "true"
+			})
+			attest(t.json).equals(expected.json)
 		})
 
 		it("syntax error in index definition", () => {
@@ -435,7 +443,31 @@ other must be a string (was bigint)`)
 			attest<{ "[string]": string }>(o.infer)
 			attest(o.json).snap({
 				domain: "object",
-				prop: [{ key: "[string]", value: "string" }]
+				required: [{ key: "[string]", value: "string" }]
+			})
+		})
+	},
+	"undeclared",
+	() => {
+		it("can parse an undeclared restriction", () => {
+			const t = type({ "+": "reject" })
+			attest<{}>(t.infer)
+			attest(t.json).snap({ undeclared: "reject", domain: "object" })
+		})
+		it("fails on type definition for undeclared", () => {
+			// @ts-expect-error
+			attest(() => type({ "+": "string" }))
+				.throws(writeInvalidUndeclaredBehaviorMessage("string"))
+				.type.errors.snap(
+					"Type '\"string\"' is not assignable to type 'UndeclaredKeyBehavior'."
+				)
+		})
+		it("can escape undeclared meta key", () => {
+			const t = type({ "\\+": "string" })
+			attest<{ "+": string }>(t.infer)
+			attest(t.json).snap({
+				required: [{ key: "+", value: "string" }],
+				domain: "object"
 			})
 		})
 	}

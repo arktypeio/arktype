@@ -138,4 +138,40 @@ contextualize(() => {
   • more than 0`
 		)
 	})
+
+	it("relative path", () => {
+		const signup = type({
+			email: "email",
+			password: "string",
+			repeatPassword: "string"
+		}).narrow(
+			(d, ctx) =>
+				d.password === d.repeatPassword ||
+				ctx.invalid({
+					expected: "identical to password",
+					actual: null,
+					relativePath: ["repeatPassword"]
+				})
+		)
+
+		// ensure the relativePath is relative
+		const nestedSignup = type({
+			user: signup
+		})
+
+		const validSignup: typeof signup.infer = {
+			email: "david@arktype.io",
+			password: "secure",
+			repeatPassword: "secure"
+		}
+
+		const valid: typeof nestedSignup.infer = { user: validSignup }
+
+		attest(nestedSignup(valid)).equals(valid)
+		attest(
+			nestedSignup({
+				user: { ...validSignup, repeatPassword: "insecure" }
+			}).toString()
+		).snap("user.repeatPassword must be identical to password")
+	})
 })

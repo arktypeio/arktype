@@ -1,5 +1,3 @@
-import { root } from "../../scope.js"
-
 type DayDelimiter = "." | "/" | "-"
 
 const dayDelimiterMatcher = /^[./-]$/
@@ -95,11 +93,3 @@ export const tryParseDatePattern = (
 
 	return writeFormattedExpected(opts.format)
 }
-
-export const parsedDate = root.defineSchema({
-	from: "string",
-	morphs: (s: string, ctx) => {
-		const result = tryParseDatePattern(s)
-		return typeof result === "string" ? ctx.error(result) : result
-	}
-})

@@ -1,6 +1,6 @@
 {
 	"name": "@arktype/schema",
-	"version": "0.1.1",
+	"version": "0.1.5",
 	"license": "MIT",
 	"author": {
 		"name": "David Blass",
@@ -12,25 +12,15 @@
 		"url": "https://github.com/arktypeio/arktype.git"
 	},
 	"type": "module",
-	"main": "./out/main.js",
-	"types": "./out/main.d.ts",
+	"main": "./out/api.js",
+	"types": "./out/api.d.ts",
 	"exports": {
-		".": {
-			"types": "./out/main.d.ts",
-			"default": "./out/main.js"
-		},
-		"./config": {
-			"types": "./out/config.d.ts",
-			"default": "./out/config.js"
-		},
-		"./internal/*": {
-			"default": "./out/*"
-		}
+		".": "./out/api.js",
+		"./config": "./out/config.js",
+		"./internal/*": "./out/*"
 	},
 	"files": [
-		"out",
-		"!__tests__",
-		"**/*.ts"
+		"out"
 	],
 	"scripts": {
 		"build": "tsx ../repo/build.ts",

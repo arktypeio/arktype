@@ -1,13 +1,13 @@
 import {
+	keywordNodes,
 	type Ark,
 	type ArkErrors,
-	type inferred,
-	keywordNodes
+	type inferred
 } from "@arktype/schema"
 import type { Generic } from "./generic.js"
 import type { MatchParser } from "./match.js"
 import type { Module } from "./module.js"
-import { RawScope, type Scope, scope } from "./scope.js"
+import { RawScope, scope, type Scope } from "./scope.js"
 import type { DeclarationParser, DefinitionParser, TypeParser } from "./type.js"
 
 type TsGenericsExports<$ = Ark> = {

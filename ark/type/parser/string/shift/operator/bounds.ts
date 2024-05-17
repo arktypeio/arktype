@@ -1,9 +1,9 @@
 import {
+	type BaseRoot,
 	type BoundKind,
 	type DateLiteral,
 	type LimitLiteral,
-	type NodeDef,
-	type RawSchema,
+	type NodeSchema,
 	internalKeywords,
 	jsObjects,
 	tsKeywords,
@@ -104,13 +104,15 @@ type shiftComparator<
 	: start extends OneCharComparator ? [start, unscanned]
 	: state.error<singleEqualsMessage>
 
-export const writeIncompatibleRangeMessage = (l: BoundKind, r: BoundKind) =>
-	`Bound kinds ${l} and ${r} are incompatible` as const
+export const writeIncompatibleRangeMessage = (
+	l: BoundKind,
+	r: BoundKind
+): string => `Bound kinds ${l} and ${r} are incompatible`
 
 export const getBoundKinds = (
 	comparator: Comparator,
 	limit: LimitLiteral,
-	root: RawSchema,
+	root: BaseRoot,
 	boundKind: BoundExpressionKind
 ): BoundKind[] => {
 	if (root.extends(tsKeywords.number)) {
@@ -152,9 +154,9 @@ export const singleEqualsMessage =
 	"= is not a valid comparator. Use == to check for equality"
 type singleEqualsMessage = typeof singleEqualsMessage
 
-const openLeftBoundToSchema = (
+const openLeftBoundToRoot = (
 	leftBound: OpenLeftBound
-): NodeDef<BoundKind> => ({
+): NodeSchema<BoundKind> => ({
 	rule:
 		isDateLiteral(leftBound.limit) ?
 			extractDateLiteralSource(leftBound.limit)
@@ -208,10 +210,7 @@ export const parseRightBound = (
 		previousRoot,
 		"left"
 	)
-	s.constrainRoot(
-		lowerBoundKind[0],
-		openLeftBoundToSchema(s.branches.leftBound)
-	)
+	s.constrainRoot(lowerBoundKind[0], openLeftBoundToRoot(s.branches.leftBound))
 	s.branches.leftBound = null
 }
 
@@ -257,7 +256,7 @@ export const writeInvalidLimitMessage = <
 		boundKind === "left" ? invertedComparators[comparator] : (comparator as any)
 	} must be ${
 		boundKind === "left" ? "preceded" : ("followed" as any)
-	} by a corresponding literal (was '${limit}')`
+	} by a corresponding literal (was ${limit})`
 
 export type writeInvalidLimitMessage<
 	comparator extends Comparator,
@@ -265,6 +264,6 @@ export type writeInvalidLimitMessage<
 	boundKind extends BoundExpressionKind
 > = `Comparator ${boundKind extends "left" ? InvertedComparators[comparator]
 :	comparator} must be ${boundKind extends "left" ? "preceded"
-:	"followed"} by a corresponding literal (was '${limit}')`
+:	"followed"} by a corresponding literal (was ${limit})`
 
 export type BoundExpressionKind = "left" | "right"

@@ -377,15 +377,12 @@ value at [1] must be a number (was false)`)
 			const expected = type("number[]>=3")
 			attest(t.json).equals(expected.json)
 		})
+
+		it("multiple errors", () => {
+			const stringArray = type("string[]")
+			attest(stringArray([1, 2]).toString())
+				.snap(`value at [0] must be a string (was number)
+value at [1] must be a string (was number)`)
+		})
 	}
 )
-
-// TODO: reenable
-// describe("traversal", () => {
-//     it("multiple errors", () => {
-//         const stringArray = type("string[]")
-//         attest(stringArray([1, 2]).toString()).snap(
-//             "Item at index 0 must be a string (was number)\nItem at index 1 must be a string (was number)"
-//         )
-//     })
-// })

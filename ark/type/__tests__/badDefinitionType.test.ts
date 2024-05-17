@@ -51,6 +51,12 @@ contextualize(() => {
 		attest<{ bad: any }>(t.infer)
 	})
 
+	it("never", () => {
+		// can't error
+		const t = type({ bad: {} as never })
+		attest<{ bad: never }>(t.infer)
+	})
+
 	it("unknown", () => {
 		// @ts-expect-error just results in base completions, so we just check there's an error
 		attest(() => type({ bad: {} as unknown })).type.errors("")

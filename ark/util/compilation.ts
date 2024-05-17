@@ -40,8 +40,8 @@ export class CompiledFunction<
 		return compileLiteralPropAccess(key, optional)
 	}
 
-	index(key: string, optional = false): string {
-		return indexPropAccess(key, optional)
+	index(key: string | number, optional = false): string {
+		return indexPropAccess(`${key}`, optional)
 	}
 
 	line(statement: string): this {
@@ -124,5 +124,5 @@ export const compileLiteralPropAccess = (
 export const serializeLiteralKey = (key: PropertyKey): string =>
 	typeof key === "symbol" ? registeredReference(key) : JSON.stringify(key)
 
-export const indexPropAccess = (key: string, optional = false) =>
-	`${optional ? "?." : ""}[${key}]` as const
+export const indexPropAccess = (key: string, optional = false): string =>
+	`${optional ? "?." : ""}[${key}]`

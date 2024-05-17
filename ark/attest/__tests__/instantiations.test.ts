@@ -4,7 +4,17 @@ import { it } from "mocha"
 
 contextualize(() => {
 	it("Inline instantiations", () => {
-		type("string")
-		attest.instantiations([1968, "instantiations"])
+		const user = type({
+			kind: "'admin'",
+			"powers?": "string[]"
+		})
+			.or({
+				kind: "'superadmin'",
+				"superpowers?": "string[]"
+			})
+			.or({
+				kind: "'pleb'"
+			})
+		attest.instantiations([7574, "instantiations"])
 	})
 })

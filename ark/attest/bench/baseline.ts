@@ -41,9 +41,9 @@ export const compareToBaseline = (
 	result: MeasureComparison,
 	ctx: BenchContext
 ): void => {
-	console.log(`🏌️ Result: ${stringifyMeasure(result.updated)}`)
+	console.log(`⛳ Result: ${stringifyMeasure(result.updated)}`)
 	if (result.baseline && !ctx.cfg.updateSnapshots) {
-		console.log(`⛳ Baseline: ${stringifyMeasure(result.baseline)}`)
+		console.log(`🎯 Baseline: ${stringifyMeasure(result.baseline)}`)
 		const delta =
 			((result.updated[0] - result.baseline[0]) / result.baseline[0]) * 100
 		const formattedDelta = `${delta.toFixed(2)}%`
@@ -52,6 +52,8 @@ export const compareToBaseline = (
 		else if (delta < -ctx.cfg.benchPercentThreshold)
 			handleNegativeDelta(formattedDelta, ctx)
 		else console.log(`📊 Delta: ${delta > 0 ? "+" : ""}${formattedDelta}`)
+		// add an extra newline
+		console.log()
 	}
 }
 

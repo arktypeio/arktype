@@ -3,14 +3,14 @@ import {
 	makeRootAndArrayPropertiesMutable,
 	tsKeywords,
 	type BaseMeta,
+	type BaseRoot,
 	type Morph,
 	type MutableInner,
 	type Node,
 	type Out,
 	type Predicate,
-	type RawSchema,
 	type UnionChildKind,
-	type UnknownSchema,
+	type UnknownRoot,
 	type distillConstrainableIn,
 	type distillConstrainableOut,
 	type inferIntersection,
@@ -35,10 +35,10 @@ import type { InfixOperator, PostfixExpression } from "./semantic/infer.js"
 import { writeMissingRightOperandMessage } from "./string/shift/operand/unenclosed.js"
 import type { BaseCompletions } from "./string/string.js"
 
-export const parseTuple = (def: array, ctx: ParseContext): RawSchema =>
+export const parseTuple = (def: array, ctx: ParseContext): BaseRoot =>
 	maybeParseTupleExpression(def, ctx) ?? parseTupleLiteral(def, ctx)
 
-export const parseTupleLiteral = (def: array, ctx: ParseContext): RawSchema => {
+export const parseTupleLiteral = (def: array, ctx: ParseContext): BaseRoot => {
 	let sequences: MutableInner<"sequence">[] = [{}]
 	let i = 0
 	while (i < def.length) {
@@ -93,11 +93,11 @@ type ElementKind = "optional" | "required" | "variadic"
 const appendElement = (
 	base: MutableInner<"sequence">,
 	kind: ElementKind,
-	element: UnknownSchema
+	element: UnknownRoot
 ): MutableInner<"sequence"> => {
 	switch (kind) {
 		case "required":
-			if (base.optional)
+			if (base.optionals)
 				// e.g. [string?, number]
 				return throwParseError(requiredPostOptionalMessage)
 			if (base.variadic) {
@@ -113,7 +113,7 @@ const appendElement = (
 				// e.g. [...string[], number?]
 				return throwParseError(optionalPostVariadicMessage)
 			// e.g. [string, number?]
-			base.optional = append(base.optional, element)
+			base.optionals = append(base.optionals, element)
 			return base
 		case "variadic":
 			// e.g. [...string[], number, ...string[]]
@@ -143,7 +143,7 @@ const appendSpreadBranch = (
 		return appendElement(base, "variadic", tsKeywords.unknown)
 	}
 	spread.prefix.forEach(node => appendElement(base, "required", node))
-	spread.optional.forEach(node => appendElement(base, "optional", node))
+	spread.optionals.forEach(node => appendElement(base, "optional", node))
 	spread.variadic && appendElement(base, "variadic", spread.variadic)
 	spread.postfix.forEach(node => appendElement(base, "required", node))
 	return base
@@ -152,25 +152,12 @@ const appendSpreadBranch = (
 const maybeParseTupleExpression = (
 	def: array,
 	ctx: ParseContext
-): RawSchema | undefined => {
+): BaseRoot | undefined => {
 	const tupleExpressionResult =
 		isIndexZeroExpression(def) ? prefixParsers[def[0]](def as never, ctx)
 		: isIndexOneExpression(def) ? indexOneParsers[def[1]](def as never, ctx)
 		: undefined
 	return tupleExpressionResult
-
-	// TODO: remove
-	// return tupleExpressionResult.isNever()
-	// 	? throwParseError(
-	// 			writeUnsatisfiableExpressionError(
-	// 				def
-	// 					.map((def) =>
-	// 						typeof def === "string" ? def : printable(def)
-	// 					)
-	// 					.join(" ")
-	// 			)
-	// 		)
-	// 	: tupleExpressionResult
 }
 
 // It is *extremely* important we use readonly any time we check a tuple against
@@ -317,7 +304,7 @@ export const writeNonArraySpreadMessage = <operand extends string>(
 	`Spread element must be an array (was ${operand})` as never
 
 type writeNonArraySpreadMessage<operand> =
-	`Spread element must be an array${operand extends string ? `(was ${operand})`
+	`Spread element must be an array${operand extends string ? ` (was ${operand})`
 	:	""}`
 
 export const multipleVariadicMesage =
@@ -427,12 +414,12 @@ const parseArrayTuple: PostfixParser<"[]"> = (def, ctx) =>
 export type PostfixParser<token extends IndexOneOperator> = (
 	def: IndexOneExpression<token>,
 	ctx: ParseContext
-) => RawSchema
+) => BaseRoot
 
 export type PrefixParser<token extends IndexZeroOperator> = (
 	def: IndexZeroExpression<token>,
 	ctx: ParseContext
-) => RawSchema
+) => BaseRoot
 
 export type TupleExpression = IndexZeroExpression | IndexOneExpression
 
@@ -464,10 +451,10 @@ export const parseMorphTuple: PostfixParser<"=>"> = (def, ctx) => {
 export const writeMalformedFunctionalExpressionMessage = (
 	operator: ":" | "=>",
 	value: unknown
-) =>
+): string =>
 	`${
 		operator === ":" ? "Narrow" : "Morph"
-	} expression requires a function following '${operator}' (was ${typeof value})` as const
+	} expression requires a function following '${operator}' (was ${typeof value})`
 
 export type parseMorph<inDef, morph, $, args> =
 	morph extends Morph ?
@@ -538,5 +525,5 @@ export const writeInvalidConstructorMessage = <
 	actual extends Domain | BuiltinObjectKind
 >(
 	actual: actual
-) =>
-	`Expected a constructor following 'instanceof' operator (was ${actual})` as const
+): string =>
+	`Expected a constructor following 'instanceof' operator (was ${actual})`

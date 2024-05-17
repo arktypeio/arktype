@@ -72,7 +72,8 @@ export type EnclosingQuote = keyof typeof enclosingQuote
 
 export const enclosingChar = {
 	"/": 1,
-	...enclosingQuote
+	"'": 1,
+	'"': 1
 } as const
 
 export const enclosingTokens = {

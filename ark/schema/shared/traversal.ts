@@ -1,24 +1,28 @@
 import type { array } from "@arktype/util"
-import type { Morph } from "../schemas/morph.js"
+import type { Morph } from "../roots/morph.js"
 import type { ResolvedArkConfig } from "../scope.js"
 import {
-	type ArkErrorCode,
-	type ArkErrorInput,
+	ArkError,
 	ArkErrors,
-	ArkTypeError,
-	createError
+	type ArkErrorCode,
+	type ArkErrorContextInput,
+	type ArkErrorInput
 } from "./errors.js"
 import type { TraversalPath } from "./utils.js"
 
 export type QueuedMorphs = {
 	path: TraversalPath
 	morphs: array<Morph>
-	to: TraverseApply | null
+	to?: TraverseApply
 }
 
 export type BranchTraversalContext = {
-	error: ArkTypeError | undefined
+	error: ArkError | undefined
 	queuedMorphs: QueuedMorphs[]
+}
+
+export type QueueMorphOptions = {
+	outValidator?: TraverseApply
 }
 
 export class TraversalContext {
@@ -27,8 +31,7 @@ export class TraversalContext {
 	errors: ArkErrors = new ArkErrors(this)
 	branches: BranchTraversalContext[] = []
 
-	// Qualified
-	seen: { [name in string]?: object[] } = {}
+	seen: { [id in string]?: object[] } = {}
 
 	constructor(
 		public root: unknown,
@@ -39,12 +42,12 @@ export class TraversalContext {
 		return this.branches.at(-1)
 	}
 
-	queueMorphs(morphs: array<Morph>, outValidator: TraverseApply | null): void {
+	queueMorphs(morphs: array<Morph>, opts?: QueueMorphOptions): void {
 		const input: QueuedMorphs = {
 			path: [...this.path],
-			morphs,
-			to: outValidator
+			morphs
 		}
+		if (opts?.outValidator) input.to = opts?.outValidator
 		this.currentBranch?.queuedMorphs.push(input) ??
 			this.queuedMorphs.push(input)
 	}
@@ -63,7 +66,7 @@ export class TraversalContext {
 						const result = morph(out, this)
 						if (result instanceof ArkErrors) return result
 						if (this.hasError()) return this.errors
-						if (result instanceof ArkTypeError) {
+						if (result instanceof ArkError) {
 							// if an ArkTypeError was returned but wasn't added to these
 							// errors, add it then return
 							this.error(result)
@@ -84,7 +87,7 @@ export class TraversalContext {
 						const result = morph(parent[key], this)
 						if (result instanceof ArkErrors) return result
 						if (this.hasError()) return this.errors
-						if (result instanceof ArkTypeError) {
+						if (result instanceof ArkError) {
 							this.error(result)
 							return this.errors
 						}
@@ -101,10 +104,18 @@ export class TraversalContext {
 		return out
 	}
 
+	get currentErrorCount(): number {
+		return (
+			this.currentBranch ?
+				this.currentBranch.error ?
+					1
+				:	0
+			:	this.errors.count
+		)
+	}
+
 	hasError(): boolean {
-		return this.currentBranch ?
-				this.currentBranch.error !== undefined
-			:	this.errors.count !== 0
+		return this.currentErrorCount !== 0
 	}
 
 	get failFast(): boolean {
@@ -113,14 +124,20 @@ export class TraversalContext {
 
 	error<input extends ArkErrorInput>(
 		input: input
-	): ArkTypeError<
+	): ArkError<
 		input extends { code: ArkErrorCode } ? input["code"] : "predicate"
 	> {
-		const error = createError(this, input)
+		const errCtx: ArkErrorContextInput =
+			typeof input === "object" ?
+				input.code ?
+					input
+				:	{ ...input, code: "predicate" }
+			:	{ code: "predicate", expected: input }
+		const error = new ArkError(errCtx, this)
 		if (this.currentBranch) this.currentBranch.error = error
 		else this.errors.add(error)
 
-		return error
+		return error as never
 	}
 
 	get data(): unknown {

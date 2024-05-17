@@ -18,8 +18,8 @@
 		// too many overlapping names, easy to import in schema/arktype where we don't want it
 		// should just import as * as ts when we need it in attest
 		"typescript",
-		"./ark/type/main.ts",
-		"./ark/schema/main.ts"
+		"./ark/type/api.ts",
+		"./ark/schema/api.ts"
 	],
 	"typescript.tsserver.experimental.enableProjectDiagnostics": true,
 	// IF YOU UPDATE THE MOCHA CONFIG HERE, PLEASE ALSO UPDATE package.json/mocha AND ark/repo/mocha.jsonc

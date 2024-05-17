@@ -1,43 +1,43 @@
-import { type RawSchema, hasArkKind, type string } from "@arktype/schema"
+import { hasArkKind, type BaseRoot, type string } from "@arktype/schema"
 import {
+	isThunk,
+	objectKindOf,
+	printable,
+	throwParseError,
 	type Dict,
 	type ErrorMessage,
 	type Primitive,
+	type anyOrNever,
 	type array,
 	type defined,
 	type equals,
-	type isAny,
-	isThunk,
 	type isUnknown,
-	objectKindOf,
 	type objectKindOrDomainOf,
 	type optionalKeyOf,
-	printable,
 	type requiredKeyOf,
-	type show,
-	throwParseError
+	type show
 } from "@arktype/util"
 import type { type } from "../ark.js"
 import type { ParseContext } from "../scope.js"
 import {
-	type inferObjectLiteral,
 	parseObjectLiteral,
+	type inferObjectLiteral,
 	type validateObjectLiteral
 } from "./objectLiteral.js"
 import type { validateString } from "./semantic/validate.js"
 import type { BaseCompletions, inferString } from "./string/string.js"
 import {
+	parseTuple,
 	type TupleExpression,
 	type inferTuple,
-	parseTuple,
 	type validateTuple
 } from "./tuple.js"
 
-export const parseObject = (def: object, ctx: ParseContext): RawSchema => {
+export const parseObject = (def: object, ctx: ParseContext): BaseRoot => {
 	const objectKind = objectKindOf(def)
 	switch (objectKind) {
 		case undefined:
-			if (hasArkKind(def, "schema")) return def
+			if (hasArkKind(def, "root")) return def
 			return parseObjectLiteral(def as Dict, ctx)
 		case "Array":
 			return parseTuple(def as array, ctx)
@@ -52,7 +52,7 @@ export const parseObject = (def: object, ctx: ParseContext): RawSchema => {
 			)
 		case "Function": {
 			const resolvedDef = isThunk(def) ? def() : def
-			if (hasArkKind(resolvedDef, "schema")) return resolvedDef
+			if (hasArkKind(resolvedDef, "root")) return resolvedDef
 			return throwParseError(writeBadDefinitionTypeMessage("Function"))
 		}
 		default:
@@ -63,7 +63,7 @@ export const parseObject = (def: object, ctx: ParseContext): RawSchema => {
 }
 
 export type inferDefinition<def, $, args> =
-	isAny<def> extends true ? never
+	[def] extends [anyOrNever] ? def
 	: def extends type.cast<infer t> | ThunkCast<infer t> ? t
 	: def extends string ? inferString<def, $, args>
 	: def extends array ? inferTuple<def, $, args>
@@ -78,7 +78,7 @@ export type validateDefinition<def, $, args> =
 	: def extends string ? validateString<def, $, args>
 	: def extends array ? validateTuple<def, $, args>
 	: def extends BadDefinitionType ?
-		writeBadDefinitionTypeMessage<objectKindOrDomainOf<def>>
+		ErrorMessage<writeBadDefinitionTypeMessage<objectKindOrDomainOf<def>>>
 	: isUnknown<def> extends true ?
 		// this allows the initial list of autocompletions to be populated when a user writes "type()",
 		// before having specified a definition
@@ -98,7 +98,7 @@ type validateInference<def, declared, $, args> =
 			{
 				[i in keyof declared]: i extends keyof def ?
 					validateInference<def[i], declared[i], $, args>
-				:	unknown
+				:	declared[i]
 			}
 		:	show<declarationMismatch<def, declared, $, args>>
 	: def extends object ?
@@ -106,13 +106,13 @@ type validateInference<def, declared, $, args> =
 			{
 				[k in requiredKeyOf<declared>]: k extends keyof def ?
 					validateInference<def[k], declared[k], $, args>
-				:	unknown
+				:	declared[k]
 			} & {
 				[k in optionalKeyOf<declared> & string as `${k}?`]: `${k}?` extends (
 					keyof def
 				) ?
 					validateInference<def[`${k}?`], defined<declared[k]>, $, args>
-				:	unknown
+				:	declared[k]
 			}
 		>
 	:	validateShallowInference<def, declared, $, args>
