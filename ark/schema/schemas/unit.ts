@@ -1,8 +1,8 @@
 import {
-	type JsonPrimitive,
 	domainOf,
 	printable,
-	prototypeKeysOf
+	prototypeKeysOf,
+	type JsonPrimitive
 } from "@arktype/util"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -36,7 +36,9 @@ export const unitImplementation = implementNode<UnitDeclaration>({
 	},
 	normalize: def => def,
 	defaults: {
-		description: node => printable(node.unit)
+		description: node => printable(node.unit),
+		problem: ({ expected, actual }) =>
+			`${expected === actual ? "objects must be reference equal" : `must be ${expected} was ${actual}`}`
 	},
 	intersections: {
 		unit: (l, r) => Disjoint.from("unit", l, r),
