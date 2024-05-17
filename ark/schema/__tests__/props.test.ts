@@ -19,7 +19,7 @@ contextualize(() => {
 		})
 		attest(l.json).equals(r.json)
 	})
-	it("strict intersection", () => {
+	it("undeclared key intersection", () => {
 		const l = schema({
 			domain: "object",
 			required: [
@@ -34,7 +34,7 @@ contextualize(() => {
 		})
 
 		attest(() => l.and(r)).throws.snap(
-			"ParseError: Intersection at b of true and false results in an unsatisfiable type"
+			"ParseError: Intersection at b of number and never results in an unsatisfiable type"
 		)
 	})
 })

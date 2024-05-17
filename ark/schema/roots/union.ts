@@ -130,16 +130,9 @@ export const unionImplementation: nodeImplementationOf<UnionDeclaration> =
 		},
 		intersections: {
 			union: (l, r, ctx) => {
-				if (
-					(l.branches.length === 0 || r.branches.length === 0) &&
-					l.branches.length !== r.branches.length
-				) {
+				if (l.isNever !== r.isNever) {
 					// if exactly one operand is never, we can use it to discriminate based on presence
-					return Disjoint.from(
-						"presence",
-						l.branches.length !== 0,
-						r.branches.length !== 0
-					)
+					return Disjoint.from("presence", l, r)
 				}
 				let resultBranches: readonly UnionChildNode[] | Disjoint
 				if (l.ordered) {
@@ -174,6 +167,7 @@ export const unionImplementation: nodeImplementationOf<UnionDeclaration> =
 	})
 
 export class UnionNode extends BaseRoot<UnionDeclaration> {
+	isNever: boolean = this.branches.length === 0
 	isBoolean: boolean =
 		this.branches.length === 2 &&
 		this.branches[0].hasUnit(false) &&
@@ -181,9 +175,9 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 
 	discriminant = null
 	expression: string =
-		this.isBoolean ? "boolean" : (
-			this.branches.map(branch => branch.nestableExpression).join(" | ")
-		)
+		this.isNever ? "never"
+		: this.isBoolean ? "boolean"
+		: this.branches.map(branch => branch.nestableExpression).join(" | ")
 
 	traverseAllows: TraverseAllows = (data, ctx) =>
 		this.branches.some(b => b.traverseAllows(data, ctx))

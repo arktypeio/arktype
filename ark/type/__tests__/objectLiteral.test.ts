@@ -101,23 +101,6 @@ contextualize(
 			attest(o({ a: 1 }).toString()).snap("a must be a string (was number)")
 		})
 
-		// it("traverse strict optional", () => {
-		// 	// TODO: strict
-		// 	const o = type({ "a?": "string" })
-		// 	attest(o({ a: "a" })).snap({ a: "a" })
-		// 	attest(o({})).snap({})
-		// 	attest(o({ a: 1 }).toString()).snap("a must be a string (was number)")
-		// })
-
-		// it("multiple bad strict", () => {
-		// 	const t = type({ a: "string", b: "boolean" }).configure({
-		// 		keys: "strict"
-		// 	})
-		// 	attest(t({ a: 1, b: 2 }).toString()).snap(
-		// 		"a must be a string (was number)\nb must be boolean (was number)"
-		// 	)
-		// })
-
 		// it("optional symbol", () => {
 		// 	const s = Symbol()
 		// 	const name = reference(s)

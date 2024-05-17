@@ -1,7 +1,7 @@
 import { attest, contextualize } from "@arktype/attest"
 import { type } from "arktype"
 
-contextualize(() => {
+contextualize("traversal", () => {
 	const getExtraneousB = () => ({ a: "ok", b: "why?" })
 
 	it("loose by default", () => {

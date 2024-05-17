@@ -310,9 +310,10 @@ const createStructuralWriter =
 		if (node.props.length || node.index) {
 			const parts = node.index?.map(String) ?? []
 			node.props.forEach(node => parts.push(node[childStringProp]))
-			const objectLiteralDescription = `${
-				node.undeclared ? "exact " : ""
-			}{ ${parts.join(", ")} }`
+
+			if (node.undeclared) parts.push(`+ (undeclared): ${node.undeclared}`)
+
+			const objectLiteralDescription = `{ ${parts.join(", ")} }`
 			return node.sequence ?
 					`${objectLiteralDescription} & ${node.sequence.description}`
 				:	objectLiteralDescription
@@ -360,9 +361,11 @@ export const structureImplementation: nodeImplementationOf<StructureDeclaration>
 						k => !lKey.allows(k)
 					)
 					if (disjointRKeys.length) {
-						return Disjoint.from("presence", true, false).withPrefixKey(
-							disjointRKeys[0]
-						)
+						return Disjoint.from(
+							"presence",
+							ctx.$.keywords.never.raw,
+							r.propsByKey[disjointRKeys[0]]!.value
+						).withPrefixKey(disjointRKeys[0])
 					}
 				}
 				if (r.undeclared) {
@@ -371,9 +374,11 @@ export const structureImplementation: nodeImplementationOf<StructureDeclaration>
 						k => !rKey.allows(k)
 					)
 					if (disjointLKeys.length) {
-						return Disjoint.from("presence", true, false).withPrefixKey(
-							disjointLKeys[0]
-						)
+						return Disjoint.from(
+							"presence",
+							l.propsByKey[disjointLKeys[0]]!.value,
+							ctx.$.keywords.never.raw
+						).withPrefixKey(disjointLKeys[0])
 					}
 				}
 
