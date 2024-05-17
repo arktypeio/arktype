@@ -90,13 +90,13 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): BaseRoot => {
 				if (nonEnumerable.length) {
 					structure.index = append(
 						structure.index,
-						ctx.$.node("index", { index: nonEnumerable, value })
+						ctx.$.node("index", { signature: nonEnumerable, value })
 					)
 				}
 			} else {
 				structure.index = append(
 					structure.index,
-					ctx.$.node("index", { index: key, value })
+					ctx.$.node("index", { signature: key, value })
 				)
 			}
 		} else {

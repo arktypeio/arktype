@@ -22,12 +22,12 @@ export type IndexKeyKind = Exclude<RootKind, "unit">
 export type IndexKeyNode = Node<IndexKeyKind>
 
 export interface IndexSchema extends BaseMeta {
-	readonly index: RootSchema<IndexKeyKind>
+	readonly signature: RootSchema<IndexKeyKind>
 	readonly value: RootSchema
 }
 
 export interface IndexInner extends BaseMeta {
-	readonly index: IndexKeyNode
+	readonly signature: IndexKeyNode
 	readonly value: BaseRoot
 }
 
@@ -48,7 +48,7 @@ export const indexImplementation: nodeImplementationOf<IndexDeclaration> =
 		hasAssociatedError: false,
 		intersectionIsOpen: true,
 		keys: {
-			index: {
+			signature: {
 				child: true,
 				parse: (schema, ctx) => {
 					const key = ctx.$.schema(schema)
@@ -57,7 +57,6 @@ export const indexImplementation: nodeImplementationOf<IndexDeclaration> =
 							writeInvalidPropertyKeyMessage(key.expression)
 						)
 					}
-					// TODO: explicit manual annotation once we can upgrade to 5.5
 					const enumerableBranches = key.branches.filter((b): b is UnitNode =>
 						b.hasKind("unit")
 					)
@@ -79,23 +78,25 @@ export const indexImplementation: nodeImplementationOf<IndexDeclaration> =
 		normalize: schema => schema,
 		defaults: {
 			description: node =>
-				`[${node.index.expression}]: ${node.value.description}`
+				`[${node.signature.expression}]: ${node.value.description}`
 		},
 		intersections: {
 			index: (l, r, ctx) => {
-				if (l.index.equals(r.index)) {
+				if (l.signature.equals(r.signature)) {
 					const valueIntersection = intersectNodes(l.value, r.value, ctx)
 					const value =
 						valueIntersection instanceof Disjoint ?
 							ctx.$.keywords.never.raw
 						:	valueIntersection
-					return ctx.$.node("index", { index: l.index, value })
+					return ctx.$.node("index", { signature: l.signature, value })
 				}
 
 				// if r constrains all of l's keys to a subtype of l's value, r is a subtype of l
-				if (l.index.extends(r.index) && l.value.subsumes(r.value)) return r
+				if (l.signature.extends(r.signature) && l.value.subsumes(r.value))
+					return r
 				// if l constrains all of r's keys to a subtype of r's value, l is a subtype of r
-				if (r.index.extends(l.index) && r.value.subsumes(l.value)) return l
+				if (r.signature.extends(l.signature) && r.value.subsumes(l.value))
+					return l
 
 				// other relationships between index signatures can't be generally reduced
 				return null
@@ -105,11 +106,11 @@ export const indexImplementation: nodeImplementationOf<IndexDeclaration> =
 
 export class IndexNode extends BaseConstraint<IndexDeclaration> {
 	impliedBasis: BaseRoot = this.$.keywords.object.raw
-	expression = `[${this.index.expression}]: ${this.value.expression}`
+	expression = `[${this.signature.expression}]: ${this.value.expression}`
 
 	traverseAllows: TraverseAllows<object> = (data, ctx) =>
 		stringAndSymbolicEntriesOf(data).every(entry => {
-			if (this.index.traverseAllows(entry[0], ctx)) {
+			if (this.signature.traverseAllows(entry[0], ctx)) {
 				// ctx will be undefined if this node isn't context-dependent
 				ctx?.path.push(entry[0])
 				const allowed = this.value.traverseAllows(entry[1], ctx)
@@ -121,7 +122,7 @@ export class IndexNode extends BaseConstraint<IndexDeclaration> {
 
 	traverseApply: TraverseApply<object> = (data, ctx) =>
 		stringAndSymbolicEntriesOf(data).forEach(entry => {
-			if (this.index.traverseAllows(entry[0], ctx)) {
+			if (this.signature.traverseAllows(entry[0], ctx)) {
 				ctx.path.push(entry[0])
 				this.value.traverseApply(entry[1], ctx)
 				ctx.path.pop()

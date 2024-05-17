@@ -3,6 +3,7 @@ import {
 	cached,
 	flatMorph,
 	registeredReference,
+	spliterate,
 	type array,
 	type Key,
 	type RegisteredReference
@@ -14,7 +15,10 @@ import {
 	intersectConstraints
 } from "../constraint.js"
 import type { MutableInner } from "../kinds.js"
+import type { BaseNode } from "../node.js"
 import type { BaseRoot } from "../roots/root.js"
+import type { UnitNode } from "../roots/unit.js"
+import type { RawRootScope } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -23,6 +27,7 @@ import {
 	type nodeImplementationOf,
 	type StructuralKind
 } from "../shared/implement.js"
+import { intersectNodesRoot } from "../shared/intersections.js"
 import type {
 	TraversalContext,
 	TraversalKind,
@@ -103,7 +108,7 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 	@cached
 	keyof(): BaseRoot {
 		let branches = this.$.units(this.literalKeys).branches
-		this.index?.forEach(({ index }) => {
+		this.index?.forEach(({ signature: index }) => {
 			branches = branches.concat(index.branches)
 		})
 		return this.$.node("union", branches)
@@ -171,7 +176,7 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 
 			if (this.index) {
 				for (const node of this.index) {
-					if (node.index.traverseAllows(k, ctx)) {
+					if (node.signature.traverseAllows(k, ctx)) {
 						if (traversalKind === "Allows") {
 							ctx?.path.push(k)
 							const result = node.value.traverseAllows(data[k as never], ctx)
@@ -247,11 +252,14 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 		if (this.undeclared) js.let("matched", false)
 
 		this.index?.forEach(node => {
-			js.if(`${js.invoke(node.index, { arg: "k", kind: "Allows" })}`, () => {
-				js.traverseKey("k", "data[k]", node.value)
-				if (this.undeclared) js.set("matched", true)
-				return js
-			})
+			js.if(
+				`${js.invoke(node.signature, { arg: "k", kind: "Allows" })}`,
+				() => {
+					js.traverseKey("k", "data[k]", node.value)
+					if (this.undeclared) js.set("matched", true)
+					return js
+				}
+			)
 		})
 
 		if (this.undeclared) {
@@ -299,7 +307,7 @@ const omitFromInner = (
 		if (result.index && typeof k === "function") {
 			// we only have to filter index nodes if the input was a node, as
 			// literal keys should never subsume an index
-			result.index = result.index.filter(n => !n.index.extends(k))
+			result.index = result.index.filter(n => !n.signature.extends(k))
 		}
 	})
 	return result
@@ -355,6 +363,8 @@ export const structureImplementation: nodeImplementationOf<StructureDeclaration>
 		},
 		intersections: {
 			structure: (l, r, ctx) => {
+				const lInner = { ...l.inner }
+				const rInner = { ...r.inner }
 				if (l.undeclared) {
 					const lKey = l.keyof()
 					const disjointRKeys = r.requiredLiteralKeys.filter(
@@ -366,6 +376,33 @@ export const structureImplementation: nodeImplementationOf<StructureDeclaration>
 							ctx.$.keywords.never.raw,
 							r.propsByKey[disjointRKeys[0]]!.value
 						).withPrefixKey(disjointRKeys[0])
+					}
+
+					if (rInner.optional)
+						rInner.optional = rInner.optional.filter(n => lKey.allows(n.key))
+					if (rInner.index) {
+						rInner.index = rInner.index.flatMap(n => {
+							if (n.signature.extends(lKey)) return n
+							const indexOverlap = intersectNodesRoot(lKey, n.signature, ctx.$)
+							if (indexOverlap instanceof Disjoint) return []
+							const normalized = normalizeIndexKey(indexOverlap, ctx.$)
+							if (normalized.enumerable) {
+								const additionalRequiredNodes = normalized.enumerable.map(key =>
+									ctx.$.node("required", { key, value: n.value })
+								)
+								rInner.required =
+									rInner.required ?
+										[...rInner.required, ...additionalRequiredNodes]
+									:	additionalRequiredNodes
+							}
+							if (normalized.nonEnumerable) {
+								return ctx.$.node("index", {
+									...n.inner,
+									signature: normalized.nonEnumerable
+								})
+							}
+							return []
+						})
 					}
 				}
 				if (r.undeclared) {
@@ -379,6 +416,33 @@ export const structureImplementation: nodeImplementationOf<StructureDeclaration>
 							l.propsByKey[disjointLKeys[0]]!.value,
 							ctx.$.keywords.never.raw
 						).withPrefixKey(disjointLKeys[0])
+					}
+
+					if (lInner.optional)
+						lInner.optional = lInner.optional.filter(n => rKey.allows(n.key))
+					if (lInner.index) {
+						lInner.index = lInner.index.flatMap(n => {
+							if (n.signature.extends(rKey)) return n
+							const indexOverlap = intersectNodesRoot(rKey, n.signature, ctx.$)
+							if (indexOverlap instanceof Disjoint) return []
+							const normalized = normalizeIndexKey(indexOverlap, ctx.$)
+							if (normalized.enumerable) {
+								const additionalRequiredNodes = normalized.enumerable.map(key =>
+									ctx.$.node("required", { key, value: n.value })
+								)
+								lInner.required =
+									lInner.required ?
+										[...lInner.required, ...additionalRequiredNodes]
+									:	additionalRequiredNodes
+							}
+							if (normalized.nonEnumerable) {
+								return ctx.$.node("index", {
+									...n.inner,
+									signature: normalized.nonEnumerable
+								})
+							}
+							return []
+						})
 					}
 				}
 
@@ -394,11 +458,37 @@ export const structureImplementation: nodeImplementationOf<StructureDeclaration>
 				return intersectConstraints({
 					kind: "structure",
 					baseInner,
-					l: flattenConstraints(l.inner),
-					r: flattenConstraints(r.inner),
+					l: flattenConstraints(lInner),
+					r: flattenConstraints(rInner),
 					roots: [],
 					ctx
 				})
 			}
 		}
 	})
+
+export type NormalizedIndexKey = {
+	nonEnumerable?: BaseNode
+	enumerable?: Key[]
+}
+
+/** extract enumerable named props from an index signature */
+export const normalizeIndexKey = (
+	key: BaseRoot,
+	$: RawRootScope
+): NormalizedIndexKey => {
+	const [enumerableBranches, nonEnumerableBranches] = spliterate(
+		key.branches,
+		(k): k is UnitNode => k.hasKind("unit")
+	)
+
+	if (!enumerableBranches.length) return { nonEnumerable: key }
+
+	const normalized: NormalizedIndexKey = {}
+
+	normalized.enumerable = enumerableBranches.map(n => n.unit as Key)
+	if (nonEnumerableBranches.length)
+		normalized.nonEnumerable = $.node("union", nonEnumerableBranches)
+
+	return normalized
+}
