@@ -9,13 +9,13 @@ hero:
     alt: A serene ark, sailing to runtime
     file: ../../assets/splash.png
   actions:
-    - text: Meet v2
+    - text: Set sail
       link: /intro/why/
       icon: right-arrow
       variant: primary
-    # - text: Read more
-    #   link: https://starlight.astro.build
-    #   icon: external
+    - text: Doc up
+      link: https://github.com/arktypeio/arktype
+      icon: external
 ---
 
 import { Card, CardGrid } from "@astrojs/starlight/components"
@@ -26,19 +26,22 @@ import { HomeDemo } from "../../components/HomeDemo.tsx"
 	<HeroContents client:only="react" />
 </div>
 
-## Highlights
+## What awaits
 
 <CardGrid stagger>
-	<Card title="Update content" icon="pencil">
-		Edit `src/content/docs/index.mdx` to see this page change.
+	<Card title="Unparalleled DX" icon="seti:tsconfig">
+		Type syntax you already know with safety unlike anything you've ever seen
 	</Card>
-	<Card title="Add new content" icon="add-document">
-		Add Markdown or MDX files to `src/content/docs` to create new pages.
+	<Card title="Faster. Everywhere." icon="rocket">
+		[100x faster than
+		Zod](https://moltar.github.io/typescript-runtime-type-benchmarks/) with
+		editor performance that will remind you how autocomplete is supposed to feel
 	</Card>
-	<Card title="Configure your site" icon="setting">
-		Edit your `sidebar` and other config in `astro.config.mjs`.
+	<Card title="Clear and concise" icon="magnifier">
+		Schemas are half as long and twice as readable with hovers that only tell
+		you what matters
 	</Card>
-	<Card title="Read the docs" icon="open-book">
-		Learn more in [the Starlight Docs](https://starlight.astro.build/).
+	<Card title="Better errors" icon="error">
+		Deeply customizable and composable messages with great defaults
 	</Card>
 </CardGrid>
