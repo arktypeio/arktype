@@ -192,7 +192,7 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 
 	unitBranches = this.branches.filter((n): n is UnitNode => n.hasKind("unit"))
 
-	discriminant = null
+	discriminator = this.discriminate()
 	expression: string =
 		this.isNever ? "never"
 		: this.isBoolean ? "boolean"
@@ -248,7 +248,7 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 	}
 
 	@cached
-	discriminate(): Discriminant | null {
+	discriminate(): Discriminator | null {
 		if (this.unitBranches.length === this.branches.length) {
 			const cases: DiscriminatedCases = flatMorph(
 				this.unitBranches,
@@ -269,9 +269,9 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 				if (!(result instanceof Disjoint)) continue
 
 				for (const { path, kind, disjoint } of result.flat) {
-					if (!isKeyOf(kind, discriminantKinds)) continue
+					if (!isKeyOf(kind, discriminatorKinds)) continue
 
-					const qualifiedDiscriminant: DiscriminantKey = `${path}${kind}`
+					const qualifiedDiscriminator: DiscriminatorKey = `${path}${kind}`
 					let lSerialized: string
 					let rSerialized: string
 					if (kind === "domain") {
@@ -285,14 +285,14 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 							`Unexpected attempt to discriminate disjoint kind '${kind}'`
 						)
 					}
-					if (!casesBySpecifier[qualifiedDiscriminant]) {
-						casesBySpecifier[qualifiedDiscriminant] = {
+					if (!casesBySpecifier[qualifiedDiscriminator]) {
+						casesBySpecifier[qualifiedDiscriminator] = {
 							[lSerialized]: [l],
 							[rSerialized]: [r]
 						}
 						continue
 					}
-					const cases = casesBySpecifier[qualifiedDiscriminant]!
+					const cases = casesBySpecifier[qualifiedDiscriminator]!
 					if (!isKeyOf(lSerialized, cases)) cases[lSerialized] = [l]
 					else if (!cases[lSerialized].includes(l)) cases[lSerialized].push(l)
 
@@ -302,14 +302,14 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 			}
 		}
 
-		const bestDiscriminantEntry = entriesOf(casesBySpecifier)
+		const bestDiscriminatorEntry = entriesOf(casesBySpecifier)
 			.sort((a, b) => Object.keys(a[1]).length - Object.keys(b[1]).length)
 			.at(-1)
 
-		if (!bestDiscriminantEntry) return null
+		if (!bestDiscriminatorEntry) return null
 
-		const [specifier, bestCases] = bestDiscriminantEntry
-		const [path, kind] = parseDiscriminantKey(specifier)
+		const [specifier, bestCases] = bestDiscriminatorEntry
+		const [path, kind] = parseDiscriminatorKey(specifier)
 
 		return {
 			kind,
@@ -381,35 +381,35 @@ const describeBranches = (descriptions: string[]) => {
 // 			.join(" || ")
 // 	}
 
-// 	private static compileDiscriminant(
-// 		discriminant: Discriminant,
+// 	private static compileDiscriminator(
+// 		discriminator: Discriminator,
 // 		ctx: CompilationContext
 // 	) {
-// 		if (discriminant.isPureRootLiteral) {
+// 		if (discriminator.isPureRootLiteral) {
 // 			// TODO: ctx?
-// 			return this.compileDiscriminatedLiteral(discriminant.cases)
+// 			return this.compileDiscriminatedLiteral(discriminator.cases)
 // 		}
 // 		let compiledPath = this.argName
-// 		for (const segment of discriminant.path) {
+// 		for (const segment of discriminator.path) {
 // 			// we need to access the path as optional so we don't throw if it isn't present
 // 			compiledPath += compilePropAccess(segment, true)
 // 		}
 // 		const condition =
-// 			discriminant.kind === "domain" ? `typeof ${compiledPath}` : compiledPath
+// 			discriminator.kind === "domain" ? `typeof ${compiledPath}` : compiledPath
 // 		let compiledCases = ""
-// 		for (const k in discriminant.cases) {
+// 		for (const k in discriminator.cases) {
 // 			const caseCondition = k === "default" ? "default" : `case ${k}`
-// 			const caseBranches = discriminant.cases[k]
-// 			ctx.discriminants.push(discriminant)
+// 			const caseBranches = discriminator.cases[k]
+// 			ctx.discriminators.push(discriminator)
 // 			const caseChecks = isArray(caseBranches)
 // 				? this.compileIndiscriminable(caseBranches, ctx)
-// 				: this.compileDiscriminant(caseBranches, ctx)
-// 			ctx.discriminants.pop()
+// 				: this.compileDiscriminator(caseBranches, ctx)
+// 			ctx.discriminators.pop()
 // 			compiledCases += `${caseCondition}: {
 // 		${caseChecks ? `${caseChecks}\n     break` : "break"}
 // 	}`
 // 		}
-// 		if (!discriminant.cases.default) {
+// 		if (!discriminator.cases.default) {
 // 			// TODO: error message for traversal
 // 			compiledCases += `default: {
 // 		return false
@@ -524,45 +524,46 @@ export const reduceBranches = ({
 	return branches.filter((_, i) => uniquenessByIndex[i])
 }
 
-export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
-	DiscriminantKind extends kind ? string : DiscriminantKinds[kind] | "default"
+export type CaseKey<kind extends DiscriminatorKind = DiscriminatorKind> =
+	DiscriminatorKind extends kind ? string : DiscriminatorKinds[kind] | "default"
 
-export type Discriminant<kind extends DiscriminantKind = DiscriminantKind> = {
-	path: string[]
-	kind: kind
-	cases: DiscriminatedCases<kind>
-}
+export type Discriminator<kind extends DiscriminatorKind = DiscriminatorKind> =
+	{
+		path: string[]
+		kind: kind
+		cases: DiscriminatedCases<kind>
+	}
 
 export type DiscriminatedCases<
-	kind extends DiscriminantKind = DiscriminantKind
+	kind extends DiscriminatorKind = DiscriminatorKind
 > = {
 	[caseKey in CaseKey<kind>]: BaseRoot
 }
 
-type DiscriminantKey = `${SerializedPath}${DiscriminantKind}`
+type DiscriminatorKey = `${SerializedPath}${DiscriminatorKind}`
 
 type CasesBySpecifier = {
-	[k in DiscriminantKey]?: Record<string, UnionChildNode[]>
+	[k in DiscriminatorKey]?: Record<string, UnionChildNode[]>
 }
 
-export type DiscriminantKinds = {
+export type DiscriminatorKinds = {
 	domain: Domain
 	unit: SerializedPrimitive
 }
 
-const discriminantKinds: keySet<DiscriminantKind> = {
+const discriminatorKinds: keySet<DiscriminatorKind> = {
 	domain: 1,
 	unit: 1
 }
 
-export type DiscriminantKind = show<keyof DiscriminantKinds>
+export type DiscriminatorKind = show<keyof DiscriminatorKinds>
 
-const parseDiscriminantKey = (key: DiscriminantKey) => {
+const parseDiscriminatorKey = (key: DiscriminatorKey) => {
 	const lastPathIndex = key.lastIndexOf("]")
 	return [
 		JSON.parse(key.slice(0, lastPathIndex + 1)),
 		key.slice(lastPathIndex + 1)
-	] as [path: string[], kind: DiscriminantKind]
+	] as [path: string[], kind: DiscriminatorKind]
 }
 
 // // TODO: if deeply includes morphs?

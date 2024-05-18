@@ -1,7 +1,7 @@
 import { CompiledFunction } from "@arktype/util"
 import type { Node } from "../kinds.js"
 import type { BaseNode } from "../node.js"
-import type { Discriminant } from "../roots/union.js"
+import type { Discriminator } from "../roots/union.js"
 import type { PrimitiveKind } from "./implement.js"
 import type { TraversalKind } from "./traversal.js"
 
@@ -16,7 +16,7 @@ export interface ReferenceOptions {
 
 export class NodeCompiler extends CompiledFunction<["data", "ctx"]> {
 	path: string[] = []
-	discriminants: Discriminant[] = []
+	discriminators: Discriminator[] = []
 
 	constructor(public traversalKind: TraversalKind) {
 		super("data", "ctx")
@@ -81,7 +81,7 @@ export class NodeCompiler extends CompiledFunction<["data", "ctx"]> {
 		if (
 			node.kind === "domain" &&
 			node.domain === "object" &&
-			this.discriminants.some(d => d.path.join().startsWith(pathString))
+			this.discriminators.some(d => d.path.join().startsWith(pathString))
 		) {
 			// if we've already checked a path at least as long as the current one,
 			// we don't need to revalidate that we're in an object
@@ -89,7 +89,7 @@ export class NodeCompiler extends CompiledFunction<["data", "ctx"]> {
 		}
 		if (
 			(node.kind === "domain" || node.kind === "unit") &&
-			this.discriminants.some(
+			this.discriminators.some(
 				d =>
 					d.path.join() === pathString &&
 					(node.kind === "domain" ?
@@ -97,7 +97,7 @@ export class NodeCompiler extends CompiledFunction<["data", "ctx"]> {
 					:	d.kind === "unit")
 			)
 		) {
-			// if the discriminant has already checked the domain at the current path
+			// if the discriminator has already checked the domain at the current path
 			// (or an exact value, implying a domain), we don't need to recheck it
 			return this
 		}
