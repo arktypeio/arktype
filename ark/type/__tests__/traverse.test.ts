@@ -84,6 +84,13 @@ contextualize(() => {
 		)
 	})
 
+	it("common errors collapse", () => {
+		const t = type({ base: "1", a: "1" }, "|", { base: "1", b: "1" })
+		attest(t({ base: 1, a: 1 })).snap({ base: 1, a: 1 })
+		attest(t({ base: 1, b: 1 })).snap({ base: 1, b: 1 })
+		attest(t({ a: 1, b: 1 }).toString()).snap("base must be 1 (was missing)")
+	})
+
 	it("branches at path", () => {
 		const t = type({ key: [{ a: "string" }, "|", { b: "boolean" }] })
 		attest(t({ key: { a: "ok" } })).snap({ key: { a: "ok" } })
