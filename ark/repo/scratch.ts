@@ -1,16 +1,11 @@
-// this must come first
-import "./arkConfig.js"
+import { match } from "arktype"
 
-import { type } from "arktype"
+const sizeOf = match({
+	"string|Array": _ => _.length,
+	number: _ => _,
+	bigint: _ => _
+}).orThrow()
 
-// create and validate types
-
-const user = type({
-	name: "string",
-	age: "number"
-})
-
-const out = user({
-	name: "David",
-	age: 30
-})
+const a = sizeOf("abc") //=>?
+const b = sizeOf([1, 2, 3]) //=>?
+const c = sizeOf(5n) //=>?
