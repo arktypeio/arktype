@@ -51,10 +51,6 @@ contextualize(
 			const expected = rawRoot([{ unit: false }, { unit: true }])
 			// should be simplified to simple checks for true and false literals
 			attest(boolean.json).equals(expected.json)
-			// TODO:
-			// 			attest(boolean.json).snap(`if( $arkRoot !== false && $arkRoot !== true) {
-			//     return false
-			// }`)
 		})
 
 		it("never", () => {
@@ -84,130 +80,133 @@ contextualize(
 			//should be treated as undefined at runtime
 			attest(t.json).equals(expected.json)
 		})
+	},
+	"validation",
+	() => {
+		it("integer", () => {
+			const integer = type("integer")
+			attest(integer(123)).equals(123)
+			attest(integer("123").toString()).snap("must be a number (was string)")
+			attest(integer(12.12).toString()).snap("must be an integer (was 12.12)")
+		})
+		it("alpha", () => {
+			const alpha = type("alpha")
+			attest(alpha("user")).snap("user")
+			attest(alpha("user123").toString()).equals(
+				'must be only letters (was "user123")'
+			)
+		})
+		it("alphanumeric", () => {
+			const alphanumeric = type("alphanumeric")
+			attest(alphanumeric("user123")).snap("user123")
+			attest(alphanumeric("user")).snap("user")
+			attest(alphanumeric("123")).snap("123")
+			attest(alphanumeric("abc@123").toString()).equals(
+				'must be only letters and digits (was "abc@123")'
+			)
+		})
+		it("lowercase", () => {
+			const lowercase = type("lowercase")
+			attest(lowercase("var")).snap("var")
+			attest(lowercase("newVar").toString()).equals(
+				'must be only lowercase letters (was "newVar")'
+			)
+		})
+		it("uppercase", () => {
+			const uppercase = type("uppercase")
+			attest(uppercase("VAR")).snap("VAR")
+			attest(uppercase("CONST_VAR").toString()).equals(
+				'must be only uppercase letters (was "CONST_VAR")'
+			)
+			attest(uppercase("myVar").toString()).equals(
+				'must be only uppercase letters (was "myVar")'
+			)
+		})
+		it("email", () => {
+			const email = type("email")
+			attest(email("shawn@mail.com")).snap("shawn@mail.com")
+			attest(email("shawn@email").toString()).equals(
+				'must be a valid email (was "shawn@email")'
+			)
+		})
+		it("uuid", () => {
+			const uuid = type("uuid")
+			attest(uuid("f70b8242-dd57-4e6b-b0b7-649d997140a0")).equals(
+				"f70b8242-dd57-4e6b-b0b7-649d997140a0"
+			)
+			attest(uuid("1234").toString()).equals(
+				'must be a valid UUID (was "1234")'
+			)
+		})
+
+		it("credit card", () => {
+			const validCC = "5489582921773376"
+			attest(ark.creditCard(validCC)).equals(validCC)
+			// Regex validation
+			attest(ark.creditCard("0".repeat(16)).toString()).equals(
+				'must be a valid credit card number (was "0000000000000000")'
+			)
+			// Luhn validation
+			attest(ark.creditCard(validCC.slice(0, -1) + "0").toString()).equals(
+				'must be a valid credit card number (was "5489582921773370")'
+			)
+		})
+		it("semver", () => {
+			attest(ark.semver("1.0.0")).snap("1.0.0")
+			attest(ark.semver("-1.0.0").toString()).equals(
+				'must be a valid semantic version (see https://semver.org/) (was "-1.0.0")'
+			)
+		})
+
+		it("ip", () => {
+			const ip = type("ip")
+
+			// valid IPv4 address
+			attest(ip("192.168.1.1")).snap("192.168.1.1")
+			// valid IPv6 address
+			attest(ip("2001:0db8:85a3:0000:0000:8a2e:0370:7334")).snap()
+
+			attest(ip("192.168.1.256").toString()).snap()
+			attest(ip("2001:0db8:85a3:0000:0000:8a2e:0370:733g").toString()).snap()
+		})
+	},
+	"parse",
+	() => {
+		it("json", () => {
+			const parseJson = type("parse.json")
+			attest(parseJson('{"a": "hello"}')).snap({ a: "hello" })
+			attest(parseJson(123).toString()).snap()
+			attest(parseJson("foo").toString()).snap()
+		})
+		it("number", () => {
+			const parseNum = type("parse.number")
+			attest(parseNum("5")).equals(5)
+			attest(parseNum("5.5")).equals(5.5)
+			attest(parseNum("five").toString()).equals(
+				'must be a well-formed numeric string (was "five")'
+			)
+		})
+		it("integer", () => {
+			const parseInt = type("parse.integer")
+			attest(parseInt("5")).equals(5)
+			attest(parseInt("5.5").toString()).equals(
+				'must be a well-formed integer string (was "5.5")'
+			)
+			attest(parseInt("five").toString()).equals(
+				'must be a well-formed integer string (was "five")'
+			)
+			attest(parseInt(5).toString()).snap("must be a string (was number)")
+			attest(parseInt("9007199254740992").toString()).equals(
+				'must be an integer in the range Number.MIN_SAFE_INTEGER to Number.MAX_SAFE_INTEGER (was "9007199254740992")'
+			)
+		})
+		it("date", () => {
+			const parseDate = type("parse.date")
+			attest(parseDate("5/21/1993").toString()).snap()
+			attest(parseDate("foo").toString()).equals(
+				'must be a valid date (was "foo")'
+			)
+			attest(parseDate(5).toString()).snap("must be a string (was number)")
+		})
 	}
 )
-
-// describe("validation", () => {
-// it("integer", () => {
-//     const integer = type("integer")
-//     attest(integer(123)).equals(123)
-//     attest(integer("123").toString()).equals(
-//         "must be a number (was string)"
-//     )
-//     attest(integer(12.12).toString()).equals(
-//         "must be an integer (was 12.12)"
-//     )
-// })
-// it("alpha", () => {
-//     const alpha = type("alpha")
-//     attest(alpha("user")).equals("user")
-//     attest(alpha("user123").toString()).equals(
-//         "must be only letters (was 'user123')"
-//     )
-// })
-// it("alphanumeric", () => {
-//     const alphanumeric = type("alphanumeric")
-//     attest(alphanumeric("user123")).equals("user123")
-//     attest(alphanumeric("user")).equals("user")
-//     attest(alphanumeric("123")).equals("123")
-//     attest(alphanumeric("abc@123").toString()).equals(
-//         "must be only letters and digits (was 'abc@123')"
-//     )
-// })
-// it("lowercase", () => {
-//     const lowercase = type("lowercase")
-//     attest(lowercase("var")).equals("var")
-//     attest(lowercase("newVar").toString()).equals(
-//         "must be only lowercase letters (was 'newVar')"
-//     )
-// })
-// it("uppercase", () => {
-//     const uppercase = type("uppercase")
-//     attest(uppercase("VAR")).equals("VAR")
-//     attest(uppercase("CONST_VAR").toString()).equals(
-//         "must be only uppercase letters (was 'CONST_VAR')"
-//     )
-//     attest(uppercase("myVar").toString()).equals(
-//         "must be only uppercase letters (was 'myVar')"
-//     )
-// })
-// it("email", () => {
-//     const email = type("email")
-//     attest(email("shawn@mail.com")).equals("shawn@mail.com")
-//     attest(email("shawn@email").toString()).equals(
-//         "must be a valid email (was 'shawn@email')"
-//     )
-// })
-// it("uuid", () => {
-//     const uuid = type("uuid")
-//     attest(uuid("f70b8242-dd57-4e6b-b0b7-649d997140a0")).equals(
-//         "f70b8242-dd57-4e6b-b0b7-649d997140a0"
-//     )
-//     attest(uuid("1234").toString()).equals(
-//         "must be a valid UUID (was '1234')"
-//     )
-// })
-// it("parsedNumber", () => {
-//     const parsedNumber = type("parsedNumber")
-//     attest(parsedNumber("5")).equals(5)
-//     attest(parsedNumber("5.5")).equals(5.5)
-//     attest(parsedNumber("five").toString()).equals(
-//         "must be a well-formed numeric string (was 'five')"
-//     )
-// })
-// it("parsedInteger", () => {
-//     const parsedInteger = type("parsedInteger")
-//     attest(parsedInteger("5")).equals(5)
-//     attest(parsedInteger("5.5").toString()).equals(
-//         "must be a well-formed integer string (was '5.5')"
-//     )
-//     attest(parsedInteger("five").toString()).equals(
-//         "must be a well-formed integer string (was 'five')"
-//     )
-//     attest(parsedInteger(5).toString()).equals(
-//         "must be a string (was number)"
-//     )
-//     attest(parsedInteger("9007199254740992").toString()).equals(
-//         "must be an integer in the range Number.MIN_SAFE_INTEGER to Number.MAX_SAFE_INTEGER (was '9007199254740992')"
-//     )
-// })
-// it("parsedDate", () => {
-//     const parsedDate = type("parsedDate")
-//     attest(parsedDate("5/21/1993").out?.toDateString()).equals(
-//         "Fri May 21 1993"
-//     )
-//     attest(parsedDate("foo").toString()).equals(
-//         "must be a valid date (was 'foo')"
-//     )
-//     attest(parsedDate(5).toString()).equals(
-//         "must be a string (was number)"
-//     )
-// })
-// it("json", () => {
-//     const json = type("json")
-//     attest(json('{"a": "hello"}')).equals({ a: "hello" })
-//     attest(json(123).toString()).equals(
-//         "must be a JSON-parsable string (was number)"
-//     )
-// })
-// it("credit card", () => {
-//     const validCC = "5489582921773376"
-//     attest(ark.creditCard(validCC)).equals(validCC)
-//     // Regex validation
-//     attest(ark.creditCard("0".repeat(16)).toString()).equals(
-//         "must be a valid credit card number (was '0000000000000000')"
-//     )
-//     // Luhn validation
-//     attest(
-//         ark.creditCard(validCC.slice(0, -1) + "0").toString()
-//     ).equals(
-//         "must be a valid credit card number (was '5489582921773370')"
-//     )
-// })
-// it("semver", () => {
-//     attest(ark.semver("1.0.0")).equals("1.0.0")
-//     attest(ark.semver("-1.0.0").toString()).equals(
-//         "must be a valid semantic version (see https://semver.org/) (was '-1.0.0')"
-//     )
-// })
-// })
