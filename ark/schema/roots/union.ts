@@ -1,6 +1,7 @@
 import {
 	appendUnique,
 	cached,
+	compileLiteralPropAccess,
 	compileSerializedValue,
 	entriesOf,
 	flatMorph,
@@ -214,6 +215,36 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 	}
 
 	compile(js: NodeCompiler): void {
+		if (
+			!this.discriminator ||
+			// if we have a union of two units like `boolean`, the
+			// undiscriminated compilation will be just as fast
+			(this.unitBranches.length === this.branches.length &&
+				this.branches.length === 2)
+		)
+			return this.compileIndiscriminable(js)
+
+		// we need to access the path as optional so we don't throw if it isn't present
+		const condition = this.discriminator.path.reduce(
+			(acc, segment) => acc + compileLiteralPropAccess(segment, true),
+			this.discriminator.kind === "domain" ? "typeof data" : "data"
+		)
+
+		const cases = this.discriminator.cases
+
+		js.block(`switch(${condition})`, () => {
+			for (const k in cases) {
+				const caseCondition = k === "default" ? "default" : `case ${k}`
+				js.line(`${caseCondition}: return ${js.invoke(cases[k])}`)
+			}
+
+			return js
+		})
+
+		js.return(false)
+	}
+
+	private compileIndiscriminable(js: NodeCompiler): void {
 		if (js.traversalKind === "Apply") {
 			js.const("errors", "[]")
 			this.branches.forEach(branch =>
@@ -316,6 +347,7 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 			path,
 			cases: flatMorph(bestCases, (k, branches) => [
 				k,
+				// TODO: prune
 				branches.length === 1 ? branches[0] : this.$.node("union", branches)
 			])
 		}
@@ -341,84 +373,6 @@ const describeBranches = (descriptions: string[]) => {
 	description += ` or ${descriptions[descriptions.length - 1]}`
 	return description
 }
-
-// 	private static compileDiscriminatedLiteral(cases: DiscriminatedCases) {
-// 		// TODO: error messages for traversal
-// 		const caseKeys = Object.keys(cases)
-// 		if (caseKeys.length === 2) {
-// 			return `if( ${this.argName} !== ${caseKeys[0]} && ${this.argName} !== ${caseKeys[1]}) {
-//     return false
-// }`
-// 		}
-// 		// for >2 literals, we fall through all cases, breaking on the last
-// 		const compiledCases =
-// 			caseKeys.map((k) => `    case ${k}:`).join("\n") + "        break"
-// 		// if none of the cases are met, the check fails (this is optimal for perf)
-// 		return `switch(${this.argName}) {
-//     ${compiledCases}
-//     default:
-//         return false
-// }`
-// 	}
-
-// 	private static compileIndiscriminable(
-// 		branches: readonly BranchNode[],
-// 		ctx: CompilationContext
-// 	) {
-// 		if (branches.length === 0) {
-// 			return compileFailureResult("custom", "nothing", ctx)
-// 		}
-// 		if (branches.length === 1) {
-// 			return branches[0].compile(ctx)
-// 		}
-// 		return branches
-// 			.map(
-// 				(branch) => `(() => {
-// 	${branch.compile(ctx)}
-// 	return true
-// 	})()`
-// 			)
-// 			.join(" || ")
-// 	}
-
-// 	private static compileDiscriminator(
-// 		discriminator: Discriminator,
-// 		ctx: CompilationContext
-// 	) {
-// 		if (discriminator.isPureRootLiteral) {
-// 			// TODO: ctx?
-// 			return this.compileDiscriminatedLiteral(discriminator.cases)
-// 		}
-// 		let compiledPath = this.argName
-// 		for (const segment of discriminator.path) {
-// 			// we need to access the path as optional so we don't throw if it isn't present
-// 			compiledPath += compilePropAccess(segment, true)
-// 		}
-// 		const condition =
-// 			discriminator.kind === "domain" ? `typeof ${compiledPath}` : compiledPath
-// 		let compiledCases = ""
-// 		for (const k in discriminator.cases) {
-// 			const caseCondition = k === "default" ? "default" : `case ${k}`
-// 			const caseBranches = discriminator.cases[k]
-// 			ctx.discriminators.push(discriminator)
-// 			const caseChecks = isArray(caseBranches)
-// 				? this.compileIndiscriminable(caseBranches, ctx)
-// 				: this.compileDiscriminator(caseBranches, ctx)
-// 			ctx.discriminators.pop()
-// 			compiledCases += `${caseCondition}: {
-// 		${caseChecks ? `${caseChecks}\n     break` : "break"}
-// 	}`
-// 		}
-// 		if (!discriminator.cases.default) {
-// 			// TODO: error message for traversal
-// 			compiledCases += `default: {
-// 		return false
-// 	}`
-// 		}
-// 		return `switch(${condition}) {
-// 		${compiledCases}
-// 	}`
-// 	}
 
 export const intersectBranches = (
 	l: readonly UnionChildNode[],
@@ -543,7 +497,7 @@ export type DiscriminatedCases<
 type DiscriminatorKey = `${SerializedPath}${DiscriminatorKind}`
 
 type CasesBySpecifier = {
-	[k in DiscriminatorKey]?: Record<string, UnionChildNode[]>
+	[k in DiscriminatorKey]?: Record<string, BaseRoot[]>
 }
 
 export type DiscriminatorKinds = {

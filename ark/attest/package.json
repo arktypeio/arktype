@@ -17,7 +17,7 @@
 		"out"
 	],
 	"bin": {
-		"attest": "./out/cli/cli.js"
+		"attest": "out/cli/cli.js"
 	},
 	"scripts": {
 		"build": "tsx ../repo/build.ts",

@@ -1,14 +1,14 @@
 import {
-	type BuiltinObjectKind,
-	type Constructor,
-	type Key,
-	type array,
 	builtinConstructors,
 	constructorExtends,
 	getExactBuiltinConstructorName,
 	objectKindDescriptions,
 	objectKindOrDomainOf,
-	prototypeKeysOf
+	prototypeKeysOf,
+	type BuiltinObjectKind,
+	type Constructor,
+	type Key,
+	type array
 } from "@arktype/util"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -19,6 +19,7 @@ import {
 } from "../shared/implement.js"
 import type { TraverseAllows } from "../shared/traversal.js"
 import { RawBasis } from "./basis.js"
+import type { DomainNode } from "./domain.js"
 
 export interface ProtoInner<proto extends Constructor = Constructor>
 	extends BaseMeta {
@@ -81,7 +82,11 @@ export const protoImplementation: nodeImplementationOf<ProtoDeclaration> =
 			domain: (proto, domain, ctx) =>
 				domain.domain === "object" ?
 					proto
-				:	Disjoint.from("domain", ctx.$.keywords.object as never, domain)
+				:	Disjoint.from(
+						"domain",
+						ctx.$.keywords.object.raw as DomainNode,
+						domain
+					)
 		}
 	})
 

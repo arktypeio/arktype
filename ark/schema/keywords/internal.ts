@@ -1,6 +1,8 @@
 import type { Key } from "@arktype/util"
 import type { SchemaModule } from "../module.js"
 import { root, schemaScope } from "../scope.js"
+// these are needed to create some internal types
+import "./tsKeywords.js"
 
 export interface internalKeywordExports {
 	lengthBoundable: string | unknown[]

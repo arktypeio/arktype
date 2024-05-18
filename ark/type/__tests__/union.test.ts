@@ -36,7 +36,7 @@ contextualize(() => {
 		attest(t.json).equals(expected.json)
 	})
 
-	it("union of true and false reduces to boolean", () => {
+	it("boolean is a union of true | false", () => {
 		const t = type("true|false")
 		attest(t.infer).type.toString("boolean")
 		attest(t.json).equals(type("boolean").json)
@@ -106,6 +106,7 @@ contextualize(() => {
 				| 44
 				| 45
 			>(t.infer)
+
 		attest(t.json).snap([
 			{ unit: 0 },
 			{ unit: 10 },
