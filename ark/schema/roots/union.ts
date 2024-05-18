@@ -1,8 +1,23 @@
-import { appendUnique, groupBy, isArray, type array } from "@arktype/util"
+import {
+	appendUnique,
+	cached,
+	compileSerializedValue,
+	entriesOf,
+	flatMorph,
+	groupBy,
+	isArray,
+	isKeyOf,
+	throwInternalError,
+	type Domain,
+	type SerializedPrimitive,
+	type array,
+	type keySet,
+	type show
+} from "@arktype/util"
 import type { Node, NodeSchema } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
-import { Disjoint } from "../shared/disjoint.js"
+import { Disjoint, type SerializedPath } from "../shared/disjoint.js"
 import type { ArkError } from "../shared/errors.js"
 import {
 	implementNode,
@@ -13,7 +28,9 @@ import {
 } from "../shared/implement.js"
 import { intersectNodes, intersectNodesRoot } from "../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
+import type { DomainNode } from "./domain.js"
 import { BaseRoot, type schemaKindRightOf } from "./root.js"
+import type { UnitNode } from "./unit.js"
 import { defineRightwardIntersections } from "./utils.js"
 
 export type UnionChildKind = schemaKindRightOf<"union"> | "alias"
@@ -173,6 +190,8 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 		this.branches[0].hasUnit(false) &&
 		this.branches[1].hasUnit(true)
 
+	unitBranches = this.branches.filter((n): n is UnitNode => n.hasKind("unit"))
+
 	discriminant = null
 	expression: string =
 		this.isNever ? "never"
@@ -226,6 +245,80 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 		// avoid adding unnecessary parentheses around boolean since it's
 		// already collapsed to a single keyword
 		return this.isBoolean ? "boolean" : super.nestableExpression
+	}
+
+	@cached
+	discriminate(): Discriminant | null {
+		if (this.unitBranches.length === this.branches.length) {
+			const cases: DiscriminatedCases = flatMorph(
+				this.unitBranches,
+				(i, unit) => [`${unit.serializedValue}`, unit]
+			)
+			return {
+				path: [],
+				kind: "unit",
+				cases
+			}
+		}
+		const casesBySpecifier: CasesBySpecifier = {}
+		for (let lIndex = 0; lIndex < this.branches.length - 1; lIndex++) {
+			const l = this.branches[lIndex]
+			for (let rIndex = lIndex + 1; rIndex < this.branches.length; rIndex++) {
+				const r = this.branches[rIndex]
+				const result = intersectNodesRoot(l, r, l.$)
+				if (!(result instanceof Disjoint)) continue
+
+				for (const { path, kind, disjoint } of result.flat) {
+					if (!isKeyOf(kind, discriminantKinds)) continue
+
+					const qualifiedDiscriminant: DiscriminantKey = `${path}${kind}`
+					let lSerialized: string
+					let rSerialized: string
+					if (kind === "domain") {
+						lSerialized = (disjoint.l as DomainNode).domain
+						rSerialized = (disjoint.r as DomainNode).domain
+					} else if (kind === "unit") {
+						lSerialized = compileSerializedValue(disjoint.l)
+						rSerialized = compileSerializedValue(disjoint.r)
+					} else {
+						return throwInternalError(
+							`Unexpected attempt to discriminate disjoint kind '${kind}'`
+						)
+					}
+					if (!casesBySpecifier[qualifiedDiscriminant]) {
+						casesBySpecifier[qualifiedDiscriminant] = {
+							[lSerialized]: [l],
+							[rSerialized]: [r]
+						}
+						continue
+					}
+					const cases = casesBySpecifier[qualifiedDiscriminant]!
+					if (!isKeyOf(lSerialized, cases)) cases[lSerialized] = [l]
+					else if (!cases[lSerialized].includes(l)) cases[lSerialized].push(l)
+
+					if (!isKeyOf(rSerialized, cases)) cases[rSerialized] = [r]
+					else if (!cases[rSerialized].includes(r)) cases[rSerialized].push(r)
+				}
+			}
+		}
+
+		const bestDiscriminantEntry = entriesOf(casesBySpecifier)
+			.sort((a, b) => Object.keys(a[1]).length - Object.keys(b[1]).length)
+			.at(-1)
+
+		if (!bestDiscriminantEntry) return null
+
+		const [specifier, bestCases] = bestDiscriminantEntry
+		const [path, kind] = parseDiscriminantKey(specifier)
+
+		return {
+			kind,
+			path,
+			cases: flatMorph(bestCases, (k, branches) => [
+				k,
+				branches.length === 1 ? branches[0] : this.$.node("union", branches)
+			])
+		}
 	}
 }
 
@@ -430,3 +523,52 @@ export const reduceBranches = ({
 	}
 	return branches.filter((_, i) => uniquenessByIndex[i])
 }
+
+export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
+	DiscriminantKind extends kind ? string : DiscriminantKinds[kind] | "default"
+
+export type Discriminant<kind extends DiscriminantKind = DiscriminantKind> = {
+	path: string[]
+	kind: kind
+	cases: DiscriminatedCases<kind>
+}
+
+export type DiscriminatedCases<
+	kind extends DiscriminantKind = DiscriminantKind
+> = {
+	[caseKey in CaseKey<kind>]: BaseRoot
+}
+
+type DiscriminantKey = `${SerializedPath}${DiscriminantKind}`
+
+type CasesBySpecifier = {
+	[k in DiscriminantKey]?: Record<string, UnionChildNode[]>
+}
+
+export type DiscriminantKinds = {
+	domain: Domain
+	unit: SerializedPrimitive
+}
+
+const discriminantKinds: keySet<DiscriminantKind> = {
+	domain: 1,
+	unit: 1
+}
+
+export type DiscriminantKind = show<keyof DiscriminantKinds>
+
+const parseDiscriminantKey = (key: DiscriminantKey) => {
+	const lastPathIndex = key.lastIndexOf("]")
+	return [
+		JSON.parse(key.slice(0, lastPathIndex + 1)),
+		key.slice(lastPathIndex + 1)
+	] as [path: string[], kind: DiscriminantKind]
+}
+
+// // TODO: if deeply includes morphs?
+// const writeUndiscriminableMorphUnionMessage = <path extends string>(
+// 	path: path
+// ) =>
+// 	`${
+// 		path === "/" ? "A" : `At ${path}, a`
+// 	} union including one or more morphs must be discriminable` as const

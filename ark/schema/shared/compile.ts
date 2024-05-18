@@ -1,7 +1,7 @@
 import { CompiledFunction } from "@arktype/util"
 import type { Node } from "../kinds.js"
 import type { BaseNode } from "../node.js"
-import type { Discriminant } from "../roots/discriminate.js"
+import type { Discriminant } from "../roots/union.js"
 import type { PrimitiveKind } from "./implement.js"
 import type { TraversalKind } from "./traversal.js"
 
@@ -93,8 +93,8 @@ export class NodeCompiler extends CompiledFunction<["data", "ctx"]> {
 				d =>
 					d.path.join() === pathString &&
 					(node.kind === "domain" ?
-						d.kind === "domain" || d.kind === "value"
-					:	d.kind === "value")
+						d.kind === "domain" || d.kind === "unit"
+					:	d.kind === "unit")
 			)
 		) {
 			// if the discriminant has already checked the domain at the current path
