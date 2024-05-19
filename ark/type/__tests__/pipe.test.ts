@@ -216,6 +216,7 @@ contextualize(() => {
 	it("union with output", () => {
 		const t = type("number|parse.number")
 		attest<number>(t.infer)
+		attest<string | number>(t.inferIn)
 	})
 
 	it("deep union", () => {
