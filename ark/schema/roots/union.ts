@@ -526,30 +526,10 @@ const parseDiscriminantKey = (key: DiscriminantKey) => {
 	] as [path: string[], kind: DiscriminantKind]
 }
 
-// const pathString = this.path.join()
-// if (
-// 	node.kind === "domain" &&
-// 	node.domain === "object" &&
-// 	this.discriminants.some(d => d.path.join().startsWith(pathString))
-// ) {
-
-// 	return this
-// }
-// if (
-// 	(node.kind === "domain" || node.kind === "unit") &&
-// 	this.discriminants.some(
-// 		d =>
-// 			d.path.join() === pathString &&
-// 			(node.kind === "domain" ?
-// 				d.kind === "domain" || d.kind === "unit"
-// 			:	d.kind === "unit")
-// 	)
-// ) {
-
-// 	return this
-// }
-
-const pruneDiscriminant = (branch: BaseRoot, discriminant: Discriminant) =>
+export const pruneDiscriminant = (
+	branch: BaseRoot,
+	discriminant: Discriminant
+): BaseRoot =>
 	branch.transform(
 		(kind, inner, ctx) => {
 			// if we've already checked a path at least as long as the current one,
