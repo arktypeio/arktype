@@ -2,7 +2,6 @@ import {
 	appendUnique,
 	cached,
 	compileLiteralPropAccess,
-	compileSerializedValue,
 	entriesOf,
 	flatMorph,
 	groupBy,
@@ -280,6 +279,7 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 
 	@cached
 	discriminate(): Discriminant | null {
+		if (this.branches.length < 2) return null
 		if (this.unitBranches.length === this.branches.length) {
 			const cases = flatMorph(this.unitBranches, (i, unit) => [
 				`${unit.serializedValue}`,
@@ -311,8 +311,8 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 						lSerialized = (disjoint.l as DomainNode).domain
 						rSerialized = (disjoint.r as DomainNode).domain
 					} else if (kind === "unit") {
-						lSerialized = compileSerializedValue(disjoint.l)
-						rSerialized = compileSerializedValue(disjoint.r)
+						lSerialized = (disjoint.l as UnitNode).compiledValue as never
+						rSerialized = (disjoint.r as UnitNode).compiledValue as never
 					} else {
 						return throwInternalError(
 							`Unexpected attempt to discriminate disjoint kind '${kind}'`

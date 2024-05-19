@@ -31,9 +31,10 @@ contextualize(() => {
 		})
 
 	it("nested", () => {
-		const t = getPlaces().type("ocean|sky|rainForest|desert")
+		const $ = getPlaces()
+		const t = $.type("ocean|sky|rainForest|desert")
 		attest(t.raw.hasKind("union") && t.raw.discriminant?.json).snap({
-			"$ark.fn2": [
+			blue: [
 				{
 					required: [
 						{ key: "climate", value: { unit: "dry" } },
@@ -51,7 +52,7 @@ contextualize(() => {
 					domain: "object"
 				}
 			],
-			"$ark.fn4": {
+			brown: {
 				required: [
 					{ key: "climate", value: { unit: "dry" } },
 					{ key: "color", value: { unit: "brown" } },
@@ -59,7 +60,7 @@ contextualize(() => {
 				],
 				domain: "object"
 			},
-			"$ark.fn3": {
+			green: {
 				required: [
 					{ key: "climate", value: { unit: "wet" } },
 					{ key: "color", value: { unit: "green" } },

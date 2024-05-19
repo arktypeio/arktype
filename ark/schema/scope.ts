@@ -700,8 +700,8 @@ export const bindCompiledScope = (references: readonly BaseNode[]): void => {
 	}
 }
 
-const compileScope = (references: readonly BaseNode[]) => {
-	return new CompiledFunction()
+const compileScope = (references: readonly BaseNode[]) =>
+	new CompiledFunction()
 		.block("return", js => {
 			references.forEach(node => {
 				const allowsCompiler = new NodeCompiler("Allows").indent()
@@ -720,4 +720,3 @@ const compileScope = (references: readonly BaseNode[]) => {
 				[k: `${string}Apply`]: TraverseApply
 			}
 		>()()
-}
