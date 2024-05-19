@@ -28,6 +28,7 @@ export const parseOperator = (s: DynamicStateWithRoot): void => {
 	)
 }
 
+
 export type parseOperator<s extends StaticState, $, args> =
 	s["unscanned"] extends Scanner.shift<infer lookahead, infer unscanned> ?
 		lookahead extends "[" ?

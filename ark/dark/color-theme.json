@@ -18,8 +18,8 @@
 			}
 		},
 		{
-			"name": "types",
-			"scope": ["entity.name.type"],
+			"name": "types and decorators",
+			"scope": ["entity.name.type", "meta.decorator.ts variable"],
 			"settings": {
 				"foreground": "#40decc"
 			}
