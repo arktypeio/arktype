@@ -2,7 +2,7 @@ import { fromCwd, type SourcePosition } from "@arktype/fs"
 import { throwInternalError } from "@arktype/util"
 import * as tsvfs from "@typescript/vfs"
 import { readFileSync } from "node:fs"
-import { dirname, join } from "node:path"
+import path, { dirname, join } from "node:path"
 import ts from "typescript"
 import { getConfig } from "../config.js"
 
@@ -20,8 +20,8 @@ export class TsServer {
 
 		const tsLibPaths = getTsLibFiles(tsConfigInfo.parsed.options)
 
-		this.rootFiles = tsConfigInfo.parsed.fileNames.filter(path =>
-			path.startsWith(fromCwd())
+		this.rootFiles = tsConfigInfo.parsed.fileNames.filter(filePath => 
+			path.normalize(filePath).startsWith(fromCwd())
 		)
 
 		const system = tsvfs.createFSBackedSystem(
