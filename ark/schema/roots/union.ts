@@ -112,9 +112,8 @@ export const unionImplementation: nodeImplementationOf<UnionDeclaration> =
 			)
 		},
 		defaults: {
-			description: node => {
-				return describeBranches(node.branches.map(branch => branch.description))
-			},
+			description: node =>
+				describeBranches(node.branches.map(branch => branch.description)),
 			expected: ctx => {
 				const byPath = groupBy(ctx.errors, "propString") as Record<
 					string,

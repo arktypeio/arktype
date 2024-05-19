@@ -6,7 +6,6 @@
 			"name": "functions",
 			"scope": [
 				"entity.name.function",
-				"meta.function-call",
 				"support.function",
 				// We have this for Python in honor of contributor TizzySaurus.
 				// Will be removed for consistency once they allow it or the next time someone complains about it.
@@ -14,7 +13,8 @@
 				"meta.function.decorator support.type"
 			],
 			"settings": {
-				"foreground": "#80cff8"
+				"foreground": "#80cff8",
+				"fontStyle": "italic"
 			}
 		},
 		{
@@ -22,6 +22,21 @@
 			"scope": ["entity.name.type"],
 			"settings": {
 				"foreground": "#40decc"
+			}
+		},
+		{
+			"scope": ["meta.type.declaration.ts entity.name.type"],
+			"settings": {
+				"foreground": "#80cff8",
+				"fontStyle": "italic"
+			}
+		},
+		{
+			"scope": [
+				"meta.type.declaration.ts meta.type.parameters.ts entity.name.type"
+			],
+			"settings": {
+				"fontStyle": ""
 			}
 		},
 		{
@@ -33,22 +48,7 @@
 				"constant.character.escape"
 			],
 			"settings": {
-				"foreground": "#eb9f2e"
-			}
-		},
-		{
-			"name": "italics",
-			// italicize keywords that are not punctuation/symbols
-			"scope": ["keyword", "storage", "keyword.operator.expression"],
-			"settings": {
-				"fontStyle": "italic"
-			}
-		},
-		{
-			"name": "unitalicized",
-			"scope": ["keyword.operator", "storage.type.function.arrow.ts"],
-			"settings": {
-				"fontStyle": ""
+				"foreground": "#ba7e41"
 			}
 		},
 		{

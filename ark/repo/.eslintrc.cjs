@@ -51,6 +51,7 @@ module.exports = defineConfig({
 				disallowPrototype: true
 			}
 		],
+		"arrow-body-style": ["warn", "as-needed"],
 		"@typescript-eslint/no-unused-vars": [
 			"warn",
 			{
