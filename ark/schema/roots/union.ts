@@ -2,6 +2,7 @@ import {
 	appendUnique,
 	cached,
 	compileLiteralPropAccess,
+	compileSerializedValue,
 	entriesOf,
 	flatMorph,
 	groupBy,
@@ -233,7 +234,8 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 
 		js.block(`switch(${condition})`, () => {
 			for (const k in cases) {
-				const caseCondition = k === "default" ? "default" : `case ${k}`
+				const caseCondition =
+					k === "default" ? "default" : `case ${compileSerializedValue(k)}`
 				js.line(`${caseCondition}: return ${js.invoke(cases[k])}`)
 			}
 

@@ -164,10 +164,16 @@ contextualize(
 			// valid IPv4 address
 			attest(ip("192.168.1.1")).snap("192.168.1.1")
 			// valid IPv6 address
-			attest(ip("2001:0db8:85a3:0000:0000:8a2e:0370:7334")).snap()
+			attest(ip("2001:0db8:85a3:0000:0000:8a2e:0370:7334")).snap(
+				"2001:0db8:85a3:0000:0000:8a2e:0370:7334"
+			)
 
-			attest(ip("192.168.1.256").toString()).snap()
-			attest(ip("2001:0db8:85a3:0000:0000:8a2e:0370:733g").toString()).snap()
+			attest(ip("192.168.1.256").toString()).snap(
+				'must be a valid IPv4 address or a valid IPv6 address (was "192.168.1.256")'
+			)
+			attest(ip("2001:0db8:85a3:0000:0000:8a2e:0370:733g").toString()).snap(
+				'must be a valid IPv4 address or a valid IPv6 address (was "2001:0db8:85a3:0000:0000:8a2e:0370:733g")'
+			)
 		})
 	},
 	"parse",
@@ -175,8 +181,10 @@ contextualize(
 		it("json", () => {
 			const parseJson = type("parse.json")
 			attest(parseJson('{"a": "hello"}')).snap({ a: "hello" })
-			attest(parseJson(123).toString()).snap()
-			attest(parseJson("foo").toString()).snap()
+			attest(parseJson(123).toString()).snap("must be a string (was number)")
+			attest(parseJson("foo").toString()).snap(
+				'must be a valid JSON string (was "foo")'
+			)
 		})
 		it("number", () => {
 			const parseNum = type("parse.number")
@@ -202,7 +210,9 @@ contextualize(
 		})
 		it("date", () => {
 			const parseDate = type("parse.date")
-			attest(parseDate("5/21/1993").toString()).snap()
+			attest(parseDate("5/21/1993").toString()).snap(
+				"Fri May 21 1993 00:00:00 GMT-0400 (Eastern Daylight Time)"
+			)
 			attest(parseDate("foo").toString()).equals(
 				'must be a valid date (was "foo")'
 			)

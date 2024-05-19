@@ -85,7 +85,7 @@ contextualize(() => {
 		attest(t.raw.hasKind("union") && t.raw.discriminant?.json).equals(undefined)
 	})
 
-	it("doesn't discriminate optional key", () => {
+	it("discriminate optional key", () => {
 		const t = type({
 			direction: "'forward' | 'backward'",
 			"operator?": "'by'"
