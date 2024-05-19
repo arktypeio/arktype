@@ -45,6 +45,17 @@ export type Thunk<ret = unknown> = () => ret
 
 export type thunkable<t> = t | Thunk<t>
 
+export const tryCatch = <returns, onError = never>(
+	fn: () => returns,
+	onError?: (e: unknown) => onError
+): returns | onError => {
+	try {
+		return fn()
+	} catch (e) {
+		return onError?.(e) as onError
+	}
+}
+
 export const DynamicFunction = class extends Function {
 	constructor(...args: [string, ...string[]]) {
 		const params = args.slice(0, -1)

@@ -42,7 +42,7 @@ const url = root.defineRoot({
 
 const json = root.defineRoot({
 	in: "string",
-	morphs: (s: string, ctx): unknown => {
+	morphs: (s: string, ctx): object => {
 		try {
 			return JSON.parse(s)
 		} catch {
@@ -64,7 +64,7 @@ export type parsingExports = {
 	number: (In: string) => Out<number>
 	integer: (In: string) => Out<number>
 	date: (In: string) => Out<Date>
-	json: (In: string) => Out<unknown>
+	json: (In: string) => Out<object>
 }
 
 export type parsing = SchemaModule<parsingExports>

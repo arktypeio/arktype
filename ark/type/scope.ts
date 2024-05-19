@@ -27,7 +27,6 @@ import {
 	type nominal,
 	type show
 } from "@arktype/util"
-import type { type } from "./ark.js"
 import { Generic } from "./generic.js"
 import { createMatchParser, type MatchParser } from "./match.js"
 import type { Module } from "./module.js"
@@ -127,19 +126,6 @@ type extractGenericName<k> =
 type extractGenericParameters<k> =
 	k extends GenericDeclaration<string, infer params> ? params : never
 
-// type isAnyOrNever<t> = isAny<t> | isNever<t> extends false ? false : true
-
-// export type resolve<reference extends keyof $ | keyof args, $, args> =
-// 	(
-// 		reference extends keyof args ?
-// 			args[reference]
-// 		:	$[reference & keyof $]
-// 	) extends infer resolution ?
-// 		isAnyOrNever<resolution> extends true ? resolution
-// 		: resolution extends Def<infer def> ? inferDefinition<def, $, args>
-// 		: resolution
-// 	:	never
-
 export type resolve<reference extends keyof $ | keyof args, $, args> =
 	(
 		reference extends keyof args ?
@@ -159,9 +145,7 @@ export type moduleKeyOf<$> = {
 export type tryInferSubmoduleReference<$, token> =
 	token extends `${infer submodule extends moduleKeyOf<$>}.${infer subalias}` ?
 		subalias extends keyof $[submodule] ?
-			$[submodule][subalias] extends type.cast<infer t> ?
-				t
-			:	never
+			$[submodule][subalias]
 		:	never
 	:	never
 
