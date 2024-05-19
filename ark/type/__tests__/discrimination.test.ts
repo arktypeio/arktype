@@ -32,7 +32,42 @@ contextualize(() => {
 
 	it("nested", () => {
 		const t = getPlaces().type("ocean|sky|rainForest|desert")
-		attest(t.json).snap()
+		attest(t.raw.hasKind("union") && t.raw.discriminant?.json).snap({
+			"$ark.fn2": [
+				{
+					required: [
+						{ key: "climate", value: { unit: "dry" } },
+						{ key: "color", value: { unit: "blue" } },
+						{ key: "isSky", value: { unit: true } }
+					],
+					domain: "object"
+				},
+				{
+					required: [
+						{ key: "climate", value: { unit: "wet" } },
+						{ key: "color", value: { unit: "blue" } },
+						{ key: "isOcean", value: { unit: true } }
+					],
+					domain: "object"
+				}
+			],
+			"$ark.fn4": {
+				required: [
+					{ key: "climate", value: { unit: "dry" } },
+					{ key: "color", value: { unit: "brown" } },
+					{ key: "isDesert", value: { unit: true } }
+				],
+				domain: "object"
+			},
+			"$ark.fn3": {
+				required: [
+					{ key: "climate", value: { unit: "wet" } },
+					{ key: "color", value: { unit: "green" } },
+					{ key: "isRainForest", value: { unit: true } }
+				],
+				domain: "object"
+			}
+		})
 	})
 
 	it("undiscriminable", () => {
@@ -46,7 +81,7 @@ contextualize(() => {
 			}
 		])
 
-		attest(t.raw.hasKind("union") && t.raw.discriminator).is(null)
+		attest(t.raw.hasKind("union") && t.raw.discriminant?.json).equals(undefined)
 	})
 
 	it("doesn't discriminate optional key", () => {
@@ -58,7 +93,7 @@ contextualize(() => {
 			operator: "'to'"
 		})
 
-		attest(t.raw.hasKind("union") && t.raw.discriminator).is(null)
+		attest(t.raw.hasKind("union") && t.raw.discriminant?.json).equals(undefined)
 	})
 
 	it("default case", () => {

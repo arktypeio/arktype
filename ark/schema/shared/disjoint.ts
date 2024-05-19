@@ -12,7 +12,6 @@ import {
 import type { Node } from "../kinds.js"
 import type { BaseNode } from "../node.js"
 import type { BaseRoot } from "../roots/root.js"
-import type { UnitNode } from "../roots/unit.js"
 import type { BoundKind } from "./implement.js"
 import { hasArkKind } from "./utils.js"
 
@@ -37,13 +36,10 @@ type DisjointKinds = {
 		l: Node<BoundKind>
 		r: Node<BoundKind>
 	}
-	leftAssignability?: {
-		l: UnitNode
-		r: BaseNode
-	}
-	rightAssignability?: {
+	// exactly one of l or r should be a UnitNode
+	assignability?: {
 		l: BaseNode
-		r: UnitNode
+		r: BaseNode
 	}
 	union?: {
 		l: readonly BaseRoot[]

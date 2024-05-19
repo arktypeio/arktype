@@ -10,6 +10,7 @@ import {
 	isKeyOf,
 	throwInternalError,
 	type Domain,
+	type Json,
 	type SerializedPrimitive,
 	type array,
 	type keySet,
@@ -192,7 +193,7 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 
 	unitBranches = this.branches.filter((n): n is UnitNode => n.hasKind("unit"))
 
-	discriminator = this.discriminate()
+	discriminant = this.discriminate()
 	expression: string =
 		this.isNever ? "never"
 		: this.isBoolean ? "boolean"
@@ -215,7 +216,7 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 
 	compile(js: NodeCompiler): void {
 		if (
-			!this.discriminator ||
+			!this.discriminant ||
 			// if we have a union of two units like `boolean`, the
 			// undiscriminated compilation will be just as fast
 			(this.unitBranches.length === this.branches.length &&
@@ -224,12 +225,12 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 			return this.compileIndiscriminable(js)
 
 		// we need to access the path as optional so we don't throw if it isn't present
-		const condition = this.discriminator.path.reduce(
+		const condition = this.discriminant.path.reduce(
 			(acc, segment) => acc + compileLiteralPropAccess(segment, true),
-			this.discriminator.kind === "domain" ? "typeof data" : "data"
+			this.discriminant.kind === "domain" ? "typeof data" : "data"
 		)
 
-		const cases = this.discriminator.cases
+		const cases = this.discriminant.cases
 
 		js.block(`switch(${condition})`, () => {
 			for (const k in cases) {
@@ -278,16 +279,18 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 	}
 
 	@cached
-	discriminate(): Discriminator | null {
+	discriminate(): Discriminant | null {
 		if (this.unitBranches.length === this.branches.length) {
-			const cases: DiscriminatedCases = flatMorph(
-				this.unitBranches,
-				(i, unit) => [`${unit.serializedValue}`, unit]
-			)
+			const cases = flatMorph(this.unitBranches, (i, unit) => [
+				`${unit.serializedValue}`,
+				unit
+			])
+
 			return {
 				path: [],
 				kind: "unit",
-				cases
+				cases,
+				json: flatMorph(cases, (k, n) => [k, n.json])
 			}
 		}
 		const casesBySpecifier: CasesBySpecifier = {}
@@ -299,9 +302,9 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 				if (!(result instanceof Disjoint)) continue
 
 				for (const { path, kind, disjoint } of result.flat) {
-					if (!isKeyOf(kind, discriminatorKinds)) continue
+					if (!isKeyOf(kind, discriminantKinds)) continue
 
-					const qualifiedDiscriminator: DiscriminatorKey = `${path}${kind}`
+					const qualifiedDiscriminant: DiscriminantKey = `${path}${kind}`
 					let lSerialized: string
 					let rSerialized: string
 					if (kind === "domain") {
@@ -315,14 +318,14 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 							`Unexpected attempt to discriminate disjoint kind '${kind}'`
 						)
 					}
-					if (!casesBySpecifier[qualifiedDiscriminator]) {
-						casesBySpecifier[qualifiedDiscriminator] = {
+					if (!casesBySpecifier[qualifiedDiscriminant]) {
+						casesBySpecifier[qualifiedDiscriminant] = {
 							[lSerialized]: [l],
 							[rSerialized]: [r]
 						}
 						continue
 					}
-					const cases = casesBySpecifier[qualifiedDiscriminator]!
+					const cases = casesBySpecifier[qualifiedDiscriminant]!
 					if (!isKeyOf(lSerialized, cases)) cases[lSerialized] = [l]
 					else if (!cases[lSerialized].includes(l)) cases[lSerialized].push(l)
 
@@ -332,23 +335,25 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 			}
 		}
 
-		const bestDiscriminatorEntry = entriesOf(casesBySpecifier)
+		const bestDiscriminantEntry = entriesOf(casesBySpecifier)
 			.sort((a, b) => Object.keys(a[1]).length - Object.keys(b[1]).length)
 			.at(-1)
 
-		if (!bestDiscriminatorEntry) return null
+		if (!bestDiscriminantEntry) return null
 
-		const [specifier, bestCases] = bestDiscriminatorEntry
-		const [path, kind] = parseDiscriminatorKey(specifier)
+		const [specifier, bestCases] = bestDiscriminantEntry
+		const [path, kind] = parseDiscriminantKey(specifier)
+
+		const cases = flatMorph(bestCases, (k, branches) => [
+			k,
+			branches.length === 1 ? branches[0] : this.$.node("union", branches)
+		])
 
 		return {
 			kind,
 			path,
-			cases: flatMorph(bestCases, (k, branches) => [
-				k,
-				// TODO: prune
-				branches.length === 1 ? branches[0] : this.$.node("union", branches)
-			])
+			cases,
+			json: flatMorph(cases, (k, node) => [k, node.json])
 		}
 	}
 }
@@ -477,46 +482,46 @@ export const reduceBranches = ({
 	return branches.filter((_, i) => uniquenessByIndex[i])
 }
 
-export type CaseKey<kind extends DiscriminatorKind = DiscriminatorKind> =
-	DiscriminatorKind extends kind ? string : DiscriminatorKinds[kind] | "default"
+export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
+	DiscriminantKind extends kind ? string : DiscriminantKinds[kind] | "default"
 
-export type Discriminator<kind extends DiscriminatorKind = DiscriminatorKind> =
-	{
-		path: string[]
-		kind: kind
-		cases: DiscriminatedCases<kind>
-	}
+export type Discriminant<kind extends DiscriminantKind = DiscriminantKind> = {
+	path: string[]
+	kind: kind
+	json: Json
+	cases: DiscriminatedCases<kind>
+}
 
 export type DiscriminatedCases<
-	kind extends DiscriminatorKind = DiscriminatorKind
+	kind extends DiscriminantKind = DiscriminantKind
 > = {
 	[caseKey in CaseKey<kind>]: BaseRoot
 }
 
-type DiscriminatorKey = `${SerializedPath}${DiscriminatorKind}`
+type DiscriminantKey = `${SerializedPath}${DiscriminantKind}`
 
 type CasesBySpecifier = {
-	[k in DiscriminatorKey]?: Record<string, BaseRoot[]>
+	[k in DiscriminantKey]?: Record<string, BaseRoot[]>
 }
 
-export type DiscriminatorKinds = {
+export type DiscriminantKinds = {
 	domain: Domain
 	unit: SerializedPrimitive
 }
 
-const discriminatorKinds: keySet<DiscriminatorKind> = {
+const discriminantKinds: keySet<DiscriminantKind> = {
 	domain: 1,
 	unit: 1
 }
 
-export type DiscriminatorKind = show<keyof DiscriminatorKinds>
+export type DiscriminantKind = show<keyof DiscriminantKinds>
 
-const parseDiscriminatorKey = (key: DiscriminatorKey) => {
+const parseDiscriminantKey = (key: DiscriminantKey) => {
 	const lastPathIndex = key.lastIndexOf("]")
 	return [
 		JSON.parse(key.slice(0, lastPathIndex + 1)),
 		key.slice(lastPathIndex + 1)
-	] as [path: string[], kind: DiscriminatorKind]
+	] as [path: string[], kind: DiscriminantKind]
 }
 
 // // TODO: if deeply includes morphs?

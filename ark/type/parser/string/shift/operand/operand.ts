@@ -3,10 +3,11 @@ import type { StaticState, state } from "../../reduce/static.js"
 import type { BaseCompletions } from "../../string.js"
 import { Scanner } from "../scanner.js"
 import {
-	type EnclosingQuote,
-	type EnclosingStartToken,
 	enclosingChar,
-	parseEnclosed
+	enclosingQuote,
+	parseEnclosed,
+	type EnclosingQuote,
+	type EnclosingStartToken
 } from "./enclosed.js"
 import { parseUnenclosed, writeMissingOperandMessage } from "./unenclosed.js"
 
@@ -17,8 +18,11 @@ export const parseOperand = (s: DynamicState): void =>
 	: s.scanner.lookaheadIsIn(Scanner.whiteSpaceTokens) ?
 		parseOperand(s.shiftedByOne())
 	: s.scanner.lookahead === "d" ?
-		s.shiftedByOne().scanner.lookaheadIsIn(enclosingChar) ?
-			parseEnclosed(s, `d${s.scanner.shift()}` as EnclosingStartToken)
+		s.scanner.nextLookahead in enclosingQuote ?
+			parseEnclosed(
+				s,
+				`${s.scanner.shift()}${s.scanner.shift()}` as EnclosingStartToken
+			)
 		:	parseUnenclosed(s)
 	:	parseUnenclosed(s)
 
