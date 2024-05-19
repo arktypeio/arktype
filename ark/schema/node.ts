@@ -8,6 +8,7 @@ import {
 	type Dict,
 	type Guardable,
 	type Json,
+	type Key,
 	type conform,
 	type listable
 } from "@arktype/util"
@@ -236,14 +237,17 @@ export abstract class BaseNode<
 
 	transform(
 		mapper: DeepNodeTransformation,
-		shouldTransform: ShouldTransformFn
+		opts?: DeepNodeTransformOptions
 	): Node<reducibleKindOf<this["kind"]>> {
-		return this._transform(mapper, shouldTransform, { seen: {} }) as never
+		return this._transform(mapper, {
+			seen: {},
+			path: [],
+			shouldTransform: opts?.shouldTransform ?? (() => true)
+		}) as never
 	}
 
-	private _transform(
+	protected _transform(
 		mapper: DeepNodeTransformation,
-		shouldTransform: ShouldTransformFn,
 		ctx: DeepNodeTransformationContext
 	): BaseNode {
 		if (ctx.seen[this.id])
@@ -251,22 +255,25 @@ export abstract class BaseNode<
 			// TODO: if each transform has a unique base id, could ensure
 			// these don't create duplicates
 			return this.$.lazilyResolve(ctx.seen[this.id]! as never)
-		if (!shouldTransform(this as never, ctx)) return this
+		if (!ctx.shouldTransform(this as never, ctx)) return this
 
 		ctx.seen[this.id] = () => node
 
 		const innerWithTransformedChildren = flatMorph(
 			this.inner as Dict,
-			(k, v) => [
-				k,
-				this.impl.keys[k].child ?
-					isArray(v) ?
-						v.map(node =>
-							(node as BaseNode)._transform(mapper, shouldTransform, ctx)
-						)
-					:	(v as BaseNode)._transform(mapper, shouldTransform, ctx)
-				:	v
-			]
+			(k, v) => {
+				if (!this.impl.keys[k].child) return [k, v]
+				const children = v as listable<BaseNode>
+				if (!isArray(children)) {
+					const transformed = children._transform(mapper, ctx)
+					return transformed ? [k, transformed] : []
+				}
+				const transformed = children.flatMap(n => {
+					const transformedChild = n._transform(mapper, ctx)
+					return transformedChild ?? []
+				})
+				return transformed.length ? [k, transformed] : []
+			}
 		)
 
 		delete ctx.seen[this.id]
@@ -284,11 +291,14 @@ export abstract class BaseNode<
 			typeof configOrDescription === "string" ?
 				{ description: configOrDescription }
 			:	(configOrDescription as never)
-		return this.transform(
-			(kind, inner) => ({ ...inner, ...config }),
-			node => node.kind !== "structure"
-		) as never
+		return this.transform((kind, inner) => ({ ...inner, ...config }), {
+			shouldTransform: node => node.kind !== "structure"
+		}) as never
 	}
+}
+
+export type DeepNodeTransformOptions = {
+	shouldTransform: ShouldTransformFn
 }
 
 export type ShouldTransformFn = (
@@ -297,11 +307,14 @@ export type ShouldTransformFn = (
 ) => boolean
 
 export type DeepNodeTransformationContext = {
+	/** a literal key or a node representing the key of an index signature */
+	path: Array<Key | BaseNode>
 	seen: { [originalId: string]: (() => BaseNode) | undefined }
+	shouldTransform: ShouldTransformFn
 }
 
 export type DeepNodeTransformation = <kind extends NodeKind>(
 	kind: kind,
 	inner: Inner<kind>,
 	ctx: DeepNodeTransformationContext
-) => Inner<kind>
+) => Inner<kind> | null

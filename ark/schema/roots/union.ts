@@ -30,7 +30,7 @@ import {
 } from "../shared/implement.js"
 import { intersectNodes, intersectNodesRoot } from "../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
-import type { DomainNode } from "./domain.js"
+import type { DomainInner, DomainNode } from "./domain.js"
 import { BaseRoot, type schemaKindRightOf } from "./root.js"
 import type { UnitNode } from "./unit.js"
 import { defineRightwardIntersections } from "./utils.js"
@@ -525,6 +525,60 @@ const parseDiscriminantKey = (key: DiscriminantKey) => {
 		key.slice(lastPathIndex + 1)
 	] as [path: string[], kind: DiscriminantKind]
 }
+
+// const pathString = this.path.join()
+// if (
+// 	node.kind === "domain" &&
+// 	node.domain === "object" &&
+// 	this.discriminants.some(d => d.path.join().startsWith(pathString))
+// ) {
+
+// 	return this
+// }
+// if (
+// 	(node.kind === "domain" || node.kind === "unit") &&
+// 	this.discriminants.some(
+// 		d =>
+// 			d.path.join() === pathString &&
+// 			(node.kind === "domain" ?
+// 				d.kind === "domain" || d.kind === "unit"
+// 			:	d.kind === "unit")
+// 	)
+// ) {
+
+// 	return this
+// }
+
+const pruneDiscriminant = (branch: BaseRoot, discriminant: Discriminant) =>
+	branch.transform(
+		(kind, inner, ctx) => {
+			// if we've already checked a path at least as long as the current one,
+			// we don't need to revalidate that we're in an object
+			if (
+				kind === "domain" &&
+				(inner as DomainInner).domain === "object" &&
+				discriminant.path.length > ctx.path.length
+			)
+				return null
+
+			// if the discriminant has already checked the domain at the current path
+			// (or an exact value, implying a domain), we don't need to recheck it
+			if (
+				kind === discriminant.kind ||
+				(kind === "domain" &&
+					ctx.path.length === discriminant.path.length &&
+					ctx.path.every((segment, i) => segment === discriminant.path[i]))
+			)
+				return null
+			return inner
+		},
+		{
+			shouldTransform: node =>
+				node.children.length !== 0 ||
+				node.kind === "domain" ||
+				node.kind === "unit"
+		}
+	)
 
 // // TODO: if deeply includes morphs?
 // const writeUndiscriminableMorphUnionMessage = <path extends string>(

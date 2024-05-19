@@ -79,7 +79,12 @@ export abstract class RawPrimitiveConstraint<
 	}
 
 	compile(js: NodeCompiler): void {
-		js.compilePrimitive(this as never)
+		if (js.traversalKind === "Allows") js.return(this.compiledCondition)
+		else {
+			js.if(this.compiledNegation, () =>
+				js.line(`${js.ctx}.error(${this.compiledErrorContext})`)
+			)
+		}
 	}
 
 	get errorContext(): d["errorContext"] {

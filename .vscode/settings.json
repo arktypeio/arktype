@@ -10,8 +10,7 @@
 		"@typescript-eslint/consistent-type-imports",
 		"import/no-duplicates",
 		"@typescript-eslint/no-import-type-side-effects",
-		"curly",
-		"arrow-body-style"
+		"curly"
 	],
 	"typescript.preferences.preferTypeOnlyAutoImports": true,
 	"typescript.preferences.autoImportFileExcludePatterns": [

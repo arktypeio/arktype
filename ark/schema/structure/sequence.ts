@@ -8,6 +8,11 @@ import {
 } from "@arktype/util"
 import { BaseConstraint } from "../constraint.js"
 import type { MutableInner, RootSchema } from "../kinds.js"
+import type {
+	BaseNode,
+	DeepNodeTransformation,
+	DeepNodeTransformationContext
+} from "../node.js"
 import type { MaxLengthNode } from "../refinements/maxLength.js"
 import type { MinLengthNode } from "../refinements/minLength.js"
 import type { BaseRoot } from "../roots/root.js"
@@ -307,6 +312,16 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 		}
 
 		if (js.traversalKind === "Allows") js.return(true)
+	}
+
+	protected override _transform(
+		mapper: DeepNodeTransformation,
+		ctx: DeepNodeTransformationContext
+	): BaseNode {
+		ctx.path.push(this.$.keywords.nonNegativeIntegerString.raw)
+		const result = super._transform(mapper, ctx)
+		ctx.path.pop()
+		return result
 	}
 
 	tuple: SequenceTuple = sequenceInnerToTuple(this.inner)
