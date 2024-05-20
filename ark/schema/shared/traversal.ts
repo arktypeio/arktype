@@ -53,40 +53,28 @@ export class TraversalContext {
 		if (this.queuedMorphs.length) {
 			for (let i = 0; i < this.queuedMorphs.length; i++) {
 				const { path, morphs } = this.queuedMorphs[i]
-				if (path.length === 0) {
-					this.path = []
-					// if the morph applies to the root, just assign to it directly
-					for (const morph of morphs) {
-						const result = morph(out, this)
-						if (result instanceof ArkErrors) return result
-						if (this.hasError()) return this.errors
-						if (result instanceof ArkError) {
-							// if an ArkTypeError was returned but wasn't added to these
-							// errors, add it then return
-							this.error(result)
-							return this.errors
-						}
-						out = result
-					}
-				} else {
-					// find the object on which the key to be morphed exists
-					let parent = out
-					for (let pathIndex = 0; pathIndex < path.length - 1; pathIndex++)
-						parent = parent[path[pathIndex]]
 
-					// apply the morph function and assign the result to the corresponding property
-					const key = path.at(-1)!
-					this.path = path
-					for (const morph of morphs) {
-						const result = morph(parent[key], this)
-						if (result instanceof ArkErrors) return result
-						if (this.hasError()) return this.errors
-						if (result instanceof ArkError) {
-							this.error(result)
-							return this.errors
-						}
-						parent[key] = result
+				// find the object on which the key to be morphed exists
+				let parent = out
+				for (let pathIndex = 0; pathIndex < path.length - 1; pathIndex++)
+					parent = parent[path[pathIndex]]
+
+				// apply the morph function and assign the result to the corresponding property
+				const key = path.at(-1)
+				this.path = path
+				// if the morph applies to the root, just assign to it directly
+				for (const morph of morphs) {
+					const result = morph(key === undefined ? out : parent[key], this)
+					if (result instanceof ArkErrors) return result
+					if (this.hasError()) return this.errors
+					if (result instanceof ArkError) {
+						// if an ArkTypeError was returned but wasn't added to these
+						// errors, add it then return
+						this.error(result)
+						return this.errors
 					}
+					if (key === undefined) out = result
+					else parent[key] = result
 				}
 			}
 		}

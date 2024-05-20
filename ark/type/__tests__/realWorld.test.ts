@@ -285,6 +285,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		attest<typeof referenced>(inlined)
 	})
 
+	// https://discord.com/channels/957797212103016458/957804102685982740/1242221022380556400
 	it("nested pipe to validated output", () => {
 		const trimString = (s: string) => s.trim()
 
@@ -328,9 +329,14 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			],
 			domain: "object"
 		})
-		attest(CreatePatientInput({ first_name: " John  " })).equals({
-			first_name: "John"
+		attest(CreatePatientInput({ first_name: " Bob  " })).equals({
+			first_name: "Bob"
 		})
-		attest(CreatePatientInput({ first_name: 5 }).toString()).snap()
+		attest(CreatePatientInput({ first_name: " John  " }).toString()).snap(
+			"[object Object]"
+		)
+		attest(CreatePatientInput({ first_name: 5 }).toString()).snap(
+			"first_name must be a string or null (was number, 5)"
+		)
 	})
 })
