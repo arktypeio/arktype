@@ -1,4 +1,6 @@
 import { attest, contextualize } from "@arktype/attest"
+import type { AtLeastLength, AtMostLength, Out, string } from "@arktype/schema"
+import { registeredReference } from "@arktype/util"
 import { scope, type, type Type } from "arktype"
 
 contextualize(() => {
@@ -281,5 +283,54 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		)
 
 		attest<typeof referenced>(inlined)
+	})
+
+	it("nested pipe to validated output", () => {
+		const trimString = (s: string) => s.trim()
+
+		const trimStringReference = registeredReference(trimString)
+
+		const validatedTrimString = type("string").pipe(
+			trimString,
+			type("1<=string<=3")
+		)
+
+		const CreatePatientInput = type({
+			"patient_id?": "string|null",
+			"first_name?": validatedTrimString.or("null"),
+			"middle_name?": "string|null",
+			"last_name?": "string|null"
+		})
+
+		attest<
+			| ((In: string) => Out<string.is<AtLeastLength<1> & AtMostLength<3>>>)
+			| null
+			| undefined,
+			typeof CreatePatientInput.t.first_name
+		>()
+
+		attest(CreatePatientInput.json).snap({
+			optional: [
+				{
+					key: "first_name",
+					value: [
+						{
+							in: "string",
+							morphs: [trimStringReference],
+							out: { domain: "string", maxLength: 3, minLength: 1 }
+						},
+						{ unit: null }
+					]
+				},
+				{ key: "last_name", value: ["string", { unit: null }] },
+				{ key: "middle_name", value: ["string", { unit: null }] },
+				{ key: "patient_id", value: ["string", { unit: null }] }
+			],
+			domain: "object"
+		})
+		attest(CreatePatientInput({ first_name: " John  " })).equals({
+			first_name: "John"
+		})
+		attest(CreatePatientInput({ first_name: 5 }).toString()).snap()
 	})
 })

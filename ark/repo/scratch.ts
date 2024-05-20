@@ -1,4 +1,4 @@
-import { match } from "arktype"
+import { match, type } from "arktype"
 
 const sizeOf = match({
 	"string|Array": _ => _.length,

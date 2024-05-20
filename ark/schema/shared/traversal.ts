@@ -13,16 +13,11 @@ import type { TraversalPath } from "./utils.js"
 export type QueuedMorphs = {
 	path: TraversalPath
 	morphs: array<Morph>
-	to?: TraverseApply
 }
 
 export type BranchTraversalContext = {
 	error: ArkError | undefined
 	queuedMorphs: QueuedMorphs[]
-}
-
-export type QueueMorphOptions = {
-	outValidator?: TraverseApply
 }
 
 export class TraversalContext {
@@ -42,12 +37,11 @@ export class TraversalContext {
 		return this.branches.at(-1)
 	}
 
-	queueMorphs(morphs: array<Morph>, opts?: QueueMorphOptions): void {
+	queueMorphs(morphs: array<Morph>): void {
 		const input: QueuedMorphs = {
 			path: [...this.path],
 			morphs
 		}
-		if (opts?.outValidator) input.to = opts?.outValidator
 		this.currentBranch?.queuedMorphs.push(input) ??
 			this.queuedMorphs.push(input)
 	}
@@ -58,7 +52,7 @@ export class TraversalContext {
 		let out: any = this.root
 		if (this.queuedMorphs.length) {
 			for (let i = 0; i < this.queuedMorphs.length; i++) {
-				const { path, morphs, to } = this.queuedMorphs[i]
+				const { path, morphs } = this.queuedMorphs[i]
 				if (path.length === 0) {
 					this.path = []
 					// if the morph applies to the root, just assign to it directly
@@ -93,11 +87,6 @@ export class TraversalContext {
 						}
 						parent[key] = result
 					}
-				}
-				if (to) {
-					const toCtx = new TraversalContext(out, this.config)
-					to(out, toCtx)
-					return toCtx.finalize()
 				}
 			}
 		}
