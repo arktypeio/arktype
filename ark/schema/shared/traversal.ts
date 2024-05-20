@@ -13,16 +13,11 @@ import type { TraversalPath } from "./utils.js"
 export type QueuedMorphs = {
 	path: TraversalPath
 	morphs: array<Morph>
-	to?: TraverseApply
 }
 
 export type BranchTraversalContext = {
 	error: ArkError | undefined
 	queuedMorphs: QueuedMorphs[]
-}
-
-export type QueueMorphOptions = {
-	outValidator?: TraverseApply
 }
 
 export class TraversalContext {
@@ -42,12 +37,11 @@ export class TraversalContext {
 		return this.branches.at(-1)
 	}
 
-	queueMorphs(morphs: array<Morph>, opts?: QueueMorphOptions): void {
+	queueMorphs(morphs: array<Morph>): void {
 		const input: QueuedMorphs = {
 			path: [...this.path],
 			morphs
 		}
-		if (opts?.outValidator) input.to = opts?.outValidator
 		this.currentBranch?.queuedMorphs.push(input) ??
 			this.queuedMorphs.push(input)
 	}
@@ -58,46 +52,29 @@ export class TraversalContext {
 		let out: any = this.root
 		if (this.queuedMorphs.length) {
 			for (let i = 0; i < this.queuedMorphs.length; i++) {
-				const { path, morphs, to } = this.queuedMorphs[i]
-				if (path.length === 0) {
-					this.path = []
-					// if the morph applies to the root, just assign to it directly
-					for (const morph of morphs) {
-						const result = morph(out, this)
-						if (result instanceof ArkErrors) return result
-						if (this.hasError()) return this.errors
-						if (result instanceof ArkError) {
-							// if an ArkTypeError was returned but wasn't added to these
-							// errors, add it then return
-							this.error(result)
-							return this.errors
-						}
-						out = result
-					}
-				} else {
-					// find the object on which the key to be morphed exists
-					let parent = out
-					for (let pathIndex = 0; pathIndex < path.length - 1; pathIndex++)
-						parent = parent[path[pathIndex]]
+				const { path, morphs } = this.queuedMorphs[i]
 
-					// apply the morph function and assign the result to the corresponding property
-					const key = path.at(-1)!
-					this.path = path
-					for (const morph of morphs) {
-						const result = morph(parent[key], this)
-						if (result instanceof ArkErrors) return result
-						if (this.hasError()) return this.errors
-						if (result instanceof ArkError) {
-							this.error(result)
-							return this.errors
-						}
-						parent[key] = result
+				// find the object on which the key to be morphed exists
+				let parent = out
+				for (let pathIndex = 0; pathIndex < path.length - 1; pathIndex++)
+					parent = parent[path[pathIndex]]
+
+				// apply the morph function and assign the result to the corresponding property
+				const key = path.at(-1)
+				this.path = path
+				// if the morph applies to the root, just assign to it directly
+				for (const morph of morphs) {
+					const result = morph(key === undefined ? out : parent[key], this)
+					if (result instanceof ArkErrors) return result
+					if (this.hasError()) return this.errors
+					if (result instanceof ArkError) {
+						// if an ArkTypeError was returned but wasn't added to these
+						// errors, add it then return
+						this.error(result)
+						return this.errors
 					}
-				}
-				if (to) {
-					const toCtx = new TraversalContext(out, this.config)
-					to(out, toCtx)
-					return toCtx.finalize()
+					if (key === undefined) out = result
+					else parent[key] = result
 				}
 			}
 		}
