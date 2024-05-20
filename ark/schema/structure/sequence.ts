@@ -9,7 +9,6 @@ import {
 import { BaseConstraint } from "../constraint.js"
 import type { MutableInner, RootSchema } from "../kinds.js"
 import type {
-	BaseNode,
 	DeepNodeTransformation,
 	DeepNodeTransformationContext
 } from "../node.js"
@@ -317,7 +316,7 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 	protected override _transform(
 		mapper: DeepNodeTransformation,
 		ctx: DeepNodeTransformationContext
-	): BaseNode {
+	) {
 		ctx.path.push(this.$.keywords.nonNegativeIntegerString.raw)
 		const result = super._transform(mapper, ctx)
 		ctx.path.pop()

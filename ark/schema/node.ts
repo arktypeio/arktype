@@ -3,6 +3,7 @@ import {
 	flatMorph,
 	includes,
 	isArray,
+	isEmptyObject,
 	shallowClone,
 	throwError,
 	type Dict,
@@ -230,10 +231,10 @@ export abstract class BaseNode<
 		)
 	}
 
-	transform(
-		mapper: DeepNodeTransformation,
+	transform<mapper extends DeepNodeTransformation>(
+		mapper: mapper,
 		opts?: DeepNodeTransformOptions
-	): Node<reducibleKindOf<this["kind"]>> {
+	): Node<reducibleKindOf<this["kind"]>> | Extract<ReturnType<mapper>, null> {
 		return this._transform(mapper, {
 			seen: {},
 			path: [],
@@ -244,7 +245,7 @@ export abstract class BaseNode<
 	protected _transform(
 		mapper: DeepNodeTransformation,
 		ctx: DeepNodeTransformationContext
-	): BaseNode {
+	): BaseNode | null {
 		if (ctx.seen[this.id])
 			// TODO: remove cast by making lazilyResolve more flexible
 			// TODO: if each transform has a unique base id, could ensure
@@ -252,7 +253,9 @@ export abstract class BaseNode<
 			return this.$.lazilyResolve(ctx.seen[this.id]! as never)
 		if (!ctx.shouldTransform(this as never, ctx)) return this
 
-		ctx.seen[this.id] = () => node
+		let transformedNode: BaseRoot | undefined
+
+		ctx.seen[this.id] = () => transformedNode
 
 		const innerWithTransformedChildren = flatMorph(
 			this.inner as Dict,
@@ -273,12 +276,17 @@ export abstract class BaseNode<
 
 		delete ctx.seen[this.id]
 
-		const node = this.$.node(
+		const transformedInner = mapper(
 			this.kind,
-			mapper(this.kind, innerWithTransformedChildren as never, ctx) as never
+			innerWithTransformedChildren as never,
+			ctx
 		)
 
-		return node
+		if (transformedInner === null) return null
+		// TODO: more robust checks for pruned inner
+		if (isEmptyObject(transformedInner)) return null
+
+		return (transformedNode = this.$.node(this.kind, transformedInner) as never)
 	}
 
 	configureShallowDescendants(configOrDescription: BaseMeta | string): this {
@@ -304,7 +312,7 @@ export type ShouldTransformFn = (
 export type DeepNodeTransformationContext = {
 	/** a literal key or a node representing the key of an index signature */
 	path: Array<Key | BaseNode>
-	seen: { [originalId: string]: (() => BaseNode) | undefined }
+	seen: { [originalId: string]: (() => BaseNode | undefined) | undefined }
 	shouldTransform: ShouldTransformFn
 }
 

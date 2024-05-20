@@ -303,6 +303,6 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 
 		const out = Test({ group: { nested: { value: "5" } } })
 		attest<bigint, typeof Test.infer.group.nested.value>()
-		attest(out).snap()
+		attest(out).equals({ group: { nested: { value: 5n } } })
 	})
 })

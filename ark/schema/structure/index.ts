@@ -6,7 +6,6 @@ import {
 import { BaseConstraint } from "../constraint.js"
 import type { Node, RootSchema } from "../kinds.js"
 import type {
-	BaseNode,
 	DeepNodeTransformation,
 	DeepNodeTransformationContext
 } from "../node.js"
@@ -137,7 +136,7 @@ export class IndexNode extends BaseConstraint<IndexDeclaration> {
 	protected override _transform(
 		mapper: DeepNodeTransformation,
 		ctx: DeepNodeTransformationContext
-	): BaseNode {
+	) {
 		ctx.path.push(this.signature)
 		const result = super._transform(mapper, ctx)
 		ctx.path.pop()

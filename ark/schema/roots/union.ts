@@ -236,9 +236,10 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 
 		js.block(`switch(${condition})`, () => {
 			for (const k in cases) {
+				const v = cases[k]
 				const caseCondition =
 					k === "default" ? "default" : `case ${compileSerializedValue(k)}`
-				js.line(`${caseCondition}: return ${js.invoke(cases[k])}`)
+				js.line(`${caseCondition}: return ${v === true ? "" : js.invoke(v)}`)
 			}
 
 			return js
@@ -349,9 +350,14 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 		const [path, kind] = parseDiscriminantKey(specifier)
 
 		const cases = flatMorph(bestCases, (k, branches) => {
-			const prunedBranches = branches.map(branch =>
-				pruneDiscriminant(kind, path, branch)
-			)
+			const prunedBranches: BaseRoot[] = []
+			for (const branch of branches) {
+				const pruned = pruneDiscriminant(kind, path, branch)
+				// if any branch of the union has no constraints (i.e. is unknown)
+				// return it right away
+				if (pruned === null) return [k, true as const]
+				prunedBranches.push(pruned)
+			}
 			return [
 				k,
 				prunedBranches.length === 1 ?
@@ -364,7 +370,7 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 			kind,
 			path,
 			cases,
-			json: flatMorph(cases, (k, node) => [k, node.json])
+			json: flatMorph(cases, (k, node) => [k, node === true ? node : node.json])
 		}
 	}
 }
@@ -506,7 +512,7 @@ export type Discriminant<kind extends DiscriminantKind = DiscriminantKind> = {
 export type DiscriminatedCases<
 	kind extends DiscriminantKind = DiscriminantKind
 > = {
-	[caseKey in CaseKey<kind>]: BaseRoot
+	[caseKey in CaseKey<kind>]: BaseRoot | true
 }
 
 type DiscriminantKey = `${SerializedPath}${DiscriminantKind}`
@@ -536,16 +542,16 @@ const parseDiscriminantKey = (key: DiscriminantKey) => {
 }
 
 export const pruneDiscriminant = (
-	kind: DiscriminantKind,
+	discriminantKind: DiscriminantKind,
 	path: TraversalPath,
 	branch: BaseRoot
-): BaseRoot =>
+): BaseRoot | null =>
 	branch.transform(
-		(kind, inner, ctx) => {
+		(nodeKind, inner, ctx) => {
 			// if we've already checked a path at least as long as the current one,
 			// we don't need to revalidate that we're in an object
 			if (
-				kind === "domain" &&
+				nodeKind === "domain" &&
 				(inner as DomainInner).domain === "object" &&
 				path.length > ctx.path.length
 			)
@@ -554,10 +560,9 @@ export const pruneDiscriminant = (
 			// if the discriminant has already checked the domain at the current path
 			// (or an exact value, implying a domain), we don't need to recheck it
 			if (
-				kind === kind ||
-				(kind === "domain" &&
-					ctx.path.length === path.length &&
-					ctx.path.every((segment, i) => segment === path[i]))
+				(discriminantKind === nodeKind ||
+					(nodeKind === "domain" && ctx.path.length === path.length)) &&
+				ctx.path.every((segment, i) => segment === path[i])
 			)
 				return null
 			return inner

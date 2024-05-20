@@ -60,10 +60,6 @@ module.exports = defineConfig({
 				ignoreRestSiblings: true
 			}
 		],
-		"@typescript-eslint/explicit-module-boundary-types": [
-			"warn",
-			{ allowDirectConstAssertionInArrowFunctions: true }
-		],
 		"@typescript-eslint/default-param-last": "warn",
 		"@typescript-eslint/no-empty-interface": "off",
 		/**
