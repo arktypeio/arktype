@@ -30,6 +30,7 @@ import {
 } from "../shared/implement.js"
 import { intersectNodes, intersectNodesRoot } from "../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
+import type { TraversalPath } from "../shared/utils.js"
 import type { DomainInner, DomainNode } from "./domain.js"
 import { BaseRoot, type schemaKindRightOf } from "./root.js"
 import type { UnitNode } from "./unit.js"
@@ -194,6 +195,7 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 	unitBranches = this.branches.filter((n): n is UnitNode => n.hasKind("unit"))
 
 	discriminant = this.discriminate()
+
 	expression: string =
 		this.isNever ? "never"
 		: this.isBoolean ? "boolean"
@@ -346,10 +348,17 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 		const [specifier, bestCases] = bestDiscriminantEntry
 		const [path, kind] = parseDiscriminantKey(specifier)
 
-		const cases = flatMorph(bestCases, (k, branches) => [
-			k,
-			branches.length === 1 ? branches[0] : this.$.node("union", branches)
-		])
+		const cases = flatMorph(bestCases, (k, branches) => {
+			const prunedBranches = branches.map(branch =>
+				pruneDiscriminant(kind, path, branch)
+			)
+			return [
+				k,
+				prunedBranches.length === 1 ?
+					prunedBranches[0]
+				:	this.$.node("union", prunedBranches)
+			]
+		})
 
 		return {
 			kind,
@@ -527,8 +536,9 @@ const parseDiscriminantKey = (key: DiscriminantKey) => {
 }
 
 export const pruneDiscriminant = (
-	branch: BaseRoot,
-	discriminant: Discriminant
+	kind: DiscriminantKind,
+	path: TraversalPath,
+	branch: BaseRoot
 ): BaseRoot =>
 	branch.transform(
 		(kind, inner, ctx) => {
@@ -537,17 +547,17 @@ export const pruneDiscriminant = (
 			if (
 				kind === "domain" &&
 				(inner as DomainInner).domain === "object" &&
-				discriminant.path.length > ctx.path.length
+				path.length > ctx.path.length
 			)
 				return null
 
 			// if the discriminant has already checked the domain at the current path
 			// (or an exact value, implying a domain), we don't need to recheck it
 			if (
-				kind === discriminant.kind ||
+				kind === kind ||
 				(kind === "domain" &&
-					ctx.path.length === discriminant.path.length &&
-					ctx.path.every((segment, i) => segment === discriminant.path[i]))
+					ctx.path.length === path.length &&
+					ctx.path.every((segment, i) => segment === path[i]))
 			)
 				return null
 			return inner

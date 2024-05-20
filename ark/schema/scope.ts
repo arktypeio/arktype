@@ -389,12 +389,11 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 			if (this.resolved) {
 				// this node was not part of the original scope, so compile an anonymous scope
 				// including only its references
-				if (!this.resolvedConfig.jitless)
-					bindCompiledScope(node.contributesReferences)
+				if (!this.resolvedConfig.jitless) bindCompiledScope(node.references)
 			} else {
 				// we're still parsing the scope itself, so defer compilation but
 				// add the node as a reference
-				Object.assign(this.referencesById, node.contributesReferencesById)
+				Object.assign(this.referencesById, node.referencesById)
 			}
 
 			return node as never
