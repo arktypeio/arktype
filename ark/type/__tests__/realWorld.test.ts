@@ -340,8 +340,10 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 					value: [
 						{
 							in: "string",
-							morphs: [trimStringReference],
-							out: { domain: "string", maxLength: 3, minLength: 1 }
+							morphs: [
+								trimStringReference,
+								{ domain: "string", maxLength: 3, minLength: 1 }
+							]
 						},
 						{ unit: null }
 					]
@@ -356,7 +358,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			first_name: "Bob"
 		})
 		attest(CreatePatientInput({ first_name: " John  " }).toString()).snap(
-			"[object Object]"
+			"must be at most length 3 (was 4)"
 		)
 		attest(CreatePatientInput({ first_name: 5 }).toString()).snap(
 			"first_name must be a string or null (was number, 5)"

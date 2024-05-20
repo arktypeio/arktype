@@ -1,4 +1,4 @@
-import type { Dict, array } from "@arktype/util"
+import type { array } from "@arktype/util"
 import type { Morph } from "../roots/morph.js"
 import type { ResolvedArkConfig } from "../scope.js"
 import {
