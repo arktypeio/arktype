@@ -1,4 +1,4 @@
-import type { array } from "@arktype/util"
+import type { Dict, array } from "@arktype/util"
 import type { Morph } from "../roots/morph.js"
 import type { ResolvedArkConfig } from "../scope.js"
 import {
@@ -54,27 +54,33 @@ export class TraversalContext {
 			for (let i = 0; i < this.queuedMorphs.length; i++) {
 				const { path, morphs } = this.queuedMorphs[i]
 
-				// find the object on which the key to be morphed exists
-				let parent = out
-				for (let pathIndex = 0; pathIndex < path.length - 1; pathIndex++)
-					parent = parent[path[pathIndex]]
-
-				// apply the morph function and assign the result to the corresponding property
 				const key = path.at(-1)
+
+				let parent: any
+
+				if (key !== undefined) {
+					// find the object on which the key to be morphed exists
+					parent = out
+					for (let pathIndex = 0; pathIndex < path.length - 1; pathIndex++)
+						parent = parent[path[pathIndex]]
+				}
+
 				this.path = path
-				// if the morph applies to the root, just assign to it directly
 				for (const morph of morphs) {
-					const result = morph(key === undefined ? out : parent[key], this)
+					const result = morph(parent === undefined ? out : parent[key!], this)
 					if (result instanceof ArkErrors) return result
 					if (this.hasError()) return this.errors
 					if (result instanceof ArkError) {
-						// if an ArkTypeError was returned but wasn't added to these
+						// if an ArkError was returned but wasn't added to these
 						// errors, add it then return
 						this.error(result)
 						return this.errors
 					}
-					if (key === undefined) out = result
-					else parent[key] = result
+
+					// apply the morph function and assign the result to the
+					// corresponding property, or to root if path is empty
+					if (parent === undefined) out = result
+					else parent[key!] = result
 				}
 			}
 		}
