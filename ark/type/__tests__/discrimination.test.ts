@@ -5,14 +5,23 @@ contextualize(() => {
 	it("2 literal branches", () => {
 		// should not use a switch with <=2 branches to avoid visual clutter
 		const t = type("'a'|'b'")
-		attest(t.json).snap({ unit: "a" })
+		attest(t.json).snap([{ unit: "a" }, { unit: "b" }])
+		attest(t.raw.hasKind("union") && t.raw.discriminant?.json).snap({
+			a: true,
+			b: true
+		})
 		attest(t.allows("a")).equals(true)
 		attest(t.allows("b")).equals(true)
 		attest(t.allows("c")).equals(false)
 	})
 	it(">2 literal branches", () => {
 		const t = type("'a'|'b'|'c'")
-		attest(t.json).snap({ unit: "a" })
+		attest(t.json).snap([{ unit: "a" }, { unit: "b" }, { unit: "c" }])
+		attest(t.raw.hasKind("union") && t.raw.discriminant?.json).snap({
+			a: true,
+			b: true,
+			c: true
+		})
 		attest(t.allows("a")).equals(true)
 		attest(t.allows("b")).equals(true)
 		attest(t.allows("c")).equals(true)
@@ -33,42 +42,7 @@ contextualize(() => {
 	it("nested", () => {
 		const $ = getPlaces()
 		const t = $.type("ocean|sky|rainForest|desert")
-		attest(t.raw.hasKind("union") && t.raw.discriminant?.json).snap({
-			blue: [
-				{
-					required: [
-						{ key: "climate", value: { unit: "dry" } },
-						{ key: "color", value: { unit: "blue" } },
-						{ key: "isSky", value: { unit: true } }
-					],
-					domain: "object"
-				},
-				{
-					required: [
-						{ key: "climate", value: { unit: "wet" } },
-						{ key: "color", value: { unit: "blue" } },
-						{ key: "isOcean", value: { unit: true } }
-					],
-					domain: "object"
-				}
-			],
-			brown: {
-				required: [
-					{ key: "climate", value: { unit: "dry" } },
-					{ key: "color", value: { unit: "brown" } },
-					{ key: "isDesert", value: { unit: true } }
-				],
-				domain: "object"
-			},
-			green: {
-				required: [
-					{ key: "climate", value: { unit: "wet" } },
-					{ key: "color", value: { unit: "green" } },
-					{ key: "isRainForest", value: { unit: true } }
-				],
-				domain: "object"
-			}
-		})
+		attest(t.raw.hasKind("union") && t.raw.discriminant?.json).snap()
 	})
 
 	it("undiscriminable", () => {

@@ -239,7 +239,7 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 				const v = cases[k]
 				const caseCondition =
 					k === "default" ? "default" : `case ${compileSerializedValue(k)}`
-				js.line(`${caseCondition}: return ${v === true ? "" : js.invoke(v)}`)
+				js.line(`${caseCondition}: return ${v === true ? v : js.invoke(v)}`)
 			}
 
 			return js
@@ -287,15 +287,15 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 		if (this.branches.length < 2) return null
 		if (this.unitBranches.length === this.branches.length) {
 			const cases = flatMorph(this.unitBranches, (i, unit) => [
-				`${unit.serializedValue}`,
-				unit
+				`${unit.compiledValue}`,
+				true as const
 			])
 
 			return {
 				path: [],
 				kind: "unit",
 				cases,
-				json: flatMorph(cases, (k, n) => [k, n.json])
+				json: flatMorph(cases, k => [k, true])
 			}
 		}
 		const casesBySpecifier: CasesBySpecifier = {}
@@ -535,10 +535,9 @@ export type DiscriminantKind = show<keyof DiscriminantKinds>
 
 const parseDiscriminantKey = (key: DiscriminantKey) => {
 	const lastPathIndex = key.lastIndexOf("]")
-	return [
-		JSON.parse(key.slice(0, lastPathIndex + 1)),
-		key.slice(lastPathIndex + 1)
-	] as [path: string[], kind: DiscriminantKind]
+	const parsedPath: string[] = JSON.parse(key.slice(0, lastPathIndex + 1))
+	const parsedKind: DiscriminantKind = key.slice(lastPathIndex + 1) as never
+	return [parsedPath, parsedKind] as const
 }
 
 export const pruneDiscriminant = (
