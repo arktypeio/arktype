@@ -54,6 +54,13 @@ contextualize(
 			})
 		})
 
+		it("serializes to same value but not reference equal", () => {
+			const t = type("===", {})
+			attest(t({}).toString()).snap(
+				"must be reference equal to {} (serialized to the same value)"
+			)
+		})
+
 		it("error in obj that has tuple that writes error at proper path", () => {
 			// @ts-expect-error
 			attest(() => type({ "a?": ["string", ["stringx", "?"]] }))
