@@ -282,4 +282,27 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 
 		attest<typeof referenced>(inlined)
 	})
+
+	// https://discord.com/channels/957797212103016458/1242116299547476100
+	it("infers morphs at nested paths", () => {
+		const parseBigint = type("string", "=>", (s, ctx) => {
+			try {
+				return BigInt(s)
+			} catch {
+				return ctx.error("a valid number")
+			}
+		})
+
+		const Test = type({
+			group: {
+				nested: {
+					value: parseBigint
+				}
+			}
+		})
+
+		const out = Test({ group: { nested: { value: "5" } } })
+		attest<bigint, typeof Test.infer.group.nested.value>()
+		attest(out).snap()
+	})
 })
