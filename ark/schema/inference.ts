@@ -68,8 +68,7 @@ type inferRootBranch<schema, $> =
 	: schema extends MorphSchema ?
 		(
 			In: schema["in"] extends {} ? inferMorphChild<schema["in"], $> : unknown
-		) => schema["out"] extends {} ? Out<inferMorphChild<schema["out"], $>>
-		: schema["morphs"] extends infer morph extends Morph ?
+		) => schema["morphs"] extends infer morph extends Morph ?
 			Out<inferMorphOut<morph>>
 		: schema["morphs"] extends (
 			readonly [...unknown[], infer morph extends Morph]

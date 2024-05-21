@@ -51,13 +51,17 @@ export abstract class BaseNode<
 > extends Callable<(data: d["prerequisite"]) => unknown, attachmentsOf<d>> {
 	constructor(public attachments: UnknownAttachments) {
 		super(
-			(data: any) => {
+			// pipedFromCtx allows us internally to reuse TraversalContext
+			// through pipes and keep track of piped paths. It is not exposed
+			(data: any, pipedFromCtx?: TraversalContext) => {
 				if (
 					!this.includesMorph &&
 					!this.allowsRequiresContext &&
 					this.allows(data)
 				)
 					return data
+
+				if (pipedFromCtx) return this.traverseApply(data, pipedFromCtx)
 
 				const ctx = new TraversalContext(data, this.$.resolvedConfig)
 				this.traverseApply(data, ctx)

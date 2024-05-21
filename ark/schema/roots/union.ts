@@ -8,6 +8,7 @@ import {
 	groupBy,
 	isArray,
 	isKeyOf,
+	printable,
 	throwInternalError,
 	type Domain,
 	type Json,
@@ -130,13 +131,12 @@ export const unionImplementation: nodeImplementationOf<UnionDeclaration> =
 							appendUnique(branchesAtPath, errorAtPath.expected)
 						)
 						const expected = describeBranches(branchesAtPath)
-						const actual = errors.reduce(
-							(acc, e) =>
-								e.actual && !acc.includes(e.actual) ?
-									`${acc && `${acc}, `}${e.actual}`
-								:	acc,
-							""
-						)
+						// if there are multiple actual descriptions that differ,
+						// just fall back to printable, which is the most specific
+						const actual =
+							errors.every(e => e.actual === errors[0].actual) ?
+								errors[0].actual
+							:	printable(errors[0].data)
 						return `${path && `${path} `}must be ${expected}${
 							actual && ` (was ${actual})`
 						}`
