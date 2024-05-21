@@ -2,7 +2,6 @@ import {
 	appendUnique,
 	cached,
 	compileLiteralPropAccess,
-	compileSerializedValue,
 	domainDescriptions,
 	entriesOf,
 	flatMorph,
@@ -242,8 +241,7 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 		js.block(`switch(${condition})`, () => {
 			for (const k in cases) {
 				const v = cases[k]
-				const caseCondition =
-					k === "default" ? "default" : `case ${compileSerializedValue(k)}`
+				const caseCondition = k === "default" ? "default" : `case ${k}`
 				js.line(`${caseCondition}: return ${v === true ? v : js.invoke(v)}`)
 			}
 
@@ -257,12 +255,12 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 
 		const expected = describeBranches(
 			this.discriminant.kind === "domain" ?
-				caseKeys.map(k => domainDescriptions[k as Domain])
+				caseKeys.map(k => domainDescriptions[k.slice(1, -1) as Domain])
 			:	caseKeys
 		)
 
 		js.line(`ctx.error({
-	expected: "${expected}",
+	expected: ${JSON.stringify(expected)},
 	actual: ${condition},
 	relativePath: ${JSON.stringify(this.discriminant.path)}
 })`)
@@ -307,7 +305,7 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 		if (this.branches.length < 2) return null
 		if (this.unitBranches.length === this.branches.length) {
 			const cases = flatMorph(this.unitBranches, (i, unit) => [
-				`${unit.compiledValue}`,
+				`${unit.serializedValue}`,
 				true as const
 			])
 
@@ -332,11 +330,11 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 					let lSerialized: string
 					let rSerialized: string
 					if (kind === "domain") {
-						lSerialized = (disjoint.l as DomainNode).domain
-						rSerialized = (disjoint.r as DomainNode).domain
+						lSerialized = `"${(disjoint.l as DomainNode).domain}"`
+						rSerialized = `"${(disjoint.r as DomainNode).domain}"`
 					} else if (kind === "unit") {
-						lSerialized = (disjoint.l as UnitNode).compiledValue as never
-						rSerialized = (disjoint.r as UnitNode).compiledValue as never
+						lSerialized = (disjoint.l as UnitNode).serializedValue as never
+						rSerialized = (disjoint.r as UnitNode).serializedValue as never
 					} else {
 						return throwInternalError(
 							`Unexpected attempt to discriminate disjoint kind '${kind}'`
@@ -603,6 +601,7 @@ export const pruneDiscriminant = (
 			if (
 				(discriminantKind === nodeKind ||
 					(nodeKind === "domain" && ctx.path.length === path.length)) &&
+				ctx.path.length === path.length &&
 				ctx.path.every((segment, i) => segment === path[i])
 			)
 				return null
