@@ -3,6 +3,7 @@ import {
 	cached,
 	compileLiteralPropAccess,
 	compileSerializedValue,
+	domainDescriptions,
 	entriesOf,
 	flatMorph,
 	groupBy,
@@ -195,6 +196,8 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 	unitBranches = this.branches.filter((n): n is UnitNode => n.hasKind("unit"))
 
 	discriminant = this.discriminate()
+	discriminantJson =
+		this.discriminant ? discriminantToJson(this.discriminant) : null
 
 	expression: string =
 		this.isNever ? "never"
@@ -234,6 +237,8 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 
 		const cases = this.discriminant.cases
 
+		const caseKeys = Object.keys(cases)
+
 		js.block(`switch(${condition})`, () => {
 			for (const k in cases) {
 				const v = cases[k]
@@ -245,7 +250,22 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 			return js
 		})
 
-		js.return(false)
+		if (js.traversalKind === "Allows") {
+			js.return(false)
+			return
+		}
+
+		const expected = describeBranches(
+			this.discriminant.kind === "domain" ?
+				caseKeys.map(k => domainDescriptions[k as Domain])
+			:	caseKeys
+		)
+
+		js.line(`ctx.error({
+	expected: "${expected}",
+	actual: ${condition},
+	relativePath: ${JSON.stringify(this.discriminant.path)}
+})`)
 	}
 
 	private compileIndiscriminable(js: NodeCompiler): void {
@@ -294,8 +314,7 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 			return {
 				path: [],
 				kind: "unit",
-				cases,
-				json: flatMorph(cases, k => [k, true])
+				cases
 			}
 		}
 		const casesBySpecifier: CasesBySpecifier = {}
@@ -349,31 +368,55 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 		const [specifier, bestCases] = bestDiscriminantEntry
 		const [path, kind] = parseDiscriminantKey(specifier)
 
-		const cases = flatMorph(bestCases, (k, branches) => {
+		let defaultBranches = [...this.branches]
+
+		const cases = flatMorph(bestCases, (k, caseBranches) => {
 			const prunedBranches: BaseRoot[] = []
-			for (const branch of branches) {
+			defaultBranches = defaultBranches.filter(n => !caseBranches.includes(n))
+			for (const branch of caseBranches) {
 				const pruned = pruneDiscriminant(kind, path, branch)
 				// if any branch of the union has no constraints (i.e. is unknown)
 				// return it right away
 				if (pruned === null) return [k, true as const]
 				prunedBranches.push(pruned)
 			}
-			return [
-				k,
+
+			const caseNode =
 				prunedBranches.length === 1 ?
 					prunedBranches[0]
 				:	this.$.node("union", prunedBranches)
-			]
+
+			Object.assign(this.referencesById, caseNode.referencesById)
+
+			return [k, caseNode]
 		})
+
+		if (defaultBranches.length) {
+			cases.default = this.$.node("union", defaultBranches, {
+				prereduced: true
+			})
+
+			Object.assign(this.referencesById, cases.default.referencesById)
+		}
 
 		return {
 			kind,
 			path,
-			cases,
-			json: flatMorph(cases, (k, node) => [k, node === true ? node : node.json])
+			cases
 		}
 	}
 }
+
+const discriminantToJson = (discriminant: Discriminant): Json => ({
+	kind: discriminant.kind,
+	path: discriminant.path,
+	cases: flatMorph(discriminant.cases, (k, node) => [
+		k,
+		node === true ? node
+		: node.hasKind("union") && node.discriminantJson ? node.discriminantJson
+		: node.json
+	])
+})
 
 const describeBranches = (descriptions: string[]) => {
 	if (descriptions.length === 0) return "never"
@@ -505,7 +548,6 @@ export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
 export type Discriminant<kind extends DiscriminantKind = DiscriminantKind> = {
 	path: string[]
 	kind: kind
-	json: Json
 	cases: DiscriminatedCases<kind>
 }
 

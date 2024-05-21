@@ -60,7 +60,8 @@ contextualize(() => {
 		const t = type("string|number[]")
 		attest(t([1])).snap([1])
 		attest(t("hello")).snap("hello")
-		attest(t(2).toString()).snap("must be a string or an array (was number)")
+		attest(t(2).toString()).snap("must be a string or an object (was number)")
+		attest(t({}).toString()).snap("must be an array (was object)")
 	})
 
 	it("tuple length", () => {
@@ -106,11 +107,11 @@ contextualize(() => {
 		attest(t({ a: 5 })).snap({ a: 5 })
 		// value isn't present
 		attest(t({}).toString()).snap(
-			"a must be a number, a string or null (was missing)"
+			"a must be a number or a string (was undefined)"
 		)
 		// unsatisfying value
 		attest(t({ a: false }).toString()).snap(
-			"a must be a number, a string or null (was false)"
+			"a must be a number or a string (was boolean)"
 		)
 	})
 
@@ -122,10 +123,12 @@ contextualize(() => {
 			d: "a|b|c"
 		}).export()
 		attest(types.d({}).toString()).snap(
-			"foo must be a function, a number or a string (was missing)"
+			"foo must be an object, a number or a string (was undefined)"
 		)
+		// this could be improved, currently a bit counterintuitive because of
+		// the inconsistency between `domainOf` and typeof
 		attest(types.d({ foo: null }).toString()).snap(
-			"foo must be a function, a number or a string (was null)"
+			"foo must be a function (was null)"
 		)
 	})
 

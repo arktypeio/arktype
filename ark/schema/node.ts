@@ -14,7 +14,7 @@ import {
 	type listable
 } from "@arktype/util"
 import type { BaseConstraint } from "./constraint.js"
-import type { Inner, Node, reducibleKindOf } from "./kinds.js"
+import type { Inner, MutableInner, Node, reducibleKindOf } from "./kinds.js"
 import type { BaseRoot, Root } from "./roots/root.js"
 import type { UnitNode } from "./roots/unit.js"
 import type { RawRootScope } from "./scope.js"
@@ -210,7 +210,7 @@ export abstract class BaseNode<
 	firstReference<narrowed>(
 		filter: Guardable<BaseNode, conform<narrowed, BaseNode>>
 	): narrowed | undefined {
-		return this.references.find(filter as never) as never
+		return this.references.find(n => n !== this && filter(n)) as never
 	}
 
 	firstReferenceOrThrow<narrowed extends BaseNode>(
@@ -289,6 +289,18 @@ export abstract class BaseNode<
 		if (transformedInner === null) return null
 		// TODO: more robust checks for pruned inner
 		if (isEmptyObject(transformedInner)) return null
+
+		if (
+			(this.kind === "required" ||
+				this.kind === "optional" ||
+				this.kind === "index") &&
+			!("value" in transformedInner)
+		)
+			return null
+		if (this.kind === "morph") {
+			;(transformedInner as MutableInner<"morph">).in ??= this.$.keywords
+				.unknown as never
+		}
 
 		return (transformedNode = this.$.node(this.kind, transformedInner) as never)
 	}

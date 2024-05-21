@@ -59,7 +59,7 @@ b must be removed`)
 			"reject"
 		)
 		attest(o({ a: 2, b: true }).toString()).snap(
-			"a must be a string or removed (was number)"
+			"a must be a string or removed (was 2)"
 		)
 	})
 })

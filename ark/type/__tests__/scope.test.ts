@@ -313,7 +313,7 @@ dependencies[1].contributors[0].email must be a valid email (was "ssalbdivad")`)
 			attest(types.a(valid)).equals(valid)
 
 			attest(types.a({ b: { a: { b: { a: 4 } } } }).toString()).snap(
-				'b.a.b.a must be an object or 3 (was number, 4) or b.a must be 3 (was {"b":{"a":4}})'
+				'b.a.b.a must be an object or 3 (was 4) or b.a must be 3 (was {"b":{"a":4}})'
 			)
 
 			attest(types.b.infer).type.toString.snap("{ a: 3 | { b: ...; }; }")

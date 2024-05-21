@@ -6,9 +6,10 @@ contextualize(() => {
 		// should not use a switch with <=2 branches to avoid visual clutter
 		const t = type("'a'|'b'")
 		attest(t.json).snap([{ unit: "a" }, { unit: "b" }])
-		attest(t.raw.hasKind("union") && t.raw.discriminant?.json).snap({
-			a: true,
-			b: true
+		attest(t.raw.hasKind("union") && t.raw.discriminantJson).snap({
+			kind: "unit",
+			path: [],
+			cases: { a: true, b: true }
 		})
 		attest(t.allows("a")).equals(true)
 		attest(t.allows("b")).equals(true)
@@ -17,10 +18,10 @@ contextualize(() => {
 	it(">2 literal branches", () => {
 		const t = type("'a'|'b'|'c'")
 		attest(t.json).snap([{ unit: "a" }, { unit: "b" }, { unit: "c" }])
-		attest(t.raw.hasKind("union") && t.raw.discriminant?.json).snap({
-			a: true,
-			b: true,
-			c: true
+		attest(t.raw.hasKind("union") && t.raw.discriminantJson).snap({
+			kind: "unit",
+			path: [],
+			cases: { a: true, b: true, c: true }
 		})
 		attest(t.allows("a")).equals(true)
 		attest(t.allows("b")).equals(true)
@@ -42,10 +43,35 @@ contextualize(() => {
 	it("nested", () => {
 		const $ = getPlaces()
 		const t = $.type("ocean|sky|rainForest|desert")
-		attest(t.raw.hasKind("union") && t.raw.discriminant?.json).snap()
+		attest(t.raw.hasKind("union") && t.raw.discriminantJson).snap({
+			kind: "unit",
+			path: ["color"],
+			cases: {
+				blue: {
+					kind: "unit",
+					path: ["climate"],
+					cases: {
+						dry: { required: [{ key: "isSky", value: { unit: true } }] },
+						wet: { required: [{ key: "isOcean", value: { unit: true } }] }
+					}
+				},
+				brown: {
+					required: [
+						{ key: "climate", value: { unit: "dry" } },
+						{ key: "isDesert", value: { unit: true } }
+					]
+				},
+				green: {
+					required: [
+						{ key: "climate", value: { unit: "wet" } },
+						{ key: "isRainForest", value: { unit: true } }
+					]
+				}
+			}
+		})
 	})
 
-	it("undiscriminable", () => {
+	it("indiscriminable", () => {
 		const t = getPlaces().type([
 			"ocean",
 			"|",
@@ -56,7 +82,7 @@ contextualize(() => {
 			}
 		])
 
-		attest(t.raw.hasKind("union") && t.raw.discriminant?.json).equals(undefined)
+		attest(t.raw.hasKind("union") && t.raw.discriminantJson).equals(null)
 	})
 
 	it("discriminate optional key", () => {
@@ -68,7 +94,7 @@ contextualize(() => {
 			operator: "'to'"
 		})
 
-		attest(t.raw.hasKind("union") && t.raw.discriminant?.json).equals(undefined)
+		attest(t.raw.hasKind("union") && t.raw.discriminantJson).equals(null)
 	})
 
 	it("default case", () => {
@@ -77,6 +103,29 @@ contextualize(() => {
 			"|",
 			{ temperature: "'hot'" }
 		])
+
+		attest(t.raw.hasKind("union") && t.raw.discriminantJson).snap({
+			kind: "unit",
+			path: ["color"],
+			cases: {
+				blue: {
+					required: [
+						{ key: "climate", value: { unit: "wet" } },
+						{ key: "isOcean", value: { unit: true } }
+					]
+				},
+				green: {
+					required: [
+						{ key: "climate", value: { unit: "wet" } },
+						{ key: "isRainForest", value: { unit: true } }
+					]
+				},
+				default: {
+					required: [{ key: "temperature", value: { unit: "hot" } }],
+					domain: "object"
+				}
+			}
+		})
 	})
 
 	it("discriminable default", () => {
@@ -85,8 +134,10 @@ contextualize(() => {
 			"|",
 			["ocean|rainForest", "|", { temperature: "'hot'" }]
 		])
+		attest(t.raw.hasKind("union") && t.raw.discriminantJson).snap()
 	})
 	it("won't discriminate between possibly empty arrays", () => {
 		const t = type("string[]|boolean[]")
+		attest(t.raw.hasKind("union") && t.raw.discriminantJson).equals(null)
 	})
 })
