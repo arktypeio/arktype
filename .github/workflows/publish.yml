@@ -7,22 +7,11 @@ on:
   # Allows you to run this workflow manually from the Actions tab on GitHub.
   workflow_dispatch:
 
-# Allow this job to clone the repo and create a page deployment
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
 jobs:
   update-gh-pages:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-
       - name: Setup repo
         uses: ./.github/actions/setup
 
@@ -48,11 +37,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-
       - name: Setup repo
         uses: ./.github/actions/setup
 
