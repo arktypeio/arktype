@@ -88,7 +88,7 @@ const getAssertionsOfKindAtPosition = <kind extends TypeAssertionKind>(
 					`Found no assertion data for '${fileKey}' for TypeScript version ${version}.`
 				)
 			}
-			const matchingAssertion = assertions[fileKey].find(assertion => {
+			const matchingAssertion = assertions[fileKey].find(assertion =>
 				/**
 				 * Depending on the environment, a trace can refer to any of these points
 				 * attest(...)
@@ -96,8 +96,8 @@ const getAssertionsOfKindAtPosition = <kind extends TypeAssertionKind>(
 				 * Because of this, it's safest to check if the call came from anywhere in the expected range.
 				 *
 				 */
-				return isPositionWithinRange(position, assertion.location)
-			})
+				isPositionWithinRange(position, assertion.location)
+			)
 			if (!matchingAssertion) {
 				throw new Error(
 					`Found no assertion for TypeScript version ${version} at line ${position.line} char ${position.char} in '${fileKey}'.

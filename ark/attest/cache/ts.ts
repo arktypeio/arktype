@@ -20,8 +20,11 @@ export class TsServer {
 
 		const tsLibPaths = getTsLibFiles(tsConfigInfo.parsed.options)
 
+		// TS represents windows paths as `C:/Users/ssalb/...`
+		const normalizedCwd = fromCwd().replaceAll(/\\/g, "/")
+
 		this.rootFiles = tsConfigInfo.parsed.fileNames.filter(path =>
-			path.startsWith(fromCwd())
+			path.startsWith(normalizedCwd)
 		)
 
 		const system = tsvfs.createFSBackedSystem(
@@ -41,7 +44,8 @@ export class TsServer {
 	}
 
 	getSourceFileOrThrow(path: string): ts.SourceFile {
-		const file = this.virtualEnv.getSourceFile(path)
+		const tsPath = path.replaceAll(/\\/g, "/")
+		const file = this.virtualEnv.getSourceFile(tsPath)
 		if (!file) throw new Error(`Could not find ${path}.`)
 
 		return file

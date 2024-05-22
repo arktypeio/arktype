@@ -229,20 +229,20 @@ export type groupableKeyOf<t> = {
 	[k in keyof t]: t[k] extends PropertyKey ? k : never
 }[keyof t]
 
-export type groupBy<element, discriminator extends groupableKeyOf<element>> = {
-	[k in element[discriminator] & PropertyKey]?: (element extends unknown ?
-		isDisjoint<element[discriminator], k> extends true ?
+export type groupBy<element, discriminant extends groupableKeyOf<element>> = {
+	[k in element[discriminant] & PropertyKey]?: (element extends unknown ?
+		isDisjoint<element[discriminant], k> extends true ?
 			never
 		:	element
 	:	never)[]
 } & unknown
 
-export const groupBy = <element, discriminator extends groupableKeyOf<element>>(
+export const groupBy = <element, discriminant extends groupableKeyOf<element>>(
 	array: readonly element[],
-	discriminator: discriminator
-): groupBy<element, discriminator> =>
+	discriminant: discriminant
+): groupBy<element, discriminant> =>
 	array.reduce<Record<PropertyKey, any>>((result, item) => {
-		const key = item[discriminator] as never
+		const key = item[discriminant] as never
 		result[key] ??= []
 		result[key].push(item)
 		return result

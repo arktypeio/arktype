@@ -8,6 +8,10 @@ import {
 } from "@arktype/util"
 import { BaseConstraint } from "../constraint.js"
 import type { Node, RootSchema } from "../kinds.js"
+import type {
+	DeepNodeTransformation,
+	DeepNodeTransformationContext
+} from "../node.js"
 import type { Morph } from "../roots/morph.js"
 import type { BaseRoot } from "../roots/root.js"
 import type { NodeCompiler } from "../shared/compile.js"
@@ -91,6 +95,16 @@ export abstract class BaseProp<
 	serializedKey: string = compileSerializedValue(this.key)
 	compiledKey: string =
 		typeof this.key === "string" ? this.key : this.serializedKey
+
+	protected override _transform(
+		mapper: DeepNodeTransformation,
+		ctx: DeepNodeTransformationContext
+	) {
+		ctx.path.push(this.key)
+		const result = super._transform(mapper, ctx)
+		ctx.path.pop()
+		return result
+	}
 
 	private defaultValueMorphs: Morph[] = [
 		data => {

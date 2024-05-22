@@ -1,23 +1,34 @@
 import { type } from "arktype"
 
-// type Z = Type<{ age: number.default<5> }>
-
-const f = (arg?: string) => {}
-
-const user = type({
-	"+": "delete",
-	name: "string>10",
-	email: "email"
-	// age: ["number", "=", 5]
+const parseBigint = type("string", "=>", (s, ctx) => {
+	try {
+		return BigInt(s)
+	} catch {
+		return ctx.error("a valid number")
+	}
 })
 
-const out = user({
-	name: "test",
-	email: ""
+// or
+
+const parseBigint2 = type("string").pipe((s, ctx) => {
+	try {
+		return BigInt(s)
+	} catch {
+		return ctx.error("a valid number")
+	}
 })
 
-if (out instanceof type.errors) {
-	console.log(out.summary)
-} else {
-	console.log(out)
+const Test = type({
+	group: {
+		nested: {
+			value: parseBigint
+		}
+	}
+})
+
+const myFunc = () => {
+	const out = Test({})
+	if (out instanceof type.errors) return
+
+	const value: bigint = out.group.nested.value
 }

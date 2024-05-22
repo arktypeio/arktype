@@ -1,4 +1,6 @@
 import { attest, contextualize } from "@arktype/attest"
+import type { AtLeastLength, AtMostLength, Out, string } from "@arktype/schema"
+import { registeredReference } from "@arktype/util"
 import { scope, type, type Type } from "arktype"
 
 contextualize(() => {
@@ -245,5 +247,121 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 				}
 			]
 		})
+	})
+
+	// https://github.com/arktypeio/arktype/issues/947
+	it("chained inline type expression inference", () => {
+		const a = type({
+			action: "'a' | 'b'"
+		}).or({
+			action: "'c'"
+		})
+
+		const referenced = type({
+			someField: "string"
+		}).and(a)
+
+		attest<
+			| {
+					someField: string
+					action: "a" | "b"
+			  }
+			| {
+					someField: string
+					action: "c"
+			  }
+		>(referenced.infer)
+
+		const inlined = type({
+			someField: "string"
+		}).and(
+			type({
+				action: "'a' | 'b'"
+			}).or({
+				action: "'c'"
+			})
+		)
+
+		attest<typeof referenced>(inlined)
+	})
+
+	// https://discord.com/channels/957797212103016458/1242116299547476100
+	it("infers morphs at nested paths", () => {
+		const parseBigint = type("string", "=>", (s, ctx) => {
+			try {
+				return BigInt(s)
+			} catch {
+				return ctx.error("a valid number")
+			}
+		})
+
+		const Test = type({
+			group: {
+				nested: {
+					value: parseBigint
+				}
+			}
+		})
+
+		const out = Test({ group: { nested: { value: "5" } } })
+		attest<bigint, typeof Test.infer.group.nested.value>()
+		attest(out).equals({ group: { nested: { value: 5n } } })
+	})
+
+	// https://discord.com/channels/957797212103016458/957804102685982740/1242221022380556400
+	it("nested pipe to validated output", () => {
+		const trimString = (s: string) => s.trim()
+
+		const trimStringReference = registeredReference(trimString)
+
+		const validatedTrimString = type("string").pipe(
+			trimString,
+			type("1<=string<=3")
+		)
+
+		const CreatePatientInput = type({
+			"patient_id?": "string|null",
+			"first_name?": validatedTrimString.or("null"),
+			"middle_name?": "string|null",
+			"last_name?": "string|null"
+		})
+
+		attest<
+			| ((In: string) => Out<string.is<AtLeastLength<1> & AtMostLength<3>>>)
+			| null
+			| undefined,
+			typeof CreatePatientInput.t.first_name
+		>()
+
+		attest(CreatePatientInput.json).snap({
+			optional: [
+				{
+					key: "first_name",
+					value: [
+						{
+							in: "string",
+							morphs: [
+								trimStringReference,
+								{ domain: "string", maxLength: 3, minLength: 1 }
+							]
+						},
+						{ unit: null }
+					]
+				},
+				{ key: "last_name", value: ["string", { unit: null }] },
+				{ key: "middle_name", value: ["string", { unit: null }] },
+				{ key: "patient_id", value: ["string", { unit: null }] }
+			],
+			domain: "object"
+		})
+		attest(CreatePatientInput({ first_name: " Bob  " })).equals({
+			first_name: "Bob"
+		})
+		attest(CreatePatientInput({ first_name: " John  " }).toString()).snap(
+			"first_name must be at most length 3 (was 4)"
+		)
+		attest(CreatePatientInput({ first_name: 5 }).toString()).snap(
+			"first_name must be a string or null (was 5)"
+		)
 	})
 })

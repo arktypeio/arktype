@@ -27,7 +27,6 @@ import {
 	type nominal,
 	type show
 } from "@arktype/util"
-import type { type } from "./ark.js"
 import { Generic } from "./generic.js"
 import { createMatchParser, type MatchParser } from "./match.js"
 import type { Module } from "./module.js"
@@ -146,9 +145,7 @@ export type moduleKeyOf<$> = {
 export type tryInferSubmoduleReference<$, token> =
 	token extends `${infer submodule extends moduleKeyOf<$>}.${infer subalias}` ?
 		subalias extends keyof $[submodule] ?
-			$[submodule][subalias] extends type.cast<infer t> ?
-				t
-			:	never
+			$[submodule][subalias]
 		:	never
 	:	never
 

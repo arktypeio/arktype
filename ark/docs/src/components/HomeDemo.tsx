@@ -35,14 +35,15 @@ const translateVSCodeTheme = (
 		colors: theme.colors,
 		rules: theme.tokenColors.flatMap(c => {
 			if (Array.isArray(c.scope)) {
-				return c.scope.map(sub => {
-					return {
-						token: sub,
-						background: c.settings.background,
-						foreground: c.settings.foreground,
-						fontStyle: c.settings.fontStyle
-					} as Monaco.editor.ITokenThemeRule
-				})
+				return c.scope.map(
+					sub =>
+						({
+							token: sub,
+							background: c.settings.background,
+							foreground: c.settings.foreground,
+							fontStyle: c.settings.fontStyle
+						}) as Monaco.editor.ITokenThemeRule
+				)
 			}
 			return {
 				token: c.scope,

@@ -7,21 +7,15 @@ import type { SchemaModule } from "../module.js"
 import type { Out } from "../roots/morph.js"
 import { root, schemaScope } from "../scope.js"
 import { tryParseDatePattern } from "./utils/date.js"
+import { defineRegex } from "./utils/regex.js"
 
 const number = root.defineRoot({
-	in: {
-		domain: "string",
-		regex: wellFormedNumberMatcher,
-		description: "a well-formed numeric string"
-	},
+	in: defineRegex(wellFormedNumberMatcher, "a well-formed numeric string"),
 	morphs: (s: string) => Number.parseFloat(s)
 })
 
 const integer = root.defineRoot({
-	in: {
-		domain: "string",
-		regex: wellFormedIntegerMatcher
-	},
+	in: defineRegex(wellFormedIntegerMatcher, "a well-formed integer string"),
 	morphs: (s: string, ctx) => {
 		if (!isWellFormedInteger(s))
 			return ctx.error("a well-formed integer string")
@@ -36,10 +30,7 @@ const integer = root.defineRoot({
 })
 
 const url = root.defineRoot({
-	in: {
-		domain: "string",
-		description: "a valid URL"
-	},
+	in: "string",
 	morphs: (s: string, ctx) => {
 		try {
 			return new URL(s)
@@ -50,11 +41,14 @@ const url = root.defineRoot({
 })
 
 const json = root.defineRoot({
-	in: {
-		domain: "string",
-		description: "a JSON-parsable string"
-	},
-	morphs: (s: string): unknown => JSON.parse(s)
+	in: "string",
+	morphs: (s: string, ctx): object => {
+		try {
+			return JSON.parse(s)
+		} catch {
+			return ctx.error("a valid JSON string")
+		}
+	}
 })
 
 const date = root.defineRoot({
@@ -70,7 +64,7 @@ export type parsingExports = {
 	number: (In: string) => Out<number>
 	integer: (In: string) => Out<number>
 	date: (In: string) => Out<Date>
-	json: (In: string) => Out<unknown>
+	json: (In: string) => Out<object>
 }
 
 export type parsing = SchemaModule<parsingExports>

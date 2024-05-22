@@ -1,5 +1,5 @@
 import { throwInternalError } from "./errors.js"
-import { NoopBase } from "./records.js"
+import { NoopBase, unset } from "./records.js"
 
 export const bound = (
 	target: Function,
@@ -31,6 +31,11 @@ export const cached = <self>(
 		return value
 	}
 
+export const cachedThunk = <t>(thunk: () => t): (() => t) => {
+	let result: t | unset = unset
+	return () => (result === unset ? (result = thunk()) : result)
+}
+
 export const isThunk = <value>(
 	value: value
 ): value is Extract<value, Thunk> extends never ? value & Thunk
@@ -39,6 +44,17 @@ export const isThunk = <value>(
 export type Thunk<ret = unknown> = () => ret
 
 export type thunkable<t> = t | Thunk<t>
+
+export const tryCatch = <returns, onError = never>(
+	fn: () => returns,
+	onError?: (e: unknown) => onError
+): returns | onError => {
+	try {
+		return fn()
+	} catch (e) {
+		return onError?.(e) as onError
+	}
+}
 
 export const DynamicFunction = class extends Function {
 	constructor(...args: [string, ...string[]]) {
@@ -91,3 +107,20 @@ export class Callable<
 export type Guardable<input = unknown, narrowed extends input = input> =
 	| ((In: input) => In is narrowed)
 	| ((In: input) => boolean)
+
+/**
+ * Checks if the environment has Content Security Policy (CSP) enabled,
+ * preventing JIT-optimized code from being compiled via new Function().
+ *
+ * @returns `true` if a function created using new Function() can be
+ * successfully invoked in the environment, `false` otherwise.
+ *
+ * The result is cached for subsequent invocations.
+ */
+export const envHasCsp = cachedThunk((): boolean => {
+	try {
+		return new Function("return false")()
+	} catch (e) {
+		return true
+	}
+})

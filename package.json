@@ -59,7 +59,7 @@
 	},
 	"pnpm": {
 		"overrides": {
-			"esbuild": "0.21.2"
+			"esbuild": "0.21.3"
 		}
 	},
 	"mocha": {

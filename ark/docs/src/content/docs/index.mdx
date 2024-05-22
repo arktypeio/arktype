@@ -3,15 +3,19 @@ title: ArkType
 description: Documentation for ArkType, an open-source runtime validation library for TypeScript
 template: splash
 hero:
-  tagline: TypeScript's 1:1 validator, optimized from editor to runtime
+  title: ArkType
+  tagline: TypeScript's 1:1 validator, optimized from editor to runtime.
+  image:
+    alt: A serene ark, sailing to runtime
+    file: ../../assets/splash.png
   actions:
-    - text: Meet 2.0
+    - text: Set sail
       link: /intro/why/
       icon: right-arrow
       variant: primary
-    # - text: Read more
-    #   link: https://starlight.astro.build
-    #   icon: external
+    - text: Doc up
+      link: https://github.com/arktypeio/arktype
+      icon: external
 ---
 
 import { Card, CardGrid } from "@astrojs/starlight/components"
@@ -19,31 +23,25 @@ import { HeroContents } from "../../components/HeroContents.tsx"
 import { HomeDemo } from "../../components/HomeDemo.tsx"
 
 <div class="not-content">
-	<HeroContents client:only />
+	<HeroContents client:only="react" />
 </div>
 
-## v2 is coming
-
-Thank you for all the wonderful feedback on our v1 release. Basic docs for that can be found [here]().
-
-However, most of our effort has been diverted to shipping an ambitious v2 release that will establish a stable, well-documented foundation for ArkType not just as a best-in-class validator, but as the first true runtime type system for JavaScript.
-
-We coudn't be more excited to share it with you.
-
-{/* prettier-ignore */}
-{/* ## Highlights
+## What awaits
 
 <CardGrid stagger>
-	<Card title="Update content" icon="pencil">
-		Edit `src/content/docs/index.mdx` to see this page change.
+	<Card title="Unparalleled DX" icon="seti:tsconfig">
+		Type syntax you already know with safety unlike anything you've ever seen
 	</Card>
-	<Card title="Add new content" icon="add-document">
-		Add Markdown or MDX files to `src/content/docs` to create new pages.
+	<Card title="Faster. Everywhere." icon="rocket">
+		[100x faster than
+		Zod](https://moltar.github.io/typescript-runtime-type-benchmarks/) with
+		editor performance that will remind you how autocomplete is supposed to feel
 	</Card>
-	<Card title="Configure your site" icon="setting">
-		Edit your `sidebar` and other config in `astro.config.mjs`.
+	<Card title="Clear and concise" icon="magnifier">
+		Schemas are half as long and twice as readable with hovers that tell you
+		just what really matters
 	</Card>
-	<Card title="Read the docs" icon="open-book">
-		Learn more in [the Starlight Docs](https://starlight.astro.build/).
+	<Card title="Better errors" icon="error">
+		Deeply customizable and composable messages with great defaults
 	</Card>
-</CardGrid> */}
+</CardGrid>

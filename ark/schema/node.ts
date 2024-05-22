@@ -3,16 +3,18 @@ import {
 	flatMorph,
 	includes,
 	isArray,
+	isEmptyObject,
 	shallowClone,
 	throwError,
 	type Dict,
 	type Guardable,
 	type Json,
+	type Key,
 	type conform,
 	type listable
 } from "@arktype/util"
 import type { BaseConstraint } from "./constraint.js"
-import type { Inner, Node, reducibleKindOf } from "./kinds.js"
+import type { Inner, MutableInner, Node, reducibleKindOf } from "./kinds.js"
 import type { BaseRoot, Root } from "./roots/root.js"
 import type { UnitNode } from "./roots/unit.js"
 import type { RawRootScope } from "./scope.js"
@@ -49,7 +51,9 @@ export abstract class BaseNode<
 > extends Callable<(data: d["prerequisite"]) => unknown, attachmentsOf<d>> {
 	constructor(public attachments: UnknownAttachments) {
 		super(
-			(data: any) => {
+			// pipedFromCtx allows us internally to reuse TraversalContext
+			// through pipes and keep track of piped paths. It is not exposed
+			(data: any, pipedFromCtx?: TraversalContext) => {
 				if (
 					!this.includesMorph &&
 					!this.allowsRequiresContext &&
@@ -57,17 +61,14 @@ export abstract class BaseNode<
 				)
 					return data
 
+				if (pipedFromCtx) return this.traverseApply(data, pipedFromCtx)
+
 				const ctx = new TraversalContext(data, this.$.resolvedConfig)
 				this.traverseApply(data, ctx)
 				return ctx.finalize()
 			},
 			{ attach: attachments as never }
 		)
-		this.contributesReferencesById =
-			this.id in this.referencesByName ?
-				this.referencesByName
-			:	{ ...this.referencesByName, [this.id]: this as never }
-		this.contributesReferences = Object.values(this.contributesReferencesById)
 	}
 
 	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
@@ -86,15 +87,15 @@ export abstract class BaseNode<
 		(this.hasKind("predicate") && this.inner.predicate.length !== 1) ||
 		this.kind === "alias" ||
 		this.children.some(child => child.allowsRequiresContext)
-	readonly referencesByName: Record<string, BaseNode> = this.children.reduce(
-		(result, child) => Object.assign(result, child.contributesReferencesById),
-		{}
+	readonly referencesById: Record<string, BaseNode> = this.children.reduce(
+		(result, child) => Object.assign(result, child.referencesById),
+		{ [this.id]: this }
 	)
-	readonly references: readonly BaseNode[] = Object.values(
-		this.referencesByName
-	)
-	readonly contributesReferencesById: Record<string, BaseNode>
-	readonly contributesReferences: readonly BaseNode[]
+
+	get references(): BaseNode[] {
+		return Object.values(this.referencesById)
+	}
+
 	readonly precedence: number = precedenceOfKind(this.kind)
 	jit = false
 
@@ -140,10 +141,10 @@ export abstract class BaseNode<
 
 		const ioInner: Record<any, unknown> = {}
 		for (const [k, v] of this.entries) {
-			const keySchemainition = this.impl.keys[k]
-			if (keySchemainition.meta) continue
+			const keySchemaImplementation = this.impl.keys[k]
+			if (keySchemaImplementation.meta) continue
 
-			if (keySchemainition.child) {
+			if (keySchemaImplementation.child) {
 				const childValue = v as listable<BaseNode>
 				ioInner[k] =
 					isArray(childValue) ?
@@ -209,7 +210,7 @@ export abstract class BaseNode<
 	firstReference<narrowed>(
 		filter: Guardable<BaseNode, conform<narrowed, BaseNode>>
 	): narrowed | undefined {
-		return this.references.find(filter as never) as never
+		return this.references.find(n => n !== this && filter(n)) as never
 	}
 
 	firstReferenceOrThrow<narrowed extends BaseNode>(
@@ -234,49 +235,74 @@ export abstract class BaseNode<
 		)
 	}
 
-	transform(
-		mapper: DeepNodeTransformation,
-		shouldTransform: ShouldTransformFn
-	): Node<reducibleKindOf<this["kind"]>> {
-		return this._transform(mapper, shouldTransform, { seen: {} }) as never
+	transform<mapper extends DeepNodeTransformation>(
+		mapper: mapper,
+		opts?: DeepNodeTransformOptions
+	): Node<reducibleKindOf<this["kind"]>> | Extract<ReturnType<mapper>, null> {
+		return this._transform(mapper, {
+			seen: {},
+			path: [],
+			shouldTransform: opts?.shouldTransform ?? (() => true)
+		}) as never
 	}
 
-	private _transform(
+	protected _transform(
 		mapper: DeepNodeTransformation,
-		shouldTransform: ShouldTransformFn,
 		ctx: DeepNodeTransformationContext
-	): BaseNode {
+	): BaseNode | null {
 		if (ctx.seen[this.id])
 			// TODO: remove cast by making lazilyResolve more flexible
 			// TODO: if each transform has a unique base id, could ensure
 			// these don't create duplicates
 			return this.$.lazilyResolve(ctx.seen[this.id]! as never)
-		if (!shouldTransform(this as never, ctx)) return this
+		if (!ctx.shouldTransform(this as never, ctx)) return this
 
-		ctx.seen[this.id] = () => node
+		let transformedNode: BaseRoot | undefined
+
+		ctx.seen[this.id] = () => transformedNode
 
 		const innerWithTransformedChildren = flatMorph(
 			this.inner as Dict,
-			(k, v) => [
-				k,
-				this.impl.keys[k].child ?
-					isArray(v) ?
-						v.map(node =>
-							(node as BaseNode)._transform(mapper, shouldTransform, ctx)
-						)
-					:	(v as BaseNode)._transform(mapper, shouldTransform, ctx)
-				:	v
-			]
+			(k, v) => {
+				if (!this.impl.keys[k].child) return [k, v]
+				const children = v as listable<BaseNode>
+				if (!isArray(children)) {
+					const transformed = children._transform(mapper, ctx)
+					return transformed ? [k, transformed] : []
+				}
+				const transformed = children.flatMap(n => {
+					const transformedChild = n._transform(mapper, ctx)
+					return transformedChild ?? []
+				})
+				return transformed.length ? [k, transformed] : []
+			}
 		)
 
 		delete ctx.seen[this.id]
 
-		const node = this.$.node(
+		const transformedInner = mapper(
 			this.kind,
-			mapper(this.kind, innerWithTransformedChildren as never, ctx) as never
+			innerWithTransformedChildren as never,
+			ctx
 		)
 
-		return node
+		if (transformedInner === null) return null
+		// TODO: more robust checks for pruned inner
+		if (isEmptyObject(transformedInner)) return null
+
+		if (
+			(this.kind === "required" ||
+				this.kind === "optional" ||
+				this.kind === "index") &&
+			!("value" in transformedInner)
+		)
+			return null
+		if (this.kind === "morph") {
+			;(transformedInner as MutableInner<"morph">).in ??= this.$.keywords
+				.unknown as never
+		}
+
+		return (transformedNode = this.$.node(this.kind, transformedInner) as never)
 	}
 
 	configureShallowDescendants(configOrDescription: BaseMeta | string): this {
@@ -284,11 +310,14 @@ export abstract class BaseNode<
 			typeof configOrDescription === "string" ?
 				{ description: configOrDescription }
 			:	(configOrDescription as never)
-		return this.transform(
-			(kind, inner) => ({ ...inner, ...config }),
-			node => node.kind !== "structure"
-		) as never
+		return this.transform((kind, inner) => ({ ...inner, ...config }), {
+			shouldTransform: node => node.kind !== "structure"
+		}) as never
 	}
+}
+
+export type DeepNodeTransformOptions = {
+	shouldTransform: ShouldTransformFn
 }
 
 export type ShouldTransformFn = (
@@ -297,11 +326,14 @@ export type ShouldTransformFn = (
 ) => boolean
 
 export type DeepNodeTransformationContext = {
-	seen: { [originalId: string]: (() => BaseNode) | undefined }
+	/** a literal key or a node representing the key of an index signature */
+	path: Array<Key | BaseNode>
+	seen: { [originalId: string]: (() => BaseNode | undefined) | undefined }
+	shouldTransform: ShouldTransformFn
 }
 
 export type DeepNodeTransformation = <kind extends NodeKind>(
 	kind: kind,
 	inner: Inner<kind>,
 	ctx: DeepNodeTransformationContext
-) => Inner<kind>
+) => Inner<kind> | null

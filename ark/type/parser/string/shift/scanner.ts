@@ -1,7 +1,7 @@
-import { type Dict, isKeyOf } from "@arktype/util"
+import { isKeyOf, type Dict } from "@arktype/util"
 import type { Comparator } from "../reduce/shared.js"
 
-export class Scanner<Lookahead extends string = string> {
+export class Scanner<lookahead extends string = string> {
 	private chars: string[]
 	private i: number
 
@@ -11,12 +11,16 @@ export class Scanner<Lookahead extends string = string> {
 	}
 
 	/** Get lookahead and advance scanner by one */
-	shift(): Lookahead {
-		return (this.chars[this.i++] ?? "") as Lookahead
+	shift(): lookahead {
+		return (this.chars[this.i++] ?? "") as never
 	}
 
-	get lookahead(): Lookahead {
-		return (this.chars[this.i] ?? "") as Lookahead
+	get lookahead(): lookahead {
+		return (this.chars[this.i] ?? "") as never
+	}
+
+	get nextLookahead(): string {
+		return this.chars[this.i + 1] ?? ""
 	}
 
 	get length(): number {
@@ -65,13 +69,13 @@ export class Scanner<Lookahead extends string = string> {
 		return this.chars.slice(start, end).join("")
 	}
 
-	lookaheadIs<Char extends Lookahead>(char: Char): this is Scanner<Char> {
+	lookaheadIs<char extends lookahead>(char: char): this is Scanner<char> {
 		return this.lookahead === char
 	}
 
-	lookaheadIsIn<Tokens extends Dict>(
-		tokens: Tokens
-	): this is Scanner<Extract<keyof Tokens, string>> {
+	lookaheadIsIn<tokens extends Dict>(
+		tokens: tokens
+	): this is Scanner<Extract<keyof tokens, string>> {
 		return this.lookahead in tokens
 	}
 }

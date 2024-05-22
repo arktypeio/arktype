@@ -333,8 +333,8 @@ export const getBenchCtx = (
 	qualifiedPath: string[],
 	isAsync: boolean = false,
 	options: BenchOptions = {}
-): BenchContext => {
-	return {
+): BenchContext =>
+	({
 		qualifiedPath,
 		qualifiedName: qualifiedPath.join("/"),
 		options,
@@ -342,5 +342,4 @@ export const getBenchCtx = (
 		benchCallPosition: caller(),
 		lastSnapCallPosition: undefined,
 		isAsync
-	} as BenchContext
-}
+	}) as BenchContext

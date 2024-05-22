@@ -230,7 +230,7 @@ export abstract class BaseRoot<
 						omit(inner as StructureInner, { undeclared: 1 })
 					:	{ ...inner, undeclared }
 				:	inner,
-			node => !includes(structuralKinds, node.kind)
+			{ shouldTransform: node => !includes(structuralKinds, node.kind) }
 		)
 	}
 

@@ -12,22 +12,21 @@
 	},
 	"dependencies": {
 		"@arktype/util": "workspace:*",
-		"@astrojs/starlight": "0.21.1",
-		"@astrojs/react": "3.0.10",
+		"@astrojs/starlight": "0.23.0",
+		"@astrojs/react": "3.3.4",
 		"@monaco-editor/react": "4.6.0",
-		"monaco-editor": "0.47.0",
+		"monaco-editor": "0.48.0",
 		"monaco-textmate": "3.0.1",
 		"monaco-editor-textmate": "4.0.0",
 		"onigasm": "2.2.5",
-		"@stackblitz/sdk": "1.9.0",
-		"astro": "4.4.15",
-		"sharp": "0.33.2",
-		"react": "18.2.0",
-		"react-dom": "18.2.0",
-		"framer-motion": "11.0.8"
+		"astro": "4.8.6",
+		"sharp": "0.33.4",
+		"react": "18.3.1",
+		"react-dom": "18.3.1",
+		"framer-motion": "11.2.4"
 	},
 	"devDependencies": {
-		"@types/react": "18.2.64",
-		"@types/react-dom": "18.2.21"
+		"@types/react": "18.3.2",
+		"@types/react-dom": "18.3.0"
 	}
 }

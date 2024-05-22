@@ -42,7 +42,7 @@ export const exactLengthImplementation: nodeImplementationOf<ExactLengthDeclarat
 		intersections: {
 			exactLength: (l, r, ctx) =>
 				new Disjoint({
-					"[length]": {
+					'["length"]': {
 						unit: {
 							l: ctx.$.node("unit", { unit: l.rule }),
 							r: ctx.$.node("unit", { unit: r.rule })

@@ -1,8 +1,11 @@
+import { fromCwd, rmRf, shell, writeJson } from "@arktype/fs"
 import { symlinkSync, unlinkSync } from "fs"
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import { fromCwd, shell, writeJson } from "../fs/api.js"
+import { join } from "path"
 
 const isCjs = process.argv.includes("--cjs") || process.env.ARKTYPE_CJS
+const outDir = fromCwd("out")
+
+rmRf(outDir)
 
 try {
 	if (isCjs) {
@@ -10,7 +13,7 @@ try {
 		symlinkSync(`../repo/tsconfig.cjs.json`, "tsconfig.build.json")
 	}
 	shell("pnpm tsc --project tsconfig.build.json")
-	if (isCjs) writeJson(fromCwd("out", "package.json"), { type: "commonjs" })
+	if (isCjs) writeJson(join(outDir, "package.json"), { type: "commonjs" })
 } finally {
 	if (isCjs) {
 		unlinkSync("tsconfig.build.json")

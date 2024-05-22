@@ -3,9 +3,9 @@
 
 // it("cases only", () => {
 // 	const sizeOf = match({
-// 		"string|Array": (v) => v.length,
-// 		number: (v) => v,
-// 		bigint: (v) => v
+// 		"string|Array": v => v.length,
+// 		number: v => v,
+// 		bigint: v => v
 // 	}).orThrow()
 
 // 	attest<number>(sizeOf("abc")).equals(3)
@@ -14,8 +14,8 @@
 // })
 
 // it("properly infers types of inputs/outputs", () => {
-// 	const matcher = match({ string: (s) => s, number: (n) => n })
-// 		.when("boolean", (b) => b)
+// 	const matcher = match({ string: s => s, number: n => n })
+// 		.when("boolean", b => b)
 // 		.orThrow()
 
 // 	// properly infers the type of the output based on the input
@@ -28,19 +28,19 @@
 // })
 
 // it("`.when` errors on redundant cases", () => {
-// 	const matcher = match().when("string", (s) => s)
+// 	const matcher = match().when("string", s => s)
 
 // 	// @ts-expect-error
-// 	attest(() => matcher.when("string", (s) => s)).throwsAndHasTypeError(
+// 	attest(() => matcher.when("string", s => s)).throwsAndHasTypeError(
 // 		"This branch is redundant and will never be reached" // TODO: rewrite error message
 // 	)
 // })
 
 // it("errors on cases redundant to a previous `cases` block", () => {
-// 	const matcher = match({ string: (s) => s })
+// 	const matcher = match({ string: s => s })
 
 // 	// @ts-expect-error
-// 	attest(() => matcher.cases({ string: (s) => s })).throwsAndHasTypeError(
+// 	attest(() => matcher.cases({ string: s => s })).throwsAndHasTypeError(
 // 		"This branch is redundant and will never be reached"
 // 	)
 // })
@@ -64,7 +64,7 @@
 // describe('"finalizations"', () => {
 // 	it(".orThrow()", () => {
 // 		const matcher = match()
-// 			.when("string", (s) => s)
+// 			.when("string", s => s)
 // 			.orThrow()
 
 // 		// properly returns the `never` type and throws given a guaranteed-to-be-invalid input
@@ -108,7 +108,7 @@
 // 	// })
 
 // 	it("errors when attempting to `.finalize()` a non-exhaustive matcher", () => {
-// 		const matcher = match().when("string", (s) => s)
+// 		const matcher = match().when("string", s => s)
 
 // 		// @ts-expect-error
 // 		attest(() => matcher.finalize()).throwsAndHasTypeError(
@@ -118,7 +118,7 @@
 
 // 	it("considers `unknown` exhaustive", () => {
 // 		const matcher = match()
-// 			.when("unknown", (x) => x)
+// 			.when("unknown", x => x)
 // 			.finalize()
 
 // 		attest(matcher(4)).equals(4)
@@ -129,8 +129,8 @@
 // 	it("does not accept invalid inputs at a type-level", () => {
 // 		const matcher = match
 // 			.only<string | number>()
-// 			.when("string", (s) => s)
-// 			.when("number", (n) => n)
+// 			.when("string", s => s)
+// 			.when("number", n => n)
 // 			.finalize()
 
 // 		// @ts-expect-error
@@ -140,7 +140,7 @@
 // 	})
 
 // 	it("errors when attempting to `.finalize()` a non-exhaustive matcher", () => {
-// 		const matcher = match.only<string | number>().when("string", (s) => s)
+// 		const matcher = match.only<string | number>().when("string", s => s)
 
 // 		// @ts-expect-error
 // 		attest(() => matcher.finalize()).throwsAndHasTypeError(
@@ -148,11 +148,11 @@
 // 		)
 // 	})
 
-// 	it("allows finalizing exhaustive matchers", (_) => {
+// 	it("allows finalizing exhaustive matchers", _ => {
 // 		const matcher = match
 // 			.only<string | number>()
-// 			.when("string", (s) => s)
-// 			.when("number", (n) => n)
+// 			.when("string", s => s)
+// 			.when("number", n => n)
 // 			.finalize()
 
 // 		attest<string>(matcher("abc")).equals("abc")
@@ -164,8 +164,8 @@
 // 	it("infers the parameter to chained .default as the remaining cases", () => {
 // 		const matcher = match
 // 			.only<string | number | boolean>()
-// 			.when("string", (s) => s)
-// 			.default((n) => {
+// 			.when("string", s => s)
+// 			.default(n => {
 // 				attest<number | boolean>(n)
 // 				return n
 // 			})
@@ -176,8 +176,8 @@
 
 // 	it("infers the parameter to in-cases .default", () => {
 // 		const matcher = match.only<string | number | boolean>().cases({
-// 			string: (s) => s,
-// 			default: (n) => {
+// 			string: s => s,
+// 			default: n => {
 // 				// TS doesn't understand sequentiality in cases, so it's inferred as the in-type
 // 				attest<string | number | boolean>(n)
 // 				return n
@@ -191,7 +191,7 @@
 // 	it("returns `never` on only the specific cases handled by `.orThrow`", () => {
 // 		const matcher = match
 // 			.only<string | number>()
-// 			.when("string", (s) => s)
+// 			.when("string", s => s)
 // 			.orThrow()
 
 // 		attest<never>(matcher(4))
@@ -203,12 +203,12 @@
 
 // 	const matcher = threeSixtyNoScope
 // 		.match({
-// 			three: (three) => {
+// 			three: three => {
 // 				attest<3>(three)
 // 				return 3
 // 			}
 // 		})
-// 		.when("sixty", (sixty) => {
+// 		.when("sixty", sixty => {
 // 			attest<60>(sixty)
 // 			return 60
 // 		})
@@ -221,14 +221,14 @@
 
 // it("properly propagates errors from invalid type definitions in `when`", () => {
 // 	// @ts-expect-error
-// 	attest(() => match().when("strong", (s) => s)).type.errors(
+// 	attest(() => match().when("strong", s => s)).type.errors(
 // 		"'strong' is unresolvable"
 // 	)
 // })
 
 // it("properly propagates errors from invalid type definitions in `cases`", () => {
 // 	// @ts-expect-error
-// 	attest(() => match({ strong: (s) => s })).type.errors(
+// 	attest(() => match({ strong: s => s })).type.errors(
 // 		"'strong' is unresolvable"
 // 	)
 // })

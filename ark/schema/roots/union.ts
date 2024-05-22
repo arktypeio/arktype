@@ -1,8 +1,26 @@
-import { appendUnique, groupBy, isArray, type array } from "@arktype/util"
+import {
+	appendUnique,
+	cached,
+	compileLiteralPropAccess,
+	domainDescriptions,
+	entriesOf,
+	flatMorph,
+	groupBy,
+	isArray,
+	isKeyOf,
+	printable,
+	throwInternalError,
+	type Domain,
+	type Json,
+	type SerializedPrimitive,
+	type array,
+	type keySet,
+	type show
+} from "@arktype/util"
 import type { Node, NodeSchema } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
-import { Disjoint } from "../shared/disjoint.js"
+import { Disjoint, type SerializedPath } from "../shared/disjoint.js"
 import type { ArkError } from "../shared/errors.js"
 import {
 	implementNode,
@@ -13,7 +31,10 @@ import {
 } from "../shared/implement.js"
 import { intersectNodes, intersectNodesRoot } from "../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
+import type { TraversalPath } from "../shared/utils.js"
+import type { DomainInner, DomainNode } from "./domain.js"
 import { BaseRoot, type schemaKindRightOf } from "./root.js"
+import type { UnitNode } from "./unit.js"
 import { defineRightwardIntersections } from "./utils.js"
 
 export type UnionChildKind = schemaKindRightOf<"union"> | "alias"
@@ -94,9 +115,8 @@ export const unionImplementation: nodeImplementationOf<UnionDeclaration> =
 			)
 		},
 		defaults: {
-			description: node => {
-				return describeBranches(node.branches.map(branch => branch.description))
-			},
+			description: node =>
+				describeBranches(node.branches.map(branch => branch.description)),
 			expected: ctx => {
 				const byPath = groupBy(ctx.errors, "propString") as Record<
 					string,
@@ -111,13 +131,12 @@ export const unionImplementation: nodeImplementationOf<UnionDeclaration> =
 							appendUnique(branchesAtPath, errorAtPath.expected)
 						)
 						const expected = describeBranches(branchesAtPath)
-						const actual = errors.reduce(
-							(acc, e) =>
-								e.actual && !acc.includes(e.actual) ?
-									`${acc && `${acc}, `}${e.actual}`
-								:	acc,
-							""
-						)
+						// if there are multiple actual descriptions that differ,
+						// just fall back to printable, which is the most specific
+						const actual =
+							errors.every(e => e.actual === errors[0].actual) ?
+								errors[0].actual
+							:	printable(errors[0].data)
 						return `${path && `${path} `}must be ${expected}${
 							actual && ` (was ${actual})`
 						}`
@@ -173,7 +192,12 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 		this.branches[0].hasUnit(false) &&
 		this.branches[1].hasUnit(true)
 
-	discriminant = null
+	unitBranches = this.branches.filter((n): n is UnitNode => n.hasKind("unit"))
+
+	discriminant = this.discriminate()
+	discriminantJson =
+		this.discriminant ? discriminantToJson(this.discriminant) : null
+
 	expression: string =
 		this.isNever ? "never"
 		: this.isBoolean ? "boolean"
@@ -195,6 +219,54 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 	}
 
 	compile(js: NodeCompiler): void {
+		if (
+			!this.discriminant ||
+			// if we have a union of two units like `boolean`, the
+			// undiscriminated compilation will be just as fast
+			(this.unitBranches.length === this.branches.length &&
+				this.branches.length === 2)
+		)
+			return this.compileIndiscriminable(js)
+
+		// we need to access the path as optional so we don't throw if it isn't present
+		const condition = this.discriminant.path.reduce(
+			(acc, segment) => acc + compileLiteralPropAccess(segment, true),
+			this.discriminant.kind === "domain" ? "typeof data" : "data"
+		)
+
+		const cases = this.discriminant.cases
+
+		const caseKeys = Object.keys(cases)
+
+		js.block(`switch(${condition})`, () => {
+			for (const k in cases) {
+				const v = cases[k]
+				const caseCondition = k === "default" ? "default" : `case ${k}`
+				js.line(`${caseCondition}: return ${v === true ? v : js.invoke(v)}`)
+			}
+
+			return js
+		})
+
+		if (js.traversalKind === "Allows") {
+			js.return(false)
+			return
+		}
+
+		const expected = describeBranches(
+			this.discriminant.kind === "domain" ?
+				caseKeys.map(k => domainDescriptions[k.slice(1, -1) as Domain])
+			:	caseKeys
+		)
+
+		js.line(`ctx.error({
+	expected: ${JSON.stringify(expected)},
+	actual: ${condition},
+	relativePath: ${JSON.stringify(this.discriminant.path)}
+})`)
+	}
+
+	private compileIndiscriminable(js: NodeCompiler): void {
 		if (js.traversalKind === "Apply") {
 			js.const("errors", "[]")
 			this.branches.forEach(branch =>
@@ -227,7 +299,122 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 		// already collapsed to a single keyword
 		return this.isBoolean ? "boolean" : super.nestableExpression
 	}
+
+	@cached
+	discriminate(): Discriminant | null {
+		if (this.branches.length < 2) return null
+		if (this.unitBranches.length === this.branches.length) {
+			const cases = flatMorph(this.unitBranches, (i, unit) => [
+				`${unit.serializedValue}`,
+				true as const
+			])
+
+			return {
+				path: [],
+				kind: "unit",
+				cases
+			}
+		}
+		const casesBySpecifier: CasesBySpecifier = {}
+		for (let lIndex = 0; lIndex < this.branches.length - 1; lIndex++) {
+			const l = this.branches[lIndex]
+			for (let rIndex = lIndex + 1; rIndex < this.branches.length; rIndex++) {
+				const r = this.branches[rIndex]
+				const result = intersectNodesRoot(l, r, l.$)
+				if (!(result instanceof Disjoint)) continue
+
+				for (const { path, kind, disjoint } of result.flat) {
+					if (!isKeyOf(kind, discriminantKinds)) continue
+
+					const qualifiedDiscriminant: DiscriminantKey = `${path}${kind}`
+					let lSerialized: string
+					let rSerialized: string
+					if (kind === "domain") {
+						lSerialized = `"${(disjoint.l as DomainNode).domain}"`
+						rSerialized = `"${(disjoint.r as DomainNode).domain}"`
+					} else if (kind === "unit") {
+						lSerialized = (disjoint.l as UnitNode).serializedValue as never
+						rSerialized = (disjoint.r as UnitNode).serializedValue as never
+					} else {
+						return throwInternalError(
+							`Unexpected attempt to discriminate disjoint kind '${kind}'`
+						)
+					}
+					if (!casesBySpecifier[qualifiedDiscriminant]) {
+						casesBySpecifier[qualifiedDiscriminant] = {
+							[lSerialized]: [l],
+							[rSerialized]: [r]
+						}
+						continue
+					}
+					const cases = casesBySpecifier[qualifiedDiscriminant]!
+					if (!isKeyOf(lSerialized, cases)) cases[lSerialized] = [l]
+					else if (!cases[lSerialized].includes(l)) cases[lSerialized].push(l)
+
+					if (!isKeyOf(rSerialized, cases)) cases[rSerialized] = [r]
+					else if (!cases[rSerialized].includes(r)) cases[rSerialized].push(r)
+				}
+			}
+		}
+
+		const bestDiscriminantEntry = entriesOf(casesBySpecifier)
+			.sort((a, b) => Object.keys(a[1]).length - Object.keys(b[1]).length)
+			.at(-1)
+
+		if (!bestDiscriminantEntry) return null
+
+		const [specifier, bestCases] = bestDiscriminantEntry
+		const [path, kind] = parseDiscriminantKey(specifier)
+
+		let defaultBranches = [...this.branches]
+
+		const cases = flatMorph(bestCases, (k, caseBranches) => {
+			const prunedBranches: BaseRoot[] = []
+			defaultBranches = defaultBranches.filter(n => !caseBranches.includes(n))
+			for (const branch of caseBranches) {
+				const pruned = pruneDiscriminant(kind, path, branch)
+				// if any branch of the union has no constraints (i.e. is unknown)
+				// return it right away
+				if (pruned === null) return [k, true as const]
+				prunedBranches.push(pruned)
+			}
+
+			const caseNode =
+				prunedBranches.length === 1 ?
+					prunedBranches[0]
+				:	this.$.node("union", prunedBranches)
+
+			Object.assign(this.referencesById, caseNode.referencesById)
+
+			return [k, caseNode]
+		})
+
+		if (defaultBranches.length) {
+			cases.default = this.$.node("union", defaultBranches, {
+				prereduced: true
+			})
+
+			Object.assign(this.referencesById, cases.default.referencesById)
+		}
+
+		return {
+			kind,
+			path,
+			cases
+		}
+	}
 }
+
+const discriminantToJson = (discriminant: Discriminant): Json => ({
+	kind: discriminant.kind,
+	path: discriminant.path,
+	cases: flatMorph(discriminant.cases, (k, node) => [
+		k,
+		node === true ? node
+		: node.hasKind("union") && node.discriminantJson ? node.discriminantJson
+		: node.json
+	])
+})
 
 const describeBranches = (descriptions: string[]) => {
 	if (descriptions.length === 0) return "never"
@@ -248,84 +435,6 @@ const describeBranches = (descriptions: string[]) => {
 	description += ` or ${descriptions[descriptions.length - 1]}`
 	return description
 }
-
-// 	private static compileDiscriminatedLiteral(cases: DiscriminatedCases) {
-// 		// TODO: error messages for traversal
-// 		const caseKeys = Object.keys(cases)
-// 		if (caseKeys.length === 2) {
-// 			return `if( ${this.argName} !== ${caseKeys[0]} && ${this.argName} !== ${caseKeys[1]}) {
-//     return false
-// }`
-// 		}
-// 		// for >2 literals, we fall through all cases, breaking on the last
-// 		const compiledCases =
-// 			caseKeys.map((k) => `    case ${k}:`).join("\n") + "        break"
-// 		// if none of the cases are met, the check fails (this is optimal for perf)
-// 		return `switch(${this.argName}) {
-//     ${compiledCases}
-//     default:
-//         return false
-// }`
-// 	}
-
-// 	private static compileIndiscriminable(
-// 		branches: readonly BranchNode[],
-// 		ctx: CompilationContext
-// 	) {
-// 		if (branches.length === 0) {
-// 			return compileFailureResult("custom", "nothing", ctx)
-// 		}
-// 		if (branches.length === 1) {
-// 			return branches[0].compile(ctx)
-// 		}
-// 		return branches
-// 			.map(
-// 				(branch) => `(() => {
-// 	${branch.compile(ctx)}
-// 	return true
-// 	})()`
-// 			)
-// 			.join(" || ")
-// 	}
-
-// 	private static compileDiscriminant(
-// 		discriminant: Discriminant,
-// 		ctx: CompilationContext
-// 	) {
-// 		if (discriminant.isPureRootLiteral) {
-// 			// TODO: ctx?
-// 			return this.compileDiscriminatedLiteral(discriminant.cases)
-// 		}
-// 		let compiledPath = this.argName
-// 		for (const segment of discriminant.path) {
-// 			// we need to access the path as optional so we don't throw if it isn't present
-// 			compiledPath += compilePropAccess(segment, true)
-// 		}
-// 		const condition =
-// 			discriminant.kind === "domain" ? `typeof ${compiledPath}` : compiledPath
-// 		let compiledCases = ""
-// 		for (const k in discriminant.cases) {
-// 			const caseCondition = k === "default" ? "default" : `case ${k}`
-// 			const caseBranches = discriminant.cases[k]
-// 			ctx.discriminants.push(discriminant)
-// 			const caseChecks = isArray(caseBranches)
-// 				? this.compileIndiscriminable(caseBranches, ctx)
-// 				: this.compileDiscriminant(caseBranches, ctx)
-// 			ctx.discriminants.pop()
-// 			compiledCases += `${caseCondition}: {
-// 		${caseChecks ? `${caseChecks}\n     break` : "break"}
-// 	}`
-// 		}
-// 		if (!discriminant.cases.default) {
-// 			// TODO: error message for traversal
-// 			compiledCases += `default: {
-// 		return false
-// 	}`
-// 		}
-// 		return `switch(${condition}) {
-// 		${compiledCases}
-// 	}`
-// 	}
 
 export const intersectBranches = (
 	l: readonly UnionChildNode[],
@@ -430,3 +539,86 @@ export const reduceBranches = ({
 	}
 	return branches.filter((_, i) => uniquenessByIndex[i])
 }
+
+export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
+	DiscriminantKind extends kind ? string : DiscriminantKinds[kind] | "default"
+
+export type Discriminant<kind extends DiscriminantKind = DiscriminantKind> = {
+	path: string[]
+	kind: kind
+	cases: DiscriminatedCases<kind>
+}
+
+export type DiscriminatedCases<
+	kind extends DiscriminantKind = DiscriminantKind
+> = {
+	[caseKey in CaseKey<kind>]: BaseRoot | true
+}
+
+type DiscriminantKey = `${SerializedPath}${DiscriminantKind}`
+
+type CasesBySpecifier = {
+	[k in DiscriminantKey]?: Record<string, BaseRoot[]>
+}
+
+export type DiscriminantKinds = {
+	domain: Domain
+	unit: SerializedPrimitive
+}
+
+const discriminantKinds: keySet<DiscriminantKind> = {
+	domain: 1,
+	unit: 1
+}
+
+export type DiscriminantKind = show<keyof DiscriminantKinds>
+
+const parseDiscriminantKey = (key: DiscriminantKey) => {
+	const lastPathIndex = key.lastIndexOf("]")
+	const parsedPath: string[] = JSON.parse(key.slice(0, lastPathIndex + 1))
+	const parsedKind: DiscriminantKind = key.slice(lastPathIndex + 1) as never
+	return [parsedPath, parsedKind] as const
+}
+
+export const pruneDiscriminant = (
+	discriminantKind: DiscriminantKind,
+	path: TraversalPath,
+	branch: BaseRoot
+): BaseRoot | null =>
+	branch.transform(
+		(nodeKind, inner, ctx) => {
+			// if we've already checked a path at least as long as the current one,
+			// we don't need to revalidate that we're in an object
+			if (
+				nodeKind === "domain" &&
+				(inner as DomainInner).domain === "object" &&
+				path.length > ctx.path.length
+			)
+				return null
+
+			// if the discriminant has already checked the domain at the current path
+			// (or an exact value, implying a domain), we don't need to recheck it
+			if (
+				(discriminantKind === nodeKind ||
+					(nodeKind === "domain" && ctx.path.length === path.length)) &&
+				ctx.path.length === path.length &&
+				ctx.path.every((segment, i) => segment === path[i])
+			)
+				return null
+			return inner
+		},
+		{
+			shouldTransform: node =>
+				node.children.length !== 0 ||
+				node.kind === "domain" ||
+				node.kind === "unit"
+		}
+	)
+
+// // TODO: if deeply includes morphs?
+// const writeUndiscriminableMorphUnionMessage = <path extends string>(
+// 	path: path
+// ) =>
+// 	`${
+// 		path === "/" ? "A" : `At ${path}, a`
+// 	} union including one or more morphs must be discriminable` as const

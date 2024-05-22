@@ -51,6 +51,7 @@ module.exports = defineConfig({
 				disallowPrototype: true
 			}
 		],
+		"arrow-body-style": ["warn", "as-needed"],
 		"@typescript-eslint/no-unused-vars": [
 			"warn",
 			{
@@ -58,10 +59,6 @@ module.exports = defineConfig({
 				argsIgnorePattern: "^_",
 				ignoreRestSiblings: true
 			}
-		],
-		"@typescript-eslint/explicit-module-boundary-types": [
-			"warn",
-			{ allowDirectConstAssertionInArrowFunctions: true }
 		],
 		"@typescript-eslint/default-param-last": "warn",
 		"@typescript-eslint/no-empty-interface": "off",

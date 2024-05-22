@@ -107,7 +107,7 @@ contextualize(
 
 		it("invalid literal", () => {
 			attest(() => type("number%3&8")).throws.snap(
-				"ParseError: Intersection of 8 and number & % 3 results in an unsatisfiable type"
+				"ParseError: Intersection of 8 and % 3 results in an unsatisfiable type"
 			)
 		})
 	}

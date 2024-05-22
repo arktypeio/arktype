@@ -166,12 +166,17 @@ export const pipeFromMorph = (
 	to: BaseRoot,
 	ctx: IntersectionContext
 ): MorphNode | Disjoint => {
-	const out = from?.out ? intersectNodes(from.out, to, ctx) : to
-	if (out instanceof Disjoint) return out
+	const morphs = [...from.morphs]
+	if (from.validatedOut) {
+		// still piped from context, so allows appending additional morphs
+		const outIntersection = intersectNodes(from.validatedOut, to, ctx)
+		if (outIntersection instanceof Disjoint) return outIntersection
+		morphs[morphs.length - 1] = outIntersection
+	} else morphs.push(to)
+
 	return ctx.$.node("morph", {
-		morphs: from.morphs,
-		in: from.in,
-		out
+		morphs,
+		in: from.in
 	})
 }
 
@@ -184,7 +189,6 @@ export const pipeToMorph = (
 	if (result instanceof Disjoint) return result
 	return ctx.$.node("morph", {
 		morphs: to.morphs,
-		in: result,
-		out: to.out
+		in: result
 	})
 }

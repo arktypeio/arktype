@@ -10,8 +10,9 @@ import {
 	type entryOf
 } from "@arktype/util"
 import type { Node } from "../kinds.js"
+import type { BaseNode } from "../node.js"
 import type { BaseRoot } from "../roots/root.js"
-import type { BoundKind, PrimitiveKind } from "./implement.js"
+import type { BoundKind } from "./implement.js"
 import { hasArkKind } from "./utils.js"
 
 type DisjointKinds = {
@@ -35,15 +36,11 @@ type DisjointKinds = {
 		l: Node<BoundKind>
 		r: Node<BoundKind>
 	}
-	assignability?:
-		| {
-				l: unknown
-				r: Node<PrimitiveKind>
-		  }
-		| {
-				l: Node<PrimitiveKind>
-				r: unknown
-		  }
+	// exactly one of l or r should be a UnitNode
+	assignability?: {
+		l: BaseNode
+		r: BaseNode
+	}
 	union?: {
 		l: readonly BaseRoot[]
 		r: readonly BaseRoot[]

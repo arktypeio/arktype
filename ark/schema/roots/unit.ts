@@ -55,7 +55,17 @@ export const unitImplementation: nodeImplementationOf<UnitDeclaration> =
 		intersections: {
 			unit: (l, r) => Disjoint.from("unit", l, r),
 			...defineRightwardIntersections("unit", (l, r) =>
-				r.allows(l.unit) ? l : Disjoint.from("assignability", l.unit, r)
+				r.allows(l.unit) ? l : (
+					Disjoint.from(
+						"assignability",
+						l,
+						r.hasKind("intersection") ?
+							r.children.find(
+								rConstraint => !rConstraint.allows(l.unit as never)
+							)!
+						:	r
+					)
+				)
 			)
 		}
 	})

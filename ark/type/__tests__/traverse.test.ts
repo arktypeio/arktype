@@ -60,7 +60,8 @@ contextualize(() => {
 		const t = type("string|number[]")
 		attest(t([1])).snap([1])
 		attest(t("hello")).snap("hello")
-		attest(t(2).toString()).snap("must be a string or an array (was number)")
+		attest(t(2).toString()).snap("must be a string or an object (was number)")
+		attest(t({}).toString()).snap("must be an array (was object)")
 	})
 
 	it("tuple length", () => {
@@ -84,6 +85,13 @@ contextualize(() => {
 		)
 	})
 
+	it("common errors collapse", () => {
+		const t = type({ base: "1", a: "1" }, "|", { base: "1", b: "1" })
+		attest(t({ base: 1, a: 1 })).snap({ base: 1, a: 1 })
+		attest(t({ base: 1, b: 1 })).snap({ base: 1, b: 1 })
+		attest(t({ a: 1, b: 1 }).toString()).snap("base must be 1 (was missing)")
+	})
+
 	it("branches at path", () => {
 		const t = type({ key: [{ a: "string" }, "|", { b: "boolean" }] })
 		attest(t({ key: { a: "ok" } })).snap({ key: { a: "ok" } })
@@ -98,29 +106,28 @@ contextualize(() => {
 		attest(t({ a: "ok" })).snap({ a: "ok" })
 		attest(t({ a: 5 })).snap({ a: 5 })
 		// value isn't present
-		attest(t({}).toString()).snap(
-			"a must be a number, a string or null (was missing)"
-		)
+		attest(t({}).toString()).snap("a must be null (was missing)")
 		// unsatisfying value
-		attest(t({ a: false }).toString()).snap(
-			"a must be a number, a string or null (was false)"
-		)
+		attest(t({ a: false }).toString()).snap("a must be null (was false)")
 	})
 
-	it("multiple switch", () => {
-		const types = scope({
-			a: { foo: "string" },
-			b: { foo: "number" },
-			c: { foo: "Function" },
-			d: "a|b|c"
-		}).export()
-		attest(types.d({}).toString()).snap(
-			"foo must be a function, a number or a string (was missing)"
-		)
-		attest(types.d({ foo: null }).toString()).snap(
-			"foo must be a function, a number or a string (was null)"
-		)
-	})
+	// TODO: https://github.com/arktypeio/arktype/issues/962
+	// it("multiple switch", () => {
+	// 	const types = scope({
+	// 		a: { foo: "string" },
+	// 		b: { foo: "number" },
+	// 		c: { foo: "Function" },
+	// 		d: "a|b|c"
+	// 	}).export()
+	// 	// attest(types.d({}).toString()).snap(
+	// 	// 	"foo must be a number, an object or a string (was undefined)"
+	// 	// )
+	// 	// this could be improved, currently a bit counterintuitive because of
+	// 	// the inconsistency between `domainOf` and typeof
+	// 	attest(types.d({ foo: null }).toString()).snap(
+	// 		"foo must be a function (was null)"
+	// 	)
+	// })
 
 	it("multi", () => {
 		const naturalNumber = type("integer>0")

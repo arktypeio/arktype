@@ -1,8 +1,8 @@
 import {
+	arkKind,
 	type GenericNodeInstantiation,
 	type GenericProps,
-	type RootScope,
-	arkKind
+	type RootScope
 } from "@arktype/schema"
 import { Callable, type conform } from "@arktype/util"
 import type { inferDefinition } from "./parser/definition.js"
@@ -11,6 +11,7 @@ import type {
 	parseGenericParams
 } from "./parser/generic.js"
 import type { Type, inferTypeRoot, validateTypeRoot } from "./type.js"
+
 export type validateParameterString<params extends string> =
 	parseGenericParams<params> extends GenericParamsParseError<infer message> ?
 		message
