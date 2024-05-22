@@ -44,25 +44,21 @@ type BaseAttestConfig = {
 
 export type AttestConfig = Partial<BaseAttestConfig>
 
-export const getDefaultAttestConfig = (): BaseAttestConfig => {
-	return {
-		tsconfig:
-			existsSync(fromCwd("tsconfig.json")) ?
-				fromCwd("tsconfig.json")
-			:	undefined,
-		attestAliases: ["attest", "attestInternal"],
-		updateSnapshots: false,
-		skipTypes: false,
-		skipInlineInstantiations: false,
-		tsVersions: "typescript",
-		benchPercentThreshold: 20,
-		benchErrorOnThresholdExceeded: false,
-		filter: undefined,
-		testDeclarationAliases: ["bench", "it"],
-		formatter: `npm exec --no -- prettier --write`,
-		shouldFormat: true
-	}
-}
+export const getDefaultAttestConfig = (): BaseAttestConfig => ({
+	tsconfig:
+		existsSync(fromCwd("tsconfig.json")) ? fromCwd("tsconfig.json") : undefined,
+	attestAliases: ["attest", "attestInternal"],
+	updateSnapshots: false,
+	skipTypes: false,
+	skipInlineInstantiations: false,
+	tsVersions: "typescript",
+	benchPercentThreshold: 20,
+	benchErrorOnThresholdExceeded: false,
+	filter: undefined,
+	testDeclarationAliases: ["bench", "it"],
+	formatter: `npm exec --no -- prettier --write`,
+	shouldFormat: true
+})
 
 const hasFlag = (flag: keyof AttestConfig) =>
 	process.argv.some(arg => arg.includes(flag))

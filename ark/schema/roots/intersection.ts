@@ -332,9 +332,7 @@ export const intersectionImplementation: nodeImplementationOf<IntersectionDeclar
 			problem: ctx => `must be...\n${ctx.expected}`
 		},
 		intersections: {
-			intersection: (l, r, ctx) => {
-				return intersectIntersections(l, r, ctx)
-			},
+			intersection: (l, r, ctx) => intersectIntersections(l, r, ctx),
 			...defineRightwardIntersections("intersection", (l, r, ctx) => {
 				// if l is unknown, return r
 				if (l.children.length === 0) return r

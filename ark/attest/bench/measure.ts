@@ -26,12 +26,10 @@ export type TypeUnit = (typeof TYPE_UNITS)[number]
 export const createTypeComparison = (
 	value: number,
 	baseline: Measure<TypeUnit> | undefined
-): MeasureComparison<TypeUnit> => {
-	return {
-		updated: [value, "instantiations"],
-		baseline
-	}
-}
+): MeasureComparison<TypeUnit> => ({
+	updated: [value, "instantiations"],
+	baseline
+})
 
 export const timeUnitRatios = {
 	ns: 0.000_001,

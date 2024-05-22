@@ -39,11 +39,10 @@ export type RegisteredReference<to extends string = string> = `$ark.${to}`
 export const isDotAccessible = (keyName: string): boolean =>
 	/^[a-zA-Z_$][a-zA-Z_$0-9]*$/.test(keyName)
 
-export const compileSerializedValue = (value: unknown): string => {
-	return hasDomain(value, "object") || typeof value === "symbol" ?
-			registeredReference(value)
-		:	serializePrimitive(value as SerializablePrimitive)
-}
+export const compileSerializedValue = (value: unknown): string =>
+	hasDomain(value, "object") || typeof value === "symbol" ?
+		registeredReference(value)
+	:	serializePrimitive(value as SerializablePrimitive)
 
 const baseNameFor = (value: object | symbol) => {
 	switch (typeof value) {
