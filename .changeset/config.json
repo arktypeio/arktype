@@ -10,6 +10,6 @@
 	"access": "public",
 	"baseBranch": "main",
 	"updateInternalDependencies": "patch",
-	"ignore": ["@arktype/repo", "@arktype/docs", "@arktype/arkdark"],
+	"ignore": ["arktype", "@arktype/repo", "@arktype/docs", "@arktype/arkdark"],
 	"bumpVersionsWithWorkspaceProtocolOnly": true
 }
