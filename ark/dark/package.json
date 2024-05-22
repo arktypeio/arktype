@@ -1,5 +1,6 @@
 {
-	"name": "arkdark",
+	"name": "@arktype/arkdark",
+	"private": true,
 	"displayName": "ArkDark",
 	"description": "ArkType syntax highlighting and theme⛵",
 	"version": "5.1.3",

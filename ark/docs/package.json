@@ -1,5 +1,5 @@
 {
-	"name": "docs",
+	"name": "@arktype/docs",
 	"private": true,
 	"type": "module",
 	"version": "0.0.1",
