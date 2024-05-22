@@ -9,6 +9,8 @@ on:
 
 # Allow this job to clone the repo and create a page deployment
 permissions:
+  contents: write
+  pages: write
   id-token: write
 
 jobs:
@@ -17,7 +19,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -47,7 +49,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
