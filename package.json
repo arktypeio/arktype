@@ -27,7 +27,7 @@
 		"format": "prettier --write .",
 		"knip": "knip",
 		"ci:publish": "changeset publish",
-		"ci:version": "tsx ./ark/repo/updateVersions.ts"
+		"ci:version": "chanegeset version"
 	},
 	"devDependencies": {
 		"arktype": "workspace:*",
