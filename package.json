@@ -27,7 +27,7 @@
 		"format": "prettier --write .",
 		"knip": "knip",
 		"ci:publish": "changeset publish",
-		"ci:version": "chanegeset version"
+		"ci:version": "changeset version"
 	},
 	"devDependencies": {
 		"arktype": "workspace:*",
