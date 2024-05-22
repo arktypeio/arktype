@@ -162,7 +162,9 @@ export class MorphNode extends BaseRoot<MorphDeclaration> {
 
 	get validatedOut(): BaseRoot | undefined {
 		const lastMorph = this.inner.morphs.at(-1)
-		return hasArkKind(lastMorph, "root") ? lastMorph : undefined
+		return hasArkKind(lastMorph, "root") ?
+				(lastMorph?.out as BaseRoot)
+			:	undefined
 	}
 
 	override get out(): BaseRoot {
