@@ -156,63 +156,63 @@ export type MatchInvocation<ctx extends MatchInvocationContext> = <
 	:	ReturnType<ctx["thens"][i]>
 }[numericStringKeyOf<ctx["thens"]>]
 
-export const createMatchParser = <$>($: Scope): MatchParser<$> => {
-	return (() => {}).bind($) as never
-	// const matchParser = (isRestricted: boolean) => {
-	// 	const handledCases: { when: RawRoot; then: Morph }[] = []
-	// 	let defaultCase: ((x: unknown) => unknown) | null = null
+export const createMatchParser = <$>($: Scope): MatchParser<$> =>
+	(() => {}).bind($) as never
 
-	// 	const parser = {
-	// 		when: (when: unknown, then: Morph) => {
-	// 			handledCases.push({ when: $.parseRoot(when, {}), then })
+// const matchParser = (isRestricted: boolean) => {
+// 	const handledCases: { when: RawRoot; then: Morph }[] = []
+// 	let defaultCase: ((x: unknown) => unknown) | null = null
 
-	// 			return parser
-	// 		},
+// 	const parser = {
+// 		when: (when: unknown, then: Morph) => {
+// 			handledCases.push({ when: $.parseRoot(when, {}), then })
 
-	// 		finalize: () => {
-	// 			// TODO: exhaustiveness checking
-	// 			const branches = handledCases.flatMap(({ when, then }) => {
-	// 				if (when.kind === "union") {
-	// 					return when.branches.map((branch) => ({
-	// 						in: branch,
-	// 						morph: then
-	// 					}))
-	// 				}
-	// 				if (when.kind === "morph") {
-	// 					return [{ in: when, morph: [when.morph, then] }]
-	// 				}
-	// 				return [{ in: when, morph: then }]
-	// 			})
-	// 			if (defaultCase) {
-	// 				branches.push({ in: keywordNodes.unknown, morph: defaultCase })
-	// 			}
-	// 			const matchers = $.node("union", {
-	// 				branches,
-	// 				ordered: true
-	// 			})
-	// 			return matchers.assert
-	// 		},
+// 			return parser
+// 		},
 
-	// 		orThrow: () => {
-	// 			// implicitly finalize, we don't need to do anything else because we throw either way
-	// 			return parser.finalize()
-	// 		},
+// 		finalize: () => {
+// 			// TODO: exhaustiveness checking
+// 			const branches = handledCases.flatMap(({ when, then }) => {
+// 				if (when.kind === "union") {
+// 					return when.branches.map((branch) => ({
+// 						in: branch,
+// 						morph: then
+// 					}))
+// 				}
+// 				if (when.kind === "morph") {
+// 					return [{ in: when, morph: [when.morph, then] }]
+// 				}
+// 				return [{ in: when, morph: then }]
+// 			})
+// 			if (defaultCase) {
+// 				branches.push({ in: keywordNodes.unknown, morph: defaultCase })
+// 			}
+// 			const matchers = $.node("union", {
+// 				branches,
+// 				ordered: true
+// 			})
+// 			return matchers.assert
+// 		},
 
-	// 		default: (x: unknown) => {
-	// 			if (x instanceof Function) {
-	// 				defaultCase = x as never
-	// 			} else {
-	// 				defaultCase = () => x
-	// 			}
+// 		orThrow: () => {
+// 			// implicitly finalize, we don't need to do anything else because we throw either way
+// 			return parser.finalize()
+// 		},
 
-	// 			return parser.finalize()
-	// 		}
-	// 	}
+// 		default: (x: unknown) => {
+// 			if (x instanceof Function) {
+// 				defaultCase = x as never
+// 			} else {
+// 				defaultCase = () => x
+// 			}
 
-	// 	return parser
-	// }
+// 			return parser.finalize()
+// 		}
+// 	}
 
-	// return Object.assign(() => matchParser(false), {
-	// 	only: () => matchParser(true)
-	// }) as never
-}
+// 	return parser
+// }
+
+// return Object.assign(() => matchParser(false), {
+// 	only: () => matchParser(true)
+// }) as never
