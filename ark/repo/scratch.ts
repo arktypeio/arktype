@@ -1,9 +1,5 @@
 import { type } from "arktype"
 
-const t = type("1<unknown[]<10")
-
-const u = type("1<unknown[]>10")
-
 const parseBigint = type("string", "=>", (s, ctx) => {
 	try {
 		return BigInt(s)
