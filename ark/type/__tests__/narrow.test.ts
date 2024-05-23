@@ -22,12 +22,12 @@ contextualize(() => {
 	})
 
 	it("explicit problem", () => {
-		const even = type([
+		const divisibleBy3 = type([
 			"number",
 			":",
 			(n, ctx) => n % 3 === 0 || ctx.invalid("divisible by 3")
 		])
-		attest(even(1).toString()).snap("must be divisible by 3 (was 1)")
+		attest(divisibleBy3(1).toString()).snap("must be divisible by 3 (was 1)")
 	})
 
 	it("problem at path", () => {
