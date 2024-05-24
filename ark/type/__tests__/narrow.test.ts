@@ -104,7 +104,22 @@ contextualize(() => {
 			.pipe(s => s.length)
 			.narrow((n): n is 5 => n === 5)
 
+		const morphRef = t.raw.assertHasKind("morph").serializedMorphs[0]
+
+		const predicateRef =
+			t.raw.firstReferenceOfKindOrThrow("predicate").serializedPredicate
+
+		attest(t.json).snap({
+			in: "string",
+			morphs: [morphRef, { predicate: [predicateRef] }]
+		})
+
 		attest<Type<(In: string) => Out<of<5, Narrowed>>>>(t)
+
+		attest(t("12345")).snap(5)
+		attest(t("1234").toString()).snap(
+			"must be valid according to an anonymous predicate (was 4)"
+		)
 	})
 
 	it("expression", () => {

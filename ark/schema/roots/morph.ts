@@ -160,10 +160,12 @@ export class MorphNode extends BaseRoot<MorphDeclaration> {
 		return this.inner.in
 	}
 
-	get validatedOut(): BaseRoot | undefined {
-		const lastMorph = this.inner.morphs.at(-1)
-		return hasArkKind(lastMorph, "root") ? lastMorph?.out : undefined
-	}
+	lastMorph = this.inner.morphs.at(-1)
+	validatedOut: BaseRoot | undefined =
+		hasArkKind(this.lastMorph, "root") ?
+			Object.assign(this.referencesById, this.lastMorph.out.referencesById) &&
+			this.lastMorph.out
+		:	undefined
 
 	override get out(): BaseRoot {
 		return this.validatedOut ?? this.$.keywords.unknown.raw
@@ -211,7 +213,6 @@ export type includesMorphsOrConstraints<t> =
 		false
 	:	true
 
-// TODO: this would return false on morphs within a single type
 export type includesMorphs<t> =
 	[
 		_distill<t, "in", "constrainable">,
