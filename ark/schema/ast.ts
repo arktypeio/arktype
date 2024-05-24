@@ -227,6 +227,17 @@ export type constrain<
 	kind extends PrimitiveConstraintKind,
 	schema extends NodeSchema<kind>
 > =
+	_constrain<t, kind, schema> extends infer constrained ?
+		[t, constrained] extends [constrained, t] ?
+			t
+		:	constrained
+	:	never
+
+type _constrain<
+	t,
+	kind extends PrimitiveConstraintKind,
+	schema extends NodeSchema<kind>
+> =
 	schemaToConstraint<kind, schema> extends infer constraint ?
 		t extends of<infer base, infer constraints> ?
 			[number, base] extends [base, number] ?

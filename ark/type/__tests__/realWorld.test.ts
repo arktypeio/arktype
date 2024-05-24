@@ -364,4 +364,35 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			"first_name must be a string or null (was 5)"
 		)
 	})
+
+	// https://github.com/arktypeio/arktype/issues/968
+	it("handles consecutive pipes", () => {
+		const MyAssets = scope({
+			Asset: {
+				token: "string",
+				amount: type("string").pipe((s, ctx) => {
+					try {
+						return BigInt(s)
+					} catch {
+						return ctx.error("a valid non-decimal number")
+					}
+				})
+			},
+			Assets: {
+				assets: "Asset[]>=1"
+			}
+		})
+			.export()
+			.Assets.pipe(o => {
+				const assets = o.assets.reduce<Record<string, bigint>>((acc, asset) => {
+					acc[asset.token] = asset.amount
+					return acc
+				}, {})
+				return { ...o, assets }
+			})
+
+		const out = MyAssets({ assets: [{ token: "a", amount: "1" }] })
+
+		attest(out).snap({ assets: { a: "1n" } })
+	})
 })

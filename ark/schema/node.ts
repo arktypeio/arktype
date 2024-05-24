@@ -41,6 +41,7 @@ import {
 	type TraverseAllows,
 	type TraverseApply
 } from "./shared/traversal.js"
+import type { arkKind } from "./shared/utils.js"
 
 export type UnknownNode = BaseNode | Root
 
@@ -117,13 +118,13 @@ export abstract class BaseNode<
 	// decorator from @arktype/util on these for now
 	// as they cause a deopt in V8
 	private _in?: BaseNode;
-	get in(): BaseNode {
+	get in(): this extends { [arkKind]: "root" } ? BaseRoot : BaseNode {
 		this._in ??= this.getIo("in")
 		return this._in as never
 	}
 
 	private _out?: BaseNode
-	get out(): BaseNode {
+	get out(): this extends { [arkKind]: "root" } ? BaseRoot : BaseNode {
 		this._out ??= this.getIo("out")
 		return this._out as never
 	}
@@ -166,6 +167,12 @@ export abstract class BaseNode<
 	equals(other: UnknownNode): boolean
 	equals(other: BaseNode): boolean {
 		return this.typeHash === other.typeHash
+	}
+
+	assertHasKind<kind extends NodeKind>(kind: kind): Node<kind> {
+		if (!this.kind === (kind as never))
+			throwError(`${this.kind} node was not of asserted kind ${kind}`)
+		return this as never
 	}
 
 	hasKind<kind extends NodeKind>(kind: kind): this is Node<kind> {

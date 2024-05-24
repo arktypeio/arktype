@@ -168,7 +168,7 @@ export abstract class BaseRoot<
 		return this.configure(description)
 	}
 
-	create(input: unknown): unknown {
+	from(input: unknown): unknown {
 		// ideally we wouldn't validate here but for now we need to do determine
 		// which morphs to apply
 		return this.assert(input)
@@ -179,8 +179,11 @@ export abstract class BaseRoot<
 	}
 
 	private pipeOnce(morph: Morph): BaseRoot {
-		if (hasArkKind(morph, "root"))
-			return pipeNodesRoot(this, morph, this.$) as never
+		if (hasArkKind(morph, "root")) {
+			const result = pipeNodesRoot(this, morph, this.$)
+			if (result instanceof Disjoint) return result.throw()
+			return result as BaseRoot
+		}
 		if (this.hasKind("union")) {
 			const branches = this.branches.map(node => node.pipe(morph))
 			return this.$.node("union", { ...this.inner, branches })
@@ -198,15 +201,30 @@ export abstract class BaseRoot<
 	}
 
 	narrow(predicate: Predicate): BaseRoot {
-		return this.constrain("predicate", predicate)
+		return this.constrainOut("predicate", predicate)
 	}
 
 	constrain<kind extends PrimitiveConstraintKind>(
 		kind: kind,
 		schema: NodeSchema<kind>
 	): BaseRoot {
+		return this._constrain("in", kind, schema)
+	}
+
+	constrainOut<kind extends PrimitiveConstraintKind>(
+		kind: kind,
+		schema: NodeSchema<kind>
+	): BaseRoot {
+		return this._constrain("out", kind, schema)
+	}
+
+	private _constrain(
+		io: "in" | "out",
+		kind: PrimitiveConstraintKind,
+		schema: any
+	): BaseRoot {
 		const constraint = this.$.node(kind, schema)
-		if (constraint.impliedBasis && !this.extends(constraint.impliedBasis)) {
+		if (constraint.impliedBasis && !this[io].extends(constraint.impliedBasis)) {
 			return throwInvalidOperandError(
 				kind,
 				constraint.impliedBasis as never,
@@ -214,12 +232,18 @@ export abstract class BaseRoot<
 			)
 		}
 
-		return this.and(
-			// TODO: not an intersection
-			this.$.node("intersection", {
-				[kind]: constraint
-			})
-		)
+		const partialIntersection = this.$.node("intersection", {
+			[kind]: constraint
+		})
+
+		const result =
+			io === "in" ?
+				intersectNodesRoot(this, partialIntersection, this.$)
+			:	pipeNodesRoot(this, partialIntersection, this.$)
+
+		if (result instanceof Disjoint) result.throw()
+
+		return result as never
 	}
 
 	onUndeclaredKey(undeclared: UndeclaredKeyBehavior): BaseRoot {
@@ -331,7 +355,7 @@ export declare abstract class InnerRoot<t = unknown, $ = any> extends Callable<
 
 	onUndeclaredKey(behavior: UndeclaredKeyBehavior): this
 
-	create(literal: this["inferIn"]): this["infer"]
+	from(literal: this["inferIn"]): this["infer"]
 }
 
 // this is declared as a class internally so we can ensure all "abstract"

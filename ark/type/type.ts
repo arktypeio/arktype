@@ -13,7 +13,6 @@ import {
 	type ambient,
 	type constrain,
 	type constraintKindOf,
-	type distillConstrainableOut,
 	type distillIn,
 	type distillOut,
 	type includesMorphs,
@@ -208,13 +207,12 @@ declare class _Type<t = unknown, $ = any>
 		g: g
 	): Type<inferPipes<t, [a, b, c, d, e, f, g]>, $>
 
-	// TODO: based on below, should maybe narrow morph output if used after
-	narrow<def extends Predicate<distillConstrainableOut<t>>>(
+	narrow<def extends Predicate<distillOut<t>>>(
 		def: def
 	): Type<
 		includesMorphs<t> extends true ?
-			(In: this["tIn"]) => Out<inferNarrow<this["infer"], def>>
-		:	inferNarrow<this["infer"], def>,
+			(In: this["tIn"]) => Out<inferNarrow<this["tOut"], def>>
+		:	inferNarrow<t, def>,
 		$
 	>
 

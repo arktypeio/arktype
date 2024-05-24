@@ -141,8 +141,8 @@ export class MorphNode extends BaseRoot<MorphDeclaration> {
 		this.in.traverseAllows(data, ctx)
 
 	traverseApply: TraverseApply = (data, ctx) => {
-		ctx.queueMorphs(this.morphs)
 		this.in.traverseApply(data, ctx)
+		ctx.queueMorphs(this.morphs)
 	}
 
 	expression = `(In: ${this.in.expression}) => Out<${this.out?.expression ?? "unknown"}>`
@@ -152,20 +152,20 @@ export class MorphNode extends BaseRoot<MorphDeclaration> {
 			js.return(js.invoke(this.in))
 			return
 		}
-		js.line(`ctx.queueMorphs(${this.compiledMorphs})`)
 		js.line(js.invoke(this.in))
+		js.line(`ctx.queueMorphs(${this.compiledMorphs})`)
 	}
 
 	override get in(): BaseRoot {
 		return this.inner.in
 	}
 
-	get validatedOut(): BaseRoot | undefined {
-		const lastMorph = this.inner.morphs.at(-1)
-		return hasArkKind(lastMorph, "root") ?
-				(lastMorph?.out as BaseRoot)
-			:	undefined
-	}
+	lastMorph = this.inner.morphs.at(-1)
+	validatedOut: BaseRoot | undefined =
+		hasArkKind(this.lastMorph, "root") ?
+			Object.assign(this.referencesById, this.lastMorph.out.referencesById) &&
+			this.lastMorph.out
+		:	undefined
 
 	override get out(): BaseRoot {
 		return this.validatedOut ?? this.$.keywords.unknown.raw
@@ -191,20 +191,34 @@ export type inferMorphOut<morph extends Morph> = Exclude<
 >
 
 export type distillIn<t> =
-	includesMorphs<t> extends true ? _distill<t, "in", "base"> : t
+	includesMorphsOrConstraints<t> extends true ? _distill<t, "in", "base"> : t
 
 export type distillOut<t> =
-	includesMorphs<t> extends true ? _distill<t, "out", "base"> : t
+	includesMorphsOrConstraints<t> extends true ? _distill<t, "out", "base"> : t
 
 export type distillConstrainableIn<t> =
-	includesMorphs<t> extends true ? _distill<t, "in", "constrainable"> : t
+	includesMorphsOrConstraints<t> extends true ?
+		_distill<t, "in", "constrainable">
+	:	t
 
 export type distillConstrainableOut<t> =
-	includesMorphs<t> extends true ? _distill<t, "out", "constrainable"> : t
+	includesMorphsOrConstraints<t> extends true ?
+		_distill<t, "out", "constrainable">
+	:	t
 
-export type includesMorphs<t> =
+export type includesMorphsOrConstraints<t> =
 	[t, _distill<t, "in", "base">, t, _distill<t, "out", "base">] extends (
 		[_distill<t, "in", "base">, t, _distill<t, "out", "base">, t]
+	) ?
+		false
+	:	true
+
+export type includesMorphs<t> =
+	[
+		_distill<t, "in", "constrainable">,
+		_distill<t, "out", "constrainable">
+	] extends (
+		[_distill<t, "out", "constrainable">, _distill<t, "in", "constrainable">]
 	) ?
 		false
 	:	true
