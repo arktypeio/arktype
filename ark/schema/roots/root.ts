@@ -179,8 +179,11 @@ export abstract class BaseRoot<
 	}
 
 	private pipeOnce(morph: Morph): BaseRoot {
-		if (hasArkKind(morph, "root"))
-			return pipeNodesRoot(this, morph, this.$) as never
+		if (hasArkKind(morph, "root")) {
+			const result = pipeNodesRoot(this, morph, this.$)
+			if (result instanceof Disjoint) return result.throw()
+			return result as BaseRoot
+		}
 		if (this.hasKind("union")) {
 			const branches = this.branches.map(node => node.pipe(morph))
 			return this.$.node("union", { ...this.inner, branches })
