@@ -14,12 +14,6 @@ contextualize(() => {
 		attest(result.toString()).snap("must be a number (was string)")
 	})
 
-	it("disjoint", () => {
-		attest(() => type("number>5").pipe(type("number<3"))).throws.snap(
-			"ParseError: Intersection of <3 and >5 results in an unsatisfiable type"
-		)
-	})
-
 	it("within type", () => {
 		const t = type(["boolean", "=>", data => !data])
 		attest<Type<(In: boolean) => Out<boolean>>>(t)
@@ -76,6 +70,12 @@ contextualize(() => {
 		>(t)
 		const expected = type({ foo: "string", bar: "number" })
 		attest(t.json).equals(expected.json)
+	})
+
+	it("disjoint", () => {
+		attest(() => type("number>5").pipe(type("number<3"))).throws.snap(
+			"ParseError: Intersection of <3 and >5 results in an unsatisfiable type"
+		)
 	})
 
 	it("uses pipe for many consecutive types", () => {

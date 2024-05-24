@@ -1,34 +1,18 @@
 import { type } from "arktype"
 
-const parseBigint = type("string", "=>", (s, ctx) => {
-	try {
-		return BigInt(s)
-	} catch {
-		return ctx.error("a valid number")
-	}
+const user = type({
+	name: "string",
+	age: "number"
 })
 
-// or
+const parseUser = type("string").pipe(s => JSON.parse(s), user)
 
-const parseBigint2 = type("string").pipe((s, ctx) => {
-	try {
-		return BigInt(s)
-	} catch {
-		return ctx.error("a valid number")
-	}
-})
+const validUser = parseUser(`{ "name": "David", "age": 30 }`) //?
+//    ^?
 
-const Test = type({
-	group: {
-		nested: {
-			value: parseBigint
-		}
-	}
-})
+const invalidUser = parseUser(`{ "name": "David" }`)
+//    ^?
 
-const myFunc = () => {
-	const out = Test({})
-	if (out instanceof type.errors) return
-
-	const value: bigint = out.group.nested.value
+if (invalidUser instanceof type.errors) {
+	console.log(invalidUser.summary)
 }
