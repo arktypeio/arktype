@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@arktype/attest"
 import { assertNodeKind, type Out } from "@arktype/schema"
-import { scope, type, type Type } from "arktype"
+import { scope, type Type, type } from "arktype"
 
 contextualize(() => {
 	it("base", () => {
@@ -12,6 +12,12 @@ contextualize(() => {
 		attest<string | type.errors>(out).equals("5")
 		const result = t("foo")
 		attest(result.toString()).snap("must be a number (was string)")
+	})
+
+	it("disjoint", () => {
+		attest(() => type("number>5").pipe(type("number<3"))).throws.snap(
+			"ParseError: Intersection of <3 and >5 results in an unsatisfiable type"
+		)
 	})
 
 	it("within type", () => {
@@ -134,6 +140,37 @@ contextualize(() => {
 		const out = t(input)
 
 		attest<{ a: number } | type.errors>(out).equals({ a: 4 })
+	})
+
+	it("doesn't pipe on error", () => {
+		const a = type({ a: "number" }).pipe(o => o.a + 1)
+
+		const aMorphs = a.raw.assertHasKind("morph").serializedMorphs
+
+		const b = type({ a: "string" }, "=>", o => o.a + "!")
+
+		const bMorphs = b.raw.assertHasKind("morph").serializedMorphs
+
+		const t = b.or(a)
+
+		attest<
+			Type<
+				| ((In: { a: string }) => Out<string>)
+				| ((In: { a: number }) => Out<number>)
+			>
+		>(t)
+		attest(t.json).snap([
+			{
+				in: { required: [{ key: "a", value: "number" }], domain: "object" },
+				morphs: aMorphs
+			},
+			{
+				in: { required: [{ key: "a", value: "string" }], domain: "object" },
+				morphs: bMorphs
+			}
+		])
+
+		attest(t({ a: 2 })).snap(3)
 	})
 
 	it("in array", () => {

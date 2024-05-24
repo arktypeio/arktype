@@ -49,7 +49,6 @@ export class TraversalContext {
 	finalize(): unknown {
 		if (this.hasError()) return this.errors
 
-		let out: any = this.root
 		if (this.queuedMorphs.length) {
 			for (let i = 0; i < this.queuedMorphs.length; i++) {
 				const { path, morphs } = this.queuedMorphs[i]
@@ -60,14 +59,17 @@ export class TraversalContext {
 
 				if (key !== undefined) {
 					// find the object on which the key to be morphed exists
-					parent = out
+					parent = this.root
 					for (let pathIndex = 0; pathIndex < path.length - 1; pathIndex++)
 						parent = parent[path[pathIndex]]
 				}
 
 				this.path = path
 				for (const morph of morphs) {
-					const result = morph(parent === undefined ? out : parent[key!], this)
+					const result = morph(
+						parent === undefined ? this.root : parent[key!],
+						this
+					)
 					if (result instanceof ArkErrors) return result
 					if (this.hasError()) return this.errors
 					if (result instanceof ArkError) {
@@ -79,12 +81,12 @@ export class TraversalContext {
 
 					// apply the morph function and assign the result to the
 					// corresponding property, or to root if path is empty
-					if (parent === undefined) out = result
+					if (parent === undefined) this.root = result
 					else parent[key!] = result
 				}
 			}
 		}
-		return out
+		return this.root
 	}
 
 	get currentErrorCount(): number {

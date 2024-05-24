@@ -320,7 +320,7 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 			const l = this.branches[lIndex]
 			for (let rIndex = lIndex + 1; rIndex < this.branches.length; rIndex++) {
 				const r = this.branches[rIndex]
-				const result = intersectNodesRoot(l, r, l.$)
+				const result = intersectNodesRoot(l.in, r.in, l.$)
 				if (!(result instanceof Disjoint)) continue
 
 				for (const { path, kind, disjoint } of result.flat) {
@@ -523,18 +523,17 @@ export const reduceBranches = ({
 				continue
 			}
 			const intersection = intersectNodesRoot(
-				branches[i],
-				branches[j],
+				branches[i].in,
+				branches[j].in,
 				branches[0].$
-			)
+			)!
 			if (intersection instanceof Disjoint) continue
 
-			if (intersection.equals(branches[i])) {
-				if (!ordered) {
-					// preserve ordered branches that are a subtype of a subsequent branch
-					uniquenessByIndex[i] = false
-				}
-			} else if (intersection.equals(branches[j])) uniquenessByIndex[j] = false
+			if (intersection.equals(branches[i].in)) {
+				// preserve ordered branches that are a subtype of a subsequent branch
+				uniquenessByIndex[i] = !!ordered
+			} else if (intersection.equals(branches[j].in))
+				uniquenessByIndex[j] = false
 		}
 	}
 	return branches.filter((_, i) => uniquenessByIndex[i])
