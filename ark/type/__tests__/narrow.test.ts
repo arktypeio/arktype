@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@arktype/attest"
-import type { Narrowed, Out, of, string } from "@arktype/schema"
+import type { Narrowed, Out, number, of, string } from "@arktype/schema"
 import { registeredReference, type equals } from "@arktype/util"
 import { type, type Type } from "arktype"
 
@@ -28,6 +28,20 @@ contextualize(() => {
 			(n, ctx) => n % 3 === 0 || ctx.invalid("divisible by 3")
 		])
 		attest(divisibleBy3(1).toString()).snap("must be divisible by 3 (was 1)")
+	})
+
+	it("chained narrows", () => {
+		const divisibleBy30 = type("number")
+			.narrow((n, ctx) => n % 2 === 0 || ctx.invalid("divisible by 2"))
+			.narrow((n, ctx) => n % 3 === 0 || ctx.invalid("divisible by 3"))
+			.narrow((n, ctx) => n % 5 === 0 || ctx.invalid("divisible by 5"))
+
+		attest<number.narrowed>(divisibleBy30.t)
+
+		attest(divisibleBy30(1).toString()).snap("must be divisible by 2 (was 1)")
+		attest(divisibleBy30(2).toString()).snap("must be divisible by 3 (was 2)")
+		attest(divisibleBy30(6).toString()).snap("must be divisible by 5 (was 6)")
+		attest(divisibleBy30(30)).equals(30)
 	})
 
 	it("problem at path", () => {

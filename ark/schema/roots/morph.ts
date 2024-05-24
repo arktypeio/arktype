@@ -141,8 +141,8 @@ export class MorphNode extends BaseRoot<MorphDeclaration> {
 		this.in.traverseAllows(data, ctx)
 
 	traverseApply: TraverseApply = (data, ctx) => {
-		ctx.queueMorphs(this.morphs)
 		this.in.traverseApply(data, ctx)
+		ctx.queueMorphs(this.morphs)
 	}
 
 	expression = `(In: ${this.in.expression}) => Out<${this.out?.expression ?? "unknown"}>`
@@ -152,8 +152,8 @@ export class MorphNode extends BaseRoot<MorphDeclaration> {
 			js.return(js.invoke(this.in))
 			return
 		}
-		js.line(`ctx.queueMorphs(${this.compiledMorphs})`)
 		js.line(js.invoke(this.in))
+		js.line(`ctx.queueMorphs(${this.compiledMorphs})`)
 	}
 
 	override get in(): BaseRoot {

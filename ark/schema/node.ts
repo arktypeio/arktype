@@ -168,6 +168,12 @@ export abstract class BaseNode<
 		return this.typeHash === other.typeHash
 	}
 
+	assertHasKind<kind extends NodeKind>(kind: kind): Node<kind> {
+		if (!this.kind === (kind as never))
+			throwError(`${this.kind} node was not of asserted kind ${kind}`)
+		return this as never
+	}
+
 	hasKind<kind extends NodeKind>(kind: kind): this is Node<kind> {
 		return this.kind === (kind as never)
 	}
