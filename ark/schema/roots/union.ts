@@ -531,7 +531,7 @@ export const reduceBranches = ({
 
 			if (intersection.equals(branches[i].in)) {
 				// preserve ordered branches that are a subtype of a subsequent branch
-				uniquenessByIndex[i] = !ordered
+				uniquenessByIndex[i] = !!ordered
 			} else if (intersection.equals(branches[j].in))
 				uniquenessByIndex[j] = false
 		}

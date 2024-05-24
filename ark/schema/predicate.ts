@@ -97,9 +97,9 @@ export type PredicateCast<input = never, narrowed extends input = input> = (
 	ctx: TraversalContext
 ) => input is narrowed
 
-export type inferNarrow<In, predicate> =
+export type inferNarrow<t, predicate> =
 	predicate extends (data: any, ...args: any[]) => data is infer narrowed ?
-		In extends of<unknown, infer constraints> ?
+		t extends of<unknown, infer constraints> ?
 			constrain<of<narrowed, constraints>, "predicate", any>
 		:	constrain<narrowed, "predicate", any>
-	:	constrain<In, "predicate", any>
+	:	constrain<t, "predicate", any>

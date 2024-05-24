@@ -162,9 +162,7 @@ export class MorphNode extends BaseRoot<MorphDeclaration> {
 
 	get validatedOut(): BaseRoot | undefined {
 		const lastMorph = this.inner.morphs.at(-1)
-		return hasArkKind(lastMorph, "root") ?
-				(lastMorph?.out as BaseRoot)
-			:	undefined
+		return hasArkKind(lastMorph, "root") ? lastMorph?.out : undefined
 	}
 
 	override get out(): BaseRoot {
@@ -191,20 +189,35 @@ export type inferMorphOut<morph extends Morph> = Exclude<
 >
 
 export type distillIn<t> =
-	includesMorphs<t> extends true ? _distill<t, "in", "base"> : t
+	includesMorphsOrConstraints<t> extends true ? _distill<t, "in", "base"> : t
 
 export type distillOut<t> =
-	includesMorphs<t> extends true ? _distill<t, "out", "base"> : t
+	includesMorphsOrConstraints<t> extends true ? _distill<t, "out", "base"> : t
 
 export type distillConstrainableIn<t> =
-	includesMorphs<t> extends true ? _distill<t, "in", "constrainable"> : t
+	includesMorphsOrConstraints<t> extends true ?
+		_distill<t, "in", "constrainable">
+	:	t
 
 export type distillConstrainableOut<t> =
-	includesMorphs<t> extends true ? _distill<t, "out", "constrainable"> : t
+	includesMorphsOrConstraints<t> extends true ?
+		_distill<t, "out", "constrainable">
+	:	t
 
-export type includesMorphs<t> =
+export type includesMorphsOrConstraints<t> =
 	[t, _distill<t, "in", "base">, t, _distill<t, "out", "base">] extends (
 		[_distill<t, "in", "base">, t, _distill<t, "out", "base">, t]
+	) ?
+		false
+	:	true
+
+// TODO: this would return false on morphs within a single type
+export type includesMorphs<t> =
+	[
+		_distill<t, "in", "constrainable">,
+		_distill<t, "out", "constrainable">
+	] extends (
+		[_distill<t, "out", "constrainable">, _distill<t, "in", "constrainable">]
 	) ?
 		false
 	:	true

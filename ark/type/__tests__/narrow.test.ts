@@ -104,11 +104,21 @@ contextualize(() => {
 			.pipe(s => s.length)
 			.narrow((n): n is 5 => n === 5)
 
-		attest<Type<(In: string) => Out<of<5, Narrowed>>, {}>>(t)
+		attest<Type<(In: string) => Out<of<5, Narrowed>>>>(t)
 	})
 
 	it("expression", () => {
 		const t = type("string", ":", (s): s is `f${string}` => s[0] === "f")
 		attest<`f${string}`>(t.infer)
 	})
+
+	// TODO: reenable
+	// https://github.com/arktypeio/arktype/issues/970
+	// it("narrows the output type of an morph within a single type", () => {
+	// 	const t = type("string")
+	// 		.pipe(s => `${s}!`)
+	// 		.narrow((s): s is "foo!" => s === "foo!")
+
+	// 	attest<Type<(In: string) => Out<of<"foo!", Narrowed>>>>(t)
+	// })
 })
