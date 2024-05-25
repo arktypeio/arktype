@@ -42,28 +42,26 @@ export default defineConfig({
 					]
 				}
 			],
-			customCss: ["./src/styles.css", "@shikijs/twoslash/style-rich.css"],
+			customCss: ["@shikijs/twoslash/style-rich.css", "./src/styles.css"],
 			expressiveCode: false
-			// expressiveCode: {
-			// 	themes: [arkdarkColors],
-			// 	shiki: {
-			// 		/** @ts-expect-error allow textmate lang from JSON */
-			// 		langs: [arktypeTextmate]
-			// 	},
-			// 	styleOverrides: {
-			// 		codeFontSize: "1rem",
-			// 		codeBackground: "#00000027",
-			// 		borderRadius: "1rem",
-			// 		borderColor: "#ba7e4127",
-			// 		borderWidth: "1px"
-			// 	}
-			// }
 		}),
 		react()
 	],
 	markdown: {
 		shikiConfig: {
-			theme: arkdarkColors,
+			theme: (() => {
+				arkdarkColors.colors["editor.background"] = "#00000027"
+				// @ts-expect-error
+				arkdarkColors.tokenColors.push({
+					// this is covered by editorBracketHighlight.foreground1 etc. in VSCode,
+					// but it's not available in Shiki so add a replacement
+					scope: ["meta.brace"],
+					settings: {
+						foreground: "#f5cf8f"
+					}
+				})
+				return arkdarkColors
+			})(),
 			// @ts-expect-error
 			langs: [arktypeTextmate],
 			transformers: [transformerTwoslash()]
