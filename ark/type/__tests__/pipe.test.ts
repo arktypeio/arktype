@@ -78,6 +78,12 @@ contextualize(() => {
 		attest(t.json).equals(expected.json)
 	})
 
+	it("disjoint", () => {
+		attest(() => type("number>5").pipe(type("number<3"))).throws.snap(
+			"ParseError: Intersection of <3 and >5 results in an unsatisfiable type"
+		)
+	})
+
 	it("uses pipe for many consecutive types", () => {
 		const t = type({ a: "1" }).pipe(
 			type({ b: "1" }),
