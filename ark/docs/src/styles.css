@@ -1,7 +1,9 @@
 @import url("https://fonts.googleapis.com/css?family=Raleway:300,400,500,700&display=swap");
+@import url("https://fonts.cdnfonts.com/css/cascadia-code");
 
 :root {
 	--sl-font: Raleway, sans-serif;
+	--sl-font-mono: cascadia code;
 }
 
 /* Dark mode colors. */
@@ -54,29 +56,3 @@ header * {
 	/* Ensure navbar items are in front of boat animation but slightly transparent */
 	z-index: 12;
 }
-
-/* cascadiaCodeFamily = `"Cascadia Code", sans-serif`
-
-// // Consider #0bda96 as an accent color?
-
-// 		createTheme({
-// 			palette: {
-// 				primary: {
-// 					dark: "#085b92",
-// 					light: "#80cff8",
-// 					main: "#009eff"
-// 				},
-// 				secondary: {
-// 					main: "#eb9f2e",
-// 					dark: "#4b3621",
-// 					light: "#f5cf8f"
-// 				},
-// 				common: {
-// 					white: "#fffff0",
-// 					black: "#1b1b1b"
-// 				}
-// 			},
-// 			typography: {
-// 				fontFamily: "'Raleway', sans-serif"
-// 			}
-// 	) */

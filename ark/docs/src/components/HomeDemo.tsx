@@ -1,4 +1,6 @@
 import Editor, { useMonaco } from "@monaco-editor/react"
+import arkdarkColors from "arkdark/color-theme.json"
+import arktypeTextmate from "arkdark/tsWithArkType.tmLanguage.json"
 import type * as Monaco from "monaco-editor"
 import { wireTmGrammars } from "monaco-editor-textmate"
 import { Registry } from "monaco-textmate"
@@ -6,9 +8,7 @@ import { loadWASM } from "onigasm"
 import onigasm from "onigasm/lib/onigasm.wasm?url"
 import React, { useState } from "react"
 import "../styles.css"
-import arkdarkColors from "./arkdark.json"
 // import syntax from "./syntax.ts?raw"
-import arktypeTextmate from "./tsWithArkType.tmLanguage.json"
 
 interface IVSCodeTheme {
 	colors: {

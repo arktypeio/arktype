@@ -1,4 +1,4 @@
-import type { array, listable } from "@arktype/util"
+import { flatMorph, type array, type listable } from "@arktype/util"
 import type { BaseNode } from "./node.js"
 import {
 	PredicateNode,

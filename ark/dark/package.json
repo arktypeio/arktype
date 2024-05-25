@@ -1,6 +1,5 @@
 {
 	"name": "arkdark",
-	"private": true,
 	"displayName": "ArkDark",
 	"description": "ArkType syntax highlighting and theme⛵",
 	"version": "5.1.4",
@@ -8,6 +7,12 @@
 	"type": "module",
 	"scripts": {
 		"vspublish": "pnpx vsce publish"
+	},
+	"files": [
+		"*.json"
+	],
+	"exports": {
+		"./*.json": "./*.json"
 	},
 	"repository": {
 		"type": "git",

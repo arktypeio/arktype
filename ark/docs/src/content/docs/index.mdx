@@ -18,7 +18,7 @@ hero:
       icon: external
 ---
 
-import { Card, CardGrid } from "@astrojs/starlight/components"
+import { Card, CardGrid, Code } from "@astrojs/starlight/components"
 import { HeroContents } from "../../components/HeroContents.tsx"
 import { HomeDemo } from "../../components/HomeDemo.tsx"
 
@@ -26,11 +26,17 @@ import { HomeDemo } from "../../components/HomeDemo.tsx"
 	<HeroContents client:only="react" />
 </div>
 
+export const exampleCode = `const t = type({
+	a: "string|number[]"
+})`
+export const fileName = "example.ts"
+
 ## What awaits
 
 <CardGrid stagger>
 	<Card title="Unparalleled DX" icon="seti:tsconfig">
 		Type syntax you already know with safety unlike anything you've ever seen
+		<Code code={exampleCode} lang="ts" title={fileName} />
 	</Card>
 	<Card title="Faster. Everywhere." icon="rocket">
 		[100x faster than

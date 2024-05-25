@@ -1,5 +1,5 @@
 {
-	"name": "TypeScript with ArkType",
+	"name": "ArkTypeScript",
 	"scopeName": "source.ts",
 	"fileTypes": ["ts"],
 	"patterns": [

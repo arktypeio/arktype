@@ -39,3 +39,16 @@ Current textmate scopes can be viewed:
 
 - Open: Command Palette **(Ctrl + Shift + P)**
 - Search: **Developer: Inspect Editor Tokens and Scopes**
+
+## Notes
+
+Base color-theme.json copied from VSCode's "Default Dark Modern" (https://github.com/microsoft/vscode/blob/main/extensions/theme-defaults/themes/dark_modern.json).
+
+These are the original colors of defaults that have been overriden:
+
+```json
+{
+	"editor.foreground": "#CCCCCC",
+	"errorForeground": "#F85149"
+}
+```
