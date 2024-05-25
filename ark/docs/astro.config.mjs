@@ -1,11 +1,14 @@
 // @ts-check
 
+import tsconfig from "@arktype/util/tsconfig.base.json"
 import react from "@astrojs/react"
 import starlight from "@astrojs/starlight"
 import { transformerTwoslash } from "@shikijs/twoslash"
 import arkdarkColors from "arkdark/color-theme.json"
 import arktypeTextmate from "arkdark/tsWithArkType.tmLanguage.json"
 import { defineConfig } from "astro/config"
+
+const twoslashPropertyPrefix = "(property) "
 
 // https://astro.build/config
 export default defineConfig({
@@ -64,7 +67,31 @@ export default defineConfig({
 			})(),
 			// @ts-expect-error
 			langs: [arktypeTextmate],
-			transformers: [transformerTwoslash()]
+			transformers: [
+				transformerTwoslash({
+					twoslashOptions: {
+						filterNode: node => {
+							console.log(node)
+							if (node.type !== "hover") return true
+							if (node.text.startsWith("const")) {
+								// filter out the type of Type's invocation
+								// as opposed to the Type itself
+								return !node.text.includes("(data: unknown)")
+							}
+							if (node.text.startsWith(twoslashPropertyPrefix)) {
+								const expression = node.text.slice(
+									twoslashPropertyPrefix.length
+								)
+								if (expression.startsWith("ArkErrors.summary"))
+									// this helps demonstrate narrowing on discrimination
+									return true
+								return false
+							}
+							return false
+						}
+					}
+				})
+			]
 		}
 	}
 })
