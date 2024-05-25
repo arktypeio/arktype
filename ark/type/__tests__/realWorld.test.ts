@@ -396,6 +396,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		attest(out).snap({ assets: { a: "1n" } })
 	})
 
+	// https://discord.com/channels/957797212103016458/957804102685982740/1243850690644934677
 	it("more chained pipes/narrows", () => {
 		const Amount = type(
 			"string",

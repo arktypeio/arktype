@@ -49,41 +49,42 @@ export class TraversalContext {
 	finalize(): unknown {
 		if (this.hasError()) return this.errors
 
-		if (this.queuedMorphs.length) {
-			for (let i = 0; i < this.queuedMorphs.length; i++) {
-				const { path, morphs } = this.queuedMorphs[i]
+		// invoking morphs that are Nodes will reuse this context, potentially
+		// adding additional morphs, so we have to continue looping until
+		// queuedMorphs is empty rather than iterating over the list once
+		while (this.queuedMorphs.length) {
+			const { path, morphs } = this.queuedMorphs.shift()!
 
-				const key = path.at(-1)
+			const key = path.at(-1)
 
-				let parent: any
+			let parent: any
 
-				if (key !== undefined) {
-					// find the object on which the key to be morphed exists
-					parent = this.root
-					for (let pathIndex = 0; pathIndex < path.length - 1; pathIndex++)
-						parent = parent[path[pathIndex]]
+			if (key !== undefined) {
+				// find the object on which the key to be morphed exists
+				parent = this.root
+				for (let pathIndex = 0; pathIndex < path.length - 1; pathIndex++)
+					parent = parent[path[pathIndex]]
+			}
+
+			this.path = path
+			for (const morph of morphs) {
+				const result = morph(
+					parent === undefined ? this.root : parent[key!],
+					this
+				)
+				if (result instanceof ArkErrors) return result
+				if (this.hasError()) return this.errors
+				if (result instanceof ArkError) {
+					// if an ArkError was returned but wasn't added to these
+					// errors, add it then return
+					this.error(result)
+					return this.errors
 				}
 
-				this.path = path
-				for (const morph of morphs) {
-					const result = morph(
-						parent === undefined ? this.root : parent[key!],
-						this
-					)
-					if (result instanceof ArkErrors) return result
-					if (this.hasError()) return this.errors
-					if (result instanceof ArkError) {
-						// if an ArkError was returned but wasn't added to these
-						// errors, add it then return
-						this.error(result)
-						return this.errors
-					}
-
-					// apply the morph function and assign the result to the
-					// corresponding property, or to root if path is empty
-					if (parent === undefined) this.root = result
-					else parent[key!] = result
-				}
+				// apply the morph function and assign the result to the
+				// corresponding property, or to root if path is empty
+				if (parent === undefined) this.root = result
+				else parent[key!] = result
 			}
 		}
 		return this.root

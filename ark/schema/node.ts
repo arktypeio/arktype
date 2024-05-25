@@ -62,14 +62,12 @@ export abstract class BaseNode<
 				)
 					return data
 
-				// if (pipedFromCtx) {
-				// 	this.traverseApply(data, pipedFromCtx)
-				// 	return pipedFromCtx.finalize()
-				// }
+				if (pipedFromCtx) {
+					this.traverseApply(data, pipedFromCtx)
+					return pipedFromCtx.data
+				}
 
 				const ctx = new TraversalContext(data, this.$.resolvedConfig)
-				if (pipedFromCtx) ctx.path = pipedFromCtx.path
-
 				this.traverseApply(data, ctx)
 				return ctx.finalize()
 			},
