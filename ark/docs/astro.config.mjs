@@ -70,6 +70,7 @@ export default defineConfig({
 			transformers: [
 				transformerTwoslash({
 					twoslashOptions: {
+						compilerOptions: {},
 						filterNode: node => {
 							console.log(node)
 							if (node.type !== "hover") return true

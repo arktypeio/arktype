@@ -19,11 +19,11 @@ hero:
 ---
 
 import { Card, CardGrid, Code } from "@astrojs/starlight/components"
-import { HeroContents } from "../../components/HeroContents.tsx"
+import { HeroBackdrop } from "../../components/HeroBackdrop.tsx"
 import { HomeDemo } from "../../components/HomeDemo.tsx"
 
 <div class="not-content">
-	<HeroContents client:only="react" />
+	<HeroBackdrop client:only="react" />
 </div>
 
 export const exampleCode = `const t = type({
