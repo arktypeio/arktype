@@ -10,36 +10,15 @@ import { defineConfig } from "astro/config"
 // https://astro.build/config
 export default defineConfig({
 	site: "https://arktype.io",
-	markdown: {
-		shikiConfig: {
-			// Choose from Shiki's built-in themes (or add your own)
-			// https://shiki.style/themes
-			theme: arkdarkColors,
-			// Add custom languages
-			// Note: Shiki has countless langs built-in, including .astro!
-			// https://shiki.style/languages
-			/** @ts-expect-error allow textmate lang from JSON */
-			langs: [arktypeTextmate],
-			// Enable word wrap to prevent horizontal scrolling
-			wrap: true
-			// Add custom transformers: https://shiki.style/guide/transformers
-			// Find common transformers: https://shiki.style/packages/transformers
-			// transformers: []
-		}
-	},
 	// cannot configure out dir to out to match other packges since dist is hard
 	// coded into: https://github.com/withastro/action/blob/main/action.yml
 	integrations: [
-		// astroExpressiveCode({
-		// 	themes: [arkdarkColors]
-		// }),
 		starlight({
 			title: "ArkType",
 			logo: {
 				src: "./src/assets/logo.svg",
 				replacesTitle: true
 			},
-			customCss: ["./src/styles.css"],
 			social: {
 				twitch: "https://twitch.tv/arktypeio",
 				twitter: "https://twitter.com/arktypeio",
@@ -59,7 +38,15 @@ export default defineConfig({
 						{ label: "Cheat sheet", link: "/reference/cheat-sheet/" }
 					]
 				}
-			]
+			],
+			customCss: ["./src/styles.css"],
+			expressiveCode: {
+				themes: [arkdarkColors],
+				shiki: {
+					/** @ts-expect-error allow textmate lang from JSON */
+					langs: [arktypeTextmate]
+				}
+			}
 		}),
 		react()
 	]

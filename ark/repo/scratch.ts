@@ -1,8 +1,8 @@
 import { type } from "arktype"
 
 const user = type({
-	name: "string",
-	age: "number"
+	name: "string>=5",
+	age: "number<100"
 })
 
 const parseUser = type("string").pipe(s => JSON.parse(s), user)
