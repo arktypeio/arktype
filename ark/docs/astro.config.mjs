@@ -7,6 +7,7 @@ import { transformerTwoslash } from "@shikijs/twoslash"
 import arkdarkColors from "arkdark/color-theme.json"
 import arktypeTextmate from "arkdark/tsWithArkType.tmLanguage.json"
 import { defineConfig } from "astro/config"
+import { defaultCompilerOptions } from "twoslash"
 
 const twoslashPropertyPrefix = "(property) "
 
@@ -70,9 +71,11 @@ export default defineConfig({
 			transformers: [
 				transformerTwoslash({
 					twoslashOptions: {
-						compilerOptions: {},
+						compilerOptions: {
+							...defaultCompilerOptions,
+							exactOptionalPropertyTypes: true
+						},
 						filterNode: node => {
-							console.log(node)
 							if (node.type !== "hover") return true
 							if (node.text.startsWith("const")) {
 								// filter out the type of Type's invocation
@@ -85,6 +88,9 @@ export default defineConfig({
 								)
 								if (expression.startsWith("ArkErrors.summary"))
 									// this helps demonstrate narrowing on discrimination
+									return true
+								if (expression.endsWith("typeof ArkErrors"))
+									// also helps clarify how discrimination works
 									return true
 								return false
 							}

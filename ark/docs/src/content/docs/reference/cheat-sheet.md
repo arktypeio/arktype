@@ -6,6 +6,8 @@ order: 3
 Lots more docs are on the way, but I want to highlight some of the most useful synatx patterns/features that are carried over from alpha as well as those new to the 2.0 release.
 
 ```ts
+import { type } from "arktype"
+
 // Syntax carried over from 1.0 + TS
 export const currentTsSyntax = type({
 	keyword: "null",
@@ -56,15 +58,8 @@ const user = type({
 	age: "number"
 })
 
+// type is fully introspectable and traversable
 const parseUser = type("string").pipe(s => JSON.parse(s), user)
-
-// type is fully introspectable and traversable, displayed as:
-type ParseUser = Type<
-	(In: string) => Out<{
-		name: string
-		age: number
-	}>
->
 
 const maybeMe = parseUser('{ "name": "David" }')
 

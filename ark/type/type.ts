@@ -42,11 +42,12 @@ import type {
 } from "./parser/tuple.js"
 import type { RawScope, Scope, bindThis } from "./scope.js"
 
-export interface TypeParserAttachments {
-	errors: typeof ArkErrors
-}
+/** The convenience properties attached to `type` */
+export type TypeParserAttachments =
+	// map over to remove call signatures
+	Omit<TypeParser, never>
 
-export interface TypeParser<$> extends TypeParserAttachments {
+export interface TypeParser<$ = {}> {
 	// Parse and check the definition, returning either the original input for a
 	// valid definition or a string representing an error message.
 	<const def>(def: validateTypeRoot<def, $>): Type<inferTypeRoot<def, $>, $>
@@ -78,6 +79,8 @@ export interface TypeParser<$> extends TypeParserAttachments {
 			}
 		>
 	): Generic<parseGenericParams<params>, def, $>
+
+	errors: typeof ArkErrors
 }
 
 const typeParserAttachments = Object.freeze({

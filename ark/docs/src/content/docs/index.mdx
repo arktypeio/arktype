@@ -18,9 +18,9 @@ hero:
       icon: external
 ---
 
-import { Card, CardGrid, Code } from "@astrojs/starlight/components"
+import { Card, CardGrid } from "@astrojs/starlight/components"
+import { Code } from "astro:components"
 import { HeroBackdrop } from "../../components/HeroBackdrop.tsx"
-import { HomeDemo } from "../../components/HomeDemo.tsx"
 
 <div class="not-content">
 	<HeroBackdrop client:only="react" />
