@@ -1,5 +1,46 @@
 # arktype
 
+## 2.0.0-dev.16
+
+- Fix an incorrect return value on pipe sequences like the following:
+
+```ts
+const Amount = type(
+	"string",
+	":",
+	(s, ctx) => Number.isInteger(Number(s)) || ctx.invalid("number")
+)
+	.pipe((s, ctx) => {
+		try {
+			return BigInt(s)
+		} catch {
+			return ctx.error("a non-decimal number")
+		}
+	})
+	.narrow((amount, ctx) => true)
+
+const Token = type("7<string<=120")
+	.pipe(s => s.toLowerCase())
+	.narrow((s, ctx) => true)
+
+const $ = scope({
+	Asset: {
+		token: Token,
+		amount: Amount
+	},
+	Assets: () => $.type("Asset[]>=1").pipe(assets => assets)
+})
+
+const types = $.export()
+
+// now correctly returns { token: "lovelace", amount: 5000000n }
+const out = types.Assets([{ token: "lovelace", amount: "5000000" }])
+
+// (was previously { token: undefined, amount: undefined })
+```
+
+https://github.com/arktypeio/arktype/pull/974
+
 ## 2.0.0-dev.15
 
 - Fix a crash when piping to nested paths (see https://github.com/arktypeio/arktype/issues/968)
