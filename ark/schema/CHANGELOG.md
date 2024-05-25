@@ -1,5 +1,11 @@
 # @arktype/schema
 
+## 0.1.8
+
+### Patch Changes
+
+- [#974](https://github.com/arktypeio/arktype/pull/974) [`52be860`](https://github.com/arktypeio/arktype/commit/52be860e536db5c4585b7a9f271562e7b2ee9ac3) Thanks [@ssalbdivad](https://github.com/ssalbdivad)! - Pipe and narrow bug fixes (see [arktype CHANGELOG](../type/CHANGELOG.md))
+
 ## 0.1.7
 
 ### Patch Changes
