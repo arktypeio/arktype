@@ -15,6 +15,9 @@ export default defineConfig({
 	integrations: [
 		starlight({
 			title: "ArkType",
+			redirects: {
+				"/discord": "https://discord.gg/xEzdc3fJQC"
+			},
 			logo: {
 				src: "./src/assets/logo.svg",
 				replacesTitle: true
