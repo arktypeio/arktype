@@ -45,6 +45,13 @@ export default defineConfig({
 				shiki: {
 					/** @ts-expect-error allow textmate lang from JSON */
 					langs: [arktypeTextmate]
+				},
+				styleOverrides: {
+					codeFontSize: "1rem",
+					codeBackground: "#00000027",
+					borderRadius: "1rem",
+					borderColor: "#ba7e4127",
+					borderWidth: "1px"
 				}
 			}
 		}),

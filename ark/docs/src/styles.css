@@ -1,9 +1,15 @@
 @import url("https://fonts.googleapis.com/css?family=Raleway:300,400,500,700&display=swap");
 @import url("https://fonts.cdnfonts.com/css/cascadia-code");
 
+@font-face {
+	font-family: "Cascadia Code";
+	src: url("./assets/CascadiaCodeLig.ttf") format("truetype");
+	font-style: italic;
+}
+
 :root {
 	--sl-font: Raleway, sans-serif;
-	--sl-font-mono: cascadia code;
+	--sl-font-mono: Cascadia Code;
 }
 
 /* Dark mode colors. */
@@ -36,7 +42,8 @@
 	--sl-color-black: #fffff0;
 }
 
-header {
+header,
+.expressive-code {
 	backdrop-filter: blur(8px);
 	box-shadow:
 		rgba(0, 0, 0, 0.2) 0px 11px 15px -7px,
@@ -44,15 +51,36 @@ header {
 		rgba(0, 0, 0, 0.12) 0px 9px 46px 8px;
 }
 
-h1 {
-	font-weight: 400;
-}
-
 .header {
 	background-color: transparent;
+}
+
+.expressive-code {
+	border-radius: 1rem;
+}
+
+h1 {
+	font-weight: 400;
 }
 
 header * {
 	/* Ensure navbar items are in front of boat animation but slightly transparent */
 	z-index: 12;
+}
+
+@media (max-width: 799px) {
+	.hero {
+		padding-top: 8rem;
+	}
+
+	.hero img {
+		display: none;
+	}
+}
+
+@media (min-width: 800px) {
+	.hero {
+		margin-top: -3rem;
+		margin-bottom: -8rem;
+	}
 }
