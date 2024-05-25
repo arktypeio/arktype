@@ -2,7 +2,7 @@
 
 import react from "@astrojs/react"
 import starlight from "@astrojs/starlight"
-import { astroExpressiveCode } from "@astrojs/starlight/expressive-code"
+import { transformerTwoslash } from "@shikijs/twoslash"
 import arkdarkColors from "arkdark/color-theme.json"
 import arktypeTextmate from "arkdark/tsWithArkType.tmLanguage.json"
 import { defineConfig } from "astro/config"
@@ -10,14 +10,14 @@ import { defineConfig } from "astro/config"
 // https://astro.build/config
 export default defineConfig({
 	site: "https://arktype.io",
+	redirects: {
+		"/discord": "https://discord.gg/xEzdc3fJQC"
+	},
 	// cannot configure out dir to out to match other packges since dist is hard
 	// coded into: https://github.com/withastro/action/blob/main/action.yml
 	integrations: [
 		starlight({
 			title: "ArkType",
-			redirects: {
-				"/discord": "https://discord.gg/xEzdc3fJQC"
-			},
 			logo: {
 				src: "./src/assets/logo.svg",
 				replacesTitle: true
@@ -42,22 +42,31 @@ export default defineConfig({
 					]
 				}
 			],
-			customCss: ["./src/styles.css"],
-			expressiveCode: {
-				themes: [arkdarkColors],
-				shiki: {
-					/** @ts-expect-error allow textmate lang from JSON */
-					langs: [arktypeTextmate]
-				},
-				styleOverrides: {
-					codeFontSize: "1rem",
-					codeBackground: "#00000027",
-					borderRadius: "1rem",
-					borderColor: "#ba7e4127",
-					borderWidth: "1px"
-				}
-			}
+			customCss: ["./src/styles.css", "@shikijs/twoslash/style-rich.css"],
+			expressiveCode: false
+			// expressiveCode: {
+			// 	themes: [arkdarkColors],
+			// 	shiki: {
+			// 		/** @ts-expect-error allow textmate lang from JSON */
+			// 		langs: [arktypeTextmate]
+			// 	},
+			// 	styleOverrides: {
+			// 		codeFontSize: "1rem",
+			// 		codeBackground: "#00000027",
+			// 		borderRadius: "1rem",
+			// 		borderColor: "#ba7e4127",
+			// 		borderWidth: "1px"
+			// 	}
+			// }
 		}),
 		react()
-	]
+	],
+	markdown: {
+		shikiConfig: {
+			theme: arkdarkColors,
+			// @ts-expect-error
+			langs: [arktypeTextmate],
+			transformers: [transformerTwoslash()]
+		}
+	}
 })
