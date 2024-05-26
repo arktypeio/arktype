@@ -19,23 +19,32 @@ hero:
 ---
 
 import { Card, CardGrid } from "@astrojs/starlight/components"
-import { Code } from "astro:components"
 import { HeroBackdrop } from "../../components/HeroBackdrop.tsx"
+import TsBlock from "../../components/TsBlock.astro"
 
 <div class="not-content">
 	<HeroBackdrop client:only="react" />
 </div>
 
-export const exampleCode = `const t = type({
+export const exampleCode = `import { type } from "arktype"
+const t = type({
     a: "string|number[]"
 })`
 
 ## What awaits
 
+```ts
+import { type } from "arktype"
+
+const t = type({
+	a: "string|number[]"
+})
+```
+
 <CardGrid stagger>
 	<Card title="Unparalleled DX" icon="seti:tsconfig">
 		Type syntax you already know with safety unlike anything you've ever seen
-		<Code code={exampleCode} lang="ts" />
+		<TsBlock code={exampleCode} />
 	</Card>
 	<Card title="Faster. Everywhere." icon="rocket">
 		[100x faster than
