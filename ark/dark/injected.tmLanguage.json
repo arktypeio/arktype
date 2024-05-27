@@ -1,5 +1,6 @@
 {
 	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "InjectedArkTypeScript",
 	"scopeName": "source.arktype.injection.ts",
 	"injectionSelector": "L:source.ts - comment",
 	"patterns": [

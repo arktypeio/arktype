@@ -3,6 +3,7 @@
 import { transformerTwoslash } from "@shikijs/twoslash"
 import arkdarkColors from "arkdark/color-theme.json"
 import arktypeTextmate from "arkdark/tsWithArkType.tmLanguage.json"
+import { getHighlighter } from "shiki"
 import { defaultCompilerOptions } from "twoslash"
 
 // Theme adjustments
@@ -21,6 +22,7 @@ arkdarkColors.tokenColors.push({
 const twoslashPropertyPrefix = "(property) "
 
 const twoslash = transformerTwoslash({
+	langs: ["ArkTypeScript", "ts", "js"],
 	twoslashOptions: {
 		compilerOptions: {
 			...defaultCompilerOptions,
@@ -54,4 +56,20 @@ export const shikiConfig = {
 	// @ts-expect-error
 	langs: [arktypeTextmate],
 	transformers: [twoslash]
+}
+
+/** @type { Awaited<ReturnType<typeof getHighlighter>> } */
+let highlighter
+
+export const arkHighlight = async (/** @type { string } */ code) => {
+	highlighter ??= await getHighlighter({
+		themes: [arkdarkColors],
+		// @ts-expect-error
+		langs: [{ ...arktypeTextmate, name: "ts" }]
+	})
+	return highlighter.codeToHtml(code, {
+		lang: "ts",
+		theme: "ArkDark",
+		transformers: [twoslash]
+	})
 }

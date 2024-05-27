@@ -1,7 +1,7 @@
 {
 	"name": "ArkTypeScript",
 	"scopeName": "source.ts",
-	"fileTypes": ["ts"],
+	"fileTypes": ["ts", "js"],
 	"patterns": [
 		{
 			"include": "#directives"

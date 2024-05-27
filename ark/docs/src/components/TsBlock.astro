@@ -1,6 +1,6 @@
 ---
-import { shikiConfig } from "../../shiki.config.js"
-import { codeToHtml } from 'shiki'
+import { shikiConfig, arkHighlight } from "../../shiki.config.js"
+import { codeToHtml, getHighlighter } from 'shiki'
 
 // ideally we could just import { Code } from "astro:components" instead of
 // using this custom component, but as of now, the `Code` component imported from
@@ -14,10 +14,7 @@ interface Props {
 
 const { code } = Astro.props
 
-const html = await codeToHtml(code, {
-    ...shikiConfig as any,
-    lang: "ts"
-})
+const html = await arkHighlight(code)
 ---
 
 <Fragment set:html={html} />
