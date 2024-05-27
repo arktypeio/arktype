@@ -1,10 +1,16 @@
+// @ts-check
+
 import react from "@astrojs/react"
 import starlight from "@astrojs/starlight"
 import { defineConfig } from "astro/config"
+import { shikiConfig } from "./shiki.config.js"
 
 // https://astro.build/config
 export default defineConfig({
 	site: "https://arktype.io",
+	redirects: {
+		"/discord": "https://discord.gg/xEzdc3fJQC"
+	},
 	// cannot configure out dir to out to match other packges since dist is hard
 	// coded into: https://github.com/withastro/action/blob/main/action.yml
 	integrations: [
@@ -14,7 +20,6 @@ export default defineConfig({
 				src: "./src/assets/logo.svg",
 				replacesTitle: true
 			},
-			customCss: ["./src/styles.css"],
 			social: {
 				twitch: "https://twitch.tv/arktypeio",
 				twitter: "https://twitter.com/arktypeio",
@@ -24,7 +29,7 @@ export default defineConfig({
 			sidebar: [
 				{
 					label: "Intro",
-					items: [{ label: "Why ArkType?", link: "/intro/why/" }]
+					items: [{ label: "Install", link: "/intro/install/" }]
 				},
 				{
 					label: "Reference",
@@ -34,8 +39,13 @@ export default defineConfig({
 						{ label: "Cheat sheet", link: "/reference/cheat-sheet/" }
 					]
 				}
-			]
+			],
+			customCss: ["@shikijs/twoslash/style-rich.css", "./src/styles.css"],
+			expressiveCode: false
 		}),
 		react()
-	]
+	],
+	markdown: {
+		shikiConfig
+	}
 })

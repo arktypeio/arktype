@@ -1,7 +1,7 @@
 {
-	"name": "TypeScript with ArkType",
+	"name": "ArkTypeScript",
 	"scopeName": "source.ts",
-	"fileTypes": ["ts"],
+	"fileTypes": ["ts", "js"],
 	"patterns": [
 		{
 			"include": "#directives"
@@ -22,7 +22,7 @@
 	"repository": {
 		"arkDefinition": {
 			"contentName": "meta.embedded.arktype.definition",
-			"begin": "(([^\\)\\(\\s]*)?((\\.)?(type|scope|define|match|fn)|(\\.)(morph|and|or|when)))\\(",
+			"begin": "(([^\\)\\(\\s]*)?((\\.)?(?:type|scope|define|match|fn|morph|and|or|when)))(\\()",
 			"beginCaptures": {
 				"1": {
 					"name": "entity.name.function.ts"
@@ -30,11 +30,16 @@
 				"4": {
 					"name": "punctuation.accessor"
 				},
-				"6": {
-					"name": "punctuation.accessor"
+				"5": {
+					"name": "meta.brace.round.ts"
 				}
 			},
 			"end": "\\)",
+			"endCaptures": {
+				"0": {
+					"name": "meta.brace.round.ts"
+				}
+			},
 			"patterns": [
 				{
 					"include": "#arkAll"

@@ -1,11 +1,20 @@
 @import url("https://fonts.googleapis.com/css?family=Raleway:300,400,500,700&display=swap");
+@import url("https://fonts.cdnfonts.com/css/cascadia-code");
 
-:root {
-	--sl-font: Raleway, sans-serif;
+@font-face {
+	font-family: "Cascadia Code";
+	src: url("./assets/CascadiaCodeLig.ttf") format("truetype");
+	font-style: italic;
 }
 
-/* Dark mode colors. */
 :root {
+	/* General */
+	--shadow: rgba(0, 0, 0, 0.2) 0px 11px 15px -7px,
+		rgba(0, 0, 0, 0.14) 0px 24px 38px 3px, rgba(0, 0, 0, 0.12) 0px 9px 46px 8px;
+	/* Fonts */
+	--sl-font: Raleway, sans-serif;
+	--sl-font-mono: Cascadia Code;
+	/* Dark mode colors. */
 	--sl-color-accent-low: #4b3621;
 	--sl-color-accent: #eb9f2e;
 	--sl-color-accent-high: #f5cf8f;
@@ -17,7 +26,35 @@
 	--sl-color-gray-5: #003b62;
 	--sl-color-gray-6: #002946;
 	--sl-color-black: #001a2f;
+	/** @shikijs/twoslash/style-rich.css overrides */
+	--twoslash-border-color: #ba7e4127;
+	--twoslash-underline-color: currentColor;
+	--twoslash-highlighted-border: #c37d0d50;
+	--twoslash-highlighted-bg: #c37d0d20;
+	/* Semi-transparent white */
+	/* background: rgba(255, 255, 255, 0.1); */
+	--twoslash-popup-bg: transparent;
+	--twoslash-popup-color: inherit;
+	--twoslash-popup-shadow: var(--shadow);
+	--twoslash-docs-color: #888;
+	--twoslash-docs-font: sans-serif;
+	--twoslash-code-font: inherit;
+	--twoslash-code-font-size: 1em;
+	--twoslash-matched-color: inherit;
+	--twoslash-unmatched-color: #888;
+	--twoslash-cursor-color: #8888;
+	--twoslash-error-color: #d45656;
+	--twoslash-error-bg: #d4565620;
+	--twoslash-warn-color: #c37d0d;
+	--twoslash-warn-bg: #c37d0d20;
+	--twoslash-tag-color: #3772cf;
+	--twoslash-tag-bg: #3772cf20;
+	--twoslash-tag-warn-color: var(--twoslash-warn-color);
+	--twoslash-tag-warn-bg: var(--twoslash-warn-bg);
+	--twoslash-tag-annotate-color: #1ba673;
+	--twoslash-tag-annotate-bg: #1ba67320;
 }
+
 /* Light mode colors. */
 :root[data-theme="light"] {
 	--sl-color-accent-low: #f5cf8f;
@@ -34,20 +71,35 @@
 	--sl-color-black: #fffff0;
 }
 
-header {
-	backdrop-filter: blur(8px);
-	box-shadow:
-		rgba(0, 0, 0, 0.2) 0px 11px 15px -7px,
-		rgba(0, 0, 0, 0.14) 0px 24px 38px 3px,
-		rgba(0, 0, 0, 0.12) 0px 9px 46px 8px;
+pre.astro-code {
+	border-radius: 1rem;
+	border-color: #ba7e4127;
+	border-width: 1px;
 }
 
-h1 {
-	font-weight: 400;
+header {
+	backdrop-filter: blur(8px);
+	box-shadow: var(--shadow);
 }
 
 .header {
 	background-color: transparent;
+}
+
+.twoslash .twoslash-hover:hover .twoslash-popup-container {
+	border-radius: 1rem;
+	opacity: 1;
+	backdrop-filter: blur(10px);
+	border: 1px solid rgba(255, 255, 255, 0.2);
+	box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+}
+
+.twoslash-popup-code {
+	opacity: 1;
+}
+
+h1 {
+	font-weight: 400;
 }
 
 header * {
@@ -55,28 +107,19 @@ header * {
 	z-index: 12;
 }
 
-/* cascadiaCodeFamily = `"Cascadia Code", sans-serif`
+@media (max-width: 799px) {
+	.hero {
+		padding-top: 8rem;
+	}
 
-// // Consider #0bda96 as an accent color?
+	.hero img {
+		display: none;
+	}
+}
 
-// 		createTheme({
-// 			palette: {
-// 				primary: {
-// 					dark: "#085b92",
-// 					light: "#80cff8",
-// 					main: "#009eff"
-// 				},
-// 				secondary: {
-// 					main: "#eb9f2e",
-// 					dark: "#4b3621",
-// 					light: "#f5cf8f"
-// 				},
-// 				common: {
-// 					white: "#fffff0",
-// 					black: "#1b1b1b"
-// 				}
-// 			},
-// 			typography: {
-// 				fontFamily: "'Raleway', sans-serif"
-// 			}
-// 	) */
+@media (min-width: 800px) {
+	.hero {
+		margin-top: -3rem;
+		margin-bottom: -8rem;
+	}
+}

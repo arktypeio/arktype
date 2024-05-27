@@ -8,8 +8,6 @@
 				"entity.name.function",
 				"support.function",
 				"meta.function-call.python",
-				// We have this for Python in honor of contributor TizzySaurus.
-				// Will be removed for consistency once they allow it or the next time someone complains about it.
 				"meta.function.decorator punctuation",
 				"meta.function.decorator support.type"
 			],
@@ -66,12 +64,9 @@
 		{
 			"name": "this, primitives, built-in types, quotes",
 			"scope": [
-				// this
 				"variable.language",
 				"constant",
-				// also includes JSON keys
 				"support.type",
-				// YAML keys
 				"entity.name.tag",
 				"punctuation.definition.string.begin",
 				"punctuation.definition.string.end",
@@ -97,9 +92,6 @@
 			}
 		},
 		{
-			// re-specifying the foreground color explicitly for variable avoids
-			// some edge cases like variables in template strings being
-			// highlighted as strings
 			"name": "variable",
 			"scope": ["variable", "meta.function-call.arguments"],
 			"settings": {
@@ -108,7 +100,6 @@
 		}
 	],
 	"colors": {
-		// Customized built-in settings
 		"editor.foreground": "#eeeeee",
 		"errorForeground": "#9558f8",
 		"editorError.foreground": "#9558f8",
@@ -123,8 +114,6 @@
 		"editorCursor.foreground": "#408fde",
 		"terminalCursor.foreground": "#408fde",
 		"editorCodeLens.foreground": "#00ccff60",
-		"editorInlayHint.foreground": "#00ccff60",
-		// ErrorLens settings
 		"errorLens.errorBackground": "#9558f818",
 		"errorLens.errorForeground": "#9558f8a0",
 		"errorLens.warningBackground": "#00b7e40c",
@@ -133,10 +122,6 @@
 		"errorLens.infoForeground": "#00ccff60",
 		"errorLens.hintBackground": "#17a2a20c",
 		"errorLens.hintForeground": "#2faf6460",
-		// Copied from VSCode's "Default Dark Modern" (https://github.com/microsoft/vscode/blob/main/extensions/theme-defaults/themes/dark_modern.json)
-		// Overridden defaults should be commented out here
-		// "editor.foreground": "#CCCCCC",
-		// "errorForeground": "#F85149",
 		"activityBar.activeBorder": "#0078D4",
 		"activityBar.background": "#181818",
 		"activityBar.border": "#2B2B2B",

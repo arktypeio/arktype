@@ -1,5 +1,6 @@
 {
 	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "InjectedArkTypeScript",
 	"scopeName": "source.arktype.injection.ts",
 	"injectionSelector": "L:source.ts - comment",
 	"patterns": [
@@ -10,7 +11,7 @@
 	"repository": {
 		"arkDefinition": {
 			"contentName": "meta.embedded.arktype.definition",
-			"begin": "(([^\\)\\(\\s]*)?((\\.)?(type|scope|define|match|fn)|(\\.)(morph|and|or|when)))\\(",
+			"begin": "(([^\\)\\(\\s]*)?((\\.)?(?:type|scope|define|match|fn|morph|and|or|when)))(\\()",
 			"beginCaptures": {
 				"1": {
 					"name": "entity.name.function.ts"
@@ -18,11 +19,16 @@
 				"4": {
 					"name": "punctuation.accessor"
 				},
-				"6": {
-					"name": "punctuation.accessor"
+				"5": {
+					"name": "meta.brace.round.ts"
 				}
 			},
 			"end": "\\)",
+			"endCaptures": {
+				"0": {
+					"name": "meta.brace.round.ts"
+				}
+			},
 			"patterns": [
 				{
 					"include": "#arkAll"
