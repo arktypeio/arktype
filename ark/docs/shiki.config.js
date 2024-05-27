@@ -3,7 +3,6 @@
 import { transformerTwoslash } from "@shikijs/twoslash"
 import arkdarkColors from "arkdark/color-theme.json"
 import arktypeTextmate from "arkdark/tsWithArkType.tmLanguage.json"
-import { getHighlighter } from "shiki"
 import { defaultCompilerOptions } from "twoslash"
 
 // Theme adjustments
@@ -22,7 +21,7 @@ arkdarkColors.tokenColors.push({
 const twoslashPropertyPrefix = "(property) "
 
 export const twoslash = transformerTwoslash({
-	langs: ["ArkTypeScript", "ts", "js"],
+	langs: ["ts", "js"],
 	twoslashOptions: {
 		compilerOptions: {
 			...defaultCompilerOptions,
@@ -31,6 +30,9 @@ export const twoslash = transformerTwoslash({
 		filterNode: node => {
 			if (node.type !== "hover") return true
 			if (node.text.startsWith("const")) {
+				if (node.text.endsWith(", {}>"))
+					// omit default scope param from type display
+					node.text = node.text.slice(0, -5) + ">"
 				// filter out the type of Type's invocation
 				// as opposed to the Type itself
 				return !node.text.includes("(data: unknown)")

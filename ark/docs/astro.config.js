@@ -29,7 +29,7 @@ export default defineConfig({
 			sidebar: [
 				{
 					label: "Intro",
-					items: [{ label: "Why ArkType?", link: "/intro/why/" }]
+					items: [{ label: "Install", link: "/intro/install/" }]
 				},
 				{
 					label: "Reference",
