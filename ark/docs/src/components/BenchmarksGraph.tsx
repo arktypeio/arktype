@@ -67,7 +67,7 @@ export const TypeBenchmarksGraph = () => (
 				Union Type Instantiations, TypeScript 5.4.5 (
 				<a
 					target="_blank"
-					href="https://moltar.github.io/typescript-runtime-type-benchmarks/"
+					href="https://github.com/arktypeio/arktype/blob/468da965d9a2bbb16fe38d37e82c3b35e5158334/ark/repo/scratch/discriminatedComparison.ts"
 				>
 					source
 				</a>
