@@ -3,7 +3,7 @@
 import react from "@astrojs/react"
 import starlight from "@astrojs/starlight"
 import { defineConfig } from "astro/config"
-import { shikiConfig } from "./shiki.config.js"
+import { shikiConfig } from "./src/components/shiki.config.js"
 
 // https://astro.build/config
 export default defineConfig({

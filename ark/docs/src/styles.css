@@ -71,7 +71,9 @@
 	--sl-color-black: #fffff0;
 }
 
-pre.astro-code {
+pre.astro-code,
+pre.shiki,
+.twoslash-popup-container {
 	border-radius: 1rem;
 	border-color: #ba7e4127;
 	border-width: 1px;
@@ -95,14 +97,13 @@ starlight-theme-select,
 .twoslash .twoslash-hover:hover .twoslash-popup-container {
 	border-radius: 1rem;
 	opacity: 1;
-	backdrop-filter: blur(10px);
-	border: 1px solid #ba7e4127;
+	backdrop-filter: blur(8px);
 	box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
 }
 
-/* FireFox specific rules */
+/* Firefox specific rules */
 @-moz-document url-prefix() {
-	/* The backdrop-filter above doesn't work by default yet on FireFox so we do this instead  */
+	/* The backdrop-filter above doesn't work by default yet on Firefox so we do this instead  */
 	.twoslash .twoslash-hover:hover .twoslash-popup-container {
 		background: #001323ee;
 	}

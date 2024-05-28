@@ -1,7 +1,7 @@
 import arkdarkColors from "arkdark/color-theme.json"
 import arktypeTextmate from "arkdark/tsWithArkType.tmLanguage.json"
 import { getHighlighter } from "shiki"
-import { twoslash } from "../../shiki.config.js"
+import { twoslash } from "./shiki.config.js"
 
 let highlighter: Awaited<ReturnType<typeof getHighlighter>> | undefined
 

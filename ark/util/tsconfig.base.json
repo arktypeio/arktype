@@ -12,6 +12,7 @@
 		"esModuleInterop": true,
 		"resolveJsonModule": true,
 		"exactOptionalPropertyTypes": true,
+		"forceConsistentCasingInFileNames": true,
 		"stripInternal": true
 	}
 }
