@@ -20,6 +20,14 @@ export default defineConfig({
 				src: "./src/assets/logo.svg",
 				replacesTitle: true
 			},
+			head: [
+				// this ensures each page is rendered in dark mode since we
+				// don't support light yet
+				{
+					tag: "script",
+					content: `localStorage.setItem("starlight-theme", "dark")`
+				}
+			],
 			social: {
 				twitch: "https://twitch.tv/arktypeio",
 				twitter: "https://twitter.com/arktypeio",
