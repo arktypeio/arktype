@@ -21,7 +21,7 @@ hero:
 import { Card, CardGrid } from "@astrojs/starlight/components"
 import { HeroBackdrop } from "../../components/HeroBackdrop.tsx"
 import TsBlock from "../../components/TsBlock.astro"
-import dxCode from "./dx.ts?raw"
+import dxCode from "./dx.example.ts?raw"
 
 <div class="not-content">
 	<HeroBackdrop client:only="react" />
@@ -40,8 +40,8 @@ import dxCode from "./dx.ts?raw"
 		editor performance that will remind you how autocomplete is supposed to feel
 	</Card>
 	<Card title="Clear and concise" icon="comment-alt">
-		Schemas are half as long and twice as readable with hovers that tell you
-		just what really matters
+		Schemas are half as long, error messages are twice as readable, and hovers
+		tell you just what really matters
 	</Card>
 	<Card title="Better errors" icon="error">
 		Deeply customizable and composable messages with great defaults

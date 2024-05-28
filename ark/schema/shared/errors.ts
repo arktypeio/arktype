@@ -128,7 +128,7 @@ export class ArkErrors extends ReadonlyArray<ArkError> {
 	}
 
 	throw(): never {
-		throw this
+		throw new AggregateError(this, this.message)
 	}
 }
 

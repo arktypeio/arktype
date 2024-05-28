@@ -42,8 +42,8 @@
 	--twoslash-code-font-size: 1em;
 	--twoslash-matched-color: inherit;
 	--twoslash-unmatched-color: #888;
-	--twoslash-cursor-color: #8888;
-	--twoslash-error-color: #d45656;
+	--twoslash-cursor-color: var(--sl-color-gray-2);
+	--twoslash-error-color: #9558f8a0;
 	--twoslash-error-bg: #d4565620;
 	--twoslash-warn-color: #c37d0d;
 	--twoslash-warn-bg: #c37d0d20;
@@ -94,7 +94,8 @@ starlight-theme-select,
 	display: none;
 }
 
-.twoslash .twoslash-hover:hover .twoslash-popup-container {
+.twoslash .twoslash-hover:hover .twoslash-popup-container,
+.twoslash .twoslash-completion-cursor .twoslash-completion-list {
 	border-radius: 1rem;
 	opacity: 1;
 	backdrop-filter: blur(8px);

@@ -1,5 +1,9 @@
 # arktype
 
+## 2.0.0-dev.17
+
+- Error thrown by `.assert` or `out.throw()` is now an instance of [AggregateError](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/AggregateError), with the cause being an `ArkErrors` array.
+
 ## 2.0.0-dev.16
 
 - Fix an incorrect return value on pipe sequences like the following:
