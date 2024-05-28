@@ -26,6 +26,9 @@
 	--sl-color-gray-5: #003b62;
 	--sl-color-gray-6: #002946;
 	--sl-color-black: #001a2f;
+	/* Based on ArkDark ErrorLens */
+	--ark-error: #9558f8a0;
+	--ark-success: #40decca0;
 	/** @shikijs/twoslash/style-rich.css overrides */
 	--twoslash-border-color: #ba7e4127;
 	--twoslash-underline-color: currentColor;
@@ -43,8 +46,8 @@
 	--twoslash-matched-color: inherit;
 	--twoslash-unmatched-color: #888;
 	--twoslash-cursor-color: var(--sl-color-gray-2);
-	--twoslash-error-color: #9558f8a0;
-	--twoslash-error-bg: #d4565620;
+	--twoslash-error-color: var(--ark-error);
+	--twoslash-error-bg: #9558f818;
 	--twoslash-warn-color: #c37d0d;
 	--twoslash-warn-bg: #c37d0d20;
 	--twoslash-tag-color: #3772cf;

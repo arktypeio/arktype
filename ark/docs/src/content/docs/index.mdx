@@ -18,7 +18,11 @@ hero:
       icon: external
 ---
 
-import { Card, CardGrid } from "@astrojs/starlight/components"
+import { Card, CardGrid, TabItem, Tabs } from "@astrojs/starlight/components"
+import {
+	RuntimeBenchmarksGraph,
+	TypeBenchmarksGraph
+} from "../../components/BenchmarksGraph.tsx"
 import { HeroBackdrop } from "../../components/HeroBackdrop.tsx"
 import TsBlock from "../../components/TsBlock.astro"
 import dxCode from "./dx.example.ts?raw"
@@ -35,9 +39,16 @@ import dxCode from "./dx.example.ts?raw"
 		<TsBlock code={dxCode} />
 	</Card>
 	<Card title="Faster. Everywhere." icon="rocket">
-		[100x faster than
-		Zod](https://moltar.github.io/typescript-runtime-type-benchmarks/) with
-		editor performance that will remind you how autocomplete is supposed to feel
+		100x faster than Zod with editor performance that will remind you how
+		autocomplete is supposed to feel
+		<Tabs>
+			<TabItem label="Runtime">
+				<RuntimeBenchmarksGraph />
+			</TabItem>
+			<TabItem label="Editor">
+				<TypeBenchmarksGraph />
+			</TabItem>
+		</Tabs>
 	</Card>
 	<Card title="Clear and concise" icon="comment-alt">
 		Schemas are half as long, error messages are twice as readable, and hovers
