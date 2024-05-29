@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { bench } from "@arktype/attest"
 import { scope, type } from "arktype"
 import { z } from "zod"

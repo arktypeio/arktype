@@ -27,9 +27,18 @@ contextualize(() => {
 			const result = t("invalid")
 			attest(result instanceof type.errors && result.throw())
 		} catch (e) {
-			attest(e instanceof type.errors).equals(true)
+			attest(e instanceof AggregateError).equals(true)
+			attest((e as AggregateError).errors instanceof type.errors)
 			return
 		}
 		throw new AssertionError({ message: "Expected to throw" })
+	})
+
+	it("assert", () => {
+		const t = type({ a: "string" })
+		attest(t.assert({ a: "1" })).equals({ a: "1" })
+		attest(() => t.assert({ a: 1 })).throws.snap(
+			"AggregateError: a must be a string (was number)"
+		)
 	})
 })
