@@ -1,0 +1,3 @@
+---
+"@arktype/schema": patch
+---

@@ -4,6 +4,10 @@
 
 - Error thrown by `.assert` or `out.throw()` is now an instance of [AggregateError](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/AggregateError), with the cause being an `ArkErrors` array.
 
+- Throw an error immediately if multiple versions of `arktype` are imported
+
+- Fix an issue causing some discriminated unions including a prototype like `string | RegExp` to return incorrect validation results.
+
 ## 2.0.0-dev.16
 
 - Fix an incorrect return value on pipe sequences like the following:
