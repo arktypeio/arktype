@@ -7,6 +7,6 @@ const user = type({
 	// ---cut-start---
 	// @ts-expect-error
 	// ---cut-end---
-	isAdmin: "boolean | n"
-	//				               ^|
+	"isAdmin?": "boolean | n"
+	//				                  ^|
 })

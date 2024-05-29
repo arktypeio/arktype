@@ -37,8 +37,12 @@ export const twoslash = transformerTwoslash({
 							node.text = node.text.slice(0, -5) + ">"
 						// show type with completions populated for known examples
 						node.text = node.text.replace(
-							"isAdmin: never",
-							"isAdmin: boolean | null"
+							"isAdmin?: never",
+							"isAdmin?: boolean | null"
+						)
+						node.text = node.text.replace(
+							"luckyNumbers: never",
+							"luckyNumbers: (number | bigint)[]"
 						)
 						// filter out the type of Type's invocation
 						// as opposed to the Type itself
@@ -46,7 +50,18 @@ export const twoslash = transformerTwoslash({
 					}
 					if (node.text.startsWith(twoslashPropertyPrefix)) {
 						const expression = node.text.slice(twoslashPropertyPrefix.length)
-						if (expression.startsWith("ArkErrors.summary"))
+						if (expression.startsWith("ArkErrors.summary")) {
+							// cleanup runtime errors for display
+							const runtimeErrorSummary = /^ArkErrors\.summary: "(.*)"/.exec(
+								expression
+							)
+							if (runtimeErrorSummary) {
+								node.text = runtimeErrorSummary[1].split("\\n").join("\n")
+							}
+							// this helps demonstrate narrowing on discrimination
+							return true
+						}
+						if (expression === "luckyNumbers: (number | bigint)[]")
 							// this helps demonstrate narrowing on discrimination
 							return true
 						if (expression.endsWith("typeof ArkErrors"))
@@ -75,7 +90,7 @@ export const twoslash = transformerTwoslash({
 									matchResult[Number(groupIndex)]
 								)
 							}
-							node.text = `TypeError: ${node.text}`
+							node.text = `TypeScript: ${node.text}`
 						}
 					}
 				default:

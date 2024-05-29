@@ -151,7 +151,7 @@ module.exports = defineConfig({
 				"**/__tests__/**",
 				"**/*.bench.ts",
 				"**/*.test.ts",
-				"**/*.example.ts"
+				"**/*.twoslash.ts"
 			],
 			rules: {
 				// Assignment to a variable is required to ensure types are parsed

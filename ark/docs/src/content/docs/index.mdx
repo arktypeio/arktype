@@ -25,7 +25,9 @@ import {
 } from "../../components/BenchmarksGraph.tsx"
 import { HeroBackdrop } from "../../components/HeroBackdrop.tsx"
 import TsBlock from "../../components/TsBlock.astro"
-import dxCode from "./dx.example.ts?raw"
+import betterErrorsSrc from "./betterErrors.twoslash.ts?raw"
+import clearAndConciseSrc from "./clearAndConcise.twoslash.ts?raw"
+import unparalleledDxSrc from "./unparalleledDx.twoslash.ts?raw"
 
 <div class="not-content">
 	<HeroBackdrop client:only="react" />
@@ -36,7 +38,7 @@ import dxCode from "./dx.example.ts?raw"
 <CardGrid stagger>
 	<Card title="Unparalleled DX" icon="seti:tsconfig">
 		Type syntax you already know with safety unlike anything you've ever seen
-		<TsBlock code={dxCode} />
+		<TsBlock code={unparalleledDxSrc} />
 	</Card>
 	<Card title="Faster. Everywhere." icon="rocket">
 		100x faster than Zod with editor performance that will remind you how
@@ -51,11 +53,13 @@ import dxCode from "./dx.example.ts?raw"
 		</Tabs>
 	</Card>
 	<Card title="Clear and concise" icon="comment-alt">
-		Schemas are half as long, error messages are twice as readable, and hovers
+		Definitions are half as long, type errors are twice as readable, and hovers
 		tell you just what really matters
+		<TsBlock code={clearAndConciseSrc} />
 	</Card>
 	<Card title="Better errors" icon="error">
-		Deeply customizable and composable messages with great defaults
+		Deeply customizable messages with great defaults
+		<TsBlock code={betterErrorsSrc} />
 	</Card>
 	<Card title="Deeply introspectable" icon="seti:code-search">
 		ArkType uses set theory to understand and expose the relationships between

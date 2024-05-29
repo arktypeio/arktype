@@ -146,6 +146,24 @@ contextualize(() => {
 		)
 	})
 
+	it("homepage example", () => {
+		const user = type({
+			name: "string",
+			luckyNumbers: "(number | bigint)[]",
+			"isAdmin?": "boolean | null"
+		})
+
+		const out = user({
+			luckyNumbers: [31, "255", 1337n],
+			isAdmin: 1
+		})
+
+		attest(out.toString())
+			.snap(`luckyNumbers[1] must be a bigint or a number (was string)
+name must be a string (was missing)
+isAdmin must be false, null or true (was 1)`)
+	})
+
 	it("relative path", () => {
 		const signup = type({
 			email: "email",
