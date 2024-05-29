@@ -1,5 +1,11 @@
 # @arktype/util
 
+## 0.0.46
+
+### Patch Changes
+
+- [#984](https://github.com/arktypeio/arktype/pull/984) [`ebe3408`](https://github.com/arktypeio/arktype/commit/ebe3408e2310bc8f69eacd29e0d51c99c24d9471) Thanks [@ssalbdivad](https://github.com/ssalbdivad)! - - Throw an error immediately if multiple versions of `@arktype/util` are imported
+
 ## 0.0.45
 
 ### Patch Changes
