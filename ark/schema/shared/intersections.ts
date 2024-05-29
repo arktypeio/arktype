@@ -138,14 +138,16 @@ export const intersectNodes: InternalNodeIntersection<IntersectionContext> = (
 		const leftmostKind = l.precedence < r.precedence ? l.kind : r.kind
 		const implementation =
 			l.impl.intersections[r.kind] ?? r.impl.intersections[l.kind]
-		result =
-			implementation === undefined ?
-				// should be two ConstraintNodes that have no relation
-				// this could also happen if a user directly intersects a Type and a ConstraintNode,
-				// but that is not allowed by the external function signature
-				null
-			: leftmostKind === l.kind ? implementation(l, r, ctx)
-			: implementation(r, l, { ...ctx, invert: !ctx.invert })
+		if (implementation === undefined) {
+			// should be two ConstraintNodes that have no relation
+			// this could also happen if a user directly intersects a Type and a ConstraintNode,
+			// but that is not allowed by the external function signature
+			result = null
+		} else if (leftmostKind === l.kind) result = implementation(l, r, ctx)
+		else {
+			result = implementation(r, l, { ...ctx, invert: !ctx.invert })
+			if (result instanceof Disjoint) result = result.invert()
+		}
 	}
 
 	if (isNode(result)) {
