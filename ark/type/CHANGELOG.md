@@ -1,5 +1,20 @@
 # arktype
 
+## 2.0.0-dev.18
+
+Fixed causing index signatures with constraints like regex to be considered invalid as definitions.
+
+The following is valid and now will be allowed as a definition.
+
+```ts
+const test = scope({
+	svgPath: /^\.\/(\d|a|b|c|d|e|f)+(-(\d|a|b|c|d|e|f)+)*\.svg$/,
+	svgMap: {
+		"[svgPath]": "digits"
+	}
+}).export()
+```
+
 ## 2.0.0-dev.17
 
 - Error thrown by `.assert` or `out.throw()` is now an instance of [AggregateError](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/AggregateError), with the cause being an `ArkErrors` array.
