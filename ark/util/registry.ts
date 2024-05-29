@@ -12,7 +12,8 @@ declare global {
 if ("$ark" in globalThis) {
 	throwError(
 		`Tried to initialize an $ark registry but one already existed.
-This probably means you are depending on multiple versions of an arktype package.
+This probably means you are either depending on multiple versions of an arktype package,
+or importing the same package from both ESM and CJS.
 Review package.json versions across your repo to ensure consistency.`
 	)
 }
