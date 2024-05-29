@@ -56,6 +56,7 @@ const creditCard = root.defineRoot({
 export interface validationExports {
 	alpha: string
 	alphanumeric: string
+	digits: string
 	lowercase: string
 	uppercase: string
 	creditCard: string
@@ -72,7 +73,8 @@ export type validation = SchemaModule<validationExports>
 export const validation: validation = schemaScope(
 	{
 		alpha: defineRegex(/^[A-Za-z]*$/, "only letters"),
-		alphanumeric: defineRegex(/^[A-Za-z\d]*$/, "only letters and digits"),
+		alphanumeric: defineRegex(/^[A-Za-z\d]*$/, "only letters and digits 0-9"),
+		digits: defineRegex(/^\d*$/, "only digits 0-9"),
 		lowercase: defineRegex(/^[a-z]*$/, "only lowercase letters"),
 		uppercase: defineRegex(/^[A-Z]*$/, "only uppercase letters"),
 		creditCard,

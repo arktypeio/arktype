@@ -2,6 +2,7 @@ import { attest, contextualize } from "@arktype/attest"
 import type { AtLeastLength, AtMostLength, Out, string } from "@arktype/schema"
 import { registeredReference } from "@arktype/util"
 import { scope, type, type Type } from "arktype"
+import type { Module } from "../module.js"
 
 contextualize(() => {
 	// https://github.com/arktypeio/arktype/issues/915
@@ -430,16 +431,28 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 
 		attest(out).snap([{ token: "lovelace", amount: "5000000n" }])
 	})
-	it("union with domain and proto", () => {
-		const t = type("RegExp | string")
-		attest(t.raw.assertHasKind("union").discriminantJson).snap({
-			kind: "domain",
-			path: [],
-			cases: { '"string"': true, '"object"': { proto: "RegExp" } }
+
+	it("regex index signature", () => {
+		const test = scope({
+			svgPath: /^\.\/(\d|a|b|c|d|e|f)+(-(\d|a|b|c|d|e|f)+)*\.svg$/,
+			svgMap: {
+				"[svgPath]": "digits"
+			}
+		}).export()
+		attest<
+			Module<{
+				svgMap: {
+					[x: string & string.matching<string>]: string
+				}
+				svgPath: string.matching<string>
+			}>
+		>(test)
+		attest(test.svgMap({ "./f.svg": "123", bar: 5 })).unknown.snap({
+			"./f.svg": "123",
+			bar: 5
 		})
-		attest(t.allows("es")).equals(true)
-		attest(t.allows(5)).equals(false)
-		attest(t("es")).equals("es")
-		attest(t(new Date()).toString()).snap("must be a RegExp (was Date)")
+		attest(test.svgMap({ "./f.svg": "123a" }).toString()).snap(
+			'value at ["./f.svg"] must be only digits 0-9 (was "123a")'
+		)
 	})
 })

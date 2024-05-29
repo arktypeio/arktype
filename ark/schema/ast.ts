@@ -21,9 +21,9 @@ export type Constraints = {
 	literal?: string | number
 }
 
-declare const constrained: unique symbol
+export declare const constrained: unique symbol
 
-type constrained = typeof constrained
+export type constrained = typeof constrained
 
 export type of<base, constraints extends Constraints> = [
 	base,

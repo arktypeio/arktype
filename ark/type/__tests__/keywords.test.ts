@@ -105,6 +105,13 @@ contextualize(
 				'must be only letters and digits (was "abc@123")'
 			)
 		})
+		it("digits", () => {
+			const digits = type("digits")
+			attest(digits("123")).snap("123")
+			attest(digits("user123").toString()).equals(
+				'must be only digits 0-9 (was "user123")'
+			)
+		})
 		it("lowercase", () => {
 			const lowercase = type("lowercase")
 			attest(lowercase("var")).snap("var")
