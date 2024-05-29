@@ -11,7 +11,7 @@
 	"repository": {
 		"arkDefinition": {
 			"contentName": "meta.embedded.arktype.definition",
-			"begin": "(([^\\)\\(\\s]+)?(?:type|scope|define|match|fn|\\.morph|\\.and|\\.or|\\.when))(\\()",
+			"begin": "(([^\\)\\(\\s]+)?(?:type|scope|define|match|fn|\\.morph|\\.and|\\.or|\\.when|\\.extends|\\.intersect))(\\()",
 			"beginCaptures": {
 				"1": {
 					"name": "entity.name.function.ts"

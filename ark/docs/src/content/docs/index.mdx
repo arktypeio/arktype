@@ -27,6 +27,8 @@ import { HeroBackdrop } from "../../components/HeroBackdrop.tsx"
 import TsBlock from "../../components/TsBlock.astro"
 import betterErrorsSrc from "./betterErrors.twoslash.ts?raw"
 import clearAndConciseSrc from "./clearAndConcise.twoslash.ts?raw"
+import deepIntrospectability from "./deepIntrospectability.twoslash.ts?raw"
+import intrinsicOptimization from "./intrinsicOptimization.twoslash.ts?raw"
 import unparalleledDxSrc from "./unparalleledDx.twoslash.ts?raw"
 
 <div class="not-content">
@@ -37,12 +39,13 @@ import unparalleledDxSrc from "./unparalleledDx.twoslash.ts?raw"
 
 <CardGrid stagger>
 	<Card title="Unparalleled DX" icon="seti:tsconfig">
-		Type syntax you already know with safety unlike anything you've ever seen
+		Type syntax you already know with safety and completions unlike anything
+		you've ever seen
 		<TsBlock code={unparalleledDxSrc} />
 	</Card>
-	<Card title="Faster. Everywhere." icon="rocket">
-		100x faster than Zod with editor performance that will remind you how
-		autocomplete is supposed to feel
+	<Card title="Faster... everything" icon="rocket">
+		100x faster than Zod at runtime with editor performance that will remind you
+		how autocomplete is supposed to feel
 		<Tabs>
 			<TabItem label="Runtime">
 				<RuntimeBenchmarksGraph />
@@ -52,22 +55,24 @@ import unparalleledDxSrc from "./unparalleledDx.twoslash.ts?raw"
 			</TabItem>
 		</Tabs>
 	</Card>
-	<Card title="Clear and concise" icon="comment-alt">
+	<Card title="Clarity and Concision" icon="comment-alt">
 		Definitions are half as long, type errors are twice as readable, and hovers
 		tell you just what really matters
 		<TsBlock code={clearAndConciseSrc} />
 	</Card>
-	<Card title="Better errors" icon="error">
+	<Card title="Better Errors" icon="error">
 		Deeply customizable messages with great defaults
 		<TsBlock code={betterErrorsSrc} />
 	</Card>
-	<Card title="Deeply introspectable" icon="seti:code-search">
+	<Card title="Deep Introspectability" icon="seti:code-search">
 		ArkType uses set theory to understand and expose the relationships between
 		your types at runtime the way TypeScript does at compile time
+		<TsBlock code={deepIntrospectability} />
 	</Card>
-	<Card title="Smarter by default" icon="seti:smarty">
-		Every schema you define is internally optimized to provide the clearest,
-		fastest validation possible
+	<Card title="Intrinsic Optimization" icon="seti:smarty">
+		Every schema is internally normalized and reduced to its purest and fastest
+		representation
+		<TsBlock code={intrinsicOptimization} />
 	</Card>
 	{/* <Card title="Portable" icon="seti:json">
 		Most definitions are just objects and strings- take them across the stack or

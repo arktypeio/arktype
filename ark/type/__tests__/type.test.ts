@@ -27,7 +27,8 @@ contextualize(() => {
 			const result = t("invalid")
 			attest(result instanceof type.errors && result.throw())
 		} catch (e) {
-			attest(e instanceof type.errors).equals(true)
+			attest(e instanceof AggregateError).equals(true)
+			attest((e as AggregateError).errors instanceof type.errors)
 			return
 		}
 		throw new AssertionError({ message: "Expected to throw" })

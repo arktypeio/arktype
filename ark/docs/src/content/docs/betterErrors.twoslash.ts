@@ -20,10 +20,10 @@ if (out instanceof type.errors) {
 		`luckyNumbers[1] must be a bigint or a number (was string)
 name must be a string (was missing)
 isAdmin must be false, null or true (was 1)`
-	) {
+	)
 		throw new Error()
-	}
+
 	// ---cut-end---
-	// hover out.summary to see the validation error
+	// hover out.summary to see validation errors
 	console.error(out.summary)
 } else console.log(out.luckyNumbers)
