@@ -1,5 +1,5 @@
 import { domainOf, hasDomain } from "./domain.js"
-import { throwInternalError } from "./errors.js"
+import { throwError, throwInternalError } from "./errors.js"
 import { objectKindOf } from "./objectKinds.js"
 import { serializePrimitive, type SerializablePrimitive } from "./primitive.js"
 
@@ -7,6 +7,14 @@ declare global {
 	export const $ark: ArkRegistry
 
 	export interface ArkRegistry {}
+}
+
+if ("$ark" in globalThis) {
+	throwError(
+		`Tried to initialize an $ark registry but one already existed.
+This probably means you are depending on multiple versions of an arktype package.
+Review package.json versions across your repo to ensure consistency.`
+	)
 }
 
 export const registry: Record<string, unknown> = {}

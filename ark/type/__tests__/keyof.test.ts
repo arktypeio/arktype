@@ -57,7 +57,7 @@ contextualize(() => {
 
 	it("union including non-object", () => {
 		attest(() => type({ a: "number" }).or("boolean").keyof()).throws.snap(
-			'ParseError: Intersection of "toString" | "valueOf" and "a" results in an unsatisfiable type'
+			'ParseError: Intersection of "a" and "toString" | "valueOf" results in an unsatisfiable type'
 		)
 	})
 
