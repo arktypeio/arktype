@@ -26,6 +26,4 @@ isAdmin must be false, null or true (was 1)`
 	// ---cut-end---
 	// hover out.summary to see the validation error
 	console.error(out.summary)
-} else {
-	console.log(out.luckyNumbers)
-}
+} else console.log(out.luckyNumbers)
