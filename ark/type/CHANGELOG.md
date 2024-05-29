@@ -2,7 +2,9 @@
 
 ## 2.0.0-dev.18
 
-Fixed causing index signatures with constraints like regex to be considered invalid as definitions.
+Add a `"digits"` keyword for strings consisting exclusively of 0-9.
+
+Fix an issue causing index signatures with constraints like regex to be considered invalid as definitions.
 
 The following is valid and now will be allowed as a definition.
 

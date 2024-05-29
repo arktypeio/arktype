@@ -102,7 +102,7 @@ contextualize(
 			attest(alphanumeric("user")).snap("user")
 			attest(alphanumeric("123")).snap("123")
 			attest(alphanumeric("abc@123").toString()).equals(
-				'must be only letters and digits (was "abc@123")'
+				'must be only letters and digits 0-9 (was "abc@123")'
 			)
 		})
 		it("digits", () => {
