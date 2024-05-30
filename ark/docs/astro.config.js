@@ -36,7 +36,7 @@ export default defineConfig({
 			},
 			sidebar: [
 				{
-					label: "Quick Start",
+					label: "Intro",
 					items: [{ label: "Setup", link: "/intro/setup/" }]
 				},
 				{
