@@ -59,9 +59,11 @@ document
 
 			icon.setAttribute("src", "/src/assets/check.svg")
             copyButton.setAttribute("disabled", "1")
+            copyButton.setAttribute("style", "opacity: .6;")
 			setTimeout(() => {
 				icon.setAttribute("src", "/src/assets/copy.svg")
                 copyButton.removeAttribute("disabled")
+                copyButton.removeAttribute("style")
 			}, 2000)
 		})
 	})

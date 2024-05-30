@@ -147,8 +147,8 @@ header * {
 
 .copy-button {
 	position: absolute;
-	top: 0rem;
-	right: 1rem;
+	top: -0.25rem;
+	right: 0.75rem;
 	padding: 0.1rem;
 	border-radius: 4px;
 	background: var(--sl-color-gray-4);
@@ -158,9 +158,10 @@ header * {
 }
 
 .copy-button:hover {
-	opacity: 0.5;
+	opacity: 0.6;
 }
 
 .copy-button:active {
+	opacity: 0.6;
 	scale: 0.8;
 }
