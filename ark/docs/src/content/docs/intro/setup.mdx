@@ -1,0 +1,25 @@
+---
+title: Setup
+---
+
+import { TabItem, Tabs } from "@astrojs/starlight/components"
+import Code from "../../../components/Code.astro"
+
+<Tabs>
+	<TabItem label="pnpm" icon="pnpm">
+		<Code code="pnpm install arktype" lang="bash" />
+	</TabItem>
+	<TabItem label="npm" icon="seti:npm">
+		<Code code="npm install arktype" lang="bash" />
+	</TabItem>
+	<TabItem label="yarn" icon="seti:yarn">
+		<Code code="yarn install arktype" lang="bash" />
+	</TabItem>
+	<TabItem label="bun" icon="bun">
+		<Code code="bun install arktype" lang="bash" />
+	</TabItem>
+</Tabs>
+
+Our types are tested in [strict-mode](https://www.typescriptlang.org/tsconfig#strict) with TypeScript 5.1+.
+
+If your types work but you notice errors in node_modules, this could be due to tsconfig incompatibilities- please enable `compilerOptions/skipLibCheck` ([docs](https://www.typescriptlang.org/tsconfig/#skipLibCheck)).
