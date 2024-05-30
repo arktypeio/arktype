@@ -2,7 +2,7 @@
 	"name": "arkdark",
 	"displayName": "ArkDark",
 	"description": "ArkType syntax highlighting and theme⛵",
-	"version": "5.1.7",
+	"version": "5.2.0",
 	"publisher": "arktypeio",
 	"type": "module",
 	"scripts": {
@@ -41,9 +41,11 @@
 			{
 				"injectTo": [
 					"source.ts",
-					"source.ts.tsx",
+					"source.tsx",
 					"source.js",
-					"source.js.jsx"
+					"source.jsx",
+					"source.mdx",
+					"text.html.markdown"
 				],
 				"scopeName": "source.arktype.injection.ts",
 				"path": "injected.tmLanguage.json"

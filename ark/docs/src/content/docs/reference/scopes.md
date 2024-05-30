@@ -7,7 +7,7 @@ Scopes are the foundation of ArkType, and one of the most powerful features for 
 
 Here's a quick preview of what that looks like:
 
-```ts
+```tsx
 import { scope } from "arktype"
 
 // Scopes are collections of types that can reference each other.
