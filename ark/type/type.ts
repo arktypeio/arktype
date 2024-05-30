@@ -28,6 +28,7 @@ import {
 	type array,
 	type conform
 } from "@arktype/util"
+
 import { Generic, type validateParameterString } from "./generic.js"
 import type {
 	inferDefinition,

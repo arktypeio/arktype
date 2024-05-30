@@ -13,23 +13,26 @@ hero:
       link: /intro/install/
       icon: right-arrow
       variant: primary
-    - text: Doc up
-      link: https://github.com/arktypeio/arktype
-      icon: external
 ---
 
-import { Card, CardGrid, TabItem, Tabs } from "@astrojs/starlight/components"
+import {
+	Card,
+	CardGrid,
+	LinkCard,
+	TabItem,
+	Tabs
+} from "@astrojs/starlight/components"
 import {
 	RuntimeBenchmarksGraph,
 	TypeBenchmarksGraph
 } from "../../components/BenchmarksGraph.tsx"
 import { HeroBackdrop } from "../../components/HeroBackdrop.tsx"
 import TsBlock from "../../components/TsBlock.astro"
-import betterErrorsSrc from "./betterErrors.twoslash.ts?raw"
-import clearAndConciseSrc from "./clearAndConcise.twoslash.ts?raw"
+import betterErrors from "./betterErrors.twoslash.ts?raw"
+import clarityAndConcision from "./clarityAndConcision.twoslash.ts?raw"
 import deepIntrospectability from "./deepIntrospectability.twoslash.ts?raw"
 import intrinsicOptimization from "./intrinsicOptimization.twoslash.ts?raw"
-import unparalleledDxSrc from "./unparalleledDx.twoslash.ts?raw"
+import unparalleledDx from "./unparalleledDx.twoslash.ts?raw"
 
 <div class="not-content">
 	<HeroBackdrop client:only="react" />
@@ -41,7 +44,7 @@ import unparalleledDxSrc from "./unparalleledDx.twoslash.ts?raw"
 	<Card title="Unparalleled DX" icon="seti:tsconfig">
 		Type syntax you already know with safety and completions unlike anything
 		you've ever seen
-		<TsBlock code={unparalleledDxSrc} />
+		<TsBlock code={unparalleledDx} />
 	</Card>
 	<Card title="Faster... everything" icon="rocket">
 		100x faster than Zod at runtime with editor performance that will remind you
@@ -58,11 +61,11 @@ import unparalleledDxSrc from "./unparalleledDx.twoslash.ts?raw"
 	<Card title="Clarity and Concision" icon="comment-alt">
 		Definitions are half as long, type errors are twice as readable, and hovers
 		tell you just what really matters
-		<TsBlock code={clearAndConciseSrc} />
+		<TsBlock code={clarityAndConcision} />
 	</Card>
 	<Card title="Better Errors" icon="error">
 		Deeply customizable messages with great defaults
-		<TsBlock code={betterErrorsSrc} />
+		<TsBlock code={betterErrors} />
 	</Card>
 	<Card title="Deep Introspectability" icon="seti:code-search">
 		ArkType uses set theory to understand and expose the relationships between
@@ -79,3 +82,9 @@ import unparalleledDxSrc from "./unparalleledDx.twoslash.ts?raw"
 		even outside JS altogether
 	</Card> */}
 </CardGrid>
+
+<LinkCard
+	title="Doc up"
+	description="Everything you need to know from installation to integration"
+	href="/intro/install"
+/>
