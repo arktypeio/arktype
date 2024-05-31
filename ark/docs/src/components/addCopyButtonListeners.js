@@ -23,21 +23,23 @@ const distillTwoslashCode = container => {
 	return src.trim()
 }
 
-document.querySelectorAll(".code-container").forEach(codeContainer => {
-	const copyButton = codeContainer.querySelector(".copy-button")
-	const icon = codeContainer.querySelector(".copy-icon")
+globalThis.addCopyButtonListeners = () => {
+	document.querySelectorAll(".code-container").forEach(codeContainer => {
+		const copyButton = codeContainer.querySelector(".copy-button")
+		const icon = codeContainer.querySelector(".copy-icon")
 
-	copyButton.addEventListener("click", async () => {
-		const textToCopy = distillTwoslashCode(codeContainer)
-		await navigator.clipboard.writeText(textToCopy)
+		copyButton.addEventListener("click", async () => {
+			const textToCopy = distillTwoslashCode(codeContainer)
+			await navigator.clipboard.writeText(textToCopy)
 
-		icon.setAttribute("src", "/src/assets/check.svg")
-		copyButton.setAttribute("disabled", "1")
-		copyButton.setAttribute("style", "opacity: .6;")
-		setTimeout(() => {
-			icon.setAttribute("src", "/src/assets/copy.svg")
-			copyButton.removeAttribute("disabled")
-			copyButton.removeAttribute("style")
-		}, 2000)
+			icon.setAttribute("src", "/src/assets/check.svg")
+			copyButton.setAttribute("disabled", "1")
+			copyButton.setAttribute("style", "opacity: .6;")
+			setTimeout(() => {
+				icon.setAttribute("src", "/src/assets/copy.svg")
+				copyButton.removeAttribute("disabled")
+				copyButton.removeAttribute("style")
+			}, 2000)
+		})
 	})
-})
+}

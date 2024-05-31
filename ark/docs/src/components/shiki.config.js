@@ -100,6 +100,31 @@ export const twoslash = transformerTwoslash({
 	}
 })
 
+const hoverSelector = ".twoslash-popup-code"
+const errorSelector = ".twoslash-error-line"
+const completionSelector = ".twoslash-completion-cursor"
+const metaSelector = `${hoverSelector}, ${errorSelector}, ${completionSelector}`
+
+const distillTwoslashCode = (/** @type {Element} */ container) => {
+	const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT)
+
+	let src = ""
+	while (walker.nextNode()) {
+		const parentNode = walker.currentNode.parentNode
+		if (!(parentNode instanceof Element)) continue
+		if (parentNode.closest(errorSelector)) {
+			// if a twoslash error was rendered in this position, we need an additional newline
+			src += "\n"
+		}
+		if (!parentNode?.closest(metaSelector)) {
+			// if the node is not a meta node (hover, error or completion) add its textContent
+			src += walker.currentNode.textContent ?? ""
+		}
+	}
+
+	return src.trim()
+}
+
 /** @type {import("shiki").ShikiTransformer} */
 export const addCopyButton = {
 	name: "addCopyButton",
@@ -107,7 +132,7 @@ export const addCopyButton = {
 		return `<div class="code-container">
 	${html}
     <button class="copy-button">
-        <img class="copy-icon" src= "/src/assets/copy.svg" />
+        <img class="copy-icon" src= "/src/assets/copy.svg" onload="addCopyButtonListeners()"/>
     </button>
 </div>`
 	}

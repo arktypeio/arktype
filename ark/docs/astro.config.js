@@ -3,7 +3,6 @@
 import react from "@astrojs/react"
 import starlight from "@astrojs/starlight"
 import { defineConfig } from "astro/config"
-import addCopyButtonListeners from "./src/components/addCopyButtonListeners.js?raw"
 import { shikiConfig } from "./src/components/shiki.config.js"
 
 // https://astro.build/config
@@ -31,8 +30,7 @@ export default defineConfig({
 				{
 					tag: "script",
 					attrs: {
-						src: "/src/components/addCopyButtonListeners.js",
-						defer: true
+						src: "/src/components/addCopyButtonListeners.js"
 					}
 				}
 			],

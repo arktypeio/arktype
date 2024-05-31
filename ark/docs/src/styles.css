@@ -154,7 +154,6 @@ header * {
 	background: var(--sl-color-gray-4);
 	opacity: 0.3;
 	cursor: pointer;
-	transition: background-color 0.3s ease;
 }
 
 .copy-button:hover {
@@ -163,5 +162,10 @@ header * {
 
 .copy-button:active {
 	opacity: 0.6;
+}
+
+/* only scale the icon to avoid changing the click hitbox */
+.copy-icon:active {
+	transition: scale 0.3s ease;
 	scale: 0.8;
 }
