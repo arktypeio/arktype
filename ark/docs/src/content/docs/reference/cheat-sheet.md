@@ -1,6 +1,7 @@
 ---
-title: 2.0 API cheat sheet
-order: 3
+title: API cheat sheet
+sidebar:
+  order: 3
 ---
 
 Lots more docs are on the way, but I want to highlight some of the most useful synatx patterns/features that are carried over from alpha as well as those new to the 2.0 release.

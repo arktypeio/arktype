@@ -1,5 +1,7 @@
 ---
 title: FAQ
+sidebar:
+  order: 4
 ---
 
 ### Why do I see type errors in an ArkType package in `node_modules`?
