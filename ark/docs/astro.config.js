@@ -3,6 +3,7 @@
 import react from "@astrojs/react"
 import starlight from "@astrojs/starlight"
 import { defineConfig } from "astro/config"
+import addCopyButtonListeners from "./src/components/addCopyButtonListeners.js?raw"
 import { shikiConfig } from "./src/components/shiki.config.js"
 
 // https://astro.build/config
@@ -26,6 +27,13 @@ export default defineConfig({
 				{
 					tag: "script",
 					content: `localStorage.setItem("starlight-theme", "dark")`
+				},
+				{
+					tag: "script",
+					attrs: {
+						src: "/src/components/addCopyButtonListeners.js",
+						defer: true
+					}
 				}
 			],
 			social: {
@@ -37,15 +45,11 @@ export default defineConfig({
 			sidebar: [
 				{
 					label: "Intro",
-					items: [{ label: "Setup", link: "/intro/setup/" }]
+					autogenerate: { directory: "intro" }
 				},
 				{
 					label: "Reference",
-					items: [
-						{ label: "Your first type", link: "/reference/your-first-type/" },
-						{ label: "Scopes", link: "/reference/scopes/" },
-						{ label: "Cheat sheet", link: "/reference/cheat-sheet/" }
-					]
+					autogenerate: { directory: "reference" }
 				}
 			],
 			customCss: ["@shikijs/twoslash/style-rich.css", "./src/styles.css"],

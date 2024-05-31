@@ -1,8 +1,11 @@
 ---
 title: Setup
 ---
+
 import { TabItem, Tabs } from "@astrojs/starlight/components"
 import Code from "../../../components/Code.astro"
+
+## Install
 
 <Tabs>
 	<TabItem label="pnpm" icon="pnpm">
@@ -19,6 +22,7 @@ import Code from "../../../components/Code.astro"
 	</TabItem>
 </Tabs>
 
-Our types are tested in [strict-mode](https://www.typescriptlang.org/tsconfig#strict) with TypeScript 5.1+.
+You'll also need...
 
-If your types work but you notice errors in node_modules, this could be due to tsconfig incompatibilities- please enable `compilerOptions/skipLibCheck` ([docs](https://www.typescriptlang.org/tsconfig/#skipLibCheck)).
+- TypeScript version `>=5.1`
+- A `tsconfig.json` with [`strict`](https://www.typescriptlang.org/tsconfig#strict) or [`strictNullChecks`](https://www.typescriptlang.org/tsconfig/#strictNullChecks) enabled

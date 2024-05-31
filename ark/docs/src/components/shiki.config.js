@@ -100,10 +100,24 @@ export const twoslash = transformerTwoslash({
 	}
 })
 
+/** @type {import("shiki").ShikiTransformer} */
+export const addCopyButton = {
+	name: "addCopyButton",
+	postprocess(html) {
+		return `<div class="code-container">
+	${html}
+    <button class="copy-button">
+        <img class="copy-icon" src= "/src/assets/copy.svg" />
+    </button>
+</div>`
+	}
+}
+
 /** @type { import("astro").ShikiConfig } */
 export const shikiConfig = {
 	theme: arkdarkColors,
 	// @ts-expect-error
 	langs: [arktypeTextmate],
-	transformers: [twoslash]
+	transformers: [twoslash, addCopyButton],
+	wrap: true
 }
