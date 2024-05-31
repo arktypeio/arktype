@@ -257,60 +257,6 @@ export abstract class BaseRoot<
 			{ shouldTransform: node => !includes(structuralKinds, node.kind) }
 		)
 	}
-
-	// divisibleBy<
-	// 	const schema extends validateConstraintArg<"divisor", this["infer"]>
-	// >(schema: schema): Type<applyRoot<t, "divisor", schema>, $> {
-	// 	return this.rawConstrain("divisor", schema as never) as never
-	// }
-
-	// atLeast<const schema extends validateConstraintArg<"min", this["infer"]>>(
-	// 	schema: schema
-	// ): Type<applyRoot<t, "min", schema>, $> {
-	// 	return this.rawConstrain("min", schema as never) as never
-	// }
-
-	// atMost<const schema extends validateConstraintArg<"max", this["infer"]>>(
-	// 	schema: schema
-	// ): Type<applyRoot<t, "max", schema>, $> {
-	// 	return this.rawConstrain("max", schema as never) as never
-	// }
-
-	// moreThan<const schema extends validateConstraintArg<"min", this["infer"]>>(
-	// 	schema: schema
-	// ): Type<applyRoot<t, "min", schema>, $> {
-	// 	return this.rawConstrain("min", schema as never) as never
-	// }
-
-	// lessThan<const schema extends validateConstraintArg<"max", this["infer"]>>(
-	// 	schema: schema
-	// ): Type<applyRoot<t, "max", schema>, $> {
-	// 	return this.rawConstrain("max", schema as never) as never
-	// }
-
-	// atLeastLength<
-	// 	const schema extends validateConstraintArg<"minLength", this["infer"]>
-	// >(schema: schema): Type<applyRoot<t, "minLength", schema>, $> {
-	// 	return this.rawConstrain("minLength", schema as never) as never
-	// }
-
-	// atMostLength<
-	// 	const schema extends validateConstraintArg<"maxLength", this["infer"]>
-	// >(schema: schema): Type<applyRoot<t, "maxLength", schema>, $> {
-	// 	return this.rawConstrain("maxLength", schema as never) as never
-	// }
-
-	// earlierThan<
-	// 	const schema extends validateConstraintArg<"before", this["infer"]>
-	// >(schema: schema): Type<applyRoot<t, "before", schema>, $> {
-	// 	return this.rawConstrain("before", schema as never) as never
-	// }
-
-	// laterThan<const schema extends validateConstraintArg<"after", this["infer"]>>(
-	// 	schema: schema
-	// ): Type<applyRoot<t, "after", schema>, $> {
-	// 	return this.rawConstrain("after", schema as never) as never
-	// }
 }
 
 export declare abstract class InnerRoot<t = unknown, $ = any> extends Callable<

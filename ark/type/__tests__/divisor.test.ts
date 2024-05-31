@@ -12,8 +12,15 @@ contextualize(
 			attest(divisibleByTwo.json).snap({ domain: "number", divisor: 2 })
 		})
 
-		it("chained", () => {
+		it("constrained", () => {
 			const t = type("number").constrain("divisor", 2)
+			const expected = type("number%2")
+			attest<typeof expected>(t)
+			attest(t.json).equals(expected.json)
+		})
+
+		it("chained", () => {
+			const t = type("number").divisibleBy(2)
 			const expected = type("number%2")
 			attest<typeof expected>(t)
 			attest(t.json).equals(expected.json)
@@ -67,6 +74,13 @@ contextualize(
 		it("indivisible", () => {
 			// @ts-expect-error
 			attest(() => type("string%1")).throwsAndHasTypeError(
+				writeIndivisibleMessage(keywordNodes.string)
+			)
+		})
+
+		it("chained indivisible", () => {
+			// @ts-expect-error
+			attest(() => type("string").divisibleBy(2)).throwsAndHasTypeError(
 				writeIndivisibleMessage(keywordNodes.string)
 			)
 		})

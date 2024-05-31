@@ -1,9 +1,16 @@
 import {
 	ArkErrors,
 	BaseRoot,
+	type AfterSchema,
 	type BaseMeta,
+	type BeforeSchema,
 	type Disjoint,
+	type DivisorSchema,
 	type InnerRoot,
+	type MaxLengthSchema,
+	type MaxSchema,
+	type MinLengthSchema,
+	type MinSchema,
 	type Morph,
 	type NodeSchema,
 	type Out,
@@ -238,6 +245,59 @@ declare class _Type<t = unknown, $ = any>
 		kind: conform<kind, constraintKindOf<this["inferIn"]>>,
 		def: def
 	): Type<constrain<t, kind, def>, $>
+
+	divisibleBy<const schema extends DivisorSchema>(
+		this: this["inferIn"] extends number ? this : Type<number>,
+		schema: schema
+	): Type<constrain<t, "divisor", schema>, $>
+
+	atLeast<const schema extends MinSchema>(
+		schema: schema
+	): Type<constrain<t, "min", schema>, $>
+
+	atMost<const schema extends MaxSchema>(
+		schema: schema
+	): Type<constrain<t, "max", schema>, $>
+
+	moreThan<const schema extends MinSchema>(
+		schema: schema
+	): Type<constrain<t, "min", schema>, $>
+
+	lessThan<const schema extends MaxSchema>(
+		schema: schema
+	): Type<constrain<t, "max", schema>, $>
+
+	atLeastLength<const schema extends MinLengthSchema>(
+		schema: schema
+	): Type<constrain<t, "minLength", schema>, $>
+
+	moreThanLength<const schema extends MinLengthSchema>(
+		schema: schema
+	): Type<constrain<t, "minLength", schema>, $>
+
+	atMostLength<const schema extends MaxLengthSchema>(
+		schema: schema
+	): Type<constrain<t, "maxLength", schema>, $>
+
+	lessThanLength<const schema extends MaxLengthSchema>(
+		schema: schema
+	): Type<constrain<t, "maxLength", schema>, $>
+
+	earlierThan<const schema extends BeforeSchema>(
+		schema: schema
+	): Type<constrain<t, "before", schema>, $>
+
+	atOrBefore<const schema extends BeforeSchema>(
+		schema: schema
+	): Type<constrain<t, "before", schema>, $>
+
+	laterThan<const schema extends AfterSchema>(
+		schema: schema
+	): Type<constrain<t, "after", schema>, $>
+
+	atOrAfter<const schema extends AfterSchema>(
+		schema: schema
+	): Type<constrain<t, "after", schema>, $>
 }
 
 export interface Type<

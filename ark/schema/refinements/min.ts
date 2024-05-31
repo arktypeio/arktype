@@ -20,12 +20,12 @@ export interface NormalizedMinRoot extends BaseNormalizedRangeRoot {
 	rule: number
 }
 
-export type MinRoot = NormalizedMinRoot | number
+export type MinSchema = NormalizedMinRoot | number
 
 export interface MinDeclaration
 	extends declareNode<{
 		kind: "min"
-		schema: MinRoot
+		schema: MinSchema
 		normalizedSchema: NormalizedMinRoot
 		inner: MinInner
 		prerequisite: number
