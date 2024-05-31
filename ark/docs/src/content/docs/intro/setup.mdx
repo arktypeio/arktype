@@ -5,7 +5,7 @@ title: Setup
 import { Aside, TabItem, Tabs } from "@astrojs/starlight/components"
 import Code from "../../../components/Code.astro"
 
-## Install
+## Installation
 
 <Tabs>
 	<TabItem label="pnpm" icon="pnpm">
@@ -24,11 +24,14 @@ import Code from "../../../components/Code.astro"
 
 You'll also need...
 
-- TypeScript version `>=5.1`
-- A `tsconfig.json` with [`strict`](https://www.typescriptlang.org/tsconfig#strict) or [`strictNullChecks`](https://www.typescriptlang.org/tsconfig/#strictNullChecks) enabled
+- TypeScript version `>=5.1`.
+- A `tsconfig.json` with...
+  - [`strict`](https://www.typescriptlang.org/tsconfig#strict) or [`strictNullChecks`](https://www.typescriptlang.org/tsconfig/#strictNullChecks) (**required**)
+  - [`skipLibCheck`](https://www.typescriptlang.org/tsconfig/#exactOptionalPropertyTypes) (strongly recommended, see [FAQ](/reference/faq#why-do-i-see-type-errors-in-an-arktype-package-in-node_modules))
+  - [`exactOptionalPropertyTypes`](https://www.typescriptlang.org/tsconfig/#exactOptionalPropertyTypes) (recommended)
 
-## Editor Extension (optional)
+## Extension (optional)
 
 If you're using VSCode, we recommend installing [ArkDark](https://marketplace.visualstudio.com/items?itemName=arktypeio.arkdark), an extension we built to provide the embedded syntax highlighting you'll see throughout these docs.
 
-If you're using a different editor, don't worry- ArkType will always aim to offer best-in-class DX anywhere TypeScript is supported. That said, we'd love help bringing ArkDark to [a wider array of environments](https://github.com/arktypeio/arktype/issues/989), so let us know if you're interested in contributing!
+If you're using a different editor, we'd love [help bringing ArkDark to other editors](https://github.com/arktypeio/arktype/issues/989), and in the meantime, don't worry- ArkType still offers best-in-class DX anywhere TypeScript is supported.
