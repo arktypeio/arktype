@@ -105,6 +105,8 @@ starlight-theme-select,
 	background: #001323aa;
 	backdrop-filter: blur(8px);
 	box-shadow: var(--hover-glow);
+	/** Applying wrapping to hovers looks awful */
+	white-space: pre;
 }
 
 /* Firefox specific rules */
