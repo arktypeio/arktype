@@ -2,7 +2,7 @@
 	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
 	"name": "InjectedArkTypeScript",
 	"scopeName": "source.arktype.injection.ts",
-	"injectionSelector": "L:source.ts, L:source.tsx, L:source.js, L:source.jsx, L:source.mdx, L:meta.embedded.block.typescript, L:meta.embedded.block.typescriptreact, L:meta.embedded.block.javascript - comment",
+	"injectionSelector": "L:source.ts - comment, L:source.tsx - comment, L:source.js - comment, L:source.jsx - comment, L:source.mdx - comment, L:meta.embedded.block.typescript - comment, L:meta.embedded.block.typescriptreact - comment, L:meta.embedded.block.javascript - comment",
 	"patterns": [
 		{
 			"include": "#arkDefinition"

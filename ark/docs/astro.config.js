@@ -26,12 +26,6 @@ export default defineConfig({
 				{
 					tag: "script",
 					content: `localStorage.setItem("starlight-theme", "dark")`
-				},
-				{
-					tag: "script",
-					attrs: {
-						src: "/src/components/addCopyButtonListeners.js"
-					}
 				}
 			],
 			social: {

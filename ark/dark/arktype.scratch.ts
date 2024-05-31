@@ -41,6 +41,11 @@ factor("foo|bar")
 // not highglighted
 or("foo|bar")
 
+// THIS SHOULD NOT BE HIGHLIGHTED
+// 	const t = type({
+// 		[optional(s)]: "number"
+// 	})
+
 const ff = type("string").or("foobar|baz")
 
 const types = scope({ notASpace: { a: type("string") } }).export()
