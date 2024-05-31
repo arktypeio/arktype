@@ -26,6 +26,12 @@ export default defineConfig({
 				{
 					tag: "script",
 					content: `localStorage.setItem("starlight-theme", "dark")`
+				},
+				{
+					tag: "script",
+					attrs: {
+						src: "/src/components/addCopyButtonListeners.js"
+					}
 				}
 			],
 			social: {
@@ -37,15 +43,11 @@ export default defineConfig({
 			sidebar: [
 				{
 					label: "Intro",
-					items: [{ label: "Install", link: "/intro/install/" }]
+					autogenerate: { directory: "intro" }
 				},
 				{
 					label: "Reference",
-					items: [
-						{ label: "Your first type", link: "/reference/your-first-type/" },
-						{ label: "Scopes", link: "/reference/scopes/" },
-						{ label: "Cheat sheet", link: "/reference/cheat-sheet/" }
-					]
+					autogenerate: { directory: "reference" }
 				}
 			],
 			customCss: ["@shikijs/twoslash/style-rich.css", "./src/styles.css"],

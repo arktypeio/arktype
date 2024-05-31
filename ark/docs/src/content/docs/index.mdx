@@ -10,26 +10,29 @@ hero:
     file: ../../assets/splash.png
   actions:
     - text: Set sail
-      link: /intro/install/
+      link: /intro/setup/
       icon: right-arrow
       variant: primary
-    - text: Doc up
-      link: https://github.com/arktypeio/arktype
-      icon: external
 ---
 
-import { Card, CardGrid, TabItem, Tabs } from "@astrojs/starlight/components"
+import {
+	Card,
+	CardGrid,
+	LinkCard,
+	TabItem,
+	Tabs
+} from "@astrojs/starlight/components"
 import {
 	RuntimeBenchmarksGraph,
 	TypeBenchmarksGraph
 } from "../../components/BenchmarksGraph.tsx"
+import Code from "../../components/Code.astro"
 import { HeroBackdrop } from "../../components/HeroBackdrop.tsx"
-import TsBlock from "../../components/TsBlock.astro"
-import betterErrorsSrc from "./betterErrors.twoslash.ts?raw"
-import clearAndConciseSrc from "./clearAndConcise.twoslash.ts?raw"
-import deepIntrospectability from "./deepIntrospectability.twoslash.ts?raw"
-import intrinsicOptimization from "./intrinsicOptimization.twoslash.ts?raw"
-import unparalleledDxSrc from "./unparalleledDx.twoslash.ts?raw"
+import betterErrors from "./betterErrors.twoslash.js?raw"
+import clarityAndConcision from "./clarityAndConcision.twoslash.js?raw"
+import deepIntrospectability from "./deepIntrospectability.twoslash.js?raw"
+import intrinsicOptimization from "./intrinsicOptimization.twoslash.js?raw"
+import unparalleledDx from "./unparalleledDx.twoslash.js?raw"
 
 <div class="not-content">
 	<HeroBackdrop client:only="react" />
@@ -41,7 +44,7 @@ import unparalleledDxSrc from "./unparalleledDx.twoslash.ts?raw"
 	<Card title="Unparalleled DX" icon="seti:tsconfig">
 		Type syntax you already know with safety and completions unlike anything
 		you've ever seen
-		<TsBlock code={unparalleledDxSrc} />
+		<Code code={unparalleledDx} />
 	</Card>
 	<Card title="Faster... everything" icon="rocket">
 		100x faster than Zod at runtime with editor performance that will remind you
@@ -58,24 +61,30 @@ import unparalleledDxSrc from "./unparalleledDx.twoslash.ts?raw"
 	<Card title="Clarity and Concision" icon="comment-alt">
 		Definitions are half as long, type errors are twice as readable, and hovers
 		tell you just what really matters
-		<TsBlock code={clearAndConciseSrc} />
+		<Code code={clarityAndConcision} />
 	</Card>
 	<Card title="Better Errors" icon="error">
 		Deeply customizable messages with great defaults
-		<TsBlock code={betterErrorsSrc} />
+		<Code code={betterErrors} />
 	</Card>
 	<Card title="Deep Introspectability" icon="seti:code-search">
 		ArkType uses set theory to understand and expose the relationships between
 		your types at runtime the way TypeScript does at compile time
-		<TsBlock code={deepIntrospectability} />
+		<Code code={deepIntrospectability} />
 	</Card>
 	<Card title="Intrinsic Optimization" icon="seti:smarty">
 		Every schema is internally normalized and reduced to its purest and fastest
 		representation
-		<TsBlock code={intrinsicOptimization} />
+		<Code code={intrinsicOptimization} />
 	</Card>
 	{/* <Card title="Portable" icon="seti:json">
 		Most definitions are just objects and strings- take them across the stack or
 		even outside JS altogether
 	</Card> */}
 </CardGrid>
+
+<LinkCard
+	title="Doc up"
+	description="Everything you need to know from installation to integration"
+	href="/intro/setup"
+/>

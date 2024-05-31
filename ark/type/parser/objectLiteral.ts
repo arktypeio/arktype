@@ -181,8 +181,8 @@ type nonOptionalKeyFrom<k, $, args> =
 	parseKey<k> extends PreparsedKey<"required", infer inner> ? inner
 	: parseKey<k> extends PreparsedKey<"index", infer inner> ?
 		inferDefinition<inner, $, args> extends infer t ?
-			// symbols are not constrainable
-			(t extends of<any, any> ? string : Key) & t
+			// simplify the display of constrained index signatures
+			(t extends of<infer inner, any> ? Extract<inner, string> : Key) & t
 		:	never
 	:	// "..." is handled at the type root so is handled neither here nor in optionalKeyFrom
 		// "+" has no effect on inference

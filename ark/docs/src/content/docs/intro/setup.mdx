@@ -1,0 +1,34 @@
+---
+title: Setup
+---
+
+import { Aside, TabItem, Tabs } from "@astrojs/starlight/components"
+import Code from "../../../components/Code.astro"
+
+## Install
+
+<Tabs>
+	<TabItem label="pnpm" icon="pnpm">
+		<Code code="pnpm install arktype" lang="bash" />
+	</TabItem>
+	<TabItem label="npm" icon="seti:npm">
+		<Code code="npm install arktype" lang="bash" />
+	</TabItem>
+	<TabItem label="yarn" icon="seti:yarn">
+		<Code code="yarn install arktype" lang="bash" />
+	</TabItem>
+	<TabItem label="bun" icon="bun">
+		<Code code="bun install arktype" lang="bash" />
+	</TabItem>
+</Tabs>
+
+You'll also need...
+
+- TypeScript version `>=5.1`
+- A `tsconfig.json` with [`strict`](https://www.typescriptlang.org/tsconfig#strict) or [`strictNullChecks`](https://www.typescriptlang.org/tsconfig/#strictNullChecks) enabled
+
+## Editor Extension (optional)
+
+If you're using VSCode, we recommend installing [ArkDark](https://marketplace.visualstudio.com/items?itemName=arktypeio.arkdark), an extension we built to provide the embedded syntax highlighting you'll see throughout these docs.
+
+If you're using a different editor, don't worry- ArkType will always aim to offer best-in-class DX anywhere TypeScript is supported. That said, we'd love help bringing ArkDark to [a wider array of environments](https://github.com/arktypeio/arktype/issues/989), so let us know if you're interested in contributing!

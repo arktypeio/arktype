@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="./icon.png" height="64px" />
+  <img src="/ark/dark/icon.png" height="64px" />
   <h1>ArkDark</h1>
 </div>
 <div align="center">
@@ -14,41 +14,36 @@ We're building a 1:1 validator for TypeScript! Check out our core project [on Gi
 
 This extension provides syntax highlighting for strings that are part of an ArkType definition:
 
-![syntax highlighting](./highlighting.png)
+![syntax highlighting](/ark/dark/highlighting.png)
 
 ## ArkDark Theme
 
 It also includes an editor theme based on ArkType and optimized for type syntax:
 
-![theme](./theme.png)
+![theme](/ark/dark/theme.png)
 
-## Extending This Theme
+## Contributing
 
-- **pnpm build** to generate the arkdark.json theme
-- **F5** or **Run > Debugger**, will launch the extension in another window, allowing you to see the changes on any repo you open up
+**Run > Debugger** (`F5` by default) will launch the extension in another window, allowing you to see the effects of your changes on whatever code you open in it.
 
-Looking to edit the theme? **(Changes are immediately reflected)**
+### Update the ArkDark theme palette
 
-- **themes** > **arkdark.json**
+See [color-theme.json](/ark/dark/color-theme.json)
 
-Looking to change the textmate scopes? **(Must restart the debugger to view changes)**
+> [!NOTE]  
+> Changes will be immediately reflected in the extension host window
 
-- arktype.tmLanguage.json
+### Update syntax highlighting rules
 
-Current textmate scopes can be viewed:
+See [injected.tmLanguage.json](/ark/dark/injected.tmLanguage.json)
 
-- Open: Command Palette **(Ctrl + Shift + P)**
-- Search: **Developer: Inspect Editor Tokens and Scopes**
+To determine which scopes need to be changed, you can view scopes applied to any file in VSCode by opening the Command Palette (Ctrl+Shift+P by default) and searching "Developer: Inspect Editor Tokens and Scopes".
 
-## Notes
+Changes to `injected.tmLanguage.json` should be mirrored to [tsWithArkType.tmLanguage.json](./tsWithArkType.tmLanguage.json).
 
-Base color-theme.json copied from VSCode's "Default Dark Modern" (https://github.com/microsoft/vscode/blob/main/extensions/theme-defaults/themes/dark_modern.json).
+> [!IMPORTANT]  
+> You must reload the extension host window to see scope changes reflected
 
-These are the original colors of defaults that have been overriden:
+## Attributions
 
-```json
-{
-	"editor.foreground": "#CCCCCC",
-	"errorForeground": "#F85149"
-}
-```
+Base color-theme.json extended from VSCode's "Default Dark Modern" (https://github.com/microsoft/vscode/blob/main/extensions/theme-defaults/themes/dark_modern.json).
