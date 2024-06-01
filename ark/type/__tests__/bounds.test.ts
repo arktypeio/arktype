@@ -395,11 +395,11 @@ contextualize(
 
 		it("invalid minLength operand", () => {
 			// @ts-expect-error
-			attest(() => type("boolean").atLeastLength(5)).throwsAndHasTypeError(
+			attest(() => type("bigint").atLeastLength(5)).throwsAndHasTypeError(
 				writeInvalidOperandMessage(
 					"minLength",
 					internalKeywords.lengthBoundable,
-					keywordNodes.boolean
+					keywordNodes.bigint
 				)
 			)
 		})

@@ -1,5 +1,53 @@
 # arktype
 
+## 2.0.0-dev.19
+
+### Chainable Constraints
+
+Added `satisfying`, `matching`, `divisibleBy`, `atLeast`, `moreThan`, `atMost`, `lessThan`, `atLeastLength`, `moreThanLength`, `atMostLength`, `lessThanLength`, `atOrAfter`, `laterThan`, `atOrBefore`, and `earlierThan` as chainable expressions mirroring existing comparator expressions.
+
+This can be especially convenient for applying constraints to previously defined types like this:
+
+```ts
+const evenNumber = type("number%2")
+
+const evenNumberLessThan100 = evenNumber.lessThan(100)
+
+const equivalentSingleDeclaration = type("number%2<100")
+```
+
+Also works great for chaining off non-string-embedable expressions outside a scope:
+
+```ts
+const myBoundedArray = type({ foo: "string" })
+	.array()
+	.atLeastLength(5)
+	.atMostLength(20)
+```
+
+These chained operations are also typesafe:
+
+```ts
+// TypeError: Divisor operand must be a number (was a string)
+type("string").divisibleBy(2)
+```
+
+### Cyclic Types Bug Fix
+
+Fixed an issue causing standalone types referencing cyclic types in a scope to crash on JIT-compiled runtime validation.
+
+Types like this will now work correctly:
+
+```ts
+const $ = scope({
+	box: {
+		"box?": "box"
+	}
+})
+
+const box = $.type("box|null")
+```
+
 ## 2.0.0-dev.18
 
 Add a `"digits"` keyword for strings consisting exclusively of 0-9.
