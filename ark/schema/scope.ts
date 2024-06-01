@@ -473,8 +473,25 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 	): show<destructuredExportContext<$, names>> {
 		if (!this._exports) {
 			this._exports = {}
-			for (const name of this.exportedNames)
-				this._exports[name] = this.maybeResolve(name) as never
+			for (const name of this.exportedNames) {
+				const resolution = this.maybeResolve(name)
+				if (hasArkKind(resolution, "root")) {
+					resolution.references
+						.filter((node): node is Node<"alias"> => node.hasKind("alias"))
+						.forEach(aliasNode => {
+							Object.assign(
+								aliasNode.referencesById,
+								aliasNode.resolution.referencesById
+							)
+							resolution.references.forEach(ref => {
+								if (aliasNode.id in ref.referencesById)
+									Object.assign(ref.referencesById, aliasNode.referencesById)
+							})
+						})
+				}
+				this._exports[name] = resolution as never
+			}
+
 			this.lazyResolutions.forEach(node => node.resolution)
 
 			this._exportedResolutions = resolutionsOfModule(this, this._exports)
