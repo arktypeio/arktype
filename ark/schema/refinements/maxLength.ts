@@ -1,18 +1,24 @@
 import type { BaseRoot } from "../roots/root.js"
-import type { BaseMeta, declareNode } from "../shared/declare.js"
+import type { declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.js"
 import type { TraverseAllows } from "../shared/traversal.js"
-import { BaseRange, type LengthBoundableData } from "./range.js"
+import {
+	type BaseNormalizedRangeSchema,
+	BaseRange,
+	type BaseRangeInner,
+	type LengthBoundableData,
+	parseExclusiveKey
+} from "./range.js"
 
-export interface MaxLengthInner extends BaseMeta {
+export interface MaxLengthInner extends BaseRangeInner {
 	rule: number
 }
 
-export interface NormalizedMaxLengthSchema extends BaseMeta {
+export interface NormalizedMaxLengthSchema extends BaseNormalizedRangeSchema {
 	rule: number
 }
 
@@ -34,12 +40,16 @@ export const maxLengthImplementation: nodeImplementationOf<MaxLengthDeclaration>
 		collapsibleKey: "rule",
 		hasAssociatedError: true,
 		keys: {
-			rule: {}
+			rule: {},
+			exclusive: parseExclusiveKey
 		},
 		normalize: schema =>
 			typeof schema === "number" ? { rule: schema } : schema,
 		defaults: {
-			description: node => `at most length ${node.rule}`,
+			description: node =>
+				node.exclusive ?
+					`less than length ${node.rule}`
+				:	`at most length ${node.rule}`,
 			actual: data => `${data.length}`
 		},
 		intersections: {
@@ -56,6 +66,8 @@ export const maxLengthImplementation: nodeImplementationOf<MaxLengthDeclaration>
 export class MaxLengthNode extends BaseRange<MaxLengthDeclaration> {
 	readonly impliedBasis: BaseRoot = this.$.keywords.lengthBoundable.raw
 
-	traverseAllows: TraverseAllows<LengthBoundableData> = data =>
-		data.length <= this.rule
+	traverseAllows: TraverseAllows<LengthBoundableData> =
+		this.exclusive ?
+			data => data.length < this.rule
+		:	data => data.length <= this.rule
 }

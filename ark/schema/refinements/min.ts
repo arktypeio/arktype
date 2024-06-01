@@ -1,29 +1,32 @@
 import type { BaseRoot } from "../roots/root.js"
-import type { BaseMeta, declareNode } from "../shared/declare.js"
+import type { declareNode } from "../shared/declare.js"
 import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.js"
 import type { TraverseAllows } from "../shared/traversal.js"
-import { BaseRange, parseExclusiveKey } from "./range.js"
+import {
+	type BaseNormalizedRangeSchema,
+	BaseRange,
+	type BaseRangeInner,
+	parseExclusiveKey
+} from "./range.js"
 
-export interface MinInner extends BaseMeta {
+export interface MinInner extends BaseRangeInner {
 	rule: number
-	exclusive?: true
 }
 
-export interface NormalizedMinSchema extends BaseMeta {
+export interface NormalizedMinRoot extends BaseNormalizedRangeSchema {
 	rule: number
-	exclusive?: boolean
 }
 
-export type MinSchema = NormalizedMinSchema | number
+export type MinSchema = NormalizedMinRoot | number
 
 export interface MinDeclaration
 	extends declareNode<{
 		kind: "min"
 		schema: MinSchema
-		normalizedSchema: NormalizedMinSchema
+		normalizedSchema: NormalizedMinRoot
 		inner: MinInner
 		prerequisite: number
 		errorContext: MinInner

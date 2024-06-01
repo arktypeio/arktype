@@ -11,8 +11,8 @@ import type { KeySchemainitions, RangeKind } from "../shared/implement.js"
 
 export interface BaseRangeDeclaration extends RawNodeDeclaration {
 	kind: RangeKind
-	inner: UnknownRangeInner
-	normalizedSchema: UnknownNormalizedRangeSchema
+	inner: BaseRangeInner
+	normalizedSchema: BaseNormalizedRangeSchema
 }
 
 export abstract class BaseRange<
@@ -24,10 +24,6 @@ export abstract class BaseRange<
 		this.boundOperandKind === "value" ? `data`
 		: this.boundOperandKind === "length" ? `data.length`
 		: `data.valueOf()`
-	// this is only ever set on min/max, but it is useful internally for
-	// generalizing range comparisons
-	declare exclusive?: true
-
 	readonly comparator: RelativeComparator = compileComparator(
 		this.kind,
 		this.exclusive
@@ -75,19 +71,22 @@ export abstract class BaseRange<
 	}
 }
 
-export interface UnknownRangeInner extends BaseMeta {
+export interface BaseRangeInner extends BaseMeta {
 	readonly rule: number | Date
 	readonly exclusive?: true
 }
 
 export type LimitSchemaValue = Date | number | string
 
-export interface UnknownNormalizedRangeSchema extends BaseMeta {
+export type LimitInnerValue<kind extends RangeKind = RangeKind> =
+	kind extends "before" | "after" ? Date : number
+
+export interface BaseNormalizedRangeSchema extends BaseMeta {
 	readonly rule: LimitSchemaValue
 	readonly exclusive?: boolean
 }
 
-export type UnknownRangeSchema = LimitSchemaValue | UnknownNormalizedRangeSchema
+export type UnknownRangeSchema = LimitSchemaValue | BaseNormalizedRangeSchema
 
 export interface ExclusiveDateRangeSchema extends BaseMeta {
 	rule: LimitSchemaValue

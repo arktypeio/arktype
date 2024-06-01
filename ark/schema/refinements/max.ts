@@ -1,21 +1,24 @@
 import type { BaseRoot } from "../roots/root.js"
-import type { BaseMeta, declareNode } from "../shared/declare.js"
+import type { declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.js"
 import type { TraverseAllows } from "../shared/traversal.js"
-import { BaseRange, parseExclusiveKey } from "./range.js"
+import {
+	type BaseNormalizedRangeSchema,
+	BaseRange,
+	type BaseRangeInner,
+	parseExclusiveKey
+} from "./range.js"
 
-export interface MaxInner extends BaseMeta {
+export interface MaxInner extends BaseRangeInner {
 	rule: number
-	exclusive?: true
 }
 
-export interface NormalizedMaxSchema extends BaseMeta {
+export interface NormalizedMaxSchema extends BaseNormalizedRangeSchema {
 	rule: number
-	exclusive?: boolean
 }
 
 export type MaxSchema = NormalizedMaxSchema | number

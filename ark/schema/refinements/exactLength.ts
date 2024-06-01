@@ -50,11 +50,19 @@ export const exactLengthImplementation: nodeImplementationOf<ExactLengthDeclarat
 					}
 				}),
 			minLength: (exactLength, minLength) =>
-				exactLength.rule >= minLength.rule ?
+				(
+					minLength.exclusive ?
+						exactLength.rule > minLength.rule
+					:	exactLength.rule >= minLength.rule
+				) ?
 					exactLength
 				:	Disjoint.from("range", exactLength, minLength),
 			maxLength: (exactLength, maxLength) =>
-				exactLength.rule <= maxLength.rule ?
+				(
+					maxLength.exclusive ?
+						exactLength.rule < maxLength.rule
+					:	exactLength.rule <= maxLength.rule
+				) ?
 					exactLength
 				:	Disjoint.from("range", exactLength, maxLength)
 		}
