@@ -2,29 +2,40 @@ import {
 	ArkErrors,
 	BaseRoot,
 	type BaseMeta,
+	type ConstraintKind,
 	type Disjoint,
+	type DivisorSchema,
+	type ExactLengthSchema,
+	type ExclusiveDateRangeSchema,
+	type ExclusiveNumericRangeSchema,
+	type InclusiveDateRangeSchema,
+	type InclusiveNumericRangeSchema,
 	type InnerRoot,
 	type Morph,
+	type MorphAst,
 	type NodeSchema,
 	type Out,
 	type Predicate,
+	type Prerequisite,
 	type PrimitiveConstraintKind,
+	type RegexSchema,
 	type Root,
 	type ambient,
 	type constrain,
 	type constraintKindOf,
 	type distillIn,
 	type distillOut,
-	type includesMorphs,
+	type exclusivizeRangeSchema,
 	type inferIntersection,
 	type inferMorphOut,
-	type inferNarrow,
 	type inferPipes,
-	type internalImplementationOf
+	type inferPredicate,
+	type writeInvalidOperandMessage
 } from "@arktype/schema"
 import {
 	Callable,
 	type Constructor,
+	type ErrorMessage,
 	type array,
 	type conform
 } from "@arktype/util"
@@ -129,13 +140,17 @@ export type DeclarationParser<$> = <preinferred>() => {
 	) => Type<preinferred, $>
 }
 
+type validateChainedConstraint<
+	kind extends ConstraintKind,
+	t extends { inferIn: unknown }
+> =
+	t["inferIn"] extends Prerequisite<kind> ? t
+	:	ErrorMessage<writeInvalidOperandMessage<kind, Root<t["inferIn"]>>>
+
 // this is declared as a class internally so we can ensure all "abstract"
 // methods of BaseRoot are overridden, but we end up exporting it as an interface
 // to ensure it is not accessed as a runtime value
-declare class _Type<t = unknown, $ = any>
-	extends InnerRoot<t, $>
-	implements internalImplementationOf<Root>
-{
+declare class _Type<t = unknown, $ = any> extends InnerRoot<t, $> {
 	$: Scope<$>;
 
 	get in(): Type<this["tIn"], $>
@@ -211,12 +226,12 @@ declare class _Type<t = unknown, $ = any>
 		g: g
 	): Type<inferPipes<t, [a, b, c, d, e, f, g]>, $>
 
-	narrow<def extends Predicate<distillOut<t>>>(
-		def: def
+	narrow<const predicate extends Predicate<distillOut<t>>>(
+		predicate: predicate
 	): Type<
-		includesMorphs<t> extends true ?
-			(In: this["tIn"]) => Out<inferNarrow<this["tOut"], def>>
-		:	inferNarrow<t, def>,
+		t extends MorphAst ?
+			(In: this["tIn"]) => Out<inferPredicate<this["tOut"], predicate>>
+		:	inferPredicate<t, predicate>,
 		$
 	>
 
@@ -238,6 +253,90 @@ declare class _Type<t = unknown, $ = any>
 		kind: conform<kind, constraintKindOf<this["inferIn"]>>,
 		def: def
 	): Type<constrain<t, kind, def>, $>
+
+	satisfying<predicate extends Predicate<distillIn<t>>>(
+		predicate: predicate
+	): Type<
+		t extends MorphAst ?
+			(In: inferPredicate<this["tIn"], predicate>) => Out<this["tOut"]>
+		:	inferPredicate<t, predicate>,
+		$
+	>
+
+	divisibleBy<const schema extends DivisorSchema>(
+		this: validateChainedConstraint<"divisor", this>,
+		schema: schema
+	): Type<constrain<t, "divisor", schema>, $>
+
+	matching<const schema extends RegexSchema>(
+		this: validateChainedConstraint<"regex", this>,
+		schema: schema
+	): Type<constrain<t, "regex", schema>, $>
+
+	atLeast<const schema extends InclusiveNumericRangeSchema>(
+		this: validateChainedConstraint<"min", this>,
+		schema: schema
+	): Type<constrain<t, "min", schema>, $>
+
+	atMost<const schema extends InclusiveNumericRangeSchema>(
+		this: validateChainedConstraint<"max", this>,
+		schema: schema
+	): Type<constrain<t, "max", schema>, $>
+
+	moreThan<const schema extends ExclusiveNumericRangeSchema>(
+		this: validateChainedConstraint<"min", this>,
+		schema: schema
+	): Type<constrain<t, "min", exclusivizeRangeSchema<schema>>, $>
+
+	lessThan<const schema extends ExclusiveNumericRangeSchema>(
+		this: validateChainedConstraint<"max", this>,
+		schema: schema
+	): Type<constrain<t, "max", exclusivizeRangeSchema<schema>>, $>
+
+	atLeastLength<const schema extends InclusiveNumericRangeSchema>(
+		this: validateChainedConstraint<"minLength", this>,
+		schema: schema
+	): Type<constrain<t, "minLength", schema>, $>
+
+	atMostLength<const schema extends InclusiveNumericRangeSchema>(
+		this: validateChainedConstraint<"maxLength", this>,
+		schema: schema
+	): Type<constrain<t, "maxLength", schema>, $>
+
+	moreThanLength<const schema extends ExclusiveNumericRangeSchema>(
+		this: validateChainedConstraint<"minLength", this>,
+		schema: schema
+	): Type<constrain<t, "minLength", exclusivizeRangeSchema<schema>>, $>
+
+	lessThanLength<const schema extends ExclusiveNumericRangeSchema>(
+		this: validateChainedConstraint<"maxLength", this>,
+		schema: schema
+	): Type<constrain<t, "maxLength", exclusivizeRangeSchema<schema>>, $>
+
+	exactlyLength<const schema extends ExactLengthSchema>(
+		this: validateChainedConstraint<"exactLength", this>,
+		schema: schema
+	): Type<constrain<t, "exactLength", schema>, $>
+
+	atOrAfter<const schema extends InclusiveDateRangeSchema>(
+		this: validateChainedConstraint<"after", this>,
+		schema: schema
+	): Type<constrain<t, "after", schema>, $>
+
+	atOrBefore<const schema extends InclusiveDateRangeSchema>(
+		this: validateChainedConstraint<"before", this>,
+		schema: schema
+	): Type<constrain<t, "before", schema>, $>
+
+	laterThan<const schema extends ExclusiveDateRangeSchema>(
+		this: validateChainedConstraint<"after", this>,
+		schema: schema
+	): Type<constrain<t, "after", exclusivizeRangeSchema<schema>>, $>
+
+	earlierThan<const schema extends ExclusiveDateRangeSchema>(
+		this: validateChainedConstraint<"before", this>,
+		schema: schema
+	): Type<constrain<t, "before", exclusivizeRangeSchema<schema>>, $>
 }
 
 export interface Type<

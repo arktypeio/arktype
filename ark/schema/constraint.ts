@@ -6,7 +6,7 @@ import {
 	throwInternalError,
 	throwParseError,
 	type array,
-	type describeExpression,
+	type describe,
 	type listable,
 	type satisfy
 } from "@arktype/util"
@@ -247,9 +247,9 @@ export const writeInvalidOperandMessage = <
 export type writeInvalidOperandMessage<
 	kind extends ConstraintKind,
 	actual extends Root
-> = `${Capitalize<kind>} operand must be ${describeExpression<
+> = `${Capitalize<kind>} operand must be ${describe<
 	Prerequisite<kind>
->} (was ${describeExpression<Exclude<actual["infer"], Prerequisite<kind>>>})`
+>} (was ${describe<Exclude<actual["infer"], Prerequisite<kind>>>})`
 
 export interface ConstraintAttachments {
 	impliedBasis: UnknownRoot | null

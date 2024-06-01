@@ -1,7 +1,8 @@
-import type { conform } from "@arktype/util"
+import type { conform, leftIfEqual } from "@arktype/util"
 import type { PrimitiveConstraintKind } from "./constraint.js"
 import type { NodeSchema } from "./kinds.js"
 import type { constraintKindOf } from "./roots/intersection.js"
+import type { MorphAst, Out } from "./roots/morph.js"
 
 export type Comparator = "<" | "<=" | ">" | ">=" | "=="
 
@@ -126,6 +127,11 @@ export type LessThanLength<rule extends number> = {
 	max: { [k in rule]: 0 }
 }
 
+export type ExactlyLength<rule extends number> = {
+	min: { [k in rule]: 1 }
+	max: { [k in rule]: 1 }
+}
+
 export namespace string {
 	export type atLeastLength<rule extends number> = of<
 		string,
@@ -142,6 +148,11 @@ export namespace string {
 	export type lessThanLength<rule extends number> = of<
 		string,
 		LessThanLength<rule>
+	>
+
+	export type exactlyLength<rule extends number> = of<
+		string,
+		ExactlyLength<rule>
 	>
 
 	export type matching<rule extends string> = of<string, Matching<rule>>
@@ -164,6 +175,7 @@ export namespace string {
 					lessThanLength<rule & number>
 				:	atMostLength<rule & number>
 			: kind extends "regex" ? matching<rule & string>
+			: kind extends "exactLength" ? exactlyLength<rule & number>
 			: narrowed
 		:	never
 }
@@ -227,11 +239,9 @@ export type constrain<
 	kind extends PrimitiveConstraintKind,
 	schema extends NodeSchema<kind>
 > =
-	_constrain<t, kind, schema> extends infer constrained ?
-		[t, constrained] extends [constrained, t] ?
-			t
-		:	constrained
-	:	never
+	t extends MorphAst<infer i, infer o> ?
+		(In: leftIfEqual<i, _constrain<i, kind, schema>>) => Out<o>
+	:	leftIfEqual<t, _constrain<t, kind, schema>>
 
 type _constrain<
 	t,
@@ -282,6 +292,7 @@ export type schemaToConstraint<
 			schema extends { exclusive: true } ?
 				LessThanLength<rule & number>
 			:	AtMostLength<rule & number>
+		: kind extends "exactLength" ? ExactlyLength<rule & number>
 		: kind extends "after" ?
 			schema extends { exclusive: true } ?
 				After<normalizeLimit<rule>>

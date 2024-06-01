@@ -11,14 +11,16 @@ import type {
 	TraverseApply
 } from "./shared/traversal.js"
 
-export interface PredicateInner<rule extends Predicate<any> = Predicate<any>>
+export interface PredicateInner<predicate extends Predicate = Predicate>
 	extends BaseMeta {
-	readonly predicate: rule
+	readonly predicate: predicate
 }
 
 export type PredicateErrorContext = Partial<PredicateInner>
 
-export type PredicateSchema = PredicateInner | Predicate<any>
+export type PredicateSchema<predicate extends Predicate = Predicate> =
+	| PredicateInner<predicate>
+	| predicate
 
 export interface PredicateDeclaration
 	extends declareNode<{
@@ -87,7 +89,7 @@ export class PredicateNode extends BaseConstraint<PredicateDeclaration> {
 	}
 }
 
-export type Predicate<data = unknown> = (
+export type Predicate<data = any> = (
 	data: data,
 	ctx: TraversalContext
 ) => boolean
@@ -97,7 +99,7 @@ export type PredicateCast<input = never, narrowed extends input = input> = (
 	ctx: TraversalContext
 ) => input is narrowed
 
-export type inferNarrow<t, predicate> =
+export type inferPredicate<t, predicate> =
 	predicate extends (data: any, ...args: any[]) => data is infer narrowed ?
 		t extends of<unknown, infer constraints> ?
 			constrain<of<narrowed, constraints>, "predicate", any>

@@ -6,7 +6,7 @@ import { arrayIndexMatcher } from "../structure/shared.js"
 import "./tsKeywords.js"
 
 export interface internalKeywordExports {
-	lengthBoundable: string | unknown[]
+	lengthBoundable: string | readonly unknown[]
 	propertyKey: Key
 	nonNegativeIntegerString: string
 }

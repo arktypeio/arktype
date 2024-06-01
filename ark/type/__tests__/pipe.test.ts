@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@arktype/attest"
-import { assertNodeKind, type Out } from "@arktype/schema"
+import { assertNodeKind, type Out, type string } from "@arktype/schema"
 import { scope, type Type, type } from "arktype"
 
 contextualize(() => {
@@ -18,6 +18,30 @@ contextualize(() => {
 		attest(() => type("number>5").pipe(type("number<3"))).throws.snap(
 			"ParseError: Intersection of >5 and <3 results in an unsatisfiable type"
 		)
+	})
+
+	it("constraints apply to input", () => {
+		const t = type("parse.number").atMostLength(5)
+		attest<(In: string.atMostLength<5>) => Out<number>>(t.t)
+
+		const morphs = t.raw.assertHasKind("morph").serializedMorphs
+		attest(t.json).snap({
+			in: {
+				domain: "string",
+				regex: [
+					{
+						description: "a well-formed numeric string",
+						flags: "",
+						rule: "^(?!^-0$)-?(?:0|[1-9]\\d*)(?:\\.\\d*[1-9])?$"
+					}
+				],
+				maxLength: 5
+			},
+			morphs
+		})
+
+		attest(t("321")).equals(321)
+		attest(t("654321").toString()).snap("must be at most length 5 (was 6)")
 	})
 
 	it("within type", () => {

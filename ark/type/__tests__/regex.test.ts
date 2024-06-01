@@ -1,4 +1,5 @@
 import { attest, contextualize } from "@arktype/attest"
+import { keywordNodes, writeInvalidOperandMessage } from "@arktype/schema"
 import { type } from "arktype"
 
 contextualize(
@@ -63,6 +64,26 @@ contextualize(
 			const a = type(/a/gi)
 			const b = type(new RegExp("a", "ig"))
 			attest(a.json).equals(b.json)
+		})
+	},
+	"chained",
+	() => {
+		it("matching", () => {
+			const t = type("string").matching("foo")
+			const expected = type("/foo/")
+			attest<typeof expected>(t)
+			attest(t.json).equals(expected.json)
+		})
+
+		it("invalid operand", () => {
+			// @ts-expect-error
+			attest(() => type("number").matching("foo")).throwsAndHasTypeError(
+				writeInvalidOperandMessage(
+					"regex",
+					keywordNodes.string,
+					keywordNodes.number
+				)
+			)
 		})
 	}
 )

@@ -1,3 +1,4 @@
+import type { array } from "./arrays.js"
 import type { describeDomainOf, domainOf, inferDomain } from "./domain.js"
 import type { Stringifiable, isAny, isNever } from "./generics.js"
 import type { describeObject } from "./objectKinds.js"
@@ -10,6 +11,7 @@ export type describe<
 	isAny<t> extends true ? "any"
 	: isNever<t> extends true ? "never"
 	: unknown extends t ? "unknown"
+	: t extends array ? "an array"
 	: t extends object ? describeObject<t>
 	: t extends Stringifiable ?
 		// if it's the base wideneded domain, use that name

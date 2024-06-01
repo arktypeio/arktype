@@ -455,4 +455,65 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			'value at ["./f.svg"] must be only digits 0-9 (was "123a")'
 		)
 	})
+
+	it("standalone type from cyclic", () => {
+		const types = scope({
+			JsonSchema: "JsonSchemaArray|JsonSchemaNumber",
+			JsonSchemaArray: {
+				items: "JsonSchema",
+				type: "'array'"
+			},
+			JsonSchemaNumber: {
+				type: "'number'|'integer'"
+			}
+		}).export()
+
+		const standalone = types.JsonSchemaArray.describe("standalone")
+
+		attest(standalone.json).snap({
+			required: [
+				{ key: "items", value: "$JsonSchema" },
+				{ key: "type", value: { unit: "array" } }
+			],
+			description: "standalone",
+			domain: { description: "standalone", domain: "object" }
+		})
+
+		const valid: typeof standalone.infer = {
+			type: "array",
+			items: { type: "array", items: { type: "number" } }
+		}
+
+		const out = standalone(valid)
+
+		attest(out).equals(valid)
+
+		const failOut = standalone({
+			type: "array",
+			items: { type: "array" }
+		})
+
+		attest(failOut.toString()).snap(
+			'items.items must be JsonSchema (was missing) or items.type must be "integer" or "number" (was "array")'
+		)
+	})
+
+	it("more external cyclic scope references", () => {
+		const $ = scope({
+			box: {
+				"box?": "box"
+			}
+		})
+
+		const box = $.type("box|null")
+
+		attest(box({})).equals({})
+		attest(box(null)).equals(null)
+		attest(box({ box: { box: { box: {} } } })).snap({
+			box: { box: { box: {} } }
+		})
+		attest(box({ box: { box: { box: "whoops" } } })?.toString()).snap(
+			'box.box.box must be an object (was string) or must be null (was {"box":{"box":{"box":"whoops"}}})'
+		)
+	})
 })

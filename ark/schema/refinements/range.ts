@@ -8,10 +8,11 @@ import { RawPrimitiveConstraint } from "../constraint.js"
 import type { Node } from "../kinds.js"
 import type { BaseMeta, RawNodeDeclaration } from "../shared/declare.js"
 import type { KeySchemainitions, RangeKind } from "../shared/implement.js"
+
 export interface BaseRangeDeclaration extends RawNodeDeclaration {
 	kind: RangeKind
 	inner: BaseRangeInner
-	normalizedSchema: BaseNormalizedRangeRoot
+	normalizedSchema: UnknownNormalizedRangeSchema
 }
 
 export abstract class BaseRange<
@@ -75,15 +76,53 @@ export interface BaseRangeInner extends BaseMeta {
 	readonly exclusive?: true
 }
 
-export type LimitRootValue<kind extends RangeKind = RangeKind> =
-	kind extends "before" | "after" ? Date | number | string : number
+export type LimitSchemaValue = Date | number | string
 
 export type LimitInnerValue<kind extends RangeKind = RangeKind> =
 	kind extends "before" | "after" ? Date : number
 
-export interface BaseNormalizedRangeRoot extends BaseMeta {
+export interface UnknownNormalizedRangeSchema extends BaseMeta {
+	readonly rule: LimitSchemaValue
 	readonly exclusive?: boolean
 }
+
+export type UnknownRangeSchema = LimitSchemaValue | UnknownNormalizedRangeSchema
+
+export interface ExclusiveNormalizedDateRangeSchema extends BaseMeta {
+	rule: LimitSchemaValue
+	exclusive?: true
+}
+
+export type ExclusiveDateRangeSchema =
+	| LimitSchemaValue
+	| ExclusiveNormalizedDateRangeSchema
+
+export interface InclusiveNormalizedDateRangeSchema extends BaseMeta {
+	rule: LimitSchemaValue
+	exclusive?: false
+}
+
+export type InclusiveDateRangeSchema =
+	| LimitSchemaValue
+	| InclusiveNormalizedDateRangeSchema
+
+export interface ExclusiveNormalizedNumericRangeSchema extends BaseMeta {
+	rule: number
+	exclusive?: true
+}
+
+export type ExclusiveNumericRangeSchema =
+	| number
+	| ExclusiveNormalizedNumericRangeSchema
+
+export interface InclusiveNormalizedNumericRangeSchema extends BaseMeta {
+	rule: number
+	exclusive?: false
+}
+
+export type InclusiveNumericRangeSchema =
+	| number
+	| InclusiveNormalizedNumericRangeSchema
 
 export type LimitKind = "lower" | "upper"
 
@@ -139,7 +178,7 @@ export const parseExclusiveKey: KeySchemainitions<BaseRangeDeclaration>["exclusi
 		parse: (flag: boolean) => flag || undefined
 	}
 
-export const parseDateLimit = (limit: LimitRootValue): Date =>
+export const parseDateLimit = (limit: LimitSchemaValue): Date =>
 	typeof limit === "string" || typeof limit === "number" ?
 		new Date(limit)
 	:	limit
@@ -179,7 +218,7 @@ export type LengthBoundableData = string | array
 
 export type DateRangeKind = "before" | "after"
 
-export const dateLimitToString = (limit: LimitRootValue): string =>
+export const dateLimitToString = (limit: LimitSchemaValue): string =>
 	typeof limit === "string" ? limit : new Date(limit).toLocaleString()
 
 export const writeUnboundableMessage = <root extends string>(
