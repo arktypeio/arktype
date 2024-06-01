@@ -1,5 +1,11 @@
 # @arktype/util
 
+## 0.0.47
+
+### Patch Changes
+
+- [#995](https://github.com/arktypeio/arktype/pull/995) [`317f012`](https://github.com/arktypeio/arktype/commit/317f0122b1f2c0ba6e1de872f210490af75761af) Thanks [@ssalbdivad](https://github.com/ssalbdivad)! - Add `leftIfEqual` type utility
+
 ## 0.0.46
 
 ### Patch Changes
