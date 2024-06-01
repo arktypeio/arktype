@@ -1,5 +1,14 @@
 # @arktype/schema
 
+## 0.1.11
+
+### Patch Changes
+
+- [#995](https://github.com/arktypeio/arktype/pull/995) [`317f012`](https://github.com/arktypeio/arktype/commit/317f0122b1f2c0ba6e1de872f210490af75761af) Thanks [@ssalbdivad](https://github.com/ssalbdivad)! - Fixed a cyclic traversal case (see [arktype CHANGELOG](../type/CHANGELOG.md))
+
+- Updated dependencies [[`317f012`](https://github.com/arktypeio/arktype/commit/317f0122b1f2c0ba6e1de872f210490af75761af)]:
+  - @arktype/util@0.0.47
+
 ## 0.1.10
 
 ### Patch Changes
