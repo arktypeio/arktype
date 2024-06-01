@@ -2,7 +2,7 @@
 	"name": "arkdark",
 	"displayName": "ArkDark",
 	"description": "ArkType syntax highlighting and theme⛵",
-	"version": "5.2.3",
+	"version": "5.2.4",
 	"publisher": "arktypeio",
 	"type": "module",
 	"scripts": {
@@ -59,11 +59,11 @@
 			},
 			"errorLens.replace": [
 				{
-					"matcher": "'keyError<\"(.*)\">'\\.$",
+					"matcher": ".*'keyError<\"(.*)\">'\\.$",
 					"message": "$1"
 				},
 				{
-					"matcher": "'\"(.*\\u200A)\"'\\.$",
+					"matcher": ".*'\"(.*\\u200A)\"'\\.$",
 					"message": "$1"
 				},
 				{

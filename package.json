@@ -92,5 +92,6 @@
 	},
 	"eslintConfig": {
 		"extends": "./ark/repo/.eslintrc.cjs"
-	}
+	},
+	"packageManager": "pnpm@9.1.4"
 }
