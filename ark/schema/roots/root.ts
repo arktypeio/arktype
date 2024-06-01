@@ -268,6 +268,10 @@ export abstract class BaseRoot<
 		)
 	}
 
+	satisfying(predicate: Predicate): BaseRoot {
+		return this.constrain("predicate", predicate)
+	}
+
 	divisibleBy(schema: DivisorSchema): BaseRoot {
 		return this.constrain("divisor", schema)
 	}

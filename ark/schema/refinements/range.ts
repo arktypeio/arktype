@@ -88,25 +88,41 @@ export interface BaseNormalizedRangeSchema extends BaseMeta {
 
 export type UnknownRangeSchema = LimitSchemaValue | BaseNormalizedRangeSchema
 
-export interface ExclusiveDateRangeSchema extends BaseMeta {
+export interface ExclusiveNormalizedDateRangeSchema extends BaseMeta {
 	rule: LimitSchemaValue
 	exclusive?: true
 }
 
-export interface InclusiveDateRangeSchema extends BaseMeta {
+export type ExclusiveDateRangeSchema =
+	| LimitSchemaValue
+	| ExclusiveNormalizedDateRangeSchema
+
+export interface InclusiveNormalizedDateRangeSchema extends BaseMeta {
 	rule: LimitSchemaValue
 	exclusive?: false
 }
 
-export interface ExclusiveNumericRangeSchema extends BaseMeta {
+export type InclusiveDateRangeSchema =
+	| LimitSchemaValue
+	| InclusiveNormalizedDateRangeSchema
+
+export interface ExclusiveNormalizedNumericRangeSchema extends BaseMeta {
 	rule: number
 	exclusive?: true
 }
 
-export interface InclusiveNumericRangeSchema extends BaseMeta {
+export type ExclusiveNumericRangeSchema =
+	| number
+	| ExclusiveNormalizedNumericRangeSchema
+
+export interface InclusiveNormalizedNumericRangeSchema extends BaseMeta {
 	rule: number
 	exclusive?: false
 }
+
+export type InclusiveNumericRangeSchema =
+	| number
+	| InclusiveNormalizedNumericRangeSchema
 
 export type LimitKind = "lower" | "upper"
 

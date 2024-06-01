@@ -15,7 +15,7 @@ import {
 	type distillConstrainableOut,
 	type inferIntersection,
 	type inferMorphOut,
-	type inferNarrow
+	type inferPredicate
 } from "@arktype/schema"
 import {
 	append,
@@ -339,7 +339,8 @@ export type inferTupleExpression<def extends TupleExpression, $, args> =
 		>
 	: def[1] extends "|" ?
 		inferDefinition<def[0], $, args> | inferDefinition<def[2], $, args>
-	: def[1] extends ":" ? inferNarrow<inferDefinition<def[0], $, args>, def[2]>
+	: def[1] extends ":" ?
+		inferPredicate<inferDefinition<def[0], $, args>, def[2]>
 	: def[1] extends "=>" ? parseMorph<def[0], def[2], $, args>
 	: def[1] extends "@" ? inferDefinition<def[0], $, args>
 	: def extends readonly ["===", ...infer values] ? values[number]

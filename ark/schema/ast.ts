@@ -1,7 +1,8 @@
-import type { conform } from "@arktype/util"
+import type { conform, leftIfEqual } from "@arktype/util"
 import type { PrimitiveConstraintKind } from "./constraint.js"
 import type { NodeSchema } from "./kinds.js"
 import type { constraintKindOf } from "./roots/intersection.js"
+import type { MorphAst, Out } from "./roots/morph.js"
 
 export type Comparator = "<" | "<=" | ">" | ">=" | "=="
 
@@ -238,11 +239,9 @@ export type constrain<
 	kind extends PrimitiveConstraintKind,
 	schema extends NodeSchema<kind>
 > =
-	_constrain<t, kind, schema> extends infer constrained ?
-		[t, constrained] extends [constrained, t] ?
-			t
-		:	constrained
-	:	never
+	t extends MorphAst<infer i, infer o> ?
+		(In: leftIfEqual<i, _constrain<i, kind, schema>>) => Out<o>
+	:	leftIfEqual<t, _constrain<t, kind, schema>>
 
 type _constrain<
 	t,
