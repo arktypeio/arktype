@@ -1,22 +1,21 @@
 import {
 	ArkErrors,
 	BaseRoot,
-	type AfterSchema,
 	type BaseMeta,
-	type BeforeSchema,
 	type Disjoint,
 	type DivisorSchema,
+	type ExactLengthSchema,
+	type ExclusiveDateRangeSchema,
+	type ExclusiveNumericRangeSchema,
+	type InclusiveDateRangeSchema,
+	type InclusiveNumericRangeSchema,
 	type InnerRoot,
-	type MaxLengthSchema,
-	type MaxSchema,
-	type MinLengthSchema,
-	type MinSchema,
 	type Morph,
 	type NodeSchema,
 	type Out,
 	type Predicate,
 	type PrimitiveConstraintKind,
-	type Root,
+	type RegexSchema,
 	type ambient,
 	type constrain,
 	type constraintKindOf,
@@ -26,8 +25,7 @@ import {
 	type inferIntersection,
 	type inferMorphOut,
 	type inferNarrow,
-	type inferPipes,
-	type internalImplementationOf
+	type inferPipes
 } from "@arktype/schema"
 import {
 	Callable,
@@ -139,10 +137,7 @@ export type DeclarationParser<$> = <preinferred>() => {
 // this is declared as a class internally so we can ensure all "abstract"
 // methods of BaseRoot are overridden, but we end up exporting it as an interface
 // to ensure it is not accessed as a runtime value
-declare class _Type<t = unknown, $ = any>
-	extends InnerRoot<t, $>
-	implements internalImplementationOf<Root>
-{
+declare class _Type<t = unknown, $ = any> extends InnerRoot<t, $> {
 	$: Scope<$>;
 
 	get in(): Type<this["tIn"], $>
@@ -218,15 +213,6 @@ declare class _Type<t = unknown, $ = any>
 		g: g
 	): Type<inferPipes<t, [a, b, c, d, e, f, g]>, $>
 
-	narrow<def extends Predicate<distillOut<t>>>(
-		def: def
-	): Type<
-		includesMorphs<t> extends true ?
-			(In: this["tIn"]) => Out<inferNarrow<this["tOut"], def>>
-		:	inferNarrow<t, def>,
-		$
-	>
-
 	equals<def>(
 		def: validateTypeRoot<def, $>
 	): this is Type<inferTypeRoot<def>, $>
@@ -246,58 +232,76 @@ declare class _Type<t = unknown, $ = any>
 		def: def
 	): Type<constrain<t, kind, def>, $>
 
+	narrow<def extends Predicate<distillOut<t>>>(
+		def: def
+	): Type<
+		includesMorphs<t> extends true ?
+			(In: this["tIn"]) => Out<inferNarrow<this["tOut"], def>>
+		:	inferNarrow<t, def>,
+		$
+	>
+
 	divisibleBy<const schema extends DivisorSchema>(
 		this: this["inferIn"] extends number ? this : Type<number>,
 		schema: schema
 	): Type<constrain<t, "divisor", schema>, $>
 
-	atLeast<const schema extends MinSchema>(
+	matching<const schema extends RegexSchema>(
+		this: this["inferIn"] extends string ? this : Type<string>,
+		schema: schema
+	): Type<constrain<t, "regex", schema>, $>
+
+	atLeast<const schema extends InclusiveNumericRangeSchema>(
 		schema: schema
 	): Type<constrain<t, "min", schema>, $>
 
-	atMost<const schema extends MaxSchema>(
+	atMost<const schema extends InclusiveNumericRangeSchema>(
 		schema: schema
 	): Type<constrain<t, "max", schema>, $>
 
-	moreThan<const schema extends MinSchema>(
+	moreThan<const schema extends ExclusiveNumericRangeSchema>(
 		schema: schema
 	): Type<constrain<t, "min", schema>, $>
 
-	lessThan<const schema extends MaxSchema>(
+	lessThan<const schema extends ExclusiveNumericRangeSchema>(
 		schema: schema
 	): Type<constrain<t, "max", schema>, $>
 
-	atLeastLength<const schema extends MinLengthSchema>(
+	atLeastLength<const schema extends InclusiveNumericRangeSchema>(
 		schema: schema
 	): Type<constrain<t, "minLength", schema>, $>
 
-	moreThanLength<const schema extends MinLengthSchema>(
+	atMostLength<const schema extends InclusiveNumericRangeSchema>(
+		schema: schema
+	): Type<constrain<t, "maxLength", schema>, $>
+
+	moreThanLength<const schema extends ExclusiveNumericRangeSchema>(
 		schema: schema
 	): Type<constrain<t, "minLength", schema>, $>
 
-	atMostLength<const schema extends MaxLengthSchema>(
+	lessThanLength<const schema extends ExclusiveNumericRangeSchema>(
 		schema: schema
 	): Type<constrain<t, "maxLength", schema>, $>
 
-	lessThanLength<const schema extends MaxLengthSchema>(
+	exactlyLength<const schema extends ExactLengthSchema>(
 		schema: schema
-	): Type<constrain<t, "maxLength", schema>, $>
+	): Type<constrain<t, "exactLength", schema>, $>
 
-	earlierThan<const schema extends BeforeSchema>(
-		schema: schema
-	): Type<constrain<t, "before", schema>, $>
-
-	atOrBefore<const schema extends BeforeSchema>(
-		schema: schema
-	): Type<constrain<t, "before", schema>, $>
-
-	laterThan<const schema extends AfterSchema>(
+	atOrAfter<const schema extends InclusiveDateRangeSchema>(
 		schema: schema
 	): Type<constrain<t, "after", schema>, $>
 
-	atOrAfter<const schema extends AfterSchema>(
+	atOrBefore<const schema extends InclusiveDateRangeSchema>(
+		schema: schema
+	): Type<constrain<t, "before", schema>, $>
+
+	laterThan<const schema extends ExclusiveDateRangeSchema>(
 		schema: schema
 	): Type<constrain<t, "after", schema>, $>
+
+	earlierThan<const schema extends ExclusiveDateRangeSchema>(
+		schema: schema
+	): Type<constrain<t, "before", schema>, $>
 }
 
 export interface Type<

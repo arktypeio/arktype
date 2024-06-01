@@ -1,3 +1,13 @@
+import type {
+	DivisorSchema,
+	ExactLengthSchema,
+	ExclusiveDateRangeSchema,
+	ExclusiveNumericRangeSchema,
+	InclusiveDateRangeSchema,
+	InclusiveNumericRangeSchema,
+	RegexSchema,
+	UnknownRangeSchema
+} from "@arktype/schema"
 import {
 	includes,
 	omit,
@@ -257,7 +267,77 @@ export abstract class BaseRoot<
 			{ shouldTransform: node => !includes(structuralKinds, node.kind) }
 		)
 	}
+
+	divisibleBy(schema: DivisorSchema): BaseRoot {
+		return this.constrain("divisor", schema)
+	}
+
+	matching(schema: RegexSchema): BaseRoot {
+		return this.constrain("regex", schema)
+	}
+
+	atLeast(schema: InclusiveNumericRangeSchema): BaseRoot {
+		return this.constrain("min", schema)
+	}
+
+	atMost(schema: InclusiveNumericRangeSchema): BaseRoot {
+		return this.constrain("max", schema)
+	}
+
+	moreThan(schema: ExclusiveNumericRangeSchema): BaseRoot {
+		return this.constrain("min", exclusivizeRangeSchema(schema))
+	}
+
+	lessThan(schema: ExclusiveNumericRangeSchema): BaseRoot {
+		return this.constrain("max", exclusivizeRangeSchema(schema))
+	}
+
+	atLeastLength(schema: InclusiveNumericRangeSchema): BaseRoot {
+		return this.constrain("minLength", schema)
+	}
+
+	atMostLength(schema: InclusiveNumericRangeSchema): BaseRoot {
+		return this.constrain("maxLength", schema)
+	}
+
+	moreThanLength(schema: ExclusiveNumericRangeSchema): BaseRoot {
+		return this.constrain("minLength", exclusivizeRangeSchema(schema))
+	}
+
+	lessThanLength(schema: ExclusiveNumericRangeSchema): BaseRoot {
+		return this.constrain("maxLength", exclusivizeRangeSchema(schema))
+	}
+
+	exactlyLength(schema: ExactLengthSchema): BaseRoot {
+		return this.constrain("exactLength", schema)
+	}
+
+	atOrAfter(schema: InclusiveDateRangeSchema): BaseRoot {
+		return this.constrain("after", schema)
+	}
+
+	atOrBefore(schema: InclusiveDateRangeSchema): BaseRoot {
+		return this.constrain("before", schema)
+	}
+
+	laterThan(schema: ExclusiveDateRangeSchema): BaseRoot {
+		return this.constrain("after", exclusivizeRangeSchema(schema))
+	}
+
+	earlierThan(schema: ExclusiveDateRangeSchema): BaseRoot {
+		return this.constrain("before", exclusivizeRangeSchema(schema))
+	}
 }
+
+export const exclusivizeRangeSchema = <schema extends UnknownRangeSchema>(
+	schema: schema
+): schema =>
+	(typeof schema === "object" && !(schema instanceof Date) ?
+		{ ...schema, exclusive: true }
+	:	{
+			rule: schema,
+			exclusive: true
+		}) as schema
 
 export declare abstract class InnerRoot<t = unknown, $ = any> extends Callable<
 	(data: unknown) => distillOut<t> | ArkErrors

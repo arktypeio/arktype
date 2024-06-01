@@ -126,6 +126,11 @@ export type LessThanLength<rule extends number> = {
 	max: { [k in rule]: 0 }
 }
 
+export type ExactlyLength<rule extends number> = {
+	min: { [k in rule]: 1 }
+	max: { [k in rule]: 1 }
+}
+
 export namespace string {
 	export type atLeastLength<rule extends number> = of<
 		string,
@@ -142,6 +147,11 @@ export namespace string {
 	export type lessThanLength<rule extends number> = of<
 		string,
 		LessThanLength<rule>
+	>
+
+	export type exactlyLength<rule extends number> = of<
+		string,
+		ExactlyLength<rule>
 	>
 
 	export type matching<rule extends string> = of<string, Matching<rule>>
@@ -164,6 +174,7 @@ export namespace string {
 					lessThanLength<rule & number>
 				:	atMostLength<rule & number>
 			: kind extends "regex" ? matching<rule & string>
+			: kind extends "exactLength" ? exactlyLength<rule & number>
 			: narrowed
 		:	never
 }
@@ -282,6 +293,7 @@ export type schemaToConstraint<
 			schema extends { exclusive: true } ?
 				LessThanLength<rule & number>
 			:	AtMostLength<rule & number>
+		: kind extends "exactLength" ? ExactlyLength<rule & number>
 		: kind extends "after" ?
 			schema extends { exclusive: true } ?
 				After<normalizeLimit<rule>>

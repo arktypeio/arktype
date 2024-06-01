@@ -7,7 +7,7 @@ import {
 } from "../shared/implement.js"
 import type { TraverseAllows } from "../shared/traversal.js"
 import {
-	type BaseNormalizedRangeRoot,
+	type BaseNormalizedRangeSchema,
 	BaseRange,
 	type BaseRangeInner,
 	parseExclusiveKey
@@ -17,7 +17,7 @@ export interface MaxInner extends BaseRangeInner {
 	rule: number
 }
 
-export interface NormalizedMaxSchema extends BaseNormalizedRangeRoot {
+export interface NormalizedMaxSchema extends BaseNormalizedRangeSchema {
 	rule: number
 }
 
