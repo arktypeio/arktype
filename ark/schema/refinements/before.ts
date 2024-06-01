@@ -1,25 +1,18 @@
 import type { BaseRoot } from "../roots/root.js"
-import type { declareNode } from "../shared/declare.js"
+import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.js"
 import type { TraverseAllows } from "../shared/traversal.js"
-import {
-	BaseRange,
-	parseDateLimit,
-	parseExclusiveKey,
-	type BaseNormalizedRangeSchema,
-	type BaseRangeInner,
-	type LimitSchemaValue
-} from "./range.js"
+import { BaseRange, parseDateLimit, type LimitSchemaValue } from "./range.js"
 
-export interface BeforeInner extends BaseRangeInner {
+export interface BeforeInner extends BaseMeta {
 	rule: Date
 }
 
-export interface NormalizedBeforeSchema extends BaseNormalizedRangeSchema {
+export interface NormalizedBeforeSchema extends BaseMeta {
 	rule: LimitSchemaValue
 }
 
@@ -44,8 +37,7 @@ export const beforeImplementation: nodeImplementationOf<BeforeDeclaration> =
 			rule: {
 				parse: parseDateLimit,
 				serialize: schema => schema.toISOString()
-			},
-			exclusive: parseExclusiveKey
+			}
 		},
 		normalize: schema =>
 			(
@@ -56,10 +48,7 @@ export const beforeImplementation: nodeImplementationOf<BeforeDeclaration> =
 				{ rule: schema }
 			:	schema,
 		defaults: {
-			description: node =>
-				node.exclusive ?
-					`before ${node.stringLimit}`
-				:	`${node.stringLimit} or earlier`,
+			description: node => `before ${node.stringLimit}`,
 			actual: data => data.toLocaleString()
 		},
 		intersections: {
@@ -74,8 +63,7 @@ export const beforeImplementation: nodeImplementationOf<BeforeDeclaration> =
 	})
 
 export class BeforeNode extends BaseRange<BeforeDeclaration> {
-	traverseAllows: TraverseAllows<Date> =
-		this.exclusive ? data => data < this.rule : data => data <= this.rule
+	traverseAllows: TraverseAllows<Date> = data => data <= this.rule
 
 	impliedBasis: BaseRoot = this.$.keywords.Date.raw
 }

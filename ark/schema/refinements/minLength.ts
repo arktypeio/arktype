@@ -1,23 +1,17 @@
 import type { BaseRoot } from "../roots/root.js"
-import type { declareNode } from "../shared/declare.js"
+import type { BaseMeta, declareNode } from "../shared/declare.js"
 import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.js"
 import type { TraverseAllows } from "../shared/traversal.js"
-import {
-	type BaseNormalizedRangeSchema,
-	BaseRange,
-	type BaseRangeInner,
-	type LengthBoundableData,
-	parseExclusiveKey
-} from "./range.js"
+import { BaseRange, type LengthBoundableData } from "./range.js"
 
-export interface MinLengthInner extends BaseRangeInner {
+export interface MinLengthInner extends BaseMeta {
 	rule: number
 }
 
-export interface NormalizedMinLengthSchema extends BaseNormalizedRangeSchema {
+export interface NormalizedMinLengthSchema extends BaseMeta {
 	rule: number
 }
 
@@ -39,19 +33,13 @@ export const minLengthImplementation: nodeImplementationOf<MinLengthDeclaration>
 		collapsibleKey: "rule",
 		hasAssociatedError: true,
 		keys: {
-			rule: {},
-			exclusive: parseExclusiveKey
+			rule: {}
 		},
 		normalize: schema =>
 			typeof schema === "number" ? { rule: schema } : schema,
 		defaults: {
 			description: node =>
-				node.exclusive ?
-					node.rule === 0 ?
-						"non-empty"
-					:	`more than length ${node.rule}`
-				: node.rule === 1 ? "non-empty"
-				: `at least length ${node.rule}`,
+				node.rule === 1 ? "non-empty" : `at least length ${node.rule}`,
 			actual: data => `${data.length}`
 		},
 		intersections: {
@@ -62,8 +50,6 @@ export const minLengthImplementation: nodeImplementationOf<MinLengthDeclaration>
 export class MinLengthNode extends BaseRange<MinLengthDeclaration> {
 	readonly impliedBasis: BaseRoot = this.$.keywords.lengthBoundable.raw
 
-	traverseAllows: TraverseAllows<LengthBoundableData> =
-		this.exclusive ?
-			data => data.length > this.rule
-		:	data => data.length >= this.rule
+	traverseAllows: TraverseAllows<LengthBoundableData> = data =>
+		data.length >= this.rule
 }
