@@ -5,6 +5,7 @@ import type {
 	ExclusiveNumericRangeSchema,
 	InclusiveDateRangeSchema,
 	InclusiveNumericRangeSchema,
+	LimitSchemaValue,
 	RegexSchema,
 	UnknownRangeSchema
 } from "@arktype/schema"
@@ -342,6 +343,9 @@ export const exclusivizeRangeSchema = <schema extends UnknownRangeSchema>(
 			rule: schema,
 			exclusive: true
 		}) as schema
+
+export type exclusivizeRangeSchema<schema extends UnknownRangeSchema> =
+	schema extends LimitSchemaValue ? { rule: schema; exclusive: true } : schema
 
 export declare abstract class InnerRoot<t = unknown, $ = any> extends Callable<
 	(data: unknown) => distillOut<t> | ArkErrors

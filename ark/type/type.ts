@@ -25,6 +25,7 @@ import {
 	type constraintKindOf,
 	type distillIn,
 	type distillOut,
+	type exclusivizeRangeSchema,
 	type inferIntersection,
 	type inferMorphOut,
 	type inferPipes,
@@ -285,12 +286,12 @@ declare class _Type<t = unknown, $ = any> extends InnerRoot<t, $> {
 	moreThan<const schema extends ExclusiveNumericRangeSchema>(
 		this: validateChainedConstraint<"min", this>,
 		schema: schema
-	): Type<constrain<t, "min", schema>, $>
+	): Type<constrain<t, "min", exclusivizeRangeSchema<schema>>, $>
 
 	lessThan<const schema extends ExclusiveNumericRangeSchema>(
 		this: validateChainedConstraint<"max", this>,
 		schema: schema
-	): Type<constrain<t, "max", schema>, $>
+	): Type<constrain<t, "max", exclusivizeRangeSchema<schema>>, $>
 
 	atLeastLength<const schema extends InclusiveNumericRangeSchema>(
 		this: validateChainedConstraint<"minLength", this>,
@@ -305,12 +306,12 @@ declare class _Type<t = unknown, $ = any> extends InnerRoot<t, $> {
 	moreThanLength<const schema extends ExclusiveNumericRangeSchema>(
 		this: validateChainedConstraint<"minLength", this>,
 		schema: schema
-	): Type<constrain<t, "minLength", schema>, $>
+	): Type<constrain<t, "minLength", exclusivizeRangeSchema<schema>>, $>
 
 	lessThanLength<const schema extends ExclusiveNumericRangeSchema>(
 		this: validateChainedConstraint<"maxLength", this>,
 		schema: schema
-	): Type<constrain<t, "maxLength", schema>, $>
+	): Type<constrain<t, "maxLength", exclusivizeRangeSchema<schema>>, $>
 
 	exactlyLength<const schema extends ExactLengthSchema>(
 		this: validateChainedConstraint<"exactLength", this>,
@@ -330,12 +331,12 @@ declare class _Type<t = unknown, $ = any> extends InnerRoot<t, $> {
 	laterThan<const schema extends ExclusiveDateRangeSchema>(
 		this: validateChainedConstraint<"after", this>,
 		schema: schema
-	): Type<constrain<t, "after", schema>, $>
+	): Type<constrain<t, "after", exclusivizeRangeSchema<schema>>, $>
 
 	earlierThan<const schema extends ExclusiveDateRangeSchema>(
 		this: validateChainedConstraint<"before", this>,
 		schema: schema
-	): Type<constrain<t, "before", schema>, $>
+	): Type<constrain<t, "before", exclusivizeRangeSchema<schema>>, $>
 }
 
 export interface Type<

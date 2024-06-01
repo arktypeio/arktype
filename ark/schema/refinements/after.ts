@@ -9,16 +9,16 @@ import {
 	BaseRange,
 	parseDateLimit,
 	parseExclusiveKey,
-	type BaseNormalizedRangeSchema,
 	type BaseRangeInner,
-	type LimitSchemaValue
+	type LimitSchemaValue,
+	type UnknownNormalizedRangeSchema
 } from "./range.js"
 
 export interface AfterInner extends BaseRangeInner {
 	rule: Date
 }
 
-export interface NormalizedAfterSchema extends BaseNormalizedRangeSchema {
+export interface NormalizedAfterSchema extends UnknownNormalizedRangeSchema {
 	rule: LimitSchemaValue
 }
 

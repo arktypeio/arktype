@@ -12,7 +12,7 @@ import type { KeySchemainitions, RangeKind } from "../shared/implement.js"
 export interface BaseRangeDeclaration extends RawNodeDeclaration {
 	kind: RangeKind
 	inner: BaseRangeInner
-	normalizedSchema: BaseNormalizedRangeSchema
+	normalizedSchema: UnknownNormalizedRangeSchema
 }
 
 export abstract class BaseRange<
@@ -81,12 +81,12 @@ export type LimitSchemaValue = Date | number | string
 export type LimitInnerValue<kind extends RangeKind = RangeKind> =
 	kind extends "before" | "after" ? Date : number
 
-export interface BaseNormalizedRangeSchema extends BaseMeta {
+export interface UnknownNormalizedRangeSchema extends BaseMeta {
 	readonly rule: LimitSchemaValue
 	readonly exclusive?: boolean
 }
 
-export type UnknownRangeSchema = LimitSchemaValue | BaseNormalizedRangeSchema
+export type UnknownRangeSchema = LimitSchemaValue | UnknownNormalizedRangeSchema
 
 export interface ExclusiveNormalizedDateRangeSchema extends BaseMeta {
 	rule: LimitSchemaValue
