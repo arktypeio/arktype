@@ -160,6 +160,11 @@ export abstract class BaseRoot<
 		) as never
 	}
 
+	overlaps(r: UnknownRoot): boolean {
+		const intersection = this.intersect(r as never)
+		return !(intersection instanceof Disjoint)
+	}
+
 	extends(r: UnknownRoot): boolean {
 		const intersection = this.intersect(r as never)
 		return (
@@ -374,6 +379,7 @@ export declare abstract class InnerRoot<t = unknown, $ = any> extends Callable<
 	abstract extract(r: never): unknown
 	abstract exclude(r: never): unknown
 	abstract extends(r: never): this is unknown
+	abstract overlaps(r: never): boolean
 	abstract array(): unknown
 	abstract pipe(morph: Morph): unknown
 
@@ -485,6 +491,8 @@ declare class _Root<t = unknown, $ = any> extends InnerRoot<t, $> {
 		f: f,
 		g: g
 	): Root<inferPipes<t, [a, b, c, d, e, f, g]>, $>
+
+	overlaps(r: Root): boolean
 }
 
 export interface Root<

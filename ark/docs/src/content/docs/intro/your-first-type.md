@@ -1,7 +1,7 @@
 ---
 title: Your first type
 sidebar:
-  order: 0
+  order: 2
 ---
 
 Defining basic types in ArkType is just like TypeScript, so if you already know how to do that, congratulations! You already know most of ArkType's syntax 🎉

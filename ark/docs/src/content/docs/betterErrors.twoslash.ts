@@ -1,24 +1,24 @@
-import { type, type ArkErrors as BaseArkErrors } from "arktype"
+import { type, type ArkErrors } from "arktype"
 
 const user = type({
 	name: "string",
-	luckyNumbers: "(number | bigint)[]",
-	"isAdmin?": "boolean | null"
+	platform: "'android' | 'ios'",
+	"versions?": "(number | string)[]"
 })
 
-interface ArkErrors extends BaseArkErrors {
-	/**luckyNumbers[1] must be a bigint or a number (was string)
-name must be a string (was missing)
-isAdmin must be false, null or true (was 1)*/
+interface RuntimeErrors extends ArkErrors {
+	/**platform must be "android" or "ios" (was "enigma")
+versions[2] must be a number or a string (was bigint)*/
 	summary: string
 }
 
-const narrowMessage = (e: BaseArkErrors): e is ArkErrors => true
+const narrowMessage = (e: ArkErrors): e is RuntimeErrors => true
 
 // ---cut---
 const out = user({
-	luckyNumbers: [31, "255", 1337n],
-	isAdmin: 1
+	name: "Alan Turing",
+	platform: "enigma",
+	version: [0, "1", 0n]
 })
 
 if (out instanceof type.errors) {
@@ -28,4 +28,4 @@ if (out instanceof type.errors) {
 	// ---cut-end---
 	// hover out.summary to see validation errors
 	console.error(out.summary)
-} else console.log(out.luckyNumbers)
+} else console.log(out.platform)

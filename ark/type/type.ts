@@ -245,6 +245,7 @@ declare class _Type<t = unknown, $ = any> extends InnerRoot<t, $> {
 	extends<def>(
 		other: validateTypeRoot<def, $>
 	): this is Type<inferTypeRoot<def>, $>
+	overlaps<def>(r: validateTypeRoot<def, $>): boolean
 
 	constrain<
 		kind extends PrimitiveConstraintKind,

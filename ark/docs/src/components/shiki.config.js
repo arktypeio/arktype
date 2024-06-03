@@ -37,12 +37,12 @@ export const twoslash = transformerTwoslash({
 							node.text = node.text.slice(0, -5) + ">"
 						// show type with completions populated for known examples
 						node.text = node.text.replace(
-							"isAdmin?: never",
-							"isAdmin?: boolean | null"
+							"version?: never",
+							`version?: number | string`
 						)
 						node.text = node.text.replace(
-							"luckyNumbers: never",
-							"luckyNumbers: (number | bigint)[]"
+							"versions?: never",
+							"versions?: (number | string)[]"
 						)
 						// filter out the type of Type's invocation
 						// as opposed to the Type itself
@@ -50,15 +50,12 @@ export const twoslash = transformerTwoslash({
 					}
 					if (node.text.startsWith(twoslashPropertyPrefix)) {
 						const expression = node.text.slice(twoslashPropertyPrefix.length)
-						if (expression.startsWith("ArkErrors.summary")) {
+						if (expression.startsWith("RuntimeErrors.summary")) {
 							// this shows error summary in JSDoc
 							return true
 						}
-						if (expression === "luckyNumbers: (number | bigint)[]")
+						if (expression === `platform: "android" | "ios"`)
 							// this helps demonstrate narrowing on discrimination
-							return true
-						if (expression.endsWith("typeof ArkErrors"))
-							// also helps clarify how discrimination works
 							return true
 						return false
 					}

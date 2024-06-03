@@ -6,6 +6,6 @@ import { type } from "arktype"
 // hover me
 const user = type({
 	name: "string",
-	luckyNumbers: "number | bigint)[]",
-	"isAdmin?": "boolean | null"
+	platform: "'android' | 'ios'",
+	"versions?": "number | string)[]"
 })

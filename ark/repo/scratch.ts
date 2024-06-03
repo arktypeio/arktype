@@ -2,17 +2,12 @@ import { type } from "arktype"
 
 const user = type({
 	name: "string",
-	age: "number"
+	platform: "'android' | 'ios'",
+	"versions?": "(number | string)[]"
 })
 
-const parseUser = type("string").pipe(s => JSON.parse(s), user)
-
-const validUser = parseUser(`{ "name": "David", "age": 30 }`) //?
-//    ^?
-
-const invalidUser = parseUser(`{ "name": "David" }`)
-//    ^?
-
-if (invalidUser instanceof type.errors) {
-	console.log(invalidUser.summary)
-}
+const out = user({
+	name: "Alan Turing",
+	platform: "enigma",
+	versions: [0, "1", 0n]
+})
