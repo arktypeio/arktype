@@ -51,14 +51,7 @@ export const twoslash = transformerTwoslash({
 					if (node.text.startsWith(twoslashPropertyPrefix)) {
 						const expression = node.text.slice(twoslashPropertyPrefix.length)
 						if (expression.startsWith("ArkErrors.summary")) {
-							// cleanup runtime errors for display
-							const runtimeErrorSummary = /^ArkErrors\.summary: "(.*)"/.exec(
-								expression
-							)
-							if (runtimeErrorSummary) {
-								node.text = runtimeErrorSummary[1].split("\\n").join("\n")
-							}
-							// this helps demonstrate narrowing on discrimination
+							// this shows error summary in JSDoc
 							return true
 						}
 						if (expression === "luckyNumbers: (number | bigint)[]")
