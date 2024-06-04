@@ -81,6 +81,7 @@ pre.shiki,
 	border-radius: 1rem;
 	border-color: #ba7e4127;
 	border-width: 1px;
+	overflow-x: visible !important;
 }
 
 header {
