@@ -168,6 +168,13 @@ export type RawRootResolutions = Record<string, RawResolution | undefined>
 
 export type exportedNameOf<$> = Exclude<keyof $ & string, PrivateDeclaration>
 
+export type resolvableReferenceIn<$> =
+	keyof $ extends infer k extends string ?
+		k extends PrivateDeclaration<infer alias> ?
+			alias
+		:	k
+	:	never
+
 export type PrivateDeclaration<key extends string = string> = `#${key}`
 
 type toRawScope<$> = RawRootScope<{
