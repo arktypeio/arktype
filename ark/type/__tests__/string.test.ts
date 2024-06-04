@@ -35,18 +35,21 @@ contextualize(() => {
 
 	it("shallow single autocomplete", () => {
 		// @ts-expect-error
-		attest(() => type("str")).type.errors(
-			`Argument of type '"str"' is not assignable to parameter of type '"string"'`
-		)
+		attest(() => type("str")).completions()
 	})
 
 	it("shallow multi autocomplete", () => {
 		// @ts-expect-error
-		attest(() => type("s")).type.errors(`"string" | "symbol" | "semver"`)
+		attest(() => type("s")).completions()
 	})
 
 	it("post-operator autocomplete", () => {
 		// @ts-expect-error
-		attest(() => type("string|num")).type.errors(`"string|number"`)
+		attest(() => type("string|num")).completions()
+	})
+
+	it("post-operator autocomplete with spaces", () => {
+		// @ts-expect-error
+		attest(() => type("  string  |  num")).completions()
 	})
 })
