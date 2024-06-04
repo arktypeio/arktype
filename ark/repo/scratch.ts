@@ -1,5 +1,4 @@
-import { type } from "arktype"
-import type { Type } from "../type/type.js"
+import { type, type Type } from "arktype"
 
 const _user = type({
 	name: "string",

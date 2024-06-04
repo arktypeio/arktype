@@ -6,22 +6,22 @@ sidebar:
 
 import { TypeBenchmarksGraph } from "../../../components/BenchmarksGraph.tsx"
 
+## Definitions
+
 If you already know TypeScript, congratulations! You just learned most of ArkType's syntax 🎉
 
 ```ts
 // @noErrors
 import { type } from "arktype"
-// prettier-ignore
-// ---cut---
+
 const user = type({
 	name: "string",
 	platform: "'android' | 'ios'",
-	"version?": "number | s"
-	//                     ^|
+	"version?": "number | string"
 })
 ```
 
-If you make a mistake, don't worry- every definition gets the autocomplete and validation you're used to in your editor, all from within TypeScript's type system!
+If you make a mistake, don't worry- every definition gets the autocomplete and validation you're used to in your editor, all from within TypeScript's type system.
 
 :::note[Will ArkType crash my TypeScript server?]
 A huge amount of optimization has gone into making validating native type syntax not just feasible, but often much faster than alternatives.
@@ -32,18 +32,40 @@ A huge amount of optimization has gone into making validating native type syntax
 </details>
 :::
 
+## Composition
+
+One of the best things about type syntax is how well it composes.
+
+Let's say we want to move `platform` and `version` from our original type to a new `device` property.
+
 ```ts
 import { type } from "arktype"
 
-// Definitions are statically parsed and inferred as TS.
-export const user = type({
+const user = type({
 	name: "string",
+	// nested definitions don't need to be wrapped
 	device: {
-		platform: "'android'|'ios'",
-		"version?": "number"
+		platform: "'android' | 'ios'",
+		"version?": "number | string"
 	}
 })
+```
 
+If we want to decouple `device` from `user`, we just move it to its own type and reference it.
+
+```ts
+const device = type({
+	platform: "'android' | 'ios'",
+	"version?": "number | string"
+})
+
+const user = type({
+	name: "string",
+	device: device
+})
+```
+
+```ts
 // Validators return typed data or clear, customizable errors.
 export const out = user({
 	name: "Alan Turing",
@@ -60,4 +82,8 @@ if (out instanceof type.errors) {
 	// your valid data!
 	console.log(out)
 }
+```
+
+```
+
 ```
