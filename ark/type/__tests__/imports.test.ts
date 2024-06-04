@@ -99,9 +99,7 @@ contextualize(() => {
 		})
 
 		// @ts-expect-error
-		attest(() => $.type("#")).completions({
-			"#": []
-		})
+		attest(() => $.type("#")).completions({})
 	})
 
 	it("errors on private reference with #", () => {

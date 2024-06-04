@@ -35,21 +35,25 @@ contextualize(() => {
 
 	it("shallow single autocomplete", () => {
 		// @ts-expect-error
-		attest(() => type("str")).completions()
+		attest(() => type("str")).completions({ str: ["string"] })
 	})
 
 	it("shallow multi autocomplete", () => {
 		// @ts-expect-error
-		attest(() => type("s")).completions()
+		attest(() => type("s")).completions({ s: ["string", "symbol", "semver"] })
 	})
 
 	it("post-operator autocomplete", () => {
 		// @ts-expect-error
-		attest(() => type("string|num")).completions()
+		attest(() => type("string|num")).completions({
+			"string|num": ["string|number"]
+		})
 	})
 
 	it("post-operator autocomplete with spaces", () => {
 		// @ts-expect-error
-		attest(() => type("  string  |  num")).completions()
+		attest(() => type("  string  |  num")).completions({
+			"  string  |  num": ["  string  |  number"]
+		})
 	})
 })
