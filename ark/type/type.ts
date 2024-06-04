@@ -343,10 +343,10 @@ declare class _Type<t = unknown, $ = any> extends InnerRoot<t, $> {
 export interface Type<
 	/** @ts-expect-error allow instantiation assignment to the base type */
 	out t = unknown,
-	$ = any
+	$ = {}
 > extends _Type<t, $> {}
 
-export type TypeConstructor<t = unknown, $ = any> = new (
+export type TypeConstructor<t = unknown, $ = {}> = new (
 	def: unknown,
 	$: Scope<$>
 ) => Type<t, $>
