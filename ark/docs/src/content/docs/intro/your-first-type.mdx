@@ -6,9 +6,9 @@ sidebar:
 
 import { TypeBenchmarksGraph } from "../../../components/BenchmarksGraph.tsx"
 
-## Definitions
+## Define
 
-If you already know TypeScript, congratulations! You just learned most of ArkType's syntax 🎉
+If you already know TypeScript, congratulations- you just learned most of ArkType's syntax 🎉
 
 ```ts
 // @noErrors
@@ -17,14 +17,21 @@ import { type } from "arktype"
 const user = type({
 	name: "string",
 	platform: "'android' | 'ios'",
-	"version?": "number | string"
+	"versions?": "(number | string)[]"
 })
+
+// extract the type if needed
+type User = typeof user.infer
+// ---cut-start---
+// this empty line prevents the source syntax highlighting from breaking
+
+// ---cut-end---
 ```
 
-If you make a mistake, don't worry- every definition gets the autocomplete and validation you're used to in your editor, all from within TypeScript's type system.
+If you make a mistake, don't worry- every definition gets the autocomplete and validation you're used to from your editor, all within TypeScript's type system.
 
 :::note[Will ArkType crash my TypeScript server?]
-A huge amount of optimization has gone into making validating native type syntax not just feasible, but often much faster than alternatives.
+Thousands of hours of optimization have gone into making validating native type syntax not just feasible, but often much faster than alternatives.
 
 <details>
 	<summary>Editor performance compared to Zod</summary>
@@ -32,9 +39,7 @@ A huge amount of optimization has gone into making validating native type syntax
 </details>
 :::
 
-## Composition
-
-One of the best things about type syntax is how well it composes.
+## Compose
 
 Let's say we want to move `platform` and `version` from our original type to a new `device` property.
 
@@ -46,7 +51,7 @@ const user = type({
 	// nested definitions don't need to be wrapped
 	device: {
 		platform: "'android' | 'ios'",
-		"version?": "number | string"
+		"versions?": "(number | string)[]"
 	}
 })
 ```
@@ -54,9 +59,11 @@ const user = type({
 If we want to decouple `device` from `user`, we just move it to its own type and reference it.
 
 ```ts
+import { type } from "arktype"
+
 const device = type({
 	platform: "'android' | 'ios'",
-	"version?": "number | string"
+	"versions?": "(number | string)[]"
 })
 
 const user = type({
@@ -65,7 +72,22 @@ const user = type({
 })
 ```
 
+## Validate
+
+At runtime, we can pass arbitrary data to our new type and get back either a validated `User`
+
 ```ts
+import { type } from "arktype"
+
+const user = type({
+	name: "string",
+	// nested definitions don't need to be wrapped
+	device: {
+		platform: "'android' | 'ios'",
+		"versions?": "(number | string)[]"
+	}
+})
+// ---cut---
 // Validators return typed data or clear, customizable errors.
 export const out = user({
 	name: "Alan Turing",
@@ -82,8 +104,4 @@ if (out instanceof type.errors) {
 	// your valid data!
 	console.log(out)
 }
-```
-
-```
-
 ```

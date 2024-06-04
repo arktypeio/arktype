@@ -37,7 +37,8 @@ export const exactLengthImplementation: nodeImplementationOf<ExactLengthDeclarat
 			typeof schema === "number" ? { rule: schema } : schema,
 		hasAssociatedError: true,
 		defaults: {
-			description: node => `exactly length ${node.rule}`
+			description: node => `exactly length ${node.rule}`,
+			actual: data => `${data.length}`
 		},
 		intersections: {
 			exactLength: (l, r, ctx) =>

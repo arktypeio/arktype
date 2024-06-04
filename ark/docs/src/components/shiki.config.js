@@ -31,10 +31,13 @@ export const twoslash = transformerTwoslash({
 		filterNode: node => {
 			switch (node.type) {
 				case "hover":
+					if (node.text.endsWith(", {}>"))
+						// omit default scope param from type display
+						node.text = node.text.slice(0, -5) + ">"
+					if (node.text.startsWith("type")) {
+						return true
+					}
 					if (node.text.startsWith("const")) {
-						if (node.text.endsWith(", {}>"))
-							// omit default scope param from type display
-							node.text = node.text.slice(0, -5) + ">"
 						// show type with completions populated for known examples
 						node.text = node.text.replace(
 							"version?: never",
@@ -50,14 +53,12 @@ export const twoslash = transformerTwoslash({
 					}
 					if (node.text.startsWith(twoslashPropertyPrefix)) {
 						const expression = node.text.slice(twoslashPropertyPrefix.length)
-						if (expression.startsWith("RuntimeErrors.summary")) {
+						return (
 							// this shows error summary in JSDoc
-							return true
-						}
-						if (expression === `platform: "android" | "ios"`)
+							expression.startsWith("RuntimeErrors.summary") ||
 							// this helps demonstrate narrowing on discrimination
-							return true
-						return false
+							expression === `platform: "android" | "ios"`
+						)
 					}
 					return false
 				case "error":

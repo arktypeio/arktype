@@ -1,6 +1,7 @@
 import {
 	CompiledFunction,
 	DynamicBase,
+	ParseError,
 	bound,
 	envHasCsp,
 	flatMorph,
@@ -636,10 +637,22 @@ export const schema: RootScope["schema"] = root.schema
 export const node: RootScope["node"] = root.node
 export const defineRoot: RootScope["defineRoot"] = root.defineRoot
 export const units: RootScope["units"] = root.units
-export const rawRoot: RawRootScope["schema"] = root.raw.schema
+export const rawSchema: RawRootScope["schema"] = root.raw.schema
 export const rawNode: RawRootScope["node"] = root.raw.node
 export const defineRawRoot: RawRootScope["defineRoot"] = root.raw.defineRoot
 export const rawUnits: RawRootScope["units"] = root.raw.units
+
+export const tryParseSchema = <castTo = unknown>(
+	def: unknown,
+	opts?: NodeParseOptions
+): Root<castTo, {}> | ParseError => {
+	try {
+		return schema(def as RootSchema, opts) as never
+	} catch (e) {
+		if (e instanceof ParseError) return e
+		throw e
+	}
+}
 
 export class RawRootModule<
 	resolutions extends RawRootResolutions = RawRootResolutions
