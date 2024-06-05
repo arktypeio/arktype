@@ -2,18 +2,20 @@ import { type } from "arktype"
 
 const user = type({
 	name: "string",
-	luckyNumbers: "(number | bigint)[]",
-	"isAdmin?": "boolean | null"
+	device: {
+		platform: "'android' | 'ios'",
+		"version?": "number | string"
+	}
 })
 
 // ---cut---
 user.extends("object") // true
 user.extends("string") // false
-// true (number | bigint is narrower than unknown)
+// true (string is narrower than unknown)
 user.extends({
-	luckyNumbers: "unknown[]"
+	name: "unknown"
 })
-// false (number | bigint is wider than number)
+// false (string is wider than "Alan")
 user.extends({
-	luckyNumbers: "number[]"
+	name: "'Alan'"
 })

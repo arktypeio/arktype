@@ -1,10 +1,10 @@
 // @noErrors
 import { type } from "arktype"
+// prettier-ignore
 // ---cut---
-// hover me
 const user = type({
 	name: "string",
-	luckyNumbers: "number[]",
-	"isAdmin?": "boolean | n"
-	//				                  ^|
+	platform: "'android' | 'ios'",
+	"version?": "number | s"
+	//                     ^|
 })

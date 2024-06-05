@@ -90,12 +90,10 @@ contextualize(
 value at [1] must be a number (was false)`)
 			// too short
 			attest(t.allows([""])).equals(false)
-			attest(t([""]).toString()).snap('must be exactly length 2 (was [""])')
+			attest(t([""]).toString()).snap("must be exactly length 2 (was 1)")
 			// too long
 			attest(t.allows(["", 0, 1])).equals(false)
-			attest(t(["", 0, 1]).toString()).snap(
-				'must be exactly length 2 (was ["",0,1])'
-			)
+			attest(t(["", 0, 1]).toString()).snap("must be exactly length 2 (was 3)")
 			// non-array
 			attest(
 				t.allows({

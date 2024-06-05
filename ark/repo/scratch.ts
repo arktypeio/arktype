@@ -1,18 +1,19 @@
-import { type } from "arktype"
+import { type, type Type } from "arktype"
 
-const user = type({
+const _user = type({
 	name: "string",
-	age: "number"
+	platform: "'android' | 'ios'",
+	"versions?": "(number | string)[]"
 })
 
-const parseUser = type("string").pipe(s => JSON.parse(s), user)
+type _User = typeof _user.t
 
-const validUser = parseUser(`{ "name": "David", "age": 30 }`) //?
-//    ^?
+interface User extends _User {}
 
-const invalidUser = parseUser(`{ "name": "David" }`)
-//    ^?
+export const user: Type<User> = _user
 
-if (invalidUser instanceof type.errors) {
-	console.log(invalidUser.summary)
-}
+const out = user({
+	name: "Alan Turing",
+	platform: "enigma",
+	versions: [0, "1", 0n]
+})

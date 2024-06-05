@@ -245,6 +245,7 @@ declare class _Type<t = unknown, $ = any> extends InnerRoot<t, $> {
 	extends<def>(
 		other: validateTypeRoot<def, $>
 	): this is Type<inferTypeRoot<def>, $>
+	overlaps<def>(r: validateTypeRoot<def, $>): boolean
 
 	constrain<
 		kind extends PrimitiveConstraintKind,
@@ -342,10 +343,10 @@ declare class _Type<t = unknown, $ = any> extends InnerRoot<t, $> {
 export interface Type<
 	/** @ts-expect-error allow instantiation assignment to the base type */
 	out t = unknown,
-	$ = any
+	$ = {}
 > extends _Type<t, $> {}
 
-export type TypeConstructor<t = unknown, $ = any> = new (
+export type TypeConstructor<t = unknown, $ = {}> = new (
 	def: unknown,
 	$: Scope<$>
 ) => Type<t, $>

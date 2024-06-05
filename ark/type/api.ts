@@ -1,4 +1,4 @@
-export { ArkError, ArkErrors } from "@arktype/schema"
+export { ArkError, ArkErrors as ArkErrors } from "@arktype/schema"
 export type { Ark, ArkConfig, Out } from "@arktype/schema"
 export { ambient, ark, declare, define, match, type } from "./ark.js"
 export { Module } from "./module.js"

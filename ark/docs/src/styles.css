@@ -29,6 +29,7 @@
 	--sl-color-gray-6: #002946;
 	--sl-color-black: #001a2f;
 	/* Based on ArkDark ErrorLens */
+	--ark-green: #40decc;
 	--ark-error: #9558f8a0;
 	--ark-success: #40decca0;
 	/** @shikijs/twoslash/style-rich.css overrides */
@@ -58,20 +59,10 @@
 	--twoslash-tag-annotate-bg: #1ba67320;
 }
 
-/* Light mode colors. */
-:root[data-theme="light"] {
-	--sl-color-accent-low: #f5cf8f;
-	--sl-color-accent: #eb9f2e;
-	--sl-color-accent-high: #4b3621;
-	--sl-color-white: #001a2f;
-	--sl-color-gray-1: #002946;
-	--sl-color-gray-2: #003b62;
-	--sl-color-gray-3: #0a5c93;
-	--sl-color-gray-4: #4b91cc;
-	--sl-color-gray-5: #a4c6e5;
-	--sl-color-gray-6: #e0f0ff;
-	--sl-color-gray-7: #eff7ff;
-	--sl-color-black: #fffff0;
+.starlight-aside--note {
+	--sl-color-asides-text-accent: var(--sl-color-gray-2);
+	--sl-color-asides-border: var(--sl-color-gray-4);
+	background-color: var(--sl-color-gray-6);
 }
 
 pre.astro-code,
@@ -81,6 +72,7 @@ pre.shiki,
 	border-radius: 1rem;
 	border-color: #ba7e4127;
 	border-width: 1px;
+	overflow-x: visible !important;
 }
 
 header {
@@ -92,10 +84,20 @@ header {
 	background-color: transparent;
 }
 
+.card {
+	max-width: 93vw;
+}
+
 /** Hide theme picker since light mode is not currently supported */
 starlight-theme-select,
 .social-icons::after {
 	display: none;
+}
+
+.twoslash {
+	/** Applying wrapping to hovers looks awful.
+	Defining it at this level ensures the shape doesn't change when it renders */
+	white-space: pre !important;
 }
 
 .twoslash .twoslash-hover:hover .twoslash-popup-container,
@@ -105,8 +107,11 @@ starlight-theme-select,
 	background: #001323aa;
 	backdrop-filter: blur(8px);
 	box-shadow: var(--hover-glow);
-	/** Applying wrapping to hovers looks awful */
-	white-space: pre;
+}
+
+/** used to display runtime errors on hover */
+.twoslash .twoslash-popup-docs {
+	color: #f85858;
 }
 
 /* Firefox specific rules */

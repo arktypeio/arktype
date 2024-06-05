@@ -68,9 +68,7 @@ contextualize(() => {
 		const t = type(["string", "number", "string", "string[]"])
 		const data: typeof t.infer = ["foo", 5, "boo", []]
 		attest(t(data)).equals(data)
-		attest(t(["hello"]).toString()).snap(
-			'must be exactly length 4 (was ["hello"])'
-		)
+		attest(t(["hello"]).toString()).snap("must be exactly length 4 (was 1)")
 	})
 
 	it("branches", () => {

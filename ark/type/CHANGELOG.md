@@ -1,5 +1,19 @@
 # arktype
 
+## 2.0.0-dev.20
+
+### Fix autocomplete for private aliases
+
+```ts
+const $ = scope({
+	"#kekw": "true",
+	// now correctly completed as "kekw" without the # prefix,
+	outerKek: {
+		kekw: "kek"
+	}
+})
+```
+
 ## 2.0.0-dev.19
 
 ### Chainable Constraints

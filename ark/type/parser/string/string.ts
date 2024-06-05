@@ -1,4 +1,4 @@
-import type { BaseRoot } from "@arktype/schema"
+import type { BaseRoot, resolvableReferenceIn } from "@arktype/schema"
 import {
 	type ErrorMessage,
 	throwInternalError,
@@ -36,7 +36,7 @@ export type inferString<def extends string, $, args> = inferAstRoot<
 >
 
 export type BaseCompletions<$, args, otherSuggestions extends string = never> =
-	| (keyof $ & string)
+	| resolvableReferenceIn<$>
 	| (keyof args & string)
 	| StringifiablePrefixOperator
 	| otherSuggestions

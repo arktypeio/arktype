@@ -208,7 +208,7 @@ contextualize(() => {
 			lengthOfString: ["string", "=>", data => data.length],
 			mapToLengths: "lengthOfString[]"
 		}).export()
-		attest<Type<((In: string) => Out<number>)[]>>(types.mapToLengths)
+		attest<((In: string) => Out<number>)[]>(types.mapToLengths.t)
 		const out = types.mapToLengths(["1", "22", "333"])
 		attest<number[] | type.errors>(out).equals([1, 2, 3])
 	})
@@ -230,7 +230,7 @@ contextualize(() => {
 		assertNodeKind(types.bAndA.raw, "morph")
 		assertNodeKind(types.aAndB.raw, "morph")
 
-		attest<Type<(In: 3.14) => Out<string>>>(types.aAndB)
+		attest<(In: 3.14) => Out<string>>(types.aAndB.t)
 		attest(types.aAndB.json).snap({
 			in: { unit: 3.14 },
 			morphs: types.aAndB.raw.serializedMorphs
@@ -268,7 +268,7 @@ contextualize(() => {
 			aOrB: "a|b",
 			bOrA: "b|a"
 		}).export()
-		attest<Type<boolean | ((In: number) => Out<string>)>>(types.aOrB)
+		attest<boolean | ((In: number) => Out<string>)>(types.aOrB.t)
 		const serializedMorphs =
 			types.aOrB.raw.firstReferenceOfKindOrThrow("morph").serializedMorphs
 		attest(types.aOrB.json).snap([
@@ -293,15 +293,13 @@ contextualize(() => {
 			c: "a|b"
 		}).export()
 		attest<
-			Type<
-				| {
-						a: (In: number) => Out<string>
-				  }
-				| {
-						a: Function
-				  }
-			>
-		>(types.c)
+			| {
+					a: (In: number) => Out<string>
+			  }
+			| {
+					a: Function
+			  }
+		>(types.c.t)
 
 		const serializedMorphs =
 			types.a.raw.firstReferenceOfKindOrThrow("morph").serializedMorphs
@@ -332,7 +330,7 @@ contextualize(() => {
 			b: () => $.type("a").pipe(n => n === 0)
 		})
 		const types = $.export()
-		attest<Type<(In: string) => Out<boolean>>>(types.b)
+		attest<(In: string) => Out<boolean>>(types.b.t)
 		assertNodeKind(types.b.raw, "morph")
 		attest(types.b.json).snap({
 			in: "string",
@@ -347,7 +345,7 @@ contextualize(() => {
 		})
 
 		const types = $.export()
-		attest<Type<(In: { a: string }) => Out<boolean>>>(types.b)
+		attest<(In: { a: string }) => Out<boolean>>(types.b.t)
 		assertNodeKind(types.b.raw, "morph")
 		assertNodeKind(types.a.raw, "morph")
 		attest(types.b.json).snap({
@@ -403,7 +401,7 @@ contextualize(() => {
 			c: () => $.type("a|b")
 		})
 		const types = $.export()
-		attest<Type<[boolean] | ((In: [string]) => Out<string[]>)>>(types.c)
+		attest<[boolean] | ((In: [string]) => Out<string[]>)>(types.c.t)
 	})
 
 	it("ArkTypeError not included in return", () => {
