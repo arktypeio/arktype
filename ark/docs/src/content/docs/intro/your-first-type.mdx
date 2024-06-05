@@ -41,7 +41,7 @@ Thousands of hours of optimization have gone into making validating native type 
 
 ## Compose
 
-Let's say we want to move `platform` and `version` from our original type to a new `device` property.
+Suppose we want to move `platform` and `version` from our original type to a new `device` property.
 
 ```ts
 import { type } from "arktype"
@@ -74,34 +74,45 @@ const user = type({
 
 ## Validate
 
-At runtime, we can pass arbitrary data to our new type and get back either a validated `User`
+At runtime, we can pass `unknown` data to our type and get back either a validated `User` or an array of clear, customizable errors with a root `summary`.
 
 ```ts
-import { type } from "arktype"
+import { type, type ArkErrors } from "arktype"
 
 const user = type({
 	name: "string",
-	// nested definitions don't need to be wrapped
 	device: {
 		platform: "'android' | 'ios'",
 		"versions?": "(number | string)[]"
 	}
 })
+
+interface RuntimeErrors extends ArkErrors {
+	/**device.platform must be "android" or "ios" (was "enigma")
+device.versions[2] must be a number or a string (was bigint)*/
+	summary: string
+}
+
+const narrowMessage = (e: ArkErrors): e is RuntimeErrors => true
+
 // ---cut---
-// Validators return typed data or clear, customizable errors.
-export const out = user({
+const out = user({
 	name: "Alan Turing",
 	device: {
-		// errors.summary: "device/platform must be 'android' or 'ios' (was 'enigma')"
-		platform: "enigma"
+		platform: "enigma",
+		versions: [0, "1", 0n]
 	}
 })
 
 if (out instanceof type.errors) {
-	// a clear, user-ready error message, even for complex unions and intersections
-	console.log(out.summary)
+	// ---cut-start---
+	// just a trick to display the runtime error
+	if (!narrowMessage(out)) throw new Error()
+	// ---cut-end---
+	// hover out.summary to see validation errors
+	console.error(out.summary)
 } else {
-	// your valid data!
-	console.log(out)
+	// hover out to see your validated data
+	console.log(`Hello, ${out.name}`)
 }
 ```

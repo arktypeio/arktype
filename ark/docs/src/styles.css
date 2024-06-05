@@ -90,6 +90,12 @@ starlight-theme-select,
 	display: none;
 }
 
+.twoslash {
+	/** Applying wrapping to hovers looks awful.
+	Defining it at this level ensures the shape doesn't change when it renders */
+	white-space: pre !important;
+}
+
 .twoslash .twoslash-hover:hover .twoslash-popup-container,
 .twoslash .twoslash-completion-cursor .twoslash-completion-list {
 	border-radius: 1rem;
@@ -97,8 +103,6 @@ starlight-theme-select,
 	background: #001323aa;
 	backdrop-filter: blur(8px);
 	box-shadow: var(--hover-glow);
-	/** Applying wrapping to hovers looks awful */
-	white-space: pre;
 }
 
 /** used to display runtime errors on hover */

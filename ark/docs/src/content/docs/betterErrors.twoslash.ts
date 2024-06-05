@@ -18,7 +18,7 @@ const narrowMessage = (e: ArkErrors): e is RuntimeErrors => true
 const out = user({
 	name: "Alan Turing",
 	platform: "enigma",
-	version: [0, "1", 0n]
+	versions: [0, "1", 0n]
 })
 
 if (out instanceof type.errors) {
@@ -28,4 +28,4 @@ if (out instanceof type.errors) {
 	// ---cut-end---
 	// hover out.summary to see validation errors
 	console.error(out.summary)
-} else console.log(out.platform)
+}

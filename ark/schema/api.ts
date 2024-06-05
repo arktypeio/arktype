@@ -41,3 +41,5 @@ export * from "./structure/optional.js"
 export * from "./structure/prop.js"
 export * from "./structure/sequence.js"
 export * from "./structure/structure.js"
+
+export { ParseError } from "@arktype/util"
