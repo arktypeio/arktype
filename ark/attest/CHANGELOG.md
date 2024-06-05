@@ -1,5 +1,13 @@
 # @arktype/attest
 
+## 0.7.10
+
+### Patch Changes
+
+- Updated dependencies [[`232fc42`](https://github.com/arktypeio/arktype/commit/232fc42af18e8412d0095293926077a9c50abdc6)]:
+  - @arktype/util@0.0.48
+  - arktype@2.0.0-dev.20
+
 ## 0.7.9
 
 ### Patch Changes

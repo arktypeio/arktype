@@ -1,3 +1,0 @@
----
-"@arktype/util": patch
----

@@ -1,5 +1,11 @@
 # @arktype/util
 
+## 0.0.48
+
+### Patch Changes
+
+- [#997](https://github.com/arktypeio/arktype/pull/997) [`232fc42`](https://github.com/arktypeio/arktype/commit/232fc42af18e8412d0095293926077a9c50abdc6) Thanks [@ssalbdivad](https://github.com/ssalbdivad)! -
+
 ## 0.0.47
 
 ### Patch Changes
