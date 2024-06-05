@@ -16,6 +16,8 @@ export default defineConfig({
 	integrations: [
 		starlight({
 			title: "ArkType",
+			description:
+				"TypeScript's 1:1 validator, optimized from editor to runtime",
 			logo: {
 				src: "./src/assets/logo.svg",
 				replacesTitle: true
@@ -44,6 +46,9 @@ export default defineConfig({
 					autogenerate: { directory: "reference" }
 				}
 			],
+			components: {
+				Head: "./src/components/Head.astro"
+			},
 			customCss: ["@shikijs/twoslash/style-rich.css", "./src/styles.css"],
 			expressiveCode: false
 		}),

@@ -642,7 +642,7 @@ export const rawNode: RawRootScope["node"] = root.raw.node
 export const defineRawRoot: RawRootScope["defineRoot"] = root.raw.defineRoot
 export const rawUnits: RawRootScope["units"] = root.raw.units
 
-export const tryParseSchema = <castTo = unknown>(
+export const parseAsSchema = <castTo = unknown>(
 	def: unknown,
 	opts?: NodeParseOptions
 ): Root<castTo, {}> | ParseError => {
