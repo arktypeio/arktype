@@ -1,5 +1,21 @@
 # @arktype/schema
 
+## 0.1.12
+
+### Patch Changes
+
+- [#997](https://github.com/arktypeio/arktype/pull/997) [`232fc42`](https://github.com/arktypeio/arktype/commit/232fc42af18e8412d0095293926077a9c50abdc6) Thanks [@ssalbdivad](https://github.com/ssalbdivad)! - Add a new `parseAsSchema` API that accepts `unknown` and returns either a `ParseError` or a Root schema instance with a castable parameter.
+
+  Useful for stuff like:
+
+  ```ts
+  const s = schema("number")
+  const fromSerialized = parseAsSchema(s.json)
+  ```
+
+- Updated dependencies [[`232fc42`](https://github.com/arktypeio/arktype/commit/232fc42af18e8412d0095293926077a9c50abdc6)]:
+  - @arktype/util@0.0.48
+
 ## 0.1.11
 
 ### Patch Changes
