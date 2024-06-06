@@ -1,5 +1,11 @@
 # @arktype/schema
 
+## 0.1.13
+
+### Patch Changes
+
+- [#999](https://github.com/arktypeio/arktype/pull/999) [`21c0105`](https://github.com/arktypeio/arktype/commit/21c0105a0c4ee45b8fd95e2c547724570742f6b0) Thanks [@ssalbdivad](https://github.com/ssalbdivad)! - Fix chained .describe() on union types (see [arktype CHANGELOG](../type/CHANGELOG.md))
+
 ## 0.1.12
 
 ### Patch Changes
