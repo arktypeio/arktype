@@ -259,4 +259,15 @@ contextualize(() => {
 			writeUnresolvableMessage("nummer")
 		)
 	})
+
+	it("chained description", () => {
+		const t = type("number|string").describe("My custom type")
+		attest(t.json).snap({
+			branches: [
+				{ description: "My custom type", domain: "number" },
+				{ description: "My custom type", domain: "string" }
+			],
+			description: "My custom type"
+		})
+	})
 })
