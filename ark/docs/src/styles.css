@@ -112,6 +112,7 @@ starlight-theme-select,
 /** used to display runtime errors on hover */
 .twoslash .twoslash-popup-docs {
 	color: #f85858;
+	font-size: small;
 }
 
 /* Firefox specific rules */
