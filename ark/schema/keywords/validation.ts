@@ -43,7 +43,7 @@ const semver = defineRegex(
 
 const creditCard = root.defineRoot({
 	domain: "string",
-	regex: {
+	pattern: {
 		rule: creditCardMatcher.source,
 		description: "a valid credit card number"
 	},

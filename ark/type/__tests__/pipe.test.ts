@@ -28,7 +28,7 @@ contextualize(() => {
 		attest(t.json).snap({
 			in: {
 				domain: "string",
-				regex: [
+				pattern: [
 					{
 						description: "a well-formed numeric string",
 						flags: "",

@@ -16,7 +16,7 @@ export type Constraints = {
 	divisor?: { [k: number]: 1 }
 	min?: { [k: number | string]: 0 | 1 }
 	max?: { [k: number | string]: 0 | 1 }
-	regex?: { [k: string]: 1 }
+	pattern?: { [k: string]: 1 }
 	length?: { [k: number]: 1 }
 	predicate?: 1
 	literal?: string | number
@@ -66,7 +66,7 @@ export type Length<rule extends number> = {
 }
 
 export type Matching<rule extends string> = {
-	regex: { [k in rule]: 1 }
+	pattern: { [k in rule]: 1 }
 }
 
 export type Narrowed = {
@@ -174,7 +174,7 @@ export namespace string {
 				schema extends { exclusive: true } ?
 					lessThanLength<rule & number>
 				:	atMostLength<rule & number>
-			: kind extends "regex" ? matching<rule & string>
+			: kind extends "pattern" ? matching<rule & string>
 			: kind extends "exactLength" ? exactlyLength<rule & number>
 			: narrowed
 		:	never
@@ -273,7 +273,7 @@ export type schemaToConstraint<
 	schema extends NodeSchema<kind>
 > =
 	normalizePrimitiveConstraintRoot<schema> extends infer rule ?
-		kind extends "regex" ? Matching<rule & string>
+		kind extends "pattern" ? Matching<rule & string>
 		: kind extends "divisor" ? DivisibleBy<rule & number>
 		: kind extends "exactLength" ? Length<rule & number>
 		: kind extends "min" ?

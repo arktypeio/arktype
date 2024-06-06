@@ -302,9 +302,9 @@ export const intersectionImplementation: nodeImplementationOf<IntersectionDeclar
 				child: true,
 				parse: constraintKeyParser("after")
 			},
-			regex: {
+			pattern: {
 				child: true,
-				parse: constraintKeyParser("regex")
+				parse: constraintKeyParser("pattern")
 			},
 			predicate: {
 				child: true,

@@ -15,10 +15,10 @@ import {
 	type MorphAst,
 	type NodeSchema,
 	type Out,
+	type PatternSchema,
 	type Predicate,
 	type Prerequisite,
 	type PrimitiveConstraintKind,
-	type RegexSchema,
 	type Root,
 	type ambient,
 	type constrain,
@@ -269,10 +269,10 @@ declare class _Type<t = unknown, $ = any> extends InnerRoot<t, $> {
 		schema: schema
 	): Type<constrain<t, "divisor", schema>, $>
 
-	matching<const schema extends RegexSchema>(
-		this: validateChainedConstraint<"regex", this>,
+	matching<const schema extends PatternSchema>(
+		this: validateChainedConstraint<"pattern", this>,
 		schema: schema
-	): Type<constrain<t, "regex", schema>, $>
+	): Type<constrain<t, "pattern", schema>, $>
 
 	atLeast<const schema extends InclusiveNumericRangeSchema>(
 		this: validateChainedConstraint<"min", this>,

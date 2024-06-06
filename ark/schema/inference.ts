@@ -148,12 +148,12 @@ export type inferBasis<schema extends NodeSchema<BasisKind>, $> =
 // ]
 // 	? inferIndexed<
 // 			tail,
-// 			entry["key"] extends { readonly regex: VariadicIndexMatcherLiteral }
+// 			entry["key"] extends { readonly pattern: VariadicIndexMatcherLiteral }
 // 				? result extends List
 // 					? [...result, ...inferTypeInput<entry["value"]>[]]
 // 					: never
 // 				: entry["key"] extends {
-// 						readonly regex: NonVariadicIndexMatcherLiteral
+// 						readonly pattern: NonVariadicIndexMatcherLiteral
 // 				  }
 // 				? inferTypeInput<entry["value"]>[]
 // 				: Record<
@@ -168,7 +168,7 @@ export type inferBasis<schema extends NodeSchema<BasisKind>, $> =
 // 	indexed extends readonly IndexedPropInput[]
 // > = [named, indexed[0]["key"]] extends
 // 	| [TupleLengthProps, unknown]
-// 	| [unknown, { readonly regex: VariadicIndexMatcherLiteral }]
+// 	| [unknown, { readonly pattern: VariadicIndexMatcherLiteral }]
 // 	? inferNonVariadicTupleProps<named> &
 // 			inferObjectLiteralProps<Omit<named, "length" | NumberLiteral | number>>
 // 	: inferObjectLiteralProps<named>

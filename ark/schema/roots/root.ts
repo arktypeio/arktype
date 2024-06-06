@@ -6,7 +6,7 @@ import type {
 	InclusiveDateRangeSchema,
 	InclusiveNumericRangeSchema,
 	LimitSchemaValue,
-	RegexSchema,
+	PatternSchema,
 	UnknownRangeSchema
 } from "@arktype/schema"
 import {
@@ -282,8 +282,8 @@ export abstract class BaseRoot<
 		return this.constrain("divisor", schema)
 	}
 
-	matching(schema: RegexSchema): BaseRoot {
-		return this.constrain("regex", schema)
+	matching(schema: PatternSchema): BaseRoot {
+		return this.constrain("pattern", schema)
 	}
 
 	atLeast(schema: InclusiveNumericRangeSchema): BaseRoot {

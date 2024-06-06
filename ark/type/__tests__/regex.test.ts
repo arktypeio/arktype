@@ -79,7 +79,7 @@ contextualize(
 			// @ts-expect-error
 			attest(() => type("number").matching("foo")).throwsAndHasTypeError(
 				writeInvalidOperandMessage(
-					"regex",
+					"pattern",
 					keywordNodes.string,
 					keywordNodes.number
 				)

@@ -7,14 +7,14 @@ contextualize(() => {
 		const parseNumber = schema({
 			in: {
 				domain: "string",
-				regex: wellFormedNumberMatcher,
+				pattern: wellFormedNumberMatcher,
 				description: "a well-formed numeric string"
 			},
 			morphs: (s: string) => Number.parseFloat(s)
 		})
 		attest(parseNumber.in.json).snap({
 			domain: "string",
-			regex: ["^(?!^-0$)-?(?:0|[1-9]\\d*)(?:\\.\\d*[1-9])?$"],
+			pattern: ["^(?!^-0$)-?(?:0|[1-9]\\d*)(?:\\.\\d*[1-9])?$"],
 			description: "a well-formed numeric string"
 		})
 		attest(parseNumber.out.json).snap({})

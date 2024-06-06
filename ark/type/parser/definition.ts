@@ -46,7 +46,7 @@ export const parseObject = (def: object, ctx: ParseContext): BaseRoot => {
 				"intersection",
 				{
 					domain: "string",
-					regex: def as RegExp
+					pattern: def as RegExp
 				},
 				{ prereduced: true }
 			)

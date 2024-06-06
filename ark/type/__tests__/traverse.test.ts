@@ -20,7 +20,7 @@ contextualize(() => {
 		attest(t("foo").toString()).snap("must be a number (was string)")
 	})
 
-	it("regex", () => {
+	it("pattern", () => {
 		const t = type("/.*@arktype.io/")
 		attest(t("shawn@arktype.io")).snap("shawn@arktype.io")
 		attest(t("shawn@hotmail.com").toString()).snap(

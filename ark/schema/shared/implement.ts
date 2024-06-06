@@ -53,10 +53,10 @@ export type StructuralKind = (typeof structuralKinds)[number]
 
 export type RangeKind = Exclude<BoundKind, "exactLength">
 
-export type BoundKind = Exclude<RefinementKind, "regex" | "divisor">
+export type BoundKind = Exclude<RefinementKind, "pattern" | "divisor">
 
 export const refinementKinds = [
-	"regex",
+	"pattern",
 	"divisor",
 	"exactLength",
 	"max",
