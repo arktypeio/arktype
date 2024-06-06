@@ -7,7 +7,7 @@ import {
 import { RawPrimitiveConstraint } from "../constraint.js"
 import type { Node } from "../kinds.js"
 import type { BaseMeta, RawNodeDeclaration } from "../shared/declare.js"
-import type { KeySchemainitions, RangeKind } from "../shared/implement.js"
+import type { KeySchemaDefinitions, RangeKind } from "../shared/implement.js"
 
 export interface BaseRangeDeclaration extends RawNodeDeclaration {
 	kind: RangeKind
@@ -172,7 +172,7 @@ export type NumericallyBoundable = string | number | array
 
 export type Boundable = NumericallyBoundable | Date
 
-export const parseExclusiveKey: KeySchemainitions<BaseRangeDeclaration>["exclusive"] =
+export const parseExclusiveKey: KeySchemaDefinitions<BaseRangeDeclaration>["exclusive"] =
 	{
 		// omit key with value false since it is the default
 		parse: (flag: boolean) => flag || undefined

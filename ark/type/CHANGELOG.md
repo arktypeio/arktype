@@ -1,5 +1,14 @@
 # arktype
 
+## 2.0.0-dev.21
+
+### Fix chained .describe() on union types
+
+```ts
+// now correctly adds the description to the union and its branches
+const t = type("number|string").describe("My custom type")
+```
+
 ## 2.0.0-dev.20
 
 ### Fix autocomplete for private aliases

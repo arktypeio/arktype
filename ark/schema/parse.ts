@@ -8,9 +8,7 @@ import {
 	type Dict,
 	type Json,
 	type JsonData,
-	type PartialRecord,
-	type listable,
-	type propValueOf
+	type listable
 } from "@arktype/util"
 import {
 	nodeClassesByKind,
@@ -20,14 +18,12 @@ import {
 import type { BaseNode } from "./node.js"
 import type { UnknownRoot } from "./roots/root.js"
 import type { RawRootScope } from "./scope.js"
-import type { RawNodeDeclaration } from "./shared/declare.js"
 import { Disjoint } from "./shared/disjoint.js"
 import {
 	constraintKeys,
 	defaultValueSerializer,
 	isNodeKind,
 	precedenceOfKind,
-	type KeySchemainitions,
 	type NodeKind,
 	type RootKind,
 	type UnknownAttachments
@@ -52,10 +48,6 @@ export interface NodeParseContext<kind extends NodeKind = NodeKind>
 	args?: Record<string, UnknownRoot>
 	schema: NormalizedSchema<kind>
 }
-
-const baseKeys: PartialRecord<string, propValueOf<KeySchemainitions<any>>> = {
-	description: { meta: true }
-} satisfies KeySchemainitions<RawNodeDeclaration> as never
 
 export const schemaKindOf = <kind extends RootKind = RootKind>(
 	schema: unknown,
@@ -122,7 +114,7 @@ export const parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
 	const children: BaseNode[] = []
 	for (const entry of schemaEntries) {
 		const k = entry[0]
-		const keyImpl = impl.keys[k] ?? baseKeys[k]
+		const keyImpl = impl.keys[k]
 		if (!keyImpl)
 			return throwParseError(`Key ${k} is not valid on ${kind} schema`)
 
@@ -136,7 +128,7 @@ export const parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
 	let typeJson: Record<string, unknown> = {}
 	entries.forEach(([k, v]) => {
 		const listableNode = v as listable<BaseNode>
-		const keyImpl = impl.keys[k] ?? baseKeys[k]
+		const keyImpl = impl.keys[k]
 		const serialize =
 			keyImpl.serialize ??
 			(keyImpl.child ? serializeListableChild : defaultValueSerializer)

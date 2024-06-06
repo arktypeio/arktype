@@ -6,11 +6,13 @@ import {
 	type Entry,
 	type Json,
 	type JsonData,
+	type PartialRecord,
 	type entryOf,
 	type indexOf,
 	type keySet,
 	type keySetOf,
 	type listable,
+	type propValueOf,
 	type requireKeys,
 	type show
 } from "@arktype/util"
@@ -233,11 +235,11 @@ export const schemaKindsRightOf = <kind extends RootKind>(
 ): schemaKindRightOf<kind>[] =>
 	rootKinds.slice(precedenceOfKind(kind) + 1) as never
 
-export type KeySchemainitions<d extends RawNodeDeclaration> = {
-	[k in keyRequiringSchemainition<d>]: NodeKeyImplementation<d, k>
+export type KeySchemaDefinitions<d extends RawNodeDeclaration> = {
+	[k in keyRequiringSchemaDefinition<d>]: NodeKeyImplementation<d, k>
 }
 
-type keyRequiringSchemainition<d extends RawNodeDeclaration> = Exclude<
+type keyRequiringSchemaDefinition<d extends RawNodeDeclaration> = Exclude<
 	keyof d["normalizedSchema"],
 	keyof BaseMeta
 >
@@ -279,7 +281,7 @@ export type NodeKeyImplementation<
 
 interface CommonNodeImplementationInput<d extends RawNodeDeclaration> {
 	kind: d["kind"]
-	keys: KeySchemainitions<d>
+	keys: KeySchemaDefinitions<d>
 	normalize: (schema: d["schema"]) => d["normalizedSchema"]
 	hasAssociatedError: d["errorContext"] extends null ? false : true
 	finalizeJson?: (json: { [k in keyof d["inner"]]: JsonData }) => Json
@@ -366,6 +368,13 @@ export interface NarrowedAttachments<d extends RawNodeDeclaration>
 	children: Node<d["childKind"]>[]
 }
 
+export const baseKeys: PartialRecord<
+	string,
+	propValueOf<KeySchemaDefinitions<any>>
+> = {
+	description: { meta: true }
+} satisfies KeySchemaDefinitions<RawNodeDeclaration> as never
+
 export const implementNode = <d extends RawNodeDeclaration = never>(
 	_: nodeImplementationInputOf<d>
 ): nodeImplementationOf<d> => {
@@ -388,5 +397,6 @@ export const implementNode = <d extends RawNodeDeclaration = never>(
 			return problemWithLocation
 		}
 	}
+	Object.assign(implementation.keys, baseKeys)
 	return implementation as never
 }
