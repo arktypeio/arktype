@@ -15,7 +15,7 @@ import type { DomainSchema } from "./roots/domain.js"
 import type { IntersectionSchema } from "./roots/intersection.js"
 import type {
 	Morph,
-	MorphInputSchema,
+	MorphChildSchema,
 	MorphSchema,
 	Out,
 	inferMorphOut
@@ -75,7 +75,7 @@ type inferRootBranch<schema, $> =
 		) ?
 			Out<inferMorphOut<morph>>
 		:	never
-	: schema extends MorphInputSchema ? inferMorphChild<schema, $>
+	: schema extends MorphChildSchema ? inferMorphChild<schema, $>
 	: unknown
 
 type NonIntersectableBasisRoot = NonEnumerableDomain | Constructor | UnitSchema

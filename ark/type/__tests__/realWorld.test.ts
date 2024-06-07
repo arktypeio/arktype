@@ -516,4 +516,21 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			'box.box.box must be an object (was string) or must be null (was {"box":{"box":{"box":"whoops"}}})'
 		)
 	})
+
+	it("morph with alias child", () => {
+		const types = scope({
+			ArraySchema: {
+				"items?": "Schema"
+			},
+			Schema: "TypeWithKeywords",
+			TypeWithKeywords: "ArraySchema"
+		}).export()
+
+		const t = types.Schema.pipe(o => JSON.stringify(o))
+
+		attest(t({ items: {} })).snap('{"items":{}}')
+		attest(t({ items: null }).toString()).snap(
+			"items must be an object (was null)"
+		)
+	})
 })

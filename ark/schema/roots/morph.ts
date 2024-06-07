@@ -33,18 +33,19 @@ import type { DefaultableAst } from "../structure/optional.js"
 import { BaseRoot, type Root, type schemaKindRightOf } from "./root.js"
 import { defineRightwardIntersections } from "./utils.js"
 
-export type MorphInputKind = schemaKindRightOf<"morph">
+export type MorphChildKind = schemaKindRightOf<"morph"> | "alias"
 
-const morphInputKinds: array<MorphInputKind> = [
+const morphChildKinds: array<MorphChildKind> = [
+	"alias",
 	"intersection",
 	"unit",
 	"domain",
 	"proto"
 ]
 
-export type MorphInputNode = Node<MorphInputKind>
+export type MorphChildNode = Node<MorphChildKind>
 
-export type MorphInputSchema = NodeSchema<MorphInputKind>
+export type MorphChildSchema = NodeSchema<MorphChildKind>
 
 export type Morph<i = any, o = unknown> = (In: i, ctx: TraversalContext) => o
 
@@ -53,12 +54,12 @@ export type Out<o = any> = ["=>", o]
 export type MorphAst<i = any, o = any> = (In: i) => Out<o>
 
 export interface MorphInner extends BaseMeta {
-	readonly in: MorphInputNode
+	readonly in: MorphChildNode
 	readonly morphs: array<Morph | Root>
 }
 
 export interface MorphSchema extends BaseMeta {
-	readonly in: MorphInputSchema
+	readonly in: MorphChildSchema
 	readonly morphs: listable<Morph | Root>
 }
 
@@ -68,7 +69,7 @@ export interface MorphDeclaration
 		schema: MorphSchema
 		normalizedSchema: MorphSchema
 		inner: MorphInner
-		childKind: MorphInputKind
+		childKind: MorphChildKind
 	}> {}
 
 export const morphImplementation: nodeImplementationOf<MorphDeclaration> =
@@ -78,7 +79,7 @@ export const morphImplementation: nodeImplementationOf<MorphDeclaration> =
 		keys: {
 			in: {
 				child: true,
-				parse: (schema, ctx) => ctx.$.node(morphInputKinds, schema)
+				parse: (schema, ctx) => ctx.$.node(morphChildKinds, schema)
 			},
 			morphs: {
 				parse: arrayFrom,
