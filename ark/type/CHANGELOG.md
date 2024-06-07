@@ -1,5 +1,23 @@
 # arktype
 
+## 2.0.0-dev.22
+
+### Fix a ParseError compiling certain morphs with cyclic inputs
+
+Types like the following will now work:
+
+```ts
+const types = scope({
+	ArraySchema: {
+		"items?": "Schema"
+	},
+	Schema: "TypeWithKeywords",
+	TypeWithKeywords: "ArraySchema"
+}).export()
+
+const t = types.Schema.pipe(o => JSON.stringify(o))
+```
+
 ## 2.0.0-dev.21
 
 ### Fix chained .describe() on union types
