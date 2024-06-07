@@ -1,10 +1,19 @@
 @import url("https://fonts.googleapis.com/css?family=Raleway:300,400,500,700&display=swap");
-@import url("https://fonts.cdnfonts.com/css/cascadia-code");
+
+@font-face {
+	font-family: "Cascadia Mono";
+	src:
+		local("Cascadia Mono"),
+		url("https://fonts.cdnfonts.com/s/37910/CascadiaMono.woff") format("woff");
+	font-style: normal;
+}
 
 /* Don't render italics, which can be hard to read for some users */
 @font-face {
-	font-family: "Cascadia Code";
-	src: local("Cascadia Code");
+	font-family: "Cascadia Mono";
+	src:
+		local("Cascadia Mono"),
+		url("https://fonts.cdnfonts.com/s/37910/CascadiaMono.woff") format("woff");
 	font-style: italic;
 }
 
@@ -15,7 +24,7 @@
 	--hover-glow: 0.5rem 0.5rem 2rem 0 rgba(31, 38, 135, 0.37);
 	/* Fonts */
 	--sl-font: Raleway, sans-serif;
-	--sl-font-mono: Cascadia Code;
+	--sl-font-mono: Cascadia Mono;
 	/* Dark mode colors. */
 	--sl-color-accent-low: #4b3621;
 	--sl-color-accent: #eb9f2e;

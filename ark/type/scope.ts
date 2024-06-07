@@ -54,15 +54,17 @@ import {
 export type ScopeParser = <const def>(
 	def: validateScope<def>,
 	config?: ArkConfig
-) => Scope<inferBootstrapped<bootstrapAliases<def>>>
+) => Scope<inferScope<def>>
 
-type validateScope<def> = {
+export type validateScope<def> = {
 	[k in keyof def]: k extends symbol ?
 		// this should only occur when importing/exporting modules, and those
 		// keys should be ignored
 		unknown
 	: parseScopeKey<k>["params"] extends [] ?
-		// Not including Type here directly breaks inference
+		// not including Type here directly breaks some cyclic tests (last checked w/ TS 5.5).
+		// if you are from the future with a better version of TS and can remove it
+		// without breaking `pnpm typecheck`, go for it.
 		def[k] extends Type | PreparsedResolution ? def[k]
 		: k extends PrivateDeclaration<infer name extends keyof def & string> ?
 			keyError<writeDuplicateAliasError<name>>
@@ -81,6 +83,8 @@ type validateScope<def> = {
 			}
 		>
 }
+
+export type inferScope<def> = inferBootstrapped<bootstrapAliases<def>>
 
 export type bindThis<def> = { this: Def<def> }
 

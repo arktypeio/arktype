@@ -378,19 +378,49 @@ b.c.c must be arf&bork (was missing)`)
 				]
 			})
 		})
+
 		// https://github.com/arktypeio/arktype/issues/930
-		// 		it("intersect cyclic reference with repeat name", () => {
-		// 			const types = scope({
-		// 				arf: {
-		// 					b: "bork"
-		// 				},
-		// 				bork: {
-		// 					c: "arf&bork"
-		// 				}
-		// 			}).export()
-		// 			attest(types.arf({ b: { c: {} } }).toString())
-		// 				.snap(`b.c.b must be { c: arf&bork } (was missing)
-		// b.c.c must be arf&bork (was missing)`)
-		// 		})
+		it("intersect cyclic reference with repeat name", () => {
+			const types = scope({
+				arf: {
+					a: "bork"
+				},
+				bork: {
+					b: "arf&bork"
+				}
+			}).export()
+
+			const resolveRef: string = (
+				types.bork.raw.firstReferenceOfKindOrThrow("alias").json as any
+			).resolve
+
+			attest(types.bork.json).snap({
+				required: [
+					{ key: "b", value: { resolve: resolveRef, alias: "$arf&bork" } }
+				],
+				domain: "object"
+			})
+
+			attest(types.arf.json).snap({
+				required: [
+					{
+						key: "a",
+						value: types.bork.json
+					}
+				],
+				domain: "object"
+			})
+
+			attest(types.arf({ a: { b: {} } }).toString())
+				.snap(`a.b.a must be { b: arf&bork } (was missing)
+a.b.b must be arf&bork (was missing)`)
+		})
+	})
+
+	it("can override ambient aliases", () => {
+		const $ = scope({
+			bar: "Array", // Type<never> for some reason?
+			Array: "string"
+		}).export()
 	})
 })
