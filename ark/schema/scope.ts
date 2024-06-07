@@ -225,7 +225,7 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 {
 	readonly config: ArkConfig
 	readonly resolvedConfig: ResolvedArkConfig
-	readonly id = `$${++scopeCount}`;
+	readonly id = `$${++scopeCount}`
 	readonly [arkKind] = "scope"
 
 	readonly referencesById: { [name: string]: BaseNode } = {}
@@ -280,12 +280,16 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 			// TODO: generics and modules
 			this.resolutions = flatMorph(
 				this.ambient.resolutions,
-				(alias, resolution) => [
-					alias,
-					hasArkKind(resolution, "root") ?
-						resolution.bindScope(this)
-					:	resolution
-				]
+				(alias, resolution) =>
+					// an alias defined in this scope should override an ambient alias of the same name
+					alias in this.aliases ?
+						[]
+					:	[
+							alias,
+							hasArkKind(resolution, "root") ?
+								resolution.bindScope(this)
+							:	resolution
+						]
 			)
 		}
 		scopesById[this.id] = this

@@ -1,9 +1,12 @@
 import { attest, contextualize } from "@arktype/attest"
 import {
+	schema,
 	writeUnboundableMessage,
-	writeUnresolvableMessage
+	writeUnresolvableMessage,
+	type string
 } from "@arktype/schema"
 import { define, scope, type } from "arktype"
+import type { Module } from "../module.js"
 import { writeUnexpectedCharacterMessage } from "../parser/string/shift/operator/operator.js"
 
 contextualize(() => {
@@ -418,9 +421,23 @@ a.b.b must be arf&bork (was missing)`)
 	})
 
 	it("can override ambient aliases", () => {
-		const $ = scope({
-			bar: "Array", // Type<never> for some reason?
-			Array: "string"
+		const types = scope({
+			foo: {
+				bar: "string"
+			},
+			string: schema({ domain: "string" }).constrain("minLength", 1)
 		}).export()
+		attest<
+			Module<{
+				string: string.atLeastLength<1>
+				foo: {
+					bar: string.atLeastLength<1>
+				}
+			}>
+		>(types)
+		attest(types.foo.json).snap({
+			required: [{ key: "bar", value: { domain: "string", minLength: 1 } }],
+			domain: "object"
+		})
 	})
 })

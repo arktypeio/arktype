@@ -4,6 +4,7 @@ import {
 	writeUnresolvableMessage,
 	type GenericProps,
 	type PrivateDeclaration,
+	type ambient,
 	type arkKind,
 	type writeNonSubmoduleDotMessage
 } from "@arktype/schema"
@@ -134,20 +135,31 @@ const maybeParseUnenclosedLiteral = (
 }
 
 type tryResolve<s extends StaticState, token extends string, $, args> =
-	token extends keyof $ ? token
+	token extends keyof ambient ? token
+	: token extends keyof $ ? token
 	: `#${token}` extends keyof $ ? token
 	: token extends keyof args ? token
 	: token extends `${number}` ? token
 	: token extends BigintLiteral ? token
 	: token extends (
-		`${infer submodule extends keyof $ & string}.${infer reference}`
+		`${infer submodule extends (keyof $ | keyof ambient) & string}.${infer reference}`
 	) ?
-		$[submodule] extends { [arkKind]: "module" } ?
-			reference extends keyof $[submodule] ?
-				token
-			:	unresolvableError<s, reference, $[submodule], args, [submodule]>
-		:	ErrorMessage<writeNonSubmoduleDotMessage<submodule>>
+		tryResolveSubmodule<token, submodule, reference, s, $ & ambient, args>
 	:	unresolvableError<s, token, $, args, []>
+
+type tryResolveSubmodule<
+	token,
+	submodule extends keyof $ & string,
+	reference extends string,
+	s extends StaticState,
+	$,
+	args
+> =
+	$[submodule] extends { [arkKind]: "module" } ?
+		reference extends keyof $[submodule] ?
+			token
+		:	unresolvableError<s, reference, $[submodule], args, [submodule]>
+	:	ErrorMessage<writeNonSubmoduleDotMessage<submodule>>
 
 /** Provide valid completions for the current token, or fallback to an
  * unresolvable error if there are none */

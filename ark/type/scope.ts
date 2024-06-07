@@ -68,14 +68,14 @@ export type validateScope<def> = {
 		def[k] extends Type | PreparsedResolution ? def[k]
 		: k extends PrivateDeclaration<infer name extends keyof def & string> ?
 			keyError<writeDuplicateAliasError<name>>
-		:	validateDefinition<def[k], ambient & bootstrapAliases<def>, {}>
+		:	validateDefinition<def[k], bootstrapAliases<def>, {}>
 	: parseScopeKey<k>["params"] extends GenericParamsParseError ?
 		// use the full nominal type here to avoid an overlap between the
 		// error message and a possible value for the property
 		parseScopeKey<k>["params"][0]
 	:	validateDefinition<
 			def[k],
-			ambient & bootstrapAliases<def>,
+			bootstrapAliases<def>,
 			{
 				// once we support constraints on generic parameters, we'd use
 				// the base type here: https://github.com/arktypeio/arktype/issues/796
@@ -116,7 +116,7 @@ type bootstrapAliases<def> = {
 
 type inferBootstrapped<$> = show<{
 	[name in keyof $]: $[name] extends Def<infer def> ?
-		inferDefinition<def, $ & ambient, {}>
+		inferDefinition<def, $, {}>
 	: $[name] extends GenericProps<infer params, infer def> ?
 		// add the scope in which the generic was defined here
 		Generic<params, def, $>
@@ -150,6 +150,12 @@ export type tryInferSubmoduleReference<$, token> =
 	token extends `${infer submodule extends moduleKeyOf<$>}.${infer subalias}` ?
 		subalias extends keyof $[submodule] ?
 			$[submodule][subalias]
+		:	never
+	: token extends (
+		`${infer submodule extends moduleKeyOf<ambient>}.${infer subalias}`
+	) ?
+		subalias extends keyof ambient[submodule] ?
+			ambient[submodule][subalias]
 		:	never
 	:	never
 

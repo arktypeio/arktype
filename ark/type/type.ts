@@ -20,7 +20,6 @@ import {
 	type Prerequisite,
 	type PrimitiveConstraintKind,
 	type Root,
-	type ambient,
 	type constrain,
 	type constraintKindOf,
 	type distillIn,
@@ -136,7 +135,7 @@ export class RawTypeParser extends Callable<
 export type DeclarationParser<$> = <preinferred>() => {
 	// for some reason, making this a const parameter breaks preinferred validation
 	type: <def>(
-		def: validateDeclared<preinferred, def, $ & ambient, bindThis<def>>
+		def: validateDeclared<preinferred, def, $, bindThis<def>>
 	) => Type<preinferred, $>
 }
 
@@ -357,12 +356,8 @@ export type DefinitionParser<$> = <def>(def: validateTypeRoot<def, $>) => def
 
 export type validateTypeRoot<def, $ = {}> = validateDefinition<
 	def,
-	$ & ambient,
+	$,
 	bindThis<def>
 >
 
-export type inferTypeRoot<def, $ = {}> = inferDefinition<
-	def,
-	$ & ambient,
-	bindThis<def>
->
+export type inferTypeRoot<def, $ = {}> = inferDefinition<def, $, bindThis<def>>
