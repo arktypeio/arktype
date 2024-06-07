@@ -2,6 +2,22 @@
 
 ## 2.0.0-dev.22
 
+### Allow overriding builtin keywords
+
+```ts
+// all references to string in this scope now enforce minLength: 1
+const $ = scope({
+	foo: {
+		// has minLength: 1
+		bar: "string"
+	},
+	string: schema({ domain: "string" }).constrain("minLength", 1)
+})
+
+// has minLength: 1
+const s = $.type("string")
+```
+
 ### Fix a ParseError compiling certain morphs with cyclic inputs
 
 Types like the following will now work:

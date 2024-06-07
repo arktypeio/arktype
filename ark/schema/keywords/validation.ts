@@ -1,3 +1,4 @@
+import type { number, string } from "../ast.js"
 import type { SchemaModule } from "../module.js"
 import { root, schemaScope } from "../scope.js"
 import { creditCardMatcher, isLuhnValid } from "./utils/creditCard.js"
@@ -54,18 +55,18 @@ const creditCard = root.defineRoot({
 })
 
 export interface validationExports {
-	alpha: string
-	alphanumeric: string
-	digits: string
-	lowercase: string
-	uppercase: string
-	creditCard: string
-	email: string
-	uuid: string
-	url: string
-	semver: string
-	ip: string
-	integer: number
+	alpha: string.matching<string>
+	alphanumeric: string.matching<string>
+	digits: string.matching<string>
+	lowercase: string.matching<string>
+	uppercase: string.matching<string>
+	creditCard: string.matching<string>
+	email: string.matching<string>
+	uuid: string.matching<string>
+	url: string.matching<string>
+	semver: string.matching<string>
+	ip: string.matching<string>
+	integer: number.divisibleBy<1>
 }
 
 export type validation = SchemaModule<validationExports>

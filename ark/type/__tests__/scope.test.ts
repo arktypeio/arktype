@@ -3,6 +3,7 @@ import {
 	schema,
 	writeUnboundableMessage,
 	writeUnresolvableMessage,
+	type distillOut,
 	type string
 } from "@arktype/schema"
 import { define, scope, type } from "arktype"
@@ -217,7 +218,7 @@ contextualize(() => {
 				}
 			})
 
-		type Package = ReturnType<typeof getCyclicScope>["t"]["package"]
+		type Package = distillOut<ReturnType<typeof getCyclicScope>["t"]["package"]>
 
 		const getCyclicData = () => {
 			const packageData = {
