@@ -1,4 +1,4 @@
-import type { number, string } from "../ast.js"
+import type { anonymous, number, string } from "../ast.js"
 import type { SchemaModule } from "../module.js"
 import { root, schemaScope } from "../scope.js"
 import { creditCardMatcher, isLuhnValid } from "./utils/creditCard.js"
@@ -55,17 +55,17 @@ const creditCard = root.defineRoot({
 })
 
 export interface validationExports {
-	alpha: string.matching<string>
-	alphanumeric: string.matching<string>
-	digits: string.matching<string>
-	lowercase: string.matching<string>
-	uppercase: string.matching<string>
-	creditCard: string.matching<string>
-	email: string.matching<string>
-	uuid: string.matching<string>
-	url: string.matching<string>
-	semver: string.matching<string>
-	ip: string.matching<string>
+	alpha: string.matching<anonymous>
+	alphanumeric: string.matching<anonymous>
+	digits: string.matching<anonymous>
+	lowercase: string.matching<anonymous>
+	uppercase: string.matching<anonymous>
+	creditCard: string.matching<anonymous>
+	email: string.matching<anonymous>
+	uuid: string.matching<anonymous>
+	url: string.matching<anonymous>
+	semver: string.matching<anonymous>
+	ip: string.matching<anonymous>
 	integer: number.divisibleBy<1>
 }
 
