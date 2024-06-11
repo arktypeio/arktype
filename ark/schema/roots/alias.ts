@@ -1,4 +1,4 @@
-import { append, cached } from "@arktype/util"
+import { append, cached, domainDescriptions } from "@arktype/util"
 import type { RawRootScope } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
@@ -39,6 +39,10 @@ export class AliasNode extends BaseRoot<AliasDeclaration> {
 
 	rawKeyOf(): BaseRoot<RawRootDeclaration> {
 		return this.resolution.keyof()
+	}
+
+	describeDomain(): string {
+		return domainDescriptions.object
 	}
 
 	traverseAllows: TraverseAllows = (data, ctx) => {

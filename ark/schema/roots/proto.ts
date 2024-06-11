@@ -1,6 +1,7 @@
 import {
 	builtinConstructors,
 	constructorExtends,
+	domainDescriptions,
 	getExactBuiltinConstructorName,
 	objectKindDescriptions,
 	objectKindOrDomainOf,
@@ -102,4 +103,8 @@ export class ProtoNode extends RawBasis<ProtoDeclaration> {
 	traverseAllows: TraverseAllows = data => data instanceof this.proto
 	expression: string = this.proto.name
 	readonly domain = "object"
+
+	describeDomain(): string {
+		return domainDescriptions.object
+	}
 }

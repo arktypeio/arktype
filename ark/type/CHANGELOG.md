@@ -1,5 +1,9 @@
 # arktype
 
+## 2.0.0-dev.23
+
+### Add an `AnyType` type that allows a Type instance from any Scope
+
 ## 2.0.0-dev.22
 
 ### Allow overriding builtin keywords

@@ -105,6 +105,10 @@ export class IntersectionNode extends BaseRoot<IntersectionDeclaration> {
 		this.children.map(node => node.nestableExpression).join(" & ") ||
 		"unknown"
 
+	describeDomain(): string {
+		return this.basis?.describeDomain() ?? "present"
+	}
+
 	traverseAllows: TraverseAllows = (data, ctx) =>
 		this.children.every(child => child.traverseAllows(data as never, ctx))
 

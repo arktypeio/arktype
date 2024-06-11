@@ -203,6 +203,12 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 		: this.isBoolean ? "boolean"
 		: this.branches.map(branch => branch.nestableExpression).join(" | ")
 
+	describeDomain(): string {
+		return describeBranches(
+			this.branches.map(branch => branch.describeDomain())
+		)
+	}
+
 	traverseAllows: TraverseAllows = (data, ctx) =>
 		this.branches.some(b => b.traverseAllows(data, ctx))
 

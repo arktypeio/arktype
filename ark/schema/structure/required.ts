@@ -35,7 +35,7 @@ export class RequiredNode extends BaseProp<"required"> {
 
 	errorContext: ArkErrorContextInput<"required"> = Object.freeze({
 		code: "required",
-		missingValueDescription: this.value.description,
+		missingValueDescription: this.value.describeDomain(),
 		relativePath: [this.key]
 	})
 

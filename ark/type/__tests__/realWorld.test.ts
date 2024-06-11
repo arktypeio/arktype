@@ -533,4 +533,30 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			"items must be an object (was null)"
 		)
 	})
+
+	it("terse missing key error", () => {
+		const types = scope({
+			Library: {
+				sections: "Sections"
+			},
+			Sections: {
+				"[string]": "Book[]"
+			},
+			Book: {
+				isbn: "string",
+				title: "string",
+				"subtitle?": "string",
+				authors: "string[]",
+				publisher: "Publisher"
+			},
+			Publisher: {
+				id: "string",
+				name: "string"
+			}
+		}).export()
+
+		attest(types.Library({}).toString()).snap(
+			"sections must be an object (was missing)"
+		)
+	})
 })

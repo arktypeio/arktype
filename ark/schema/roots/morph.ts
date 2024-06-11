@@ -148,6 +148,10 @@ export class MorphNode extends BaseRoot<MorphDeclaration> {
 
 	expression = `(In: ${this.in.expression}) => Out<${this.out?.expression ?? "unknown"}>`
 
+	describeDomain(): string {
+		return this.in.describeDomain()
+	}
+
 	compile(js: NodeCompiler): void {
 		if (js.traversalKind === "Allows") {
 			js.return(js.invoke(this.in))

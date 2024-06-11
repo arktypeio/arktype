@@ -1,4 +1,6 @@
+import type { CastableBase } from "@arktype/util"
 import { type } from "arktype"
+import { scope } from "../type/scope.js"
 import type { Type } from "../type/type.js"
 
 const _Contact = type({
@@ -6,8 +8,6 @@ const _Contact = type({
 	score: "integer < 100"
 })
 
-interface Contact extends type.of<typeof _Contact.t> {}
+interface Contact extends CastableBase<typeof _Contact.t> {}
 
-type Z = Contact["inferIn"]
-
-const contact: Contact = _Contact
+const Contact: Type<Contact> = _Contact
