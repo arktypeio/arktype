@@ -4,6 +4,23 @@
 
 ### Add an `AnyType` type that allows a Type instance from any Scope
 
+### Avoid an overly verbose default error on a missing key for a complex object
+
+```ts
+const MyType = type({
+	foo: {
+		/** Some very complex object */
+	}
+})
+
+// previously threw with a message like:
+// sections must be /* Some very complex description */ (was missing)
+
+// now throws with a message like:
+// sections must be an object (was missing)
+MyType.assert({})
+```
+
 ## 2.0.0-dev.22
 
 ### Allow overriding builtin keywords
@@ -214,6 +231,10 @@ https://github.com/arktypeio/arktype/pull/971
 ### Patch Changes
 
 - Initial changeset
+
+```
+
+```
 
 ```
 
