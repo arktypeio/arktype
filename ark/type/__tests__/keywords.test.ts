@@ -225,5 +225,13 @@ contextualize(
 			)
 			attest(parseDate(5).toString()).snap("must be a string (was number)")
 		})
+	},
+	"format",
+	() => {
+		it("trim", () => {
+			const trim = type("format.trim")
+			attest(trim("  foo  ")).equals("foo")
+			attest(trim(5).toString()).snap("must be a string (was number)")
+		})
 	}
 )
