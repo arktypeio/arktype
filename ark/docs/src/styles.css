@@ -5,16 +5,6 @@
 	src:
 		local("Cascadia Mono"),
 		url("https://fonts.cdnfonts.com/s/37910/CascadiaMono.woff") format("woff");
-	font-style: normal;
-}
-
-/* Don't render italics, which can be hard to read for some users */
-@font-face {
-	font-family: "Cascadia Mono";
-	src:
-		local("Cascadia Mono"),
-		url("https://fonts.cdnfonts.com/s/37910/CascadiaMono.woff") format("woff");
-	font-style: italic;
 }
 
 :root {

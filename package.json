@@ -51,7 +51,7 @@
 		"c8": "10.0.0",
 		"knip": "5.18.2",
 		"tsx": "4.15.2",
-		"typescript": "npm:@typescript-deploys/pr-build@5.6.0-pr-58824-2",
+		"typescript": "5.4.5",
 		"typescript-min": "npm:typescript@5.1.6",
 		"typescript-nightly": "npm:typescript@next",
 		"mocha": "10.4.0",

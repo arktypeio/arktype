@@ -1,4 +1,4 @@
-import arkdarkColors from "arkdark/color-theme.json"
+import arkdarkColors from "arkdark/arkdark.json"
 import arktypeTextmate from "arkdark/tsWithArkType.tmLanguage.json"
 import { getHighlighter } from "shiki"
 import { addCopyButton, twoslash } from "./shiki.config.js"

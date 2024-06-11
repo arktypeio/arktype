@@ -1,6 +1,6 @@
 {
 	"$schema": "vscode://schemas/color-theme",
-	"name": "ArkDark",
+	"name": "ArkDark Italic",
 	"tokenColors": [
 		{
 			"name": "functions",

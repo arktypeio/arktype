@@ -4,6 +4,12 @@ sidebar:
   order: 3
 ---
 
+:::caution[Under Construction]
+We're still working on our new docs, as evidenced by the fact that they are not done.
+
+Check back soon for more!
+:::
+
 TypeScript is extremely versatile for representing types like `string` or `number`, but what about `email` or `positive integer less than 100`?
 
 In ArkType, conditions that narrow a type beyond its **basis** are called **constraints**.
@@ -16,7 +22,6 @@ Constraints are a first-class citizen of ArkType and behave according to the sam
 import { type } from "arktype"
 // ---cut---
 const contact = type({
-	// many common
 	email: "email",
 	score: "1 <= integer < 100"
 })

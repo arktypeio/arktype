@@ -25,10 +25,10 @@
 		"bunTest": "bun test --preload ../repo/bunTestSetup.ts"
 	},
 	"dependencies": {
-		"arktype": "latest",
+		"arktype": "workspace:*",
 		"@arktype/fs": "workspace:*",
 		"@arktype/util": "workspace:*",
-		"@typescript/vfs": "1.5.0",
+		"@typescript/vfs": "1.5.3",
 		"@typescript/analyze-trace": "0.10.1"
 	},
 	"devDependencies": {
