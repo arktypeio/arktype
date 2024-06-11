@@ -1,19 +1,13 @@
-import { type, type Type } from "arktype"
+import { type } from "arktype"
+import type { Type } from "../type/type.js"
 
-const _user = type({
-	name: "string",
-	platform: "'android' | 'ios'",
-	"versions?": "(number | string)[]"
+const _Contact = type({
+	email: "email",
+	score: "integer < 100"
 })
 
-type _User = typeof _user.t
+interface Contact extends type.of<typeof _Contact.t> {}
 
-interface User extends _User {}
+type Z = Contact["inferIn"]
 
-export const user: Type<User> = _user
-
-const out = user({
-	name: "Alan Turing",
-	platform: "enigma",
-	versions: [0, "1", 0n]
-})
+const contact: Contact = _Contact

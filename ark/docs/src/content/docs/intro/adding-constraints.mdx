@@ -10,7 +10,7 @@ We're still working on our new docs, as evidenced by the fact that they are not 
 Check back soon for more!
 :::
 
-TypeScript is extremely versatile for representing types like `string` or `number`, but what about `email` or `positive integer less than 100`?
+TypeScript is extremely versatile for representing types like `string` or `number`, but what about `email` or `integer less than 100`?
 
 In ArkType, conditions that narrow a type beyond its **basis** are called **constraints**.
 
@@ -18,15 +18,50 @@ Constraints are a first-class citizen of ArkType. They are fully composable with
 
 In other words, **they just work**.
 
-## Syntax
+## Define
+
+Let's create a new `contact` Type that enforces our example constraints.
 
 ```ts
 import { type } from "arktype"
 // ---cut---
+// hover to see the type-level representation
 const contact = type({
 	// many common constraints are available as built-in keywords
 	email: "email",
-	// others can be chained or written in type-safe expressions
-	score: "1 <= integer < 100"
+	// others can be written as type-safe expressions
+	score: "integer < 100"
 })
+
+// if you need the TS type, just infer it out
+type Contact = typeof contact.infer
+// ---cut-start---
+// this empty line prevents the source syntax highlighting from breaking
+
+// ---cut-end---
+```
+
+## Compose
+
+Imagine we want to define a new Type representing a non-empty list of `contact`s.
+
+While the expression syntax we've been using is ideal for creating new types, chaining is a great way to refine or transform existing ones.
+
+```ts
+import { type } from "arktype"
+
+const _Contact = type({
+	email: "email",
+	score: "integer < 100"
+})
+
+type _Contact = typeof _Contact.t
+
+interface Contact extends _User {}
+
+export const user: Type<User> = _user
+// ---cut---
+
+// a non-empty list of Contacts
+const contacts = contact.array().atLeastLength(1)
 ```
