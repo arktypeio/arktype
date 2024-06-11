@@ -1,5 +1,17 @@
 # @arktype/schema
 
+## 0.1.14
+
+### Patch Changes
+
+- [#1004](https://github.com/arktypeio/arktype/pull/1004) [`bf85e7d`](https://github.com/arktypeio/arktype/commit/bf85e7dec809169a7749c8e7af9003230e09b98f) Thanks [@ssalbdivad](https://github.com/ssalbdivad)! - (see [arktype CHANGELOG](../type/CHANGELOG.md))
+
+  ### Allow overriding builtin keywords
+
+  ### Fix a ParseError compiling certain morphs with cyclic inputs
+
+  ### Rename RegexNode to PatternNode
+
 ## 0.1.13
 
 ### Patch Changes
