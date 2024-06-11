@@ -33,7 +33,7 @@ const contact = type({
 	score: "integer < 100"
 })
 
-// if you need the TS type, just infer it out
+// if you need the TS type, just infer it out as normal
 type Contact = typeof contact.infer
 // ---cut-start---
 // this empty line prevents the source syntax highlighting from breaking
@@ -43,25 +43,67 @@ type Contact = typeof contact.infer
 
 ## Compose
 
-Imagine we want to define a new Type representing a non-empty list of `contact`s.
+Imagine we want to define a new Type representing a non-empty list of `Contact`.
 
 While the expression syntax we've been using is ideal for creating new types, chaining is a great way to refine or transform existing ones.
 
 ```ts
-import { type } from "arktype"
+import { type, type Type } from "arktype"
 
-const _Contact = type({
+const _contact = type({
 	email: "email",
 	score: "integer < 100"
 })
 
-type _Contact = typeof _Contact.t
+type _Contact = typeof _contact.t
 
-interface Contact extends _User {}
+interface Contact extends _Contact {}
 
-export const user: Type<User> = _user
+export const contact: Type<Contact> = _contact
 // ---cut---
-
-// a non-empty list of Contacts
+// a non-empty list of Contact
 const contacts = contact.array().atLeastLength(1)
+```
+
+## Narrow
+
+Structured constraints like divisors and ranges will only take us so far. Luckily, they integrate seamlessly with whatever custom validation logic you need.
+
+```ts
+import { type, type Type } from "arktype"
+
+const _contact = type({
+	email: "email",
+	score: "integer < 100"
+})
+
+type _Contact = typeof _contact.t
+
+interface Contact extends _Contact {}
+
+export const contact: Type<Contact> = _contact
+
+const contacts = contact.array().atLeastLength(1)
+
+const extractDuplicates = (arr: typeof contacts.infer) =>
+	Object.values(Object.groupBy(arr, contact => contact.email)).flatMap(
+		contactsWithEmail =>
+			contactsWithEmail && contactsWithEmail.length > 1 ?
+				contactsWithEmail[0].email
+			:	[]
+	)
+// ---cut---
+const uniqueContacts = contacts.narrow((arr, ctx) => {
+	// get a list of the duplicate emails
+	const duplicates = extractDuplicates(arr)
+
+	// return true if there are no duplicates
+	if (duplicates.length === 0) return true
+
+	// or false with a custom error message listing the duplicates
+	return ctx.invalid({
+		expected: "an array of unique contacts",
+		actual: `duplicated by ${duplicates}`
+	})
+})
 ```
