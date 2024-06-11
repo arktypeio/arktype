@@ -3,6 +3,7 @@ import {
 	wellFormedIntegerMatcher,
 	wellFormedNumberMatcher
 } from "@arktype/util"
+import type { number } from "../ast.js"
 import type { SchemaModule } from "../module.js"
 import type { Out } from "../roots/morph.js"
 import { root, schemaScope } from "../scope.js"
@@ -62,7 +63,7 @@ const date = root.defineRoot({
 export type parsingExports = {
 	url: (In: string) => Out<URL>
 	number: (In: string) => Out<number>
-	integer: (In: string) => Out<number>
+	integer: (In: string) => Out<number.divisibleBy<1>>
 	date: (In: string) => Out<Date>
 	json: (In: string) => Out<object>
 }

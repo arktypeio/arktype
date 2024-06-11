@@ -9,5 +9,5 @@ bench("intersection", () => schema("string").and(schema("number"))).types([
 ])
 
 bench("no assignment", () => {
-	schema({ domain: "string", regex: "/.*/" })
+	schema({ domain: "string", pattern: "/.*/" })
 }).types([350, "instantiations"])

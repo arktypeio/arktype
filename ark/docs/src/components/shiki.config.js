@@ -1,6 +1,6 @@
 // @ts-check
 import { transformerTwoslash } from "@shikijs/twoslash"
-import arkdarkColors from "arkdark/color-theme.json"
+import arkdarkColors from "arkdark/arkdark.json"
 import arkdarkPackageJson from "arkdark/package.json"
 import arktypeTextmate from "arkdark/tsWithArkType.tmLanguage.json"
 import { defaultCompilerOptions } from "twoslash"
@@ -9,7 +9,7 @@ import addCopyButtonListenersSrc from "./addCopyButtonListeners.js?raw"
 // Theme adjustments
 
 arkdarkColors.colors["editor.background"] = "#00000027"
-// @ts-expect-error
+
 arkdarkColors.tokenColors.push({
 	// this is covered by editorBracketHighlight.foreground1 etc. in VSCode,
 	// but it's not available in Shiki so add a replacement

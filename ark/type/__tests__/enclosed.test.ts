@@ -13,7 +13,7 @@ contextualize(() => {
 		const t = type("'foo'|/.*/[]")
 		attest<"foo" | string[]>(t.infer)
 		attest(t.json).snap([
-			{ proto: "Array", sequence: { domain: "string", regex: [".*"] } },
+			{ proto: "Array", sequence: { domain: "string", pattern: [".*"] } },
 			{ unit: "foo" }
 		])
 	})

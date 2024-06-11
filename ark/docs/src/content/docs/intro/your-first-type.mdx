@@ -1,14 +1,14 @@
 ---
-title: Your first type
+title: Your First Type
 sidebar:
   order: 2
 ---
 
 import { TypeBenchmarksGraph } from "../../../components/BenchmarksGraph.tsx"
 
-## Define
-
 If you already know TypeScript, congratulations- you just learned most of ArkType's syntax 🎉
+
+## Define
 
 ```ts
 // @noErrors
@@ -56,7 +56,7 @@ const user = type({
 })
 ```
 
-If we want to decouple `device` from `user`, we just move it to its own type and reference it.
+To decouple `device` from `user`, just move it to its own type and reference it.
 
 ```ts
 import { type } from "arktype"
@@ -116,3 +116,7 @@ if (out instanceof type.errors) {
 	console.log(`Hello, ${out.name}`)
 }
 ```
+
+And that's it! You now know how to to define a `Type` use it to check your data at runtime.
+
+Next, we'll take a look at how ArkType extends TypeScript's type system to handle common runtime constraints like `minLength` and `pattern`.

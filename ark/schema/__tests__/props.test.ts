@@ -63,13 +63,13 @@ contextualize(() => {
 		})
 	})
 
-	const startingWithA = schema({ domain: "string", regex: /^a.*/ })
+	const startingWithA = schema({ domain: "string", pattern: /^a.*/ })
 
-	const endingWithZ = schema({ domain: "string", regex: /.*z$/ })
+	const endingWithZ = schema({ domain: "string", pattern: /.*z$/ })
 
 	const startingWithAAndEndingWithZ = schema({
 		domain: "string",
-		regex: [/^a.*/, /.*z$/]
+		pattern: [/^a.*/, /.*z$/]
 	})
 
 	it("intersects nonsubtype index signatures", () => {

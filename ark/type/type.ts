@@ -15,12 +15,11 @@ import {
 	type MorphAst,
 	type NodeSchema,
 	type Out,
+	type PatternSchema,
 	type Predicate,
 	type Prerequisite,
 	type PrimitiveConstraintKind,
-	type RegexSchema,
 	type Root,
-	type ambient,
 	type constrain,
 	type constraintKindOf,
 	type distillIn,
@@ -136,7 +135,7 @@ export class RawTypeParser extends Callable<
 export type DeclarationParser<$> = <preinferred>() => {
 	// for some reason, making this a const parameter breaks preinferred validation
 	type: <def>(
-		def: validateDeclared<preinferred, def, $ & ambient, bindThis<def>>
+		def: validateDeclared<preinferred, def, $, bindThis<def>>
 	) => Type<preinferred, $>
 }
 
@@ -269,10 +268,10 @@ declare class _Type<t = unknown, $ = any> extends InnerRoot<t, $> {
 		schema: schema
 	): Type<constrain<t, "divisor", schema>, $>
 
-	matching<const schema extends RegexSchema>(
-		this: validateChainedConstraint<"regex", this>,
+	matching<const schema extends PatternSchema>(
+		this: validateChainedConstraint<"pattern", this>,
 		schema: schema
-	): Type<constrain<t, "regex", schema>, $>
+	): Type<constrain<t, "pattern", schema>, $>
 
 	atLeast<const schema extends InclusiveNumericRangeSchema>(
 		this: validateChainedConstraint<"min", this>,
@@ -357,12 +356,8 @@ export type DefinitionParser<$> = <def>(def: validateTypeRoot<def, $>) => def
 
 export type validateTypeRoot<def, $ = {}> = validateDefinition<
 	def,
-	$ & ambient,
+	$,
 	bindThis<def>
 >
 
-export type inferTypeRoot<def, $ = {}> = inferDefinition<
-	def,
-	$ & ambient,
-	bindThis<def>
->
+export type inferTypeRoot<def, $ = {}> = inferDefinition<def, $, bindThis<def>>

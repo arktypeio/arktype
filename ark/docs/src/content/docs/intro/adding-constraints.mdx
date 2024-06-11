@@ -1,0 +1,28 @@
+---
+title: Adding Constraints
+sidebar:
+  order: 3
+---
+
+:::caution[Under Construction]
+We're still working on our new docs, as evidenced by the fact that they are not done.
+
+Check back soon for more!
+:::
+
+TypeScript is extremely versatile for representing types like `string` or `number`, but what about `email` or `positive integer less than 100`?
+
+In ArkType, conditions that narrow a type beyond its **basis** are called **constraints**.
+
+Constraints are a first-class citizen of ArkType and behave according to the same principles of set-theory that govern TypeScript. In other words, **they just work**.
+
+## Syntax
+
+```ts
+import { type } from "arktype"
+// ---cut---
+const contact = type({
+	email: "email",
+	score: "1 <= integer < 100"
+})
+```

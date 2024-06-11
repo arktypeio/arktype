@@ -1,8 +1,8 @@
 {
 	"name": "arkdark",
 	"displayName": "ArkDark",
-	"description": "ArkType syntax highlighting and theme⛵",
-	"version": "5.2.4",
+	"description": "Syntax highlighting, inline errors and theme for ArkType⛵",
+	"version": "5.3.0",
 	"publisher": "arktypeio",
 	"type": "module",
 	"scripts": {
@@ -34,7 +34,12 @@
 			{
 				"label": "ArkDark",
 				"uiTheme": "vs-dark",
-				"path": "./color-theme.json"
+				"path": "./arkdark.json"
+			},
+			{
+				"label": "ArkDark Italic",
+				"uiTheme": "vs-dark",
+				"path": "./arkdarkItalic.json"
 			}
 		],
 		"grammars": [

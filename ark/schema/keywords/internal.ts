@@ -17,7 +17,7 @@ export const internalKeywords: internalKeywords = schemaScope(
 	{
 		lengthBoundable: ["string", Array],
 		propertyKey: ["string", "symbol"],
-		nonNegativeIntegerString: { domain: "string", regex: arrayIndexMatcher }
+		nonNegativeIntegerString: { domain: "string", pattern: arrayIndexMatcher }
 	},
 	{
 		prereducedAliases: true,

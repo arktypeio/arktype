@@ -1,9 +1,13 @@
 import { attest, contextualize } from "@arktype/attest"
 import {
+	schema,
 	writeUnboundableMessage,
-	writeUnresolvableMessage
+	writeUnresolvableMessage,
+	type distillOut,
+	type string
 } from "@arktype/schema"
 import { define, scope, type } from "arktype"
+import type { Module } from "../module.js"
 import { writeUnexpectedCharacterMessage } from "../parser/string/shift/operator/operator.js"
 
 contextualize(() => {
@@ -214,7 +218,7 @@ contextualize(() => {
 				}
 			})
 
-		type Package = ReturnType<typeof getCyclicScope>["t"]["package"]
+		type Package = distillOut<ReturnType<typeof getCyclicScope>["t"]["package"]>
 
 		const getCyclicData = () => {
 			const packageData = {
@@ -378,19 +382,63 @@ b.c.c must be arf&bork (was missing)`)
 				]
 			})
 		})
-		// https://github.com/arktypeio/arktype/issues/930
+
+		// 		// https://github.com/arktypeio/arktype/issues/930
 		// 		it("intersect cyclic reference with repeat name", () => {
 		// 			const types = scope({
 		// 				arf: {
-		// 					b: "bork"
+		// 					a: "bork"
 		// 				},
 		// 				bork: {
-		// 					c: "arf&bork"
+		// 					b: "arf&bork"
 		// 				}
 		// 			}).export()
-		// 			attest(types.arf({ b: { c: {} } }).toString())
-		// 				.snap(`b.c.b must be { c: arf&bork } (was missing)
-		// b.c.c must be arf&bork (was missing)`)
+
+		// 			const resolveRef: string = (
+		// 				types.bork.raw.firstReferenceOfKindOrThrow("alias").json as any
+		// 			).resolve
+
+		// 			attest(types.bork.json).snap({
+		// 				required: [
+		// 					{ key: "b", value: { resolve: resolveRef, alias: "$arf&bork" } }
+		// 				],
+		// 				domain: "object"
+		// 			})
+
+		// 			attest(types.arf.json).snap({
+		// 				required: [
+		// 					{
+		// 						key: "a",
+		// 						value: types.bork.json
+		// 					}
+		// 				],
+		// 				domain: "object"
+		// 			})
+
+		// 			attest(types.arf({ a: { b: {} } }).toString())
+		// 				.snap(`a.b.a must be { b: arf&bork } (was missing)
+		// a.b.b must be arf&bork (was missing)`)
 		// 		})
+	})
+
+	it("can override ambient aliases", () => {
+		const types = scope({
+			foo: {
+				bar: "string"
+			},
+			string: schema({ domain: "string" }).constrain("minLength", 1)
+		}).export()
+		attest<
+			Module<{
+				string: string.atLeastLength<1>
+				foo: {
+					bar: string.atLeastLength<1>
+				}
+			}>
+		>(types)
+		attest(types.foo.json).snap({
+			required: [{ key: "bar", value: { domain: "string", minLength: 1 } }],
+			domain: "object"
+		})
 	})
 })

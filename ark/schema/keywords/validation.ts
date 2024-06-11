@@ -1,3 +1,4 @@
+import type { anonymous, number, string } from "../ast.js"
 import type { SchemaModule } from "../module.js"
 import { root, schemaScope } from "../scope.js"
 import { creditCardMatcher, isLuhnValid } from "./utils/creditCard.js"
@@ -43,7 +44,7 @@ const semver = defineRegex(
 
 const creditCard = root.defineRoot({
 	domain: "string",
-	regex: {
+	pattern: {
 		rule: creditCardMatcher.source,
 		description: "a valid credit card number"
 	},
@@ -54,18 +55,18 @@ const creditCard = root.defineRoot({
 })
 
 export interface validationExports {
-	alpha: string
-	alphanumeric: string
-	digits: string
-	lowercase: string
-	uppercase: string
-	creditCard: string
-	email: string
-	uuid: string
-	url: string
-	semver: string
-	ip: string
-	integer: number
+	alpha: string.matching<anonymous>
+	alphanumeric: string.matching<anonymous>
+	digits: string.matching<anonymous>
+	lowercase: string.matching<anonymous>
+	uppercase: string.matching<anonymous>
+	creditCard: string.matching<anonymous>
+	email: string.matching<anonymous>
+	uuid: string.matching<anonymous>
+	url: string.matching<anonymous>
+	semver: string.matching<anonymous>
+	ip: string.matching<anonymous>
+	integer: number.divisibleBy<1>
 }
 
 export type validation = SchemaModule<validationExports>

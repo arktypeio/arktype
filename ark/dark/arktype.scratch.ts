@@ -130,5 +130,5 @@ class F {
 const highlighted = type({
 	literals: "'foo' | 'bar' | true",
 	expressions: "boolean[] | 5 < number <= 10 | number % 2",
-	regex: "/^(?:4[0-9]{12}(?:[0-9]{3,6}))$/"
+	pattern: "/^(?:4[0-9]{12}(?:[0-9]{3,6}))$/"
 })
