@@ -14,7 +14,9 @@ TypeScript is extremely versatile for representing types like `string` or `numbe
 
 In ArkType, conditions that narrow a type beyond its **basis** are called **constraints**.
 
-Constraints are a first-class citizen of ArkType and behave according to the same principles of set-theory that govern TypeScript. In other words, **they just work**.
+Constraints are a first-class citizen of ArkType. They are fully composable with TypeScript's built-in operators and governed by the same underlying principles of set-theory.
+
+In other words, **they just work**.
 
 ## Syntax
 
@@ -22,7 +24,9 @@ Constraints are a first-class citizen of ArkType and behave according to the sam
 import { type } from "arktype"
 // ---cut---
 const contact = type({
+	// many common constraints are available as built-in keywords
 	email: "email",
+	// others can be chained or written in type-safe expressions
 	score: "1 <= integer < 100"
 })
 ```
