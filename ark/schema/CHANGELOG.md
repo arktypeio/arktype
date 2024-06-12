@@ -1,5 +1,11 @@
 # @arktype/schema
 
+## 0.1.15
+
+### Patch Changes
+
+- [#1008](https://github.com/arktypeio/arktype/pull/1008) [`3957acd`](https://github.com/arktypeio/arktype/commit/3957acd68b753abfd370e99be361981f74c6f95d) Thanks [@ssalbdivad](https://github.com/ssalbdivad)! - Add a new default `format` subscope
+
 ## 0.1.14
 
 ### Patch Changes
