@@ -41,7 +41,7 @@ export class AliasNode extends BaseRoot<AliasDeclaration> {
 		return this.resolution.keyof()
 	}
 
-	describeDomain(): string {
+	get shortDescription(): string {
 		return domainDescriptions.object
 	}
 

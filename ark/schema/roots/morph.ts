@@ -148,8 +148,8 @@ export class MorphNode extends BaseRoot<MorphDeclaration> {
 
 	expression = `(In: ${this.in.expression}) => Out<${this.out?.expression ?? "unknown"}>`
 
-	describeDomain(): string {
-		return this.in.describeDomain()
+	get shortDescription(): string {
+		return this.in.shortDescription
 	}
 
 	compile(js: NodeCompiler): void {

@@ -1,7 +1,6 @@
 import {
 	builtinConstructors,
 	constructorExtends,
-	domainDescriptions,
 	getExactBuiltinConstructorName,
 	objectKindDescriptions,
 	objectKindOrDomainOf,
@@ -104,7 +103,7 @@ export class ProtoNode extends RawBasis<ProtoDeclaration> {
 	expression: string = this.proto.name
 	readonly domain = "object"
 
-	describeDomain(): string {
-		return domainDescriptions.object
+	get shortDescription(): string {
+		return this.description
 	}
 }

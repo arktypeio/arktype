@@ -95,7 +95,7 @@ export abstract class BaseRoot<
 	}
 
 	abstract rawKeyOf(): BaseRoot
-	abstract describeDomain(): string
+	abstract get shortDescription(): string
 
 	private _keyof: BaseRoot | undefined
 	keyof(): BaseRoot {

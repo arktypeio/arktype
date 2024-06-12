@@ -51,7 +51,7 @@ export class DomainNode extends RawBasis<DomainDeclaration> {
 	readonly expression: string = this.domain
 	readonly literalKeys: array<Key> = getBaseDomainKeys(this.domain)
 
-	describeDomain(): string {
+	get shortDescription(): string {
 		return domainDescriptions[this.domain]
 	}
 }

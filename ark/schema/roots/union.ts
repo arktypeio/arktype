@@ -203,9 +203,9 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 		: this.isBoolean ? "boolean"
 		: this.branches.map(branch => branch.nestableExpression).join(" | ")
 
-	describeDomain(): string {
+	get shortDescription(): string {
 		return describeBranches(
-			this.branches.map(branch => branch.describeDomain())
+			this.branches.map(branch => branch.shortDescription)
 		)
 	}
 
@@ -434,11 +434,19 @@ const describeBranches = (descriptions: string[]) => {
 	)
 		return "boolean"
 	let description = ""
+	// keep track of seen descriptions to avoid duplication
+	const seen: Record<string, true | undefined> = {}
 	for (let i = 0; i < descriptions.length - 1; i++) {
+		if (seen[descriptions[i]]) continue
+		seen[descriptions[i]] = true
 		description += descriptions[i]
 		if (i < descriptions.length - 2) description += ", "
 	}
-	description += ` or ${descriptions[descriptions.length - 1]}`
+
+	const lastDescription = descriptions.at(-1)!
+	if (!seen[lastDescription])
+		description += ` or ${descriptions[descriptions.length - 1]}`
+
 	return description
 }
 

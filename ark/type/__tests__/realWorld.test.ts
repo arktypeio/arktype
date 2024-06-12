@@ -494,7 +494,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		})
 
 		attest(failOut.toString()).snap(
-			'items.items must be JsonSchema (was missing) or items.type must be "integer" or "number" (was "array")'
+			'items.items must be an object (was missing) or items.type must be "integer" or "number" (was "array")'
 		)
 	})
 
