@@ -402,7 +402,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		const Amount = type(
 			"string",
 			":",
-			(s, ctx) => Number.isInteger(Number(s)) || ctx.invalid("number")
+			(s, ctx) => Number.isInteger(Number(s)) || ctx.reject("number")
 		)
 			.pipe((s, ctx) => {
 				try {
