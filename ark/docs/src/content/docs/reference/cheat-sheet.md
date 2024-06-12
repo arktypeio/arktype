@@ -23,6 +23,12 @@ export const currentTsSyntax = type({
 		nested: "string",
 		"optional?": "number"
 	},
+	arrayOfObjectLiteral: [
+		{
+			name: "string"
+		},
+		"[]"
+	],
 	tuple: ["number", "number"]
 })
 
@@ -30,7 +36,8 @@ export const currentTsSyntax = type({
 
 export const upcomingTsSyntax = type({
 	keyof: "keyof bigint",
-	variadicTuples: ["true", "...", "false[]"]
+	variadicTuples: ["true", "...", "false[]"],
+	arrayOfObjectLiteral: type({ name: "string" }).array()
 })
 
 // runtime-specific syntax and builtin keywords with great error messages
