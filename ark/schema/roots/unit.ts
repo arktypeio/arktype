@@ -1,4 +1,5 @@
 import {
+	domainDescriptions,
 	domainOf,
 	printable,
 	prototypeKeysOf,
@@ -89,6 +90,11 @@ export class UnitNode extends RawBasis<UnitDeclaration> {
 	)
 	expression: string = printable(this.unit)
 	domain: Domain = domainOf(this.unit)
+	get shortDescription(): string {
+		return this.domain === "object" ?
+				domainDescriptions.object
+			:	this.description
+	}
 
 	traverseAllows: TraverseAllows =
 		this.unit instanceof Date ?

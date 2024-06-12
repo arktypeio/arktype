@@ -133,8 +133,13 @@ export class TraversalContext {
 		return result
 	}
 
-	invalid(input: ArkErrorInput): false {
+	reject(input: ArkErrorInput): false {
 		this.error(input)
+		return false
+	}
+
+	mustBe(expected: string): false {
+		this.error(expected)
 		return false
 	}
 

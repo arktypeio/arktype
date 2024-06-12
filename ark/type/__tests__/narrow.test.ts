@@ -25,16 +25,16 @@ contextualize(() => {
 		const divisibleBy3 = type([
 			"number",
 			":",
-			(n, ctx) => n % 3 === 0 || ctx.invalid("divisible by 3")
+			(n, ctx) => n % 3 === 0 || ctx.reject("divisible by 3")
 		])
 		attest(divisibleBy3(1).toString()).snap("must be divisible by 3 (was 1)")
 	})
 
 	it("chained narrows", () => {
 		const divisibleBy30 = type("number")
-			.narrow((n, ctx) => n % 2 === 0 || ctx.invalid("divisible by 2"))
-			.narrow((n, ctx) => n % 3 === 0 || ctx.invalid("divisible by 3"))
-			.narrow((n, ctx) => n % 5 === 0 || ctx.invalid("divisible by 5"))
+			.narrow((n, ctx) => n % 2 === 0 || ctx.reject("divisible by 2"))
+			.narrow((n, ctx) => n % 3 === 0 || ctx.reject("divisible by 3"))
+			.narrow((n, ctx) => n % 5 === 0 || ctx.reject("divisible by 5"))
 
 		attest<number.narrowed>(divisibleBy30.t)
 
@@ -90,7 +90,7 @@ contextualize(() => {
 			"string",
 			":",
 			(s, ctx) =>
-				s === [...s].reverse().join("") ? true : ctx.invalid("a palindrome")
+				s === [...s].reverse().join("") ? true : ctx.reject("a palindrome")
 		])
 		attest<Type<string.narrowed>>(palindrome)
 		attest(palindrome("dad")).snap("dad")

@@ -50,7 +50,7 @@ contextualize("traversal", () => {
 		attest(o({ a: ["shawn"] })).snap({ a: ["shawn"] })
 		attest(o({ a: [2] }).toString()).snap("a[0] must be a string (was number)")
 		attest(o({ b: ["shawn"] }).toString())
-			.snap(`a must be string[] (was missing)
+			.snap(`a must be an array (was missing)
 b must be removed`)
 	})
 

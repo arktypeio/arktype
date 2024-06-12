@@ -102,4 +102,8 @@ export class ProtoNode extends RawBasis<ProtoDeclaration> {
 	traverseAllows: TraverseAllows = data => data instanceof this.proto
 	expression: string = this.proto.name
 	readonly domain = "object"
+
+	get shortDescription(): string {
+		return this.description
+	}
 }

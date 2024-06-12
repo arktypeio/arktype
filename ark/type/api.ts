@@ -8,4 +8,9 @@ export {
 	type inferScope,
 	type validateScope
 } from "./scope.js"
-export { Type, type inferTypeRoot, type validateTypeRoot } from "./type.js"
+export {
+	Type,
+	type AnyType,
+	type inferTypeRoot,
+	type validateTypeRoot
+} from "./type.js"

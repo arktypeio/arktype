@@ -350,6 +350,12 @@ export type TypeConstructor<t = unknown, $ = {}> = new (
 	$: Scope<$>
 ) => Type<t, $>
 
+export type AnyType<
+	/** @ts-expect-error allow instantiation assignment to the base type */
+	out t = unknown,
+	$ = any
+> = Type<t, $>
+
 export const Type: TypeConstructor = BaseRoot as never
 
 export type DefinitionParser<$> = <def>(def: validateTypeRoot<def, $>) => def

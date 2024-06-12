@@ -4,11 +4,17 @@ import {
 	type ArkErrors,
 	type inferred
 } from "@arktype/schema"
+import type { CastableBase } from "@arktype/util"
 import type { Generic } from "./generic.js"
 import type { MatchParser } from "./match.js"
 import type { Module } from "./module.js"
 import { RawScope, scope, type Scope } from "./scope.js"
-import type { DeclarationParser, DefinitionParser, TypeParser } from "./type.js"
+import type {
+	DeclarationParser,
+	DefinitionParser,
+	Type,
+	TypeParser
+} from "./type.js"
 
 type TsGenericsExports<$ = Ark> = {
 	Record: Generic<
@@ -38,6 +44,14 @@ export namespace type {
 	}
 
 	export type errors = ArkErrors
+
+	export interface of<t, $ = {}> extends Type<t, $> {}
+
+	export interface infer<t extends Type<object>>
+		extends CastableBase<t["infer"]> {}
+
+	export interface inferIn<t extends Type<object>>
+		extends CastableBase<t["inferIn"]> {}
 }
 
 export const match: MatchParser<{}> = ambient.match as never

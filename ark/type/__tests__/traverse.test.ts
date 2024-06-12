@@ -170,7 +170,7 @@ isAdmin must be false, null or true (was 1)`)
 		}).narrow(
 			(d, ctx) =>
 				d.password === d.repeatPassword ||
-				ctx.invalid({
+				ctx.reject({
 					expected: "identical to password",
 					actual: null,
 					relativePath: ["repeatPassword"]

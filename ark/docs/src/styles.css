@@ -99,6 +99,21 @@ starlight-theme-select,
 	white-space: pre !important;
 }
 
+.twoslash .twoslash-error {
+	/* Override the builtin error squiggle to match our theme */
+	background: url("/src/assets/errorSquiggle.svg") repeat-x bottom left;
+}
+
+.twoslash .twoslash-popup-code,
+.twoslash .twoslash-popup-error,
+.twoslash .twoslash-popup-docs {
+	padding: 0px !important;
+}
+
+.twoslash .twoslash-popup-code pre {
+	padding: 0.5rem;
+}
+
 .twoslash .twoslash-hover:hover .twoslash-popup-container,
 .twoslash .twoslash-completion-cursor .twoslash-completion-list {
 	border-radius: 1rem;
@@ -108,7 +123,7 @@ starlight-theme-select,
 	box-shadow: var(--hover-glow);
 }
 
-/** used to display runtime errors on hover */
+/** display runtime errors on hover */
 .twoslash .twoslash-popup-docs {
 	color: #f85858;
 	font-size: small;
