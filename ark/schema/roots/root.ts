@@ -86,7 +86,7 @@ export abstract class BaseRoot<
 	implements internalImplementationOf<Root, TypeOnlyRootKey | "intersect">
 {
 	readonly branches: readonly Node<UnionChildKind>[] =
-		this.hasKind("union") ? this.inner.branches : [this as never];
+		this.hasKind("union") ? this.inner.branches : [this as never]
 
 	readonly [arkKind] = "root"
 
