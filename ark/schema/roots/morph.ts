@@ -187,7 +187,7 @@ export const writeMorphIntersectionMessage = (
 	lDescription: string,
 	rDescription: string
 ) =>
-	`A morphed type cannot be intersected with another type including a different morph at the same path.
+	`The intersection of distinct morphs at a single path is indeterminate:
 Left: ${lDescription}
 Right: ${rDescription}`
 

@@ -45,14 +45,6 @@ type DisjointKinds = {
 		l: readonly BaseRoot[]
 		r: readonly BaseRoot[]
 	}
-	indiscriminableMorphs?: {
-		l: Node<"union">
-		r: Node<"union">
-	}
-	interesectedMorphs?: {
-		l: Node<"morph">
-		r: Node<"morph">
-	}
 }
 
 export type DisjointKindEntries = entryOf<DisjointKinds>[]

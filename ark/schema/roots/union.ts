@@ -156,7 +156,11 @@ export const unionImplementation: nodeImplementationOf<UnionDeclaration> =
 				}
 				let resultBranches: readonly UnionChildNode[] | Disjoint
 				if (l.ordered) {
-					if (r.ordered) return Disjoint.from("indiscriminableMorphs", l, r)
+					if (r.ordered) {
+						throwParseError(
+							writeOrderedIntersectionMessage(l.expression, r.expression)
+						)
+					}
 
 					resultBranches = intersectBranches(r.branches, l.branches, ctx)
 					if (resultBranches instanceof Disjoint) resultBranches.invert()
@@ -670,6 +674,13 @@ export const writeIndiscriminableMorphMessage = (
 	morphDescription: string,
 	overlappingDescription: string
 ) =>
-	`Types including a morph must be discriminable from every other branch of an unordered union.
+	`An unordered union of a type including a morph and a type with overlapping input is indeterminate:
 Morph Branch: ${morphDescription}
 Overlapping Branch: ${overlappingDescription}`
+
+export const writeOrderedIntersectionMessage = (
+	lDescription: string,
+	rDescription: string
+) => `The intersection of two ordered unions is indeterminate:
+Left: ${lDescription}
+Right: ${rDescription}`
