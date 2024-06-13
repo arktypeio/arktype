@@ -34,7 +34,7 @@ import type {
 	TraverseApply
 } from "../shared/traversal.js"
 import { makeRootAndArrayPropertiesMutable } from "../shared/utils.js"
-import type { IndexNode, IndexSchema } from "./index.js"
+import type { IndexNode, IndexSchema } from "./indexed.js"
 import type { OptionalNode, OptionalSchema } from "./optional.js"
 import type { PropNode } from "./prop.js"
 import type { RequiredNode, RequiredSchema } from "./required.js"

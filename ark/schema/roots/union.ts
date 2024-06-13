@@ -628,10 +628,10 @@ export const pruneDiscriminant = (
 		}
 	)
 
-// // TODO: if deeply includes morphs?
-// const writeUndiscriminableMorphUnionMessage = <path extends string>(
-// 	path: path
-// ) =>
-// 	`${
-// 		path === "/" ? "A" : `At ${path}, a`
-// 	} union including one or more morphs must be discriminable` as const
+// TODO: if deeply includes morphs?
+export const writeIndiscriminableMorphUnionMessage = <path extends string>(
+	path: path
+) =>
+	`${
+		path === "/" ? "A" : `At ${path}, a`
+	} union including one or more morphs must be discriminable` as const

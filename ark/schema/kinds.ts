@@ -68,7 +68,7 @@ import {
 	IndexNode,
 	indexImplementation,
 	type IndexDeclaration
-} from "./structure/index.js"
+} from "./structure/indexed.js"
 import {
 	OptionalNode,
 	optionalImplementation,
