@@ -307,9 +307,6 @@ export type BenchContext = {
 	benchCallPosition: SourcePosition
 	lastSnapCallPosition: SourcePosition | undefined
 	isAsync: boolean
-}
-
-export type BenchAssertionContext = BenchContext & {
 	kind: TimeAssertionName | "types" | "instantiations"
 }
 

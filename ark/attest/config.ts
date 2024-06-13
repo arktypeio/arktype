@@ -53,9 +53,9 @@ export const getDefaultAttestConfig = (): BaseAttestConfig => ({
 	skipInlineInstantiations: false,
 	tsVersions: "typescript",
 	benchPercentThreshold: 20,
-	benchErrorOnThresholdExceeded: false,
+	benchErrorOnThresholdExceeded: true,
 	filter: undefined,
-	testDeclarationAliases: ["bench", "it"],
+	testDeclarationAliases: ["bench", "it", "test"],
 	formatter: `npm exec --no -- prettier --write`,
 	shouldFormat: true
 })
