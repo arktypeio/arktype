@@ -55,7 +55,7 @@ export const maxImplementation: nodeImplementationOf<MaxDeclaration> =
 					max.overlapIsUnit(min) ?
 						ctx.$.node("unit", { unit: max.rule })
 					:	null
-				:	Disjoints.from("range", max, min)
+				:	Disjoints.init("range", max, min)
 		}
 	})
 

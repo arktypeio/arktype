@@ -370,7 +370,7 @@ export const structureImplementation: nodeImplementationOf<StructureDeclaration>
 						k => !lKey.allows(k)
 					)
 					if (disjointRKeys.length) {
-						return Disjoints.from(
+						return Disjoints.init(
 							"presence",
 							ctx.$.keywords.never.raw,
 							r.propsByKey[disjointRKeys[0]]!.value
@@ -401,7 +401,7 @@ export const structureImplementation: nodeImplementationOf<StructureDeclaration>
 						k => !rKey.allows(k)
 					)
 					if (disjointLKeys.length) {
-						return Disjoints.from(
+						return Disjoints.init(
 							"presence",
 							l.propsByKey[disjointLKeys[0]]!.value,
 							ctx.$.keywords.never.raw

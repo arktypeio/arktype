@@ -88,13 +88,23 @@ export const intersectNodesRoot: InternalNodeIntersection<RawRootScope> = (
 	l,
 	r,
 	$
-) => intersectNodes(l, r, { $, invert: false, pipe: false })
+) =>
+	intersectNodes(l, r, {
+		$,
+		invert: false,
+		pipe: false
+	})
 
 export const pipeNodesRoot: InternalNodeIntersection<RawRootScope> = (
 	l,
 	r,
 	$
-) => intersectNodes(l, r, { $, invert: false, pipe: true })
+) =>
+	intersectNodes(l, r, {
+		$,
+		invert: false,
+		pipe: true
+	})
 
 export const intersectNodes: InternalNodeIntersection<IntersectionContext> = (
 	l,

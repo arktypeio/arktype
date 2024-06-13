@@ -54,10 +54,10 @@ export const unitImplementation: nodeImplementationOf<UnitDeclaration> =
 				`${expected === actual ? `must be reference equal to ${expected} (serialized to the same value)` : `must be ${expected} (was ${actual})`}`
 		},
 		intersections: {
-			unit: (l, r) => Disjoints.from("unit", l, r),
+			unit: (l, r) => Disjoints.init("unit", l, r),
 			...defineRightwardIntersections("unit", (l, r) =>
 				r.allows(l.unit) ? l : (
-					Disjoints.from(
+					Disjoints.init(
 						"assignability",
 						l,
 						r.hasKind("intersection") ?

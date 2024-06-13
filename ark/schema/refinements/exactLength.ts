@@ -42,14 +42,11 @@ export const exactLengthImplementation: nodeImplementationOf<ExactLengthDeclarat
 		},
 		intersections: {
 			exactLength: (l, r, ctx) =>
-				new Disjoints({
-					'["length"]': {
-						unit: {
-							l: ctx.$.node("unit", { unit: l.rule }),
-							r: ctx.$.node("unit", { unit: r.rule })
-						}
-					}
-				}),
+				Disjoints.init(
+					"unit",
+					ctx.$.node("unit", { unit: l.rule }),
+					ctx.$.node("unit", { unit: r.rule })
+				).withPrefixKey("length"),
 			minLength: (exactLength, minLength) =>
 				(
 					minLength.exclusive ?
@@ -57,7 +54,7 @@ export const exactLengthImplementation: nodeImplementationOf<ExactLengthDeclarat
 					:	exactLength.rule >= minLength.rule
 				) ?
 					exactLength
-				:	Disjoints.from("range", exactLength, minLength),
+				:	Disjoints.init("range", exactLength, minLength),
 			maxLength: (exactLength, maxLength) =>
 				(
 					maxLength.exclusive ?
@@ -65,7 +62,7 @@ export const exactLengthImplementation: nodeImplementationOf<ExactLengthDeclarat
 					:	exactLength.rule <= maxLength.rule
 				) ?
 					exactLength
-				:	Disjoints.from("range", exactLength, maxLength)
+				:	Disjoints.init("range", exactLength, maxLength)
 		}
 	})
 

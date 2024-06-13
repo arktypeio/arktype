@@ -60,7 +60,7 @@ export const maxLengthImplementation: nodeImplementationOf<MaxLengthDeclaration>
 					max.overlapIsUnit(min) ?
 						ctx.$.node("exactLength", { rule: max.rule })
 					:	null
-				:	Disjoints.from("range", max, min)
+				:	Disjoints.init("range", max, min)
 		}
 	})
 

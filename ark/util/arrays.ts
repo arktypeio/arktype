@@ -247,3 +247,6 @@ export const groupBy = <element, discriminant extends groupableKeyOf<element>>(
 		result[key].push(item)
 		return result
 	}, {})
+
+export const arrayEquals = (l: array, r: array) =>
+	l.length === r.length && l.every((lItem, i) => lItem === r[i])

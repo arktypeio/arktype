@@ -13,27 +13,31 @@ export interface DisjointEntry<kind extends DisjointKind = DisjointKind> {
 }
 
 type OperandsByDisjointKind = {
-	domain?: Node<"domain">
-	unit?: Node<"unit">
-	proto?: Node<"proto">
-	presence?: BaseRoot
-	range?: Node<BoundKind>
-	assignability?: BaseNode
-	union?: readonly BaseRoot[]
+	domain: Node<"domain">
+	unit: Node<"unit">
+	proto: Node<"proto">
+	presence: BaseRoot
+	range: Node<BoundKind>
+	assignability: BaseNode
+	union: readonly BaseRoot[]
 }
 
 export class Disjoints extends Array<DisjointEntry> {
+	static init<kind extends DisjointKind>(
+		kind: kind,
+		l: OperandsByDisjointKind[kind],
+		r: OperandsByDisjointKind[kind]
+	): Disjoints {
+		return new Disjoints({ kind, l, r, path: [] })
+	}
+
 	add<kind extends DisjointKind>(
 		kind: kind,
 		l: OperandsByDisjointKind[kind],
 		r: OperandsByDisjointKind[kind]
-	): void {
-		this.push({
-			kind,
-			l,
-			r,
-			path: []
-		})
+	): Disjoints {
+		this.push({ kind, l, r, path: [] })
+		return this
 	}
 
 	describeReasons(): string {

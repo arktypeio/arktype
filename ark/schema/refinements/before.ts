@@ -69,7 +69,7 @@ export const beforeImplementation: nodeImplementationOf<BeforeDeclaration> =
 					before.overlapIsUnit(after) ?
 						ctx.$.node("unit", { unit: before.rule })
 					:	null
-				:	Disjoints.from("range", before, after)
+				:	Disjoints.init("range", before, after)
 		}
 	})
 
