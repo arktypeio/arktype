@@ -88,18 +88,17 @@ contextualize(() => {
 		attest(t.raw.hasKind("union") && t.raw.discriminantJson).equals(null)
 	})
 
-	// https://github.com/arktypeio/arktype/issues/960
-	// it("discriminate optional key", () => {
-	// 	const t = type({
-	// 		direction: "'forward' | 'backward'",
-	// 		"operator?": "'by'"
-	// 	}).or({
-	// 		duration: "'s' | 'min' | 'h'",
-	// 		operator: "'to'"
-	// 	})
+	it("discriminate optional key", () => {
+		const t = type({
+			direction: "'forward' | 'backward'",
+			"operator?": "'by'"
+		}).or({
+			duration: "'s' | 'min' | 'h'",
+			operator: "'to'"
+		})
 
-	// 	attest(t.raw.hasKind("union") && t.raw.discriminantJson).equals(null)
-	// })
+		attest(t.raw.hasKind("union") && t.raw.discriminantJson).equals(null)
+	})
 
 	it("default case", () => {
 		const t = getPlaces().type([

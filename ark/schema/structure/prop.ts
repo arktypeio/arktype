@@ -16,7 +16,7 @@ import type { Morph } from "../roots/morph.js"
 import type { BaseRoot } from "../roots/root.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta } from "../shared/declare.js"
-import { Disjoints } from "../shared/disjoint.js"
+import { Disjoint } from "../shared/disjoint.js"
 import type { IntersectionContext, RootKind } from "../shared/implement.js"
 import { intersectNodes } from "../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
@@ -47,15 +47,21 @@ export const intersectProps = (
 	l: Node<PropKind>,
 	r: Node<PropKind>,
 	ctx: IntersectionContext
-): Node<PropKind> | Disjoints | null => {
+): Node<PropKind> | Disjoint | null => {
 	if (l.key !== r.key) return null
 
 	const key = l.key
 	let value = intersectNodes(l.value, r.value, ctx)
 	const kind: PropKind = l.required || r.required ? "required" : "optional"
-	if (value instanceof Disjoints) {
+	if (value instanceof Disjoint) {
 		if (kind === "optional") value = ctx.$.keywords.never.raw
-		else return value.withPrefixKey(l.key)
+		else {
+			// if either operand was optional, the Disjoint has to be treated as optional
+			return value.withPrefixKey(
+				l.key,
+				l.required && r.required ? "required" : "optional"
+			)
+		}
 	}
 
 	if (kind === "required") {

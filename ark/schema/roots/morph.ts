@@ -16,7 +16,7 @@ import type { Node, NodeSchema } from "../kinds.js"
 import type { StaticArkOption } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
-import { Disjoints } from "../shared/disjoint.js"
+import { Disjoint } from "../shared/disjoint.js"
 import type { ArkError, ArkErrors } from "../shared/errors.js"
 import {
 	implementNode,
@@ -102,7 +102,7 @@ export const morphImplementation: nodeImplementationOf<MorphDeclaration> =
 					)
 				}
 				const inTersection = intersectNodes(l.in, r.in, ctx)
-				if (inTersection instanceof Disjoints) return inTersection
+				if (inTersection instanceof Disjoint) return inTersection
 
 				// in case from is a union, we need to distribute the branches
 				// to can be a union as any schema is allowed
@@ -118,7 +118,7 @@ export const morphImplementation: nodeImplementationOf<MorphDeclaration> =
 			...defineRightwardIntersections("morph", (l, r, ctx) => {
 				const inTersection = intersectNodes(l.in, r, ctx)
 				return (
-					inTersection instanceof Disjoints ? inTersection
+					inTersection instanceof Disjoint ? inTersection
 					: inTersection.kind === "union" ?
 						ctx.$.node(
 							"union",

@@ -12,7 +12,7 @@ import type { BaseNode } from "../node.js"
 import type { MorphAst, MorphNode, Out } from "../roots/morph.js"
 import type { BaseRoot } from "../roots/root.js"
 import type { RawRootScope } from "../scope.js"
-import { Disjoints } from "./disjoint.js"
+import { Disjoint } from "./disjoint.js"
 import type {
 	IntersectionContext,
 	RootKind,
@@ -81,8 +81,8 @@ type InternalNodeIntersection<ctx> = <l extends BaseNode, r extends BaseNode>(
 	l: l,
 	r: r,
 	ctx: ctx
-) => l["kind"] | r["kind"] extends RootKind ? BaseRoot | Disjoints
-:	BaseNode | Disjoints | null
+) => l["kind"] | r["kind"] extends RootKind ? BaseRoot | Disjoint
+:	BaseNode | Disjoint | null
 
 export const intersectNodesRoot: InternalNodeIntersection<RawRootScope> = (
 	l,
@@ -124,7 +124,7 @@ export const intersectNodes: InternalNodeIntersection<IntersectionContext> = (
 			// appeared in the opposite order, we need to invert it to match
 			const rlResult = intersectionCache[rlCacheKey]!
 			const lrResult =
-				rlResult instanceof Disjoints ? rlResult.invert() : rlResult
+				rlResult instanceof Disjoint ? rlResult.invert() : rlResult
 			// add the lr result to the cache directly to bypass this check in the future
 			intersectionCache[lrCacheKey] = lrResult
 			return lrResult as never
@@ -156,7 +156,7 @@ export const intersectNodes: InternalNodeIntersection<IntersectionContext> = (
 		} else if (leftmostKind === l.kind) result = implementation(l, r, ctx)
 		else {
 			result = implementation(r, l, { ...ctx, invert: !ctx.invert })
-			if (result instanceof Disjoints) result = result.invert()
+			if (result instanceof Disjoint) result = result.invert()
 		}
 	}
 
@@ -177,12 +177,12 @@ export const pipeFromMorph = (
 	from: MorphNode,
 	to: BaseRoot,
 	ctx: IntersectionContext
-): MorphNode | Disjoints => {
+): MorphNode | Disjoint => {
 	const morphs = [...from.morphs]
 	if (from.validatedOut) {
 		// still piped from context, so allows appending additional morphs
 		const outIntersection = intersectNodes(from.validatedOut, to, ctx)
-		if (outIntersection instanceof Disjoints) return outIntersection
+		if (outIntersection instanceof Disjoint) return outIntersection
 		morphs[morphs.length - 1] = outIntersection
 	} else morphs.push(to)
 
@@ -196,9 +196,9 @@ export const pipeToMorph = (
 	from: BaseRoot,
 	to: MorphNode,
 	ctx: IntersectionContext
-): MorphNode | Disjoints => {
+): MorphNode | Disjoint => {
 	const result = intersectNodes(from, to.in, ctx)
-	if (result instanceof Disjoints) return result
+	if (result instanceof Disjoint) return result
 	return ctx.$.node("morph", {
 		morphs: to.morphs,
 		in: result

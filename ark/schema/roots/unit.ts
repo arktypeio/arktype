@@ -9,7 +9,7 @@ import {
 	type array
 } from "@arktype/util"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
-import { Disjoints } from "../shared/disjoint.js"
+import { Disjoint } from "../shared/disjoint.js"
 import {
 	defaultValueSerializer,
 	implementNode,
@@ -54,10 +54,10 @@ export const unitImplementation: nodeImplementationOf<UnitDeclaration> =
 				`${expected === actual ? `must be reference equal to ${expected} (serialized to the same value)` : `must be ${expected} (was ${actual})`}`
 		},
 		intersections: {
-			unit: (l, r) => Disjoints.init("unit", l, r),
+			unit: (l, r) => Disjoint.init("unit", l, r),
 			...defineRightwardIntersections("unit", (l, r) =>
 				r.allows(l.unit) ? l : (
-					Disjoints.init(
+					Disjoint.init(
 						"assignability",
 						l,
 						r.hasKind("intersection") ?

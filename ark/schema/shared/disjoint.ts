@@ -2,6 +2,7 @@ import { isArray, throwParseError, type Key } from "@arktype/util"
 import type { Node } from "../kinds.js"
 import type { BaseNode } from "../node.js"
 import type { BaseRoot } from "../roots/root.js"
+import type { PropKind } from "../structure/prop.js"
 import type { BoundKind } from "./implement.js"
 import { hasArkKind, pathToPropString } from "./utils.js"
 
@@ -10,6 +11,7 @@ export interface DisjointEntry<kind extends DisjointKind = DisjointKind> {
 	l: OperandsByDisjointKind[kind]
 	r: OperandsByDisjointKind[kind]
 	path: Key[]
+	optional: boolean
 }
 
 type OperandsByDisjointKind = {
@@ -22,21 +24,40 @@ type OperandsByDisjointKind = {
 	union: readonly BaseRoot[]
 }
 
-export class Disjoints extends Array<DisjointEntry> {
+export type DisjointEntryContext = {
+	path?: Key[]
+	optional?: true
+}
+
+export class Disjoint extends Array<DisjointEntry> {
 	static init<kind extends DisjointKind>(
 		kind: kind,
 		l: OperandsByDisjointKind[kind],
-		r: OperandsByDisjointKind[kind]
-	): Disjoints {
-		return new Disjoints({ kind, l, r, path: [] })
+		r: OperandsByDisjointKind[kind],
+		ctx?: DisjointEntryContext
+	): Disjoint {
+		return new Disjoint({
+			kind,
+			l,
+			r,
+			path: ctx?.path ?? [],
+			optional: ctx?.optional ?? false
+		})
 	}
 
 	add<kind extends DisjointKind>(
 		kind: kind,
 		l: OperandsByDisjointKind[kind],
-		r: OperandsByDisjointKind[kind]
-	): Disjoints {
-		this.push({ kind, l, r, path: [] })
+		r: OperandsByDisjointKind[kind],
+		ctx?: DisjointEntryContext
+	): Disjoint {
+		this.push({
+			kind,
+			l,
+			r,
+			path: ctx?.path ?? [],
+			optional: ctx?.optional ?? false
+		})
 		return this
 	}
 
@@ -57,19 +78,20 @@ export class Disjoints extends Array<DisjointEntry> {
 		return throwParseError(this.describeReasons())
 	}
 
-	invert(): Disjoints {
+	invert(): Disjoint {
 		return this.map(entry => ({
 			...entry,
 			l: entry.r,
 			r: entry.l
-		})) as Disjoints
+		})) as Disjoint
 	}
 
-	withPrefixKey(key: string | symbol): Disjoints {
+	withPrefixKey(key: string | symbol, kind: PropKind): Disjoint {
 		return this.map(entry => ({
 			...entry,
-			path: [key, ...entry.path]
-		})) as Disjoints
+			path: [key, ...entry.path],
+			optional: entry.optional || kind === "optional"
+		})) as Disjoint
 	}
 }
 

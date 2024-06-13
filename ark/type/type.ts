@@ -3,7 +3,7 @@ import {
 	BaseRoot,
 	type BaseMeta,
 	type ConstraintKind,
-	type Disjoints,
+	type Disjoint,
 	type DivisorSchema,
 	type ExactLengthSchema,
 	type ExclusiveDateRangeSchema,
@@ -156,7 +156,7 @@ declare class _Type<t = unknown, $ = any> extends InnerRoot<t, $> {
 
 	intersect<def>(
 		def: validateTypeRoot<def, $>
-	): Type<inferIntersection<t, inferTypeRoot<def, $>>> | Disjoints
+	): Type<inferIntersection<t, inferTypeRoot<def, $>>> | Disjoint
 
 	and<def>(
 		def: validateTypeRoot<def, $>

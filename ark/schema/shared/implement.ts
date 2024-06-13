@@ -35,7 +35,7 @@ import type {
 	BaseMeta,
 	RawNodeDeclaration
 } from "./declare.js"
-import type { Disjoints } from "./disjoint.js"
+import type { Disjoint } from "./disjoint.js"
 import { isNode } from "./utils.js"
 
 export const basisKinds = ["unit", "proto", "domain"] as const
@@ -159,7 +159,7 @@ export type ConstraintIntersection<
 	l: Node<lKind>,
 	r: Node<rKind>,
 	ctx: IntersectionContext
-) => BaseNode | Disjoints | null
+) => BaseNode | Disjoint | null
 
 export type ConstraintIntersectionMap<kind extends ConstraintKind> = show<
 	{
@@ -176,7 +176,7 @@ export type RootIntersection<
 	l: Node<lKind>,
 	r: Node<rKind>,
 	ctx: IntersectionContext
-) => BaseRoot | Disjoints
+) => BaseRoot | Disjoint
 
 export type TypeIntersectionMap<kind extends RootKind> = {
 	[rKind in schemaKindOrRightOf<kind>]: RootIntersection<kind, rKind>
@@ -194,7 +194,7 @@ export type UnknownIntersectionMap = {
 	) => UnknownIntersectionResult
 }
 
-export type UnknownIntersectionResult = BaseNode | Disjoints | null
+export type UnknownIntersectionResult = BaseNode | Disjoint | null
 
 type PrecedenceByKind = {
 	[i in indexOf<OrderedNodeKinds> as OrderedNodeKinds[i]]: i
@@ -289,7 +289,7 @@ interface CommonNodeImplementationInput<d extends RawNodeDeclaration> {
 	reduce?: (
 		inner: d["inner"],
 		$: RawRootScope
-	) => Node<d["reducibleTo"]> | Disjoints | undefined
+	) => Node<d["reducibleTo"]> | Disjoint | undefined
 }
 
 export interface UnknownNodeImplementation

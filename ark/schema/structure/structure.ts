@@ -20,7 +20,7 @@ import type { UnitNode } from "../roots/unit.js"
 import type { RawRootScope } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
-import { Disjoints } from "../shared/disjoint.js"
+import { Disjoint } from "../shared/disjoint.js"
 import {
 	implementNode,
 	type nodeImplementationOf,
@@ -370,11 +370,15 @@ export const structureImplementation: nodeImplementationOf<StructureDeclaration>
 						k => !lKey.allows(k)
 					)
 					if (disjointRKeys.length) {
-						return Disjoints.init(
-							"presence",
-							ctx.$.keywords.never.raw,
-							r.propsByKey[disjointRKeys[0]]!.value
-						).withPrefixKey(disjointRKeys[0])
+						return new Disjoint(
+							...disjointRKeys.map(k => ({
+								kind: "presence" as const,
+								l: ctx.$.keywords.never.raw,
+								r: r.propsByKey[k]!.value,
+								path: [k],
+								optional: false
+							}))
+						)
 					}
 
 					if (rInner.optional)
@@ -383,7 +387,7 @@ export const structureImplementation: nodeImplementationOf<StructureDeclaration>
 						rInner.index = rInner.index.flatMap(n => {
 							if (n.signature.extends(lKey)) return n
 							const indexOverlap = intersectNodesRoot(lKey, n.signature, ctx.$)
-							if (indexOverlap instanceof Disjoints) return []
+							if (indexOverlap instanceof Disjoint) return []
 							const normalized = normalizeIndex(indexOverlap, n.value, ctx.$)
 							if (normalized.required) {
 								rInner.required =
@@ -401,11 +405,15 @@ export const structureImplementation: nodeImplementationOf<StructureDeclaration>
 						k => !rKey.allows(k)
 					)
 					if (disjointLKeys.length) {
-						return Disjoints.init(
-							"presence",
-							l.propsByKey[disjointLKeys[0]]!.value,
-							ctx.$.keywords.never.raw
-						).withPrefixKey(disjointLKeys[0])
+						return new Disjoint(
+							...disjointLKeys.map(k => ({
+								kind: "presence" as const,
+								l: l.propsByKey[k]!.value,
+								r: ctx.$.keywords.never.raw,
+								path: [k],
+								optional: false
+							}))
+						)
 					}
 
 					if (lInner.optional)
@@ -414,7 +422,7 @@ export const structureImplementation: nodeImplementationOf<StructureDeclaration>
 						lInner.index = lInner.index.flatMap(n => {
 							if (n.signature.extends(rKey)) return n
 							const indexOverlap = intersectNodesRoot(rKey, n.signature, ctx.$)
-							if (indexOverlap instanceof Disjoints) return []
+							if (indexOverlap instanceof Disjoint) return []
 							const normalized = normalizeIndex(indexOverlap, n.value, ctx.$)
 							if (normalized.required) {
 								lInner.required =

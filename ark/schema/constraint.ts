@@ -27,7 +27,7 @@ import type {
 import type { BaseRoot, Root, UnknownRoot } from "./roots/root.js"
 import type { NodeCompiler } from "./shared/compile.js"
 import type { RawNodeDeclaration } from "./shared/declare.js"
-import { Disjoints } from "./shared/disjoint.js"
+import { Disjoint } from "./shared/disjoint.js"
 import {
 	compileErrorContext,
 	constraintKeys,
@@ -64,7 +64,7 @@ export abstract class BaseConstraint<
 
 export type ConstraintReductionResult =
 	| BaseRoot
-	| Disjoints
+	| Disjoint
 	| MutableIntersectionInner
 
 export abstract class RawPrimitiveConstraint<
@@ -130,10 +130,10 @@ interface ConstraintIntersectionState<
 
 export const intersectConstraints = <kind extends ConstraintGroupKind>(
 	s: ConstraintIntersectionState<kind>
-): Node<RootKind | Extract<kind, "structure">> | Disjoints => {
+): Node<RootKind | Extract<kind, "structure">> | Disjoint => {
 	const head = s.r.shift()
 	if (!head) {
-		let result: BaseNode | Disjoints =
+		let result: BaseNode | Disjoint =
 			s.l.length === 0 && s.kind === "structure" ?
 				s.ctx.$.keywords.unknown.raw
 			:	s.ctx.$.node(
@@ -143,7 +143,7 @@ export const intersectConstraints = <kind extends ConstraintGroupKind>(
 				)
 
 		for (const root of s.roots) {
-			if (result instanceof Disjoints) return result
+			if (result instanceof Disjoint) return result
 
 			result = intersectNodes(root, result, s.ctx)!
 		}
@@ -154,7 +154,7 @@ export const intersectConstraints = <kind extends ConstraintGroupKind>(
 	for (let i = 0; i < s.l.length; i++) {
 		const result = intersectNodes(s.l[i], head, s.ctx)
 		if (result === null) continue
-		if (result instanceof Disjoints) return result
+		if (result instanceof Disjoint) return result
 
 		if (!matched) {
 			if (result.isRoot()) {
@@ -225,7 +225,7 @@ export type constraintKindOrLeftOf<kind extends ConstraintKind> =
 export type intersectConstraintKinds<
 	l extends ConstraintKind,
 	r extends ConstraintKind
-> = Node<l | r | "unit" | "union"> | Disjoints | null
+> = Node<l | r | "unit" | "union"> | Disjoint | null
 
 export const throwInvalidOperandError = (
 	...args: Parameters<typeof writeInvalidOperandMessage>
