@@ -55,7 +55,7 @@ export const intersectProps = (
 	const kind: PropKind = l.required || r.required ? "required" : "optional"
 	if (value instanceof Disjoints) {
 		if (kind === "optional") value = ctx.$.keywords.never.raw
-		else return value.withPrefixKey(l.compiledKey)
+		else return value.withPrefixKey(l.key)
 	}
 
 	if (kind === "required") {

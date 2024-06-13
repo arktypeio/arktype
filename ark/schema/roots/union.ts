@@ -3,12 +3,14 @@ import {
 	arrayEquals,
 	cached,
 	compileLiteralPropAccess,
+	compileSerializedValue,
 	domainDescriptions,
 	flatMorph,
 	groupBy,
 	isArray,
 	isKeyOf,
 	printable,
+	registeredReference,
 	throwInternalError,
 	throwParseError,
 	type Domain,
@@ -240,8 +242,8 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 			return this.compileIndiscriminable(js)
 
 		// we need to access the path as optional so we don't throw if it isn't present
-		const condition = this.discriminant.path.reduce(
-			(acc, segment) => acc + compileLiteralPropAccess(segment, true),
+		const condition = this.discriminant.path.reduce<string>(
+			(acc, k) => acc + compileLiteralPropAccess(k, true),
 			this.discriminant.kind === "domain" ? "typeof data" : "data"
 		)
 
@@ -270,10 +272,14 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 			:	caseKeys
 		)
 
+		const serializedPathSegments = this.discriminant.path.map(k =>
+			typeof k === "string" ? JSON.stringify(k) : registeredReference(k)
+		)
+
 		js.line(`ctx.error({
 	expected: ${JSON.stringify(expected)},
 	actual: ${condition},
-	relativePath: ${JSON.stringify(this.discriminant.path)}
+	relativePath: [${serializedPathSegments}]
 })`)
 	}
 
@@ -336,18 +342,15 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 
 				for (const entry of result) {
 					if (!isKeyOf(entry.kind, discriminantKinds)) continue
-					// all DiscriminantKinds have BaseRoot operands
-					const l = entry.l as BaseRoot
-					const r = entry.r as BaseRoot
 
 					let lSerialized: string
 					let rSerialized: string
 					if (entry.kind === "domain") {
-						lSerialized = `"${(l as DomainNode).domain}"`
-						rSerialized = `"${(r as DomainNode).domain}"`
+						lSerialized = `"${(entry.l as DomainNode).domain}"`
+						rSerialized = `"${(entry.r as DomainNode).domain}"`
 					} else if (entry.kind === "unit") {
-						lSerialized = (l as UnitNode).serializedValue as never
-						rSerialized = (r as UnitNode).serializedValue as never
+						lSerialized = (entry.l as UnitNode).serializedValue as never
+						rSerialized = (entry.r as UnitNode).serializedValue as never
 					} else {
 						return throwInternalError(
 							`Unexpected attempt to discriminate disjoint kind '${entry.kind}'`
@@ -360,8 +363,8 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 						candidates.push({
 							kind: entry.kind,
 							cases: {
-								[lSerialized]: [l as BaseRoot],
-								[rSerialized]: [r as BaseRoot]
+								[lSerialized]: [l],
+								[rSerialized]: [r]
 							},
 							path: entry.path
 						})
@@ -427,7 +430,9 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 
 const discriminantToJson = (discriminant: Discriminant): Json => ({
 	kind: discriminant.kind,
-	path: discriminant.path,
+	path: discriminant.path.map(k =>
+		typeof k === "string" ? k : compileSerializedValue(k)
+	),
 	cases: flatMorph(discriminant.cases, (k, node) => [
 		k,
 		node === true ? node
@@ -609,7 +614,7 @@ export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
 	DiscriminantKind extends kind ? string : DiscriminantKinds[kind] | "default"
 
 export type Discriminant<kind extends DiscriminantKind = DiscriminantKind> = {
-	path: string[]
+	path: Key[]
 	kind: kind
 	cases: DiscriminatedCases<kind>
 }

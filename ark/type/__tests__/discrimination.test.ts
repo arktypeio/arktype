@@ -1,9 +1,10 @@
 import { attest, contextualize } from "@arktype/attest"
+import { registeredReference } from "@arktype/util"
 import { scope, type } from "arktype"
 
 contextualize(() => {
 	it("2 literal branches", () => {
-		// should not use a switch with <=2 branches to avoid visual clutter
+		// should not use a switch with <=2 branches to avoid needless convolution
 		const t = type("'a'|'b'")
 		attest(t.json).snap([{ unit: "a" }, { unit: "b" }])
 		attest(t.raw.hasKind("union") && t.raw.discriminantJson).snap({
@@ -168,5 +169,27 @@ contextualize(() => {
 	it("won't discriminate between possibly empty arrays", () => {
 		const t = type("string[]|boolean[]")
 		attest(t.raw.hasKind("union") && t.raw.discriminantJson).equals(null)
+	})
+
+	it("discriminant path including symbol", () => {
+		const s = Symbol("lobmyS")
+		const sRef = registeredReference(s)
+		const t = type({ [s]: "0" }).or({ [s]: "1" })
+		attest(t.raw.hasKind("union") && t.raw.discriminantJson).snap({
+			kind: "unit",
+			path: [sRef],
+			cases: {
+				"0": true,
+				"1": true
+			}
+		})
+
+		attest(t.allows({ [s]: 0 })).equals(true)
+		attest(t.allows({ [s]: -1 })).equals(false)
+
+		attest(t({ [s]: 1 })).equals({ [s]: 1 })
+		attest(t({ [s]: 2 }).toString()).snap(
+			"value at [Symbol(lobmyS)] must be 0 or 1 (was 2)"
+		)
 	})
 })
