@@ -102,7 +102,7 @@ export class IntersectionNode extends BaseRoot<IntersectionDeclaration> {
 
 	expression: string =
 		this.structure?.expression ||
-		this.children.map(node => node.nestableExpression).join(" & ") ||
+		`${this.basis ? this.basis.nestableExpression + " " : ""}${this.refinements.join(" & ")}` ||
 		"unknown"
 
 	get shortDescription(): string {

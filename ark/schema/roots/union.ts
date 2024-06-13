@@ -10,6 +10,7 @@ import {
 	isKeyOf,
 	printable,
 	throwInternalError,
+	throwParseError,
 	type Domain,
 	type Json,
 	type SerializedPrimitive,
@@ -198,10 +199,9 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 	discriminantJson =
 		this.discriminant ? discriminantToJson(this.discriminant) : null
 
-	expression: string =
-		this.isNever ? "never"
-		: this.isBoolean ? "boolean"
-		: this.branches.map(branch => branch.nestableExpression).join(" | ")
+	expression: string = expressBranches(
+		this.branches.map(n => n.nestableExpression)
+	)
 
 	get shortDescription(): string {
 		return describeBranches(
@@ -422,7 +422,26 @@ const discriminantToJson = (discriminant: Discriminant): Json => ({
 	])
 })
 
-const describeBranches = (descriptions: string[]) => {
+type DescribeBranchesOptions = {
+	delimiter?: string
+	finalDelimiter?: string
+}
+
+const describeExpressionOptions: DescribeBranchesOptions = {
+	delimiter: " | ",
+	finalDelimiter: " | "
+}
+
+const expressBranches = (expressions: string[]) =>
+	describeBranches(expressions, describeExpressionOptions)
+
+const describeBranches = (
+	descriptions: string[],
+	opts?: DescribeBranchesOptions
+) => {
+	const delimiter = opts?.delimiter ?? ", "
+	const finalDelimiter = opts?.finalDelimiter ?? " or "
+
 	if (descriptions.length === 0) return "never"
 
 	if (descriptions.length === 1) return descriptions[0]
@@ -440,12 +459,12 @@ const describeBranches = (descriptions: string[]) => {
 		if (seen[descriptions[i]]) continue
 		seen[descriptions[i]] = true
 		description += descriptions[i]
-		if (i < descriptions.length - 2) description += ", "
+		if (i < descriptions.length - 2) description += delimiter
 	}
 
 	const lastDescription = descriptions.at(-1)!
 	if (!seen[lastDescription])
-		description += ` or ${descriptions[descriptions.length - 1]}`
+		description += ` ${finalDelimiter} ${descriptions[descriptions.length - 1]}`
 
 	return description
 }
@@ -543,6 +562,25 @@ export const reduceBranches = ({
 			)!
 			if (intersection instanceof Disjoint) continue
 
+			if (!ordered) {
+				if (branches[i].includesMorph) {
+					throwParseError(
+						writeIndiscriminableMorphMessage(
+							branches[i].expression,
+							branches[j].expression
+						)
+					)
+				}
+				if (branches[j].includesMorph) {
+					throwParseError(
+						writeIndiscriminableMorphMessage(
+							branches[j].expression,
+							branches[i].expression
+						)
+					)
+				}
+			}
+
 			if (intersection.equals(branches[i].in)) {
 				// preserve ordered branches that are a subtype of a subsequent branch
 				uniquenessByIndex[i] = !!ordered
@@ -628,10 +666,10 @@ export const pruneDiscriminant = (
 		}
 	)
 
-// TODO: if deeply includes morphs?
-export const writeIndiscriminableMorphUnionMessage = <path extends string>(
-	path: path
+export const writeIndiscriminableMorphMessage = (
+	morphDescription: string,
+	overlappingDescription: string
 ) =>
-	`${
-		path === "/" ? "A" : `At ${path}, a`
-	} union including one or more morphs must be discriminable` as const
+	`Types including a morph must be discriminable from every other branch of an unordered union.
+Morph Branch: ${morphDescription}
+Overlapping Branch: ${overlappingDescription}`

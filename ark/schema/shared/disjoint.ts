@@ -158,7 +158,7 @@ export class Disjoint {
 
 	add(input: Disjoint): void {
 		entriesOf(input.sources).forEach(([path, disjoints]) =>
-			Object.assign(this.sources[path] ?? {}, disjoints)
+			Object.assign((this.sources[path] ??= {}), disjoints)
 		)
 	}
 

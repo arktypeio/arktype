@@ -1,7 +1,8 @@
 import { attest, contextualize } from "@arktype/attest"
 import {
 	assertNodeKind,
-	writeIndiscriminableMorphUnionMessage,
+	writeIndiscriminableMorphMessage,
+	writeMorphIntersectionMessage,
 	type MoreThan,
 	type Out,
 	type of,
@@ -404,11 +405,34 @@ contextualize(() => {
 	it("discriminable tuple union", () => {
 		const $ = scope({
 			a: () => $.type(["string"]).pipe(s => [...s, "!"]),
-			b: ["boolean"],
+			b: ["number"],
 			c: () => $.type("a|b")
 		})
 		const types = $.export()
-		attest<[boolean] | ((In: [string]) => Out<string[]>)>(types.c.t)
+
+		attest<[number] | ((In: [string]) => Out<string[]>)>(types.c.t)
+		const expectedSerializedMorphs =
+			types.a.raw.assertHasKind("morph").serializedMorphs
+
+		attest(types.c.raw.assertHasKind("union").discriminantJson).snap({
+			kind: "domain",
+			path: ["0"],
+			cases: {
+				'"number"': {
+					sequence: { prefix: ["number"] },
+					proto: "Array",
+					exactLength: 1
+				},
+				'"string"': {
+					in: {
+						sequence: { prefix: ["string"] },
+						proto: "Array",
+						exactLength: 1
+					},
+					morphs: expectedSerializedMorphs
+				}
+			}
+		})
 	})
 
 	it("ArkTypeError not included in return", () => {
@@ -470,69 +494,75 @@ contextualize(() => {
 		})
 	})
 
-	it("double intersection", () => {
+	it("morph intersection", () => {
 		attest(() =>
 			scope({
-				a: ["boolean", "=>", data => `${data}`],
-				b: ["boolean", "=>", data => `${data}!!!`],
+				a: ["string", "=>", data => `${data}`],
+				b: ["string", "=>", data => `${data}!!!`],
 				c: "a&b"
 			}).export()
-		).throws.snap("ParseError: Invalid intersection of morphs")
+		).throws(
+			writeMorphIntersectionMessage(
+				"(In: string) => Out<unknown>",
+				"(In: string) => Out<unknown>"
+			)
+		)
 	})
 
-	it("undiscriminated union", () => {
+	it("indiscriminable union", () => {
 		attest(() => {
 			scope({
 				a: ["/.*/", "=>", s => s.trim()],
 				b: "string",
 				c: "a|b"
 			}).export()
-		}).throws(writeIndiscriminableMorphUnionMessage("/"))
+		}).throws(
+			writeIndiscriminableMorphMessage(
+				"(In: string /.*/) => Out<unknown>",
+				"string"
+			)
+		)
 	})
 
-	it("deep double intersection", () => {
+	it("deep morph intersection", () => {
 		attest(() => {
 			scope({
-				a: { a: ["boolean", "=>", data => `${data}`] },
-				b: { a: ["boolean", "=>", data => `${data}!!!`] },
+				a: { a: ["number", "=>", data => `${data}`] },
+				b: { a: ["number", "=>", data => `${data}!!!`] },
 				c: "a&b"
 			}).export()
-		}).throws.snap("ParseError: Invalid intersection of morphs")
+		}).throws(
+			writeMorphIntersectionMessage(
+				"(In: number) => Out<unknown>",
+				"(In: number) => Out<unknown>"
+			)
+		)
 	})
 
-	it("deep undiscriminated union", () => {
-		attest(() => {
-			scope({
-				a: { a: ["string", "=>", s => s.trim()] },
-				b: { a: "'foo'" },
-				c: "a|b"
-			}).export()
-		}).throws(writeIndiscriminableMorphUnionMessage("/"))
-	})
-
-	it("deep undiscriminated reference", () => {
+	it("deep indiscriminable", () => {
 		const $ = scope({
-			a: { a: ["string", "=>", s => s.trim()] },
-			b: { a: "boolean" },
-			c: { b: "boolean" }
+			a: { foo: ["string", "=>", s => s.trim()] },
+			b: { foo: "symbol" },
+			c: { bar: "symbol" }
 		})
+
+		// this is fine as a | b can be discriminated via foo
 		const t = $.type("a|b")
 		attest<
 			| {
-					a: (In: string) => Out<string>
+					foo: (In: string) => Out<string>
 			  }
 			| {
-					a: boolean
+					foo: symbol
 			  }
 		>(t.t)
 
-		attest(() => {
-			scope({
-				a: { a: ["string", "=>", s => s.trim()] },
-				b: { b: "boolean" },
-				c: "a|b"
-			}).export()
-		}).throws(writeIndiscriminableMorphUnionMessage("/"))
+		attest(() => $.type("a|c")).throws(
+			writeIndiscriminableMorphMessage(
+				"{ foo: (In: string) => Out<unknown> }",
+				"{ bar: symbol }"
+			)
+		)
 	})
 
 	it("array double intersection", () => {
@@ -543,7 +573,10 @@ contextualize(() => {
 				c: "a[]&b[]"
 			}).export()
 		}).throws(
-			"At [index]/a: Intersection of morphs results in an unsatisfiable type"
+			writeMorphIntersectionMessage(
+				"(In: number >0) => Out<unknown>",
+				"(In: number >0) => Out<unknown>"
+			)
 		)
 	})
 
@@ -551,10 +584,15 @@ contextualize(() => {
 		attest(() => {
 			scope({
 				a: { a: ["string", "=>", s => s.trim()] },
-				b: { b: "boolean" },
+				b: { b: "bigint" },
 				c: { key: "a|b" }
 			}).export()
-		}).throws(writeIndiscriminableMorphUnionMessage("key"))
+		}).throws(
+			writeIndiscriminableMorphMessage(
+				"{ a: (In: string) => Out<unknown> }",
+				"{ b: bigint }"
+			)
+		)
 	})
 
 	it("helper morph intersection", () => {
@@ -562,7 +600,12 @@ contextualize(() => {
 			type("string")
 				.pipe(s => s.length)
 				.and(type("string").pipe(s => s.length))
-		).throws("Intersection of morphs results in an unsatisfiable type")
+		).throws(
+			writeMorphIntersectionMessage(
+				"(In: string) => Out<unknown>",
+				"(In: string) => Out<unknown>"
+			)
+		)
 	})
 
 	it("union helper undiscriminated", () => {
@@ -570,6 +613,8 @@ contextualize(() => {
 			type("string")
 				.pipe(s => s.length)
 				.or("'foo'")
-		).throws(writeIndiscriminableMorphUnionMessage("/"))
+		).throws(
+			writeIndiscriminableMorphMessage("(In: string) => Out<unknown>", '"foo"')
+		)
 	})
 })
