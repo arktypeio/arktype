@@ -1,31 +1,43 @@
-import { type, type Type } from "arktype"
+import { ArkErrors, type } from "arktype"
 
-const _contact = type({
-	email: "email",
-	score: "integer < 100"
-})
+interface RuntimeErrors extends ArkErrors {
+	/**
+```
+email must be a palindrome (was "david@arktype.io")
+score (133.7) must be...
+    • an integer
+    • less than 100
+```*/
+	summary: string
+}
 
-type _Contact = typeof _contact.t
+const narrowMessage = (e: ArkErrors): e is RuntimeErrors => true
 
-interface Contact extends _Contact {}
-
-export const contact: Type<Contact> = _contact
 // ---cut---
-const goodContact = contact.narrow((data, ctx) => {
-	if (data.score > 75 || data.email.endsWith("@arktype.io")) {
+const palindromicEmail = type("email").narrow((address, ctx) => {
+	if (address === [...address].reverse().join("")) {
+		// congratulations! your email is somehow a palindrome
 		return true
 	}
 	// add a customizable error and return false
-	return ctx.mustBe("a better contact")
+	return ctx.mustBe("a palindrome")
 })
 
-const out = goodContact({
-	email: "david@gmail.com",
-	score: 60
+const palindromicContact = type({
+	email: palindromicEmail,
+	score: "integer < 100"
+})
+
+const out = palindromicContact({
+	email: "david@arktype.io",
+	score: 133.7
 })
 
 if (out instanceof type.errors) {
+	// ---cut-start---
+	if (!narrowMessage(out)) throw new Error()
+	// ---cut-end---
 	console.error(out.summary)
 } else {
-	console.log(`${out.email}: ${out.score}`)
+	console.log(out.email)
 }

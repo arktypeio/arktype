@@ -333,7 +333,7 @@ export const intersectionImplementation: nodeImplementationOf<IntersectionDeclar
 					node.children.map(child => child.description).join(" and "),
 			expected: source =>
 				`  • ${source.errors.map(e => e.expected).join("\n  • ")}`,
-			problem: ctx => `${ctx.actual} must be...\n${ctx.expected}`
+			problem: ctx => `(${ctx.actual}) must be...\n${ctx.expected}`
 		},
 		intersections: {
 			intersection: (l, r, ctx) => intersectIntersections(l, r, ctx),

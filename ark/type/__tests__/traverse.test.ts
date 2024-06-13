@@ -129,16 +129,14 @@ contextualize(() => {
 
 	it("multi", () => {
 		const naturalNumber = type("integer>0")
-		attest(naturalNumber(-1.2).toString()).snap(
-			`-1.2 must be...
+		attest(naturalNumber(-1.2).toString()).snap(`(-1.2) must be...
   • an integer
-  • more than 0`
-		)
+  • more than 0`)
 		const naturalAtPath = type({
 			natural: naturalNumber
 		})
 		attest(naturalAtPath({ natural: -0.1 }).toString()).snap(
-			`natural -0.1 must be...
+			`natural (-0.1) must be...
   • an integer
   • more than 0`
 		)
