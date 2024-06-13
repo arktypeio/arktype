@@ -2,7 +2,7 @@ import { append, cached, domainDescriptions } from "@arktype/util"
 import type { RawRootScope } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
-import { Disjoint } from "../shared/disjoint.js"
+import { Disjoints } from "../shared/disjoint.js"
 import {
 	implementNode,
 	type nodeImplementationOf
@@ -104,6 +104,6 @@ export const aliasImplementation: nodeImplementationOf<AliasDeclaration> =
 	})
 
 const neverIfDisjoint = (
-	result: BaseRoot | Disjoint,
+	result: BaseRoot | Disjoints,
 	$: RawRootScope
-): BaseRoot => (result instanceof Disjoint ? $.keywords.never.raw : result)
+): BaseRoot => (result instanceof Disjoints ? $.keywords.never.raw : result)

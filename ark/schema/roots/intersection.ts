@@ -26,7 +26,7 @@ import type {
 import type { PredicateNode } from "../predicate.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import { metaKeys, type BaseMeta, type declareNode } from "../shared/declare.js"
-import { Disjoint } from "../shared/disjoint.js"
+import { Disjoints } from "../shared/disjoint.js"
 import type { ArkError } from "../shared/errors.js"
 import {
 	implementNode,
@@ -191,7 +191,7 @@ const intersectIntersections = (
 	l: IntersectionInner,
 	r: IntersectionInner,
 	ctx: IntersectionContext
-): BaseRoot | Disjoint => {
+): BaseRoot | Disjoints => {
 	// avoid treating adding instance keys as keys of lRoot, rRoot
 	if (hasArkKind(l, "root") && l.hasKind("intersection"))
 		return intersectIntersections(l.inner, r, ctx)
@@ -209,7 +209,7 @@ const intersectIntersections = (
 				(intersectNodes(lBasis, rBasis, ctx) as Node<IntersectionBasisKind>)
 			:	lBasis
 		:	rBasis
-	if (basisResult instanceof Disjoint) return basisResult
+	if (basisResult instanceof Disjoints) return basisResult
 
 	if (basisResult) baseInner[basisResult.kind] = basisResult as never
 
@@ -344,7 +344,7 @@ export const intersectionImplementation: nodeImplementationOf<IntersectionDeclar
 				const basis = l.basis ? intersectNodes(l.basis, r, ctx) : r
 
 				return (
-					basis instanceof Disjoint ? basis
+					basis instanceof Disjoints ? basis
 					: l?.basis?.equals(basis) ?
 						// if the basis doesn't change, return the original intesection
 						l

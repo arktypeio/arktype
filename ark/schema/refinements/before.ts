@@ -1,6 +1,6 @@
 import type { BaseRoot } from "../roots/root.js"
 import type { declareNode } from "../shared/declare.js"
-import { Disjoint } from "../shared/disjoint.js"
+import { Disjoints } from "../shared/disjoint.js"
 import {
 	implementNode,
 	type nodeImplementationOf
@@ -69,7 +69,7 @@ export const beforeImplementation: nodeImplementationOf<BeforeDeclaration> =
 					before.overlapIsUnit(after) ?
 						ctx.$.node("unit", { unit: before.rule })
 					:	null
-				:	Disjoint.from("range", before, after)
+				:	Disjoints.from("range", before, after)
 		}
 	})
 

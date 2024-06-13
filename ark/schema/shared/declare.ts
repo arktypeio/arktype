@@ -1,6 +1,6 @@
 import type { merge, show } from "@arktype/util"
 import type { Node, reducibleKindOf } from "../kinds.js"
-import type { Disjoint } from "./disjoint.js"
+import type { Disjoints } from "./disjoint.js"
 import type { NarrowedAttachments, NodeKind } from "./implement.js"
 
 export interface BaseMeta {
@@ -67,4 +67,4 @@ export interface RawNodeDeclaration {
 
 export type ownIntersectionResult<d extends RawNodeDeclaration> =
 	| Node<reducibleKindOf<d["kind"]>>
-	| Disjoint
+	| Disjoints

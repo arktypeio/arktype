@@ -11,7 +11,7 @@ import {
 	type array
 } from "@arktype/util"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
-import { Disjoint } from "../shared/disjoint.js"
+import { Disjoints } from "../shared/disjoint.js"
 import {
 	defaultValueSerializer,
 	implementNode,
@@ -78,11 +78,11 @@ export const protoImplementation: nodeImplementationOf<ProtoDeclaration> =
 			proto: (l, r) =>
 				constructorExtends(l.proto, r.proto) ? l
 				: constructorExtends(r.proto, l.proto) ? r
-				: Disjoint.from("proto", l, r),
+				: Disjoints.from("proto", l, r),
 			domain: (proto, domain, ctx) =>
 				domain.domain === "object" ?
 					proto
-				:	Disjoint.from(
+				:	Disjoints.from(
 						"domain",
 						ctx.$.keywords.object.raw as DomainNode,
 						domain

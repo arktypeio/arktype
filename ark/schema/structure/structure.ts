@@ -20,7 +20,7 @@ import type { UnitNode } from "../roots/unit.js"
 import type { RawRootScope } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
-import { Disjoint } from "../shared/disjoint.js"
+import { Disjoints } from "../shared/disjoint.js"
 import {
 	implementNode,
 	type nodeImplementationOf,
@@ -370,7 +370,7 @@ export const structureImplementation: nodeImplementationOf<StructureDeclaration>
 						k => !lKey.allows(k)
 					)
 					if (disjointRKeys.length) {
-						return Disjoint.from(
+						return Disjoints.from(
 							"presence",
 							ctx.$.keywords.never.raw,
 							r.propsByKey[disjointRKeys[0]]!.value
@@ -383,7 +383,7 @@ export const structureImplementation: nodeImplementationOf<StructureDeclaration>
 						rInner.index = rInner.index.flatMap(n => {
 							if (n.signature.extends(lKey)) return n
 							const indexOverlap = intersectNodesRoot(lKey, n.signature, ctx.$)
-							if (indexOverlap instanceof Disjoint) return []
+							if (indexOverlap instanceof Disjoints) return []
 							const normalized = normalizeIndex(indexOverlap, n.value, ctx.$)
 							if (normalized.required) {
 								rInner.required =
@@ -401,7 +401,7 @@ export const structureImplementation: nodeImplementationOf<StructureDeclaration>
 						k => !rKey.allows(k)
 					)
 					if (disjointLKeys.length) {
-						return Disjoint.from(
+						return Disjoints.from(
 							"presence",
 							l.propsByKey[disjointLKeys[0]]!.value,
 							ctx.$.keywords.never.raw
@@ -414,7 +414,7 @@ export const structureImplementation: nodeImplementationOf<StructureDeclaration>
 						lInner.index = lInner.index.flatMap(n => {
 							if (n.signature.extends(rKey)) return n
 							const indexOverlap = intersectNodesRoot(rKey, n.signature, ctx.$)
-							if (indexOverlap instanceof Disjoint) return []
+							if (indexOverlap instanceof Disjoints) return []
 							const normalized = normalizeIndex(indexOverlap, n.value, ctx.$)
 							if (normalized.required) {
 								lInner.required =

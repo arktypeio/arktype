@@ -1,6 +1,6 @@
 import type { BaseRoot } from "../roots/root.js"
 import type { declareNode } from "../shared/declare.js"
-import { Disjoint } from "../shared/disjoint.js"
+import { Disjoints } from "../shared/disjoint.js"
 import {
 	implementNode,
 	type nodeImplementationOf
@@ -8,9 +8,9 @@ import {
 import type { TraverseAllows } from "../shared/traversal.js"
 import {
 	BaseRange,
+	parseExclusiveKey,
 	type BaseRangeInner,
 	type LengthBoundableData,
-	parseExclusiveKey,
 	type UnknownNormalizedRangeSchema
 } from "./range.js"
 
@@ -60,7 +60,7 @@ export const maxLengthImplementation: nodeImplementationOf<MaxLengthDeclaration>
 					max.overlapIsUnit(min) ?
 						ctx.$.node("exactLength", { rule: max.rule })
 					:	null
-				:	Disjoint.from("range", max, min)
+				:	Disjoints.from("range", max, min)
 		}
 	})
 

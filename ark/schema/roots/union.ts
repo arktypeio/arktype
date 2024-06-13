@@ -21,7 +21,7 @@ import {
 import type { Node, NodeSchema } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
-import { Disjoint, type SerializedPath } from "../shared/disjoint.js"
+import { Disjoints, type SerializedPath } from "../shared/disjoint.js"
 import type { ArkError } from "../shared/errors.js"
 import {
 	implementNode,
@@ -152,9 +152,9 @@ export const unionImplementation: nodeImplementationOf<UnionDeclaration> =
 			union: (l, r, ctx) => {
 				if (l.isNever !== r.isNever) {
 					// if exactly one operand is never, we can use it to discriminate based on presence
-					return Disjoint.from("presence", l, r)
+					return Disjoints.from("presence", l, r)
 				}
-				let resultBranches: readonly UnionChildNode[] | Disjoint
+				let resultBranches: readonly UnionChildNode[] | Disjoints
 				if (l.ordered) {
 					if (r.ordered) {
 						throwParseError(
@@ -163,10 +163,10 @@ export const unionImplementation: nodeImplementationOf<UnionDeclaration> =
 					}
 
 					resultBranches = intersectBranches(r.branches, l.branches, ctx)
-					if (resultBranches instanceof Disjoint) resultBranches.invert()
+					if (resultBranches instanceof Disjoints) resultBranches.invert()
 				} else resultBranches = intersectBranches(l.branches, r.branches, ctx)
 
-				if (resultBranches instanceof Disjoint) return resultBranches
+				if (resultBranches instanceof Disjoints) return resultBranches
 
 				return ctx.$.schema(
 					l.ordered || r.ordered ?
@@ -179,7 +179,7 @@ export const unionImplementation: nodeImplementationOf<UnionDeclaration> =
 			},
 			...defineRightwardIntersections("union", (l, r, ctx) => {
 				const branches = intersectBranches(l.branches, [r], ctx)
-				if (branches instanceof Disjoint) return branches
+				if (branches instanceof Disjoints) return branches
 
 				if (branches.length === 1) return branches[0]
 
@@ -331,7 +331,7 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 			for (let rIndex = lIndex + 1; rIndex < this.branches.length; rIndex++) {
 				const r = this.branches[rIndex]
 				const result = intersectNodesRoot(l.in, r.in, l.$)
-				if (!(result instanceof Disjoint)) continue
+				if (!(result instanceof Disjoints)) continue
 
 				for (const { path, kind, disjoint } of result.flat) {
 					if (!isKeyOf(kind, discriminantKinds)) continue
@@ -477,7 +477,7 @@ export const intersectBranches = (
 	l: readonly UnionChildNode[],
 	r: readonly UnionChildNode[],
 	ctx: IntersectionContext
-): readonly UnionChildNode[] | Disjoint => {
+): readonly UnionChildNode[] | Disjoints => {
 	// If the corresponding r branch is identified as a subtype of an l branch, the
 	// value at rIndex is set to null so we can avoid including previous/future
 	// inersections in the reduced result.
@@ -497,7 +497,7 @@ export const intersectBranches = (
 				break
 			}
 			const branchIntersection = intersectNodes(l[lIndex], r[rIndex], ctx)
-			if (branchIntersection instanceof Disjoint) {
+			if (branchIntersection instanceof Disjoints) {
 				// Doesn't tell us anything useful about their relationships
 				// with other branches
 				continue
@@ -535,7 +535,7 @@ export const intersectBranches = (
 		(batch, i) => batch?.flatMap(branch => branch.branches) ?? r[i]
 	)
 	return resultBranches.length === 0 ?
-			Disjoint.from("union", l, r)
+			Disjoints.from("union", l, r)
 		:	resultBranches
 }
 
@@ -564,7 +564,7 @@ export const reduceBranches = ({
 				branches[j].in,
 				branches[0].$
 			)!
-			if (intersection instanceof Disjoint) continue
+			if (intersection instanceof Disjoints) continue
 
 			if (!ordered) {
 				if (branches[i].includesMorph) {

@@ -12,7 +12,7 @@ import type {
 import type { BaseRoot } from "../roots/root.js"
 import type { UnitNode } from "../roots/unit.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
-import { Disjoint } from "../shared/disjoint.js"
+import { Disjoints } from "../shared/disjoint.js"
 import {
 	implementNode,
 	type RootKind,
@@ -89,7 +89,7 @@ export const indexImplementation: nodeImplementationOf<IndexDeclaration> =
 				if (l.signature.equals(r.signature)) {
 					const valueIntersection = intersectNodes(l.value, r.value, ctx)
 					const value =
-						valueIntersection instanceof Disjoint ?
+						valueIntersection instanceof Disjoints ?
 							ctx.$.keywords.never.raw
 						:	valueIntersection
 					return ctx.$.node("index", { signature: l.signature, value })

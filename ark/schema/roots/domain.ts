@@ -7,7 +7,7 @@ import {
 	type array
 } from "@arktype/util"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
-import { Disjoint } from "../shared/disjoint.js"
+import { Disjoints } from "../shared/disjoint.js"
 import {
 	implementNode,
 	type nodeImplementationOf
@@ -71,6 +71,6 @@ export const domainImplementation: nodeImplementationOf<DomainDeclaration> =
 			actual: data => (typeof data === "boolean" ? `${data}` : domainOf(data))
 		},
 		intersections: {
-			domain: (l, r) => Disjoint.from("domain", l, r)
+			domain: (l, r) => Disjoints.from("domain", l, r)
 		}
 	})

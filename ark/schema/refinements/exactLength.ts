@@ -1,7 +1,7 @@
 import { RawPrimitiveConstraint } from "../constraint.js"
 import type { BaseRoot } from "../roots/root.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
-import { Disjoint } from "../shared/disjoint.js"
+import { Disjoints } from "../shared/disjoint.js"
 import {
 	implementNode,
 	type nodeImplementationOf
@@ -42,7 +42,7 @@ export const exactLengthImplementation: nodeImplementationOf<ExactLengthDeclarat
 		},
 		intersections: {
 			exactLength: (l, r, ctx) =>
-				new Disjoint({
+				new Disjoints({
 					'["length"]': {
 						unit: {
 							l: ctx.$.node("unit", { unit: l.rule }),
@@ -57,7 +57,7 @@ export const exactLengthImplementation: nodeImplementationOf<ExactLengthDeclarat
 					:	exactLength.rule >= minLength.rule
 				) ?
 					exactLength
-				:	Disjoint.from("range", exactLength, minLength),
+				:	Disjoints.from("range", exactLength, minLength),
 			maxLength: (exactLength, maxLength) =>
 				(
 					maxLength.exclusive ?
@@ -65,7 +65,7 @@ export const exactLengthImplementation: nodeImplementationOf<ExactLengthDeclarat
 					:	exactLength.rule <= maxLength.rule
 				) ?
 					exactLength
-				:	Disjoint.from("range", exactLength, maxLength)
+				:	Disjoints.from("range", exactLength, maxLength)
 		}
 	})
 

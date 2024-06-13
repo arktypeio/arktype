@@ -17,7 +17,7 @@ import type { MinLengthNode } from "../refinements/minLength.js"
 import type { BaseRoot } from "../roots/root.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
-import { Disjoint } from "../shared/disjoint.js"
+import { Disjoints } from "../shared/disjoint.js"
 import {
 	implementNode,
 	type IntersectionContext,
@@ -193,19 +193,19 @@ export const sequenceImplementation: nodeImplementationOf<SequenceDeclaration> =
 				const rootState = _intersectSequences({
 					l: l.tuple,
 					r: r.tuple,
-					disjoint: new Disjoint({}),
+					disjoints: new Disjoints(),
 					result: [],
 					fixedVariants: [],
 					ctx
 				})
 
 				const viableBranches =
-					rootState.disjoint.isEmpty() ?
+					rootState.disjoints.length === 0 ?
 						[rootState, ...rootState.fixedVariants]
 					:	rootState.fixedVariants
 
 				return (
-					viableBranches.length === 0 ? rootState.disjoint!
+					viableBranches.length === 0 ? rootState.disjoints!
 					: viableBranches.length === 1 ?
 						ctx.$.node(
 							"sequence",
@@ -370,7 +370,7 @@ export type SequenceTuple = array<SequenceElement>
 type SequenceIntersectionState = {
 	l: SequenceTuple
 	r: SequenceTuple
-	disjoint: Disjoint
+	disjoints: Disjoints
 	result: SequenceTuple
 	fixedVariants: SequenceIntersectionState[]
 	ctx: IntersectionContext
@@ -405,7 +405,7 @@ const _intersectSequences = (
 			fixedVariants: [],
 			r: rTail.map(element => ({ ...element, kind: "prefix" }))
 		})
-		if (postfixBranchResult.disjoint.isEmpty())
+		if (postfixBranchResult.disjoints.length === 0)
 			s.fixedVariants.push(postfixBranchResult)
 	} else if (
 		rHead.kind === "prefix" &&
@@ -417,15 +417,15 @@ const _intersectSequences = (
 			fixedVariants: [],
 			l: lTail.map(element => ({ ...element, kind: "prefix" }))
 		})
-		if (postfixBranchResult.disjoint.isEmpty())
+		if (postfixBranchResult.disjoints.length === 0)
 			s.fixedVariants.push(postfixBranchResult)
 	}
 
 	const result = intersectNodes(lHead.node, rHead.node, s.ctx)
-	if (result instanceof Disjoint) {
+	if (result instanceof Disjoints) {
 		if (kind === "prefix" || kind === "postfix") {
-			s.disjoint.add(
-				result.withPrefixKey(
+			s.disjoints.push(
+				...result.withPrefixKey(
 					// TODO: more precise path handling for Disjoints
 					kind === "prefix" ? `${s.result.length}` : `-${lTail.length + 1}`
 				)

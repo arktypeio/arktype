@@ -27,7 +27,7 @@ import { BaseNode } from "../node.js"
 import type { Predicate } from "../predicate.js"
 import type { RootScope } from "../scope.js"
 import type { BaseMeta, RawNodeDeclaration } from "../shared/declare.js"
-import { Disjoint } from "../shared/disjoint.js"
+import { Disjoints } from "../shared/disjoint.js"
 import { ArkErrors } from "../shared/errors.js"
 import {
 	structuralKinds,
@@ -110,14 +110,14 @@ export abstract class BaseRoot<
 		return this._keyof as never
 	}
 
-	protected intersect(r: unknown): BaseRoot | Disjoint {
+	protected intersect(r: unknown): BaseRoot | Disjoints {
 		const rNode = this.$.parseRoot(r)
 		return intersectNodesRoot(this, rNode, this.$) as never
 	}
 
 	and(r: unknown): BaseRoot {
 		const result = this.intersect(r)
-		return result instanceof Disjoint ? result.throw() : (result as never)
+		return result instanceof Disjoints ? result.throw() : (result as never)
 	}
 
 	or(r: unknown): BaseRoot {
@@ -163,13 +163,13 @@ export abstract class BaseRoot<
 
 	overlaps(r: UnknownRoot): boolean {
 		const intersection = this.intersect(r as never)
-		return !(intersection instanceof Disjoint)
+		return !(intersection instanceof Disjoints)
 	}
 
 	extends(r: UnknownRoot): boolean {
 		const intersection = this.intersect(r as never)
 		return (
-			!(intersection instanceof Disjoint) && this.equals(intersection as never)
+			!(intersection instanceof Disjoints) && this.equals(intersection as never)
 		)
 	}
 
@@ -198,7 +198,7 @@ export abstract class BaseRoot<
 	private pipeOnce(morph: Morph): BaseRoot {
 		if (hasArkKind(morph, "root")) {
 			const result = pipeNodesRoot(this, morph, this.$)
-			if (result instanceof Disjoint) return result.throw()
+			if (result instanceof Disjoints) return result.throw()
 			return result as BaseRoot
 		}
 		if (this.hasKind("union")) {
@@ -258,7 +258,7 @@ export abstract class BaseRoot<
 				intersectNodesRoot(this, partialIntersection, this.$)
 			:	pipeNodesRoot(this, partialIntersection, this.$)
 
-		if (result instanceof Disjoint) result.throw()
+		if (result instanceof Disjoints) result.throw()
 
 		return result as never
 	}
@@ -372,7 +372,7 @@ export declare abstract class InnerRoot<t = unknown, $ = any> extends Callable<
 	abstract get in(): unknown
 	abstract get out(): unknown
 	abstract keyof(): unknown
-	abstract intersect(r: never): unknown | Disjoint
+	abstract intersect(r: never): unknown | Disjoints
 	abstract and(r: never): unknown
 	abstract or(r: never): unknown
 	abstract constrain(kind: never, schema: never): unknown
@@ -411,7 +411,9 @@ declare class _Root<t = unknown, $ = any> extends InnerRoot<t, $> {
 
 	keyof(): Root<keyof this["inferIn"], $>
 
-	intersect<r extends Root>(r: r): Root<inferIntersection<t, r["t"]>> | Disjoint
+	intersect<r extends Root>(
+		r: r
+	): Root<inferIntersection<t, r["t"]>> | Disjoints
 
 	and<r extends Root>(r: r): Root<inferIntersection<t, r["t"]>>
 

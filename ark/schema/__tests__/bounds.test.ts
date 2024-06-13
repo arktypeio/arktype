@@ -2,7 +2,7 @@ import { attest, contextualize } from "@arktype/attest"
 import { schema } from "@arktype/schema"
 import { entriesOf, flatMorph } from "@arktype/util"
 import { boundKindPairsByLower } from "../refinements/range.js"
-import { Disjoint } from "../shared/disjoint.js"
+import { Disjoints } from "../shared/disjoint.js"
 
 const numericCases = {
 	lessThanMin: 4,
@@ -153,8 +153,8 @@ contextualize(() => {
 						exclusive: true
 					}
 				} as never)
-				attest(l.intersect(r)).instanceOf(Disjoint)
-				attest(r.intersect(l)).instanceOf(Disjoint)
+				attest(l.intersect(r)).instanceOf(Disjoints)
+				attest(r.intersect(l)).instanceOf(Disjoints)
 			})
 
 			it("non-overlapping limits", () => {
@@ -163,8 +163,8 @@ contextualize(() => {
 					...basis,
 					[max]: 1
 				} as never)
-				attest(l.intersect(r)).instanceOf(Disjoint)
-				attest(r.intersect(l)).instanceOf(Disjoint)
+				attest(l.intersect(r)).instanceOf(Disjoints)
+				attest(r.intersect(l)).instanceOf(Disjoints)
 			})
 
 			it("greater min is stricter", () => {

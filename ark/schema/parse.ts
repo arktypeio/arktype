@@ -18,7 +18,7 @@ import {
 import type { BaseNode } from "./node.js"
 import type { UnknownRoot } from "./roots/root.js"
 import type { RawRootScope } from "./scope.js"
-import { Disjoint } from "./shared/disjoint.js"
+import { Disjoints } from "./shared/disjoint.js"
 import {
 	constraintKeys,
 	defaultValueSerializer,
@@ -178,7 +178,7 @@ export const parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
 	if (impl.reduce && !ctx.prereduced) {
 		const reduced = impl.reduce(inner, ctx.$)
 		if (reduced) {
-			if (reduced instanceof Disjoint) return reduced.throw()
+			if (reduced instanceof Disjoints) return reduced.throw()
 
 			// if we're defining the resolution of an alias and the result is
 			// reduced to another node, add the alias to that node if it doesn't
