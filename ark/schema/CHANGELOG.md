@@ -1,5 +1,14 @@
 # @arktype/schema
 
+## 0.1.16
+
+### Patch Changes
+
+- [#1011](https://github.com/arktypeio/arktype/pull/1011) [`2be4f5b`](https://github.com/arktypeio/arktype/commit/2be4f5b391d57ad47dc6f4c0e4c9d31ae6b550c5) Thanks [@ssalbdivad](https://github.com/ssalbdivad)! - ### Improve discrimination logic across several issues (see primary release notes at [ArkType's CHANGELOG](../type/CHANGELOG.md))
+
+- Updated dependencies [[`2be4f5b`](https://github.com/arktypeio/arktype/commit/2be4f5b391d57ad47dc6f4c0e4c9d31ae6b550c5)]:
+  - @arktype/util@0.0.49
+
 ## 0.1.15
 
 ### Patch Changes
