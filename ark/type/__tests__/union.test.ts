@@ -203,7 +203,7 @@ contextualize(() => {
 	it("root autocompletions", () => {
 		// @ts-expect-error
 		attest(() => type({ a: "s" }, "|", { b: "boolean" })).completions({
-			s: ["string", "symbol", "semver"]
+			s: ["semver", "string", "symbol"]
 		})
 		// @ts-expect-error
 		attest(() => type({ a: "string" }, "|", { b: "b" })).completions({

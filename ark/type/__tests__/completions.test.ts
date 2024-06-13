@@ -4,15 +4,13 @@ import { scope, type } from "arktype"
 contextualize(() => {
 	it("completes standalone keyword", () => {
 		// @ts-expect-error
-		attest(() => type("s")).completions({
-			s: ["string", "symbol", "semver"]
-		})
+		attest(() => type("s")).completions({ s: ["semver", "string", "symbol"] })
 	})
 
 	it("completes within objects", () => {
 		// @ts-expect-error
 		attest(() => type({ a: "a", b: "b" })).completions({
-			a: ["any", "alpha", "alphanumeric"],
+			a: ["alpha", "alphanumeric", "any"],
 			b: ["bigint", "boolean"]
 		})
 	})
@@ -20,7 +18,7 @@ contextualize(() => {
 	it("completes within expressions", () => {
 		// @ts-expect-error
 		attest(() => type("string|n")).completions({
-			"string|n": ["string|number", "string|null", "string|never"]
+			"string|n": ["string|never", "string|null", "string|number"]
 		})
 	})
 

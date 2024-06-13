@@ -15,7 +15,7 @@ import {
 import type { TypeRelationship } from "../cache/writeAssertionCache.js"
 import { getConfig } from "../config.js"
 import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.js"
-import type { BenchAssertionContext, BenchContext } from "./bench.js"
+import type { BenchContext } from "./bench.js"
 import {
 	createTypeComparison,
 	type Measure,
@@ -75,7 +75,7 @@ export type ArgAssertionData = {
 }
 
 export const instantiationDataHandler = (
-	ctx: BenchAssertionContext,
+	ctx: BenchContext,
 	args?: Measure<TypeUnit>,
 	isBenchFunction = true
 ): void => {

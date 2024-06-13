@@ -1,17 +1,21 @@
 import {
 	appendUnique,
+	arrayEquals,
 	cached,
 	compileLiteralPropAccess,
+	compileSerializedValue,
 	domainDescriptions,
-	entriesOf,
 	flatMorph,
 	groupBy,
 	isArray,
 	isKeyOf,
 	printable,
+	registeredReference,
 	throwInternalError,
+	throwParseError,
 	type Domain,
 	type Json,
+	type Key,
 	type SerializedPrimitive,
 	type array,
 	type keySet,
@@ -20,7 +24,7 @@ import {
 import type { Node, NodeSchema } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
-import { Disjoint, type SerializedPath } from "../shared/disjoint.js"
+import { Disjoint } from "../shared/disjoint.js"
 import type { ArkError } from "../shared/errors.js"
 import {
 	implementNode,
@@ -151,11 +155,15 @@ export const unionImplementation: nodeImplementationOf<UnionDeclaration> =
 			union: (l, r, ctx) => {
 				if (l.isNever !== r.isNever) {
 					// if exactly one operand is never, we can use it to discriminate based on presence
-					return Disjoint.from("presence", l, r)
+					return Disjoint.init("presence", l, r)
 				}
 				let resultBranches: readonly UnionChildNode[] | Disjoint
 				if (l.ordered) {
-					if (r.ordered) return Disjoint.from("indiscriminableMorphs", l, r)
+					if (r.ordered) {
+						throwParseError(
+							writeOrderedIntersectionMessage(l.expression, r.expression)
+						)
+					}
 
 					resultBranches = intersectBranches(r.branches, l.branches, ctx)
 					if (resultBranches instanceof Disjoint) resultBranches.invert()
@@ -198,10 +206,9 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 	discriminantJson =
 		this.discriminant ? discriminantToJson(this.discriminant) : null
 
-	expression: string =
-		this.isNever ? "never"
-		: this.isBoolean ? "boolean"
-		: this.branches.map(branch => branch.nestableExpression).join(" | ")
+	expression: string = expressBranches(
+		this.branches.map(n => n.nestableExpression)
+	)
 
 	get shortDescription(): string {
 		return describeBranches(
@@ -235,8 +242,8 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 			return this.compileIndiscriminable(js)
 
 		// we need to access the path as optional so we don't throw if it isn't present
-		const condition = this.discriminant.path.reduce(
-			(acc, segment) => acc + compileLiteralPropAccess(segment, true),
+		const condition = this.discriminant.path.reduce<string>(
+			(acc, k) => acc + compileLiteralPropAccess(k, true),
 			this.discriminant.kind === "domain" ? "typeof data" : "data"
 		)
 
@@ -265,10 +272,14 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 			:	caseKeys
 		)
 
+		const serializedPathSegments = this.discriminant.path.map(k =>
+			typeof k === "string" ? JSON.stringify(k) : registeredReference(k)
+		)
+
 		js.line(`ctx.error({
 	expected: ${JSON.stringify(expected)},
 	actual: ${condition},
-	relativePath: ${JSON.stringify(this.discriminant.path)}
+	relativePath: [${serializedPathSegments}]
 })`)
 	}
 
@@ -321,7 +332,7 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 				cases
 			}
 		}
-		const casesBySpecifier: CasesBySpecifier = {}
+		const candidates: DiscriminantCandidate[] = []
 		for (let lIndex = 0; lIndex < this.branches.length - 1; lIndex++) {
 			const l = this.branches[lIndex]
 			for (let rIndex = lIndex + 1; rIndex < this.branches.length; rIndex++) {
@@ -329,56 +340,63 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 				const result = intersectNodesRoot(l.in, r.in, l.$)
 				if (!(result instanceof Disjoint)) continue
 
-				for (const { path, kind, disjoint } of result.flat) {
-					if (!isKeyOf(kind, discriminantKinds)) continue
+				for (const entry of result) {
+					if (!isKeyOf(entry.kind, discriminantKinds) || entry.optional)
+						continue
 
-					const qualifiedDiscriminant: DiscriminantKey = `${path}${kind}`
 					let lSerialized: string
 					let rSerialized: string
-					if (kind === "domain") {
-						lSerialized = `"${(disjoint.l as DomainNode).domain}"`
-						rSerialized = `"${(disjoint.r as DomainNode).domain}"`
-					} else if (kind === "unit") {
-						lSerialized = (disjoint.l as UnitNode).serializedValue as never
-						rSerialized = (disjoint.r as UnitNode).serializedValue as never
+					if (entry.kind === "domain") {
+						lSerialized = `"${(entry.l as DomainNode).domain}"`
+						rSerialized = `"${(entry.r as DomainNode).domain}"`
+					} else if (entry.kind === "unit") {
+						lSerialized = (entry.l as UnitNode).serializedValue as never
+						rSerialized = (entry.r as UnitNode).serializedValue as never
 					} else {
 						return throwInternalError(
-							`Unexpected attempt to discriminate disjoint kind '${kind}'`
+							`Unexpected attempt to discriminate disjoint kind '${entry.kind}'`
 						)
 					}
-					if (!casesBySpecifier[qualifiedDiscriminant]) {
-						casesBySpecifier[qualifiedDiscriminant] = {
-							[lSerialized]: [l],
-							[rSerialized]: [r]
-						}
+					const matching = candidates.find(
+						d => arrayEquals(d.path, entry.path) && d.kind === entry.kind
+					)
+					if (!matching) {
+						candidates.push({
+							kind: entry.kind,
+							cases: {
+								[lSerialized]: [l],
+								[rSerialized]: [r]
+							},
+							path: entry.path
+						})
 						continue
 					}
-					const cases = casesBySpecifier[qualifiedDiscriminant]!
-					if (!isKeyOf(lSerialized, cases)) cases[lSerialized] = [l]
-					else if (!cases[lSerialized].includes(l)) cases[lSerialized].push(l)
 
-					if (!isKeyOf(rSerialized, cases)) cases[rSerialized] = [r]
-					else if (!cases[rSerialized].includes(r)) cases[rSerialized].push(r)
+					matching.cases[lSerialized] = appendUnique(
+						matching.cases[lSerialized],
+						l
+					)
+					matching.cases[rSerialized] = appendUnique(
+						matching.cases[rSerialized],
+						r
+					)
 				}
 			}
 		}
 
-		const bestDiscriminantEntry = entriesOf(casesBySpecifier)
-			.sort((a, b) => Object.keys(a[1]).length - Object.keys(b[1]).length)
+		const best = candidates
+			.sort((l, r) => Object.keys(l.cases).length - Object.keys(r.cases).length)
 			.at(-1)
 
-		if (!bestDiscriminantEntry) return null
-
-		const [specifier, bestCases] = bestDiscriminantEntry
-		const [path, kind] = parseDiscriminantKey(specifier)
+		if (!best) return null
 
 		let defaultBranches = [...this.branches]
 
-		const cases = flatMorph(bestCases, (k, caseBranches) => {
+		const cases = flatMorph(best.cases, (k, caseBranches) => {
 			const prunedBranches: BaseRoot[] = []
 			defaultBranches = defaultBranches.filter(n => !caseBranches.includes(n))
 			for (const branch of caseBranches) {
-				const pruned = pruneDiscriminant(kind, path, branch)
+				const pruned = pruneDiscriminant(best.kind, best.path, branch)
 				// if any branch of the union has no constraints (i.e. is unknown)
 				// return it right away
 				if (pruned === null) return [k, true as const]
@@ -404,8 +422,8 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 		}
 
 		return {
-			kind,
-			path,
+			kind: best.kind,
+			path: best.path,
 			cases
 		}
 	}
@@ -413,7 +431,9 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 
 const discriminantToJson = (discriminant: Discriminant): Json => ({
 	kind: discriminant.kind,
-	path: discriminant.path,
+	path: discriminant.path.map(k =>
+		typeof k === "string" ? k : compileSerializedValue(k)
+	),
 	cases: flatMorph(discriminant.cases, (k, node) => [
 		k,
 		node === true ? node
@@ -422,7 +442,26 @@ const discriminantToJson = (discriminant: Discriminant): Json => ({
 	])
 })
 
-const describeBranches = (descriptions: string[]) => {
+type DescribeBranchesOptions = {
+	delimiter?: string
+	finalDelimiter?: string
+}
+
+const describeExpressionOptions: DescribeBranchesOptions = {
+	delimiter: " | ",
+	finalDelimiter: " | "
+}
+
+const expressBranches = (expressions: string[]) =>
+	describeBranches(expressions, describeExpressionOptions)
+
+const describeBranches = (
+	descriptions: string[],
+	opts?: DescribeBranchesOptions
+) => {
+	const delimiter = opts?.delimiter ?? ", "
+	const finalDelimiter = opts?.finalDelimiter ?? " or "
+
 	if (descriptions.length === 0) return "never"
 
 	if (descriptions.length === 1) return descriptions[0]
@@ -440,12 +479,12 @@ const describeBranches = (descriptions: string[]) => {
 		if (seen[descriptions[i]]) continue
 		seen[descriptions[i]] = true
 		description += descriptions[i]
-		if (i < descriptions.length - 2) description += ", "
+		if (i < descriptions.length - 2) description += delimiter
 	}
 
 	const lastDescription = descriptions.at(-1)!
 	if (!seen[lastDescription])
-		description += ` or ${descriptions[descriptions.length - 1]}`
+		description += `${finalDelimiter}${descriptions[descriptions.length - 1]}`
 
 	return description
 }
@@ -512,7 +551,7 @@ export const intersectBranches = (
 		(batch, i) => batch?.flatMap(branch => branch.branches) ?? r[i]
 	)
 	return resultBranches.length === 0 ?
-			Disjoint.from("union", l, r)
+			Disjoint.init("union", l, r)
 		:	resultBranches
 }
 
@@ -543,6 +582,25 @@ export const reduceBranches = ({
 			)!
 			if (intersection instanceof Disjoint) continue
 
+			if (!ordered) {
+				if (branches[i].includesMorph) {
+					throwParseError(
+						writeIndiscriminableMorphMessage(
+							branches[i].expression,
+							branches[j].expression
+						)
+					)
+				}
+				if (branches[j].includesMorph) {
+					throwParseError(
+						writeIndiscriminableMorphMessage(
+							branches[j].expression,
+							branches[i].expression
+						)
+					)
+				}
+			}
+
 			if (intersection.equals(branches[i].in)) {
 				// preserve ordered branches that are a subtype of a subsequent branch
 				uniquenessByIndex[i] = !!ordered
@@ -557,21 +615,25 @@ export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
 	DiscriminantKind extends kind ? string : DiscriminantKinds[kind] | "default"
 
 export type Discriminant<kind extends DiscriminantKind = DiscriminantKind> = {
-	path: string[]
+	path: Key[]
 	kind: kind
 	cases: DiscriminatedCases<kind>
+}
+
+type DiscriminantCandidate<kind extends DiscriminantKind = DiscriminantKind> = {
+	path: Key[]
+	kind: kind
+	cases: CandidateCases<kind>
+}
+
+type CandidateCases<kind extends DiscriminantKind = DiscriminantKind> = {
+	[caseKey in CaseKey<kind>]: BaseRoot[]
 }
 
 export type DiscriminatedCases<
 	kind extends DiscriminantKind = DiscriminantKind
 > = {
 	[caseKey in CaseKey<kind>]: BaseRoot | true
-}
-
-type DiscriminantKey = `${SerializedPath}${DiscriminantKind}`
-
-type CasesBySpecifier = {
-	[k in DiscriminantKey]?: Record<string, BaseRoot[]>
 }
 
 export type DiscriminantKinds = {
@@ -585,13 +647,6 @@ const discriminantKinds: keySet<DiscriminantKind> = {
 }
 
 export type DiscriminantKind = show<keyof DiscriminantKinds>
-
-const parseDiscriminantKey = (key: DiscriminantKey) => {
-	const lastPathIndex = key.lastIndexOf("]")
-	const parsedPath: string[] = JSON.parse(key.slice(0, lastPathIndex + 1))
-	const parsedKind: DiscriminantKind = key.slice(lastPathIndex + 1) as never
-	return [parsedPath, parsedKind] as const
-}
 
 export const pruneDiscriminant = (
 	discriminantKind: DiscriminantKind,
@@ -628,10 +683,17 @@ export const pruneDiscriminant = (
 		}
 	)
 
-// // TODO: if deeply includes morphs?
-// const writeUndiscriminableMorphUnionMessage = <path extends string>(
-// 	path: path
-// ) =>
-// 	`${
-// 		path === "/" ? "A" : `At ${path}, a`
-// 	} union including one or more morphs must be discriminable` as const
+export const writeIndiscriminableMorphMessage = (
+	morphDescription: string,
+	overlappingDescription: string
+) =>
+	`An unordered union of a type including a morph and a type with overlapping input is indeterminate:
+Morph Branch: ${morphDescription}
+Overlapping Branch: ${overlappingDescription}`
+
+export const writeOrderedIntersectionMessage = (
+	lDescription: string,
+	rDescription: string
+) => `The intersection of two ordered unions is indeterminate:
+Left: ${lDescription}
+Right: ${rDescription}`

@@ -31,7 +31,7 @@ contextualize(() => {
 	it(".type.completions", () => {
 		//@ts-expect-error
 		attest({ ark: "s" } as Arks).type.completions({
-			s: ["string", "symbol", "semver"]
+			s: ["semver", "string", "symbol"]
 		})
 	})
 

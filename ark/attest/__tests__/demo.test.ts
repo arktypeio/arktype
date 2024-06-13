@@ -66,7 +66,7 @@ contextualize(() => {
 		// snapshot expected completions for any string literal!
 		// @ts-expect-error (if your expression would throw, prepend () =>)
 		attest(() => type({ a: "a", b: "b" })).completions({
-			a: ["any", "alpha", "alphanumeric"],
+			a: ["alpha", "alphanumeric", "any"],
 			b: ["bigint", "boolean"]
 		})
 		type Legends = { faker?: "🐐"; [others: string]: unknown }

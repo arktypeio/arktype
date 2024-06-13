@@ -1,5 +1,21 @@
 # arktype
 
+## 2.0.0-dev.24
+
+### Fix constrained narrow/pipe tuple expression input inference
+
+Previously constraints were not stripped when inferring function inputs for tuple expressions like the following:
+
+```ts
+// previously errored due to data being inferred as `number.moreThan<0>`
+// now correctly inferred as number
+const t = type(["number>0", "=>", data => data + 1])
+```
+
+### Fix a bug where paths including optional keys could be included as candidates for discrimination (see https://github.com/arktypeio/arktype/issues/960)
+
+### Throw descriptive parse errors on unordered unions between indiscriminable morphs and other indeterminate type operations (see https://github.com/arktypeio/arktype/issues/967)
+
 ## 2.0.0-dev.23
 
 ### Add an `AnyType` type that allows a Type instance from any Scope

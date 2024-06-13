@@ -96,9 +96,11 @@ export const morphImplementation: nodeImplementationOf<MorphDeclaration> =
 		},
 		intersections: {
 			morph: (l, r, ctx) => {
-				if (l.morphs.some((morph, i) => morph !== r.morphs[i]))
-					// TODO: check in for union reduction
-					return throwParseError("Invalid intersection of morphs")
+				if (l.morphs.some((morph, i) => morph !== r.morphs[i])) {
+					return throwParseError(
+						writeMorphIntersectionMessage(l.expression, r.expression)
+					)
+				}
 				const inTersection = intersectNodes(l.in, r.in, ctx)
 				if (inTersection instanceof Disjoint) return inTersection
 
@@ -180,6 +182,14 @@ export class MorphNode extends BaseRoot<MorphDeclaration> {
 		return this.in.rawKeyOf()
 	}
 }
+
+export const writeMorphIntersectionMessage = (
+	lDescription: string,
+	rDescription: string
+) =>
+	`The intersection of distinct morphs at a single path is indeterminate:
+Left: ${lDescription}
+Right: ${rDescription}`
 
 export type inferPipes<t, pipes extends Morph[]> =
 	pipes extends [infer head extends Morph, ...infer tail extends Morph[]] ?

@@ -71,6 +71,6 @@ export const domainImplementation: nodeImplementationOf<DomainDeclaration> =
 			actual: data => (typeof data === "boolean" ? `${data}` : domainOf(data))
 		},
 		intersections: {
-			domain: (l, r) => Disjoint.from("domain", l, r)
+			domain: (l, r) => Disjoint.init("domain", l, r)
 		}
 	})

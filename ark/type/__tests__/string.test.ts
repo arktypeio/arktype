@@ -40,7 +40,7 @@ contextualize(() => {
 
 	it("shallow multi autocomplete", () => {
 		// @ts-expect-error
-		attest(() => type("s")).completions({ s: ["string", "symbol", "semver"] })
+		attest(() => type("s")).completions({ s: ["semver", "string", "symbol"] })
 	})
 
 	it("post-operator autocomplete", () => {
