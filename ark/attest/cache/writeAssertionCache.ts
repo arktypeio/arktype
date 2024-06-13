@@ -128,7 +128,7 @@ const getCompletions = (attestCall: ts.CallExpression) => {
 	}
 
 	return flatMorph(completions, (prefix, entries) =>
-		entries.length >= 1 ? [prefix, entries] : []
+		entries.length >= 1 ? [prefix, entries.sort()] : []
 	)
 }
 

@@ -14,3 +14,58 @@ it("can snap instantiations", () => {
 	attest.instantiations([1, "instantiations"])
 })
 ```
+
+### Snapshotted completions will now be alphabetized
+
+This will help improve stability, especially for large completion lists like this one which we updated more times than we'd care to admit 😅
+
+```ts
+attest(() => type([""])).completions({
+	"": [
+		"...",
+		"===",
+		"Array",
+		"Date",
+		"Error",
+		"Function",
+		"Map",
+		"Promise",
+		"Record",
+		"RegExp",
+		"Set",
+		"WeakMap",
+		"WeakSet",
+		"alpha",
+		"alphanumeric",
+		"any",
+		"bigint",
+		"boolean",
+		"creditCard",
+		"digits",
+		"email",
+		"false",
+		"format",
+		"instanceof",
+		"integer",
+		"ip",
+		"keyof",
+		"lowercase",
+		"never",
+		"null",
+		"number",
+		"object",
+		"parse",
+		"semver",
+		"string",
+		"symbol",
+		"this",
+		"true",
+		"undefined",
+		"unknown",
+		"uppercase",
+		"url",
+		"uuid",
+		"void"
+	]
+})
+```
