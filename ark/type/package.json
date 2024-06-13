@@ -13,10 +13,10 @@
 		"url": "https://github.com/arktypeio/arktype.git"
 	},
 	"type": "module",
-	"main": "./out/api.js",
-	"types": "./out/api.d.ts",
+	"main": "./out/index.js",
+	"types": "./out/index.d.ts",
 	"exports": {
-		".": "./out/api.js",
+		".": "./out/index.js",
 		"./config": "./out/config.js",
 		"./internal/*": "./out/*"
 	},
