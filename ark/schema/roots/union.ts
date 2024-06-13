@@ -464,7 +464,7 @@ const describeBranches = (
 
 	const lastDescription = descriptions.at(-1)!
 	if (!seen[lastDescription])
-		description += ` ${finalDelimiter} ${descriptions[descriptions.length - 1]}`
+		description += `${finalDelimiter}${descriptions[descriptions.length - 1]}`
 
 	return description
 }

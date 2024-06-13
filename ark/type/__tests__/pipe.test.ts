@@ -486,9 +486,12 @@ contextualize(() => {
 			c: "a&b"
 		}).export()
 		attest<{ a: (In: of<1, MoreThan<0>>) => Out<number> }>(types.c.t)
+		const { serializedMorphs } =
+			types.a.raw.firstReferenceOfKindOrThrow("morph")
+
 		attest(types.c.json).snap({
 			required: [
-				{ key: "a", value: { in: { unit: 1 }, morphs: ["$ark.fn36"] } }
+				{ key: "a", value: { in: { unit: 1 }, morphs: serializedMorphs } }
 			],
 			domain: "object"
 		})
