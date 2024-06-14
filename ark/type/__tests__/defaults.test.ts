@@ -69,7 +69,9 @@ contextualize(
 				// @ts-expect-error
 				type({ foo: "string", bar: "number = true" })
 			)
-				.throws.snap()
+				.throws.snap(
+					"ParseError: = is not a valid comparator. Use == to check for equality"
+				)
 				.type.errors.snap()
 		})
 
@@ -78,7 +80,9 @@ contextualize(
 				// @ts-expect-error
 				type({ foo: "string", bar: "unknown = number" })
 			)
-				.throws.snap()
+				.throws.snap(
+					"ParseError: = is not a valid comparator. Use == to check for equality"
+				)
 				.type.errors.snap()
 		})
 

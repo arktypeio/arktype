@@ -64,6 +64,12 @@
 	background-color: var(--sl-color-gray-6);
 }
 
+@media (prefers-reduced-motion: no-preference) {
+	* {
+		scroll-behavior: smooth;
+	}
+}
+
 pre.astro-code,
 pre.shiki,
 .twoslash-popup-container,

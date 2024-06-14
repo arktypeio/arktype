@@ -341,76 +341,75 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 		return node
 	}
 
-	node: <
+	@bound
+	node<
 		kinds extends NodeKind | array<RootKind>,
 		prereduced extends boolean = false
 	>(
 		kinds: kinds,
 		nodeSchema: NodeSchema<flattenListable<kinds>>,
 		opts?: NodeParseOptions<prereduced>
-	) => Node<
+	): Node<
 		prereduced extends true ? flattenListable<kinds>
 		:	reducibleKindOf<flattenListable<kinds>>
-	> = (
-		((kinds, nodeSchema, opts) => {
-			let kind: NodeKind =
-				typeof kinds === "string" ? kinds : schemaKindOf(nodeSchema, kinds)
+	> {
+		let kind: NodeKind =
+			typeof kinds === "string" ? kinds : schemaKindOf(nodeSchema, kinds)
 
-			let schema: unknown = nodeSchema
+		let schema: unknown = nodeSchema
 
-			if (isNode(schema) && schema.kind === kind)
-				return schema.bindScope(this) as never
+		if (isNode(schema) && schema.kind === kind)
+			return schema.bindScope(this) as never
 
-			if (kind === "alias" && !opts?.prereduced) {
-				const resolution = this.resolveRoot(
-					normalizeAliasSchema(schema as never).alias
-				)
-				schema = resolution
-				kind = resolution.kind
-			} else if (kind === "union" && hasDomain(schema, "object")) {
-				const branches = schemaBranchesOf(schema)
-				if (branches?.length === 1) {
-					schema = branches[0]
-					kind = schemaKindOf(schema)
-				}
+		if (kind === "alias" && !opts?.prereduced) {
+			const resolution = this.resolveRoot(
+				normalizeAliasSchema(schema as never).alias
+			)
+			schema = resolution
+			kind = resolution.kind
+		} else if (kind === "union" && hasDomain(schema, "object")) {
+			const branches = schemaBranchesOf(schema)
+			if (branches?.length === 1) {
+				schema = branches[0]
+				kind = schemaKindOf(schema)
 			}
+		}
 
-			const impl = nodeImplementationsByKind[kind]
-			const normalizedSchema = impl.normalize?.(schema) ?? schema
-			// check again after normalization in case a node is a valid collapsed
-			// schema for the kind (e.g. sequence can collapse to element accepting a Node)
-			if (isNode(normalizedSchema)) {
-				return normalizedSchema.kind === kind ?
-						(normalizedSchema.bindScope(this) as never)
-					:	throwMismatchedNodeRootError(kind, normalizedSchema.kind)
-			}
+		const impl = nodeImplementationsByKind[kind]
+		const normalizedSchema = impl.normalize?.(schema) ?? schema
+		// check again after normalization in case a node is a valid collapsed
+		// schema for the kind (e.g. sequence can collapse to element accepting a Node)
+		if (isNode(normalizedSchema)) {
+			return normalizedSchema.kind === kind ?
+					(normalizedSchema.bindScope(this) as never)
+				:	throwMismatchedNodeRootError(kind, normalizedSchema.kind)
+		}
 
-			const prefix = opts?.alias ?? kind
-			nodeCountsByPrefix[prefix] ??= 0
-			const id = `${prefix}${++nodeCountsByPrefix[prefix]!}`
+		const prefix = opts?.alias ?? kind
+		nodeCountsByPrefix[prefix] ??= 0
+		const id = `${prefix}${++nodeCountsByPrefix[prefix]!}`
 
-			const node = parseNode(kind, {
-				...opts,
-				id,
-				$: this,
-				schema: normalizedSchema
-			}).bindScope(this)
+		const node = parseNode(kind, {
+			...opts,
+			id,
+			$: this,
+			schema: normalizedSchema
+		}).bindScope(this)
 
-			nodesById[id] = node
+		nodesById[id] = node
 
-			if (this.resolved) {
-				// this node was not part of the original scope, so compile an anonymous scope
-				// including only its references
-				if (!this.resolvedConfig.jitless) bindCompiledScope(node.references)
-			} else {
-				// we're still parsing the scope itself, so defer compilation but
-				// add the node as a reference
-				Object.assign(this.referencesById, node.referencesById)
-			}
+		if (this.resolved) {
+			// this node was not part of the original scope, so compile an anonymous scope
+			// including only its references
+			if (!this.resolvedConfig.jitless) bindCompiledScope(node.references)
+		} else {
+			// we're still parsing the scope itself, so defer compilation but
+			// add the node as a reference
+			Object.assign(this.referencesById, node.referencesById)
+		}
 
-			return node as never
-		}) satisfies this["node"]
-	).bind(this)
+		return node as never
+	}
 
 	parseRoot(def: unknown, opts?: NodeParseOptions): BaseRoot {
 		return this.schema(def as never, opts)
