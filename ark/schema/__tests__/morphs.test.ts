@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@arktype/attest"
-import { schema } from "@arktype/schema"
+import { schema, tsKeywords } from "@arktype/schema"
 import { wellFormedNumberMatcher } from "@arktype/util"
 
 contextualize(() => {
@@ -24,11 +24,11 @@ contextualize(() => {
 		const n = schema([
 			{
 				in: "string",
-				morphs: (s: string) => Number.parseFloat(s)
+				morphs: [(s: string) => Number.parseFloat(s), tsKeywords.number]
 			},
 			"number"
 		])
-		attest(n.in.json).snap(["number", "string"])
-		attest(n.out.json).snap({})
+		attest(n.in.expression).snap("number | string")
+		attest(n.out.expression).snap("number")
 	})
 })

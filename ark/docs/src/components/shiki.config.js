@@ -53,12 +53,17 @@ export const twoslash = transformerTwoslash({
 					}
 					if (node.text.startsWith(twoslashPropertyPrefix)) {
 						const expression = node.text.slice(twoslashPropertyPrefix.length)
-						return (
+						if (expression.startsWith("RuntimeErrors.summary") && node.docs) {
 							// this shows error summary in JSDoc
-							expression.startsWith("RuntimeErrors.summary") ||
+							// re-add spaces stripped out during processing
+							node.docs = node.docs.replaceAll("•", "    •")
+							return true
+						}
+						if (expression === `platform: "android" | "ios"`) {
 							// this helps demonstrate narrowing on discrimination
-							expression === `platform: "android" | "ios"`
-						)
+							return true
+						}
+						return false
 					}
 					return false
 				case "error":

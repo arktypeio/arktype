@@ -193,14 +193,14 @@ export const sequenceImplementation: nodeImplementationOf<SequenceDeclaration> =
 				const rootState = _intersectSequences({
 					l: l.tuple,
 					r: r.tuple,
-					disjoint: new Disjoint({}),
+					disjoint: new Disjoint(),
 					result: [],
 					fixedVariants: [],
 					ctx
 				})
 
 				const viableBranches =
-					rootState.disjoint.isEmpty() ?
+					rootState.disjoint.length === 0 ?
 						[rootState, ...rootState.fixedVariants]
 					:	rootState.fixedVariants
 
@@ -405,7 +405,7 @@ const _intersectSequences = (
 			fixedVariants: [],
 			r: rTail.map(element => ({ ...element, kind: "prefix" }))
 		})
-		if (postfixBranchResult.disjoint.isEmpty())
+		if (postfixBranchResult.disjoint.length === 0)
 			s.fixedVariants.push(postfixBranchResult)
 	} else if (
 		rHead.kind === "prefix" &&
@@ -417,17 +417,18 @@ const _intersectSequences = (
 			fixedVariants: [],
 			l: lTail.map(element => ({ ...element, kind: "prefix" }))
 		})
-		if (postfixBranchResult.disjoint.isEmpty())
+		if (postfixBranchResult.disjoint.length === 0)
 			s.fixedVariants.push(postfixBranchResult)
 	}
 
 	const result = intersectNodes(lHead.node, rHead.node, s.ctx)
 	if (result instanceof Disjoint) {
 		if (kind === "prefix" || kind === "postfix") {
-			s.disjoint.add(
-				result.withPrefixKey(
+			s.disjoint.push(
+				...result.withPrefixKey(
 					// TODO: more precise path handling for Disjoints
-					kind === "prefix" ? `${s.result.length}` : `-${lTail.length + 1}`
+					kind === "prefix" ? `${s.result.length}` : `-${lTail.length + 1}`,
+					"required"
 				)
 			)
 			s.result = [...s.result, { kind, node: s.ctx.$.keywords.never.raw }]

@@ -99,16 +99,26 @@ starlight-theme-select,
 	white-space: pre !important;
 }
 
-.twoslash .twoslash-hover:hover .twoslash-popup-container,
+.twoslash .twoslash-error {
+	/* Override the builtin error squiggle to match our theme */
+	background: url("/src/assets/errorSquiggle.svg") repeat-x bottom left;
+}
+
+/* avoid double padding + border */
+.twoslash .twoslash-popup-code pre {
+	margin: -6px -8px !important;
+	border-width: 0px;
+}
+
+.twoslash .twoslash-hover .twoslash-popup-container,
 .twoslash .twoslash-completion-cursor .twoslash-completion-list {
 	border-radius: 1rem;
-	opacity: 1;
 	background: #001323aa;
 	backdrop-filter: blur(8px);
 	box-shadow: var(--hover-glow);
 }
 
-/** used to display runtime errors on hover */
+/** display runtime errors on hover */
 .twoslash .twoslash-popup-docs {
 	color: #f85858;
 	font-size: small;

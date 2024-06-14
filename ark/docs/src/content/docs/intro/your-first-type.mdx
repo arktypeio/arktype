@@ -46,6 +46,7 @@ Suppose we want to move `platform` and `version` from our original type to a new
 ```ts
 import { type } from "arktype"
 
+// ---cut---
 const user = type({
 	name: "string",
 	// nested definitions don't need to be wrapped
@@ -61,6 +62,7 @@ To decouple `device` from `user`, just move it to its own type and reference it.
 ```ts
 import { type } from "arktype"
 
+// ---cut---
 const device = type({
 	platform: "'android' | 'ios'",
 	"versions?": "(number | string)[]"
@@ -119,4 +121,4 @@ if (out instanceof type.errors) {
 
 And that's it! You now know how to to define a `Type` use it to check your data at runtime.
 
-Next, we'll take a look at how ArkType extends TypeScript's type system to handle common runtime constraints like `minLength` and `pattern`.
+Next, we'll take a look at how ArkType extends TypeScript's type system to handle runtime constraints like `maxLength` and `pattern`.

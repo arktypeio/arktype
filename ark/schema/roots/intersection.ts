@@ -102,8 +102,12 @@ export class IntersectionNode extends BaseRoot<IntersectionDeclaration> {
 
 	expression: string =
 		this.structure?.expression ||
-		this.children.map(node => node.nestableExpression).join(" & ") ||
+		`${this.basis ? this.basis.nestableExpression + " " : ""}${this.refinements.join(" & ")}` ||
 		"unknown"
+
+	get shortDescription(): string {
+		return this.basis?.shortDescription ?? "present"
+	}
 
 	traverseAllows: TraverseAllows = (data, ctx) =>
 		this.children.every(child => child.traverseAllows(data as never, ctx))
@@ -329,7 +333,7 @@ export const intersectionImplementation: nodeImplementationOf<IntersectionDeclar
 					node.children.map(child => child.description).join(" and "),
 			expected: source =>
 				`  • ${source.errors.map(e => e.expected).join("\n  • ")}`,
-			problem: ctx => `${ctx.actual} must be...\n${ctx.expected}`
+			problem: ctx => `(${ctx.actual}) must be...\n${ctx.expected}`
 		},
 		intersections: {
 			intersection: (l, r, ctx) => intersectIntersections(l, r, ctx),

@@ -23,9 +23,8 @@ const out = user({
 
 if (out instanceof type.errors) {
 	// ---cut-start---
-	// just a trick to display the runtime error
 	if (!narrowMessage(out)) throw new Error()
 	// ---cut-end---
-	// hover out.summary to see validation errors
+	// hover summary to see validation errors
 	console.error(out.summary)
 }

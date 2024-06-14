@@ -3,7 +3,7 @@ import { type } from "arktype"
 import { it } from "mocha"
 
 contextualize(() => {
-	it("Inline instantiations", () => {
+	it("inline", () => {
 		const user = type({
 			kind: "'admin'",
 			"powers?": "string[]"
@@ -16,5 +16,13 @@ contextualize(() => {
 				kind: "'pleb'"
 			})
 		attest.instantiations([7574, "instantiations"])
+	})
+	it("fails on instantiations above threshold", () => {
+		attest(() => {
+			const user = type({
+				foo: "0|1|2|3|4|5|6"
+			})
+			attest.instantiations([1, "instantiations"])
+		}).throws("exceeded baseline by")
 	})
 })

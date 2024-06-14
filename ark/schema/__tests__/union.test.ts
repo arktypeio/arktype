@@ -1,5 +1,9 @@
 import { attest, contextualize } from "@arktype/attest"
-import { schema, validation } from "@arktype/schema"
+import {
+	schema,
+	validation,
+	writeOrderedIntersectionMessage
+} from "@arktype/schema"
 
 contextualize(() => {
 	it("binary", () => {
@@ -67,5 +71,30 @@ contextualize(() => {
 		const r = schema(["string", Array])
 		const result = l.and(r)
 		attest(result.json).equals(l.json)
+	})
+
+	it("unordered union with ordered union", () => {
+		const l = schema({
+			branches: ["string", "number"],
+			ordered: true
+		})
+		const r = schema(["number", "string"])
+		const result = l.and(r)
+		attest(result.json).equals(l.json)
+	})
+
+	it("intersection of ordered unions", () => {
+		const l = schema({
+			branches: ["string", "number"],
+			ordered: true
+		})
+		const r = schema({
+			branches: ["number", "string"],
+			ordered: true
+		})
+
+		attest(() => l.and(r)).throws(
+			writeOrderedIntersectionMessage("string | number", "number | string")
+		)
 	})
 })

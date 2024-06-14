@@ -402,7 +402,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		const Amount = type(
 			"string",
 			":",
-			(s, ctx) => Number.isInteger(Number(s)) || ctx.invalid("number")
+			(s, ctx) => Number.isInteger(Number(s)) || ctx.reject("number")
 		)
 			.pipe((s, ctx) => {
 				try {
@@ -494,7 +494,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		})
 
 		attest(failOut.toString()).snap(
-			'items.items must be JsonSchema (was missing) or items.type must be "integer" or "number" (was "array")'
+			'items.items must be an object (was missing) or items.type must be "integer" or "number" (was "array")'
 		)
 	})
 
@@ -531,6 +531,32 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		attest(t({ items: {} })).snap('{"items":{}}')
 		attest(t({ items: null }).toString()).snap(
 			"items must be an object (was null)"
+		)
+	})
+
+	it("terse missing key error", () => {
+		const types = scope({
+			Library: {
+				sections: "Sections"
+			},
+			Sections: {
+				"[string]": "Book[]"
+			},
+			Book: {
+				isbn: "string",
+				title: "string",
+				"subtitle?": "string",
+				authors: "string[]",
+				publisher: "Publisher"
+			},
+			Publisher: {
+				id: "string",
+				name: "string"
+			}
+		}).export()
+
+		attest(types.Library({}).toString()).snap(
+			"sections must be an object (was missing)"
 		)
 	})
 })

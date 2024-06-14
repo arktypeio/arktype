@@ -38,7 +38,6 @@ import {
 	type array,
 	type conform
 } from "@arktype/util"
-
 import { Generic, type validateParameterString } from "./generic.js"
 import type {
 	inferDefinition,
@@ -349,6 +348,12 @@ export type TypeConstructor<t = unknown, $ = {}> = new (
 	def: unknown,
 	$: Scope<$>
 ) => Type<t, $>
+
+export type AnyType<
+	/** @ts-expect-error allow instantiation assignment to the base type */
+	out t = unknown,
+	$ = any
+> = Type<t, $>
 
 export const Type: TypeConstructor = BaseRoot as never
 

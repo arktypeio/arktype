@@ -6,7 +6,6 @@
 		"arktype": "workspace:*",
 		"@arktype/attest": "workspace:*",
 		"@arktype/fs": "workspace:*",
-		"ts-morph": "20.0.0",
 		"zod": "3.23.8"
 	},
 	"scripts": {

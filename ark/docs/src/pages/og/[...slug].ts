@@ -30,7 +30,9 @@ export const { getStaticPaths, GET } = OGImageRoute({
 		title: page.data.title === "ArkType" ? "ArkType" : "ArkType Docs",
 		description:
 			page.data.title === "ArkType" ? defaultDescription : page.data.title,
-		bgImage: { path: fromPackageRoot("src", "assets", "ogBg.png") },
+		bgImage: {
+			path: fromPackageRoot("src", "assets", "openGraphBackground.png")
+		},
 		font: {
 			title: {
 				families: ["Raleway"],

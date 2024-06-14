@@ -8,8 +8,8 @@ import {
 import type { TraverseAllows } from "../shared/traversal.js"
 import {
 	BaseRange,
-	type BaseRangeInner,
 	parseExclusiveKey,
+	type BaseRangeInner,
 	type UnknownNormalizedRangeSchema
 } from "./range.js"
 
@@ -55,7 +55,7 @@ export const maxImplementation: nodeImplementationOf<MaxDeclaration> =
 					max.overlapIsUnit(min) ?
 						ctx.$.node("unit", { unit: max.rule })
 					:	null
-				:	Disjoint.from("range", max, min)
+				:	Disjoint.init("range", max, min)
 		}
 	})
 

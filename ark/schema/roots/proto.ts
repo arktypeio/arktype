@@ -78,11 +78,11 @@ export const protoImplementation: nodeImplementationOf<ProtoDeclaration> =
 			proto: (l, r) =>
 				constructorExtends(l.proto, r.proto) ? l
 				: constructorExtends(r.proto, l.proto) ? r
-				: Disjoint.from("proto", l, r),
+				: Disjoint.init("proto", l, r),
 			domain: (proto, domain, ctx) =>
 				domain.domain === "object" ?
 					proto
-				:	Disjoint.from(
+				:	Disjoint.init(
 						"domain",
 						ctx.$.keywords.object.raw as DomainNode,
 						domain
@@ -102,4 +102,8 @@ export class ProtoNode extends RawBasis<ProtoDeclaration> {
 	traverseAllows: TraverseAllows = data => data instanceof this.proto
 	expression: string = this.proto.name
 	readonly domain = "object"
+
+	get shortDescription(): string {
+		return this.description
+	}
 }

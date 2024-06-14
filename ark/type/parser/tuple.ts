@@ -12,7 +12,7 @@ import {
 	type UnionChildKind,
 	type UnknownRoot,
 	type distillConstrainableIn,
-	type distillConstrainableOut,
+	type distillOut,
 	type inferIntersection,
 	type inferMorphOut,
 	type inferPredicate
@@ -376,12 +376,9 @@ export type validateInfixExpression<def extends InfixExpression, $, args> =
 			def[1] extends "|" ? validateDefinition<def[2], $, args>
 			: def[1] extends "&" ? validateDefinition<def[2], $, args>
 			: def[1] extends ":" ?
-				Predicate<distillConstrainableIn<inferDefinition<def[0], $, args>>>
+				Predicate<distillOut<inferDefinition<def[0], $, args>>>
 			: def[1] extends "=>" ?
-				Morph<
-					distillConstrainableOut<inferDefinition<def[0], $, args>>,
-					unknown
-				>
+				Morph<distillOut<inferDefinition<def[0], $, args>>, unknown>
 			: def[1] extends "@" ? BaseMeta | string
 			: validateDefinition<def[2], $, args>
 		]

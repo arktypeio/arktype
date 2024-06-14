@@ -126,9 +126,9 @@ contextualize(() => {
 			scope({
 				foobar: "string",
 				// @ts-expect-error
-				baz: "fo"
+				baz: "foo"
 			}).export()
-		}).type.errors(`Type '"fo"' is not assignable to type '"foobar"'`)
+		}).completions({ foo: ["foobar"] })
 	})
 
 	it("cross-scope reference", () => {
@@ -367,10 +367,13 @@ dependencies[1].contributors[0].email must be a valid email (was "ssalbdivad")`)
 			b.c.b = b
 			b.c.c = b.c
 
+			attest(types.arf.description).snap("{ b: { c: arf&bork } }")
+			attest(types.bork.description).snap("{ c: arf&bork }")
+
 			attest(types.arf(a)).equals(a)
 			attest(types.arf({ b: { c: {} } }).toString())
-				.snap(`b.c.b must be { c: arf&bork } (was missing)
-b.c.c must be arf&bork (was missing)`)
+				.snap(`b.c.b must be an object (was missing)
+b.c.c must be an object (was missing)`)
 
 			attest(types.bork.json).snap({
 				domain: "object",

@@ -34,7 +34,7 @@ import type {
 	TraverseApply
 } from "../shared/traversal.js"
 import { makeRootAndArrayPropertiesMutable } from "../shared/utils.js"
-import type { IndexNode, IndexSchema } from "./index.js"
+import type { IndexNode, IndexSchema } from "./indexed.js"
 import type { OptionalNode, OptionalSchema } from "./optional.js"
 import type { PropNode } from "./prop.js"
 import type { RequiredNode, RequiredSchema } from "./required.js"
@@ -370,11 +370,15 @@ export const structureImplementation: nodeImplementationOf<StructureDeclaration>
 						k => !lKey.allows(k)
 					)
 					if (disjointRKeys.length) {
-						return Disjoint.from(
-							"presence",
-							ctx.$.keywords.never.raw,
-							r.propsByKey[disjointRKeys[0]]!.value
-						).withPrefixKey(disjointRKeys[0])
+						return new Disjoint(
+							...disjointRKeys.map(k => ({
+								kind: "presence" as const,
+								l: ctx.$.keywords.never.raw,
+								r: r.propsByKey[k]!.value,
+								path: [k],
+								optional: false
+							}))
+						)
 					}
 
 					if (rInner.optional)
@@ -401,11 +405,15 @@ export const structureImplementation: nodeImplementationOf<StructureDeclaration>
 						k => !rKey.allows(k)
 					)
 					if (disjointLKeys.length) {
-						return Disjoint.from(
-							"presence",
-							l.propsByKey[disjointLKeys[0]]!.value,
-							ctx.$.keywords.never.raw
-						).withPrefixKey(disjointLKeys[0])
+						return new Disjoint(
+							...disjointLKeys.map(k => ({
+								kind: "presence" as const,
+								l: l.propsByKey[k]!.value,
+								r: ctx.$.keywords.never.raw,
+								path: [k],
+								optional: false
+							}))
+						)
 					}
 
 					if (lInner.optional)
