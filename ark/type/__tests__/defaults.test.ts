@@ -1,4 +1,5 @@
 import { attest, contextualize } from "@arktype/attest"
+import type { Default } from "@arktype/schema"
 import { type } from "arktype"
 import { invalidDefaultKeyKindMessage } from "../parser/objectLiteral.js"
 
@@ -46,6 +47,52 @@ contextualize(
 			attest(() =>
 				// @ts-expect-error
 				type({ foo: "string", "bar?": ["number", "=", 5] })
+			).throwsAndHasTypeError(invalidDefaultKeyKindMessage)
+		})
+	},
+	"string parsing",
+	() => {
+		it("can parse a serializable default from a string", () => {
+			const t = type({ foo: "string", bar: "number = 5" })
+			const expected = type({ foo: "string", bar: ["number", "=", 5] })
+
+			attest<{
+				foo: string
+				bar: (In?: number) => Default<5>
+			}>(t.t)
+
+			attest(t.json).equals(expected.json)
+		})
+
+		it("incorrect default type", () => {
+			attest(() =>
+				// @ts-expect-error
+				type({ foo: "string", bar: "number = true" })
+			)
+				.throws.snap()
+				.type.errors.snap()
+		})
+
+		it("non-literal", () => {
+			attest(() =>
+				// @ts-expect-error
+				type({ foo: "string", bar: "unknown = number" })
+			)
+				.throws.snap()
+				.type.errors.snap()
+		})
+
+		// it("allows whitespace surrounding =", () => {
+		// 	const whitespace = type({ foo: "string = 'foo'" })
+		// 	const noWhitespace = type({ foo: "string='foo'" })
+
+		// 	attest<typeof whitespace>(noWhitespace).equals(whitespace)
+		// })
+
+		it("optional with default", () => {
+			attest(() =>
+				// @ts-expect-error
+				type({ foo: "string", "bar?": "number = 5" })
 			).throwsAndHasTypeError(invalidDefaultKeyKindMessage)
 		})
 	},

@@ -2,6 +2,7 @@ import {
 	ArkErrors,
 	normalizeIndex,
 	type BaseRoot,
+	type DateLiteral,
 	type Default,
 	type MutableInner,
 	type NodeSchema,
@@ -19,19 +20,23 @@ import {
 	throwParseError,
 	unset,
 	type anyOrNever,
+	type BigintLiteral,
 	type Dict,
 	type ErrorMessage,
 	type Key,
 	type keyError,
 	type merge,
 	type mutable,
+	type NumberLiteral,
 	type show
 } from "@arktype/util"
 import type { ParseContext } from "../scope.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
 import type { astToString } from "./semantic/utils.js"
 import type { validateString } from "./semantic/validate.js"
+import type { StringLiteral } from "./string/shift/operand/enclosed.js"
 import { Scanner } from "./string/shift/scanner.js"
+import type { inferString } from "./string/string.js"
 
 export const parseObjectLiteral = (def: Dict, ctx: ParseContext): BaseRoot => {
 	let spread: StructureNode | undefined
@@ -132,11 +137,15 @@ type _inferObjectLiteral<def extends object, $, args> = {
 	// support for builtin readonly tracked here:
 	// https://github.com/arktypeio/arktype/issues/808
 	-readonly [k in keyof def as nonOptionalKeyFrom<k, $, args>]: def[k] extends (
-		readonly [infer defaultableDef, "=", infer v]
+		DefaultValueTuple<infer baseDef, infer defaultValue>
 	) ?
 		def[k] extends anyOrNever ?
 			def[k]
-		:	(In?: inferDefinition<defaultableDef, $, args>) => Default<v>
+		:	(In?: inferDefinition<baseDef, $, args>) => Default<defaultValue>
+	: def[k] extends DefaultValueString<infer baseDef, infer defaultDef> ?
+		(
+			In?: inferDefinition<baseDef, $, args>
+		) => Default<inferDefinition<defaultDef, $, args>>
 	:	inferDefinition<def[k], $, args>
 } & {
 	-readonly [k in keyof def as optionalKeyFrom<k>]?: inferDefinition<
@@ -163,19 +172,89 @@ export type validateObjectLiteral<def, $, args> = {
 			validateDefinition<def[k], $, args>
 		:	keyError<writeInvalidSpreadTypeMessage<astToString<def[k]>>>
 	: k extends "+" ? UndeclaredKeyBehavior
-	: validatePossibleDefaultValue<def, k, $, args>
+	: validateDefaultableValue<def, k, $, args>
 }
 
-type validatePossibleDefaultValue<def, k extends keyof def, $, args> =
-	def[k] extends readonly [infer defaultDef, "=", unknown] ?
-		parseKey<k>["kind"] extends "required" ?
-			readonly [
-				validateDefinition<defaultDef, $, args>,
-				"=",
-				inferDefinition<defaultDef, $, args>
-			]
-		:	ErrorMessage<invalidDefaultKeyKindMessage>
+export type UnitLiteral =
+	| StringLiteral
+	| BigintLiteral
+	| NumberLiteral
+	| DateLiteral
+	| "null"
+	| "undefined"
+	| "true"
+	| "false"
+
+type validateDefaultableValue<def, k extends keyof def, $, args> =
+	def[k] extends DefaultValueTuple ?
+		validateDefaultValueTuple<def[k], k, $, args>
+	: def[k] extends DefaultValueString ?
+		validateDefaultValueString<def[k], k, $, args>
 	:	validateDefinition<def[k], $, args>
+
+type DefaultValueTuple<baseDef = unknown, defaultValue = unknown> = readonly [
+	baseDef,
+	"=",
+	defaultValue
+]
+
+type validateDefaultValueTuple<
+	def extends DefaultValueTuple,
+	k extends PropertyKey,
+	$,
+	args
+> =
+	parseKey<k>["kind"] extends "required" ?
+		readonly [
+			validateDefinition<def[0], $, args>,
+			"=",
+			inferDefinition<def[0], $, args>
+		]
+	:	ErrorMessage<invalidDefaultKeyKindMessage>
+
+type DefaultValueString<
+	baseDef extends string = string,
+	defaultDef extends UnitLiteral = UnitLiteral
+> = `${baseDef} = ${defaultDef}`
+
+// type validateDefaultValueString<
+// 	def extends DefaultValueString,
+// 	k extends PropertyKey,
+// 	$,
+// 	args
+// > =
+// 	def extends DefaultValueString<infer baseDef, infer defaultDef> ?
+// 		parseKey<k>["kind"] extends "required" ?
+// 			validateString<baseDef, $, args> extends baseDef ?
+// 				inferString<defaultDef, $, args> extends (
+// 					inferString<baseDef, {}, args>
+// 				) ?
+// 					def
+// 				:	never
+// 			:	validateString<baseDef, $, args>
+// 		:	ErrorMessage<invalidDefaultKeyKindMessage>
+// 	:	never
+
+type validateDefaultValueString<
+	def extends DefaultValueString,
+	k extends PropertyKey,
+	$,
+	args
+> =
+	def extends DefaultValueString<infer baseDef, infer defaultDef> ?
+		parseKey<k>["kind"] extends "required" ?
+			[
+				inferString<baseDef, {}, args>,
+				inferString<defaultDef, $, args>
+			] extends [infer base, infer defaultValue] ?
+				defaultValue extends base ?
+					validateDefinition<baseDef, $, args> extends baseDef ?
+						def
+					:	validateDefinition<baseDef, $, args>
+				:	ErrorMessage<`${defaultDef} is not assignable to ${baseDef}`>
+			:	never
+		:	ErrorMessage<invalidDefaultKeyKindMessage>
+	:	never
 
 type nonOptionalKeyFrom<k, $, args> =
 	parseKey<k> extends PreparsedKey<"required", infer inner> ? inner
@@ -241,7 +320,7 @@ export const parseEntry = ([key, value]: readonly [
 }
 
 // single quote use here is better for TypeScript's inlined error to avoid escapes
-export const invalidDefaultKeyKindMessage = `Only required keys may specify default values, e.g. { ark: ['string', '=', '⛵'] }`
+export const invalidDefaultKeyKindMessage = `Only required keys may specify default values, e.g. { value: 'number = 0' }`
 
 export type invalidDefaultKeyKindMessage = typeof invalidDefaultKeyKindMessage
 
