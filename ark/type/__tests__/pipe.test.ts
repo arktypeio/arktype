@@ -620,4 +620,29 @@ contextualize(() => {
 			writeIndiscriminableMorphMessage("(In: string) => Out<unknown>", '"foo"')
 		)
 	})
+
+	it("allows undiscriminated union if morphs are equal", () => {
+		const t = type({ foo: "1" })
+			.or({ bar: "1" })
+			.pipe(o => Object.values(o))
+
+		attest<
+			(
+				In:
+					| {
+							foo: 1
+					  }
+					| {
+							bar: 1
+					  }
+			) => Out<1[]>
+		>(t.t)
+
+		const serializedMorphs = t.raw.assertHasKind("morph").serializedMorphs
+
+		attest(t.json).snap()
+		attest(t({ foo: 1 })).snap()
+		attest(t({ bar: 1 })).snap()
+		attest(t({ baz: 2 }).toString()).snap()
+	})
 })

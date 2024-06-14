@@ -119,6 +119,13 @@ export abstract class BaseProp<
 		}
 	]
 
+	override get contextualReferences() {
+		return super.contextualReferences.map(ref => ({
+			path: [this.key, ...ref.path],
+			node: ref.node
+		}))
+	}
+
 	private defaultValueMorphsReference = registeredReference(
 		this.defaultValueMorphs
 	)

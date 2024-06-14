@@ -8,9 +8,11 @@ import {
 } from "@arktype/util"
 import { BaseConstraint } from "../constraint.js"
 import type { MutableInner, RootSchema } from "../kinds.js"
-import type {
-	DeepNodeTransformation,
-	DeepNodeTransformationContext
+import {
+	appendUniqueContextualReferences,
+	type ContextualReference,
+	type DeepNodeTransformation,
+	type DeepNodeTransformationContext
 } from "../node.js"
 import type { MaxLengthNode } from "../refinements/maxLength.js"
 import type { MinLengthNode } from "../refinements/minLength.js"
@@ -279,6 +281,44 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 			this.childAtIndex(data, i).traverseApply(data[i], ctx)
 			ctx.path.pop()
 		}
+	}
+
+	override get contextualReferences() {
+		const refs: ContextualReference[] = []
+
+		appendUniqueContextualReferences(
+			refs,
+			this.prevariadic.flatMap((n, i) =>
+				n.contextualReferences.map(ref => ({
+					path: [`${i}`, ...ref.path],
+					node: ref.node
+				}))
+			)
+		)
+
+		if (this.variadic) {
+			appendUniqueContextualReferences(
+				refs,
+				this.variadic.contextualReferences.map(ref => ({
+					path: [this.$.keywords.nonNegativeIntegerString.raw, ...ref.path],
+					node: ref.node
+				}))
+			)
+		}
+
+		appendUniqueContextualReferences(
+			refs,
+			this.postfix.flatMap(n =>
+				n.contextualReferences.map(ref => ({
+					// a postfix index can't be directly represented as a type
+					// key, so we just use the same matcher for variadic
+					path: [this.$.keywords.nonNegativeIntegerString.raw, ...ref.path],
+					node: ref.node
+				}))
+			)
+		)
+
+		return refs
 	}
 
 	// minLength/maxLength compilation should be handled by Intersection

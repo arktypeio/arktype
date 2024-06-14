@@ -1,5 +1,7 @@
 import {
 	Callable,
+	appendUnique,
+	arrayEquals,
 	flatMorph,
 	includes,
 	isArray,
@@ -10,6 +12,7 @@ import {
 	type Guardable,
 	type Json,
 	type Key,
+	type array,
 	type conform,
 	type listable
 } from "@arktype/util"
@@ -44,6 +47,11 @@ import {
 import type { arkKind } from "./shared/utils.js"
 
 export type UnknownNode = BaseNode | Root
+
+export type ContextualReference = {
+	path: array<Key | BaseRoot>
+	node: BaseNode
+}
 
 export abstract class BaseNode<
 	/** uses -ignore rather than -expect-error because this is not an error in .d.ts
@@ -98,6 +106,14 @@ export abstract class BaseNode<
 
 	get references(): BaseNode[] {
 		return Object.values(this.referencesById)
+	}
+
+	get contextualReferences(): ContextualReference[] {
+		return this.children.reduce<ContextualReference[]>(
+			(acc, child) =>
+				appendUniqueContextualReferences(acc, child.contextualReferences),
+			[{ path: [], node: this }]
+		)
 	}
 
 	readonly precedence: number = precedenceOfKind(this.kind)
@@ -325,6 +341,14 @@ export abstract class BaseNode<
 		}) as never
 	}
 }
+
+export const appendUniqueContextualReferences = (
+	existing: ContextualReference[] | undefined,
+	refs: ContextualReference[] | ContextualReference
+) =>
+	appendUnique(existing, refs, {
+		isEqual: (l, r) => l.node === r.node && arrayEquals(l.path, r.path)
+	})
 
 export type DeepNodeTransformOptions = {
 	shouldTransform: ShouldTransformFn

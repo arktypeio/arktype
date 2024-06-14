@@ -41,13 +41,20 @@ export type internalImplementationOf<
 
 export type TraversalPath = PropertyKey[]
 
-export const pathToPropString = (path: TraversalPath): string => {
+export type PathToPropStringOptions = {
+	stringifySymbol?: (s: symbol) => string
+}
+
+export const pathToPropString = (
+	path: TraversalPath,
+	opts?: PathToPropStringOptions
+): string => {
+	const stringifySymbol = opts?.stringifySymbol ?? printable
 	const propAccessChain = path.reduce<string>(
 		(s, k) =>
-			typeof k === "string" && isDotAccessible(k) ?
-				`${s}.${k}`
-			:	`${s}[${printable(k)}]`,
-
+			typeof k === "symbol" ? `${s}[${stringifySymbol(k)}]`
+			: typeof k === "string" && isDotAccessible(k) ? `${s}.${k}`
+			: `${s}[${printable(k)}]`,
 		""
 	)
 	return propAccessChain[0] === "." ? propAccessChain.slice(1) : propAccessChain

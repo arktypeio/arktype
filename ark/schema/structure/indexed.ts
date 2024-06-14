@@ -143,6 +143,13 @@ export class IndexNode extends BaseConstraint<IndexDeclaration> {
 		return result
 	}
 
+	override get contextualReferences() {
+		return super.contextualReferences.map(ref => ({
+			path: [this.signature, ...ref.path],
+			node: ref.node
+		}))
+	}
+
 	compile(): void {
 		// this is currently handled by StructureNode
 	}
