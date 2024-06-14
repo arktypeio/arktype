@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@arktype/attest"
 import type { Default } from "@arktype/schema"
-import { type } from "arktype"
+import { scope, type } from "arktype"
 import { invalidDefaultKeyKindMessage } from "../parser/objectLiteral.js"
 
 contextualize(
@@ -81,6 +81,16 @@ contextualize(
 				.throws.snap()
 				.type.errors.snap()
 		})
+
+		// TODO: this is currently broken due to a workaround in
+		// validateDefaultValueString to prevent cyclic inference from breaking
+
+		// it("validated default in scope", () => {
+		// 	const $ = scope({
+		// 		specialNumber: "number",
+		// 		obj: { foo: "string", bar: "specialNumber =5" }
+		// 	})
+		// })
 
 		// it("allows whitespace surrounding =", () => {
 		// 	const whitespace = type({ foo: "string = 'foo'" })

@@ -217,24 +217,6 @@ type DefaultValueString<
 	defaultDef extends UnitLiteral = UnitLiteral
 > = `${baseDef} = ${defaultDef}`
 
-// type validateDefaultValueString<
-// 	def extends DefaultValueString,
-// 	k extends PropertyKey,
-// 	$,
-// 	args
-// > =
-// 	def extends DefaultValueString<infer baseDef, infer defaultDef> ?
-// 		parseKey<k>["kind"] extends "required" ?
-// 			validateString<baseDef, $, args> extends baseDef ?
-// 				inferString<defaultDef, $, args> extends (
-// 					inferString<baseDef, {}, args>
-// 				) ?
-// 					def
-// 				:	never
-// 			:	validateString<baseDef, $, args>
-// 		:	ErrorMessage<invalidDefaultKeyKindMessage>
-// 	:	never
-
 type validateDefaultValueString<
 	def extends DefaultValueString,
 	k extends PropertyKey,
@@ -243,14 +225,16 @@ type validateDefaultValueString<
 > =
 	def extends DefaultValueString<infer baseDef, infer defaultDef> ?
 		parseKey<k>["kind"] extends "required" ?
-			[
+			validateDefinition<baseDef, $, args> extends (
+				infer e extends ErrorMessage
+			) ?
+				e
+			: [
 				inferString<baseDef, {}, args>,
 				inferString<defaultDef, $, args>
 			] extends [infer base, infer defaultValue] ?
 				defaultValue extends base ?
-					validateDefinition<baseDef, $, args> extends baseDef ?
-						def
-					:	validateDefinition<baseDef, $, args>
+					def
 				:	ErrorMessage<`${defaultDef} is not assignable to ${baseDef}`>
 			:	never
 		:	ErrorMessage<invalidDefaultKeyKindMessage>
