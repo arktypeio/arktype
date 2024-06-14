@@ -45,16 +45,9 @@ import {
 	type TraverseAllows,
 	type TraverseApply
 } from "./shared/traversal.js"
-import { isNode, pathToPropString, type arkKind } from "./shared/utils.js"
+import { pathToPropString, type arkKind } from "./shared/utils.js"
 
 export type UnknownNode = BaseNode | Root
-
-export type TypePath = array<Key | BaseRoot>
-
-export type ContextualReference = {
-	path: TypePath
-	node: BaseNode
-}
 
 export abstract class BaseNode<
 	/** uses -ignore rather than -expect-error because this is not an error in .d.ts
@@ -120,21 +113,25 @@ export abstract class BaseNode<
 	}
 
 	get contextualReferencesByPath() {
-		return Object.groupBy(this.contextualReferences, ref => {
-			const serializablePath: Key[] = ref.path.map(k =>
-				isNode(k) ? `(${k.expression})` : k
-			)
-
-			return pathToPropString(serializablePath, {
-				stringifySymbol: registeredReference
+		return Object.groupBy(this.contextualReferences, ref =>
+			pathToPropString(ref.path, {
+				stringifySymbol: registeredReference,
+				stringifyNonKey: node => node.expression
 			})
-		})
+		)
 	}
 
 	get referencesByPath() {
 		return flatMorph(this.contextualReferencesByPath, (path, refs) => [
 			path,
 			refs.map(ref => ref.node)
+		])
+	}
+
+	get expressionsByPath() {
+		return flatMorph(this.contextualReferencesByPath, (path, refs) => [
+			path,
+			refs.map(ref => ref.node.expression)
 		])
 	}
 
@@ -362,6 +359,13 @@ export abstract class BaseNode<
 			shouldTransform: node => node.kind !== "structure"
 		}) as never
 	}
+}
+
+export type TypePath = array<Key | BaseRoot>
+
+export type ContextualReference = {
+	path: TypePath
+	node: BaseNode
 }
 
 export const appendUniqueContextualReferences = (

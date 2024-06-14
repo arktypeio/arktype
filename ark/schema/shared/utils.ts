@@ -3,8 +3,10 @@ import {
 	isArray,
 	isDotAccessible,
 	printable,
+	throwParseError,
 	type array,
 	type mutable,
+	type requireKeys,
 	type show
 } from "@arktype/util"
 import type { BaseConstraint } from "../constraint.js"
@@ -41,22 +43,37 @@ export type internalImplementationOf<
 
 export type TraversalPath = PropertyKey[]
 
-export type PathToPropStringOptions = {
-	stringifySymbol?: (s: symbol) => string
-}
+export type PathToPropStringOptions<stringifiable = PropertyKey> = requireKeys<
+	{
+		stringifySymbol?: (s: symbol) => string
+		stringifyNonKey?: (o: Exclude<stringifiable, PropertyKey>) => string
+	},
+	stringifiable extends PropertyKey ? never : "stringifyNonKey"
+>
 
-export const pathToPropString = (
-	path: array<PropertyKey>,
-	opts?: PathToPropStringOptions
+export const pathToPropString = <stringifiable>(
+	path: array<stringifiable>,
+	...[opts]: [stringifiable] extends [PropertyKey] ?
+		[opts?: PathToPropStringOptions]
+	:	[opts: PathToPropStringOptions<stringifiable>]
 ): string => {
 	const stringifySymbol = opts?.stringifySymbol ?? printable
-	const propAccessChain = path.reduce<string>(
-		(s, k) =>
-			typeof k === "symbol" ? `${s}[${stringifySymbol(k)}]`
-			: typeof k === "string" && isDotAccessible(k) ? `${s}.${k}`
-			: `${s}[${printable(k)}]`,
-		""
-	)
+	const propAccessChain = path.reduce<string>((s, k) => {
+		switch (typeof k) {
+			case "string":
+				return isDotAccessible(k) ? `${s}.${k}` : `${s}[${printable(k)}]`
+			case "number":
+				return `${s}[${printable(k)}]`
+			case "symbol":
+				return `${s}[${stringifySymbol(k)}]`
+			default:
+				if (opts?.stringifyNonKey)
+					return `${s}[${opts.stringifyNonKey(k as never)}]`
+				throwParseError(
+					`${printable(k)} must be a PropertyKey or stringifyNonKey must be passed to options`
+				)
+		}
+	}, "")
 	return propAccessChain[0] === "." ? propAccessChain.slice(1) : propAccessChain
 }
 
