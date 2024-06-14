@@ -6,6 +6,7 @@ import {
 	includes,
 	isArray,
 	isEmptyObject,
+	registeredReference,
 	shallowClone,
 	throwError,
 	type Dict,
@@ -44,12 +45,14 @@ import {
 	type TraverseAllows,
 	type TraverseApply
 } from "./shared/traversal.js"
-import type { arkKind } from "./shared/utils.js"
+import { isNode, pathToPropString, type arkKind } from "./shared/utils.js"
 
 export type UnknownNode = BaseNode | Root
 
+export type TypePath = array<Key | BaseRoot>
+
 export type ContextualReference = {
-	path: array<Key | BaseRoot>
+	path: TypePath
 	node: BaseNode
 }
 
@@ -114,6 +117,25 @@ export abstract class BaseNode<
 				appendUniqueContextualReferences(acc, child.contextualReferences),
 			[{ path: [], node: this }]
 		)
+	}
+
+	get contextualReferencesByPath() {
+		return Object.groupBy(this.contextualReferences, ref => {
+			const serializablePath: Key[] = ref.path.map(k =>
+				isNode(k) ? `(${k.expression})` : k
+			)
+
+			return pathToPropString(serializablePath, {
+				stringifySymbol: registeredReference
+			})
+		})
+	}
+
+	get referencesByPath() {
+		return flatMorph(this.contextualReferencesByPath, (path, refs) => [
+			path,
+			refs.map(ref => ref.node)
+		])
 	}
 
 	readonly precedence: number = precedenceOfKind(this.kind)

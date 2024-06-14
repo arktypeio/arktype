@@ -1,4 +1,4 @@
-import { ArkErrors, type } from "arktype"
+import { ArkErrors, type } from "../type/index.js"
 
 interface RuntimeErrors extends ArkErrors {
 	/**

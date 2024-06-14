@@ -46,7 +46,7 @@ export type PathToPropStringOptions = {
 }
 
 export const pathToPropString = (
-	path: TraversalPath,
+	path: array<PropertyKey>,
 	opts?: PathToPropStringOptions
 ): string => {
 	const stringifySymbol = opts?.stringifySymbol ?? printable
