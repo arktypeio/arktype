@@ -326,6 +326,9 @@ export abstract class BaseNode<
 					const transformed = children._transform(mapper, ctx)
 					return transformed ? [k, transformed] : []
 				}
+				// if the value was previously explicitly set to an empty list,
+				// (e.g. branches for `never`), ensure it is not pruned
+				if (children.length === 0) return [k, v]
 				const transformed = children.flatMap(n => {
 					const transformedChild = n._transform(mapper, ctx)
 					return transformedChild ?? []
@@ -343,8 +346,13 @@ export abstract class BaseNode<
 		)
 
 		if (transformedInner === null) return null
-		// TODO: more robust checks for pruned inner
-		if (isEmptyObject(transformedInner)) return null
+
+		if (
+			isEmptyObject(transformedInner) &&
+			// if inner was previously an empty object (e.g. unknown) ensure it is not pruned
+			!isEmptyObject(this.inner)
+		)
+			return null
 
 		if (
 			(this.kind === "required" ||
