@@ -50,7 +50,7 @@ declare const anyOrNever: unique symbol
 
 export type anyOrNever = typeof anyOrNever
 
-export type isAny<t> = [unknown, t] extends [t, {}] ? true : false
+export type isAny<t> = 0 extends 1 & t ? true : false
 
 export type isNever<t> = [t] extends [never] ? true : false
 
