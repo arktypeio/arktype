@@ -135,7 +135,7 @@ export const intersectConstraints = <kind extends ConstraintGroupKind>(
 	if (!head) {
 		let result: BaseNode | Disjoint =
 			s.l.length === 0 && s.kind === "structure" ?
-				s.ctx.$.keywords.unknown.raw
+				s.ctx.$.keywords.unknown.internal
 			:	s.ctx.$.node(
 					s.kind,
 					Object.assign(s.baseInner, unflattenConstraints(s.l)),

@@ -8,6 +8,7 @@ import {
 	isEmptyObject,
 	registeredReference,
 	throwError,
+	type AppendUniqueOptions,
 	type Dict,
 	type Guardable,
 	type Json,
@@ -244,14 +245,6 @@ export abstract class BaseNode<
 		return this.expression
 	}
 
-	bindScope($: RawRootScope): this {
-		if (this.$ === $ && this.children.every(ref => ref.$ === $)) return this
-		return this.transform((kind, inner) => inner, {
-			bindScope: $,
-			prereduced: true
-		}) as never
-	}
-
 	firstReference<narrowed>(
 		filter: Guardable<BaseNode, conform<narrowed, BaseNode>>
 	): narrowed | undefined {
@@ -298,7 +291,7 @@ export abstract class BaseNode<
 		mapper: DeepNodeTransformation,
 		ctx: DeepNodeTransformContext
 	): BaseNode | null {
-		const $ = ctx.bindScope?.raw ?? this.$
+		const $ = ctx.bindScope?.internal ?? this.$
 		if (ctx.seen[this.id])
 			// TODO: remove cast by making lazilyResolve more flexible
 			// TODO: if each transform has a unique base id, could ensure
@@ -387,13 +380,15 @@ export type ContextualReference = {
 	node: BaseNode
 }
 
+const uniqueContextualReferencesOptions: AppendUniqueOptions<ContextualReference> =
+	{
+		isEqual: (l, r) => l.node === r.node && arrayEquals(l.path, r.path)
+	}
+
 export const appendUniqueContextualReferences = (
 	existing: ContextualReference[] | undefined,
-	refs: ContextualReference[] | ContextualReference
-) =>
-	appendUnique(existing, refs, {
-		isEqual: (l, r) => l.node === r.node && arrayEquals(l.path, r.path)
-	})
+	refs: listable<ContextualReference>
+) => appendUnique(existing, refs, uniqueContextualReferencesOptions)
 
 export type DeepNodeTransformOptions = {
 	shouldTransform?: ShouldTransformFn

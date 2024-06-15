@@ -90,7 +90,7 @@ export const indexImplementation: nodeImplementationOf<IndexDeclaration> =
 					const valueIntersection = intersectNodes(l.value, r.value, ctx)
 					const value =
 						valueIntersection instanceof Disjoint ?
-							ctx.$.keywords.never.raw
+							ctx.$.keywords.never.internal
 						:	valueIntersection
 					return ctx.$.node("index", { signature: l.signature, value })
 				}
@@ -109,7 +109,7 @@ export const indexImplementation: nodeImplementationOf<IndexDeclaration> =
 	})
 
 export class IndexNode extends BaseConstraint<IndexDeclaration> {
-	impliedBasis: BaseRoot = this.$.keywords.object.raw
+	impliedBasis: BaseRoot = this.$.keywords.object.internal
 	expression = `[${this.signature.expression}]: ${this.value.expression}`
 
 	traverseAllows: TraverseAllows<object> = (data, ctx) =>

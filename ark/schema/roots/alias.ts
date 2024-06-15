@@ -106,4 +106,4 @@ export const aliasImplementation: nodeImplementationOf<AliasDeclaration> =
 const neverIfDisjoint = (
 	result: BaseRoot | Disjoint,
 	$: RawRootScope
-): BaseRoot => (result instanceof Disjoint ? $.keywords.never.raw : result)
+): BaseRoot => (result instanceof Disjoint ? $.keywords.never.internal : result)

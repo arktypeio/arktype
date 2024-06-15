@@ -32,7 +32,7 @@ contextualize(() => {
 		const t = type("parse.number").atMostLength(5)
 		attest<(In: string.atMostLength<5>) => Out<number>>(t.t)
 
-		const morphs = t.raw.assertHasKind("morph").serializedMorphs
+		const morphs = t.internal.assertHasKind("morph").serializedMorphs
 		attest(t.json).snap({
 			in: {
 				domain: "string",
@@ -183,11 +183,11 @@ contextualize(() => {
 	it("doesn't pipe on error", () => {
 		const a = type({ a: "number" }).pipe(o => o.a + 1)
 
-		const aMorphs = a.raw.assertHasKind("morph").serializedMorphs
+		const aMorphs = a.internal.assertHasKind("morph").serializedMorphs
 
 		const b = type({ a: "string" }, "=>", o => o.a + "!")
 
-		const bMorphs = b.raw.assertHasKind("morph").serializedMorphs
+		const bMorphs = b.internal.assertHasKind("morph").serializedMorphs
 
 		const t = b.or(a)
 
@@ -235,13 +235,13 @@ contextualize(() => {
 			bAndA: () => $.type("b&a")
 		})
 		const types = $.export()
-		assertNodeKind(types.bAndA.raw, "morph")
-		assertNodeKind(types.aAndB.raw, "morph")
+		assertNodeKind(types.bAndA.internal, "morph")
+		assertNodeKind(types.aAndB.internal, "morph")
 
 		attest<(In: 3.14) => Out<string>>(types.aAndB.t)
 		attest(types.aAndB.json).snap({
 			in: { unit: 3.14 },
-			morphs: types.aAndB.raw.serializedMorphs
+			morphs: types.aAndB.internal.serializedMorphs
 		})
 		attest<typeof types.aAndB>(types.bAndA)
 		attest(types.bAndA).equals(types.aAndB)
@@ -256,7 +256,7 @@ contextualize(() => {
 		const types = $.export()
 		// TODO: FIX
 		// attest<Type<(In: { a: 1; b: 2 }) => string>>(types.c)
-		assertNodeKind(types.c.raw, "morph")
+		assertNodeKind(types.c.internal, "morph")
 		attest(types.c.json).snap({
 			in: {
 				domain: "object",
@@ -265,7 +265,7 @@ contextualize(() => {
 					{ key: "b", value: { unit: 2 } }
 				]
 			},
-			morphs: types.c.raw.serializedMorphs
+			morphs: types.c.internal.serializedMorphs
 		})
 	})
 
@@ -278,7 +278,7 @@ contextualize(() => {
 		}).export()
 		attest<boolean | ((In: number) => Out<string>)>(types.aOrB.t)
 		const serializedMorphs =
-			types.aOrB.raw.firstReferenceOfKindOrThrow("morph").serializedMorphs
+			types.aOrB.internal.firstReferenceOfKindOrThrow("morph").serializedMorphs
 		attest(types.aOrB.json).snap([
 			{ in: "number", morphs: serializedMorphs },
 			{ unit: false },
@@ -310,7 +310,7 @@ contextualize(() => {
 		>(types.c.t)
 
 		const serializedMorphs =
-			types.a.raw.firstReferenceOfKindOrThrow("morph").serializedMorphs
+			types.a.internal.firstReferenceOfKindOrThrow("morph").serializedMorphs
 
 		attest(types.c.json).snap([
 			{ domain: "object", required: [{ key: "a", value: "Function" }] },
@@ -339,10 +339,10 @@ contextualize(() => {
 		})
 		const types = $.export()
 		attest<(In: string) => Out<boolean>>(types.b.t)
-		assertNodeKind(types.b.raw, "morph")
+		assertNodeKind(types.b.internal, "morph")
 		attest(types.b.json).snap({
 			in: "string",
-			morphs: types.b.raw.serializedMorphs
+			morphs: types.b.internal.serializedMorphs
 		})
 	})
 
@@ -354,8 +354,8 @@ contextualize(() => {
 
 		const types = $.export()
 		attest<(In: { a: string }) => Out<boolean>>(types.b.t)
-		assertNodeKind(types.b.raw, "morph")
-		assertNodeKind(types.a.raw, "morph")
+		assertNodeKind(types.b.internal, "morph")
+		assertNodeKind(types.a.internal, "morph")
 		attest(types.b.json).snap({
 			in: {
 				domain: "object",
@@ -364,12 +364,12 @@ contextualize(() => {
 						key: "a",
 						value: {
 							in: "string",
-							morphs: types.a.raw.serializedMorphs
+							morphs: types.a.internal.serializedMorphs
 						}
 					}
 				]
 			},
-			morphs: types.b.raw.serializedMorphs
+			morphs: types.b.internal.serializedMorphs
 		})
 	})
 
@@ -383,8 +383,8 @@ contextualize(() => {
 			({ a }) => a === 0
 		)
 		attest<Type<(In: { a: string }) => Out<boolean>>>(t)
-		assertNodeKind(t.raw, "morph")
-		const nestedMorph = t.raw.firstReferenceOfKindOrThrow("morph")
+		assertNodeKind(t.internal, "morph")
+		const nestedMorph = t.internal.firstReferenceOfKindOrThrow("morph")
 		attest(t.json).snap({
 			in: {
 				domain: "object",
@@ -398,7 +398,7 @@ contextualize(() => {
 					}
 				]
 			},
-			morphs: t.raw.serializedMorphs
+			morphs: t.internal.serializedMorphs
 		})
 	})
 
@@ -412,9 +412,9 @@ contextualize(() => {
 
 		attest<[number] | ((In: [string]) => Out<string[]>)>(types.c.t)
 		const expectedSerializedMorphs =
-			types.a.raw.assertHasKind("morph").serializedMorphs
+			types.a.internal.assertHasKind("morph").serializedMorphs
 
-		attest(types.c.raw.assertHasKind("union").discriminantJson).snap({
+		attest(types.c.internal.assertHasKind("union").discriminantJson).snap({
 			kind: "domain",
 			path: ["0"],
 			cases: {
@@ -487,7 +487,7 @@ contextualize(() => {
 		}).export()
 		attest<{ a: (In: of<1, MoreThan<0>>) => Out<number> }>(types.c.t)
 		const { serializedMorphs } =
-			types.a.raw.firstReferenceOfKindOrThrow("morph")
+			types.a.internal.firstReferenceOfKindOrThrow("morph")
 
 		attest(types.c.json).snap({
 			required: [
@@ -638,7 +638,7 @@ contextualize(() => {
 			) => Out<1[]>
 		>(t.t)
 
-		const serializedMorphs = t.raw.assertHasKind("morph").serializedMorphs
+		const serializedMorphs = t.internal.assertHasKind("morph").serializedMorphs
 
 		attest(t.json).snap()
 		attest(t({ foo: 1 })).snap()

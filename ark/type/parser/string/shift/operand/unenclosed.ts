@@ -111,7 +111,7 @@ const maybeParseReference = (
 	s: DynamicState,
 	token: string
 ): BaseRoot | undefined => {
-	if (s.ctx.args?.[token]) return s.ctx.args[token].raw
+	if (s.ctx.args?.[token]) return s.ctx.args[token].internal
 	const resolution = s.ctx.$.maybeResolve(token)
 	if (resolution instanceof BaseRoot) return resolution
 	if (resolution === undefined) return

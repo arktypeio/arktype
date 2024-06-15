@@ -90,7 +90,7 @@ export abstract class BaseRoot<
 
 	readonly [arkKind] = "root"
 
-	get raw(): this {
+	get internal(): this {
 		return this
 	}
 
@@ -366,7 +366,7 @@ export declare abstract class InnerRoot<t = unknown, $ = any> extends Callable<
 	json: Json
 	description: string
 	expression: string
-	raw: BaseRoot
+	internal: BaseRoot
 
 	abstract $: RootScope<$>;
 	abstract get in(): unknown

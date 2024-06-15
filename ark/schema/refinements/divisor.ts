@@ -56,14 +56,14 @@ export class DivisorNode extends RawPrimitiveConstraint<DivisorDeclaration> {
 	readonly compiledCondition: string = `data % ${this.rule} === 0`
 	readonly compiledNegation: string = `data % ${this.rule} !== 0`
 	readonly impliedBasis: BaseRoot<RawRootDeclaration> =
-		this.$.keywords.number.raw
+		this.$.keywords.number.internal
 	readonly expression: string = `% ${this.rule}`
 }
 
 export const writeIndivisibleMessage = <node extends Root>(
 	t: node
 ): writeIndivisibleMessage<node> =>
-	writeInvalidOperandMessage("divisor", t.$.raw.keywords.number, t)
+	writeInvalidOperandMessage("divisor", t.$.internal.keywords.number, t)
 
 export type writeIndivisibleMessage<node extends Root> =
 	writeInvalidOperandMessage<"divisor", node>

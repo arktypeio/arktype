@@ -49,7 +49,7 @@ contextualize(() => {
 			"age?": "integer < 100"
 		}).and(["true", "false"])
 
-		attest(user.raw.expressionsByPath).snap({
+		attest(user.internal.expressionsByPath).snap({
 			"": [
 				"{ [string]: number | string, name: string, age?: number % 1 & <100 } & [true, false]",
 				"Array",

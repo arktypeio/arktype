@@ -1,8 +1,15 @@
-import { Callable, type conform, type repeat } from "@arktype/util"
+import {
+	Callable,
+	cached,
+	flatMorph,
+	type array,
+	type conform,
+	type repeat
+} from "@arktype/util"
 import type { inferRoot } from "./inference.js"
 import type { RootSchema } from "./kinds.js"
-import type { Root } from "./roots/root.js"
-import type { RootScope } from "./scope.js"
+import type { BaseRoot, Root } from "./roots/root.js"
+import type { RawRootScope, RootScope } from "./scope.js"
 import { arkKind } from "./shared/utils.js"
 
 export type GenericNodeInstantiation<
@@ -21,16 +28,6 @@ export type bindGenericNodeInstantiation<params extends string[], $, args> = {
 	>
 }
 
-export const validateUninstantiatedGenericNode = (
-	g: GenericRoot
-): GenericRoot => {
-	g.$.schema(g.def as never, {
-		// // TODO: probably don't need raw once this is fixed.
-		// args: flatMorph(g.params, (_, name) => [name, g.$.raw.keywords.unknown])
-	})
-	return g
-}
-
 // Comparing to Generic directly doesn't work well, so we compare to only its props
 export interface GenericProps<
 	params extends string[] = string[],
@@ -42,6 +39,8 @@ export interface GenericProps<
 	def: def
 	$: RootScope<$>
 }
+
+export type GenericArgResolutions = Record<string, BaseRoot>
 
 export class GenericRoot<params extends string[] = string[], def = any, $ = any>
 	extends Callable<GenericNodeInstantiation<params, def, $>>
@@ -55,13 +54,39 @@ export class GenericRoot<params extends string[] = string[], def = any, $ = any>
 		public $: RootScope<$>
 	) {
 		super((...args: RootSchema[]) => {
-			args
-			// const argNodes: Record<string, RawRoot> = flatMorph(
-			// 	params,
-			// 	(i, param) => [param, $.schema(args[i])]
-			// ) as never
-			// { args: argNodes }
-			return $.schema(def as never) as never
+			const argNodes: GenericArgResolutions = flatMorph(params, (i, param) => [
+				param,
+				$.schema(args[i])
+			]) as never
+
+			return $.schema(def as never, { args: argNodes }) as never
 		})
+	}
+
+	bindScope($: RawRootScope) {
+		throw new Error(`Unimplemented generic bind ${$}`)
+	}
+
+	@cached
+	get baseConstraints(): array<RootSchema> {
+		return this.params.map(_ => this.$.internal.keywords.unknown)
+	}
+
+	@cached
+	get baseInstantiation(): Root {
+		return this(...(this.baseConstraints as never))
+	}
+
+	validateBaseInstantiation(): this {
+		this.baseInstantiation
+		return this as never
+	}
+
+	get internal(): this {
+		return this
+	}
+
+	get references() {
+		return this.baseInstantiation.internal.references
 	}
 }

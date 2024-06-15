@@ -342,7 +342,7 @@ dependencies[1].contributors[0].email must be a valid email (was "ssalbdivad")`)
 			attest(types.bork.infer).type.toString.snap("{ c: { b: ...; c: ...; }; }")
 
 			const expectedCyclicJson =
-				types.arf.raw.firstReferenceOfKindOrThrow("alias").json
+				types.arf.internal.firstReferenceOfKindOrThrow("alias").json
 
 			attest(types.arf.json).snap({
 				domain: "object",

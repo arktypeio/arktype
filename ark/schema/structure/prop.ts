@@ -54,7 +54,7 @@ export const intersectProps = (
 	let value = intersectNodes(l.value, r.value, ctx)
 	const kind: PropKind = l.required || r.required ? "required" : "optional"
 	if (value instanceof Disjoint) {
-		if (kind === "optional") value = ctx.$.keywords.never.raw
+		if (kind === "optional") value = ctx.$.keywords.never.internal
 		else {
 			// if either operand was optional, the Disjoint has to be treated as optional
 			return value.withPrefixKey(
@@ -97,7 +97,7 @@ export abstract class BaseProp<
 	kind extends "required" ? RequiredDeclaration : OptionalDeclaration
 > {
 	required: boolean = this.kind === "required"
-	impliedBasis: BaseRoot = this.$.keywords.object.raw
+	impliedBasis: BaseRoot = this.$.keywords.object.internal
 	serializedKey: string = compileSerializedValue(this.key)
 	compiledKey: string =
 		typeof this.key === "string" ? this.key : this.serializedKey

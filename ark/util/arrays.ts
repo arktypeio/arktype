@@ -220,7 +220,7 @@ export type AppendUniqueOptions<element> = {
  */
 export const appendUnique = <to extends unknown[]>(
 	to: to | undefined,
-	value: NoInfer<to | to[number]>,
+	value: NoInfer<Readonly<to> | to[number]>,
 	opts?: AppendUniqueOptions<to[number]>
 ): to => {
 	if (to === undefined)

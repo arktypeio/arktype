@@ -104,10 +104,10 @@ contextualize(() => {
 			.pipe(s => s.length)
 			.satisfying(s => s.length > 5)
 
-		const morphRef = t.raw.assertHasKind("morph").serializedMorphs[0]
+		const morphRef = t.internal.assertHasKind("morph").serializedMorphs[0]
 
 		const predicateRef =
-			t.raw.firstReferenceOfKindOrThrow("predicate").serializedPredicate
+			t.internal.firstReferenceOfKindOrThrow("predicate").serializedPredicate
 
 		attest(t.json).snap({
 			in: { domain: "string", predicate: [predicateRef] },
@@ -127,10 +127,10 @@ contextualize(() => {
 			.pipe(s => s.length)
 			.narrow((n): n is 5 => n === 5)
 
-		const morphRef = t.raw.assertHasKind("morph").serializedMorphs[0]
+		const morphRef = t.internal.assertHasKind("morph").serializedMorphs[0]
 
 		const predicateRef =
-			t.raw.firstReferenceOfKindOrThrow("predicate").serializedPredicate
+			t.internal.firstReferenceOfKindOrThrow("predicate").serializedPredicate
 
 		attest(t.json).snap({
 			in: "string",

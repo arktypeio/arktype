@@ -91,6 +91,6 @@ contextualize(() => {
 			{ jitless: true }
 		).export()
 
-		attest(types.fast.raw.jit).equals(false)
+		attest(types.fast.internal.jit).equals(false)
 	})
 })

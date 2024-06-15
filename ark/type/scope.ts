@@ -219,13 +219,11 @@ export class RawScope<
 	}
 
 	override parseRoot(def: unknown): BaseRoot {
-		// args: { this: {} as RawRoot },
 		return this.parse(def, {
 			$: this as never,
+			// args: { this: {} as RawRoot },
 			args: {}
-			// type parsing can bypass nodes if it hits the cache,
-			// so bind it directly (could be optimized)
-		}).bindScope(this)
+		})
 	}
 
 	parse(def: unknown, ctx: ParseContext): BaseRoot {

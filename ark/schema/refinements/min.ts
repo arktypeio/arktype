@@ -7,8 +7,8 @@ import {
 import type { TraverseAllows } from "../shared/traversal.js"
 import {
 	BaseRange,
-	type BaseRangeInner,
 	parseExclusiveKey,
+	type BaseRangeInner,
 	type UnknownNormalizedRangeSchema
 } from "./range.js"
 
@@ -53,7 +53,7 @@ export const minImplementation: nodeImplementationOf<MinDeclaration> =
 	})
 
 export class MinNode extends BaseRange<MinDeclaration> {
-	readonly impliedBasis: BaseRoot = this.$.keywords.number.raw
+	readonly impliedBasis: BaseRoot = this.$.keywords.number.internal
 
 	traverseAllows: TraverseAllows<number> =
 		this.exclusive ? data => data > this.rule : data => data >= this.rule

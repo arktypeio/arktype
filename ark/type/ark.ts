@@ -32,7 +32,7 @@ export const tsGenerics = {} as Module<TsGenericsExports>
 
 export const ambient: Scope<Ark> = scope(keywordNodes) as never
 
-RawScope.ambient = ambient.raw
+RawScope.ambient = ambient.internal
 
 export const ark: Module<Ark> = ambient.export()
 

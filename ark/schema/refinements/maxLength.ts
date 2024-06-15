@@ -65,7 +65,7 @@ export const maxLengthImplementation: nodeImplementationOf<MaxLengthDeclaration>
 	})
 
 export class MaxLengthNode extends BaseRange<MaxLengthDeclaration> {
-	readonly impliedBasis: BaseRoot = this.$.keywords.lengthBoundable.raw
+	readonly impliedBasis: BaseRoot = this.$.keywords.lengthBoundable.internal
 
 	traverseAllows: TraverseAllows<LengthBoundableData> =
 		this.exclusive ?

@@ -31,7 +31,7 @@ export const ambientRootScope: RootScope<Ark> = schemaScope({
 	// TODO: remove cast
 }) as never
 
-RawRootScope.ambient = ambientRootScope.raw
+RawRootScope.ambient = ambientRootScope.internal
 
 export const keywordNodes: SchemaModule<Ark> = ambientRootScope.export()
 

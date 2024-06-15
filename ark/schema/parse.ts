@@ -10,13 +10,13 @@ import {
 	type JsonData,
 	type listable
 } from "@arktype/util"
+import type { GenericArgResolutions } from "./generic.js"
 import {
 	nodeClassesByKind,
 	nodeImplementationsByKind,
 	type NormalizedSchema
 } from "./kinds.js"
 import type { BaseNode } from "./node.js"
-import type { UnknownRoot } from "./roots/root.js"
 import type { RawRootScope } from "./scope.js"
 import { Disjoint } from "./shared/disjoint.js"
 import {
@@ -39,13 +39,14 @@ export type NodeParseOptions<prereduced extends boolean = boolean> = {
 	 * Useful for defining reductions like number|string|bigint|symbol|object|true|false|null|undefined => unknown
 	 **/
 	reduceTo?: BaseNode
+	args?: GenericArgResolutions
 }
 
 export interface NodeParseContext<kind extends NodeKind = NodeKind>
 	extends NodeParseOptions {
 	$: RawRootScope
 	id: string
-	args?: Record<string, UnknownRoot>
+	args: GenericArgResolutions
 	schema: NormalizedSchema<kind>
 }
 
@@ -134,17 +135,8 @@ export const parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
 
 		if (keyImpl.child) {
 			const listableNode = v as listable<BaseNode>
-			if (isArray(listableNode)) {
-				inner[k] = listableNode.map(n => {
-					const scoped = n.bindScope(ctx.$)
-					children.push(scoped)
-					return scoped
-				})
-			} else {
-				const scoped = listableNode.bindScope(ctx.$)
-				children.push(scoped)
-				inner[k] = scoped
-			}
+			if (isArray(listableNode)) children.push(...listableNode)
+			else children.push(listableNode)
 		}
 		if (!keyImpl.meta) typeJson[k] = json[k]
 	})

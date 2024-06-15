@@ -29,9 +29,9 @@ contextualize(() => {
 		const t = schema({ unit: 7n })
 		// serializes to string for JSON
 		attest(t.json).snap({ unit: "7n" })
-		assertNodeKind(t.raw, "unit")
+		assertNodeKind(t.internal, "unit")
 		// preserves the bigint for context
-		attest(t.raw.errorContext).equals({
+		attest(t.internal.errorContext).equals({
 			code: "unit",
 			description: "7n",
 			unit: 7n
@@ -43,9 +43,9 @@ contextualize(() => {
 
 	it("undefined", () => {
 		const t = schema({ unit: undefined })
-		assertNodeKind(t.raw, "unit")
+		assertNodeKind(t.internal, "unit")
 		attest(t.json).snap({ unit: "undefined" })
-		attest(t.raw.errorContext).equals({
+		attest(t.internal.errorContext).equals({
 			code: "unit",
 			description: "undefined",
 			unit: undefined
@@ -59,11 +59,11 @@ contextualize(() => {
 		// this symbol description should not be reused in other tests
 		const status = Symbol("status")
 		const t = schema({ unit: status })
-		assertNodeKind(t.raw, "unit")
+		assertNodeKind(t.internal, "unit")
 		// serializes to string for JSON
 		attest(t.json).snap({ unit: "$ark.status" })
 		// preserves the symbol for context
-		attest(t.raw.errorContext).equals({
+		attest(t.internal.errorContext).equals({
 			code: "unit",
 			description: "Symbol(status)",
 			unit: status
@@ -76,9 +76,9 @@ contextualize(() => {
 		const o = new Object()
 		const ref = registeredReference(o)
 		const t = schema({ unit: o })
-		assertNodeKind(t.raw, "unit")
+		assertNodeKind(t.internal, "unit")
 		attest(t.json).snap({ unit: ref })
-		attest(t.raw.errorContext).equals({
+		attest(t.internal.errorContext).equals({
 			code: "unit",
 			description: "{}",
 			unit: o

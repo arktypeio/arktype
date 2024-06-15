@@ -19,10 +19,7 @@ import {
 	type show
 } from "@arktype/util"
 import { globalConfig, mergeConfigs } from "./config.js"
-import {
-	validateUninstantiatedGenericNode,
-	type GenericRoot
-} from "./generic.js"
+import { GenericRoot } from "./generic.js"
 import type { inferRoot, validateRoot } from "./inference.js"
 import type { internalKeywords } from "./keywords/internal.js"
 import type { jsObjects } from "./keywords/jsObjects.js"
@@ -121,7 +118,13 @@ export type ParsedUnknownNodeConfig = requireKeys<
 
 export type StaticArkOption<k extends keyof ArkEnv> = ReturnType<ArkEnv[k]>
 
-export interface ArkConfig extends Partial<Readonly<NodeConfigsByKind>> {
+export interface BindReferencesOptions {
+	bindReferences?: boolean
+}
+
+export interface ArkConfig
+	extends Partial<Readonly<NodeConfigsByKind>>,
+		BindReferencesOptions {
 	jitless?: boolean
 	/** @internal */
 	registerKeywords?: boolean
@@ -142,6 +145,7 @@ export const defaultConfig: ResolvedArkConfig = Object.assign(
 	]),
 	{
 		jitless: envHasCsp(),
+		bindReferences: false,
 		registerKeywords: false,
 		prereducedAliases: false
 	} satisfies Omit<ResolvedArkConfig, NodeKind>
@@ -290,8 +294,11 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 						[]
 					:	[
 							alias,
-							hasArkKind(resolution, "root") ?
-								resolution.bindScope(this)
+							(
+								hasArkKind(resolution, "root") ||
+								hasArkKind(resolution, "generic")
+							) ?
+								this.bindResolution(resolution.internal)
 							:	resolution
 						]
 			)
@@ -299,7 +306,7 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 		scopesById[this.id] = this
 	}
 
-	get raw(): this {
+	get internal(): this {
 		return this
 	}
 
@@ -363,7 +370,7 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 		let schema: unknown = nodeSchema
 
 		if (isNode(schema) && schema.kind === kind)
-			return schema.bindScope(this) as never
+			return this.bindResolution(schema) as never
 
 		if (kind === "alias" && !opts?.prereduced) {
 			const resolution = this.resolveRoot(
@@ -385,7 +392,7 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 		// schema for the kind (e.g. sequence can collapse to element accepting a Node)
 		if (isNode(normalizedSchema)) {
 			return normalizedSchema.kind === kind ?
-					(normalizedSchema.bindScope(this) as never)
+					(this.bindResolution(normalizedSchema) as never)
 				:	throwMismatchedNodeRootError(kind, normalizedSchema.kind)
 		}
 
@@ -397,6 +404,7 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 			...opts,
 			id,
 			$: this,
+			args: opts?.args ?? {},
 			schema: normalizedSchema
 		})
 
@@ -415,6 +423,32 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 		}
 
 		return node as never
+	}
+
+	bindResolution<resolution extends BaseNode | GenericRoot>(
+		resolution: resolution,
+		opts?: BindReferencesOptions
+	): resolution {
+		const bindReferences =
+			opts?.bindReferences ?? this.resolvedConfig.bindReferences
+		const isBound =
+			bindReferences ?
+				resolution.references.every(ref => ref.$ === this)
+			:	resolution.$ === this
+		if (isBound) return resolution as never
+
+		if (hasArkKind(resolution, "generic")) {
+			return new GenericRoot(
+				resolution.params,
+				resolution.def,
+				this as never
+			) as never
+		}
+
+		return resolution.transform((kind, inner) => inner, {
+			bindScope: this,
+			prereduced: true
+		}) as never
 	}
 
 	parseRoot(def: unknown, opts?: NodeParseOptions): BaseRoot {
@@ -459,7 +493,8 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 		if (!def) return this.maybeResolveSubalias(name)
 		def = this.preparseRoot(def)
 		if (hasArkKind(def, "generic"))
-			return (this.resolutions[name] = validateUninstantiatedGenericNode(def))
+			return (this.resolutions[name] = def.validateBaseInstantiation())
+
 		if (hasArkKind(def, "module")) return (this.resolutions[name] = def)
 		this.resolutions[name] = name
 		return (this.resolutions[name] = this.parseRoot(def))
@@ -601,7 +636,7 @@ export interface RootScope<$ = any> {
 	/** The set of names defined at the root-level of the scope mapped to their
 	 * corresponding definitions.**/
 	aliases: Record<string, unknown>
-	raw: toRawScope<$>
+	internal: toRawScope<$>
 
 	schema<const def extends RootSchema>(
 		schema: def,
@@ -646,10 +681,11 @@ export const schema: RootScope["schema"] = root.schema
 export const node: RootScope["node"] = root.node
 export const defineRoot: RootScope["defineRoot"] = root.defineRoot
 export const units: RootScope["units"] = root.units
-export const rawSchema: RawRootScope["schema"] = root.raw.schema
-export const rawNode: RawRootScope["node"] = root.raw.node
-export const defineRawRoot: RawRootScope["defineRoot"] = root.raw.defineRoot
-export const rawUnits: RawRootScope["units"] = root.raw.units
+export const rawSchema: RawRootScope["schema"] = root.internal.schema
+export const rawNode: RawRootScope["node"] = root.internal.node
+export const defineRawRoot: RawRootScope["defineRoot"] =
+	root.internal.defineRoot
+export const rawUnits: RawRootScope["units"] = root.internal.units
 
 export const parseAsSchema = <castTo = unknown>(
 	def: unknown,
