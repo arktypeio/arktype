@@ -262,6 +262,7 @@ contextualize(
 			]
 
 			attest<expected, intersectArrays<l, r>>()
+			attest<expected, intersectArrays<r, l>>()
 		})
 	}
 )

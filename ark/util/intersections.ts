@@ -66,10 +66,7 @@ type intersectSequences<
 				operation,
 				kind
 			>
-		: // when inferring head/tail from the left, TS gives unknown for a tuple with a
-		// non-trailing variadic element, e.g. [...0[], 1]. if we see a result
-		// that looks like that, try inferring init/last from the right instead
-		l extends readonly [...infer lInit, infer lLast] ?
+		: l extends readonly [...infer lInit, infer lLast] ?
 			r extends readonly [...infer rInit, infer rLast] ?
 				intersectSequences<
 					lInit,
