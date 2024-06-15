@@ -115,8 +115,13 @@ const maybeParseReference = (
 	const resolution = s.ctx.$.maybeResolve(token)
 	if (resolution instanceof BaseRoot) return resolution
 	if (resolution === undefined) return
-	if (hasArkKind(resolution, "generic"))
-		return parseGenericInstantiation(token, resolution as Generic, s)
+	if (hasArkKind(resolution, "generic")) {
+		return parseGenericInstantiation(
+			token,
+			throwParseError("Generics unsupported"),
+			s
+		)
+	}
 	return throwParseError(`Unexpected resolution ${printable(resolution)}`)
 }
 

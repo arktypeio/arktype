@@ -22,6 +22,7 @@
 		"testTyped": "mocha --exclude 'ark/attest/**/*.test.*'",
 		"testRepo": "pnpm test && cd ./ark/attest && pnpm test",
 		"testTsVersions": "tsx ./ark/repo/testTsVersions.ts",
+		"bench": "tsx ./ark/type/__tests__/scope.bench.ts",
 		"typecheck": "tsc --noEmit",
 		"lint": "prettier --check . && eslint --max-warnings=0 .",
 		"format": "prettier --write .",
