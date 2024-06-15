@@ -355,6 +355,7 @@ export interface UnknownAttachments {
 	readonly children: BaseNode[]
 	readonly innerHash: string
 	readonly typeHash: string
+	readonly $: RawRootScope
 }
 
 export interface NarrowedAttachments<d extends RawNodeDeclaration>

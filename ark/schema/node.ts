@@ -53,12 +53,7 @@ export abstract class BaseNode<
 	 * @ts-ignore allow instantiation assignment to the base type */
 	out d extends RawNodeDeclaration = RawNodeDeclaration
 > extends Callable<(data: d["prerequisite"]) => unknown, attachmentsOf<d>> {
-	readonly qualifiedId: string
-
-	constructor(
-		public attachments: UnknownAttachments,
-		public $: RawRootScope
-	) {
+	constructor(public attachments: UnknownAttachments) {
 		super(
 			// pipedFromCtx allows us internally to reuse TraversalContext
 			// through pipes and keep track of piped paths. It is not exposed
@@ -81,7 +76,6 @@ export abstract class BaseNode<
 			},
 			{ attach: attachments as never }
 		)
-		this.qualifiedId = `${this.$.id}${this.id}`
 	}
 
 	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
@@ -89,6 +83,7 @@ export abstract class BaseNode<
 	abstract expression: string
 	abstract compile(js: NodeCompiler): void
 
+	readonly qualifiedId = `${this.$.id}${this.id}`
 	readonly includesMorph: boolean =
 		this.kind === "morph" ||
 		(this.hasKind("optional") && this.hasDefault()) ||
@@ -250,7 +245,7 @@ export abstract class BaseNode<
 	}
 
 	bindScope($: RawRootScope): this {
-		if (this.$ === $) return this as never
+		if (this.$ === $ && this.children.every(ref => ref.$ === $)) return this
 		return this.transform((kind, inner) => inner, {
 			bindScope: $,
 			prereduced: true

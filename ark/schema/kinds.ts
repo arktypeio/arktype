@@ -56,7 +56,6 @@ import {
 	unitImplementation,
 	type UnitDeclaration
 } from "./roots/unit.js"
-import type { RawRootScope } from "./scope.js"
 import type {
 	ConstraintKind,
 	NodeKind,
@@ -134,7 +133,7 @@ export const nodeImplementationsByKind: Record<
 
 export const nodeClassesByKind: Record<
 	NodeKind,
-	new (attachments: UnknownAttachments, $: RawRootScope) => BaseNode
+	new (attachments: UnknownAttachments) => BaseNode
 > = {
 	...boundClassesByKind,
 	alias: AliasNode,

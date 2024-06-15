@@ -68,8 +68,7 @@ contextualize(() => {
 				"[string]: number | string",
 				"string",
 				"number | string",
-				"number",
-				"string"
+				"number"
 			],
 			'["0"]': ["true"],
 			'["1"]': ["false"]

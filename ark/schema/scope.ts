@@ -232,7 +232,7 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 	readonly id = `$${++scopeCount}`
 	readonly [arkKind] = "scope"
 
-	readonly referencesById: { [name: string]: BaseNode } = {}
+	readonly referencesById: { [innerHash: string]: BaseNode } = {}
 	references: readonly BaseNode[] = []
 	protected readonly resolutions: {
 		[alias: string]: CachedResolution | undefined
@@ -400,7 +400,7 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 			schema: normalizedSchema
 		})
 
-		const node = new nodeClassesByKind[attachments.kind](attachments, this)
+		const node = new nodeClassesByKind[attachments.kind](attachments)
 
 		nodesById[id] = node
 
