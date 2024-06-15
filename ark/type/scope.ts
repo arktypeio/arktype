@@ -9,7 +9,6 @@ import {
 	type RawRootResolutions,
 	type RootScope,
 	type UnknownRoot,
-	type ambient,
 	type arkKind,
 	type destructuredExportContext,
 	type destructuredImportContext,
@@ -152,10 +151,10 @@ export type tryInferSubmoduleReference<$, token> =
 			$[submodule][subalias]
 		:	never
 	: token extends (
-		`${infer submodule extends moduleKeyOf<ambient>}.${infer subalias}`
+		`${infer submodule extends moduleKeyOf<ArkEnv.$>}.${infer subalias}`
 	) ?
-		subalias extends keyof ambient[submodule] ?
-			ambient[submodule][subalias]
+		subalias extends keyof ArkEnv.$[submodule] ?
+			ArkEnv.$[submodule][subalias]
 		:	never
 	:	never
 

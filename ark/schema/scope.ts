@@ -70,13 +70,18 @@ export type nodeResolutions<keywords> = { [k in keyof keywords]: BaseRoot }
 export type BaseResolutions = Record<string, BaseRoot>
 
 declare global {
-	export interface StaticArkConfig {
+	export interface ArkEnv {
+		$(): Ark
+		meta(): {}
 		preserve(): never
-		ambient(): Ark
+	}
+
+	export namespace ArkEnv {
+		export type $ = ReturnType<ArkEnv["$"]>
+		export type meta = ReturnType<ArkEnv["meta"]>
+		export type preserve = ReturnType<ArkEnv["preserve"]>
 	}
 }
-
-export type ambient = ReturnType<StaticArkConfig["ambient"]>
 
 type nodeConfigForKind<kind extends NodeKind> = Readonly<
 	show<
@@ -113,9 +118,7 @@ export type ParsedUnknownNodeConfig = requireKeys<
 	"description"
 >
 
-export type StaticArkOption<k extends keyof StaticArkConfig> = ReturnType<
-	StaticArkConfig[k]
->
+export type StaticArkOption<k extends keyof ArkEnv> = ReturnType<ArkEnv[k]>
 
 export interface ArkConfig extends Partial<Readonly<NodeConfigsByKind>> {
 	jitless?: boolean

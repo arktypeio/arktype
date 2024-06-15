@@ -243,7 +243,7 @@ type _distill<
 	io extends "in" | "out",
 	distilledKind extends "base" | "constrainable"
 > =
-	t extends TerminallyInferredObjectKind | Primitive ? t
+	t extends TerminallyInferredObjectKind | ArkEnv.preserve | Primitive ? t
 	: unknown extends t ? unknown
 	: t extends MorphAst<infer i, infer o> ?
 		io extends "in" ?

@@ -4,7 +4,6 @@ import {
 	writeUnresolvableMessage,
 	type GenericProps,
 	type PrivateDeclaration,
-	type ambient,
 	type arkKind,
 	type writeNonSubmoduleDotMessage
 } from "@arktype/schema"
@@ -135,16 +134,16 @@ const maybeParseUnenclosedLiteral = (
 }
 
 type tryResolve<s extends StaticState, token extends string, $, args> =
-	token extends keyof ambient ? token
+	token extends keyof ArkEnv.$ ? token
 	: token extends keyof $ ? token
 	: `#${token}` extends keyof $ ? token
 	: token extends keyof args ? token
 	: token extends `${number}` ? token
 	: token extends BigintLiteral ? token
 	: token extends (
-		`${infer submodule extends (keyof $ | keyof ambient) & string}.${infer reference}`
+		`${infer submodule extends (keyof $ | keyof ArkEnv.$) & string}.${infer reference}`
 	) ?
-		tryResolveSubmodule<token, submodule, reference, s, $ & ambient, args>
+		tryResolveSubmodule<token, submodule, reference, s, $ & ArkEnv.$, args>
 	:	unresolvableError<s, token, $, args, []>
 
 type tryResolveSubmodule<
