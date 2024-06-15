@@ -5,16 +5,11 @@ import {
 	printable,
 	throwParseError,
 	unset,
-	type Dict,
 	type Json,
 	type JsonData,
 	type listable
 } from "@arktype/util"
-import {
-	nodeClassesByKind,
-	nodeImplementationsByKind,
-	type NormalizedSchema
-} from "./kinds.js"
+import { nodeImplementationsByKind, type NormalizedSchema } from "./kinds.js"
 import type { BaseNode } from "./node.js"
 import type { UnknownRoot } from "./roots/root.js"
 import type { RawRootScope } from "./scope.js"
@@ -91,19 +86,22 @@ const discriminateRootKind = (schema: unknown): RootKind => {
 	return throwParseError(`${printable(schema)} is not a valid type schema`)
 }
 
-const nodeCache: { [innerHash: string]: BaseNode } = {}
+const attachmentsCache: { [innerHash: string]: UnknownAttachments } = {}
 
 const serializeListableChild = (listableNode: listable<BaseNode>) =>
 	isArray(listableNode) ?
 		listableNode.map(node => node.collapsibleJson)
 	:	listableNode.collapsibleJson
 
-export const parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
+export const parseNode = (
+	kind: NodeKind,
+	ctx: NodeParseContext
+): UnknownAttachments => {
 	const impl = nodeImplementationsByKind[kind]
 	const inner: Record<string, unknown> = {}
 	// ensure node entries are parsed in order of precedence, with non-children
 	// parsed first
-	const schemaEntries = entriesOf(ctx.schema as Dict).sort(([lKey], [rKey]) =>
+	const schemaEntries = Object.entries(ctx.schema).sort(([lKey], [rKey]) =>
 		isNodeKind(lKey) ?
 			isNodeKind(rKey) ? precedenceOfKind(lKey) - precedenceOfKind(rKey)
 			:	1
@@ -127,17 +125,26 @@ export const parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
 	let json: Record<string, unknown> = {}
 	let typeJson: Record<string, unknown> = {}
 	entries.forEach(([k, v]) => {
-		const listableNode = v as listable<BaseNode>
 		const keyImpl = impl.keys[k]
 		const serialize =
 			keyImpl.serialize ??
 			(keyImpl.child ? serializeListableChild : defaultValueSerializer)
 
-		json[k] = serialize(listableNode)
+		json[k] = serialize(v as never)
 
 		if (keyImpl.child) {
-			if (isArray(listableNode)) children.push(...listableNode)
-			else children.push(listableNode)
+			const listableNode = v as listable<BaseNode>
+			if (isArray(listableNode)) {
+				inner[k] = listableNode.map(n => {
+					const scoped = n.bindScope(ctx.$)
+					children.push(scoped)
+					return scoped
+				})
+			} else {
+				const scoped = listableNode.bindScope(ctx.$)
+				children.push(scoped)
+				inner[k] = scoped
+			}
 		}
 		if (!keyImpl.meta) typeJson[k] = json[k]
 	})
@@ -169,7 +176,7 @@ export const parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
 
 	const innerHash = JSON.stringify({ kind, ...json })
 	if (ctx.reduceTo) {
-		nodeCache[innerHash] = ctx.reduceTo
+		attachmentsCache[innerHash] = ctx.reduceTo
 		return ctx.reduceTo
 	}
 
@@ -187,13 +194,13 @@ export const parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
 
 			// we can't cache this reduction for now in case the reduction involved
 			// impliedSiblings
-			return reduced
+			return reduced.attachments
 		}
 	}
 
 	// we have to wait until after reduction to return a cached entry,
 	// since reduction can add impliedSiblings
-	if (nodeCache[innerHash]) return nodeCache[innerHash]
+	if (attachmentsCache[innerHash]) return attachmentsCache[innerHash]
 
 	const attachments = {
 		id: ctx.id,
@@ -206,8 +213,7 @@ export const parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
 		collapsibleJson: collapsibleJson as JsonData,
 		children,
 		innerHash,
-		typeHash,
-		$: ctx.$
+		typeHash
 	} satisfies UnknownAttachments as Record<string, any>
 	if (ctx.alias) attachments.alias = ctx.alias
 
@@ -216,8 +222,5 @@ export const parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
 			attachments[k] = inner[k]
 	}
 
-	const node: BaseNode = new nodeClassesByKind[kind](attachments as never)
-
-	nodeCache[innerHash] = node
-	return node
+	return (attachmentsCache[innerHash] = attachments as never)
 }

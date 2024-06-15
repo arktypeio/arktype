@@ -7,18 +7,17 @@ import {
 	isArray,
 	isEmptyObject,
 	registeredReference,
-	shallowClone,
 	throwError,
 	type Dict,
 	type Guardable,
 	type Json,
 	type Key,
-	type array,
 	type conform,
 	type listable
 } from "@arktype/util"
 import type { BaseConstraint } from "./constraint.js"
 import type { Inner, MutableInner, Node, reducibleKindOf } from "./kinds.js"
+import type { NodeParseOptions } from "./parse.js"
 import type { BaseRoot, Root } from "./roots/root.js"
 import type { UnitNode } from "./roots/unit.js"
 import type { RawRootScope } from "./scope.js"
@@ -54,7 +53,12 @@ export abstract class BaseNode<
 	 * @ts-ignore allow instantiation assignment to the base type */
 	out d extends RawNodeDeclaration = RawNodeDeclaration
 > extends Callable<(data: d["prerequisite"]) => unknown, attachmentsOf<d>> {
-	constructor(public attachments: UnknownAttachments) {
+	readonly qualifiedId: string
+
+	constructor(
+		public attachments: UnknownAttachments,
+		public $: RawRootScope
+	) {
 		super(
 			// pipedFromCtx allows us internally to reuse TraversalContext
 			// through pipes and keep track of piped paths. It is not exposed
@@ -77,6 +81,7 @@ export abstract class BaseNode<
 			},
 			{ attach: attachments as never }
 		)
+		this.qualifiedId = `${this.$.id}${this.id}`
 	}
 
 	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
@@ -84,7 +89,6 @@ export abstract class BaseNode<
 	abstract expression: string
 	abstract compile(js: NodeCompiler): void
 
-	readonly qualifiedId = `${this.$.id}${this.id}`
 	readonly includesMorph: boolean =
 		this.kind === "morph" ||
 		(this.hasKind("optional") && this.hasDefault()) ||
@@ -247,9 +251,10 @@ export abstract class BaseNode<
 
 	bindScope($: RawRootScope): this {
 		if (this.$ === $) return this as never
-		return new (this.constructor as any)(
-			Object.assign(shallowClone(this.attachments), { $ })
-		)
+		return this.transform((kind, inner) => inner, {
+			bindScope: $,
+			prereduced: true
+		}) as never
 	}
 
 	firstReference<narrowed>(
@@ -285,22 +290,28 @@ export abstract class BaseNode<
 		opts?: DeepNodeTransformOptions
 	): Node<reducibleKindOf<this["kind"]>> | Extract<ReturnType<mapper>, null> {
 		return this._transform(mapper, {
+			...opts,
 			seen: {},
 			path: [],
-			shouldTransform: opts?.shouldTransform ?? (() => true)
+			parseOptions: {
+				prereduced: opts?.prereduced ?? false
+			}
 		}) as never
 	}
 
 	protected _transform(
 		mapper: DeepNodeTransformation,
-		ctx: DeepNodeTransformationContext
+		ctx: DeepNodeTransformContext
 	): BaseNode | null {
+		const $ = ctx.bindScope?.raw ?? this.$
 		if (ctx.seen[this.id])
 			// TODO: remove cast by making lazilyResolve more flexible
 			// TODO: if each transform has a unique base id, could ensure
 			// these don't create duplicates
+			// TODO: bindToScope?
+			// TODO: io?
 			return this.$.lazilyResolve(ctx.seen[this.id]! as never)
-		if (!ctx.shouldTransform(this as never, ctx)) return this
+		if (ctx.shouldTransform?.(this as never, ctx) === false) return this
 
 		let transformedNode: BaseRoot | undefined
 
@@ -343,11 +354,15 @@ export abstract class BaseNode<
 		)
 			return null
 		if (this.kind === "morph") {
-			;(transformedInner as MutableInner<"morph">).in ??= this.$.keywords
+			;(transformedInner as MutableInner<"morph">).in ??= $.keywords
 				.unknown as never
 		}
 
-		return (transformedNode = this.$.node(this.kind, transformedInner) as never)
+		return (transformedNode = $.node(
+			this.kind,
+			transformedInner,
+			ctx.parseOptions
+		) as never)
 	}
 
 	configureShallowDescendants(configOrDescription: BaseMeta | string): this {
@@ -361,7 +376,8 @@ export abstract class BaseNode<
 	}
 }
 
-export type TypePath = array<Key | BaseRoot>
+/** a list of literal keys (named properties) or a nodes (index signatures) representing a path */
+export type TypePath = (Key | BaseRoot)[]
 
 export type ContextualReference = {
 	path: TypePath
@@ -377,23 +393,24 @@ export const appendUniqueContextualReferences = (
 	})
 
 export type DeepNodeTransformOptions = {
-	shouldTransform: ShouldTransformFn
+	shouldTransform?: ShouldTransformFn
+	bindScope?: RawRootScope
+	prereduced?: boolean
 }
 
 export type ShouldTransformFn = (
 	node: BaseNode,
-	ctx: DeepNodeTransformationContext
+	ctx: DeepNodeTransformContext
 ) => boolean
 
-export type DeepNodeTransformationContext = {
-	/** a literal key or a node representing the key of an index signature */
-	path: Array<Key | BaseNode>
+export interface DeepNodeTransformContext extends DeepNodeTransformOptions {
+	path: TypePath
 	seen: { [originalId: string]: (() => BaseNode | undefined) | undefined }
-	shouldTransform: ShouldTransformFn
+	parseOptions: NodeParseOptions
 }
 
 export type DeepNodeTransformation = <kind extends NodeKind>(
 	kind: kind,
 	inner: Inner<kind>,
-	ctx: DeepNodeTransformationContext
+	ctx: DeepNodeTransformContext
 ) => Inner<kind> | null

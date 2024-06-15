@@ -669,8 +669,7 @@ export const pruneDiscriminant = (
 			if (
 				(discriminantKind === nodeKind ||
 					(nodeKind === "domain" && ctx.path.length === path.length)) &&
-				ctx.path.length === path.length &&
-				ctx.path.every((segment, i) => segment === path[i])
+				arrayEquals(ctx.path, path)
 			)
 				return null
 			return inner

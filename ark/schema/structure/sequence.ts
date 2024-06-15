@@ -11,8 +11,8 @@ import type { MutableInner, RootSchema } from "../kinds.js"
 import {
 	appendUniqueContextualReferences,
 	type ContextualReference,
-	type DeepNodeTransformation,
-	type DeepNodeTransformationContext
+	type DeepNodeTransformContext,
+	type DeepNodeTransformation
 } from "../node.js"
 import type { MaxLengthNode } from "../refinements/maxLength.js"
 import type { MinLengthNode } from "../refinements/minLength.js"
@@ -355,7 +355,7 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 
 	protected override _transform(
 		mapper: DeepNodeTransformation,
-		ctx: DeepNodeTransformationContext
+		ctx: DeepNodeTransformContext
 	) {
 		ctx.path.push(this.$.keywords.nonNegativeIntegerString.raw)
 		const result = super._transform(mapper, ctx)

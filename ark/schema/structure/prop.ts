@@ -9,8 +9,8 @@ import {
 import { BaseConstraint } from "../constraint.js"
 import type { Node, RootSchema } from "../kinds.js"
 import type {
-	DeepNodeTransformation,
-	DeepNodeTransformationContext
+	DeepNodeTransformContext,
+	DeepNodeTransformation
 } from "../node.js"
 import type { Morph } from "../roots/morph.js"
 import type { BaseRoot } from "../roots/root.js"
@@ -104,7 +104,7 @@ export abstract class BaseProp<
 
 	protected override _transform(
 		mapper: DeepNodeTransformation,
-		ctx: DeepNodeTransformationContext
+		ctx: DeepNodeTransformContext
 	) {
 		ctx.path.push(this.key)
 		const result = super._transform(mapper, ctx)

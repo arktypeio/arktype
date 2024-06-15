@@ -29,6 +29,7 @@ import type { jsObjects } from "./keywords/jsObjects.js"
 import type { Ark } from "./keywords/keywords.js"
 import type { tsKeywords } from "./keywords/tsKeywords.js"
 import {
+	nodeClassesByKind,
 	nodeImplementationsByKind,
 	type Node,
 	type NodeSchema,
@@ -392,12 +393,14 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 		nodeCountsByPrefix[prefix] ??= 0
 		const id = `${prefix}${++nodeCountsByPrefix[prefix]!}`
 
-		const node = parseNode(kind, {
+		const attachments = parseNode(kind, {
 			...opts,
 			id,
 			$: this,
 			schema: normalizedSchema
-		}).bindScope(this)
+		})
+
+		const node = new nodeClassesByKind[attachments.kind](attachments, this)
 
 		nodesById[id] = node
 

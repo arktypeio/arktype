@@ -56,11 +56,13 @@ import {
 	unitImplementation,
 	type UnitDeclaration
 } from "./roots/unit.js"
+import type { RawRootScope } from "./scope.js"
 import type {
 	ConstraintKind,
 	NodeKind,
 	OpenNodeKind,
 	RootKind,
+	UnknownAttachments,
 	UnknownNodeImplementation
 } from "./shared/implement.js"
 import type { makeRootAndArrayPropertiesMutable } from "./shared/utils.js"
@@ -132,7 +134,7 @@ export const nodeImplementationsByKind: Record<
 
 export const nodeClassesByKind: Record<
 	NodeKind,
-	new (attachments: never) => BaseNode
+	new (attachments: UnknownAttachments, $: RawRootScope) => BaseNode
 > = {
 	...boundClassesByKind,
 	alias: AliasNode,
