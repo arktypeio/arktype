@@ -493,7 +493,9 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 			Object.assign(this.resolutions, this._exportedResolutions)
 			if (this.config.intrinsic)
 				Object.assign($ark.intrinsic, this._exportedResolutions)
-			this.references = Object.values(this.referencesById)
+			this.references = Object.values(this.referencesById).map(n =>
+				n.bindContext({ $: this })
+			)
 			if (!this.resolvedConfig.jitless) bindCompiledScope(this.references)
 			this.resolved = true
 		}
