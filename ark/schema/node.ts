@@ -1,7 +1,6 @@
 import {
 	Callable,
 	appendUnique,
-	arrayEquals,
 	cached,
 	flatMorph,
 	includes,
@@ -386,7 +385,14 @@ export type ContextualReference = {
 
 const uniqueContextualReferencesOptions: AppendUniqueOptions<ContextualReference> =
 	{
-		isEqual: (l, r) => l.node === r.node && arrayEquals(l.path, r.path)
+		isEqual: (l, r) =>
+			l.node.equals(r.node) &&
+			l.path.length === r.path.length &&
+			l.path.every((lKey, i) =>
+				typeof lKey === "object" && typeof r.path[i] === "object" ?
+					lKey === r.path[i]
+				:	lKey === r.path[i]
+			)
 	}
 
 export const appendUniqueContextualReferences = (
