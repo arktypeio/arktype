@@ -70,7 +70,7 @@ declare global {
 		$(): Ark
 		meta(): {}
 		preserve(): never
-		registry(): { $: RootScope<ArkEnv.$> }
+		registry(): { ambient: RawRootScope; intrinsic: IntrinsicKeywords }
 	}
 
 	export namespace ArkEnv {
@@ -124,7 +124,7 @@ export interface ArkConfig
 		BindReferencesOptions {
 	jitless?: boolean
 	/** @internal */
-	registerKeywords?: boolean
+	intrinsic?: boolean
 	/** @internal */
 	prereducedAliases?: boolean
 }
@@ -143,13 +143,13 @@ export const defaultConfig: ResolvedArkConfig = Object.assign(
 	{
 		jitless: envHasCsp(),
 		bindReferences: false,
-		registerKeywords: false,
+		intrinsic: false,
 		prereducedAliases: false
 	} satisfies Omit<ResolvedArkConfig, NodeKind>
 ) as never
 
 const nonInheritedKeys = [
-	"registerKeywords",
+	"intrinsic",
 	"prereducedAliases"
 ] as const satisfies array<keyof ArkConfig>
 
@@ -191,9 +191,14 @@ type toRawScope<$> = RawRootScope<{
 	:	BaseRoot
 }>
 
-export type PrimitiveKeywords = typeof tsKeywords &
-	typeof jsObjects &
-	typeof internalKeywords
+// these allow builtin types to be accessed during parsing without cyclic imports
+// they are populated as each scope is parsed with `intrinsic` in its config
+export type IntrinsicKeywords = {
+	[alias in
+		| keyof tsKeywords
+		| keyof jsObjects
+		| keyof internalKeywords]: BaseRoot
+}
 
 export type RawResolution = BaseRoot | GenericRoot | RawRootModule
 
@@ -217,19 +222,19 @@ export const writeDuplicateAliasError = <alias extends string>(
 export type writeDuplicateAliasError<alias extends string> =
 	`#${alias} duplicates public alias ${alias}`
 
-let scopeCount = 0
-
 const scopesById: Record<string, RawRootScope | undefined> = {}
+
+$ark.intrinsic = {} as never
 
 export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 	implements internalImplementationOf<RootScope, "t">
 {
 	readonly config: ArkConfig
 	readonly resolvedConfig: ResolvedArkConfig
-	readonly id = `$${++scopeCount}`
+	readonly id = `${Object.keys(scopesById).length}$`
 	readonly [arkKind] = "scope"
 
-	readonly referencesById: { [innerHash: string]: BaseNode } = {}
+	readonly referencesById: { [id: string]: BaseNode } = {}
 	references: readonly BaseNode[] = []
 	protected readonly resolutions: {
 		[alias: string]: CachedResolution | undefined
@@ -238,22 +243,6 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 	exportedNames: string[]
 	readonly aliases: Record<string, unknown> = {}
 	protected resolved = false
-
-	// these allow builtin types to be accessed during parsing without cyclic imports
-	// they are populated as each scope is parsed with `registerKeywords` in its config
-	/** @internal */
-	static keywords = {} as PrimitiveKeywords
-
-	/** @internal */
-	get keywords(): PrimitiveKeywords {
-		return RawRootScope.keywords
-	}
-
-	static ambient: RawRootScope
-
-	get ambient(): RawRootScope {
-		return (this.constructor as typeof RawRootScope).ambient
-	}
 
 	constructor(
 		/** The set of names defined at the root-level of the scope mapped to their
@@ -275,12 +264,12 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 			this.aliases[k] = def[k]
 			return true
 		}) as never
-		if (this.ambient) {
+		if ($ark.ambient) {
 			// ensure exportedResolutions is populated
-			this.ambient.export()
+			$ark.ambient.export()
 			// TODO: generics and modules
 			this.resolutions = flatMorph(
-				this.ambient.resolutions,
+				$ark.ambient.resolutions,
 				(alias, resolution) =>
 					// an alias defined in this scope should override an ambient alias of the same name
 					alias in this.aliases ?
@@ -502,8 +491,8 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 				)
 			)
 			Object.assign(this.resolutions, this._exportedResolutions)
-			if (this.config.registerKeywords)
-				Object.assign(RawRootScope.keywords, this._exportedResolutions)
+			if (this.config.intrinsic)
+				Object.assign($ark.intrinsic, this._exportedResolutions)
 			this.references = Object.values(this.referencesById)
 			if (!this.resolvedConfig.jitless) bindCompiledScope(this.references)
 			this.resolved = true

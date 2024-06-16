@@ -65,7 +65,7 @@ export const maxLengthImplementation: nodeImplementationOf<MaxLengthDeclaration>
 	})
 
 export class MaxLengthNode extends BaseRange<MaxLengthDeclaration> {
-	readonly impliedBasis: BaseRoot = this.$.keywords.lengthBoundable.internal
+	readonly impliedBasis: BaseRoot = $ark.intrinsic.lengthBoundable
 
 	traverseAllows: TraverseAllows<LengthBoundableData> =
 		this.exclusive ?

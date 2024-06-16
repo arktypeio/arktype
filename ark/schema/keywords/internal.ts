@@ -21,7 +21,7 @@ export const internalKeywords: internalKeywords = schemaScope(
 	},
 	{
 		prereducedAliases: true,
-		registerKeywords: true
+		intrinsic: true
 	}
 ).export()
 

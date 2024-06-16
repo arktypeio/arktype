@@ -20,7 +20,7 @@ import {
 	PatternNode,
 	patternImplementation,
 	type PatternDeclaration
-} from "./refinements/regex.js"
+} from "./refinements/pattern.js"
 import {
 	AliasNode,
 	aliasImplementation,

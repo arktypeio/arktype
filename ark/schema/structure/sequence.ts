@@ -231,7 +231,7 @@ export const sequenceImplementation: nodeImplementationOf<SequenceDeclaration> =
 	})
 
 export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
-	impliedBasis: BaseRoot = this.$.keywords.Array.internal
+	impliedBasis: BaseRoot = $ark.intrinsic.Array
 	prefix: array<BaseRoot> = this.inner.prefix ?? []
 	optionals: array<BaseRoot> = this.inner.optionals ?? []
 	prevariadic: BaseRoot[] = [...this.prefix, ...this.optionals]
@@ -300,10 +300,7 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 			appendUniqueContextualReferences(
 				refs,
 				this.variadic.contextualReferences.map(ref => ({
-					path: [
-						this.$.keywords.nonNegativeIntegerString.internal,
-						...ref.path
-					],
+					path: [$ark.intrinsic.nonNegativeIntegerString, ...ref.path],
 					node: ref.node
 				}))
 			)
@@ -315,10 +312,7 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 				n.contextualReferences.map(ref => ({
 					// a postfix index can't be directly represented as a type
 					// key, so we just use the same matcher for variadic
-					path: [
-						this.$.keywords.nonNegativeIntegerString.internal,
-						...ref.path
-					],
+					path: [$ark.intrinsic.nonNegativeIntegerString, ...ref.path],
 					node: ref.node
 				}))
 			)
@@ -363,7 +357,7 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 		mapper: DeepNodeTransformation,
 		ctx: DeepNodeTransformContext
 	) {
-		ctx.path.push(this.$.keywords.nonNegativeIntegerString.internal)
+		ctx.path.push($ark.intrinsic.nonNegativeIntegerString)
 		const result = super._transform(mapper, ctx)
 		ctx.path.pop()
 		return result
@@ -477,7 +471,7 @@ const _intersectSequences = (
 					"required"
 				)
 			)
-			s.result = [...s.result, { kind, node: s.ctx.$.keywords.never.internal }]
+			s.result = [...s.result, { kind, node: $ark.intrinsic.never.internal }]
 		} else if (kind === "optionals") {
 			// if the element result is optional and unsatisfiable, the
 			// intersection can still be satisfied as long as the tuple

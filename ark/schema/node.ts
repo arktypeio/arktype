@@ -112,7 +112,7 @@ export abstract class BaseNode<
 	)
 
 	get $() {
-		return $ark.$.internal
+		return $ark.ambient.internal
 	}
 
 	get references(): BaseNode[] {
@@ -364,7 +364,7 @@ export abstract class BaseNode<
 		)
 			return null
 		if (this.kind === "morph") {
-			;(transformedInner as MutableInner<"morph">).in ??= $.keywords
+			;(transformedInner as MutableInner<"morph">).in ??= $ark.intrinsic
 				.unknown as never
 		}
 

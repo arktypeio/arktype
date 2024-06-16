@@ -174,7 +174,7 @@ export class MorphNode extends BaseRoot<MorphDeclaration> {
 		:	undefined
 
 	override get out(): BaseRoot {
-		return this.validatedOut ?? this.$.keywords.unknown.internal
+		return this.validatedOut ?? $ark.intrinsic.unknown
 	}
 
 	rawKeyOf(): BaseRoot {

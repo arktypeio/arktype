@@ -8,7 +8,7 @@ import type { CastableBase } from "@arktype/util"
 import type { Generic } from "./generic.js"
 import type { MatchParser } from "./match.js"
 import type { Module } from "./module.js"
-import { RawScope, scope, type Scope } from "./scope.js"
+import { scope, type Scope } from "./scope.js"
 import type {
 	DeclarationParser,
 	DefinitionParser,
@@ -31,8 +31,6 @@ type TsGenericsExports<$ = Ark> = {
 export const tsGenerics = {} as Module<TsGenericsExports>
 
 export const ambient: Scope<Ark> = scope(keywordNodes) as never
-
-RawScope.ambient = ambient.internal
 
 export const ark: Module<Ark> = ambient.export()
 

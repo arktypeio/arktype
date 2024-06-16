@@ -69,7 +69,7 @@ export class GenericRoot<params extends string[] = string[], def = any, $ = any>
 
 	@cached
 	get baseConstraints(): array<RootSchema> {
-		return this.params.map(_ => this.$.internal.keywords.unknown)
+		return this.params.map(_ => $ark.intrinsic.unknown)
 	}
 
 	@cached

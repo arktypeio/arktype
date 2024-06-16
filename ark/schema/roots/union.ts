@@ -307,7 +307,7 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 	rawKeyOf(): BaseRoot {
 		return this.branches.reduce(
 			(result, branch) => result.and(branch.rawKeyOf()),
-			this.$.keywords.unknown.internal
+			$ark.intrinsic.unknown
 		)
 	}
 

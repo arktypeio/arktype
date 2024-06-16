@@ -182,7 +182,7 @@ export class IntersectionNode extends BaseRoot<IntersectionDeclaration> {
 				this.structure ?
 					this.basis.rawKeyOf().or(this.structure.keyof())
 				:	this.basis.rawKeyOf()
-			:	this.structure?.keyof() ?? this.$.keywords.never.internal
+			:	this.structure?.keyof() ?? $ark.intrinsic.never
 		)
 	}
 }

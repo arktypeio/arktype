@@ -2,7 +2,7 @@ import {
 	RawPrimitiveConstraint,
 	writeInvalidOperandMessage
 } from "../constraint.js"
-import type { BaseRoot, RawRootDeclaration, Root } from "../roots/root.js"
+import type { BaseRoot, Root } from "../roots/root.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import {
 	implementNode,
@@ -55,15 +55,14 @@ export class DivisorNode extends RawPrimitiveConstraint<DivisorDeclaration> {
 
 	readonly compiledCondition: string = `data % ${this.rule} === 0`
 	readonly compiledNegation: string = `data % ${this.rule} !== 0`
-	readonly impliedBasis: BaseRoot<RawRootDeclaration> =
-		this.$.keywords.number.internal
+	readonly impliedBasis: BaseRoot = $ark.intrinsic.number
 	readonly expression: string = `% ${this.rule}`
 }
 
 export const writeIndivisibleMessage = <node extends Root>(
 	t: node
 ): writeIndivisibleMessage<node> =>
-	writeInvalidOperandMessage("divisor", t.$.internal.keywords.number, t)
+	writeInvalidOperandMessage("divisor", $ark.intrinsic.number as never, t)
 
 export type writeIndivisibleMessage<node extends Root> =
 	writeInvalidOperandMessage<"divisor", node>

@@ -56,7 +56,7 @@ export const indexImplementation: nodeImplementationOf<IndexDeclaration> =
 				child: true,
 				parse: (schema, ctx) => {
 					const key = ctx.$.schema(schema)
-					if (!key.extends(ctx.$.keywords.propertyKey)) {
+					if (!key.extends($ark.intrinsic.propertyKey)) {
 						return throwParseError(
 							writeInvalidPropertyKeyMessage(key.expression)
 						)
@@ -90,7 +90,7 @@ export const indexImplementation: nodeImplementationOf<IndexDeclaration> =
 					const valueIntersection = intersectNodes(l.value, r.value, ctx)
 					const value =
 						valueIntersection instanceof Disjoint ?
-							ctx.$.keywords.never.internal
+							$ark.intrinsic.never.internal
 						:	valueIntersection
 					return ctx.$.node("index", { signature: l.signature, value })
 				}
@@ -109,7 +109,7 @@ export const indexImplementation: nodeImplementationOf<IndexDeclaration> =
 	})
 
 export class IndexNode extends BaseConstraint<IndexDeclaration> {
-	impliedBasis: BaseRoot = this.$.keywords.object.internal
+	impliedBasis: BaseRoot = $ark.intrinsic.object
 	expression = `[${this.signature.expression}]: ${this.value.expression}`
 
 	traverseAllows: TraverseAllows<object> = (data, ctx) =>

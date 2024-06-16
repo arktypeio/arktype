@@ -263,15 +263,19 @@ export abstract class BaseRoot<
 		return result as never
 	}
 
-	onUndeclaredKey(undeclared: UndeclaredKeyBehavior): BaseRoot {
+	onUndeclaredKey(cfg: UndeclaredKeyBehavior | UndeclaredKeyConfig): BaseRoot {
+		const rule = typeof cfg === "string" ? cfg : cfg.rule
+		const deep = typeof cfg === "string" ? false : cfg.deep
 		return this.transform(
 			(kind, inner) =>
 				kind === "structure" ?
-					undeclared === "ignore" ?
+					rule === "ignore" ?
 						omit(inner as StructureInner, { undeclared: 1 })
-					:	{ ...inner, undeclared }
+					:	{ ...inner, undeclared: rule }
 				:	inner,
-			{ shouldTransform: node => !includes(structuralKinds, node.kind) }
+			deep ? undefined : (
+				{ shouldTransform: node => !includes(structuralKinds, node.kind) }
+			)
 		)
 	}
 
@@ -338,6 +342,11 @@ export abstract class BaseRoot<
 	earlierThan(schema: ExclusiveDateRangeSchema): BaseRoot {
 		return this.constrain("before", exclusivizeRangeSchema(schema))
 	}
+}
+
+export type UndeclaredKeyConfig = {
+	rule: UndeclaredKeyBehavior
+	deep?: boolean
 }
 
 export const exclusivizeRangeSchema = <schema extends UnknownRangeSchema>(

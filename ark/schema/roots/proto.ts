@@ -84,7 +84,7 @@ export const protoImplementation: nodeImplementationOf<ProtoDeclaration> =
 					proto
 				:	Disjoint.init(
 						"domain",
-						ctx.$.keywords.object.internal as DomainNode,
+						$ark.intrinsic.object.internal as DomainNode,
 						domain
 					)
 		}

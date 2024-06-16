@@ -72,7 +72,7 @@ export interface StructureDeclaration
 	}> {}
 
 export class StructureNode extends BaseConstraint<StructureDeclaration> {
-	impliedBasis: BaseRoot = this.$.keywords.object.internal
+	impliedBasis: BaseRoot = $ark.intrinsic.object
 	impliedSiblings = this.children.flatMap(
 		n => (n.impliedSiblings as BaseConstraint[]) ?? []
 	)
@@ -373,7 +373,7 @@ export const structureImplementation: nodeImplementationOf<StructureDeclaration>
 						return new Disjoint(
 							...disjointRKeys.map(k => ({
 								kind: "presence" as const,
-								l: ctx.$.keywords.never.internal,
+								l: $ark.intrinsic.never.internal,
 								r: r.propsByKey[k]!.value,
 								path: [k],
 								optional: false
@@ -409,7 +409,7 @@ export const structureImplementation: nodeImplementationOf<StructureDeclaration>
 							...disjointLKeys.map(k => ({
 								kind: "presence" as const,
 								l: l.propsByKey[k]!.value,
-								r: ctx.$.keywords.never.internal,
+								r: $ark.intrinsic.never.internal,
 								path: [k],
 								optional: false
 							}))

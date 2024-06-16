@@ -53,7 +53,7 @@ export const minImplementation: nodeImplementationOf<MinDeclaration> =
 	})
 
 export class MinNode extends BaseRange<MinDeclaration> {
-	readonly impliedBasis: BaseRoot = this.$.keywords.number.internal
+	readonly impliedBasis: BaseRoot = $ark.intrinsic.number
 
 	traverseAllows: TraverseAllows<number> =
 		this.exclusive ? data => data > this.rule : data => data >= this.rule
