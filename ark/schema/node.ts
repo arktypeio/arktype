@@ -56,7 +56,11 @@ export abstract class BaseNode<
 	/** uses -ignore rather than -expect-error because this is not an error in .d.ts
 	 * @ts-ignore allow instantiation assignment to the base type */
 	out d extends RawNodeDeclaration = RawNodeDeclaration
-> extends DynamicBase<attachmentsOf<d> & ContextualNodeProps> {
+> extends DynamicBase<
+	((data: d["prerequisite"]) => unknown) &
+		attachmentsOf<d> &
+		ContextualNodeProps
+> {
 	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
 	abstract traverseApply: TraverseApply<d["prerequisite"]>
 	abstract expression: string
