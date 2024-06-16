@@ -244,7 +244,10 @@ export const intersectionImplementation: nodeImplementationOf<IntersectionDeclar
 				}
 				return [k, v]
 			}) as mutable<NormalizedIntersectionSchema>
-			if (!isEmptyObject(normalizedStructure))
+			if (
+				hasArkKind(normalizedStructure, "constraint") ||
+				!isEmptyObject(normalizedStructure)
+			)
 				normalized.structure = normalizedStructure
 			return normalized
 		},
