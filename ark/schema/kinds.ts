@@ -57,6 +57,7 @@ import {
 	unitImplementation,
 	type UnitDeclaration
 } from "./roots/unit.js"
+import type { RawRootScope } from "./scope.js"
 import type {
 	ConstraintKind,
 	NodeKind,
@@ -146,7 +147,7 @@ $ark.defaultConfig = Object.assign(
 
 export const nodeClassesByKind: Record<
 	NodeKind,
-	new (attachments: UnknownAttachments) => BaseNode
+	new (attachments: UnknownAttachments, $: RawRootScope) => BaseNode
 > = {
 	...boundClassesByKind,
 	alias: AliasNode,

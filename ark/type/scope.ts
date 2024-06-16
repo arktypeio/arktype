@@ -223,7 +223,7 @@ export class RawScope<
 			$: this as never,
 			// args: { this: {} as RawRoot },
 			args: {}
-		})
+		}).bindScope(this)
 	}
 
 	parse(def: unknown, ctx: ParseContext): BaseRoot {

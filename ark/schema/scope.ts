@@ -228,7 +228,8 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 
 		let schema: unknown = nodeSchema
 
-		if (isNode(schema) && schema.kind === kind) return schema as never
+		if (isNode(schema) && schema.kind === kind)
+			return schema.bindScope(this) as never
 
 		if (kind === "alias" && !opts?.prereduced) {
 			const resolution = this.resolveRoot(
@@ -250,11 +251,13 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 		// schema for the kind (e.g. sequence can collapse to element accepting a Node)
 		if (isNode(normalizedSchema)) {
 			return normalizedSchema.kind === kind ?
-					(normalizedSchema as never)
+					(normalizedSchema.bindScope(this) as never)
 				:	throwMismatchedNodeRootError(kind, normalizedSchema.kind)
 		}
 
-		const node = parseNode(kind, normalizedSchema, this, opts ?? {})
+		const node = parseNode(kind, normalizedSchema, this, opts ?? {}).bindScope(
+			this
+		)
 
 		if (this.resolved) {
 			// this node was not part of the original scope, so compile an anonymous scope

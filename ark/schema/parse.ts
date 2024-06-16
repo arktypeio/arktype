@@ -119,7 +119,7 @@ export const parseNode = <kind extends NodeKind>(
 		schema,
 		id
 	}
-	return _parseNode(kind, ctx).bindContext({ $: ctx.$ })
+	return _parseNode(kind, ctx)
 }
 
 const _parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
@@ -160,17 +160,8 @@ const _parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
 
 		if (keyImpl.child) {
 			const listableNode = v as listable<BaseNode>
-			if (isArray(listableNode)) {
-				inner[k] = listableNode.map(n => {
-					const bound = n.bindContext({ $: ctx.$ })
-					children.push(bound)
-					return bound
-				})
-			} else {
-				const bound = listableNode.bindContext({ $: ctx.$ })
-				children.push(bound)
-				inner[k] = bound
-			}
+			if (isArray(listableNode)) children.push(...listableNode)
+			else children.push(listableNode)
 		}
 		if (!keyImpl.meta) typeJson[k] = json[k]
 	})
@@ -248,7 +239,10 @@ const _parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
 			attachments[k] = inner[k]
 	}
 
-	const node: BaseNode = new nodeClassesByKind[kind](attachments as never)
+	const node: BaseNode = new nodeClassesByKind[kind](
+		attachments as never,
+		ctx.$
+	)
 
 	return (nodeCache[innerHash] = node)
 }
