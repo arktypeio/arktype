@@ -49,11 +49,18 @@ import { pathToPropString, type arkKind } from "./shared/utils.js"
 
 export type UnknownNode = BaseNode | Root
 
+export interface ContextualNodeProps {
+	$: RawRootScope
+}
+
 export abstract class BaseNode<
 	/** uses -ignore rather than -expect-error because this is not an error in .d.ts
 	 * @ts-ignore allow instantiation assignment to the base type */
 	out d extends RawNodeDeclaration = RawNodeDeclaration
-> extends Callable<(data: d["prerequisite"]) => unknown, attachmentsOf<d>> {
+> extends Callable<
+	(data: d["prerequisite"]) => unknown,
+	attachmentsOf<d> & ContextualNodeProps
+> {
 	constructor(public attachments: UnknownAttachments) {
 		super(
 			// pipedFromCtx allows us internally to reuse TraversalContext
@@ -84,7 +91,11 @@ export abstract class BaseNode<
 	abstract expression: string
 	abstract compile(js: NodeCompiler): void
 
-	readonly qualifiedId = `${this.$.id}${this.id}`
+	readonly unbound = this
+	bindContext(ctx: ContextualNodeProps) {
+		return Object.create(this.unbound, Object.getOwnPropertyDescriptors(ctx))
+	}
+
 	readonly includesMorph: boolean =
 		this.kind === "morph" ||
 		(this.hasKind("optional") && this.hasDefault()) ||

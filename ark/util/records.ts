@@ -228,3 +228,7 @@ export type withJsDoc<o, jsDocSource> = show<
 type _withJsDoc<o, jsDocSource> = {
 	[k in keyof jsDocSource]-?: o[k & keyof o]
 }
+
+export type propertyDescriptorsOf<o extends object> = {
+	[k in keyof o]: TypedPropertyDescriptor<o[k]>
+}

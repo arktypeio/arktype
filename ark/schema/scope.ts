@@ -12,21 +12,19 @@ import {
 	throwParseError,
 	type Dict,
 	type Json,
-	type PartialRecord,
 	type array,
 	type flattenListable,
 	type requireKeys,
 	type show
 } from "@arktype/util"
 import { globalConfig, mergeConfigs } from "./config.js"
-import { GenericRoot } from "./generic.js"
+import type { GenericRoot } from "./generic.js"
 import type { inferRoot, validateRoot } from "./inference.js"
 import type { internalKeywords } from "./keywords/internal.js"
 import type { jsObjects } from "./keywords/jsObjects.js"
 import type { Ark } from "./keywords/keywords.js"
 import type { tsKeywords } from "./keywords/tsKeywords.js"
 import {
-	nodeClassesByKind,
 	nodeImplementationsByKind,
 	type Node,
 	type NodeSchema,
@@ -220,10 +218,6 @@ export const writeDuplicateAliasError = <alias extends string>(
 export type writeDuplicateAliasError<alias extends string> =
 	`#${alias} duplicates public alias ${alias}`
 
-const nodeCountsByPrefix: PartialRecord<string, number> = {}
-
-const nodesById: Record<string, BaseNode | undefined> = {}
-
 let scopeCount = 0
 
 const scopesById: Record<string, RawRootScope | undefined> = {}
@@ -298,7 +292,7 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 								hasArkKind(resolution, "root") ||
 								hasArkKind(resolution, "generic")
 							) ?
-								this.bindResolution(resolution.internal)
+								resolution.internal
 							:	resolution
 						]
 			)
@@ -335,15 +329,10 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 
 	protected lazyResolutions: AliasNode[] = []
 	lazilyResolve(resolve: () => BaseRoot, syntheticAlias?: string): AliasNode {
-		if (!syntheticAlias) {
-			nodeCountsByPrefix.synthetic ??= 0
-			syntheticAlias = `synthetic${++nodeCountsByPrefix.synthetic}`
-		}
-
 		const node = this.node(
 			"alias",
 			{
-				alias: syntheticAlias,
+				alias: syntheticAlias ?? "synthetic",
 				resolve
 			},
 			{ prereduced: true }
@@ -369,8 +358,7 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 
 		let schema: unknown = nodeSchema
 
-		if (isNode(schema) && schema.kind === kind)
-			return this.bindResolution(schema) as never
+		if (isNode(schema) && schema.kind === kind) return schema as never
 
 		if (kind === "alias" && !opts?.prereduced) {
 			const resolution = this.resolveRoot(
@@ -392,25 +380,11 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 		// schema for the kind (e.g. sequence can collapse to element accepting a Node)
 		if (isNode(normalizedSchema)) {
 			return normalizedSchema.kind === kind ?
-					(this.bindResolution(normalizedSchema) as never)
+					(normalizedSchema as never)
 				:	throwMismatchedNodeRootError(kind, normalizedSchema.kind)
 		}
 
-		const prefix = opts?.alias ?? kind
-		nodeCountsByPrefix[prefix] ??= 0
-		const id = `${prefix}${++nodeCountsByPrefix[prefix]!}`
-
-		const attachments = parseNode(kind, {
-			...opts,
-			id,
-			$: this,
-			args: opts?.args ?? {},
-			schema: normalizedSchema
-		})
-
-		const node = new nodeClassesByKind[attachments.kind](attachments)
-
-		nodesById[id] = node
+		const node = parseNode(kind, normalizedSchema, this, opts ?? {})
 
 		if (this.resolved) {
 			// this node was not part of the original scope, so compile an anonymous scope
@@ -423,32 +397,6 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 		}
 
 		return node as never
-	}
-
-	bindResolution<resolution extends BaseNode | GenericRoot>(
-		resolution: resolution,
-		opts?: BindReferencesOptions
-	): resolution {
-		const bindReferences =
-			opts?.bindReferences ?? this.resolvedConfig.bindReferences
-		const isBound =
-			bindReferences ?
-				resolution.references.every(ref => ref.$ === this)
-			:	resolution.$ === this
-		if (isBound) return resolution as never
-
-		if (hasArkKind(resolution, "generic")) {
-			return new GenericRoot(
-				resolution.params,
-				resolution.def,
-				this as never
-			) as never
-		}
-
-		return resolution.transform((kind, inner) => inner, {
-			bindScope: this,
-			prereduced: true
-		}) as never
 	}
 
 	parseRoot(def: unknown, opts?: NodeParseOptions): BaseRoot {

@@ -8,6 +8,7 @@ import {
 	type Dict,
 	type Json,
 	type JsonData,
+	type PartialRecord,
 	type listable
 } from "@arktype/util"
 import type { GenericArgResolutions } from "./generic.js"
@@ -45,9 +46,9 @@ export type NodeParseOptions<prereduced extends boolean = boolean> = {
 export interface NodeParseContext<kind extends NodeKind = NodeKind>
 	extends NodeParseOptions {
 	$: RawRootScope
-	id: string
 	args: GenericArgResolutions
 	schema: NormalizedSchema<kind>
+	id: string
 }
 
 export const schemaKindOf = <kind extends RootKind = RootKind>(
@@ -92,12 +93,34 @@ const discriminateRootKind = (schema: unknown): RootKind => {
 	return throwParseError(`${printable(schema)} is not a valid type schema`)
 }
 
+const nodeCache: { [innerHash: string]: BaseNode } = {}
+const nodeCountsByPrefix: PartialRecord<string, number> = {}
+
 const serializeListableChild = (listableNode: listable<BaseNode>) =>
 	isArray(listableNode) ?
 		listableNode.map(node => node.collapsibleJson)
 	:	listableNode.collapsibleJson
 
-export const parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
+export const parseNode = <kind extends NodeKind>(
+	kind: kind,
+	schema: NormalizedSchema<kind>,
+	$: RawRootScope,
+	opts: NodeParseOptions
+): BaseNode => {
+	const prefix = opts.alias ?? kind
+	nodeCountsByPrefix[prefix] ??= 0
+	const id = `${prefix}${++nodeCountsByPrefix[prefix]!}`
+	const ctx: NodeParseContext = {
+		...opts,
+		$,
+		args: opts.args ?? {},
+		schema,
+		id
+	}
+	return _parseNode(kind, ctx).bindContext({ $: ctx.$ })
+}
+
+const _parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
 	const impl = nodeImplementationsByKind[kind]
 	const inner: Record<string, unknown> = {}
 	// ensure node entries are parsed in order of precedence, with non-children
@@ -167,10 +190,10 @@ export const parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
 	}
 
 	const innerHash = JSON.stringify({ kind, ...json })
-	// if (ctx.reduceTo) {
-	// 	nodeCache[innerHash] = ctx.reduceTo
-	// 	return ctx.reduceTo
-	// }
+	if (ctx.reduceTo) {
+		nodeCache[innerHash] = ctx.reduceTo
+		return ctx.reduceTo
+	}
 
 	const typeHash = JSON.stringify({ kind, ...typeJson })
 
@@ -192,7 +215,7 @@ export const parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
 
 	// we have to wait until after reduction to return a cached entry,
 	// since reduction can add impliedSiblings
-	if (ctx.$.referencesById[innerHash]) return ctx.$.referencesById[innerHash]
+	if (nodeCache[innerHash]) return nodeCache[innerHash]
 
 	const attachments = {
 		id: ctx.id,
@@ -205,8 +228,7 @@ export const parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
 		collapsibleJson: collapsibleJson as JsonData,
 		children,
 		innerHash,
-		typeHash,
-		$: ctx.$
+		typeHash
 	} satisfies UnknownAttachments as Record<string, any>
 	if (ctx.alias) attachments.alias = ctx.alias
 
@@ -217,6 +239,5 @@ export const parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
 
 	const node: BaseNode = new nodeClassesByKind[kind](attachments as never)
 
-	ctx.$.referencesById[innerHash] = node
-	return node
+	return (nodeCache[innerHash] = node)
 }
