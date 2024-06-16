@@ -33,7 +33,10 @@ import type {
 	TraverseAllows,
 	TraverseApply
 } from "../shared/traversal.js"
-import { makeRootAndArrayPropertiesMutable } from "../shared/utils.js"
+import {
+	hasArkKind,
+	makeRootAndArrayPropertiesMutable
+} from "../shared/utils.js"
 import type { IndexNode, IndexSchema } from "./indexed.js"
 import type { OptionalNode, OptionalSchema } from "./optional.js"
 import type { PropNode } from "./prop.js"
@@ -295,15 +298,15 @@ const omitFromInner = (
 	keys.forEach(k => {
 		if (result.required) {
 			result.required = result.required.filter(b =>
-				typeof k === "function" ? !k.allows(b.key) : k !== b.key
+				hasArkKind(k, "root") ? !k.allows(b.key) : k !== b.key
 			)
 		}
 		if (result.optional) {
 			result.optional = result.optional.filter(b =>
-				typeof k === "function" ? !k.allows(b.key) : k !== b.key
+				hasArkKind(k, "root") ? !k.allows(b.key) : k !== b.key
 			)
 		}
-		if (result.index && typeof k === "function") {
+		if (result.index && hasArkKind(k, "root")) {
 			// we only have to filter index nodes if the input was a node, as
 			// literal keys should never subsume an index
 			result.index = result.index.filter(n => !n.signature.extends(k))

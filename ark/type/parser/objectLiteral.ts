@@ -92,7 +92,7 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): BaseRoot => {
 			const value = ctx.$.parse(entry.value, ctx)
 			const inner: MutableInner<PropKind> = { key: entry.key, value }
 			if (entry.default !== unset) {
-				const out = value(entry.default)
+				const out = value.traverse(entry.default)
 				if (out instanceof ArkErrors)
 					throwParseError(`Default value at ${printable(entry.key)} ${out}`)
 

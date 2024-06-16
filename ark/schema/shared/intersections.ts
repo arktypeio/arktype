@@ -171,8 +171,6 @@ export const intersectNodes: InternalNodeIntersection<IntersectionContext> = (
 	return result as never
 }
 
-// TODO: double check pipes through chained morphs
-
 export const pipeFromMorph = (
 	from: MorphNode,
 	to: BaseRoot,

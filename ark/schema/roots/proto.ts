@@ -79,7 +79,7 @@ export const protoImplementation: nodeImplementationOf<ProtoDeclaration> =
 				constructorExtends(l.proto, r.proto) ? l
 				: constructorExtends(r.proto, l.proto) ? r
 				: Disjoint.init("proto", l, r),
-			domain: (proto, domain, ctx) =>
+			domain: (proto, domain) =>
 				domain.domain === "object" ?
 					proto
 				:	Disjoint.init(

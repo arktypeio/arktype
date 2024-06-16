@@ -65,33 +65,34 @@ export const schemaKindOf = <kind extends RootKind = RootKind>(
 }
 
 const discriminateRootKind = (schema: unknown): RootKind => {
-	switch (typeof schema) {
-		case "string":
-			return schema[0] === "$" ? "alias" : "domain"
-		case "function":
-			return hasArkKind(schema, "root") ? schema.kind : "proto"
-		case "object": {
-			// throw at end of function
-			if (schema === null) break
+	if (hasArkKind(schema, "root")) return schema.kind
+	if (typeof schema === "string") return schema[0] === "$" ? "alias" : "domain"
+	if (typeof schema === "function") return "proto"
 
-			if ("morphs" in schema) return "morph"
+	// throw at end of function
+	if (typeof schema !== "object" || schema === null)
+		return throwParseError(writeInvalidSchemaMessage(schema))
 
-			if ("branches" in schema || isArray(schema)) return "union"
+	if ("morphs" in schema) return "morph"
 
-			if ("unit" in schema) return "unit"
+	if ("branches" in schema || isArray(schema)) return "union"
 
-			if ("alias" in schema) return "alias"
+	if ("unit" in schema) return "unit"
 
-			const schemaKeys = Object.keys(schema)
+	if ("alias" in schema) return "alias"
 
-			if (schemaKeys.length === 0 || schemaKeys.some(k => k in constraintKeys))
-				return "intersection"
-			if ("proto" in schema) return "proto"
-			if ("domain" in schema) return "domain"
-		}
-	}
-	return throwParseError(`${printable(schema)} is not a valid type schema`)
+	const schemaKeys = Object.keys(schema)
+
+	if (schemaKeys.length === 0 || schemaKeys.some(k => k in constraintKeys))
+		return "intersection"
+	if ("proto" in schema) return "proto"
+	if ("domain" in schema) return "domain"
+
+	return throwParseError(writeInvalidSchemaMessage(schema))
 }
+
+export const writeInvalidSchemaMessage = (schema: unknown) =>
+	`${printable(schema)} is not a valid type schema`
 
 const nodeCache: { [innerHash: string]: BaseNode } = {}
 const nodeCountsByPrefix: PartialRecord<string, number> = {}

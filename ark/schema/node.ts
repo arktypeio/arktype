@@ -1,5 +1,5 @@
 import {
-	Callable,
+	DynamicBase,
 	appendUnique,
 	arrayEquals,
 	flatMorph,
@@ -37,8 +37,7 @@ import {
 	type BasisKind,
 	type NodeKind,
 	type OpenNodeKind,
-	type RefinementKind,
-	type UnknownAttachments
+	type RefinementKind
 } from "./shared/implement.js"
 import {
 	TraversalContext,
@@ -57,35 +56,7 @@ export abstract class BaseNode<
 	/** uses -ignore rather than -expect-error because this is not an error in .d.ts
 	 * @ts-ignore allow instantiation assignment to the base type */
 	out d extends RawNodeDeclaration = RawNodeDeclaration
-> extends Callable<
-	(data: d["prerequisite"]) => unknown,
-	attachmentsOf<d> & ContextualNodeProps
-> {
-	constructor(public attachments: UnknownAttachments) {
-		super(
-			// pipedFromCtx allows us internally to reuse TraversalContext
-			// through pipes and keep track of piped paths. It is not exposed
-			(data: any, pipedFromCtx?: TraversalContext) => {
-				if (
-					!this.includesMorph &&
-					!this.allowsRequiresContext &&
-					this.allows(data)
-				)
-					return data
-
-				if (pipedFromCtx) {
-					this.traverseApply(data, pipedFromCtx)
-					return pipedFromCtx.data
-				}
-
-				const ctx = new TraversalContext(data, this.$.resolvedConfig)
-				this.traverseApply(data, ctx)
-				return ctx.finalize()
-			},
-			{ attach: attachments as never }
-		)
-	}
-
+> extends DynamicBase<attachmentsOf<d> & ContextualNodeProps> {
 	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
 	abstract traverseApply: TraverseApply<d["prerequisite"]>
 	abstract expression: string
@@ -93,7 +64,11 @@ export abstract class BaseNode<
 
 	readonly unbound = this
 	bindContext(ctx: ContextualNodeProps) {
-		return Object.create(this.unbound, Object.getOwnPropertyDescriptors(ctx))
+		const proto = Object.create(
+			this.unbound,
+			Object.getOwnPropertyDescriptors(ctx)
+		)
+		return Object.setPrototypeOf(this.unbound.traverse.bind(proto), proto)
 	}
 
 	readonly includesMorph: boolean =
@@ -110,10 +85,6 @@ export abstract class BaseNode<
 		(result, child) => Object.assign(result, child.referencesById),
 		{ [this.id]: this }
 	)
-
-	get $() {
-		return $ark.ambient.internal
-	}
 
 	get references(): BaseNode[] {
 		return Object.values(this.referencesById)
@@ -163,8 +134,21 @@ export abstract class BaseNode<
 		return (this.traverseAllows as any)(data as never)
 	}
 
-	traverse(data: d["prerequisite"]): unknown {
-		return this(data)
+	traverse(data: d["prerequisite"], pipedFromCtx?: TraversalContext): unknown {
+		// pipedFromCtx allows us internally to reuse TraversalContext
+		// through pipes and keep track of piped paths. It is not exposed
+
+		if (!this.includesMorph && !this.allowsRequiresContext && this.allows(data))
+			return data
+
+		if (pipedFromCtx) {
+			this.traverseApply(data, pipedFromCtx)
+			return pipedFromCtx.data
+		}
+
+		const ctx = new TraversalContext(data, this.$.resolvedConfig)
+		this.traverseApply(data, ctx)
+		return ctx.finalize()
 	}
 
 	// unfortunately we can't use the @cached
