@@ -207,8 +207,8 @@ export const conflatenateAll = <element>(
 ): readonly element[] =>
 	elementsOrLists.reduce<readonly element[]>(conflatenate, [])
 
-export type AppendUniqueOptions<element> = {
-	isEqual?: (l: element, r: element) => boolean
+export interface ComparisonOptions<t = unknown> {
+	isEqual?: (l: t, r: t) => boolean
 }
 
 /**
@@ -221,7 +221,7 @@ export type AppendUniqueOptions<element> = {
 export const appendUnique = <to extends unknown[]>(
 	to: to | undefined,
 	value: NoInfer<Readonly<to> | to[number]>,
-	opts?: AppendUniqueOptions<to[number]>
+	opts?: ComparisonOptions<to[number]>
 ): to => {
 	if (to === undefined)
 		return Array.isArray(value) ? (value as never) : ([value] as never)
@@ -252,10 +252,18 @@ export const groupBy = <element, discriminant extends groupableKeyOf<element>>(
 ): groupBy<element, discriminant> =>
 	array.reduce<Record<PropertyKey, any>>((result, item) => {
 		const key = item[discriminant] as never
-		result[key] ??= []
-		result[key].push(item)
+		result[key] = append(result[key], item)
 		return result
 	}, {})
 
-export const arrayEquals = (l: array, r: array) =>
-	l.length === r.length && l.every((lItem, i) => lItem === r[i])
+export const arrayEquals = <element>(
+	l: array<element>,
+	r: array<element>,
+	opts?: ComparisonOptions<element>
+) =>
+	l.length === r.length &&
+	l.every(
+		opts?.isEqual ?
+			(lItem, i) => opts.isEqual!(lItem, r[i])
+		:	(lItem, i) => lItem === r[i]
+	)

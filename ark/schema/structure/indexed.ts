@@ -5,9 +5,10 @@ import {
 } from "@arktype/util"
 import { BaseConstraint } from "../constraint.js"
 import type { Node, RootSchema } from "../kinds.js"
-import type {
-	DeepNodeTransformContext,
-	DeepNodeTransformation
+import {
+	contextualReference,
+	type DeepNodeTransformContext,
+	type DeepNodeTransformation
 } from "../node.js"
 import type { BaseRoot } from "../roots/root.js"
 import type { UnitNode } from "../roots/unit.js"
@@ -144,10 +145,9 @@ export class IndexNode extends BaseConstraint<IndexDeclaration> {
 	}
 
 	override get contextualReferences() {
-		return super.contextualReferences.map(ref => ({
-			path: [this.signature, ...ref.path],
-			node: ref.node
-		}))
+		return super.contextualReferences.map(ref =>
+			contextualReference([this.signature, ...ref.path], ref.node)
+		)
 	}
 
 	compile(): void {

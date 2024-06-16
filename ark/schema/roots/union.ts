@@ -22,6 +22,7 @@ import {
 	type show
 } from "@arktype/util"
 import type { Node, NodeSchema } from "../kinds.js"
+import { contextualReferencesAreEqual } from "../node.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -582,23 +583,21 @@ export const reduceBranches = ({
 			)!
 			if (intersection instanceof Disjoint) continue
 
-			if (!ordered) {
-				if (branches[i].includesMorph) {
-					throwParseError(
-						writeIndiscriminableMorphMessage(
-							branches[i].expression,
-							branches[j].expression
-						)
+			if (
+				!ordered &&
+				(branches[i].includesMorph || branches[j].includesMorph) &&
+				arrayEquals(
+					branches[i].contextualMorphs,
+					branches[j].contextualMorphs,
+					{ isEqual: contextualReferencesAreEqual }
+				)
+			) {
+				throwParseError(
+					writeIndiscriminableMorphMessage(
+						branches[i].expression,
+						branches[j].expression
 					)
-				}
-				if (branches[j].includesMorph) {
-					throwParseError(
-						writeIndiscriminableMorphMessage(
-							branches[j].expression,
-							branches[i].expression
-						)
-					)
-				}
+				)
 			}
 
 			if (intersection.equals(branches[i].in)) {
@@ -683,12 +682,12 @@ export const pruneDiscriminant = (
 	)
 
 export const writeIndiscriminableMorphMessage = (
-	morphDescription: string,
-	overlappingDescription: string
+	lDescription: string,
+	rDescription: string
 ) =>
 	`An unordered union of a type including a morph and a type with overlapping input is indeterminate:
-Morph Branch: ${morphDescription}
-Overlapping Branch: ${overlappingDescription}`
+Left: ${lDescription}
+Right: ${rDescription}`
 
 export const writeOrderedIntersectionMessage = (
 	lDescription: string,

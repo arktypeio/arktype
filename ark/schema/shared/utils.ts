@@ -55,7 +55,7 @@ export const pathToPropString = <stringifiable>(
 	path: array<stringifiable>,
 	...[opts]: [stringifiable] extends [PropertyKey] ?
 		[opts?: PathToPropStringOptions]
-	:	[opts: PathToPropStringOptions<stringifiable>]
+	:	NoInfer<[opts: PathToPropStringOptions<stringifiable>]>
 ): string => {
 	const stringifySymbol = opts?.stringifySymbol ?? printable
 	const propAccessChain = path.reduce<string>((s, k) => {

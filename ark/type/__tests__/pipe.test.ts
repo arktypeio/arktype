@@ -645,4 +645,29 @@ contextualize(() => {
 		attest(t({ bar: 1 })).snap()
 		attest(t({ baz: 2 }).toString()).snap()
 	})
+	it("allows undiscriminated union if morphs at path are equal", () => {
+		const t = type({ l: "1", n: "parse.number" }, "|", {
+			r: "1",
+			n: "parse.number"
+		})
+
+		attest<
+			| {
+					l: 1
+					n: (In: string) => Out<number>
+			  }
+			| {
+					r: 1
+					n: (In: string) => Out<number>
+			  }
+		>(t.t)
+
+		const serializedMorphs = t.internal.firstReferenceOfKindOrThrow("morph")
+
+		attest(t.json).snap()
+		attest(t({ l: 1, n: "234" })).snap()
+		attest(t({ r: 1, n: "234" })).snap()
+		attest(t({ l: 1, r: 1, n: "234" })).snap() 
+		attest(t({ n: "234" }).toString()).snap()
+	})
 })

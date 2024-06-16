@@ -10,6 +10,7 @@ import { BaseConstraint } from "../constraint.js"
 import type { MutableInner, RootSchema } from "../kinds.js"
 import {
 	appendUniqueContextualReferences,
+	contextualReference,
 	type ContextualReference,
 	type DeepNodeTransformContext,
 	type DeepNodeTransformation
@@ -289,32 +290,35 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 		appendUniqueContextualReferences(
 			refs,
 			this.prevariadic.flatMap((n, i) =>
-				n.contextualReferences.map(ref => ({
-					path: [`${i}`, ...ref.path],
-					node: ref.node
-				}))
+				n.contextualReferences.map(ref =>
+					contextualReference([`${i}`, ...ref.path], ref.node)
+				)
 			)
 		)
 
 		if (this.variadic) {
 			appendUniqueContextualReferences(
 				refs,
-				this.variadic.contextualReferences.map(ref => ({
-					path: [$ark.intrinsic.nonNegativeIntegerString, ...ref.path],
-					node: ref.node
-				}))
+				this.variadic.contextualReferences.map(ref =>
+					contextualReference(
+						[$ark.intrinsic.nonNegativeIntegerString, ...ref.path],
+						ref.node
+					)
+				)
 			)
 		}
 
 		appendUniqueContextualReferences(
 			refs,
 			this.postfix.flatMap(n =>
-				n.contextualReferences.map(ref => ({
-					// a postfix index can't be directly represented as a type
-					// key, so we just use the same matcher for variadic
-					path: [$ark.intrinsic.nonNegativeIntegerString, ...ref.path],
-					node: ref.node
-				}))
+				// a postfix index can't be directly represented as a type
+				// key, so we just use the same matcher for variadic
+				n.contextualReferences.map(ref =>
+					contextualReference(
+						[$ark.intrinsic.nonNegativeIntegerString, ...ref.path],
+						ref.node
+					)
+				)
 			)
 		)
 

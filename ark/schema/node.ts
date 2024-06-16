@@ -3,12 +3,12 @@ import {
 	appendUnique,
 	cached,
 	flatMorph,
+	groupBy,
 	includes,
 	isArray,
 	isEmptyObject,
 	registeredReference,
 	throwError,
-	type AppendUniqueOptions,
 	type Dict,
 	type Guardable,
 	type Json,
@@ -45,7 +45,11 @@ import {
 	type TraverseAllows,
 	type TraverseApply
 } from "./shared/traversal.js"
-import { pathToPropString, type arkKind } from "./shared/utils.js"
+import {
+	pathToPropString,
+	type PathToPropStringOptions,
+	type arkKind
+} from "./shared/utils.js"
 
 export type UnknownNode = BaseNode | Root
 
@@ -121,20 +125,26 @@ export abstract class BaseNode<
 	}
 
 	get contextualReferences(): ContextualReference[] {
-		return this.children.reduce<ContextualReference[]>(
-			(acc, child) =>
-				appendUniqueContextualReferences(acc, child.contextualReferences),
-			[{ path: [], node: this }]
-		)
+		return this.children
+			.reduce<ContextualReference[]>(
+				(acc, child) =>
+					appendUniqueContextualReferences(acc, child.contextualReferences),
+				[contextualReference([], this)]
+			)
+			.sort((l, r) =>
+				l.propString > r.propString ? 1
+				: l.propString < r.propString ? -1
+				: l.node.expression < r.node.expression ? -1
+				: 1
+			)
+	}
+
+	get contextualMorphs(): ContextualReference[] {
+		return this.contextualReferences.filter(ref => ref.node.hasKind("morph"))
 	}
 
 	get contextualReferencesByPath() {
-		return Object.groupBy(this.contextualReferences, ref =>
-			pathToPropString(ref.path, {
-				stringifySymbol: registeredReference,
-				stringifyNonKey: node => node.expression
-			})
-		)
+		return groupBy(this.contextualReferences, "propString")
 	}
 
 	get referencesByPath() {
@@ -381,24 +391,36 @@ export type TypePath = (Key | BaseRoot)[]
 export type ContextualReference = {
 	path: TypePath
 	node: BaseNode
+	propString: string
 }
 
-const uniqueContextualReferencesOptions: AppendUniqueOptions<ContextualReference> =
+const contextualReferencePropStringOptions: PathToPropStringOptions<BaseNode> =
 	{
-		isEqual: (l, r) =>
-			l.node.equals(r.node) &&
-			l.path.length === r.path.length &&
-			l.path.every((lKey, i) =>
-				typeof lKey === "object" && typeof r.path[i] === "object" ?
-					lKey === r.path[i]
-				:	lKey === r.path[i]
-			)
+		stringifySymbol: registeredReference,
+		stringifyNonKey: node => node.expression
 	}
+
+export const contextualReference = (
+	path: TypePath,
+	node: BaseNode
+): ContextualReference => ({
+	path,
+	node,
+	propString: pathToPropString(path, contextualReferencePropStringOptions)
+})
+
+export const contextualReferencesAreEqual = (
+	l: ContextualReference,
+	r: ContextualReference
+) => l.propString === r.propString && l.node.equals(r.node)
 
 export const appendUniqueContextualReferences = (
 	existing: ContextualReference[] | undefined,
 	refs: listable<ContextualReference>
-) => appendUnique(existing, refs, uniqueContextualReferencesOptions)
+) =>
+	appendUnique(existing, refs, {
+		isEqual: contextualReferencesAreEqual
+	})
 
 export type DeepNodeTransformOptions = {
 	shouldTransform?: ShouldTransformFn

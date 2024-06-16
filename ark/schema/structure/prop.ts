@@ -8,9 +8,11 @@ import {
 } from "@arktype/util"
 import { BaseConstraint } from "../constraint.js"
 import type { Node, RootSchema } from "../kinds.js"
-import type {
-	DeepNodeTransformContext,
-	DeepNodeTransformation
+import {
+	contextualReference,
+	type ContextualReference,
+	type DeepNodeTransformContext,
+	type DeepNodeTransformation
 } from "../node.js"
 import type { Morph } from "../roots/morph.js"
 import type { BaseRoot } from "../roots/root.js"
@@ -119,11 +121,10 @@ export abstract class BaseProp<
 		}
 	]
 
-	override get contextualReferences() {
-		return super.contextualReferences.map(ref => ({
-			path: [this.key, ...ref.path],
-			node: ref.node
-		}))
+	override get contextualReferences(): ContextualReference[] {
+		return super.contextualReferences.map(ref =>
+			contextualReference([this.key, ...ref.path], ref.node)
+		)
 	}
 
 	private defaultValueMorphsReference = registeredReference(
