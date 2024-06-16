@@ -93,11 +93,11 @@ export abstract class BaseNode<
 
 	@cached
 	get description(): string {
-		return (
-			this.inner.description ??
-			this.$?.resolvedConfig[this.kind].description?.(this as never) ??
-			"foo"
-		)
+		const writer =
+			this.$?.resolvedConfig[this.kind].description ??
+			$ark.config[this.kind]?.description ??
+			$ark.defaultConfig[this.kind].description
+		return this.inner.description ?? writer(this as never)
 	}
 
 	get references(): BaseNode[] {
