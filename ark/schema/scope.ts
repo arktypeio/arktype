@@ -3,7 +3,6 @@ import {
 	DynamicBase,
 	ParseError,
 	bound,
-	envHasCsp,
 	flatMorph,
 	hasDomain,
 	isArray,
@@ -14,15 +13,14 @@ import {
 	type Json,
 	type array,
 	type flattenListable,
-	type requireKeys,
 	type show
 } from "@arktype/util"
-import { globalConfig, mergeConfigs } from "./config.js"
+import type { ArkConfig } from "arktype"
+import { resolveConfig, type ResolvedArkConfig } from "./config.js"
 import type { GenericRoot } from "./generic.js"
 import type { inferRoot, validateRoot } from "./inference.js"
 import type { internalKeywords } from "./keywords/internal.js"
 import type { jsObjects } from "./keywords/jsObjects.js"
-import type { Ark } from "./keywords/keywords.js"
 import type { tsKeywords } from "./keywords/tsKeywords.js"
 import {
 	nodeImplementationsByKind,
@@ -41,18 +39,7 @@ import { parseNode, schemaKindOf, type NodeParseOptions } from "./parse.js"
 import { normalizeAliasSchema, type AliasNode } from "./roots/alias.js"
 import type { BaseRoot, Root } from "./roots/root.js"
 import { NodeCompiler } from "./shared/compile.js"
-import type {
-	ActualWriter,
-	ArkErrorCode,
-	ExpectedWriter,
-	MessageWriter,
-	ProblemWriter
-} from "./shared/errors.js"
-import type {
-	DescriptionWriter,
-	NodeKind,
-	RootKind
-} from "./shared/implement.js"
+import type { NodeKind, RootKind } from "./shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "./shared/traversal.js"
 import {
 	arkKind,
@@ -64,111 +51,6 @@ import {
 export type nodeResolutions<keywords> = { [k in keyof keywords]: BaseRoot }
 
 export type BaseResolutions = Record<string, BaseRoot>
-
-declare global {
-	export interface ArkEnv {
-		$(): Ark
-		meta(): {}
-		preserve(): never
-		registry(): { ambient: RawRootScope; intrinsic: IntrinsicKeywords }
-	}
-
-	export namespace ArkEnv {
-		export type $ = ReturnType<ArkEnv["$"]>
-		export type meta = ReturnType<ArkEnv["meta"]>
-		export type preserve = ReturnType<ArkEnv["preserve"]>
-	}
-}
-
-type nodeConfigForKind<kind extends NodeKind> = Readonly<
-	show<
-		{
-			description?: DescriptionWriter<kind>
-		} & (kind extends ArkErrorCode ?
-			{
-				expected?: ExpectedWriter<kind>
-				actual?: ActualWriter<kind>
-				problem?: ProblemWriter<kind>
-				message?: MessageWriter<kind>
-			}
-		:	{})
-	>
->
-
-type NodeConfigsByKind = {
-	[kind in NodeKind]: nodeConfigForKind<kind>
-}
-
-export type NodeConfig<kind extends NodeKind = NodeKind> =
-	NodeConfigsByKind[kind]
-
-type UnknownNodeConfig = {
-	description?: DescriptionWriter
-	expected?: ExpectedWriter
-	actual?: ActualWriter
-	problem?: ProblemWriter
-	message?: MessageWriter
-}
-
-export type ParsedUnknownNodeConfig = requireKeys<
-	UnknownNodeConfig,
-	"description"
->
-
-export interface BindReferencesOptions {
-	bindReferences?: boolean
-}
-
-export interface ArkConfig
-	extends Partial<Readonly<NodeConfigsByKind>>,
-		BindReferencesOptions {
-	jitless?: boolean
-	/** @internal */
-	intrinsic?: boolean
-	/** @internal */
-	prereducedAliases?: boolean
-}
-
-type resolveConfig<config extends ArkConfig> = {
-	[k in keyof config]-?: k extends NodeKind ? Required<config[k]> : config[k]
-}
-
-export type ResolvedArkConfig = resolveConfig<ArkConfig>
-
-export const defaultConfig: ResolvedArkConfig = Object.assign(
-	flatMorph(nodeImplementationsByKind, (kind, implementation) => [
-		kind,
-		implementation.defaults
-	]),
-	{
-		jitless: envHasCsp(),
-		bindReferences: false,
-		intrinsic: false,
-		prereducedAliases: false
-	} satisfies Omit<ResolvedArkConfig, NodeKind>
-) as never
-
-const nonInheritedKeys = [
-	"intrinsic",
-	"prereducedAliases"
-] as const satisfies array<keyof ArkConfig>
-
-export const extendConfig = (
-	base: ArkConfig,
-	extension: ArkConfig | undefined
-): ArkConfig => {
-	if (!extension) return base
-	const result = mergeConfigs(base, extension)
-	nonInheritedKeys.forEach(k => {
-		if (!(k in extension)) delete result[k]
-	})
-	return result
-}
-
-export const resolveConfig = (
-	config: ArkConfig | undefined
-): ResolvedArkConfig =>
-	extendConfig(extendConfig(defaultConfig, globalConfig), config) as never
 
 export type RawRootResolutions = Record<string, RawResolution | undefined>
 
@@ -493,9 +375,7 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 			Object.assign(this.resolutions, this._exportedResolutions)
 			if (this.config.intrinsic)
 				Object.assign($ark.intrinsic, this._exportedResolutions)
-			this.references = Object.values(this.referencesById).map(n =>
-				n.bindContext({ $: this })
-			)
+			this.references = Object.values(this.referencesById)
 			if (!this.resolvedConfig.jitless) bindCompiledScope(this.references)
 			this.resolved = true
 		}

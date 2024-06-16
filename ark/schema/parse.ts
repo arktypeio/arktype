@@ -162,14 +162,14 @@ const _parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
 			const listableNode = v as listable<BaseNode>
 			if (isArray(listableNode)) {
 				inner[k] = listableNode.map(n => {
-					const scoped = n.bindContext({ $: ctx.$ })
-					children.push(scoped)
-					return scoped
+					const bound = n.bindContext({ $: ctx.$ })
+					children.push(bound)
+					return bound
 				})
 			} else {
-				const scoped = listableNode.bindContext({ $: ctx.$ })
-				children.push(scoped)
-				inner[k] = scoped
+				const bound = listableNode.bindContext({ $: ctx.$ })
+				children.push(bound)
+				inner[k] = bound
 			}
 		}
 		if (!keyImpl.meta) typeJson[k] = json[k]

@@ -2,6 +2,7 @@ import {
 	DynamicBase,
 	appendUnique,
 	arrayEquals,
+	cached,
 	flatMorph,
 	includes,
 	isArray,
@@ -90,11 +91,13 @@ export abstract class BaseNode<
 		{ [this.id]: this }
 	)
 
-	private _description?: string
+	@cached
 	get description(): string {
-		this._description ??= this.inner.description ?? "foo"
-		// this.$.resolvedConfig[this.kind].description?.(this as never)
-		return this._description
+		return (
+			this.inner.description ??
+			this.$?.resolvedConfig[this.kind].description?.(this as never) ??
+			"foo"
+		)
 	}
 
 	get references(): BaseNode[] {
@@ -162,19 +165,14 @@ export abstract class BaseNode<
 		return ctx.finalize()
 	}
 
-	// unfortunately we can't use the @cached
-	// decorator from @arktype/util on these for now
-	// as they cause a deopt in V8
-	private _in?: BaseNode;
+	@cached
 	get in(): this extends { [arkKind]: "root" } ? BaseRoot : BaseNode {
-		this._in ??= this.getIo("in")
-		return this._in as never
+		return this.getIo("in") as never
 	}
 
-	private _out?: BaseNode
+	@cached
 	get out(): this extends { [arkKind]: "root" } ? BaseRoot : BaseNode {
-		this._out ??= this.getIo("out")
-		return this._out as never
+		return this.getIo("out") as never
 	}
 
 	getIo(kind: "in" | "out"): BaseNode {

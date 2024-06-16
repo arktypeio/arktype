@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@arktype/attest"
-import { configure, defaultConfig, schema } from "@arktype/schema"
+import { configure, schema } from "@arktype/schema"
 import { schemaScope } from "../scope.js"
 
 contextualize(() => {
@@ -110,7 +110,7 @@ contextualize(() => {
 			"must be my special symbol (was string)"
 		)
 		configure({
-			domain: defaultConfig.domain
+			domain: $ark.defaultConfig.domain
 		})
 		const myBoringSymbol = schemaScope({}).schema("symbol")
 		attest(myBoringSymbol.traverse("foo").toString()).snap(

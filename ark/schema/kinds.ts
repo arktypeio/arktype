@@ -1,4 +1,5 @@
-import type { array, listable } from "@arktype/util"
+import { envHasCsp, flatMorph, type array, type listable } from "@arktype/util"
+import type { ResolvedArkConfig } from "./config.js"
 import type { BaseNode } from "./node.js"
 import {
 	PredicateNode,
@@ -130,6 +131,18 @@ export const nodeImplementationsByKind: Record<
 	sequence: sequenceImplementation,
 	structure: structureImplementation
 } satisfies Record<NodeKind, unknown> as never
+
+$ark.defaultConfig = Object.assign(
+	flatMorph(nodeImplementationsByKind, (kind, implementation) => [
+		kind,
+		implementation.defaults
+	]),
+	{
+		jitless: envHasCsp(),
+		intrinsic: false,
+		prereducedAliases: false
+	} satisfies Omit<ResolvedArkConfig, NodeKind>
+) as never
 
 export const nodeClassesByKind: Record<
 	NodeKind,

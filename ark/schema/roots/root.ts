@@ -10,6 +10,7 @@ import type {
 	UnknownRangeSchema
 } from "@arktype/schema"
 import {
+	cached,
 	includes,
 	omit,
 	throwParseError,
@@ -97,17 +98,15 @@ export abstract class BaseRoot<
 	abstract rawKeyOf(): BaseRoot
 	abstract get shortDescription(): string
 
-	private _keyof: BaseRoot | undefined
+	@cached
 	keyof(): BaseRoot {
-		if (!this._keyof) {
-			this._keyof = this.rawKeyOf()
-			if (this._keyof.branches.length === 0) {
-				throwParseError(
-					`keyof ${this.expression} results in an unsatisfiable type`
-				)
-			}
+		const result = this.rawKeyOf()
+		if (result.branches.length === 0) {
+			throwParseError(
+				`keyof ${this.expression} results in an unsatisfiable type`
+			)
 		}
-		return this._keyof as never
+		return result
 	}
 
 	protected intersect(r: unknown): BaseRoot | Disjoint {

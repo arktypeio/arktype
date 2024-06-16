@@ -1,6 +1,10 @@
 import { type } from "arktype"
 import { fromHere } from "@arktype/fs"
 
+console.log(
+	"⏱️  Checking for V8 fast properties (https://v8.dev/blog/fast-properties) on Type...\n"
+)
+
 const t = type({
 	a: "string",
 	b: "number"
@@ -16,6 +20,7 @@ node --allow-natives-syntax ${fromHere()}`)
 }
 
 if (!hasFastProperties) {
-	throw new Error(`Type instance has been deoptimized by V8.
-See: https://v8.dev/blog/fast-properties`)
+	throw new Error("⚠️  Type instance has been deoptimized.")
 }
+
+console.log("🏎️  Type instance has fast properties!")

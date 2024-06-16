@@ -1,6 +1,6 @@
 import type { array } from "@arktype/util"
+import type { ResolvedArkConfig } from "../config.js"
 import type { Morph } from "../roots/morph.js"
-import type { ResolvedArkConfig } from "../scope.js"
 import {
 	ArkError,
 	ArkErrors,
