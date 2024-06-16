@@ -76,8 +76,8 @@ export abstract class BaseNode<
 		(this.hasKind("optional") && this.hasDefault()) ||
 		(this.hasKind("structure") && this.undeclared === "delete") ||
 		this.children.some(child => child.includesMorph)
+	// if a predicate accepts exactly one arg, we can safely skip passing context
 	readonly allowsRequiresContext: boolean =
-		// if a predicate accepts exactly one arg, we can safely skip passing context
 		(this.hasKind("predicate") && this.inner.predicate.length !== 1) ||
 		this.kind === "alias" ||
 		this.children.some(child => child.allowsRequiresContext)
@@ -88,9 +88,8 @@ export abstract class BaseNode<
 
 	private _description?: string
 	get description(): string {
-		this._description ??=
-			this.inner.description ??
-			this.$.resolvedConfig[this.kind].description?.(this as never)
+		this._description ??= this.inner.description ?? "foo"
+		// this.$.resolvedConfig[this.kind].description?.(this as never)
 		return this._description
 	}
 
