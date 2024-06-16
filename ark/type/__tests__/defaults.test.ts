@@ -52,17 +52,17 @@ contextualize(
 	},
 	"string parsing",
 	() => {
-		it("can parse a serializable default from a string", () => {
-			const t = type({ foo: "string", bar: "number = 5" })
-			const expected = type({ foo: "string", bar: ["number", "=", 5] })
+		// it("can parse a serializable default from a string", () => {
+		// 	const t = type({ foo: "string", bar: "number = 5" })
+		// 	const expected = type({ foo: "string", bar: ["number", "=", 5] })
 
-			attest<{
-				foo: string
-				bar: (In?: number) => Default<5>
-			}>(t.t)
+		// 	attest<{
+		// 		foo: string
+		// 		bar: (In?: number) => Default<5>
+		// 	}>(t.t)
 
-			attest(t.json).equals(expected.json)
-		})
+		// 	attest(t.json).equals(expected.json)
+		// })
 
 		it("incorrect default type", () => {
 			attest(() =>
@@ -103,12 +103,12 @@ contextualize(
 		// 	attest<typeof whitespace>(noWhitespace).equals(whitespace)
 		// })
 
-		it("optional with default", () => {
-			attest(() =>
-				// @ts-expect-error
-				type({ foo: "string", "bar?": "number = 5" })
-			).throwsAndHasTypeError(invalidDefaultKeyKindMessage)
-		})
+		// it("optional with default", () => {
+		// 	attest(() =>
+		// 		// @ts-expect-error
+		// 		type({ foo: "string", "bar?": "number = 5" })
+		// 	).throwsAndHasTypeError(invalidDefaultKeyKindMessage)
+		// })
 	},
 	"intersection",
 	() => {

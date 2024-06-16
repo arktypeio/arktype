@@ -61,9 +61,9 @@ export const pathToPropString = <stringifiable>(
 	const propAccessChain = path.reduce<string>((s, k) => {
 		switch (typeof k) {
 			case "string":
-				return isDotAccessible(k) ? `${s}.${k}` : `${s}[${printable(k)}]`
+				return isDotAccessible(k) ? `${s}.${k}` : `${s}[${JSON.stringify(k)}]`
 			case "number":
-				return `${s}[${printable(k)}]`
+				return `${s}[${k}]`
 			case "symbol":
 				return `${s}[${stringifySymbol(k)}]`
 			default:

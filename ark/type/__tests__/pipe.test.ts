@@ -521,8 +521,8 @@ contextualize(() => {
 			}).export()
 		}).throws(
 			writeIndiscriminableMorphMessage(
-				"(In: string /.*/) => Out<unknown>",
-				"string"
+				"string",
+				"(In: string /.*/) => Out<unknown>"
 			)
 		)
 	})
@@ -562,8 +562,8 @@ contextualize(() => {
 
 		attest(() => $.type("a|c")).throws(
 			writeIndiscriminableMorphMessage(
-				"{ foo: (In: string) => Out<unknown> }",
-				"{ bar: symbol }"
+				"{ bar: symbol }",
+				"{ foo: (In: string) => Out<unknown> }"
 			)
 		)
 	})
@@ -640,10 +640,27 @@ contextualize(() => {
 
 		const serializedMorphs = t.internal.assertHasKind("morph").serializedMorphs
 
-		attest(t.json).snap()
-		attest(t({ foo: 1 })).snap()
-		attest(t({ bar: 1 })).snap()
-		attest(t({ baz: 2 }).toString()).snap()
+		attest(t.json).snap([
+			{
+				in: {
+					required: [{ key: "bar", value: { unit: 1 } }],
+					domain: "object"
+				},
+				morphs: serializedMorphs
+			},
+			{
+				in: {
+					required: [{ key: "foo", value: { unit: 1 } }],
+					domain: "object"
+				},
+				morphs: serializedMorphs
+			}
+		])
+		attest(t({ foo: 1 })).snap([1])
+		attest(t({ bar: 1 })).snap([1])
+		attest(t({ baz: 2 }).toString()).snap(
+			"bar must be 1 (was missing) or foo must be 1 (was missing)"
+		)
 	})
 	it("allows undiscriminated union if morphs at path are equal", () => {
 		const t = type({ l: "1", n: "parse.number" }, "|", {
@@ -662,12 +679,60 @@ contextualize(() => {
 			  }
 		>(t.t)
 
-		const serializedMorphs = t.internal.firstReferenceOfKindOrThrow("morph")
+		const serializedMorphs =
+			t.internal.firstReferenceOfKindOrThrow("morph").serializedMorphs
 
-		attest(t.json).snap()
-		attest(t({ l: 1, n: "234" })).snap()
-		attest(t({ r: 1, n: "234" })).snap()
-		attest(t({ l: 1, r: 1, n: "234" })).snap() 
-		attest(t({ n: "234" }).toString()).snap()
+		attest(t.json).snap([
+			{
+				required: [
+					{ key: "l", value: { unit: 1 } },
+					{
+						key: "n",
+						value: {
+							in: {
+								domain: "string",
+								pattern: [
+									{
+										description: "a well-formed numeric string",
+										flags: "",
+										rule: "^(?!^-0$)-?(?:0|[1-9]\\d*)(?:\\.\\d*[1-9])?$"
+									}
+								]
+							},
+							morphs: serializedMorphs
+						}
+					}
+				],
+				domain: "object"
+			},
+			{
+				required: [
+					{
+						key: "n",
+						value: {
+							in: {
+								domain: "string",
+								pattern: [
+									{
+										description: "a well-formed numeric string",
+										flags: "",
+										rule: "^(?!^-0$)-?(?:0|[1-9]\\d*)(?:\\.\\d*[1-9])?$"
+									}
+								]
+							},
+							morphs: serializedMorphs
+						}
+					},
+					{ key: "r", value: { unit: 1 } }
+				],
+				domain: "object"
+			}
+		])
+		attest(t({ l: 1, n: "234" })).snap({ l: 1, n: 234 })
+		attest(t({ r: 1, n: "234" })).snap({ r: 1, n: 234 })
+		attest(t({ l: 1, r: 1, n: "234" })).snap({ l: 1, r: 1, n: 234 })
+		attest(t({ n: "234" }).toString()).snap(
+			"l must be 1 (was missing) or r must be 1 (was missing)"
+		)
 	})
 })

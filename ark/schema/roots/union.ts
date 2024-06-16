@@ -22,7 +22,7 @@ import {
 	type show
 } from "@arktype/util"
 import type { Node, NodeSchema } from "../kinds.js"
-import { contextualReferencesAreEqual } from "../node.js"
+import { contextualReferencesAreEqual, typePathToPropString } from "../node.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -36,7 +36,7 @@ import {
 } from "../shared/implement.js"
 import { intersectNodes, intersectNodesRoot } from "../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
-import type { TraversalPath } from "../shared/utils.js"
+import { pathToPropString } from "../shared/utils.js"
 import type { DomainInner, DomainNode } from "./domain.js"
 import { BaseRoot, type schemaKindRightOf } from "./root.js"
 import type { UnitNode } from "./unit.js"
@@ -328,8 +328,9 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 			])
 
 			return {
-				path: [],
 				kind: "unit",
+				path: [],
+				propString: "",
 				cases
 			}
 		}
@@ -393,11 +394,17 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 
 		let defaultBranches = [...this.branches]
 
+		const bestCtx: DiscriminantContext = {
+			kind: best.kind,
+			path: best.path,
+			propString: pathToPropString(best.path)
+		}
+
 		const cases = flatMorph(best.cases, (k, caseBranches) => {
 			const prunedBranches: BaseRoot[] = []
 			defaultBranches = defaultBranches.filter(n => !caseBranches.includes(n))
 			for (const branch of caseBranches) {
-				const pruned = pruneDiscriminant(best.kind, best.path, branch)
+				const pruned = pruneDiscriminant(branch, bestCtx)
 				// if any branch of the union has no constraints (i.e. is unknown)
 				// return it right away
 				if (pruned === null) return [k, true as const]
@@ -425,6 +432,7 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 		return {
 			kind: best.kind,
 			path: best.path,
+			propString: pathToPropString(best.path),
 			cases
 		}
 	}
@@ -586,7 +594,7 @@ export const reduceBranches = ({
 			if (
 				!ordered &&
 				(branches[i].includesMorph || branches[j].includesMorph) &&
-				arrayEquals(
+				!arrayEquals(
 					branches[i].contextualMorphs,
 					branches[j].contextualMorphs,
 					{ isEqual: contextualReferencesAreEqual }
@@ -613,9 +621,14 @@ export const reduceBranches = ({
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
 	DiscriminantKind extends kind ? string : DiscriminantKinds[kind] | "default"
 
-export type Discriminant<kind extends DiscriminantKind = DiscriminantKind> = {
+type DiscriminantContext<kind extends DiscriminantKind = DiscriminantKind> = {
 	path: Key[]
+	propString: string
 	kind: kind
+}
+
+export interface Discriminant<kind extends DiscriminantKind = DiscriminantKind>
+	extends DiscriminantContext<kind> {
 	cases: DiscriminatedCases<kind>
 }
 
@@ -648,34 +661,34 @@ const discriminantKinds: keySet<DiscriminantKind> = {
 export type DiscriminantKind = show<keyof DiscriminantKinds>
 
 export const pruneDiscriminant = (
-	discriminantKind: DiscriminantKind,
-	path: TraversalPath,
-	branch: BaseRoot
+	discriminantBranch: BaseRoot,
+	discriminantCtx: DiscriminantContext
 ): BaseRoot | null =>
-	branch.transform(
+	discriminantBranch.transform(
 		(nodeKind, inner, ctx) => {
 			// if we've already checked a path at least as long as the current one,
 			// we don't need to revalidate that we're in an object
 			if (
 				nodeKind === "domain" &&
 				(inner as DomainInner).domain === "object" &&
-				path.length > ctx.path.length
+				discriminantCtx.path.length >= ctx.path.length
 			)
 				return null
 
 			// if the discriminant has already checked the domain at the current path
-			// (or an exact value, implying a domain), we don't need to recheck it
+			// (or a unit literal, implying a domain), we don't need to recheck it
 			if (
-				(discriminantKind === nodeKind ||
-					(nodeKind === "domain" && ctx.path.length === path.length)) &&
-				arrayEquals(ctx.path, path)
+				(nodeKind === "domain" || discriminantCtx.kind === "unit") &&
+				typePathToPropString(ctx.path) === discriminantCtx.propString
 			)
 				return null
 			return inner
 		},
 		{
 			shouldTransform: node =>
-				node.children.length !== 0 ||
+				// we don't need to recurse into index nodes as they will never
+				// have a required path therefore can't be used to discriminate
+				(node.children.length !== 0 && node.kind !== "index") ||
 				node.kind === "domain" ||
 				node.kind === "unit"
 		}

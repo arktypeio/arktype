@@ -7,12 +7,10 @@ import {
 	includes,
 	isArray,
 	isEmptyObject,
-	registeredReference,
 	throwError,
 	type Dict,
 	type Guardable,
 	type Json,
-	type Key,
 	type conform,
 	type listable
 } from "@arktype/util"
@@ -45,11 +43,7 @@ import {
 	type TraverseAllows,
 	type TraverseApply
 } from "./shared/traversal.js"
-import {
-	pathToPropString,
-	type PathToPropStringOptions,
-	type arkKind
-} from "./shared/utils.js"
+import { pathToPropString, type arkKind } from "./shared/utils.js"
 
 export type UnknownNode = BaseNode | Root
 
@@ -386,7 +380,7 @@ export abstract class BaseNode<
 }
 
 /** a list of literal keys (named properties) or a nodes (index signatures) representing a path */
-export type TypePath = (Key | BaseRoot)[]
+export type TypePath = (PropertyKey | BaseRoot)[]
 
 export type ContextualReference = {
 	path: TypePath
@@ -394,11 +388,10 @@ export type ContextualReference = {
 	propString: string
 }
 
-const contextualReferencePropStringOptions: PathToPropStringOptions<BaseNode> =
-	{
-		stringifySymbol: registeredReference,
+export const typePathToPropString = (path: TypePath) =>
+	pathToPropString(path, {
 		stringifyNonKey: node => node.expression
-	}
+	})
 
 export const contextualReference = (
 	path: TypePath,
@@ -406,7 +399,7 @@ export const contextualReference = (
 ): ContextualReference => ({
 	path,
 	node,
-	propString: pathToPropString(path, contextualReferencePropStringOptions)
+	propString: typePathToPropString(path)
 })
 
 export const contextualReferencesAreEqual = (
