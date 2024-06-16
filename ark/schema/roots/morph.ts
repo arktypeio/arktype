@@ -13,7 +13,6 @@ import {
 import type { of } from "../ast.js"
 import type { type } from "../inference.js"
 import type { Node, NodeSchema } from "../kinds.js"
-import type { StaticArkOption } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -313,5 +312,5 @@ type distillPostfix<
 
 /** Objects we don't want to expand during inference like Date or Promise */
 type TerminallyInferredObjectKind =
-	| StaticArkOption<"preserve">
+	| ArkEnv.preserve
 	| BuiltinObjects[Exclude<BuiltinObjectKind, "Array" | "Function">]

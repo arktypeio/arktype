@@ -111,6 +111,10 @@ export abstract class BaseNode<
 		{ [this.id]: this }
 	)
 
+	get $() {
+		return $ark.$.internal
+	}
+
 	get references(): BaseNode[] {
 		return Object.values(this.referencesById)
 	}
@@ -180,9 +184,8 @@ export abstract class BaseNode<
 
 	private _description?: string
 	get description(): string {
-		this._description ??=
-			this.inner.description ??
-			this.$.resolvedConfig[this.kind].description?.(this as never)
+		this._description ??= this.inner.description ?? "foo"
+		// this.$.resolvedConfig[this.kind].description?.(this as never)
 		return this._description
 	}
 

@@ -70,6 +70,7 @@ declare global {
 		$(): Ark
 		meta(): {}
 		preserve(): never
+		registry(): { $: RootScope<ArkEnv.$> }
 	}
 
 	export namespace ArkEnv {
@@ -113,8 +114,6 @@ export type ParsedUnknownNodeConfig = requireKeys<
 	UnknownNodeConfig,
 	"description"
 >
-
-export type StaticArkOption<k extends keyof ArkEnv> = ReturnType<ArkEnv[k]>
 
 export interface BindReferencesOptions {
 	bindReferences?: boolean
