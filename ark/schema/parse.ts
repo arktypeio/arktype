@@ -9,6 +9,7 @@ import {
 	type Json,
 	type JsonData,
 	type PartialRecord,
+	type dict,
 	type listable
 } from "@arktype/util"
 import type { GenericArgResolutions } from "./generic.js"
@@ -218,7 +219,7 @@ const _parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
 	// since reduction can add impliedSiblings
 	if (nodeCache[innerHash]) return nodeCache[innerHash]
 
-	const attachments = {
+	const attachments: UnknownAttachments & dict = {
 		id: ctx.id,
 		kind,
 		impl,
@@ -230,7 +231,7 @@ const _parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
 		children,
 		innerHash,
 		typeHash
-	} satisfies UnknownAttachments as Record<string, any>
+	}
 	if (ctx.alias) attachments.alias = ctx.alias
 
 	for (const k in inner) {

@@ -86,6 +86,14 @@ export abstract class BaseNode<
 		{ [this.id]: this }
 	)
 
+	private _description?: string
+	get description(): string {
+		this._description ??=
+			this.inner.description ??
+			this.$.resolvedConfig[this.kind].description?.(this as never)
+		return this._description
+	}
+
 	get references(): BaseNode[] {
 		return Object.values(this.referencesById)
 	}
@@ -164,13 +172,6 @@ export abstract class BaseNode<
 	get out(): this extends { [arkKind]: "root" } ? BaseRoot : BaseNode {
 		this._out ??= this.getIo("out")
 		return this._out as never
-	}
-
-	private _description?: string
-	get description(): string {
-		this._description ??= this.inner.description ?? "foo"
-		// this.$.resolvedConfig[this.kind].description?.(this as never)
-		return this._description
 	}
 
 	getIo(kind: "in" | "out"): BaseNode {

@@ -6,6 +6,10 @@ export type Dict<k extends string = string, v = unknown> = {
 	readonly [_ in k]: v
 }
 
+export type dict<v = unknown, k extends string = string> = {
+	[_ in k]?: v
+}
+
 /** Either:
  * A, with all properties of B undefined
  * OR
