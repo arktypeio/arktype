@@ -22,7 +22,7 @@ import {
 	type show
 } from "@arktype/util"
 import type { Node, NodeSchema } from "../kinds.js"
-import { contextualReferencesAreEqual, typePathToPropString } from "../node.js"
+import { typePathToPropString } from "../node.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -36,8 +36,9 @@ import {
 } from "../shared/implement.js"
 import { intersectNodes, intersectNodesRoot } from "../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
-import { pathToPropString } from "../shared/utils.js"
+import { hasArkKind, pathToPropString } from "../shared/utils.js"
 import type { DomainInner, DomainNode } from "./domain.js"
+import type { MorphNode } from "./morph.js"
 import { BaseRoot, type schemaKindRightOf } from "./root.js"
 import type { UnitNode } from "./unit.js"
 import { defineRightwardIntersections } from "./utils.js"
@@ -201,7 +202,9 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 		this.branches[0].hasUnit(false) &&
 		this.branches[1].hasUnit(true)
 
-	unitBranches = this.branches.filter((n): n is UnitNode => n.hasKind("unit"))
+	unitBranches = this.branches.filter((n): n is UnitNode | MorphNode =>
+		n.in.hasKind("unit")
+	)
 
 	discriminant = this.discriminate()
 	discriminantJson =
@@ -255,7 +258,7 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 		js.block(`switch(${condition})`, () => {
 			for (const k in cases) {
 				const v = cases[k]
-				const caseCondition = k === "default" ? "default" : `case ${k}`
+				const caseCondition = k === "default" ? k : `case ${k}`
 				js.line(`${caseCondition}: return ${v === true ? v : js.invoke(v)}`)
 			}
 
@@ -322,9 +325,9 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 	discriminate(): Discriminant | null {
 		if (this.branches.length < 2) return null
 		if (this.unitBranches.length === this.branches.length) {
-			const cases = flatMorph(this.unitBranches, (i, unit) => [
-				`${unit.serializedValue}`,
-				true as const
+			const cases = flatMorph(this.unitBranches, (i, n) => [
+				`${(n.in as UnitNode).serializedValue}`,
+				n.hasKind("morph") ? n : (true as const)
 			])
 
 			return {
@@ -597,7 +600,17 @@ export const reduceBranches = ({
 				!arrayEquals(
 					branches[i].contextualMorphs,
 					branches[j].contextualMorphs,
-					{ isEqual: contextualReferencesAreEqual }
+					{
+						isEqual: (l, r) =>
+							l.propString === r.propString &&
+							arrayEquals(l.node.morphs, r.node.morphs, {
+								isEqual: (lMorph, rMorph) =>
+									lMorph === rMorph ||
+									(hasArkKind(lMorph, "root") &&
+										hasArkKind(rMorph, "root") &&
+										lMorph.equals(rMorph))
+							})
+					}
 				)
 			) {
 				throwParseError(

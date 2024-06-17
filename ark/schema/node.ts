@@ -17,6 +17,7 @@ import {
 import type { BaseConstraint } from "./constraint.js"
 import type { Inner, MutableInner, Node, reducibleKindOf } from "./kinds.js"
 import type { NodeParseOptions } from "./parse.js"
+import type { MorphNode } from "./roots/morph.js"
 import type { BaseRoot, Root } from "./roots/root.js"
 import type { UnitNode } from "./roots/unit.js"
 import type { RawRootScope } from "./scope.js"
@@ -133,8 +134,10 @@ export abstract class BaseNode<
 			)
 	}
 
-	get contextualMorphs(): ContextualReference[] {
-		return this.contextualReferences.filter(ref => ref.node.hasKind("morph"))
+	get contextualMorphs(): ContextualReference<MorphNode>[] {
+		return this.contextualReferences.filter(
+			(ref): ref is ContextualReference<MorphNode> => ref.node.hasKind("morph")
+		)
 	}
 
 	get contextualReferencesByPath() {
@@ -382,9 +385,9 @@ export abstract class BaseNode<
 /** a list of literal keys (named properties) or a nodes (index signatures) representing a path */
 export type TypePath = (PropertyKey | BaseRoot)[]
 
-export type ContextualReference = {
+export type ContextualReference<node extends BaseNode = BaseNode> = {
 	path: TypePath
-	node: BaseNode
+	node: node
 	propString: string
 }
 
@@ -393,10 +396,10 @@ export const typePathToPropString = (path: TypePath) =>
 		stringifyNonKey: node => node.expression
 	})
 
-export const contextualReference = (
+export const contextualReference = <node extends BaseNode>(
 	path: TypePath,
-	node: BaseNode
-): ContextualReference => ({
+	node: node
+): ContextualReference<node> => ({
 	path,
 	node,
 	propString: typePathToPropString(path)

@@ -55,8 +55,39 @@ contextualize(() => {
 	it("within type", () => {
 		const t = type(["boolean", "=>", data => !data])
 		attest<Type<(In: boolean) => Out<boolean>>>(t)
+
+		const serializedMorphs =
+			t.internal.firstReferenceOfKindOrThrow("morph").serializedMorphs
+
+		attest(t.json).snap([
+			{ in: { unit: false }, morphs: serializedMorphs },
+			{ in: { unit: true }, morphs: serializedMorphs }
+		])
+
 		const out = t(true)
 		attest<boolean | type.errors>(out).equals(false)
+		attest(t(1).toString()).snap("must be boolean (was 1)")
+	})
+
+	it("unit branches", () => {
+		const t = type("0 | 1 | 2").pipe(n => n + 1)
+		attest<(In: 0 | 1 | 2) => Out<number>>(t.t)
+
+		const serializedMorphs =
+			t.internal.firstReferenceOfKindOrThrow("morph").serializedMorphs
+
+		attest(t.internal.assertHasKind("union").discriminantJson).snap({
+			kind: "unit",
+			path: [],
+			cases: {
+				"0": { in: { unit: 0 }, morphs: serializedMorphs },
+				"1": { in: { unit: 1 }, morphs: serializedMorphs },
+				"2": { in: { unit: 2 }, morphs: serializedMorphs }
+			}
+		})
+
+		attest(t(0)).equals(1)
+		attest(t(3).toString()).snap("must be 0, 1 or 2 (was 3)")
 	})
 
 	it("type instance reference", () => {
@@ -638,7 +669,7 @@ contextualize(() => {
 			) => Out<1[]>
 		>(t.t)
 
-		const serializedMorphs = t.internal.assertHasKind("morph").serializedMorphs
+		const serializedMorphs = t.internal.firstReferenceOfKindOrThrow("morph").serializedMorphs
 
 		attest(t.json).snap([
 			{
