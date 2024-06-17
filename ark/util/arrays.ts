@@ -6,30 +6,25 @@ export type pathToString<
 	delimiter extends string = "/"
 > = segments extends [] ? "/" : join<segments, delimiter>
 
+export const join = <segments extends array<string>, delimiter extends string>(
+	segments: segments,
+	delimiter: delimiter
+): join<segments, delimiter> => segments.join(delimiter) as never
+
 export type join<
-	segments extends string[],
+	segments extends array<string>,
 	delimiter extends string,
 	result extends string = ""
 > =
-	segments extends [infer head extends string, ...infer tail extends string[]] ?
+	segments extends (
+		readonly [infer head extends string, ...infer tail extends string[]]
+	) ?
 		join<
 			tail,
 			delimiter,
 			result extends "" ? head : `${result}${delimiter}${head}`
 		>
 	:	result
-
-export type split<
-	s extends string,
-	delimiter extends string,
-	current extends string = "",
-	result extends string[] = []
-> =
-	s extends `${infer head}${infer tail}` ?
-		head extends delimiter ?
-			split<tail, delimiter, "", [...result, current]>
-		:	split<tail, delimiter, `${current}${head}`, result>
-	:	[...result, current]
 
 export const getPath = (root: unknown, path: string[]): unknown => {
 	let result: any = root
