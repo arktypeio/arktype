@@ -218,6 +218,7 @@ export class ChainableAssertions implements AssertionRecord {
 		}
 	}
 }
+
 const checkCompletionsForErrors = (completions?: Completions) => {
 	if (typeof completions === "string") throw new Error(completions)
 }
