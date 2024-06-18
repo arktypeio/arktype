@@ -1,28 +1,28 @@
 import {
+	internalKeywords,
+	jsObjects,
+	tsKeywords,
+	writeUnboundableMessage,
 	type BaseRoot,
 	type BoundKind,
 	type DateLiteral,
 	type LimitLiteral,
-	type NodeSchema,
-	internalKeywords,
-	jsObjects,
-	tsKeywords,
-	writeUnboundableMessage
+	type NodeSchema
 } from "@arktype/schema"
-import { isKeyOf, type keySet, throwParseError } from "@arktype/util"
+import { isKeyOf, throwParseError, type keySet } from "@arktype/util"
 import type { astToString } from "../../../semantic/utils.js"
 import type {
 	DynamicState,
 	DynamicStateWithRoot
 } from "../../reduce/dynamic.js"
 import {
+	invertedComparators,
+	maxComparators,
+	writeUnpairableComparatorMessage,
 	type Comparator,
 	type InvertedComparators,
 	type MaxComparator,
-	type OpenLeftBound,
-	invertedComparators,
-	maxComparators,
-	writeUnpairableComparatorMessage
+	type OpenLeftBound
 } from "../../reduce/shared.js"
 import type { StaticState, state } from "../../reduce/static.js"
 import { extractDateLiteralSource, isDateLiteral } from "../operand/date.js"
@@ -150,8 +150,7 @@ export const getBoundKinds = (
 	return throwParseError(writeUnboundableMessage(root.expression))
 }
 
-export const singleEqualsMessage =
-	"= is not a valid comparator. Use == to check for equality"
+export const singleEqualsMessage = `= is not valid here. Default values must be specified on objects like { isAdmin: 'boolean = false' }`
 type singleEqualsMessage = typeof singleEqualsMessage
 
 const openLeftBoundToRoot = (

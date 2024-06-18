@@ -1,7 +1,8 @@
 import { attest, contextualize } from "@arktype/attest"
-import type { Default } from "@arktype/schema"
+import type { Date, Default } from "@arktype/schema"
 import { type } from "arktype"
 import { invalidDefaultKeyKindMessage } from "../parser/objectLiteral.js"
+import { singleEqualsMessage } from "../parser/string/shift/operator/bounds.js"
 
 contextualize(
 	"parsing and traversal",
@@ -52,38 +53,94 @@ contextualize(
 	},
 	"string parsing",
 	() => {
-		it("can parse a serializable default from a string", () => {
-			const t = type({ foo: "string", bar: "number = 5" })
-			const expected = type({ foo: "string", bar: ["number", "=", 5] })
+		it("number", () => {
+			const t = type({ key: "number = 42" })
+			const expected = type({ key: ["number", "=", 42] })
 
+			attest<typeof expected>(t)
+			attest(t.json).equals(expected.json)
+		})
+
+		it("bigint", () => {
+			const t = type({ key: "bigint = 100n" })
+			const expected = type({ key: ["bigint", "=", BigInt(100)] })
+
+			attest<typeof expected>(t)
+			attest(t.json).equals(expected.json)
+		})
+
+		it("string", () => {
+			const t = type({ key: 'string = "default value"' })
+			const expected = type({ key: ["string", "=", "default value"] })
+
+			attest<typeof expected>(t)
+			attest(t.json).equals(expected.json)
+		})
+
+		it("Date", () => {
+			const t = type({ key: 'Date = d"1993-05-21"' })
+
+			const out = t.assert({})
+
+			// pass the same date instance back
+			const expected = type({ key: ["Date", "=", out.key] })
+
+			// we can't check expected here since the Date instance will not
+			// have a narrowed literal type
 			attest<{
-				foo: string
-				bar: (In?: number) => Default<5>
+				key: (In?: Date) => Default<Date.literal<"1993-05-21">>
 			}>(t.t)
+			attest(t.json).equals(expected.json)
+		})
 
+		it("true", () => {
+			const t = type({ key: "boolean = true" })
+			const expected = type({ key: ["boolean", "=", true] })
+
+			attest<typeof expected>(t)
+			attest(t.json).equals(expected.json)
+		})
+
+		it("false", () => {
+			const t = type({ key: "boolean = false" })
+			const expected = type({ key: ["boolean", "=", false] })
+
+			attest<typeof expected>(t)
+			attest(t.json).equals(expected.json)
+		})
+
+		it("null", () => {
+			const t = type({ key: "object | null = null" })
+			const expected = type({ key: ["object | null", "=", null] })
+
+			attest<typeof expected>(t)
+			attest(t.json).equals(expected.json)
+		})
+
+		it("undefined", () => {
+			const t = type({ key: "unknown = undefined" })
+			const expected = type({ key: ["unknown", "=", undefined] })
+
+			attest(t({})).snap({ key: "(undefined)" })
+
+			attest<typeof expected>(t)
 			attest(t.json).equals(expected.json)
 		})
 
 		it("incorrect default type", () => {
-			attest(() =>
-				// @ts-expect-error
-				type({ foo: "string", bar: "number = true" })
-			)
+			// @ts-expect-error
+			attest(() => type({ foo: "string", bar: "number = true" }))
 				.throws.snap(
-					"ParseError: = is not a valid comparator. Use == to check for equality"
+					'ParseError: Default value at "bar" must be a number (was true)'
 				)
-				.type.errors.snap()
+				.type.errors("true is not assignable to number")
 		})
 
 		it("non-literal", () => {
 			attest(() =>
 				// @ts-expect-error
 				type({ foo: "string", bar: "unknown = number" })
-			)
-				.throws.snap(
-					"ParseError: = is not a valid comparator. Use == to check for equality"
-				)
-				.type.errors.snap()
+			).throwsAndHasTypeError(singleEqualsMessage)
 		})
 
 		// TODO: this is currently broken due to a workaround in

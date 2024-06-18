@@ -4,6 +4,7 @@ import {
 	type BaseRoot,
 	type DateLiteral,
 	type Default,
+	type distillOut,
 	type MutableInner,
 	type NodeSchema,
 	type of,
@@ -232,8 +233,10 @@ type validateDefaultValueString<
 			) ?
 				e
 			: [
-				inferString<baseDef, {}, args>,
-				inferString<defaultDef, $, args>
+				// check against the output of the type since morphs will not occur
+				distillOut<inferString<baseDef, {}, args>>,
+				// a default value should never have In/Out, so which side we choose is irrelevant
+				distillOut<inferString<defaultDef, $, args>>
 			] extends [infer base, infer defaultValue] ?
 				defaultValue extends base ?
 					def
