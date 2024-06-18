@@ -90,12 +90,9 @@ export interface TypeParser<$ = {}> {
 		>
 	): Generic<parseGenericParams<params>, def, $>
 
+	raw(def: unknown): Type<any, $>
 	errors: typeof ArkErrors
 }
-
-const typeParserAttachments = Object.freeze({
-	errors: ArkErrors
-} satisfies TypeParserAttachments)
 
 export class RawTypeParser extends Callable<
 	(...args: unknown[]) => BaseRoot | Generic,
@@ -126,7 +123,13 @@ export class RawTypeParser extends Callable<
 				// part of the API as specified by the associated types
 				return $.parseRoot(args)
 			},
-			{ bind: $, attach: typeParserAttachments }
+			{
+				bind: $,
+				attach: {
+					errors: ArkErrors,
+					raw: $.parseRoot as never
+				}
+			}
 		)
 	}
 }

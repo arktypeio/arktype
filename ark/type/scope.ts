@@ -16,6 +16,7 @@ import {
 	type writeDuplicateAliasError
 } from "@arktype/schema"
 import {
+	bound,
 	domainOf,
 	hasDomain,
 	isThunk,
@@ -218,6 +219,7 @@ export class RawScope<
 		return def
 	}
 
+	@bound
 	override parseRoot(def: unknown): BaseRoot {
 		return this.parse(def, {
 			$: this as never,
