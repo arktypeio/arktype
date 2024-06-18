@@ -103,12 +103,12 @@ contextualize(
 		// 	attest<typeof whitespace>(noWhitespace).equals(whitespace)
 		// })
 
-		// it("optional with default", () => {
-		// 	attest(() =>
-		// 		// @ts-expect-error
-		// 		type({ foo: "string", "bar?": "number = 5" })
-		// 	).throwsAndHasTypeError(invalidDefaultKeyKindMessage)
-		// })
+		it("optional with default", () => {
+			attest(() =>
+				// @ts-expect-error
+				type({ foo: "string", "bar?": "number = 5" })
+			).throwsAndHasTypeError(invalidDefaultKeyKindMessage)
+		})
 	},
 	"intersection",
 	() => {

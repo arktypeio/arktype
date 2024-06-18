@@ -13,11 +13,19 @@ import {
 	type writeInvalidPropertyKeyMessage
 } from "@arktype/schema"
 import {
+	anchoredRegex,
 	append,
+	deanchoredSource,
+	integerLikeMatcher,
 	isArray,
+	keysOf,
+	numberLikeMatcher,
 	printable,
 	stringAndSymbolicEntriesOf,
+	throwInternalError,
 	throwParseError,
+	tryParseWellFormedBigint,
+	tryParseWellFormedNumber,
 	unset,
 	type anyOrNever,
 	type BigintLiteral,
@@ -207,7 +215,9 @@ type validateDefaultValueTuple<
 type DefaultValueString<
 	baseDef extends string = string,
 	defaultDef extends UnitLiteral = UnitLiteral
-> = `${baseDef} = ${defaultDef}`
+> = `${baseDef}${typeof defaultValueStringOperator}${defaultDef}`
+
+const defaultValueStringOperator = " = "
 
 type validateDefaultValueString<
 	def extends DefaultValueString,
@@ -269,15 +279,58 @@ interface PreparsedEntry extends PreparsedKey {
 	default: unknown
 }
 
+const unitLiteralKeywords = {
+	null: null,
+	undefined,
+	true: true,
+	false: false
+} as const
+
+type UnitLiteralKeyword = keyof typeof unitLiteralKeywords
+
 export type UnitLiteral =
 	| StringLiteral
 	| BigintLiteral
 	| NumberLiteral
 	| DateLiteral
-	| "null"
-	| "undefined"
-	| "true"
-	| "false"
+	| UnitLiteralKeyword
+
+/** Matches a single or double-quoted date or string literal */
+const stringLiteral = anchoredRegex(/(?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')/)
+
+/** Matches a definition including a valid default value expression */
+const defaultExpressionMatcher = new RegExp(
+	`^(?<baseDef>[\\s\\S]*) = (` +
+		`(?<string>${deanchoredSource(stringLiteral)})` +
+		`|(?<date>d${deanchoredSource(stringLiteral)})` +
+		`|(?<bigint>${deanchoredSource(integerLikeMatcher)}n)` +
+		`|(?<number>${deanchoredSource(numberLikeMatcher)})` +
+		`|(?<keyword>${keysOf(unitLiteralKeywords).join("|")})` +
+		`)$`
+)
+
+type DefaultExpressionMatcherGroups = {
+	baseDef: string
+	string?: StringLiteral
+	date?: DateLiteral
+	bigint?: BigintLiteral
+	number?: NumberLiteral
+	keyword?: UnitLiteralKeyword
+}
+
+type UnitLiteralValue =
+	| string
+	| Date
+	| bigint
+	| number
+	| boolean
+	| null
+	| undefined
+
+const parsePossibleDefaultExpression = (s: string) => {
+	const result = defaultExpressionMatcher.exec(s)
+	return result && (result.groups as {} as DefaultExpressionMatcherGroups)
+}
 
 export const parseEntry = (key: Key, value: unknown): PreparsedEntry => {
 	const parsedKey = parseKey(key)
@@ -293,11 +346,51 @@ export const parseEntry = (key: Key, value: unknown): PreparsedEntry => {
 		}
 	}
 
+	// if a string includes " = ", it might have a default value,
+	// but it could also be a string literal like "' = '"
+	if (typeof value === "string" && value.includes(defaultValueStringOperator)) {
+		const result = parsePossibleDefaultExpression(value)
+		if (result) return parseDefaultValueStringExpression(parsedKey, result)
+	}
+
 	return {
 		kind: parsedKey.kind,
 		key: parsedKey.key,
 		value,
 		default: unset
+	}
+}
+
+const parseDefaultValueStringExpression = (
+	parsedKey: PreparsedKey,
+	match: DefaultExpressionMatcherGroups
+): PreparsedEntry => {
+	if (parsedKey.kind !== "required")
+		throwParseError(invalidDefaultKeyKindMessage)
+
+	let defaultValue: UnitLiteralValue
+
+	if (match.keyword) defaultValue = unitLiteralKeywords[match.keyword]
+	else if (match.string) defaultValue = match.string.slice(1, -1)
+	else if (match.number) {
+		defaultValue = tryParseWellFormedNumber(match.number, {
+			errorOnFail: true
+		})
+	} else if (match.date) defaultValue = new Date(match.date)
+	else if (match.bigint) {
+		defaultValue =
+			tryParseWellFormedBigint(match.bigint) ??
+			throwInternalError(
+				`Unexpected default bigint parse result ${match.bigint}`
+			)
+	} else
+		throwInternalError(`Unexpected default expression parse result ${match}`)
+
+	return {
+		kind: "optional",
+		key: parsedKey.key,
+		value: match.baseDef,
+		default: defaultValue
 	}
 }
 

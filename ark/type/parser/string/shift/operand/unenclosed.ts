@@ -10,8 +10,8 @@ import {
 import {
 	printable,
 	throwParseError,
-	tryParseNumber,
 	tryParseWellFormedBigint,
+	tryParseWellFormedNumber,
 	type BigintLiteral,
 	type Completion,
 	type ErrorMessage,
@@ -129,7 +129,7 @@ const maybeParseUnenclosedLiteral = (
 	s: DynamicState,
 	token: string
 ): BaseRoot | undefined => {
-	const maybeNumber = tryParseNumber(token, { strict: true })
+	const maybeNumber = tryParseWellFormedNumber(token)
 	if (maybeNumber !== undefined)
 		return s.ctx.$.node("unit", { unit: maybeNumber })
 
