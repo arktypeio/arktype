@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@arktype/attest"
 import type { Date, Default } from "@arktype/schema"
-import { type } from "arktype"
+import { scope, type } from "arktype"
 import { invalidDefaultKeyKindMessage } from "../parser/objectLiteral.js"
 import { singleEqualsMessage } from "../parser/string/shift/operator/bounds.js"
 
@@ -49,6 +49,21 @@ contextualize(
 				// @ts-expect-error
 				type({ foo: "string", "bar?": ["number", "=", 5] })
 			).throwsAndHasTypeError(invalidDefaultKeyKindMessage)
+		})
+
+		it("validated default in scope", () => {
+			// note the string version of this does not work, see
+			// https://github.com/arktypeio/arktype/issues/1018
+			const types = scope({
+				specialNumber: "number",
+				obj: { foo: "string", bar: ["specialNumber", "=", 5] }
+			}).export()
+
+			attest(types.obj.json).snap({
+				required: [{ key: "foo", value: "string" }],
+				optional: [{ default: 5, key: "bar", value: "number" }],
+				domain: "object"
+			})
 		})
 	},
 	"string parsing",
@@ -143,21 +158,12 @@ contextualize(
 			).throwsAndHasTypeError(singleEqualsMessage)
 		})
 
-		// TODO: this is currently broken due to a workaround in
-		// validateDefaultValueString to prevent cyclic inference from breaking
-
+		// https://github.com/arktypeio/arktype/issues/1017
 		// it("validated default in scope", () => {
 		// 	const $ = scope({
 		// 		specialNumber: "number",
 		// 		obj: { foo: "string", bar: "specialNumber =5" }
 		// 	})
-		// })
-
-		// it("allows whitespace surrounding =", () => {
-		// 	const whitespace = type({ foo: "string = 'foo'" })
-		// 	const noWhitespace = type({ foo: "string='foo'" })
-
-		// 	attest<typeof whitespace>(noWhitespace).equals(whitespace)
 		// })
 
 		it("optional with default", () => {

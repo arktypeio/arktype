@@ -234,9 +234,11 @@ type validateDefaultValueString<
 				e
 			: [
 				// check against the output of the type since morphs will not occur
+				// we currently can't parse string embedded defaults for non-global keywords
 				distillOut<inferString<baseDef, {}, args>>,
 				// a default value should never have In/Out, so which side we choose is irrelevant
-				distillOut<inferString<defaultDef, $, args>>
+				// we will never need a scope here as we're just trying to infer a UnitLiteral
+				distillOut<inferString<defaultDef, {}, args>>
 			] extends [infer base, infer defaultValue] ?
 				defaultValue extends base ?
 					def
