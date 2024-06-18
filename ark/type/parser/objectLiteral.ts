@@ -45,7 +45,9 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): BaseRoot => {
 	// because to match JS behavior any keys before the spread are overwritten
 	// by the values in the target object, so there'd be no useful purpose in having it
 	// anywhere except for the beginning.
-	const parsedEntries = stringAndSymbolicEntriesOf(def).map(parseEntry)
+	const parsedEntries = stringAndSymbolicEntriesOf(def).map(entry =>
+		parseEntry(entry[0], entry[1])
+	)
 	if (parsedEntries[0]?.kind === "...") {
 		// remove the spread entry so we can iterate over the remaining entries
 		// expecting non-spread entries
@@ -175,16 +177,6 @@ export type validateObjectLiteral<def, $, args> = {
 	: validateDefaultableValue<def, k, $, args>
 }
 
-export type UnitLiteral =
-	| StringLiteral
-	| BigintLiteral
-	| NumberLiteral
-	| DateLiteral
-	| "null"
-	| "undefined"
-	| "true"
-	| "false"
-
 type validateDefaultableValue<def, k extends keyof def, $, args> =
 	def[k] extends DefaultValueTuple ?
 		validateDefaultValueTuple<def[k], k, $, args>
@@ -277,16 +269,22 @@ interface PreparsedEntry extends PreparsedKey {
 	default: unknown
 }
 
-export const parseEntry = ([key, value]: readonly [
-	Key,
-	unknown
-]): PreparsedEntry => {
+export type UnitLiteral =
+	| StringLiteral
+	| BigintLiteral
+	| NumberLiteral
+	| DateLiteral
+	| "null"
+	| "undefined"
+	| "true"
+	| "false"
+
+export const parseEntry = (key: Key, value: unknown): PreparsedEntry => {
 	const parsedKey = parseKey(key)
 
 	if (isArray(value) && value[1] === "=") {
 		if (parsedKey.kind !== "required")
 			throwParseError(invalidDefaultKeyKindMessage)
-
 		return {
 			kind: "optional",
 			key: parsedKey.key,

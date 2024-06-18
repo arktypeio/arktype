@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@arktype/attest"
 import type { Default } from "@arktype/schema"
-import { scope, type } from "arktype"
+import { type } from "arktype"
 import { invalidDefaultKeyKindMessage } from "../parser/objectLiteral.js"
 
 contextualize(
@@ -52,17 +52,17 @@ contextualize(
 	},
 	"string parsing",
 	() => {
-		// it("can parse a serializable default from a string", () => {
-		// 	const t = type({ foo: "string", bar: "number = 5" })
-		// 	const expected = type({ foo: "string", bar: ["number", "=", 5] })
+		it("can parse a serializable default from a string", () => {
+			const t = type({ foo: "string", bar: "number = 5" })
+			const expected = type({ foo: "string", bar: ["number", "=", 5] })
 
-		// 	attest<{
-		// 		foo: string
-		// 		bar: (In?: number) => Default<5>
-		// 	}>(t.t)
+			attest<{
+				foo: string
+				bar: (In?: number) => Default<5>
+			}>(t.t)
 
-		// 	attest(t.json).equals(expected.json)
-		// })
+			attest(t.json).equals(expected.json)
+		})
 
 		it("incorrect default type", () => {
 			attest(() =>
