@@ -150,11 +150,11 @@ export type tryInferSubmoduleReference<$, token> =
 		subalias extends keyof $[submodule] ?
 			$[submodule][subalias]
 		:	never
-	: token extends (
-		`${infer submodule extends moduleKeyOf<ArkEnv.$>}.${infer subalias}`
-	) ?
-		subalias extends keyof ArkEnv.$[submodule] ?
-			ArkEnv.$[submodule][subalias]
+	: token extends `${infer submodule}.${infer subalias}` ?
+		submodule extends moduleKeyOf<ArkEnv.$> ?
+			subalias extends keyof ArkEnv.$[submodule] ?
+				ArkEnv.$[submodule][subalias]
+			:	never
 		:	never
 	:	never
 
