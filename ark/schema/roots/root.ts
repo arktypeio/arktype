@@ -130,9 +130,7 @@ export abstract class BaseRoot<
 		return result instanceof ArkErrors ? result.throw() : result
 	}
 
-	// get<key extends PropertyKey>(
-	// 	...path: readonly (key | Root<key>)[]
-	// ): this {
+	// get<key extends PropertyKey>(...path: readonly (key | Root<key>)[]): this {
 	// 	return this
 	// }
 

@@ -12,6 +12,7 @@ import {
 	type Guardable,
 	type Json,
 	type conform,
+	type dict,
 	type listable
 } from "@arktype/util"
 import type { BaseConstraint } from "./constraint.js"
@@ -19,6 +20,7 @@ import type { Inner, MutableInner, Node, reducibleKindOf } from "./kinds.js"
 import type { NodeParseOptions } from "./parse.js"
 import type { MorphNode } from "./roots/morph.js"
 import type { BaseRoot, Root } from "./roots/root.js"
+import type { UnionChildNode } from "./roots/union.js"
 import type { UnitNode } from "./roots/unit.js"
 import type { RawRootScope } from "./scope.js"
 import type { NodeCompiler } from "./shared/compile.js"
@@ -33,10 +35,12 @@ import {
 	precedenceOfKind,
 	refinementKinds,
 	rootKinds,
+	structuralKinds,
 	type BasisKind,
 	type NodeKind,
 	type OpenNodeKind,
 	type RefinementKind,
+	type StructuralKind,
 	type UnknownAttachments
 } from "./shared/implement.js"
 import {
@@ -119,12 +123,22 @@ export abstract class BaseNode<
 		return Object.values(this.referencesById)
 	}
 
-	get contextualReferences(): ContextualReference[] {
+	get shallowReferences(): BaseNode[] {
+		return this.hasKind("structure") ?
+				this.children
+			:	this.children.reduce<BaseNode[]>(
+					(acc, child) => appendUniqueNodes(acc, child.shallowReferences),
+					[]
+				)
+	}
+
+	// overriden by structural kinds so that only the root at each path is added
+	get structuralReferences(): StructuralReference[] {
 		return this.children
-			.reduce<ContextualReference[]>(
+			.reduce<StructuralReference[]>(
 				(acc, child) =>
-					appendUniqueContextualReferences(acc, child.contextualReferences),
-				[contextualReference([], this)]
+					appendUniqueStructuralReferences(acc, child.structuralReferences),
+				[]
 			)
 			.sort((l, r) =>
 				l.propString > r.propString ? 1
@@ -134,25 +148,71 @@ export abstract class BaseNode<
 			)
 	}
 
-	get contextualMorphs(): ContextualReference<MorphNode>[] {
-		return this.contextualReferences.filter(
-			(ref): ref is ContextualReference<MorphNode> => ref.node.hasKind("morph")
+	get structuralBranches(): StructuralReference<UnionChildNode>[] {
+		return this.structuralReferences.reduce<
+			StructuralReference<UnionChildNode>[]
+		>(
+			(branches, ref) =>
+				appendUniqueStructuralReferences(
+					branches,
+					ref.node.hasKind("union") ?
+						ref.node.branches.map(branch => ({
+							path: ref.path,
+							propString: ref.propString,
+							node: branch
+						}))
+					:	(ref as StructuralReference<UnionChildNode>)
+				),
+			[]
 		)
 	}
 
-	get contextualReferencesByPath() {
-		return groupBy(this.contextualReferences, "propString")
+	get structuralMorphs(): StructuralReference<MorphNode>[] {
+		return this.structuralBranches.filter(
+			(ref): ref is StructuralReference<MorphNode> => ref.node.hasKind("morph")
+		)
+	}
+
+	get structuralReferencesByPath(): dict<StructuralReference[]> {
+		return groupBy(this.structuralReferences, "propString")
+	}
+
+	get structuralBranchesByPath(): dict<StructuralReference<UnionChildNode>[]> {
+		return groupBy(this.structuralBranches, "propString")
+	}
+
+	get indexablePaths(): dict<StructuralReference> {
+		return flatMorph(this.structuralBranchesByPath, (propString, refs) => [
+			propString,
+			refs.length === 1 ?
+				refs[0]
+			:	{
+					path: refs[0].path,
+					propString,
+					node: this.$.node(
+						"union",
+						refs.map(ref => ref.node)
+					)
+				}
+		])
+	}
+
+	get indexableExpressions(): dict<string> {
+		return flatMorph(this.indexablePaths, (propString, ref) => [
+			propString,
+			ref.node.expression
+		])
 	}
 
 	get referencesByPath() {
-		return flatMorph(this.contextualReferencesByPath, (path, refs) => [
+		return flatMorph(this.structuralReferencesByPath, (path, refs) => [
 			path,
 			refs.map(ref => ref.node)
 		])
 	}
 
 	get expressionsByPath() {
-		return flatMorph(this.contextualReferencesByPath, (path, refs) => [
+		return flatMorph(this.structuralReferencesByPath, (path, refs) => [
 			path,
 			refs.map(ref => ref.node.expression)
 		])
@@ -233,6 +293,10 @@ export abstract class BaseNode<
 
 	isConstraint(): this is BaseConstraint {
 		return includes(constraintKinds, this.kind)
+	}
+
+	isStructural(): this is Node<StructuralKind> {
+		return includes(structuralKinds, this.kind)
 	}
 
 	isRefinement(): this is Node<RefinementKind> {
@@ -385,9 +449,9 @@ export abstract class BaseNode<
 /** a list of literal keys (named properties) or a nodes (index signatures) representing a path */
 export type TypePath = (PropertyKey | BaseRoot)[]
 
-export type ContextualReference<node extends BaseNode = BaseNode> = {
+export type StructuralReference<root extends BaseRoot = BaseRoot> = {
 	path: TypePath
-	node: node
+	node: root
 	propString: string
 }
 
@@ -396,26 +460,34 @@ export const typePathToPropString = (path: TypePath) =>
 		stringifyNonKey: node => node.expression
 	})
 
-export const contextualReference = <node extends BaseNode>(
+export const structuralReference = <node extends BaseRoot>(
 	path: TypePath,
 	node: node
-): ContextualReference<node> => ({
+): StructuralReference<node> => ({
 	path,
 	node,
 	propString: typePathToPropString(path)
 })
 
-export const contextualReferencesAreEqual = (
-	l: ContextualReference,
-	r: ContextualReference
+export const structuralReferencesAreEqual = (
+	l: StructuralReference,
+	r: StructuralReference
 ) => l.propString === r.propString && l.node.equals(r.node)
 
-export const appendUniqueContextualReferences = (
-	existing: ContextualReference[] | undefined,
-	refs: listable<ContextualReference>
+export const appendUniqueStructuralReferences = <node extends BaseRoot>(
+	existing: StructuralReference<node>[] | undefined,
+	refs: listable<StructuralReference<node>>
 ) =>
 	appendUnique(existing, refs, {
-		isEqual: contextualReferencesAreEqual
+		isEqual: structuralReferencesAreEqual
+	})
+
+export const appendUniqueNodes = <node extends BaseNode>(
+	existing: node[] | undefined,
+	refs: listable<node>
+) =>
+	appendUnique(existing, refs, {
+		isEqual: (l, r) => l.equals(r)
 	})
 
 export type DeepNodeTransformOptions = {

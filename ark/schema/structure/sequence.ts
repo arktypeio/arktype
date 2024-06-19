@@ -9,11 +9,11 @@ import {
 import { BaseConstraint } from "../constraint.js"
 import type { MutableInner, RootSchema } from "../kinds.js"
 import {
-	appendUniqueContextualReferences,
-	contextualReference,
-	type ContextualReference,
+	appendUniqueStructuralReferences,
+	structuralReference,
 	type DeepNodeTransformContext,
-	type DeepNodeTransformation
+	type DeepNodeTransformation,
+	type StructuralReference
 } from "../node.js"
 import type { MaxLengthNode } from "../refinements/maxLength.js"
 import type { MinLengthNode } from "../refinements/minLength.js"
@@ -235,8 +235,10 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 	impliedBasis: BaseRoot = $ark.intrinsic.Array
 	prefix: array<BaseRoot> = this.inner.prefix ?? []
 	optionals: array<BaseRoot> = this.inner.optionals ?? []
-	prevariadic: BaseRoot[] = [...this.prefix, ...this.optionals]
+	prevariadic: array<BaseRoot> = [...this.prefix, ...this.optionals]
 	postfix: array<BaseRoot> = this.inner.postfix ?? []
+	variadicOrPostfix: array<BaseRoot> =
+		this.variadic ? [this.variadic, ...this.postfix] : this.postfix
 	isVariadicOnly: boolean = this.prevariadic.length + this.postfix.length === 0
 	minVariadicLength: number = this.inner.minVariadicLength ?? 0
 	minLength: number =
@@ -284,39 +286,36 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 		}
 	}
 
-	override get contextualReferences() {
-		const refs: ContextualReference[] = []
+	override get structuralReferences() {
+		const refs: StructuralReference[] = []
 
-		appendUniqueContextualReferences(
+		appendUniqueStructuralReferences(
 			refs,
-			this.prevariadic.flatMap((n, i) =>
-				n.contextualReferences.map(ref =>
-					contextualReference([`${i}`, ...ref.path], ref.node)
+			this.prevariadic.flatMap((element, i) =>
+				append(
+					element.structuralReferences.map(ref =>
+						structuralReference([`${i}`, ...ref.path], ref.node)
+					),
+					structuralReference([`${i}`], element)
 				)
 			)
 		)
 
-		if (this.variadic) {
-			appendUniqueContextualReferences(
-				refs,
-				this.variadic.contextualReferences.map(ref =>
-					contextualReference(
-						[$ark.intrinsic.nonNegativeIntegerString, ...ref.path],
-						ref.node
-					)
-				)
-			)
-		}
-
-		appendUniqueContextualReferences(
+		appendUniqueStructuralReferences(
 			refs,
-			this.postfix.flatMap(n =>
+			this.variadicOrPostfix.flatMap(element =>
 				// a postfix index can't be directly represented as a type
 				// key, so we just use the same matcher for variadic
-				n.contextualReferences.map(ref =>
-					contextualReference(
-						[$ark.intrinsic.nonNegativeIntegerString, ...ref.path],
-						ref.node
+				append(
+					element.structuralReferences.map(ref =>
+						structuralReference(
+							[$ark.intrinsic.nonNegativeIntegerString, ...ref.path],
+							ref.node
+						)
+					),
+					structuralReference(
+						[$ark.intrinsic.nonNegativeIntegerString],
+						element
 					)
 				)
 			)

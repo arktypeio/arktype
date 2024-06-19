@@ -1,4 +1,5 @@
 import {
+	append,
 	compileSerializedValue,
 	printable,
 	registeredReference,
@@ -9,10 +10,10 @@ import {
 import { BaseConstraint } from "../constraint.js"
 import type { Node, RootSchema } from "../kinds.js"
 import {
-	contextualReference,
-	type ContextualReference,
+	structuralReference,
 	type DeepNodeTransformContext,
-	type DeepNodeTransformation
+	type DeepNodeTransformation,
+	type StructuralReference
 } from "../node.js"
 import type { Morph } from "../roots/morph.js"
 import type { BaseRoot } from "../roots/root.js"
@@ -121,9 +122,12 @@ export abstract class BaseProp<
 		}
 	]
 
-	override get contextualReferences(): ContextualReference[] {
-		return super.contextualReferences.map(ref =>
-			contextualReference([this.key, ...ref.path], ref.node)
+	override get structuralReferences(): StructuralReference[] {
+		return append(
+			this.value.structuralReferences.map(ref =>
+				structuralReference([this.key, ...ref.path], ref.node)
+			),
+			structuralReference([this.key], this.value)
 		)
 	}
 

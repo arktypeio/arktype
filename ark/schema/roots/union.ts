@@ -598,8 +598,8 @@ export const reduceBranches = ({
 				!ordered &&
 				(branches[i].includesMorph || branches[j].includesMorph) &&
 				!arrayEquals(
-					branches[i].contextualMorphs,
-					branches[j].contextualMorphs,
+					branches[i].structuralMorphs,
+					branches[j].structuralMorphs,
 					{
 						isEqual: (l, r) =>
 							l.propString === r.propString &&
