@@ -643,6 +643,10 @@ contextualize(() => {
 	})
 
 	it("union helper undiscriminated", () => {
+		const t = type("string")
+			.pipe(s => s.length)
+			.or("'foo'")
+
 		attest(() =>
 			type("string")
 				.pipe(s => s.length)
@@ -669,7 +673,8 @@ contextualize(() => {
 			) => Out<1[]>
 		>(t.t)
 
-		const serializedMorphs = t.internal.firstReferenceOfKindOrThrow("morph").serializedMorphs
+		const serializedMorphs =
+			t.internal.firstReferenceOfKindOrThrow("morph").serializedMorphs
 
 		attest(t.json).snap([
 			{
