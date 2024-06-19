@@ -452,7 +452,7 @@ export type StructuralReference<root extends BaseRoot = BaseRoot> = {
 	optional: boolean
 }
 
-export const typePathToPropString = (path: TypePath) =>
+export const typePathToPropString = (path: Readonly<TypePath>) =>
 	pathToPropString(path, {
 		stringifyNonKey: node => node.expression
 	})

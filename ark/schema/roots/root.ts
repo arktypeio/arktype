@@ -25,7 +25,7 @@ import {
 	type PrimitiveConstraintKind
 } from "../constraint.js"
 import type { Node, NodeSchema, reducibleKindOf } from "../kinds.js"
-import { BaseNode } from "../node.js"
+import { BaseNode, appendUniqueNodes, typePathToPropString } from "../node.js"
 import type { Predicate } from "../predicate.js"
 import type { RootScope } from "../scope.js"
 import type { BaseMeta, RawNodeDeclaration } from "../shared/declare.js"
@@ -62,7 +62,7 @@ import type {
 	inferMorphOut,
 	inferPipes
 } from "./morph.js"
-import type { UnionChildKind } from "./union.js"
+import type { UnionChildKind, UnionChildNode } from "./union.js"
 
 export interface RawRootDeclaration extends RawNodeDeclaration {
 	kind: RootKind
@@ -140,9 +140,19 @@ export abstract class BaseRoot<
 					if (hasArkKind(pathKey, "root")) return pathKey.extends(indexableKey)
 					return indexableKey.allows(pathKey)
 				}
+				return false
 			})
 		)
-		return this
+
+		if (matches.length === 0)
+			throwParseError(`${typePathToPropString(path)} does not exist on ${this}`)
+		if (matches.length === 1) return matches[0].node
+
+		const branches = matches.reduce<UnionChildNode[]>(
+			(acc, ref) => appendUniqueNodes(acc, ref.node.branches),
+			[]
+		)
+		return this.$.node("union", branches)
 	}
 
 	extract(r: unknown): BaseRoot {
