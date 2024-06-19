@@ -1,5 +1,11 @@
 import { attest, contextualize } from "@arktype/attest"
-import type { AtLeastLength, AtMostLength, Out, string } from "@arktype/schema"
+import type {
+	AtLeastLength,
+	AtMostLength,
+	Out,
+	number,
+	string
+} from "@arktype/schema"
 import { registeredReference } from "@arktype/util"
 import { scope, type, type Type } from "arktype"
 import type { Module } from "../module.js"
@@ -569,5 +575,32 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			domain: { description: 'This will "fail"', domain: "string" },
 			predicate: [{ description: 'This will "fail"', predicate: "$ark.fn" }]
 		})
+	})
+
+	it("extract in of narrowed morph", () => {
+		const SubSubType = type("string").pipe(s => parseInt(s))
+		const SubType = type({ amount: SubSubType }).narrow(() => true)
+		const MyType = type({
+			sub: SubType
+		})
+
+		type MyType = typeof MyType.in.infer
+
+		attest<
+			{
+				sub: {
+					amount: string
+				}
+			},
+			MyType
+		>()
+	})
+
+	it("narrowed morph", () => {
+		const t = type("string").pipe(s => parseInt(s))
+		// .narrow(n => true)
+		const ts = type("string").narrow(s => true)
+
+		attest(t.t).type.toString("(In: string) => Out<number.narrowed>")
 	})
 })

@@ -261,10 +261,10 @@ type _distill<
 			_distill<i, io, distilledKind>
 		:	_distill<o, io, distilledKind>
 	: t extends DefaultableAst<infer t> ? _distill<t, io, distilledKind>
-	: t extends of<infer base, any> ?
+	: t extends of<infer base, infer constraints> ?
 		distilledKind extends "base" ?
 			_distill<base, io, distilledKind>
-		:	t
+		:	of<_distill<base, io, distilledKind>, constraints>
 	: t extends array ? distillArray<t, io, distilledKind, []>
 	: // we excluded this from TerminallyInferredObjectKind so that those types could be
 	// inferred before checking morphs/defaults, which extend Function

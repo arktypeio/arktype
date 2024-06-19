@@ -171,7 +171,7 @@ declare class _Type<t = unknown, $ = any> extends InnerRoot<t, $> {
 
 	keyof(): Type<keyof this["inferIn"], $>
 
-	pipe<a extends Morph<this["infer"]>>(a: a): Type<inferPipes<t, [a]>, $>
+	pipe<a extends Morph<distillOut<t>>>(a: a): Type<inferPipes<t, [a]>, $>
 	pipe<a extends Morph<this["infer"]>, b extends Morph<inferMorphOut<a>>>(
 		a: a,
 		b: b
