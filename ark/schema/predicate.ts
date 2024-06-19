@@ -4,7 +4,11 @@ import { BaseConstraint } from "./constraint.js"
 import type { errorContext } from "./kinds.js"
 import type { NodeCompiler } from "./shared/compile.js"
 import type { BaseMeta, declareNode } from "./shared/declare.js"
-import { implementNode, type nodeImplementationOf } from "./shared/implement.js"
+import {
+	compileErrorContext,
+	implementNode,
+	type nodeImplementationOf
+} from "./shared/implement.js"
 import type {
 	TraversalContext,
 	TraverseAllows,
@@ -71,7 +75,7 @@ export class PredicateNode extends BaseConstraint<PredicateDeclaration> {
 		description: this.description
 	}
 
-	compiledErrorContext = `{ code: "predicate", description: "${this.description}" }`
+	compiledErrorContext = compileErrorContext(this.errorContext)
 
 	traverseApply: TraverseApply = (data, ctx) => {
 		if (!this.predicate(data, ctx) && !ctx.hasError())

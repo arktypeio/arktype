@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@arktype/attest"
-import { ark, type } from "arktype"
+import { ark, scope, type } from "arktype"
 
 contextualize(() => {
 	it("can get shallow roots by path", () => {
@@ -103,27 +103,36 @@ contextualize(() => {
 	})
 
 	it("can collect multiple key types across a union", () => {
-		const t = type({
-			"[string]": "string | number | boolean",
-			name: "string",
-			"age?": "integer < 100",
-			address: {
-				"[symbol]": "boolean",
-				street: "string",
-				"number?": "number"
-			}
-		}).or([
-			{
-				isTrue: "true"
+		const types = scope({
+			lOnlyIndex: /^l*$/,
+			rOnlyIndex: /^r*$/,
+			sharedIndex: "/^*lr*$/",
+			l: {
+				lOnly: "1",
+				"[lOnlyIndex]": "1",
+				shared: {
+					lOnly: "1",
+					"[lOnlyIndex]": "1",
+					shared: "1",
+					"[sharedIndex]": "1"
+				},
+				"[sharedIndex]": "1"
 			},
-			["false", "?"]
-		])
+			r: {
+				rOnly: "1",
+				"[rOnlyIndex]": "1",
+				shared: {
+					rOnly: "1",
+					"[rOnlyIndex]": "1",
+					shared: "1",
+					"[sharedIndex]": "1"
+				},
+				"[sharedIndex]": "1"
+			}
+		}).export()
 
-		// attest(t.internal.indexableExpressions).snap()
+		const lOrR = types.l.or(types.r)
 
-		attest(t.get("0", "isTrue").expression).snap()
-		attest(t.get("1", "0").expression).snap()
-		attest(t.get(ark.string).expression).snap()
-		attest(t.get("address", Symbol()).expression).snap()
+		attest(lOrR.internal.indexableExpressions).snap()
 	})
 })

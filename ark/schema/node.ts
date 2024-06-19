@@ -237,14 +237,10 @@ export abstract class BaseNode<
 		return this.getIo("out") as never
 	}
 
+	// Should be refactored to use transform
+	// https://github.com/arktypeio/arktype/issues/1020
 	getIo(kind: "in" | "out"): BaseNode {
 		if (!this.includesMorph) return this as never
-		// return this.transform((kind, inner) => {
-		// 	if (kind === "morph") {
-		// 		const morphInner = inner as MorphInner
-		// 		return
-		// 	}
-		// })
 
 		const ioInner: Record<any, unknown> = {}
 		for (const [k, v] of this.entries) {
@@ -365,8 +361,8 @@ export abstract class BaseNode<
 	): BaseNode | null {
 		const $ = ctx.bindScope?.internal ?? this.$
 		if (ctx.seen[this.id])
+			// Cyclic handling needs to be made more robust
 			// https://github.com/arktypeio/arktype/issues/944
-			// TODO: io?
 			return this.$.lazilyResolve(ctx.seen[this.id]! as never)
 		if (ctx.shouldTransform?.(this as never, ctx) === false) return this
 

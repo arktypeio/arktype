@@ -46,13 +46,18 @@ or("foo|bar")
 // 		[optional(s)]: "number"
 // 	})
 
+const lOrR = types.l.or(types.r)
+
+// THIS SHOULD NOT BE HIGHLIGHTED
+// attest(t.internal.indexableExpressions).snap()
+
 const ff = type("string").or("foobar|baz")
 
 const types = scope({ notASpace: { a: type("string") } }).export()
 attest<Type<{ a: string }, Ark>>(types.notASpace)
 
 test("type definition", () => {
-	const types = scope({ a: type("string") }).export()
+	const types = scope({ a: type("string | number") }).export()
 	attest<string>(types.a.infer)
 	attest(() =>
 		// @ts-expect-error
@@ -75,6 +80,10 @@ scope({
 			nested: "a"
 		}
 	]
+})
+
+$.type({
+	foo: "string[]"
 })
 
 {
@@ -130,5 +139,6 @@ class F {
 const highlighted = type({
 	literals: "'foo' | 'bar' | true",
 	expressions: "boolean[] | 5 < number <= 10 | number % 2",
-	pattern: "/^(?:4[0-9]{12}(?:[0-9]{3,6}))$/"
+	pattern: "/^(?:4[0-9]{12}(?:[0-9]{3,6}))$/",
+	bar: "(string | number)[]"
 })

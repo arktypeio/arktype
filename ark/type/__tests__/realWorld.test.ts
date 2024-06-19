@@ -559,4 +559,15 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			"sections must be an object (was missing)"
 		)
 	})
+
+	it("narrowed quoted description", () => {
+		const t = type("string")
+			.narrow(() => true)
+			.describe('This will "fail"')
+		attest(t.json).snap({
+			description: 'This will "fail"',
+			domain: { description: 'This will "fail"', domain: "string" },
+			predicate: [{ description: 'This will "fail"', predicate: "$ark.fn" }]
+		})
+	})
 })
