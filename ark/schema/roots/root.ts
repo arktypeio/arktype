@@ -16,6 +16,7 @@ import {
 	throwParseError,
 	type Callable,
 	type Json,
+	type array,
 	type conform
 } from "@arktype/util"
 import type { constrain } from "../ast.js"
@@ -130,9 +131,11 @@ export abstract class BaseRoot<
 		return result instanceof ArkErrors ? result.throw() : result
 	}
 
-	// get<key extends PropertyKey>(...path: readonly (key | Root<key>)[]): this {
-	// 	return this
-	// }
+	get<path extends array<PropertyKey | Root<PropertyKey>>>(
+		...path: path
+	): this {
+		return this
+	}
 
 	extract(r: unknown): BaseRoot {
 		const rNode = this.$.parseRoot(r)

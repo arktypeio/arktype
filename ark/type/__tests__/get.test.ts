@@ -31,4 +31,25 @@ contextualize(() => {
 			"foo.baz": "1"
 		})
 	})
+
+	it("can merge across a deep union", () => {
+		const t = type(
+			{
+				foo: {
+					bar: "0"
+				}
+			},
+			"|",
+			{
+				foo: {
+					bar: "1"
+				}
+			}
+		)
+
+		attest(t.internal.indexableExpressions).snap({
+			foo: "{ bar: 0 } | { bar: 1 }",
+			"foo.bar": "0 | 1"
+		})
+	})
 })
