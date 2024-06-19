@@ -14,12 +14,15 @@
 	"repository": {
 		"arkDefinition": {
 			"contentName": "meta.embedded.arktype.definition",
-			"begin": "(([^\\)\\(\\s]+)?(?:type|scope|define|match|fn))(\\()",
+			"begin": "([^\\)\\(\\s\\.]+)?(\\.)?(type|scope|define|match|fn)(\\()",
 			"beginCaptures": {
-				"1": {
-					"name": "entity.name.function.ts"
+				"2": {
+					"name": "punctuation.accessor.ts"
 				},
 				"3": {
+					"name": "entity.name.function.ts"
+				},
+				"4": {
 					"name": "meta.brace.round.ts"
 				}
 			},
@@ -37,12 +40,12 @@
 		},
 		"arkChained": {
 			"contentName": "meta.embedded.arktype.definition",
-			"begin": "(\\.)(([^\\)\\(\\s]+)?(?:morph|and|or|when|extends|intersect))(\\()",
+			"begin": "([^\\)\\(\\s\\.]+)?(\\.)(and|or|when|extends|intersect|exclude|extract|overlaps|subsumes)(\\()",
 			"beginCaptures": {
-				"1": {
+				"2": {
 					"name": "punctuation.accessor.ts"
 				},
-				"2": {
+				"3": {
 					"name": "entity.name.function.ts"
 				},
 				"4": {
