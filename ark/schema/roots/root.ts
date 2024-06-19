@@ -132,24 +132,31 @@ export abstract class BaseRoot<
 	}
 
 	get<path extends array<PropertyKey | BaseRoot>>(...path: path): BaseRoot {
-		const matches = this.indexablePaths.filter((indexable, pathIndex) =>
-			indexable.path.every(indexableKey => {
-				const pathKey = path[pathIndex]
-				if (indexableKey === pathKey) return true
+		const nodesAtPath = this.indexablePaths.flatMap(indexable => {
+			// paths with differing lengths cannot match
+			if (path.length !== indexable.path.length) return []
+			for (let keyIndex = 0; keyIndex < path.length; keyIndex++) {
+				const indexableKey = indexable.path[keyIndex]
+				const pathKey = path[keyIndex]
+				if (indexableKey === pathKey) continue
 				if (hasArkKind(indexableKey, "root")) {
-					if (hasArkKind(pathKey, "root")) return pathKey.extends(indexableKey)
-					return indexableKey.allows(pathKey)
+					if (hasArkKind(pathKey, "root")) continue
+					if (indexableKey.allows(pathKey)) continue
 				}
-				return false
-			})
-		)
+				// if the key is not assignable to the indexable path at the current position,
+				// stop traversing it and filter it from results
+				return []
+			}
+			// if we make it to this point, the path matches, so return the corresponding node
+			return indexable.node
+		})
 
-		if (matches.length === 0)
+		if (nodesAtPath.length === 0)
 			throwParseError(`${typePathToPropString(path)} does not exist on ${this}`)
-		if (matches.length === 1) return matches[0].node
+		if (nodesAtPath.length === 1) return nodesAtPath[0]
 
-		const branches = matches.reduce<UnionChildNode[]>(
-			(acc, ref) => appendUniqueNodes(acc, ref.node.branches),
+		const branches = nodesAtPath.reduce<UnionChildNode[]>(
+			(acc, node) => appendUniqueNodes(acc, node.branches),
 			[]
 		)
 		return this.$.node("union", branches)

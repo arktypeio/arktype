@@ -20,6 +20,7 @@ import {
 	type Prerequisite,
 	type PrimitiveConstraintKind,
 	type Root,
+	type TypePath,
 	type constrain,
 	type constraintKindOf,
 	type distillIn,
@@ -247,6 +248,10 @@ declare class _Type<t = unknown, $ = any> extends InnerRoot<t, $> {
 		other: validateTypeRoot<def, $>
 	): this is Type<inferTypeRoot<def>, $>
 	overlaps<def>(r: validateTypeRoot<def, $>): boolean
+
+	get<const path extends array<PropertyKey | Type<any, any>>>(
+		...path: path
+	): Type
 
 	constrain<
 		kind extends PrimitiveConstraintKind,

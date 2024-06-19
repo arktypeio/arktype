@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@arktype/attest"
-import { type } from "arktype"
+import { ark, type } from "arktype"
 
 contextualize(() => {
 	it("can get shallow roots by path", () => {
@@ -7,6 +7,8 @@ contextualize(() => {
 			foo: "string",
 			bar: "number|bigint"
 		})
+
+		attest(t.get("bar").expression).snap("bigint | number")
 
 		attest(t.internal.indexableExpressions).snap({
 			bar: "bigint | number",
@@ -23,6 +25,10 @@ contextualize(() => {
 				quux: "2"
 			}
 		})
+
+		attest(t.get("foo", "baz").expression).snap("1")
+
+		attest(t.get("bar", "quux").expression).snap("2")
 
 		attest(t.internal.indexableExpressions).snap({
 			bar: "{ quux: 2 }",
@@ -47,6 +53,8 @@ contextualize(() => {
 			}
 		)
 
+		attest(t.get("foo", "bar").expression).snap("0 | 1")
+
 		attest(t.internal.indexableExpressions).snap({
 			foo: "{ bar: 0 } | { bar: 1 }",
 			"foo.bar": "0 | 1"
@@ -63,7 +71,7 @@ contextualize(() => {
 				street: "string",
 				"number?": "number"
 			}
-		}).and([
+		}).or([
 			{
 				isTrue: "true"
 			},
@@ -83,5 +91,11 @@ contextualize(() => {
 			age: "number % 1 & <100 | undefined",
 			name: "string"
 		})
+
+		attest(t.get("1", "0").expression).snap("undefined | false")
+		attest(t.get(ark.string).expression).snap("number | string | undefined")
+		attest(t.get("address", Symbol()).expression).snap(
+			"undefined | false | true"
+		)
 	})
 })

@@ -11,9 +11,11 @@ import {
 	type Dict,
 	type Guardable,
 	type Json,
+	type array,
 	type conform,
 	type dict,
-	type listable
+	type listable,
+	type mutable
 } from "@arktype/util"
 import type { BaseConstraint } from "./constraint.js"
 import type { Inner, MutableInner, Node, reducibleKindOf } from "./kinds.js"
@@ -443,7 +445,7 @@ export abstract class BaseNode<
 }
 
 /** a list of literal keys (named properties) or a nodes (index signatures) representing a path */
-export type TypePath = (PropertyKey | BaseRoot)[]
+export type TypePath = array<PropertyKey | BaseRoot>
 
 export type StructuralReference<root extends BaseRoot = BaseRoot> = {
 	path: TypePath
@@ -504,7 +506,7 @@ export type ShouldTransformFn = (
 ) => boolean
 
 export interface DeepNodeTransformContext extends DeepNodeTransformOptions {
-	path: TypePath
+	path: mutable<TypePath>
 	seen: { [originalId: string]: (() => BaseNode | undefined) | undefined }
 	parseOptions: NodeParseOptions
 }
