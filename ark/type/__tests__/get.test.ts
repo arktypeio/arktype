@@ -52,4 +52,36 @@ contextualize(() => {
 			"foo.bar": "0 | 1"
 		})
 	})
+
+	it("can collect multiple key types", () => {
+		const t = type({
+			"[string]": "string | number",
+			name: "string",
+			"age?": "integer < 100",
+			address: {
+				"[symbol]": "boolean",
+				street: "string",
+				"number?": "number"
+			}
+		}).and([
+			{
+				isTrue: "true"
+			},
+			["false", "?"]
+		])
+
+		attest(t.internal.indexableExpressions).snap({
+			'["0"]': "{ isTrue: true }",
+			'["0"].isTrue': "true",
+			'["1"]': "[false?]",
+			'["1"]["0"]': "undefined | false",
+			"[string]": "number | string | undefined",
+			address: "{ [symbol]: boolean, street: string, number?: number }",
+			"address.number": "number | undefined",
+			"address.street": "string",
+			"address[symbol]": "undefined | false | true",
+			age: "number % 1 & <100 | undefined",
+			name: "string"
+		})
+	})
 })

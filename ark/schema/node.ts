@@ -48,7 +48,7 @@ import {
 	type TraverseAllows,
 	type TraverseApply
 } from "./shared/traversal.js"
-import { pathToPropString, type arkKind } from "./shared/utils.js"
+import { isNode, pathToPropString, type arkKind } from "./shared/utils.js"
 
 export type UnknownNode = BaseNode | Root
 
@@ -159,7 +159,8 @@ export abstract class BaseNode<
 						ref.node.branches.map(branch => ({
 							path: ref.path,
 							propString: ref.propString,
-							node: branch
+							node: branch,
+							optional: ref.optional
 						}))
 					:	(ref as StructuralReference<UnionChildNode>)
 				),
@@ -182,39 +183,27 @@ export abstract class BaseNode<
 	}
 
 	get indexablePaths(): dict<StructuralReference> {
-		return flatMorph(this.structuralBranchesByPath, (propString, refs) => [
-			propString,
-			refs.length === 1 ?
-				refs[0]
-			:	{
+		return flatMorph(this.structuralBranchesByPath, (propString, refs) => {
+			const branchNodes = refs.map(ref => ref.node)
+			const optional = refs.some(ref => ref.optional)
+			if (optional)
+				appendUnique(branchNodes, $ark.intrinsic.undefined as UnitNode)
+			return [
+				propString,
+				{
 					path: refs[0].path,
 					propString,
-					node: this.$.node(
-						"union",
-						refs.map(ref => ref.node)
-					)
+					node: this.$.node("union", branchNodes),
+					optional
 				}
-		])
+			]
+		})
 	}
 
 	get indexableExpressions(): dict<string> {
 		return flatMorph(this.indexablePaths, (propString, ref) => [
 			propString,
 			ref.node.expression
-		])
-	}
-
-	get referencesByPath() {
-		return flatMorph(this.structuralReferencesByPath, (path, refs) => [
-			path,
-			refs.map(ref => ref.node)
-		])
-	}
-
-	get expressionsByPath() {
-		return flatMorph(this.structuralReferencesByPath, (path, refs) => [
-			path,
-			refs.map(ref => ref.node.expression)
 		])
 	}
 
@@ -247,6 +236,12 @@ export abstract class BaseNode<
 
 	getIo(kind: "in" | "out"): BaseNode {
 		if (!this.includesMorph) return this as never
+		// return this.transform((kind, inner) => {
+		// 	if (kind === "morph") {
+		// 		const morphInner = inner as MorphInner
+		// 		return
+		// 	}
+		// })
 
 		const ioInner: Record<any, unknown> = {}
 		for (const [k, v] of this.entries) {
@@ -367,10 +362,7 @@ export abstract class BaseNode<
 	): BaseNode | null {
 		const $ = ctx.bindScope?.internal ?? this.$
 		if (ctx.seen[this.id])
-			// TODO: remove cast by making lazilyResolve more flexible
-			// TODO: if each transform has a unique base id, could ensure
-			// these don't create duplicates
-			// TODO: bindToScope?
+			// https://github.com/arktypeio/arktype/issues/944
 			// TODO: io?
 			return this.$.lazilyResolve(ctx.seen[this.id]! as never)
 		if (ctx.shouldTransform?.(this as never, ctx) === false) return this
@@ -408,6 +400,9 @@ export abstract class BaseNode<
 		)
 
 		if (transformedInner === null) return null
+
+		if (isNode(transformedInner))
+			return (transformedNode = transformedInner as never)
 
 		if (
 			isEmptyObject(transformedInner) &&
@@ -453,6 +448,7 @@ export type StructuralReference<root extends BaseRoot = BaseRoot> = {
 	path: TypePath
 	node: root
 	propString: string
+	optional: boolean
 }
 
 export const typePathToPropString = (path: TypePath) =>
@@ -462,17 +458,22 @@ export const typePathToPropString = (path: TypePath) =>
 
 export const structuralReference = <node extends BaseRoot>(
 	path: TypePath,
-	node: node
+	node: node,
+	optional: boolean
 ): StructuralReference<node> => ({
 	path,
 	node,
-	propString: typePathToPropString(path)
+	propString: typePathToPropString(path),
+	optional
 })
 
 export const structuralReferencesAreEqual = (
 	l: StructuralReference,
 	r: StructuralReference
-) => l.propString === r.propString && l.node.equals(r.node)
+) =>
+	l.propString === r.propString &&
+	l.optional === r.optional &&
+	l.node.equals(r.node)
 
 export const appendUniqueStructuralReferences = <node extends BaseRoot>(
 	existing: StructuralReference<node>[] | undefined,

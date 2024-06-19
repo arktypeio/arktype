@@ -133,7 +133,7 @@ export abstract class BaseRoot<
 
 	get<path extends array<PropertyKey | Root<PropertyKey>>>(
 		...path: path
-	): this {
+	): BaseRoot {
 		return this
 	}
 

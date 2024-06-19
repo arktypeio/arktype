@@ -41,37 +41,4 @@ contextualize(() => {
 			"AggregateError: a must be a string (was number)"
 		)
 	})
-
-	it("references by path", () => {
-		const user = type({
-			"[string]": "string | number",
-			name: "string",
-			"age?": "integer < 100"
-		}).and(["true", "false"])
-
-		attest(user.internal.expressionsByPath).snap({
-			"": [
-				"Array",
-				"{ [string]: number | string, name: string, age?: number % 1 & <100 } & [true, false]",
-				"{ [string]: number | string, name: string, age?: number % 1 & <100 } & [true, false]",
-				"{ length: 2 }"
-			],
-			'["0"]': ["true"],
-			'["1"]': ["false"],
-			"[string]": [
-				"[string]: number | string",
-				"number",
-				"number | string",
-				"string"
-			],
-			age: [
-				"% 1",
-				"<100",
-				"age?: number % 1 & <100",
-				"number",
-				"number % 1 & <100"
-			],
-			name: ["name: string", "string"]
-		})
-	})
 })

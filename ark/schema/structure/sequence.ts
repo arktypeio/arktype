@@ -291,14 +291,19 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 
 		appendUniqueStructuralReferences(
 			refs,
-			this.prevariadic.flatMap((element, i) =>
-				append(
+			this.prevariadic.flatMap((element, i) => {
+				const optional = i >= this.prefix.length
+				return append(
 					element.structuralReferences.map(ref =>
-						structuralReference([`${i}`, ...ref.path], ref.node)
+						structuralReference(
+							[`${i}`, ...ref.path],
+							ref.node,
+							ref.optional || optional
+						)
 					),
-					structuralReference([`${i}`], element)
+					structuralReference([`${i}`], element, optional)
 				)
-			)
+			})
 		)
 
 		appendUniqueStructuralReferences(
@@ -310,12 +315,17 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 					element.structuralReferences.map(ref =>
 						structuralReference(
 							[$ark.intrinsic.nonNegativeIntegerString, ...ref.path],
-							ref.node
+							ref.node,
+							true
 						)
 					),
 					structuralReference(
 						[$ark.intrinsic.nonNegativeIntegerString],
-						element
+						element,
+						// even though a postfix element is not optional,
+						// we have to treat it that way as we have no way to index
+						// based on the length of the array
+						true
 					)
 				)
 			)

@@ -148,9 +148,9 @@ export class IndexNode extends BaseConstraint<IndexDeclaration> {
 	override get structuralReferences() {
 		return append(
 			this.value.structuralReferences.map(ref =>
-				structuralReference([this.signature, ...ref.path], ref.node)
+				structuralReference([this.signature, ...ref.path], ref.node, true)
 			),
-			structuralReference([this.signature], this.value)
+			structuralReference([this.signature], this.value, true)
 		)
 	}
 

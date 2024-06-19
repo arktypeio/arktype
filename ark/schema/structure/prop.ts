@@ -100,10 +100,24 @@ export abstract class BaseProp<
 	kind extends "required" ? RequiredDeclaration : OptionalDeclaration
 > {
 	required: boolean = this.kind === "required"
+	optional: boolean = this.kind === "optional"
 	impliedBasis: BaseRoot = $ark.intrinsic.object
 	serializedKey: string = compileSerializedValue(this.key)
 	compiledKey: string =
 		typeof this.key === "string" ? this.key : this.serializedKey
+
+	override get structuralReferences(): StructuralReference[] {
+		return append(
+			this.value.structuralReferences.map(ref =>
+				structuralReference(
+					[this.key, ...ref.path],
+					ref.node,
+					ref.optional || this.optional
+				)
+			),
+			structuralReference([this.key], this.value, this.optional)
+		)
+	}
 
 	protected override _transform(
 		mapper: DeepNodeTransformation,
@@ -122,15 +136,6 @@ export abstract class BaseProp<
 		}
 	]
 
-	override get structuralReferences(): StructuralReference[] {
-		return append(
-			this.value.structuralReferences.map(ref =>
-				structuralReference([this.key, ...ref.path], ref.node)
-			),
-			structuralReference([this.key], this.value)
-		)
-	}
-
 	private defaultValueMorphsReference = registeredReference(
 		this.defaultValueMorphs
 	)
@@ -147,7 +152,7 @@ export abstract class BaseProp<
 			ctx?.path.pop()
 			return allowed
 		}
-		return !this.required
+		return this.optional
 	}
 
 	traverseApply: TraverseApply<object> = (data, ctx) => {
