@@ -131,9 +131,17 @@ export abstract class BaseRoot<
 		return result instanceof ArkErrors ? result.throw() : result
 	}
 
-	get<path extends array<PropertyKey | Root<PropertyKey>>>(
-		...path: path
-	): BaseRoot {
+	get<path extends array<PropertyKey | BaseRoot>>(...path: path): BaseRoot {
+		const matches = this.indexablePaths.filter((indexable, pathIndex) =>
+			indexable.path.every(indexableKey => {
+				const pathKey = path[pathIndex]
+				if (indexableKey === pathKey) return true
+				if (hasArkKind(indexableKey, "root")) {
+					if (hasArkKind(pathKey, "root")) return pathKey.extends(indexableKey)
+					return indexableKey.allows(pathKey)
+				}
+			})
+		)
 		return this
 	}
 
