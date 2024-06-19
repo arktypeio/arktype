@@ -643,10 +643,6 @@ contextualize(() => {
 	})
 
 	it("union helper undiscriminated", () => {
-		const t = type("string")
-			.pipe(s => s.length)
-			.or("'foo'")
-
 		attest(() =>
 			type("string")
 				.pipe(s => s.length)

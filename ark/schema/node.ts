@@ -125,11 +125,17 @@ export abstract class BaseNode<
 
 	get shallowReferences(): BaseNode[] {
 		return this.hasKind("structure") ?
-				this.children
+				[this as BaseNode, ...this.children]
 			:	this.children.reduce<BaseNode[]>(
 					(acc, child) => appendUniqueNodes(acc, child.shallowReferences),
-					[]
+					[this]
 				)
+	}
+
+	get shallowMorphs(): MorphNode[] {
+		return this.shallowReferences
+			.filter((n): n is MorphNode => n.hasKind("morph"))
+			.sort((l, r) => (l.expression < r.expression ? -1 : 1))
 	}
 
 	// overriden by structural kinds so that only the root at each path is added

@@ -36,7 +36,7 @@ import {
 } from "../shared/implement.js"
 import { intersectNodes, intersectNodesRoot } from "../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
-import { hasArkKind, pathToPropString } from "../shared/utils.js"
+import { pathToPropString } from "../shared/utils.js"
 import type { DomainInner, DomainNode } from "./domain.js"
 import type { MorphNode } from "./morph.js"
 import { BaseRoot, type schemaKindRightOf } from "./root.js"
@@ -597,21 +597,17 @@ export const reduceBranches = ({
 			if (
 				!ordered &&
 				(branches[i].includesMorph || branches[j].includesMorph) &&
-				!arrayEquals(
-					branches[i].structuralMorphs,
-					branches[j].structuralMorphs,
-					{
-						isEqual: (l, r) =>
-							l.propString === r.propString &&
-							arrayEquals(l.node.morphs, r.node.morphs, {
-								isEqual: (lMorph, rMorph) =>
-									lMorph === rMorph ||
-									(hasArkKind(lMorph, "root") &&
-										hasArkKind(rMorph, "root") &&
-										lMorph.equals(rMorph))
-							})
-					}
-				)
+				(!arrayEquals(branches[i].shallowMorphs, branches[j].shallowMorphs, {
+					isEqual: (l, r) => l.hasEqualMorphs(r)
+				}) ||
+					!arrayEquals(
+						branches[i].structuralMorphs,
+						branches[j].structuralMorphs,
+						{
+							isEqual: (l, r) =>
+								l.propString === r.propString && l.node.hasEqualMorphs(r.node)
+						}
+					))
 			) {
 				throwParseError(
 					writeIndiscriminableMorphMessage(

@@ -1,4 +1,5 @@
 import {
+	arrayEquals,
 	arrayFrom,
 	registeredReference,
 	throwParseError,
@@ -95,7 +96,7 @@ export const morphImplementation: nodeImplementationOf<MorphDeclaration> =
 		},
 		intersections: {
 			morph: (l, r, ctx) => {
-				if (l.morphs.some((morph, i) => morph !== r.morphs[i])) {
+				if (!l.hasEqualMorphs(r)) {
 					return throwParseError(
 						writeMorphIntersectionMessage(l.expression, r.expression)
 					)
@@ -164,6 +165,17 @@ export class MorphNode extends BaseRoot<MorphDeclaration> {
 
 	override get in(): BaseRoot {
 		return this.inner.in
+	}
+
+	/** Check if the morphs of r are equal to those of this node */
+	hasEqualMorphs(r: MorphNode) {
+		return arrayEquals(this.morphs, r.morphs, {
+			isEqual: (lMorph, rMorph) =>
+				lMorph === rMorph ||
+				(hasArkKind(lMorph, "root") &&
+					hasArkKind(rMorph, "root") &&
+					lMorph.equals(rMorph))
+		})
 	}
 
 	lastMorph = this.inner.morphs.at(-1)
