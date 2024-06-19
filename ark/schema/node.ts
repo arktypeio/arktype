@@ -180,35 +180,30 @@ export abstract class BaseNode<
 		)
 	}
 
-	get structuralReferencesByPath(): dict<StructuralReference[]> {
-		return groupBy(this.structuralReferences, "propString")
-	}
-
-	get structuralBranchesByPath(): dict<StructuralReference<UnionChildNode>[]> {
-		return groupBy(this.structuralBranches, "propString")
-	}
-
-	get indexablePaths(): dict<StructuralReference> {
-		return flatMorph(this.structuralBranchesByPath, (propString, refs) => {
-			const branchNodes = refs.map(ref => ref.node)
-			const optional = refs.some(ref => ref.optional)
-			if (optional)
-				appendUnique(branchNodes, $ark.intrinsic.undefined as UnitNode)
-			return [
-				propString,
-				{
+	get indexablePaths(): StructuralReference[] {
+		const structuralBranchesByPath = groupBy(
+			this.structuralBranches,
+			"propString"
+		)
+		return Object.values(structuralBranchesByPath).map(
+			(refs): StructuralReference => {
+				const branchNodes = refs.map(ref => ref.node)
+				const optional = refs.some(ref => ref.optional)
+				if (optional)
+					appendUnique(branchNodes, $ark.intrinsic.undefined as UnitNode)
+				return {
 					path: refs[0].path,
-					propString,
+					propString: refs[0].propString,
 					node: this.$.node("union", branchNodes),
 					optional
 				}
-			]
-		})
+			}
+		)
 	}
 
 	get indexableExpressions(): dict<string> {
-		return flatMorph(this.indexablePaths, (propString, ref) => [
-			propString,
+		return flatMorph(this.indexablePaths, (i, ref) => [
+			ref.propString,
 			ref.node.expression
 		])
 	}

@@ -7,7 +7,7 @@ export type Dict<k extends string = string, v = unknown> = {
 }
 
 export type dict<v = unknown, k extends string = string> = {
-	[_ in k]?: v
+	[_ in k]: v
 }
 
 /** Either:
