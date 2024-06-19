@@ -63,7 +63,48 @@ contextualize(() => {
 
 	it("can collect multiple key types", () => {
 		const t = type({
-			"[string]": "string | number",
+			"[string]": "string | number | boolean",
+			name: "string",
+			"age?": "integer < 100",
+			address: {
+				"[symbol]": "boolean",
+				street: "string",
+				"number?": "number"
+			}
+		}).and([
+			{
+				isTrue: "true"
+			},
+			["false", "?"]
+		])
+
+		attest(t.internal.indexableExpressions).snap({
+			'["0"]': "{ isTrue: true }",
+			'["0"].isTrue': "true",
+			'["1"]': "[false?]",
+			'["1"]["0"]': "undefined | false",
+			"[string]": "number | string | undefined | false | true",
+			address: "{ [symbol]: boolean, street: string, number?: number }",
+			"address.number": "number | undefined",
+			"address.street": "string",
+			"address[symbol]": "undefined | false | true",
+			age: "number % 1 & <100 | undefined",
+			name: "string"
+		})
+
+		attest(t.get("0", "isTrue").expression).snap("true")
+		attest(t.get("1", "0").expression).snap("undefined | false")
+		attest(t.get(ark.string).expression).snap(
+			"number | string | undefined | false | true"
+		)
+		attest(t.get("address", Symbol()).expression).snap(
+			"undefined | false | true"
+		)
+	})
+
+	it("can collect multiple key types across a union", () => {
+		const t = type({
+			"[string]": "string | number | boolean",
 			name: "string",
 			"age?": "integer < 100",
 			address: {
@@ -78,24 +119,11 @@ contextualize(() => {
 			["false", "?"]
 		])
 
-		attest(t.internal.indexableExpressions).snap({
-			'["0"]': "{ isTrue: true }",
-			'["0"].isTrue': "true",
-			'["1"]': "[false?]",
-			'["1"]["0"]': "undefined | false",
-			"[string]": "number | string | undefined",
-			address: "{ [symbol]: boolean, street: string, number?: number }",
-			"address.number": "number | undefined",
-			"address.street": "string",
-			"address[symbol]": "undefined | false | true",
-			age: "number % 1 & <100 | undefined",
-			name: "string"
-		})
+		// attest(t.internal.indexableExpressions).snap()
 
-		attest(t.get("1", "0").expression).snap("undefined | false")
-		attest(t.get(ark.string).expression).snap("number | string | undefined")
-		attest(t.get("address", Symbol()).expression).snap(
-			"undefined | false | true"
-		)
+		attest(t.get("0", "isTrue").expression).snap()
+		attest(t.get("1", "0").expression).snap()
+		attest(t.get(ark.string).expression).snap()
+		attest(t.get("address", Symbol()).expression).snap()
 	})
 })

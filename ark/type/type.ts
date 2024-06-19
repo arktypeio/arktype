@@ -20,7 +20,6 @@ import {
 	type Prerequisite,
 	type PrimitiveConstraintKind,
 	type Root,
-	type TypePath,
 	type constrain,
 	type constraintKindOf,
 	type distillIn,
