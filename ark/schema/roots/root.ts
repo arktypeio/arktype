@@ -7,17 +7,20 @@ import type {
 	InclusiveNumericRangeSchema,
 	LimitSchemaValue,
 	PatternSchema,
+	StructuralReference,
 	UnknownRangeSchema
 } from "@arktype/schema"
 import {
 	cached,
+	flatMorph,
 	includes,
 	omit,
 	throwParseError,
 	type Callable,
 	type Json,
 	type array,
-	type conform
+	type conform,
+	type dict
 } from "@arktype/util"
 import type { constrain } from "../ast.js"
 import {
@@ -25,7 +28,12 @@ import {
 	type PrimitiveConstraintKind
 } from "../constraint.js"
 import type { Node, NodeSchema, reducibleKindOf } from "../kinds.js"
-import { BaseNode, appendUniqueNodes, typePathToPropString } from "../node.js"
+import {
+	BaseNode,
+	appendUniqueNodes,
+	appendUniqueStructuralReferences,
+	typePathToPropString
+} from "../node.js"
 import type { Predicate } from "../predicate.js"
 import type { RootScope } from "../scope.js"
 import type { BaseMeta, RawNodeDeclaration } from "../shared/declare.js"
@@ -55,6 +63,7 @@ import type {
 import type { constraintKindOf } from "./intersection.js"
 import type {
 	Morph,
+	MorphNode,
 	distillConstrainableIn,
 	distillConstrainableOut,
 	distillIn,
@@ -132,24 +141,26 @@ export abstract class BaseRoot<
 	}
 
 	get<path extends array<PropertyKey | BaseRoot>>(...path: path): BaseRoot {
-		const nodesAtPath = this.indexablePaths.flatMap(indexable => {
-			// paths with differing lengths cannot match
-			if (path.length !== indexable.path.length) return []
-			for (let keyIndex = 0; keyIndex < path.length; keyIndex++) {
-				const indexableKey = indexable.path[keyIndex]
-				const pathKey = path[keyIndex]
-				if (indexableKey === pathKey) continue
-				if (hasArkKind(indexableKey, "root")) {
-					if (hasArkKind(pathKey, "root")) continue
-					if (indexableKey.allows(pathKey)) continue
+		const nodesAtPath = Object.values(this.indexablePaths).flatMap(
+			indexable => {
+				// paths with differing lengths cannot match
+				if (path.length !== indexable.path.length) return []
+				for (let keyIndex = 0; keyIndex < path.length; keyIndex++) {
+					const indexableKey = indexable.path[keyIndex]
+					const pathKey = path[keyIndex]
+					if (indexableKey === pathKey) continue
+					if (hasArkKind(indexableKey, "root")) {
+						if (hasArkKind(pathKey, "root")) continue
+						if (indexableKey.allows(pathKey)) continue
+					}
+					// if the key is not assignable to the indexable path at the current position,
+					// stop traversing it and filter it from results
+					return []
 				}
-				// if the key is not assignable to the indexable path at the current position,
-				// stop traversing it and filter it from results
-				return []
+				// if we make it to this point, the path matches, so return the corresponding node
+				return indexable.node
 			}
-			// if we make it to this point, the path matches, so return the corresponding node
-			return indexable.node
-		})
+		)
 
 		if (nodesAtPath.length === 0)
 			throwParseError(`${typePathToPropString(path)} does not exist on ${this}`)
@@ -240,6 +251,60 @@ export abstract class BaseRoot<
 			in: this,
 			morphs: [morph]
 		})
+	}
+
+	@cached
+	get structuralChildren(): array<StructuralReference> {
+		const firstNonChildIndex = this.structuralReferences.findIndex(
+			n => n.path.length === 2
+		)
+		return firstNonChildIndex === -1 ?
+				this.structuralReferences
+			:	this.structuralReferences.slice(0, firstNonChildIndex)
+	}
+
+	@cached
+	get flatStructuralReferences(): array<StructuralReference<UnionChildNode>> {
+		return this.structuralReferences.reduce<
+			StructuralReference<UnionChildNode>[]
+		>(
+			(branches, ref) =>
+				appendUniqueStructuralReferences(
+					branches,
+					ref.node.hasKind("union") ?
+						ref.node.branches.map(branch => ({
+							path: ref.path,
+							propString: ref.propString,
+							node: branch,
+							optional: ref.optional
+						}))
+					:	(ref as StructuralReference<UnionChildNode>)
+				),
+			[]
+		)
+	}
+
+	@cached
+	get structuralMorphs(): array<StructuralReference<MorphNode>> {
+		return this.flatStructuralReferences.filter(
+			(ref): ref is StructuralReference<MorphNode> => ref.node.hasKind("morph")
+		)
+	}
+
+	@cached
+	get indexablePaths(): dict<StructuralReference> {
+		return flatMorph(this.structuralReferences, (i, ref) => [
+			ref.propString,
+			ref
+		])
+	}
+
+	@cached
+	get structuralExpressions(): dict<string> {
+		return flatMorph(this.structuralReferences, (i, ref) => [
+			ref.propString,
+			ref.propString
+		])
 	}
 
 	narrow(predicate: Predicate): BaseRoot {

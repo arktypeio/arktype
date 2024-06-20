@@ -714,52 +714,9 @@ contextualize(() => {
 		const serializedMorphs =
 			t.internal.firstReferenceOfKindOrThrow("morph").serializedMorphs
 
-		attest(t.json).snap([
-			{
-				required: [
-					{ key: "l", value: { unit: 1 } },
-					{
-						key: "n",
-						value: {
-							in: {
-								domain: "string",
-								pattern: [
-									{
-										description: "a well-formed numeric string",
-										flags: "",
-										rule: "^(?!^-0$)-?(?:0|[1-9]\\d*)(?:\\.\\d*[1-9])?$"
-									}
-								]
-							},
-							morphs: serializedMorphs
-						}
-					}
-				],
-				domain: "object"
-			},
-			{
-				required: [
-					{
-						key: "n",
-						value: {
-							in: {
-								domain: "string",
-								pattern: [
-									{
-										description: "a well-formed numeric string",
-										flags: "",
-										rule: "^(?!^-0$)-?(?:0|[1-9]\\d*)(?:\\.\\d*[1-9])?$"
-									}
-								]
-							},
-							morphs: serializedMorphs
-						}
-					},
-					{ key: "r", value: { unit: 1 } }
-				],
-				domain: "object"
-			}
-		])
+		attest(t.expression).snap(
+			"{ l: 1, n: (In: string /^(?!^-0$)-?(?:0|[1-9]\\d*)(?:\\.\\d*[1-9])?$/) => Out<unknown> } | { n: (In: string /^(?!^-0$)-?(?:0|[1-9]\\d*)(?:\\.\\d*[1-9])?$/) => Out<unknown>, r: 1 }"
+		)
 		attest(t({ l: 1, n: "234" })).snap({ l: 1, n: 234 })
 		attest(t({ r: 1, n: "234" })).snap({ r: 1, n: 234 })
 		attest(t({ l: 1, r: 1, n: "234" })).snap({ l: 1, r: 1, n: 234 })
@@ -768,8 +725,15 @@ contextualize(() => {
 		)
 	})
 	it("fails on indiscriminable morph in nested union", () => {
-		type({
-			foo: "boolean | parse.number"
-		})
+		attest(() =>
+			type({
+				foo: "boolean | parse.date"
+			}).or({
+				foo: "boolean | parse.json"
+			})
+		).throws
+			.snap(`ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
+Left: { foo: (In: string) => Out<unknown> | false | true }
+Right: { foo: (In: string) => Out<unknown> | false | true }`)
 	})
 })

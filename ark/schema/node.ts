@@ -3,7 +3,6 @@ import {
 	appendUnique,
 	cached,
 	flatMorph,
-	groupBy,
 	includes,
 	isArray,
 	isEmptyObject,
@@ -13,7 +12,6 @@ import {
 	type Json,
 	type array,
 	type conform,
-	type dict,
 	type listable,
 	type mutable
 } from "@arktype/util"
@@ -22,7 +20,6 @@ import type { Inner, MutableInner, Node, reducibleKindOf } from "./kinds.js"
 import type { NodeParseOptions } from "./parse.js"
 import type { MorphNode } from "./roots/morph.js"
 import type { BaseRoot, Root } from "./roots/root.js"
-import type { UnionChildNode } from "./roots/union.js"
 import type { UnitNode } from "./roots/unit.js"
 import type { RawRootScope } from "./scope.js"
 import type { NodeCompiler } from "./shared/compile.js"
@@ -121,10 +118,13 @@ export abstract class BaseNode<
 		return this.inner.description ?? writer(this as never)
 	}
 
+	// we don't cache this currently since it can be updated once a scope finishes
+	// resolving cyclic references, although it may be possible to ensure it is cached safely
 	get references(): BaseNode[] {
 		return Object.values(this.referencesById)
 	}
 
+	@cached
 	get shallowReferences(): BaseNode[] {
 		return this.hasKind("structure") ?
 				[this as BaseNode, ...this.children]
@@ -134,6 +134,7 @@ export abstract class BaseNode<
 				)
 	}
 
+	@cached
 	get shallowMorphs(): MorphNode[] {
 		return this.shallowReferences
 			.filter(n => n.hasKind("morph"))
@@ -141,7 +142,8 @@ export abstract class BaseNode<
 	}
 
 	// overriden by structural kinds so that only the root at each path is added
-	get structuralReferences(): StructuralReference[] {
+	@cached
+	get structuralReferences(): array<StructuralReference> {
 		return this.children
 			.reduce<StructuralReference[]>(
 				(acc, child) =>
@@ -149,65 +151,13 @@ export abstract class BaseNode<
 				[]
 			)
 			.sort((l, r) =>
-				l.propString > r.propString ? 1
+				l.path.length > r.path.length ? 1
+				: l.path.length < r.path.length ? -1
+				: l.propString > r.propString ? 1
 				: l.propString < r.propString ? -1
 				: l.node.expression < r.node.expression ? -1
 				: 1
 			)
-	}
-
-	get flatStructuralReferences(): StructuralReference<UnionChildNode>[] {
-		return this.structuralReferences.reduce<
-			StructuralReference<UnionChildNode>[]
-		>(
-			(branches, ref) =>
-				appendUniqueStructuralReferences(
-					branches,
-					ref.node.hasKind("union") ?
-						ref.node.branches.map(branch => ({
-							path: ref.path,
-							propString: ref.propString,
-							node: branch,
-							optional: ref.optional
-						}))
-					:	(ref as StructuralReference<UnionChildNode>)
-				),
-			[]
-		)
-	}
-
-	get structuralMorphs(): StructuralReference<MorphNode>[] {
-		return this.structuralReferences.filter(
-			(ref): ref is StructuralReference<MorphNode> => ref.node.hasKind("morph")
-		)
-	}
-
-	get indexablePaths(): StructuralReference[] {
-		const structuralBranchesByPath = groupBy(
-			this.flatStructuralReferences,
-			"propString"
-		)
-		return Object.values(structuralBranchesByPath).map(
-			(refs): StructuralReference => {
-				const branchNodes = refs.map(ref => ref.node)
-				const optional = refs.some(ref => ref.optional)
-				if (optional)
-					appendUnique(branchNodes, $ark.intrinsic.undefined as UnitNode)
-				return {
-					path: refs[0].path,
-					propString: refs[0].propString,
-					node: this.$.node("union", branchNodes),
-					optional
-				}
-			}
-		)
-	}
-
-	get structuralExpressions(): dict<string> {
-		return flatMorph(this.indexablePaths, (i, ref) => [
-			ref.propString,
-			ref.node.expression
-		])
 	}
 
 	readonly precedence: number = precedenceOfKind(this.kind)
