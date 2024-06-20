@@ -9,11 +9,11 @@ import {
 import { BaseConstraint } from "../constraint.js"
 import type { MutableInner, RootSchema } from "../kinds.js"
 import {
-	appendUniqueStructuralReferences,
-	structuralReference,
+	appendUniqueFlatRefs,
+	flatRef,
 	type DeepNodeTransformContext,
 	type DeepNodeTransformation,
-	type StructuralReference
+	type FlatRef
 } from "../node.js"
 import type { MaxLengthNode } from "../refinements/maxLength.js"
 import type { MinLengthNode } from "../refinements/minLength.js"
@@ -286,37 +286,32 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 		}
 	}
 
-	override get structuralReferences() {
-		const refs: StructuralReference[] = []
+	override get flatRefs() {
+		const refs: FlatRef[] = []
 
-		appendUniqueStructuralReferences(
+		appendUniqueFlatRefs(
 			refs,
 			this.prevariadic.flatMap((element, i) =>
 				append(
-					element.structuralReferences.map(ref =>
-						structuralReference([`${i}`, ...ref.path], ref.node)
-					),
-					structuralReference([`${i}`], element)
+					element.flatRefs.map(ref => flatRef([`${i}`, ...ref.path], ref.node)),
+					flatRef([`${i}`], element)
 				)
 			)
 		)
 
-		appendUniqueStructuralReferences(
+		appendUniqueFlatRefs(
 			refs,
 			this.variadicOrPostfix.flatMap(element =>
 				// a postfix index can't be directly represented as a type
 				// key, so we just use the same matcher for variadic
 				append(
-					element.structuralReferences.map(ref =>
-						structuralReference(
+					element.flatRefs.map(ref =>
+						flatRef(
 							[$ark.intrinsic.nonNegativeIntegerString, ...ref.path],
 							ref.node
 						)
 					),
-					structuralReference(
-						[$ark.intrinsic.nonNegativeIntegerString],
-						element
-					)
+					flatRef([$ark.intrinsic.nonNegativeIntegerString], element)
 				)
 			)
 		)

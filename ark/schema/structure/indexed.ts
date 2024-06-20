@@ -7,7 +7,7 @@ import {
 import { BaseConstraint } from "../constraint.js"
 import type { Node, RootSchema } from "../kinds.js"
 import {
-	structuralReference,
+	flatRef,
 	type DeepNodeTransformContext,
 	type DeepNodeTransformation
 } from "../node.js"
@@ -142,12 +142,12 @@ export class IndexNode extends BaseConstraint<IndexDeclaration> {
 		return result
 	}
 
-	override get structuralReferences() {
+	override get flatRefs() {
 		return append(
-			this.value.structuralReferences.map(ref =>
-				structuralReference([this.signature, ...ref.path], ref.node)
+			this.value.flatRefs.map(ref =>
+				flatRef([this.signature, ...ref.path], ref.node)
 			),
-			structuralReference([this.signature], this.value)
+			flatRef([this.signature], this.value)
 		)
 	}
 

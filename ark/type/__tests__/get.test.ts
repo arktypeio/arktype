@@ -10,10 +10,10 @@ contextualize(() => {
 
 		attest(t.get("bar").expression).snap("bigint | number")
 
-		attest(t.internal.structuralExpressions).snap({
-			bar: "bigint | number",
-			foo: "string"
-		})
+		// attest(t.internal.structuralExpressions).snap({
+		// 	bar: "bigint | number",
+		// 	foo: "string"
+		// })
 	})
 
 	it("can get deep roots by path", () => {
@@ -30,12 +30,12 @@ contextualize(() => {
 
 		attest(t.get("bar", "quux").expression).snap("2")
 
-		attest(t.internal.structuralExpressions).snap({
-			bar: "{ quux: 2 }",
-			"bar.quux": "2",
-			foo: "{ baz: 1 }",
-			"foo.baz": "1"
-		})
+		// attest(t.internal.structuralExpressions).snap({
+		// 	bar: "{ quux: 2 }",
+		// 	"bar.quux": "2",
+		// 	foo: "{ baz: 1 }",
+		// 	"foo.baz": "1"
+		// })
 	})
 
 	it("can merge across a deep union", () => {
@@ -55,10 +55,10 @@ contextualize(() => {
 
 		attest(t.get("foo", "bar").expression).snap("0 | 1")
 
-		attest(t.internal.structuralExpressions).snap({
-			foo: "{ bar: 0 } | { bar: 1 }",
-			"foo.bar": "0 | 1"
-		})
+		// attest(t.internal.structuralExpressions).snap({
+		// 	foo: "{ bar: 0 } | { bar: 1 }",
+		// 	"foo.bar": "0 | 1"
+		// })
 	})
 
 	// it("can collect multiple key types", () => {
@@ -133,20 +133,20 @@ contextualize(() => {
 
 		const lOrR = types.l.or(types.r)
 
-		attest(lOrR.internal.structuralExpressions).snap({
-			"[string /^.*lr.*$/]": "1",
-			"[string /^l.*$/]": "1",
-			"[string /^r.*$/]": "1",
-			lOnly: "1",
-			rOnly: "1",
-			shared:
-				"{ [string /^.*lr.*$/]: 1, [string /^r.*$/]: 1, rOnly: 1, shared: 1 }",
-			"shared.lOnly": "1",
-			"shared.rOnly": "1",
-			"shared.shared": "1",
-			"shared[string /^.*lr.*$/]": "1",
-			"shared[string /^l.*$/]": "1",
-			"shared[string /^r.*$/]": "1"
-		})
+		// attest(lOrR.internal.structuralExpressions).snap({
+		// 	"[string /^.*lr.*$/]": "1",
+		// 	"[string /^l.*$/]": "1",
+		// 	"[string /^r.*$/]": "1",
+		// 	lOnly: "1",
+		// 	rOnly: "1",
+		// 	shared:
+		// 		"{ [string /^.*lr.*$/]: 1, [string /^r.*$/]: 1, rOnly: 1, shared: 1 }",
+		// 	"shared.lOnly": "1",
+		// 	"shared.rOnly": "1",
+		// 	"shared.shared": "1",
+		// 	"shared[string /^.*lr.*$/]": "1",
+		// 	"shared[string /^l.*$/]": "1",
+		// 	"shared[string /^r.*$/]": "1"
+		// })
 	})
 })

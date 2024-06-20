@@ -10,10 +10,10 @@ import {
 import { BaseConstraint } from "../constraint.js"
 import type { Node, RootSchema } from "../kinds.js"
 import {
-	structuralReference,
+	flatRef,
 	type DeepNodeTransformContext,
 	type DeepNodeTransformation,
-	type StructuralReference
+	type FlatRef
 } from "../node.js"
 import type { Morph } from "../roots/morph.js"
 import type { BaseRoot } from "../roots/root.js"
@@ -106,12 +106,12 @@ export abstract class BaseProp<
 	compiledKey: string =
 		typeof this.key === "string" ? this.key : this.serializedKey
 
-	override get structuralReferences(): StructuralReference[] {
+	override get flatRefs(): FlatRef[] {
 		return append(
-			this.value.structuralReferences.map(ref =>
-				structuralReference([this.key, ...ref.path], ref.node)
+			this.value.flatRefs.map(ref =>
+				flatRef([this.key, ...ref.path], ref.node)
 			),
-			structuralReference([this.key], this.value)
+			flatRef([this.key], this.value)
 		)
 	}
 

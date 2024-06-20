@@ -144,11 +144,10 @@ export abstract class BaseNode<
 
 	// overriden by structural kinds so that only the root at each path is added
 	@cached
-	get structuralReferences(): array<StructuralReference> {
+	get flatRefs(): array<FlatRef> {
 		return this.children
-			.reduce<StructuralReference[]>(
-				(acc, child) =>
-					appendUniqueStructuralReferences(acc, child.structuralReferences),
+			.reduce<FlatRef[]>(
+				(acc, child) => appendUniqueFlatRefs(acc, child.flatRefs),
 				[]
 			)
 			.sort((l, r) =>
@@ -399,7 +398,7 @@ export type TypePath = array<TypeKey>
 export const typeEquals = (l: unknown, r: unknown) =>
 	l === r || (isNode(l) && isNode(r) && l.equals(r))
 
-export type StructuralReference<root extends BaseRoot = BaseRoot> = {
+export type FlatRef<root extends BaseRoot = BaseRoot> = {
 	path: TypePath
 	node: root
 	propString: string
@@ -410,26 +409,24 @@ export const typePathToPropString = (path: Readonly<TypePath>) =>
 		stringifyNonKey: node => node.expression
 	})
 
-export const structuralReference = <node extends BaseRoot>(
+export const flatRef = <node extends BaseRoot>(
 	path: TypePath,
 	node: node
-): StructuralReference<node> => ({
+): FlatRef<node> => ({
 	path,
 	node,
 	propString: typePathToPropString(path)
 })
 
-export const structuralReferencesAreEqual = (
-	l: StructuralReference,
-	r: StructuralReference
-) => l.propString === r.propString && l.node.equals(r.node)
+export const flatRefsAreEqual = (l: FlatRef, r: FlatRef) =>
+	l.propString === r.propString && l.node.equals(r.node)
 
-export const appendUniqueStructuralReferences = <node extends BaseRoot>(
-	existing: StructuralReference<node>[] | undefined,
-	refs: listable<StructuralReference<node>>
+export const appendUniqueFlatRefs = <node extends BaseRoot>(
+	existing: FlatRef<node>[] | undefined,
+	refs: listable<FlatRef<node>>
 ) =>
 	appendUnique(existing, refs, {
-		isEqual: structuralReferencesAreEqual
+		isEqual: flatRefsAreEqual
 	})
 
 export const appendUniqueNodes = <node extends BaseNode>(

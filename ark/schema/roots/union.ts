@@ -600,14 +600,10 @@ export const reduceBranches = ({
 				(!arrayEquals(branches[i].shallowMorphs, branches[j].shallowMorphs, {
 					isEqual: (l, r) => l.hasEqualMorphs(r)
 				}) ||
-					!arrayEquals(
-						branches[i].structuralMorphs,
-						branches[j].structuralMorphs,
-						{
-							isEqual: (l, r) =>
-								l.propString === r.propString && l.node.hasEqualMorphs(r.node)
-						}
-					))
+					!arrayEquals(branches[i].flatMorphs, branches[j].flatMorphs, {
+						isEqual: (l, r) =>
+							l.propString === r.propString && l.node.hasEqualMorphs(r.node)
+					}))
 			) {
 				throwParseError(
 					writeIndiscriminableMorphMessage(
