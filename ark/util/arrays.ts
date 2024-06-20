@@ -255,7 +255,7 @@ export const arrayEquals = <element>(
 	l: array<element>,
 	r: array<element>,
 	opts?: ComparisonOptions<element>
-) =>
+): boolean =>
 	l.length === r.length &&
 	l.every(
 		opts?.isEqual ?

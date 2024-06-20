@@ -73,7 +73,7 @@ export class ChainableAssertions implements AssertionRecord {
 	}
 
 	satisfies(def: unknown): this {
-		type.raw(def).assert(def)
+		type(def as never).assert(def)
 		return this
 	}
 

@@ -16,7 +16,6 @@ import {
 } from "../constraint.js"
 import type { MutableInner } from "../kinds.js"
 import type { BaseRoot } from "../roots/root.js"
-import type { UnitNode } from "../roots/unit.js"
 import type { RawRootScope } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
@@ -472,7 +471,7 @@ export const normalizeIndex = (
 ): NormalizedIndex => {
 	const [enumerableBranches, nonEnumerableBranches] = spliterate(
 		signature.branches,
-		(k): k is UnitNode => k.hasKind("unit")
+		k => k.hasKind("unit")
 	)
 
 	if (!enumerableBranches.length)

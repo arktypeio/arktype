@@ -12,7 +12,6 @@ import {
 	type DeepNodeTransformation
 } from "../node.js"
 import type { BaseRoot } from "../roots/root.js"
-import type { UnitNode } from "../roots/unit.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
@@ -63,9 +62,7 @@ export const indexImplementation: nodeImplementationOf<IndexDeclaration> =
 							writeInvalidPropertyKeyMessage(key.expression)
 						)
 					}
-					const enumerableBranches = key.branches.filter((b): b is UnitNode =>
-						b.hasKind("unit")
-					)
+					const enumerableBranches = key.branches.filter(b => b.hasKind("unit"))
 					if (enumerableBranches.length) {
 						return throwParseError(
 							writeEnumerableIndexBranches(

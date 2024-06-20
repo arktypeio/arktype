@@ -96,8 +96,8 @@ export type IntersectionDeclaration = declareNode<{
 export class IntersectionNode extends BaseRoot<IntersectionDeclaration> {
 	basis: Node<IntersectionBasisKind> | null = this.domain ?? this.proto ?? null
 
-	refinements: array<Node<RefinementKind>> = this.children.filter(
-		(node): node is Node<RefinementKind> => node.isRefinement()
+	refinements: array<Node<RefinementKind>> = this.children.filter(node =>
+		node.isRefinement()
 	)
 
 	expression: string =

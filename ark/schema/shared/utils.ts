@@ -19,7 +19,7 @@ import type { ArkError } from "./errors.js"
 export const makeRootAndArrayPropertiesMutable = <o extends object>(
 	o: o
 ): makeRootAndArrayPropertiesMutable<o> =>
-	// TODO: this cast should not be required, but it seems TS is referencing
+	// this cast should not be required, but it seems TS is referencing
 	// the wrong parameters here?
 	flatMorph(o as never, (k, v) => [k, isArray(v) ? [...v] : v]) as never
 
@@ -76,6 +76,8 @@ export const pathToPropString = <stringifiable>(
 	}, "")
 	return propAccessChain[0] === "." ? propAccessChain.slice(1) : propAccessChain
 }
+
+export type arkKind = typeof arkKind
 
 export const arkKind: unique symbol = Symbol("ArkTypeInternalKind")
 

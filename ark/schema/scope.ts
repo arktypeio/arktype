@@ -350,7 +350,7 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 				const resolution = this.maybeResolve(name)
 				if (hasArkKind(resolution, "root")) {
 					resolution.references
-						.filter((node): node is Node<"alias"> => node.hasKind("alias"))
+						.filter(node => node.hasKind("alias"))
 						.forEach(aliasNode => {
 							Object.assign(
 								aliasNode.referencesById,

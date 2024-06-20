@@ -136,7 +136,7 @@ export abstract class BaseNode<
 
 	get shallowMorphs(): MorphNode[] {
 		return this.shallowReferences
-			.filter((n): n is MorphNode => n.hasKind("morph"))
+			.filter(n => n.hasKind("morph"))
 			.sort((l, r) => (l.expression < r.expression ? -1 : 1))
 	}
 
@@ -331,7 +331,7 @@ export abstract class BaseNode<
 	firstReferenceOfKind<kind extends NodeKind>(
 		kind: kind
 	): Node<kind> | undefined {
-		return this.firstReference((node): node is Node<kind> => node.kind === kind)
+		return this.firstReference(node => node.hasKind(kind))
 	}
 
 	firstReferenceOfKindOrThrow<kind extends NodeKind>(kind: kind): Node<kind> {
