@@ -5,15 +5,15 @@ import { root, schemaScope } from "../scope.js"
 import { arrayIndexMatcher } from "../structure/shared.js"
 import "./tsKeywords.js"
 
-export interface internalKeywordExports {
+export interface internalExports {
 	lengthBoundable: string | readonly unknown[]
 	propertyKey: Key
 	nonNegativeIntegerString: string
 }
 
-export type internalKeywords = SchemaModule<internalKeywordExports>
+export type internal = SchemaModule<internalExports>
 
-export const internalKeywords: internalKeywords = schemaScope(
+export const internal: internal = schemaScope(
 	{
 		lengthBoundable: ["string", Array],
 		propertyKey: ["string", "symbol"],

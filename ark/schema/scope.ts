@@ -19,7 +19,7 @@ import type { ArkConfig } from "arktype"
 import { resolveConfig, type ResolvedArkConfig } from "./config.js"
 import type { GenericRoot } from "./generic.js"
 import type { inferRoot, validateRoot } from "./inference.js"
-import type { internalKeywords } from "./keywords/internal.js"
+import type { internal } from "./keywords/internal.js"
 import type { jsObjects } from "./keywords/jsObjects.js"
 import type { tsKeywords } from "./keywords/tsKeywords.js"
 import {
@@ -76,10 +76,7 @@ type toRawScope<$> = RawRootScope<{
 // these allow builtin types to be accessed during parsing without cyclic imports
 // they are populated as each scope is parsed with `intrinsic` in its config
 export type IntrinsicKeywords = {
-	[alias in
-		| keyof tsKeywords
-		| keyof jsObjects
-		| keyof internalKeywords]: BaseRoot
+	[alias in keyof tsKeywords | keyof jsObjects | keyof internal]: BaseRoot
 }
 
 export type RawResolution = BaseRoot | GenericRoot | RawRootModule

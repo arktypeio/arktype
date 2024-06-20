@@ -8,6 +8,7 @@ import type {
 	InclusiveNumericRangeSchema,
 	LimitSchemaValue,
 	PatternSchema,
+	TypeKey,
 	TypePath,
 	UnknownRangeSchema
 } from "@arktype/schema"
@@ -19,6 +20,7 @@ import {
 	throwParseError,
 	type Callable,
 	type Json,
+	type Key,
 	type array,
 	type conform
 } from "@arktype/util"
@@ -137,18 +139,19 @@ export abstract class BaseRoot<
 
 	get(...[key, ...tail]: TypePath): BaseRoot {
 		if (key === undefined) return this
+		if (hasArkKind(key, "root") && key.hasKind("unit")) key = key.unit as Key
+		if (typeof key === "number") key = `${key}`
+
 		if (this.hasKind("union")) {
 			return this.branches.reduce(
-				(acc, b) => acc.and(b.get(key, ...tail)),
-				$ark.intrinsic.unknown
+				(acc, b) => acc.or(b.get(key, ...tail)),
+				$ark.intrinsic.never
 			)
 		}
 
 		return (
 			(this as {} as UnionChildNode).structure?.get(key, ...tail) ??
-			throwParseError(
-				`${printable(key)} cannot be accessed on ${this}, which has no structural keys`
-			)
+			throwParseError(writeNonStructuralIndexAccessMessage(key))
 		)
 	}
 
@@ -544,6 +547,9 @@ declare class _Root<t = unknown, $ = any> extends InnerRoot<t, $> {
 
 	overlaps(r: Root): boolean
 }
+
+export const writeNonStructuralIndexAccessMessage = (key: TypeKey) =>
+	`${printable(key)} cannot be accessed on ${this}, which has no structural keys`
 
 export interface Root<
 	/** @ts-expect-error allow instantiation assignment to the base type */

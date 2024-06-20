@@ -6,11 +6,12 @@ import { schemaScope, type RootScope } from "../scope.js"
 import { tsKeywords, type tsKeywordExports } from "./tsKeywords.js"
 
 import { formatting, type formattingExports } from "./format.js"
+import { internal, type internalExports } from "./internal.js"
 import { jsObjects, type jsObjectExports } from "./jsObjects.js"
 import { parsing, type parsingExports } from "./parsing.js"
 import { validation, type validationExports } from "./validation.js"
 
-type TsGenericsExports<$ = Ark> = {
+type tsGenericsExports<$ = Ark> = {
 	Record: GenericRoot<
 		["K", "V"],
 		{
@@ -26,6 +27,7 @@ export const ambientRootScope: RootScope<Ark> = schemaScope({
 	...tsKeywords,
 	...jsObjects,
 	...validation,
+	...internal,
 	parse: parsing,
 	format: formatting
 	// TODO: remove cast
@@ -41,7 +43,8 @@ export interface Ark
 	extends tsKeywordExports,
 		jsObjectExports,
 		validationExports,
-		TsGenericsExports {
+		tsGenericsExports,
+		internalExports {
 	parse: RootModule<parsingExports>
 	format: RootModule<formattingExports>
 }

@@ -120,28 +120,65 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 
 	get(key: TypeKey, ...tail: TypePath): BaseRoot {
 		let value: BaseRoot | undefined
-		let literalKey: Key | undefined
 		let required = false
 
 		if (hasArkKind(key, "root") && key.hasKind("unit")) key = key.unit as never
 
-		if (typeof key === "string" || typeof key === "symbol") literalKey = key
-		else if (typeof key === "number") literalKey = `${key}`
-
-		if (literalKey && this.propsByKey[literalKey]) {
-			value = this.propsByKey[literalKey]!.value
-			required = this.propsByKey[literalKey]!.required
+		if (
+			(typeof key === "string" || typeof key === "symbol") &&
+			this.propsByKey[key]
+		) {
+			value = this.propsByKey[key]!.value
+			required = this.propsByKey[key]!.required
 		}
 
 		this.index?.forEach(n => {
 			if (n.signature.includes(key)) value = value?.and(n.value) ?? n.value
 		})
 
-		if (!value)
-			return throwParseError(`${printable(key)} does not exist on ${this}`)
+		if (
+			this.sequence &&
+			$ark.intrinsic.nonNegativeIntegerString.includes(key)
+		) {
+			if (hasArkKind(key, "root")) {
+				if (this.sequence.variadic)
+					// if there is a variadic element and we're accessing an index, return a union
+					// of all possible elements. If there is no variadic expression, we're in a tuple
+					// so this access wouldn't be safe based on the array indices
+					value = value?.and(this.sequence.element) ?? this.sequence.element
+			} else {
+				const index = Number.parseInt(key as string)
+				if (index < this.sequence.prevariadic.length) {
+					const fixedElement = this.sequence.prevariadic[index]
+					value = value?.and(fixedElement) ?? fixedElement
+					required ||= index < this.sequence.prefix.length
+				} else if (this.sequence.variadic) {
+					// ideally we could return something more specific for postfix
+					// but there is no way to represent it using an index alone
+					const nonFixedElement = this.$.node(
+						"union",
+						this.sequence.variadicOrPostfix
+					)
+					value = value?.and(nonFixedElement) ?? nonFixedElement
+				}
+			}
+		}
+
+		if (!value) {
+			if (
+				this.sequence?.variadic &&
+				hasArkKind(key, "root") &&
+				key.extends($ark.intrinsic.number)
+			) {
+				return throwParseError(
+					writeRawNumberIndexMessage(key.expression, this.sequence.expression)
+				)
+			}
+			return throwParseError(writeBadKeyAccessMessage(key, this.expression))
+		}
 
 		const result = value.get(...tail)
-		return required ? result.or($ark.intrinsic.undefined) : result
+		return required ? result : result.or($ark.intrinsic.undefined)
 	}
 
 	readonly exhaustive: boolean =
@@ -486,6 +523,17 @@ export const structureImplementation: nodeImplementationOf<StructureDeclaration>
 			}
 		}
 	})
+
+export const writeRawNumberIndexMessage = (
+	indexExpression: string,
+	sequenceExpression: string
+) =>
+	`${indexExpression} is not allowed as an array index on ${sequenceExpression}. Use the 'nonNegativeIntegerString' keyword instead.`
+
+export const writeBadKeyAccessMessage = (
+	key: TypeKey,
+	structuralExpression: string
+) => `${printable(key)} does not exist on ${structuralExpression}`
 
 export type NormalizedIndex = {
 	index?: IndexNode

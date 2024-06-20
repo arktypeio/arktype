@@ -29,7 +29,7 @@ export const snapshot = <t>(
 export type snapshot<t, depth extends 1[] = []> =
 	unknown extends t ? unknown
 	: t extends Primitive ? snapshotPrimitive<t>
-	: t extends Function ? `(function${string})`
+	: t extends Function ? `Function(${string})`
 	: t extends Date ? string
 	: depth["length"] extends 10 ? unknown
 	: t extends array<infer item> ? array<snapshot<item, [...depth, 1]>>

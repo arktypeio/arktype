@@ -1,5 +1,5 @@
 import {
-	internalKeywords,
+	internal,
 	jsObjects,
 	tsKeywords,
 	writeUnboundableMessage,
@@ -127,7 +127,7 @@ export const getBoundKinds = (
 			: ["max"]
 		)
 	}
-	if (root.extends(internalKeywords.lengthBoundable)) {
+	if (root.extends(internal.lengthBoundable)) {
 		if (typeof limit !== "number") {
 			return throwParseError(
 				writeInvalidLimitMessage(comparator, limit, boundKind)

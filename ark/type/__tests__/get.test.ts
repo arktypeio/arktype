@@ -1,5 +1,9 @@
 import { attest, contextualize } from "@arktype/attest"
-import { ark, scope, type } from "arktype"
+import {
+	writeBadKeyAccessMessage,
+	writeRawNumberIndexMessage
+} from "@arktype/schema"
+import { ark, type } from "arktype"
 
 contextualize(() => {
 	it("can get shallow roots by path", () => {
@@ -9,11 +13,6 @@ contextualize(() => {
 		})
 
 		attest(t.get("bar").expression).snap("bigint | number")
-
-		// attest(t.internal.structuralExpressions).snap({
-		// 	bar: "bigint | number",
-		// 	foo: "string"
-		// })
 	})
 
 	it("can get deep roots by path", () => {
@@ -29,13 +28,6 @@ contextualize(() => {
 		attest(t.get("foo", "baz").expression).snap("1")
 
 		attest(t.get("bar", "quux").expression).snap("2")
-
-		// attest(t.internal.structuralExpressions).snap({
-		// 	bar: "{ quux: 2 }",
-		// 	"bar.quux": "2",
-		// 	foo: "{ baz: 1 }",
-		// 	"foo.baz": "1"
-		// })
 	})
 
 	it("can merge across a deep union", () => {
@@ -54,99 +46,92 @@ contextualize(() => {
 		)
 
 		attest(t.get("foo", "bar").expression).snap("0 | 1")
-
-		// attest(t.internal.structuralExpressions).snap({
-		// 	foo: "{ bar: 0 } | { bar: 1 }",
-		// 	"foo.bar": "0 | 1"
-		// })
 	})
 
-	// it("can collect multiple key types", () => {
-	// 	const t = type({
-	// 		"[string]": "string | number | boolean",
-	// 		name: "string",
-	// 		"age?": "integer < 100",
-	// 		address: {
-	// 			"[symbol]": "boolean",
-	// 			street: "string",
-	// 			"number?": "number"
-	// 		}
-	// 	}).and([
-	// 		{
-	// 			isTrue: "true"
-	// 		},
-	// 		["false", "?"]
-	// 	])
+	it("can get index keys", () => {
+		const t = type({
+			"[/^f/]": "0"
+		})
 
-	// 	attest(t.internal.structuralExpressions).snap({
-	// 		'["0"]': "{ isTrue: true }",
-	// 		'["0"].isTrue': "true",
-	// 		'["1"]': "[false?]",
-	// 		'["1"]["0"]': "undefined | false",
-	// 		"[string]": "number | string | undefined | false | true",
-	// 		address: "{ [symbol]: boolean, street: string, number?: number }",
-	// 		"address.number": "number | undefined",
-	// 		"address.street": "string",
-	// 		"address[symbol]": "undefined | false | true",
-	// 		age: "number % 1 & <100 | undefined",
-	// 		name: "string"
-	// 	})
+		attest(t.get("foo").expression).snap("undefined | 0")
+		attest(() => t.get("bar")).throwsAndHasTypeError(
+			writeBadKeyAccessMessage("bar", t.expression)
+		)
+	})
 
-	// 	attest(t.get("0", "isTrue").expression).snap("true")
-	// 	attest(t.get("1", "0").expression).snap("undefined | false")
-	// 	attest(t.get(ark.string).expression).snap(
-	// 		"number | string | undefined | false | true"
-	// 	)
-	// 	attest(t.get("address", Symbol()).expression).snap(
-	// 		"undefined | false | true"
-	// 	)
-	// })
-
-	it("can collect multiple key types across a union", () => {
-		const types = scope({
-			lOnlyIndex: /^l.*$/,
-			rOnlyIndex: /^r.*$/,
-			sharedIndex: /^.*lr.*$/,
-			l: {
-				lOnly: "1",
-				"[lOnlyIndex]": "1",
-				shared: {
-					lOnly: "1",
-					"[lOnlyIndex]": "1",
-					shared: "1",
-					"[sharedIndex]": "1"
-				},
-				"[sharedIndex]": "1"
+	it("named and multiple indices", () => {
+		const t = type({
+			"[/^f/]": {
+				a: "1"
 			},
-			r: {
-				rOnly: "1",
-				"[rOnlyIndex]": "1",
-				shared: {
-					rOnly: "1",
-					"[rOnlyIndex]": "1",
-					shared: "1",
-					"[sharedIndex]": "1"
-				},
-				"[sharedIndex]": "1"
-			}
-		}).export()
+			"[/f$/]": { b: "1" },
+			foof: { c: "1" }
+		})
 
-		const lOrR = types.l.or(types.r)
+		attest(t.get("foo").expression).snap("{ a: 1 } | undefined")
+		attest(t.get("oof").expression).snap("{ b: 1 } | undefined")
+		attest(t.get("fof").expression).snap("{ a: 1, b: 1 } | undefined")
+		attest(t.get("foof").expression).snap("{ a: 1, b: 1, c: 1 }")
+		attest(() => t.get("goog").expression).throwsAndHasTypeError(
+			writeBadKeyAccessMessage("goog", t.expression)
+		)
+	})
 
-		// attest(lOrR.internal.structuralExpressions).snap({
-		// 	"[string /^.*lr.*$/]": "1",
-		// 	"[string /^l.*$/]": "1",
-		// 	"[string /^r.*$/]": "1",
-		// 	lOnly: "1",
-		// 	rOnly: "1",
-		// 	shared:
-		// 		"{ [string /^.*lr.*$/]: 1, [string /^r.*$/]: 1, rOnly: 1, shared: 1 }",
-		// 	"shared.lOnly": "1",
-		// 	"shared.rOnly": "1",
-		// 	"shared.shared": "1",
-		// 	"shared[string /^.*lr.*$/]": "1",
-		// 	"shared[string /^l.*$/]": "1",
-		// 	"shared[string /^r.*$/]": "1"
-		// })
+	it("optional key adds undefined", () => {
+		const t = type({
+			"foo?": "null"
+		})
+
+		attest(t.get("foo").expression).snap("undefined | null")
+	})
+
+	it("non-fixed array", () => {
+		const t = type("string[]")
+
+		attest(t.get(0).expression).snap("string | undefined")
+		attest(() => t.get(-1)).throws(writeBadKeyAccessMessage("-1", t.expression))
+		attest(() => t.get(5.5)).throws(
+			writeBadKeyAccessMessage("5.5", t.expression)
+		)
+
+		attest(t.get(ark.nonNegativeIntegerString).expression).snap(
+			"string | undefined"
+		)
+	})
+
+	it("number access on non-variadic", () => {
+		const t = type({ foo: "number" }).array()
+
+		attest(() => t.get(ark.number)).throws(
+			writeRawNumberIndexMessage("number", t.expression)
+		)
+		// number subtype
+		attest(() => t.get(ark.integer)).throws(
+			writeRawNumberIndexMessage("number % 1", t.expression)
+		)
+	})
+
+	it("tuple", () => {
+		const t = type(["1", "2", "?"])
+
+		// fixed
+		attest(t.get(0).expression).snap("1")
+		attest(t.get(1).expression).snap("undefined | 2")
+
+		// out of bounds
+		attest(() => t.get(2)).throws(writeBadKeyAccessMessage("2", t.expression))
+	})
+
+	it("variadic tuple", () => {
+		const t = type(["1", "2", "...", "3[]", "4", "5"])
+
+		// fixed
+		attest(t.get(0).expression).snap("1")
+		attest(t.get(1).expression).snap("2")
+
+		// variadic
+		// based on length, we could narrow this to remove undefined in the future
+		attest(t.get(2).expression).snap("undefined | 3 | 4 | 5")
+		attest(t.get(100).expression).snap("undefined | 3 | 4 | 5")
 	})
 })

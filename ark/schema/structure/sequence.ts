@@ -1,5 +1,6 @@
 import {
 	append,
+	cached,
 	throwInternalError,
 	throwParseError,
 	type array,
@@ -317,6 +318,11 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 		)
 
 		return refs
+	}
+
+	@cached
+	get element(): BaseRoot {
+		return this.$.node("union", this.children)
 	}
 
 	// minLength/maxLength compilation should be handled by Intersection
