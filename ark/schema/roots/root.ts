@@ -162,8 +162,11 @@ export abstract class BaseRoot<
 			}
 		)
 
-		if (nodesAtPath.length === 0)
-			throwParseError(`${typePathToPropString(path)} does not exist on ${this}`)
+		if (nodesAtPath.length === 0) {
+			throwParseError(
+				`${typePathToPropString(path as never)} does not exist on ${this}`
+			)
+		}
 		if (nodesAtPath.length === 1) return nodesAtPath[0]
 
 		const branches = nodesAtPath.reduce<UnionChildNode[]>(
@@ -275,8 +278,7 @@ export abstract class BaseRoot<
 						ref.node.branches.map(branch => ({
 							path: ref.path,
 							propString: ref.propString,
-							node: branch,
-							optional: ref.optional
+							node: branch
 						}))
 					:	(ref as StructuralReference<UnionChildNode>)
 				),

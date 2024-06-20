@@ -10,6 +10,7 @@ import {
 	type Dict,
 	type Guardable,
 	type Json,
+	type Key,
 	type array,
 	type conform,
 	type listable,
@@ -390,14 +391,18 @@ export abstract class BaseNode<
 	}
 }
 
-/** a list of literal keys (named properties) or a nodes (index signatures) representing a path */
-export type TypePath = array<PropertyKey | BaseRoot>
+/** a literal key (named property) or a node (index signatures) representing part of a type structure */
+export type TypeKey = Key | BaseRoot
+
+export type TypePath = array<TypeKey>
+
+export const typeEquals = (l: unknown, r: unknown) =>
+	l === r || (isNode(l) && isNode(r) && l.equals(r))
 
 export type StructuralReference<root extends BaseRoot = BaseRoot> = {
 	path: TypePath
 	node: root
 	propString: string
-	optional: boolean
 }
 
 export const typePathToPropString = (path: Readonly<TypePath>) =>
@@ -407,22 +412,17 @@ export const typePathToPropString = (path: Readonly<TypePath>) =>
 
 export const structuralReference = <node extends BaseRoot>(
 	path: TypePath,
-	node: node,
-	optional: boolean
+	node: node
 ): StructuralReference<node> => ({
 	path,
 	node,
-	propString: typePathToPropString(path),
-	optional
+	propString: typePathToPropString(path)
 })
 
 export const structuralReferencesAreEqual = (
 	l: StructuralReference,
 	r: StructuralReference
-) =>
-	l.propString === r.propString &&
-	l.optional === r.optional &&
-	l.node.equals(r.node)
+) => l.propString === r.propString && l.node.equals(r.node)
 
 export const appendUniqueStructuralReferences = <node extends BaseRoot>(
 	existing: StructuralReference<node>[] | undefined,

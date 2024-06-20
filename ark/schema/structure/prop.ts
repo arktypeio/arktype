@@ -109,13 +109,9 @@ export abstract class BaseProp<
 	override get structuralReferences(): StructuralReference[] {
 		return append(
 			this.value.structuralReferences.map(ref =>
-				structuralReference(
-					[this.key, ...ref.path],
-					ref.node,
-					ref.optional || this.optional
-				)
+				structuralReference([this.key, ...ref.path], ref.node)
 			),
-			structuralReference([this.key], this.value, this.optional)
+			structuralReference([this.key], this.value)
 		)
 	}
 
