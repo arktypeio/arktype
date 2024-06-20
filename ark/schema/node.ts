@@ -156,7 +156,7 @@ export abstract class BaseNode<
 			)
 	}
 
-	get structuralBranches(): StructuralReference<UnionChildNode>[] {
+	get flatStructuralReferences(): StructuralReference<UnionChildNode>[] {
 		return this.structuralReferences.reduce<
 			StructuralReference<UnionChildNode>[]
 		>(
@@ -177,14 +177,14 @@ export abstract class BaseNode<
 	}
 
 	get structuralMorphs(): StructuralReference<MorphNode>[] {
-		return this.structuralBranches.filter(
+		return this.structuralReferences.filter(
 			(ref): ref is StructuralReference<MorphNode> => ref.node.hasKind("morph")
 		)
 	}
 
 	get indexablePaths(): StructuralReference[] {
 		const structuralBranchesByPath = groupBy(
-			this.structuralBranches,
+			this.flatStructuralReferences,
 			"propString"
 		)
 		return Object.values(structuralBranchesByPath).map(

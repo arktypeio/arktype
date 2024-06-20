@@ -104,9 +104,9 @@ contextualize(() => {
 
 	it("can collect multiple key types across a union", () => {
 		const types = scope({
-			lOnlyIndex: /^l*$/,
-			rOnlyIndex: /^r*$/,
-			sharedIndex: "/^*lr*$/",
+			lOnlyIndex: /^l.*$/,
+			rOnlyIndex: /^r.*$/,
+			sharedIndex: /^.*lr.*$/,
 			l: {
 				lOnly: "1",
 				"[lOnlyIndex]": "1",
@@ -133,6 +133,20 @@ contextualize(() => {
 
 		const lOrR = types.l.or(types.r)
 
-		attest(lOrR.internal.structuralExpressions).snap()
+		attest(lOrR.internal.structuralExpressions).snap({
+			"[string /^.*lr.*$/]": "undefined | 1",
+			"[string /^l.*$/]": "undefined | 1",
+			"[string /^r.*$/]": "undefined | 1",
+			lOnly: "1",
+			rOnly: "1",
+			shared:
+				"{ [string /^.*lr.*$/]: 1, [string /^l.*$/]: 1, lOnly: 1, shared: 1 } | { [string /^.*lr.*$/]: 1, [string /^r.*$/]: 1, rOnly: 1, shared: 1 }",
+			"shared.lOnly": "1",
+			"shared.rOnly": "1",
+			"shared.shared": "1",
+			"shared[string /^.*lr.*$/]": "undefined | 1",
+			"shared[string /^l.*$/]": "undefined | 1",
+			"shared[string /^r.*$/]": "undefined | 1"
+		})
 	})
 })

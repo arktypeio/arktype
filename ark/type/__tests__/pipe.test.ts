@@ -767,4 +767,9 @@ contextualize(() => {
 			"l must be 1 (was missing) or r must be 1 (was missing)"
 		)
 	})
+	it("fails on indiscriminable morph in nested union", () => {
+		type({
+			foo: "boolean | parse.number"
+		})
+	})
 })

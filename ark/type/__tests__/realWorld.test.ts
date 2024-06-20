@@ -1,11 +1,5 @@
 import { attest, contextualize } from "@arktype/attest"
-import type {
-	AtLeastLength,
-	AtMostLength,
-	Out,
-	number,
-	string
-} from "@arktype/schema"
+import type { AtLeastLength, AtMostLength, Out, string } from "@arktype/schema"
 import { registeredReference } from "@arktype/util"
 import { scope, type, type Type } from "arktype"
 import type { Module } from "../module.js"
@@ -570,10 +564,18 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		const t = type("string")
 			.narrow(() => true)
 			.describe('This will "fail"')
+
+		attest<string.narrowed>(t.t)
+
+		const serializedPredicate =
+			t.internal.firstReferenceOfKindOrThrow("predicate").serializedPredicate
+
 		attest(t.json).snap({
 			description: 'This will "fail"',
 			domain: { description: 'This will "fail"', domain: "string" },
-			predicate: [{ description: 'This will "fail"', predicate: "$ark.fn" }]
+			predicate: [
+				{ description: 'This will "fail"', predicate: serializedPredicate }
+			]
 		})
 	})
 
