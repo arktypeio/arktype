@@ -171,7 +171,7 @@ declare class _Type<t = unknown, $ = any> extends InnerRoot<t, $> {
 
 	keyof(): Type<keyof this["inferIn"], $>
 
-	pipe<a extends Morph<distillOut<t>>>(a: a): Type<inferPipes<t, [a]>, $>
+	pipe<a extends Morph<this["infer"]>>(a: a): Type<inferPipes<t, [a]>, $>
 	pipe<a extends Morph<this["infer"]>, b extends Morph<inferMorphOut<a>>>(
 		a: a,
 		b: b
@@ -227,11 +227,13 @@ declare class _Type<t = unknown, $ = any> extends InnerRoot<t, $> {
 		g: g
 	): Type<inferPipes<t, [a, b, c, d, e, f, g]>, $>
 
-	narrow<const predicate extends Predicate<distillOut<t>>>(
+	narrow<predicate extends Predicate<distillOut<t>>>(
 		predicate: predicate
 	): Type<
 		t extends MorphAst ?
-			(In: this["tIn"]) => Out<inferPredicate<this["tOut"], predicate>>
+			inferPredicate<this["tOut"], predicate> extends infer narrowed ?
+				(In: this["tIn"]) => Out<narrowed>
+			:	never
 		:	inferPredicate<t, predicate>,
 		$
 	>

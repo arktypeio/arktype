@@ -597,9 +597,13 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 	})
 
 	it("narrowed morph", () => {
-		const t = type("string").pipe(s => parseInt(s))
-		// .narrow(n => true)
-		const ts = type("string").narrow(s => true)
+		const t = type("string")
+			.pipe(s => parseInt(s))
+			.narrow(n => true)
+			.pipe(
+				n => `${n}`,
+				s => `${s}++` as const
+			)
 
 		attest(t.t).type.toString("(In: string) => Out<number.narrowed>")
 	})

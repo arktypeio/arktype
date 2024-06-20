@@ -203,13 +203,19 @@ Left: ${lDescription}
 Right: ${rDescription}`
 
 export type inferPipes<t, pipes extends Morph[]> =
-	pipes extends [infer head extends Morph, ...infer tail extends Morph[]] ?
+	pipes extends (
+		[Morph<never, infer headReturn>, ...infer tail extends Morph[]]
+	) ?
 		inferPipes<
-			head extends type.cast<infer tPipe> ? inferPipe<t, tPipe>
-			:	(In: distillConstrainableIn<t>) => Out<inferMorphOut<head>>,
+			pipes[0] extends type.cast<infer tPipe> ? inferPipe<t, tPipe>
+			: Exclude<headReturn, ArkError | ArkErrors> extends infer out ?
+				(In: distillConstrainableIn<t>) => Out<out>
+			:	never,
 			tail
 		>
 	:	t
+
+export type inferMorphReturn<returns> = Exclude<returns, ArkError | ArkErrors>
 
 export type inferMorphOut<morph extends Morph> = Exclude<
 	ReturnType<morph>,

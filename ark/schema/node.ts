@@ -203,7 +203,7 @@ export abstract class BaseNode<
 		)
 	}
 
-	get indexableExpressions(): dict<string> {
+	get structuralExpressions(): dict<string> {
 		return flatMorph(this.indexablePaths, (i, ref) => [
 			ref.propString,
 			ref.node.expression

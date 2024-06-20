@@ -109,3 +109,8 @@ export type inferPredicate<t, predicate> =
 			constrain<of<narrowed, constraints>, "predicate", any>
 		:	constrain<narrowed, "predicate", any>
 	:	constrain<t, "predicate", any>
+
+export type inferPredicate2<t, to> =
+	t extends of<unknown, infer constraints> ?
+		constrain<of<to, constraints>, "predicate", any>
+	:	constrain<to, "predicate", any>

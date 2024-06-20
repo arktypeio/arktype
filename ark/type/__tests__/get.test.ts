@@ -10,7 +10,7 @@ contextualize(() => {
 
 		attest(t.get("bar").expression).snap("bigint | number")
 
-		attest(t.internal.indexableExpressions).snap({
+		attest(t.internal.structuralExpressions).snap({
 			bar: "bigint | number",
 			foo: "string"
 		})
@@ -30,7 +30,7 @@ contextualize(() => {
 
 		attest(t.get("bar", "quux").expression).snap("2")
 
-		attest(t.internal.indexableExpressions).snap({
+		attest(t.internal.structuralExpressions).snap({
 			bar: "{ quux: 2 }",
 			"bar.quux": "2",
 			foo: "{ baz: 1 }",
@@ -55,7 +55,7 @@ contextualize(() => {
 
 		attest(t.get("foo", "bar").expression).snap("0 | 1")
 
-		attest(t.internal.indexableExpressions).snap({
+		attest(t.internal.structuralExpressions).snap({
 			foo: "{ bar: 0 } | { bar: 1 }",
 			"foo.bar": "0 | 1"
 		})
@@ -78,7 +78,7 @@ contextualize(() => {
 			["false", "?"]
 		])
 
-		attest(t.internal.indexableExpressions).snap({
+		attest(t.internal.structuralExpressions).snap({
 			'["0"]': "{ isTrue: true }",
 			'["0"].isTrue': "true",
 			'["1"]': "[false?]",
@@ -133,6 +133,6 @@ contextualize(() => {
 
 		const lOrR = types.l.or(types.r)
 
-		attest(lOrR.internal.indexableExpressions).snap()
+		attest(lOrR.internal.structuralExpressions).snap()
 	})
 })
