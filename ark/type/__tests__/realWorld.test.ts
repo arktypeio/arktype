@@ -1,5 +1,8 @@
 import { attest, contextualize } from "@arktype/attest"
+import type { AtLeastLength, AtMostLength, Out, string } from "@arktype/schema"
+import { registeredReference } from "@arktype/util"
 import { scope, type, type Type } from "arktype"
+import type { Module } from "../module.js"
 
 contextualize(() => {
 	// https://github.com/arktypeio/arktype/issues/915
@@ -245,5 +248,315 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 				}
 			]
 		})
+	})
+
+	// https://github.com/arktypeio/arktype/issues/947
+	it("chained inline type expression inference", () => {
+		const a = type({
+			action: "'a' | 'b'"
+		}).or({
+			action: "'c'"
+		})
+
+		const referenced = type({
+			someField: "string"
+		}).and(a)
+
+		attest<
+			| {
+					someField: string
+					action: "a" | "b"
+			  }
+			| {
+					someField: string
+					action: "c"
+			  }
+		>(referenced.infer)
+
+		const inlined = type({
+			someField: "string"
+		}).and(
+			type({
+				action: "'a' | 'b'"
+			}).or({
+				action: "'c'"
+			})
+		)
+
+		attest<typeof referenced>(inlined)
+	})
+
+	// https://discord.com/channels/957797212103016458/1242116299547476100
+	it("infers morphs at nested paths", () => {
+		const parseBigint = type("string", "=>", (s, ctx) => {
+			try {
+				return BigInt(s)
+			} catch {
+				return ctx.error("a valid number")
+			}
+		})
+
+		const Test = type({
+			group: {
+				nested: {
+					value: parseBigint
+				}
+			}
+		})
+
+		const out = Test({ group: { nested: { value: "5" } } })
+		attest<bigint, typeof Test.infer.group.nested.value>()
+		attest(out).equals({ group: { nested: { value: 5n } } })
+	})
+
+	// https://discord.com/channels/957797212103016458/957804102685982740/1242221022380556400
+	it("nested pipe to validated output", () => {
+		const trimString = (s: string) => s.trim()
+
+		const trimStringReference = registeredReference(trimString)
+
+		const validatedTrimString = type("string").pipe(
+			trimString,
+			type("1<=string<=3")
+		)
+
+		const CreatePatientInput = type({
+			"patient_id?": "string|null",
+			"first_name?": validatedTrimString.or("null"),
+			"middle_name?": "string|null",
+			"last_name?": "string|null"
+		})
+
+		attest<
+			| ((In: string) => Out<string.is<AtLeastLength<1> & AtMostLength<3>>>)
+			| null
+			| undefined,
+			typeof CreatePatientInput.t.first_name
+		>()
+
+		attest(CreatePatientInput.json).snap({
+			optional: [
+				{
+					key: "first_name",
+					value: [
+						{
+							in: "string",
+							morphs: [
+								trimStringReference,
+								{ domain: "string", maxLength: 3, minLength: 1 }
+							]
+						},
+						{ unit: null }
+					]
+				},
+				{ key: "last_name", value: ["string", { unit: null }] },
+				{ key: "middle_name", value: ["string", { unit: null }] },
+				{ key: "patient_id", value: ["string", { unit: null }] }
+			],
+			domain: "object"
+		})
+		attest(CreatePatientInput({ first_name: " Bob  " })).equals({
+			first_name: "Bob"
+		})
+		attest(CreatePatientInput({ first_name: " John  " }).toString()).snap(
+			"first_name must be at most length 3 (was 4)"
+		)
+		attest(CreatePatientInput({ first_name: 5 }).toString()).snap(
+			"first_name must be a string or null (was 5)"
+		)
+	})
+
+	// https://github.com/arktypeio/arktype/issues/968
+	it("handles consecutive pipes", () => {
+		const MyAssets = scope({
+			Asset: {
+				token: "string",
+				amount: type("string").pipe((s, ctx) => {
+					try {
+						return BigInt(s)
+					} catch {
+						return ctx.error("a valid non-decimal number")
+					}
+				})
+			},
+			Assets: {
+				assets: "Asset[]>=1"
+			}
+		})
+			.export()
+			.Assets.pipe(o => {
+				const assets = o.assets.reduce<Record<string, bigint>>((acc, asset) => {
+					acc[asset.token] = asset.amount
+					return acc
+				}, {})
+				return { ...o, assets }
+			})
+
+		const out = MyAssets({ assets: [{ token: "a", amount: "1" }] })
+
+		attest(out).snap({ assets: { a: "1n" } })
+	})
+
+	// https://discord.com/channels/957797212103016458/957804102685982740/1243850690644934677
+	it("more chained pipes/narrows", () => {
+		const Amount = type(
+			"string",
+			":",
+			(s, ctx) => Number.isInteger(Number(s)) || ctx.reject("number")
+		)
+			.pipe((s, ctx) => {
+				try {
+					return BigInt(s)
+				} catch {
+					return ctx.error("a non-decimal number")
+				}
+			})
+			.narrow((amount, ctx) => true)
+
+		const Token = type("7<string<=120")
+			.pipe(s => s.toLowerCase())
+			.narrow((s, ctx) => true)
+
+		const $ = scope({
+			Asset: {
+				token: Token,
+				amount: Amount
+			},
+			Assets: () => $.type("Asset[]>=1").pipe(assets => assets)
+		})
+
+		const types = $.export()
+
+		const out = types.Assets([{ token: "lovelace", amount: "5000000" }])
+
+		attest(out).snap([{ token: "lovelace", amount: "5000000n" }])
+	})
+
+	it("regex index signature", () => {
+		const test = scope({
+			svgPath: /^\.\/(\d|a|b|c|d|e|f)+(-(\d|a|b|c|d|e|f)+)*\.svg$/,
+			svgMap: {
+				"[svgPath]": "digits"
+			}
+		}).export()
+		attest<
+			Module<{
+				svgMap: {
+					[x: string & string.matching<string>]: string
+				}
+				svgPath: string.matching<string>
+			}>
+		>(test)
+		attest(test.svgMap({ "./f.svg": "123", bar: 5 })).unknown.snap({
+			"./f.svg": "123",
+			bar: 5
+		})
+		attest(test.svgMap({ "./f.svg": "123a" }).toString()).snap(
+			'value at ["./f.svg"] must be only digits 0-9 (was "123a")'
+		)
+	})
+
+	it("standalone type from cyclic", () => {
+		const types = scope({
+			JsonSchema: "JsonSchemaArray|JsonSchemaNumber",
+			JsonSchemaArray: {
+				items: "JsonSchema",
+				type: "'array'"
+			},
+			JsonSchemaNumber: {
+				type: "'number'|'integer'"
+			}
+		}).export()
+
+		const standalone = types.JsonSchemaArray.describe("standalone")
+
+		attest(standalone.json).snap({
+			required: [
+				{ key: "items", value: "$JsonSchema" },
+				{ key: "type", value: { unit: "array" } }
+			],
+			description: "standalone",
+			domain: { description: "standalone", domain: "object" }
+		})
+
+		const valid: typeof standalone.infer = {
+			type: "array",
+			items: { type: "array", items: { type: "number" } }
+		}
+
+		const out = standalone(valid)
+
+		attest(out).equals(valid)
+
+		const failOut = standalone({
+			type: "array",
+			items: { type: "array" }
+		})
+
+		attest(failOut.toString()).snap(
+			'items.items must be an object (was missing) or items.type must be "integer" or "number" (was "array")'
+		)
+	})
+
+	it("more external cyclic scope references", () => {
+		const $ = scope({
+			box: {
+				"box?": "box"
+			}
+		})
+
+		const box = $.type("box|null")
+
+		attest(box({})).equals({})
+		attest(box(null)).equals(null)
+		attest(box({ box: { box: { box: {} } } })).snap({
+			box: { box: { box: {} } }
+		})
+		attest(box({ box: { box: { box: "whoops" } } })?.toString()).snap(
+			'box.box.box must be an object (was string) or must be null (was {"box":{"box":{"box":"whoops"}}})'
+		)
+	})
+
+	it("morph with alias child", () => {
+		const types = scope({
+			ArraySchema: {
+				"items?": "Schema"
+			},
+			Schema: "TypeWithKeywords",
+			TypeWithKeywords: "ArraySchema"
+		}).export()
+
+		const t = types.Schema.pipe(o => JSON.stringify(o))
+
+		attest(t({ items: {} })).snap('{"items":{}}')
+		attest(t({ items: null }).toString()).snap(
+			"items must be an object (was null)"
+		)
+	})
+
+	it("terse missing key error", () => {
+		const types = scope({
+			Library: {
+				sections: "Sections"
+			},
+			Sections: {
+				"[string]": "Book[]"
+			},
+			Book: {
+				isbn: "string",
+				title: "string",
+				"subtitle?": "string",
+				authors: "string[]",
+				publisher: "Publisher"
+			},
+			Publisher: {
+				id: "string",
+				name: "string"
+			}
+		}).export()
+
+		attest(types.Library({}).toString()).snap(
+			"sections must be an object (was missing)"
+		)
 	})
 })

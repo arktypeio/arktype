@@ -25,7 +25,7 @@ export namespace Hkt {
 	}
 
 	export abstract class Instantiable {
-		declare readonly [args]: unknown;
+		declare readonly [args]: unknown
 
 		abstract readonly [instantiate]: (...args: never[]) => Instantiable
 	}

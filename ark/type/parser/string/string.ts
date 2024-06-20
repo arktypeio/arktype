@@ -1,4 +1,4 @@
-import type { BaseRoot } from "@arktype/schema"
+import type { ambient, BaseRoot, resolvableReferenceIn } from "@arktype/schema"
 import {
 	type ErrorMessage,
 	throwInternalError,
@@ -7,7 +7,7 @@ import {
 import type { inferAstRoot } from "../semantic/infer.js"
 import type { DynamicState, DynamicStateWithRoot } from "./reduce/dynamic.js"
 import type { StringifiablePrefixOperator } from "./reduce/shared.js"
-import type { StaticState, state } from "./reduce/static.js"
+import type { state, StaticState } from "./reduce/static.js"
 import type { parseOperand } from "./shift/operand/operand.js"
 import {
 	type parseOperator,
@@ -36,7 +36,8 @@ export type inferString<def extends string, $, args> = inferAstRoot<
 >
 
 export type BaseCompletions<$, args, otherSuggestions extends string = never> =
-	| (keyof $ & string)
+	| resolvableReferenceIn<$>
+	| resolvableReferenceIn<ambient>
 	| (keyof args & string)
 	| StringifiablePrefixOperator
 	| otherSuggestions

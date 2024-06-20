@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@arktype/attest"
-import type { Narrowed, Out, of, string } from "@arktype/schema"
+import type { Narrowed, Out, number, of, string } from "@arktype/schema"
 import { registeredReference, type equals } from "@arktype/util"
 import { type, type Type } from "arktype"
 
@@ -22,12 +22,26 @@ contextualize(() => {
 	})
 
 	it("explicit problem", () => {
-		const even = type([
+		const divisibleBy3 = type([
 			"number",
 			":",
-			(n, ctx) => n % 3 === 0 || ctx.invalid("divisible by 3")
+			(n, ctx) => n % 3 === 0 || ctx.reject("divisible by 3")
 		])
-		attest(even(1).toString()).snap("must be divisible by 3 (was 1)")
+		attest(divisibleBy3(1).toString()).snap("must be divisible by 3 (was 1)")
+	})
+
+	it("chained narrows", () => {
+		const divisibleBy30 = type("number")
+			.narrow((n, ctx) => n % 2 === 0 || ctx.reject("divisible by 2"))
+			.narrow((n, ctx) => n % 3 === 0 || ctx.reject("divisible by 3"))
+			.narrow((n, ctx) => n % 5 === 0 || ctx.reject("divisible by 5"))
+
+		attest<number.narrowed>(divisibleBy30.t)
+
+		attest(divisibleBy30(1).toString()).snap("must be divisible by 2 (was 1)")
+		attest(divisibleBy30(2).toString()).snap("must be divisible by 3 (was 2)")
+		attest(divisibleBy30(6).toString()).snap("must be divisible by 5 (was 6)")
+		attest(divisibleBy30(30)).equals(30)
 	})
 
 	it("problem at path", () => {
@@ -76,7 +90,7 @@ contextualize(() => {
 			"string",
 			":",
 			(s, ctx) =>
-				s === [...s].reverse().join("") ? true : ctx.invalid("a palindrome")
+				s === [...s].reverse().join("") ? true : ctx.reject("a palindrome")
 		])
 		attest<Type<string.narrowed>>(palindrome)
 		attest(palindrome("dad")).snap("dad")
@@ -85,16 +99,64 @@ contextualize(() => {
 		)
 	})
 
+	it("satisfying narrows input type of morphs", () => {
+		const t = type("string")
+			.pipe(s => s.length)
+			.satisfying(s => s.length > 5)
+
+		const morphRef = t.raw.assertHasKind("morph").serializedMorphs[0]
+
+		const predicateRef =
+			t.raw.firstReferenceOfKindOrThrow("predicate").serializedPredicate
+
+		attest(t.json).snap({
+			in: { domain: "string", predicate: [predicateRef] },
+			morphs: [morphRef]
+		})
+
+		attest<Type<(In: string.narrowed) => Out<number>>>(t)
+
+		attest(t("123456")).snap(6)
+		attest(t("1234").toString()).snap(
+			'must be valid according to an anonymous predicate (was "1234")'
+		)
+	})
+
 	it("narrows the output type of a morph", () => {
 		const t = type("string")
 			.pipe(s => s.length)
 			.narrow((n): n is 5 => n === 5)
 
-		attest<Type<(In: string) => Out<of<5, Narrowed>>, {}>>(t)
+		const morphRef = t.raw.assertHasKind("morph").serializedMorphs[0]
+
+		const predicateRef =
+			t.raw.firstReferenceOfKindOrThrow("predicate").serializedPredicate
+
+		attest(t.json).snap({
+			in: "string",
+			morphs: [morphRef, { predicate: [predicateRef] }]
+		})
+
+		attest<Type<(In: string) => Out<of<5, Narrowed>>>>(t)
+
+		attest(t("12345")).snap(5)
+		attest(t("1234").toString()).snap(
+			"must be valid according to an anonymous predicate (was 4)"
+		)
 	})
 
 	it("expression", () => {
 		const t = type("string", ":", (s): s is `f${string}` => s[0] === "f")
 		attest<`f${string}`>(t.infer)
 	})
+
+	// TODO: reenable
+	// https://github.com/arktypeio/arktype/issues/970
+	// it("narrows the output type of an morph within a single type", () => {
+	// 	const t = type("string")
+	// 		.pipe(s => `${s}!`)
+	// 		.narrow((s): s is "foo!" => s === "foo!")
+
+	// 	attest<Type<(In: string) => Out<of<"foo!", Narrowed>>>>(t)
+	// })
 })

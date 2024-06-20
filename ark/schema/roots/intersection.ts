@@ -102,8 +102,12 @@ export class IntersectionNode extends BaseRoot<IntersectionDeclaration> {
 
 	expression: string =
 		this.structure?.expression ||
-		this.children.map(node => node.nestableExpression).join(" & ") ||
+		`${this.basis ? this.basis.nestableExpression + " " : ""}${this.refinements.join(" & ")}` ||
 		"unknown"
+
+	get shortDescription(): string {
+		return this.basis?.shortDescription ?? "present"
+	}
 
 	traverseAllows: TraverseAllows = (data, ctx) =>
 		this.children.every(child => child.traverseAllows(data as never, ctx))
@@ -302,9 +306,9 @@ export const intersectionImplementation: nodeImplementationOf<IntersectionDeclar
 				child: true,
 				parse: constraintKeyParser("after")
 			},
-			regex: {
+			pattern: {
 				child: true,
-				parse: constraintKeyParser("regex")
+				parse: constraintKeyParser("pattern")
 			},
 			predicate: {
 				child: true,
@@ -329,12 +333,10 @@ export const intersectionImplementation: nodeImplementationOf<IntersectionDeclar
 					node.children.map(child => child.description).join(" and "),
 			expected: source =>
 				`  • ${source.errors.map(e => e.expected).join("\n  • ")}`,
-			problem: ctx => `must be...\n${ctx.expected}`
+			problem: ctx => `(${ctx.actual}) must be...\n${ctx.expected}`
 		},
 		intersections: {
-			intersection: (l, r, ctx) => {
-				return intersectIntersections(l, r, ctx)
-			},
+			intersection: (l, r, ctx) => intersectIntersections(l, r, ctx),
 			...defineRightwardIntersections("intersection", (l, r, ctx) => {
 				// if l is unknown, return r
 				if (l.children.length === 0) return r

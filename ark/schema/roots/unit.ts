@@ -1,4 +1,5 @@
 import {
+	domainDescriptions,
 	domainOf,
 	printable,
 	prototypeKeysOf,
@@ -53,9 +54,19 @@ export const unitImplementation: nodeImplementationOf<UnitDeclaration> =
 				`${expected === actual ? `must be reference equal to ${expected} (serialized to the same value)` : `must be ${expected} (was ${actual})`}`
 		},
 		intersections: {
-			unit: (l, r) => Disjoint.from("unit", l, r),
+			unit: (l, r) => Disjoint.init("unit", l, r),
 			...defineRightwardIntersections("unit", (l, r) =>
-				r.allows(l.unit) ? l : Disjoint.from("assignability", l.unit, r)
+				r.allows(l.unit) ? l : (
+					Disjoint.init(
+						"assignability",
+						l,
+						r.hasKind("intersection") ?
+							r.children.find(
+								rConstraint => !rConstraint.allows(l.unit as never)
+							)!
+						:	r
+					)
+				)
 			)
 		}
 	})
@@ -79,6 +90,11 @@ export class UnitNode extends RawBasis<UnitDeclaration> {
 	)
 	expression: string = printable(this.unit)
 	domain: Domain = domainOf(this.unit)
+	get shortDescription(): string {
+		return this.domain === "object" ?
+				domainDescriptions.object
+			:	this.description
+	}
 
 	traverseAllows: TraverseAllows =
 		this.unit instanceof Date ?

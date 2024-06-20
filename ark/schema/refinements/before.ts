@@ -10,20 +10,20 @@ import {
 	BaseRange,
 	parseDateLimit,
 	parseExclusiveKey,
-	type BaseNormalizedRangeRoot,
 	type BaseRangeInner,
-	type LimitRootValue
+	type LimitSchemaValue,
+	type UnknownNormalizedRangeSchema
 } from "./range.js"
 
 export interface BeforeInner extends BaseRangeInner {
 	rule: Date
 }
 
-export interface NormalizedBeforeSchema extends BaseNormalizedRangeRoot {
-	rule: LimitRootValue
+export interface NormalizedBeforeSchema extends UnknownNormalizedRangeSchema {
+	rule: LimitSchemaValue
 }
 
-export type BeforeSchema = NormalizedBeforeSchema | LimitRootValue
+export type BeforeSchema = NormalizedBeforeSchema | LimitSchemaValue
 
 export interface BeforeDeclaration
 	extends declareNode<{
@@ -69,7 +69,7 @@ export const beforeImplementation: nodeImplementationOf<BeforeDeclaration> =
 					before.overlapIsUnit(after) ?
 						ctx.$.node("unit", { unit: before.rule })
 					:	null
-				:	Disjoint.from("range", before, after)
+				:	Disjoint.init("range", before, after)
 		}
 	})
 

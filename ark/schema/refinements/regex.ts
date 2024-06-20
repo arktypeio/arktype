@@ -6,29 +6,29 @@ import {
 	type nodeImplementationOf
 } from "../shared/implement.js"
 
-export interface RegexInner extends BaseMeta {
+export interface PatternInner extends BaseMeta {
 	readonly rule: string
 	readonly flags?: string
 }
 
-export type NormalizedRegexSchema = RegexInner
+export type NormalizedPatternSchema = PatternInner
 
-export type RegexSchema = NormalizedRegexSchema | string | RegExp
+export type PatternSchema = NormalizedPatternSchema | string | RegExp
 
-export interface RegexDeclaration
+export interface PatternDeclaration
 	extends declareNode<{
-		kind: "regex"
-		schema: RegexSchema
-		normalizedSchema: NormalizedRegexSchema
-		inner: RegexInner
+		kind: "pattern"
+		schema: PatternSchema
+		normalizedSchema: NormalizedPatternSchema
+		inner: PatternInner
 		intersectionIsOpen: true
 		prerequisite: string
-		errorContext: RegexInner
+		errorContext: PatternInner
 	}> {}
 
-export const regexImplementation: nodeImplementationOf<RegexDeclaration> =
-	implementNode<RegexDeclaration>({
-		kind: "regex",
+export const patternImplementation: nodeImplementationOf<PatternDeclaration> =
+	implementNode<PatternDeclaration>({
+		kind: "pattern",
 		collapsibleKey: "rule",
 		keys: {
 			rule: {},
@@ -49,11 +49,11 @@ export const regexImplementation: nodeImplementationOf<RegexDeclaration> =
 		intersections: {
 			// for now, non-equal regex are naively intersected:
 			// https://github.com/arktypeio/arktype/issues/853
-			regex: () => null
+			pattern: () => null
 		}
 	})
 
-export class RegexNode extends RawPrimitiveConstraint<RegexDeclaration> {
+export class PatternNode extends RawPrimitiveConstraint<PatternDeclaration> {
 	readonly instance: RegExp = new RegExp(this.rule, this.flags)
 	readonly expression: string = `${this.instance}`
 	traverseAllows: (string: string) => boolean = this.instance.test.bind(

@@ -5,12 +5,12 @@
 		// "noErrorTruncation": true,
 		// "isolatedDeclarations": true,
 		"paths": {
-			"arktype": ["./ark/type/api.ts"],
+			"arktype": ["./ark/type/index.ts"],
 			"arktype/config": ["./ark/type/config.ts"],
-			"@arktype/util": ["./ark/util/api.ts"],
-			"@arktype/fs": ["./ark/fs/api.ts"],
-			"@arktype/attest": ["./ark/attest/api.ts"],
-			"@arktype/schema": ["./ark/schema/api.ts"],
+			"@arktype/util": ["./ark/util/index.ts"],
+			"@arktype/fs": ["./ark/fs/index.ts"],
+			"@arktype/attest": ["./ark/attest/index.ts"],
+			"@arktype/schema": ["./ark/schema/index.ts"],
 			"@arktype/schema/config": ["./ark/schema/config.ts"]
 		},
 		"types": ["mocha", "node"]

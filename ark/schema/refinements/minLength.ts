@@ -6,18 +6,19 @@ import {
 } from "../shared/implement.js"
 import type { TraverseAllows } from "../shared/traversal.js"
 import {
-	type BaseNormalizedRangeRoot,
 	BaseRange,
+	parseExclusiveKey,
 	type BaseRangeInner,
 	type LengthBoundableData,
-	parseExclusiveKey
+	type UnknownNormalizedRangeSchema
 } from "./range.js"
 
 export interface MinLengthInner extends BaseRangeInner {
 	rule: number
 }
 
-export interface NormalizedMinLengthSchema extends BaseNormalizedRangeRoot {
+export interface NormalizedMinLengthSchema
+	extends UnknownNormalizedRangeSchema {
 	rule: number
 }
 
@@ -52,7 +53,8 @@ export const minLengthImplementation: nodeImplementationOf<MinLengthDeclaration>
 					:	`more than length ${node.rule}`
 				: node.rule === 1 ? "non-empty"
 				: `at least length ${node.rule}`,
-			actual: data => `${data.length}`
+			// avoid default message like "must be non-empty (was 0)"
+			actual: data => (data.length === 0 ? null : `${data.length}`)
 		},
 		intersections: {
 			minLength: (l, r) => (l.isStricterThan(r) ? l : r)

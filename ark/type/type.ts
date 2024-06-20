@@ -2,30 +2,39 @@ import {
 	ArkErrors,
 	BaseRoot,
 	type BaseMeta,
+	type ConstraintKind,
 	type Disjoint,
+	type DivisorSchema,
+	type ExactLengthSchema,
+	type ExclusiveDateRangeSchema,
+	type ExclusiveNumericRangeSchema,
+	type InclusiveDateRangeSchema,
+	type InclusiveNumericRangeSchema,
 	type InnerRoot,
 	type Morph,
+	type MorphAst,
 	type NodeSchema,
 	type Out,
+	type PatternSchema,
 	type Predicate,
+	type Prerequisite,
 	type PrimitiveConstraintKind,
 	type Root,
-	type ambient,
 	type constrain,
 	type constraintKindOf,
-	type distillConstrainableOut,
 	type distillIn,
 	type distillOut,
-	type includesMorphs,
+	type exclusivizeRangeSchema,
 	type inferIntersection,
 	type inferMorphOut,
-	type inferNarrow,
 	type inferPipes,
-	type internalImplementationOf
+	type inferPredicate,
+	type writeInvalidOperandMessage
 } from "@arktype/schema"
 import {
 	Callable,
 	type Constructor,
+	type ErrorMessage,
 	type array,
 	type conform
 } from "@arktype/util"
@@ -43,11 +52,12 @@ import type {
 } from "./parser/tuple.js"
 import type { RawScope, Scope, bindThis } from "./scope.js"
 
-export interface TypeParserAttachments {
-	errors: typeof ArkErrors
-}
+/** The convenience properties attached to `type` */
+export type TypeParserAttachments =
+	// map over to remove call signatures
+	Omit<TypeParser, never>
 
-export interface TypeParser<$> extends TypeParserAttachments {
+export interface TypeParser<$ = {}> {
 	// Parse and check the definition, returning either the original input for a
 	// valid definition or a string representing an error message.
 	<const def>(def: validateTypeRoot<def, $>): Type<inferTypeRoot<def, $>, $>
@@ -79,6 +89,8 @@ export interface TypeParser<$> extends TypeParserAttachments {
 			}
 		>
 	): Generic<parseGenericParams<params>, def, $>
+
+	errors: typeof ArkErrors
 }
 
 const typeParserAttachments = Object.freeze({
@@ -122,17 +134,21 @@ export class RawTypeParser extends Callable<
 export type DeclarationParser<$> = <preinferred>() => {
 	// for some reason, making this a const parameter breaks preinferred validation
 	type: <def>(
-		def: validateDeclared<preinferred, def, $ & ambient, bindThis<def>>
+		def: validateDeclared<preinferred, def, $, bindThis<def>>
 	) => Type<preinferred, $>
 }
+
+type validateChainedConstraint<
+	kind extends ConstraintKind,
+	t extends { inferIn: unknown }
+> =
+	t["inferIn"] extends Prerequisite<kind> ? t
+	:	ErrorMessage<writeInvalidOperandMessage<kind, Root<t["inferIn"]>>>
 
 // this is declared as a class internally so we can ensure all "abstract"
 // methods of BaseRoot are overridden, but we end up exporting it as an interface
 // to ensure it is not accessed as a runtime value
-declare class _Type<t = unknown, $ = any>
-	extends InnerRoot<t, $>
-	implements internalImplementationOf<Root>
-{
+declare class _Type<t = unknown, $ = any> extends InnerRoot<t, $> {
 	$: Scope<$>;
 
 	get in(): Type<this["tIn"], $>
@@ -208,13 +224,12 @@ declare class _Type<t = unknown, $ = any>
 		g: g
 	): Type<inferPipes<t, [a, b, c, d, e, f, g]>, $>
 
-	// TODO: based on below, should maybe narrow morph output if used after
-	narrow<def extends Predicate<distillConstrainableOut<t>>>(
-		def: def
+	narrow<const predicate extends Predicate<distillOut<t>>>(
+		predicate: predicate
 	): Type<
-		includesMorphs<t> extends true ?
-			(In: this["tIn"]) => Out<inferNarrow<this["infer"], def>>
-		:	inferNarrow<this["infer"], def>,
+		t extends MorphAst ?
+			(In: this["tIn"]) => Out<inferPredicate<this["tOut"], predicate>>
+		:	inferPredicate<t, predicate>,
 		$
 	>
 
@@ -228,6 +243,7 @@ declare class _Type<t = unknown, $ = any>
 	extends<def>(
 		other: validateTypeRoot<def, $>
 	): this is Type<inferTypeRoot<def>, $>
+	overlaps<def>(r: validateTypeRoot<def, $>): boolean
 
 	constrain<
 		kind extends PrimitiveConstraintKind,
@@ -236,18 +252,108 @@ declare class _Type<t = unknown, $ = any>
 		kind: conform<kind, constraintKindOf<this["inferIn"]>>,
 		def: def
 	): Type<constrain<t, kind, def>, $>
+
+	satisfying<predicate extends Predicate<distillIn<t>>>(
+		predicate: predicate
+	): Type<
+		t extends MorphAst ?
+			(In: inferPredicate<this["tIn"], predicate>) => Out<this["tOut"]>
+		:	inferPredicate<t, predicate>,
+		$
+	>
+
+	divisibleBy<const schema extends DivisorSchema>(
+		this: validateChainedConstraint<"divisor", this>,
+		schema: schema
+	): Type<constrain<t, "divisor", schema>, $>
+
+	matching<const schema extends PatternSchema>(
+		this: validateChainedConstraint<"pattern", this>,
+		schema: schema
+	): Type<constrain<t, "pattern", schema>, $>
+
+	atLeast<const schema extends InclusiveNumericRangeSchema>(
+		this: validateChainedConstraint<"min", this>,
+		schema: schema
+	): Type<constrain<t, "min", schema>, $>
+
+	atMost<const schema extends InclusiveNumericRangeSchema>(
+		this: validateChainedConstraint<"max", this>,
+		schema: schema
+	): Type<constrain<t, "max", schema>, $>
+
+	moreThan<const schema extends ExclusiveNumericRangeSchema>(
+		this: validateChainedConstraint<"min", this>,
+		schema: schema
+	): Type<constrain<t, "min", exclusivizeRangeSchema<schema>>, $>
+
+	lessThan<const schema extends ExclusiveNumericRangeSchema>(
+		this: validateChainedConstraint<"max", this>,
+		schema: schema
+	): Type<constrain<t, "max", exclusivizeRangeSchema<schema>>, $>
+
+	atLeastLength<const schema extends InclusiveNumericRangeSchema>(
+		this: validateChainedConstraint<"minLength", this>,
+		schema: schema
+	): Type<constrain<t, "minLength", schema>, $>
+
+	atMostLength<const schema extends InclusiveNumericRangeSchema>(
+		this: validateChainedConstraint<"maxLength", this>,
+		schema: schema
+	): Type<constrain<t, "maxLength", schema>, $>
+
+	moreThanLength<const schema extends ExclusiveNumericRangeSchema>(
+		this: validateChainedConstraint<"minLength", this>,
+		schema: schema
+	): Type<constrain<t, "minLength", exclusivizeRangeSchema<schema>>, $>
+
+	lessThanLength<const schema extends ExclusiveNumericRangeSchema>(
+		this: validateChainedConstraint<"maxLength", this>,
+		schema: schema
+	): Type<constrain<t, "maxLength", exclusivizeRangeSchema<schema>>, $>
+
+	exactlyLength<const schema extends ExactLengthSchema>(
+		this: validateChainedConstraint<"exactLength", this>,
+		schema: schema
+	): Type<constrain<t, "exactLength", schema>, $>
+
+	atOrAfter<const schema extends InclusiveDateRangeSchema>(
+		this: validateChainedConstraint<"after", this>,
+		schema: schema
+	): Type<constrain<t, "after", schema>, $>
+
+	atOrBefore<const schema extends InclusiveDateRangeSchema>(
+		this: validateChainedConstraint<"before", this>,
+		schema: schema
+	): Type<constrain<t, "before", schema>, $>
+
+	laterThan<const schema extends ExclusiveDateRangeSchema>(
+		this: validateChainedConstraint<"after", this>,
+		schema: schema
+	): Type<constrain<t, "after", exclusivizeRangeSchema<schema>>, $>
+
+	earlierThan<const schema extends ExclusiveDateRangeSchema>(
+		this: validateChainedConstraint<"before", this>,
+		schema: schema
+	): Type<constrain<t, "before", exclusivizeRangeSchema<schema>>, $>
 }
 
 export interface Type<
 	/** @ts-expect-error allow instantiation assignment to the base type */
 	out t = unknown,
-	$ = any
+	$ = {}
 > extends _Type<t, $> {}
 
-export type TypeConstructor<t = unknown, $ = any> = new (
+export type TypeConstructor<t = unknown, $ = {}> = new (
 	def: unknown,
 	$: Scope<$>
 ) => Type<t, $>
+
+export type AnyType<
+	/** @ts-expect-error allow instantiation assignment to the base type */
+	out t = unknown,
+	$ = any
+> = Type<t, $>
 
 export const Type: TypeConstructor = BaseRoot as never
 
@@ -255,12 +361,8 @@ export type DefinitionParser<$> = <def>(def: validateTypeRoot<def, $>) => def
 
 export type validateTypeRoot<def, $ = {}> = validateDefinition<
 	def,
-	$ & ambient,
+	$,
 	bindThis<def>
 >
 
-export type inferTypeRoot<def, $ = {}> = inferDefinition<
-	def,
-	$ & ambient,
-	bindThis<def>
->
+export type inferTypeRoot<def, $ = {}> = inferDefinition<def, $, bindThis<def>>

@@ -8,10 +8,7 @@ on:
   workflow_dispatch:
 
 # Allow this job to clone the repo and create a page deployment
-permissions:
-  contents: read
-  pages: write
-  id-token: write
+permissions: write-all
 
 jobs:
   update-gh-pages:
@@ -19,7 +16,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -49,7 +46,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 

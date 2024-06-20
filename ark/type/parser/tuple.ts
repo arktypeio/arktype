@@ -12,10 +12,10 @@ import {
 	type UnionChildKind,
 	type UnknownRoot,
 	type distillConstrainableIn,
-	type distillConstrainableOut,
+	type distillOut,
 	type inferIntersection,
 	type inferMorphOut,
-	type inferNarrow
+	type inferPredicate
 } from "@arktype/schema"
 import {
 	append,
@@ -339,7 +339,8 @@ export type inferTupleExpression<def extends TupleExpression, $, args> =
 		>
 	: def[1] extends "|" ?
 		inferDefinition<def[0], $, args> | inferDefinition<def[2], $, args>
-	: def[1] extends ":" ? inferNarrow<inferDefinition<def[0], $, args>, def[2]>
+	: def[1] extends ":" ?
+		inferPredicate<inferDefinition<def[0], $, args>, def[2]>
 	: def[1] extends "=>" ? parseMorph<def[0], def[2], $, args>
 	: def[1] extends "@" ? inferDefinition<def[0], $, args>
 	: def extends readonly ["===", ...infer values] ? values[number]
@@ -375,12 +376,9 @@ export type validateInfixExpression<def extends InfixExpression, $, args> =
 			def[1] extends "|" ? validateDefinition<def[2], $, args>
 			: def[1] extends "&" ? validateDefinition<def[2], $, args>
 			: def[1] extends ":" ?
-				Predicate<distillConstrainableIn<inferDefinition<def[0], $, args>>>
+				Predicate<distillOut<inferDefinition<def[0], $, args>>>
 			: def[1] extends "=>" ?
-				Morph<
-					distillConstrainableOut<inferDefinition<def[0], $, args>>,
-					unknown
-				>
+				Morph<distillOut<inferDefinition<def[0], $, args>>, unknown>
 			: def[1] extends "@" ? BaseMeta | string
 			: validateDefinition<def[2], $, args>
 		]

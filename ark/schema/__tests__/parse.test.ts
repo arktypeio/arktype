@@ -3,9 +3,9 @@ import { type Root, schema } from "@arktype/schema"
 
 contextualize(() => {
 	it("single constraint", () => {
-		const t = schema({ domain: "string", regex: ".*" })
+		const t = schema({ domain: "string", pattern: ".*" })
 		attest<Root<string>>(t)
-		attest(t.json).snap({ domain: "string", regex: [".*"] })
+		attest(t.json).snap({ domain: "string", pattern: [".*"] })
 	})
 
 	it("multiple constraints", () => {

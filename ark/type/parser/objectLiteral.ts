@@ -5,6 +5,7 @@ import {
 	type Default,
 	type MutableInner,
 	type NodeSchema,
+	type of,
 	type PropKind,
 	type StructureNode,
 	type UndeclaredKeyBehavior,
@@ -17,10 +18,10 @@ import {
 	stringAndSymbolicEntriesOf,
 	throwParseError,
 	unset,
+	type anyOrNever,
 	type Dict,
 	type ErrorMessage,
 	type Key,
-	type anyOrNever,
 	type keyError,
 	type merge,
 	type mutable,
@@ -150,7 +151,9 @@ export type validateObjectLiteral<def, $, args> = {
 		validateString<indexDef, $, args> extends ErrorMessage<infer message> ?
 			// add a nominal type here to avoid allowing the error message as input
 			keyError<message>
-		: inferDefinition<indexDef, $, args> extends PropertyKey ?
+		: inferDefinition<indexDef, $, args> extends (
+			PropertyKey | of<PropertyKey, {}>
+		) ?
 			// if the indexDef is syntactically and semantically valid,
 			// move on to the validating the value definition
 			validateDefinition<def[k], $, args>
@@ -177,7 +180,10 @@ type validatePossibleDefaultValue<def, k extends keyof def, $, args> =
 type nonOptionalKeyFrom<k, $, args> =
 	parseKey<k> extends PreparsedKey<"required", infer inner> ? inner
 	: parseKey<k> extends PreparsedKey<"index", infer inner> ?
-		inferDefinition<inner, $, args> & Key
+		inferDefinition<inner, $, args> extends infer t ?
+			// simplify the display of constrained index signatures
+			(t extends of<infer inner, any> ? Extract<inner, string> : Key) & t
+		:	never
 	:	// "..." is handled at the type root so is handled neither here nor in optionalKeyFrom
 		// "+" has no effect on inference
 		never

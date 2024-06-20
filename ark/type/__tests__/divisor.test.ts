@@ -12,8 +12,15 @@ contextualize(
 			attest(divisibleByTwo.json).snap({ domain: "number", divisor: 2 })
 		})
 
-		it("chained", () => {
+		it("constrained", () => {
 			const t = type("number").constrain("divisor", 2)
+			const expected = type("number%2")
+			attest<typeof expected>(t)
+			attest(t.json).equals(expected.json)
+		})
+
+		it("chained", () => {
+			const t = type("number").divisibleBy(2)
 			const expected = type("number%2")
 			attest<typeof expected>(t)
 			attest(t.json).equals(expected.json)
@@ -71,6 +78,13 @@ contextualize(
 			)
 		})
 
+		it("chained indivisible", () => {
+			// @ts-expect-error
+			attest(() => type("string").divisibleBy(2)).throwsAndHasTypeError(
+				writeIndivisibleMessage(keywordNodes.string)
+			)
+		})
+
 		it("overlapping", () => {
 			// @ts-expect-error
 			attest(() => type("(number|string)%10")).throwsAndHasTypeError(
@@ -107,7 +121,7 @@ contextualize(
 
 		it("invalid literal", () => {
 			attest(() => type("number%3&8")).throws.snap(
-				"ParseError: Intersection of 8 and number & % 3 results in an unsatisfiable type"
+				"ParseError: Intersection of % 3 and 8 results in an unsatisfiable type"
 			)
 		})
 	}

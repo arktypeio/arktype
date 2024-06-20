@@ -1,7 +1,9 @@
 import {
 	CompiledFunction,
 	DynamicBase,
+	ParseError,
 	bound,
+	envHasCsp,
 	flatMorph,
 	hasDomain,
 	isArray,
@@ -135,7 +137,7 @@ export const defaultConfig: ResolvedArkConfig = Object.assign(
 		implementation.defaults
 	]),
 	{
-		jitless: false,
+		jitless: envHasCsp(),
 		registerKeywords: false,
 		prereducedAliases: false
 	} satisfies Omit<ResolvedArkConfig, NodeKind>
@@ -166,6 +168,13 @@ export const resolveConfig = (
 export type RawRootResolutions = Record<string, RawResolution | undefined>
 
 export type exportedNameOf<$> = Exclude<keyof $ & string, PrivateDeclaration>
+
+export type resolvableReferenceIn<$> =
+	keyof $ extends infer k extends string ?
+		k extends PrivateDeclaration<infer alias> ?
+			alias
+		:	k
+	:	never
 
 export type PrivateDeclaration<key extends string = string> = `#${key}`
 
@@ -216,7 +225,7 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 {
 	readonly config: ArkConfig
 	readonly resolvedConfig: ResolvedArkConfig
-	readonly id = `$${++scopeCount}`;
+	readonly id = `$${++scopeCount}`
 	readonly [arkKind] = "scope"
 
 	readonly referencesById: { [name: string]: BaseNode } = {}
@@ -271,12 +280,16 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 			// TODO: generics and modules
 			this.resolutions = flatMorph(
 				this.ambient.resolutions,
-				(alias, resolution) => [
-					alias,
-					hasArkKind(resolution, "root") ?
-						resolution.bindScope(this)
-					:	resolution
-				]
+				(alias, resolution) =>
+					// an alias defined in this scope should override an ambient alias of the same name
+					alias in this.aliases ?
+						[]
+					:	[
+							alias,
+							hasArkKind(resolution, "root") ?
+								resolution.bindScope(this)
+							:	resolution
+						]
 			)
 		}
 		scopesById[this.id] = this
@@ -388,12 +401,11 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 			if (this.resolved) {
 				// this node was not part of the original scope, so compile an anonymous scope
 				// including only its references
-				if (!this.resolvedConfig.jitless)
-					bindCompiledScope(node.contributesReferences)
+				if (!this.resolvedConfig.jitless) bindCompiledScope(node.references)
 			} else {
 				// we're still parsing the scope itself, so defer compilation but
 				// add the node as a reference
-				Object.assign(this.referencesById, node.contributesReferencesById)
+				Object.assign(this.referencesById, node.referencesById)
 			}
 
 			return node as never
@@ -473,8 +485,25 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 	): show<destructuredExportContext<$, names>> {
 		if (!this._exports) {
 			this._exports = {}
-			for (const name of this.exportedNames)
-				this._exports[name] = this.maybeResolve(name) as never
+			for (const name of this.exportedNames) {
+				const resolution = this.maybeResolve(name)
+				if (hasArkKind(resolution, "root")) {
+					resolution.references
+						.filter((node): node is Node<"alias"> => node.hasKind("alias"))
+						.forEach(aliasNode => {
+							Object.assign(
+								aliasNode.referencesById,
+								aliasNode.resolution.referencesById
+							)
+							resolution.references.forEach(ref => {
+								if (aliasNode.id in ref.referencesById)
+									Object.assign(ref.referencesById, aliasNode.referencesById)
+							})
+						})
+				}
+				this._exports[name] = resolution as never
+			}
+
 			this.lazyResolutions.forEach(node => node.resolution)
 
 			this._exportedResolutions = resolutionsOfModule(this, this._exports)
@@ -612,10 +641,22 @@ export const schema: RootScope["schema"] = root.schema
 export const node: RootScope["node"] = root.node
 export const defineRoot: RootScope["defineRoot"] = root.defineRoot
 export const units: RootScope["units"] = root.units
-export const rawRoot: RawRootScope["schema"] = root.raw.schema
+export const rawSchema: RawRootScope["schema"] = root.raw.schema
 export const rawNode: RawRootScope["node"] = root.raw.node
 export const defineRawRoot: RawRootScope["defineRoot"] = root.raw.defineRoot
 export const rawUnits: RawRootScope["units"] = root.raw.units
+
+export const parseAsSchema = <castTo = unknown>(
+	def: unknown,
+	opts?: NodeParseOptions
+): Root<castTo, {}> | ParseError => {
+	try {
+		return schema(def as RootSchema, opts) as never
+	} catch (e) {
+		if (e instanceof ParseError) return e
+		throw e
+	}
+}
 
 export class RawRootModule<
 	resolutions extends RawRootResolutions = RawRootResolutions
@@ -699,8 +740,8 @@ export const bindCompiledScope = (references: readonly BaseNode[]): void => {
 	}
 }
 
-const compileScope = (references: readonly BaseNode[]) => {
-	return new CompiledFunction()
+const compileScope = (references: readonly BaseNode[]) =>
+	new CompiledFunction()
 		.block("return", js => {
 			references.forEach(node => {
 				const allowsCompiler = new NodeCompiler("Allows").indent()
@@ -719,4 +760,3 @@ const compileScope = (references: readonly BaseNode[]) => {
 				[k: `${string}Apply`]: TraverseApply
 			}
 		>()()
-}

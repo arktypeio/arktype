@@ -1,5 +1,11 @@
 import { attest, contextualize } from "@arktype/attest"
-import { rawRoot, writeUnboundableMessage } from "@arktype/schema"
+import {
+	internalKeywords,
+	keywordNodes,
+	rawSchema,
+	writeInvalidOperandMessage,
+	writeUnboundableMessage
+} from "@arktype/schema"
 import { writeMalformedNumericLiteralMessage } from "@arktype/util"
 import { type } from "arktype"
 import { writeDoubleRightBoundMessage } from "../parser/semantic/bounds.js"
@@ -30,7 +36,7 @@ contextualize(
 			const t = type("number<10")
 			attest<number>(t.infer)
 			attest(t).type.toString.snap("Type<lessThan<10>, {}>")
-			const expected = rawRoot({
+			const expected = rawSchema({
 				domain: "number",
 				max: { rule: 10, exclusive: true }
 			})
@@ -41,7 +47,7 @@ contextualize(
 			const t = type("number<=-49")
 			attest<number>(t.infer)
 			attest(t).type.toString.snap("Type<atMost<-49>, {}>")
-			const expected = rawRoot({
+			const expected = rawSchema({
 				domain: "number",
 				max: { rule: -49, exclusive: false }
 			})
@@ -52,15 +58,24 @@ contextualize(
 			const t = type("number==3211993")
 			attest<3211993>(t.infer)
 			attest(t).type.toString.snap("Type<3211993, {}>")
-			const expected = rawRoot({ unit: 3211993 })
+			const expected = rawSchema({ unit: 3211993 })
 			attest(t.json).equals(expected.json)
+		})
+
+		it("== length", () => {
+			const verifyCodeSchema = type({ code: "string==6" })
+
+			attest(verifyCodeSchema({ code: "123456" })).snap({ code: "123456" })
+			attest(verifyCodeSchema({ code: "foo" }).toString()).snap(
+				"code must be exactly length 6 (was 3)"
+			)
 		})
 
 		it("<,<=", () => {
 			const t = type("-5<number<=5")
 			attest(t).type.toString.snap("Type<is<MoreThan<-5> & AtMost<5>>, {}>")
 			attest<number>(t.infer)
-			const expected = rawRoot({
+			const expected = rawSchema({
 				domain: "number",
 				min: { rule: -5, exclusive: true },
 				max: 5
@@ -74,7 +89,7 @@ contextualize(
 				"Type<is<AtLeast<-3.23> & LessThan<4.654>>, {}>"
 			)
 			attest<number>(t.infer)
-			const expected = rawRoot({
+			const expected = rawSchema({
 				domain: "number",
 				min: { rule: -3.23 },
 				max: { rule: 4.654, exclusive: true }
@@ -86,7 +101,7 @@ contextualize(
 			const t = type("number > 3")
 			attest(t).type.toString.snap("Type<moreThan<3>, {}>")
 			attest<number>(t.infer)
-			const expected = rawRoot({
+			const expected = rawSchema({
 				domain: "number",
 				min: { rule: 3, exclusive: true }
 			})
@@ -319,6 +334,161 @@ contextualize(
 			const expected = type("number>1337")
 			attest<typeof expected>(t)
 			attest(t.json).equals(expected.json)
+		})
+	},
+	"chained",
+	() => {
+		it("atLeast", () => {
+			const t = type("number").atLeast(5)
+			const expected = type("number>=5")
+			attest<typeof expected>(t)
+			attest(t.json).equals(expected.json)
+		})
+
+		it("invalid min operand", () => {
+			// @ts-expect-error
+			attest(() => type("string").atLeast(5)).throwsAndHasTypeError(
+				writeInvalidOperandMessage(
+					"min",
+					keywordNodes.number,
+					keywordNodes.string
+				)
+			)
+		})
+
+		it("moreThan", () => {
+			const t = type("number").moreThan(5)
+			const expected = type("number>5")
+			attest<typeof expected>(t)
+			attest(t.json).equals(expected.json)
+		})
+
+		it("atMost", () => {
+			const t = type("number").atMost(10)
+			const expected = type("number<=10")
+			attest<typeof expected>(t)
+			attest(t.json).equals(expected.json)
+		})
+
+		it("lessThan", () => {
+			const t = type("number").lessThan(10)
+			const expected = type("number<10")
+			attest<typeof expected>(t)
+			attest(t.json).equals(expected.json)
+		})
+
+		it("invalid max operand", () => {
+			// @ts-expect-error
+			attest(() => type("string").lessThan(5)).throwsAndHasTypeError(
+				writeInvalidOperandMessage(
+					"max",
+					keywordNodes.number,
+					keywordNodes.string
+				)
+			)
+		})
+
+		it("atLeastLength", () => {
+			const t = type("string").atLeastLength(5)
+			const expected = type("string>=5")
+			attest<typeof expected>(t)
+			attest(t.json).equals(expected.json)
+		})
+
+		it("moreThanLength", () => {
+			const t = type("string[]").moreThanLength(5)
+			const expected = type("string[]>5")
+			attest<typeof expected>(t)
+			attest(t.json).equals(expected.json)
+		})
+
+		it("invalid minLength operand", () => {
+			// @ts-expect-error
+			attest(() => type("bigint").atLeastLength(5)).throwsAndHasTypeError(
+				writeInvalidOperandMessage(
+					"minLength",
+					internalKeywords.lengthBoundable,
+					keywordNodes.bigint
+				)
+			)
+		})
+
+		it("atMostLength", () => {
+			const t = type("string").atMostLength(10)
+			const expected = type("string<=10")
+			attest<typeof expected>(t)
+			attest(t.json).equals(expected.json)
+		})
+
+		it("lessThanLength", () => {
+			const t = type("string[]").lessThanLength(10)
+			const expected = type("string[]<10")
+			attest<typeof expected>(t)
+			attest(t.json).equals(expected.json)
+		})
+
+		it("invalid maxLength operand", () => {
+			// @ts-expect-error
+			attest(() => type("null").lessThanLength(5)).throwsAndHasTypeError(
+				writeInvalidOperandMessage(
+					"maxLength",
+					internalKeywords.lengthBoundable,
+					keywordNodes.null
+				)
+			)
+		})
+
+		it("atOrAfter", () => {
+			const t = type("Date").atOrAfter(new Date("2022-01-01"))
+			// widen the input to a string so both are non-narrowed
+			const expected = type(`Date>=d'${"2022-01-01" as string}'`)
+			attest<typeof expected>(t)
+			attest(t.json).equals(expected.json)
+		})
+
+		it("laterThan", () => {
+			const t = type("Date").laterThan(new Date("2022-01-01"))
+			const expected = type(`Date>d'${"2022-01-01" as string}'`)
+			attest<typeof expected>(t)
+			attest(t.json).equals(expected.json)
+		})
+
+		it("invalid after operand", () => {
+			// @ts-expect-error
+			attest(() => type("false").laterThan(new Date())).throwsAndHasTypeError(
+				writeInvalidOperandMessage(
+					"after",
+					keywordNodes.Date,
+					keywordNodes.false
+				)
+			)
+		})
+
+		it("atOrBefore", () => {
+			const t = type("Date").atOrBefore(5)
+			const expected = type("Date<=5")
+			attest<typeof expected>(t)
+			attest(t.json).equals(expected.json)
+		})
+
+		it("earlierThan", () => {
+			const t = type("Date").earlierThan(5)
+			const expected = type("Date<5")
+			attest<typeof expected>(t)
+			attest(t.json).equals(expected.json)
+		})
+
+		it("invalid before operand", () => {
+			attest(() =>
+				// @ts-expect-error
+				type("unknown").atOrBefore(new Date())
+			).throwsAndHasTypeError(
+				writeInvalidOperandMessage(
+					"before",
+					keywordNodes.Date,
+					keywordNodes.unknown
+				)
+			)
 		})
 	}
 )

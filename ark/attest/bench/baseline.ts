@@ -1,10 +1,11 @@
 import { snapshot } from "@arktype/util"
+import { AssertionError } from "node:assert"
 import process from "node:process"
 import {
 	queueSnapshotUpdate,
 	writeSnapshotUpdatesOnExit
 } from "../cache/snapshots.js"
-import type { BenchAssertionContext, BenchContext } from "./bench.js"
+import type { BenchContext } from "./bench.js"
 import {
 	stringifyMeasure,
 	type MarkMeasure,
@@ -15,7 +16,7 @@ import {
 export const queueBaselineUpdateIfNeeded = (
 	updated: Measure | MarkMeasure,
 	baseline: Measure | MarkMeasure | undefined,
-	ctx: BenchAssertionContext
+	ctx: BenchContext
 ): void => {
 	// If we already have a baseline and the user didn't pass an update flag, do nothing
 	if (baseline && !ctx.cfg.updateSnapshots) return
@@ -61,11 +62,16 @@ const handlePositiveDelta = (formattedDelta: string, ctx: BenchContext) => {
 	const message = `'${ctx.qualifiedName}' exceeded baseline by ${formattedDelta} (threshold is ${ctx.cfg.benchPercentThreshold}%).`
 	console.error(`📈 ${message}`)
 	if (ctx.cfg.benchErrorOnThresholdExceeded) {
-		process.exitCode = 1
-		// Summarize failures at the end of output
-		process.on("exit", () => {
-			console.error(`❌ ${message}`)
-		})
+		const errorSummary = `❌ ${message}`
+		if (ctx.kind === "instantiations")
+			throw new AssertionError({ message: errorSummary })
+		else {
+			process.exitCode = 1
+			// Summarize failures at the end of output
+			process.on("exit", () => {
+				console.error(errorSummary)
+			})
+		}
 	}
 }
 

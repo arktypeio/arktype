@@ -1,4 +1,5 @@
 import { attest, cleanup, setup } from "@arktype/attest"
+import type { makeComplexType } from "./utils.js"
 
 setup()
 
@@ -22,5 +23,12 @@ attest("multiline\nmultiline").snap(`multiline
 multiline`)
 
 attest("with `quotes`").snap("with `quotes`")
+
+const it = (name: string, fn: () => void) => fn()
+
+it("can snap instantiations", () => {
+	type Z = makeComplexType<"asbsdfsaodisfhsda">
+	attest.instantiations([229, "instantiations"])
+})
 
 cleanup()

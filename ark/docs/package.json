@@ -1,5 +1,5 @@
 {
-	"name": "docs",
+	"name": "@arktype/docs",
 	"private": true,
 	"type": "module",
 	"version": "0.0.1",
@@ -11,23 +11,25 @@
 		"astro": "astro"
 	},
 	"dependencies": {
+		"@arktype/fs": "workspace:*",
 		"@arktype/util": "workspace:*",
-		"@astrojs/starlight": "0.21.1",
-		"@astrojs/react": "3.0.10",
-		"@monaco-editor/react": "4.6.0",
-		"monaco-editor": "0.47.0",
-		"monaco-textmate": "3.0.1",
-		"monaco-editor-textmate": "4.0.0",
-		"onigasm": "2.2.5",
-		"@stackblitz/sdk": "1.9.0",
-		"astro": "4.4.15",
-		"sharp": "0.33.2",
-		"react": "18.2.0",
-		"react-dom": "18.2.0",
-		"framer-motion": "11.0.8"
+		"@astrojs/react": "3.5.0",
+		"@astrojs/starlight": "0.24.2",
+		"@shikijs/twoslash": "1.6.4",
+		"arkdark": "workspace:*",
+		"arktype": "workspace:*",
+		"astro": "4.10.2",
+		"astro-og-canvas": "0.5.0",
+		"canvaskit-wasm": "0.39.1",
+		"framer-motion": "11.2.10",
+		"react": "18.3.1",
+		"react-dom": "18.3.1",
+		"sharp": "0.33.4",
+		"shiki": "1.6.4",
+		"twoslash": "0.2.8"
 	},
 	"devDependencies": {
-		"@types/react": "18.2.64",
-		"@types/react-dom": "18.2.21"
+		"@types/react": "18.3.3",
+		"@types/react-dom": "18.3.0"
 	}
 }

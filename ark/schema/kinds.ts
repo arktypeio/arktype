@@ -17,9 +17,9 @@ import {
 	type BoundNodesByKind
 } from "./refinements/kinds.js"
 import {
-	RegexNode,
-	regexImplementation,
-	type RegexDeclaration
+	PatternNode,
+	patternImplementation,
+	type PatternDeclaration
 } from "./refinements/regex.js"
 import {
 	AliasNode,
@@ -68,7 +68,7 @@ import {
 	IndexNode,
 	indexImplementation,
 	type IndexDeclaration
-} from "./structure/index.js"
+} from "./structure/indexed.js"
 import {
 	OptionalNode,
 	optionalImplementation,
@@ -103,7 +103,7 @@ export interface NodeDeclarationsByKind extends BoundDeclarations {
 	required: RequiredDeclaration
 	optional: OptionalDeclaration
 	index: IndexDeclaration
-	regex: RegexDeclaration
+	pattern: PatternDeclaration
 	predicate: PredicateDeclaration
 	structure: StructureDeclaration
 }
@@ -121,7 +121,7 @@ export const nodeImplementationsByKind: Record<
 	morph: morphImplementation,
 	intersection: intersectionImplementation,
 	divisor: divisorImplementation,
-	regex: regexImplementation,
+	pattern: patternImplementation,
 	predicate: predicateImplementation,
 	required: requiredImplementation,
 	optional: optionalImplementation,
@@ -143,7 +143,7 @@ export const nodeClassesByKind: Record<
 	morph: MorphNode,
 	intersection: IntersectionNode,
 	divisor: DivisorNode,
-	regex: RegexNode,
+	pattern: PatternNode,
 	predicate: PredicateNode,
 	required: RequiredNode,
 	optional: OptionalNode,
@@ -161,7 +161,7 @@ interface NodesByKind extends BoundNodesByKind {
 	proto: ProtoNode
 	domain: DomainNode
 	divisor: DivisorNode
-	regex: RegexNode
+	pattern: PatternNode
 	predicate: PredicateNode
 	required: RequiredNode
 	optional: OptionalNode

@@ -227,6 +227,4 @@ export const getCurrentLine = (
 		frames: 0,
 		immediate: false
 	}
-): Location => {
-	return getLocationFromError(new Error(), offset)
-}
+): Location => getLocationFromError(new Error(), offset)

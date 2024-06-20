@@ -1,5 +1,5 @@
 import { domainOf, hasDomain } from "./domain.js"
-import { throwInternalError } from "./errors.js"
+import { throwError, throwInternalError } from "./errors.js"
 import { objectKindOf } from "./objectKinds.js"
 import { serializePrimitive, type SerializablePrimitive } from "./primitive.js"
 
@@ -7,6 +7,15 @@ declare global {
 	export const $ark: ArkRegistry
 
 	export interface ArkRegistry {}
+}
+
+if ("$ark" in globalThis) {
+	throwError(
+		`Tried to initialize an $ark registry but one already existed.
+This probably means you are either depending on multiple versions of an arktype package,
+or importing the same package from both ESM and CJS.
+Review package.json versions across your repo to ensure consistency.`
+	)
 }
 
 export const registry: Record<string, unknown> = {}
@@ -39,11 +48,10 @@ export type RegisteredReference<to extends string = string> = `$ark.${to}`
 export const isDotAccessible = (keyName: string): boolean =>
 	/^[a-zA-Z_$][a-zA-Z_$0-9]*$/.test(keyName)
 
-export const compileSerializedValue = (value: unknown): string => {
-	return hasDomain(value, "object") || typeof value === "symbol" ?
-			registeredReference(value)
-		:	serializePrimitive(value as SerializablePrimitive)
-}
+export const compileSerializedValue = (value: unknown): string =>
+	hasDomain(value, "object") || typeof value === "symbol" ?
+		registeredReference(value)
+	:	serializePrimitive(value as SerializablePrimitive)
 
 const baseNameFor = (value: object | symbol) => {
 	switch (typeof value) {

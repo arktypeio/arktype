@@ -1,16 +1,16 @@
 {
 	"name": "@arktype/fs",
-	"version": "0.0.19",
+	"version": "0.0.20",
 	"author": {
 		"name": "David Blass",
 		"email": "david@arktype.io",
 		"url": "https://arktype.io"
 	},
 	"type": "module",
-	"main": "./out/api.js",
-	"types": "./out/api.d.ts",
+	"main": "./out/index.js",
+	"types": "./out/index.d.ts",
 	"exports": {
-		".": "./out/api.js",
+		".": "./out/index.js",
 		"./internal/*": "./out/*"
 	},
 	"scripts": {

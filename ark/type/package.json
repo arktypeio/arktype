@@ -1,7 +1,7 @@
 {
 	"name": "arktype",
 	"description": "TypeScript's 1:1 validator, optimized from editor to runtime",
-	"version": "2.0.0-dev.13",
+	"version": "2.0.0-dev.24",
 	"license": "MIT",
 	"author": {
 		"name": "David Blass",
@@ -13,15 +13,12 @@
 		"url": "https://github.com/arktypeio/arktype.git"
 	},
 	"type": "module",
-	"main": "./out/api.js",
-	"types": "./out/api.d.ts",
+	"main": "./out/index.js",
+	"types": "./out/index.d.ts",
 	"exports": {
-		".": "./out/api.js",
+		".": "./out/index.js",
 		"./config": "./out/config.js",
 		"./internal/*": "./out/*"
-	},
-	"imports": {
-		"#foo": "../schema/api.ts"
 	},
 	"files": [
 		"out"

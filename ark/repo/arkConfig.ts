@@ -1,10 +1,5 @@
-// import { configure } from "arktype/config"
-// // import { type } from "arktype"
+import { configure } from "arktype/config"
 
-// // const user = type("string")
-
-// configure({
-// 	domain: {
-// 		description: (inner) => `my special ${inner.domain}`
-// 	}
-// })
+configure({
+	jitless: true
+})

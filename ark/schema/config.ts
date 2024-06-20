@@ -13,11 +13,11 @@ export const mergeConfigs = (
 	for (k in extensions) {
 		result[k] =
 			isNodeKind(k) ?
-				({
-					...base[k],
-					...extensions[k]
-				} as never)
-			:	(extensions[k]! as never)
+				{
+					...(base as any)[k],
+					...(extensions as any)[k]
+				}
+			:	(extensions[k] as never)
 	}
 	return result
 }

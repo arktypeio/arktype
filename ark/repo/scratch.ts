@@ -1,23 +1,43 @@
-import { type } from "arktype"
+import { ArkErrors, type } from "arktype"
 
-// type Z = Type<{ age: number.default<5> }>
+interface RuntimeErrors extends ArkErrors {
+	/**
+```
+email must be a palindrome (was "david@arktype.io")
+score (133.7) must be...
+    • an integer
+    • less than 100
+```*/
+	summary: string
+}
 
-const f = (arg?: string) => {}
+const narrowMessage = (e: ArkErrors): e is RuntimeErrors => true
 
-const user = type({
-	"+": "delete",
-	name: "string>10",
-	email: "email"
-	// age: ["number", "=", 5]
+// ---cut---
+const palindromicEmail = type("email").narrow((address, ctx) => {
+	if (address === [...address].reverse().join("")) {
+		// congratulations! your email is somehow a palindrome
+		return true
+	}
+	// add a customizable error and return false
+	return ctx.mustBe("a palindrome")
 })
 
-const out = user({
-	name: "test",
-	email: ""
+const palindromicContact = type({
+	email: palindromicEmail,
+	score: "integer < 100"
+})
+
+const out = palindromicContact({
+	email: "david@arktype.io",
+	score: 133.7
 })
 
 if (out instanceof type.errors) {
-	console.log(out.summary)
+	// ---cut-start---
+	if (!narrowMessage(out)) throw new Error()
+	// ---cut-end---
+	console.error(out.summary)
 } else {
-	console.log(out)
+	console.log(out.email)
 }

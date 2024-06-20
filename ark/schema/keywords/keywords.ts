@@ -5,6 +5,7 @@ import { RawRootScope, schemaScope, type RootScope } from "../scope.js"
 // and used to bootstrap nodes with constraints
 import { tsKeywords, type tsKeywordExports } from "./tsKeywords.js"
 
+import { formatting, type formattingExports } from "./format.js"
 import { jsObjects, type jsObjectExports } from "./jsObjects.js"
 import { parsing, type parsingExports } from "./parsing.js"
 import { validation, type validationExports } from "./validation.js"
@@ -25,7 +26,8 @@ export const ambientRootScope: RootScope<Ark> = schemaScope({
 	...tsKeywords,
 	...jsObjects,
 	...validation,
-	parse: parsing
+	parse: parsing,
+	format: formatting
 	// TODO: remove cast
 }) as never
 
@@ -41,4 +43,5 @@ export interface Ark
 		validationExports,
 		TsGenericsExports {
 	parse: RootModule<parsingExports>
+	format: RootModule<formattingExports>
 }

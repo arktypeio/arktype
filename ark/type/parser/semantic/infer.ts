@@ -4,6 +4,7 @@ import type {
 	GenericProps,
 	LimitLiteral,
 	RegexLiteral,
+	ambient,
 	constrain,
 	distillIn,
 	inferIntersection,
@@ -130,6 +131,7 @@ export type InfixExpression<
 
 export type inferTerminal<token extends string, $, args> =
 	token extends keyof args | keyof $ ? resolve<token, $, args>
+	: token extends keyof ambient ? ambient[token]
 	: `#${token}` extends keyof $ ? resolve<`#${token}`, $, args>
 	: token extends StringLiteral<infer text> ? text
 	: token extends `${infer n extends number}` ? n

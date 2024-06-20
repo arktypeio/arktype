@@ -15,7 +15,7 @@ import type { DomainSchema } from "./roots/domain.js"
 import type { IntersectionSchema } from "./roots/intersection.js"
 import type {
 	Morph,
-	MorphInputSchema,
+	MorphChildSchema,
 	MorphSchema,
 	Out,
 	inferMorphOut
@@ -68,15 +68,14 @@ type inferRootBranch<schema, $> =
 	: schema extends MorphSchema ?
 		(
 			In: schema["in"] extends {} ? inferMorphChild<schema["in"], $> : unknown
-		) => schema["out"] extends {} ? Out<inferMorphChild<schema["out"], $>>
-		: schema["morphs"] extends infer morph extends Morph ?
+		) => schema["morphs"] extends infer morph extends Morph ?
 			Out<inferMorphOut<morph>>
 		: schema["morphs"] extends (
 			readonly [...unknown[], infer morph extends Morph]
 		) ?
 			Out<inferMorphOut<morph>>
 		:	never
-	: schema extends MorphInputSchema ? inferMorphChild<schema, $>
+	: schema extends MorphChildSchema ? inferMorphChild<schema, $>
 	: unknown
 
 type NonIntersectableBasisRoot = NonEnumerableDomain | Constructor | UnitSchema
@@ -149,12 +148,12 @@ export type inferBasis<schema extends NodeSchema<BasisKind>, $> =
 // ]
 // 	? inferIndexed<
 // 			tail,
-// 			entry["key"] extends { readonly regex: VariadicIndexMatcherLiteral }
+// 			entry["key"] extends { readonly pattern: VariadicIndexMatcherLiteral }
 // 				? result extends List
 // 					? [...result, ...inferTypeInput<entry["value"]>[]]
 // 					: never
 // 				: entry["key"] extends {
-// 						readonly regex: NonVariadicIndexMatcherLiteral
+// 						readonly pattern: NonVariadicIndexMatcherLiteral
 // 				  }
 // 				? inferTypeInput<entry["value"]>[]
 // 				: Record<
@@ -169,7 +168,7 @@ export type inferBasis<schema extends NodeSchema<BasisKind>, $> =
 // 	indexed extends readonly IndexedPropInput[]
 // > = [named, indexed[0]["key"]] extends
 // 	| [TupleLengthProps, unknown]
-// 	| [unknown, { readonly regex: VariadicIndexMatcherLiteral }]
+// 	| [unknown, { readonly pattern: VariadicIndexMatcherLiteral }]
 // 	? inferNonVariadicTupleProps<named> &
 // 			inferObjectLiteralProps<Omit<named, "length" | NumberLiteral | number>>
 // 	: inferObjectLiteralProps<named>

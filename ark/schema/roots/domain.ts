@@ -1,10 +1,10 @@
 import {
-	type Key,
-	type NonEnumerableDomain,
-	type array,
 	domainDescriptions,
 	domainOf,
-	getBaseDomainKeys
+	getBaseDomainKeys,
+	type Key,
+	type NonEnumerableDomain,
+	type array
 } from "@arktype/util"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -50,6 +50,10 @@ export class DomainNode extends RawBasis<DomainDeclaration> {
 
 	readonly expression: string = this.domain
 	readonly literalKeys: array<Key> = getBaseDomainKeys(this.domain)
+
+	get shortDescription(): string {
+		return domainDescriptions[this.domain]
+	}
 }
 
 export const domainImplementation: nodeImplementationOf<DomainDeclaration> =
@@ -67,6 +71,6 @@ export const domainImplementation: nodeImplementationOf<DomainDeclaration> =
 			actual: data => (typeof data === "boolean" ? `${data}` : domainOf(data))
 		},
 		intersections: {
-			domain: (l, r) => Disjoint.from("domain", l, r)
+			domain: (l, r) => Disjoint.init("domain", l, r)
 		}
 	})

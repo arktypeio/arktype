@@ -1,23 +1,23 @@
 {
 	"name": "@arktype/attest",
-	"version": "0.7.5",
+	"version": "0.8.0",
 	"author": {
 		"name": "David Blass",
 		"email": "david@arktype.io",
 		"url": "https://arktype.io"
 	},
 	"type": "module",
-	"main": "./out/api.js",
-	"types": "./out/api.d.ts",
+	"main": "./out/index.js",
+	"types": "./out/index.d.ts",
 	"exports": {
-		".": "./out/api.js",
+		".": "./out/index.js",
 		"./internal/*": "./out/*"
 	},
 	"files": [
 		"out"
 	],
 	"bin": {
-		"attest": "./out/cli/cli.js"
+		"attest": "out/cli/cli.js"
 	},
 	"scripts": {
 		"build": "tsx ../repo/build.ts",
@@ -25,10 +25,10 @@
 		"bunTest": "bun test --preload ../repo/bunTestSetup.ts"
 	},
 	"dependencies": {
-		"arktype": "workspace:*",
+		"arktype": "latest",
 		"@arktype/fs": "workspace:*",
 		"@arktype/util": "workspace:*",
-		"@typescript/vfs": "1.5.0",
+		"@typescript/vfs": "1.5.3",
 		"@typescript/analyze-trace": "0.10.1"
 	},
 	"devDependencies": {

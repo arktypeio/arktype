@@ -7,18 +7,19 @@ import {
 } from "../shared/implement.js"
 import type { TraverseAllows } from "../shared/traversal.js"
 import {
-	type BaseNormalizedRangeRoot,
 	BaseRange,
+	parseExclusiveKey,
 	type BaseRangeInner,
 	type LengthBoundableData,
-	parseExclusiveKey
+	type UnknownNormalizedRangeSchema
 } from "./range.js"
 
 export interface MaxLengthInner extends BaseRangeInner {
 	rule: number
 }
 
-export interface NormalizedMaxLengthSchema extends BaseNormalizedRangeRoot {
+export interface NormalizedMaxLengthSchema
+	extends UnknownNormalizedRangeSchema {
 	rule: number
 }
 
@@ -59,7 +60,7 @@ export const maxLengthImplementation: nodeImplementationOf<MaxLengthDeclaration>
 					max.overlapIsUnit(min) ?
 						ctx.$.node("exactLength", { rule: max.rule })
 					:	null
-				:	Disjoint.from("range", max, min)
+				:	Disjoint.init("range", max, min)
 		}
 	})
 

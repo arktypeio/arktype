@@ -2,7 +2,7 @@ import React from "react"
 import { FloatYourBoat } from "./FloatYourBoat.js"
 import { PlatformCloud } from "./PlatformCloud.js"
 
-export const HeroContents = () => (
+export const HeroBackdrop = () => (
 	<div
 		style={{
 			position: "absolute",

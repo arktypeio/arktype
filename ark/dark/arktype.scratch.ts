@@ -41,6 +41,11 @@ factor("foo|bar")
 // not highglighted
 or("foo|bar")
 
+// THIS SHOULD NOT BE HIGHLIGHTED
+// 	const t = type({
+// 		[optional(s)]: "number"
+// 	})
+
 const ff = type("string").or("foobar|baz")
 
 const types = scope({ notASpace: { a: type("string") } }).export()
@@ -125,5 +130,5 @@ class F {
 const highlighted = type({
 	literals: "'foo' | 'bar' | true",
 	expressions: "boolean[] | 5 < number <= 10 | number % 2",
-	regex: "/^(?:4[0-9]{12}(?:[0-9]{3,6}))$/"
+	pattern: "/^(?:4[0-9]{12}(?:[0-9]{3,6}))$/"
 })

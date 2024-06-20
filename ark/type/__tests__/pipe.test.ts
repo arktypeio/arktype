@@ -1,5 +1,13 @@
 import { attest, contextualize } from "@arktype/attest"
-import { assertNodeKind, type Out } from "@arktype/schema"
+import {
+	assertNodeKind,
+	writeIndiscriminableMorphMessage,
+	writeMorphIntersectionMessage,
+	type MoreThan,
+	type Out,
+	type of,
+	type string
+} from "@arktype/schema"
 import { scope, type, type Type } from "arktype"
 
 contextualize(() => {
@@ -12,6 +20,36 @@ contextualize(() => {
 		attest<string | type.errors>(out).equals("5")
 		const result = t("foo")
 		attest(result.toString()).snap("must be a number (was string)")
+	})
+
+	it("disjoint", () => {
+		attest(() => type("number>5").pipe(type("number<3"))).throws.snap(
+			"ParseError: Intersection of >5 and <3 results in an unsatisfiable type"
+		)
+	})
+
+	it("constraints apply to input", () => {
+		const t = type("parse.number").atMostLength(5)
+		attest<(In: string.atMostLength<5>) => Out<number>>(t.t)
+
+		const morphs = t.raw.assertHasKind("morph").serializedMorphs
+		attest(t.json).snap({
+			in: {
+				domain: "string",
+				pattern: [
+					{
+						description: "a well-formed numeric string",
+						flags: "",
+						rule: "^(?!^-0$)-?(?:0|[1-9]\\d*)(?:\\.\\d*[1-9])?$"
+					}
+				],
+				maxLength: 5
+			},
+			morphs
+		})
+
+		attest(t("321")).equals(321)
+		attest(t("654321").toString()).snap("must be at most length 5 (was 6)")
 	})
 
 	it("within type", () => {
@@ -70,6 +108,12 @@ contextualize(() => {
 		>(t)
 		const expected = type({ foo: "string", bar: "number" })
 		attest(t.json).equals(expected.json)
+	})
+
+	it("disjoint", () => {
+		attest(() => type("number>5").pipe(type("number<3"))).throws.snap(
+			"ParseError: Intersection of >5 and <3 results in an unsatisfiable type"
+		)
 	})
 
 	it("uses pipe for many consecutive types", () => {
@@ -136,12 +180,43 @@ contextualize(() => {
 		attest<{ a: number } | type.errors>(out).equals({ a: 4 })
 	})
 
+	it("doesn't pipe on error", () => {
+		const a = type({ a: "number" }).pipe(o => o.a + 1)
+
+		const aMorphs = a.raw.assertHasKind("morph").serializedMorphs
+
+		const b = type({ a: "string" }, "=>", o => o.a + "!")
+
+		const bMorphs = b.raw.assertHasKind("morph").serializedMorphs
+
+		const t = b.or(a)
+
+		attest<
+			Type<
+				| ((In: { a: string }) => Out<string>)
+				| ((In: { a: number }) => Out<number>)
+			>
+		>(t)
+		attest(t.json).snap([
+			{
+				in: { required: [{ key: "a", value: "number" }], domain: "object" },
+				morphs: aMorphs
+			},
+			{
+				in: { required: [{ key: "a", value: "string" }], domain: "object" },
+				morphs: bMorphs
+			}
+		])
+
+		attest(t({ a: 2 })).snap(3)
+	})
+
 	it("in array", () => {
 		const types = scope({
 			lengthOfString: ["string", "=>", data => data.length],
 			mapToLengths: "lengthOfString[]"
 		}).export()
-		attest<Type<((In: string) => Out<number>)[]>>(types.mapToLengths)
+		attest<((In: string) => Out<number>)[]>(types.mapToLengths.t)
 		const out = types.mapToLengths(["1", "22", "333"])
 		attest<number[] | type.errors>(out).equals([1, 2, 3])
 	})
@@ -163,7 +238,7 @@ contextualize(() => {
 		assertNodeKind(types.bAndA.raw, "morph")
 		assertNodeKind(types.aAndB.raw, "morph")
 
-		attest<Type<(In: 3.14) => Out<string>>>(types.aAndB)
+		attest<(In: 3.14) => Out<string>>(types.aAndB.t)
 		attest(types.aAndB.json).snap({
 			in: { unit: 3.14 },
 			morphs: types.aAndB.raw.serializedMorphs
@@ -201,7 +276,7 @@ contextualize(() => {
 			aOrB: "a|b",
 			bOrA: "b|a"
 		}).export()
-		attest<Type<boolean | ((In: number) => Out<string>)>>(types.aOrB)
+		attest<boolean | ((In: number) => Out<string>)>(types.aOrB.t)
 		const serializedMorphs =
 			types.aOrB.raw.firstReferenceOfKindOrThrow("morph").serializedMorphs
 		attest(types.aOrB.json).snap([
@@ -216,6 +291,7 @@ contextualize(() => {
 	it("union with output", () => {
 		const t = type("number|parse.number")
 		attest<number>(t.infer)
+		attest<string | number>(t.inferIn)
 	})
 
 	it("deep union", () => {
@@ -225,15 +301,13 @@ contextualize(() => {
 			c: "a|b"
 		}).export()
 		attest<
-			Type<
-				| {
-						a: (In: number) => Out<string>
-				  }
-				| {
-						a: Function
-				  }
-			>
-		>(types.c)
+			| {
+					a: (In: number) => Out<string>
+			  }
+			| {
+					a: Function
+			  }
+		>(types.c.t)
 
 		const serializedMorphs =
 			types.a.raw.firstReferenceOfKindOrThrow("morph").serializedMorphs
@@ -264,7 +338,7 @@ contextualize(() => {
 			b: () => $.type("a").pipe(n => n === 0)
 		})
 		const types = $.export()
-		attest<Type<(In: string) => Out<boolean>>>(types.b)
+		attest<(In: string) => Out<boolean>>(types.b.t)
 		assertNodeKind(types.b.raw, "morph")
 		attest(types.b.json).snap({
 			in: "string",
@@ -279,7 +353,7 @@ contextualize(() => {
 		})
 
 		const types = $.export()
-		attest<Type<(In: { a: string }) => Out<boolean>>>(types.b)
+		attest<(In: { a: string }) => Out<boolean>>(types.b.t)
 		assertNodeKind(types.b.raw, "morph")
 		assertNodeKind(types.a.raw, "morph")
 		attest(types.b.json).snap({
@@ -331,11 +405,34 @@ contextualize(() => {
 	it("discriminable tuple union", () => {
 		const $ = scope({
 			a: () => $.type(["string"]).pipe(s => [...s, "!"]),
-			b: ["boolean"],
+			b: ["number"],
 			c: () => $.type("a|b")
 		})
 		const types = $.export()
-		attest<Type<[boolean] | ((In: [string]) => Out<string[]>)>>(types.c)
+
+		attest<[number] | ((In: [string]) => Out<string[]>)>(types.c.t)
+		const expectedSerializedMorphs =
+			types.a.raw.assertHasKind("morph").serializedMorphs
+
+		attest(types.c.raw.assertHasKind("union").discriminantJson).snap({
+			kind: "domain",
+			path: ["0"],
+			cases: {
+				'"number"': {
+					sequence: { prefix: ["number"] },
+					proto: "Array",
+					exactLength: 1
+				},
+				'"string"': {
+					in: {
+						sequence: { prefix: ["string"] },
+						proto: "Array",
+						exactLength: 1
+					},
+					morphs: expectedSerializedMorphs
+				}
+			}
+		})
 	})
 
 	it("ArkTypeError not included in return", () => {
@@ -382,120 +479,145 @@ contextualize(() => {
 		attest<Type<(In: string) => Out<number | null | undefined>>>(toMaybeNumber)
 	})
 
-	// TODO: reenable discrimination
-	// it("deep intersection", () => {
-	// 	const types = scope({
-	// 		a: { a: ["number>0", "=>", (data) => data + 1] },
-	// 		b: { a: "1" },
-	// 		c: "a&b"
-	// 	}).export()
-	// 	attest<Type<{ a: (In: 1) => Out<number> }>>(types.c)
-	// 	attest(types.c.json).snap()
-	// })
+	it("deep intersection", () => {
+		const types = scope({
+			a: { a: ["number>0", "=>", data => data + 1] },
+			b: { a: "1" },
+			c: "a&b"
+		}).export()
+		attest<{ a: (In: of<1, MoreThan<0>>) => Out<number> }>(types.c.t)
+		const { serializedMorphs } =
+			types.a.raw.firstReferenceOfKindOrThrow("morph")
 
-	// it("double intersection", () => {
-	// 	attest(() =>
-	// 		scope({
-	// 			a: ["boolean", "=>", (data) => `${data}`],
-	// 			b: ["boolean", "=>", (data) => `${data}!!!`],
-	// 			c: "a&b"
-	// 		}).export()
-	// 	).throws.snap("ParseError: Invalid intersection of morphs")
-	// })
+		attest(types.c.json).snap({
+			required: [
+				{ key: "a", value: { in: { unit: 1 }, morphs: serializedMorphs } }
+			],
+			domain: "object"
+		})
+	})
 
-	// it("undiscriminated union", () => {
-	// 	// TODO: fix
-	// 	// attest(() => {
-	// 	// 	scope({
-	// 	// 		a: ["/.*/", "=>", (s) => s.trim()],
-	// 	// 		b: "string",
-	// 	// 		c: "a|b"
-	// 	// 	}).export()
-	// 	// }).throws(writeUndiscriminableMorphUnionMessage("/"))
-	// })
+	it("morph intersection", () => {
+		attest(() =>
+			scope({
+				a: ["string", "=>", data => `${data}`],
+				b: ["string", "=>", data => `${data}!!!`],
+				c: "a&b"
+			}).export()
+		).throws(
+			writeMorphIntersectionMessage(
+				"(In: string) => Out<unknown>",
+				"(In: string) => Out<unknown>"
+			)
+		)
+	})
 
-	// it("deep double intersection", () => {
-	// 	attest(() => {
-	// 		scope({
-	// 			a: { a: ["boolean", "=>", (data) => `${data}`] },
-	// 			b: { a: ["boolean", "=>", (data) => `${data}!!!`] },
-	// 			c: "a&b"
-	// 		}).export()
-	// 	}).throws.snap("ParseError: Invalid intersection of morphs")
-	// })
+	it("indiscriminable union", () => {
+		attest(() => {
+			scope({
+				a: ["/.*/", "=>", s => s.trim()],
+				b: "string",
+				c: "a|b"
+			}).export()
+		}).throws(
+			writeIndiscriminableMorphMessage(
+				"(In: string /.*/) => Out<unknown>",
+				"string"
+			)
+		)
+	})
 
-	// it("deep undiscriminated union", () => {
-	// 	attest(() => {
-	// 		scope({
-	// 			a: { a: ["string", "=>", (s) => s.trim()] },
-	// 			b: { a: "'foo'" },
-	// 			c: "a|b"
-	// 		}).export()
-	// 	}).throws(writeUndiscriminableMorphUnionMessage("/"))
-	// })
+	it("deep morph intersection", () => {
+		attest(() => {
+			scope({
+				a: { a: ["number", "=>", data => `${data}`] },
+				b: { a: ["number", "=>", data => `${data}!!!`] },
+				c: "a&b"
+			}).export()
+		}).throws(
+			writeMorphIntersectionMessage(
+				"(In: number) => Out<unknown>",
+				"(In: number) => Out<unknown>"
+			)
+		)
+	})
 
-	// it("deep undiscriminated reference", () => {
-	// 	const $ = scope({
-	// 		a: { a: ["string", "=>", (s) => s.trim()] },
-	// 		b: { a: "boolean" },
-	// 		c: { b: "boolean" }
-	// 	})
-	// 	const t = $.type("a|b")
-	// 	attest<
-	// 		Type<
-	// 			| {
-	// 					a: (In: string) => Out<string>
-	// 			  }
-	// 			| {
-	// 					a: boolean
-	// 			  }
-	// 		>
-	// 	>(t)
+	it("deep indiscriminable", () => {
+		const $ = scope({
+			a: { foo: ["string", "=>", s => s.trim()] },
+			b: { foo: "symbol" },
+			c: { bar: "symbol" }
+		})
 
-	// 	attest(() => {
-	// 		scope({
-	// 			a: { a: ["string", "=>", (s) => s.trim()] },
-	// 			b: { b: "boolean" },
-	// 			c: "a|b"
-	// 		}).export()
-	// 	}).throws(writeUndiscriminableMorphUnionMessage("/"))
-	// })
+		// this is fine as a | b can be discriminated via foo
+		const t = $.type("a|b")
+		attest<
+			| {
+					foo: (In: string) => Out<string>
+			  }
+			| {
+					foo: symbol
+			  }
+		>(t.t)
 
-	// it("array double intersection", () => {
-	// 	// attest(() => {
-	// 	// 	scope({
-	// 	// 		a: { a: ["number>0", "=>", (data) => data + 1] },
-	// 	// 		b: { a: ["number>0", "=>", (data) => data + 2] },
-	// 	// 		c: "a[]&b[]"
-	// 	// 	}).export()
-	// 	// }).throws(
-	// 	// 	"At [index]/a: Intersection of morphs results in an unsatisfiable type"
-	// 	// )
-	// })
+		attest(() => $.type("a|c")).throws(
+			writeIndiscriminableMorphMessage(
+				"{ foo: (In: string) => Out<unknown> }",
+				"{ bar: symbol }"
+			)
+		)
+	})
 
-	// it("undiscriminated morph at path", () => {
-	// 	attest(() => {
-	// 		scope({
-	// 			a: { a: ["string", "=>", (s) => s.trim()] },
-	// 			b: { b: "boolean" },
-	// 			c: { key: "a|b" }
-	// 		}).export()
-	// 	}).throws(writeUndiscriminableMorphUnionMessage("key"))
-	// })
+	it("array double intersection", () => {
+		attest(() => {
+			scope({
+				a: { a: ["number>0", "=>", data => data + 1] },
+				b: { a: ["number>0", "=>", data => data + 2] },
+				c: "a[]&b[]"
+			}).export()
+		}).throws(
+			writeMorphIntersectionMessage(
+				"(In: number >0) => Out<unknown>",
+				"(In: number >0) => Out<unknown>"
+			)
+		)
+	})
 
-	// it("helper morph intersection", () => {
-	// 	attest(() =>
-	// 		type("string")
-	// 			.morph((s) => s.length)
-	// 			.and(type("string").morph((s) => s.length))
-	// 	).throws("Intersection of morphs results in an unsatisfiable type")
-	// })
+	it("undiscriminated morph at path", () => {
+		attest(() => {
+			scope({
+				a: { a: ["string", "=>", s => s.trim()] },
+				b: { b: "bigint" },
+				c: { key: "a|b" }
+			}).export()
+		}).throws(
+			writeIndiscriminableMorphMessage(
+				"{ a: (In: string) => Out<unknown> }",
+				"{ b: bigint }"
+			)
+		)
+	})
 
-	// it("union helper undiscriminated", () => {
-	// 	attest(() =>
-	// 		type("string")
-	// 			.morph((s) => s.length)
-	// 			.or("'foo'")
-	// 	).throws(writeUndiscriminableMorphUnionMessage("/"))
-	// })
+	it("helper morph intersection", () => {
+		attest(() =>
+			type("string")
+				.pipe(s => s.length)
+				.and(type("string").pipe(s => s.length))
+		).throws(
+			writeMorphIntersectionMessage(
+				"(In: string) => Out<unknown>",
+				"(In: string) => Out<unknown>"
+			)
+		)
+	})
+
+	it("union helper undiscriminated", () => {
+		attest(() =>
+			type("string")
+				.pipe(s => s.length)
+				.or("'foo'")
+		).throws(
+			writeIndiscriminableMorphMessage("(In: string) => Out<unknown>", '"foo"')
+		)
+	})
 })

@@ -33,7 +33,7 @@ export const parseEnclosed = (
 			"intersection",
 			{
 				domain: "string",
-				regex: enclosed
+				pattern: enclosed
 			},
 			{ prereduced: true }
 		)

@@ -1,144 +1,77 @@
-import {
-	entriesOf,
-	flatMorph,
-	fromEntries,
-	isArray,
-	printable,
-	register,
-	throwInternalError,
-	throwParseError,
-	type entryOf
-} from "@arktype/util"
+import { isArray, throwParseError, type Key } from "@arktype/util"
 import type { Node } from "../kinds.js"
+import type { BaseNode } from "../node.js"
 import type { BaseRoot } from "../roots/root.js"
-import type { BoundKind, PrimitiveKind } from "./implement.js"
-import { hasArkKind } from "./utils.js"
+import type { PropKind } from "../structure/prop.js"
+import type { BoundKind } from "./implement.js"
+import { hasArkKind, pathToPropString } from "./utils.js"
 
-type DisjointKinds = {
-	domain?: {
-		l: Node<"domain">
-		r: Node<"domain">
-	}
-	unit?: {
-		l: Node<"unit">
-		r: Node<"unit">
-	}
-	proto?: {
-		l: Node<"proto">
-		r: Node<"proto">
-	}
-	presence?: {
-		l: BaseRoot
-		r: BaseRoot
-	}
-	range?: {
-		l: Node<BoundKind>
-		r: Node<BoundKind>
-	}
-	assignability?:
-		| {
-				l: unknown
-				r: Node<PrimitiveKind>
-		  }
-		| {
-				l: Node<PrimitiveKind>
-				r: unknown
-		  }
-	union?: {
-		l: readonly BaseRoot[]
-		r: readonly BaseRoot[]
-	}
-	indiscriminableMorphs?: {
-		l: Node<"union">
-		r: Node<"union">
-	}
-	interesectedMorphs?: {
-		l: Node<"morph">
-		r: Node<"morph">
-	}
+export interface DisjointEntry<kind extends DisjointKind = DisjointKind> {
+	kind: kind
+	l: OperandsByDisjointKind[kind]
+	r: OperandsByDisjointKind[kind]
+	path: Key[]
+	optional: boolean
 }
 
-export type DisjointKindEntries = entryOf<DisjointKinds>[]
-
-export type SerializedPath = `[${string}]`
-
-export type DisjointsSources = {
-	[k in `${SerializedPath}`]: DisjointsAtPath
+type OperandsByDisjointKind = {
+	domain: Node<"domain">
+	unit: Node<"unit">
+	proto: Node<"proto">
+	presence: BaseRoot
+	range: Node<BoundKind>
+	assignability: BaseNode
+	union: readonly BaseRoot[]
 }
 
-export type DisjointsAtPath = {
-	[kind in DisjointKind]?: DisjointKinds[kind]
+export type DisjointEntryContext = {
+	path?: Key[]
+	optional?: true
 }
 
-export type DisjointSourceEntry = entryOf<DisjointsSources>
-
-export type DisjointSource = Required<DisjointKinds>[DisjointKind]
-
-export type FlatDisjointEntry = {
-	path: SerializedPath
-	kind: DisjointKind
-	disjoint: DisjointSource
-}
-
-export type DisjointKind = keyof DisjointKinds
-
-export class Disjoint {
-	constructor(public sources: DisjointsSources) {}
-
-	clone(): Disjoint {
-		return new Disjoint(this.sources)
-	}
-
-	static from<kind extends DisjointKind>(
+export class Disjoint extends Array<DisjointEntry> {
+	static init<kind extends DisjointKind>(
 		kind: kind,
-		l: Required<DisjointKinds>[kind]["l"],
-		r: Required<DisjointKinds>[kind]["r"]
+		l: OperandsByDisjointKind[kind],
+		r: OperandsByDisjointKind[kind],
+		ctx?: DisjointEntryContext
 	): Disjoint {
 		return new Disjoint({
-			"[]": {
-				[kind]: {
-					l,
-					r
-				}
-			}
+			kind,
+			l,
+			r,
+			path: ctx?.path ?? [],
+			optional: ctx?.optional ?? false
 		})
 	}
 
-	static fromEntries(entries: DisjointKindEntries): Disjoint {
-		if (!entries.length) {
-			return throwInternalError(
-				"Unexpected attempt to create a disjoint from no entries"
-			)
-		}
-		return new Disjoint({ "[]": fromEntries(entries) })
-	}
-
-	get flat(): FlatDisjointEntry[] {
-		return entriesOf(this.sources).flatMap(([path, disjointKinds]) =>
-			entriesOf(disjointKinds).map(([kind, disjoint]) => ({
-				path,
-				kind,
-				disjoint
-			}))
-		)
+	add<kind extends DisjointKind>(
+		kind: kind,
+		l: OperandsByDisjointKind[kind],
+		r: OperandsByDisjointKind[kind],
+		ctx?: DisjointEntryContext
+	): Disjoint {
+		this.push({
+			kind,
+			l,
+			r,
+			path: ctx?.path ?? [],
+			optional: ctx?.optional ?? false
+		})
+		return this
 	}
 
 	describeReasons(): string {
-		const reasons = this.flat
-		if (reasons.length === 1) {
-			const { path, disjoint } = reasons[0]
-			const pathString = JSON.parse(path).join(".")
+		if (this.length === 1) {
+			const { path, l, r } = this[0]
+			const pathString = pathToPropString(path)
 			return `Intersection${
 				pathString && ` at ${pathString}`
-			} of ${describeReasons(disjoint)} results in an unsatisfiable type`
+			} of ${describeReasons(l, r)} results in an unsatisfiable type`
 		}
-		return `The following intersections result in unsatisfiable types:\n• ${reasons
-			.map(({ path, disjoint }) => `${path}: ${describeReasons(disjoint)}`)
-			.join("\n• ")}`
-	}
-
-	isEmpty(): boolean {
-		return this.flat.length === 0
+		return `The following intersections result in unsatisfiable types:\n• ${this.map(
+			({ path, l, r }) => `${path}: ${describeReasons(l, r)}`
+		).join("\n• ")}`
 	}
 
 	throw(): never {
@@ -146,44 +79,26 @@ export class Disjoint {
 	}
 
 	invert(): Disjoint {
-		const invertedEntries = entriesOf(this.sources).map(
-			([path, disjoints]) =>
-				[
-					path,
-					flatMorph(disjoints, (kind, disjoint) => [
-						kind,
-						{ l: disjoint.r, r: disjoint.l }
-					])
-				] as DisjointSourceEntry
-		)
-		return new Disjoint(fromEntries(invertedEntries))
+		return this.map(entry => ({
+			...entry,
+			l: entry.r,
+			r: entry.l
+		})) as Disjoint
 	}
 
-	add(input: Disjoint): void {
-		entriesOf(input.sources).forEach(([path, disjoints]) =>
-			Object.assign(this.sources[path] ?? {}, disjoints)
-		)
-	}
-
-	withPrefixKey(key: string | symbol): Disjoint {
-		const entriesWithPrefix = entriesOf(this.sources).map(
-			([path, disjoints]): DisjointSourceEntry => {
-				const segments = JSON.parse(path) as string[]
-				segments.unshift(typeof key === "symbol" ? register(key) : key)
-				const pathWithPrefix = JSON.stringify(segments) as `[${string}]`
-				return [pathWithPrefix, disjoints]
-			}
-		)
-		return new Disjoint(fromEntries(entriesWithPrefix))
-	}
-
-	toString(): string {
-		return printable(this.sources)
+	withPrefixKey(key: string | symbol, kind: PropKind): Disjoint {
+		return this.map(entry => ({
+			...entry,
+			path: [key, ...entry.path],
+			optional: entry.optional || kind === "optional"
+		})) as Disjoint
 	}
 }
 
-const describeReasons = (source: DisjointSource): string =>
-	`${describeReason(source.l)} and ${describeReason(source.r)}`
+export type DisjointKind = keyof OperandsByDisjointKind
+
+const describeReasons = (l: unknown, r: unknown): string =>
+	`${describeReason(l)} and ${describeReason(r)}`
 
 const describeReason = (value: unknown): string =>
 	hasArkKind(value, "root") ? value.expression

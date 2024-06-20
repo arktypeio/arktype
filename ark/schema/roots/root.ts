@@ -1,3 +1,14 @@
+import type {
+	DivisorSchema,
+	ExactLengthSchema,
+	ExclusiveDateRangeSchema,
+	ExclusiveNumericRangeSchema,
+	InclusiveDateRangeSchema,
+	InclusiveNumericRangeSchema,
+	LimitSchemaValue,
+	PatternSchema,
+	UnknownRangeSchema
+} from "@arktype/schema"
 import {
 	includes,
 	omit,
@@ -75,7 +86,7 @@ export abstract class BaseRoot<
 	implements internalImplementationOf<Root, TypeOnlyRootKey | "intersect">
 {
 	readonly branches: readonly Node<UnionChildKind>[] =
-		this.hasKind("union") ? this.inner.branches : [this as never];
+		this.hasKind("union") ? this.inner.branches : [this as never]
 
 	readonly [arkKind] = "root"
 
@@ -84,6 +95,7 @@ export abstract class BaseRoot<
 	}
 
 	abstract rawKeyOf(): BaseRoot
+	abstract get shortDescription(): string
 
 	private _keyof: BaseRoot | undefined
 	keyof(): BaseRoot {
@@ -149,6 +161,11 @@ export abstract class BaseRoot<
 		) as never
 	}
 
+	overlaps(r: UnknownRoot): boolean {
+		const intersection = this.intersect(r as never)
+		return !(intersection instanceof Disjoint)
+	}
+
 	extends(r: UnknownRoot): boolean {
 		const intersection = this.intersect(r as never)
 		return (
@@ -168,7 +185,7 @@ export abstract class BaseRoot<
 		return this.configure(description)
 	}
 
-	create(input: unknown): unknown {
+	from(input: unknown): unknown {
 		// ideally we wouldn't validate here but for now we need to do determine
 		// which morphs to apply
 		return this.assert(input)
@@ -179,8 +196,11 @@ export abstract class BaseRoot<
 	}
 
 	private pipeOnce(morph: Morph): BaseRoot {
-		if (hasArkKind(morph, "root"))
-			return pipeNodesRoot(this, morph, this.$) as never
+		if (hasArkKind(morph, "root")) {
+			const result = pipeNodesRoot(this, morph, this.$)
+			if (result instanceof Disjoint) return result.throw()
+			return result as BaseRoot
+		}
 		if (this.hasKind("union")) {
 			const branches = this.branches.map(node => node.pipe(morph))
 			return this.$.node("union", { ...this.inner, branches })
@@ -198,15 +218,30 @@ export abstract class BaseRoot<
 	}
 
 	narrow(predicate: Predicate): BaseRoot {
-		return this.constrain("predicate", predicate)
+		return this.constrainOut("predicate", predicate)
 	}
 
 	constrain<kind extends PrimitiveConstraintKind>(
 		kind: kind,
 		schema: NodeSchema<kind>
 	): BaseRoot {
+		return this._constrain("in", kind, schema)
+	}
+
+	constrainOut<kind extends PrimitiveConstraintKind>(
+		kind: kind,
+		schema: NodeSchema<kind>
+	): BaseRoot {
+		return this._constrain("out", kind, schema)
+	}
+
+	private _constrain(
+		io: "in" | "out",
+		kind: PrimitiveConstraintKind,
+		schema: any
+	): BaseRoot {
 		const constraint = this.$.node(kind, schema)
-		if (constraint.impliedBasis && !this.extends(constraint.impliedBasis)) {
+		if (constraint.impliedBasis && !this[io].extends(constraint.impliedBasis)) {
 			return throwInvalidOperandError(
 				kind,
 				constraint.impliedBasis as never,
@@ -214,12 +249,18 @@ export abstract class BaseRoot<
 			)
 		}
 
-		return this.and(
-			// TODO: not an intersection
-			this.$.node("intersection", {
-				[kind]: constraint
-			})
-		)
+		const partialIntersection = this.$.node("intersection", {
+			[kind]: constraint
+		})
+
+		const result =
+			io === "in" ?
+				intersectNodesRoot(this, partialIntersection, this.$)
+			:	pipeNodesRoot(this, partialIntersection, this.$)
+
+		if (result instanceof Disjoint) result.throw()
+
+		return result as never
 	}
 
 	onUndeclaredKey(undeclared: UndeclaredKeyBehavior): BaseRoot {
@@ -230,64 +271,87 @@ export abstract class BaseRoot<
 						omit(inner as StructureInner, { undeclared: 1 })
 					:	{ ...inner, undeclared }
 				:	inner,
-			node => !includes(structuralKinds, node.kind)
+			{ shouldTransform: node => !includes(structuralKinds, node.kind) }
 		)
 	}
 
-	// divisibleBy<
-	// 	const schema extends validateConstraintArg<"divisor", this["infer"]>
-	// >(schema: schema): Type<applyRoot<t, "divisor", schema>, $> {
-	// 	return this.rawConstrain("divisor", schema as never) as never
-	// }
+	satisfying(predicate: Predicate): BaseRoot {
+		return this.constrain("predicate", predicate)
+	}
 
-	// atLeast<const schema extends validateConstraintArg<"min", this["infer"]>>(
-	// 	schema: schema
-	// ): Type<applyRoot<t, "min", schema>, $> {
-	// 	return this.rawConstrain("min", schema as never) as never
-	// }
+	divisibleBy(schema: DivisorSchema): BaseRoot {
+		return this.constrain("divisor", schema)
+	}
 
-	// atMost<const schema extends validateConstraintArg<"max", this["infer"]>>(
-	// 	schema: schema
-	// ): Type<applyRoot<t, "max", schema>, $> {
-	// 	return this.rawConstrain("max", schema as never) as never
-	// }
+	matching(schema: PatternSchema): BaseRoot {
+		return this.constrain("pattern", schema)
+	}
 
-	// moreThan<const schema extends validateConstraintArg<"min", this["infer"]>>(
-	// 	schema: schema
-	// ): Type<applyRoot<t, "min", schema>, $> {
-	// 	return this.rawConstrain("min", schema as never) as never
-	// }
+	atLeast(schema: InclusiveNumericRangeSchema): BaseRoot {
+		return this.constrain("min", schema)
+	}
 
-	// lessThan<const schema extends validateConstraintArg<"max", this["infer"]>>(
-	// 	schema: schema
-	// ): Type<applyRoot<t, "max", schema>, $> {
-	// 	return this.rawConstrain("max", schema as never) as never
-	// }
+	atMost(schema: InclusiveNumericRangeSchema): BaseRoot {
+		return this.constrain("max", schema)
+	}
 
-	// atLeastLength<
-	// 	const schema extends validateConstraintArg<"minLength", this["infer"]>
-	// >(schema: schema): Type<applyRoot<t, "minLength", schema>, $> {
-	// 	return this.rawConstrain("minLength", schema as never) as never
-	// }
+	moreThan(schema: ExclusiveNumericRangeSchema): BaseRoot {
+		return this.constrain("min", exclusivizeRangeSchema(schema))
+	}
 
-	// atMostLength<
-	// 	const schema extends validateConstraintArg<"maxLength", this["infer"]>
-	// >(schema: schema): Type<applyRoot<t, "maxLength", schema>, $> {
-	// 	return this.rawConstrain("maxLength", schema as never) as never
-	// }
+	lessThan(schema: ExclusiveNumericRangeSchema): BaseRoot {
+		return this.constrain("max", exclusivizeRangeSchema(schema))
+	}
 
-	// earlierThan<
-	// 	const schema extends validateConstraintArg<"before", this["infer"]>
-	// >(schema: schema): Type<applyRoot<t, "before", schema>, $> {
-	// 	return this.rawConstrain("before", schema as never) as never
-	// }
+	atLeastLength(schema: InclusiveNumericRangeSchema): BaseRoot {
+		return this.constrain("minLength", schema)
+	}
 
-	// laterThan<const schema extends validateConstraintArg<"after", this["infer"]>>(
-	// 	schema: schema
-	// ): Type<applyRoot<t, "after", schema>, $> {
-	// 	return this.rawConstrain("after", schema as never) as never
-	// }
+	atMostLength(schema: InclusiveNumericRangeSchema): BaseRoot {
+		return this.constrain("maxLength", schema)
+	}
+
+	moreThanLength(schema: ExclusiveNumericRangeSchema): BaseRoot {
+		return this.constrain("minLength", exclusivizeRangeSchema(schema))
+	}
+
+	lessThanLength(schema: ExclusiveNumericRangeSchema): BaseRoot {
+		return this.constrain("maxLength", exclusivizeRangeSchema(schema))
+	}
+
+	exactlyLength(schema: ExactLengthSchema): BaseRoot {
+		return this.constrain("exactLength", schema)
+	}
+
+	atOrAfter(schema: InclusiveDateRangeSchema): BaseRoot {
+		return this.constrain("after", schema)
+	}
+
+	atOrBefore(schema: InclusiveDateRangeSchema): BaseRoot {
+		return this.constrain("before", schema)
+	}
+
+	laterThan(schema: ExclusiveDateRangeSchema): BaseRoot {
+		return this.constrain("after", exclusivizeRangeSchema(schema))
+	}
+
+	earlierThan(schema: ExclusiveDateRangeSchema): BaseRoot {
+		return this.constrain("before", exclusivizeRangeSchema(schema))
+	}
 }
+
+export const exclusivizeRangeSchema = <schema extends UnknownRangeSchema>(
+	schema: schema
+): schema =>
+	(typeof schema === "object" && !(schema instanceof Date) ?
+		{ ...schema, exclusive: true }
+	:	{
+			rule: schema,
+			exclusive: true
+		}) as schema
+
+export type exclusivizeRangeSchema<schema extends UnknownRangeSchema> =
+	schema extends LimitSchemaValue ? { rule: schema; exclusive: true } : schema
 
 export declare abstract class InnerRoot<t = unknown, $ = any> extends Callable<
 	(data: unknown) => distillOut<t> | ArkErrors
@@ -316,6 +380,7 @@ export declare abstract class InnerRoot<t = unknown, $ = any> extends Callable<
 	abstract extract(r: never): unknown
 	abstract exclude(r: never): unknown
 	abstract extends(r: never): this is unknown
+	abstract overlaps(r: never): boolean
 	abstract array(): unknown
 	abstract pipe(morph: Morph): unknown
 
@@ -331,7 +396,7 @@ export declare abstract class InnerRoot<t = unknown, $ = any> extends Callable<
 
 	onUndeclaredKey(behavior: UndeclaredKeyBehavior): this
 
-	create(literal: this["inferIn"]): this["infer"]
+	from(literal: this["inferIn"]): this["infer"]
 }
 
 // this is declared as a class internally so we can ensure all "abstract"
@@ -427,6 +492,8 @@ declare class _Root<t = unknown, $ = any> extends InnerRoot<t, $> {
 		f: f,
 		g: g
 	): Root<inferPipes<t, [a, b, c, d, e, f, g]>, $>
+
+	overlaps(r: Root): boolean
 }
 
 export interface Root<

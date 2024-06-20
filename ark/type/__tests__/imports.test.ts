@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@arktype/attest"
-import { writeDuplicateAliasError } from "@arktype/schema"
-import { type Module, scope, type } from "arktype"
+import { writeDuplicateAliasError, type Morph } from "@arktype/schema"
+import { scope, type, type Module } from "arktype"
 import { writePrefixedPrivateReferenceMessage } from "../parser/semantic/validate.js"
 
 const threeSixtyNoScope = scope({
@@ -86,6 +86,20 @@ contextualize(() => {
 				"#bar": boolean
 			}>
 		>(types)
+	})
+
+	it("autocompletes private references", () => {
+		const $ = scope({
+			"#kekw": "true"
+		})
+
+		// @ts-expect-error
+		attest(() => $.type("kek")).completions({
+			kek: ["kekw"]
+		})
+
+		// @ts-expect-error
+		attest(() => $.type("#")).completions({})
 	})
 
 	it("errors on private reference with #", () => {

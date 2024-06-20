@@ -1,20 +1,17 @@
 {
 	"name": "@arktype/util",
-	"version": "0.0.43",
+	"version": "0.0.49",
 	"author": {
 		"name": "David Blass",
 		"email": "david@arktype.io",
 		"url": "https://arktype.io"
 	},
 	"type": "module",
-	"main": "./out/api.js",
-	"types": "./out/api.d.ts",
+	"main": "./out/index.js",
+	"types": "./out/index.d.ts",
 	"exports": {
-		".": "./out/api.js",
+		".": "./out/index.js",
 		"./internal/*": "./out/*",
-		"./tsconfig": "./tsconfig.base.json",
-		"./tsconfig.json": "./tsconfig.base.json",
-		"./tsconfig.base": "./tsconfig.base.json",
 		"./tsconfig.base.json": "./tsconfig.base.json"
 	},
 	"files": [

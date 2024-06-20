@@ -88,13 +88,23 @@ export const intersectNodesRoot: InternalNodeIntersection<RawRootScope> = (
 	l,
 	r,
 	$
-) => intersectNodes(l, r, { $, invert: false, pipe: false })
+) =>
+	intersectNodes(l, r, {
+		$,
+		invert: false,
+		pipe: false
+	})
 
 export const pipeNodesRoot: InternalNodeIntersection<RawRootScope> = (
 	l,
 	r,
 	$
-) => intersectNodes(l, r, { $, invert: false, pipe: true })
+) =>
+	intersectNodes(l, r, {
+		$,
+		invert: false,
+		pipe: true
+	})
 
 export const intersectNodes: InternalNodeIntersection<IntersectionContext> = (
 	l,
@@ -138,14 +148,16 @@ export const intersectNodes: InternalNodeIntersection<IntersectionContext> = (
 		const leftmostKind = l.precedence < r.precedence ? l.kind : r.kind
 		const implementation =
 			l.impl.intersections[r.kind] ?? r.impl.intersections[l.kind]
-		result =
-			implementation === undefined ?
-				// should be two ConstraintNodes that have no relation
-				// this could also happen if a user directly intersects a Type and a ConstraintNode,
-				// but that is not allowed by the external function signature
-				null
-			: leftmostKind === l.kind ? implementation(l, r, ctx)
-			: implementation(r, l, { ...ctx, invert: !ctx.invert })
+		if (implementation === undefined) {
+			// should be two ConstraintNodes that have no relation
+			// this could also happen if a user directly intersects a Type and a ConstraintNode,
+			// but that is not allowed by the external function signature
+			result = null
+		} else if (leftmostKind === l.kind) result = implementation(l, r, ctx)
+		else {
+			result = implementation(r, l, { ...ctx, invert: !ctx.invert })
+			if (result instanceof Disjoint) result = result.invert()
+		}
 	}
 
 	if (isNode(result)) {
@@ -166,12 +178,17 @@ export const pipeFromMorph = (
 	to: BaseRoot,
 	ctx: IntersectionContext
 ): MorphNode | Disjoint => {
-	const out = from?.out ? intersectNodes(from.out, to, ctx) : to
-	if (out instanceof Disjoint) return out
+	const morphs = [...from.morphs]
+	if (from.validatedOut) {
+		// still piped from context, so allows appending additional morphs
+		const outIntersection = intersectNodes(from.validatedOut, to, ctx)
+		if (outIntersection instanceof Disjoint) return outIntersection
+		morphs[morphs.length - 1] = outIntersection
+	} else morphs.push(to)
+
 	return ctx.$.node("morph", {
-		morphs: from.morphs,
-		in: from.in,
-		out
+		morphs,
+		in: from.in
 	})
 }
 
@@ -184,7 +201,6 @@ export const pipeToMorph = (
 	if (result instanceof Disjoint) return result
 	return ctx.$.node("morph", {
 		morphs: to.morphs,
-		in: result,
-		out: to.out
+		in: result
 	})
 }

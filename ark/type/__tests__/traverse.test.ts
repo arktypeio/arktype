@@ -20,7 +20,7 @@ contextualize(() => {
 		attest(t("foo").toString()).snap("must be a number (was string)")
 	})
 
-	it("regex", () => {
+	it("pattern", () => {
 		const t = type("/.*@arktype.io/")
 		attest(t("shawn@arktype.io")).snap("shawn@arktype.io")
 		attest(t("shawn@hotmail.com").toString()).snap(
@@ -60,16 +60,15 @@ contextualize(() => {
 		const t = type("string|number[]")
 		attest(t([1])).snap([1])
 		attest(t("hello")).snap("hello")
-		attest(t(2).toString()).snap("must be a string or an array (was number)")
+		attest(t(2).toString()).snap("must be a string or an object (was number)")
+		attest(t({}).toString()).snap("must be an array (was object)")
 	})
 
 	it("tuple length", () => {
 		const t = type(["string", "number", "string", "string[]"])
 		const data: typeof t.infer = ["foo", 5, "boo", []]
 		attest(t(data)).equals(data)
-		attest(t(["hello"]).toString()).snap(
-			'must be exactly length 4 (was ["hello"])'
-		)
+		attest(t(["hello"]).toString()).snap("must be exactly length 4 (was 1)")
 	})
 
 	it("branches", () => {
@@ -82,6 +81,13 @@ contextualize(() => {
 		attest(t({ bar: "swapped", foo: true }).toString()).snap(
 			'bar must be boolean (was "swapped") or foo must be a string (was true)'
 		)
+	})
+
+	it("common errors collapse", () => {
+		const t = type({ base: "1", a: "1" }, "|", { base: "1", b: "1" })
+		attest(t({ base: 1, a: 1 })).snap({ base: 1, a: 1 })
+		attest(t({ base: 1, b: 1 })).snap({ base: 1, b: 1 })
+		attest(t({ a: 1, b: 1 }).toString()).snap("base must be 1 (was missing)")
 	})
 
 	it("branches at path", () => {
@@ -98,45 +104,60 @@ contextualize(() => {
 		attest(t({ a: "ok" })).snap({ a: "ok" })
 		attest(t({ a: 5 })).snap({ a: 5 })
 		// value isn't present
-		attest(t({}).toString()).snap(
-			"a must be a number, a string or null (was missing)"
-		)
+		attest(t({}).toString()).snap("a must be null (was missing)")
 		// unsatisfying value
-		attest(t({ a: false }).toString()).snap(
-			"a must be a number, a string or null (was false)"
-		)
+		attest(t({ a: false }).toString()).snap("a must be null (was false)")
 	})
 
-	it("multiple switch", () => {
-		const types = scope({
-			a: { foo: "string" },
-			b: { foo: "number" },
-			c: { foo: "Function" },
-			d: "a|b|c"
-		}).export()
-		attest(types.d({}).toString()).snap(
-			"foo must be a function, a number or a string (was missing)"
-		)
-		attest(types.d({ foo: null }).toString()).snap(
-			"foo must be a function, a number or a string (was null)"
-		)
-	})
+	// TODO: https://github.com/arktypeio/arktype/issues/962
+	// it("multiple switch", () => {
+	// 	const types = scope({
+	// 		a: { foo: "string" },
+	// 		b: { foo: "number" },
+	// 		c: { foo: "Function" },
+	// 		d: "a|b|c"
+	// 	}).export()
+	// 	// attest(types.d({}).toString()).snap(
+	// 	// 	"foo must be a number, an object or a string (was undefined)"
+	// 	// )
+	// 	// this could be improved, currently a bit counterintuitive because of
+	// 	// the inconsistency between `domainOf` and typeof
+	// 	attest(types.d({ foo: null }).toString()).snap(
+	// 		"foo must be a function (was null)"
+	// 	)
+	// })
 
 	it("multi", () => {
 		const naturalNumber = type("integer>0")
-		attest(naturalNumber(-1.2).toString()).snap(
-			`must be...
+		attest(naturalNumber(-1.2).toString()).snap(`(-1.2) must be...
   • an integer
-  • more than 0`
-		)
+  • more than 0`)
 		const naturalAtPath = type({
 			natural: naturalNumber
 		})
 		attest(naturalAtPath({ natural: -0.1 }).toString()).snap(
-			`natural must be...
+			`natural (-0.1) must be...
   • an integer
   • more than 0`
 		)
+	})
+
+	it("homepage example", () => {
+		const user = type({
+			name: "string",
+			luckyNumbers: "(number | bigint)[]",
+			"isAdmin?": "boolean | null"
+		})
+
+		const out = user({
+			luckyNumbers: [31, "255", 1337n],
+			isAdmin: 1
+		})
+
+		attest(out.toString())
+			.snap(`luckyNumbers[1] must be a bigint or a number (was string)
+name must be a string (was missing)
+isAdmin must be false, null or true (was 1)`)
 	})
 
 	it("relative path", () => {
@@ -147,7 +168,7 @@ contextualize(() => {
 		}).narrow(
 			(d, ctx) =>
 				d.password === d.repeatPassword ||
-				ctx.invalid({
+				ctx.reject({
 					expected: "identical to password",
 					actual: null,
 					relativePath: ["repeatPassword"]

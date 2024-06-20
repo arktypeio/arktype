@@ -57,9 +57,8 @@ contextualize(() => {
 		const AddD = new (class AddD extends Hkt.UnaryKind {
 			hkt = (
 				args: conform<this[Hkt.args], { c: number }>
-			): show<typeof args & { d: (typeof args)["c"] }> => {
-				return Object.assign(args, { d: args.c } as const)
-			}
+			): show<typeof args & { d: (typeof args)["c"] }> =>
+				Object.assign(args, { d: args.c } as const)
 		})()
 		// @ts-expect-error
 		attest(() => Hkt.pipe(AddB, AddD)).type.errors.snap(

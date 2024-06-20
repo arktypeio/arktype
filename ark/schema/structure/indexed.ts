@@ -5,6 +5,10 @@ import {
 } from "@arktype/util"
 import { BaseConstraint } from "../constraint.js"
 import type { Node, RootSchema } from "../kinds.js"
+import type {
+	DeepNodeTransformation,
+	DeepNodeTransformationContext
+} from "../node.js"
 import type { BaseRoot } from "../roots/root.js"
 import type { UnitNode } from "../roots/unit.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
@@ -128,6 +132,16 @@ export class IndexNode extends BaseConstraint<IndexDeclaration> {
 				ctx.path.pop()
 			}
 		})
+
+	protected override _transform(
+		mapper: DeepNodeTransformation,
+		ctx: DeepNodeTransformationContext
+	) {
+		ctx.path.push(this.signature)
+		const result = super._transform(mapper, ctx)
+		ctx.path.pop()
+		return result
+	}
 
 	compile(): void {
 		// this is currently handled by StructureNode

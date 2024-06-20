@@ -8,6 +8,10 @@ import {
 } from "@arktype/util"
 import { BaseConstraint } from "../constraint.js"
 import type { Node, RootSchema } from "../kinds.js"
+import type {
+	DeepNodeTransformation,
+	DeepNodeTransformationContext
+} from "../node.js"
 import type { Morph } from "../roots/morph.js"
 import type { BaseRoot } from "../roots/root.js"
 import type { NodeCompiler } from "../shared/compile.js"
@@ -51,7 +55,13 @@ export const intersectProps = (
 	const kind: PropKind = l.required || r.required ? "required" : "optional"
 	if (value instanceof Disjoint) {
 		if (kind === "optional") value = ctx.$.keywords.never.raw
-		else return value.withPrefixKey(l.compiledKey)
+		else {
+			// if either operand was optional, the Disjoint has to be treated as optional
+			return value.withPrefixKey(
+				l.key,
+				l.required && r.required ? "required" : "optional"
+			)
+		}
 	}
 
 	if (kind === "required") {
@@ -91,6 +101,16 @@ export abstract class BaseProp<
 	serializedKey: string = compileSerializedValue(this.key)
 	compiledKey: string =
 		typeof this.key === "string" ? this.key : this.serializedKey
+
+	protected override _transform(
+		mapper: DeepNodeTransformation,
+		ctx: DeepNodeTransformationContext
+	) {
+		ctx.path.push(this.key)
+		const result = super._transform(mapper, ctx)
+		ctx.path.pop()
+		return result
+	}
 
 	private defaultValueMorphs: Morph[] = [
 		data => {
