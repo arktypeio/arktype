@@ -396,7 +396,11 @@ export type TypeKey = Key | BaseRoot
 export type TypePath = array<TypeKey>
 
 export const typeEquals = (l: unknown, r: unknown) =>
-	l === r || (isNode(l) && isNode(r) && l.equals(r))
+	l === r ||
+	(isNode(l) ?
+		isNode(r) ? l.equals(r)
+		:	l.hasUnit(r)
+	:	isNode(r) && r.hasUnit(l))
 
 export type FlatRef<root extends BaseRoot = BaseRoot> = {
 	path: TypePath

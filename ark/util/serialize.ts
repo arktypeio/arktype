@@ -1,7 +1,7 @@
 import type { array } from "./arrays.js"
 import { domainOf, type Primitive } from "./domain.js"
 import { serializePrimitive, type SerializablePrimitive } from "./primitive.js"
-import type { Dict } from "./records.js"
+import type { dict, Dict } from "./records.js"
 import { register } from "./registry.js"
 
 export type SerializationOptions = {
@@ -49,9 +49,15 @@ export const print = (data: unknown, indent?: number): void =>
 export const printable = (data: unknown, indent?: number): string => {
 	switch (domainOf(data)) {
 		case "object":
-			return data instanceof Date ?
-					data.toDateString()
-				:	JSON.stringify(_serialize(data, printableOpts, []), null, indent)
+			const o = data as dict
+			const ctorName = o.constructor.name
+			return (
+				ctorName === "Object" || ctorName === "Array" ?
+					JSON.stringify(_serialize(o, printableOpts, []), null, indent)
+				: o instanceof Date ? o.toDateString()
+				: typeof o.expression === "string" ? o.expression
+				: ctorName
+			)
 		case "symbol":
 			return printableOpts.onSymbol(data as symbol)
 		default:

@@ -10,6 +10,7 @@ export abstract class RawBasis<
 	abstract compiledCondition: string
 	abstract compiledNegation: string
 	abstract literalKeys: array<Key>
+	declare structure: undefined
 
 	rawKeyOf(): BaseRoot {
 		return this.$.units(this.literalKeys)

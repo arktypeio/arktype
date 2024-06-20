@@ -2,8 +2,10 @@ import {
 	append,
 	cached,
 	flatMorph,
+	printable,
 	registeredReference,
 	spliterate,
+	throwParseError,
 	type array,
 	type Key,
 	type RegisteredReference
@@ -15,6 +17,7 @@ import {
 	intersectConstraints
 } from "../constraint.js"
 import type { MutableInner } from "../kinds.js"
+import type { TypeKey, TypePath } from "../node.js"
 import type { BaseRoot } from "../roots/root.js"
 import type { RawRootScope } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
@@ -109,10 +112,36 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 	@cached
 	keyof(): BaseRoot {
 		let branches = this.$.units(this.literalKeys).branches
-		this.index?.forEach(({ signature: index }) => {
-			branches = branches.concat(index.branches)
+		this.index?.forEach(({ signature }) => {
+			branches = branches.concat(signature.branches)
 		})
 		return this.$.node("union", branches)
+	}
+
+	get(key: TypeKey, ...tail: TypePath): BaseRoot {
+		let value: BaseRoot | undefined
+		let literalKey: Key | undefined
+		let required = false
+
+		if (hasArkKind(key, "root") && key.hasKind("unit")) key = key.unit as never
+
+		if (typeof key === "string" || typeof key === "symbol") literalKey = key
+		else if (typeof key === "number") literalKey = `${key}`
+
+		if (literalKey && this.propsByKey[literalKey]) {
+			value = this.propsByKey[literalKey]!.value
+			required = this.propsByKey[literalKey]!.required
+		}
+
+		this.index?.forEach(n => {
+			if (n.signature.includes(key)) value = value?.and(n.value) ?? n.value
+		})
+
+		if (!value)
+			return throwParseError(`${printable(key)} does not exist on ${this}`)
+
+		const result = value.get(...tail)
+		return required ? result.or($ark.intrinsic.undefined) : result
 	}
 
 	readonly exhaustive: boolean =

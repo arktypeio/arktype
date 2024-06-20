@@ -8,12 +8,14 @@ import type {
 	InclusiveNumericRangeSchema,
 	LimitSchemaValue,
 	PatternSchema,
+	TypePath,
 	UnknownRangeSchema
 } from "@arktype/schema"
 import {
 	cached,
 	includes,
 	omit,
+	printable,
 	throwParseError,
 	type Callable,
 	type Json,
@@ -64,7 +66,7 @@ import type {
 	inferMorphOut,
 	inferPipes
 } from "./morph.js"
-import type { UnionChildKind } from "./union.js"
+import type { UnionChildKind, UnionChildNode } from "./union.js"
 
 export interface RawRootDeclaration extends RawNodeDeclaration {
 	kind: RootKind
@@ -133,40 +135,21 @@ export abstract class BaseRoot<
 		return result instanceof ArkErrors ? result.throw() : result
 	}
 
-	get<path extends array<PropertyKey | BaseRoot>>(...path: path): BaseRoot {
-		// const nodesAtPath = Object.values(this.indexablePaths).flatMap(
-		// 	indexable => {
-		// 		// paths with differing lengths cannot match
-		// 		if (path.length !== indexable.path.length) return []
-		// 		for (let keyIndex = 0; keyIndex < path.length; keyIndex++) {
-		// 			const indexableKey = indexable.path[keyIndex]
-		// 			const pathKey = path[keyIndex]
-		// 			if (indexableKey === pathKey) continue
-		// 			if (hasArkKind(indexableKey, "root")) {
-		// 				if (hasArkKind(pathKey, "root")) continue
-		// 				if (indexableKey.allows(pathKey)) continue
-		// 			}
-		// 			// if the key is not assignable to the indexable path at the current position,
-		// 			// stop traversing it and filter it from results
-		// 			return []
-		// 		}
-		// 		// if we make it to this point, the path matches, so return the corresponding node
-		// 		return indexable.node
-		// 	}
-		// )
+	get(...[key, ...tail]: TypePath): BaseRoot {
+		if (key === undefined) return this
+		if (this.hasKind("union")) {
+			return this.branches.reduce(
+				(acc, b) => acc.and(b.get(key, ...tail)),
+				$ark.intrinsic.unknown
+			)
+		}
 
-		// if (nodesAtPath.length === 0) {
-		// 	throwParseError(
-		// 		`${typePathToPropString(path as never)} does not exist on ${this}`
-		// 	)
-		// }
-		// if (nodesAtPath.length === 1) return nodesAtPath[0]
-
-		// const branches = nodesAtPath.reduce<UnionChildNode[]>(
-		// 	(acc, node) => appendUniqueNodes(acc, node.branches),
-		// 	[]
-		// )
-		return this.$.node("union", [])
+		return (
+			(this as {} as UnionChildNode).structure?.get(key, ...tail) ??
+			throwParseError(
+				`${printable(key)} cannot be accessed on ${this}, which has no structural keys`
+			)
+		)
 	}
 
 	extract(r: unknown): BaseRoot {
@@ -207,6 +190,10 @@ export abstract class BaseRoot<
 
 	subsumes(r: UnknownRoot): boolean {
 		return r.extends(this as never)
+	}
+
+	includes(r: unknown): boolean {
+		return hasArkKind(r, "root") ? r.extends(this) : this.allows(r)
 	}
 
 	configure(configOrDescription: BaseMeta | string): this {

@@ -110,7 +110,7 @@ export const morphImplementation: nodeImplementationOf<MorphDeclaration> =
 					inTersection.branches.map(inBranch =>
 						ctx.$.node("morph", {
 							morphs: l.morphs,
-							in: inBranch
+							in: inBranch as never
 						})
 					)
 				)
@@ -139,6 +139,7 @@ export const morphImplementation: nodeImplementationOf<MorphDeclaration> =
 export class MorphNode extends BaseRoot<MorphDeclaration> {
 	serializedMorphs: string[] = this.morphs.map(registeredReference)
 	compiledMorphs = `[${this.serializedMorphs}]`
+	structure = this.in.structure
 
 	traverseAllows: TraverseAllows = (data, ctx) =>
 		this.in.traverseAllows(data, ctx)
@@ -163,8 +164,12 @@ export class MorphNode extends BaseRoot<MorphDeclaration> {
 		js.line(`ctx.queueMorphs(${this.compiledMorphs})`)
 	}
 
-	override get in(): BaseRoot {
+	override get in(): MorphChildNode {
 		return this.inner.in
+	}
+
+	override get out(): BaseRoot {
+		return this.validatedOut ?? $ark.intrinsic.unknown
 	}
 
 	/** Check if the morphs of r are equal to those of this node */
@@ -184,10 +189,6 @@ export class MorphNode extends BaseRoot<MorphDeclaration> {
 			Object.assign(this.referencesById, this.lastMorph.out.referencesById) &&
 			this.lastMorph.out
 		:	undefined
-
-	override get out(): BaseRoot {
-		return this.validatedOut ?? $ark.intrinsic.unknown
-	}
 
 	rawKeyOf(): BaseRoot {
 		return this.in.rawKeyOf()

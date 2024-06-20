@@ -30,6 +30,7 @@ export interface AliasDeclaration
 
 export class AliasNode extends BaseRoot<AliasDeclaration> {
 	readonly expression: string = this.alias
+	readonly structure = undefined
 
 	@cached
 	get resolution(): BaseRoot {
