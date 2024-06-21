@@ -250,9 +250,11 @@ declare class _Type<t = unknown, $ = any> extends InnerRoot<t, $> {
 	): this is Type<inferTypeRoot<def>, $>
 	overlaps<def>(r: validateTypeRoot<def, $>): boolean
 
-	get<const path extends array<PropertyKey | Type<any, any>>>(
-		...path: path
-	): Type
+	get<k1 extends keyof t>(k1: k1): Type<t[k1], $>
+	get<k1 extends keyof t, k2 extends keyof t[k1]>(
+		k1: k1,
+		k2: k2
+	): Type<t[k1][k2], $>
 
 	constrain<
 		kind extends PrimitiveConstraintKind,

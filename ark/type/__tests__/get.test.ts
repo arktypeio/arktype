@@ -31,7 +31,7 @@ contextualize(() => {
 	})
 
 	it("can merge across a deep union", () => {
-		const t = type(
+		const base = type(
 			{
 				foo: {
 					bar: "0"
@@ -45,7 +45,10 @@ contextualize(() => {
 			}
 		)
 
-		attest(t.get("foo", "bar").expression).snap("0 | 1")
+		const t = base.get("foo", "bar")
+
+		attest<0 | 1>(t.infer)
+		attest(t.expression).snap("0 | 1")
 	})
 
 	it("can get index keys", () => {
@@ -102,10 +105,13 @@ contextualize(() => {
 	it("number access on non-variadic", () => {
 		const t = type({ foo: "number" }).array()
 
+		// @ts-expect-error
 		attest(() => t.get(ark.number)).throws(
 			writeRawNumberIndexMessage("number", t.expression)
 		)
+
 		// number subtype
+		// @ts-expect-error
 		attest(() => t.get(ark.integer)).throws(
 			writeRawNumberIndexMessage("number % 1", t.expression)
 		)
