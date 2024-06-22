@@ -1,5 +1,11 @@
 import { attest, contextualize } from "@arktype/attest"
-import type { AtLeastLength, AtMostLength, Out, string } from "@arktype/schema"
+import type {
+	AtLeastLength,
+	AtMostLength,
+	number,
+	Out,
+	string
+} from "@arktype/schema"
 import { registeredReference } from "@arktype/util"
 import { scope, type, type Type } from "arktype"
 import type { Module } from "../module.js"
@@ -602,11 +608,14 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		const t = type("string")
 			.pipe(s => parseInt(s))
 			.narrow(n => true)
-			.pipe(
-				n => `${n}`,
-				s => `${s}++` as const
-			)
 
-		attest(t.t).type.toString("(In: string) => Out<number.narrowed>")
+		attest<(In: string) => Out<number.narrowed>>(t.t)
+
+		const u = t.pipe(
+			n => `${n}`,
+			s => `${s}++` as const
+		)
+
+		attest(u.t).type.toString("(In: string) => Out<`${string}++`>")
 	})
 })
