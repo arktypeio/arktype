@@ -78,7 +78,7 @@ contextualize(
 
 		it("bigint", () => {
 			const t = type({ key: "bigint = 100n" })
-			const expected = type({ key: ["bigint", "=", BigInt(100)] })
+			const expected = type({ key: ["bigint", "=", 100n] })
 
 			attest<typeof expected>(t)
 			attest(t.json).equals(expected.json)

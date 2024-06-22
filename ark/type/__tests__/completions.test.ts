@@ -18,7 +18,12 @@ contextualize(() => {
 	it("completes within expressions", () => {
 		// @ts-expect-error
 		attest(() => type("string|n")).completions({
-			"string|n": ["string|never", "string|null", "string|number"]
+			"string|n": [
+				"string|never",
+				"string|nonNegativeIntegerString",
+				"string|null",
+				"string|number"
+			]
 		})
 	})
 

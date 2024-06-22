@@ -398,39 +398,39 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 	})
 
 	// https://discord.com/channels/957797212103016458/957804102685982740/1243850690644934677
-	// it("more chained pipes/narrows", () => {
-	// 	const Amount = type(
-	// 		"string",
-	// 		":",
-	// 		(s, ctx) => Number.isInteger(Number(s)) || ctx.reject("number")
-	// 	)
-	// 		.pipe((s, ctx) => {
-	// 			try {
-	// 				return BigInt(s)
-	// 			} catch {
-	// 				return ctx.error("a non-decimal number")
-	// 			}
-	// 		})
-	// 		.narrow((amount, ctx) => true)
+	it("more chained pipes/narrows", () => {
+		const Amount = type(
+			"string",
+			":",
+			(s, ctx) => Number.isInteger(Number(s)) || ctx.reject("number")
+		)
+			.pipe((s, ctx) => {
+				try {
+					return BigInt(s)
+				} catch {
+					return ctx.error("a non-decimal number")
+				}
+			})
+			.narrow((amount, ctx) => true)
 
-	// 	const Token = type("7<string<=120")
-	// 		.pipe(s => s.toLowerCase())
-	// 		.narrow((s, ctx) => true)
+		const Token = type("7<string<=120")
+			.pipe(s => s.toLowerCase())
+			.narrow((s, ctx) => true)
 
-	// 	const $ = scope({
-	// 		Asset: {
-	// 			token: Token,
-	// 			amount: Amount
-	// 		},
-	// 		Assets: () => $.type("Asset[]>=1").pipe(assets => assets)
-	// 	})
+		const $ = scope({
+			Asset: {
+				token: Token,
+				amount: Amount
+			},
+			Assets: () => $.type("Asset[]>=1").pipe(assets => assets)
+		})
 
-	// 	const types = $.export()
+		const types = $.export()
 
-	// 	const out = types.Assets([{ token: "lovelace", amount: "5000000" }])
+		const out = types.Assets([{ token: "lovelace", amount: "5000000" }])
 
-	// 	attest(out).snap([{ token: "lovelace", amount: "5000000n" }])
-	// })
+		attest(out).snap([{ token: "lovelace", amount: "5000000n" }])
+	})
 
 	it("regex index signature", () => {
 		const test = scope({
@@ -442,7 +442,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		attest<
 			Module<{
 				svgMap: {
-					[x: string & string.matching<string>]: string
+					[x: string.matching<string>]: string
 				}
 				svgPath: string.matching<string>
 			}>
