@@ -24,7 +24,13 @@ import {
 	type array,
 	type conform
 } from "@arktype/util"
-import type { constrain } from "../ast.js"
+import type {
+	constrain,
+	distillConstrainableIn,
+	distillConstrainableOut,
+	distillIn,
+	distillOut
+} from "../ast.js"
 import {
 	throwInvalidOperandError,
 	type PrimitiveConstraintKind
@@ -58,16 +64,7 @@ import type {
 	UndeclaredKeyBehavior
 } from "../structure/structure.js"
 import type { constraintKindOf } from "./intersection.js"
-import type {
-	Morph,
-	MorphNode,
-	distillConstrainableIn,
-	distillConstrainableOut,
-	distillIn,
-	distillOut,
-	inferMorphOut,
-	inferPipes
-} from "./morph.js"
+import type { Morph, MorphNode, inferMorphOut, inferPipes } from "./morph.js"
 import type { UnionChildKind, UnionChildNode } from "./union.js"
 
 export interface RawRootDeclaration extends RawNodeDeclaration {

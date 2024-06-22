@@ -7,7 +7,7 @@ import {
 	type PartialRecord,
 	type show
 } from "@arktype/util"
-import type { of } from "../ast.js"
+import type { Constraints, of, parseConstraints } from "../ast.js"
 import type { BaseNode } from "../node.js"
 import type { MorphAst, MorphNode, Out } from "../roots/morph.js"
 import type { BaseRoot } from "../roots/root.js"
@@ -39,11 +39,17 @@ type _inferIntersection<l, r, piped extends boolean> =
 		: (In: _inferIntersection<lIn, r, false>) => Out<lOut>
 	: r extends MorphAst<infer rIn, infer rOut> ?
 		(In: _inferIntersection<rIn, l, false>) => Out<rOut>
-	: l extends of<infer lBase, infer lConstraints> ?
-		r extends of<infer rBase, infer rConstraints> ?
+	: parseConstraints<l> extends (
+		[infer lBase, infer lConstraints extends Constraints]
+	) ?
+		parseConstraints<r> extends (
+			[infer rBase, infer rConstraints extends Constraints]
+		) ?
 			of<_inferIntersection<lBase, rBase, piped>, lConstraints & rConstraints>
 		:	of<_inferIntersection<lBase, r, piped>, lConstraints>
-	: r extends of<infer rBase, infer rConstraints> ?
+	: parseConstraints<r> extends (
+		[infer rBase, infer rConstraints extends Constraints]
+	) ?
 		of<_inferIntersection<l, rBase, piped>, rConstraints>
 	: [l, r] extends [object, object] ?
 		// adding this intermediate infer result avoids extra instantiations

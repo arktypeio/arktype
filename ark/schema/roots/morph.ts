@@ -3,15 +3,10 @@ import {
 	arrayFrom,
 	registeredReference,
 	throwParseError,
-	type BuiltinObjectKind,
-	type BuiltinObjects,
-	type Primitive,
-	type anyOrNever,
 	type array,
-	type listable,
-	type show
+	type listable
 } from "@arktype/util"
-import type { of } from "../ast.js"
+import type { distillConstrainableIn } from "../ast.js"
 import type { type } from "../inference.js"
 import type { Node, NodeSchema } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
@@ -29,7 +24,6 @@ import type {
 	TraverseApply
 } from "../shared/traversal.js"
 import { hasArkKind } from "../shared/utils.js"
-import type { DefaultableAst } from "../structure/optional.js"
 import { BaseRoot, type Root, type schemaKindRightOf } from "./root.js"
 import { defineRightwardIntersections } from "./utils.js"
 
@@ -222,114 +216,3 @@ export type inferMorphOut<morph extends Morph> = Exclude<
 	ReturnType<morph>,
 	ArkError | ArkErrors
 >
-
-export type distillIn<t> =
-	includesMorphsOrConstraints<t> extends true ? _distill<t, "in", "base"> : t
-
-export type distillOut<t> =
-	includesMorphsOrConstraints<t> extends true ? _distill<t, "out", "base"> : t
-
-export type distillConstrainableIn<t> =
-	includesMorphsOrConstraints<t> extends true ?
-		_distill<t, "in", "constrainable">
-	:	t
-
-export type distillConstrainableOut<t> =
-	includesMorphsOrConstraints<t> extends true ?
-		_distill<t, "out", "constrainable">
-	:	t
-
-export type includesMorphsOrConstraints<t> =
-	[t, _distill<t, "in", "base">, t, _distill<t, "out", "base">] extends (
-		[_distill<t, "in", "base">, t, _distill<t, "out", "base">, t]
-	) ?
-		false
-	:	true
-
-export type includesMorphs<t> =
-	[
-		_distill<t, "in", "constrainable">,
-		_distill<t, "out", "constrainable">
-	] extends (
-		[_distill<t, "out", "constrainable">, _distill<t, "in", "constrainable">]
-	) ?
-		false
-	:	true
-
-type _distill<
-	t,
-	io extends "in" | "out",
-	distilledKind extends "base" | "constrainable"
-> =
-	t extends TerminallyInferredObjectKind | ArkEnv.preserve | Primitive ? t
-	: unknown extends t ? unknown
-	: t extends MorphAst<infer i, infer o> ?
-		io extends "in" ?
-			_distill<i, io, distilledKind>
-		:	_distill<o, io, distilledKind>
-	: t extends DefaultableAst<infer t> ? _distill<t, io, distilledKind>
-	: t extends of<infer base, infer constraints> ?
-		distilledKind extends "base" ?
-			_distill<base, io, distilledKind>
-		:	of<_distill<base, io, distilledKind>, constraints>
-	: t extends array ? distillArray<t, io, distilledKind, []>
-	: // we excluded this from TerminallyInferredObjectKind so that those types could be
-	// inferred before checking morphs/defaults, which extend Function
-	t extends Function ? t
-	: // avoid recursing into classes with private props etc.
-	{ [k in keyof t]: t[k] } extends t ?
-		io extends "in" ?
-			show<
-				{
-					[k in keyof t as k extends defaultableKeyOf<t> ? never : k]: _distill<
-						t[k],
-						io,
-						distilledKind
-					>
-				} & { [k in defaultableKeyOf<t>]?: _distill<t[k], io, distilledKind> }
-			>
-		:	{
-				[k in keyof t]: _distill<t[k], io, distilledKind>
-			}
-	:	t
-
-type defaultableKeyOf<t> = {
-	[k in keyof t]: [t[k]] extends [anyOrNever] ? never
-	: t[k] extends DefaultableAst ? k
-	: never
-}[keyof t]
-
-type distillArray<
-	t extends array,
-	io extends "in" | "out",
-	constraints extends "base" | "constrainable",
-	prefix extends array
-> =
-	t extends readonly [infer head, ...infer tail] ?
-		distillArray<
-			tail,
-			io,
-			constraints,
-			[...prefix, _distill<head, io, constraints>]
-		>
-	:	[...prefix, ...distillPostfix<t, io, constraints>]
-
-type distillPostfix<
-	t extends array,
-	io extends "in" | "out",
-	constraints extends "base" | "constrainable",
-	postfix extends array = []
-> =
-	t extends readonly [...infer init, infer last] ?
-		distillPostfix<
-			init,
-			io,
-			constraints,
-			[_distill<last, io, constraints>, ...postfix]
-		>
-	:	[...{ [i in keyof t]: _distill<t[i], io, constraints> }, ...postfix]
-
-/** Objects we don't want to expand during inference like Date or Promise */
-type TerminallyInferredObjectKind =
-	| ArkEnv.preserve
-	| BuiltinObjects[Exclude<BuiltinObjectKind, "Array" | "Function">]
