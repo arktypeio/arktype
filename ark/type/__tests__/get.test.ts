@@ -1,7 +1,8 @@
 import { attest, contextualize } from "@arktype/attest"
 import {
 	writeBadKeyAccessMessage,
-	writeRawNumberIndexMessage
+	writeRawNumberIndexMessage,
+	type string
 } from "@arktype/schema"
 import { ark, type } from "arktype"
 
@@ -53,10 +54,15 @@ contextualize(() => {
 
 	it("can get index keys", () => {
 		const t = type({
-			"[/^f/]": "0"
+			"[/^f/]": "0",
+			named: "1"
 		})
 
-		attest(t.get("foo").expression).snap("undefined | 0")
+		attest(t.get("foo" as string & string.matching<"^f">).expression).snap(
+			"undefined | 0"
+		)
+
+		// @ts-expect-error
 		attest(() => t.get("bar")).throwsAndHasTypeError(
 			writeBadKeyAccessMessage("bar", t.expression)
 		)
@@ -71,10 +77,27 @@ contextualize(() => {
 			foof: { c: "1" }
 		})
 
-		attest(t.get("foo").expression).snap("{ a: 1 } | undefined")
-		attest(t.get("oof").expression).snap("{ b: 1 } | undefined")
-		attest(t.get("fof").expression).snap("{ a: 1, b: 1 } | undefined")
+		const a = t.get("foo" as string & string.matching<"^f">)
+
+		attest<{ a: 1 }>(a.infer)
+		attest(a.expression).snap("{ a: 1 } | undefined")
+
+		const b = t.get("oof" as string & string.matching<"f$">)
+		attest<{ b: 1 }>(b.infer)
+		attest(b.expression).snap("{ b: 1 } | undefined")
+
+		const c = t.get(
+			"fof" as string & string.matching<"^f"> & string.matching<"f$">
+		)
+		attest<{
+			a: 1
+			b: 1
+		}>(c.infer)
+		attest(c.expression).snap("{ a: 1, b: 1 } | undefined")
+
 		attest(t.get("foof").expression).snap("{ a: 1, b: 1, c: 1 }")
+
+		// @ts-expect-error
 		attest(() => t.get("goog").expression).throwsAndHasTypeError(
 			writeBadKeyAccessMessage("goog", t.expression)
 		)
@@ -91,7 +114,8 @@ contextualize(() => {
 	it("non-fixed array", () => {
 		const t = type("string[]")
 
-		attest(t.get(0).expression).snap("string | undefined")
+		const a = t.get(0)
+		attest(a.expression).snap("string | undefined")
 		attest(() => t.get(-1)).throws(writeBadKeyAccessMessage("-1", t.expression))
 		attest(() => t.get(5.5)).throws(
 			writeBadKeyAccessMessage("5.5", t.expression)

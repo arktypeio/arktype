@@ -252,8 +252,8 @@ declare class _Type<t = unknown, $ = any> extends InnerRoot<t, $> {
 
 	get<k1 extends keyof t>(k1: k1): Type<t[k1], $>
 	get<k1 extends keyof t, k2 extends keyof t[k1]>(
-		k1: k1,
-		k2: k2
+		k1: k1 | Type<k1, any>,
+		k2: k2 | Type<k2, any>
 	): Type<t[k1][k2], $>
 
 	constrain<
@@ -360,11 +360,7 @@ export type TypeConstructor<t = unknown, $ = {}> = new (
 	$: Scope<$>
 ) => Type<t, $>
 
-export type AnyType<
-	/** @ts-expect-error allow instantiation assignment to the base type */
-	out t = unknown,
-	$ = any
-> = Type<t, $>
+export type AnyType<out t = unknown> = Type<t>
 
 export const Type: TypeConstructor = BaseRoot as never
 
