@@ -49,3 +49,14 @@ export const deanchoredSource = (regex: RegExp | string) => {
 		source.at(-1) === "$" ? -1 : undefined
 	)
 }
+
+// Credit to @gugaguichard for this! https://x.com/gugaguichard/status/1720528864500150534
+export type isStringLiteral<t> =
+	[t] extends [string] ?
+		[string] extends [t] ? false
+		: Uppercase<t> extends Uppercase<Lowercase<t>> ?
+			Lowercase<t> extends Lowercase<Uppercase<t>> ?
+				true
+			:	false
+		:	false
+	:	false

@@ -16,6 +16,7 @@ import {
 	flattenConstraints,
 	intersectConstraints
 } from "../constraint.js"
+import type { NonNegativeIntegerString } from "../keywords/internal.js"
 import type { MutableInner } from "../kinds.js"
 import type { TypeKey, TypePath } from "../node.js"
 import type { BaseRoot } from "../roots/root.js"
@@ -44,7 +45,7 @@ import type { OptionalNode, OptionalSchema } from "./optional.js"
 import type { PropNode } from "./prop.js"
 import type { RequiredNode, RequiredSchema } from "./required.js"
 import type { SequenceNode, SequenceSchema } from "./sequence.js"
-import { arrayIndexMatcher, arrayIndexMatcherReference } from "./shared.js"
+import { arrayIndexMatcherReference } from "./shared.js"
 
 export type UndeclaredKeyBehavior = "ignore" | UndeclaredKeyHandling
 
@@ -267,7 +268,7 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 				matched ||=
 					this.sequence !== undefined &&
 					typeof k === "string" &&
-					arrayIndexMatcher.test(k)
+					$ark.intrinsic.nonNegativeIntegerString.allows(k)
 				if (!matched) {
 					if (traversalKind === "Allows") return false
 					if (this.undeclared === "reject")
@@ -568,3 +569,19 @@ export const normalizeIndex = (
 
 	return normalized
 }
+
+export type indexOf<o> =
+	o extends array ?
+		| (number extends o["length"] ? NonNegativeIntegerString : never)
+		| {
+				[k in keyof o]-?: k extends `${infer index extends number}` ? index | k
+				:	never
+		  }[keyof o & `${number}`]
+	:	{
+			[k in keyof o]: k extends number ? k | `${k}` : k
+		}[keyof o]
+
+export type indexInto<o, k extends indexOf<o>> = o[Extract<
+	k extends NonNegativeIntegerString ? number : k,
+	keyof o
+>]

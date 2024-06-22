@@ -15,7 +15,9 @@ contextualize(() => {
 			bar: "number|bigint"
 		})
 
-		attest(t.get("bar").expression).snap("bigint | number")
+		const a = t.get("bar")
+		attest<number | bigint>(a.infer)
+		attest(a.expression).snap("bigint | number")
 	})
 
 	it("can get deep roots by path", () => {
@@ -28,9 +30,13 @@ contextualize(() => {
 			}
 		})
 
-		attest(t.get("foo", "baz").expression).snap("1")
+		const a = t.get("foo", "baz")
+		attest<1>(a.t)
+		attest(a.expression).snap("1")
 
-		attest(t.get("bar", "quux").expression).snap("2")
+		const b = t.get("bar", "quux")
+		attest<2>(b.t)
+		attest(b.expression).snap("2")
 	})
 
 	it("can merge across a deep union", () => {
@@ -60,12 +66,12 @@ contextualize(() => {
 			named: "1"
 		})
 
-		attest(t.get("foo" as string & string.matching<"^f">).expression).snap(
-			"undefined | 0"
-		)
+		const a = t.get("foo" as string & string.matching<"^f">)
+		attest<0>(a.t)
+		attest(a.expression).snap("undefined | 0")
 
 		// @ts-expect-error
-		attest(() => t.get("bar")).throwsAndHasTypeError(
+		attest(() => t.get("bar")).throws(
 			writeBadKeyAccessMessage("bar", t.expression)
 		)
 	})
@@ -107,7 +113,7 @@ contextualize(() => {
 		attest(d.expression).snap("{ a: 1, b: 1, c: 1 }")
 
 		// @ts-expect-error
-		attest(() => t.get("goog").expression).throwsAndHasTypeError(
+		attest(() => t.get("goog").expression).throws(
 			writeBadKeyAccessMessage("goog", t.expression)
 		)
 	})
@@ -117,17 +123,24 @@ contextualize(() => {
 			"foo?": "null"
 		})
 
-		attest(t.get("foo").expression).snap("undefined | null")
+		const a = t.get("foo")
+		attest<null | undefined>(a.t)
+		attest(a.expression).snap("undefined | null")
 	})
 
 	it("non-fixed array", () => {
 		const t = type("string[]")
 
-		const a = t.get(0)
+		const a = t.get("0")
 		attest<string>(a.infer)
 		attest(a.expression).snap("string | undefined")
-		attest(() => t.get(-1)).throws(writeBadKeyAccessMessage("-1", t.expression))
-		attest(() => t.get(5.5)).throws(
+
+		// @ts-expect-error
+		attest(() => t.get("-1")).throws(
+			writeBadKeyAccessMessage("-1", t.expression)
+		)
+		// @ts-expect-error
+		attest(() => t.get("5.5")).throws(
 			writeBadKeyAccessMessage("5.5", t.expression)
 		)
 
@@ -155,10 +168,15 @@ contextualize(() => {
 		const t = type(["1", "2", "?"])
 
 		// fixed
-		attest(t.get(0).expression).snap("1")
-		attest(t.get(1).expression).snap("undefined | 2")
+		const a = t.get(0)
+		attest<1>(a.infer)
+		attest(a.expression).snap("1")
+		const b = t.get(1)
+		attest<2 | undefined>(b.infer)
+		attest(b.expression).snap("undefined | 2")
 
 		// out of bounds
+		// @ts-expect-error
 		attest(() => t.get(2)).throws(writeBadKeyAccessMessage("2", t.expression))
 	})
 
@@ -166,12 +184,41 @@ contextualize(() => {
 		const t = type(["1", "2", "...", "3[]", "4", "5"])
 
 		// fixed
-		attest(t.get(0).expression).snap("1")
-		attest(t.get(1).expression).snap("2")
+		const a = t.get(0)
+		attest<1>(a.t)
+		attest(a.expression).snap("1")
+
+		const b = t.get(1)
+		attest<2>(b.t)
+		attest(b.expression).snap("2")
 
 		// variadic
 		// based on length, we could narrow this to remove undefined in the future
-		attest(t.get(2).expression).snap("undefined | 3 | 4 | 5")
-		attest(t.get(100).expression).snap("undefined | 3 | 4 | 5")
+		attest(t.get("2").expression).snap("undefined | 3 | 4 | 5")
+		attest(t.get("100").expression).snap("undefined | 3 | 4 | 5")
+	})
+
+	it("deep", () => {
+		const t = type({
+			foo: {
+				"[symbol]": {
+					bar: "1",
+					"baz?": "2"
+				}
+			}
+		})
+
+		const bar = t.get("foo", ark.symbol, "bar")
+		attest<1>(bar.t)
+		attest(bar.expression).snap("undefined | 1")
+
+		const baz = t.get("foo", ark.symbol, "baz")
+		attest<2 | undefined>(baz.t)
+		attest(baz.expression).snap("undefined | 2")
+
+		// @ts-expect-error
+		attest(() => t.get("foo", ark.symbol, "")).completions({
+			"": ["bar", "baz"]
+		})
 	})
 })

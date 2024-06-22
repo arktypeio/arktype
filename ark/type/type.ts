@@ -25,6 +25,8 @@ import {
 	type distillIn,
 	type distillOut,
 	type exclusivizeRangeSchema,
+	type indexInto,
+	type indexOf,
 	type inferIntersection,
 	type inferMorphOut,
 	type inferPipes,
@@ -250,11 +252,20 @@ declare class _Type<t = unknown, $ = any> extends InnerRoot<t, $> {
 	): this is Type<inferTypeRoot<def>, $>
 	overlaps<def>(r: validateTypeRoot<def, $>): boolean
 
-	get<k1 extends keyof t>(k1: k1): Type<t[k1], $>
-	get<k1 extends keyof t, k2 extends keyof t[k1]>(
-		k1: k1 | Type<k1, any>,
-		k2: k2 | Type<k2, any>
-	): Type<t[k1][k2], $>
+	get<k1 extends indexOf<t>>(k1: k1 | AnyType<k1>): Type<indexInto<t, k1>, $>
+	get<k1 extends indexOf<t>, k2 extends indexOf<indexInto<t, k1>>>(
+		k1: k1 | AnyType<k1>,
+		k2: k2 | AnyType<k2>
+	): Type<indexInto<indexInto<t, k1>, k2>, $>
+	get<
+		k1 extends indexOf<t>,
+		k2 extends indexOf<indexInto<t, k1>>,
+		k3 extends indexOf<indexInto<indexInto<t, k1>, k2>>
+	>(
+		k1: k1 | AnyType<k1>,
+		k2: k2 | AnyType<k2>,
+		k3: k3 | AnyType<k3>
+	): Type<indexInto<indexInto<indexInto<t, k1>, k2>, k3>, $>
 
 	constrain<
 		kind extends PrimitiveConstraintKind,
@@ -360,7 +371,7 @@ export type TypeConstructor<t = unknown, $ = {}> = new (
 	$: Scope<$>
 ) => Type<t, $>
 
-export type AnyType<out t = unknown> = Type<t>
+export type AnyType<out t = unknown> = Type<t, any>
 
 export const Type: TypeConstructor = BaseRoot as never
 
