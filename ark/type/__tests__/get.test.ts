@@ -2,6 +2,8 @@ import { attest, contextualize } from "@arktype/attest"
 import {
 	writeBadKeyAccessMessage,
 	writeRawNumberIndexMessage,
+	type Matching,
+	type of,
 	type string
 } from "@arktype/schema"
 import { ark, type } from "arktype"
@@ -77,25 +79,32 @@ contextualize(() => {
 			foof: { c: "1" }
 		})
 
-		const a = t.get("foo" as string & string.matching<"^f">)
+		const a = t.get("foo" as string.matching<"^f">)
 
 		attest<{ a: 1 }>(a.infer)
 		attest(a.expression).snap("{ a: 1 } | undefined")
 
-		const b = t.get("oof" as string & string.matching<"f$">)
+		const b = t.get("oof" as string.matching<"f$">)
 		attest<{ b: 1 }>(b.infer)
 		attest(b.expression).snap("{ b: 1 } | undefined")
 
-		const c = t.get(
-			"fof" as string & string.matching<"^f"> & string.matching<"f$">
-		)
+		const c = t.get("fof" as string.matching<"^f"> & string.matching<"f$">)
 		attest<{
 			a: 1
 			b: 1
 		}>(c.infer)
 		attest(c.expression).snap("{ a: 1, b: 1 } | undefined")
 
-		attest(t.get("foof").expression).snap("{ a: 1, b: 1, c: 1 }")
+		const d = t.get("foof" as of<"foof", Matching<"^f"> & Matching<"f$">>)
+		// should include { c: 1 } as well but it seems TS can't infer it for now
+		attest<
+			{
+				a: 1
+			} & {
+				b: 1
+			}
+		>(d.infer)
+		attest(d.expression).snap("{ a: 1, b: 1, c: 1 }")
 
 		// @ts-expect-error
 		attest(() => t.get("goog").expression).throwsAndHasTypeError(
@@ -115,6 +124,7 @@ contextualize(() => {
 		const t = type("string[]")
 
 		const a = t.get(0)
+		attest<string>(a.infer)
 		attest(a.expression).snap("string | undefined")
 		attest(() => t.get(-1)).throws(writeBadKeyAccessMessage("-1", t.expression))
 		attest(() => t.get(5.5)).throws(
