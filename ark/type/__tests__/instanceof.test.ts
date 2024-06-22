@@ -50,9 +50,11 @@ contextualize(
 				"Type '() => void' is not assignable to type"
 			)
 		})
+
+		// If perf cost too high can use global type config to expand ArkEnv.preserve
 		it("user-defined class", () => {
 			class ArkClass {
-				private isArk = true
+				isArk = true
 			}
 			const ark = type(["instanceof", ArkClass])
 			attest<Type<ArkClass>>(ark)
@@ -65,13 +67,14 @@ contextualize(
 				"must be an instance of ArkClass (was object)"
 			)
 		})
-		// TODO: Fix- Investigate bidirectional check impact on perf to narrow private props without breaking this case:
-		// const tt = type({
-		// 	f: ["string", "=>", (s) => [] as unknown]
-		// })
-		// // Should be inferred as {f: unknown}
-		// type FF = typeof tt.infer
-		// If perf cost too high can use global type config to expand TerminallyInferredObjects
+		it("bidirectional checks doesn't break pipe inference", () => {
+			const tt = type({
+				f: ["string", "=>", s => [] as unknown]
+			})
+			// Should be inferred as {f: unknown}
+			type FF = typeof tt.infer
+		})
+
 		it("class with private properties", () => {
 			class ArkClass {
 				private isArk = true

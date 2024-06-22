@@ -308,28 +308,22 @@ export type schemaToConstraint<
 		:	Narrowed
 	:	never
 
-export type distillIn<t> =
-	includesMorphsOrConstraints<t> extends true ? _distill<t, "in", "base"> : t
+export type distillIn<t> = finalizeDistillation<t, _distill<t, "in", "base">>
 
-export type distillOut<t> =
-	includesMorphsOrConstraints<t> extends true ? _distill<t, "out", "base"> : t
+export type distillOut<t> = finalizeDistillation<t, _distill<t, "out", "base">>
 
-export type distillConstrainableIn<t> =
-	includesMorphsOrConstraints<t> extends true ?
-		_distill<t, "in", "constrainable">
-	:	t
+export type distillConstrainableIn<t> = finalizeDistillation<
+	t,
+	_distill<t, "in", "constrainable">
+>
 
-export type distillConstrainableOut<t> =
-	includesMorphsOrConstraints<t> extends true ?
-		_distill<t, "out", "constrainable">
-	:	t
+export type distillConstrainableOut<t> = finalizeDistillation<
+	t,
+	_distill<t, "out", "constrainable">
+>
 
-export type includesMorphsOrConstraints<t> =
-	[t, _distill<t, "in", "base">, t, _distill<t, "out", "base">] extends (
-		[_distill<t, "in", "base">, t, _distill<t, "out", "base">, t]
-	) ?
-		false
-	:	true
+type finalizeDistillation<t, distilled> =
+	equals<t, distilled> extends true ? t : distilled
 
 export type includesMorphs<t> =
 	[
