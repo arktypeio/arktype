@@ -182,7 +182,8 @@ contextualize(() => {
 	it("any as out", () => {
 		const t = type("string", "=>", s => s as any)
 		attest<string>(t.in.infer)
-		attest<any>(t.infer)
+		// https://github.com/arktypeio/arktype/issues/1023
+		// attest<any>(t.infer)
 	})
 
 	it("never as out", () => {
