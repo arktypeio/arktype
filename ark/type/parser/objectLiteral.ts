@@ -213,12 +213,12 @@ type validateDefaultValueTuple<
 		]
 	:	ErrorMessage<invalidDefaultKeyKindMessage>
 
+const defaultValueStringOperator = " = "
+
 type DefaultValueString<
 	baseDef extends string = string,
 	defaultDef extends UnitLiteral = UnitLiteral
 > = `${baseDef}${typeof defaultValueStringOperator}${defaultDef}`
-
-const defaultValueStringOperator = " = "
 
 type validateDefaultValueString<
 	def extends DefaultValueString,
@@ -250,7 +250,9 @@ type validateDefaultValueString<
 type nonOptionalKeyFrom<k, $, args> =
 	parseKey<k> extends PreparsedKey<"required", infer inner> ? inner
 	: parseKey<k> extends PreparsedKey<"index", infer inner> ?
-		Extract<inferDefinition<inner, $, args>, Key>
+		inferDefinition<inner, $, args> extends infer t extends Key ?
+			t
+		:	never
 	:	// "..." is handled at the type root so is handled neither here nor in optionalKeyFrom
 		// "+" has no effect on inference
 		never
