@@ -1,8 +1,5 @@
 import { bench } from "@arktype/attest"
-import { scope, type } from "arktype"
-import type { UnitLiteral } from "../parser/objectLiteral.js"
-
-type M = UnitLiteral
+import { type } from "arktype"
 
 bench("single-quoted", () => {
 	const _ = type("'nineteen characters'")
