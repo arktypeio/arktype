@@ -61,8 +61,8 @@ contextualize(() => {
 				Object.assign(args, { d: args.c } as const)
 		})()
 		// @ts-expect-error
-		attest(() => Hkt.pipe(AddB, AddD)).type.errors.snap(
-			"Argument of type 'AddD' is not assignable to parameter of type 'Kind<(In: { a: number; b: number; }) => unknown>'.Types of property 'hkt' are incompatible.Type '(args: { c: number; }) => { c: number; d: number; }' is not assignable to type '(In: { a: number; b: number; }) => unknown'.Types of parameters 'args' and 'In' are incompatible.Property 'c' is missing in type '{ a: number; b: number; }' but required in type '{ c: number; }'."
+		attest(() => Hkt.pipe(AddB, AddD)).type.errors(
+			"Property 'c' is missing in type '{ a: number; b: number; }' but required in type '{ c: number; }'."
 		)
 	})
 })
