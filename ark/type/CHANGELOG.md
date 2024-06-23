@@ -25,7 +25,7 @@ const myType = type({ value: ["symbol", "=", mySymbol] })
 
 ### Chained index access
 
-This allows chained index access on types via a .get method
+This allows type-safe chained index access on types via a .get method
 
 ```ts
 const myUnion = type(
@@ -42,8 +42,8 @@ const myUnion = type(
 	}
 )
 
-// 0 | 1
-myUnion.get("foo", "bar")
+// Type<0 | 1>
+const fooBar = myUnion.get("foo", "bar")
 ```
 
 ### `format` subscope keyword
@@ -66,6 +66,8 @@ console.log(lowercase(" fOO "))
 // " FOO "
 const uppercase = type("format.uppercase")
 ```
+
+### Many more improvements, especially related to morphs across unions
 
 ## 2.0.0-dev.24
 

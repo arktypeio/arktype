@@ -56,9 +56,9 @@
 		"mocha": "10.4.0",
 		"prettier": "3.3.2",
 		"tsx": "4.15.6",
-		"typescript": "5.5.2",
+		"typescript": "5.4.5",
 		"typescript-min": "npm:typescript@5.1.5",
-		"typescript-nightly": "npm:typescript@5.6.0-dev.20240619"
+		"typescript-nightly": "npm:typescript@next"
 	},
 	"mocha": {
 		"//": "IF YOU UPDATE THE MOCHA CONFIG HERE, PLEASE ALSO UPDATE ark/repo/mocha.jsonc AND .vscode/settings.json",
@@ -91,5 +91,5 @@
 	"eslintConfig": {
 		"extends": "./ark/repo/.eslintrc.cjs"
 	},
-	"packageManager": "pnpm@9.4.0+sha512.f549b8a52c9d2b8536762f99c0722205efc5af913e77835dbccc3b0b0b2ca9e7dc8022b78062c17291c48e88749c70ce88eb5a74f1fa8c4bf5e18bb46c8bd83a"
+	"packageManager": "pnpm@9.4.0"
 }
