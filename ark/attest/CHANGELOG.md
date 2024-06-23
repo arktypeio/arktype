@@ -1,5 +1,22 @@
 # @arktype/attest
 
+## 0.8.1
+
+### Patch Changes
+
+- [#1024](https://github.com/arktypeio/arktype/pull/1024) [`5284b60`](https://github.com/arktypeio/arktype/commit/5284b6054209ffa38f02ae010c3e9ab3dff93653) Thanks [@ssalbdivad](https://github.com/ssalbdivad)! - ### Add .satisfies as an attest assertion to compare the value to an ArkType definition.
+
+  ```ts
+  attest({ foo: "bar" }).satisfies({ foo: "string" })
+
+  // Error: foo must be a number (was string)
+  attest({ foo: "bar" }).satisfies({ foo: "number" })
+  ```
+
+- Updated dependencies [[`1bf2066`](https://github.com/arktypeio/arktype/commit/1bf2066800ce65edc918a24c251ce20f1ccf29f4)]:
+  - @arktype/util@0.0.50
+  - arktype@2.0.0-dev.25
+
 ## 0.8.0
 
 ### Minor Changes
