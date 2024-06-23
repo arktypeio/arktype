@@ -15,8 +15,11 @@ import {
 	type flattenListable,
 	type show
 } from "@arktype/util"
-import type { ArkConfig } from "arktype"
-import { resolveConfig, type ResolvedArkConfig } from "./config.js"
+import {
+	resolveConfig,
+	type ArkConfig,
+	type ResolvedArkConfig
+} from "./config.js"
 import type { GenericRoot } from "./generic.js"
 import type { inferRoot, validateRoot } from "./inference.js"
 import type { internal } from "./keywords/internal.js"
