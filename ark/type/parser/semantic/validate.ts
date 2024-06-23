@@ -14,8 +14,10 @@ import type {
 } from "@arktype/util"
 import type { Comparator } from "../string/reduce/shared.js"
 import type { writeInvalidGenericArgsMessage } from "../string/shift/operand/genericArgs.js"
+import type { UnitLiteral } from "../string/shift/operator/default.js"
 import type { parseString } from "../string/string.js"
 import type { validateRange } from "./bounds.js"
+import type { validateDefault } from "./default.js"
 import type { validateDivisor } from "./divisor.js"
 import type {
 	GenericInstantiationAst,
@@ -35,6 +37,10 @@ export type validateAst<ast, $, args> =
 		: operator extends Comparator ? validateRange<l, operator, r, $, args>
 		: operator extends "%" ? validateDivisor<l, $, args>
 		: undefined
+	: ast extends (
+		readonly [infer baseAst, "=", infer unitLiteral extends UnitLiteral]
+	) ?
+		validateDefault<baseAst, unitLiteral, $, args>
 	: ast extends readonly ["keyof", infer operand] ?
 		validateAst<operand, $, args>
 	: ast extends GenericInstantiationAst ? validateGenericArgs<ast[2], $, args>

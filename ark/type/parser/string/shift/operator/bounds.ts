@@ -92,17 +92,16 @@ const shiftComparator = (
 	s: DynamicState,
 	start: ComparatorStartChar
 ): Comparator =>
-	s.scanner.lookaheadIs("=") ? `${start}${s.scanner.shift()}`
-	: isKeyOf(start, oneCharComparators) ? start
-	: s.error(singleEqualsMessage)
+	s.scanner.lookaheadIs("=") ?
+		`${start}${s.scanner.shift()}`
+	:	(start as OneCharComparator)
 
 type shiftComparator<
 	start extends ComparatorStartChar,
 	unscanned extends string
 > =
 	unscanned extends `=${infer nextUnscanned}` ? [`${start}=`, nextUnscanned]
-	: start extends OneCharComparator ? [start, unscanned]
-	: state.error<singleEqualsMessage>
+	:	[start & OneCharComparator, unscanned]
 
 export const writeIncompatibleRangeMessage = (
 	l: BoundKind,

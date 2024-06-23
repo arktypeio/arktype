@@ -1,11 +1,13 @@
 import type {
 	Date,
 	DateLiteral,
+	Default,
 	GenericProps,
 	LimitLiteral,
 	RegexLiteral,
 	constrain,
 	distillIn,
+	distillOut,
 	inferIntersection,
 	normalizeLimit,
 	string
@@ -23,6 +25,8 @@ import type { StringLiteral } from "../string/shift/operand/enclosed.js"
 export type inferAstRoot<ast, $, args> = inferConstrainableAst<ast, $, args>
 
 export type inferAstIn<ast, $, args> = distillIn<inferAstRoot<ast, $, args>>
+
+export type inferAstOut<ast, $, args> = distillOut<inferAstRoot<ast, $, args>>
 
 export type inferConstrainableAst<ast, $, args> =
 	ast extends array ? inferExpression<ast, $, args>
@@ -64,6 +68,10 @@ export type inferExpression<ast extends array, $, args> =
 			inferConstrainableAst<ast[0], $, args>,
 			inferConstrainableAst<ast[2], $, args>
 		>
+	: ast[1] extends "=" ?
+		inferTerminal<ast[2] & string, $, args> extends infer defaultValue ?
+			(In?: inferConstrainableAst<ast[0], $, args>) => Default<defaultValue>
+		:	never
 	: ast[1] extends Comparator ?
 		ast[0] extends LimitLiteral ?
 			constrainBound<inferConstrainableAst<ast[2], $, args>, ast[1], ast[0]>

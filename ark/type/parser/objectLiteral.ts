@@ -2,9 +2,7 @@ import {
 	ArkErrors,
 	normalizeIndex,
 	type BaseRoot,
-	type DateLiteral,
 	type Default,
-	type distillOut,
 	type MutableInner,
 	type NodeSchema,
 	type of,
@@ -14,42 +12,33 @@ import {
 	type writeInvalidPropertyKeyMessage
 } from "@arktype/schema"
 import {
-	anchoredRegex,
 	append,
-	deanchoredSource,
-	integerLikeMatcher,
+	escapeToken,
 	isArray,
-	keysOf,
-	numberLikeMatcher,
 	printable,
 	stringAndSymbolicEntriesOf,
-	throwInternalError,
 	throwParseError,
-	tryParseWellFormedBigint,
-	tryParseWellFormedNumber,
 	unset,
 	type anyOrNever,
-	type BigintLiteral,
 	type Dict,
 	type ErrorMessage,
+	type EscapeToken,
 	type Key,
 	type keyError,
 	type merge,
 	type mutable,
-	type NumberLiteral,
 	type show
 } from "@arktype/util"
 import type { ParseContext } from "../scope.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
 import type { astToString } from "./semantic/utils.js"
 import type { validateString } from "./semantic/validate.js"
-import type { StringLiteral } from "./string/shift/operand/enclosed.js"
-import { Scanner } from "./string/shift/scanner.js"
-import type { inferString } from "./string/string.js"
 
 export const parseObjectLiteral = (def: Dict, ctx: ParseContext): BaseRoot => {
 	let spread: StructureNode | undefined
 	const structure: mutable<NodeSchema<"structure">, 2> = {}
+	const wasRoot = ctx.isRoot
+	ctx.isRoot = false
 	// We only allow a spread operator to be used as the first key in an object
 	// because to match JS behavior any keys before the spread are overwritten
 	// by the values in the target object, so there'd be no useful purpose in having it
@@ -62,7 +51,11 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): BaseRoot => {
 		// expecting non-spread entries
 		const spreadEntry = parsedEntries.shift()!
 		const spreadNode = ctx.$.parse(spreadEntry.value, ctx)
-		if (!spreadNode.hasKind("intersection") || !spreadNode.structure) {
+		if (
+			isArray(spreadNode) ||
+			!spreadNode.hasKind("intersection") ||
+			!spreadNode.structure
+		) {
 			return throwParseError(
 				writeInvalidSpreadTypeMessage(
 					typeof spreadEntry.value === "string" ?
@@ -87,8 +80,10 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): BaseRoot => {
 		}
 		if (entry.kind === "index") {
 			// handle key parsing first to match type behavior
-			const key = ctx.$.parse(entry.key, ctx)
+			const key = ctx.$.parse(entry.key, { ...ctx, isRoot: true })
 			const value = ctx.$.parse(entry.value, ctx)
+
+			if (isArray(value)) return throwParseError("")
 
 			const normalizedSignature = normalizeIndex(key, value, ctx.$)
 			if (normalizedSignature.required) {
@@ -101,6 +96,13 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): BaseRoot => {
 				structure.index = append(structure.index, normalizedSignature.index)
 		} else {
 			const value = ctx.$.parse(entry.value, ctx)
+
+			if (isArray(value)) {
+				structure.optional = append(structure.optional, {
+					key: entry.key
+				})
+			}
+
 			const inner: MutableInner<PropKind> = { key: entry.key, value }
 			if (entry.default !== unset) {
 				const out = value.traverse(entry.default)
@@ -116,6 +118,8 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): BaseRoot => {
 	}
 
 	const structureNode = ctx.$.node("structure", structure)
+
+	ctx.isRoot = wasRoot
 
 	return ctx.$.schema({
 		domain: "object",
@@ -153,10 +157,6 @@ type _inferObjectLiteral<def extends object, $, args> = {
 		def[k] extends anyOrNever ?
 			def[k]
 		:	(In?: inferDefinition<baseDef, $, args>) => Default<defaultValue>
-	: def[k] extends DefaultValueString<infer baseDef, infer defaultDef> ?
-		(
-			In?: inferDefinition<baseDef, $, args>
-		) => Default<inferDefinition<defaultDef, $, args>>
 	:	inferDefinition<def[k], $, args>
 } & {
 	-readonly [k in keyof def as optionalKeyFrom<k>]?: inferDefinition<
@@ -189,8 +189,6 @@ export type validateObjectLiteral<def, $, args> = {
 type validateDefaultableValue<def, k extends keyof def, $, args> =
 	def[k] extends DefaultValueTuple ?
 		validateDefaultValueTuple<def[k], k, $, args>
-	: def[k] extends DefaultValueString ?
-		validateDefaultValueString<def[k], k, $, args>
 	:	validateDefinition<def[k], $, args>
 
 type DefaultValueTuple<baseDef = unknown, defaultValue = unknown> = readonly [
@@ -213,39 +211,18 @@ type validateDefaultValueTuple<
 		]
 	:	ErrorMessage<invalidDefaultKeyKindMessage>
 
-const defaultValueStringOperator = " = "
+// type validateDefaultValueString<
+// 	def extends DefaultValueString,
+// 	k extends PropertyKey,
+// 	$,
+// 	args
+// > =
+// 	def extends DefaultValueString<infer baseDef, infer defaultDef> ?
+// 		parseKey<k>["kind"] extends "required" ?
 
-type DefaultValueString<
-	baseDef extends string = string,
-	defaultDef extends UnitLiteral = UnitLiteral
-> = `${baseDef}${typeof defaultValueStringOperator}${defaultDef}`
-
-type validateDefaultValueString<
-	def extends DefaultValueString,
-	k extends PropertyKey,
-	$,
-	args
-> =
-	def extends DefaultValueString<infer baseDef, infer defaultDef> ?
-		parseKey<k>["kind"] extends "required" ?
-			validateDefinition<baseDef, $, args> extends (
-				infer e extends ErrorMessage
-			) ?
-				e
-			: [
-				// check against the output of the type since morphs will not occur
-				// we currently can't parse string embedded defaults for non-global keywords
-				distillOut<inferString<baseDef, {}, args>>,
-				// a default value should never have In/Out, so which side we choose is irrelevant
-				// we will never need a scope here as we're just trying to infer a UnitLiteral
-				distillOut<inferString<defaultDef, {}, args>>
-			] extends [infer base, infer defaultValue] ?
-				defaultValue extends base ?
-					def
-				:	ErrorMessage<`${defaultDef} is not assignable to ${baseDef}`>
-			:	never
-		:	ErrorMessage<invalidDefaultKeyKindMessage>
-	:	never
+// 			:	never
+// 		:	ErrorMessage<invalidDefaultKeyKindMessage>
+// 	:	never
 
 type nonOptionalKeyFrom<k, $, args> =
 	parseKey<k> extends PreparsedKey<"required", infer inner> ? inner
@@ -283,59 +260,6 @@ interface PreparsedEntry extends PreparsedKey {
 	default: unknown
 }
 
-const unitLiteralKeywords = {
-	null: null,
-	undefined,
-	true: true,
-	false: false
-} as const
-
-type UnitLiteralKeyword = keyof typeof unitLiteralKeywords
-
-export type UnitLiteral =
-	| StringLiteral
-	| BigintLiteral
-	| NumberLiteral
-	| DateLiteral
-	| UnitLiteralKeyword
-
-/** Matches a single or double-quoted date or string literal */
-const stringLiteral = anchoredRegex(/(?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')/)
-
-/** Matches a definition including a valid default value expression */
-const defaultExpressionMatcher = new RegExp(
-	`^(?<baseDef>[\\s\\S]*) = (` +
-		`(?<string>${deanchoredSource(stringLiteral)})` +
-		`|(?<date>d${deanchoredSource(stringLiteral)})` +
-		`|(?<bigint>${deanchoredSource(integerLikeMatcher)}n)` +
-		`|(?<number>${deanchoredSource(numberLikeMatcher)})` +
-		`|(?<keyword>${keysOf(unitLiteralKeywords).join("|")})` +
-		`)$`
-)
-
-type DefaultExpressionMatcherGroups = {
-	baseDef: string
-	string?: StringLiteral
-	date?: DateLiteral
-	bigint?: BigintLiteral
-	number?: NumberLiteral
-	keyword?: UnitLiteralKeyword
-}
-
-type UnitLiteralValue =
-	| string
-	| Date
-	| bigint
-	| number
-	| boolean
-	| null
-	| undefined
-
-const parsePossibleDefaultExpression = (s: string) => {
-	const result = defaultExpressionMatcher.exec(s)
-	return result && (result.groups as {} as DefaultExpressionMatcherGroups)
-}
-
 export const parseEntry = (key: Key, value: unknown): PreparsedEntry => {
 	const parsedKey = parseKey(key)
 
@@ -350,51 +274,28 @@ export const parseEntry = (key: Key, value: unknown): PreparsedEntry => {
 		}
 	}
 
-	// if a string includes " = ", it might have a default value,
-	// but it could also be a string literal like "' = '"
-	if (typeof value === "string" && value.includes(defaultValueStringOperator)) {
-		const result = parsePossibleDefaultExpression(value)
-		if (result) return parseDefaultValueStringExpression(parsedKey, result)
-	}
+	// // if a string includes " = ", it might have a default value,
+	// // but it could also be a string literal like "' = '"
+	// if (typeof value === "string" && value.includes(defaultValueStringOperator)) {
+	// 	const result = parsePossibleDefaultExpression(value)
+	// 	if (result) return parseDefaultValueStringExpression(parsedKey, result)
+	// }
+
+	// if (parsedKey.kind !== "required")
+	// 	throwParseError(invalidDefaultKeyKindMessage)
+
+	// return {
+	// 	kind: "optional",
+	// 	key: parsedKey.key,
+	// 	value: match.baseDef,
+	// 	default: defaultValue
+	// }
 
 	return {
 		kind: parsedKey.kind,
 		key: parsedKey.key,
 		value,
 		default: unset
-	}
-}
-
-const parseDefaultValueStringExpression = (
-	parsedKey: PreparsedKey,
-	match: DefaultExpressionMatcherGroups
-): PreparsedEntry => {
-	if (parsedKey.kind !== "required")
-		throwParseError(invalidDefaultKeyKindMessage)
-
-	let defaultValue: UnitLiteralValue
-
-	if (match.keyword) defaultValue = unitLiteralKeywords[match.keyword]
-	else if (match.string) defaultValue = match.string.slice(1, -1)
-	else if (match.number) {
-		defaultValue = tryParseWellFormedNumber(match.number, {
-			errorOnFail: true
-		})
-	} else if (match.date) defaultValue = new Date(match.date)
-	else if (match.bigint) {
-		defaultValue =
-			tryParseWellFormedBigint(match.bigint) ??
-			throwInternalError(
-				`Unexpected default bigint parse result ${match.bigint}`
-			)
-	} else
-		throwInternalError(`Unexpected default expression parse result ${match}`)
-
-	return {
-		kind: "optional",
-		key: parsedKey.key,
-		value: match.baseDef,
-		default: defaultValue
 	}
 }
 
@@ -406,7 +307,7 @@ export type invalidDefaultKeyKindMessage = typeof invalidDefaultKeyKindMessage
 const parseKey = (key: Key): PreparsedKey =>
 	typeof key === "symbol" ? { kind: "required", key }
 	: key.at(-1) === "?" ?
-		key.at(-2) === Scanner.escapeToken ?
+		key.at(-2) === escapeToken ?
 			{ kind: "required", key: `${key.slice(0, -2)}?` }
 		:	{
 				kind: "optional",
@@ -414,7 +315,7 @@ const parseKey = (key: Key): PreparsedKey =>
 			}
 	: key[0] === "[" && key.at(-1) === "]" ?
 		{ kind: "index", key: key.slice(1, -1) }
-	: key[0] === Scanner.escapeToken && key[1] === "[" && key.at(-1) === "]" ?
+	: key[0] === escapeToken && key[1] === "[" && key.at(-1) === "]" ?
 		{ kind: "required", key: key.slice(1) }
 	: key === "..." || key === "+" ? { kind: key, key }
 	: {
@@ -427,7 +328,7 @@ const parseKey = (key: Key): PreparsedKey =>
 
 type parseKey<k> =
 	k extends `${infer inner}?` ?
-		inner extends `${infer baseName}${Scanner.EscapeToken}` ?
+		inner extends `${infer baseName}${EscapeToken}` ?
 			PreparsedKey.from<{
 				kind: "required"
 				key: `${baseName}?`
@@ -437,7 +338,7 @@ type parseKey<k> =
 				key: inner
 			}>
 	: k extends MetaKey ? PreparsedKey.from<{ kind: k; key: k }>
-	: k extends `${Scanner.EscapeToken}${infer escapedMeta extends MetaKey}` ?
+	: k extends `${EscapeToken}${infer escapedMeta extends MetaKey}` ?
 		PreparsedKey.from<{ kind: "required"; key: escapedMeta }>
 	: k extends IndexKey<infer def> ?
 		PreparsedKey.from<{
@@ -446,9 +347,7 @@ type parseKey<k> =
 		}>
 	:	PreparsedKey.from<{
 			kind: "required"
-			key: k extends (
-				`${Scanner.EscapeToken}${infer escapedIndexKey extends IndexKey}`
-			) ?
+			key: k extends `${EscapeToken}${infer escapedIndexKey extends IndexKey}` ?
 				escapedIndexKey
 			: k extends Key ? k
 			: `${k & number}`

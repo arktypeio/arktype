@@ -143,14 +143,13 @@ export type AppendOptions = {
  *
  * @param to The array to which `value` is to be added. If `to` is `undefined`, a new array
  * is created as `[value]` if value was not undefined, otherwise `[]`.
- * @param value The value to add to the array. If `value` is `undefined`, does nothing.
+ * @param value The value to add to the array.
  * @param opts
  * 		prepend: If true, adds the element to the beginning of the array instead of the end
  */
 export const append = <
-	to extends element[] | undefined,
-	element,
-	value extends listable<element> | undefined
+	to extends unknown[] | undefined,
+	value extends listable<(to & {})[number]>
 >(
 	to: to,
 	value: value,
