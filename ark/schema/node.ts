@@ -1,20 +1,25 @@
 import {
 	Callable,
+	appendUnique,
+	cached,
 	flatMorph,
 	includes,
 	isArray,
 	isEmptyObject,
-	shallowClone,
 	throwError,
 	type Dict,
 	type Guardable,
 	type Json,
 	type Key,
+	type array,
 	type conform,
-	type listable
+	type listable,
+	type mutable
 } from "@arktype/util"
 import type { BaseConstraint } from "./constraint.js"
 import type { Inner, MutableInner, Node, reducibleKindOf } from "./kinds.js"
+import type { NodeParseOptions } from "./parse.js"
+import type { MorphNode } from "./roots/morph.js"
 import type { BaseRoot, Root } from "./roots/root.js"
 import type { UnitNode } from "./roots/unit.js"
 import type { RawRootScope } from "./scope.js"
@@ -30,10 +35,12 @@ import {
 	precedenceOfKind,
 	refinementKinds,
 	rootKinds,
+	structuralKinds,
 	type BasisKind,
 	type NodeKind,
 	type OpenNodeKind,
 	type RefinementKind,
+	type StructuralKind,
 	type UnknownAttachments
 } from "./shared/implement.js"
 import {
@@ -41,7 +48,7 @@ import {
 	type TraverseAllows,
 	type TraverseApply
 } from "./shared/traversal.js"
-import type { arkKind } from "./shared/utils.js"
+import { isNode, pathToPropString, type arkKind } from "./shared/utils.js"
 
 export type UnknownNode = BaseNode | Root
 
@@ -50,7 +57,10 @@ export abstract class BaseNode<
 	 * @ts-ignore allow instantiation assignment to the base type */
 	out d extends RawNodeDeclaration = RawNodeDeclaration
 > extends Callable<(data: d["prerequisite"]) => unknown, attachmentsOf<d>> {
-	constructor(public attachments: UnknownAttachments) {
+	constructor(
+		public attachments: UnknownAttachments,
+		public $: RawRootScope
+	) {
 		super(
 			// pipedFromCtx allows us internally to reuse TraversalContext
 			// through pipes and keep track of piped paths. It is not exposed
@@ -75,19 +85,23 @@ export abstract class BaseNode<
 		)
 	}
 
+	bindScope($: RawRootScope): this {
+		if (this.$ === $) return this as never
+		return new (this.constructor as any)(this.attachments, $)
+	}
+
 	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
 	abstract traverseApply: TraverseApply<d["prerequisite"]>
 	abstract expression: string
 	abstract compile(js: NodeCompiler): void
 
-	readonly qualifiedId = `${this.$.id}${this.id}`
 	readonly includesMorph: boolean =
 		this.kind === "morph" ||
 		(this.hasKind("optional") && this.hasDefault()) ||
 		(this.hasKind("structure") && this.undeclared === "delete") ||
 		this.children.some(child => child.includesMorph)
+	// if a predicate accepts exactly one arg, we can safely skip passing context
 	readonly allowsRequiresContext: boolean =
-		// if a predicate accepts exactly one arg, we can safely skip passing context
 		(this.hasKind("predicate") && this.inner.predicate.length !== 1) ||
 		this.kind === "alias" ||
 		this.children.some(child => child.allowsRequiresContext)
@@ -96,8 +110,54 @@ export abstract class BaseNode<
 		{ [this.id]: this }
 	)
 
+	@cached
+	get description(): string {
+		const writer =
+			this.$?.resolvedConfig[this.kind].description ??
+			$ark.config[this.kind]?.description ??
+			$ark.defaultConfig[this.kind].description
+		return this.inner.description ?? writer(this as never)
+	}
+
+	// we don't cache this currently since it can be updated once a scope finishes
+	// resolving cyclic references, although it may be possible to ensure it is cached safely
 	get references(): BaseNode[] {
 		return Object.values(this.referencesById)
+	}
+
+	@cached
+	get shallowReferences(): BaseNode[] {
+		return this.hasKind("structure") ?
+				[this as BaseNode, ...this.children]
+			:	this.children.reduce<BaseNode[]>(
+					(acc, child) => appendUniqueNodes(acc, child.shallowReferences),
+					[this]
+				)
+	}
+
+	@cached
+	get shallowMorphs(): MorphNode[] {
+		return this.shallowReferences
+			.filter(n => n.hasKind("morph"))
+			.sort((l, r) => (l.expression < r.expression ? -1 : 1))
+	}
+
+	// overriden by structural kinds so that only the root at each path is added
+	@cached
+	get flatRefs(): array<FlatRef> {
+		return this.children
+			.reduce<FlatRef[]>(
+				(acc, child) => appendUniqueFlatRefs(acc, child.flatRefs),
+				[]
+			)
+			.sort((l, r) =>
+				l.path.length > r.path.length ? 1
+				: l.path.length < r.path.length ? -1
+				: l.propString > r.propString ? 1
+				: l.propString < r.propString ? -1
+				: l.node.expression < r.node.expression ? -1
+				: 1
+			)
 	}
 
 	readonly precedence: number = precedenceOfKind(this.kind)
@@ -110,36 +170,25 @@ export abstract class BaseNode<
 				new TraversalContext(data, this.$.resolvedConfig)
 			)
 		}
-		return (this.traverseAllows as any)(data as never)
+		return (this.traverseAllows as any)(data)
 	}
 
 	traverse(data: d["prerequisite"]): unknown {
 		return this(data)
 	}
 
-	// unfortunately we can't use the @cached
-	// decorator from @arktype/util on these for now
-	// as they cause a deopt in V8
-	private _in?: BaseNode;
+	@cached
 	get in(): this extends { [arkKind]: "root" } ? BaseRoot : BaseNode {
-		this._in ??= this.getIo("in")
-		return this._in as never
+		return this.getIo("in") as never
 	}
 
-	private _out?: BaseNode
+	@cached
 	get out(): this extends { [arkKind]: "root" } ? BaseRoot : BaseNode {
-		this._out ??= this.getIo("out")
-		return this._out as never
+		return this.getIo("out") as never
 	}
 
-	private _description?: string
-	get description(): string {
-		this._description ??=
-			this.inner.description ??
-			this.$.resolvedConfig[this.kind].description?.(this as never)
-		return this._description
-	}
-
+	// Should be refactored to use transform
+	// https://github.com/arktypeio/arktype/issues/1020
 	getIo(kind: "in" | "out"): BaseNode {
 		if (!this.includesMorph) return this as never
 
@@ -190,6 +239,10 @@ export abstract class BaseNode<
 		return includes(constraintKinds, this.kind)
 	}
 
+	isStructural(): this is Node<StructuralKind> {
+		return includes(structuralKinds, this.kind)
+	}
+
 	isRefinement(): this is Node<RefinementKind> {
 		return includes(refinementKinds, this.kind)
 	}
@@ -210,13 +263,6 @@ export abstract class BaseNode<
 		return this.expression
 	}
 
-	bindScope($: RawRootScope): this {
-		if (this.$ === $) return this as never
-		return new (this.constructor as any)(
-			Object.assign(shallowClone(this.attachments), { $ })
-		)
-	}
-
 	firstReference<narrowed>(
 		filter: Guardable<BaseNode, conform<narrowed, BaseNode>>
 	): narrowed | undefined {
@@ -235,7 +281,7 @@ export abstract class BaseNode<
 	firstReferenceOfKind<kind extends NodeKind>(
 		kind: kind
 	): Node<kind> | undefined {
-		return this.firstReference((node): node is Node<kind> => node.kind === kind)
+		return this.firstReference(node => node.hasKind(kind))
 	}
 
 	firstReferenceOfKindOrThrow<kind extends NodeKind>(kind: kind): Node<kind> {
@@ -250,22 +296,25 @@ export abstract class BaseNode<
 		opts?: DeepNodeTransformOptions
 	): Node<reducibleKindOf<this["kind"]>> | Extract<ReturnType<mapper>, null> {
 		return this._transform(mapper, {
+			...opts,
 			seen: {},
 			path: [],
-			shouldTransform: opts?.shouldTransform ?? (() => true)
+			parseOptions: {
+				prereduced: opts?.prereduced ?? false
+			}
 		}) as never
 	}
 
 	protected _transform(
 		mapper: DeepNodeTransformation,
-		ctx: DeepNodeTransformationContext
+		ctx: DeepNodeTransformContext
 	): BaseNode | null {
+		const $ = ctx.bindScope?.internal ?? this.$
 		if (ctx.seen[this.id])
-			// TODO: remove cast by making lazilyResolve more flexible
-			// TODO: if each transform has a unique base id, could ensure
-			// these don't create duplicates
+			// Cyclic handling needs to be made more robust
+			// https://github.com/arktypeio/arktype/issues/944
 			return this.$.lazilyResolve(ctx.seen[this.id]! as never)
-		if (!ctx.shouldTransform(this as never, ctx)) return this
+		if (ctx.shouldTransform?.(this as never, ctx) === false) return this
 
 		let transformedNode: BaseRoot | undefined
 
@@ -280,6 +329,9 @@ export abstract class BaseNode<
 					const transformed = children._transform(mapper, ctx)
 					return transformed ? [k, transformed] : []
 				}
+				// if the value was previously explicitly set to an empty list,
+				// (e.g. branches for `never`), ensure it is not pruned
+				if (children.length === 0) return [k, v]
 				const transformed = children.flatMap(n => {
 					const transformedChild = n._transform(mapper, ctx)
 					return transformedChild ?? []
@@ -297,8 +349,16 @@ export abstract class BaseNode<
 		)
 
 		if (transformedInner === null) return null
-		// TODO: more robust checks for pruned inner
-		if (isEmptyObject(transformedInner)) return null
+
+		if (isNode(transformedInner))
+			return (transformedNode = transformedInner as never)
+
+		if (
+			isEmptyObject(transformedInner) &&
+			// if inner was previously an empty object (e.g. unknown) ensure it is not pruned
+			!isEmptyObject(this.inner)
+		)
+			return null
 
 		if (
 			(this.kind === "required" ||
@@ -308,11 +368,15 @@ export abstract class BaseNode<
 		)
 			return null
 		if (this.kind === "morph") {
-			;(transformedInner as MutableInner<"morph">).in ??= this.$.keywords
+			;(transformedInner as MutableInner<"morph">).in ??= $ark.intrinsic
 				.unknown as never
 		}
 
-		return (transformedNode = this.$.node(this.kind, transformedInner) as never)
+		return (transformedNode = $.node(
+			this.kind,
+			transformedInner,
+			ctx.parseOptions
+		) as never)
 	}
 
 	configureShallowDescendants(configOrDescription: BaseMeta | string): this {
@@ -326,24 +390,69 @@ export abstract class BaseNode<
 	}
 }
 
+/** a literal key (named property) or a node (index signatures) representing part of a type structure */
+export type TypeKey = Key | BaseRoot
+
+export type TypePath = array<TypeKey>
+
+export type FlatRef<root extends BaseRoot = BaseRoot> = {
+	path: TypePath
+	node: root
+	propString: string
+}
+
+export const typePathToPropString = (path: Readonly<TypePath>) =>
+	pathToPropString(path, {
+		stringifyNonKey: node => node.expression
+	})
+
+export const flatRef = <node extends BaseRoot>(
+	path: TypePath,
+	node: node
+): FlatRef<node> => ({
+	path,
+	node,
+	propString: typePathToPropString(path)
+})
+
+export const flatRefsAreEqual = (l: FlatRef, r: FlatRef) =>
+	l.propString === r.propString && l.node.equals(r.node)
+
+export const appendUniqueFlatRefs = <node extends BaseRoot>(
+	existing: FlatRef<node>[] | undefined,
+	refs: listable<FlatRef<node>>
+) =>
+	appendUnique(existing, refs, {
+		isEqual: flatRefsAreEqual
+	})
+
+export const appendUniqueNodes = <node extends BaseNode>(
+	existing: node[] | undefined,
+	refs: listable<node>
+) =>
+	appendUnique(existing, refs, {
+		isEqual: (l, r) => l.equals(r)
+	})
+
 export type DeepNodeTransformOptions = {
-	shouldTransform: ShouldTransformFn
+	shouldTransform?: ShouldTransformFn
+	bindScope?: RawRootScope
+	prereduced?: boolean
 }
 
 export type ShouldTransformFn = (
 	node: BaseNode,
-	ctx: DeepNodeTransformationContext
+	ctx: DeepNodeTransformContext
 ) => boolean
 
-export type DeepNodeTransformationContext = {
-	/** a literal key or a node representing the key of an index signature */
-	path: Array<Key | BaseNode>
+export interface DeepNodeTransformContext extends DeepNodeTransformOptions {
+	path: mutable<TypePath>
 	seen: { [originalId: string]: (() => BaseNode | undefined) | undefined }
-	shouldTransform: ShouldTransformFn
+	parseOptions: NodeParseOptions
 }
 
 export type DeepNodeTransformation = <kind extends NodeKind>(
 	kind: kind,
 	inner: Inner<kind>,
-	ctx: DeepNodeTransformationContext
+	ctx: DeepNodeTransformContext
 ) => Inner<kind> | null

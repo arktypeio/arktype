@@ -2,11 +2,19 @@ import { domainOf, hasDomain } from "./domain.js"
 import { throwError, throwInternalError } from "./errors.js"
 import { objectKindOf } from "./objectKinds.js"
 import { serializePrimitive, type SerializablePrimitive } from "./primitive.js"
+import type { PartialRecord } from "./records.js"
 
 declare global {
-	export const $ark: ArkRegistry
+	export const $ark: ArkEnv.registry
 
-	export interface ArkRegistry {}
+	export interface ArkEnv {
+		registry(): {}
+	}
+
+	export namespace ArkEnv {
+		export type registry = PartialRecord<string, object | symbol> &
+			ReturnType<ArkEnv["registry"]>
+	}
 }
 
 if ("$ark" in globalThis) {

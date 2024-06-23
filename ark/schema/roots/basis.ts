@@ -1,5 +1,4 @@
 import type { array, Key } from "@arktype/util"
-
 import type { NodeCompiler } from "../shared/compile.js"
 import { compileErrorContext } from "../shared/implement.js"
 import type { TraverseApply } from "../shared/traversal.js"
@@ -11,6 +10,7 @@ export abstract class RawBasis<
 	abstract compiledCondition: string
 	abstract compiledNegation: string
 	abstract literalKeys: array<Key>
+	declare structure: undefined
 
 	rawKeyOf(): BaseRoot {
 		return this.$.units(this.literalKeys)

@@ -47,9 +47,12 @@ contextualize(() => {
 				{
 					limit?: number
 				},
-				{
-					description?: string
-				}?
+				(
+					| {
+							description?: string
+					  }
+					| undefined
+				)?
 			],
 			Params
 		>()

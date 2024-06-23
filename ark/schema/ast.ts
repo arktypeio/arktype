@@ -1,8 +1,19 @@
-import type { conform, leftIfEqual } from "@arktype/util"
+import type {
+	anyOrNever,
+	array,
+	BuiltinObjectKind,
+	BuiltinObjects,
+	conform,
+	equals,
+	leftIfEqual,
+	Primitive,
+	show
+} from "@arktype/util"
 import type { PrimitiveConstraintKind } from "./constraint.js"
 import type { NodeSchema } from "./kinds.js"
 import type { constraintKindOf } from "./roots/intersection.js"
 import type { MorphAst, Out } from "./roots/morph.js"
+import type { DefaultableAst } from "./structure/optional.js"
 
 export type Comparator = "<" | "<=" | ">" | ">=" | "=="
 
@@ -20,11 +31,9 @@ export declare const constrained: unique symbol
 
 export type constrained = typeof constrained
 
-export type of<base, constraints extends Constraints> = [
-	base,
-	constrained,
-	constraints
-]
+export type of<base, constraints extends Constraints> = base & {
+	[constrained]: constraints
+}
 
 export type LimitLiteral = number | DateLiteral
 
@@ -231,7 +240,9 @@ type _constrain<
 	schema extends NodeSchema<kind>
 > =
 	schemaToConstraint<kind, schema> extends infer constraint ?
-		t extends of<infer base, infer constraints> ?
+		parseConstraints<t> extends (
+			[infer base, infer constraints extends Constraints]
+		) ?
 			[number, base] extends [base, number] ?
 				number.is<constraint & constraints>
 			: [string, base] extends [base, string] ?
@@ -243,6 +254,17 @@ type _constrain<
 		: [Date, t] extends [t, Date] ? Date.constrain<kind, schema>
 		: of<t, conform<constraint, Constraints>>
 	:	never
+
+export type parseConstraints<t> =
+	t extends of<infer base, infer constraints> ?
+		equals<t, number & { [constrained]: constraints }> extends true ?
+			[number, constraints]
+		: equals<t, string & { [constrained]: constraints }> extends true ?
+			[string, constraints]
+		: equals<t, Date & { [constrained]: constraints }> extends true ?
+			[Date, constraints]
+		:	[base, constraints]
+	:	null
 
 export type normalizePrimitiveConstraintRoot<
 	schema extends NodeSchema<PrimitiveConstraintKind>
@@ -285,3 +307,111 @@ export type schemaToConstraint<
 			:	AtOrBefore<normalizeLimit<rule>>
 		:	Narrowed
 	:	never
+
+export type distillIn<t> = finalizeDistillation<t, _distill<t, "in", "base">>
+
+export type distillOut<t> = finalizeDistillation<t, _distill<t, "out", "base">>
+
+export type distillConstrainableIn<t> = finalizeDistillation<
+	t,
+	_distill<t, "in", "constrainable">
+>
+
+export type distillConstrainableOut<t> = finalizeDistillation<
+	t,
+	_distill<t, "out", "constrainable">
+>
+
+type finalizeDistillation<t, distilled> =
+	equals<t, distilled> extends true ? t : distilled
+
+export type includesMorphs<t> =
+	[
+		_distill<t, "in", "constrainable">,
+		_distill<t, "out", "constrainable">
+	] extends (
+		[_distill<t, "out", "constrainable">, _distill<t, "in", "constrainable">]
+	) ?
+		false
+	:	true
+
+type _distill<
+	t,
+	io extends "in" | "out",
+	distilledKind extends "base" | "constrainable"
+> =
+	[t] extends [anyOrNever] ? t
+	: parseConstraints<t> extends (
+		[infer base, infer constraints extends Constraints]
+	) ?
+		distilledKind extends "base" ?
+			_distill<base, io, distilledKind>
+		:	of<_distill<base, io, distilledKind>, constraints>
+	: t extends TerminallyInferredObjectKind | ArkEnv.preserve | Primitive ? t
+	: unknown extends t ? unknown
+	: t extends MorphAst<infer i, infer o> ?
+		io extends "in" ?
+			_distill<i, io, distilledKind>
+		:	_distill<o, io, distilledKind>
+	: t extends DefaultableAst<infer t> ? _distill<t, io, distilledKind>
+	: t extends array ? distillArray<t, io, distilledKind, []>
+	: // we excluded this from TerminallyInferredObjectKind so that those types could be
+	// inferred before checking morphs/defaults, which extend Function
+	t extends Function ? t
+	: // avoid recursing into classes with private props etc.
+	{ [k in keyof t]: t[k] } extends t ?
+		io extends "in" ?
+			show<
+				{
+					[k in keyof t as k extends defaultableKeyOf<t> ? never : k]: _distill<
+						t[k],
+						io,
+						distilledKind
+					>
+				} & { [k in defaultableKeyOf<t>]?: _distill<t[k], io, distilledKind> }
+			>
+		:	{
+				[k in keyof t]: _distill<t[k], io, distilledKind>
+			}
+	:	t
+
+type defaultableKeyOf<t> = {
+	[k in keyof t]: [t[k]] extends [anyOrNever] ? never
+	: t[k] extends DefaultableAst ? k
+	: never
+}[keyof t]
+
+type distillArray<
+	t extends array,
+	io extends "in" | "out",
+	constraints extends "base" | "constrainable",
+	prefix extends array
+> =
+	t extends readonly [infer head, ...infer tail] ?
+		distillArray<
+			tail,
+			io,
+			constraints,
+			[...prefix, _distill<head, io, constraints>]
+		>
+	:	[...prefix, ...distillPostfix<t, io, constraints>]
+
+type distillPostfix<
+	t extends array,
+	io extends "in" | "out",
+	constraints extends "base" | "constrainable",
+	postfix extends array = []
+> =
+	t extends readonly [...infer init, infer last] ?
+		distillPostfix<
+			init,
+			io,
+			constraints,
+			[_distill<last, io, constraints>, ...postfix]
+		>
+	:	[...{ [i in keyof t]: _distill<t[i], io, constraints> }, ...postfix]
+
+/** Objects we don't want to expand during inference like Date or Promise */
+type TerminallyInferredObjectKind =
+	| ArkEnv.preserve
+	| BuiltinObjects[Exclude<BuiltinObjectKind, "Array" | "Function">]

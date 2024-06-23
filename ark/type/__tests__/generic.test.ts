@@ -15,7 +15,10 @@
 // describe("standalone generic", () => {
 // 	it("unary", () => {
 // 		const boxOf = type("<t>", { box: "t" })
+
 // 		const schrodingersBox = boxOf({ cat: { isAlive: "boolean" } })
+// 		//     ^?
+
 // 		attest<{ box: { cat: { isAlive: boolean } } }>(schrodingersBox.infer)
 
 // 		attest(schrodingersBox.json).equals(
@@ -130,6 +133,7 @@
 // 			bitBox: "box<0,1>"
 // 		})
 // 	)
+
 // 	const types = lazily(() => $.export())
 
 // 	it("referenced in scope", () => {
@@ -209,6 +213,7 @@
 // 			},
 // 			reference: "alternate<0, 1>"
 // 		}).export()
+
 // 		attest<[0, 1]>(types.reference.infer.swap.swap.order)
 // 		attest<[1, 0]>(types.reference.infer.swap.swap.swap.order)
 // 		const fromCall = types.alternate("'off'", "'on'")

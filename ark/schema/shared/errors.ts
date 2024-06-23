@@ -5,8 +5,8 @@ import {
 	type propwiseXor,
 	type show
 } from "@arktype/util"
+import type { ResolvedArkConfig } from "../config.js"
 import type { Prerequisite, errorContext } from "../kinds.js"
-import type { ResolvedArkConfig } from "../scope.js"
 import type { NodeKind } from "./implement.js"
 import type { TraversalContext } from "./traversal.js"
 import { arkKind, pathToPropString, type TraversalPath } from "./utils.js"

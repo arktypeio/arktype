@@ -1,5 +1,4 @@
 import { caller, getCallStack, type SourcePosition } from "@arktype/fs"
-import type { inferTypeRoot, validateTypeRoot } from "arktype"
 import { getBenchCtx } from "../bench/bench.js"
 import type { Measure } from "../bench/measure.js"
 import { instantiationDataHandler } from "../bench/type.js"
@@ -20,11 +19,6 @@ export type AttestFn = {
 		...args: [actual] extends [never] ? [value: expected] : []
 	): [expected] extends [never] ? rootAssertions<unknown, AssertionKind>
 	:	rootAssertions<expected, AssertionKind>
-	<actual, def>(
-		actual: actual,
-		def: validateTypeRoot<def>
-	): asserts actual is unknown extends actual ? inferTypeRoot<def> & actual
-	:	Extract<actual, inferTypeRoot<def>>
 
 	instantiations: (count?: Measure<"instantiations"> | undefined) => void
 }
@@ -83,4 +77,4 @@ export const attest: AttestFn = Object.assign(attestInternal, {
 		ctx.lastSnapCallPosition = calledFrom
 		instantiationDataHandler({ ...ctx, kind: "instantiations" }, args, false)
 	}
-})
+}) as never

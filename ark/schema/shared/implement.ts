@@ -16,6 +16,7 @@ import {
 	type requireKeys,
 	type show
 } from "@arktype/util"
+import type { NodeConfig, ResolvedUnknownNodeConfig } from "../config.js"
 import type { Declaration, Inner, Node, errorContext } from "../kinds.js"
 import type { BaseNode } from "../node.js"
 import type { NodeParseContext } from "../parse.js"
@@ -24,11 +25,7 @@ import type {
 	schemaKindOrRightOf,
 	schemaKindRightOf
 } from "../roots/root.js"
-import type {
-	NodeConfig,
-	ParsedUnknownNodeConfig,
-	RawRootScope
-} from "../scope.js"
+import type { RawRootScope } from "../scope.js"
 import type { StructureInner } from "../structure/structure.js"
 import type {
 	BaseErrorContext,
@@ -294,7 +291,7 @@ interface CommonNodeImplementationInput<d extends RawNodeDeclaration> {
 
 export interface UnknownNodeImplementation
 	extends CommonNodeImplementationInput<RawNodeDeclaration> {
-	defaults: ParsedUnknownNodeConfig
+	defaults: ResolvedUnknownNodeConfig
 	intersectionIsOpen: boolean
 	intersections: UnknownIntersectionMap
 	keys: Record<string, NodeKeyImplementation<any, any>>
@@ -355,7 +352,6 @@ export interface UnknownAttachments {
 	readonly children: BaseNode[]
 	readonly innerHash: string
 	readonly typeHash: string
-	readonly $: RawRootScope
 }
 
 export interface NarrowedAttachments<d extends RawNodeDeclaration>

@@ -7,7 +7,7 @@ contextualize(() => {
 		// should not use a switch with <=2 branches to avoid needless convolution
 		const t = type("'a'|'b'")
 		attest(t.json).snap([{ unit: "a" }, { unit: "b" }])
-		attest(t.raw.hasKind("union") && t.raw.discriminantJson).snap({
+		attest(t.internal.hasKind("union") && t.internal.discriminantJson).snap({
 			kind: "unit",
 			path: [],
 			cases: { '"a"': true, '"b"': true }
@@ -20,7 +20,7 @@ contextualize(() => {
 	it(">2 literal branches", () => {
 		const t = type("'a'|'b'|'c'")
 		attest(t.json).snap([{ unit: "a" }, { unit: "b" }, { unit: "c" }])
-		attest(t.raw.hasKind("union") && t.raw.discriminantJson).snap({
+		attest(t.internal.hasKind("union") && t.internal.discriminantJson).snap({
 			kind: "unit",
 			path: [],
 			cases: { '"a"': true, '"b"': true, '"c"': true }
@@ -46,7 +46,7 @@ contextualize(() => {
 	it("nested", () => {
 		const $ = getPlaces()
 		const t = $.type("ocean|sky|rainForest|desert")
-		attest(t.raw.hasKind("union") && t.raw.discriminantJson).snap({
+		attest(t.internal.hasKind("union") && t.internal.discriminantJson).snap({
 			kind: "unit",
 			path: ["color"],
 			cases: {
@@ -85,7 +85,9 @@ contextualize(() => {
 			}
 		])
 
-		attest(t.raw.hasKind("union") && t.raw.discriminantJson).equals(null)
+		attest(t.internal.hasKind("union") && t.internal.discriminantJson).equals(
+			null
+		)
 	})
 
 	it("discriminate optional key", () => {
@@ -97,7 +99,9 @@ contextualize(() => {
 			operator: "'to'"
 		})
 
-		attest(t.raw.hasKind("union") && t.raw.discriminantJson).equals(null)
+		attest(t.internal.hasKind("union") && t.internal.discriminantJson).equals(
+			null
+		)
 	})
 
 	it("default case", () => {
@@ -107,7 +111,7 @@ contextualize(() => {
 			{ temperature: "'hot'" }
 		])
 
-		attest(t.raw.hasKind("union") && t.raw.discriminantJson).snap({
+		attest(t.internal.hasKind("union") && t.internal.discriminantJson).snap({
 			kind: "unit",
 			path: ["color"],
 			cases: {
@@ -137,7 +141,7 @@ contextualize(() => {
 			"|",
 			["ocean|rainForest", "|", { temperature: "'hot'" }]
 		])
-		attest(t.raw.hasKind("union") && t.raw.discriminantJson).snap({
+		attest(t.internal.hasKind("union") && t.internal.discriminantJson).snap({
 			kind: "unit",
 			path: ["temperature"],
 			cases: {
@@ -167,14 +171,16 @@ contextualize(() => {
 
 	it("won't discriminate between possibly empty arrays", () => {
 		const t = type("string[]|boolean[]")
-		attest(t.raw.hasKind("union") && t.raw.discriminantJson).equals(null)
+		attest(t.internal.hasKind("union") && t.internal.discriminantJson).equals(
+			null
+		)
 	})
 
 	it("discriminant path including symbol", () => {
 		const s = Symbol("lobmyS")
 		const sRef = registeredReference(s)
 		const t = type({ [s]: "0" }).or({ [s]: "1" })
-		attest(t.raw.hasKind("union") && t.raw.discriminantJson).snap({
+		attest(t.internal.hasKind("union") && t.internal.discriminantJson).snap({
 			kind: "unit",
 			path: [sRef],
 			cases: {

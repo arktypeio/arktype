@@ -29,5 +29,5 @@ export const jsObjects: jsObjects = schemaScope(
 		WeakSet,
 		Promise
 	},
-	{ prereducedAliases: true, registerKeywords: true }
+	{ prereducedAliases: true, intrinsic: true }
 ).export()

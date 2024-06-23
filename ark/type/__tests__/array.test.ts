@@ -344,8 +344,6 @@ value at [1] must be a number (was false)`)
 			const l = type(["...", [{ a: "0" }, "[]"], { b: "0" }, { c: "0" }])
 			const r = type([{ x: "0" }, { y: "0" }, "...", [{ z: "0" }, "[]"]])
 
-			// currently getting this "Expected" result at a type-level incurs
-			// too high a performance cost for such a niche intersection.
 			const expected = type([
 				{ a: "0", x: "0" },
 				{ a: "0", y: "0" },

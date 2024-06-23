@@ -3,8 +3,10 @@ import {
 	isArray,
 	isDotAccessible,
 	printable,
+	throwParseError,
 	type array,
 	type mutable,
+	type requireKeys,
 	type show
 } from "@arktype/util"
 import type { BaseConstraint } from "../constraint.js"
@@ -17,7 +19,7 @@ import type { ArkError } from "./errors.js"
 export const makeRootAndArrayPropertiesMutable = <o extends object>(
 	o: o
 ): makeRootAndArrayPropertiesMutable<o> =>
-	// TODO: this cast should not be required, but it seems TS is referencing
+	// this cast should not be required, but it seems TS is referencing
 	// the wrong parameters here?
 	flatMorph(o as never, (k, v) => [k, isArray(v) ? [...v] : v]) as never
 
@@ -41,17 +43,41 @@ export type internalImplementationOf<
 
 export type TraversalPath = PropertyKey[]
 
-export const pathToPropString = (path: TraversalPath): string => {
-	const propAccessChain = path.reduce<string>(
-		(s, k) =>
-			typeof k === "string" && isDotAccessible(k) ?
-				`${s}.${k}`
-			:	`${s}[${printable(k)}]`,
+export type PathToPropStringOptions<stringifiable = PropertyKey> = requireKeys<
+	{
+		stringifySymbol?: (s: symbol) => string
+		stringifyNonKey?: (o: Exclude<stringifiable, PropertyKey>) => string
+	},
+	stringifiable extends PropertyKey ? never : "stringifyNonKey"
+>
 
-		""
-	)
+export const pathToPropString = <stringifiable>(
+	path: array<stringifiable>,
+	...[opts]: [stringifiable] extends [PropertyKey] ?
+		[opts?: PathToPropStringOptions]
+	:	NoInfer<[opts: PathToPropStringOptions<stringifiable>]>
+): string => {
+	const stringifySymbol = opts?.stringifySymbol ?? printable
+	const propAccessChain = path.reduce<string>((s, k) => {
+		switch (typeof k) {
+			case "string":
+				return isDotAccessible(k) ? `${s}.${k}` : `${s}[${JSON.stringify(k)}]`
+			case "number":
+				return `${s}[${k}]`
+			case "symbol":
+				return `${s}[${stringifySymbol(k)}]`
+			default:
+				if (opts?.stringifyNonKey)
+					return `${s}[${opts.stringifyNonKey(k as never)}]`
+				throwParseError(
+					`${printable(k)} must be a PropertyKey or stringifyNonKey must be passed to options`
+				)
+		}
+	}, "")
 	return propAccessChain[0] === "." ? propAccessChain.slice(1) : propAccessChain
 }
+
+export type arkKind = typeof arkKind
 
 export const arkKind: unique symbol = Symbol("ArkTypeInternalKind")
 

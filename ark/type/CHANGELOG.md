@@ -1,5 +1,74 @@
 # arktype
 
+## 2.0.0-dev.25
+
+### String defaults
+
+Previously, setting a default value on an object required a tuple expression:
+
+```ts
+const myType = type({ value: ["number", "=", 42] })
+```
+
+This is still valid, but now a more convenient syntax is supported for many common cases:
+
+```ts
+const myType = type({ value: "number = 42" })
+```
+
+The original syntax is still supported, and will be required for cases where the default value is not a serializable primitive e.g.
+
+```ts
+const mySymbol = Symbol()
+const myType = type({ value: ["symbol", "=", mySymbol] })
+```
+
+### Chained index access
+
+This allows type-safe chained index access on types via a .get method
+
+```ts
+const myUnion = type(
+	{
+		foo: {
+			bar: "0"
+		}
+	},
+	"|",
+	{
+		foo: {
+			bar: "1"
+		}
+	}
+)
+
+// Type<0 | 1>
+const fooBar = myUnion.get("foo", "bar")
+```
+
+### `format` subscope keyword
+
+The new built-in format subscope contains keywords for transforming validated strings:
+
+```ts
+const foo =
+
+const trim = type("format.trim")
+
+// "fOO"
+console.log(trim(" fOO "))
+
+const lowercase = type("format.lowercase")
+
+// " foo "
+console.log(lowercase(" fOO "))
+
+// " FOO "
+const uppercase = type("format.uppercase")
+```
+
+### Many more improvements, especially related to morphs across unions
+
 ## 2.0.0-dev.24
 
 ### Fix constrained narrow/pipe tuple expression input inference

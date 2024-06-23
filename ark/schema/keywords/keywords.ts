@@ -1,16 +1,17 @@
 import type { GenericRoot } from "../generic.js"
 import type { RootModule, SchemaModule } from "../module.js"
-import { RawRootScope, schemaScope, type RootScope } from "../scope.js"
+import { schemaScope, type RootScope } from "../scope.js"
 // the import ordering here is important so builtin keywords can be resolved
 // and used to bootstrap nodes with constraints
 import { tsKeywords, type tsKeywordExports } from "./tsKeywords.js"
 
 import { formatting, type formattingExports } from "./format.js"
+import { internal, type internalExports } from "./internal.js"
 import { jsObjects, type jsObjectExports } from "./jsObjects.js"
 import { parsing, type parsingExports } from "./parsing.js"
 import { validation, type validationExports } from "./validation.js"
 
-type TsGenericsExports<$ = Ark> = {
+type tsGenericsExports<$ = Ark> = {
 	Record: GenericRoot<
 		["K", "V"],
 		{
@@ -26,12 +27,13 @@ export const ambientRootScope: RootScope<Ark> = schemaScope({
 	...tsKeywords,
 	...jsObjects,
 	...validation,
+	...internal,
 	parse: parsing,
 	format: formatting
 	// TODO: remove cast
 }) as never
 
-RawRootScope.ambient = ambientRootScope.raw
+$ark.ambient = ambientRootScope.internal
 
 export const keywordNodes: SchemaModule<Ark> = ambientRootScope.export()
 
@@ -41,7 +43,8 @@ export interface Ark
 	extends tsKeywordExports,
 		jsObjectExports,
 		validationExports,
-		TsGenericsExports {
+		tsGenericsExports,
+		internalExports {
 	parse: RootModule<parsingExports>
 	format: RootModule<formattingExports>
 }

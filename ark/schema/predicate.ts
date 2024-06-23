@@ -4,7 +4,11 @@ import { BaseConstraint } from "./constraint.js"
 import type { errorContext } from "./kinds.js"
 import type { NodeCompiler } from "./shared/compile.js"
 import type { BaseMeta, declareNode } from "./shared/declare.js"
-import { implementNode, type nodeImplementationOf } from "./shared/implement.js"
+import {
+	compileErrorContext,
+	implementNode,
+	type nodeImplementationOf
+} from "./shared/implement.js"
 import type {
 	TraversalContext,
 	TraverseAllows,
@@ -71,7 +75,7 @@ export class PredicateNode extends BaseConstraint<PredicateDeclaration> {
 		description: this.description
 	}
 
-	compiledErrorContext = `{ code: "predicate", description: "${this.description}" }`
+	compiledErrorContext = compileErrorContext(this.errorContext)
 
 	traverseApply: TraverseApply = (data, ctx) => {
 		if (!this.predicate(data, ctx) && !ctx.hasError())
@@ -105,3 +109,8 @@ export type inferPredicate<t, predicate> =
 			constrain<of<narrowed, constraints>, "predicate", any>
 		:	constrain<narrowed, "predicate", any>
 	:	constrain<t, "predicate", any>
+
+export type inferPredicate2<t, to> =
+	t extends of<unknown, infer constraints> ?
+		constrain<of<to, constraints>, "predicate", any>
+	:	constrain<to, "predicate", any>

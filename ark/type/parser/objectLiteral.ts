@@ -2,7 +2,9 @@ import {
 	ArkErrors,
 	normalizeIndex,
 	type BaseRoot,
+	type DateLiteral,
 	type Default,
+	type distillOut,
 	type MutableInner,
 	type NodeSchema,
 	type of,
@@ -12,26 +14,38 @@ import {
 	type writeInvalidPropertyKeyMessage
 } from "@arktype/schema"
 import {
+	anchoredRegex,
 	append,
+	deanchoredSource,
+	integerLikeMatcher,
 	isArray,
+	keysOf,
+	numberLikeMatcher,
 	printable,
 	stringAndSymbolicEntriesOf,
+	throwInternalError,
 	throwParseError,
+	tryParseWellFormedBigint,
+	tryParseWellFormedNumber,
 	unset,
 	type anyOrNever,
+	type BigintLiteral,
 	type Dict,
 	type ErrorMessage,
 	type Key,
 	type keyError,
 	type merge,
 	type mutable,
+	type NumberLiteral,
 	type show
 } from "@arktype/util"
 import type { ParseContext } from "../scope.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
 import type { astToString } from "./semantic/utils.js"
 import type { validateString } from "./semantic/validate.js"
+import type { StringLiteral } from "./string/shift/operand/enclosed.js"
 import { Scanner } from "./string/shift/scanner.js"
+import type { inferString } from "./string/string.js"
 
 export const parseObjectLiteral = (def: Dict, ctx: ParseContext): BaseRoot => {
 	let spread: StructureNode | undefined
@@ -40,7 +54,9 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): BaseRoot => {
 	// because to match JS behavior any keys before the spread are overwritten
 	// by the values in the target object, so there'd be no useful purpose in having it
 	// anywhere except for the beginning.
-	const parsedEntries = stringAndSymbolicEntriesOf(def).map(parseEntry)
+	const parsedEntries = stringAndSymbolicEntriesOf(def).map(entry =>
+		parseEntry(entry[0], entry[1])
+	)
 	if (parsedEntries[0]?.kind === "...") {
 		// remove the spread entry so we can iterate over the remaining entries
 		// expecting non-spread entries
@@ -87,7 +103,7 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): BaseRoot => {
 			const value = ctx.$.parse(entry.value, ctx)
 			const inner: MutableInner<PropKind> = { key: entry.key, value }
 			if (entry.default !== unset) {
-				const out = value(entry.default)
+				const out = value.traverse(entry.default)
 				if (out instanceof ArkErrors)
 					throwParseError(`Default value at ${printable(entry.key)} ${out}`)
 
@@ -132,11 +148,15 @@ type _inferObjectLiteral<def extends object, $, args> = {
 	// support for builtin readonly tracked here:
 	// https://github.com/arktypeio/arktype/issues/808
 	-readonly [k in keyof def as nonOptionalKeyFrom<k, $, args>]: def[k] extends (
-		readonly [infer defaultableDef, "=", infer v]
+		DefaultValueTuple<infer baseDef, infer defaultValue>
 	) ?
 		def[k] extends anyOrNever ?
 			def[k]
-		:	(In?: inferDefinition<defaultableDef, $, args>) => Default<v>
+		:	(In?: inferDefinition<baseDef, $, args>) => Default<defaultValue>
+	: def[k] extends DefaultValueString<infer baseDef, infer defaultDef> ?
+		(
+			In?: inferDefinition<baseDef, $, args>
+		) => Default<inferDefinition<defaultDef, $, args>>
 	:	inferDefinition<def[k], $, args>
 } & {
 	-readonly [k in keyof def as optionalKeyFrom<k>]?: inferDefinition<
@@ -163,27 +183,74 @@ export type validateObjectLiteral<def, $, args> = {
 			validateDefinition<def[k], $, args>
 		:	keyError<writeInvalidSpreadTypeMessage<astToString<def[k]>>>
 	: k extends "+" ? UndeclaredKeyBehavior
-	: validatePossibleDefaultValue<def, k, $, args>
+	: validateDefaultableValue<def, k, $, args>
 }
 
-type validatePossibleDefaultValue<def, k extends keyof def, $, args> =
-	def[k] extends readonly [infer defaultDef, "=", unknown] ?
-		parseKey<k>["kind"] extends "required" ?
-			readonly [
-				validateDefinition<defaultDef, $, args>,
-				"=",
-				inferDefinition<defaultDef, $, args>
-			]
-		:	ErrorMessage<invalidDefaultKeyKindMessage>
+type validateDefaultableValue<def, k extends keyof def, $, args> =
+	def[k] extends DefaultValueTuple ?
+		validateDefaultValueTuple<def[k], k, $, args>
+	: def[k] extends DefaultValueString ?
+		validateDefaultValueString<def[k], k, $, args>
 	:	validateDefinition<def[k], $, args>
+
+type DefaultValueTuple<baseDef = unknown, defaultValue = unknown> = readonly [
+	baseDef,
+	"=",
+	defaultValue
+]
+
+type validateDefaultValueTuple<
+	def extends DefaultValueTuple,
+	k extends PropertyKey,
+	$,
+	args
+> =
+	parseKey<k>["kind"] extends "required" ?
+		readonly [
+			validateDefinition<def[0], $, args>,
+			"=",
+			inferDefinition<def[0], $, args>
+		]
+	:	ErrorMessage<invalidDefaultKeyKindMessage>
+
+type DefaultValueString<
+	baseDef extends string = string,
+	defaultDef extends UnitLiteral = UnitLiteral
+> = `${baseDef}${typeof defaultValueStringOperator}${defaultDef}`
+
+const defaultValueStringOperator = " = "
+
+type validateDefaultValueString<
+	def extends DefaultValueString,
+	k extends PropertyKey,
+	$,
+	args
+> =
+	def extends DefaultValueString<infer baseDef, infer defaultDef> ?
+		parseKey<k>["kind"] extends "required" ?
+			validateDefinition<baseDef, $, args> extends (
+				infer e extends ErrorMessage
+			) ?
+				e
+			: [
+				// check against the output of the type since morphs will not occur
+				// we currently can't parse string embedded defaults for non-global keywords
+				distillOut<inferString<baseDef, {}, args>>,
+				// a default value should never have In/Out, so which side we choose is irrelevant
+				// we will never need a scope here as we're just trying to infer a UnitLiteral
+				distillOut<inferString<defaultDef, {}, args>>
+			] extends [infer base, infer defaultValue] ?
+				defaultValue extends base ?
+					def
+				:	ErrorMessage<`${defaultDef} is not assignable to ${baseDef}`>
+			:	never
+		:	ErrorMessage<invalidDefaultKeyKindMessage>
+	:	never
 
 type nonOptionalKeyFrom<k, $, args> =
 	parseKey<k> extends PreparsedKey<"required", infer inner> ? inner
 	: parseKey<k> extends PreparsedKey<"index", infer inner> ?
-		inferDefinition<inner, $, args> extends infer t ?
-			// simplify the display of constrained index signatures
-			(t extends of<infer inner, any> ? Extract<inner, string> : Key) & t
-		:	never
+		Extract<inferDefinition<inner, $, args>, Key>
 	:	// "..." is handled at the type root so is handled neither here nor in optionalKeyFrom
 		// "+" has no effect on inference
 		never
@@ -214,22 +281,78 @@ interface PreparsedEntry extends PreparsedKey {
 	default: unknown
 }
 
-export const parseEntry = ([key, value]: readonly [
-	Key,
-	unknown
-]): PreparsedEntry => {
+const unitLiteralKeywords = {
+	null: null,
+	undefined,
+	true: true,
+	false: false
+} as const
+
+type UnitLiteralKeyword = keyof typeof unitLiteralKeywords
+
+export type UnitLiteral =
+	| StringLiteral
+	| BigintLiteral
+	| NumberLiteral
+	| DateLiteral
+	| UnitLiteralKeyword
+
+/** Matches a single or double-quoted date or string literal */
+const stringLiteral = anchoredRegex(/(?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')/)
+
+/** Matches a definition including a valid default value expression */
+const defaultExpressionMatcher = new RegExp(
+	`^(?<baseDef>[\\s\\S]*) = (` +
+		`(?<string>${deanchoredSource(stringLiteral)})` +
+		`|(?<date>d${deanchoredSource(stringLiteral)})` +
+		`|(?<bigint>${deanchoredSource(integerLikeMatcher)}n)` +
+		`|(?<number>${deanchoredSource(numberLikeMatcher)})` +
+		`|(?<keyword>${keysOf(unitLiteralKeywords).join("|")})` +
+		`)$`
+)
+
+type DefaultExpressionMatcherGroups = {
+	baseDef: string
+	string?: StringLiteral
+	date?: DateLiteral
+	bigint?: BigintLiteral
+	number?: NumberLiteral
+	keyword?: UnitLiteralKeyword
+}
+
+type UnitLiteralValue =
+	| string
+	| Date
+	| bigint
+	| number
+	| boolean
+	| null
+	| undefined
+
+const parsePossibleDefaultExpression = (s: string) => {
+	const result = defaultExpressionMatcher.exec(s)
+	return result && (result.groups as {} as DefaultExpressionMatcherGroups)
+}
+
+export const parseEntry = (key: Key, value: unknown): PreparsedEntry => {
 	const parsedKey = parseKey(key)
 
 	if (isArray(value) && value[1] === "=") {
 		if (parsedKey.kind !== "required")
 			throwParseError(invalidDefaultKeyKindMessage)
-
 		return {
 			kind: "optional",
 			key: parsedKey.key,
 			value: value[0],
 			default: value[2]
 		}
+	}
+
+	// if a string includes " = ", it might have a default value,
+	// but it could also be a string literal like "' = '"
+	if (typeof value === "string" && value.includes(defaultValueStringOperator)) {
+		const result = parsePossibleDefaultExpression(value)
+		if (result) return parseDefaultValueStringExpression(parsedKey, result)
 	}
 
 	return {
@@ -240,8 +363,41 @@ export const parseEntry = ([key, value]: readonly [
 	}
 }
 
+const parseDefaultValueStringExpression = (
+	parsedKey: PreparsedKey,
+	match: DefaultExpressionMatcherGroups
+): PreparsedEntry => {
+	if (parsedKey.kind !== "required")
+		throwParseError(invalidDefaultKeyKindMessage)
+
+	let defaultValue: UnitLiteralValue
+
+	if (match.keyword) defaultValue = unitLiteralKeywords[match.keyword]
+	else if (match.string) defaultValue = match.string.slice(1, -1)
+	else if (match.number) {
+		defaultValue = tryParseWellFormedNumber(match.number, {
+			errorOnFail: true
+		})
+	} else if (match.date) defaultValue = new Date(match.date)
+	else if (match.bigint) {
+		defaultValue =
+			tryParseWellFormedBigint(match.bigint) ??
+			throwInternalError(
+				`Unexpected default bigint parse result ${match.bigint}`
+			)
+	} else
+		throwInternalError(`Unexpected default expression parse result ${match}`)
+
+	return {
+		kind: "optional",
+		key: parsedKey.key,
+		value: match.baseDef,
+		default: defaultValue
+	}
+}
+
 // single quote use here is better for TypeScript's inlined error to avoid escapes
-export const invalidDefaultKeyKindMessage = `Only required keys may specify default values, e.g. { ark: ['string', '=', '⛵'] }`
+export const invalidDefaultKeyKindMessage = `Only required keys may specify default values, e.g. { value: 'number = 0' }`
 
 export type invalidDefaultKeyKindMessage = typeof invalidDefaultKeyKindMessage
 

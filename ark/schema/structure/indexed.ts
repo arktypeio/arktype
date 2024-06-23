@@ -1,16 +1,17 @@
 import {
+	append,
 	printable,
 	stringAndSymbolicEntriesOf,
 	throwParseError
 } from "@arktype/util"
 import { BaseConstraint } from "../constraint.js"
 import type { Node, RootSchema } from "../kinds.js"
-import type {
-	DeepNodeTransformation,
-	DeepNodeTransformationContext
+import {
+	flatRef,
+	type DeepNodeTransformContext,
+	type DeepNodeTransformation
 } from "../node.js"
 import type { BaseRoot } from "../roots/root.js"
-import type { UnitNode } from "../roots/unit.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
@@ -56,14 +57,12 @@ export const indexImplementation: nodeImplementationOf<IndexDeclaration> =
 				child: true,
 				parse: (schema, ctx) => {
 					const key = ctx.$.schema(schema)
-					if (!key.extends(ctx.$.keywords.propertyKey)) {
+					if (!key.extends($ark.intrinsic.propertyKey)) {
 						return throwParseError(
 							writeInvalidPropertyKeyMessage(key.expression)
 						)
 					}
-					const enumerableBranches = key.branches.filter((b): b is UnitNode =>
-						b.hasKind("unit")
-					)
+					const enumerableBranches = key.branches.filter(b => b.hasKind("unit"))
 					if (enumerableBranches.length) {
 						return throwParseError(
 							writeEnumerableIndexBranches(
@@ -90,7 +89,7 @@ export const indexImplementation: nodeImplementationOf<IndexDeclaration> =
 					const valueIntersection = intersectNodes(l.value, r.value, ctx)
 					const value =
 						valueIntersection instanceof Disjoint ?
-							ctx.$.keywords.never.raw
+							$ark.intrinsic.never.internal
 						:	valueIntersection
 					return ctx.$.node("index", { signature: l.signature, value })
 				}
@@ -109,7 +108,7 @@ export const indexImplementation: nodeImplementationOf<IndexDeclaration> =
 	})
 
 export class IndexNode extends BaseConstraint<IndexDeclaration> {
-	impliedBasis: BaseRoot = this.$.keywords.object.raw
+	impliedBasis: BaseRoot = $ark.intrinsic.object
 	expression = `[${this.signature.expression}]: ${this.value.expression}`
 
 	traverseAllows: TraverseAllows<object> = (data, ctx) =>
@@ -135,12 +134,21 @@ export class IndexNode extends BaseConstraint<IndexDeclaration> {
 
 	protected override _transform(
 		mapper: DeepNodeTransformation,
-		ctx: DeepNodeTransformationContext
+		ctx: DeepNodeTransformContext
 	) {
 		ctx.path.push(this.signature)
 		const result = super._transform(mapper, ctx)
 		ctx.path.pop()
 		return result
+	}
+
+	override get flatRefs() {
+		return append(
+			this.value.flatRefs.map(ref =>
+				flatRef([this.signature, ...ref.path], ref.node)
+			),
+			flatRef([this.signature], this.value)
+		)
 	}
 
 	compile(): void {

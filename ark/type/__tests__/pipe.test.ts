@@ -32,7 +32,7 @@ contextualize(() => {
 		const t = type("parse.number").atMostLength(5)
 		attest<(In: string.atMostLength<5>) => Out<number>>(t.t)
 
-		const morphs = t.raw.assertHasKind("morph").serializedMorphs
+		const morphs = t.internal.assertHasKind("morph").serializedMorphs
 		attest(t.json).snap({
 			in: {
 				domain: "string",
@@ -55,8 +55,39 @@ contextualize(() => {
 	it("within type", () => {
 		const t = type(["boolean", "=>", data => !data])
 		attest<Type<(In: boolean) => Out<boolean>>>(t)
+
+		const serializedMorphs =
+			t.internal.firstReferenceOfKindOrThrow("morph").serializedMorphs
+
+		attest(t.json).snap([
+			{ in: { unit: false }, morphs: serializedMorphs },
+			{ in: { unit: true }, morphs: serializedMorphs }
+		])
+
 		const out = t(true)
 		attest<boolean | type.errors>(out).equals(false)
+		attest(t(1).toString()).snap("must be boolean (was 1)")
+	})
+
+	it("unit branches", () => {
+		const t = type("0 | 1 | 2").pipe(n => n + 1)
+		attest<(In: 0 | 1 | 2) => Out<number>>(t.t)
+
+		const serializedMorphs =
+			t.internal.firstReferenceOfKindOrThrow("morph").serializedMorphs
+
+		attest(t.internal.assertHasKind("union").discriminantJson).snap({
+			kind: "unit",
+			path: [],
+			cases: {
+				"0": { in: { unit: 0 }, morphs: serializedMorphs },
+				"1": { in: { unit: 1 }, morphs: serializedMorphs },
+				"2": { in: { unit: 2 }, morphs: serializedMorphs }
+			}
+		})
+
+		attest(t(0)).equals(1)
+		attest(t(3).toString()).snap("must be 0, 1 or 2 (was 3)")
 	})
 
 	it("type instance reference", () => {
@@ -151,7 +182,8 @@ contextualize(() => {
 	it("any as out", () => {
 		const t = type("string", "=>", s => s as any)
 		attest<string>(t.in.infer)
-		attest<any>(t.infer)
+		// https://github.com/arktypeio/arktype/issues/1023
+		// attest<any>(t.infer)
 	})
 
 	it("never as out", () => {
@@ -183,11 +215,11 @@ contextualize(() => {
 	it("doesn't pipe on error", () => {
 		const a = type({ a: "number" }).pipe(o => o.a + 1)
 
-		const aMorphs = a.raw.assertHasKind("morph").serializedMorphs
+		const aMorphs = a.internal.assertHasKind("morph").serializedMorphs
 
 		const b = type({ a: "string" }, "=>", o => o.a + "!")
 
-		const bMorphs = b.raw.assertHasKind("morph").serializedMorphs
+		const bMorphs = b.internal.assertHasKind("morph").serializedMorphs
 
 		const t = b.or(a)
 
@@ -235,13 +267,13 @@ contextualize(() => {
 			bAndA: () => $.type("b&a")
 		})
 		const types = $.export()
-		assertNodeKind(types.bAndA.raw, "morph")
-		assertNodeKind(types.aAndB.raw, "morph")
+		assertNodeKind(types.bAndA.internal, "morph")
+		assertNodeKind(types.aAndB.internal, "morph")
 
 		attest<(In: 3.14) => Out<string>>(types.aAndB.t)
 		attest(types.aAndB.json).snap({
 			in: { unit: 3.14 },
-			morphs: types.aAndB.raw.serializedMorphs
+			morphs: types.aAndB.internal.serializedMorphs
 		})
 		attest<typeof types.aAndB>(types.bAndA)
 		attest(types.bAndA).equals(types.aAndB)
@@ -256,7 +288,7 @@ contextualize(() => {
 		const types = $.export()
 		// TODO: FIX
 		// attest<Type<(In: { a: 1; b: 2 }) => string>>(types.c)
-		assertNodeKind(types.c.raw, "morph")
+		assertNodeKind(types.c.internal, "morph")
 		attest(types.c.json).snap({
 			in: {
 				domain: "object",
@@ -265,7 +297,7 @@ contextualize(() => {
 					{ key: "b", value: { unit: 2 } }
 				]
 			},
-			morphs: types.c.raw.serializedMorphs
+			morphs: types.c.internal.serializedMorphs
 		})
 	})
 
@@ -278,7 +310,7 @@ contextualize(() => {
 		}).export()
 		attest<boolean | ((In: number) => Out<string>)>(types.aOrB.t)
 		const serializedMorphs =
-			types.aOrB.raw.firstReferenceOfKindOrThrow("morph").serializedMorphs
+			types.aOrB.internal.firstReferenceOfKindOrThrow("morph").serializedMorphs
 		attest(types.aOrB.json).snap([
 			{ in: "number", morphs: serializedMorphs },
 			{ unit: false },
@@ -310,7 +342,7 @@ contextualize(() => {
 		>(types.c.t)
 
 		const serializedMorphs =
-			types.a.raw.firstReferenceOfKindOrThrow("morph").serializedMorphs
+			types.a.internal.firstReferenceOfKindOrThrow("morph").serializedMorphs
 
 		attest(types.c.json).snap([
 			{ domain: "object", required: [{ key: "a", value: "Function" }] },
@@ -339,10 +371,10 @@ contextualize(() => {
 		})
 		const types = $.export()
 		attest<(In: string) => Out<boolean>>(types.b.t)
-		assertNodeKind(types.b.raw, "morph")
+		assertNodeKind(types.b.internal, "morph")
 		attest(types.b.json).snap({
 			in: "string",
-			morphs: types.b.raw.serializedMorphs
+			morphs: types.b.internal.serializedMorphs
 		})
 	})
 
@@ -354,8 +386,8 @@ contextualize(() => {
 
 		const types = $.export()
 		attest<(In: { a: string }) => Out<boolean>>(types.b.t)
-		assertNodeKind(types.b.raw, "morph")
-		assertNodeKind(types.a.raw, "morph")
+		assertNodeKind(types.b.internal, "morph")
+		assertNodeKind(types.a.internal, "morph")
 		attest(types.b.json).snap({
 			in: {
 				domain: "object",
@@ -364,12 +396,12 @@ contextualize(() => {
 						key: "a",
 						value: {
 							in: "string",
-							morphs: types.a.raw.serializedMorphs
+							morphs: types.a.internal.serializedMorphs
 						}
 					}
 				]
 			},
-			morphs: types.b.raw.serializedMorphs
+			morphs: types.b.internal.serializedMorphs
 		})
 	})
 
@@ -383,8 +415,8 @@ contextualize(() => {
 			({ a }) => a === 0
 		)
 		attest<Type<(In: { a: string }) => Out<boolean>>>(t)
-		assertNodeKind(t.raw, "morph")
-		const nestedMorph = t.raw.firstReferenceOfKindOrThrow("morph")
+		assertNodeKind(t.internal, "morph")
+		const nestedMorph = t.internal.firstReferenceOfKindOrThrow("morph")
 		attest(t.json).snap({
 			in: {
 				domain: "object",
@@ -398,7 +430,7 @@ contextualize(() => {
 					}
 				]
 			},
-			morphs: t.raw.serializedMorphs
+			morphs: t.internal.serializedMorphs
 		})
 	})
 
@@ -412,9 +444,9 @@ contextualize(() => {
 
 		attest<[number] | ((In: [string]) => Out<string[]>)>(types.c.t)
 		const expectedSerializedMorphs =
-			types.a.raw.assertHasKind("morph").serializedMorphs
+			types.a.internal.assertHasKind("morph").serializedMorphs
 
-		attest(types.c.raw.assertHasKind("union").discriminantJson).snap({
+		attest(types.c.internal.assertHasKind("union").discriminantJson).snap({
 			kind: "domain",
 			path: ["0"],
 			cases: {
@@ -487,7 +519,7 @@ contextualize(() => {
 		}).export()
 		attest<{ a: (In: of<1, MoreThan<0>>) => Out<number> }>(types.c.t)
 		const { serializedMorphs } =
-			types.a.raw.firstReferenceOfKindOrThrow("morph")
+			types.a.internal.firstReferenceOfKindOrThrow("morph")
 
 		attest(types.c.json).snap({
 			required: [
@@ -521,8 +553,8 @@ contextualize(() => {
 			}).export()
 		}).throws(
 			writeIndiscriminableMorphMessage(
-				"(In: string /.*/) => Out<unknown>",
-				"string"
+				"string",
+				"(In: string /.*/) => Out<unknown>"
 			)
 		)
 	})
@@ -562,8 +594,8 @@ contextualize(() => {
 
 		attest(() => $.type("a|c")).throws(
 			writeIndiscriminableMorphMessage(
-				"{ foo: (In: string) => Out<unknown> }",
-				"{ bar: symbol }"
+				"{ bar: symbol }",
+				"{ foo: (In: string) => Out<unknown> }"
 			)
 		)
 	})
@@ -619,5 +651,90 @@ contextualize(() => {
 		).throws(
 			writeIndiscriminableMorphMessage("(In: string) => Out<unknown>", '"foo"')
 		)
+	})
+
+	it("allows undiscriminated union if morphs are equal", () => {
+		const t = type({ foo: "1" })
+			.or({ bar: "1" })
+			.pipe(o => Object.values(o))
+
+		attest<
+			(
+				In:
+					| {
+							foo: 1
+					  }
+					| {
+							bar: 1
+					  }
+			) => Out<1[]>
+		>(t.t)
+
+		const serializedMorphs =
+			t.internal.firstReferenceOfKindOrThrow("morph").serializedMorphs
+
+		attest(t.json).snap([
+			{
+				in: {
+					required: [{ key: "bar", value: { unit: 1 } }],
+					domain: "object"
+				},
+				morphs: serializedMorphs
+			},
+			{
+				in: {
+					required: [{ key: "foo", value: { unit: 1 } }],
+					domain: "object"
+				},
+				morphs: serializedMorphs
+			}
+		])
+		attest(t({ foo: 1 })).snap([1])
+		attest(t({ bar: 1 })).snap([1])
+		attest(t({ baz: 2 }).toString()).snap(
+			"bar must be 1 (was missing) or foo must be 1 (was missing)"
+		)
+	})
+	it("allows undiscriminated union if morphs at path are equal", () => {
+		const t = type({ l: "1", n: "parse.number" }, "|", {
+			r: "1",
+			n: "parse.number"
+		})
+
+		attest<
+			| {
+					l: 1
+					n: (In: string) => Out<number>
+			  }
+			| {
+					r: 1
+					n: (In: string) => Out<number>
+			  }
+		>(t.t)
+
+		const serializedMorphs =
+			t.internal.firstReferenceOfKindOrThrow("morph").serializedMorphs
+
+		attest(t.expression).snap(
+			"{ l: 1, n: (In: string /^(?!^-0$)-?(?:0|[1-9]\\d*)(?:\\.\\d*[1-9])?$/) => Out<unknown> } | { n: (In: string /^(?!^-0$)-?(?:0|[1-9]\\d*)(?:\\.\\d*[1-9])?$/) => Out<unknown>, r: 1 }"
+		)
+		attest(t({ l: 1, n: "234" })).snap({ l: 1, n: 234 })
+		attest(t({ r: 1, n: "234" })).snap({ r: 1, n: 234 })
+		attest(t({ l: 1, r: 1, n: "234" })).snap({ l: 1, r: 1, n: 234 })
+		attest(t({ n: "234" }).toString()).snap(
+			"l must be 1 (was missing) or r must be 1 (was missing)"
+		)
+	})
+	it("fails on indiscriminable morph in nested union", () => {
+		attest(() =>
+			type({
+				foo: "boolean | parse.date"
+			}).or({
+				foo: "boolean | parse.json"
+			})
+		).throws
+			.snap(`ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
+Left: { foo: (In: string) => Out<unknown> | false | true }
+Right: { foo: (In: string) => Out<unknown> | false | true }`)
 	})
 })
