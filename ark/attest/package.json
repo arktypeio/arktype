@@ -1,6 +1,6 @@
 {
 	"name": "@arktype/attest",
-	"version": "0.8.0",
+	"version": "0.8.1",
 	"author": {
 		"name": "David Blass",
 		"email": "david@arktype.io",
@@ -32,7 +32,7 @@
 		"@typescript/analyze-trace": "0.10.1"
 	},
 	"devDependencies": {
-		"typescript": "5.4.5"
+		"typescript": "5.5.2"
 	},
 	"peerDependencies": {
 		"typescript": "*"

@@ -3,27 +3,40 @@ import type {
 	ExactLengthSchema,
 	ExclusiveDateRangeSchema,
 	ExclusiveNumericRangeSchema,
+	FlatRef,
 	InclusiveDateRangeSchema,
 	InclusiveNumericRangeSchema,
 	LimitSchemaValue,
 	PatternSchema,
+	TypeKey,
+	TypePath,
 	UnknownRangeSchema
 } from "@arktype/schema"
 import {
+	cached,
 	includes,
 	omit,
+	printable,
 	throwParseError,
 	type Callable,
 	type Json,
+	type Key,
+	type array,
 	type conform
 } from "@arktype/util"
-import type { constrain } from "../ast.js"
+import type {
+	constrain,
+	distillConstrainableIn,
+	distillConstrainableOut,
+	distillIn,
+	distillOut
+} from "../ast.js"
 import {
 	throwInvalidOperandError,
 	type PrimitiveConstraintKind
 } from "../constraint.js"
 import type { Node, NodeSchema, reducibleKindOf } from "../kinds.js"
-import { BaseNode } from "../node.js"
+import { BaseNode, appendUniqueFlatRefs } from "../node.js"
 import type { Predicate } from "../predicate.js"
 import type { RootScope } from "../scope.js"
 import type { BaseMeta, RawNodeDeclaration } from "../shared/declare.js"
@@ -51,16 +64,8 @@ import type {
 	UndeclaredKeyBehavior
 } from "../structure/structure.js"
 import type { constraintKindOf } from "./intersection.js"
-import type {
-	Morph,
-	distillConstrainableIn,
-	distillConstrainableOut,
-	distillIn,
-	distillOut,
-	inferMorphOut,
-	inferPipes
-} from "./morph.js"
-import type { UnionChildKind } from "./union.js"
+import type { Morph, MorphNode, inferMorphOut, inferPipes } from "./morph.js"
+import type { UnionChildKind, UnionChildNode } from "./union.js"
 
 export interface RawRootDeclaration extends RawNodeDeclaration {
 	kind: RootKind
@@ -90,24 +95,22 @@ export abstract class BaseRoot<
 
 	readonly [arkKind] = "root"
 
-	get raw(): this {
+	get internal(): this {
 		return this
 	}
 
 	abstract rawKeyOf(): BaseRoot
 	abstract get shortDescription(): string
 
-	private _keyof: BaseRoot | undefined
+	@cached
 	keyof(): BaseRoot {
-		if (!this._keyof) {
-			this._keyof = this.rawKeyOf()
-			if (this._keyof.branches.length === 0) {
-				throwParseError(
-					`keyof ${this.expression} results in an unsatisfiable type`
-				)
-			}
+		const result = this.rawKeyOf()
+		if (result.branches.length === 0) {
+			throwParseError(
+				`keyof ${this.expression} results in an unsatisfiable type`
+			)
 		}
-		return this._keyof as never
+		return result
 	}
 
 	protected intersect(r: unknown): BaseRoot | Disjoint {
@@ -131,11 +134,23 @@ export abstract class BaseRoot<
 		return result instanceof ArkErrors ? result.throw() : result
 	}
 
-	// get<key extends PropertyKey>(
-	// 	...path: readonly (key | Root<key>)[]
-	// ): this {
-	// 	return this
-	// }
+	get(...[key, ...tail]: TypePath): BaseRoot {
+		if (key === undefined) return this
+		if (hasArkKind(key, "root") && key.hasKind("unit")) key = key.unit as Key
+		if (typeof key === "number") key = `${key}`
+
+		if (this.hasKind("union")) {
+			return this.branches.reduce(
+				(acc, b) => acc.or(b.get(key, ...tail)),
+				$ark.intrinsic.never
+			)
+		}
+
+		return (
+			(this as {} as UnionChildNode).structure?.get(key, ...tail) ??
+			throwParseError(writeNonStructuralIndexAccessMessage(key))
+		)
+	}
 
 	extract(r: unknown): BaseRoot {
 		const rNode = this.$.parseRoot(r)
@@ -177,6 +192,10 @@ export abstract class BaseRoot<
 		return r.extends(this as never)
 	}
 
+	includes(r: unknown): boolean {
+		return hasArkKind(r, "root") ? r.extends(this) : this.allows(r)
+	}
+
 	configure(configOrDescription: BaseMeta | string): this {
 		return this.configureShallowDescendants(configOrDescription)
 	}
@@ -215,6 +234,27 @@ export abstract class BaseRoot<
 			in: this,
 			morphs: [morph]
 		})
+	}
+
+	@cached
+	get flatMorphs(): array<FlatRef<MorphNode>> {
+		return this.flatRefs.reduce<FlatRef<MorphNode>[]>(
+			(branches, ref) =>
+				appendUniqueFlatRefs(
+					branches,
+					ref.node.hasKind("union") ?
+						ref.node.branches
+							.filter(b => b.hasKind("morph"))
+							.map(branch => ({
+								path: ref.path,
+								propString: ref.propString,
+								node: branch
+							}))
+					: ref.node.hasKind("morph") ? (ref as FlatRef<MorphNode>)
+					: []
+				),
+			[]
+		)
 	}
 
 	narrow(predicate: Predicate): BaseRoot {
@@ -263,15 +303,19 @@ export abstract class BaseRoot<
 		return result as never
 	}
 
-	onUndeclaredKey(undeclared: UndeclaredKeyBehavior): BaseRoot {
+	onUndeclaredKey(cfg: UndeclaredKeyBehavior | UndeclaredKeyConfig): BaseRoot {
+		const rule = typeof cfg === "string" ? cfg : cfg.rule
+		const deep = typeof cfg === "string" ? false : cfg.deep
 		return this.transform(
 			(kind, inner) =>
 				kind === "structure" ?
-					undeclared === "ignore" ?
+					rule === "ignore" ?
 						omit(inner as StructureInner, { undeclared: 1 })
-					:	{ ...inner, undeclared }
+					:	{ ...inner, undeclared: rule }
 				:	inner,
-			{ shouldTransform: node => !includes(structuralKinds, node.kind) }
+			deep ? undefined : (
+				{ shouldTransform: node => !includes(structuralKinds, node.kind) }
+			)
 		)
 	}
 
@@ -340,6 +384,11 @@ export abstract class BaseRoot<
 	}
 }
 
+export type UndeclaredKeyConfig = {
+	rule: UndeclaredKeyBehavior
+	deep?: boolean
+}
+
 export const exclusivizeRangeSchema = <schema extends UnknownRangeSchema>(
 	schema: schema
 ): schema =>
@@ -366,7 +415,7 @@ export declare abstract class InnerRoot<t = unknown, $ = any> extends Callable<
 	json: Json
 	description: string
 	expression: string
-	raw: BaseRoot
+	internal: BaseRoot
 
 	abstract $: RootScope<$>;
 	abstract get in(): unknown
@@ -495,6 +544,9 @@ declare class _Root<t = unknown, $ = any> extends InnerRoot<t, $> {
 
 	overlaps(r: Root): boolean
 }
+
+export const writeNonStructuralIndexAccessMessage = (key: TypeKey) =>
+	`${printable(key)} cannot be accessed on ${this}, which has no structural keys`
 
 export interface Root<
 	/** @ts-expect-error allow instantiation assignment to the base type */

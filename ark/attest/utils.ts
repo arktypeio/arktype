@@ -61,14 +61,18 @@ export type ContextualizeBlock = {
 }
 
 export const contextualize: ContextualizeBlock = (...args: any[]) => {
-	if (globalThis.describe as unknown) {
-		const fileName = basename(caller().file)
-		if (typeof args[0] === "function") globalThis.describe(fileName, args[0])
-		else {
-			globalThis.describe(fileName, () => {
-				for (let i = 0; i < args.length; i = i + 2)
-					globalThis.describe(args[i], args[i + 1])
-			})
-		}
+	const describe = globalThis.describe
+	if (!describe) {
+		throw new Error(
+			`contextualize cannot be used without a global 'describe' function.`
+		)
+	}
+
+	const fileName = basename(caller().file)
+	if (typeof args[0] === "function") describe(fileName, args[0])
+	else {
+		describe(fileName, () => {
+			for (let i = 0; i < args.length; i = i + 2) describe(args[i], args[i + 1])
+		})
 	}
 }

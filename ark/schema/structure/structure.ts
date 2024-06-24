@@ -2,8 +2,10 @@ import {
 	append,
 	cached,
 	flatMorph,
+	printable,
 	registeredReference,
 	spliterate,
+	throwParseError,
 	type array,
 	type Key,
 	type RegisteredReference
@@ -14,9 +16,10 @@ import {
 	flattenConstraints,
 	intersectConstraints
 } from "../constraint.js"
+import type { NonNegativeIntegerString } from "../keywords/internal.js"
 import type { MutableInner } from "../kinds.js"
+import type { TypeKey, TypePath } from "../node.js"
 import type { BaseRoot } from "../roots/root.js"
-import type { UnitNode } from "../roots/unit.js"
 import type { RawRootScope } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
@@ -33,13 +36,16 @@ import type {
 	TraverseAllows,
 	TraverseApply
 } from "../shared/traversal.js"
-import { makeRootAndArrayPropertiesMutable } from "../shared/utils.js"
+import {
+	hasArkKind,
+	makeRootAndArrayPropertiesMutable
+} from "../shared/utils.js"
 import type { IndexNode, IndexSchema } from "./indexed.js"
 import type { OptionalNode, OptionalSchema } from "./optional.js"
 import type { PropNode } from "./prop.js"
 import type { RequiredNode, RequiredSchema } from "./required.js"
 import type { SequenceNode, SequenceSchema } from "./sequence.js"
-import { arrayIndexMatcher, arrayIndexMatcherReference } from "./shared.js"
+import { arrayIndexMatcherReference } from "./shared.js"
 
 export type UndeclaredKeyBehavior = "ignore" | UndeclaredKeyHandling
 
@@ -72,7 +78,7 @@ export interface StructureDeclaration
 	}> {}
 
 export class StructureNode extends BaseConstraint<StructureDeclaration> {
-	impliedBasis: BaseRoot = this.$.keywords.object.raw
+	impliedBasis: BaseRoot = $ark.intrinsic.object
 	impliedSiblings = this.children.flatMap(
 		n => (n.impliedSiblings as BaseConstraint[]) ?? []
 	)
@@ -107,10 +113,73 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 	@cached
 	keyof(): BaseRoot {
 		let branches = this.$.units(this.literalKeys).branches
-		this.index?.forEach(({ signature: index }) => {
-			branches = branches.concat(index.branches)
+		this.index?.forEach(({ signature }) => {
+			branches = branches.concat(signature.branches)
 		})
 		return this.$.node("union", branches)
+	}
+
+	get(key: TypeKey, ...tail: TypePath): BaseRoot {
+		let value: BaseRoot | undefined
+		let required = false
+
+		if (hasArkKind(key, "root") && key.hasKind("unit")) key = key.unit as never
+
+		if (
+			(typeof key === "string" || typeof key === "symbol") &&
+			this.propsByKey[key]
+		) {
+			value = this.propsByKey[key]!.value
+			required = this.propsByKey[key]!.required
+		}
+
+		this.index?.forEach(n => {
+			if (n.signature.includes(key)) value = value?.and(n.value) ?? n.value
+		})
+
+		if (
+			this.sequence &&
+			$ark.intrinsic.nonNegativeIntegerString.includes(key)
+		) {
+			if (hasArkKind(key, "root")) {
+				if (this.sequence.variadic)
+					// if there is a variadic element and we're accessing an index, return a union
+					// of all possible elements. If there is no variadic expression, we're in a tuple
+					// so this access wouldn't be safe based on the array indices
+					value = value?.and(this.sequence.element) ?? this.sequence.element
+			} else {
+				const index = Number.parseInt(key as string)
+				if (index < this.sequence.prevariadic.length) {
+					const fixedElement = this.sequence.prevariadic[index]
+					value = value?.and(fixedElement) ?? fixedElement
+					required ||= index < this.sequence.prefix.length
+				} else if (this.sequence.variadic) {
+					// ideally we could return something more specific for postfix
+					// but there is no way to represent it using an index alone
+					const nonFixedElement = this.$.node(
+						"union",
+						this.sequence.variadicOrPostfix
+					)
+					value = value?.and(nonFixedElement) ?? nonFixedElement
+				}
+			}
+		}
+
+		if (!value) {
+			if (
+				this.sequence?.variadic &&
+				hasArkKind(key, "root") &&
+				key.extends($ark.intrinsic.number)
+			) {
+				return throwParseError(
+					writeRawNumberIndexMessage(key.expression, this.sequence.expression)
+				)
+			}
+			return throwParseError(writeBadKeyAccessMessage(key, this.expression))
+		}
+
+		const result = value.get(...tail)
+		return required ? result : result.or($ark.intrinsic.undefined)
 	}
 
 	readonly exhaustive: boolean =
@@ -199,7 +268,7 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 				matched ||=
 					this.sequence !== undefined &&
 					typeof k === "string" &&
-					arrayIndexMatcher.test(k)
+					$ark.intrinsic.nonNegativeIntegerString.allows(k)
 				if (!matched) {
 					if (traversalKind === "Allows") return false
 					if (this.undeclared === "reject")
@@ -295,15 +364,15 @@ const omitFromInner = (
 	keys.forEach(k => {
 		if (result.required) {
 			result.required = result.required.filter(b =>
-				typeof k === "function" ? !k.allows(b.key) : k !== b.key
+				hasArkKind(k, "root") ? !k.allows(b.key) : k !== b.key
 			)
 		}
 		if (result.optional) {
 			result.optional = result.optional.filter(b =>
-				typeof k === "function" ? !k.allows(b.key) : k !== b.key
+				hasArkKind(k, "root") ? !k.allows(b.key) : k !== b.key
 			)
 		}
-		if (result.index && typeof k === "function") {
+		if (result.index && hasArkKind(k, "root")) {
 			// we only have to filter index nodes if the input was a node, as
 			// literal keys should never subsume an index
 			result.index = result.index.filter(n => !n.signature.extends(k))
@@ -373,7 +442,7 @@ export const structureImplementation: nodeImplementationOf<StructureDeclaration>
 						return new Disjoint(
 							...disjointRKeys.map(k => ({
 								kind: "presence" as const,
-								l: ctx.$.keywords.never.raw,
+								l: $ark.intrinsic.never.internal,
 								r: r.propsByKey[k]!.value,
 								path: [k],
 								optional: false
@@ -409,7 +478,7 @@ export const structureImplementation: nodeImplementationOf<StructureDeclaration>
 							...disjointLKeys.map(k => ({
 								kind: "presence" as const,
 								l: l.propsByKey[k]!.value,
-								r: ctx.$.keywords.never.raw,
+								r: $ark.intrinsic.never.internal,
 								path: [k],
 								optional: false
 							}))
@@ -456,6 +525,17 @@ export const structureImplementation: nodeImplementationOf<StructureDeclaration>
 		}
 	})
 
+export const writeRawNumberIndexMessage = (
+	indexExpression: string,
+	sequenceExpression: string
+) =>
+	`${indexExpression} is not allowed as an array index on ${sequenceExpression}. Use the 'nonNegativeIntegerString' keyword instead.`
+
+export const writeBadKeyAccessMessage = (
+	key: TypeKey,
+	structuralExpression: string
+) => `${printable(key)} does not exist on ${structuralExpression}`
+
 export type NormalizedIndex = {
 	index?: IndexNode
 	required?: RequiredNode[]
@@ -469,7 +549,7 @@ export const normalizeIndex = (
 ): NormalizedIndex => {
 	const [enumerableBranches, nonEnumerableBranches] = spliterate(
 		signature.branches,
-		(k): k is UnitNode => k.hasKind("unit")
+		k => k.hasKind("unit")
 	)
 
 	if (!enumerableBranches.length)
@@ -489,3 +569,19 @@ export const normalizeIndex = (
 
 	return normalized
 }
+
+export type indexOf<o> =
+	o extends array ?
+		| (number extends o["length"] ? NonNegativeIntegerString : never)
+		| {
+				[k in keyof o]-?: k extends `${infer index extends number}` ? index | k
+				:	never
+		  }[keyof o & `${number}`]
+	:	{
+			[k in keyof o]: k extends number ? k | `${k}` : k
+		}[keyof o]
+
+export type indexInto<o, k extends indexOf<o>> = o[Extract<
+	k extends NonNegativeIntegerString ? number : k,
+	keyof o
+>]

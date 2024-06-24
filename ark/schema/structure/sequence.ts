@@ -1,5 +1,6 @@
 import {
 	append,
+	cached,
 	throwInternalError,
 	throwParseError,
 	type array,
@@ -8,9 +9,12 @@ import {
 } from "@arktype/util"
 import { BaseConstraint } from "../constraint.js"
 import type { MutableInner, RootSchema } from "../kinds.js"
-import type {
-	DeepNodeTransformation,
-	DeepNodeTransformationContext
+import {
+	appendUniqueFlatRefs,
+	flatRef,
+	type DeepNodeTransformContext,
+	type DeepNodeTransformation,
+	type FlatRef
 } from "../node.js"
 import type { MaxLengthNode } from "../refinements/maxLength.js"
 import type { MinLengthNode } from "../refinements/minLength.js"
@@ -229,11 +233,13 @@ export const sequenceImplementation: nodeImplementationOf<SequenceDeclaration> =
 	})
 
 export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
-	impliedBasis: BaseRoot = this.$.keywords.Array.raw
+	impliedBasis: BaseRoot = $ark.intrinsic.Array
 	prefix: array<BaseRoot> = this.inner.prefix ?? []
 	optionals: array<BaseRoot> = this.inner.optionals ?? []
-	prevariadic: BaseRoot[] = [...this.prefix, ...this.optionals]
+	prevariadic: array<BaseRoot> = [...this.prefix, ...this.optionals]
 	postfix: array<BaseRoot> = this.inner.postfix ?? []
+	variadicOrPostfix: array<BaseRoot> =
+		this.variadic ? [this.variadic, ...this.postfix] : this.postfix
 	isVariadicOnly: boolean = this.prevariadic.length + this.postfix.length === 0
 	minVariadicLength: number = this.inner.minVariadicLength ?? 0
 	minLength: number =
@@ -281,6 +287,44 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 		}
 	}
 
+	override get flatRefs() {
+		const refs: FlatRef[] = []
+
+		appendUniqueFlatRefs(
+			refs,
+			this.prevariadic.flatMap((element, i) =>
+				append(
+					element.flatRefs.map(ref => flatRef([`${i}`, ...ref.path], ref.node)),
+					flatRef([`${i}`], element)
+				)
+			)
+		)
+
+		appendUniqueFlatRefs(
+			refs,
+			this.variadicOrPostfix.flatMap(element =>
+				// a postfix index can't be directly represented as a type
+				// key, so we just use the same matcher for variadic
+				append(
+					element.flatRefs.map(ref =>
+						flatRef(
+							[$ark.intrinsic.nonNegativeIntegerString, ...ref.path],
+							ref.node
+						)
+					),
+					flatRef([$ark.intrinsic.nonNegativeIntegerString], element)
+				)
+			)
+		)
+
+		return refs
+	}
+
+	@cached
+	get element(): BaseRoot {
+		return this.$.node("union", this.children)
+	}
+
 	// minLength/maxLength compilation should be handled by Intersection
 	compile(js: NodeCompiler): void {
 		this.prefix.forEach((node, i) => js.traverseKey(`${i}`, `data[${i}]`, node))
@@ -315,9 +359,9 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 
 	protected override _transform(
 		mapper: DeepNodeTransformation,
-		ctx: DeepNodeTransformationContext
+		ctx: DeepNodeTransformContext
 	) {
-		ctx.path.push(this.$.keywords.nonNegativeIntegerString.raw)
+		ctx.path.push($ark.intrinsic.nonNegativeIntegerString)
 		const result = super._transform(mapper, ctx)
 		ctx.path.pop()
 		return result
@@ -431,7 +475,7 @@ const _intersectSequences = (
 					"required"
 				)
 			)
-			s.result = [...s.result, { kind, node: s.ctx.$.keywords.never.raw }]
+			s.result = [...s.result, { kind, node: $ark.intrinsic.never.internal }]
 		} else if (kind === "optionals") {
 			// if the element result is optional and unsatisfiable, the
 			// intersection can still be satisfied as long as the tuple

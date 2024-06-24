@@ -1,5 +1,11 @@
 # @arktype/util
 
+## 0.0.50
+
+### Patch Changes
+
+- [`1bf2066`](https://github.com/arktypeio/arktype/commit/1bf2066800ce65edc918a24c251ce20f1ccf29f4) Thanks [@ssalbdivad](https://github.com/ssalbdivad)! - ### Add `dict` util for defaultable Records
+
 ## 0.0.49
 
 ### Patch Changes

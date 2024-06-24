@@ -25,6 +25,8 @@ import {
 	type distillIn,
 	type distillOut,
 	type exclusivizeRangeSchema,
+	type indexInto,
+	type indexOf,
 	type inferIntersection,
 	type inferMorphOut,
 	type inferPipes,
@@ -90,12 +92,9 @@ export interface TypeParser<$ = {}> {
 		>
 	): Generic<parseGenericParams<params>, def, $>
 
+	raw(def: unknown): Type<any, $>
 	errors: typeof ArkErrors
 }
-
-const typeParserAttachments = Object.freeze({
-	errors: ArkErrors
-} satisfies TypeParserAttachments)
 
 export class RawTypeParser extends Callable<
 	(...args: unknown[]) => BaseRoot | Generic,
@@ -126,7 +125,13 @@ export class RawTypeParser extends Callable<
 				// part of the API as specified by the associated types
 				return $.parseRoot(args)
 			},
-			{ bind: $, attach: typeParserAttachments }
+			{
+				bind: $,
+				attach: {
+					errors: ArkErrors,
+					raw: $.parseRoot as never
+				}
+			}
 		)
 	}
 }
@@ -224,11 +229,13 @@ declare class _Type<t = unknown, $ = any> extends InnerRoot<t, $> {
 		g: g
 	): Type<inferPipes<t, [a, b, c, d, e, f, g]>, $>
 
-	narrow<const predicate extends Predicate<distillOut<t>>>(
+	narrow<predicate extends Predicate<distillOut<t>>>(
 		predicate: predicate
 	): Type<
 		t extends MorphAst ?
-			(In: this["tIn"]) => Out<inferPredicate<this["tOut"], predicate>>
+			inferPredicate<this["tOut"], predicate> extends infer narrowed ?
+				(In: this["tIn"]) => Out<narrowed>
+			:	never
 		:	inferPredicate<t, predicate>,
 		$
 	>
@@ -244,6 +251,21 @@ declare class _Type<t = unknown, $ = any> extends InnerRoot<t, $> {
 		other: validateTypeRoot<def, $>
 	): this is Type<inferTypeRoot<def>, $>
 	overlaps<def>(r: validateTypeRoot<def, $>): boolean
+
+	get<k1 extends indexOf<t>>(k1: k1 | AnyType<k1>): Type<indexInto<t, k1>, $>
+	get<k1 extends indexOf<t>, k2 extends indexOf<indexInto<t, k1>>>(
+		k1: k1 | AnyType<k1>,
+		k2: k2 | AnyType<k2>
+	): Type<indexInto<indexInto<t, k1>, k2>, $>
+	get<
+		k1 extends indexOf<t>,
+		k2 extends indexOf<indexInto<t, k1>>,
+		k3 extends indexOf<indexInto<indexInto<t, k1>, k2>>
+	>(
+		k1: k1 | AnyType<k1>,
+		k2: k2 | AnyType<k2>,
+		k3: k3 | AnyType<k3>
+	): Type<indexInto<indexInto<indexInto<t, k1>, k2>, k3>, $>
 
 	constrain<
 		kind extends PrimitiveConstraintKind,
@@ -349,11 +371,7 @@ export type TypeConstructor<t = unknown, $ = {}> = new (
 	$: Scope<$>
 ) => Type<t, $>
 
-export type AnyType<
-	/** @ts-expect-error allow instantiation assignment to the base type */
-	out t = unknown,
-	$ = any
-> = Type<t, $>
+export type AnyType<out t = unknown> = Type<t, any>
 
 export const Type: TypeConstructor = BaseRoot as never
 

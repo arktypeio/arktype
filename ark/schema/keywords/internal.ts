@@ -1,27 +1,31 @@
-import type { Key } from "@arktype/util"
+import type { array, Digit, Key } from "@arktype/util"
 import type { SchemaModule } from "../module.js"
 import { root, schemaScope } from "../scope.js"
 // these are needed to create some internal types
-import { arrayIndexMatcher } from "../structure/shared.js"
+import { arrayIndexSource } from "../structure/shared.js"
 import "./tsKeywords.js"
 
-export interface internalKeywordExports {
-	lengthBoundable: string | readonly unknown[]
+export type NonNegativeIntegerString =
+	| `${Digit}`
+	| (`${Exclude<Digit, 0>}${string}` & `${bigint}`)
+
+export interface internalExports {
+	lengthBoundable: string | array
 	propertyKey: Key
-	nonNegativeIntegerString: string
+	nonNegativeIntegerString: NonNegativeIntegerString
 }
 
-export type internalKeywords = SchemaModule<internalKeywordExports>
+export type internal = SchemaModule<internalExports>
 
-export const internalKeywords: internalKeywords = schemaScope(
+export const internal: internal = schemaScope(
 	{
 		lengthBoundable: ["string", Array],
 		propertyKey: ["string", "symbol"],
-		nonNegativeIntegerString: { domain: "string", pattern: arrayIndexMatcher }
+		nonNegativeIntegerString: { domain: "string", pattern: arrayIndexSource }
 	},
 	{
 		prereducedAliases: true,
-		registerKeywords: true
+		intrinsic: true
 	}
 ).export()
 

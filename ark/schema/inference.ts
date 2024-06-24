@@ -118,7 +118,7 @@ type inferBasisOf<schema, $> =
 		inferBasis<conform<schema["domain"], DomainSchema>, $>
 	:	unknown
 
-// TODO: remove
+// ignore should be removed once we infer from aliases
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export type inferBasis<schema extends NodeSchema<BasisKind>, $> =
 	isAny<schema> extends (

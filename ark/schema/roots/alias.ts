@@ -1,5 +1,4 @@
 import { append, cached, domainDescriptions } from "@arktype/util"
-import type { RawRootScope } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -31,6 +30,7 @@ export interface AliasDeclaration
 
 export class AliasNode extends BaseRoot<AliasDeclaration> {
 	readonly expression: string = this.alias
+	readonly structure = undefined
 
 	@cached
 	get resolution(): BaseRoot {
@@ -88,22 +88,17 @@ export const aliasImplementation: nodeImplementationOf<AliasDeclaration> =
 			alias: (l, r, ctx) =>
 				ctx.$.lazilyResolve(
 					() =>
-						neverIfDisjoint(
-							intersectNodes(l.resolution, r.resolution, ctx),
-							ctx.$
-						),
+						neverIfDisjoint(intersectNodes(l.resolution, r.resolution, ctx)),
 					`${l.alias}${ctx.pipe ? "|>" : "&"}${r.alias}`
 				),
 			...defineRightwardIntersections("alias", (l, r, ctx) =>
 				ctx.$.lazilyResolve(
-					() => neverIfDisjoint(intersectNodes(l.resolution, r, ctx), ctx.$),
+					() => neverIfDisjoint(intersectNodes(l.resolution, r, ctx)),
 					`${l.alias}${ctx.pipe ? "|>" : "&"}${r.alias}`
 				)
 			)
 		}
 	})
 
-const neverIfDisjoint = (
-	result: BaseRoot | Disjoint,
-	$: RawRootScope
-): BaseRoot => (result instanceof Disjoint ? $.keywords.never.raw : result)
+const neverIfDisjoint = (result: BaseRoot | Disjoint): BaseRoot =>
+	result instanceof Disjoint ? $ark.intrinsic.never : result

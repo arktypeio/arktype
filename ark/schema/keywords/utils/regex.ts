@@ -1,4 +1,4 @@
-import type { NormalizedPatternSchema } from "../../refinements/regex.js"
+import type { NormalizedPatternSchema } from "../../refinements/pattern.js"
 import { root } from "../../scope.js"
 
 export const defineRegex = (

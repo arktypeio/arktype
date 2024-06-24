@@ -1,6 +1,8 @@
 import { attest, contextualize } from "@arktype/attest"
-import { type } from "arktype"
+import type { Date, Default } from "@arktype/schema"
+import { scope, type } from "arktype"
 import { invalidDefaultKeyKindMessage } from "../parser/objectLiteral.js"
+import { singleEqualsMessage } from "../parser/string/shift/operator/bounds.js"
 
 contextualize(
 	"parsing and traversal",
@@ -46,6 +48,128 @@ contextualize(
 			attest(() =>
 				// @ts-expect-error
 				type({ foo: "string", "bar?": ["number", "=", 5] })
+			).throwsAndHasTypeError(invalidDefaultKeyKindMessage)
+		})
+
+		it("validated default in scope", () => {
+			// note the string version of this does not work, see
+			// https://github.com/arktypeio/arktype/issues/1018
+			const types = scope({
+				specialNumber: "number",
+				obj: { foo: "string", bar: ["specialNumber", "=", 5] }
+			}).export()
+
+			attest(types.obj.json).snap({
+				required: [{ key: "foo", value: "string" }],
+				optional: [{ default: 5, key: "bar", value: "number" }],
+				domain: "object"
+			})
+		})
+	},
+	"string parsing",
+	() => {
+		it("number", () => {
+			const t = type({ key: "number = 42" })
+			const expected = type({ key: ["number", "=", 42] })
+
+			attest<typeof expected>(t)
+			attest(t.json).equals(expected.json)
+		})
+
+		it("bigint", () => {
+			const t = type({ key: "bigint = 100n" })
+			const expected = type({ key: ["bigint", "=", 100n] })
+
+			attest<typeof expected>(t)
+			attest(t.json).equals(expected.json)
+		})
+
+		it("string", () => {
+			const t = type({ key: 'string = "default value"' })
+			const expected = type({ key: ["string", "=", "default value"] })
+
+			attest<typeof expected>(t)
+			attest(t.json).equals(expected.json)
+		})
+
+		it("Date", () => {
+			const t = type({ key: 'Date = d"1993-05-21"' })
+
+			const out = t.assert({})
+
+			// pass the same date instance back
+			const expected = type({ key: ["Date", "=", out.key] })
+
+			// we can't check expected here since the Date instance will not
+			// have a narrowed literal type
+			attest<{
+				key: (In?: Date) => Default<Date.literal<"1993-05-21">>
+			}>(t.t)
+			attest(t.json).equals(expected.json)
+		})
+
+		it("true", () => {
+			const t = type({ key: "boolean = true" })
+			const expected = type({ key: ["boolean", "=", true] })
+
+			attest<typeof expected>(t)
+			attest(t.json).equals(expected.json)
+		})
+
+		it("false", () => {
+			const t = type({ key: "boolean = false" })
+			const expected = type({ key: ["boolean", "=", false] })
+
+			attest<typeof expected>(t)
+			attest(t.json).equals(expected.json)
+		})
+
+		it("null", () => {
+			const t = type({ key: "object | null = null" })
+			const expected = type({ key: ["object | null", "=", null] })
+
+			attest<typeof expected>(t)
+			attest(t.json).equals(expected.json)
+		})
+
+		it("undefined", () => {
+			const t = type({ key: "unknown = undefined" })
+			const expected = type({ key: ["unknown", "=", undefined] })
+
+			attest(t({})).snap({ key: "(undefined)" })
+
+			attest<typeof expected>(t)
+			attest(t.json).equals(expected.json)
+		})
+
+		it("incorrect default type", () => {
+			// @ts-expect-error
+			attest(() => type({ foo: "string", bar: "number = true" }))
+				.throws.snap(
+					'ParseError: Default value at "bar" must be a number (was true)'
+				)
+				.type.errors("true is not assignable to number")
+		})
+
+		it("non-literal", () => {
+			attest(() =>
+				// @ts-expect-error
+				type({ foo: "string", bar: "unknown = number" })
+			).throwsAndHasTypeError(singleEqualsMessage)
+		})
+
+		// https://github.com/arktypeio/arktype/issues/1017
+		// it("validated default in scope", () => {
+		// 	const $ = scope({
+		// 		specialNumber: "number",
+		// 		obj: { foo: "string", bar: "specialNumber =5" }
+		// 	})
+		// })
+
+		it("optional with default", () => {
+			attest(() =>
+				// @ts-expect-error
+				type({ foo: "string", "bar?": "number = 5" })
 			).throwsAndHasTypeError(invalidDefaultKeyKindMessage)
 		})
 	},

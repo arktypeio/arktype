@@ -6,30 +6,25 @@ export type pathToString<
 	delimiter extends string = "/"
 > = segments extends [] ? "/" : join<segments, delimiter>
 
+export const join = <segments extends array<string>, delimiter extends string>(
+	segments: segments,
+	delimiter: delimiter
+): join<segments, delimiter> => segments.join(delimiter) as never
+
 export type join<
-	segments extends string[],
+	segments extends array<string>,
 	delimiter extends string,
 	result extends string = ""
 > =
-	segments extends [infer head extends string, ...infer tail extends string[]] ?
+	segments extends (
+		readonly [infer head extends string, ...infer tail extends string[]]
+	) ?
 		join<
 			tail,
 			delimiter,
 			result extends "" ? head : `${result}${delimiter}${head}`
 		>
 	:	result
-
-export type split<
-	s extends string,
-	delimiter extends string,
-	current extends string = "",
-	result extends string[] = []
-> =
-	s extends `${infer head}${infer tail}` ?
-		head extends delimiter ?
-			split<tail, delimiter, "", [...result, current]>
-		:	split<tail, delimiter, `${current}${head}`, result>
-	:	[...result, current]
 
 export const getPath = (root: unknown, path: string[]): unknown => {
 	let result: any = root
@@ -207,20 +202,29 @@ export const conflatenateAll = <element>(
 ): readonly element[] =>
 	elementsOrLists.reduce<readonly element[]>(conflatenate, [])
 
+export interface ComparisonOptions<t = unknown> {
+	isEqual?: (l: t, r: t) => boolean
+}
+
 /**
- * Appends a value to an array if it is not already included, returning the array
+ * Appends a value or concatenates an array to an array if it is not already included, returning the array
  *
  * @param to The array to which `value` is to be appended. If `to` is `undefined`, a new array
  * is created including only `value`.
- * @param value The value to append to the array. If `to` includes `value`, nothing is appended.
+ * @param value An array or value to append to the array. If `to` includes `value`, nothing is appended.
  */
 export const appendUnique = <to extends unknown[]>(
 	to: to | undefined,
-	value: to[number]
+	value: NoInfer<Readonly<to> | to[number]>,
+	opts?: ComparisonOptions<to[number]>
 ): to => {
-	if (to === undefined) return [value] as never
+	if (to === undefined)
+		return Array.isArray(value) ? (value as never) : ([value] as never)
 
-	if (!to.includes(value)) to.push(value)
+	const isEqual = opts?.isEqual ?? ((l, r) => l === r)
+	arrayFrom(value).forEach(v => {
+		if (!to.some(existing => isEqual(existing as never, v as never))) to.push(v)
+	})
 
 	return to
 }
@@ -243,10 +247,18 @@ export const groupBy = <element, discriminant extends groupableKeyOf<element>>(
 ): groupBy<element, discriminant> =>
 	array.reduce<Record<PropertyKey, any>>((result, item) => {
 		const key = item[discriminant] as never
-		result[key] ??= []
-		result[key].push(item)
+		result[key] = append(result[key], item)
 		return result
-	}, {})
+	}, {}) as never
 
-export const arrayEquals = (l: array, r: array) =>
-	l.length === r.length && l.every((lItem, i) => lItem === r[i])
+export const arrayEquals = <element>(
+	l: array<element>,
+	r: array<element>,
+	opts?: ComparisonOptions<element>
+): boolean =>
+	l.length === r.length &&
+	l.every(
+		opts?.isEqual ?
+			(lItem, i) => opts.isEqual!(lItem, r[i])
+		:	(lItem, i) => lItem === r[i]
+	)

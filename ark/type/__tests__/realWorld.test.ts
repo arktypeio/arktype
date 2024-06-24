@@ -1,5 +1,11 @@
 import { attest, contextualize } from "@arktype/attest"
-import type { AtLeastLength, AtMostLength, Out, string } from "@arktype/schema"
+import type {
+	AtLeastLength,
+	AtMostLength,
+	number,
+	Out,
+	string
+} from "@arktype/schema"
 import { registeredReference } from "@arktype/util"
 import { scope, type, type Type } from "arktype"
 import type { Module } from "../module.js"
@@ -442,7 +448,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		attest<
 			Module<{
 				svgMap: {
-					[x: string & string.matching<string>]: string
+					[x: string.matching<string>]: string
 				}
 				svgPath: string.matching<string>
 			}>
@@ -558,5 +564,58 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		attest(types.Library({}).toString()).snap(
 			"sections must be an object (was missing)"
 		)
+	})
+
+	it("narrowed quoted description", () => {
+		const t = type("string")
+			.narrow(() => true)
+			.describe('This will "fail"')
+
+		attest<string.narrowed>(t.t)
+
+		const serializedPredicate =
+			t.internal.firstReferenceOfKindOrThrow("predicate").serializedPredicate
+
+		attest(t.json).snap({
+			description: 'This will "fail"',
+			domain: { description: 'This will "fail"', domain: "string" },
+			predicate: [
+				{ description: 'This will "fail"', predicate: serializedPredicate }
+			]
+		})
+	})
+
+	it("extract in of narrowed morph", () => {
+		const SubSubType = type("string").pipe(s => parseInt(s))
+		const SubType = type({ amount: SubSubType }).narrow(() => true)
+		const MyType = type({
+			sub: SubType
+		})
+
+		type MyType = typeof MyType.in.infer
+
+		attest<
+			{
+				sub: {
+					amount: string
+				}
+			},
+			MyType
+		>()
+	})
+
+	it("narrowed morph", () => {
+		const t = type("string")
+			.pipe(s => parseInt(s))
+			.narrow(n => true)
+
+		attest<(In: string) => Out<number.narrowed>>(t.t)
+
+		const u = t.pipe(
+			n => `${n}`,
+			s => `${s}++` as const
+		)
+
+		attest(u.t).type.toString("(In: string) => Out<`${string}++`>")
 	})
 })

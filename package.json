@@ -20,8 +20,11 @@
 		"buildCjs": "ARKTYPE_CJS=1 pnpm -r build",
 		"test": "pnpm testTyped --skipTypes",
 		"testTyped": "mocha --exclude 'ark/attest/**/*.test.*'",
-		"testRepo": "pnpm test && cd ./ark/attest && pnpm test",
+		"testRepo": "pnpm test && pnpm testV8 && cd ./ark/attest && pnpm test",
+		"testV8": "node --allow-natives-syntax ./ark/repo/testV8.js",
 		"testTsVersions": "tsx ./ark/repo/testTsVersions.ts",
+		"bench": "tsx ./ark/type/__tests__/scope.bench.ts",
+		"scratch": "tsx ./ark/repo/scratch.ts",
 		"typecheck": "tsc --noEmit",
 		"lint": "prettier --check . && eslint --max-warnings=0 .",
 		"format": "prettier --write .",
@@ -30,14 +33,17 @@
 		"ci:version": "changeset version"
 	},
 	"devDependencies": {
-		"arktype": "workspace:*",
 		"@arktype/attest": "workspace:*",
 		"@arktype/repo": "workspace:*",
 		"@arktype/util": "workspace:*",
 		"@changesets/changelog-github": "0.5.0",
 		"@changesets/cli": "2.27.5",
-		"@types/node": "20.14.2",
-		"prettier": "3.3.2",
+		"@types/mocha": "10.0.6",
+		"@types/node": "20.14.6",
+		"@typescript-eslint/eslint-plugin": "7.13.1",
+		"@typescript-eslint/parser": "7.13.1",
+		"arktype": "workspace:*",
+		"c8": "10.1.2",
 		"eslint": "8.57.0",
 		"eslint-config-prettier": "9.1.0",
 		"eslint-define-config": "2.1.0",
@@ -46,16 +52,13 @@
 		"eslint-plugin-mdx": "3.1.5",
 		"eslint-plugin-only-warn": "1.1.0",
 		"eslint-plugin-prefer-arrow-functions": "3.3.2",
-		"@typescript-eslint/eslint-plugin": "7.13.0",
-		"@typescript-eslint/parser": "7.13.0",
-		"c8": "10.0.0",
-		"knip": "5.18.2",
-		"tsx": "4.15.2",
-		"typescript": "5.4.5",
-		"typescript-min": "npm:typescript@5.1.6",
-		"typescript-nightly": "npm:typescript@next",
+		"knip": "5.22.0",
 		"mocha": "10.4.0",
-		"@types/mocha": "10.0.6"
+		"prettier": "3.3.2",
+		"tsx": "4.15.6",
+		"typescript": "5.5.2",
+		"typescript-min": "npm:typescript@5.1.5",
+		"typescript-nightly": "npm:typescript@next"
 	},
 	"mocha": {
 		"//": "IF YOU UPDATE THE MOCHA CONFIG HERE, PLEASE ALSO UPDATE ark/repo/mocha.jsonc AND .vscode/settings.json",
@@ -88,5 +91,5 @@
 	"eslintConfig": {
 		"extends": "./ark/repo/.eslintrc.cjs"
 	},
-	"packageManager": "pnpm@9.1.4"
+	"packageManager": "pnpm@9.4.0"
 }

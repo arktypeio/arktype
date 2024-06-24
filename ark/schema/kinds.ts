@@ -1,4 +1,5 @@
-import type { array, listable } from "@arktype/util"
+import { envHasCsp, flatMorph, type array, type listable } from "@arktype/util"
+import type { ResolvedArkConfig } from "./config.js"
 import type { BaseNode } from "./node.js"
 import {
 	PredicateNode,
@@ -20,7 +21,7 @@ import {
 	PatternNode,
 	patternImplementation,
 	type PatternDeclaration
-} from "./refinements/regex.js"
+} from "./refinements/pattern.js"
 import {
 	AliasNode,
 	aliasImplementation,
@@ -56,11 +57,13 @@ import {
 	unitImplementation,
 	type UnitDeclaration
 } from "./roots/unit.js"
+import type { RawRootScope } from "./scope.js"
 import type {
 	ConstraintKind,
 	NodeKind,
 	OpenNodeKind,
 	RootKind,
+	UnknownAttachments,
 	UnknownNodeImplementation
 } from "./shared/implement.js"
 import type { makeRootAndArrayPropertiesMutable } from "./shared/utils.js"
@@ -130,9 +133,21 @@ export const nodeImplementationsByKind: Record<
 	structure: structureImplementation
 } satisfies Record<NodeKind, unknown> as never
 
+$ark.defaultConfig = Object.assign(
+	flatMorph(nodeImplementationsByKind, (kind, implementation) => [
+		kind,
+		implementation.defaults
+	]),
+	{
+		jitless: envHasCsp(),
+		intrinsic: false,
+		prereducedAliases: false
+	} satisfies Omit<ResolvedArkConfig, NodeKind>
+) as never
+
 export const nodeClassesByKind: Record<
 	NodeKind,
-	new (attachments: never) => BaseNode
+	new (attachments: UnknownAttachments, $: RawRootScope) => BaseNode
 > = {
 	...boundClassesByKind,
 	alias: AliasNode,

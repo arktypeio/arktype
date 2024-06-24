@@ -73,6 +73,6 @@ export class ExactLengthNode extends RawPrimitiveConstraint<ExactLengthDeclarati
 
 	readonly compiledCondition: string = `data.length === ${this.rule}`
 	readonly compiledNegation: string = `data.length !== ${this.rule}`
-	readonly impliedBasis: BaseRoot = this.$.keywords.lengthBoundable.raw
+	readonly impliedBasis: BaseRoot = $ark.intrinsic.lengthBoundable
 	readonly expression: string = `{ length: ${this.rule} }`
 }

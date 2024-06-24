@@ -16,7 +16,7 @@ contextualize(() => {
 	})
 
 	it("snap", () => {
-		attest(o).snap({ re: `do` })
+		attest<{ re: string }>(o).snap({ re: `do` })
 		attest(o).equals({ re: "do" }).type.toString.snap(`{ re: string; }`)
 		assert.throws(
 			() => attest(o).snap({ re: `dorf` }),

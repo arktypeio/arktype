@@ -1,5 +1,14 @@
 # @arktype/schema
 
+## 0.1.17
+
+### Patch Changes
+
+- [#1024](https://github.com/arktypeio/arktype/pull/1024) [`5284b60`](https://github.com/arktypeio/arktype/commit/5284b6054209ffa38f02ae010c3e9ab3dff93653) Thanks [@ssalbdivad](https://github.com/ssalbdivad)! - ### Add support for index access, less indeterminate morph union errors (see full release notes in [ArkType's CHANGELOG](../type/CHANGELOG.md))
+
+- Updated dependencies [[`1bf2066`](https://github.com/arktypeio/arktype/commit/1bf2066800ce65edc918a24c251ce20f1ccf29f4)]:
+  - @arktype/util@0.0.50
+
 ## 0.1.16
 
 ### Patch Changes

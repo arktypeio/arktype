@@ -96,8 +96,8 @@ export type IntersectionDeclaration = declareNode<{
 export class IntersectionNode extends BaseRoot<IntersectionDeclaration> {
 	basis: Node<IntersectionBasisKind> | null = this.domain ?? this.proto ?? null
 
-	refinements: array<Node<RefinementKind>> = this.children.filter(
-		(node): node is Node<RefinementKind> => node.isRefinement()
+	refinements: array<Node<RefinementKind>> = this.children.filter(node =>
+		node.isRefinement()
 	)
 
 	expression: string =
@@ -182,7 +182,7 @@ export class IntersectionNode extends BaseRoot<IntersectionDeclaration> {
 				this.structure ?
 					this.basis.rawKeyOf().or(this.structure.keyof())
 				:	this.basis.rawKeyOf()
-			:	this.structure?.keyof() ?? this.$.keywords.never.raw
+			:	this.structure?.keyof() ?? $ark.intrinsic.never
 		)
 	}
 }
@@ -244,7 +244,10 @@ export const intersectionImplementation: nodeImplementationOf<IntersectionDeclar
 				}
 				return [k, v]
 			}) as mutable<NormalizedIntersectionSchema>
-			if (!isEmptyObject(normalizedStructure))
+			if (
+				hasArkKind(normalizedStructure, "constraint") ||
+				!isEmptyObject(normalizedStructure)
+			)
 				normalized.structure = normalizedStructure
 			return normalized
 		},

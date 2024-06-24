@@ -9,7 +9,7 @@ contextualize("traversal", () => {
 			a: "string"
 		})
 
-		attest(t).equals(t.onUndeclaredKey("ignore"))
+		attest(t.json).equals(t.onUndeclaredKey("ignore").json)
 
 		const dataWithExtraneousB = getExtraneousB()
 		attest(t(dataWithExtraneousB)).equals(dataWithExtraneousB)

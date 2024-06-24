@@ -233,5 +233,15 @@ contextualize(
 			attest(trim("  foo  ")).equals("foo")
 			attest(trim(5).toString()).snap("must be a string (was number)")
 		})
+		it("lowercase", () => {
+			const lowercase = type("format.lowercase")
+			attest(lowercase("FOO")).equals("foo")
+			attest(lowercase(5).toString()).snap("must be a string (was number)")
+		})
+		it("uppercase", () => {
+			const uppercase = type("format.uppercase")
+			attest(uppercase("foo")).equals("FOO")
+			attest(uppercase(5).toString()).snap("must be a string (was number)")
+		})
 	}
 )

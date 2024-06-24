@@ -22,6 +22,7 @@ import {
 	type show
 } from "@arktype/util"
 import type { Node, NodeSchema } from "../kinds.js"
+import { typePathToPropString } from "../node.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -35,8 +36,9 @@ import {
 } from "../shared/implement.js"
 import { intersectNodes, intersectNodesRoot } from "../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
-import type { TraversalPath } from "../shared/utils.js"
+import { pathToPropString } from "../shared/utils.js"
 import type { DomainInner, DomainNode } from "./domain.js"
+import type { MorphNode } from "./morph.js"
 import { BaseRoot, type schemaKindRightOf } from "./root.js"
 import type { UnitNode } from "./unit.js"
 import { defineRightwardIntersections } from "./utils.js"
@@ -200,7 +202,9 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 		this.branches[0].hasUnit(false) &&
 		this.branches[1].hasUnit(true)
 
-	unitBranches = this.branches.filter((n): n is UnitNode => n.hasKind("unit"))
+	unitBranches = this.branches.filter((n): n is UnitNode | MorphNode =>
+		n.in.hasKind("unit")
+	)
 
 	discriminant = this.discriminate()
 	discriminantJson =
@@ -254,7 +258,7 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 		js.block(`switch(${condition})`, () => {
 			for (const k in cases) {
 				const v = cases[k]
-				const caseCondition = k === "default" ? "default" : `case ${k}`
+				const caseCondition = k === "default" ? k : `case ${k}`
 				js.line(`${caseCondition}: return ${v === true ? v : js.invoke(v)}`)
 			}
 
@@ -307,7 +311,7 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 	rawKeyOf(): BaseRoot {
 		return this.branches.reduce(
 			(result, branch) => result.and(branch.rawKeyOf()),
-			this.$.keywords.unknown.raw
+			$ark.intrinsic.unknown
 		)
 	}
 
@@ -321,14 +325,15 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 	discriminate(): Discriminant | null {
 		if (this.branches.length < 2) return null
 		if (this.unitBranches.length === this.branches.length) {
-			const cases = flatMorph(this.unitBranches, (i, unit) => [
-				`${unit.serializedValue}`,
-				true as const
+			const cases = flatMorph(this.unitBranches, (i, n) => [
+				`${(n.in as UnitNode).serializedValue}`,
+				n.hasKind("morph") ? n : (true as const)
 			])
 
 			return {
-				path: [],
 				kind: "unit",
+				path: [],
+				propString: "",
 				cases
 			}
 		}
@@ -392,11 +397,17 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 
 		let defaultBranches = [...this.branches]
 
+		const bestCtx: DiscriminantContext = {
+			kind: best.kind,
+			path: best.path,
+			propString: pathToPropString(best.path)
+		}
+
 		const cases = flatMorph(best.cases, (k, caseBranches) => {
 			const prunedBranches: BaseRoot[] = []
 			defaultBranches = defaultBranches.filter(n => !caseBranches.includes(n))
 			for (const branch of caseBranches) {
-				const pruned = pruneDiscriminant(best.kind, best.path, branch)
+				const pruned = pruneDiscriminant(branch, bestCtx)
 				// if any branch of the union has no constraints (i.e. is unknown)
 				// return it right away
 				if (pruned === null) return [k, true as const]
@@ -424,6 +435,7 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 		return {
 			kind: best.kind,
 			path: best.path,
+			propString: pathToPropString(best.path),
 			cases
 		}
 	}
@@ -582,23 +594,23 @@ export const reduceBranches = ({
 			)!
 			if (intersection instanceof Disjoint) continue
 
-			if (!ordered) {
-				if (branches[i].includesMorph) {
-					throwParseError(
-						writeIndiscriminableMorphMessage(
-							branches[i].expression,
-							branches[j].expression
-						)
+			if (
+				!ordered &&
+				(branches[i].includesMorph || branches[j].includesMorph) &&
+				(!arrayEquals(branches[i].shallowMorphs, branches[j].shallowMorphs, {
+					isEqual: (l, r) => l.hasEqualMorphs(r)
+				}) ||
+					!arrayEquals(branches[i].flatMorphs, branches[j].flatMorphs, {
+						isEqual: (l, r) =>
+							l.propString === r.propString && l.node.hasEqualMorphs(r.node)
+					}))
+			) {
+				throwParseError(
+					writeIndiscriminableMorphMessage(
+						branches[i].expression,
+						branches[j].expression
 					)
-				}
-				if (branches[j].includesMorph) {
-					throwParseError(
-						writeIndiscriminableMorphMessage(
-							branches[j].expression,
-							branches[i].expression
-						)
-					)
-				}
+				)
 			}
 
 			if (intersection.equals(branches[i].in)) {
@@ -614,9 +626,14 @@ export const reduceBranches = ({
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
 	DiscriminantKind extends kind ? string : DiscriminantKinds[kind] | "default"
 
-export type Discriminant<kind extends DiscriminantKind = DiscriminantKind> = {
+type DiscriminantContext<kind extends DiscriminantKind = DiscriminantKind> = {
 	path: Key[]
+	propString: string
 	kind: kind
+}
+
+export interface Discriminant<kind extends DiscriminantKind = DiscriminantKind>
+	extends DiscriminantContext<kind> {
 	cases: DiscriminatedCases<kind>
 }
 
@@ -649,47 +666,46 @@ const discriminantKinds: keySet<DiscriminantKind> = {
 export type DiscriminantKind = show<keyof DiscriminantKinds>
 
 export const pruneDiscriminant = (
-	discriminantKind: DiscriminantKind,
-	path: TraversalPath,
-	branch: BaseRoot
+	discriminantBranch: BaseRoot,
+	discriminantCtx: DiscriminantContext
 ): BaseRoot | null =>
-	branch.transform(
+	discriminantBranch.transform(
 		(nodeKind, inner, ctx) => {
 			// if we've already checked a path at least as long as the current one,
 			// we don't need to revalidate that we're in an object
 			if (
 				nodeKind === "domain" &&
 				(inner as DomainInner).domain === "object" &&
-				path.length > ctx.path.length
+				discriminantCtx.path.length >= ctx.path.length
 			)
 				return null
 
 			// if the discriminant has already checked the domain at the current path
-			// (or an exact value, implying a domain), we don't need to recheck it
+			// (or a unit literal, implying a domain), we don't need to recheck it
 			if (
-				(discriminantKind === nodeKind ||
-					(nodeKind === "domain" && ctx.path.length === path.length)) &&
-				ctx.path.length === path.length &&
-				ctx.path.every((segment, i) => segment === path[i])
+				(nodeKind === "domain" || discriminantCtx.kind === "unit") &&
+				typePathToPropString(ctx.path) === discriminantCtx.propString
 			)
 				return null
 			return inner
 		},
 		{
 			shouldTransform: node =>
-				node.children.length !== 0 ||
+				// we don't need to recurse into index nodes as they will never
+				// have a required path therefore can't be used to discriminate
+				(node.children.length !== 0 && node.kind !== "index") ||
 				node.kind === "domain" ||
 				node.kind === "unit"
 		}
 	)
 
 export const writeIndiscriminableMorphMessage = (
-	morphDescription: string,
-	overlappingDescription: string
+	lDescription: string,
+	rDescription: string
 ) =>
 	`An unordered union of a type including a morph and a type with overlapping input is indeterminate:
-Morph Branch: ${morphDescription}
-Overlapping Branch: ${overlappingDescription}`
+Left: ${lDescription}
+Right: ${rDescription}`
 
 export const writeOrderedIntersectionMessage = (
 	lDescription: string,

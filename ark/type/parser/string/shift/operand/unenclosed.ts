@@ -4,15 +4,14 @@ import {
 	writeUnresolvableMessage,
 	type GenericProps,
 	type PrivateDeclaration,
-	type ambient,
 	type arkKind,
 	type writeNonSubmoduleDotMessage
 } from "@arktype/schema"
 import {
 	printable,
 	throwParseError,
-	tryParseNumber,
 	tryParseWellFormedBigint,
+	tryParseWellFormedNumber,
 	type BigintLiteral,
 	type Completion,
 	type ErrorMessage,
@@ -112,12 +111,17 @@ const maybeParseReference = (
 	s: DynamicState,
 	token: string
 ): BaseRoot | undefined => {
-	if (s.ctx.args?.[token]) return s.ctx.args[token].raw
+	if (s.ctx.args?.[token]) return s.ctx.args[token].internal
 	const resolution = s.ctx.$.maybeResolve(token)
 	if (resolution instanceof BaseRoot) return resolution
 	if (resolution === undefined) return
-	if (hasArkKind(resolution, "generic"))
-		return parseGenericInstantiation(token, resolution as Generic, s)
+	if (hasArkKind(resolution, "generic")) {
+		return parseGenericInstantiation(
+			token,
+			throwParseError("Generics unsupported"),
+			s
+		)
+	}
 	return throwParseError(`Unexpected resolution ${printable(resolution)}`)
 }
 
@@ -125,7 +129,7 @@ const maybeParseUnenclosedLiteral = (
 	s: DynamicState,
 	token: string
 ): BaseRoot | undefined => {
-	const maybeNumber = tryParseNumber(token, { strict: true })
+	const maybeNumber = tryParseWellFormedNumber(token)
 	if (maybeNumber !== undefined)
 		return s.ctx.$.node("unit", { unit: maybeNumber })
 
@@ -135,16 +139,16 @@ const maybeParseUnenclosedLiteral = (
 }
 
 type tryResolve<s extends StaticState, token extends string, $, args> =
-	token extends keyof ambient ? token
+	token extends keyof ArkEnv.$ ? token
 	: token extends keyof $ ? token
 	: `#${token}` extends keyof $ ? token
 	: token extends keyof args ? token
 	: token extends `${number}` ? token
 	: token extends BigintLiteral ? token
 	: token extends (
-		`${infer submodule extends (keyof $ | keyof ambient) & string}.${infer reference}`
+		`${infer submodule extends (keyof $ | keyof ArkEnv.$) & string}.${infer reference}`
 	) ?
-		tryResolveSubmodule<token, submodule, reference, s, $ & ambient, args>
+		tryResolveSubmodule<token, submodule, reference, s, $ & ArkEnv.$, args>
 	:	unresolvableError<s, token, $, args, []>
 
 type tryResolveSubmodule<

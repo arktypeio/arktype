@@ -2,6 +2,8 @@ import { throwParseError } from "./errors.js"
 
 export type Digit = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
 
+export type NumberLiteral<value extends number = number> = `${value}`
+
 export type BigintLiteral<value extends bigint = bigint> = `${value}n`
 
 /**
@@ -26,7 +28,7 @@ export const wellFormedNumberMatcher: RegExp =
 export const isWellFormedNumber: RegExp["test"] =
 	wellFormedNumberMatcher.test.bind(wellFormedNumberMatcher)
 
-const numberLikeMatcher = /^-?\d*\.?\d*$/
+export const numberLikeMatcher = /^-?\d*\.?\d*$/
 const isNumberLike = (s: string) => s.length !== 0 && numberLikeMatcher.test(s)
 
 /**
@@ -38,7 +40,7 @@ export const wellFormedIntegerMatcher: RegExp = /^(?:0|(?:-?[1-9]\d*))$/
 export const isWellFormedInteger: RegExp["test"] =
 	wellFormedIntegerMatcher.test.bind(wellFormedIntegerMatcher)
 
-const integerLikeMatcher = /^-?\d+$/
+export const integerLikeMatcher = /^-?\d+$/
 const isIntegerLike = integerLikeMatcher.test.bind(integerLikeMatcher)
 
 type NumericLiteralKind = "number" | "bigint" | "integer"
@@ -81,6 +83,11 @@ export const tryParseNumber = <errorOnFail extends boolean | string>(
 	options?: NumericParseOptions<errorOnFail>
 ): errorOnFail extends true | string ? number : number | undefined =>
 	parseNumeric(token, "number", options)
+
+export const tryParseWellFormedNumber: typeof tryParseNumber = (
+	token,
+	options
+) => parseNumeric(token, "number", { ...options, strict: true })
 
 export type tryParseNumber<token extends string, messageOnFail extends string> =
 	token extends `${infer n extends number}` ?

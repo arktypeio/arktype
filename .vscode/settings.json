@@ -20,6 +20,7 @@
 		"typescript"
 	],
 	"typescript.tsserver.experimental.enableProjectDiagnostics": true,
+	"typescript.tsdk": "./node_modules/typescript/lib",
 	// IF YOU UPDATE THE MOCHA CONFIG HERE, PLEASE ALSO UPDATE package.json/mocha AND ark/repo/mocha.jsonc
 	"mochaExplorer.nodeArgv": ["--import=tsx"],
 	// ignore attest since it requires type information

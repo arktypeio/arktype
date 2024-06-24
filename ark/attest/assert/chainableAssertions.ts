@@ -1,5 +1,6 @@
 import { caller } from "@arktype/fs"
 import { printable, snapshot, type Constructor } from "@arktype/util"
+import { type, type validateTypeRoot } from "arktype"
 import * as assert from "node:assert/strict"
 import { isDeepStrictEqual } from "node:util"
 import {
@@ -68,6 +69,11 @@ export class ChainableAssertions implements AssertionRecord {
 
 	equals(expected: unknown): this {
 		assertEquals(expected, this.ctx.actual, this.ctx)
+		return this
+	}
+
+	satisfies(def: unknown): this {
+		type(def as never).assert(def)
 		return this
 	}
 
@@ -218,6 +224,7 @@ export class ChainableAssertions implements AssertionRecord {
 		}
 	}
 }
+
 const checkCompletionsForErrors = (completions?: Completions) => {
 	if (typeof completions === "string") throw new Error(completions)
 }
@@ -278,6 +285,7 @@ export type comparableValueAssertion<expected, kind extends AssertionKind> = {
 	instanceOf: (constructor: Constructor) => nextAssertions<kind>
 	is: (value: expected) => nextAssertions<kind>
 	completions: (value?: Completions) => void
+	satisfies: <def>(def: validateTypeRoot<def>) => nextAssertions<kind>
 	// This can be used to assert values without type constraints
 	unknown: Omit<comparableValueAssertion<unknown, kind>, "unknown">
 }

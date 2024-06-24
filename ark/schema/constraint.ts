@@ -107,9 +107,11 @@ export const constraintKeyParser =
 				// Omit empty lists as input
 				return
 			}
-			return schema
-				.map(schema => ctx.$.node(kind, schema as never))
-				.sort((l, r) => (l.innerHash < r.innerHash ? -1 : 1)) as never
+			const nodes = schema.map(schema => ctx.$.node(kind, schema as never))
+			// predicate order must be preserved to ensure inputs are narrowed
+			// and checked in the correct order
+			if (kind === "predicate") return nodes as never
+			return nodes.sort((l, r) => (l.innerHash < r.innerHash ? -1 : 1)) as never
 		}
 		const child = ctx.$.node(kind, schema)
 		return child.hasOpenIntersection() ? [child] : (child as any)
@@ -135,7 +137,7 @@ export const intersectConstraints = <kind extends ConstraintGroupKind>(
 	if (!head) {
 		let result: BaseNode | Disjoint =
 			s.l.length === 0 && s.kind === "structure" ?
-				s.ctx.$.keywords.unknown.raw
+				$ark.intrinsic.unknown.internal
 			:	s.ctx.$.node(
 					s.kind,
 					Object.assign(s.baseInner, unflattenConstraints(s.l)),

@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@arktype/attest"
 import {
-	internalKeywords,
+	internal,
 	keywordNodes,
 	rawSchema,
 	writeInvalidOperandMessage,
@@ -407,7 +407,7 @@ contextualize(
 			attest(() => type("bigint").atLeastLength(5)).throwsAndHasTypeError(
 				writeInvalidOperandMessage(
 					"minLength",
-					internalKeywords.lengthBoundable,
+					internal.lengthBoundable,
 					keywordNodes.bigint
 				)
 			)
@@ -432,7 +432,7 @@ contextualize(
 			attest(() => type("null").lessThanLength(5)).throwsAndHasTypeError(
 				writeInvalidOperandMessage(
 					"maxLength",
-					internalKeywords.lengthBoundable,
+					internal.lengthBoundable,
 					keywordNodes.null
 				)
 			)

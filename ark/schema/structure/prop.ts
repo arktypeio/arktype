@@ -1,4 +1,5 @@
 import {
+	append,
 	compileSerializedValue,
 	printable,
 	registeredReference,
@@ -8,9 +9,11 @@ import {
 } from "@arktype/util"
 import { BaseConstraint } from "../constraint.js"
 import type { Node, RootSchema } from "../kinds.js"
-import type {
-	DeepNodeTransformation,
-	DeepNodeTransformationContext
+import {
+	flatRef,
+	type DeepNodeTransformContext,
+	type DeepNodeTransformation,
+	type FlatRef
 } from "../node.js"
 import type { Morph } from "../roots/morph.js"
 import type { BaseRoot } from "../roots/root.js"
@@ -54,7 +57,7 @@ export const intersectProps = (
 	let value = intersectNodes(l.value, r.value, ctx)
 	const kind: PropKind = l.required || r.required ? "required" : "optional"
 	if (value instanceof Disjoint) {
-		if (kind === "optional") value = ctx.$.keywords.never.raw
+		if (kind === "optional") value = $ark.intrinsic.never.internal
 		else {
 			// if either operand was optional, the Disjoint has to be treated as optional
 			return value.withPrefixKey(
@@ -97,14 +100,24 @@ export abstract class BaseProp<
 	kind extends "required" ? RequiredDeclaration : OptionalDeclaration
 > {
 	required: boolean = this.kind === "required"
-	impliedBasis: BaseRoot = this.$.keywords.object.raw
+	optional: boolean = this.kind === "optional"
+	impliedBasis: BaseRoot = $ark.intrinsic.object
 	serializedKey: string = compileSerializedValue(this.key)
 	compiledKey: string =
 		typeof this.key === "string" ? this.key : this.serializedKey
 
+	override get flatRefs(): FlatRef[] {
+		return append(
+			this.value.flatRefs.map(ref =>
+				flatRef([this.key, ...ref.path], ref.node)
+			),
+			flatRef([this.key], this.value)
+		)
+	}
+
 	protected override _transform(
 		mapper: DeepNodeTransformation,
-		ctx: DeepNodeTransformationContext
+		ctx: DeepNodeTransformContext
 	) {
 		ctx.path.push(this.key)
 		const result = super._transform(mapper, ctx)
@@ -135,7 +148,7 @@ export abstract class BaseProp<
 			ctx?.path.pop()
 			return allowed
 		}
-		return !this.required
+		return this.optional
 	}
 
 	traverseApply: TraverseApply<object> = (data, ctx) => {

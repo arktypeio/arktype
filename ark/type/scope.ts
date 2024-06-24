@@ -9,7 +9,6 @@ import {
 	type RawRootResolutions,
 	type RootScope,
 	type UnknownRoot,
-	type ambient,
 	type arkKind,
 	type destructuredExportContext,
 	type destructuredImportContext,
@@ -17,6 +16,7 @@ import {
 	type writeDuplicateAliasError
 } from "@arktype/schema"
 import {
+	bound,
 	domainOf,
 	hasDomain,
 	isThunk,
@@ -151,11 +151,11 @@ export type tryInferSubmoduleReference<$, token> =
 		subalias extends keyof $[submodule] ?
 			$[submodule][subalias]
 		:	never
-	: token extends (
-		`${infer submodule extends moduleKeyOf<ambient>}.${infer subalias}`
-	) ?
-		subalias extends keyof ambient[submodule] ?
-			ambient[submodule][subalias]
+	: token extends `${infer submodule}.${infer subalias}` ?
+		submodule extends moduleKeyOf<ArkEnv.$> ?
+			subalias extends keyof ArkEnv.$[submodule] ?
+				ArkEnv.$[submodule][subalias]
+			:	never
 		:	never
 	:	never
 
@@ -219,13 +219,12 @@ export class RawScope<
 		return def
 	}
 
+	@bound
 	override parseRoot(def: unknown): BaseRoot {
-		// args: { this: {} as RawRoot },
 		return this.parse(def, {
 			$: this as never,
+			// args: { this: {} as RawRoot },
 			args: {}
-			// type parsing can bypass nodes if it hits the cache,
-			// so bind it directly (could be optimized)
 		}).bindScope(this)
 	}
 
