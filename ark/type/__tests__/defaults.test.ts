@@ -185,6 +185,7 @@ contextualize(
 				domain: "object"
 			})
 		})
+
 		it("same default", () => {
 			const l = type({ bar: ["number", "=", 5] })
 			const r = type({ bar: ["5", "=", 5] })
