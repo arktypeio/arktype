@@ -3,31 +3,31 @@ import { type } from "arktype"
 
 bench("single-quoted", () => {
 	const _ = type("'nineteen characters'")
-}).types([1319, "instantiations"])
+}).types([2697, "instantiations"])
 
 bench("double-quoted", () => {
 	const _ = type('"nineteen characters"')
-}).types([1319, "instantiations"])
+}).types([2697, "instantiations"])
 
 bench("regex literal", () => {
 	const _ = type("/nineteen characters/")
-}).types([1363, "instantiations"])
+}).types([2741, "instantiations"])
 
 bench("keyword", () => {
 	const _ = type("string")
-}).types([919, "instantiations"])
+}).types([2507, "instantiations"])
 
 bench("number", () => {
 	const _ = type("-98765.4321")
-}).types([1139, "instantiations"])
+}).types([2589, "instantiations"])
 
 bench("bigint", () => {
 	const _ = type("-987654321n")
-}).types([1157, "instantiations"])
+}).types([2611, "instantiations"])
 
 bench("instantiations", () => {
 	const t = type({ foo: "string" })
-}).types([18483, "instantiations"])
+}).types([3522, "instantiations"])
 
 bench("union", () => {
 	// Union is automatically discriminated using shallow or deep keys
@@ -42,4 +42,4 @@ bench("union", () => {
 		.or({
 			kind: "'pleb'"
 		})
-}).types([22721, "instantiations"])
+}).types([8430, "instantiations"])
