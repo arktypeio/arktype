@@ -149,9 +149,6 @@ export const getBoundKinds = (
 	return throwParseError(writeUnboundableMessage(root.expression))
 }
 
-export const singleEqualsMessage = `= is not valid here. Default values must be specified on objects like { isAdmin: 'boolean = false' }`
-type singleEqualsMessage = typeof singleEqualsMessage
-
 const openLeftBoundToRoot = (
 	leftBound: OpenLeftBound
 ): NodeSchema<BoundKind> => ({

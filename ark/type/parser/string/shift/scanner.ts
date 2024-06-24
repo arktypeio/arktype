@@ -146,7 +146,7 @@ export namespace Scanner {
 				isKeyOf(unscanned.trimStart()[0], Scanner.terminatingChars)
 			// "=" is a finalizer on its own (representing a default value),
 			// but not with a second "=" (an equality comparator)
-		: lookahead === "=" ? unscanned[0] === "="
+		: lookahead === "=" ? unscanned[0] !== "="
 			// ","" is unambiguously a finalizer
 		: lookahead === ","
 

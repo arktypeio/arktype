@@ -1,9 +1,10 @@
 import type { BaseRoot, DateLiteral } from "@arktype/schema"
-import type {
-	BigintLiteral,
-	ErrorMessage,
-	NumberLiteral,
-	trim
+import {
+	throwParseError,
+	type BigintLiteral,
+	type ErrorMessage,
+	type NumberLiteral,
+	type trim
 } from "@arktype/util"
 import type { DynamicStateWithRoot } from "../../reduce/dynamic.js"
 import type { StringLiteral } from "../operand/enclosed.js"
@@ -27,6 +28,8 @@ export type UnitLiteral =
 export type ParsedDefault = [BaseRoot, "=", unknown]
 
 export const parseDefault = (s: DynamicStateWithRoot): ParsedDefault => {
+	if (!s.defaultable) return throwParseError(singleEqualsMessage)
+
 	// store the node that will be bounded
 	const baseNode = s.unsetRoot()
 	s.parseOperand()
@@ -34,7 +37,7 @@ export const parseDefault = (s: DynamicStateWithRoot): ParsedDefault => {
 	// after parsing the next operand, use the locations to get the
 	// token from which it was parsed
 	if (!defaultNode.hasKind("unit"))
-		return s.error(writeInvalidDefaultValueMessage(defaultNode.expression))
+		return s.error(writeNonLiteralDefaultMessage(defaultNode.expression))
 
 	// assignability is checked in parseEntries
 
@@ -46,12 +49,16 @@ export type parseDefault<root, unscanned extends string> =
 	// so parse the rest of the string and ensure it is a valid unit literal
 	trim<unscanned> extends infer defaultValue extends UnitLiteral ?
 		[root, "=", defaultValue]
-	:	ErrorMessage<writeInvalidDefaultValueMessage<trim<unscanned>>>
+	:	ErrorMessage<writeNonLiteralDefaultMessage<trim<unscanned>>>
 
-export type writeInvalidDefaultValueMessage<defaultDef extends string> =
-	`Default value '${defaultDef}' must a literal value`
-
-export const writeInvalidDefaultValueMessage = <defaultDef extends string>(
+export const writeNonLiteralDefaultMessage = <defaultDef extends string>(
 	defaultDef: defaultDef
-): writeInvalidDefaultValueMessage<defaultDef> =>
+): writeNonLiteralDefaultMessage<defaultDef> =>
 	`Default value '${defaultDef}' must a literal value`
+
+export type writeNonLiteralDefaultMessage<defaultDef extends string> =
+	`Default value '${defaultDef}' must a literal value`
+
+export const singleEqualsMessage = `= is not valid here. Default values must be specified on objects like { isAdmin: 'boolean = false' }`
+
+export type singleEqualsMessage = typeof singleEqualsMessage

@@ -14,10 +14,8 @@ import {
 	writeOpenRangeMessage,
 	writeUnpairableComparatorMessage
 } from "../parser/string/reduce/shared.js"
-import {
-	singleEqualsMessage,
-	writeInvalidLimitMessage
-} from "../parser/string/shift/operator/bounds.js"
+import { writeInvalidLimitMessage } from "../parser/string/shift/operator/bounds.js"
+import { singleEqualsMessage } from "../parser/string/shift/operator/default.js"
 
 contextualize(
 	"string expressions",
