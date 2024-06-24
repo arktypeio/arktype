@@ -5,7 +5,6 @@ import type {
 	NumberLiteral,
 	trim
 } from "@arktype/util"
-import { writeUnassignableDefaultValueMessage } from "../../../semantic/default.js"
 import type { DynamicStateWithRoot } from "../../reduce/dynamic.js"
 import type { StringLiteral } from "../operand/enclosed.js"
 
@@ -36,14 +35,9 @@ export const parseDefault = (s: DynamicStateWithRoot): ParsedDefault => {
 	// token from which it was parsed
 	if (!defaultNode.hasKind("unit"))
 		return s.error(writeInvalidDefaultValueMessage(defaultNode.expression))
-	if (!baseNode.allows(defaultNode.unit)) {
-		return s.error(
-			writeUnassignableDefaultValueMessage(
-				baseNode.expression,
-				defaultNode.expression
-			)
-		)
-	}
+
+	// assignability is checked in parseEntries
+
 	return [baseNode, "=", defaultNode.unit]
 }
 

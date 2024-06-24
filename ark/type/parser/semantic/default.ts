@@ -14,15 +14,14 @@ export type validateDefault<baseAst, unitLiteral extends UnitLiteral, $, args> =
 		>
 
 export const writeUnassignableDefaultValueMessage = <
-	baseDef extends string,
-	unitLiteral extends string
+	key extends string,
+	message extends string
 >(
-	baseDef: baseDef,
-	unitLiteral: unitLiteral
-): writeUnassignableDefaultValueMessage<baseDef, unitLiteral> =>
-	`${unitLiteral} is not assignable to ${baseDef}`
+	key: key,
+	message: message
+) => `Default value at ${key} ${message}`
 
 export type writeUnassignableDefaultValueMessage<
 	baseDef extends string,
-	unitLiteral extends string
-> = `${unitLiteral} is not assignable to ${baseDef}`
+	defaultValue extends string
+> = `Default value ${defaultValue} is not assignable to ${baseDef}`

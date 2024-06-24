@@ -299,16 +299,16 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 
 		if (!def) return this.maybeResolveSubalias(name)
 
-		const parsed = this.preparseRoot(def)
-		if (hasArkKind(parsed, "generic")) {
-			return (this.resolutions[name] = parsed
+		const preparsed = this.preparseRoot(def)
+		if (hasArkKind(preparsed, "generic")) {
+			return (this.resolutions[name] = preparsed
 				.validateBaseInstantiation()
 				?.bindScope(this))
 		}
 
-		if (hasArkKind(parsed, "module")) {
+		if (hasArkKind(preparsed, "module")) {
 			return (this.resolutions[name] = new RootModule(
-				flatMorph(parsed, (alias, node) => [
+				flatMorph(preparsed, (alias, node) => [
 					alias,
 					(node as BaseRoot | GenericRoot).bindScope(this)
 				])
@@ -316,7 +316,7 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 		}
 
 		this.resolutions[name] = name
-		return (this.resolutions[name] = this.parseRoot(def).bindScope(this))
+		return (this.resolutions[name] = this.parseRoot(preparsed).bindScope(this))
 	}
 
 	/** If name is a valid reference to a submodule alias, return its resolution  */

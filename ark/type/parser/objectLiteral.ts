@@ -1,4 +1,5 @@
 import {
+	ArkErrors,
 	normalizeIndex,
 	type BaseRoot,
 	type Default,
@@ -32,8 +33,10 @@ import {
 } from "@arktype/util"
 import type { ParseContext } from "../scope.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
+import { writeUnassignableDefaultValueMessage } from "./semantic/default.js"
 import type { astToString } from "./semantic/utils.js"
 import type { validateString } from "./semantic/validate.js"
+import type { ParsedDefault } from "./string/shift/operator/default.js"
 
 export const parseObjectLiteral = (def: Dict, ctx: ParseContext): BaseRoot => {
 	let spread: StructureNode | undefined
@@ -230,21 +233,25 @@ export const parseEntry = (
 	if (parsedKey.kind === "...")
 		return { kind: "spread", node: ctx.$.parse(value, ctx) }
 
-	if (isArray(value) && value[1] === "=") {
-		if (parsedKey.kind !== "required")
-			throwParseError(invalidDefaultKeyKindMessage)
-		return ctx.$.node("optional", {
-			key: parsedKey.key,
-			value: ctx.$.parse(value[0], ctx),
-			default: value[2]
-		})
-	}
-
-	const parsedValue = ctx.$.parse(value, ctx, true)
+	const parsedValue: ParsedDefault | BaseRoot =
+		isArray(value) && value[1] === "=" ?
+			[ctx.$.parse(value[0], ctx), "=", value[2]]
+		:	ctx.$.parse(value, ctx, true)
 
 	if (isArray(parsedValue)) {
 		if (parsedKey.kind !== "required")
 			throwParseError(invalidDefaultKeyKindMessage)
+
+		const out = parsedValue[0].traverse(parsedValue[2])
+		if (out instanceof ArkErrors) {
+			throwParseError(
+				writeUnassignableDefaultValueMessage(
+					printable(parsedKey.key),
+					out.message
+				)
+			)
+		}
+
 		return ctx.$.node("optional", {
 			key: parsedKey.key,
 			value: parsedValue[0],

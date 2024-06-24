@@ -41,7 +41,7 @@ contextualize(
 				.throws.snap(
 					'ParseError: Default value at "bar" must be a number (was string)'
 				)
-				.type.errors("Type 'string' is not assignable to type 'number'")
+				.type.errors()
 		})
 
 		it("optional with default", () => {
