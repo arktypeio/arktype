@@ -621,12 +621,10 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 
 	it("recursive reference from union", () => {
 		const $ = scope({
-			TypeWithKeywords: "ArraySchema", // without this line the union works (in either order)
-			// Schema: "ArraySchema", // works without a union
-			// Schema: "ArraySchema|number", // for some reason the union in this order works
-			Schema: "number|ArraySchema", // union in this order breaks
+			TypeWithKeywords: "ArraySchema",
+			Schema: "number|ArraySchema",
 			ArraySchema: {
-				"additionalItems?": "Schema" // needs a type that causes recursion for the error to occur
+				"additionalItems?": "Schema"
 			}
 		})
 

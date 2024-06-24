@@ -1,5 +1,24 @@
 # arktype
 
+## 2.0.0-dev.26
+
+### Improved string default parsing
+
+String defaults are now parsed more efficiently by the core string parser. They can include arbitrary whitespace and give more specific errors.
+
+### Fix a resolution issue on certain cyclic unions
+
+```ts
+// Now resolves correctly
+const types = scope({
+	TypeWithKeywords: "ArraySchema",
+	Schema: "number|ArraySchema",
+	ArraySchema: {
+		"additionalItems?": "Schema"
+	}
+}).export()
+```
+
 ## 2.0.0-dev.25
 
 ### String defaults
