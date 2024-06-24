@@ -26,7 +26,7 @@ export class TraversalContext {
 	errors: ArkErrors = new ArkErrors(this)
 	branches: BranchTraversalContext[] = []
 
-	seen: { [id in string]?: object[] } = {}
+	seen: { [id in string]?: unknown[] } = {}
 
 	constructor(
 		public root: unknown,

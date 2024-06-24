@@ -20,7 +20,6 @@ export type GenericNodeInstantiation<
 	...args: conform<args, repeat<[RootSchema], params["length"]>>
 ) => Root<inferRoot<def, $ & bindGenericNodeInstantiation<params, $, args>>>
 
-// TODO: ????
 export type bindGenericNodeInstantiation<params extends string[], $, args> = {
 	[i in keyof params & `${number}` as params[i]]: inferRoot<
 		args[i & keyof args],
@@ -63,7 +62,7 @@ export class GenericRoot<params extends string[] = string[], def = any, $ = any>
 		})
 	}
 
-	bindScope($: RawRootScope) {
+	bindScope($: RawRootScope): never {
 		throw new Error(`Unimplemented generic bind ${$}`)
 	}
 

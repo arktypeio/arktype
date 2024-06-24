@@ -50,6 +50,26 @@ export const deanchoredSource = (regex: RegExp | string) => {
 	)
 }
 
+export const escapeToken = "\\"
+
+export type EscapeToken = typeof escapeToken
+
+export const whiteSpaceTokens = {
+	" ": true,
+	"\n": true,
+	"\t": true
+} as const
+
+export type WhiteSpaceToken = keyof typeof whiteSpaceTokens
+
+export type trim<s extends string> = trimEnd<trimStart<s>>
+
+export type trimStart<s extends string> =
+	s extends `${WhiteSpaceToken}${infer tail}` ? trimEnd<tail> : s
+
+export type trimEnd<s extends string> =
+	s extends `${infer init}${WhiteSpaceToken}` ? trimEnd<init> : s
+
 // Credit to @gugaguichard for this! https://x.com/gugaguichard/status/1720528864500150534
 export type isStringLiteral<t> =
 	[t] extends [string] ?

@@ -618,4 +618,48 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 
 		attest(u.t).type.toString("(In: string) => Out<`${string}++`>")
 	})
+
+	it("recursive reference from union", () => {
+		const $ = scope({
+			TypeWithKeywords: "ArraySchema",
+			Schema: "number|ArraySchema",
+			ArraySchema: {
+				"additionalItems?": "Schema"
+			}
+		})
+
+		$.export()
+
+		attest($.json).snap({
+			TypeWithKeywords: {
+				optional: [
+					{ key: "additionalItems", value: ["$ArraySchema", "number"] }
+				],
+				domain: "object"
+			},
+			Schema: ["$ArraySchema", "number"],
+			ArraySchema: {
+				optional: [
+					{ key: "additionalItems", value: ["$ArraySchema", "number"] }
+				],
+				domain: "object"
+			}
+		})
+	})
+
+	// https://discord.com/channels/957797212103016458/957804102685982740/1254900389346807849
+	it("narrows nested morphs", () => {
+		const parseBigint = type("string").pipe(s => BigInt(s))
+		const fee = type({ amount: parseBigint }).narrow(
+			fee => typeof fee.amount === "bigint"
+		)
+
+		const Claim = type({
+			fee
+		})
+
+		const out = Claim.assert({ fee: { amount: "5" } })
+
+		attest(out).equals({ fee: { amount: 5n } })
+	})
 })

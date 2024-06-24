@@ -10,7 +10,6 @@ import {
 	type Out,
 	type Predicate,
 	type UnionChildKind,
-	type UnknownRoot,
 	type distillConstrainableIn,
 	type distillOut,
 	type inferIntersection,
@@ -93,7 +92,7 @@ type ElementKind = "optional" | "required" | "variadic"
 const appendElement = (
 	base: MutableInner<"sequence">,
 	kind: ElementKind,
-	element: UnknownRoot
+	element: BaseRoot
 ): MutableInner<"sequence"> => {
 	switch (kind) {
 		case "required":
@@ -140,7 +139,7 @@ const appendSpreadBranch = (
 	const spread = branch.firstReferenceOfKind("sequence")
 	if (!spread) {
 		// the only array with no sequence reference is unknown[]
-		return appendElement(base, "variadic", tsKeywords.unknown)
+		return appendElement(base, "variadic", tsKeywords.unknown.internal)
 	}
 	spread.prefix.forEach(node => appendElement(base, "required", node))
 	spread.optionals.forEach(node => appendElement(base, "optional", node))

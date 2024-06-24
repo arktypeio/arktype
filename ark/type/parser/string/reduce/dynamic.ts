@@ -49,7 +49,8 @@ export class DynamicState {
 
 	constructor(
 		def: string,
-		public readonly ctx: ParseContext
+		public readonly ctx: ParseContext,
+		public readonly defaultable: boolean
 	) {
 		this.scanner = new Scanner(def)
 	}
@@ -154,7 +155,7 @@ export class DynamicState {
 
 	parseUntilFinalizer(): DynamicStateWithRoot {
 		return parseUntilFinalizer(
-			new DynamicState(this.scanner.unscanned, this.ctx)
+			new DynamicState(this.scanner.unscanned, this.ctx, false)
 		)
 	}
 

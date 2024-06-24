@@ -47,14 +47,14 @@ export class AliasNode extends BaseRoot<AliasDeclaration> {
 
 	traverseAllows: TraverseAllows = (data, ctx) => {
 		const seen = ctx.seen[this.id]
-		if (seen?.includes(data as object)) return true
+		if (seen?.includes(data)) return true
 		ctx.seen[this.id] = append(seen, data)
 		return this.resolution.traverseAllows(data, ctx)
 	}
 
 	traverseApply: TraverseApply = (data, ctx) => {
 		const seen = ctx.seen[this.id]
-		if (seen?.includes(data as object)) return
+		if (seen?.includes(data)) return
 		ctx.seen[this.id] = append(seen, data)
 		this.resolution.traverseApply(data, ctx)
 	}

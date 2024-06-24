@@ -1,4 +1,4 @@
-import { isKeyOf } from "@arktype/util"
+import { isKeyOf, type WhiteSpaceToken } from "@arktype/util"
 import type { DynamicStateWithRoot } from "../../reduce/dynamic.js"
 import type { StaticState, state } from "../../reduce/static.js"
 import { Scanner } from "../scanner.js"
@@ -44,7 +44,7 @@ export type parseOperator<s extends StaticState, $, args> =
 		: lookahead extends ComparatorStartChar ?
 			parseBound<s, lookahead, unscanned, $, args>
 		: lookahead extends "%" ? parseDivisor<s, unscanned>
-		: lookahead extends Scanner.WhiteSpaceToken ?
+		: lookahead extends WhiteSpaceToken ?
 			parseOperator<state.scanTo<s, unscanned>, $, args>
 		:	state.error<writeUnexpectedCharacterMessage<lookahead>>
 	:	state.finalize<s, "">

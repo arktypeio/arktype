@@ -55,7 +55,7 @@
 		"knip": "5.22.0",
 		"mocha": "10.4.0",
 		"prettier": "3.3.2",
-		"tsx": "4.15.6",
+		"tsx": "4.15.7",
 		"typescript": "5.5.2",
 		"typescript-min": "npm:typescript@5.1.5",
 		"typescript-nightly": "npm:typescript@next"

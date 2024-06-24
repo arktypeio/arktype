@@ -14,10 +14,8 @@ import {
 	writeOpenRangeMessage,
 	writeUnpairableComparatorMessage
 } from "../parser/string/reduce/shared.js"
-import {
-	singleEqualsMessage,
-	writeInvalidLimitMessage
-} from "../parser/string/shift/operator/bounds.js"
+import { writeInvalidLimitMessage } from "../parser/string/shift/operator/bounds.js"
+import { shallowDefaultMessage } from "../parser/string/shift/operator/default.js"
 
 contextualize(
 	"string expressions",
@@ -153,11 +151,6 @@ contextualize(
 			attest(t.allows(new Date(now.valueOf() - 1000))).equals(true)
 			attest(t.allows(now)).equals(true)
 			attest(t.allows(new Date(now.valueOf() + 1000))).equals(false)
-		})
-
-		it("single equals", () => {
-			// @ts-expect-error
-			attest(() => type("string=5")).throwsAndHasTypeError(singleEqualsMessage)
 		})
 
 		it("invalid left comparator", () => {
