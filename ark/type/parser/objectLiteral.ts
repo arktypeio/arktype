@@ -50,19 +50,19 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): BaseRoot => {
 		// expecting non-spread entries
 		const spreadEntry = parsedEntries.shift()! as ParsedSpreadEntry
 		if (
-			!spreadEntry.inner.hasKind("intersection") ||
-			!spreadEntry.inner.structure
+			!spreadEntry.node.hasKind("intersection") ||
+			!spreadEntry.node.structure
 		) {
 			return throwParseError(
-				writeInvalidSpreadTypeMessage(typeof spreadEntry.inner.expression)
+				writeInvalidSpreadTypeMessage(typeof spreadEntry.node.expression)
 			)
 		}
-		spread = spreadEntry.inner.structure
+		spread = spreadEntry.node.structure
 	}
 	for (const entry of parsedEntries) {
 		if (entry.kind === "spread") return throwParseError(nonLeadingSpreadError)
 		if (entry.kind === "undeclared") {
-			structure.undeclared = entry.inner
+			structure.undeclared = entry.behavior
 			continue
 		}
 		structure[entry.kind] = append(structure[entry.kind], entry) as never
@@ -166,19 +166,6 @@ type validateDefaultValueTuple<
 		]
 	:	ErrorMessage<invalidDefaultKeyKindMessage>
 
-// type validateDefaultValueString<
-// 	def extends DefaultValueString,
-// 	k extends PropertyKey,
-// 	$,
-// 	args
-// > =
-// 	def extends DefaultValueString<infer baseDef, infer defaultDef> ?
-// 		parseKey<k>["kind"] extends "required" ?
-
-// 			:	never
-// 		:	ErrorMessage<invalidDefaultKeyKindMessage>
-// 	:	never
-
 type nonOptionalKeyFrom<k, $, args> =
 	parseKey<k> extends PreparsedKey<"required", infer inner> ? inner
 	: parseKey<k> extends PreparsedKey<"index", infer inner> ?
@@ -219,12 +206,12 @@ export type ParsedEntry =
 
 export type ParsedUndeclaredEntry = {
 	kind: "undeclared"
-	inner: UndeclaredKeyBehavior
+	behavior: UndeclaredKeyBehavior
 }
 
 export type ParsedSpreadEntry = {
 	kind: "spread"
-	inner: BaseRoot
+	node: BaseRoot
 }
 
 export const parseEntry = (
@@ -237,11 +224,11 @@ export const parseEntry = (
 	if (parsedKey.kind === "+") {
 		if (value !== "reject" && value !== "delete" && value !== "ignore")
 			throwParseError(writeInvalidUndeclaredBehaviorMessage(value))
-		return { kind: "undeclared", inner: value }
+		return { kind: "undeclared", behavior: value }
 	}
 
 	if (parsedKey.kind === "...")
-		return { kind: "spread", inner: ctx.$.parse(value, ctx) }
+		return { kind: "spread", node: ctx.$.parse(value, ctx) }
 
 	if (isArray(value) && value[1] === "=") {
 		if (parsedKey.kind !== "required")
