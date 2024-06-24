@@ -2,7 +2,10 @@ import { attest, contextualize } from "@arktype/attest"
 import type { Date, Default } from "@arktype/schema"
 import { scope, type } from "arktype"
 import { invalidDefaultKeyKindMessage } from "../parser/objectLiteral.js"
-import { writeNonLiteralDefaultMessage } from "../parser/string/shift/operator/default.js"
+import {
+	shallowDefaultMessage,
+	writeNonLiteralDefaultMessage
+} from "../parser/string/shift/operator/default.js"
 
 contextualize(
 	"parsing and traversal",
@@ -174,6 +177,13 @@ contextualize(
 					domain: "object"
 				}
 			})
+		})
+
+		it("shallow default", () => {
+			// would be ideal if this was a type error as well
+			attest(() => type("string='foo'")).throwsAndHasTypeError(
+				shallowDefaultMessage
+			)
 		})
 
 		it("optional with default", () => {

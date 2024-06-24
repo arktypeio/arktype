@@ -28,7 +28,7 @@ export type UnitLiteral =
 export type ParsedDefault = [BaseRoot, "=", unknown]
 
 export const parseDefault = (s: DynamicStateWithRoot): ParsedDefault => {
-	if (!s.defaultable) return throwParseError(singleEqualsMessage)
+	if (!s.defaultable) return throwParseError(shallowDefaultMessage)
 
 	// store the node that will be bounded
 	const baseNode = s.unsetRoot()
@@ -59,6 +59,6 @@ export const writeNonLiteralDefaultMessage = <defaultDef extends string>(
 export type writeNonLiteralDefaultMessage<defaultDef extends string> =
 	`Default value '${defaultDef}' must a literal value`
 
-export const singleEqualsMessage = `= is not valid here. Default values must be specified on objects like { isAdmin: 'boolean = false' }`
+export const shallowDefaultMessage = `Default values must be specified on objects like { isAdmin: 'boolean = false' }`
 
-export type singleEqualsMessage = typeof singleEqualsMessage
+export type shallowDefaultMessage = typeof shallowDefaultMessage
