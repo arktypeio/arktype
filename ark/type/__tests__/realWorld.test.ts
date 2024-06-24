@@ -618,4 +618,34 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 
 		attest(u.t).type.toString("(In: string) => Out<`${string}++`>")
 	})
+
+	it("recursive reference from union", () => {
+		const $ = scope({
+			TypeWithKeywords: "ArraySchema", // without this line the union works (in either order)
+			// Schema: "ArraySchema", // works without a union
+			// Schema: "ArraySchema|number", // for some reason the union in this order works
+			Schema: "number|ArraySchema", // union in this order breaks
+			ArraySchema: {
+				"additionalItems?": "Schema" // needs a type that causes recursion for the error to occur
+			}
+		})
+
+		$.export()
+
+		attest($.json).snap({
+			TypeWithKeywords: {
+				optional: [
+					{ key: "additionalItems", value: ["$ArraySchema", "number"] }
+				],
+				domain: "object"
+			},
+			Schema: ["$ArraySchema", "number"],
+			ArraySchema: {
+				optional: [
+					{ key: "additionalItems", value: ["$ArraySchema", "number"] }
+				],
+				domain: "object"
+			}
+		})
+	})
 })
