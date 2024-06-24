@@ -413,7 +413,9 @@ other must be a string (was bigint)`)
 					// @ts-expect-error
 					"[unresolvable]": "'unresolvable' is unresolvable"
 				})
-			).throwsAndHasTypeError(writeUnexpectedCharacterMessage("i"))
+			)
+				.throws(writeUnexpectedCharacterMessage("i"))
+				.type.errors(writeUnresolvableMessage("unresolvable"))
 		})
 
 		it("semantic error in index definition", () => {

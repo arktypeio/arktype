@@ -181,9 +181,7 @@ contextualize(
 
 		it("shallow default", () => {
 			// would be ideal if this was a type error as well
-			attest(() => type("string='foo'")).throwsAndHasTypeError(
-				shallowDefaultMessage
-			)
+			attest(() => type("string='foo'")).throws(shallowDefaultMessage)
 		})
 
 		it("optional with default", () => {

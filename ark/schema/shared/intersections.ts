@@ -140,12 +140,24 @@ export const intersectNodes: InternalNodeIntersection<IntersectionContext> = (
 
 	let result: UnknownIntersectionResult
 
-	if (ctx.pipe && l.hasKind("morph")) {
+	if (ctx.pipe && l.includesMorph) {
+		if (!l.hasKind("morph")) {
+			return ctx.$.node("morph", {
+				morphs: [r],
+				in: l
+			})
+		}
 		result =
 			ctx.invert ?
 				pipeToMorph(r as never, l, ctx)
 			:	pipeFromMorph(l, r as never, ctx)
-	} else if (ctx.pipe && r.hasKind("morph")) {
+	} else if (ctx.pipe && r.includesMorph) {
+		if (!r.hasKind("morph")) {
+			return ctx.$.node("morph", {
+				morphs: [r],
+				in: l
+			})
+		}
 		result =
 			ctx.invert ?
 				pipeFromMorph(r, l as never, ctx)
