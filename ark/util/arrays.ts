@@ -154,9 +154,7 @@ export const append = <
 	to: to,
 	value: value,
 	opts?: AppendOptions
-): Exclude<to, undefined> | Extract<value & to, undefined> => {
-	if (value === undefined) return to ?? ([] as any)
-
+): to & {} => {
 	if (to === undefined) {
 		return (
 			value === undefined ? []

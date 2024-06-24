@@ -163,9 +163,8 @@ export type tryInferSubmoduleReference<$, token> =
 		:	never
 	:	never
 
-export interface ParseContext<isRoot extends boolean = boolean> {
+export interface ParseContext {
 	$: RawScope
-	isRoot: isRoot
 	args?: Record<string, UnknownRoot>
 }
 
@@ -228,25 +227,25 @@ export class RawScope<
 	override parseRoot(def: unknown): BaseRoot {
 		return this.parse(def, {
 			$: this as never,
-			isRoot: true,
 			// args: { this: {} as RawRoot },
 			args: {}
 		}).bindScope(this)
 	}
 
-	parse<isRoot extends boolean>(
+	parse<defaultable extends boolean = false>(
 		def: unknown,
-		ctx: ParseContext<isRoot>
-	): BaseRoot | (isRoot extends true ? never : ParsedDefault) {
+		ctx: ParseContext,
+		defaultable: defaultable = false as defaultable
+	): BaseRoot | (defaultable extends false ? never : ParsedDefault) {
 		if (typeof def === "string") {
 			if (ctx.args && Object.keys(ctx.args).every(k => !def.includes(k))) {
 				// we can only rely on the cache if there are no contextual
 				// resolutions like "this" or generic args
-				return this.parseString(def, ctx)
+				return this.parseString(def, ctx, defaultable)
 			}
-			const contextKey = `${def}${ctx.isRoot}`
+			const contextKey = `${def}${defaultable}`
 			if (!this.parseCache[contextKey])
-				this.parseCache[contextKey] = this.parseString(def, ctx)
+				this.parseCache[contextKey] = this.parseString(def, ctx, defaultable)
 
 			return this.parseCache[contextKey] as never
 		}
@@ -255,10 +254,11 @@ export class RawScope<
 			:	throwParseError(writeBadDefinitionTypeMessage(domainOf(def)))
 	}
 
-	parseString<isRoot extends boolean>(
+	parseString<defaultable extends boolean>(
 		def: string,
-		ctx: ParseContext<isRoot>
-	): BaseRoot | (isRoot extends true ? never : ParsedDefault) {
+		ctx: ParseContext,
+		defaultable: defaultable
+	): BaseRoot | (defaultable extends false ? never : ParsedDefault) {
 		const aliasResolution = this.maybeResolveRoot(def)
 		if (aliasResolution) return aliasResolution
 
@@ -269,7 +269,7 @@ export class RawScope<
 
 		if (aliasArrayResolution) return aliasArrayResolution
 
-		return fullStringParse(new DynamicState(def, ctx)) as never
+		return fullStringParse(new DynamicState(def, ctx, defaultable)) as never
 	}
 }
 

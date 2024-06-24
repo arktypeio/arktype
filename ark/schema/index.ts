@@ -41,6 +41,7 @@ export * from "./shared/utils.js"
 export * from "./structure/indexed.js"
 export * from "./structure/optional.js"
 export * from "./structure/prop.js"
+export * from "./structure/required.js"
 export * from "./structure/sequence.js"
 export * from "./structure/structure.js"
 

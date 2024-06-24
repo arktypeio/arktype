@@ -1,12 +1,13 @@
 import {
-	ArkErrors,
 	normalizeIndex,
 	type BaseRoot,
 	type Default,
-	type MutableInner,
+	type DefaultableAst,
+	type IndexNode,
 	type NodeSchema,
 	type of,
-	type PropKind,
+	type OptionalNode,
+	type RequiredNode,
 	type StructureNode,
 	type UndeclaredKeyBehavior,
 	type writeInvalidPropertyKeyMessage
@@ -18,13 +19,13 @@ import {
 	printable,
 	stringAndSymbolicEntriesOf,
 	throwParseError,
-	unset,
 	type anyOrNever,
 	type Dict,
 	type ErrorMessage,
 	type EscapeToken,
 	type Key,
 	type keyError,
+	type listable,
 	type merge,
 	type mutable,
 	type show
@@ -37,89 +38,37 @@ import type { validateString } from "./semantic/validate.js"
 export const parseObjectLiteral = (def: Dict, ctx: ParseContext): BaseRoot => {
 	let spread: StructureNode | undefined
 	const structure: mutable<NodeSchema<"structure">, 2> = {}
-	const wasRoot = ctx.isRoot
-	ctx.isRoot = false
 	// We only allow a spread operator to be used as the first key in an object
 	// because to match JS behavior any keys before the spread are overwritten
 	// by the values in the target object, so there'd be no useful purpose in having it
 	// anywhere except for the beginning.
-	const parsedEntries = stringAndSymbolicEntriesOf(def).map(entry =>
-		parseEntry(entry[0], entry[1])
+	const parsedEntries = stringAndSymbolicEntriesOf(def).flatMap(entry =>
+		parseEntry(entry[0], entry[1], ctx)
 	)
-	if (parsedEntries[0]?.kind === "...") {
+	if (parsedEntries[0]?.kind === "spread") {
 		// remove the spread entry so we can iterate over the remaining entries
 		// expecting non-spread entries
-		const spreadEntry = parsedEntries.shift()!
-		const spreadNode = ctx.$.parse(spreadEntry.value, ctx)
+		const spreadEntry = parsedEntries.shift()! as ParsedSpreadEntry
 		if (
-			isArray(spreadNode) ||
-			!spreadNode.hasKind("intersection") ||
-			!spreadNode.structure
+			!spreadEntry.inner.hasKind("intersection") ||
+			!spreadEntry.inner.structure
 		) {
 			return throwParseError(
-				writeInvalidSpreadTypeMessage(
-					typeof spreadEntry.value === "string" ?
-						spreadEntry.value
-					:	printable(spreadEntry.value)
-				)
+				writeInvalidSpreadTypeMessage(typeof spreadEntry.inner.expression)
 			)
 		}
-		spread = spreadNode.structure
+		spread = spreadEntry.inner.structure
 	}
 	for (const entry of parsedEntries) {
-		if (entry.kind === "...") return throwParseError(nonLeadingSpreadError)
-		if (entry.kind === "+") {
-			if (
-				entry.value !== "reject" &&
-				entry.value !== "delete" &&
-				entry.value !== "ignore"
-			)
-				throwParseError(writeInvalidUndeclaredBehaviorMessage(entry.value))
-			structure.undeclared = entry.value
+		if (entry.kind === "spread") return throwParseError(nonLeadingSpreadError)
+		if (entry.kind === "undeclared") {
+			structure.undeclared = entry.inner
 			continue
 		}
-		if (entry.kind === "index") {
-			// handle key parsing first to match type behavior
-			const key = ctx.$.parse(entry.key, { ...ctx, isRoot: true })
-			const value = ctx.$.parse(entry.value, ctx)
-
-			if (isArray(value)) return throwParseError("")
-
-			const normalizedSignature = normalizeIndex(key, value, ctx.$)
-			if (normalizedSignature.required) {
-				structure.required = append(
-					structure.required,
-					normalizedSignature.required
-				)
-			}
-			if (normalizedSignature.index)
-				structure.index = append(structure.index, normalizedSignature.index)
-		} else {
-			const value = ctx.$.parse(entry.value, ctx)
-
-			if (isArray(value)) {
-				structure.optional = append(structure.optional, {
-					key: entry.key
-				})
-			}
-
-			const inner: MutableInner<PropKind> = { key: entry.key, value }
-			if (entry.default !== unset) {
-				const out = value.traverse(entry.default)
-				if (out instanceof ArkErrors)
-					throwParseError(`Default value at ${printable(entry.key)} ${out}`)
-
-				value.assert(entry.default)
-				;(inner as MutableInner<"optional">).default = entry.default
-			}
-
-			structure[entry.kind] = append(structure[entry.kind], inner)
-		}
+		structure[entry.kind] = append(structure[entry.kind], entry) as never
 	}
 
 	const structureNode = ctx.$.node("structure", structure)
-
-	ctx.isRoot = wasRoot
 
 	return ctx.$.schema({
 		domain: "object",
@@ -189,6 +138,12 @@ export type validateObjectLiteral<def, $, args> = {
 type validateDefaultableValue<def, k extends keyof def, $, args> =
 	def[k] extends DefaultValueTuple ?
 		validateDefaultValueTuple<def[k], k, $, args>
+	: validateDefinition<def[k], $, args> extends def[k] ?
+		[inferDefinition<def[k], $, args>, parseKey<k>["kind"]] extends (
+			[DefaultableAst, Exclude<ParsedKeyKind, "required">]
+		) ?
+			ErrorMessage<invalidDefaultKeyKindMessage>
+		:	validateDefinition<def[k], $, args>
 	:	validateDefinition<def[k], $, args>
 
 type DefaultValueTuple<baseDef = unknown, defaultValue = unknown> = readonly [
@@ -239,10 +194,10 @@ type optionalKeyFrom<k> =
 
 type PreparsedKey<
 	kind extends ParsedKeyKind = ParsedKeyKind,
-	inner extends Key = Key
+	key extends Key = Key
 > = {
 	kind: kind
-	key: inner
+	key: key
 }
 
 namespace PreparsedKey {
@@ -255,48 +210,77 @@ export type MetaKey = "..." | "+"
 
 export type IndexKey<def extends string = string> = `[${def}]`
 
-interface PreparsedEntry extends PreparsedKey {
-	value: unknown
-	default: unknown
+export type ParsedEntry =
+	| ParsedUndeclaredEntry
+	| ParsedSpreadEntry
+	| RequiredNode
+	| OptionalNode
+	| IndexNode
+
+export type ParsedUndeclaredEntry = {
+	kind: "undeclared"
+	inner: UndeclaredKeyBehavior
 }
 
-export const parseEntry = (key: Key, value: unknown): PreparsedEntry => {
+export type ParsedSpreadEntry = {
+	kind: "spread"
+	inner: BaseRoot
+}
+
+export const parseEntry = (
+	key: Key,
+	value: unknown,
+	ctx: ParseContext
+): listable<ParsedEntry> => {
 	const parsedKey = parseKey(key)
+
+	if (parsedKey.kind === "+") {
+		if (value !== "reject" && value !== "delete" && value !== "ignore")
+			throwParseError(writeInvalidUndeclaredBehaviorMessage(value))
+		return { kind: "undeclared", inner: value }
+	}
+
+	if (parsedKey.kind === "...")
+		return { kind: "spread", inner: ctx.$.parse(value, ctx) }
 
 	if (isArray(value) && value[1] === "=") {
 		if (parsedKey.kind !== "required")
 			throwParseError(invalidDefaultKeyKindMessage)
-		return {
-			kind: "optional",
+		return ctx.$.node("optional", {
 			key: parsedKey.key,
-			value: value[0],
+			value: ctx.$.parse(value[0], ctx),
 			default: value[2]
-		}
+		})
 	}
 
-	// // if a string includes " = ", it might have a default value,
-	// // but it could also be a string literal like "' = '"
-	// if (typeof value === "string" && value.includes(defaultValueStringOperator)) {
-	// 	const result = parsePossibleDefaultExpression(value)
-	// 	if (result) return parseDefaultValueStringExpression(parsedKey, result)
-	// }
+	const parsedValue = ctx.$.parse(value, ctx, true)
 
-	// if (parsedKey.kind !== "required")
-	// 	throwParseError(invalidDefaultKeyKindMessage)
+	if (isArray(parsedValue)) {
+		if (parsedKey.kind !== "required")
+			throwParseError(invalidDefaultKeyKindMessage)
+		return ctx.$.node("optional", {
+			key: parsedKey.key,
+			value: parsedValue[0],
+			default: parsedValue[2]
+		})
+	}
 
-	// return {
-	// 	kind: "optional",
-	// 	key: parsedKey.key,
-	// 	value: match.baseDef,
-	// 	default: defaultValue
-	// }
+	if (parsedKey.kind === "index") {
+		const signature = ctx.$.parse(parsedKey.key, ctx)
+		const normalized = normalizeIndex(signature, parsedValue, ctx.$)
+		return (
+			normalized.index ?
+				normalized.required ?
+					[normalized.index, ...normalized.required]
+				:	normalized.index
+			:	normalized.required ?? []
+		)
+	}
 
-	return {
-		kind: parsedKey.kind,
+	return ctx.$.node(parsedKey.kind, {
 		key: parsedKey.key,
-		value,
-		default: unset
-	}
+		value: parsedValue
+	})
 }
 
 // single quote use here is better for TypeScript's inlined error to avoid escapes
@@ -317,7 +301,8 @@ const parseKey = (key: Key): PreparsedKey =>
 		{ kind: "index", key: key.slice(1, -1) }
 	: key[0] === escapeToken && key[1] === "[" && key.at(-1) === "]" ?
 		{ kind: "required", key: key.slice(1) }
-	: key === "..." || key === "+" ? { kind: key, key }
+	: key === "..." ? { kind: key, key }
+	: key === "+" ? { kind: key, key }
 	: {
 			kind: "required",
 			key:
