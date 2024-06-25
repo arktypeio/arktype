@@ -1,4 +1,8 @@
-import { type keyError, throwParseError } from "@arktype/util"
+import {
+	type keyError,
+	throwParseError,
+	type WhiteSpaceToken
+} from "@arktype/util"
 import { writeUnexpectedCharacterMessage } from "./string/shift/operator/operator.js"
 import { Scanner } from "./string/shift/scanner.js"
 
@@ -47,7 +51,7 @@ type _parseParams<
 > =
 	unscanned extends `${infer lookahead}${infer nextUnscanned}` ?
 		lookahead extends "," ? _parseParams<nextUnscanned, "", [...result, param]>
-		: lookahead extends Scanner.WhiteSpaceToken ?
+		: lookahead extends WhiteSpaceToken ?
 			param extends "" ?
 				// if the next char is whitespace and we aren't in the middle of a param, skip to the next one
 				_parseParams<Scanner.skipWhitespace<nextUnscanned>, "", result>

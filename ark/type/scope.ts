@@ -42,7 +42,11 @@ import {
 	type GenericParamsParseError
 } from "./parser/generic.js"
 import { DynamicState } from "./parser/string/reduce/dynamic.js"
-import { fullStringParse } from "./parser/string/string.js"
+import type { ParsedDefault } from "./parser/string/shift/operator/default.js"
+import {
+	fullStringParse,
+	type StringParseResult
+} from "./parser/string/string.js"
 import {
 	RawTypeParser,
 	type DeclarationParser,
@@ -188,7 +192,7 @@ export interface Scope<$ = any> extends RootScope<$> {
 export class RawScope<
 	$ extends RawRootResolutions = RawRootResolutions
 > extends RawRootScope<$> {
-	private parseCache: Record<string, BaseRoot> = {}
+	private parseCache: Record<string, StringParseResult> = {}
 
 	constructor(def: Record<string, unknown>, config?: ArkConfig) {
 		const aliases: Record<string, unknown> = {}
@@ -228,30 +232,44 @@ export class RawScope<
 		}).bindScope(this)
 	}
 
-	parse(def: unknown, ctx: ParseContext): BaseRoot {
+	parse<defaultable extends boolean = false>(
+		def: unknown,
+		ctx: ParseContext,
+		defaultable: defaultable = false as defaultable
+	): BaseRoot | (defaultable extends false ? never : ParsedDefault) {
 		if (typeof def === "string") {
 			if (ctx.args && Object.keys(ctx.args).every(k => !def.includes(k))) {
 				// we can only rely on the cache if there are no contextual
 				// resolutions like "this" or generic args
-				return this.parseString(def, ctx)
+				return this.parseString(def, ctx, defaultable)
 			}
-			if (!this.parseCache[def])
-				this.parseCache[def] = this.parseString(def, ctx)
+			const contextKey = `${def}${defaultable}`
+			if (!this.parseCache[contextKey])
+				this.parseCache[contextKey] = this.parseString(def, ctx, defaultable)
 
-			return this.parseCache[def]
+			return this.parseCache[contextKey] as never
 		}
 		return hasDomain(def, "object") ?
 				parseObject(def, ctx)
 			:	throwParseError(writeBadDefinitionTypeMessage(domainOf(def)))
 	}
 
-	parseString(def: string, ctx: ParseContext): BaseRoot {
-		return (
-			this.maybeResolveRoot(def) ??
-			((def.endsWith("[]") &&
-				this.maybeResolveRoot(def.slice(0, -2))?.array()) ||
-				fullStringParse(new DynamicState(def, ctx)))
-		)
+	parseString<defaultable extends boolean>(
+		def: string,
+		ctx: ParseContext,
+		defaultable: defaultable
+	): BaseRoot | (defaultable extends false ? never : ParsedDefault) {
+		const aliasResolution = this.maybeResolveRoot(def)
+		if (aliasResolution) return aliasResolution
+
+		const aliasArrayResolution =
+			def.endsWith("[]") ?
+				this.maybeResolveRoot(def.slice(0, -2))?.array()
+			:	undefined
+
+		if (aliasArrayResolution) return aliasArrayResolution
+
+		return fullStringParse(new DynamicState(def, ctx, defaultable)) as never
 	}
 }
 

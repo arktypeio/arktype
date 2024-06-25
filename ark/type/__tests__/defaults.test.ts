@@ -2,7 +2,10 @@ import { attest, contextualize } from "@arktype/attest"
 import type { Date, Default } from "@arktype/schema"
 import { scope, type } from "arktype"
 import { invalidDefaultKeyKindMessage } from "../parser/objectLiteral.js"
-import { singleEqualsMessage } from "../parser/string/shift/operator/bounds.js"
+import {
+	shallowDefaultMessage,
+	writeNonLiteralDefaultMessage
+} from "../parser/string/shift/operator/default.js"
 
 contextualize(
 	"parsing and traversal",
@@ -41,7 +44,7 @@ contextualize(
 				.throws.snap(
 					'ParseError: Default value at "bar" must be a number (was string)'
 				)
-				.type.errors("Type 'string' is not assignable to type 'number'")
+				.type.errors()
 		})
 
 		it("optional with default", () => {
@@ -155,16 +158,31 @@ contextualize(
 			attest(() =>
 				// @ts-expect-error
 				type({ foo: "string", bar: "unknown = number" })
-			).throwsAndHasTypeError(singleEqualsMessage)
+			).throwsAndHasTypeError(writeNonLiteralDefaultMessage("number"))
 		})
 
-		// https://github.com/arktypeio/arktype/issues/1017
-		// it("validated default in scope", () => {
-		// 	const $ = scope({
-		// 		specialNumber: "number",
-		// 		obj: { foo: "string", bar: "specialNumber =5" }
-		// 	})
-		// })
+		it("validated default in scope", () => {
+			const $ = scope({
+				specialNumber: "number",
+				obj: { foo: "string", bar: "specialNumber = 5" }
+			})
+
+			$.export()
+
+			attest($.json).snap({
+				specialNumber: { domain: "number" },
+				obj: {
+					required: [{ key: "foo", value: "string" }],
+					optional: [{ default: 5, key: "bar", value: "number" }],
+					domain: "object"
+				}
+			})
+		})
+
+		it("shallow default", () => {
+			// would be ideal if this was a type error as well
+			attest(() => type("string='foo'")).throws(shallowDefaultMessage)
+		})
 
 		it("optional with default", () => {
 			attest(() =>
@@ -185,6 +203,7 @@ contextualize(
 				domain: "object"
 			})
 		})
+
 		it("same default", () => {
 			const l = type({ bar: ["number", "=", 5] })
 			const r = type({ bar: ["5", "=", 5] })

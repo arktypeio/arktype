@@ -7,8 +7,9 @@ import {
 import type { inferAstRoot } from "../semantic/infer.js"
 import type { DynamicState, DynamicStateWithRoot } from "./reduce/dynamic.js"
 import type { StringifiablePrefixOperator } from "./reduce/shared.js"
-import type { StaticState, state } from "./reduce/static.js"
+import type { state, StaticState } from "./reduce/static.js"
 import type { parseOperand } from "./shift/operand/operand.js"
+import { parseDefault, type ParsedDefault } from "./shift/operator/default.js"
 import {
 	writeUnexpectedCharacterMessage,
 	type parseOperator
@@ -42,14 +43,18 @@ export type BaseCompletions<$, args, otherSuggestions extends string = never> =
 	| StringifiablePrefixOperator
 	| otherSuggestions
 
-export const fullStringParse = (s: DynamicState): BaseRoot => {
+export type StringParseResult = BaseRoot | ParsedDefault
+
+export const fullStringParse = (s: DynamicState): StringParseResult => {
 	s.parseOperand()
-	const result = parseUntilFinalizer(s).root
+	let result: StringParseResult = parseUntilFinalizer(s).root
 	if (!result) {
 		return throwInternalError(
 			`Root was unexpectedly unset after parsing string '${s.scanner.scanned}'`
 		)
 	}
+	if (s.finalizer === "=") result = parseDefault(s as DynamicStateWithRoot)
+
 	s.scanner.shiftUntilNonWhitespace()
 	if (s.scanner.lookahead) {
 		// throw a parse error if non-whitespace characters made it here without being parsed
@@ -81,6 +86,7 @@ type next<s extends StaticState, $, args> =
 	:	parseOperator<s, $, args>
 
 export type extractFinalizedResult<s extends StaticState> =
-	s["finalizer"] extends ErrorMessage ? s["finalizer"]
-	: s["finalizer"] extends "" ? s["root"]
+	s["finalizer"] extends "" ? s["root"]
+	: s["finalizer"] extends ErrorMessage ? s["finalizer"]
+	: s["finalizer"] extends "=" ? parseDefault<s["root"], s["unscanned"]>
 	: state.error<writeUnexpectedCharacterMessage<`${s["finalizer"]}`>>

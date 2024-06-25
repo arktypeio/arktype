@@ -10,6 +10,7 @@ import {
 	writeInvalidSpreadTypeMessage,
 	writeInvalidUndeclaredBehaviorMessage
 } from "../parser/objectLiteral.js"
+import { writeUnexpectedCharacterMessage } from "../parser/string/shift/operator/operator.js"
 
 contextualize(
 	"named",
@@ -412,7 +413,9 @@ other must be a string (was bigint)`)
 					// @ts-expect-error
 					"[unresolvable]": "'unresolvable' is unresolvable"
 				})
-			).throwsAndHasTypeError(writeUnresolvableMessage("unresolvable"))
+			)
+				.throws(writeUnexpectedCharacterMessage("i"))
+				.type.errors(writeUnresolvableMessage("unresolvable"))
 		})
 
 		it("semantic error in index definition", () => {

@@ -150,22 +150,7 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 			// ensure exportedResolutions is populated
 			$ark.ambient.export()
 			// TODO: generics and modules
-			this.resolutions = flatMorph(
-				$ark.ambient.resolutions,
-				(alias, resolution) =>
-					// an alias defined in this scope should override an ambient alias of the same name
-					alias in this.aliases ?
-						[]
-					:	[
-							alias,
-							(
-								hasArkKind(resolution, "root") ||
-								hasArkKind(resolution, "generic")
-							) ?
-								resolution.internal
-							:	resolution
-						]
-			)
+			this.resolutions = {}
 		}
 		scopesById[this.id] = this
 	}
@@ -310,15 +295,28 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 	maybeShallowResolve(name: string): CachedResolution | undefined {
 		const cached = this.resolutions[name]
 		if (cached) return cached
-		let def = this.aliases[name]
-		if (!def) return this.maybeResolveSubalias(name)
-		def = this.preparseRoot(def)
-		if (hasArkKind(def, "generic"))
-			return (this.resolutions[name] = def.validateBaseInstantiation())
+		const def = this.aliases[name] ?? $ark.ambient.resolutions[name]
 
-		if (hasArkKind(def, "module")) return (this.resolutions[name] = def)
+		if (!def) return this.maybeResolveSubalias(name)
+
+		const preparsed = this.preparseRoot(def)
+		if (hasArkKind(preparsed, "generic")) {
+			return (this.resolutions[name] = preparsed
+				.validateBaseInstantiation()
+				?.bindScope(this))
+		}
+
+		if (hasArkKind(preparsed, "module")) {
+			return (this.resolutions[name] = new RootModule(
+				flatMorph(preparsed, (alias, node) => [
+					alias,
+					(node as BaseRoot | GenericRoot).bindScope(this)
+				])
+			))
+		}
+
 		this.resolutions[name] = name
-		return (this.resolutions[name] = this.parseRoot(def))
+		return (this.resolutions[name] = this.parseRoot(preparsed).bindScope(this))
 	}
 
 	/** If name is a valid reference to a submodule alias, return its resolution  */
