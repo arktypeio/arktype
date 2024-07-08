@@ -99,15 +99,13 @@ starlight-theme-select,
 	display: none;
 }
 
-.twoslash {
-	/** Applying wrapping to hovers looks awful.
-	Defining it at this level ensures the shape doesn't change when it renders */
-	white-space: pre !important;
-}
-
 .twoslash .twoslash-error {
 	/* Override the builtin error squiggle to match our theme */
 	background: url("/src/assets/errorSquiggle.svg") repeat-x bottom left;
+}
+
+.twoslash .twoslash-popup-code {
+	white-space: pre;
 }
 
 /* avoid double padding + border */
@@ -128,6 +126,7 @@ starlight-theme-select,
 .twoslash .twoslash-popup-docs {
 	color: #f85858;
 	font-size: small;
+	white-space: pre;
 }
 
 /* Firefox specific rules */

@@ -13,20 +13,20 @@
 	"dependencies": {
 		"@arktype/fs": "workspace:*",
 		"@arktype/util": "workspace:*",
-		"@astrojs/react": "3.5.0",
-		"@astrojs/starlight": "0.24.2",
-		"@shikijs/twoslash": "1.6.4",
+		"@astrojs/react": "3.6.0",
+		"@astrojs/starlight": "0.25.0",
+		"@shikijs/twoslash": "1.10.3",
 		"arkdark": "workspace:*",
 		"arktype": "workspace:*",
-		"astro": "4.10.2",
-		"astro-og-canvas": "0.5.0",
+		"astro": "4.11.5",
+		"astro-og-canvas": "0.5.3",
 		"canvaskit-wasm": "0.39.1",
-		"framer-motion": "11.2.10",
+		"framer-motion": "11.2.13",
 		"react": "18.3.1",
 		"react-dom": "18.3.1",
 		"sharp": "0.33.4",
-		"shiki": "1.6.4",
-		"twoslash": "0.2.8"
+		"shiki": "1.10.3",
+		"twoslash": "0.2.9"
 	},
 	"devDependencies": {
 		"@types/react": "18.3.3",
