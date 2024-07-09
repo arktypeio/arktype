@@ -3,7 +3,6 @@ import {
 	normalizeIndex,
 	type BaseRoot,
 	type Default,
-	type DefaultableAst,
 	type IndexNode,
 	type NodeSchema,
 	type of,
@@ -141,12 +140,6 @@ export type validateObjectLiteral<def, $, args> = {
 type validateDefaultableValue<def, k extends keyof def, $, args> =
 	def[k] extends DefaultValueTuple ?
 		validateDefaultValueTuple<def[k], k, $, args>
-	: validateDefinition<def[k], $, args> extends def[k] ?
-		[inferDefinition<def[k], $, args>, parseKey<k>["kind"]] extends (
-			[DefaultableAst, Exclude<ParsedKeyKind, "required">]
-		) ?
-			ErrorMessage<invalidDefaultKeyKindMessage>
-		:	validateDefinition<def[k], $, args>
 	:	validateDefinition<def[k], $, args>
 
 type DefaultValueTuple<baseDef = unknown, defaultValue = unknown> = readonly [
