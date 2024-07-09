@@ -1,5 +1,11 @@
 # @arktype/schema
 
+## 0.1.21
+
+### Patch Changes
+
+- [`64bb34c`](https://github.com/arktypeio/arktype/commit/64bb34c8154311ec1613ba73537e09a33001b8e5) Thanks [@ssalbdivad](https://github.com/ssalbdivad)! - Bump version
+
 ## 0.1.20
 
 ### Patch Changes
