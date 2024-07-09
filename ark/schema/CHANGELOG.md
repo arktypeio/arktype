@@ -1,5 +1,11 @@
 # @arktype/schema
 
+## 0.1.20
+
+### Patch Changes
+
+- [#1041](https://github.com/arktypeio/arktype/pull/1041) [`040d655`](https://github.com/arktypeio/arktype/commit/040d65547633e35dc5c99646ebe7a3330833f340) Thanks [@ssalbdivad](https://github.com/ssalbdivad)! - Bump version
+
 ## 0.1.19
 
 ### Patch Changes
