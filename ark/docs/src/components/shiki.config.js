@@ -119,7 +119,7 @@ export const shikiConfig = {
 	theme: arkdarkColors,
 	// @ts-expect-error
 	langs: [arktypeTextmate],
-	// @ts-expect-error
+	// @ts-ignore
 	transformers: [twoslash, addCopyButton],
 	wrap: true
 }

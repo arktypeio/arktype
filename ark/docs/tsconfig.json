@@ -7,5 +7,7 @@
 		"allowJs": true,
 		"jsx": "preserve"
 	},
-	"exclude": ["**/out", "**/node_modules"]
+	"mdx": {
+		"checkMdx": true
+	}
 }
