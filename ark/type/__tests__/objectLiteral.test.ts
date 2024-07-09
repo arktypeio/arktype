@@ -456,6 +456,20 @@ other must be a string (was bigint)`)
 				required: [{ key: "[string]", value: "string" }]
 			})
 		})
+
+		// https://github.com/arktypeio/arktype/issues/1040
+		it("can constrain optional keys", () => {
+			const repro = type({
+				normal: "string>0",
+				"optional?": "string>0"
+			})
+
+			attest<{ normal: string; optional?: string }, typeof repro.infer>()
+
+			attest(repro.expression).snap(
+				"{ normal: string >0, optional?: string >0 }"
+			)
+		})
 	},
 	"undeclared",
 	() => {

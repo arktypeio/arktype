@@ -363,17 +363,15 @@ type _distill<
 		io extends "in" ?
 			show<
 				{
-					[k in keyof t as k extends defaultableKeyOf<t> ? never : k]: _distill<
-						t[k],
-						io,
-						distilledKind
-					>
+					[k in nonDefaultableKeyOf<t>]: _distill<t[k], io, distilledKind>
 				} & { [k in defaultableKeyOf<t>]?: _distill<t[k], io, distilledKind> }
 			>
 		:	{
 				[k in keyof t]: _distill<t[k], io, distilledKind>
 			}
 	:	t
+
+type nonDefaultableKeyOf<t> = Exclude<keyof t, defaultableKeyOf<t>>
 
 type defaultableKeyOf<t> = {
 	[k in keyof t]: [t[k]] extends [anyOrNever] ? never
