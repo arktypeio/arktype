@@ -663,6 +663,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		attest(out).equals({ fee: { amount: 5n } })
 	})
 
+	// https://github.com/arktypeio/arktype/issues/1037
 	it("can morph an optional key", () => {
 		const t = type({
 			"optionalKey?": ["string", "=>", x => x.toLowerCase()]
