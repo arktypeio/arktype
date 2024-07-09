@@ -1,5 +1,23 @@
 # arktype
 
+## 2.0.0-dev.28
+
+### Fix inference for constrained or morphed optional keys (https://github.com/arktypeio/arktype/issues/1040)
+
+```ts
+const repro = type({
+	normal: "string>0",
+	"optional?": "string>0"
+})
+
+type Expected = { normal: string; optional?: string }
+
+// these are both now identical to Expected
+// (previously, optional was inferred as string.moreThanLength<0>)
+type Actual = typeof repro.infer
+type ActualIn = typeof repro.infer
+```
+
 ## 2.0.0-dev.27
 
 ### Fixed an issue causing morphs on optional keys to give a type error incorrectly indicating they had default values, e.g.:

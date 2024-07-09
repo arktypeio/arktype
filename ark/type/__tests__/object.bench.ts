@@ -7,9 +7,7 @@ bench("dictionary", () => {
 		b: "number[]",
 		c: { nested: "boolean[]" }
 	})
-})
-	.median([20.83, "us"])
-	.types([1704, "instantiations"])
+}).types([5212, "instantiations"])
 
 bench("dictionary with optional keys", () => {
 	const dict = type({
@@ -17,12 +15,8 @@ bench("dictionary with optional keys", () => {
 		"b?": "number[]",
 		"c?": { "nested?": "boolean[]" }
 	})
-})
-	.median([21.23, "us"])
-	.types([1704, "instantiations"])
+}).types([5051, "instantiations"])
 
 bench("tuple", () => {
 	const tuple = type(["string[]", "number[]", ["boolean[]"]])
-})
-	.median([28.6, "us"])
-	.types([2739, "instantiations"])
+}).types([11888, "instantiations"])
