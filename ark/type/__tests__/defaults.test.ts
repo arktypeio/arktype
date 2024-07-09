@@ -179,16 +179,16 @@ contextualize(
 			})
 		})
 
+		it("optional with default", () => {
+			// would be ideal if this was a type error
+			attest(() => type({ foo: "string", "bar?": "number = 5" })).throws(
+				invalidDefaultKeyKindMessage
+			)
+		})
+
 		it("shallow default", () => {
 			// would be ideal if this was a type error as well
 			attest(() => type("string='foo'")).throws(shallowDefaultMessage)
-		})
-
-		it("optional with default", () => {
-			attest(() =>
-				// @ts-expect-error
-				type({ foo: "string", "bar?": "number = 5" })
-			).throwsAndHasTypeError(invalidDefaultKeyKindMessage)
 		})
 	},
 	"intersection",

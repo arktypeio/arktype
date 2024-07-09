@@ -662,4 +662,18 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 
 		attest(out).equals({ fee: { amount: 5n } })
 	})
+
+	it("can morph an optional key", () => {
+		const t = type({
+			"optionalKey?": ["string", "=>", x => x.toLowerCase()]
+		})
+
+		attest<{
+			optionalKey?: (In: string) => Out<string>
+		}>(t.t)
+
+		attest(t({})).equals({})
+
+		attest(t({ optionalKey: "FOO" })).snap({ optionalKey: "foo" })
+	})
 })
