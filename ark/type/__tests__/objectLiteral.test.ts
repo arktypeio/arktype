@@ -464,7 +464,10 @@ other must be a string (was bigint)`)
 				"optional?": "string>0"
 			})
 
-			attest<{ normal: string; optional?: string }, typeof repro.infer>()
+			type Expected = { normal: string; optional?: string }
+
+			attest<Expected, typeof repro.infer>()
+			attest<Expected, typeof repro.inferIn>()
 
 			attest(repro.expression).snap(
 				"{ normal: string >0, optional?: string >0 }"

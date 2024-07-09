@@ -4,7 +4,7 @@ import { cyclic10, cyclic100, cyclic500 } from "./generated/cyclic.js"
 
 bench("cyclic 10 intersection", () => {
 	const s = scope(cyclic10).type("user&user2").infer
-}).types([30747, "instantiations"])
+}).types([30633, "instantiations"])
 
 bench("cyclic(10)", () => {
 	const types = scope(cyclic10).export()

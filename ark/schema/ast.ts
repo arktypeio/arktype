@@ -340,7 +340,9 @@ type _distill<
 	io extends "in" | "out",
 	distilledKind extends "base" | "constrainable"
 > =
-	[t] extends [anyOrNever] ? t
+	// ensure optional keys don't prevent extracting defaults
+	t extends undefined ? t
+	: [t] extends [anyOrNever] ? t
 	: parseConstraints<t> extends (
 		[infer base, infer constraints extends Constraints]
 	) ?
@@ -363,17 +365,21 @@ type _distill<
 		io extends "in" ?
 			show<
 				{
-					[k in nonDefaultableKeyOf<t>]: _distill<t[k], io, distilledKind>
-				} & { [k in defaultableKeyOf<t>]?: _distill<t[k], io, distilledKind> }
+					[k in keyof t as k extends defaultableKeyOf<t> ? never : k]: _distill<
+						t[k],
+						io,
+						distilledKind
+					>
+				} & {
+					[k in defaultableKeyOf<t>]?: _distill<t[k], io, distilledKind>
+				}
 			>
 		:	{
 				[k in keyof t]: _distill<t[k], io, distilledKind>
 			}
 	:	t
 
-type nonDefaultableKeyOf<t> = Exclude<keyof t, defaultableKeyOf<t>>
-
-type defaultableKeyOf<t> = {
+export type defaultableKeyOf<t> = {
 	[k in keyof t]: [t[k]] extends [anyOrNever] ? never
 	: t[k] extends DefaultableAst ? k
 	: never
