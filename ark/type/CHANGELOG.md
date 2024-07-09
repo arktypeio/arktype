@@ -1,5 +1,21 @@
 # arktype
 
+## 2.0.0-dev.27
+
+### Fixed an issue causing morphs on optional keys to give a type error incorrectly indicating they had default values, e.g.:
+
+```ts
+const t = type({
+	// previously had a type error here
+	"optionalKey?": ["string", "=>", x => x.toLowerCase()]
+})
+
+// now correctly inferred as
+type T = {
+	optionalKey?: (In: string) => Out<string>
+}
+```
+
 ## 2.0.0-dev.26
 
 ### Improved string default parsing
