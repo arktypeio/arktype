@@ -128,32 +128,28 @@ contextualize(
 		const types = lazily(() => $.export())
 
 		it("referenced in scope", () => {
-			attest(types.bitBox.json).equals(type({ box: "0|1" }).json)
-			attest<{ box: 0 | 1 }>(types.bitBox.infer)
+			const expected = type({ box: "0|1" })
+
+			attest(types.bitBox.json).equals(expected.json)
+			attest<typeof expected.t>(types.bitBox.t)
 		})
 
 		it("nested", () => {
 			const t = $.type("box<0|1, box<'one', 'zero'>>")
-			attest(t.json).equals(
-				type({ box: ["0|1", "|", { box: "'one'|'zero'" }] }).json
-			)
-			attest<{
-				box:
-					| 0
-					| 1
-					| {
-							box: "one" | "zero"
-					  }
-			}>(t.infer)
+
+			const expected = type({ box: ["0|1", "|", { box: "'one'|'zero'" }] })
+
+			attest<typeof expected.t>(t.t)
+			attest(t.json).equals(expected.json)
 		})
 
 		it("in expression", () => {
 			const t = $.type("string | box<0, 1> | boolean")
-			attest(t.json).equals(
-				// as const is required for TS <=5.0
-				type("string|boolean", "|", { box: "0|1" }).json
-			)
-			attest<string | { box: 0 | 1 } | boolean>(t.infer)
+
+			const expected = type("string|boolean", "|", { box: "0|1" })
+
+			attest<typeof expected.t>(t.t)
+			attest(t.json).equals(expected.json)
 		})
 
 		it("this in args", () => {
@@ -161,24 +157,26 @@ contextualize(
 			type Expected = {
 				box: 0 | Expected
 			}
-			attest(t.json).equals(
-				type({
-					box: "0|this"
-				}).json
-			)
-			attest<Expected>(t.infer)
+			const standalone = type({
+				box: "0|this"
+			})
+
+			attest<Expected>(t.t)
+			attest<Expected>(standalone.t)
+			attest(t.json).equals(standalone.json)
 		})
 
 		it("right bounds", () => {
 			// should be able to differentiate between > that is part of a right
 			// bound and > that closes a generic instantiation
 			const t = $.type("box<number>5, string>=7>")
-			attest<{ box: string | number }>(t.infer)
-			attest(t.json).equals(
-				type({
-					box: "number>5|string>=7"
-				}).json
-			)
+
+			const expected = type({
+				box: "number>5|string>=7"
+			})
+
+			attest<typeof expected.t>(t.t)
+			attest(t.json).equals(expected.json)
 		})
 
 		it("parameter supercedes alias with same name", () => {
@@ -189,9 +187,13 @@ contextualize(
 				foo: "'foo'",
 				bar: "'bar'"
 			}).export()
+
 			const t = types.box("'baz'")
-			attest<{ box: "bar" | "baz" }>(t.infer)
-			attest(t.json).equals(type({ box: "'bar' | 'baz'" }).json)
+
+			const expected = type({ box: "'bar' | 'baz'" })
+
+			attest<typeof expected.t>(t.t)
+			attest(t.json).equals(expected.json)
 		})
 
 		it("self-reference", () => {
@@ -230,7 +232,12 @@ contextualize(
 				},
 				actual: "  box  < 'foo'  ,   'bar'  > "
 			}).export()
-			attest<{ box: "foo" | "bar" }>(types.actual.infer)
+
+			const expected = type({
+				box: "'foo' | 'bar'"
+			})
+
+			attest<typeof expected.t>(types.actual.t)
 		})
 
 		it("allows external scope reference to be resolved", () => {
@@ -238,11 +245,16 @@ contextualize(
 				external: "'external'",
 				"orExternal<t>": "t|external"
 			}).export()
+
 			const b = scope({
 				orExternal: types.orExternal,
 				internal: "orExternal<'internal'>"
 			}).export()
-			attest<"internal" | "external">(b.internal.infer)
+
+			const expected = type("'internal' | 'external'")
+
+			attest<typeof expected.t>(b.internal.t)
+			attest(b.internal.json).equals(expected.json)
 		})
 
 		it("empty string in declaration", () => {
