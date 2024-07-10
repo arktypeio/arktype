@@ -52,12 +52,13 @@ export class GenericRoot<params extends string[] = string[], def = any, $ = any>
 	constructor(
 		public params: params,
 		public def: def,
-		private _$: thunkable<RootScope<$>>
+		private _$: thunkable<RootScope<$>>,
+		private _arg$: thunkable<RootScope<$>>
 	) {
 		super((...args: RootSchema[]) => {
 			const argNodes: GenericArgResolutions = flatMorph(params, (i, param) => [
 				param,
-				this.$.parseRoot(args[i])
+				this.arg$.parseRoot(args[i])
 			]) as never
 
 			return this.$.parseRoot(def as never, { args: argNodes }) as never
@@ -68,8 +69,13 @@ export class GenericRoot<params extends string[] = string[], def = any, $ = any>
 		return isThunk(this._$) ? this._$() : this._$
 	}
 
-	bindScope($: RawRootScope): never {
-		throw new Error(`Unimplemented generic bind ${$}`)
+	get arg$() {
+		return isThunk(this._arg$) ? this._arg$() : this._arg$
+	}
+
+	bindScope($: RawRootScope): this {
+		if (this.arg$ === ($ as never)) return this
+		return new GenericRoot(this.params, this.def, this.$, $ as never) as never
 	}
 
 	@cached

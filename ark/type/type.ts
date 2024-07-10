@@ -119,7 +119,7 @@ export class RawTypeParser extends Callable<
 					const params = parseGenericParams(args[0].slice(1, -1))
 					const def = args[1]
 					// TODO: validateUninstantiatedGeneric, remove this cast
-					return new GenericRoot(params, def, $ as never) as never
+					return new GenericRoot(params, def, $ as never, $ as never) as never
 				}
 				// otherwise, treat as a tuple expression. technically, this also allows
 				// non-expression tuple definitions to be parsed, but it's not a supported

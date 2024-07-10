@@ -62,19 +62,26 @@ contextualize(
 				one: "1",
 				orOne: () => $.type("<t>", "t|one")
 			})
+
 			const types = $.export()
 			const bit = types.orOne("0")
-			attest<0 | 1>(bit.infer)
-			attest(bit.json).equals(type("0|1").json)
+
+			const expected = type("0|1")
+
+			attest<typeof expected.t>(bit.t)
+			attest(bit.json).equals(expected.json)
 		})
 
 		it("referenced from other scope", () => {
 			const types = scope({
 				arrayOf: type("<t>", "t[]")
 			}).export()
+
 			const stringArray = types.arrayOf("string")
-			attest<string[]>(stringArray.infer)
-			attest(stringArray.json).equals(type("string[]").json)
+			const expected = type("string[]")
+
+			attest<typeof expected.t>(stringArray.t)
+			attest(stringArray.json).equals(expected.json)
 		})
 
 		it("this not resolvable in generic def", () => {
@@ -93,9 +100,12 @@ contextualize(
 			const t = boxOf({
 				a: "string|this"
 			})
+
 			const expectedContents = type({ a: "string|this" })
-			attest(t.json).equals(type({ box: expectedContents }).json)
-			attest(t.infer).type.toString.snap("{ box: { a: string | any; }; }")
+			const expectedBox = type({ box: expectedContents })
+
+			attest(t.t).type.toString.snap()
+			attest(t.json).equals(expectedBox.json)
 		})
 
 		it("too few args", () => {

@@ -5,7 +5,6 @@ import {
 	type ArkConfig,
 	type BaseRoot,
 	type GenericProps,
-	type NodeParseOptions,
 	type PreparsedNodeResolution,
 	type PrivateDeclaration,
 	type RawRootResolutions,
@@ -205,7 +204,12 @@ export class RawScope<
 			const parsedKey = parseScopeKey(k)
 			aliases[parsedKey.name] =
 				parsedKey.params.length ?
-					new GenericRoot(parsedKey.params, def[k], () => this as never)
+					new GenericRoot(
+						parsedKey.params,
+						def[k],
+						() => this as never,
+						() => this as never
+					)
 				:	def[k]
 		}
 		super(aliases, config)
@@ -241,16 +245,17 @@ export class RawScope<
 		defaultable: defaultable = false as defaultable
 	): BaseRoot | (defaultable extends false ? never : ParsedDefault) {
 		if (typeof def === "string") {
-			if (ctx.args && Object.keys(ctx.args).every(k => !def.includes(k))) {
+			if (ctx.args && Object.keys(ctx.args).some(k => def.includes(k))) {
 				// we can only rely on the cache if there are no contextual
 				// resolutions like "this" or generic args
 				return this.parseString(def, ctx, defaultable)
 			}
 			const contextKey = `${def}${defaultable}`
-			if (!this.parseCache[contextKey])
-				this.parseCache[contextKey] = this.parseString(def, ctx, defaultable)
-
-			return this.parseCache[contextKey] as never
+			return (this.parseCache[contextKey] ??= this.parseString(
+				def,
+				ctx,
+				defaultable
+			)) as never
 		}
 		return hasDomain(def, "object") ?
 				parseObject(def, ctx)
