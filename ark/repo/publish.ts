@@ -65,6 +65,6 @@ packagesToPublish.forEach(pkg => {
 
 tagsToPublish.forEach(tagName => shell(`git tag ${tagName}`))
 
-shell("git push --follow-tags")
+shell("git push --follow-tags --force")
 
 tagsToPublish.forEach(tagName => shell(`gh release create ${tagName} --latest`))
