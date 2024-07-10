@@ -17,6 +17,9 @@ export type Stringifiable =
  */
 export type show<t> = { [k in keyof t]: t[k] } & unknown
 
+/** @deprecated use "show" instead */
+export type evaluate<t> = { [k in keyof t]: t[k] } & unknown
+
 export type exact<t extends object, u extends object> = {
 	[k in keyof t]: k extends keyof u ? conform<t[k], u[k]> : never
 }
