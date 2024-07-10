@@ -1,5 +1,18 @@
 # arktype
 
+## 2.0.0-dev.29
+
+### Fix parsing for expressions starting with subalias references
+
+In recent versions, types like the following would fail to parse:
+
+```ts
+// ParseError: "parse.date | Date" is unresolvable
+const dateFrom = type("parse.date | Date")
+```
+
+Those expressions are once again resolved correctly.
+
 ## 2.0.0-dev.28
 
 ### Fix inference for constrained or morphed optional keys (https://github.com/arktypeio/arktype/issues/1040)

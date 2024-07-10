@@ -39,11 +39,15 @@ export default defineConfig({
 			sidebar: [
 				{
 					label: "Intro",
-					autogenerate: { directory: "intro" }
+					autogenerate: {
+						directory: "intro"
+					}
 				},
 				{
 					label: "Reference",
-					autogenerate: { directory: "reference" }
+					autogenerate: {
+						directory: "reference"
+					}
 				}
 			],
 			components: {
