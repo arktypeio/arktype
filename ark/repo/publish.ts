@@ -50,4 +50,4 @@ for (scope in publishConfig) {
 	shell(bumpCmd, { cwd: pkg.path })
 }
 
-// packagesToPublish.forEach(pkg => shell("pnpm publish", { cwd: pkg.path }))
+//  packagesToPublish.forEach(pkg => shell("pnpm publish", { cwd: pkg.path }))
