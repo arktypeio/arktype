@@ -57,12 +57,13 @@ packagesToPublish.forEach(pkg => {
 	shell("pnpm publish", { cwd: pkg.path })
 })
 
-shell("git add .")
 shell(
 	`git commit -m "chore: bump versions" --author="ArkCI <noreply@arktype.io>"`
 )
 
 tagsToPublish.forEach(tagName => shell(`git tag ${tagName}`))
+
+shell("git add .")
 
 shell("git push --follow-tags")
 
