@@ -53,17 +53,17 @@ for (scope in publishConfig) {
 	tagsToPublish.push(`${pkg.name}@${nextVersion}`)
 }
 
-packagesToPublish.forEach(pkg => {
-	shell("pnpm publish", { cwd: pkg.path })
-})
+shell("git add .")
 
 shell(
 	`git commit -m "chore: bump versions" --author="ArkCI <noreply@arktype.io>"`
 )
 
-tagsToPublish.forEach(tagName => shell(`git tag ${tagName}`))
+packagesToPublish.forEach(pkg => {
+	shell("pnpm publish", { cwd: pkg.path })
+})
 
-shell("git add .")
+tagsToPublish.forEach(tagName => shell(`git tag ${tagName}`))
 
 shell("git push --follow-tags")
 
