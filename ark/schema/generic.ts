@@ -2,9 +2,11 @@ import {
 	Callable,
 	cached,
 	flatMorph,
+	isThunk,
 	type array,
 	type conform,
-	type repeat
+	type repeat,
+	type thunkable
 } from "@arktype/util"
 import type { inferRoot } from "./inference.js"
 import type { RootSchema } from "./kinds.js"
@@ -50,16 +52,20 @@ export class GenericRoot<params extends string[] = string[], def = any, $ = any>
 	constructor(
 		public params: params,
 		public def: def,
-		public $: RootScope<$>
+		private _$: thunkable<RootScope<$>>
 	) {
 		super((...args: RootSchema[]) => {
 			const argNodes: GenericArgResolutions = flatMorph(params, (i, param) => [
 				param,
-				$.schema(args[i])
+				this.$.parseRoot(args[i])
 			]) as never
 
-			return $.schema(def as never, { args: argNodes }) as never
+			return this.$.parseRoot(def as never, { args: argNodes }) as never
 		})
+	}
+
+	get $() {
+		return isThunk(this._$) ? this._$() : this._$
 	}
 
 	bindScope($: RawRootScope): never {

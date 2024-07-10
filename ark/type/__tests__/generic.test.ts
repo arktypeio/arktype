@@ -20,15 +20,14 @@ contextualize(
 
 			const schrodingersBox = boxOf({ cat: { isAlive: "boolean" } })
 
-			attest<{ box: { cat: { isAlive: boolean } } }>(schrodingersBox.infer)
+			const expected = type({
+				box: {
+					cat: { isAlive: "boolean" }
+				}
+			})
 
-			attest(schrodingersBox.json).equals(
-				type({
-					box: {
-						cat: { isAlive: "boolean" }
-					}
-				}).json
-			)
+			attest<typeof expected.t>(schrodingersBox.t)
+			attest(schrodingersBox.json).equals(expected.json)
 		})
 
 		it("binary", () => {
@@ -37,36 +36,25 @@ contextualize(
 				{ cat: { isAlive: "true" } },
 				{ cat: { isAlive: "false" } }
 			)
-			attest<
-				| {
-						cat: {
-							isAlive: true
-						}
-				  }
-				| {
-						cat: {
-							isAlive: false
-						}
-				  }
-			>(schrodingersBox.infer)
 
+			const expected = type(
+				{
+					cat: {
+						isAlive: "true"
+					}
+				},
+				"|",
+				{
+					cat: {
+						isAlive: "false"
+					}
+				}
+			)
+
+			attest<typeof expected.t>(schrodingersBox.t)
 			// ideally, this would be reduced to { cat: { isAlive: boolean } }:
 			// https://github.com/arktypeio/arktype/issues/751
-			attest(schrodingersBox.json).equals(
-				type(
-					{
-						cat: {
-							isAlive: "true"
-						}
-					},
-					"|",
-					{
-						cat: {
-							isAlive: "false"
-						}
-					}
-				).json
-			)
+			attest(schrodingersBox.json).equals(expected.json)
 		})
 
 		it("referenced in scope inline", () => {

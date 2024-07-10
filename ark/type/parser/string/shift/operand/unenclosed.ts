@@ -75,7 +75,7 @@ export const parseGenericInstantiation = (
 	s.scanner.jumpToIndex(
 		remainingChars === 0 ? s.scanner.length : -remainingChars
 	)
-	return g(...parsedArgs.result) as never
+	return g(...(parsedArgs.result as never)) as never
 }
 
 export type parseGenericInstantiation<

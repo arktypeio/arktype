@@ -1,9 +1,11 @@
 import {
+	GenericRoot,
 	RawRootScope,
 	hasArkKind,
 	type ArkConfig,
 	type BaseRoot,
 	type GenericProps,
+	type NodeParseOptions,
 	type PreparsedNodeResolution,
 	type PrivateDeclaration,
 	type RawRootResolutions,
@@ -27,7 +29,7 @@ import {
 	type nominal,
 	type show
 } from "@arktype/util"
-import { Generic } from "./generic.js"
+import type { Generic } from "./generic.js"
 import { createMatchParser, type MatchParser } from "./match.js"
 import type { Module } from "./module.js"
 import {
@@ -163,8 +165,11 @@ export type tryInferSubmoduleReference<$, token> =
 		:	never
 	:	never
 
-export interface ParseContext {
+export interface ParseContext extends TypeParseOptions {
 	$: RawScope
+}
+
+export interface TypeParseOptions {
 	args?: Record<string, UnknownRoot>
 }
 
@@ -200,8 +205,7 @@ export class RawScope<
 			const parsedKey = parseScopeKey(k)
 			aliases[parsedKey.name] =
 				parsedKey.params.length ?
-					// TODO: this
-					new Generic(parsedKey.params, def[k], {} as never)
+					new GenericRoot(parsedKey.params, def[k], () => this as never)
 				:	def[k]
 		}
 		super(aliases, config)
@@ -224,11 +228,10 @@ export class RawScope<
 	}
 
 	@bound
-	override parseRoot(def: unknown): BaseRoot {
+	override parseRoot(def: unknown, opts?: TypeParseOptions): BaseRoot {
 		return this.parse(def, {
-			$: this as never,
-			// args: { this: {} as RawRoot },
-			args: {}
+			...opts,
+			$: this as never
 		}).bindScope(this)
 	}
 

@@ -1,10 +1,5 @@
-import {
-	arkKind,
-	type GenericNodeInstantiation,
-	type GenericProps,
-	type RootScope
-} from "@arktype/schema"
-import { Callable, type conform } from "@arktype/util"
+import type { GenericNodeInstantiation, GenericRoot } from "@arktype/schema"
+import type { Callable, conform } from "@arktype/util"
 import type { inferDefinition } from "./parser/definition.js"
 import type {
 	GenericParamsParseError,
@@ -45,26 +40,10 @@ type bindGenericInstantiation<params extends string[], $, args> = {
 	>
 }
 
-export class Generic<params extends string[] = string[], def = unknown, $ = any>
-	extends Callable<GenericInstantiation<params, def, $>>
-	implements GenericProps<params, def, $>
-{
-	readonly [arkKind] = "generic"
-
-	constructor(
-		public params: params,
-		public def: def,
-		// TODO: should be Scope<$>, but breaks inference
-		public $: RootScope<$>
-	) {
-		super((...args: unknown[]) => {
-			// const argNodes = flatMorph(params, (i, param: string) => [
-			// 	param,
-			// 	$.parseRoot(args[i])
-			// ])
-			// { args: argNodes }
-			args
-			return $.parseRoot(def) as never
-		})
-	}
-}
+// TODO: should be Scope<$>, but breaks inference
+export interface Generic<
+	params extends string[] = string[],
+	def = unknown,
+	$ = any
+> extends Callable<GenericInstantiation<params, def, $>>,
+		GenericRoot<params, def, $> {}
