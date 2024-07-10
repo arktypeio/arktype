@@ -257,8 +257,15 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 		return node as never
 	}
 
-	parseRoot(def: unknown, opts?: NodeParseOptions): BaseRoot {
-		return this.schema(def as never, opts)
+	parseRoot(def: unknown, opts: NodeParseOptions = {}): BaseRoot {
+		const isResolution = opts.alias && opts.alias in this.aliases
+
+		// if the definition being parsed is not a scope alias and is not a
+		// generic instantiation (i.e. opts don't include args), add this as a resolution.
+		if (!isResolution) opts.args ??= { args: this.lazilyResolve(() => node) }
+
+		const node = this.schema(def as never, opts)
+		return node
 	}
 
 	resolveRoot(name: string): BaseRoot {
@@ -316,7 +323,9 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 		}
 
 		this.resolutions[name] = name
-		return (this.resolutions[name] = this.parseRoot(preparsed).bindScope(this))
+		return (this.resolutions[name] = this.parseRoot(preparsed, {
+			alias: name
+		}).bindScope(this))
 	}
 
 	/** If name is a valid reference to a submodule alias, return its resolution  */
