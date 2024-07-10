@@ -1,17 +1,7 @@
-import { type } from "../type/index.js"
+import { type } from "arktype"
 
-const palindromicContact = type({
-	email: "email",
-	score: "integer < 100"
-})
+const dateFrom = type("parse.date | Date")
 
-const out = palindromicContact({
-	email: "david@arktype.io",
-	score: 133.7
-})
+const fromString = dateFrom("05-21-1993")
 
-if (out instanceof type.errors) {
-	console.error(out.summary)
-} else {
-	console.log(out.email)
-}
+const fromDate = dateFrom(new Date())
