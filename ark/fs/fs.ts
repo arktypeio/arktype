@@ -14,7 +14,7 @@ import { dirname, join, parse } from "node:path"
 import * as process from "node:process"
 import { URL, fileURLToPath } from "node:url"
 import { caller } from "./caller.js"
-import { shell } from "./shell.js"
+import { getShellOutput } from "./shell.js"
 export { rmSync } from "node:fs"
 
 export const ensureDir = (path: string): string => {
@@ -138,10 +138,7 @@ export const readPackageJson = (startDir?: string): any =>
 
 export const getSourceControlPaths = (): string[] =>
 	// include tracked and untracked files as long as they are not ignored
-	shell("git ls-files --exclude-standard --cached --others", {
-		stdio: "pipe"
-	})!
-		.toString()
+	getShellOutput("git ls-files --exclude-standard --cached --others")
 		.split("\n")
 		.filter(path => existsSync(path) && statSync(path).isFile())
 

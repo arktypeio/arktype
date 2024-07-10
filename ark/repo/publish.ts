@@ -1,4 +1,4 @@
-import { shell } from "@arktype/fs"
+import { getShellOutput, shell } from "@arktype/fs"
 import { flatMorph } from "@arktype/util"
 import { type } from "arktype"
 import {
@@ -8,10 +8,10 @@ import {
 	type PackageScope
 } from "./shared.js"
 
-const lastCommitBody = shell("git log -1 --pretty=%b")
+const lastCommitBody = getShellOutput("git log -1 --pretty=%b").trim()
 
-const publishConfigMatch = lastCommitBody.match(/```publish([\s\S]*)```/)
-if (!publishConfigMatch?.[1]) process.exit(0)
+const publishConfigMatch = lastCommitBody.match(/```publish([\s\S]*)```/)?.[1]
+if (!publishConfigMatch) process.exit(0)
 
 const bumpType = type("===", "major", "minor", "patch", "prerelease")
 
@@ -50,4 +50,10 @@ for (scope in publishConfig) {
 	shell(bumpCmd, { cwd: pkg.path })
 }
 
-//  packagesToPublish.forEach(pkg => shell("pnpm publish", { cwd: pkg.path }))
+packagesToPublish.forEach(pkg => shell("pnpm publish", { cwd: pkg.path }))
+
+shell("git add .")
+shell(
+	`git commit -m "chore: bump versions" --author="ArkCI <noreply@arktype.io>"`
+)
+shell("git push")
