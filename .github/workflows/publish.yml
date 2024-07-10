@@ -54,7 +54,7 @@ jobs:
         uses: ./.github/actions/setup
 
       - name: Create and publish versions
-        run: pnpm publish
+        run: pnpm ci:publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

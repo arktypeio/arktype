@@ -33,8 +33,7 @@
 		"lint": "prettier --check . && eslint --max-warnings=0 .",
 		"format": "prettier --write .",
 		"knip": "knip",
-		"ci:publish": "changeset publish",
-		"ci:version": "changeset version"
+		"ci:publish": "tsx ./ark/repo/publish.ts"
 	},
 	"devDependencies": {
 		"@arktype/attest": "workspace:*",

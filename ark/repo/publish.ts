@@ -47,13 +47,19 @@ for (scope in publishConfig) {
 		bumpCmd += ` --preid ${preid}`
 	}
 
-	shell(bumpCmd, { cwd: pkg.path })
+	// get the new version without the leading "v", e.g. "v1.0.0" => "1.0.0"
+	const nextVersion = getShellOutput(bumpCmd, { cwd: pkg.path }).slice(1)
+	const tagName = `${pkg.name}@${nextVersion}`
+	shell(`git tag ${tagName}`)
+	shell(`gh release create ${tagName}`)
 }
 
-packagesToPublish.forEach(pkg => shell("pnpm publish", { cwd: pkg.path }))
+packagesToPublish.forEach(pkg => {
+	shell("pnpm publish", { cwd: pkg.path })
+})
 
 shell("git add .")
 shell(
 	`git commit -m "chore: bump versions" --author="ArkCI <noreply@arktype.io>"`
 )
-shell("git push")
+shell("git push --follow-tags")
