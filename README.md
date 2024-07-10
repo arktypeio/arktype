@@ -31,7 +31,7 @@ For an ever better in-editor developer experience, try the [ArkDark VSCode exten
 ```ts @blockFrom:dev/test/examples/type.ts
 import { type } from "arktype"
 
-// Definitions are statically parsed and inferred as TS.
+// Definitions are statically parsed and inferred as TS
 export const user = type({
 	name: "string",
 	device: {
