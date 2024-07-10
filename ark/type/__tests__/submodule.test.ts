@@ -2,9 +2,10 @@ import { attest, contextualize } from "@arktype/attest"
 import {
 	writeMissingSubmoduleAccessMessage,
 	writeNonSubmoduleDotMessage,
-	writeUnresolvableMessage
+	writeUnresolvableMessage,
+	type Out
 } from "@arktype/schema"
-import { type Module, type Scope, scope, type } from "arktype"
+import { scope, type, type Module, type Scope } from "arktype"
 
 contextualize(() => {
 	const $ = scope({
@@ -82,5 +83,19 @@ contextualize(() => {
 			.throws(writeUnresolvableMessage("base."))
 			.type.completions({ "base.": ["base.foo"] })
 	})
+
+	it("can reference subaliases in expression", () => {
+		const dateFrom = type("parse.date | Date")
+
+		attest<Date | ((In: string) => Out<Date>)>(dateFrom.t)
+
+		attest(dateFrom("05-21-1993")).instanceOf(Date)
+		attest(dateFrom(new Date())).instanceOf(Date)
+
+		attest(dateFrom("foobar").toString()).snap(
+			'must be a valid date (was "foobar")'
+		)
+	})
+
 	// TODO: private aliases
 })

@@ -323,7 +323,7 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 	protected maybeResolveSubalias(
 		name: string
 	): BaseRoot | GenericRoot | undefined {
-		return resolveSubalias(this.aliases, name)
+		return maybeResolveSubalias(this.aliases, name)
 	}
 
 	import<names extends exportedNameOf<$>[]>(
@@ -396,7 +396,7 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 	}
 }
 
-const resolveSubalias = (
+const maybeResolveSubalias = (
 	base: Dict,
 	name: string
 ): BaseRoot | GenericRoot | undefined => {
@@ -413,13 +413,10 @@ const resolveSubalias = (
 
 	const subalias = name.slice(dotIndex + 1)
 	const resolution = prefixSchema[subalias]
-	// if the first part of name is a submodule but the suffix is
-	// unresolvable, we can throw immediately
-	if (resolution === undefined) {
-		if (hasArkKind(resolution, "module"))
-			return resolveSubalias(resolution, subalias)
-		return throwParseError(writeUnresolvableMessage(name))
-	}
+	if (resolution === undefined) return
+
+	if (hasArkKind(resolution, "module"))
+		return maybeResolveSubalias(resolution, subalias)
 
 	if (hasArkKind(resolution, "root") || hasArkKind(resolution, "generic"))
 		return resolution

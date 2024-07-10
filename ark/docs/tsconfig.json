@@ -7,7 +7,10 @@
 		"allowJs": true,
 		"jsx": "preserve"
 	},
-	"mdx": {
-		"checkMdx": true
-	}
+	// temporarily disabled until it can handle Starlight's frontmatter
+	// "mdx": {
+	// 	"checkMdx": true,
+	// 	"plugins": []
+	// },
+	"exclude": ["**/out", "**/node_modules"]
 }

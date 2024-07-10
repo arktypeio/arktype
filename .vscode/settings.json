@@ -1,5 +1,12 @@
 {
 	"editor.defaultFormatter": "esbenp.prettier-vscode",
+	// mdx highlighting is currently very fragile in VSCode and can be broken by
+	// various formatting. if this can be reenable without causing problems
+	// editing mdx in the future, it should be.
+	"[mdx]": {
+		"editor.defaultFormatter": null,
+		"editor.codeActionsOnSave": {}
+	},
 	"editor.codeActionsOnSave": [
 		"editor.formatOnSave",
 		"source.fixAll.eslint",
