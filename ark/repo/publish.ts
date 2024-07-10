@@ -53,11 +53,11 @@ for (scope in publishConfig) {
 	tagsToPublish.push(`${pkg.name}@${nextVersion}`)
 }
 
+shell(`git config --global user.email "noreply@arktype.io"`)
+shell(`git config --global user.name "ArkCI"`)
 shell("git add .")
 
-shell(
-	`git commit -m "chore: bump versions" --author="ArkCI <noreply@arktype.io>"`
-)
+shell(`git commit -m "chore: bump versions"`)
 
 packagesToPublish.forEach(pkg => {
 	shell("pnpm publish", { cwd: pkg.path })
