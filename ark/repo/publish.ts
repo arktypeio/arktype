@@ -1,70 +1,27 @@
-import { getShellOutput, shell } from "@arktype/fs"
-import { flatMorph } from "@arktype/util"
-import { type } from "arktype"
-import {
-	packageScopes,
-	packagesByScope,
-	type ArkPackage,
-	type PackageScope
-} from "./shared.js"
+import { shell } from "@arktype/fs"
+import { packages } from "./shared.js"
 
-const lastCommitBody = getShellOutput("git log -1 --pretty=%b").trim()
-
-const publishConfigMatch = lastCommitBody.match(/```publish([\s\S]*)```/)?.[1]
-if (!publishConfigMatch) process.exit(0)
-
-const bumpType = type("===", "major", "minor", "patch", "prerelease")
-
-const PublishConfig = type(
-	flatMorph(packageScopes, (i, scope) => [`${scope}?` as const, bumpType])
-).onUndeclaredKey("reject")
-
-type PublishConfig = typeof PublishConfig.infer
-
-const parsePublishConfig = type("parse.json").pipe(PublishConfig)
-
-const publishConfig = parsePublishConfig.assert(publishConfigMatch)
-
-let scope: PackageScope
-
-const packagesToPublish: ArkPackage[] = []
 const tagsToPublish: string[] = []
 
-// apply bumped versions to package.json
-for (scope in publishConfig) {
-	const pkg = packagesByScope[scope]
-	packagesToPublish.push(pkg)
-	const bump = publishConfig[scope]
+packages.forEach(pkg => {
+	const tagName = `${pkg.name}@${pkg.version}`
 
-	let bumpCmd = `pnpm version ${bump}`
-
-	if (bump === "prerelease") {
-		const preid = pkg.version.match(/-(.*)\.\d*$/)?.[1]
-		if (!preid) {
-			throw new Error(
-				`${scope} must have a prerelease version (was ${pkg.version})`
-			)
+	const versionExists = () => {
+		try {
+			shell(`npm view ${tagName}`)
+			return true
+		} catch {
+			return false
 		}
-		bumpCmd += ` --preid ${preid}`
 	}
 
-	// get the new version without the leading "v", e.g. "v1.0.0" => "1.0.0"
-	const nextVersion = getShellOutput(bumpCmd, { cwd: pkg.path }).slice(1)
-	tagsToPublish.push(`${pkg.name}@${nextVersion}`)
-}
-
-shell(`git config --global user.email "noreply@arktype.io"`)
-shell(`git config --global user.name "ArkCI"`)
-shell("git add .")
-
-shell(`git commit -m "chore: bump versions"`)
-
-packagesToPublish.forEach(pkg => {
-	shell("pnpm publish", { cwd: pkg.path })
+	if (!versionExists()) {
+		shell(`git tag ${tagName}`)
+		tagsToPublish.push(tagName)
+		shell("pnpm publish", { cwd: pkg.path })
+	}
 })
 
-tagsToPublish.forEach(tagName => shell(`git tag ${tagName}`))
-
-shell("git push --follow-tags --force")
+shell("git push --tags")
 
 tagsToPublish.forEach(tagName => shell(`gh release create ${tagName} --latest`))
