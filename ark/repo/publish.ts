@@ -28,6 +28,7 @@ const publishConfig = parsePublishConfig.assert(publishConfigMatch)
 let scope: PackageScope
 
 const packagesToPublish: ArkPackage[] = []
+const tagsToPublish: string[] = []
 
 // apply bumped versions to package.json
 for (scope in publishConfig) {
@@ -49,9 +50,7 @@ for (scope in publishConfig) {
 
 	// get the new version without the leading "v", e.g. "v1.0.0" => "1.0.0"
 	const nextVersion = getShellOutput(bumpCmd, { cwd: pkg.path }).slice(1)
-	const tagName = `${pkg.name}@${nextVersion}`
-	shell(`git tag ${tagName}`)
-	shell(`gh release create ${tagName}`)
+	tagsToPublish.push(`${pkg.name}@${nextVersion}`)
 }
 
 packagesToPublish.forEach(pkg => {
@@ -62,4 +61,9 @@ shell("git add .")
 shell(
 	`git commit -m "chore: bump versions" --author="ArkCI <noreply@arktype.io>"`
 )
+
+tagsToPublish.forEach(tagName => shell(`git tag ${tagName}`))
+
 shell("git push --follow-tags")
+
+tagsToPublish.forEach(tagName => shell(`gh release create ${tagName} --latest`))
