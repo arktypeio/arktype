@@ -30,7 +30,7 @@ export const RuntimeBenchmarksGraph = () => (
 			}}
 		>
 			<h6 style={{ fontSize: 16 }}>
-				Node v22.2.0 (
+				Object Validation, Node v22.2.0 (
 				<a
 					target="_blank"
 					href="https://moltar.github.io/typescript-runtime-type-benchmarks/"
@@ -40,17 +40,17 @@ export const RuntimeBenchmarksGraph = () => (
 				)
 			</h6>
 		</div>
-		<div style={{ ...arkBarStyles, width: "100%" }}>
-			&nbsp;&nbsp;ArkType (68,581,169 ops)
-		</div>
 		<div
 			style={{
 				display: "flex",
 				alignItems: "center"
 			}}
 		>
-			<div style={{ ...zodBarStyles, width: "1.06%" }}></div>
-			Zod (727,703 ops)
+			<div style={{ ...arkBarStyles, width: "1.06%" }}></div>
+			ArkType (15 ns)
+		</div>
+		<div style={{ ...zodBarStyles, width: "100%" }}>
+			&nbsp;&nbsp;Zod (1374 ns)
 		</div>
 	</div>
 )
@@ -64,7 +64,7 @@ export const TypeBenchmarksGraph = () => (
 			}}
 		>
 			<h6 style={{ fontSize: 15 }}>
-				Union Type Instantiations, TypeScript 5.4.5 (
+				Union Type Instantiations, TypeScript 5.5.3 (
 				<a
 					target="_blank"
 					href="https://github.com/arktypeio/arktype/blob/468da965d9a2bbb16fe38d37e82c3b35e5158334/ark/repo/scratch/discriminatedComparison.ts"
