@@ -42,6 +42,7 @@
 		"@arktype/util": "workspace:*",
 		"@types/mocha": "10.0.7",
 		"@types/node": "20.14.10",
+		"@types/semver": "7.5.8",
 		"@typescript-eslint/eslint-plugin": "7.16.0",
 		"@typescript-eslint/parser": "7.16.0",
 		"arktype": "workspace:*",
@@ -57,7 +58,7 @@
 		"knip": "5.25.1",
 		"mocha": "10.6.0",
 		"prettier": "3.3.2",
-		"semantic-release": "24.0.0",
+		"semver": "7.6.2",
 		"tsx": "4.16.2",
 		"typescript": "5.5.3",
 		"typescript-min": "npm:typescript@5.1.5",
@@ -93,11 +94,6 @@
 	},
 	"eslintConfig": {
 		"extends": "./ark/repo/.eslintrc.cjs"
-	},
-	"release": {
-		"branches": [
-			"main"
-		]
 	},
 	"packageManager": "pnpm@9.5.0"
 }

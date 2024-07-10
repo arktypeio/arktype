@@ -6,7 +6,8 @@
 		"arktype": "workspace:*",
 		"@arktype/attest": "workspace:*",
 		"@arktype/fs": "workspace:*",
-		"zod": "3.23.8"
+		"zod": "3.23.8",
+		"type-fest": "4.21.0"
 	},
 	"scripts": {
 		"build": "echo No build required!"
