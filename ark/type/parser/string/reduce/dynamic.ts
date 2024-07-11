@@ -9,7 +9,7 @@ import type { ParseContext } from "../../../scope.js"
 import type { InfixOperator } from "../../semantic/infer.js"
 import { parseOperand } from "../shift/operand/operand.js"
 import { parseOperator } from "../shift/operator/operator.js"
-import { Scanner } from "../shift/scanner.js"
+import type { Scanner } from "../shift/scanner.js"
 import { parseUntilFinalizer } from "../string.js"
 import {
 	type Comparator,
@@ -35,7 +35,6 @@ type BranchState = {
 export type DynamicStateWithRoot = requireKeys<DynamicState, "root">
 
 export class DynamicState {
-	readonly scanner: Scanner
 	// set root type to `any` so that all constraints can be applied
 	root: BaseRoot<any> | undefined
 	branches: BranchState = {
@@ -48,12 +47,10 @@ export class DynamicState {
 	groups: BranchState[] = []
 
 	constructor(
-		def: string,
+		public readonly scanner: Scanner,
 		public readonly ctx: ParseContext,
 		public readonly defaultable: boolean
-	) {
-		this.scanner = new Scanner(def)
-	}
+	) {}
 
 	error(message: string): never {
 		return throwParseError(message)
@@ -154,9 +151,7 @@ export class DynamicState {
 	}
 
 	parseUntilFinalizer(): DynamicStateWithRoot {
-		return parseUntilFinalizer(
-			new DynamicState(this.scanner.unscanned, this.ctx, false)
-		)
+		return parseUntilFinalizer(new DynamicState(this.scanner, this.ctx, false))
 	}
 
 	parseOperator(this: DynamicStateWithRoot): void {

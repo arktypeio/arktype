@@ -44,6 +44,7 @@ import {
 } from "./parser/generic.js"
 import { DynamicState } from "./parser/string/reduce/dynamic.js"
 import type { ParsedDefault } from "./parser/string/shift/operator/default.js"
+import { Scanner } from "./parser/string/shift/scanner.js"
 import {
 	fullStringParse,
 	type StringParseResult
@@ -281,7 +282,9 @@ export class RawScope<
 
 		if (aliasArrayResolution) return aliasArrayResolution
 
-		return fullStringParse(new DynamicState(def, ctx, defaultable)) as never
+		return fullStringParse(
+			new DynamicState(new Scanner(def), ctx, defaultable)
+		) as never
 	}
 }
 

@@ -243,5 +243,12 @@ contextualize(
 			attest(uppercase("foo")).equals("FOO")
 			attest(uppercase(5).toString()).snap("must be a string (was number)")
 		})
+	},
+	"generics",
+	() => {
+		it("record", () => {
+			const t = ark.Record("string", "number")
+			attest(t.json).equals(type("Record<string, number>").json)
+		})
 	}
 )

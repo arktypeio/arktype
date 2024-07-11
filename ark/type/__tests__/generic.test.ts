@@ -321,12 +321,5 @@ contextualize(
 				$.type("box<1,string%2>")
 			).throwsAndHasTypeError(writeIndivisibleMessage(keywordNodes.string))
 		})
-	},
-	"builtins",
-	() => {
-		it("record", () => {
-			const t = ark.Record("string", "number")
-			attest(t.json).equals(type("Record<string, number>").json)
-		})
 	}
 )

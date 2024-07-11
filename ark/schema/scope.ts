@@ -197,7 +197,7 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 			},
 			{ prereduced: true }
 		)
-		this.lazyResolutions.push(node)
+		if (!this.resolved) this.lazyResolutions.push(node)
 		return node
 	}
 
@@ -273,6 +273,7 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 		// if the definition being parsed is not a scope alias and is not a
 		// generic instantiation (i.e. opts don't include args), add this as a resolution.
 		// TODO: this.lazilyResolve(resolve)
+		resolve
 		if (!isResolution) opts.args ??= { this: $ark.intrinsic.unknown }
 
 		return opts

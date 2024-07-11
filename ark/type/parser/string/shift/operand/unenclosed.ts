@@ -3,6 +3,7 @@ import {
 	hasArkKind,
 	writeUnresolvableMessage,
 	type GenericProps,
+	type GenericRoot,
 	type PrivateDeclaration,
 	type arkKind,
 	type writeNonSubmoduleDotMessage
@@ -18,7 +19,6 @@ import {
 	type anyOrNever,
 	type join
 } from "@arktype/util"
-import type { Generic } from "../../../../generic.js"
 import type { GenericInstantiationAst } from "../../../semantic/infer.js"
 import { writePrefixedPrivateReferenceMessage } from "../../../semantic/validate.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
@@ -61,7 +61,7 @@ export type parseUnenclosed<s extends StaticState, $, args> =
 
 export const parseGenericInstantiation = (
 	name: string,
-	g: Generic,
+	g: GenericRoot,
 	s: DynamicState
 ): BaseRoot => {
 	s.scanner.shiftUntilNonWhitespace()
@@ -115,13 +115,9 @@ const maybeParseReference = (
 	const resolution = s.ctx.$.maybeResolve(token)
 	if (resolution instanceof BaseRoot) return resolution
 	if (resolution === undefined) return
-	if (hasArkKind(resolution, "generic")) {
-		return parseGenericInstantiation(
-			token,
-			throwParseError("Generics unsupported"),
-			s
-		)
-	}
+	if (hasArkKind(resolution, "generic"))
+		return parseGenericInstantiation(token, resolution, s)
+
 	return throwParseError(`Unexpected resolution ${printable(resolution)}`)
 }
 
