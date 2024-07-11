@@ -79,7 +79,8 @@ export class GenericRoot<
 				this.arg$.parseRoot(args[i])
 			]) as never
 
-			if (def instanceof LazyGenericRoot) return def(argNodes) as never
+			if (def instanceof LazyGenericRoot)
+				return this.$.parseRoot(def(argNodes)) as never
 
 			return this.$.parseRoot(def as never, { args: argNodes }) as never
 		})
