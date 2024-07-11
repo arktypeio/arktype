@@ -257,14 +257,20 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 		return node as never
 	}
 
-	parseRoot(def: unknown, opts: NodeParseOptions = {}): BaseRoot {
+	protected finalizeRootArgs(opts: NodeParseOptions, resolve: () => BaseRoot) {
 		const isResolution = opts.alias && opts.alias in this.aliases
-
 		// if the definition being parsed is not a scope alias and is not a
 		// generic instantiation (i.e. opts don't include args), add this as a resolution.
-		if (!isResolution) opts.args ??= { args: this.lazilyResolve(() => node) }
+		if (!isResolution) opts.args ??= { this: this.lazilyResolve(resolve) }
 
-		const node = this.schema(def as never, opts)
+		return opts
+	}
+
+	parseRoot(def: unknown, opts: NodeParseOptions = {}): BaseRoot {
+		const node = this.schema(
+			def as never,
+			this.finalizeRootArgs(opts, () => node)
+		)
 		return node
 	}
 

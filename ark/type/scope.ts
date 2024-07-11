@@ -4,12 +4,12 @@ import {
 	hasArkKind,
 	type ArkConfig,
 	type BaseRoot,
+	type GenericArgResolutions,
 	type GenericProps,
 	type PreparsedNodeResolution,
 	type PrivateDeclaration,
 	type RawRootResolutions,
 	type RootScope,
-	type UnknownRoot,
 	type arkKind,
 	type destructuredExportContext,
 	type destructuredImportContext,
@@ -169,7 +169,7 @@ export interface ParseContext extends TypeParseOptions {
 }
 
 export interface TypeParseOptions {
-	args?: Record<string, UnknownRoot>
+	args?: GenericArgResolutions
 }
 
 export const scope: ScopeParser = ((def: Dict, config: ArkConfig = {}) =>
@@ -232,11 +232,15 @@ export class RawScope<
 	}
 
 	@bound
-	override parseRoot(def: unknown, opts?: TypeParseOptions): BaseRoot {
-		return this.parse(def, {
-			...opts,
-			$: this as never
-		}).bindScope(this)
+	override parseRoot(def: unknown, opts: TypeParseOptions = {}): BaseRoot {
+		const node: BaseRoot = this.parse(
+			def,
+			Object.assign(
+				this.finalizeRootArgs(opts, () => node),
+				{ $: this as never }
+			)
+		).bindScope(this)
+		return node
 	}
 
 	parse<defaultable extends boolean = false>(
