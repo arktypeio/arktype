@@ -247,8 +247,15 @@ contextualize(
 	"generics",
 	() => {
 		it("record", () => {
-			const t = ark.Record("string", "number")
-			attest(t.json).equals(type("Record<string, number>").json)
+			const expected = type({ "[string]": "number" })
+
+			// const invocation = ark.Record("string", "number")
+			// attest(invocation.json).equals(expected.json)
+			// attest<typeof expected.t>(invocation.t)
+
+			const expression = type("Record<string, number>")
+			attest(expression.json).equals(expected.json)
+			attest<typeof expected.t>(expression.t)
 		})
 	}
 )
