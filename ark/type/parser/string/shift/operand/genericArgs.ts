@@ -5,19 +5,11 @@ import { writeUnclosedGroupMessage } from "../../reduce/shared.js"
 import type { StaticState, state } from "../../reduce/static.js"
 import type { parseUntilFinalizer } from "../../string.js"
 
-export type ParsedArgs<
-	result extends unknown[] = unknown[],
-	unscanned extends string = string
-> = {
-	result: result
-	unscanned: unscanned
-}
-
 export const parseGenericArgs = (
 	name: string,
 	params: string[],
 	s: DynamicState
-): ParsedArgs<BaseRoot[]> => _parseGenericArgs(name, params, s, [], [])
+): BaseRoot[] => _parseGenericArgs(name, params, s, [])
 
 export type parseGenericArgs<
 	name extends string,
@@ -31,26 +23,34 @@ const _parseGenericArgs = (
 	name: string,
 	params: string[],
 	s: DynamicState,
-	argDefs: string[],
 	argNodes: BaseRoot[]
-): ParsedArgs<BaseRoot[]> => {
+): BaseRoot[] => {
 	const argState = s.parseUntilFinalizer()
-	// remove the finalizing token from the argDef
-	argDefs.push(argState.scanner.scanned.slice(0, -1))
 	argNodes.push(argState.root)
 	if (argState.finalizer === ">") {
-		if (argNodes.length === params.length) {
-			return {
-				result: argNodes,
-				unscanned: argState.scanner.unscanned
-			}
+		if (argNodes.length !== params.length) {
+			return s.error(
+				writeInvalidGenericArgsMessage(
+					name,
+					params,
+					argNodes.map(arg => arg.expression)
+				)
+			)
 		}
-		return argState.error(writeInvalidGenericArgsMessage(name, params, argDefs))
+		return argNodes
 	}
 	if (argState.finalizer === ",")
-		return _parseGenericArgs(name, params, s, argDefs, argNodes)
+		return _parseGenericArgs(name, params, s, argNodes)
 
 	return argState.error(writeUnclosedGroupMessage(">"))
+}
+
+export type ParsedArgs<
+	result extends unknown[] = unknown[],
+	unscanned extends string = string
+> = {
+	result: result
+	unscanned: unscanned
 }
 
 type _parseGenericArgs<

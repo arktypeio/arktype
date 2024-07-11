@@ -70,12 +70,7 @@ export const parseGenericInstantiation = (
 		return s.error(writeInvalidGenericArgsMessage(name, g.params, []))
 
 	const parsedArgs = parseGenericArgs(name, g.params, s)
-	const remainingChars = parsedArgs.unscanned.length
-	// set the scanner position to where the args scanner left off
-	s.scanner.jumpToIndex(
-		remainingChars === 0 ? s.scanner.length : -remainingChars
-	)
-	return g(...(parsedArgs.result as never)) as never
+	return g(...(parsedArgs as never)) as never
 }
 
 export type parseGenericInstantiation<

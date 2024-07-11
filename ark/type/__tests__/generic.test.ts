@@ -104,7 +104,7 @@ contextualize(
 			const expectedContents = type({ a: "string|this" })
 			const expectedBox = type({ box: expectedContents })
 
-			attest(t.t).type.toString.snap()
+			attest(t.t).type.toString.snap("{ box: { a: string | ...; }; }")
 			attest(t.json).equals(expectedBox.json)
 		})
 
@@ -126,16 +126,14 @@ contextualize(
 	},
 	"scoped",
 	() => {
-		const $ = lazily(() =>
-			scope({
-				"box<t,u>": {
-					box: "t|u"
-				},
-				bitBox: "box<0,1>"
-			})
-		)
+		const $ = scope({
+			"box<t,u>": {
+				box: "t|u"
+			},
+			bitBox: "box<0,1>"
+		})
 
-		const types = lazily(() => $.export())
+		const types = $.export()
 
 		it("referenced in scope", () => {
 			const expected = type({ box: "0|1" })
@@ -293,9 +291,9 @@ contextualize(
 		it("too few args", () => {
 			attest(() =>
 				// @ts-expect-error
-				$.type("box<0,box<2|3>>")
+				$.type("box<0,box<2 | 3>>")
 			).throwsAndHasTypeError(
-				writeInvalidGenericArgsMessage("box", ["t", "u"], ["2|3"])
+				writeInvalidGenericArgsMessage("box", ["t", "u"], ["2 | 3"])
 			)
 		})
 
@@ -304,7 +302,7 @@ contextualize(
 				// @ts-expect-error
 				$.type("box<0, box<1, 2, 3>>")
 			).throwsAndHasTypeError(
-				writeInvalidGenericArgsMessage("box", ["t", "u"], ["1", " 2", " 3"])
+				writeInvalidGenericArgsMessage("box", ["t", "u"], ["1", "2", "3"])
 			)
 		})
 
