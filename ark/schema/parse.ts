@@ -103,15 +103,19 @@ const serializeListableChild = (listableNode: listable<BaseNode>) =>
 		listableNode.map(node => node.collapsibleJson)
 	:	listableNode.collapsibleJson
 
+export const registerNodeId = (kind: NodeKind, opts: NodeParseOptions) => {
+	const prefix = opts.alias ?? kind
+	nodeCountsByPrefix[prefix] ??= 0
+	return `${prefix}${++nodeCountsByPrefix[prefix]!}`
+}
+
 export const parseNode = <kind extends NodeKind>(
+	id: string,
 	kind: kind,
 	schema: NormalizedSchema<kind>,
 	$: RawRootScope,
 	opts: NodeParseOptions
 ): BaseNode => {
-	const prefix = opts.alias ?? kind
-	nodeCountsByPrefix[prefix] ??= 0
-	const id = `${prefix}${++nodeCountsByPrefix[prefix]!}`
 	const ctx: NodeParseContext = {
 		...opts,
 		$,

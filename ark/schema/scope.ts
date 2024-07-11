@@ -38,7 +38,12 @@ import {
 	type SchemaModule
 } from "./module.js"
 import type { BaseNode } from "./node.js"
-import { parseNode, schemaKindOf, type NodeParseOptions } from "./parse.js"
+import {
+	parseNode,
+	registerNodeId,
+	schemaKindOf,
+	type NodeParseOptions
+} from "./parse.js"
 import { normalizeAliasSchema, type AliasNode } from "./roots/alias.js"
 import type { BaseRoot, Root } from "./roots/root.js"
 import { NodeCompiler } from "./shared/compile.js"
@@ -203,7 +208,7 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 	>(
 		kinds: kinds,
 		nodeSchema: NodeSchema<flattenListable<kinds>>,
-		opts?: NodeParseOptions<prereduced>
+		opts = {} as NodeParseOptions<prereduced>
 	): Node<
 		prereduced extends true ? flattenListable<kinds>
 		:	reducibleKindOf<flattenListable<kinds>>
@@ -240,9 +245,15 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 				:	throwMismatchedNodeRootError(kind, normalizedSchema.kind)
 		}
 
-		const node = parseNode(kind, normalizedSchema, this, opts ?? {}).bindScope(
-			this
-		)
+		const id = registerNodeId(kind, opts)
+
+		const node = parseNode(
+			id,
+			kind,
+			normalizedSchema,
+			this,
+			opts ?? {}
+		).bindScope(this)
 
 		if (this.resolved) {
 			// this node was not part of the original scope, so compile an anonymous scope
@@ -261,7 +272,8 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 		const isResolution = opts.alias && opts.alias in this.aliases
 		// if the definition being parsed is not a scope alias and is not a
 		// generic instantiation (i.e. opts don't include args), add this as a resolution.
-		if (!isResolution) opts.args ??= { this: this.lazilyResolve(resolve) }
+		// TODO: this.lazilyResolve(resolve)
+		if (!isResolution) opts.args ??= { this: $ark.intrinsic.unknown }
 
 		return opts
 	}
