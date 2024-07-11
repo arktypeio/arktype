@@ -1,19 +1,19 @@
 import type { BaseRoot } from "@arktype/schema"
-import type { ErrorMessage, join } from "@arktype/util"
+import type { array, ErrorMessage, join } from "@arktype/util"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import { writeUnclosedGroupMessage } from "../../reduce/shared.js"
-import type { StaticState, state } from "../../reduce/static.js"
+import type { state, StaticState } from "../../reduce/static.js"
 import type { parseUntilFinalizer } from "../../string.js"
 
 export const parseGenericArgs = (
 	name: string,
-	params: string[],
+	params: array<string>,
 	s: DynamicState
 ): BaseRoot[] => _parseGenericArgs(name, params, s, [])
 
 export type parseGenericArgs<
 	name extends string,
-	params extends string[],
+	params extends array<string>,
 	unscanned extends string,
 	$,
 	args
@@ -21,7 +21,7 @@ export type parseGenericArgs<
 
 const _parseGenericArgs = (
 	name: string,
-	params: string[],
+	params: array<string>,
 	s: DynamicState,
 	argNodes: BaseRoot[]
 ): BaseRoot[] => {
@@ -55,7 +55,7 @@ export type ParsedArgs<
 
 type _parseGenericArgs<
 	name extends string,
-	params extends string[],
+	params extends array<string>,
 	unscanned extends string,
 	$,
 	args,
@@ -101,8 +101,8 @@ type _parseGenericArgs<
 
 export const writeInvalidGenericArgsMessage = <
 	name extends string,
-	params extends string[],
-	argDefs extends string[]
+	params extends array<string>,
+	argDefs extends array<string>
 >(
 	name: name,
 	params: params,
@@ -116,8 +116,8 @@ export const writeInvalidGenericArgsMessage = <
 
 export type writeInvalidGenericArgsMessage<
 	name extends string,
-	params extends string[],
-	argDefs extends string[]
+	params extends array<string>,
+	argDefs extends array<string>
 > = `${name}<${join<
 	params,
 	", "

@@ -6,16 +6,16 @@ import {
 import type { number } from "../ast.js"
 import type { SchemaModule } from "../module.js"
 import type { Out } from "../roots/morph.js"
-import { root, schemaScope } from "../scope.js"
+import { defineRoot, schemaScope } from "../scope.js"
 import { tryParseDatePattern } from "./utils/date.js"
 import { defineRegex } from "./utils/regex.js"
 
-const number = root.defineRoot({
+const number = defineRoot({
 	in: defineRegex(wellFormedNumberMatcher, "a well-formed numeric string"),
 	morphs: (s: string) => Number.parseFloat(s)
 })
 
-const integer = root.defineRoot({
+const integer = defineRoot({
 	in: defineRegex(wellFormedIntegerMatcher, "a well-formed integer string"),
 	morphs: (s: string, ctx) => {
 		if (!isWellFormedInteger(s))
@@ -30,7 +30,7 @@ const integer = root.defineRoot({
 	}
 })
 
-const url = root.defineRoot({
+const url = defineRoot({
 	in: "string",
 	morphs: (s: string, ctx) => {
 		try {
@@ -41,7 +41,7 @@ const url = root.defineRoot({
 	}
 })
 
-const json = root.defineRoot({
+const json = defineRoot({
 	in: "string",
 	morphs: (s: string, ctx): object => {
 		try {
@@ -52,7 +52,7 @@ const json = root.defineRoot({
 	}
 })
 
-const date = root.defineRoot({
+const date = defineRoot({
 	in: "string",
 	morphs: (s: string, ctx) => {
 		const result = tryParseDatePattern(s)

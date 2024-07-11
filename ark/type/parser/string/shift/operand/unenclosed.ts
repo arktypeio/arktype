@@ -44,20 +44,30 @@ export type parseUnenclosed<s extends StaticState, $, args> =
 		token extends "keyof" ? state.addPrefix<s, "keyof", unscanned>
 		: tryResolve<s, token, $, args> extends infer result ?
 			result extends ErrorMessage<infer message> ? state.error<message>
-			: result extends keyof $ ?
-				[$[result]] extends [anyOrNever] ? state.setRoot<s, result, unscanned>
-				: $[result] extends GenericProps ?
-					parseGenericInstantiation<
-						token,
-						$[result],
-						state.scanTo<s, unscanned>,
-						$,
-						args
-					>
-				:	state.setRoot<s, result, unscanned>
+			: result extends keyof $ ? parseResolution<s, unscanned, result, $, args>
+			: result extends keyof ArkEnv.$ ?
+				parseResolution<s, unscanned, result, ArkEnv.$, args>
 			:	state.setRoot<s, result, unscanned>
 		:	never
 	:	never
+
+type parseResolution<
+	s extends StaticState,
+	unscanned extends string,
+	alias extends keyof $,
+	$,
+	args
+> =
+	[$[alias]] extends [anyOrNever] ? state.setRoot<s, alias, unscanned>
+	: $[alias] extends GenericProps ?
+		parseGenericInstantiation<
+			alias & string,
+			$[alias],
+			state.scanTo<s, unscanned>,
+			$,
+			args
+		>
+	:	state.setRoot<s, alias, unscanned>
 
 export const parseGenericInstantiation = (
 	name: string,

@@ -4,8 +4,7 @@ import {
 	writeIndivisibleMessage,
 	writeUnresolvableMessage
 } from "@arktype/schema"
-import { lazily } from "@arktype/util"
-import { ark, scope, type } from "arktype"
+import { scope, type } from "arktype"
 import { emptyGenericParameterMessage } from "../parser/generic.js"
 import { writeUnclosedGroupMessage } from "../parser/string/reduce/shared.js"
 import { writeInvalidGenericArgsMessage } from "../parser/string/shift/operand/genericArgs.js"

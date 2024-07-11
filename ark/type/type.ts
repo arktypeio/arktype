@@ -123,7 +123,7 @@ export class RawTypeParser extends Callable<
 						def,
 						$ as never,
 						$ as never
-					).validateBaseInstantiation() as Generic
+					).validateBaseInstantiation() as never
 				}
 				// otherwise, treat as a tuple expression. technically, this also allows
 				// non-expression tuple definitions to be parsed, but it's not a supported

@@ -1,11 +1,11 @@
-import type { GenericNodeInstantiation, GenericRoot } from "@arktype/schema"
-import type { Callable, conform } from "@arktype/util"
+import type { GenericNodeSignature, GenericRoot } from "@arktype/schema"
+import type { array, Callable, conform } from "@arktype/util"
 import type { inferDefinition } from "./parser/definition.js"
 import type {
 	GenericParamsParseError,
 	parseGenericParams
 } from "./parser/generic.js"
-import type { Type, inferTypeRoot, validateTypeRoot } from "./type.js"
+import type { inferTypeRoot, Type, validateTypeRoot } from "./type.js"
 
 export type validateParameterString<params extends string> =
 	parseGenericParams<params> extends GenericParamsParseError<infer message> ?
@@ -13,7 +13,7 @@ export type validateParameterString<params extends string> =
 	:	params
 
 export type GenericTypeInstantiation<
-	params extends string[] = string[],
+	params extends array<string> = array<string>,
 	def = any,
 	$ = any
 > = <args>(
@@ -26,14 +26,14 @@ export type GenericTypeInstantiation<
 ) => Type<inferDefinition<def, $, bindGenericInstantiation<params, $, args>>, $>
 
 export type GenericInstantiation<
-	params extends string[] = string[],
+	params extends array<string> = array<string>,
 	def = any,
 	$ = any
 > = GenericTypeInstantiation<params, def, $> &
-	GenericNodeInstantiation<params, def, $>
+	GenericNodeSignature<params, def, $>
 
 // TODO: Fix external reference (i.e. if this is attached to a scope, then args are defined using it)
-type bindGenericInstantiation<params extends string[], $, args> = {
+type bindGenericInstantiation<params extends array<string>, $, args> = {
 	[i in keyof params & `${number}` as params[i]]: inferTypeRoot<
 		args[i & keyof args],
 		$
@@ -42,7 +42,7 @@ type bindGenericInstantiation<params extends string[], $, args> = {
 
 // TODO: should be Scope<$>, but breaks inference
 export interface Generic<
-	params extends string[] = string[],
+	params extends array<string> = array<string>,
 	def = unknown,
 	$ = any
 > extends Callable<GenericInstantiation<params, def, $>>,

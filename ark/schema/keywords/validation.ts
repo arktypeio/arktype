@@ -1,13 +1,13 @@
 import type { anonymous, number, string } from "../ast.js"
 import type { SchemaModule } from "../module.js"
-import { root, schemaScope } from "../scope.js"
+import { defineRoot, schemaScope } from "../scope.js"
 import { creditCardMatcher, isLuhnValid } from "./utils/creditCard.js"
 import { ip } from "./utils/ip.js"
 import { defineRegex } from "./utils/regex.js"
 
 // Non-trivial expressions should have an explanation or attribution
 
-const url = root.defineRoot({
+const url = defineRoot({
 	domain: "string",
 	predicate: {
 		predicate: (s: string) => {
@@ -42,7 +42,7 @@ const semver = defineRegex(
 	"a valid semantic version (see https://semver.org/)"
 )
 
-const creditCard = root.defineRoot({
+const creditCard = defineRoot({
 	domain: "string",
 	pattern: {
 		rule: creditCardMatcher.source,

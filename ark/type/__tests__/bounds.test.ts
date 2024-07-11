@@ -1,8 +1,8 @@
 import { attest, contextualize } from "@arktype/attest"
 import {
 	internal,
+	internalSchema,
 	keywordNodes,
-	rawSchema,
 	writeInvalidOperandMessage,
 	writeUnboundableMessage
 } from "@arktype/schema"
@@ -34,7 +34,7 @@ contextualize(
 			const t = type("number<10")
 			attest<number>(t.infer)
 			attest(t).type.toString.snap("Type<lessThan<10>, {}>")
-			const expected = rawSchema({
+			const expected = internalSchema({
 				domain: "number",
 				max: { rule: 10, exclusive: true }
 			})
@@ -45,7 +45,7 @@ contextualize(
 			const t = type("number<=-49")
 			attest<number>(t.infer)
 			attest(t).type.toString.snap("Type<atMost<-49>, {}>")
-			const expected = rawSchema({
+			const expected = internalSchema({
 				domain: "number",
 				max: { rule: -49, exclusive: false }
 			})
@@ -56,7 +56,7 @@ contextualize(
 			const t = type("number==3211993")
 			attest<3211993>(t.infer)
 			attest(t).type.toString.snap("Type<3211993, {}>")
-			const expected = rawSchema({ unit: 3211993 })
+			const expected = internalSchema({ unit: 3211993 })
 			attest(t.json).equals(expected.json)
 		})
 
@@ -73,7 +73,7 @@ contextualize(
 			const t = type("-5<number<=5")
 			attest(t).type.toString.snap("Type<is<MoreThan<-5> & AtMost<5>>, {}>")
 			attest<number>(t.infer)
-			const expected = rawSchema({
+			const expected = internalSchema({
 				domain: "number",
 				min: { rule: -5, exclusive: true },
 				max: 5
@@ -87,7 +87,7 @@ contextualize(
 				"Type<is<AtLeast<-3.23> & LessThan<4.654>>, {}>"
 			)
 			attest<number>(t.infer)
-			const expected = rawSchema({
+			const expected = internalSchema({
 				domain: "number",
 				min: { rule: -3.23 },
 				max: { rule: 4.654, exclusive: true }
@@ -99,7 +99,7 @@ contextualize(
 			const t = type("number > 3")
 			attest(t).type.toString.snap("Type<moreThan<3>, {}>")
 			attest<number>(t.infer)
-			const expected = rawSchema({
+			const expected = internalSchema({
 				domain: "number",
 				min: { rule: 3, exclusive: true }
 			})

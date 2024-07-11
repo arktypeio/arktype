@@ -20,7 +20,12 @@ import {
 	type ArkConfig,
 	type ResolvedArkConfig
 } from "./config.js"
-import type { GenericRoot } from "./generic.js"
+import {
+	GenericRoot,
+	LazyGenericRoot,
+	type GenericArgResolutions,
+	type LazyGenericDef
+} from "./generic.js"
 import type { inferRoot, validateRoot } from "./inference.js"
 import type { internal } from "./keywords/internal.js"
 import type { jsObjects } from "./keywords/jsObjects.js"
@@ -175,6 +180,19 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 	}
 
 	@bound
+	generic(
+		params: string[],
+		resolveDef: (args: GenericArgResolutions) => unknown
+	): GenericRoot {
+		return new GenericRoot(
+			params,
+			new LazyGenericRoot(resolveDef as never),
+			this as never,
+			this as never
+		)
+	}
+
+	@bound
 	units(values: array, opts?: NodeParseOptions): BaseRoot {
 		const uniqueValues: unknown[] = []
 		for (const value of values)
@@ -321,7 +339,7 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 	maybeShallowResolve(name: string): CachedResolution | undefined {
 		const cached = this.resolutions[name]
 		if (cached) return cached
-		const def = this.aliases[name] ?? $ark.ambient.resolutions[name]
+		const def = this.aliases[name] ?? $ark.ambient?.resolutions[name]
 
 		if (!def) return this.maybeResolveSubalias(name)
 
@@ -500,6 +518,14 @@ export interface RootScope<$ = any> {
 		opts?: NodeParseOptions
 	): Node<reducibleKindOf<flattenListable<kinds>>>
 
+	generic<
+		const params extends array<string>,
+		def extends LazyGenericDef<params>
+	>(
+		params: params,
+		resolve: LazyGenericDef<params>
+	): GenericRoot<params, def, $>
+
 	parseRoot(schema: unknown, opts?: NodeParseOptions): BaseRoot
 
 	import<names extends exportedNameOf<$>[]>(
@@ -525,11 +551,13 @@ export const schema: RootScope["schema"] = root.schema
 export const node: RootScope["node"] = root.node
 export const defineRoot: RootScope["defineRoot"] = root.defineRoot
 export const units: RootScope["units"] = root.units
-export const rawSchema: RawRootScope["schema"] = root.internal.schema
-export const rawNode: RawRootScope["node"] = root.internal.node
-export const defineRawRoot: RawRootScope["defineRoot"] =
+export const generic: RootScope["generic"] = root.generic
+export const internalSchema: RawRootScope["schema"] = root.internal.schema
+export const internalNode: RawRootScope["node"] = root.internal.node
+export const defineInternalRoot: RawRootScope["defineRoot"] =
 	root.internal.defineRoot
-export const rawUnits: RawRootScope["units"] = root.internal.units
+export const internalUnits: RawRootScope["units"] = root.internal.units
+export const internalGeneric: RawRootScope["generic"] = root.internal.generic
 
 export const parseAsSchema = <castTo = unknown>(
 	def: unknown,

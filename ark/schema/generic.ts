@@ -14,15 +14,19 @@ import type { BaseRoot, Root } from "./roots/root.js"
 import type { RawRootScope, RootScope } from "./scope.js"
 import { arkKind } from "./shared/utils.js"
 
-export type GenericNodeInstantiation<
-	params extends string[] = string[],
+export type GenericNodeSignature<
+	params extends array<string> = array<string>,
 	def = unknown,
 	$ = any
 > = <args>(
 	...args: conform<args, repeat<[RootSchema], params["length"]>>
 ) => Root<inferRoot<def, $ & bindGenericNodeInstantiation<params, $, args>>>
 
-export type bindGenericNodeInstantiation<params extends string[], $, args> = {
+export type bindGenericNodeInstantiation<
+	params extends array<string>,
+	$,
+	args
+> = {
 	[i in keyof params & `${number}` as params[i]]: inferRoot<
 		args[i & keyof args],
 		$
@@ -31,7 +35,7 @@ export type bindGenericNodeInstantiation<params extends string[], $, args> = {
 
 // Comparing to Generic directly doesn't work well, so we compare to only its props
 export interface GenericProps<
-	params extends string[] = string[],
+	params extends array<string> = array<string>,
 	def = any,
 	$ = any
 > {
@@ -41,10 +45,24 @@ export interface GenericProps<
 	$: RootScope<$>
 }
 
-export type GenericArgResolutions = Record<string, BaseRoot>
+export type GenericArgResolutions<
+	params extends array<string> = array<string>
+> = Record<params[number], BaseRoot>
 
-export class GenericRoot<params extends string[] = string[], def = any, $ = any>
-	extends Callable<GenericNodeInstantiation<params, def, $>>
+export type LazyGenericDef<params extends array<string> = array<string>> = (
+	args: GenericArgResolutions<params>
+) => RootSchema
+
+export class LazyGenericRoot<
+	params extends array<string> = array<string>
+> extends Callable<LazyGenericDef<params>> {}
+
+export class GenericRoot<
+		params extends array<string> = array<string>,
+		def = any,
+		$ = any
+	>
+	extends Callable<GenericNodeSignature<params, def, $>>
 	implements GenericProps
 {
 	readonly [arkKind] = "generic"
@@ -60,6 +78,8 @@ export class GenericRoot<params extends string[] = string[], def = any, $ = any>
 				param,
 				this.arg$.parseRoot(args[i])
 			]) as never
+
+			if (def instanceof LazyGenericRoot) return def(argNodes) as never
 
 			return this.$.parseRoot(def as never, { args: argNodes }) as never
 		})
