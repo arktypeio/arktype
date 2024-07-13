@@ -31,10 +31,15 @@ contextualize(() => {
 	})
 
 	it("chained narrows", () => {
-		const divisibleBy30 = type("number")
-			.narrow((n, ctx) => n % 2 === 0 || ctx.reject("divisible by 2"))
-			.narrow((n, ctx) => n % 3 === 0 || ctx.reject("divisible by 3"))
-			.narrow((n, ctx) => n % 5 === 0 || ctx.reject("divisible by 5"))
+		const a = type("number").narrow(
+			(n, ctx) => n % 2 === 0 || ctx.reject("divisible by 2")
+		)
+
+		const b = a.narrow((n, ctx) => n % 3 === 0 || ctx.reject("divisible by 3"))
+
+		const divisibleBy30 = b.narrow(
+			(n, ctx) => n % 5 === 0 || ctx.reject("divisible by 5")
+		)
 
 		attest<number.narrowed>(divisibleBy30.t)
 

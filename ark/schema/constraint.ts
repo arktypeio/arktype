@@ -187,6 +187,8 @@ export const flattenConstraints = (inner: object): BaseConstraint[] => {
 		.sort((l, r) =>
 			l.precedence < r.precedence ? -1
 			: l.precedence > r.precedence ? 1
+				// preserve order for predicates
+			: l.kind === "predicate" && r.kind === "predicate" ? 0
 			: l.innerHash < r.innerHash ? -1
 			: 1
 		)

@@ -52,7 +52,6 @@ export const predicateImplementation: nodeImplementationOf<PredicateDeclaration>
 		},
 		intersectionIsOpen: true,
 		intersections: {
-			// TODO: allow changed order to be the same type
 			// as long as the narrows in l and r are individually safe to check
 			// in the order they're specified, checking them in the order
 			// resulting from this intersection should also be safe.
@@ -109,8 +108,3 @@ export type inferPredicate<t, predicate> =
 			constrain<of<narrowed, constraints>, "predicate", any>
 		:	constrain<narrowed, "predicate", any>
 	:	constrain<t, "predicate", any>
-
-export type inferPredicate2<t, to> =
-	t extends of<unknown, infer constraints> ?
-		constrain<of<to, constraints>, "predicate", any>
-	:	constrain<to, "predicate", any>
