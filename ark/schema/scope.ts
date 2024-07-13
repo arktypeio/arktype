@@ -22,9 +22,7 @@ import {
 } from "./config.js"
 import {
 	GenericRoot,
-	LazyGenericRoot,
-	type GenericArgResolutions,
-	type GenericParamSchema,
+	type GenericParamDef,
 	type LazyGenericDef,
 	type genericParamSchemasToAst
 } from "./generic.js"
@@ -182,17 +180,14 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 	}
 
 	@bound
-	generic(
-		params: array<GenericParamSchema>,
-		resolveDef: (args: GenericArgResolutions) => unknown
-	): GenericRoot {
+	generic(params: array<GenericParamDef>, def: unknown): GenericRoot {
 		return new GenericRoot(
 			params.map((param): [string, BaseRoot] =>
 				typeof param === "string" ?
 					[param, $ark.intrinsic.unknown]
 				:	[param[0], this.parseRoot(param[1])]
 			) as never,
-			new LazyGenericRoot(resolveDef as never),
+			def,
 			this as never,
 			this as never
 		)
@@ -525,7 +520,7 @@ export interface RootScope<$ = any> {
 	): Node<reducibleKindOf<flattenListable<kinds>>>
 
 	generic<
-		const params extends array<GenericParamSchema>,
+		const params extends array<GenericParamDef>,
 		def extends LazyGenericDef<genericParamSchemasToAst<params, $>>
 	>(
 		params: params,

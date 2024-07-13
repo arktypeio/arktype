@@ -79,7 +79,7 @@ export const parseGenericInstantiation = (
 	if (lookahead !== "<")
 		return s.error(writeInvalidGenericArgsMessage(name, g.names, []))
 
-	const parsedArgs = parseGenericArgs(name, g.params, s)
+	const parsedArgs = parseGenericArgs(name, g, s)
 	return g(...(parsedArgs as never)) as never
 }
 
@@ -92,15 +92,13 @@ export type parseGenericInstantiation<
 	// have to skip whitespace here since TS allows instantiations like `Partial    <T>`
 > =
 	Scanner.skipWhitespace<s["unscanned"]> extends `<${infer unscanned}` ?
-		parseGenericArgs<name, g["params"], unscanned, $, args> extends (
-			infer result
-		) ?
+		parseGenericArgs<name, g, unscanned, $, args> extends infer result ?
 			result extends ParsedArgs<infer argAsts, infer nextUnscanned> ?
 				state.setRoot<s, GenericInstantiationAst<g, argAsts>, nextUnscanned>
 			:	// propagate error
 				result
 		:	never
-	:	state.error<writeInvalidGenericArgsMessage<name, g["params"], []>>
+	:	state.error<writeInvalidGenericArgsMessage<name, g["names"], []>>
 
 const unenclosedToNode = (s: DynamicState, token: string): BaseRoot =>
 	maybeParseReference(s, token) ??

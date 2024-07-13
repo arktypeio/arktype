@@ -71,7 +71,7 @@ export interface RawRootDeclaration extends RawNodeDeclaration {
 	kind: RootKind
 }
 
-export type UnknownRoot = Root | BaseRoot
+export type UnknownRoot<t = unknown> = Root<t> | BaseRoot
 
 export type TypeOnlyRootKey =
 	| (keyof Root & symbol)

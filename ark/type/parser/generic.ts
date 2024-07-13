@@ -1,4 +1,6 @@
+import type { GenericParamAst, GenericParamDef } from "@arktype/schema"
 import {
+	type array,
 	type keyError,
 	throwParseError,
 	type WhiteSpaceToken
@@ -16,12 +18,14 @@ export type GenericParamsParseError<message extends string = string> = [
 	keyError<message>
 ]
 
-export const parseGenericParams = (def: string): string[] =>
+export const parseGenericParams = (def: string): array<GenericParamDef> =>
 	_parseGenericParams(new Scanner(def))
 
 export type parseGenericParams<def extends string> =
-	_parseParams<def, "", []> extends infer result extends string[] ?
-		"" extends result[number] ?
+	_parseParams<def, "", []> extends (
+		infer result extends array<GenericParamAst>
+	) ?
+		"" extends result[number][0] ?
 			GenericParamsParseError<emptyGenericParameterMessage>
 		:	result
 	:	never
@@ -31,7 +35,7 @@ export const emptyGenericParameterMessage =
 
 export type emptyGenericParameterMessage = typeof emptyGenericParameterMessage
 
-const _parseGenericParams = (scanner: Scanner): string[] => {
+const _parseGenericParams = (scanner: Scanner): array<GenericParamDef> => {
 	const param = scanner.shiftUntilNextTerminator()
 	if (param === "") throwParseError(emptyGenericParameterMessage)
 
@@ -47,10 +51,11 @@ const _parseGenericParams = (scanner: Scanner): string[] => {
 type _parseParams<
 	unscanned extends string,
 	param extends string,
-	result extends string[]
+	result extends array<GenericParamAst>
 > =
 	unscanned extends `${infer lookahead}${infer nextUnscanned}` ?
-		lookahead extends "," ? _parseParams<nextUnscanned, "", [...result, param]>
+		lookahead extends "," ?
+			_parseParams<nextUnscanned, "", [...result, [param, unknown]]>
 		: lookahead extends WhiteSpaceToken ?
 			param extends "" ?
 				// if the next char is whitespace and we aren't in the middle of a param, skip to the next one
@@ -59,12 +64,12 @@ type _parseParams<
 				`${infer nextNonWhitespace}${infer rest}`
 			) ?
 				nextNonWhitespace extends "," ?
-					_parseParams<rest, "", [...result, param]>
+					_parseParams<rest, "", [...result, [param, unknown]]>
 				:	GenericParamsParseError<
 						writeUnexpectedCharacterMessage<nextNonWhitespace, ",">
 					>
 			:	// params end with a single whitespace character, add the current token
-				[...result, param]
+				[...result, [param, unknown]]
 		:	_parseParams<nextUnscanned, `${param}${lookahead}`, result>
 	: param extends "" ? result
-	: [...result, param]
+	: [...result, [param, unknown]]

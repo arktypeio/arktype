@@ -1,7 +1,6 @@
 import {
 	ArkErrors,
 	BaseRoot,
-	GenericRoot,
 	type BaseMeta,
 	type ConstraintKind,
 	type Disjoint,
@@ -26,6 +25,7 @@ import {
 	type distillIn,
 	type distillOut,
 	type exclusivizeRangeSchema,
+	type genericParamNames,
 	type indexInto,
 	type indexOf,
 	type inferIntersection,
@@ -88,7 +88,7 @@ export interface TypeParser<$ = {}> {
 			def,
 			$,
 			{
-				[param in parseGenericParams<params>[number]]: unknown
+				[name in parseGenericParams<params>[number][0]]: unknown
 			}
 		>
 	): Generic<parseGenericParams<params>, def, $>
@@ -118,12 +118,7 @@ export class RawTypeParser extends Callable<
 					// treat as a generic
 					const params = parseGenericParams(args[0].slice(1, -1))
 					const def = args[1]
-					return new GenericRoot(
-						params,
-						def,
-						$ as never,
-						$ as never
-					).validateBaseInstantiation() as never
+					return $.generic(params, def) as never
 				}
 				// otherwise, treat as a tuple expression. technically, this also allows
 				// non-expression tuple definitions to be parsed, but it's not a supported

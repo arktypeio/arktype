@@ -1,8 +1,7 @@
 import type {
 	GenericNodeSignature,
 	GenericParamAst,
-	GenericRoot,
-	namesOf
+	GenericRoot
 } from "@arktype/schema"
 import type { array, Callable, conform } from "@arktype/util"
 import type { inferDefinition } from "./parser/definition.js"
@@ -28,10 +27,7 @@ export type GenericTypeInstantiation<
 			[i in keyof params]: validateTypeRoot<args[i & keyof args], $>
 		}
 	>
-) => Type<
-	inferDefinition<def, $, bindGenericInstantiation<namesOf<params>, $, args>>,
-	$
->
+) => Type<inferDefinition<def, $, bindGenericInstantiation<params, $, args>>, $>
 
 export type GenericInstantiation<
 	params extends array<GenericParamAst> = array<GenericParamAst>,
@@ -41,8 +37,12 @@ export type GenericInstantiation<
 	GenericNodeSignature<params, def, $>
 
 // TODO: Fix external reference (i.e. if this is attached to a scope, then args are defined using it)
-type bindGenericInstantiation<params extends array<string>, $, args> = {
-	[i in keyof params & `${number}` as params[i]]: inferTypeRoot<
+type bindGenericInstantiation<
+	params extends array<GenericParamAst>,
+	$,
+	args
+> = {
+	[i in keyof params & `${number}` as params[i][0]]: inferTypeRoot<
 		args[i & keyof args],
 		$
 	>
@@ -51,7 +51,7 @@ type bindGenericInstantiation<params extends array<string>, $, args> = {
 // TODO: should be Scope<$>, but breaks inference
 export interface Generic<
 	params extends array<GenericParamAst> = array<GenericParamAst>,
-	def = unknown,
+	bodyDef = unknown,
 	$ = any
-> extends Callable<GenericInstantiation<params, def, $>>,
-		GenericRoot<params, def, $> {}
+> extends Callable<GenericInstantiation<params, bodyDef, $>>,
+		GenericRoot<params, bodyDef, $> {}

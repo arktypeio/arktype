@@ -1,10 +1,12 @@
 import {
-	GenericRoot,
 	RawRootScope,
 	hasArkKind,
+	parseGeneric,
 	type ArkConfig,
 	type BaseRoot,
 	type GenericArgResolutions,
+	type GenericParamAst,
+	type GenericParamDef,
 	type GenericProps,
 	type PreparsedNodeResolution,
 	type PrivateDeclaration,
@@ -23,7 +25,9 @@ import {
 	isThunk,
 	throwParseError,
 	type Dict,
+	type ErrorMessage,
 	type anyOrNever,
+	type array,
 	type keyError,
 	type nominal,
 	type show
@@ -76,19 +80,23 @@ export type validateScope<def> = {
 		: k extends PrivateDeclaration<infer name extends keyof def & string> ?
 			keyError<writeDuplicateAliasError<name>>
 		:	validateDefinition<def[k], bootstrapAliases<def>, {}>
-	: parseScopeKey<k>["params"] extends GenericParamsParseError ?
-		// use the full nominal type here to avoid an overlap between the
-		// error message and a possible value for the property
-		parseScopeKey<k>["params"][0]
-	:	validateDefinition<
-			def[k],
-			bootstrapAliases<def>,
-			{
-				// once we support constraints on generic parameters, we'd use
-				// the base type here: https://github.com/arktypeio/arktype/issues/796
-				[param in parseScopeKey<k>["params"][number]]: unknown
-			}
-		>
+	: parseScopeKey<k>["params"] extends infer params ?
+		params extends array<GenericParamAst> ?
+			validateDefinition<
+				def[k],
+				bootstrapAliases<def>,
+				{
+					// once we support constraints on generic parameters, we'd use
+					// the base type here: https://github.com/arktypeio/arktype/issues/796
+					[param in params[number][0]]: unknown
+				}
+			>
+		: params extends GenericParamsParseError ?
+			// use the full nominal type here to avoid an overlap between the
+			// error message and a possible value for the property
+			params[0]
+		:	ErrorMessage<`Unexpected generic parameter parse result for ${k & string}`>
+	:	never
 }
 
 export type inferScope<def> = inferBootstrapped<bootstrapAliases<def>>
@@ -206,12 +214,7 @@ export class RawScope<
 			const parsedKey = parseScopeKey(k)
 			aliases[parsedKey.name] =
 				parsedKey.params.length ?
-					new GenericRoot(
-						parsedKey.params,
-						def[k],
-						() => this as never,
-						() => this as never
-					)
+					parseGeneric(parsedKey.params, def[k], () => this as never)
 				:	def[k]
 		}
 		super(aliases, config)
@@ -302,7 +305,7 @@ export const writeShallowCycleErrorMessage = (
 
 export type ParsedScopeKey = {
 	name: string
-	params: string[]
+	params: array<GenericParamDef>
 }
 
 export const parseScopeKey = (k: string): ParsedScopeKey => {

@@ -1,4 +1,4 @@
-import type { BaseRoot } from "@arktype/schema"
+import type { BaseRoot, GenericProps, GenericRoot } from "@arktype/schema"
 import type { array, ErrorMessage, join } from "@arktype/util"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import { writeUnclosedGroupMessage } from "../../reduce/shared.js"
@@ -7,40 +7,39 @@ import type { parseUntilFinalizer } from "../../string.js"
 
 export const parseGenericArgs = (
 	name: string,
-	params: array<string>,
+	g: GenericRoot,
 	s: DynamicState
-): BaseRoot[] => _parseGenericArgs(name, params, s, [])
+): BaseRoot[] => _parseGenericArgs(name, g, s, [])
 
 export type parseGenericArgs<
 	name extends string,
-	params extends array<string>,
+	g extends GenericProps,
 	unscanned extends string,
 	$,
 	args
-> = _parseGenericArgs<name, params, unscanned, $, args, [], []>
+> = _parseGenericArgs<name, g, unscanned, $, args, [], []>
 
 const _parseGenericArgs = (
 	name: string,
-	params: array<string>,
+	g: GenericRoot,
 	s: DynamicState,
 	argNodes: BaseRoot[]
 ): BaseRoot[] => {
 	const argState = s.parseUntilFinalizer()
 	argNodes.push(argState.root)
 	if (argState.finalizer === ">") {
-		if (argNodes.length !== params.length) {
+		if (argNodes.length !== g.params.length) {
 			return s.error(
 				writeInvalidGenericArgsMessage(
 					name,
-					params,
+					g.names,
 					argNodes.map(arg => arg.expression)
 				)
 			)
 		}
 		return argNodes
 	}
-	if (argState.finalizer === ",")
-		return _parseGenericArgs(name, params, s, argNodes)
+	if (argState.finalizer === ",") return _parseGenericArgs(name, g, s, argNodes)
 
 	return argState.error(writeUnclosedGroupMessage(">"))
 }
@@ -55,7 +54,7 @@ export type ParsedArgs<
 
 type _parseGenericArgs<
 	name extends string,
-	params extends array<string>,
+	g extends GenericProps,
 	unscanned extends string,
 	$,
 	args,
@@ -81,19 +80,11 @@ type _parseGenericArgs<
 			}
 		) ?
 			finalArgState["finalizer"] extends ">" ?
-				nextAsts["length"] extends params["length"] ?
+				nextAsts["length"] extends g["params"]["length"] ?
 					ParsedArgs<nextAsts, nextUnscanned>
-				:	state.error<writeInvalidGenericArgsMessage<name, params, nextDefs>>
+				:	state.error<writeInvalidGenericArgsMessage<name, g["names"], nextDefs>>
 			: finalArgState["finalizer"] extends "," ?
-				_parseGenericArgs<
-					name,
-					params,
-					nextUnscanned,
-					$,
-					args,
-					nextDefs,
-					nextAsts
-				>
+				_parseGenericArgs<name, g, nextUnscanned, $, args, nextDefs, nextAsts>
 			: finalArgState["finalizer"] extends ErrorMessage ? finalArgState
 			: state.error<writeUnclosedGroupMessage<">">>
 		:	never

@@ -9,7 +9,7 @@ import {
 } from "@arktype/util"
 import type { inferRoot } from "./inference.js"
 import type { RootSchema } from "./kinds.js"
-import type { BaseRoot, Root } from "./roots/root.js"
+import type { BaseRoot, Root, UnknownRoot } from "./roots/root.js"
 import type { RawRootScope, RootScope } from "./scope.js"
 import { arkKind } from "./shared/utils.js"
 
@@ -18,22 +18,35 @@ export type GenericParamAst<
 	constraint = unknown
 > = readonly [name: name, constraint: constraint]
 
-export type GenericParamSchema = string | ConstrainedGenericParamSchema
+export type GenericParamDef<name extends string = string> =
+	| name
+	| ConstrainedGenericParamDef
 
-export type ConstrainedGenericParamSchema = GenericParamAst<string, RootSchema>
+export type ConstrainedGenericParamDef<name extends string = string> =
+	GenericParamAst<name>
 
-type genericParamSchemaToAst<schema extends GenericParamSchema, $> =
+export const parseGeneric = (
+	paramDefs: array<GenericParamDef>,
+	bodyDef: unknown,
+	$: thunkable<RootScope>
+): GenericRoot => new GenericRoot(paramDefs, bodyDef, $, $)
+
+type genericParamSchemaToAst<schema extends GenericParamDef, $> =
 	schema extends string ? GenericParamAst<schema>
-	: schema extends ConstrainedGenericParamSchema ?
+	: schema extends ConstrainedGenericParamDef ?
 		GenericParamAst<schema[0], inferRoot<schema[1], $>>
 	:	never
 
 export type genericParamSchemasToAst<
-	schemas extends array<GenericParamSchema>,
+	schemas extends array<GenericParamDef>,
 	$
 > = { [i in keyof schemas]: genericParamSchemaToAst<schemas[i], $> }
 
-export type namesOf<params extends array<GenericParamAst>> = {
+export type genericParamAstToDefs<asts extends array<GenericParamAst>> = {
+	[i in keyof asts]: GenericParamDef<asts[i][0]>
+}
+
+export type genericParamNames<params extends array<GenericParamAst>> = {
 	[i in keyof params]: params[i][0]
 }
 
@@ -41,7 +54,7 @@ type instantiateParams<params extends array<GenericParamAst>> = {
 	[i in keyof params]: params[i] extends (
 		GenericParamAst<infer name, infer constraint>
 	) ?
-		GenericParamAst<name, Root<constraint>>
+		GenericParam<name, constraint>
 	:	never
 }
 
@@ -55,6 +68,11 @@ export type GenericNodeSignature<
 
 type instantiateConstraintsOf<params extends array<GenericParamAst>> = {
 	[i in keyof params]: Root<params[i][1]>
+}
+
+export type GenericParam<name extends string = string, constraint = unknown> = {
+	name: name
+	constraint: UnknownRoot<constraint>
 }
 
 export type bindGenericNodeInstantiation<
@@ -71,14 +89,14 @@ export type bindGenericNodeInstantiation<
 // Comparing to Generic directly doesn't work well, so we compare to only its props
 export interface GenericProps<
 	params extends array<GenericParamAst> = array<GenericParamAst>,
-	def = any,
+	bodyDef = any,
 	$ = any
 > {
 	[arkKind]: "generic"
-	params: params
-	names: namesOf<params>
+	params: instantiateParams<params>
+	names: genericParamNames<params>
 	constraints: instantiateConstraintsOf<params>
-	def: def
+	bodyDef: bodyDef
 	$: RootScope<$>
 }
 
@@ -96,17 +114,17 @@ export class LazyGenericRoot<
 
 export class GenericRoot<
 		params extends array<GenericParamAst> = array<GenericParamAst>,
-		def = any,
+		bodyDef = any,
 		$ = any
 	>
-	extends Callable<GenericNodeSignature<params, def, $>>
+	extends Callable<GenericNodeSignature<params, bodyDef, $>>
 	implements GenericProps
 {
 	readonly [arkKind] = "generic"
 
 	constructor(
-		public params: instantiateParams<params>,
-		public def: def,
+		public paramDefs: genericParamAstToDefs<params>,
+		public bodyDef: bodyDef,
 		private _$: thunkable<RootScope<$>>,
 		private _arg$: thunkable<RootScope<$>>
 	) {
@@ -117,10 +135,10 @@ export class GenericRoot<
 				return [name, arg]
 			}) as GenericArgResolutions
 
-			if (def instanceof LazyGenericRoot)
-				return this.$.parseRoot(def(argNodes)) as never
+			if (bodyDef instanceof LazyGenericRoot)
+				return this.$.parseRoot(bodyDef(argNodes)) as never
 
-			return this.$.parseRoot(def as never, { args: argNodes }) as never
+			return this.$.parseRoot(bodyDef as never, { args: argNodes }) as never
 		})
 	}
 
@@ -134,17 +152,32 @@ export class GenericRoot<
 
 	bindScope($: RawRootScope): this {
 		if (this.arg$ === ($ as never)) return this
-		return new GenericRoot(this.params, this.def, this.$, $ as never) as never
+		return new GenericRoot(
+			this.params as never,
+			this.bodyDef,
+			this.$,
+			$ as never
+		) as never
 	}
 
 	@cached
-	get names(): namesOf<params> {
-		return this.params.map(e => e[0]) as never
+	get params(): instantiateParams<params> {
+		return this.paramDefs.map(
+			(param): GenericParam =>
+				typeof param === "string" ?
+					{ name: param, constraint: $ark.intrinsic.unknown }
+				:	{ name: param[0], constraint: this.$.parseRoot(param[1]) }
+		) as never
+	}
+
+	@cached
+	get names(): genericParamNames<params> {
+		return this.params.map(e => e.name) as never
 	}
 
 	@cached
 	get constraints(): instantiateConstraintsOf<params> {
-		return this.params.map(e => e[1]) as never
+		return this.params.map(e => e.constraint) as never
 	}
 
 	@cached
