@@ -11,9 +11,8 @@ import { writeInvalidGenericArgsMessage } from "../parser/string/shift/operand/g
 import { writeInvalidDivisorMessage } from "../parser/string/shift/operator/divisor.js"
 import { writeUnexpectedCharacterMessage } from "../parser/string/shift/operator/operator.js"
 
-contextualize(
-	"standalone",
-	() => {
+contextualize(() => {
+	describe("standalone", () => {
 		it("unary", () => {
 			const boxOf = type("<t>", { box: "t" })
 
@@ -122,9 +121,9 @@ contextualize(
 				"Expected 2 arguments, but got 3"
 			)
 		})
-	},
-	"scoped",
-	() => {
+	})
+
+	describe("scoped", () => {
 		const $ = scope({
 			"box<t,u>": {
 				box: "t|u"
@@ -318,5 +317,5 @@ contextualize(
 				$.type("box<1,string%2>")
 			).throwsAndHasTypeError(writeIndivisibleMessage(keywordNodes.string))
 		})
-	}
-)
+	})
+})

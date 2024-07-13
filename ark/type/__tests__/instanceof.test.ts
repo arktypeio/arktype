@@ -3,9 +3,8 @@ import { internalSchema } from "@arktype/schema"
 import { type, type Type } from "arktype"
 import { writeInvalidConstructorMessage } from "../parser/tuple.js"
 
-contextualize(
-	"tuple expression",
-	() => {
+contextualize(() => {
+	describe("tuple expression", () => {
 		it("base", () => {
 			const t = type(["instanceof", Error])
 			attest<Error>(t.infer)
@@ -86,9 +85,9 @@ contextualize(
 			attest(ark.infer).type.toString("ArkClass")
 			attest(ark.in.infer).type.toString("ArkClass")
 		})
-	},
-	"root expression",
-	() => {
+	})
+
+	describe("root expression", () => {
 		it("class", () => {
 			const t = type("instanceof", Error)
 			attest<Error>(t.infer)
@@ -105,5 +104,5 @@ contextualize(
 				writeInvalidConstructorMessage("Error")
 			)
 		})
-	}
-)
+	})
+})

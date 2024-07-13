@@ -17,9 +17,8 @@ import {
 import { writeInvalidLimitMessage } from "../parser/string/shift/operator/bounds.js"
 import { shallowDefaultMessage } from "../parser/string/shift/operator/default.js"
 
-contextualize(
-	"string expressions",
-	() => {
+contextualize(() => {
+	describe("string expressions", () => {
 		it(">", () => {
 			const t = type("number>0")
 			attest<number>(t.infer)
@@ -273,9 +272,9 @@ contextualize(
 				writeInvalidLimitMessage(">", "d'2001/01/01'", "left")
 			)
 		})
-	},
-	"constrain",
-	() => {
+	})
+
+	describe("constrain", () => {
 		it("min", () => {
 			const t = type("number").constrain("min", 5)
 			const expected = type("number>=5")
@@ -328,9 +327,9 @@ contextualize(
 			attest<typeof expected>(t)
 			attest(t.json).equals(expected.json)
 		})
-	},
-	"chained",
-	() => {
+	})
+
+	describe("chained", () => {
 		it("atLeast", () => {
 			const t = type("number").atLeast(5)
 			const expected = type("number>=5")
@@ -483,5 +482,5 @@ contextualize(
 				)
 			)
 		})
-	}
-)
+	})
+})

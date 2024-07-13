@@ -12,9 +12,8 @@ import {
 } from "../parser/objectLiteral.js"
 import { writeUnexpectedCharacterMessage } from "../parser/string/shift/operator/operator.js"
 
-contextualize(
-	"named",
-	() => {
+contextualize(() => {
+	describe("named", () => {
 		it("empty", () => {
 			const o = type({})
 			attest(o.json).equals(type("object").json)
@@ -121,9 +120,9 @@ contextualize(
 		// 		optional: [{ key: name, value: "number" }]
 		// 	})
 		// })
-	},
-	"spread syntax",
-	() => {
+	})
+
+	describe("spread syntax", () => {
 		it("within scope", () => {
 			const s = scope({
 				user: { isAdmin: "false", name: "string" },
@@ -217,9 +216,9 @@ contextualize(
 				]
 			})
 		})
-	},
-	"index",
-	() => {
+	})
+
+	describe("index", () => {
 		it("string index", () => {
 			const o = type({ "[string]": "string" })
 			attest<{ [x: string]: string }>(o.infer)
@@ -473,9 +472,9 @@ other must be a string (was bigint)`)
 				"{ normal: string >0, optional?: string >0 }"
 			)
 		})
-	},
-	"undeclared",
-	() => {
+	})
+
+	describe("undeclared", () => {
 		it("can parse an undeclared restriction", () => {
 			const t = type({ "+": "reject" })
 			attest<{}>(t.infer)
@@ -497,5 +496,5 @@ other must be a string (was bigint)`)
 				domain: "object"
 			})
 		})
-	}
-)
+	})
+})

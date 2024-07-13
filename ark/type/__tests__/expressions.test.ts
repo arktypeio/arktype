@@ -3,9 +3,8 @@ import { internalSchema, writeUnresolvableMessage } from "@arktype/schema"
 import { type } from "arktype"
 import { writeMissingRightOperandMessage } from "../parser/string/shift/operand/unenclosed.js"
 
-contextualize(
-	"tuple expressions",
-	() => {
+contextualize(() => {
+	describe("tuple expressions", () => {
 		it("nested", () => {
 			const t = type(["string|bigint", "|", ["number", "|", "boolean"]])
 			attest<string | number | bigint | boolean>(t.infer)
@@ -147,9 +146,9 @@ contextualize(
 				type([{ s: "strng" }, "|", "number"])
 			}).throwsAndHasTypeError(writeUnresolvableMessage("strng"))
 		})
-	},
-	"root expression",
-	() => {
+	})
+
+	describe("root expression", () => {
 		it("=== single", () => {
 			const t = type("===", 5)
 			attest<5>(t.infer)
@@ -218,5 +217,5 @@ contextualize(
 			attest<typeof expected.infer>(t.infer)
 			attest(t.json).equals(expected.json)
 		})
-	}
-)
+	})
+})

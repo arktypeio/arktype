@@ -2,9 +2,8 @@ import { attest, contextualize } from "@arktype/attest"
 import { internalSchema } from "@arktype/schema"
 import { ark, type } from "arktype"
 
-contextualize(
-	"jsObjects",
-	() => {
+contextualize(() => {
+	describe("jsObjects", () => {
 		it("Function", () => {
 			// should not be treated as a morph
 			attest<Function>(type("Function").infer)
@@ -14,9 +13,9 @@ contextualize(
 			// should not expand built-in classes
 			attest(type("Date").infer).type.toString.snap("Date")
 		})
-	},
-	"tsKeywords",
-	() => {
+	})
+
+	describe("tsKeywords", () => {
 		it("string strings", () => {
 			/**
 			 * 	In honor of @ark-expect-beta aka log(n):
@@ -80,9 +79,9 @@ contextualize(
 			//should be treated as undefined at runtime
 			attest(t.json).equals(expected.json)
 		})
-	},
-	"validation",
-	() => {
+	})
+
+	describe("validation", () => {
 		it("integer", () => {
 			const integer = type("integer")
 			attest(integer(123)).equals(123)
@@ -182,9 +181,9 @@ contextualize(
 				'must be a valid IPv4 address or a valid IPv6 address (was "2001:0db8:85a3:0000:0000:8a2e:0370:733g")'
 			)
 		})
-	},
-	"parse",
-	() => {
+	})
+
+	describe("parse", () => {
 		it("json", () => {
 			const parseJson = type("parse.json")
 			attest(parseJson('{"a": "hello"}')).snap({ a: "hello" })
@@ -225,9 +224,9 @@ contextualize(
 			)
 			attest(parseDate(5).toString()).snap("must be a string (was number)")
 		})
-	},
-	"format",
-	() => {
+	})
+
+	describe("format", () => {
 		it("trim", () => {
 			const trim = type("format.trim")
 			attest(trim("  foo  ")).equals("foo")
@@ -243,9 +242,9 @@ contextualize(
 			attest(uppercase("foo")).equals("FOO")
 			attest(uppercase(5).toString()).snap("must be a string (was number)")
 		})
-	},
-	"generics",
-	() => {
+	})
+
+	describe("generics", () => {
 		it("record", () => {
 			const expected = type({ "[string]": "number" })
 
@@ -253,5 +252,5 @@ contextualize(
 			attest(expression.json).equals(expected.json)
 			attest<typeof expected.t>(expression.t)
 		})
-	}
-)
+	})
+})

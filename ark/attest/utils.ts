@@ -10,69 +10,30 @@ export const chainableNoOpProxy: any = new Proxy(() => chainableNoOpProxy, {
 	get: () => chainableNoOpProxy
 })
 
+export type ContextualTests<ctx = unknown> = (
+	it: (name: string, test: (ctx: ctx) => void) => void
+) => void
+
 export type ContextualizeBlock = {
-	(tests: () => void): void
-	(nameA: string, testsA: () => void): void
-	(nameA: string, testsA: () => void, nameB: string, testsB: () => void): void
-	(
-		nameA: string,
-		testsA: () => void,
-		nameB: string,
-		testsB: () => void,
-		nameC: string,
-		testsC: () => void
-	): void
-	(
-		nameA: string,
-		testsA: () => void,
-		nameB: string,
-		testsB: () => void,
-		nameC: string,
-		testsC: () => void,
-		nameD: string,
-		testsD: () => void
-	): void
-	(
-		nameA: string,
-		testsA: () => void,
-		nameB: string,
-		testsB: () => void,
-		nameC: string,
-		testsC: () => void,
-		nameD: string,
-		testsD: () => void,
-		nameE: string,
-		testsE: () => void
-	): void
-	(
-		nameA: string,
-		testsA: () => void,
-		nameB: string,
-		testsB: () => void,
-		nameC: string,
-		testsC: () => void,
-		nameD: string,
-		testsD: () => void,
-		nameE: string,
-		testsE: () => void,
-		nameF: string,
-		testsF: () => void
-	): void
+	// if this unused ctx type is removed, TS can no longer infer the overloads
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	<ctx>(tests: () => void, createCtx?: never): void
+	<ctx>(createCtx: () => ctx, tests: ContextualTests<ctx>): void
 }
 
-export const contextualize: ContextualizeBlock = (...args: any[]) => {
+export const contextualize: ContextualizeBlock = (first, contextualTests) => {
 	const describe = globalThis.describe
 	if (!describe) {
 		throw new Error(
 			`contextualize cannot be used without a global 'describe' function.`
 		)
 	}
-
 	const fileName = basename(caller().file)
-	if (typeof args[0] === "function") describe(fileName, args[0])
-	else {
-		describe(fileName, () => {
-			for (let i = 0; i < args.length; i = i + 2) describe(args[i], args[i + 1])
-		})
-	}
+	if (contextualTests) {
+		describe(fileName, () =>
+			contextualTests((name, test) => {
+				it(name, () => test(first() as never))
+			})
+		)
+	} else describe(fileName, first)
 }

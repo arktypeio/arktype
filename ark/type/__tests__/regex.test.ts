@@ -2,9 +2,8 @@ import { attest, contextualize } from "@arktype/attest"
 import { keywordNodes, writeInvalidOperandMessage } from "@arktype/schema"
 import { type } from "arktype"
 
-contextualize(
-	"intersection",
-	() => {
+contextualize(() => {
+	describe("intersection", () => {
 		it("distinct strings", () => {
 			const t = type("/a/&/b/")
 			attest<string>(t.infer)
@@ -44,9 +43,9 @@ contextualize(
 			const t = type(["/a/&/b/", "&", "/b/&/a/"])
 			attest(t.json).equals(type("/a/&/b/").json)
 		})
-	},
-	"instance",
-	() => {
+	})
+
+	describe("instance", () => {
 		it("flagless", () => {
 			const t = type(/.*/)
 			attest<string>(t.infer)
@@ -65,9 +64,9 @@ contextualize(
 			const b = type(new RegExp("a", "ig"))
 			attest(a.json).equals(b.json)
 		})
-	},
-	"chained",
-	() => {
+	})
+
+	describe("chained", () => {
 		it("matching", () => {
 			const t = type("string").matching("foo")
 			const expected = type("/foo/")
@@ -85,5 +84,5 @@ contextualize(
 				)
 			)
 		})
-	}
-)
+	})
+})

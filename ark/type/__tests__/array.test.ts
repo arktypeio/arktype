@@ -7,9 +7,8 @@ import {
 	writeNonArraySpreadMessage
 } from "../parser/tuple.js"
 
-contextualize(
-	"non-tuple",
-	() => {
+contextualize(() => {
+	describe("non-tuple", () => {
 		it("allows and apply", () => {
 			const t = type("string[]")
 			attest<string[]>(t.infer)
@@ -72,9 +71,9 @@ contextualize(
 				incompleteArrayTokenMessage
 			)
 		})
-	},
-	"non-variadic tuple",
-	() => {
+	})
+
+	describe("non-variadic tuple", () => {
 		it("shallow", () => {
 			const t = type(["string", "number"])
 			attest<[string, number]>(t.infer)
@@ -151,9 +150,9 @@ value at [1] must be a number (was false)`)
 			const t = type([["string", "?"], "string", "?"])
 			attest<[[string?], string?]>(t.infer)
 		})
-	},
-	"variadic tuple",
-	() => {
+	})
+
+	describe("variadic tuple", () => {
 		it("spreads simple arrays", () => {
 			const wellRested = type(["string", "...", "number[]"])
 			attest<[string, ...number[]]>(wellRested.infer)
@@ -233,9 +232,9 @@ value at [1] must be a number (was false)`)
 				])
 			).throwsAndHasTypeError(multipleVariadicMesage)
 		})
-	},
-	"intersection",
-	() => {
+	})
+
+	describe("intersection", () => {
 		it("shallow array intersection", () => {
 			const t = type("string[]&'foo'[]")
 			const expected = type("'foo'[]")
@@ -380,5 +379,5 @@ value at [1] must be a number (was false)`)
 				.snap(`value at [0] must be a string (was number)
 value at [1] must be a string (was number)`)
 		})
-	}
-)
+	})
+})
