@@ -3,6 +3,7 @@ import {
 	cached,
 	flatMorph,
 	isThunk,
+	throwParseError,
 	type array,
 	type thunkable
 } from "@arktype/util"
@@ -12,29 +13,46 @@ import type { BaseRoot, Root } from "./roots/root.js"
 import type { RawRootScope, RootScope } from "./scope.js"
 import { arkKind } from "./shared/utils.js"
 
-export type GenericConstraintsTypes<
-	params extends array<string> = array<string>
-> = [...{ [i in keyof params]: unknown }]
+export type GenericParam<name extends string = string, constraint = unknown> =
+	| name
+	| ConstrainedGenericParam<name, constraint>
 
-export type GenericNodeSignature<
-	params extends array<string>,
-	constraints extends GenericConstraintsTypes<params>,
-	def,
-	$
-> = <args extends instantiateGenericConstraintTypes<constraints>>(
+export type ConstrainedGenericParam<
+	name extends string = string,
+	constraint = unknown
+> = readonly [name: name, constraint: constraint]
+
+type schemaForParams<params extends array<GenericParam>> = {
+	[i in keyof params]: params[i] extends string ? params[i]
+	:	readonly [nameOf<params[i]>, constraintOf<params[i]>]
+}
+
+export type namesOf<params extends array<GenericParam>> = {
+	[i in keyof params]: nameOf<params[i]>
+}
+
+type nameOf<param extends GenericParam> =
+	param extends GenericParam<infer name> ? name : never
+
+type constraintOf<param extends GenericParam> =
+	param extends GenericParam<string, infer constraint> ? constraint : never
+
+export type GenericNodeSignature<params extends array<GenericParam>, def, $> = <
+	args extends instantiateConstraints<params>
+>(
 	...args: args
 ) => Root<inferRoot<def, $ & bindGenericNodeInstantiation<params, $, args>>>
 
-type instantiateGenericConstraintTypes<
-	constraints extends GenericConstraintsTypes
-> = { [i in keyof constraints]: Root<constraints[i]> }
+type instantiateConstraints<params extends array<GenericParam>> = {
+	[i in keyof params]: Root<constraintOf<params[i]>>
+}
 
 export type bindGenericNodeInstantiation<
-	params extends array<string>,
+	params extends array<GenericParam>,
 	$,
 	args
 > = {
-	[i in keyof params & `${number}` as params[i]]: inferRoot<
+	[i in keyof params & `${number}` as nameOf<params[i]>]: inferRoot<
 		args[i & keyof args],
 		$
 	>
@@ -42,33 +60,30 @@ export type bindGenericNodeInstantiation<
 
 // Comparing to Generic directly doesn't work well, so we compare to only its props
 export interface GenericProps<
-	params extends array<string> = array<string>,
-	constraints extends
-		GenericConstraintsTypes<params> = GenericConstraintsTypes<params>,
+	params extends array<GenericParam> = array<GenericParam>,
 	def = any,
 	$ = any
 > {
 	[arkKind]: "generic"
 	params: params
-	constraints: instantiateGenericConstraintTypes<constraints>
 	def: def
 	$: RootScope<$>
 }
 
 export type GenericArgResolutions<
-	params extends array<string> = array<string>
-> = Record<params[number], BaseRoot>
+	params extends array<GenericParam> = array<GenericParam>
+> = Record<nameOf<params[number]>, BaseRoot>
 
-export type LazyGenericDef<params extends array<string> = array<string>> = (
-	args: GenericArgResolutions<params>
-) => RootSchema
+export type LazyGenericDef<
+	params extends array<GenericParam> = array<GenericParam>
+> = (args: GenericArgResolutions<params>) => RootSchema
 
 export class LazyGenericRoot<
-	params extends array<string> = array<string>
+	params extends array<GenericParam> = array<GenericParam>
 > extends Callable<LazyGenericDef<params>> {}
 
 export class GenericRoot<
-		params extends array<string> = array<string>,
+		params extends array<GenericParam> = array<GenericParam>,
 		def = any,
 		$ = any
 	>
@@ -78,16 +93,17 @@ export class GenericRoot<
 	readonly [arkKind] = "generic"
 
 	constructor(
-		public params: params,
+		public params: schemaForParams<params>,
 		public def: def,
 		private _$: thunkable<RootScope<$>>,
 		private _arg$: thunkable<RootScope<$>>
 	) {
-		super((...args: RootSchema[]) => {
-			const argNodes: GenericArgResolutions = flatMorph(params, (i, param) => [
-				param,
-				this.arg$.parseRoot(args[i])
-			]) as never
+		super((...args: any[]) => {
+			const argNodes = flatMorph(this.names, (i, name) => {
+				const arg = this.arg$.parseRoot(args[i])
+				if (!arg.extends(this.constraints[i])) throwParseError("FAIL")
+				return [name, arg]
+			}) as GenericArgResolutions
 
 			if (def instanceof LazyGenericRoot)
 				return this.$.parseRoot(def(argNodes)) as never
@@ -110,18 +126,29 @@ export class GenericRoot<
 	}
 
 	@cached
-	get baseConstraints(): array<RootSchema> {
-		return this.params.map(_ => $ark.intrinsic.unknown)
+	get names(): { [i in keyof params]: nameOf<params[i]> } {
+		return this.params.map(param =>
+			typeof param === "string" ? param : param[0]
+		) as never
+	}
+
+	@cached
+	get constraints(): instantiateConstraints<params> {
+		return this.params.map(param =>
+			typeof param === "string" ?
+				$ark.intrinsic.unknown
+			:	this.$.parseRoot(param[1])
+		) as never
 	}
 
 	@cached
 	get baseInstantiation(): Root {
-		return this(...(this.baseConstraints as never))
+		return this(...(this.constraints as never))
 	}
 
 	validateBaseInstantiation(): this {
 		this.baseInstantiation
-		return this as never
+		return this
 	}
 
 	get internal(): this {
