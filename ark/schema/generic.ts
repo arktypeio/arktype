@@ -4,8 +4,6 @@ import {
 	flatMorph,
 	isThunk,
 	type array,
-	type conform,
-	type repeat,
 	type thunkable
 } from "@arktype/util"
 import type { inferRoot } from "./inference.js"
@@ -14,13 +12,22 @@ import type { BaseRoot, Root } from "./roots/root.js"
 import type { RawRootScope, RootScope } from "./scope.js"
 import { arkKind } from "./shared/utils.js"
 
+export type GenericConstraintsTypes<
+	params extends array<string> = array<string>
+> = [...{ [i in keyof params]: unknown }]
+
 export type GenericNodeSignature<
-	params extends array<string> = array<string>,
-	def = unknown,
-	$ = any
-> = <args>(
-	...args: conform<args, repeat<[RootSchema], params["length"]>>
+	params extends array<string>,
+	constraints extends GenericConstraintsTypes<params>,
+	def,
+	$
+> = <args extends instantiateGenericConstraintTypes<constraints>>(
+	...args: args
 ) => Root<inferRoot<def, $ & bindGenericNodeInstantiation<params, $, args>>>
+
+type instantiateGenericConstraintTypes<
+	constraints extends GenericConstraintsTypes
+> = { [i in keyof constraints]: Root<constraints[i]> }
 
 export type bindGenericNodeInstantiation<
 	params extends array<string>,
@@ -36,11 +43,14 @@ export type bindGenericNodeInstantiation<
 // Comparing to Generic directly doesn't work well, so we compare to only its props
 export interface GenericProps<
 	params extends array<string> = array<string>,
+	constraints extends
+		GenericConstraintsTypes<params> = GenericConstraintsTypes<params>,
 	def = any,
 	$ = any
 > {
 	[arkKind]: "generic"
 	params: params
+	constraints: instantiateGenericConstraintTypes<constraints>
 	def: def
 	$: RootScope<$>
 }
