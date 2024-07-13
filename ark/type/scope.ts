@@ -25,14 +25,18 @@ import {
 	isThunk,
 	throwParseError,
 	type Dict,
-	type ErrorMessage,
 	type anyOrNever,
 	type array,
 	type keyError,
 	type nominal,
 	type show
 } from "@arktype/util"
-import type { Generic } from "./generic.js"
+import {
+	parseGenericParams,
+	type Generic,
+	type GenericDeclaration,
+	type parseValidGenericParams
+} from "./generic.js"
 import { createMatchParser, type MatchParser } from "./match.js"
 import type { Module } from "./module.js"
 import {
@@ -41,11 +45,6 @@ import {
 	type inferDefinition,
 	type validateDefinition
 } from "./parser/definition.js"
-import {
-	parseGenericParams,
-	type GenericDeclaration,
-	type GenericParamsParseError
-} from "./parser/generic.js"
 import { DynamicState } from "./parser/string/reduce/dynamic.js"
 import type { ParsedDefault } from "./parser/string/shift/operator/default.js"
 import { writeUnexpectedCharacterMessage } from "./parser/string/shift/operator/operator.js"
@@ -72,30 +71,27 @@ export type validateScope<def> = {
 		// this should only occur when importing/exporting modules, and those
 		// keys should be ignored
 		unknown
-	: parseScopeKey<k>["params"] extends [] ?
-		// not including Type here directly breaks some cyclic tests (last checked w/ TS 5.5).
-		// if you are from the future with a better version of TS and can remove it
-		// without breaking `pnpm typecheck`, go for it.
-		def[k] extends Type | PreparsedResolution ? def[k]
-		: k extends PrivateDeclaration<infer name extends keyof def & string> ?
-			keyError<writeDuplicateAliasError<name>>
-		:	validateDefinition<def[k], bootstrapAliases<def>, {}>
-	: parseScopeKey<k>["params"] extends infer params ?
-		params extends array<GenericParamAst> ?
+	: parseScopeKey<k> extends infer parsedKey extends ParsedScopeKey ?
+		parsedKey["params"]["length"] extends 0 ?
+			// not including Type here directly breaks some cyclic tests (last checked w/ TS 5.5).
+			// if you are from the future with a better version of TS and can remove it
+			// without breaking `pnpm typecheck`, go for it.
+			def[k] extends Type | PreparsedResolution ? def[k]
+			: k extends PrivateDeclaration<infer name extends keyof def & string> ?
+				keyError<writeDuplicateAliasError<name>>
+			:	validateDefinition<def[k], bootstrapAliases<def>, {}>
+		: parsedKey["params"] extends array<GenericParamAst> ?
 			validateDefinition<
 				def[k],
 				bootstrapAliases<def>,
 				{
 					// once we support constraints on generic parameters, we'd use
 					// the base type here: https://github.com/arktypeio/arktype/issues/796
-					[param in params[number][0]]: unknown
+					[param in parsedKey["params"][number][0]]: unknown
 				}
 			>
-		: params extends GenericParamsParseError ?
-			// use the full nominal type here to avoid an overlap between the
-			// error message and a possible value for the property
-			params[0]
-		:	ErrorMessage<`Unexpected generic parameter parse result for ${k & string}`>
+		:	// if we get here, the params failed to parse- return the error
+			parsedKey["params"]
 	:	never
 }
 
@@ -123,7 +119,7 @@ type bootstrapAliases<def> = {
 	:	Def<def[k]>
 } & {
 	[k in keyof def & GenericDeclaration as extractGenericName<k>]: GenericProps<
-		parseGenericParams<extractGenericParameters<k>>,
+		parseValidGenericParams<extractGenericParameters<k>>,
 		def[k],
 		UnparsedScope
 	>

@@ -25,7 +25,6 @@ import {
 	type distillIn,
 	type distillOut,
 	type exclusivizeRangeSchema,
-	type genericParamNames,
 	type indexInto,
 	type indexOf,
 	type inferIntersection,
@@ -41,13 +40,17 @@ import {
 	type array,
 	type conform
 } from "@arktype/util"
-import type { Generic, validateParameterString } from "./generic.js"
+import {
+	parseGenericParams,
+	type Generic,
+	type parseValidGenericParams,
+	type validateParameterString
+} from "./generic.js"
 import type {
 	inferDefinition,
 	validateDeclared,
 	validateDefinition
 } from "./parser/definition.js"
-import { parseGenericParams } from "./parser/generic.js"
 import type {
 	IndexOneOperator,
 	IndexZeroOperator,
@@ -91,7 +94,7 @@ export interface TypeParser<$ = {}> {
 				[name in parseGenericParams<params>[number][0]]: unknown
 			}
 		>
-	): Generic<parseGenericParams<params>, def, $>
+	): Generic<parseValidGenericParams<params>, def, $>
 
 	raw(def: unknown): Type<any, $>
 	errors: typeof ArkErrors

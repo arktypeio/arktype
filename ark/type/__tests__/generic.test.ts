@@ -5,7 +5,7 @@ import {
 	writeUnresolvableMessage
 } from "@arktype/schema"
 import { scope, type } from "arktype"
-import { emptyGenericParameterMessage } from "../parser/generic.js"
+import { emptyGenericParameterMessage } from "../generic.js"
 import { writeUnclosedGroupMessage } from "../parser/string/reduce/shared.js"
 import { writeInvalidGenericArgsMessage } from "../parser/string/shift/operand/genericArgs.js"
 import { writeInvalidDivisorMessage } from "../parser/string/shift/operator/divisor.js"
