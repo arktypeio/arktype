@@ -17,7 +17,7 @@ export interface tsGenericsExports<$ = {}> {
 export type tsGenerics = SchemaModule<tsGenericsExports>
 
 const $: RootScope = schemaScope({
-	Record: generic(["K", "V"], args => ({
+	Record: generic(["K", "V"])(args => ({
 		domain: "object",
 		index: {
 			signature: args.K,

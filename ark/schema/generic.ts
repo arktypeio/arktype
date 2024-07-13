@@ -40,7 +40,9 @@ type genericParamSchemaToAst<schema extends GenericParamDef, $> =
 export type genericParamSchemasToAst<
 	schemas extends array<GenericParamDef>,
 	$
-> = { [i in keyof schemas]: genericParamSchemaToAst<schemas[i], $> }
+> = readonly [
+	...{ [i in keyof schemas]: genericParamSchemaToAst<schemas[i], $> }
+]
 
 export type genericParamAstToDefs<asts extends array<GenericParamAst>> = {
 	[i in keyof asts]: GenericParamDef<asts[i][0]>
@@ -70,10 +72,10 @@ type instantiateConstraintsOf<params extends array<GenericParamAst>> = {
 	[i in keyof params]: Root<params[i][1]>
 }
 
-export type GenericParam<name extends string = string, constraint = unknown> = {
-	name: name
-	constraint: UnknownRoot<constraint>
-}
+export type GenericParam<
+	name extends string = string,
+	constraint = unknown
+> = readonly [name: name, constraint: UnknownRoot<constraint>]
 
 export type bindGenericNodeInstantiation<
 	params extends array<GenericParamAst>,
@@ -104,13 +106,14 @@ export type GenericArgResolutions<
 	params extends array<GenericParamAst> = array<GenericParamAst>
 > = Record<params[number][0], BaseRoot>
 
-export type LazyGenericDef<
-	params extends array<GenericParamAst> = array<GenericParamAst>
-> = (args: GenericArgResolutions<params>) => RootSchema
+export type LazyGenericSchema<
+	params extends array<GenericParamAst> = array<GenericParamAst>,
+	returns extends RootSchema = RootSchema
+> = (args: GenericArgResolutions<params>) => returns
 
 export class LazyGenericRoot<
 	params extends array<GenericParamAst> = array<GenericParamAst>
-> extends Callable<LazyGenericDef<params>> {}
+> extends Callable<LazyGenericSchema<params>> {}
 
 export class GenericRoot<
 		params extends array<GenericParamAst> = array<GenericParamAst>,
@@ -165,19 +168,19 @@ export class GenericRoot<
 		return this.paramDefs.map(
 			(param): GenericParam =>
 				typeof param === "string" ?
-					{ name: param, constraint: $ark.intrinsic.unknown }
-				:	{ name: param[0], constraint: this.$.parseRoot(param[1]) }
+					[param, $ark.intrinsic.unknown]
+				:	[param[0], this.$.parseRoot(param[1])]
 		) as never
 	}
 
 	@cached
 	get names(): genericParamNames<params> {
-		return this.params.map(e => e.name) as never
+		return this.params.map(e => e[0]) as never
 	}
 
 	@cached
 	get constraints(): instantiateConstraintsOf<params> {
-		return this.params.map(e => e.constraint) as never
+		return this.params.map(e => e[1]) as never
 	}
 
 	@cached

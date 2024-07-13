@@ -23,7 +23,7 @@ import {
 import {
 	GenericRoot,
 	type GenericParamDef,
-	type LazyGenericDef,
+	type LazyGenericSchema,
 	type genericParamSchemasToAst
 } from "./generic.js"
 import type { inferRoot, validateRoot } from "./inference.js"
@@ -180,7 +180,12 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 	}
 
 	@bound
-	generic(params: array<GenericParamDef>, def: unknown): GenericRoot {
+	generic(
+		params: array<GenericParamDef>,
+		def?: unknown
+	): GenericRoot | ((def: LazyGenericSchema) => GenericRoot) {
+		if (def === undefined)
+			return (def: LazyGenericSchema) => this.generic(params, def) as never
 		return new GenericRoot(
 			params.map((param): [string, BaseRoot] =>
 				typeof param === "string" ?
@@ -520,12 +525,22 @@ export interface RootScope<$ = any> {
 	): Node<reducibleKindOf<flattenListable<kinds>>>
 
 	generic<
-		const params extends array<GenericParamDef>,
-		def extends LazyGenericDef<genericParamSchemasToAst<params, $>>
+		const paramsDef extends array<GenericParamDef>,
+		bodyDef extends LazyGenericSchema<
+			genericParamSchemasToAst<paramsDef, $>
+		> = never
 	>(
-		params: params,
-		resolve: def
-	): GenericRoot<genericParamSchemasToAst<params, $>, def, $>
+		params: paramsDef,
+		def?: bodyDef
+	): [bodyDef] extends [never] ?
+		<lazyDef extends LazyGenericSchema<genericParamSchemasToAst<paramsDef, $>>>(
+			lazyDef: lazyDef
+		) => GenericRoot<
+			genericParamSchemasToAst<paramsDef, $>,
+			ReturnType<lazyDef>,
+			$
+		>
+	:	GenericRoot<genericParamSchemasToAst<paramsDef, $>, bodyDef, $>
 
 	parseRoot(schema: unknown, opts?: NodeParseOptions): BaseRoot
 
