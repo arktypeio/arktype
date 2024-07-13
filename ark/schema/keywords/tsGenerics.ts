@@ -4,7 +4,7 @@ import { generic, schemaScope, type RootScope } from "../scope.js"
 
 export interface tsGenericsExports<$ = {}> {
 	Record: GenericRoot<
-		["K", "V"],
+		[["K", PropertyKey], ["V", unknown]],
 		{
 			"[K]": "V"
 		},

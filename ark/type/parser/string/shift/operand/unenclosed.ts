@@ -77,7 +77,7 @@ export const parseGenericInstantiation = (
 	s.scanner.shiftUntilNonWhitespace()
 	const lookahead = s.scanner.shift()
 	if (lookahead !== "<")
-		return s.error(writeInvalidGenericArgsMessage(name, g.params, []))
+		return s.error(writeInvalidGenericArgsMessage(name, g.names, []))
 
 	const parsedArgs = parseGenericArgs(name, g.params, s)
 	return g(...(parsedArgs as never)) as never

@@ -1,6 +1,6 @@
 import type {
 	GenericNodeSignature,
-	GenericParam,
+	GenericParamAst,
 	GenericRoot,
 	namesOf
 } from "@arktype/schema"
@@ -18,7 +18,7 @@ export type validateParameterString<params extends string> =
 	:	params
 
 export type GenericTypeInstantiation<
-	params extends array<GenericParam> = array<GenericParam>,
+	params extends array<GenericParamAst> = array<GenericParamAst>,
 	def = any,
 	$ = any
 > = <args>(
@@ -34,7 +34,7 @@ export type GenericTypeInstantiation<
 >
 
 export type GenericInstantiation<
-	params extends array<GenericParam> = array<GenericParam>,
+	params extends array<GenericParamAst> = array<GenericParamAst>,
 	def = any,
 	$ = any
 > = GenericTypeInstantiation<params, def, $> &
@@ -50,7 +50,7 @@ type bindGenericInstantiation<params extends array<string>, $, args> = {
 
 // TODO: should be Scope<$>, but breaks inference
 export interface Generic<
-	params extends array<GenericParam> = array<GenericParam>,
+	params extends array<GenericParamAst> = array<GenericParamAst>,
 	def = unknown,
 	$ = any
 > extends Callable<GenericInstantiation<params, def, $>>,
