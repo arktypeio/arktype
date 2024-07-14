@@ -358,7 +358,7 @@ contextualize(() => {
 					scope({
 						// @ts-expect-error
 						"box<t,,u>": "string"
-					})
+					}).export()
 				).throwsAndHasTypeError(emptyGenericParameterMessage)
 			})
 

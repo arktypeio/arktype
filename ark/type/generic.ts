@@ -120,9 +120,6 @@ const parseName = (
 
 	scanner.shiftUntilNonWhitespace()
 
-	if (scanner.lookahead === ",")
-		return parseName(scanner, [...result, [name, $ark.intrinsic.unknown]], ctx)
-
 	return _parseOptionalConstraint(scanner, name, result, ctx)
 }
 

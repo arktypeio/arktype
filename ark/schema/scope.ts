@@ -156,15 +156,15 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 			this.preparseAlias(...entry)
 		)
 
-		aliasEntries.forEach(([k]) => {
+		aliasEntries.forEach(([k, v]) => {
 			if (k[0] === "#") {
 				const name = k.slice(1)
 				if (name in this.aliases)
 					throwParseError(writeDuplicateAliasError(name))
-				this.aliases[name] = def[k]
+				this.aliases[name] = v
 			} else {
 				if (k in this.aliases) throwParseError(writeDuplicateAliasError(k))
-				this.aliases[k] = def[k]
+				this.aliases[k] = v
 				this.exportedNames.push(k)
 			}
 		}) as never

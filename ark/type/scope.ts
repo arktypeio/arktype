@@ -229,14 +229,24 @@ export class RawScope<
 			)
 		}
 
-		const params = parseGenericParams(k.slice(firstParamIndex + 1, -1), {
-			$: this as never,
-			args: {}
-		})
+		const name = k.slice(0, firstParamIndex)
+		const paramString = k.slice(firstParamIndex + 1, -1)
 
-		const generic = parseGeneric(params, v, () => this as never)
+		return [
+			name,
+			// use a thunk definition for the generic so that we can parse
+			// constraints within the current scope
+			() => {
+				const params = parseGenericParams(paramString, {
+					$: this as never,
+					args: {}
+				})
 
-		return [k.slice(0, firstParamIndex), generic]
+				const generic = parseGeneric(params, v, this as never)
+
+				return generic
+			}
+		]
 	}
 
 	override preparseRoot(def: unknown): unknown {
