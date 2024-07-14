@@ -8,8 +8,8 @@ import {
 	type DateLiteral,
 	type LimitLiteral,
 	type NodeSchema
-} from "@arktype/schema"
-import { isKeyOf, throwParseError, type keySet } from "@arktype/util"
+} from "@ark/schema"
+import { isKeyOf, throwParseError, type keySet } from "@ark/util"
 import type { astToString } from "../../../semantic/utils.js"
 import type {
 	DynamicState,

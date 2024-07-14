@@ -1,9 +1,9 @@
-import { attest, contextualize } from "@arktype/attest"
+import { attest, contextualize } from "@ark/attest"
 import {
 	schema,
 	validation,
 	writeOrderedIntersectionMessage
-} from "@arktype/schema"
+} from "@ark/schema"
 
 contextualize(() => {
 	it("binary", () => {

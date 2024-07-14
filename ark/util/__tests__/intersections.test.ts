@@ -1,5 +1,5 @@
-import { attest, contextualize } from "@arktype/attest"
-import type { intersectArrays, intersectParameters } from "@arktype/util"
+import { attest, contextualize } from "@ark/attest"
+import type { intersectArrays, intersectParameters } from "@ark/util"
 
 contextualize(() => {
 	describe("parameters", () => {

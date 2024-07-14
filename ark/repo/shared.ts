@@ -1,5 +1,5 @@
-import { fromHere, readPackageJson } from "@arktype/fs"
-import { flatMorph } from "@arktype/util"
+import { fromHere, readPackageJson } from "@ark/fs"
+import { flatMorph } from "@ark/util"
 import { join } from "node:path"
 import type { PackageJson } from "type-fest"
 

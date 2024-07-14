@@ -1,4 +1,4 @@
-import { shell, writeJson } from "@arktype/fs"
+import { shell, writeJson } from "@ark/fs"
 import { rmSync } from "node:fs"
 import { join } from "node:path"
 import { writeSnapshotUpdatesOnExit } from "./cache/snapshots.js"

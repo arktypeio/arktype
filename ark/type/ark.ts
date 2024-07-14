@@ -3,8 +3,8 @@ import {
 	type Ark,
 	type ArkErrors,
 	type inferred
-} from "@arktype/schema"
-import type { CastableBase } from "@arktype/util"
+} from "@ark/schema"
+import type { CastableBase } from "@ark/util"
 import type { MatchParser } from "./match.js"
 import type { Module } from "./module.js"
 import { scope, type Scope } from "./scope.js"

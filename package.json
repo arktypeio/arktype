@@ -36,9 +36,9 @@
 		"ci:publish": "tsx ./ark/repo/publish.ts"
 	},
 	"devDependencies": {
-		"@arktype/attest": "workspace:*",
-		"@arktype/repo": "workspace:*",
-		"@arktype/util": "workspace:*",
+		"@ark/attest": "workspace:*",
+		"@ark/repo": "workspace:*",
+		"@ark/util": "workspace:*",
 		"@types/mocha": "10.0.7",
 		"@types/node": "20.14.10",
 		"@typescript-eslint/eslint-plugin": "7.16.0",

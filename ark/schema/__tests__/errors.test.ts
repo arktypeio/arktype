@@ -1,5 +1,5 @@
-import { attest, contextualize } from "@arktype/attest"
-import { configure, schema } from "@arktype/schema"
+import { attest, contextualize } from "@ark/attest"
+import { configure, schema } from "@ark/schema"
 import { schemaScope } from "../scope.js"
 
 contextualize(() => {

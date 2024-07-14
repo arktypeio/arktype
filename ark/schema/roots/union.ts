@@ -20,7 +20,7 @@ import {
 	type array,
 	type keySet,
 	type show
-} from "@arktype/util"
+} from "@ark/util"
 import type { Node, NodeSchema } from "../kinds.js"
 import { typePathToPropString } from "../node.js"
 import type { NodeCompiler } from "../shared/compile.js"

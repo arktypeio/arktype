@@ -6,7 +6,7 @@ import {
 	throwParseError,
 	unset,
 	type Key
-} from "@arktype/util"
+} from "@ark/util"
 import { BaseConstraint } from "../constraint.js"
 import type { Node, RootSchema } from "../kinds.js"
 import {

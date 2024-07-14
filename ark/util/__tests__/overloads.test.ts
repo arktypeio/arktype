@@ -1,4 +1,4 @@
-import { attest, contextualize } from "@arktype/attest"
+import { attest, contextualize } from "@ark/attest"
 import type { array } from "../arrays.js"
 import type { conform } from "../generics.js"
 import type { overloadOf } from "../unionToTuple.js"

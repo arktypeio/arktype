@@ -1,4 +1,4 @@
-import type { Key } from "@arktype/util"
+import type { Key } from "@ark/util"
 import type { GenericRoot } from "../generic.js"
 import type { SchemaModule } from "../module.js"
 import { generic, schemaScope, type RootScope } from "../scope.js"

@@ -1,5 +1,5 @@
-import { attest, contextualize } from "@arktype/attest"
-import { deepClone } from "@arktype/util"
+import { attest, contextualize } from "@ark/attest"
+import { deepClone } from "@ark/util"
 
 contextualize(() => {
 	it("should return a deep clone of a simple object", () => {

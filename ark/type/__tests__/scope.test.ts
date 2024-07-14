@@ -1,11 +1,11 @@
-import { attest, contextualize } from "@arktype/attest"
+import { attest, contextualize } from "@ark/attest"
 import {
 	schema,
 	writeUnboundableMessage,
 	writeUnresolvableMessage,
 	type distillOut,
 	type string
-} from "@arktype/schema"
+} from "@ark/schema"
 import { define, scope, type } from "arktype"
 import type { Module } from "../module.js"
 import { writeUnexpectedCharacterMessage } from "../parser/string/shift/operator/operator.js"

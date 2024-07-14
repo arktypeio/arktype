@@ -1,4 +1,4 @@
-import { attest, contextualize } from "@arktype/attest"
+import { attest, contextualize } from "@ark/attest"
 import { type } from "arktype"
 
 const o = { ark: "type" } as const
@@ -38,7 +38,7 @@ contextualize(() => {
 			)
 	})
 
-	// @arktype/attest assertions can be made from any unit test framework with a global setup/teardown
+	// @ark/attest assertions can be made from any unit test framework with a global setup/teardown
 
 	it("type and value assertions", () => {
 		const even = type("number%2")

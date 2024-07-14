@@ -1,5 +1,5 @@
+import { fromHere } from "@ark/fs"
 import { type } from "arktype"
-import { fromHere } from "@arktype/fs"
 
 console.log(
 	"⏱️  Checking for V8 fast properties (https://v8.dev/blog/fast-properties) on Type...\n"

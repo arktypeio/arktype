@@ -5,7 +5,7 @@ import {
 	type Dict,
 	type EscapeToken,
 	type WhiteSpaceToken
-} from "@arktype/util"
+} from "@ark/util"
 import type { Comparator } from "../reduce/shared.js"
 
 export class Scanner<lookahead extends string = string> {

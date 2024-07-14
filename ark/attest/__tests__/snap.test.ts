@@ -1,4 +1,4 @@
-import { attest, contextualize } from "@arktype/attest"
+import { attest, contextualize } from "@ark/attest"
 import * as assert from "node:assert/strict"
 
 const o = { re: "do" }

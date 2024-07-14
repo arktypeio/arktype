@@ -11,7 +11,7 @@ import type {
 	TypeKey,
 	TypePath,
 	UnknownRangeSchema
-} from "@arktype/schema"
+} from "@ark/schema"
 import {
 	cached,
 	includes,
@@ -23,7 +23,7 @@ import {
 	type Key,
 	type array,
 	type conform
-} from "@arktype/util"
+} from "@ark/util"
 import type {
 	constrain,
 	distillConstrainableIn,

@@ -14,7 +14,7 @@ import {
 	type array,
 	type flattenListable,
 	type show
-} from "@arktype/util"
+} from "@ark/util"
 import {
 	resolveConfig,
 	type ArkConfig,

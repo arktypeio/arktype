@@ -1,10 +1,9 @@
 import type {
-	GenericNodeSignature,
 	GenericParamAst,
 	GenericParamDef,
 	GenericRoot,
 	writeUnsatisfiedParameterConstraintMessage
-} from "@arktype/schema"
+} from "@ark/schema"
 import {
 	throwParseError,
 	whiteSpaceTokens,
@@ -15,7 +14,7 @@ import {
 	type ErrorMessage,
 	type keyError,
 	type WhiteSpaceToken
-} from "@arktype/util"
+} from "@ark/util"
 import type { inferDefinition } from "./parser/definition.js"
 import type { inferAstRoot } from "./parser/semantic/infer.js"
 import type { validateAst } from "./parser/semantic/validate.js"
@@ -49,7 +48,7 @@ export type validateGenericArg<param extends GenericParamAst, def, $> =
 			>
 	:	never
 
-export type GenericTypeInstantiation<
+export type GenericInstantiation<
 	params extends array<GenericParamAst> = array<GenericParamAst>,
 	def = any,
 	$ = any
@@ -65,13 +64,6 @@ export type GenericTypeInstantiation<
 		}
 	>
 ) => Type<inferDefinition<def, $, bindGenericArgs<params, $, args>>, $>
-
-export type GenericInstantiation<
-	params extends array<GenericParamAst> = array<GenericParamAst>,
-	def = any,
-	$ = any
-> = GenericTypeInstantiation<params, def, $> &
-	GenericNodeSignature<params, def, $>
 
 // TODO: Fix external reference (i.e. if this is attached to a scope, then args are defined using it)
 type bindGenericArgs<params extends array<GenericParamAst>, $, args> = {

@@ -1,4 +1,4 @@
-import { registeredReference, type RegisteredReference } from "@arktype/util"
+import { registeredReference, type RegisteredReference } from "@ark/util"
 import type { constrain, of } from "./ast.js"
 import { BaseConstraint } from "./constraint.js"
 import type { errorContext } from "./kinds.js"

@@ -1,5 +1,5 @@
-import { attest, contextualize } from "@arktype/attest"
-import type { Date, Default } from "@arktype/schema"
+import { attest, contextualize } from "@ark/attest"
+import type { Date, Default } from "@ark/schema"
 import { scope, type } from "arktype"
 import { invalidDefaultKeyKindMessage } from "../parser/objectLiteral.js"
 import {

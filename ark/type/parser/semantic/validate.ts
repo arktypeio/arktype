@@ -3,7 +3,7 @@ import type {
 	GenericProps,
 	PrivateDeclaration,
 	writeMissingSubmoduleAccessMessage
-} from "@arktype/schema"
+} from "@ark/schema"
 import type {
 	anyOrNever,
 	array,
@@ -12,7 +12,7 @@ import type {
 	Completion,
 	ErrorMessage,
 	writeMalformedNumericLiteralMessage
-} from "@arktype/util"
+} from "@ark/util"
 import type { Comparator } from "../string/reduce/shared.js"
 import type { writeInvalidGenericArgCountMessage } from "../string/shift/operand/genericArgs.js"
 import type { UnitLiteral } from "../string/shift/operator/default.js"

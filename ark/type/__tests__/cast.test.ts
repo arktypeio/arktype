@@ -1,5 +1,5 @@
-import { attest, contextualize } from "@arktype/attest"
-import type { Constructor } from "@arktype/util"
+import { attest, contextualize } from "@ark/attest"
+import type { Constructor } from "@ark/util"
 import { type, type Type } from "arktype"
 
 contextualize(() => {

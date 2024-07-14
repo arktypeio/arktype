@@ -1,4 +1,4 @@
-// import { attest } from "@arktype/attest"
+// import { attest } from "@ark/attest"
 // import { match, scope } from "arktype"
 
 // it("cases only", () => {

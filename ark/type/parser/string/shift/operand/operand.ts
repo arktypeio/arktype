@@ -1,4 +1,4 @@
-import { whiteSpaceTokens, type WhiteSpaceToken } from "@arktype/util"
+import { whiteSpaceTokens, type WhiteSpaceToken } from "@ark/util"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import type { StaticState, state } from "../../reduce/static.js"
 import type { BaseCompletions } from "../../string.js"

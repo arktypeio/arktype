@@ -15,7 +15,7 @@ import {
 	type conform,
 	type listable,
 	type mutable
-} from "@arktype/util"
+} from "@ark/util"
 import type { BaseConstraint } from "./constraint.js"
 import type { Inner, MutableInner, Node, reducibleKindOf } from "./kinds.js"
 import type { NodeParseOptions } from "./parse.js"

@@ -1,5 +1,5 @@
 {
-	"name": "@arktype/schema",
+	"name": "@ark/schema",
 	"version": "0.1.22",
 	"license": "MIT",
 	"author": {
@@ -29,6 +29,6 @@
 		"tnt": "tsx ../repo/testPackage.ts --skipTypes"
 	},
 	"dependencies": {
-		"@arktype/util": "workspace:*"
+		"@ark/util": "workspace:*"
 	}
 }

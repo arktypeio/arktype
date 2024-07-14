@@ -8,7 +8,7 @@ import {
 	type mutable,
 	type requireKeys,
 	type show
-} from "@arktype/util"
+} from "@ark/util"
 import type { BaseConstraint } from "../constraint.js"
 import type { GenericRoot } from "../generic.js"
 import type { BaseNode } from "../node.js"

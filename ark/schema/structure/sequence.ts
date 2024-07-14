@@ -6,7 +6,7 @@ import {
 	type array,
 	type mutable,
 	type satisfy
-} from "@arktype/util"
+} from "@ark/util"
 import { BaseConstraint } from "../constraint.js"
 import type { MutableInner, RootSchema } from "../kinds.js"
 import {

@@ -1,4 +1,4 @@
-import { caller, getCallStack, type SourcePosition } from "@arktype/fs"
+import { caller, getCallStack, type SourcePosition } from "@ark/fs"
 import { getBenchCtx } from "../bench/bench.js"
 import type { Measure } from "../bench/measure.js"
 import { instantiationDataHandler } from "../bench/type.js"

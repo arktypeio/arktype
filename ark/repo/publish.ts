@@ -1,4 +1,4 @@
-import { shell } from "@arktype/fs"
+import { shell } from "@ark/fs"
 import { packages } from "./shared.js"
 
 const tagsToPublish: string[] = []

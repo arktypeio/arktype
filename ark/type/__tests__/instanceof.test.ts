@@ -1,5 +1,5 @@
-import { attest, contextualize } from "@arktype/attest"
-import { internalSchema } from "@arktype/schema"
+import { attest, contextualize } from "@ark/attest"
+import { internalSchema } from "@ark/schema"
 import { type, type Type } from "arktype"
 import { writeInvalidConstructorMessage } from "../parser/tuple.js"
 

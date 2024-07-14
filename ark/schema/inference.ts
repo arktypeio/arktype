@@ -8,7 +8,7 @@ import type {
 	inferDomain,
 	instanceOf,
 	isAny
-} from "@arktype/util"
+} from "@ark/util"
 import type { NodeSchema, Prerequisite } from "./kinds.js"
 import type { BaseNode } from "./node.js"
 import type { DomainSchema } from "./roots/domain.js"

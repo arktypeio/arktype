@@ -32,14 +32,14 @@ import {
 	type inferPipes,
 	type inferPredicate,
 	type writeInvalidOperandMessage
-} from "@arktype/schema"
+} from "@ark/schema"
 import {
 	Callable,
 	type Constructor,
 	type ErrorMessage,
 	type array,
 	type conform
-} from "@arktype/util"
+} from "@ark/util"
 import type { type } from "./ark.js"
 import {
 	parseGenericParams,

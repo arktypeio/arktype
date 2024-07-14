@@ -1,5 +1,5 @@
-import { attest, contextualize } from "@arktype/attest"
-import { writeDuplicateAliasError, type Morph } from "@arktype/schema"
+import { attest, contextualize } from "@ark/attest"
+import { writeDuplicateAliasError, type Morph } from "@ark/schema"
 import { scope, type, type Module } from "arktype"
 import { writePrefixedPrivateReferenceMessage } from "../parser/semantic/validate.js"
 

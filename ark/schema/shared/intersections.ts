@@ -6,7 +6,7 @@ import {
 	type isAny,
 	type PartialRecord,
 	type show
-} from "@arktype/util"
+} from "@ark/util"
 import type { Constraints, of, parseConstraints } from "../ast.js"
 import type { BaseNode } from "../node.js"
 import type { MorphAst, MorphNode, Out } from "../roots/morph.js"

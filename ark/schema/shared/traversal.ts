@@ -1,4 +1,4 @@
-import type { array } from "@arktype/util"
+import type { array } from "@ark/util"
 import type { ResolvedArkConfig } from "../config.js"
 import type { Morph } from "../roots/morph.js"
 import {

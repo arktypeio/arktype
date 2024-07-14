@@ -45,4 +45,4 @@ export * from "./structure/required.js"
 export * from "./structure/sequence.js"
 export * from "./structure/structure.js"
 
-export { ParseError } from "@arktype/util"
+export { ParseError } from "@ark/util"

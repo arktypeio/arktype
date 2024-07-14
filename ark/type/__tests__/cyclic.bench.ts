@@ -1,4 +1,4 @@
-import { bench } from "@arktype/attest"
+import { bench } from "@ark/attest"
 import { scope } from "arktype"
 import { cyclic10, cyclic100, cyclic500 } from "./generated/cyclic.js"
 

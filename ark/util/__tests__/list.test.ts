@@ -1,5 +1,5 @@
-import { attest, contextualize } from "@arktype/attest"
-import { groupBy } from "@arktype/util"
+import { attest, contextualize } from "@ark/attest"
+import { groupBy } from "@ark/util"
 
 type PinkLady = { group: "apple"; kind: "Pink Lady" }
 type Gala = { group: "apple"; kind: "Gala" }

@@ -1,4 +1,4 @@
-import type { ErrorMessage } from "@arktype/util"
+import type { ErrorMessage } from "@ark/util"
 import type { UnitLiteral } from "../string/shift/operator/default.js"
 import type { inferAstOut, inferTerminal } from "./infer.js"
 import type { astToString } from "./utils.js"

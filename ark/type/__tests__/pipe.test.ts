@@ -1,4 +1,4 @@
-import { attest, contextualize } from "@arktype/attest"
+import { attest, contextualize } from "@ark/attest"
 import {
 	assertNodeKind,
 	writeIndiscriminableMorphMessage,
@@ -7,7 +7,7 @@ import {
 	type Out,
 	type of,
 	type string
-} from "@arktype/schema"
+} from "@ark/schema"
 import { scope, type, type Type } from "arktype"
 
 contextualize(() => {

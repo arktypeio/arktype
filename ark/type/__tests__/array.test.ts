@@ -1,5 +1,5 @@
-import { attest, contextualize } from "@arktype/attest"
-import { writeUnresolvableMessage } from "@arktype/schema"
+import { attest, contextualize } from "@ark/attest"
+import { writeUnresolvableMessage } from "@ark/schema"
 import { scope, type } from "arktype"
 import { incompleteArrayTokenMessage } from "../parser/string/shift/operator/operator.js"
 import {
@@ -300,7 +300,7 @@ value at [1] must be a number (was false)`)
 			attest(t.json).equals(expected.json)
 		})
 
-		// based on the equivalent type-level test from @arktype/util
+		// based on the equivalent type-level test from @ark/util
 		it("kitchen sink", () => {
 			const l = type([
 				{ a: "0" },

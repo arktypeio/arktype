@@ -1,5 +1,5 @@
-import { attest, contextualize } from "@arktype/attest"
-import { keywordNodes, writeInvalidOperandMessage } from "@arktype/schema"
+import { attest, contextualize } from "@ark/attest"
+import { keywordNodes, writeInvalidOperandMessage } from "@ark/schema"
 import { type } from "arktype"
 
 contextualize(() => {

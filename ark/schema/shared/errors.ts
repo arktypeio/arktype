@@ -4,7 +4,7 @@ import {
 	defineProperties,
 	type propwiseXor,
 	type show
-} from "@arktype/util"
+} from "@ark/util"
 import type { ResolvedArkConfig } from "../config.js"
 import type { Prerequisite, errorContext } from "../kinds.js"
 import type { NodeKind } from "./implement.js"

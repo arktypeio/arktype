@@ -1,6 +1,6 @@
-import { attest, contextualize } from "@arktype/attest"
-import { assertNodeKind, schema } from "@arktype/schema"
-import { registeredReference } from "@arktype/util"
+import { attest, contextualize } from "@ark/attest"
+import { assertNodeKind, schema } from "@ark/schema"
+import { registeredReference } from "@ark/util"
 
 contextualize(() => {
 	it("string allows", () => {

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { fileName } from "@arktype/fs"
+import { fileName } from "@ark/fs"
 import { basename } from "path"
 import { precache } from "./precache.js"
 import { stats } from "./stats.js"

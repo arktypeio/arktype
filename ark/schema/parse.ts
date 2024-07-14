@@ -11,7 +11,7 @@ import {
 	type PartialRecord,
 	type dict,
 	type listable
-} from "@arktype/util"
+} from "@ark/util"
 import type { GenericArgResolutions } from "./generic.js"
 import {
 	nodeClassesByKind,

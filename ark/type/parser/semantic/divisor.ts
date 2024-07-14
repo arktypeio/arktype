@@ -1,5 +1,5 @@
-import type { Root, writeIndivisibleMessage } from "@arktype/schema"
-import type { ErrorMessage } from "@arktype/util"
+import type { Root, writeIndivisibleMessage } from "@ark/schema"
+import type { ErrorMessage } from "@ark/util"
 import type { inferAstIn } from "./infer.js"
 import type { validateAst } from "./validate.js"
 

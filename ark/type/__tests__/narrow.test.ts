@@ -1,6 +1,6 @@
-import { attest, contextualize } from "@arktype/attest"
-import type { Narrowed, Out, number, of, string } from "@arktype/schema"
-import { registeredReference, type equals } from "@arktype/util"
+import { attest, contextualize } from "@ark/attest"
+import type { Narrowed, Out, number, of, string } from "@ark/schema"
+import { registeredReference, type equals } from "@ark/util"
 import { type, type Type } from "arktype"
 
 contextualize(() => {

@@ -1,11 +1,11 @@
 {
-	"name": "@arktype/repo",
+	"name": "@ark/repo",
 	"private": true,
 	"type": "module",
 	"dependencies": {
 		"arktype": "workspace:*",
-		"@arktype/attest": "workspace:*",
-		"@arktype/fs": "workspace:*",
+		"@ark/attest": "workspace:*",
+		"@ark/fs": "workspace:*",
 		"zod": "3.23.8",
 		"type-fest": "4.21.0"
 	},

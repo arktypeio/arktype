@@ -1,4 +1,4 @@
-import { ensureDir } from "@arktype/fs"
+import { ensureDir } from "@ark/fs"
 import { join } from "path"
 import { writeAssertionData } from "../fixtures.js"
 

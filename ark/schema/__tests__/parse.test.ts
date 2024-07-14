@@ -1,5 +1,5 @@
-import { attest, contextualize } from "@arktype/attest"
-import { type Root, schema } from "@arktype/schema"
+import { attest, contextualize } from "@ark/attest"
+import { type Root, schema } from "@ark/schema"
 
 contextualize(() => {
 	it("single constraint", () => {

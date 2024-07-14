@@ -7,7 +7,7 @@ import {
 	type JsonPrimitive,
 	type Key,
 	type array
-} from "@arktype/util"
+} from "@ark/util"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {

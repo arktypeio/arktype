@@ -1,11 +1,11 @@
-import { attest, contextualize } from "@arktype/attest"
+import { attest, contextualize } from "@ark/attest"
 import {
 	writeBadKeyAccessMessage,
 	writeRawNumberIndexMessage,
 	type Matching,
 	type of,
 	type string
-} from "@arktype/schema"
+} from "@ark/schema"
 import { ark, type } from "arktype"
 
 contextualize(() => {

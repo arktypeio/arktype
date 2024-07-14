@@ -1,4 +1,4 @@
-import { fromCwd, rmRf, shell, writeJson } from "@arktype/fs"
+import { fromCwd, rmRf, shell, writeJson } from "@ark/fs"
 import { symlinkSync, unlinkSync } from "fs"
 import { join } from "path"
 

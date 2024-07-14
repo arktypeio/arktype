@@ -1,4 +1,4 @@
-import { Trait, implement } from "@arktype/util"
+import { Trait, implement } from "@ark/util"
 
 // Declare a trait just like a normal class
 export class Rectangle extends Trait {

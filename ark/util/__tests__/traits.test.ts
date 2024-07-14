@@ -1,5 +1,5 @@
-import { attest, contextualize } from "@arktype/attest"
-import { Trait, compose, implement } from "@arktype/util"
+import { attest, contextualize } from "@ark/attest"
+import { Trait, compose, implement } from "@ark/util"
 
 export class Describable extends Trait<{
 	abstractMethods: {

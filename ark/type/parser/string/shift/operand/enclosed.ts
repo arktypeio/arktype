@@ -1,4 +1,4 @@
-import { isKeyOf } from "@arktype/util"
+import { isKeyOf } from "@ark/util"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import type { StaticState, state } from "../../reduce/static.js"
 import type { Scanner } from "../scanner.js"

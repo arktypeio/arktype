@@ -1,4 +1,4 @@
-import { flatMorph } from "@arktype/util"
+import { flatMorph } from "@ark/util"
 import {
 	schemaKindsRightOf,
 	type RootIntersection,

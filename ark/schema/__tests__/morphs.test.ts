@@ -1,6 +1,6 @@
-import { attest, contextualize } from "@arktype/attest"
-import { schema, tsKeywords } from "@arktype/schema"
-import { wellFormedNumberMatcher } from "@arktype/util"
+import { attest, contextualize } from "@ark/attest"
+import { schema, tsKeywords } from "@ark/schema"
+import { wellFormedNumberMatcher } from "@ark/util"
 
 contextualize(() => {
 	it("in/out", () => {

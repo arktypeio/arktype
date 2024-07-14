@@ -1,4 +1,4 @@
-import { attest } from "@arktype/attest"
+import { attest } from "@ark/attest"
 import * as assert from "node:assert/strict"
 
 const o = { ark: "type" }

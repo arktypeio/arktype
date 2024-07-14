@@ -1,5 +1,5 @@
-import { attest, contextualize } from "@arktype/attest"
-import { anchoredSource, deanchoredSource } from "@arktype/util"
+import { attest, contextualize } from "@ark/attest"
+import { anchoredSource, deanchoredSource } from "@ark/util"
 
 contextualize(() => {
 	it("anchors a simple source correctly", () => {

@@ -1,4 +1,4 @@
-import { readJson, type LinePosition, type SourcePosition } from "@arktype/fs"
+import { readJson, type LinePosition, type SourcePosition } from "@ark/fs"
 import { existsSync, readdirSync } from "node:fs"
 import { join } from "node:path"
 import { getConfig } from "../config.js"
@@ -53,7 +53,7 @@ export const getCachedAssertionEntries = (): VersionedAssertionsByFile[] => {
 const throwMissingAssertionDataError = (location: string) => {
 	throw new Error(
 		`Unable to find precached assertion data at '${location}'. ` +
-			`Ensure the 'setup' function from @arktype/attest has been called before running your tests.`
+			`Ensure the 'setup' function from @ark/attest has been called before running your tests.`
 	)
 }
 

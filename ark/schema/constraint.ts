@@ -9,7 +9,7 @@ import {
 	type describe,
 	type listable,
 	type satisfy
-} from "@arktype/util"
+} from "@ark/util"
 import type {
 	Inner,
 	MutableInner,

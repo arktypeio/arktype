@@ -1,5 +1,5 @@
 {
-	"name": "@arktype/docs",
+	"name": "@ark/docs",
 	"private": true,
 	"type": "module",
 	"version": "0.0.1",
@@ -11,8 +11,8 @@
 		"astro": "astro"
 	},
 	"dependencies": {
-		"@arktype/fs": "workspace:*",
-		"@arktype/util": "workspace:*",
+		"@ark/fs": "workspace:*",
+		"@ark/util": "workspace:*",
 		"@astrojs/react": "3.6.0",
 		"@astrojs/starlight": "0.25.0",
 		"@shikijs/twoslash": "1.10.3",

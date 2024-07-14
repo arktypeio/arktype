@@ -1,5 +1,5 @@
-import type { LinePosition } from "@arktype/fs"
-import { flatMorph } from "@arktype/util"
+import type { LinePosition } from "@ark/fs"
+import { flatMorph } from "@ark/util"
 import ts from "typescript"
 
 import { getConfig } from "../config.js"

@@ -1,5 +1,5 @@
-import { attest, contextualize } from "@arktype/attest"
-import { internalSchema } from "@arktype/schema"
+import { attest, contextualize } from "@ark/attest"
+import { internalSchema } from "@ark/schema"
 import { ark, type } from "arktype"
 
 contextualize(() => {

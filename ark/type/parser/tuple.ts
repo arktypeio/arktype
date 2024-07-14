@@ -15,7 +15,7 @@ import {
 	type inferIntersection,
 	type inferMorphOut,
 	type inferPredicate
-} from "@arktype/schema"
+} from "@ark/schema"
 import {
 	append,
 	objectKindOrDomainOf,
@@ -27,7 +27,7 @@ import {
 	type array,
 	type conform,
 	type show
-} from "@arktype/util"
+} from "@ark/util"
 import type { ParseContext } from "../scope.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
 import type { InfixOperator, PostfixExpression } from "./semantic/infer.js"

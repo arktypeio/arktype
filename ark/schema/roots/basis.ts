@@ -1,4 +1,4 @@
-import type { array, Key } from "@arktype/util"
+import type { array, Key } from "@ark/util"
 import type { NodeCompiler } from "../shared/compile.js"
 import { compileErrorContext } from "../shared/implement.js"
 import type { TraverseApply } from "../shared/traversal.js"

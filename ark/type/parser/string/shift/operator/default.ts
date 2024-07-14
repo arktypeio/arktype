@@ -1,11 +1,11 @@
-import type { BaseRoot, DateLiteral } from "@arktype/schema"
+import type { BaseRoot, DateLiteral } from "@ark/schema"
 import {
 	throwParseError,
 	type BigintLiteral,
 	type ErrorMessage,
 	type NumberLiteral,
 	type trim
-} from "@arktype/util"
+} from "@ark/util"
 import type { DynamicStateWithRoot } from "../../reduce/dynamic.js"
 import type { StringLiteral } from "../operand/enclosed.js"
 

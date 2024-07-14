@@ -1,5 +1,5 @@
-import { fromCwd, type SourcePosition } from "@arktype/fs"
-import { throwInternalError } from "@arktype/util"
+import { fromCwd, type SourcePosition } from "@ark/fs"
+import { throwInternalError } from "@ark/util"
 import * as tsvfs from "@typescript/vfs"
 import { readFileSync } from "node:fs"
 import { dirname, join } from "node:path"

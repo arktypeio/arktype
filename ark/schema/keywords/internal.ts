@@ -1,4 +1,4 @@
-import type { array, Digit, Key } from "@arktype/util"
+import type { array, Digit, Key } from "@ark/util"
 import type { SchemaModule } from "../module.js"
 import { root, schemaScope } from "../scope.js"
 // these are needed to create some internal types

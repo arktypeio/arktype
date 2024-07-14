@@ -1,10 +1,10 @@
-import { attest, contextualize } from "@arktype/attest"
+import { attest, contextualize } from "@ark/attest"
 import {
 	writeInvalidPropertyKeyMessage,
 	writeUnboundableMessage,
 	writeUnresolvableMessage
-} from "@arktype/schema"
-import { printable, registeredReference } from "@arktype/util"
+} from "@ark/schema"
+import { printable, registeredReference } from "@ark/util"
 import { scope, type } from "arktype"
 import {
 	writeInvalidSpreadTypeMessage,

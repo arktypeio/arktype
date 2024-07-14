@@ -11,7 +11,7 @@ import {
 	type StructureNode,
 	type UndeclaredKeyBehavior,
 	type writeInvalidPropertyKeyMessage
-} from "@arktype/schema"
+} from "@ark/schema"
 import {
 	append,
 	escapeToken,
@@ -29,7 +29,7 @@ import {
 	type merge,
 	type mutable,
 	type show
-} from "@arktype/util"
+} from "@ark/util"
 import type { ParseContext } from "../scope.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
 import { writeUnassignableDefaultValueMessage } from "./semantic/default.js"

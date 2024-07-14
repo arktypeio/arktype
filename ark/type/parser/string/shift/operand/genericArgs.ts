@@ -1,5 +1,5 @@
-import type { BaseRoot, GenericProps, GenericRoot } from "@arktype/schema"
-import type { array, ErrorMessage, join } from "@arktype/util"
+import type { BaseRoot, GenericProps, GenericRoot } from "@ark/schema"
+import type { array, ErrorMessage, join } from "@ark/util"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import { writeUnclosedGroupMessage } from "../../reduce/shared.js"
 import type { state, StaticState } from "../../reduce/static.js"

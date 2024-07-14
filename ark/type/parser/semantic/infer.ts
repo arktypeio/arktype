@@ -11,8 +11,8 @@ import type {
 	inferIntersection,
 	normalizeLimit,
 	string
-} from "@arktype/schema"
-import type { BigintLiteral, array } from "@arktype/util"
+} from "@ark/schema"
+import type { BigintLiteral, array } from "@ark/util"
 import type {
 	UnparsedScope,
 	resolve,

@@ -1,4 +1,4 @@
-import type { Stringifiable } from "@arktype/util"
+import type { Stringifiable } from "@ark/util"
 import type { Comparator } from "../string/reduce/shared.js"
 import type { InfixExpression, PostfixExpression } from "./infer.js"
 

@@ -1,6 +1,6 @@
-import { attest, contextualize } from "@arktype/attest"
-import { writeUnresolvableMessage } from "@arktype/schema"
-import { writeMalformedNumericLiteralMessage } from "@arktype/util"
+import { attest, contextualize } from "@ark/attest"
+import { writeUnresolvableMessage } from "@ark/schema"
+import { writeMalformedNumericLiteralMessage } from "@ark/util"
 import { scope, type } from "arktype"
 
 contextualize(() => {

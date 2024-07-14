@@ -1,9 +1,4 @@
-import {
-	type array,
-	isKeyOf,
-	type propValueOf,
-	type satisfy
-} from "@arktype/util"
+import { type array, isKeyOf, type propValueOf, type satisfy } from "@ark/util"
 import { RawPrimitiveConstraint } from "../constraint.js"
 import type { Node } from "../kinds.js"
 import type { BaseMeta, RawNodeDeclaration } from "../shared/declare.js"

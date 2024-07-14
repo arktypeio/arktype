@@ -6,7 +6,7 @@ import {
 	throwParseError,
 	type array,
 	type thunkable
-} from "@arktype/util"
+} from "@ark/util"
 import type { inferRoot } from "./inference.js"
 import type { RootSchema } from "./kinds.js"
 import type { Root, UnknownRoot } from "./roots/root.js"

@@ -1,5 +1,5 @@
-import { attest, contextualize } from "@arktype/attest"
-import { Hkt, type array, type conform, type show } from "@arktype/util"
+import { attest, contextualize } from "@ark/attest"
+import { Hkt, type array, type conform, type show } from "@ark/util"
 
 contextualize(() => {
 	interface AppendKind extends Hkt.Kind {

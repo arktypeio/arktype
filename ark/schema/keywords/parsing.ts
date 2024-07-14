@@ -2,7 +2,7 @@ import {
 	isWellFormedInteger,
 	wellFormedIntegerMatcher,
 	wellFormedNumberMatcher
-} from "@arktype/util"
+} from "@ark/util"
 import type { number } from "../ast.js"
 import type { SchemaModule } from "../module.js"
 import type { Out } from "../roots/morph.js"

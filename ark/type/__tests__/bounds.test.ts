@@ -1,12 +1,12 @@
-import { attest, contextualize } from "@arktype/attest"
+import { attest, contextualize } from "@ark/attest"
 import {
 	internal,
 	internalSchema,
 	keywordNodes,
 	writeInvalidOperandMessage,
 	writeUnboundableMessage
-} from "@arktype/schema"
-import { writeMalformedNumericLiteralMessage } from "@arktype/util"
+} from "@ark/schema"
+import { writeMalformedNumericLiteralMessage } from "@ark/util"
 import { type } from "arktype"
 import { writeDoubleRightBoundMessage } from "../parser/semantic/bounds.js"
 import {

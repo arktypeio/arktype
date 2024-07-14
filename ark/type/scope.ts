@@ -18,7 +18,7 @@ import {
 	type destructuredImportContext,
 	type exportedNameOf,
 	type writeDuplicateAliasError
-} from "@arktype/schema"
+} from "@ark/schema"
 import {
 	bound,
 	domainOf,
@@ -31,7 +31,7 @@ import {
 	type keyError,
 	type nominal,
 	type show
-} from "@arktype/util"
+} from "@ark/util"
 import {
 	parseGenericParams,
 	type Generic,

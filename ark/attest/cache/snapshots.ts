@@ -7,7 +7,7 @@ import {
 	writeFile,
 	writeJson,
 	type SourcePosition
-} from "@arktype/fs"
+} from "@ark/fs"
 import { existsSync } from "node:fs"
 import { basename, dirname, isAbsolute, join } from "node:path"
 import type ts from "typescript"

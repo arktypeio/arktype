@@ -1,12 +1,12 @@
-import { attest, contextualize } from "@arktype/attest"
+import { attest, contextualize } from "@ark/attest"
 import type {
 	AtLeastLength,
 	AtMostLength,
 	number,
 	Out,
 	string
-} from "@arktype/schema"
-import { registeredReference } from "@arktype/util"
+} from "@ark/schema"
+import { registeredReference } from "@ark/util"
 import { scope, type, type Type } from "arktype"
 import type { Module } from "../module.js"
 

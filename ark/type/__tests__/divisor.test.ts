@@ -1,5 +1,5 @@
-import { attest, contextualize } from "@arktype/attest"
-import { keywordNodes, writeIndivisibleMessage } from "@arktype/schema"
+import { attest, contextualize } from "@ark/attest"
+import { keywordNodes, writeIndivisibleMessage } from "@ark/schema"
 import { type } from "arktype"
 import { writeInvalidDivisorMessage } from "../parser/string/shift/operator/divisor.js"
 

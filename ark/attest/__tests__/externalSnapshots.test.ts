@@ -1,5 +1,5 @@
-import { attest, contextualize } from "@arktype/attest"
-import { dirName, readJson, writeJson } from "@arktype/fs"
+import { attest, contextualize } from "@ark/attest"
+import { dirName, readJson, writeJson } from "@ark/fs"
 import * as assert from "node:assert/strict"
 import { rmSync } from "node:fs"
 import { join } from "node:path"

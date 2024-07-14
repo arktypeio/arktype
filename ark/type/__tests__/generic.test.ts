@@ -1,11 +1,11 @@
-import { attest, contextualize } from "@arktype/attest"
+import { attest, contextualize } from "@ark/attest"
 import {
 	keywordNodes,
 	writeIndivisibleMessage,
 	writeUnboundableMessage,
 	writeUnresolvableMessage,
 	writeUnsatisfiedParameterConstraintMessage
-} from "@arktype/schema"
+} from "@ark/schema"
 import { scope, type } from "arktype"
 import { emptyGenericParameterMessage, type Generic } from "../generic.js"
 import { writeUnclosedGroupMessage } from "../parser/string/reduce/shared.js"
@@ -177,6 +177,32 @@ contextualize(() => {
 				.type.errors(
 					"Argument of type 'string' is not assignable to parameter of type 'Root<moreThan<0>, any>'"
 				)
+		})
+
+		it("unsatisfied parameter string", () => {
+			const $ = scope({
+				"entry<k extends string | symbol, v>": ["k", "v"],
+				foobar: "entry<'foo', 'bar'>"
+			})
+			const types = $.export()
+
+			const expected = type(["'foo'", "'bar'"])
+
+			attest<typeof expected.t>(types.foobar.t)
+			attest(types.foobar.expression).equals(expected.expression)
+
+			// // @ts-expect-error
+			// attest(() => {})
+			// 	.throws(
+			// 		writeUnsatisfiedParameterConstraintMessage(
+			// 			"n",
+			// 			"number > 0",
+			// 			"number"
+			// 		)
+			// 	)
+			// 	.type.errors(
+			// 		"Argument of type 'string' is not assignable to parameter of type 'Root<moreThan<0>, any>'"
+			// 	)
 		})
 
 		it("constraint parse error", () => {

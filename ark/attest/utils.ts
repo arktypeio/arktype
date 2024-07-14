@@ -1,5 +1,5 @@
-import { caller } from "@arktype/fs"
-import { throwError } from "@arktype/util"
+import { caller } from "@ark/fs"
+import { throwError } from "@ark/util"
 import { basename, relative } from "node:path"
 
 export const getFileKey = (path: string): string => relative(".", path)

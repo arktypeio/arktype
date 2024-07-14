@@ -9,7 +9,7 @@ import {
 	type resolvableReferenceIn,
 	type resolveReference,
 	type writeNonSubmoduleDotMessage
-} from "@arktype/schema"
+} from "@ark/schema"
 import {
 	printable,
 	throwParseError,
@@ -20,7 +20,7 @@ import {
 	type ErrorMessage,
 	type anyOrNever,
 	type join
-} from "@arktype/util"
+} from "@ark/util"
 import type { GenericInstantiationAst } from "../../../semantic/infer.js"
 import { writePrefixedPrivateReferenceMessage } from "../../../semantic/validate.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
