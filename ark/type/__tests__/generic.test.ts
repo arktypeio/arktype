@@ -57,12 +57,6 @@ contextualize(() => {
 			attest(schrodingersBox.json).equals(expected.json)
 		})
 
-		it("with constraint", () => {
-			const nonEmpty = type("<arr>", "arr ")
-
-			const z = nonEmpty("string")
-		})
-
 		it("referenced in scope inline", () => {
 			const $ = scope({
 				one: "1",
