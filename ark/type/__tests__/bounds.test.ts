@@ -15,7 +15,6 @@ import {
 	writeUnpairableComparatorMessage
 } from "../parser/string/reduce/shared.js"
 import { writeInvalidLimitMessage } from "../parser/string/shift/operator/bounds.js"
-import { shallowDefaultMessage } from "../parser/string/shift/operator/default.js"
 
 contextualize(() => {
 	describe("string expressions", () => {
