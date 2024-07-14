@@ -71,27 +71,27 @@ export type validateScope<def> = {
 		// this should only occur when importing/exporting modules, and those
 		// keys should be ignored
 		unknown
-	: parseScopeKey<k> extends infer parsedKey extends ParsedScopeKey ?
-		parsedKey["params"]["length"] extends 0 ?
-			// not including Type here directly breaks some cyclic tests (last checked w/ TS 5.5).
-			// if you are from the future with a better version of TS and can remove it
-			// without breaking `pnpm typecheck`, go for it.
-			def[k] extends Type | PreparsedResolution ? def[k]
-			: k extends PrivateDeclaration<infer name extends keyof def & string> ?
-				keyError<writeDuplicateAliasError<name>>
-			:	validateDefinition<def[k], bootstrapAliases<def>, {}>
-		: parsedKey["params"] extends array<GenericParamAst> ?
-			validateDefinition<
-				def[k],
-				bootstrapAliases<def>,
-				{
-					// once we support constraints on generic parameters, we'd use
-					// the base type here: https://github.com/arktypeio/arktype/issues/796
-					[param in parsedKey["params"][number][0]]: unknown
-				}
-			>
+	: parseScopeKey<k, def>["params"] extends infer params ?
+		params extends array<GenericParamAst> ?
+			params["length"] extends 0 ?
+				// not including Type here directly breaks some cyclic tests (last checked w/ TS 5.5).
+				// if you are from the future with a better version of TS and can remove it
+				// without breaking `pnpm typecheck`, go for it.
+				def[k] extends Type | PreparsedResolution ? def[k]
+				: k extends PrivateDeclaration<infer name extends keyof def & string> ?
+					keyError<writeDuplicateAliasError<name>>
+				:	validateDefinition<def[k], bootstrapAliases<def>, {}>
+			:	validateDefinition<
+					def[k],
+					bootstrapAliases<def>,
+					{
+						// once we support constraints on generic parameters, we'd use
+						// the base type here: https://github.com/arktypeio/arktype/issues/796
+						[param in params[number][0]]: unknown
+					}
+				>
 		:	// if we get here, the params failed to parse- return the error
-			parsedKey["params"]
+			params
 	:	never
 }
 
@@ -119,11 +119,18 @@ type bootstrapAliases<def> = {
 	:	Def<def[k]>
 } & {
 	[k in keyof def & GenericDeclaration as extractGenericName<k>]: GenericProps<
-		parseValidGenericParams<extractGenericParameters<k>>,
+		parseValidGenericParams<extractGenericParameters<k>, bootstrapAliases<def>>,
 		def[k],
 		UnparsedScope
 	>
 }
+
+type O = bootstrapAliases<{
+	readonly "box<t,u>": {
+		readonly box: "t|u"
+	}
+	readonly bitBox: "box<0,1>"
+}>
 
 type inferBootstrapped<$> = show<{
 	[name in keyof $]: $[name] extends Def<infer def> ?
@@ -323,11 +330,11 @@ export const parseScopeKey = (k: string): ParsedScopeKey => {
 	}
 }
 
-export type parseScopeKey<k> =
+export type parseScopeKey<k, def> =
 	k extends GenericDeclaration<infer name, infer paramString> ?
 		{
 			name: name
-			params: parseGenericParams<paramString>
+			params: parseGenericParams<paramString, bootstrapAliases<def>>
 		}
 	:	{
 			name: k

@@ -55,6 +55,10 @@ contextualize(() => {
 			attest(schrodingersBox.json).equals(expected.json)
 		})
 
+		it("with constraint", () => {
+			const nonEmpty = type("<arr extends Array>", "arr > 0")
+		})
+
 		it("referenced in scope inline", () => {
 			const $ = scope({
 				one: "1",

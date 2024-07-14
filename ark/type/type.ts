@@ -44,6 +44,8 @@ import type { type } from "./ark.js"
 import {
 	parseGenericParams,
 	type Generic,
+	type ParameterString,
+	type baseGenericInstantiation,
 	type parseValidGenericParams,
 	type validateParameterString
 } from "./generic.js"
@@ -86,16 +88,14 @@ export interface TypeParser<$ = {}> {
 		:	[]
 	): Type<inferTypeRoot<[zero, one, ...rest], $>, $>
 
-	<params extends string, const def>(
-		params: `<${validateParameterString<params>}>`,
+	<params extends ParameterString, const def>(
+		params: validateParameterString<params, $>,
 		def: validateDefinition<
 			def,
 			$,
-			{
-				[name in parseGenericParams<params>[number][0]]: unknown
-			}
+			baseGenericInstantiation<parseValidGenericParams<params, $>>
 		>
-	): Generic<parseValidGenericParams<params>, def, $>
+	): Generic<parseValidGenericParams<params, $>, def, $>
 
 	raw(def: unknown): Type<any, $>
 	errors: typeof ArkErrors
