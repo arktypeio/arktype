@@ -2,7 +2,8 @@ import type {
 	GenericNodeSignature,
 	GenericParamAst,
 	GenericParamDef,
-	GenericRoot
+	GenericRoot,
+	writeUnsatisfiedParameterConstraintMessage
 } from "@arktype/schema"
 import {
 	throwParseError,
@@ -10,6 +11,7 @@ import {
 	type array,
 	type Callable,
 	type conform,
+	type describeExpression,
 	type ErrorMessage,
 	type keyError,
 	type WhiteSpaceToken
@@ -34,15 +36,32 @@ export type validateParameterString<s extends ParameterString, $> =
 		ErrorMessage<message>
 	:	s
 
+export type validateGenericArg<param extends GenericParamAst, def, $> =
+	validateTypeRoot<def, $> extends infer result ?
+		result extends ErrorMessage ? result
+		: inferTypeRoot<def, $> extends param[1] ? def
+		: ErrorMessage<
+				writeUnsatisfiedParameterConstraintMessage<
+					param[0],
+					describeExpression<param[1]>,
+					""
+				>
+			>
+	:	never
+
 export type GenericTypeInstantiation<
 	params extends array<GenericParamAst> = array<GenericParamAst>,
 	def = any,
 	$ = any
-> = <args>(
+> = <const args>(
 	...args: conform<
 		args,
 		{
-			[i in keyof params]: validateTypeRoot<args[i & keyof args], $>
+			[i in keyof params]: validateGenericArg<
+				params[i],
+				args[i & keyof args],
+				$
+			>
 		}
 	>
 ) => Type<inferDefinition<def, $, bindGenericArgs<params, $, args>>, $>

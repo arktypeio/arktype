@@ -58,7 +58,9 @@ contextualize(() => {
 		})
 
 		it("with constraint", () => {
-			const nonEmpty = type("<arr extends Array>", "arr > 0")
+			const nonEmpty = type("<arr>", "arr ")
+
+			const z = nonEmpty("string")
 		})
 
 		it("referenced in scope inline", () => {
@@ -169,9 +171,18 @@ contextualize(() => {
 			attest<typeof expected.t>(t.t)
 			attest(t.expression).equals(expected.expression)
 
-			attest(() => positiveToInteger("number")).throwsAndHasTypeError(
-				writeUnsatisfiedParameterConstraintMessage("n", "number > 0", "number")
-			)
+			// @ts-expect-error
+			attest(() => positiveToInteger("number"))
+				.throws(
+					writeUnsatisfiedParameterConstraintMessage(
+						"n",
+						"number > 0",
+						"number"
+					)
+				)
+				.type.errors(
+					"Argument of type 'string' is not assignable to parameter of type 'Root<moreThan<0>, any>'"
+				)
 		})
 
 		it("constraint parse error", () => {
