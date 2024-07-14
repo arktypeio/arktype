@@ -35,6 +35,8 @@ import {
 	parseGenericParams,
 	type Generic,
 	type GenericDeclaration,
+	type ParameterString,
+	type baseGenericArgs,
 	type parseValidGenericParams
 } from "./generic.js"
 import { createMatchParser, type MatchParser } from "./match.js"
@@ -84,11 +86,7 @@ export type validateScope<def> = {
 			:	validateDefinition<
 					def[k],
 					bootstrapAliases<def>,
-					{
-						// once we support constraints on generic parameters, we'd use
-						// the base type here: https://github.com/arktypeio/arktype/issues/796
-						[param in params[number][0]]: unknown
-					}
+					baseGenericArgs<params>
 				>
 		:	// if we get here, the params failed to parse- return the error
 			params
@@ -125,13 +123,6 @@ type bootstrapAliases<def> = {
 	>
 }
 
-type O = bootstrapAliases<{
-	readonly "box<t,u>": {
-		readonly box: "t|u"
-	}
-	readonly bitBox: "box<0,1>"
-}>
-
 type inferBootstrapped<$> = show<{
 	[name in keyof $]: $[name] extends Def<infer def> ?
 		inferDefinition<def, $, {}>
@@ -146,7 +137,9 @@ type extractGenericName<k> =
 	k extends GenericDeclaration<infer name> ? name : never
 
 type extractGenericParameters<k> =
-	k extends GenericDeclaration<string, infer params> ? params : never
+	// using extends GenericDeclaration<string, infer params>
+	// causes TS fail to infer a narrowed result as of 5.5
+	k extends `${string}<${infer params}>` ? ParameterString<params> : never
 
 export type resolve<reference extends keyof $ | keyof args, $, args> =
 	(
@@ -331,10 +324,11 @@ export const parseScopeKey = (k: string): ParsedScopeKey => {
 }
 
 export type parseScopeKey<k, def> =
-	k extends GenericDeclaration<infer name, infer paramString> ?
+	// trying to infer against GenericDeclaration here directly also fails as of TS 5.5
+	k extends `${infer name}<${infer params}>` ?
 		{
 			name: name
-			params: parseGenericParams<paramString, bootstrapAliases<def>>
+			params: parseGenericParams<params, bootstrapAliases<def>>
 		}
 	:	{
 			name: k

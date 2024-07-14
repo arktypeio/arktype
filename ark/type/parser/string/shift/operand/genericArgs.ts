@@ -30,7 +30,7 @@ const _parseGenericArgs = (
 	if (argState.finalizer === ">") {
 		if (argNodes.length !== g.params.length) {
 			return s.error(
-				writeInvalidGenericArgsMessage(
+				writeInvalidGenericArgCountMessage(
 					name,
 					g.names,
 					argNodes.map(arg => arg.expression)
@@ -82,7 +82,9 @@ type _parseGenericArgs<
 			finalArgState["finalizer"] extends ">" ?
 				nextAsts["length"] extends g["params"]["length"] ?
 					ParsedArgs<nextAsts, nextUnscanned>
-				:	state.error<writeInvalidGenericArgsMessage<name, g["names"], nextDefs>>
+				:	state.error<
+						writeInvalidGenericArgCountMessage<name, g["names"], nextDefs>
+					>
 			: finalArgState["finalizer"] extends "," ?
 				_parseGenericArgs<name, g, nextUnscanned, $, args, nextDefs, nextAsts>
 			: finalArgState["finalizer"] extends ErrorMessage ? finalArgState
@@ -90,7 +92,7 @@ type _parseGenericArgs<
 		:	never
 	:	never
 
-export const writeInvalidGenericArgsMessage = <
+export const writeInvalidGenericArgCountMessage = <
 	name extends string,
 	params extends array<string>,
 	argDefs extends array<string>
@@ -98,14 +100,14 @@ export const writeInvalidGenericArgsMessage = <
 	name: name,
 	params: params,
 	argDefs: argDefs
-): writeInvalidGenericArgsMessage<name, params, argDefs> =>
+): writeInvalidGenericArgCountMessage<name, params, argDefs> =>
 	`${name}<${params.join(", ")}> requires exactly ${
 		params.length
 	} args (got ${argDefs.length}${
 		argDefs.length === 0 ? "" : `: ${argDefs.join(", ")}`
 	})` as never
 
-export type writeInvalidGenericArgsMessage<
+export type writeInvalidGenericArgCountMessage<
 	name extends string,
 	params extends array<string>,
 	argDefs extends array<string>

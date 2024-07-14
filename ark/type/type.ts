@@ -45,7 +45,7 @@ import {
 	parseGenericParams,
 	type Generic,
 	type ParameterString,
-	type baseGenericInstantiation,
+	type baseGenericArgs,
 	type parseValidGenericParams,
 	type validateParameterString
 } from "./generic.js"
@@ -93,7 +93,7 @@ export interface TypeParser<$ = {}> {
 		def: validateDefinition<
 			def,
 			$,
-			baseGenericInstantiation<parseValidGenericParams<params, $>>
+			baseGenericArgs<parseValidGenericParams<params, $>>
 		>
 	): Generic<parseValidGenericParams<params, $>, def, $>
 

@@ -7,7 +7,7 @@ import {
 import { scope, type } from "arktype"
 import { emptyGenericParameterMessage } from "../generic.js"
 import { writeUnclosedGroupMessage } from "../parser/string/reduce/shared.js"
-import { writeInvalidGenericArgsMessage } from "../parser/string/shift/operand/genericArgs.js"
+import { writeInvalidGenericArgCountMessage } from "../parser/string/shift/operand/genericArgs.js"
 import { writeInvalidDivisorMessage } from "../parser/string/shift/operator/divisor.js"
 import { writeUnexpectedCharacterMessage } from "../parser/string/shift/operator/operator.js"
 
@@ -211,7 +211,7 @@ contextualize(() => {
 					// @ts-expect-error
 					$.type("box<0,box<2 | 3>>")
 				).throwsAndHasTypeError(
-					writeInvalidGenericArgsMessage("box", ["t", "u"], ["2 | 3"])
+					writeInvalidGenericArgCountMessage("box", ["t", "u"], ["2 | 3"])
 				)
 			})
 
@@ -220,7 +220,7 @@ contextualize(() => {
 					// @ts-expect-error
 					$.type("box<0, box<1, 2, 3>>")
 				).throwsAndHasTypeError(
-					writeInvalidGenericArgsMessage("box", ["t", "u"], ["1", "2", "3"])
+					writeInvalidGenericArgCountMessage("box", ["t", "u"], ["1", "2", "3"])
 				)
 			})
 
@@ -288,7 +288,7 @@ contextualize(() => {
 
 			it("declaration and instantiation leading and trailing whitespace", () => {
 				const types = scope({
-					"box< a , b >": {
+					"box<a , b >": {
 						box: " a | b "
 					},
 					actual: "  box  < 'foo'  ,   'bar'  > "

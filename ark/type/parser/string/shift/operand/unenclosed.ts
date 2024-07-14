@@ -27,7 +27,7 @@ import type { BaseCompletions } from "../../string.js"
 import type { Scanner } from "../scanner.js"
 import {
 	parseGenericArgs,
-	writeInvalidGenericArgsMessage,
+	writeInvalidGenericArgCountMessage,
 	type ParsedArgs
 } from "./genericArgs.js"
 
@@ -77,7 +77,7 @@ export const parseGenericInstantiation = (
 	s.scanner.shiftUntilNonWhitespace()
 	const lookahead = s.scanner.shift()
 	if (lookahead !== "<")
-		return s.error(writeInvalidGenericArgsMessage(name, g.names, []))
+		return s.error(writeInvalidGenericArgCountMessage(name, g.names, []))
 
 	const parsedArgs = parseGenericArgs(name, g, s)
 	return g(...(parsedArgs as never)) as never
@@ -98,7 +98,7 @@ export type parseGenericInstantiation<
 			:	// propagate error
 				result
 		:	never
-	:	state.error<writeInvalidGenericArgsMessage<name, g["names"], []>>
+	:	state.error<writeInvalidGenericArgCountMessage<name, g["names"], []>>
 
 const unenclosedToNode = (s: DynamicState, token: string): BaseRoot =>
 	maybeParseReference(s, token) ??

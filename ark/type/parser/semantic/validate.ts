@@ -13,7 +13,7 @@ import type {
 	writeMalformedNumericLiteralMessage
 } from "@arktype/util"
 import type { Comparator } from "../string/reduce/shared.js"
-import type { writeInvalidGenericArgsMessage } from "../string/shift/operand/genericArgs.js"
+import type { writeInvalidGenericArgCountMessage } from "../string/shift/operand/genericArgs.js"
 import type { UnitLiteral } from "../string/shift/operator/default.js"
 import type { parseString } from "../string/string.js"
 import type { validateRange } from "./bounds.js"
@@ -94,7 +94,9 @@ type validateStringAst<def extends string, $> =
 		: // these problems would've been caught during a fullStringParse, but it's most
 		// efficient to check for them here in case the string was naively parsed
 		$[alias] extends GenericProps ?
-			ErrorMessage<writeInvalidGenericArgsMessage<def, $[alias]["names"], []>>
+			ErrorMessage<
+				writeInvalidGenericArgCountMessage<def, $[alias]["names"], []>
+			>
 		: $[alias] extends { [arkKind]: "module" } ?
 			ErrorMessage<writeMissingSubmoduleAccessMessage<def>>
 		:	undefined
