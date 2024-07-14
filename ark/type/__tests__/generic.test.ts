@@ -123,199 +123,205 @@ contextualize(() => {
 		})
 	})
 
-	describe("scoped", () => {
-		const $ = scope({
-			"box<t,u>": {
-				box: "t|u"
-			},
-			bitBox: "box<0,1>"
-		})
-
-		const types = $.export()
-
-		it("referenced in scope", () => {
-			const expected = type({ box: "0|1" })
-
-			attest(types.bitBox.json).equals(expected.json)
-			attest<typeof expected.t>(types.bitBox.t)
-		})
-
-		it("nested", () => {
-			const t = $.type("box<0|1, box<'one', 'zero'>>")
-
-			const expected = type({ box: ["0|1", "|", { box: "'one'|'zero'" }] })
-
-			attest<typeof expected.t>(t.t)
-			attest(t.json).equals(expected.json)
-		})
-
-		it("in expression", () => {
-			const t = $.type("string | box<0, 1> | boolean")
-
-			const expected = type("string|boolean", "|", { box: "0|1" })
-
-			attest<typeof expected.t>(t.t)
-			attest(t.json).equals(expected.json)
-		})
-
-		it("this in args", () => {
-			const t = $.type("box<0,  this>")
-			type Expected = {
-				box: 0 | Expected
-			}
-			const standalone = type({
-				box: "0|this"
+	contextualize.each(
+		"scoped",
+		() => {
+			const $ = scope({
+				"box<t,u>": {
+					box: "t|u"
+				},
+				bitBox: "box<0,1>"
 			})
 
-			attest<Expected>(t.t)
-			attest<Expected>(standalone.t)
-			attest(t.json).equals(standalone.json)
-		})
+			return { $, types: $.export() }
+		},
+		it => {
+			it("referenced in scope", ({ types }) => {
+				const expected = type({ box: "0|1" })
 
-		it("right bounds", () => {
-			// should be able to differentiate between > that is part of a right
-			// bound and > that closes a generic instantiation
-			const t = $.type("box<number>5, string>=7>")
-
-			const expected = type({
-				box: "number>5|string>=7"
+				attest(types.bitBox.json).equals(expected.json)
+				attest<typeof expected.t>(types.bitBox.t)
 			})
 
-			attest<typeof expected.t>(t.t)
-			attest(t.json).equals(expected.json)
-		})
+			it("nested", ({ $ }) => {
+				const t = $.type("box<0|1, box<'one', 'zero'>>")
 
-		it("parameter supercedes alias with same name", () => {
-			const types = scope({
-				"box<foo>": {
-					box: "foo|bar"
-				},
-				foo: "'foo'",
-				bar: "'bar'"
-			}).export()
+				const expected = type({ box: ["0|1", "|", { box: "'one'|'zero'" }] })
 
-			const t = types.box("'baz'")
-
-			const expected = type({ box: "'bar' | 'baz'" })
-
-			attest<typeof expected.t>(t.t)
-			attest(t.json).equals(expected.json)
-		})
-
-		it("self-reference", () => {
-			const types = scope({
-				"alternate<a, b>": {
-					// ensures old generic params aren't intersected with
-					// updated values (would be never)
-					swap: "alternate<b, a>",
-					order: ["a", "b"]
-				},
-				reference: "alternate<0, 1>"
-			}).export()
-
-			attest<[0, 1]>(types.reference.infer.swap.swap.order)
-			attest<[1, 0]>(types.reference.infer.swap.swap.swap.order)
-			const fromCall = types.alternate("'off'", "'on'")
-			attest<["off", "on"]>(fromCall.infer.swap.swap.order)
-			attest<["on", "off"]>(fromCall.infer.swap.swap.swap.order)
-		})
-
-		it("self-reference no params", () => {
-			attest(() =>
-				scope({
-					"nest<t>": {
-						// @ts-expect-error
-						nest: "nest"
-					}
-				}).export()
-			).throwsAndHasTypeError(writeInvalidGenericArgsMessage("nest", ["t"], []))
-		})
-
-		it("declaration and instantiation leading and trailing whitespace", () => {
-			const types = scope({
-				"box< a , b >": {
-					box: " a | b "
-				},
-				actual: "  box  < 'foo'  ,   'bar'  > "
-			}).export()
-
-			const expected = type({
-				box: "'foo' | 'bar'"
+				attest<typeof expected.t>(t.t)
+				attest(t.json).equals(expected.json)
 			})
 
-			attest<typeof expected.t>(types.actual.t)
-		})
+			it("in expression", ({ $ }) => {
+				const t = $.type("string | box<0, 1> | boolean")
 
-		it("allows external scope reference to be resolved", () => {
-			const types = scope({
-				external: "'external'",
-				"orExternal<t>": "t|external"
-			}).export()
+				const expected = type("string|boolean", "|", { box: "0|1" })
 
-			const b = scope({
-				orExternal: types.orExternal,
-				internal: "orExternal<'internal'>"
-			}).export()
+				attest<typeof expected.t>(t.t)
+				attest(t.json).equals(expected.json)
+			})
 
-			const expected = type("'internal' | 'external'")
-
-			attest<typeof expected.t>(b.internal.t)
-			attest(b.internal.json).equals(expected.json)
-		})
-
-		it("empty string in declaration", () => {
-			attest(() =>
-				scope({
-					// @ts-expect-error
-					"box<t,,u>": "string"
+			it("this in args", ({ $ }) => {
+				const t = $.type("box<0,  this>")
+				type Expected = {
+					box: 0 | Expected
+				}
+				const standalone = type({
+					box: "0|this"
 				})
-			).throwsAndHasTypeError(emptyGenericParameterMessage)
-		})
 
-		it("unclosed instantiation", () => {
-			// @ts-expect-error
-			attest(() => $.type("box<0,  1")).throwsAndHasTypeError(
-				writeUnclosedGroupMessage(">")
-			)
-		})
+				attest<Expected>(t.t)
+				attest<Expected>(standalone.t)
+				attest(t.json).equals(standalone.json)
+			})
 
-		it("extra >", () => {
-			attest(() =>
+			it("right bounds", ({ $ }) => {
+				// should be able to differentiate between > that is part of a right
+				// bound and > that closes a generic instantiation
+				const t = $.type("box<number>5, string>=7>")
+
+				const expected = type({
+					box: "number>5|string>=7"
+				})
+
+				attest<typeof expected.t>(t.t)
+				attest(t.json).equals(expected.json)
+			})
+
+			it("unclosed instantiation", ({ $ }) => {
 				// @ts-expect-error
-				$.type("box<0,  this>>")
-			).throwsAndHasTypeError(writeUnexpectedCharacterMessage(">"))
-		})
+				attest(() => $.type("box<0,  1")).throwsAndHasTypeError(
+					writeUnclosedGroupMessage(">")
+				)
+			})
 
-		it("too few args", () => {
-			attest(() =>
-				// @ts-expect-error
-				$.type("box<0,box<2 | 3>>")
-			).throwsAndHasTypeError(
-				writeInvalidGenericArgsMessage("box", ["t", "u"], ["2 | 3"])
-			)
-		})
+			it("extra >", ({ $ }) => {
+				attest(() =>
+					// @ts-expect-error
+					$.type("box<0,  this>>")
+				).throwsAndHasTypeError(writeUnexpectedCharacterMessage(">"))
+			})
 
-		it("too many args", () => {
-			attest(() =>
-				// @ts-expect-error
-				$.type("box<0, box<1, 2, 3>>")
-			).throwsAndHasTypeError(
-				writeInvalidGenericArgsMessage("box", ["t", "u"], ["1", "2", "3"])
-			)
-		})
+			it("too few args", ({ $ }) => {
+				attest(() =>
+					// @ts-expect-error
+					$.type("box<0,box<2 | 3>>")
+				).throwsAndHasTypeError(
+					writeInvalidGenericArgsMessage("box", ["t", "u"], ["2 | 3"])
+				)
+			})
 
-		it("syntactic error in arg", () => {
-			attest(() =>
-				// @ts-expect-error
-				$.type("box<1, number%0>")
-			).throwsAndHasTypeError(writeInvalidDivisorMessage(0))
-		})
+			it("too many args", ({ $ }) => {
+				attest(() =>
+					// @ts-expect-error
+					$.type("box<0, box<1, 2, 3>>")
+				).throwsAndHasTypeError(
+					writeInvalidGenericArgsMessage("box", ["t", "u"], ["1", "2", "3"])
+				)
+			})
 
-		it("semantic error in arg", () => {
-			attest(() =>
-				// @ts-expect-error
-				$.type("box<1,string%2>")
-			).throwsAndHasTypeError(writeIndivisibleMessage(keywordNodes.string))
-		})
-	})
+			it("syntactic error in arg", ({ $ }) => {
+				attest(() =>
+					// @ts-expect-error
+					$.type("box<1, number%0>")
+				).throwsAndHasTypeError(writeInvalidDivisorMessage(0))
+			})
+
+			it("semantic error in arg", ({ $ }) => {
+				attest(() =>
+					// @ts-expect-error
+					$.type("box<1,string%2>")
+				).throwsAndHasTypeError(writeIndivisibleMessage(keywordNodes.string))
+			})
+
+			it("parameter supercedes alias with same name", () => {
+				const types = scope({
+					"box<foo>": {
+						box: "foo|bar"
+					},
+					foo: "'foo'",
+					bar: "'bar'"
+				}).export()
+
+				const t = types.box("'baz'")
+
+				const expected = type({ box: "'bar' | 'baz'" })
+
+				attest<typeof expected.t>(t.t)
+				attest(t.json).equals(expected.json)
+			})
+
+			it("self-reference", () => {
+				const types = scope({
+					"alternate<a, b>": {
+						// ensures old generic params aren't intersected with
+						// updated values (would be never)
+						swap: "alternate<b, a>",
+						order: ["a", "b"]
+					},
+					reference: "alternate<0, 1>"
+				}).export()
+
+				attest<[0, 1]>(types.reference.infer.swap.swap.order)
+				attest<[1, 0]>(types.reference.infer.swap.swap.swap.order)
+				const fromCall = types.alternate("'off'", "'on'")
+				attest<["off", "on"]>(fromCall.infer.swap.swap.order)
+				attest<["on", "off"]>(fromCall.infer.swap.swap.swap.order)
+			})
+
+			it("self-reference no params", () => {
+				attest(() =>
+					scope({
+						"nest<t>": {
+							// @ts-expect-error
+							nest: "nest"
+						}
+					}).export()
+				).throwsAndHasTypeError(
+					writeInvalidGenericArgsMessage("nest", ["t"], [])
+				)
+			})
+
+			it("declaration and instantiation leading and trailing whitespace", () => {
+				const types = scope({
+					"box< a , b >": {
+						box: " a | b "
+					},
+					actual: "  box  < 'foo'  ,   'bar'  > "
+				}).export()
+
+				const expected = type({
+					box: "'foo' | 'bar'"
+				})
+
+				attest<typeof expected.t>(types.actual.t)
+			})
+
+			it("allows external scope reference to be resolved", () => {
+				const types = scope({
+					external: "'external'",
+					"orExternal<t>": "t|external"
+				}).export()
+
+				const b = scope({
+					orExternal: types.orExternal,
+					internal: "orExternal<'internal'>"
+				}).export()
+
+				const expected = type("'internal' | 'external'")
+
+				attest<typeof expected.t>(b.internal.t)
+				attest(b.internal.json).equals(expected.json)
+			})
+
+			it("empty string in declaration", () => {
+				attest(() =>
+					scope({
+						// @ts-expect-error
+						"box<t,,u>": "string"
+					})
+				).throwsAndHasTypeError(emptyGenericParameterMessage)
+			})
+		}
+	)
 })
