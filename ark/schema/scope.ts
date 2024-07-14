@@ -21,9 +21,10 @@ import {
 	type ResolvedArkConfig
 } from "./config.js"
 import {
-	GenericRoot,
 	LazyGenericRoot,
+	parseGeneric,
 	type GenericParamDef,
+	type GenericRoot,
 	type LazyGenericSchema,
 	type genericParamSchemasToAst
 } from "./generic.js"
@@ -189,16 +190,7 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 			return (def: LazyGenericSchema) =>
 				this.generic(params, new LazyGenericRoot(def)) as never
 		}
-		return new GenericRoot(
-			params.map((param): [string, BaseRoot] =>
-				typeof param === "string" ?
-					[param, $ark.intrinsic.unknown]
-				:	[param[0], this.parseRoot(param[1])]
-			) as never,
-			def,
-			this as never,
-			this as never
-		)
+		return parseGeneric(params, def, this as never)
 	}
 
 	@bound

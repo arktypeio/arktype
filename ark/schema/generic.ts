@@ -147,6 +147,10 @@ export class GenericRoot<
 
 			return this.$.parseRoot(bodyDef as never, { args: argNodes }) as never
 		})
+		// if this is a standalone generic, validate its base constraints right away
+		if (!isThunk(this._$)) this.validateBaseInstantiation()
+		// if it's part of a scope, scope.export will be resposible for invoking
+		// validateBaseInstantiation on export() once everything is resolvable
 	}
 
 	get $() {
