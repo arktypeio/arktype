@@ -2,6 +2,7 @@ import {
 	RawRootScope,
 	hasArkKind,
 	parseGeneric,
+	type AliasDefEntry,
 	type ArkConfig,
 	type BaseRoot,
 	type GenericArgResolutions,
@@ -205,15 +206,7 @@ export class RawScope<
 	private parseCache: Record<string, StringParseResult> = {}
 
 	constructor(def: Record<string, unknown>, config?: ArkConfig) {
-		const aliases: Record<string, unknown> = {}
-		for (const k in def) {
-			const parsedKey = parseScopeKey(k)
-			aliases[parsedKey.name] =
-				parsedKey.params.length ?
-					parseGeneric(parsedKey.params, def[k], () => this as never)
-				:	def[k]
-		}
-		super(aliases, config)
+		super(def, config)
 	}
 
 	type: RawTypeParser = new RawTypeParser(this as never)
@@ -225,6 +218,26 @@ export class RawScope<
 	})).bind(this)
 
 	define: (def: unknown) => unknown = ((def: unknown) => def).bind(this)
+
+	override preparseAlias(k: string, v: unknown): AliasDefEntry {
+		const firstParamIndex = k.indexOf("<")
+		if (firstParamIndex === -1) return [k, v]
+
+		if (k.at(-1) !== ">") {
+			throwParseError(
+				`'>' must be the last character of a generic declaration in a scope`
+			)
+		}
+
+		const params = parseGenericParams(k.slice(firstParamIndex + 1, -1), {
+			$: this as never,
+			args: {}
+		})
+
+		const generic = parseGeneric(params, v, () => this as never)
+
+		return [k.slice(0, firstParamIndex), generic]
+	}
 
 	override preparseRoot(def: unknown): unknown {
 		if (isThunk(def) && !hasArkKind(def, "generic")) return def()
@@ -302,25 +315,6 @@ export const writeShallowCycleErrorMessage = (
 export type ParsedScopeKey = {
 	name: string
 	params: array<GenericParamDef>
-}
-
-export const parseScopeKey = (k: string): ParsedScopeKey => {
-	const firstParamIndex = k.indexOf("<")
-	if (firstParamIndex === -1) {
-		return {
-			name: k,
-			params: []
-		}
-	}
-	if (k.at(-1) !== ">") {
-		throwParseError(
-			`'>' must be the last character of a generic declaration in a scope`
-		)
-	}
-	return {
-		name: k.slice(0, firstParamIndex),
-		params: parseGenericParams(k.slice(firstParamIndex + 1, -1))
-	}
 }
 
 export type parseScopeKey<k, def> =

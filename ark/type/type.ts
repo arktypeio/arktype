@@ -120,7 +120,10 @@ export class RawTypeParser extends Callable<
 				) {
 					// if there are exactly two args, the first of which looks like <${string}>,
 					// treat as a generic
-					const params = parseGenericParams(args[0].slice(1, -1))
+					const params = parseGenericParams(args[0].slice(1, -1), {
+						$,
+						args: {}
+					})
 					const def = args[1]
 					return $.generic(params, def) as never
 				}

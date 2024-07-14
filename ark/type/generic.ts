@@ -6,6 +6,7 @@ import type {
 } from "@arktype/schema"
 import {
 	throwParseError,
+	whiteSpaceTokens,
 	type array,
 	type Callable,
 	type conform,
@@ -16,10 +17,11 @@ import {
 import type { inferDefinition } from "./parser/definition.js"
 import type { inferAstRoot } from "./parser/semantic/infer.js"
 import type { validateAst } from "./parser/semantic/validate.js"
+import { DynamicState } from "./parser/string/reduce/dynamic.js"
 import type { state, StaticState } from "./parser/string/reduce/static.js"
-import { writeUnexpectedCharacterMessage } from "./parser/string/shift/operator/operator.js"
 import { Scanner } from "./parser/string/shift/scanner.js"
-import type { parseUntilFinalizer } from "./parser/string/string.js"
+import { parseUntilFinalizer } from "./parser/string/string.js"
+import type { ParseContext } from "./scope.js"
 import type { inferTypeRoot, Type, validateTypeRoot } from "./type.js"
 
 export type ParameterString<params extends string = string> = `<${params}>`
@@ -76,9 +78,6 @@ export type GenericDeclaration<
 	params extends ParameterString = ParameterString
 > = `${name}${params}`
 
-export const parseGenericParams = (def: string): array<GenericParamDef> =>
-	_parseGenericParams(new Scanner(def))
-
 export type parseValidGenericParams<def extends ParameterString, $> = conform<
 	parseGenericParams<extractParams<def>, $>,
 	array<GenericParamAst>
@@ -89,61 +88,98 @@ export const emptyGenericParameterMessage =
 
 export type emptyGenericParameterMessage = typeof emptyGenericParameterMessage
 
-const _parseGenericParams = (scanner: Scanner): array<GenericParamDef> => {
-	const param = scanner.shiftUntilNextTerminator()
-	if (param === "") throwParseError(emptyGenericParameterMessage)
+export const parseGenericParams = (
+	def: string,
+	ctx: ParseContext
+): array<GenericParamDef> => parseName(new Scanner(def), [], ctx)
 
-	scanner.shiftUntilNonWhitespace()
-	const nextNonWhitespace = scanner.shift()
-	return (
-		nextNonWhitespace === "" ? [param]
-		: nextNonWhitespace === "," ? [param, ..._parseGenericParams(scanner)]
-		: throwParseError(writeUnexpectedCharacterMessage(nextNonWhitespace, ","))
-	)
-}
-
-export type parseGenericParams<def extends string, $> = _parseName<
+export type parseGenericParams<def extends string, $> = parseNextNameChar<
 	Scanner.skipWhitespace<def>,
 	"",
 	[],
 	$
 >
 
-type Terminator = "," | ":" | WhiteSpaceToken
+const paramsTerminators = { ...whiteSpaceTokens, ",": true, ":": true }
 
-type _parseName<
+type ParamsTerminator = keyof typeof paramsTerminators
+
+const parseName = (
+	scanner: Scanner,
+	result: GenericParamDef[],
+	ctx: ParseContext
+): GenericParamDef[] => {
+	scanner.shiftUntilNonWhitespace()
+	const name = scanner.shiftUntilNextTerminator()
+	if (name === "") {
+		// if we've reached the end of the string and have parsed at least one
+		// param, return the valid result
+		if (scanner.lookahead === "" && result.length) return result
+		return throwParseError(emptyGenericParameterMessage)
+	}
+
+	scanner.shiftUntilNonWhitespace()
+
+	if (scanner.lookahead === ",")
+		return parseName(scanner, [...result, [name, $ark.intrinsic.unknown]], ctx)
+
+	return _parseOptionalConstraint(scanner, name, result, ctx)
+}
+
+type parseName<
+	unscanned extends string,
+	result extends array<GenericParamAst>,
+	$
+> = parseNextNameChar<Scanner.skipWhitespace<unscanned>, "", result, $>
+
+type parseNextNameChar<
 	unscanned extends string,
 	name extends string,
 	result extends array<GenericParamAst>,
 	$
 > =
 	unscanned extends `${infer lookahead}${infer nextUnscanned}` ?
-		lookahead extends Terminator ?
+		lookahead extends ParamsTerminator ?
 			name extends "" ? keyError<emptyGenericParameterMessage>
 			: lookahead extends "," ?
-				_parseName<
-					Scanner.skipWhitespace<nextUnscanned>,
-					"",
-					[...result, [name, unknown]],
-					$
-				>
-			: lookahead extends WhiteSpaceToken ?
-				_parseOptionalConstraint<
-					Scanner.skipWhitespace<nextUnscanned>,
-					name,
-					result,
-					$
-				>
-			: lookahead extends ":" ?
+				parseName<nextUnscanned, [...result, [name, unknown]], $>
+			: lookahead extends ":" | WhiteSpaceToken ?
 				// pass in unscanned instead of nextUnscanned here so we don't
-				// miss the terminator
+				// miss the ":" terminator
 				_parseOptionalConstraint<unscanned, name, result, $>
 			:	never
-		:	_parseName<nextUnscanned, `${name}${lookahead}`, result, $>
+		:	parseNextNameChar<nextUnscanned, `${name}${lookahead}`, result, $>
 	: name extends "" ? result
 	: [...result, [name, unknown]]
 
-type ConstrainingToken = ":" | "extends "
+const extendsToken = "extends "
+
+type ConstrainingToken = ":" | typeof extendsToken
+
+const _parseOptionalConstraint = (
+	scanner: Scanner,
+	name: string,
+	result: GenericParamDef[],
+	ctx: ParseContext
+): GenericParamDef[] => {
+	scanner.shiftUntilNonWhitespace()
+
+	if (scanner.lookahead === ":") scanner.shift()
+	else if (scanner.unscanned.startsWith(extendsToken))
+		scanner.jumpForward(extendsToken.length)
+	else {
+		// if we don't have a contraining token here, return now so we can
+		// assume in the rest of the function body we do have a constraint
+		if (scanner.lookahead === ",") scanner.shift()
+		result.push(name)
+		return parseName(scanner, result, ctx)
+	}
+
+	const s = parseUntilFinalizer(new DynamicState(scanner, ctx, false))
+	result.push([name, s.root])
+
+	return parseName(scanner, result, ctx)
+}
 
 type _parseOptionalConstraint<
 	unscanned extends string,
@@ -151,7 +187,9 @@ type _parseOptionalConstraint<
 	result extends array<GenericParamAst>,
 	$
 > =
-	unscanned extends `${ConstrainingToken}${infer nextUnscanned}` ?
+	Scanner.skipWhitespace<unscanned> extends (
+		`${ConstrainingToken}${infer nextUnscanned}`
+	) ?
 		parseUntilFinalizer<state.initialize<nextUnscanned>, $, {}> extends (
 			infer finalArgState extends StaticState
 		) ?
@@ -159,18 +197,16 @@ type _parseOptionalConstraint<
 				ErrorMessage<infer message>
 			) ?
 				keyError<message>
-			:	_parseName<
+			:	parseName<
 					finalArgState["unscanned"],
-					"",
 					[...result, [name, inferAstRoot<finalArgState["root"], $, {}>]],
 					$
 				>
 		:	never
-	:	_parseName<
-			Scanner.skipWhitespace<
-				unscanned extends `,${infer nextUnscanned}` ? nextUnscanned : unscanned
-			>,
-			"",
+	:	parseName<
+			Scanner.skipWhitespace<unscanned> extends `,${infer nextUnscanned}` ?
+				nextUnscanned
+			:	unscanned,
 			[...result, [name, unknown]],
 			$
 		>

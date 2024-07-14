@@ -119,6 +119,8 @@ export const writeDuplicateAliasError = <alias extends string>(
 export type writeDuplicateAliasError<alias extends string> =
 	`#${alias} duplicates public alias ${alias}`
 
+export type AliasDefEntry = [name: string, defValue: unknown]
+
 const scopesById: Record<string, RawRootScope | undefined> = {}
 
 $ark.intrinsic = {} as never
@@ -137,7 +139,7 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 		[alias: string]: CachedResolution | undefined
 	} = {}
 	readonly json: Json = {}
-	exportedNames: string[]
+	exportedNames: string[] = []
 	readonly aliases: Record<string, unknown> = {}
 	protected resolved = false
 
@@ -149,24 +151,30 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 	) {
 		this.config = config ?? {}
 		this.resolvedConfig = resolveConfig(config)
-		this.exportedNames = Object.keys(def).filter(k => {
+
+		const aliasEntries = Object.entries(def).map(entry =>
+			this.preparseAlias(...entry)
+		)
+
+		aliasEntries.forEach(([k]) => {
 			if (k[0] === "#") {
 				const name = k.slice(1)
 				if (name in this.aliases)
 					throwParseError(writeDuplicateAliasError(name))
 				this.aliases[name] = def[k]
-				return false
+			} else {
+				if (k in this.aliases) throwParseError(writeDuplicateAliasError(k))
+				this.aliases[k] = def[k]
+				this.exportedNames.push(k)
 			}
-			if (k in this.aliases) throwParseError(writeDuplicateAliasError(k))
-			this.aliases[k] = def[k]
-			return true
 		}) as never
+
 		if ($ark.ambient) {
 			// ensure exportedResolutions is populated
 			$ark.ambient.export()
-			// TODO: generics and modules
 			this.resolutions = {}
 		}
+
 		scopesById[this.id] = this
 	}
 
@@ -331,6 +339,10 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 
 	preparseRoot(def: unknown): unknown {
 		return def
+	}
+
+	preparseAlias(k: string, v: unknown): AliasDefEntry {
+		return [k, v]
 	}
 
 	maybeResolve(name: string): RawResolution | undefined {

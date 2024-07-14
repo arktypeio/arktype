@@ -1,5 +1,5 @@
 import type { LimitLiteral, writeUnboundableMessage } from "@arktype/schema"
-import type { ErrorMessage, array } from "@arktype/util"
+import type { ErrorMessage, array, describeExpression } from "@arktype/util"
 import type { Comparator } from "../string/reduce/shared.js"
 import type {
 	BoundExpressionKind,
@@ -31,14 +31,7 @@ export type validateBound<
 		: bounded extends Date ?
 			// allow numeric or date literal as a Date limit
 			validateAst<boundedAst, $, args>
-		:	ErrorMessage<
-				writeUnboundableMessage<
-					astToString<
-						boundKind extends "left" ? boundedAst[0 & keyof boundedAst]
-						:	boundedAst
-					>
-				>
-			>
+		:	ErrorMessage<writeUnboundableMessage<describeExpression<bounded>>>
 	:	never
 
 // Check each numerically boundable type individually so an expression comprised
