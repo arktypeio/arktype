@@ -2,10 +2,11 @@ import { attest, contextualize } from "@arktype/attest"
 import {
 	keywordNodes,
 	writeIndivisibleMessage,
+	writeUnboundableMessage,
 	writeUnresolvableMessage
 } from "@arktype/schema"
 import { scope, type } from "arktype"
-import { emptyGenericParameterMessage } from "../generic.js"
+import { emptyGenericParameterMessage, type Generic } from "../generic.js"
 import { writeUnclosedGroupMessage } from "../parser/string/reduce/shared.js"
 import { writeInvalidGenericArgCountMessage } from "../parser/string/shift/operand/genericArgs.js"
 import { writeInvalidDivisorMessage } from "../parser/string/shift/operator/divisor.js"
@@ -196,6 +197,69 @@ contextualize(() => {
 				// @ts-expect-error
 				attest(() => $.type("box<0,  1")).throwsAndHasTypeError(
 					writeUnclosedGroupMessage(">")
+				)
+			})
+
+			const testNonEmpty = (
+				nonEmpty: Generic<[["arr", unknown[]]], "arr > 0", {}>
+			) => {
+				const t = nonEmpty("number[]")
+				const expected = type("number[] > 0")
+
+				attest<typeof expected.t>(t.t)
+				attest(t.expression).equals(expected.expression)
+			}
+
+			it("can apply constraints to parameters", () => {
+				const nonEmpty = type("<arr extends unknown[]>", "arr > 0")
+				testNonEmpty(nonEmpty)
+			})
+
+			it("can apply constraints via :", () => {
+				const nonEmpty = type("<arr: unknown[]>", "arr > 0")
+				testNonEmpty(nonEmpty)
+			})
+
+			it("can apply constraints with whitespace", () => {
+				const nonEmpty = type("<   arr     extends    unknown  []>", "arr > 0")
+				testNonEmpty(nonEmpty)
+			})
+
+			it("can apply constraints with whitespace and :", () => {
+				const nonEmpty = type("<   arr     :    unknown  []   >", "arr > 0")
+				testNonEmpty(nonEmpty)
+			})
+
+			it("constrained constraint", () => {
+				const positiveToInteger = type("<n: number > 0>", "n % 1")
+
+				const t = positiveToInteger("number > 0")
+				const expected = type("integer > 0")
+
+				attest<typeof expected.t>(t.t)
+				attest(t.expression).equals(expected.expression)
+
+				attest(() => positiveToInteger("number")).throwsAndHasTypeError("huh")
+			})
+
+			it("constraint parse error", () => {
+				attest(() => {
+					// @ts-expect-error
+					type("<n extends nummer>", "n > 0")
+				}).throwsAndHasTypeError(writeUnresolvableMessage("nummer"))
+			})
+
+			it("constraint semantic parse error", () => {
+				attest(() => {
+					// @ts-expect-error
+					type("<boo extends boolean > 0>", "boo")
+				}).throwsAndHasTypeError(writeUnboundableMessage("boolean"))
+			})
+
+			it("default constraint is unknown", () => {
+				// @ts-expect-error
+				attest(() => type("<arr>", "arr > 0")).throwsAndHasTypeError(
+					writeUnboundableMessage("arr")
 				)
 			})
 

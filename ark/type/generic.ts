@@ -14,7 +14,8 @@ import {
 	type WhiteSpaceToken
 } from "@arktype/util"
 import type { inferDefinition } from "./parser/definition.js"
-import type { inferAstIn } from "./parser/semantic/infer.js"
+import type { inferAstRoot } from "./parser/semantic/infer.js"
+import type { validateAst } from "./parser/semantic/validate.js"
 import type { state, StaticState } from "./parser/string/reduce/static.js"
 import { writeUnexpectedCharacterMessage } from "./parser/string/shift/operator/operator.js"
 import { Scanner } from "./parser/string/shift/scanner.js"
@@ -102,7 +103,7 @@ const _parseGenericParams = (scanner: Scanner): array<GenericParamDef> => {
 }
 
 export type parseGenericParams<def extends string, $> = _parseName<
-	def,
+	Scanner.skipWhitespace<def>,
 	"",
 	[],
 	$
@@ -154,12 +155,14 @@ type _parseOptionalConstraint<
 		parseUntilFinalizer<state.initialize<nextUnscanned>, $, {}> extends (
 			infer finalArgState extends StaticState
 		) ?
-			finalArgState["finalizer"] extends ErrorMessage<infer message> ?
+			validateAst<finalArgState["root"], $, {}> extends (
+				ErrorMessage<infer message>
+			) ?
 				keyError<message>
 			:	_parseName<
 					finalArgState["unscanned"],
 					"",
-					[...result, [name, inferAstIn<finalArgState["root"], $, {}>]],
+					[...result, [name, inferAstRoot<finalArgState["root"], $, {}>]],
 					$
 				>
 		:	never
