@@ -44,7 +44,7 @@ export namespace state {
 	}>
 
 	export type error<message extends string> = from<{
-		root: undefined
+		root: ErrorMessage<message>
 		branches: initialBranches
 		groups: []
 		finalizer: ErrorMessage<message>
@@ -53,7 +53,7 @@ export namespace state {
 	}>
 
 	export type completion<text extends string> = from<{
-		root: undefined
+		root: Completion<text>
 		branches: initialBranches
 		groups: []
 		finalizer: Completion<text>
