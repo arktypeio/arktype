@@ -6,6 +6,8 @@ import {
 	type GenericRoot,
 	type PrivateDeclaration,
 	type arkKind,
+	type resolvableReferenceIn,
+	type resolveReference,
 	type writeNonSubmoduleDotMessage
 } from "@arktype/schema"
 import {
@@ -44,9 +46,26 @@ export type parseUnenclosed<s extends StaticState, $, args> =
 		token extends "keyof" ? state.addPrefix<s, "keyof", unscanned>
 		: tryResolve<s, token, $, args> extends infer result ?
 			result extends ErrorMessage<infer message> ? state.error<message>
-			: result extends keyof $ ? parseResolution<s, unscanned, result, $, args>
-			: result extends keyof ArkEnv.$ ?
-				parseResolution<s, unscanned, result, ArkEnv.$, args>
+			: result extends resolvableReferenceIn<$> ?
+				parseResolution<
+					s,
+					unscanned,
+					result,
+					resolveReference<result, $>,
+					$,
+					args
+				>
+			: result extends resolvableReferenceIn<ArkEnv.$> ?
+				parseResolution<
+					s,
+					unscanned,
+					result,
+					resolveReference<result, ArkEnv.$>,
+					// note that we still want the current scope to parse args,
+					// even if the generic was defined in the ambient scope
+					$,
+					args
+				>
 			:	state.setRoot<s, result, unscanned>
 		:	never
 	:	never
@@ -54,15 +73,16 @@ export type parseUnenclosed<s extends StaticState, $, args> =
 type parseResolution<
 	s extends StaticState,
 	unscanned extends string,
-	alias extends keyof $,
+	alias extends string,
+	resolution,
 	$,
 	args
 > =
-	[$[alias]] extends [anyOrNever] ? state.setRoot<s, alias, unscanned>
-	: $[alias] extends GenericProps ?
+	[resolution] extends [anyOrNever] ? state.setRoot<s, alias, unscanned>
+	: resolution extends GenericProps ?
 		parseGenericInstantiation<
-			alias & string,
-			$[alias],
+			alias,
+			resolution,
 			state.scanTo<s, unscanned>,
 			$,
 			args
@@ -89,8 +109,8 @@ export type parseGenericInstantiation<
 	s extends StaticState,
 	$,
 	args
-	// have to skip whitespace here since TS allows instantiations like `Partial    <T>`
 > =
+	// skip whitepsace to allow instantiations like `Partial    <T>`
 	Scanner.skipWhitespace<s["unscanned"]> extends `<${infer unscanned}` ?
 		parseGenericArgs<name, g, unscanned, $, args> extends infer result ?
 			result extends ParsedArgs<infer argAsts, infer nextUnscanned> ?

@@ -3,75 +3,81 @@ import { writeDuplicateAliasError, type Morph } from "@arktype/schema"
 import { scope, type, type Module } from "arktype"
 import { writePrefixedPrivateReferenceMessage } from "../parser/semantic/validate.js"
 
-const threeSixtyNoScope = scope({
-	three: "3",
-	sixty: "60",
-	no: "'no'"
-})
-
-const yesScope = scope({ yes: "'yes'" })
-
-const threeSixtyNoModule = threeSixtyNoScope.export()
-const yesModule = yesScope.export()
-
 contextualize(() => {
-	it("single", () => {
-		const types = scope({
-			...threeSixtyNoModule,
-			threeSixtyNo: "three|sixty|no"
-		}).export()
-		attest<Module<{ threeSixtyNo: 3 | 60 | "no" }>>(types)
-	})
+	contextualize.each(
+		"threeSixtyNoScope",
+		() => {
+			const threeSixtyNoScope = scope({
+				three: "3",
+				sixty: "60",
+				no: "'no'"
+			})
+			const threeSixtyNoModule = threeSixtyNoScope.export()
 
-	it("multiple", () => {
-		const base = scope({
-			...threeSixtyNoModule,
-			...yesModule,
-			extra: "true"
-		})
+			const yesScope = scope({ yes: "'yes'" })
+			const yesModule = yesScope.export()
 
-		const imported = scope({
-			...base.import(),
-			a: "three|sixty|no|yes|extra"
-		})
+			return {
+				threeSixtyNoScope,
+				threeSixtyNoModule,
+				yesScope,
+				yesModule
+			}
+		},
+		it => {
+			it("single", ({ threeSixtyNoModule }) => {
+				const types = scope({
+					...threeSixtyNoModule,
+					threeSixtyNo: "three|sixty|no"
+				}).export()
+				attest<Module<{ threeSixtyNo: 3 | 60 | "no" }>>(types)
+			})
 
-		const exports = imported.export()
+			it("multiple", ({ threeSixtyNoModule, yesModule }) => {
+				const base = scope({
+					...threeSixtyNoModule,
+					...yesModule,
+					extra: "true"
+				})
 
-		attest<Module<{ a: 3 | 60 | "no" | "yes" | true }>>(exports)
-	})
+				const imported = scope({
+					...base.import(),
+					a: "three|sixty|no|yes|extra"
+				})
 
-	it("import & export", () => {
-		const threeSixtyNoScope = scope({
-			three: "3",
-			sixty: "60",
-			no: "'no'"
-		})
+				const exports = imported.export()
 
-		const scopeCreep = scope({
-			hasCrept: "true"
-		})
+				attest<Module<{ a: 3 | 60 | "no" | "yes" | true }>>(exports)
+			})
 
-		const types = scope({
-			...threeSixtyNoScope.import("three", "no"),
-			...scopeCreep.export(),
-			public: "hasCrept|three|no|private",
-			"#private": "uuid"
-		}).export()
+			it("import & export", ({ threeSixtyNoScope }) => {
+				const scopeCreep = scope({
+					hasCrept: "true"
+				})
 
-		attest(Object.keys(types)).equals(["hasCrept", "public"])
+				const types = scope({
+					...threeSixtyNoScope.import("three", "no"),
+					...scopeCreep.export(),
+					public: "hasCrept|three|no|private",
+					"#private": "uuid"
+				}).export()
 
-		attest(types.public.json).equals(type("3|'no'|uuid|true").json)
+				attest(Object.keys(types)).equals(["hasCrept", "public"])
 
-		attest<
-			Module<{
-				hasCrept: true
-				public: string | true | 3
-				"#three": 3
-				"#no": "no"
-				"#private": string
-			}>
-		>(types)
-	})
+				attest(types.public.json).equals(type("3|'no'|uuid|true").json)
+
+				attest<
+					Module<{
+						hasCrept: true
+						public: string | true | 3
+						"#three": 3
+						"#no": "no"
+						"#private": string
+					}>
+				>(types)
+			})
+		}
+	)
 
 	it("non-generic", () => {
 		const types = scope({
@@ -129,12 +135,15 @@ contextualize(() => {
 		).throwsAndHasTypeError(writeDuplicateAliasError("kekw"))
 	})
 
-	// TODO: reenable
-	// it("generic", () => {
-	// 	const types = scope({
-	// 		foo: "bar<string>[]",
-	// 		"#bar<t>": ["t"]
-	// 	}).export()
-	// 	attest<[string][]>(types.foo.infer)
-	// })
+	it("private generic", () => {
+		const types = scope({
+			foo: "bar<string>[]",
+			"#bar<t>": ["t"]
+		}).export()
+
+		const expected = type(["string"]).array()
+
+		attest<typeof expected.t>(types.foo.t)
+		attest(types.foo.expression).snap("[string][]")
+	})
 })

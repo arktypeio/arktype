@@ -78,6 +78,9 @@ export type resolvableReferenceIn<$> =
 		:	k
 	:	never
 
+export type resolveReference<reference extends resolvableReferenceIn<$>, $> =
+	reference extends keyof $ ? $[reference] : $[`#${reference}` & keyof $]
+
 export type PrivateDeclaration<key extends string = string> = `#${key}`
 
 type toRawScope<$> = RawRootScope<{
