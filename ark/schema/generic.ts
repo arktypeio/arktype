@@ -138,7 +138,15 @@ export class GenericRoot<
 		super((...args: any[]) => {
 			const argNodes = flatMorph(this.names, (i, name) => {
 				const arg = this.arg$.parseRoot(args[i])
-				if (!arg.extends(this.constraints[i])) throwParseError("FAIL")
+				if (!arg.extends(this.constraints[i])) {
+					throwParseError(
+						writeUnsatisfiedParameterConstraintMessage(
+							name,
+							this.constraints[i].expression,
+							arg.expression
+						)
+					)
+				}
 				return [name, arg]
 			}) as GenericArgResolutions
 
@@ -209,3 +217,20 @@ export class GenericRoot<
 		return this.baseInstantiation.internal.references
 	}
 }
+
+export const writeUnsatisfiedParameterConstraintMessage = <
+	name extends string,
+	constraint extends string,
+	arg extends string
+>(
+	name: name,
+	constraint: constraint,
+	arg: arg
+): writeUnsatisfiedParameterConstraintMessage<name, constraint, arg> =>
+	`${name} must be assignable to ${constraint} (was ${arg})`
+
+export type writeUnsatisfiedParameterConstraintMessage<
+	name extends string,
+	constraint extends string,
+	arg extends string
+> = `${name} must be assignable to ${constraint} (was ${arg})`

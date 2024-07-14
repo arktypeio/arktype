@@ -29,7 +29,7 @@ export abstract class BaseRange<
 		this.exclusive
 	)
 	readonly numericLimit: number = this.rule.valueOf()
-	readonly expression: string = `${this.comparator}${this.rule}`
+	readonly expression: string = `${this.comparator} ${this.rule}`
 	readonly compiledCondition: string = `${this.compiledActual} ${this.comparator} ${this.numericLimit}`
 	readonly compiledNegation: string = `${this.compiledActual} ${
 		negatedComparators[this.comparator]

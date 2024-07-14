@@ -24,7 +24,7 @@ contextualize(() => {
 
 	it("disjoint", () => {
 		attest(() => type("number>5").pipe(type("number<3"))).throws.snap(
-			"ParseError: Intersection of >5 and <3 results in an unsatisfiable type"
+			"ParseError: Intersection of > 5 and < 3 results in an unsatisfiable type"
 		)
 	})
 
@@ -143,7 +143,7 @@ contextualize(() => {
 
 	it("disjoint", () => {
 		attest(() => type("number>5").pipe(type("number<3"))).throws.snap(
-			"ParseError: Intersection of >5 and <3 results in an unsatisfiable type"
+			"ParseError: Intersection of > 5 and < 3 results in an unsatisfiable type"
 		)
 	})
 
@@ -609,8 +609,8 @@ contextualize(() => {
 			}).export()
 		}).throws(
 			writeMorphIntersectionMessage(
-				"(In: number >0) => Out<unknown>",
-				"(In: number >0) => Out<unknown>"
+				"(In: number > 0) => Out<unknown>",
+				"(In: number > 0) => Out<unknown>"
 			)
 		)
 	})

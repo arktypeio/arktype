@@ -3,7 +3,8 @@ import {
 	keywordNodes,
 	writeIndivisibleMessage,
 	writeUnboundableMessage,
-	writeUnresolvableMessage
+	writeUnresolvableMessage,
+	writeUnsatisfiedParameterConstraintMessage
 } from "@arktype/schema"
 import { scope, type } from "arktype"
 import { emptyGenericParameterMessage, type Generic } from "../generic.js"
@@ -168,7 +169,9 @@ contextualize(() => {
 			attest<typeof expected.t>(t.t)
 			attest(t.expression).equals(expected.expression)
 
-			attest(() => positiveToInteger("number")).throwsAndHasTypeError("huh")
+			attest(() => positiveToInteger("number")).throwsAndHasTypeError(
+				writeUnsatisfiedParameterConstraintMessage("n", "number > 0", "number")
+			)
 		})
 
 		it("constraint parse error", () => {

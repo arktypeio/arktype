@@ -184,7 +184,7 @@ contextualize(() => {
 
 		it("empty range", () => {
 			attest(() => type("3<=number<2")).throws.snap(
-				"ParseError: Intersection of <2 and >=3 results in an unsatisfiable type"
+				"ParseError: Intersection of < 2 and >= 3 results in an unsatisfiable type"
 			)
 		})
 
