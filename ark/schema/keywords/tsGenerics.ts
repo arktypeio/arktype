@@ -1,10 +1,11 @@
+import type { Key } from "@arktype/util"
 import type { GenericRoot } from "../generic.js"
 import type { SchemaModule } from "../module.js"
 import { generic, schemaScope, type RootScope } from "../scope.js"
 
 export interface tsGenericsExports<$ = {}> {
 	Record: GenericRoot<
-		[["K", PropertyKey], ["V", unknown]],
+		[["K", Key], ["V", unknown]],
 		{
 			"[K]": "V"
 		},
@@ -17,7 +18,7 @@ export interface tsGenericsExports<$ = {}> {
 export type tsGenerics = SchemaModule<tsGenericsExports>
 
 const $: RootScope = schemaScope({
-	Record: generic(["K", "V"])(args => ({
+	Record: generic([["K", $ark.intrinsic.propertyKey], "V"])(args => ({
 		domain: "object",
 		index: {
 			signature: args.K,

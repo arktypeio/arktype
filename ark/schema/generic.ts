@@ -9,7 +9,7 @@ import {
 } from "@arktype/util"
 import type { inferRoot } from "./inference.js"
 import type { RootSchema } from "./kinds.js"
-import type { BaseRoot, Root, UnknownRoot } from "./roots/root.js"
+import type { Root, UnknownRoot } from "./roots/root.js"
 import type { RawRootScope, RootScope } from "./scope.js"
 import { arkKind } from "./shared/utils.js"
 
@@ -104,7 +104,11 @@ export interface GenericProps<
 
 export type GenericArgResolutions<
 	params extends array<GenericParamAst> = array<GenericParamAst>
-> = Record<params[number][0], BaseRoot>
+> = {
+	[i in keyof params as params[i & `${number}`][0]]: UnknownRoot<
+		params[i & `${number}`][1]
+	>
+}
 
 export type LazyGenericSchema<
 	params extends array<GenericParamAst> = array<GenericParamAst>,

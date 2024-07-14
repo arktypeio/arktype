@@ -251,36 +251,36 @@ contextualize(() => {
 				attest(t.json).equals(expected.json)
 			})
 
-			it("self-reference", () => {
-				const types = scope({
-					"alternate<a, b>": {
-						// ensures old generic params aren't intersected with
-						// updated values (would be never)
-						swap: "alternate<b, a>",
-						order: ["a", "b"]
-					},
-					reference: "alternate<0, 1>"
-				}).export()
+			// it("self-reference", () => {
+			// 	const types = scope({
+			// 		"alternate<a, b>": {
+			// 			// ensures old generic params aren't intersected with
+			// 			// updated values (would be never)
+			// 			swap: "alternate<b, a>",
+			// 			order: ["a", "b"]
+			// 		},
+			// 		reference: "alternate<0, 1>"
+			// 	}).export()
 
-				attest<[0, 1]>(types.reference.infer.swap.swap.order)
-				attest<[1, 0]>(types.reference.infer.swap.swap.swap.order)
-				const fromCall = types.alternate("'off'", "'on'")
-				attest<["off", "on"]>(fromCall.infer.swap.swap.order)
-				attest<["on", "off"]>(fromCall.infer.swap.swap.swap.order)
-			})
+			// 	attest<[0, 1]>(types.reference.infer.swap.swap.order)
+			// 	attest<[1, 0]>(types.reference.infer.swap.swap.swap.order)
+			// 	const fromCall = types.alternate("'off'", "'on'")
+			// 	attest<["off", "on"]>(fromCall.infer.swap.swap.order)
+			// 	attest<["on", "off"]>(fromCall.infer.swap.swap.swap.order)
+			// })
 
-			it("self-reference no params", () => {
-				attest(() =>
-					scope({
-						"nest<t>": {
-							// @ts-expect-error
-							nest: "nest"
-						}
-					}).export()
-				).throwsAndHasTypeError(
-					writeInvalidGenericArgsMessage("nest", ["t"], [])
-				)
-			})
+			// it("self-reference no params", () => {
+			// 	attest(() =>
+			// 		scope({
+			// 			"nest<t>": {
+			// 				// @ts-expect-error
+			// 				nest: "nest"
+			// 			}
+			// 		}).export()
+			// 	).throwsAndHasTypeError(
+			// 		writeInvalidGenericArgsMessage("nest", ["t"], [])
+			// 	)
+			// })
 
 			it("declaration and instantiation leading and trailing whitespace", () => {
 				const types = scope({

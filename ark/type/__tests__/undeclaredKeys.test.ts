@@ -54,7 +54,7 @@ contextualize(() => {
 			)
 			attest(o({ b: ["shawn"] }).toString())
 				.snap(`a must be an array (was missing)
-		b must be removed`)
+b must be removed`)
 		})
 
 		it("reject key from union", () => {

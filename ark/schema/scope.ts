@@ -22,6 +22,7 @@ import {
 } from "./config.js"
 import {
 	GenericRoot,
+	LazyGenericRoot,
 	type GenericParamDef,
 	type LazyGenericSchema,
 	type genericParamSchemasToAst
@@ -184,8 +185,10 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 		params: array<GenericParamDef>,
 		def?: unknown
 	): GenericRoot | ((def: LazyGenericSchema) => GenericRoot) {
-		if (def === undefined)
-			return (def: LazyGenericSchema) => this.generic(params, def) as never
+		if (def === undefined) {
+			return (def: LazyGenericSchema) =>
+				this.generic(params, new LazyGenericRoot(def)) as never
+		}
 		return new GenericRoot(
 			params.map((param): [string, BaseRoot] =>
 				typeof param === "string" ?
@@ -298,7 +301,7 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 		// generic instantiation (i.e. opts don't include args), add this as a resolution.
 		// TODO: this.lazilyResolve(resolve)
 		resolve
-		if (!isResolution) opts.args ??= { this: $ark.intrinsic.unknown }
+		if (!isResolution) opts.args ??= { this: $ark.intrinsic.unknown as never }
 
 		return opts
 	}
