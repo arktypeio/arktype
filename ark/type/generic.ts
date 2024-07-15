@@ -10,9 +10,9 @@ import {
 	type array,
 	type Callable,
 	type conform,
-	type describeExpression,
 	type ErrorMessage,
 	type keyError,
+	type typeToString,
 	type WhiteSpaceToken
 } from "@ark/util"
 import type { inferDefinition } from "./parser/definition.js"
@@ -42,7 +42,7 @@ export type validateGenericArg<param extends GenericParamAst, def, $> =
 		: ErrorMessage<
 				writeUnsatisfiedParameterConstraintMessage<
 					param[0],
-					describeExpression<param[1]>,
+					typeToString<param[1]>,
 					""
 				>
 			>

@@ -57,11 +57,11 @@ export type describeObject<
 	opts extends DescribeOptions = {}
 > =
 	objectKindOf<o> extends string ?
-		[opts["excludeArticles"]] extends [true] ?
-			objectKindOf<o>
-		:	objectKindDescriptions[objectKindOf<o>]
-	: [opts["excludeArticles"]] extends [true] ? "object"
-	: domainDescriptions["object"]
+		[opts["includeArticles"]] extends [true] ?
+			objectKindDescriptions[objectKindOf<o>]
+		:	objectKindOf<o>
+	: [opts["includeArticles"]] extends [true] ? domainDescriptions["object"]
+	: "object"
 
 type instantiableObjectKind<data extends object> = {
 	[kind in keyof builtinConstructors]: data extends (

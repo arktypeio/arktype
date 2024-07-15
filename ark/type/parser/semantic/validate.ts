@@ -12,8 +12,8 @@ import type {
 	BigintLiteral,
 	charsAfterFirst,
 	Completion,
-	describeExpression,
 	ErrorMessage,
+	typeToString,
 	writeMalformedNumericLiteralMessage
 } from "@ark/util"
 import type { Generic } from "../../generic.js"
@@ -78,7 +78,7 @@ type validateGenericArgs<
 		:	ErrorMessage<
 				writeUnsatisfiedParameterConstraintMessage<
 					params[indices["length"]][0],
-					describeExpression<params[indices["length"]][1]>,
+					typeToString<params[indices["length"]][1]>,
 					astToString<arg>
 				>
 			>

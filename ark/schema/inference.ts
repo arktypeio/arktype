@@ -4,10 +4,10 @@ import type {
 	NonEnumerableDomain,
 	array,
 	conform,
-	describe,
 	inferDomain,
 	instanceOf,
-	isAny
+	isAny,
+	typeToString
 } from "@ark/util"
 import type { NodeSchema, Prerequisite } from "./kinds.js"
 import type { BaseNode } from "./node.js"
@@ -101,7 +101,7 @@ type exactBasisMessageOnError<schema, expected> = {
 		conform<schema[k], expected[k]>
 	:	ErrorMessage<
 			k extends ConstraintKind ?
-				`${k} has a prerequisite of ${describe<Prerequisite<k>>}`
+				`${k} has a prerequisite of ${typeToString<Prerequisite<k>>}`
 			:	`'${k & string}' is not on an intersection schema`
 		>
 }

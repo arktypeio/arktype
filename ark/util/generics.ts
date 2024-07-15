@@ -78,9 +78,6 @@ export type nominal<t, id extends string> = t & {
 	readonly [id]: id
 }
 
-export type conformOrDefault<t, base, fallback> =
-	[t] extends [base] ? t : fallback
-
 export type keyError<message extends string> = ErrorMessage<message> & {
 	[id]: "KeyError"
 }
