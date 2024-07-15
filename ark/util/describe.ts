@@ -1,10 +1,5 @@
 import type { array } from "./arrays.js"
-import type {
-	Domain,
-	domainDescriptions,
-	domainOf,
-	inferDomain
-} from "./domain.js"
+import type { describeDomainOf, domainOf, inferDomain } from "./domain.js"
 import type { isAny, isNever, Stringifiable } from "./generics.js"
 import type { describeObject } from "./objectKinds.js"
 import type { stringifyUnion } from "./unionToTuple.js"
@@ -19,19 +14,16 @@ export type describe<t, opts extends DescribeOptions = {}> = stringifyUnion<
 	: isNever<t> extends true ? "never"
 	: unknown extends t ? "unknown"
 	: t extends array ? "an array"
-	: t extends object ? describeObject<t>
+	: t extends object ? describeObject<t, opts>
 	: t extends Stringifiable ?
 		// if it's the base wideneded domain, use that name
 		inferDomain<domainOf<t>> extends t ?
-			describeDomainBranch<domainOf<t>, opts>
+			describeDomainOf<t, opts>
 		:	// otherwise if it's a literal, use that
 			`${t}`
-	:	describeDomainBranch<domainOf<t>, opts>,
+	:	describeDomainOf<domainOf<t>, opts>,
 	opts["branchDelimiter"] extends string ? opts["branchDelimiter"] : " or "
 >
-
-type describeDomainBranch<domain extends Domain, opts extends DescribeOptions> =
-	[opts["excludeArticles"]] extends [true] ? domain : domainDescriptions[domain]
 
 export type describeExpression<t> = describe<
 	t,

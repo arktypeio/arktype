@@ -1,5 +1,5 @@
 {
-	"name": "arktype",
+	"name": "@ark/type",
 	"description": "TypeScript's 1:1 validator, optimized from editor to runtime",
 	"version": "2.0.0-dev.29",
 	"license": "MIT",
@@ -10,7 +10,8 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/arktypeio/arktype.git"
+		"url": "https://github.com/arktypeio/arktype.git",
+		"directory": "ark/type"
 	},
 	"type": "module",
 	"main": "./out/index.js",
@@ -30,5 +31,8 @@
 	"dependencies": {
 		"@ark/util": "workspace:*",
 		"@ark/schema": "workspace:*"
+	},
+	"publishConfig": {
+		"access": "public"
 	}
 }

@@ -6,6 +6,11 @@
 		"email": "david@arktype.io",
 		"url": "https://arktype.io"
 	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/arktypeio/arktype.git",
+		"directory": "ark/attest"
+	},
 	"type": "module",
 	"main": "./out/index.js",
 	"types": "./out/index.d.ts",
@@ -36,5 +41,8 @@
 	},
 	"peerDependencies": {
 		"typescript": "*"
+	},
+	"publishConfig": {
+		"access": "public"
 	}
 }

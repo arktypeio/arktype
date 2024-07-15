@@ -21,5 +21,8 @@
 	"scripts": {
 		"build": "tsx ../repo/build.ts",
 		"test": "tsx ../repo/testPackage.ts"
+	},
+	"publishConfig": {
+		"access": "public"
 	}
 }

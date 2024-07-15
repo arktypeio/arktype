@@ -1,4 +1,5 @@
-import type { show } from "./generics.js"
+import type { DescribeOptions } from "./describe.js"
+import type { conformOrDefault, show } from "./generics.js"
 import type { stringifyUnion } from "./unionToTuple.js"
 
 export const hasDomain = <data, domain extends Domain>(
@@ -77,7 +78,11 @@ export const domainDescriptions = {
 
 export type domainDescriptions = typeof domainDescriptions
 
-export type describeDomainOf<t> = stringifyUnion<
-	domainDescriptions[domainOf<t>],
-	" or "
+export type describeDomainOf<
+	t,
+	opts extends DescribeOptions = {}
+> = stringifyUnion<
+	opts["excludeArticles"] extends true ? domainOf<t>
+	:	domainDescriptions[domainOf<t>],
+	conformOrDefault<opts["branchDelimiter"], string, " or ">
 >

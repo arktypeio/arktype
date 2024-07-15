@@ -1,4 +1,4 @@
-import { fromHere, readPackageJson } from "@ark/fs"
+import { fromHere, readJson } from "@ark/fs"
 import { flatMorph } from "@ark/util"
 import { join } from "node:path"
 import type { PackageJson } from "type-fest"
@@ -21,6 +21,7 @@ export type PackageScope = (typeof packageScopes)[number]
 export type ArkPackage = {
 	scope: PackageScope
 	path: string
+	packageJsonPath: string
 	name: string
 	version: string
 	json: PackageJson
@@ -30,10 +31,18 @@ export const packagesByScope = flatMorph(
 	packageScopes,
 	(i, scope): [PackageScope, ArkPackage] => {
 		const path = join(arkDir, scope)
-		const json = readPackageJson(path) as PackageJson
+		const packageJsonPath = join(path, "package.json")
+		const json = readJson(path) as PackageJson
 		return [
 			scope,
-			{ scope, path, json, name: json.name!, version: json.version! }
+			{
+				scope,
+				path,
+				packageJsonPath,
+				json,
+				name: json.name!,
+				version: json.version!
+			}
 		]
 	}
 )
