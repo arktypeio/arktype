@@ -28,7 +28,7 @@ export type validateBound<
 			limit extends number ?
 				validateAst<boundedAst, $, args>
 			:	ErrorMessage<writeInvalidLimitMessage<comparator, limit, boundKind>>
-		: bounded extends Date ?
+		: [bounded] extends [Date] ?
 			// allow numeric or date literal as a Date limit
 			validateAst<boundedAst, $, args>
 		:	ErrorMessage<writeUnboundableMessage<typeToString<bounded>>>

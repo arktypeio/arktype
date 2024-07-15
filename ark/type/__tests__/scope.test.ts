@@ -102,9 +102,7 @@ contextualize(() => {
 				lessThan10: () => $.type("b<10")
 			})
 			$.export()
-		})
-			.throws(writeUnboundableMessage("boolean"))
-			.type.errors(writeUnboundableMessage("b"))
+		}).throwsAndHasTypeError(writeUnboundableMessage("boolean"))
 	})
 
 	it("errors on ridiculous unexpected alias scenario", () => {

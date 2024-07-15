@@ -229,10 +229,8 @@ contextualize(() => {
 		it("multiple bound kinds", () => {
 			attest(() =>
 				// @ts-expect-error
-				type("(number | string | boolean[])>0")
-			).throwsAndHasTypeError(
-				writeUnboundableMessage("number | string | boolean[]")
-			)
+				type("(number | boolean[])>0")
+			).throwsAndHasTypeError(writeUnboundableMessage("number | boolean[]"))
 		})
 
 		it("unknown", () => {
