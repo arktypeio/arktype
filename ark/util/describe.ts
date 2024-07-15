@@ -1,13 +1,20 @@
 import type { array } from "./arrays.js"
-import type { describeDomainOf, domainOf, inferDomain } from "./domain.js"
-import type { Stringifiable, isAny, isNever } from "./generics.js"
+import type {
+	Domain,
+	domainDescriptions,
+	domainOf,
+	inferDomain
+} from "./domain.js"
+import type { isAny, isNever, Stringifiable } from "./generics.js"
 import type { describeObject } from "./objectKinds.js"
 import type { stringifyUnion } from "./unionToTuple.js"
 
-export type describe<
-	t,
-	branchDelimiter extends string = " or "
-> = stringifyUnion<
+export type DescribeOptions = {
+	excludeArticles?: boolean
+	branchDelimiter?: string
+}
+
+export type describe<t, opts extends DescribeOptions = {}> = stringifyUnion<
 	isAny<t> extends true ? "any"
 	: isNever<t> extends true ? "never"
 	: unknown extends t ? "unknown"
@@ -16,11 +23,20 @@ export type describe<
 	: t extends Stringifiable ?
 		// if it's the base wideneded domain, use that name
 		inferDomain<domainOf<t>> extends t ?
-			describeDomainOf<t>
+			describeDomainBranch<domainOf<t>, opts>
 		:	// otherwise if it's a literal, use that
 			`${t}`
-	:	describeDomainOf<t>,
-	branchDelimiter
+	:	describeDomainBranch<domainOf<t>, opts>,
+	opts["branchDelimiter"] extends string ? opts["branchDelimiter"] : " or "
 >
 
-export type describeExpression<t> = describe<t, " | ">
+type describeDomainBranch<domain extends Domain, opts extends DescribeOptions> =
+	[opts["excludeArticles"]] extends [true] ? domain : domainDescriptions[domain]
+
+export type describeExpression<t> = describe<
+	t,
+	{
+		excludeArticles: true
+		branchDelimiter: " | "
+	}
+>

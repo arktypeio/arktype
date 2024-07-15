@@ -52,6 +52,10 @@ export type genericParamNames<params extends array<GenericParamAst>> = {
 	[i in keyof params]: params[i][0]
 }
 
+export type genericParamConstraints<params extends array<GenericParamAst>> = {
+	[i in keyof params]: params[i][1]
+}
+
 type instantiateParams<params extends array<GenericParamAst>> = {
 	[i in keyof params]: params[i] extends (
 		GenericParamAst<infer name, infer constraint>

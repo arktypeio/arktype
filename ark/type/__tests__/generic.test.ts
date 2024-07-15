@@ -191,18 +191,10 @@ contextualize(() => {
 			attest<typeof expected.t>(types.foobar.t)
 			attest(types.foobar.expression).equals(expected.expression)
 
-			// // @ts-expect-error
-			// attest(() => {})
-			// 	.throws(
-			// 		writeUnsatisfiedParameterConstraintMessage(
-			// 			"n",
-			// 			"number > 0",
-			// 			"number"
-			// 		)
-			// 	)
-			// 	.type.errors(
-			// 		"Argument of type 'string' is not assignable to parameter of type 'Root<moreThan<0>, any>'"
-			// 	)
+			// @ts-expect-error
+			attest(() => $.type("entry<0, 1>")).throwsAndHasTypeError(
+				writeUnsatisfiedParameterConstraintMessage("k", "string | symbol", "0")
+			)
 		})
 
 		it("constraint parse error", () => {

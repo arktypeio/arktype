@@ -25,14 +25,14 @@
 		"bunTest": "bun test --preload ../repo/bunTestSetup.ts"
 	},
 	"dependencies": {
-		"arktype": "*",
+		"arktype": "workspace:*",
 		"@ark/fs": "workspace:*",
 		"@ark/util": "workspace:*",
 		"@typescript/vfs": "1.5.3",
 		"@typescript/analyze-trace": "0.10.1"
 	},
 	"devDependencies": {
-		"typescript": "5.5.2"
+		"typescript": "5.5.3"
 	},
 	"peerDependencies": {
 		"typescript": "*"
