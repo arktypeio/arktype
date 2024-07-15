@@ -138,31 +138,37 @@ export const intersectNodes: InternalNodeIntersection<IntersectionContext> = (
 	}
 	if (l.equals(r as never)) return l as never
 
-	let result: UnknownIntersectionResult
+	let result
 
-	if (ctx.pipe && l.includesMorph) {
-		if (!l.hasKind("morph")) {
-			return ctx.$.node("morph", {
-				morphs: [r],
-				in: l
-			})
+	if (ctx.pipe && l.kind !== "union" && r.kind !== "union") {
+		if (l.includesMorph) {
+			if (l.hasKind("morph")) {
+				result =
+					ctx.invert ?
+						pipeToMorph(r as never, l, ctx)
+					:	pipeFromMorph(l, r as never, ctx)
+			} else {
+				result = ctx.$.node("morph", {
+					morphs: [r],
+					in: l
+				})
+			}
+		} else if (r.includesMorph) {
+			if (!r.hasKind("morph")) {
+				result = ctx.$.node("morph", {
+					morphs: [r],
+					in: l
+				})
+			} else {
+				result =
+					ctx.invert ?
+						pipeFromMorph(r, l as never, ctx)
+					:	pipeToMorph(l as never, r, ctx)
+			}
 		}
-		result =
-			ctx.invert ?
-				pipeToMorph(r as never, l, ctx)
-			:	pipeFromMorph(l, r as never, ctx)
-	} else if (ctx.pipe && r.includesMorph) {
-		if (!r.hasKind("morph")) {
-			return ctx.$.node("morph", {
-				morphs: [r],
-				in: l
-			})
-		}
-		result =
-			ctx.invert ?
-				pipeFromMorph(r, l as never, ctx)
-			:	pipeToMorph(l as never, r, ctx)
-	} else {
+	}
+
+	if (!result) {
 		const leftmostKind = l.precedence < r.precedence ? l.kind : r.kind
 		const implementation =
 			l.impl.intersections[r.kind] ?? r.impl.intersections[l.kind]
