@@ -127,7 +127,9 @@ type bootstrapAliases<def> = {
 type inferBootstrapped<$> = show<{
 	[name in keyof $]: $[name] extends Def<infer def> ?
 		inferDefinition<def, $, {}>
-	: $[name] extends GenericProps<infer params, infer def> ?
+	: $[name] extends (
+		Generic<infer params, infer def> | GenericProps<infer params, infer def>
+	) ?
 		// add the scope in which the generic was defined here
 		Generic<params, def, $>
 	:	// otherwise should be a submodule
