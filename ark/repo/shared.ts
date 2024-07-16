@@ -32,7 +32,7 @@ export const packagesByScope = flatMorph(
 	(i, scope): [PackageScope, ArkPackage] => {
 		const path = join(arkDir, scope)
 		const packageJsonPath = join(path, "package.json")
-		const json = readJson(path) as PackageJson
+		const json = readJson(packageJsonPath) as PackageJson
 		return [
 			scope,
 			{
