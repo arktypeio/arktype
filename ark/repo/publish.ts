@@ -8,7 +8,7 @@ const existingTags = getShellOutput("git tag")
 const publishPackage = (pkg: ArkPackage, alias?: string) => {
 	const tagName = `${alias ?? pkg.name}@${pkg.version}`
 
-	if (!getShellOutput(existingTags).includes(tagName)) {
+	if (!existingTags.includes(tagName)) {
 		if (alias) rewritePackageJsonName(pkg.packageJsonPath, alias)
 
 		shell(`git tag ${tagName}`)
