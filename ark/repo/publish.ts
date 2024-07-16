@@ -13,7 +13,7 @@ const publishPackage = (pkg: ArkPackage, alias?: string) => {
 
 		shell(`git tag ${tagName}`)
 		tagsToPublish.push(tagName)
-		shell("pnpm publish", { cwd: pkg.path })
+		shell("pnpm publish --no-git-checks", { cwd: pkg.path })
 
 		if (alias) rewritePackageJsonName(pkg.packageJsonPath, pkg.name)
 	}
