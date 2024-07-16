@@ -1,6 +1,6 @@
 {
 	"name": "@ark/attest",
-	"version": "0.8.2",
+	"version": "0.9.0",
 	"author": {
 		"name": "David Blass",
 		"email": "david@arktype.io",
@@ -30,7 +30,7 @@
 		"bunTest": "bun test --preload ../repo/bunTestSetup.ts"
 	},
 	"dependencies": {
-		"arktype": "workspace:*",
+		"@ark/type": "workspace:*",
 		"@ark/fs": "workspace:*",
 		"@ark/util": "workspace:*",
 		"@typescript/vfs": "1.5.3",
