@@ -9,7 +9,7 @@ import {
 	type array,
 	type Key,
 	type RegisteredReference
-} from "@arktype/util"
+} from "@ark/util"
 import {
 	BaseConstraint,
 	constraintKeyParser,

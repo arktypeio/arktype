@@ -1,4 +1,5 @@
 import type { array } from "./arrays.js"
+import type { DescribeOptions } from "./describe.js"
 import { type Domain, type domainDescriptions, domainOf } from "./domain.js"
 import { type Key, isKeyOf } from "./records.js"
 
@@ -51,9 +52,16 @@ export type objectKindOf<data extends object> =
 		keyof builtinConstructors | undefined
 	:	instantiableObjectKind<data>
 
-export type describeObject<o extends object> =
-	objectKindOf<o> extends string ? objectKindDescriptions[objectKindOf<o>]
-	:	domainDescriptions["object"]
+export type describeObject<
+	o extends object,
+	opts extends DescribeOptions = {}
+> =
+	objectKindOf<o> extends string ?
+		[opts["includeArticles"]] extends [true] ?
+			objectKindDescriptions[objectKindOf<o>]
+		:	objectKindOf<o>
+	: [opts["includeArticles"]] extends [true] ? domainDescriptions["object"]
+	: "object"
 
 type instantiableObjectKind<data extends object> = {
 	[kind in keyof builtinConstructors]: data extends (

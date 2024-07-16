@@ -10,7 +10,7 @@ import {
 	type listable,
 	type mutable,
 	type show
-} from "@arktype/util"
+} from "@ark/util"
 import {
 	constraintKeyParser,
 	flattenConstraints,

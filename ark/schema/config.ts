@@ -1,4 +1,4 @@
-import type { array, mutable, requireKeys, show } from "@arktype/util"
+import type { array, mutable, requireKeys, show } from "@ark/util"
 import type { Ark } from "./keywords/keywords.js"
 import type { IntrinsicKeywords, RawRootScope } from "./scope.js"
 import type {

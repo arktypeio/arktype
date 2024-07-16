@@ -1,4 +1,4 @@
-import { root } from "../../scope.js"
+import { defineRoot } from "../../scope.js"
 import { defineRegex } from "./regex.js"
 
 // Based on https://github.com/validatorjs/validator.js/blob/master/src/lib/isIP.js
@@ -24,4 +24,4 @@ const ipv6Matcher = new RegExp(
 
 export const ipv6 = defineRegex(ipv6Matcher, "a valid IPv6 address")
 
-export const ip = root.defineRoot([ipv4, ipv6])
+export const ip = defineRoot([ipv4, ipv6])

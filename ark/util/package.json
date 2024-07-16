@@ -1,6 +1,6 @@
 {
-	"name": "@arktype/util",
-	"version": "0.0.58",
+	"name": "@ark/util",
+	"version": "0.1.0",
 	"author": {
 		"name": "David Blass",
 		"email": "david@arktype.io",
@@ -21,5 +21,8 @@
 	"scripts": {
 		"build": "tsx ../repo/build.ts",
 		"test": "tsx ../repo/testPackage.ts"
+	},
+	"publishConfig": {
+		"access": "public"
 	}
 }

@@ -1,4 +1,4 @@
-import { bench } from "@arktype/attest"
+import { bench } from "@ark/attest"
 import { type } from "arktype"
 
 export const validData = Object.freeze({

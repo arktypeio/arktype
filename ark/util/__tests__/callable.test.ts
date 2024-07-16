@@ -1,5 +1,5 @@
-import { attest, contextualize } from "@arktype/attest"
-import { Callable } from "@arktype/util"
+import { attest, contextualize } from "@ark/attest"
+import { Callable } from "@ark/util"
 
 contextualize(() => {
 	class Sub extends Callable<(name: string) => string> {

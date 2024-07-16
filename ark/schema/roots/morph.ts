@@ -5,7 +5,7 @@ import {
 	throwParseError,
 	type array,
 	type listable
-} from "@arktype/util"
+} from "@ark/util"
 import type { distillConstrainableIn } from "../ast.js"
 import type { type } from "../inference.js"
 import type { Node, NodeSchema } from "../kinds.js"

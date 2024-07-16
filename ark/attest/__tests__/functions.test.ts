@@ -1,5 +1,5 @@
-import { attest, contextualize } from "@arktype/attest"
-import { fileName } from "@arktype/fs"
+import { attest, contextualize } from "@ark/attest"
+import { fileName } from "@ark/fs"
 import * as assert from "node:assert/strict"
 import { basename } from "node:path"
 

@@ -1,12 +1,12 @@
-import { attest, contextualize } from "@arktype/attest"
+import { attest, contextualize } from "@ark/attest"
 import {
 	internal,
+	internalSchema,
 	keywordNodes,
-	rawSchema,
 	writeInvalidOperandMessage,
 	writeUnboundableMessage
-} from "@arktype/schema"
-import { writeMalformedNumericLiteralMessage } from "@arktype/util"
+} from "@ark/schema"
+import { writeMalformedNumericLiteralMessage } from "@ark/util"
 import { type } from "arktype"
 import { writeDoubleRightBoundMessage } from "../parser/semantic/bounds.js"
 import {
@@ -15,11 +15,9 @@ import {
 	writeUnpairableComparatorMessage
 } from "../parser/string/reduce/shared.js"
 import { writeInvalidLimitMessage } from "../parser/string/shift/operator/bounds.js"
-import { shallowDefaultMessage } from "../parser/string/shift/operator/default.js"
 
-contextualize(
-	"string expressions",
-	() => {
+contextualize(() => {
+	describe("string expressions", () => {
 		it(">", () => {
 			const t = type("number>0")
 			attest<number>(t.infer)
@@ -34,7 +32,7 @@ contextualize(
 			const t = type("number<10")
 			attest<number>(t.infer)
 			attest(t).type.toString.snap("Type<lessThan<10>, {}>")
-			const expected = rawSchema({
+			const expected = internalSchema({
 				domain: "number",
 				max: { rule: 10, exclusive: true }
 			})
@@ -45,7 +43,7 @@ contextualize(
 			const t = type("number<=-49")
 			attest<number>(t.infer)
 			attest(t).type.toString.snap("Type<atMost<-49>, {}>")
-			const expected = rawSchema({
+			const expected = internalSchema({
 				domain: "number",
 				max: { rule: -49, exclusive: false }
 			})
@@ -56,7 +54,7 @@ contextualize(
 			const t = type("number==3211993")
 			attest<3211993>(t.infer)
 			attest(t).type.toString.snap("Type<3211993, {}>")
-			const expected = rawSchema({ unit: 3211993 })
+			const expected = internalSchema({ unit: 3211993 })
 			attest(t.json).equals(expected.json)
 		})
 
@@ -73,7 +71,7 @@ contextualize(
 			const t = type("-5<number<=5")
 			attest(t).type.toString.snap("Type<is<MoreThan<-5> & AtMost<5>>, {}>")
 			attest<number>(t.infer)
-			const expected = rawSchema({
+			const expected = internalSchema({
 				domain: "number",
 				min: { rule: -5, exclusive: true },
 				max: 5
@@ -87,7 +85,7 @@ contextualize(
 				"Type<is<AtLeast<-3.23> & LessThan<4.654>>, {}>"
 			)
 			attest<number>(t.infer)
-			const expected = rawSchema({
+			const expected = internalSchema({
 				domain: "number",
 				min: { rule: -3.23 },
 				max: { rule: 4.654, exclusive: true }
@@ -99,7 +97,7 @@ contextualize(
 			const t = type("number > 3")
 			attest(t).type.toString.snap("Type<moreThan<3>, {}>")
 			attest<number>(t.infer)
-			const expected = rawSchema({
+			const expected = internalSchema({
 				domain: "number",
 				min: { rule: 3, exclusive: true }
 			})
@@ -186,7 +184,7 @@ contextualize(
 
 		it("empty range", () => {
 			attest(() => type("3<=number<2")).throws.snap(
-				"ParseError: Intersection of <2 and >=3 results in an unsatisfiable type"
+				"ParseError: Intersection of < 2 and >= 3 results in an unsatisfiable type"
 			)
 		})
 
@@ -231,10 +229,8 @@ contextualize(
 		it("multiple bound kinds", () => {
 			attest(() =>
 				// @ts-expect-error
-				type("(number | string | boolean[])>0")
-			).throwsAndHasTypeError(
-				writeUnboundableMessage("number | string | boolean[]")
-			)
+				type("(number | boolean[])>0")
+			).throwsAndHasTypeError(writeUnboundableMessage("number | boolean[]"))
 		})
 
 		it("unknown", () => {
@@ -273,9 +269,9 @@ contextualize(
 				writeInvalidLimitMessage(">", "d'2001/01/01'", "left")
 			)
 		})
-	},
-	"constrain",
-	() => {
+	})
+
+	describe("constrain", () => {
 		it("min", () => {
 			const t = type("number").constrain("min", 5)
 			const expected = type("number>=5")
@@ -328,9 +324,9 @@ contextualize(
 			attest<typeof expected>(t)
 			attest(t.json).equals(expected.json)
 		})
-	},
-	"chained",
-	() => {
+	})
+
+	describe("chained", () => {
 		it("atLeast", () => {
 			const t = type("number").atLeast(5)
 			const expected = type("number>=5")
@@ -483,5 +479,5 @@ contextualize(
 				)
 			)
 		})
-	}
-)
+	})
+})

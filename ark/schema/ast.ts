@@ -8,7 +8,7 @@ import type {
 	leftIfEqual,
 	Primitive,
 	show
-} from "@arktype/util"
+} from "@ark/util"
 import type { PrimitiveConstraintKind } from "./constraint.js"
 import type { NodeSchema } from "./kinds.js"
 import type { constraintKindOf } from "./roots/intersection.js"

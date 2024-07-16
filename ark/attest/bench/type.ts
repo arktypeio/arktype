@@ -1,4 +1,4 @@
-import { caller } from "@arktype/fs"
+import { caller } from "@ark/fs"
 import ts from "typescript"
 import { getBenchAssertionsAtPosition } from "../cache/getCachedAssertions.js"
 import {

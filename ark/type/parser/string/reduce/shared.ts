@@ -1,4 +1,4 @@
-import type { LimitLiteral } from "@arktype/schema"
+import type { LimitLiteral } from "@ark/schema"
 
 export type StringifiablePrefixOperator = "keyof"
 

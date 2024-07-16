@@ -1,6 +1,6 @@
 {
-	"name": "@arktype/schema",
-	"version": "0.1.22",
+	"name": "@ark/schema",
+	"version": "0.2.0",
 	"license": "MIT",
 	"author": {
 		"name": "David Blass",
@@ -9,7 +9,8 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/arktypeio/arktype.git"
+		"url": "https://github.com/arktypeio/arktype.git",
+		"directory": "ark/schema"
 	},
 	"type": "module",
 	"main": "./out/index.js",
@@ -29,6 +30,9 @@
 		"tnt": "tsx ../repo/testPackage.ts --skipTypes"
 	},
 	"dependencies": {
-		"@arktype/util": "workspace:*"
+		"@ark/util": "workspace:*"
+	},
+	"publishConfig": {
+		"access": "public"
 	}
 }

@@ -1,5 +1,5 @@
-import type { Ark } from "@arktype/schema"
-import { DynamicBase } from "@arktype/util"
+import type { Ark } from "@ark/schema"
+import { DynamicBase } from "@ark/util"
 import { type, type inferTypeRoot, type validateTypeRoot } from "arktype"
 
 const Class = <def>(def: validateTypeRoot<def, Ark>) => {

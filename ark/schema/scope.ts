@@ -14,13 +14,20 @@ import {
 	type array,
 	type flattenListable,
 	type show
-} from "@arktype/util"
+} from "@ark/util"
 import {
 	resolveConfig,
 	type ArkConfig,
 	type ResolvedArkConfig
 } from "./config.js"
-import type { GenericRoot } from "./generic.js"
+import {
+	LazyGenericRoot,
+	parseGeneric,
+	type GenericParamDef,
+	type GenericRoot,
+	type LazyGenericSchema,
+	type genericParamSchemasToAst
+} from "./generic.js"
 import type { inferRoot, validateRoot } from "./inference.js"
 import type { internal } from "./keywords/internal.js"
 import type { jsObjects } from "./keywords/jsObjects.js"
@@ -38,7 +45,12 @@ import {
 	type SchemaModule
 } from "./module.js"
 import type { BaseNode } from "./node.js"
-import { parseNode, schemaKindOf, type NodeParseOptions } from "./parse.js"
+import {
+	parseNode,
+	registerNodeId,
+	schemaKindOf,
+	type NodeParseOptions
+} from "./parse.js"
 import { normalizeAliasSchema, type AliasNode } from "./roots/alias.js"
 import type { BaseRoot, Root } from "./roots/root.js"
 import { NodeCompiler } from "./shared/compile.js"
@@ -65,6 +77,9 @@ export type resolvableReferenceIn<$> =
 			alias
 		:	k
 	:	never
+
+export type resolveReference<reference extends resolvableReferenceIn<$>, $> =
+	reference extends keyof $ ? $[reference] : $[`#${reference}` & keyof $]
 
 export type PrivateDeclaration<key extends string = string> = `#${key}`
 
@@ -104,6 +119,8 @@ export const writeDuplicateAliasError = <alias extends string>(
 export type writeDuplicateAliasError<alias extends string> =
 	`#${alias} duplicates public alias ${alias}`
 
+export type AliasDefEntry = [name: string, defValue: unknown]
+
 const scopesById: Record<string, RawRootScope | undefined> = {}
 
 $ark.intrinsic = {} as never
@@ -122,7 +139,7 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 		[alias: string]: CachedResolution | undefined
 	} = {}
 	readonly json: Json = {}
-	exportedNames: string[]
+	exportedNames: string[] = []
 	readonly aliases: Record<string, unknown> = {}
 	protected resolved = false
 
@@ -134,24 +151,30 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 	) {
 		this.config = config ?? {}
 		this.resolvedConfig = resolveConfig(config)
-		this.exportedNames = Object.keys(def).filter(k => {
+
+		const aliasEntries = Object.entries(def).map(entry =>
+			this.preparseAlias(...entry)
+		)
+
+		aliasEntries.forEach(([k, v]) => {
 			if (k[0] === "#") {
 				const name = k.slice(1)
 				if (name in this.aliases)
 					throwParseError(writeDuplicateAliasError(name))
-				this.aliases[name] = def[k]
-				return false
+				this.aliases[name] = v
+			} else {
+				if (k in this.aliases) throwParseError(writeDuplicateAliasError(k))
+				this.aliases[k] = v
+				this.exportedNames.push(k)
 			}
-			if (k in this.aliases) throwParseError(writeDuplicateAliasError(k))
-			this.aliases[k] = def[k]
-			return true
 		}) as never
+
 		if ($ark.ambient) {
 			// ensure exportedResolutions is populated
 			$ark.ambient.export()
-			// TODO: generics and modules
 			this.resolutions = {}
 		}
+
 		scopesById[this.id] = this
 	}
 
@@ -167,6 +190,18 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 	@bound
 	defineRoot(def: RootSchema): RootSchema {
 		return def
+	}
+
+	@bound
+	generic(
+		params: array<GenericParamDef>,
+		def?: unknown
+	): GenericRoot | ((def: LazyGenericSchema) => GenericRoot) {
+		if (def === undefined) {
+			return (def: LazyGenericSchema) =>
+				this.generic(params, new LazyGenericRoot(def)) as never
+		}
+		return parseGeneric(params, def, this as never)
 	}
 
 	@bound
@@ -192,7 +227,7 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 			},
 			{ prereduced: true }
 		)
-		this.lazyResolutions.push(node)
+		if (!this.resolved) this.lazyResolutions.push(node)
 		return node
 	}
 
@@ -203,7 +238,7 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 	>(
 		kinds: kinds,
 		nodeSchema: NodeSchema<flattenListable<kinds>>,
-		opts?: NodeParseOptions<prereduced>
+		opts = {} as NodeParseOptions<prereduced>
 	): Node<
 		prereduced extends true ? flattenListable<kinds>
 		:	reducibleKindOf<flattenListable<kinds>>
@@ -240,9 +275,15 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 				:	throwMismatchedNodeRootError(kind, normalizedSchema.kind)
 		}
 
-		const node = parseNode(kind, normalizedSchema, this, opts ?? {}).bindScope(
-			this
-		)
+		const id = registerNodeId(kind, opts)
+
+		const node = parseNode(
+			id,
+			kind,
+			normalizedSchema,
+			this,
+			opts ?? {}
+		).bindScope(this)
 
 		if (this.resolved) {
 			// this node was not part of the original scope, so compile an anonymous scope
@@ -257,8 +298,23 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 		return node as never
 	}
 
-	parseRoot(def: unknown, opts?: NodeParseOptions): BaseRoot {
-		return this.schema(def as never, opts)
+	protected finalizeRootArgs(opts: NodeParseOptions, resolve: () => BaseRoot) {
+		const isResolution = opts.alias && opts.alias in this.aliases
+		// if the definition being parsed is not a scope alias and is not a
+		// generic instantiation (i.e. opts don't include args), add this as a resolution.
+		// TODO: this.lazilyResolve(resolve)
+		resolve
+		if (!isResolution) opts.args ??= { this: $ark.intrinsic.unknown as never }
+
+		return opts
+	}
+
+	parseRoot(def: unknown, opts: NodeParseOptions = {}): BaseRoot {
+		const node = this.schema(
+			def as never,
+			this.finalizeRootArgs(opts, () => node)
+		)
+		return node
 	}
 
 	resolveRoot(name: string): BaseRoot {
@@ -285,6 +341,10 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 		return def
 	}
 
+	preparseAlias(k: string, v: unknown): AliasDefEntry {
+		return [k, v]
+	}
+
 	maybeResolve(name: string): RawResolution | undefined {
 		const resolution = this.maybeShallowResolve(name)
 		return typeof resolution === "string" ?
@@ -295,7 +355,7 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 	maybeShallowResolve(name: string): CachedResolution | undefined {
 		const cached = this.resolutions[name]
 		if (cached) return cached
-		const def = this.aliases[name] ?? $ark.ambient.resolutions[name]
+		const def = this.aliases[name] ?? $ark.ambient?.resolutions[name]
 
 		if (!def) return this.maybeResolveSubalias(name)
 
@@ -316,7 +376,9 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 		}
 
 		this.resolutions[name] = name
-		return (this.resolutions[name] = this.parseRoot(preparsed).bindScope(this))
+		return (this.resolutions[name] = this.parseRoot(preparsed, {
+			alias: name
+		}).bindScope(this))
 	}
 
 	/** If name is a valid reference to a submodule alias, return its resolution  */
@@ -472,6 +534,24 @@ export interface RootScope<$ = any> {
 		opts?: NodeParseOptions
 	): Node<reducibleKindOf<flattenListable<kinds>>>
 
+	generic<
+		const paramsDef extends array<GenericParamDef>,
+		bodyDef extends LazyGenericSchema<
+			genericParamSchemasToAst<paramsDef, $>
+		> = never
+	>(
+		params: paramsDef,
+		def?: bodyDef
+	): [bodyDef] extends [never] ?
+		<lazyDef extends LazyGenericSchema<genericParamSchemasToAst<paramsDef, $>>>(
+			lazyDef: lazyDef
+		) => GenericRoot<
+			genericParamSchemasToAst<paramsDef, $>,
+			ReturnType<lazyDef>,
+			$
+		>
+	:	GenericRoot<genericParamSchemasToAst<paramsDef, $>, bodyDef, $>
+
 	parseRoot(schema: unknown, opts?: NodeParseOptions): BaseRoot
 
 	import<names extends exportedNameOf<$>[]>(
@@ -497,11 +577,13 @@ export const schema: RootScope["schema"] = root.schema
 export const node: RootScope["node"] = root.node
 export const defineRoot: RootScope["defineRoot"] = root.defineRoot
 export const units: RootScope["units"] = root.units
-export const rawSchema: RawRootScope["schema"] = root.internal.schema
-export const rawNode: RawRootScope["node"] = root.internal.node
-export const defineRawRoot: RawRootScope["defineRoot"] =
+export const generic: RootScope["generic"] = root.generic
+export const internalSchema: RawRootScope["schema"] = root.internal.schema
+export const internalNode: RawRootScope["node"] = root.internal.node
+export const defineInternalRoot: RawRootScope["defineRoot"] =
 	root.internal.defineRoot
-export const rawUnits: RawRootScope["units"] = root.internal.units
+export const internalUnits: RawRootScope["units"] = root.internal.units
+export const internalGeneric: RawRootScope["generic"] = root.internal.generic
 
 export const parseAsSchema = <castTo = unknown>(
 	def: unknown,

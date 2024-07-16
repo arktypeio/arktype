@@ -11,7 +11,7 @@ import type {
 	TypeKey,
 	TypePath,
 	UnknownRangeSchema
-} from "@arktype/schema"
+} from "@ark/schema"
 import {
 	cached,
 	includes,
@@ -23,7 +23,7 @@ import {
 	type Key,
 	type array,
 	type conform
-} from "@arktype/util"
+} from "@ark/util"
 import type {
 	constrain,
 	distillConstrainableIn,
@@ -71,7 +71,7 @@ export interface RawRootDeclaration extends RawNodeDeclaration {
 	kind: RootKind
 }
 
-export type UnknownRoot = Root | BaseRoot
+export type UnknownRoot<t = unknown> = Root<t> | BaseRoot
 
 export type TypeOnlyRootKey =
 	| (keyof Root & symbol)

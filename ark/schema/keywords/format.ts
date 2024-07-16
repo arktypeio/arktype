@@ -1,18 +1,18 @@
 import type { SchemaModule } from "../module.js"
 import type { Out } from "../roots/morph.js"
-import { root, schemaScope } from "../scope.js"
+import { defineRoot, schemaScope } from "../scope.js"
 
-const trim = root.defineRoot({
+const trim = defineRoot({
 	in: "string",
 	morphs: (s: string) => s.trim()
 })
 
-const uppercase = root.defineRoot({
+const uppercase = defineRoot({
 	in: "string",
 	morphs: (s: string) => s.toUpperCase()
 })
 
-const lowercase = root.defineRoot({
+const lowercase = defineRoot({
 	in: "string",
 	morphs: (s: string) => s.toLowerCase()
 })

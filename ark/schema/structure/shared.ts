@@ -1,4 +1,4 @@
-import { registeredReference } from "@arktype/util"
+import { registeredReference } from "@ark/util"
 
 export const arrayIndexSource = `^(?:0|[1-9]\\d*)$`
 

@@ -1,4 +1,4 @@
-import { DynamicBase, type anyOrNever } from "@arktype/util"
+import { DynamicBase, type anyOrNever } from "@ark/util"
 import type { Root } from "./roots/root.js"
 import { arkKind } from "./shared/utils.js"
 

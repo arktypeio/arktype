@@ -1,6 +1,6 @@
-import { attest, contextualize } from "@arktype/attest"
-import { schema } from "@arktype/schema"
-import { entriesOf, flatMorph } from "@arktype/util"
+import { attest, contextualize } from "@ark/attest"
+import { schema } from "@ark/schema"
+import { entriesOf, flatMorph } from "@ark/util"
 import { boundKindPairsByLower } from "../refinements/range.js"
 import { Disjoint } from "../shared/disjoint.js"
 

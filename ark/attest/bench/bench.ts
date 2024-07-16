@@ -1,4 +1,4 @@
-import { caller, type SourcePosition } from "@arktype/fs"
+import { caller, type SourcePosition } from "@ark/fs"
 import { performance } from "node:perf_hooks"
 import {
 	ensureCacheDirs,

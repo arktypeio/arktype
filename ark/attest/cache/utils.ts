@@ -1,5 +1,5 @@
-import { filePath } from "@arktype/fs"
-import { throwInternalError } from "@arktype/util"
+import { filePath } from "@ark/fs"
+import { throwInternalError } from "@ark/util"
 import * as tsvfs from "@typescript/vfs"
 import ts from "typescript"
 import { getConfig } from "../config.js"

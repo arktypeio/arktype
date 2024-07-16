@@ -1,5 +1,5 @@
-import { contextualize } from "@arktype/attest"
-import { fromHere, readFile } from "@arktype/fs"
+import { contextualize } from "@ark/attest"
+import { fromHere, readFile } from "@ark/fs"
 import { equal } from "node:assert/strict"
 import { runThenGetContents } from "./utils.js"
 

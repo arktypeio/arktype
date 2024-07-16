@@ -1,5 +1,5 @@
-import { findPackageRoot, fsRoot, readJson } from "@arktype/fs"
-import type { Digit } from "@arktype/util"
+import { findPackageRoot, fsRoot, readJson } from "@ark/fs"
+import type { Digit } from "@ark/util"
 import { existsSync, renameSync, symlinkSync, unlinkSync } from "fs"
 import { dirname } from "path"
 import { join } from "path/posix"

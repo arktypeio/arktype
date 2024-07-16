@@ -1,5 +1,5 @@
-import { attest, contextualize } from "@arktype/attest"
-import { schemaScope } from "@arktype/schema"
+import { attest, contextualize } from "@ark/attest"
+import { schemaScope } from "@ark/schema"
 
 contextualize(() => {
 	it("reference", () => {

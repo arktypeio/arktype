@@ -1,5 +1,5 @@
-import { caller } from "@arktype/fs"
-import { printable, snapshot, type Constructor } from "@arktype/util"
+import { caller } from "@ark/fs"
+import { printable, snapshot, type Constructor } from "@ark/util"
 import { type, type validateTypeRoot } from "arktype"
 import * as assert from "node:assert/strict"
 import { isDeepStrictEqual } from "node:util"

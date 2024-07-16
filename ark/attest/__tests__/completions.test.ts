@@ -1,5 +1,5 @@
-import { attest, contextualize } from "@arktype/attest"
-import { hasDomain } from "@arktype/util"
+import { attest, contextualize } from "@ark/attest"
+import { hasDomain } from "@ark/util"
 import assert from "assert"
 
 type Obj = {

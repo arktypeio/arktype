@@ -1,4 +1,4 @@
-import { attest, cleanup, setup } from "@arktype/attest"
+import { attest, cleanup, setup } from "@ark/attest"
 import type { makeComplexType } from "./utils.js"
 
 setup()

@@ -1,4 +1,4 @@
-import type { Out } from "@arktype/schema"
+import type { Out } from "@ark/schema"
 import { type, type Type } from "arktype"
 
 // Syntax carried over from 1.0 + TS

@@ -1,4 +1,4 @@
-# @arktype/fs
+# @ark/fs
 
 ## 0.0.20
 

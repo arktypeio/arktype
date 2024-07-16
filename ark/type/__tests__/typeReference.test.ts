@@ -1,5 +1,5 @@
-import { attest, contextualize } from "@arktype/attest"
-import { writeUnresolvableMessage } from "@arktype/schema"
+import { attest, contextualize } from "@ark/attest"
+import { writeUnresolvableMessage } from "@ark/schema"
 import { ambient, scope, type } from "arktype"
 
 contextualize(() => {

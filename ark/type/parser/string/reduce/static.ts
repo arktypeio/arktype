@@ -1,5 +1,5 @@
-import type { LimitLiteral } from "@arktype/schema"
-import type { Completion, ErrorMessage, defined } from "@arktype/util"
+import type { LimitLiteral } from "@ark/schema"
+import type { Completion, ErrorMessage, defined } from "@ark/util"
 import type { Scanner } from "../shift/scanner.js"
 import type {
 	Comparator,
@@ -44,7 +44,7 @@ export namespace state {
 	}>
 
 	export type error<message extends string> = from<{
-		root: undefined
+		root: ErrorMessage<message>
 		branches: initialBranches
 		groups: []
 		finalizer: ErrorMessage<message>
@@ -53,7 +53,7 @@ export namespace state {
 	}>
 
 	export type completion<text extends string> = from<{
-		root: undefined
+		root: Completion<text>
 		branches: initialBranches
 		groups: []
 		finalizer: Completion<text>

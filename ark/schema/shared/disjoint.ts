@@ -1,4 +1,4 @@
-import { isArray, throwParseError, type Key } from "@arktype/util"
+import { isArray, throwParseError, type Key } from "@ark/util"
 import type { Node } from "../kinds.js"
 import type { BaseNode } from "../node.js"
 import type { BaseRoot } from "../roots/root.js"

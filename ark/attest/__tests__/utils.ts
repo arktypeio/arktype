@@ -1,4 +1,4 @@
-import { dirName, fromHere, readFile, shell } from "@arktype/fs"
+import { dirName, fromHere, readFile, shell } from "@ark/fs"
 import { copyFileSync, rmSync } from "node:fs"
 
 export const runThenGetContents = (templatePath: string): string => {

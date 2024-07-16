@@ -1,9 +1,48 @@
-import type { BaseRoot } from "@arktype/schema"
-import type { ErrorMessage, join } from "@arktype/util"
+import type { BaseRoot, GenericProps, GenericRoot } from "@ark/schema"
+import type { array, ErrorMessage, join } from "@ark/util"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import { writeUnclosedGroupMessage } from "../../reduce/shared.js"
-import type { StaticState, state } from "../../reduce/static.js"
+import type { state, StaticState } from "../../reduce/static.js"
 import type { parseUntilFinalizer } from "../../string.js"
+
+export const parseGenericArgs = (
+	name: string,
+	g: GenericRoot,
+	s: DynamicState
+): BaseRoot[] => _parseGenericArgs(name, g, s, [])
+
+export type parseGenericArgs<
+	name extends string,
+	g extends GenericProps,
+	unscanned extends string,
+	$,
+	args
+> = _parseGenericArgs<name, g, unscanned, $, args, [], []>
+
+const _parseGenericArgs = (
+	name: string,
+	g: GenericRoot,
+	s: DynamicState,
+	argNodes: BaseRoot[]
+): BaseRoot[] => {
+	const argState = s.parseUntilFinalizer()
+	argNodes.push(argState.root)
+	if (argState.finalizer === ">") {
+		if (argNodes.length !== g.params.length) {
+			return s.error(
+				writeInvalidGenericArgCountMessage(
+					name,
+					g.names,
+					argNodes.map(arg => arg.expression)
+				)
+			)
+		}
+		return argNodes
+	}
+	if (argState.finalizer === ",") return _parseGenericArgs(name, g, s, argNodes)
+
+	return argState.error(writeUnclosedGroupMessage(">"))
+}
 
 export type ParsedArgs<
 	result extends unknown[] = unknown[],
@@ -13,49 +52,9 @@ export type ParsedArgs<
 	unscanned: unscanned
 }
 
-export const parseGenericArgs = (
-	name: string,
-	params: string[],
-	s: DynamicState
-): ParsedArgs<BaseRoot[]> => _parseGenericArgs(name, params, s, [], [])
-
-export type parseGenericArgs<
-	name extends string,
-	params extends string[],
-	unscanned extends string,
-	$,
-	args
-> = _parseGenericArgs<name, params, unscanned, $, args, [], []>
-
-const _parseGenericArgs = (
-	name: string,
-	params: string[],
-	s: DynamicState,
-	argDefs: string[],
-	argNodes: BaseRoot[]
-): ParsedArgs<BaseRoot[]> => {
-	const argState = s.parseUntilFinalizer()
-	// remove the finalizing token from the argDef
-	argDefs.push(argState.scanner.scanned.slice(0, -1))
-	argNodes.push(argState.root)
-	if (argState.finalizer === ">") {
-		if (argNodes.length === params.length) {
-			return {
-				result: argNodes,
-				unscanned: argState.scanner.unscanned
-			}
-		}
-		return argState.error(writeInvalidGenericArgsMessage(name, params, argDefs))
-	}
-	if (argState.finalizer === ",")
-		return _parseGenericArgs(name, params, s, argDefs, argNodes)
-
-	return argState.error(writeUnclosedGroupMessage(">"))
-}
-
 type _parseGenericArgs<
 	name extends string,
-	params extends string[],
+	g extends GenericProps,
 	unscanned extends string,
 	$,
 	args,
@@ -81,43 +80,37 @@ type _parseGenericArgs<
 			}
 		) ?
 			finalArgState["finalizer"] extends ">" ?
-				nextAsts["length"] extends params["length"] ?
+				nextAsts["length"] extends g["params"]["length"] ?
 					ParsedArgs<nextAsts, nextUnscanned>
-				:	state.error<writeInvalidGenericArgsMessage<name, params, nextDefs>>
+				:	state.error<
+						writeInvalidGenericArgCountMessage<name, g["names"], nextDefs>
+					>
 			: finalArgState["finalizer"] extends "," ?
-				_parseGenericArgs<
-					name,
-					params,
-					nextUnscanned,
-					$,
-					args,
-					nextDefs,
-					nextAsts
-				>
+				_parseGenericArgs<name, g, nextUnscanned, $, args, nextDefs, nextAsts>
 			: finalArgState["finalizer"] extends ErrorMessage ? finalArgState
 			: state.error<writeUnclosedGroupMessage<">">>
 		:	never
 	:	never
 
-export const writeInvalidGenericArgsMessage = <
+export const writeInvalidGenericArgCountMessage = <
 	name extends string,
-	params extends string[],
-	argDefs extends string[]
+	params extends array<string>,
+	argDefs extends array<string>
 >(
 	name: name,
 	params: params,
 	argDefs: argDefs
-): writeInvalidGenericArgsMessage<name, params, argDefs> =>
+): writeInvalidGenericArgCountMessage<name, params, argDefs> =>
 	`${name}<${params.join(", ")}> requires exactly ${
 		params.length
 	} args (got ${argDefs.length}${
 		argDefs.length === 0 ? "" : `: ${argDefs.join(", ")}`
 	})` as never
 
-export type writeInvalidGenericArgsMessage<
+export type writeInvalidGenericArgCountMessage<
 	name extends string,
-	params extends string[],
-	argDefs extends string[]
+	params extends array<string>,
+	argDefs extends array<string>
 > = `${name}<${join<
 	params,
 	", "

@@ -1,11 +1,11 @@
 import type { NormalizedPatternSchema } from "../../refinements/pattern.js"
-import { root } from "../../scope.js"
+import { defineRoot } from "../../scope.js"
 
 export const defineRegex = (
 	regex: RegExp,
 	description: string
 ): { domain: "string"; pattern: NormalizedPatternSchema } =>
-	root.defineRoot({
+	defineRoot({
 		domain: "string",
 		pattern: {
 			rule: regex.source,

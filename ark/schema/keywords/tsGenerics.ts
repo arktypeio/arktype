@@ -1,28 +1,30 @@
-// import type { Ark, RootScope } from "arktype/internal/ark.js"
-// import { Scope } from "arktype/internal/scope.js"
-// import type { Generic } from "arktype/internal/type.js"
+import type { Key } from "@ark/util"
+import type { GenericRoot } from "../generic.js"
+import type { SchemaModule } from "../module.js"
+import { generic, schemaScope, type RootScope } from "../scope.js"
 
-// export interface InferredTsGenerics<$ = Ark> {
-// 	Record: Generic<
-// 		["K", "V"],
-// 		{
-// 			"[K]": "V"
-// 		},
-// 		// as long as the generics in the root scope don't reference one
-// 		// another, they shouldn't need a bound local scope
-// 		$
-// 	>
-// }
+export interface tsGenericsExports<$ = {}> {
+	Record: GenericRoot<
+		[["K", Key], ["V", unknown]],
+		{
+			"[K]": "V"
+		},
+		// as long as the generics in the root scope don't reference one
+		// another, they shouldn't need a bound local scope
+		$
+	>
+}
 
-// export const tsGenerics: RootScope<InferredTsGenerics> = Scope.root({
-// 	// "Record<K, V>": {
-// 	//     // Remove this once we support constraints on generic parameters:
-// 	//     // https://github.com/arktypeio/arktype/issues/796
-// 	//     /** @ts-expect-error */
-// 	//     "[K]": "V"
-// 	// }
-// 	// unfortunately TS won't let us assign this directly, so we need to be
-// 	// careful to keep the inferred types in sync
-// }) as never
+export type tsGenerics = SchemaModule<tsGenericsExports>
 
-export const tsGenericsModule = {} //tsGenerics.export()
+const $: RootScope = schemaScope({
+	Record: generic([["K", $ark.intrinsic.propertyKey], "V"])(args => ({
+		domain: "object",
+		index: {
+			signature: args.K,
+			value: args.V
+		}
+	}))
+})
+
+export const tsGenerics: tsGenerics = $.export()

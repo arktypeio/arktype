@@ -11,7 +11,7 @@ If you've ever wondered how [ArkType](https://github.com/arktypeio/arktype) can 
 ## Installation
 
 ```bash
-npm install @arktype/attest
+npm install @ark/attest
 ```
 
 _Note: This package is still in alpha! Your feedback will help us iterate toward a stable 1.0._
@@ -37,7 +37,7 @@ export default defineConfig({
 `setupVitest.ts`
 
 ```ts
-import { setup, teardown } from "@arktype/attest"
+import { setup, teardown } from "@ark/attest"
 
 // config options can be passed here
 export default () => setup({})
@@ -56,7 +56,7 @@ export default () => setup({})
 `setupMocha.ts`
 
 ```ts
-import { setup, teardown } from "@arktype/attest"
+import { setup, teardown } from "@ark/attest"
 
 // config options can be passed here
 export const mochaGlobalSetup = () => setup({})
@@ -73,7 +73,7 @@ Bun support is currently pending a [bug in the way their source maps translate t
 Here are some simple examples of type assertions and snapshotting:
 
 ```ts
-// @arktype/attest assertions can be made from any unit test framework with a global setup/teardown
+// @ark/attest assertions can be made from any unit test framework with a global setup/teardown
 describe("attest features", () => {
 	it("type and value assertions", () => {
 		const even = type("number%2")
@@ -222,7 +222,7 @@ This ensures that type assertions can be made across processes without creating 
 There is a tsVersions setting that allows testing multiple TypeScript aliases at once.
 
 ````ts globalSetup.ts
-import { setup } from "@arktype/attest"
+import { setup } from "@ark/attest"
 /** A string or list of strings representing the TypeScript version aliases to run.
  *
  * Aliases must be specified as a package.json dependency or devDependency beginning with "typescript".
@@ -246,7 +246,7 @@ The most flexible attest APIs are `getTypeAssertionsAtPosition` and `caller`.
 Here's an example of how you might use them in your own API:
 
 ```ts
-import { getTypeAssertionsAtPosition, caller } from "@arktype/attest"
+import { getTypeAssertionsAtPosition, caller } from "@ark/attest"
 
 const yourCustomAssert = <expectedType>(actualValue: expectedType) => {
 	const position = caller()

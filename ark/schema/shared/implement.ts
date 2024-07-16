@@ -15,7 +15,7 @@ import {
 	type propValueOf,
 	type requireKeys,
 	type show
-} from "@arktype/util"
+} from "@ark/util"
 import type { NodeConfig, ResolvedUnknownNodeConfig } from "../config.js"
 import type { Declaration, Inner, Node, errorContext } from "../kinds.js"
 import type { BaseNode } from "../node.js"

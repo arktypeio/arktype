@@ -1,9 +1,9 @@
-import type { BaseRoot, resolvableReferenceIn } from "@arktype/schema"
+import type { BaseRoot, resolvableReferenceIn } from "@ark/schema"
 import {
 	throwInternalError,
 	throwParseError,
 	type ErrorMessage
-} from "@arktype/util"
+} from "@ark/util"
 import type { inferAstRoot } from "../semantic/infer.js"
 import type { DynamicState, DynamicStateWithRoot } from "./reduce/dynamic.js"
 import type { StringifiablePrefixOperator } from "./reduce/shared.js"

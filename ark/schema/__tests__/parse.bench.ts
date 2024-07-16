@@ -1,5 +1,5 @@
-import { bench } from "@arktype/attest"
-import { schema } from "@arktype/schema"
+import { bench } from "@ark/attest"
+import { schema } from "@ark/schema"
 
 bench("domain", () => schema("string").infer).types([2, "instantiations"])
 

@@ -1,5 +1,5 @@
-import { attest, contextualize } from "@arktype/attest"
-import { flatMorph } from "@arktype/util"
+import { attest, contextualize } from "@ark/attest"
+import { flatMorph } from "@ark/util"
 
 contextualize(() => {
 	it("object", () => {

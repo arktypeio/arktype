@@ -1,5 +1,5 @@
-import type { AttestConfig } from "@arktype/attest"
-import { shell } from "@arktype/fs"
+import type { AttestConfig } from "@ark/attest"
+import { shell } from "@ark/fs"
 
 process.env.ATTEST_CONFIG = JSON.stringify({
 	tsVersions: "*"

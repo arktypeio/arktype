@@ -1,5 +1,5 @@
-import { attest, contextualize } from "@arktype/attest"
-import { type Root, schema } from "@arktype/schema"
+import { attest, contextualize } from "@ark/attest"
+import { type Root, schema } from "@ark/schema"
 
 contextualize(() => {
 	it("single constraint", () => {
@@ -38,7 +38,7 @@ contextualize(() => {
 				}
 			})
 		).throws.snap(
-			"ParseError: Intersection of <=0 and >=1 results in an unsatisfiable type"
+			"ParseError: Intersection of <= 0 and >= 1 results in an unsatisfiable type"
 		)
 	})
 

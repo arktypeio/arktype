@@ -1,4 +1,4 @@
-import { CompiledFunction } from "@arktype/util"
+import { CompiledFunction } from "@ark/util"
 import type { BaseNode } from "../node.js"
 import type { Discriminant } from "../roots/union.js"
 import type { TraversalKind } from "./traversal.js"

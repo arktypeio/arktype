@@ -32,21 +32,28 @@ import {
 	type inferPipes,
 	type inferPredicate,
 	type writeInvalidOperandMessage
-} from "@arktype/schema"
+} from "@ark/schema"
 import {
 	Callable,
 	type Constructor,
 	type ErrorMessage,
 	type array,
 	type conform
-} from "@arktype/util"
-import { Generic, type validateParameterString } from "./generic.js"
+} from "@ark/util"
+import type { type } from "./ark.js"
+import {
+	parseGenericParams,
+	type Generic,
+	type ParameterString,
+	type baseGenericArgs,
+	type parseValidGenericParams,
+	type validateParameterString
+} from "./generic.js"
 import type {
 	inferDefinition,
 	validateDeclared,
 	validateDefinition
 } from "./parser/definition.js"
-import { parseGenericParams } from "./parser/generic.js"
 import type {
 	IndexOneOperator,
 	IndexZeroOperator,
@@ -81,16 +88,14 @@ export interface TypeParser<$ = {}> {
 		:	[]
 	): Type<inferTypeRoot<[zero, one, ...rest], $>, $>
 
-	<params extends string, const def>(
-		params: `<${validateParameterString<params>}>`,
+	<params extends ParameterString, const def>(
+		params: validateParameterString<params, $>,
 		def: validateDefinition<
 			def,
 			$,
-			{
-				[param in parseGenericParams<params>[number]]: unknown
-			}
+			baseGenericArgs<parseValidGenericParams<params, $>>
 		>
-	): Generic<parseGenericParams<params>, def, $>
+	): Generic<parseValidGenericParams<params, $>, def, $>
 
 	raw(def: unknown): Type<any, $>
 	errors: typeof ArkErrors
@@ -115,10 +120,12 @@ export class RawTypeParser extends Callable<
 				) {
 					// if there are exactly two args, the first of which looks like <${string}>,
 					// treat as a generic
-					const params = parseGenericParams(args[0].slice(1, -1))
+					const params = parseGenericParams(args[0].slice(1, -1), {
+						$,
+						args: {}
+					})
 					const def = args[1]
-					// TODO: validateUninstantiatedGeneric, remove this cast
-					return new Generic(params, def, $ as never) as never
+					return $.generic(params, def) as never
 				}
 				// otherwise, treat as a tuple expression. technically, this also allows
 				// non-expression tuple definitions to be parsed, but it's not a supported
@@ -252,19 +259,19 @@ declare class _Type<t = unknown, $ = any> extends InnerRoot<t, $> {
 	): this is Type<inferTypeRoot<def>, $>
 	overlaps<def>(r: validateTypeRoot<def, $>): boolean
 
-	get<k1 extends indexOf<t>>(k1: k1 | AnyType<k1>): Type<indexInto<t, k1>, $>
+	get<k1 extends indexOf<t>>(k1: k1 | type.cast<k1>): Type<indexInto<t, k1>, $>
 	get<k1 extends indexOf<t>, k2 extends indexOf<indexInto<t, k1>>>(
-		k1: k1 | AnyType<k1>,
-		k2: k2 | AnyType<k2>
+		k1: k1 | type.cast<k1>,
+		k2: k2 | type.cast<k2>
 	): Type<indexInto<indexInto<t, k1>, k2>, $>
 	get<
 		k1 extends indexOf<t>,
 		k2 extends indexOf<indexInto<t, k1>>,
 		k3 extends indexOf<indexInto<indexInto<t, k1>, k2>>
 	>(
-		k1: k1 | AnyType<k1>,
-		k2: k2 | AnyType<k2>,
-		k3: k3 | AnyType<k3>
+		k1: k1 | type.cast<k1>,
+		k2: k2 | type.cast<k2>,
+		k3: k3 | type.cast<k3>
 	): Type<indexInto<indexInto<indexInto<t, k1>, k2>, k3>, $>
 
 	constrain<

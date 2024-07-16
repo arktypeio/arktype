@@ -1,4 +1,4 @@
-import type { merge, show } from "@arktype/util"
+import type { merge, show } from "@ark/util"
 import type { Node, reducibleKindOf } from "../kinds.js"
 import type { Disjoint } from "./disjoint.js"
 import type { NarrowedAttachments, NodeKind } from "./implement.js"

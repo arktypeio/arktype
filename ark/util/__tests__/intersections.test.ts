@@ -1,9 +1,8 @@
-import { attest, contextualize } from "@arktype/attest"
-import type { intersectArrays, intersectParameters } from "@arktype/util"
+import { attest, contextualize } from "@ark/attest"
+import type { intersectArrays, intersectParameters } from "@ark/util"
 
-contextualize(
-	"parameters",
-	() => {
+contextualize(() => {
+	describe("parameters", () => {
 		it("both empty", () => {
 			type t = intersectParameters<[], []>
 			attest<[], t>()
@@ -150,9 +149,9 @@ contextualize(
 			type t = intersectParameters<["a", "b"], [string, ...string[]]>
 			attest<["a", "b", ...string[]], t>()
 		})
-	},
-	"arrays",
-	() => {
+	})
+
+	describe("arrays", () => {
 		// Ideally this might be reduced to a top-level never
 		it("incompatible lengths", () => {
 			type t = intersectArrays<[], [string]>
@@ -264,5 +263,5 @@ contextualize(
 			attest<expected, intersectArrays<l, r>>()
 			attest<expected, intersectArrays<r, l>>()
 		})
-	}
-)
+	})
+})

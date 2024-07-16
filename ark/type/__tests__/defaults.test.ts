@@ -1,5 +1,5 @@
-import { attest, contextualize } from "@arktype/attest"
-import type { Date, Default } from "@arktype/schema"
+import { attest, contextualize } from "@ark/attest"
+import type { Date, Default } from "@ark/schema"
 import { scope, type } from "arktype"
 import { invalidDefaultKeyKindMessage } from "../parser/objectLiteral.js"
 import {
@@ -7,9 +7,8 @@ import {
 	writeNonLiteralDefaultMessage
 } from "../parser/string/shift/operator/default.js"
 
-contextualize(
-	"parsing and traversal",
-	() => {
+contextualize(() => {
+	describe("parsing and traversal", () => {
 		it("base", () => {
 			const o = type({ foo: "string", bar: ["number", "=", 5] })
 
@@ -68,9 +67,9 @@ contextualize(
 				domain: "object"
 			})
 		})
-	},
-	"string parsing",
-	() => {
+	})
+
+	describe("string parsing", () => {
 		it("number", () => {
 			const t = type({ key: "number = 42" })
 			const expected = type({ key: ["number", "=", 42] })
@@ -190,9 +189,9 @@ contextualize(
 			// would be ideal if this was a type error as well
 			attest(() => type("string='foo'")).throws(shallowDefaultMessage)
 		})
-	},
-	"intersection",
-	() => {
+	})
+
+	describe("intersection", () => {
 		it("two optionals, one default", () => {
 			const l = type({ bar: ["number", "=", 5] })
 			const r = type({ "bar?": "5" })
@@ -233,5 +232,5 @@ contextualize(
 				"ParseError: Invalid intersection of default values 5 & 6"
 			)
 		})
-	}
-)
+	})
+})

@@ -1,10 +1,10 @@
-import { attest, contextualize } from "@arktype/attest"
+import { attest, contextualize } from "@ark/attest"
 import {
 	writeMissingSubmoduleAccessMessage,
 	writeNonSubmoduleDotMessage,
 	writeUnresolvableMessage,
 	type Out
-} from "@arktype/schema"
+} from "@ark/schema"
 import { scope, type, type Module, type Scope } from "arktype"
 
 contextualize(() => {

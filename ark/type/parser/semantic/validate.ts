@@ -1,19 +1,24 @@
 import type {
 	arkKind,
+	GenericParamAst,
 	GenericProps,
 	PrivateDeclaration,
-	writeMissingSubmoduleAccessMessage
-} from "@arktype/schema"
+	writeMissingSubmoduleAccessMessage,
+	writeUnsatisfiedParameterConstraintMessage
+} from "@ark/schema"
 import type {
 	anyOrNever,
+	array,
 	BigintLiteral,
 	charsAfterFirst,
 	Completion,
 	ErrorMessage,
+	typeToString,
 	writeMalformedNumericLiteralMessage
-} from "@arktype/util"
+} from "@ark/util"
+import type { Generic } from "../../generic.js"
 import type { Comparator } from "../string/reduce/shared.js"
-import type { writeInvalidGenericArgsMessage } from "../string/shift/operand/genericArgs.js"
+import type { writeInvalidGenericArgCountMessage } from "../string/shift/operand/genericArgs.js"
 import type { UnitLiteral } from "../string/shift/operator/default.js"
 import type { parseString } from "../string/string.js"
 import type { validateRange } from "./bounds.js"
@@ -21,6 +26,7 @@ import type { validateDefault } from "./default.js"
 import type { validateDivisor } from "./divisor.js"
 import type {
 	GenericInstantiationAst,
+	inferAstRoot,
 	InfixExpression,
 	PostfixExpression
 } from "./infer.js"
@@ -43,19 +49,39 @@ export type validateAst<ast, $, args> =
 		validateDefault<baseAst, unitLiteral, $, args>
 	: ast extends readonly ["keyof", infer operand] ?
 		validateAst<operand, $, args>
-	: ast extends GenericInstantiationAst ? validateGenericArgs<ast[2], $, args>
-	: ErrorMessage<writeUnexpectedExpressionMessage<astToString<ast>>> & {
+	: ast extends (
+		GenericInstantiationAst<
+			Generic<infer params, any, any> | GenericProps<infer params>,
+			infer argAsts
+		>
+	) ?
+		validateGenericArgs<params, argAsts, $, args, []>
+	:	ErrorMessage<writeUnexpectedExpressionMessage<astToString<ast>>> & {
 			ast: ast
 		}
 
 type writeUnexpectedExpressionMessage<expression extends string> =
 	`Unexpectedly failed to parse the expression resulting from ${expression}`
 
-type validateGenericArgs<argAsts extends unknown[], $, args> =
-	argAsts extends [infer head, ...infer tail] ?
-		validateAst<head, $, args> extends ErrorMessage<infer message> ?
+type validateGenericArgs<
+	params extends array<GenericParamAst>,
+	argAsts extends array,
+	$,
+	args,
+	indices extends 1[]
+> =
+	argAsts extends readonly [infer arg, ...infer argsTail] ?
+		validateAst<arg, $, args> extends ErrorMessage<infer message> ?
 			ErrorMessage<message>
-		:	validateGenericArgs<tail, $, args>
+		: inferAstRoot<arg, $, args> extends params[indices["length"]][1] ?
+			validateGenericArgs<params, argsTail, $, args, [...indices, 1]>
+		:	ErrorMessage<
+				writeUnsatisfiedParameterConstraintMessage<
+					params[indices["length"]][0],
+					typeToString<params[indices["length"]][1]>,
+					astToString<arg>
+				>
+			>
 	:	undefined
 
 export const writeUnsatisfiableExpressionError = <expression extends string>(
@@ -94,7 +120,9 @@ type validateStringAst<def extends string, $> =
 		: // these problems would've been caught during a fullStringParse, but it's most
 		// efficient to check for them here in case the string was naively parsed
 		$[alias] extends GenericProps ?
-			ErrorMessage<writeInvalidGenericArgsMessage<def, $[alias]["params"], []>>
+			ErrorMessage<
+				writeInvalidGenericArgCountMessage<def, $[alias]["names"], []>
+			>
 		: $[alias] extends { [arkKind]: "module" } ?
 			ErrorMessage<writeMissingSubmoduleAccessMessage<def>>
 		:	undefined

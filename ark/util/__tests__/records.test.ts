@@ -1,4 +1,4 @@
-import { attest, contextualize } from "@arktype/attest"
+import { attest, contextualize } from "@ark/attest"
 import type { withJsDoc } from "../records.js"
 
 contextualize(() => {

@@ -1,5 +1,5 @@
-import { attest, contextualize } from "@arktype/attest"
-import { writeUnresolvableMessage } from "@arktype/schema"
+import { attest, contextualize } from "@ark/attest"
+import { writeUnresolvableMessage } from "@ark/schema"
 import { type } from "arktype"
 import { writeUnterminatedEnclosedMessage } from "../parser/string/shift/operand/enclosed.js"
 import { writeExpressionExpectedMessage } from "../parser/string/shift/operand/unenclosed.js"

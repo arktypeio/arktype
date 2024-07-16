@@ -1,10 +1,10 @@
-import { ensureDir, fromCwd } from "@arktype/fs"
+import { ensureDir, fromCwd } from "@ark/fs"
 import {
 	arrayFrom,
 	isArray,
 	tryParseNumber,
 	type autocomplete
-} from "@arktype/util"
+} from "@ark/util"
 import { existsSync } from "node:fs"
 import { join, resolve } from "node:path"
 import {

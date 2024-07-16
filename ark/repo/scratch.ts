@@ -1,7 +1,16 @@
-import { type } from "arktype"
+import { scope, type } from "arktype"
 
-const dateFrom = type("parse.date | Date")
+const nonEmpty = type("<arr extends unknown[]>", "arr > 0")
 
-const fromString = dateFrom("05-21-1993")
+const m = nonEmpty("number[]")
 
-const fromDate = dateFrom(new Date())
+const threeSixtyNoModule = scope({
+	three: "3",
+	sixty: "60",
+	no: "'no'"
+}).export()
+
+const types = scope({
+	...threeSixtyNoModule,
+	threeSixtyNo: "three|sixty|no"
+}).export()

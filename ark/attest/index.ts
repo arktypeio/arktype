@@ -1,4 +1,4 @@
-export { caller, type CallerOfOptions } from "@arktype/fs"
+export { caller, type CallerOfOptions } from "@ark/fs"
 export { attest } from "./assert/attest.js"
 export { bench } from "./bench/bench.js"
 export {

@@ -1,10 +1,10 @@
-import { attest, contextualize } from "@arktype/attest"
+import { attest, contextualize } from "@ark/attest"
 import {
+	internalSchema,
 	keywordNodes,
-	rawSchema,
 	writeIndivisibleMessage,
 	writeUnresolvableMessage
-} from "@arktype/schema"
+} from "@ark/schema"
 import { type } from "arktype"
 import { writeMissingRightOperandMessage } from "../parser/string/shift/operand/unenclosed.js"
 
@@ -158,7 +158,7 @@ contextualize(() => {
 	})
 
 	const expected = () =>
-		rawSchema([
+		internalSchema([
 			{
 				domain: "object",
 				required: {

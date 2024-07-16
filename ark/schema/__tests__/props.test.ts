@@ -1,5 +1,5 @@
-import { attest, contextualize } from "@arktype/attest"
-import { schema } from "@arktype/schema"
+import { attest, contextualize } from "@ark/attest"
+import { schema } from "@ark/schema"
 
 contextualize(() => {
 	it("normalizes prop order", () => {

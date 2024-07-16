@@ -1,9 +1,4 @@
-import {
-	type array,
-	isKeyOf,
-	type propValueOf,
-	type satisfy
-} from "@arktype/util"
+import { type array, isKeyOf, type propValueOf, type satisfy } from "@ark/util"
 import { RawPrimitiveConstraint } from "../constraint.js"
 import type { Node } from "../kinds.js"
 import type { BaseMeta, RawNodeDeclaration } from "../shared/declare.js"
@@ -29,7 +24,7 @@ export abstract class BaseRange<
 		this.exclusive
 	)
 	readonly numericLimit: number = this.rule.valueOf()
-	readonly expression: string = `${this.comparator}${this.rule}`
+	readonly expression: string = `${this.comparator} ${this.rule}`
 	readonly compiledCondition: string = `${this.compiledActual} ${this.comparator} ${this.numericLimit}`
 	readonly compiledNegation: string = `${this.compiledActual} ${
 		negatedComparators[this.comparator]

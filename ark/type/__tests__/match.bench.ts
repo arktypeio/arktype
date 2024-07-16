@@ -1,4 +1,4 @@
-import { bench } from "@arktype/attest"
+import { bench } from "@ark/attest"
 import { match } from "arktype"
 
 bench("general matchers", () => {

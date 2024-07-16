@@ -1,10 +1,9 @@
-import { attest, contextualize } from "@arktype/attest"
-import { rawSchema } from "@arktype/schema"
+import { attest, contextualize } from "@ark/attest"
+import { internalSchema } from "@ark/schema"
 import { ark, type } from "arktype"
 
-contextualize(
-	"jsObjects",
-	() => {
+contextualize(() => {
+	describe("jsObjects", () => {
 		it("Function", () => {
 			// should not be treated as a morph
 			attest<Function>(type("Function").infer)
@@ -14,9 +13,9 @@ contextualize(
 			// should not expand built-in classes
 			attest(type("Date").infer).type.toString.snap("Date")
 		})
-	},
-	"tsKeywords",
-	() => {
+	})
+
+	describe("tsKeywords", () => {
 		it("string strings", () => {
 			/**
 			 * 	In honor of @ark-expect-beta aka log(n):
@@ -48,7 +47,7 @@ contextualize(
 		it("boolean", () => {
 			const boolean = type("boolean")
 			attest<boolean>(boolean.infer)
-			const expected = rawSchema([{ unit: false }, { unit: true }])
+			const expected = internalSchema([{ unit: false }, { unit: true }])
 			// should be simplified to simple checks for true and false literals
 			attest(boolean.json).equals(expected.json)
 		})
@@ -56,7 +55,7 @@ contextualize(
 		it("never", () => {
 			const never = type("never")
 			attest<never>(never.infer)
-			const expected = rawSchema([])
+			const expected = internalSchema([])
 			// should be equivalent to a zero-branch union
 			attest(never.json).equals(expected.json)
 		})
@@ -68,7 +67,7 @@ contextualize(
 		})
 
 		it("unknown", () => {
-			const expected = rawSchema({})
+			const expected = internalSchema({})
 			// should be equivalent to an unconstrained predicate
 			attest(type("unknown").json).equals(expected.json)
 		})
@@ -80,9 +79,9 @@ contextualize(
 			//should be treated as undefined at runtime
 			attest(t.json).equals(expected.json)
 		})
-	},
-	"validation",
-	() => {
+	})
+
+	describe("validation", () => {
 		it("integer", () => {
 			const integer = type("integer")
 			attest(integer(123)).equals(123)
@@ -182,9 +181,9 @@ contextualize(
 				'must be a valid IPv4 address or a valid IPv6 address (was "2001:0db8:85a3:0000:0000:8a2e:0370:733g")'
 			)
 		})
-	},
-	"parse",
-	() => {
+	})
+
+	describe("parse", () => {
 		it("json", () => {
 			const parseJson = type("parse.json")
 			attest(parseJson('{"a": "hello"}')).snap({ a: "hello" })
@@ -225,9 +224,9 @@ contextualize(
 			)
 			attest(parseDate(5).toString()).snap("must be a string (was number)")
 		})
-	},
-	"format",
-	() => {
+	})
+
+	describe("format", () => {
 		it("trim", () => {
 			const trim = type("format.trim")
 			attest(trim("  foo  ")).equals("foo")
@@ -243,5 +242,15 @@ contextualize(
 			attest(uppercase("foo")).equals("FOO")
 			attest(uppercase(5).toString()).snap("must be a string (was number)")
 		})
-	}
-)
+	})
+
+	describe("generics", () => {
+		it("record", () => {
+			const expected = type({ "[string]": "number" })
+
+			const expression = type("Record<string, number>")
+			attest(expression.json).equals(expected.json)
+			attest<typeof expected.t>(expression.t)
+		})
+	})
+})

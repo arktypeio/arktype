@@ -1,4 +1,4 @@
-import { append, cached, domainDescriptions } from "@arktype/util"
+import { append, cached, domainDescriptions } from "@ark/util"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"

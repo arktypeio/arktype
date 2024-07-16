@@ -1,4 +1,4 @@
-import { snapshot } from "@arktype/util"
+import { snapshot } from "@ark/util"
 import { AssertionError } from "node:assert"
 import process from "node:process"
 import {

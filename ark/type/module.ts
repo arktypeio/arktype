@@ -1,5 +1,5 @@
-import { RootModule, type PreparsedNodeResolution } from "@arktype/schema"
-import type { anyOrNever } from "@arktype/util"
+import { RootModule, type PreparsedNodeResolution } from "@ark/schema"
+import type { anyOrNever } from "@ark/util"
 import type { Type } from "./type.js"
 
 type exportScope<$> = {

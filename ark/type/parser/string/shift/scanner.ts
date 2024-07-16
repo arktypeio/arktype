@@ -5,7 +5,7 @@ import {
 	type Dict,
 	type EscapeToken,
 	type WhiteSpaceToken
-} from "@arktype/util"
+} from "@ark/util"
 import type { Comparator } from "../reduce/shared.js"
 
 export class Scanner<lookahead extends string = string> {
@@ -60,6 +60,10 @@ export class Scanner<lookahead extends string = string> {
 		this.i = i < 0 ? this.length + i : i
 	}
 
+	jumpForward(count: number): void {
+		this.i += count
+	}
+
 	get location(): number {
 		return this.i
 	}
@@ -112,7 +116,8 @@ export namespace Scanner {
 		"[": true,
 		"%": true,
 		" ": true,
-		",": true
+		",": true,
+		":": true
 	} as const
 
 	export type TerminatingChar = keyof typeof terminatingChars

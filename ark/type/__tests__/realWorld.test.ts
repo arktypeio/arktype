@@ -1,12 +1,14 @@
-import { attest, contextualize } from "@arktype/attest"
+import { attest, contextualize } from "@ark/attest"
 import type {
 	AtLeastLength,
 	AtMostLength,
+	Narrowed,
 	number,
+	of,
 	Out,
 	string
-} from "@arktype/schema"
-import { registeredReference } from "@arktype/util"
+} from "@ark/schema"
+import { registeredReference } from "@ark/util"
 import { scope, type, type Type } from "arktype"
 import type { Module } from "../module.js"
 
@@ -676,5 +678,34 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		attest(t({})).equals({})
 
 		attest(t({ optionalKey: "FOO" })).snap({ optionalKey: "foo" })
+	})
+
+	// https://discord.com/channels/957797212103016458/1261621890775126160/1261621890775126160
+	it("can narrow output of a piped union", () => {
+		const parseBigint = (v: string | number) => BigInt(v)
+		const morphReference = registeredReference(parseBigint)
+		const validatePositiveBigint = (b: bigint) => b > 0n
+		const predicateReference = registeredReference(validatePositiveBigint)
+
+		const Amount = type("string|number")
+			.pipe(parseBigint)
+			.narrow(validatePositiveBigint)
+
+		attest<(In: string | number) => Out<of<bigint, Narrowed>>>(Amount.t)
+		attest(Amount.json).snap([
+			{
+				in: "number",
+				morphs: [morphReference, { predicate: [predicateReference] }]
+			},
+			{
+				in: "string",
+				morphs: [morphReference, { predicate: [predicateReference] }]
+			}
+		])
+
+		attest(Amount("1000")).equals(1000n)
+		attest(Amount("-5").toString()).snap(
+			"must be valid according to validatePositiveBigint (was -5n)"
+		)
 	})
 })

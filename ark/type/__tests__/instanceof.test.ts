@@ -1,15 +1,14 @@
-import { attest, contextualize } from "@arktype/attest"
-import { rawSchema } from "@arktype/schema"
+import { attest, contextualize } from "@ark/attest"
+import { internalSchema } from "@ark/schema"
 import { type, type Type } from "arktype"
 import { writeInvalidConstructorMessage } from "../parser/tuple.js"
 
-contextualize(
-	"tuple expression",
-	() => {
+contextualize(() => {
+	describe("tuple expression", () => {
 		it("base", () => {
 			const t = type(["instanceof", Error])
 			attest<Error>(t.infer)
-			const expected = rawSchema(Error)
+			const expected = internalSchema(Error)
 			attest(t.json).equals(expected.json)
 			const e = new Error()
 			attest(t(e)).equals(e)
@@ -86,9 +85,9 @@ contextualize(
 			attest(ark.infer).type.toString("ArkClass")
 			attest(ark.in.infer).type.toString("ArkClass")
 		})
-	},
-	"root expression",
-	() => {
+	})
+
+	describe("root expression", () => {
 		it("class", () => {
 			const t = type("instanceof", Error)
 			attest<Error>(t.infer)
@@ -105,5 +104,5 @@ contextualize(
 				writeInvalidConstructorMessage("Error")
 			)
 		})
-	}
-)
+	})
+})

@@ -1,11 +1,10 @@
-import { attest, contextualize } from "@arktype/attest"
-import { keywordNodes, writeIndivisibleMessage } from "@arktype/schema"
+import { attest, contextualize } from "@ark/attest"
+import { keywordNodes, writeIndivisibleMessage } from "@ark/schema"
 import { type } from "arktype"
 import { writeInvalidDivisorMessage } from "../parser/string/shift/operator/divisor.js"
 
-contextualize(
-	"parse",
-	() => {
+contextualize(() => {
+	describe("parse", () => {
 		it("integer literal", () => {
 			const divisibleByTwo = type("number%2")
 			attest<number>(divisibleByTwo.infer)
@@ -91,9 +90,9 @@ contextualize(
 				writeIndivisibleMessage(keywordNodes.number.or(keywordNodes.string))
 			)
 		})
-	},
-	"intersection",
-	() => {
+	})
+
+	describe("intersection", () => {
 		it("identical", () => {
 			const t = type("number%2&number%2")
 			attest(t.json).equals(type("number%2").json)
@@ -124,5 +123,5 @@ contextualize(
 				"ParseError: Intersection of % 3 and 8 results in an unsatisfiable type"
 			)
 		})
-	}
-)
+	})
+})
