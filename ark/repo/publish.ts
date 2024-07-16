@@ -6,13 +6,15 @@ const tagsToPublish: string[] = []
 const existingTags = getShellOutput("git tag")
 
 packages.forEach(pkg => {
-	// primary @ark/ scope
+	// primary name (either arktype or @ark/*)
 	publishPackage(pkg)
-	// alias for original @arktype/ scope
-	publishPackage(pkg, `@arktype/${pkg.scope}`)
 
-	// unscoped alias for primary entry point
-	if (pkg.scope === "type") publishPackage(pkg, "arktype")
+	// scoped alias for primary entry point
+	if (pkg.scope === "type") publishPackage(pkg, "@ark/type")
+	else {
+		// alias for original @arktype/ scope
+		publishPackage(pkg, `@arktype/${pkg.scope}`)
+	}
 })
 
 const publishPackage = (pkg: ArkPackage, alias?: string) => {

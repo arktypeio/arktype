@@ -30,7 +30,7 @@
 		"bunTest": "bun test --preload ../repo/bunTestSetup.ts"
 	},
 	"dependencies": {
-		"@ark/type": "workspace:*",
+		"arktype": "workspace:*",
 		"@ark/fs": "workspace:*",
 		"@ark/util": "workspace:*",
 		"@typescript/vfs": "1.5.3",
