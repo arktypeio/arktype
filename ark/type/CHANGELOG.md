@@ -1,5 +1,97 @@
 # arktype
 
+## 2.0.0-beta.0
+
+### Generics
+
+Native generic syntax is finally available! 🎉
+
+Here are some examples of how this powerful feature can be used:
+
+#### Standalone Type Syntax
+
+```ts
+const boxOf = type("<t>", { box: "t" })
+
+const schrodingersBox = boxOf({ cat: { isAlive: "boolean" } })
+
+const expected = type({
+	box: {
+		cat: { isAlive: "boolean" }
+	}
+})
+
+// true
+console.log(expected.equals(schrodingersBox))
+```
+
+#### Constrained Parameters
+
+All syntax in parameters definitions and all references to generic args are fully-type safe and autocompleted like any builtin keyword. Constraints can be used just like TS to limit what can be passed to a generic and allow that arg to be used with operators like `>`.
+
+```ts
+const nonEmpty = type("<arr extends unknown[]>", "arr > 0")
+const nonEmptyNumberArray = nonEmpty("number[]")
+
+const expected = type("number[] > 0")
+
+// true
+console.log(expected.equals(nonEmptyNumberArray))
+```
+
+#### Scoped
+
+There is a special syntax for specifying generics in a scope:
+
+```ts
+const types = scope({
+	"box<t, u>": {
+		box: "t | u"
+	},
+	bitBox: "box<0, 1>"
+}).export()
+
+const expected = type({ box: "0|1" })
+
+// true
+console.log(expected.equals(types.bitBox))
+```
+
+#### Builtins
+
+Record is now available as a builtin keyword.
+
+```ts
+const stringRecord = type("Record<string, string>")
+
+const expected = type({
+	"[string]": "string"
+})
+
+// true
+console.log(expected.equals(stringRecord))
+```
+
+Other common utils like `Pick` and `Omit` to follow in the an upcoming release.
+
+Recursive and cyclic generics are also currently unavailable and will be added soon.
+
+For more usage examples, check out the unit tests for generics [here](https://github.com/arktypeio/arktype/blob/main/ark/type/__tests__/generic.test.ts).
+
+This feature was built to be very robust and flexible. We're excited to see what you do with it!
+
+### Fix narrowing output of some piped unions
+
+In recent versions, types like the following would fail to parse:
+
+```ts
+// Previously was a ParseError, now correctly inferred as
+// (In: string | number) => Out<of<bigint, Narrowed>>
+const Amount = type("string|number")
+	.pipe(v => BigInt(v))
+	.narrow(b => b > 0n)
+```
+
 ## 2.0.0-dev.29
 
 ### Fix parsing for expressions starting with subalias references
