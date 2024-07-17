@@ -1,4 +1,4 @@
-import { caller, type SourcePosition } from "@ark/fs"
+import { caller, rmRf, type SourcePosition } from "@ark/fs"
 import { performance } from "node:perf_hooks"
 import {
 	ensureCacheDirs,
@@ -22,6 +22,8 @@ export type StatName = keyof typeof stats
 
 export type TimeAssertionName = StatName | "mark"
 
+let benchHasRun = false
+
 export const bench = <Fn extends BenchableFunction>(
 	name: string,
 	fn: Fn,
@@ -34,8 +36,15 @@ export const bench = <Fn extends BenchableFunction>(
 		fn.constructor.name === "AsyncFunction",
 		options
 	)
+
+	if (!benchHasRun) {
+		rmRf(ctx.cfg.cacheDir)
+		ensureCacheDirs()
+		benchHasRun = true
+	}
+
 	ctx.benchCallPosition = caller()
-	ensureCacheDirs()
+
 	if (
 		typeof ctx.cfg.filter === "string" &&
 		!qualifiedPath.includes(ctx.cfg.filter)

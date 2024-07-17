@@ -11,7 +11,7 @@ bench("when(3)", () => {
 	const zero = matcher(0)
 	const one = matcher(1)
 	const two = matcher(2)
-}).types()
+}).types([34953, "instantiations"])
 
 bench("when(10)", () => {
 	const matcher = match()
@@ -30,7 +30,7 @@ bench("when(10)", () => {
 	const zero = matcher(0)
 	const one = matcher(1)
 	const two = matcher(2)
-}).types()
+}).types([98902, "instantiations"])
 
 bench("match.only<T>", () => {
 	const matcher = match
