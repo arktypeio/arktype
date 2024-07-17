@@ -4,8 +4,7 @@ import {
 	flatMorph,
 	isThunk,
 	throwParseError,
-	type array,
-	type thunkable
+	type array
 } from "@ark/util"
 import type { inferRoot } from "./inference.js"
 import type { RootSchema } from "./kinds.js"
@@ -28,7 +27,7 @@ export type ConstrainedGenericParamDef<name extends string = string> =
 export const parseGeneric = (
 	paramDefs: array<GenericParamDef>,
 	bodyDef: unknown,
-	$: thunkable<RootScope>
+	$: RootScope
 ): GenericRoot => new GenericRoot(paramDefs, bodyDef, $, $)
 
 type genericParamSchemaToAst<schema extends GenericParamDef, $> =
@@ -124,20 +123,18 @@ export class LazyGenericRoot<
 > extends Callable<LazyGenericSchema<params>> {}
 
 export class GenericRoot<
-		params extends array<GenericParamAst> = array<GenericParamAst>,
-		bodyDef = any,
-		$ = any
-	>
-	extends Callable<GenericNodeSignature<params, bodyDef, $>>
-	implements GenericProps
-{
+	params extends array<GenericParamAst> = array<GenericParamAst>,
+	bodyDef = any,
+	$ = any
+> extends Callable<GenericNodeSignature<params, bodyDef, $>> {
 	readonly [arkKind] = "generic"
+	declare readonly paramsAst: params
 
 	constructor(
 		public paramDefs: genericParamAstToDefs<params>,
 		public bodyDef: bodyDef,
-		private _$: thunkable<RootScope<$>>,
-		private _arg$: thunkable<RootScope<$>>
+		public $: RootScope<$>,
+		public arg$: RootScope<$>
 	) {
 		super((...args: any[]) => {
 			const argNodes = flatMorph(this.names, (i, name) => {
@@ -160,17 +157,9 @@ export class GenericRoot<
 			return this.$.parseRoot(bodyDef as never, { args: argNodes }) as never
 		})
 		// if this is a standalone generic, validate its base constraints right away
-		if (!isThunk(this._$)) this.validateBaseInstantiation()
+		if (!isThunk(this.$)) this.validateBaseInstantiation()
 		// if it's part of a scope, scope.export will be resposible for invoking
 		// validateBaseInstantiation on export() once everything is resolvable
-	}
-
-	get $() {
-		return isThunk(this._$) ? this._$() : this._$
-	}
-
-	get arg$() {
-		return isThunk(this._arg$) ? this._arg$() : this._arg$
 	}
 
 	bindScope($: RawRootScope): this {

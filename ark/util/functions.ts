@@ -87,12 +87,16 @@ export type CallableOptions<attachments extends object> = {
 	bind?: object
 }
 
-/** @ts-expect-error required to cast function type */
+// @ts-expect-error required to cast function type
 export class Callable<
 	f extends (...args: never[]) => unknown,
 	attachments extends object = {}
 > extends NoopBase<f & attachments> {
-	constructor(f: f, opts?: CallableOptions<attachments>) {
+	constructor(
+		f: f,
+		...[opts]: {} extends attachments ? [opts?: CallableOptions<attachments>]
+		:	[opts: CallableOptions<attachments>]
+	) {
 		super()
 		return Object.assign(
 			Object.setPrototypeOf(
