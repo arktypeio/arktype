@@ -1,13 +1,12 @@
 import {
 	Callable,
+	Hkt,
 	cached,
 	flatMorph,
-	isThunk,
 	throwParseError,
 	type array
 } from "@ark/util"
 import type { inferRoot } from "./inference.js"
-import type { RootSchema } from "./kinds.js"
 import type { Root, UnknownRoot } from "./roots/root.js"
 import type { RawRootScope, RootScope } from "./scope.js"
 import { arkKind } from "./shared/utils.js"
@@ -26,9 +25,9 @@ export type ConstrainedGenericParamDef<name extends string = string> =
 
 export const parseGeneric = (
 	paramDefs: array<GenericParamDef>,
-	bodyDef: unknown,
+	instantiate: GenericInstantiator,
 	$: RootScope
-): GenericRoot => new GenericRoot(paramDefs, bodyDef, $, $)
+): GenericRoot => new GenericRoot(paramDefs, instantiate, $, $)
 
 type genericParamSchemaToAst<schema extends GenericParamDef, $> =
 	schema extends string ? GenericParamAst<schema>
@@ -113,60 +112,67 @@ export type GenericArgResolutions<
 	>
 }
 
-export type LazyGenericSchema<
+export type GenericInstantiator<
 	params extends array<GenericParamAst> = array<GenericParamAst>,
-	returns extends RootSchema = RootSchema
+	returns = unknown
 > = (args: GenericArgResolutions<params>) => returns
 
-export class LazyGenericRoot<
-	params extends array<GenericParamAst> = array<GenericParamAst>
-> extends Callable<LazyGenericSchema<params>> {}
+export abstract class GenericHkt<
+	params extends array<GenericParamAst> = array<GenericParamAst<string, any>>
+> extends Hkt.Kind {
+	constructor(public instantiateDef: GenericInstantiator<params>) {
+		super()
+	}
+}
 
 export class GenericRoot<
 	params extends array<GenericParamAst> = array<GenericParamAst>,
-	bodyDef = unknown,
+	hkt extends GenericHkt<params> = GenericHkt<params>,
 	$ = {}
-> extends Callable<GenericNodeSignature<params, bodyDef, $>> {
+> extends Callable<GenericNodeSignature<params, hkt, $>, hkt> {
 	readonly [arkKind] = "generic"
 	declare readonly paramsAst: params
+	declare readonly hkt: hkt["hkt"]
 
 	constructor(
 		public paramDefs: genericParamAstToDefs<params>,
-		public bodyDef: bodyDef,
+		public instantiateDef: GenericInstantiator<params>,
 		public $: RootScope<$>,
 		public arg$: RootScope<$>
 	) {
-		super((...args: any[]) => {
-			const argNodes = flatMorph(this.names, (i, name) => {
-				const arg = this.arg$.parseRoot(args[i])
-				if (!arg.extends(this.constraints[i])) {
-					throwParseError(
-						writeUnsatisfiedParameterConstraintMessage(
-							name,
-							this.constraints[i].expression,
-							arg.expression
+		super(
+			(...args: any[]) => {
+				const argNodes = flatMorph(this.names, (i, name) => {
+					const arg = this.arg$.parseRoot(args[i])
+					if (!arg.extends(this.constraints[i])) {
+						throwParseError(
+							writeUnsatisfiedParameterConstraintMessage(
+								name,
+								this.constraints[i].expression,
+								arg.expression
+							)
 						)
-					)
-				}
-				return [name, arg]
-			}) as GenericArgResolutions
+					}
+					return [name, arg]
+				}) as GenericArgResolutions
 
-			if (bodyDef instanceof LazyGenericRoot)
-				return this.$.parseRoot(bodyDef(argNodes)) as never
+				const instantiatedDef = instantiateDef(argNodes as never)
 
-			return this.$.parseRoot(bodyDef as never, { args: argNodes }) as never
-		})
-		// if this is a standalone generic, validate its base constraints right away
-		if (!isThunk(this.$)) this.validateBaseInstantiation()
-		// if it's part of a scope, scope.export will be resposible for invoking
-		// validateBaseInstantiation on export() once everything is resolvable
+				return this.$.parseRoot(instantiatedDef) as never
+			},
+			{ attach: {} as hkt }
+		)
+		// // if this is a standalone generic, validate its base constraints right away
+		// if (!isThunk(this.$)) this.validateBaseInstantiation()
+		// // if it's part of a scope, scope.export will be resposible for invoking
+		// // validateBaseInstantiation on export() once everything is resolvable
 	}
 
 	bindScope($: RawRootScope): this {
 		if (this.arg$ === ($ as never)) return this
 		return new GenericRoot(
 			this.params as never,
-			this.bodyDef,
+			this.instantiateDef,
 			this.$,
 			$ as never
 		) as never

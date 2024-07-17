@@ -1,8 +1,10 @@
-import type {
-	GenericParamAst,
-	GenericParamDef,
-	GenericRoot,
-	writeUnsatisfiedParameterConstraintMessage
+import {
+	GenericHkt,
+	type GenericParamAst,
+	type genericParamConstraints,
+	type GenericParamDef,
+	type GenericRoot,
+	type writeUnsatisfiedParameterConstraintMessage
 } from "@ark/schema"
 import {
 	throwParseError,
@@ -11,6 +13,8 @@ import {
 	type Callable,
 	type conform,
 	type ErrorMessage,
+	type Hkt,
+	type Key,
 	type keyError,
 	type typeToString,
 	type WhiteSpaceToken
@@ -77,12 +81,30 @@ export type baseGenericArgs<params extends array<GenericParamAst>> = {
 	[i in keyof params & `${number}` as params[i][0]]: params[i][1]
 }
 
+export class ParsedGenericHkt<
+	params extends array<GenericParamAst> = array<GenericParamAst>,
+	bodyDef = unknown,
+	$ = {}
+> extends GenericHkt {
+	constructor() {
+		super(() => "string")
+	}
+
+	declare hkt: (
+		args: conform<this[Hkt.args], genericParamConstraints<params>>
+	) => inferDefinition<bodyDef, $, bindGenericArgs<params, $, typeof args>>
+}
+
+declare const C: ParsedGenericHkt<[["K", Key]], "K[][]">
+
+type Z = Hkt.apply<typeof C, ["string"]>
+
 export interface Generic<
 	params extends array<GenericParamAst> = array<GenericParamAst>,
 	bodyDef = unknown,
 	$ = {}
 > extends Callable<GenericInstantiation<params, bodyDef, $>>,
-		GenericRoot<params, bodyDef, $> {}
+		GenericRoot<params, ParsedGenericHkt<params, bodyDef, $>, $> {}
 
 export type GenericDeclaration<
 	name extends string = string,
