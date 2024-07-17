@@ -124,8 +124,8 @@ export class LazyGenericRoot<
 
 export class GenericRoot<
 	params extends array<GenericParamAst> = array<GenericParamAst>,
-	bodyDef = any,
-	$ = any
+	bodyDef = unknown,
+	$ = {}
 > extends Callable<GenericNodeSignature<params, bodyDef, $>> {
 	readonly [arkKind] = "generic"
 	declare readonly paramsAst: params
