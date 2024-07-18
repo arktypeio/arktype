@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { internalSchema, type Out, type string } from "@ark/schema"
+import { internalSchema, type Ark, type Out, type string } from "@ark/schema"
 import { ark, scope, type } from "arktype"
 
 contextualize(() => {
@@ -224,6 +224,7 @@ contextualize(() => {
 			)
 			attest(parseDate(5).toString()).snap("must be a string (was number)")
 		})
+
 		it("formData", () => {
 			const user = type({
 				email: "email",
@@ -231,7 +232,15 @@ contextualize(() => {
 				tags: "liftArray<string>"
 			})
 
-			const formUser = type("parse.formData").pipe(user)
+			const parseUserForm = type("parse.formData").pipe(user)
+
+			attest<
+				(In: FormData) => Out<{
+					email: string.matching<"?">
+					file: File
+					tags: (In: string | string[]) => Out<string[]>
+				}>
+			>(parseUserForm.t)
 
 			const data = new FormData()
 			const file = new File([], "")
@@ -241,7 +250,7 @@ contextualize(() => {
 			data.append("tags", "typescript")
 			data.append("tags", "arktype")
 
-			const out = formUser(data)
+			const out = parseUserForm(data)
 			attest(out).equals({
 				email: "david@arktype.io",
 				file,
@@ -252,7 +261,7 @@ contextualize(() => {
 			data.set("file", null)
 			data.append("tags", file)
 
-			attest(formUser(data).toString())
+			attest(parseUserForm(data).toString())
 				.snap(`email must be a valid email (was "david")
 file must be an instance of File (was string)
 tags[2] must be a string (was object)`)

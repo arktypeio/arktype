@@ -2,7 +2,6 @@ import type {
 	Date,
 	DateLiteral,
 	Default,
-	GenericHktRootSubclass,
 	GenericProps,
 	LimitLiteral,
 	RegexLiteral,
@@ -41,9 +40,9 @@ export type GenericInstantiationAst<
 
 export type inferExpression<ast extends array, $, args> =
 	ast extends GenericInstantiationAst<infer generic, infer argAsts> ?
-		generic extends GenericHktRootSubclass ?
+		generic extends Hkt.Kind ?
 			Hkt.apply<
-				generic["bodyDef"],
+				generic,
 				{ [i in keyof argAsts]: inferConstrainableAst<argAsts[i], $, args> }
 			>
 		:	inferDefinition<

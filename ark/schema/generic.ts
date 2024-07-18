@@ -1,5 +1,4 @@
 import {
-	ancestorsOf,
 	cached,
 	Callable,
 	flatMorph,
@@ -131,6 +130,7 @@ export class GenericRoot<
 > extends Callable<GenericNodeSignature<params, bodyDef, $>> {
 	readonly [arkKind] = "generic"
 	declare readonly paramsAst: params
+	readonly instantiateDef?: GenericInstantiator<params>
 
 	constructor(
 		public paramDefs: genericParamAstToDefs<params>,
@@ -153,7 +153,7 @@ export class GenericRoot<
 				return [name, arg]
 			}) as GenericArgResolutions
 
-			if (isGenericHkt(this)) {
+			if (this.instantiateDef) {
 				const def = this.instantiateDef(argNodes as never)
 
 				return this.$.parseRoot(def) as never
@@ -235,11 +235,6 @@ export interface GenericHktRoot<
 		Hkt.Kind {
 	instantiateDef: GenericInstantiator<params>
 }
-
-export const isGenericHkt = (v: unknown): v is GenericHktRoot =>
-	typeof v === "function" &&
-	ancestorsOf(v.prototype).includes(GenericRoot) &&
-	(v as GenericHktRoot).instantiateDef !== undefined
 
 export const writeUnsatisfiedParameterConstraintMessage = <
 	name extends string,

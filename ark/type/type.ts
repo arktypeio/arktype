@@ -1,6 +1,7 @@
 import {
 	ArkErrors,
 	BaseRoot,
+	GenericRoot,
 	type BaseMeta,
 	type ConstraintKind,
 	type Disjoint,
@@ -125,7 +126,12 @@ export class RawTypeParser extends Callable<
 						args: {}
 					})
 
-					return $.generic(...params)(args[1]) as never
+					return new GenericRoot(
+						params,
+						args[1],
+						$ as never,
+						$ as never
+					) as never
 				}
 				// otherwise, treat as a tuple expression. technically, this also allows
 				// non-expression tuple definitions to be parsed, but it's not a supported

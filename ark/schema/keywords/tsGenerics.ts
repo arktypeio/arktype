@@ -1,4 +1,5 @@
 import { liftArray, type conform, type Hkt, type Key } from "@ark/util"
+import type { Out } from "arktype"
 import type { SchemaModule } from "../module.js"
 import type { Root } from "../roots/root.js"
 import { generic, schemaScope, type RootScope } from "../scope.js"
@@ -29,13 +30,15 @@ class ArkPick extends generic("T", ["K", propKey])(args => args.T) {
 class ArkLiftArray extends generic("T")(args => args.T.pipe(liftArray)) {
 	declare hkt: (
 		args: conform<this[Hkt.args], [unknown]>
-	) => liftArray<(typeof args)[0]>
+	) => liftArray<(typeof args)[0]> extends infer lifted ?
+		(In: (typeof args)[0] | lifted) => Out<lifted>
+	:	never
 }
 
 const tsGenericsExports = {
-	Record: ArkRecord,
-	Pick: ArkPick,
-	liftArray: ArkLiftArray
+	Record: new ArkRecord(),
+	Pick: new ArkPick(),
+	liftArray: new ArkLiftArray()
 }
 
 export type tsGenericsExports = typeof tsGenericsExports
