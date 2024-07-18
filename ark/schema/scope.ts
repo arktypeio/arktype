@@ -353,11 +353,8 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 		if (!def) return this.maybeResolveSubalias(name)
 
 		const preparsed = this.preparseRoot(def)
-		if (hasArkKind(preparsed, "generic")) {
-			return (this.resolutions[name] = preparsed
-				.validateBaseInstantiation()
-				?.bindScope(this))
-		}
+		if (hasArkKind(preparsed, "generic"))
+			return (this.resolutions[name] = preparsed.bindScope(this))
 
 		if (hasArkKind(preparsed, "module")) {
 			return (this.resolutions[name] = new RootModule(

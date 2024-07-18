@@ -1,6 +1,7 @@
 import {
 	Callable,
 	Hkt,
+	ancestorsOf,
 	cached,
 	flatMorph,
 	throwParseError,
@@ -121,9 +122,16 @@ export type GenericInstantiator<
 export class GenericHkt<
 	params extends array<GenericParamAst> = array<GenericParamAst<string, any>>
 > extends Callable<GenericInstantiator<params>> {
+	static readonly [arkKind] = "hkt"
+
 	declare readonly [Hkt.args]: unknown
 	declare readonly hkt: Hkt.Kind["hkt"]
 }
+
+export type GenericHktSubclass = new () => GenericHkt
+
+export const isGenericHkt = (v: unknown): v is GenericHktSubclass =>
+	typeof v === "function" && ancestorsOf(v.prototype).includes(GenericHkt)
 
 export class GenericRoot<
 	params extends array<GenericParamAst> = array<GenericParamAst>,
@@ -155,18 +163,16 @@ export class GenericRoot<
 				return [name, arg]
 			}) as GenericArgResolutions
 
-			if (bodyDef instanceof GenericHkt) {
-				const def = bodyDef(argNodes as never)
+			if (isGenericHkt(bodyDef)) {
+				const def = new bodyDef()(argNodes as never)
 
 				return this.$.parseRoot(def) as never
 			}
 
 			return this.$.parseRoot(bodyDef, { args: argNodes }) as never
 		})
-		// // if this is a standalone generic, validate its base constraints right away
-		// if (!isThunk(this.$)) this.validateBaseInstantiation()
-		// // if it's part of a scope, scope.export will be resposible for invoking
-		// // validateBaseInstantiation on export() once everything is resolvable
+
+		this.validateBaseInstantiation()
 	}
 
 	bindScope($: RawRootScope): this {
