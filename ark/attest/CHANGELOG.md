@@ -1,5 +1,9 @@
 # @ark/attest
 
+## 0.9.2
+
+Fix a bug preventing consecutive benchmark runs from populating snapshots inline
+
 ## 0.8.2
 
 ### Patch Changes
