@@ -1,6 +1,8 @@
 import type {
+	GenericInstantiator,
 	GenericParamAst,
 	GenericParamDef,
+	genericParamSchemasToAst,
 	GenericRoot,
 	writeUnsatisfiedParameterConstraintMessage
 } from "@ark/schema"
@@ -11,6 +13,7 @@ import {
 	type Callable,
 	type conform,
 	type ErrorMessage,
+	type Hkt,
 	type keyError,
 	type typeToString,
 	type WhiteSpaceToken
@@ -223,3 +226,25 @@ type _parseOptionalConstraint<
 			[...result, [name, unknown]],
 			$
 		>
+
+export type GenericHktParser<$ = {}> = <
+	const paramsDef extends array<GenericParamDef>
+>(
+	...params: paramsDef
+) => (
+	instantiateDef: GenericInstantiator<genericParamSchemasToAst<paramsDef, $>>
+) => GenericHktSubclass<genericParamSchemasToAst<paramsDef, $>, $>
+
+export type GenericHktSubclass<
+	params extends array<GenericParamAst> = any,
+	$ = any
+> = abstract new () => GenericHkt<genericParamSchemasToAst<params, $>, $>
+
+export interface GenericHkt<
+	params extends array<GenericParamAst> = any,
+	$ = {},
+	args$ = $
+> extends Generic<params, unknown, $, args$>,
+		Hkt.Kind {
+	instantiateDef: GenericInstantiator<params>
+}

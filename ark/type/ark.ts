@@ -5,6 +5,7 @@ import {
 	type inferred
 } from "@ark/schema"
 import type { CastableBase } from "@ark/util"
+import type { GenericHktParser } from "./generic.js"
 import type { MatchParser } from "./match.js"
 import type { Module } from "./module.js"
 import { scope, type Scope } from "./scope.js"
@@ -36,6 +37,8 @@ export namespace type {
 	export interface inferIn<t extends Type<object>>
 		extends CastableBase<t["inferIn"]> {}
 }
+
+export const generic: GenericHktParser<{}> = ambient.generic as never
 
 export const match: MatchParser<{}> = ambient.match as never
 

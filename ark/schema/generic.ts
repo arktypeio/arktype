@@ -1,11 +1,11 @@
 import {
-	Callable,
-	Hkt,
 	ancestorsOf,
 	cached,
+	Callable,
 	flatMorph,
 	throwParseError,
-	type array
+	type array,
+	type Hkt
 } from "@ark/util"
 import type { inferRoot } from "./inference.js"
 import type { Root, UnknownRoot } from "./roots/root.js"
@@ -43,7 +43,9 @@ type genericParamSchemaToAst<schema extends GenericParamDef, $> =
 export type genericParamSchemasToAst<
 	schemas extends array<GenericParamDef>,
 	$
-> = [...{ [i in keyof schemas]: genericParamSchemaToAst<schemas[i], $> }]
+> = readonly [
+	...{ [i in keyof schemas]: genericParamSchemaToAst<schemas[i], $> }
+]
 
 export type genericParamAstToDefs<asts extends array<GenericParamAst>> = {
 	[i in keyof asts]: GenericParamDef<asts[i][0]>
@@ -121,21 +123,6 @@ export type GenericInstantiator<
 	returns = unknown
 > = (args: GenericArgResolutions<params>) => returns
 
-export class GenericHkt<
-	params extends array<GenericParamAst> = any
-> extends Callable<GenericInstantiator<params>> {
-	static readonly [arkKind] = "hkt"
-
-	declare readonly [Hkt.args]: unknown
-	declare readonly hkt: Hkt.Kind["hkt"]
-}
-
-export type GenericHktSubclass<params extends array<GenericParamAst> = any> =
-	new () => GenericHkt<params>
-
-export const isGenericHkt = (v: unknown): v is GenericHktSubclass =>
-	typeof v === "function" && ancestorsOf(v.prototype).includes(GenericHkt)
-
 export class GenericRoot<
 	params extends array<GenericParamAst> = array<GenericParamAst>,
 	bodyDef = unknown,
@@ -166,8 +153,8 @@ export class GenericRoot<
 				return [name, arg]
 			}) as GenericArgResolutions
 
-			if (isGenericHkt(bodyDef)) {
-				const def = new bodyDef()(argNodes as never)
+			if (isGenericHkt(this)) {
+				const def = this.instantiateDef(argNodes as never)
 
 				return this.$.parseRoot(def) as never
 			}
@@ -226,6 +213,33 @@ export class GenericRoot<
 		return this.baseInstantiation.internal.references
 	}
 }
+
+export type GenericHktRootParser<$ = {}> = <
+	const paramsDef extends array<GenericParamDef>
+>(
+	...params: paramsDef
+) => (
+	instantiateDef: GenericInstantiator<genericParamSchemasToAst<paramsDef, $>>
+) => GenericHktRootSubclass<genericParamSchemasToAst<paramsDef, $>, $>
+
+export type GenericHktRootSubclass<
+	params extends array<GenericParamAst> = any,
+	$ = any
+> = abstract new () => GenericHktRoot<genericParamSchemasToAst<params, $>, $>
+
+export interface GenericHktRoot<
+	params extends array<GenericParamAst> = any,
+	$ = {},
+	args$ = $
+> extends GenericRoot<params, unknown, $, args$>,
+		Hkt.Kind {
+	instantiateDef: GenericInstantiator<params>
+}
+
+export const isGenericHkt = (v: unknown): v is GenericHktRoot =>
+	typeof v === "function" &&
+	ancestorsOf(v.prototype).includes(GenericRoot) &&
+	(v as GenericHktRoot).instantiateDef !== undefined
 
 export const writeUnsatisfiedParameterConstraintMessage = <
 	name extends string,

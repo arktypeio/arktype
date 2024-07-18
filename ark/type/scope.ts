@@ -36,6 +36,7 @@ import {
 	parseGenericParams,
 	type Generic,
 	type GenericDeclaration,
+	type GenericHktParser,
 	type ParameterString,
 	type baseGenericArgs,
 	type parseValidGenericParams
@@ -192,6 +193,8 @@ export interface Scope<$ = any> extends RootScope<$> {
 	declare: DeclarationParser<$>
 
 	define: DefinitionParser<$>
+
+	generic: GenericHktParser<$>
 
 	import<names extends exportedNameOf<$>[]>(
 		...names: names

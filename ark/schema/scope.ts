@@ -13,7 +13,6 @@ import {
 	type Json,
 	type array,
 	type flattenListable,
-	type instanceOf,
 	type show
 } from "@ark/util"
 import {
@@ -22,11 +21,9 @@ import {
 	type ResolvedArkConfig
 } from "./config.js"
 import {
-	parseGeneric,
-	type GenericHkt,
-	type GenericParamDef,
-	type GenericRoot,
-	type genericParamSchemasToAst
+	GenericRoot,
+	type GenericHktRootParser,
+	type GenericParamDef
 } from "./generic.js"
 import type { inferRoot, validateRoot } from "./inference.js"
 import type { internal } from "./keywords/internal.js"
@@ -193,8 +190,16 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 	}
 
 	@bound
-	generic(...params: array<GenericParamDef>): (def: unknown) => GenericRoot {
-		return def => parseGeneric(params, def as never, this as never)
+	generic(...params: array<GenericParamDef>): ReturnType<GenericHktRootParser> {
+		const $: RootScope = this as never
+		return (instantiateDef): any =>
+			class GenericHktSubclass extends GenericRoot {
+				public instantiateDef = instantiateDef
+
+				constructor() {
+					super(params, instantiateDef, $, $)
+				}
+			}
 	}
 
 	@bound
@@ -524,13 +529,7 @@ export interface RootScope<$ = any> {
 		opts?: NodeParseOptions
 	): Node<reducibleKindOf<flattenListable<kinds>>>
 
-	generic<const paramsDef extends array<GenericParamDef>>(
-		...params: paramsDef
-	): <
-		const hkt extends typeof GenericHkt<genericParamSchemasToAst<paramsDef, $>>
-	>(
-		hkt: hkt
-	) => GenericRoot<genericParamSchemasToAst<paramsDef, $>, instanceOf<hkt>, $>
+	generic: GenericHktRootParser<$>
 
 	parseRoot(schema: unknown, opts?: NodeParseOptions): BaseRoot
 
