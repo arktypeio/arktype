@@ -113,7 +113,7 @@ export interface GenericProps<
 export type GenericArgResolutions<
 	params extends array<GenericParamAst> = array<GenericParamAst>
 > = {
-	[i in keyof params as params[i & `${number}`][0]]: UnknownRoot<
+	[i in keyof params as params[i & `${number}`][0]]: Root<
 		params[i & `${number}`][1]
 	>
 }

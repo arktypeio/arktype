@@ -1,6 +1,6 @@
 import {
 	arrayEquals,
-	arrayFrom,
+	liftArray,
 	registeredReference,
 	throwParseError,
 	type array,
@@ -76,7 +76,7 @@ export const morphImplementation: nodeImplementationOf<MorphDeclaration> =
 				parse: (schema, ctx) => ctx.$.node(morphChildKinds, schema)
 			},
 			morphs: {
-				parse: arrayFrom,
+				parse: liftArray,
 				serialize: morphs =>
 					morphs.map(m =>
 						hasArkKind(m, "root") ? m.json : registeredReference(m)

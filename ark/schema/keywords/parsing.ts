@@ -60,12 +60,46 @@ const date = defineRoot({
 	}
 })
 
+export type FormDataValue = string | File
+
+export type ParsedFormData = Record<string, FormDataValue | FormDataValue[]>
+
+export const parse = (data: FormData): ParsedFormData => {
+	const result: ParsedFormData = {}
+	for (const [k, v] of data) {
+		if (k in result) {
+			const existing = result[k]
+			if (typeof existing === "string" || existing instanceof File)
+				result[k] = [existing, v]
+			else existing.push(v)
+		} else result[k] = v
+	}
+	return result
+}
+
+const formData = defineRoot({
+	in: FormData,
+	morphs: (data: FormData): ParsedFormData => {
+		const result: ParsedFormData = {}
+		for (const [k, v] of data) {
+			if (k in result) {
+				const existing = result[k]
+				if (typeof existing === "string" || existing instanceof File)
+					result[k] = [existing, v]
+				else existing.push(v)
+			} else result[k] = v
+		}
+		return result
+	}
+})
+
 export type parsingExports = {
 	url: (In: string) => Out<URL>
 	number: (In: string) => Out<number>
 	integer: (In: string) => Out<number.divisibleBy<1>>
 	date: (In: string) => Out<Date>
 	json: (In: string) => Out<object>
+	formData: (In: FormData) => Out<ParsedFormData>
 }
 
 export type parsing = SchemaModule<parsingExports>
@@ -75,5 +109,6 @@ export const parsing: parsing = schemaScope({
 	number,
 	integer,
 	date,
-	json
+	json,
+	formData
 }).export()

@@ -7,9 +7,12 @@ import type {
 	equals,
 	leftIfEqual,
 	Primitive,
+	propValueOf,
 	show
 } from "@ark/util"
 import type { PrimitiveConstraintKind } from "./constraint.js"
+import type { platformObjectExports } from "./keywords/platformObjects.js"
+import type { typedArrayExports } from "./keywords/typedArray.js"
 import type { NodeSchema } from "./kinds.js"
 import type { constraintKindOf } from "./roots/intersection.js"
 import type { MorphAst, Out } from "./roots/morph.js"
@@ -349,7 +352,7 @@ type _distill<
 		distilledKind extends "base" ?
 			_distill<base, io, distilledKind>
 		:	of<_distill<base, io, distilledKind>, constraints>
-	: t extends TerminallyInferredObjectKind | ArkEnv.preserve | Primitive ? t
+	: t extends TerminallyInferredObjectKind | Primitive ? t
 	: unknown extends t ? unknown
 	: t extends MorphAst<infer i, infer o> ?
 		io extends "in" ?
@@ -419,3 +422,5 @@ type distillPostfix<
 type TerminallyInferredObjectKind =
 	| ArkEnv.preserve
 	| BuiltinObjects[Exclude<BuiltinObjectKind, "Array" | "Function">]
+	| propValueOf<platformObjectExports>
+	| propValueOf<typedArrayExports>
