@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { internalSchema } from "@ark/schema"
-import { ark, type } from "arktype"
+import { ark, scope, type } from "arktype"
 
 contextualize(() => {
 	describe("jsObjects", () => {
@@ -245,12 +245,28 @@ contextualize(() => {
 	})
 
 	describe("generics", () => {
-		it("record", () => {
+		it("Record", () => {
 			const expected = type({ "[string]": "number" })
 
 			const expression = type("Record<string, number>")
 			attest(expression.json).equals(expected.json)
 			attest<typeof expected.t>(expression.t)
+		})
+
+		it("Pick", () => {
+			const types = scope({
+				from: {
+					foo: "1",
+					bar: "1"
+				},
+				actual: "Pick<from, 'foo'>",
+				expected: {
+					foo: "1"
+				}
+			}).export()
+
+			attest<typeof types.expected.t>(types.actual.t)
+			attest(types.actual.expression).equals(types.expected.expression)
 		})
 	})
 })

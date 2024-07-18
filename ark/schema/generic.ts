@@ -15,7 +15,11 @@ import { arkKind } from "./shared/utils.js"
 export type GenericParamAst<
 	name extends string = string,
 	constraint = unknown
-> = readonly [name: name, constraint: constraint]
+> = [name: name, constraint: constraint]
+
+export namespace GenericParamAst {
+	export type Any = GenericParamAst<string, any>
+}
 
 export type GenericParamDef<name extends string = string> =
 	| name
@@ -39,9 +43,7 @@ type genericParamSchemaToAst<schema extends GenericParamDef, $> =
 export type genericParamSchemasToAst<
 	schemas extends array<GenericParamDef>,
 	$
-> = readonly [
-	...{ [i in keyof schemas]: genericParamSchemaToAst<schemas[i], $> }
-]
+> = [...{ [i in keyof schemas]: genericParamSchemaToAst<schemas[i], $> }]
 
 export type genericParamAstToDefs<asts extends array<GenericParamAst>> = {
 	[i in keyof asts]: GenericParamDef<asts[i][0]>
@@ -120,7 +122,7 @@ export type GenericInstantiator<
 > = (args: GenericArgResolutions<params>) => returns
 
 export class GenericHkt<
-	params extends array<GenericParamAst> = array<GenericParamAst<string, any>>
+	params extends array<GenericParamAst> = any
 > extends Callable<GenericInstantiator<params>> {
 	static readonly [arkKind] = "hkt"
 
@@ -128,7 +130,8 @@ export class GenericHkt<
 	declare readonly hkt: Hkt.Kind["hkt"]
 }
 
-export type GenericHktSubclass = new () => GenericHkt
+export type GenericHktSubclass<params extends array<GenericParamAst> = any> =
+	new () => GenericHkt<params>
 
 export const isGenericHkt = (v: unknown): v is GenericHktSubclass =>
 	typeof v === "function" && ancestorsOf(v.prototype).includes(GenericHkt)
