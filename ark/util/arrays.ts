@@ -1,3 +1,4 @@
+import type { anyOrNever } from "./generics.js"
 import type { isDisjoint } from "./intersections.js"
 import type { parseNonNegativeInteger } from "./numericLiterals.js"
 
@@ -101,14 +102,15 @@ export type numericStringKeyOf<t extends array> = Extract<keyof t, `${number}`>
 export type indexOf<a extends array> =
 	keyof a extends infer k ? parseNonNegativeInteger<k & string> : never
 
-export const arrayFrom = <t>(
-	data: t
-): t extends array ?
-	[t] extends [null] ?
-		// check for any/never
-		t[]
-	:	t
-:	t[] => (Array.isArray(data) ? data : [data]) as never
+export type liftArray<t> =
+	t extends array ?
+		[t] extends [anyOrNever] ?
+			t[]
+		:	t
+	:	t[]
+
+export const liftArray = <t>(data: t): liftArray<t> =>
+	(Array.isArray(data) ? data : [data]) as never
 
 export const spliterate = <item, included extends item>(
 	list: readonly item[],
@@ -183,7 +185,7 @@ export const conflatenate = <element>(
 	if (elementOrList === undefined || elementOrList === null)
 		return to ?? ([] as never)
 
-	if (to === undefined || to === null) return arrayFrom(elementOrList) as never
+	if (to === undefined || to === null) return liftArray(elementOrList) as never
 
 	return to.concat(elementOrList) as never
 }
@@ -219,7 +221,7 @@ export const appendUnique = <to extends unknown[]>(
 		return Array.isArray(value) ? (value as never) : ([value] as never)
 
 	const isEqual = opts?.isEqual ?? ((l, r) => l === r)
-	arrayFrom(value).forEach(v => {
+	liftArray(value).forEach(v => {
 		if (!to.some(existing => isEqual(existing as never, v as never))) to.push(v)
 	})
 

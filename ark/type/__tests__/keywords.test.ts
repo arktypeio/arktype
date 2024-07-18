@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { internalSchema } from "@ark/schema"
+import { internalSchema, type Out, type string } from "@ark/schema"
 import { ark, scope, type } from "arktype"
 
 contextualize(() => {
@@ -223,6 +223,39 @@ contextualize(() => {
 				'must be a valid date (was "foo")'
 			)
 			attest(parseDate(5).toString()).snap("must be a string (was number)")
+		})
+		it("formData", () => {
+			const user = type({
+				email: "email",
+				file: "File",
+				tags: "liftArray<string>"
+			})
+
+			const formUser = type("parse.formData").pipe(user)
+
+			const data = new FormData()
+			const file = new File([], "")
+
+			data.append("email", "david@arktype.io")
+			data.append("file", file)
+			data.append("tags", "typescript")
+			data.append("tags", "arktype")
+
+			const out = formUser(data)
+			attest(out).equals({
+				email: "david@arktype.io",
+				file,
+				tags: ["typescript", "arktype"]
+			})
+
+			data.set("email", "david")
+			data.set("file", null)
+			data.append("tags", file)
+
+			attest(formUser(data).toString())
+				.snap(`email must be a valid email (was "david")
+file must be an instance of File (was string)
+tags[2] must be a string (was object)`)
 		})
 	})
 
