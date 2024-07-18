@@ -193,7 +193,7 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 	}
 
 	@bound
-	generic(...params: array<GenericParamDef>): (def: GenericHkt) => GenericRoot {
+	generic(...params: array<GenericParamDef>): (def: unknown) => GenericRoot {
 		return def => parseGeneric(params, def as never, this as never)
 	}
 

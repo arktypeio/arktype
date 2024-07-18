@@ -2,6 +2,7 @@ import type {
 	Date,
 	DateLiteral,
 	Default,
+	GenericHkt,
 	GenericProps,
 	LimitLiteral,
 	RegexLiteral,
@@ -12,7 +13,7 @@ import type {
 	normalizeLimit,
 	string
 } from "@ark/schema"
-import type { BigintLiteral, array } from "@ark/util"
+import type { BigintLiteral, Hkt, array } from "@ark/util"
 import type {
 	UnparsedScope,
 	resolve,
@@ -40,25 +41,29 @@ export type GenericInstantiationAst<
 
 export type inferExpression<ast extends array, $, args> =
 	ast extends GenericInstantiationAst<infer generic, infer argAsts> ?
-		inferDefinition<
-			generic["bodyDef"],
-			generic["$"]["t"] extends UnparsedScope ?
-				// If the generic was defined in the current scope, its definition can be
-				// resolved using the same scope as that of the input args.
-				$
-			:	// Otherwise, use the scope that was explicitly associated with it.
-				generic["$"]["t"],
-			{
-				// Using keyof g["params"] & number here results in the element types
-				// being mixed- another reason TS should not have separate `${number}` and number keys!
-				[i in keyof generic["params"] & `${number}` as generic["names"][i &
-					keyof generic["names"]]]: inferConstrainableAst<
-					argAsts[i & keyof argAsts],
-					$,
-					args
-				>
-			}
-		>
+		generic["bodyDef"] extends GenericHkt ?
+			Hkt.apply<
+				generic["bodyDef"],
+				{ [i in keyof argAsts]: inferConstrainableAst<argAsts[i], $, args> }
+			>
+		:	inferDefinition<
+				generic["bodyDef"],
+				generic["$"]["t"] extends UnparsedScope ?
+					// If the generic was defined in the current scope, its definition can be
+					// resolved using the same scope as that of the input args.
+					$
+				:	// Otherwise, use the scope that was explicitly associated with it.
+					generic["$"]["t"],
+				{
+					// Using keyof g["params"] & number here results in the element types being mixed
+					[i in keyof generic["params"] & `${number}` as generic["names"][i &
+						keyof generic["names"]]]: inferConstrainableAst<
+						argAsts[i & keyof argAsts],
+						$,
+						args
+					>
+				}
+			>
 	: ast[1] extends "[]" ? inferConstrainableAst<ast[0], $, args>[]
 	: ast[1] extends "|" ?
 		| inferConstrainableAst<ast[0], $, args>

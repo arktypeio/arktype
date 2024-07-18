@@ -25,9 +25,9 @@ export type ConstrainedGenericParamDef<name extends string = string> =
 
 export const parseGeneric = (
 	paramDefs: array<GenericParamDef>,
-	instantiate: GenericInstantiator,
+	bodyDef: unknown,
 	$: RootScope
-): GenericRoot => new GenericRoot(paramDefs, instantiate, $, $)
+): GenericRoot => new GenericRoot(paramDefs, bodyDef, $, $)
 
 type genericParamSchemaToAst<schema extends GenericParamDef, $> =
 	schema extends string ? GenericParamAst<schema>
@@ -97,6 +97,7 @@ export interface GenericProps<
 	$ = any
 > {
 	[arkKind]: "generic"
+	paramsAst: params
 	params: instantiateParams<params>
 	names: genericParamNames<params>
 	constraints: instantiateConstraintsOf<params>
@@ -117,51 +118,51 @@ export type GenericInstantiator<
 	returns = unknown
 > = (args: GenericArgResolutions<params>) => returns
 
-export abstract class GenericHkt<
+export class GenericHkt<
 	params extends array<GenericParamAst> = array<GenericParamAst<string, any>>
-> extends Hkt.Kind {
-	constructor(public instantiateDef: GenericInstantiator<params>) {
-		super()
-	}
+> extends Callable<GenericInstantiator<params>> {
+	declare readonly [Hkt.args]: unknown
+	declare readonly hkt: Hkt.Kind["hkt"]
 }
 
 export class GenericRoot<
 	params extends array<GenericParamAst> = array<GenericParamAst>,
-	hkt extends GenericHkt<params> = GenericHkt<params>,
-	$ = {}
-> extends Callable<GenericNodeSignature<params, hkt, $>, hkt> {
+	bodyDef = unknown,
+	$ = {},
+	arg$ = $
+> extends Callable<GenericNodeSignature<params, bodyDef, $>> {
 	readonly [arkKind] = "generic"
 	declare readonly paramsAst: params
-	declare readonly hkt: hkt["hkt"]
 
 	constructor(
 		public paramDefs: genericParamAstToDefs<params>,
-		public instantiateDef: GenericInstantiator<params>,
+		public bodyDef: bodyDef,
 		public $: RootScope<$>,
-		public arg$: RootScope<$>
+		public arg$: RootScope<arg$>
 	) {
-		super(
-			(...args: any[]) => {
-				const argNodes = flatMorph(this.names, (i, name) => {
-					const arg = this.arg$.parseRoot(args[i])
-					if (!arg.extends(this.constraints[i])) {
-						throwParseError(
-							writeUnsatisfiedParameterConstraintMessage(
-								name,
-								this.constraints[i].expression,
-								arg.expression
-							)
+		super((...args: any[]) => {
+			const argNodes = flatMorph(this.names, (i, name) => {
+				const arg = this.arg$.parseRoot(args[i])
+				if (!arg.extends(this.constraints[i])) {
+					throwParseError(
+						writeUnsatisfiedParameterConstraintMessage(
+							name,
+							this.constraints[i].expression,
+							arg.expression
 						)
-					}
-					return [name, arg]
-				}) as GenericArgResolutions
+					)
+				}
+				return [name, arg]
+			}) as GenericArgResolutions
 
-				const instantiatedDef = instantiateDef(argNodes as never)
+			if (bodyDef instanceof GenericHkt) {
+				const def = bodyDef(argNodes as never)
 
-				return this.$.parseRoot(instantiatedDef) as never
-			},
-			{ attach: {} as hkt }
-		)
+				return this.$.parseRoot(def) as never
+			}
+
+			return this.$.parseRoot(bodyDef, { args: argNodes }) as never
+		})
 		// // if this is a standalone generic, validate its base constraints right away
 		// if (!isThunk(this.$)) this.validateBaseInstantiation()
 		// // if it's part of a scope, scope.export will be resposible for invoking
@@ -172,7 +173,7 @@ export class GenericRoot<
 		if (this.arg$ === ($ as never)) return this
 		return new GenericRoot(
 			this.params as never,
-			this.instantiateDef,
+			this.bodyDef,
 			this.$,
 			$ as never
 		) as never

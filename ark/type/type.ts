@@ -124,8 +124,8 @@ export class RawTypeParser extends Callable<
 						$,
 						args: {}
 					})
-					const def = args[1]
-					return $.generic(params, def) as never
+
+					return $.generic(...params)(args[1]) as never
 				}
 				// otherwise, treat as a tuple expression. technically, this also allows
 				// non-expression tuple definitions to be parsed, but it's not a supported
