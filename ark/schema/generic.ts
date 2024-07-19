@@ -118,10 +118,10 @@ export type GenericArgResolutions<
 	>
 }
 
-export type GenericInstantiator<
+export class LazyGenericBody<
 	params extends array<GenericParamAst> = array<GenericParamAst>,
 	returns = unknown
-> = (args: GenericArgResolutions<params>) => returns
+> extends Callable<(args: GenericArgResolutions<params>) => returns> {}
 
 export class GenericRoot<
 	params extends array<GenericParamAst> = array<GenericParamAst>,
@@ -131,7 +131,6 @@ export class GenericRoot<
 > extends Callable<GenericNodeSignature<params, bodyDef, $>> {
 	readonly [arkKind] = "generic"
 	declare readonly paramsAst: params
-	readonly instantiateDef?: GenericInstantiator<params>
 
 	constructor(
 		public paramDefs: genericParamAstToDefs<params>,
@@ -154,8 +153,8 @@ export class GenericRoot<
 				return [name, arg]
 			}) as GenericArgResolutions
 
-			if (this.instantiateDef) {
-				const def = this.instantiateDef(argNodes as never)
+			if (this.defIsLazy()) {
+				const def = this.bodyDef(argNodes)
 
 				return this.$.parseRoot(def) as never
 			}
@@ -164,6 +163,10 @@ export class GenericRoot<
 		})
 
 		this.validateBaseInstantiation()
+	}
+
+	defIsLazy(): this is GenericRoot<params, LazyGenericBody, $, arg$> {
+		return this.bodyDef instanceof LazyGenericBody
 	}
 
 	bindScope($: RawRootScope): this {
@@ -220,7 +223,7 @@ export type GenericHktRootParser<$ = {}> = <
 >(
 	...params: paramsDef
 ) => (
-	instantiateDef: GenericInstantiator<genericParamSchemasToAst<paramsDef, $>>
+	instantiateDef: LazyGenericBody<genericParamSchemasToAst<paramsDef, $>>
 ) => GenericHktRootSubclass<genericParamSchemasToAst<paramsDef, $>, $>
 
 export type GenericHktRootSubclass<
@@ -233,9 +236,7 @@ export interface GenericHktRoot<
 	$ = {},
 	args$ = $
 > extends GenericRoot<params, unknown, $, args$>,
-		Hkt.Kind {
-	instantiateDef: GenericInstantiator<params>
-}
+		Hkt.Kind {}
 
 export const writeUnsatisfiedParameterConstraintMessage = <
 	name extends string,

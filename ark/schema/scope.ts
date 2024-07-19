@@ -22,6 +22,7 @@ import {
 } from "./config.js"
 import {
 	GenericRoot,
+	LazyGenericBody,
 	type GenericHktRootParser,
 	type GenericParamDef
 } from "./generic.js"
@@ -194,10 +195,8 @@ export class RawRootScope<$ extends RawRootResolutions = RawRootResolutions>
 		const $: RootScope = this as never
 		return (instantiateDef): any =>
 			class GenericHktSubclass extends GenericRoot {
-				public instantiateDef = instantiateDef
-
 				constructor() {
-					super(params, instantiateDef, $, $)
+					super(params, new LazyGenericBody(instantiateDef), $, $)
 				}
 			}
 	}

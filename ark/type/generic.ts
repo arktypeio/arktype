@@ -1,9 +1,9 @@
 import type {
-	GenericInstantiator,
 	GenericParamAst,
 	GenericParamDef,
 	genericParamSchemasToAst,
 	GenericRoot,
+	LazyGenericBody,
 	writeUnsatisfiedParameterConstraintMessage
 } from "@ark/schema"
 import {
@@ -232,7 +232,7 @@ export type GenericHktParser<$ = {}> = <
 >(
 	...params: paramsDef
 ) => (
-	instantiateDef: GenericInstantiator<genericParamSchemasToAst<paramsDef, $>>
+	instantiateDef: LazyGenericBody<genericParamSchemasToAst<paramsDef, $>>
 ) => GenericHktSubclass<genericParamSchemasToAst<paramsDef, $>, $>
 
 export type GenericHktSubclass<
@@ -246,5 +246,5 @@ export interface GenericHkt<
 	args$ = $
 > extends Generic<params, unknown, $, args$>,
 		Hkt.Kind {
-	instantiateDef: GenericInstantiator<params>
+	instantiateDef: LazyGenericBody<params>
 }

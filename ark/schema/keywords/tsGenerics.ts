@@ -27,7 +27,9 @@ class ArkPick extends generic("T", ["K", propKey])(args => args.T) {
 	} & unknown
 }
 
-class ArkLiftArray extends generic("T")(args => args.T.pipe(liftArray)) {
+class ArkLiftArray extends generic("T")(args =>
+	args.T.or(args.T.array()).pipe(liftArray)
+) {
 	declare hkt: (
 		args: conform<this[Hkt.args], [unknown]>
 	) => liftArray<(typeof args)[0]> extends infer lifted ?
