@@ -1,4 +1,4 @@
-import { liftArray, type conform, type Hkt, type Key } from "@ark/util"
+import { $ark, liftArray, type conform, type Hkt, type Key } from "@ark/util"
 import type { Out } from "arktype"
 import type { SchemaModule } from "../module.js"
 import type { Root } from "../roots/root.js"

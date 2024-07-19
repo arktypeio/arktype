@@ -1,14 +1,13 @@
 import {
+	$ark,
 	append,
 	cached,
 	flatMorph,
 	printable,
-	registeredReference,
 	spliterate,
 	throwParseError,
 	type array,
-	type Key,
-	type RegisteredReference
+	type Key
 } from "@ark/util"
 import {
 	BaseConstraint,
@@ -30,6 +29,10 @@ import {
 	type StructuralKind
 } from "../shared/implement.js"
 import { intersectNodesRoot } from "../shared/intersections.js"
+import {
+	registeredReference,
+	type RegisteredReference
+} from "../shared/registry.js"
 import type {
 	TraversalContext,
 	TraversalKind,

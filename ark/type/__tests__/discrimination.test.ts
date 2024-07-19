@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { registeredReference } from "@ark/util"
+import { registeredReference } from "@ark/schema"
 import { scope, type } from "arktype"
 
 contextualize(() => {

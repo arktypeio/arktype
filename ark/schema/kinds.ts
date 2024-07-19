@@ -1,4 +1,10 @@
-import { envHasCsp, flatMorph, type array, type listable } from "@ark/util"
+import {
+	$ark,
+	envHasCsp,
+	flatMorph,
+	type array,
+	type listable
+} from "@ark/util"
 import type { ResolvedArkConfig } from "./config.js"
 import type { BaseNode } from "./node.js"
 import {

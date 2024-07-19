@@ -4,6 +4,7 @@
 		// should be off by default, but here as a convenience to toggle
 		// "noErrorTruncation": true,
 		// "isolatedDeclarations": true,
+		"resolveJsonModule": true,
 		"paths": {
 			"arktype": ["./ark/type/index.ts"],
 			"arktype/config": ["./ark/type/config.ts"],

@@ -1,3 +1,4 @@
+import { $ark } from "@ark/util"
 import {
 	RawPrimitiveConstraint,
 	writeInvalidOperandMessage

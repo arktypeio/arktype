@@ -1,4 +1,5 @@
 import {
+	$ark,
 	cached,
 	Callable,
 	flatMorph,

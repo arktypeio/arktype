@@ -1,4 +1,5 @@
 import {
+	$ark,
 	Callable,
 	appendUnique,
 	cached,

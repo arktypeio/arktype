@@ -1,6 +1,5 @@
 export * from "./arrays.js"
 export * from "./clone.js"
-export * from "./compilation.js"
 export * from "./describe.js"
 export * from "./domain.js"
 export * from "./errors.js"

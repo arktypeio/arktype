@@ -1,4 +1,3 @@
-import { registeredReference, type RegisteredReference } from "@ark/util"
 import type { constrain, of } from "./ast.js"
 import { BaseConstraint } from "./constraint.js"
 import type { errorContext } from "./kinds.js"
@@ -9,6 +8,10 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "./shared/implement.js"
+import {
+	type RegisteredReference,
+	registeredReference
+} from "./shared/registry.js"
 import type {
 	TraversalContext,
 	TraverseAllows,

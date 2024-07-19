@@ -1,5 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
-import { printable, registeredReference } from "@ark/util"
+import { registeredReference } from "@ark/schema"
+import { printable } from "@ark/util"
 import { type } from "arktype"
 
 contextualize(() => {

@@ -1,8 +1,7 @@
 import {
+	$ark,
 	append,
-	compileSerializedValue,
 	printable,
-	registeredReference,
 	throwParseError,
 	unset,
 	type Key
@@ -17,11 +16,12 @@ import {
 } from "../node.js"
 import type { Morph } from "../roots/morph.js"
 import type { BaseRoot } from "../roots/root.js"
-import type { NodeCompiler } from "../shared/compile.js"
+import { compileSerializedValue, type NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { IntersectionContext, RootKind } from "../shared/implement.js"
 import { intersectNodes } from "../shared/intersections.js"
+import { registeredReference } from "../shared/registry.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 import type { OptionalDeclaration, OptionalNode } from "./optional.js"
 import type { RequiredDeclaration } from "./required.js"

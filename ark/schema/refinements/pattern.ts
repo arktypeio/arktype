@@ -1,3 +1,4 @@
+import { $ark } from "@ark/util"
 import { RawPrimitiveConstraint } from "../constraint.js"
 import type { BaseRoot } from "../roots/root.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"

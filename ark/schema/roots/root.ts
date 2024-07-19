@@ -13,6 +13,7 @@ import type {
 	UnknownRangeSchema
 } from "@ark/schema"
 import {
+	$ark,
 	cached,
 	includes,
 	omit,

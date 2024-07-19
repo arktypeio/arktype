@@ -1,7 +1,7 @@
 import {
+	$ark,
 	arrayEquals,
 	liftArray,
-	registeredReference,
 	throwParseError,
 	type array,
 	type listable
@@ -18,6 +18,7 @@ import {
 	type nodeImplementationOf
 } from "../shared/implement.js"
 import { intersectNodes, type inferPipe } from "../shared/intersections.js"
+import { registeredReference } from "../shared/registry.js"
 import type {
 	TraversalContext,
 	TraverseAllows,

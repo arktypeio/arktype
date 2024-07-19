@@ -1,4 +1,5 @@
 import {
+	$ark,
 	append,
 	printable,
 	stringAndSymbolicEntriesOf,

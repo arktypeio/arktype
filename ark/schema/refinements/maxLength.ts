@@ -1,3 +1,4 @@
+import { $ark } from "@ark/util"
 import type { BaseRoot } from "../roots/root.js"
 import type { declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"

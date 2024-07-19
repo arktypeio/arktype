@@ -1,4 +1,5 @@
 import {
+	$ark,
 	flatMorph,
 	hasDomain,
 	isEmptyObject,

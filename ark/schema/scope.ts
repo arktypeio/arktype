@@ -1,5 +1,5 @@
 import {
-	CompiledFunction,
+	$ark,
 	DynamicBase,
 	ParseError,
 	bound,
@@ -50,7 +50,7 @@ import {
 } from "./parse.js"
 import { normalizeAliasSchema, type AliasNode } from "./roots/alias.js"
 import type { BaseRoot, Root } from "./roots/root.js"
-import { NodeCompiler } from "./shared/compile.js"
+import { CompiledFunction, NodeCompiler } from "./shared/compile.js"
 import type { NodeKind, RootKind } from "./shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "./shared/traversal.js"
 import {

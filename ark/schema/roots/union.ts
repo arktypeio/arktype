@@ -1,16 +1,14 @@
 import {
+	$ark,
 	appendUnique,
 	arrayEquals,
 	cached,
-	compileLiteralPropAccess,
-	compileSerializedValue,
 	domainDescriptions,
 	flatMorph,
 	groupBy,
 	isArray,
 	isKeyOf,
 	printable,
-	registeredReference,
 	throwInternalError,
 	throwParseError,
 	type Domain,
@@ -23,7 +21,11 @@ import {
 } from "@ark/util"
 import type { Node, NodeSchema } from "../kinds.js"
 import { typePathToPropString } from "../node.js"
-import type { NodeCompiler } from "../shared/compile.js"
+import {
+	compileLiteralPropAccess,
+	compileSerializedValue,
+	type NodeCompiler
+} from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { ArkError } from "../shared/errors.js"
@@ -35,6 +37,7 @@ import {
 	type nodeImplementationOf
 } from "../shared/implement.js"
 import { intersectNodes, intersectNodesRoot } from "../shared/intersections.js"
+import { registeredReference } from "../shared/registry.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 import { pathToPropString } from "../shared/utils.js"
 import type { DomainInner, DomainNode } from "./domain.js"

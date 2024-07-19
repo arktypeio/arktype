@@ -4,6 +4,7 @@ import { schemaScope, type RootScope } from "../scope.js"
 // and used to bootstrap nodes with constraints
 import { tsKeywords, type tsKeywordExports } from "./tsKeywords.js"
 
+import { $ark } from "@ark/util"
 import { formatting, type formattingExports } from "./format.js"
 import { internal, type internalExports } from "./internal.js"
 import { jsObjects, type jsObjectExports } from "./jsObjects.js"

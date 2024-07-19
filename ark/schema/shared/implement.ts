@@ -1,5 +1,4 @@
 import {
-	compileSerializedValue,
 	flatMorph,
 	printable,
 	throwParseError,
@@ -27,6 +26,7 @@ import type {
 } from "../roots/root.js"
 import type { RawRootScope } from "../scope.js"
 import type { StructureInner } from "../structure/structure.js"
+import { compileSerializedValue } from "./compile.js"
 import type {
 	BaseErrorContext,
 	BaseMeta,
