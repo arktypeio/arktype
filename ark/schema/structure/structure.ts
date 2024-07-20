@@ -8,8 +8,10 @@ import {
 	throwParseError,
 	type array,
 	type join,
-	type Key
+	type Key,
+	type typeToString
 } from "@ark/util"
+import type { type } from "arktype"
 import {
 	BaseConstraint,
 	constraintKeyParser,
@@ -19,7 +21,7 @@ import {
 import type { NonNegativeIntegerString } from "../keywords/internal.js"
 import type { MutableInner } from "../kinds.js"
 import type { TypeIndexer, TypeKey } from "../node.js"
-import { isSubtypeOrTermOf, type BaseRoot } from "../roots/root.js"
+import { typeOrTermExtends, type BaseRoot } from "../roots/root.js"
 import type { RawRootScope } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
@@ -124,27 +126,22 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 	}
 
 	assertHasKeys(keys: array<TypeKey>) {
-		const invalidKeys = keys.filter(k => isSubtypeOrTermOf(k, this.keyof()))
+		const invalidKeys = keys.filter(k => typeOrTermExtends(k, this.keyof()))
 
 		if (invalidKeys.length) {
 			return throwParseError(
-				writeInvalidKeysMessage(
-					this.expression,
-					invalidKeys.map(k =>
-						hasArkKind(k, "root") ? k.expression : printable(k)
-					)
-				)
+				writeInvalidKeysMessage(this.expression, invalidKeys)
 			)
 		}
 	}
 
-	pick(...keys: array<TypeKey>) {
+	pick(...picked: array<TypeKey>) {
 		const inner: MutableInner<"structure"> = {}
 
-		this.assertHasKeys(keys)
+		this.assertHasKeys(picked)
 
 		const filterPicked = (k: unknown) =>
-			keys.some(picked => isSubtypeOrTermOf(picked, k))
+			picked.some(pickedKey => typeOrTermExtends(k, pickedKey))
 
 		if (this.required) inner.required = this.required.filter(filterPicked)
 
@@ -170,12 +167,13 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 		}
 
 		this.index?.forEach(n => {
-			if (isSubtypeOrTermOf(n, key)) value = value?.and(n.value) ?? n.value
+			if (typeOrTermExtends(key, n.signature))
+				value = value?.and(n.value) ?? n.value
 		})
 
 		if (
 			this.sequence &&
-			isSubtypeOrTermOf($ark.intrinsic.nonNegativeIntegerString, key)
+			typeOrTermExtends(key, $ark.intrinsic.nonNegativeIntegerString)
 		) {
 			if (hasArkKind(key, "root")) {
 				if (this.sequence.variadic)
@@ -211,7 +209,7 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 					writeRawNumberIndexMessage(key.expression, this.sequence.expression)
 				)
 			}
-			return throwParseError(writeBadKeyAccessMessage(key, this.expression))
+			return throwParseError(writeInvalidKeysMessage(this.expression, [key]))
 		}
 
 		const result = value.get(...path)
@@ -574,11 +572,6 @@ export const writeRawNumberIndexMessage = (
 ) =>
 	`${indexExpression} is not allowed as an array index on ${sequenceExpression}. Use the 'nonNegativeIntegerString' keyword instead.`
 
-export const writeBadKeyAccessMessage = (
-	key: TypeKey,
-	structuralExpression: string
-) => `${printable(key)} does not exist on ${structuralExpression}`
-
 export type NormalizedIndex = {
 	index?: IndexNode
 	required?: RequiredNode[]
@@ -629,19 +622,26 @@ export type indexInto<o, k extends indexOf<o>> = o[Extract<
 	keyof o
 >]
 
+export const typeKeyToString = (k: TypeKey) =>
+	hasArkKind(k, "root") ? k.expression : printable(k)
+
+export type typeKeyToString<k extends TypeKey> = typeToString<
+	k extends type.cast<infer t> ? t : k
+>
+
 export const writeInvalidKeysMessage = <
 	o extends string,
-	keys extends array<string>
+	keys extends array<TypeKey>
 >(
 	o: o,
 	keys: keys
 ) =>
-	`Key${keys.length === 1 ? "" : "s"} ${keys.join(", ")} ${keys.length === 1 ? "does" : "do"} not exist on ${o}` as writeInvalidKeysMessage<
+	`Key${keys.length === 1 ? "" : "s"} ${keys.map(typeKeyToString).join(", ")} ${keys.length === 1 ? "does" : "do"} not exist on ${o}` as writeInvalidKeysMessage<
 		o,
 		keys
 	>
 
 export type writeInvalidKeysMessage<
 	o extends string,
-	keys extends array<string>
-> = `Key${keys["length"] extends 1 ? "" : "s"} ${join<keys, ", ">} ${keys["length"] extends 1 ? "does" : "do"} not exist on ${o}`
+	keys extends array<TypeKey>
+> = `Key${keys["length"] extends 1 ? "" : "s"} ${join<{ [i in keyof keys]: typeKeyToString<keys[i]> }, ", ">} ${keys["length"] extends 1 ? "does" : "do"} not exist on ${o}`

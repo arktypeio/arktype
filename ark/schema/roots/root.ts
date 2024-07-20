@@ -171,6 +171,10 @@ export abstract class BaseRoot<
 			})
 		}
 
+		if (this.isBasis() && this.domain === "object")
+			// if it's an object but has no Structure node, return an empty object
+			return $ark.intrinsic.object.internal.bindScope(this.$)
+
 		return throwParseError(
 			writeNonStructuralOperandMessage("Pick", this.expression)
 		)
@@ -605,12 +609,12 @@ declare class _Root<t = unknown, $ = any> extends InnerRoot<t, $> {
 	overlaps(r: Root): boolean
 }
 
-export const isSubtypeOrTermOf = (base: unknown, check: unknown) =>
+export const typeOrTermExtends = (t: unknown, base: unknown) =>
 	hasArkKind(base, "root") ?
-		hasArkKind(check, "root") ? base.subsumes(check)
-		:	base.allows(check)
-	: hasArkKind(check, "root") ? check.hasUnit(base)
-	: base === check
+		hasArkKind(t, "root") ? t.extends(base)
+		:	base.allows(t)
+	: hasArkKind(t, "root") ? t.hasUnit(base)
+	: base === t
 
 export interface Root<
 	/** @ts-expect-error allow instantiation assignment to the base type */
@@ -659,7 +663,7 @@ export type StructuralOperationName = "Pick" | "Omit" | "Index access"
 export type writeNonStructuralOperandMessage<
 	operation extends StructuralOperationName,
 	operand extends string
-> = `${operation} operand must be a structured object (was ${operand})`
+> = `${operation} operand must be an object (was ${operand})`
 
 export const writeNonStructuralOperandMessage = <
 	operation extends StructuralOperationName,
@@ -668,4 +672,4 @@ export const writeNonStructuralOperandMessage = <
 	operation: operation,
 	operand: operand
 ): writeNonStructuralOperandMessage<operation, operand> =>
-	`${operation} operand must be a structured object (was ${operand})`
+	`${operation} operand must be an object (was ${operand})`
