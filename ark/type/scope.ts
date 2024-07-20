@@ -175,7 +175,7 @@ export type tryInferSubmoduleReference<$, token> =
 	:	never
 
 export interface ParseContext extends TypeParseOptions {
-	$: RawScope
+	$: InternalScope
 }
 
 export interface TypeParseOptions {
@@ -183,7 +183,7 @@ export interface TypeParseOptions {
 }
 
 export const scope: ScopeParser = ((def: Dict, config: ArkConfig = {}) =>
-	new RawScope(def, config)) as never
+	new InternalScope(def, config)) as never
 
 export interface Scope<$ = any> extends RootScope<$> {
 	type: TypeParser<$>
@@ -205,7 +205,7 @@ export interface Scope<$ = any> extends RootScope<$> {
 	): Module<show<destructuredExportContext<$, names>>>
 }
 
-export class RawScope<
+export class InternalScope<
 	$ extends InternalResolutions = InternalResolutions
 > extends InternalRootScope<$> {
 	private parseCache: Record<string, StringParseResult> = {}

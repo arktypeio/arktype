@@ -11,6 +11,7 @@ import {
 	type InclusiveDateRangeSchema,
 	type InclusiveNumericRangeSchema,
 	type InnerRoot,
+	type InternalRootScope,
 	type Morph,
 	type MorphAst,
 	type NodeSchema,
@@ -53,7 +54,7 @@ import type {
 	IndexZeroOperator,
 	TupleInfixOperator
 } from "./parser/tuple.js"
-import type { InternalScope, Scope, bindThis } from "./scope.js"
+import type { Scope, bindThis } from "./scope.js"
 
 /** The convenience properties attached to `type` */
 export type TypeParserAttachments =
@@ -99,7 +100,7 @@ export class InternalTypeParser extends Callable<
 	(...args: unknown[]) => BaseRoot | Generic,
 	TypeParserAttachments
 > {
-	constructor($: InternalScope) {
+	constructor($: InternalRootScope) {
 		super(
 			(...args) => {
 				if (args.length === 1) {

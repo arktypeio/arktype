@@ -1,7 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import {
 	writeInvalidKeysMessage,
-	writeRawNumberIndexMessage,
+	writeNumberIndexMessage,
 	type Matching,
 	type of,
 	type string
@@ -154,13 +154,13 @@ contextualize(() => {
 
 		// @ts-expect-error
 		attest(() => t.get(ark.number)).throws(
-			writeRawNumberIndexMessage("number", t.expression)
+			writeNumberIndexMessage("number", t.expression)
 		)
 
 		// number subtype
 		// @ts-expect-error
 		attest(() => t.get(ark.integer)).throws(
-			writeRawNumberIndexMessage("number % 1", t.expression)
+			writeNumberIndexMessage("number % 1", t.expression)
 		)
 	})
 

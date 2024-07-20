@@ -82,7 +82,7 @@ export type resolveReference<reference extends resolvableReferenceIn<$>, $> =
 
 export type PrivateDeclaration<key extends string = string> = `#${key}`
 
-type toRawScope<$> = InternalRootScope<{
+type toInternalScope<$> = InternalRootScope<{
 	[k in keyof $]: $[k] extends { [arkKind]: infer kind } ?
 		[$[k]] extends [anyOrNever] ? BaseRoot
 		: kind extends "generic" ? GenericRoot
@@ -512,7 +512,7 @@ export interface RootScope<$ = any> {
 	/** The set of names defined at the root-level of the scope mapped to their
 	 * corresponding definitions.**/
 	aliases: Record<string, unknown>
-	internal: toRawScope<$>
+	internal: toInternalScope<$>
 
 	schema<const def extends RootSchema>(
 		schema: def,

@@ -209,7 +209,7 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 				key.extends($ark.intrinsic.number)
 			) {
 				return throwParseError(
-					writeRawNumberIndexMessage(key.expression, this.sequence.expression)
+					writeNumberIndexMessage(key.expression, this.sequence.expression)
 				)
 			}
 			return throwParseError(writeInvalidKeysMessage(this.expression, [key]))
@@ -569,7 +569,7 @@ export const structureImplementation: nodeImplementationOf<StructureDeclaration>
 		}
 	})
 
-export const writeRawNumberIndexMessage = (
+export const writeNumberIndexMessage = (
 	indexExpression: string,
 	sequenceExpression: string
 ) =>
