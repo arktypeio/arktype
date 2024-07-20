@@ -70,8 +70,7 @@ contextualize(() => {
 					"unknown",
 					"uppercase",
 					"url",
-					"uuid",
-					"void"
+					"uuid"
 				]
 			})
 			// @ts-expect-error
@@ -138,7 +137,6 @@ contextualize(() => {
 					"uppercase",
 					"url",
 					"uuid",
-					"void",
 					"|"
 				]
 			})

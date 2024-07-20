@@ -340,7 +340,9 @@ tags[2] must be a string (was object)`)
 				// @ts-expect-error
 				attest(() => user.pick("length"))
 					.throws(writeInvalidKeysMessage(user.expression, ["length"]))
-					.type.errors.snap()
+					.type.errors.snap(
+						'Argument of type \'"length"\' is not assignable to parameter of type \'"name" | cast<"name">\'.'
+					)
 			})
 
 			it("non-structure", () => {
