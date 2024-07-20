@@ -126,7 +126,7 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 	}
 
 	assertHasKeys(keys: array<TypeKey>) {
-		const invalidKeys = keys.filter(k => typeOrTermExtends(k, this.keyof()))
+		const invalidKeys = keys.filter(k => !typeOrTermExtends(k, this.keyof()))
 
 		if (invalidKeys.length) {
 			return throwParseError(
@@ -140,14 +140,17 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 
 		this.assertHasKeys(picked)
 
-		const filterPicked = (k: unknown) =>
+		const filterPicked = (k: TypeKey) =>
 			picked.some(pickedKey => typeOrTermExtends(k, pickedKey))
 
-		if (this.required) inner.required = this.required.filter(filterPicked)
+		if (this.required)
+			inner.required = this.required.filter(node => filterPicked(node.key))
 
-		if (this.optional) inner.optional = this.optional.filter(filterPicked)
+		if (this.optional)
+			inner.optional = this.optional.filter(node => filterPicked(node.key))
 
-		if (this.index) inner.index = this.index.filter(filterPicked)
+		if (this.index)
+			inner.index = this.index.filter(node => filterPicked(node.signature))
 
 		return this.$.node("structure", inner, { prereduced: true })
 	}
