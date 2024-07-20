@@ -1,5 +1,5 @@
 import type { RootModule, SchemaModule } from "../module.js"
-import { schemaScope, type RootScope } from "../scope.js"
+import { schemaScope, type BaseScope } from "../scope.js"
 // the import ordering here is important so builtin keywords can be resolved
 // and used to bootstrap nodes with constraints
 import { tsKeywords, type tsKeywordExports } from "./tsKeywords.js"
@@ -17,7 +17,7 @@ import { tsGenerics, type tsGenericsExports } from "./tsGenerics.js"
 import { typedArray, type typedArrayExports } from "./typedArray.js"
 import { validation, type validationExports } from "./validation.js"
 
-export const ambientRootScope: RootScope<Ark> = schemaScope({
+export const ambientRootScope: BaseScope<Ark> = schemaScope({
 	...tsKeywords,
 	...jsObjects,
 	...platformObjects,

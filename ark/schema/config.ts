@@ -6,7 +6,7 @@ import {
 	type show
 } from "@ark/util"
 import type { Ark } from "./keywords/keywords.js"
-import type { InternalRootScope, IntrinsicKeywords } from "./scope.js"
+import type { InternalBaseScope, IntrinsicKeywords } from "./scope.js"
 import type {
 	ActualWriter,
 	ArkErrorCode,
@@ -26,7 +26,7 @@ declare global {
 		meta(): {}
 		preserve(): never
 		registry(): {
-			ambient: InternalRootScope
+			ambient: InternalBaseScope
 			intrinsic: IntrinsicKeywords
 			config: ArkConfig
 			defaultConfig: ResolvedArkConfig

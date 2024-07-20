@@ -1,10 +1,11 @@
 import {
-	InternalRootScope,
+	InternalBaseScope,
 	hasArkKind,
 	parseGeneric,
 	type AliasDefEntry,
 	type ArkConfig,
 	type BaseRoot,
+	type BaseScope,
 	type GenericArgResolutions,
 	type GenericParamAst,
 	type GenericParamDef,
@@ -12,7 +13,6 @@ import {
 	type InternalResolutions,
 	type PreparsedNodeResolution,
 	type PrivateDeclaration,
-	type RootScope,
 	type arkKind,
 	type destructuredExportContext,
 	type destructuredImportContext,
@@ -185,29 +185,9 @@ export interface TypeParseOptions {
 export const scope: ScopeParser = ((def: Dict, config: ArkConfig = {}) =>
 	new InternalScope(def, config)) as never
 
-export interface Scope<$ = any> extends RootScope<$> {
-	type: TypeParser<$>
-
-	match: MatchParser<$>
-
-	declare: DeclarationParser<$>
-
-	define: DefinitionParser<$>
-
-	generic: GenericHktParser<$>
-
-	import<names extends exportedNameOf<$>[]>(
-		...names: names
-	): Module<show<destructuredImportContext<$, names>>>
-
-	export<names extends exportedNameOf<$>[]>(
-		...names: names
-	): Module<show<destructuredExportContext<$, names>>>
-}
-
 export class InternalScope<
 	$ extends InternalResolutions = InternalResolutions
-> extends InternalRootScope<$> {
+> extends InternalBaseScope<$> {
 	private parseCache: Record<string, StringParseResult> = {}
 
 	constructor(def: Record<string, unknown>, config?: ArkConfig) {
@@ -261,7 +241,7 @@ export class InternalScope<
 	}
 
 	@bound
-	override parseRoot(def: unknown, opts: TypeParseOptions = {}): BaseRoot {
+	parseRoot(def: unknown, opts: TypeParseOptions = {}): BaseRoot {
 		const node: BaseRoot = this.parse(
 			def,
 			Object.assign(
@@ -320,6 +300,28 @@ export class InternalScope<
 		return node as never
 	}
 }
+
+export interface Scope<$ = any> extends BaseScope<$> {
+	type: TypeParser<$>
+
+	match: MatchParser<$>
+
+	declare: DeclarationParser<$>
+
+	define: DefinitionParser<$>
+
+	generic: GenericHktParser<$>
+
+	import<names extends exportedNameOf<$>[]>(
+		...names: names
+	): Module<show<destructuredImportContext<$, names>>>
+
+	export<names extends exportedNameOf<$>[]>(
+		...names: names
+	): Module<show<destructuredExportContext<$, names>>>
+}
+
+export const Scope: new <$ = any>() => Scope<$> = InternalScope as never
 
 export const writeShallowCycleErrorMessage = (
 	name: string,

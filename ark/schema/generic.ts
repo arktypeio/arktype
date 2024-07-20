@@ -11,7 +11,7 @@ import {
 } from "@ark/util"
 import type { inferRoot } from "./inference.js"
 import type { Root, UnknownRoot } from "./roots/root.js"
-import type { InternalRootScope, RootScope } from "./scope.js"
+import type { BaseScope, InternalBaseScope } from "./scope.js"
 import { arkKind } from "./shared/utils.js"
 
 export type GenericParamAst<
@@ -33,7 +33,7 @@ export type ConstrainedGenericParamDef<name extends string = string> =
 export const parseGeneric = (
 	paramDefs: array<GenericParamDef>,
 	bodyDef: unknown,
-	$: RootScope
+	$: BaseScope
 ): GenericRoot => new GenericRoot(paramDefs, bodyDef, $, $)
 
 type genericParamSchemaToAst<schema extends GenericParamDef, $> =
@@ -109,7 +109,7 @@ export interface GenericProps<
 	names: genericParamNames<params>
 	constraints: instantiateConstraintsOf<params>
 	bodyDef: bodyDef
-	$: RootScope<$>
+	$: BaseScope<$>
 }
 
 export type GenericArgResolutions<
@@ -137,8 +137,8 @@ export class GenericRoot<
 	constructor(
 		public paramDefs: genericParamAstToDefs<params>,
 		public bodyDef: bodyDef,
-		public $: RootScope<$>,
-		public arg$: RootScope<arg$>
+		public $: BaseScope<$>,
+		public arg$: BaseScope<arg$>
 	) {
 		super((...args: any[]) => {
 			const argNodes = flatMorph(this.names, (i, name) => {
@@ -171,7 +171,7 @@ export class GenericRoot<
 		return this.bodyDef instanceof LazyGenericBody
 	}
 
-	bindScope($: InternalRootScope): this {
+	bindScope($: InternalBaseScope): this {
 		if (this.arg$ === ($ as never)) return this
 		return new GenericRoot(
 			this.params as never,

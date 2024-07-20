@@ -82,7 +82,7 @@ export type resolveReference<reference extends resolvableReferenceIn<$>, $> =
 
 export type PrivateDeclaration<key extends string = string> = `#${key}`
 
-type toInternalScope<$> = InternalRootScope<{
+type toInternalScope<$> = InternalBaseScope<{
 	[k in keyof $]: $[k] extends { [arkKind]: infer kind } ?
 		[$[k]] extends [anyOrNever] ? BaseRoot
 		: kind extends "generic" ? GenericRoot
@@ -119,13 +119,13 @@ export type writeDuplicateAliasError<alias extends string> =
 
 export type AliasDefEntry = [name: string, defValue: unknown]
 
-const scopesById: Record<string, InternalRootScope | undefined> = {}
+const scopesById: Record<string, InternalBaseScope | undefined> = {}
 
 $ark.intrinsic = {} as never
 
-export class InternalRootScope<
+export abstract class InternalBaseScope<
 	$ extends InternalResolutions = InternalResolutions
-> implements internalImplementationOf<RootScope, "t">
+> implements internalImplementationOf<BaseScope, "t">
 {
 	readonly config: ArkConfig
 	readonly resolvedConfig: ResolvedArkConfig
@@ -182,18 +182,23 @@ export class InternalRootScope<
 	}
 
 	@bound
+	defineSchema(def: RootSchema): RootSchema {
+		return def
+	}
+
+	@bound
 	schema(def: RootSchema, opts?: NodeParseOptions): BaseRoot {
 		return this.node(schemaKindOf(def), def, opts)
 	}
 
 	@bound
 	defineRoot(def: RootSchema): RootSchema {
-		return def
+		return this.defineSchema(def)
 	}
 
 	@bound
 	generic(...params: array<GenericParamDef>): ReturnType<GenericHktRootParser> {
-		const $: RootScope = this as never
+		const $: BaseScope = this as never
 		return (instantiateDef): any =>
 			class GenericHktSubclass extends GenericRoot {
 				constructor() {
@@ -305,14 +310,6 @@ export class InternalRootScope<
 		if (!isResolution) opts.args ??= { this: $ark.intrinsic.unknown as never }
 
 		return opts
-	}
-
-	parseRoot(def: unknown, opts: NodeParseOptions = {}): BaseRoot {
-		const node = this.schema(
-			def as never,
-			this.finalizeRootArgs(opts, () => node)
-		)
-		return node
 	}
 
 	resolveRoot(name: string): BaseRoot {
@@ -446,6 +443,8 @@ export class InternalRootScope<
 	): destructuredExportContext<$, []>[name] {
 		return this.export()[name] as never
 	}
+
+	abstract parseRoot(schema: any, opts?: NodeParseOptions): BaseRoot
 }
 
 const resolutionsToJson = (resolutions: InternalResolutions): Json =>
@@ -499,9 +498,9 @@ export type instantiateAliases<aliases> = {
 export const schemaScope = <const aliases>(
 	aliases: validateAliases<aliases>,
 	config?: ArkConfig
-): RootScope<instantiateAliases<aliases>> => new RootScope(aliases, config)
+): SchemaScope<instantiateAliases<aliases>> => new SchemaScope(aliases, config)
 
-export interface RootScope<$ = any> {
+export interface BaseScope<$ = any> {
 	t: $
 	[arkKind]: "scope"
 	config: ArkConfig
@@ -514,12 +513,12 @@ export interface RootScope<$ = any> {
 	aliases: Record<string, unknown>
 	internal: toInternalScope<$>
 
+	defineSchema<const def extends RootSchema>(schema: def): def
+
 	schema<const def extends RootSchema>(
 		schema: def,
 		opts?: NodeParseOptions
 	): Root<inferRoot<def, $>, $>
-
-	defineRoot<const def extends RootSchema>(schema: def): def
 
 	units<const branches extends array>(
 		values: branches,
@@ -532,10 +531,6 @@ export interface RootScope<$ = any> {
 		opts?: NodeParseOptions
 	): Node<reducibleKindOf<flattenListable<kinds>>>
 
-	generic: GenericHktRootParser<$>
-
-	parseRoot(schema: unknown, opts?: NodeParseOptions): BaseRoot
-
 	import<names extends exportedNameOf<$>[]>(
 		...names: names
 	): SchemaModule<show<destructuredImportContext<$, names>>>
@@ -547,25 +542,45 @@ export interface RootScope<$ = any> {
 	resolve<name extends exportedNameOf<$>>(
 		name: name
 	): $[name] extends PreparsedNodeResolution ? $[name] : Root<$[name], $>
+
+	parseRoot(def: any, opts?: NodeParseOptions): Root
 }
 
-export const RootScope: new <$ = any>(
-	...args: ConstructorParameters<typeof InternalRootScope>
-) => RootScope<$> = InternalRootScope as never
+export class InternalSchemaScope<
+	$ extends InternalResolutions = InternalResolutions
+> extends InternalBaseScope<$> {
+	parseRoot(def: unknown, opts: NodeParseOptions = {}): BaseRoot {
+		const node = this.schema(
+			def as never,
+			this.finalizeRootArgs(opts, () => node)
+		)
+		return node
+	}
+}
 
-export const root: RootScope<{}> = new RootScope({})
+export interface SchemaScope<$ = any> extends BaseScope<$> {
+	defineRoot: this["defineSchema"]
+	parseRoot: this["schema"]
+	generic: GenericHktRootParser<$>
+}
 
-export const schema: RootScope["schema"] = root.schema
-export const node: RootScope["node"] = root.node
-export const defineRoot: RootScope["defineRoot"] = root.defineRoot
-export const units: RootScope["units"] = root.units
-export const generic: RootScope["generic"] = root.generic
-export const internalSchema: InternalRootScope["schema"] = root.internal.schema
-export const internalNode: InternalRootScope["node"] = root.internal.node
-export const defineInternalRoot: InternalRootScope["defineRoot"] =
+export const SchemaScope: new <$ = any>(
+	...args: ConstructorParameters<typeof InternalBaseScope>
+) => SchemaScope<$> = InternalSchemaScope as never
+
+export const root: SchemaScope<{}> = new SchemaScope({})
+
+export const schema: SchemaScope["schema"] = root.schema
+export const node: SchemaScope["node"] = root.node
+export const defineRoot: SchemaScope["defineRoot"] = root.defineRoot
+export const units: SchemaScope["units"] = root.units
+export const generic: SchemaScope["generic"] = root.generic
+export const internalSchema: InternalBaseScope["schema"] = root.internal.schema
+export const internalNode: InternalBaseScope["node"] = root.internal.node
+export const defineInternalRoot: InternalBaseScope["defineRoot"] =
 	root.internal.defineRoot
-export const internalUnits: InternalRootScope["units"] = root.internal.units
-export const internalGeneric: InternalRootScope["generic"] =
+export const internalUnits: InternalBaseScope["units"] = root.internal.units
+export const internalGeneric: InternalBaseScope["generic"] =
 	root.internal.generic
 
 export const parseAsSchema = <castTo = unknown>(
@@ -601,7 +616,7 @@ export type RootExportCache = Record<
 >
 
 const resolutionsOfModule = (
-	$: InternalRootScope,
+	$: InternalBaseScope,
 	typeSet: RootExportCache
 ) => {
 	const result: InternalResolutions = {}

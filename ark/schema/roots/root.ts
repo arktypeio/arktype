@@ -48,7 +48,7 @@ import type {
 } from "../kinds.js"
 import { BaseNode, appendUniqueFlatRefs } from "../node.js"
 import type { Predicate } from "../predicate.js"
-import type { RootScope } from "../scope.js"
+import type { BaseScope } from "../scope.js"
 import type { BaseMeta, BaseNodeDeclaration } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import { ArkErrors } from "../shared/errors.js"
@@ -469,7 +469,7 @@ export declare abstract class InnerRoot<t = unknown, $ = any> extends Callable<
 	expression: string
 	internal: BaseRoot
 
-	abstract $: RootScope<$>;
+	abstract $: BaseScope<$>;
 	abstract get in(): unknown
 	abstract get out(): unknown
 	abstract keyof(): unknown
@@ -508,7 +508,7 @@ export declare abstract class InnerRoot<t = unknown, $ = any> extends Callable<
 // methods of BaseRoot are overridden, but we end up exporting it as an interface
 // to ensure it is not accessed as a runtime value
 declare class _Root<t = unknown, $ = any> extends InnerRoot<t, $> {
-	$: RootScope<$>;
+	$: BaseScope<$>;
 
 	get in(): Root<this["tIn"], $>
 

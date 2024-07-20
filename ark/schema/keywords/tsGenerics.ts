@@ -8,7 +8,7 @@ import {
 } from "@ark/util"
 import type { SchemaModule } from "../module.js"
 import type { Out } from "../roots/morph.js"
-import { generic, schemaScope, type RootScope } from "../scope.js"
+import { generic, schemaScope } from "../scope.js"
 
 class ArkRecord extends generic(
 	["K", $ark.intrinsic.propertyKey],
@@ -55,6 +55,6 @@ export type tsGenericsExports = typeof tsGenericsExports
 
 export type tsGenerics = SchemaModule<tsGenericsExports>
 
-const $: RootScope = schemaScope(tsGenericsExports)
+const $ = schemaScope(tsGenericsExports)
 
 export const tsGenerics: tsGenerics = $.export()
