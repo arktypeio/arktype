@@ -27,7 +27,6 @@ export const ambientRootScope: RootScope<Ark> = schemaScope({
 	TypedArray: typedArray,
 	parse: parsing,
 	format: formatting
-	// TODO: remove cast
 }) as never
 
 $ark.ambient = ambientRootScope.internal

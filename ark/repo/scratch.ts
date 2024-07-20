@@ -7,5 +7,5 @@ const types = scope({
 		"age?": "number",
 		address: "string"
 	},
-	homelessUser: "Pick<user, 'name' | 'address'>"
+	homelessUser: "Pick<user, 'name' | 'age'>"
 }).export()

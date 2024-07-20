@@ -1,12 +1,15 @@
-import { RootModule, type PreparsedNodeResolution } from "@ark/schema"
+import { RootModule, type arkKind, type GenericProps } from "@ark/schema"
 import type { anyOrNever } from "@ark/util"
+import type { Generic } from "./generic.js"
 import type { Type } from "./type.js"
 
 type exportScope<$> = {
-	[k in keyof $]: $[k] extends PreparsedNodeResolution ?
+	[k in keyof $]: $[k] extends { [arkKind]: "module" } ?
 		[$[k]] extends [anyOrNever] ?
 			Type<$[k], $>
 		:	$[k]
+	: $[k] extends GenericProps<infer params, infer bodyDef, infer $> ?
+		Generic<params, bodyDef, $>
 	:	Type<$[k], $>
 }
 

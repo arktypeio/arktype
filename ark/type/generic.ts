@@ -88,10 +88,6 @@ export interface Generic<
 > extends Callable<GenericInstantiation<params, bodyDef, $>>,
 		GenericRoot<params, bodyDef, $, arg$> {}
 
-export namespace Generic {
-	export type Any = Generic<any, any, any>
-}
-
 export type GenericDeclaration<
 	name extends string = string,
 	params extends ParameterString = ParameterString

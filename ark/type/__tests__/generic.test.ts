@@ -6,7 +6,7 @@ import {
 	writeUnresolvableMessage,
 	writeUnsatisfiedParameterConstraintMessage
 } from "@ark/schema"
-import { ark, generic, scope, type } from "arktype"
+import { scope, type } from "arktype"
 import { emptyGenericParameterMessage, type Generic } from "../generic.js"
 import { writeUnclosedGroupMessage } from "../parser/string/reduce/shared.js"
 import { writeInvalidGenericArgCountMessage } from "../parser/string/shift/operand/genericArgs.js"
