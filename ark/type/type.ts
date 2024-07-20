@@ -30,10 +30,17 @@ import {
 	type inferPipes,
 	type inferPredicate,
 	type toArkKey,
+	type validateChainedAsArgs,
 	type validateChainedConstraint,
 	type validateStructuralOperand
 } from "@ark/schema"
-import { Callable, type Constructor, type array, type conform } from "@ark/util"
+import {
+	Callable,
+	type Constructor,
+	type array,
+	type conform,
+	type unset
+} from "@ark/util"
 import type { type } from "./ark.js"
 import {
 	parseGenericParams,
@@ -153,7 +160,9 @@ export type DeclarationParser<$> = <preinferred>() => {
 // methods of BaseRoot are overridden, but we end up exporting it as an interface
 // to ensure it is not accessed as a runtime value
 declare class _Type<t = unknown, $ = any> extends InnerRoot<t, $> {
-	$: Scope<$>;
+	$: Scope<$>
+
+	as<t = unset>(...args: validateChainedAsArgs<t>): Type<t, $>
 
 	get in(): Type<this["tIn"], $>
 	get out(): Type<this["tOut"], $>

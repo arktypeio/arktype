@@ -39,22 +39,7 @@ export type validateParameterString<s extends ParameterString, $> =
 		ErrorMessage<message>
 	:	s
 
-export type validateGenericArg<param extends GenericParamAst, def, $> =
-	inferTypeRoot<def, $> extends param[1] ? def
-	:	ErrorMessage<
-			writeUnsatisfiedParameterConstraintMessage<
-				param[0],
-				typeToString<param[1]>,
-				typeToString<inferTypeRoot<def, $>>
-			>
-		>
-
-export type validateGeneric2<arg, param extends GenericParamAst, $> =
-	validateTypeRoot<arg, $> extends ErrorMessage<infer message> ?
-		ErrorMessage<message>
-	:	validateGenericConstraint<arg, param, $>
-
-export type validateGenericConstraint<arg, param extends GenericParamAst, $> =
+export type validateGenericArg<arg, param extends GenericParamAst, $> =
 	inferTypeRoot<arg, $> extends param[1] ? arg
 	:	ErrorMessage<
 			writeUnsatisfiedParameterConstraintMessage<
@@ -76,10 +61,10 @@ export type GenericInstantiator<
 >(
 	/** @ts-expect-error treat as array */
 	...args: {
-		[i in keyof args]: validateGenericConstraint<
+		[i in keyof args]: validateGenericArg<
 			args[i],
 			params[i & keyof params & `${number}`],
-			$
+			args$
 		>
 	}
 ) => Type<inferDefinition<def, $, bindGenericArgs<params, args$, args>>, $>

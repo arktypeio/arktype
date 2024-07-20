@@ -25,9 +25,11 @@ import {
 	type ErrorMessage,
 	type Json,
 	type NonEmptyList,
+	type anyOrNever,
 	type array,
 	type conform,
-	type typeToString
+	type typeToString,
+	type unset
 } from "@ark/util"
 import type {
 	constrain,
@@ -109,6 +111,10 @@ export abstract class BaseRoot<
 	readonly [arkKind] = "root"
 
 	get internal(): this {
+		return this
+	}
+
+	as(): this {
 		return this
 	}
 
@@ -472,6 +478,7 @@ export declare abstract class InnerRoot<t = unknown, $ = any> extends Callable<
 	abstract $: BaseScope<$>;
 	abstract get in(): unknown
 	abstract get out(): unknown
+	abstract as(): unknown
 	abstract keyof(): unknown
 	abstract intersect(r: never): unknown | Disjoint
 	abstract and(r: never): unknown
@@ -508,7 +515,9 @@ export declare abstract class InnerRoot<t = unknown, $ = any> extends Callable<
 // methods of BaseRoot are overridden, but we end up exporting it as an interface
 // to ensure it is not accessed as a runtime value
 declare class _Root<t = unknown, $ = any> extends InnerRoot<t, $> {
-	$: BaseScope<$>;
+	$: BaseScope<$>
+
+	as<t = unset>(...args: validateChainedAsArgs<t>): Root<t, $>
 
 	get in(): Root<this["tIn"], $>
 
@@ -629,6 +638,15 @@ export const typeOrTermExtends = (t: unknown, base: unknown) =>
 		:	base.allows(t)
 	: hasArkKind(t, "root") ? t.hasUnit(base)
 	: base === t
+
+export type validateChainedAsArgs<t> =
+	[t] extends [unset] ?
+		[t] extends [anyOrNever] ?
+			[]
+		:	[
+				ErrorMessage<"as requires an explicit type parameter like myType.as<t>()">
+			]
+	:	[]
 
 export interface Root<
 	/** @ts-expect-error allow instantiation assignment to the base type */
