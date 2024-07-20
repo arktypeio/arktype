@@ -1,6 +1,6 @@
 import { $ark } from "@ark/util"
 import {
-	RawPrimitiveConstraint,
+	InternalPrimitiveConstraint,
 	writeInvalidOperandMessage
 } from "../constraint.js"
 import type { BaseRoot, Root } from "../roots/root.js"
@@ -51,7 +51,7 @@ export const divisorImplementation: nodeImplementationOf<DivisorDeclaration> =
 		}
 	})
 
-export class DivisorNode extends RawPrimitiveConstraint<DivisorDeclaration> {
+export class DivisorNode extends InternalPrimitiveConstraint<DivisorDeclaration> {
 	traverseAllows: TraverseAllows<number> = data => data % this.rule === 0
 
 	readonly compiledCondition: string = `data % ${this.rule} === 0`

@@ -49,7 +49,7 @@ import type {
 import { BaseNode, appendUniqueFlatRefs } from "../node.js"
 import type { Predicate } from "../predicate.js"
 import type { RootScope } from "../scope.js"
-import type { BaseMeta, RawNodeDeclaration } from "../shared/declare.js"
+import type { BaseMeta, BaseNodeDeclaration } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import { ArkErrors } from "../shared/errors.js"
 import {
@@ -79,7 +79,7 @@ import type { constraintKindOf } from "./intersection.js"
 import type { Morph, MorphNode, inferMorphOut, inferPipes } from "./morph.js"
 import type { UnionChildKind, UnionChildNode } from "./union.js"
 
-export interface RawRootDeclaration extends RawNodeDeclaration {
+export interface InternalRootDeclaration extends BaseNodeDeclaration {
 	kind: RootKind
 }
 
@@ -96,7 +96,7 @@ export type TypeOnlyRootKey =
 export abstract class BaseRoot<
 		/** uses -ignore rather than -expect-error because this is not an error in .d.ts
 		 * @ts-ignore allow instantiation assignment to the base type */
-		out d extends RawRootDeclaration = RawRootDeclaration
+		out d extends InternalRootDeclaration = InternalRootDeclaration
 	>
 	extends BaseNode<d>
 	// don't require intersect so we can make it protected to ensure it is not called internally
@@ -129,6 +129,14 @@ export abstract class BaseRoot<
 	protected intersect(r: unknown): BaseRoot | Disjoint {
 		const rNode = this.$.parseRoot(r)
 		return intersectNodesRoot(this, rNode, this.$) as never
+	}
+
+	isUnknown(): boolean {
+		return this.hasKind("intersection") && this.children.length === 0
+	}
+
+	isNever(): boolean {
+		return this.hasKind("union") && this.children.length === 0
 	}
 
 	and(r: unknown): BaseRoot {
@@ -476,6 +484,10 @@ export declare abstract class InnerRoot<t = unknown, $ = any> extends Callable<
 	abstract overlaps(r: never): boolean
 	abstract array(): unknown
 	abstract pipe(morph: Morph): unknown
+
+	isUnknown(): boolean
+
+	isNever(): boolean
 
 	assert(data: unknown): this["infer"]
 

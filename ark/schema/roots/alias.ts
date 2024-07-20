@@ -8,7 +8,7 @@ import {
 } from "../shared/implement.js"
 import { intersectNodes } from "../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
-import { BaseRoot, type RawRootDeclaration } from "./root.js"
+import { BaseRoot, type InternalRootDeclaration } from "./root.js"
 import { defineRightwardIntersections } from "./utils.js"
 
 export interface AliasInner<alias extends string = string> extends BaseMeta {
@@ -37,7 +37,7 @@ export class AliasNode extends BaseRoot<AliasDeclaration> {
 		return this.resolve?.() ?? this.$.resolveRoot(this.alias)
 	}
 
-	rawKeyOf(): BaseRoot<RawRootDeclaration> {
+	rawKeyOf(): BaseRoot<InternalRootDeclaration> {
 		return this.resolution.keyof()
 	}
 

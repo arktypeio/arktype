@@ -53,7 +53,7 @@ import type {
 	IndexZeroOperator,
 	TupleInfixOperator
 } from "./parser/tuple.js"
-import type { RawScope, Scope, bindThis } from "./scope.js"
+import type { InternalScope, Scope, bindThis } from "./scope.js"
 
 /** The convenience properties attached to `type` */
 export type TypeParserAttachments =
@@ -95,11 +95,11 @@ export interface TypeParser<$ = {}> {
 	errors: typeof ArkErrors
 }
 
-export class RawTypeParser extends Callable<
+export class InternalTypeParser extends Callable<
 	(...args: unknown[]) => BaseRoot | Generic,
 	TypeParserAttachments
 > {
-	constructor($: RawScope) {
+	constructor($: InternalScope) {
 		super(
 			(...args) => {
 				if (args.length === 1) {

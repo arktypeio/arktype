@@ -1,10 +1,10 @@
 import { type array, isKeyOf, type propValueOf, type satisfy } from "@ark/util"
-import { RawPrimitiveConstraint } from "../constraint.js"
+import { InternalPrimitiveConstraint } from "../constraint.js"
 import type { Node } from "../kinds.js"
-import type { BaseMeta, RawNodeDeclaration } from "../shared/declare.js"
+import type { BaseMeta, BaseNodeDeclaration } from "../shared/declare.js"
 import type { KeySchemaDefinitions, RangeKind } from "../shared/implement.js"
 
-export interface BaseRangeDeclaration extends RawNodeDeclaration {
+export interface BaseRangeDeclaration extends BaseNodeDeclaration {
 	kind: RangeKind
 	inner: BaseRangeInner
 	normalizedSchema: UnknownNormalizedRangeSchema
@@ -12,7 +12,7 @@ export interface BaseRangeDeclaration extends RawNodeDeclaration {
 
 export abstract class BaseRange<
 	d extends BaseRangeDeclaration
-> extends RawPrimitiveConstraint<d> {
+> extends InternalPrimitiveConstraint<d> {
 	readonly boundOperandKind: OperandKindsByBoundKind[d["kind"]] =
 		operandKindsByBoundKind[this.kind]
 	readonly compiledActual: string =

@@ -199,7 +199,6 @@ export const unionImplementation: nodeImplementationOf<UnionDeclaration> =
 	})
 
 export class UnionNode extends BaseRoot<UnionDeclaration> {
-	isNever: boolean = this.branches.length === 0
 	isBoolean: boolean =
 		this.branches.length === 2 &&
 		this.branches[0].hasUnit(false) &&

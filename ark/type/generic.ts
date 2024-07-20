@@ -15,7 +15,6 @@ import {
 	type conform,
 	type ErrorMessage,
 	type Hkt,
-	type isDisjoint,
 	type keyError,
 	type typeToString,
 	type WhiteSpaceToken
@@ -84,17 +83,6 @@ export type GenericInstantiator<
 		>
 	}
 ) => Type<inferDefinition<def, $, bindGenericArgs<params, args$, args>>, $>
-
-declare const generic: GenericInstantiator<
-	[["K", PropertyKey], ["V", unknown]],
-	{ "[K]": "V" },
-	{},
-	{}
->
-
-const o = generic("string", {
-	foo: "number | boolean"
-})
 
 // TODO: Fix external reference (i.e. if this is attached to a scope, then args are defined using it)
 type bindGenericArgs<params extends array<GenericParamAst>, $, args> = {

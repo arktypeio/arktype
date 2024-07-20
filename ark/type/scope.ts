@@ -1,5 +1,5 @@
 import {
-	RawRootScope,
+	InternalRootScope,
 	hasArkKind,
 	parseGeneric,
 	type AliasDefEntry,
@@ -9,9 +9,9 @@ import {
 	type GenericParamAst,
 	type GenericParamDef,
 	type GenericProps,
+	type InternalResolutions,
 	type PreparsedNodeResolution,
 	type PrivateDeclaration,
-	type RawRootResolutions,
 	type RootScope,
 	type arkKind,
 	type destructuredExportContext,
@@ -58,7 +58,7 @@ import {
 	type StringParseResult
 } from "./parser/string/string.js"
 import {
-	RawTypeParser,
+	InternalTypeParser,
 	type DeclarationParser,
 	type DefinitionParser,
 	type Type,
@@ -206,19 +206,19 @@ export interface Scope<$ = any> extends RootScope<$> {
 }
 
 export class RawScope<
-	$ extends RawRootResolutions = RawRootResolutions
-> extends RawRootScope<$> {
+	$ extends InternalResolutions = InternalResolutions
+> extends InternalRootScope<$> {
 	private parseCache: Record<string, StringParseResult> = {}
 
 	constructor(def: Record<string, unknown>, config?: ArkConfig) {
 		super(def, config)
 	}
 
-	type: RawTypeParser = new RawTypeParser(this as never)
+	type: InternalTypeParser = new InternalTypeParser(this as never)
 
 	match: MatchParser<$> = createMatchParser(this as never) as never
 
-	declare: () => { type: RawTypeParser } = (() => ({
+	declare: () => { type: InternalTypeParser } = (() => ({
 		type: this.type
 	})).bind(this)
 

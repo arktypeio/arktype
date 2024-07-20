@@ -23,11 +23,11 @@ import type { NodeParseOptions } from "./parse.js"
 import type { MorphNode } from "./roots/morph.js"
 import type { BaseRoot, Root } from "./roots/root.js"
 import type { UnitNode } from "./roots/unit.js"
-import type { RawRootScope } from "./scope.js"
+import type { InternalRootScope } from "./scope.js"
 import type { NodeCompiler } from "./shared/compile.js"
 import type {
 	BaseMeta,
-	RawNodeDeclaration,
+	BaseNodeDeclaration,
 	attachmentsOf
 } from "./shared/declare.js"
 import {
@@ -56,11 +56,11 @@ export type UnknownNode = BaseNode | Root
 export abstract class BaseNode<
 	/** uses -ignore rather than -expect-error because this is not an error in .d.ts
 	 * @ts-ignore allow instantiation assignment to the base type */
-	out d extends RawNodeDeclaration = RawNodeDeclaration
+	out d extends BaseNodeDeclaration = BaseNodeDeclaration
 > extends Callable<(data: d["prerequisite"]) => unknown, attachmentsOf<d>> {
 	constructor(
 		public attachments: UnknownAttachments,
-		public $: RawRootScope
+		public $: InternalRootScope
 	) {
 		super(
 			// pipedFromCtx allows us internally to reuse TraversalContext
@@ -86,7 +86,7 @@ export abstract class BaseNode<
 		)
 	}
 
-	bindScope($: RawRootScope): this {
+	bindScope($: InternalRootScope): this {
 		if (this.$ === $) return this as never
 		return new (this.constructor as any)(this.attachments, $)
 	}
@@ -439,7 +439,7 @@ export const appendUniqueNodes = <node extends BaseNode>(
 
 export type DeepNodeTransformOptions = {
 	shouldTransform?: ShouldTransformFn
-	bindScope?: RawRootScope
+	bindScope?: InternalRootScope
 	prereduced?: boolean
 }
 

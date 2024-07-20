@@ -19,7 +19,7 @@ import {
 	type NormalizedSchema
 } from "./kinds.js"
 import type { BaseNode } from "./node.js"
-import type { RawRootScope } from "./scope.js"
+import type { InternalRootScope } from "./scope.js"
 import { Disjoint } from "./shared/disjoint.js"
 import {
 	constraintKeys,
@@ -46,7 +46,7 @@ export type NodeParseOptions<prereduced extends boolean = boolean> = {
 
 export interface NodeParseContext<kind extends NodeKind = NodeKind>
 	extends NodeParseOptions {
-	$: RawRootScope
+	$: InternalRootScope
 	args: GenericArgResolutions
 	schema: NormalizedSchema<kind>
 	id: string
@@ -113,7 +113,7 @@ export const parseNode = <kind extends NodeKind>(
 	id: string,
 	kind: kind,
 	schema: NormalizedSchema<kind>,
-	$: RawRootScope,
+	$: InternalRootScope,
 	opts: NodeParseOptions
 ): BaseNode => {
 	const ctx: NodeParseContext = {

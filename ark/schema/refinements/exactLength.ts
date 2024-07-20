@@ -1,5 +1,5 @@
 import { $ark } from "@ark/util"
-import { RawPrimitiveConstraint } from "../constraint.js"
+import { InternalPrimitiveConstraint } from "../constraint.js"
 import type { BaseRoot } from "../roots/root.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -68,7 +68,7 @@ export const exactLengthImplementation: nodeImplementationOf<ExactLengthDeclarat
 		}
 	})
 
-export class ExactLengthNode extends RawPrimitiveConstraint<ExactLengthDeclaration> {
+export class ExactLengthNode extends InternalPrimitiveConstraint<ExactLengthDeclaration> {
 	traverseAllows: TraverseAllows<LengthBoundableData> = data =>
 		data.length === this.rule
 

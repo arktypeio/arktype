@@ -22,7 +22,7 @@ import type { NonNegativeIntegerString } from "../keywords/internal.js"
 import type { MutableInner } from "../kinds.js"
 import type { TypeIndexer, TypeKey } from "../node.js"
 import { typeOrTermExtends, type BaseRoot } from "../roots/root.js"
-import type { RawRootScope } from "../scope.js"
+import type { InternalRootScope } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -584,7 +584,7 @@ export type NormalizedIndex = {
 export const normalizeIndex = (
 	signature: BaseRoot,
 	value: BaseRoot,
-	$: RawRootScope
+	$: InternalRootScope
 ): NormalizedIndex => {
 	const [enumerableBranches, nonEnumerableBranches] = spliterate(
 		signature.branches,

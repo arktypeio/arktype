@@ -24,13 +24,13 @@ import type {
 	schemaKindOrRightOf,
 	schemaKindRightOf
 } from "../roots/root.js"
-import type { RawRootScope } from "../scope.js"
+import type { InternalRootScope } from "../scope.js"
 import type { StructureInner } from "../structure/structure.js"
 import { compileSerializedValue } from "./compile.js"
 import type {
 	BaseErrorContext,
 	BaseMeta,
-	RawNodeDeclaration
+	BaseNodeDeclaration
 } from "./declare.js"
 import type { Disjoint } from "./disjoint.js"
 import { isNode } from "./utils.js"
@@ -145,7 +145,7 @@ export interface InternalIntersectionOptions {
 }
 
 export interface IntersectionContext extends InternalIntersectionOptions {
-	$: RawRootScope
+	$: InternalRootScope
 	invert: boolean
 }
 
@@ -232,11 +232,11 @@ export const schemaKindsRightOf = <kind extends RootKind>(
 ): schemaKindRightOf<kind>[] =>
 	rootKinds.slice(precedenceOfKind(kind) + 1) as never
 
-export type KeySchemaDefinitions<d extends RawNodeDeclaration> = {
+export type KeySchemaDefinitions<d extends BaseNodeDeclaration> = {
 	[k in keyRequiringSchemaDefinition<d>]: NodeKeyImplementation<d, k>
 }
 
-type keyRequiringSchemaDefinition<d extends RawNodeDeclaration> = Exclude<
+type keyRequiringSchemaDefinition<d extends BaseNodeDeclaration> = Exclude<
 	keyof d["normalizedSchema"],
 	keyof BaseMeta
 >
@@ -254,7 +254,7 @@ export const defaultValueSerializer = (v: unknown): JsonData => {
 }
 
 export type NodeKeyImplementation<
-	d extends RawNodeDeclaration,
+	d extends BaseNodeDeclaration,
 	k extends keyof d["normalizedSchema"],
 	instantiated = k extends keyof d["inner"] ? Exclude<d["inner"][k], undefined>
 	:	never
@@ -276,7 +276,7 @@ export type NodeKeyImplementation<
 	| ([instantiated] extends [listable<BaseNode>] ? "child" : never)
 >
 
-interface CommonNodeImplementationInput<d extends RawNodeDeclaration> {
+interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	kind: d["kind"]
 	keys: KeySchemaDefinitions<d>
 	normalize: (schema: d["schema"]) => d["normalizedSchema"]
@@ -285,12 +285,12 @@ interface CommonNodeImplementationInput<d extends RawNodeDeclaration> {
 	collapsibleKey?: keyof d["inner"]
 	reduce?: (
 		inner: d["inner"],
-		$: RawRootScope
+		$: InternalRootScope
 	) => Node<d["reducibleTo"]> | Disjoint | undefined
 }
 
 export interface UnknownNodeImplementation
-	extends CommonNodeImplementationInput<RawNodeDeclaration> {
+	extends CommonNodeImplementationInput<BaseNodeDeclaration> {
 	defaults: ResolvedUnknownNodeConfig
 	intersectionIsOpen: boolean
 	intersections: UnknownIntersectionMap
@@ -305,14 +305,14 @@ export const compileErrorContext = (ctx: object): string => {
 	return result + " }"
 }
 
-export type nodeImplementationOf<d extends RawNodeDeclaration> =
+export type nodeImplementationOf<d extends BaseNodeDeclaration> =
 	nodeImplementationInputOf<d> & {
 		intersections: IntersectionMap<d["kind"]>
 		intersectionIsOpen: d["intersectionIsOpen"]
 		defaults: Required<NodeConfig<d["kind"]>>
 	}
 
-export type nodeImplementationInputOf<d extends RawNodeDeclaration> =
+export type nodeImplementationInputOf<d extends BaseNodeDeclaration> =
 	CommonNodeImplementationInput<d> & {
 		intersections: IntersectionMap<d["kind"]>
 		defaults: nodeSchemaaultsImplementationInputFor<d["kind"]>
@@ -354,7 +354,7 @@ export interface UnknownAttachments {
 	readonly typeHash: string
 }
 
-export interface NarrowedAttachments<d extends RawNodeDeclaration>
+export interface NarrowedAttachments<d extends BaseNodeDeclaration>
 	extends UnknownAttachments {
 	kind: d["kind"]
 	inner: d["inner"]
@@ -369,9 +369,9 @@ export const baseKeys: PartialRecord<
 	propValueOf<KeySchemaDefinitions<any>>
 > = {
 	description: { meta: true }
-} satisfies KeySchemaDefinitions<RawNodeDeclaration> as never
+} satisfies KeySchemaDefinitions<BaseNodeDeclaration> as never
 
-export const implementNode = <d extends RawNodeDeclaration = never>(
+export const implementNode = <d extends BaseNodeDeclaration = never>(
 	_: nodeImplementationInputOf<d>
 ): nodeImplementationOf<d> => {
 	const implementation: UnknownNodeImplementation = _ as never

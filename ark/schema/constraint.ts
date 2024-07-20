@@ -27,7 +27,7 @@ import type {
 } from "./roots/intersection.js"
 import type { BaseRoot, Root, UnknownRoot } from "./roots/root.js"
 import type { NodeCompiler } from "./shared/compile.js"
-import type { RawNodeDeclaration } from "./shared/declare.js"
+import type { BaseNodeDeclaration } from "./shared/declare.js"
 import { Disjoint } from "./shared/disjoint.js"
 import {
 	compileErrorContext,
@@ -43,7 +43,7 @@ import { intersectNodes, intersectNodesRoot } from "./shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "./shared/traversal.js"
 import { arkKind } from "./shared/utils.js"
 
-export interface BaseConstraintDeclaration extends RawNodeDeclaration {
+export interface BaseConstraintDeclaration extends BaseNodeDeclaration {
 	kind: ConstraintKind
 }
 
@@ -68,7 +68,7 @@ export type ConstraintReductionResult =
 	| Disjoint
 	| MutableIntersectionInner
 
-export abstract class RawPrimitiveConstraint<
+export abstract class InternalPrimitiveConstraint<
 	d extends BaseConstraintDeclaration
 > extends BaseConstraint<d> {
 	abstract traverseAllows: TraverseAllows<d["prerequisite"]>

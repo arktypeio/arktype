@@ -3,13 +3,15 @@ import {
 	cached,
 	Callable,
 	flatMorph,
+	snapshot,
 	throwParseError,
 	type array,
-	type Hkt
+	type Hkt,
+	type Json
 } from "@ark/util"
 import type { inferRoot } from "./inference.js"
 import type { Root, UnknownRoot } from "./roots/root.js"
-import type { RawRootScope, RootScope } from "./scope.js"
+import type { InternalRootScope, RootScope } from "./scope.js"
 import { arkKind } from "./shared/utils.js"
 
 export type GenericParamAst<
@@ -169,7 +171,7 @@ export class GenericRoot<
 		return this.bodyDef instanceof LazyGenericBody
 	}
 
-	bindScope($: RawRootScope): this {
+	bindScope($: InternalRootScope): this {
 		if (this.arg$ === ($ as never)) return this
 		return new GenericRoot(
 			this.params as never,
@@ -177,6 +179,16 @@ export class GenericRoot<
 			this.$,
 			$ as never
 		) as never
+	}
+
+	@cached
+	get json(): Json {
+		return {
+			params: this.params.map(param =>
+				param[1].isUnknown() ? param[0] : [param[0], param[1].json]
+			),
+			body: snapshot(this.bodyDef) as never
+		}
 	}
 
 	@cached
