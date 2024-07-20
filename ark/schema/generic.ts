@@ -151,7 +151,7 @@ export class GenericRoot<
 					)
 				}
 				return [name, arg]
-			}) as GenericArgResolutions
+			}) as GenericArgResolutions<any>
 
 			if (this.defIsLazy()) {
 				const def = this.bodyDef(argNodes)
