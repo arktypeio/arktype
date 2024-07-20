@@ -11,13 +11,13 @@ import {
 	type Key,
 	type typeToString
 } from "@ark/util"
-import type { type } from "arktype"
 import {
 	BaseConstraint,
 	constraintKeyParser,
 	flattenConstraints,
 	intersectConstraints
 } from "../constraint.js"
+import type { InferredRoot } from "../inference.js"
 import type { NonNegativeIntegerString } from "../keywords/internal.js"
 import type { MutableInner } from "../kinds.js"
 import type { TypeIndexer, TypeKey } from "../node.js"
@@ -636,7 +636,7 @@ export const typeKeyToString = (k: TypeKey) =>
 	hasArkKind(k, "root") ? k.expression : printable(k)
 
 export type typeKeyToString<k extends TypeKey> = typeToString<
-	k extends type.cast<infer t> ? t : k
+	k extends InferredRoot<infer t> ? t : k
 >
 
 export const writeInvalidKeysMessage = <

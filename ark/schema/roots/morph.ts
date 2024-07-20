@@ -7,7 +7,7 @@ import {
 	type listable
 } from "@ark/util"
 import type { distillConstrainableIn } from "../ast.js"
-import type { type } from "../inference.js"
+import type { InferredRoot } from "../inference.js"
 import type { Node, NodeSchema } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
@@ -201,7 +201,7 @@ Right: ${rDescription}`
 export type inferPipes<t, pipes extends Morph[]> =
 	pipes extends [infer head extends Morph, ...infer tail extends Morph[]] ?
 		inferPipes<
-			pipes[0] extends type.cast<infer tPipe> ? inferPipe<t, tPipe>
+			pipes[0] extends InferredRoot<infer tPipe> ? inferPipe<t, tPipe>
 			: inferMorphOut<head> extends infer out ?
 				(In: distillConstrainableIn<t>) => Out<out>
 			:	never,

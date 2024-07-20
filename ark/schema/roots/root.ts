@@ -7,12 +7,12 @@ import type {
 	FlatRef,
 	InclusiveDateRangeSchema,
 	InclusiveNumericRangeSchema,
+	InferredRoot,
 	LimitSchemaValue,
 	PatternSchema,
 	TypeIndexer,
 	TypeKey,
 	UnknownRangeSchema,
-	type,
 	writeInvalidOperandMessage
 } from "@ark/schema"
 import {
@@ -506,22 +506,24 @@ declare class _Root<t = unknown, $ = any> extends InnerRoot<t, $> {
 
 	pick<const key extends arkKeyOf<t> = never>(
 		this: validateStructuralOperand<"Pick", this>,
-		...keys: array<key | type.cast<key>>
+		...keys: array<key | InferredRoot<key>>
 	): Root<{ [k in key]: getArkKey<t, k> }, $>
 
-	get<k1 extends arkKeyOf<t>>(k1: k1 | type.cast<k1>): Root<getArkKey<t, k1>, $>
+	get<k1 extends arkKeyOf<t>>(
+		k1: k1 | InferredRoot<k1>
+	): Root<getArkKey<t, k1>, $>
 	get<k1 extends arkKeyOf<t>, k2 extends arkKeyOf<getArkKey<t, k1>>>(
-		k1: k1 | type.cast<k1>,
-		k2: k2 | type.cast<k2>
+		k1: k1 | InferredRoot<k1>,
+		k2: k2 | InferredRoot<k2>
 	): Root<getArkKey<getArkKey<t, k1>, k2>, $>
 	get<
 		k1 extends arkKeyOf<t>,
 		k2 extends arkKeyOf<getArkKey<t, k1>>,
 		k3 extends arkKeyOf<getArkKey<getArkKey<t, k1>, k2>>
 	>(
-		k1: k1 | type.cast<k1>,
-		k2: k2 | type.cast<k2>,
-		k3: k3 | type.cast<k3>
+		k1: k1 | InferredRoot<k1>,
+		k2: k2 | InferredRoot<k2>,
+		k3: k3 | InferredRoot<k3>
 	): Root<getArkKey<getArkKey<getArkKey<t, k1>, k2>, k3>, $>
 
 	intersect<r extends Root>(r: r): Root<inferIntersection<t, r["t"]>> | Disjoint

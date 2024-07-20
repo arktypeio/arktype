@@ -1,4 +1,4 @@
-import type { type } from "../inference.js"
+import type { InferredRoot } from "../inference.js"
 import type { SchemaModule } from "../module.js"
 import { schemaScope } from "../scope.js"
 
@@ -15,7 +15,6 @@ export interface tsKeywordExports {
 	symbol: symbol
 	true: true
 	unknown: unknown
-	void: void
 	undefined: undefined
 }
 
@@ -23,10 +22,10 @@ export type tsKeywords = SchemaModule<tsKeywordExports>
 
 export const tsKeywords: tsKeywords = schemaScope(
 	{
-		any: {} as type.cast<any>,
+		any: {} as InferredRoot<any>,
 		bigint: "bigint",
 		// since we know this won't be reduced, it can be safely cast to a union
-		boolean: [{ unit: false }, { unit: true }] as type.cast<boolean>,
+		boolean: [{ unit: false }, { unit: true }] as InferredRoot<boolean>,
 		false: { unit: false },
 		never: [],
 		null: { unit: null },
@@ -36,8 +35,9 @@ export const tsKeywords: tsKeywords = schemaScope(
 		symbol: "symbol",
 		true: { unit: true },
 		unknown: {},
-		void: { unit: undefined } as type.cast<void>,
 		undefined: { unit: undefined }
+		// void is not included because it doesn't have a well-defined meaning
+		// as a standalone type
 	},
 	{ prereducedAliases: true, intrinsic: true }
 ).export()

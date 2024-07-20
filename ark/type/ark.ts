@@ -4,17 +4,11 @@ import {
 	type ArkErrors,
 	type inferred
 } from "@ark/schema"
-import type { CastableBase } from "@ark/util"
 import type { GenericHktParser } from "./generic.js"
 import type { MatchParser } from "./match.js"
 import type { Module } from "./module.js"
 import { scope, type Scope } from "./scope.js"
-import type {
-	DeclarationParser,
-	DefinitionParser,
-	Type,
-	TypeParser
-} from "./type.js"
+import type { DeclarationParser, DefinitionParser, TypeParser } from "./type.js"
 
 export const ambient: Scope<Ark> = scope(keywordNodes) as never
 
@@ -28,14 +22,6 @@ export namespace type {
 	}
 
 	export type errors = ArkErrors
-
-	export interface of<t, $ = {}> extends Type<t, $> {}
-
-	export interface infer<t extends Type<object>>
-		extends CastableBase<t["infer"]> {}
-
-	export interface inferIn<t extends Type<object>>
-		extends CastableBase<t["inferIn"]> {}
 }
 
 export const generic: GenericHktParser<{}> = ambient.generic as never

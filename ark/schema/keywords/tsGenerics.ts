@@ -6,8 +6,8 @@ import {
 	type Key,
 	type show
 } from "@ark/util"
-import type { Out } from "arktype"
 import type { SchemaModule } from "../module.js"
+import type { Out } from "../roots/morph.js"
 import { generic, schemaScope, type RootScope } from "../scope.js"
 
 class ArkRecord extends generic(

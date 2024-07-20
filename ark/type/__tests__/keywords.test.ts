@@ -78,14 +78,6 @@ contextualize(() => {
 			// should be equivalent to an unconstrained predicate
 			attest(type("unknown").json).equals(expected.json)
 		})
-
-		it("void", () => {
-			const t = type("void")
-			attest<void>(t.infer)
-			const expected = type("undefined")
-			//should be treated as undefined at runtime
-			attest(t.json).equals(expected.json)
-		})
 	})
 
 	describe("validation", () => {
