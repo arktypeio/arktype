@@ -67,7 +67,7 @@ type instantiateParams<params extends array<GenericParamAst>> = {
 	:	never
 }
 
-export type GenericNodeSignature<
+export type GenericRootInstantiator<
 	params extends array<GenericParamAst>,
 	def,
 	$
@@ -128,7 +128,7 @@ export class GenericRoot<
 	bodyDef = unknown,
 	$ = {},
 	arg$ = $
-> extends Callable<GenericNodeSignature<params, bodyDef, $>> {
+> extends Callable<GenericRootInstantiator<params, bodyDef, $>> {
 	readonly [arkKind] = "generic"
 	declare readonly paramsAst: params
 

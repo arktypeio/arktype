@@ -15,6 +15,7 @@ import {
 	type conform,
 	type ErrorMessage,
 	type Hkt,
+	type isDisjoint,
 	type keyError,
 	type typeToString,
 	type WhiteSpaceToken
@@ -64,7 +65,7 @@ export type validateGenericConstraint<arg, param extends GenericParamAst, $> =
 			>
 		>
 
-export type GenericInstantiation<
+export type GenericInstantiator<
 	params extends array<GenericParamAst>,
 	def,
 	$,
@@ -84,6 +85,17 @@ export type GenericInstantiation<
 	}
 ) => Type<inferDefinition<def, $, bindGenericArgs<params, args$, args>>, $>
 
+declare const generic: GenericInstantiator<
+	[["K", PropertyKey], ["V", unknown]],
+	{ "[K]": "V" },
+	{},
+	{}
+>
+
+const o = generic("string", {
+	foo: "number | boolean"
+})
+
 // TODO: Fix external reference (i.e. if this is attached to a scope, then args are defined using it)
 type bindGenericArgs<params extends array<GenericParamAst>, $, args> = {
 	[i in keyof params & `${number}` as params[i][0]]: inferTypeRoot<
@@ -101,7 +113,7 @@ export interface Generic<
 	bodyDef = unknown,
 	$ = {},
 	args$ = $
-> extends Callable<GenericInstantiation<params, bodyDef, $, args$>>,
+> extends Callable<GenericInstantiator<params, bodyDef, $, args$>>,
 		GenericProps<params, bodyDef, $> {
 	internal: GenericRoot<params, bodyDef, $>
 }
