@@ -609,7 +609,14 @@ export const normalizeIndex = (
 	return normalized
 }
 
-export type indexOf<o> =
+export type toArkKey<o, k extends keyof o> =
+	k extends number ?
+		[o, number] extends [array, k] ?
+			NonNegativeIntegerString
+		:	`${k}`
+	:	k
+
+export type arkKeyOf<o> =
 	o extends array ?
 		| (number extends o["length"] ? NonNegativeIntegerString : never)
 		| {
@@ -620,7 +627,7 @@ export type indexOf<o> =
 			[k in keyof o]: k extends number ? k | `${k}` : k
 		}[keyof o]
 
-export type indexInto<o, k extends indexOf<o>> = o[Extract<
+export type getArkKey<o, k extends arkKeyOf<o>> = o[Extract<
 	k extends NonNegativeIntegerString ? number : k,
 	keyof o
 >]

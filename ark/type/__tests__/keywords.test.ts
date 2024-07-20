@@ -307,11 +307,13 @@ tags[2] must be a string (was object)`)
 				const types = scope({
 					from: {
 						foo: "1",
-						bar: "1"
+						"bar?": "1",
+						baz: "1"
 					},
-					actual: "Pick<from, 'foo'>",
+					actual: "Pick<from, 'foo' | 'bar'>",
 					expected: {
-						foo: "1"
+						foo: "1",
+						"bar?": "1"
 					}
 				}).export()
 
@@ -322,7 +324,7 @@ tags[2] must be a string (was object)`)
 			it("chained", () => {
 				const user = type({
 					name: "string",
-					age: "number",
+					"age?": "number",
 					isAdmin: "boolean"
 				})
 
@@ -330,7 +332,7 @@ tags[2] must be a string (was object)`)
 
 				const expected = type({
 					name: "string",
-					age: "number"
+					"age?": "number"
 				})
 
 				attest<typeof expected.t>(basicUser.t)

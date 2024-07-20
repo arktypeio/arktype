@@ -1,4 +1,11 @@
-import { $ark, liftArray, type conform, type Hkt, type Key } from "@ark/util"
+import {
+	$ark,
+	liftArray,
+	type conform,
+	type Hkt,
+	type Key,
+	type show
+} from "@ark/util"
 import type { Out } from "arktype"
 import type { SchemaModule } from "../module.js"
 import { generic, schemaScope, type RootScope } from "../scope.js"
@@ -24,10 +31,7 @@ class ArkPick extends generic(
 )(args => args.T.pick(args.K as never)) {
 	declare hkt: (
 		args: conform<this[Hkt.args], [object, Key]>
-	) => typeof args extends [infer T, infer K extends Key] ?
-		{
-			[k in K]: T[k & keyof T]
-		} & unknown
+	) => typeof args extends [infer T, infer K] ? show<Pick<T, K & keyof T>>
 	:	never
 }
 

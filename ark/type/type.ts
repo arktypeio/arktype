@@ -18,17 +18,18 @@ import {
 	type PatternSchema,
 	type Predicate,
 	type PrimitiveConstraintKind,
+	type arkKeyOf,
 	type constrain,
 	type constraintKindOf,
 	type distillIn,
 	type distillOut,
 	type exclusivizeRangeSchema,
-	type indexInto,
-	type indexOf,
+	type getArkKey,
 	type inferIntersection,
 	type inferMorphOut,
 	type inferPipes,
 	type inferPredicate,
+	type toArkKey,
 	type validateChainedConstraint,
 	type validateStructuralOperand
 } from "@ark/schema"
@@ -250,25 +251,30 @@ declare class _Type<t = unknown, $ = any> extends InnerRoot<t, $> {
 	): this is Type<inferTypeRoot<def>, $>
 	overlaps<def>(r: validateTypeRoot<def, $>): boolean
 
-	pick<const key extends indexOf<t> = never>(
+	pick<const key extends arkKeyOf<t> = never>(
 		this: validateStructuralOperand<"Pick", this>,
 		...keys: array<key | type.cast<key>>
-	): Type<{ [k in key]: indexInto<t, k> }, $>
+	): Type<
+		{
+			[k in keyof t as Extract<toArkKey<t, k>, key>]: t[k]
+		},
+		$
+	>
 
-	get<k1 extends indexOf<t>>(k1: k1 | type.cast<k1>): Type<indexInto<t, k1>, $>
-	get<k1 extends indexOf<t>, k2 extends indexOf<indexInto<t, k1>>>(
+	get<k1 extends arkKeyOf<t>>(k1: k1 | type.cast<k1>): Type<getArkKey<t, k1>, $>
+	get<k1 extends arkKeyOf<t>, k2 extends arkKeyOf<getArkKey<t, k1>>>(
 		k1: k1 | type.cast<k1>,
 		k2: k2 | type.cast<k2>
-	): Type<indexInto<indexInto<t, k1>, k2>, $>
+	): Type<getArkKey<getArkKey<t, k1>, k2>, $>
 	get<
-		k1 extends indexOf<t>,
-		k2 extends indexOf<indexInto<t, k1>>,
-		k3 extends indexOf<indexInto<indexInto<t, k1>, k2>>
+		k1 extends arkKeyOf<t>,
+		k2 extends arkKeyOf<getArkKey<t, k1>>,
+		k3 extends arkKeyOf<getArkKey<getArkKey<t, k1>, k2>>
 	>(
 		k1: k1 | type.cast<k1>,
 		k2: k2 | type.cast<k2>,
 		k3: k3 | type.cast<k3>
-	): Type<indexInto<indexInto<indexInto<t, k1>, k2>, k3>, $>
+	): Type<getArkKey<getArkKey<getArkKey<t, k1>, k2>, k3>, $>
 
 	constrain<
 		kind extends PrimitiveConstraintKind,

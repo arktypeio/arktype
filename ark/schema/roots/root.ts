@@ -72,8 +72,8 @@ import {
 import type {
 	StructureInner,
 	UndeclaredKeyBehavior,
-	indexInto,
-	indexOf
+	arkKeyOf,
+	getArkKey
 } from "../structure/structure.js"
 import type { constraintKindOf } from "./intersection.js"
 import type { Morph, MorphNode, inferMorphOut, inferPipes } from "./morph.js"
@@ -504,25 +504,25 @@ declare class _Root<t = unknown, $ = any> extends InnerRoot<t, $> {
 
 	keyof(): Root<keyof this["inferIn"], $>
 
-	pick<const key extends indexOf<t> = never>(
+	pick<const key extends arkKeyOf<t> = never>(
 		this: validateStructuralOperand<"Pick", this>,
 		...keys: array<key | type.cast<key>>
-	): Root<{ [k in key]: indexInto<t, k> }, $>
+	): Root<{ [k in key]: getArkKey<t, k> }, $>
 
-	get<k1 extends indexOf<t>>(k1: k1 | type.cast<k1>): Root<indexInto<t, k1>, $>
-	get<k1 extends indexOf<t>, k2 extends indexOf<indexInto<t, k1>>>(
+	get<k1 extends arkKeyOf<t>>(k1: k1 | type.cast<k1>): Root<getArkKey<t, k1>, $>
+	get<k1 extends arkKeyOf<t>, k2 extends arkKeyOf<getArkKey<t, k1>>>(
 		k1: k1 | type.cast<k1>,
 		k2: k2 | type.cast<k2>
-	): Root<indexInto<indexInto<t, k1>, k2>, $>
+	): Root<getArkKey<getArkKey<t, k1>, k2>, $>
 	get<
-		k1 extends indexOf<t>,
-		k2 extends indexOf<indexInto<t, k1>>,
-		k3 extends indexOf<indexInto<indexInto<t, k1>, k2>>
+		k1 extends arkKeyOf<t>,
+		k2 extends arkKeyOf<getArkKey<t, k1>>,
+		k3 extends arkKeyOf<getArkKey<getArkKey<t, k1>, k2>>
 	>(
 		k1: k1 | type.cast<k1>,
 		k2: k2 | type.cast<k2>,
 		k3: k3 | type.cast<k3>
-	): Root<indexInto<indexInto<indexInto<t, k1>, k2>, k3>, $>
+	): Root<getArkKey<getArkKey<getArkKey<t, k1>, k2>, k3>, $>
 
 	intersect<r extends Root>(r: r): Root<inferIntersection<t, r["t"]>> | Disjoint
 
