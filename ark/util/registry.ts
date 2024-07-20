@@ -1,13 +1,23 @@
 import { domainOf } from "./domain.js"
 import { throwInternalError } from "./errors.js"
 import { objectKindOf } from "./objectKinds.js"
-import packageJson from "./package.json"
 import type { PartialRecord } from "./records.js"
 
-export type InitialRegistryContents = {
-	version: string
-	filename: string
+// Eventually we can just import from package.json in the source itself
+// but for now, import assertions are too unstable and it wouldn't support
+// recent node versions (https://nodejs.org/api/esm.html#json-modules).
+
+// For now, we assert this matches the package.json version via a unit test.
+export const arkUtilVersion = "0.1.0"
+
+export const initialRegistryContents = {
+	version: arkUtilVersion,
+	filename: import.meta.filename
 }
+
+export type InitialRegistryContents = typeof initialRegistryContents
+
+export const $ark: ArkEnv.registry = initialRegistryContents as never
 
 declare global {
 	export interface ArkEnv {
@@ -20,11 +30,6 @@ declare global {
 			ReturnType<ArkEnv["registry"]>
 	}
 }
-
-export const $ark: ArkEnv.registry = {
-	version: packageJson.version,
-	filename: import.meta.filename
-} satisfies InitialRegistryContents as never
 
 const namesByResolution = new WeakMap<object | symbol, string>()
 const nameCounts: Record<string, number | undefined> = {}
