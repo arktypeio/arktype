@@ -63,7 +63,7 @@ export const minLengthImplementation: nodeImplementationOf<MinLengthDeclaration>
 	})
 
 export class MinLengthNode extends BaseRange<MinLengthDeclaration> {
-	readonly impliedBasis: BaseRoot = $ark.intrinsic.lengthBoundable
+	readonly impliedBasis: BaseRoot = $ark.intrinsic.lengthBoundable.internal
 
 	traverseAllows: TraverseAllows<LengthBoundableData> =
 		this.exclusive ?

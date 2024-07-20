@@ -1,13 +1,10 @@
 import { $ark, liftArray, type conform, type Hkt, type Key } from "@ark/util"
 import type { Out } from "arktype"
 import type { SchemaModule } from "../module.js"
-import type { Root } from "../roots/root.js"
 import { generic, schemaScope, type RootScope } from "../scope.js"
 
-const propKey: Root<Key> = $ark.intrinsic.propertyKey as never
-
 class ArkRecord extends generic(
-	["K", propKey],
+	["K", $ark.intrinsic.propertyKey],
 	"V"
 )(args => ({
 	domain: "object",
@@ -21,10 +18,17 @@ class ArkRecord extends generic(
 	) => Record<(typeof args)[0], (typeof args)[1]>
 }
 
-class ArkPick extends generic("T", ["K", propKey])(args => args.T) {
-	declare hkt: (args: conform<this[Hkt.args], [unknown, Key]>) => {
-		[k in (typeof args)[1]]: (typeof args)[0][k & keyof (typeof args)[0]]
-	} & unknown
+class ArkPick extends generic(
+	["T", $ark.intrinsic.object],
+	["K", $ark.intrinsic.propertyKey]
+)(args => args.T.pick(args.K as never)) {
+	declare hkt: (
+		args: conform<this[Hkt.args], [object, Key]>
+	) => typeof args extends [infer T, infer K extends Key] ?
+		{
+			[k in K]: T[k & keyof T]
+		} & unknown
+	:	never
 }
 
 class ArkLiftArray extends generic("T")(args =>

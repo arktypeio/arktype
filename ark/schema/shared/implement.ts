@@ -6,8 +6,8 @@ import {
 	type Json,
 	type JsonData,
 	type PartialRecord,
+	type arrayIndexOf,
 	type entryOf,
-	type indexOf,
 	type keySet,
 	type keySetOf,
 	type listable,
@@ -194,7 +194,7 @@ export type UnknownIntersectionMap = {
 export type UnknownIntersectionResult = BaseNode | Disjoint | null
 
 type PrecedenceByKind = {
-	[i in indexOf<OrderedNodeKinds> as OrderedNodeKinds[i]]: i
+	[i in arrayIndexOf<OrderedNodeKinds> as OrderedNodeKinds[i]]: i
 }
 
 export const precedenceByKind: PrecedenceByKind = flatMorph(

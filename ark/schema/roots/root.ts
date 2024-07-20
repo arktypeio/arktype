@@ -1,4 +1,5 @@
 import type {
+	ConstraintKind,
 	DivisorSchema,
 	ExactLengthSchema,
 	ExclusiveDateRangeSchema,
@@ -8,22 +9,25 @@ import type {
 	InclusiveNumericRangeSchema,
 	LimitSchemaValue,
 	PatternSchema,
+	TypeIndexer,
 	TypeKey,
-	TypePath,
-	UnknownRangeSchema
+	UnknownRangeSchema,
+	type,
+	writeInvalidOperandMessage
 } from "@ark/schema"
 import {
 	$ark,
 	cached,
 	includes,
 	omit,
-	printable,
 	throwParseError,
 	type Callable,
+	type ErrorMessage,
 	type Json,
-	type Key,
+	type NonEmptyList,
 	type array,
-	type conform
+	type conform,
+	type typeToString
 } from "@ark/util"
 import type {
 	constrain,
@@ -36,7 +40,12 @@ import {
 	throwInvalidOperandError,
 	type PrimitiveConstraintKind
 } from "../constraint.js"
-import type { Node, NodeSchema, reducibleKindOf } from "../kinds.js"
+import type {
+	Node,
+	NodeSchema,
+	Prerequisite,
+	reducibleKindOf
+} from "../kinds.js"
 import { BaseNode, appendUniqueFlatRefs } from "../node.js"
 import type { Predicate } from "../predicate.js"
 import type { RootScope } from "../scope.js"
@@ -57,12 +66,14 @@ import {
 import {
 	arkKind,
 	hasArkKind,
-	type inferred,
+	inferred,
 	type internalImplementationOf
 } from "../shared/utils.js"
 import type {
 	StructureInner,
-	UndeclaredKeyBehavior
+	UndeclaredKeyBehavior,
+	indexInto,
+	indexOf
 } from "../structure/structure.js"
 import type { constraintKindOf } from "./intersection.js"
 import type { Morph, MorphNode, inferMorphOut, inferPipes } from "./morph.js"
@@ -91,6 +102,7 @@ export abstract class BaseRoot<
 	// don't require intersect so we can make it protected to ensure it is not called internally
 	implements internalImplementationOf<Root, TypeOnlyRootKey | "intersect">
 {
+	[inferred]?: unknown
 	readonly branches: readonly Node<UnionChildKind>[] =
 		this.hasKind("union") ? this.inner.branches : [this as never]
 
@@ -135,21 +147,52 @@ export abstract class BaseRoot<
 		return result instanceof ArkErrors ? result.throw() : result
 	}
 
-	get(...[key, ...tail]: TypePath): BaseRoot {
-		if (key === undefined) return this
-		if (hasArkKind(key, "root") && key.hasKind("unit")) key = key.unit as Key
-		if (typeof key === "number") key = `${key}`
+	pick(...keys: array<TypeKey>): BaseRoot {
+		if (this.hasKind("union"))
+			return this.$.schema(this.branches.map(branch => branch.pick(...keys)))
+
+		if (this.hasKind("morph")) {
+			return this.$.node("morph", {
+				...this.inner,
+				in: this.in.pick(...keys)
+			})
+		}
+
+		if (this.hasKind("intersection")) {
+			if (!this.inner.structure) {
+				throwParseError(
+					writeNonStructuralOperandMessage("Pick", this.expression)
+				)
+			}
+
+			return this.$.node("intersection", {
+				...this.inner,
+				structure: this.inner.structure.pick(...keys)
+			})
+		}
+
+		return throwParseError(
+			writeNonStructuralOperandMessage("Pick", this.expression)
+		)
+	}
+
+	get(...path: array<TypeIndexer>): BaseRoot {
+		if (path[0] === undefined) return this
 
 		if (this.hasKind("union")) {
 			return this.branches.reduce(
-				(acc, b) => acc.or(b.get(key, ...tail)),
-				$ark.intrinsic.never
+				(acc, b) => acc.or(b.get(...path)),
+				$ark.intrinsic.never.internal
 			)
 		}
 
+		const branch = this as {} as UnionChildNode
+
 		return (
-			(this as {} as UnionChildNode).structure?.get(key, ...tail) ??
-			throwParseError(writeNonStructuralIndexAccessMessage(key))
+			branch.structure?.get(...(path as NonEmptyList<TypeIndexer>)) ??
+			throwParseError(
+				writeNonStructuralOperandMessage("Index access", this.expression)
+			)
 		)
 	}
 
@@ -191,10 +234,6 @@ export abstract class BaseRoot<
 
 	subsumes(r: UnknownRoot): boolean {
 		return r.extends(this as never)
-	}
-
-	includes(r: unknown): boolean {
-		return hasArkKind(r, "root") ? r.extends(this) : this.allows(r)
 	}
 
 	configure(configOrDescription: BaseMeta | string): this {
@@ -461,6 +500,26 @@ declare class _Root<t = unknown, $ = any> extends InnerRoot<t, $> {
 
 	keyof(): Root<keyof this["inferIn"], $>
 
+	pick<const key extends indexOf<t> = never>(
+		this: validateStructuralOperand<"Pick", this>,
+		...keys: array<key | type.cast<key>>
+	): Root<{ [k in key]: indexInto<t, k> }, $>
+
+	get<k1 extends indexOf<t>>(k1: k1 | type.cast<k1>): Root<indexInto<t, k1>, $>
+	get<k1 extends indexOf<t>, k2 extends indexOf<indexInto<t, k1>>>(
+		k1: k1 | type.cast<k1>,
+		k2: k2 | type.cast<k2>
+	): Root<indexInto<indexInto<t, k1>, k2>, $>
+	get<
+		k1 extends indexOf<t>,
+		k2 extends indexOf<indexInto<t, k1>>,
+		k3 extends indexOf<indexInto<indexInto<t, k1>, k2>>
+	>(
+		k1: k1 | type.cast<k1>,
+		k2: k2 | type.cast<k2>,
+		k3: k3 | type.cast<k3>
+	): Root<indexInto<indexInto<indexInto<t, k1>, k2>, k3>, $>
+
 	intersect<r extends Root>(r: r): Root<inferIntersection<t, r["t"]>> | Disjoint
 
 	and<r extends Root>(r: r): Root<inferIntersection<t, r["t"]>>
@@ -546,8 +605,12 @@ declare class _Root<t = unknown, $ = any> extends InnerRoot<t, $> {
 	overlaps(r: Root): boolean
 }
 
-export const writeNonStructuralIndexAccessMessage = (key: TypeKey) =>
-	`${printable(key)} cannot be accessed on ${this}, which has no structural keys`
+export const isSubtypeOrTermOf = (base: unknown, check: unknown) =>
+	hasArkKind(base, "root") ?
+		hasArkKind(check, "root") ? base.subsumes(check)
+		:	base.allows(check)
+	: hasArkKind(check, "root") ? check.hasUnit(base)
+	: base === check
 
 export interface Root<
 	/** @ts-expect-error allow instantiation assignment to the base type */
@@ -574,3 +637,35 @@ export type schemaKindRightOf<kind extends RootKind> = Extract<
 export type schemaKindOrRightOf<kind extends RootKind> =
 	| kind
 	| schemaKindRightOf<kind>
+
+export type validateStructuralOperand<
+	name extends StructuralOperationName,
+	t extends { inferIn: unknown }
+> =
+	t["inferIn"] extends object ? t
+	:	ErrorMessage<
+			writeNonStructuralOperandMessage<name, typeToString<t["inferIn"]>>
+		>
+
+export type validateChainedConstraint<
+	kind extends ConstraintKind,
+	t extends { inferIn: unknown }
+> =
+	t["inferIn"] extends Prerequisite<kind> ? t
+	:	ErrorMessage<writeInvalidOperandMessage<kind, Root<t["inferIn"]>>>
+
+export type StructuralOperationName = "Pick" | "Omit" | "Index access"
+
+export type writeNonStructuralOperandMessage<
+	operation extends StructuralOperationName,
+	operand extends string
+> = `${operation} operand must be a structured object (was ${operand})`
+
+export const writeNonStructuralOperandMessage = <
+	operation extends StructuralOperationName,
+	operand extends string
+>(
+	operation: operation,
+	operand: operand
+): writeNonStructuralOperandMessage<operation, operand> =>
+	`${operation} operand must be a structured object (was ${operand})`

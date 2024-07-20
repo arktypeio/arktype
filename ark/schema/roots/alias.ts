@@ -101,4 +101,4 @@ export const aliasImplementation: nodeImplementationOf<AliasDeclaration> =
 	})
 
 const neverIfDisjoint = (result: BaseRoot | Disjoint): BaseRoot =>
-	result instanceof Disjoint ? $ark.intrinsic.never : result
+	result instanceof Disjoint ? $ark.intrinsic.never.internal : result

@@ -61,7 +61,7 @@ export const maxImplementation: nodeImplementationOf<MaxDeclaration> =
 	})
 
 export class MaxNode extends BaseRange<MaxDeclaration> {
-	impliedBasis: BaseRoot = $ark.intrinsic.number
+	impliedBasis: BaseRoot = $ark.intrinsic.number.internal
 
 	traverseAllows: TraverseAllows<number> =
 		this.exclusive ? data => data < this.rule : data => data <= this.rule

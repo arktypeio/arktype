@@ -99,7 +99,7 @@ export type initOf<t extends array> =
 
 export type numericStringKeyOf<t extends array> = Extract<keyof t, `${number}`>
 
-export type indexOf<a extends array> =
+export type arrayIndexOf<a extends array> =
 	keyof a extends infer k ? parseNonNegativeInteger<k & string> : never
 
 export type liftArray<t> =

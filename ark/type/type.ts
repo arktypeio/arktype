@@ -3,7 +3,6 @@ import {
 	BaseRoot,
 	GenericRoot,
 	type BaseMeta,
-	type ConstraintKind,
 	type Disjoint,
 	type DivisorSchema,
 	type ExactLengthSchema,
@@ -18,9 +17,7 @@ import {
 	type Out,
 	type PatternSchema,
 	type Predicate,
-	type Prerequisite,
 	type PrimitiveConstraintKind,
-	type Root,
 	type constrain,
 	type constraintKindOf,
 	type distillIn,
@@ -32,15 +29,10 @@ import {
 	type inferMorphOut,
 	type inferPipes,
 	type inferPredicate,
-	type writeInvalidOperandMessage
+	type validateChainedConstraint,
+	type validateStructuralOperand
 } from "@ark/schema"
-import {
-	Callable,
-	type Constructor,
-	type ErrorMessage,
-	type array,
-	type conform
-} from "@ark/util"
+import { Callable, type Constructor, type array, type conform } from "@ark/util"
 import type { type } from "./ark.js"
 import {
 	parseGenericParams,
@@ -156,13 +148,6 @@ export type DeclarationParser<$> = <preinferred>() => {
 	) => Type<preinferred, $>
 }
 
-type validateChainedConstraint<
-	kind extends ConstraintKind,
-	t extends { inferIn: unknown }
-> =
-	t["inferIn"] extends Prerequisite<kind> ? t
-	:	ErrorMessage<writeInvalidOperandMessage<kind, Root<t["inferIn"]>>>
-
 // this is declared as a class internally so we can ensure all "abstract"
 // methods of BaseRoot are overridden, but we end up exporting it as an interface
 // to ensure it is not accessed as a runtime value
@@ -264,6 +249,11 @@ declare class _Type<t = unknown, $ = any> extends InnerRoot<t, $> {
 		other: validateTypeRoot<def, $>
 	): this is Type<inferTypeRoot<def>, $>
 	overlaps<def>(r: validateTypeRoot<def, $>): boolean
+
+	pick<const key extends indexOf<t> = never>(
+		this: validateStructuralOperand<"Pick", this>,
+		...keys: array<key | type.cast<key>>
+	): Type<{ [k in key]: indexInto<t, k> }, $>
 
 	get<k1 extends indexOf<t>>(k1: k1 | type.cast<k1>): Type<indexInto<t, k1>, $>
 	get<k1 extends indexOf<t>, k2 extends indexOf<indexInto<t, k1>>>(

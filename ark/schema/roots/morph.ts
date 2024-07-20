@@ -164,7 +164,7 @@ export class MorphNode extends BaseRoot<MorphDeclaration> {
 	}
 
 	override get out(): BaseRoot {
-		return this.validatedOut ?? $ark.intrinsic.unknown
+		return this.validatedOut ?? $ark.intrinsic.unknown.internal
 	}
 
 	/** Check if the morphs of r are equal to those of this node */

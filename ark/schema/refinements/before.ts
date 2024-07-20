@@ -78,5 +78,5 @@ export class BeforeNode extends BaseRange<BeforeDeclaration> {
 	traverseAllows: TraverseAllows<Date> =
 		this.exclusive ? data => data < this.rule : data => data <= this.rule
 
-	impliedBasis: BaseRoot = $ark.intrinsic.Date
+	impliedBasis: BaseRoot = $ark.intrinsic.Date.internal
 }

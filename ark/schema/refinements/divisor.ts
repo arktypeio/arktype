@@ -56,7 +56,7 @@ export class DivisorNode extends RawPrimitiveConstraint<DivisorDeclaration> {
 
 	readonly compiledCondition: string = `data % ${this.rule} === 0`
 	readonly compiledNegation: string = `data % ${this.rule} !== 0`
-	readonly impliedBasis: BaseRoot = $ark.intrinsic.number
+	readonly impliedBasis: BaseRoot = $ark.intrinsic.number.internal
 	readonly expression: string = `% ${this.rule}`
 }
 

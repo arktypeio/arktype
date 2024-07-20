@@ -91,9 +91,7 @@ type toRawScope<$> = RawRootScope<{
 
 // these allow builtin types to be accessed during parsing without cyclic imports
 // they are populated as each scope is parsed with `intrinsic` in its config
-export type IntrinsicKeywords = {
-	[alias in keyof tsKeywords | keyof jsObjects | keyof internal]: BaseRoot
-}
+export interface IntrinsicKeywords extends tsKeywords, jsObjects, internal {}
 
 export type RawResolution = BaseRoot | GenericRoot | RawRootModule
 

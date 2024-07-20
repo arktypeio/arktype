@@ -101,7 +101,7 @@ export abstract class BaseProp<
 > {
 	required: boolean = this.kind === "required"
 	optional: boolean = this.kind === "optional"
-	impliedBasis: BaseRoot = $ark.intrinsic.object
+	impliedBasis: BaseRoot = $ark.intrinsic.object.internal
 	serializedKey: string = compileSerializedValue(this.key)
 	compiledKey: string =
 		typeof this.key === "string" ? this.key : this.serializedKey

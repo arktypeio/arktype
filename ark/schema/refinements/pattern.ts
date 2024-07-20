@@ -63,5 +63,5 @@ export class PatternNode extends RawPrimitiveConstraint<PatternDeclaration> {
 
 	readonly compiledCondition: string = `${this.expression}.test(data)`
 	readonly compiledNegation: string = `!${this.compiledCondition}`
-	readonly impliedBasis: BaseRoot = $ark.intrinsic.string
+	readonly impliedBasis: BaseRoot = $ark.intrinsic.string.internal
 }

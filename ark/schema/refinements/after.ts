@@ -68,7 +68,7 @@ export const afterImplementation: nodeImplementationOf<AfterDeclaration> =
 	})
 
 export class AfterNode extends BaseRange<AfterDeclaration> {
-	impliedBasis: BaseRoot = $ark.intrinsic.Date
+	impliedBasis: BaseRoot = $ark.intrinsic.Date.internal
 
 	traverseAllows: TraverseAllows<Date> =
 		this.exclusive ? data => data > this.rule : data => data >= this.rule

@@ -7,6 +7,7 @@ import {
 	spliterate,
 	throwParseError,
 	type array,
+	type join,
 	type Key
 } from "@ark/util"
 import {
@@ -17,8 +18,8 @@ import {
 } from "../constraint.js"
 import type { NonNegativeIntegerString } from "../keywords/internal.js"
 import type { MutableInner } from "../kinds.js"
-import type { TypeKey, TypePath } from "../node.js"
-import type { BaseRoot } from "../roots/root.js"
+import type { TypeIndexer, TypeKey } from "../node.js"
+import { isSubtypeOrTermOf, type BaseRoot } from "../roots/root.js"
 import type { RawRootScope } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
@@ -81,7 +82,7 @@ export interface StructureDeclaration
 	}> {}
 
 export class StructureNode extends BaseConstraint<StructureDeclaration> {
-	impliedBasis: BaseRoot = $ark.intrinsic.object
+	impliedBasis: BaseRoot = $ark.intrinsic.object.internal
 	impliedSiblings = this.children.flatMap(
 		n => (n.impliedSiblings as BaseConstraint[]) ?? []
 	)
@@ -122,11 +123,43 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 		return this.$.node("union", branches)
 	}
 
-	get(key: TypeKey, ...tail: TypePath): BaseRoot {
+	assertHasKeys(keys: array<TypeKey>) {
+		const invalidKeys = keys.filter(k => isSubtypeOrTermOf(k, this.keyof()))
+
+		if (invalidKeys.length) {
+			return throwParseError(
+				writeInvalidKeysMessage(
+					this.expression,
+					invalidKeys.map(k =>
+						hasArkKind(k, "root") ? k.expression : printable(k)
+					)
+				)
+			)
+		}
+	}
+
+	pick(...keys: array<TypeKey>) {
+		const inner: MutableInner<"structure"> = {}
+
+		this.assertHasKeys(keys)
+
+		const filterPicked = (k: unknown) =>
+			keys.some(picked => isSubtypeOrTermOf(picked, k))
+
+		if (this.required) inner.required = this.required.filter(filterPicked)
+
+		if (this.optional) inner.optional = this.optional.filter(filterPicked)
+
+		if (this.index) inner.index = this.index.filter(filterPicked)
+
+		return this.$.node("structure", inner, { prereduced: true })
+	}
+
+	get(indexer: TypeIndexer, ...path: array<TypeIndexer>): BaseRoot {
 		let value: BaseRoot | undefined
 		let required = false
 
-		if (hasArkKind(key, "root") && key.hasKind("unit")) key = key.unit as never
+		const key = indexerToKey(indexer)
 
 		if (
 			(typeof key === "string" || typeof key === "symbol") &&
@@ -137,12 +170,12 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 		}
 
 		this.index?.forEach(n => {
-			if (n.signature.includes(key)) value = value?.and(n.value) ?? n.value
+			if (isSubtypeOrTermOf(n, key)) value = value?.and(n.value) ?? n.value
 		})
 
 		if (
 			this.sequence &&
-			$ark.intrinsic.nonNegativeIntegerString.includes(key)
+			isSubtypeOrTermOf($ark.intrinsic.nonNegativeIntegerString, key)
 		) {
 			if (hasArkKind(key, "root")) {
 				if (this.sequence.variadic)
@@ -181,7 +214,7 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 			return throwParseError(writeBadKeyAccessMessage(key, this.expression))
 		}
 
-		const result = value.get(...tail)
+		const result = value.get(...path)
 		return required ? result : result.or($ark.intrinsic.undefined)
 	}
 
@@ -357,6 +390,13 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 
 		return js
 	}
+}
+
+const indexerToKey = (indexable: TypeIndexer): TypeKey => {
+	if (hasArkKind(indexable, "root") && indexable.hasKind("unit"))
+		indexable = indexable.unit as Key
+	if (typeof indexable === "number") indexable = `${indexable}`
+	return indexable
 }
 
 const omitFromInner = (
@@ -588,3 +628,20 @@ export type indexInto<o, k extends indexOf<o>> = o[Extract<
 	k extends NonNegativeIntegerString ? number : k,
 	keyof o
 >]
+
+export const writeInvalidKeysMessage = <
+	o extends string,
+	keys extends array<string>
+>(
+	o: o,
+	keys: keys
+) =>
+	`Key${keys.length === 1 ? "" : "s"} ${keys.join(", ")} ${keys.length === 1 ? "does" : "do"} not exist on ${o}` as writeInvalidKeysMessage<
+		o,
+		keys
+	>
+
+export type writeInvalidKeysMessage<
+	o extends string,
+	keys extends array<string>
+> = `Key${keys["length"] extends 1 ? "" : "s"} ${join<keys, ", ">} ${keys["length"] extends 1 ? "does" : "do"} not exist on ${o}`
