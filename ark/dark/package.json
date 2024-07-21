@@ -57,6 +57,9 @@
 			}
 		],
 		"configurationDefaults": {
+			"editor.quickSuggestions": {
+				"strings": "on"
+			},
 			"errorLens.followCursor": "closestProblem",
 			"errorLens.delay": 0,
 			"errorLens.editorHoverPartsEnabled": {

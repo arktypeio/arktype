@@ -1,10 +1,10 @@
 import { attest, contextualize } from "@ark/attest"
-import { type Root, schema } from "@ark/schema"
+import { type SchemaRoot, schema } from "@ark/schema"
 
 contextualize(() => {
 	it("single constraint", () => {
 		const t = schema({ domain: "string", pattern: ".*" })
-		attest<Root<string>>(t)
+		attest<SchemaRoot<string>>(t)
 		attest(t.json).snap({ domain: "string", pattern: [".*"] })
 	})
 
@@ -19,7 +19,7 @@ contextualize(() => {
 			divisor: 5
 		})
 		const result = l.and(r)
-		attest<Root<number>>(result)
+		attest<SchemaRoot<number>>(result)
 		attest(result.json).snap({
 			domain: "number",
 			divisor: 15,

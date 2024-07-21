@@ -11,7 +11,7 @@ import {
 } from "@ark/util"
 import type { inferRoot } from "./inference.js"
 import type { RootSchema } from "./kinds.js"
-import type { Root, UnknownRoot } from "./roots/root.js"
+import type { SchemaRoot, UnknownRoot } from "./roots/root.js"
 import type { BaseScope, InternalBaseScope } from "./scope.js"
 import { arkKind } from "./shared/utils.js"
 
@@ -70,10 +70,12 @@ export type GenericRootInstantiator<
 	$
 > = <args extends instantiateConstraintsOf<params>>(
 	...args: args
-) => Root<inferRoot<def, $ & bindGenericNodeInstantiation<params, $, args>>>
+) => SchemaRoot<
+	inferRoot<def, $ & bindGenericNodeInstantiation<params, $, args>>
+>
 
 type instantiateConstraintsOf<params extends array<GenericParamAst>> = {
-	[i in keyof params]: Root<params[i][1]>
+	[i in keyof params]: SchemaRoot<params[i][1]>
 }
 
 export type GenericParam<
@@ -110,7 +112,7 @@ export interface GenericProps<
 export type GenericArgResolutions<
 	params extends array<GenericParamAst> = array<GenericParamAst>
 > = {
-	[i in keyof params as params[i & `${number}`][0]]: Root<
+	[i in keyof params as params[i & `${number}`][0]]: SchemaRoot<
 		params[i & `${number}`][1]
 	>
 }
@@ -207,7 +209,7 @@ export class GenericRoot<
 	}
 
 	@cached
-	get baseInstantiation(): Root {
+	get baseInstantiation(): SchemaRoot {
 		return this(...(this.constraints as never))
 	}
 
@@ -239,7 +241,7 @@ export type GenericHktSchemaParser<$ = {}> = <
 export type GenericHktRootSubclass<
 	params extends array<GenericParamAst>,
 	$
-> = abstract new () => GenericHktRoot<genericParamSchemasToAst<params, $>, $, $>
+> = abstract new () => GenericHktRoot<params, $, $>
 
 // convenient for AST display without including default params
 interface Hkt extends Hkt.Kind {}

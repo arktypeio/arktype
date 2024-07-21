@@ -3,7 +3,7 @@ import {
 	InternalPrimitiveConstraint,
 	writeInvalidOperandMessage
 } from "../constraint.js"
-import type { BaseRoot, Root } from "../roots/root.js"
+import type { BaseRoot, SchemaRoot } from "../roots/root.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import {
 	implementNode,
@@ -60,12 +60,12 @@ export class DivisorNode extends InternalPrimitiveConstraint<DivisorDeclaration>
 	readonly expression: string = `% ${this.rule}`
 }
 
-export const writeIndivisibleMessage = <node extends Root>(
+export const writeIndivisibleMessage = <node extends SchemaRoot>(
 	t: node
 ): writeIndivisibleMessage<node> =>
 	writeInvalidOperandMessage("divisor", $ark.intrinsic.number as never, t)
 
-export type writeIndivisibleMessage<node extends Root> =
+export type writeIndivisibleMessage<node extends SchemaRoot> =
 	writeInvalidOperandMessage<"divisor", node>
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm

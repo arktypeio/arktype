@@ -67,9 +67,13 @@ export type GenericInstantiator<
 			args$
 		>
 	}
-) => Type<inferDefinition<def, $, bindGenericArgs<params, args$, args>>, $>
+) => Type<
+	def extends Hkt.Kind ?
+		Hkt.apply<def, { [i in keyof args]: inferTypeRoot<args[i], args$> }>
+	:	inferDefinition<def, $, bindGenericArgs<params, args$, args>>,
+	$
+>
 
-// TODO: Fix external reference (i.e. if this is attached to a scope, then args are defined using it)
 type bindGenericArgs<params extends array<GenericParamAst>, $, args> = {
 	[i in keyof params & `${number}` as params[i][0]]: inferTypeRoot<
 		args[i & keyof args],
@@ -237,10 +241,17 @@ export type GenericHktParser<$ = {}> = <
 export type GenericHktSubclass<
 	params extends array<GenericParamAst>,
 	$
-> = abstract new () => GenericHkt<genericParamSchemasToAst<params, $>, $, $>
+> = abstract new () => GenericHkt<
+	genericParamSchemasToAst<params, $>,
+	Hkt.Kind,
+	$,
+	$
+>
 
-export interface GenericHkt<params extends array<GenericParamAst>, $, args$>
-	extends Generic<params, unknown, $, args$>,
-		Hkt.Kind {
-	instantiateDef: LazyGenericBody<params>
-}
+export interface GenericHkt<
+	params extends array<GenericParamAst>,
+	hkt extends Hkt.Kind,
+	$,
+	args$
+> extends Generic<params, hkt, $, args$>,
+		Hkt.Kind {}

@@ -164,7 +164,6 @@ contextualize(() => {
 
 			attest<typeof expected.t>(t.t)
 			attest(t.expression).equals(expected.expression)
-
 			// @ts-expect-error
 			attest(() => positiveToInteger("number"))
 				.throws(

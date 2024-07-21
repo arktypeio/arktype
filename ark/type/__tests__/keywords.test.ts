@@ -1,8 +1,11 @@
 import { attest, contextualize } from "@ark/attest"
 import {
 	internalSchema,
+	keywordNodes,
+	writeIndivisibleMessage,
 	writeInvalidKeysMessage,
 	writeNonStructuralOperandMessage,
+	writeUnsatisfiedParameterConstraintMessage,
 	type Out,
 	type string
 } from "@ark/schema"
@@ -285,12 +288,40 @@ tags[2] must be a string (was object)`)
 	})
 
 	describe("generics", () => {
-		it("Record", () => {
-			const expected = type({ "[string]": "number" })
+		describe("record", () => {
+			it("parsed", () => {
+				const expected = type({ "[string]": "number" })
 
-			const expression = type("Record<string, number>")
-			attest(expression.json).equals(expected.json)
-			attest<typeof expected.t>(expression.t)
+				const expression = type("Record<string, number>")
+				attest(expression.json).equals(expected.json)
+				attest<typeof expected.t>(expression.t)
+			})
+
+			it("invoked", () => {
+				const expected = type({ "[string]": "number" })
+
+				const t = ark.Record("string", "number")
+				attest(t.json).equals(expected.json)
+				attest<typeof expected.t>(t.t)
+			})
+
+			it("invoked validation error", () => {
+				// @ts-expect-error
+				attest(() => ark.Record("string", "string % 2")).throwsAndHasTypeError(
+					writeIndivisibleMessage(keywordNodes.string)
+				)
+			})
+
+			it("invoked constraint error", () => {
+				// @ts-expect-error
+				attest(() => ark.Record("boolean", "number")).throwsAndHasTypeError(
+					writeUnsatisfiedParameterConstraintMessage(
+						"K",
+						"string | symbol",
+						"boolean"
+					)
+				)
+			})
 		})
 
 		describe("pick", () => {

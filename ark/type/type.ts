@@ -10,7 +10,6 @@ import {
 	type ExclusiveNumericRangeSchema,
 	type InclusiveDateRangeSchema,
 	type InclusiveNumericRangeSchema,
-	type InnerRoot,
 	type Morph,
 	type MorphAst,
 	type NodeSchema,
@@ -18,6 +17,7 @@ import {
 	type PatternSchema,
 	type Predicate,
 	type PrimitiveConstraintKind,
+	type Root,
 	type arkKeyOf,
 	type constrain,
 	type constraintKindOf,
@@ -159,7 +159,7 @@ export type DeclarationParser<$> = <preinferred>() => {
 // this is declared as a class internally so we can ensure all "abstract"
 // methods of BaseRoot are overridden, but we end up exporting it as an interface
 // to ensure it is not accessed as a runtime value
-declare class _Type<t = unknown, $ = any> extends InnerRoot<t, $> {
+declare class _Type<t = unknown, $ = any> extends Root<t, $> {
 	$: Scope<$>
 
 	as<t = unset>(...args: validateChainedAsArgs<t>): Type<t, $>
