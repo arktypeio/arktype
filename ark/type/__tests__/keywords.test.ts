@@ -3,7 +3,6 @@ import {
 	internalSchema,
 	writeInvalidKeysMessage,
 	writeNonStructuralOperandMessage,
-	type Ark,
 	type Out,
 	type string
 } from "@ark/schema"
@@ -350,6 +349,27 @@ tags[2] must be a string (was object)`)
 				attest(() => type("string").pick("length")).throwsAndHasTypeError(
 					writeNonStructuralOperandMessage("Pick", "string")
 				)
+			})
+		})
+
+		describe("liftArray", () => {
+			it("parsed", () => {
+				const liftNumberArray = type("liftArray<number>")
+
+				attest<(In: number | number[]) => Out<number[]>>(liftNumberArray.t)
+
+				attest(liftNumberArray(5)).equals([5])
+				attest(liftNumberArray([5])).equals([5])
+				attest(liftNumberArray("five").toString()).snap(
+					"must be a number or an array (was string)"
+				)
+				attest(liftNumberArray(["five"]).toString()).snap(
+					"must be a number (was object) or [0] must be a number (was string)"
+				)
+			})
+
+			it("invoked", () => {
+				ark.liftArray({ data: "number" })
 			})
 		})
 	})

@@ -24,7 +24,7 @@ import {
 import {
 	GenericRoot,
 	LazyGenericBody,
-	type GenericHktRootParser,
+	type GenericHktSchemaParser,
 	type GenericParamDef
 } from "./generic.js"
 import type { inferRoot, validateRoot } from "./inference.js"
@@ -197,7 +197,9 @@ export abstract class InternalBaseScope<
 	}
 
 	@bound
-	generic(...params: array<GenericParamDef>): ReturnType<GenericHktRootParser> {
+	generic(
+		...params: array<GenericParamDef>
+	): ReturnType<GenericHktSchemaParser> {
 		const $: BaseScope = this as never
 		return (instantiateDef): any =>
 			class GenericHktSubclass extends GenericRoot {
@@ -558,17 +560,17 @@ export class InternalSchemaScope<
 	}
 }
 
-export interface SchemaScope<$ = any> extends BaseScope<$> {
+export interface SchemaScope<$ = {}> extends BaseScope<$> {
 	defineRoot: this["defineSchema"]
 	parseRoot: this["schema"]
-	generic: GenericHktRootParser<$>
+	generic: GenericHktSchemaParser<$>
 }
 
-export const SchemaScope: new <$ = any>(
+export const SchemaScope: new <$ = {}>(
 	...args: ConstructorParameters<typeof InternalBaseScope>
 ) => SchemaScope<$> = InternalSchemaScope as never
 
-export const root: SchemaScope<{}> = new SchemaScope({})
+export const root: SchemaScope = new SchemaScope({})
 
 export const schema: SchemaScope["schema"] = root.schema
 export const node: SchemaScope["node"] = root.node
