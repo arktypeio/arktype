@@ -95,7 +95,7 @@ contextualize(() => {
 				a: "string"
 			})
 		).type.errors(
-			`Property 'b' is missing in type '{ a: "string"; }' but required in type '{ a: "string"; b: number; }'.`
+			`Property 'b' is missing in type '{ a: "string"; }' but required in type '{ b: number; a: "string"; }'.`
 		)
 	})
 

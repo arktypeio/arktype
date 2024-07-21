@@ -314,13 +314,17 @@ tags[2] must be a string (was object)`)
 
 			it("invoked constraint error", () => {
 				// @ts-expect-error
-				attest(() => ark.Record("boolean", "number")).throwsAndHasTypeError(
-					writeUnsatisfiedParameterConstraintMessage(
-						"K",
-						"string | symbol",
-						"boolean"
+				attest(() => ark.Record("boolean", "number"))
+					.throws(
+						writeUnsatisfiedParameterConstraintMessage(
+							"K",
+							"string | symbol",
+							"boolean"
+						)
 					)
-				)
+					.type.errors(
+						`'string' is not assignable to parameter of type 'Type<Key, {}>'`
+					)
 			})
 		})
 

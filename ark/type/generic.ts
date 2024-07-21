@@ -4,8 +4,7 @@ import type {
 	genericParamSchemasToAst,
 	GenericProps,
 	GenericRoot,
-	LazyGenericBody,
-	writeUnsatisfiedParameterConstraintMessage
+	LazyGenericBody
 } from "@ark/schema"
 import {
 	throwParseError,
@@ -16,7 +15,6 @@ import {
 	type ErrorMessage,
 	type Hkt,
 	type keyError,
-	type typeToString,
 	type WhiteSpaceToken
 } from "@ark/util"
 import type { inferDefinition } from "./parser/definition.js"
@@ -40,14 +38,7 @@ export type validateParameterString<s extends ParameterString, $> =
 	:	s
 
 export type validateGenericArg<arg, param extends GenericParamAst, $> =
-	inferTypeRoot<arg, $> extends param[1] ? arg
-	:	ErrorMessage<
-			writeUnsatisfiedParameterConstraintMessage<
-				param[0],
-				typeToString<param[1]>,
-				typeToString<inferTypeRoot<arg, $>>
-			>
-		>
+	inferTypeRoot<arg, $> extends param[1] ? arg : Type<param[1]>
 
 export type GenericInstantiator<
 	params extends array<GenericParamAst>,

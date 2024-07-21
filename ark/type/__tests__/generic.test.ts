@@ -174,7 +174,7 @@ contextualize(() => {
 					)
 				)
 				.type.errors(
-					"Argument of type 'string' is not assignable to parameter of type 'Root<moreThan<0>, any>'"
+					"Argument of type 'string' is not assignable to parameter of type 'Type<moreThan<0>, {}>'"
 				)
 		})
 
