@@ -92,5 +92,5 @@
 	"eslintConfig": {
 		"extends": "./ark/repo/.eslintrc.cjs"
 	},
-	"packageManager": "pnpm@9.5.0"
+	"packageManager": "pnpm@9.6.0"
 }
