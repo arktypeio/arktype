@@ -261,7 +261,7 @@ declare class _Type<t = unknown, $ = any> extends Root<t, $> {
 	overlaps<def>(r: validateTypeRoot<def, $>): boolean
 
 	pick<const key extends arkKeyOf<t> = never>(
-		this: validateStructuralOperand<"Pick", this>,
+		this: validateStructuralOperand<"pick", this>,
 		...keys: array<key | type.cast<key>>
 	): Type<
 		{

@@ -163,26 +163,40 @@ export abstract class BaseRoot<
 	}
 
 	pick(...keys: array<TypeKey>): BaseRoot {
-		if (this.hasKind("union"))
-			return this.$.schema(this.branches.map(branch => branch.pick(...keys)))
+		return this.filterKeys("pick", keys)
+	}
+
+	omit(...keys: array<TypeKey>): BaseRoot {
+		return this.filterKeys("omit", keys)
+	}
+
+	private filterKeys(
+		operation: "pick" | "omit",
+		keys: array<TypeKey>
+	): BaseRoot {
+		if (this.hasKind("union")) {
+			return this.$.schema(
+				this.branches.map(branch => branch[operation](...keys))
+			)
+		}
 
 		if (this.hasKind("morph")) {
 			return this.$.node("morph", {
 				...this.inner,
-				in: this.in.pick(...keys)
+				in: this.in[operation](...keys)
 			})
 		}
 
 		if (this.hasKind("intersection")) {
 			if (!this.inner.structure) {
 				throwParseError(
-					writeNonStructuralOperandMessage("Pick", this.expression)
+					writeNonStructuralOperandMessage(operation, this.expression)
 				)
 			}
 
 			return this.$.node("intersection", {
 				...this.inner,
-				structure: this.inner.structure.pick(...keys)
+				structure: this.inner.structure[operation](...keys)
 			})
 		}
 
@@ -191,7 +205,7 @@ export abstract class BaseRoot<
 			return $ark.intrinsic.object.internal.bindScope(this.$)
 
 		return throwParseError(
-			writeNonStructuralOperandMessage("Pick", this.expression)
+			writeNonStructuralOperandMessage(operation, this.expression)
 		)
 	}
 
@@ -210,7 +224,7 @@ export abstract class BaseRoot<
 		return (
 			branch.structure?.get(...(path as NonEmptyList<TypeIndexer>)) ??
 			throwParseError(
-				writeNonStructuralOperandMessage("Index access", this.expression)
+				writeNonStructuralOperandMessage("index access", this.expression)
 			)
 		)
 	}
@@ -527,7 +541,7 @@ declare class _SchemaRoot<t = unknown, $ = any> extends Root<t, $> {
 	keyof(): SchemaRoot<keyof this["inferIn"], $>
 
 	pick<const key extends arkKeyOf<t> = never>(
-		this: validateStructuralOperand<"Pick", this>,
+		this: validateStructuralOperand<"pick", this>,
 		...keys: array<key | InferredRoot<key>>
 	): SchemaRoot<{ [k in key]: getArkKey<t, k> }, $>
 
@@ -693,7 +707,7 @@ export type validateChainedConstraint<
 	t["inferIn"] extends Prerequisite<kind> ? t
 	:	ErrorMessage<writeInvalidOperandMessage<kind, SchemaRoot<t["inferIn"]>>>
 
-export type StructuralOperationName = "Pick" | "Omit" | "Index access"
+export type StructuralOperationName = "pick" | "omit" | "index access"
 
 export type writeNonStructuralOperandMessage<
 	operation extends StructuralOperationName,

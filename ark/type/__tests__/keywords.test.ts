@@ -382,7 +382,7 @@ tags[2] must be a string (was object)`)
 			it("non-structure", () => {
 				// @ts-expect-error
 				attest(() => type("string").pick("length")).throwsAndHasTypeError(
-					writeNonStructuralOperandMessage("Pick", "string")
+					writeNonStructuralOperandMessage("pick", "string")
 				)
 			})
 		})

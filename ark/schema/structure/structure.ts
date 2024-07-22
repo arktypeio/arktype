@@ -223,12 +223,12 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 		this.undeclared !== undefined || this.index !== undefined
 
 	omit(...keys: array<BaseRoot | Key>): StructureNode {
-		return this.$.node("structure", omitFromInner(this.inner, keys))
+		return this.$.node("structure", filterKeys(this.inner, "omit", keys))
 	}
 
 	merge(r: StructureNode): StructureNode {
 		const inner = makeRootAndArrayPropertiesMutable(
-			omitFromInner(this.inner, [r.keyof()])
+			filterKeys(this.inner, "omit", [r.keyof()])
 		)
 		if (r.required) inner.required = append(inner.required, r.required)
 		if (r.optional) inner.optional = append(inner.optional, r.optional)
@@ -400,16 +400,20 @@ const indexerToKey = (indexable: TypeIndexer): TypeKey => {
 	return indexable
 }
 
-const omitFromInner = (
+const filterKeys = (
 	inner: StructureInner,
+	operation: "pick" | "omit",
 	keys: array<BaseRoot | Key>
 ): StructureInner => {
 	const result = { ...inner }
 	keys.forEach(k => {
 		if (result.required) {
-			result.required = result.required.filter(b =>
-				hasArkKind(k, "root") ? !k.allows(b.key) : k !== b.key
+			const [picked, omitted] = spliterate(
+				result.required,
+				(b): b is RequiredNode =>
+					hasArkKind(k, "root") ? k.allows(b.key) : k === b.key
 			)
+			result.required = operation === "pick" ? picked : omitted
 		}
 		if (result.optional) {
 			result.optional = result.optional.filter(b =>
