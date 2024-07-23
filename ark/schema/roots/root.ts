@@ -504,6 +504,8 @@ export declare abstract class Root<t = unknown, $ = any> extends Callable<
 	abstract exclude(r: never): unknown
 	abstract extends(r: never): this is unknown
 	abstract overlaps(r: never): boolean
+	abstract pick(...keys: never): unknown
+	abstract omit(...keys: never): unknown
 	abstract array(): unknown
 	abstract pipe(morph: Morph): unknown
 
@@ -542,6 +544,11 @@ declare class _SchemaRoot<t = unknown, $ = any> extends Root<t, $> {
 
 	pick<const key extends arkKeyOf<t> = never>(
 		this: validateStructuralOperand<"pick", this>,
+		...keys: array<key | InferredRoot<key>>
+	): SchemaRoot<{ [k in key]: getArkKey<t, k> }, $>
+
+	omit<const key extends arkKeyOf<t> = never>(
+		this: validateStructuralOperand<"omit", this>,
 		...keys: array<key | InferredRoot<key>>
 	): SchemaRoot<{ [k in key]: getArkKey<t, k> }, $>
 

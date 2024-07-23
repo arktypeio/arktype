@@ -35,6 +35,16 @@ class ArkPick extends generic(
 	:	never
 }
 
+class ArkOmit extends generic(
+	["T", $ark.intrinsic.object],
+	["K", $ark.intrinsic.propertyKey]
+)(args => args.T.omit(args.K as never)) {
+	declare hkt: (
+		args: conform<this[Hkt.args], [object, Key]>
+	) => typeof args extends [infer T, infer K] ? show<Omit<T, K & keyof T>>
+	:	never
+}
+
 class ArkLiftArray extends generic("T")(args =>
 	args.T.or(args.T.array()).pipe(liftArray)
 ) {
@@ -48,6 +58,7 @@ class ArkLiftArray extends generic("T")(args =>
 const tsGenericsExports = {
 	Record: new ArkRecord(),
 	Pick: new ArkPick(),
+	Omit: new ArkOmit(),
 	liftArray: new ArkLiftArray()
 }
 

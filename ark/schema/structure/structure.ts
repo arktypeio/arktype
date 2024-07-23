@@ -231,28 +231,19 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 	): StructureInner {
 		const result = { ...this.inner }
 
-		const negateIfOmit =
-			operation === "pick" ?
-				(shouldFilter: boolean) => shouldFilter
-			:	(shouldFilter: boolean) => !shouldFilter
-
-		if (result.required) {
-			result.required = result.required.filter(prop =>
-				keys.some(k => negateIfOmit(typeOrTermExtends(prop.key, k)))
-			)
+		const includeKey = (key: TypeKey) => {
+			const matchesKey = keys.some(k => typeOrTermExtends(key, k))
+			return operation === "pick" ? matchesKey : !matchesKey
 		}
 
-		if (result.optional) {
-			result.optional = result.optional.filter(prop =>
-				keys.some(k => negateIfOmit(typeOrTermExtends(prop.key, k)))
-			)
-		}
+		if (result.required)
+			result.required = result.required.filter(prop => includeKey(prop.key))
 
-		if (result.index) {
-			result.index = result.index.filter(index =>
-				keys.some(k => negateIfOmit(typeOrTermExtends(index.signature, k)))
-			)
-		}
+		if (result.optional)
+			result.optional = result.optional.filter(prop => includeKey(prop.key))
+
+		if (result.index)
+			result.index = result.index.filter(index => includeKey(index.signature))
 
 		return result
 	}

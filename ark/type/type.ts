@@ -260,6 +260,16 @@ declare class _Type<t = unknown, $ = any> extends Root<t, $> {
 	): this is Type<inferTypeRoot<def>, $>
 	overlaps<def>(r: validateTypeRoot<def, $>): boolean
 
+	omit<const key extends arkKeyOf<t> = never>(
+		this: validateStructuralOperand<"omit", this>,
+		...keys: array<key | type.cast<key>>
+	): Type<
+		{
+			[k in keyof t as Exclude<toArkKey<t, k>, key>]: t[k]
+		},
+		$
+	>
+
 	pick<const key extends arkKeyOf<t> = never>(
 		this: validateStructuralOperand<"pick", this>,
 		...keys: array<key | type.cast<key>>
