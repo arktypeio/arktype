@@ -1,3 +1,4 @@
+import type { Guardable } from "./functions.js"
 import type { anyOrNever } from "./generics.js"
 import type { isDisjoint } from "./intersections.js"
 import type { parseNonNegativeInteger } from "./numericLiterals.js"
@@ -114,14 +115,17 @@ export const liftArray = <t>(data: t): liftArray<t> =>
 
 export const spliterate = <item, included extends item>(
 	list: readonly item[],
-	by: (item: item) => item is included
-): [included: included[], excluded: Exclude<item, included>[]] => {
+	by: Guardable<item, included>
+): [
+	included: included[],
+	excluded: item extends included ? item[] : Exclude<item, included>[]
+] => {
 	const result: [any[], any[]] = [[], []]
 	for (const item of list) {
 		if (by(item)) result[0].push(item)
 		else result[1].push(item)
 	}
-	return result
+	return result as never
 }
 
 export const ReadonlyArray = Array as unknown as new <T>(

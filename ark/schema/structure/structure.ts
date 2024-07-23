@@ -135,26 +135,6 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 		}
 	}
 
-	pick(...picked: array<TypeKey>) {
-		const inner: MutableInner<"structure"> = {}
-
-		this.assertHasKeys(picked)
-
-		const filterPicked = (k: TypeKey) =>
-			picked.some(pickedKey => typeOrTermExtends(k, pickedKey))
-
-		if (this.required)
-			inner.required = this.required.filter(node => filterPicked(node.key))
-
-		if (this.optional)
-			inner.optional = this.optional.filter(node => filterPicked(node.key))
-
-		if (this.index)
-			inner.index = this.index.filter(node => filterPicked(node.signature))
-
-		return this.$.node("structure", inner, { prereduced: true })
-	}
-
 	get(indexer: TypeIndexer, ...path: array<TypeIndexer>): BaseRoot {
 		let value: BaseRoot | undefined
 		let required = false
@@ -222,13 +202,19 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 	readonly exhaustive: boolean =
 		this.undeclared !== undefined || this.index !== undefined
 
+	pick(...keys: array<BaseRoot | Key>): StructureNode {
+		this.assertHasKeys(keys)
+		return this.$.node("structure", this.filterKeys("pick", keys))
+	}
+
 	omit(...keys: array<BaseRoot | Key>): StructureNode {
-		return this.$.node("structure", filterKeys(this.inner, "omit", keys))
+		this.assertHasKeys(keys)
+		return this.$.node("structure", this.filterKeys("omit", keys))
 	}
 
 	merge(r: StructureNode): StructureNode {
 		const inner = makeRootAndArrayPropertiesMutable(
-			filterKeys(this.inner, "omit", [r.keyof()])
+			this.filterKeys("omit", [r.keyof()])
 		)
 		if (r.required) inner.required = append(inner.required, r.required)
 		if (r.optional) inner.optional = append(inner.optional, r.optional)
@@ -237,6 +223,38 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 		if (r.undeclared) inner.undeclared = r.undeclared
 		else delete inner.undeclared
 		return this.$.node("structure", inner)
+	}
+
+	private filterKeys(
+		operation: "pick" | "omit",
+		keys: array<BaseRoot | Key>
+	): StructureInner {
+		const result = { ...this.inner }
+
+		const negateIfOmit =
+			operation === "pick" ?
+				(shouldFilter: boolean) => shouldFilter
+			:	(shouldFilter: boolean) => !shouldFilter
+
+		if (result.required) {
+			result.required = result.required.filter(prop =>
+				keys.some(k => negateIfOmit(typeOrTermExtends(prop.key, k)))
+			)
+		}
+
+		if (result.optional) {
+			result.optional = result.optional.filter(prop =>
+				keys.some(k => negateIfOmit(typeOrTermExtends(prop.key, k)))
+			)
+		}
+
+		if (result.index) {
+			result.index = result.index.filter(index =>
+				keys.some(k => negateIfOmit(typeOrTermExtends(index.signature, k)))
+			)
+		}
+
+		return result
 	}
 
 	traverseAllows: TraverseAllows<object> = (data, ctx) =>
@@ -398,35 +416,6 @@ const indexerToKey = (indexable: TypeIndexer): TypeKey => {
 		indexable = indexable.unit as Key
 	if (typeof indexable === "number") indexable = `${indexable}`
 	return indexable
-}
-
-const filterKeys = (
-	inner: StructureInner,
-	operation: "pick" | "omit",
-	keys: array<BaseRoot | Key>
-): StructureInner => {
-	const result = { ...inner }
-	keys.forEach(k => {
-		if (result.required) {
-			const [picked, omitted] = spliterate(
-				result.required,
-				(b): b is RequiredNode =>
-					hasArkKind(k, "root") ? k.allows(b.key) : k === b.key
-			)
-			result.required = operation === "pick" ? picked : omitted
-		}
-		if (result.optional) {
-			result.optional = result.optional.filter(b =>
-				hasArkKind(k, "root") ? !k.allows(b.key) : k !== b.key
-			)
-		}
-		if (result.index && hasArkKind(k, "root")) {
-			// we only have to filter index nodes if the input was a node, as
-			// literal keys should never subsume an index
-			result.index = result.index.filter(n => !n.signature.extends(k))
-		}
-	})
-	return result
 }
 
 const createStructuralWriter =
