@@ -252,12 +252,17 @@ declare class _Type<t = unknown, $ = any> extends Root<t, $> {
 		def: validateTypeRoot<def, $>
 	): this is Type<inferTypeRoot<def>, $>
 
-	// TODO: i/o
-	extract<def>(r: validateTypeRoot<def, $>): Type<t, $>
-	exclude<def>(r: validateTypeRoot<def, $>): Type<t, $>
+	extract<def>(
+		r: validateTypeRoot<def, $>
+	): Type<Extract<t, inferTypeRoot<def, $>>, $>
+	exclude<def>(
+		r: validateTypeRoot<def, $>
+	): Type<Exclude<t, inferTypeRoot<def, $>>, $>
+
 	extends<def>(
 		other: validateTypeRoot<def, $>
 	): this is Type<inferTypeRoot<def>, $>
+
 	overlaps<def>(r: validateTypeRoot<def, $>): boolean
 
 	omit<const key extends arkKeyOf<t> = never>(

@@ -31,8 +31,7 @@ class ArkPick extends generic(
 )(args => args.T.pick(args.K as never)) {
 	declare hkt: (
 		args: conform<this[Hkt.args], [object, Key]>
-	) => typeof args extends [infer T, infer K] ? show<Pick<T, K & keyof T>>
-	:	never
+	) => show<Pick<(typeof args)[0], (typeof args)[1] & keyof (typeof args)[0]>>
 }
 
 class ArkOmit extends generic(
@@ -41,8 +40,19 @@ class ArkOmit extends generic(
 )(args => args.T.omit(args.K as never)) {
 	declare hkt: (
 		args: conform<this[Hkt.args], [object, Key]>
-	) => typeof args extends [infer T, infer K] ? show<Omit<T, K & keyof T>>
-	:	never
+	) => show<Omit<(typeof args)[0], (typeof args)[1] & keyof (typeof args)[0]>>
+}
+
+class ArkExclude extends generic("T", "U")(args => args.T.exclude(args.U)) {
+	declare hkt: (
+		args: conform<this[Hkt.args], [unknown, unknown]>
+	) => show<Exclude<(typeof args)[0], (typeof args)[1]>>
+}
+
+class ArkExtract extends generic("T", "U")(args => args.T.extract(args.U)) {
+	declare hkt: (
+		args: conform<this[Hkt.args], [unknown, unknown]>
+	) => show<Extract<(typeof args)[0], (typeof args)[1]>>
 }
 
 class ArkLiftArray extends generic("T")(args =>
@@ -59,6 +69,8 @@ const tsGenericsExports = {
 	Record: new ArkRecord(),
 	Pick: new ArkPick(),
 	Omit: new ArkOmit(),
+	Exclude: new ArkExclude(),
+	Extract: new ArkExtract(),
 	liftArray: new ArkLiftArray()
 }
 
