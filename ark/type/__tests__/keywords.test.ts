@@ -187,9 +187,16 @@ contextualize(() => {
 
 			// valid Unix timestamp
 			attest(unix(1621530000)).equals(1621530000)
+			attest(unix(8640000000000000)).equals(8640000000000000)
 			// invalid Unix timestamp
 			attest(unix(-1).toString()).equals(
 				"must be a non-negative integer representing a Unix timestamp (was -1)"
+			)
+			attest(unix(1.5).toString()).equals(
+				"must be a non-negative integer representing a Unix timestamp (was 1.5)"
+			)
+			attest(unix(8640000000000001).toString()).equals(
+				"must be a non-negative integer representing a Unix timestamp (was 8640000000000001)"
 			)
 		})
 	})
