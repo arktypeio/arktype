@@ -1,3 +1,4 @@
+import { $ark } from "@ark/util"
 import type { BaseRoot } from "../roots/root.js"
 import type { declareNode } from "../shared/declare.js"
 import {
@@ -53,7 +54,7 @@ export const minImplementation: nodeImplementationOf<MinDeclaration> =
 	})
 
 export class MinNode extends BaseRange<MinDeclaration> {
-	readonly impliedBasis: BaseRoot = $ark.intrinsic.number
+	readonly impliedBasis: BaseRoot = $ark.intrinsic.number.internal
 
 	traverseAllows: TraverseAllows<number> =
 		this.exclusive ? data => data > this.rule : data => data >= this.rule

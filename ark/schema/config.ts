@@ -1,6 +1,12 @@
-import type { array, mutable, requireKeys, show } from "@ark/util"
+import {
+	$ark,
+	type array,
+	type mutable,
+	type requireKeys,
+	type show
+} from "@ark/util"
 import type { Ark } from "./keywords/keywords.js"
-import type { IntrinsicKeywords, RawRootScope } from "./scope.js"
+import type { InternalBaseScope, IntrinsicKeywords } from "./scope.js"
 import type {
 	ActualWriter,
 	ArkErrorCode,
@@ -20,7 +26,7 @@ declare global {
 		meta(): {}
 		preserve(): never
 		registry(): {
-			ambient: RawRootScope
+			ambient: InternalBaseScope
 			intrinsic: IntrinsicKeywords
 			config: ArkConfig
 			defaultConfig: ResolvedArkConfig

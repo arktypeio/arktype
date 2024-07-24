@@ -1,18 +1,18 @@
 import {
-	RawRootScope,
+	InternalBaseScope,
 	hasArkKind,
 	parseGeneric,
 	type AliasDefEntry,
 	type ArkConfig,
 	type BaseRoot,
+	type BaseScope,
 	type GenericArgResolutions,
 	type GenericParamAst,
 	type GenericParamDef,
 	type GenericProps,
+	type InternalResolutions,
 	type PreparsedNodeResolution,
 	type PrivateDeclaration,
-	type RawRootResolutions,
-	type RootScope,
 	type arkKind,
 	type destructuredExportContext,
 	type destructuredImportContext,
@@ -36,6 +36,7 @@ import {
 	parseGenericParams,
 	type Generic,
 	type GenericDeclaration,
+	type GenericHktParser,
 	type ParameterString,
 	type baseGenericArgs,
 	type parseValidGenericParams
@@ -57,7 +58,7 @@ import {
 	type StringParseResult
 } from "./parser/string/string.js"
 import {
-	RawTypeParser,
+	InternalTypeParser,
 	type DeclarationParser,
 	type DefinitionParser,
 	type Type,
@@ -174,7 +175,7 @@ export type tryInferSubmoduleReference<$, token> =
 	:	never
 
 export interface ParseContext extends TypeParseOptions {
-	$: RawScope
+	$: InternalScope
 }
 
 export interface TypeParseOptions {
@@ -182,40 +183,22 @@ export interface TypeParseOptions {
 }
 
 export const scope: ScopeParser = ((def: Dict, config: ArkConfig = {}) =>
-	new RawScope(def, config)) as never
+	new InternalScope(def, config)) as never
 
-export interface Scope<$ = any> extends RootScope<$> {
-	type: TypeParser<$>
-
-	match: MatchParser<$>
-
-	declare: DeclarationParser<$>
-
-	define: DefinitionParser<$>
-
-	import<names extends exportedNameOf<$>[]>(
-		...names: names
-	): Module<show<destructuredImportContext<$, names>>>
-
-	export<names extends exportedNameOf<$>[]>(
-		...names: names
-	): Module<show<destructuredExportContext<$, names>>>
-}
-
-export class RawScope<
-	$ extends RawRootResolutions = RawRootResolutions
-> extends RawRootScope<$> {
+export class InternalScope<
+	$ extends InternalResolutions = InternalResolutions
+> extends InternalBaseScope<$> {
 	private parseCache: Record<string, StringParseResult> = {}
 
 	constructor(def: Record<string, unknown>, config?: ArkConfig) {
 		super(def, config)
 	}
 
-	type: RawTypeParser = new RawTypeParser(this as never)
+	type: InternalTypeParser = new InternalTypeParser(this as never)
 
 	match: MatchParser<$> = createMatchParser(this as never) as never
 
-	declare: () => { type: RawTypeParser } = (() => ({
+	declare: () => { type: InternalTypeParser } = (() => ({
 		type: this.type
 	})).bind(this)
 
@@ -258,7 +241,7 @@ export class RawScope<
 	}
 
 	@bound
-	override parseRoot(def: unknown, opts: TypeParseOptions = {}): BaseRoot {
+	parseRoot(def: unknown, opts: TypeParseOptions = {}): BaseRoot {
 		const node: BaseRoot = this.parse(
 			def,
 			Object.assign(
@@ -317,6 +300,28 @@ export class RawScope<
 		return node as never
 	}
 }
+
+export interface Scope<$ = any> extends BaseScope<$> {
+	type: TypeParser<$>
+
+	match: MatchParser<$>
+
+	declare: DeclarationParser<$>
+
+	define: DefinitionParser<$>
+
+	generic: GenericHktParser<$>
+
+	import<names extends exportedNameOf<$>[]>(
+		...names: names
+	): Module<show<destructuredImportContext<$, names>>>
+
+	export<names extends exportedNameOf<$>[]>(
+		...names: names
+	): Module<show<destructuredExportContext<$, names>>>
+}
+
+export const Scope: new <$ = any>() => Scope<$> = InternalScope as never
 
 export const writeShallowCycleErrorMessage = (
 	name: string,

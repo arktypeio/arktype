@@ -1,4 +1,5 @@
 import {
+	$ark,
 	Callable,
 	appendUnique,
 	cached,
@@ -22,11 +23,11 @@ import type { NodeParseOptions } from "./parse.js"
 import type { MorphNode } from "./roots/morph.js"
 import type { BaseRoot, Root } from "./roots/root.js"
 import type { UnitNode } from "./roots/unit.js"
-import type { RawRootScope } from "./scope.js"
+import type { InternalBaseScope } from "./scope.js"
 import type { NodeCompiler } from "./shared/compile.js"
 import type {
 	BaseMeta,
-	RawNodeDeclaration,
+	BaseNodeDeclaration,
 	attachmentsOf
 } from "./shared/declare.js"
 import {
@@ -55,11 +56,11 @@ export type UnknownNode = BaseNode | Root
 export abstract class BaseNode<
 	/** uses -ignore rather than -expect-error because this is not an error in .d.ts
 	 * @ts-ignore allow instantiation assignment to the base type */
-	out d extends RawNodeDeclaration = RawNodeDeclaration
+	out d extends BaseNodeDeclaration = BaseNodeDeclaration
 > extends Callable<(data: d["prerequisite"]) => unknown, attachmentsOf<d>> {
 	constructor(
 		public attachments: UnknownAttachments,
-		public $: RawRootScope
+		public $: InternalBaseScope
 	) {
 		super(
 			// pipedFromCtx allows us internally to reuse TraversalContext
@@ -85,7 +86,7 @@ export abstract class BaseNode<
 		)
 	}
 
-	bindScope($: RawRootScope): this {
+	bindScope($: InternalBaseScope): this {
 		if (this.$ === $) return this as never
 		return new (this.constructor as any)(this.attachments, $)
 	}
@@ -395,21 +396,21 @@ export abstract class BaseNode<
 /** a literal key (named property) or a node (index signatures) representing part of a type structure */
 export type TypeKey = Key | BaseRoot
 
-export type TypePath = array<TypeKey>
+export type TypeIndexer = TypeKey | number
 
 export type FlatRef<root extends BaseRoot = BaseRoot> = {
-	path: TypePath
+	path: array<TypeKey>
 	node: root
 	propString: string
 }
 
-export const typePathToPropString = (path: Readonly<TypePath>) =>
+export const typePathToPropString = (path: array<TypeKey>) =>
 	pathToPropString(path, {
 		stringifyNonKey: node => node.expression
 	})
 
 export const flatRef = <node extends BaseRoot>(
-	path: TypePath,
+	path: array<TypeKey>,
 	node: node
 ): FlatRef<node> => ({
 	path,
@@ -438,7 +439,7 @@ export const appendUniqueNodes = <node extends BaseNode>(
 
 export type DeepNodeTransformOptions = {
 	shouldTransform?: ShouldTransformFn
-	bindScope?: RawRootScope
+	bindScope?: InternalBaseScope
 	prereduced?: boolean
 }
 
@@ -448,7 +449,7 @@ export type ShouldTransformFn = (
 ) => boolean
 
 export interface DeepNodeTransformContext extends DeepNodeTransformOptions {
-	path: mutable<TypePath>
+	path: mutable<array<TypeKey>>
 	seen: { [originalId: string]: (() => BaseNode | undefined) | undefined }
 	parseOptions: NodeParseOptions
 }

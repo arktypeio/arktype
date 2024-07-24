@@ -1,3 +1,4 @@
+import { $ark } from "@ark/util"
 import type { BaseRoot } from "../roots/root.js"
 import type { declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -60,7 +61,7 @@ export const maxImplementation: nodeImplementationOf<MaxDeclaration> =
 	})
 
 export class MaxNode extends BaseRange<MaxDeclaration> {
-	impliedBasis: BaseRoot = $ark.intrinsic.number
+	impliedBasis: BaseRoot = $ark.intrinsic.number.internal
 
 	traverseAllows: TraverseAllows<number> =
 		this.exclusive ? data => data < this.rule : data => data <= this.rule

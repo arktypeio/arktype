@@ -2,10 +2,10 @@ import type { array, Key } from "@ark/util"
 import type { NodeCompiler } from "../shared/compile.js"
 import { compileErrorContext } from "../shared/implement.js"
 import type { TraverseApply } from "../shared/traversal.js"
-import { BaseRoot, type RawRootDeclaration } from "./root.js"
+import { BaseRoot, type InternalRootDeclaration } from "./root.js"
 
-export abstract class RawBasis<
-	d extends RawRootDeclaration = RawRootDeclaration
+export abstract class InternalBasis<
+	d extends InternalRootDeclaration = InternalRootDeclaration
 > extends BaseRoot<d> {
 	abstract compiledCondition: string
 	abstract compiledNegation: string

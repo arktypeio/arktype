@@ -1,4 +1,5 @@
 import {
+	$ark,
 	append,
 	cached,
 	throwInternalError,
@@ -233,7 +234,7 @@ export const sequenceImplementation: nodeImplementationOf<SequenceDeclaration> =
 	})
 
 export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
-	impliedBasis: BaseRoot = $ark.intrinsic.Array
+	impliedBasis: BaseRoot = $ark.intrinsic.Array.internal
 	prefix: array<BaseRoot> = this.inner.prefix ?? []
 	optionals: array<BaseRoot> = this.inner.optionals ?? []
 	prevariadic: array<BaseRoot> = [...this.prefix, ...this.optionals]
@@ -308,11 +309,11 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 				append(
 					element.flatRefs.map(ref =>
 						flatRef(
-							[$ark.intrinsic.nonNegativeIntegerString, ...ref.path],
+							[$ark.intrinsic.nonNegativeIntegerString.internal, ...ref.path],
 							ref.node
 						)
 					),
-					flatRef([$ark.intrinsic.nonNegativeIntegerString], element)
+					flatRef([$ark.intrinsic.nonNegativeIntegerString.internal], element)
 				)
 			)
 		)
@@ -361,7 +362,7 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 		mapper: DeepNodeTransformation,
 		ctx: DeepNodeTransformContext
 	) {
-		ctx.path.push($ark.intrinsic.nonNegativeIntegerString)
+		ctx.path.push($ark.intrinsic.nonNegativeIntegerString.internal)
 		const result = super._transform(mapper, ctx)
 		ctx.path.pop()
 		return result

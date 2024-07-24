@@ -16,7 +16,7 @@ import {
 	type nodeImplementationOf
 } from "../shared/implement.js"
 import type { TraverseAllows } from "../shared/traversal.js"
-import { RawBasis } from "./basis.js"
+import { InternalBasis } from "./basis.js"
 import { defineRightwardIntersections } from "./utils.js"
 
 export type UnitSchema<value = unknown> = UnitInner<value>
@@ -71,7 +71,7 @@ export const unitImplementation: nodeImplementationOf<UnitDeclaration> =
 		}
 	})
 
-export class UnitNode extends RawBasis<UnitDeclaration> {
+export class UnitNode extends InternalBasis<UnitDeclaration> {
 	compiledValue: JsonPrimitive = (this.json as any).unit
 	serializedValue: JsonPrimitive =
 		typeof this.unit === "string" || this.unit instanceof Date ?

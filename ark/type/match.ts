@@ -144,7 +144,7 @@ type MatchInvocationContext = {
 }
 
 export type MatchInvocation<ctx extends MatchInvocationContext> = <
-	data extends ctx["initialInputs"]
+	const data extends ctx["initialInputs"]
 >(
 	data: data
 ) => {

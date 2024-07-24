@@ -1,3 +1,4 @@
+import { $ark } from "@ark/util"
 import type { BaseRoot } from "../roots/root.js"
 import type { declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -65,7 +66,7 @@ export const maxLengthImplementation: nodeImplementationOf<MaxLengthDeclaration>
 	})
 
 export class MaxLengthNode extends BaseRange<MaxLengthDeclaration> {
-	readonly impliedBasis: BaseRoot = $ark.intrinsic.lengthBoundable
+	readonly impliedBasis: BaseRoot = $ark.intrinsic.lengthBoundable.internal
 
 	traverseAllows: TraverseAllows<LengthBoundableData> =
 		this.exclusive ?

@@ -1,13 +1,13 @@
 import {
+	$ark,
 	arrayEquals,
-	arrayFrom,
-	registeredReference,
+	liftArray,
 	throwParseError,
 	type array,
 	type listable
 } from "@ark/util"
 import type { distillConstrainableIn } from "../ast.js"
-import type { type } from "../inference.js"
+import type { InferredRoot } from "../inference.js"
 import type { Node, NodeSchema } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
@@ -18,6 +18,7 @@ import {
 	type nodeImplementationOf
 } from "../shared/implement.js"
 import { intersectNodes, type inferPipe } from "../shared/intersections.js"
+import { registeredReference } from "../shared/registry.js"
 import type {
 	TraversalContext,
 	TraverseAllows,
@@ -76,7 +77,7 @@ export const morphImplementation: nodeImplementationOf<MorphDeclaration> =
 				parse: (schema, ctx) => ctx.$.node(morphChildKinds, schema)
 			},
 			morphs: {
-				parse: arrayFrom,
+				parse: liftArray,
 				serialize: morphs =>
 					morphs.map(m =>
 						hasArkKind(m, "root") ? m.json : registeredReference(m)
@@ -163,7 +164,7 @@ export class MorphNode extends BaseRoot<MorphDeclaration> {
 	}
 
 	override get out(): BaseRoot {
-		return this.validatedOut ?? $ark.intrinsic.unknown
+		return this.validatedOut ?? $ark.intrinsic.unknown.internal
 	}
 
 	/** Check if the morphs of r are equal to those of this node */
@@ -200,7 +201,7 @@ Right: ${rDescription}`
 export type inferPipes<t, pipes extends Morph[]> =
 	pipes extends [infer head extends Morph, ...infer tail extends Morph[]] ?
 		inferPipes<
-			pipes[0] extends type.cast<infer tPipe> ? inferPipe<t, tPipe>
+			pipes[0] extends InferredRoot<infer tPipe> ? inferPipe<t, tPipe>
 			: inferMorphOut<head> extends infer out ?
 				(In: distillConstrainableIn<t>) => Out<out>
 			:	never,

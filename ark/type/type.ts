@@ -1,8 +1,8 @@
 import {
 	ArkErrors,
 	BaseRoot,
+	GenericRoot,
 	type BaseMeta,
-	type ConstraintKind,
 	type Disjoint,
 	type DivisorSchema,
 	type ExactLengthSchema,
@@ -10,35 +10,36 @@ import {
 	type ExclusiveNumericRangeSchema,
 	type InclusiveDateRangeSchema,
 	type InclusiveNumericRangeSchema,
-	type InnerRoot,
 	type Morph,
 	type MorphAst,
 	type NodeSchema,
 	type Out,
 	type PatternSchema,
 	type Predicate,
-	type Prerequisite,
 	type PrimitiveConstraintKind,
 	type Root,
+	type arkKeyOf,
 	type constrain,
 	type constraintKindOf,
 	type distillIn,
 	type distillOut,
 	type exclusivizeRangeSchema,
-	type indexInto,
-	type indexOf,
+	type getArkKey,
 	type inferIntersection,
 	type inferMorphOut,
 	type inferPipes,
 	type inferPredicate,
-	type writeInvalidOperandMessage
+	type toArkKey,
+	type validateChainedAsArgs,
+	type validateChainedConstraint,
+	type validateStructuralOperand
 } from "@ark/schema"
 import {
 	Callable,
 	type Constructor,
-	type ErrorMessage,
 	type array,
-	type conform
+	type conform,
+	type unset
 } from "@ark/util"
 import type { type } from "./ark.js"
 import {
@@ -59,7 +60,7 @@ import type {
 	IndexZeroOperator,
 	TupleInfixOperator
 } from "./parser/tuple.js"
-import type { RawScope, Scope, bindThis } from "./scope.js"
+import type { InternalScope, Scope, bindThis } from "./scope.js"
 
 /** The convenience properties attached to `type` */
 export type TypeParserAttachments =
@@ -101,11 +102,11 @@ export interface TypeParser<$ = {}> {
 	errors: typeof ArkErrors
 }
 
-export class RawTypeParser extends Callable<
+export class InternalTypeParser extends Callable<
 	(...args: unknown[]) => BaseRoot | Generic,
 	TypeParserAttachments
 > {
-	constructor($: RawScope) {
+	constructor($: InternalScope) {
 		super(
 			(...args) => {
 				if (args.length === 1) {
@@ -124,8 +125,13 @@ export class RawTypeParser extends Callable<
 						$,
 						args: {}
 					})
-					const def = args[1]
-					return $.generic(params, def) as never
+
+					return new GenericRoot(
+						params,
+						args[1],
+						$ as never,
+						$ as never
+					) as never
 				}
 				// otherwise, treat as a tuple expression. technically, this also allows
 				// non-expression tuple definitions to be parsed, but it's not a supported
@@ -150,18 +156,13 @@ export type DeclarationParser<$> = <preinferred>() => {
 	) => Type<preinferred, $>
 }
 
-type validateChainedConstraint<
-	kind extends ConstraintKind,
-	t extends { inferIn: unknown }
-> =
-	t["inferIn"] extends Prerequisite<kind> ? t
-	:	ErrorMessage<writeInvalidOperandMessage<kind, Root<t["inferIn"]>>>
-
 // this is declared as a class internally so we can ensure all "abstract"
 // methods of BaseRoot are overridden, but we end up exporting it as an interface
 // to ensure it is not accessed as a runtime value
-declare class _Type<t = unknown, $ = any> extends InnerRoot<t, $> {
-	$: Scope<$>;
+declare class _Type<t = unknown, $ = any> extends Root<t, $> {
+	$: Scope<$>
+
+	as<t = unset>(...args: validateChainedAsArgs<t>): Type<t, $>
 
 	get in(): Type<this["tIn"], $>
 	get out(): Type<this["tOut"], $>
@@ -251,28 +252,53 @@ declare class _Type<t = unknown, $ = any> extends InnerRoot<t, $> {
 		def: validateTypeRoot<def, $>
 	): this is Type<inferTypeRoot<def>, $>
 
-	// TODO: i/o
-	extract<def>(r: validateTypeRoot<def, $>): Type<t, $>
-	exclude<def>(r: validateTypeRoot<def, $>): Type<t, $>
+	extract<def>(
+		r: validateTypeRoot<def, $>
+	): Type<Extract<t, inferTypeRoot<def, $>>, $>
+	exclude<def>(
+		r: validateTypeRoot<def, $>
+	): Type<Exclude<t, inferTypeRoot<def, $>>, $>
+
 	extends<def>(
 		other: validateTypeRoot<def, $>
 	): this is Type<inferTypeRoot<def>, $>
+
 	overlaps<def>(r: validateTypeRoot<def, $>): boolean
 
-	get<k1 extends indexOf<t>>(k1: k1 | type.cast<k1>): Type<indexInto<t, k1>, $>
-	get<k1 extends indexOf<t>, k2 extends indexOf<indexInto<t, k1>>>(
+	omit<const key extends arkKeyOf<t> = never>(
+		this: validateStructuralOperand<"omit", this>,
+		...keys: array<key | type.cast<key>>
+	): Type<
+		{
+			[k in keyof t as Exclude<toArkKey<t, k>, key>]: t[k]
+		},
+		$
+	>
+
+	pick<const key extends arkKeyOf<t> = never>(
+		this: validateStructuralOperand<"pick", this>,
+		...keys: array<key | type.cast<key>>
+	): Type<
+		{
+			[k in keyof t as Extract<toArkKey<t, k>, key>]: t[k]
+		},
+		$
+	>
+
+	get<k1 extends arkKeyOf<t>>(k1: k1 | type.cast<k1>): Type<getArkKey<t, k1>, $>
+	get<k1 extends arkKeyOf<t>, k2 extends arkKeyOf<getArkKey<t, k1>>>(
 		k1: k1 | type.cast<k1>,
 		k2: k2 | type.cast<k2>
-	): Type<indexInto<indexInto<t, k1>, k2>, $>
+	): Type<getArkKey<getArkKey<t, k1>, k2>, $>
 	get<
-		k1 extends indexOf<t>,
-		k2 extends indexOf<indexInto<t, k1>>,
-		k3 extends indexOf<indexInto<indexInto<t, k1>, k2>>
+		k1 extends arkKeyOf<t>,
+		k2 extends arkKeyOf<getArkKey<t, k1>>,
+		k3 extends arkKeyOf<getArkKey<getArkKey<t, k1>, k2>>
 	>(
 		k1: k1 | type.cast<k1>,
 		k2: k2 | type.cast<k2>,
 		k3: k3 | type.cast<k3>
-	): Type<indexInto<indexInto<indexInto<t, k1>, k2>, k3>, $>
+	): Type<getArkKey<getArkKey<getArkKey<t, k1>, k2>, k3>, $>
 
 	constrain<
 		kind extends PrimitiveConstraintKind,

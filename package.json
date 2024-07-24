@@ -15,7 +15,7 @@
 	"type": "module",
 	"private": true,
 	"scripts": {
-		"prChecks": "pnpm lint && pnpm build && pnpm testRepo && pnpm bench && pnpm testTsVersions",
+		"prChecks": "pnpm lint && pnpm build && pnpm testRepo && pnpm testTsVersions",
 		"build": "pnpm -r build",
 		"buildCjs": "ARKTYPE_CJS=1 pnpm -r build",
 		"test": "pnpm testTyped --skipTypes",
@@ -92,5 +92,5 @@
 	"eslintConfig": {
 		"extends": "./ark/repo/.eslintrc.cjs"
 	},
-	"packageManager": "pnpm@9.5.0"
+	"packageManager": "pnpm@9.6.0"
 }

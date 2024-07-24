@@ -1,4 +1,5 @@
-import { RawPrimitiveConstraint } from "../constraint.js"
+import { $ark } from "@ark/util"
+import { InternalPrimitiveConstraint } from "../constraint.js"
 import type { BaseRoot } from "../roots/root.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import {
@@ -53,7 +54,7 @@ export const patternImplementation: nodeImplementationOf<PatternDeclaration> =
 		}
 	})
 
-export class PatternNode extends RawPrimitiveConstraint<PatternDeclaration> {
+export class PatternNode extends InternalPrimitiveConstraint<PatternDeclaration> {
 	readonly instance: RegExp = new RegExp(this.rule, this.flags)
 	readonly expression: string = `${this.instance}`
 	traverseAllows: (string: string) => boolean = this.instance.test.bind(
@@ -62,5 +63,5 @@ export class PatternNode extends RawPrimitiveConstraint<PatternDeclaration> {
 
 	readonly compiledCondition: string = `${this.expression}.test(data)`
 	readonly compiledNegation: string = `!${this.compiledCondition}`
-	readonly impliedBasis: BaseRoot = $ark.intrinsic.string
+	readonly impliedBasis: BaseRoot = $ark.intrinsic.string.internal
 }

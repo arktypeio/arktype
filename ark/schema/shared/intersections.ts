@@ -11,7 +11,7 @@ import type { Constraints, of, parseConstraints } from "../ast.js"
 import type { BaseNode } from "../node.js"
 import type { MorphAst, MorphNode, Out } from "../roots/morph.js"
 import type { BaseRoot } from "../roots/root.js"
-import type { RawRootScope } from "../scope.js"
+import type { InternalBaseScope } from "../scope.js"
 import { Disjoint } from "./disjoint.js"
 import type {
 	IntersectionContext,
@@ -90,7 +90,7 @@ type InternalNodeIntersection<ctx> = <l extends BaseNode, r extends BaseNode>(
 ) => l["kind"] | r["kind"] extends RootKind ? BaseRoot | Disjoint
 :	BaseNode | Disjoint | null
 
-export const intersectNodesRoot: InternalNodeIntersection<RawRootScope> = (
+export const intersectNodesRoot: InternalNodeIntersection<InternalBaseScope> = (
 	l,
 	r,
 	$
@@ -101,7 +101,7 @@ export const intersectNodesRoot: InternalNodeIntersection<RawRootScope> = (
 		pipe: false
 	})
 
-export const pipeNodesRoot: InternalNodeIntersection<RawRootScope> = (
+export const pipeNodesRoot: InternalNodeIntersection<InternalBaseScope> = (
 	l,
 	r,
 	$

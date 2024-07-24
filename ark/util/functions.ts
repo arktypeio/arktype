@@ -92,7 +92,11 @@ export class Callable<
 	f extends (...args: never[]) => unknown,
 	attachments extends object = {}
 > extends NoopBase<f & attachments> {
-	constructor(f: f, opts?: CallableOptions<attachments>) {
+	constructor(
+		f: f,
+		...[opts]: {} extends attachments ? [opts?: CallableOptions<attachments>]
+		:	[opts: CallableOptions<attachments>]
+	) {
 		super()
 		return Object.assign(
 			Object.setPrototypeOf(

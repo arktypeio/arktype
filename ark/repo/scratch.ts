@@ -1,16 +1,14 @@
-import { scope, type } from "arktype"
+import { ark, scope, type } from "arktype"
 
-const nonEmpty = type("<arr extends unknown[]>", "arr > 0")
+const t = type({
+	foo: "string | number",
+	bar: ["number | string | boolean"]
+})
 
-const m = nonEmpty("number[]")
+const o = type("string")
 
-const threeSixtyNoModule = scope({
-	three: "3",
-	sixty: "60",
-	no: "'no'"
-}).export()
+ark.Record
 
-const types = scope({
-	...threeSixtyNoModule,
-	threeSixtyNo: "three|sixty|no"
-}).export()
+// 	("string", {
+// 	bar: "number | string"
+// })

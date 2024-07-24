@@ -1,8 +1,10 @@
 import type {
 	GenericParamAst,
 	GenericParamDef,
+	genericParamSchemasToAst,
+	GenericProps,
 	GenericRoot,
-	writeUnsatisfiedParameterConstraintMessage
+	LazyGenericBody
 } from "@ark/schema"
 import {
 	throwParseError,
@@ -11,8 +13,8 @@ import {
 	type Callable,
 	type conform,
 	type ErrorMessage,
+	type Hkt,
 	type keyError,
-	type typeToString,
 	type WhiteSpaceToken
 } from "@ark/util"
 import type { inferDefinition } from "./parser/definition.js"
@@ -35,37 +37,34 @@ export type validateParameterString<s extends ParameterString, $> =
 		ErrorMessage<message>
 	:	s
 
-export type validateGenericArg<param extends GenericParamAst, def, $> =
-	validateTypeRoot<def, $> extends infer result ?
-		result extends ErrorMessage ? result
-		: inferTypeRoot<def, $> extends param[1] ? def
-		: ErrorMessage<
-				writeUnsatisfiedParameterConstraintMessage<
-					param[0],
-					typeToString<param[1]>,
-					""
-				>
-			>
-	:	never
+export type validateGenericArg<arg, param extends GenericParamAst, $> =
+	inferTypeRoot<arg, $> extends param[1] ? arg : Type<param[1]>
 
-export type GenericInstantiation<
-	params extends array<GenericParamAst> = array<GenericParamAst>,
-	def = any,
-	$ = any
-> = <const args>(
-	...args: conform<
-		args,
-		{
-			[i in keyof params]: validateGenericArg<
-				params[i],
-				args[i & keyof args],
-				$
-			>
-		}
-	>
-) => Type<inferDefinition<def, $, bindGenericArgs<params, $, args>>, $>
+export type GenericInstantiator<
+	params extends array<GenericParamAst>,
+	def,
+	$,
+	args$
+> = <
+	const args extends {
+		[i in keyof params]: validateTypeRoot<args[i & keyof args], args$>
+	}
+>(
+	/** @ts-expect-error treat as array */
+	...args: {
+		[i in keyof args]: validateGenericArg<
+			args[i],
+			params[i & keyof params & `${number}`],
+			args$
+		>
+	}
+) => Type<
+	def extends Hkt.Kind ?
+		Hkt.apply<def, { [i in keyof args]: inferTypeRoot<args[i], args$> }>
+	:	inferDefinition<def, $, bindGenericArgs<params, args$, args>>,
+	$
+>
 
-// TODO: Fix external reference (i.e. if this is attached to a scope, then args are defined using it)
 type bindGenericArgs<params extends array<GenericParamAst>, $, args> = {
 	[i in keyof params & `${number}` as params[i][0]]: inferTypeRoot<
 		args[i & keyof args],
@@ -80,9 +79,12 @@ export type baseGenericArgs<params extends array<GenericParamAst>> = {
 export interface Generic<
 	params extends array<GenericParamAst> = array<GenericParamAst>,
 	bodyDef = unknown,
-	$ = {}
-> extends Callable<GenericInstantiation<params, bodyDef, $>>,
-		GenericRoot<params, bodyDef, $> {}
+	$ = {},
+	args$ = $
+> extends Callable<GenericInstantiator<params, bodyDef, $, args$>>,
+		GenericProps<params, bodyDef, $> {
+	internal: GenericRoot<params, bodyDef, $>
+}
 
 export type GenericDeclaration<
 	name extends string = string,
@@ -218,3 +220,29 @@ type _parseOptionalConstraint<
 			[...result, [name, unknown]],
 			$
 		>
+
+export type GenericHktParser<$ = {}> = <
+	const paramsDef extends array<GenericParamDef>
+>(
+	...params: paramsDef
+) => (
+	instantiateDef: LazyGenericBody<genericParamSchemasToAst<paramsDef, $>>
+) => GenericHktSubclass<genericParamSchemasToAst<paramsDef, $>, $>
+
+export type GenericHktSubclass<
+	params extends array<GenericParamAst>,
+	$
+> = abstract new () => GenericHkt<
+	genericParamSchemasToAst<params, $>,
+	Hkt.Kind,
+	$,
+	$
+>
+
+export interface GenericHkt<
+	params extends array<GenericParamAst>,
+	hkt extends Hkt.Kind,
+	$,
+	args$
+> extends Generic<params, hkt, $, args$>,
+		Hkt.Kind {}

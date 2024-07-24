@@ -1,4 +1,5 @@
 import {
+	$ark,
 	builtinConstructors,
 	constructorExtends,
 	getExactBuiltinConstructorName,
@@ -18,7 +19,7 @@ import {
 	type nodeImplementationOf
 } from "../shared/implement.js"
 import type { TraverseAllows } from "../shared/traversal.js"
-import { RawBasis } from "./basis.js"
+import { InternalBasis } from "./basis.js"
 import type { DomainNode } from "./domain.js"
 
 export interface ProtoInner<proto extends Constructor = Constructor>
@@ -90,7 +91,7 @@ export const protoImplementation: nodeImplementationOf<ProtoDeclaration> =
 		}
 	})
 
-export class ProtoNode extends RawBasis<ProtoDeclaration> {
+export class ProtoNode extends InternalBasis<ProtoDeclaration> {
 	builtinName: BuiltinObjectKind | null = getExactBuiltinConstructorName(
 		this.proto
 	)

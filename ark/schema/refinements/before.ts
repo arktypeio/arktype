@@ -1,3 +1,4 @@
+import { $ark } from "@ark/util"
 import type { BaseRoot } from "../roots/root.js"
 import type { declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -77,5 +78,5 @@ export class BeforeNode extends BaseRange<BeforeDeclaration> {
 	traverseAllows: TraverseAllows<Date> =
 		this.exclusive ? data => data < this.rule : data => data <= this.rule
 
-	impliedBasis: BaseRoot = $ark.intrinsic.Date
+	impliedBasis: BaseRoot = $ark.intrinsic.Date.internal
 }

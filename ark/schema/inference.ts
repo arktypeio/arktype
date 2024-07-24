@@ -23,20 +23,15 @@ import type {
 import type { ProtoSchema } from "./roots/proto.js"
 import type { NormalizedUnionSchema, UnionSchema } from "./roots/union.js"
 import type { UnitSchema } from "./roots/unit.js"
-import type { ArkErrors } from "./shared/errors.js"
 import type { BasisKind, ConstraintKind } from "./shared/implement.js"
 import type { inferred } from "./shared/utils.js"
 
-export namespace type {
-	export type cast<t> = {
-		[inferred]?: t
-	}
-
-	export type errors = ArkErrors
+export type InferredRoot<t = unknown> = {
+	[inferred]?: t
 }
 
 export type validateRoot<schema, $> =
-	schema extends type.cast<unknown> ? schema
+	schema extends InferredRoot ? schema
 	: schema extends array ?
 		{ [i in keyof schema]: validateRootBranch<schema[i], $> }
 	: schema extends NormalizedUnionSchema<infer branches> ?
@@ -51,7 +46,7 @@ export type validateRoot<schema, $> =
 	:	validateRootBranch<schema, $>
 
 export type inferRoot<schema, $> =
-	schema extends type.cast<infer to> ? to
+	schema extends InferredRoot<infer to> ? to
 	: schema extends UnionSchema<infer branches> ?
 		branches["length"] extends 0 ? never
 		: branches["length"] extends 1 ? inferRootBranch<branches[0], $>
@@ -64,7 +59,7 @@ type validateRootBranch<schema, $> =
 	: validateMorphChild<schema, $>
 
 type inferRootBranch<schema, $> =
-	schema extends type.cast<infer to> ? to
+	schema extends InferredRoot<infer to> ? to
 	: schema extends MorphSchema ?
 		(
 			In: schema["in"] extends {} ? inferMorphChild<schema["in"], $> : unknown

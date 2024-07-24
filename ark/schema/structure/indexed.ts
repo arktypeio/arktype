@@ -1,4 +1,5 @@
 import {
+	$ark,
 	append,
 	printable,
 	stringAndSymbolicEntriesOf,
@@ -108,7 +109,7 @@ export const indexImplementation: nodeImplementationOf<IndexDeclaration> =
 	})
 
 export class IndexNode extends BaseConstraint<IndexDeclaration> {
-	impliedBasis: BaseRoot = $ark.intrinsic.object
+	impliedBasis: BaseRoot = $ark.intrinsic.object.internal
 	expression = `[${this.signature.expression}]: ${this.value.expression}`
 
 	traverseAllows: TraverseAllows<object> = (data, ctx) =>

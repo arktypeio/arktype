@@ -27,6 +27,13 @@ contextualize(() => {
 		})
 	})
 
+	it("completes within expressions in objects", () => {
+		// @ts-expect-error
+		attest(() => type({ key: "number | b" })).completions({
+			"number | b": ["number | bigint", "number | boolean"]
+		})
+	})
+
 	it("completes user-defined aliases", () => {
 		const $ = scope({
 			over9000: "number>9000",

@@ -50,10 +50,10 @@ export type declareNode<
 type prerequisiteOf<d extends DeclarationInput> =
 	"prerequisite" extends keyof d ? d["prerequisite"] : unknown
 
-export type attachmentsOf<d extends RawNodeDeclaration> =
+export type attachmentsOf<d extends BaseNodeDeclaration> =
 	NarrowedAttachments<d> & d["inner"]
 
-export interface RawNodeDeclaration {
+export interface BaseNodeDeclaration {
 	kind: NodeKind
 	schema: unknown
 	normalizedSchema: BaseMeta
@@ -65,6 +65,6 @@ export interface RawNodeDeclaration {
 	errorContext: BaseErrorContext | null
 }
 
-export type ownIntersectionResult<d extends RawNodeDeclaration> =
+export type ownIntersectionResult<d extends BaseNodeDeclaration> =
 	| Node<reducibleKindOf<d["kind"]>>
 	| Disjoint

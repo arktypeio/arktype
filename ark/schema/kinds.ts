@@ -1,4 +1,10 @@
-import { envHasCsp, flatMorph, type array, type listable } from "@ark/util"
+import {
+	$ark,
+	envHasCsp,
+	flatMorph,
+	type array,
+	type listable
+} from "@ark/util"
 import type { ResolvedArkConfig } from "./config.js"
 import type { BaseNode } from "./node.js"
 import {
@@ -57,7 +63,7 @@ import {
 	unitImplementation,
 	type UnitDeclaration
 } from "./roots/unit.js"
-import type { RawRootScope } from "./scope.js"
+import type { InternalBaseScope } from "./scope.js"
 import type {
 	ConstraintKind,
 	NodeKind,
@@ -147,7 +153,7 @@ $ark.defaultConfig = Object.assign(
 
 export const nodeClassesByKind: Record<
 	NodeKind,
-	new (attachments: UnknownAttachments, $: RawRootScope) => BaseNode
+	new (attachments: UnknownAttachments, $: InternalBaseScope) => BaseNode
 > = {
 	...boundClassesByKind,
 	alias: AliasNode,

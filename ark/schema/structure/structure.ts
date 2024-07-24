@@ -1,14 +1,15 @@
 import {
+	$ark,
 	append,
 	cached,
 	flatMorph,
 	printable,
-	registeredReference,
 	spliterate,
 	throwParseError,
 	type array,
+	type join,
 	type Key,
-	type RegisteredReference
+	type typeToString
 } from "@ark/util"
 import {
 	BaseConstraint,
@@ -16,11 +17,12 @@ import {
 	flattenConstraints,
 	intersectConstraints
 } from "../constraint.js"
+import type { InferredRoot } from "../inference.js"
 import type { NonNegativeIntegerString } from "../keywords/internal.js"
 import type { MutableInner } from "../kinds.js"
-import type { TypeKey, TypePath } from "../node.js"
-import type { BaseRoot } from "../roots/root.js"
-import type { RawRootScope } from "../scope.js"
+import type { TypeIndexer, TypeKey } from "../node.js"
+import { typeOrTermExtends, type BaseRoot } from "../roots/root.js"
+import type { InternalBaseScope } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -30,6 +32,10 @@ import {
 	type StructuralKind
 } from "../shared/implement.js"
 import { intersectNodesRoot } from "../shared/intersections.js"
+import {
+	registeredReference,
+	type RegisteredReference
+} from "../shared/registry.js"
 import type {
 	TraversalContext,
 	TraversalKind,
@@ -78,7 +84,7 @@ export interface StructureDeclaration
 	}> {}
 
 export class StructureNode extends BaseConstraint<StructureDeclaration> {
-	impliedBasis: BaseRoot = $ark.intrinsic.object
+	impliedBasis: BaseRoot = $ark.intrinsic.object.internal
 	impliedSiblings = this.children.flatMap(
 		n => (n.impliedSiblings as BaseConstraint[]) ?? []
 	)
@@ -119,11 +125,21 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 		return this.$.node("union", branches)
 	}
 
-	get(key: TypeKey, ...tail: TypePath): BaseRoot {
+	assertHasKeys(keys: array<TypeKey>) {
+		const invalidKeys = keys.filter(k => !typeOrTermExtends(k, this.keyof()))
+
+		if (invalidKeys.length) {
+			return throwParseError(
+				writeInvalidKeysMessage(this.expression, invalidKeys)
+			)
+		}
+	}
+
+	get(indexer: TypeIndexer, ...path: array<TypeIndexer>): BaseRoot {
 		let value: BaseRoot | undefined
 		let required = false
 
-		if (hasArkKind(key, "root") && key.hasKind("unit")) key = key.unit as never
+		const key = indexerToKey(indexer)
 
 		if (
 			(typeof key === "string" || typeof key === "symbol") &&
@@ -134,12 +150,13 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 		}
 
 		this.index?.forEach(n => {
-			if (n.signature.includes(key)) value = value?.and(n.value) ?? n.value
+			if (typeOrTermExtends(key, n.signature))
+				value = value?.and(n.value) ?? n.value
 		})
 
 		if (
 			this.sequence &&
-			$ark.intrinsic.nonNegativeIntegerString.includes(key)
+			typeOrTermExtends(key, $ark.intrinsic.nonNegativeIntegerString)
 		) {
 			if (hasArkKind(key, "root")) {
 				if (this.sequence.variadic)
@@ -172,26 +189,32 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 				key.extends($ark.intrinsic.number)
 			) {
 				return throwParseError(
-					writeRawNumberIndexMessage(key.expression, this.sequence.expression)
+					writeNumberIndexMessage(key.expression, this.sequence.expression)
 				)
 			}
-			return throwParseError(writeBadKeyAccessMessage(key, this.expression))
+			return throwParseError(writeInvalidKeysMessage(this.expression, [key]))
 		}
 
-		const result = value.get(...tail)
+		const result = value.get(...path)
 		return required ? result : result.or($ark.intrinsic.undefined)
 	}
 
 	readonly exhaustive: boolean =
 		this.undeclared !== undefined || this.index !== undefined
 
+	pick(...keys: array<BaseRoot | Key>): StructureNode {
+		this.assertHasKeys(keys)
+		return this.$.node("structure", this.filterKeys("pick", keys))
+	}
+
 	omit(...keys: array<BaseRoot | Key>): StructureNode {
-		return this.$.node("structure", omitFromInner(this.inner, keys))
+		this.assertHasKeys(keys)
+		return this.$.node("structure", this.filterKeys("omit", keys))
 	}
 
 	merge(r: StructureNode): StructureNode {
 		const inner = makeRootAndArrayPropertiesMutable(
-			omitFromInner(this.inner, [r.keyof()])
+			this.filterKeys("omit", [r.keyof()])
 		)
 		if (r.required) inner.required = append(inner.required, r.required)
 		if (r.optional) inner.optional = append(inner.optional, r.optional)
@@ -200,6 +223,29 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 		if (r.undeclared) inner.undeclared = r.undeclared
 		else delete inner.undeclared
 		return this.$.node("structure", inner)
+	}
+
+	private filterKeys(
+		operation: "pick" | "omit",
+		keys: array<BaseRoot | Key>
+	): StructureInner {
+		const result = { ...this.inner }
+
+		const includeKey = (key: TypeKey) => {
+			const matchesKey = keys.some(k => typeOrTermExtends(key, k))
+			return operation === "pick" ? matchesKey : !matchesKey
+		}
+
+		if (result.required)
+			result.required = result.required.filter(prop => includeKey(prop.key))
+
+		if (result.optional)
+			result.optional = result.optional.filter(prop => includeKey(prop.key))
+
+		if (result.index)
+			result.index = result.index.filter(index => includeKey(index.signature))
+
+		return result
 	}
 
 	traverseAllows: TraverseAllows<object> = (data, ctx) =>
@@ -356,29 +402,11 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 	}
 }
 
-const omitFromInner = (
-	inner: StructureInner,
-	keys: array<BaseRoot | Key>
-): StructureInner => {
-	const result = { ...inner }
-	keys.forEach(k => {
-		if (result.required) {
-			result.required = result.required.filter(b =>
-				hasArkKind(k, "root") ? !k.allows(b.key) : k !== b.key
-			)
-		}
-		if (result.optional) {
-			result.optional = result.optional.filter(b =>
-				hasArkKind(k, "root") ? !k.allows(b.key) : k !== b.key
-			)
-		}
-		if (result.index && hasArkKind(k, "root")) {
-			// we only have to filter index nodes if the input was a node, as
-			// literal keys should never subsume an index
-			result.index = result.index.filter(n => !n.signature.extends(k))
-		}
-	})
-	return result
+const indexerToKey = (indexable: TypeIndexer): TypeKey => {
+	if (hasArkKind(indexable, "root") && indexable.hasKind("unit"))
+		indexable = indexable.unit as Key
+	if (typeof indexable === "number") indexable = `${indexable}`
+	return indexable
 }
 
 const createStructuralWriter =
@@ -525,16 +553,11 @@ export const structureImplementation: nodeImplementationOf<StructureDeclaration>
 		}
 	})
 
-export const writeRawNumberIndexMessage = (
+export const writeNumberIndexMessage = (
 	indexExpression: string,
 	sequenceExpression: string
 ) =>
 	`${indexExpression} is not allowed as an array index on ${sequenceExpression}. Use the 'nonNegativeIntegerString' keyword instead.`
-
-export const writeBadKeyAccessMessage = (
-	key: TypeKey,
-	structuralExpression: string
-) => `${printable(key)} does not exist on ${structuralExpression}`
 
 export type NormalizedIndex = {
 	index?: IndexNode
@@ -545,7 +568,7 @@ export type NormalizedIndex = {
 export const normalizeIndex = (
 	signature: BaseRoot,
 	value: BaseRoot,
-	$: RawRootScope
+	$: InternalBaseScope
 ): NormalizedIndex => {
 	const [enumerableBranches, nonEnumerableBranches] = spliterate(
 		signature.branches,
@@ -570,7 +593,14 @@ export const normalizeIndex = (
 	return normalized
 }
 
-export type indexOf<o> =
+export type toArkKey<o, k extends keyof o> =
+	k extends number ?
+		[o, number] extends [array, k] ?
+			NonNegativeIntegerString
+		:	`${k}`
+	:	k
+
+export type arkKeyOf<o> =
 	o extends array ?
 		| (number extends o["length"] ? NonNegativeIntegerString : never)
 		| {
@@ -581,7 +611,31 @@ export type indexOf<o> =
 			[k in keyof o]: k extends number ? k | `${k}` : k
 		}[keyof o]
 
-export type indexInto<o, k extends indexOf<o>> = o[Extract<
+export type getArkKey<o, k extends arkKeyOf<o>> = o[Extract<
 	k extends NonNegativeIntegerString ? number : k,
 	keyof o
 >]
+
+export const typeKeyToString = (k: TypeKey) =>
+	hasArkKind(k, "root") ? k.expression : printable(k)
+
+export type typeKeyToString<k extends TypeKey> = typeToString<
+	k extends InferredRoot<infer t> ? t : k
+>
+
+export const writeInvalidKeysMessage = <
+	o extends string,
+	keys extends array<TypeKey>
+>(
+	o: o,
+	keys: keys
+) =>
+	`Key${keys.length === 1 ? "" : "s"} ${keys.map(typeKeyToString).join(", ")} ${keys.length === 1 ? "does" : "do"} not exist on ${o}` as writeInvalidKeysMessage<
+		o,
+		keys
+	>
+
+export type writeInvalidKeysMessage<
+	o extends string,
+	keys extends array<TypeKey>
+> = `Key${keys["length"] extends 1 ? "" : "s"} ${join<{ [i in keyof keys]: typeKeyToString<keys[i]> }, ", ">} ${keys["length"] extends 1 ? "does" : "do"} not exist on ${o}`

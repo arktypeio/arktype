@@ -1,6 +1,15 @@
 import { attest, contextualize } from "@ark/attest"
-import { internalSchema } from "@ark/schema"
-import { ark, type } from "arktype"
+import {
+	internalSchema,
+	keywordNodes,
+	writeIndivisibleMessage,
+	writeInvalidKeysMessage,
+	writeNonStructuralOperandMessage,
+	writeUnsatisfiedParameterConstraintMessage,
+	type Out,
+	type string
+} from "@ark/schema"
+import { ark, scope, type } from "arktype"
 
 contextualize(() => {
 	describe("jsObjects", () => {
@@ -70,14 +79,6 @@ contextualize(() => {
 			const expected = internalSchema({})
 			// should be equivalent to an unconstrained predicate
 			attest(type("unknown").json).equals(expected.json)
-		})
-
-		it("void", () => {
-			const t = type("void")
-			attest<void>(t.infer)
-			const expected = type("undefined")
-			//should be treated as undefined at runtime
-			attest(t.json).equals(expected.json)
 		})
 	})
 
@@ -224,6 +225,51 @@ contextualize(() => {
 			)
 			attest(parseDate(5).toString()).snap("must be a string (was number)")
 		})
+
+		it("formData", () => {
+			const user = type({
+				email: "email",
+				file: "File",
+				tags: "liftArray<string>"
+			})
+
+			const parseUserForm = type("parse.formData").pipe(user)
+
+			attest<
+				(In: FormData) => Out<{
+					email: string.matching<"?">
+					file: File
+					tags: (In: string | string[]) => Out<string[]>
+				}>
+			>(parseUserForm.t)
+
+			// support Node18
+			if (!globalThis.File) return
+
+			const data = new FormData()
+			const file = new File([], "")
+
+			data.append("email", "david@arktype.io")
+			data.append("file", file)
+			data.append("tags", "typescript")
+			data.append("tags", "arktype")
+
+			const out = parseUserForm(data)
+			attest(out).equals({
+				email: "david@arktype.io",
+				file,
+				tags: ["typescript", "arktype"]
+			})
+
+			data.set("email", "david")
+			data.set("file", null)
+			data.append("tags", file)
+
+			attest(parseUserForm(data).toString())
+				.snap(`email must be a valid email (was "david")
+file must be an instance of File (was string)
+tags[2] must be a string (was object)`)
+		})
 	})
 
 	describe("format", () => {
@@ -245,12 +291,212 @@ contextualize(() => {
 	})
 
 	describe("generics", () => {
-		it("record", () => {
-			const expected = type({ "[string]": "number" })
+		describe("record", () => {
+			it("parsed", () => {
+				const expected = type({ "[string]": "number" })
 
-			const expression = type("Record<string, number>")
-			attest(expression.json).equals(expected.json)
-			attest<typeof expected.t>(expression.t)
+				const expression = type("Record<string, number>")
+				attest(expression.json).equals(expected.json)
+				attest<typeof expected.t>(expression.t)
+			})
+
+			it("invoked", () => {
+				const expected = type({ "[string]": "number" })
+
+				const t = ark.Record("string", "number")
+				attest(t.json).equals(expected.json)
+				attest<typeof expected.t>(t.t)
+			})
+
+			it("invoked validation error", () => {
+				// @ts-expect-error
+				attest(() => ark.Record("string", "string % 2")).throwsAndHasTypeError(
+					writeIndivisibleMessage(keywordNodes.string)
+				)
+			})
+
+			it("invoked constraint error", () => {
+				// @ts-expect-error
+				attest(() => ark.Record("boolean", "number"))
+					.throws(
+						writeUnsatisfiedParameterConstraintMessage(
+							"K",
+							"string | symbol",
+							"boolean"
+						)
+					)
+					.type.errors(
+						`'string' is not assignable to parameter of type 'Type<Key, {}>'`
+					)
+			})
+		})
+
+		describe("pick", () => {
+			it("parsed", () => {
+				const types = scope({
+					from: {
+						foo: "1",
+						"bar?": "1",
+						baz: "1",
+						"quux?": "1"
+					},
+					actual: "Pick<from, 'foo' | 'bar'>",
+					expected: {
+						foo: "1",
+						"bar?": "1"
+					}
+				}).export()
+
+				attest<typeof types.expected.t>(types.actual.t)
+				attest(types.actual.expression).equals(types.expected.expression)
+			})
+
+			it("chained", () => {
+				const user = type({
+					name: "string",
+					"age?": "number",
+					isAdmin: "boolean"
+				})
+
+				const basicUser = user.pick("name", "age")
+
+				const expected = type({
+					name: "string",
+					"age?": "number"
+				})
+
+				attest<typeof expected.t>(basicUser.t)
+
+				attest(basicUser.expression).equals(expected.expression)
+			})
+
+			it("invalid key", () => {
+				const user = type({
+					name: "string"
+				})
+
+				// @ts-expect-error
+				attest(() => user.pick("length"))
+					.throws(writeInvalidKeysMessage(user.expression, ["length"]))
+					.type.errors.snap(
+						'Argument of type \'"length"\' is not assignable to parameter of type \'"name" | cast<"name">\'.'
+					)
+			})
+
+			it("non-structure", () => {
+				// @ts-expect-error
+				attest(() => type("string").pick("length")).throwsAndHasTypeError(
+					writeNonStructuralOperandMessage("pick", "string")
+				)
+			})
+		})
+
+		describe("omit", () => {
+			it("parsed", () => {
+				const types = scope({
+					from: {
+						foo: "1",
+						"bar?": "1",
+						baz: "1",
+						"quux?": "1"
+					},
+					actual: "Omit<from, 'foo' | 'bar'>",
+					expected: {
+						baz: "1",
+						"quux?": "1"
+					}
+				}).export()
+
+				attest<typeof types.expected.t>(types.actual.t)
+				attest(types.actual.expression).equals(types.expected.expression)
+			})
+
+			it("chained", () => {
+				const user = type({
+					name: "string",
+					"age?": "number",
+					isAdmin: "boolean",
+					"isActive?": "boolean"
+				})
+
+				const extras = user.omit("name", "age")
+
+				const expected = type({
+					isAdmin: "boolean",
+					"isActive?": "boolean"
+				})
+
+				attest<typeof expected.t>(extras.t)
+
+				attest(extras.expression).equals(expected.expression)
+			})
+		})
+
+		describe("extract", () => {
+			it("parsed", () => {
+				const types = scope({
+					from: "0 | 1",
+					actual: "Extract<from, 1>",
+					expected: "1"
+				}).export()
+
+				attest<typeof types.expected.t>(types.actual.t)
+				attest(types.actual.expression).equals(types.expected.expression)
+			})
+
+			it("chained", () => {
+				const extracted = type("true | 0 | 'foo'").extract("boolean | number")
+
+				const expected = type("true | 0")
+
+				attest<typeof expected.t>(extracted.t)
+
+				attest(extracted.expression).equals(expected.expression)
+			})
+		})
+
+		describe("exclude", () => {
+			it("parsed", () => {
+				const types = scope({
+					from: "0 | 1",
+					actual: "Exclude<from, 1>",
+					expected: "0"
+				}).export()
+
+				attest<typeof types.expected.t>(types.actual.t)
+				attest(types.actual.expression).equals(types.expected.expression)
+			})
+
+			it("chained", () => {
+				const extracted = type("true | 0 | 'foo'").exclude("string")
+
+				const expected = type("true | 0")
+
+				attest<typeof expected.t>(extracted.t)
+
+				attest(extracted.expression).equals(expected.expression)
+			})
+		})
+
+		describe("liftArray", () => {
+			it("parsed", () => {
+				const liftNumberArray = type("liftArray<number>")
+
+				attest<(In: number | number[]) => Out<number[]>>(liftNumberArray.t)
+
+				attest(liftNumberArray(5)).equals([5])
+				attest(liftNumberArray([5])).equals([5])
+				attest(liftNumberArray("five").toString()).snap(
+					"must be a number or an array (was string)"
+				)
+				attest(liftNumberArray(["five"]).toString()).snap(
+					"must be a number (was object) or [0] must be a number (was string)"
+				)
+			})
+
+			it("invoked", () => {
+				ark.liftArray({ data: "number" })
+			})
 		})
 	})
 })

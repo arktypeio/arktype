@@ -1,7 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import {
-	writeBadKeyAccessMessage,
-	writeRawNumberIndexMessage,
+	writeInvalidKeysMessage,
+	writeNumberIndexMessage,
 	type Matching,
 	type of,
 	type string
@@ -72,7 +72,7 @@ contextualize(() => {
 
 		// @ts-expect-error
 		attest(() => t.get("bar")).throws(
-			writeBadKeyAccessMessage("bar", t.expression)
+			writeInvalidKeysMessage(t.expression, ["bar"])
 		)
 	})
 
@@ -114,7 +114,7 @@ contextualize(() => {
 
 		// @ts-expect-error
 		attest(() => t.get("goog").expression).throws(
-			writeBadKeyAccessMessage("goog", t.expression)
+			writeInvalidKeysMessage(t.expression, ["goog"])
 		)
 	})
 
@@ -137,11 +137,11 @@ contextualize(() => {
 
 		// @ts-expect-error
 		attest(() => t.get("-1")).throws(
-			writeBadKeyAccessMessage("-1", t.expression)
+			writeInvalidKeysMessage(t.expression, ["-1"])
 		)
 		// @ts-expect-error
 		attest(() => t.get("5.5")).throws(
-			writeBadKeyAccessMessage("5.5", t.expression)
+			writeInvalidKeysMessage(t.expression, ["5.5"])
 		)
 
 		attest(t.get(ark.nonNegativeIntegerString).expression).snap(
@@ -154,13 +154,13 @@ contextualize(() => {
 
 		// @ts-expect-error
 		attest(() => t.get(ark.number)).throws(
-			writeRawNumberIndexMessage("number", t.expression)
+			writeNumberIndexMessage("number", t.expression)
 		)
 
 		// number subtype
 		// @ts-expect-error
 		attest(() => t.get(ark.integer)).throws(
-			writeRawNumberIndexMessage("number % 1", t.expression)
+			writeNumberIndexMessage("number % 1", t.expression)
 		)
 	})
 
@@ -177,7 +177,7 @@ contextualize(() => {
 
 		// out of bounds
 		// @ts-expect-error
-		attest(() => t.get(2)).throws(writeBadKeyAccessMessage("2", t.expression))
+		attest(() => t.get(2)).throws(writeInvalidKeysMessage(t.expression, ["2"]))
 	})
 
 	it("variadic tuple", () => {

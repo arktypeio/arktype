@@ -48,5 +48,8 @@
 	},
 	"debug.javascript.terminalOptions": {
 		"skipFiles": ["<node_internals>/**", "**/node_modules/**"]
+	},
+	"editor.quickSuggestions": {
+		"strings": "on"
 	}
 }

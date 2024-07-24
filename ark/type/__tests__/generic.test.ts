@@ -6,7 +6,8 @@ import {
 	writeUnresolvableMessage,
 	writeUnsatisfiedParameterConstraintMessage
 } from "@ark/schema"
-import { scope, type } from "arktype"
+import type { conform, Hkt } from "@ark/util"
+import { generic, scope, type } from "arktype"
 import { emptyGenericParameterMessage, type Generic } from "../generic.js"
 import { writeUnclosedGroupMessage } from "../parser/string/reduce/shared.js"
 import { writeInvalidGenericArgCountMessage } from "../parser/string/shift/operand/genericArgs.js"
@@ -164,7 +165,6 @@ contextualize(() => {
 
 			attest<typeof expected.t>(t.t)
 			attest(t.expression).equals(expected.expression)
-
 			// @ts-expect-error
 			attest(() => positiveToInteger("number"))
 				.throws(
@@ -175,7 +175,7 @@ contextualize(() => {
 					)
 				)
 				.type.errors(
-					"Argument of type 'string' is not assignable to parameter of type 'Root<moreThan<0>, any>'"
+					"Argument of type 'string' is not assignable to parameter of type 'Type<moreThan<0>, {}>'"
 				)
 		})
 
@@ -387,37 +387,58 @@ contextualize(() => {
 					}).export()
 				).throwsAndHasTypeError(emptyGenericParameterMessage)
 			})
-
-			// it("self-reference", () => {
-			// 	const types = scope({
-			// 		"alternate<a, b>": {
-			// 			// ensures old generic params aren't intersected with
-			// 			// updated values (would be never)
-			// 			swap: "alternate<b, a>",
-			// 			order: ["a", "b"]
-			// 		},
-			// 		reference: "alternate<0, 1>"
-			// 	}).export()
-
-			// 	attest<[0, 1]>(types.reference.infer.swap.swap.order)
-			// 	attest<[1, 0]>(types.reference.infer.swap.swap.swap.order)
-			// 	const fromCall = types.alternate("'off'", "'on'")
-			// 	attest<["off", "on"]>(fromCall.infer.swap.swap.order)
-			// 	attest<["on", "off"]>(fromCall.infer.swap.swap.swap.order)
-			// })
-
-			// it("self-reference no params", () => {
-			// 	attest(() =>
-			// 		scope({
-			// 			"nest<t>": {
-			// 				// @ts-expect-error
-			// 				nest: "nest"
-			// 			}
-			// 		}).export()
-			// 	).throwsAndHasTypeError(
-			// 		writeInvalidGenericArgsMessage("nest", ["t"], [])
-			// 	)
-			// })
 		}
 	)
+	describe("hkt", () => {
+		it("can infer a generic from an hkt", () => {
+			// class MyExternalClass<T> {
+			// 	constructor(public data: T) {}
+			// }
+			// class ValidatedExternalGeneric extends generic("T")(args =>
+			// 	type("instanceof", MyExternalClass).and({
+			// 		data: args.T
+			// 	})
+			// ) {
+			// 	declare hkt: (
+			// 		args: conform<this[Hkt.args], [unknown]>
+			// 	) => MyExternalClass<(typeof args)[0]>
+			// }
+			// const myExternalClass = new ValidatedExternalGeneric()
+			// const myType = myExternalClass({
+			// 	name: "string",
+			// 	age: "number"
+			// })
+		})
+	})
+
+	describe("cyclic", () => {
+		// it("self-reference", () => {
+		// 	const types = scope({
+		// 		"alternate<a, b>": {
+		// 			// ensures old generic params aren't intersected with
+		// 			// updated values (would be never)
+		// 			swap: "alternate<b, a>",
+		// 			order: ["a", "b"]
+		// 		},
+		// 		reference: "alternate<0, 1>"
+		// 	}).export()
+		// 	attest<[0, 1]>(types.reference.infer.swap.swap.order)
+		// 	attest<[1, 0]>(types.reference.infer.swap.swap.swap.order)
+		// 	const fromCall = types.alternate("'off'", "'on'")
+		// 	attest<["off", "on"]>(fromCall.infer.swap.swap.order)
+		// 	attest<["on", "off"]>(fromCall.infer.swap.swap.swap.order)
+		// })
+		// it("self-reference no params", () => {
+		// 	attest(() =>
+		// 		scope({
+		// 			"nest<t>": {
+		// 				// @ts-expect-error
+		// 				nest: "nest"
+		// 			}
+		// 		}).export()
+		// 	).throwsAndHasTypeError(
+		// 		writeInvalidGenericArgsMessage("nest", ["t"], [])
+		// 	)
+		// })
+	})
 })

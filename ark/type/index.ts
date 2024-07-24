@@ -1,6 +1,6 @@
 export { ArkError, ArkErrors as ArkErrors } from "@ark/schema"
 export type { Ark, ArkConfig, Out, constrained, inferred } from "@ark/schema"
-export { ambient, ark, declare, define, match, type } from "./ark.js"
+export { ambient, ark, declare, define, generic, match, type } from "./ark.js"
 export { Module } from "./module.js"
 export {
 	scope,

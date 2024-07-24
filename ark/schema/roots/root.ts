@@ -1,4 +1,5 @@
 import type {
+	ConstraintKind,
 	DivisorSchema,
 	ExactLengthSchema,
 	ExclusiveDateRangeSchema,
@@ -6,23 +7,29 @@ import type {
 	FlatRef,
 	InclusiveDateRangeSchema,
 	InclusiveNumericRangeSchema,
+	InferredRoot,
 	LimitSchemaValue,
 	PatternSchema,
+	TypeIndexer,
 	TypeKey,
-	TypePath,
-	UnknownRangeSchema
+	UnknownRangeSchema,
+	writeInvalidOperandMessage
 } from "@ark/schema"
 import {
+	$ark,
 	cached,
 	includes,
 	omit,
-	printable,
 	throwParseError,
 	type Callable,
+	type ErrorMessage,
 	type Json,
-	type Key,
+	type NonEmptyList,
+	type anyOrNever,
 	type array,
-	type conform
+	type conform,
+	type typeToString,
+	type unset
 } from "@ark/util"
 import type {
 	constrain,
@@ -35,11 +42,16 @@ import {
 	throwInvalidOperandError,
 	type PrimitiveConstraintKind
 } from "../constraint.js"
-import type { Node, NodeSchema, reducibleKindOf } from "../kinds.js"
+import type {
+	Node,
+	NodeSchema,
+	Prerequisite,
+	reducibleKindOf
+} from "../kinds.js"
 import { BaseNode, appendUniqueFlatRefs } from "../node.js"
 import type { Predicate } from "../predicate.js"
-import type { RootScope } from "../scope.js"
-import type { BaseMeta, RawNodeDeclaration } from "../shared/declare.js"
+import type { BaseScope } from "../scope.js"
+import type { BaseMeta, BaseNodeDeclaration } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import { ArkErrors } from "../shared/errors.js"
 import {
@@ -56,25 +68,27 @@ import {
 import {
 	arkKind,
 	hasArkKind,
-	type inferred,
+	inferred,
 	type internalImplementationOf
 } from "../shared/utils.js"
 import type {
 	StructureInner,
-	UndeclaredKeyBehavior
+	UndeclaredKeyBehavior,
+	arkKeyOf,
+	getArkKey
 } from "../structure/structure.js"
 import type { constraintKindOf } from "./intersection.js"
 import type { Morph, MorphNode, inferMorphOut, inferPipes } from "./morph.js"
 import type { UnionChildKind, UnionChildNode } from "./union.js"
 
-export interface RawRootDeclaration extends RawNodeDeclaration {
+export interface InternalRootDeclaration extends BaseNodeDeclaration {
 	kind: RootKind
 }
 
-export type UnknownRoot<t = unknown> = Root<t> | BaseRoot
+export type UnknownRoot<t = unknown> = SchemaRoot<t> | BaseRoot
 
 export type TypeOnlyRootKey =
-	| (keyof Root & symbol)
+	| (keyof SchemaRoot & symbol)
 	| "infer"
 	| "inferIn"
 	| "t"
@@ -84,18 +98,24 @@ export type TypeOnlyRootKey =
 export abstract class BaseRoot<
 		/** uses -ignore rather than -expect-error because this is not an error in .d.ts
 		 * @ts-ignore allow instantiation assignment to the base type */
-		out d extends RawRootDeclaration = RawRootDeclaration
+		out d extends InternalRootDeclaration = InternalRootDeclaration
 	>
 	extends BaseNode<d>
 	// don't require intersect so we can make it protected to ensure it is not called internally
-	implements internalImplementationOf<Root, TypeOnlyRootKey | "intersect">
+	implements
+		internalImplementationOf<SchemaRoot, TypeOnlyRootKey | "intersect">
 {
+	[inferred]?: unknown
 	readonly branches: readonly Node<UnionChildKind>[] =
 		this.hasKind("union") ? this.inner.branches : [this as never]
 
 	readonly [arkKind] = "root"
 
 	get internal(): this {
+		return this
+	}
+
+	as(): this {
 		return this
 	}
 
@@ -118,6 +138,14 @@ export abstract class BaseRoot<
 		return intersectNodesRoot(this, rNode, this.$) as never
 	}
 
+	isUnknown(): boolean {
+		return this.hasKind("intersection") && this.children.length === 0
+	}
+
+	isNever(): boolean {
+		return this.hasKind("union") && this.children.length === 0
+	}
+
 	and(r: unknown): BaseRoot {
 		const result = this.intersect(r)
 		return result instanceof Disjoint ? result.throw() : (result as never)
@@ -134,21 +162,70 @@ export abstract class BaseRoot<
 		return result instanceof ArkErrors ? result.throw() : result
 	}
 
-	get(...[key, ...tail]: TypePath): BaseRoot {
-		if (key === undefined) return this
-		if (hasArkKind(key, "root") && key.hasKind("unit")) key = key.unit as Key
-		if (typeof key === "number") key = `${key}`
+	pick(...keys: array<TypeKey>): BaseRoot {
+		return this.filterKeys("pick", keys)
+	}
 
+	omit(...keys: array<TypeKey>): BaseRoot {
+		return this.filterKeys("omit", keys)
+	}
+
+	private filterKeys(
+		operation: "pick" | "omit",
+		keys: array<TypeKey>
+	): BaseRoot {
 		if (this.hasKind("union")) {
-			return this.branches.reduce(
-				(acc, b) => acc.or(b.get(key, ...tail)),
-				$ark.intrinsic.never
+			return this.$.schema(
+				this.branches.map(branch => branch[operation](...keys))
 			)
 		}
 
+		if (this.hasKind("morph")) {
+			return this.$.node("morph", {
+				...this.inner,
+				in: this.in[operation](...keys)
+			})
+		}
+
+		if (this.hasKind("intersection")) {
+			if (!this.inner.structure) {
+				throwParseError(
+					writeNonStructuralOperandMessage(operation, this.expression)
+				)
+			}
+
+			return this.$.node("intersection", {
+				...this.inner,
+				structure: this.inner.structure[operation](...keys)
+			})
+		}
+
+		if (this.isBasis() && this.domain === "object")
+			// if it's an object but has no Structure node, return an empty object
+			return $ark.intrinsic.object.internal.bindScope(this.$)
+
+		return throwParseError(
+			writeNonStructuralOperandMessage(operation, this.expression)
+		)
+	}
+
+	get(...path: array<TypeIndexer>): BaseRoot {
+		if (path[0] === undefined) return this
+
+		if (this.hasKind("union")) {
+			return this.branches.reduce(
+				(acc, b) => acc.or(b.get(...path)),
+				$ark.intrinsic.never.internal
+			)
+		}
+
+		const branch = this as {} as UnionChildNode
+
 		return (
-			(this as {} as UnionChildNode).structure?.get(key, ...tail) ??
-			throwParseError(writeNonStructuralIndexAccessMessage(key))
+			branch.structure?.get(...(path as NonEmptyList<TypeIndexer>)) ??
+			throwParseError(
+				writeNonStructuralOperandMessage("index access", this.expression)
+			)
 		)
 	}
 
@@ -190,10 +267,6 @@ export abstract class BaseRoot<
 
 	subsumes(r: UnknownRoot): boolean {
 		return r.extends(this as never)
-	}
-
-	includes(r: unknown): boolean {
-		return hasArkKind(r, "root") ? r.extends(this) : this.allows(r)
 	}
 
 	configure(configOrDescription: BaseMeta | string): this {
@@ -402,7 +475,7 @@ export const exclusivizeRangeSchema = <schema extends UnknownRangeSchema>(
 export type exclusivizeRangeSchema<schema extends UnknownRangeSchema> =
 	schema extends LimitSchemaValue ? { rule: schema; exclusive: true } : schema
 
-export declare abstract class InnerRoot<t = unknown, $ = any> extends Callable<
+export declare abstract class Root<t = unknown, $ = any> extends Callable<
 	(data: unknown) => distillOut<t> | ArkErrors
 > {
 	t: t
@@ -417,9 +490,10 @@ export declare abstract class InnerRoot<t = unknown, $ = any> extends Callable<
 	expression: string
 	internal: BaseRoot
 
-	abstract $: RootScope<$>;
+	abstract $: BaseScope<$>;
 	abstract get in(): unknown
 	abstract get out(): unknown
+	abstract as(): unknown
 	abstract keyof(): unknown
 	abstract intersect(r: never): unknown | Disjoint
 	abstract and(r: never): unknown
@@ -430,8 +504,14 @@ export declare abstract class InnerRoot<t = unknown, $ = any> extends Callable<
 	abstract exclude(r: never): unknown
 	abstract extends(r: never): this is unknown
 	abstract overlaps(r: never): boolean
+	abstract pick(...keys: never): unknown
+	abstract omit(...keys: never): unknown
 	abstract array(): unknown
 	abstract pipe(morph: Morph): unknown
+
+	isUnknown(): boolean
+
+	isNever(): boolean
 
 	assert(data: unknown): this["infer"]
 
@@ -451,22 +531,53 @@ export declare abstract class InnerRoot<t = unknown, $ = any> extends Callable<
 // this is declared as a class internally so we can ensure all "abstract"
 // methods of BaseRoot are overridden, but we end up exporting it as an interface
 // to ensure it is not accessed as a runtime value
-declare class _Root<t = unknown, $ = any> extends InnerRoot<t, $> {
-	$: RootScope<$>;
+declare class _SchemaRoot<t = unknown, $ = any> extends Root<t, $> {
+	$: BaseScope<$>
 
-	get in(): Root<this["tIn"], $>
+	as<t = unset>(...args: validateChainedAsArgs<t>): SchemaRoot<t, $>
 
-	get out(): Root<this["tOut"], $>
+	get in(): SchemaRoot<this["tIn"], $>
 
-	keyof(): Root<keyof this["inferIn"], $>
+	get out(): SchemaRoot<this["tOut"], $>
 
-	intersect<r extends Root>(r: r): Root<inferIntersection<t, r["t"]>> | Disjoint
+	keyof(): SchemaRoot<keyof this["inferIn"], $>
 
-	and<r extends Root>(r: r): Root<inferIntersection<t, r["t"]>>
+	pick<const key extends arkKeyOf<t> = never>(
+		this: validateStructuralOperand<"pick", this>,
+		...keys: array<key | InferredRoot<key>>
+	): SchemaRoot<{ [k in key]: getArkKey<t, k> }, $>
 
-	or<r extends Root>(r: r): Root<t | r["t"]>
+	omit<const key extends arkKeyOf<t> = never>(
+		this: validateStructuralOperand<"omit", this>,
+		...keys: array<key | InferredRoot<key>>
+	): SchemaRoot<{ [k in key]: getArkKey<t, k> }, $>
 
-	array(): Root<t[], $>
+	get<k1 extends arkKeyOf<t>>(
+		k1: k1 | InferredRoot<k1>
+	): SchemaRoot<getArkKey<t, k1>, $>
+	get<k1 extends arkKeyOf<t>, k2 extends arkKeyOf<getArkKey<t, k1>>>(
+		k1: k1 | InferredRoot<k1>,
+		k2: k2 | InferredRoot<k2>
+	): SchemaRoot<getArkKey<getArkKey<t, k1>, k2>, $>
+	get<
+		k1 extends arkKeyOf<t>,
+		k2 extends arkKeyOf<getArkKey<t, k1>>,
+		k3 extends arkKeyOf<getArkKey<getArkKey<t, k1>, k2>>
+	>(
+		k1: k1 | InferredRoot<k1>,
+		k2: k2 | InferredRoot<k2>,
+		k3: k3 | InferredRoot<k3>
+	): SchemaRoot<getArkKey<getArkKey<getArkKey<t, k1>, k2>, k3>, $>
+
+	intersect<r extends SchemaRoot>(
+		r: r
+	): SchemaRoot<inferIntersection<t, r["t"]>> | Disjoint
+
+	and<r extends SchemaRoot>(r: r): SchemaRoot<inferIntersection<t, r["t"]>>
+
+	or<r extends SchemaRoot>(r: r): SchemaRoot<t | r["t"]>
+
+	array(): SchemaRoot<t[], $>
 
 	constrain<
 		kind extends PrimitiveConstraintKind,
@@ -474,41 +585,41 @@ declare class _Root<t = unknown, $ = any> extends InnerRoot<t, $> {
 	>(
 		kind: conform<kind, constraintKindOf<this["inferIn"]>>,
 		schema: schema
-	): Root<constrain<t, kind, schema>, $>
+	): SchemaRoot<constrain<t, kind, schema>, $>
 
-	equals<r>(r: Root<r>): this is Root<r>
+	equals<r>(r: SchemaRoot<r>): this is SchemaRoot<r>
 
 	// TODO: i/o
-	extract<r>(r: Root<r>): Root<t, $>
-	exclude<r>(r: Root<r>): Root<t, $>
+	extract<r>(r: SchemaRoot<r>): SchemaRoot<t, $>
+	exclude<r>(r: SchemaRoot<r>): SchemaRoot<t, $>
 
 	// add the extra inferred intersection so that a variable of Type
 	// can be narrowed without other branches becoming never
-	extends<r>(other: Root<r>): this is Root<r> & { [inferred]?: r }
+	extends<r>(other: SchemaRoot<r>): this is SchemaRoot<r> & { [inferred]?: r }
 
-	pipe<a extends Morph<this["infer"]>>(a: a): Root<inferPipes<t, [a]>, $>
+	pipe<a extends Morph<this["infer"]>>(a: a): SchemaRoot<inferPipes<t, [a]>, $>
 	pipe<a extends Morph<this["infer"]>, b extends Morph<inferMorphOut<a>>>(
 		a: a,
 		b: b
-	): Root<inferPipes<t, [a, b]>, $>
+	): SchemaRoot<inferPipes<t, [a, b]>, $>
 	pipe<
 		a extends Morph<this["infer"]>,
 		b extends Morph<inferMorphOut<a>>,
 		c extends Morph<inferMorphOut<b>>
-	>(a: a, b: b, c: c): Root<inferPipes<t, [a, b, c]>, $>
+	>(a: a, b: b, c: c): SchemaRoot<inferPipes<t, [a, b, c]>, $>
 	pipe<
 		a extends Morph<this["infer"]>,
 		b extends Morph<inferMorphOut<a>>,
 		c extends Morph<inferMorphOut<b>>,
 		d extends Morph<inferMorphOut<c>>
-	>(a: a, b: b, c: c, d: d): Root<inferPipes<t, [a, b, c, d]>, $>
+	>(a: a, b: b, c: c, d: d): SchemaRoot<inferPipes<t, [a, b, c, d]>, $>
 	pipe<
 		a extends Morph<this["infer"]>,
 		b extends Morph<inferMorphOut<a>>,
 		c extends Morph<inferMorphOut<b>>,
 		d extends Morph<inferMorphOut<c>>,
 		e extends Morph<inferMorphOut<d>>
-	>(a: a, b: b, c: c, d: d, e: e): Root<inferPipes<t, [a, b, c, d, e]>, $>
+	>(a: a, b: b, c: c, d: d, e: e): SchemaRoot<inferPipes<t, [a, b, c, d, e]>, $>
 	pipe<
 		a extends Morph<this["infer"]>,
 		b extends Morph<inferMorphOut<a>>,
@@ -523,7 +634,7 @@ declare class _Root<t = unknown, $ = any> extends InnerRoot<t, $> {
 		d: d,
 		e: e,
 		f: f
-	): Root<inferPipes<t, [a, b, c, d, e, f]>, $>
+	): SchemaRoot<inferPipes<t, [a, b, c, d, e, f]>, $>
 	pipe<
 		a extends Morph<this["infer"]>,
 		b extends Morph<inferMorphOut<a>>,
@@ -540,19 +651,32 @@ declare class _Root<t = unknown, $ = any> extends InnerRoot<t, $> {
 		e: e,
 		f: f,
 		g: g
-	): Root<inferPipes<t, [a, b, c, d, e, f, g]>, $>
+	): SchemaRoot<inferPipes<t, [a, b, c, d, e, f, g]>, $>
 
-	overlaps(r: Root): boolean
+	overlaps(r: SchemaRoot): boolean
 }
 
-export const writeNonStructuralIndexAccessMessage = (key: TypeKey) =>
-	`${printable(key)} cannot be accessed on ${this}, which has no structural keys`
+export const typeOrTermExtends = (t: unknown, base: unknown) =>
+	hasArkKind(base, "root") ?
+		hasArkKind(t, "root") ? t.extends(base)
+		:	base.allows(t)
+	: hasArkKind(t, "root") ? t.hasUnit(base)
+	: base === t
 
-export interface Root<
+export type validateChainedAsArgs<t> =
+	[t] extends [unset] ?
+		[t] extends [anyOrNever] ?
+			[]
+		:	[
+				ErrorMessage<"as requires an explicit type parameter like myType.as<t>()">
+			]
+	:	[]
+
+export interface SchemaRoot<
 	/** @ts-expect-error allow instantiation assignment to the base type */
 	out t = unknown,
 	$ = any
-> extends _Root<t, $> {}
+> extends _SchemaRoot<t, $> {}
 
 export type intersectRoot<l extends RootKind, r extends NodeKind> =
 	[l, r] extends [r, l] ? l
@@ -573,3 +697,35 @@ export type schemaKindRightOf<kind extends RootKind> = Extract<
 export type schemaKindOrRightOf<kind extends RootKind> =
 	| kind
 	| schemaKindRightOf<kind>
+
+export type validateStructuralOperand<
+	name extends StructuralOperationName,
+	t extends { inferIn: unknown }
+> =
+	t["inferIn"] extends object ? t
+	:	ErrorMessage<
+			writeNonStructuralOperandMessage<name, typeToString<t["inferIn"]>>
+		>
+
+export type validateChainedConstraint<
+	kind extends ConstraintKind,
+	t extends { inferIn: unknown }
+> =
+	t["inferIn"] extends Prerequisite<kind> ? t
+	:	ErrorMessage<writeInvalidOperandMessage<kind, SchemaRoot<t["inferIn"]>>>
+
+export type StructuralOperationName = "pick" | "omit" | "index access"
+
+export type writeNonStructuralOperandMessage<
+	operation extends StructuralOperationName,
+	operand extends string
+> = `${operation} operand must be an object (was ${operand})`
+
+export const writeNonStructuralOperandMessage = <
+	operation extends StructuralOperationName,
+	operand extends string
+>(
+	operation: operation,
+	operand: operand
+): writeNonStructuralOperandMessage<operation, operand> =>
+	`${operation} operand must be an object (was ${operand})`

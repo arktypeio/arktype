@@ -13,7 +13,7 @@ import {
 	type nodeImplementationOf
 } from "../shared/implement.js"
 import type { TraverseAllows } from "../shared/traversal.js"
-import { RawBasis } from "./basis.js"
+import { InternalBasis } from "./basis.js"
 
 export interface DomainInner<
 	domain extends NonEnumerableDomain = NonEnumerableDomain
@@ -35,7 +35,7 @@ export interface DomainDeclaration
 		errorContext: DomainInner
 	}> {}
 
-export class DomainNode extends RawBasis<DomainDeclaration> {
+export class DomainNode extends InternalBasis<DomainDeclaration> {
 	traverseAllows: TraverseAllows = data => domainOf(data) === this.domain
 
 	readonly compiledCondition: string =

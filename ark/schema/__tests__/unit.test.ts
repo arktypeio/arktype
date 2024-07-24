@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { assertNodeKind, schema } from "@ark/schema"
-import { registeredReference } from "@ark/util"
+import { registeredReference } from "../shared/registry.js"
 
 contextualize(() => {
 	it("string allows", () => {

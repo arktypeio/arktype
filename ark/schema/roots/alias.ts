@@ -1,4 +1,4 @@
-import { append, cached, domainDescriptions } from "@ark/util"
+import { $ark, append, cached, domainDescriptions } from "@ark/util"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -8,7 +8,7 @@ import {
 } from "../shared/implement.js"
 import { intersectNodes } from "../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
-import { BaseRoot, type RawRootDeclaration } from "./root.js"
+import { BaseRoot, type InternalRootDeclaration } from "./root.js"
 import { defineRightwardIntersections } from "./utils.js"
 
 export interface AliasInner<alias extends string = string> extends BaseMeta {
@@ -37,7 +37,7 @@ export class AliasNode extends BaseRoot<AliasDeclaration> {
 		return this.resolve?.() ?? this.$.resolveRoot(this.alias)
 	}
 
-	rawKeyOf(): BaseRoot<RawRootDeclaration> {
+	rawKeyOf(): BaseRoot<InternalRootDeclaration> {
 		return this.resolution.keyof()
 	}
 
@@ -101,4 +101,4 @@ export const aliasImplementation: nodeImplementationOf<AliasDeclaration> =
 	})
 
 const neverIfDisjoint = (result: BaseRoot | Disjoint): BaseRoot =>
-	result instanceof Disjoint ? $ark.intrinsic.never : result
+	result instanceof Disjoint ? $ark.intrinsic.never.internal : result

@@ -1,7 +1,7 @@
 import { ensureDir, fromCwd } from "@ark/fs"
 import {
-	arrayFrom,
 	isArray,
+	liftArray,
 	tryParseNumber,
 	type autocomplete
 } from "@ark/util"
@@ -135,7 +135,7 @@ const parseTsVersions = (aliases: TsVersionAliases): TsVersionData[] => {
 	const versions = findAttestTypeScriptVersions()
 	if (aliases === "*") return versions
 
-	return arrayFrom(aliases).map(alias => {
+	return liftArray(aliases).map(alias => {
 		const matching = versions.find(v => v.alias === alias)
 		if (!matching) {
 			throw new Error(

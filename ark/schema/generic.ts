@@ -1,22 +1,24 @@
 import {
-	Callable,
+	$ark,
 	cached,
+	Callable,
 	flatMorph,
-	isThunk,
+	snapshot,
 	throwParseError,
 	type array,
-	type thunkable
+	type Hkt,
+	type Json
 } from "@ark/util"
 import type { inferRoot } from "./inference.js"
 import type { RootSchema } from "./kinds.js"
-import type { Root, UnknownRoot } from "./roots/root.js"
-import type { RawRootScope, RootScope } from "./scope.js"
+import type { SchemaRoot, UnknownRoot } from "./roots/root.js"
+import type { BaseScope, InternalBaseScope } from "./scope.js"
 import { arkKind } from "./shared/utils.js"
 
 export type GenericParamAst<
 	name extends string = string,
 	constraint = unknown
-> = readonly [name: name, constraint: constraint]
+> = [name: name, constraint: constraint]
 
 export type GenericParamDef<name extends string = string> =
 	| name
@@ -28,21 +30,19 @@ export type ConstrainedGenericParamDef<name extends string = string> =
 export const parseGeneric = (
 	paramDefs: array<GenericParamDef>,
 	bodyDef: unknown,
-	$: thunkable<RootScope>
+	$: BaseScope
 ): GenericRoot => new GenericRoot(paramDefs, bodyDef, $, $)
 
 type genericParamSchemaToAst<schema extends GenericParamDef, $> =
 	schema extends string ? GenericParamAst<schema>
 	: schema extends ConstrainedGenericParamDef ?
-		GenericParamAst<schema[0], inferRoot<schema[1], $>>
+		[schema[0], inferRoot<schema[1], $>]
 	:	never
 
 export type genericParamSchemasToAst<
 	schemas extends array<GenericParamDef>,
 	$
-> = readonly [
-	...{ [i in keyof schemas]: genericParamSchemaToAst<schemas[i], $> }
-]
+> = [...{ [i in keyof schemas]: genericParamSchemaToAst<schemas[i], $> }]
 
 export type genericParamAstToDefs<asts extends array<GenericParamAst>> = {
 	[i in keyof asts]: GenericParamDef<asts[i][0]>
@@ -64,16 +64,18 @@ type instantiateParams<params extends array<GenericParamAst>> = {
 	:	never
 }
 
-export type GenericNodeSignature<
+export type GenericRootInstantiator<
 	params extends array<GenericParamAst>,
 	def,
 	$
 > = <args extends instantiateConstraintsOf<params>>(
 	...args: args
-) => Root<inferRoot<def, $ & bindGenericNodeInstantiation<params, $, args>>>
+) => SchemaRoot<
+	inferRoot<def, $ & bindGenericNodeInstantiation<params, $, args>>
+>
 
 type instantiateConstraintsOf<params extends array<GenericParamAst>> = {
-	[i in keyof params]: Root<params[i][1]>
+	[i in keyof params]: SchemaRoot<params[i][1]>
 }
 
 export type GenericParam<
@@ -99,45 +101,41 @@ export interface GenericProps<
 	$ = any
 > {
 	[arkKind]: "generic"
+	paramsAst: params
 	params: instantiateParams<params>
 	names: genericParamNames<params>
 	constraints: instantiateConstraintsOf<params>
 	bodyDef: bodyDef
-	$: RootScope<$>
+	$: BaseScope<$>
 }
 
 export type GenericArgResolutions<
 	params extends array<GenericParamAst> = array<GenericParamAst>
 > = {
-	[i in keyof params as params[i & `${number}`][0]]: UnknownRoot<
+	[i in keyof params as params[i & `${number}`][0]]: SchemaRoot<
 		params[i & `${number}`][1]
 	>
 }
 
-export type LazyGenericSchema<
+export class LazyGenericBody<
 	params extends array<GenericParamAst> = array<GenericParamAst>,
-	returns extends RootSchema = RootSchema
-> = (args: GenericArgResolutions<params>) => returns
-
-export class LazyGenericRoot<
-	params extends array<GenericParamAst> = array<GenericParamAst>
-> extends Callable<LazyGenericSchema<params>> {}
+	returns = unknown
+> extends Callable<(args: GenericArgResolutions<params>) => returns> {}
 
 export class GenericRoot<
-		params extends array<GenericParamAst> = array<GenericParamAst>,
-		bodyDef = any,
-		$ = any
-	>
-	extends Callable<GenericNodeSignature<params, bodyDef, $>>
-	implements GenericProps
-{
+	params extends array<GenericParamAst> = array<GenericParamAst>,
+	bodyDef = unknown,
+	$ = {},
+	arg$ = $
+> extends Callable<GenericRootInstantiator<params, bodyDef, $>> {
 	readonly [arkKind] = "generic"
+	declare readonly paramsAst: params
 
 	constructor(
 		public paramDefs: genericParamAstToDefs<params>,
 		public bodyDef: bodyDef,
-		private _$: thunkable<RootScope<$>>,
-		private _arg$: thunkable<RootScope<$>>
+		public $: BaseScope<$>,
+		public arg$: BaseScope<arg$>
 	) {
 		super((...args: any[]) => {
 			const argNodes = flatMorph(this.names, (i, name) => {
@@ -152,28 +150,25 @@ export class GenericRoot<
 					)
 				}
 				return [name, arg]
-			}) as GenericArgResolutions
+			}) as GenericArgResolutions<any>
 
-			if (bodyDef instanceof LazyGenericRoot)
-				return this.$.parseRoot(bodyDef(argNodes)) as never
+			if (this.defIsLazy()) {
+				const def = this.bodyDef(argNodes)
 
-			return this.$.parseRoot(bodyDef as never, { args: argNodes }) as never
+				return this.$.parseRoot(def) as never
+			}
+
+			return this.$.parseRoot(bodyDef, { args: argNodes }) as never
 		})
-		// if this is a standalone generic, validate its base constraints right away
-		if (!isThunk(this._$)) this.validateBaseInstantiation()
-		// if it's part of a scope, scope.export will be resposible for invoking
-		// validateBaseInstantiation on export() once everything is resolvable
+
+		this.validateBaseInstantiation()
 	}
 
-	get $() {
-		return isThunk(this._$) ? this._$() : this._$
+	defIsLazy(): this is GenericRoot<params, LazyGenericBody, $, arg$> {
+		return this.bodyDef instanceof LazyGenericBody
 	}
 
-	get arg$() {
-		return isThunk(this._arg$) ? this._arg$() : this._arg$
-	}
-
-	bindScope($: RawRootScope): this {
+	bindScope($: InternalBaseScope): this {
 		if (this.arg$ === ($ as never)) return this
 		return new GenericRoot(
 			this.params as never,
@@ -181,6 +176,16 @@ export class GenericRoot<
 			this.$,
 			$ as never
 		) as never
+	}
+
+	@cached
+	get json(): Json {
+		return {
+			params: this.params.map(param =>
+				param[1].isUnknown() ? param[0] : [param[0], param[1].json]
+			),
+			body: snapshot(this.bodyDef) as never
+		}
 	}
 
 	@cached
@@ -204,7 +209,7 @@ export class GenericRoot<
 	}
 
 	@cached
-	get baseInstantiation(): Root {
+	get baseInstantiation(): SchemaRoot {
 		return this(...(this.constraints as never))
 	}
 
@@ -221,6 +226,29 @@ export class GenericRoot<
 		return this.baseInstantiation.internal.references
 	}
 }
+
+export type GenericHktSchemaParser<$ = {}> = <
+	const paramsDef extends array<GenericParamDef>
+>(
+	...params: paramsDef
+) => (
+	instantiateDef: LazyGenericBody<
+		genericParamSchemasToAst<paramsDef, $>,
+		RootSchema
+	>
+) => GenericHktRootSubclass<genericParamSchemasToAst<paramsDef, $>, $>
+
+export type GenericHktRootSubclass<
+	params extends array<GenericParamAst>,
+	$
+> = abstract new () => GenericHktRoot<params, $, $>
+
+// convenient for AST display without including default params
+interface Hkt extends Hkt.Kind {}
+
+export interface GenericHktRoot<params extends array<GenericParamAst>, $, args$>
+	extends GenericRoot<params, Hkt, $, args$>,
+		Hkt.Kind {}
 
 export const writeUnsatisfiedParameterConstraintMessage = <
 	name extends string,
