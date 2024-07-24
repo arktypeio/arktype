@@ -1,5 +1,113 @@
 # arktype
 
+## 2.0.0-beta.1
+
+### Generic Builtins
+
+In addition to `Record`, the following generics from TS are now available in ArkType:
+
+- **Pick**
+- **Omit**
+- **Extract**
+- **Exclude**
+
+These can be instantiated in one of three ways:
+
+### Syntactic Definition
+
+```ts
+// Type<1>
+const one = type("Extract<0 | 1, 1>")
+```
+
+### Chained Definition
+
+```ts
+const user = type({
+	name: "string",
+	"age?": "number",
+	isAdmin: "boolean"
+})
+
+// Type<{
+//     name: string;
+//     age?: number;
+// }>
+const basicUser = user.pick("name", "age")
+```
+
+### Invoked Definition
+
+```ts
+import { ark } from "arktype"
+
+// Type<true>
+const unfalse = ark.Exclude("boolean", "false")
+```
+
+### New Keywords
+
+#### BuiltinObjects
+
+We've added many new keywords for builtin JavaScript objects:
+
+- `ArrayBuffer`
+- `Blob`
+- `File`
+- `FormData`
+- `Headers`
+- `Request`
+- `Response`
+- `URL`
+- `TypedArray.Int8`
+- `TypedArray.Uint8`
+- `TypedArray.Uint8Clamped`
+- `TypedArray.Int16`
+- `TypedArray.Uint16`
+- `TypedArray.Int32`
+- `TypedArray.Uint32`
+- `TypedArray.Float32`
+- `TypedArray.Float64`
+- `TypedArray.BigInt64`
+- `TypedArray.BigUint64`
+
+#### `pasre.formData` and `liftArray`
+
+We've also added a new builtin parse keyword, `parse.formData`. It validates an input is an instance of `FormData`, then converts it to a `Record<string, string | File | string[] | File[]>`. The first entry for a given key will have a `string | File` value. If subsequent entries with the same key are encountered, the value will be an array listing them.
+
+This is especially useful when combined with a new builtin generic, `liftArray`. This generic accepts a single parameter, accepts inputs of that type or arrays of that type, and converts the input to an array if it is not one already.
+
+Here's an example of how they can be used together:
+
+```ts
+const user = type({
+	email: "email",
+	file: "File",
+	tags: "liftArray<string>"
+})
+
+// Type<(In: FormData) => Out<{
+//     email: string.matching<"?">;
+//     file: File;
+//     tags: (In: string | string[]) => Out<string[]>;
+// }>>
+const parseUserForm = type("parse.formData").pipe(user)
+```
+
+### Generic HKTs
+
+Our new generics have been built using a new method for integrating arbitrary external types as native ArkType generics! This opens up tons of possibilities for external integrations that would otherwise not be possible, but we're still finalizing the API. As a preview, here's what the implementation of `Exclude` looks like internally:
+
+```ts
+class ArkExclude extends generic("T", "U")(args => args.T.exclude(args.U)) {
+	declare hkt: (
+		args: conform<this[Hkt.args], [unknown, unknown]>
+	) => Exclude<(typeof args)[0], (typeof args)[1]>
+}
+```
+
+More to come on this as the API is finalized!
+
 ## 2.0.0-beta.0
 
 ### Generics

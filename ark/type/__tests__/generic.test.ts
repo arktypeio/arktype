@@ -6,7 +6,8 @@ import {
 	writeUnresolvableMessage,
 	writeUnsatisfiedParameterConstraintMessage
 } from "@ark/schema"
-import { scope, type } from "arktype"
+import type { conform, Hkt } from "@ark/util"
+import { generic, scope, type } from "arktype"
 import { emptyGenericParameterMessage, type Generic } from "../generic.js"
 import { writeUnclosedGroupMessage } from "../parser/string/reduce/shared.js"
 import { writeInvalidGenericArgCountMessage } from "../parser/string/shift/operand/genericArgs.js"
@@ -390,10 +391,23 @@ contextualize(() => {
 	)
 	describe("hkt", () => {
 		it("can infer a generic from an hkt", () => {
-			// const symbolRecord = generic(
-			// 	["K", ark.symbol],
-			// 	"V"
-			// )(class extends GenericHkt {})
+			// class MyExternalClass<T> {
+			// 	constructor(public data: T) {}
+			// }
+			// class ValidatedExternalGeneric extends generic("T")(args =>
+			// 	type("instanceof", MyExternalClass).and({
+			// 		data: args.T
+			// 	})
+			// ) {
+			// 	declare hkt: (
+			// 		args: conform<this[Hkt.args], [unknown]>
+			// 	) => MyExternalClass<(typeof args)[0]>
+			// }
+			// const myExternalClass = new ValidatedExternalGeneric()
+			// const myType = myExternalClass({
+			// 	name: "string",
+			// 	age: "number"
+			// })
 		})
 	})
 

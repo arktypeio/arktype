@@ -46,13 +46,13 @@ class ArkOmit extends generic(
 class ArkExclude extends generic("T", "U")(args => args.T.exclude(args.U)) {
 	declare hkt: (
 		args: conform<this[Hkt.args], [unknown, unknown]>
-	) => show<Exclude<(typeof args)[0], (typeof args)[1]>>
+	) => Exclude<(typeof args)[0], (typeof args)[1]>
 }
 
 class ArkExtract extends generic("T", "U")(args => args.T.extract(args.U)) {
 	declare hkt: (
 		args: conform<this[Hkt.args], [unknown, unknown]>
-	) => show<Extract<(typeof args)[0], (typeof args)[1]>>
+	) => Extract<(typeof args)[0], (typeof args)[1]>
 }
 
 class ArkLiftArray extends generic("T")(args =>
