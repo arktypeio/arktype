@@ -58,7 +58,7 @@ export const bench = <Fn extends BenchableFunction>(
 
 	const assertions = new BenchAssertions(fn, ctx)
 	Object.assign(assertions, createBenchTypeAssertion(ctx))
-	return assertions as any
+	return assertions as never
 }
 
 export const stats = {
@@ -158,7 +158,7 @@ export class BenchAssertions<
 
 	private callTimesSync() {
 		if (!this.lastCallTimes) {
-			this.lastCallTimes = loopCalls(this.fn as any, this.ctx)
+			this.lastCallTimes = loopCalls(this.fn as never, this.ctx)
 			this.lastCallTimes.sort()
 		}
 		this.applyCallTimeHooks()
@@ -167,7 +167,7 @@ export class BenchAssertions<
 
 	private async callTimesAsync() {
 		if (!this.lastCallTimes) {
-			this.lastCallTimes = await loopAsyncCalls(this.fn as any, this.ctx)
+			this.lastCallTimes = await loopAsyncCalls(this.fn as never, this.ctx)
 			this.lastCallTimes.sort()
 		}
 		this.applyCallTimeHooks()
@@ -181,7 +181,7 @@ export class BenchAssertions<
 		:	Measure<TimeUnit> | undefined,
 		callTimes: number[]
 	) {
-		if (name === "mark") return this.markAssertion(baseline as any, callTimes)
+		if (name === "mark") return this.markAssertion(baseline as never, callTimes)
 
 		const ms: number = stats[name as StatName](callTimes)
 		const comparison = createTimeComparison(ms, baseline as Measure<TimeUnit>)
@@ -204,7 +204,7 @@ export class BenchAssertions<
 			baseline ?
 				Object.entries(baseline)
 				// If nothing was passed, gather all available baselines by setting their values to undefined.
-			:	Object.entries(stats).map(([kind]) => [kind, undefined])) as any
+			:	Object.entries(stats).map(([kind]) => [kind, undefined])) as never
 		const markResults = Object.fromEntries(
 			markEntries.map(([kind, kindBaseline]) => {
 				console.group(kind)
@@ -224,7 +224,7 @@ export class BenchAssertions<
 	}
 
 	private getNextAssertions(): NextAssertions {
-		return createBenchTypeAssertion(this.ctx) as any as NextAssertions
+		return createBenchTypeAssertion(this.ctx) as never as NextAssertions
 	}
 
 	private createStatMethod<Name extends TimeAssertionName>(
@@ -268,21 +268,24 @@ export class BenchAssertions<
 		const assertions = this.createStatMethod(
 			"median",
 			baseline
-		) as any as ReturnedAssertions
+		) as never as ReturnedAssertions
 		return assertions
 	}
 
 	mean(baseline?: Measure<TimeUnit>): ReturnedAssertions {
 		this.ctx.lastSnapCallPosition = caller()
-		return this.createStatMethod("mean", baseline) as any as ReturnedAssertions
+		return this.createStatMethod(
+			"mean",
+			baseline
+		) as never as ReturnedAssertions
 	}
 
 	mark(baseline?: MarkMeasure): ReturnedAssertions {
 		this.ctx.lastSnapCallPosition = caller()
 		return this.createStatMethod(
 			"mark",
-			baseline as any
-		) as any as ReturnedAssertions
+			baseline as never
+		) as never as ReturnedAssertions
 	}
 }
 

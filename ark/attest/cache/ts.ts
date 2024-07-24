@@ -9,6 +9,7 @@ import { getConfig } from "../config.js"
 export class TsServer {
 	rootFiles!: string[]
 	virtualEnv!: tsvfs.VirtualTypeScriptEnvironment
+	program!: ts.Program
 
 	private static _instance: TsServer | null = null
 	static get instance(): TsServer {
@@ -39,6 +40,8 @@ export class TsServer {
 			ts,
 			this.tsConfigInfo.parsed.options
 		)
+
+		this.program = this.virtualEnv.languageService.getProgram()!
 
 		TsServer._instance = this
 	}

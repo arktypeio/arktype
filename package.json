@@ -15,7 +15,8 @@
 	"type": "module",
 	"private": true,
 	"scripts": {
-		"prChecks": "pnpm lint && pnpm build && pnpm testRepo && pnpm testTsVersions",
+		"prChecks": "pnpm lint && pnpm build && pnpm testRepo && pnpm bench && pnpm testTsVersions",
+		"attest": "pnpm tsx ./ark/attest/cli/cli.ts",
 		"build": "pnpm -r build",
 		"buildCjs": "ARKTYPE_CJS=1 pnpm -r build",
 		"test": "pnpm testTyped --skipTypes",

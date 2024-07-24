@@ -1,13 +1,15 @@
 import { bench } from "@ark/attest"
 import { type } from "arktype"
 
+type("never")
+
 bench("dictionary", () => {
 	const dict = type({
 		a: "string[]",
 		b: "number[]",
 		c: { nested: "boolean[]" }
 	})
-}).types([5212, "instantiations"])
+}).types([3175, "instantiations"])
 
 bench("dictionary with optional keys", () => {
 	const dict = type({
@@ -15,8 +17,8 @@ bench("dictionary with optional keys", () => {
 		"b?": "number[]",
 		"c?": { "nested?": "boolean[]" }
 	})
-}).types([5051, "instantiations"])
+}).types([3018, "instantiations"])
 
 bench("tuple", () => {
 	const tuple = type(["string[]", "number[]", ["boolean[]"]])
-}).types([11888, "instantiations"])
+}).types([10381, "instantiations"])
