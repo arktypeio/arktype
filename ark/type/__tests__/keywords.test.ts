@@ -182,21 +182,25 @@ contextualize(() => {
 			)
 		})
 
-		it("unix", () => {
-			const unix = type("unix")
+		it("unixTimestamp", () => {
+			const unixTimestamp = type("unixTimestamp")
 
 			// valid Unix timestamp
-			attest(unix(1621530000)).equals(1621530000)
-			attest(unix(8640000000000000)).equals(8640000000000000)
+			attest(unixTimestamp(1621530000)).equals(1621530000)
+			attest(unixTimestamp(8640000000000000)).equals(8640000000000000)
+			attest(unixTimestamp(-8640000000000000)).equals(-8640000000000000)
 			// invalid Unix timestamp
-			attest(unix(-1).toString()).equals(
-				"must be a non-negative integer representing a Unix timestamp (was -1)"
+			attest(unixTimestamp("foo").toString()).equals(
+				"must be a number representing a Unix timestamp (was string)"
 			)
-			attest(unix(1.5).toString()).equals(
-				"must be a non-negative integer representing a Unix timestamp (was 1.5)"
+			attest(unixTimestamp(1.5).toString()).equals(
+				"must be an integer representing a Unix timestamp (was 1.5)"
 			)
-			attest(unix(8640000000000001).toString()).equals(
-				"must be a non-negative integer representing a Unix timestamp (was 8640000000000001)"
+			attest(unixTimestamp(-8640000000000001).toString()).equals(
+				"must be a Unix timestamp after -8640000000000000 (was -8640000000000001)"
+			)
+			attest(unixTimestamp(8640000000000001).toString()).equals(
+				"must be a Unix timestamp before 8640000000000000 (was 8640000000000001)"
 			)
 		})
 	})
