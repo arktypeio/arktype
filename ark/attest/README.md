@@ -168,6 +168,31 @@ bench(
 	.types([337, "instantiations"])
 ```
 
+If you're benchmarking an API, you'll need to include a "baseline expression" so that instantiations created when your API is initially invoked don't add noise to the individual tests.
+
+Here's an example of what that looks like:
+
+```ts
+import { bench } from "@ark/attest"
+import { type } from "arktype"
+
+// baseline expression
+type("boolean")
+
+bench("single-quoted", () => {
+	const _ = type("'nineteen characters'")
+	// would be 2697 without baseline
+}).types([610, "instantiations"])
+
+bench("keyword", () => {
+	const _ = type("string")
+	// would be 2507 without baseline
+}).types([356, "instantiations"])
+```
+
+> [!WARNING]  
+> Be sure your baseline expression is not identical to an expression you are using in any of your benchmarks. If it is, the individual benchmarks will reuse its cached types, leading to reduced (or 0) instantiations.
+
 If you'd like to fail in CI above a threshold, you can add flags like the following (default value is 20%, but it will not throw unless `--benchErrorOnThresholdExceeded` is set):
 
 ```

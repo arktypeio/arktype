@@ -1,5 +1,4 @@
 import { filePath } from "@ark/fs"
-import { throwInternalError } from "@ark/util"
 import * as tsvfs from "@typescript/vfs"
 import ts from "typescript"
 import { getConfig } from "../config.js"
@@ -145,15 +144,25 @@ export const createOrUpdateFile = (
 	return env.getSourceFile(fileName)
 }
 
+declare module "typescript" {
+	interface SourceFile {
+		imports: ts.StringLiteral[]
+	}
+
+	interface Program {
+		getResolvedModuleFromModuleSpecifier(
+			moduleSpecifier: ts.StringLiteralLike,
+			sourceFile?: ts.SourceFile
+		): ts.ResolvedModuleWithFailedLookupLocations
+	}
+}
+
 const getInstantiationsWithFile = (fileText: string, fileName: string) => {
 	const env = getIsolatedEnv()
 	const file = createOrUpdateFile(env, fileName, fileText)
 	const program = getProgram(env)
 	program.emit(file)
 	const count = program.getInstantiationCount()
-	if (count === undefined)
-		throwInternalError(`Unable to gather instantiation count for ${fileText}`)
-
 	return count
 }
 

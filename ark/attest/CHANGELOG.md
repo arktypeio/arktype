@@ -1,5 +1,9 @@
 # @ark/attest
 
+## 0.9.4
+
+Improve benchmark source extraction, add notes on baseline expressions
+
 ## 0.9.2
 
 Fix a bug preventing consecutive benchmark runs from populating snapshots inline
