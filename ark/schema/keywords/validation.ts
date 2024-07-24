@@ -1,8 +1,8 @@
 import type {
 	anonymous,
+	AtLeast,
+	AtMost,
 	DivisibleBy,
-	LessThan,
-	MoreThan,
 	number,
 	string
 } from "../ast.js"
@@ -101,7 +101,7 @@ export interface validationExports {
 	ip: string.matching<anonymous>
 	integer: number.divisibleBy<1>
 	unixTimestamp: number.is<
-		DivisibleBy<1> & MoreThan<-8640000000000000> & LessThan<-8640000000000000>
+		DivisibleBy<1> & AtMost<8640000000000000> & AtLeast<-8640000000000000>
 	>
 }
 
