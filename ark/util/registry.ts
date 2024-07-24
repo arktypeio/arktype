@@ -8,7 +8,7 @@ import type { PartialRecord } from "./records.js"
 // recent node versions (https://nodejs.org/api/esm.html#json-modules).
 
 // For now, we assert this matches the package.json version via a unit test.
-export const arkUtilVersion = "0.1.0"
+export const arkUtilVersion = "0.1.1"
 
 export const initialRegistryContents = {
 	version: arkUtilVersion,
