@@ -54,6 +54,15 @@ const creditCard = defineRoot({
 	}
 })
 
+const unix = defineRoot({
+	domain: "number",
+	predicate: {
+		predicate: (n: number) =>
+			Number.isInteger(n) && n >= 0 && !isNaN(+new Date(n)),
+		description: "a non-negative integer representing a Unix timestamp"
+	}
+})
+
 export interface validationExports {
 	alpha: string.matching<anonymous>
 	alphanumeric: string.matching<anonymous>
@@ -67,6 +76,7 @@ export interface validationExports {
 	semver: string.matching<anonymous>
 	ip: string.matching<anonymous>
 	integer: number.divisibleBy<1>
+	unix: number.atLeast<0>
 }
 
 export type validation = SchemaModule<validationExports>
@@ -87,7 +97,8 @@ export const validation: validation = schemaScope(
 		integer: {
 			domain: "number",
 			divisor: 1
-		}
+		},
+		unix
 	},
 	{ prereducedAliases: true }
 ).export()

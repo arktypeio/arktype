@@ -181,6 +181,17 @@ contextualize(() => {
 				'must be a valid IPv4 address or a valid IPv6 address (was "2001:0db8:85a3:0000:0000:8a2e:0370:733g")'
 			)
 		})
+
+		it("unix", () => {
+			const unix = type("unix")
+
+			// valid Unix timestamp
+			attest(unix(1621530000)).equals(1621530000)
+			// invalid Unix timestamp
+			attest(unix(-1).toString()).equals(
+				"must be a non-negative integer representing a Unix timestamp (was -1)"
+			)
+		})
 	})
 
 	describe("parse", () => {
