@@ -243,6 +243,9 @@ contextualize(() => {
 				}>
 			>(parseUserForm.t)
 
+			// support Node18
+			if (!globalThis.File) return
+
 			const data = new FormData()
 			const file = new File([], "")
 

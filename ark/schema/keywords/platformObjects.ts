@@ -22,7 +22,8 @@ export const platformObjects: platformObjects = schemaScope(
 	{
 		ArrayBuffer,
 		Blob,
-		File,
+		// support Node18
+		File: globalThis.File ?? Blob,
 		FormData,
 		Headers,
 		Request,

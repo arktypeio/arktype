@@ -77,6 +77,9 @@ export const parse = (data: FormData): ParsedFormData => {
 	return result
 }
 
+// support Node18
+const File = globalThis.File ?? Blob
+
 const formData = defineRoot({
 	in: FormData,
 	morphs: (data: FormData): ParsedFormData => {
