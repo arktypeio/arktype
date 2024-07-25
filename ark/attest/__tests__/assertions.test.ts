@@ -25,8 +25,28 @@ describe("type assertions", () => {
 	})
 
 	it("type toString", () => {
-		attest(o).type.toString("{ ark: string; }")
-		attest(o).type.toString.is("{ ark: string; }")
+		attest(o).type.toString("{ ark: string }")
+		attest(o).type.toString.is("{ ark: string }")
+	})
+
+	it("type toString multiline", () => {
+		const obj = {
+			ark: "type",
+			type: "script",
+			vali: "dator",
+			opti: "mized",
+			from: "editor",
+			to: "runtime"
+		}
+
+		attest(obj).type.toString.is(`{
+	ark: string
+	type: string
+	vali: string
+	opti: string
+	from: string
+	to: string
+}`)
 	})
 
 	it("equals", () => {

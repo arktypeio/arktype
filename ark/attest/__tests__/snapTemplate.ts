@@ -5,6 +5,17 @@ setup()
 
 attest({ re: "do" }).equals({ re: "do" }).type.toString.snap()
 
+attest({
+	ark: "type",
+	type: "script",
+	vali: "dator",
+	opti: "mized",
+	from: "editor",
+	to: "runtime"
+})
+	.snap()
+	.type.toString.snap()
+
 attest(5).snap()
 
 attest({ re: "do" }).snap()

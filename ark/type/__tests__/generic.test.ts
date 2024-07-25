@@ -105,7 +105,7 @@ contextualize(() => {
 			const expectedContents = type({ a: "string|this" })
 			const expectedBox = type({ box: expectedContents })
 
-			attest(t.t).type.toString.snap("{ box: { a: string | ...; }; }")
+			attest(t.t).type.toString.snap(`{ box: { a: string | "..." } }`)
 			attest(t.json).equals(expectedBox.json)
 		})
 

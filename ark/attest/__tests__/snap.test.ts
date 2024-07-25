@@ -17,7 +17,7 @@ contextualize(() => {
 
 	it("snap", () => {
 		attest<{ re: string }>(o).snap({ re: `do` })
-		attest(o).equals({ re: "do" }).type.toString.snap(`{ re: string; }`)
+		attest(o).equals({ re: "do" }).type.toString.snap("{ re: string }")
 		assert.throws(
 			() => attest(o).snap({ re: `dorf` }),
 			assert.AssertionError,
@@ -26,9 +26,9 @@ contextualize(() => {
 	})
 
 	it("value and type snap", () => {
-		attest(o).snap({ re: `do` }).type.toString.snap(`{ re: string; }`)
+		attest(o).snap({ re: `do` }).type.toString.snap("{ re: string }")
 		assert.throws(
-			() => attest(o).snap({ re: `do` }).type.toString.snap(`{ re: number; }`),
+			() => attest(o).snap({ re: `do` }).type.toString.snap(`{ re: number }`),
 			assert.AssertionError,
 			"number"
 		)

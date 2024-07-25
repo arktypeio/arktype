@@ -21,7 +21,7 @@ contextualize(() => {
 		it("objects evaluated", () => {
 			type t = intersectParameters<[{ a: string }], [{ b: boolean }]>
 			// Snapshotted so that { a: string } & { b: boolean } fails
-			attest({} as t).type.toString.snap("[{ a: string; b: boolean; }]")
+			attest({} as t).type.toString.snap("[{ a: string; b: boolean }]")
 		})
 
 		it("unknown preserved", () => {

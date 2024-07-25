@@ -1,8 +1,10 @@
 import { fromCwd, type SourcePosition } from "@ark/fs"
 import { throwInternalError } from "@ark/util"
+import prettier from "@prettier/sync"
 import * as tsvfs from "@typescript/vfs"
 import { readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
+import type { Options as PrettierOptions } from "prettier"
 import ts from "typescript"
 import { getConfig } from "../config.js"
 
@@ -194,12 +196,47 @@ export interface StringifiableType extends ts.Type {
 	isUnresolvable: boolean
 }
 
+const declarationPrefix = "type T = "
+const typeFormatOptions: PrettierOptions = {
+	parser: "typescript",
+	semi: false,
+	useTabs: true,
+	printWidth: 60,
+	trailingComma: "none"
+}
+
+const formatTypeString = (typeString: string) =>
+	prettier
+		.format(`${declarationPrefix}${typeString}`, typeFormatOptions)
+		.slice(declarationPrefix.length)
+		.trimEnd()
+
+const replaceKnownInvalidSyntax = (typeString: string): string => {
+	// Match '...' and '... x more ...' (known truncated type syntax)
+	const regex = /\.\.\.\s*(\d+\s*more\s*\.\.\.)?/g
+
+	// replace these with a string literal "..." so that they can still
+	// form valid expressions, e.g. "..."[]
+	return typeString.replaceAll(regex, '"..."')
+}
+
 export const getStringifiableType = (node: ts.Node): StringifiableType => {
 	const typeChecker = getInternalTypeChecker()
-	// in a call like attest<object>({a: true}),
-	// passing arg.expression avoids inferring {a: true} as object
 	const nodeType = typeChecker.getTypeAtLocation(node)
-	const stringified = typeChecker.typeToString(nodeType)
+	let stringified = typeChecker.typeToString(nodeType)
+
+	try {
+		stringified = formatTypeString(stringified)
+	} catch {
+		// if formatting fails (e.g. due to custom typeToString syntax like ... X more),
+		// try to comment out problematic sections
+		try {
+			stringified = formatTypeString(replaceKnownInvalidSyntax(stringified))
+		} catch {
+			// if still fails somehow, just swallow the error and use the unformatted type
+		}
+	}
+
 	return Object.assign(nodeType, {
 		toString: () => stringified,
 		isUnresolvable: (nodeType as any).intrinsicName === "error"

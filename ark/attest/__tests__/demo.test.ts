@@ -1,4 +1,8 @@
-import { attest, contextualize } from "@ark/attest"
+import {
+	attest,
+	contextualize,
+	getPrimaryTsVersionUnderTest
+} from "@ark/attest"
 import { type } from "arktype"
 
 const o = { ark: "type" } as const
@@ -12,7 +16,7 @@ contextualize(() => {
 	})
 
 	it("type snap", () => {
-		attest(o).type.toString.snap('{ readonly ark: "type"; }')
+		attest(o).type.toString.snap('{ readonly ark: "type" }')
 	})
 
 	it("type assertion", () => {
@@ -26,7 +30,7 @@ contextualize(() => {
 	it("chained snaps", () => {
 		attest(o)
 			.snap({ ark: "type" })
-			.type.toString.snap('{ readonly ark: "type"; }')
+			.type.toString.snap('{ readonly ark: "type" }')
 	})
 
 	it("error and type error snap", () => {
@@ -75,15 +79,15 @@ contextualize(() => {
 		// prettier-ignore
 		attest({ "f": "🐐" } as Legends).completions({ f: ["faker"] })
 	})
-	// TODO: reenable once generics are finished
-	// it("integrate runtime logic with type assertions", () => {
-	// 	const arrayOf = type("<t>", "t[]")
-	// 	const numericArray = arrayOf("number | bigint")
-	// 	// flexibly combine runtime logic with type assertions to customize your
-	// 	// tests beyond what is possible from pure static-analysis based type testing tools
-	// 	if (getPrimaryTsVersionUnderTest().startsWith("5")) {
-	// 		// this assertion will only occur when testing TypeScript 5+!
-	// 		attest<(number | bigint)[]>(numericArray.infer)
-	// 	}
-	// })
+
+	it("integrate runtime logic with type assertions", () => {
+		const arrayOf = type("<t>", "t[]")
+		const numericArray = arrayOf("number | bigint")
+		// flexibly combine runtime logic with type assertions to customize your
+		// tests beyond what is possible from pure static-analysis based type testing tools
+		if (getPrimaryTsVersionUnderTest().startsWith("5")) {
+			// this assertion will only occur when testing TypeScript 5+!
+			attest<(number | bigint)[]>(numericArray.infer)
+		}
+	})
 })
