@@ -194,12 +194,23 @@ export interface StringifiableType extends ts.Type {
 	isUnresolvable: boolean
 }
 
+export const quickInfoTypeOf = (node: ts.Node) => {
+	const quickInfo =
+		TsServer.instance.virtualEnv.languageService.getQuickInfoAtPosition(
+			node.getSourceFile().fileName,
+			node.pos
+		)
+
+	const text = quickInfo?.displayParts?.map(part => part.text).join("") ?? ""
+
+	const matched = text.match(/^const .*: ([\s\S]*)$/)
+	return matched?.[1] ?? text
+}
+
 export const getStringifiableType = (node: ts.Node): StringifiableType => {
 	const typeChecker = getInternalTypeChecker()
-	// in a call like attest<object>({a: true}),
-	// passing arg.expression avoids inferring {a: true} as object
 	const nodeType = typeChecker.getTypeAtLocation(node)
-	const stringified = typeChecker.typeToString(nodeType)
+	const stringified = quickInfoTypeOf(node)
 	return Object.assign(nodeType, {
 		toString: () => stringified,
 		isUnresolvable: (nodeType as any).intrinsicName === "error"

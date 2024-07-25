@@ -29,6 +29,25 @@ describe("type assertions", () => {
 		attest(o).type.toString.is("{ ark: string; }")
 	})
 
+	it("type toString", () => {
+		const obj = {
+			a: 1,
+			b: 1,
+			c: 1
+		}
+
+		attest(obj).type.toString(`{
+    a: number;
+    b: number;
+    c: number;
+}`)
+		attest(obj).type.toString.is(`{
+    a: number;
+    b: number;
+    c: number;
+}`)
+	})
+
 	it("equals", () => {
 		attest(o).equals({ ark: "type" })
 	})
