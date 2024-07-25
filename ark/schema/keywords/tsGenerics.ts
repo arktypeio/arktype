@@ -1,13 +1,5 @@
-import {
-	$ark,
-	liftArray,
-	type conform,
-	type Hkt,
-	type Key,
-	type show
-} from "@ark/util"
+import { $ark, type conform, type Hkt, type Key, type show } from "@ark/util"
 import type { SchemaModule } from "../module.js"
-import type { Out } from "../roots/morph.js"
 import { generic, schemaScope } from "../scope.js"
 
 class ArkRecord extends generic(
@@ -55,23 +47,12 @@ class ArkExtract extends generic("T", "U")(args => args.T.extract(args.U)) {
 	) => Extract<(typeof args)[0], (typeof args)[1]>
 }
 
-class ArkLiftArray extends generic("T")(args =>
-	args.T.or(args.T.array()).pipe(liftArray)
-) {
-	declare hkt: (
-		args: conform<this[Hkt.args], [unknown]>
-	) => liftArray<(typeof args)[0]> extends infer lifted ?
-		(In: (typeof args)[0] | lifted) => Out<lifted>
-	:	never
-}
-
 const tsGenericsExports = {
 	Record: new ArkRecord(),
 	Pick: new ArkPick(),
 	Omit: new ArkOmit(),
 	Exclude: new ArkExclude(),
-	Extract: new ArkExtract(),
-	liftArray: new ArkLiftArray()
+	Extract: new ArkExtract()
 }
 
 export type tsGenericsExports = typeof tsGenericsExports

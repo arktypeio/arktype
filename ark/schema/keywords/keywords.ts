@@ -5,6 +5,7 @@ import { schemaScope, type BaseScope } from "../scope.js"
 import { tsKeywords, type tsKeywordExports } from "./tsKeywords.js"
 
 import { $ark } from "@ark/util"
+import { arkGenerics, type arkGenericsExports } from "./arkGenerics.js"
 import { formatting, type formattingExports } from "./format.js"
 import { internal, type internalExports } from "./internal.js"
 import { jsObjects, type jsObjectExports } from "./jsObjects.js"
@@ -24,6 +25,7 @@ export const ambientRootScope: BaseScope<Ark> = schemaScope({
 	...validation,
 	...internal,
 	...tsGenerics,
+	...arkGenerics,
 	TypedArray: typedArray,
 	parse: parsing,
 	format: formatting
@@ -41,6 +43,7 @@ export interface Ark
 		platformObjectExports,
 		validationExports,
 		tsGenericsExports,
+		arkGenericsExports,
 		internalExports {
 	TypedArray: RootModule<typedArrayExports>
 	parse: RootModule<parsingExports>
