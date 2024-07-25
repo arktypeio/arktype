@@ -1,4 +1,5 @@
 import type {
+	GenericHkt,
 	GenericParamAst,
 	GenericParamDef,
 	genericParamSchemasToAst,
@@ -13,7 +14,6 @@ import {
 	type Callable,
 	type conform,
 	type ErrorMessage,
-	type Hkt,
 	type keyError,
 	type WhiteSpaceToken
 } from "@ark/util"
@@ -59,8 +59,11 @@ export type GenericInstantiator<
 		>
 	}
 ) => Type<
-	def extends Hkt.Kind ?
-		Hkt.apply<def, { [i in keyof args]: inferTypeRoot<args[i], args$> }>
+	def extends GenericHkt ?
+		GenericHkt.instantiate<
+			def,
+			{ [i in keyof args]: inferTypeRoot<args[i], args$> }
+		>
 	:	inferDefinition<def, $, bindGenericArgs<params, args$, args>>,
 	$
 >
@@ -225,24 +228,10 @@ export type GenericHktParser<$ = {}> = <
 	const paramsDef extends array<GenericParamDef>
 >(
 	...params: paramsDef
-) => (
-	instantiateDef: LazyGenericBody<genericParamSchemasToAst<paramsDef, $>>
-) => GenericHktSubclass<genericParamSchemasToAst<paramsDef, $>, $>
-
-export type GenericHktSubclass<
-	params extends array<GenericParamAst>,
-	$
-> = abstract new () => GenericHkt<
-	genericParamSchemasToAst<params, $>,
-	Hkt.Kind,
-	$,
-	$
->
-
-export interface GenericHkt<
-	params extends array<GenericParamAst>,
-	hkt extends Hkt.Kind,
-	$,
-	args$
-> extends Generic<params, hkt, $, args$>,
-		Hkt.Kind {}
+) => <
+	hkt extends abstract new () => GenericHkt,
+	params extends Array<GenericParamAst> = genericParamSchemasToAst<paramsDef, $>
+>(
+	instantiateDef: LazyGenericBody<params, unknown>,
+	hkt: hkt
+) => Generic<params, InstanceType<hkt>, $, $>

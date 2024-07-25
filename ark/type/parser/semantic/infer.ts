@@ -2,6 +2,7 @@ import type {
 	Date,
 	DateLiteral,
 	Default,
+	GenericHkt,
 	GenericProps,
 	LimitLiteral,
 	RegexLiteral,
@@ -12,7 +13,7 @@ import type {
 	normalizeLimit,
 	string
 } from "@ark/schema"
-import type { BigintLiteral, Hkt, array } from "@ark/util"
+import type { BigintLiteral, array } from "@ark/util"
 import type {
 	UnparsedScope,
 	resolve,
@@ -40,9 +41,9 @@ export type GenericInstantiationAst<
 
 export type inferExpression<ast extends array, $, args> =
 	ast extends GenericInstantiationAst<infer generic, infer argAsts> ?
-		generic extends Hkt.Kind ?
-			Hkt.apply<
-				generic,
+		generic["bodyDef"] extends GenericHkt ?
+			GenericHkt.instantiate<
+				generic["bodyDef"],
 				{ [i in keyof argAsts]: inferConstrainableAst<argAsts[i], $, args> }
 			>
 		:	inferDefinition<

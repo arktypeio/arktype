@@ -6,7 +6,6 @@ import {
 	snapshot,
 	throwParseError,
 	type array,
-	type Hkt,
 	type Json
 } from "@ark/util"
 import type { inferRoot } from "./inference.js"
@@ -231,24 +230,31 @@ export type GenericHktSchemaParser<$ = {}> = <
 	const paramsDef extends array<GenericParamDef>
 >(
 	...params: paramsDef
-) => (
-	instantiateDef: LazyGenericBody<
-		genericParamSchemasToAst<paramsDef, $>,
-		RootSchema
+) => <
+	hkt extends abstract new () => GenericHkt,
+	params extends Array<GenericParamAst> = genericParamSchemasToAst<paramsDef, $>
+>(
+	instantiateDef: LazyGenericBody<params, RootSchema>,
+	hkt: hkt
+) => GenericRoot<params, InstanceType<hkt>, $, $>
+
+export abstract class GenericHkt<
+	hkt extends (args: any) => unknown = (args: any) => unknown
+> {
+	declare readonly args: array
+	abstract readonly hkt: hkt
+}
+
+export namespace GenericHkt {
+	export type instantiate<
+		hkt extends GenericHkt,
+		args extends Parameters<hkt["hkt"]>[0]
+	> = ReturnType<
+		(hkt & {
+			readonly args: args
+		})["hkt"]
 	>
-) => GenericHktRootSubclass<genericParamSchemasToAst<paramsDef, $>, $>
-
-export type GenericHktRootSubclass<
-	params extends array<GenericParamAst>,
-	$
-> = abstract new () => GenericHktRoot<params, $, $>
-
-// convenient for AST display without including default params
-interface Hkt extends Hkt.Kind {}
-
-export interface GenericHktRoot<params extends array<GenericParamAst>, $, args$>
-	extends GenericRoot<params, Hkt, $, args$>,
-		Hkt.Kind {}
+}
 
 export const writeUnsatisfiedParameterConstraintMessage = <
 	name extends string,
