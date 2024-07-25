@@ -77,11 +77,11 @@ const nearestBoundingCallExpression = (
 	position: number
 ): ts.CallExpression | undefined =>
 	node.pos <= position && node.end >= position ?
-		node
+		(node
 			.getChildren()
 			.flatMap(
 				child => nearestBoundingCallExpression(child, position) ?? []
-			)[0] ?? (ts.isCallExpression(node) ? node : undefined)
+			)[0] ?? (ts.isCallExpression(node) ? node : undefined))
 	:	undefined
 
 export const getAbsolutePosition = (

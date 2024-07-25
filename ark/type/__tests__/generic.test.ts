@@ -1,5 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import {
+	GenericHkt,
 	keywordNodes,
 	writeIndivisibleMessage,
 	writeUnboundableMessage,
@@ -391,23 +392,35 @@ contextualize(() => {
 	)
 	describe("hkt", () => {
 		it("can infer a generic from an hkt", () => {
-			// class MyExternalClass<T> {
-			// 	constructor(public data: T) {}
-			// }
-			// class ValidatedExternalGeneric extends generic("T")(args =>
-			// 	type("instanceof", MyExternalClass).and({
-			// 		data: args.T
-			// 	})
-			// ) {
-			// 	declare hkt: (
-			// 		args: conform<this[Hkt.args], [unknown]>
-			// 	) => MyExternalClass<(typeof args)[0]>
-			// }
-			// const myExternalClass = new ValidatedExternalGeneric()
-			// const myType = myExternalClass({
-			// 	name: "string",
-			// 	age: "number"
-			// })
+			class MyExternalClass<T> {
+				constructor(public data: T) {}
+			}
+
+			const validateExternalGeneric = generic("T")(
+				args =>
+					type("instanceof", MyExternalClass).and({
+						data: args.T
+					}),
+				class extends GenericHkt {
+					declare hkt: (
+						args: conform<this["args"], [unknown]>
+					) => MyExternalClass<(typeof args)[0]>
+				}
+			)
+
+			const t = validateExternalGeneric({
+				name: "string",
+				age: "number"
+			})
+
+			attest<
+				MyExternalClass<{
+					name: string
+					age: number
+				}>
+			>(t.t)
+
+			attest(t.json).snap()
 		})
 	})
 
