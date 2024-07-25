@@ -1,8 +1,10 @@
 import { fromCwd, type SourcePosition } from "@ark/fs"
 import { throwInternalError } from "@ark/util"
+import prettier from "@prettier/sync"
 import * as tsvfs from "@typescript/vfs"
 import { readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
+import type { Options as PrettierOptions } from "prettier"
 import ts from "typescript"
 import { getConfig } from "../config.js"
 
@@ -75,11 +77,11 @@ const nearestBoundingCallExpression = (
 	position: number
 ): ts.CallExpression | undefined =>
 	node.pos <= position && node.end >= position ?
-		node
+		(node
 			.getChildren()
 			.flatMap(
 				child => nearestBoundingCallExpression(child, position) ?? []
-			)[0] ?? (ts.isCallExpression(node) ? node : undefined)
+			)[0] ?? (ts.isCallExpression(node) ? node : undefined))
 	:	undefined
 
 export const getAbsolutePosition = (
@@ -194,23 +196,47 @@ export interface StringifiableType extends ts.Type {
 	isUnresolvable: boolean
 }
 
-export const quickInfoTypeOf = (node: ts.Node) => {
-	const quickInfo =
-		TsServer.instance.virtualEnv.languageService.getQuickInfoAtPosition(
-			node.getSourceFile().fileName,
-			node.pos
-		)
+const declarationPrefix = "type T = "
+const typeFormatOptions: PrettierOptions = {
+	parser: "typescript",
+	semi: false,
+	useTabs: true,
+	printWidth: 60,
+	trailingComma: "none"
+}
 
-	const text = quickInfo?.displayParts?.map(part => part.text).join("") ?? ""
+const formatTypeString = (typeString: string) =>
+	prettier
+		.format(`${declarationPrefix}${typeString}`, typeFormatOptions)
+		.slice(declarationPrefix.length)
+		.trimEnd()
 
-	const matched = text.match(/^const .*: ([\s\S]*)$/)
-	return matched?.[1] ?? text
+const replaceKnownInvalidSyntax = (typeString: string): string => {
+	// Match '...' and '... x more ...' (known truncated type syntax)
+	const regex = /\.\.\.\s*(\d+\s*more\s*\.\.\.)?/g
+
+	// replace these with a string literal "..." so that they can still
+	// form valid expressions, e.g. "..."[]
+	return typeString.replaceAll(regex, '"..."')
 }
 
 export const getStringifiableType = (node: ts.Node): StringifiableType => {
 	const typeChecker = getInternalTypeChecker()
 	const nodeType = typeChecker.getTypeAtLocation(node)
-	const stringified = quickInfoTypeOf(node)
+	let stringified = typeChecker.typeToString(nodeType)
+
+	try {
+		stringified = formatTypeString(stringified)
+	} catch {
+		// if formatting fails (e.g. due to custom typeToString syntax like ... X more),
+		// try to comment out problematic sections
+		try {
+			stringified = formatTypeString(replaceKnownInvalidSyntax(stringified))
+		} catch {
+			// if still fails somehow, just swallow the error and use the unformatted type
+		}
+	}
+
 	return Object.assign(nodeType, {
 		toString: () => stringified,
 		isUnresolvable: (nodeType as any).intrinsicName === "error"

@@ -1,5 +1,48 @@
 # @ark/attest
 
+## 0.10.0
+
+Format serialized types using `prettier`.
+
+This makes long serialized types much more readable:
+
+```ts
+// old
+attest({
+	ark: "type",
+	type: "script",
+	vali: "dator",
+	opti: "mized",
+	from: "editor",
+	to: "runtime"
+}).type.toString.snap(
+	`{ 	ark: string; type: string; vali: string; opti: string; from: string; to: string; }`
+)
+
+// new
+attest({
+	ark: "type",
+	type: "script",
+	vali: "dator",
+	opti: "mized",
+	from: "editor",
+	to: "runtime"
+}).type.toString.snap(`{
+	ark: string
+	type: string
+	vali: string
+	opti: string
+	from: string
+	to: string
+}`)
+```
+
+Be aware, this is likely means you will need to regenerate existing type snaps to avoid failing due to formatting inconsistencies.
+
+You should be able to update all your snapshots by running your tests with the `--updateSnapshots` flag or setting `ATTEST_updateSnapshots=1` in your environment.
+
+If you have any non-snap `type.toString` assertions, you will need to update them manually. You may want to convert them temporarily to snaps so you can easily see the correct value.
+
 ## 0.9.4
 
 Improve benchmark source extraction, add notes on baseline expressions

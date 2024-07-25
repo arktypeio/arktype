@@ -191,10 +191,10 @@ contextualize(() => {
 
 			// Type hint displays as "..." on hitting cycle (or any if "noErrorTruncation" is true)
 			attest({} as typeof types.a.infer).type.toString.snap(
-				"{ b: { a: ...; }; }"
+				`{ b: { a: "..." } }`
 			)
 			attest({} as typeof types.b.infer.a.b.a.b.a.b.a).type.toString.snap(
-				"{ b: { a: ...; }; }"
+				`{ b: { a: "..." } }`
 			)
 
 			// @ts-expect-error
@@ -233,9 +233,10 @@ contextualize(() => {
 				a: { b: "b|false" },
 				b: { a: "a|true" }
 			}).export()
-			attest(types).type.toString.snap(
-				"Module<{ b: { a: true | { b: false | ...; }; }; a: { b: false | { a: true | ...; }; }; }>"
-			)
+			attest(types).type.toString.snap(`Module<{
+	b: { a: true | { b: false | "..." } }
+	a: { b: false | { a: true | "..." } }
+}>`)
 		})
 
 		it("cyclic intersection", () => {
@@ -243,9 +244,10 @@ contextualize(() => {
 				a: { b: "b&a" },
 				b: { a: "a&b" }
 			}).export()
-			attest(types).type.toString.snap(
-				"Module<{ b: { a: { b: { a: ...; b: ...; }; a: ...; }; }; a: { b: { a: { b: ...; a: ...; }; b: ...; }; }; }>"
-			)
+			attest(types).type.toString.snap(`Module<{
+	b: { a: { b: { a: "..."; b: "..." }; a: "..." } }
+	a: { b: { a: { b: "..."; a: "..." }; b: "..." } }
+}>`)
 		})
 
 		it("allows valid", () => {
@@ -290,7 +292,7 @@ dependencies[1].contributors[0].email must be a valid email (was "ssalbdivad")`)
 					a: "a|3"
 				}
 			}).export()
-			attest(types.a.infer).type.toString.snap("{ b: { a: 3 | ...; }; }")
+			attest(types.a.infer).type.toString.snap('{ b: { a: 3 | "..." } }')
 
 			attest(types.a.json).snap({
 				domain: "object",
@@ -318,7 +320,7 @@ dependencies[1].contributors[0].email must be a valid email (was "ssalbdivad")`)
 				'b.a.b.a must be an object or 3 (was 4) or b.a must be 3 (was {"b":{"a":4}})'
 			)
 
-			attest(types.b.infer).type.toString.snap("{ a: 3 | { b: ...; }; }")
+			attest(types.b.infer).type.toString.snap('{ a: 3 | { b: "..." } }')
 			attest(types.b.json).snap({
 				domain: "object",
 				required: [{ key: "a", value: ["$a", { unit: 3 }] }]
@@ -335,9 +337,11 @@ dependencies[1].contributors[0].email must be a valid email (was "ssalbdivad")`)
 				}
 			}).export()
 			attest(types.arf.infer).type.toString.snap(
-				"{ b: { c: { b: ...; c: ...; }; }; }"
+				'{ b: { c: { b: "..."; c: "..." } } }'
 			)
-			attest(types.bork.infer).type.toString.snap("{ c: { b: ...; c: ...; }; }")
+			attest(types.bork.infer).type.toString.snap(
+				'{ c: { b: "..."; c: "..." } }'
+			)
 
 			const expectedCyclicJson =
 				types.arf.internal.firstReferenceOfKindOrThrow("alias").json

@@ -3,7 +3,30 @@ import type { makeComplexType } from "./utils.js"
 
 setup()
 
-attest({ re: "do" }).equals({ re: "do" }).type.toString.snap("{ re: string; }")
+attest({ re: "do" }).equals({ re: "do" }).type.toString.snap("{ re: string }")
+
+attest({
+	ark: "type",
+	type: "script",
+	vali: "dator",
+	opti: "mized",
+	from: "editor",
+	to: "runtime"
+}).snap({
+	ark: "type",
+	type: "script",
+	vali: "dator",
+	opti: "mized",
+	from: "editor",
+	to: "runtime"
+}).type.toString.snap(`{
+	ark: string
+	type: string
+	vali: string
+	opti: string
+	from: string
+	to: string
+}`)
 
 attest(5).snap(5)
 

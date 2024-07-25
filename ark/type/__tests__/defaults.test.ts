@@ -13,9 +13,10 @@ contextualize(() => {
 			const o = type({ foo: "string", bar: ["number", "=", 5] })
 
 			// ensure type ast displays is exactly as expected
-			attest(o.t).type.toString.snap(
-				"{ foo: string; bar: (In?: number | undefined) => Default<5>; }"
-			)
+			attest(o.t).type.toString.snap(`{
+	foo: string
+	bar: (In?: number | undefined) => Default<5>
+}`)
 			attest<{ foo: string; bar?: number }>(o.inferIn)
 			attest<{ foo: string; bar: number }>(o.infer)
 
