@@ -473,8 +473,8 @@ contextualize(() => {
 						"{ value: string }"
 					)
 				)
-				.type.errors.snap(
-					"Argument of type '{ value: string; }' is not assignable to parameter of type '\"Argument for N does not satisfy its associated constraint \" & { constraint: { value: number; }; N: { value: string; }; }'.Type '{ value: string; }' is not assignable to type '\"Argument for N does not satisfy its associated constraint \"'."
+				.type.errors(
+					`ErrorObject<"Invalid argument for N", [expected: { value: number; }]>`
 				)
 		})
 	})

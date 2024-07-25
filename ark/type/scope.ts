@@ -26,9 +26,9 @@ import {
 	isThunk,
 	throwParseError,
 	type Dict,
+	type KeyError,
 	type anyOrNever,
 	type array,
-	type keyError,
 	type nominal,
 	type show
 } from "@ark/util"
@@ -83,7 +83,7 @@ export type validateScope<def> = {
 				// without breaking `pnpm typecheck`, go for it.
 				def[k] extends Type | PreparsedResolution ? def[k]
 				: k extends PrivateDeclaration<infer name extends keyof def & string> ?
-					keyError<writeDuplicateAliasError<name>>
+					KeyError<writeDuplicateAliasError<name>>
 				:	validateDefinition<def[k], bootstrapAliases<def>, {}>
 			:	validateDefinition<
 					def[k],

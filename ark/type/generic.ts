@@ -14,8 +14,8 @@ import {
 	type Callable,
 	type conform,
 	type ErrorMessage,
-	type keyError,
-	type show,
+	type ErrorObject,
+	type KeyError,
 	type WhiteSpaceToken
 } from "@ark/util"
 import type { inferDefinition } from "./parser/definition.js"
@@ -34,18 +34,13 @@ export type extractParams<s extends ParameterString> =
 	s extends ParameterString<infer params> ? params : never
 
 export type validateParameterString<s extends ParameterString, $> =
-	parseGenericParams<extractParams<s>, $> extends keyError<infer message> ?
+	parseGenericParams<extractParams<s>, $> extends KeyError<infer message> ?
 		ErrorMessage<message>
 	:	s
 
 export type validateGenericArg<arg, param extends GenericParamAst, $> =
 	inferTypeRoot<arg, $> extends param[1] ? arg
-	:	ErrorMessage<`Argument for ${param[0]} does not satisfy its associated constraint`> &
-			show<
-				{
-					constraint: param[1]
-				} & { [_ in param[0]]: inferTypeRoot<arg, $> }
-			>
+	:	ErrorObject<`Invalid argument for ${param[0]}`, [expected: param[1]]>
 
 export type GenericInstantiator<
 	params extends array<GenericParamAst>,
@@ -165,7 +160,7 @@ type parseNextNameChar<
 > =
 	unscanned extends `${infer lookahead}${infer nextUnscanned}` ?
 		lookahead extends ParamsTerminator ?
-			name extends "" ? keyError<emptyGenericParameterMessage>
+			name extends "" ? KeyError<emptyGenericParameterMessage>
 			: lookahead extends "," ?
 				parseName<nextUnscanned, [...result, [name, unknown]], $>
 			: lookahead extends ":" | WhiteSpaceToken ?
@@ -221,7 +216,7 @@ type _parseOptionalConstraint<
 			validateAst<finalArgState["root"], $, {}> extends (
 				ErrorMessage<infer message>
 			) ?
-				keyError<message>
+				KeyError<message>
 			:	parseName<
 					finalArgState["unscanned"],
 					[...result, [name, inferAstRoot<finalArgState["root"], $, {}>]],
