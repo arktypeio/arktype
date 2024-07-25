@@ -31,15 +31,21 @@ describe("type assertions", () => {
 
 	it("type toString multiline", () => {
 		const obj = {
-			foo: 1,
-			bar: 1,
-			baz: 1
+			ark: "type",
+			type: "script",
+			vali: "dator",
+			opti: "mized",
+			from: "editor",
+			to: "runtime"
 		}
 
 		attest(obj).type.toString.is(`{
-	foo: number
-	bar: number
-	baz: number
+	ark: string
+	type: string
+	vali: string
+	opti: string
+	from: string
+	to: string
 }`)
 	})
 
