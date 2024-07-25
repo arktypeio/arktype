@@ -9,7 +9,6 @@ import {
 	type Json
 } from "@ark/util"
 import type { inferRoot } from "./inference.js"
-import type { RootSchema } from "./kinds.js"
 import type { SchemaRoot, UnknownRoot } from "./roots/root.js"
 import type { BaseScope, InternalBaseScope } from "./scope.js"
 import { arkKind } from "./shared/utils.js"
@@ -117,9 +116,9 @@ export type GenericArgResolutions<
 }
 
 export class LazyGenericBody<
-	params extends array<GenericParamAst> = array<GenericParamAst>,
+	argResolutions = {},
 	returns = unknown
-> extends Callable<(args: GenericArgResolutions<params>) => returns> {}
+> extends Callable<(args: argResolutions) => returns> {}
 
 export class GenericRoot<
 	params extends array<GenericParamAst> = array<GenericParamAst>,
@@ -234,7 +233,7 @@ export type GenericHktSchemaParser<$ = {}> = <
 	hkt extends abstract new () => GenericHkt,
 	params extends Array<GenericParamAst> = genericParamSchemasToAst<paramsDef, $>
 >(
-	instantiateDef: LazyGenericBody<params, RootSchema>,
+	instantiateDef: LazyGenericBody<GenericArgResolutions<params>>,
 	hkt: hkt
 ) => GenericRoot<params, InstanceType<hkt>, $, $>
 

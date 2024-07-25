@@ -420,7 +420,62 @@ contextualize(() => {
 				}>
 			>(t.t)
 
-			attest(t.json).snap()
+			attest(t.json).snap({
+				required: [
+					{
+						key: "data",
+						value: {
+							required: [
+								{ key: "age", value: "number" },
+								{ key: "name", value: "string" }
+							],
+							domain: "object"
+						}
+					}
+				],
+				proto: "$ark.MyExternalClass",
+				domain: "object"
+			})
+		})
+
+		it("can infer constrained parameters", () => {
+			const validateExternalGeneric = generic(
+				["S", "string"],
+				["N", { value: "number" }]
+			)(
+				args => [args.S.atLeastLength(1), args.N],
+				class extends GenericHkt {
+					declare hkt: (
+						args: conform<this["args"], [string, { value: number }]>
+					) => [(typeof args)[0], (typeof args)[1]]
+				}
+			)
+
+			const t = validateExternalGeneric("string", { value: "number" })
+
+			attest<
+				[
+					string,
+					{
+						value: number
+					}
+				]
+			>(t.t)
+
+			attest(t.expression).snap("[string >= 1, { value: number }]")
+
+			// @ts-expect-error
+			attest(() => validateExternalGeneric("string", { value: "string" }))
+				.throws(
+					writeUnsatisfiedParameterConstraintMessage(
+						"N",
+						"{ value: number }",
+						"{ value: string }"
+					)
+				)
+				.type.errors.snap(
+					"Argument of type '{ value: string; }' is not assignable to parameter of type '\"Argument for N does not satisfy its associated constraint \" & { constraint: { value: number; }; N: { value: string; }; }'.Type '{ value: string; }' is not assignable to type '\"Argument for N does not satisfy its associated constraint \"'."
+				)
 		})
 	})
 

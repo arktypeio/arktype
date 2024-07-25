@@ -201,12 +201,13 @@ export abstract class InternalBaseScope<
 		...params: array<GenericParamDef>
 	): ReturnType<GenericHktSchemaParser> {
 		const $: BaseScope = this as never
-		return (instantiateDef): any =>
-			class GenericHktSubclass extends GenericRoot {
-				constructor() {
-					super(params, new LazyGenericBody(instantiateDef), $, $)
-				}
-			}
+		return instantiateDef =>
+			new GenericRoot(
+				params,
+				new LazyGenericBody(instantiateDef),
+				$,
+				$
+			) as never
 	}
 
 	@bound

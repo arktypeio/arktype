@@ -1,8 +1,8 @@
 import type {
+	ConstrainedGenericParamDef,
 	GenericHkt,
 	GenericParamAst,
 	GenericParamDef,
-	genericParamSchemasToAst,
 	GenericProps,
 	GenericRoot,
 	LazyGenericBody
@@ -15,6 +15,7 @@ import {
 	type conform,
 	type ErrorMessage,
 	type keyError,
+	type show,
 	type WhiteSpaceToken
 } from "@ark/util"
 import type { inferDefinition } from "./parser/definition.js"
@@ -38,7 +39,13 @@ export type validateParameterString<s extends ParameterString, $> =
 	:	s
 
 export type validateGenericArg<arg, param extends GenericParamAst, $> =
-	inferTypeRoot<arg, $> extends param[1] ? arg : Type<param[1]>
+	inferTypeRoot<arg, $> extends param[1] ? arg
+	:	ErrorMessage<`Argument for ${param[0]} does not satisfy its associated constraint`> &
+			show<
+				{
+					constraint: param[1]
+				} & { [_ in param[0]]: inferTypeRoot<arg, $> }
+			>
 
 export type GenericInstantiator<
 	params extends array<GenericParamAst>,
@@ -75,7 +82,12 @@ type bindGenericArgs<params extends array<GenericParamAst>, $, args> = {
 	>
 }
 
-export type baseGenericArgs<params extends array<GenericParamAst>> = {
+type baseGenericResolutions<params extends array<GenericParamAst>, $> =
+	baseGenericConstraints<params> extends infer baseConstraints ?
+		{ [k in keyof baseConstraints]: Type<baseConstraints[k], $> }
+	:	never
+
+export type baseGenericConstraints<params extends array<GenericParamAst>> = {
 	[i in keyof params & `${number}` as params[i][0]]: params[i][1]
 }
 
@@ -224,14 +236,24 @@ type _parseOptionalConstraint<
 			$
 		>
 
+type genericParamDefToAst<schema extends GenericParamDef, $> =
+	schema extends string ? [schema, unknown]
+	: schema extends ConstrainedGenericParamDef ?
+		[schema[0], inferTypeRoot<schema[1], $>]
+	:	never
+
+export type genericParamDefsToAst<schemas extends array<GenericParamDef>, $> = [
+	...{ [i in keyof schemas]: genericParamDefToAst<schemas[i], $> }
+]
+
 export type GenericHktParser<$ = {}> = <
 	const paramsDef extends array<GenericParamDef>
 >(
 	...params: paramsDef
 ) => <
 	hkt extends abstract new () => GenericHkt,
-	params extends Array<GenericParamAst> = genericParamSchemasToAst<paramsDef, $>
+	params extends Array<GenericParamAst> = genericParamDefsToAst<paramsDef, $>
 >(
-	instantiateDef: LazyGenericBody<params, unknown>,
+	instantiateDef: LazyGenericBody<baseGenericResolutions<params, $>>,
 	hkt: hkt
 ) => Generic<params, InstanceType<hkt>, $, $>

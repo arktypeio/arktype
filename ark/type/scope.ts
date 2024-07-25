@@ -38,7 +38,7 @@ import {
 	type GenericDeclaration,
 	type GenericHktParser,
 	type ParameterString,
-	type baseGenericArgs,
+	type baseGenericConstraints,
 	type parseValidGenericParams
 } from "./generic.js"
 import { createMatchParser, type MatchParser } from "./match.js"
@@ -88,7 +88,7 @@ export type validateScope<def> = {
 			:	validateDefinition<
 					def[k],
 					bootstrapAliases<def>,
-					baseGenericArgs<params>
+					baseGenericConstraints<params>
 				>
 		:	// if we get here, the params failed to parse- return the error
 			params
