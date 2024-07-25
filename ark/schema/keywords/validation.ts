@@ -1,4 +1,11 @@
-import type { anonymous, number, string } from "../ast.js"
+import type {
+	anonymous,
+	AtLeast,
+	AtMost,
+	DivisibleBy,
+	number,
+	string
+} from "../ast.js"
 import type { SchemaModule } from "../module.js"
 import { defineRoot, schemaScope } from "../scope.js"
 import { creditCardMatcher, isLuhnValid } from "./utils/creditCard.js"
@@ -54,6 +61,32 @@ const creditCard = defineRoot({
 	}
 })
 
+/**
+ * As per the ECMA-262 specification:
+ * A time value supports a slightly smaller range of -8,640,000,000,000,000 to 8,640,000,000,000,000 milliseconds.
+ *
+ * @see https://262.ecma-international.org/15.0/index.html#sec-time-values-and-time-range
+ */
+const unixTimestamp = defineRoot({
+	domain: {
+		domain: "number",
+		description: "a number representing a Unix timestamp"
+	},
+	divisor: {
+		rule: 1,
+		description: `an integer representing a Unix timestamp`
+	},
+	min: {
+		rule: -8640000000000000,
+		description: `a Unix timestamp after -8640000000000000`
+	},
+	max: {
+		rule: 8640000000000000,
+		description: "a Unix timestamp before 8640000000000000"
+	},
+	description: "an integer representing a safe Unix timestamp"
+})
+
 export interface validationExports {
 	alpha: string.matching<anonymous>
 	alphanumeric: string.matching<anonymous>
@@ -67,6 +100,9 @@ export interface validationExports {
 	semver: string.matching<anonymous>
 	ip: string.matching<anonymous>
 	integer: number.divisibleBy<1>
+	unixTimestamp: number.is<
+		DivisibleBy<1> & AtMost<8640000000000000> & AtLeast<-8640000000000000>
+	>
 }
 
 export type validation = SchemaModule<validationExports>
@@ -87,7 +123,8 @@ export const validation: validation = schemaScope(
 		integer: {
 			domain: "number",
 			divisor: 1
-		}
+		},
+		unixTimestamp
 	},
 	{ prereducedAliases: true }
 ).export()
