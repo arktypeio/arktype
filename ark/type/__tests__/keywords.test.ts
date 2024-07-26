@@ -347,9 +347,7 @@ tags[2] must be a string (was object)`)
 							"boolean"
 						)
 					)
-					.type.errors(
-						`'string' is not assignable to parameter of type 'Type<Key, {}>'`
-					)
+					.type.errors(`ErrorType<"Invalid argument for K", [expected: Key]>`)
 			})
 		})
 

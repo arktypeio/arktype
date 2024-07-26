@@ -7,7 +7,7 @@ import {
 	writeUnresolvableMessage,
 	writeUnsatisfiedParameterConstraintMessage
 } from "@ark/schema"
-import type { conform, Hkt } from "@ark/util"
+import type { conform } from "@ark/util"
 import { generic, scope, type } from "arktype"
 import { emptyGenericParameterMessage, type Generic } from "../generic.js"
 import { writeUnclosedGroupMessage } from "../parser/string/reduce/shared.js"
@@ -176,7 +176,7 @@ contextualize(() => {
 					)
 				)
 				.type.errors(
-					"Argument of type 'string' is not assignable to parameter of type 'Type<moreThan<0>, {}>'"
+					`ErrorType<"Invalid argument for n", [expected: moreThan<0>]>`
 				)
 		})
 
