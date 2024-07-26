@@ -203,6 +203,7 @@ contextualize(() => {
 				"entry<k extends key, v>": ["k", "v"],
 				key: "string | symbol"
 			})
+
 			const types = $.export()
 
 			const ok = types.entry("string", "number")
@@ -217,6 +218,28 @@ contextualize(() => {
 						"k",
 						"string | symbol",
 						"boolean"
+					)
+				)
+				.type.errors(
+					`ErrorType<"Invalid argument for k", [expected: string | symbol]>`
+				)
+		})
+
+		it("errors on unsatisfied constraints from current scope", () => {
+			attest(() =>
+				scope({
+					"entry<k extends key, v>": ["k", "v"],
+					key: "string | symbol",
+					goodEntry: "entry<'foo', 1>",
+					// @ts-expect-error
+					badEntry: "entry<1, 0>"
+				}).export()
+			)
+				.throws(
+					writeUnsatisfiedParameterConstraintMessage(
+						"k",
+						"string | symbol",
+						"1"
 					)
 				)
 				.type.errors(
