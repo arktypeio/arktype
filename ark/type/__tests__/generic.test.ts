@@ -198,6 +198,32 @@ contextualize(() => {
 			)
 		})
 
+		it("can parse constraint including alias from current scope", () => {
+			const $ = scope({
+				"entry<k extends key, v>": ["k", "v"],
+				key: "string | symbol"
+			})
+			const types = $.export()
+
+			const ok = types.entry("string", "number")
+
+			attest<[string, number]>(ok.t)
+			attest(ok.expression).snap()
+
+			// @ts-expect-error
+			attest(() => types.entry("boolean", "number"))
+				.throws(
+					writeUnsatisfiedParameterConstraintMessage(
+						"k",
+						"string | symbol",
+						"boolean"
+					)
+				)
+				.type.errors(
+					`ErrorType<"Invalid argument for k", [expected: string | symbol]>`
+				)
+		})
+
 		it("constraint parse error", () => {
 			attest(() => {
 				// @ts-expect-error

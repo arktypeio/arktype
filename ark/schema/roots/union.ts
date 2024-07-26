@@ -39,7 +39,7 @@ import {
 import { intersectNodes, intersectNodesRoot } from "../shared/intersections.js"
 import { registeredReference } from "../shared/registry.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
-import { pathToPropString } from "../shared/utils.js"
+import { hasArkKind, pathToPropString } from "../shared/utils.js"
 import type { DomainInner, DomainNode } from "./domain.js"
 import type { MorphNode } from "./morph.js"
 import { BaseRoot, type schemaKindRightOf } from "./root.js"
@@ -57,12 +57,15 @@ export type UnionChildSchema = NodeSchema<UnionChildKind>
 
 export type UnionChildNode = Node<UnionChildKind>
 
+// allow union nodes as branch definitions that will be flattened on parsing
+export type UnionBranchSchema = UnionChildSchema | BaseRoot
+
 export type UnionSchema<
-	branches extends readonly UnionChildSchema[] = readonly UnionChildSchema[]
+	branches extends readonly UnionBranchSchema[] = readonly UnionBranchSchema[]
 > = NormalizedUnionSchema<branches> | branches
 
 export interface NormalizedUnionSchema<
-	branches extends readonly UnionChildSchema[] = readonly UnionChildSchema[]
+	branches extends readonly UnionBranchSchema[] = readonly UnionBranchSchema[]
 > extends BaseMeta {
 	readonly branches: branches
 	readonly ordered?: true
@@ -96,8 +99,10 @@ export const unionImplementation: nodeImplementationOf<UnionDeclaration> =
 			branches: {
 				child: true,
 				parse: (schema, ctx) => {
-					const branches = schema.map(branch =>
-						ctx.$.node(unionChildKinds, branch)
+					const branches = schema.flatMap(branch =>
+						hasArkKind(branch, "root") ?
+							branch.branches
+						:	ctx.$.node(unionChildKinds, branch as UnionChildSchema)
 					)
 
 					if (!ctx.schema.ordered)

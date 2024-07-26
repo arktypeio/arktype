@@ -73,12 +73,19 @@ import {
 } from "../shared/utils.js"
 import type {
 	StructureInner,
+	StructureNode,
 	UndeclaredKeyBehavior,
 	arkKeyOf,
 	getArkKey
 } from "../structure/structure.js"
 import type { constraintKindOf } from "./intersection.js"
-import type { Morph, MorphNode, inferMorphOut, inferPipes } from "./morph.js"
+import type {
+	Morph,
+	MorphChildNode,
+	MorphNode,
+	inferMorphOut,
+	inferPipes
+} from "./morph.js"
 import type { UnionChildKind, UnionChildNode } from "./union.js"
 
 export interface InternalRootDeclaration extends BaseNodeDeclaration {
@@ -170,16 +177,16 @@ export abstract class BaseRoot<
 		return this.applyStructuralOperation("omit", keys)
 	}
 
-	require(): BaseRoot {
-		return this.applyStructuralOperation("require", [])
+	required(): BaseRoot {
+		return this.applyStructuralOperation("required", [])
 	}
 
-	optionalize(): BaseRoot {
-		return this.applyStructuralOperation("optionalize", [])
+	partial(): BaseRoot {
+		return this.applyStructuralOperation("partial", [])
 	}
 
 	private applyStructuralOperation<
-		operation extends "pick" | "omit" | "require" | "optionalize"
+		operation extends "pick" | "omit" | "required" | "partial"
 	>(operation: operation, args: Parameters<BaseRoot[operation]>): BaseRoot {
 		if (this.hasKind("union")) {
 			return this.$.schema(
@@ -192,7 +199,10 @@ export abstract class BaseRoot<
 		if (this.hasKind("morph")) {
 			return this.$.node("morph", {
 				...this.inner,
-				in: (this.in as BaseRoot).applyStructuralOperation(operation, args)
+				in: (this.in as BaseRoot).applyStructuralOperation(
+					operation,
+					args
+				) as MorphChildNode
 			})
 		}
 
@@ -203,9 +213,14 @@ export abstract class BaseRoot<
 				)
 			}
 
+			const structuralMethodName: keyof StructureNode =
+				operation === "required" ? "require"
+				: operation === "partial" ? "optionalize"
+				: operation
+
 			return this.$.node("intersection", {
 				...this.inner,
-				structure: this.inner.structure[operation](...(args as never[]))
+				structure: this.inner.structure[structuralMethodName](...(args as any))
 			})
 		}
 
@@ -232,9 +247,7 @@ export abstract class BaseRoot<
 
 		return (
 			branch.structure?.get(...(path as {} as NonEmptyList<TypeIndexer>)) ??
-			throwParseError(
-				writeNonStructuralOperandMessage("index access", this.expression)
-			)
+			throwParseError(writeNonStructuralOperandMessage("get", this.expression))
 		)
 	}
 
@@ -313,7 +326,7 @@ export abstract class BaseRoot<
 			})
 		}
 		return this.$.node("morph", {
-			in: this,
+			in: this as {} as MorphChildNode,
 			morphs: [morph]
 		})
 	}
@@ -726,9 +739,9 @@ export type validateChainedConstraint<
 export type StructuralOperationName =
 	| "pick"
 	| "omit"
-	| "index access"
-	| "require"
-	| "optionalize"
+	| "get"
+	| "required"
+	| "partial"
 
 export type writeNonStructuralOperandMessage<
 	operation extends StructuralOperationName,

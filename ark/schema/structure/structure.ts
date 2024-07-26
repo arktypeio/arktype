@@ -202,12 +202,12 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 	readonly exhaustive: boolean =
 		this.undeclared !== undefined || this.index !== undefined
 
-	pick(...keys: array<BaseRoot | Key>): StructureNode {
+	pick(...keys: TypeKey[]): StructureNode {
 		this.assertHasKeys(keys)
 		return this.$.node("structure", this.filterKeys("pick", keys))
 	}
 
-	omit(...keys: array<BaseRoot | Key>): StructureNode {
+	omit(...keys: TypeKey[]): StructureNode {
 		this.assertHasKeys(keys)
 		return this.$.node("structure", this.filterKeys("omit", keys))
 	}

@@ -208,7 +208,7 @@ export class GenericRoot<
 
 	@cached
 	get baseInstantiation(): SchemaRoot {
-		return this(...(this.constraints as never))
+		return this(...(this.constraints as never)) as never
 	}
 
 	validateBaseInstantiation(): this {

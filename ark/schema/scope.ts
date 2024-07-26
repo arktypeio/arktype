@@ -503,7 +503,7 @@ export const schemaScope = <const aliases>(
 	config?: ArkConfig
 ): SchemaScope<instantiateAliases<aliases>> => new SchemaScope(aliases, config)
 
-export interface BaseScope<$ = any> {
+export interface BaseScope<$ = {}> {
 	t: $
 	[arkKind]: "scope"
 	config: ArkConfig
@@ -561,6 +561,8 @@ export class InternalSchemaScope<
 	}
 }
 
+// https://github.com/arktypeio/arktype/issues/1051
+/** @ts-ignore sometimes infinite? requires further investigation */
 export interface SchemaScope<$ = {}> extends BaseScope<$> {
 	defineRoot: this["defineSchema"]
 	parseRoot: this["schema"]

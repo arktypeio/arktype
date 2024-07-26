@@ -124,7 +124,8 @@ export const morphImplementation: nodeImplementationOf<MorphDeclaration> =
 						)
 					:	ctx.$.node("morph", {
 							...l.inner,
-							in: inTersection
+							// TODO: https://github.com/arktypeio/arktype/issues/1067
+							in: inTersection as MorphChildNode
 						})
 				)
 			})

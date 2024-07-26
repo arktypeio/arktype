@@ -337,11 +337,13 @@ export type ParsedScopeKey = {
 export type parseScopeKey<k, def> =
 	// trying to infer against GenericDeclaration here directly also fails as of TS 5.5
 	k extends `${infer name}<${infer params}>` ?
-		{
-			name: name
-			params: parseGenericParams<params, bootstrapAliases<def>>
-		}
+		parseGenericScopeKey<name, params, def>
 	:	{
 			name: k
 			params: []
 		}
+
+type parseGenericScopeKey<name extends string, params extends string, def> = {
+	name: name
+	params: parseGenericParams<params, bootstrapAliases<def>>
+}
