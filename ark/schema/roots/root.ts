@@ -162,28 +162,37 @@ export abstract class BaseRoot<
 		return result instanceof ArkErrors ? result.throw() : result
 	}
 
-	pick(...keys: array<TypeKey>): BaseRoot {
-		return this.filterKeys("pick", keys)
+	pick(...keys: TypeKey[]): BaseRoot {
+		return this.applyStructuralOperation("pick", keys)
 	}
 
-	omit(...keys: array<TypeKey>): BaseRoot {
-		return this.filterKeys("omit", keys)
+	omit(...keys: TypeKey[]): BaseRoot {
+		return this.applyStructuralOperation("omit", keys)
 	}
 
-	private filterKeys(
-		operation: "pick" | "omit",
-		keys: array<TypeKey>
-	): BaseRoot {
+	require(): BaseRoot {
+		return this.applyStructuralOperation("require", [])
+	}
+
+	optionalize(): BaseRoot {
+		return this.applyStructuralOperation("optionalize", [])
+	}
+
+	private applyStructuralOperation<
+		operation extends "pick" | "omit" | "require" | "optionalize"
+	>(operation: operation, args: Parameters<BaseRoot[operation]>): BaseRoot {
 		if (this.hasKind("union")) {
 			return this.$.schema(
-				this.branches.map(branch => branch[operation](...keys))
+				this.branches.map(branch =>
+					branch.applyStructuralOperation(operation, args)
+				)
 			)
 		}
 
 		if (this.hasKind("morph")) {
 			return this.$.node("morph", {
 				...this.inner,
-				in: this.in[operation](...keys)
+				in: (this.in as BaseRoot).applyStructuralOperation(operation, args)
 			})
 		}
 
@@ -196,7 +205,7 @@ export abstract class BaseRoot<
 
 			return this.$.node("intersection", {
 				...this.inner,
-				structure: this.inner.structure[operation](...keys)
+				structure: this.inner.structure[operation](...(args as never[]))
 			})
 		}
 
@@ -209,7 +218,7 @@ export abstract class BaseRoot<
 		)
 	}
 
-	get(...path: array<TypeIndexer>): BaseRoot {
+	get(...path: TypeIndexer[]): BaseRoot {
 		if (path[0] === undefined) return this
 
 		if (this.hasKind("union")) {
@@ -222,7 +231,7 @@ export abstract class BaseRoot<
 		const branch = this as {} as UnionChildNode
 
 		return (
-			branch.structure?.get(...(path as NonEmptyList<TypeIndexer>)) ??
+			branch.structure?.get(...(path as {} as NonEmptyList<TypeIndexer>)) ??
 			throwParseError(
 				writeNonStructuralOperandMessage("index access", this.expression)
 			)
@@ -714,7 +723,12 @@ export type validateChainedConstraint<
 	t["inferIn"] extends Prerequisite<kind> ? t
 	:	ErrorMessage<writeInvalidOperandMessage<kind, SchemaRoot<t["inferIn"]>>>
 
-export type StructuralOperationName = "pick" | "omit" | "index access"
+export type StructuralOperationName =
+	| "pick"
+	| "omit"
+	| "index access"
+	| "require"
+	| "optionalize"
 
 export type writeNonStructuralOperandMessage<
 	operation extends StructuralOperationName,

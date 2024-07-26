@@ -212,6 +212,29 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 		return this.$.node("structure", this.filterKeys("omit", keys))
 	}
 
+	optionalize(): StructureNode {
+		const { required, ...inner } = this.inner
+		return this.$.node("structure", {
+			...inner,
+			optional: this.props.map(prop =>
+				prop.hasKind("required") ? this.$.node("optional", prop.inner) : prop
+			)
+		})
+	}
+
+	require(): StructureNode {
+		const { optional, ...inner } = this.inner
+		return this.$.node("structure", {
+			...inner,
+			required: this.props.map(prop =>
+				prop.hasKind("optional") ?
+					// don't include keys like default that don't exist on required
+					this.$.node("required", { key: prop.key, value: prop.value })
+				:	prop
+			)
+		})
+	}
+
 	merge(r: StructureNode): StructureNode {
 		const inner = makeRootAndArrayPropertiesMutable(
 			this.filterKeys("omit", [r.keyof()])
