@@ -14,7 +14,7 @@ import {
 	type Callable,
 	type conform,
 	type ErrorMessage,
-	type ErrorObject,
+	type ErrorType,
 	type WhiteSpaceToken
 } from "@ark/util"
 import type { inferDefinition } from "./parser/definition.js"
@@ -39,7 +39,7 @@ export type validateParameterString<s extends ParameterString, $> =
 
 export type validateGenericArg<arg, param extends GenericParamAst, $> =
 	inferTypeRoot<arg, $> extends param[1] ? arg
-	:	ErrorObject<`Invalid argument for ${param[0]}`, [expected: param[1]]>
+	:	ErrorType<`Invalid argument for ${param[0]}`, [expected: param[1]]>
 
 export type GenericInstantiator<
 	params extends array<GenericParamAst>,
