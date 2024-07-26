@@ -1,5 +1,5 @@
 import type { BaseRoot, GenericProps, GenericRoot } from "@ark/schema"
-import type { array, ErrorMessage, join } from "@ark/util"
+import type { array, ErrorType, join } from "@ark/util"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import { writeUnclosedGroupMessage } from "../../reduce/shared.js"
 import type { state, StaticState } from "../../reduce/static.js"
@@ -87,7 +87,7 @@ type _parseGenericArgs<
 					>
 			: finalArgState["finalizer"] extends "," ?
 				_parseGenericArgs<name, g, nextUnscanned, $, args, nextDefs, nextAsts>
-			: finalArgState["finalizer"] extends ErrorMessage ? finalArgState
+			: finalArgState["finalizer"] extends ErrorType ? finalArgState
 			: state.error<writeUnclosedGroupMessage<">">>
 		:	never
 	:	never

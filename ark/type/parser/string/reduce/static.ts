@@ -1,5 +1,5 @@
 import type { LimitLiteral } from "@ark/schema"
-import type { Completion, ErrorMessage, defined } from "@ark/util"
+import type { Completion, ErrorMessage, ErrorObject, defined } from "@ark/util"
 import type { Scanner } from "../shift/scanner.js"
 import type {
 	Comparator,
@@ -43,8 +43,8 @@ export namespace state {
 		unscanned: def
 	}>
 
-	export type error<message extends string> = from<{
-		root: ErrorMessage<message>
+	export type error<message extends string, ctx extends object = {}> = from<{
+		root: {} extends ctx ? ErrorMessage<message> : ErrorObject<message, ctx>
 		branches: initialBranches
 		groups: []
 		finalizer: ErrorMessage<message>

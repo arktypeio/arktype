@@ -26,7 +26,7 @@ import {
 	isThunk,
 	throwParseError,
 	type Dict,
-	type KeyError,
+	type ErrorObject,
 	type anyOrNever,
 	type array,
 	type nominal,
@@ -83,7 +83,7 @@ export type validateScope<def> = {
 				// without breaking `pnpm typecheck`, go for it.
 				def[k] extends Type | PreparsedResolution ? def[k]
 				: k extends PrivateDeclaration<infer name extends keyof def & string> ?
-					KeyError<writeDuplicateAliasError<name>>
+					ErrorObject<writeDuplicateAliasError<name>>
 				:	validateDefinition<def[k], bootstrapAliases<def>, {}>
 			:	validateDefinition<
 					def[k],

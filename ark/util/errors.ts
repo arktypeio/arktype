@@ -1,3 +1,5 @@
+import type { id } from "./generics.js"
+
 export class InternalArktypeError extends Error {}
 
 export const throwInternalError: (message: string) => never = message =>
@@ -24,6 +26,19 @@ export type ZeroWidthSpace = " "
 
 export type ErrorMessage<message extends string = string> =
 	`${message}${ZeroWidthSpace}`
+
+export interface ErrorObject<
+	message extends string = string,
+	ctx extends {} = {}
+> {
+	[id]: "ErrorObject"
+	message: message
+	ctx: ctx
+}
+
+export type ErrorType<message extends string = string, ctx extends {} = {}> =
+	| ErrorMessage<message>
+	| ErrorObject<message, ctx>
 
 export type Completion<text extends string = string> =
 	`${text}${ZeroWidthSpace}${ZeroWidthSpace}`

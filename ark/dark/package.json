@@ -67,7 +67,7 @@
 			},
 			"errorLens.replace": [
 				{
-					"matcher": ".*'KeyError<\"(.*)\">'\\.$",
+					"matcher": ".*'ErrorObject<(.*)>'\\.$",
 					"message": "$1"
 				},
 				{

@@ -22,9 +22,10 @@ import {
 	type anyOrNever,
 	type Dict,
 	type ErrorMessage,
+	type ErrorObject,
+	type ErrorType,
 	type EscapeToken,
 	type Key,
-	type KeyError,
 	type listable,
 	type merge,
 	type mutable,
@@ -119,20 +120,22 @@ type _inferObjectLiteral<def extends object, $, args> = {
 
 export type validateObjectLiteral<def, $, args> = {
 	[k in keyof def]: k extends IndexKey<infer indexDef> ?
-		validateString<indexDef, $, args> extends ErrorMessage<infer message> ?
+		validateString<indexDef, $, args> extends (
+			ErrorType<infer message, infer ctx>
+		) ?
 			// add a nominal type here to avoid allowing the error message as input
-			KeyError<message>
+			ErrorObject<message, ctx>
 		: inferDefinition<indexDef, $, args> extends (
 			PropertyKey | of<PropertyKey, {}>
 		) ?
 			// if the indexDef is syntactically and semantically valid,
 			// move on to the validating the value definition
 			validateDefinition<def[k], $, args>
-		:	KeyError<writeInvalidPropertyKeyMessage<indexDef>>
+		:	ErrorObject<writeInvalidPropertyKeyMessage<indexDef>>
 	: k extends "..." ?
 		inferDefinition<def[k], $, args> extends object ?
 			validateDefinition<def[k], $, args>
-		:	KeyError<writeInvalidSpreadTypeMessage<astToString<def[k]>>>
+		:	ErrorObject<writeInvalidSpreadTypeMessage<astToString<def[k]>>>
 	: k extends "+" ? UndeclaredKeyBehavior
 	: validateDefaultableValue<def, k, $, args>
 }

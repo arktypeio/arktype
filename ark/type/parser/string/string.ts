@@ -1,9 +1,5 @@
 import type { BaseRoot, resolvableReferenceIn } from "@ark/schema"
-import {
-	throwInternalError,
-	throwParseError,
-	type ErrorMessage
-} from "@ark/util"
+import { throwInternalError, throwParseError, type ErrorType } from "@ark/util"
 import type { inferAstRoot } from "../semantic/infer.js"
 import type { DynamicState, DynamicStateWithRoot } from "./reduce/dynamic.js"
 import type { StringifiablePrefixOperator } from "./reduce/shared.js"
@@ -87,6 +83,6 @@ type next<s extends StaticState, $, args> =
 
 export type extractFinalizedResult<s extends StaticState> =
 	s["finalizer"] extends "" ? s["root"]
-	: s["finalizer"] extends ErrorMessage ? s["finalizer"]
+	: s["finalizer"] extends ErrorType ? s["finalizer"]
 	: s["finalizer"] extends "=" ? parseDefault<s["root"], s["unscanned"]>
 	: state.error<writeUnexpectedCharacterMessage<`${s["finalizer"]}`>>
