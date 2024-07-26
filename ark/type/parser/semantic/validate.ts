@@ -13,7 +13,6 @@ import type {
 	charsAfterFirst,
 	Completion,
 	ErrorMessage,
-	ErrorType,
 	typeToString,
 	writeMalformedNumericLiteralMessage
 } from "@ark/util"
@@ -72,7 +71,7 @@ type validateGenericArgs<
 	indices extends 1[]
 > =
 	argAsts extends readonly [infer arg, ...infer argsTail] ?
-		validateAst<arg, $, args> extends infer e extends ErrorType ? e
+		validateAst<arg, $, args> extends infer e extends ErrorMessage ? e
 		: inferAstRoot<arg, $, args> extends params[indices["length"]][1] ?
 			validateGenericArgs<params, argsTail, $, args, [...indices, 1]>
 		:	ErrorMessage<
@@ -126,7 +125,7 @@ type validateStringAst<def extends string, $> =
 		: $[alias] extends { [arkKind]: "module" } ?
 			ErrorMessage<writeMissingSubmoduleAccessMessage<def>>
 		:	undefined
-	: def extends ErrorType ? def
+	: def extends ErrorMessage ? def
 	: undefined
 
 export type maybeExtractAlias<def extends string, $> =
@@ -136,7 +135,7 @@ export type maybeExtractAlias<def extends string, $> =
 
 export type validateString<def extends string, $, args> =
 	validateAst<parseString<def, $, args>, $, args> extends (
-		infer result extends ErrorType
+		infer result extends ErrorMessage
 	) ?
 		result extends Completion<infer text> ?
 			text
@@ -144,6 +143,6 @@ export type validateString<def extends string, $, args> =
 	:	def
 
 type validateInfix<ast extends InfixExpression, $, args> =
-	validateAst<ast[0], $, args> extends infer e extends ErrorType ? e
-	: validateAst<ast[2], $, args> extends infer e extends ErrorType ? e
+	validateAst<ast[0], $, args> extends infer e extends ErrorMessage ? e
+	: validateAst<ast[2], $, args> extends infer e extends ErrorMessage ? e
 	: undefined

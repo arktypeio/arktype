@@ -15,7 +15,6 @@ import {
 	type conform,
 	type ErrorMessage,
 	type ErrorObject,
-	type ErrorType,
 	type WhiteSpaceToken
 } from "@ark/util"
 import type { inferDefinition } from "./parser/definition.js"
@@ -34,7 +33,8 @@ export type extractParams<s extends ParameterString> =
 	s extends ParameterString<infer params> ? params : never
 
 export type validateParameterString<s extends ParameterString, $> =
-	parseGenericParams<extractParams<s>, $> extends infer e extends ErrorType ? e
+	parseGenericParams<extractParams<s>, $> extends infer e extends ErrorMessage ?
+		e
 	:	s
 
 export type validateGenericArg<arg, param extends GenericParamAst, $> =
@@ -213,7 +213,7 @@ type _parseOptionalConstraint<
 			infer finalArgState extends StaticState
 		) ?
 			validateAst<finalArgState["root"], $, {}> extends (
-				infer e extends ErrorType
+				infer e extends ErrorMessage
 			) ?
 				e
 			:	parseName<

@@ -18,7 +18,6 @@ import {
 	type BigintLiteral,
 	type Completion,
 	type ErrorMessage,
-	type ErrorType,
 	type anyOrNever,
 	type join
 } from "@ark/util"
@@ -46,8 +45,7 @@ export type parseUnenclosed<s extends StaticState, $, args> =
 	) ?
 		token extends "keyof" ? state.addPrefix<s, "keyof", unscanned>
 		: tryResolve<s, token, $, args> extends infer result ?
-			result extends ErrorType<infer message, infer ctx> ?
-				state.error<message, ctx>
+			result extends ErrorMessage<infer message> ? state.error<message>
 			: result extends resolvableReferenceIn<$> ?
 				parseResolution<
 					s,
