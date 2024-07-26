@@ -1,5 +1,93 @@
 # arktype
 
+## 2.0.0-beta.2
+
+### More Generic Builtins
+
+Added equivalents for the following generics:
+
+- **Required**
+- **Partial**
+
+Like the other genreic utilities, these can be instantiated in one of three ways:
+
+### Syntactic Definition
+
+```ts
+const types = scope({
+	user: {
+		name: "string",
+		"age?": "number"
+	},
+	partialUser: "Partial<user>"
+}).export()
+
+// Type<{
+//     name?: string;
+//     age?: number;
+// }>
+types.partialUser
+```
+
+### Chained Definition
+
+```ts
+const user = type({
+	name: "string",
+	"age?": "number"
+}).required()
+
+// Type<{
+//     name: string;
+//     age: number;
+// }>
+const basicUser = user.required()
+```
+
+### Invoked Definition
+
+```ts
+import { ark, type } from "arktype"
+
+const user = type({
+	name: "string",
+	"age?": "number"
+})
+
+// Type<{
+//     name?: string;
+//     age?: number;
+// }>
+const partialUser = ark.Partial(user)
+```
+
+### New Keywords
+
+We've added a new `unixTimestamp` keyword for an integer value representing the unix epoch. Thanks @Bas950 🎉
+
+### Deep undeclared key behavior
+
+You can now deeply reject or delete all undeclared keys on a type with the following method:
+
+```ts
+const husband = type({
+	name: "string",
+	wife: {
+		name: "string"
+	}
+}).onDeepUndeclaredKey("delete")
+
+// { name: "David", wife: { name: "Savannah" } }
+const out = husband({
+	name: "David",
+	age: 31,
+	wife: {
+		name: "Savannah",
+		age: 31
+	}
+})
+```
+
 ## 2.0.0-beta.1
 
 ### Generic Builtins

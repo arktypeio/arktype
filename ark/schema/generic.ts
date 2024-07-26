@@ -253,6 +253,9 @@ export namespace GenericHkt {
 			readonly args: args
 		})["hkt"]
 	>
+
+	export type conform<thisArgs, parameters extends array> =
+		thisArgs extends parameters ? thisArgs : parameters
 }
 
 export const writeUnsatisfiedParameterConstraintMessage = <

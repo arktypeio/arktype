@@ -444,7 +444,7 @@ contextualize(() => {
 					}),
 				class extends GenericHkt {
 					declare hkt: (
-						args: conform<this["args"], [unknown]>
+						args: GenericHkt.conform<this["args"], [unknown]>
 					) => MyExternalClass<(typeof args)[0]>
 				}
 			)
