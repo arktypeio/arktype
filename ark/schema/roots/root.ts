@@ -414,6 +414,10 @@ export abstract class BaseRoot<
 		)
 	}
 
+	onDeepUndeclaredKey(behavior: UndeclaredKeyBehavior): BaseRoot {
+		return this.onUndeclaredKey({ rule: behavior, deep: true })
+	}
+
 	satisfying(predicate: Predicate): BaseRoot {
 		return this.constrain("predicate", predicate)
 	}
@@ -546,6 +550,8 @@ export declare abstract class Root<t = unknown, $ = any> extends Callable<
 	describe(description: string): this
 
 	onUndeclaredKey(behavior: UndeclaredKeyBehavior): this
+
+	onDeepUndeclaredKey(behavior: UndeclaredKeyBehavior): this
 
 	from(literal: this["inferIn"]): this["infer"]
 }

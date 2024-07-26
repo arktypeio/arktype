@@ -24,6 +24,38 @@ contextualize(() => {
 			attest(t(getExtraneousB())).snap({ a: "ok" })
 		})
 
+		it("applies shallowly", () => {
+			const t = type({
+				a: "string",
+				nested: {
+					a: "string"
+				}
+			}).onUndeclaredKey("delete")
+
+			attest(
+				t({
+					...getExtraneousB(),
+					nested: getExtraneousB()
+				})
+			).equals({ a: "ok", nested: { a: "ok", b: "why?" } as never })
+		})
+
+		it("can apply deeply", () => {
+			const t = type({
+				a: "string",
+				nested: {
+					a: "string"
+				}
+			}).onDeepUndeclaredKey("delete")
+
+			attest(
+				t({
+					...getExtraneousB(),
+					nested: getExtraneousB()
+				})
+			).equals({ a: "ok", nested: { a: "ok" } })
+		})
+
 		it("delete union key", () => {
 			const o = type([{ a: "string" }, "|", { b: "boolean" }]).onUndeclaredKey(
 				"delete"
