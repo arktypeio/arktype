@@ -3,7 +3,7 @@ import { GenericHkt } from "../generic.js"
 import type { SchemaModule } from "../module.js"
 import { generic, schemaScope } from "../scope.js"
 
-const ArkRecord = generic(["K", $ark.intrinsic.propertyKey], "V")(
+const Record = generic(["K", $ark.intrinsic.propertyKey], "V")(
 	args => ({
 		domain: "object",
 		index: {
@@ -18,7 +18,7 @@ const ArkRecord = generic(["K", $ark.intrinsic.propertyKey], "V")(
 	}
 )
 
-const ArkPick = generic(
+const Pick = generic(
 	["T", $ark.intrinsic.object],
 	["K", $ark.intrinsic.propertyKey]
 )(
@@ -30,7 +30,7 @@ const ArkPick = generic(
 	}
 )
 
-const ArkOmit = generic(
+const Omit = generic(
 	["T", $ark.intrinsic.object],
 	["K", $ark.intrinsic.propertyKey]
 )(
@@ -42,7 +42,25 @@ const ArkOmit = generic(
 	}
 )
 
-const ArkExclude = generic("T", "U")(
+const Partial = generic(["T", $ark.intrinsic.object])(
+	args => args.T.partial(),
+	class PartialHkt extends GenericHkt {
+		declare hkt: (
+			args: conform<this["args"], [object]>
+		) => show<Partial<(typeof args)[0]>>
+	}
+)
+
+const Required = generic(["T", $ark.intrinsic.object])(
+	args => args.T.required(),
+	class RequiredHkt extends GenericHkt {
+		declare hkt: (
+			args: conform<this["args"], [object]>
+		) => show<Required<(typeof args)[0]>>
+	}
+)
+
+const Exclude = generic("T", "U")(
 	args => args.T.exclude(args.U),
 	class ExcludeHkt extends GenericHkt {
 		declare hkt: (
@@ -51,7 +69,7 @@ const ArkExclude = generic("T", "U")(
 	}
 )
 
-const ArkExtract = generic("T", "U")(
+const Extract = generic("T", "U")(
 	args => args.T.extract(args.U),
 	class ExtractHkt extends GenericHkt {
 		declare hkt: (
@@ -61,11 +79,13 @@ const ArkExtract = generic("T", "U")(
 )
 
 const tsGenericsExports = {
-	Record: ArkRecord,
-	Pick: ArkPick,
-	Omit: ArkOmit,
-	Exclude: ArkExclude,
-	Extract: ArkExtract
+	Record,
+	Pick,
+	Omit,
+	Exclude,
+	Extract,
+	Partial,
+	Required
 }
 
 export type tsGenericsExports = typeof tsGenericsExports

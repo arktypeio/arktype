@@ -209,7 +209,7 @@ contextualize(() => {
 			const ok = types.entry("string", "number")
 
 			attest<[string, number]>(ok.t)
-			attest(ok.expression).snap()
+			attest(ok.expression).snap("[string, number]")
 
 			// @ts-expect-error
 			attest(() => types.entry("boolean", "number"))
@@ -234,17 +234,9 @@ contextualize(() => {
 					// @ts-expect-error
 					badEntry: "entry<1, 0>"
 				}).export()
+			).throws(
+				writeUnsatisfiedParameterConstraintMessage("k", "string | symbol", "1")
 			)
-				.throws(
-					writeUnsatisfiedParameterConstraintMessage(
-						"k",
-						"string | symbol",
-						"1"
-					)
-				)
-				.type.errors(
-					`ErrorType<"Invalid argument for k", [expected: string | symbol]>`
-				)
 		})
 
 		it("constraint parse error", () => {

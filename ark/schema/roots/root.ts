@@ -574,6 +574,14 @@ declare class _SchemaRoot<t = unknown, $ = any> extends Root<t, $> {
 		...keys: array<key | InferredRoot<key>>
 	): SchemaRoot<{ [k in key]: getArkKey<t, k> }, $>
 
+	required(
+		this: validateStructuralOperand<"required", this>
+	): SchemaRoot<{ [k in keyof this["inferIn"]]-?: this["inferIn"][k] }, $>
+
+	partial(
+		this: validateStructuralOperand<"partial", this>
+	): SchemaRoot<{ [k in keyof this["inferIn"]]?: this["inferIn"][k] }, $>
+
 	get<k1 extends arkKeyOf<t>>(
 		k1: k1 | InferredRoot<k1>
 	): SchemaRoot<getArkKey<t, k1>, $>

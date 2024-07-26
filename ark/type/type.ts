@@ -285,6 +285,14 @@ declare class _Type<t = unknown, $ = any> extends Root<t, $> {
 		$
 	>
 
+	required(
+		this: validateStructuralOperand<"required", this>
+	): Type<{ [k in keyof this["inferIn"]]-?: this["inferIn"][k] }, $>
+
+	partial(
+		this: validateStructuralOperand<"partial", this>
+	): Type<{ [k in keyof this["inferIn"]]?: this["inferIn"][k] }, $>
+
 	get<k1 extends arkKeyOf<t>>(k1: k1 | type.cast<k1>): Type<getArkKey<t, k1>, $>
 	get<k1 extends arkKeyOf<t>, k2 extends arkKeyOf<getArkKey<t, k1>>>(
 		k1: k1 | type.cast<k1>,
