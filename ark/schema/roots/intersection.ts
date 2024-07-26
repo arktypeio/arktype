@@ -75,12 +75,14 @@ export type NormalizedIntersectionSchema = Omit<
 	StructuralKind | "undeclared"
 >
 
-export type IntersectionSchema<inferredBasis = any> = show<
-	BaseMeta & {
-		domain?: DomainSchema
-		proto?: ProtoSchema
-	} & conditionalRootOf<inferredBasis>
->
+export type IntersectionSchema<inferredBasis = any> =
+	| show<
+			BaseMeta & {
+				domain?: DomainSchema
+				proto?: ProtoSchema
+			} & conditionalRootOf<inferredBasis>
+	  >
+	| IntersectionNode
 
 export type IntersectionDeclaration = declareNode<{
 	kind: "intersection"

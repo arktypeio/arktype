@@ -71,8 +71,7 @@ type validateGenericArgs<
 	indices extends 1[]
 > =
 	argAsts extends readonly [infer arg, ...infer argsTail] ?
-		validateAst<arg, $, args> extends ErrorMessage<infer message> ?
-			ErrorMessage<message>
+		validateAst<arg, $, args> extends infer e extends ErrorMessage ? e
 		: inferAstRoot<arg, $, args> extends params[indices["length"]][1] ?
 			validateGenericArgs<params, argsTail, $, args, [...indices, 1]>
 		:	ErrorMessage<
@@ -144,8 +143,6 @@ export type validateString<def extends string, $, args> =
 	:	def
 
 type validateInfix<ast extends InfixExpression, $, args> =
-	validateAst<ast[0], $, args> extends ErrorMessage<infer message> ?
-		ErrorMessage<message>
-	: validateAst<ast[2], $, args> extends ErrorMessage<infer message> ?
-		ErrorMessage<message>
-	:	undefined
+	validateAst<ast[0], $, args> extends infer e extends ErrorMessage ? e
+	: validateAst<ast[2], $, args> extends infer e extends ErrorMessage ? e
+	: undefined

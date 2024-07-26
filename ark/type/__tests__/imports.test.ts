@@ -30,7 +30,15 @@ contextualize(() => {
 					...threeSixtyNoModule,
 					threeSixtyNo: "three|sixty|no"
 				}).export()
-				attest<Module<{ threeSixtyNo: 3 | 60 | "no" }>>(types)
+
+				attest<
+					Module<{
+						three: 3
+						sixty: 60
+						no: "no"
+						threeSixtyNo: 3 | 60 | "no"
+					}>
+				>(types)
 			})
 
 			it("multiple", ({ threeSixtyNoModule, yesModule }) => {

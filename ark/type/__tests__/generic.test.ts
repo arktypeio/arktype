@@ -1,12 +1,13 @@
 import { attest, contextualize } from "@ark/attest"
 import {
+	GenericHkt,
 	keywordNodes,
 	writeIndivisibleMessage,
 	writeUnboundableMessage,
 	writeUnresolvableMessage,
 	writeUnsatisfiedParameterConstraintMessage
 } from "@ark/schema"
-import type { conform, Hkt } from "@ark/util"
+import type { conform } from "@ark/util"
 import { generic, scope, type } from "arktype"
 import { emptyGenericParameterMessage, type Generic } from "../generic.js"
 import { writeUnclosedGroupMessage } from "../parser/string/reduce/shared.js"
@@ -175,7 +176,7 @@ contextualize(() => {
 					)
 				)
 				.type.errors(
-					"Argument of type 'string' is not assignable to parameter of type 'Type<moreThan<0>, {}>'"
+					`ErrorType<"Invalid argument for n", [expected: moreThan<0>]>`
 				)
 		})
 
@@ -194,6 +195,47 @@ contextualize(() => {
 			// @ts-expect-error
 			attest(() => $.type("entry<0, 1>")).throwsAndHasTypeError(
 				writeUnsatisfiedParameterConstraintMessage("k", "string | symbol", "0")
+			)
+		})
+
+		it("can parse constraint including alias from current scope", () => {
+			const $ = scope({
+				"entry<k extends key, v>": ["k", "v"],
+				key: "string | symbol"
+			})
+
+			const types = $.export()
+
+			const ok = types.entry("string", "number")
+
+			attest<[string, number]>(ok.t)
+			attest(ok.expression).snap("[string, number]")
+
+			// @ts-expect-error
+			attest(() => types.entry("boolean", "number"))
+				.throws(
+					writeUnsatisfiedParameterConstraintMessage(
+						"k",
+						"string | symbol",
+						"boolean"
+					)
+				)
+				.type.errors(
+					`ErrorType<"Invalid argument for k", [expected: string | symbol]>`
+				)
+		})
+
+		it("errors on unsatisfied constraints from current scope", () => {
+			attest(() =>
+				scope({
+					"entry<k extends key, v>": ["k", "v"],
+					key: "string | symbol",
+					goodEntry: "entry<'foo', 1>",
+					// @ts-expect-error
+					badEntry: "entry<1, 0>"
+				}).export()
+			).throws(
+				writeUnsatisfiedParameterConstraintMessage("k", "string | symbol", "1")
 			)
 		})
 
@@ -391,23 +433,90 @@ contextualize(() => {
 	)
 	describe("hkt", () => {
 		it("can infer a generic from an hkt", () => {
-			// class MyExternalClass<T> {
-			// 	constructor(public data: T) {}
-			// }
-			// class ValidatedExternalGeneric extends generic("T")(args =>
-			// 	type("instanceof", MyExternalClass).and({
-			// 		data: args.T
-			// 	})
-			// ) {
-			// 	declare hkt: (
-			// 		args: conform<this[Hkt.args], [unknown]>
-			// 	) => MyExternalClass<(typeof args)[0]>
-			// }
-			// const myExternalClass = new ValidatedExternalGeneric()
-			// const myType = myExternalClass({
-			// 	name: "string",
-			// 	age: "number"
-			// })
+			class MyExternalClass<T> {
+				constructor(public data: T) {}
+			}
+
+			const validateExternalGeneric = generic("T")(
+				args =>
+					type("instanceof", MyExternalClass).and({
+						data: args.T
+					}),
+				class extends GenericHkt {
+					declare hkt: (
+						args: GenericHkt.conform<this["args"], [unknown]>
+					) => MyExternalClass<(typeof args)[0]>
+				}
+			)
+
+			const t = validateExternalGeneric({
+				name: "string",
+				age: "number"
+			})
+
+			attest<
+				MyExternalClass<{
+					name: string
+					age: number
+				}>
+			>(t.t)
+
+			attest(t.json).snap({
+				required: [
+					{
+						key: "data",
+						value: {
+							required: [
+								{ key: "age", value: "number" },
+								{ key: "name", value: "string" }
+							],
+							domain: "object"
+						}
+					}
+				],
+				proto: "$ark.MyExternalClass",
+				domain: "object"
+			})
+		})
+
+		it("can infer constrained parameters", () => {
+			const validateExternalGeneric = generic(
+				["S", "string"],
+				["N", { value: "number" }]
+			)(
+				args => [args.S.atLeastLength(1), args.N],
+				class extends GenericHkt {
+					declare hkt: (
+						args: conform<this["args"], [string, { value: number }]>
+					) => [(typeof args)[0], (typeof args)[1]]
+				}
+			)
+
+			const t = validateExternalGeneric("string", { value: "number" })
+
+			attest<
+				[
+					string,
+					{
+						value: number
+					}
+				]
+			>(t.t)
+
+			attest(t.expression).snap("[string >= 1, { value: number }]")
+
+			// @ts-expect-error
+			attest(() => validateExternalGeneric("string", { value: "string" }))
+				.throws(
+					writeUnsatisfiedParameterConstraintMessage(
+						"N",
+						"{ value: number }",
+						"{ value: string }"
+					)
+				)
+				.type.errors(
+					`ErrorType<"Invalid argument for N", [expected: { value: number; }]>`
+				)
 		})
 	})
 

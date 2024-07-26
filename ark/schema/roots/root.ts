@@ -73,12 +73,19 @@ import {
 } from "../shared/utils.js"
 import type {
 	StructureInner,
+	StructureNode,
 	UndeclaredKeyBehavior,
 	arkKeyOf,
 	getArkKey
 } from "../structure/structure.js"
 import type { constraintKindOf } from "./intersection.js"
-import type { Morph, MorphNode, inferMorphOut, inferPipes } from "./morph.js"
+import type {
+	Morph,
+	MorphChildNode,
+	MorphNode,
+	inferMorphOut,
+	inferPipes
+} from "./morph.js"
 import type { UnionChildKind, UnionChildNode } from "./union.js"
 
 export interface InternalRootDeclaration extends BaseNodeDeclaration {
@@ -162,28 +169,40 @@ export abstract class BaseRoot<
 		return result instanceof ArkErrors ? result.throw() : result
 	}
 
-	pick(...keys: array<TypeKey>): BaseRoot {
-		return this.filterKeys("pick", keys)
+	pick(...keys: TypeKey[]): BaseRoot {
+		return this.applyStructuralOperation("pick", keys)
 	}
 
-	omit(...keys: array<TypeKey>): BaseRoot {
-		return this.filterKeys("omit", keys)
+	omit(...keys: TypeKey[]): BaseRoot {
+		return this.applyStructuralOperation("omit", keys)
 	}
 
-	private filterKeys(
-		operation: "pick" | "omit",
-		keys: array<TypeKey>
-	): BaseRoot {
+	required(): BaseRoot {
+		return this.applyStructuralOperation("required", [])
+	}
+
+	partial(): BaseRoot {
+		return this.applyStructuralOperation("partial", [])
+	}
+
+	private applyStructuralOperation<
+		operation extends "pick" | "omit" | "required" | "partial"
+	>(operation: operation, args: Parameters<BaseRoot[operation]>): BaseRoot {
 		if (this.hasKind("union")) {
 			return this.$.schema(
-				this.branches.map(branch => branch[operation](...keys))
+				this.branches.map(branch =>
+					branch.applyStructuralOperation(operation, args)
+				)
 			)
 		}
 
 		if (this.hasKind("morph")) {
 			return this.$.node("morph", {
 				...this.inner,
-				in: this.in[operation](...keys)
+				in: (this.in as BaseRoot).applyStructuralOperation(
+					operation,
+					args
+				) as MorphChildNode
 			})
 		}
 
@@ -194,9 +213,14 @@ export abstract class BaseRoot<
 				)
 			}
 
+			const structuralMethodName: keyof StructureNode =
+				operation === "required" ? "require"
+				: operation === "partial" ? "optionalize"
+				: operation
+
 			return this.$.node("intersection", {
 				...this.inner,
-				structure: this.inner.structure[operation](...keys)
+				structure: this.inner.structure[structuralMethodName](...(args as any))
 			})
 		}
 
@@ -209,7 +233,7 @@ export abstract class BaseRoot<
 		)
 	}
 
-	get(...path: array<TypeIndexer>): BaseRoot {
+	get(...path: TypeIndexer[]): BaseRoot {
 		if (path[0] === undefined) return this
 
 		if (this.hasKind("union")) {
@@ -222,10 +246,8 @@ export abstract class BaseRoot<
 		const branch = this as {} as UnionChildNode
 
 		return (
-			branch.structure?.get(...(path as NonEmptyList<TypeIndexer>)) ??
-			throwParseError(
-				writeNonStructuralOperandMessage("index access", this.expression)
-			)
+			branch.structure?.get(...(path as {} as NonEmptyList<TypeIndexer>)) ??
+			throwParseError(writeNonStructuralOperandMessage("get", this.expression))
 		)
 	}
 
@@ -304,7 +326,7 @@ export abstract class BaseRoot<
 			})
 		}
 		return this.$.node("morph", {
-			in: this,
+			in: this as {} as MorphChildNode,
 			morphs: [morph]
 		})
 	}
@@ -390,6 +412,10 @@ export abstract class BaseRoot<
 				{ shouldTransform: node => !includes(structuralKinds, node.kind) }
 			)
 		)
+	}
+
+	onDeepUndeclaredKey(behavior: UndeclaredKeyBehavior): BaseRoot {
+		return this.onUndeclaredKey({ rule: behavior, deep: true })
 	}
 
 	satisfying(predicate: Predicate): BaseRoot {
@@ -525,6 +551,8 @@ export declare abstract class Root<t = unknown, $ = any> extends Callable<
 
 	onUndeclaredKey(behavior: UndeclaredKeyBehavior): this
 
+	onDeepUndeclaredKey(behavior: UndeclaredKeyBehavior): this
+
 	from(literal: this["inferIn"]): this["infer"]
 }
 
@@ -551,6 +579,14 @@ declare class _SchemaRoot<t = unknown, $ = any> extends Root<t, $> {
 		this: validateStructuralOperand<"omit", this>,
 		...keys: array<key | InferredRoot<key>>
 	): SchemaRoot<{ [k in key]: getArkKey<t, k> }, $>
+
+	required(
+		this: validateStructuralOperand<"required", this>
+	): SchemaRoot<{ [k in keyof this["inferIn"]]-?: this["inferIn"][k] }, $>
+
+	partial(
+		this: validateStructuralOperand<"partial", this>
+	): SchemaRoot<{ [k in keyof this["inferIn"]]?: this["inferIn"][k] }, $>
 
 	get<k1 extends arkKeyOf<t>>(
 		k1: k1 | InferredRoot<k1>
@@ -714,7 +750,12 @@ export type validateChainedConstraint<
 	t["inferIn"] extends Prerequisite<kind> ? t
 	:	ErrorMessage<writeInvalidOperandMessage<kind, SchemaRoot<t["inferIn"]>>>
 
-export type StructuralOperationName = "pick" | "omit" | "index access"
+export type StructuralOperationName =
+	| "pick"
+	| "omit"
+	| "get"
+	| "required"
+	| "partial"
 
 export type writeNonStructuralOperandMessage<
 	operation extends StructuralOperationName,

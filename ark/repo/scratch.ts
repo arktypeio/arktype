@@ -8,7 +8,3 @@ const t = type({
 const o = type("string")
 
 ark.Record
-
-// 	("string", {
-// 	bar: "number | string"
-// })

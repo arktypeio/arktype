@@ -9,7 +9,12 @@ import {
 } from "@ark/util"
 import type { Constraints, of, parseConstraints } from "../ast.js"
 import type { BaseNode } from "../node.js"
-import type { MorphAst, MorphNode, Out } from "../roots/morph.js"
+import type {
+	MorphAst,
+	MorphChildNode,
+	MorphNode,
+	Out
+} from "../roots/morph.js"
 import type { BaseRoot } from "../roots/root.js"
 import type { InternalBaseScope } from "../scope.js"
 import { Disjoint } from "./disjoint.js"
@@ -223,6 +228,7 @@ export const pipeToMorph = (
 	if (result instanceof Disjoint) return result
 	return ctx.$.node("morph", {
 		morphs: to.morphs,
-		in: result
+		// TODO: https://github.com/arktypeio/arktype/issues/1067
+		in: result as MorphChildNode
 	})
 }

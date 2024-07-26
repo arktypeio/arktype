@@ -78,10 +78,6 @@ export type nominal<t, id extends string> = t & {
 	readonly [id]: id
 }
 
-export type keyError<message extends string> = ErrorMessage<message> & {
-	[id]: "KeyError"
-}
-
 export type satisfy<base, t extends base> = t
 
 export type defined<t> = t & ({} | null)

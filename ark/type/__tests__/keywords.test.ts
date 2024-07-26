@@ -347,9 +347,7 @@ tags[2] must be a string (was object)`)
 							"boolean"
 						)
 					)
-					.type.errors(
-						`'string' is not assignable to parameter of type 'Type<Key, {}>'`
-					)
+					.type.errors(`ErrorType<"Invalid argument for K", [expected: Key]>`)
 			})
 		})
 
@@ -451,6 +449,77 @@ tags[2] must be a string (was object)`)
 				attest<typeof expected.t>(extras.t)
 
 				attest(extras.expression).equals(expected.expression)
+			})
+		})
+
+		describe("partial", () => {
+			it("parsed", () => {
+				const types = scope({
+					user: {
+						name: "string",
+						"age?": "number"
+					},
+					actual: "Partial<user>",
+					expected: {
+						"name?": "string",
+						"age?": "number"
+					}
+				}).export()
+
+				attest<typeof types.expected.t>(types.actual.t)
+				attest(types.actual.expression).equals(types.expected.expression)
+			})
+
+			it("chained", () => {
+				const t = type({
+					"[string]": "number",
+					foo: "1",
+					"bar?": "1"
+				}).partial()
+
+				attest<{
+					// really this should just be number for the index signature, seems like a TS bug?
+					[x: string]: number | undefined
+					foo?: 1
+					bar?: 1
+				}>(t.t)
+
+				attest(t.expression).snap("{ [string]: number, bar?: 1, foo?: 1 }")
+			})
+		})
+
+		describe("required", () => {
+			it("parsed", () => {
+				const types = scope({
+					user: {
+						name: "string",
+						"age?": "number"
+					},
+					actual: "Required<user>",
+					expected: {
+						name: "string",
+						age: "number"
+					}
+				}).export()
+
+				attest<typeof types.expected.t>(types.actual.t)
+				attest(types.actual.expression).equals(types.expected.expression)
+			})
+
+			it("chained", () => {
+				const t = type({
+					"[string]": "number",
+					foo: "1",
+					"bar?": "1"
+				}).required()
+
+				attest<{
+					[x: string]: number
+					foo: 1
+					bar: 1
+				}>(t.t)
+
+				attest(t.expression).snap("{ [string]: number, bar: 1, foo: 1 }")
 			})
 		})
 

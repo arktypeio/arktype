@@ -1,77 +1,91 @@
-import {
-	$ark,
-	liftArray,
-	type conform,
-	type Hkt,
-	type Key,
-	type show
-} from "@ark/util"
+import { $ark, type conform, type Key, type show } from "@ark/util"
+import { GenericHkt } from "../generic.js"
 import type { SchemaModule } from "../module.js"
-import type { Out } from "../roots/morph.js"
 import { generic, schemaScope } from "../scope.js"
 
-class ArkRecord extends generic(
-	["K", $ark.intrinsic.propertyKey],
-	"V"
-)(args => ({
-	domain: "object",
-	index: {
-		signature: args.K,
-		value: args.V
+const Record = generic(["K", $ark.intrinsic.propertyKey], "V")(
+	args => ({
+		domain: "object",
+		index: {
+			signature: args.K,
+			value: args.V
+		}
+	}),
+	class RecordHkt extends GenericHkt {
+		declare hkt: (
+			args: conform<this["args"], [PropertyKey, unknown]>
+		) => Record<(typeof args)[0], (typeof args)[1]>
 	}
-})) {
-	declare hkt: (
-		args: conform<this[Hkt.args], [PropertyKey, unknown]>
-	) => Record<(typeof args)[0], (typeof args)[1]>
-}
+)
 
-class ArkPick extends generic(
+const Pick = generic(
 	["T", $ark.intrinsic.object],
 	["K", $ark.intrinsic.propertyKey]
-)(args => args.T.pick(args.K as never)) {
-	declare hkt: (
-		args: conform<this[Hkt.args], [object, Key]>
-	) => show<Pick<(typeof args)[0], (typeof args)[1] & keyof (typeof args)[0]>>
-}
+)(
+	args => args.T.pick(args.K as never),
+	class PickHkt extends GenericHkt {
+		declare hkt: (
+			args: conform<this["args"], [object, Key]>
+		) => show<Pick<(typeof args)[0], (typeof args)[1] & keyof (typeof args)[0]>>
+	}
+)
 
-class ArkOmit extends generic(
+const Omit = generic(
 	["T", $ark.intrinsic.object],
 	["K", $ark.intrinsic.propertyKey]
-)(args => args.T.omit(args.K as never)) {
-	declare hkt: (
-		args: conform<this[Hkt.args], [object, Key]>
-	) => show<Omit<(typeof args)[0], (typeof args)[1] & keyof (typeof args)[0]>>
-}
+)(
+	args => args.T.omit(args.K as never),
+	class OmitHkt extends GenericHkt {
+		declare hkt: (
+			args: conform<this["args"], [object, Key]>
+		) => show<Omit<(typeof args)[0], (typeof args)[1] & keyof (typeof args)[0]>>
+	}
+)
 
-class ArkExclude extends generic("T", "U")(args => args.T.exclude(args.U)) {
-	declare hkt: (
-		args: conform<this[Hkt.args], [unknown, unknown]>
-	) => Exclude<(typeof args)[0], (typeof args)[1]>
-}
+const Partial = generic(["T", $ark.intrinsic.object])(
+	args => args.T.partial(),
+	class PartialHkt extends GenericHkt {
+		declare hkt: (
+			args: conform<this["args"], [object]>
+		) => show<Partial<(typeof args)[0]>>
+	}
+)
 
-class ArkExtract extends generic("T", "U")(args => args.T.extract(args.U)) {
-	declare hkt: (
-		args: conform<this[Hkt.args], [unknown, unknown]>
-	) => Extract<(typeof args)[0], (typeof args)[1]>
-}
+const Required = generic(["T", $ark.intrinsic.object])(
+	args => args.T.required(),
+	class RequiredHkt extends GenericHkt {
+		declare hkt: (
+			args: conform<this["args"], [object]>
+		) => show<Required<(typeof args)[0]>>
+	}
+)
 
-class ArkLiftArray extends generic("T")(args =>
-	args.T.or(args.T.array()).pipe(liftArray)
-) {
-	declare hkt: (
-		args: conform<this[Hkt.args], [unknown]>
-	) => liftArray<(typeof args)[0]> extends infer lifted ?
-		(In: (typeof args)[0] | lifted) => Out<lifted>
-	:	never
-}
+const Exclude = generic("T", "U")(
+	args => args.T.exclude(args.U),
+	class ExcludeHkt extends GenericHkt {
+		declare hkt: (
+			args: conform<this["args"], [unknown, unknown]>
+		) => Exclude<(typeof args)[0], (typeof args)[1]>
+	}
+)
+
+const Extract = generic("T", "U")(
+	args => args.T.extract(args.U),
+	class ExtractHkt extends GenericHkt {
+		declare hkt: (
+			args: conform<this["args"], [unknown, unknown]>
+		) => Extract<(typeof args)[0], (typeof args)[1]>
+	}
+)
 
 const tsGenericsExports = {
-	Record: new ArkRecord(),
-	Pick: new ArkPick(),
-	Omit: new ArkOmit(),
-	Exclude: new ArkExclude(),
-	Extract: new ArkExtract(),
-	liftArray: new ArkLiftArray()
+	Record,
+	Pick,
+	Omit,
+	Exclude,
+	Extract,
+	Partial,
+	Required
 }
 
 export type tsGenericsExports = typeof tsGenericsExports

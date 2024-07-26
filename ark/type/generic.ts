@@ -1,7 +1,8 @@
 import type {
+	ConstrainedGenericParamDef,
+	GenericHkt,
 	GenericParamAst,
 	GenericParamDef,
-	genericParamSchemasToAst,
 	GenericProps,
 	GenericRoot,
 	LazyGenericBody
@@ -13,8 +14,7 @@ import {
 	type Callable,
 	type conform,
 	type ErrorMessage,
-	type Hkt,
-	type keyError,
+	type ErrorType,
 	type WhiteSpaceToken
 } from "@ark/util"
 import type { inferDefinition } from "./parser/definition.js"
@@ -33,12 +33,13 @@ export type extractParams<s extends ParameterString> =
 	s extends ParameterString<infer params> ? params : never
 
 export type validateParameterString<s extends ParameterString, $> =
-	parseGenericParams<extractParams<s>, $> extends keyError<infer message> ?
-		ErrorMessage<message>
+	parseGenericParams<extractParams<s>, $> extends infer e extends ErrorMessage ?
+		e
 	:	s
 
 export type validateGenericArg<arg, param extends GenericParamAst, $> =
-	inferTypeRoot<arg, $> extends param[1] ? arg : Type<param[1]>
+	inferTypeRoot<arg, $> extends param[1] ? arg
+	:	ErrorType<`Invalid argument for ${param[0]}`, [expected: param[1]]>
 
 export type GenericInstantiator<
 	params extends array<GenericParamAst>,
@@ -59,8 +60,11 @@ export type GenericInstantiator<
 		>
 	}
 ) => Type<
-	def extends Hkt.Kind ?
-		Hkt.apply<def, { [i in keyof args]: inferTypeRoot<args[i], args$> }>
+	def extends GenericHkt ?
+		GenericHkt.instantiate<
+			def,
+			{ [i in keyof args]: inferTypeRoot<args[i], args$> }
+		>
 	:	inferDefinition<def, $, bindGenericArgs<params, args$, args>>,
 	$
 >
@@ -72,7 +76,12 @@ type bindGenericArgs<params extends array<GenericParamAst>, $, args> = {
 	>
 }
 
-export type baseGenericArgs<params extends array<GenericParamAst>> = {
+type baseGenericResolutions<params extends array<GenericParamAst>, $> =
+	baseGenericConstraints<params> extends infer baseConstraints ?
+		{ [k in keyof baseConstraints]: Type<baseConstraints[k], $> }
+	:	never
+
+export type baseGenericConstraints<params extends array<GenericParamAst>> = {
 	[i in keyof params & `${number}` as params[i][0]]: params[i][1]
 }
 
@@ -150,7 +159,7 @@ type parseNextNameChar<
 > =
 	unscanned extends `${infer lookahead}${infer nextUnscanned}` ?
 		lookahead extends ParamsTerminator ?
-			name extends "" ? keyError<emptyGenericParameterMessage>
+			name extends "" ? ErrorMessage<emptyGenericParameterMessage>
 			: lookahead extends "," ?
 				parseName<nextUnscanned, [...result, [name, unknown]], $>
 			: lookahead extends ":" | WhiteSpaceToken ?
@@ -204,9 +213,9 @@ type _parseOptionalConstraint<
 			infer finalArgState extends StaticState
 		) ?
 			validateAst<finalArgState["root"], $, {}> extends (
-				ErrorMessage<infer message>
+				infer e extends ErrorMessage
 			) ?
-				keyError<message>
+				e
 			:	parseName<
 					finalArgState["unscanned"],
 					[...result, [name, inferAstRoot<finalArgState["root"], $, {}>]],
@@ -221,28 +230,24 @@ type _parseOptionalConstraint<
 			$
 		>
 
+type genericParamDefToAst<schema extends GenericParamDef, $> =
+	schema extends string ? [schema, unknown]
+	: schema extends ConstrainedGenericParamDef ?
+		[schema[0], inferTypeRoot<schema[1], $>]
+	:	never
+
+export type genericParamDefsToAst<schemas extends array<GenericParamDef>, $> = [
+	...{ [i in keyof schemas]: genericParamDefToAst<schemas[i], $> }
+]
+
 export type GenericHktParser<$ = {}> = <
 	const paramsDef extends array<GenericParamDef>
 >(
 	...params: paramsDef
-) => (
-	instantiateDef: LazyGenericBody<genericParamSchemasToAst<paramsDef, $>>
-) => GenericHktSubclass<genericParamSchemasToAst<paramsDef, $>, $>
-
-export type GenericHktSubclass<
-	params extends array<GenericParamAst>,
-	$
-> = abstract new () => GenericHkt<
-	genericParamSchemasToAst<params, $>,
-	Hkt.Kind,
-	$,
-	$
->
-
-export interface GenericHkt<
-	params extends array<GenericParamAst>,
-	hkt extends Hkt.Kind,
-	$,
-	args$
-> extends Generic<params, hkt, $, args$>,
-		Hkt.Kind {}
+) => <
+	hkt extends abstract new () => GenericHkt,
+	params extends Array<GenericParamAst> = genericParamDefsToAst<paramsDef, $>
+>(
+	instantiateDef: LazyGenericBody<baseGenericResolutions<params, $>>,
+	hkt: hkt
+) => Generic<params, InstanceType<hkt>, $, $>

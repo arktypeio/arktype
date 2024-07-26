@@ -201,12 +201,13 @@ export abstract class InternalBaseScope<
 		...params: array<GenericParamDef>
 	): ReturnType<GenericHktSchemaParser> {
 		const $: BaseScope = this as never
-		return (instantiateDef): any =>
-			class GenericHktSubclass extends GenericRoot {
-				constructor() {
-					super(params, new LazyGenericBody(instantiateDef), $, $)
-				}
-			}
+		return instantiateDef =>
+			new GenericRoot(
+				params,
+				new LazyGenericBody(instantiateDef),
+				$,
+				$
+			) as never
 	}
 
 	@bound
@@ -502,7 +503,7 @@ export const schemaScope = <const aliases>(
 	config?: ArkConfig
 ): SchemaScope<instantiateAliases<aliases>> => new SchemaScope(aliases, config)
 
-export interface BaseScope<$ = any> {
+export interface BaseScope<$ = {}> {
 	t: $
 	[arkKind]: "scope"
 	config: ArkConfig
@@ -560,6 +561,8 @@ export class InternalSchemaScope<
 	}
 }
 
+// https://github.com/arktypeio/arktype/issues/1051
+/** @ts-ignore sometimes infinite? requires further investigation */
 export interface SchemaScope<$ = {}> extends BaseScope<$> {
 	defineRoot: this["defineSchema"]
 	parseRoot: this["schema"]

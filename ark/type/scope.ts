@@ -26,9 +26,9 @@ import {
 	isThunk,
 	throwParseError,
 	type Dict,
+	type ErrorType,
 	type anyOrNever,
 	type array,
-	type keyError,
 	type nominal,
 	type show
 } from "@ark/util"
@@ -38,7 +38,7 @@ import {
 	type GenericDeclaration,
 	type GenericHktParser,
 	type ParameterString,
-	type baseGenericArgs,
+	type baseGenericConstraints,
 	type parseValidGenericParams
 } from "./generic.js"
 import { createMatchParser, type MatchParser } from "./match.js"
@@ -83,12 +83,12 @@ export type validateScope<def> = {
 				// without breaking `pnpm typecheck`, go for it.
 				def[k] extends Type | PreparsedResolution ? def[k]
 				: k extends PrivateDeclaration<infer name extends keyof def & string> ?
-					keyError<writeDuplicateAliasError<name>>
+					ErrorType<writeDuplicateAliasError<name>>
 				:	validateDefinition<def[k], bootstrapAliases<def>, {}>
 			:	validateDefinition<
 					def[k],
 					bootstrapAliases<def>,
-					baseGenericArgs<params>
+					baseGenericConstraints<params>
 				>
 		:	// if we get here, the params failed to parse- return the error
 			params
@@ -337,11 +337,13 @@ export type ParsedScopeKey = {
 export type parseScopeKey<k, def> =
 	// trying to infer against GenericDeclaration here directly also fails as of TS 5.5
 	k extends `${infer name}<${infer params}>` ?
-		{
-			name: name
-			params: parseGenericParams<params, bootstrapAliases<def>>
-		}
+		parseGenericScopeKey<name, params, def>
 	:	{
 			name: k
 			params: []
 		}
+
+type parseGenericScopeKey<name extends string, params extends string, def> = {
+	name: name
+	params: parseGenericParams<params, bootstrapAliases<def>>
+}
