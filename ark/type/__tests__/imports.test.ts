@@ -25,9 +25,9 @@ contextualize(() => {
 			}
 		},
 		it => {
-			it("single", ctx => {
+			it("single", ({ threeSixtyNoModule }) => {
 				const types = scope({
-					...ctx.threeSixtyNoModule,
+					...threeSixtyNoModule,
 					threeSixtyNo: "three|sixty|no"
 				}).export()
 

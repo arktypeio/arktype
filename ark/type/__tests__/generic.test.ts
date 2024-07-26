@@ -474,7 +474,7 @@ contextualize(() => {
 					)
 				)
 				.type.errors(
-					`ErrorObject<"Invalid argument for N", [expected: { value: number; }]>`
+					`ErrorType<"Invalid argument for N", [expected: { value: number; }]>`
 				)
 		})
 	})
