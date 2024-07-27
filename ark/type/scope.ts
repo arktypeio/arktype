@@ -301,7 +301,7 @@ export class InternalScope<
 	}
 }
 
-export interface Scope<$ = any> extends BaseScope<$> {
+export interface Scope<$ = {}> extends BaseScope<$> {
 	type: TypeParser<$>
 
 	match: MatchParser<$>
@@ -321,7 +321,7 @@ export interface Scope<$ = any> extends BaseScope<$> {
 	): Module<show<destructuredExportContext<$, names>>>
 }
 
-export const Scope: new <$ = any>() => Scope<$> = InternalScope as never
+export const Scope: new <$ = {}>() => Scope<$> = InternalScope as never
 
 export const writeShallowCycleErrorMessage = (
 	name: string,

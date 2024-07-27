@@ -11,21 +11,21 @@
 		"astro": "astro"
 	},
 	"dependencies": {
+		"arkdark": "workspace:*",
 		"arktype": "workspace:*",
 		"@ark/fs": "workspace:*",
 		"@ark/util": "workspace:*",
-		"arkdark": "workspace:*",
 		"@astrojs/react": "3.6.0",
-		"@astrojs/starlight": "0.25.1",
-		"@shikijs/twoslash": "1.10.3",
-		"astro": "4.11.5",
+		"@astrojs/starlight": "0.25.2",
+		"@shikijs/twoslash": "1.12.0",
+		"astro": "4.12.2",
 		"astro-og-canvas": "0.5.3",
 		"canvaskit-wasm": "0.39.1",
-		"framer-motion": "11.3.2",
+		"framer-motion": "11.3.19",
 		"react": "18.3.1",
 		"react-dom": "18.3.1",
 		"sharp": "0.33.4",
-		"shiki": "1.10.3",
+		"shiki": "1.12.0",
 		"twoslash": "0.2.9"
 	},
 	"devDependencies": {
