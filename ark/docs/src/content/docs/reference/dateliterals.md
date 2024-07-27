@@ -1,7 +1,3 @@
----
-"arktype": minor
----
-
 Date literals
 
 Date literals can now be defined using the following syntax:

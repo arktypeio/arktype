@@ -47,6 +47,10 @@ bench("arktype", () => {
 		},
 		type: "'public-key'"
 	})
+
+	const out = verifyRegistrationResponseOptsSchema
+		.pick("id", "clientExtensionResults", "authenticatorAttachment")
+		.omit("clientExtensionResults")
 }).types([16167, "instantiations"])
 
 bench("arktype scope", () => {
@@ -151,4 +155,12 @@ bench("zod", () => {
 		}),
 		type: z.literal("public-key")
 	})
+
+	const ok = verifyRegistrationResponseOptsSchema
+		.pick({
+			id: true,
+			response: true,
+			clientExtensionResults: true
+		})
+		.omit({ clientExtensionResults: true })
 }).types([27703, "instantiations"])

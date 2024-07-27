@@ -1,7 +1,3 @@
----
-"arktype": patch
----
-
 add a "this" keyword resolvable from types without an associated scope alias
 
 ```ts

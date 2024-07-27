@@ -736,12 +736,10 @@ export type schemaKindOrRightOf<kind extends RootKind> =
 
 export type validateStructuralOperand<
 	name extends StructuralOperationName,
-	t extends { inferIn: unknown }
+	input
 > =
-	t["inferIn"] extends object ? t
-	:	ErrorMessage<
-			writeNonStructuralOperandMessage<name, typeToString<t["inferIn"]>>
-		>
+	input extends object ? unknown
+	:	ErrorMessage<writeNonStructuralOperandMessage<name, typeToString<input>>>
 
 export type validateChainedConstraint<
 	kind extends ConstraintKind,
