@@ -327,77 +327,77 @@ declare class _Type<t = unknown, $ = any> extends Root<t, $> {
 	>
 
 	divisibleBy<const schema extends DivisorSchema>(
-		this: validateChainedConstraint<"divisor", this>,
+		this: validateChainedConstraint<"divisor", t>,
 		schema: schema
 	): Type<constrain<t, "divisor", schema>, $>
 
 	matching<const schema extends PatternSchema>(
-		this: validateChainedConstraint<"pattern", this>,
+		this: validateChainedConstraint<"pattern", t>,
 		schema: schema
 	): Type<constrain<t, "pattern", schema>, $>
 
 	atLeast<const schema extends InclusiveNumericRangeSchema>(
-		this: validateChainedConstraint<"min", this>,
+		this: validateChainedConstraint<"min", t>,
 		schema: schema
 	): Type<constrain<t, "min", schema>, $>
 
 	atMost<const schema extends InclusiveNumericRangeSchema>(
-		this: validateChainedConstraint<"max", this>,
+		this: validateChainedConstraint<"max", t>,
 		schema: schema
 	): Type<constrain<t, "max", schema>, $>
 
 	moreThan<const schema extends ExclusiveNumericRangeSchema>(
-		this: validateChainedConstraint<"min", this>,
+		this: validateChainedConstraint<"min", t>,
 		schema: schema
 	): Type<constrain<t, "min", exclusivizeRangeSchema<schema>>, $>
 
 	lessThan<const schema extends ExclusiveNumericRangeSchema>(
-		this: validateChainedConstraint<"max", this>,
+		this: validateChainedConstraint<"max", t>,
 		schema: schema
 	): Type<constrain<t, "max", exclusivizeRangeSchema<schema>>, $>
 
 	atLeastLength<const schema extends InclusiveNumericRangeSchema>(
-		this: validateChainedConstraint<"minLength", this>,
+		this: validateChainedConstraint<"minLength", t>,
 		schema: schema
 	): Type<constrain<t, "minLength", schema>, $>
 
 	atMostLength<const schema extends InclusiveNumericRangeSchema>(
-		this: validateChainedConstraint<"maxLength", this>,
+		this: validateChainedConstraint<"maxLength", t>,
 		schema: schema
 	): Type<constrain<t, "maxLength", schema>, $>
 
 	moreThanLength<const schema extends ExclusiveNumericRangeSchema>(
-		this: validateChainedConstraint<"minLength", this>,
+		this: validateChainedConstraint<"minLength", t>,
 		schema: schema
 	): Type<constrain<t, "minLength", exclusivizeRangeSchema<schema>>, $>
 
 	lessThanLength<const schema extends ExclusiveNumericRangeSchema>(
-		this: validateChainedConstraint<"maxLength", this>,
+		this: validateChainedConstraint<"maxLength", t>,
 		schema: schema
 	): Type<constrain<t, "maxLength", exclusivizeRangeSchema<schema>>, $>
 
 	exactlyLength<const schema extends ExactLengthSchema>(
-		this: validateChainedConstraint<"exactLength", this>,
+		this: validateChainedConstraint<"exactLength", t>,
 		schema: schema
 	): Type<constrain<t, "exactLength", schema>, $>
 
 	atOrAfter<const schema extends InclusiveDateRangeSchema>(
-		this: validateChainedConstraint<"after", this>,
+		this: validateChainedConstraint<"after", t>,
 		schema: schema
 	): Type<constrain<t, "after", schema>, $>
 
 	atOrBefore<const schema extends InclusiveDateRangeSchema>(
-		this: validateChainedConstraint<"before", this>,
+		this: validateChainedConstraint<"before", t>,
 		schema: schema
 	): Type<constrain<t, "before", schema>, $>
 
 	laterThan<const schema extends ExclusiveDateRangeSchema>(
-		this: validateChainedConstraint<"after", this>,
+		this: validateChainedConstraint<"after", t>,
 		schema: schema
 	): Type<constrain<t, "after", exclusivizeRangeSchema<schema>>, $>
 
 	earlierThan<const schema extends ExclusiveDateRangeSchema>(
-		this: validateChainedConstraint<"before", this>,
+		this: validateChainedConstraint<"before", t>,
 		schema: schema
 	): Type<constrain<t, "before", exclusivizeRangeSchema<schema>>, $>
 }
