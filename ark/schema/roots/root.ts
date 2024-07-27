@@ -734,19 +734,13 @@ export type schemaKindOrRightOf<kind extends RootKind> =
 	| kind
 	| schemaKindRightOf<kind>
 
-export type validateStructuralOperand<
-	name extends StructuralOperationName,
-	input
-> =
-	input extends object ? unknown
-	:	ErrorMessage<writeNonStructuralOperandMessage<name, typeToString<input>>>
+export type validateStructuralOperand<name extends StructuralOperationName, t> =
+	t extends object ? unknown
+	:	ErrorMessage<writeNonStructuralOperandMessage<name, typeToString<t>>>
 
-export type validateChainedConstraint<
-	kind extends ConstraintKind,
-	t extends { inferIn: unknown }
-> =
-	t["inferIn"] extends Prerequisite<kind> ? t
-	:	ErrorMessage<writeInvalidOperandMessage<kind, SchemaRoot<t["inferIn"]>>>
+export type validateChainedConstraint<kind extends ConstraintKind, t> =
+	t extends Prerequisite<kind> ? unknown
+	:	ErrorMessage<writeInvalidOperandMessage<kind, SchemaRoot<t>>>
 
 export type StructuralOperationName =
 	| "pick"

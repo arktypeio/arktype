@@ -1,4 +1,4 @@
-import { ark, scope, type } from "arktype"
+import { ark, type } from "arktype"
 
 const t = type({
 	foo: "string | number",
