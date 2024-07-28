@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { internalSchema } from "@ark/schema"
-import { type, type BaseType } from "arktype"
+import { type } from "arktype"
 import { writeInvalidConstructorMessage } from "../parser/tuple.js"
 
 contextualize(() => {

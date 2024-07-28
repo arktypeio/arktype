@@ -437,14 +437,14 @@ export declare namespace Type {
 			schema: schema
 		): Type.Date<constrain<t, "before", exclusivizeRangeSchema<schema>>, $>
 	}
+
+	export type Any<t = any> = BaseType<t, any>
 }
 
 export type TypeConstructor<t = unknown, $ = {}> = new (
 	def: unknown,
 	$: Scope<$>
 ) => Type<t, $>
-
-export type AnyType<out t = unknown> = BaseType<t, any>
 
 export const Type: TypeConstructor = BaseRoot as never
 

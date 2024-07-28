@@ -11,8 +11,6 @@ export {
 } from "./scope.js"
 export {
 	Type,
-	type AnyType,
-	type BaseType,
 	type inferAmbient,
 	type inferTypeRoot,
 	type validateAmbient,

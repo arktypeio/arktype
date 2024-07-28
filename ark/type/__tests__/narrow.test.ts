@@ -8,7 +8,7 @@ import {
 	type string
 } from "@ark/schema"
 import type { equals } from "@ark/util"
-import { type, type BaseType, type Type } from "arktype"
+import { type, type Type } from "arktype"
 
 contextualize(() => {
 	it("implicit problem", () => {
