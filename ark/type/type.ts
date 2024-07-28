@@ -70,10 +70,17 @@ export type TypeParserAttachments =
 export interface TypeParser<$ = {}> {
 	// Parse and check the definition, returning either the original input for a
 	// valid definition or a string representing an error message.
-	<const def>(def: validateTypeRoot<def, $>): Data<inferTypeRoot<def, $>, $>
+	<const def, t = instantiateType<inferTypeRoot<def, $>, $>>(
+		def: validateTypeRoot<def, $>
+	): t
 
 	// Spread version of a tuple expression
-	<const zero, const one, const rest extends array>(
+	<
+		const zero,
+		const one,
+		const rest extends array,
+		t = Data<inferTypeRoot<[zero, one, ...rest], $>, $>
+	>(
 		_0: zero extends IndexZeroOperator ? zero : validateTypeRoot<zero, $>,
 		_1: zero extends "keyof" ? validateTypeRoot<one, $>
 		: zero extends "instanceof" ? conform<one, Constructor>
@@ -87,7 +94,7 @@ export interface TypeParser<$ = {}> {
 			: one extends "@" ? [string | BaseMeta]
 			: [validateTypeRoot<rest[0], $>]
 		:	[]
-	): Data<inferTypeRoot<[zero, one, ...rest], $>, $>
+	): t
 
 	<params extends ParameterString, const def>(
 		params: validateParameterString<params, $>,
@@ -98,7 +105,7 @@ export interface TypeParser<$ = {}> {
 		>
 	): Generic<parseValidGenericParams<params, $>, def, $>
 
-	raw(def: unknown): Data<any, $>
+	raw(def: unknown): Type<any, $>
 	errors: typeof ArkErrors
 }
 
@@ -178,8 +185,6 @@ declare class _Type<t = unknown, $ = {}> extends Root<t, $> {
 	or<def>(def: validateTypeRoot<def, $>): Data<t | inferTypeRoot<def, $>, $>
 
 	array(): Data<t[], $>
-
-	keyof(): Data<keyof this["inferIn"], $>
 
 	pipe<a extends Morph<this["infer"]>>(a: a): Data<inferPipes<t, [a]>, $>
 	pipe<a extends Morph<this["infer"]>, b extends Morph<inferMorphOut<a>>>(
@@ -266,6 +271,29 @@ declare class _Type<t = unknown, $ = {}> extends Root<t, $> {
 
 	overlaps<def>(r: validateTypeRoot<def, $>): boolean
 
+	satisfying<predicate extends Predicate<distillIn<t>>>(
+		predicate: predicate
+	): Data<
+		t extends MorphAst ?
+			(In: inferPredicate<this["tIn"], predicate>) => Out<this["tOut"]>
+		:	inferPredicate<t, predicate>,
+		$
+	>
+}
+
+export interface Type<
+	/** @ts-expect-error allow instantiation assignment to the base type */
+	out t = unknown,
+	$ = {}
+> extends _Type<t, $> {}
+
+export interface Data<
+	/** @ts-expect-error allow instantiation assignment to the base type */
+	out t = unknown,
+	$ = {}
+> extends Type<t, $> {
+	keyof(): Data<keyof t, $>
+
 	get<k1 extends arkKeyOf<t>>(k1: k1 | type.cast<k1>): Data<getArkKey<t, k1>, $>
 	get<k1 extends arkKeyOf<t>, k2 extends arkKeyOf<getArkKey<t, k1>>>(
 		k1: k1 | type.cast<k1>,
@@ -289,27 +317,6 @@ declare class _Type<t = unknown, $ = {}> extends Root<t, $> {
 		def: def
 	): Data<constrain<t, kind, def>, $>
 
-	satisfying<predicate extends Predicate<distillIn<t>>>(
-		predicate: predicate
-	): Data<
-		t extends MorphAst ?
-			(In: inferPredicate<this["tIn"], predicate>) => Out<this["tOut"]>
-		:	inferPredicate<t, predicate>,
-		$
-	>
-}
-
-export interface Type<
-	/** @ts-expect-error allow instantiation assignment to the base type */
-	out t = unknown,
-	$ = {}
-> extends _Type<t, $> {}
-
-export interface Data<
-	/** @ts-expect-error allow instantiation assignment to the base type */
-	out t = unknown,
-	$ = {}
-> extends Type<t, $> {
 	pick<const key extends arkKeyOf<t> = never>(
 		this: validateStructuralOperand<"pick", t>,
 		...keys: (key | type.cast<key>)[]
@@ -436,3 +443,10 @@ export type inferTypeRoot<def, $> = inferDefinition<def, $, bindThis<def>>
 export type validateAmbient<def> = validateTypeRoot<def, {}>
 
 export type inferAmbient<def> = inferTypeRoot<def, {}>
+
+export type instantiateType<t, $> =
+	[t] extends [MorphAst] ? Type<t, $> : Data<t, $>
+
+// [t] extends [anyOrNever] ? Data<t, $>
+// : [t] extends [MorphAst] ? Type<t, $>
+// : Data<t, $>
