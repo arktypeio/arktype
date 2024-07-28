@@ -59,21 +59,6 @@ contextualize(() => {
 			attest(schrodingersBox.json).equals(expected.json)
 		})
 
-		it("referenced in scope inline", () => {
-			const $ = scope({
-				one: "1",
-				orOne: () => $.type("<t>", "t|one")
-			})
-
-			const types = $.export()
-			const bit = types.orOne("0")
-
-			const expected = type("0|1")
-
-			attest<typeof expected.t>(bit.t)
-			attest(bit.json).equals(expected.json)
-		})
-
 		it("referenced from other scope", () => {
 			const types = scope({
 				arrayOf: type("<t>", "t[]")

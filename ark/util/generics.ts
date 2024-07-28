@@ -57,13 +57,6 @@ export type isAny<t> = 0 extends 1 & t ? true : false
 
 export type isNever<t> = [t] extends [never] ? true : false
 
-export type isUnknown<t> =
-	unknown extends t ?
-		[t] extends [{}] ?
-			false
-		:	true
-	:	false
-
 export type conform<t, base> = t extends base ? t : base
 
 export type equals<l, r> = [l, r] extends [r, l] ? true : false

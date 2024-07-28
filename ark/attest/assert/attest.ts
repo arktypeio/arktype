@@ -1,4 +1,5 @@
 import { caller, getCallStack, type SourcePosition } from "@ark/fs"
+import type { ErrorMessage } from "@ark/util"
 import { getBenchCtx } from "../bench/bench.js"
 import type { Measure } from "../bench/measure.js"
 import { instantiationDataHandler } from "../bench/type.js"
@@ -15,10 +16,15 @@ import {
 } from "./chainableAssertions.js"
 
 export type AttestFn = {
+	<expected>(actual: expected): rootAssertions<expected, AssertionKind>
+
 	<expected, actual extends expected = never>(
-		...args: [actual] extends [never] ? [value: expected] : []
-	): [expected] extends [never] ? rootAssertions<unknown, AssertionKind>
-	:	rootAssertions<expected, AssertionKind>
+		...args: actual extends never ?
+			[
+				ErrorMessage<"Type-only assertion requires two explicit genreic params, e.g. attest<expected, actual>">
+			]
+		:	[]
+	): void
 
 	instantiations: (count?: Measure<"instantiations"> | undefined) => void
 }
