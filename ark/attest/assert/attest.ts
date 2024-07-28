@@ -16,8 +16,6 @@ import {
 } from "./chainableAssertions.js"
 
 export type AttestFn = {
-	<expected>(actual: expected): rootAssertions<expected, AssertionKind>
-
 	<expected, actual extends expected = never>(
 		...args: actual extends never ?
 			[
@@ -25,6 +23,8 @@ export type AttestFn = {
 			]
 		:	[]
 	): void
+
+	<expected>(actual: expected): rootAssertions<expected, AssertionKind>
 
 	instantiations: (count?: Measure<"instantiations"> | undefined) => void
 }
