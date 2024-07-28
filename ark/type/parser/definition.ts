@@ -63,10 +63,7 @@ export const parseObject = (def: object, ctx: ParseContext): BaseRoot => {
 }
 
 export type inferDefinition<def, $, args> =
-	[def] extends [anyOrNever] ?
-		def extends never ?
-			never
-		:	any
+	[def] extends [anyOrNever] ? def
 	: def extends type.cast<infer t> | ThunkCast<infer t> ? t
 	: def extends string ? inferString<def, $, args>
 	: def extends array ? inferTuple<def, $, args>
@@ -82,7 +79,7 @@ export type validateDefinition<def, $, args> =
 	: def extends array ? validateTuple<def, $, args>
 	: def extends BadDefinitionType ?
 		ErrorMessage<writeBadDefinitionTypeMessage<objectKindOrDomainOf<def>>>
-	: isUnknown<def> extends true ?
+	: unknown extends def ?
 		// this allows the initial list of autocompletions to be populated when a user writes "type()",
 		// before having specified a definition
 		BaseCompletions<$, args> | {}
