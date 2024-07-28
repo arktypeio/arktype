@@ -250,7 +250,7 @@ declare class _Type<t = unknown, $ = {}> extends Root<t, $> {
 
 	equals<def>(
 		def: validateTypeRoot<def, $>
-	): this is Type<inferTypeRoot<def>, $>
+	): this is Type<inferTypeRoot<def, $>, $>
 
 	extract<def>(
 		r: validateTypeRoot<def, $>
@@ -262,7 +262,7 @@ declare class _Type<t = unknown, $ = {}> extends Root<t, $> {
 
 	extends<def>(
 		other: validateTypeRoot<def, $>
-	): this is Type<inferTypeRoot<def>, $>
+	): this is Type<inferTypeRoot<def, $>, $>
 
 	overlaps<def>(r: validateTypeRoot<def, $>): boolean
 
@@ -408,6 +408,12 @@ export interface Type<
 	$ = {}
 > extends _Type<t, $> {}
 
+export interface Data<
+	/** @ts-expect-error allow instantiation assignment to the base type */
+	out t = unknown,
+	$ = {}
+> extends Type<t, $> {}
+
 export type TypeConstructor<t = unknown, $ = {}> = new (
 	def: unknown,
 	$: Scope<$>
@@ -425,4 +431,8 @@ export type validateTypeRoot<def, $ = {}> = validateDefinition<
 	bindThis<def>
 >
 
-export type inferTypeRoot<def, $ = {}> = inferDefinition<def, $, bindThis<def>>
+export type inferTypeRoot<def, $> = inferDefinition<def, $, bindThis<def>>
+
+export type validateAmbient<def> = validateTypeRoot<def, {}>
+
+export type inferAmbient<def> = inferTypeRoot<def, {}>

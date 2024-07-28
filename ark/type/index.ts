@@ -12,6 +12,8 @@ export {
 export {
 	Type,
 	type AnyType,
+	type inferAmbient,
 	type inferTypeRoot,
+	type validateAmbient,
 	type validateTypeRoot
 } from "./type.js"
