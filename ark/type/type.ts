@@ -10,18 +10,14 @@ import {
 	type ExclusiveNumericRangeSchema,
 	type InclusiveDateRangeSchema,
 	type InclusiveNumericRangeSchema,
-	type LengthBoundableData,
 	type Morph,
 	type MorphAst,
-	type NodeSchema,
 	type Out,
 	type PatternSchema,
 	type Predicate,
-	type PrimitiveConstraintKind,
 	type Root,
 	type arkKeyOf,
 	type constrain,
-	type constraintKindOf,
 	type distillIn,
 	type distillOut,
 	type exclusivizeRangeSchema,
@@ -31,9 +27,7 @@ import {
 	type inferPipes,
 	type inferPredicate,
 	type toArkKey,
-	type validateChainedAsArgs,
-	type validateChainedConstraint,
-	type validateStructuralOperand
+	type validateChainedAsArgs
 } from "@ark/schema"
 import {
 	Callable,
@@ -107,7 +101,7 @@ export interface TypeParser<$ = {}> {
 		:	[]
 	): r
 
-	raw(def: unknown): BaseType<any, $>
+	raw(def: unknown): Type<any, $>
 	errors: typeof ArkErrors
 }
 
@@ -160,9 +154,9 @@ export class InternalTypeParser extends Callable<
 
 export type DeclarationParser<$> = <preinferred>() => {
 	// for some reason, making this a const parameter breaks preinferred validation
-	type: <def>(
+	type: <const def>(
 		def: validateDeclared<preinferred, def, $, bindThis<def>>
-	) => Type<preinferred, $>
+	) => instantiateType<preinferred, $>
 }
 
 // this is declared as a class internally so we can ensure all "abstract"
@@ -171,10 +165,10 @@ export type DeclarationParser<$> = <preinferred>() => {
 declare abstract class _Type<t = unknown, $ = {}> extends Root<t, $> {
 	$: Scope<$>
 
-	as<t = unset>(...args: validateChainedAsArgs<t>): Type<t, $>
+	as<t = unset>(...args: validateChainedAsArgs<t>): instantiateType<t, $>
 
-	get in(): Type<this["tIn"], $>
-	get out(): Type<this["tOut"], $>
+	get in(): instantiateType<this["tIn"], $>
+	get out(): instantiateType<this["tOut"], $>
 
 	intersect<const def, r = inferTypeRoot<def, $>>(
 		def: validateTypeRoot<def, $>
@@ -191,7 +185,7 @@ declare abstract class _Type<t = unknown, $ = {}> extends Root<t, $> {
 		def: validateTypeRoot<def, $>
 	): instantiateType<t | r, $>
 
-	array(): Type<t[], $>
+	array(): Type.Array<t[], $>
 
 	pipe<
 		a extends Morph<this["infer"]>,
@@ -282,20 +276,14 @@ declare abstract class _Type<t = unknown, $ = {}> extends Root<t, $> {
 	>
 }
 
-export interface BaseType<
+export interface Type<
 	/** @ts-expect-error allow instantiation assignment to the base type */
 	out t = unknown,
 	$ = {}
 > extends _Type<t, $> {}
 
-export interface Type<
-	/** @ts-expect-error allow instantiation assignment to the base type */
-	out t = unknown,
-	$ = {}
-> extends BaseType<t, $> {}
-
 export declare namespace Type {
-	export interface Morph<t = unknown, $ = {}> extends BaseType<t, $> {}
+	export interface Morph<t = unknown, $ = {}> extends Type<t, $> {}
 
 	export interface Object<t extends object = object, $ = {}>
 		extends Type<t, $> {
@@ -438,7 +426,7 @@ export declare namespace Type {
 		): Type.Date<constrain<t, "before", exclusivizeRangeSchema<schema>>, $>
 	}
 
-	export type Any<t = any> = BaseType<t, any>
+	export type Any<t = any> = Type<t, any>
 }
 
 export type TypeConstructor<t = unknown, $ = {}> = new (
