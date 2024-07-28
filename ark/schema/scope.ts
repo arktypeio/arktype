@@ -24,8 +24,10 @@ import {
 import {
 	GenericRoot,
 	LazyGenericBody,
+	type GenericHktSchemaBodyParser,
 	type GenericHktSchemaParser,
-	type GenericParamDef
+	type GenericParamDef,
+	type genericParamSchemasToAst
 } from "./generic.js"
 import type { internal } from "./keywords/internal.js"
 import type { jsObjects } from "./keywords/jsObjects.js"
@@ -184,9 +186,9 @@ export abstract class BaseScope<$ extends {} = {}> {
 	}
 
 	@bound
-	generic(
-		...params: array<GenericParamDef>
-	): ReturnType<GenericHktSchemaParser> {
+	generic<const paramsDef extends readonly GenericParamDef[]>(
+		...params: paramsDef
+	): GenericHktSchemaBodyParser<genericParamSchemasToAst<paramsDef>> {
 		const $: BaseScope = this as never
 		return instantiateDef =>
 			new GenericRoot(

@@ -19,10 +19,7 @@ export type GenericParamAst<
 
 export type GenericParamDef<name extends string = string> =
 	| name
-	| ConstrainedGenericParamDef
-
-export type ConstrainedGenericParamDef<name extends string = string> =
-	GenericParamAst<name>
+	| readonly [name, unknown]
 
 export const parseGeneric = (
 	paramDefs: array<GenericParamDef>,
@@ -164,19 +161,25 @@ export class GenericRoot<
 	}
 }
 
+export type genericParamSchemasToAst<
+	schemas extends readonly GenericParamDef[]
+> = {
+	[i in keyof schemas]: schemas[i] extends GenericParamDef<infer name> ?
+		[name, unknown]
+	:	never
+}
+
 export type GenericHktSchemaParser = <
-	const paramsDef extends array<GenericParamDef>
+	const paramsDef extends readonly GenericParamDef[]
 >(
 	...params: paramsDef
-) => <
-	hkt extends abstract new () => GenericHkt,
-	params extends array<GenericParamAst> = {
-		[i in keyof paramsDef]: GenericParamAst
-	}
->(
-	instantiateDef: LazyGenericBody<GenericArgResolutions<params>>,
-	hkt: hkt
-) => GenericRoot<params, InstanceType<hkt>>
+) => GenericHktSchemaBodyParser<genericParamSchemasToAst<paramsDef>>
+
+export type GenericHktSchemaBodyParser<params extends array<GenericParamAst>> =
+	<hkt extends abstract new () => GenericHkt>(
+		instantiateDef: LazyGenericBody<GenericArgResolutions<params>>,
+		hkt: hkt
+	) => GenericRoot<params, InstanceType<hkt>>
 
 export abstract class GenericHkt<
 	hkt extends (args: any) => unknown = (args: any) => unknown

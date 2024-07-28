@@ -384,8 +384,8 @@ type genericParamDefToAst<schema extends GenericParamDef, $> =
 		[schema[0], inferTypeRoot<schema[1], $>]
 	:	never
 
-export type genericParamDefsToAst<schemas extends array<GenericParamDef>, $> = [
-	...{ [i in keyof schemas]: genericParamDefToAst<schemas[i], $> }
+export type genericParamDefsToAst<defs extends array<GenericParamDef>, $> = [
+	...{ [i in keyof defs]: genericParamDefToAst<defs[i], $> }
 ]
 
 export type GenericHktParser<$ = {}> = <
