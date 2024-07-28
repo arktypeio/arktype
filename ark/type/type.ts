@@ -70,16 +70,16 @@ export type TypeParserAttachments =
 export interface TypeParser<$ = {}> {
 	// Parse and check the definition, returning either the original input for a
 	// valid definition or a string representing an error message.
-	<const def, t = instantiateType<inferTypeRoot<def, $>, $>>(
+	<const def, r = instantiateType<inferTypeRoot<def, $>, $>>(
 		def: validateTypeRoot<def, $>
-	): t
+	): r
 
 	// Spread version of a tuple expression
 	<
 		const zero,
 		const one,
 		const rest extends array,
-		t = Data<inferTypeRoot<[zero, one, ...rest], $>, $>
+		r = Data<inferTypeRoot<[zero, one, ...rest], $>, $>
 	>(
 		_0: zero extends IndexZeroOperator ? zero : validateTypeRoot<zero, $>,
 		_1: zero extends "keyof" ? validateTypeRoot<one, $>
@@ -94,7 +94,7 @@ export interface TypeParser<$ = {}> {
 			: one extends "@" ? [string | BaseMeta]
 			: [validateTypeRoot<rest[0], $>]
 		:	[]
-	): t
+	): r
 
 	<params extends ParameterString, const def>(
 		params: validateParameterString<params, $>,
@@ -294,20 +294,27 @@ export interface Data<
 > extends Type<t, $> {
 	keyof(): Data<keyof t, $>
 
-	get<k1 extends arkKeyOf<t>>(k1: k1 | type.cast<k1>): Data<getArkKey<t, k1>, $>
-	get<k1 extends arkKeyOf<t>, k2 extends arkKeyOf<getArkKey<t, k1>>>(
-		k1: k1 | type.cast<k1>,
-		k2: k2 | type.cast<k2>
-	): Data<getArkKey<getArkKey<t, k1>, k2>, $>
+	get<k1 extends arkKeyOf<t>, r = instantiateType<getArkKey<t, k1>, $>>(
+		k1: k1 | type.cast<k1>
+	): r
 	get<
 		k1 extends arkKeyOf<t>,
 		k2 extends arkKeyOf<getArkKey<t, k1>>,
-		k3 extends arkKeyOf<getArkKey<getArkKey<t, k1>, k2>>
+		r = instantiateType<getArkKey<getArkKey<t, k1>, k2>, $>
+	>(
+		k1: k1 | type.cast<k1>,
+		k2: k2 | type.cast<k2>
+	): r
+	get<
+		k1 extends arkKeyOf<t>,
+		k2 extends arkKeyOf<getArkKey<t, k1>>,
+		k3 extends arkKeyOf<getArkKey<getArkKey<t, k1>, k2>>,
+		r = instantiateType<getArkKey<getArkKey<getArkKey<t, k1>, k2>, k3>, $>
 	>(
 		k1: k1 | type.cast<k1>,
 		k2: k2 | type.cast<k2>,
 		k3: k3 | type.cast<k3>
-	): Data<getArkKey<getArkKey<getArkKey<t, k1>, k2>, k3>, $>
+	): r
 
 	constrain<
 		kind extends PrimitiveConstraintKind,
