@@ -92,10 +92,7 @@ export class LazyGenericBody<
 > extends Callable<(args: argResolutions) => returns> {}
 
 export class GenericRoot<
-	params extends array<GenericParamAst> = array<GenericParamAst>,
-	bodyDef = unknown,
-	$ = {},
-	arg$ = $
+	params extends array<GenericParamAst> = array<GenericParamAst>
 > extends Callable<GenericRootInstantiator<params, bodyDef, $>> {
 	readonly [arkKind] = "generic"
 	declare readonly paramsAst: params

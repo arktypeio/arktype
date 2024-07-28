@@ -240,7 +240,7 @@ export interface Generic<
 	args$ = $
 > extends Callable<GenericInstantiator<params, bodyDef, $, args$>>,
 		GenericProps<params, bodyDef, $> {
-	internal: GenericRoot<params, bodyDef, $>
+	internal: GenericRoot<params>
 }
 
 export type GenericDeclaration<

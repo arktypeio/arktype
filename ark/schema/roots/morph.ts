@@ -25,7 +25,7 @@ import type {
 	TraverseApply
 } from "../shared/traversal.js"
 import { hasArkKind } from "../shared/utils.js"
-import { BaseRoot, type Root, type schemaKindRightOf } from "./root.js"
+import { BaseRoot, type schemaKindRightOf } from "./root.js"
 import { defineRightwardIntersections } from "./utils.js"
 
 export type MorphChildKind = schemaKindRightOf<"morph"> | "alias"
@@ -50,12 +50,12 @@ export type MorphAst<i = any, o = any> = (In: i) => Out<o>
 
 export interface MorphInner extends BaseMeta {
 	readonly in: MorphChildNode
-	readonly morphs: array<Morph | Root>
+	readonly morphs: array<Morph | BaseRoot>
 }
 
 export interface MorphSchema extends BaseMeta {
 	readonly in: MorphChildSchema
-	readonly morphs: listable<Morph | Root>
+	readonly morphs: listable<Morph | BaseRoot>
 }
 
 export interface MorphDeclaration

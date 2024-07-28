@@ -18,20 +18,12 @@ import {
 	includes,
 	omit,
 	throwParseError,
-	type Callable,
 	type ErrorMessage,
-	type Json,
 	type NonEmptyList,
 	type anyOrNever,
 	type array,
 	type unset
 } from "@ark/util"
-import type {
-	distillConstrainableIn,
-	distillConstrainableOut,
-	distillIn,
-	distillOut
-} from "../ast.js"
 import {
 	throwInvalidOperandError,
 	type PrimitiveConstraintKind
@@ -39,7 +31,6 @@ import {
 import type { Node, NodeSchema, reducibleKindOf } from "../kinds.js"
 import { BaseNode, appendUniqueFlatRefs } from "../node.js"
 import type { Predicate } from "../predicate.js"
-import type { BaseScope } from "../scope.js"
 import type { BaseMeta, BaseNodeDeclaration } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import { ArkErrors } from "../shared/errors.js"
@@ -96,7 +87,7 @@ export abstract class BaseRoot<
 		return result
 	}
 
-	protected intersect(r: unknown): BaseRoot | Disjoint {
+	intersect(r: unknown): BaseRoot | Disjoint {
 		const rNode = this.$.parseRoot(r)
 		return intersectNodesRoot(this, rNode, this.$) as never
 	}
@@ -457,61 +448,6 @@ export const exclusivizeRangeSchema = <schema extends UnknownRangeSchema>(
 export type exclusivizeRangeSchema<schema extends UnknownRangeSchema> =
 	schema extends LimitSchemaValue ? { rule: schema; exclusive: true } : schema
 
-export declare abstract class Root<t = unknown, $ = any> extends Callable<
-	(data: unknown) => distillOut<t> | ArkErrors
-> {
-	t: t
-	tIn: distillConstrainableIn<t>
-	tOut: distillConstrainableOut<t>
-	infer: distillOut<t>
-	inferIn: distillIn<t>;
-	[inferred]: t
-
-	json: Json
-	description: string
-	expression: string
-	internal: BaseRoot
-
-	abstract $: BaseScope<$>;
-	abstract get in(): unknown
-	abstract get out(): unknown
-	abstract as(): unknown
-	abstract keyof(): unknown
-	abstract intersect(r: never): unknown | Disjoint
-	abstract and(r: never): unknown
-	abstract or(r: never): unknown
-	abstract constrain(kind: never, schema: never): unknown
-	abstract equals(r: never): this is unknown
-	abstract extract(r: never): unknown
-	abstract exclude(r: never): unknown
-	abstract extends(r: never): this is unknown
-	abstract overlaps(r: never): boolean
-	abstract pick(...keys: never): unknown
-	abstract omit(...keys: never): unknown
-	abstract array(): unknown
-	abstract pipe(morph: Morph): unknown
-
-	isUnknown(): boolean
-
-	isNever(): boolean
-
-	assert(data: unknown): this["infer"]
-
-	allows(data: unknown): data is this["inferIn"]
-
-	traverse(data: unknown): distillOut<t> | ArkErrors
-
-	configure(configOrDescription: BaseMeta | string): this
-
-	describe(description: string): this
-
-	onUndeclaredKey(behavior: UndeclaredKeyBehavior): this
-
-	onDeepUndeclaredKey(behavior: UndeclaredKeyBehavior): this
-
-	from(literal: this["inferIn"]): this["infer"]
-}
-
 export const typeOrTermExtends = (t: unknown, base: unknown) =>
 	hasArkKind(base, "root") ?
 		hasArkKind(t, "root") ? t.extends(base)
@@ -555,16 +491,10 @@ export type StructuralOperationName =
 	| "required"
 	| "partial"
 
-export type writeNonStructuralOperandMessage<
-	operation extends StructuralOperationName,
-	operand extends string
-> = `${operation} operand must be an object (was ${operand})`
-
 export const writeNonStructuralOperandMessage = <
 	operation extends StructuralOperationName,
 	operand extends string
 >(
 	operation: operation,
 	operand: operand
-): writeNonStructuralOperandMessage<operation, operand> =>
-	`${operation} operand must be an object (was ${operand})`
+) => `${operation} operand must be an object (was ${operand})`

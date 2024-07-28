@@ -15,9 +15,11 @@ import {
 	type Out,
 	type PatternSchema,
 	type Predicate,
-	type Root,
+	type UndeclaredKeyBehavior,
 	type arkKeyOf,
 	type constrain,
+	type distillConstrainableIn,
+	type distillConstrainableOut,
 	type distillIn,
 	type distillOut,
 	type exclusivizeRangeSchema,
@@ -26,12 +28,14 @@ import {
 	type inferMorphOut,
 	type inferPipes,
 	type inferPredicate,
+	type inferred,
 	type toArkKey,
 	type validateChainedAsArgs
 } from "@ark/schema"
 import {
 	Callable,
 	type Constructor,
+	type Json,
 	type anyOrNever,
 	type array,
 	type conform,
@@ -162,8 +166,37 @@ export type DeclarationParser<$> = <preinferred>() => {
 // this is declared as a class internally so we can ensure all "abstract"
 // methods of BaseRoot are overridden, but we end up exporting it as an interface
 // to ensure it is not accessed as a runtime value
-declare abstract class _Type<t = unknown, $ = {}> extends Root<t, $> {
+declare abstract class _Type<t = unknown, $ = {}> extends Callable<
+	(data: unknown) => distillOut<t> | ArkErrors
+> {
+	t: t
+	tIn: distillConstrainableIn<t>
+	tOut: distillConstrainableOut<t>
+	infer: distillOut<t>
+	inferIn: distillIn<t>;
+	[inferred]: t
+
+	json: Json
+	description: string
+	expression: string
+	internal: BaseRoot
 	$: Scope<$>
+
+	assert(data: unknown): this["infer"]
+
+	allows(data: unknown): data is this["inferIn"]
+
+	traverse(data: unknown): distillOut<t> | ArkErrors
+
+	configure(configOrDescription: BaseMeta | string): this
+
+	describe(description: string): this
+
+	onUndeclaredKey(behavior: UndeclaredKeyBehavior): this
+
+	onDeepUndeclaredKey(behavior: UndeclaredKeyBehavior): this
+
+	from(literal: this["inferIn"]): this["infer"]
 
 	as<t = unset>(...args: validateChainedAsArgs<t>): instantiateType<t, $>
 

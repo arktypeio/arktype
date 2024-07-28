@@ -10,7 +10,7 @@ contextualize(() => {
 			divisor: 3
 		})
 		attest(n.traverse(6)).snap(6)
-		attest(n.traverse(7).toString()).snap("must be a multiple of 3 (was 7)")
+		attest(n.traverse(7)?.toString()).snap("must be a multiple of 3 (was 7)")
 	})
 
 	it("at path", () => {
@@ -25,7 +25,7 @@ contextualize(() => {
 			}
 		})
 		attest(o.traverse({ foo: 6 })).snap({ foo: 6 })
-		attest(o.traverse({ foo: 7 }).toString()).snap(
+		attest(o.traverse({ foo: 7 })?.toString()).snap(
 			"foo must be a multiple of 3 (was 7)"
 		)
 	})
@@ -36,7 +36,7 @@ contextualize(() => {
 			sequence: "number"
 		})
 		attest(t.traverse([5])).snap([5])
-		attest(t.traverse([5, "five"]).toString()).snap(
+		attest(t.traverse([5, "five"])?.toString()).snap(
 			"value at [1] must be a number (was string)"
 		)
 	})
@@ -47,7 +47,7 @@ contextualize(() => {
 			description: "my special bigint"
 		})
 		attest(superSpecialBigint.description).snap("my special bigint")
-		attest(superSpecialBigint.traverse(5).toString()).snap(
+		attest(superSpecialBigint.traverse(5)?.toString()).snap(
 			"must be my special bigint (was number)"
 		)
 	})
@@ -61,7 +61,7 @@ contextualize(() => {
 		attest(evenNumber.description).snap("an even number")
 		// since the error is from the divisor constraint which didn't have a
 		// description, it is unchanged
-		attest(evenNumber.traverse(5).toString()).snap(
+		attest(evenNumber.traverse(5)?.toString()).snap(
 			"must be a multiple of 2 (was 5)"
 		)
 	})
@@ -79,7 +79,7 @@ contextualize(() => {
 			}
 		).export()
 		const superSpecialString = types.superSpecialString
-		attest(superSpecialString(5).toString()).snap(
+		attest(superSpecialString(5)?.toString()).snap(
 			"custom message custom problem custom expected string custom actual 5"
 		)
 	})
@@ -95,7 +95,7 @@ contextualize(() => {
 		).export()
 		const superSpecialNumber = types.superSpecialNumber
 		attest(superSpecialNumber.description).snap("my special number")
-		attest(superSpecialNumber("five").toString()).snap(
+		attest(superSpecialNumber("five")?.toString()).snap(
 			"must be my special number (was string)"
 		)
 	})
@@ -107,14 +107,14 @@ contextualize(() => {
 			}
 		})
 		const mySpecialSymbol = schemaScope({}).schema("symbol")
-		attest(mySpecialSymbol.traverse("foo").toString()).snap(
+		attest(mySpecialSymbol.traverse("foo")?.toString()).snap(
 			"must be my special symbol (was string)"
 		)
 		configure({
 			domain: $ark.defaultConfig.domain
 		})
 		const myBoringSymbol = schemaScope({}).schema("symbol")
-		attest(myBoringSymbol.traverse("foo").toString()).snap(
+		attest(myBoringSymbol.traverse("foo")?.toString()).snap(
 			"must be a symbol (was string)"
 		)
 	})

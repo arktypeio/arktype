@@ -1,8 +1,7 @@
 import {
 	isWellFormedInteger,
 	wellFormedIntegerMatcher,
-	wellFormedNumberMatcher,
-	type array
+	wellFormedNumberMatcher
 } from "@ark/util"
 import type { number } from "../ast.js"
 import type { SchemaModule } from "../module.js"

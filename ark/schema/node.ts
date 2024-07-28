@@ -17,11 +17,12 @@ import {
 	type listable,
 	type mutable
 } from "@ark/util"
+import type { ArkErrors } from "arktype"
 import type { BaseConstraint } from "./constraint.js"
 import type { Inner, MutableInner, Node, reducibleKindOf } from "./kinds.js"
 import type { NodeParseOptions } from "./parse.js"
 import type { MorphNode } from "./roots/morph.js"
-import type { BaseRoot, Root } from "./roots/root.js"
+import type { BaseRoot } from "./roots/root.js"
 import type { UnitNode } from "./roots/unit.js"
 import type { InternalBaseScope } from "./scope.js"
 import type { NodeCompiler } from "./shared/compile.js"
@@ -50,8 +51,6 @@ import {
 	type TraverseApply
 } from "./shared/traversal.js"
 import { isNode, pathToPropString, type arkKind } from "./shared/utils.js"
-
-export type UnknownNode = BaseNode | Root
 
 export abstract class BaseNode<
 	/** uses -ignore rather than -expect-error because this is not an error in .d.ts
@@ -176,7 +175,7 @@ export abstract class BaseNode<
 		return (this.traverseAllows as any)(data)
 	}
 
-	traverse(data: d["prerequisite"]): unknown {
+	traverse(data: d["prerequisite"]): ArkErrors | {} | null | undefined {
 		return this(data)
 	}
 
@@ -219,7 +218,6 @@ export abstract class BaseNode<
 		return this.expression
 	}
 
-	equals(other: UnknownNode): boolean
 	equals(other: BaseNode): boolean {
 		return this.typeHash === other.typeHash
 	}
