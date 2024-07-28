@@ -51,11 +51,117 @@ export type GenericInstantiator<
 	def,
 	$,
 	args$
-> = <
-	const args extends {
-		[i in keyof params]: validateTypeRoot<args[i & keyof args], args$>
-	},
-	r = [def] extends [GenericHkt] ?
+> =
+	params["length"] extends 1 ?
+		{
+			<const a, r = instantiateGeneric<def, params, [a], $, args$>>(
+				a: validateGenericArg<a, params[0], args$>
+			): r
+		}
+	: params["length"] extends 2 ?
+		{
+			<const a, const b, r = instantiateGeneric<def, params, [a, b], $, args$>>(
+				a: validateGenericArg<a, params[0], args$>,
+				b: validateGenericArg<b, params[1], args$>
+			): r
+		}
+	: params["length"] extends 3 ?
+		{
+			<
+				const a,
+				const b,
+				const c,
+				r = instantiateGeneric<def, params, [a, b, c], $, args$>
+			>(
+				a: validateGenericArg<a, params[0], args$>,
+				b: validateGenericArg<b, params[1], args$>,
+				c: validateGenericArg<b, params[2], args$>
+			): r
+		}
+	: params["length"] extends 4 ?
+		{
+			<
+				const a,
+				const b,
+				const c,
+				const d,
+				r = instantiateGeneric<def, params, [a, b, c, d], $, args$>
+			>(
+				a: validateGenericArg<a, params[0], args$>,
+				b: validateGenericArg<b, params[1], args$>,
+				c: validateGenericArg<b, params[2], args$>,
+				d: validateGenericArg<b, params[3], args$>
+			): r
+		}
+	: params["length"] extends 4 ?
+		{
+			<
+				const a,
+				const b,
+				const c,
+				const d,
+				const e,
+				r = instantiateGeneric<def, params, [a, b, c, d, e], $, args$>
+			>(
+				a: validateGenericArg<a, params[0], args$>,
+				b: validateGenericArg<b, params[1], args$>,
+				c: validateGenericArg<b, params[2], args$>,
+				d: validateGenericArg<b, params[3], args$>,
+				e: validateGenericArg<b, params[4], args$>
+			): r
+		}
+	: params["length"] extends 5 ?
+		{
+			<
+				const a,
+				const b,
+				const c,
+				const d,
+				const e,
+				const f,
+				r = instantiateGeneric<def, params, [a, b, c, d, e, f], $, args$>
+			>(
+				a: validateGenericArg<a, params[0], args$>,
+				b: validateGenericArg<b, params[1], args$>,
+				c: validateGenericArg<b, params[2], args$>,
+				d: validateGenericArg<b, params[3], args$>,
+				e: validateGenericArg<b, params[4], args$>,
+				f: validateGenericArg<b, params[5], args$>
+			): r
+		}
+	: params["length"] extends 6 ?
+		{
+			<
+				const a,
+				const b,
+				const c,
+				const d,
+				const e,
+				const f,
+				const g,
+				r = instantiateGeneric<def, params, [a, b, c, d, e, f, g], $, args$>
+			>(
+				a: validateGenericArg<a, params[0], args$>,
+				b: validateGenericArg<b, params[1], args$>,
+				c: validateGenericArg<b, params[2], args$>,
+				d: validateGenericArg<b, params[3], args$>,
+				e: validateGenericArg<b, params[4], args$>,
+				f: validateGenericArg<b, params[5], args$>,
+				g: validateGenericArg<b, params[6], args$>
+			): r
+		}
+	:	(
+			error: ErrorMessage<`You may not define more than 6 positional generic parameters`>
+		) => never
+
+type instantiateGeneric<
+	def,
+	params extends array<GenericParamAst>,
+	args,
+	$,
+	args$
+> =
+	[def] extends [GenericHkt] ?
 		instantiateType<
 			GenericHkt.instantiate<
 				def,
@@ -67,16 +173,6 @@ export type GenericInstantiator<
 			inferDefinition<def, $, bindGenericArgs<params, args$, args>>,
 			$
 		>
->(
-	/** @ts-expect-error treat as array */
-	...args: {
-		[i in keyof args]: validateGenericArg<
-			args[i],
-			params[i & keyof params & `${number}`],
-			args$
-		>
-	}
-) => r
 
 type bindGenericArgs<params extends array<GenericParamAst>, $, args> = {
 	[i in keyof params & `${number}` as params[i][0]]: inferTypeRoot<
