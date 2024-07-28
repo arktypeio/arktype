@@ -12,7 +12,7 @@ export {
 export {
 	Type,
 	type AnyType,
-	type Data,
+	type BaseType,
 	type inferAmbient,
 	type inferTypeRoot,
 	type validateAmbient,

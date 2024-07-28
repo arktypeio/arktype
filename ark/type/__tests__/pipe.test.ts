@@ -8,13 +8,13 @@ import {
 	type of,
 	type string
 } from "@ark/schema"
-import { scope, type, type Type } from "arktype"
-import type { Data } from "../type.js"
+import { scope, type, type BaseType } from "arktype"
+import type { Type } from "../type.js"
 
 contextualize(() => {
 	it("base", () => {
 		const t = type("number").pipe(data => `${data}`)
-		attest<Type<(In: number) => Out<string>>>(t)
+		attest<BaseType<(In: number) => Out<string>>>(t)
 		attest<string>(t.infer)
 		attest<number>(t.in.infer)
 		const out = t(5)
@@ -55,7 +55,7 @@ contextualize(() => {
 
 	it("within type", () => {
 		const t = type(["boolean", "=>", data => !data])
-		attest<Type<(In: boolean) => Out<boolean>>>(t)
+		attest<BaseType<(In: boolean) => Out<boolean>>>(t)
 
 		const serializedMorphs =
 			t.internal.firstReferenceOfKindOrThrow("morph").serializedMorphs
@@ -99,7 +99,7 @@ contextualize(() => {
 		const parsedUser = type("string").pipe(s => JSON.parse(s), user)
 
 		attest<
-			Type<
+			BaseType<
 				(In: string) => Out<{
 					name: string
 					age: number
@@ -133,7 +133,7 @@ contextualize(() => {
 		const bar = type({ bar: "number" })
 		const t = type({ foo: "string" }).pipe(bar)
 		attest<
-			Type<{
+			BaseType<{
 				foo: string
 				bar: number
 			}>
@@ -155,7 +155,7 @@ contextualize(() => {
 			type({ d: "1" })
 		)
 		attest<
-			Data<{
+			BaseType<{
 				a: 1
 				b: 1
 				c: 1
@@ -172,7 +172,7 @@ contextualize(() => {
 			length => length === 0
 		)
 
-		attest<Type<(In: string) => Out<boolean>>>(inefficientStringIsEmpty)
+		attest<BaseType<(In: string) => Out<boolean>>>(inefficientStringIsEmpty)
 		attest(inefficientStringIsEmpty("")).equals(true)
 		attest(inefficientStringIsEmpty("foo")).equals(false)
 		attest(inefficientStringIsEmpty(0).toString()).snap(
@@ -197,14 +197,14 @@ contextualize(() => {
 		const divide100By = type("number", "=>", (n, ctx) =>
 			n !== 0 ? 100 / n : ctx.error("non-zero")
 		)
-		attest<Type<(In: number) => Out<number>>>(divide100By)
+		attest<BaseType<(In: number) => Out<number>>>(divide100By)
 		attest(divide100By(5)).equals(20)
 		attest(divide100By(0).toString()).snap("must be non-zero (was 0)")
 	})
 
 	it("at path", () => {
 		const t = type({ a: ["string", "=>", data => data.length] })
-		attest<Type<{ a: (In: string) => Out<number> }>>(t)
+		attest<BaseType<{ a: (In: string) => Out<number> }>>(t)
 
 		const input = { a: "four" }
 
@@ -225,7 +225,7 @@ contextualize(() => {
 		const t = b.or(a)
 
 		attest<
-			Type<
+			BaseType<
 				| ((In: { a: string }) => Out<string>)
 				| ((In: { a: number }) => Out<number>)
 			>
@@ -416,7 +416,7 @@ contextualize(() => {
 			"=>",
 			({ a }) => a === 0
 		)
-		attest<Type<(In: { a: string }) => Out<boolean>>>(t)
+		attest<BaseType<(In: { a: string }) => Out<boolean>>>(t)
 		assertNodeKind(t.internal, "morph")
 		const nestedMorph = t.internal.firstReferenceOfKindOrThrow("morph")
 		attest(t.json).snap({
@@ -480,7 +480,7 @@ contextualize(() => {
 				return result
 			}
 		])
-		attest<Type<(In: string) => Out<number>>>(parsedInt)
+		attest<BaseType<(In: string) => Out<number>>>(parsedInt)
 		attest(parsedInt("5")).snap(5)
 		attest(parsedInt("five").toString()).snap(
 			'must be an integer string (was "five")'
@@ -489,7 +489,7 @@ contextualize(() => {
 
 	it("nullable return", () => {
 		const toNullableNumber = type(["string", "=>", s => s.length || null])
-		attest<Type<(In: string) => Out<number | null>>>(toNullableNumber)
+		attest<BaseType<(In: string) => Out<number | null>>>(toNullableNumber)
 	})
 
 	it("undefinable return", () => {
@@ -498,7 +498,9 @@ contextualize(() => {
 			"=>",
 			s => s.length || undefined
 		])
-		attest<Type<(In: string) => Out<number | undefined>>>(toUndefinableNumber)
+		attest<BaseType<(In: string) => Out<number | undefined>>>(
+			toUndefinableNumber
+		)
 	})
 
 	it("null or undefined return", () => {
@@ -510,7 +512,9 @@ contextualize(() => {
 				: s.length === 1 ? null
 				: s.length
 		])
-		attest<Type<(In: string) => Out<number | null | undefined>>>(toMaybeNumber)
+		attest<BaseType<(In: string) => Out<number | null | undefined>>>(
+			toMaybeNumber
+		)
 	})
 
 	it("deep intersection", () => {

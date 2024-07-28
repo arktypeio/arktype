@@ -1,5 +1,5 @@
 import type { Out } from "@ark/schema"
-import { type, type Type } from "arktype"
+import { type, type BaseType } from "arktype"
 
 // Syntax carried over from 1.0 + TS
 export const currentTsSyntax = type({
@@ -54,7 +54,7 @@ const user = type({
 const parseUser = type("string").pipe(s => JSON.parse(s), user)
 
 // type is fully introspectable and traversable, displayed as:
-type ParseUser = Type<
+type ParseUser = BaseType<
 	(In: string) => Out<{
 		name: string
 		age: number

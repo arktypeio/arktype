@@ -105,7 +105,7 @@ export interface TypeParser<$ = {}> {
 		>
 	): Generic<parseValidGenericParams<params, $>, def, $>
 
-	raw(def: unknown): Type<any, $>
+	raw(def: unknown): BaseType<any, $>
 	errors: typeof ArkErrors
 }
 
@@ -160,7 +160,7 @@ export type DeclarationParser<$> = <preinferred>() => {
 	// for some reason, making this a const parameter breaks preinferred validation
 	type: <def>(
 		def: validateDeclared<preinferred, def, $, bindThis<def>>
-	) => Data<preinferred, $>
+	) => Type<preinferred, $>
 }
 
 // this is declared as a class internally so we can ensure all "abstract"
@@ -169,10 +169,10 @@ export type DeclarationParser<$> = <preinferred>() => {
 declare abstract class _Type<t = unknown, $ = {}> extends Root<t, $> {
 	$: Scope<$>
 
-	as<t = unset>(...args: validateChainedAsArgs<t>): Data<t, $>
+	as<t = unset>(...args: validateChainedAsArgs<t>): Type<t, $>
 
-	get in(): Data<this["tIn"], $>
-	get out(): Data<this["tOut"], $>
+	get in(): Type<this["tIn"], $>
+	get out(): Type<this["tOut"], $>
 
 	intersect<const def, r = inferTypeRoot<def, $>>(
 		def: validateTypeRoot<def, $>
@@ -189,7 +189,7 @@ declare abstract class _Type<t = unknown, $ = {}> extends Root<t, $> {
 		def: validateTypeRoot<def, $>
 	): instantiateType<t | r, $>
 
-	array(): Data<t[], $>
+	array(): Type<t[], $>
 
 	pipe<
 		a extends Morph<this["infer"]>,
@@ -243,7 +243,7 @@ declare abstract class _Type<t = unknown, $ = {}> extends Root<t, $> {
 
 	narrow<predicate extends Predicate<distillOut<t>>>(
 		predicate: predicate
-	): Data<
+	): Type<
 		t extends MorphAst ?
 			inferPredicate<this["tOut"], predicate> extends infer narrowed ?
 				(In: this["tIn"]) => Out<narrowed>
@@ -254,25 +254,25 @@ declare abstract class _Type<t = unknown, $ = {}> extends Root<t, $> {
 
 	equals<def>(
 		def: validateTypeRoot<def, $>
-	): this is Data<inferTypeRoot<def, $>, $>
+	): this is Type<inferTypeRoot<def, $>, $>
 
 	extract<def>(
 		r: validateTypeRoot<def, $>
-	): Data<Extract<t, inferTypeRoot<def, $>>, $>
+	): Type<Extract<t, inferTypeRoot<def, $>>, $>
 
 	exclude<def>(
 		r: validateTypeRoot<def, $>
-	): Data<Exclude<t, inferTypeRoot<def, $>>, $>
+	): Type<Exclude<t, inferTypeRoot<def, $>>, $>
 
 	extends<def>(
 		other: validateTypeRoot<def, $>
-	): this is Data<inferTypeRoot<def, $>, $>
+	): this is Type<inferTypeRoot<def, $>, $>
 
 	overlaps<def>(r: validateTypeRoot<def, $>): boolean
 
 	satisfying<predicate extends Predicate<distillIn<t>>>(
 		predicate: predicate
-	): Data<
+	): Type<
 		t extends MorphAst ?
 			(In: inferPredicate<this["tIn"], predicate>) => Out<this["tOut"]>
 		:	inferPredicate<t, predicate>,
@@ -280,7 +280,7 @@ declare abstract class _Type<t = unknown, $ = {}> extends Root<t, $> {
 	>
 }
 
-export interface Type<
+export interface BaseType<
 	/** @ts-expect-error allow instantiation assignment to the base type */
 	out t = unknown,
 	$ = {}
@@ -290,14 +290,14 @@ export interface MorphType<
 	/** @ts-expect-error cast variance */
 	out t = unknown,
 	$ = {}
-> extends Type<t, $> {}
+> extends BaseType<t, $> {}
 
-export interface Data<
+export interface Type<
 	/** @ts-expect-error allow instantiation assignment to the base type */
 	out t = unknown,
 	$ = {}
-> extends Type<t, $> {
-	keyof(): Data<keyof t, $>
+> extends BaseType<t, $> {
+	keyof(): Type<keyof t, $>
 
 	get<k1 extends arkKeyOf<t>, r = instantiateType<getArkKey<t, k1>, $>>(
 		k1: k1 | type.cast<k1>
@@ -327,12 +327,12 @@ export interface Data<
 	>(
 		kind: conform<kind, constraintKindOf<this["inferIn"]>>,
 		def: def
-	): Data<constrain<t, kind, def>, $>
+	): Type<constrain<t, kind, def>, $>
 
 	pick<const key extends arkKeyOf<t> = never>(
 		this: validateStructuralOperand<"pick", t>,
 		...keys: (key | type.cast<key>)[]
-	): Data<
+	): Type<
 		{
 			[k in keyof t as Extract<toArkKey<t, k>, key>]: t[k]
 		},
@@ -342,7 +342,7 @@ export interface Data<
 	omit<const key extends arkKeyOf<t> = never>(
 		this: validateStructuralOperand<"omit", t>,
 		...keys: (key | type.cast<key>)[]
-	): Data<
+	): Type<
 		{
 			[k in keyof t as Exclude<toArkKey<t, k>, key>]: t[k]
 		},
@@ -351,94 +351,94 @@ export interface Data<
 
 	required(
 		this: validateStructuralOperand<"required", t>
-	): Data<{ [k in keyof t]-?: t[k] }, $>
+	): Type<{ [k in keyof t]-?: t[k] }, $>
 
 	partial(
 		this: validateStructuralOperand<"partial", t>
-	): Data<{ [k in keyof t]?: t[k] }, $>
+	): Type<{ [k in keyof t]?: t[k] }, $>
 
 	divisibleBy<const schema extends DivisorSchema>(
 		this: validateChainedConstraint<"divisor", t>,
 		schema: schema
-	): Data<constrain<t, "divisor", schema>, $>
+	): Type<constrain<t, "divisor", schema>, $>
 
 	matching<const schema extends PatternSchema>(
 		this: validateChainedConstraint<"pattern", t>,
 		schema: schema
-	): Data<constrain<t, "pattern", schema>, $>
+	): Type<constrain<t, "pattern", schema>, $>
 
 	atLeast<const schema extends InclusiveNumericRangeSchema>(
 		this: validateChainedConstraint<"min", t>,
 		schema: schema
-	): Data<constrain<t, "min", schema>, $>
+	): Type<constrain<t, "min", schema>, $>
 
 	atMost<const schema extends InclusiveNumericRangeSchema>(
 		this: validateChainedConstraint<"max", t>,
 		schema: schema
-	): Data<constrain<t, "max", schema>, $>
+	): Type<constrain<t, "max", schema>, $>
 
 	moreThan<const schema extends ExclusiveNumericRangeSchema>(
 		this: validateChainedConstraint<"min", t>,
 		schema: schema
-	): Data<constrain<t, "min", exclusivizeRangeSchema<schema>>, $>
+	): Type<constrain<t, "min", exclusivizeRangeSchema<schema>>, $>
 
 	lessThan<const schema extends ExclusiveNumericRangeSchema>(
 		this: validateChainedConstraint<"max", t>,
 		schema: schema
-	): Data<constrain<t, "max", exclusivizeRangeSchema<schema>>, $>
+	): Type<constrain<t, "max", exclusivizeRangeSchema<schema>>, $>
 
 	atLeastLength<const schema extends InclusiveNumericRangeSchema>(
 		this: validateChainedConstraint<"minLength", t>,
 		schema: schema
-	): Data<constrain<t, "minLength", schema>, $>
+	): Type<constrain<t, "minLength", schema>, $>
 
 	atMostLength<const schema extends InclusiveNumericRangeSchema>(
 		this: validateChainedConstraint<"maxLength", t>,
 		schema: schema
-	): Data<constrain<t, "maxLength", schema>, $>
+	): Type<constrain<t, "maxLength", schema>, $>
 
 	moreThanLength<const schema extends ExclusiveNumericRangeSchema>(
 		this: validateChainedConstraint<"minLength", t>,
 		schema: schema
-	): Data<constrain<t, "minLength", exclusivizeRangeSchema<schema>>, $>
+	): Type<constrain<t, "minLength", exclusivizeRangeSchema<schema>>, $>
 
 	lessThanLength<const schema extends ExclusiveNumericRangeSchema>(
 		this: validateChainedConstraint<"maxLength", t>,
 		schema: schema
-	): Data<constrain<t, "maxLength", exclusivizeRangeSchema<schema>>, $>
+	): Type<constrain<t, "maxLength", exclusivizeRangeSchema<schema>>, $>
 
 	exactlyLength<const schema extends ExactLengthSchema>(
 		this: validateChainedConstraint<"exactLength", t>,
 		schema: schema
-	): Data<constrain<t, "exactLength", schema>, $>
+	): Type<constrain<t, "exactLength", schema>, $>
 
 	atOrAfter<const schema extends InclusiveDateRangeSchema>(
 		this: validateChainedConstraint<"after", t>,
 		schema: schema
-	): Data<constrain<t, "after", schema>, $>
+	): Type<constrain<t, "after", schema>, $>
 
 	atOrBefore<const schema extends InclusiveDateRangeSchema>(
 		this: validateChainedConstraint<"before", t>,
 		schema: schema
-	): Data<constrain<t, "before", schema>, $>
+	): Type<constrain<t, "before", schema>, $>
 
 	laterThan<const schema extends ExclusiveDateRangeSchema>(
 		this: validateChainedConstraint<"after", t>,
 		schema: schema
-	): Data<constrain<t, "after", exclusivizeRangeSchema<schema>>, $>
+	): Type<constrain<t, "after", exclusivizeRangeSchema<schema>>, $>
 
 	earlierThan<const schema extends ExclusiveDateRangeSchema>(
 		this: validateChainedConstraint<"before", t>,
 		schema: schema
-	): Data<constrain<t, "before", exclusivizeRangeSchema<schema>>, $>
+	): Type<constrain<t, "before", exclusivizeRangeSchema<schema>>, $>
 }
 
 export type TypeConstructor<t = unknown, $ = {}> = new (
 	def: unknown,
 	$: Scope<$>
-) => Data<t, $>
+) => Type<t, $>
 
-export type AnyType<out t = unknown> = Type<t, any>
+export type AnyType<out t = unknown> = BaseType<t, any>
 
 export const Type: TypeConstructor = BaseRoot as never
 
@@ -458,7 +458,7 @@ export type inferAmbient<def> = inferTypeRoot<def, {}>
 
 export type instantiateType<t, $> =
 	// if any branch of t is a MorphAst, instantiate it as a MorphType
-	MorphAst extends t ? MorphType<t, $> : Data<t, $>
+	MorphAst extends t ? MorphType<t, $> : Type<t, $>
 
 // [t] extends [anyOrNever] ? Data<t, $>
 // : [t] extends [MorphAst] ? Type<t, $>

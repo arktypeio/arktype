@@ -1,6 +1,6 @@
-import { type, type Data } from "arktype"
+import { type, type Type } from "arktype"
 
-const createBox = <T extends string>(of: Data<T>) =>
+const createBox = <T extends string>(of: Type<T>) =>
 	type({
 		box: of
 	})
