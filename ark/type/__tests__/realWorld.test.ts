@@ -9,7 +9,7 @@ import {
 	registeredReference,
 	type string
 } from "@ark/schema"
-import { scope, type, type Type } from "arktype"
+import { scope, type } from "arktype"
 import type { Module } from "../module.js"
 
 contextualize(() => {
@@ -218,24 +218,21 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			b: "B"
 		})
 
-		attest<
-			Type<
-				{
-					b: {
-						a: {
-							required: boolean
-						}
-					}
-				},
-				{
-					B: {
-						a: {
-							required: boolean
-						}
-					}
+		attest<{
+			b: {
+				a: {
+					required: boolean
 				}
-			>
-		>(C)
+			}
+		}>(C.t)
+
+		attest<{
+			B: {
+				a: {
+					required: boolean
+				}
+			}
+		}>(C.$.t)
 
 		attest(C.json).snap({
 			domain: "object",

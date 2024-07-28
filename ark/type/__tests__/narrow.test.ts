@@ -8,7 +8,7 @@ import {
 	type string
 } from "@ark/schema"
 import type { equals } from "@ark/util"
-import { type, type Type } from "arktype"
+import { type, type Data, type Type } from "arktype"
 
 contextualize(() => {
 	it("implicit problem", () => {
@@ -104,7 +104,7 @@ contextualize(() => {
 			(s, ctx) =>
 				s === [...s].reverse().join("") ? true : ctx.reject("a palindrome")
 		])
-		attest<Type<string.narrowed>>(palindrome)
+		attest<Data<string.narrowed>>(palindrome)
 		attest(palindrome("dad")).snap("dad")
 		attest(palindrome("david").toString()).snap(
 			'must be a palindrome (was "david")'
@@ -126,7 +126,7 @@ contextualize(() => {
 			morphs: [morphRef]
 		})
 
-		attest<Type<(In: string.narrowed) => Out<number>>>(t)
+		attest<Data<(In: string.narrowed) => Out<number>>>(t)
 
 		attest(t("123456")).snap(6)
 		attest(t("1234").toString()).snap(
@@ -149,7 +149,7 @@ contextualize(() => {
 			morphs: [morphRef, { predicate: [predicateRef] }]
 		})
 
-		attest<Type<(In: string) => Out<of<5, Narrowed>>>>(t)
+		attest<Data<(In: string) => Out<of<5, Narrowed>>>>(t)
 
 		attest(t("12345")).snap(5)
 		attest(t("1234").toString()).snap(
@@ -169,6 +169,6 @@ contextualize(() => {
 	// 		.pipe(s => `${s}!`)
 	// 		.narrow((s): s is "foo!" => s === "foo!")
 
-	// 	attest<Type<(In: string) => Out<of<"foo!", Narrowed>>>>(t)
+	// 	attest<Data<(In: string) => Out<of<"foo!", Narrowed>>>>(t)
 	// })
 })

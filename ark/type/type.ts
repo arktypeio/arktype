@@ -70,7 +70,7 @@ export type TypeParserAttachments =
 export interface TypeParser<$ = {}> {
 	// Parse and check the definition, returning either the original input for a
 	// valid definition or a string representing an error message.
-	<const def>(def: validateTypeRoot<def, $>): Type<inferTypeRoot<def, $>, $>
+	<const def>(def: validateTypeRoot<def, $>): Data<inferTypeRoot<def, $>, $>
 
 	// Spread version of a tuple expression
 	<const zero, const one, const rest extends array>(
@@ -87,7 +87,7 @@ export interface TypeParser<$ = {}> {
 			: one extends "@" ? [string | BaseMeta]
 			: [validateTypeRoot<rest[0], $>]
 		:	[]
-	): Type<inferTypeRoot<[zero, one, ...rest], $>, $>
+	): Data<inferTypeRoot<[zero, one, ...rest], $>, $>
 
 	<params extends ParameterString, const def>(
 		params: validateParameterString<params, $>,
@@ -98,7 +98,7 @@ export interface TypeParser<$ = {}> {
 		>
 	): Generic<parseValidGenericParams<params, $>, def, $>
 
-	raw(def: unknown): Type<any, $>
+	raw(def: unknown): Data<any, $>
 	errors: typeof ArkErrors
 }
 
@@ -153,7 +153,7 @@ export type DeclarationParser<$> = <preinferred>() => {
 	// for some reason, making this a const parameter breaks preinferred validation
 	type: <def>(
 		def: validateDeclared<preinferred, def, $, bindThis<def>>
-	) => Type<preinferred, $>
+	) => Data<preinferred, $>
 }
 
 // this is declared as a class internally so we can ensure all "abstract"
@@ -162,48 +162,48 @@ export type DeclarationParser<$> = <preinferred>() => {
 declare class _Type<t = unknown, $ = {}> extends Root<t, $> {
 	$: Scope<$>
 
-	as<t = unset>(...args: validateChainedAsArgs<t>): Type<t, $>
+	as<t = unset>(...args: validateChainedAsArgs<t>): Data<t, $>
 
-	get in(): Type<this["tIn"], $>
-	get out(): Type<this["tOut"], $>
+	get in(): Data<this["tIn"], $>
+	get out(): Data<this["tOut"], $>
 
 	intersect<def>(
 		def: validateTypeRoot<def, $>
-	): Type<inferIntersection<t, inferTypeRoot<def, $>>> | Disjoint
+	): Data<inferIntersection<t, inferTypeRoot<def, $>>> | Disjoint
 
 	and<def>(
 		def: validateTypeRoot<def, $>
-	): Type<inferIntersection<t, inferTypeRoot<def, $>>, $>
+	): Data<inferIntersection<t, inferTypeRoot<def, $>>, $>
 
-	or<def>(def: validateTypeRoot<def, $>): Type<t | inferTypeRoot<def, $>, $>
+	or<def>(def: validateTypeRoot<def, $>): Data<t | inferTypeRoot<def, $>, $>
 
-	array(): Type<t[], $>
+	array(): Data<t[], $>
 
-	keyof(): Type<keyof this["inferIn"], $>
+	keyof(): Data<keyof this["inferIn"], $>
 
-	pipe<a extends Morph<this["infer"]>>(a: a): Type<inferPipes<t, [a]>, $>
+	pipe<a extends Morph<this["infer"]>>(a: a): Data<inferPipes<t, [a]>, $>
 	pipe<a extends Morph<this["infer"]>, b extends Morph<inferMorphOut<a>>>(
 		a: a,
 		b: b
-	): Type<inferPipes<t, [a, b]>, $>
+	): Data<inferPipes<t, [a, b]>, $>
 	pipe<
 		a extends Morph<this["infer"]>,
 		b extends Morph<inferMorphOut<a>>,
 		c extends Morph<inferMorphOut<b>>
-	>(a: a, b: b, c: c): Type<inferPipes<t, [a, b, c]>, $>
+	>(a: a, b: b, c: c): Data<inferPipes<t, [a, b, c]>, $>
 	pipe<
 		a extends Morph<this["infer"]>,
 		b extends Morph<inferMorphOut<a>>,
 		c extends Morph<inferMorphOut<b>>,
 		d extends Morph<inferMorphOut<c>>
-	>(a: a, b: b, c: c, d: d): Type<inferPipes<t, [a, b, c, d]>, $>
+	>(a: a, b: b, c: c, d: d): Data<inferPipes<t, [a, b, c, d]>, $>
 	pipe<
 		a extends Morph<this["infer"]>,
 		b extends Morph<inferMorphOut<a>>,
 		c extends Morph<inferMorphOut<b>>,
 		d extends Morph<inferMorphOut<c>>,
 		e extends Morph<inferMorphOut<d>>
-	>(a: a, b: b, c: c, d: d, e: e): Type<inferPipes<t, [a, b, c, d, e]>, $>
+	>(a: a, b: b, c: c, d: d, e: e): Data<inferPipes<t, [a, b, c, d, e]>, $>
 	pipe<
 		a extends Morph<this["infer"]>,
 		b extends Morph<inferMorphOut<a>>,
@@ -218,7 +218,7 @@ declare class _Type<t = unknown, $ = {}> extends Root<t, $> {
 		d: d,
 		e: e,
 		f: f
-	): Type<inferPipes<t, [a, b, c, d, e, f]>, $>
+	): Data<inferPipes<t, [a, b, c, d, e, f]>, $>
 	pipe<
 		a extends Morph<this["infer"]>,
 		b extends Morph<inferMorphOut<a>>,
@@ -235,11 +235,11 @@ declare class _Type<t = unknown, $ = {}> extends Root<t, $> {
 		e: e,
 		f: f,
 		g: g
-	): Type<inferPipes<t, [a, b, c, d, e, f, g]>, $>
+	): Data<inferPipes<t, [a, b, c, d, e, f, g]>, $>
 
 	narrow<predicate extends Predicate<distillOut<t>>>(
 		predicate: predicate
-	): Type<
+	): Data<
 		t extends MorphAst ?
 			inferPredicate<this["tOut"], predicate> extends infer narrowed ?
 				(In: this["tIn"]) => Out<narrowed>
@@ -250,55 +250,27 @@ declare class _Type<t = unknown, $ = {}> extends Root<t, $> {
 
 	equals<def>(
 		def: validateTypeRoot<def, $>
-	): this is Type<inferTypeRoot<def, $>, $>
+	): this is Data<inferTypeRoot<def, $>, $>
 
 	extract<def>(
 		r: validateTypeRoot<def, $>
-	): Type<Extract<t, inferTypeRoot<def, $>>, $>
+	): Data<Extract<t, inferTypeRoot<def, $>>, $>
 
 	exclude<def>(
 		r: validateTypeRoot<def, $>
-	): Type<Exclude<t, inferTypeRoot<def, $>>, $>
+	): Data<Exclude<t, inferTypeRoot<def, $>>, $>
 
 	extends<def>(
 		other: validateTypeRoot<def, $>
-	): this is Type<inferTypeRoot<def, $>, $>
+	): this is Data<inferTypeRoot<def, $>, $>
 
 	overlaps<def>(r: validateTypeRoot<def, $>): boolean
 
-	pick<const key extends arkKeyOf<t> = never>(
-		this: validateStructuralOperand<"pick", t>,
-		...keys: (key | type.cast<key>)[]
-	): Type<
-		{
-			[k in keyof t as Extract<toArkKey<t, k>, key>]: t[k]
-		},
-		$
-	>
-
-	omit<const key extends arkKeyOf<t> = never>(
-		this: validateStructuralOperand<"omit", t>,
-		...keys: (key | type.cast<key>)[]
-	): Type<
-		{
-			[k in keyof t as Exclude<toArkKey<t, k>, key>]: t[k]
-		},
-		$
-	>
-
-	required(
-		this: validateStructuralOperand<"required", t>
-	): Type<{ [k in keyof t]-?: t[k] }, $>
-
-	partial(
-		this: validateStructuralOperand<"partial", t>
-	): Type<{ [k in keyof t]?: t[k] }, $>
-
-	get<k1 extends arkKeyOf<t>>(k1: k1 | type.cast<k1>): Type<getArkKey<t, k1>, $>
+	get<k1 extends arkKeyOf<t>>(k1: k1 | type.cast<k1>): Data<getArkKey<t, k1>, $>
 	get<k1 extends arkKeyOf<t>, k2 extends arkKeyOf<getArkKey<t, k1>>>(
 		k1: k1 | type.cast<k1>,
 		k2: k2 | type.cast<k2>
-	): Type<getArkKey<getArkKey<t, k1>, k2>, $>
+	): Data<getArkKey<getArkKey<t, k1>, k2>, $>
 	get<
 		k1 extends arkKeyOf<t>,
 		k2 extends arkKeyOf<getArkKey<t, k1>>,
@@ -307,7 +279,7 @@ declare class _Type<t = unknown, $ = {}> extends Root<t, $> {
 		k1: k1 | type.cast<k1>,
 		k2: k2 | type.cast<k2>,
 		k3: k3 | type.cast<k3>
-	): Type<getArkKey<getArkKey<getArkKey<t, k1>, k2>, k3>, $>
+	): Data<getArkKey<getArkKey<getArkKey<t, k1>, k2>, k3>, $>
 
 	constrain<
 		kind extends PrimitiveConstraintKind,
@@ -315,91 +287,16 @@ declare class _Type<t = unknown, $ = {}> extends Root<t, $> {
 	>(
 		kind: conform<kind, constraintKindOf<this["inferIn"]>>,
 		def: def
-	): Type<constrain<t, kind, def>, $>
+	): Data<constrain<t, kind, def>, $>
 
 	satisfying<predicate extends Predicate<distillIn<t>>>(
 		predicate: predicate
-	): Type<
+	): Data<
 		t extends MorphAst ?
 			(In: inferPredicate<this["tIn"], predicate>) => Out<this["tOut"]>
 		:	inferPredicate<t, predicate>,
 		$
 	>
-
-	divisibleBy<const schema extends DivisorSchema>(
-		this: validateChainedConstraint<"divisor", t>,
-		schema: schema
-	): Type<constrain<t, "divisor", schema>, $>
-
-	matching<const schema extends PatternSchema>(
-		this: validateChainedConstraint<"pattern", t>,
-		schema: schema
-	): Type<constrain<t, "pattern", schema>, $>
-
-	atLeast<const schema extends InclusiveNumericRangeSchema>(
-		this: validateChainedConstraint<"min", t>,
-		schema: schema
-	): Type<constrain<t, "min", schema>, $>
-
-	atMost<const schema extends InclusiveNumericRangeSchema>(
-		this: validateChainedConstraint<"max", t>,
-		schema: schema
-	): Type<constrain<t, "max", schema>, $>
-
-	moreThan<const schema extends ExclusiveNumericRangeSchema>(
-		this: validateChainedConstraint<"min", t>,
-		schema: schema
-	): Type<constrain<t, "min", exclusivizeRangeSchema<schema>>, $>
-
-	lessThan<const schema extends ExclusiveNumericRangeSchema>(
-		this: validateChainedConstraint<"max", t>,
-		schema: schema
-	): Type<constrain<t, "max", exclusivizeRangeSchema<schema>>, $>
-
-	atLeastLength<const schema extends InclusiveNumericRangeSchema>(
-		this: validateChainedConstraint<"minLength", t>,
-		schema: schema
-	): Type<constrain<t, "minLength", schema>, $>
-
-	atMostLength<const schema extends InclusiveNumericRangeSchema>(
-		this: validateChainedConstraint<"maxLength", t>,
-		schema: schema
-	): Type<constrain<t, "maxLength", schema>, $>
-
-	moreThanLength<const schema extends ExclusiveNumericRangeSchema>(
-		this: validateChainedConstraint<"minLength", t>,
-		schema: schema
-	): Type<constrain<t, "minLength", exclusivizeRangeSchema<schema>>, $>
-
-	lessThanLength<const schema extends ExclusiveNumericRangeSchema>(
-		this: validateChainedConstraint<"maxLength", t>,
-		schema: schema
-	): Type<constrain<t, "maxLength", exclusivizeRangeSchema<schema>>, $>
-
-	exactlyLength<const schema extends ExactLengthSchema>(
-		this: validateChainedConstraint<"exactLength", t>,
-		schema: schema
-	): Type<constrain<t, "exactLength", schema>, $>
-
-	atOrAfter<const schema extends InclusiveDateRangeSchema>(
-		this: validateChainedConstraint<"after", t>,
-		schema: schema
-	): Type<constrain<t, "after", schema>, $>
-
-	atOrBefore<const schema extends InclusiveDateRangeSchema>(
-		this: validateChainedConstraint<"before", t>,
-		schema: schema
-	): Type<constrain<t, "before", schema>, $>
-
-	laterThan<const schema extends ExclusiveDateRangeSchema>(
-		this: validateChainedConstraint<"after", t>,
-		schema: schema
-	): Type<constrain<t, "after", exclusivizeRangeSchema<schema>>, $>
-
-	earlierThan<const schema extends ExclusiveDateRangeSchema>(
-		this: validateChainedConstraint<"before", t>,
-		schema: schema
-	): Type<constrain<t, "before", exclusivizeRangeSchema<schema>>, $>
 }
 
 export interface Type<
@@ -412,14 +309,117 @@ export interface Data<
 	/** @ts-expect-error allow instantiation assignment to the base type */
 	out t = unknown,
 	$ = {}
-> extends Type<t, $> {}
+> extends Type<t, $> {
+	pick<const key extends arkKeyOf<t> = never>(
+		this: validateStructuralOperand<"pick", t>,
+		...keys: (key | type.cast<key>)[]
+	): Data<
+		{
+			[k in keyof t as Extract<toArkKey<t, k>, key>]: t[k]
+		},
+		$
+	>
+
+	omit<const key extends arkKeyOf<t> = never>(
+		this: validateStructuralOperand<"omit", t>,
+		...keys: (key | type.cast<key>)[]
+	): Data<
+		{
+			[k in keyof t as Exclude<toArkKey<t, k>, key>]: t[k]
+		},
+		$
+	>
+
+	required(
+		this: validateStructuralOperand<"required", t>
+	): Data<{ [k in keyof t]-?: t[k] }, $>
+
+	partial(
+		this: validateStructuralOperand<"partial", t>
+	): Data<{ [k in keyof t]?: t[k] }, $>
+
+	divisibleBy<const schema extends DivisorSchema>(
+		this: validateChainedConstraint<"divisor", t>,
+		schema: schema
+	): Data<constrain<t, "divisor", schema>, $>
+
+	matching<const schema extends PatternSchema>(
+		this: validateChainedConstraint<"pattern", t>,
+		schema: schema
+	): Data<constrain<t, "pattern", schema>, $>
+
+	atLeast<const schema extends InclusiveNumericRangeSchema>(
+		this: validateChainedConstraint<"min", t>,
+		schema: schema
+	): Data<constrain<t, "min", schema>, $>
+
+	atMost<const schema extends InclusiveNumericRangeSchema>(
+		this: validateChainedConstraint<"max", t>,
+		schema: schema
+	): Data<constrain<t, "max", schema>, $>
+
+	moreThan<const schema extends ExclusiveNumericRangeSchema>(
+		this: validateChainedConstraint<"min", t>,
+		schema: schema
+	): Data<constrain<t, "min", exclusivizeRangeSchema<schema>>, $>
+
+	lessThan<const schema extends ExclusiveNumericRangeSchema>(
+		this: validateChainedConstraint<"max", t>,
+		schema: schema
+	): Data<constrain<t, "max", exclusivizeRangeSchema<schema>>, $>
+
+	atLeastLength<const schema extends InclusiveNumericRangeSchema>(
+		this: validateChainedConstraint<"minLength", t>,
+		schema: schema
+	): Data<constrain<t, "minLength", schema>, $>
+
+	atMostLength<const schema extends InclusiveNumericRangeSchema>(
+		this: validateChainedConstraint<"maxLength", t>,
+		schema: schema
+	): Data<constrain<t, "maxLength", schema>, $>
+
+	moreThanLength<const schema extends ExclusiveNumericRangeSchema>(
+		this: validateChainedConstraint<"minLength", t>,
+		schema: schema
+	): Data<constrain<t, "minLength", exclusivizeRangeSchema<schema>>, $>
+
+	lessThanLength<const schema extends ExclusiveNumericRangeSchema>(
+		this: validateChainedConstraint<"maxLength", t>,
+		schema: schema
+	): Data<constrain<t, "maxLength", exclusivizeRangeSchema<schema>>, $>
+
+	exactlyLength<const schema extends ExactLengthSchema>(
+		this: validateChainedConstraint<"exactLength", t>,
+		schema: schema
+	): Data<constrain<t, "exactLength", schema>, $>
+
+	atOrAfter<const schema extends InclusiveDateRangeSchema>(
+		this: validateChainedConstraint<"after", t>,
+		schema: schema
+	): Data<constrain<t, "after", schema>, $>
+
+	atOrBefore<const schema extends InclusiveDateRangeSchema>(
+		this: validateChainedConstraint<"before", t>,
+		schema: schema
+	): Data<constrain<t, "before", schema>, $>
+
+	laterThan<const schema extends ExclusiveDateRangeSchema>(
+		this: validateChainedConstraint<"after", t>,
+		schema: schema
+	): Data<constrain<t, "after", exclusivizeRangeSchema<schema>>, $>
+
+	earlierThan<const schema extends ExclusiveDateRangeSchema>(
+		this: validateChainedConstraint<"before", t>,
+		schema: schema
+	): Data<constrain<t, "before", exclusivizeRangeSchema<schema>>, $>
+}
 
 export type TypeConstructor<t = unknown, $ = {}> = new (
 	def: unknown,
 	$: Scope<$>
-) => Type<t, $>
+) => Data<t, $>
 
-export type AnyType<out t = unknown> = Type<t, any>
+export type AnyType<out t = unknown> = Data<t, any>
 
 export const Type: TypeConstructor = BaseRoot as never
 
