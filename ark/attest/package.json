@@ -38,9 +38,6 @@
 		"prettier": "3.3.3",
 		"@prettier/sync": "0.5.2"
 	},
-	"devDependencies": {
-		"typescript": "5.5.3"
-	},
 	"peerDependencies": {
 		"typescript": "*"
 	},

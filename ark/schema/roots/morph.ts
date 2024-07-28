@@ -145,8 +145,6 @@ export class MorphNode extends BaseRoot<MorphDeclaration> {
 		ctx.queueMorphs(this.morphs)
 	}
 
-	expression = `(In: ${this.in.expression}) => Out<${this.out?.expression ?? "unknown"}>`
-
 	get shortDescription(): string {
 		return this.in.shortDescription
 	}
@@ -185,6 +183,8 @@ export class MorphNode extends BaseRoot<MorphDeclaration> {
 			Object.assign(this.referencesById, this.lastMorph.out.referencesById) &&
 			this.lastMorph.out
 		:	undefined
+
+	expression = `(In: ${this.in.expression}) => Out<${this.out.expression}>`
 
 	rawKeyOf(): BaseRoot {
 		return this.in.rawKeyOf()

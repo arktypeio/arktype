@@ -718,13 +718,17 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			type("1<=string<=3")
 		)
 
-		const CreatePatientInput = type({
+		const t = type({
 			"first_name?": validatedTrimString.and("unknown")
 		})
 
-		attest(CreatePatientInput.expression).snap(
-			"{ first_name?: (In: string) => Out<unknown> }"
+		attest(t.expression).snap(
+			"{ first_name?: (In: string) => Out<string <= 3 & >= 1> }"
 		)
-		attest(CreatePatientInput.t).type.toString.snap()
+		attest(t.t).type.toString.snap(`{
+	first_name?: (
+		In: string
+	) => Out<is<AtLeastLength<1> & AtMostLength<3>>>
+}`)
 	})
 })
