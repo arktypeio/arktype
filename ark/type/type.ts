@@ -274,6 +274,34 @@ declare abstract class _Type<t = unknown, $ = {}> extends Root<t, $> {
 		:	inferPredicate<t, predicate>,
 		$
 	>
+
+	// deprecate Function methods so they are deprioritized as suggestions
+
+	/** @deprecated */
+	apply: Function["apply"]
+
+	/** @deprecated */
+	bind: Function["bind"]
+
+	/** @deprecated */
+	call: Function["call"]
+
+	/** @deprecated */
+	caller: Function
+
+	/** @deprecated */
+	length: number
+
+	/** @deprecated */
+	name: string
+
+	/** @deprecated */
+	prototype: Function["prototype"]
+
+	// I don't know why Symbol is suggested as a key of a function instance,
+	// but applying the same method to that
+	/** @deprecated */
+	Symbol: never
 }
 
 export interface Type<
