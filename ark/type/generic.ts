@@ -237,10 +237,10 @@ export interface Generic<
 	params extends array<GenericParamAst> = array<GenericParamAst>,
 	bodyDef = unknown,
 	$ = {},
-	args$ = $
-> extends Callable<GenericInstantiator<params, bodyDef, $, args$>>,
-		GenericProps<params, bodyDef, $> {
-	internal: GenericRoot<params>
+	arg$ = $
+> extends Callable<GenericInstantiator<params, bodyDef, $, arg$>>,
+		GenericProps<params, bodyDef, $, arg$> {
+	internal: GenericRoot<params, bodyDef>
 }
 
 export type GenericDeclaration<

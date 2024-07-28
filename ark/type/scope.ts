@@ -51,7 +51,7 @@ import {
 	type parseValidGenericParams
 } from "./generic.js"
 import { createMatchParser, type MatchParser } from "./match.js"
-import type { Module } from "./module.js"
+import type { Module, instantiateExport } from "./module.js"
 import {
 	parseObject,
 	writeBadDefinitionTypeMessage,
@@ -358,6 +358,10 @@ export interface Scope<$ = {}> {
 	export<names extends exportedNameOf<$>[]>(
 		...names: names
 	): Module<show<destructuredExportContext<$, names>>>
+
+	resolve<name extends exportedNameOf<$>>(
+		name: name
+	): instantiateExport<$[name], $>
 }
 
 export const Scope: new <$ = {}>() => Scope<$> = InternalScope as never

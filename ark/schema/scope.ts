@@ -56,10 +56,6 @@ import type { NodeKind, RootKind } from "./shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "./shared/traversal.js"
 import { arkKind, hasArkKind, isNode } from "./shared/utils.js"
 
-export type nodeResolutions<keywords> = { [k in keyof keywords]: BaseRoot }
-
-export type BaseResolutions = Record<string, BaseRoot>
-
 export type InternalResolutions = Record<string, InternalResolution | undefined>
 
 export type exportedNameOf<$> = Exclude<keyof $ & string, PrivateDeclaration>
