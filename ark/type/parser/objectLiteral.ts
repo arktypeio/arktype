@@ -20,6 +20,7 @@ import {
 	stringAndSymbolicEntriesOf,
 	throwParseError,
 	type anyOrNever,
+	type conform,
 	type Dict,
 	type ErrorMessage,
 	type ErrorType,
@@ -155,11 +156,14 @@ type validateDefaultValueTuple<
 	args
 > =
 	parseKey<k>["kind"] extends "required" ?
-		readonly [
-			validateDefinition<def[0], $, args>,
-			"=",
-			inferDefinition<def[0], $, args>
-		]
+		conform<
+			def,
+			readonly [
+				validateDefinition<def[0], $, args>,
+				"=",
+				inferDefinition<def[0], $, args>
+			]
+		>
 	:	ErrorMessage<invalidDefaultKeyKindMessage>
 
 type nonOptionalKeyFrom<k, $, args> =
