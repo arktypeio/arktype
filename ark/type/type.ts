@@ -159,7 +159,7 @@ export type DeclarationParser<$> = <preinferred>() => {
 // this is declared as a class internally so we can ensure all "abstract"
 // methods of BaseRoot are overridden, but we end up exporting it as an interface
 // to ensure it is not accessed as a runtime value
-declare class _Type<t = unknown, $ = any> extends Root<t, $> {
+declare class _Type<t = unknown, $ = {}> extends Root<t, $> {
 	$: Scope<$>
 
 	as<t = unset>(...args: validateChainedAsArgs<t>): Type<t, $>
