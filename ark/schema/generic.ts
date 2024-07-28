@@ -49,6 +49,18 @@ export class LazyGenericBody<
 	returns = unknown
 > extends Callable<(args: argResolutions) => returns> {}
 
+export type GenericProps<
+	params extends array<GenericParamAst> = array<GenericParamAst>,
+	bodyDef = unknown,
+	$ = {},
+	arg$ = $
+> = {
+	paramsAst: params
+	bodyDef: bodyDef
+	$: $
+	arg$: arg$
+}
+
 export class GenericRoot<
 	params extends array<GenericParamAst> = array<GenericParamAst>,
 	bodyDef = unknown

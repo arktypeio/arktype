@@ -163,17 +163,14 @@ export type DeclarationParser<$> = <preinferred>() => {
 	) => instantiateType<preinferred, $>
 }
 
-// this is declared as a class internally so we can ensure all "abstract"
-// methods of BaseRoot are overridden, but we end up exporting it as an interface
-// to ensure it is not accessed as a runtime value
-declare abstract class _Type<t = unknown, $ = {}> extends Callable<
-	(data: unknown) => distillOut<t> | ArkErrors
-> {
+/** @ts-expect-error cast variance */
+export interface Type<out t = unknown, $ = {}>
+	extends Callable<(data: unknown) => distillOut<t> | ArkErrors> {
 	t: t
 	tIn: distillConstrainableIn<t>
 	tOut: distillConstrainableOut<t>
 	infer: distillOut<t>
-	inferIn: distillIn<t>;
+	inferIn: distillIn<t>
 	[inferred]: t
 
 	json: Json
@@ -223,25 +220,39 @@ declare abstract class _Type<t = unknown, $ = {}> extends Callable<
 	pipe<
 		a extends Morph<this["infer"]>,
 		r = instantiateType<inferPipes<t, [a]>, $>
-	>(a: a): r
+	>(
+		a: a
+	): r
 	pipe<
 		a extends Morph<this["infer"]>,
 		b extends Morph<inferMorphOut<a>>,
 		r = instantiateType<inferPipes<t, [a, b]>, $>
-	>(a: a, b: b): r
+	>(
+		a: a,
+		b: b
+	): r
 	pipe<
 		a extends Morph<this["infer"]>,
 		b extends Morph<inferMorphOut<a>>,
 		c extends Morph<inferMorphOut<b>>,
 		r = instantiateType<inferPipes<t, [a, b, c]>, $>
-	>(a: a, b: b, c: c): r
+	>(
+		a: a,
+		b: b,
+		c: c
+	): r
 	pipe<
 		a extends Morph<this["infer"]>,
 		b extends Morph<inferMorphOut<a>>,
 		c extends Morph<inferMorphOut<b>>,
 		d extends Morph<inferMorphOut<c>>,
 		r = instantiateType<inferPipes<t, [a, b, c, d]>, $>
-	>(a: a, b: b, c: c, d: d): r
+	>(
+		a: a,
+		b: b,
+		c: c,
+		d: d
+	): r
 	pipe<
 		a extends Morph<this["infer"]>,
 		b extends Morph<inferMorphOut<a>>,
@@ -249,7 +260,13 @@ declare abstract class _Type<t = unknown, $ = {}> extends Callable<
 		d extends Morph<inferMorphOut<c>>,
 		e extends Morph<inferMorphOut<d>>,
 		r = instantiateType<inferPipes<t, [a, b, c, d, e]>, $>
-	>(a: a, b: b, c: c, d: d, e: e): r
+	>(
+		a: a,
+		b: b,
+		c: c,
+		d: d,
+		e: e
+	): r
 	pipe<
 		a extends Morph<this["infer"]>,
 		b extends Morph<inferMorphOut<a>>,
@@ -258,7 +275,14 @@ declare abstract class _Type<t = unknown, $ = {}> extends Callable<
 		e extends Morph<inferMorphOut<d>>,
 		f extends Morph<inferMorphOut<e>>,
 		r = instantiateType<inferPipes<t, [a, b, c, d, e, f]>, $>
-	>(a: a, b: b, c: c, d: d, e: e, f: f): r
+	>(
+		a: a,
+		b: b,
+		c: c,
+		d: d,
+		e: e,
+		f: f
+	): r
 	pipe<
 		a extends Morph<this["infer"]>,
 		b extends Morph<inferMorphOut<a>>,
@@ -268,7 +292,15 @@ declare abstract class _Type<t = unknown, $ = {}> extends Callable<
 		f extends Morph<inferMorphOut<e>>,
 		g extends Morph<inferMorphOut<f>>,
 		r = instantiateType<inferPipes<t, [a, b, c, d, e, f, g]>, $>
-	>(a: a, b: b, c: c, d: d, e: e, f: f, g: g): r
+	>(
+		a: a,
+		b: b,
+		c: c,
+		d: d,
+		e: e,
+		f: f,
+		g: g
+	): r
 
 	narrow<predicate extends Predicate<distillOut<t>>>(
 		predicate: predicate
@@ -308,6 +340,8 @@ declare abstract class _Type<t = unknown, $ = {}> extends Callable<
 		$
 	>
 
+	keyof(): Type<keyof t, $>
+
 	// deprecate Function methods so they are deprioritized as suggestions
 
 	/** @deprecated */
@@ -340,12 +374,6 @@ declare abstract class _Type<t = unknown, $ = {}> extends Callable<
 	Symbol: never
 }
 
-export interface Type<
-	/** @ts-ignore cast variance */
-	out t = unknown,
-	$ = {}
-> extends _Type<t, $> {}
-
 export declare namespace Type {
 	/** @ts-ignore cast variance */
 	export interface Morph<out t = unknown, $ = {}> extends Type<t, $> {}
@@ -353,8 +381,6 @@ export declare namespace Type {
 	/** @ts-ignore cast variance */
 	export interface Object<out t extends object = object, $ = {}>
 		extends Type<t, $> {
-		keyof(): Type<keyof t, $>
-
 		get<k1 extends arkKeyOf<t>, r = instantiateType<getArkKey<t, k1>, $>>(
 			k1: k1 | type.cast<k1>
 		): r

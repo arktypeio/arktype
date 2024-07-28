@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { internalSchema } from "@ark/schema"
+import { schema } from "@ark/schema"
 import { type } from "arktype"
 import { writeInvalidConstructorMessage } from "../parser/tuple.js"
 
@@ -8,7 +8,7 @@ contextualize(() => {
 		it("base", () => {
 			const t = type(["instanceof", Error])
 			attest<Error>(t.infer)
-			const expected = internalSchema(Error)
+			const expected = schema(Error)
 			attest(t.json).equals(expected.json)
 			const e = new Error()
 			attest(t(e)).equals(e)
