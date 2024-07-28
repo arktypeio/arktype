@@ -195,7 +195,6 @@ contextualize(() => {
 
 			attest<[string, number]>(ok.t)
 			attest(ok.expression).snap("[string, number]")
-
 			// @ts-expect-error
 			attest(() => types.entry("boolean", "number"))
 				.throws(
