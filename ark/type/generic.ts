@@ -25,7 +25,12 @@ import type { state, StaticState } from "./parser/string/reduce/static.js"
 import { Scanner } from "./parser/string/shift/scanner.js"
 import { parseUntilFinalizer } from "./parser/string/string.js"
 import type { ParseContext } from "./scope.js"
-import type { inferTypeRoot, Type, validateTypeRoot } from "./type.js"
+import type {
+	inferTypeRoot,
+	instantiateType,
+	Type,
+	validateTypeRoot
+} from "./type.js"
 
 export type ParameterString<params extends string = string> = `<${params}>`
 
@@ -49,7 +54,19 @@ export type GenericInstantiator<
 > = <
 	const args extends {
 		[i in keyof params]: validateTypeRoot<args[i & keyof args], args$>
-	}
+	},
+	r = [def] extends [GenericHkt] ?
+		instantiateType<
+			GenericHkt.instantiate<
+				def,
+				{ [i in keyof args]: inferTypeRoot<args[i], args$> }
+			>,
+			$
+		>
+	:	instantiateType<
+			inferDefinition<def, $, bindGenericArgs<params, args$, args>>,
+			$
+		>
 >(
 	/** @ts-expect-error treat as array */
 	...args: {
@@ -59,15 +76,7 @@ export type GenericInstantiator<
 			args$
 		>
 	}
-) => Type<
-	def extends GenericHkt ?
-		GenericHkt.instantiate<
-			def,
-			{ [i in keyof args]: inferTypeRoot<args[i], args$> }
-		>
-	:	inferDefinition<def, $, bindGenericArgs<params, args$, args>>,
-	$
->
+) => r
 
 type bindGenericArgs<params extends array<GenericParamAst>, $, args> = {
 	[i in keyof params & `${number}` as params[i][0]]: inferTypeRoot<
@@ -78,7 +87,7 @@ type bindGenericArgs<params extends array<GenericParamAst>, $, args> = {
 
 type baseGenericResolutions<params extends array<GenericParamAst>, $> =
 	baseGenericConstraints<params> extends infer baseConstraints ?
-		{ [k in keyof baseConstraints]: Type<baseConstraints[k], $> }
+		{ [k in keyof baseConstraints]: instantiateType<baseConstraints[k], $> }
 	:	never
 
 export type baseGenericConstraints<params extends array<GenericParamAst>> = {
