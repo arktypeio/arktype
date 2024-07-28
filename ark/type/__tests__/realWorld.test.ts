@@ -711,4 +711,20 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			"must be valid according to validatePositiveBigint (was -5n)"
 		)
 	})
+
+	it("nested 'and' chained from morph on optional", () => {
+		const validatedTrimString = type("string").pipe(
+			s => s.trim(),
+			type("1<=string<=3")
+		)
+
+		const CreatePatientInput = type({
+			"first_name?": validatedTrimString.and("unknown")
+		})
+
+		attest(CreatePatientInput.expression).snap(
+			"{ first_name?: (In: string) => Out<unknown> }"
+		)
+		attest(CreatePatientInput.t).type.toString.snap()
+	})
 })

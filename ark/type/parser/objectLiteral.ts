@@ -260,7 +260,7 @@ export const parseEntry = (
 				normalized.required ?
 					[normalized.index, ...normalized.required]
 				:	normalized.index
-			:	normalized.required ?? []
+			:	(normalized.required ?? [])
 		)
 	}
 

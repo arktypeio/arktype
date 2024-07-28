@@ -166,7 +166,7 @@ export type DeclarationParser<$> = <preinferred>() => {
 // this is declared as a class internally so we can ensure all "abstract"
 // methods of BaseRoot are overridden, but we end up exporting it as an interface
 // to ensure it is not accessed as a runtime value
-declare class _Type<t = unknown, $ = {}> extends Root<t, $> {
+declare abstract class _Type<t = unknown, $ = {}> extends Root<t, $> {
 	$: Scope<$>
 
 	as<t = unset>(...args: validateChainedAsArgs<t>): Data<t, $>
@@ -174,18 +174,20 @@ declare class _Type<t = unknown, $ = {}> extends Root<t, $> {
 	get in(): Data<this["tIn"], $>
 	get out(): Data<this["tOut"], $>
 
-	intersect<
-		def,
-		r = instantiateType<inferIntersection<t, inferTypeRoot<def, $>>, $>
-	>(def: validateTypeRoot<def, $>): r | Disjoint
-
-	and<def, r = instantiateType<inferIntersection<t, inferTypeRoot<def, $>>, $>>(
+	intersect<const def, r = inferTypeRoot<def, $>>(
 		def: validateTypeRoot<def, $>
-	): r
+	): instantiateType<inferIntersection<t, r>, $> | Disjoint
 
-	or<def, r = instantiateType<t | inferTypeRoot<def, $>, $>>(
+	// these defaulted params are split up to optimize
+	// type perf while maintaining accurate inference for test cases
+	// like "nested 'and' chained from morph on optional"
+	and<const def, r = inferTypeRoot<def, $>>(
 		def: validateTypeRoot<def, $>
-	): r
+	): instantiateType<inferIntersection<t, r>, $>
+
+	or<const def, r = inferTypeRoot<def, $>>(
+		def: validateTypeRoot<def, $>
+	): instantiateType<t | r, $>
 
 	array(): Data<t[], $>
 
@@ -283,6 +285,12 @@ export interface Type<
 	out t = unknown,
 	$ = {}
 > extends _Type<t, $> {}
+
+export interface MorphType<
+	/** @ts-expect-error cast variance */
+	out t = unknown,
+	$ = {}
+> extends Type<t, $> {}
 
 export interface Data<
 	/** @ts-expect-error allow instantiation assignment to the base type */
@@ -430,7 +438,7 @@ export type TypeConstructor<t = unknown, $ = {}> = new (
 	$: Scope<$>
 ) => Data<t, $>
 
-export type AnyType<out t = unknown> = Data<t, any>
+export type AnyType<out t = unknown> = Type<t, any>
 
 export const Type: TypeConstructor = BaseRoot as never
 
@@ -449,7 +457,8 @@ export type validateAmbient<def> = validateTypeRoot<def, {}>
 export type inferAmbient<def> = inferTypeRoot<def, {}>
 
 export type instantiateType<t, $> =
-	[t] extends [MorphAst] ? Type<t, $> : Data<t, $>
+	// if any branch of t is a MorphAst, instantiate it as a MorphType
+	MorphAst extends t ? MorphType<t, $> : Data<t, $>
 
 // [t] extends [anyOrNever] ? Data<t, $>
 // : [t] extends [MorphAst] ? Type<t, $>
