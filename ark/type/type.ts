@@ -10,6 +10,7 @@ import {
 	type ExclusiveNumericRangeSchema,
 	type InclusiveDateRangeSchema,
 	type InclusiveNumericRangeSchema,
+	type LengthBoundableData,
 	type Morph,
 	type MorphAst,
 	type NodeSchema,
@@ -287,104 +288,16 @@ export interface BaseType<
 	$ = {}
 > extends _Type<t, $> {}
 
-export interface MorphType<
-	/** @ts-expect-error cast variance */
-	out t = unknown,
-	$ = {}
-> extends BaseType<t, $> {}
-
 export interface Type<
 	/** @ts-expect-error allow instantiation assignment to the base type */
 	out t = unknown,
 	$ = {}
-> extends BaseType<t, $> {
-	constrain<
-		kind extends PrimitiveConstraintKind,
-		const def extends NodeSchema<kind>
-	>(
-		kind: conform<kind, constraintKindOf<this["inferIn"]>>,
-		def: def
-	): Type<constrain<t, kind, def>, $>
-
-	divisibleBy<const schema extends DivisorSchema>(
-		this: validateChainedConstraint<"divisor", t>,
-		schema: schema
-	): Type<constrain<t, "divisor", schema>, $>
-
-	matching<const schema extends PatternSchema>(
-		this: validateChainedConstraint<"pattern", t>,
-		schema: schema
-	): Type<constrain<t, "pattern", schema>, $>
-
-	atLeast<const schema extends InclusiveNumericRangeSchema>(
-		this: validateChainedConstraint<"min", t>,
-		schema: schema
-	): Type<constrain<t, "min", schema>, $>
-
-	atMost<const schema extends InclusiveNumericRangeSchema>(
-		this: validateChainedConstraint<"max", t>,
-		schema: schema
-	): Type<constrain<t, "max", schema>, $>
-
-	moreThan<const schema extends ExclusiveNumericRangeSchema>(
-		this: validateChainedConstraint<"min", t>,
-		schema: schema
-	): Type<constrain<t, "min", exclusivizeRangeSchema<schema>>, $>
-
-	lessThan<const schema extends ExclusiveNumericRangeSchema>(
-		this: validateChainedConstraint<"max", t>,
-		schema: schema
-	): Type<constrain<t, "max", exclusivizeRangeSchema<schema>>, $>
-
-	atLeastLength<const schema extends InclusiveNumericRangeSchema>(
-		this: validateChainedConstraint<"minLength", t>,
-		schema: schema
-	): Type<constrain<t, "minLength", schema>, $>
-
-	atMostLength<const schema extends InclusiveNumericRangeSchema>(
-		this: validateChainedConstraint<"maxLength", t>,
-		schema: schema
-	): Type<constrain<t, "maxLength", schema>, $>
-
-	moreThanLength<const schema extends ExclusiveNumericRangeSchema>(
-		this: validateChainedConstraint<"minLength", t>,
-		schema: schema
-	): Type<constrain<t, "minLength", exclusivizeRangeSchema<schema>>, $>
-
-	lessThanLength<const schema extends ExclusiveNumericRangeSchema>(
-		this: validateChainedConstraint<"maxLength", t>,
-		schema: schema
-	): Type<constrain<t, "maxLength", exclusivizeRangeSchema<schema>>, $>
-
-	exactlyLength<const schema extends ExactLengthSchema>(
-		this: validateChainedConstraint<"exactLength", t>,
-		schema: schema
-	): Type<constrain<t, "exactLength", schema>, $>
-
-	atOrAfter<const schema extends InclusiveDateRangeSchema>(
-		this: validateChainedConstraint<"after", t>,
-		schema: schema
-	): Type<constrain<t, "after", schema>, $>
-
-	atOrBefore<const schema extends InclusiveDateRangeSchema>(
-		this: validateChainedConstraint<"before", t>,
-		schema: schema
-	): Type<constrain<t, "before", schema>, $>
-
-	laterThan<const schema extends ExclusiveDateRangeSchema>(
-		this: validateChainedConstraint<"after", t>,
-		schema: schema
-	): Type<constrain<t, "after", exclusivizeRangeSchema<schema>>, $>
-
-	earlierThan<const schema extends ExclusiveDateRangeSchema>(
-		this: validateChainedConstraint<"before", t>,
-		schema: schema
-	): Type<constrain<t, "before", exclusivizeRangeSchema<schema>>, $>
-}
+> extends BaseType<t, $> {}
 
 export declare namespace Type {
-	/** @ts-expect-error cast variance */
-	export interface Object<out t extends object = object, $ = {}>
+	export interface Morph<t = unknown, $ = {}> extends BaseType<t, $> {}
+
+	export interface Object<t extends object = object, $ = {}>
 		extends Type<t, $> {
 		keyof(): Type<keyof t, $>
 
@@ -412,7 +325,7 @@ export declare namespace Type {
 
 		pick<const key extends arkKeyOf<t> = never>(
 			...keys: (key | type.cast<key>)[]
-		): Type<
+		): Type.Object<
 			{
 				[k in keyof t as Extract<toArkKey<t, k>, key>]: t[k]
 			},
@@ -421,16 +334,108 @@ export declare namespace Type {
 
 		omit<const key extends arkKeyOf<t> = never>(
 			...keys: (key | type.cast<key>)[]
-		): Type<
+		): Type.Object<
 			{
 				[k in keyof t as Exclude<toArkKey<t, k>, key>]: t[k]
 			},
 			$
 		>
 
-		required(): Type<{ [k in keyof t]-?: t[k] }, $>
+		required(): Type.Object<{ [k in keyof t]-?: t[k] }, $>
 
-		partial(): Type<{ [k in keyof t]?: t[k] }, $>
+		partial(): Type.Object<{ [k in keyof t]?: t[k] }, $>
+	}
+
+	export interface Number<t extends number = number, $ = {}>
+		extends Type<t, $> {
+		divisibleBy<const schema extends DivisorSchema>(
+			schema: schema
+		): Type.Number<constrain<t, "divisor", schema>, $>
+
+		atLeast<const schema extends InclusiveNumericRangeSchema>(
+			schema: schema
+		): Type.Number<constrain<t, "min", schema>, $>
+
+		atMost<const schema extends InclusiveNumericRangeSchema>(
+			schema: schema
+		): Type.Number<constrain<t, "max", schema>, $>
+
+		moreThan<const schema extends ExclusiveNumericRangeSchema>(
+			schema: schema
+		): Type.Number<constrain<t, "min", exclusivizeRangeSchema<schema>>, $>
+
+		lessThan<const schema extends ExclusiveNumericRangeSchema>(
+			schema: schema
+		): Type.Number<constrain<t, "max", exclusivizeRangeSchema<schema>>, $>
+	}
+
+	export interface String<t extends string = string, $ = {}>
+		extends Type<t, $> {
+		matching<const schema extends PatternSchema>(
+			schema: schema
+		): Type.String<constrain<t, "pattern", schema>, $>
+
+		atLeastLength<const schema extends InclusiveNumericRangeSchema>(
+			schema: schema
+		): Type.String<constrain<t, "minLength", schema>, $>
+
+		atMostLength<const schema extends InclusiveNumericRangeSchema>(
+			schema: schema
+		): Type.String<constrain<t, "maxLength", schema>, $>
+
+		moreThanLength<const schema extends ExclusiveNumericRangeSchema>(
+			schema: schema
+		): Type.String<constrain<t, "minLength", exclusivizeRangeSchema<schema>>, $>
+
+		lessThanLength<const schema extends ExclusiveNumericRangeSchema>(
+			schema: schema
+		): Type.String<constrain<t, "maxLength", exclusivizeRangeSchema<schema>>, $>
+
+		exactlyLength<const schema extends ExactLengthSchema>(
+			schema: schema
+		): Type.String<constrain<t, "exactLength", schema>, $>
+	}
+
+	export interface Array<t extends array = array, $ = {}>
+		extends Type.Object<t, $> {
+		atLeastLength<const schema extends InclusiveNumericRangeSchema>(
+			schema: schema
+		): Type.Array<constrain<t, "minLength", schema>, $>
+
+		atMostLength<const schema extends InclusiveNumericRangeSchema>(
+			schema: schema
+		): Type.Array<constrain<t, "maxLength", schema>, $>
+
+		moreThanLength<const schema extends ExclusiveNumericRangeSchema>(
+			schema: schema
+		): Type.Array<constrain<t, "minLength", exclusivizeRangeSchema<schema>>, $>
+
+		lessThanLength<const schema extends ExclusiveNumericRangeSchema>(
+			schema: schema
+		): Type.Array<constrain<t, "maxLength", exclusivizeRangeSchema<schema>>, $>
+
+		exactlyLength<const schema extends ExactLengthSchema>(
+			schema: schema
+		): Type.Array<constrain<t, "exactLength", schema>, $>
+	}
+
+	export interface Date<t extends globalThis.Date = globalThis.Date, $ = {}>
+		extends Type.Object<t, $> {
+		atOrAfter<const schema extends InclusiveDateRangeSchema>(
+			schema: schema
+		): Type.Date<constrain<t, "after", schema>, $>
+
+		atOrBefore<const schema extends InclusiveDateRangeSchema>(
+			schema: schema
+		): Type.Date<constrain<t, "before", schema>, $>
+
+		laterThan<const schema extends ExclusiveDateRangeSchema>(
+			schema: schema
+		): Type.Date<constrain<t, "after", exclusivizeRangeSchema<schema>>, $>
+
+		earlierThan<const schema extends ExclusiveDateRangeSchema>(
+			schema: schema
+		): Type.Date<constrain<t, "before", exclusivizeRangeSchema<schema>>, $>
 	}
 }
 
@@ -461,9 +466,11 @@ export type instantiateType<t, $> =
 	// if any branch of t is a MorphAst, instantiate it as a MorphType
 	Extract<t, MorphAst> extends anyOrNever ?
 		// otherwise, all branches have to conform to a single basis type those methods to be available
-		[t] extends [string] ? Type<t, $>
-		: [t] extends [number] ? Type<t, $>
-		: [t] extends [Date] ? Type<t, $>
-		: [t] extends [object] ? Type.Object<t, $>
-		: Type<t, $>
-	:	MorphType<t, $>
+		[t] extends [string] ? Type.String<t, $>
+		: [t] extends [number] ? Type.Number<t, $>
+		: [t] extends [object] ?
+			[t] extends [array] ? Type.Array<t, $>
+			: [t] extends [Date] ? Type.Date<t, $>
+			: Type.Object<t, $>
+		:	Type<t, $>
+	:	Type.Morph<t, $>

@@ -271,61 +271,6 @@ contextualize(() => {
 		})
 	})
 
-	describe("constrain", () => {
-		it("min", () => {
-			const t = type("number").constrain("min", 5)
-			const expected = type("number>=5")
-			attest<typeof expected>(t)
-			attest(t.json).equals(expected.json)
-		})
-
-		it("max", () => {
-			const t = type("number").constrain("max", 10)
-			const expected = type("number<=10")
-			attest<typeof expected>(t)
-			attest(t.json).equals(expected.json)
-		})
-
-		it("minLength", () => {
-			const t = type("string").constrain("minLength", 5)
-			const expected = type("string>=5")
-			attest<typeof expected>(t)
-			attest(t.json).equals(expected.json)
-		})
-
-		it("maxLength", () => {
-			const t = type("string").constrain("maxLength", 10)
-			const expected = type("string<=10")
-			attest<typeof expected>(t)
-			attest(t.json).equals(expected.json)
-		})
-
-		it("after", () => {
-			const t = type("Date").constrain("after", new Date("2022-01-01"))
-			// widen the input to a string so both are non-narrowed
-			const expected = type(`Date>=d'${"2022-01-01" as string}'`)
-			attest<typeof expected>(t)
-			attest(t.json).equals(expected.json)
-		})
-
-		it("before", () => {
-			const t = type("Date").constrain("before", 5)
-			const expected = type("Date<=5")
-			attest<typeof expected>(t)
-			attest(t.json).equals(expected.json)
-		})
-
-		it("exclusive", () => {
-			const t = type("number").constrain("min", {
-				rule: 1337,
-				exclusive: true
-			})
-			const expected = type("number>1337")
-			attest<typeof expected>(t)
-			attest(t.json).equals(expected.json)
-		})
-	})
-
 	describe("chained", () => {
 		it("atLeast", () => {
 			const t = type("number").atLeast(5)
