@@ -79,7 +79,7 @@ export interface TypeParser<$ = {}> {
 		const zero,
 		const one,
 		const rest extends array,
-		r = Data<inferTypeRoot<[zero, one, ...rest], $>, $>
+		r = instantiateType<inferTypeRoot<[zero, one, ...rest], $>, $>
 	>(
 		_0: zero extends IndexZeroOperator ? zero : validateTypeRoot<zero, $>,
 		_1: zero extends "keyof" ? validateTypeRoot<one, $>
