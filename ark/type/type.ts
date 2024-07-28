@@ -277,15 +277,17 @@ declare abstract class _Type<t = unknown, $ = {}> extends Root<t, $> {
 }
 
 export interface Type<
-	/** @ts-expect-error allow instantiation assignment to the base type */
+	/** @ts-ignore cast variance */
 	out t = unknown,
 	$ = {}
 > extends _Type<t, $> {}
 
 export declare namespace Type {
-	export interface Morph<t = unknown, $ = {}> extends Type<t, $> {}
+	/** @ts-ignore cast variance */
+	export interface Morph<out t = unknown, $ = {}> extends Type<t, $> {}
 
-	export interface Object<t extends object = object, $ = {}>
+	/** @ts-ignore cast variance */
+	export interface Object<out t extends object = object, $ = {}>
 		extends Type<t, $> {
 		keyof(): Type<keyof t, $>
 
@@ -334,7 +336,8 @@ export declare namespace Type {
 		partial(): Type.Object<{ [k in keyof t]?: t[k] }, $>
 	}
 
-	export interface Number<t extends number = number, $ = {}>
+	/** @ts-ignore cast variance */
+	export interface Number<out t extends number = number, $ = {}>
 		extends Type<t, $> {
 		divisibleBy<const schema extends DivisorSchema>(
 			schema: schema
@@ -357,7 +360,8 @@ export declare namespace Type {
 		): Type.Number<constrain<t, "max", exclusivizeRangeSchema<schema>>, $>
 	}
 
-	export interface String<t extends string = string, $ = {}>
+	/** @ts-ignore cast variance */
+	export interface String<out t extends string = string, $ = {}>
 		extends Type<t, $> {
 		matching<const schema extends PatternSchema>(
 			schema: schema
@@ -384,7 +388,8 @@ export declare namespace Type {
 		): Type.String<constrain<t, "exactLength", schema>, $>
 	}
 
-	export interface Array<t extends array = array, $ = {}>
+	/** @ts-ignore cast variance */
+	export interface Array<out t extends array = array, $ = {}>
 		extends Type.Object<t, $> {
 		atLeastLength<const schema extends InclusiveNumericRangeSchema>(
 			schema: schema
@@ -407,7 +412,8 @@ export declare namespace Type {
 		): Type.Array<constrain<t, "exactLength", schema>, $>
 	}
 
-	export interface Date<t extends globalThis.Date = globalThis.Date, $ = {}>
+	/** @ts-ignore cast variance */
+	export interface Date<out t extends globalThis.Date = globalThis.Date, $ = {}>
 		extends Type.Object<t, $> {
 		atOrAfter<const schema extends InclusiveDateRangeSchema>(
 			schema: schema
@@ -426,7 +432,8 @@ export declare namespace Type {
 		): Type.Date<constrain<t, "before", exclusivizeRangeSchema<schema>>, $>
 	}
 
-	export type Any<t = any> = Type<t, any>
+	/** @ts-ignore cast variance */
+	export type Any<out t = any> = Type<t, any>
 }
 
 export type TypeConstructor<t = unknown, $ = {}> = new (
