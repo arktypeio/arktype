@@ -298,30 +298,6 @@ export interface Type<
 	out t = unknown,
 	$ = {}
 > extends BaseType<t, $> {
-	keyof(): Type<keyof t, $>
-
-	get<k1 extends arkKeyOf<t>, r = instantiateType<getArkKey<t, k1>, $>>(
-		k1: k1 | type.cast<k1>
-	): r
-	get<
-		k1 extends arkKeyOf<t>,
-		k2 extends arkKeyOf<getArkKey<t, k1>>,
-		r = instantiateType<getArkKey<getArkKey<t, k1>, k2>, $>
-	>(
-		k1: k1 | type.cast<k1>,
-		k2: k2 | type.cast<k2>
-	): r
-	get<
-		k1 extends arkKeyOf<t>,
-		k2 extends arkKeyOf<getArkKey<t, k1>>,
-		k3 extends arkKeyOf<getArkKey<getArkKey<t, k1>, k2>>,
-		r = instantiateType<getArkKey<getArkKey<getArkKey<t, k1>, k2>, k3>, $>
-	>(
-		k1: k1 | type.cast<k1>,
-		k2: k2 | type.cast<k2>,
-		k3: k3 | type.cast<k3>
-	): r
-
 	constrain<
 		kind extends PrimitiveConstraintKind,
 		const def extends NodeSchema<kind>
@@ -329,34 +305,6 @@ export interface Type<
 		kind: conform<kind, constraintKindOf<this["inferIn"]>>,
 		def: def
 	): Type<constrain<t, kind, def>, $>
-
-	pick<const key extends arkKeyOf<t> = never>(
-		this: validateStructuralOperand<"pick", t>,
-		...keys: (key | type.cast<key>)[]
-	): Type<
-		{
-			[k in keyof t as Extract<toArkKey<t, k>, key>]: t[k]
-		},
-		$
-	>
-
-	omit<const key extends arkKeyOf<t> = never>(
-		this: validateStructuralOperand<"omit", t>,
-		...keys: (key | type.cast<key>)[]
-	): Type<
-		{
-			[k in keyof t as Exclude<toArkKey<t, k>, key>]: t[k]
-		},
-		$
-	>
-
-	required(
-		this: validateStructuralOperand<"required", t>
-	): Type<{ [k in keyof t]-?: t[k] }, $>
-
-	partial(
-		this: validateStructuralOperand<"partial", t>
-	): Type<{ [k in keyof t]?: t[k] }, $>
 
 	divisibleBy<const schema extends DivisorSchema>(
 		this: validateChainedConstraint<"divisor", t>,
@@ -434,6 +382,58 @@ export interface Type<
 	): Type<constrain<t, "before", exclusivizeRangeSchema<schema>>, $>
 }
 
+export declare namespace Type {
+	/** @ts-expect-error cast variance */
+	export interface Object<out t extends object = object, $ = {}>
+		extends Type<t, $> {
+		keyof(): Type<keyof t, $>
+
+		get<k1 extends arkKeyOf<t>, r = instantiateType<getArkKey<t, k1>, $>>(
+			k1: k1 | type.cast<k1>
+		): r
+		get<
+			k1 extends arkKeyOf<t>,
+			k2 extends arkKeyOf<getArkKey<t, k1>>,
+			r = instantiateType<getArkKey<getArkKey<t, k1>, k2>, $>
+		>(
+			k1: k1 | type.cast<k1>,
+			k2: k2 | type.cast<k2>
+		): r
+		get<
+			k1 extends arkKeyOf<t>,
+			k2 extends arkKeyOf<getArkKey<t, k1>>,
+			k3 extends arkKeyOf<getArkKey<getArkKey<t, k1>, k2>>,
+			r = instantiateType<getArkKey<getArkKey<getArkKey<t, k1>, k2>, k3>, $>
+		>(
+			k1: k1 | type.cast<k1>,
+			k2: k2 | type.cast<k2>,
+			k3: k3 | type.cast<k3>
+		): r
+
+		pick<const key extends arkKeyOf<t> = never>(
+			...keys: (key | type.cast<key>)[]
+		): Type<
+			{
+				[k in keyof t as Extract<toArkKey<t, k>, key>]: t[k]
+			},
+			$
+		>
+
+		omit<const key extends arkKeyOf<t> = never>(
+			...keys: (key | type.cast<key>)[]
+		): Type<
+			{
+				[k in keyof t as Exclude<toArkKey<t, k>, key>]: t[k]
+			},
+			$
+		>
+
+		required(): Type<{ [k in keyof t]-?: t[k] }, $>
+
+		partial(): Type<{ [k in keyof t]?: t[k] }, $>
+	}
+}
+
 export type TypeConstructor<t = unknown, $ = {}> = new (
 	def: unknown,
 	$: Scope<$>
@@ -459,4 +459,11 @@ export type inferAmbient<def> = inferTypeRoot<def, {}>
 
 export type instantiateType<t, $> =
 	// if any branch of t is a MorphAst, instantiate it as a MorphType
-	Extract<t, MorphAst> extends anyOrNever ? Type<t, $> : MorphType<t, $>
+	Extract<t, MorphAst> extends anyOrNever ?
+		// otherwise, all branches have to conform to a single basis type those methods to be available
+		[t] extends [string] ? Type<t, $>
+		: [t] extends [number] ? Type<t, $>
+		: [t] extends [Date] ? Type<t, $>
+		: [t] extends [object] ? Type.Object<t, $>
+		: Type<t, $>
+	:	MorphType<t, $>
