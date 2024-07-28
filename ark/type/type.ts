@@ -174,56 +174,51 @@ declare class _Type<t = unknown, $ = {}> extends Root<t, $> {
 	get in(): Data<this["tIn"], $>
 	get out(): Data<this["tOut"], $>
 
-	intersect<def>(
-		def: validateTypeRoot<def, $>
-	): Data<inferIntersection<t, inferTypeRoot<def, $>>> | Disjoint
+	intersect<
+		def,
+		r = instantiateType<inferIntersection<t, inferTypeRoot<def, $>>, $>
+	>(def: validateTypeRoot<def, $>): r | Disjoint
 
-	and<def>(
+	and<def, r = instantiateType<inferIntersection<t, inferTypeRoot<def, $>>, $>>(
 		def: validateTypeRoot<def, $>
-	): Data<inferIntersection<t, inferTypeRoot<def, $>>, $>
+	): r
 
-	or<def>(def: validateTypeRoot<def, $>): Data<t | inferTypeRoot<def, $>, $>
+	or<def, r = instantiateType<t | inferTypeRoot<def, $>, $>>(
+		def: validateTypeRoot<def, $>
+	): r
 
 	array(): Data<t[], $>
 
-	pipe<a extends Morph<this["infer"]>>(a: a): Data<inferPipes<t, [a]>, $>
-	pipe<a extends Morph<this["infer"]>, b extends Morph<inferMorphOut<a>>>(
-		a: a,
-		b: b
-	): Data<inferPipes<t, [a, b]>, $>
+	pipe<
+		a extends Morph<this["infer"]>,
+		r = instantiateType<inferPipes<t, [a]>, $>
+	>(a: a): r
 	pipe<
 		a extends Morph<this["infer"]>,
 		b extends Morph<inferMorphOut<a>>,
-		c extends Morph<inferMorphOut<b>>
-	>(a: a, b: b, c: c): Data<inferPipes<t, [a, b, c]>, $>
+		r = instantiateType<inferPipes<t, [a, b]>, $>
+	>(a: a, b: b): r
 	pipe<
 		a extends Morph<this["infer"]>,
 		b extends Morph<inferMorphOut<a>>,
 		c extends Morph<inferMorphOut<b>>,
-		d extends Morph<inferMorphOut<c>>
-	>(a: a, b: b, c: c, d: d): Data<inferPipes<t, [a, b, c, d]>, $>
+		r = instantiateType<inferPipes<t, [a, b, c]>, $>
+	>(a: a, b: b, c: c): r
 	pipe<
 		a extends Morph<this["infer"]>,
 		b extends Morph<inferMorphOut<a>>,
 		c extends Morph<inferMorphOut<b>>,
 		d extends Morph<inferMorphOut<c>>,
-		e extends Morph<inferMorphOut<d>>
-	>(a: a, b: b, c: c, d: d, e: e): Data<inferPipes<t, [a, b, c, d, e]>, $>
+		r = instantiateType<inferPipes<t, [a, b, c, d]>, $>
+	>(a: a, b: b, c: c, d: d): r
 	pipe<
 		a extends Morph<this["infer"]>,
 		b extends Morph<inferMorphOut<a>>,
 		c extends Morph<inferMorphOut<b>>,
 		d extends Morph<inferMorphOut<c>>,
 		e extends Morph<inferMorphOut<d>>,
-		f extends Morph<inferMorphOut<e>>
-	>(
-		a: a,
-		b: b,
-		c: c,
-		d: d,
-		e: e,
-		f: f
-	): Data<inferPipes<t, [a, b, c, d, e, f]>, $>
+		r = instantiateType<inferPipes<t, [a, b, c, d, e]>, $>
+	>(a: a, b: b, c: c, d: d, e: e): r
 	pipe<
 		a extends Morph<this["infer"]>,
 		b extends Morph<inferMorphOut<a>>,
@@ -231,16 +226,18 @@ declare class _Type<t = unknown, $ = {}> extends Root<t, $> {
 		d extends Morph<inferMorphOut<c>>,
 		e extends Morph<inferMorphOut<d>>,
 		f extends Morph<inferMorphOut<e>>,
-		g extends Morph<inferMorphOut<f>>
-	>(
-		a: a,
-		b: b,
-		c: c,
-		d: d,
-		e: e,
-		f: f,
-		g: g
-	): Data<inferPipes<t, [a, b, c, d, e, f, g]>, $>
+		r = instantiateType<inferPipes<t, [a, b, c, d, e, f]>, $>
+	>(a: a, b: b, c: c, d: d, e: e, f: f): r
+	pipe<
+		a extends Morph<this["infer"]>,
+		b extends Morph<inferMorphOut<a>>,
+		c extends Morph<inferMorphOut<b>>,
+		d extends Morph<inferMorphOut<c>>,
+		e extends Morph<inferMorphOut<d>>,
+		f extends Morph<inferMorphOut<e>>,
+		g extends Morph<inferMorphOut<f>>,
+		r = instantiateType<inferPipes<t, [a, b, c, d, e, f, g]>, $>
+	>(a: a, b: b, c: c, d: d, e: e, f: f, g: g): r
 
 	narrow<predicate extends Predicate<distillOut<t>>>(
 		predicate: predicate
