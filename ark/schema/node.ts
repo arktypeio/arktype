@@ -24,7 +24,7 @@ import type { NodeParseOptions } from "./parse.js"
 import type { MorphNode } from "./roots/morph.js"
 import type { BaseRoot } from "./roots/root.js"
 import type { UnitNode } from "./roots/unit.js"
-import type { InternalBaseScope } from "./scope.js"
+import type { BaseScope } from "./scope.js"
 import type { NodeCompiler } from "./shared/compile.js"
 import type {
 	BaseMeta,
@@ -59,7 +59,7 @@ export abstract class BaseNode<
 > extends Callable<(data: d["prerequisite"]) => unknown, attachmentsOf<d>> {
 	constructor(
 		public attachments: UnknownAttachments,
-		public $: InternalBaseScope
+		public $: BaseScope
 	) {
 		super(
 			// pipedFromCtx allows us internally to reuse TraversalContext
@@ -85,7 +85,7 @@ export abstract class BaseNode<
 		)
 	}
 
-	bindScope($: InternalBaseScope): this {
+	bindScope($: BaseScope): this {
 		if (this.$ === $) return this as never
 		return new (this.constructor as any)(this.attachments, $)
 	}
@@ -437,7 +437,7 @@ export const appendUniqueNodes = <node extends BaseNode>(
 
 export type DeepNodeTransformOptions = {
 	shouldTransform?: ShouldTransformFn
-	bindScope?: InternalBaseScope
+	bindScope?: BaseScope
 	prereduced?: boolean
 }
 

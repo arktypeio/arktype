@@ -38,11 +38,7 @@ import {
 	type RootSchema,
 	type reducibleKindOf
 } from "./kinds.js"
-import {
-	RootModule,
-	type PreparsedNodeResolution,
-	type SchemaModule
-} from "./module.js"
+import { RootModule, type PreparsedNodeResolution } from "./module.js"
 import type { BaseNode } from "./node.js"
 import {
 	parseNode,
@@ -55,12 +51,7 @@ import type { BaseRoot } from "./roots/root.js"
 import { CompiledFunction, NodeCompiler } from "./shared/compile.js"
 import type { NodeKind, RootKind } from "./shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "./shared/traversal.js"
-import {
-	arkKind,
-	hasArkKind,
-	isNode,
-	type internalImplementationOf
-} from "./shared/utils.js"
+import { arkKind, hasArkKind, isNode } from "./shared/utils.js"
 
 export type nodeResolutions<keywords> = { [k in keyof keywords]: BaseRoot }
 
@@ -82,7 +73,7 @@ export type resolveReference<reference extends resolvableReferenceIn<$>, $> =
 
 export type PrivateDeclaration<key extends string = string> = `#${key}`
 
-type toInternalScope<$> = InternalBaseScope<{
+type toInternalScope<$> = BaseScope<{
 	[k in keyof $]: $[k] extends { [arkKind]: infer kind } ?
 		[$[k]] extends [anyOrNever] ? BaseRoot
 		: kind extends "generic" ? GenericRoot
@@ -119,14 +110,13 @@ export type writeDuplicateAliasError<alias extends string> =
 
 export type AliasDefEntry = [name: string, defValue: unknown]
 
-const scopesById: Record<string, InternalBaseScope | undefined> = {}
+const scopesById: Record<string, BaseScope | undefined> = {}
 
 $ark.intrinsic = {} as never
 
-export abstract class InternalBaseScope<
+export abstract class BaseScope<
 	$ extends InternalResolutions = InternalResolutions
-> implements internalImplementationOf<BaseScope, "t">
-{
+> {
 	readonly config: ArkConfig
 	readonly resolvedConfig: ResolvedArkConfig
 	readonly id = `${Object.keys(scopesById).length}$`
@@ -503,55 +493,9 @@ export const schemaScope = <const aliases>(
 	config?: ArkConfig
 ): SchemaScope<instantiateAliases<aliases>> => new SchemaScope(aliases, config)
 
-export interface BaseScope<$ = {}> {
-	t: $
-	[arkKind]: "scope"
-	config: ArkConfig
-	references: readonly BaseNode[]
-	json: Json
-	exportedNames: array<exportedNameOf<$>>
-
-	/** The set of names defined at the root-level of the scope mapped to their
-	 * corresponding definitions.**/
-	aliases: Record<string, unknown>
-	internal: toInternalScope<$>
-
-	defineSchema<const def extends RootSchema>(schema: def): def
-
-	schema<const def extends RootSchema>(
-		schema: def,
-		opts?: NodeParseOptions
-	): BaseRoot
-
-	units<const branches extends array>(
-		values: branches,
-		opts?: NodeParseOptions
-	): BaseRoot
-
-	node<kinds extends NodeKind | array<RootKind>>(
-		kinds: kinds,
-		schema: NodeSchema<flattenListable<kinds>>,
-		opts?: NodeParseOptions
-	): Node<reducibleKindOf<flattenListable<kinds>>>
-
-	import<names extends exportedNameOf<$>[]>(
-		...names: names
-	): SchemaModule<show<destructuredImportContext<$, names>>>
-
-	export<names extends exportedNameOf<$>[]>(
-		...names: names
-	): SchemaModule<show<destructuredExportContext<$, names>>>
-
-	resolve<name extends exportedNameOf<$>>(
-		name: name
-	): $[name] extends PreparsedNodeResolution ? $[name] : BaseRoot
-
-	parseRoot(def: any, opts?: NodeParseOptions): BaseRoot
-}
-
-export class InternalSchemaScope<
+export class SchemaScope<
 	$ extends InternalResolutions = InternalResolutions
-> extends InternalBaseScope<$> {
+> extends BaseScope<$> {
 	parseRoot(def: unknown, opts: NodeParseOptions = {}): BaseRoot {
 		const node = this.schema(
 			def as never,
@@ -561,32 +505,13 @@ export class InternalSchemaScope<
 	}
 }
 
-// https://github.com/arktypeio/arktype/issues/1051
-/** @ts-ignore sometimes infinite? requires further investigation */
-export interface SchemaScope<$ = {}> extends BaseScope<$> {
-	defineRoot: this["defineSchema"]
-	parseRoot: this["schema"]
-	generic: GenericHktSchemaParser<$>
-}
-
-export const SchemaScope: new <$ = {}>(
-	...args: ConstructorParameters<typeof InternalBaseScope>
-) => SchemaScope<$> = InternalSchemaScope as never
-
 export const root: SchemaScope = new SchemaScope({})
 
 export const schema: SchemaScope["schema"] = root.schema
 export const node: SchemaScope["node"] = root.node
 export const defineRoot: SchemaScope["defineRoot"] = root.defineRoot
 export const units: SchemaScope["units"] = root.units
-export const generic: SchemaScope["generic"] = root.generic
-export const internalSchema: InternalBaseScope["schema"] = root.internal.schema
-export const internalNode: InternalBaseScope["node"] = root.internal.node
-export const defineInternalRoot: InternalBaseScope["defineRoot"] =
-	root.internal.defineRoot
-export const internalUnits: InternalBaseScope["units"] = root.internal.units
-export const internalGeneric: InternalBaseScope["generic"] =
-	root.internal.generic
+export const generic: SchemaScope["generic"] = root.gerinec
 
 export const parseAsSchema = (
 	def: unknown,
@@ -620,10 +545,7 @@ export type RootExportCache = Record<
 	BaseRoot | GenericRoot | InternalRootModule | undefined
 >
 
-const resolutionsOfModule = (
-	$: InternalBaseScope,
-	typeSet: RootExportCache
-) => {
+const resolutionsOfModule = ($: BaseScope, typeSet: RootExportCache) => {
 	const result: InternalResolutions = {}
 	for (const k in typeSet) {
 		const v = typeSet[k]

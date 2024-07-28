@@ -8,9 +8,8 @@ import {
 	type array,
 	type Json
 } from "@ark/util"
-import type { inferRoot } from "./inference.js"
 import type { BaseRoot } from "./roots/root.js"
-import type { BaseScope, InternalBaseScope } from "./scope.js"
+import type { BaseScope, BaseScope } from "./scope.js"
 import { arkKind } from "./shared/utils.js"
 
 export type GenericParamAst<
@@ -31,53 +30,12 @@ export const parseGeneric = (
 	$: BaseScope
 ): GenericRoot => new GenericRoot(paramDefs, bodyDef, $, $)
 
-type genericParamSchemaToAst<schema extends GenericParamDef, $> =
-	schema extends string ? GenericParamAst<schema>
-	: schema extends ConstrainedGenericParamDef ?
-		[schema[0], inferRoot<schema[1], $>]
-	:	never
-
-export type genericParamSchemasToAst<
-	schemas extends array<GenericParamDef>,
-	$
-> = [...{ [i in keyof schemas]: genericParamSchemaToAst<schemas[i], $> }]
-
-export type genericParamAstToDefs<asts extends array<GenericParamAst>> = {
-	[i in keyof asts]: GenericParamDef<asts[i][0]>
-}
-
 export type genericParamNames<params extends array<GenericParamAst>> = {
 	[i in keyof params]: params[i][0]
 }
 
 export type genericParamConstraints<params extends array<GenericParamAst>> = {
 	[i in keyof params]: params[i][1]
-}
-
-export type bindGenericNodeInstantiation<
-	params extends array<GenericParamAst>,
-	$,
-	args
-> = {
-	[i in keyof params & `${number}` as params[i][0]]: inferRoot<
-		args[i & keyof args],
-		$
-	>
-}
-
-// Comparing to Generic directly doesn't work well, so we compare to only its props
-export interface GenericProps<
-	params extends array<GenericParamAst> = array<GenericParamAst>,
-	bodyDef = any,
-	$ = any
-> {
-	[arkKind]: "generic"
-	paramsAst: params
-	params: instantiateParams<params>
-	names: genericParamNames<params>
-	constraints: instantiateConstraintsOf<params>
-	bodyDef: bodyDef
-	$: BaseScope<$>
 }
 
 export type GenericArgResolutions<
@@ -92,16 +50,17 @@ export class LazyGenericBody<
 > extends Callable<(args: argResolutions) => returns> {}
 
 export class GenericRoot<
-	params extends array<GenericParamAst> = array<GenericParamAst>
-> extends Callable<GenericRootInstantiator<params, bodyDef, $>> {
+	params extends array<GenericParamAst> = array<GenericParamAst>,
+	bodyDef = unknown
+> extends Callable<(...args: { [i in keyof params]: BaseRoot }) => BaseRoot> {
 	readonly [arkKind] = "generic"
 	declare readonly paramsAst: params
 
 	constructor(
-		public paramDefs: genericParamAstToDefs<params>,
+		public paramDefs: array<GenericParamDef>,
 		public bodyDef: bodyDef,
-		public $: BaseScope<$>,
-		public arg$: BaseScope<arg$>
+		public $: BaseScope,
+		public arg$: BaseScope
 	) {
 		super((...args: any[]) => {
 			const argNodes = flatMorph(this.names, (i, name) => {
@@ -130,11 +89,11 @@ export class GenericRoot<
 		this.validateBaseInstantiation()
 	}
 
-	defIsLazy(): this is GenericRoot<params, LazyGenericBody, $, arg$> {
+	defIsLazy(): this is GenericRoot<params, LazyGenericBody> {
 		return this.bodyDef instanceof LazyGenericBody
 	}
 
-	bindScope($: InternalBaseScope): this {
+	bindScope($: BaseScope): this {
 		if (this.arg$ === ($ as never)) return this
 		return new GenericRoot(
 			this.params as never,
@@ -155,12 +114,11 @@ export class GenericRoot<
 	}
 
 	@cached
-	get params(): instantiateParams<params> {
-		return this.paramDefs.map(
-			(param): GenericParam =>
-				typeof param === "string" ?
-					[param, $ark.intrinsic.unknown]
-				:	[param[0], this.$.parseRoot(param[1])]
+	get params(): { [i in keyof params]: [params[i][0], BaseRoot] } {
+		return this.paramDefs.map(param =>
+			typeof param === "string" ?
+				[param, $ark.intrinsic.unknown]
+			:	[param[0], this.$.parseRoot(param[1])]
 		) as never
 	}
 
@@ -170,7 +128,7 @@ export class GenericRoot<
 	}
 
 	@cached
-	get constraints(): instantiateConstraintsOf<params> {
+	get constraints(): { [i in keyof params]: BaseRoot } {
 		return this.params.map(e => e[1]) as never
 	}
 
@@ -193,17 +151,19 @@ export class GenericRoot<
 	}
 }
 
-export type GenericHktSchemaParser<$ = {}> = <
+export type GenericHktSchemaParser = <
 	const paramsDef extends array<GenericParamDef>
 >(
 	...params: paramsDef
 ) => <
 	hkt extends abstract new () => GenericHkt,
-	params extends Array<GenericParamAst> = genericParamSchemasToAst<paramsDef, $>
+	params extends array<GenericParamAst> = {
+		[i in keyof paramsDef]: GenericParamAst
+	}
 >(
 	instantiateDef: LazyGenericBody<GenericArgResolutions<params>>,
 	hkt: hkt
-) => GenericRoot<params, InstanceType<hkt>, $, $>
+) => GenericRoot<params, InstanceType<hkt>>
 
 export abstract class GenericHkt<
 	hkt extends (args: any) => unknown = (args: any) => unknown

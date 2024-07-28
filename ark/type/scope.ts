@@ -1,22 +1,28 @@
 import {
-	InternalBaseScope,
+	BaseScope,
 	hasArkKind,
 	parseGeneric,
 	type AliasDefEntry,
 	type ArkConfig,
+	type BaseNode,
 	type BaseRoot,
-	type BaseScope,
 	type GenericArgResolutions,
 	type GenericParamAst,
 	type GenericParamDef,
-	type GenericProps,
 	type InternalResolutions,
+	type Node,
+	type NodeKind,
+	type NodeParseOptions,
+	type NodeSchema,
 	type PreparsedNodeResolution,
 	type PrivateDeclaration,
+	type RootKind,
+	type RootSchema,
 	type arkKind,
 	type destructuredExportContext,
 	type destructuredImportContext,
 	type exportedNameOf,
+	type reducibleKindOf,
 	type writeDuplicateAliasError
 } from "@ark/schema"
 import {
@@ -27,8 +33,10 @@ import {
 	throwParseError,
 	type Dict,
 	type ErrorType,
+	type Json,
 	type anyOrNever,
 	type array,
+	type flattenListable,
 	type nominal,
 	type show
 } from "@ark/util"
@@ -118,7 +126,7 @@ type bootstrapAliases<def> = {
 		thunkReturn
 	:	Def<def[k]>
 } & {
-	[k in keyof def & GenericDeclaration as extractGenericName<k>]: GenericProps<
+	[k in keyof def & GenericDeclaration as extractGenericName<k>]: Generic<
 		parseValidGenericParams<extractGenericParameters<k>, bootstrapAliases<def>>,
 		def[k],
 		UnparsedScope
@@ -129,7 +137,7 @@ type inferBootstrapped<$> = show<{
 	[name in keyof $]: $[name] extends Def<infer def> ?
 		inferDefinition<def, $, {}>
 	: $[name] extends (
-		Generic<infer params, infer def> | GenericProps<infer params, infer def>
+		Generic<infer params, infer def> | Generic<infer params, infer def>
 	) ?
 		// add the scope in which the generic was defined here
 		Generic<params, def, $>
@@ -187,7 +195,7 @@ export const scope: ScopeParser = ((def: Dict, config: ArkConfig = {}) =>
 
 export class InternalScope<
 	$ extends InternalResolutions = InternalResolutions
-> extends InternalBaseScope<$> {
+> extends BaseScope<$> {
 	private parseCache: Record<string, StringParseResult> = {}
 
 	constructor(def: Record<string, unknown>, config?: ArkConfig) {
@@ -301,7 +309,37 @@ export class InternalScope<
 	}
 }
 
-export interface Scope<$ = {}> extends BaseScope<$> {
+export interface Scope<$ = {}> {
+	t: $
+	[arkKind]: "scope"
+	config: ArkConfig
+	references: readonly BaseNode[]
+	json: Json
+	exportedNames: array<exportedNameOf<$>>
+
+	/** The set of names defined at the root-level of the scope mapped to their
+	 * corresponding definitions.**/
+	aliases: Record<string, unknown>
+	internal: toInternalScope<$>
+
+	defineSchema<const def extends RootSchema>(schema: def): def
+
+	schema<const def extends RootSchema>(
+		schema: def,
+		opts?: NodeParseOptions
+	): BaseRoot
+
+	units<const branches extends array>(
+		values: branches,
+		opts?: NodeParseOptions
+	): BaseRoot
+
+	node<kinds extends NodeKind | array<RootKind>>(
+		kinds: kinds,
+		schema: NodeSchema<flattenListable<kinds>>,
+		opts?: NodeParseOptions
+	): Node<reducibleKindOf<flattenListable<kinds>>>
+
 	type: TypeParser<$>
 
 	match: MatchParser<$>

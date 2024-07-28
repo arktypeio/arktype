@@ -22,7 +22,7 @@ import type { NonNegativeIntegerString } from "../keywords/internal.js"
 import type { MutableInner } from "../kinds.js"
 import type { TypeIndexer, TypeKey } from "../node.js"
 import { typeOrTermExtends, type BaseRoot } from "../roots/root.js"
-import type { InternalBaseScope } from "../scope.js"
+import type { BaseScope } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -94,7 +94,7 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 			this.optional ?
 				[...this.required, ...this.optional]
 			:	this.required
-		:	this.optional ?? []
+		:	(this.optional ?? [])
 
 	propsByKey: Record<Key, PropNode | undefined> = flatMorph(
 		this.props,
@@ -591,7 +591,7 @@ export type NormalizedIndex = {
 export const normalizeIndex = (
 	signature: BaseRoot,
 	value: BaseRoot,
-	$: InternalBaseScope
+	$: BaseScope
 ): NormalizedIndex => {
 	const [enumerableBranches, nonEnumerableBranches] = spliterate(
 		signature.branches,

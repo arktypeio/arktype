@@ -13,7 +13,7 @@ import type { BaseConstraint } from "../constraint.js"
 import type { GenericRoot } from "../generic.js"
 import type { BaseNode } from "../node.js"
 import type { BaseRoot } from "../roots/root.js"
-import type { InternalBaseScope, InternalRootModule } from "../scope.js"
+import type { BaseScope, InternalRootModule } from "../scope.js"
 import type { ArkError } from "./errors.js"
 
 export const makeRootAndArrayPropertiesMutable = <o extends object>(
@@ -84,7 +84,7 @@ export const arkKind: unique symbol = Symbol("ArkTypeInternalKind")
 export interface ArkKinds {
 	constraint: BaseConstraint
 	root: BaseRoot
-	scope: InternalBaseScope
+	scope: BaseScope
 	generic: GenericRoot
 	module: InternalRootModule
 	error: ArkError

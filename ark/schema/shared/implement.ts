@@ -24,7 +24,7 @@ import type {
 	schemaKindOrRightOf,
 	schemaKindRightOf
 } from "../roots/root.js"
-import type { InternalBaseScope } from "../scope.js"
+import type { BaseScope } from "../scope.js"
 import type { StructureInner } from "../structure/structure.js"
 import { compileSerializedValue } from "./compile.js"
 import type {
@@ -145,7 +145,7 @@ export interface InternalIntersectionOptions {
 }
 
 export interface IntersectionContext extends InternalIntersectionOptions {
-	$: InternalBaseScope
+	$: BaseScope
 	invert: boolean
 }
 
@@ -285,7 +285,7 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	collapsibleKey?: keyof d["inner"]
 	reduce?: (
 		inner: d["inner"],
-		$: InternalBaseScope
+		$: BaseScope
 	) => Node<d["reducibleTo"]> | Disjoint | undefined
 }
 

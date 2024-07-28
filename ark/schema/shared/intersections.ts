@@ -16,7 +16,7 @@ import type {
 	Out
 } from "../roots/morph.js"
 import type { BaseRoot } from "../roots/root.js"
-import type { InternalBaseScope } from "../scope.js"
+import type { BaseScope } from "../scope.js"
 import { Disjoint } from "./disjoint.js"
 import type {
 	IntersectionContext,
@@ -95,7 +95,7 @@ type InternalNodeIntersection<ctx> = <l extends BaseNode, r extends BaseNode>(
 ) => l["kind"] | r["kind"] extends RootKind ? BaseRoot | Disjoint
 :	BaseNode | Disjoint | null
 
-export const intersectNodesRoot: InternalNodeIntersection<InternalBaseScope> = (
+export const intersectNodesRoot: InternalNodeIntersection<BaseScope> = (
 	l,
 	r,
 	$
@@ -106,11 +106,7 @@ export const intersectNodesRoot: InternalNodeIntersection<InternalBaseScope> = (
 		pipe: false
 	})
 
-export const pipeNodesRoot: InternalNodeIntersection<InternalBaseScope> = (
-	l,
-	r,
-	$
-) =>
+export const pipeNodesRoot: InternalNodeIntersection<BaseScope> = (l, r, $) =>
 	intersectNodes(l, r, {
 		$,
 		invert: false,
