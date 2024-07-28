@@ -37,6 +37,7 @@ import {
 import {
 	Callable,
 	type Constructor,
+	type anyOrNever,
 	type array,
 	type conform,
 	type unset
@@ -458,7 +459,7 @@ export type inferAmbient<def> = inferTypeRoot<def, {}>
 
 export type instantiateType<t, $> =
 	// if any branch of t is a MorphAst, instantiate it as a MorphType
-	MorphAst extends t ? MorphType<t, $> : Type<t, $>
+	Extract<t, MorphAst> extends anyOrNever ? Type<t, $> : MorphType<t, $>
 
 // [t] extends [anyOrNever] ? Data<t, $>
 // : [t] extends [MorphAst] ? Type<t, $>
