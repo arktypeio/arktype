@@ -76,6 +76,15 @@ export interface TypeParser<$ = {}> {
 		def: validateTypeRoot<def, $>
 	): r
 
+	<params extends ParameterString, const def>(
+		params: validateParameterString<params, $>,
+		def: validateDefinition<
+			def,
+			$,
+			baseGenericConstraints<parseValidGenericParams<params, $>>
+		>
+	): Generic<parseValidGenericParams<params, $>, def, $>
+
 	// Spread version of a tuple expression
 	<
 		const zero,
@@ -97,15 +106,6 @@ export interface TypeParser<$ = {}> {
 			: [validateTypeRoot<rest[0], $>]
 		:	[]
 	): r
-
-	<params extends ParameterString, const def>(
-		params: validateParameterString<params, $>,
-		def: validateDefinition<
-			def,
-			$,
-			baseGenericConstraints<parseValidGenericParams<params, $>>
-		>
-	): Generic<parseValidGenericParams<params, $>, def, $>
 
 	raw(def: unknown): BaseType<any, $>
 	errors: typeof ArkErrors

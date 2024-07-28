@@ -32,6 +32,14 @@ contextualize(() => {
 			attest(schrodingersBox.json).equals(expected.json)
 		})
 
+		it("completions", () => {
+			// @ts-expect-error
+			attest(() => type("<foobar>", { a: "foob", b: "bool" })).completions({
+				foob: ["foobar"],
+				bool: ["boolean"]
+			})
+		})
+
 		it("binary", () => {
 			const either = type("<first, second>", "first|second")
 			const schrodingersBox = either(
