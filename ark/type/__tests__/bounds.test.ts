@@ -53,7 +53,7 @@ contextualize(() => {
 		it("==", () => {
 			const t = type("number==3211993")
 			attest<3211993>(t.infer)
-			attest(t).type.toString.snap("Type<3211993, {}>")
+			attest(t).type.toString.snap("Type.Number<3211993, {}>")
 			const expected = internalSchema({ unit: 3211993 })
 			attest(t.json).equals(expected.json)
 		})

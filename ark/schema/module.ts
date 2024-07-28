@@ -1,5 +1,5 @@
 import { DynamicBase, type anyOrNever } from "@ark/util"
-import type { SchemaRoot } from "./roots/root.js"
+import type { BaseRoot } from "./roots/root.js"
 import { arkKind } from "./shared/utils.js"
 
 export type PreparsedNodeResolution = {
@@ -18,9 +18,9 @@ export class RootModule<
 type exportSchemaScope<$> = {
 	[k in keyof $]: $[k] extends PreparsedNodeResolution ?
 		[$[k]] extends [anyOrNever] ?
-			SchemaRoot<$[k], $>
+			BaseRoot
 		:	$[k]
-	:	SchemaRoot<$[k], $>
+	:	BaseRoot
 }
 
 export const SchemaModule: new <$ = {}>(

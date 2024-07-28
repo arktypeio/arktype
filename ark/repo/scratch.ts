@@ -1,10 +1,11 @@
-import { ark, type } from "arktype"
+import { type } from "arktype"
 
-const t = type({
-	foo: "string | number",
-	bar: ["number | string | boolean"]
+const group = type({
+	name: "string",
+	userIds: "(string | number)[]"
 })
 
-const o = type("string")
-
-ark.Record
+export const out = group({
+	name: "TS Validators",
+	userIds: ["ssalbdivad", "colinhacks", "FabianHiller"]
+})

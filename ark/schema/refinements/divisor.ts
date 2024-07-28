@@ -1,9 +1,9 @@
-import { $ark } from "@ark/util"
+import { $ark, type typeToString } from "@ark/util"
 import {
 	InternalPrimitiveConstraint,
 	writeInvalidOperandMessage
 } from "../constraint.js"
-import type { BaseRoot, SchemaRoot } from "../roots/root.js"
+import type { BaseRoot } from "../roots/root.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import {
 	implementNode,
@@ -60,13 +60,13 @@ export class DivisorNode extends InternalPrimitiveConstraint<DivisorDeclaration>
 	readonly expression: string = `% ${this.rule}`
 }
 
-export const writeIndivisibleMessage = <node extends SchemaRoot>(
-	t: node
-): writeIndivisibleMessage<node> =>
+export const writeIndivisibleMessage = (t: BaseRoot) =>
 	writeInvalidOperandMessage("divisor", $ark.intrinsic.number as never, t)
 
-export type writeIndivisibleMessage<node extends SchemaRoot> =
-	writeInvalidOperandMessage<"divisor", node>
+export type writeIndivisibleMessage<actual> = writeInvalidOperandMessage<
+	"divisor",
+	typeToString<actual>
+>
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
 const greatestCommonDivisor = (l: number, r: number) => {

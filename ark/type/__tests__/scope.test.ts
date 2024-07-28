@@ -234,8 +234,8 @@ contextualize(() => {
 				b: { a: "a|true" }
 			}).export()
 			attest(types).type.toString.snap(`Module<{
-	b: { a: true | { b: false | "..." } }
 	a: { b: false | { a: true | "..." } }
+	b: { a: true | { b: false | "..." } }
 }>`)
 		})
 
@@ -245,8 +245,8 @@ contextualize(() => {
 				b: { a: "a&b" }
 			}).export()
 			attest(types).type.toString.snap(`Module<{
-	b: { a: { b: { a: "..."; b: "..." }; a: "..." } }
 	a: { b: { a: { b: "..."; a: "..." }; b: "..." } }
+	b: { a: { b: { a: "..."; b: "..." }; a: "..." } }
 }>`)
 		})
 

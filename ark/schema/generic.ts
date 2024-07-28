@@ -9,7 +9,7 @@ import {
 	type Json
 } from "@ark/util"
 import type { inferRoot } from "./inference.js"
-import type { SchemaRoot, UnknownRoot } from "./roots/root.js"
+import type { BaseRoot } from "./roots/root.js"
 import type { BaseScope, InternalBaseScope } from "./scope.js"
 import { arkKind } from "./shared/utils.js"
 
@@ -54,33 +54,6 @@ export type genericParamConstraints<params extends array<GenericParamAst>> = {
 	[i in keyof params]: params[i][1]
 }
 
-type instantiateParams<params extends array<GenericParamAst>> = {
-	[i in keyof params]: params[i] extends (
-		GenericParamAst<infer name, infer constraint>
-	) ?
-		GenericParam<name, constraint>
-	:	never
-}
-
-export type GenericRootInstantiator<
-	params extends array<GenericParamAst>,
-	def,
-	$
-> = <args extends instantiateConstraintsOf<params>>(
-	...args: args
-) => SchemaRoot<
-	inferRoot<def, $ & bindGenericNodeInstantiation<params, $, args>>
->
-
-type instantiateConstraintsOf<params extends array<GenericParamAst>> = {
-	[i in keyof params]: SchemaRoot<params[i][1]>
-}
-
-export type GenericParam<
-	name extends string = string,
-	constraint = unknown
-> = readonly [name: name, constraint: UnknownRoot<constraint>]
-
 export type bindGenericNodeInstantiation<
 	params extends array<GenericParamAst>,
 	$,
@@ -110,9 +83,7 @@ export interface GenericProps<
 export type GenericArgResolutions<
 	params extends array<GenericParamAst> = array<GenericParamAst>
 > = {
-	[i in keyof params as params[i & `${number}`][0]]: SchemaRoot<
-		params[i & `${number}`][1]
-	>
+	[i in keyof params as params[i & `${number}`][0]]: BaseRoot
 }
 
 export class LazyGenericBody<
@@ -207,7 +178,7 @@ export class GenericRoot<
 	}
 
 	@cached
-	get baseInstantiation(): SchemaRoot {
+	get baseInstantiation(): BaseRoot {
 		return this(...(this.constraints as never)) as never
 	}
 

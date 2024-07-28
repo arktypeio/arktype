@@ -298,6 +298,9 @@ declare abstract class _Type<t = unknown, $ = {}> extends Root<t, $> {
 	/** @deprecated */
 	prototype: Function["prototype"]
 
+	/** @deprecated */
+	arguments: Function["arguments"]
+
 	// I don't know why Symbol is suggested as a key of a function instance,
 	// but applying the same method to that
 	/** @deprecated */

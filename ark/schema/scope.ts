@@ -51,7 +51,7 @@ import {
 	type NodeParseOptions
 } from "./parse.js"
 import { normalizeAliasSchema, type AliasNode } from "./roots/alias.js"
-import type { BaseRoot, SchemaRoot } from "./roots/root.js"
+import type { BaseRoot } from "./roots/root.js"
 import { CompiledFunction, NodeCompiler } from "./shared/compile.js"
 import type { NodeKind, RootKind } from "./shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "./shared/traversal.js"
@@ -521,12 +521,12 @@ export interface BaseScope<$ = {}> {
 	schema<const def extends RootSchema>(
 		schema: def,
 		opts?: NodeParseOptions
-	): SchemaRoot<inferRoot<def, $>, $>
+	): BaseRoot
 
 	units<const branches extends array>(
 		values: branches,
 		opts?: NodeParseOptions
-	): SchemaRoot<branches[number], $>
+	): BaseRoot
 
 	node<kinds extends NodeKind | array<RootKind>>(
 		kinds: kinds,
@@ -544,9 +544,9 @@ export interface BaseScope<$ = {}> {
 
 	resolve<name extends exportedNameOf<$>>(
 		name: name
-	): $[name] extends PreparsedNodeResolution ? $[name] : SchemaRoot<$[name], $>
+	): $[name] extends PreparsedNodeResolution ? $[name] : BaseRoot
 
-	parseRoot(def: any, opts?: NodeParseOptions): SchemaRoot
+	parseRoot(def: any, opts?: NodeParseOptions): BaseRoot
 }
 
 export class InternalSchemaScope<
@@ -588,10 +588,10 @@ export const internalUnits: InternalBaseScope["units"] = root.internal.units
 export const internalGeneric: InternalBaseScope["generic"] =
 	root.internal.generic
 
-export const parseAsSchema = <castTo = unknown>(
+export const parseAsSchema = (
 	def: unknown,
 	opts?: NodeParseOptions
-): SchemaRoot<castTo, {}> | ParseError => {
+): BaseRoot | ParseError => {
 	try {
 		return schema(def as RootSchema, opts) as never
 	} catch (e) {

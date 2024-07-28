@@ -25,7 +25,7 @@ import type {
 	IntersectionInner,
 	MutableIntersectionInner
 } from "./roots/intersection.js"
-import type { BaseRoot, SchemaRoot, UnknownRoot } from "./roots/root.js"
+import type { BaseRoot } from "./roots/root.js"
 import type { NodeCompiler } from "./shared/compile.js"
 import type { BaseNodeDeclaration } from "./shared/declare.js"
 import { Disjoint } from "./shared/disjoint.js"
@@ -238,8 +238,8 @@ export const throwInvalidOperandError = (
 
 export const writeInvalidOperandMessage = <
 	kind extends ConstraintKind,
-	expected extends SchemaRoot,
-	actual extends SchemaRoot
+	expected extends BaseRoot,
+	actual extends BaseRoot
 >(
 	kind: kind,
 	expected: expected,
@@ -251,13 +251,13 @@ export const writeInvalidOperandMessage = <
 
 export type writeInvalidOperandMessage<
 	kind extends ConstraintKind,
-	actual extends SchemaRoot
+	actual
 > = `${Capitalize<kind>} operand must be ${describe<
 	Prerequisite<kind>
->} (was ${describe<Exclude<actual["infer"], Prerequisite<kind>>>})`
+>} (was ${describe<Exclude<actual, Prerequisite<kind>>>})`
 
 export interface ConstraintAttachments {
-	impliedBasis: UnknownRoot | null
+	impliedBasis: BaseRoot | null
 	impliedSiblings?: array<BaseConstraint> | null
 }
 
