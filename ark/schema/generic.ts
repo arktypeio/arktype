@@ -9,7 +9,7 @@ import {
 	type Json
 } from "@ark/util"
 import type { BaseRoot } from "./roots/root.js"
-import type { BaseScope, BaseScope } from "./scope.js"
+import type { BaseScope } from "./scope.js"
 import { arkKind } from "./shared/utils.js"
 
 export type GenericParamAst<

@@ -23,6 +23,7 @@ import {
 	type destructuredImportContext,
 	type exportedNameOf,
 	type reducibleKindOf,
+	type toInternalScope,
 	type writeDuplicateAliasError
 } from "@ark/schema"
 import {

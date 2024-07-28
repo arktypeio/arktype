@@ -11,9 +11,10 @@ import {
 } from "@ark/util"
 import type { BaseConstraint } from "../constraint.js"
 import type { GenericRoot } from "../generic.js"
+import type { RootModule } from "../module.js"
 import type { BaseNode } from "../node.js"
 import type { BaseRoot } from "../roots/root.js"
-import type { BaseScope, InternalRootModule } from "../scope.js"
+import type { BaseScope } from "../scope.js"
 import type { ArkError } from "./errors.js"
 
 export const makeRootAndArrayPropertiesMutable = <o extends object>(
@@ -86,7 +87,7 @@ export interface ArkKinds {
 	root: BaseRoot
 	scope: BaseScope
 	generic: GenericRoot
-	module: InternalRootModule
+	module: RootModule
 	error: ArkError
 }
 
@@ -104,3 +105,7 @@ export const isNode = (value: unknown): value is BaseNode =>
 // but it doesn't play well with typescript-eslint: https://github.com/typescript-eslint/typescript-eslint/issues/4608
 // easiest solution seems to be just having it declared as a value so it doesn't break when we import at runtime
 export const inferred: unique symbol = Symbol("inferred")
+
+export type InferredRoot<t = unknown> = {
+	[inferred]?: t
+}

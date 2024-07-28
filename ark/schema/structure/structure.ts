@@ -17,7 +17,6 @@ import {
 	flattenConstraints,
 	intersectConstraints
 } from "../constraint.js"
-import type { InferredRoot } from "../inference.js"
 import type { NonNegativeIntegerString } from "../keywords/internal.js"
 import type { MutableInner } from "../kinds.js"
 import type { TypeIndexer, TypeKey } from "../node.js"
@@ -44,7 +43,8 @@ import type {
 } from "../shared/traversal.js"
 import {
 	hasArkKind,
-	makeRootAndArrayPropertiesMutable
+	makeRootAndArrayPropertiesMutable,
+	type InferredRoot
 } from "../shared/utils.js"
 import type { IndexNode, IndexSchema } from "./indexed.js"
 import type { OptionalNode, OptionalSchema } from "./optional.js"

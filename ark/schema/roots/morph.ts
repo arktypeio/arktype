@@ -7,7 +7,6 @@ import {
 	type listable
 } from "@ark/util"
 import type { distillConstrainableIn } from "../ast.js"
-import type { InferredRoot } from "../inference.js"
 import type { Node, NodeSchema } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
@@ -24,7 +23,7 @@ import type {
 	TraverseAllows,
 	TraverseApply
 } from "../shared/traversal.js"
-import { hasArkKind } from "../shared/utils.js"
+import { hasArkKind, type InferredRoot } from "../shared/utils.js"
 import { BaseRoot, type schemaKindRightOf } from "./root.js"
 import { defineRightwardIntersections } from "./utils.js"
 

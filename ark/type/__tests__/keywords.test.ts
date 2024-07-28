@@ -1,7 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import {
-	internalSchema,
 	keywordNodes,
+	schema,
 	writeIndivisibleMessage,
 	writeInvalidKeysMessage,
 	writeNonStructuralOperandMessage,
@@ -56,7 +56,7 @@ contextualize(() => {
 		it("boolean", () => {
 			const boolean = type("boolean")
 			attest<boolean>(boolean.infer)
-			const expected = internalSchema([{ unit: false }, { unit: true }])
+			const expected = schema([{ unit: false }, { unit: true }])
 			// should be simplified to simple checks for true and false literals
 			attest(boolean.json).equals(expected.json)
 		})
@@ -64,7 +64,7 @@ contextualize(() => {
 		it("never", () => {
 			const never = type("never")
 			attest<never>(never.infer)
-			const expected = internalSchema([])
+			const expected = schema([])
 			// should be equivalent to a zero-branch union
 			attest(never.json).equals(expected.json)
 		})
@@ -76,7 +76,7 @@ contextualize(() => {
 		})
 
 		it("unknown", () => {
-			const expected = internalSchema({})
+			const expected = schema({})
 			// should be equivalent to an unconstrained predicate
 			attest(type("unknown").json).equals(expected.json)
 		})

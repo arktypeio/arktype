@@ -1,5 +1,6 @@
 import { DynamicBase, type anyOrNever } from "@ark/util"
 import type { BaseRoot } from "./roots/root.js"
+import type { InternalResolution, InternalResolutions } from "./scope.js"
 import { arkKind } from "./shared/utils.js"
 
 export type PreparsedNodeResolution = {
@@ -7,7 +8,7 @@ export type PreparsedNodeResolution = {
 }
 
 export class RootModule<
-	exports extends object = {}
+	exports extends InternalResolutions = InternalResolutions
 > extends DynamicBase<exports> {
 	// ensure `[arkKind]` is non-enumerable so it doesn't get spread on import/export
 	get [arkKind](): "module" {
@@ -16,7 +17,7 @@ export class RootModule<
 }
 
 type exportSchemaScope<$> = {
-	[k in keyof $]: $[k] extends PreparsedNodeResolution ?
+	[k in keyof $]: $[k] extends InternalResolution ?
 		[$[k]] extends [anyOrNever] ?
 			BaseRoot
 		:	$[k]

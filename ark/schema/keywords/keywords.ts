@@ -1,4 +1,4 @@
-import type { RootModule, SchemaModule } from "../module.js"
+import type { SchemaModule } from "../module.js"
 import { schemaScope, type BaseScope } from "../scope.js"
 // the import ordering here is important so builtin keywords can be resolved
 // and used to bootstrap nodes with constraints
@@ -45,7 +45,7 @@ export interface Ark
 		tsGenericsExports,
 		arkGenericsExports,
 		internalExports {
-	TypedArray: RootModule<typedArrayExports>
-	parse: RootModule<parsingExports>
-	format: RootModule<formattingExports>
+	TypedArray: SchemaModule<typedArrayExports>
+	parse: SchemaModule<parsingExports>
+	format: SchemaModule<formattingExports>
 }

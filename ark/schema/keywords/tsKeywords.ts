@@ -1,4 +1,4 @@
-import type { InferredRoot } from "../inference.js"
+import type { RootSchema } from "../kinds.js"
 import type { SchemaModule } from "../module.js"
 import { schemaScope } from "../scope.js"
 
@@ -22,10 +22,10 @@ export type tsKeywords = SchemaModule<tsKeywordExports>
 
 export const tsKeywords: tsKeywords = schemaScope(
 	{
-		any: {} as InferredRoot<any>,
+		any: {},
 		bigint: "bigint",
 		// since we know this won't be reduced, it can be safely cast to a union
-		boolean: [{ unit: false }, { unit: true }] as InferredRoot<boolean>,
+		boolean: [{ unit: false }, { unit: true }],
 		false: { unit: false },
 		never: [],
 		null: { unit: null },
@@ -38,6 +38,6 @@ export const tsKeywords: tsKeywords = schemaScope(
 		undefined: { unit: undefined }
 		// void is not included because it doesn't have a well-defined meaning
 		// as a standalone type
-	},
+	} satisfies Record<keyof tsKeywordExports, RootSchema>,
 	{ prereducedAliases: true, intrinsic: true }
 ).export()
