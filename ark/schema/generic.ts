@@ -55,6 +55,7 @@ export type GenericProps<
 	[arkKind]: "generic"
 	paramsAst: params
 	bodyDef: bodyDef
+	names: genericParamNames<params>
 	$: $
 	arg$: arg$
 }

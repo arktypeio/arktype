@@ -1,5 +1,4 @@
 import type {
-	ConstrainedGenericParamDef,
 	GenericHkt,
 	GenericParamAst,
 	GenericParamDef,
@@ -380,8 +379,8 @@ type _parseOptionalConstraint<
 
 type genericParamDefToAst<schema extends GenericParamDef, $> =
 	schema extends string ? [schema, unknown]
-	: schema extends ConstrainedGenericParamDef ?
-		[schema[0], inferTypeRoot<schema[1], $>]
+	: schema extends readonly [infer name, infer def] ?
+		[name, inferTypeRoot<def, $>]
 	:	never
 
 export type genericParamDefsToAst<defs extends array<GenericParamDef>, $> = [

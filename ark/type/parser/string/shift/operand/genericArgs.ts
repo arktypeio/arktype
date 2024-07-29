@@ -80,7 +80,7 @@ type _parseGenericArgs<
 			}
 		) ?
 			finalArgState["finalizer"] extends ">" ?
-				nextAsts["length"] extends g["params"]["length"] ?
+				nextAsts["length"] extends g["paramsAst"]["length"] ?
 					ParsedArgs<nextAsts, nextUnscanned>
 				:	state.error<
 						writeInvalidGenericArgCountMessage<name, g["names"], nextDefs>
