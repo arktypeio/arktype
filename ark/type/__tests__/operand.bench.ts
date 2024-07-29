@@ -1,7 +1,7 @@
 import { bench } from "@ark/attest"
 import { type } from "arktype"
 
-type("never")
+bench.baseline(() => type("never"))
 
 bench("single-quoted", () => {
 	const _ = type("'nineteen characters'")

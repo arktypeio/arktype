@@ -2,7 +2,7 @@ import { bench } from "@ark/attest"
 import { scope, type } from "arktype"
 import { cyclic10, cyclic100, cyclic500 } from "./generated/cyclic.js"
 
-type("never")
+bench.baseline(() => type("never"))
 
 bench("cyclic 10 intersection", () => {
 	const s = scope(cyclic10).type("user&user2").infer

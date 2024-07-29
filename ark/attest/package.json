@@ -1,6 +1,6 @@
 {
 	"name": "@ark/attest",
-	"version": "0.10.1",
+	"version": "0.10.2",
 	"author": {
 		"name": "David Blass",
 		"email": "david@arktype.io",
@@ -37,6 +37,9 @@
 		"@typescript/analyze-trace": "0.10.1",
 		"prettier": "3.3.3",
 		"@prettier/sync": "0.5.2"
+	},
+	"devDependencies": {
+		"typescript": "catalog:"
 	},
 	"peerDependencies": {
 		"typescript": "*"

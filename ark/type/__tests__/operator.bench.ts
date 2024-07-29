@@ -1,7 +1,7 @@
 import { bench } from "@ark/attest"
 import { type } from "arktype"
 
-type("never")
+bench.baseline(() => type("never"))
 
 bench("array-string", () => {
 	const _ = type("number[]")
