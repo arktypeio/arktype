@@ -1,14 +1,14 @@
 import { attest, contextualize } from "@ark/attest"
-import { schema } from "@ark/schema"
+import { rootNode } from "@ark/schema"
 
 contextualize(() => {
 	it("normalizes refinement order", () => {
-		const l = schema({
+		const l = rootNode({
 			domain: "number",
 			divisor: 3,
 			min: 5
 		})
-		const r = schema({
+		const r = rootNode({
 			domain: "number",
 			min: 5,
 			divisor: 3
@@ -17,7 +17,7 @@ contextualize(() => {
 	})
 
 	it("multiple constraints", () => {
-		const n = schema({
+		const n = rootNode({
 			domain: "number",
 			divisor: 3,
 			min: 5

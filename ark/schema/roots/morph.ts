@@ -94,7 +94,7 @@ export const morphImplementation: nodeImplementationOf<MorphDeclaration> =
 
 				// in case from is a union, we need to distribute the branches
 				// to can be a union as any schema is allowed
-				return ctx.$.schema(
+				return ctx.$.rootNode(
 					inTersection.branches.map(inBranch =>
 						ctx.$.node("morph", {
 							morphs: l.morphs,

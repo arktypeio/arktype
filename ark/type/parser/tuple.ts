@@ -77,7 +77,7 @@ export const parseTupleLiteral = (def: array, ctx: ParseContext): BaseRoot => {
 			)
 		}
 	}
-	return ctx.$.internal.schema(
+	return ctx.$.internal.rootNode(
 		sequences.map(
 			sequence =>
 				({

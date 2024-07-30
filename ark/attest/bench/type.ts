@@ -12,7 +12,6 @@ import {
 	getCallExpressionsByName,
 	getInstantiationsContributedByNode
 } from "../cache/utils.js"
-import type { TypeRelationship } from "../cache/writeAssertionCache.js"
 import { getConfig } from "../config.js"
 import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.js"
 import type { BenchContext } from "./bench.js"
@@ -64,14 +63,6 @@ export const getContributedInstantiations = (ctx: BenchContext): number => {
 		throw new Error("Unable to retrieve contents of the call expression")
 
 	return getInstantiationsContributedByNode(file, body)
-}
-
-export type ArgAssertionData = {
-	type: string
-	relationships: {
-		args: TypeRelationship[]
-		typeArgs: TypeRelationship[]
-	}
 }
 
 export const instantiationDataHandler = (

@@ -166,11 +166,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 	}
 
 	@bound
-	schema(def: RootSchema, opts?: NodeParseOptions): BaseRoot {
-		return this.node(schemaKindOf(def), def, opts)
-	}
-
-	@bound
 	defineRoot(def: RootSchema): RootSchema {
 		return this.defineSchema(def)
 	}
@@ -214,6 +209,11 @@ export abstract class BaseScope<$ extends {} = {}> {
 		)
 		if (!this.resolved) this.lazyResolutions.push(node)
 		return node
+	}
+
+	@bound
+	rootNode(def: RootSchema, opts?: NodeParseOptions): BaseRoot {
+		return this.node(schemaKindOf(def), def, opts)
 	}
 
 	@bound
@@ -490,7 +490,7 @@ export class SchemaScope<
 	}
 
 	parseRoot(schema: RootSchema, opts: NodeParseOptions = {}): BaseRoot {
-		const node = this.schema(
+		const node = this.rootNode(
 			schema as never,
 			this.finalizeRootArgs(opts, () => node)
 		)
@@ -498,19 +498,19 @@ export class SchemaScope<
 	}
 }
 
-export const root: SchemaScope = new SchemaScope({})
+export const $empty: SchemaScope = new SchemaScope({})
 
-export const schema: SchemaScope["schema"] = root.schema
-export const node: SchemaScope["node"] = root.node
-export const defineSchema: SchemaScope["defineSchema"] = root.defineSchema
-export const genericRoot: SchemaScope["generic"] = root.generic
+export const rootNode: SchemaScope["rootNode"] = $empty.rootNode
+export const node: SchemaScope["node"] = $empty.node
+export const defineSchema: SchemaScope["defineSchema"] = $empty.defineSchema
+export const genericNode: SchemaScope["generic"] = $empty.generic
 
 export const parseAsSchema = (
 	def: unknown,
 	opts?: NodeParseOptions
 ): BaseRoot | ParseError => {
 	try {
-		return schema(def as RootSchema, opts) as never
+		return rootNode(def as RootSchema, opts) as never
 	} catch (e) {
 		if (e instanceof ParseError) return e
 		throw e

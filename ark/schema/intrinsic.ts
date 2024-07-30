@@ -1,5 +1,5 @@
 import { $ark } from "@ark/util"
-import { root, schemaScope } from "./scope.js"
+import { node, schemaScope } from "./scope.js"
 import { arrayIndexSource } from "./structure/shared.js"
 
 const intrinsicBases = schemaScope(
@@ -24,7 +24,7 @@ const intrinsicBases = schemaScope(
 ).export()
 
 // reduce union of all possible values reduces to unknown
-root.node(
+node(
 	"union",
 	{
 		branches: [
@@ -39,7 +39,7 @@ root.node(
 			{ unit: undefined }
 		]
 	},
-	{ reduceTo: root.node("intersection", {}, { prereduced: true }) }
+	{ reduceTo: node("intersection", {}, { prereduced: true }) }
 )
 
 export const intrinsic = schemaScope(

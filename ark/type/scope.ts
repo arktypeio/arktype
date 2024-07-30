@@ -325,15 +325,7 @@ export interface Scope<$ = {}> {
 
 	defineSchema<const def extends RootSchema>(schema: def): def
 
-	schema<const def extends RootSchema>(
-		schema: def,
-		opts?: NodeParseOptions
-	): BaseRoot
-
-	units<const branches extends array>(
-		values: branches,
-		opts?: NodeParseOptions
-	): BaseRoot
+	schema(schema: RootSchema, opts?: NodeParseOptions): BaseRoot
 
 	node<kinds extends NodeKind | array<RootKind>>(
 		kinds: kinds,
@@ -371,11 +363,6 @@ export const writeShallowCycleErrorMessage = (
 	seen: string[]
 ): string =>
 	`Alias '${name}' has a shallow resolution cycle: ${[...seen, name].join(":")}`
-
-export type ParsedScopeKey = {
-	name: string
-	params: array<GenericParamDef>
-}
 
 export type parseScopeKey<k, def> =
 	// trying to infer against GenericDeclaration here directly also fails as of TS 5.5

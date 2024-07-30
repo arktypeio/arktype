@@ -103,7 +103,7 @@ export abstract class BaseRoot<
 	or(r: unknown): BaseRoot {
 		const rNode = this.$.parseRoot(r)
 		const branches = [...this.branches, ...(rNode.branches as any)]
-		return this.$.schema(branches) as never
+		return this.$.rootNode(branches) as never
 	}
 
 	assert(data: unknown): unknown {
@@ -131,7 +131,7 @@ export abstract class BaseRoot<
 		operation extends "pick" | "omit" | "required" | "partial"
 	>(operation: operation, args: Parameters<BaseRoot[operation]>): BaseRoot {
 		if (this.hasKind("union")) {
-			return this.$.schema(
+			return this.$.rootNode(
 				this.branches.map(branch =>
 					branch.applyStructuralOperation(operation, args)
 				)
@@ -197,20 +197,20 @@ export abstract class BaseRoot<
 
 	extract(r: unknown): BaseRoot {
 		const rNode = this.$.parseRoot(r)
-		return this.$.schema(
+		return this.$.rootNode(
 			this.branches.filter(branch => branch.extends(rNode))
 		) as never
 	}
 
 	exclude(r: BaseRoot): BaseRoot {
 		const rNode = this.$.parseRoot(r)
-		return this.$.schema(
+		return this.$.rootNode(
 			this.branches.filter(branch => !branch.extends(rNode))
 		) as never
 	}
 
 	array(): BaseRoot {
-		return this.$.schema(
+		return this.$.rootNode(
 			{
 				proto: Array,
 				sequence: this

@@ -181,7 +181,7 @@ export const unionImplementation: nodeImplementationOf<UnionDeclaration> =
 
 				if (resultBranches instanceof Disjoint) return resultBranches
 
-				return ctx.$.schema(
+				return ctx.$.rootNode(
 					l.ordered || r.ordered ?
 						{
 							branches: resultBranches,
@@ -196,7 +196,7 @@ export const unionImplementation: nodeImplementationOf<UnionDeclaration> =
 
 				if (branches.length === 1) return branches[0]
 
-				return ctx.$.schema(
+				return ctx.$.rootNode(
 					l.ordered ? { branches, ordered: true } : { branches }
 				)
 			})

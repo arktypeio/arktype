@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import {
-	schema,
+	rootNode,
 	writeUnboundableMessage,
 	writeUnresolvableMessage
 } from "@ark/schema"
@@ -430,7 +430,7 @@ b.c.c must be an object (was missing)`)
 			foo: {
 				bar: "string"
 			},
-			string: schema({ domain: "string" }).constrain("minLength", 1)
+			string: rootNode({ domain: "string" }).constrain("minLength", 1)
 		}).export()
 		attest<
 			Module<{

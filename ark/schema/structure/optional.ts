@@ -36,7 +36,7 @@ export const optionalImplementation: nodeImplementationOf<OptionalDeclaration> =
 			key: {},
 			value: {
 				child: true,
-				parse: (schema, ctx) => ctx.$.schema(schema)
+				parse: (schema, ctx) => ctx.$.rootNode(schema)
 			},
 			default: {
 				preserveUndefined: true

@@ -51,7 +51,7 @@ export const requiredImplementation: nodeImplementationOf<RequiredDeclaration> =
 			key: {},
 			value: {
 				child: true,
-				parse: (schema, ctx) => ctx.$.schema(schema)
+				parse: (schema, ctx) => ctx.$.rootNode(schema)
 			}
 		},
 		normalize: schema => schema,

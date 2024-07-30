@@ -76,7 +76,7 @@ const fixedSequenceKeySchemaDefinition: NodeKeyImplementation<
 			// empty affixes are omitted. an empty array should therefore
 			// be specified as `{ proto: Array, length: 0 }`
 			undefined
-		:	schema.map(element => ctx.$.schema(element))
+		:	schema.map(element => ctx.$.rootNode(element))
 }
 
 export const sequenceImplementation: nodeImplementationOf<SequenceDeclaration> =
@@ -89,7 +89,7 @@ export const sequenceImplementation: nodeImplementationOf<SequenceDeclaration> =
 			optionals: fixedSequenceKeySchemaDefinition,
 			variadic: {
 				child: true,
-				parse: (schema, ctx) => ctx.$.schema(schema, ctx)
+				parse: (schema, ctx) => ctx.$.rootNode(schema, ctx)
 			},
 			minVariadicLength: {
 				// minVariadicLength is reflected in the id of this node,

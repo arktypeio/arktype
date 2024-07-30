@@ -1,11 +1,11 @@
 import { attest, contextualize } from "@ark/attest"
-import { configure, schema } from "@ark/schema"
+import { configure, rootNode } from "@ark/schema"
 import { $ark } from "@ark/util"
 import { schemaScope } from "../scope.js"
 
 contextualize(() => {
 	it("shallow", () => {
-		const n = schema({
+		const n = rootNode({
 			domain: "number",
 			divisor: 3
 		})
@@ -14,7 +14,7 @@ contextualize(() => {
 	})
 
 	it("at path", () => {
-		const o = schema({
+		const o = rootNode({
 			domain: "object",
 			required: {
 				key: "foo",
@@ -31,7 +31,7 @@ contextualize(() => {
 	})
 
 	it("array", () => {
-		const t = schema({
+		const t = rootNode({
 			proto: Array,
 			sequence: "number"
 		})
@@ -42,7 +42,7 @@ contextualize(() => {
 	})
 
 	it("custom description integrated with error", () => {
-		const superSpecialBigint = schema({
+		const superSpecialBigint = rootNode({
 			domain: "bigint",
 			description: "my special bigint"
 		})
@@ -53,7 +53,7 @@ contextualize(() => {
 	})
 
 	it("custom description on parent doesn't affect children", () => {
-		const evenNumber = schema({
+		const evenNumber = rootNode({
 			domain: "number",
 			divisor: 2,
 			description: "an even number"
@@ -106,14 +106,14 @@ contextualize(() => {
 				description: inner => `my special ${inner.domain}`
 			}
 		})
-		const mySpecialSymbol = schemaScope({}).schema("symbol")
+		const mySpecialSymbol = schemaScope({}).rootNode("symbol")
 		attest(mySpecialSymbol.traverse("foo")?.toString()).snap(
 			"must be my special symbol (was string)"
 		)
 		configure({
 			domain: $ark.defaultConfig.domain
 		})
-		const myBoringSymbol = schemaScope({}).schema("symbol")
+		const myBoringSymbol = schemaScope({}).rootNode("symbol")
 		attest(myBoringSymbol.traverse("foo")?.toString()).snap(
 			"must be a symbol (was string)"
 		)

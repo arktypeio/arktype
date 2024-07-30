@@ -1,10 +1,10 @@
 import { attest, contextualize } from "@ark/attest"
-import { intrinsic, schema } from "@ark/schema"
+import { intrinsic, rootNode } from "@ark/schema"
 import { wellFormedNumberMatcher } from "@ark/util"
 
 contextualize(() => {
 	it("in/out", () => {
-		const parseNumber = schema({
+		const parseNumber = rootNode({
 			in: {
 				domain: "string",
 				pattern: wellFormedNumberMatcher,
@@ -21,7 +21,7 @@ contextualize(() => {
 	})
 
 	it("in/out union", () => {
-		const n = schema([
+		const n = rootNode([
 			{
 				in: "string",
 				morphs: [(s: string) => Number.parseFloat(s), intrinsic.number]

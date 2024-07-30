@@ -1,32 +1,32 @@
 import { attest, contextualize } from "@ark/attest"
-import { assertNodeKind, schema } from "@ark/schema"
+import { assertNodeKind, rootNode } from "@ark/schema"
 import { registeredReference } from "../shared/registry.js"
 
 contextualize(() => {
 	it("string allows", () => {
-		const t = schema({ unit: "foo" })
+		const t = rootNode({ unit: "foo" })
 		attest(t.json).snap({ unit: "foo" })
 		attest(t.allows("foo")).equals(true)
 		attest(t.allows("bar")).equals(false)
 	})
 
 	it("string apply", () => {
-		const t = schema({ unit: "foo" })
+		const t = rootNode({ unit: "foo" })
 		attest(t.json).snap({ unit: "foo" })
 		attest(t("foo")).equals("foo")
 		attest(t("bar")?.toString()).snap('must be "foo" (was "bar")')
 		attest(t(5)?.toString()).snap('must be "foo" (was 5)')
 	})
 	it("treats equivalent dates as equal", () => {
-		const l = schema({ unit: new Date(1337) })
-		const r = schema({ unit: new Date(1337) })
+		const l = rootNode({ unit: new Date(1337) })
+		const r = rootNode({ unit: new Date(1337) })
 		attest(l.json).snap({ unit: "1970-01-01T00:00:01.337Z" })
 		attest(l.json).equals(r.json)
 		attest(l.equals(r)).equals(true)
 	})
 
 	it("bigint", () => {
-		const t = schema({ unit: 7n })
+		const t = rootNode({ unit: 7n })
 		// serializes to string for JSON
 		attest(t.json).snap({ unit: "7n" })
 		assertNodeKind(t.internal, "unit")
@@ -42,7 +42,7 @@ contextualize(() => {
 	})
 
 	it("undefined", () => {
-		const t = schema({ unit: undefined })
+		const t = rootNode({ unit: undefined })
 		assertNodeKind(t.internal, "unit")
 		attest(t.json).snap({ unit: "undefined" })
 		attest(t.internal.errorContext).equals({
@@ -58,7 +58,7 @@ contextualize(() => {
 	it("symbol", () => {
 		// this symbol description should not be reused in other tests
 		const status = Symbol("status")
-		const t = schema({ unit: status })
+		const t = rootNode({ unit: status })
 		assertNodeKind(t.internal, "unit")
 		// serializes to string for JSON
 		attest(t.json).snap({ unit: "$ark.status" })
@@ -75,7 +75,7 @@ contextualize(() => {
 	it("object reference", () => {
 		const o = new Object()
 		const ref = registeredReference(o)
-		const t = schema({ unit: o })
+		const t = rootNode({ unit: o })
 		assertNodeKind(t.internal, "unit")
 		attest(t.json).snap({ unit: ref })
 		attest(t.internal.errorContext).equals({
