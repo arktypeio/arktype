@@ -112,7 +112,7 @@ type validateStringAst<def extends string, $> =
 			ErrorMessage<writePrefixedPrivateReferenceMessage<def>>
 		: // these problems would've been caught during a fullStringParse, but it's most
 		// efficient to check for them here in case the string was naively parsed
-		$[alias] extends GenericProps ?
+		$[alias] extends Generic ?
 			ErrorMessage<
 				writeInvalidGenericArgCountMessage<def, $[alias]["names"], []>
 			>
