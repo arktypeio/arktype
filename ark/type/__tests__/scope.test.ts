@@ -11,17 +11,30 @@ import { writeUnexpectedCharacterMessage } from "../parser/string/shift/operator
 
 contextualize(() => {
 	it("base definition", () => {
-		const types = scope({ a: "string" }).export()
-		attest<string>(types.a.infer)
+		const types = scope({ actual: { name: "string" } }).export()
+
+		const expected = type({
+			name: "string"
+		})
+
+		attest<typeof expected.t>(types.actual.t)
+		attest(types.actual.expression).equals(expected.expression)
 		attest(() =>
 			// @ts-expect-error
 			scope({ a: "strong" }).export()
 		).throwsAndHasTypeError(writeUnresolvableMessage("strong"))
 	})
 
-	it("type definition", () => {
-		const types = scope({ a: type("string") }).export()
-		attest<string>(types.a.infer)
+	it("type definition inline", () => {
+		const $ = scope({ actual: type({ name: "string" }) })
+		const types = $.export()
+
+		const expected = type({ name: "string" })
+
+		attest<typeof expected.t>(types.actual.t)
+		attest(types.actual.expression).equals(expected.expression)
+		attest(types.actual.$.json).equals($.json)
+
 		attest(() =>
 			// @ts-expect-error
 			scope({ a: type("strong") })
@@ -30,22 +43,23 @@ contextualize(() => {
 
 	it("interdependent", () => {
 		const types = scope({
-			a: "string>5",
-			b: "email<=10",
-			c: "a&b"
+			l: "string > 5",
+			r: "email <= 10",
+			actual: "l & r"
 		}).export()
-		attest<string>(types.c.infer)
+
+		const expected = type("email <= 10 & string > 5")
+
+		attest<typeof expected.t>(types.actual.t)
+		attest(types.actual.expression).equals(expected.expression)
 	})
 
-	it("object array", () => {
-		const types = scope({ a: "string", b: [{ c: "a" }] }).export()
-		attest<
-			[
-				{
-					c: string
-				}
-			]
-		>(types.b.infer)
+	it("object tuple", () => {
+		const types = scope({ ref: "string", actual: [{ c: "ref" }] }).export()
+		const expected = type([{ c: "string" }])
+
+		attest<typeof expected.t>(types.actual.t)
+		attest(types.actual.expression).equals(expected.expression)
 	})
 
 	it("doesn't try to validate any in scope", () => {
@@ -60,7 +74,7 @@ contextualize(() => {
 		})
 		attest<number>($.resolve("a").infer)
 
-		attest<string>($.resolve("a").in.infer)
+		attest<string>($.resolve("a").inferIn)
 	})
 
 	it("infers its own helpers", () => {
@@ -69,8 +83,14 @@ contextualize(() => {
 			b: () => $.type("number")
 		})
 		const types = $.export()
+
 		attest<string>(types.a.infer)
+		attest(types.a.expression).equals("string")
+		attest(types.a.$.json).equals($.json)
+
 		attest<number>(types.b.infer)
+		attest(types.b.expression).equals("number")
+		attest(types.b.$.json).equals($.json)
 	})
 
 	it("allows semantically valid helpers", () => {
@@ -79,7 +99,9 @@ contextualize(() => {
 			lessThan10: () => $.type("n<10")
 		})
 		const types = $.export()
+
 		attest<number>(types.n.infer)
+		throw new Error("TODO: check assertions")
 		attest<number>(types.lessThan10.infer)
 	})
 

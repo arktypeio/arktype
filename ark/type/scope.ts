@@ -8,7 +8,6 @@ import {
 	type BaseRoot,
 	type GenericArgResolutions,
 	type GenericParamAst,
-	type GenericParamDef,
 	type InternalResolutions,
 	type Node,
 	type NodeKind,

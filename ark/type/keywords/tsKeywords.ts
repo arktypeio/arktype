@@ -23,7 +23,6 @@ export const tsKeywords: tsKeywords = scope(
 	{
 		any: {},
 		bigint: "bigint",
-		// since we know this won't be reduced, it can be safely cast to a union
 		boolean: [{ unit: false }, { unit: true }],
 		false: { unit: false },
 		never: [],

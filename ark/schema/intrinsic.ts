@@ -23,6 +23,22 @@ const intrinsicBases = schemaScope(
 	{ prereducedAliases: true }
 ).export()
 
+$ark.intrinsic = intrinsicBases
+
+export const intrinsic = schemaScope(
+	{
+		...intrinsicBases,
+		integer: {
+			domain: "number",
+			divisor: 1
+		},
+		lengthBoundable: ["string", Array],
+		propertyKey: ["string", "symbol"],
+		nonNegativeIntegerString: { domain: "string", pattern: arrayIndexSource }
+	},
+	{ prereducedAliases: true }
+).export()
+
 // reduce union of all possible values reduces to unknown
 node(
 	"union",
@@ -41,19 +57,5 @@ node(
 	},
 	{ reduceTo: node("intersection", {}, { prereduced: true }) }
 )
-
-export const intrinsic = schemaScope(
-	{
-		...intrinsicBases,
-		integer: {
-			domain: "number",
-			divisor: 1
-		},
-		lengthBoundable: ["string", Array],
-		propertyKey: ["string", "symbol"],
-		nonNegativeIntegerString: { domain: "string", pattern: arrayIndexSource }
-	},
-	{ prereducedAliases: true }
-).export()
 
 $ark.intrinsic = intrinsic
