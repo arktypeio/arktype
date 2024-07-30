@@ -1,5 +1,5 @@
-import type { Out } from "@ark/schema"
 import { type, type Type } from "arktype"
+import type { Out } from "../../type/ast.js"
 
 // Syntax carried over from 1.0 + TS
 export const currentTsSyntax = type({
