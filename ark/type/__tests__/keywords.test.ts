@@ -1,15 +1,14 @@
 import { attest, contextualize } from "@ark/attest"
 import {
-	keywordNodes,
+	intrinsic,
 	schema,
 	writeIndivisibleMessage,
 	writeInvalidKeysMessage,
 	writeNonStructuralOperandMessage,
-	writeUnsatisfiedParameterConstraintMessage,
-	type Out,
-	type string
+	writeUnsatisfiedParameterConstraintMessage
 } from "@ark/schema"
 import { ark, scope, type } from "arktype"
+import type { Out, string } from "../ast.js"
 
 contextualize(() => {
 	describe("jsObjects", () => {
@@ -333,7 +332,7 @@ tags[2] must be a string (was object)`)
 			it("invoked validation error", () => {
 				// @ts-expect-error
 				attest(() => ark.Record("string", "string % 2")).throwsAndHasTypeError(
-					writeIndivisibleMessage(keywordNodes.string)
+					writeIndivisibleMessage(intrinsic.string)
 				)
 			})
 

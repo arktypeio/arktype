@@ -2,7 +2,6 @@ import type {
 	ArkError,
 	ArkErrors,
 	constraintKindOf,
-	DefaultableAst,
 	Morph,
 	NodeSchema,
 	PrimitiveConstraintKind
@@ -458,5 +457,9 @@ export type inferMorphOut<morph extends Morph> = Exclude<
 export type Out<o = any> = ["=>", o]
 
 export type MorphAst<i = any, o = any> = (In: i) => Out<o>
+
+export type Default<v = any> = ["=", v]
+
+export type DefaultableAst<t = any, v = any> = (In?: t) => Default<v>
 
 export type termOrType<t> = t | instantiateType<t, any>

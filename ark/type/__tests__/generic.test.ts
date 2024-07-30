@@ -1,7 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import {
 	GenericHkt,
-	keywordNodes,
+	intrinsic,
 	writeIndivisibleMessage,
 	writeUnboundableMessage,
 	writeUnresolvableMessage,
@@ -361,7 +361,7 @@ contextualize(() => {
 				attest(() =>
 					// @ts-expect-error
 					$.type("box<1,string%2>")
-				).throwsAndHasTypeError(writeIndivisibleMessage(keywordNodes.string))
+				).throwsAndHasTypeError(writeIndivisibleMessage(intrinsic.string))
 			})
 
 			it("parameter supercedes alias with same name", () => {

@@ -2,13 +2,10 @@ import { attest, contextualize } from "@ark/attest"
 import {
 	assertNodeKind,
 	writeIndiscriminableMorphMessage,
-	writeMorphIntersectionMessage,
-	type MoreThan,
-	type Out,
-	type of,
-	type string
+	writeMorphIntersectionMessage
 } from "@ark/schema"
 import { scope, type, type Type } from "arktype"
+import type { MoreThan, Out, of, string } from "../ast.js"
 
 contextualize(() => {
 	it("base", () => {

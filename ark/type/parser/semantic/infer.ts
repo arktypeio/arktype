@@ -1,8 +1,9 @@
-import type { Default, GenericHkt } from "@ark/schema"
+import type { GenericHkt } from "@ark/schema"
 import type { BigintLiteral, array } from "@ark/util"
 import type {
 	Date,
 	DateLiteral,
+	Default,
 	LimitLiteral,
 	RegexLiteral,
 	constrain,

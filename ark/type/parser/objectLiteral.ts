@@ -2,7 +2,6 @@ import {
 	ArkErrors,
 	normalizeIndex,
 	type BaseRoot,
-	type Default,
 	type IndexNode,
 	type NodeSchema,
 	type OptionalNode,
@@ -30,7 +29,7 @@ import {
 	type mutable,
 	type show
 } from "@ark/util"
-import type { of } from "../ast.js"
+import type { Default, of } from "../ast.js"
 import type { ParseContext } from "../scope.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
 import { writeUnassignableDefaultValueMessage } from "./semantic/default.js"

@@ -1,13 +1,12 @@
 import { attest, contextualize } from "@ark/attest"
 import {
-	internal,
-	keywordNodes,
+	intrinsic,
 	schema,
 	writeInvalidOperandMessage,
 	writeUnboundableMessage
 } from "@ark/schema"
 import { writeMalformedNumericLiteralMessage } from "@ark/util"
-import { type } from "arktype"
+import { ark, type } from "arktype"
 import { writeDoubleRightBoundMessage } from "../parser/semantic/bounds.js"
 import {
 	writeMultipleLeftBoundsMessage,
@@ -282,11 +281,7 @@ contextualize(() => {
 		it("invalid min operand", () => {
 			// @ts-expect-error
 			attest(() => type("string").atLeast(5)).throwsAndHasTypeError(
-				writeInvalidOperandMessage(
-					"min",
-					keywordNodes.number,
-					keywordNodes.string
-				)
+				writeInvalidOperandMessage("min", intrinsic.number, intrinsic.string)
 			)
 		})
 
@@ -314,11 +309,7 @@ contextualize(() => {
 		it("invalid max operand", () => {
 			// @ts-expect-error
 			attest(() => type("string").lessThan(5)).throwsAndHasTypeError(
-				writeInvalidOperandMessage(
-					"max",
-					keywordNodes.number,
-					keywordNodes.string
-				)
+				writeInvalidOperandMessage("max", intrinsic.number, intrinsic.string)
 			)
 		})
 
@@ -341,8 +332,8 @@ contextualize(() => {
 			attest(() => type("bigint").atLeastLength(5)).throwsAndHasTypeError(
 				writeInvalidOperandMessage(
 					"minLength",
-					internal.lengthBoundable,
-					keywordNodes.bigint
+					intrinsic.lengthBoundable,
+					intrinsic.bigint
 				)
 			)
 		})
@@ -366,8 +357,8 @@ contextualize(() => {
 			attest(() => type("null").lessThanLength(5)).throwsAndHasTypeError(
 				writeInvalidOperandMessage(
 					"maxLength",
-					internal.lengthBoundable,
-					keywordNodes.null
+					intrinsic.lengthBoundable,
+					intrinsic.null
 				)
 			)
 		})
@@ -390,11 +381,7 @@ contextualize(() => {
 		it("invalid after operand", () => {
 			// @ts-expect-error
 			attest(() => type("false").laterThan(new Date())).throwsAndHasTypeError(
-				writeInvalidOperandMessage(
-					"after",
-					keywordNodes.Date,
-					keywordNodes.false
-				)
+				writeInvalidOperandMessage("after", intrinsic.Date, intrinsic.false)
 			)
 		})
 
@@ -417,11 +404,7 @@ contextualize(() => {
 				// @ts-expect-error
 				type("unknown").atOrBefore(new Date())
 			).throwsAndHasTypeError(
-				writeInvalidOperandMessage(
-					"before",
-					keywordNodes.Date,
-					keywordNodes.unknown
-				)
+				writeInvalidOperandMessage("before", intrinsic.Date, intrinsic.unknown)
 			)
 		})
 	})

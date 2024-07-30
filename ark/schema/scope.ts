@@ -105,8 +105,6 @@ export type AliasDefEntry = [name: string, defValue: unknown]
 
 const scopesById: Record<string, BaseScope | undefined> = {}
 
-$ark.intrinsic = {} as never
-
 export abstract class BaseScope<$ extends {} = {}> {
 	readonly config: ArkConfig
 	readonly resolvedConfig: ResolvedArkConfig

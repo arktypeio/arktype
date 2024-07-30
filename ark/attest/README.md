@@ -284,7 +284,7 @@ If no directories are provided, defaults to CWD.
 npm run attest trace .
 ```
 
-Creates a trace.json file in a .tstrace directory that can be viewed as a type performance heat map via a tool like https://ui.perfetto.dev/. Also summarizes any hot spots as identified by `@typescript/analyze-trace`.
+Creates a trace.json file in `.attest/trace` that can be viewed as a type performance heat map via a tool like https://ui.perfetto.dev/. Also summarizes any hot spots as identified by `@typescript/analyze-trace`.
 
 Trace expects a single argument representing the root directory of the root package for which to gather type information.
 

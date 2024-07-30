@@ -1,7 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import {
-	internalSchema,
-	keywordNodes,
+	intrinsic,
+	schema,
 	writeIndivisibleMessage,
 	writeUnresolvableMessage
 } from "@ark/schema"
@@ -158,7 +158,7 @@ contextualize(() => {
 	})
 
 	const expected = () =>
-		internalSchema([
+		schema([
 			{
 				domain: "object",
 				required: {
@@ -242,14 +242,14 @@ contextualize(() => {
 	it("left semantic error", () => {
 		// @ts-expect-error
 		attest(() => type("symbol%2|string")).throwsAndHasTypeError(
-			writeIndivisibleMessage(keywordNodes.symbol)
+			writeIndivisibleMessage(intrinsic.symbol)
 		)
 	})
 
 	it("right semantic error", () => {
 		// @ts-expect-error
 		attest(() => type("string|symbol%2")).throwsAndHasTypeError(
-			writeIndivisibleMessage(keywordNodes.symbol)
+			writeIndivisibleMessage(intrinsic.symbol)
 		)
 	})
 

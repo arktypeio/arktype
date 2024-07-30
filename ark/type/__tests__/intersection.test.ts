@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import {
-	keywordNodes,
+	intrinsic,
 	writeIndivisibleMessage,
 	writeUnresolvableMessage
 } from "@ark/schema"
@@ -85,13 +85,13 @@ contextualize(() => {
 	it("left semantic error", () => {
 		// @ts-expect-error
 		attest(() => type("string%2&'foo'")).throwsAndHasTypeError(
-			writeIndivisibleMessage(keywordNodes.string)
+			writeIndivisibleMessage(intrinsic.string)
 		)
 	})
 	it("right semantic error", () => {
 		// @ts-expect-error
 		attest(() => type("'foo'&string%2")).throwsAndHasTypeError(
-			writeIndivisibleMessage(keywordNodes.string)
+			writeIndivisibleMessage(intrinsic.string)
 		)
 	})
 	it("chained validation error", () => {

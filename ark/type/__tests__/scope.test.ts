@@ -2,11 +2,10 @@ import { attest, contextualize } from "@ark/attest"
 import {
 	schema,
 	writeUnboundableMessage,
-	writeUnresolvableMessage,
-	type distillOut,
-	type string
+	writeUnresolvableMessage
 } from "@ark/schema"
 import { define, scope, type } from "arktype"
+import type { distillOut, string } from "../ast.js"
 import type { Module } from "../module.js"
 import { writeUnexpectedCharacterMessage } from "../parser/string/shift/operator/operator.js"
 

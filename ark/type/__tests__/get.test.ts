@@ -1,12 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
-import {
-	writeInvalidKeysMessage,
-	writeNumberIndexMessage,
-	type Matching,
-	type of,
-	type string
-} from "@ark/schema"
+import { writeInvalidKeysMessage, writeNumberIndexMessage } from "@ark/schema"
 import { ark, type } from "arktype"
+import type { Matching, of, string } from "../ast.js"
 
 contextualize(() => {
 	it("can get shallow roots by path", () => {

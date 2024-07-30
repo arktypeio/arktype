@@ -19,10 +19,6 @@ export interface OptionalInner extends BasePropInner {
 	default?: unknown
 }
 
-export type Default<v = any> = ["=", v]
-
-export type DefaultableAst<t = any, v = any> = (In?: t) => Default<v>
-
 export type OptionalDeclaration = declareNode<
 	BasePropDeclaration<"optional"> & {
 		schema: OptionalSchema

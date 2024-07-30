@@ -1,14 +1,8 @@
 import { attest, contextualize } from "@ark/attest"
-import {
-	registeredReference,
-	type Narrowed,
-	type Out,
-	type number,
-	type of,
-	type string
-} from "@ark/schema"
+import { registeredReference } from "@ark/schema"
 import type { equals } from "@ark/util"
 import { type, type Type } from "arktype"
+import type { Narrowed, Out, number, of, string } from "../ast.js"
 
 contextualize(() => {
 	it("implicit problem", () => {

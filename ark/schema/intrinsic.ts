@@ -1,3 +1,4 @@
+import { $ark } from "@ark/util"
 import { root, schemaScope } from "./scope.js"
 import { arrayIndexSource } from "./structure/shared.js"
 
@@ -54,3 +55,5 @@ export const intrinsic = schemaScope(
 	},
 	{ prereducedAliases: true }
 ).export()
+
+$ark.intrinsic = intrinsic

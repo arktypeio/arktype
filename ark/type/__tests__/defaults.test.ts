@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
-import type { Date, Default } from "@ark/schema"
 import { scope, type } from "arktype"
+import type { Date, Default } from "../ast.js"
 import { invalidDefaultKeyKindMessage } from "../parser/objectLiteral.js"
 import {
 	shallowDefaultMessage,

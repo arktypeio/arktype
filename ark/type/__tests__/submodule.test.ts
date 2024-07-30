@@ -2,10 +2,10 @@ import { attest, contextualize } from "@ark/attest"
 import {
 	writeMissingSubmoduleAccessMessage,
 	writeNonSubmoduleDotMessage,
-	writeUnresolvableMessage,
-	type Out
+	writeUnresolvableMessage
 } from "@ark/schema"
 import { scope, type, type Module, type Scope } from "arktype"
+import type { Out } from "../ast.js"
 
 contextualize(() => {
 	const $ = scope({

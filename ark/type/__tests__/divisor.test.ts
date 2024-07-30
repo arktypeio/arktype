@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { keywordNodes, writeIndivisibleMessage } from "@ark/schema"
+import { intrinsic, writeIndivisibleMessage } from "@ark/schema"
 import { type } from "arktype"
 import { writeInvalidDivisorMessage } from "../parser/string/shift/operator/divisor.js"
 
@@ -59,28 +59,28 @@ contextualize(() => {
 		it("unknown", () => {
 			// @ts-expect-error
 			attest(() => type("unknown%2")).throwsAndHasTypeError(
-				writeIndivisibleMessage(keywordNodes.unknown)
+				writeIndivisibleMessage(intrinsic.unknown)
 			)
 		})
 
 		it("indivisible", () => {
 			// @ts-expect-error
 			attest(() => type("string%1")).throwsAndHasTypeError(
-				writeIndivisibleMessage(keywordNodes.string)
+				writeIndivisibleMessage(intrinsic.string)
 			)
 		})
 
 		it("chained indivisible", () => {
 			// @ts-expect-error
 			attest(() => type("string").divisibleBy(2)).throwsAndHasTypeError(
-				writeIndivisibleMessage(keywordNodes.string)
+				writeIndivisibleMessage(intrinsic.string)
 			)
 		})
 
 		it("overlapping", () => {
 			// @ts-expect-error
 			attest(() => type("(number|string)%10")).throwsAndHasTypeError(
-				writeIndivisibleMessage(keywordNodes.number.or(keywordNodes.string))
+				writeIndivisibleMessage(intrinsic.number.or(intrinsic.string))
 			)
 		})
 	})

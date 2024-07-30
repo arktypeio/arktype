@@ -1,8 +1,7 @@
+import { generic, GenericHkt, schemaScope } from "@ark/schema"
 import { liftArray, type conform } from "@ark/util"
-import { GenericHkt } from "../generic.js"
-import type { RootModule } from "../module.js"
-import type { Out } from "../roots/morph.js"
-import { generic, schemaScope } from "../scope.js"
+import type { Out } from "../ast.js"
+import type { Module } from "../module.js"
 
 const ArkLiftArray = generic("T")(
 	args => args.T.or(args.T.array()).pipe(liftArray),
@@ -21,7 +20,7 @@ const arkGenericsExports = {
 
 export type arkGenericsExports = typeof arkGenericsExports
 
-export type arkGenerics = RootModule<arkGenericsExports>
+export type arkGenerics = Module<arkGenericsExports>
 
 const $ = schemaScope(arkGenericsExports)
 

@@ -1,15 +1,15 @@
 import { attest, contextualize } from "@ark/attest"
-import {
-	type AtLeastLength,
-	type AtMostLength,
-	type Narrowed,
-	type number,
-	type of,
-	type Out,
-	registeredReference,
-	type string
-} from "@ark/schema"
+import { registeredReference } from "@ark/schema"
 import { scope, type } from "arktype"
+import type {
+	AtLeastLength,
+	AtMostLength,
+	Narrowed,
+	number,
+	of,
+	Out,
+	string
+} from "../ast.js"
 import type { Module } from "../module.js"
 
 contextualize(() => {
