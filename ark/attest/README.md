@@ -140,6 +140,69 @@ describe("attest features", () => {
 })
 ```
 
+## Options
+
+Options can be specified in one of 3 ways:
+
+- An argument passed to your test process, e.g. `--skipTypes` or `--benchPercentThreshold 10`
+- An environment variable with an `ATTEST_` prefix, e.g. `ATTEST_skipTypes=1` or `ATTEST_benchPercentThreshold=10`
+- Passed as an option to attest's `setup` function, e.g.:
+
+`setupVitest.ts`
+
+```ts
+import * as attest from "@ark/attest"
+
+export const setup = () =>
+	attest.setup({
+		skipTypes: true,
+		benchPercentThreshold: 10
+	})
+```
+
+Here are the current defaults for all available options. Please note, some of these are experimental and subject to change:
+
+```ts
+export const getDefaultAttestConfig = (): BaseAttestConfig => ({
+	tsconfig:
+		existsSync(fromCwd("tsconfig.json")) ? fromCwd("tsconfig.json") : undefined,
+	attestAliases: ["attest", "attestInternal"],
+	updateSnapshots: false,
+	skipTypes: false,
+	skipInlineInstantiations: false,
+	tsVersions: "typescript",
+	benchPercentThreshold: 20,
+	benchErrorOnThresholdExceeded: true,
+	filter: undefined,
+	testDeclarationAliases: ["bench", "it", "test"],
+	formatter: `npm exec --no -- prettier --write`,
+	shouldFormat: true
+})
+```
+
+### `skipTypes`
+
+`skipTypes` is extremely useful for iterating quickly during development without having to typecheck your project to test runtime logic.
+
+When this setting is enabled, setup will skip typechecking and all assertions requiring type information will be skipped.
+
+You likely want two scripts, one for running tests with types and one for tests without:
+
+```json
+		"test": "ATTEST_skipTypes=1 vitest run",
+		"testWithTypes": "vitest run",
+```
+
+Our recommendation is to use `test` when:
+
+- Only wanting to test runtime logic during development
+- Running tests in watch mode or via VSCode's Test Explorer
+
+Use `testWithTypes` when:
+
+- You've made changes to your types and want to recheck your type-level assertions
+- You're running your tests in CI
+
 ## Benches
 
 Benches are run separately from tests and don't require any special setup. If the below file was `benches.ts`, you could run it using something like `tsx benches.ts` or `ts-node benches.ts`:
