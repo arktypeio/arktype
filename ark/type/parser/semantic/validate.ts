@@ -1,7 +1,6 @@
 import type {
 	arkKind,
 	GenericParamAst,
-	GenericProps,
 	PrivateDeclaration,
 	writeMissingSubmoduleAccessMessage,
 	writeUnsatisfiedParameterConstraintMessage
@@ -49,12 +48,7 @@ export type validateAst<ast, $, args> =
 		validateDefault<baseAst, unitLiteral, $, args>
 	: ast extends readonly ["keyof", infer operand] ?
 		validateAst<operand, $, args>
-	: ast extends (
-		GenericInstantiationAst<
-			Generic<infer params, any, any> | GenericProps<infer params>,
-			infer argAsts
-		>
-	) ?
+	: ast extends GenericInstantiationAst<Generic<infer params>, infer argAsts> ?
 		validateGenericArgs<params, argAsts, $, args, []>
 	:	ErrorMessage<writeUnexpectedExpressionMessage<astToString<ast>>> & {
 			ast: ast

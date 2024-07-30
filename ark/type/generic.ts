@@ -1,8 +1,9 @@
 import type {
+	arkKind,
 	GenericHkt,
 	GenericParamAst,
 	GenericParamDef,
-	GenericProps,
+	genericParamNames,
 	GenericRoot,
 	LazyGenericBody
 } from "@ark/schema"
@@ -23,7 +24,7 @@ import { DynamicState } from "./parser/string/reduce/dynamic.js"
 import type { state, StaticState } from "./parser/string/reduce/static.js"
 import { Scanner } from "./parser/string/shift/scanner.js"
 import { parseUntilFinalizer } from "./parser/string/string.js"
-import type { ParseContext } from "./scope.js"
+import type { ParseContext, Scope } from "./scope.js"
 import type {
 	inferTypeRoot,
 	instantiateType,
@@ -234,12 +235,17 @@ export type baseGenericConstraints<params extends array<GenericParamAst>> = {
 
 export interface Generic<
 	params extends array<GenericParamAst> = array<GenericParamAst>,
-	bodyDef = unknown,
+	bodyDef = any,
 	$ = {},
 	arg$ = $
-> extends Callable<GenericInstantiator<params, bodyDef, $, arg$>>,
-		GenericProps<params, bodyDef, $, arg$> {
-	internal: GenericRoot<params, bodyDef>
+> extends Callable<GenericInstantiator<params, bodyDef, $, arg$>> {
+	[arkKind]: "generic"
+	paramsAst: params
+	bodyDef: bodyDef
+	names: genericParamNames<params>
+	$: Scope<$>
+	arg$: arg$
+	internal: GenericRoot
 }
 
 export type GenericDeclaration<

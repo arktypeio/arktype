@@ -1,5 +1,6 @@
-import type { BaseRoot, GenericProps, GenericRoot } from "@ark/schema"
+import type { BaseRoot, GenericRoot } from "@ark/schema"
 import type { array, ErrorMessage, join } from "@ark/util"
+import type { Generic } from "../../../../generic.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import { writeUnclosedGroupMessage } from "../../reduce/shared.js"
 import type { state, StaticState } from "../../reduce/static.js"
@@ -13,7 +14,7 @@ export const parseGenericArgs = (
 
 export type parseGenericArgs<
 	name extends string,
-	g extends GenericProps,
+	g extends Generic,
 	unscanned extends string,
 	$,
 	args
@@ -54,7 +55,7 @@ export type ParsedArgs<
 
 type _parseGenericArgs<
 	name extends string,
-	g extends GenericProps,
+	g extends Generic,
 	unscanned extends string,
 	$,
 	args,

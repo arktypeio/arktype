@@ -2,7 +2,6 @@ import {
 	BaseRoot,
 	hasArkKind,
 	writeUnresolvableMessage,
-	type GenericProps,
 	type GenericRoot,
 	type PrivateDeclaration,
 	type arkKind,
@@ -21,6 +20,7 @@ import {
 	type anyOrNever,
 	type join
 } from "@ark/util"
+import type { Generic } from "../../../../generic.js"
 import type { GenericInstantiationAst } from "../../../semantic/infer.js"
 import { writePrefixedPrivateReferenceMessage } from "../../../semantic/validate.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
@@ -79,7 +79,7 @@ type parseResolution<
 	args
 > =
 	[resolution] extends [anyOrNever] ? state.setRoot<s, alias, unscanned>
-	: resolution extends GenericProps ?
+	: resolution extends Generic ?
 		parseGenericInstantiation<
 			alias,
 			resolution,
@@ -105,7 +105,7 @@ export const parseGenericInstantiation = (
 
 export type parseGenericInstantiation<
 	name extends string,
-	g extends GenericProps,
+	g extends Generic,
 	s extends StaticState,
 	$,
 	args

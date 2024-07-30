@@ -3,7 +3,6 @@ import type {
 	DateLiteral,
 	Default,
 	GenericHkt,
-	GenericProps,
 	LimitLiteral,
 	RegexLiteral,
 	constrain,
@@ -14,6 +13,7 @@ import type {
 	string
 } from "@ark/schema"
 import type { BigintLiteral, array } from "@ark/util"
+import type { Generic } from "../../generic.js"
 import type {
 	UnparsedScope,
 	resolve,
@@ -35,7 +35,7 @@ export type inferConstrainableAst<ast, $, args> =
 	: never
 
 export type GenericInstantiationAst<
-	generic extends GenericProps = GenericProps,
+	generic extends Generic = Generic,
 	argAsts extends unknown[] = unknown[]
 > = [generic, "<>", argAsts]
 
@@ -56,8 +56,7 @@ export type inferExpression<ast extends array, $, args> =
 					generic["$"]["t"],
 				{
 					// Using keyof g["params"] & number here results in the element types being mixed
-					[i in keyof generic["params"] & `${number}` as generic["names"][i &
-						keyof generic["names"]]]: inferConstrainableAst<
+					[i in keyof generic["names"]]: inferConstrainableAst<
 						argAsts[i & keyof argAsts],
 						$,
 						args

@@ -25,7 +25,6 @@ import {
 	GenericRoot,
 	LazyGenericBody,
 	type GenericHktSchemaBodyParser,
-	type GenericHktSchemaParser,
 	type GenericParamDef,
 	type genericParamSchemasToAst
 } from "./generic.js"
@@ -78,13 +77,13 @@ export type PrivateDeclaration<key extends string = string> = `#${key}`
 // they are populated as each scope is parsed with `intrinsic` in its config
 export interface IntrinsicKeywords extends tsKeywords, jsObjects, internal {}
 
-export type InternalResolution = BaseRoot | GenericRoot | SchemaModule
+export type InternalResolution = BaseRoot | GenericRoot | RootModule
 
 export type toInternalScope<$> = BaseScope<{
 	[k in keyof $]: $[k] extends { [arkKind]: infer kind } ?
 		[$[k]] extends [anyOrNever] ? BaseRoot
 		: kind extends "generic" ? GenericRoot
-		: kind extends "module" ? SchemaModule
+		: kind extends "module" ? RootModule
 		: never
 	:	BaseRoot
 }>
