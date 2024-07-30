@@ -1,4 +1,4 @@
-import type { Default, GenericHkt, inferIntersection } from "@ark/schema"
+import type { Default, GenericHkt } from "@ark/schema"
 import type { BigintLiteral, array } from "@ark/util"
 import type {
 	Date,
@@ -12,6 +12,7 @@ import type {
 	string
 } from "../../ast.js"
 import type { Generic } from "../../generic.js"
+import type { inferIntersection } from "../../intersect.js"
 import type {
 	UnparsedScope,
 	resolve,

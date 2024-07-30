@@ -20,7 +20,6 @@ import {
 	type inferIntersection,
 	type inferMorphOut,
 	type inferPipes,
-	type inferPredicate,
 	type inferred,
 	type validateChainedAsArgs
 } from "@ark/schema"
@@ -39,7 +38,8 @@ import type {
 	distillConstrainableIn,
 	distillConstrainableOut,
 	distillIn,
-	distillOut
+	distillOut,
+	inferPredicate
 } from "./ast.js"
 import {
 	parseGenericParams,

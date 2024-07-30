@@ -1,9 +1,10 @@
 import type {
+	ArkError,
+	ArkErrors,
 	constraintKindOf,
 	DefaultableAst,
-	MorphAst,
+	Morph,
 	NodeSchema,
-	Out,
 	PrimitiveConstraintKind
 } from "@ark/schema"
 import type {
@@ -18,8 +19,11 @@ import type {
 	propValueOf,
 	show
 } from "@ark/util"
+import type { type } from "./ark.js"
+import type { inferPipe } from "./intersect.js"
 import type { platformObjectExports } from "./keywords/platformObjects.js"
 import type { typedArrayExports } from "./keywords/typedArray.js"
+import type { instantiateType } from "./type.js"
 
 export type Comparator = "<" | "<=" | ">" | ">=" | "=="
 
@@ -434,3 +438,25 @@ export type inferPredicate<t, predicate> =
 			constrain<of<narrowed, constraints>, "predicate", any>
 		:	constrain<narrowed, "predicate", any>
 	:	constrain<t, "predicate", any>
+
+export type inferPipes<t, pipes extends Morph[]> =
+	pipes extends [infer head extends Morph, ...infer tail extends Morph[]] ?
+		inferPipes<
+			pipes[0] extends type.cast<infer tPipe> ? inferPipe<t, tPipe>
+			: inferMorphOut<head> extends infer out ?
+				(In: distillConstrainableIn<t>) => Out<out>
+			:	never,
+			tail
+		>
+	:	t
+
+export type inferMorphOut<morph extends Morph> = Exclude<
+	ReturnType<morph>,
+	ArkError | ArkErrors
+>
+
+export type Out<o = any> = ["=>", o]
+
+export type MorphAst<i = any, o = any> = (In: i) => Out<o>
+
+export type termOrType<t> = t | instantiateType<t, any>

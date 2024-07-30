@@ -1,20 +1,6 @@
-import {
-	Hkt,
-	type array,
-	type conform,
-	type intersectArrays,
-	type isAny,
-	type PartialRecord,
-	type show
-} from "@ark/util"
-import type { Constraints, of, parseConstraints } from "../../type/ast.js"
+import type { PartialRecord } from "@ark/util"
 import type { BaseNode } from "../node.js"
-import type {
-	MorphAst,
-	MorphChildNode,
-	MorphNode,
-	Out
-} from "../roots/morph.js"
+import type { MorphChildNode, MorphNode } from "../roots/morph.js"
 import type { BaseRoot } from "../roots/root.js"
 import type { BaseScope } from "../scope.js"
 import { Disjoint } from "./disjoint.js"
@@ -24,67 +10,6 @@ import type {
 	UnknownIntersectionResult
 } from "./implement.js"
 import { isNode } from "./utils.js"
-
-export type inferIntersection<l, r> = _inferIntersection<l, r, false>
-
-export type inferPipe<l, r> = _inferIntersection<l, r, true>
-
-type _inferIntersection<l, r, piped extends boolean> =
-	[l] extends [never] ? never
-	: [r] extends [never] ? never
-	: [l & r] extends [never] ? never
-	: isAny<l | r> extends true ? any
-	: l extends MorphAst<infer lIn, infer lOut> ?
-		r extends MorphAst<any, infer rOut> ?
-			piped extends true ?
-				(In: lIn) => Out<rOut>
-			:	// a commutative intersection between two morphs is a ParseError
-				never
-		: piped extends true ? (In: lIn) => Out<r>
-		: (In: _inferIntersection<lIn, r, false>) => Out<lOut>
-	: r extends MorphAst<infer rIn, infer rOut> ?
-		(In: _inferIntersection<rIn, l, false>) => Out<rOut>
-	: parseConstraints<l> extends (
-		[infer lBase, infer lConstraints extends Constraints]
-	) ?
-		parseConstraints<r> extends (
-			[infer rBase, infer rConstraints extends Constraints]
-		) ?
-			of<_inferIntersection<lBase, rBase, piped>, lConstraints & rConstraints>
-		:	of<_inferIntersection<lBase, r, piped>, lConstraints>
-	: parseConstraints<r> extends (
-		[infer rBase, infer rConstraints extends Constraints]
-	) ?
-		of<_inferIntersection<l, rBase, piped>, rConstraints>
-	: [l, r] extends [object, object] ?
-		// adding this intermediate infer result avoids extra instantiations
-		intersectObjects<l, r, piped> extends infer result ?
-			result
-		:	never
-	:	l & r
-
-declare class MorphableIntersection<piped extends boolean> extends Hkt.Kind {
-	hkt: (
-		In: conform<this[Hkt.args], [l: unknown, r: unknown]>
-	) => _inferIntersection<(typeof In)[0], (typeof In)[1], piped>
-}
-
-type intersectObjects<l, r, piped extends boolean> =
-	[l, r] extends [infer lList extends array, infer rList extends array] ?
-		intersectArrays<lList, rList, MorphableIntersection<piped>>
-	:	show<
-			// this looks redundant, but should hit the cache anyways and
-			// preserves index signature + optional keys correctly
-			{
-				[k in keyof l]: k extends keyof r ?
-					_inferIntersection<l[k], r[k], piped>
-				:	l[k]
-			} & {
-				[k in keyof r]: k extends keyof l ?
-					_inferIntersection<l[k], r[k], piped>
-				:	r[k]
-			}
-		>
 
 const intersectionCache: PartialRecord<string, UnknownIntersectionResult> = {}
 

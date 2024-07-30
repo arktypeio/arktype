@@ -6,24 +6,22 @@ import {
 	type array,
 	type listable
 } from "@ark/util"
-import type { distillConstrainableIn } from "../../type/ast.js"
 import type { Node, NodeSchema } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
-import type { ArkError, ArkErrors } from "../shared/errors.js"
 import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.js"
-import { intersectNodes, type inferPipe } from "../shared/intersections.js"
+import { intersectNodes } from "../shared/intersections.js"
 import { registeredReference } from "../shared/registry.js"
 import type {
 	TraversalContext,
 	TraverseAllows,
 	TraverseApply
 } from "../shared/traversal.js"
-import { hasArkKind, type InferredRoot } from "../shared/utils.js"
+import { hasArkKind } from "../shared/utils.js"
 import { BaseRoot, type schemaKindRightOf } from "./root.js"
 import { defineRightwardIntersections } from "./utils.js"
 
@@ -42,10 +40,6 @@ export type MorphChildNode = Node<MorphChildKind>
 export type MorphChildSchema = NodeSchema<MorphChildKind>
 
 export type Morph<i = any, o = unknown> = (In: i, ctx: TraversalContext) => o
-
-export type Out<o = any> = ["=>", o]
-
-export type MorphAst<i = any, o = any> = (In: i) => Out<o>
 
 export interface MorphInner extends BaseMeta {
 	readonly in: MorphChildNode
@@ -197,19 +191,3 @@ export const writeMorphIntersectionMessage = (
 	`The intersection of distinct morphs at a single path is indeterminate:
 Left: ${lDescription}
 Right: ${rDescription}`
-
-export type inferPipes<t, pipes extends Morph[]> =
-	pipes extends [infer head extends Morph, ...infer tail extends Morph[]] ?
-		inferPipes<
-			pipes[0] extends InferredRoot<infer tPipe> ? inferPipe<t, tPipe>
-			: inferMorphOut<head> extends infer out ?
-				(In: distillConstrainableIn<t>) => Out<out>
-			:	never,
-			tail
-		>
-	:	t
-
-export type inferMorphOut<morph extends Morph> = Exclude<
-	ReturnType<morph>,
-	ArkError | ArkErrors
->

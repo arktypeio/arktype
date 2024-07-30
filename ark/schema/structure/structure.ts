@@ -7,9 +7,7 @@ import {
 	spliterate,
 	throwParseError,
 	type array,
-	type join,
-	type Key,
-	type typeToString
+	type Key
 } from "@ark/util"
 import {
 	BaseConstraint,
@@ -18,7 +16,7 @@ import {
 	intersectConstraints
 } from "../constraint.js"
 import type { MutableInner } from "../kinds.js"
-import type { TypeIndexer, TypeKey } from "../node.js"
+import type { GettableKeyOrNode, KeyOrKeyNode } from "../node.js"
 import { typeOrTermExtends, type BaseRoot } from "../roots/root.js"
 import type { BaseScope } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
@@ -42,8 +40,7 @@ import type {
 } from "../shared/traversal.js"
 import {
 	hasArkKind,
-	makeRootAndArrayPropertiesMutable,
-	type InferredRoot
+	makeRootAndArrayPropertiesMutable
 } from "../shared/utils.js"
 import type { IndexNode, IndexSchema } from "./indexed.js"
 import type { OptionalNode, OptionalSchema } from "./optional.js"
@@ -124,7 +121,7 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 		return this.$.node("union", branches)
 	}
 
-	assertHasKeys(keys: array<TypeKey>) {
+	assertHasKeys(keys: array<KeyOrKeyNode>) {
 		const invalidKeys = keys.filter(k => !typeOrTermExtends(k, this.keyof()))
 
 		if (invalidKeys.length) {
@@ -134,7 +131,7 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 		}
 	}
 
-	get(indexer: TypeIndexer, ...path: array<TypeIndexer>): BaseRoot {
+	get(indexer: GettableKeyOrNode, ...path: array<GettableKeyOrNode>): BaseRoot {
 		let value: BaseRoot | undefined
 		let required = false
 
@@ -201,12 +198,12 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 	readonly exhaustive: boolean =
 		this.undeclared !== undefined || this.index !== undefined
 
-	pick(...keys: TypeKey[]): StructureNode {
+	pick(...keys: KeyOrKeyNode[]): StructureNode {
 		this.assertHasKeys(keys)
 		return this.$.node("structure", this.filterKeys("pick", keys))
 	}
 
-	omit(...keys: TypeKey[]): StructureNode {
+	omit(...keys: KeyOrKeyNode[]): StructureNode {
 		this.assertHasKeys(keys)
 		return this.$.node("structure", this.filterKeys("omit", keys))
 	}
@@ -253,7 +250,7 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 	): StructureInner {
 		const result = { ...this.inner }
 
-		const includeKey = (key: TypeKey) => {
+		const includeKey = (key: KeyOrKeyNode) => {
 			const matchesKey = keys.some(k => typeOrTermExtends(key, k))
 			return operation === "pick" ? matchesKey : !matchesKey
 		}
@@ -424,7 +421,7 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 	}
 }
 
-const indexerToKey = (indexable: TypeIndexer): TypeKey => {
+const indexerToKey = (indexable: GettableKeyOrNode): KeyOrKeyNode => {
 	if (hasArkKind(indexable, "root") && indexable.hasKind("unit"))
 		indexable = indexable.unit as Key
 	if (typeof indexable === "number") indexable = `${indexable}`
@@ -615,26 +612,14 @@ export const normalizeIndex = (
 	return normalized
 }
 
-export const typeKeyToString = (k: TypeKey) =>
+export const typeKeyToString = (k: KeyOrKeyNode) =>
 	hasArkKind(k, "root") ? k.expression : printable(k)
-
-export type typeKeyToString<k extends TypeKey> = typeToString<
-	k extends InferredRoot<infer t> ? t : k
->
 
 export const writeInvalidKeysMessage = <
 	o extends string,
-	keys extends array<TypeKey>
+	keys extends array<KeyOrKeyNode>
 >(
 	o: o,
 	keys: keys
 ) =>
-	`Key${keys.length === 1 ? "" : "s"} ${keys.map(typeKeyToString).join(", ")} ${keys.length === 1 ? "does" : "do"} not exist on ${o}` as writeInvalidKeysMessage<
-		o,
-		keys
-	>
-
-export type writeInvalidKeysMessage<
-	o extends string,
-	keys extends array<TypeKey>
-> = `Key${keys["length"] extends 1 ? "" : "s"} ${join<{ [i in keyof keys]: typeKeyToString<keys[i]> }, ", ">} ${keys["length"] extends 1 ? "does" : "do"} not exist on ${o}`
+	`Key${keys.length === 1 ? "" : "s"} ${keys.map(typeKeyToString).join(", ")} ${keys.length === 1 ? "does" : "do"} not exist on ${o}`

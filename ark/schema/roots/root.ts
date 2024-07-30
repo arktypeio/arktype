@@ -4,12 +4,12 @@ import type {
 	ExclusiveDateRangeSchema,
 	ExclusiveNumericRangeSchema,
 	FlatRef,
+	GettableKeyOrNode,
 	InclusiveDateRangeSchema,
 	InclusiveNumericRangeSchema,
+	KeyOrKeyNode,
 	LimitSchemaValue,
 	PatternSchema,
-	TypeIndexer,
-	TypeKey,
 	UnknownRangeSchema
 } from "@ark/schema"
 import {
@@ -116,11 +116,11 @@ export abstract class BaseRoot<
 		return result instanceof ArkErrors ? result.throw() : result
 	}
 
-	pick(...keys: TypeKey[]): BaseRoot {
+	pick(...keys: KeyOrKeyNode[]): BaseRoot {
 		return this.applyStructuralOperation("pick", keys)
 	}
 
-	omit(...keys: TypeKey[]): BaseRoot {
+	omit(...keys: KeyOrKeyNode[]): BaseRoot {
 		return this.applyStructuralOperation("omit", keys)
 	}
 
@@ -180,7 +180,7 @@ export abstract class BaseRoot<
 		)
 	}
 
-	get(...path: TypeIndexer[]): BaseRoot {
+	get(...path: GettableKeyOrNode[]): BaseRoot {
 		if (path[0] === undefined) return this
 
 		if (this.hasKind("union")) {
@@ -193,7 +193,9 @@ export abstract class BaseRoot<
 		const branch = this as {} as UnionChildNode
 
 		return (
-			branch.structure?.get(...(path as {} as NonEmptyList<TypeIndexer>)) ??
+			branch.structure?.get(
+				...(path as {} as NonEmptyList<GettableKeyOrNode>)
+			) ??
 			throwParseError(writeNonStructuralOperandMessage("get", this.expression))
 		)
 	}

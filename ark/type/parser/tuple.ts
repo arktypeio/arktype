@@ -5,26 +5,30 @@ import {
 	type Morph,
 	type MutableInner,
 	type Node,
-	type Out,
 	type Predicate,
-	type UnionChildKind,
-	type inferIntersection,
-	type inferMorphOut,
-	type inferPredicate
+	type UnionChildKind
 } from "@ark/schema"
 import {
+	$ark,
 	append,
 	objectKindOrDomainOf,
 	throwParseError,
+	type array,
 	type BuiltinObjectKind,
+	type conform,
 	type Constructor,
 	type Domain,
 	type ErrorMessage,
-	type array,
-	type conform,
 	type show
 } from "@ark/util"
-import type { distillConstrainableIn, distillOut } from "../ast.js"
+import type {
+	distillConstrainableIn,
+	distillOut,
+	inferMorphOut,
+	inferPredicate,
+	Out
+} from "../ast.js"
+import type { inferIntersection } from "../intersect.js"
 import type { ParseContext } from "../scope.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
 import type { InfixOperator, PostfixExpression } from "./semantic/infer.js"
@@ -136,7 +140,7 @@ const appendSpreadBranch = (
 	const spread = branch.firstReferenceOfKind("sequence")
 	if (!spread) {
 		// the only array with no sequence reference is unknown[]
-		return appendElement(base, "variadic", intrinsicBases.unknown.internal)
+		return appendElement(base, "variadic", $ark.intrinsic.unknown)
 	}
 	spread.prefix.forEach(node => appendElement(base, "required", node))
 	spread.optionals.forEach(node => appendElement(base, "optional", node))

@@ -4,7 +4,7 @@ import {
 	type BoundKind,
 	type NodeSchema
 } from "@ark/schema"
-import { isKeyOf, throwParseError, type keySet } from "@ark/util"
+import { $ark, isKeyOf, throwParseError, type keySet } from "@ark/util"
 import type { DateLiteral, LimitLiteral } from "../../../../ast.js"
 import type { astToString } from "../../../semantic/utils.js"
 import type {

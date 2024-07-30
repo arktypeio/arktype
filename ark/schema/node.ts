@@ -392,23 +392,23 @@ export abstract class BaseNode<
 }
 
 /** a literal key (named property) or a node (index signatures) representing part of a type structure */
-export type TypeKey = Key | BaseRoot
+export type KeyOrKeyNode = Key | BaseRoot
 
-export type TypeIndexer = TypeKey | number
+export type GettableKeyOrNode = KeyOrKeyNode | number
 
 export type FlatRef<root extends BaseRoot = BaseRoot> = {
-	path: array<TypeKey>
+	path: array<KeyOrKeyNode>
 	node: root
 	propString: string
 }
 
-export const typePathToPropString = (path: array<TypeKey>) =>
+export const typePathToPropString = (path: array<KeyOrKeyNode>) =>
 	pathToPropString(path, {
 		stringifyNonKey: node => node.expression
 	})
 
 export const flatRef = <node extends BaseRoot>(
-	path: array<TypeKey>,
+	path: array<KeyOrKeyNode>,
 	node: node
 ): FlatRef<node> => ({
 	path,
@@ -447,7 +447,7 @@ export type ShouldTransformFn = (
 ) => boolean
 
 export interface DeepNodeTransformContext extends DeepNodeTransformOptions {
-	path: mutable<array<TypeKey>>
+	path: mutable<array<KeyOrKeyNode>>
 	seen: { [originalId: string]: (() => BaseNode | undefined) | undefined }
 	parseOptions: NodeParseOptions
 }

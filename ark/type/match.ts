@@ -1,4 +1,3 @@
-import type { inferIntersection } from "@ark/schema"
 import type {
 	ErrorMessage,
 	isDisjoint,
@@ -8,6 +7,7 @@ import type {
 	unionToTuple
 } from "@ark/util"
 import type { distillOut, Narrowed } from "./ast.js"
+import type { inferIntersection } from "./intersect.js"
 import type { Scope } from "./scope.js"
 import type { inferTypeRoot, validateTypeRoot } from "./type.js"
 
