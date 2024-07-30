@@ -100,7 +100,7 @@ export const parseGenericInstantiation = (
 		return s.error(writeInvalidGenericArgCountMessage(name, g.names, []))
 
 	const parsedArgs = parseGenericArgs(name, g, s)
-	return g(...(parsedArgs as never)) as never
+	return g(...parsedArgs) as never
 }
 
 export type parseGenericInstantiation<
