@@ -1,4 +1,5 @@
-import type { ArkErrors, inferred } from "@ark/schema"
+import type { ArkErrors } from "@ark/schema"
+import type { inferred } from "./ast.js"
 import type { GenericHktParser } from "./generic.js"
 import { keywordNodes, type Ark } from "./keywords/keywords.js"
 import type { MatchParser } from "./match.js"

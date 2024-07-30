@@ -1,10 +1,10 @@
-import { type NormalizedPatternSchema, defineRoot } from "@ark/schema"
+import { type NormalizedPatternSchema, defineSchema } from "@ark/schema"
 
 export const defineRegex = (
 	regex: RegExp,
 	description: string
 ): { domain: "string"; pattern: NormalizedPatternSchema } =>
-	defineRoot({
+	defineSchema({
 		domain: "string",
 		pattern: {
 			rule: regex.source,

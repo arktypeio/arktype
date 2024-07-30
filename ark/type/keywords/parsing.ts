@@ -1,4 +1,4 @@
-import { defineRoot } from "@ark/schema"
+import { defineSchema } from "@ark/schema"
 import {
 	isWellFormedInteger,
 	wellFormedIntegerMatcher,
@@ -10,12 +10,12 @@ import { scope } from "../scope.js"
 import { tryParseDatePattern } from "./utils/date.js"
 import { defineRegex } from "./utils/regex.js"
 
-const number = defineRoot({
+const number = defineSchema({
 	in: defineRegex(wellFormedNumberMatcher, "a well-formed numeric string"),
 	morphs: (s: string) => Number.parseFloat(s)
 })
 
-const integer = defineRoot({
+const integer = defineSchema({
 	in: defineRegex(wellFormedIntegerMatcher, "a well-formed integer string"),
 	morphs: (s: string, ctx) => {
 		if (!isWellFormedInteger(s))
@@ -30,7 +30,7 @@ const integer = defineRoot({
 	}
 })
 
-const url = defineRoot({
+const url = defineSchema({
 	in: "string",
 	morphs: (s: string, ctx) => {
 		try {
@@ -41,7 +41,7 @@ const url = defineRoot({
 	}
 })
 
-const json = defineRoot({
+const json = defineSchema({
 	in: "string",
 	morphs: (s: string, ctx): object => {
 		try {
@@ -52,7 +52,7 @@ const json = defineRoot({
 	}
 })
 
-const date = defineRoot({
+const date = defineSchema({
 	in: "string",
 	morphs: (s: string, ctx) => {
 		const result = tryParseDatePattern(s)
@@ -67,7 +67,7 @@ export type ParsedFormData = Record<string, FormDataValue | FormDataValue[]>
 // support Node18
 const File = globalThis.File ?? Blob
 
-const formData = defineRoot({
+const formData = defineSchema({
 	in: FormData,
 	morphs: (data: FormData): ParsedFormData => {
 		const result: ParsedFormData = {}

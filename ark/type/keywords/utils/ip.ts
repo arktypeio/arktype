@@ -1,4 +1,4 @@
-import { defineRoot } from "@ark/schema"
+import { defineSchema } from "@ark/schema"
 import { defineRegex } from "./regex.js"
 
 // Based on https://github.com/validatorjs/validator.js/blob/master/src/lib/isIP.js
@@ -24,4 +24,4 @@ const ipv6Matcher = new RegExp(
 
 export const ipv6 = defineRegex(ipv6Matcher, "a valid IPv6 address")
 
-export const ip = defineRoot([ipv4, ipv6])
+export const ip = defineSchema([ipv4, ipv6])

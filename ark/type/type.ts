@@ -14,8 +14,7 @@ import {
 	type PatternSchema,
 	type Predicate,
 	type UndeclaredKeyBehavior,
-	type exclusivizeRangeSchema,
-	type inferred
+	type exclusivizeRangeSchema
 } from "@ark/schema"
 import {
 	Callable,
@@ -38,7 +37,8 @@ import type {
 	distillOut,
 	inferMorphOut,
 	inferPipes,
-	inferPredicate
+	inferPredicate,
+	inferred
 } from "./ast.js"
 import {
 	parseGenericParams,

@@ -1,4 +1,4 @@
-import { defineRoot } from "@ark/schema"
+import { defineSchema } from "@ark/schema"
 import type {
 	anonymous,
 	AtLeast,
@@ -15,7 +15,7 @@ import { defineRegex } from "./utils/regex.js"
 
 // Non-trivial expressions should have an explanation or attribution
 
-const url = defineRoot({
+const url = defineSchema({
 	domain: "string",
 	predicate: {
 		predicate: (s: string) => {
@@ -50,7 +50,7 @@ const semver = defineRegex(
 	"a valid semantic version (see https://semver.org/)"
 )
 
-const creditCard = defineRoot({
+const creditCard = defineSchema({
 	domain: "string",
 	pattern: {
 		rule: creditCardMatcher.source,
@@ -68,7 +68,7 @@ const creditCard = defineRoot({
  *
  * @see https://262.ecma-international.org/15.0/index.html#sec-time-values-and-time-range
  */
-const unixTimestamp = defineRoot({
+const unixTimestamp = defineSchema({
 	domain: {
 		domain: "number",
 		description: "a number representing a Unix timestamp"

@@ -24,6 +24,10 @@ import type { platformObjectExports } from "./keywords/platformObjects.js"
 import type { typedArrayExports } from "./keywords/typedArray.js"
 import type { instantiateType } from "./type.js"
 
+export const inferred: unique symbol = Symbol("inferred")
+
+export type inferred = typeof inferred
+
 export type Comparator = "<" | "<=" | ">" | ">=" | "=="
 
 export type RegexLiteral<source extends string = string> = `/${source}/`
@@ -36,7 +40,7 @@ export type ConstraintSet = Record<PropertyKey, 1>
 
 export type Constraints = Record<string, ConstraintSet>
 
-export declare const constrained: unique symbol
+export const constrained: unique symbol = Symbol("constrained")
 
 export type constrained = typeof constrained
 

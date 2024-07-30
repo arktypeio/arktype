@@ -1,7 +1,12 @@
-import { generic, GenericHkt, type RootModule, schemaScope } from "@ark/schema"
+import {
+	GenericHkt,
+	genericRoot,
+	type RootModule,
+	schemaScope
+} from "@ark/schema"
 import { $ark, type conform, type Key, type show } from "@ark/util"
 
-const Record = generic(["K", $ark.intrinsic.propertyKey], "V")(
+const Record = genericRoot(["K", $ark.intrinsic.propertyKey], "V")(
 	args => ({
 		domain: "object",
 		index: {
@@ -16,7 +21,7 @@ const Record = generic(["K", $ark.intrinsic.propertyKey], "V")(
 	}
 )
 
-const Pick = generic(
+const Pick = genericRoot(
 	["T", $ark.intrinsic.object],
 	["K", $ark.intrinsic.propertyKey]
 )(
@@ -28,7 +33,7 @@ const Pick = generic(
 	}
 )
 
-const Omit = generic(
+const Omit = genericRoot(
 	["T", $ark.intrinsic.object],
 	["K", $ark.intrinsic.propertyKey]
 )(
@@ -40,7 +45,7 @@ const Omit = generic(
 	}
 )
 
-const Partial = generic(["T", $ark.intrinsic.object])(
+const Partial = genericRoot(["T", $ark.intrinsic.object])(
 	args => args.T.partial(),
 	class PartialHkt extends GenericHkt {
 		declare hkt: (
@@ -49,7 +54,7 @@ const Partial = generic(["T", $ark.intrinsic.object])(
 	}
 )
 
-const Required = generic(["T", $ark.intrinsic.object])(
+const Required = genericRoot(["T", $ark.intrinsic.object])(
 	args => args.T.required(),
 	class RequiredHkt extends GenericHkt {
 		declare hkt: (
@@ -58,7 +63,7 @@ const Required = generic(["T", $ark.intrinsic.object])(
 	}
 )
 
-const Exclude = generic("T", "U")(
+const Exclude = genericRoot("T", "U")(
 	args => args.T.exclude(args.U),
 	class ExcludeHkt extends GenericHkt {
 		declare hkt: (
@@ -67,7 +72,7 @@ const Exclude = generic("T", "U")(
 	}
 )
 
-const Extract = generic("T", "U")(
+const Extract = genericRoot("T", "U")(
 	args => args.T.extract(args.U),
 	class ExtractHkt extends GenericHkt {
 		declare hkt: (

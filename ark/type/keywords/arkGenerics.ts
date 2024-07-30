@@ -1,9 +1,9 @@
-import { generic, GenericHkt, schemaScope } from "@ark/schema"
+import { GenericHkt, genericRoot, schemaScope } from "@ark/schema"
 import { liftArray, type conform } from "@ark/util"
 import type { Out } from "../ast.js"
 import type { Module } from "../module.js"
 
-const ArkLiftArray = generic("T")(
+const ArkLiftArray = genericRoot("T")(
 	args => args.T.or(args.T.array()).pipe(liftArray),
 	class liftArrayHkt extends GenericHkt {
 		declare hkt: (
