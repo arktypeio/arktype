@@ -1,12 +1,12 @@
+import { defineRoot } from "@ark/schema"
 import {
 	isWellFormedInteger,
 	wellFormedIntegerMatcher,
 	wellFormedNumberMatcher
 } from "@ark/util"
-import type { number } from "../ast.js"
-import type { SchemaModule } from "../module.js"
-import type { Out } from "../roots/morph.js"
-import { defineRoot, schemaScope } from "../scope.js"
+import type { number, Out } from "../ast.js"
+import type { Module } from "../module.js"
+import { scope } from "../scope.js"
 import { tryParseDatePattern } from "./utils/date.js"
 import { defineRegex } from "./utils/regex.js"
 
@@ -99,9 +99,9 @@ export type parsingExports = {
 	formData: (In: FormData) => Out<ParsedFormData>
 }
 
-export type parsing = SchemaModule<parsingExports>
+export type parsing = Module<parsingExports>
 
-export const parsing: parsing = schemaScope({
+export const parsing: parsing = scope({
 	url,
 	number,
 	integer,

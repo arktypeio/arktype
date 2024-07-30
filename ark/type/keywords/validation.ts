@@ -1,3 +1,4 @@
+import { defineRoot } from "@ark/schema"
 import type {
 	anonymous,
 	AtLeast,
@@ -6,8 +7,8 @@ import type {
 	number,
 	string
 } from "../ast.js"
-import type { SchemaModule } from "../module.js"
-import { defineRoot, schemaScope } from "../scope.js"
+import type { Module } from "../module.js"
+import { scope } from "../scope.js"
 import { creditCardMatcher, isLuhnValid } from "./utils/creditCard.js"
 import { ip } from "./utils/ip.js"
 import { defineRegex } from "./utils/regex.js"
@@ -105,9 +106,9 @@ export interface validationExports {
 	>
 }
 
-export type validation = SchemaModule<validationExports>
+export type validation = Module<validationExports>
 
-export const validation: validation = schemaScope(
+export const validation: validation = scope(
 	{
 		alpha: defineRegex(/^[A-Za-z]*$/, "only letters"),
 		alphanumeric: defineRegex(/^[A-Za-z\d]*$/, "only letters and digits 0-9"),

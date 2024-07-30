@@ -1,5 +1,4 @@
-import type { NormalizedPatternSchema } from "../../refinements/pattern.js"
-import { defineRoot } from "../../scope.js"
+import { type NormalizedPatternSchema, defineRoot } from "@ark/schema"
 
 export const defineRegex = (
 	regex: RegExp,

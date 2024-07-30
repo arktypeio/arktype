@@ -1,6 +1,7 @@
-import type { SchemaModule } from "../module.js"
-import type { Out } from "../roots/morph.js"
-import { defineRoot, schemaScope } from "../scope.js"
+import { defineRoot } from "@ark/schema"
+import type { Out } from "../ast.js"
+import type { Module } from "../module.js"
+import { scope } from "../scope.js"
 
 const trim = defineRoot({
 	in: "string",
@@ -22,9 +23,9 @@ export type formattingExports = {
 	uppercase: (In: string) => Out<string>
 	lowercase: (In: string) => Out<string>
 }
-export type formatting = SchemaModule<formattingExports>
+export type formatting = Module<formattingExports>
 
-export const formatting: formatting = schemaScope({
+export const formatting: formatting = scope({
 	trim,
 	uppercase,
 	lowercase

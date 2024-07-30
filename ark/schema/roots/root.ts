@@ -18,11 +18,8 @@ import {
 	includes,
 	omit,
 	throwParseError,
-	type ErrorMessage,
 	type NonEmptyList,
-	type anyOrNever,
-	type array,
-	type unset
+	type array
 } from "@ark/util"
 import {
 	throwInvalidOperandError,
@@ -456,15 +453,6 @@ export const typeOrTermExtends = (t: unknown, base: unknown) =>
 		:	base.allows(t)
 	: hasArkKind(t, "root") ? t.hasUnit(base)
 	: base === t
-
-export type validateChainedAsArgs<t> =
-	[t] extends [unset] ?
-		[t] extends [anyOrNever] ?
-			[]
-		:	[
-				ErrorMessage<"as requires an explicit type parameter like myType.as<t>()">
-			]
-	:	[]
 
 export type intersectRoot<l extends RootKind, r extends NodeKind> =
 	[l, r] extends [r, l] ? l

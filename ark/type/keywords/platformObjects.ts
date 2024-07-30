@@ -1,6 +1,5 @@
-import type { Constructor } from "@ark/util"
-import type { SchemaModule } from "../module.js"
-import { schemaScope } from "../scope.js"
+import type { Module } from "../module.js"
+import { scope } from "../scope.js"
 
 // Platform APIs
 // See https://developer.mozilla.org/en-US/docs/Web/API
@@ -16,21 +15,19 @@ export interface platformObjectExports {
 	URL: URL
 }
 
-export type platformObjects = SchemaModule<platformObjectExports>
+export type platformObjects = Module<platformObjectExports>
 
-export const platformObjects: platformObjects = schemaScope(
+export const platformObjects: platformObjects = scope(
 	{
-		ArrayBuffer,
-		Blob,
+		ArrayBuffer: ["instanceof", ArrayBuffer],
+		Blob: ["instanceof", Blob],
 		// support Node18
-		File: globalThis.File ?? Blob,
-		FormData,
-		Headers,
-		Request,
-		Response,
-		URL
-	} satisfies {
-		[k in keyof platformObjectExports]: Constructor<platformObjectExports[k]>
+		File: ["instanceof", globalThis.File ?? Blob],
+		FormData: ["instanceof", FormData],
+		Headers: ["instanceof", Headers],
+		Request: ["instanceof", Request],
+		Response: ["instanceof", Response],
+		URL: ["instanceof", URL]
 	},
 	{ prereducedAliases: true }
 ).export()

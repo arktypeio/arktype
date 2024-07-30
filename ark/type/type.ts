@@ -11,21 +11,16 @@ import {
 	type InclusiveDateRangeSchema,
 	type InclusiveNumericRangeSchema,
 	type Morph,
-	type MorphAst,
-	type Out,
 	type PatternSchema,
 	type Predicate,
 	type UndeclaredKeyBehavior,
 	type exclusivizeRangeSchema,
-	type inferIntersection,
-	type inferMorphOut,
-	type inferPipes,
-	type inferred,
-	type validateChainedAsArgs
+	type inferred
 } from "@ark/schema"
 import {
 	Callable,
 	type Constructor,
+	type ErrorMessage,
 	type Json,
 	type anyOrNever,
 	type array,
@@ -34,11 +29,15 @@ import {
 } from "@ark/util"
 import type { type } from "./ark.js"
 import type {
+	MorphAst,
+	Out,
 	constrain,
 	distillConstrainableIn,
 	distillConstrainableOut,
 	distillIn,
 	distillOut,
+	inferMorphOut,
+	inferPipes,
 	inferPredicate
 } from "./ast.js"
 import {
@@ -49,6 +48,7 @@ import {
 	type parseValidGenericParams,
 	type validateParameterString
 } from "./generic.js"
+import type { inferIntersection } from "./intersect.js"
 import type { arkKeyOf, getArkKey, toArkKey } from "./keys.js"
 import type {
 	inferDefinition,
@@ -559,3 +559,12 @@ export type instantiateType<t, $> =
 			: Type.Object<t, $>
 		:	Type<t, $>
 	:	Type.Morph<t, $>
+
+export type validateChainedAsArgs<t> =
+	[t] extends [unset] ?
+		[t] extends [anyOrNever] ?
+			[]
+		:	[
+				ErrorMessage<"as requires an explicit type parameter like myType.as<t>()">
+			]
+	:	[]

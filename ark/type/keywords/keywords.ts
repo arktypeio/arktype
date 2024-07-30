@@ -1,13 +1,12 @@
-import type { SchemaModule } from "../module.js"
-import { schemaScope, type BaseScope } from "../scope.js"
 // the import ordering here is important so builtin keywords can be resolved
 // and used to bootstrap nodes with constraints
 import { tsKeywords, type tsKeywordExports } from "./tsKeywords.js"
 
 import { $ark } from "@ark/util"
+import type { Module } from "../module.js"
+import { scope, type Scope } from "../scope.js"
 import { arkGenerics, type arkGenericsExports } from "./arkGenerics.js"
 import { formatting, type formattingExports } from "./format.js"
-import { internal, type internalExports } from "./internal.js"
 import { jsObjects, type jsObjectExports } from "./jsObjects.js"
 import { parsing, type parsingExports } from "./parsing.js"
 import {
@@ -18,12 +17,11 @@ import { tsGenerics, type tsGenericsExports } from "./tsGenerics.js"
 import { typedArray, type typedArrayExports } from "./typedArray.js"
 import { validation, type validationExports } from "./validation.js"
 
-export const ambientRootScope: BaseScope<Ark> = schemaScope({
+export const ambientRootScope: Scope<Ark> = scope({
 	...tsKeywords,
 	...jsObjects,
 	...platformObjects,
 	...validation,
-	...internal,
 	...tsGenerics,
 	...arkGenerics,
 	TypedArray: typedArray,
@@ -33,7 +31,7 @@ export const ambientRootScope: BaseScope<Ark> = schemaScope({
 
 $ark.ambient = ambientRootScope.internal
 
-export const keywordNodes: SchemaModule<Ark> = ambientRootScope.export()
+export const keywordNodes: Module<Ark> = ambientRootScope.export()
 
 // this type is redundant with the inferred definition of ark but allow types
 // derived from the default scope to be calulated more efficiently
@@ -43,9 +41,8 @@ export interface Ark
 		platformObjectExports,
 		validationExports,
 		tsGenericsExports,
-		arkGenericsExports,
-		internalExports {
-	TypedArray: SchemaModule<typedArrayExports>
-	parse: SchemaModule<parsingExports>
-	format: SchemaModule<formattingExports>
+		arkGenericsExports {
+	TypedArray: Module<typedArrayExports>
+	parse: Module<parsingExports>
+	format: Module<formattingExports>
 }

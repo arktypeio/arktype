@@ -1,7 +1,5 @@
+import { generic, GenericHkt, type RootModule, schemaScope } from "@ark/schema"
 import { $ark, type conform, type Key, type show } from "@ark/util"
-import { GenericHkt } from "../generic.js"
-import type { RootModule } from "../module.js"
-import { generic, schemaScope } from "../scope.js"
 
 const Record = generic(["K", $ark.intrinsic.propertyKey], "V")(
 	args => ({

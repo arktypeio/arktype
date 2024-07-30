@@ -1,4 +1,4 @@
-import { defineRoot } from "../../scope.js"
+import { defineRoot } from "@ark/schema"
 import { defineRegex } from "./regex.js"
 
 // Based on https://github.com/validatorjs/validator.js/blob/master/src/lib/isIP.js

@@ -1,6 +1,5 @@
-import type { Constructor } from "@ark/util"
-import type { SchemaModule } from "../module.js"
-import { schemaScope } from "../scope.js"
+import type { Module } from "../module.js"
+import { scope } from "../scope.js"
 
 // ECMAScript Objects
 // See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
@@ -17,20 +16,20 @@ export interface jsObjectExports {
 	Promise: Promise<unknown>
 }
 
-export type jsObjects = SchemaModule<jsObjectExports>
+export type jsObjects = Module<jsObjectExports>
 
-export const jsObjects: jsObjects = schemaScope(
+export const jsObjects: jsObjects = scope(
 	{
-		Array,
-		Date,
-		Error,
-		Function,
-		Map,
-		RegExp,
-		Set,
-		WeakMap,
-		WeakSet,
-		Promise
-	} satisfies { [k in keyof jsObjectExports]: Constructor<jsObjectExports[k]> },
-	{ prereducedAliases: true, intrinsic: true }
+		Array: ["instanceof", Array],
+		Date: ["instanceof", Date],
+		Error: ["instanceof", Error],
+		Function: ["instanceof", Function],
+		Map: ["instanceof", Map],
+		RegExp: ["instanceof", RegExp],
+		Set: ["instanceof", Set],
+		WeakMap: ["instanceof", WeakMap],
+		WeakSet: ["instanceof", WeakSet],
+		Promise: ["instanceof", Promise]
+	},
+	{ prereducedAliases: true }
 ).export()

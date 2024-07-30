@@ -1,6 +1,5 @@
-import type { RootSchema } from "../kinds.js"
-import type { SchemaModule } from "../module.js"
-import { schemaScope } from "../scope.js"
+import type { Module } from "../module.js"
+import { scope } from "../scope.js"
 
 export interface tsKeywordExports {
 	any: any
@@ -18,9 +17,9 @@ export interface tsKeywordExports {
 	undefined: undefined
 }
 
-export type tsKeywords = SchemaModule<tsKeywordExports>
+export type tsKeywords = Module<tsKeywordExports>
 
-export const tsKeywords: tsKeywords = schemaScope(
+export const tsKeywords: tsKeywords = scope(
 	{
 		any: {},
 		bigint: "bigint",
@@ -36,8 +35,6 @@ export const tsKeywords: tsKeywords = schemaScope(
 		true: { unit: true },
 		unknown: {},
 		undefined: { unit: undefined }
-		// void is not included because it doesn't have a well-defined meaning
-		// as a standalone type
-	} satisfies Record<keyof tsKeywordExports, RootSchema>,
-	{ prereducedAliases: true, intrinsic: true }
+	},
+	{ prereducedAliases: true }
 ).export()
