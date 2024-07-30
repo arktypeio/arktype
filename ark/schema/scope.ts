@@ -161,7 +161,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 	}
 
 	@bound
-	defineSchema(def: RootSchema): RootSchema {
+	defineSchema<def extends RootSchema>(def: def): def {
 		return def
 	}
 
@@ -421,7 +421,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 	resolve<name extends exportedNameOf<$>>(
 		name: name
 	): destructuredExportContext<$, []>[name] {
-		return this.export()[name] as never
+		return this.export()[name as never]
 	}
 
 	abstract parseRoot(schema: any, opts?: NodeParseOptions): BaseRoot
@@ -502,9 +502,8 @@ export const root: SchemaScope = new SchemaScope({})
 
 export const schema: SchemaScope["schema"] = root.schema
 export const node: SchemaScope["node"] = root.node
-export const defineRoot: SchemaScope["defineRoot"] = root.defineRoot
-export const units: SchemaScope["units"] = root.units
-export const generic: SchemaScope["generic"] = root.generic
+export const defineSchema: SchemaScope["defineSchema"] = root.defineSchema
+export const genericRoot: SchemaScope["generic"] = root.generic
 
 export const parseAsSchema = (
 	def: unknown,

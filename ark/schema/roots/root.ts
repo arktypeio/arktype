@@ -38,7 +38,7 @@ import {
 	type kindRightOf
 } from "../shared/implement.js"
 import { intersectNodesRoot, pipeNodesRoot } from "../shared/intersections.js"
-import { arkKind, hasArkKind, inferred } from "../shared/utils.js"
+import { arkKind, hasArkKind } from "../shared/utils.js"
 import type {
 	StructureInner,
 	StructureNode,
@@ -52,11 +52,9 @@ export interface InternalRootDeclaration extends BaseNodeDeclaration {
 }
 
 export abstract class BaseRoot<
-	/** uses -ignore rather than -expect-error because this is not an error in .d.ts
-	 * @ts-ignore allow instantiation assignment to the base type */
+	/** @ts-expect-error allow cast variance */
 	out d extends InternalRootDeclaration = InternalRootDeclaration
 > extends BaseNode<d> {
-	[inferred]?: unknown
 	readonly branches: readonly Node<UnionChildKind>[] =
 		this.hasKind("union") ? this.inner.branches : [this as never]
 
