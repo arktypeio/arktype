@@ -1,4 +1,4 @@
-import { hasArkKind, type BaseRoot, type string } from "@ark/schema"
+import { hasArkKind, type BaseRoot } from "@ark/schema"
 import {
 	isThunk,
 	objectKindOf,
@@ -17,6 +17,7 @@ import {
 	type show
 } from "@ark/util"
 import type { type } from "../ark.js"
+import type { string } from "../ast.js"
 import type { ParseContext } from "../scope.js"
 import {
 	parseObjectLiteral,

@@ -1,4 +1,3 @@
-import type { constrain, of } from "./ast.js"
 import { BaseConstraint } from "./constraint.js"
 import type { errorContext } from "./kinds.js"
 import type { NodeCompiler } from "./shared/compile.js"
@@ -104,10 +103,3 @@ export type PredicateCast<input = never, narrowed extends input = input> = (
 	input: input,
 	ctx: TraversalContext
 ) => input is narrowed
-
-export type inferPredicate<t, predicate> =
-	predicate extends (data: any, ...args: any[]) => data is infer narrowed ?
-		t extends of<unknown, infer constraints> ?
-			constrain<of<narrowed, constraints>, "predicate", any>
-		:	constrain<narrowed, "predicate", any>
-	:	constrain<t, "predicate", any>

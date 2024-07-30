@@ -1,18 +1,14 @@
-import type { array, Digit, Key } from "@ark/util"
+import type { array, Key, NonNegativeIntegerLiteral } from "@ark/util"
 import type { SchemaModule } from "../module.js"
 import { root, schemaScope } from "../scope.js"
 // these are needed to create some internal types
 import { arrayIndexSource } from "../structure/shared.js"
 import "./tsKeywords.js"
 
-export type NonNegativeIntegerString =
-	| `${Digit}`
-	| (`${Exclude<Digit, 0>}${string}` & `${bigint}`)
-
 export interface internalExports {
 	lengthBoundable: string | array
 	propertyKey: Key
-	nonNegativeIntegerString: NonNegativeIntegerString
+	nonNegativeIntegerString: NonNegativeIntegerLiteral
 }
 
 export type internal = SchemaModule<internalExports>

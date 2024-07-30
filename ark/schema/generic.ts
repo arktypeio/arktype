@@ -134,7 +134,7 @@ export class GenericRoot<
 
 	@cached
 	get baseInstantiation(): BaseRoot {
-		return this(...(this.constraints as never)) as never
+		return this(...(this.constraints as never[])) as never
 	}
 
 	validateBaseInstantiation(): this {

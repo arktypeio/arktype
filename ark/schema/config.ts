@@ -5,8 +5,8 @@ import {
 	type requireKeys,
 	type show
 } from "@ark/util"
-import type { Ark } from "./keywords/keywords.js"
-import type { BaseScope, IntrinsicKeywords } from "./scope.js"
+import type { intrinsic } from "./intrinsic.js"
+import type { BaseScope } from "./scope.js"
 import type {
 	ActualWriter,
 	ArkErrorCode,
@@ -22,19 +22,17 @@ import {
 
 declare global {
 	export interface ArkEnv {
-		$(): Ark
 		meta(): {}
 		preserve(): never
 		registry(): {
 			ambient: BaseScope
-			intrinsic: IntrinsicKeywords
+			intrinsic: typeof intrinsic
 			config: ArkConfig
 			defaultConfig: ResolvedArkConfig
 		}
 	}
 
 	export namespace ArkEnv {
-		export type $ = ReturnType<ArkEnv["$"]>
 		export type meta = ReturnType<ArkEnv["meta"]>
 		export type preserve = ReturnType<ArkEnv["preserve"]>
 	}
@@ -101,8 +99,6 @@ export const mergeConfigs = (
 export interface ArkConfig extends Partial<Readonly<NodeConfigsByKind>> {
 	jitless?: boolean
 	/** @internal */
-	intrinsic?: boolean
-	/** @internal */
 	prereducedAliases?: boolean
 }
 
@@ -112,10 +108,9 @@ type resolveConfig<config extends ArkConfig> = {
 
 export type ResolvedArkConfig = resolveConfig<ArkConfig>
 
-const nonInheritedKeys = [
-	"intrinsic",
-	"prereducedAliases"
-] as const satisfies array<keyof ArkConfig>
+const nonInheritedKeys = ["prereducedAliases"] as const satisfies array<
+	keyof ArkConfig
+>
 
 export const extendConfig = (
 	base: ArkConfig,

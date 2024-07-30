@@ -7,7 +7,7 @@ import {
 	type PartialRecord,
 	type show
 } from "@ark/util"
-import type { Constraints, of, parseConstraints } from "../ast.js"
+import type { Constraints, of, parseConstraints } from "../../type/ast.js"
 import type { BaseNode } from "../node.js"
 import type {
 	MorphAst,

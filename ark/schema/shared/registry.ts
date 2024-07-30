@@ -2,9 +2,9 @@ import {
 	$ark,
 	groupBy,
 	register,
-	type InitialRegistryContents
+	type InitialRegistryContents,
+	type NonNegativeIntegerLiteral
 } from "@ark/util"
-import type { NonNegativeIntegerString } from "../keywords/internal.js"
 
 let _registryName = "$ark"
 let suffix = 2
@@ -55,4 +55,4 @@ export const registeredReference = (
 ): RegisteredReference => reference(register(value))
 
 export type RegisteredReference<to extends string = string> =
-	`$ark${"" | NonNegativeIntegerString}.${to}`
+	`$ark${"" | NonNegativeIntegerLiteral}.${to}`

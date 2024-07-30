@@ -1,4 +1,12 @@
 import type {
+	constraintKindOf,
+	DefaultableAst,
+	MorphAst,
+	NodeSchema,
+	Out,
+	PrimitiveConstraintKind
+} from "@ark/schema"
+import type {
 	anyOrNever,
 	array,
 	BuiltinObjectKind,
@@ -10,13 +18,8 @@ import type {
 	propValueOf,
 	show
 } from "@ark/util"
-import type { PrimitiveConstraintKind } from "./constraint.js"
 import type { platformObjectExports } from "./keywords/platformObjects.js"
 import type { typedArrayExports } from "./keywords/typedArray.js"
-import type { NodeSchema } from "./kinds.js"
-import type { constraintKindOf } from "./roots/intersection.js"
-import type { MorphAst, Out } from "./roots/morph.js"
-import type { DefaultableAst } from "./structure/optional.js"
 
 export type Comparator = "<" | "<=" | ">" | ">=" | "=="
 
@@ -424,3 +427,10 @@ type TerminallyInferredObjectKind =
 	| BuiltinObjects[Exclude<BuiltinObjectKind, "Array" | "Function">]
 	| propValueOf<platformObjectExports>
 	| propValueOf<typedArrayExports>
+
+export type inferPredicate<t, predicate> =
+	predicate extends (data: any, ...args: any[]) => data is infer narrowed ?
+		t extends of<unknown, infer constraints> ?
+			constrain<of<narrowed, constraints>, "predicate", any>
+		:	constrain<narrowed, "predicate", any>
+	:	constrain<t, "predicate", any>

@@ -146,7 +146,6 @@ $ark.defaultConfig = Object.assign(
 	]),
 	{
 		jitless: envHasCsp(),
-		intrinsic: false,
 		prereducedAliases: false
 	} satisfies Omit<ResolvedArkConfig, NodeKind>
 ) as never

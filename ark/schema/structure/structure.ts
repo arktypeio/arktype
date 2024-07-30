@@ -17,7 +17,6 @@ import {
 	flattenConstraints,
 	intersectConstraints
 } from "../constraint.js"
-import type { NonNegativeIntegerString } from "../keywords/internal.js"
 import type { MutableInner } from "../kinds.js"
 import type { TypeIndexer, TypeKey } from "../node.js"
 import { typeOrTermExtends, type BaseRoot } from "../roots/root.js"
@@ -615,29 +614,6 @@ export const normalizeIndex = (
 
 	return normalized
 }
-
-export type toArkKey<o, k extends keyof o> =
-	k extends number ?
-		[o, number] extends [array, k] ?
-			NonNegativeIntegerString
-		:	`${k}`
-	:	k
-
-export type arkKeyOf<o> =
-	o extends array ?
-		| (number extends o["length"] ? NonNegativeIntegerString : never)
-		| {
-				[k in keyof o]-?: k extends `${infer index extends number}` ? index | k
-				:	never
-		  }[keyof o & `${number}`]
-	:	{
-			[k in keyof o]: k extends number ? k | `${k}` : k
-		}[keyof o]
-
-export type getArkKey<o, k extends arkKeyOf<o>> = o[Extract<
-	k extends NonNegativeIntegerString ? number : k,
-	keyof o
->]
 
 export const typeKeyToString = (k: TypeKey) =>
 	hasArkKind(k, "root") ? k.expression : printable(k)

@@ -1,5 +1,5 @@
 export { ArkError, ArkErrors, GenericHkt } from "@ark/schema"
-export type { Ark, ArkConfig, Out, constrained, inferred } from "@ark/schema"
+export type { ArkConfig, Out, inferred } from "@ark/schema"
 export { ambient, ark, declare, define, generic, match, type } from "./ark.js"
 export type { Generic } from "./generic.js"
 export { Module } from "./module.js"

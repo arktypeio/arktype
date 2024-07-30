@@ -6,7 +6,7 @@ import {
 	type array,
 	type listable
 } from "@ark/util"
-import type { distillConstrainableIn } from "../ast.js"
+import type { distillConstrainableIn } from "../../type/ast.js"
 import type { Node, NodeSchema } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"

@@ -1,18 +1,16 @@
+import type { Default, GenericHkt, inferIntersection } from "@ark/schema"
+import type { BigintLiteral, array } from "@ark/util"
 import type {
 	Date,
 	DateLiteral,
-	Default,
-	GenericHkt,
 	LimitLiteral,
 	RegexLiteral,
 	constrain,
 	distillIn,
 	distillOut,
-	inferIntersection,
 	normalizeLimit,
 	string
-} from "@ark/schema"
-import type { BigintLiteral, array } from "@ark/util"
+} from "../../ast.js"
 import type { Generic } from "../../generic.js"
 import type {
 	UnparsedScope,

@@ -1,9 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import {
-	schema,
-	validation,
-	writeOrderedIntersectionMessage
-} from "@ark/schema"
+import { schema, writeOrderedIntersectionMessage } from "@ark/schema"
 
 contextualize(() => {
 	it("binary", () => {
@@ -67,7 +63,10 @@ contextualize(() => {
 	})
 
 	it("reducible intersection with union", () => {
-		const l = validation.email
+		const l = schema({
+			domain: "string",
+			minLength: 1
+		})
 		const r = schema(["string", Array])
 		const result = l.and(r)
 		attest(result.json).equals(l.json)

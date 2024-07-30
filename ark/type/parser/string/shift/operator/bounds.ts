@@ -1,15 +1,11 @@
 import {
-	internal,
-	jsObjects,
-	tsKeywords,
 	writeUnboundableMessage,
 	type BaseRoot,
 	type BoundKind,
-	type DateLiteral,
-	type LimitLiteral,
 	type NodeSchema
 } from "@ark/schema"
 import { isKeyOf, throwParseError, type keySet } from "@ark/util"
+import type { DateLiteral, LimitLiteral } from "../../../../ast.js"
 import type { astToString } from "../../../semantic/utils.js"
 import type {
 	DynamicState,
@@ -114,7 +110,7 @@ export const getBoundKinds = (
 	root: BaseRoot,
 	boundKind: BoundExpressionKind
 ): BoundKind[] => {
-	if (root.extends(tsKeywords.number)) {
+	if (root.extends($ark.intrinsic.number)) {
 		if (typeof limit !== "number") {
 			return throwParseError(
 				writeInvalidLimitMessage(comparator, limit, boundKind)
@@ -126,7 +122,7 @@ export const getBoundKinds = (
 			: ["max"]
 		)
 	}
-	if (root.extends(internal.lengthBoundable)) {
+	if (root.extends($ark.intrinsic.lengthBoundable)) {
 		if (typeof limit !== "number") {
 			return throwParseError(
 				writeInvalidLimitMessage(comparator, limit, boundKind)
@@ -138,7 +134,7 @@ export const getBoundKinds = (
 			: ["maxLength"]
 		)
 	}
-	if (root.extends(jsObjects.Date)) {
+	if (root.extends($ark.intrinsic.Date)) {
 		// allow either numeric or date limits
 		return (
 			comparator === "==" ? ["after", "before"]

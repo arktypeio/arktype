@@ -1,7 +1,5 @@
 import {
-	jsObjects,
 	makeRootAndArrayPropertiesMutable,
-	tsKeywords,
 	type BaseMeta,
 	type BaseRoot,
 	type Morph,
@@ -10,8 +8,6 @@ import {
 	type Out,
 	type Predicate,
 	type UnionChildKind,
-	type distillConstrainableIn,
-	type distillOut,
 	type inferIntersection,
 	type inferMorphOut,
 	type inferPredicate
@@ -28,6 +24,7 @@ import {
 	type conform,
 	type show
 } from "@ark/util"
+import type { distillConstrainableIn, distillOut } from "../ast.js"
 import type { ParseContext } from "../scope.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
 import type { InfixOperator, PostfixExpression } from "./semantic/infer.js"
@@ -58,7 +55,7 @@ export const parseTupleLiteral = (def: array, ctx: ParseContext): BaseRoot => {
 			i++
 		}
 		if (spread) {
-			if (!element.extends(jsObjects.Array))
+			if (!element.extends($ark.intrinsic.Array))
 				return throwParseError(writeNonArraySpreadMessage(element.expression))
 
 			// a spread must be distributed over branches e.g.:
@@ -139,7 +136,7 @@ const appendSpreadBranch = (
 	const spread = branch.firstReferenceOfKind("sequence")
 	if (!spread) {
 		// the only array with no sequence reference is unknown[]
-		return appendElement(base, "variadic", tsKeywords.unknown.internal)
+		return appendElement(base, "variadic", intrinsicBases.unknown.internal)
 	}
 	spread.prefix.forEach(node => appendElement(base, "required", node))
 	spread.optionals.forEach(node => appendElement(base, "optional", node))

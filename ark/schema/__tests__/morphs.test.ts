@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { schema, tsKeywords } from "@ark/schema"
+import { intrinsic, schema } from "@ark/schema"
 import { wellFormedNumberMatcher } from "@ark/util"
 
 contextualize(() => {
@@ -24,7 +24,7 @@ contextualize(() => {
 		const n = schema([
 			{
 				in: "string",
-				morphs: [(s: string) => Number.parseFloat(s), tsKeywords.number]
+				morphs: [(s: string) => Number.parseFloat(s), intrinsic.number]
 			},
 			"number"
 		])

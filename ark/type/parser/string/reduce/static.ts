@@ -1,5 +1,5 @@
-import type { LimitLiteral } from "@ark/schema"
 import type { Completion, ErrorMessage, defined } from "@ark/util"
+import type { LimitLiteral } from "../../../ast.js"
 import type { Scanner } from "../shift/scanner.js"
 import type {
 	Comparator,

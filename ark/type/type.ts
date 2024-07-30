@@ -16,20 +16,12 @@ import {
 	type PatternSchema,
 	type Predicate,
 	type UndeclaredKeyBehavior,
-	type arkKeyOf,
-	type constrain,
-	type distillConstrainableIn,
-	type distillConstrainableOut,
-	type distillIn,
-	type distillOut,
 	type exclusivizeRangeSchema,
-	type getArkKey,
 	type inferIntersection,
 	type inferMorphOut,
 	type inferPipes,
 	type inferPredicate,
 	type inferred,
-	type toArkKey,
 	type validateChainedAsArgs
 } from "@ark/schema"
 import {
@@ -42,6 +34,13 @@ import {
 	type unset
 } from "@ark/util"
 import type { type } from "./ark.js"
+import type {
+	constrain,
+	distillConstrainableIn,
+	distillConstrainableOut,
+	distillIn,
+	distillOut
+} from "./ast.js"
 import {
 	parseGenericParams,
 	type Generic,
@@ -50,6 +49,7 @@ import {
 	type parseValidGenericParams,
 	type validateParameterString
 } from "./generic.js"
+import type { arkKeyOf, getArkKey, toArkKey } from "./keys.js"
 import type {
 	inferDefinition,
 	validateDeclared,

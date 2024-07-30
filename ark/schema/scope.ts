@@ -28,9 +28,6 @@ import {
 	type GenericParamDef,
 	type genericParamSchemasToAst
 } from "./generic.js"
-import type { internal } from "./keywords/internal.js"
-import type { jsObjects } from "./keywords/jsObjects.js"
-import type { tsKeywords } from "./keywords/tsKeywords.js"
 import {
 	nodeImplementationsByKind,
 	type Node,
@@ -72,10 +69,6 @@ export type resolveReference<reference extends resolvableReferenceIn<$>, $> =
 	reference extends keyof $ ? $[reference] : $[`#${reference}` & keyof $]
 
 export type PrivateDeclaration<key extends string = string> = `#${key}`
-
-// these allow builtin types to be accessed during parsing without cyclic imports
-// they are populated as each scope is parsed with `intrinsic` in its config
-export interface IntrinsicKeywords extends tsKeywords, jsObjects, internal {}
 
 export type InternalResolution = BaseRoot | GenericRoot | RootModule
 
@@ -414,8 +407,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 			Object.assign(this.json, resolutionsToJson(this._exportedResolutions))
 			Object.assign(this.resolutions, this._exportedResolutions)
-			if (this.config.intrinsic)
-				Object.assign($ark.intrinsic, this._exportedResolutions)
 			this.references = Object.values(this.referencesById)
 			if (!this.resolvedConfig.jitless) bindCompiledScope(this.references)
 			this.resolved = true
