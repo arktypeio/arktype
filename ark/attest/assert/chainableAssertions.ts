@@ -1,8 +1,10 @@
 import { caller } from "@ark/fs"
 import { printable, snapshot, type Constructor } from "@ark/util"
+import prettier from "@prettier/sync"
 import { type, type validateTypeRoot } from "arktype"
 import * as assert from "node:assert/strict"
 import { isDeepStrictEqual } from "node:util"
+import type { Options as PrettierOptions } from "prettier"
 import {
 	getSnapshotByName,
 	queueSnapshotUpdate,
@@ -200,6 +202,45 @@ export class ChainableAssertions implements AssertionRecord {
 	}
 
 	get type(): any {
+		const declarationPrefix = "type T = "
+		const typeFormatOptions: PrettierOptions = {
+			parser: "typescript",
+			semi: false,
+			useTabs: true,
+			printWidth: 60,
+			trailingComma: "none"
+		}
+
+		const formatTypeString = (typeString: string) =>
+			prettier
+				.format(`${declarationPrefix}${typeString}`, typeFormatOptions)
+				.slice(declarationPrefix.length)
+				.trimEnd()
+
+		const replaceKnownInvalidSyntax = (typeString: string): string => {
+			// Match '...' and '... x more ...' (known truncated type syntax)
+			const regex = /\.\.\.\s*(\d+\s*more\s*\.\.\.)?/g
+
+			// replace these with a string literal "..." so that they can still
+			// form valid expressions, e.g. "..."[]
+			return typeString.replaceAll(regex, '"..."')
+		}
+
+		const applyFormatting = (typeString: string): string => {
+			try {
+				typeString = formatTypeString(typeString)
+			} catch {
+				// if formatting fails (e.g. due to custom typeToString syntax like ... X more),
+				// try to comment out problematic sections
+				try {
+					typeString = formatTypeString(replaceKnownInvalidSyntax(typeString))
+				} catch {
+					// if still fails somehow, just swallow the error and use the unformatted type
+				}
+			}
+			return typeString;
+		}
+
 		if (this.ctx.cfg.skipTypes) return chainableNoOpProxy
 
 		// We need to bind this to return an object with getters
@@ -207,7 +248,7 @@ export class ChainableAssertions implements AssertionRecord {
 		return {
 			get toString() {
 				self.ctx.actual = new TypeAssertionMapping(data => ({
-					actual: data.args[0].type
+					actual: applyFormatting(data.args[0].type)
 				}))
 				return self.immediateOrChained()
 			},
