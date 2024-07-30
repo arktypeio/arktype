@@ -238,7 +238,7 @@ export class ChainableAssertions implements AssertionRecord {
 					// if still fails somehow, just swallow the error and use the unformatted type
 				}
 			}
-			return typeString;
+			return typeString
 		}
 
 		if (this.ctx.cfg.skipTypes) return chainableNoOpProxy
