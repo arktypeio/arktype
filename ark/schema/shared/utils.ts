@@ -80,7 +80,7 @@ export const pathToPropString = <stringifiable>(
 
 export type arkKind = typeof arkKind
 
-export const arkKind: unique symbol = Symbol("ArkTypeInternalKind")
+export const arkKind = " arkKind"
 
 export interface ArkKinds {
 	constraint: BaseConstraint

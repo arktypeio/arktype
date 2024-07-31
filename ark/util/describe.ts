@@ -1,6 +1,6 @@
 import type { array } from "./arrays.js"
 import type { describeDomainOf, domainOf, inferDomain } from "./domain.js"
-import type { isAny, isNever, satisfy, Stringifiable } from "./generics.js"
+import type { anyOrNever, satisfy, Stringifiable } from "./generics.js"
 import type { describeObject } from "./objectKinds.js"
 import type { stringifyUnion } from "./unionToTuple.js"
 
@@ -10,8 +10,10 @@ export type DescribeOptions = {
 }
 
 export type typeToString<t, opts extends DescribeOptions = {}> = stringifyUnion<
-	isAny<t> extends true ? "any"
-	: isNever<t> extends true ? "never"
+	[t] extends [anyOrNever] ?
+		unknown extends t ?
+			"any"
+		:	"never"
 	: unknown extends t ? "unknown"
 	: boolean extends t ?
 		| "boolean"

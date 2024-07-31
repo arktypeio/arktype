@@ -1,9 +1,9 @@
 import type {
+	anyOrNever,
 	array,
 	conform,
 	Hkt,
 	intersectArrays,
-	isAny,
 	show
 } from "@ark/util"
 import type { Constraints, MorphAst, of, Out, parseConstraints } from "./ast.js"
@@ -13,10 +13,7 @@ export type inferIntersection<l, r> = _inferIntersection<l, r, false>
 export type inferPipe<l, r> = _inferIntersection<l, r, true>
 
 type _inferIntersection<l, r, piped extends boolean> =
-	[l] extends [never] ? never
-	: [r] extends [never] ? never
-	: [l & r] extends [never] ? never
-	: isAny<l | r> extends true ? any
+	[l & r] extends [infer t extends anyOrNever] ? t
 	: l extends MorphAst<infer lIn, infer lOut> ?
 		r extends MorphAst<any, infer rOut> ?
 			piped extends true ?
