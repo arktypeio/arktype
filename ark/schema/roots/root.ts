@@ -58,9 +58,6 @@ export abstract class BaseRoot<
 	/** @ts-ignore cast variance */
 	out d extends InternalRootDeclaration = InternalRootDeclaration
 > extends BaseNode<d> {
-	readonly branches: readonly Node<UnionChildKind>[] =
-		this.hasKind("union") ? this.inner.branches : [this as never]
-
 	readonly [arkKind] = "root"
 
 	get internal(): this {
@@ -69,6 +66,21 @@ export abstract class BaseRoot<
 
 	as(): this {
 		return this
+	}
+
+	readonly branches: readonly Node<UnionChildKind>[] =
+		this.hasKind("union") ? this.inner.branches : [this as never]
+
+	distribute<mapOut, reduceOut = mapOut[]>(
+		mapBranch: (
+			branch: Node<UnionChildKind>,
+			i: number,
+			branches: array<Node<UnionChildKind>>
+		) => mapOut,
+		reduceMapped?: (mappedBranches: mapOut[]) => reduceOut
+	): reduceOut {
+		const mappedBranches = this.branches.map(mapBranch)
+		return reduceMapped?.(mappedBranches) ?? (mappedBranches as never)
 	}
 
 	abstract rawKeyOf(): BaseRoot
@@ -132,63 +144,51 @@ export abstract class BaseRoot<
 
 	merge(r: unknown): BaseRoot {
 		const rNode = this.$.parseRoot(r)
-		if (rNode.hasKind("union")) {
-			return this.$.rootNode(
-				rNode.branches.map(mergedPropsBranch => this.merge(mergedPropsBranch))
+		return this.$.rootNode(
+			rNode.distribute(branch =>
+				this.applyStructuralOperation("merge", [branch])
 			)
-		}
-
-		return this.applyStructuralOperation("merge", [r])
+		)
 	}
 
 	private applyStructuralOperation<
 		operation extends "pick" | "omit" | "required" | "partial" | "merge"
 	>(operation: operation, args: Parameters<BaseRoot[operation]>): BaseRoot {
-		if (this.hasKind("union")) {
-			return this.$.rootNode(
-				this.branches.map(branch =>
-					branch.applyStructuralOperation(operation, args)
-				)
-			)
-		}
-
-		if (this.hasKind("morph")) {
-			return this.$.node("morph", {
-				...this.inner,
-				in: (this.in as BaseRoot).applyStructuralOperation(
-					operation,
-					args
-				) as MorphChildNode
-			})
-		}
-
-		if (this.hasKind("intersection")) {
-			if (!this.inner.structure) {
+		return this.distribute(branch => {
+			if (branch.hasKind("morph")) {
 				throwParseError(
 					writeNonStructuralOperandMessage(operation, this.expression)
 				)
 			}
 
-			const structuralMethodName: keyof StructureNode =
-				operation === "required" ? "require"
-				: operation === "partial" ? "optionalize"
-				: operation
+			if (branch.hasKind("intersection")) {
+				if (!branch.inner.structure) {
+					throwParseError(
+						writeNonStructuralOperandMessage(operation, this.expression)
+					)
+				}
 
-			return this.$.node("intersection", {
-				...this.inner,
-				structure: this.inner.structure[structuralMethodName](
-					...(args as [never])
-				)
-			})
-		}
+				const structuralMethodName: keyof StructureNode =
+					operation === "required" ? "require"
+					: operation === "partial" ? "optionalize"
+					: operation
 
-		if (this.isBasis() && this.domain === "object")
-			// if it's an object but has no Structure node, return an empty object
-			return $ark.intrinsic.object.internal.bindScope(this.$)
+				return this.$.node("intersection", {
+					...branch.inner,
+					structure: branch.inner.structure[structuralMethodName](
+						...(args as [never])
+					)
+				})
+			}
 
-		return throwParseError(
-			writeNonStructuralOperandMessage(operation, this.expression)
-		)
+			if (this.isBasis() && this.domain === "object")
+				// if it's an object but has no Structure node, return an empty object
+				return $ark.intrinsic.object.internal.bindScope(this.$)
+
+			return throwParseError(
+				writeNonStructuralOperandMessage(operation, this.expression)
+			)
+		}, this.$.rootNode)
 	}
 
 	get(...path: GettableKeyOrNode[]): BaseRoot {
