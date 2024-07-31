@@ -25,28 +25,11 @@ contextualize(() => {
 		)
 	})
 
-	it("constraints apply to input", () => {
-		const t = type("parse.number").atMostLength(5)
-		attest<(In: string.atMostLength<5>) => Out<number>>(t.t)
-
-		const morphs = t.internal.assertHasKind("morph").serializedMorphs
-		attest(t.json).snap({
-			in: {
-				domain: "string",
-				pattern: [
-					{
-						description: "a well-formed numeric string",
-						flags: "",
-						rule: "^(?!^-0$)-?(?:0|[1-9]\\d*)(?:\\.\\d*[1-9])?$"
-					}
-				],
-				maxLength: 5
-			},
-			morphs
-		})
-
-		attest(t("321")).equals(321)
-		attest(t("654321").toString()).snap("must be at most length 5 (was 6)")
+	it("can't directly constrain morph", () => {
+		// @ts-expect-error
+		attest(() => type("parse.number").atMostLength(5))
+			.throws("zzz")
+			.type.errors("Property 'atMostLength' does not exist")
 	})
 
 	it("within type", () => {
