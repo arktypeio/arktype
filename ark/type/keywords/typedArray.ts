@@ -32,5 +32,5 @@ export const typedArray: typedArray = scope(
 		BigInt64: ["instanceof", BigInt64Array],
 		BigUint64: ["instanceof", BigUint64Array]
 	},
-	{ prereducedAliases: true }
+	{ prereducedAliases: true, ambient: true }
 ).export()

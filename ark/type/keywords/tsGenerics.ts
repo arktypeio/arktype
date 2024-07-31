@@ -88,6 +88,9 @@ export type tsGenericsExports = exportScope<typeof tsGenericsExports>
 
 export type tsGenerics = Module<tsGenericsExports>
 
-const $ = scope(tsGenericsExports)
+const $ = scope(tsGenericsExports, {
+	prereducedAliases: true,
+	ambient: true
+})
 
 export const tsGenerics: tsGenerics = $.export()

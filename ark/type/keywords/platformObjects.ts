@@ -29,5 +29,5 @@ export const platformObjects: platformObjects = scope(
 		Response: ["instanceof", Response],
 		URL: ["instanceof", URL]
 	},
-	{ prereducedAliases: true }
+	{ prereducedAliases: true, ambient: true }
 ).export()

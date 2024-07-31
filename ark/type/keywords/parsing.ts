@@ -101,11 +101,17 @@ export type parsingExports = {
 
 export type parsing = Module<parsingExports>
 
-export const parsing: parsing = scope({
-	url,
-	number,
-	integer,
-	date,
-	json,
-	formData
-}).export()
+export const parsing: parsing = scope(
+	{
+		url,
+		number,
+		integer,
+		date,
+		json,
+		formData
+	},
+	{
+		prereducedAliases: true,
+		ambient: true
+	}
+).export()

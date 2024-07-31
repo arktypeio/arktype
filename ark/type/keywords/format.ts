@@ -25,8 +25,14 @@ export type formattingExports = {
 }
 export type formatting = Module<formattingExports>
 
-export const formatting: formatting = scope({
-	trim,
-	uppercase,
-	lowercase
-}).export()
+export const formatting: formatting = scope(
+	{
+		trim,
+		uppercase,
+		lowercase
+	},
+	{
+		prereducedAliases: true,
+		ambient: true
+	}
+).export()
