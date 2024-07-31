@@ -1,17 +1,3 @@
-import type {
-	DivisorSchema,
-	ExactLengthSchema,
-	ExclusiveDateRangeSchema,
-	ExclusiveNumericRangeSchema,
-	FlatRef,
-	GettableKeyOrNode,
-	InclusiveDateRangeSchema,
-	InclusiveNumericRangeSchema,
-	KeyOrKeyNode,
-	LimitSchemaValue,
-	PatternSchema,
-	UnknownRangeSchema
-} from "@ark/schema"
 import {
 	$ark,
 	cached,
@@ -26,8 +12,25 @@ import {
 	type PrimitiveConstraintKind
 } from "../constraint.js"
 import type { Node, NodeSchema, reducibleKindOf } from "../kinds.js"
-import { BaseNode, appendUniqueFlatRefs } from "../node.js"
+import {
+	BaseNode,
+	appendUniqueFlatRefs,
+	type FlatRef,
+	type GettableKeyOrNode,
+	type KeyOrKeyNode
+} from "../node.js"
 import type { Predicate } from "../predicate.js"
+import type { DivisorSchema } from "../refinements/divisor.js"
+import type { ExactLengthSchema } from "../refinements/exactLength.js"
+import type { PatternSchema } from "../refinements/pattern.js"
+import type {
+	ExclusiveDateRangeSchema,
+	ExclusiveNumericRangeSchema,
+	InclusiveDateRangeSchema,
+	InclusiveNumericRangeSchema,
+	LimitSchemaValue,
+	UnknownRangeSchema
+} from "../refinements/range.js"
 import type { BaseMeta, BaseNodeDeclaration } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import { ArkErrors } from "../shared/errors.js"

@@ -408,10 +408,10 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 			if (this.resolvedConfig.ambient === true)
 				// spread all exports to ambient
-				Object.assign($ark.ambient, this._exports)
+				Object.assign($ark.ambient as {}, this._exports)
 			else if (typeof this.resolvedConfig.ambient === "string") {
 				// add exports as a subscope with the config value as a name
-				Object.assign($ark.ambient, {
+				Object.assign($ark.ambient as {}, {
 					[this.resolvedConfig.ambient]: new RootModule({
 						...this._exports
 					})
