@@ -1,3 +1,4 @@
+import { intrinsic } from "@ark/schema"
 import type { Module } from "../module.js"
 import { scope } from "../scope.js"
 
@@ -21,19 +22,19 @@ export type tsKeywords = Module<tsKeywordExports>
 
 export const tsKeywords: tsKeywords = scope(
 	{
-		any: {},
-		bigint: "bigint",
-		boolean: [{ unit: false }, { unit: true }],
-		false: { unit: false },
-		never: [],
-		null: { unit: null },
-		number: "number",
-		object: "object",
-		string: "string",
-		symbol: "symbol",
-		true: { unit: true },
-		unknown: {},
-		undefined: { unit: undefined }
+		any: intrinsic.unknown,
+		bigint: intrinsic.bigint,
+		boolean: intrinsic.boolean,
+		false: intrinsic.false,
+		never: intrinsic.never,
+		null: intrinsic.null,
+		number: intrinsic.number,
+		object: intrinsic.object,
+		string: intrinsic.string,
+		symbol: intrinsic.symbol,
+		true: intrinsic.true,
+		unknown: intrinsic.unknown,
+		undefined: intrinsic.undefined
 	},
-	{ prereducedAliases: true }
+	{ prereducedAliases: true, ambient: true }
 ).export()

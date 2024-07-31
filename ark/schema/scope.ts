@@ -16,11 +16,7 @@ import {
 	type flattenListable,
 	type show
 } from "@ark/util"
-import {
-	resolveConfig,
-	type ArkConfig,
-	type ResolvedArkConfig
-} from "./config.js"
+import { resolveConfig, type ArkConfig } from "./config.js"
 import {
 	GenericRoot,
 	LazyGenericBody,
@@ -105,9 +101,16 @@ export type AliasDefEntry = [name: string, defValue: unknown]
 
 const scopesById: Record<string, BaseScope | undefined> = {}
 
+export interface ArkScopeConfig extends ArkConfig {
+	ambient?: boolean | string
+	prereducedAliases?: boolean
+}
+
+export type ResolvedArkScopeConfig = resolveConfig<ArkScopeConfig>
+
 export abstract class BaseScope<$ extends {} = {}> {
-	readonly config: ArkConfig
-	readonly resolvedConfig: ResolvedArkConfig
+	readonly config: ArkScopeConfig
+	readonly resolvedConfig: ResolvedArkScopeConfig
 	readonly id = `${Object.keys(scopesById).length}$`
 	readonly [arkKind] = "scope"
 
@@ -125,7 +128,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		/** The set of names defined at the root-level of the scope mapped to their
 		 * corresponding definitions.**/
 		def: Record<string, unknown>,
-		config?: ArkConfig
+		config?: ArkScopeConfig
 	) {
 		this.config = config ?? {}
 		this.resolvedConfig = resolveConfig(config)
@@ -146,12 +149,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 				this.exportedNames.push(k)
 			}
 		}) as never
-
-		if ($ark.ambient) {
-			// ensure exportedResolutions is populated
-			$ark.ambient.export()
-			this.resolutions = {}
-		}
 
 		scopesById[this.id] = this
 	}
@@ -329,10 +326,14 @@ export abstract class BaseScope<$ extends {} = {}> {
 			:	resolution
 	}
 
+	get ambient(): RootModule {
+		return $ark.ambient
+	}
+
 	maybeShallowResolve(name: string): CachedResolution | undefined {
 		const cached = this.resolutions[name]
 		if (cached) return cached
-		const def = this.aliases[name] ?? $ark.ambient?.resolutions[name]
+		const def = this.aliases[name] ?? this.ambient[name]
 
 		if (!def) return this.maybeResolveSubalias(name)
 
@@ -401,10 +402,23 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 			this.lazyResolutions.forEach(node => node.resolution)
 
+			if (this.resolvedConfig.ambient === true)
+				// spread all exports to ambient
+				Object.assign($ark.ambient, this._exports)
+			else if (typeof this.resolvedConfig.ambient === "string") {
+				// add exports as a subscope with the config value as a name
+				Object.assign($ark.ambient, {
+					[this.resolvedConfig.ambient]: new RootModule({
+						...this._exports
+					})
+				})
+			}
+
 			this._exportedResolutions = resolutionsOfModule(this, this._exports)
 
 			Object.assign(this.json, resolutionsToJson(this._exportedResolutions))
 			Object.assign(this.resolutions, this._exportedResolutions)
+
 			this.references = Object.values(this.referencesById)
 			if (!this.resolvedConfig.jitless) bindCompiledScope(this.references)
 			this.resolved = true
@@ -479,7 +493,7 @@ export const schemaScope = <
 	}
 >(
 	aliases: aliases,
-	config?: ArkConfig
+	config?: ArkScopeConfig
 ): SchemaScope<instantiateAliases<aliases>> => new SchemaScope(aliases, config)
 
 export class SchemaScope<
@@ -498,12 +512,12 @@ export class SchemaScope<
 	}
 }
 
-export const $empty: SchemaScope = new SchemaScope({})
+export const $root: SchemaScope = new SchemaScope({})
 
-export const rootNode: SchemaScope["rootNode"] = $empty.rootNode
-export const node: SchemaScope["node"] = $empty.node
-export const defineSchema: SchemaScope["defineSchema"] = $empty.defineSchema
-export const genericNode: SchemaScope["generic"] = $empty.generic
+export const rootNode: SchemaScope["rootNode"] = $root.rootNode
+export const node: SchemaScope["node"] = $root.node
+export const defineSchema: SchemaScope["defineSchema"] = $root.defineSchema
+export const genericNode: SchemaScope["generic"] = $root.generic
 
 export const parseAsSchema = (
 	def: unknown,

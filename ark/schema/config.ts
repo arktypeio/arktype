@@ -1,12 +1,6 @@
-import {
-	$ark,
-	type array,
-	type mutable,
-	type requireKeys,
-	type show
-} from "@ark/util"
+import { $ark, type mutable, type requireKeys, type show } from "@ark/util"
 import type { intrinsic } from "./intrinsic.js"
-import type { BaseScope } from "./scope.js"
+import type { RootModule } from "./module.js"
 import type {
 	ActualWriter,
 	ArkErrorCode,
@@ -20,16 +14,18 @@ import {
 	type NodeKind
 } from "./shared/implement.js"
 
+export interface ArkSchemaRegistryContents {
+	ambient: RootModule
+	intrinsic: typeof intrinsic
+	config: ArkConfig
+	defaultConfig: ResolvedArkConfig
+}
+
 declare global {
 	export interface ArkEnv {
 		meta(): {}
 		preserve(): never
-		registry(): {
-			ambient: BaseScope
-			intrinsic: typeof intrinsic
-			config: ArkConfig
-			defaultConfig: ResolvedArkConfig
-		}
+		registry(): ArkSchemaRegistryContents
 	}
 
 	export namespace ArkEnv {
@@ -98,19 +94,16 @@ export const mergeConfigs = (
 
 export interface ArkConfig extends Partial<Readonly<NodeConfigsByKind>> {
 	jitless?: boolean
-	/** @internal */
-	prereducedAliases?: boolean
 }
 
-type resolveConfig<config extends ArkConfig> = {
-	[k in keyof config]-?: k extends NodeKind ? Required<config[k]> : config[k]
-}
+export type resolveConfig<config extends ArkConfig> = show<
+	{
+		[k in keyof ArkConfig]-?: k extends NodeKind ? Required<config[k]>
+		:	config[k]
+	} & Omit<config, keyof ArkConfig>
+>
 
 export type ResolvedArkConfig = resolveConfig<ArkConfig>
-
-const nonInheritedKeys = ["prereducedAliases"] as const satisfies array<
-	keyof ArkConfig
->
 
 export const extendConfig = (
 	base: ArkConfig,
@@ -118,13 +111,10 @@ export const extendConfig = (
 ): ArkConfig => {
 	if (!extension) return base
 	const result = mergeConfigs(base, extension)
-	nonInheritedKeys.forEach(k => {
-		if (!(k in extension)) delete result[k]
-	})
 	return result
 }
 
-export const resolveConfig = (
-	config: ArkConfig | undefined
-): ResolvedArkConfig =>
+export const resolveConfig = <config extends ArkConfig>(
+	config: config | undefined
+): resolveConfig<config> =>
 	extendConfig(extendConfig($ark.defaultConfig, $ark.config), config) as never

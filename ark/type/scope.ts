@@ -3,7 +3,7 @@ import {
 	hasArkKind,
 	parseGeneric,
 	type AliasDefEntry,
-	type ArkConfig,
+	type ArkScopeConfig,
 	type BaseNode,
 	type BaseRoot,
 	type GenericArgResolutions,
@@ -75,7 +75,7 @@ import {
 
 export type ScopeParser = <const def>(
 	def: validateScope<def>,
-	config?: ArkConfig
+	config?: ArkScopeConfig
 ) => Scope<inferScope<def>>
 
 export type validateScope<def> = {
@@ -190,17 +190,13 @@ export interface TypeParseOptions {
 	args?: GenericArgResolutions
 }
 
-export const scope: ScopeParser = ((def: Dict, config: ArkConfig = {}) =>
+export const scope: ScopeParser = ((def: Dict, config: ArkScopeConfig = {}) =>
 	new InternalScope(def, config)) as never
 
 export class InternalScope<
 	$ extends InternalResolutions = InternalResolutions
 > extends BaseScope<$> {
 	private parseCache: Record<string, StringParseResult> = {}
-
-	constructor(def: Record<string, unknown>, config?: ArkConfig) {
-		super(def, config)
-	}
 
 	type: InternalTypeParser = new InternalTypeParser(this as never)
 
@@ -312,7 +308,7 @@ export class InternalScope<
 export interface Scope<$ = {}> {
 	t: $
 	[arkKind]: "scope"
-	config: ArkConfig
+	config: ArkScopeConfig
 	references: readonly BaseNode[]
 	json: Json
 	exportedNames: array<exportedNameOf<$>>

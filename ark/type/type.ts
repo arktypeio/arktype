@@ -26,7 +26,6 @@ import {
 	type conform,
 	type unset
 } from "@ark/util"
-import type { type } from "./ark.js"
 import type {
 	MorphAst,
 	Out,
@@ -50,6 +49,7 @@ import {
 } from "./generic.js"
 import type { inferIntersection } from "./intersect.js"
 import type { arkKeyOf, getArkKey, toArkKey } from "./keys.js"
+import type { type } from "./keywords/keywords.js"
 import type {
 	inferDefinition,
 	validateDeclared,

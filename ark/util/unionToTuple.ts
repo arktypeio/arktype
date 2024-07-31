@@ -30,6 +30,9 @@ export type intersectUnion<t> =
 		intersection
 	:	never
 
+export type intersectOverloadReturns<f extends (...args: never[]) => unknown> =
+	intersectUnion<ReturnType<overloadOf<f>>>
+
 // Based on: https://tsplay.dev/WvydBm
 export type overloadOf<
 	f extends (...args: never[]) => unknown,

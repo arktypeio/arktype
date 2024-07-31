@@ -2,9 +2,17 @@
 // and used to bootstrap nodes with constraints
 import { tsKeywords, type tsKeywordExports } from "./tsKeywords.js"
 
-import { $ark } from "@ark/util"
+import type { ArkErrors } from "@ark/schema"
+import type { inferred } from "../ast.js"
+import type { GenericHktParser } from "../generic.js"
+import type { MatchParser } from "../match.js"
 import type { Module } from "../module.js"
 import { scope, type Scope } from "../scope.js"
+import type {
+	DeclarationParser,
+	DefinitionParser,
+	TypeParser
+} from "../type.js"
 import { arkGenerics, type arkGenericsExports } from "./arkGenerics.js"
 import { formatting, type formattingExports } from "./format.js"
 import { jsObjects, type jsObjectExports } from "./jsObjects.js"
@@ -29,8 +37,6 @@ export const ambientRootScope: Scope<Ark> = scope({
 	format: formatting
 }) as never
 
-$ark.ambient = ambientRootScope.internal
-
 export const keywordNodes: Module<Ark> = ambientRootScope.export()
 
 // this type is redundant with the inferred definition of ark but allow types
@@ -46,3 +52,25 @@ export interface Ark
 	parse: Module<parsingExports>
 	format: Module<formattingExports>
 }
+
+export const ambient: Scope<Ark> = scope(keywordNodes) as never
+
+export const ark: Module<Ark> = ambient.export()
+
+export const type: TypeParser<{}> = ambient.type as never
+
+export namespace type {
+	export type cast<t> = {
+		[inferred]?: t
+	}
+
+	export type errors = ArkErrors
+}
+
+export const generic: GenericHktParser<{}> = ambient.generic as never
+
+export const match: MatchParser<{}> = ambient.match as never
+
+export const define: DefinitionParser<{}> = ambient.define as never
+
+export const declare: DeclarationParser<{}> = ambient.declare as never
