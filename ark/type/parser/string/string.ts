@@ -4,6 +4,7 @@ import {
 	throwParseError,
 	type ErrorMessage
 } from "@ark/util"
+import type { Ark } from "../../ark.js"
 import type { inferAstRoot } from "../semantic/infer.js"
 import type { DynamicState, DynamicStateWithRoot } from "./reduce/dynamic.js"
 import type { StringifiablePrefixOperator } from "./reduce/shared.js"
@@ -38,7 +39,7 @@ export type inferString<def extends string, $, args> = inferAstRoot<
 
 export type BaseCompletions<$, args, otherSuggestions extends string = never> =
 	| resolvableReferenceIn<$>
-	| resolvableReferenceIn<ArkEnv.$>
+	| resolvableReferenceIn<Ark>
 	| (keyof args & string)
 	| StringifiablePrefixOperator
 	| otherSuggestions

@@ -22,6 +22,7 @@ import {
 	type anyOrNever,
 	type join
 } from "@ark/util"
+import type { Ark } from "../../../../ark.js"
 import type { GenericInstantiationAst } from "../../../semantic/infer.js"
 import { writePrefixedPrivateReferenceMessage } from "../../../semantic/validate.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
@@ -56,12 +57,12 @@ export type parseUnenclosed<s extends StaticState, $, args> =
 					$,
 					args
 				>
-			: result extends resolvableReferenceIn<ArkEnv.$> ?
+			: result extends resolvableReferenceIn<Ark> ?
 				parseResolution<
 					s,
 					unscanned,
 					result,
-					resolveReference<result, ArkEnv.$>,
+					resolveReference<result, Ark>,
 					// note that we still want the current scope to parse args,
 					// even if the generic was defined in the ambient scope
 					$,
@@ -165,16 +166,16 @@ const maybeParseUnenclosedLiteral = (
 }
 
 type tryResolve<s extends StaticState, token extends string, $, args> =
-	token extends keyof ArkEnv.$ ? token
+	token extends keyof Ark ? token
 	: token extends keyof $ ? token
 	: `#${token}` extends keyof $ ? token
 	: token extends keyof args ? token
 	: token extends `${number}` ? token
 	: token extends BigintLiteral ? token
 	: token extends (
-		`${infer submodule extends (keyof $ | keyof ArkEnv.$) & string}.${infer reference}`
+		`${infer submodule extends (keyof $ | keyof Ark) & string}.${infer reference}`
 	) ?
-		tryResolveSubmodule<token, submodule, reference, s, $ & ArkEnv.$, args>
+		tryResolveSubmodule<token, submodule, reference, s, $ & Ark, args>
 	:	unresolvableError<s, token, $, args, []>
 
 type tryResolveSubmodule<

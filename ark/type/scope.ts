@@ -41,7 +41,7 @@ import {
 	type nominal,
 	type show
 } from "@ark/util"
-import type { type } from "./ark.js"
+import type { Ark, type } from "./ark.js"
 import {
 	parseGenericParams,
 	type Generic,
@@ -178,9 +178,9 @@ export type tryInferSubmoduleReference<$, token> =
 			$[submodule][subalias]
 		:	never
 	: token extends `${infer submodule}.${infer subalias}` ?
-		submodule extends moduleKeyOf<ArkEnv.$> ?
-			subalias extends keyof ArkEnv.$[submodule] ?
-				ArkEnv.$[submodule][subalias] extends infer resolution ?
+		submodule extends moduleKeyOf<Ark> ?
+			subalias extends keyof Ark[submodule] ?
+				Ark[submodule][subalias] extends infer resolution ?
 					resolution extends type.cast<infer t> ?
 						t
 					:	resolution

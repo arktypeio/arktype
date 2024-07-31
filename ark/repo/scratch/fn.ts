@@ -1,4 +1,5 @@
 import type { inferTypeRoot, validateTypeRoot } from "arktype"
+import type { Ark } from "../../type/ark.js"
 
 export type FunctionParser<$> = {
 	// <ret = unknown>(_?: ":", ret?: validateTypeRoot<ret, $>): <
@@ -90,7 +91,7 @@ export type FunctionParser<$> = {
 	) => implementation
 }
 
-export declare const fn: FunctionParser<ArkEnv.$>
+export declare const fn: FunctionParser<Ark>
 
 // // // could allow something like `fn("string", ":", "boolean")` to specify return type
 // // const z = fn("string", "number")((s, n) => `${n}` === s)

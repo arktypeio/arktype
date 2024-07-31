@@ -11,11 +11,11 @@ export interface ArkTypeRegistryContents extends ArkSchemaRegistryContents {
 
 declare global {
 	export interface ArkEnv {
-		$(): Ark
+		// $(): Ark
 		registry(): ArkTypeRegistryContents
 	}
 
 	export namespace ArkEnv {
-		export type $ = ReturnType<ArkEnv["$"]>
+		// export type $ = ReturnType<ArkEnv["$"]>
 	}
 }

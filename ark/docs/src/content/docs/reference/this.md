@@ -4,6 +4,7 @@ sidebar:
   order: 6
 ---
 
+<!--
 add a "this" keyword resolvable from types without an associated scope alias
 
 ```ts
@@ -43,4 +44,4 @@ const types = scope({
 		"box?": "this"
 	}
 }).compile()
-```
+``` -->
