@@ -178,6 +178,7 @@ contextualize(() => {
 				"entry<k extends string | symbol, v>": ["k", "v"],
 				foobar: "entry<'foo', 'bar'>"
 			})
+
 			const types = $.export()
 
 			const expected = type(["'foo'", "'bar'"])

@@ -6,7 +6,7 @@ import { writeMissingRightOperandMessage } from "../parser/string/shift/operand/
 contextualize(() => {
 	it("autocompletion", () => {
 		// @ts-expect-error
-		attest(() => type("k")).completions({ k: ["keyof"] })
+		attest(() => type("k")).completions({ k: ["key", "keyof"] })
 	})
 
 	it("root expression", () => {

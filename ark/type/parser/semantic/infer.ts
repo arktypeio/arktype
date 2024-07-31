@@ -1,4 +1,4 @@
-import type { GenericAst, GenericHkt, genericParamNames } from "@ark/schema"
+import type { GenericAst, GenericHkt } from "@ark/schema"
 import type { BigintLiteral, array } from "@ark/util"
 import type {
 	Date,
@@ -13,7 +13,12 @@ import type {
 	string
 } from "../../ast.js"
 import type { inferIntersection } from "../../intersect.js"
-import type { Scope, resolve, tryInferSubmoduleReference } from "../../scope.js"
+import type {
+	Scope,
+	UnparsedScope,
+	resolve,
+	tryInferSubmoduleReference
+} from "../../scope.js"
 import type { inferDefinition } from "../definition.js"
 import type { Comparator, MinComparator } from "../string/reduce/shared.js"
 import type { StringLiteral } from "../string/shift/operand/enclosed.js"
@@ -34,6 +39,14 @@ export type GenericInstantiationAst<
 	argAsts extends unknown[] = unknown[]
 > = [generic, "<>", argAsts]
 
+type resolveScope<g$, $> =
+	// If the generic was defined in the current scope, its definition can be
+	// resolved using the same scope as that of the input args.
+	g$ extends UnparsedScope ? $
+	: // Otherwise, use the scope that was explicitly bound to it.
+	g$ extends Scope<infer bound> ? bound
+	: never
+
 export type inferExpression<ast extends array, $, args> =
 	ast extends GenericInstantiationAst<infer g, infer argAsts> ?
 		g["bodyDef"] extends GenericHkt ?
@@ -43,17 +56,13 @@ export type inferExpression<ast extends array, $, args> =
 			>
 		:	inferDefinition<
 				g["bodyDef"],
-				g["$"] extends Scope<infer $> ?
-					// If the generic was defined in the current scope, its definition can be
-					// resolved using the same scope as that of the input args.
-					$
-				:	// Otherwise, use the scope that was explicitly associated with it.
-					g["$"],
+				resolveScope<g["$"], $>,
 				{
-					// Using keyof g["params"] & number here results in the element types being mixed
-					[i in keyof genericParamNames<g["paramsAst"]>]: inferConstrainableAst<
+					// intersect `${number}` to ensure that only array indices are mapped
+					[i in keyof g["names"] &
+						`${number}` as g["names"][i]]: inferConstrainableAst<
 						argAsts[i & keyof argAsts],
-						$,
+						resolveScope<g["arg$"], $>,
 						args
 					>
 				}

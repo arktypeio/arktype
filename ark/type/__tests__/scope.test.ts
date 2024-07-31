@@ -5,7 +5,7 @@ import {
 	writeUnresolvableMessage
 } from "@ark/schema"
 import { define, scope, type } from "arktype"
-import type { distillOut, string } from "../ast.js"
+import type { distillOut, number, string } from "../ast.js"
 import type { Module } from "../module.js"
 import { writeUnexpectedCharacterMessage } from "../parser/string/shift/operator/operator.js"
 
@@ -100,9 +100,13 @@ contextualize(() => {
 		})
 		const types = $.export()
 
-		attest<number>(types.n.infer)
-		throw new Error("TODO: check assertions")
-		attest<number>(types.lessThan10.infer)
+		attest<number>(types.n.t)
+		attest(types.n.expression).equals("number")
+
+		const expected = type("number").lessThan(10)
+
+		attest<typeof expected.t>(types.lessThan10.t)
+		attest(types.lessThan10.expression).equals(expected.expression)
 	})
 
 	it("errors on helper parse error", () => {

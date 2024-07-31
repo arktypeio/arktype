@@ -50,12 +50,13 @@ export interface GenericAst<
 	params extends array<GenericParamAst> = array<GenericParamAst>,
 	bodyDef = unknown,
 	$ = unknown,
-	arg$ = unknown
+	arg$ = $
 > {
 	paramsAst: params
 	bodyDef: bodyDef
 	$: $
 	arg$: arg$
+	names: genericParamNames<params>
 }
 
 export class GenericRoot<

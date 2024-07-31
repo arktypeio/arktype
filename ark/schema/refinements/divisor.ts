@@ -1,4 +1,4 @@
-import { $ark, type typeToString } from "@ark/util"
+import { $ark } from "@ark/util"
 import {
 	InternalPrimitiveConstraint,
 	writeInvalidOperandMessage
@@ -65,7 +65,7 @@ export const writeIndivisibleMessage = (t: BaseRoot) =>
 
 export type writeIndivisibleMessage<actual> = writeInvalidOperandMessage<
 	"divisor",
-	typeToString<actual>
+	actual
 >
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm

@@ -10,11 +10,7 @@ export type Stringifiable =
 	| null
 	| undefined
 
-/**
- * Force an operation like `{ a: 0 } & { b: 1 }` to be computed so that it displays `{ a: 0; b: 1 }`.
- *
- * Also works for some non-intersections, e.g. `keyof SomeObj` => `"a" | "b" | ...`
- */
+/** Force an operation like `{ a: 0 } & { b: 1 }` to be computed so that it displays `{ a: 0; b: 1 }`. */
 export type show<t> = { [k in keyof t]: t[k] } & unknown
 
 /** @deprecated use "show" instead */
