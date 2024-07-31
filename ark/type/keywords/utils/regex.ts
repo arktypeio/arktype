@@ -1,11 +1,14 @@
-import { rootNode, type BaseRoot } from "@ark/schema"
+import { node, type IntersectionNode } from "@ark/schema"
 
-export const regexStringNode = (regex: RegExp, description: string): BaseRoot =>
-	rootNode({
+export const regexStringNode = (
+	regex: RegExp,
+	description: string
+): IntersectionNode =>
+	node("intersection", {
 		domain: "string",
 		pattern: {
 			rule: regex.source,
 			flags: regex.flags,
 			description
 		}
-	})
+	}) as never

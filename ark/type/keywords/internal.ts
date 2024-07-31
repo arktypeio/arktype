@@ -2,7 +2,7 @@ import type { array, Digit, Key } from "@ark/util"
 import type { Module } from "../module.js"
 import { scope } from "../scope.js"
 // these are needed to create some internal types
-import { arrayIndexSource, intrinsic, node } from "@ark/schema"
+import { intrinsic, node } from "@ark/schema"
 import "./tsKeywords.js"
 
 export type NonNegativeIntegerString =
@@ -19,13 +19,13 @@ export type internal = Module<internalExports>
 
 export const internal: internal = scope(
 	{
-		lengthBoundable: intrinsic,
-		propertyKey: ["string", "symbol"],
-		nonNegativeIntegerString: { domain: "string", pattern: arrayIndexSource }
+		lengthBoundable: intrinsic.lengthBoundable,
+		propertyKey: intrinsic.propertyKey,
+		nonNegativeIntegerString: intrinsic.nonNegativeIntegerString
 	},
 	{
 		prereducedAliases: true,
-		intrinsic: true
+		ambient: true
 	}
 ).export()
 

@@ -124,10 +124,10 @@ export const validation: validation = scope(
 		url,
 		semver,
 		ip,
-		integer: {
+		integer: rootNode({
 			domain: "number",
 			divisor: 1
-		},
+		}),
 		unixTimestamp
 	},
 	{ prereducedAliases: true }
