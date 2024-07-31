@@ -130,5 +130,5 @@ export const validation: validation = scope(
 		}),
 		unixTimestamp
 	},
-	{ prereducedAliases: true, ambient: true }
+	{ prereducedAliases: true }
 ).export()

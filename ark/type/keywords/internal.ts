@@ -24,8 +24,7 @@ export const internal: internal = scope(
 		nonNegativeIntegerString: intrinsic.nonNegativeIntegerString
 	},
 	{
-		prereducedAliases: true,
-		ambient: true
+		prereducedAliases: true
 	}
 ).export()
 

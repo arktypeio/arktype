@@ -335,7 +335,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 	maybeShallowResolve(name: string): CachedResolution | undefined {
 		const cached = this.resolutions[name]
 		if (cached) return cached
-		const def = this.aliases[name] ?? this.ambient[name]
+		const def = this.aliases[name] ?? this.ambient?.[name]
 
 		if (!def) return this.maybeResolveSubalias(name)
 

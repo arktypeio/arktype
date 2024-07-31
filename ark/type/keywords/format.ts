@@ -32,7 +32,6 @@ export const formatting: formatting = scope(
 		lowercase
 	},
 	{
-		prereducedAliases: true,
-		ambient: true
+		prereducedAliases: true
 	}
 ).export()

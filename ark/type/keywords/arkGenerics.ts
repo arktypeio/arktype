@@ -24,8 +24,7 @@ export type arkGenericsExports = exportScope<typeof arkGenericsExports>
 export type arkGenerics = Module<arkGenericsExports>
 
 const $ = scope(arkGenericsExports, {
-	prereducedAliases: true,
-	ambient: true
+	prereducedAliases: true
 })
 
 export const arkGenerics: arkGenerics = $.export()

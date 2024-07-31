@@ -111,7 +111,6 @@ export const parsing: parsing = scope(
 		formData
 	},
 	{
-		prereducedAliases: true,
-		ambient: true
+		prereducedAliases: true
 	}
 ).export()

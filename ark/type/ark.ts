@@ -1,16 +1,19 @@
 import type { ArkErrors } from "@ark/schema"
 import type { inferred } from "./ast.js"
 import type { GenericHktParser } from "./generic.js"
-import type { arkGenericsExports } from "./keywords/arkGenerics.js"
-import type { formattingExports } from "./keywords/format.js"
-import type { internalExports } from "./keywords/internal.js"
-import type { jsObjectExports } from "./keywords/jsObjects.js"
-import type { parsingExports } from "./keywords/parsing.js"
-import type { platformObjectExports } from "./keywords/platformObjects.js"
-import type { tsGenericsExports } from "./keywords/tsGenerics.js"
-import type { tsKeywordExports } from "./keywords/tsKeywords.js"
-import type { typedArrayExports } from "./keywords/typedArray.js"
-import type { validationExports } from "./keywords/validation.js"
+import { arkGenerics, type arkGenericsExports } from "./keywords/arkGenerics.js"
+import { formatting, type formattingExports } from "./keywords/format.js"
+import { internal, type internalExports } from "./keywords/internal.js"
+import { jsObjects, type jsObjectExports } from "./keywords/jsObjects.js"
+import { parsing, type parsingExports } from "./keywords/parsing.js"
+import {
+	platformObjects,
+	type platformObjectExports
+} from "./keywords/platformObjects.js"
+import { tsGenerics, type tsGenericsExports } from "./keywords/tsGenerics.js"
+import { tsKeywords, type tsKeywordExports } from "./keywords/tsKeywords.js"
+import { typedArray, type typedArrayExports } from "./keywords/typedArray.js"
+import { validation, type validationExports } from "./keywords/validation.js"
 import type { MatchParser } from "./match.js"
 import type { Module } from "./module.js"
 import { scope, type Scope } from "./scope.js"
@@ -31,7 +34,18 @@ export interface Ark
 	format: Module<formattingExports>
 }
 
-export const ambient: Scope<Ark> = scope({}) as never
+export const ambient: Scope<Ark> = scope({
+	...tsKeywords,
+	...jsObjects,
+	...platformObjects,
+	...validation,
+	...internal,
+	...tsGenerics,
+	...arkGenerics,
+	TypedArray: typedArray,
+	parse: parsing,
+	format: formatting
+}) as never
 
 export const ark: Module<Ark> = ambient.export()
 

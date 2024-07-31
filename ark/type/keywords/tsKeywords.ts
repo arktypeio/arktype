@@ -36,5 +36,5 @@ export const tsKeywords: tsKeywords = scope(
 		unknown: intrinsic.unknown,
 		undefined: intrinsic.undefined
 	} satisfies Record<keyof tsKeywordExports, BaseRoot>,
-	{ prereducedAliases: true, ambient: true }
+	{ prereducedAliases: true }
 ).export()

@@ -31,5 +31,5 @@ export const jsObjects: jsObjects = scope(
 		WeakSet: ["instanceof", WeakSet],
 		Promise: ["instanceof", Promise]
 	},
-	{ prereducedAliases: true, ambient: true }
+	{ prereducedAliases: true }
 ).export()

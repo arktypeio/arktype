@@ -127,7 +127,7 @@ export class GenericRoot<
 
 	@cached
 	get params(): { [i in keyof params]: [params[i][0], BaseRoot] } {
-		return this.params.map(param =>
+		return this.paramDefs.map(param =>
 			typeof param === "string" ?
 				[param, $ark.intrinsic.unknown]
 			:	[param[0], this.$.parseRoot(param[1])]
