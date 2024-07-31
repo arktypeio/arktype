@@ -1,4 +1,4 @@
-import { defineSchema } from "@ark/schema"
+import { rootNode } from "@ark/schema"
 import type {
 	anonymous,
 	AtLeast,
@@ -11,11 +11,11 @@ import type { Module } from "../module.js"
 import { scope } from "../scope.js"
 import { creditCardMatcher, isLuhnValid } from "./utils/creditCard.js"
 import { ip } from "./utils/ip.js"
-import { defineRegex } from "./utils/regex.js"
+import { regexStringNode } from "./utils/regex.js"
 
 // Non-trivial expressions should have an explanation or attribution
 
-const url = defineSchema({
+const url = rootNode({
 	domain: "string",
 	predicate: {
 		predicate: (s: string) => {
@@ -33,24 +33,24 @@ const url = defineSchema({
 // https://www.regular-expressions.info/email.html
 const emailMatcher = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/
 
-const email = defineRegex(emailMatcher, "a valid email")
+const email = regexStringNode(emailMatcher, "a valid email")
 
 const uuidMatcher =
 	/^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$/
 
 // https://github.com/validatorjs/validator.js/blob/master/src/lib/isUUID.js
-const uuid = defineRegex(uuidMatcher, "a valid UUID")
+const uuid = regexStringNode(uuidMatcher, "a valid UUID")
 
 const semverMatcher =
 	/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
 
 // https://semver.org/
-const semver = defineRegex(
+const semver = regexStringNode(
 	semverMatcher,
 	"a valid semantic version (see https://semver.org/)"
 )
 
-const creditCard = defineSchema({
+const creditCard = rootNode({
 	domain: "string",
 	pattern: {
 		rule: creditCardMatcher.source,
@@ -68,7 +68,7 @@ const creditCard = defineSchema({
  *
  * @see https://262.ecma-international.org/15.0/index.html#sec-time-values-and-time-range
  */
-const unixTimestamp = defineSchema({
+const unixTimestamp = rootNode({
 	domain: {
 		domain: "number",
 		description: "a number representing a Unix timestamp"
@@ -110,11 +110,14 @@ export type validation = Module<validationExports>
 
 export const validation: validation = scope(
 	{
-		alpha: defineRegex(/^[A-Za-z]*$/, "only letters"),
-		alphanumeric: defineRegex(/^[A-Za-z\d]*$/, "only letters and digits 0-9"),
-		digits: defineRegex(/^\d*$/, "only digits 0-9"),
-		lowercase: defineRegex(/^[a-z]*$/, "only lowercase letters"),
-		uppercase: defineRegex(/^[A-Z]*$/, "only uppercase letters"),
+		alpha: regexStringNode(/^[A-Za-z]*$/, "only letters"),
+		alphanumeric: regexStringNode(
+			/^[A-Za-z\d]*$/,
+			"only letters and digits 0-9"
+		),
+		digits: regexStringNode(/^\d*$/, "only digits 0-9"),
+		lowercase: regexStringNode(/^[a-z]*$/, "only lowercase letters"),
+		uppercase: regexStringNode(/^[A-Z]*$/, "only uppercase letters"),
 		creditCard,
 		email,
 		uuid,

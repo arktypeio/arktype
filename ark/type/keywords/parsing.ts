@@ -1,22 +1,22 @@
-import { defineSchema } from "@ark/schema"
+import { rootNode } from "@ark/schema"
 import {
 	isWellFormedInteger,
 	wellFormedIntegerMatcher,
 	wellFormedNumberMatcher
 } from "@ark/util"
-import type { number, Out } from "../ast.js"
+import type { Out, number } from "../ast.js"
 import type { Module } from "../module.js"
 import { scope } from "../scope.js"
 import { tryParseDatePattern } from "./utils/date.js"
-import { defineRegex } from "./utils/regex.js"
+import { regexStringNode } from "./utils/regex.js"
 
-const number = defineSchema({
-	in: defineRegex(wellFormedNumberMatcher, "a well-formed numeric string"),
+const number = rootNode({
+	in: regexStringNode(wellFormedNumberMatcher, "a well-formed numeric string"),
 	morphs: (s: string) => Number.parseFloat(s)
 })
 
-const integer = defineSchema({
-	in: defineRegex(wellFormedIntegerMatcher, "a well-formed integer string"),
+const integer = rootNode({
+	in: regexStringNode(wellFormedIntegerMatcher, "a well-formed integer string"),
 	morphs: (s: string, ctx) => {
 		if (!isWellFormedInteger(s))
 			return ctx.error("a well-formed integer string")
@@ -30,7 +30,7 @@ const integer = defineSchema({
 	}
 })
 
-const url = defineSchema({
+const url = rootNode({
 	in: "string",
 	morphs: (s: string, ctx) => {
 		try {
@@ -41,7 +41,7 @@ const url = defineSchema({
 	}
 })
 
-const json = defineSchema({
+const json = rootNode({
 	in: "string",
 	morphs: (s: string, ctx): object => {
 		try {
@@ -52,7 +52,7 @@ const json = defineSchema({
 	}
 })
 
-const date = defineSchema({
+const date = rootNode({
 	in: "string",
 	morphs: (s: string, ctx) => {
 		const result = tryParseDatePattern(s)
@@ -67,7 +67,7 @@ export type ParsedFormData = Record<string, FormDataValue | FormDataValue[]>
 // support Node18
 const File = globalThis.File ?? Blob
 
-const formData = defineSchema({
+const formData = rootNode({
 	in: FormData,
 	morphs: (data: FormData): ParsedFormData => {
 		const result: ParsedFormData = {}

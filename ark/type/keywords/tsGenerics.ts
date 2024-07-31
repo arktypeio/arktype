@@ -1,10 +1,7 @@
-import {
-	GenericHkt,
-	genericNode,
-	type RootModule,
-	schemaScope
-} from "@ark/schema"
+import { GenericHkt, genericNode } from "@ark/schema"
 import { $ark, type conform, type Key, type show } from "@ark/util"
+import type { Module } from "../module.js"
+import { scope } from "../scope.js"
 
 const Record = genericNode(["K", $ark.intrinsic.propertyKey], "V")(
 	args => ({
@@ -93,8 +90,8 @@ const tsGenericsExports = {
 
 export type tsGenericsExports = typeof tsGenericsExports
 
-export type tsGenerics = RootModule<tsGenericsExports>
+export type tsGenerics = Module<tsGenericsExports>
 
-const $ = schemaScope(tsGenericsExports)
+const $ = scope(tsGenericsExports)
 
 export const tsGenerics: tsGenerics = $.export()

@@ -1,4 +1,4 @@
-import { intrinsic } from "@ark/schema"
+import { intrinsic, type BaseRoot } from "@ark/schema"
 import type { Module } from "../module.js"
 import { scope } from "../scope.js"
 
@@ -35,6 +35,6 @@ export const tsKeywords: tsKeywords = scope(
 		true: intrinsic.true,
 		unknown: intrinsic.unknown,
 		undefined: intrinsic.undefined
-	},
+	} satisfies Record<keyof tsKeywordExports, BaseRoot>,
 	{ prereducedAliases: true, ambient: true }
 ).export()

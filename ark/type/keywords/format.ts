@@ -1,19 +1,19 @@
-import { defineSchema } from "@ark/schema"
+import { rootNode } from "@ark/schema"
 import type { Out } from "../ast.js"
 import type { Module } from "../module.js"
 import { scope } from "../scope.js"
 
-const trim = defineSchema({
+const trim = rootNode({
 	in: "string",
 	morphs: (s: string) => s.trim()
 })
 
-const uppercase = defineSchema({
+const uppercase = rootNode({
 	in: "string",
 	morphs: (s: string) => s.toUpperCase()
 })
 
-const lowercase = defineSchema({
+const lowercase = rootNode({
 	in: "string",
 	morphs: (s: string) => s.toLowerCase()
 })

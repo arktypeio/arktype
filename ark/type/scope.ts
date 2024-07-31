@@ -351,7 +351,9 @@ export interface Scope<$ = {}> {
 	): instantiateExport<$[name], $>
 }
 
-export const Scope: new <$ = {}>() => Scope<$> = InternalScope as never
+export const Scope: new <$ = {}>(
+	...args: ConstructorParameters<typeof InternalScope>
+) => Scope<$> = InternalScope as never
 
 export const writeShallowCycleErrorMessage = (
 	name: string,
