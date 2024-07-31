@@ -1,6 +1,6 @@
 import { GenericHkt, genericNode } from "@ark/schema"
 import type { conform, Key, show } from "@ark/util"
-import type { Module } from "../module.js"
+import type { exportScope, Module } from "../module.js"
 import { scope } from "../scope.js"
 import { internal } from "./internal.js"
 import { tsKeywords } from "./tsKeywords.js"
@@ -84,9 +84,9 @@ const tsGenericsExports = {
 	Required
 }
 
-export type tsGenericsExports = Module<typeof tsGenericsExports>
+export type tsGenericsExports = exportScope<typeof tsGenericsExports>
 
-export type tsGenerics = tsGenericsExports
+export type tsGenerics = Module<tsGenericsExports>
 
 const $ = scope(tsGenericsExports)
 

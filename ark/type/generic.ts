@@ -1,5 +1,6 @@
 import type {
 	arkKind,
+	GenericAst,
 	GenericHkt,
 	GenericParamAst,
 	GenericParamDef,
@@ -235,16 +236,14 @@ export type baseGenericConstraints<params extends array<GenericParamAst>> = {
 
 export interface Generic<
 	params extends array<GenericParamAst> = array<GenericParamAst>,
-	bodyDef = any,
+	bodyDef = unknown,
 	$ = {},
 	arg$ = $
-> extends Callable<GenericInstantiator<params, bodyDef, $, arg$>> {
+> extends Callable<GenericInstantiator<params, bodyDef, $, arg$>>,
+		GenericAst<params, bodyDef, Scope<$>, Scope<arg$>> {
 	[arkKind]: "generic"
-	paramsAst: params
-	bodyDef: bodyDef
+
 	names: genericParamNames<params>
-	$: Scope<$>
-	arg$: Scope<arg$>
 	internal: GenericRoot
 }
 

@@ -1,4 +1,4 @@
-import type { GenericHkt } from "@ark/schema"
+import type { GenericAst, GenericHkt, genericParamNames } from "@ark/schema"
 import type { BigintLiteral, array } from "@ark/util"
 import type {
 	Date,
@@ -12,13 +12,8 @@ import type {
 	normalizeLimit,
 	string
 } from "../../ast.js"
-import type { Generic } from "../../generic.js"
 import type { inferIntersection } from "../../intersect.js"
-import type {
-	UnparsedScope,
-	resolve,
-	tryInferSubmoduleReference
-} from "../../scope.js"
+import type { Scope, resolve, tryInferSubmoduleReference } from "../../scope.js"
 import type { inferDefinition } from "../definition.js"
 import type { Comparator, MinComparator } from "../string/reduce/shared.js"
 import type { StringLiteral } from "../string/shift/operand/enclosed.js"
@@ -35,7 +30,7 @@ export type inferConstrainableAst<ast, $, args> =
 	: never
 
 export type GenericInstantiationAst<
-	generic extends Generic = Generic,
+	generic extends GenericAst = GenericAst,
 	argAsts extends unknown[] = unknown[]
 > = [generic, "<>", argAsts]
 
@@ -48,15 +43,15 @@ export type inferExpression<ast extends array, $, args> =
 			>
 		:	inferDefinition<
 				g["bodyDef"],
-				g["$"]["t"] extends UnparsedScope ?
+				g["$"] extends Scope<infer $> ?
 					// If the generic was defined in the current scope, its definition can be
 					// resolved using the same scope as that of the input args.
 					$
 				:	// Otherwise, use the scope that was explicitly associated with it.
-					g["$"]["t"],
+					g["$"],
 				{
 					// Using keyof g["params"] & number here results in the element types being mixed
-					[i in keyof g["names"]]: inferConstrainableAst<
+					[i in keyof genericParamNames<g["paramsAst"]>]: inferConstrainableAst<
 						argAsts[i & keyof argAsts],
 						$,
 						args

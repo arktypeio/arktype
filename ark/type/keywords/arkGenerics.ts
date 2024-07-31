@@ -1,7 +1,7 @@
 import { GenericHkt, genericNode } from "@ark/schema"
 import { liftArray, type conform } from "@ark/util"
 import type { Out } from "../ast.js"
-import type { Module } from "../module.js"
+import type { exportScope, Module } from "../module.js"
 import { scope } from "../scope.js"
 
 const ArkLiftArray = genericNode("T")(
@@ -19,9 +19,9 @@ const arkGenericsExports = {
 	liftArray: ArkLiftArray
 }
 
-export type arkGenericsExports = Module<typeof arkGenericsExports>
+export type arkGenericsExports = exportScope<typeof arkGenericsExports>
 
-export type arkGenerics = arkGenericsExports
+export type arkGenerics = Module<arkGenericsExports>
 
 const $ = scope(arkGenericsExports)
 

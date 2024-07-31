@@ -7,7 +7,7 @@ import type { anyOrNever } from "@ark/util"
 import type { Generic } from "./generic.js"
 import type { instantiateType } from "./type.js"
 
-type exportScope<$> = {
+export type exportScope<$> = {
 	[k in keyof $]: instantiateExport<$[k], $>
 } & unknown
 

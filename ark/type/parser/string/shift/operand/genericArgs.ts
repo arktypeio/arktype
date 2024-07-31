@@ -1,6 +1,10 @@
-import type { BaseRoot, GenericRoot } from "@ark/schema"
+import type {
+	BaseRoot,
+	GenericAst,
+	genericParamNames,
+	GenericRoot
+} from "@ark/schema"
 import type { array, ErrorMessage, join } from "@ark/util"
-import type { Generic } from "../../../../generic.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
 import { writeUnclosedGroupMessage } from "../../reduce/shared.js"
 import type { state, StaticState } from "../../reduce/static.js"
@@ -14,7 +18,7 @@ export const parseGenericArgs = (
 
 export type parseGenericArgs<
 	name extends string,
-	g extends Generic,
+	g extends GenericAst,
 	unscanned extends string,
 	$,
 	args
@@ -55,7 +59,7 @@ export type ParsedArgs<
 
 type _parseGenericArgs<
 	name extends string,
-	g extends Generic,
+	g extends GenericAst,
 	unscanned extends string,
 	$,
 	args,
@@ -84,7 +88,11 @@ type _parseGenericArgs<
 				nextAsts["length"] extends g["paramsAst"]["length"] ?
 					ParsedArgs<nextAsts, nextUnscanned>
 				:	state.error<
-						writeInvalidGenericArgCountMessage<name, g["names"], nextDefs>
+						writeInvalidGenericArgCountMessage<
+							name,
+							genericParamNames<g["paramsAst"]>,
+							nextDefs
+						>
 					>
 			: finalArgState["finalizer"] extends "," ?
 				_parseGenericArgs<name, g, nextUnscanned, $, args, nextDefs, nextAsts>

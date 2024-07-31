@@ -46,11 +46,27 @@ export class LazyGenericBody<
 	returns = unknown
 > extends Callable<(args: argResolutions) => returns> {}
 
-export class GenericRoot<
+export interface GenericAst<
 	params extends array<GenericParamAst> = array<GenericParamAst>,
-	bodyDef = unknown
-> extends Callable<(...args: { [i in keyof params]: BaseRoot }) => BaseRoot> {
+	bodyDef = unknown,
+	$ = unknown,
+	arg$ = unknown
+> {
+	paramsAst: params
+	bodyDef: bodyDef
+	$: $
+	arg$: arg$
+}
+
+export class GenericRoot<
+		params extends array<GenericParamAst> = array<GenericParamAst>,
+		bodyDef = unknown
+	>
+	extends Callable<(...args: { [i in keyof params]: BaseRoot }) => BaseRoot>
+	implements GenericAst<params, bodyDef, BaseScope, BaseScope>
+{
 	readonly [arkKind] = "generic"
+	declare readonly paramsAst: params
 
 	constructor(
 		public paramDefs: array<GenericParamDef>,
@@ -155,6 +171,9 @@ export type genericParamSchemasToAst<
 	:	never
 }
 
+export type genericHktToConstraints<hkt extends abstract new () => GenericHkt> =
+	Parameters<InstanceType<hkt>["hkt"]>[0]
+
 export type GenericHktSchemaParser = <
 	const paramsDef extends readonly GenericParamDef[]
 >(
@@ -165,7 +184,12 @@ export type GenericHktSchemaBodyParser<params extends array<GenericParamAst>> =
 	<hkt extends abstract new () => GenericHkt>(
 		instantiateDef: LazyGenericBody<GenericArgResolutions<params>>,
 		hkt: hkt
-	) => GenericRoot<params, InstanceType<hkt>>
+	) => GenericRoot<
+		{
+			[i in keyof params]: [params[i][0], genericHktToConstraints<hkt>[i]]
+		},
+		InstanceType<hkt>
+	>
 
 export abstract class GenericHkt<
 	hkt extends (args: any) => unknown = (args: any) => unknown

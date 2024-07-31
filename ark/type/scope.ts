@@ -7,6 +7,7 @@ import {
 	type BaseNode,
 	type BaseRoot,
 	type GenericArgResolutions,
+	type GenericAst,
 	type GenericParamAst,
 	type InternalResolutions,
 	type Node,
@@ -127,7 +128,7 @@ type bootstrapAliases<def> = {
 		thunkReturn
 	:	Def<def[k]>
 } & {
-	[k in keyof def & GenericDeclaration as extractGenericName<k>]: Generic<
+	[k in keyof def & GenericDeclaration as extractGenericName<k>]: GenericAst<
 		parseValidGenericParams<extractGenericParameters<k>, bootstrapAliases<def>>,
 		def[k],
 		UnparsedScope
@@ -137,9 +138,7 @@ type bootstrapAliases<def> = {
 type inferBootstrapped<$> = show<{
 	[name in keyof $]: $[name] extends Def<infer def> ?
 		inferDefinition<def, $, {}>
-	: $[name] extends (
-		Generic<infer params, infer def> | Generic<infer params, infer def>
-	) ?
+	: $[name] extends GenericAst<infer params, infer def> ?
 		// add the scope in which the generic was defined here
 		Generic<params, def, $>
 	:	// otherwise should be a submodule
