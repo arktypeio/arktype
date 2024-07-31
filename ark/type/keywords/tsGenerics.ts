@@ -1,9 +1,12 @@
-import { GenericHkt, genericNode } from "@ark/schema"
-import { $ark, type conform, type Key, type show } from "@ark/util"
+import { GenericHkt } from "@ark/schema"
+import type { conform, Key, show } from "@ark/util"
+import { generic } from "../ark.js"
 import type { Module } from "../module.js"
 import { scope } from "../scope.js"
+import { internal } from "./internal.js"
+import { tsKeywords } from "./tsKeywords.js"
 
-const Record = genericNode(["K", $ark.intrinsic.propertyKey], "V")(
+const Record = generic(["K", internal.propertyKey], "V")(
 	args => ({
 		domain: "object",
 		index: {
@@ -18,10 +21,7 @@ const Record = genericNode(["K", $ark.intrinsic.propertyKey], "V")(
 	}
 )
 
-const Pick = genericNode(
-	["T", $ark.intrinsic.object],
-	["K", $ark.intrinsic.propertyKey]
-)(
+const Pick = generic(["T", tsKeywords.object], ["K", internal.propertyKey])(
 	args => args.T.pick(args.K as never),
 	class PickHkt extends GenericHkt {
 		declare hkt: (
@@ -30,10 +30,7 @@ const Pick = genericNode(
 	}
 )
 
-const Omit = genericNode(
-	["T", $ark.intrinsic.object],
-	["K", $ark.intrinsic.propertyKey]
-)(
+const Omit = generic(["T", tsKeywords.object], ["K", internal.propertyKey])(
 	args => args.T.omit(args.K as never),
 	class OmitHkt extends GenericHkt {
 		declare hkt: (
@@ -42,7 +39,7 @@ const Omit = genericNode(
 	}
 )
 
-const Partial = genericNode(["T", $ark.intrinsic.object])(
+const Partial = generic(["T", tsKeywords.object])(
 	args => args.T.partial(),
 	class PartialHkt extends GenericHkt {
 		declare hkt: (
@@ -51,7 +48,7 @@ const Partial = genericNode(["T", $ark.intrinsic.object])(
 	}
 )
 
-const Required = genericNode(["T", $ark.intrinsic.object])(
+const Required = generic(["T", tsKeywords.object])(
 	args => args.T.required(),
 	class RequiredHkt extends GenericHkt {
 		declare hkt: (
@@ -60,7 +57,7 @@ const Required = genericNode(["T", $ark.intrinsic.object])(
 	}
 )
 
-const Exclude = genericNode("T", "U")(
+const Exclude = generic("T", "U")(
 	args => args.T.exclude(args.U),
 	class ExcludeHkt extends GenericHkt {
 		declare hkt: (
@@ -69,7 +66,7 @@ const Exclude = genericNode("T", "U")(
 	}
 )
 
-const Extract = genericNode("T", "U")(
+const Extract = generic("T", "U")(
 	args => args.T.extract(args.U),
 	class ExtractHkt extends GenericHkt {
 		declare hkt: (
