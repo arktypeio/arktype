@@ -2,6 +2,7 @@ import {
 	flatMorph,
 	isArray,
 	isDotAccessible,
+	noSuggest,
 	printable,
 	throwParseError,
 	type array,
@@ -80,7 +81,7 @@ export const pathToPropString = <stringifiable>(
 
 export type arkKind = typeof arkKind
 
-export const arkKind = " arkKind"
+export const arkKind = noSuggest("arkKind")
 
 export interface ArkKinds {
 	constraint: BaseConstraint

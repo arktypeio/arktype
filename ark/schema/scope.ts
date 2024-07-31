@@ -14,6 +14,7 @@ import {
 	type array,
 	type conform,
 	type flattenListable,
+	type noSuggest,
 	type show
 } from "@ark/util"
 import { resolveConfig, type ArkConfig } from "./config.js"
@@ -57,9 +58,9 @@ export type exportedNameOf<$> = Exclude<keyof $ & string, PrivateDeclaration>
 
 export type resolvableReferenceIn<$> = {
 	[k in keyof $]: k extends string ?
-		k extends PrivateDeclaration<infer alias> ?
-			alias
-		:	k
+		k extends PrivateDeclaration<infer alias> ? alias
+		: k extends noSuggest ? never
+		: k
 	:	never
 }[keyof $]
 

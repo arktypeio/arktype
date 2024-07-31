@@ -6,17 +6,18 @@ import type {
 	NodeSchema,
 	PrimitiveConstraintKind
 } from "@ark/schema"
-import type {
-	anyOrNever,
-	array,
-	BuiltinObjectKind,
-	BuiltinObjects,
-	conform,
-	equals,
-	leftIfEqual,
-	Primitive,
-	propValueOf,
-	show
+import {
+	noSuggest,
+	type anyOrNever,
+	type array,
+	type BuiltinObjectKind,
+	type BuiltinObjects,
+	type conform,
+	type equals,
+	type leftIfEqual,
+	type Primitive,
+	type propValueOf,
+	type show
 } from "@ark/util"
 import type { type } from "./ark.js"
 import type { inferPipe } from "./intersect.js"
@@ -24,7 +25,7 @@ import type { platformObjectExports } from "./keywords/platformObjects.js"
 import type { typedArrayExports } from "./keywords/typedArray.js"
 import type { instantiateType } from "./type.js"
 
-export const inferred = " arkInferred"
+export const inferred = noSuggest("arkInferred")
 
 export type inferred = typeof inferred
 
@@ -40,7 +41,7 @@ export type ConstraintSet = Record<PropertyKey, 1>
 
 export type Constraints = Record<string, ConstraintSet>
 
-export const constrained = " arkConstrained"
+export const constrained = noSuggest("arkConstrained")
 
 export type constrained = typeof constrained
 

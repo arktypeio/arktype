@@ -19,10 +19,26 @@ export class ParseError extends Error {
 export const throwParseError: (message: string) => never = message =>
 	throwError(message, ParseError)
 
+/**
+ *  TypeScript won't suggest strings beginning with a space as properties.
+ *  Useful for symbol-like string properties.
+ */
+export const noSuggest = <s extends string>(s: s): noSuggest<s> => ` ${s}`
+
+/**
+ *  TypeScript won't suggest strings beginning with a space as properties.
+ *  Useful for symbol-like string properties.
+ */
+export type noSuggest<s extends string = string> = ` ${s}`
+
+/** "Hair Space" character, used  as a non-rendered sentinel for an error message string:
+ *  https://www.compart.com/en/unicode/U+200A
+ */
 export const zeroWidthSpace = " "
 
-// Using "Hair Space" as a non-rendered sentinel for an error message string:
-// https://www.compart.com/en/unicode/U+200A
+/** "Hair Space" character, used  as a non-rendered sentinel for an error message string:
+ *  https://www.compart.com/en/unicode/U+200A
+ */
 export type ZeroWidthSpace = typeof zeroWidthSpace
 
 export type ErrorMessage<message extends string = string> =

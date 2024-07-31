@@ -221,7 +221,8 @@ type validReferenceFromToken<
 	args,
 	submodulePath extends string[]
 > = Extract<
-	submodulePath extends [] ? BaseCompletions<$, args> : keyof $,
+	submodulePath extends [] ? BaseCompletions<$, args>
+	:	resolvableReferenceIn<$>,
 	`${token}${string}`
 >
 
