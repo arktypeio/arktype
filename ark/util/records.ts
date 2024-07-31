@@ -212,12 +212,9 @@ export const pick = <o extends object, keys extends keySetOf<o>>(
  * // preserves original type w/ modifier groupings
  * type omitResult = omit<{ a: 1 } | { b: 2 }, never>
  */
-export type omit<o, key extends keyof o> =
-	o extends unknown ?
-		{
-			[k in keyof o as k extends key ? never : k]: o[k]
-		}
-	:	never
+export type omit<o, key extends keyof o> = {
+	[k in keyof o as k extends key ? never : k]: o[k]
+}
 
 export const omit = <o extends object, keys extends keySetOf<o>>(
 	o: o,
