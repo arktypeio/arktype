@@ -16,7 +16,7 @@ const Record = generic(["K", internal.propertyKey], "V")(
 	}),
 	class RecordHkt extends GenericHkt {
 		declare hkt: (
-			args: conform<this["args"], [PropertyKey, unknown]>
+			args: conform<this["args"], [Key, unknown]>
 		) => Record<(typeof args)[0], (typeof args)[1]>
 	}
 )

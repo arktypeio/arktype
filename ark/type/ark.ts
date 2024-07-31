@@ -23,7 +23,7 @@ export interface Ark
 		jsObjectExports,
 		platformObjectExports,
 		validationExports,
-		// tsGenericsExports,
+		tsGenericsExports,
 		arkGenericsExports,
 		internalExports {
 	TypedArray: Module<typedArrayExports>

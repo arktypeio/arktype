@@ -7,7 +7,7 @@ type exportScope<$> = {
 }
 
 export type instantiateExport<t, $> =
-	t extends PreparsedNodeResolution ?
+	[t] extends [PreparsedNodeResolution] ?
 		[t] extends [anyOrNever] ?
 			instantiateType<t, $>
 		:	t

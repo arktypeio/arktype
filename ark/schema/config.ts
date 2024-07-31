@@ -1,6 +1,5 @@
 import { $ark, type mutable, type requireKeys, type show } from "@ark/util"
 import type { intrinsic } from "./intrinsic.js"
-import type { RootModule } from "./module.js"
 import type {
 	ActualWriter,
 	ArkErrorCode,
@@ -15,7 +14,6 @@ import {
 } from "./shared/implement.js"
 
 export interface ArkSchemaRegistryContents {
-	ambient: RootModule
 	intrinsic: typeof intrinsic
 	config: ArkConfig
 	defaultConfig: ResolvedArkConfig
