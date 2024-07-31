@@ -244,7 +244,7 @@ export interface Generic<
 	bodyDef: bodyDef
 	names: genericParamNames<params>
 	$: Scope<$>
-	arg$: arg$
+	arg$: Scope<arg$>
 	internal: GenericRoot
 }
 

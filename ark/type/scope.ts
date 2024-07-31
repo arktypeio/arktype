@@ -40,6 +40,7 @@ import {
 	type nominal,
 	type show
 } from "@ark/util"
+import type { type } from "./ark.js"
 import {
 	parseGenericParams,
 	type Generic,
@@ -166,7 +167,11 @@ export type resolve<reference extends keyof $ | keyof args, $, args> =
 
 export type moduleKeyOf<$> = {
 	// TODO: check against module directly?
-	[k in keyof $]: $[k] extends { [arkKind]: "module" } ? k & string : never
+	[k in keyof $]: $[k] extends { [arkKind]: "module" } ?
+		[$[k]] extends [anyOrNever] ?
+			never
+		:	k & string
+	:	never
 }[keyof $]
 
 export type tryInferSubmoduleReference<$, token> =
@@ -177,7 +182,11 @@ export type tryInferSubmoduleReference<$, token> =
 	: token extends `${infer submodule}.${infer subalias}` ?
 		submodule extends moduleKeyOf<ArkEnv.$> ?
 			subalias extends keyof ArkEnv.$[submodule] ?
-				ArkEnv.$[submodule][subalias]
+				ArkEnv.$[submodule][subalias] extends infer resolution ?
+					resolution extends type.cast<infer t> ?
+						t
+					:	resolution
+				:	never
 			:	never
 		:	never
 	:	never

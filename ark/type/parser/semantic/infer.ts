@@ -40,23 +40,23 @@ export type GenericInstantiationAst<
 > = [generic, "<>", argAsts]
 
 export type inferExpression<ast extends array, $, args> =
-	ast extends GenericInstantiationAst<infer generic, infer argAsts> ?
-		generic["bodyDef"] extends GenericHkt ?
+	ast extends GenericInstantiationAst<infer g, infer argAsts> ?
+		g["bodyDef"] extends GenericHkt ?
 			GenericHkt.instantiate<
-				generic["bodyDef"],
+				g["bodyDef"],
 				{ [i in keyof argAsts]: inferConstrainableAst<argAsts[i], $, args> }
 			>
 		:	inferDefinition<
-				generic["bodyDef"],
-				generic["$"]["t"] extends UnparsedScope ?
+				g["bodyDef"],
+				g["$"]["t"] extends UnparsedScope ?
 					// If the generic was defined in the current scope, its definition can be
 					// resolved using the same scope as that of the input args.
 					$
 				:	// Otherwise, use the scope that was explicitly associated with it.
-					generic["$"]["t"],
+					g["$"]["t"],
 				{
 					// Using keyof g["params"] & number here results in the element types being mixed
-					[i in keyof generic["names"]]: inferConstrainableAst<
+					[i in keyof g["names"]]: inferConstrainableAst<
 						argAsts[i & keyof argAsts],
 						$,
 						args
