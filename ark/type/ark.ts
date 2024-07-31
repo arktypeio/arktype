@@ -34,18 +34,21 @@ export interface Ark
 	format: Module<formattingExports>
 }
 
-export const ambient: Scope<Ark> = scope({
-	...tsKeywords,
-	...jsObjects,
-	...platformObjects,
-	...validation,
-	...internal,
-	...tsGenerics,
-	...arkGenerics,
-	TypedArray: typedArray,
-	parse: parsing,
-	format: formatting
-}) as never
+export const ambient: Scope<Ark> = scope(
+	{
+		...tsKeywords,
+		...jsObjects,
+		...platformObjects,
+		...validation,
+		...internal,
+		...tsGenerics,
+		...arkGenerics,
+		TypedArray: typedArray,
+		parse: parsing,
+		format: formatting
+	},
+	{ prereducedAliases: true, ambient: true }
+) as never
 
 export const ark: Module<Ark> = ambient.export()
 
