@@ -9,7 +9,7 @@ import type { instantiateType } from "./type.js"
 
 type exportScope<$> = {
 	[k in keyof $]: instantiateExport<$[k], $>
-}
+} & unknown
 
 export type instantiateExport<t, $> =
 	[t] extends [PreparsedNodeResolution] ?
@@ -21,4 +21,4 @@ export type instantiateExport<t, $> =
 export const Module: new <$>(types: exportScope<$>) => Module<$> =
 	RootModule as never
 
-export type Module<$ = {}> = RootModule<exportScope<$>>
+export interface Module<$ = {}> extends RootModule<exportScope<$>> {}

@@ -84,9 +84,9 @@ const tsGenericsExports = {
 	Required
 }
 
-export type tsGenericsExports = typeof tsGenericsExports
+export type tsGenericsExports = Module<typeof tsGenericsExports>
 
-export type tsGenerics = Module<tsGenericsExports>
+export type tsGenerics = tsGenericsExports
 
 const $ = scope(tsGenericsExports)
 

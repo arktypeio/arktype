@@ -55,12 +55,13 @@ export type InternalResolutions = Record<string, InternalResolution | undefined>
 
 export type exportedNameOf<$> = Exclude<keyof $ & string, PrivateDeclaration>
 
-export type resolvableReferenceIn<$> =
-	keyof $ extends infer k extends string ?
+export type resolvableReferenceIn<$> = {
+	[k in keyof $]: k extends string ?
 		k extends PrivateDeclaration<infer alias> ?
 			alias
 		:	k
 	:	never
+}[keyof $]
 
 export type resolveReference<reference extends resolvableReferenceIn<$>, $> =
 	reference extends keyof $ ? $[reference] : $[`#${reference}` & keyof $]

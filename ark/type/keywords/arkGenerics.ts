@@ -19,9 +19,9 @@ const arkGenericsExports = {
 	liftArray: ArkLiftArray
 }
 
-export type arkGenericsExports = typeof arkGenericsExports
+export type arkGenericsExports = Module<typeof arkGenericsExports>
 
-export type arkGenerics = Module<arkGenericsExports>
+export type arkGenerics = arkGenericsExports
 
 const $ = scope(arkGenericsExports)
 
