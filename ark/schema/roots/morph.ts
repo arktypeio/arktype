@@ -94,33 +94,26 @@ export const morphImplementation: nodeImplementationOf<MorphDeclaration> =
 
 				// in case from is a union, we need to distribute the branches
 				// to can be a union as any schema is allowed
-				return ctx.$.rootNode(
-					inTersection.branches.map(inBranch =>
+				return inTersection.distribute(
+					inBranch =>
 						ctx.$.node("morph", {
 							morphs: l.morphs,
 							in: inBranch as never
-						})
-					)
+						}),
+					ctx.$.rootNode
 				)
 			},
 			...defineRightwardIntersections("morph", (l, r, ctx) => {
 				const inTersection = intersectNodes(l.in, r, ctx)
-				return (
-					inTersection instanceof Disjoint ? inTersection
-					: inTersection.kind === "union" ?
-						ctx.$.node(
-							"union",
-							inTersection.branches.map(branch => ({
+				return inTersection instanceof Disjoint ? inTersection : (
+						inTersection.distribute(
+							branch => ({
 								...l.inner,
 								in: branch
-							}))
+							}),
+							ctx.$.rootNode
 						)
-					:	ctx.$.node("morph", {
-							...l.inner,
-							// TODO: https://github.com/arktypeio/arktype/issues/1067
-							in: inTersection as MorphChildNode
-						})
-				)
+					)
 			})
 		}
 	})

@@ -47,7 +47,7 @@ import type {
 	StructureNode,
 	UndeclaredKeyBehavior
 } from "../structure/structure.js"
-import type { Morph, MorphChildNode, MorphNode } from "./morph.js"
+import type { Morph, MorphNode } from "./morph.js"
 import type { UnionChildKind, UnionChildNode } from "./union.js"
 
 export interface InternalRootDeclaration extends BaseNodeDeclaration {
@@ -275,20 +275,20 @@ export abstract class BaseRoot<
 			if (result instanceof Disjoint) return result.throw()
 			return result as BaseRoot
 		}
-		if (this.hasKind("union")) {
-			const branches = this.branches.map(node => node.pipe(morph))
-			return this.$.node("union", { ...this.inner, branches })
-		}
-		if (this.hasKind("morph")) {
-			return this.$.node("morph", {
-				...this.inner,
-				morphs: [...this.morphs, morph]
-			})
-		}
-		return this.$.node("morph", {
-			in: this as {} as MorphChildNode,
-			morphs: [morph]
-		})
+
+		return this.distribute(
+			node =>
+				node.hasKind("morph") ?
+					this.$.node("morph", {
+						in: node.in,
+						morphs: [...node.morphs, morph]
+					})
+				:	this.$.node("morph", {
+						in: node,
+						morphs: [morph]
+					}),
+			branches => this.$.rootNode(branches)
+		)
 	}
 
 	@cached

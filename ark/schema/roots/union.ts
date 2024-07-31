@@ -130,7 +130,7 @@ export const unionImplementation: nodeImplementationOf<UnionDeclaration> =
 		},
 		defaults: {
 			description: node =>
-				describeBranches(node.branches.map(branch => branch.description)),
+				node.distribute(branch => branch.description, describeBranches),
 			expected: ctx => {
 				const byPath = groupBy(ctx.errors, "propString") as Record<
 					string,
@@ -217,14 +217,13 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 	discriminantJson =
 		this.discriminant ? discriminantToJson(this.discriminant) : null
 
-	expression: string = expressBranches(
-		this.branches.map(n => n.nestableExpression)
+	expression: string = this.distribute(
+		n => n.nestableExpression,
+		expressBranches
 	)
 
 	get shortDescription(): string {
-		return describeBranches(
-			this.branches.map(branch => branch.shortDescription)
-		)
+		return this.distribute(branch => branch.shortDescription, describeBranches)
 	}
 
 	traverseAllows: TraverseAllows = (data, ctx) =>

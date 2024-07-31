@@ -67,7 +67,7 @@ export const parseTupleLiteral = (def: array, ctx: ParseContext): BaseRoot => {
 			// nodes: [string, ...number[]] | [string, true, false]
 			sequences = sequences.flatMap(base =>
 				// since appendElement mutates base, we have to shallow-ish clone it for each branch
-				element.branches.map(branch =>
+				element.distribute(branch =>
 					appendSpreadBranch(makeRootAndArrayPropertiesMutable(base), branch)
 				)
 			)
