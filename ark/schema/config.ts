@@ -22,13 +22,11 @@ export interface ArkSchemaRegistryContents {
 declare global {
 	export interface ArkEnv {
 		meta(): {}
-		preserve(): never
 		registry(): ArkSchemaRegistryContents
 	}
 
 	export namespace ArkEnv {
 		export type meta = ReturnType<ArkEnv["meta"]>
-		export type preserve = ReturnType<ArkEnv["preserve"]>
 	}
 }
 

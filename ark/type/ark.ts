@@ -14,7 +14,6 @@ import { tsGenerics, type tsGenericsExports } from "./keywords/tsGenerics.js"
 import { tsKeywords, type tsKeywordExports } from "./keywords/tsKeywords.js"
 import { typedArray, type typedArrayExports } from "./keywords/typedArray.js"
 import { validation, type validationExports } from "./keywords/validation.js"
-import type { MatchParser } from "./match.js"
 import type { Module } from "./module.js"
 import { scope, type Scope } from "./scope.js"
 import type { DeclarationParser, DefinitionParser, TypeParser } from "./type.js"
@@ -63,8 +62,6 @@ export namespace type {
 }
 
 export const generic: GenericHktParser<{}> = ambient.generic as never
-
-export const match: MatchParser<{}> = ambient.match as never
 
 export const define: DefinitionParser<{}> = ambient.define as never
 

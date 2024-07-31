@@ -22,12 +22,15 @@ export const $ark: ArkEnv.registry = initialRegistryContents as never
 declare global {
 	export interface ArkEnv {
 		registry(): {}
+		prototypes(): never
 	}
 
 	export namespace ArkEnv {
 		export type registry = PartialRecord<string, object | symbol> &
 			InitialRegistryContents &
 			ReturnType<ArkEnv["registry"]>
+
+		export type prototypes = ReturnType<ArkEnv["prototypes"]>
 	}
 }
 

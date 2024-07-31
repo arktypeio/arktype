@@ -1,5 +1,5 @@
 import { GenericHkt, genericNode } from "@ark/schema"
-import type { conform, Key, show } from "@ark/util"
+import type { conform, Key, omit, pick, show } from "@ark/util"
 import type { exportScope, Module } from "../module.js"
 import { scope } from "../scope.js"
 import { internal } from "./internal.js"
@@ -25,7 +25,7 @@ const Pick = genericNode(["T", tsKeywords.object], ["K", internal.key])(
 	class PickHkt extends GenericHkt {
 		declare hkt: (
 			args: conform<this["args"], [object, Key]>
-		) => show<Pick<(typeof args)[0], (typeof args)[1] & keyof (typeof args)[0]>>
+		) => pick<(typeof args)[0], (typeof args)[1] & keyof (typeof args)[0]>
 	}
 )
 
@@ -34,7 +34,7 @@ const Omit = genericNode(["T", tsKeywords.object], ["K", internal.key])(
 	class OmitHkt extends GenericHkt {
 		declare hkt: (
 			args: conform<this["args"], [object, Key]>
-		) => show<Omit<(typeof args)[0], (typeof args)[1] & keyof (typeof args)[0]>>
+		) => omit<(typeof args)[0], (typeof args)[1] & keyof (typeof args)[0]>
 	}
 )
 

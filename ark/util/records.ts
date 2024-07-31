@@ -128,7 +128,50 @@ export type requiredKeyOf<o> = {
 
 export type optionalKeyOf<o> = Exclude<keyof o, requiredKeyOf<o>>
 
-export type merge<base, merged> = show<Omit<base, keyof merged> & merged>
+export type merge<base, props> =
+	base extends unknown ?
+		props extends unknown ?
+			show<omit<base, keyof base & keyof props> & props>
+		:	props
+	:	never
+
+/** Homomorphic implementation of the builtin Omit.
+ *
+ * Gives different results for many union expressions like the following:
+ *
+ * @example
+ * // {}
+ * type OmitResult = Omit<{ a: 1 } | { b: 2 }, never>
+ *
+ * @example
+ * // preserves original type w/ modifier groupings
+ * type omitResult = omit<{ a: 1 } | { b: 2 }, never>
+ */
+export type omit<o, key extends keyof o> = {
+	[k in keyof o as k extends key ? never : k]: o[k]
+}
+
+/** Homomorphic implementation of the builtin Pick.
+ *
+ * Gives different results for certain union expressions like the following:
+ *
+ * @example
+ * // flattens result to { a?: 1 | 2; b?: 1 | 2 }
+ * type PickResult = Pick<{ a: 1; b?: 1 } | { a?: 2; b: 2 }, "a" | "b">
+ *
+ * @example
+ * // preserves original type w/ modifier groupings
+ * type pickResult = pick<{ a: 1; b?: 1 } | { a?: 2; b: 2 }, "a" | "b">
+ */
+export type pick<o, key extends keyof o> =
+	o extends unknown ?
+		{
+			[k in keyof o as k extends key ? k : never]: o[k]
+		}
+	:	// could also consider adding the following to extract literal keys from
+		// index signatures as optional. doesn't match existing TS behavior though:
+		//  & { [k in keyof o as key extends k ? key : never]?: o[k] }
+		never
 
 export type override<
 	base,

@@ -250,19 +250,19 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 	): StructureInner {
 		const result = { ...this.inner }
 
-		const includeKey = (key: KeyOrKeyNode) => {
+		const shouldKeep = (key: KeyOrKeyNode) => {
 			const matchesKey = keys.some(k => typeOrTermExtends(key, k))
 			return operation === "pick" ? matchesKey : !matchesKey
 		}
 
 		if (result.required)
-			result.required = result.required.filter(prop => includeKey(prop.key))
+			result.required = result.required.filter(prop => shouldKeep(prop.key))
 
 		if (result.optional)
-			result.optional = result.optional.filter(prop => includeKey(prop.key))
+			result.optional = result.optional.filter(prop => shouldKeep(prop.key))
 
 		if (result.index)
-			result.index = result.index.filter(index => includeKey(index.signature))
+			result.index = result.index.filter(index => shouldKeep(index.signature))
 
 		return result
 	}

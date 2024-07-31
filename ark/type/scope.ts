@@ -51,7 +51,6 @@ import {
 	type baseGenericConstraints,
 	type parseValidGenericParams
 } from "./generic.js"
-import { createMatchParser, type MatchParser } from "./match.js"
 import type { Module, instantiateExport } from "./module.js"
 import {
 	parseObject,
@@ -208,8 +207,6 @@ export class InternalScope<
 
 	type: InternalTypeParser = new InternalTypeParser(this as never)
 
-	match: MatchParser<$> = createMatchParser(this as never) as never
-
 	declare: () => { type: InternalTypeParser } = (() => ({
 		type: this.type
 	})).bind(this)
@@ -337,8 +334,6 @@ export interface Scope<$ = {}> {
 	): Node<reducibleKindOf<flattenListable<kinds>>>
 
 	type: TypeParser<$>
-
-	match: MatchParser<$>
 
 	declare: DeclarationParser<$>
 

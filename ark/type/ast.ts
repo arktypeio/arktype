@@ -430,7 +430,7 @@ type distillPostfix<
 
 /** Objects we don't want to expand during inference like Date or Promise */
 type TerminallyInferredObjectKind =
-	| ArkEnv.preserve
+	| ArkEnv.prototypes
 	| BuiltinObjects[Exclude<BuiltinObjectKind, "Array" | "Function">]
 	| propValueOf<platformObjectExports>
 	| propValueOf<typedArrayExports>

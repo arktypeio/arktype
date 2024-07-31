@@ -127,8 +127,19 @@ export abstract class BaseRoot<
 		return this.applyStructuralOperation("partial", [])
 	}
 
+	merge(r: unknown): BaseRoot {
+		const rNode = this.$.parseRoot(r)
+		if (rNode.hasKind("union")) {
+			return this.$.rootNode(
+				rNode.branches.map(mergedPropsBranch => this.merge(mergedPropsBranch))
+			)
+		}
+
+		return this.applyStructuralOperation("merge", [r])
+	}
+
 	private applyStructuralOperation<
-		operation extends "pick" | "omit" | "required" | "partial"
+		operation extends "pick" | "omit" | "required" | "partial" | "merge"
 	>(operation: operation, args: Parameters<BaseRoot[operation]>): BaseRoot {
 		if (this.hasKind("union")) {
 			return this.$.rootNode(
@@ -162,7 +173,9 @@ export abstract class BaseRoot<
 
 			return this.$.node("intersection", {
 				...this.inner,
-				structure: this.inner.structure[structuralMethodName](...(args as any))
+				structure: this.inner.structure[structuralMethodName](
+					...(args as [never])
+				)
 			})
 		}
 
@@ -478,6 +491,7 @@ export type StructuralOperationName =
 	| "get"
 	| "required"
 	| "partial"
+	| "merge"
 
 export const writeNonStructuralOperandMessage = <
 	operation extends StructuralOperationName,
