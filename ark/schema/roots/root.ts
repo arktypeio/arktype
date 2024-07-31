@@ -55,7 +55,7 @@ export interface InternalRootDeclaration extends BaseNodeDeclaration {
 }
 
 export abstract class BaseRoot<
-	/** @ts-expect-error allow cast variance */
+	/** @ts-ignore cast variance */
 	out d extends InternalRootDeclaration = InternalRootDeclaration
 > extends BaseNode<d> {
 	readonly branches: readonly Node<UnionChildKind>[] =

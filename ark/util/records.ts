@@ -148,12 +148,12 @@ export const InnerDynamicBase = class {
 	}
 } as new <t extends object>(base: t) => t
 
-/** @ts-expect-error (needed to extend `t`, but safe given ShallowClone's implementation) **/
+/** @ts-ignore (needed to extend `t`, but safe given ShallowClone's implementation) **/
 export class DynamicBase<t extends object> extends InnerDynamicBase<t> {}
 
 export const NoopBase = class {} as new <t extends object>() => t
 
-/** @ts-expect-error (see DynamicBase) **/
+/** @ts-ignore (see DynamicBase) **/
 export class CastableBase<t extends object> extends NoopBase<t> {}
 
 export const splitByKeys = <o extends object, leftKeys extends keySetOf<o>>(

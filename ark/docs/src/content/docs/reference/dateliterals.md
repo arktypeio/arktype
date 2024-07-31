@@ -4,6 +4,7 @@ sidebar:
   order: 5
 ---
 
+<!--
 Date literals
 
 Date literals can now be defined using the following syntax:
@@ -26,4 +27,4 @@ Since what is enclosed by the date literal tokens is not parsed, you can also in
 ```ts
 // a Date in the past
 const  = type(`Date<=d"${Date.now()}"`)
-```
+``` -->

@@ -66,3 +66,7 @@ if (maybeMe instanceof type.errors) {
 	// "age must be a number (was missing)"
 	console.log(maybeMe.summary)
 }
+
+import { ark } from "arktype"
+
+const unfalse = ark.Exclude("boolean", "false")

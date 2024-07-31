@@ -163,7 +163,7 @@ export type DeclarationParser<$> = <preinferred>() => {
 	) => instantiateType<preinferred, $>
 }
 
-/** @ts-expect-error cast variance */
+/** @ts-ignore cast variance */
 export interface Type<out t = unknown, $ = {}>
 	extends Callable<(data: unknown) => distillOut<t> | ArkErrors> {
 	t: t
