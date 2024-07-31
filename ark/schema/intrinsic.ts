@@ -33,7 +33,7 @@ export const intrinsic = schemaScope(
 			divisor: 1
 		},
 		lengthBoundable: ["string", Array],
-		propertyKey: ["string", "symbol"],
+		key: ["string", "symbol"],
 		nonNegativeIntegerString: { domain: "string", pattern: arrayIndexSource }
 	},
 	{ prereducedAliases: true }

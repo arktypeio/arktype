@@ -11,7 +11,7 @@ import {
 } from "@ark/util"
 import type { BaseConstraint } from "../constraint.js"
 import type { GenericRoot } from "../generic.js"
-import type { RootModule } from "../module.js"
+import type { InternalModule } from "../module.js"
 import type { BaseNode } from "../node.js"
 import type { BaseRoot } from "../roots/root.js"
 import type { BaseScope } from "../scope.js"
@@ -87,7 +87,7 @@ export interface ArkKinds {
 	root: BaseRoot
 	scope: BaseScope
 	generic: GenericRoot
-	module: RootModule
+	module: InternalModule
 	error: ArkError
 }
 

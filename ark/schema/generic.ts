@@ -48,13 +48,9 @@ export class LazyGenericBody<
 
 export class GenericRoot<
 	params extends array<GenericParamAst> = array<GenericParamAst>,
-	bodyDef = unknown,
-	instantiator extends (...args: never[]) => unknown = (
-		...args: { [i in keyof params]: BaseRoot }
-	) => BaseRoot
-> extends Callable<instantiator> {
+	bodyDef = unknown
+> extends Callable<(...args: { [i in keyof params]: BaseRoot }) => BaseRoot> {
 	readonly [arkKind] = "generic"
-	declare readonly paramsAst: params
 
 	constructor(
 		public paramDefs: array<GenericParamDef>,
@@ -62,7 +58,7 @@ export class GenericRoot<
 		public $: BaseScope,
 		public arg$: BaseScope
 	) {
-		super(((...args: any[]) => {
+		super((...args: any[]) => {
 			const argNodes = flatMorph(this.names, (i, name) => {
 				const arg = this.arg$.parseRoot(args[i])
 				if (!arg.extends(this.constraints[i])) {
@@ -84,7 +80,7 @@ export class GenericRoot<
 			}
 
 			return this.$.parseRoot(bodyDef, { args: argNodes })
-		}) as {} as instantiator)
+		})
 
 		this.validateBaseInstantiation()
 	}
@@ -115,7 +111,7 @@ export class GenericRoot<
 
 	@cached
 	get params(): { [i in keyof params]: [params[i][0], BaseRoot] } {
-		return this.paramDefs.map(param =>
+		return this.params.map(param =>
 			typeof param === "string" ?
 				[param, $ark.intrinsic.unknown]
 			:	[param[0], this.$.parseRoot(param[1])]
@@ -134,7 +130,7 @@ export class GenericRoot<
 
 	@cached
 	get baseInstantiation(): BaseRoot {
-		return this(...(this.constraints as never[])) as never
+		return this(...(this.constraints as never)) as never
 	}
 
 	validateBaseInstantiation(): this {

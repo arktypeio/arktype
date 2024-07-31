@@ -7,14 +7,16 @@ export type PreparsedNodeResolution = {
 	[arkKind]: "generic" | "module"
 }
 
-export class RootModule<
-	exports extends InternalResolutions = InternalResolutions
-> extends DynamicBase<exports> {
+export class RootModule<exports extends {} = {}> extends DynamicBase<exports> {
 	// ensure `[arkKind]` is non-enumerable so it doesn't get spread on import/export
 	get [arkKind](): "module" {
 		return "module"
 	}
 }
+
+export interface InternalModule<
+	exports extends InternalResolutions = InternalResolutions
+> extends RootModule<exports> {}
 
 type exportSchemaScope<$> = {
 	[k in keyof $]: $[k] extends InternalResolution ?

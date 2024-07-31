@@ -33,6 +33,7 @@ import {
 } from "./kinds.js"
 import {
 	RootModule,
+	type InternalModule,
 	type PreparsedNodeResolution,
 	type SchemaModule
 } from "./module.js"
@@ -66,13 +67,13 @@ export type resolveReference<reference extends resolvableReferenceIn<$>, $> =
 
 export type PrivateDeclaration<key extends string = string> = `#${key}`
 
-export type InternalResolution = BaseRoot | GenericRoot | RootModule
+export type InternalResolution = BaseRoot | GenericRoot | InternalModule
 
 export type toInternalScope<$> = BaseScope<{
 	[k in keyof $]: $[k] extends { [arkKind]: infer kind } ?
 		[$[k]] extends [anyOrNever] ? BaseRoot
 		: kind extends "generic" ? GenericRoot
-		: kind extends "module" ? RootModule
+		: kind extends "module" ? InternalModule
 		: never
 	:	BaseRoot
 }>
@@ -326,8 +327,8 @@ export abstract class BaseScope<$ extends {} = {}> {
 			:	resolution
 	}
 
-	get ambient(): RootModule {
-		return $ark.ambient
+	get ambient(): InternalModule {
+		return $ark.ambient as never
 	}
 
 	maybeShallowResolve(name: string): CachedResolution | undefined {

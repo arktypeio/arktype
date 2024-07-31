@@ -58,7 +58,7 @@ export const indexImplementation: nodeImplementationOf<IndexDeclaration> =
 				child: true,
 				parse: (schema, ctx) => {
 					const key = ctx.$.rootNode(schema)
-					if (!key.extends($ark.intrinsic.propertyKey)) {
+					if (!key.extends($ark.intrinsic.key)) {
 						return throwParseError(
 							writeInvalidPropertyKeyMessage(key.expression)
 						)

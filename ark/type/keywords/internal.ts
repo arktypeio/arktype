@@ -11,7 +11,7 @@ export type NonNegativeIntegerString =
 
 export interface internalExports {
 	lengthBoundable: string | array
-	propertyKey: Key
+	key: Key
 	nonNegativeIntegerString: NonNegativeIntegerString
 }
 
@@ -20,7 +20,7 @@ export type internal = Module<internalExports>
 export const internal: internal = scope(
 	{
 		lengthBoundable: intrinsic.lengthBoundable,
-		propertyKey: intrinsic.propertyKey,
+		key: intrinsic.key,
 		nonNegativeIntegerString: intrinsic.nonNegativeIntegerString
 	},
 	{

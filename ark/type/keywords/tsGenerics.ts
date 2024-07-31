@@ -5,7 +5,7 @@ import { scope } from "../scope.js"
 import { internal } from "./internal.js"
 import { tsKeywords } from "./tsKeywords.js"
 
-const Record = genericNode(["K", internal.propertyKey], "V")(
+const Record = genericNode(["K", internal.key], "V")(
 	args => ({
 		domain: "object",
 		index: {
@@ -20,7 +20,7 @@ const Record = genericNode(["K", internal.propertyKey], "V")(
 	}
 )
 
-const Pick = genericNode(["T", tsKeywords.object], ["K", internal.propertyKey])(
+const Pick = genericNode(["T", tsKeywords.object], ["K", internal.key])(
 	args => args.T.pick(args.K as never),
 	class PickHkt extends GenericHkt {
 		declare hkt: (
@@ -29,7 +29,7 @@ const Pick = genericNode(["T", tsKeywords.object], ["K", internal.propertyKey])(
 	}
 )
 
-const Omit = genericNode(["T", tsKeywords.object], ["K", internal.propertyKey])(
+const Omit = genericNode(["T", tsKeywords.object], ["K", internal.key])(
 	args => args.T.omit(args.K as never),
 	class OmitHkt extends GenericHkt {
 		declare hkt: (
