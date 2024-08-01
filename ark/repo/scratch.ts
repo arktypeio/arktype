@@ -23,6 +23,8 @@ export const currentTsSyntax = type({
 	tuple: ["number", "number"]
 })
 
+const t = type("string[] > 5")
+
 // available syntax new to 2.0
 
 export const upcomingTsSyntax = type({

@@ -238,7 +238,7 @@ export interface Type<out t = unknown, $ = {}>
 		def: validateTypeRoot<def, $>
 	): instantiateType<t | r, $>
 
-	array(): Type.ArrayObject<t[], $>
+	array(): Type.Array<t[], $>
 
 	pipe<
 		a extends Morph<this["infer"]>,
@@ -592,36 +592,30 @@ export declare namespace Type {
 			:	never
 	}
 
-	export interface ArrayObject<
+	export interface Array<
 		/** @ts-ignore cast variance */
 		out t extends readonly unknown[] = readonly unknown[],
 		$ = {}
 	> extends Type.Object<t, $> {
 		atLeastLength<const schema extends InclusiveNumericRangeSchema>(
 			schema: schema
-		): Type.ArrayObject<constrain<t, "minLength", schema>, $>
+		): Type.Array<constrain<t, "minLength", schema>, $>
 
 		atMostLength<const schema extends InclusiveNumericRangeSchema>(
 			schema: schema
-		): Type.ArrayObject<constrain<t, "maxLength", schema>, $>
+		): Type.Array<constrain<t, "maxLength", schema>, $>
 
 		moreThanLength<const schema extends ExclusiveNumericRangeSchema>(
 			schema: schema
-		): Type.ArrayObject<
-			constrain<t, "minLength", exclusivizeRangeSchema<schema>>,
-			$
-		>
+		): Type.Array<constrain<t, "minLength", exclusivizeRangeSchema<schema>>, $>
 
 		lessThanLength<const schema extends ExclusiveNumericRangeSchema>(
 			schema: schema
-		): Type.ArrayObject<
-			constrain<t, "maxLength", exclusivizeRangeSchema<schema>>,
-			$
-		>
+		): Type.Array<constrain<t, "maxLength", exclusivizeRangeSchema<schema>>, $>
 
 		exactlyLength<const schema extends ExactLengthSchema>(
 			schema: schema
-		): Type.ArrayObject<constrain<t, "exactLength", schema>, $>
+		): Type.Array<constrain<t, "exactLength", schema>, $>
 	}
 
 	/** @ts-ignore cast variance */
@@ -718,13 +712,13 @@ export type instantiateType<t, $> =
 		[t] extends [string] ? Type.String<t, $>
 		: [t] extends [number] ? Type.Number<t, $>
 		: [t] extends [object] ?
-			[t] extends [array] ? Type.ArrayObject<t, $>
+			[t] extends [array] ? Type.Array<t, $>
 			: [t] extends [Date] ? Type.Date<t, $>
 			: Type.Object<t, $>
 		:	Type<t, $>
 	:	Type.Morph<t, $>
 
-export type validateChainedAsArgs<t> =
+type validateChainedAsArgs<t> =
 	[t] extends [unset] ?
 		[t] extends [anyOrNever] ?
 			[]
