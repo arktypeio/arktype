@@ -11,8 +11,10 @@ import {
 	type InclusiveDateRangeSchema,
 	type InclusiveNumericRangeSchema,
 	type Morph,
+	type NodeSchema,
 	type PatternSchema,
 	type Predicate,
+	type PrimitiveConstraintKind,
 	type UndeclaredKeyBehavior,
 	type exclusivizeRangeSchema
 } from "@ark/schema"
@@ -24,11 +26,30 @@ import {
 	type anyOrNever,
 	type array,
 	type conform,
+	type show,
 	type unset
 } from "@ark/util"
 import type { type } from "./ark.js"
 import type {
+	After,
+	AtLeast,
+	AtLeastLength,
+	AtMost,
+	AtMostLength,
+	AtOrAfter,
+	AtOrBefore,
+	Before,
+	Constraints,
+	DivisibleBy,
+	ExactlyLength,
+	LessThan,
+	LessThanLength,
+	Literal,
+	Matching,
+	MoreThan,
+	MoreThanLength,
 	MorphAst,
+	Narrowed,
 	Out,
 	constrain,
 	distillConstrainableIn,
@@ -38,7 +59,10 @@ import type {
 	inferMorphOut,
 	inferPipes,
 	inferPredicate,
-	inferred
+	inferred,
+	normalizeLimit,
+	normalizePrimitiveConstraintRoot,
+	of
 } from "./ast.js"
 import {
 	parseGenericParams,
@@ -215,7 +239,7 @@ export interface Type<out t = unknown, $ = {}>
 		def: validateTypeRoot<def, $>
 	): instantiateType<t | r, $>
 
-	array(): Type.Array<t[], $>
+	array(): Type.ArrayObject<t[], $>
 
 	pipe<
 		a extends Morph<this["infer"]>,
@@ -450,6 +474,43 @@ export declare namespace Type {
 		): Type.Number<constrain<t, "max", exclusivizeRangeSchema<schema>>, $>
 	}
 
+	export namespace Number {
+		export type atLeast<rule, $> = Number<of<number, AtLeast<rule>>, $>
+
+		export type moreThan<rule, $> = Number<of<number, MoreThan<rule>>, $>
+
+		export type atMost<rule, $> = Number<of<number, AtMost<rule>>, $>
+
+		export type lessThan<rule, $> = Number<of<number, LessThan<rule>>, $>
+
+		export type divisibleBy<rule, $> = Number<of<number, DivisibleBy<rule>>, $>
+
+		export type narrowed<$> = Number<of<number, Narrowed>, $>
+
+		export type is<constraints extends Constraints, $> = Number<
+			of<number, constraints>,
+			$
+		>
+
+		export type constrain<
+			kind extends PrimitiveConstraintKind,
+			schema extends NodeSchema<kind>,
+			$
+		> =
+			normalizePrimitiveConstraintRoot<schema> extends infer rule ?
+				kind extends "min" ?
+					schema extends { exclusive: true } ?
+						moreThan<rule, $>
+					:	atLeast<rule, $>
+				: kind extends "max" ?
+					schema extends { exclusive: true } ?
+						lessThan<rule, $>
+					:	atMost<rule, $>
+				: kind extends "divisor" ? divisibleBy<rule, $>
+				: narrowed<$>
+			:	never
+	}
+
 	/** @ts-ignore cast variance */
 	export interface String<out t extends string = string, $ = {}>
 		extends Type<t, $> {
@@ -478,28 +539,91 @@ export declare namespace Type {
 		): Type.String<constrain<t, "exactLength", schema>, $>
 	}
 
-	/** @ts-ignore cast variance */
-	export interface Array<out t extends array = array, $ = {}>
-		extends Type.Object<t, $> {
+	export namespace String {
+		export type atLeastLength<rule, $> = String<
+			of<string, AtLeastLength<rule>>,
+			$
+		>
+
+		export type moreThanLength<rule, $> = String<
+			of<string, MoreThanLength<rule>>,
+			$
+		>
+
+		export type atMostLength<rule, $> = String<
+			of<string, AtMostLength<rule>>,
+			$
+		>
+
+		export type lessThanLength<rule, $> = String<
+			of<string, LessThanLength<rule>>,
+			$
+		>
+
+		export type exactlyLength<rule, $> = String<
+			of<string, ExactlyLength<rule>>,
+			$
+		>
+
+		export type matching<rule, $> = String<of<string, Matching<rule>>, $>
+
+		export type narrowed<$> = String<of<string, Narrowed>, $>
+
+		export type is<constraints extends Constraints, $> = String<
+			of<string, constraints>,
+			$
+		>
+
+		export type constrain<
+			kind extends PrimitiveConstraintKind,
+			schema extends NodeSchema<kind>,
+			$
+		> =
+			normalizePrimitiveConstraintRoot<schema> extends infer rule ?
+				kind extends "minLength" ?
+					schema extends { exclusive: true } ?
+						moreThanLength<rule, $>
+					:	atLeastLength<rule, $>
+				: kind extends "maxLength" ?
+					schema extends { exclusive: true } ?
+						lessThanLength<rule, $>
+					:	atMostLength<rule, $>
+				: kind extends "pattern" ? matching<rule & string, $>
+				: kind extends "exactLength" ? exactlyLength<rule, $>
+				: narrowed<$>
+			:	never
+	}
+
+	export interface ArrayObject<
+		/** @ts-ignore cast variance */
+		out t extends readonly unknown[] = readonly unknown[],
+		$ = {}
+	> extends Type.Object<t, $> {
 		atLeastLength<const schema extends InclusiveNumericRangeSchema>(
 			schema: schema
-		): Type.Array<constrain<t, "minLength", schema>, $>
+		): Type.ArrayObject<constrain<t, "minLength", schema>, $>
 
 		atMostLength<const schema extends InclusiveNumericRangeSchema>(
 			schema: schema
-		): Type.Array<constrain<t, "maxLength", schema>, $>
+		): Type.ArrayObject<constrain<t, "maxLength", schema>, $>
 
 		moreThanLength<const schema extends ExclusiveNumericRangeSchema>(
 			schema: schema
-		): Type.Array<constrain<t, "minLength", exclusivizeRangeSchema<schema>>, $>
+		): Type.ArrayObject<
+			constrain<t, "minLength", exclusivizeRangeSchema<schema>>,
+			$
+		>
 
 		lessThanLength<const schema extends ExclusiveNumericRangeSchema>(
 			schema: schema
-		): Type.Array<constrain<t, "maxLength", exclusivizeRangeSchema<schema>>, $>
+		): Type.ArrayObject<
+			constrain<t, "maxLength", exclusivizeRangeSchema<schema>>,
+			$
+		>
 
 		exactlyLength<const schema extends ExactLengthSchema>(
 			schema: schema
-		): Type.Array<constrain<t, "exactLength", schema>, $>
+		): Type.ArrayObject<constrain<t, "exactLength", schema>, $>
 	}
 
 	/** @ts-ignore cast variance */
@@ -520,6 +644,48 @@ export declare namespace Type {
 		earlierThan<const schema extends ExclusiveDateRangeSchema>(
 			schema: schema
 		): Type.Date<constrain<t, "before", exclusivizeRangeSchema<schema>>, $>
+	}
+
+	export namespace Date {
+		export type atOrAfter<rule, $> = Date<
+			of<globalThis.Date, AtOrAfter<rule>>,
+			$
+		>
+
+		export type after<rule, $> = Date<of<globalThis.Date, After<rule>>, $>
+
+		export type atOrBefore<rule, $> = Date<
+			of<globalThis.Date, AtOrBefore<rule>>,
+			$
+		>
+
+		export type before<rule, $> = Date<of<globalThis.Date, Before<rule>>, $>
+
+		export type narrowed<$> = Date<of<globalThis.Date, Narrowed>, $>
+
+		export type literal<rule, $> = Date<of<globalThis.Date, Literal<rule>>, $>
+
+		export type is<constraints extends Constraints, $> = Date<
+			of<globalThis.Date, constraints>,
+			$
+		>
+
+		export type constrain<
+			kind extends PrimitiveConstraintKind,
+			schema extends NodeSchema<kind>,
+			$
+		> =
+			normalizePrimitiveConstraintRoot<schema> extends infer rule ?
+				kind extends "after" ?
+					schema extends { exclusive: true } ?
+						after<normalizeLimit<rule>, $>
+					:	atOrAfter<normalizeLimit<rule>, $>
+				: kind extends "before" ?
+					schema extends { exclusive: true } ?
+						before<normalizeLimit<rule>, $>
+					:	atOrBefore<normalizeLimit<rule>, $>
+				:	narrowed<$>
+			:	never
 	}
 
 	/** @ts-ignore cast variance */
@@ -554,7 +720,7 @@ export type instantiateType<t, $> =
 		[t] extends [string] ? Type.String<t, $>
 		: [t] extends [number] ? Type.Number<t, $>
 		: [t] extends [object] ?
-			[t] extends [array] ? Type.Array<t, $>
+			[t] extends [array] ? Type.ArrayObject<t, $>
 			: [t] extends [Date] ? Type.Date<t, $>
 			: Type.Object<t, $>
 		:	Type<t, $>
