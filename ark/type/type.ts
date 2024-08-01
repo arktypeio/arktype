@@ -26,7 +26,6 @@ import {
 	type anyOrNever,
 	type array,
 	type conform,
-	type show,
 	type unset
 } from "@ark/util"
 import type { type } from "./ark.js"
@@ -392,8 +391,7 @@ export interface Type<out t = unknown, $ = {}>
 	/** @deprecated */
 	arguments: Function["arguments"]
 
-	// I don't know why Symbol is suggested as a key of a function instance,
-	// but applying the same method to that
+	// TS suggests Symbol to allow builtin symbolic access, so override that as well
 	/** @deprecated */
 	Symbol: never
 }
