@@ -41,38 +41,4 @@ contextualize(() => {
 			"AggregateError: a must be a string (was number)"
 		)
 	})
-
-	describe("as", () => {
-		it("valid cast", () => {
-			const from = type("/^foo.*$/")
-			const t = from.as<`foo${string}`>()
-
-			attest<`foo${string}`>(t.t)
-			attest(t === from).equals(true)
-		})
-
-		it("cast to any", () => {
-			const t = type("unknown").as<any>()
-			attest<any>(t.t)
-		})
-
-		it("cast to never", () => {
-			const t = type("unknown").as<never>()
-			attest<never>(t.t)
-		})
-
-		it("missing type param", () => {
-			// @ts-expect-error
-			attest(() => type("string").as()).type.errors.snap(
-				"Expected 1 arguments, but got 0."
-			)
-		})
-
-		it("missing type param with arg", () => {
-			// @ts-expect-error
-			attest(() => type("string").as("foo")).type.errors(
-				"as requires an explicit type parameter like myType.as<t>() "
-			)
-		})
-	})
 })

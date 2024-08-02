@@ -396,7 +396,7 @@ export type inferAmbient<def> = inferTypeRoot<def, {}>
 
 export type instantiateType<t, $> =
 	// if any branch of t is a MorphAst, instantiate it as a MorphType
-	Extract<t, MorphAst> extends anyOrNever ?
+	[Extract<t, MorphAst>] extends [anyOrNever] ?
 		// otherwise, all branches have to conform to a single basis type those methods to be available
 		[t] extends [string] ? StringType<t, $>
 		: [t] extends [number] ? NumberType<t, $>
