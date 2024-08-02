@@ -29,7 +29,7 @@ import {
 	type mutable,
 	type show
 } from "@ark/util"
-import type { Default, of } from "../ast.js"
+import type { constrain, Default } from "../ast.js"
 import type { ParseContext } from "../scope.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
 import { writeUnassignableDefaultValueMessage } from "./semantic/default.js"
@@ -123,7 +123,7 @@ export type validateObjectLiteral<def, $, args> = {
 			// add a nominal type here to avoid allowing the error message as input
 			ErrorType<message>
 		: inferDefinition<indexDef, $, args> extends (
-			PropertyKey | of<PropertyKey, {}>
+			PropertyKey | constrain<PropertyKey, {}>
 		) ?
 			// if the indexDef is syntactically and semantically valid,
 			// move on to the validating the value definition

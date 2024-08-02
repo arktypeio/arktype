@@ -2,7 +2,7 @@ import { attest, contextualize } from "@ark/attest"
 import { registeredReference } from "@ark/schema"
 import type { equals } from "@ark/util"
 import { type, type Type } from "arktype"
-import type { Narrowed, Out, number, of, string } from "../ast.js"
+import type { Narrowed, Out, constrain, number, string } from "../ast.js"
 
 contextualize(() => {
 	it("implicit problem", () => {
@@ -143,7 +143,7 @@ contextualize(() => {
 			morphs: [morphRef, { predicate: [predicateRef] }]
 		})
 
-		attest<Type<(In: string) => Out<of<5, Narrowed>>>>(t)
+		attest<Type<(In: string) => Out<constrain<5, Narrowed>>>>(t)
 
 		attest(t("12345")).snap(5)
 		attest(t("1234").toString()).snap(

@@ -4,9 +4,9 @@ import { scope, type } from "arktype"
 import type {
 	AtLeastLength,
 	AtMostLength,
+	constrain,
 	Narrowed,
 	number,
-	of,
 	Out,
 	string
 } from "../ast.js"
@@ -694,7 +694,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			.pipe(parseBigint)
 			.narrow(validatePositiveBigint)
 
-		attest<(In: string | number) => Out<of<bigint, Narrowed>>>(Amount.t)
+		attest<(In: string | number) => Out<constrain<bigint, Narrowed>>>(Amount.t)
 		attest(Amount.json).snap([
 			{
 				in: "number",

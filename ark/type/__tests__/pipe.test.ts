@@ -5,7 +5,7 @@ import {
 	writeMorphIntersectionMessage
 } from "@ark/schema"
 import { scope, type, type Type } from "arktype"
-import type { MoreThan, Out, of, string } from "../ast.js"
+import type { MoreThan, Out, constrain, string } from "../ast.js"
 
 contextualize(() => {
 	it("base", () => {
@@ -492,7 +492,7 @@ contextualize(() => {
 			b: { a: "1" },
 			c: "a&b"
 		}).export()
-		attest<{ a: (In: of<1, MoreThan<0>>) => Out<number> }>(types.c.t)
+		attest<{ a: (In: constrain<1, MoreThan<0>>) => Out<number> }>(types.c.t)
 		const { serializedMorphs } =
 			types.a.internal.firstReferenceOfKindOrThrow("morph")
 

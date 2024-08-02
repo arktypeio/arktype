@@ -6,7 +6,13 @@ import type {
 	intersectArrays,
 	show
 } from "@ark/util"
-import type { Constraints, MorphAst, of, Out, parseConstraints } from "./ast.js"
+import type {
+	constrain,
+	Constraints,
+	MorphAst,
+	Out,
+	parseConstraints
+} from "./ast.js"
 
 export type inferIntersection<l, r> = _inferIntersection<l, r, false>
 
@@ -30,12 +36,15 @@ type _inferIntersection<l, r, piped extends boolean> =
 		parseConstraints<r> extends (
 			[infer rBase, infer rConstraints extends Constraints]
 		) ?
-			of<_inferIntersection<lBase, rBase, piped>, lConstraints & rConstraints>
-		:	of<_inferIntersection<lBase, r, piped>, lConstraints>
+			constrain<
+				_inferIntersection<lBase, rBase, piped>,
+				lConstraints & rConstraints
+			>
+		:	constrain<_inferIntersection<lBase, r, piped>, lConstraints>
 	: parseConstraints<r> extends (
 		[infer rBase, infer rConstraints extends Constraints]
 	) ?
-		of<_inferIntersection<l, rBase, piped>, rConstraints>
+		constrain<_inferIntersection<l, rBase, piped>, rConstraints>
 	: [l, r] extends [object, object] ?
 		// adding this intermediate infer result avoids extra instantiations
 		intersectObjects<l, r, piped> extends infer result ?

@@ -45,7 +45,7 @@ export const constrained = noSuggest("arkConstrained")
 
 export type constrained = typeof constrained
 
-export type of<base, constraints extends Constraints> = base & {
+export type constrain<base, constraints extends Constraints> = base & {
 	[constrained]: constraints
 }
 
@@ -102,21 +102,24 @@ export type primitiveConstraintKindOf<In> = Extract<
 >
 
 export namespace number {
-	export type atLeast<rule> = of<number, AtLeast<rule>>
+	export type atLeast<rule> = constrain<number, AtLeast<rule>>
 
-	export type moreThan<rule> = of<number, MoreThan<rule>>
+	export type moreThan<rule> = constrain<number, MoreThan<rule>>
 
-	export type atMost<rule> = of<number, AtMost<rule>>
+	export type atMost<rule> = constrain<number, AtMost<rule>>
 
-	export type lessThan<rule> = of<number, LessThan<rule>>
+	export type lessThan<rule> = constrain<number, LessThan<rule>>
 
-	export type divisibleBy<rule> = of<number, DivisibleBy<rule>>
+	export type divisibleBy<rule> = constrain<number, DivisibleBy<rule>>
 
-	export type narrowed = of<number, Narrowed>
+	export type narrowed = constrain<number, Narrowed>
 
-	export type is<constraints extends Constraints> = of<number, constraints>
+	export type is<constraints extends Constraints> = constrain<
+		number,
+		constraints
+	>
 
-	export type constrain<
+	export type parseConstraint<
 		kind extends PrimitiveConstraintKind,
 		schema extends NodeSchema<kind>
 	> =
@@ -156,23 +159,26 @@ export type ExactlyLength<rule> = {
 }
 
 export namespace string {
-	export type atLeastLength<rule> = of<string, AtLeastLength<rule>>
+	export type atLeastLength<rule> = constrain<string, AtLeastLength<rule>>
 
-	export type moreThanLength<rule> = of<string, MoreThanLength<rule>>
+	export type moreThanLength<rule> = constrain<string, MoreThanLength<rule>>
 
-	export type atMostLength<rule> = of<string, AtMostLength<rule>>
+	export type atMostLength<rule> = constrain<string, AtMostLength<rule>>
 
-	export type lessThanLength<rule> = of<string, LessThanLength<rule>>
+	export type lessThanLength<rule> = constrain<string, LessThanLength<rule>>
 
-	export type exactlyLength<rule> = of<string, ExactlyLength<rule>>
+	export type exactlyLength<rule> = constrain<string, ExactlyLength<rule>>
 
-	export type matching<rule> = of<string, Matching<rule>>
+	export type matching<rule> = constrain<string, Matching<rule>>
 
-	export type narrowed = of<string, Narrowed>
+	export type narrowed = constrain<string, Narrowed>
 
-	export type is<constraints extends Constraints> = of<string, constraints>
+	export type is<constraints extends Constraints> = constrain<
+		string,
+		constraints
+	>
 
-	export type constrain<
+	export type parseConstraint<
 		kind extends PrimitiveConstraintKind,
 		schema extends NodeSchema<kind>
 	> =
@@ -208,21 +214,21 @@ export type Before<rule> = {
 }
 
 export namespace Date {
-	export type atOrAfter<rule> = of<Date, AtOrAfter<rule>>
+	export type atOrAfter<rule> = constrain<Date, AtOrAfter<rule>>
 
-	export type after<rule> = of<Date, After<rule>>
+	export type after<rule> = constrain<Date, After<rule>>
 
-	export type atOrBefore<rule> = of<Date, AtOrBefore<rule>>
+	export type atOrBefore<rule> = constrain<Date, AtOrBefore<rule>>
 
-	export type before<rule> = of<Date, Before<rule>>
+	export type before<rule> = constrain<Date, Before<rule>>
 
-	export type narrowed = of<Date, Narrowed>
+	export type narrowed = constrain<Date, Narrowed>
 
-	export type literal<rule> = of<Date, Literal<rule>>
+	export type literal<rule> = constrain<Date, Literal<rule>>
 
-	export type is<constraints extends Constraints> = of<Date, constraints>
+	export type is<constraints extends Constraints> = constrain<Date, constraints>
 
-	export type constrain<
+	export type parseConstraint<
 		kind extends PrimitiveConstraintKind,
 		schema extends NodeSchema<kind>
 	> =
@@ -239,16 +245,16 @@ export namespace Date {
 		:	never
 }
 
-export type constrain<
+export type parseConstraint<
 	t,
 	kind extends PrimitiveConstraintKind,
 	schema extends NodeSchema<kind>
 > =
 	t extends MorphAst<infer i, infer o> ?
-		(In: leftIfEqual<i, _constrain<i, kind, schema>>) => Out<o>
-	:	leftIfEqual<t, _constrain<t, kind, schema>>
+		(In: leftIfEqual<i, _parseConstraint<i, kind, schema>>) => Out<o>
+	:	leftIfEqual<t, _parseConstraint<t, kind, schema>>
 
-type _constrain<
+type _parseConstraint<
 	t,
 	kind extends PrimitiveConstraintKind,
 	schema extends NodeSchema<kind>
@@ -262,15 +268,15 @@ type _constrain<
 			: [string, base] extends [base, string] ?
 				string.is<constraint & constraints>
 			: [Date, base] extends [base, Date] ? Date.is<constraint & constraints>
-			: of<base, constraints & constraint>
-		: [number, t] extends [t, number] ? number.constrain<kind, schema>
-		: [string, t] extends [t, string] ? string.constrain<kind, schema>
-		: [Date, t] extends [t, Date] ? Date.constrain<kind, schema>
-		: of<t, conform<constraint, Constraints>>
+			: constrain<base, constraints & constraint>
+		: [number, t] extends [t, number] ? number.parseConstraint<kind, schema>
+		: [string, t] extends [t, string] ? string.parseConstraint<kind, schema>
+		: [Date, t] extends [t, Date] ? Date.parseConstraint<kind, schema>
+		: constrain<t, conform<constraint, Constraints>>
 	:	never
 
 export type parseConstraints<t> =
-	t extends of<infer base, infer constraints> ?
+	t extends constrain<infer base, infer constraints> ?
 		equals<t, number & { [constrained]: constraints }> extends true ?
 			[number, constraints]
 		: equals<t, string & { [constrained]: constraints }> extends true ?
@@ -362,7 +368,7 @@ type _distill<
 	) ?
 		distilledKind extends "base" ?
 			_distill<base, io, distilledKind>
-		:	of<_distill<base, io, distilledKind>, constraints>
+		:	constrain<_distill<base, io, distilledKind>, constraints>
 	: t extends TerminallyInferredObjectKind | Primitive ? t
 	: unknown extends t ? unknown
 	: t extends MorphAst<infer i, infer o> ?
@@ -438,10 +444,10 @@ type TerminallyInferredObjectKind =
 
 export type inferPredicate<t, predicate> =
 	predicate extends (data: any, ...args: any[]) => data is infer narrowed ?
-		t extends of<unknown, infer constraints> ?
-			constrain<of<narrowed, constraints>, "predicate", any>
-		:	constrain<narrowed, "predicate", any>
-	:	constrain<t, "predicate", any>
+		t extends constrain<unknown, infer constraints> ?
+			parseConstraint<constrain<narrowed, constraints>, "predicate", any>
+		:	parseConstraint<narrowed, "predicate", any>
+	:	parseConstraint<t, "predicate", any>
 
 export type inferPipes<t, pipes extends Morph[]> =
 	pipes extends [infer head extends Morph, ...infer tail extends Morph[]] ?

@@ -11,10 +11,8 @@ import {
 	type InclusiveDateRangeSchema,
 	type InclusiveNumericRangeSchema,
 	type Morph,
-	type NodeSchema,
 	type PatternSchema,
 	type Predicate,
-	type PrimitiveConstraintKind,
 	type UndeclaredKeyBehavior,
 	type exclusivizeRangeSchema
 } from "@ark/schema"
@@ -30,27 +28,8 @@ import {
 } from "@ark/util"
 import type { type } from "./ark.js"
 import type {
-	After,
-	AtLeast,
-	AtLeastLength,
-	AtMost,
-	AtMostLength,
-	AtOrAfter,
-	AtOrBefore,
-	Before,
-	Constraints,
-	DivisibleBy,
-	ExactlyLength,
-	LessThan,
-	LessThanLength,
-	Literal,
-	Matching,
-	MoreThan,
-	MoreThanLength,
 	MorphAst,
-	Narrowed,
 	Out,
-	constrain,
 	distillConstrainableIn,
 	distillConstrainableOut,
 	distillIn,
@@ -59,9 +38,7 @@ import type {
 	inferPipes,
 	inferPredicate,
 	inferred,
-	normalizeLimit,
-	normalizePrimitiveConstraintRoot,
-	of
+	parseConstraint
 } from "./ast.js"
 import {
 	parseGenericParams,
@@ -453,60 +430,23 @@ export declare namespace Type {
 		extends Type<t, $> {
 		divisibleBy<const schema extends DivisorSchema>(
 			schema: schema
-		): Type.Number<constrain<t, "divisor", schema>, $>
+		): Type.Number<parseConstraint<t, "divisor", schema>, $>
 
 		atLeast<const schema extends InclusiveNumericRangeSchema>(
 			schema: schema
-		): Type.Number<constrain<t, "min", schema>, $>
+		): Type.Number<parseConstraint<t, "min", schema>, $>
 
 		atMost<const schema extends InclusiveNumericRangeSchema>(
 			schema: schema
-		): Type.Number<constrain<t, "max", schema>, $>
+		): Type.Number<parseConstraint<t, "max", schema>, $>
 
 		moreThan<const schema extends ExclusiveNumericRangeSchema>(
 			schema: schema
-		): Type.Number<constrain<t, "min", exclusivizeRangeSchema<schema>>, $>
+		): Type.Number<parseConstraint<t, "min", exclusivizeRangeSchema<schema>>, $>
 
 		lessThan<const schema extends ExclusiveNumericRangeSchema>(
 			schema: schema
-		): Type.Number<constrain<t, "max", exclusivizeRangeSchema<schema>>, $>
-	}
-
-	export namespace Number {
-		export type atLeast<rule, $> = Number<of<number, AtLeast<rule>>, $>
-
-		export type moreThan<rule, $> = Number<of<number, MoreThan<rule>>, $>
-
-		export type atMost<rule, $> = Number<of<number, AtMost<rule>>, $>
-
-		export type lessThan<rule, $> = Number<of<number, LessThan<rule>>, $>
-
-		export type divisibleBy<rule, $> = Number<of<number, DivisibleBy<rule>>, $>
-
-		export type narrowed<$> = Number<of<number, Narrowed>, $>
-
-		export type is<constraints extends Constraints, $> = Number<
-			of<number, constraints>,
-			$
-		>
-
-		export type constrain<
-			kind extends PrimitiveConstraintKind,
-			schema extends NodeSchema<kind>,
-			$
-		> =
-			normalizePrimitiveConstraintRoot<schema> extends infer rule ?
-				kind extends "min" ?
-					schema extends { exclusive: true } ?
-						moreThan<rule, $>
-					:	atLeast<rule, $>
-				: kind extends "max" ?
-					schema extends { exclusive: true } ?
-						lessThan<rule, $>
-					:	atMost<rule, $>
-				: kind extends "divisor" ? divisibleBy<rule, $>
-				: narrowed<$>
-			:	never
+		): Type.Number<parseConstraint<t, "max", exclusivizeRangeSchema<schema>>, $>
 	}
 
 	/** @ts-ignore cast variance */
@@ -514,82 +454,33 @@ export declare namespace Type {
 		extends Type<t, $> {
 		matching<const schema extends PatternSchema>(
 			schema: schema
-		): Type.String<constrain<t, "pattern", schema>, $>
+		): Type.String<parseConstraint<t, "pattern", schema>, $>
 
 		atLeastLength<const schema extends InclusiveNumericRangeSchema>(
 			schema: schema
-		): Type.String<constrain<t, "minLength", schema>, $>
+		): Type.String<parseConstraint<t, "minLength", schema>, $>
 
 		atMostLength<const schema extends InclusiveNumericRangeSchema>(
 			schema: schema
-		): Type.String<constrain<t, "maxLength", schema>, $>
+		): Type.String<parseConstraint<t, "maxLength", schema>, $>
 
 		moreThanLength<const schema extends ExclusiveNumericRangeSchema>(
 			schema: schema
-		): Type.String<constrain<t, "minLength", exclusivizeRangeSchema<schema>>, $>
+		): Type.String<
+			parseConstraint<t, "minLength", exclusivizeRangeSchema<schema>>,
+			$
+		>
 
 		lessThanLength<const schema extends ExclusiveNumericRangeSchema>(
 			schema: schema
-		): Type.String<constrain<t, "maxLength", exclusivizeRangeSchema<schema>>, $>
+		): Type.String<
+			parseConstraint<t, "maxLength", exclusivizeRangeSchema<schema>>,
+			$
+		>
 
 		exactlyLength<const schema extends ExactLengthSchema>(
 			schema: schema
-		): Type.String<constrain<t, "exactLength", schema>, $>
-	}
-
-	export namespace String {
-		export type atLeastLength<rule, $> = String<
-			of<string, AtLeastLength<rule>>,
-			$
-		>
-
-		export type moreThanLength<rule, $> = String<
-			of<string, MoreThanLength<rule>>,
-			$
-		>
-
-		export type atMostLength<rule, $> = String<
-			of<string, AtMostLength<rule>>,
-			$
-		>
-
-		export type lessThanLength<rule, $> = String<
-			of<string, LessThanLength<rule>>,
-			$
-		>
-
-		export type exactlyLength<rule, $> = String<
-			of<string, ExactlyLength<rule>>,
-			$
-		>
-
-		export type matching<rule, $> = String<of<string, Matching<rule>>, $>
-
-		export type narrowed<$> = String<of<string, Narrowed>, $>
-
-		export type is<constraints extends Constraints, $> = String<
-			of<string, constraints>,
-			$
-		>
-
-		export type constrain<
-			kind extends PrimitiveConstraintKind,
-			schema extends NodeSchema<kind>,
-			$
-		> =
-			normalizePrimitiveConstraintRoot<schema> extends infer rule ?
-				kind extends "minLength" ?
-					schema extends { exclusive: true } ?
-						moreThanLength<rule, $>
-					:	atLeastLength<rule, $>
-				: kind extends "maxLength" ?
-					schema extends { exclusive: true } ?
-						lessThanLength<rule, $>
-					:	atMostLength<rule, $>
-				: kind extends "pattern" ? matching<rule & string, $>
-				: kind extends "exactLength" ? exactlyLength<rule, $>
-				: narrowed<$>
-			:	never
+		): Type.String<parseConstraint<t, "exactLength", schema>, $>
 	}
 
 	export interface Array<
@@ -599,23 +490,29 @@ export declare namespace Type {
 	> extends Type.Object<t, $> {
 		atLeastLength<const schema extends InclusiveNumericRangeSchema>(
 			schema: schema
-		): Type.Array<constrain<t, "minLength", schema>, $>
+		): Type.Array<parseConstraint<t, "minLength", schema>, $>
 
 		atMostLength<const schema extends InclusiveNumericRangeSchema>(
 			schema: schema
-		): Type.Array<constrain<t, "maxLength", schema>, $>
+		): Type.Array<parseConstraint<t, "maxLength", schema>, $>
 
 		moreThanLength<const schema extends ExclusiveNumericRangeSchema>(
 			schema: schema
-		): Type.Array<constrain<t, "minLength", exclusivizeRangeSchema<schema>>, $>
+		): Type.Array<
+			parseConstraint<t, "minLength", exclusivizeRangeSchema<schema>>,
+			$
+		>
 
 		lessThanLength<const schema extends ExclusiveNumericRangeSchema>(
 			schema: schema
-		): Type.Array<constrain<t, "maxLength", exclusivizeRangeSchema<schema>>, $>
+		): Type.Array<
+			parseConstraint<t, "maxLength", exclusivizeRangeSchema<schema>>,
+			$
+		>
 
 		exactlyLength<const schema extends ExactLengthSchema>(
 			schema: schema
-		): Type.Array<constrain<t, "exactLength", schema>, $>
+		): Type.Array<parseConstraint<t, "exactLength", schema>, $>
 	}
 
 	/** @ts-ignore cast variance */
@@ -623,61 +520,22 @@ export declare namespace Type {
 		extends Type.Object<t, $> {
 		atOrAfter<const schema extends InclusiveDateRangeSchema>(
 			schema: schema
-		): Type.Date<constrain<t, "after", schema>, $>
+		): Type.Date<parseConstraint<t, "after", schema>, $>
 
 		atOrBefore<const schema extends InclusiveDateRangeSchema>(
 			schema: schema
-		): Type.Date<constrain<t, "before", schema>, $>
+		): Type.Date<parseConstraint<t, "before", schema>, $>
 
 		laterThan<const schema extends ExclusiveDateRangeSchema>(
 			schema: schema
-		): Type.Date<constrain<t, "after", exclusivizeRangeSchema<schema>>, $>
+		): Type.Date<parseConstraint<t, "after", exclusivizeRangeSchema<schema>>, $>
 
 		earlierThan<const schema extends ExclusiveDateRangeSchema>(
 			schema: schema
-		): Type.Date<constrain<t, "before", exclusivizeRangeSchema<schema>>, $>
-	}
-
-	export namespace Date {
-		export type atOrAfter<rule, $> = Date<
-			of<globalThis.Date, AtOrAfter<rule>>,
+		): Type.Date<
+			parseConstraint<t, "before", exclusivizeRangeSchema<schema>>,
 			$
 		>
-
-		export type after<rule, $> = Date<of<globalThis.Date, After<rule>>, $>
-
-		export type atOrBefore<rule, $> = Date<
-			of<globalThis.Date, AtOrBefore<rule>>,
-			$
-		>
-
-		export type before<rule, $> = Date<of<globalThis.Date, Before<rule>>, $>
-
-		export type narrowed<$> = Date<of<globalThis.Date, Narrowed>, $>
-
-		export type literal<rule, $> = Date<of<globalThis.Date, Literal<rule>>, $>
-
-		export type is<constraints extends Constraints, $> = Date<
-			of<globalThis.Date, constraints>,
-			$
-		>
-
-		export type constrain<
-			kind extends PrimitiveConstraintKind,
-			schema extends NodeSchema<kind>,
-			$
-		> =
-			normalizePrimitiveConstraintRoot<schema> extends infer rule ?
-				kind extends "after" ?
-					schema extends { exclusive: true } ?
-						after<normalizeLimit<rule>, $>
-					:	atOrAfter<normalizeLimit<rule>, $>
-				: kind extends "before" ?
-					schema extends { exclusive: true } ?
-						before<normalizeLimit<rule>, $>
-					:	atOrBefore<normalizeLimit<rule>, $>
-				:	narrowed<$>
-			:	never
 	}
 
 	/** @ts-ignore cast variance */
