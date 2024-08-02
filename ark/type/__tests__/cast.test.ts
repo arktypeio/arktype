@@ -23,14 +23,14 @@ contextualize(() => {
 	it("infer function", () => {
 		type F = () => boolean
 		const constructable = type({} as type.cast<F>)
-		attest<Type<F>>(constructable)
+		attest<F>(constructable.t)
 		attest<F>(constructable.infer)
 		attest<F>(constructable.in.infer)
 	})
 
 	it("infer constructable", () => {
 		const constructable = type({} as type.cast<Constructor>)
-		attest<Type<Constructor>>(constructable)
+		attest<Constructor>(constructable.t)
 		attest<Constructor>(constructable.infer)
 		attest<Constructor>(constructable.in.infer)
 	})

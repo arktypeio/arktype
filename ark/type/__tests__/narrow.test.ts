@@ -98,7 +98,7 @@ contextualize(() => {
 			(s, ctx) =>
 				s === [...s].reverse().join("") ? true : ctx.reject("a palindrome")
 		])
-		attest<Type<string.narrowed>>(palindrome)
+		attest<string.narrowed>(palindrome.t)
 		attest(palindrome("dad")).snap("dad")
 		attest(palindrome("david").toString()).snap(
 			'must be a palindrome (was "david")'

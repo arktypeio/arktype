@@ -52,7 +52,7 @@ contextualize(() => {
 		it("==", () => {
 			const t = type("number==3211993")
 			attest<3211993>(t.infer)
-			attest(t).type.toString.snap("Type.Number<3211993, {}>")
+			attest(t).type.toString.snap("Type<3211993, {}>")
 			const expected = rootNode({ unit: 3211993 })
 			attest(t.json).equals(expected.json)
 		})
@@ -280,9 +280,11 @@ contextualize(() => {
 
 		it("invalid min operand", () => {
 			// @ts-expect-error
-			attest(() => type("string").atLeast(5)).throwsAndHasTypeError(
-				writeInvalidOperandMessage("min", intrinsic.number, intrinsic.string)
-			)
+			attest(() => type("string").atLeast(5))
+				.throws(
+					writeInvalidOperandMessage("min", intrinsic.number, intrinsic.string)
+				)
+				.type.errors("Property 'atLeast' does not exist")
 		})
 
 		it("moreThan", () => {
@@ -308,9 +310,11 @@ contextualize(() => {
 
 		it("invalid max operand", () => {
 			// @ts-expect-error
-			attest(() => type("string").lessThan(5)).throwsAndHasTypeError(
-				writeInvalidOperandMessage("max", intrinsic.number, intrinsic.string)
-			)
+			attest(() => type("string").lessThan(5))
+				.throws(
+					writeInvalidOperandMessage("max", intrinsic.number, intrinsic.string)
+				)
+				.type.errors("Property 'lessThan' does not exist")
 		})
 
 		it("atLeastLength", () => {
@@ -329,13 +333,15 @@ contextualize(() => {
 
 		it("invalid minLength operand", () => {
 			// @ts-expect-error
-			attest(() => type("bigint").atLeastLength(5)).throwsAndHasTypeError(
-				writeInvalidOperandMessage(
-					"minLength",
-					intrinsic.lengthBoundable,
-					intrinsic.bigint
+			attest(() => type("bigint").atLeastLength(5))
+				.throws(
+					writeInvalidOperandMessage(
+						"minLength",
+						intrinsic.lengthBoundable,
+						intrinsic.bigint
+					)
 				)
-			)
+				.type.errors("Property 'atLeastLength' does not exist")
 		})
 
 		it("atMostLength", () => {
@@ -354,13 +360,15 @@ contextualize(() => {
 
 		it("invalid maxLength operand", () => {
 			// @ts-expect-error
-			attest(() => type("null").lessThanLength(5)).throwsAndHasTypeError(
-				writeInvalidOperandMessage(
-					"maxLength",
-					intrinsic.lengthBoundable,
-					intrinsic.null
+			attest(() => type("null").lessThanLength(5))
+				.throws(
+					writeInvalidOperandMessage(
+						"maxLength",
+						intrinsic.lengthBoundable,
+						intrinsic.null
+					)
 				)
-			)
+				.type.errors("Property 'lessThanLength' does not exist")
 		})
 
 		it("atOrAfter", () => {
@@ -380,9 +388,11 @@ contextualize(() => {
 
 		it("invalid after operand", () => {
 			// @ts-expect-error
-			attest(() => type("false").laterThan(new Date())).throwsAndHasTypeError(
-				writeInvalidOperandMessage("after", intrinsic.Date, intrinsic.false)
-			)
+			attest(() => type("false").laterThan(new Date()))
+				.throws(
+					writeInvalidOperandMessage("after", intrinsic.Date, intrinsic.false)
+				)
+				.type.errors("Property 'laterThan' does not exist")
 		})
 
 		it("atOrBefore", () => {
@@ -403,9 +413,15 @@ contextualize(() => {
 			attest(() =>
 				// @ts-expect-error
 				type("unknown").atOrBefore(new Date())
-			).throwsAndHasTypeError(
-				writeInvalidOperandMessage("before", intrinsic.Date, intrinsic.unknown)
 			)
+				.throws(
+					writeInvalidOperandMessage(
+						"before",
+						intrinsic.Date,
+						intrinsic.unknown
+					)
+				)
+				.type.errors("Property 'atOrBefore' does not exist")
 		})
 	})
 })

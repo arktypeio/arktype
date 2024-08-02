@@ -76,13 +76,15 @@ contextualize(() => {
 
 		it("invalid operand", () => {
 			// @ts-expect-error
-			attest(() => type("number").matching("foo")).throwsAndHasTypeError(
-				writeInvalidOperandMessage(
-					"pattern",
-					intrinsic.string,
-					intrinsic.number
+			attest(() => type("number").matching("foo"))
+				.throws(
+					writeInvalidOperandMessage(
+						"pattern",
+						intrinsic.string,
+						intrinsic.number
+					)
 				)
-			)
+				.type.errors("Property 'matching' does not exist")
 		})
 	})
 })

@@ -72,9 +72,9 @@ contextualize(() => {
 
 		it("chained indivisible", () => {
 			// @ts-expect-error
-			attest(() => type("string").divisibleBy(2)).throwsAndHasTypeError(
-				writeIndivisibleMessage(intrinsic.string)
-			)
+			attest(() => type("string").divisibleBy(2))
+				.throws(writeIndivisibleMessage(intrinsic.string))
+				.type.errors("Property 'divisibleBy' does not exist")
 		})
 
 		it("overlapping", () => {

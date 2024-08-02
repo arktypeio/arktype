@@ -404,9 +404,9 @@ tags[2] must be a string (was object)`)
 
 			it("non-structure", () => {
 				// @ts-expect-error
-				attest(() => type("string").pick("length")).throwsAndHasTypeError(
-					writeNonStructuralOperandMessage("pick", "string")
-				)
+				attest(() => type("string").pick("length"))
+					.throws(writeNonStructuralOperandMessage("pick", "string"))
+					.type.errors("Property 'pick' does not exist")
 			})
 		})
 
