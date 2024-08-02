@@ -6,11 +6,13 @@ import {
 } from "@ark/schema"
 import { scope, type, type Type } from "arktype"
 import type { MoreThan, Out, constrain, string } from "../ast.js"
+import type { MorphType } from "../subtypes/morph.js"
+import type { ObjectType } from "../subtypes/object.js"
 
 contextualize(() => {
 	it("base", () => {
 		const t = type("number").pipe(data => `${data}`)
-		attest<Type.Morph<(In: number) => Out<string>>>(t)
+		attest<MorphType<(In: number) => Out<string>>>(t)
 		attest<string>(t.infer)
 		attest<number>(t.in.infer)
 		const out = t(5)
@@ -34,7 +36,7 @@ contextualize(() => {
 
 	it("within type", () => {
 		const t = type(["boolean", "=>", data => !data])
-		attest<Type.Morph<(In: boolean) => Out<boolean>>>(t)
+		attest<MorphType<(In: boolean) => Out<boolean>>>(t)
 
 		const serializedMorphs =
 			t.internal.firstReferenceOfKindOrThrow("morph").serializedMorphs
@@ -130,7 +132,7 @@ contextualize(() => {
 			type({ d: "1" })
 		)
 		attest<
-			Type.Object<{
+			ObjectType<{
 				a: 1
 				b: 1
 				c: 1

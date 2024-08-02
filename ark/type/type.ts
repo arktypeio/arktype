@@ -4,17 +4,9 @@ import {
 	GenericRoot,
 	type BaseMeta,
 	type Disjoint,
-	type DivisorSchema,
-	type ExactLengthSchema,
-	type ExclusiveDateRangeSchema,
-	type ExclusiveNumericRangeSchema,
-	type InclusiveDateRangeSchema,
-	type InclusiveNumericRangeSchema,
 	type Morph,
-	type PatternSchema,
 	type Predicate,
-	type UndeclaredKeyBehavior,
-	type exclusivizeRangeSchema
+	type UndeclaredKeyBehavior
 } from "@ark/schema"
 import {
 	Callable,
@@ -26,7 +18,6 @@ import {
 	type conform,
 	type unset
 } from "@ark/util"
-import type { type } from "./ark.js"
 import type {
 	MorphAst,
 	Out,
@@ -37,8 +28,7 @@ import type {
 	inferMorphOut,
 	inferPipes,
 	inferPredicate,
-	inferred,
-	parseConstraint
+	inferred
 } from "./ast.js"
 import {
 	parseGenericParams,
@@ -49,7 +39,6 @@ import {
 	type validateParameterString
 } from "./generic.js"
 import type { inferIntersection } from "./intersect.js"
-import type { arkKeyOf, getArkKey, toArkKey } from "./keys.js"
 import type {
 	inferDefinition,
 	validateDeclared,
@@ -61,6 +50,12 @@ import type {
 	TupleInfixOperator
 } from "./parser/tuple.js"
 import type { InternalScope, Scope, bindThis } from "./scope.js"
+import type { ArrayType } from "./subtypes/array.js"
+import type { DateType } from "./subtypes/date.js"
+import type { MorphType } from "./subtypes/morph.js"
+import type { NumberType } from "./subtypes/number.js"
+import type { ObjectType } from "./subtypes/object.js"
+import type { StringType } from "./subtypes/string.js"
 
 /** The convenience properties attached to `type` */
 export type TypeParserAttachments =
@@ -215,7 +210,7 @@ export interface Type<out t = unknown, $ = {}>
 		def: validateTypeRoot<def, $>
 	): instantiateType<t | r, $>
 
-	array(): Type.Array<t[], $>
+	array(): ArrayType<t[], $>
 
 	pipe<
 		a extends Morph<this["infer"]>,
@@ -304,7 +299,7 @@ export interface Type<out t = unknown, $ = {}>
 
 	narrow<predicate extends Predicate<distillOut<t>>>(
 		predicate: predicate
-	): Type<
+	): instantiateType<
 		t extends MorphAst ?
 			inferPredicate<this["tOut"], predicate> extends infer narrowed ?
 				(In: this["tIn"]) => Out<narrowed>
@@ -315,32 +310,32 @@ export interface Type<out t = unknown, $ = {}>
 
 	equals<def>(
 		def: validateTypeRoot<def, $>
-	): this is Type<inferTypeRoot<def, $>, $>
+	): this is instantiateType<inferTypeRoot<def, $>, $>
 
 	extract<def>(
 		r: validateTypeRoot<def, $>
-	): Type<Extract<t, inferTypeRoot<def, $>>, $>
+	): instantiateType<Extract<t, inferTypeRoot<def, $>>, $>
 
 	exclude<def>(
 		r: validateTypeRoot<def, $>
-	): Type<Exclude<t, inferTypeRoot<def, $>>, $>
+	): instantiateType<Exclude<t, inferTypeRoot<def, $>>, $>
 
 	extends<def>(
 		other: validateTypeRoot<def, $>
-	): this is Type<inferTypeRoot<def, $>, $>
+	): this is instantiateType<inferTypeRoot<def, $>, $>
 
 	overlaps<def>(r: validateTypeRoot<def, $>): boolean
 
 	satisfying<predicate extends Predicate<distillIn<t>>>(
 		predicate: predicate
-	): Type<
+	): instantiateType<
 		t extends MorphAst ?
 			(In: inferPredicate<this["tIn"], predicate>) => Out<this["tOut"]>
 		:	inferPredicate<t, predicate>,
 		$
 	>
 
-	keyof(): Type<keyof t, $>
+	keyof(): instantiateType<keyof t, $>
 
 	// deprecate Function methods so they are deprioritized as suggestions
 
@@ -375,170 +370,6 @@ export interface Type<out t = unknown, $ = {}>
 
 export declare namespace Type {
 	/** @ts-ignore cast variance */
-	export interface Morph<out t = unknown, $ = {}> extends Type<t, $> {}
-
-	/** @ts-ignore cast variance */
-	export interface Object<out t extends object = object, $ = {}>
-		extends Type<t, $> {
-		get<k1 extends arkKeyOf<t>, r = instantiateType<getArkKey<t, k1>, $>>(
-			k1: k1 | type.cast<k1>
-		): r
-		get<
-			k1 extends arkKeyOf<t>,
-			k2 extends arkKeyOf<getArkKey<t, k1>>,
-			r = instantiateType<getArkKey<getArkKey<t, k1>, k2>, $>
-		>(
-			k1: k1 | type.cast<k1>,
-			k2: k2 | type.cast<k2>
-		): r
-		get<
-			k1 extends arkKeyOf<t>,
-			k2 extends arkKeyOf<getArkKey<t, k1>>,
-			k3 extends arkKeyOf<getArkKey<getArkKey<t, k1>, k2>>,
-			r = instantiateType<getArkKey<getArkKey<getArkKey<t, k1>, k2>, k3>, $>
-		>(
-			k1: k1 | type.cast<k1>,
-			k2: k2 | type.cast<k2>,
-			k3: k3 | type.cast<k3>
-		): r
-
-		pick<const key extends arkKeyOf<t> = never>(
-			...keys: (key | type.cast<key>)[]
-		): Type.Object<
-			{
-				[k in keyof t as Extract<toArkKey<t, k>, key>]: t[k]
-			},
-			$
-		>
-
-		omit<const key extends arkKeyOf<t> = never>(
-			...keys: (key | type.cast<key>)[]
-		): Type.Object<
-			{
-				[k in keyof t as Exclude<toArkKey<t, k>, key>]: t[k]
-			},
-			$
-		>
-
-		required(): Type.Object<{ [k in keyof t]-?: t[k] }, $>
-
-		partial(): Type.Object<{ [k in keyof t]?: t[k] }, $>
-	}
-
-	/** @ts-ignore cast variance */
-	export interface Number<out t extends number = number, $ = {}>
-		extends Type<t, $> {
-		divisibleBy<const schema extends DivisorSchema>(
-			schema: schema
-		): Type.Number<parseConstraint<t, "divisor", schema>, $>
-
-		atLeast<const schema extends InclusiveNumericRangeSchema>(
-			schema: schema
-		): Type.Number<parseConstraint<t, "min", schema>, $>
-
-		atMost<const schema extends InclusiveNumericRangeSchema>(
-			schema: schema
-		): Type.Number<parseConstraint<t, "max", schema>, $>
-
-		moreThan<const schema extends ExclusiveNumericRangeSchema>(
-			schema: schema
-		): Type.Number<parseConstraint<t, "min", exclusivizeRangeSchema<schema>>, $>
-
-		lessThan<const schema extends ExclusiveNumericRangeSchema>(
-			schema: schema
-		): Type.Number<parseConstraint<t, "max", exclusivizeRangeSchema<schema>>, $>
-	}
-
-	/** @ts-ignore cast variance */
-	export interface String<out t extends string = string, $ = {}>
-		extends Type<t, $> {
-		matching<const schema extends PatternSchema>(
-			schema: schema
-		): Type.String<parseConstraint<t, "pattern", schema>, $>
-
-		atLeastLength<const schema extends InclusiveNumericRangeSchema>(
-			schema: schema
-		): Type.String<parseConstraint<t, "minLength", schema>, $>
-
-		atMostLength<const schema extends InclusiveNumericRangeSchema>(
-			schema: schema
-		): Type.String<parseConstraint<t, "maxLength", schema>, $>
-
-		moreThanLength<const schema extends ExclusiveNumericRangeSchema>(
-			schema: schema
-		): Type.String<
-			parseConstraint<t, "minLength", exclusivizeRangeSchema<schema>>,
-			$
-		>
-
-		lessThanLength<const schema extends ExclusiveNumericRangeSchema>(
-			schema: schema
-		): Type.String<
-			parseConstraint<t, "maxLength", exclusivizeRangeSchema<schema>>,
-			$
-		>
-
-		exactlyLength<const schema extends ExactLengthSchema>(
-			schema: schema
-		): Type.String<parseConstraint<t, "exactLength", schema>, $>
-	}
-
-	export interface Array<
-		/** @ts-ignore cast variance */
-		out t extends readonly unknown[] = readonly unknown[],
-		$ = {}
-	> extends Type.Object<t, $> {
-		atLeastLength<const schema extends InclusiveNumericRangeSchema>(
-			schema: schema
-		): Type.Array<parseConstraint<t, "minLength", schema>, $>
-
-		atMostLength<const schema extends InclusiveNumericRangeSchema>(
-			schema: schema
-		): Type.Array<parseConstraint<t, "maxLength", schema>, $>
-
-		moreThanLength<const schema extends ExclusiveNumericRangeSchema>(
-			schema: schema
-		): Type.Array<
-			parseConstraint<t, "minLength", exclusivizeRangeSchema<schema>>,
-			$
-		>
-
-		lessThanLength<const schema extends ExclusiveNumericRangeSchema>(
-			schema: schema
-		): Type.Array<
-			parseConstraint<t, "maxLength", exclusivizeRangeSchema<schema>>,
-			$
-		>
-
-		exactlyLength<const schema extends ExactLengthSchema>(
-			schema: schema
-		): Type.Array<parseConstraint<t, "exactLength", schema>, $>
-	}
-
-	/** @ts-ignore cast variance */
-	export interface Date<out t extends globalThis.Date = globalThis.Date, $ = {}>
-		extends Type.Object<t, $> {
-		atOrAfter<const schema extends InclusiveDateRangeSchema>(
-			schema: schema
-		): Type.Date<parseConstraint<t, "after", schema>, $>
-
-		atOrBefore<const schema extends InclusiveDateRangeSchema>(
-			schema: schema
-		): Type.Date<parseConstraint<t, "before", schema>, $>
-
-		laterThan<const schema extends ExclusiveDateRangeSchema>(
-			schema: schema
-		): Type.Date<parseConstraint<t, "after", exclusivizeRangeSchema<schema>>, $>
-
-		earlierThan<const schema extends ExclusiveDateRangeSchema>(
-			schema: schema
-		): Type.Date<
-			parseConstraint<t, "before", exclusivizeRangeSchema<schema>>,
-			$
-		>
-	}
-
-	/** @ts-ignore cast variance */
 	export type Any<out t = any> = Type<t, any>
 }
 
@@ -567,14 +398,14 @@ export type instantiateType<t, $> =
 	// if any branch of t is a MorphAst, instantiate it as a MorphType
 	Extract<t, MorphAst> extends anyOrNever ?
 		// otherwise, all branches have to conform to a single basis type those methods to be available
-		[t] extends [string] ? Type.String<t, $>
-		: [t] extends [number] ? Type.Number<t, $>
+		[t] extends [string] ? StringType<t, $>
+		: [t] extends [number] ? NumberType<t, $>
 		: [t] extends [object] ?
-			[t] extends [array] ? Type.Array<t, $>
-			: [t] extends [Date] ? Type.Date<t, $>
-			: Type.Object<t, $>
+			[t] extends [array] ? ArrayType<t, $>
+			: [t] extends [Date] ? DateType<t, $>
+			: ObjectType<t, $>
 		:	Type<t, $>
-	:	Type.Morph<t, $>
+	:	MorphType<t, $>
 
 type validateChainedAsArgs<t> =
 	[t] extends [unset] ?
