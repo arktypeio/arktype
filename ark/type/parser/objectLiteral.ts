@@ -122,9 +122,7 @@ export type validateObjectLiteral<def, $, args> = {
 		validateString<indexDef, $, args> extends ErrorMessage<infer message> ?
 			// add a nominal type here to avoid allowing the error message as input
 			ErrorType<message>
-		: inferDefinition<indexDef, $, args> extends (
-			PropertyKey | constrain<PropertyKey, {}>
-		) ?
+		: inferDefinition<indexDef, $, args> extends Key | constrain<Key, {}> ?
 			// if the indexDef is syntactically and semantically valid,
 			// move on to the validating the value definition
 			validateDefinition<def[k], $, args>

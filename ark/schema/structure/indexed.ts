@@ -163,7 +163,7 @@ export const writeEnumerableIndexBranches = (keys: string[]): string =>
 export const writeInvalidPropertyKeyMessage = <indexSchema extends string>(
 	indexSchema: indexSchema
 ): writeInvalidPropertyKeyMessage<indexSchema> =>
-	`Indexed key definition '${indexSchema}' must be a string, number or symbol`
+	`Indexed key definition '${indexSchema}' must be a string or symbol`
 
 export type writeInvalidPropertyKeyMessage<indexSchema extends string> =
-	`Indexed key definition '${indexSchema}' must be a string, number or symbol`
+	`Indexed key definition '${indexSchema}' must be a string or symbol`

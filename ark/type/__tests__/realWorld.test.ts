@@ -766,41 +766,4 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			children: constrain<"...">
 	  }`)
 	})
-
-	// 	it("cyclic chained narrow in scope", () => {
-	// 		const $ = scope({
-	// 			filename: "0<string<255",
-	// 			file: {
-	// 				type: "'file'",
-	// 				name: "filename"
-	// 			},
-	// 			directory: {
-	// 				type: "'directory'",
-	// 				name: "filename",
-	// 				children: () =>
-	// 					$.type("root[]").narrow((v, ctx) => {
-	// 						if (new Set(v.map(f => f.name)).size !== v.length)
-	// 							return ctx.mustBe("names must be unique in a directory")
-
-	// 						return true
-	// 					})
-	// 			},
-	// 			root: "file|directory"
-	// 		})
-
-	// 		const types = $.export()
-
-	// 		attest(types.root).type.toString.snap(`Type<
-	// 	| {
-	// 			type: "file"
-	// 			name: is<MoreThanLength<0> & LessThanLength<255>>
-	// 	  }
-	// 	| {
-	// 			type: "directory"
-	// 			name: is<MoreThanLength<0> & LessThanLength<"...">>
-	// 			children: unknown
-	// 	  },
-	// 	{ "..." }
-	// >`)
-	// 	})
 })
