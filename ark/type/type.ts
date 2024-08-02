@@ -56,6 +56,7 @@ import type { MorphType } from "./subtypes/morph.js"
 import type { NumberType } from "./subtypes/number.js"
 import type { ObjectType } from "./subtypes/object.js"
 import type { StringType } from "./subtypes/string.js"
+import type { ValidatorType } from "./subtypes/validator.js"
 
 /** The convenience properties attached to `type` */
 export type TypeParserAttachments =
@@ -297,17 +298,6 @@ export interface Type<out t = unknown, $ = {}>
 		g: g
 	): r
 
-	narrow<predicate extends Predicate<distillOut<t>>>(
-		predicate: predicate
-	): instantiateType<
-		t extends MorphAst ?
-			inferPredicate<this["tOut"], predicate> extends infer narrowed ?
-				(In: this["tIn"]) => Out<narrowed>
-			:	never
-		:	inferPredicate<t, predicate>,
-		$
-	>
-
 	equals<def>(
 		def: validateTypeRoot<def, $>
 	): this is instantiateType<inferTypeRoot<def, $>, $>
@@ -404,7 +394,7 @@ export type instantiateType<t, $> =
 			[t] extends [array] ? ArrayType<t, $>
 			: [t] extends [Date] ? DateType<t, $>
 			: ObjectType<t, $>
-		:	Type<t, $>
+		:	ValidatorType<t, $>
 	:	MorphType<t, $>
 
 type validateChainedAsArgs<t> =

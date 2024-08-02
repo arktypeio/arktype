@@ -1,9 +1,11 @@
 import type { type } from "../ark.js"
 import type { arkKeyOf, getArkKey, toArkKey } from "../keys.js"
-import type { Type as BaseType, instantiateType } from "../type.js"
+import type { instantiateType } from "../type.js"
+import type { ValidatorType } from "./validator.js"
 
 /** @ts-ignore cast variance */
-interface Type<out t extends object = object, $ = {}> extends BaseType<t, $> {
+interface Type<out t extends object = object, $ = {}>
+	extends ValidatorType<t, $> {
 	get<k1 extends arkKeyOf<t>, r = instantiateType<getArkKey<t, k1>, $>>(
 		k1: k1 | type.cast<k1>
 	): r

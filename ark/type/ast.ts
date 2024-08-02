@@ -245,16 +245,16 @@ export namespace Date {
 		:	never
 }
 
-export type parseConstraint<
+export type applyConstraint<
 	t,
 	kind extends PrimitiveConstraintKind,
 	schema extends NodeSchema<kind>
 > =
 	t extends MorphAst<infer i, infer o> ?
-		(In: leftIfEqual<i, _parseConstraint<i, kind, schema>>) => Out<o>
-	:	leftIfEqual<t, _parseConstraint<t, kind, schema>>
+		(In: leftIfEqual<i, _applyConstraint<i, kind, schema>>) => Out<o>
+	:	leftIfEqual<t, _applyConstraint<t, kind, schema>>
 
-type _parseConstraint<
+type _applyConstraint<
 	t,
 	kind extends PrimitiveConstraintKind,
 	schema extends NodeSchema<kind>
@@ -445,9 +445,14 @@ type TerminallyInferredObjectKind =
 export type inferPredicate<t, predicate> =
 	predicate extends (data: any, ...args: any[]) => data is infer narrowed ?
 		t extends constrain<unknown, infer constraints> ?
-			parseConstraint<constrain<narrowed, constraints>, "predicate", any>
-		:	parseConstraint<narrowed, "predicate", any>
-	:	parseConstraint<t, "predicate", any>
+			applyConstraint<constrain<narrowed, constraints>, "predicate", any>
+		:	applyConstraint<narrowed, "predicate", any>
+	:	applyConstraint<t, "predicate", any>
+
+export type constrainWithPredicate<t> =
+	t extends constrain<unknown, infer constraints> ?
+		applyConstraint<constrain<t, constraints>, "predicate", any>
+	:	applyConstraint<t, "predicate", any>
 
 export type inferPipes<t, pipes extends Morph[]> =
 	pipes extends [infer head extends Morph, ...infer tail extends Morph[]] ?

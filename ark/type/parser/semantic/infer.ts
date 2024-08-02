@@ -7,10 +7,10 @@ import type {
 	Default,
 	LimitLiteral,
 	RegexLiteral,
+	applyConstraint,
 	distillIn,
 	distillOut,
 	normalizeLimit,
-	parseConstraint,
 	string
 } from "../../ast.js"
 import type { inferIntersection } from "../../intersect.js"
@@ -86,7 +86,7 @@ export type inferExpression<ast extends array, $, args> =
 			constrainBound<inferConstrainableAst<ast[2], $, args>, ast[1], ast[0]>
 		:	constrainBound<inferConstrainableAst<ast[0], $, args>, ast[1], ast[2]>
 	: ast[1] extends "%" ?
-		parseConstraint<
+		applyConstraint<
 			inferConstrainableAst<ast[0], $, args>,
 			"divisor",
 			ast[2] & number
@@ -103,8 +103,8 @@ export type constrainBound<
 		comparator extends "==" ?
 			In extends number ? limit
 			: In extends Date ? Date.literal<normalizeLimit<limit>>
-			: parseConstraint<constrainableIn, "exactLength", limit & number>
-		:	parseConstraint<
+			: applyConstraint<constrainableIn, "exactLength", limit & number>
+		:	applyConstraint<
 				constrainableIn,
 				In extends number ?
 					comparator extends MinComparator ?

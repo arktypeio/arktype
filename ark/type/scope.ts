@@ -80,11 +80,7 @@ export type ScopeParser = <const def>(
 ) => Scope<inferScope<def>>
 
 export type validateScope<def> = {
-	[k in keyof def]: k extends symbol ?
-		// this should only occur when importing/exporting modules, and those
-		// keys should be ignored
-		unknown
-	: parseScopeKey<k, def>["params"] extends infer params ?
+	[k in keyof def]: parseScopeKey<k, def>["params"] extends infer params ?
 		params extends array<GenericParamAst> ?
 			params["length"] extends 0 ?
 				// not including Type here directly breaks some cyclic tests (last checked w/ TS 5.5).
@@ -118,11 +114,10 @@ export type UnparsedScope = "$"
 type PreparsedResolution = PreparsedNodeResolution
 
 type bootstrapAliases<def> = {
-	[k in Exclude<
-		keyof def,
-		// avoid inferring nominal symbols, e.g. arkKind from Module
-		GenericDeclaration | symbol
-	>]: def[k] extends PreparsedResolution ? def[k]
+	[k in Exclude<keyof def, GenericDeclaration>]: def[k] extends (
+		PreparsedResolution
+	) ?
+		def[k]
 	: def[k] extends (() => infer thunkReturn extends PreparsedResolution) ?
 		thunkReturn
 	:	Def<def[k]>
@@ -134,7 +129,7 @@ type bootstrapAliases<def> = {
 	>
 }
 
-type inferBootstrapped<$> = show<{
+type inferBootstrapped<$> = {
 	[name in keyof $]: $[name] extends Def<infer def> ?
 		inferDefinition<def, $, {}>
 	: $[name] extends GenericAst<infer params, infer def> ?
@@ -142,7 +137,7 @@ type inferBootstrapped<$> = show<{
 		Generic<params, def, $>
 	:	// otherwise should be a submodule
 		$[name]
-}>
+} & unknown
 
 type extractGenericName<k> =
 	k extends GenericDeclaration<infer name> ? name : never
@@ -164,7 +159,6 @@ export type resolve<reference extends keyof $ | keyof args, $, args> =
 	:	never
 
 export type moduleKeyOf<$> = {
-	// TODO: check against module directly?
 	[k in keyof $]: $[k] extends { [arkKind]: "module" } ?
 		[$[k]] extends [anyOrNever] ?
 			never

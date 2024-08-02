@@ -4,7 +4,7 @@ import type {
 	exclusivizeRangeSchema,
 	InclusiveNumericRangeSchema
 } from "@ark/schema"
-import type { parseConstraint } from "../ast.js"
+import type { applyConstraint } from "../ast.js"
 import type { ObjectType } from "./object.js"
 
 interface Type<
@@ -14,23 +14,23 @@ interface Type<
 > extends ObjectType<t, $> {
 	atLeastLength<const schema extends InclusiveNumericRangeSchema>(
 		schema: schema
-	): Type<parseConstraint<t, "minLength", schema>, $>
+	): Type<applyConstraint<t, "minLength", schema>, $>
 
 	atMostLength<const schema extends InclusiveNumericRangeSchema>(
 		schema: schema
-	): Type<parseConstraint<t, "maxLength", schema>, $>
+	): Type<applyConstraint<t, "maxLength", schema>, $>
 
 	moreThanLength<const schema extends ExclusiveNumericRangeSchema>(
 		schema: schema
-	): Type<parseConstraint<t, "minLength", exclusivizeRangeSchema<schema>>, $>
+	): Type<applyConstraint<t, "minLength", exclusivizeRangeSchema<schema>>, $>
 
 	lessThanLength<const schema extends ExclusiveNumericRangeSchema>(
 		schema: schema
-	): Type<parseConstraint<t, "maxLength", exclusivizeRangeSchema<schema>>, $>
+	): Type<applyConstraint<t, "maxLength", exclusivizeRangeSchema<schema>>, $>
 
 	exactlyLength<const schema extends ExactLengthSchema>(
 		schema: schema
-	): Type<parseConstraint<t, "exactLength", schema>, $>
+	): Type<applyConstraint<t, "exactLength", schema>, $>
 }
 
 export type { Type as ArrayType }

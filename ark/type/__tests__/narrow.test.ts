@@ -120,7 +120,7 @@ contextualize(() => {
 			morphs: [morphRef]
 		})
 
-		attest<Type<(In: string.narrowed) => Out<number>>>(t)
+		attest<(In: string.narrowed) => Out<number>>(t.t)
 
 		attest(t("123456")).snap(6)
 		attest(t("1234").toString()).snap(
@@ -143,7 +143,7 @@ contextualize(() => {
 			morphs: [morphRef, { predicate: [predicateRef] }]
 		})
 
-		attest<Type<(In: string) => Out<constrain<5, Narrowed>>>>(t)
+		attest<(In: string) => Out<5>>(t.t)
 
 		attest(t("12345")).snap(5)
 		attest(t("1234").toString()).snap(
