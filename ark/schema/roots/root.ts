@@ -461,7 +461,7 @@ export const exclusivizeRangeSchema = <schema extends UnknownRangeSchema>(
 export type exclusivizeRangeSchema<schema extends UnknownRangeSchema> =
 	schema extends LimitSchemaValue ? { rule: schema; exclusive: true } : schema
 
-export const typeOrTermExtends = (t: unknown, base: unknown) =>
+export const typeOrTermExtends = (t: unknown, base: unknown): boolean =>
 	hasArkKind(base, "root") ?
 		hasArkKind(t, "root") ? t.extends(base)
 		:	base.allows(t)
@@ -502,4 +502,4 @@ export const writeNonStructuralOperandMessage = <
 >(
 	operation: operation,
 	operand: operand
-) => `${operation} operand must be an object (was ${operand})`
+): string => `${operation} operand must be an object (was ${operand})`

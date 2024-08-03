@@ -60,7 +60,7 @@ export class DivisorNode extends InternalPrimitiveConstraint<DivisorDeclaration>
 	readonly expression: string = `% ${this.rule}`
 }
 
-export const writeIndivisibleMessage = (t: BaseRoot) =>
+export const writeIndivisibleMessage = (t: BaseRoot): string =>
 	writeInvalidOperandMessage("divisor", $ark.intrinsic.number as never, t)
 
 export type writeIndivisibleMessage<actual> = writeInvalidOperandMessage<

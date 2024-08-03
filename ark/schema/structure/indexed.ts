@@ -9,8 +9,10 @@ import { BaseConstraint } from "../constraint.js"
 import type { Node, RootSchema } from "../kinds.js"
 import {
 	flatRef,
+	type BaseNode,
 	type DeepNodeTransformContext,
-	type DeepNodeTransformation
+	type DeepNodeTransformation,
+	type FlatRef
 } from "../node.js"
 import type { BaseRoot } from "../roots/root.js"
 import type { BaseMeta, declareNode } from "../shared/declare.js"
@@ -136,14 +138,14 @@ export class IndexNode extends BaseConstraint<IndexDeclaration> {
 	protected override _transform(
 		mapper: DeepNodeTransformation,
 		ctx: DeepNodeTransformContext
-	) {
+	): BaseNode | null {
 		ctx.path.push(this.signature)
 		const result = super._transform(mapper, ctx)
 		ctx.path.pop()
 		return result
 	}
 
-	override get flatRefs() {
+	override get flatRefs(): FlatRef[] {
 		return append(
 			this.value.flatRefs.map(ref =>
 				flatRef([this.signature, ...ref.path], ref.node)

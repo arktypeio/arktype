@@ -92,7 +92,7 @@ export const objectKindOrDomainOf = <data>(
 	data: data
 ): (objectKindOf<data & object> & {}) | domainOf<data> =>
 	(typeof data === "object" && data !== null ?
-		objectKindOf(data) ?? "object"
+		(objectKindOf(data) ?? "object")
 	:	domainOf(data)) as never
 
 export type objectKindOrDomainOf<data> =

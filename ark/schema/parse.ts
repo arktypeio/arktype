@@ -92,7 +92,7 @@ const discriminateRootKind = (schema: unknown): RootKind => {
 	return throwParseError(writeInvalidSchemaMessage(schema))
 }
 
-export const writeInvalidSchemaMessage = (schema: unknown) =>
+export const writeInvalidSchemaMessage = (schema: unknown): string =>
 	`${printable(schema)} is not a valid type schema`
 
 const nodeCache: { [innerHash: string]: BaseNode } = {}
@@ -103,7 +103,10 @@ const serializeListableChild = (listableNode: listable<BaseNode>) =>
 		listableNode.map(node => node.collapsibleJson)
 	:	listableNode.collapsibleJson
 
-export const registerNodeId = (kind: NodeKind, opts: NodeParseOptions) => {
+export const registerNodeId = (
+	kind: NodeKind,
+	opts: NodeParseOptions
+): string => {
 	const prefix = opts.alias ?? kind
 	nodeCountsByPrefix[prefix] ??= 0
 	return `${prefix}${++nodeCountsByPrefix[prefix]!}`

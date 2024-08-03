@@ -13,6 +13,7 @@ import type { MutableInner, RootSchema } from "../kinds.js"
 import {
 	appendUniqueFlatRefs,
 	flatRef,
+	type BaseNode,
 	type DeepNodeTransformContext,
 	type DeepNodeTransformation,
 	type FlatRef
@@ -288,7 +289,7 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 		}
 	}
 
-	override get flatRefs() {
+	override get flatRefs(): FlatRef[] {
 		const refs: FlatRef[] = []
 
 		appendUniqueFlatRefs(
@@ -361,7 +362,7 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 	protected override _transform(
 		mapper: DeepNodeTransformation,
 		ctx: DeepNodeTransformContext
-	) {
+	): BaseNode | null {
 		ctx.path.push($ark.intrinsic.nonNegativeIntegerString.internal)
 		const result = super._transform(mapper, ctx)
 		ctx.path.pop()

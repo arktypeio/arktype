@@ -153,7 +153,7 @@ export class MorphNode extends BaseRoot<MorphDeclaration> {
 	}
 
 	/** Check if the morphs of r are equal to those of this node */
-	hasEqualMorphs(r: MorphNode) {
+	hasEqualMorphs(r: MorphNode): boolean {
 		return arrayEquals(this.morphs, r.morphs, {
 			isEqual: (lMorph, rMorph) =>
 				lMorph === rMorph ||
@@ -180,7 +180,7 @@ export class MorphNode extends BaseRoot<MorphDeclaration> {
 export const writeMorphIntersectionMessage = (
 	lDescription: string,
 	rDescription: string
-) =>
+): string =>
 	`The intersection of distinct morphs at a single path is indeterminate:
 Left: ${lDescription}
 Right: ${rDescription}`

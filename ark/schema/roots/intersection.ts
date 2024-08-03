@@ -185,7 +185,7 @@ export class IntersectionNode extends BaseRoot<IntersectionDeclaration> {
 				this.structure ?
 					this.basis.rawKeyOf().or(this.structure.keyof())
 				:	this.basis.rawKeyOf()
-			:	this.structure?.keyof() ?? $ark.intrinsic.never.internal
+			:	(this.structure?.keyof() ?? $ark.intrinsic.never.internal)
 		)
 	}
 }
@@ -335,8 +335,8 @@ export const intersectionImplementation: nodeImplementationOf<IntersectionDeclar
 			description: node =>
 				node.children.length === 0 ?
 					"unknown"
-				:	node.structure?.description ??
-					node.children.map(child => child.description).join(" and "),
+				:	(node.structure?.description ??
+					node.children.map(child => child.description).join(" and ")),
 			expected: source =>
 				`  • ${source.errors.map(e => e.expected).join("\n  • ")}`,
 			problem: ctx => `(${ctx.actual}) must be...\n${ctx.expected}`

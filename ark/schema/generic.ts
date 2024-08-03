@@ -8,6 +8,7 @@ import {
 	type array,
 	type Json
 } from "@ark/util"
+import type { BaseNode } from "./node.js"
 import type { BaseRoot } from "./roots/root.js"
 import type { BaseScope } from "./scope.js"
 import { arkKind } from "./shared/utils.js"
@@ -159,7 +160,7 @@ export class GenericRoot<
 		return this
 	}
 
-	get references() {
+	get references(): BaseNode[] {
 		return this.baseInstantiation.internal.references
 	}
 }

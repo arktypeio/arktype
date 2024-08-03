@@ -708,7 +708,7 @@ export const pruneDiscriminant = (
 export const writeIndiscriminableMorphMessage = (
 	lDescription: string,
 	rDescription: string
-) =>
+): string =>
 	`An unordered union of a type including a morph and a type with overlapping input is indeterminate:
 Left: ${lDescription}
 Right: ${rDescription}`
@@ -716,6 +716,6 @@ Right: ${rDescription}`
 export const writeOrderedIntersectionMessage = (
 	lDescription: string,
 	rDescription: string
-) => `The intersection of two ordered unions is indeterminate:
+): string => `The intersection of two ordered unions is indeterminate:
 Left: ${lDescription}
 Right: ${rDescription}`

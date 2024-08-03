@@ -285,7 +285,10 @@ export abstract class BaseScope<$ extends {} = {}> {
 		return node as never
 	}
 
-	protected finalizeRootArgs(opts: NodeParseOptions, resolve: () => BaseRoot) {
+	protected finalizeRootArgs(
+		opts: NodeParseOptions,
+		resolve: () => BaseRoot
+	): NodeParseOptions {
 		const isResolution = opts.alias && opts.alias in this.aliases
 		// if the definition being parsed is not a scope alias and is not a
 		// generic instantiation (i.e. opts don't include args), add this as a resolution.
@@ -443,7 +446,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		return this.export()[name as never]
 	}
 
-	abstract parseRoot(schema: any, opts?: NodeParseOptions): BaseRoot
+	abstract parseRoot(schema: unknown, opts?: NodeParseOptions): BaseRoot
 }
 
 const resolutionsToJson = (resolutions: InternalResolutions): Json =>

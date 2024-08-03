@@ -121,7 +121,7 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 		return this.$.node("union", branches)
 	}
 
-	assertHasKeys(keys: array<KeyOrKeyNode>) {
+	assertHasKeys(keys: array<KeyOrKeyNode>): void {
 		const invalidKeys = keys.filter(k => !typeOrTermExtends(k, this.keyof()))
 
 		if (invalidKeys.length) {
@@ -575,7 +575,7 @@ export const structureImplementation: nodeImplementationOf<StructureDeclaration>
 export const writeNumberIndexMessage = (
 	indexExpression: string,
 	sequenceExpression: string
-) =>
+): string =>
 	`${indexExpression} is not allowed as an array index on ${sequenceExpression}. Use the 'nonNegativeIntegerString' keyword instead.`
 
 export type NormalizedIndex = {
@@ -612,7 +612,7 @@ export const normalizeIndex = (
 	return normalized
 }
 
-export const typeKeyToString = (k: KeyOrKeyNode) =>
+export const typeKeyToString = (k: KeyOrKeyNode): string =>
 	hasArkKind(k, "root") ? k.expression : printable(k)
 
 export const writeInvalidKeysMessage = <
@@ -621,5 +621,5 @@ export const writeInvalidKeysMessage = <
 >(
 	o: o,
 	keys: keys
-) =>
+): string =>
 	`Key${keys.length === 1 ? "" : "s"} ${keys.map(typeKeyToString).join(", ")} ${keys.length === 1 ? "does" : "do"} not exist on ${o}`

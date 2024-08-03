@@ -244,7 +244,7 @@ export const writeInvalidOperandMessage = <
 	kind: kind,
 	expected: expected,
 	actual: actual
-) =>
+): string =>
 	`${capitalize(kind)} operand must be ${
 		expected.description
 	} (was ${actual.exclude(expected).description})` as never

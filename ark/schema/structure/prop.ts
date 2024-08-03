@@ -10,6 +10,7 @@ import { BaseConstraint } from "../constraint.js"
 import type { Node, RootSchema } from "../kinds.js"
 import {
 	flatRef,
+	type BaseNode,
 	type DeepNodeTransformContext,
 	type DeepNodeTransformation,
 	type FlatRef
@@ -118,7 +119,7 @@ export abstract class BaseProp<
 	protected override _transform(
 		mapper: DeepNodeTransformation,
 		ctx: DeepNodeTransformContext
-	) {
+	): BaseNode | null {
 		ctx.path.push(this.key)
 		const result = super._transform(mapper, ctx)
 		ctx.path.pop()

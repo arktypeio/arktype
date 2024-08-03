@@ -19,7 +19,7 @@ export const writeUnassignableDefaultValueMessage = <
 >(
 	key: key,
 	message: message
-) => `Default value at ${key} ${message}`
+): string => `Default value at ${key} ${message}`
 
 export type writeUnassignableDefaultValueMessage<
 	baseDef extends string,

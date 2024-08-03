@@ -402,7 +402,7 @@ export type FlatRef<root extends BaseRoot = BaseRoot> = {
 	propString: string
 }
 
-export const typePathToPropString = (path: array<KeyOrKeyNode>) =>
+export const typePathToPropString = (path: array<KeyOrKeyNode>): string =>
 	pathToPropString(path, {
 		stringifyNonKey: node => node.expression
 	})
@@ -416,13 +416,13 @@ export const flatRef = <node extends BaseRoot>(
 	propString: typePathToPropString(path)
 })
 
-export const flatRefsAreEqual = (l: FlatRef, r: FlatRef) =>
+export const flatRefsAreEqual = (l: FlatRef, r: FlatRef): boolean =>
 	l.propString === r.propString && l.node.equals(r.node)
 
 export const appendUniqueFlatRefs = <node extends BaseRoot>(
 	existing: FlatRef<node>[] | undefined,
 	refs: listable<FlatRef<node>>
-) =>
+): FlatRef<node>[] =>
 	appendUnique(existing, refs, {
 		isEqual: flatRefsAreEqual
 	})
@@ -430,7 +430,7 @@ export const appendUniqueFlatRefs = <node extends BaseRoot>(
 export const appendUniqueNodes = <node extends BaseNode>(
 	existing: node[] | undefined,
 	refs: listable<node>
-) =>
+): node[] =>
 	appendUnique(existing, refs, {
 		isEqual: (l, r) => l.equals(r)
 	})
