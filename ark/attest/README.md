@@ -37,7 +37,7 @@ export default defineConfig({
 `setupVitest.ts`
 
 ```ts
-import { setup, teardown } from "@ark/attest"
+import { setup } from "@ark/attest"
 
 // config options can be passed here
 export default () => setup({})
