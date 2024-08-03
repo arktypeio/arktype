@@ -38,7 +38,7 @@ export type TypeParserAttachments =
 export interface TypeParser<$ = {}> {
 	// Parse and check the definition, returning either the original input for a
 	// valid definition or a string representing an error message.
-	<const def, r = Type.instantiate<inferTypeRoot<def, $>, $>>(
+	<const def, r = Type<inferTypeRoot<def, $>, $>>(
 		def: validateTypeRoot<def, $>
 	): r
 
@@ -56,7 +56,7 @@ export interface TypeParser<$ = {}> {
 		const zero,
 		const one,
 		const rest extends array,
-		r = Type.instantiate<inferTypeRoot<[zero, one, ...rest], $>, $>
+		r = Type<inferTypeRoot<[zero, one, ...rest], $>, $>
 	>(
 		_0: zero extends IndexZeroOperator ? zero : validateTypeRoot<zero, $>,
 		_1: zero extends "keyof" ? validateTypeRoot<one, $>
@@ -145,17 +145,15 @@ export type validateAmbient<def> = validateTypeRoot<def, {}>
 
 export type inferAmbient<def> = inferTypeRoot<def, {}>
 
-export type Type<out t = unknown, $ = {}> = BaseType<t, $>
+export type Type<t = unknown, $ = {}> = instantiateType<t, $>
 
 export declare namespace Type {
-	export type Any<out t = any> = BaseType<t, any>
-
-	export type instantiate<t, $> = instantiateType<t, $>
+	export type Any<t = any> = Type<t, any>
 }
 
 export type TypeConstructor<t = unknown, $ = {}> = new (
 	def: unknown,
 	$: Scope<$>
-) => Type.instantiate<t, $>
+) => Type<t, $>
 
 export const Type: TypeConstructor = BaseRoot as never

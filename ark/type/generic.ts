@@ -204,7 +204,7 @@ type instantiateGeneric<
 	args,
 	$,
 	args$
-> = Type.instantiate<
+> = Type<
 	[def] extends [GenericHkt] ?
 		GenericHkt.instantiate<
 			def,
@@ -223,7 +223,7 @@ type bindGenericArgs<params extends array<GenericParamAst>, $, args> = {
 
 type baseGenericResolutions<params extends array<GenericParamAst>, $> =
 	baseGenericConstraints<params> extends infer baseConstraints ?
-		{ [k in keyof baseConstraints]: Type.instantiate<baseConstraints[k], $> }
+		{ [k in keyof baseConstraints]: Type<baseConstraints[k], $> }
 	:	never
 
 export type baseGenericConstraints<params extends array<GenericParamAst>> = {
