@@ -26,11 +26,7 @@ import type { state, StaticState } from "./parser/string/reduce/static.js"
 import { Scanner } from "./parser/string/shift/scanner.js"
 import { parseUntilFinalizer } from "./parser/string/string.js"
 import type { ParseContext, Scope } from "./scope.js"
-import type {
-	inferTypeRoot,
-	instantiateType,
-	validateTypeRoot
-} from "./type.js"
+import type { inferTypeRoot, Type, validateTypeRoot } from "./type.js"
 
 export type ParameterString<params extends string = string> = `<${params}>`
 
@@ -208,7 +204,7 @@ type instantiateGeneric<
 	args,
 	$,
 	args$
-> = instantiateType<
+> = Type.instantiate<
 	[def] extends [GenericHkt] ?
 		GenericHkt.instantiate<
 			def,
@@ -227,7 +223,7 @@ type bindGenericArgs<params extends array<GenericParamAst>, $, args> = {
 
 type baseGenericResolutions<params extends array<GenericParamAst>, $> =
 	baseGenericConstraints<params> extends infer baseConstraints ?
-		{ [k in keyof baseConstraints]: instantiateType<baseConstraints[k], $> }
+		{ [k in keyof baseConstraints]: Type.instantiate<baseConstraints[k], $> }
 	:	never
 
 export type baseGenericConstraints<params extends array<GenericParamAst>> = {

@@ -1,6 +1,6 @@
 import type { type } from "../ark.js"
 import type { arkKeyOf, getArkKey, toArkKey } from "../keys.js"
-import type { instantiateType } from "../type.js"
+import type { instantiateType } from "./instantiate.js"
 import type { ValidatorType } from "./validator.js"
 
 /** @ts-ignore cast variance */

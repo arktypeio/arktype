@@ -1,6 +1,7 @@
 import type { Predicate, PredicateCast } from "@ark/schema"
 import type { applyConstraint } from "../ast.js"
-import type { Type as BaseType, instantiateType } from "../type.js"
+import type { BaseType } from "./base.js"
+import type { instantiateType } from "./instantiate.js"
 
 /** @ts-ignore cast variance */
 interface Type<out t = unknown, $ = {}> extends BaseType<t, $> {

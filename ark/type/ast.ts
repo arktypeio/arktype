@@ -23,7 +23,7 @@ import type { type } from "./ark.js"
 import type { inferPipe } from "./intersect.js"
 import type { platformObjectExports } from "./keywords/platformObjects.js"
 import type { typedArrayExports } from "./keywords/typedArray.js"
-import type { instantiateType } from "./type.js"
+import type { Type } from "./type.js"
 
 export const inferred = noSuggest("arkInferred")
 
@@ -478,4 +478,4 @@ export type Default<v = any> = ["=", v]
 
 export type DefaultableAst<t = any, v = any> = (In?: t) => Default<v>
 
-export type termOrType<t> = t | instantiateType<t, any>
+export type termOrType<t> = t | Type<t, any>

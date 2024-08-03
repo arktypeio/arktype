@@ -1,6 +1,6 @@
 import type { Predicate, PredicateCast } from "@ark/schema"
 import type { applyConstraint, Out } from "../ast.js"
-import type { Type as BaseType } from "../type.js"
+import type { BaseType } from "./base.js"
 
 // t can't be constrained to MorphAst here because it could be a union including some
 // non-morph branches

@@ -66,11 +66,11 @@ import {
 	fullStringParse,
 	type StringParseResult
 } from "./parser/string/string.js"
+import type { BaseType } from "./subtypes/base.js"
 import {
 	InternalTypeParser,
 	type DeclarationParser,
 	type DefinitionParser,
-	type Type,
 	type TypeParser
 } from "./type.js"
 
@@ -86,7 +86,7 @@ export type validateScope<def> = {
 				// not including Type here directly breaks some cyclic tests (last checked w/ TS 5.5).
 				// if you are from the future with a better version of TS and can remove it
 				// without breaking `pnpm typecheck`, go for it.
-				def[k] extends Type | PreparsedResolution ? def[k]
+				def[k] extends BaseType | PreparsedResolution ? def[k]
 				: k extends PrivateDeclaration<infer name extends keyof def & string> ?
 					ErrorType<writeDuplicateAliasError<name>>
 				:	validateDefinition<def[k], bootstrapAliases<def>, {}>
