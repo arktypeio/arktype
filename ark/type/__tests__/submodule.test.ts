@@ -183,5 +183,53 @@ contextualize.each(
 				"outer.inner.": ["outer.inner.alias"]
 			})
 		})
+
+		type DeepExpected$ = {
+			a: Submodule<{
+				b: Submodule<{
+					c: Submodule<{
+						d: Submodule<{
+							e: Submodule<{
+								f: Submodule<{
+									g: Submodule<{
+										alias: 1
+									}>
+								}>
+							}>
+						}>
+					}>
+				}>
+			}>
+		}
+
+		it("deep", () => {
+			const $ = scope({
+				a: scope({
+					b: scope({
+						c: scope({
+							d: scope({
+								e: scope({
+									f: scope({
+										g: scope({
+											alias: "1"
+										}).export()
+									}).export()
+								}).export()
+							}).export()
+						}).export()
+					}).export()
+				}).export()
+			})
+
+			const t = $.type("0 | a.b.c.d.e.f.g.alias")
+			attest<Type<0 | 1, DeepExpected$>>(t)
+			attest(t.expression).snap("0 | 1")
+			attest(() =>
+				$.type({
+					// @ts-expect-error
+					foo: "a.b.c.d.e.f.g."
+				})
+			).completions({ "a.b.c.d.e.f.g.": ["a.b.c.d.e.f.g.alias"] })
+		})
 	}
 )
