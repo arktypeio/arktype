@@ -4,7 +4,11 @@ import {
 	writeInvalidOperandMessage
 } from "../constraint.js"
 import type { BaseRoot } from "../roots/root.js"
-import type { BaseInner, declareNode } from "../shared/declare.js"
+import type {
+	BaseInner,
+	BaseNormalizedSchema,
+	declareNode
+} from "../shared/declare.js"
 import {
 	implementNode,
 	type nodeImplementationOf
@@ -16,13 +20,17 @@ export namespace Divisor {
 		readonly rule: number
 	}
 
+	export interface NormalizedSchema extends BaseNormalizedSchema {
+		readonly rule: number
+	}
+
 	export type Schema = Inner | number
 
 	export interface Declaration
 		extends declareNode<{
 			kind: "divisor"
 			schema: Schema
-			normalizedSchema: Inner
+			normalizedSchema: NormalizedSchema
 			inner: Inner
 			prerequisite: number
 			errorContext: Inner

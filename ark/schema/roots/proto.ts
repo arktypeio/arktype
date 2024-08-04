@@ -11,7 +11,11 @@ import {
 	type Key,
 	type array
 } from "@ark/util"
-import type { BaseInner, declareNode } from "../shared/declare.js"
+import type {
+	BaseInner,
+	BaseNormalizedSchema,
+	declareNode
+} from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
 	defaultValueSerializer,
@@ -29,8 +33,10 @@ export namespace Proto {
 		| proto
 		| ExpandedSchema<proto>
 
-	export type NormalizedSchema<proto extends Constructor = Constructor> =
-		Inner<proto>
+	export interface NormalizedSchema<proto extends Constructor = Constructor>
+		extends BaseNormalizedSchema {
+		readonly proto: proto
+	}
 
 	export interface ExpandedSchema<proto extends Reference = Reference>
 		extends BaseInner {

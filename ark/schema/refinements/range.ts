@@ -1,7 +1,11 @@
 import { type array, isKeyOf, type propValueOf, type satisfy } from "@ark/util"
 import { InternalPrimitiveConstraint } from "../constraint.js"
 import type { nodeOfKind } from "../kinds.js"
-import type { BaseInner, BaseNodeDeclaration } from "../shared/declare.js"
+import type {
+	BaseInner,
+	BaseNodeDeclaration,
+	BaseNormalizedSchema
+} from "../shared/declare.js"
 import type { keySchemaDefinitions, RangeKind } from "../shared/implement.js"
 
 export interface BaseRangeDeclaration extends BaseNodeDeclaration {
@@ -78,14 +82,15 @@ export type LimitSchemaValue = Date | number | string
 export type LimitInnerValue<kind extends RangeKind = RangeKind> =
 	kind extends "before" | "after" ? Date : number
 
-export interface UnknownNormalizedRangeSchema extends BaseInner {
+export interface UnknownNormalizedRangeSchema extends BaseNormalizedSchema {
 	readonly rule: LimitSchemaValue
 	readonly exclusive?: boolean
 }
 
 export type UnknownRangeSchema = LimitSchemaValue | UnknownNormalizedRangeSchema
 
-export interface ExclusiveNormalizedDateRangeSchema extends BaseInner {
+export interface ExclusiveNormalizedDateRangeSchema
+	extends BaseNormalizedSchema {
 	rule: LimitSchemaValue
 	exclusive?: true
 }
@@ -94,7 +99,8 @@ export type ExclusiveDateRangeSchema =
 	| LimitSchemaValue
 	| ExclusiveNormalizedDateRangeSchema
 
-export interface InclusiveNormalizedDateRangeSchema extends BaseInner {
+export interface InclusiveNormalizedDateRangeSchema
+	extends BaseNormalizedSchema {
 	rule: LimitSchemaValue
 	exclusive?: false
 }
@@ -103,7 +109,8 @@ export type InclusiveDateRangeSchema =
 	| LimitSchemaValue
 	| InclusiveNormalizedDateRangeSchema
 
-export interface ExclusiveNormalizedNumericRangeSchema extends BaseInner {
+export interface ExclusiveNormalizedNumericRangeSchema
+	extends BaseNormalizedSchema {
 	rule: number
 	exclusive?: true
 }
@@ -112,7 +119,8 @@ export type ExclusiveNumericRangeSchema =
 	| number
 	| ExclusiveNormalizedNumericRangeSchema
 
-export interface InclusiveNormalizedNumericRangeSchema extends BaseInner {
+export interface InclusiveNormalizedNumericRangeSchema
+	extends BaseNormalizedSchema {
 	rule: number
 	exclusive?: false
 }

@@ -18,7 +18,7 @@ import {
 import type { Morph } from "../roots/morph.js"
 import type { BaseRoot } from "../roots/root.js"
 import { compileSerializedValue, type NodeCompiler } from "../shared/compile.js"
-import type { BaseInner } from "../shared/declare.js"
+import type { BaseNormalizedSchema } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { IntersectionContext, RootKind } from "../shared/implement.js"
 import { intersectNodes } from "../shared/intersections.js"
@@ -32,7 +32,7 @@ export namespace Prop {
 
 	export type Node = nodeOfKind<Kind>
 
-	export interface Schema extends BaseInner {
+	export interface Schema extends BaseNormalizedSchema {
 		readonly key: Key
 		readonly value: RootSchema
 	}

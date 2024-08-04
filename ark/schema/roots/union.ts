@@ -24,7 +24,11 @@ import {
 	compileSerializedValue,
 	type NodeCompiler
 } from "../shared/compile.js"
-import type { BaseInner, declareNode } from "../shared/declare.js"
+import type {
+	BaseInner,
+	BaseNormalizedSchema,
+	declareNode
+} from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { ArkError } from "../shared/errors.js"
 import {
@@ -60,7 +64,7 @@ export namespace Union {
 
 	export interface NormalizedSchema<
 		branches extends readonly BranchSchema[] = readonly BranchSchema[]
-	> extends BaseInner {
+	> extends BaseNormalizedSchema {
 		readonly branches: branches
 		readonly ordered?: true
 	}

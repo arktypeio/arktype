@@ -268,7 +268,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		const node = parseNode(
 			id,
 			kind,
-			normalizedSchema,
+			normalizedSchema as never,
 			this,
 			opts ?? {}
 		).bindScope(this)

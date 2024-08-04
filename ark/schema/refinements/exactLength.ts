@@ -1,7 +1,11 @@
 import { $ark } from "@ark/util"
 import { InternalPrimitiveConstraint } from "../constraint.js"
 import type { BaseRoot } from "../roots/root.js"
-import type { BaseInner, declareNode } from "../shared/declare.js"
+import type {
+	BaseInner,
+	BaseNormalizedSchema,
+	declareNode
+} from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
 	implementNode,
@@ -15,7 +19,9 @@ export namespace ExactLength {
 		readonly rule: number
 	}
 
-	export type NormalizedSchema = Inner
+	export interface NormalizedSchema extends BaseNormalizedSchema {
+		readonly rule: number
+	}
 
 	export type Schema = NormalizedSchema | number
 

@@ -22,7 +22,11 @@ import type { MaxLengthNode } from "../refinements/maxLength.js"
 import type { MinLengthNode } from "../refinements/minLength.js"
 import type { BaseRoot } from "../roots/root.js"
 import type { NodeCompiler } from "../shared/compile.js"
-import type { BaseInner, declareNode } from "../shared/declare.js"
+import type {
+	BaseInner,
+	BaseNormalizedSchema,
+	declareNode
+} from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
 	implementNode,
@@ -35,7 +39,7 @@ import { intersectNodes } from "../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 
 export namespace Sequence {
-	export interface NormalizedSchema extends BaseInner {
+	export interface NormalizedSchema extends BaseNormalizedSchema {
 		readonly prefix?: array<RootSchema>
 		readonly optionals?: array<RootSchema>
 		readonly variadic?: RootSchema

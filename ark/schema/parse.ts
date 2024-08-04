@@ -237,7 +237,8 @@ const _parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
 		collapsibleJson: collapsibleJson as JsonData,
 		children,
 		innerHash,
-		typeHash
+		typeHash,
+		meta: {}
 	}
 	if (ctx.alias) attachments.alias = ctx.alias
 

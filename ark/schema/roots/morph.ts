@@ -8,7 +8,11 @@ import {
 } from "@ark/util"
 import type { nodeOfKind, NodeSchema } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
-import type { BaseInner, declareNode } from "../shared/declare.js"
+import type {
+	BaseInner,
+	BaseNormalizedSchema,
+	declareNode
+} from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
 	implementNode,
@@ -37,7 +41,7 @@ export namespace Morph {
 		readonly morphs: array<Morph | BaseRoot>
 	}
 
-	export interface Schema extends BaseInner {
+	export interface Schema extends BaseNormalizedSchema {
 		readonly in: ChildSchema
 		readonly morphs: listable<Morph | BaseRoot>
 	}

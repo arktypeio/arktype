@@ -15,7 +15,11 @@ import {
 	type FlatRef
 } from "../node.js"
 import type { BaseRoot } from "../roots/root.js"
-import type { BaseInner, declareNode } from "../shared/declare.js"
+import type {
+	BaseInner,
+	BaseNormalizedSchema,
+	declareNode
+} from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
 	implementNode,
@@ -30,7 +34,7 @@ export namespace Index {
 
 	export type KeyNode = nodeOfKind<KeyKind>
 
-	export interface Schema extends BaseInner {
+	export interface Schema extends BaseNormalizedSchema {
 		readonly signature: RootSchema<KeyKind>
 		readonly value: RootSchema
 	}

@@ -8,7 +8,11 @@ import {
 	type Key,
 	type array
 } from "@ark/util"
-import type { BaseInner, declareNode } from "../shared/declare.js"
+import type {
+	BaseInner,
+	BaseNormalizedSchema,
+	declareNode
+} from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
 	defaultValueSerializer,
@@ -20,7 +24,9 @@ import { InternalBasis } from "./basis.js"
 import { defineRightwardIntersections } from "./utils.js"
 
 export namespace Unit {
-	export type Schema<value = unknown> = Inner<value>
+	export interface Schema<value = unknown> extends BaseNormalizedSchema {
+		readonly unit: value
+	}
 
 	export interface Inner<value = unknown> extends BaseInner {
 		readonly unit: value

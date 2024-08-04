@@ -7,9 +7,7 @@ type withMetaPrefixedKeys<o> = {
 	[k in keyof o as k extends string ? `meta.${k}` : never]: o[k]
 }
 
-export interface BaseInner {
-	readonly meta?: BaseMeta
-}
+export interface BaseInner {}
 
 export interface BaseMeta {
 	readonly description?: string
@@ -74,7 +72,7 @@ export interface BaseNodeDeclaration {
 	kind: NodeKind
 	schema: unknown
 	normalizedSchema: BaseNormalizedSchema
-	inner: BaseInner
+	inner: {}
 	reducibleTo: NodeKind
 	prerequisite: any
 	intersectionIsOpen: boolean

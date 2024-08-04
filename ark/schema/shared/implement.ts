@@ -29,6 +29,7 @@ import type { Structure } from "../structure/structure.js"
 import { compileSerializedValue } from "./compile.js"
 import type {
 	BaseErrorContext,
+	BaseMeta,
 	BaseNodeDeclaration,
 	BaseNormalizedSchema
 } from "./declare.js"
@@ -352,6 +353,7 @@ export interface UnknownAttachments {
 	readonly children: BaseNode[]
 	readonly innerHash: string
 	readonly typeHash: string
+	readonly meta: BaseMeta
 }
 
 export interface NarrowedAttachments<d extends BaseNodeDeclaration>

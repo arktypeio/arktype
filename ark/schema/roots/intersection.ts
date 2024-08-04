@@ -28,6 +28,7 @@ import type { NodeCompiler } from "../shared/compile.js"
 import {
 	metaKeys,
 	type BaseInner,
+	type BaseNormalizedSchema,
 	type declareNode
 } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -77,7 +78,7 @@ export namespace Intersection {
 
 	export type Schema<inferredBasis = any> =
 		| show<
-				BaseInner & {
+				BaseNormalizedSchema & {
 					domain?: Domain.Schema
 					proto?: Proto.Schema
 				} & conditionalRootOf<inferredBasis>
