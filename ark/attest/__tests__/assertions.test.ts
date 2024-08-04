@@ -27,6 +27,21 @@ describe("type assertions", () => {
 	it("type toString", () => {
 		attest(o).type.toString("{ ark: string }")
 		attest(o).type.toString.is("{ ark: string }")
+		attest(o).type.toString.satisfies(/^{.*}$/)
+		assert.throws(
+			() => attest(o).type.toString.satisfies(/^a.*z$/),
+			assert.AssertionError,
+			"typfsde"
+		)
+	})
+
+	it("type toString regex", () => {
+		attest(o).type.toString(/^{.*}$/)
+		assert.throws(
+			() => attest(o).type.toString(/^a.*z$/),
+			assert.AssertionError,
+			"typfsde"
+		)
 	})
 
 	it("type toString multiline", () => {

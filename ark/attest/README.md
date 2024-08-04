@@ -176,7 +176,8 @@ export const getDefaultAttestConfig = (): BaseAttestConfig => ({
 	filter: undefined,
 	testDeclarationAliases: ["bench", "it", "test"],
 	formatter: `npm exec --no -- prettier --write`,
-	shouldFormat: true
+	shouldFormat: true,
+	typeToStringFormat: {}
 })
 ```
 
@@ -202,6 +203,24 @@ Use `testWithTypes` when:
 
 - You've made changes to your types and want to recheck your type-level assertions
 - You're running your tests in CI
+
+### `typeToStringFormat`
+
+A set of [`prettier.Options`](https://prettier.io/docs/en/options.html) overrides that apply specifically `type.toString` formatting.
+
+Any options you provide will override the defaults, which are as follows:
+
+```jsonc
+{
+	"semi": false,
+	// note this print width is optimized for type serialization, not general code
+	"printWidth": 60,
+	"trailingComma": "none",
+	"parser": "typescript"
+}
+```
+
+The easiest way to provide overrides is to the `setup` function, but they can also be provided as a JSON serialized string either passed to a `--typeToStringFormat` CLI flag or set as the value of `ATTEST_typeToStringFormat` on `process.env`.
 
 ## Benches
 

@@ -7,6 +7,7 @@ import {
 } from "@ark/util"
 import { existsSync } from "node:fs"
 import { join, resolve } from "node:path"
+import type * as prettier from "prettier"
 import {
 	findAttestTypeScriptVersions,
 	type TsVersionData
@@ -38,8 +39,19 @@ type BaseAttestConfig = {
 	benchErrorOnThresholdExceeded: boolean
 	filter: string | undefined
 	testDeclarationAliases: string[]
-	formatter: string
+	formatCmd: string
 	shouldFormat: boolean
+	/**
+	 *  Provided options will override the following defaults.
+	 *  Any options not listed will fallback to Prettier's default value.
+	 *
+	 * {
+	 *	 semi: false,
+	 *	 printWidth: 60,
+	 *	 trailingComma: "none",
+	 * }
+	 */
+	typeToStringFormat: prettier.Options
 }
 
 export type AttestConfig = Partial<BaseAttestConfig>
@@ -56,8 +68,9 @@ export const getDefaultAttestConfig = (): BaseAttestConfig => ({
 	benchErrorOnThresholdExceeded: true,
 	filter: undefined,
 	testDeclarationAliases: ["bench", "it", "test"],
-	formatter: `npm exec --no -- prettier --write`,
-	shouldFormat: true
+	formatCmd: `npm exec --no -- prettier --write`,
+	shouldFormat: true,
+	typeToStringFormat: {}
 })
 
 const hasFlag = (flag: keyof AttestConfig) =>
@@ -76,6 +89,8 @@ const getParamValue = (param: keyof AttestConfig) => {
 		return tryParseNumber(raw, { errorOnFail: true })
 
 	if (param === "tsVersions" || param === "attestAliases") return raw.split(",")
+
+	if (param === "typeToStringFormat") return JSON.parse(raw)
 
 	return raw
 }
@@ -148,11 +163,12 @@ const parseTsVersions = (aliases: TsVersionAliases): TsVersionData[] => {
 	})
 }
 
-const cachedConfig = parseConfig()
+let cachedConfig: ParsedAttestConfig | undefined
 
-export const getConfig = (): ParsedAttestConfig => cachedConfig
+export const getConfig = (): ParsedAttestConfig => parseConfig()
 
 export const ensureCacheDirs = (): void => {
+	cachedConfig ??= getConfig()
 	ensureDir(cachedConfig.cacheDir)
 	ensureDir(cachedConfig.assertionCacheDir)
 }

@@ -1,8 +1,6 @@
 import type { array } from "./arrays.js"
-import { noSuggest } from "./errors.js"
 import { flatMorph } from "./flatMorph.js"
 import type { defined, show } from "./generics.js"
-import type { NonNegativeIntegerLiteral } from "./numericLiterals.js"
 
 export type Dict<k extends string = string, v = unknown> = {
 	readonly [_ in k]: v
@@ -80,54 +78,22 @@ export const fromEntries = <const entries extends readonly Entry[]>(
 	entries: entries
 ): fromEntries<entries> => Object.fromEntries(entries) as never
 
+/** Mimics the result of Object.keys(...) */
 export type keyOf<o> =
-	[o] extends [array] ?
-		| (number extends o["length"] ? NonNegativeIntegerLiteral : never)
-		| Extract<keyof o, NonNegativeIntegerLiteral>
+	o extends array ?
+		number extends o["length"] ?
+			`${number}`
+		:	keyof o & `${number}`
 	:	{
-			[k in keyof o]: k extends number ? k | `${k}` : k
+			[k in keyof o]: k extends string ? k
+			: k extends number ? `${k}`
+			: never
 		}[keyof o]
 
-export type indexableOf<o> = arkKeyToIndexable<keyOf<o>>
-
-type arkKeyToIndexable<k> =
-	| k
-	| (k extends `${infer n extends number}` ? n : never)
-
-export type tsKeyToArkKey<o, k extends keyof o> =
-	k extends number ?
-		[o, number] extends [array, k] ?
-			NonNegativeIntegerLiteral
-		:	`${k}`
-	:	k
-
-export type arkIndexableToTsKey<o, k extends indexableOf<o>> = Extract<
-	k extends NonNegativeIntegerLiteral ? number : k,
-	keyof o
->
-
-export type indexInto<o, k extends indexableOf<o>> = o[arkIndexableToTsKey<
-	o,
-	k
->]
-
-export type pathInto<o, path extends array<PropertyKey>> = _pathInto<o, path>
-
-type _pathInto<o, path extends array> =
-	path extends readonly [infer k, ...infer tail] ?
-		k extends indexableOf<o> ?
-			_pathInto<indexInto<o, k>, tail>
-		:	undefined
-	:	o
-
-/** Mimics the result of Object.keys(...) */
-export type objectKey<o> = Exclude<keyOf<o>, symbol>
-
-/** Narrowed Object.keys(...) */
-export const objectKeys = <o extends object>(o: o): objectKey<o>[] =>
+export const keysOf = <o extends object>(o: o): keyOf<o>[] =>
 	Object.keys(o) as never
 
-export const isKeyOf = <k extends PropertyKey, o extends object>(
+export const isKeyOf = <k extends string | number | symbol, o extends object>(
 	k: k,
 	o: o
 ): k is Extract<keyof o, k> => k in o
@@ -308,7 +274,7 @@ export const invert = <t extends Record<PropertyKey, PropertyKey>>(
 	t: t
 ): invert<t> => flatMorph(t as any, (k, v) => [v, k]) as never
 
-export const unset = noSuggest("unset")
+export const unset = Symbol("represents an uninitialized value")
 
 export type unset = typeof unset
 

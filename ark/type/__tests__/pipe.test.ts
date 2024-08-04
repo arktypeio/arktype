@@ -1,12 +1,10 @@
 import { attest, contextualize } from "@ark/attest"
 import {
 	assertNodeKind,
-	intrinsic,
 	writeIndiscriminableMorphMessage,
-	writeInvalidOperandMessage,
 	writeMorphIntersectionMessage
 } from "@ark/schema"
-import { ark, scope, type, type Type } from "arktype"
+import { scope, type, type Type } from "arktype"
 import type { MoreThan, Out, constrain, string } from "../ast.js"
 import type { MorphType } from "../subtypes/morph.js"
 import type { ObjectType } from "../subtypes/object.js"
@@ -32,13 +30,7 @@ contextualize(() => {
 	it("can't directly constrain morph", () => {
 		// @ts-expect-error
 		attest(() => type("parse.number").atMostLength(5))
-			.throws(
-				writeInvalidOperandMessage(
-					"maxLength",
-					intrinsic.lengthBoundable,
-					ark.parse.number.internal
-				)
-			)
+			.throws("zzz")
 			.type.errors("Property 'atMostLength' does not exist")
 	})
 

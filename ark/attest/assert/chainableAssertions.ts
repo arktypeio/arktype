@@ -15,6 +15,7 @@ import {
 	TypeAssertionMapping,
 	assertEqualOrMatching,
 	assertEquals,
+	assertSatisfies,
 	callAssertedFunction,
 	getThrownMessage,
 	throwAssertionError
@@ -73,7 +74,7 @@ export class ChainableAssertions implements AssertionRecord {
 	}
 
 	satisfies(def: unknown): this {
-		type(def as never).assert(def)
+		assertSatisfies(type.raw(def), this.ctx.actual, this.ctx)
 		return this
 	}
 
@@ -209,6 +210,7 @@ export class ChainableAssertions implements AssertionRecord {
 				self.ctx.actual = new TypeAssertionMapping(data => ({
 					actual: data.args[0].type
 				}))
+				self.ctx.allowRegex = true
 				return self.immediateOrChained()
 			},
 			get errors() {
@@ -295,7 +297,7 @@ export type TypeAssertionsRoot = {
 }
 
 export type TypeAssertionProps = {
-	toString: valueFromTypeAssertion<string>
+	toString: valueFromTypeAssertion<string | RegExp>
 	errors: valueFromTypeAssertion<string | RegExp, string>
 	completions: (value?: Completions) => void
 }

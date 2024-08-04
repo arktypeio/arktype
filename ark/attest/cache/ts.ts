@@ -197,17 +197,19 @@ export interface StringifiableType extends ts.Type {
 }
 
 const declarationPrefix = "type T = "
-const typeFormatOptions: PrettierOptions = {
-	parser: "typescript",
+const baseTypeFormatOptions: PrettierOptions = {
 	semi: false,
-	useTabs: true,
 	printWidth: 60,
-	trailingComma: "none"
+	trailingComma: "none",
+	parser: "typescript"
 }
 
 const formatTypeString = (typeString: string) =>
 	prettier
-		.format(`${declarationPrefix}${typeString}`, typeFormatOptions)
+		.format(`${declarationPrefix}${typeString}`, {
+			...baseTypeFormatOptions,
+			...getConfig().typeToStringFormat
+		})
 		.slice(declarationPrefix.length)
 		.trimEnd()
 

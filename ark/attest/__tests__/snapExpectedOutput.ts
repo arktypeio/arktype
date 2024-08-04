@@ -1,7 +1,7 @@
 import { attest, cleanup, setup } from "@ark/attest"
 import type { makeComplexType } from "./utils.js"
 
-setup()
+setup({ typeToStringFormat: { useTabs: true } })
 
 attest({ re: "do" }).equals({ re: "do" }).type.toString.snap("{ re: string }")
 
@@ -46,6 +46,18 @@ attest("multiline\nmultiline").snap(`multiline
 multiline`)
 
 attest("with `quotes`").snap("with `quotes`")
+
+attest({
+	a2z: `a"'${"" as string}'"z`,
+	z2a: `z"'${"" as string}'"a`,
+	ark: "type",
+	type: "ark"
+} as const).type.toString.snap(`{
+	readonly a2z: \`a"'\${string}'"z\`
+	readonly z2a: \`z"'\${string}'"a\`
+	readonly ark: "type"
+	readonly type: "ark"
+}`)
 
 const it = (name: string, fn: () => void) => fn()
 
