@@ -1,5 +1,7 @@
+import type { ErrorType, merge } from "@ark/util"
 import type { type } from "../ark.js"
 import type { arkKeyOf, getArkKey, toArkKey } from "../keys.js"
+import type { inferTypeRoot, validateTypeRoot } from "../type.js"
 import type { instantiateType } from "./instantiate.js"
 import type { ValidatorType } from "./validator.js"
 
@@ -45,6 +47,12 @@ interface Type<out t extends object = object, $ = {}>
 		},
 		$
 	>
+
+	merge<const def, r = inferTypeRoot<def, $>>(
+		def: validateTypeRoot<def, $> &
+			(r extends object ? unknown
+			:	ErrorType<"Merged type must be an object", [actual: r]>)
+	): Type<merge<t, r & object>, $>
 
 	required(): Type<{ [k in keyof t]-?: t[k] }, $>
 

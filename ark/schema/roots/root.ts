@@ -146,7 +146,12 @@ export abstract class BaseRoot<
 		const rNode = this.$.parseRoot(r)
 		return this.$.rootNode(
 			rNode.distribute(branch =>
-				this.applyStructuralOperation("merge", [branch])
+				this.applyStructuralOperation("merge", [
+					structureOf(branch) ??
+						throwParseError(
+							writeNonStructuralOperandMessage("merge", branch.expression)
+						)
+				])
 			)
 		)
 	}
@@ -155,39 +160,30 @@ export abstract class BaseRoot<
 		operation extends "pick" | "omit" | "required" | "partial" | "merge"
 	>(operation: operation, args: Parameters<BaseRoot[operation]>): BaseRoot {
 		return this.distribute(branch => {
-			if (branch.hasKind("morph")) {
+			if (branch.equals($ark.intrinsic.object) && operation !== "merge")
+				// ideally this wouldn't be a special case, but for now it
+				// allows us to bypass `assertHasKeys` checks on base
+				// instantiations of generics like Pick and Omit. Could
+				// potentially be removed once constraints can reference each other:
+				// https://github.com/arktypeio/arktype/issues/1053
+				return branch
+
+			const structure = structureOf(branch)
+			if (!structure) {
 				throwParseError(
 					writeNonStructuralOperandMessage(operation, this.expression)
 				)
 			}
 
-			if (branch.hasKind("intersection")) {
-				if (!branch.inner.structure) {
-					throwParseError(
-						writeNonStructuralOperandMessage(operation, this.expression)
-					)
-				}
+			const structuralMethodName: keyof StructureNode =
+				operation === "required" ? "require"
+				: operation === "partial" ? "optionalize"
+				: operation
 
-				const structuralMethodName: keyof StructureNode =
-					operation === "required" ? "require"
-					: operation === "partial" ? "optionalize"
-					: operation
-
-				return this.$.node("intersection", {
-					...branch.inner,
-					structure: branch.inner.structure[structuralMethodName](
-						...(args as [never])
-					)
-				})
-			}
-
-			if (this.isBasis() && this.domain === "object")
-				// if it's an object but has no Structure node, return an empty object
-				return $ark.intrinsic.object.internal.bindScope(this.$)
-
-			return throwParseError(
-				writeNonStructuralOperandMessage(operation, this.expression)
-			)
+			return this.$.node("intersection", {
+				...branch.inner,
+				structure: structure[structuralMethodName](...(args as [never]))
+			})
 		}, this.$.rootNode)
 	}
 
@@ -487,6 +483,24 @@ export type schemaKindRightOf<kind extends RootKind> = Extract<
 export type schemaKindOrRightOf<kind extends RootKind> =
 	| kind
 	| schemaKindRightOf<kind>
+
+const structureOf = (branch: UnionChildNode): StructureNode | null => {
+	if (branch.hasKind("morph")) return null
+
+	if (branch.hasKind("intersection")) {
+		return (
+			branch.inner.structure ??
+			(branch.basis?.domain === "object" ?
+				$ark.intrinsic.emptyStructure.bindScope(branch.$)
+			:	null)
+		)
+	}
+
+	if (branch.isBasis() && branch.domain === "object")
+		return $ark.intrinsic.emptyStructure.bindScope(branch.$)
+
+	return null
+}
 
 export type StructuralOperationName =
 	| "pick"

@@ -23,11 +23,10 @@ const intrinsicBases = schemaScope(
 	{ prereducedAliases: true }
 ).export()
 
-$ark.intrinsic = intrinsicBases
+$ark.intrinsic = { ...intrinsicBases } as never
 
-export const intrinsic = schemaScope(
+const intrinsicRoots = schemaScope(
 	{
-		...intrinsicBases,
 		integer: {
 			domain: "number",
 			divisor: 1
@@ -58,4 +57,10 @@ node(
 	{ reduceTo: node("intersection", {}, { prereduced: true }) }
 )
 
-$ark.intrinsic = intrinsic
+export const intrinsic = {
+	...intrinsicBases,
+	...intrinsicRoots,
+	emptyStructure: node("structure", {}, { prereduced: true })
+}
+
+$ark.intrinsic = { ...intrinsic } as never

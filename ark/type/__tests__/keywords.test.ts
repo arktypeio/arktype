@@ -632,16 +632,13 @@ tags[2] must be a string (was object)`)
 				attest(t.expression).equals(expected.expression)
 			})
 
-			it("invoked", () => {
-				const t = ark.merge(
-					{
-						"[string]": "number",
-						foo: "0"
-					},
-					{
-						"[string]": "0"
-					}
-				)
+			it("chained", () => {
+				const t = type({
+					"[string]": "number",
+					foo: "0"
+				}).merge({
+					"[string]": "0"
+				})
 
 				const expected = type({
 					"[string]": "0",
@@ -652,24 +649,17 @@ tags[2] must be a string (was object)`)
 				attest(t.expression).equals(expected.expression)
 			})
 
-			it("chained", () => {
-				const t = ark.merge(
-					{
-						"[string]": "number",
+			it("non-object operand", () => {
+				attest(() =>
+					type({
 						foo: "0"
-					},
-					{
-						"[string]": "0"
-					}
+						// @ts-expect-error
+					}).merge("string")
 				)
-
-				const expected = type({
-					"[string]": "0",
-					foo: "0"
-				})
-
-				attest<typeof expected.t>(t.t)
-				attest(t.expression).equals(expected.expression)
+					.throws.snap("zzz")
+					.type.errors(
+						`ErrorType<"Merged type must be an object", [actual: string]>)`
+					)
 			})
 		})
 	})
