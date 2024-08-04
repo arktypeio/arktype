@@ -664,7 +664,7 @@ tags[2] must be a string (was object)`)
 						// @ts-expect-error
 					}).merge("string")
 				)
-					.throws.snap("zzz")
+					.throws(writeNonStructuralOperandMessage("merge", "string"))
 					.type.errors(
 						`ErrorType<"Merged type must be an object", [actual: string]>)`
 					)
