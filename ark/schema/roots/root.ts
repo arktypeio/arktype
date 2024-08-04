@@ -83,19 +83,7 @@ export abstract class BaseRoot<
 		return reduceMapped?.(mappedBranches) ?? (mappedBranches as never)
 	}
 
-	abstract rawKeyOf(): BaseRoot
 	abstract get shortDescription(): string
-
-	@cached
-	keyof(): BaseRoot {
-		const result = this.rawKeyOf()
-		if (result.branches.length === 0) {
-			throwParseError(
-				`keyof ${this.expression} results in an unsatisfiable type`
-			)
-		}
-		return result
-	}
 
 	intersect(r: unknown): BaseRoot | Disjoint {
 		const rNode = this.$.parseRoot(r)
@@ -127,19 +115,36 @@ export abstract class BaseRoot<
 	}
 
 	pick(...keys: KeyOrKeyNode[]): BaseRoot {
-		return this.applyStructuralOperation("pick", keys)
+		return this.$.rootNode(this.applyStructuralOperation("pick", keys))
 	}
 
 	omit(...keys: KeyOrKeyNode[]): BaseRoot {
-		return this.applyStructuralOperation("omit", keys)
+		return this.$.rootNode(this.applyStructuralOperation("omit", keys))
 	}
 
+	@cached
 	required(): BaseRoot {
-		return this.applyStructuralOperation("required", [])
+		return this.$.rootNode(this.applyStructuralOperation("required", []))
 	}
 
+	@cached
 	partial(): BaseRoot {
-		return this.applyStructuralOperation("partial", [])
+		return this.$.rootNode(this.applyStructuralOperation("partial", []))
+	}
+
+	@cached
+	keyof(): BaseRoot {
+		const result = this.applyStructuralOperation("keyof", []).reduce(
+			(result, branch) => result.and(branch.keyof()),
+			$ark.intrinsic.unknown.internal
+		)
+
+		if (result.branches.length === 0) {
+			throwParseError(
+				`keyof ${this.expression} results in an unsatisfiable type`
+			)
+		}
+		return result
 	}
 
 	merge(r: unknown): BaseRoot {
@@ -157,8 +162,17 @@ export abstract class BaseRoot<
 	}
 
 	private applyStructuralOperation<
-		operation extends "pick" | "omit" | "required" | "partial" | "merge"
-	>(operation: operation, args: Parameters<BaseRoot[operation]>): BaseRoot {
+		operation extends
+			| "pick"
+			| "omit"
+			| "required"
+			| "partial"
+			| "merge"
+			| "keyof"
+	>(
+		operation: operation,
+		args: Parameters<BaseRoot[operation]>
+	): UnionChildNode[] {
 		return this.distribute(branch => {
 			if (branch.equals($ark.intrinsic.object) && operation !== "merge")
 				// ideally this wouldn't be a special case, but for now it
@@ -175,6 +189,8 @@ export abstract class BaseRoot<
 				)
 			}
 
+			if (operation === "keyof") return structure.keyof()
+
 			const structuralMethodName: keyof StructureNode =
 				operation === "required" ? "require"
 				: operation === "partial" ? "optionalize"
@@ -184,7 +200,7 @@ export abstract class BaseRoot<
 				...branch.inner,
 				structure: structure[structuralMethodName](...(args as [never]))
 			})
-		}, this.$.rootNode)
+		})
 	}
 
 	get(...path: GettableKeyOrNode[]): BaseRoot {

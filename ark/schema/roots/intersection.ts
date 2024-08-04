@@ -1,5 +1,4 @@
 import {
-	$ark,
 	flatMorph,
 	hasDomain,
 	isEmptyObject,
@@ -177,16 +176,6 @@ export class IntersectionNode extends BaseRoot<IntersectionDeclaration> {
 			}
 			js.check(this.predicate.at(-1)!)
 		}
-	}
-
-	rawKeyOf(): BaseRoot {
-		return (
-			this.basis ?
-				this.structure ?
-					this.basis.rawKeyOf().or(this.structure.keyof())
-				:	this.basis.rawKeyOf()
-			:	(this.structure?.keyof() ?? $ark.intrinsic.never.internal)
-		)
 	}
 }
 

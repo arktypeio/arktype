@@ -171,10 +171,6 @@ export class MorphNode extends BaseRoot<MorphDeclaration> {
 		:	undefined
 
 	expression = `(In: ${this.in.expression}) => Out<${this.out.expression}>`
-
-	rawKeyOf(): BaseRoot {
-		return this.in.rawKeyOf()
-	}
 }
 
 export const writeMorphIntersectionMessage = (

@@ -43,12 +43,9 @@ export type validateAst<ast, $, args> =
 		: operator extends Comparator ? validateRange<l, operator, r, $, args>
 		: operator extends "%" ? validateDivisor<l, $, args>
 		: undefined
-	: ast extends (
-		readonly [infer baseAst, "=", infer unitLiteral extends UnitLiteral]
-	) ?
+	: ast extends [infer baseAst, "=", infer unitLiteral extends UnitLiteral] ?
 		validateDefault<baseAst, unitLiteral, $, args>
-	: ast extends readonly ["keyof", infer operand] ?
-		["keyof", validateKeyof<operand, $, args>]
+	: ast extends ["keyof", infer operand] ? validateKeyof<operand, $, args>
 	: ast extends GenericInstantiationAst<infer g, infer argAsts> ?
 		validateGenericArgs<g["paramsAst"], argAsts, $, args, []>
 	:	ErrorMessage<writeUnexpectedExpressionMessage<astToString<ast>>> & {

@@ -1,5 +1,4 @@
 import {
-	$ark,
 	appendUnique,
 	arrayEquals,
 	cached,
@@ -312,13 +311,6 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 			)
 			js.return(false)
 		}
-	}
-
-	rawKeyOf(): BaseRoot {
-		return this.branches.reduce(
-			(result, branch) => result.and(branch.rawKeyOf()),
-			$ark.intrinsic.unknown.internal
-		)
 	}
 
 	get nestableExpression(): string {
