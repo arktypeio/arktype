@@ -613,19 +613,23 @@ tags[2] must be a string (was object)`)
 			})
 
 			it("invoked", () => {
+				const s = Symbol()
 				const t = ark.merge(
 					{
-						"[string]": "number",
-						foo: "0"
+						"[string]": "number | bigint",
+						foo: "0",
+						[s]: "true"
 					},
 					{
-						"[string]": "0"
+						"[string]": "bigint",
+						"foo?": "1n"
 					}
 				)
 
 				const expected = type({
-					"[string]": "0",
-					foo: "0"
+					"[string]": "bigint",
+					"foo?": "1n",
+					[s]: "true"
 				})
 
 				attest<typeof expected.t>(t.t)
@@ -635,14 +639,18 @@ tags[2] must be a string (was object)`)
 			it("chained", () => {
 				const t = type({
 					"[string]": "number",
+					"bar?": "0",
 					foo: "0"
 				}).merge({
-					"[string]": "0"
+					"foo?": "1",
+					baz: "1"
 				})
 
 				const expected = type({
-					"[string]": "0",
-					foo: "0"
+					"[string]": "number",
+					"bar?": "0",
+					"foo?": "1",
+					baz: "1"
 				})
 
 				attest<typeof expected.t>(t.t)
