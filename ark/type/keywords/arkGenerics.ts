@@ -1,8 +1,8 @@
 import { GenericHkt, genericNode } from "@ark/schema"
 import { liftArray, type conform, type merge } from "@ark/util"
 import type { Out } from "../ast.js"
-import type { exportScope, Module } from "../module.js"
-import { scope } from "../scope.js"
+import type { Module } from "../module.js"
+import { scope, type inferScope } from "../scope.js"
 import { tsKeywords } from "./tsKeywords.js"
 
 const ArkLiftArray = genericNode("element")(
@@ -33,7 +33,7 @@ const arkGenericsExports = {
 	merge: ArkMerge
 }
 
-export type arkGenericsExports = exportScope<typeof arkGenericsExports>
+export type arkGenericsExports = inferScope<typeof arkGenericsExports>
 
 export type arkGenerics = Module<arkGenericsExports>
 

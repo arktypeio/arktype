@@ -1,4 +1,4 @@
-import type { merge, show } from "@ark/util"
+import type { show } from "@ark/util"
 import type { Node, reducibleKindOf } from "../kinds.js"
 import type { Disjoint } from "./disjoint.js"
 import type { NarrowedAttachments, NodeKind } from "./implement.js"
@@ -34,17 +34,20 @@ export type declareNode<
 		[k in keyof d]: k extends keyof DeclarationInput ? DeclarationInput[k]
 		:	never
 	} & DeclarationInput
-> = merge<
-	{
-		intersectionIsOpen: false
-		prerequisite: prerequisiteOf<d>
-		childKind: never
-		reducibleTo: d["kind"]
-	},
-	d & {
-		errorContext: d["errorContext"] extends {} ? BaseErrorContext<d["kind"]>
-		:	null
-	}
+> = show<
+	Omit<
+		{
+			intersectionIsOpen: false
+			prerequisite: prerequisiteOf<d>
+			childKind: never
+			reducibleTo: d["kind"]
+		},
+		keyof d
+	> &
+		d & {
+			errorContext: d["errorContext"] extends {} ? BaseErrorContext<d["kind"]>
+			:	null
+		}
 >
 
 type prerequisiteOf<d extends DeclarationInput> =

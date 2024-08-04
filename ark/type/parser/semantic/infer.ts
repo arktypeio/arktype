@@ -15,7 +15,6 @@ import type {
 } from "../../ast.js"
 import type { inferIntersection } from "../../intersect.js"
 import type {
-	Scope,
 	UnparsedScope,
 	resolve,
 	tryInferSubmoduleReference
@@ -44,9 +43,8 @@ type resolveScope<g$, $> =
 	// If the generic was defined in the current scope, its definition can be
 	// resolved using the same scope as that of the input args.
 	g$ extends UnparsedScope ? $
-	: // Otherwise, use the scope that was explicitly bound to it.
-	g$ extends Scope<infer bound> ? bound
-	: never
+	:	// Otherwise, use the scope that was explicitly bound to it.
+		g$
 
 export type inferExpression<ast extends array, $, args> =
 	ast extends GenericInstantiationAst<infer g, infer argAsts> ?

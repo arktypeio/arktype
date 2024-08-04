@@ -131,9 +131,17 @@ export type optionalKeyOf<o> = Exclude<keyof o, requiredKeyOf<o>>
 export type merge<base, props> =
 	base extends unknown ?
 		props extends unknown ?
-			show<omit<base, keyof base & keyof props> & props>
+			show<omitMerged<base, props> & props>
 		:	props
 	:	never
+
+type omitMerged<base, props> = {
+	[k in keyof base as excludeExactKeyOf<k, props>]: base[k]
+}
+
+type excludeExactKeyOf<key extends PropertyKey, o> = {
+	[k in keyof o]: [key, k] extends [k, key] ? never : key
+}[keyof o]
 
 export type override<
 	base,

@@ -44,7 +44,6 @@ import {
 import type { Ark } from "./ark.js"
 import {
 	parseGenericParams,
-	type Generic,
 	type GenericDeclaration,
 	type GenericHktParser,
 	type ParameterString,
@@ -122,9 +121,13 @@ type bootstrapAliases<def> = {
 	[k in Exclude<keyof def, GenericDeclaration>]: def[k] extends (
 		PreparsedResolution
 	) ?
-		def[k]
+		def[k] extends { t: infer g extends GenericAst } ?
+			g
+		:	def[k]
 	: def[k] extends (() => infer thunkReturn extends PreparsedResolution) ?
-		thunkReturn
+		thunkReturn extends { t: infer g extends GenericAst } ?
+			g
+		:	thunkReturn
 	:	Def<def[k]>
 } & {
 	[k in keyof def & GenericDeclaration as extractGenericName<k>]: GenericAst<
@@ -137,9 +140,9 @@ type bootstrapAliases<def> = {
 type inferBootstrapped<$> = {
 	[name in keyof $]: $[name] extends Def<infer def> ?
 		inferDefinition<def, $, {}>
-	: $[name] extends GenericAst<infer params, infer def, infer body$> ?
+	: $[name] extends { t: GenericAst<infer params, infer def, infer body$> } ?
 		// add the scope in which the generic was defined here
-		Generic<params, def, body$, $>
+		GenericAst<params, def, body$ extends UnparsedScope ? $ : body$, $>
 	: // should be submodule
 	$[name] extends Module<infer exports> ? Submodule<exports>
 	: never

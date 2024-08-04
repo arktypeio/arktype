@@ -53,22 +53,22 @@ export interface GenericAst<
 	$ = unknown,
 	arg$ = $
 > {
+	[arkKind]: "generic"
 	paramsAst: params
 	bodyDef: bodyDef
 	$: $
 	arg$: arg$
 	names: genericParamNames<params>
+	t: this
 }
 
 export class GenericRoot<
-		params extends array<GenericParamAst> = array<GenericParamAst>,
-		bodyDef = unknown
-	>
-	extends Callable<(...args: { [i in keyof params]: BaseRoot }) => BaseRoot>
-	implements GenericAst<params, bodyDef, BaseScope, BaseScope>
-{
+	params extends array<GenericParamAst> = array<GenericParamAst>,
+	bodyDef = unknown
+> extends Callable<(...args: { [i in keyof params]: BaseRoot }) => BaseRoot> {
 	readonly [arkKind] = "generic"
 	declare readonly paramsAst: params
+	declare readonly t: GenericAst<params, bodyDef, {}, {}>
 
 	constructor(
 		public paramDefs: array<GenericParamDef>,

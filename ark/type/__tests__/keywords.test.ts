@@ -588,5 +588,89 @@ tags[2] must be a string (was object)`)
 				ark.liftArray({ data: "number" })
 			})
 		})
+
+		describe("merged", () => {
+			it("parsed", () => {
+				const types = scope({
+					base: {
+						"foo?": "0",
+						"bar?": "0"
+					},
+					merged: {
+						bar: "1",
+						"baz?": "1"
+					},
+					actual: "merge<base, merged>",
+					expected: {
+						"foo?": "0",
+						bar: "1",
+						"baz?": "1"
+					}
+				}).export()
+
+				attest<typeof types.expected.t>(types.actual.t)
+				attest(types.actual.expression).equals(types.expected.expression)
+			})
+
+			it("invoked", () => {
+				const t = ark.merge(
+					{
+						"[string]": "number",
+						foo: "0"
+					},
+					{
+						"[string]": "0"
+					}
+				)
+
+				const expected = type({
+					"[string]": "0",
+					foo: "0"
+				})
+
+				attest<typeof expected.t>(t.t)
+				attest(t.expression).equals(expected.expression)
+			})
+
+			it("invoked", () => {
+				const t = ark.merge(
+					{
+						"[string]": "number",
+						foo: "0"
+					},
+					{
+						"[string]": "0"
+					}
+				)
+
+				const expected = type({
+					"[string]": "0",
+					foo: "0"
+				})
+
+				attest<typeof expected.t>(t.t)
+				attest(t.expression).equals(expected.expression)
+			})
+
+			it("chained", () => {
+				const t = ark.merge(
+					{
+						"[string]": "number",
+						foo: "0"
+					},
+					{
+						"[string]": "0"
+					}
+				)
+
+				const expected = type({
+					"[string]": "0",
+					foo: "0"
+				})
+
+				attest<typeof expected.t>(t.t)
+				attest(t.expression).equals(expected.expression)
+			})
+		})
 	})
 })

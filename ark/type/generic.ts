@@ -235,11 +235,18 @@ export interface Generic<
 	bodyDef = unknown,
 	$ = {},
 	arg$ = $
-> extends Callable<GenericInstantiator<params, bodyDef, $, arg$>>,
-		GenericAst<params, bodyDef, Scope<$>, Scope<arg$>> {
+> extends Callable<GenericInstantiator<params, bodyDef, $, arg$>> {
 	[arkKind]: "generic"
+	t: GenericAst<params, bodyDef, $, arg$>
 
+	bodyDef: bodyDef
+	params: { [i in keyof params]: [params[i][0], Type<params[i][1], $>] }
 	names: genericParamNames<params>
+	constraints: { [i in keyof params]: Type<params[i][1], $> }
+
+	$: Scope<$>
+	arg$: Scope<arg$>
+
 	internal: GenericRoot
 }
 
