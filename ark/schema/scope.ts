@@ -81,7 +81,7 @@ export type toInternalScope<$> = BaseScope<{
 	:	BaseRoot
 }>
 
-type CachedResolution = string | InternalResolution
+type CachedResolution = string | BaseRoot | GenericRoot
 
 const schemaBranchesOf = (schema: object) =>
 	isArray(schema) ? schema
@@ -308,16 +308,9 @@ export abstract class BaseScope<$ extends {} = {}> {
 	}
 
 	maybeResolveRoot(name: string): BaseRoot | undefined {
-		const result = this.maybeResolveGenericOrRoot(name)
+		const result = this.maybeResolve(name)
 		if (hasArkKind(result, "generic")) return
 		return result
-	}
-
-	maybeResolveGenericOrRoot(name: string): BaseRoot | GenericRoot | undefined {
-		const resolution = this.maybeResolve(name)
-		if (hasArkKind(resolution, "module"))
-			return throwParseError(writeMissingSubmoduleAccessMessage(name))
-		return resolution
 	}
 
 	preparseRoot(def: unknown): unknown {
@@ -328,11 +321,12 @@ export abstract class BaseScope<$ extends {} = {}> {
 		return [k, v]
 	}
 
-	maybeResolve(name: string): InternalResolution | undefined {
+	maybeResolve(name: string): Exclude<CachedResolution, string> | undefined {
 		const resolution = this.maybeShallowResolve(name)
+
 		return typeof resolution === "string" ?
 				this.node("alias", { alias: resolution }, { prereduced: true })
-			:	resolution
+			:	(resolution ?? maybeResolveSubalias(this.aliases, name))
 	}
 
 	get ambient(): InternalModule {
@@ -351,7 +345,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			return (this.resolutions[name] = preparsed.bindScope(this))
 
 		if (hasArkKind(preparsed, "module"))
-			return (this.resolutions[name] = bindModule(preparsed, this))
+			return throwParseError(writeMissingSubmoduleAccessMessage(name))
 
 		this.resolutions[name] = name
 		return (this.resolutions[name] = this.parseRoot(preparsed, {
@@ -385,8 +379,11 @@ export abstract class BaseScope<$ extends {} = {}> {
 		if (!this._exports) {
 			this._exports = {}
 			for (const name of this.exportedNames) {
-				const resolution = this.maybeResolve(name)
-				if (hasArkKind(resolution, "root")) {
+				const def = this.aliases[name]
+				if (hasArkKind(def, "module"))
+					this._exports[name] = bindModule(def, this)
+				else {
+					const resolution = this.maybeResolve(name)!
 					resolution.references
 						.filter(node => node.hasKind("alias"))
 						.forEach(aliasNode => {
@@ -399,8 +396,8 @@ export abstract class BaseScope<$ extends {} = {}> {
 									Object.assign(ref.referencesById, aliasNode.referencesById)
 							})
 						})
+					this._exports[name] = resolution as never
 				}
-				this._exports[name] = resolution as never
 			}
 
 			this.lazyResolutions.forEach(node => node.resolution)
@@ -469,13 +466,15 @@ const maybeResolveSubalias = (
 
 	const subalias = name.slice(dotIndex + 1)
 	const resolution = prefixSchema[subalias]
-	if (resolution === undefined) return
 
-	if (hasArkKind(resolution, "module"))
-		return maybeResolveSubalias(resolution, subalias)
+	if (resolution === undefined)
+		return maybeResolveSubalias(prefixSchema, subalias)
 
 	if (hasArkKind(resolution, "root") || hasArkKind(resolution, "generic"))
 		return resolution
+
+	if (hasArkKind(resolution, "module"))
+		return throwParseError(writeMissingSubmoduleAccessMessage(name))
 
 	throwInternalError(
 		`Unexpected resolution for alias '${name}': ${printable(resolution)}`
@@ -559,8 +558,7 @@ const resolutionsOfModule = ($: BaseScope, typeSet: RootExportCache) => {
 				(innerK, innerV) => [`${k}.${innerK}`, innerV]
 			)
 			Object.assign(result, prefixedResolutions)
-		} else if (hasArkKind(v, "generic")) result[k] = v
-		else if (hasArkKind(v, "root")) result[k] = v
+		} else if (hasArkKind(v, "root") || hasArkKind(v, "generic")) result[k] = v
 		else throwInternalError(`Unexpected scope resolution ${printable(v)}`)
 	}
 	return result
