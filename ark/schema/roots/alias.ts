@@ -77,7 +77,7 @@ const implementation: nodeImplementationOf<Alias.Declaration> =
 		}
 	})
 
-class AliasNode extends BaseRoot<Alias.Declaration> {
+export class AliasNode extends BaseRoot<Alias.Declaration> {
 	readonly expression: string = this.alias
 	readonly structure = undefined
 

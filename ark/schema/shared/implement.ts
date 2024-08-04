@@ -25,7 +25,7 @@ import type {
 	schemaKindRightOf
 } from "../roots/root.js"
 import type { BaseScope } from "../scope.js"
-import type { StructureInner } from "../structure/structure.js"
+import type { Structure } from "../structure/structure.js"
 import { compileSerializedValue } from "./compile.js"
 import type {
 	BaseErrorContext,
@@ -117,7 +117,7 @@ export const constraintKeys: keySet<ConstraintKind> = flatMorph(
 	(i, kind) => [kind, 1] as const
 )
 
-export const structureKeys: keySetOf<StructureInner> = flatMorph(
+export const structureKeys: keySetOf<Structure.Inner> = flatMorph(
 	[...structuralKinds, "undeclared"],
 	(i, k) => [k, 1] as const
 )

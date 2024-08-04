@@ -49,7 +49,7 @@ const implementation: nodeImplementationOf<Optional.Declaration> =
 		}
 	})
 
-class OptionalNode extends BaseProp<"optional"> {
+export class OptionalNode extends BaseProp<"optional"> {
 	expression = `${this.compiledKey}?: ${this.value.expression}`
 }
 

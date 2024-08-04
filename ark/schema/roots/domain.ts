@@ -19,6 +19,8 @@ import {
 import type { TraverseAllows } from "../shared/traversal.js"
 import { InternalBasis } from "./basis.js"
 
+export type { Domain } from "@ark/util"
+
 export namespace Domain {
 	export interface Inner<
 		domain extends NonEnumerableDomain = NonEnumerableDomain
@@ -68,7 +70,7 @@ const implementation: nodeImplementationOf<Domain.Declaration> =
 		}
 	})
 
-class DomainNode extends InternalBasis<Domain.Declaration> {
+export class DomainNode extends InternalBasis<Domain.Declaration> {
 	traverseAllows: TraverseAllows = data => domainOf(data) === this.domain
 
 	readonly compiledCondition: string =

@@ -2,11 +2,11 @@ import {
 	ArkErrors,
 	normalizeIndex,
 	type BaseRoot,
-	type IndexNode,
+	type Index,
 	type NodeSchema,
-	type OptionalNode,
-	type RequiredNode,
-	type StructureNode,
+	type Optional,
+	type Required,
+	type Structure,
 	type UndeclaredKeyBehavior,
 	type writeInvalidPropertyKeyMessage
 } from "@ark/schema"
@@ -38,7 +38,7 @@ import type { validateString } from "./semantic/validate.js"
 import type { ParsedDefault } from "./string/shift/operator/default.js"
 
 export const parseObjectLiteral = (def: Dict, ctx: ParseContext): BaseRoot => {
-	let spread: StructureNode | undefined
+	let spread: Structure.Node | undefined
 	const structure: mutable<NodeSchema<"structure">, 2> = {}
 	// We only allow a spread operator to be used as the first key in an object
 	// because to match JS behavior any keys before the spread are overwritten
@@ -197,9 +197,9 @@ export type IndexKey<def extends string = string> = `[${def}]`
 export type ParsedEntry =
 	| ParsedUndeclaredEntry
 	| ParsedSpreadEntry
-	| RequiredNode
-	| OptionalNode
-	| IndexNode
+	| Required.Node
+	| Optional.Node
+	| Index.Node
 
 export type ParsedUndeclaredEntry = {
 	kind: "undeclared"

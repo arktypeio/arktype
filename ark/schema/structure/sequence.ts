@@ -238,7 +238,7 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 		}
 	})
 
-class SequenceNode extends BaseConstraint<Sequence.Declaration> {
+export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 	impliedBasis: BaseRoot = $ark.intrinsic.Array.internal
 	prefix: array<BaseRoot> = this.inner.prefix ?? []
 	optionals: array<BaseRoot> = this.inner.optionals ?? []

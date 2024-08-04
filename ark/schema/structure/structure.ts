@@ -227,7 +227,7 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 		}
 	})
 
-class StructureNode extends BaseConstraint<Structure.Declaration> {
+export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	impliedBasis: BaseRoot = $ark.intrinsic.object.internal
 	impliedSiblings = this.children.flatMap(
 		n => (n.impliedSiblings as BaseConstraint[]) ?? []

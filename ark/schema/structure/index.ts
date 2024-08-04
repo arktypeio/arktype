@@ -114,7 +114,7 @@ const implementation: nodeImplementationOf<Index.Declaration> =
 		}
 	})
 
-class IndexNode extends BaseConstraint<Index.Declaration> {
+export class IndexNode extends BaseConstraint<Index.Declaration> {
 	impliedBasis: BaseRoot = $ark.intrinsic.object.internal
 	expression = `[${this.signature.expression}]: ${this.value.expression}`
 

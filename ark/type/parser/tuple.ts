@@ -6,7 +6,7 @@ import {
 	type mutableInnerOfKind,
 	type nodeOfKind,
 	type Predicate,
-	type UnionChildKind
+	type Union
 } from "@ark/schema"
 import {
 	$ark,
@@ -135,7 +135,7 @@ const appendElement = (
 
 const appendSpreadBranch = (
 	base: mutableInnerOfKind<"sequence">,
-	branch: nodeOfKind<UnionChildKind>
+	branch: nodeOfKind<Union.ChildKind>
 ): mutableInnerOfKind<"sequence"> => {
 	const spread = branch.firstReferenceOfKind("sequence")
 	if (!spread) {

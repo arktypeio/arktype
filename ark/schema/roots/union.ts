@@ -10,7 +10,6 @@ import {
 	printable,
 	throwInternalError,
 	throwParseError,
-	type Domain,
 	type Json,
 	type Key,
 	type SerializedPrimitive,
@@ -39,6 +38,7 @@ import { intersectNodes, intersectNodesRoot } from "../shared/intersections.js"
 import { registeredReference } from "../shared/registry.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 import { hasArkKind, pathToPropString } from "../shared/utils.js"
+import type { Domain } from "./domain.js"
 import type { Morph } from "./morph.js"
 import { BaseRoot, type schemaKindRightOf } from "./root.js"
 import type { Unit } from "./unit.js"
@@ -205,7 +205,7 @@ const implementation: nodeImplementationOf<Union.Declaration> =
 		}
 	})
 
-class UnionNode extends BaseRoot<Union.Declaration> {
+export class UnionNode extends BaseRoot<Union.Declaration> {
 	isBoolean: boolean =
 		this.branches.length === 2 &&
 		this.branches[0].hasUnit(false) &&
@@ -353,8 +353,8 @@ class UnionNode extends BaseRoot<Union.Declaration> {
 					let lSerialized: string
 					let rSerialized: string
 					if (entry.kind === "domain") {
-						lSerialized = `"${(entry.l as DomainNode).domain}"`
-						rSerialized = `"${(entry.r as DomainNode).domain}"`
+						lSerialized = `"${(entry.l as Domain.Node).domain}"`
+						rSerialized = `"${(entry.r as Domain.Node).domain}"`
 					} else if (entry.kind === "unit") {
 						lSerialized = (entry.l as Unit.Node).serializedValue as never
 						rSerialized = (entry.r as Unit.Node).serializedValue as never

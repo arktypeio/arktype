@@ -122,7 +122,7 @@ const implementation: nodeImplementationOf<Morph.Declaration> =
 		}
 	})
 
-class MorphNode extends BaseRoot<Morph.Declaration> {
+export class MorphNode extends BaseRoot<Morph.Declaration> {
 	serializedMorphs: string[] = this.morphs.map(registeredReference)
 	compiledMorphs = `[${this.serializedMorphs}]`
 	structure = this.in.structure

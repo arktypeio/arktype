@@ -2,7 +2,7 @@ import { $ark, isArray, throwParseError, type Key } from "@ark/util"
 import type { nodeOfKind } from "../kinds.js"
 import type { BaseNode } from "../node.js"
 import type { BaseRoot } from "../roots/root.js"
-import type { PropKind } from "../structure/prop.js"
+import type { Prop } from "../structure/prop.js"
 import type { BoundKind } from "./implement.js"
 import { isNode, pathToPropString } from "./utils.js"
 
@@ -88,7 +88,7 @@ export class Disjoint extends Array<DisjointEntry> {
 		})) as Disjoint
 	}
 
-	withPrefixKey(key: string | symbol, kind: PropKind): Disjoint {
+	withPrefixKey(key: string | symbol, kind: Prop.Kind): Disjoint {
 		return this.map(entry => ({
 			...entry,
 			path: [key, ...entry.path],

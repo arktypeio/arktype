@@ -94,7 +94,7 @@ const implementation: nodeImplementationOf<Proto.Declaration> =
 		}
 	})
 
-class ProtoNode extends InternalBasis<Proto.Declaration> {
+export class ProtoNode extends InternalBasis<Proto.Declaration> {
 	builtinName: BuiltinObjectKind | null = getExactBuiltinConstructorName(
 		this.proto
 	)

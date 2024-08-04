@@ -241,7 +241,7 @@ const implementation: nodeImplementationOf<Intersection.Declaration> =
 		}
 	})
 
-class IntersectionNode extends BaseRoot<Intersection.Declaration> {
+export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 	basis: nodeOfKind<Intersection.BasisKind> | null =
 		this.domain ?? this.proto ?? null
 

@@ -52,7 +52,7 @@ const implementation: nodeImplementationOf<Required.Declaration> =
 		}
 	})
 
-class RequiredNode extends BaseProp<"required"> {
+export class RequiredNode extends BaseProp<"required"> {
 	expression = `${this.compiledKey}: ${this.value.expression}`
 
 	errorContext: ArkErrorContextInput<"required"> = Object.freeze({

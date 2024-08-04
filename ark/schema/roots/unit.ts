@@ -77,7 +77,7 @@ const implementation: nodeImplementationOf<Unit.Declaration> =
 		}
 	})
 
-class UnitNode extends InternalBasis<Unit.Declaration> {
+export class UnitNode extends InternalBasis<Unit.Declaration> {
 	compiledValue: JsonPrimitive = (this.json as any).unit
 	serializedValue: JsonPrimitive =
 		typeof this.unit === "string" || this.unit instanceof Date ?
