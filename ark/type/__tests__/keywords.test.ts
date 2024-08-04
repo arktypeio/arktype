@@ -319,6 +319,13 @@ tags[2] must be a string (was object)`)
 			attest(wellFormed("ab\uD800c")).equals("ab�c")
 			attest(wellFormed(5).toString()).snap("must be a string (was number)")
 		})
+		it("normalize", () => {
+			const normalize = type("format.normalize")
+			attest(normalize("\u00F1")).equals("ñ")
+			attest(normalize("\u006E\u0303")).equals("ñ")
+			attest(normalize("\u00F1")).equals(normalize("\u006E\u0303"))
+			attest(normalize(5).toString()).snap("must be a string (was number)")
+		})
 	})
 
 	describe("generics", () => {
