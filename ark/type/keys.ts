@@ -8,15 +8,15 @@ import type {
 import type { type } from "./ark.js"
 import type { termOrType } from "./ast.js"
 
-export type toArkKey<o, k extends keyof o> =
+export type normalizeKey<o, k extends keyof o> =
 	k extends number ?
 		[o, number] extends [array, k] ?
 			NonNegativeIntegerLiteral
 		:	`${k}`
 	:	k
 
-export type arkKeyOf<o> =
-	o extends array ?
+export type keyOf<o> =
+	[o] extends [array] ?
 		| (number extends o["length"] ? NonNegativeIntegerLiteral : never)
 		| {
 				[k in keyof o]-?: k extends `${infer index extends number}` ? index | k
@@ -26,10 +26,19 @@ export type arkKeyOf<o> =
 			[k in keyof o]: k extends number ? k | `${k}` : k
 		}[keyof o]
 
-export type getArkKey<o, k extends arkKeyOf<o>> = o[Extract<
+export type getKey<o, k extends keyOf<o>> = o[Extract<
 	k extends NonNegativeIntegerLiteral ? number : k,
 	keyof o
 >]
+
+export type getPath<o, path extends array<PropertyKey>> = _getPath<o, path>
+
+type _getPath<o, path extends array> =
+	path extends readonly [infer k, ...infer tail] ?
+		k extends keyOf<o> ?
+			_getPath<getKey<o, k>, tail>
+		:	undefined
+	:	o
 
 export type TypeKey = termOrType<Key>
 
