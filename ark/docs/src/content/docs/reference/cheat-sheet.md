@@ -35,7 +35,7 @@ export const currentTsSyntax = type({
 // available syntax new to 2.0
 
 export const upcomingTsSyntax = type({
-	keyof: "keyof bigint",
+	keyof: "keyof object",
 	variadicTuples: ["true", "...", "false[]"],
 	arrayOfObjectLiteral: type({ name: "string" }).array()
 })
