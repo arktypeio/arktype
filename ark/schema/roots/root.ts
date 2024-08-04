@@ -350,12 +350,13 @@ export abstract class BaseRoot<
 	}
 
 	private _constrain(
-		io: "in" | "out",
+		io: "root" | "in" | "out",
 		kind: PrimitiveConstraintKind,
 		schema: any
 	): BaseRoot {
 		const constraint = this.$.node(kind, schema)
-		if (constraint.impliedBasis && !this[io].extends(constraint.impliedBasis)) {
+		const operand = io === "root" ? this : this[io]
+		if (constraint.impliedBasis && !operand.extends(constraint.impliedBasis)) {
 			return throwInvalidOperandError(
 				kind,
 				constraint.impliedBasis as never,
@@ -368,9 +369,9 @@ export abstract class BaseRoot<
 		})
 
 		const result =
-			io === "in" ?
-				intersectNodesRoot(this, partialIntersection, this.$)
-			:	pipeNodesRoot(this, partialIntersection, this.$)
+			io === "out" ?
+				pipeNodesRoot(this, partialIntersection, this.$)
+			:	intersectNodesRoot(this, partialIntersection, this.$)
 
 		if (result instanceof Disjoint) result.throw()
 

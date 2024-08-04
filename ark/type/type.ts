@@ -148,7 +148,7 @@ export type inferAmbient<def> = inferTypeRoot<def, {}>
 export type Type<t = unknown, $ = {}> = instantiateType<t, $>
 
 export declare namespace Type {
-	export type Any<t = any> = Type<t, any>
+	export type Any<t = any> = BaseType<t, any>
 }
 
 export type TypeConstructor<t = unknown, $ = {}> = new (
