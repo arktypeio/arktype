@@ -175,7 +175,7 @@ type tryResolve<s extends StaticState, token extends string, $, args> =
 	: token extends (
 		`${infer submodule extends (keyof $ | keyof Ark) & string}.${infer reference}`
 	) ?
-		tryResolveSubmodule<token, submodule, reference, s, $ & Ark, args>
+		tryResolveSubmodule<token, submodule, reference, s, $ & Ark, [submodule]>
 	:	unresolvableError<s, token, $, args, []>
 
 type tryResolveSubmodule<
@@ -184,12 +184,22 @@ type tryResolveSubmodule<
 	reference extends string,
 	s extends StaticState,
 	$,
-	args
+	submodulePath extends string[]
 > =
 	$[submodule] extends { [arkKind]: "module" } ?
-		reference extends keyof $[submodule] ?
-			token
-		:	unresolvableError<s, reference, $[submodule], args, [submodule]>
+		reference extends keyof $[submodule] ? token
+		: reference extends (
+			`${infer nestedSubmodule extends keyof $[submodule] & string}.${infer nestedReference}`
+		) ?
+			tryResolveSubmodule<
+				token,
+				nestedSubmodule,
+				nestedReference,
+				s,
+				$[submodule],
+				[...submodulePath, nestedSubmodule]
+			>
+		:	unresolvableError<s, reference, $[submodule], {}, submodulePath>
 	:	ErrorMessage<writeNonSubmoduleDotMessage<submodule>>
 
 /** Provide valid completions for the current token, or fallback to an
@@ -221,7 +231,7 @@ type validReferenceFromToken<
 	args,
 	submodulePath extends string[]
 > = Extract<
-	submodulePath extends [] ? BaseCompletions<$, args>
+	submodulePath["length"] extends 0 ? BaseCompletions<$, args>
 	:	resolvableReferenceIn<$>,
 	`${token}${string}`
 >

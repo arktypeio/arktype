@@ -122,16 +122,16 @@ contextualize.each(
 			}).export()
 		}),
 	it => {
+		type Expected$ = {
+			outer: Submodule<{
+				inner: Submodule<{
+					alias: 1
+				}>
+			}>
+		}
+
 		it("export", $ => {
 			const types = $.export()
-
-			type Expected$ = {
-				outer: Submodule<{
-					inner: Submodule<{
-						alias: 1
-					}>
-				}>
-			}
 
 			attest<Module<Expected$>>(types)
 
@@ -161,21 +161,27 @@ contextualize.each(
 			})
 		})
 
-		// it("reference", $ => {
-		// 	const t = $.type(["outer.inner.alias"])
-		// 	attest<
-		// 		Type<
-		// 			[1],
-		// 			{
-		// 				outer: Module<{
-		// 					inner: Module<{
-		// 						alias: 1
-		// 					}>
-		// 				}>
-		// 			}
-		// 		>
-		// 	>(t)
-		// 	attest(t.expression).snap("[1]")
-		// })
+		it("reference", $ => {
+			const t = $.type(["outer.inner.alias"])
+			attest<Type<[1], Expected$>>(t)
+			attest(t.expression).snap("[1]")
+		})
+
+		it("completions", $ => {
+			attest(() =>
+				$.type({
+					// @ts-expect-error
+					a: "ou",
+					// @ts-expect-error
+					b: "outer.",
+					// @ts-expect-error
+					c: "outer.inner."
+				})
+			).completions({
+				ou: ["outer"],
+				"outer.": ["outer.inner"],
+				"outer.inner.": ["outer.inner.alias"]
+			})
+		})
 	}
 )
