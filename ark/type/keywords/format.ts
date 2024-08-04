@@ -23,11 +23,17 @@ const capitalize = rootNode({
 	morphs: (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 })
 
+const wellFormed = rootNode({
+	in: "string",
+	morphs: (s: string) => s.toWellFormed()
+})
+
 export type formattingExports = {
 	trim: (In: string) => Out<string>
 	uppercase: (In: string) => Out<string>
 	lowercase: (In: string) => Out<string>
 	capitalize: (In: string) => Out<string>
+	wellFormed: (In: string) => Out<string>
 }
 export type formatting = Module<formattingExports>
 
@@ -36,7 +42,8 @@ export const formatting: formatting = scope(
 		trim,
 		uppercase,
 		lowercase,
-		capitalize
+		capitalize,
+		wellFormed
 	},
 	{
 		prereducedAliases: true
