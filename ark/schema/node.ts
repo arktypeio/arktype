@@ -203,7 +203,6 @@ export abstract class BaseNode<
 		const ioInner: Record<any, unknown> = {}
 		for (const [k, v] of this.entries) {
 			const keySchemaImplementation = this.impl.keys[k]
-			if (keySchemaImplementation.meta) continue
 
 			if (keySchemaImplementation.child) {
 				const childValue = v as listable<BaseNode>

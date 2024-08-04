@@ -262,7 +262,6 @@ export type NodeKeyImplementation<
 > = requireKeys<
 	{
 		preserveUndefined?: true
-		meta?: true
 		child?: true
 		serialize?: (schema: instantiated) => JsonData
 		parse?: (

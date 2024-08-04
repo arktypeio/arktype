@@ -18,7 +18,7 @@ import { regexStringNode } from "./utils/regex.js"
 const url = rootNode({
 	domain: "string",
 	predicate: {
-		"meta.description": "a valid URL",
+		meta: "a valid URL",
 		predicate: (s: string) => {
 			try {
 				new URL(s)
@@ -53,11 +53,11 @@ const semver = regexStringNode(
 const creditCard = rootNode({
 	domain: "string",
 	pattern: {
-		"meta.description": "a valid credit card number",
+		meta: "a valid credit card number",
 		rule: creditCardMatcher.source
 	},
 	predicate: {
-		"meta.description": "a valid credit card number",
+		meta: "a valid credit card number",
 		predicate: isLuhnValid
 	}
 })

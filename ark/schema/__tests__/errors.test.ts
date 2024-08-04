@@ -44,7 +44,7 @@ contextualize(() => {
 	it("custom description integrated with error", () => {
 		const superSpecialBigint = rootNode({
 			domain: "bigint",
-			"meta.description": "my special bigint"
+			meta: "my special bigint"
 		})
 		attest(superSpecialBigint.description).snap("my special bigint")
 		attest(superSpecialBigint.traverse(5)?.toString()).snap(
@@ -54,7 +54,7 @@ contextualize(() => {
 
 	it("custom description on parent doesn't affect children", () => {
 		const evenNumber = rootNode({
-			"meta.description": "an even number",
+			meta: "an even number",
 			domain: "number",
 			divisor: 2
 		})

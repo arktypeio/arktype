@@ -6,7 +6,7 @@ contextualize(() => {
 	it("in/out", () => {
 		const parseNumber = rootNode({
 			in: {
-				"meta.description": "a well-formed numeric string",
+				meta: "a well-formed numeric string",
 				domain: "string",
 				pattern: wellFormedNumberMatcher
 			},
