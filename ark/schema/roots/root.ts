@@ -503,6 +503,7 @@ const structureOf = (branch: UnionChildNode): StructureNode | null => {
 }
 
 export type StructuralOperationName =
+	| "keyof"
 	| "pick"
 	| "omit"
 	| "get"
@@ -516,4 +517,10 @@ export const writeNonStructuralOperandMessage = <
 >(
 	operation: operation,
 	operand: operand
-): string => `${operation} operand must be an object (was ${operand})`
+): writeNonStructuralOperandMessage<operation, operand> =>
+	`${operation} operand must be an object (was ${operand})`
+
+export type writeNonStructuralOperandMessage<
+	operation extends StructuralOperationName,
+	operand extends string
+> = `${operation} operand must be an object (was ${operand})`

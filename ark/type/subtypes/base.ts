@@ -4,7 +4,6 @@ import type {
 	BaseRoot,
 	Disjoint,
 	Morph,
-	Predicate,
 	UndeclaredKeyBehavior
 } from "@ark/schema"
 import type { anyOrNever, Callable, ErrorMessage, Json, unset } from "@ark/util"
@@ -15,10 +14,7 @@ import type {
 	distillOut,
 	inferMorphOut,
 	inferPipes,
-	inferPredicate,
-	inferred,
-	MorphAst,
-	Out
+	inferred
 } from "../ast.js"
 import type { inferIntersection } from "../intersect.js"
 import type { Scope } from "../scope.js"
@@ -182,17 +178,6 @@ interface Type<out t = unknown, $ = {}>
 	): this is instantiateType<inferTypeRoot<def, $>, $>
 
 	overlaps<def>(r: validateTypeRoot<def, $>): boolean
-
-	satisfying<predicate extends Predicate<distillIn<t>>>(
-		predicate: predicate
-	): instantiateType<
-		t extends MorphAst ?
-			(In: inferPredicate<this["tIn"], predicate>) => Out<this["tOut"]>
-		:	inferPredicate<t, predicate>,
-		$
-	>
-
-	keyof(): instantiateType<keyof t, $>
 
 	// deprecate Function methods so they are deprioritized as suggestions
 

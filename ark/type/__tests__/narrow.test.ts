@@ -105,29 +105,6 @@ contextualize(() => {
 		)
 	})
 
-	it("satisfying narrows input type of morphs", () => {
-		const t = type("string")
-			.pipe(s => s.length)
-			.satisfying(s => s.length > 5)
-
-		const morphRef = t.internal.assertHasKind("morph").serializedMorphs[0]
-
-		const predicateRef =
-			t.internal.firstReferenceOfKindOrThrow("predicate").serializedPredicate
-
-		attest(t.json).snap({
-			in: { domain: "string", predicate: [predicateRef] },
-			morphs: [morphRef]
-		})
-
-		attest<(In: string.narrowed) => Out<number>>(t.t)
-
-		attest(t("123456")).snap(6)
-		attest(t("1234").toString()).snap(
-			'must be valid according to an anonymous predicate (was "1234")'
-		)
-	})
-
 	it("narrows the output type of a morph", () => {
 		const t = type("string")
 			.pipe(s => s.length)

@@ -29,6 +29,7 @@ import type {
 	InfixExpression,
 	PostfixExpression
 } from "./infer.js"
+import type { validateKeyof } from "./keyof.js"
 import type { astToString } from "./utils.js"
 
 export type validateAst<ast, $, args> =
@@ -47,7 +48,7 @@ export type validateAst<ast, $, args> =
 	) ?
 		validateDefault<baseAst, unitLiteral, $, args>
 	: ast extends readonly ["keyof", infer operand] ?
-		validateAst<operand, $, args>
+		["keyof", validateKeyof<operand, $, args>]
 	: ast extends GenericInstantiationAst<infer g, infer argAsts> ?
 		validateGenericArgs<g["paramsAst"], argAsts, $, args, []>
 	:	ErrorMessage<writeUnexpectedExpressionMessage<astToString<ast>>> & {

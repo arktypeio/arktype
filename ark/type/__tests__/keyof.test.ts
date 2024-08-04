@@ -1,5 +1,9 @@
 import { attest, contextualize } from "@ark/attest"
-import { rootNode, writeUnresolvableMessage } from "@ark/schema"
+import {
+	rootNode,
+	writeNonStructuralOperandMessage,
+	writeUnresolvableMessage
+} from "@ark/schema"
 import { type } from "arktype"
 import { writeMissingRightOperandMessage } from "../parser/string/shift/operand/unenclosed.js"
 
@@ -55,15 +59,16 @@ contextualize(() => {
 		attest(t.json).equals(type("'a'").json)
 	})
 
-	it("union including non-object", () => {
-		attest(() => type({ a: "number" }).or("boolean").keyof()).throws.snap(
-			'ParseError: Intersection of "a" and "toString" | "valueOf" results in an unsatisfiable type'
-		)
+	it("keyof non-object in union", () => {
+		// @ts-expect-error
+		attest(() => type({ a: "number" }).or("bigint").keyof())
+			.throws.snap(writeNonStructuralOperandMessage("keyof", "bigint"))
+			.type.errors("Property 'keyof' does not exist")
 	})
 
-	it("unsatisfiable", () => {
+	it("non-object", () => {
 		attest(() => type("keyof undefined")).throws.snap(
-			"ParseError: keyof undefined results in an unsatisfiable type"
+			writeNonStructuralOperandMessage("keyof", "undefined")
 		)
 	})
 

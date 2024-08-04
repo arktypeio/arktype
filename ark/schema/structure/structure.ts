@@ -232,9 +232,8 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 	}
 
 	merge(r: StructureNode): StructureNode {
-		const inner = makeRootAndArrayPropertiesMutable(
-			this.filterKeys("omit", [r.keyof()])
-		)
+		const inner = this.filterKeys("omit", [r.keyof()])
+
 		if (r.required) inner.required = append(inner.required, r.required)
 		if (r.optional) inner.optional = append(inner.optional, r.optional)
 		if (r.index) inner.index = append(inner.index, r.index)
@@ -247,8 +246,8 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 	private filterKeys(
 		operation: "pick" | "omit",
 		keys: array<BaseRoot | Key>
-	): StructureInner {
-		const result = { ...this.inner }
+	): MutableInner<"structure"> {
+		const result = makeRootAndArrayPropertiesMutable(this.inner)
 
 		const shouldKeep = (key: KeyOrKeyNode) => {
 			const matchesKey = keys.some(k => typeOrTermExtends(key, k))

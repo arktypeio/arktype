@@ -8,6 +8,8 @@ import type { ValidatorType } from "./validator.js"
 /** @ts-ignore cast variance */
 interface Type<out t extends object = object, $ = {}>
 	extends ValidatorType<t, $> {
+	keyof(): instantiateType<keyof t, $>
+
 	get<k1 extends arkKeyOf<t>, r = instantiateType<getArkKey<t, k1>, $>>(
 		k1: k1 | type.cast<k1>
 	): r
