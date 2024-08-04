@@ -192,7 +192,7 @@ export abstract class BaseRoot<
 			const structure = structureOf(branch)
 			if (!structure) {
 				throwParseError(
-					writeNonStructuralOperandMessage(operation, this.expression)
+					writeNonStructuralOperandMessage(operation, branch.expression)
 				)
 			}
 

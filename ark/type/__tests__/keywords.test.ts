@@ -683,7 +683,7 @@ tags[2] must be a string (was object)`)
 				)
 					.throws(writeNonStructuralOperandMessage("merge", "string"))
 					.type.errors(
-						`ErrorType<"Merged type must be an object", [actual: string]>)`
+						`ErrorType<"Merged type must be an object", [actual: string]>`
 					)
 			})
 		})

@@ -2,7 +2,8 @@ import { attest, contextualize } from "@ark/attest"
 import {
 	rootNode,
 	writeNonStructuralOperandMessage,
-	writeUnresolvableMessage
+	writeUnresolvableMessage,
+	writeUnsatisfiableExpressionError
 } from "@ark/schema"
 import { scope, type } from "arktype"
 import { writeMissingRightOperandMessage } from "../parser/string/shift/operand/unenclosed.js"
@@ -14,10 +15,10 @@ contextualize(() => {
 	})
 
 	it("root expression", () => {
-		const t = type("keyof", "Date")
-		attest<keyof Date>(t.infer)
-		const expected = rootNode(Date).keyof()
-		attest(t.json).equals(expected.json)
+		const t = type("keyof", { foo: "string" })
+		attest<"foo">(t.t)
+		const expected = type("===", "foo")
+		attest(t.expression).equals(expected.expression)
 	})
 
 	it("object literal", () => {
@@ -36,7 +37,7 @@ contextualize(() => {
 
 	it("non-overlapping union", () => {
 		attest(() => type({ a: "number" }).or({ b: "number" }).keyof()).throws(
-			'Intersection of "a" and "b" results in an unsatisfiable type'
+			writeUnsatisfiableExpressionError(`keyof { a: number } | { b: number }`)
 		)
 	})
 
@@ -49,7 +50,7 @@ contextualize(() => {
 	it("keyof non-object in union", () => {
 		// @ts-expect-error
 		attest(() => type({ a: "number" }).or("bigint").keyof())
-			.throws.snap(writeNonStructuralOperandMessage("keyof", "bigint"))
+			.throws(writeNonStructuralOperandMessage("keyof", "bigint"))
 			.type.errors("Property 'keyof' does not exist")
 	})
 
@@ -112,7 +113,7 @@ contextualize.each(
 		it("union precedence", $ => {
 			const t = $.type("keyof ab | bc")
 			attest<"a" | "b" | { b: 1; c?: 1 }>(t.t)
-			attest(t.expression).snap()
+			attest(t.expression).snap('{ b: 1, c?: 1 } | "a" | "b"')
 		})
 	}
 )
