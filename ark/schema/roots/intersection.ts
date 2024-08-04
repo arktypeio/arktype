@@ -89,7 +89,7 @@ export namespace Intersection {
 	export interface ErrorContext
 		extends BaseErrorContext<"intersection">,
 			Inner {
-		readonly errors: readonly ArkError[]
+		errors: readonly ArkError[]
 	}
 
 	export type Declaration = declareNode<{

@@ -1,5 +1,4 @@
 import { BaseConstraint } from "./constraint.js"
-import type { errorContext } from "./kinds.js"
 import type { NodeCompiler } from "./shared/compile.js"
 import type {
 	BaseErrorContext,
@@ -38,7 +37,6 @@ export namespace Predicate {
 	}
 
 	export interface ErrorContext extends BaseErrorContext<"predicate"> {
-		readonly description?: string
 		readonly predicate?: Predicate
 	}
 

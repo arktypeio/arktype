@@ -76,7 +76,7 @@ export namespace Union {
 	}
 
 	export interface ErrorContext extends BaseErrorContext<"union"> {
-		readonly errors: readonly ArkError[]
+		errors: readonly ArkError[]
 	}
 
 	export interface Declaration

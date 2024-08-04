@@ -34,7 +34,8 @@ interface DeclarationInput {
 }
 
 export interface BaseErrorContext<kind extends NodeKind = NodeKind> {
-	code: kind
+	readonly description?: string
+	readonly code: kind
 }
 
 export type defaultErrorContext<d extends DeclarationInput> = show<

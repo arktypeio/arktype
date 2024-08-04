@@ -54,9 +54,9 @@ contextualize(() => {
 
 	it("custom description on parent doesn't affect children", () => {
 		const evenNumber = rootNode({
+			"meta.description": "an even number",
 			domain: "number",
-			divisor: 2,
-			description: "an even number"
+			divisor: 2
 		})
 		attest(evenNumber.description).snap("an even number")
 		// since the error is from the divisor constraint which didn't have a

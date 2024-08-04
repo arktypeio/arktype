@@ -117,7 +117,7 @@ const implementation: nodeImplementationOf<Morph.Declaration> =
 						inTersection.distribute(
 							branch => ({
 								...l.inner,
-								in: branch
+								in: branch as Morph.ChildNode
 							}),
 							ctx.$.rootNode
 						)
