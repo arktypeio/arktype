@@ -32,7 +32,10 @@ import type {
 	UnknownRangeSchema
 } from "../refinements/range.js"
 import type { BaseMeta, BaseNodeDeclaration } from "../shared/declare.js"
-import { Disjoint } from "../shared/disjoint.js"
+import {
+	Disjoint,
+	writeUnsatisfiableExpressionError
+} from "../shared/disjoint.js"
 import { ArkErrors } from "../shared/errors.js"
 import {
 	structuralKinds,
@@ -85,17 +88,21 @@ export abstract class BaseRoot<
 
 	abstract get shortDescription(): string
 
-	intersect(r: unknown): BaseRoot | Disjoint {
-		const rNode = this.$.parseRoot(r)
-		return intersectNodesRoot(this, rNode, this.$) as never
-	}
-
 	isUnknown(): boolean {
 		return this.hasKind("intersection") && this.children.length === 0
 	}
 
 	isNever(): boolean {
 		return this.hasKind("union") && this.children.length === 0
+	}
+
+	intersect(r: unknown): BaseRoot | Disjoint {
+		const rNode = this.$.parseRoot(r)
+		return intersectNodesRoot(this, rNode, this.$) as never
+	}
+
+	toNeverIfDisjoint(): BaseRoot {
+		return this
 	}
 
 	and(r: unknown): BaseRoot {
@@ -135,13 +142,13 @@ export abstract class BaseRoot<
 	@cached
 	keyof(): BaseRoot {
 		const result = this.applyStructuralOperation("keyof", []).reduce(
-			(result, branch) => result.and(branch.keyof()),
+			(result, branch) => result.intersect(branch).toNeverIfDisjoint(),
 			$ark.intrinsic.unknown.internal
 		)
 
 		if (result.branches.length === 0) {
 			throwParseError(
-				`keyof ${this.expression} results in an unsatisfiable type`
+				writeUnsatisfiableExpressionError(`keyof ${this.expression}`)
 			)
 		}
 		return result

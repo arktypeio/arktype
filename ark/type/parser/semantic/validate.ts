@@ -75,14 +75,6 @@ type validateGenericArgs<
 			>
 	:	undefined
 
-export const writeUnsatisfiableExpressionError = <expression extends string>(
-	expression: expression
-): writeUnsatisfiableExpressionError<expression> =>
-	`${expression} results in an unsatisfiable type`
-
-export type writeUnsatisfiableExpressionError<expression extends string> =
-	`${expression} results in an unsatisfiable type`
-
 export const writePrefixedPrivateReferenceMessage = <
 	def extends PrivateDeclaration
 >(

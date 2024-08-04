@@ -2,7 +2,8 @@ import { attest, contextualize } from "@ark/attest"
 import {
 	intrinsic,
 	writeIndivisibleMessage,
-	writeUnresolvableMessage
+	writeUnresolvableMessage,
+	writeUnsatisfiableExpressionError
 } from "@ark/schema"
 import { type } from "arktype"
 import { writeMissingRightOperandMessage } from "../parser/string/shift/operand/unenclosed.js"
@@ -80,6 +81,11 @@ contextualize(() => {
 	it("implicit never", () => {
 		attest(() => type("string&number")).throws.snap(
 			"ParseError: Intersection of string and number results in an unsatisfiable type"
+		)
+	})
+	it("intersection with never", () => {
+		attest(() => type("string&never")).throws(
+			writeUnsatisfiableExpressionError("Intersection of string and never")
 		)
 	})
 	it("left semantic error", () => {
