@@ -309,6 +309,11 @@ tags[2] must be a string (was object)`)
 			attest(uppercase("foo")).equals("FOO")
 			attest(uppercase(5).toString()).snap("must be a string (was number)")
 		})
+		it("capitalize", () => {
+			const capitalize = type("format.capitalize")
+			attest(capitalize("foo")).equals("Foo")
+			attest(capitalize(5).toString()).snap("must be a string (was number)")
+		})
 	})
 
 	describe("generics", () => {
