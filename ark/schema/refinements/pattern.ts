@@ -1,18 +1,24 @@
 import { $ark } from "@ark/util"
 import { InternalPrimitiveConstraint } from "../constraint.js"
 import type { BaseRoot } from "../roots/root.js"
-import type { BaseMeta, declareNode } from "../shared/declare.js"
+import type {
+	BaseMeta,
+	BaseNormalizedSchema,
+	declareNode
+} from "../shared/declare.js"
 import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.js"
 
-export interface PatternInner extends BaseMeta {
+export interface NormalizedPatternSchema extends BaseNormalizedSchema {
 	readonly rule: string
 	readonly flags?: string
 }
 
-export type NormalizedPatternSchema = PatternInner
+export interface PatternInner extends NormalizedPatternSchema {
+	readonly meta?: BaseMeta
+}
 
 export type PatternSchema = NormalizedPatternSchema | string | RegExp
 

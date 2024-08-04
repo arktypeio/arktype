@@ -1,19 +1,33 @@
 import type { show } from "@ark/util"
-import type { Node, reducibleKindOf } from "../kinds.js"
+import type { nodeOfKind, reducibleKindOf } from "../kinds.js"
 import type { Disjoint } from "./disjoint.js"
 import type { NarrowedAttachments, NodeKind } from "./implement.js"
+
+type withMetaPrefixedKeys<o> = {
+	[k in keyof o as k extends string ? `meta.${k}` : never]: o[k]
+}
+
+export interface BaseInner {
+	readonly meta?: BaseMeta
+}
 
 export interface BaseMeta {
 	readonly description?: string
 }
 
-export const metaKeys: { [k in keyof BaseMeta]: 1 } = { description: 1 }
+export interface BaseNormalizedSchema extends withMetaPrefixedKeys<BaseMeta> {
+	readonly meta?: BaseMetaSchema
+}
+
+export type BaseMetaSchema = string | BaseMeta
+
+export const metaKeys: { [k in keyof BaseInner]: 1 } = { meta: 1 }
 
 interface DeclarationInput {
 	kind: NodeKind
 	schema: unknown
-	normalizedSchema: BaseMeta
-	inner: BaseMeta
+	normalizedSchema: BaseNormalizedSchema
+	inner: BaseInner
 	reducibleTo?: NodeKind
 	intersectionIsOpen?: true
 	errorContext?: object
@@ -59,8 +73,8 @@ export type attachmentsOf<d extends BaseNodeDeclaration> =
 export interface BaseNodeDeclaration {
 	kind: NodeKind
 	schema: unknown
-	normalizedSchema: BaseMeta
-	inner: BaseMeta
+	normalizedSchema: BaseNormalizedSchema
+	inner: BaseInner
 	reducibleTo: NodeKind
 	prerequisite: any
 	intersectionIsOpen: boolean
@@ -69,5 +83,5 @@ export interface BaseNodeDeclaration {
 }
 
 export type ownIntersectionResult<d extends BaseNodeDeclaration> =
-	| Node<reducibleKindOf<d["kind"]>>
+	| nodeOfKind<reducibleKindOf<d["kind"]>>
 	| Disjoint

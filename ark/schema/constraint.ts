@@ -13,18 +13,15 @@ import {
 } from "@ark/util"
 import type {
 	Inner,
-	MutableInner,
-	Node,
 	NodeSchema,
 	Prerequisite,
-	innerAttachedAs
+	innerAttachedAs,
+	mutableInnerOfKind,
+	nodeOfKind
 } from "./kinds.js"
 import { BaseNode } from "./node.js"
 import type { NodeParseContext } from "./parse.js"
-import type {
-	IntersectionInner,
-	MutableIntersectionInner
-} from "./roots/intersection.js"
+import type { Intersection } from "./roots/intersection.js"
 import type { BaseRoot } from "./roots/root.js"
 import type { NodeCompiler } from "./shared/compile.js"
 import type { BaseNodeDeclaration } from "./shared/declare.js"
@@ -66,7 +63,7 @@ export abstract class BaseConstraint<
 export type ConstraintReductionResult =
 	| BaseRoot
 	| Disjoint
-	| MutableIntersectionInner
+	| Intersection.MutableInner
 
 export abstract class InternalPrimitiveConstraint<
 	d extends BaseConstraintDeclaration
@@ -133,7 +130,7 @@ interface ConstraintIntersectionState<
 
 export const intersectConstraints = <kind extends ConstraintGroupKind>(
 	s: ConstraintIntersectionState<kind>
-): Node<RootKind | Extract<kind, "structure">> | Disjoint => {
+): nodeOfKind<RootKind | Extract<kind, "structure">> | Disjoint => {
 	const head = s.r.shift()
 	if (!head) {
 		let result: BaseNode | Disjoint =
@@ -200,8 +197,8 @@ export const flattenConstraints = (inner: object): BaseConstraint[] => {
 // TODO: Fix type
 export const unflattenConstraints = (
 	constraints: array<BaseConstraint>
-): IntersectionInner & Inner<"structure"> => {
-	const inner: MutableIntersectionInner & MutableInner<"structure"> = {}
+): Intersection.Inner & Inner<"structure"> => {
+	const inner: Intersection.MutableInner & mutableInnerOfKind<"structure"> = {}
 	for (const constraint of constraints) {
 		if (constraint.hasOpenIntersection()) {
 			inner[constraint.kind] = append(
@@ -230,7 +227,7 @@ export type constraintKindOrLeftOf<kind extends ConstraintKind> =
 export type intersectConstraintKinds<
 	l extends ConstraintKind,
 	r extends ConstraintKind
-> = Node<l | r | "unit" | "union"> | Disjoint | null
+> = nodeOfKind<l | r | "unit" | "union"> | Disjoint | null
 
 export const throwInvalidOperandError = (
 	...args: Parameters<typeof writeInvalidOperandMessage>

@@ -1,10 +1,10 @@
 import {
 	makeRootAndArrayPropertiesMutable,
-	type BaseMeta,
+	type BaseInner,
 	type BaseRoot,
 	type Morph,
-	type MutableInner,
-	type Node,
+	type mutableInnerOfKind,
+	type nodeOfKind,
 	type Predicate,
 	type UnionChildKind
 } from "@ark/schema"
@@ -39,7 +39,7 @@ export const parseTuple = (def: array, ctx: ParseContext): BaseRoot =>
 	maybeParseTupleExpression(def, ctx) ?? parseTupleLiteral(def, ctx)
 
 export const parseTupleLiteral = (def: array, ctx: ParseContext): BaseRoot => {
-	let sequences: MutableInner<"sequence">[] = [{}]
+	let sequences: mutableInnerOfKind<"sequence">[] = [{}]
 	let i = 0
 	while (i < def.length) {
 		let spread = false
@@ -91,10 +91,10 @@ export const parseTupleLiteral = (def: array, ctx: ParseContext): BaseRoot => {
 type ElementKind = "optional" | "required" | "variadic"
 
 const appendElement = (
-	base: MutableInner<"sequence">,
+	base: mutableInnerOfKind<"sequence">,
 	kind: ElementKind,
 	element: BaseRoot
-): MutableInner<"sequence"> => {
+): mutableInnerOfKind<"sequence"> => {
 	switch (kind) {
 		case "required":
 			if (base.optionals)
@@ -134,9 +134,9 @@ const appendElement = (
 }
 
 const appendSpreadBranch = (
-	base: MutableInner<"sequence">,
-	branch: Node<UnionChildKind>
-): MutableInner<"sequence"> => {
+	base: mutableInnerOfKind<"sequence">,
+	branch: nodeOfKind<UnionChildKind>
+): mutableInnerOfKind<"sequence"> => {
 	const spread = branch.firstReferenceOfKind("sequence")
 	if (!spread) {
 		// the only array with no sequence reference is unknown[]
@@ -379,7 +379,7 @@ export type validateInfixExpression<def extends InfixExpression, $, args> =
 				Predicate<distillOut<inferDefinition<def[0], $, args>>>
 			: def[1] extends "=>" ?
 				Morph<distillOut<inferDefinition<def[0], $, args>>, unknown>
-			: def[1] extends "@" ? BaseMeta | string
+			: def[1] extends "@" ? BaseInner | string
 			: validateDefinition<def[2], $, args>
 		]
 

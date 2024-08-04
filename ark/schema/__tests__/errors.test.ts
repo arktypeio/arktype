@@ -44,7 +44,7 @@ contextualize(() => {
 	it("custom description integrated with error", () => {
 		const superSpecialBigint = rootNode({
 			domain: "bigint",
-			description: "my special bigint"
+			"meta.description": "my special bigint"
 		})
 		attest(superSpecialBigint.description).snap("my special bigint")
 		attest(superSpecialBigint.traverse(5)?.toString()).snap(

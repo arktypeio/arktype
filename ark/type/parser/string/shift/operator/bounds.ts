@@ -37,9 +37,8 @@ export const parseBound = (
 			return
 		}
 		if (s.root.unit instanceof Date) {
-			const literal = `d'${
-				s.root.description ?? s.root.unit.toISOString()
-			}'` as const
+			const literal =
+				`d'${s.root.description ?? s.root.unit.toISOString()}'` as const
 			s.unsetRoot()
 			s.reduceLeftBound(literal, comparator)
 			return

@@ -10,7 +10,6 @@ import {
 	type GenericAst,
 	type GenericParamAst,
 	type InternalResolutions,
-	type Node,
 	type NodeKind,
 	type NodeParseOptions,
 	type NodeSchema,
@@ -22,6 +21,7 @@ import {
 	type destructuredExportContext,
 	type destructuredImportContext,
 	type exportedNameOf,
+	type nodeOfKind,
 	type reducibleKindOf,
 	type toInternalScope,
 	type writeDuplicateAliasError
@@ -330,7 +330,7 @@ export interface Scope<$ = {}> {
 		kinds: kinds,
 		schema: NodeSchema<flattenListable<kinds>>,
 		opts?: NodeParseOptions
-	): Node<reducibleKindOf<flattenListable<kinds>>>
+	): nodeOfKind<reducibleKindOf<flattenListable<kinds>>>
 
 	type: TypeParser<$>
 

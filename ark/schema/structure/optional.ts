@@ -3,32 +3,30 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.js"
-import {
-	BaseProp,
-	intersectProps,
-	type BasePropDeclaration,
-	type BasePropInner,
-	type BasePropSchema
-} from "./prop.js"
+import { BaseProp, intersectProps, type Prop } from "./prop.js"
 
-export interface OptionalSchema extends BasePropSchema {
-	default?: unknown
-}
-
-export interface OptionalInner extends BasePropInner {
-	default?: unknown
-}
-
-export type OptionalDeclaration = declareNode<
-	BasePropDeclaration<"optional"> & {
-		schema: OptionalSchema
-		normalizedSchema: OptionalSchema
-		inner: OptionalInner
+export namespace Optional {
+	export interface Schema extends Prop.Schema {
+		default?: unknown
 	}
->
 
-export const optionalImplementation: nodeImplementationOf<OptionalDeclaration> =
-	implementNode<OptionalDeclaration>({
+	export interface Inner extends Prop.Inner {
+		default?: unknown
+	}
+
+	export type Declaration = declareNode<
+		Prop.Declaration<"optional"> & {
+			schema: Schema
+			normalizedSchema: Schema
+			inner: Inner
+		}
+	>
+
+	export type Node = OptionalNode
+}
+
+const implementation: nodeImplementationOf<Optional.Declaration> =
+	implementNode<Optional.Declaration>({
 		kind: "optional",
 		hasAssociatedError: false,
 		intersectionIsOpen: true,
@@ -51,6 +49,11 @@ export const optionalImplementation: nodeImplementationOf<OptionalDeclaration> =
 		}
 	})
 
-export class OptionalNode extends BaseProp<"optional"> {
+class OptionalNode extends BaseProp<"optional"> {
 	expression = `${this.compiledKey}?: ${this.value.expression}`
+}
+
+export const Optional = {
+	implementation,
+	Node: OptionalNode
 }

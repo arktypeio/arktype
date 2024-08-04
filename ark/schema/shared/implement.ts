@@ -16,7 +16,7 @@ import {
 	type show
 } from "@ark/util"
 import type { NodeConfig, ResolvedUnknownNodeConfig } from "../config.js"
-import type { Declaration, Inner, Node, errorContext } from "../kinds.js"
+import type { Declaration, Inner, errorContext, nodeOfKind } from "../kinds.js"
 import type { BaseNode } from "../node.js"
 import type { NodeParseContext } from "../parse.js"
 import type {
@@ -29,8 +29,8 @@ import type { StructureInner } from "../structure/structure.js"
 import { compileSerializedValue } from "./compile.js"
 import type {
 	BaseErrorContext,
-	BaseMeta,
-	BaseNodeDeclaration
+	BaseNodeDeclaration,
+	BaseNormalizedSchema
 } from "./declare.js"
 import type { Disjoint } from "./disjoint.js"
 import { isNode } from "./utils.js"
@@ -153,8 +153,8 @@ export type ConstraintIntersection<
 	lKind extends ConstraintKind,
 	rKind extends kindOrRightOf<lKind>
 > = (
-	l: Node<lKind>,
-	r: Node<rKind>,
+	l: nodeOfKind<lKind>,
+	r: nodeOfKind<rKind>,
 	ctx: IntersectionContext
 ) => BaseNode | Disjoint | null
 
@@ -170,8 +170,8 @@ export type RootIntersection<
 	lKind extends RootKind,
 	rKind extends schemaKindOrRightOf<lKind>
 > = (
-	l: Node<lKind>,
-	r: Node<rKind>,
+	l: nodeOfKind<lKind>,
+	r: nodeOfKind<rKind>,
 	ctx: IntersectionContext
 ) => BaseRoot | Disjoint
 
@@ -208,7 +208,7 @@ export const isNodeKind = (value: unknown): value is NodeKind =>
 export function assertNodeKind<kind extends NodeKind>(
 	value: BaseNode,
 	kind: kind
-): asserts value is Node<kind> {
+): asserts value is nodeOfKind<kind> {
 	const valueIsNode = isNode(value)
 	if (!valueIsNode || value.kind !== kind) {
 		throwParseError(
@@ -232,13 +232,13 @@ export const schemaKindsRightOf = <kind extends RootKind>(
 ): schemaKindRightOf<kind>[] =>
 	rootKinds.slice(precedenceOfKind(kind) + 1) as never
 
-export type KeySchemaDefinitions<d extends BaseNodeDeclaration> = {
+export type keySchemaDefinitions<d extends BaseNodeDeclaration> = {
 	[k in keyRequiringSchemaDefinition<d>]: NodeKeyImplementation<d, k>
 }
 
 type keyRequiringSchemaDefinition<d extends BaseNodeDeclaration> = Exclude<
 	keyof d["normalizedSchema"],
-	keyof BaseMeta
+	keyof BaseNormalizedSchema
 >
 
 export const defaultValueSerializer = (v: unknown): JsonData => {
@@ -278,7 +278,7 @@ export type NodeKeyImplementation<
 
 interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	kind: d["kind"]
-	keys: KeySchemaDefinitions<d>
+	keys: keySchemaDefinitions<d>
 	normalize: (schema: d["schema"]) => d["normalizedSchema"]
 	hasAssociatedError: d["errorContext"] extends null ? false : true
 	finalizeJson?: (json: { [k in keyof d["inner"]]: JsonData }) => Json
@@ -286,7 +286,7 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	reduce?: (
 		inner: d["inner"],
 		$: BaseScope
-	) => Node<d["reducibleTo"]> | Disjoint | undefined
+	) => nodeOfKind<d["reducibleTo"]> | Disjoint | undefined
 }
 
 export interface UnknownNodeImplementation
@@ -336,7 +336,7 @@ type nodeSchemaaultsImplementationInputFor<kind extends NodeKind> = requireKeys<
 >
 
 export type DescriptionWriter<kind extends NodeKind = NodeKind> = (
-	node: Node<kind>
+	node: nodeOfKind<kind>
 ) => string
 
 export interface UnknownAttachments {
@@ -361,15 +361,15 @@ export interface NarrowedAttachments<d extends BaseNodeDeclaration>
 	json: Json
 	typeJson: Json
 	collapsibleJson: JsonData
-	children: Node<d["childKind"]>[]
+	children: nodeOfKind<d["childKind"]>[]
 }
 
 export const baseKeys: PartialRecord<
 	string,
-	propValueOf<KeySchemaDefinitions<any>>
+	propValueOf<keySchemaDefinitions<any>>
 > = {
 	description: { meta: true }
-} satisfies KeySchemaDefinitions<BaseNodeDeclaration> as never
+} satisfies keySchemaDefinitions<BaseNodeDeclaration> as never
 
 export const implementNode = <d extends BaseNodeDeclaration = never>(
 	_: nodeImplementationInputOf<d>

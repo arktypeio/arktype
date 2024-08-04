@@ -1,6 +1,10 @@
 import { $ark, append, cached, domainDescriptions } from "@ark/util"
 import type { NodeCompiler } from "../shared/compile.js"
-import type { BaseMeta, declareNode } from "../shared/declare.js"
+import type {
+	BaseInner,
+	BaseNormalizedSchema,
+	declareNode
+} from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
 	implementNode,
@@ -11,24 +15,69 @@ import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 import { BaseRoot } from "./root.js"
 import { defineRightwardIntersections } from "./utils.js"
 
-export interface AliasInner<alias extends string = string> extends BaseMeta {
-	readonly alias: alias
-	readonly resolve?: () => BaseRoot
+export namespace Alias {
+	export type Schema<alias extends string = string> = `$${alias}` | Inner<alias>
+
+	export interface NormalizedSchema<alias extends string = string>
+		extends BaseNormalizedSchema {
+		readonly alias: alias
+		readonly resolve?: () => BaseRoot
+	}
+
+	export interface Inner<alias extends string = string> extends BaseInner {
+		readonly alias: alias
+		readonly resolve?: () => BaseRoot
+	}
+
+	export interface Declaration
+		extends declareNode<{
+			kind: "alias"
+			schema: Schema
+			normalizedSchema: NormalizedSchema
+			inner: Inner
+		}> {}
+
+	export type Node = AliasNode
 }
 
-export type AliasSchema<alias extends string = string> =
-	| `$${alias}`
-	| AliasInner<alias>
+export const normalizeAliasSchema = (schema: Alias.Schema): Alias.Inner =>
+	typeof schema === "string" ? { alias: schema.slice(1) } : schema
 
-export interface AliasDeclaration
-	extends declareNode<{
-		kind: "alias"
-		schema: AliasSchema
-		normalizedSchema: AliasInner
-		inner: AliasInner
-	}> {}
+const neverIfDisjoint = (result: BaseRoot | Disjoint): BaseRoot =>
+	result instanceof Disjoint ? $ark.intrinsic.never.internal : result
 
-export class AliasNode extends BaseRoot<AliasDeclaration> {
+const implementation: nodeImplementationOf<Alias.Declaration> =
+	implementNode<Alias.Declaration>({
+		kind: "alias",
+		hasAssociatedError: false,
+		collapsibleKey: "alias",
+		keys: {
+			alias: {
+				serialize: schema => `$${schema}`
+			},
+			resolve: {}
+		},
+		normalize: normalizeAliasSchema,
+		defaults: {
+			description: node => node.alias
+		},
+		intersections: {
+			alias: (l, r, ctx) =>
+				ctx.$.lazilyResolve(
+					() =>
+						neverIfDisjoint(intersectNodes(l.resolution, r.resolution, ctx)),
+					`${l.alias}${ctx.pipe ? "|>" : "&"}${r.alias}`
+				),
+			...defineRightwardIntersections("alias", (l, r, ctx) =>
+				ctx.$.lazilyResolve(
+					() => neverIfDisjoint(intersectNodes(l.resolution, r, ctx)),
+					`${l.alias}${ctx.pipe ? "|>" : "&"}${r.alias}`
+				)
+			)
+		}
+	})
+
+class AliasNode extends BaseRoot<Alias.Declaration> {
 	readonly expression: string = this.alias
 	readonly structure = undefined
 
@@ -62,39 +111,7 @@ export class AliasNode extends BaseRoot<AliasDeclaration> {
 	}
 }
 
-export const normalizeAliasSchema = (schema: AliasSchema): AliasInner =>
-	typeof schema === "string" ? { alias: schema.slice(1) } : schema
-
-export const aliasImplementation: nodeImplementationOf<AliasDeclaration> =
-	implementNode<AliasDeclaration>({
-		kind: "alias",
-		hasAssociatedError: false,
-		collapsibleKey: "alias",
-		keys: {
-			alias: {
-				serialize: schema => `$${schema}`
-			},
-			resolve: {}
-		},
-		normalize: normalizeAliasSchema,
-		defaults: {
-			description: node => node.alias
-		},
-		intersections: {
-			alias: (l, r, ctx) =>
-				ctx.$.lazilyResolve(
-					() =>
-						neverIfDisjoint(intersectNodes(l.resolution, r.resolution, ctx)),
-					`${l.alias}${ctx.pipe ? "|>" : "&"}${r.alias}`
-				),
-			...defineRightwardIntersections("alias", (l, r, ctx) =>
-				ctx.$.lazilyResolve(
-					() => neverIfDisjoint(intersectNodes(l.resolution, r, ctx)),
-					`${l.alias}${ctx.pipe ? "|>" : "&"}${r.alias}`
-				)
-			)
-		}
-	})
-
-const neverIfDisjoint = (result: BaseRoot | Disjoint): BaseRoot =>
-	result instanceof Disjoint ? $ark.intrinsic.never.internal : result
+export const Alias = {
+	implementation,
+	Node: AliasNode
+}

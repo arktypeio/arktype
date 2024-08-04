@@ -19,7 +19,12 @@ import {
 } from "@ark/util"
 import type { ArkErrors } from "arktype"
 import type { BaseConstraint } from "./constraint.js"
-import type { Inner, MutableInner, Node, reducibleKindOf } from "./kinds.js"
+import type {
+	Inner,
+	mutableInnerOfKind,
+	nodeOfKind,
+	reducibleKindOf
+} from "./kinds.js"
 import type { NodeParseOptions } from "./parse.js"
 import type { MorphNode } from "./roots/morph.js"
 import type { BaseRoot } from "./roots/root.js"
@@ -28,6 +33,7 @@ import type { BaseScope } from "./scope.js"
 import type { NodeCompiler } from "./shared/compile.js"
 import type {
 	BaseMeta,
+	BaseMetaSchema,
 	BaseNodeDeclaration,
 	attachmentsOf
 } from "./shared/declare.js"
@@ -116,7 +122,7 @@ export abstract class BaseNode<
 			this.$?.resolvedConfig[this.kind].description ??
 			$ark.config[this.kind]?.description ??
 			$ark.defaultConfig[this.kind].description
-		return this.inner.description ?? writer(this as never)
+		return this.meta?.description ?? writer(this as never)
 	}
 
 	// we don't cache this currently since it can be updated once a scope finishes
@@ -222,17 +228,17 @@ export abstract class BaseNode<
 		return this.typeHash === other.typeHash
 	}
 
-	assertHasKind<kind extends NodeKind>(kind: kind): Node<kind> {
+	assertHasKind<kind extends NodeKind>(kind: kind): nodeOfKind<kind> {
 		if (!this.kind === (kind as never))
 			throwError(`${this.kind} node was not of asserted kind ${kind}`)
 		return this as never
 	}
 
-	hasKind<kind extends NodeKind>(kind: kind): this is Node<kind> {
+	hasKind<kind extends NodeKind>(kind: kind): this is nodeOfKind<kind> {
 		return this.kind === (kind as never)
 	}
 
-	isBasis(): this is Node<BasisKind> {
+	isBasis(): this is nodeOfKind<BasisKind> {
 		return includes(basisKinds, this.kind)
 	}
 
@@ -240,11 +246,11 @@ export abstract class BaseNode<
 		return includes(constraintKinds, this.kind)
 	}
 
-	isStructural(): this is Node<StructuralKind> {
+	isStructural(): this is nodeOfKind<StructuralKind> {
 		return includes(structuralKinds, this.kind)
 	}
 
-	isRefinement(): this is Node<RefinementKind> {
+	isRefinement(): this is nodeOfKind<RefinementKind> {
 		return includes(refinementKinds, this.kind)
 	}
 
@@ -256,7 +262,7 @@ export abstract class BaseNode<
 		return this.hasKind("unit") && this.allows(value)
 	}
 
-	hasOpenIntersection(): this is Node<OpenNodeKind> {
+	hasOpenIntersection(): this is nodeOfKind<OpenNodeKind> {
 		return this.impl.intersectionIsOpen as never
 	}
 
@@ -281,11 +287,13 @@ export abstract class BaseNode<
 
 	firstReferenceOfKind<kind extends NodeKind>(
 		kind: kind
-	): Node<kind> | undefined {
+	): nodeOfKind<kind> | undefined {
 		return this.firstReference(node => node.hasKind(kind))
 	}
 
-	firstReferenceOfKindOrThrow<kind extends NodeKind>(kind: kind): Node<kind> {
+	firstReferenceOfKindOrThrow<kind extends NodeKind>(
+		kind: kind
+	): nodeOfKind<kind> {
 		return (
 			this.firstReference(node => node.kind === kind) ??
 			throwError(`${this.id} had no ${kind} references`)
@@ -295,7 +303,9 @@ export abstract class BaseNode<
 	transform<mapper extends DeepNodeTransformation>(
 		mapper: mapper,
 		opts?: DeepNodeTransformOptions
-	): Node<reducibleKindOf<this["kind"]>> | Extract<ReturnType<mapper>, null> {
+	):
+		| nodeOfKind<reducibleKindOf<this["kind"]>>
+		| Extract<ReturnType<mapper>, null> {
 		return this._transform(mapper, {
 			...opts,
 			seen: {},
@@ -369,7 +379,7 @@ export abstract class BaseNode<
 		)
 			return null
 		if (this.kind === "morph") {
-			;(transformedInner as MutableInner<"morph">).in ??= $ark.intrinsic
+			;(transformedInner as mutableInnerOfKind<"morph">).in ??= $ark.intrinsic
 				.unknown as never
 		}
 
@@ -380,11 +390,13 @@ export abstract class BaseNode<
 		) as never)
 	}
 
-	configureShallowDescendants(configOrDescription: BaseMeta | string): this {
+	configureShallowDescendants(
+		configOrDescription: BaseMetaSchema | string
+	): this {
 		const config: BaseMeta =
 			typeof configOrDescription === "string" ?
 				{ description: configOrDescription }
-			:	(configOrDescription as never)
+			:	configOrDescription
 		return this.transform((kind, inner) => ({ ...inner, ...config }), {
 			shouldTransform: node => node.kind !== "structure"
 		}) as never

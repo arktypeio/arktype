@@ -8,7 +8,7 @@ import {
 	type Key,
 	type array
 } from "@ark/util"
-import type { BaseMeta, declareNode } from "../shared/declare.js"
+import type { BaseInner, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
 	defaultValueSerializer,
@@ -19,23 +19,29 @@ import type { TraverseAllows } from "../shared/traversal.js"
 import { InternalBasis } from "./basis.js"
 import { defineRightwardIntersections } from "./utils.js"
 
-export type UnitSchema<value = unknown> = UnitInner<value>
+export namespace Unit {
+	export type Schema<value = unknown> = Inner<value>
 
-export interface UnitInner<value = unknown> extends BaseMeta {
-	readonly unit: value
+	export interface Inner<value = unknown> extends BaseInner {
+		readonly unit: value
+	}
+
+	export interface ErrorContext<value = unknown> extends Inner<value> {}
+
+	export interface Declaration
+		extends declareNode<{
+			kind: "unit"
+			schema: Schema
+			normalizedSchema: Schema
+			inner: Inner
+			errorContext: Inner
+		}> {}
+
+	export type Node = UnitNode
 }
 
-export interface UnitDeclaration
-	extends declareNode<{
-		kind: "unit"
-		schema: UnitSchema
-		normalizedSchema: UnitSchema
-		inner: UnitInner
-		errorContext: UnitInner
-	}> {}
-
-export const unitImplementation: nodeImplementationOf<UnitDeclaration> =
-	implementNode<UnitDeclaration>({
+const implementation: nodeImplementationOf<Unit.Declaration> =
+	implementNode<Unit.Declaration>({
 		kind: "unit",
 		hasAssociatedError: true,
 		keys: {
@@ -71,7 +77,7 @@ export const unitImplementation: nodeImplementationOf<UnitDeclaration> =
 		}
 	})
 
-export class UnitNode extends InternalBasis<UnitDeclaration> {
+class UnitNode extends InternalBasis<Unit.Declaration> {
 	compiledValue: JsonPrimitive = (this.json as any).unit
 	serializedValue: JsonPrimitive =
 		typeof this.unit === "string" || this.unit instanceof Date ?
@@ -100,6 +106,11 @@ export class UnitNode extends InternalBasis<UnitDeclaration> {
 		this.unit instanceof Date ?
 			data => data instanceof Date && data.toISOString() === this.compiledValue
 		:	data => data === this.unit
+}
+
+export const Unit = {
+	implementation,
+	Node: UnitNode
 }
 
 const compileEqualityCheck = (

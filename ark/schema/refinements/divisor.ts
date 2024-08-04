@@ -4,14 +4,14 @@ import {
 	writeInvalidOperandMessage
 } from "../constraint.js"
 import type { BaseRoot } from "../roots/root.js"
-import type { BaseMeta, declareNode } from "../shared/declare.js"
+import type { BaseInner, declareNode } from "../shared/declare.js"
 import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.js"
 import type { TraverseAllows } from "../shared/traversal.js"
 
-export interface DivisorInner extends BaseMeta {
+export interface DivisorInner extends BaseInner {
 	readonly rule: number
 }
 

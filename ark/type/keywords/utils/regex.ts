@@ -9,6 +9,6 @@ export const regexStringNode = (
 		pattern: {
 			rule: regex.source,
 			flags: regex.flags,
-			description
+			meta: description
 		}
 	}) as never

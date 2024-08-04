@@ -7,11 +7,8 @@ import {
 } from "@ark/util"
 import type { ResolvedArkConfig } from "./config.js"
 import type { BaseNode } from "./node.js"
-import {
-	PredicateNode,
-	predicateImplementation,
-	type PredicateDeclaration
-} from "./predicate.js"
+
+import { Predicate } from "./predicate.js"
 import {
 	DivisorNode,
 	divisorImplementation,
@@ -28,41 +25,13 @@ import {
 	patternImplementation,
 	type PatternDeclaration
 } from "./refinements/pattern.js"
-import {
-	AliasNode,
-	aliasImplementation,
-	type AliasDeclaration
-} from "./roots/alias.js"
-import {
-	DomainNode,
-	domainImplementation,
-	type DomainDeclaration
-} from "./roots/domain.js"
-import {
-	IntersectionNode,
-	intersectionImplementation,
-	type IntersectionDeclaration
-} from "./roots/intersection.js"
-import {
-	MorphNode,
-	morphImplementation,
-	type MorphDeclaration
-} from "./roots/morph.js"
-import {
-	ProtoNode,
-	protoImplementation,
-	type ProtoDeclaration
-} from "./roots/proto.js"
-import {
-	UnionNode,
-	unionImplementation,
-	type UnionDeclaration
-} from "./roots/union.js"
-import {
-	UnitNode,
-	unitImplementation,
-	type UnitDeclaration
-} from "./roots/unit.js"
+import { Alias } from "./roots/alias.js"
+import { Domain } from "./roots/domain.js"
+import { Intersection } from "./roots/intersection.js"
+import { Morph } from "./roots/morph.js"
+import { Proto } from "./roots/proto.js"
+import { Union } from "./roots/union.js"
+import { Unit } from "./roots/unit.js"
 import type { BaseScope } from "./scope.js"
 import type {
 	ConstraintKind,
@@ -73,48 +42,28 @@ import type {
 	UnknownNodeImplementation
 } from "./shared/implement.js"
 import type { makeRootAndArrayPropertiesMutable } from "./shared/utils.js"
-import {
-	IndexNode,
-	indexImplementation,
-	type IndexDeclaration
-} from "./structure/indexed.js"
-import {
-	OptionalNode,
-	optionalImplementation,
-	type OptionalDeclaration
-} from "./structure/optional.js"
-import {
-	RequiredNode,
-	requiredImplementation,
-	type RequiredDeclaration
-} from "./structure/required.js"
-import {
-	SequenceNode,
-	sequenceImplementation,
-	type SequenceDeclaration
-} from "./structure/sequence.js"
-import {
-	StructureNode,
-	structureImplementation,
-	type StructureDeclaration
-} from "./structure/structure.js"
+import { Index } from "./structure/index.js"
+import { Optional } from "./structure/optional.js"
+import { Required } from "./structure/required.js"
+import { Sequence } from "./structure/sequence.js"
+import { Structure } from "./structure/structure.js"
 
 export interface NodeDeclarationsByKind extends BoundDeclarations {
-	alias: AliasDeclaration
-	domain: DomainDeclaration
-	unit: UnitDeclaration
-	proto: ProtoDeclaration
-	union: UnionDeclaration
-	morph: MorphDeclaration
-	intersection: IntersectionDeclaration
-	sequence: SequenceDeclaration
+	alias: Alias.Declaration
+	domain: Domain.Declaration
+	unit: Unit.Declaration
+	proto: Proto.Declaration
+	union: Union.Declaration
+	morph: Morph.Declaration
+	intersection: Intersection.Declaration
+	sequence: Sequence.Declaration
 	divisor: DivisorDeclaration
-	required: RequiredDeclaration
-	optional: OptionalDeclaration
-	index: IndexDeclaration
+	required: Required.Declaration
+	optional: Optional.Declaration
+	index: Index.Declaration
 	pattern: PatternDeclaration
-	predicate: PredicateDeclaration
-	structure: StructureDeclaration
+	predicate: Predicate.Declaration
+	structure: Structure.Declaration
 }
 
 export const nodeImplementationsByKind: Record<
@@ -122,21 +71,21 @@ export const nodeImplementationsByKind: Record<
 	UnknownNodeImplementation
 > = {
 	...boundImplementationsByKind,
-	alias: aliasImplementation,
-	domain: domainImplementation,
-	unit: unitImplementation,
-	proto: protoImplementation,
-	union: unionImplementation,
-	morph: morphImplementation,
-	intersection: intersectionImplementation,
+	alias: Alias.implementation,
+	domain: Domain.implementation,
+	unit: Unit.implementation,
+	proto: Proto.implementation,
+	union: Union.implementation,
+	morph: Morph.implementation,
+	intersection: Intersection.implementation,
 	divisor: divisorImplementation,
 	pattern: patternImplementation,
-	predicate: predicateImplementation,
-	required: requiredImplementation,
-	optional: optionalImplementation,
-	index: indexImplementation,
-	sequence: sequenceImplementation,
-	structure: structureImplementation
+	predicate: Predicate.implementation,
+	required: Required.implementation,
+	optional: Optional.implementation,
+	index: Index.implementation,
+	sequence: Sequence.implementation,
+	structure: Structure.implementation
 } satisfies Record<NodeKind, unknown> as never
 
 $ark.defaultConfig = Object.assign(
@@ -154,42 +103,42 @@ export const nodeClassesByKind: Record<
 	new (attachments: UnknownAttachments, $: BaseScope) => BaseNode
 > = {
 	...boundClassesByKind,
-	alias: AliasNode,
-	domain: DomainNode,
-	unit: UnitNode,
-	proto: ProtoNode,
-	union: UnionNode,
-	morph: MorphNode,
-	intersection: IntersectionNode,
+	alias: Alias.Node,
+	domain: Domain.Node,
+	unit: Unit.Node,
+	proto: Proto.Node,
+	union: Union.Node,
+	morph: Morph.Node,
+	intersection: Intersection.Node,
 	divisor: DivisorNode,
 	pattern: PatternNode,
-	predicate: PredicateNode,
-	required: RequiredNode,
-	optional: OptionalNode,
-	index: IndexNode,
-	sequence: SequenceNode,
-	structure: StructureNode
+	predicate: Predicate.Node,
+	required: Required.Node,
+	optional: Optional.Node,
+	index: Index.Node,
+	sequence: Sequence.Node,
+	structure: Structure.Node
 } satisfies Record<NodeKind, typeof BaseNode<any>> as never
 
 interface NodesByKind extends BoundNodesByKind {
-	alias: AliasNode
-	union: UnionNode
-	morph: MorphNode
-	intersection: IntersectionNode
-	unit: UnitNode
-	proto: ProtoNode
-	domain: DomainNode
+	alias: Alias.Node
+	union: Union.Node
+	morph: Morph.Node
+	intersection: Intersection.Node
+	unit: Unit.Node
+	proto: Proto.Node
+	domain: Domain.Node
 	divisor: DivisorNode
 	pattern: PatternNode
-	predicate: PredicateNode
-	required: RequiredNode
-	optional: OptionalNode
-	index: IndexNode
-	sequence: SequenceNode
-	structure: StructureNode
+	predicate: Predicate.Node
+	required: Required.Node
+	optional: Optional.Node
+	index: Index.Node
+	sequence: Sequence.Node
+	structure: Structure.Node
 }
 
-export type Node<kind extends NodeKind> = NodesByKind[kind]
+export type nodeOfKind<kind extends NodeKind> = NodesByKind[kind]
 
 export type Declaration<kind extends NodeKind> = NodeDeclarationsByKind[kind]
 
@@ -216,13 +165,13 @@ export type defAttachedAs<kind extends ConstraintKind> =
 	kind extends OpenNodeKind ? listable<NodeSchema<kind>> : NodeSchema<kind>
 
 export type innerAttachedAs<kind extends ConstraintKind> =
-	kind extends OpenNodeKind ? array<Node<kind>> : Node<kind>
+	kind extends OpenNodeKind ? array<nodeOfKind<kind>> : nodeOfKind<kind>
 
 /** make nested arrays mutable while keeping nested nodes immutable */
-export type MutableInner<kind extends NodeKind> =
+export type mutableInnerOfKind<kind extends NodeKind> =
 	makeRootAndArrayPropertiesMutable<Inner<kind>>
 
-export type MutableNormalizedRoot<kind extends NodeKind> =
+export type mutableNormalizedRootOfKind<kind extends NodeKind> =
 	makeRootAndArrayPropertiesMutable<NormalizedSchema<kind>>
 
 export type errorContext<kind extends NodeKind> =

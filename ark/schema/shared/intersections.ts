@@ -1,6 +1,6 @@
 import type { PartialRecord } from "@ark/util"
 import type { BaseNode } from "../node.js"
-import type { MorphChildNode, MorphNode } from "../roots/morph.js"
+import type { Morph } from "../roots/morph.js"
 import type { BaseRoot } from "../roots/root.js"
 import type { BaseScope } from "../scope.js"
 import { Disjoint } from "./disjoint.js"
@@ -122,10 +122,10 @@ export const intersectNodes: InternalNodeIntersection<IntersectionContext> = (
 }
 
 export const pipeFromMorph = (
-	from: MorphNode,
+	from: Morph.Node,
 	to: BaseRoot,
 	ctx: IntersectionContext
-): MorphNode | Disjoint => {
+): Morph.Node | Disjoint => {
 	const morphs = [...from.morphs]
 	if (from.validatedOut) {
 		// still piped from context, so allows appending additional morphs
@@ -142,14 +142,14 @@ export const pipeFromMorph = (
 
 export const pipeToMorph = (
 	from: BaseRoot,
-	to: MorphNode,
+	to: Morph.Node,
 	ctx: IntersectionContext
-): MorphNode | Disjoint => {
+): Morph.Node | Disjoint => {
 	const result = intersectNodes(from, to.in, ctx)
 	if (result instanceof Disjoint) return result
 	return ctx.$.node("morph", {
 		morphs: to.morphs,
 		// TODO: https://github.com/arktypeio/arktype/issues/1067
-		in: result as MorphChildNode
+		in: result as Morph.ChildNode
 	})
 }

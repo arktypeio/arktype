@@ -27,9 +27,9 @@ import {
 } from "./generic.js"
 import {
 	nodeImplementationsByKind,
-	type Node,
 	type NodeSchema,
 	type RootSchema,
+	type nodeOfKind,
 	type reducibleKindOf
 } from "./kinds.js"
 import {
@@ -227,7 +227,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		kinds: kinds,
 		nodeSchema: NodeSchema<flattenListable<kinds>>,
 		opts = {} as NodeParseOptions<prereduced>
-	): Node<
+	): nodeOfKind<
 		prereduced extends true ? flattenListable<kinds>
 		:	reducibleKindOf<flattenListable<kinds>>
 	> {

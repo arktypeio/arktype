@@ -1,7 +1,7 @@
 import { $ark } from "@ark/util"
 import { InternalPrimitiveConstraint } from "../constraint.js"
 import type { BaseRoot } from "../roots/root.js"
-import type { BaseMeta, declareNode } from "../shared/declare.js"
+import type { BaseInner, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
 	implementNode,
@@ -10,7 +10,7 @@ import {
 import type { TraverseAllows } from "../shared/traversal.js"
 import type { LengthBoundableData } from "./range.js"
 
-export interface ExactLengthInner extends BaseMeta {
+export interface ExactLengthInner extends BaseInner {
 	readonly rule: number
 }
 

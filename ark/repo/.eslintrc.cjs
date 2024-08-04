@@ -95,7 +95,7 @@ module.exports = defineConfig({
 						message: `Use a specifier like '@ark/util' to import from a package`
 					},
 					{
-						group: ["**/index.js"],
+						group: ["**/index.js", "!**/structure/index.js"],
 						message: `Use a path like '../original/definition.js' instead of a package entrypoint`
 					}
 				]

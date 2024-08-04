@@ -1,5 +1,5 @@
 import { $ark, isArray, throwParseError, type Key } from "@ark/util"
-import type { Node } from "../kinds.js"
+import type { nodeOfKind } from "../kinds.js"
 import type { BaseNode } from "../node.js"
 import type { BaseRoot } from "../roots/root.js"
 import type { PropKind } from "../structure/prop.js"
@@ -15,11 +15,11 @@ export interface DisjointEntry<kind extends DisjointKind = DisjointKind> {
 }
 
 type OperandsByDisjointKind = {
-	domain: Node<"domain">
-	unit: Node<"unit">
-	proto: Node<"proto">
+	domain: nodeOfKind<"domain">
+	unit: nodeOfKind<"unit">
+	proto: nodeOfKind<"proto">
 	presence: BaseRoot
-	range: Node<BoundKind>
+	range: nodeOfKind<BoundKind>
 	assignability: BaseNode
 	union: readonly BaseRoot[]
 }

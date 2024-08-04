@@ -6,7 +6,7 @@ import {
 	throwParseError
 } from "@ark/util"
 import { BaseConstraint } from "../constraint.js"
-import type { Node, RootSchema } from "../kinds.js"
+import type { RootSchema, nodeOfKind } from "../kinds.js"
 import {
 	flatRef,
 	type BaseNode,
@@ -15,7 +15,7 @@ import {
 	type FlatRef
 } from "../node.js"
 import type { BaseRoot } from "../roots/root.js"
-import type { BaseMeta, declareNode } from "../shared/declare.js"
+import type { BaseInner, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
 	implementNode,
@@ -25,33 +25,37 @@ import {
 import { intersectNodes } from "../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 
-export type IndexKeyKind = Exclude<RootKind, "unit">
+export namespace Index {
+	export type KeyKind = Exclude<RootKind, "unit">
 
-export type IndexKeyNode = Node<IndexKeyKind>
+	export type KeyNode = nodeOfKind<KeyKind>
 
-export interface IndexSchema extends BaseMeta {
-	readonly signature: RootSchema<IndexKeyKind>
-	readonly value: RootSchema
+	export interface Schema extends BaseInner {
+		readonly signature: RootSchema<KeyKind>
+		readonly value: RootSchema
+	}
+
+	export interface Inner extends BaseInner {
+		readonly signature: KeyNode
+		readonly value: BaseRoot
+	}
+
+	export interface Declaration
+		extends declareNode<{
+			kind: "index"
+			schema: Schema
+			normalizedSchema: Schema
+			inner: Inner
+			prerequisite: object
+			intersectionIsOpen: true
+			childKind: RootKind
+		}> {}
+
+	export type Node = IndexNode
 }
 
-export interface IndexInner extends BaseMeta {
-	readonly signature: IndexKeyNode
-	readonly value: BaseRoot
-}
-
-export interface IndexDeclaration
-	extends declareNode<{
-		kind: "index"
-		schema: IndexSchema
-		normalizedSchema: IndexSchema
-		inner: IndexInner
-		prerequisite: object
-		intersectionIsOpen: true
-		childKind: RootKind
-	}> {}
-
-export const indexImplementation: nodeImplementationOf<IndexDeclaration> =
-	implementNode<IndexDeclaration>({
+const implementation: nodeImplementationOf<Index.Declaration> =
+	implementNode<Index.Declaration>({
 		kind: "index",
 		hasAssociatedError: false,
 		intersectionIsOpen: true,
@@ -73,7 +77,7 @@ export const indexImplementation: nodeImplementationOf<IndexDeclaration> =
 							)
 						)
 					}
-					return key as IndexKeyNode
+					return key as Index.KeyNode
 				}
 			},
 			value: {
@@ -110,7 +114,7 @@ export const indexImplementation: nodeImplementationOf<IndexDeclaration> =
 		}
 	})
 
-export class IndexNode extends BaseConstraint<IndexDeclaration> {
+class IndexNode extends BaseConstraint<Index.Declaration> {
 	impliedBasis: BaseRoot = $ark.intrinsic.object.internal
 	expression = `[${this.signature.expression}]: ${this.value.expression}`
 
@@ -157,6 +161,11 @@ export class IndexNode extends BaseConstraint<IndexDeclaration> {
 	compile(): void {
 		// this is currently handled by StructureNode
 	}
+}
+
+export const Index = {
+	implementation,
+	Node: IndexNode
 }
 
 export const writeEnumerableIndexBranches = (keys: string[]): string =>

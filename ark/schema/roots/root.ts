@@ -11,7 +11,7 @@ import {
 	throwInvalidOperandError,
 	type PrimitiveConstraintKind
 } from "../constraint.js"
-import type { Node, NodeSchema, reducibleKindOf } from "../kinds.js"
+import type { NodeSchema, nodeOfKind, reducibleKindOf } from "../kinds.js"
 import {
 	BaseNode,
 	appendUniqueFlatRefs,
@@ -31,7 +31,7 @@ import type {
 	LimitSchemaValue,
 	UnknownRangeSchema
 } from "../refinements/range.js"
-import type { BaseMeta, BaseNodeDeclaration } from "../shared/declare.js"
+import type { BaseMetaSchema, BaseNodeDeclaration } from "../shared/declare.js"
 import {
 	Disjoint,
 	writeUnsatisfiableExpressionError
@@ -46,12 +46,11 @@ import {
 import { intersectNodesRoot, pipeNodesRoot } from "../shared/intersections.js"
 import { arkKind, hasArkKind } from "../shared/utils.js"
 import type {
-	StructureInner,
-	StructureNode,
+	Structure,
 	UndeclaredKeyBehavior
 } from "../structure/structure.js"
-import type { Morph, MorphNode } from "./morph.js"
-import type { UnionChildKind, UnionChildNode } from "./union.js"
+import type { Morph } from "./morph.js"
+import type { Union } from "./union.js"
 
 export interface InternalRootDeclaration extends BaseNodeDeclaration {
 	kind: RootKind
@@ -71,14 +70,14 @@ export abstract class BaseRoot<
 		return this
 	}
 
-	readonly branches: readonly Node<UnionChildKind>[] =
+	readonly branches: readonly nodeOfKind<Union.ChildKind>[] =
 		this.hasKind("union") ? this.inner.branches : [this as never]
 
 	distribute<mapOut, reduceOut = mapOut[]>(
 		mapBranch: (
-			branch: Node<UnionChildKind>,
+			branch: nodeOfKind<Union.ChildKind>,
 			i: number,
-			branches: array<Node<UnionChildKind>>
+			branches: array<nodeOfKind<Union.ChildKind>>
 		) => mapOut,
 		reduceMapped?: (mappedBranches: mapOut[]) => reduceOut
 	): reduceOut {
@@ -179,7 +178,7 @@ export abstract class BaseRoot<
 	>(
 		operation: operation,
 		args: Parameters<BaseRoot[operation]>
-	): UnionChildNode[] {
+	): Union.ChildNode[] {
 		return this.distribute(branch => {
 			if (branch.equals($ark.intrinsic.object) && operation !== "merge")
 				// ideally this wouldn't be a special case, but for now it
@@ -198,7 +197,7 @@ export abstract class BaseRoot<
 
 			if (operation === "keyof") return structure.keyof()
 
-			const structuralMethodName: keyof StructureNode =
+			const structuralMethodName: keyof Structure.Node =
 				operation === "required" ? "require"
 				: operation === "partial" ? "optionalize"
 				: operation
@@ -220,7 +219,7 @@ export abstract class BaseRoot<
 			)
 		}
 
-		const branch = this as {} as UnionChildNode
+		const branch = this as {} as Union.ChildNode
 
 		return (
 			branch.structure?.get(
@@ -270,7 +269,7 @@ export abstract class BaseRoot<
 		return r.extends(this as never)
 	}
 
-	configure(configOrDescription: BaseMeta | string): this {
+	configure(configOrDescription: BaseMetaSchema | string): this {
 		return this.configureShallowDescendants(configOrDescription)
 	}
 
@@ -311,8 +310,8 @@ export abstract class BaseRoot<
 	}
 
 	@cached
-	get flatMorphs(): array<FlatRef<MorphNode>> {
-		return this.flatRefs.reduce<FlatRef<MorphNode>[]>(
+	get flatMorphs(): array<FlatRef<Morph.Node>> {
+		return this.flatRefs.reduce<FlatRef<Morph.Node>[]>(
 			(branches, ref) =>
 				appendUniqueFlatRefs(
 					branches,
@@ -324,7 +323,7 @@ export abstract class BaseRoot<
 								propString: ref.propString,
 								node: branch
 							}))
-					: ref.node.hasKind("morph") ? (ref as FlatRef<MorphNode>)
+					: ref.node.hasKind("morph") ? (ref as FlatRef<Morph.Node>)
 					: []
 				),
 			[]
@@ -385,7 +384,7 @@ export abstract class BaseRoot<
 			(kind, inner) =>
 				kind === "structure" ?
 					rule === "ignore" ?
-						omit(inner as StructureInner, { undeclared: 1 })
+						omit(inner as Structure.Inner, { undeclared: 1 })
 					:	{ ...inner, undeclared: rule }
 				:	inner,
 			deep ? undefined : (
@@ -508,7 +507,7 @@ export type schemaKindOrRightOf<kind extends RootKind> =
 	| kind
 	| schemaKindRightOf<kind>
 
-const structureOf = (branch: UnionChildNode): StructureNode | null => {
+const structureOf = (branch: Union.ChildNode): Structure.Node | null => {
 	if (branch.hasKind("morph")) return null
 
 	if (branch.hasKind("intersection")) {

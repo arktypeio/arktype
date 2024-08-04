@@ -6,7 +6,11 @@ import {
 	type NonEnumerableDomain,
 	type array
 } from "@ark/util"
-import type { BaseMeta, declareNode } from "../shared/declare.js"
+import type {
+	BaseInner,
+	BaseNormalizedSchema,
+	declareNode
+} from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
 	implementNode,
@@ -15,27 +19,56 @@ import {
 import type { TraverseAllows } from "../shared/traversal.js"
 import { InternalBasis } from "./basis.js"
 
-export interface DomainInner<
-	domain extends NonEnumerableDomain = NonEnumerableDomain
-> extends BaseMeta {
-	readonly domain: domain
+export namespace Domain {
+	export interface Inner<
+		domain extends NonEnumerableDomain = NonEnumerableDomain
+	> extends BaseInner {
+		readonly domain: domain
+	}
+
+	export interface NormalizedSchema<
+		domain extends NonEnumerableDomain = NonEnumerableDomain
+	> extends BaseNormalizedSchema {
+		readonly domain: domain
+	}
+
+	export type Schema<
+		// only domains with an infinite number of values are allowed as bases
+		domain extends NonEnumerableDomain = NonEnumerableDomain
+	> = domain | NormalizedSchema<domain>
+
+	export interface Declaration
+		extends declareNode<{
+			kind: "domain"
+			schema: Schema
+			normalizedSchema: NormalizedSchema
+			inner: Inner
+			errorContext: Inner
+		}> {}
+
+	export type Node = DomainNode
 }
 
-export type DomainSchema<
-	// only domains with an infinite number of values are allowed as bases
-	domain extends NonEnumerableDomain = NonEnumerableDomain
-> = domain | DomainInner<domain>
+const implementation: nodeImplementationOf<Domain.Declaration> =
+	implementNode<Domain.Declaration>({
+		kind: "domain",
+		hasAssociatedError: true,
+		collapsibleKey: "domain",
+		keys: {
+			domain: {}
+		},
+		normalize: schema =>
+			typeof schema === "string" ? { domain: schema } : schema,
+		defaults: {
+			description: node => domainDescriptions[node.domain],
+			actual: data => (typeof data === "boolean" ? `${data}` : domainOf(data))
+		},
+		intersections: {
+			domain: (l, r) => Disjoint.init("domain", l, r)
+		}
+	})
 
-export interface DomainDeclaration
-	extends declareNode<{
-		kind: "domain"
-		schema: DomainSchema
-		normalizedSchema: DomainInner
-		inner: DomainInner
-		errorContext: DomainInner
-	}> {}
-
-export class DomainNode extends InternalBasis<DomainDeclaration> {
+class DomainNode extends InternalBasis<Domain.Declaration> {
 	traverseAllows: TraverseAllows = data => domainOf(data) === this.domain
 
 	readonly compiledCondition: string =
@@ -56,21 +89,7 @@ export class DomainNode extends InternalBasis<DomainDeclaration> {
 	}
 }
 
-export const domainImplementation: nodeImplementationOf<DomainDeclaration> =
-	implementNode<DomainDeclaration>({
-		kind: "domain",
-		hasAssociatedError: true,
-		collapsibleKey: "domain",
-		keys: {
-			domain: {}
-		},
-		normalize: schema =>
-			typeof schema === "string" ? { domain: schema } : schema,
-		defaults: {
-			description: node => domainDescriptions[node.domain],
-			actual: data => (typeof data === "boolean" ? `${data}` : domainOf(data))
-		},
-		intersections: {
-			domain: (l, r) => Disjoint.init("domain", l, r)
-		}
-	})
+export const Domain = {
+	implementation,
+	Node: DomainNode
+}

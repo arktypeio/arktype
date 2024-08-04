@@ -6,9 +6,9 @@ import {
 	type array,
 	type listable
 } from "@ark/util"
-import type { Node, NodeSchema } from "../kinds.js"
+import type { nodeOfKind, NodeSchema } from "../kinds.js"
 import type { NodeCompiler } from "../shared/compile.js"
-import type { BaseMeta, declareNode } from "../shared/declare.js"
+import type { BaseInner, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
 	implementNode,
@@ -25,9 +25,36 @@ import { hasArkKind } from "../shared/utils.js"
 import { BaseRoot, type schemaKindRightOf } from "./root.js"
 import { defineRightwardIntersections } from "./utils.js"
 
-export type MorphChildKind = schemaKindRightOf<"morph"> | "alias"
+export namespace Morph {
+	export type ChildKind = schemaKindRightOf<"morph"> | "alias"
 
-const morphChildKinds: array<MorphChildKind> = [
+	export type ChildNode = nodeOfKind<ChildKind>
+
+	export type ChildSchema = NodeSchema<ChildKind>
+
+	export interface Inner extends BaseInner {
+		readonly in: ChildNode
+		readonly morphs: array<Morph | BaseRoot>
+	}
+
+	export interface Schema extends BaseInner {
+		readonly in: ChildSchema
+		readonly morphs: listable<Morph | BaseRoot>
+	}
+
+	export interface Declaration
+		extends declareNode<{
+			kind: "morph"
+			schema: Schema
+			normalizedSchema: Schema
+			inner: Inner
+			childKind: ChildKind
+		}> {}
+
+	export type Node = MorphNode
+}
+
+const morphChildKinds: array<Morph.ChildKind> = [
 	"alias",
 	"intersection",
 	"unit",
@@ -35,33 +62,10 @@ const morphChildKinds: array<MorphChildKind> = [
 	"proto"
 ]
 
-export type MorphChildNode = Node<MorphChildKind>
-
-export type MorphChildSchema = NodeSchema<MorphChildKind>
-
 export type Morph<i = any, o = unknown> = (In: i, ctx: TraversalContext) => o
 
-export interface MorphInner extends BaseMeta {
-	readonly in: MorphChildNode
-	readonly morphs: array<Morph | BaseRoot>
-}
-
-export interface MorphSchema extends BaseMeta {
-	readonly in: MorphChildSchema
-	readonly morphs: listable<Morph | BaseRoot>
-}
-
-export interface MorphDeclaration
-	extends declareNode<{
-		kind: "morph"
-		schema: MorphSchema
-		normalizedSchema: MorphSchema
-		inner: MorphInner
-		childKind: MorphChildKind
-	}> {}
-
-export const morphImplementation: nodeImplementationOf<MorphDeclaration> =
-	implementNode<MorphDeclaration>({
+const implementation: nodeImplementationOf<Morph.Declaration> =
+	implementNode<Morph.Declaration>({
 		kind: "morph",
 		hasAssociatedError: false,
 		keys: {
@@ -118,7 +122,7 @@ export const morphImplementation: nodeImplementationOf<MorphDeclaration> =
 		}
 	})
 
-export class MorphNode extends BaseRoot<MorphDeclaration> {
+class MorphNode extends BaseRoot<Morph.Declaration> {
 	serializedMorphs: string[] = this.morphs.map(registeredReference)
 	compiledMorphs = `[${this.serializedMorphs}]`
 	structure = this.in.structure
@@ -144,7 +148,7 @@ export class MorphNode extends BaseRoot<MorphDeclaration> {
 		js.line(`ctx.queueMorphs(${this.compiledMorphs})`)
 	}
 
-	override get in(): MorphChildNode {
+	override get in(): Morph.ChildNode {
 		return this.inner.in
 	}
 
@@ -171,6 +175,11 @@ export class MorphNode extends BaseRoot<MorphDeclaration> {
 		:	undefined
 
 	expression = `(In: ${this.in.expression}) => Out<${this.out.expression}>`
+}
+
+export const Morph = {
+	implementation,
+	Node: MorphNode
 }
 
 export const writeMorphIntersectionMessage = (
