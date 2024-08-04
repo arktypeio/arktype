@@ -5,6 +5,7 @@ import {
 } from "../constraint.js"
 import type { BaseRoot } from "../roots/root.js"
 import type {
+	BaseErrorContext,
 	BaseInner,
 	BaseNormalizedSchema,
 	declareNode
@@ -26,6 +27,8 @@ export namespace Divisor {
 
 	export type Schema = Inner | number
 
+	export interface ErrorContext extends BaseErrorContext<"divisor">, Inner {}
+
 	export interface Declaration
 		extends declareNode<{
 			kind: "divisor"
@@ -33,7 +36,7 @@ export namespace Divisor {
 			normalizedSchema: NormalizedSchema
 			inner: Inner
 			prerequisite: number
-			errorContext: Inner
+			errorContext: ErrorContext
 		}> {}
 
 	export type Node = DivisorNode

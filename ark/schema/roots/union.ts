@@ -25,6 +25,7 @@ import {
 	type NodeCompiler
 } from "../shared/compile.js"
 import type {
+	BaseErrorContext,
 	BaseInner,
 	BaseNormalizedSchema,
 	declareNode
@@ -74,15 +75,17 @@ export namespace Union {
 		readonly ordered?: true
 	}
 
+	export interface ErrorContext extends BaseErrorContext<"union"> {
+		readonly errors: readonly ArkError[]
+	}
+
 	export interface Declaration
 		extends declareNode<{
 			kind: "union"
 			schema: Schema
 			normalizedSchema: NormalizedSchema
 			inner: Inner
-			errorContext: {
-				errors: readonly ArkError[]
-			}
+			errorContext: ErrorContext
 			reducibleTo: RootKind
 			childKind: ChildKind
 		}> {}

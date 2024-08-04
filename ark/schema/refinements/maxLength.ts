@@ -1,6 +1,6 @@
 import { $ark } from "@ark/util"
 import type { BaseRoot } from "../roots/root.js"
-import type { declareNode } from "../shared/declare.js"
+import type { BaseErrorContext, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
 	implementNode,
@@ -26,6 +26,8 @@ export namespace MaxLength {
 
 	export type Schema = NormalizedSchema | number
 
+	export interface ErrorContext extends BaseErrorContext<"maxLength">, Inner {}
+
 	export interface Declaration
 		extends declareNode<{
 			kind: "maxLength"
@@ -33,7 +35,7 @@ export namespace MaxLength {
 			normalizedSchema: NormalizedSchema
 			inner: Inner
 			prerequisite: LengthBoundableData
-			errorContext: Inner
+			errorContext: ErrorContext
 		}> {}
 
 	export type Node = MaxLengthNode

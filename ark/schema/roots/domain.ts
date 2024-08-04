@@ -7,6 +7,7 @@ import {
 	type Key
 } from "@ark/util"
 import type {
+	BaseErrorContext,
 	BaseInner,
 	BaseNormalizedSchema,
 	declareNode
@@ -40,13 +41,15 @@ export namespace Domain {
 		domain extends NonEnumerable = NonEnumerable
 	> = domain | NormalizedSchema<domain>
 
+	export interface ErrorContext extends BaseErrorContext<"domain">, Inner {}
+
 	export interface Declaration
 		extends declareNode<{
 			kind: "domain"
 			schema: Schema
 			normalizedSchema: NormalizedSchema
 			inner: Inner
-			errorContext: Inner
+			errorContext: ErrorContext
 		}> {}
 
 	export type Node = DomainNode

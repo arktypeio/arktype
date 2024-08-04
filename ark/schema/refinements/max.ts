@@ -1,6 +1,6 @@
 import { $ark } from "@ark/util"
 import type { BaseRoot } from "../roots/root.js"
-import type { declareNode } from "../shared/declare.js"
+import type { BaseErrorContext, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
 	implementNode,
@@ -25,6 +25,8 @@ export namespace Max {
 
 	export type Schema = NormalizedSchema | number
 
+	export interface ErrorContext extends BaseErrorContext<"max">, Inner {}
+
 	export interface Declaration
 		extends declareNode<{
 			kind: "max"
@@ -32,7 +34,7 @@ export namespace Max {
 			normalizedSchema: NormalizedSchema
 			inner: Inner
 			prerequisite: number
-			errorContext: Inner
+			errorContext: ErrorContext
 		}> {}
 
 	export type Node = MaxNode

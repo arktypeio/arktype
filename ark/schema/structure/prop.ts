@@ -41,7 +41,7 @@ export namespace Prop {
 		readonly value: BaseRoot
 	}
 
-	export type Declaration<kind extends Kind = Kind> = {
+	export interface Declaration<kind extends Kind = Kind> {
 		kind: kind
 		prerequisite: object
 		intersectionIsOpen: true

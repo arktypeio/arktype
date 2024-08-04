@@ -2,6 +2,7 @@ import { $ark } from "@ark/util"
 import { InternalPrimitiveConstraint } from "../constraint.js"
 import type { BaseRoot } from "../roots/root.js"
 import type {
+	BaseErrorContext,
 	BaseMeta,
 	BaseNormalizedSchema,
 	declareNode
@@ -23,6 +24,8 @@ export namespace Pattern {
 
 	export type Schema = NormalizedSchema | string | RegExp
 
+	export interface ErrorContext extends BaseErrorContext<"pattern">, Inner {}
+
 	export interface Declaration
 		extends declareNode<{
 			kind: "pattern"
@@ -31,7 +34,7 @@ export namespace Pattern {
 			inner: Inner
 			intersectionIsOpen: true
 			prerequisite: string
-			errorContext: Inner
+			errorContext: ErrorContext
 		}> {}
 
 	export type Node = PatternNode

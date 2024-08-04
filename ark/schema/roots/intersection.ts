@@ -27,6 +27,7 @@ import type { PredicateNode } from "../predicate.js"
 import type { NodeCompiler } from "../shared/compile.js"
 import {
 	metaKeys,
+	type BaseErrorContext,
 	type BaseInner,
 	type BaseNormalizedSchema,
 	type declareNode
@@ -85,15 +86,19 @@ export namespace Intersection {
 		  >
 		| IntersectionNode
 
+	export interface ErrorContext
+		extends BaseErrorContext<"intersection">,
+			Inner {
+		readonly errors: readonly ArkError[]
+	}
+
 	export type Declaration = declareNode<{
 		kind: "intersection"
 		schema: Schema
 		normalizedSchema: NormalizedSchema
 		inner: Inner
 		reducibleTo: "intersection" | BasisKind
-		errorContext: {
-			errors: readonly ArkError[]
-		}
+		errorContext: ErrorContext
 		childKind: ChildKind
 	}>
 

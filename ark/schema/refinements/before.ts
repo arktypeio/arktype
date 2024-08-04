@@ -1,6 +1,6 @@
 import { $ark } from "@ark/util"
 import type { BaseRoot } from "../roots/root.js"
-import type { declareNode } from "../shared/declare.js"
+import type { BaseErrorContext, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
 	implementNode,
@@ -27,6 +27,8 @@ export namespace Before {
 
 	export type Schema = NormalizedSchema | LimitSchemaValue
 
+	export interface ErrorContext extends BaseErrorContext<"before">, Inner {}
+
 	export interface Declaration
 		extends declareNode<{
 			kind: "before"
@@ -34,7 +36,7 @@ export namespace Before {
 			normalizedSchema: NormalizedSchema
 			inner: Inner
 			prerequisite: Date
-			errorContext: Inner
+			errorContext: ErrorContext
 		}> {}
 
 	export type Node = BeforeNode

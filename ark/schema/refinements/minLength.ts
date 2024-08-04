@@ -1,6 +1,6 @@
 import { $ark } from "@ark/util"
 import type { BaseRoot } from "../roots/root.js"
-import type { declareNode } from "../shared/declare.js"
+import type { BaseErrorContext, declareNode } from "../shared/declare.js"
 import {
 	implementNode,
 	type nodeImplementationOf
@@ -25,6 +25,8 @@ export namespace MinLength {
 
 	export type Schema = NormalizedSchema | number
 
+	export interface ErrorContext extends BaseErrorContext<"minLength">, Inner {}
+
 	export interface Declaration
 		extends declareNode<{
 			kind: "minLength"
@@ -32,7 +34,7 @@ export namespace MinLength {
 			normalizedSchema: NormalizedSchema
 			inner: Inner
 			prerequisite: LengthBoundableData
-			errorContext: Inner
+			errorContext: ErrorContext
 		}> {}
 
 	export type Node = MinLengthNode

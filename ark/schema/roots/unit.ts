@@ -9,6 +9,7 @@ import {
 	type array
 } from "@ark/util"
 import type {
+	BaseErrorContext,
 	BaseInner,
 	BaseNormalizedSchema,
 	declareNode
@@ -32,7 +33,9 @@ export namespace Unit {
 		readonly unit: value
 	}
 
-	export interface ErrorContext<value = unknown> extends Inner<value> {}
+	export interface ErrorContext<value = unknown>
+		extends BaseErrorContext<"unit">,
+			Inner<value> {}
 
 	export interface Declaration
 		extends declareNode<{
@@ -40,7 +43,7 @@ export namespace Unit {
 			schema: Schema
 			normalizedSchema: Schema
 			inner: Inner
-			errorContext: Inner
+			errorContext: ErrorContext
 		}> {}
 
 	export type Node = UnitNode

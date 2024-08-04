@@ -2,6 +2,7 @@ import { $ark } from "@ark/util"
 import { InternalPrimitiveConstraint } from "../constraint.js"
 import type { BaseRoot } from "../roots/root.js"
 import type {
+	BaseErrorContext,
 	BaseInner,
 	BaseNormalizedSchema,
 	declareNode
@@ -25,13 +26,17 @@ export namespace ExactLength {
 
 	export type Schema = NormalizedSchema | number
 
+	export interface ErrorContext
+		extends BaseErrorContext<"exactLength">,
+			Inner {}
+
 	export type Declaration = declareNode<{
 		kind: "exactLength"
 		schema: Schema
 		normalizedSchema: NormalizedSchema
 		inner: Inner
 		prerequisite: LengthBoundableData
-		errorContext: Inner
+		errorContext: ErrorContext
 	}>
 
 	export type Node = ExactLengthNode

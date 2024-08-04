@@ -2,6 +2,7 @@ import { BaseConstraint } from "./constraint.js"
 import type { errorContext } from "./kinds.js"
 import type { NodeCompiler } from "./shared/compile.js"
 import type {
+	BaseErrorContext,
 	BaseInner,
 	BaseNormalizedSchema,
 	declareNode
@@ -36,7 +37,10 @@ export namespace Predicate {
 		readonly predicate: predicate
 	}
 
-	export type ErrorContext = Partial<Inner>
+	export interface ErrorContext extends BaseErrorContext<"predicate"> {
+		readonly description?: string
+		readonly predicate?: Predicate
+	}
 
 	export interface Declaration
 		extends declareNode<{
@@ -84,7 +88,7 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 	expression: string = this.serializedPredicate
 	traverseAllows: TraverseAllows = this.predicate
 
-	errorContext: errorContext<"predicate"> = {
+	errorContext: Predicate.ErrorContext = {
 		code: "predicate",
 		description: this.description
 	}

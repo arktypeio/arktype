@@ -1,6 +1,6 @@
 import { $ark } from "@ark/util"
 import type { BaseRoot } from "../roots/root.js"
-import type { declareNode } from "../shared/declare.js"
+import type { BaseErrorContext, declareNode } from "../shared/declare.js"
 import {
 	implementNode,
 	type nodeImplementationOf
@@ -24,6 +24,8 @@ export namespace After {
 		rule: LimitSchemaValue
 	}
 
+	export interface ErrorContext extends BaseErrorContext<"after">, Inner {}
+
 	export type Schema = NormalizedSchema | LimitSchemaValue
 
 	export interface Declaration
@@ -33,7 +35,7 @@ export namespace After {
 			normalizedSchema: NormalizedSchema
 			inner: Inner
 			prerequisite: Date
-			errorContext: Inner
+			errorContext: ErrorContext
 		}> {}
 
 	export type Node = AfterNode

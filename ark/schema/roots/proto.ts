@@ -12,6 +12,7 @@ import {
 	type array
 } from "@ark/util"
 import type {
+	BaseErrorContext,
 	BaseInner,
 	BaseNormalizedSchema,
 	declareNode
@@ -48,13 +49,15 @@ export namespace Proto {
 		readonly proto: proto
 	}
 
+	export interface ErrorContext extends BaseErrorContext<"proto">, Inner {}
+
 	export interface Declaration
 		extends declareNode<{
 			kind: "proto"
 			schema: Schema
 			normalizedSchema: NormalizedSchema
 			inner: Inner
-			errorContext: Inner
+			errorContext: ErrorContext
 		}> {}
 
 	export type Node = ProtoNode
