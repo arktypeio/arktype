@@ -1,24 +1,40 @@
 import {
 	RootModule,
-	type GenericRoot,
+	type GenericAst,
 	type PreparsedNodeResolution
 } from "@ark/schema"
 import type { anyOrNever } from "@ark/util"
 import type { Generic } from "./generic.js"
 import type { Type } from "./type.js"
 
+export const Module: new <$ extends {}>(exports: exportScope<$>) => Module<$> =
+	RootModule as never
+
+export interface Module<$ extends {} = {}> extends RootModule<exportScope<$>> {}
+
 export type exportScope<$> = {
 	[k in keyof $]: instantiateExport<$[k], $>
 } & unknown
 
+export const BoundModule: new <exports extends {}, $ extends {}>(
+	exports: bindExportsToScope<exports, $>,
+	$: $
+) => BoundModule<exports, $> = RootModule as never
+
+export interface BoundModule<exports extends {}, $>
+	extends RootModule<bindExportsToScope<exports, $>> {}
+
+export type bindExportsToScope<exports, $> = {
+	[k in keyof exports]: instantiateExport<exports[k], $>
+} & unknown
+
+export type Submodule<exports extends {}> = RootModule<exports>
+
 export type instantiateExport<t, $> =
 	[t] extends [PreparsedNodeResolution] ?
 		[t] extends [anyOrNever] ? Type<t, $>
-		: t extends GenericRoot<infer params, infer body> ? Generic<params, body>
-		: t
+		: t extends GenericAst<infer params, infer body, infer body$> ?
+			Generic<params, body, body$, $>
+		: t extends Submodule<infer exports> ? BoundModule<exports, $>
+		: never
 	:	Type<t, $>
-
-export const Module: new <$>(types: exportScope<$>) => Module<$> =
-	RootModule as never
-
-export interface Module<$ = {}> extends RootModule<exportScope<$>> {}

@@ -51,7 +51,12 @@ import {
 	type baseGenericConstraints,
 	type parseValidGenericParams
 } from "./generic.js"
-import type { Module, instantiateExport } from "./module.js"
+import type {
+	BoundModule,
+	Module,
+	Submodule,
+	instantiateExport
+} from "./module.js"
 import {
 	parseObject,
 	writeBadDefinitionTypeMessage,
@@ -132,11 +137,12 @@ type bootstrapAliases<def> = {
 type inferBootstrapped<$> = {
 	[name in keyof $]: $[name] extends Def<infer def> ?
 		inferDefinition<def, $, {}>
-	: $[name] extends GenericAst<infer params, infer def> ?
+	: $[name] extends GenericAst<infer params, infer def, infer body$> ?
 		// add the scope in which the generic was defined here
-		Generic<params, def, $>
-	:	// otherwise should be a submodule
-		$[name]
+		Generic<params, def, body$, $>
+	: // should be submodule
+	$[name] extends Module<infer exports> ? Submodule<exports>
+	: never
 } & unknown
 
 type extractGenericName<k> =
@@ -335,13 +341,15 @@ export interface Scope<$ = {}> {
 
 	generic: GenericHktParser<$>
 
+	import(): Module<{ [k in exportedNameOf<$> as PrivateDeclaration<k>]: $[k] }>
 	import<names extends exportedNameOf<$>[]>(
 		...names: names
-	): Module<show<destructuredImportContext<$, names>>>
+	): BoundModule<destructuredImportContext<$, names>, $>
 
+	export(): Module<{ [k in exportedNameOf<$>]: $[k] }>
 	export<names extends exportedNameOf<$>[]>(
 		...names: names
-	): Module<show<destructuredExportContext<$, names>>>
+	): BoundModule<show<destructuredExportContext<$, names>>, $>
 
 	resolve<name extends exportedNameOf<$>>(
 		name: name

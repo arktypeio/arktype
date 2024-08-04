@@ -34,6 +34,7 @@ import {
 } from "./kinds.js"
 import {
 	RootModule,
+	bindModule,
 	type InternalModule,
 	type PreparsedNodeResolution,
 	type SchemaModule
@@ -349,14 +350,8 @@ export abstract class BaseScope<$ extends {} = {}> {
 		if (hasArkKind(preparsed, "generic"))
 			return (this.resolutions[name] = preparsed.bindScope(this))
 
-		if (hasArkKind(preparsed, "module")) {
-			return (this.resolutions[name] = new RootModule(
-				flatMorph(preparsed, (alias, node) => [
-					alias,
-					(node as BaseRoot | GenericRoot).bindScope(this)
-				])
-			))
-		}
+		if (hasArkKind(preparsed, "module"))
+			return (this.resolutions[name] = bindModule(preparsed, this))
 
 		this.resolutions[name] = name
 		return (this.resolutions[name] = this.parseRoot(preparsed, {
@@ -540,11 +535,11 @@ export const parseAsSchema = (
 }
 
 export type destructuredExportContext<$, names extends exportedNameOf<$>[]> = {
-	[k in names extends [] ? exportedNameOf<$> : names[number]]: $[k]
+	[k in names["length"] extends 0 ? exportedNameOf<$> : names[number]]: $[k]
 }
 
 export type destructuredImportContext<$, names extends exportedNameOf<$>[]> = {
-	[k in names extends [] ? exportedNameOf<$> : names[number] as `#${k &
+	[k in names["length"] extends 0 ? exportedNameOf<$> : names[number] as `#${k &
 		string}`]: $[k]
 }
 

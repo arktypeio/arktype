@@ -4,8 +4,16 @@ import {
 	writeNonSubmoduleDotMessage,
 	writeUnresolvableMessage
 } from "@ark/schema"
-import { scope, type, type Module, type Scope } from "arktype"
+import {
+	scope,
+	type,
+	type Module,
+	type Scope,
+	type Submodule,
+	type Type
+} from "arktype"
 import type { Out } from "../ast.js"
+import type { BoundModule } from "../module.js"
 
 contextualize.each(
 	"submodule",
@@ -56,7 +64,7 @@ contextualize.each(
 				Scope<{
 					a: string
 					c: string
-					sub: Module<{
+					sub: Submodule<{
 						foo: string
 						bar: string
 					}>
@@ -100,5 +108,74 @@ contextualize.each(
 		})
 
 		// TODO: private aliases
+	}
+)
+
+contextualize.each(
+	"nested submodule",
+	() =>
+		scope({
+			outer: scope({
+				inner: scope({
+					alias: "1"
+				}).export()
+			}).export()
+		}),
+	it => {
+		it("export", $ => {
+			const types = $.export()
+
+			type Expected$ = {
+				outer: Submodule<{
+					inner: Submodule<{
+						alias: 1
+					}>
+				}>
+			}
+
+			attest<Module<Expected$>>(types)
+
+			attest<
+				BoundModule<
+					{
+						inner: Submodule<{
+							alias: 1
+						}>
+					},
+					Expected$
+				>
+			>(types.outer)
+			attest<
+				BoundModule<
+					{
+						alias: 1
+					},
+					Expected$
+				>
+			>(types.outer.inner)
+			attest<Type<1, Expected$>>(types.outer.inner.alias)
+
+			attest(types.outer.inner.alias.expression).equals("1")
+			attest(types.outer.inner.alias.$.json).snap({
+				"outer.inner.alias": { unit: 1 }
+			})
+		})
+
+		// it("reference", $ => {
+		// 	const t = $.type(["outer.inner.alias"])
+		// 	attest<
+		// 		Type<
+		// 			[1],
+		// 			{
+		// 				outer: Module<{
+		// 					inner: Module<{
+		// 						alias: 1
+		// 					}>
+		// 				}>
+		// 			}
+		// 		>
+		// 	>(t)
+		// 	attest(t.expression).snap("[1]")
+		// })
 	}
 )

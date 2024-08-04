@@ -171,6 +171,7 @@ contextualize(() => {
 		const out = X({ pear: { tasty: true } })
 		attest(out).snap({ pear: { tasty: true } })
 	})
+
 	describe("define", () => {
 		it("ark", () => {
 			const def = define({
@@ -412,43 +413,6 @@ b.c.c must be an object (was missing)`)
 				]
 			})
 		})
-
-		// 		// https://github.com/arktypeio/arktype/issues/930
-		// 		it("intersect cyclic reference with repeat name", () => {
-		// 			const types = scope({
-		// 				arf: {
-		// 					a: "bork"
-		// 				},
-		// 				bork: {
-		// 					b: "arf&bork"
-		// 				}
-		// 			}).export()
-
-		// 			const resolveRef: string = (
-		// 				types.bork.raw.firstReferenceOfKindOrThrow("alias").json as any
-		// 			).resolve
-
-		// 			attest(types.bork.json).snap({
-		// 				required: [
-		// 					{ key: "b", value: { resolve: resolveRef, alias: "$arf&bork" } }
-		// 				],
-		// 				domain: "object"
-		// 			})
-
-		// 			attest(types.arf.json).snap({
-		// 				required: [
-		// 					{
-		// 						key: "a",
-		// 						value: types.bork.json
-		// 					}
-		// 				],
-		// 				domain: "object"
-		// 			})
-
-		// 			attest(types.arf({ a: { b: {} } }).toString())
-		// 				.snap(`a.b.a must be { b: arf&bork } (was missing)
-		// a.b.b must be arf&bork (was missing)`)
-		// 		})
 	})
 
 	it("can override ambient aliases", () => {
