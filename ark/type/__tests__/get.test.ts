@@ -1,5 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { writeInvalidKeysMessage, writeNumberIndexMessage } from "@ark/schema"
+import type { indexableOf } from "@ark/util"
 import { ark, type } from "arktype"
 import type { Matching, constrain, string } from "../ast.js"
 
@@ -61,7 +62,7 @@ contextualize(() => {
 			named: "1"
 		})
 
-		const a = t.get("foo" as string & string.matching<"^f">)
+		const a = t.get("foo" as string.matching<"^f">)
 		attest<0>(a.t)
 		attest(a.expression).snap("undefined | 0")
 
