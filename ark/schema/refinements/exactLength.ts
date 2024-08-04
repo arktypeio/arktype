@@ -10,25 +10,29 @@ import {
 import type { TraverseAllows } from "../shared/traversal.js"
 import type { LengthBoundableData } from "./range.js"
 
-export interface ExactLengthInner extends BaseInner {
-	readonly rule: number
+export namespace ExactLength {
+	export interface Inner extends BaseInner {
+		readonly rule: number
+	}
+
+	export type NormalizedSchema = Inner
+
+	export type Schema = NormalizedSchema | number
+
+	export type Declaration = declareNode<{
+		kind: "exactLength"
+		schema: Schema
+		normalizedSchema: NormalizedSchema
+		inner: Inner
+		prerequisite: LengthBoundableData
+		errorContext: Inner
+	}>
+
+	export type Node = ExactLengthNode
 }
 
-export type NormalizedExactLengthSchema = ExactLengthInner
-
-export type ExactLengthSchema = NormalizedExactLengthSchema | number
-
-export type ExactLengthDeclaration = declareNode<{
-	kind: "exactLength"
-	schema: ExactLengthSchema
-	normalizedSchema: NormalizedExactLengthSchema
-	inner: ExactLengthInner
-	prerequisite: LengthBoundableData
-	errorContext: ExactLengthInner
-}>
-
-export const exactLengthImplementation: nodeImplementationOf<ExactLengthDeclaration> =
-	implementNode<ExactLengthDeclaration>({
+const implementation: nodeImplementationOf<ExactLength.Declaration> =
+	implementNode<ExactLength.Declaration>({
 		kind: "exactLength",
 		collapsibleKey: "rule",
 		keys: {
@@ -68,7 +72,7 @@ export const exactLengthImplementation: nodeImplementationOf<ExactLengthDeclarat
 		}
 	})
 
-export class ExactLengthNode extends InternalPrimitiveConstraint<ExactLengthDeclaration> {
+export class ExactLengthNode extends InternalPrimitiveConstraint<ExactLength.Declaration> {
 	traverseAllows: TraverseAllows<LengthBoundableData> = data =>
 		data.length === this.rule
 
@@ -76,4 +80,9 @@ export class ExactLengthNode extends InternalPrimitiveConstraint<ExactLengthDecl
 	readonly compiledNegation: string = `data.length !== ${this.rule}`
 	readonly impliedBasis: BaseRoot = $ark.intrinsic.lengthBoundable.internal
 	readonly expression: string = `{ length: ${this.rule} }`
+}
+
+export const ExactLength = {
+	implementation,
+	Node: ExactLengthNode
 }

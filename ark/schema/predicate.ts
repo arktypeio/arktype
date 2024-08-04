@@ -48,7 +48,7 @@ export namespace Predicate {
 			errorContext: ErrorContext
 		}> {}
 
-	export type Node = typeof PredicateNode
+	export type Node = PredicateNode
 }
 
 const implementation: nodeImplementationOf<Predicate.Declaration> =

@@ -15,28 +15,32 @@ import {
 	type UnknownNormalizedRangeSchema
 } from "./range.js"
 
-export interface AfterInner extends BaseRangeInner {
-	rule: Date
+export namespace After {
+	export interface Inner extends BaseRangeInner {
+		rule: Date
+	}
+
+	export interface NormalizedSchema extends UnknownNormalizedRangeSchema {
+		rule: LimitSchemaValue
+	}
+
+	export type Schema = NormalizedSchema | LimitSchemaValue
+
+	export interface Declaration
+		extends declareNode<{
+			kind: "after"
+			schema: Schema
+			normalizedSchema: NormalizedSchema
+			inner: Inner
+			prerequisite: Date
+			errorContext: Inner
+		}> {}
+
+	export type Node = AfterNode
 }
 
-export interface NormalizedAfterSchema extends UnknownNormalizedRangeSchema {
-	rule: LimitSchemaValue
-}
-
-export type AfterSchema = NormalizedAfterSchema | LimitSchemaValue
-
-export interface AfterDeclaration
-	extends declareNode<{
-		kind: "after"
-		schema: AfterSchema
-		normalizedSchema: NormalizedAfterSchema
-		inner: AfterInner
-		prerequisite: Date
-		errorContext: AfterInner
-	}> {}
-
-export const afterImplementation: nodeImplementationOf<AfterDeclaration> =
-	implementNode<AfterDeclaration>({
+const implementation: nodeImplementationOf<After.Declaration> =
+	implementNode<After.Declaration>({
 		kind: "after",
 		collapsibleKey: "rule",
 		hasAssociatedError: true,
@@ -67,9 +71,14 @@ export const afterImplementation: nodeImplementationOf<AfterDeclaration> =
 		}
 	})
 
-export class AfterNode extends BaseRange<AfterDeclaration> {
+export class AfterNode extends BaseRange<After.Declaration> {
 	impliedBasis: BaseRoot = $ark.intrinsic.Date.internal
 
 	traverseAllows: TraverseAllows<Date> =
 		this.exclusive ? data => data > this.rule : data => data >= this.rule
+}
+
+export const After = {
+	implementation,
+	Node: AfterNode
 }

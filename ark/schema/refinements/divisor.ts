@@ -11,24 +11,28 @@ import {
 } from "../shared/implement.js"
 import type { TraverseAllows } from "../shared/traversal.js"
 
-export interface DivisorInner extends BaseInner {
-	readonly rule: number
+export namespace Divisor {
+	export interface Inner extends BaseInner {
+		readonly rule: number
+	}
+
+	export type Schema = Inner | number
+
+	export interface Declaration
+		extends declareNode<{
+			kind: "divisor"
+			schema: Schema
+			normalizedSchema: Inner
+			inner: Inner
+			prerequisite: number
+			errorContext: Inner
+		}> {}
+
+	export type Node = DivisorNode
 }
 
-export type DivisorSchema = DivisorInner | number
-
-export interface DivisorDeclaration
-	extends declareNode<{
-		kind: "divisor"
-		schema: DivisorSchema
-		normalizedSchema: DivisorInner
-		inner: DivisorInner
-		prerequisite: number
-		errorContext: DivisorInner
-	}> {}
-
-export const divisorImplementation: nodeImplementationOf<DivisorDeclaration> =
-	implementNode<DivisorDeclaration>({
+const implementation: nodeImplementationOf<Divisor.Declaration> =
+	implementNode<Divisor.Declaration>({
 		kind: "divisor",
 		collapsibleKey: "rule",
 		keys: {
@@ -51,13 +55,18 @@ export const divisorImplementation: nodeImplementationOf<DivisorDeclaration> =
 		}
 	})
 
-export class DivisorNode extends InternalPrimitiveConstraint<DivisorDeclaration> {
+export class DivisorNode extends InternalPrimitiveConstraint<Divisor.Declaration> {
 	traverseAllows: TraverseAllows<number> = data => data % this.rule === 0
 
 	readonly compiledCondition: string = `data % ${this.rule} === 0`
 	readonly compiledNegation: string = `data % ${this.rule} !== 0`
 	readonly impliedBasis: BaseRoot = $ark.intrinsic.number.internal
 	readonly expression: string = `% ${this.rule}`
+}
+
+export const Divisor = {
+	implementation,
+	Node: DivisorNode
 }
 
 export const writeIndivisibleMessage = (t: BaseRoot): string =>

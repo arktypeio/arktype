@@ -1,5 +1,5 @@
 import type {
-	DivisorSchema,
+	Divisor,
 	ExclusiveNumericRangeSchema,
 	exclusivizeRangeSchema,
 	InclusiveNumericRangeSchema
@@ -10,7 +10,7 @@ import type { ValidatorType } from "./validator.js"
 /** @ts-ignore cast variance */
 interface Type<out t extends number = number, $ = {}>
 	extends ValidatorType<t, $> {
-	divisibleBy<const schema extends DivisorSchema>(
+	divisibleBy<const schema extends Divisor.Schema>(
 		schema: schema
 	): Type<applyConstraint<t, "divisor", schema>, $>
 

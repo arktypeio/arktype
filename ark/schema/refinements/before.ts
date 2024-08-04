@@ -16,28 +16,32 @@ import {
 	type UnknownNormalizedRangeSchema
 } from "./range.js"
 
-export interface BeforeInner extends BaseRangeInner {
-	rule: Date
+export namespace Before {
+	export interface Inner extends BaseRangeInner {
+		rule: Date
+	}
+
+	export interface NormalizedSchema extends UnknownNormalizedRangeSchema {
+		rule: LimitSchemaValue
+	}
+
+	export type Schema = NormalizedSchema | LimitSchemaValue
+
+	export interface Declaration
+		extends declareNode<{
+			kind: "before"
+			schema: Schema
+			normalizedSchema: NormalizedSchema
+			inner: Inner
+			prerequisite: Date
+			errorContext: Inner
+		}> {}
+
+	export type Node = BeforeNode
 }
 
-export interface NormalizedBeforeSchema extends UnknownNormalizedRangeSchema {
-	rule: LimitSchemaValue
-}
-
-export type BeforeSchema = NormalizedBeforeSchema | LimitSchemaValue
-
-export interface BeforeDeclaration
-	extends declareNode<{
-		kind: "before"
-		schema: BeforeSchema
-		normalizedSchema: NormalizedBeforeSchema
-		inner: BeforeInner
-		prerequisite: Date
-		errorContext: BeforeInner
-	}> {}
-
-export const beforeImplementation: nodeImplementationOf<BeforeDeclaration> =
-	implementNode<BeforeDeclaration>({
+const implementation: nodeImplementationOf<Before.Declaration> =
+	implementNode<Before.Declaration>({
 		kind: "before",
 		collapsibleKey: "rule",
 		hasAssociatedError: true,
@@ -74,9 +78,14 @@ export const beforeImplementation: nodeImplementationOf<BeforeDeclaration> =
 		}
 	})
 
-export class BeforeNode extends BaseRange<BeforeDeclaration> {
+export class BeforeNode extends BaseRange<Before.Declaration> {
 	traverseAllows: TraverseAllows<Date> =
 		this.exclusive ? data => data < this.rule : data => data <= this.rule
 
 	impliedBasis: BaseRoot = $ark.intrinsic.Date.internal
+}
+
+export const Before = {
+	implementation,
+	Node: BeforeNode
 }

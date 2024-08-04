@@ -1,5 +1,5 @@
 import type {
-	ExactLengthSchema,
+	ExactLength,
 	ExclusiveNumericRangeSchema,
 	exclusivizeRangeSchema,
 	InclusiveNumericRangeSchema
@@ -28,7 +28,7 @@ interface Type<
 		schema: schema
 	): Type<applyConstraint<t, "maxLength", exclusivizeRangeSchema<schema>>, $>
 
-	exactlyLength<const schema extends ExactLengthSchema>(
+	exactlyLength<const schema extends ExactLength.Schema>(
 		schema: schema
 	): Type<applyConstraint<t, "exactLength", schema>, $>
 }

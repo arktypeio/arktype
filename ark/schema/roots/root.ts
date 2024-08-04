@@ -7,10 +7,7 @@ import {
 	type NonEmptyList,
 	type array
 } from "@ark/util"
-import {
-	throwInvalidOperandError,
-	type PrimitiveConstraintKind
-} from "../constraint.js"
+import { throwInvalidOperandError, type Constraint } from "../constraint.js"
 import type { NodeSchema, nodeOfKind, reducibleKindOf } from "../kinds.js"
 import {
 	BaseNode,
@@ -20,9 +17,9 @@ import {
 	type KeyOrKeyNode
 } from "../node.js"
 import type { Predicate } from "../predicate.js"
-import type { DivisorSchema } from "../refinements/divisor.js"
-import type { ExactLengthSchema } from "../refinements/exactLength.js"
-import type { PatternSchema } from "../refinements/pattern.js"
+import type { Divisor } from "../refinements/divisor.js"
+import type { ExactLength } from "../refinements/exactLength.js"
+import type { Pattern } from "../refinements/pattern.js"
 import type {
 	ExclusiveDateRangeSchema,
 	ExclusiveNumericRangeSchema,
@@ -334,14 +331,14 @@ export abstract class BaseRoot<
 		return this.constrainOut("predicate", predicate)
 	}
 
-	constrain<kind extends PrimitiveConstraintKind>(
+	constrain<kind extends Constraint.PrimitiveKind>(
 		kind: kind,
 		schema: NodeSchema<kind>
 	): BaseRoot {
 		return this._constrain("in", kind, schema)
 	}
 
-	constrainOut<kind extends PrimitiveConstraintKind>(
+	constrainOut<kind extends Constraint.PrimitiveKind>(
 		kind: kind,
 		schema: NodeSchema<kind>
 	): BaseRoot {
@@ -350,7 +347,7 @@ export abstract class BaseRoot<
 
 	private _constrain(
 		io: "root" | "in" | "out",
-		kind: PrimitiveConstraintKind,
+		kind: Constraint.PrimitiveKind,
 		schema: any
 	): BaseRoot {
 		const constraint = this.$.node(kind, schema)
@@ -401,11 +398,11 @@ export abstract class BaseRoot<
 		return this.constrain("predicate", predicate)
 	}
 
-	divisibleBy(schema: DivisorSchema): BaseRoot {
+	divisibleBy(schema: Divisor.Schema): BaseRoot {
 		return this.constrain("divisor", schema)
 	}
 
-	matching(schema: PatternSchema): BaseRoot {
+	matching(schema: Pattern.Schema): BaseRoot {
 		return this.constrain("pattern", schema)
 	}
 
@@ -441,7 +438,7 @@ export abstract class BaseRoot<
 		return this.constrain("maxLength", exclusivizeRangeSchema(schema))
 	}
 
-	exactlyLength(schema: ExactLengthSchema): BaseRoot {
+	exactlyLength(schema: ExactLength.Schema): BaseRoot {
 		return this.constrain("exactLength", schema)
 	}
 

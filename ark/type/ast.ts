@@ -1,10 +1,10 @@
 import type {
 	ArkError,
 	ArkErrors,
+	Constraint,
 	constraintKindOf,
 	Morph,
-	NodeSchema,
-	PrimitiveConstraintKind
+	NodeSchema
 } from "@ark/schema"
 import {
 	noSuggest,
@@ -97,7 +97,7 @@ export type Narrowed = {
 }
 
 export type primitiveConstraintKindOf<In> = Extract<
-	PrimitiveConstraintKind,
+	Constraint.PrimitiveKind,
 	constraintKindOf<In>
 >
 
@@ -120,7 +120,7 @@ export namespace number {
 	>
 
 	export type parseConstraint<
-		kind extends PrimitiveConstraintKind,
+		kind extends Constraint.PrimitiveKind,
 		schema extends NodeSchema<kind>
 	> =
 		normalizePrimitiveConstraintRoot<schema> extends infer rule ?
@@ -179,7 +179,7 @@ export namespace string {
 	>
 
 	export type parseConstraint<
-		kind extends PrimitiveConstraintKind,
+		kind extends Constraint.PrimitiveKind,
 		schema extends NodeSchema<kind>
 	> =
 		normalizePrimitiveConstraintRoot<schema> extends infer rule ?
@@ -229,7 +229,7 @@ export namespace Date {
 	export type is<constraints extends Constraints> = constrain<Date, constraints>
 
 	export type parseConstraint<
-		kind extends PrimitiveConstraintKind,
+		kind extends Constraint.PrimitiveKind,
 		schema extends NodeSchema<kind>
 	> =
 		normalizePrimitiveConstraintRoot<schema> extends infer rule ?
@@ -247,7 +247,7 @@ export namespace Date {
 
 export type applyConstraint<
 	t,
-	kind extends PrimitiveConstraintKind,
+	kind extends Constraint.PrimitiveKind,
 	schema extends NodeSchema<kind>
 > =
 	t extends MorphAst<infer i, infer o> ?
@@ -256,7 +256,7 @@ export type applyConstraint<
 
 type _applyConstraint<
 	t,
-	kind extends PrimitiveConstraintKind,
+	kind extends Constraint.PrimitiveKind,
 	schema extends NodeSchema<kind>
 > =
 	schemaToConstraint<kind, schema> extends infer constraint ?
@@ -287,13 +287,13 @@ export type parseConstraints<t> =
 	:	null
 
 export type normalizePrimitiveConstraintRoot<
-	schema extends NodeSchema<PrimitiveConstraintKind>
+	schema extends NodeSchema<Constraint.PrimitiveKind>
 > =
 	"rule" extends keyof schema ? conform<schema["rule"], PropertyKey>
 	:	conform<schema, PropertyKey>
 
 export type schemaToConstraint<
-	kind extends PrimitiveConstraintKind,
+	kind extends Constraint.PrimitiveKind,
 	schema extends NodeSchema<kind>
 > =
 	normalizePrimitiveConstraintRoot<schema> extends infer rule ?

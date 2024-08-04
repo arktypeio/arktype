@@ -40,14 +40,25 @@ import { intersectNodes, intersectNodesRoot } from "./shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "./shared/traversal.js"
 import { arkKind } from "./shared/utils.js"
 
-export interface BaseConstraintDeclaration extends BaseNodeDeclaration {
-	kind: ConstraintKind
+export namespace Constraint {
+	export interface Declaration extends BaseNodeDeclaration {
+		kind: ConstraintKind
+	}
+
+	export type ReductionResult = BaseRoot | Disjoint | Intersection.MutableInner
+
+	export interface Attachments {
+		impliedBasis: BaseRoot | null
+		impliedSiblings?: array<BaseConstraint> | null
+	}
+
+	export type PrimitiveKind = Exclude<ConstraintKind, StructuralKind>
 }
 
 export abstract class BaseConstraint<
 	/** uses -ignore rather than -expect-error because this is not an error in .d.ts
 	 * @ts-ignore allow instantiation assignment to the base type */
-	out d extends BaseConstraintDeclaration = BaseConstraintDeclaration
+	out d extends Constraint.Declaration = Constraint.Declaration
 > extends BaseNode<d> {
 	readonly [arkKind] = "constraint"
 	abstract readonly impliedBasis: BaseRoot | null
@@ -60,13 +71,8 @@ export abstract class BaseConstraint<
 	}
 }
 
-export type ConstraintReductionResult =
-	| BaseRoot
-	| Disjoint
-	| Intersection.MutableInner
-
 export abstract class InternalPrimitiveConstraint<
-	d extends BaseConstraintDeclaration
+	d extends Constraint.Declaration
 > extends BaseConstraint<d> {
 	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
 	abstract readonly compiledCondition: string
@@ -252,10 +258,3 @@ export type writeInvalidOperandMessage<
 > = `${Capitalize<kind>} operand must be ${describe<
 	Prerequisite<kind>
 >} (was ${describe<Exclude<actual, Prerequisite<kind>>>})`
-
-export interface ConstraintAttachments {
-	impliedBasis: BaseRoot | null
-	impliedSiblings?: array<BaseConstraint> | null
-}
-
-export type PrimitiveConstraintKind = Exclude<ConstraintKind, StructuralKind>

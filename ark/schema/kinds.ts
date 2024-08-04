@@ -7,24 +7,15 @@ import {
 } from "@ark/util"
 import type { ResolvedArkConfig } from "./config.js"
 import type { BaseNode } from "./node.js"
-
 import { Predicate } from "./predicate.js"
-import {
-	DivisorNode,
-	divisorImplementation,
-	type DivisorDeclaration
-} from "./refinements/divisor.js"
+import { Divisor } from "./refinements/divisor.js"
 import {
 	boundClassesByKind,
 	boundImplementationsByKind,
 	type BoundDeclarations,
 	type BoundNodesByKind
 } from "./refinements/kinds.js"
-import {
-	PatternNode,
-	patternImplementation,
-	type PatternDeclaration
-} from "./refinements/pattern.js"
+import { Pattern } from "./refinements/pattern.js"
 import { Alias } from "./roots/alias.js"
 import { Domain } from "./roots/domain.js"
 import { Intersection } from "./roots/intersection.js"
@@ -57,11 +48,11 @@ export interface NodeDeclarationsByKind extends BoundDeclarations {
 	morph: Morph.Declaration
 	intersection: Intersection.Declaration
 	sequence: Sequence.Declaration
-	divisor: DivisorDeclaration
+	divisor: Divisor.Declaration
 	required: Required.Declaration
 	optional: Optional.Declaration
 	index: Index.Declaration
-	pattern: PatternDeclaration
+	pattern: Pattern.Declaration
 	predicate: Predicate.Declaration
 	structure: Structure.Declaration
 }
@@ -78,8 +69,8 @@ export const nodeImplementationsByKind: Record<
 	union: Union.implementation,
 	morph: Morph.implementation,
 	intersection: Intersection.implementation,
-	divisor: divisorImplementation,
-	pattern: patternImplementation,
+	divisor: Divisor.implementation,
+	pattern: Pattern.implementation,
 	predicate: Predicate.implementation,
 	required: Required.implementation,
 	optional: Optional.implementation,
@@ -110,8 +101,8 @@ export const nodeClassesByKind: Record<
 	union: Union.Node,
 	morph: Morph.Node,
 	intersection: Intersection.Node,
-	divisor: DivisorNode,
-	pattern: PatternNode,
+	divisor: Divisor.Node,
+	pattern: Pattern.Node,
 	predicate: Predicate.Node,
 	required: Required.Node,
 	optional: Optional.Node,
@@ -128,8 +119,8 @@ interface NodesByKind extends BoundNodesByKind {
 	unit: Unit.Node
 	proto: Proto.Node
 	domain: Domain.Node
-	divisor: DivisorNode
-	pattern: PatternNode
+	divisor: Divisor.Node
+	pattern: Pattern.Node
 	predicate: Predicate.Node
 	required: Required.Node
 	optional: Optional.Node

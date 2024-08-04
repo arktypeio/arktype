@@ -13,28 +13,32 @@ import {
 	type UnknownNormalizedRangeSchema
 } from "./range.js"
 
-export interface MinInner extends BaseRangeInner {
-	rule: number
+export namespace Min {
+	export interface Inner extends BaseRangeInner {
+		rule: number
+	}
+
+	export interface NormalizedSchema extends UnknownNormalizedRangeSchema {
+		rule: number
+	}
+
+	export type Schema = NormalizedSchema | number
+
+	export interface Declaration
+		extends declareNode<{
+			kind: "min"
+			schema: Schema
+			normalizedSchema: NormalizedSchema
+			inner: Inner
+			prerequisite: number
+			errorContext: Inner
+		}> {}
+
+	export type Node = MinNode
 }
 
-export interface NormalizedMinRoot extends UnknownNormalizedRangeSchema {
-	rule: number
-}
-
-export type MinSchema = NormalizedMinRoot | number
-
-export interface MinDeclaration
-	extends declareNode<{
-		kind: "min"
-		schema: MinSchema
-		normalizedSchema: NormalizedMinRoot
-		inner: MinInner
-		prerequisite: number
-		errorContext: MinInner
-	}> {}
-
-export const minImplementation: nodeImplementationOf<MinDeclaration> =
-	implementNode<MinDeclaration>({
+const implementation: nodeImplementationOf<Min.Declaration> =
+	implementNode<Min.Declaration>({
 		kind: "min",
 		collapsibleKey: "rule",
 		hasAssociatedError: true,
@@ -53,9 +57,14 @@ export const minImplementation: nodeImplementationOf<MinDeclaration> =
 		}
 	})
 
-export class MinNode extends BaseRange<MinDeclaration> {
+export class MinNode extends BaseRange<Min.Declaration> {
 	readonly impliedBasis: BaseRoot = $ark.intrinsic.number.internal
 
 	traverseAllows: TraverseAllows<number> =
 		this.exclusive ? data => data > this.rule : data => data >= this.rule
+}
+
+export const Min = {
+	implementation,
+	Node: MinNode
 }

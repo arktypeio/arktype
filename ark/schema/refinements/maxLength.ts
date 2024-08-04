@@ -15,29 +15,32 @@ import {
 	type UnknownNormalizedRangeSchema
 } from "./range.js"
 
-export interface MaxLengthInner extends BaseRangeInner {
-	rule: number
+export namespace MaxLength {
+	export interface Inner extends BaseRangeInner {
+		rule: number
+	}
+
+	export interface NormalizedSchema extends UnknownNormalizedRangeSchema {
+		rule: number
+	}
+
+	export type Schema = NormalizedSchema | number
+
+	export interface Declaration
+		extends declareNode<{
+			kind: "maxLength"
+			schema: Schema
+			normalizedSchema: NormalizedSchema
+			inner: Inner
+			prerequisite: LengthBoundableData
+			errorContext: Inner
+		}> {}
+
+	export type Node = MaxLengthNode
 }
 
-export interface NormalizedMaxLengthSchema
-	extends UnknownNormalizedRangeSchema {
-	rule: number
-}
-
-export type MaxLengthSchema = NormalizedMaxLengthSchema | number
-
-export interface MaxLengthDeclaration
-	extends declareNode<{
-		kind: "maxLength"
-		schema: MaxLengthSchema
-		normalizedSchema: NormalizedMaxLengthSchema
-		inner: MaxLengthInner
-		prerequisite: LengthBoundableData
-		errorContext: MaxLengthInner
-	}> {}
-
-export const maxLengthImplementation: nodeImplementationOf<MaxLengthDeclaration> =
-	implementNode<MaxLengthDeclaration>({
+const implementation: nodeImplementationOf<MaxLength.Declaration> =
+	implementNode<MaxLength.Declaration>({
 		kind: "maxLength",
 		collapsibleKey: "rule",
 		hasAssociatedError: true,
@@ -65,11 +68,16 @@ export const maxLengthImplementation: nodeImplementationOf<MaxLengthDeclaration>
 		}
 	})
 
-export class MaxLengthNode extends BaseRange<MaxLengthDeclaration> {
+export class MaxLengthNode extends BaseRange<MaxLength.Declaration> {
 	readonly impliedBasis: BaseRoot = $ark.intrinsic.lengthBoundable.internal
 
 	traverseAllows: TraverseAllows<LengthBoundableData> =
 		this.exclusive ?
 			data => data.length < this.rule
 		:	data => data.length <= this.rule
+}
+
+export const MaxLength = {
+	implementation,
+	Node: MaxLengthNode
 }

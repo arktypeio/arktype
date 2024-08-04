@@ -2,9 +2,9 @@ import {
 	domainDescriptions,
 	domainOf,
 	getBaseDomainKeys,
-	type Key,
-	type NonEnumerableDomain,
-	type array
+	type Domain as _Domain,
+	type array,
+	type Key
 } from "@ark/util"
 import type {
 	BaseInner,
@@ -19,24 +19,25 @@ import {
 import type { TraverseAllows } from "../shared/traversal.js"
 import { InternalBasis } from "./basis.js"
 
-export type { Domain } from "@ark/util"
+export type Domain = _Domain
 
 export namespace Domain {
-	export interface Inner<
-		domain extends NonEnumerableDomain = NonEnumerableDomain
-	> extends BaseInner {
+	export type NonEnumerable = Exclude<Domain, "undefined" | "null" | "boolean">
+
+	export interface Inner<domain extends NonEnumerable = NonEnumerable>
+		extends BaseInner {
 		readonly domain: domain
 	}
 
 	export interface NormalizedSchema<
-		domain extends NonEnumerableDomain = NonEnumerableDomain
+		domain extends NonEnumerable = NonEnumerable
 	> extends BaseNormalizedSchema {
 		readonly domain: domain
 	}
 
 	export type Schema<
 		// only domains with an infinite number of values are allowed as bases
-		domain extends NonEnumerableDomain = NonEnumerableDomain
+		domain extends NonEnumerable = NonEnumerable
 	> = domain | NormalizedSchema<domain>
 
 	export interface Declaration
