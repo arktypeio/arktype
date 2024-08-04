@@ -16,8 +16,6 @@ import type { ValidatorType } from "./validator.js"
 /** @ts-ignore cast variance */
 interface Type<out t extends object = object, $ = {}>
 	extends ValidatorType<t, $> {
-	keyof(): instantiateType<indexableOf<t>, $>
-
 	get<k1 extends indexableOf<t>, r = instantiateType<indexInto<t, k1>, $>>(
 		k1: k1 | type.cast<k1>
 	): r
@@ -40,6 +38,8 @@ interface Type<out t extends object = object, $ = {}>
 		k3: k3 | type.cast<k3>
 	): r
 
+	keyof(): instantiateType<keyOf<t>, $>
+
 	pick<const key extends keyOf<t> = never>(
 		...keys: (key | type.cast<key>)[]
 	): Type<
@@ -61,7 +61,7 @@ interface Type<out t extends object = object, $ = {}>
 	merge<const def, r = inferTypeRoot<def, $>>(
 		def: validateTypeRoot<def, $> &
 			(r extends object ? unknown
-			:	ErrorType<"Merged type must be an object", [actual: r]>)
+			:	ErrorType<"Merged type must be an object", [was: r]>)
 	): Type<merge<t, r & object>, $>
 
 	required(): Type<{ [k in keyof t]-?: t[k] }, $>
