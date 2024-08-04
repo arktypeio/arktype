@@ -26,9 +26,9 @@ import type {
 	reducibleKindOf
 } from "./kinds.js"
 import type { NodeParseOptions } from "./parse.js"
-import type { MorphNode } from "./roots/morph.js"
+import type { Morph } from "./roots/morph.js"
 import type { BaseRoot } from "./roots/root.js"
-import type { UnitNode } from "./roots/unit.js"
+import type { Unit } from "./roots/unit.js"
 import type { BaseScope } from "./scope.js"
 import type { NodeCompiler } from "./shared/compile.js"
 import type {
@@ -144,7 +144,7 @@ export abstract class BaseNode<
 	}
 
 	@cached
-	get shallowMorphs(): MorphNode[] {
+	get shallowMorphs(): Morph.Node[] {
 		return this.shallowReferences
 			.filter(n => n.hasKind("morph"))
 			.sort((l, r) => (l.expression < r.expression ? -1 : 1))
@@ -258,7 +258,7 @@ export abstract class BaseNode<
 		return includes(rootKinds, this.kind)
 	}
 
-	hasUnit<value>(value: unknown): this is UnitNode & { unit: value } {
+	hasUnit<value>(value: unknown): this is Unit.Node & { unit: value } {
 		return this.hasKind("unit") && this.allows(value)
 	}
 

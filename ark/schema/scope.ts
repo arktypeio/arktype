@@ -46,7 +46,7 @@ import {
 	schemaKindOf,
 	type NodeParseOptions
 } from "./parse.js"
-import { normalizeAliasSchema, type AliasNode } from "./roots/alias.js"
+import { normalizeAliasSchema, type Alias } from "./roots/alias.js"
 import type { BaseRoot } from "./roots/root.js"
 import { CompiledFunction, NodeCompiler } from "./shared/compile.js"
 import type { NodeKind, RootKind } from "./shared/implement.js"
@@ -200,8 +200,8 @@ export abstract class BaseScope<$ extends {} = {}> {
 		})
 	}
 
-	protected lazyResolutions: AliasNode[] = []
-	lazilyResolve(resolve: () => BaseRoot, syntheticAlias?: string): AliasNode {
+	protected lazyResolutions: Alias.Node[] = []
+	lazilyResolve(resolve: () => BaseRoot, syntheticAlias?: string): Alias.Node {
 		const node = this.node(
 			"alias",
 			{

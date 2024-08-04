@@ -1,6 +1,17 @@
 // @ts-check
 const { defineConfig } = require("eslint-define-config")
 
+const noCrossPackageImportPattern = {
+	group: [
+		"**/fs/**",
+		"**/attest/**",
+		"**/schema/**",
+		"**/type/**",
+		"**/util/**"
+	],
+	message: `Use a specifier like '@ark/util' to import from a package`
+}
+
 module.exports = defineConfig({
 	parser: "@typescript-eslint/parser",
 	plugins: [
@@ -84,16 +95,7 @@ module.exports = defineConfig({
 			"warn",
 			{
 				patterns: [
-					{
-						group: [
-							"**/fs/**",
-							"**/attest/**",
-							"**/schema/**",
-							"**/type/**",
-							"**/util/**"
-						],
-						message: `Use a specifier like '@ark/util' to import from a package`
-					},
+					noCrossPackageImportPattern,
 					{
 						group: ["**/index.js", "!**/structure/index.js"],
 						message: `Use a path like '../original/definition.js' instead of a package entrypoint`
@@ -137,6 +139,27 @@ module.exports = defineConfig({
 			rules: {
 				"import/no-nodejs-modules": "warn",
 				"import/no-extraneous-dependencies": "warn"
+			}
+		},
+
+		{
+			// Amend the index.js import restriction to allow for relative imports of
+			// ark/schema/structure/index.js, since it is for IndexNode, not a barrel file
+			files: ["**/ark/schema/structure/**"],
+			rules: {
+				"@typescript-eslint/no-restricted-imports": [
+					"warn",
+					{
+						patterns: [
+							noCrossPackageImportPattern,
+							{
+								// still restrict import from package entrypoints (relative parents)
+								group: ["../**/index.js"],
+								message: `Use a path like '../original/definition.js' instead of a package entrypoint`
+							}
+						]
+					}
+				]
 			}
 		},
 		{
