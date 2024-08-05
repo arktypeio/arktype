@@ -335,6 +335,13 @@ export abstract class BaseRoot<
 		kind: kind,
 		schema: NodeSchema<kind>
 	): BaseRoot {
+		return this._constrain("root", kind, schema)
+	}
+
+	constrainIn<kind extends Constraint.PrimitiveKind>(
+		kind: kind,
+		schema: NodeSchema<kind>
+	): BaseRoot {
 		return this._constrain("in", kind, schema)
 	}
 
@@ -352,7 +359,10 @@ export abstract class BaseRoot<
 	): BaseRoot {
 		const constraint = this.$.node(kind, schema)
 		const operand = io === "root" ? this : this[io]
-		if (constraint.impliedBasis && !operand.extends(constraint.impliedBasis)) {
+		if (
+			operand.hasKind("morph") ||
+			(constraint.impliedBasis && !operand.extends(constraint.impliedBasis))
+		) {
 			return throwInvalidOperandError(
 				kind,
 				constraint.impliedBasis as never,
