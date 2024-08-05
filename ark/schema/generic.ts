@@ -6,6 +6,7 @@ import {
 	snapshot,
 	throwParseError,
 	type array,
+	type Hkt,
 	type Json
 } from "@ark/util"
 import type { BaseNode } from "./node.js"
@@ -173,8 +174,8 @@ export type genericParamSchemasToAst<
 	:	never
 }
 
-export type genericHktToConstraints<hkt extends abstract new () => GenericHkt> =
-	Parameters<InstanceType<hkt>["hkt"]>[0]
+export type genericHktToConstraints<hkt extends abstract new () => Hkt> =
+	InstanceType<hkt>["constraints"]
 
 export type GenericHktSchemaParser = <
 	const paramsDef extends readonly GenericParamDef[]
@@ -183,7 +184,7 @@ export type GenericHktSchemaParser = <
 ) => GenericHktSchemaBodyParser<genericParamSchemasToAst<paramsDef>>
 
 export type GenericHktSchemaBodyParser<params extends array<GenericParamAst>> =
-	<hkt extends abstract new () => GenericHkt>(
+	<hkt extends typeof Hkt<any>>(
 		instantiateDef: LazyGenericBody<GenericArgResolutions<params>>,
 		hkt: hkt
 	) => GenericRoot<
@@ -192,27 +193,6 @@ export type GenericHktSchemaBodyParser<params extends array<GenericParamAst>> =
 		},
 		InstanceType<hkt>
 	>
-
-export abstract class GenericHkt<
-	hkt extends (args: any) => unknown = (args: any) => unknown
-> {
-	declare readonly args: array
-	abstract readonly hkt: hkt
-}
-
-export namespace GenericHkt {
-	export type instantiate<
-		hkt extends GenericHkt,
-		args extends Parameters<hkt["hkt"]>[0]
-	> = ReturnType<
-		(hkt & {
-			readonly args: args
-		})["hkt"]
-	>
-
-	export type conform<thisArgs, parameters extends array> =
-		thisArgs extends parameters ? thisArgs : parameters
-}
 
 export const writeUnsatisfiedParameterConstraintMessage = <
 	name extends string,

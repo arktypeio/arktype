@@ -1,11 +1,4 @@
-import type {
-	anyOrNever,
-	array,
-	conform,
-	Hkt,
-	intersectArrays,
-	show
-} from "@ark/util"
+import type { anyOrNever, array, Hkt, intersectArrays, show } from "@ark/util"
 import type {
 	constrain,
 	Constraints,
@@ -52,10 +45,9 @@ type _inferIntersection<l, r, piped extends boolean> =
 		:	never
 	:	l & r
 
-declare class MorphableIntersection<piped extends boolean> extends Hkt.Kind {
-	hkt: (
-		In: conform<this[Hkt.args], [l: unknown, r: unknown]>
-	) => _inferIntersection<(typeof In)[0], (typeof In)[1], piped>
+interface MorphableIntersection<piped extends boolean>
+	extends Hkt<[unknown, unknown]> {
+	return: _inferIntersection<this[0], this[1], piped>
 }
 
 type intersectObjects<l, r, piped extends boolean> =

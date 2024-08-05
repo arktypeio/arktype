@@ -1,5 +1,5 @@
-import { GenericHkt, genericNode } from "@ark/schema"
-import type { conform, Key, omit, pick, show } from "@ark/util"
+import { genericNode } from "@ark/schema"
+import { Hkt, type Key, type omit, type pick, type show } from "@ark/util"
 import type { Module } from "../module.js"
 import { scope, type inferScope } from "../scope.js"
 import { internal } from "./internal.js"
@@ -13,64 +13,50 @@ const Record = genericNode(["K", internal.key], "V")(
 			value: args.V
 		}
 	}),
-	class RecordHkt extends GenericHkt {
-		declare hkt: (
-			args: conform<this["args"], [Key, unknown]>
-		) => Record<(typeof args)[0], (typeof args)[1]>
+	class RecordHkt extends Hkt<[Key, unknown]> {
+		declare return: Record<this[0], this[1]>
 	}
 )
 
 const Pick = genericNode(["T", tsKeywords.object], ["K", internal.key])(
 	args => args.T.pick(args.K as never),
-	class PickHkt extends GenericHkt {
-		declare hkt: (
-			args: conform<this["args"], [object, Key]>
-		) => pick<(typeof args)[0], (typeof args)[1] & keyof (typeof args)[0]>
+	class PickHkt extends Hkt<[object, Key]> {
+		declare return: pick<this[0], this[1] & keyof this[0]>
 	}
 )
 
 const Omit = genericNode(["T", tsKeywords.object], ["K", internal.key])(
 	args => args.T.omit(args.K as never),
-	class OmitHkt extends GenericHkt {
-		declare hkt: (
-			args: conform<this["args"], [object, Key]>
-		) => omit<(typeof args)[0], (typeof args)[1] & keyof (typeof args)[0]>
+	class OmitHkt extends Hkt<[object, Key]> {
+		declare return: omit<this[0], this[1] & keyof this[0]>
 	}
 )
 
 const Partial = genericNode(["T", tsKeywords.object])(
 	args => args.T.partial(),
-	class PartialHkt extends GenericHkt {
-		declare hkt: (
-			args: conform<this["args"], [object]>
-		) => show<Partial<(typeof args)[0]>>
+	class PartialHkt extends Hkt<[object]> {
+		declare return: show<Partial<this[0]>>
 	}
 )
 
 const Required = genericNode(["T", tsKeywords.object])(
 	args => args.T.required(),
-	class RequiredHkt extends GenericHkt {
-		declare hkt: (
-			args: conform<this["args"], [object]>
-		) => show<Required<(typeof args)[0]>>
+	class RequiredHkt extends Hkt<[object]> {
+		declare return: show<Required<this[0]>>
 	}
 )
 
 const Exclude = genericNode("T", "U")(
 	args => args.T.exclude(args.U),
-	class ExcludeHkt extends GenericHkt {
-		declare hkt: (
-			args: conform<this["args"], [unknown, unknown]>
-		) => Exclude<(typeof args)[0], (typeof args)[1]>
+	class ExcludeHkt extends Hkt<[unknown, unknown]> {
+		declare return: Exclude<this[0], this[1]>
 	}
 )
 
 const Extract = genericNode("T", "U")(
 	args => args.T.extract(args.U),
-	class ExtractHkt extends GenericHkt {
-		declare hkt: (
-			args: conform<this["args"], [unknown, unknown]>
-		) => Extract<(typeof args)[0], (typeof args)[1]>
+	class ExtractHkt extends Hkt<[unknown, unknown]> {
+		declare return: Extract<this[0], this[1]>
 	}
 )
 

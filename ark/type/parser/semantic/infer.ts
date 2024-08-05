@@ -1,5 +1,5 @@
-import type { GenericAst, GenericHkt } from "@ark/schema"
-import type { BigintLiteral, array } from "@ark/util"
+import type { GenericAst } from "@ark/schema"
+import type { BigintLiteral, Hkt, array } from "@ark/util"
 import type { Ark } from "../../ark.js"
 import type {
 	Date,
@@ -48,8 +48,8 @@ type resolveScope<g$, $> =
 
 export type inferExpression<ast extends array, $, args> =
 	ast extends GenericInstantiationAst<infer g, infer argAsts> ?
-		g["bodyDef"] extends GenericHkt ?
-			GenericHkt.instantiate<
+		g["bodyDef"] extends Hkt<any> ?
+			Hkt.apply<
 				g["bodyDef"],
 				{ [i in keyof argAsts]: inferConstrainableAst<argAsts[i], $, args> }
 			>

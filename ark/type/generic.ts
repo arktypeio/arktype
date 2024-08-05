@@ -1,7 +1,6 @@
 import type {
 	arkKind,
 	GenericAst,
-	GenericHkt,
 	GenericParamAst,
 	GenericParamDef,
 	genericParamNames,
@@ -14,8 +13,10 @@ import {
 	type array,
 	type Callable,
 	type conform,
+	type Constructor,
 	type ErrorMessage,
 	type ErrorType,
+	type Hkt,
 	type WhiteSpaceToken
 } from "@ark/util"
 import type { inferDefinition } from "./parser/definition.js"
@@ -205,11 +206,8 @@ type instantiateGeneric<
 	$,
 	args$
 > = Type<
-	[def] extends [GenericHkt] ?
-		GenericHkt.instantiate<
-			def,
-			{ [i in keyof args]: inferTypeRoot<args[i], args$> }
-		>
+	[def] extends [Hkt] ?
+		Hkt.apply<def, { [i in keyof args]: inferTypeRoot<args[i], args$> }>
 	:	inferDefinition<def, $, bindGenericArgs<params, args$, args>>,
 	args$
 >
@@ -400,9 +398,9 @@ export type GenericHktParser<$ = {}> = <
 >(
 	...params: paramsDef
 ) => <
-	hkt extends abstract new () => GenericHkt,
+	hkt extends Hkt,
 	params extends Array<GenericParamAst> = genericParamDefsToAst<paramsDef, $>
 >(
 	instantiateDef: LazyGenericBody<baseGenericResolutions<params, $>>,
-	hkt: hkt
-) => Generic<params, InstanceType<hkt>, $, $>
+	hkt: Constructor<hkt>
+) => Generic<params, hkt, $, $>

@@ -1,13 +1,12 @@
 import { attest, contextualize } from "@ark/attest"
 import {
-	GenericHkt,
 	intrinsic,
 	writeIndivisibleMessage,
 	writeUnboundableMessage,
 	writeUnresolvableMessage,
 	writeUnsatisfiedParameterConstraintMessage
 } from "@ark/schema"
-import type { conform } from "@ark/util"
+import { Hkt, type conform } from "@ark/util"
 import { generic, scope, type } from "arktype"
 import { emptyGenericParameterMessage, type Generic } from "../generic.js"
 import { writeUnclosedGroupMessage } from "../parser/string/reduce/shared.js"
@@ -435,10 +434,8 @@ contextualize(() => {
 					type("instanceof", MyExternalClass).and({
 						data: args.T
 					}),
-				class extends GenericHkt {
-					declare hkt: (
-						args: GenericHkt.conform<this["args"], [unknown]>
-					) => MyExternalClass<(typeof args)[0]>
+				class extends Hkt {
+					declare return: MyExternalClass<this[0]>
 				}
 			)
 
@@ -478,20 +475,18 @@ contextualize(() => {
 				["N", { value: "number" }]
 			)(
 				args => [args.S.atLeastLength(1), args.N],
-				class extends GenericHkt {
-					declare hkt: (
-						args: conform<this["args"], [string, { value: number }]>
-					) => [(typeof args)[0], (typeof args)[1]]
+				class extends Hkt<[string, { value: number }]> {
+					declare return: [this[0], this[1]]
 				}
 			)
 
-			const t = validateExternalGeneric("string", { value: "number" })
+			const t = validateExternalGeneric("string", { value: "1" })
 
 			attest<
 				[
 					string,
 					{
-						value: number
+						value: 1
 					}
 				]
 			>(t.t)

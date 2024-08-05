@@ -1,5 +1,5 @@
-import { GenericHkt, genericNode } from "@ark/schema"
-import { liftArray, type conform, type merge } from "@ark/util"
+import { genericNode } from "@ark/schema"
+import { Hkt, liftArray, type merge } from "@ark/util"
 import type { Out } from "../ast.js"
 import type { Module } from "../module.js"
 import { scope, type inferScope } from "../scope.js"
@@ -7,11 +7,9 @@ import { tsKeywords } from "./tsKeywords.js"
 
 const ArkLiftArray = genericNode("element")(
 	args => args.element.or(args.element.array()).pipe(liftArray),
-	class liftArrayHkt extends GenericHkt {
-		declare hkt: (
-			args: conform<this["args"], [unknown]>
-		) => liftArray<(typeof args)[0]> extends infer lifted ?
-			(In: (typeof args)[0] | lifted) => Out<lifted>
+	class liftArrayHkt extends Hkt<[element: unknown]> {
+		declare return: liftArray<this[0]> extends infer lifted ?
+			(In: this[0] | lifted) => Out<lifted>
 		:	never
 	}
 )
@@ -21,10 +19,8 @@ const ArkMerge = genericNode(
 	["props", tsKeywords.object]
 )(
 	args => args.base.merge(args.props),
-	class mergeHkt extends GenericHkt {
-		declare hkt: (
-			args: conform<this["args"], [object, object]>
-		) => merge<(typeof args)[0], (typeof args)[1]>
+	class mergeHkt extends Hkt<[base: object, props: object]> {
+		declare return: merge<this[0], this[1]>
 	}
 )
 
