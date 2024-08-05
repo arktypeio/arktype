@@ -8,7 +8,7 @@ import { tsKeywords } from "./tsKeywords.js"
 const ArkLiftArray = genericNode("element")(
 	args => args.element.or(args.element.array()).pipe(liftArray),
 	class liftArrayHkt extends Hkt<[element: unknown]> {
-		declare return: liftArray<this[0]> extends infer lifted ?
+		declare body: liftArray<this[0]> extends infer lifted ?
 			(In: this[0] | lifted) => Out<lifted>
 		:	never
 	}
@@ -20,7 +20,7 @@ const ArkMerge = genericNode(
 )(
 	args => args.base.merge(args.props),
 	class mergeHkt extends Hkt<[base: object, props: object]> {
-		declare return: merge<this[0], this[1]>
+		declare body: merge<this[0], this[1]>
 	}
 )
 

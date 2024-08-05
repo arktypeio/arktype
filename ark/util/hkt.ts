@@ -9,19 +9,22 @@ export abstract class Hkt<constraints extends unknown[] = any> {
 	declare 1: this[args] extends [any, infer arg, ...any] ? arg : never
 	declare 2: this[args] extends [any, any, infer arg, ...any] ? arg : never
 	declare 3: this[args] extends [any, any, any, infer arg, ...any] ? arg : never
-	declare return: unknown
+	abstract body: unknown
 }
 
 /** A small set of HKT utility types based on https://github.com/gvergnaud/hotscript
  *  See https://github.com/gvergnaud/hotscript/blob/main/src/internals/core/Core.ts
  */
 export namespace Hkt {
+	export type constructor<constraints extends unknown[] = any> =
+		new () => Hkt<constraints>
+
 	export type args = typeof args
 
 	export type apply<
-		hkt extends Hkt<any>,
+		hkt extends Hkt,
 		args extends { [i in keyof args]: hkt["constraints"][i] }
 	> = (hkt & {
 		[args]: args
-	})["return"]
+	})["body"]
 }

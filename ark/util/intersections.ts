@@ -5,7 +5,7 @@ import type { Hkt } from "./hkt.js"
 import type { propValueOf, requiredKeyOf } from "./records.js"
 
 export interface AndPreserveUnknown extends Hkt<[unknown, unknown]> {
-	return: andPreserveUnknown<this[0], this[1]>
+	body: andPreserveUnknown<this[0], this[1]>
 }
 
 type SequenceIntersectionKind = "array" | "parameters"

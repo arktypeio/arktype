@@ -435,7 +435,7 @@ contextualize(() => {
 						data: args.T
 					}),
 				class extends Hkt {
-					declare return: MyExternalClass<this[0]>
+					declare body: MyExternalClass<this[0]>
 				}
 			)
 
@@ -476,7 +476,7 @@ contextualize(() => {
 			)(
 				args => [args.S.atLeastLength(1), args.N],
 				class extends Hkt<[string, { value: number }]> {
-					declare return: [this[0], this[1]]
+					declare body: [this[0], this[1]]
 				}
 			)
 

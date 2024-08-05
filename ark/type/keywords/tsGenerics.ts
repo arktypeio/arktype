@@ -14,49 +14,49 @@ const Record = genericNode(["K", internal.key], "V")(
 		}
 	}),
 	class RecordHkt extends Hkt<[Key, unknown]> {
-		declare return: Record<this[0], this[1]>
+		declare body: Record<this[0], this[1]>
 	}
 )
 
 const Pick = genericNode(["T", tsKeywords.object], ["K", internal.key])(
 	args => args.T.pick(args.K as never),
 	class PickHkt extends Hkt<[object, Key]> {
-		declare return: pick<this[0], this[1] & keyof this[0]>
+		declare body: pick<this[0], this[1] & keyof this[0]>
 	}
 )
 
 const Omit = genericNode(["T", tsKeywords.object], ["K", internal.key])(
 	args => args.T.omit(args.K as never),
 	class OmitHkt extends Hkt<[object, Key]> {
-		declare return: omit<this[0], this[1] & keyof this[0]>
+		declare body: omit<this[0], this[1] & keyof this[0]>
 	}
 )
 
 const Partial = genericNode(["T", tsKeywords.object])(
 	args => args.T.partial(),
 	class PartialHkt extends Hkt<[object]> {
-		declare return: show<Partial<this[0]>>
+		declare body: show<Partial<this[0]>>
 	}
 )
 
 const Required = genericNode(["T", tsKeywords.object])(
 	args => args.T.required(),
 	class RequiredHkt extends Hkt<[object]> {
-		declare return: show<Required<this[0]>>
+		declare body: show<Required<this[0]>>
 	}
 )
 
 const Exclude = genericNode("T", "U")(
 	args => args.T.exclude(args.U),
 	class ExcludeHkt extends Hkt<[unknown, unknown]> {
-		declare return: Exclude<this[0], this[1]>
+		declare body: Exclude<this[0], this[1]>
 	}
 )
 
 const Extract = genericNode("T", "U")(
 	args => args.T.extract(args.U),
 	class ExtractHkt extends Hkt<[unknown, unknown]> {
-		declare return: Extract<this[0], this[1]>
+		declare body: Extract<this[0], this[1]>
 	}
 )
 

@@ -13,7 +13,6 @@ import {
 	type array,
 	type Callable,
 	type conform,
-	type Constructor,
 	type ErrorMessage,
 	type ErrorType,
 	type Hkt,
@@ -398,9 +397,9 @@ export type GenericHktParser<$ = {}> = <
 >(
 	...params: paramsDef
 ) => <
-	hkt extends Hkt,
+	hkt extends Hkt.constructor,
 	params extends Array<GenericParamAst> = genericParamDefsToAst<paramsDef, $>
 >(
 	instantiateDef: LazyGenericBody<baseGenericResolutions<params, $>>,
-	hkt: Constructor<hkt>
-) => Generic<params, hkt, $, $>
+	hkt: hkt
+) => Generic<params, InstanceType<hkt>, $, $>

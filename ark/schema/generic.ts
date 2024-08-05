@@ -184,7 +184,7 @@ export type GenericHktSchemaParser = <
 ) => GenericHktSchemaBodyParser<genericParamSchemasToAst<paramsDef>>
 
 export type GenericHktSchemaBodyParser<params extends array<GenericParamAst>> =
-	<hkt extends typeof Hkt<any>>(
+	<hkt extends Hkt.constructor>(
 		instantiateDef: LazyGenericBody<GenericArgResolutions<params>>,
 		hkt: hkt
 	) => GenericRoot<

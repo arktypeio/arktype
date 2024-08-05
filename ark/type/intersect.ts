@@ -47,7 +47,7 @@ type _inferIntersection<l, r, piped extends boolean> =
 
 interface MorphableIntersection<piped extends boolean>
 	extends Hkt<[unknown, unknown]> {
-	return: _inferIntersection<this[0], this[1], piped>
+	body: _inferIntersection<this[0], this[1], piped>
 }
 
 type intersectObjects<l, r, piped extends boolean> =

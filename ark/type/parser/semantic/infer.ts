@@ -48,7 +48,7 @@ type resolveScope<g$, $> =
 
 export type inferExpression<ast extends array, $, args> =
 	ast extends GenericInstantiationAst<infer g, infer argAsts> ?
-		g["bodyDef"] extends Hkt<any> ?
+		g["bodyDef"] extends Hkt ?
 			Hkt.apply<
 				g["bodyDef"],
 				{ [i in keyof argAsts]: inferConstrainableAst<argAsts[i], $, args> }
