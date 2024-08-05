@@ -1,7 +1,8 @@
 import { domainOf } from "./domain.js"
 import { throwInternalError } from "./errors.js"
+import type { show } from "./generics.js"
 import { objectKindOf } from "./objectKinds.js"
-import type { PartialRecord } from "./records.js"
+import type { intersectOverloadReturns } from "./unionToTuple.js"
 
 // Eventually we can just import from package.json in the source itself
 // but for now, import assertions are too unstable and it wouldn't support
@@ -26,9 +27,9 @@ declare global {
 	}
 
 	export namespace ArkEnv {
-		export type registry = PartialRecord<string, object | symbol> &
-			InitialRegistryContents &
-			ReturnType<ArkEnv["registry"]>
+		export type registry = show<
+			InitialRegistryContents & intersectOverloadReturns<ArkEnv["registry"]>
+		>
 
 		export type prototypes = ReturnType<ArkEnv["prototypes"]>
 	}
@@ -44,8 +45,7 @@ export const register = (value: object | symbol): string => {
 	let name = baseNameFor(value)
 	if (nameCounts[name]) name = `${name}${nameCounts[name]!++}`
 	else nameCounts[name] = 1
-
-	$ark[name] = value
+	;($ark as any)[name] = value
 	namesByResolution.set(value, name)
 	return name
 }

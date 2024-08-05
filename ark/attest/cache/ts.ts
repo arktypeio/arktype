@@ -1,5 +1,5 @@
 import { fromCwd, type SourcePosition } from "@ark/fs"
-import { throwInternalError } from "@ark/util"
+import { throwInternalError, type dict } from "@ark/util"
 import prettier from "@prettier/sync"
 import * as tsvfs from "@typescript/vfs"
 import { readFileSync } from "node:fs"
@@ -108,12 +108,13 @@ export type TsconfigInfo = {
 }
 
 export const getTsConfigInfoOrThrow = (): TsconfigInfo => {
-	const config = getConfig().tsconfig
+	const config = getConfig()
+	const tsconfig = config.tsconfig
 	const configFilePath =
-		config ?? ts.findConfigFile(fromCwd(), ts.sys.fileExists, "tsconfig.json")
+		tsconfig ?? ts.findConfigFile(fromCwd(), ts.sys.fileExists, "tsconfig.json")
 	if (!configFilePath) {
 		throw new Error(
-			`File ${config ?? join(fromCwd(), "tsconfig.json")} must exist.`
+			`File ${tsconfig ?? join(fromCwd(), "tsconfig.json")} must exist.`
 		)
 	}
 
@@ -129,9 +130,15 @@ export const getTsConfigInfoOrThrow = (): TsconfigInfo => {
 		)
 	}
 
-	const configObject = result.config
+	const configJson: dict & { compilerOptions: ts.CompilerOptions } =
+		result.config
+
+	configJson.compilerOptions = Object.assign(
+		configJson.compilerOptions ?? {},
+		config.compilerOptions
+	)
 	const configParseResult = ts.parseJsonConfigFileContent(
-		configObject,
+		configJson,
 		ts.sys,
 		dirname(configFilePath),
 		{},

@@ -7,14 +7,12 @@ import {
 	writeMorphIntersectionMessage
 } from "@ark/schema"
 import { ark, scope, type, type Type } from "arktype"
-import type { MoreThan, Out, constrain, string } from "../ast.js"
-import type { MorphType } from "../subtypes/morph.js"
-import type { ObjectType } from "../subtypes/object.js"
+import type { MoreThan, Out, constrain } from "../ast.js"
 
 contextualize(() => {
 	it("base", () => {
 		const t = type("number").pipe(data => `${data}`)
-		attest<MorphType<(In: number) => Out<string>>>(t)
+		attest<Type<(In: number) => Out<string>>>(t)
 		attest<string>(t.infer)
 		attest<number>(t.in.infer)
 		const out = t(5)
@@ -44,7 +42,7 @@ contextualize(() => {
 
 	it("within type", () => {
 		const t = type(["boolean", "=>", data => !data])
-		attest<MorphType<(In: boolean) => Out<boolean>>>(t)
+		attest<Type<(In: boolean) => Out<boolean>>>(t)
 
 		const serializedMorphs =
 			t.internal.firstReferenceOfKindOrThrow("morph").serializedMorphs
@@ -140,7 +138,7 @@ contextualize(() => {
 			type({ d: "1" })
 		)
 		attest<
-			ObjectType<{
+			Type<{
 				a: 1
 				b: 1
 				c: 1

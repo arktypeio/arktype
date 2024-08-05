@@ -8,6 +8,7 @@ import {
 import { existsSync } from "node:fs"
 import { join, resolve } from "node:path"
 import type * as prettier from "prettier"
+import type ts from "typescript"
 import {
 	findAttestTypeScriptVersions,
 	type TsVersionData
@@ -17,6 +18,7 @@ export type TsVersionAliases = autocomplete<"*"> | string[]
 
 type BaseAttestConfig = {
 	tsconfig: string | undefined
+	compilerOptions: ts.CompilerOptions
 	updateSnapshots: boolean
 	/** A string or list of strings representing the TypeScript version aliases to run.
 	 *
@@ -59,6 +61,7 @@ export type AttestConfig = Partial<BaseAttestConfig>
 export const getDefaultAttestConfig = (): BaseAttestConfig => ({
 	tsconfig:
 		existsSync(fromCwd("tsconfig.json")) ? fromCwd("tsconfig.json") : undefined,
+	compilerOptions: {},
 	attestAliases: ["attest", "attestInternal"],
 	updateSnapshots: false,
 	skipTypes: false,
@@ -107,7 +110,8 @@ const getParamValue = (param: keyof AttestConfig) => {
 
 	if (param === "tsVersions" || param === "attestAliases") return raw.split(",")
 
-	if (param === "typeToStringFormat") return JSON.parse(raw)
+	if (param === "typeToStringFormat" || param === "compilerOptions")
+		return JSON.parse(raw)
 
 	return raw
 }
@@ -165,7 +169,8 @@ const isTsVersionAliases = (
 
 const parseTsVersions = (aliases: TsVersionAliases): TsVersionData[] => {
 	const versions = findAttestTypeScriptVersions()
-	if (aliases === "*") return versions
+	if (aliases === "*" || (isArray(aliases) && aliases[0] === "*"))
+		return versions
 
 	return liftArray(aliases).map(alias => {
 		const matching = versions.find(v => v.alias === alias)
