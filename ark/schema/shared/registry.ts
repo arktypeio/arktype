@@ -1,10 +1,11 @@
 import {
-	$ark,
+	registry,
 	groupBy,
 	register,
 	type InitialRegistryContents,
 	type NonNegativeIntegerLiteral
 } from "@ark/util"
+import type { ArkSchemaRegistry } from "../config.js"
 
 let _registryName = "$ark"
 let suffix = 2
@@ -12,7 +13,11 @@ let suffix = 2
 while (_registryName in globalThis) _registryName = `$ark${suffix++}`
 
 export const registryName = _registryName
-;(globalThis as any)[registryName] = $ark
+;(globalThis as any)[registryName] = registry
+
+declare global {
+	export const $ark: ArkSchemaRegistry
+}
 
 if (suffix !== 2) {
 	const g: any = globalThis

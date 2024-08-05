@@ -1,11 +1,4 @@
-import {
-	$ark,
-	append,
-	printable,
-	throwParseError,
-	unset,
-	type Key
-} from "@ark/util"
+import { append, printable, throwParseError, unset, type Key } from "@ark/util"
 import { BaseConstraint } from "../constraint.js"
 import type { nodeOfKind, RootSchema } from "../kinds.js"
 import {

@@ -1,4 +1,3 @@
-import { $ark } from "@ark/util"
 import { node, schemaScope } from "./scope.js"
 import { arrayIndexSource } from "./structure/shared.js"
 

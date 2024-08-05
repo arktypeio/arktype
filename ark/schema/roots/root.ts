@@ -1,5 +1,4 @@
 import {
-	$ark,
 	cached,
 	includes,
 	omit,

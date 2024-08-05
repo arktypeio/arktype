@@ -1,4 +1,4 @@
-import { $ark, type mutable, type requireKeys, type show } from "@ark/util"
+import type { ArkRegistry, show, requireKeys, mutable } from "@ark/util"
 import type { intrinsic } from "./intrinsic.js"
 import type {
 	ActualWriter,
@@ -13,7 +13,7 @@ import {
 	type NodeKind
 } from "./shared/implement.js"
 
-export interface ArkSchemaRegistryContents {
+export interface ArkSchemaRegistry extends ArkRegistry {
 	intrinsic: typeof intrinsic
 	config: ArkConfig
 	defaultConfig: ResolvedArkConfig
@@ -22,7 +22,6 @@ export interface ArkSchemaRegistryContents {
 declare global {
 	export interface ArkEnv {
 		meta(): {}
-		registry(): ArkSchemaRegistryContents
 	}
 
 	export namespace ArkEnv {

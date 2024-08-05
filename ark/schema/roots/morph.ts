@@ -1,5 +1,4 @@
 import {
-	$ark,
 	arrayEquals,
 	liftArray,
 	throwParseError,

@@ -9,7 +9,6 @@ import {
 	type Union
 } from "@ark/schema"
 import {
-	$ark,
 	append,
 	objectKindOrDomainOf,
 	throwParseError,

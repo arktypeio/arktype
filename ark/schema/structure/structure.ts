@@ -1,5 +1,4 @@
 import {
-	$ark,
 	append,
 	cached,
 	flatMorph,

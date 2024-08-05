@@ -1,4 +1,4 @@
-import { $ark, append, cached, domainDescriptions } from "@ark/util"
+import { append, cached, domainDescriptions } from "@ark/util"
 import type { NodeCompiler } from "../shared/compile.js"
 import type {
 	BaseInner,

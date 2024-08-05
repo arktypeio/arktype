@@ -1,4 +1,3 @@
-import { $ark } from "@ark/util"
 import { InternalPrimitiveConstraint } from "../constraint.js"
 import type { BaseRoot } from "../roots/root.js"
 import type {

@@ -1,5 +1,4 @@
 import {
-	$ark,
 	ParseError,
 	bound,
 	flatMorph,

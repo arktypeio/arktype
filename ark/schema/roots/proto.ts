@@ -1,5 +1,4 @@
 import {
-	$ark,
 	builtinConstructors,
 	constructorExtends,
 	getExactBuiltinConstructorName,

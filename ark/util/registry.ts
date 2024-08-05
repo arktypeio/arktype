@@ -1,8 +1,6 @@
 import { domainOf } from "./domain.js"
 import { throwInternalError } from "./errors.js"
-import type { show } from "./generics.js"
 import { objectKindOf } from "./objectKinds.js"
-import type { intersectOverloadReturns } from "./unionToTuple.js"
 
 // Eventually we can just import from package.json in the source itself
 // but for now, import assertions are too unstable and it wouldn't support
@@ -18,19 +16,18 @@ export const initialRegistryContents = {
 
 export type InitialRegistryContents = typeof initialRegistryContents
 
-export const $ark: ArkEnv.registry = initialRegistryContents as never
+export interface ArkRegistry extends InitialRegistryContents {
+	[k: string]: unknown
+}
+
+export const registry: ArkRegistry = initialRegistryContents as never
 
 declare global {
 	export interface ArkEnv {
-		registry(): {}
 		prototypes(): never
 	}
 
 	export namespace ArkEnv {
-		export type registry = show<
-			InitialRegistryContents & intersectOverloadReturns<ArkEnv["registry"]>
-		>
-
 		export type prototypes = ReturnType<ArkEnv["prototypes"]>
 	}
 }
@@ -45,7 +42,8 @@ export const register = (value: object | symbol): string => {
 	let name = baseNameFor(value)
 	if (nameCounts[name]) name = `${name}${nameCounts[name]!++}`
 	else nameCounts[name] = 1
-	;($ark as any)[name] = value
+
+	registry[name] = value
 	namesByResolution.set(value, name)
 	return name
 }
