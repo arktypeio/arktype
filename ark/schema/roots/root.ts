@@ -357,7 +357,7 @@ export abstract class BaseRoot<
 		kind: Constraint.PrimitiveKind,
 		schema: any
 	): BaseRoot {
-		const constraint = this.$.node(kind, schema)
+		const constraint = this.$.node(kind, schema as never)
 		const operand = io === "root" ? this : this[io]
 		if (
 			operand.hasKind("morph") ||
