@@ -12,7 +12,6 @@ export interface ArkTypeRegistryContents extends ArkSchemaRegistry {
 declare global {
 	export interface ArkEnv {
 		// $(): Ark
-		registry(): ArkTypeRegistryContents
 	}
 
 	export namespace ArkEnv {

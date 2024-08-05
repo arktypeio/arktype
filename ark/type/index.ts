@@ -3,7 +3,7 @@ export type { ArkConfig, ArkScopeConfig } from "@ark/schema"
 export { Hkt } from "@ark/util"
 export { ambient, ark, declare, define, generic, type } from "./ark.js"
 export type { Generic } from "./generic.js"
-export { Module, type Submodule } from "./module.js"
+export { Module, type Submodule, type BoundModule } from "./module.js"
 export {
 	scope,
 	type Scope,

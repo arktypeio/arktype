@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { registeredReference } from "@ark/schema"
-import { scope, type } from "arktype"
+import { scope, type, type Module } from "arktype"
 import type {
 	AtLeastLength,
 	AtMostLength,
@@ -10,7 +10,6 @@ import type {
 	Out,
 	string
 } from "../ast.js"
-import type { Module } from "../module.js"
 
 contextualize(() => {
 	// https://github.com/arktypeio/arktype/issues/915

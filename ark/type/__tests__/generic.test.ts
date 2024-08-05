@@ -6,13 +6,13 @@ import {
 	writeUnresolvableMessage,
 	writeUnsatisfiedParameterConstraintMessage
 } from "@ark/schema"
-import { Hkt, type conform } from "@ark/util"
-import { generic, scope, type } from "arktype"
-import { emptyGenericParameterMessage, type Generic } from "../generic.js"
+import { Hkt } from "@ark/util"
+import { generic, scope, type, type Generic } from "arktype"
 import { writeUnclosedGroupMessage } from "../parser/string/reduce/shared.js"
 import { writeInvalidGenericArgCountMessage } from "../parser/string/shift/operand/genericArgs.js"
 import { writeInvalidDivisorMessage } from "../parser/string/shift/operator/divisor.js"
 import { writeUnexpectedCharacterMessage } from "../parser/string/shift/operator/operator.js"
+import { emptyGenericParameterMessage } from "../generic.js"
 
 contextualize(() => {
 	describe("standalone", () => {

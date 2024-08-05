@@ -4,9 +4,8 @@ import {
 	writeUnboundableMessage,
 	writeUnresolvableMessage
 } from "@ark/schema"
-import { define, scope, type } from "arktype"
-import type { distillOut, number, string } from "../ast.js"
-import type { Module } from "../module.js"
+import { define, scope, type, type Module } from "arktype"
+import type { distillOut, string } from "../ast.js"
 import { writeUnexpectedCharacterMessage } from "../parser/string/shift/operator/operator.js"
 
 contextualize(() => {

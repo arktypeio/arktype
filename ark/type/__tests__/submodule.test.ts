@@ -10,10 +10,10 @@ import {
 	type Module,
 	type Scope,
 	type Submodule,
-	type Type
+	type Type,
+	type BoundModule
 } from "arktype"
 import type { Out } from "../ast.js"
-import type { BoundModule } from "../module.js"
 
 contextualize.each(
 	"submodule",
