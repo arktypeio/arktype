@@ -73,12 +73,29 @@ export const getDefaultAttestConfig = (): BaseAttestConfig => ({
 	typeToStringFormat: {}
 })
 
+const flagAliases: { [k in keyof AttestConfig]?: string[] } = {
+	updateSnapshots: ["u", "update"]
+}
+
+const findParamIndex = (flagOrAlias: string) =>
+	process.argv.findIndex(
+		arg => arg === `-${flagOrAlias}` || arg === `--${flagOrAlias}`
+	)
+
 const hasFlag = (flag: keyof AttestConfig) =>
-	process.argv.some(arg => arg.includes(flag))
+	findParamIndex(flag) !== -1 ||
+	flagAliases[flag]?.some(alias => findParamIndex(alias) !== -1)
 
 const getParamValue = (param: keyof AttestConfig) => {
-	const paramIndex = process.argv.findIndex(arg => arg.includes(param))
-	if (paramIndex === -1) return undefined
+	let paramIndex = findParamIndex(param)
+	if (paramIndex === -1) {
+		if (!flagAliases[param]) return
+
+		for (let i = 0; i < flagAliases[param].length && paramIndex === -1; i++)
+			paramIndex = findParamIndex(flagAliases[param][i])
+
+		if (paramIndex === -1) return
+	}
 
 	const raw = process.argv[paramIndex + 1]
 	if (raw === "true") return true
