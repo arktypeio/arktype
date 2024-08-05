@@ -6,7 +6,7 @@ import {
 	writeUnsatisfiableExpressionError
 } from "@ark/schema"
 import { type } from "arktype"
-import { writeMissingRightOperandMessage } from "../parser/string/shift/operand/unenclosed.js"
+import { writeMissingRightOperandMessage } from "arktype/internal/parser/string/shift/operand/unenclosed.js"
 
 contextualize(() => {
 	it("two types", () => {

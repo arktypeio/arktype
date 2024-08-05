@@ -10,8 +10,8 @@ import { scope, type } from "arktype"
 import {
 	writeInvalidSpreadTypeMessage,
 	writeInvalidUndeclaredBehaviorMessage
-} from "../parser/objectLiteral.js"
-import { writeUnexpectedCharacterMessage } from "../parser/string/shift/operator/operator.js"
+} from "arktype/internal/parser/objectLiteral.js"
+import { writeUnexpectedCharacterMessage } from "arktype/internal/parser/string/shift/operator/operator.js"
 
 contextualize(() => {
 	describe("named", () => {

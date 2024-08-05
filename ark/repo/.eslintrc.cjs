@@ -183,7 +183,19 @@ module.exports = defineConfig({
 				"@typescript-eslint/ban-ts-comment": "off",
 				"@typescript-eslint/explicit-module-boundary-types": "off",
 				"import/no-extraneous-dependencies": "off",
-				"import/no-nodejs-modules": "off"
+				"import/no-nodejs-modules": "off",
+				"@typescript-eslint/no-restricted-imports": [
+					"warn",
+					{
+						patterns: [
+							{
+								group: ["../**"],
+								message:
+									"Tests must import from package entrypoints (use /internal if necessary)"
+							}
+						]
+					}
+				]
 			}
 		}
 	]

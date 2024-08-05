@@ -13,7 +13,7 @@ import {
 	type Type,
 	type BoundModule
 } from "arktype"
-import type { Out } from "../ast.js"
+import type { Out } from "arktype/internal/ast.js"
 
 contextualize.each(
 	"submodule",

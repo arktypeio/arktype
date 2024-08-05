@@ -112,7 +112,7 @@ export interface ArkScopeConfig extends ArkConfig {
 
 export type ResolvedArkScopeConfig = resolveConfig<ArkScopeConfig>
 
-$ark.ambient = {} as never
+$ark.ambient ??= {} as never
 
 export abstract class BaseScope<$ extends {} = {}> {
 	readonly config: ArkScopeConfig

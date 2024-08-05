@@ -1,8 +1,8 @@
 import { attest, contextualize } from "@ark/attest"
 import { writeUnresolvableMessage } from "@ark/schema"
 import { type } from "arktype"
-import { writeUnterminatedEnclosedMessage } from "../parser/string/shift/operand/enclosed.js"
-import { writeExpressionExpectedMessage } from "../parser/string/shift/operand/unenclosed.js"
+import { writeUnterminatedEnclosedMessage } from "arktype/internal/parser/string/shift/operand/enclosed.js"
+import { writeExpressionExpectedMessage } from "arktype/internal/parser/string/shift/operand/unenclosed.js"
 
 contextualize(() => {
 	it("errors on empty string", () => {

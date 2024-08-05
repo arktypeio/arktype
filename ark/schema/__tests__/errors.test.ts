@@ -1,6 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { $ark, configure, rootNode } from "@ark/schema"
-import { schemaScope } from "../scope.js"
+import { $ark, configure, rootNode, schemaScope } from "@ark/schema"
 
 contextualize(() => {
 	it("shallow", () => {

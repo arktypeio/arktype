@@ -7,13 +7,13 @@ import {
 } from "@ark/schema"
 import { writeMalformedNumericLiteralMessage } from "@ark/util"
 import { type } from "arktype"
-import { writeDoubleRightBoundMessage } from "../parser/semantic/bounds.js"
+import { writeDoubleRightBoundMessage } from "arktype/internal/parser/semantic/bounds.js"
 import {
 	writeMultipleLeftBoundsMessage,
 	writeOpenRangeMessage,
 	writeUnpairableComparatorMessage
-} from "../parser/string/reduce/shared.js"
-import { writeInvalidLimitMessage } from "../parser/string/shift/operator/bounds.js"
+} from "arktype/internal/parser/string/reduce/shared.js"
+import { writeInvalidLimitMessage } from "arktype/internal/parser/string/shift/operator/bounds.js"
 
 contextualize(() => {
 	describe("string expressions", () => {

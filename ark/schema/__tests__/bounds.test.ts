@@ -1,8 +1,8 @@
 import { attest, contextualize } from "@ark/attest"
 import { rootNode } from "@ark/schema"
 import { entriesOf, flatMorph } from "@ark/util"
-import { boundKindPairsByLower } from "../refinements/range.js"
-import { Disjoint } from "../shared/disjoint.js"
+import { boundKindPairsByLower } from "@ark/schema/internal/refinements/range.js"
+import { Disjoint } from "@ark/schema/internal/shared/disjoint.js"
 
 const numericCases = {
 	lessThanMin: 4,

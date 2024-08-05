@@ -9,7 +9,7 @@ import type {
 	number,
 	Out,
 	string
-} from "../ast.js"
+} from "arktype/internal/ast.js"
 
 contextualize(() => {
 	// https://github.com/arktypeio/arktype/issues/915

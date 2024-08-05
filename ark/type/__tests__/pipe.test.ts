@@ -7,7 +7,7 @@ import {
 	writeMorphIntersectionMessage
 } from "@ark/schema"
 import { ark, scope, type, type Type } from "arktype"
-import type { MoreThan, Out, constrain } from "../ast.js"
+import type { MoreThan, Out, constrain } from "arktype/internal/ast.js"
 
 contextualize(() => {
 	it("base", () => {

@@ -8,11 +8,11 @@ import {
 } from "@ark/schema"
 import { Hkt } from "@ark/util"
 import { generic, scope, type, type Generic } from "arktype"
-import { writeUnclosedGroupMessage } from "../parser/string/reduce/shared.js"
-import { writeInvalidGenericArgCountMessage } from "../parser/string/shift/operand/genericArgs.js"
-import { writeInvalidDivisorMessage } from "../parser/string/shift/operator/divisor.js"
-import { writeUnexpectedCharacterMessage } from "../parser/string/shift/operator/operator.js"
-import { emptyGenericParameterMessage } from "../generic.js"
+import { writeUnclosedGroupMessage } from "arktype/internal/parser/string/reduce/shared.js"
+import { writeInvalidGenericArgCountMessage } from "arktype/internal/parser/string/shift/operand/genericArgs.js"
+import { writeInvalidDivisorMessage } from "arktype/internal/parser/string/shift/operator/divisor.js"
+import { writeUnexpectedCharacterMessage } from "arktype/internal/parser/string/shift/operator/operator.js"
+import { emptyGenericParameterMessage } from "arktype/internal/generic.js"
 
 contextualize(() => {
 	describe("standalone", () => {
@@ -491,7 +491,7 @@ contextualize(() => {
 				]
 			>(t.t)
 
-			attest(t.expression).snap("[string >= 1, { value: number }]")
+			attest(t.expression).snap("[string >= 1, { value: 1 }]")
 
 			// @ts-expect-error
 			attest(() => validateExternalGeneric("string", { value: "string" }))
