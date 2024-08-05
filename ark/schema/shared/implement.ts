@@ -281,7 +281,7 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	keys: keySchemaDefinitions<d>
 	normalize: (schema: d["schema"]) => d["normalizedSchema"]
 	hasAssociatedError: d["errorContext"] extends null ? false : true
-	finalizeJson?: (json: { [k in keyof d["inner"]]: JsonData }) => Json
+	finalizeInnerJson?: (json: { [k in keyof d["inner"]]: JsonData }) => Json
 	collapsibleKey?: keyof d["inner"]
 	reduce?: (
 		inner: d["inner"],
@@ -344,15 +344,18 @@ export interface UnknownAttachments {
 	readonly kind: NodeKind
 	readonly impl: UnknownNodeImplementation
 	readonly id: string
+
 	readonly inner: Record<string, any>
-	readonly entries: readonly Entry<string>[]
+	readonly innerEntries: readonly Entry<string>[]
+	readonly innerJson: object
+	readonly innerHash: string
+
+	readonly meta: BaseMeta
+
 	readonly json: object
-	readonly typeJson: object
+	readonly hash: string
 	readonly collapsibleJson: JsonData
 	readonly children: BaseNode[]
-	readonly innerHash: string
-	readonly typeHash: string
-	readonly meta: BaseMeta
 }
 
 export interface NarrowedAttachments<d extends BaseNodeDeclaration>
@@ -360,7 +363,7 @@ export interface NarrowedAttachments<d extends BaseNodeDeclaration>
 	kind: d["kind"]
 	inner: d["inner"]
 	json: Json
-	typeJson: Json
+	innerJson: Json
 	collapsibleJson: JsonData
 	children: nodeOfKind<d["childKind"]>[]
 }

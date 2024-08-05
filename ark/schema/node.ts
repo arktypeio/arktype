@@ -201,7 +201,7 @@ export abstract class BaseNode<
 		if (!this.includesMorph) return this as never
 
 		const ioInner: Record<any, unknown> = {}
-		for (const [k, v] of this.entries) {
+		for (const [k, v] of this.innerEntries) {
 			const keySchemaImplementation = this.impl.keys[k]
 
 			if (keySchemaImplementation.child) {
@@ -224,7 +224,7 @@ export abstract class BaseNode<
 	}
 
 	equals(other: BaseNode): boolean {
-		return this.typeHash === other.typeHash
+		return this.innerHash === other.innerHash
 	}
 
 	assertHasKind<kind extends NodeKind>(kind: kind): nodeOfKind<kind> {

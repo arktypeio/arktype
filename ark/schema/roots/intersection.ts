@@ -133,7 +133,7 @@ const implementation: nodeImplementationOf<Intersection.Declaration> =
 				normalized.structure = normalizedStructure
 			return normalized
 		},
-		finalizeJson: ({ structure, ...rest }) =>
+		finalizeInnerJson: ({ structure, ...rest }) =>
 			hasDomain(structure, "object") ? { ...structure, ...rest } : rest,
 		keys: {
 			domain: {

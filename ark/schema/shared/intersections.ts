@@ -44,13 +44,13 @@ export const intersectNodes: InternalNodeIntersection<IntersectionContext> = (
 	ctx
 ) => {
 	const operator = ctx.pipe ? "|>" : "&"
-	const lrCacheKey = `${l.typeHash}${operator}${r.typeHash}`
+	const lrCacheKey = `${l.innerHash}${operator}${r.innerHash}`
 	if (intersectionCache[lrCacheKey] !== undefined)
 		return intersectionCache[lrCacheKey]! as never
 
 	if (!ctx.pipe) {
 		// we can only use this for the commutative & operator
-		const rlCacheKey = `${r.typeHash}${operator}${l.typeHash}`
+		const rlCacheKey = `${r.innerHash}${operator}${l.innerHash}`
 		if (intersectionCache[rlCacheKey] !== undefined) {
 			// if the cached result was a Disjoint and the operands originally
 			// appeared in the opposite order, we need to invert it to match

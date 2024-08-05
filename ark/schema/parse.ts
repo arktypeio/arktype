@@ -1,5 +1,6 @@
 import {
 	entriesOf,
+	flatMorph,
 	hasDomain,
 	isArray,
 	printable,
@@ -20,6 +21,7 @@ import {
 } from "./kinds.js"
 import type { BaseNode } from "./node.js"
 import type { BaseScope } from "./scope.js"
+import type { BaseMeta, BaseMetaSchema } from "./shared/declare.js"
 import { Disjoint } from "./shared/disjoint.js"
 import {
 	constraintKeys,
@@ -132,18 +134,40 @@ export const parseNode = <kind extends NodeKind>(
 const _parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
 	const impl = nodeImplementationsByKind[kind]
 	const inner: Record<string, unknown> = {}
+	const { meta: metaSchema, ...schema } = ctx.schema as Dict & {
+		meta?: BaseMetaSchema
+	}
+
+	const meta: BaseMeta & Record<string, unknown> =
+		metaSchema === undefined ? {}
+		: typeof metaSchema === "string" ? { description: metaSchema }
+		: (metaSchema as never)
+
 	// ensure node entries are parsed in order of precedence, with non-children
 	// parsed first
-	const schemaEntries = entriesOf(ctx.schema as Dict).sort(([lKey], [rKey]) =>
-		isNodeKind(lKey) ?
-			isNodeKind(rKey) ? precedenceOfKind(lKey) - precedenceOfKind(rKey)
-			:	1
-		: isNodeKind(rKey) ? -1
-		: lKey < rKey ? -1
-		: 1
-	)
+	const innerSchemaEntries = entriesOf(schema)
+		.sort(([lKey], [rKey]) =>
+			isNodeKind(lKey) ?
+				isNodeKind(rKey) ? precedenceOfKind(lKey) - precedenceOfKind(rKey)
+				:	1
+			: isNodeKind(rKey) ? -1
+			: lKey < rKey ? -1
+			: 1
+		)
+		.filter(([k, v]) => {
+			// move meta. prefixed props to meta, overwriting existing nested
+			// props of the same name if they exist
+			if (k.startsWith("meta.")) {
+				const metaKey = k.slice(5)
+				meta[metaKey] = v
+				return false
+			}
+			return true
+		})
+
 	const children: BaseNode[] = []
-	for (const entry of schemaEntries) {
+
+	for (const entry of innerSchemaEntries) {
 		const k = entry[0]
 		const keyImpl = impl.keys[k]
 		if (!keyImpl)
@@ -153,32 +177,29 @@ const _parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
 		if (v !== unset && (v !== undefined || keyImpl.preserveUndefined))
 			inner[k] = v
 	}
-	const entries = entriesOf(inner)
+	const innerEntries = entriesOf(inner)
 
-	let json: Record<string, unknown> = {}
-	let typeJson: Record<string, unknown> = {}
-	entries.forEach(([k, v]) => {
+	let innerJson: Record<string, unknown> = {}
+
+	innerEntries.forEach(([k, v]) => {
 		const keyImpl = impl.keys[k]
 		const serialize =
 			keyImpl.serialize ??
 			(keyImpl.child ? serializeListableChild : defaultValueSerializer)
 
-		json[k] = serialize(v as never)
+		innerJson[k] = serialize(v as never)
 
 		if (keyImpl.child) {
 			const listableNode = v as listable<BaseNode>
 			if (isArray(listableNode)) children.push(...listableNode)
 			else children.push(listableNode)
 		}
-		if (!keyImpl.meta) typeJson[k] = json[k]
 	})
 
-	if (impl.finalizeJson) {
-		json = impl.finalizeJson(json) as never
-		typeJson = impl.finalizeJson(typeJson) as never
-	}
+	if (impl.finalizeInnerJson)
+		innerJson = impl.finalizeInnerJson(innerJson) as never
 
-	let collapsibleJson = json
+	let collapsibleJson = innerJson
 
 	const collapsibleKeys = Object.keys(collapsibleJson)
 	if (
@@ -190,21 +211,18 @@ const _parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
 			// if the collapsibleJson is still an object
 			hasDomain(collapsibleJson, "object") &&
 			// and the JSON did not include any implied keys
-			Object.keys(json).length === 1
+			Object.keys(innerJson).length === 1
 		) {
 			// we can replace it with its collapsed value
-			json = collapsibleJson
-			typeJson = collapsibleJson
+			innerJson = collapsibleJson
 		}
 	}
 
-	const innerHash = JSON.stringify({ kind, ...json })
+	const innerHash = JSON.stringify({ kind, ...innerJson })
 	if (ctx.reduceTo) {
 		nodeCache[innerHash] = ctx.reduceTo
 		return ctx.reduceTo
 	}
-
-	const typeHash = JSON.stringify({ kind, ...typeJson })
 
 	if (impl.reduce && !ctx.prereduced) {
 		const reduced = impl.reduce(inner, ctx.$)
@@ -222,6 +240,26 @@ const _parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
 		}
 	}
 
+	const metaKeys = Object.keys(meta)
+
+	let json: object
+	let hash: string
+	if (metaKeys.length === 0) {
+		json = innerJson
+		hash = innerHash
+	} else {
+		json = Object.assign(
+			{
+				meta:
+					metaKeys.length === 1 && metaKeys[0] === "description" ?
+						meta.description
+					:	flatMorph(meta, (k, v) => [k, defaultValueSerializer(v)])
+			},
+			innerJson
+		)
+		hash = JSON.stringify(json)
+	}
+
 	// we have to wait until after reduction to return a cached entry,
 	// since reduction can add impliedSiblings
 	if (nodeCache[innerHash]) return nodeCache[innerHash]
@@ -231,14 +269,14 @@ const _parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
 		kind,
 		impl,
 		inner,
-		entries,
-		json: json as Json,
-		typeJson: typeJson as Json,
-		collapsibleJson: collapsibleJson as JsonData,
-		children,
+		innerEntries,
+		innerJson: innerJson as Json,
 		innerHash,
-		typeHash,
-		meta: {}
+		meta,
+		json,
+		hash,
+		collapsibleJson: collapsibleJson as JsonData,
+		children
 	}
 	if (ctx.alias) attachments.alias = ctx.alias
 
