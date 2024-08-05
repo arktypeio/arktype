@@ -24,10 +24,10 @@ declare global {
 	export interface ArkEnv {
 		meta(): {}
 	}
+}
 
-	export namespace ArkEnv {
-		export type meta = ReturnType<ArkEnv["meta"]>
-	}
+export namespace ArkEnv {
+	export type meta = ReturnType<ArkEnv["meta"]>
 }
 
 type nodeConfigForKind<kind extends NodeKind> = Readonly<

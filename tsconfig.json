@@ -4,13 +4,13 @@
 		// should be off by default, but here as a convenience to toggle
 		// "noErrorTruncation": true,
 		"paths": {
-			// "arktype": ["./ark/type/index.ts"],
-			// "arktype/config": ["./ark/type/config.ts"],
-			// "@ark/util": ["./ark/util/index.ts"],
-			// "@ark/fs": ["./ark/fs/index.ts"],
-			// "@ark/attest": ["./ark/attest/index.ts"],
-			// "@ark/schema": ["./ark/schema/index.ts"],
-			// "@ark/schema/config": ["./ark/schema/config.ts"]
+			"arktype": ["./ark/type/index.ts"],
+			"arktype/config": ["./ark/type/config.ts"],
+			"@ark/util": ["./ark/util/index.ts"],
+			"@ark/fs": ["./ark/fs/index.ts"],
+			"@ark/attest": ["./ark/attest/index.ts"],
+			"@ark/schema": ["./ark/schema/index.ts"],
+			"@ark/schema/config": ["./ark/schema/config.ts"]
 		},
 		"types": ["mocha", "node"]
 	},

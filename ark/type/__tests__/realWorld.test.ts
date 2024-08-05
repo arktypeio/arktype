@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { registeredReference } from "@ark/schema"
+import { registeredReference, type ArkErrors } from "@ark/schema"
 import { scope, type, type Module } from "arktype"
 import type {
 	AtLeastLength,
@@ -764,5 +764,68 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			name: is<MoreThanLength<0> & LessThanLength<"...">>
 			children: constrain<"...">
 	  }`)
+	})
+
+	// https://github.com/arktypeio/arktype/discussions/1080#discussioncomment-10247616
+	it("pipe to discriminated morph union", () => {
+		const objSchema = type({
+			action: "'order.completed'"
+		}).or({
+			action: `'scheduled'`,
+			id: "parse.integer",
+			calendarID: "parse.integer",
+			appointmentTypeID: "parse.integer"
+		})
+
+		const parseJsonToObj = type("parse.json").pipe(objSchema)
+
+		const out = parseJsonToObj(
+			JSON.stringify({
+				action: "scheduled",
+				id: "1",
+				calendarID: "1",
+				appointmentTypeID: "1"
+			})
+		)
+
+		attest<
+			| ArkErrors
+			| {
+					action: "order.completed"
+			  }
+			| {
+					action: "scheduled"
+					id: number
+					calendarID: number
+					appointmentTypeID: number
+			  }
+		>(out)
+
+		attest(out).snap({} as never)
+	})
+
+	// https://github.com/arktypeio/arktype/discussions/1080#discussioncomment-10247616
+	it("pipe to discriminated morph inner union", () => {
+		const objSchema = type({
+			action: "'order.completed'"
+		}).or({
+			action: "'scheduled' | 'rescheduled' | 'canceled' | 'changed'",
+			id: "parse.integer",
+			calendarID: "parse.integer",
+			appointmentTypeID: "parse.integer"
+		})
+
+		const parseJsonToObj = type("parse.json").pipe(objSchema)
+
+		const out = parseJsonToObj(
+			JSON.stringify({
+				action: "scheduled",
+				id: "1",
+				calendarID: "1",
+				appointmentTypeID: "1"
+			})
+		)
+
+		attest(out).snap({} as never)
 	})
 })
