@@ -5,6 +5,10 @@ import { scope, type inferScope } from "../scope.js"
 import { internal } from "./internal.js"
 import { tsKeywords } from "./tsKeywords.js"
 
+class RecordHkt extends Hkt<[Key, unknown]> {
+	declare body: Record<this[0], this[1]>
+}
+
 const Record = genericNode(["K", internal.key], "V")(
 	args => ({
 		domain: "object",
@@ -13,51 +17,61 @@ const Record = genericNode(["K", internal.key], "V")(
 			value: args.V
 		}
 	}),
-	class RecordHkt extends Hkt<[Key, unknown]> {
-		declare body: Record<this[0], this[1]>
-	}
+	RecordHkt
 )
+
+class PickHkt extends Hkt<[object, Key]> {
+	declare body: pick<this[0], this[1] & keyof this[0]>
+}
 
 const Pick = genericNode(["T", tsKeywords.object], ["K", internal.key])(
 	args => args.T.pick(args.K as never),
-	class PickHkt extends Hkt<[object, Key]> {
-		declare body: pick<this[0], this[1] & keyof this[0]>
-	}
+	PickHkt
 )
+
+class OmitHkt extends Hkt<[object, Key]> {
+	declare body: omit<this[0], this[1] & keyof this[0]>
+}
 
 const Omit = genericNode(["T", tsKeywords.object], ["K", internal.key])(
 	args => args.T.omit(args.K as never),
-	class OmitHkt extends Hkt<[object, Key]> {
-		declare body: omit<this[0], this[1] & keyof this[0]>
-	}
+	OmitHkt
 )
+
+class PartialHkt extends Hkt<[object]> {
+	declare body: show<Partial<this[0]>>
+}
 
 const Partial = genericNode(["T", tsKeywords.object])(
 	args => args.T.partial(),
-	class PartialHkt extends Hkt<[object]> {
-		declare body: show<Partial<this[0]>>
-	}
+	PartialHkt
 )
+
+class RequiredHkt extends Hkt<[object]> {
+	declare body: show<Required<this[0]>>
+}
 
 const Required = genericNode(["T", tsKeywords.object])(
 	args => args.T.required(),
-	class RequiredHkt extends Hkt<[object]> {
-		declare body: show<Required<this[0]>>
-	}
+	RequiredHkt
 )
+
+class ExcludeHkt extends Hkt<[unknown, unknown]> {
+	declare body: Exclude<this[0], this[1]>
+}
 
 const Exclude = genericNode("T", "U")(
 	args => args.T.exclude(args.U),
-	class ExcludeHkt extends Hkt<[unknown, unknown]> {
-		declare body: Exclude<this[0], this[1]>
-	}
+	ExcludeHkt
 )
+
+class ExtractHkt extends Hkt<[unknown, unknown]> {
+	declare body: Extract<this[0], this[1]>
+}
 
 const Extract = genericNode("T", "U")(
 	args => args.T.extract(args.U),
-	class ExtractHkt extends Hkt<[unknown, unknown]> {
-		declare body: Extract<this[0], this[1]>
-	}
+	ExtractHkt
 )
 
 const tsGenericsExports = {
