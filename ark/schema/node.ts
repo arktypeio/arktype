@@ -56,6 +56,7 @@ import {
 	type TraverseApply
 } from "./shared/traversal.js"
 import { isNode, pathToPropString, type arkKind } from "./shared/utils.js"
+import { $ark } from "./shared/registry.js"
 
 export abstract class BaseNode<
 	/** uses -ignore rather than -expect-error because this is not an error in .d.ts

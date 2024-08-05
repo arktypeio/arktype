@@ -15,9 +15,7 @@ while (_registryName in globalThis) _registryName = `$ark${suffix++}`
 export const registryName = _registryName
 ;(globalThis as any)[registryName] = registry
 
-declare global {
-	export const $ark: ArkSchemaRegistry
-}
+export const $ark: ArkSchemaRegistry = registry as never
 
 if (suffix !== 2) {
 	const g: any = globalThis

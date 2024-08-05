@@ -51,6 +51,7 @@ import { CompiledFunction, NodeCompiler } from "./shared/compile.js"
 import type { NodeKind, RootKind } from "./shared/implement.js"
 import type { TraverseAllows, TraverseApply } from "./shared/traversal.js"
 import { arkKind, hasArkKind, isNode } from "./shared/utils.js"
+import { $ark } from "./shared/registry.js"
 
 export type InternalResolutions = Record<string, InternalResolution | undefined>
 

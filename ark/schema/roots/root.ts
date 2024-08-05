@@ -47,6 +47,7 @@ import type {
 } from "../structure/structure.js"
 import type { Morph } from "./morph.js"
 import type { Union } from "./union.js"
+import { $ark } from "../shared/registry.js"
 
 export interface InternalRootDeclaration extends BaseNodeDeclaration {
 	kind: RootKind

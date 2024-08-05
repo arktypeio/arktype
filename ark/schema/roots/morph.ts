@@ -18,7 +18,7 @@ import {
 	type nodeImplementationOf
 } from "../shared/implement.js"
 import { intersectNodes } from "../shared/intersections.js"
-import { registeredReference } from "../shared/registry.js"
+import { $ark, registeredReference } from "../shared/registry.js"
 import type {
 	TraversalContext,
 	TraverseAllows,

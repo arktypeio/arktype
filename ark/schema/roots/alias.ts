@@ -14,6 +14,7 @@ import { intersectNodes } from "../shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 import { BaseRoot } from "./root.js"
 import { defineRightwardIntersections } from "./utils.js"
+import { $ark } from "../shared/registry.js"
 
 export namespace Alias {
 	export type Schema<alias extends string = string> = `$${alias}` | Inner<alias>

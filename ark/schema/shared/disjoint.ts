@@ -5,6 +5,7 @@ import type { BaseRoot } from "../roots/root.js"
 import type { Prop } from "../structure/prop.js"
 import type { BoundKind } from "./implement.js"
 import { isNode, pathToPropString } from "./utils.js"
+import { $ark } from "./registry.js"
 
 export interface DisjointEntry<kind extends DisjointKind = DisjointKind> {
 	kind: kind

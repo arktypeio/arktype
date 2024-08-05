@@ -1,4 +1,5 @@
 import { node, schemaScope } from "./scope.js"
+import { $ark } from "./shared/registry.js"
 import { arrayIndexSource } from "./structure/shared.js"
 
 const intrinsicBases = schemaScope(

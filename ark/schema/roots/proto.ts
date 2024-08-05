@@ -25,6 +25,7 @@ import {
 import type { TraverseAllows } from "../shared/traversal.js"
 import { InternalBasis } from "./basis.js"
 import type { Domain } from "./domain.js"
+import { $ark } from "../shared/registry.js"
 
 export namespace Proto {
 	export type Reference = Constructor | BuiltinObjectKind

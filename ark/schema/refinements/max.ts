@@ -5,6 +5,7 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.js"
+import { $ark } from "../shared/registry.js"
 import type { TraverseAllows } from "../shared/traversal.js"
 import {
 	BaseRange,

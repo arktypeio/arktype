@@ -12,6 +12,7 @@ import type { BaseNode } from "./node.js"
 import type { BaseRoot } from "./roots/root.js"
 import type { BaseScope } from "./scope.js"
 import { arkKind } from "./shared/utils.js"
+import { $ark } from "./shared/registry.js"
 
 export type GenericParamAst<
 	name extends string = string,

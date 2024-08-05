@@ -1,4 +1,5 @@
 import {
+	$ark,
 	writeUnboundableMessage,
 	type BaseRoot,
 	type BoundKind,

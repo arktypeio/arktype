@@ -38,6 +38,7 @@ import {
 import { intersectNodes, intersectNodesRoot } from "./shared/intersections.js"
 import type { TraverseAllows, TraverseApply } from "./shared/traversal.js"
 import { arkKind } from "./shared/utils.js"
+import { $ark } from "./shared/registry.js"
 
 export namespace Constraint {
 	export interface Declaration extends BaseNodeDeclaration {

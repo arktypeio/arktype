@@ -32,6 +32,7 @@ import {
 } from "../shared/implement.js"
 import { intersectNodesRoot } from "../shared/intersections.js"
 import {
+	$ark,
 	registeredReference,
 	type RegisteredReference
 } from "../shared/registry.js"

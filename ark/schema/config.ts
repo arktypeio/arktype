@@ -12,6 +12,7 @@ import {
 	type DescriptionWriter,
 	type NodeKind
 } from "./shared/implement.js"
+import { $ark } from "./shared/registry.js"
 
 export interface ArkSchemaRegistry extends ArkRegistry {
 	intrinsic: typeof intrinsic

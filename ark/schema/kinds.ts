@@ -32,6 +32,7 @@ import { Optional } from "./structure/optional.js"
 import { Required } from "./structure/required.js"
 import { Sequence } from "./structure/sequence.js"
 import { Structure } from "./structure/structure.js"
+import { $ark } from "./shared/registry.js"
 
 export interface NodeDeclarationsByKind extends BoundDeclarations {
 	alias: Alias.Declaration

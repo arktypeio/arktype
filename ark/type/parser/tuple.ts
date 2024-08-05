@@ -1,4 +1,5 @@
 import {
+	$ark,
 	makeRootAndArrayPropertiesMutable,
 	type BaseInner,
 	type BaseRoot,
