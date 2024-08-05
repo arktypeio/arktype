@@ -175,10 +175,10 @@ contextualize(() => {
 			)
 
 			attest(ip("192.168.1.256").toString()).snap(
-				'must be a valid IPv4 address or a valid IPv6 address (was "192.168.1.256")'
+				'must be a valid IPv6 address or a valid IPv4 address (was "192.168.1.256")'
 			)
 			attest(ip("2001:0db8:85a3:0000:0000:8a2e:0370:733g").toString()).snap(
-				'must be a valid IPv4 address or a valid IPv6 address (was "2001:0db8:85a3:0000:0000:8a2e:0370:733g")'
+				'must be a valid IPv6 address or a valid IPv4 address (was "2001:0db8:85a3:0000:0000:8a2e:0370:733g")'
 			)
 		})
 
