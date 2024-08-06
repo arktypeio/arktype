@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import type { merge, mergeExact, withJsDoc } from "../records.js"
+import type { merge, mergeExact, withJsDoc } from "@ark/util"
 
 contextualize(() => {
 	it("identical keys", () => {

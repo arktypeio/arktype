@@ -1,7 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import type { array } from "../arrays.js"
-import type { conform } from "../generics.js"
-import type { overloadOf } from "../unionToTuple.js"
+import type { array, conform, overloadOf } from "@ark/util"
 
 declare const f: {
 	(): void
