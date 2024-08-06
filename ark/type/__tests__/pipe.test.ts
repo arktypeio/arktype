@@ -4,7 +4,8 @@ import {
 	intrinsic,
 	writeIndiscriminableMorphMessage,
 	writeInvalidOperandMessage,
-	writeMorphIntersectionMessage
+	writeMorphIntersectionMessage,
+	type ArkErrors
 } from "@ark/schema"
 import { ark, scope, type, type Type } from "arktype"
 import type { MoreThan, Out, To, constrain } from "arktype/internal/ast.js"
@@ -41,6 +42,34 @@ contextualize(() => {
 
 		attest<typeof expected.t>(tOut.t)
 		attest(tOut.expression).equals(expected.expression)
+	})
+
+	describe("try", () => {
+		it("can catch thrown errors", () => {
+			const parseJson = type("string").pipe.try((s): object => JSON.parse(s))
+
+			const out = parseJson("[]")
+
+			attest<ArkErrors | object>(out)
+			attest(out).equals([])
+
+			const badOut = parseJson("{ unquoted: true }")
+
+			attest(badOut.toString())
+				.snap(`must be valid according to an anonymous predicate (was aborted due to error:
+    SyntaxError: Expected property name or '}' in JSON at position 2 (line 1 column 3)
+)`)
+		})
+
+		it("preserves validated out", () => {
+			const t = type("string").pipe.try(s => JSON.parse(s), ark.Array)
+
+			const tOut = t.out
+			const expectedOut = ark.Array
+
+			attest<typeof expectedOut.t>(tOut.t)
+			attest(tOut.expression).equals(expectedOut.expression)
+		})
 	})
 
 	it("can't directly constrain morph", () => {

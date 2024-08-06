@@ -10,6 +10,16 @@ Sometimes, data at the boundaries of your code requires more than validation bef
 
 Morphs can be **piped** before, after or between validators and even chained to other morphs.
 
+```ts
+import { type } from "arktype"
+import { readFileSync } from "node:fs"
+// ---cut---
+// hover to see the type-level representation
+const parseJson = type("string").pipe(s => JSON.parse(s))
+
+const out = parseJson("{  }")
+```
+
 :::caution[Under Construction]
 We're still working on our new docs, as evidenced by the fact that they are not done.
 

@@ -78,90 +78,7 @@ interface Type<out t = unknown, $ = {}>
 
 	array(): ArrayType<t[], $>
 
-	pipe<
-		a extends Morph<this["infer"]>,
-		r = instantiateType<inferPipes<t, [a]>, $>
-	>(
-		a: a
-	): r
-	pipe<
-		a extends Morph<this["infer"]>,
-		b extends Morph<inferMorphOut<a>>,
-		r = instantiateType<inferPipes<t, [a, b]>, $>
-	>(
-		a: a,
-		b: b
-	): r
-	pipe<
-		a extends Morph<this["infer"]>,
-		b extends Morph<inferMorphOut<a>>,
-		c extends Morph<inferMorphOut<b>>,
-		r = instantiateType<inferPipes<t, [a, b, c]>, $>
-	>(
-		a: a,
-		b: b,
-		c: c
-	): r
-	pipe<
-		a extends Morph<this["infer"]>,
-		b extends Morph<inferMorphOut<a>>,
-		c extends Morph<inferMorphOut<b>>,
-		d extends Morph<inferMorphOut<c>>,
-		r = instantiateType<inferPipes<t, [a, b, c, d]>, $>
-	>(
-		a: a,
-		b: b,
-		c: c,
-		d: d
-	): r
-	pipe<
-		a extends Morph<this["infer"]>,
-		b extends Morph<inferMorphOut<a>>,
-		c extends Morph<inferMorphOut<b>>,
-		d extends Morph<inferMorphOut<c>>,
-		e extends Morph<inferMorphOut<d>>,
-		r = instantiateType<inferPipes<t, [a, b, c, d, e]>, $>
-	>(
-		a: a,
-		b: b,
-		c: c,
-		d: d,
-		e: e
-	): r
-	pipe<
-		a extends Morph<this["infer"]>,
-		b extends Morph<inferMorphOut<a>>,
-		c extends Morph<inferMorphOut<b>>,
-		d extends Morph<inferMorphOut<c>>,
-		e extends Morph<inferMorphOut<d>>,
-		f extends Morph<inferMorphOut<e>>,
-		r = instantiateType<inferPipes<t, [a, b, c, d, e, f]>, $>
-	>(
-		a: a,
-		b: b,
-		c: c,
-		d: d,
-		e: e,
-		f: f
-	): r
-	pipe<
-		a extends Morph<this["infer"]>,
-		b extends Morph<inferMorphOut<a>>,
-		c extends Morph<inferMorphOut<b>>,
-		d extends Morph<inferMorphOut<c>>,
-		e extends Morph<inferMorphOut<d>>,
-		f extends Morph<inferMorphOut<e>>,
-		g extends Morph<inferMorphOut<f>>,
-		r = instantiateType<inferPipes<t, [a, b, c, d, e, f, g]>, $>
-	>(
-		a: a,
-		b: b,
-		c: c,
-		d: d,
-		e: e,
-		f: f,
-		g: g
-	): r
+	pipe: ChainedPipes<t, $>
 
 	equals<def>(
 		def: validateTypeRoot<def, $>
@@ -210,6 +127,94 @@ interface Type<out t = unknown, $ = {}>
 	// TS suggests Symbol to allow builtin symbolic access, so override that as well
 	/** @deprecated */
 	Symbol: never
+}
+
+interface ChainedPipeSignature<t, $> {
+	<a extends Morph<distillOut<t>>, r = instantiateType<inferPipes<t, [a]>, $>>(
+		a: a
+	): r
+	<
+		a extends Morph<distillOut<t>>,
+		b extends Morph<inferMorphOut<a>>,
+		r = instantiateType<inferPipes<t, [a, b]>, $>
+	>(
+		a: a,
+		b: b
+	): r
+	<
+		a extends Morph<distillOut<t>>,
+		b extends Morph<inferMorphOut<a>>,
+		c extends Morph<inferMorphOut<b>>,
+		r = instantiateType<inferPipes<t, [a, b, c]>, $>
+	>(
+		a: a,
+		b: b,
+		c: c
+	): r
+	<
+		a extends Morph<distillOut<t>>,
+		b extends Morph<inferMorphOut<a>>,
+		c extends Morph<inferMorphOut<b>>,
+		d extends Morph<inferMorphOut<c>>,
+		r = instantiateType<inferPipes<t, [a, b, c, d]>, $>
+	>(
+		a: a,
+		b: b,
+		c: c,
+		d: d
+	): r
+	<
+		a extends Morph<distillOut<t>>,
+		b extends Morph<inferMorphOut<a>>,
+		c extends Morph<inferMorphOut<b>>,
+		d extends Morph<inferMorphOut<c>>,
+		e extends Morph<inferMorphOut<d>>,
+		r = instantiateType<inferPipes<t, [a, b, c, d, e]>, $>
+	>(
+		a: a,
+		b: b,
+		c: c,
+		d: d,
+		e: e
+	): r
+	<
+		a extends Morph<distillOut<t>>,
+		b extends Morph<inferMorphOut<a>>,
+		c extends Morph<inferMorphOut<b>>,
+		d extends Morph<inferMorphOut<c>>,
+		e extends Morph<inferMorphOut<d>>,
+		f extends Morph<inferMorphOut<e>>,
+		r = instantiateType<inferPipes<t, [a, b, c, d, e, f]>, $>
+	>(
+		a: a,
+		b: b,
+		c: c,
+		d: d,
+		e: e,
+		f: f
+	): r
+	<
+		a extends Morph<distillOut<t>>,
+		b extends Morph<inferMorphOut<a>>,
+		c extends Morph<inferMorphOut<b>>,
+		d extends Morph<inferMorphOut<c>>,
+		e extends Morph<inferMorphOut<d>>,
+		f extends Morph<inferMorphOut<e>>,
+		g extends Morph<inferMorphOut<f>>,
+		r = instantiateType<inferPipes<t, [a, b, c, d, e, f, g]>, $>
+	>(
+		a: a,
+		b: b,
+		c: c,
+		d: d,
+		e: e,
+		f: f,
+		g: g
+	): r
+}
+
+export interface ChainedPipes<t, $> extends ChainedPipeSignature<t, $> {
+	try: ChainedPipeSignature<t, $>
 }
 
 type validateChainedAsArgs<t> =

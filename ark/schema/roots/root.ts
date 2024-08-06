@@ -1,4 +1,5 @@
 import {
+	bound,
 	cached,
 	includes,
 	omit,
@@ -280,8 +281,36 @@ export abstract class BaseRoot<
 		return this.assert(input)
 	}
 
-	pipe(...morphs: Morph[]): BaseRoot {
+	pipe = Object.assign(this._pipe, {
+		try: this.tryPipe
+	})
+
+	@bound
+	protected _pipe(...morphs: Morph[]): BaseRoot {
 		return morphs.reduce<BaseRoot>((acc, morph) => acc.pipeOnce(morph), this)
+	}
+
+	@bound
+	protected tryPipe(...morphs: Morph[]): BaseRoot {
+		return morphs.reduce<BaseRoot>(
+			(acc, morph) =>
+				acc.pipeOnce(
+					hasArkKind(morph, "root") ? morph : (
+						(In, ctx) => {
+							try {
+								return morph(In, ctx)
+							} catch (e) {
+								return ctx.error({
+									code: "predicate",
+									predicate: morph as never,
+									actual: `aborted due to error:\n    ${e}\n`
+								})
+							}
+						}
+					)
+				),
+			this
+		)
 	}
 
 	to(def: unknown): BaseRoot {

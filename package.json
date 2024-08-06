@@ -19,6 +19,7 @@
 		"attest": "pnpm tsx ./ark/attest/cli/cli.ts",
 		"build": "pnpm -r build",
 		"buildCjs": "ARKTYPE_CJS=1 pnpm -r build",
+		"cleanBuilds": "pnpm -r exec rm -rf out",
 		"tsc": "node ./node_modules/typescript/lib/tsc.js",
 		"test": "pnpm testTyped --skipTypes",
 		"testTyped": "mocha --exclude 'ark/attest/**/*.test.*'",
