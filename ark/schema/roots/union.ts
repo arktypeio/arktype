@@ -108,7 +108,7 @@ const implementation: nodeImplementationOf<Union.Declaration> =
 						:	ctx.$.node(unionChildKinds, branch as Union.ChildSchema)
 					)
 
-					if (!ctx.schema.ordered)
+					if (!ctx.normalizedSchema.ordered)
 						branches.sort((l, r) => (l.hash < r.hash ? -1 : 1))
 
 					return branches

@@ -8,8 +8,8 @@ type withMetaPrefixedKeys<o> = {
 }
 
 export interface BaseMeta {
-	readonly description?: string
-	readonly alias?: string
+	description?: string
+	alias?: string
 }
 
 declare global {

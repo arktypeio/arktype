@@ -50,7 +50,8 @@ export interface NodeParseContext<kind extends NodeKind = NodeKind>
 	extends NodeParseOptions {
 	$: BaseScope
 	args: GenericArgResolutions
-	schema: NormalizedSchema<kind>
+	kind: kind
+	normalizedSchema: NormalizedSchema<kind>
 	id: string
 }
 
@@ -112,26 +113,11 @@ export const registerNodeId = (kind: NodeKind, alias?: string): string => {
 }
 
 export const parseNode = <kind extends NodeKind>(
-	id: string,
-	kind: kind,
-	schema: NormalizedSchema<kind>,
-	$: BaseScope,
-	opts: NodeParseOptions
+	ctx: NodeParseContext<kind>
 ): BaseNode => {
-	const ctx: NodeParseContext = {
-		...opts,
-		$,
-		args: opts.args ?? {},
-		schema,
-		id
-	}
-	return _parseNode(kind, ctx)
-}
-
-const _parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
-	const impl = nodeImplementationsByKind[kind]
+	const impl = nodeImplementationsByKind[ctx.kind]
 	const inner: dict = {}
-	const { meta: metaSchema, ...schema } = ctx.schema as dict & {
+	const { meta: metaSchema, ...schema } = ctx.normalizedSchema as dict & {
 		meta?: MetaSchema
 	}
 
@@ -166,7 +152,7 @@ const _parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
 		const k = entry[0]
 		const keyImpl = impl.keys[k]
 		if (!keyImpl)
-			return throwParseError(`Key ${k} is not valid on ${kind} schema`)
+			return throwParseError(`Key ${k} is not valid on ${ctx.kind} schema`)
 
 		const v = keyImpl.parse ? keyImpl.parse(entry[1], ctx) : entry[1]
 		if (v !== unset && (v !== undefined || keyImpl.preserveUndefined))
@@ -184,7 +170,7 @@ const _parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
 		}
 	}
 
-	const node = createNode(ctx.id, kind, inner, meta, ctx.$)
+	const node = createNode(ctx.id, ctx.kind, inner, meta, ctx.$)
 
 	if (ctx.reduceTo) {
 		nodeCache[node.hash] = ctx.reduceTo

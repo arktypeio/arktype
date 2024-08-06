@@ -13,6 +13,7 @@ import {
 	type array,
 	type conform,
 	type flattenListable,
+	type listable,
 	type noSuggest,
 	type show
 } from "@ark/util"
@@ -43,6 +44,7 @@ import {
 	parseNode,
 	registerNodeId,
 	schemaKindOf,
+	type NodeParseContext,
 	type NodeParseOptions
 } from "./parse.js"
 import { normalizeAliasSchema, type Alias } from "./roots/alias.js"
@@ -220,24 +222,15 @@ export abstract class BaseScope<$ extends {} = {}> {
 	}
 
 	@bound
-	node<
-		kinds extends NodeKind | array<RootKind>,
-		prereduced extends boolean = false
-	>(
-		kinds: kinds,
-		nodeSchema: NodeSchema<flattenListable<kinds>>,
-		opts = {} as NodeParseOptions<prereduced>
-	): nodeOfKind<
-		prereduced extends true ? flattenListable<kinds>
-		:	reducibleKindOf<flattenListable<kinds>>
-	> {
+	protected preparseNode(
+		kinds: NodeKind | listable<RootKind>,
+		schema: unknown,
+		opts: NodeParseOptions
+	): BaseNode | NodeParseContext {
 		let kind: NodeKind =
-			typeof kinds === "string" ? kinds : schemaKindOf(nodeSchema, kinds)
+			typeof kinds === "string" ? kinds : schemaKindOf(schema, kinds)
 
-		let schema: unknown = nodeSchema
-
-		if (isNode(schema) && schema.kind === kind)
-			return schema.bindScope(this) as never
+		if (isNode(schema) && schema.kind === kind) return schema.bindScope(this)
 
 		if (kind === "alias" && !opts?.prereduced) {
 			const resolution = this.resolveRoot(
@@ -259,19 +252,38 @@ export abstract class BaseScope<$ extends {} = {}> {
 		// schema for the kind (e.g. sequence can collapse to element accepting a Node')
 		if (isNode(normalizedSchema)) {
 			return normalizedSchema.kind === kind ?
-					(normalizedSchema.bindScope(this) as never)
+					normalizedSchema.bindScope(this)
 				:	throwMismatchedNodeRootError(kind, normalizedSchema.kind)
 		}
 
 		const id = registerNodeId(kind, opts.alias)
 
-		const node = parseNode(
-			id,
+		return {
+			...opts,
+			$: this,
+			args: opts.args ?? {},
 			kind,
-			normalizedSchema as never,
-			this,
-			opts ?? {}
-		).bindScope(this)
+			normalizedSchema,
+			id
+		}
+	}
+
+	@bound
+	node<
+		kinds extends NodeKind | array<RootKind>,
+		prereduced extends boolean = false
+	>(
+		kinds: kinds,
+		nodeSchema: NodeSchema<flattenListable<kinds>>,
+		opts = {} as NodeParseOptions<prereduced>
+	): nodeOfKind<
+		prereduced extends true ? flattenListable<kinds>
+		:	reducibleKindOf<flattenListable<kinds>>
+	> {
+		const preparsed = this.preparseNode(kinds, nodeSchema, opts)
+
+		const node =
+			isNode(preparsed) ? preparsed : parseNode(preparsed).bindScope(this)
 
 		if (this.resolved) {
 			// this node was not part of the original scope, so compile an anonymous scope
@@ -293,9 +305,9 @@ export abstract class BaseScope<$ extends {} = {}> {
 		const isResolution = opts.alias && opts.alias in this.aliases
 		// if the definition being parsed is not a scope alias and is not a
 		// generic instantiation (i.e. opts don't include args), add this as a resolution.
-		// TODO: this.lazilyResolve(resolve)
-		resolve
-		if (!isResolution) opts.args ??= { this: $ark.intrinsic.unknown as never }
+		if (!isResolution)
+			// this.lazilyResolve(resolve) as never
+			opts.args ??= { this: $ark.intrinsic.unknown || resolve }
 
 		return opts
 	}
