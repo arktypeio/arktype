@@ -256,14 +256,14 @@ export abstract class BaseScope<$ extends {} = {}> {
 		const impl = nodeImplementationsByKind[kind]
 		const normalizedSchema = impl.normalize?.(schema) ?? schema
 		// check again after normalization in case a node is a valid collapsed
-		// schema for the kind (e.g. sequence can collapse to element accepting a Node)
+		// schema for the kind (e.g. sequence can collapse to element accepting a Node')
 		if (isNode(normalizedSchema)) {
 			return normalizedSchema.kind === kind ?
 					(normalizedSchema.bindScope(this) as never)
 				:	throwMismatchedNodeRootError(kind, normalizedSchema.kind)
 		}
 
-		const id = registerNodeId(kind, opts)
+		const id = registerNodeId(kind, opts.alias)
 
 		const node = parseNode(
 			id,

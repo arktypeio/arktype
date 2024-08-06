@@ -35,8 +35,8 @@ import {
 	type nodeImplementationOf
 } from "../shared/implement.js"
 import { intersectNodes } from "../shared/intersections.js"
-import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 import { $ark } from "../shared/registry.js"
+import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 
 export namespace Sequence {
 	export interface NormalizedSchema extends BaseNormalizedSchema {

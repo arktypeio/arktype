@@ -11,6 +11,7 @@ export interface BaseInner {}
 
 export interface BaseMeta {
 	readonly description?: string
+	readonly alias?: string
 }
 
 export interface BaseNormalizedSchema extends withMetaPrefixedKeys<BaseMeta> {

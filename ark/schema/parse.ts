@@ -105,11 +105,8 @@ const serializeListableChild = (listableNode: listable<BaseNode>) =>
 		listableNode.map(node => node.collapsibleJson)
 	:	listableNode.collapsibleJson
 
-export const registerNodeId = (
-	kind: NodeKind,
-	opts: NodeParseOptions
-): string => {
-	const prefix = opts.alias ?? kind
+export const registerNodeId = (kind: NodeKind, alias?: string): string => {
+	const prefix = alias ?? kind
 	nodeCountsByPrefix[prefix] ??= 0
 	return `${prefix}${++nodeCountsByPrefix[prefix]!}`
 }
@@ -165,8 +162,6 @@ const _parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
 			return true
 		})
 
-	const children: BaseNode[] = []
-
 	for (const entry of innerSchemaEntries) {
 		const k = entry[0]
 		const keyImpl = impl.keys[k]
@@ -177,8 +172,38 @@ const _parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
 		if (v !== unset && (v !== undefined || keyImpl.preserveUndefined))
 			inner[k] = v
 	}
-	const innerEntries = entriesOf(inner)
 
+	if (impl.reduce && !ctx.prereduced) {
+		const reduced = impl.reduce(inner, ctx.$)
+		if (reduced) {
+			if (reduced instanceof Disjoint) return reduced.throw()
+
+			// we can't cache this reduction for now in case the reduction involved
+			// impliedSiblings
+			return withMeta(reduced, meta)
+		}
+	}
+
+	const node = createNode(ctx.id, kind, inner, meta, ctx.$)
+
+	if (ctx.reduceTo) {
+		nodeCache[node.hash] = ctx.reduceTo
+		return ctx.reduceTo
+	}
+
+	return node
+}
+
+export const createNode = (
+	id: string,
+	kind: NodeKind,
+	inner: dict,
+	meta: BaseMeta,
+	$: BaseScope
+): BaseNode => {
+	const impl = nodeImplementationsByKind[kind]
+	const innerEntries = entriesOf(inner)
+	const children: BaseNode[] = []
 	let innerJson: dict = {}
 
 	innerEntries.forEach(([k, v]) => {
@@ -216,33 +241,12 @@ const _parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
 	const collapsibleJson = possiblyCollapse(json, impl.collapsibleKey, true)
 	const hash = JSON.stringify({ kind, ...json })
 
-	if (ctx.reduceTo) {
-		nodeCache[hash] = ctx.reduceTo
-		return ctx.reduceTo
-	}
-
-	if (impl.reduce && !ctx.prereduced) {
-		const reduced = impl.reduce(inner, ctx.$)
-		if (reduced) {
-			if (reduced instanceof Disjoint) return reduced.throw()
-
-			// if we're defining the resolution of an alias and the result is
-			// reduced to another node, add the alias to that node if it doesn't
-			// already have one.
-			if (ctx.alias) reduced.alias ??= ctx.alias
-
-			// we can't cache this reduction for now in case the reduction involved
-			// impliedSiblings
-			return reduced
-		}
-	}
-
 	// we have to wait until after reduction to return a cached entry,
 	// since reduction can add impliedSiblings
 	if (nodeCache[hash]) return nodeCache[hash]
 
 	const attachments: UnknownAttachments & dict = {
-		id: ctx.id,
+		id,
 		kind,
 		impl,
 		inner,
@@ -255,18 +259,23 @@ const _parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
 		collapsibleJson: collapsibleJson as JsonData,
 		children
 	}
-	if (ctx.alias) attachments.alias = ctx.alias
 
 	for (const k in inner)
 		if (k !== "in" && k !== "out") attachments[k] = inner[k]
 
-	const node: BaseNode = new nodeClassesByKind[kind](
-		attachments as never,
-		ctx.$
-	)
+	const node: BaseNode = new nodeClassesByKind[kind](attachments as never, $)
 
 	return (nodeCache[hash] = node)
 }
+
+export const withMeta = (node: BaseNode, meta: BaseMeta): BaseNode =>
+	createNode(
+		registerNodeId(node.kind, meta.alias),
+		node.kind,
+		node.inner,
+		meta,
+		node.$
+	) as never
 
 const possiblyCollapse = <allowPrimitive extends boolean>(
 	json: dict,
