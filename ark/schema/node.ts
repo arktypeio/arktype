@@ -50,13 +50,13 @@ import {
 	type StructuralKind,
 	type UnknownAttachments
 } from "./shared/implement.js"
+import { $ark } from "./shared/registry.js"
 import {
 	TraversalContext,
 	type TraverseAllows,
 	type TraverseApply
 } from "./shared/traversal.js"
 import { isNode, pathToPropString, type arkKind } from "./shared/utils.js"
-import { $ark } from "./shared/registry.js"
 
 export abstract class BaseNode<
 	/** uses -ignore rather than -expect-error because this is not an error in .d.ts
@@ -235,6 +235,12 @@ export abstract class BaseNode<
 
 	hasKind<kind extends NodeKind>(kind: kind): this is nodeOfKind<kind> {
 		return this.kind === (kind as never)
+	}
+
+	hasKindIn<kinds extends NodeKind[]>(
+		...kinds: kinds
+	): this is nodeOfKind<kinds[number]> {
+		return kinds.includes(this.kind)
 	}
 
 	isBasis(): this is nodeOfKind<BasisKind> {

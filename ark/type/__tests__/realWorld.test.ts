@@ -779,6 +779,10 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 
 		const parseJsonToObj = type("parse.json").pipe(objSchema)
 
+		attest(parseJsonToObj.expression).snap(
+			'(In: string) => Out<{ action: "order.completed" } | { action: "scheduled", appointmentTypeID: unknown, calendarID: unknown, id: unknown }>'
+		)
+
 		const out = parseJsonToObj(
 			JSON.stringify({
 				action: "scheduled",
@@ -801,7 +805,12 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			  }
 		>(out)
 
-		attest(out).snap({} as never)
+		attest(out).snap({
+			action: "scheduled",
+			id: 1,
+			calendarID: 1,
+			appointmentTypeID: 1
+		})
 	})
 
 	// https://github.com/arktypeio/arktype/discussions/1080#discussioncomment-10247616
@@ -826,6 +835,11 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			})
 		)
 
-		attest(out).snap({} as never)
+		attest(out).snap({
+			action: "scheduled",
+			id: 1,
+			calendarID: 1,
+			appointmentTypeID: 1
+		})
 	})
 })

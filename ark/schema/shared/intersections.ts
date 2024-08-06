@@ -1,13 +1,16 @@
-import type { PartialRecord } from "@ark/util"
+import { append, type PartialRecord, type TypeGuard } from "@ark/util"
+import type { nodeOfKind } from "../kinds.js"
 import type { BaseNode } from "../node.js"
 import type { Morph } from "../roots/morph.js"
 import type { BaseRoot } from "../roots/root.js"
+import type { Union } from "../roots/union.js"
 import type { BaseScope } from "../scope.js"
 import { Disjoint } from "./disjoint.js"
-import type {
-	IntersectionContext,
-	RootKind,
-	UnknownIntersectionResult
+import {
+	rootKinds,
+	type IntersectionContext,
+	type RootKind,
+	type UnknownIntersectionResult
 } from "./implement.js"
 import { isNode } from "./utils.js"
 
@@ -64,51 +67,10 @@ export const intersectNodes: InternalNodeIntersection<IntersectionContext> = (
 	}
 	if (l.equals(r as never)) return l as never
 
-	let result
-
-	if (ctx.pipe && l.kind !== "union" && r.kind !== "union") {
-		if (l.includesMorph) {
-			if (l.hasKind("morph")) {
-				result =
-					ctx.invert ?
-						pipeToMorph(r as never, l, ctx)
-					:	pipeFromMorph(l, r as never, ctx)
-			} else {
-				result = ctx.$.node("morph", {
-					morphs: [r],
-					in: l
-				})
-			}
-		} else if (r.includesMorph) {
-			if (!r.hasKind("morph")) {
-				result = ctx.$.node("morph", {
-					morphs: [r],
-					in: l
-				})
-			} else {
-				result =
-					ctx.invert ?
-						pipeFromMorph(r, l as never, ctx)
-					:	pipeToMorph(l as never, r, ctx)
-			}
-		}
-	}
-
-	if (!result) {
-		const leftmostKind = l.precedence < r.precedence ? l.kind : r.kind
-		const implementation =
-			l.impl.intersections[r.kind] ?? r.impl.intersections[l.kind]
-		if (implementation === undefined) {
-			// should be two ConstraintNodes that have no relation
-			// this could also happen if a user directly intersects a Type and a ConstraintNode,
-			// but that is not allowed by the external function signature
-			result = null
-		} else if (leftmostKind === l.kind) result = implementation(l, r, ctx)
-		else {
-			result = implementation(r, l, { ...ctx, invert: !ctx.invert })
-			if (result instanceof Disjoint) result = result.invert()
-		}
-	}
+	let result =
+		ctx.pipe && l.hasKindIn(...rootKinds) && r.hasKindIn(...rootKinds) ?
+			_pipeNodes(l, r, ctx)
+		:	_intersectNodes(l, r, ctx)
 
 	if (isNode(result)) {
 		// if the result equals one of the operands, preserve its metadata by
@@ -121,35 +83,77 @@ export const intersectNodes: InternalNodeIntersection<IntersectionContext> = (
 	return result as never
 }
 
-export const pipeFromMorph = (
-	from: Morph.Node,
-	to: BaseRoot,
+const _intersectNodes = (
+	l: BaseNode,
+	r: BaseNode,
+	ctx: IntersectionContext
+) => {
+	const leftmostKind = l.precedence < r.precedence ? l.kind : r.kind
+	const implementation =
+		l.impl.intersections[r.kind] ?? r.impl.intersections[l.kind]
+	if (implementation === undefined) {
+		// should be two ConstraintNodes that have no relation
+		// this could also happen if a user directly intersects a Type and a ConstraintNode,
+		// but that is not allowed by the external function signature
+		return null
+	} else if (leftmostKind === l.kind) return implementation(l, r, ctx)
+	else {
+		let result = implementation(r, l, { ...ctx, invert: !ctx.invert })
+		if (result instanceof Disjoint) result = result.invert()
+		return result
+	}
+}
+
+const _pipeNodes = (
+	l: nodeOfKind<RootKind>,
+	r: nodeOfKind<RootKind>,
+	ctx: IntersectionContext
+) =>
+	l.includesMorph ?
+		ctx.invert ?
+			pipeMorphed(r as never, l, ctx)
+		:	pipeMorphed(l, r as never, ctx)
+	: r.includesMorph ?
+		ctx.invert ?
+			pipeMorphed(r, l as never, ctx)
+		:	pipeMorphed(l as never, r, ctx)
+	:	_intersectNodes(l, r, ctx)
+
+const pipeMorphed = (
+	from: nodeOfKind<RootKind>,
+	to: nodeOfKind<RootKind>,
+	ctx: IntersectionContext
+) =>
+	from.distribute(
+		fromBranch => _pipeMorphed(fromBranch, to, ctx),
+		results => {
+			const viableBranches = results.filter(
+				isNode as TypeGuard<unknown, Morph.Node>
+			)
+			return viableBranches.length === 0 ?
+					Disjoint.init("union", from.branches, to.branches)
+				:	ctx.$.rootNode(viableBranches)
+		}
+	)
+
+const _pipeMorphed = (
+	from: Union.ChildNode,
+	to: nodeOfKind<RootKind>,
 	ctx: IntersectionContext
 ): Morph.Node | Disjoint => {
-	const morphs = [...from.morphs]
-	if (from.validatedOut) {
+	const fromIsMorph = from.hasKind("morph")
+	const toIsMorph = to.hasKind("morph")
+	const morphs = fromIsMorph ? [...from.morphs] : [from]
+	const validatedOut = fromIsMorph ? from.validatedOut : from
+	if (validatedOut) {
 		// still piped from context, so allows appending additional morphs
-		const outIntersection = intersectNodes(from.validatedOut, to, ctx)
+		const outIntersection = intersectNodes(validatedOut, to, ctx)
 		if (outIntersection instanceof Disjoint) return outIntersection
 		morphs[morphs.length - 1] = outIntersection
-	} else morphs.push(to)
+	} else append(morphs, toIsMorph ? to.morphs : to)
 
 	return ctx.$.node("morph", {
 		morphs,
-		in: from.in
-	})
-}
-
-export const pipeToMorph = (
-	from: BaseRoot,
-	to: Morph.Node,
-	ctx: IntersectionContext
-): Morph.Node | Disjoint => {
-	const result = intersectNodes(from, to.in, ctx)
-	if (result instanceof Disjoint) return result
-	return ctx.$.node("morph", {
-		morphs: to.morphs,
-		// TODO: https://github.com/arktypeio/arktype/issues/1067
-		in: result as Morph.ChildNode
+		in: fromIsMorph ? from.in : from
 	})
 }

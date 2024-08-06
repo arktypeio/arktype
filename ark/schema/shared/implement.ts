@@ -233,6 +233,20 @@ export const schemaKindsRightOf = <kind extends RootKind>(
 ): schemaKindRightOf<kind>[] =>
 	rootKinds.slice(precedenceOfKind(kind) + 1) as never
 
+export const unionChildKinds = [
+	...schemaKindsRightOf("union"),
+	"alias"
+] as const
+
+export type UnionChildKind = (typeof unionChildKinds)[number]
+
+export const morphChildKinds = [
+	...schemaKindsRightOf("morph"),
+	"alias"
+] as const
+
+export type MorphChildKind = (typeof morphChildKinds)[number]
+
 export type keySchemaDefinitions<d extends BaseNodeDeclaration> = {
 	[k in keyRequiringSchemaDefinition<d>]: NodeKeyImplementation<d, k>
 }

@@ -7,11 +7,11 @@
 		"editor.defaultFormatter": null,
 		"editor.codeActionsOnSave": {}
 	},
-	// "editor.codeActionsOnSave": [
-	// 	"editor.formatOnSave",
-	// 	"source.fixAll.eslint",
-	// 	"source.sortImports"
-	// ],
+	"editor.codeActionsOnSave": [
+		"editor.formatOnSave",
+		"source.fixAll.eslint",
+		"source.sortImports"
+	],
 	"eslint.codeActionsOnSave.rules": [
 		"object-shorthand",
 		"@typescript-eslint/consistent-type-imports",

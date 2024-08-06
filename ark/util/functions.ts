@@ -112,6 +112,10 @@ export type Guardable<input = unknown, narrowed extends input = input> =
 	| ((In: input) => In is narrowed)
 	| ((In: input) => boolean)
 
+export type TypeGuard<input = unknown, narrowed extends input = input> = (
+	In: input
+) => In is narrowed
+
 /**
  * Checks if the environment has Content Security Policy (CSP) enabled,
  * preventing JIT-optimized code from being compiled via new Function().

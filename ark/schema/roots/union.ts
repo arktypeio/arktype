@@ -13,7 +13,6 @@ import {
 	type Json,
 	type Key,
 	type SerializedPrimitive,
-	type array,
 	type keySet,
 	type show
 } from "@ark/util"
@@ -34,9 +33,10 @@ import { Disjoint } from "../shared/disjoint.js"
 import type { ArkError } from "../shared/errors.js"
 import {
 	implementNode,
-	schemaKindsRightOf,
+	unionChildKinds,
 	type IntersectionContext,
 	type RootKind,
+	type UnionChildKind,
 	type nodeImplementationOf
 } from "../shared/implement.js"
 import { intersectNodes, intersectNodesRoot } from "../shared/intersections.js"
@@ -45,12 +45,12 @@ import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 import { hasArkKind, pathToPropString } from "../shared/utils.js"
 import type { Domain } from "./domain.js"
 import type { Morph } from "./morph.js"
-import { BaseRoot, type schemaKindRightOf } from "./root.js"
+import { BaseRoot } from "./root.js"
 import type { Unit } from "./unit.js"
 import { defineRightwardIntersections } from "./utils.js"
 
 export namespace Union {
-	export type ChildKind = schemaKindRightOf<"union"> | "alias"
+	export type ChildKind = UnionChildKind
 
 	export type ChildSchema = NodeSchema<ChildKind>
 
@@ -87,16 +87,11 @@ export namespace Union {
 			inner: Inner
 			errorContext: ErrorContext
 			reducibleTo: RootKind
-			childKind: ChildKind
+			childKind: UnionChildKind
 		}> {}
 
 	export type Node = UnionNode
 }
-
-const unionChildKinds: array<Union.ChildKind> = [
-	...schemaKindsRightOf("union"),
-	"alias"
-]
 
 const implementation: nodeImplementationOf<Union.Declaration> =
 	implementNode<Union.Declaration>({
@@ -607,24 +602,7 @@ export const reduceBranches = ({
 			)!
 			if (intersection instanceof Disjoint) continue
 
-			if (
-				!ordered &&
-				(branches[i].includesMorph || branches[j].includesMorph) &&
-				(!arrayEquals(branches[i].shallowMorphs, branches[j].shallowMorphs, {
-					isEqual: (l, r) => l.hasEqualMorphs(r)
-				}) ||
-					!arrayEquals(branches[i].flatMorphs, branches[j].flatMorphs, {
-						isEqual: (l, r) =>
-							l.propString === r.propString && l.node.hasEqualMorphs(r.node)
-					}))
-			) {
-				throwParseError(
-					writeIndiscriminableMorphMessage(
-						branches[i].expression,
-						branches[j].expression
-					)
-				)
-			}
+			if (!ordered) assertDeterminateOverlap(branches[i], branches[j])
 
 			if (intersection.equals(branches[i].in)) {
 				// preserve ordered branches that are a subtype of a subsequent branch
@@ -634,6 +612,23 @@ export const reduceBranches = ({
 		}
 	}
 	return branches.filter((_, i) => uniquenessByIndex[i])
+}
+
+const assertDeterminateOverlap = (l: Union.ChildNode, r: Union.ChildNode) => {
+	if (
+		(l.includesMorph || r.includesMorph) &&
+		(!arrayEquals(l.shallowMorphs, r.shallowMorphs, {
+			isEqual: (l, r) => l.hasEqualMorphs(r)
+		}) ||
+			!arrayEquals(l.flatMorphs, r.flatMorphs, {
+				isEqual: (l, r) =>
+					l.propString === r.propString && l.node.hasEqualMorphs(r.node)
+			}))
+	) {
+		throwParseError(
+			writeIndiscriminableMorphMessage(l.expression, r.expression)
+		)
+	}
 }
 
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
