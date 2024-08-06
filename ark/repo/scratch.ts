@@ -1,11 +1,27 @@
-import { type } from "arktype"
+import { type, type ArkErrors } from "arktype"
 
-const parseJson = type("string").pipe.try((s): object => JSON.parse(s))
+interface RuntimeErrors extends ArkErrors {
+	/**name must be a string (was true) 
+version must be a valid semantic version (see https://semver.org/) (was "v2.0.0")*/
+	summary: string
+}
+
+const narrowMessage = (e: ArkErrors): e is RuntimeErrors => true
 
 // ---cut---
-// hover to see the type-level representation
+// .to is a sugared .pipe for a single parsed output validator
+const parseJson = type("parse.json").to({
+	name: "string",
+	version: "semver"
+})
 
-// Uncaught Exception:
-const badOut = parseJson('{ unquoted: "keys" }')
+const out = parseJson('{ "name": true, "version": "v2.0.0" }')
 
-console.log(badOut.toString())
+if (out instanceof type.errors) {
+	// ---cut-start---
+	// just a trick to display the runtime error
+	if (!narrowMessage(out)) throw new Error()
+	// ---cut-end---
+	// hover out.summary to see the default error message
+	console.error(out.summary)
+}

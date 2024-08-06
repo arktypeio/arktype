@@ -31,6 +31,7 @@
 	--ark-green: #40decc;
 	--ark-error: #9558f8;
 	--ark-success: #40decca0;
+	--ark-runtime-error: #f85858;
 	/** @shikijs/twoslash/style-rich.css overrides */
 	--twoslash-border-color: #ba7e4127;
 	--twoslash-underline-color: currentColor;
@@ -101,17 +102,17 @@ starlight-theme-select,
 
 .error {
 	position: relative;
-	background-color: var(--twoslash-error-bg);
-	border-left: 3px solid var(--twoslash-error-color);
-	color: var(--twoslash-error-color) !important;
-	padding: 6px 12px;
+	background-color: #f8585822;
+	border-left: 3px solid var(--ark-runtime-error);
+	padding: 4px;
+	padding-right: 16px;
 	margin: 0.2em 0;
 	min-width: 100%;
 	width: max-content;
 }
 
 .error > span {
-	color: var(--twoslash-error-color) !important;
+	color: var(--ark-runtime-error) !important;
 }
 
 .twoslash .twoslash-error {
@@ -139,7 +140,7 @@ starlight-theme-select,
 
 /** display runtime errors on hover */
 .twoslash .twoslash-popup-docs {
-	color: #f85858;
+	color: var(--ark-runtime-error);
 	font-size: small;
 	white-space: pre;
 }

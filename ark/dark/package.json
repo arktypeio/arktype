@@ -57,25 +57,8 @@
 			}
 		],
 		"configurationDefaults": {
-			"[javascript]": {
-				"editor.quickSuggestions": {
-					"strings": "on"
-				}
-			},
-			"[typescript]": {
-				"editor.quickSuggestions": {
-					"strings": "on"
-				}
-			},
-			"[javascriptreact]": {
-				"editor.quickSuggestions": {
-					"strings": "on"
-				}
-			},
-			"[typescriptreact]": {
-				"editor.quickSuggestions": {
-					"strings": "on"
-				}
+			"editor.quickSuggestions": {
+				"strings": "on"
 			},
 			"errorLens.followCursor": "closestProblem",
 			"errorLens.delay": 0,
