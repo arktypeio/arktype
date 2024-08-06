@@ -7,7 +7,7 @@ import {
 	writeMorphIntersectionMessage
 } from "@ark/schema"
 import { ark, scope, type, type Type } from "arktype"
-import type { MoreThan, Out, constrain } from "arktype/internal/ast.js"
+import type { MoreThan, Out, To, constrain } from "arktype/internal/ast.js"
 
 contextualize(() => {
 	it("base", () => {
@@ -86,7 +86,7 @@ contextualize(() => {
 		const parsedUser = type("string").pipe(s => JSON.parse(s), user)
 
 		attest<
-			(In: string) => Out<{
+			(In: string) => To<{
 				name: string
 				age: number
 			}>
@@ -239,6 +239,18 @@ contextualize(() => {
 		const t = type([{ a: "string" }, "=>", data => JSON.stringify(data)])
 		const out = t({ a: "foo" })
 		attest<string | type.errors>(out).snap('{"a":"foo"}')
+	})
+
+	it(".out inferred based on validatedOut", () => {
+		const unvalidated = type("string").pipe(s => s.length)
+
+		attest<number>(unvalidated.infer)
+		// .out won't be known at runtime
+		attest<Type<unknown>>(unvalidated.out)
+
+		const validated = unvalidated.pipe(type("number"))
+		// now that the output is a validated, type, out can be used standalone
+		attest<Type<number>>(validated.out)
 	})
 
 	it("intersection", () => {

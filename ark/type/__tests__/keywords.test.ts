@@ -8,7 +8,7 @@ import {
 	writeUnsatisfiedParameterConstraintMessage
 } from "@ark/schema"
 import { ark, scope, type } from "arktype"
-import type { Out, string } from "arktype/internal/ast.js"
+import type { Out, string, To } from "arktype/internal/ast.js"
 
 contextualize(() => {
 	describe("jsObjects", () => {
@@ -257,7 +257,7 @@ contextualize(() => {
 			const parseUserForm = type("parse.formData").pipe(user)
 
 			attest<
-				(In: FormData) => Out<{
+				(In: FormData) => To<{
 					email: string.matching<"?">
 					file: File
 					tags: (In: string | string[]) => Out<string[]>

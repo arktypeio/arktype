@@ -10,12 +10,12 @@ interface Type<out t = unknown, $ = {}> extends BaseType<t, $> {
 		predicate: Predicate<this["infer"]> | PredicateCast<this["infer"], narrowed>
 	): Type<
 		(
-			In: this["tIn"]
-		) => Out<
 			[narrowed] extends [never] ?
 				applyConstraint<this["tOut"], "predicate", Predicate>
 			:	narrowed
-		>,
+		) extends infer o ?
+			(In: this["tIn"]) => Out<o>
+		:	never,
 		$
 	>
 }

@@ -3,8 +3,8 @@ import type {
 	constrain,
 	Constraints,
 	MorphAst,
-	Out,
-	parseConstraints
+	parseConstraints,
+	To
 } from "./ast.js"
 
 export type inferIntersection<l, r> = _inferIntersection<l, r, false>
@@ -16,13 +16,13 @@ type _inferIntersection<l, r, piped extends boolean> =
 	: l extends MorphAst<infer lIn, infer lOut> ?
 		r extends MorphAst<any, infer rOut> ?
 			piped extends true ?
-				(In: lIn) => Out<rOut>
+				(In: lIn) => rOut
 			:	// a commutative intersection between two morphs is a ParseError
 				never
-		: piped extends true ? (In: lIn) => Out<r>
-		: (In: _inferIntersection<lIn, r, false>) => Out<lOut>
+		: piped extends true ? (In: lIn) => To<r>
+		: (In: _inferIntersection<lIn, r, false>) => lOut
 	: r extends MorphAst<infer rIn, infer rOut> ?
-		(In: _inferIntersection<rIn, l, false>) => Out<rOut>
+		(In: _inferIntersection<rIn, l, false>) => rOut
 	: parseConstraints<l> extends (
 		[infer lBase, infer lConstraints extends Constraints]
 	) ?

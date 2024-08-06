@@ -12,6 +12,7 @@ import type {
 	distillConstrainableOut,
 	distillIn,
 	distillOut,
+	distillValidatedOut,
 	inferMorphOut,
 	inferPipes,
 	inferred
@@ -57,7 +58,7 @@ interface Type<out t = unknown, $ = {}>
 	as<t = unset>(...args: validateChainedAsArgs<t>): instantiateType<t, $>
 
 	get in(): instantiateType<this["tIn"], $>
-	get out(): instantiateType<this["tOut"], $>
+	get out(): instantiateType<distillValidatedOut<t>, $>
 
 	intersect<const def, r = inferTypeRoot<def, $>>(
 		def: validateTypeRoot<def, $>

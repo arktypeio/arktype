@@ -251,7 +251,7 @@ export type applyConstraint<
 	schema extends NodeSchema<kind>
 > =
 	t extends MorphAst<infer i, infer o> ?
-		(In: leftIfEqual<i, _applyConstraint<i, kind, schema>>) => Out<o>
+		(In: leftIfEqual<i, _applyConstraint<i, kind, schema>>) => o
 	:	leftIfEqual<t, _applyConstraint<t, kind, schema>>
 
 type _applyConstraint<
@@ -342,6 +342,11 @@ export type distillConstrainableOut<t> = finalizeDistillation<
 	_distill<t, "out", "constrainable">
 >
 
+export type distillValidatedOut<t> = finalizeDistillation<
+	t,
+	_distill<t, "validatedOut", "constrainable">
+>
+
 type finalizeDistillation<t, distilled> =
 	equals<t, distilled> extends true ? t : distilled
 
@@ -355,11 +360,11 @@ export type includesMorphs<t> =
 		false
 	:	true
 
-type _distill<
-	t,
-	io extends "in" | "out",
-	distilledKind extends "base" | "constrainable"
-> =
+type IoKind = "in" | "out" | "validatedOut"
+
+type DistilledKind = "base" | "constrainable"
+
+type _distill<t, io extends IoKind, distilledKind extends DistilledKind> =
 	// ensure optional keys don't prevent extracting defaults
 	t extends undefined ? t
 	: [t] extends [anyOrNever] ? t
@@ -372,9 +377,12 @@ type _distill<
 	: t extends TerminallyInferredObjectKind | Primitive ? t
 	: unknown extends t ? unknown
 	: t extends MorphAst<infer i, infer o> ?
-		io extends "in" ?
-			_distill<i, io, distilledKind>
-		:	_distill<o, io, distilledKind>
+		io extends "in" ? _distill<i, io, distilledKind>
+		: io extends "validatedOut" ?
+			o extends To<infer validatedOut> ?
+				_distill<validatedOut, io, distilledKind>
+			:	unknown
+		:	_distill<o[1], io, distilledKind>
 	: t extends DefaultableAst<infer t> ? _distill<t, io, distilledKind>
 	: t extends array ? distillArray<t, io, distilledKind, []>
 	: // we excluded this from TerminallyInferredObjectKind so that those types could be
@@ -407,8 +415,8 @@ export type defaultableKeyOf<t> = {
 
 type distillArray<
 	t extends array,
-	io extends "in" | "out",
-	constraints extends "base" | "constrainable",
+	io extends IoKind,
+	constraints extends DistilledKind,
 	prefix extends array
 > =
 	t extends readonly [infer head, ...infer tail] ?
@@ -422,8 +430,8 @@ type distillArray<
 
 type distillPostfix<
 	t extends array,
-	io extends "in" | "out",
-	constraints extends "base" | "constrainable",
+	io extends IoKind,
+	constraints extends DistilledKind,
 	postfix extends array = []
 > =
 	t extends readonly [...infer init, infer last] ?
@@ -470,9 +478,11 @@ export type inferMorphOut<morph extends Morph> = Exclude<
 	ArkError | ArkErrors
 >
 
-export type Out<o = any> = ["=>", o]
+export type Out<o = any> = ["=>", o, boolean]
 
-export type MorphAst<i = any, o = any> = (In: i) => Out<o>
+export type To<o = any> = ["=>", o, true]
+
+export type MorphAst<i = any, o extends Out = Out> = (In: i) => o
 
 export type Default<v = any> = ["=", v]
 

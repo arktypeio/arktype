@@ -8,7 +8,8 @@ import type {
 	Narrowed,
 	number,
 	Out,
-	string
+	string,
+	To
 } from "arktype/internal/ast.js"
 
 contextualize(() => {
@@ -338,7 +339,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		})
 
 		attest<
-			| ((In: string) => Out<string.is<AtLeastLength<1> & AtMostLength<3>>>)
+			| ((In: string) => To<string.is<AtLeastLength<1> & AtMostLength<3>>>)
 			| null
 			| undefined,
 			typeof CreatePatientInput.t.first_name
@@ -725,7 +726,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		attest(t.t).type.toString.snap(`{
 	first_name?: (
 		In: string
-	) => Out<is<AtLeastLength<1> & AtMostLength<3>>>
+	) => To<is<AtLeastLength<1> & AtMostLength<3>>>
 }`)
 	})
 
