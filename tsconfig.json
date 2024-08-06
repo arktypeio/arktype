@@ -13,7 +13,7 @@
 			"@ark/attest/internal/*": ["./ark/attest/*"],
 			"@ark/schema": ["./ark/schema/index.ts"],
 			"@ark/schema/config": ["./ark/schema/config.ts"],
-			"@ark/schema/internal": ["./ark/schema/*"]
+			"@ark/schema/internal/*": ["./ark/schema/*"]
 		},
 		"types": ["mocha", "node"]
 	},

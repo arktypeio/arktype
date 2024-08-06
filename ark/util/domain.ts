@@ -64,7 +64,7 @@ export const domainDescriptions = {
 	object: "an object",
 	string: "a string",
 	symbol: "a symbol"
-} satisfies Record<Domain, string>
+} as const satisfies Record<Domain, string>
 
 export type domainDescriptions = typeof domainDescriptions
 
