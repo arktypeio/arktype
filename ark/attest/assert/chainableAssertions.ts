@@ -235,22 +235,7 @@ const checkCompletionsForErrors = (completions?: Completions) => {
 
 const declarationPrefix = "type T = "
 
-const formatTypeString = (typeString: string) => {
-	try {
-		return _formatTypeString(typeString)
-	} catch {
-		// if formatting fails (e.g. due to custom typeToString syntax like ... X more),
-		// try to comment out problematic sections
-		try {
-			return _formatTypeString(replaceKnownInvalidSyntax(typeString))
-		} catch {
-			// if still fails somehow, just swallow the error and use the unformatted type
-			return typeString
-		}
-	}
-}
-
-const _formatTypeString = (typeString: string) =>
+const formatTypeString = (typeString: string) =>
 	prettier
 		.format(`${declarationPrefix}${typeString}`, {
 			semi: false,
@@ -261,15 +246,6 @@ const _formatTypeString = (typeString: string) =>
 		})
 		.slice(declarationPrefix.length)
 		.trimEnd()
-
-const replaceKnownInvalidSyntax = (typeString: string): string => {
-	// Match '...' and '... x more ...' (known truncated type syntax)
-	const regex = /\.\.\.\s*(\d+\s*more\s*\.\.\.)?/g
-
-	// replace these with a string literal "..." so that they can still
-	// form valid expressions, e.g. "..."[]
-	return typeString.replaceAll(regex, '"..."')
-}
 
 export type AssertionKind = "value" | "type"
 

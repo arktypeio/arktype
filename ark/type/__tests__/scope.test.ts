@@ -216,10 +216,10 @@ contextualize(() => {
 
 			// Type hint displays as "..." on hitting cycle (or any if "noErrorTruncation" is true)
 			attest({} as typeof types.a.infer).type.toString.snap(
-				`{ b: { a: "..." } }`
+				"{ b: { a: cyclic } }"
 			)
 			attest({} as typeof types.b.infer.a.b.a.b.a.b.a).type.toString.snap(
-				`{ b: { a: "..." } }`
+				"{ b: { a: cyclic } }"
 			)
 
 			// @ts-expect-error
@@ -259,8 +259,8 @@ contextualize(() => {
 				b: { a: "a|true" }
 			}).export()
 			attest(types).type.toString.snap(`Module<{
-	a: { b: false | { a: true | "..." } }
-	b: { a: true | { b: false | "..." } }
+	a: { b: false | { a: true | cyclic } }
+	b: { a: true | { b: false | cyclic } }
 }>`)
 		})
 
@@ -270,8 +270,8 @@ contextualize(() => {
 				b: { a: "a&b" }
 			}).export()
 			attest(types).type.toString.snap(`Module<{
-	a: { b: { a: { b: "..."; a: "..." }; b: "..." } }
-	b: { a: { b: { a: "..."; b: "..." }; a: "..." } }
+	a: { b: { a: { b: cyclic; a: cyclic }; b: cyclic } }
+	b: { a: { b: { a: cyclic; b: cyclic }; a: cyclic } }
 }>`)
 		})
 
@@ -317,7 +317,7 @@ dependencies[1].contributors[0].email must be a valid email (was "ssalbdivad")`)
 					a: "a|3"
 				}
 			}).export()
-			attest(types.a.infer).type.toString.snap('{ b: { a: 3 | "..." } }')
+			attest(types.a.infer).type.toString.snap("{ b: { a: 3 | cyclic } }")
 
 			attest(types.a.json).snap({
 				domain: "object",
@@ -345,7 +345,7 @@ dependencies[1].contributors[0].email must be a valid email (was "ssalbdivad")`)
 				'b.a.b.a must be an object or 3 (was 4) or b.a must be 3 (was {"b":{"a":4}})'
 			)
 
-			attest(types.b.infer).type.toString.snap('{ a: 3 | { b: "..." } }')
+			attest(types.b.infer).type.toString.snap("{ a: 3 | { b: cyclic } }")
 			attest(types.b.json).snap({
 				domain: "object",
 				required: [{ key: "a", value: ["$a", { unit: 3 }] }]
@@ -362,10 +362,10 @@ dependencies[1].contributors[0].email must be a valid email (was "ssalbdivad")`)
 				}
 			}).export()
 			attest(types.arf.infer).type.toString.snap(
-				'{ b: { c: { b: "..."; c: "..." } } }'
+				"{ b: { c: { b: cyclic; c: cyclic } } }"
 			)
 			attest(types.bork.infer).type.toString.snap(
-				'{ c: { b: "..."; c: "..." } }'
+				"{ c: { b: cyclic; c: cyclic } }"
 			)
 
 			const expectedCyclicJson =

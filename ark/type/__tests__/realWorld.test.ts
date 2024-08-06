@@ -54,7 +54,7 @@ contextualize(() => {
 	coll?: string
 	ts?: TimeStub
 	ttl?: TimeStub
-	user: TimeStub | { name: string; accounts?: "..."[] }
+	user: TimeStub | { name: string; accounts?: cyclic[] }
 	provider: "GitHub" | "Google"
 	providerUserId: string
 }`)
@@ -761,8 +761,19 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 	  }
 	| {
 			type: "directory"
-			name: is<MoreThanLength<0> & LessThanLength<"...">>
-			children: constrain<"...">
+			name: is<MoreThanLength<0> & LessThanLength<255>>
+			children: constrain<
+				(
+					| {
+							type: "file"
+							name: is<
+								MoreThanLength<0> & LessThanLength<255>
+							>
+					  }
+					| cyclic
+				)[],
+				Narrowed
+			>
 	  }`)
 	})
 

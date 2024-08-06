@@ -8,11 +8,11 @@ import {
 } from "@ark/schema"
 import { Hkt } from "@ark/util"
 import { generic, scope, type, type Generic } from "arktype"
+import { emptyGenericParameterMessage } from "arktype/internal/generic.js"
 import { writeUnclosedGroupMessage } from "arktype/internal/parser/string/reduce/shared.js"
 import { writeInvalidGenericArgCountMessage } from "arktype/internal/parser/string/shift/operand/genericArgs.js"
 import { writeInvalidDivisorMessage } from "arktype/internal/parser/string/shift/operator/divisor.js"
 import { writeUnexpectedCharacterMessage } from "arktype/internal/parser/string/shift/operator/operator.js"
-import { emptyGenericParameterMessage } from "arktype/internal/generic.js"
 
 contextualize(() => {
 	describe("standalone", () => {
@@ -98,7 +98,7 @@ contextualize(() => {
 			const expectedContents = type({ a: "string|this" })
 			const expectedBox = type({ box: expectedContents })
 
-			attest(t.t).type.toString.snap(`{ box: { a: string | "..." } }`)
+			attest(t.t).type.toString.snap(`{ box: { a: string | cyclic } }`)
 			attest(t.json).equals(expectedBox.json)
 		})
 

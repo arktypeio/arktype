@@ -204,7 +204,20 @@ export interface StringifiableType extends ts.Type {
 export const getStringifiableType = (node: ts.Node): StringifiableType => {
 	const typeChecker = getInternalTypeChecker()
 	const nodeType = typeChecker.getTypeAtLocation(node)
-	const stringified = typeChecker.typeToString(nodeType)
+
+	let stringified = typeChecker.typeToString(nodeType)
+
+	if (stringified.includes("...")) {
+		const nonTruncated = typeChecker.typeToString(
+			nodeType,
+			undefined,
+			ts.TypeFormatFlags.NoTruncation
+		)
+
+		if (nonTruncated.includes(" any") && !stringified.includes(" any"))
+			stringified = nonTruncated.replaceAll(" any", " cyclic")
+		else stringified = nonTruncated
+	}
 
 	return Object.assign(nodeType, {
 		toString: () => stringified,
