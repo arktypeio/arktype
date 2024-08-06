@@ -29,6 +29,7 @@ interface Type<out t = unknown, $ = {}>
 	t: t
 	tIn: distillConstrainableIn<t>
 	tOut: distillConstrainableOut<t>
+	tValidatedOut: distillValidatedOut<t>
 	infer: distillOut<t>
 	inferIn: distillIn<t>
 	[inferred]: t
@@ -58,7 +59,7 @@ interface Type<out t = unknown, $ = {}>
 	as<t = unset>(...args: validateChainedAsArgs<t>): instantiateType<t, $>
 
 	get in(): instantiateType<this["tIn"], $>
-	get out(): instantiateType<distillValidatedOut<t>, $>
+	get out(): instantiateType<this["tValidatedOut"], $>
 
 	intersect<const def, r = inferTypeRoot<def, $>>(
 		def: validateTypeRoot<def, $>

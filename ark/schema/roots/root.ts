@@ -284,12 +284,18 @@ export abstract class BaseRoot<
 		return morphs.reduce<BaseRoot>((acc, morph) => acc.pipeOnce(morph), this)
 	}
 
+	to(def: unknown): BaseRoot {
+		return this.toNode(this.$.parseRoot(def))
+	}
+
+	private toNode(root: BaseRoot): BaseRoot {
+		const result = pipeNodesRoot(this, root, this.$)
+		if (result instanceof Disjoint) return result.throw()
+		return result as BaseRoot
+	}
+
 	private pipeOnce(morph: Morph): BaseRoot {
-		if (hasArkKind(morph, "root")) {
-			const result = pipeNodesRoot(this, morph, this.$)
-			if (result instanceof Disjoint) return result.throw()
-			return result as BaseRoot
-		}
+		if (hasArkKind(morph, "root")) return this.toNode(morph)
 
 		return this.distribute(
 			node =>

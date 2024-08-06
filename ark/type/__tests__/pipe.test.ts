@@ -27,6 +27,22 @@ contextualize(() => {
 		)
 	})
 
+	it("to", () => {
+		const t = type("parse.json").to({
+			name: "string",
+			age: "number"
+		})
+
+		const tOut = t.out
+		const expected = type({
+			name: "string",
+			age: "number"
+		})
+
+		attest<typeof expected.t>(tOut.t)
+		attest(tOut.expression).equals(expected.expression)
+	})
+
 	it("can't directly constrain morph", () => {
 		// @ts-expect-error
 		attest(() => type("parse.number").atMostLength(5))
