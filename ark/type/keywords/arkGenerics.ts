@@ -1,33 +1,47 @@
 import { genericNode } from "@ark/schema"
-import { Hkt, liftArray, type merge } from "@ark/util"
+import * as util from "@ark/util"
+import { Hkt } from "@ark/util"
 import type { Out } from "../ast.js"
 import type { Module } from "../module.js"
 import { scope, type inferScope } from "../scope.js"
 import { tsKeywords } from "./tsKeywords.js"
 
-class LiftArrayHkt extends Hkt<[element: unknown]> {
-	declare body: liftArray<this[0]> extends infer lifted ?
+class liftArrayHkt extends Hkt<[element: unknown]> {
+	declare body: util.liftArray<this[0]> extends infer lifted ?
 		(In: this[0] | lifted) => Out<lifted>
 	:	never
 }
 
-const LiftArray = genericNode("element")(
-	args => args.element.or(args.element.array()).pipe(liftArray),
-	LiftArrayHkt
+const liftArray = genericNode("element")(
+	args => args.element.or(args.element.array()).pipe(util.liftArray),
+	liftArrayHkt
 )
 
-class MergeHkt extends Hkt<[base: object, props: object]> {
-	declare body: merge<this[0], this[1]>
+class mergeHkt extends Hkt<[base: object, props: object]> {
+	declare body: util.merge<this[0], this[1]>
 }
 
-const Merge = genericNode(
+const merge = genericNode(
 	["base", tsKeywords.object],
 	["props", tsKeywords.object]
-)(args => args.base.merge(args.props), MergeHkt)
+)(args => args.base.merge(args.props), mergeHkt)
+
+class cloneHkt extends Hkt<[unknown]> {
+	declare body: this[0]
+}
+
+const clone = genericNode("t")(
+	args =>
+		args.t.pipe(data =>
+			util.hasDomain(data, "object") ? util.deepClone(data) : data
+		),
+	cloneHkt
+)
 
 const arkGenericsExports = {
-	liftArray: LiftArray,
-	merge: Merge
+	liftArray,
+	merge,
+	clone
 }
 
 export type arkGenericsExports = inferScope<typeof arkGenericsExports>

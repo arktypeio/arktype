@@ -29,7 +29,7 @@
 	--sl-color-black: #001a2f;
 	/* Based on ArkDark ErrorLens */
 	--ark-green: #40decc;
-	--ark-error: #9558f8a0;
+	--ark-error: #9558f8;
 	--ark-success: #40decca0;
 	/** @shikijs/twoslash/style-rich.css overrides */
 	--twoslash-border-color: #ba7e4127;
@@ -97,6 +97,21 @@ header {
 starlight-theme-select,
 .social-icons::after {
 	display: none;
+}
+
+.error {
+	position: relative;
+	background-color: var(--twoslash-error-bg);
+	border-left: 3px solid var(--twoslash-error-color);
+	color: var(--twoslash-error-color) !important;
+	padding: 6px 12px;
+	margin: 0.2em 0;
+	min-width: 100%;
+	width: max-content;
+}
+
+.error > span {
+	color: var(--twoslash-error-color) !important;
 }
 
 .twoslash .twoslash-error {

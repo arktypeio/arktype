@@ -43,6 +43,26 @@
 		"skipFiles": ["<node_internals>/**", "**/node_modules/**"]
 	},
 	"editor.quickSuggestions": {
-		"strings": "on"
+		"strings": "off"
+	},
+	"[typescriptreact]": {
+		"editor.quickSuggestions": {
+			"strings": "on"
+		}
+	},
+	"[typescript]": {
+		"editor.quickSuggestions": {
+			"strings": "on"
+		}
+	},
+	"[javascriptreact]": {
+		"editor.quickSuggestions": {
+			"strings": "on"
+		}
+	},
+	"[javascript]": {
+		"editor.quickSuggestions": {
+			"strings": "on"
+		}
 	}
 }

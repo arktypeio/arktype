@@ -12,16 +12,39 @@ Morphs can be **piped** before, after or between validators and even chained to 
 
 ```ts
 import { type } from "arktype"
-import { readFileSync } from "node:fs"
 // ---cut---
 // hover to see the type-level representation
-const parseJson = type("string").pipe(s => JSON.parse(s))
+const parseJson = type("string").pipe((s): object => JSON.parse(s))
 
-const out = parseJson("{  }")
+// out is the object { ark: "type" }
+const out = parseJson('{ "ark": "type" }')
+
+// badOut is an ArkErrors instance with summary:
+// must be a string (was object)
+const badOut = parseJson(out)
 ```
+
+This is a good start, but there are still a couple major issues with our morph.
+
+What happens if we pass a string that isn't valid JSON?
+
+```ts
+import { type } from "arktype"
+
+const parseJson = type("string").pipe((s): object => JSON.parse(s))
+// ---cut---
+
+// Uncaught SyntaxError: Expected property name // [!code error]
+const badOut = parseJson('{ unquoted: "keys" }')
+```
+
+Despite what `JSON.parse` might have you believe, throwing exceptions and returning `any` are not very good ways to parse a string. By default, ArkType assumes that if one of your morphs or narrows throws, you meant to crash.
+
+You might consider wrapping your function body in a `try catch`.
 
 :::caution[Under Construction]
 We're still working on our new docs, as evidenced by the fact that they are not done.
 
 Check back soon for more!
 :::
+import type { throws } from "assert"

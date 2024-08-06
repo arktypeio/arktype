@@ -1,24 +1,11 @@
-import { type, type ArkErrors } from "arktype"
+import { type } from "arktype"
 
-const t = type({ s: "string" })
+const parseJson = type("string").pipe.try((s): object => JSON.parse(s))
 
-interface RuntimeErrors extends ArkErrors {
-	/**must be a string or an object (was number) */
-	summary: string
-}
+// ---cut---
+// hover to see the type-level representation
 
-const narrowMessage = (e: unknown): e is RuntimeErrors => true
+// Uncaught Exception:
+const badOut = parseJson('{ unquoted: "keys" }')
 
-// // ---cut---
-// // hover to see the type-level representation
-// const getLength = type("string").pipe(s => s.length)
-
-// const out = parseJson("{  }")
-
-// // ---cut-start---
-// // just a trick to display the runtime error
-// if (!narrowMessage(good)) throw new Error()
-// // ---cut-end---
-
-// // hover "good" to see the assertion error
-// len.assert(good)
+console.log(badOut.toString())

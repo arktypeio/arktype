@@ -687,5 +687,60 @@ tags[2] must be a string (was object)`)
 					)
 			})
 		})
+		describe("clone", () => {
+			it("parsed", () => {
+				const types = scope({
+					original: {
+						foo: "0",
+						bar: "1"
+					},
+					cloned: "clone<original>",
+					expected: {
+						foo: "0",
+						bar: "1"
+					}
+				}).export()
+
+				attest<typeof types.expected.t>(types.cloned.t)
+				attest(types.cloned.expression).equals(types.expected.expression)
+			})
+
+			it("invoked", () => {
+				const s = Symbol()
+				const t = ark.clone({
+					"[string]": "number | bigint",
+					foo: "0",
+					[s]: "true"
+				})
+
+				const expected = type({
+					"[string]": "number | bigint",
+					foo: "0",
+					[s]: "true"
+				})
+
+				attest<typeof expected.t>(t.t)
+				attest(t.expression).equals(expected.expression)
+			})
+
+			it("primitive", () => {
+				const t = type("clone<string | unknown[]>")
+
+				const strOut = t("foo")
+				attest(strOut).equals("foo")
+
+				const arr = ["f", "o", "o"]
+
+				const arrOut = t(arr)
+				attest(arrOut).equals(arr)
+				attest(arrOut !== arr).equals(true)
+
+				const badOut = t(555)
+
+				attest(badOut.toString()).snap(
+					"must be a string or an array (was number)"
+				)
+			})
+		})
 	})
 })
