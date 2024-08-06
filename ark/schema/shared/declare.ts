@@ -7,26 +7,33 @@ type withMetaPrefixedKeys<o> = {
 	[k in keyof o as k extends string ? `meta.${k}` : never]: o[k]
 }
 
-export interface BaseInner {}
-
 export interface BaseMeta {
 	readonly description?: string
 	readonly alias?: string
 }
 
-export interface BaseNormalizedSchema extends withMetaPrefixedKeys<BaseMeta> {
-	readonly meta?: BaseMetaSchema
+declare global {
+	export interface ArkEnv {
+		meta(): {}
+	}
+
+	export namespace ArkEnv {
+		export type meta = show<BaseMeta & ReturnType<ArkEnv["meta"]>>
+	}
 }
 
-export type BaseMetaSchema = string | BaseMeta
+export type MetaSchema = string | ArkEnv.meta
 
-export const metaKeys: { [k in keyof BaseInner]: 1 } = { meta: 1 }
+export interface BaseNormalizedSchema
+	extends withMetaPrefixedKeys<ArkEnv.meta> {
+	readonly meta?: MetaSchema
+}
 
 interface DeclarationInput {
 	kind: NodeKind
 	schema: unknown
 	normalizedSchema: BaseNormalizedSchema
-	inner: BaseInner
+	inner: object
 	errorContext?: BaseErrorContext
 	reducibleTo?: NodeKind
 	intersectionIsOpen?: true

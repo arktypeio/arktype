@@ -19,11 +19,7 @@ import type { GettableKeyOrNode, KeyOrKeyNode } from "../node.js"
 import { typeOrTermExtends, type BaseRoot } from "../roots/root.js"
 import type { BaseScope } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
-import type {
-	BaseInner,
-	BaseNormalizedSchema,
-	declareNode
-} from "../shared/declare.js"
+import type { BaseNormalizedSchema, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
 	implementNode,
@@ -66,7 +62,7 @@ export namespace Structure {
 		readonly undeclared?: UndeclaredKeyBehavior
 	}
 
-	export interface Inner extends BaseInner {
+	export interface Inner {
 		readonly optional?: readonly Optional.Node[]
 		readonly required?: readonly Required.Node[]
 		readonly index?: readonly Index.Node[]

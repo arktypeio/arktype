@@ -8,7 +8,6 @@ import {
 } from "@ark/util"
 import type {
 	BaseErrorContext,
-	BaseInner,
 	BaseNormalizedSchema,
 	declareNode
 } from "../shared/declare.js"
@@ -25,8 +24,7 @@ export type Domain = _Domain
 export namespace Domain {
 	export type NonEnumerable = Exclude<Domain, "undefined" | "null" | "boolean">
 
-	export interface Inner<domain extends NonEnumerable = NonEnumerable>
-		extends BaseInner {
+	export interface Inner<domain extends NonEnumerable = NonEnumerable> {
 		readonly domain: domain
 	}
 

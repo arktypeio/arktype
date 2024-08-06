@@ -21,11 +21,7 @@ import type { MaxLengthNode } from "../refinements/maxLength.js"
 import type { MinLengthNode } from "../refinements/minLength.js"
 import type { BaseRoot } from "../roots/root.js"
 import type { NodeCompiler } from "../shared/compile.js"
-import type {
-	BaseInner,
-	BaseNormalizedSchema,
-	declareNode
-} from "../shared/declare.js"
+import type { BaseNormalizedSchema, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
 	implementNode,
@@ -49,7 +45,7 @@ export namespace Sequence {
 
 	export type Schema = NormalizedSchema | RootSchema
 
-	export interface Inner extends BaseInner {
+	export interface Inner {
 		// a list of fixed position elements starting at index 0
 		readonly prefix?: array<BaseRoot>
 		// a list of optional elements following prefix

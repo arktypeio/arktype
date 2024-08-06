@@ -27,7 +27,7 @@ import type {
 	LimitSchemaValue,
 	UnknownRangeSchema
 } from "../refinements/range.js"
-import type { BaseMetaSchema, BaseNodeDeclaration } from "../shared/declare.js"
+import type { BaseNodeDeclaration, MetaSchema } from "../shared/declare.js"
 import {
 	Disjoint,
 	writeUnsatisfiableExpressionError
@@ -266,7 +266,7 @@ export abstract class BaseRoot<
 		return r.extends(this as never)
 	}
 
-	configure(meta: BaseMetaSchema): this {
+	configure(meta: MetaSchema): this {
 		return this.configureShallowDescendants(meta)
 	}
 

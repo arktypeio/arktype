@@ -1,5 +1,3 @@
 import { type } from "arktype"
 
-const t = type({
-	foo: "string"
-})
+const t = type({ s: "string" })

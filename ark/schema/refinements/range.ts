@@ -2,7 +2,6 @@ import { type array, isKeyOf, type propValueOf, type satisfy } from "@ark/util"
 import { InternalPrimitiveConstraint } from "../constraint.js"
 import type { nodeOfKind } from "../kinds.js"
 import type {
-	BaseInner,
 	BaseNodeDeclaration,
 	BaseNormalizedSchema
 } from "../shared/declare.js"
@@ -72,7 +71,7 @@ export abstract class BaseRange<
 	}
 }
 
-export interface BaseRangeInner extends BaseInner {
+export interface BaseRangeInner {
 	readonly rule: number | Date
 	readonly exclusive?: true
 }

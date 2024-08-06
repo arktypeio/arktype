@@ -25,7 +25,6 @@ import {
 } from "../shared/compile.js"
 import type {
 	BaseErrorContext,
-	BaseInner,
 	BaseNormalizedSchema,
 	declareNode
 } from "../shared/declare.js"
@@ -70,7 +69,7 @@ export namespace Union {
 		readonly ordered?: true
 	}
 
-	export interface Inner extends BaseInner {
+	export interface Inner {
 		readonly branches: readonly ChildNode[]
 		readonly ordered?: true
 	}

@@ -1,8 +1,8 @@
 import {
 	$ark,
 	makeRootAndArrayPropertiesMutable,
-	type BaseInner,
 	type BaseRoot,
+	type MetaSchema,
 	type Morph,
 	type mutableInnerOfKind,
 	type nodeOfKind,
@@ -379,7 +379,7 @@ export type validateInfixExpression<def extends InfixExpression, $, args> =
 				Predicate<distillOut<inferDefinition<def[0], $, args>>>
 			: def[1] extends "=>" ?
 				Morph<distillOut<inferDefinition<def[0], $, args>>, unknown>
-			: def[1] extends "@" ? BaseInner | string
+			: def[1] extends "@" ? MetaSchema
 			: validateDefinition<def[2], $, args>
 		]
 

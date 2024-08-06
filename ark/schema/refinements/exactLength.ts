@@ -2,7 +2,6 @@ import { InternalPrimitiveConstraint } from "../constraint.js"
 import type { BaseRoot } from "../roots/root.js"
 import type {
 	BaseErrorContext,
-	BaseInner,
 	BaseNormalizedSchema,
 	declareNode
 } from "../shared/declare.js"
@@ -16,7 +15,7 @@ import type { TraverseAllows } from "../shared/traversal.js"
 import type { LengthBoundableData } from "./range.js"
 
 export namespace ExactLength {
-	export interface Inner extends BaseInner {
+	export interface Inner {
 		readonly rule: number
 	}
 

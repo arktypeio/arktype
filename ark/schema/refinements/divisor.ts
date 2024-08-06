@@ -5,7 +5,6 @@ import {
 import type { BaseRoot } from "../roots/root.js"
 import type {
 	BaseErrorContext,
-	BaseInner,
 	BaseNormalizedSchema,
 	declareNode
 } from "../shared/declare.js"
@@ -17,7 +16,7 @@ import { $ark } from "../shared/registry.js"
 import type { TraverseAllows } from "../shared/traversal.js"
 
 export namespace Divisor {
-	export interface Inner extends BaseInner {
+	export interface Inner {
 		readonly rule: number
 	}
 

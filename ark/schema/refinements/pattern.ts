@@ -2,7 +2,6 @@ import { InternalPrimitiveConstraint } from "../constraint.js"
 import type { BaseRoot } from "../roots/root.js"
 import type {
 	BaseErrorContext,
-	BaseMeta,
 	BaseNormalizedSchema,
 	declareNode
 } from "../shared/declare.js"
@@ -18,8 +17,9 @@ export namespace Pattern {
 		readonly flags?: string
 	}
 
-	export interface Inner extends NormalizedSchema {
-		readonly meta?: BaseMeta
+	export interface Inner {
+		readonly rule: string
+		readonly flags?: string
 	}
 
 	export type Schema = NormalizedSchema | string | RegExp

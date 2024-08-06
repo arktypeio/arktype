@@ -2,7 +2,7 @@ import {
 	ArkErrors,
 	BaseRoot,
 	GenericRoot,
-	type BaseInner,
+	type MetaSchema,
 	type Morph,
 	type Predicate
 } from "@ark/schema"
@@ -68,7 +68,7 @@ export interface TypeParser<$ = {}> {
 		: one extends TupleInfixOperator ?
 			one extends ":" ? [Predicate<distillIn<inferTypeRoot<zero, $>>>]
 			: one extends "=>" ? [Morph<distillOut<inferTypeRoot<zero, $>>, unknown>]
-			: one extends "@" ? [string | BaseInner]
+			: one extends "@" ? [MetaSchema]
 			: [validateTypeRoot<rest[0], $>]
 		:	[]
 	): r

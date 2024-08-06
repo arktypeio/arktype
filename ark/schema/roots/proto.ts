@@ -12,7 +12,6 @@ import {
 } from "@ark/util"
 import type {
 	BaseErrorContext,
-	BaseInner,
 	BaseNormalizedSchema,
 	declareNode
 } from "../shared/declare.js"
@@ -22,10 +21,10 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.js"
+import { $ark } from "../shared/registry.js"
 import type { TraverseAllows } from "../shared/traversal.js"
 import { InternalBasis } from "./basis.js"
 import type { Domain } from "./domain.js"
-import { $ark } from "../shared/registry.js"
 
 export namespace Proto {
 	export type Reference = Constructor | BuiltinObjectKind
@@ -39,13 +38,11 @@ export namespace Proto {
 		readonly proto: proto
 	}
 
-	export interface ExpandedSchema<proto extends Reference = Reference>
-		extends BaseInner {
+	export interface ExpandedSchema<proto extends Reference = Reference> {
 		readonly proto: proto
 	}
 
-	export interface Inner<proto extends Constructor = Constructor>
-		extends BaseInner {
+	export interface Inner<proto extends Constructor = Constructor> {
 		readonly proto: proto
 	}
 

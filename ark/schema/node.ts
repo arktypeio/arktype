@@ -32,8 +32,8 @@ import type { Unit } from "./roots/unit.js"
 import type { BaseScope } from "./scope.js"
 import type { NodeCompiler } from "./shared/compile.js"
 import type {
-	BaseMetaSchema,
 	BaseNodeDeclaration,
+	MetaSchema,
 	attachmentsOf
 } from "./shared/declare.js"
 import {
@@ -395,7 +395,7 @@ export abstract class BaseNode<
 		) as never)
 	}
 
-	configureShallowDescendants(meta: BaseMetaSchema): this {
+	configureShallowDescendants(meta: MetaSchema): this {
 		return this.transform((kind, inner) => ({ ...inner, meta }), {
 			shouldTransform: node => node.kind !== "structure"
 		}) as never

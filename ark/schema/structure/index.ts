@@ -14,11 +14,7 @@ import {
 	type FlatRef
 } from "../node.js"
 import type { BaseRoot } from "../roots/root.js"
-import type {
-	BaseInner,
-	BaseNormalizedSchema,
-	declareNode
-} from "../shared/declare.js"
+import type { BaseNormalizedSchema, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
 	implementNode,
@@ -26,8 +22,8 @@ import {
 	type nodeImplementationOf
 } from "../shared/implement.js"
 import { intersectNodes } from "../shared/intersections.js"
-import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 import { $ark } from "../shared/registry.js"
+import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 
 export namespace Index {
 	export type KeyKind = Exclude<RootKind, "unit">
@@ -39,7 +35,7 @@ export namespace Index {
 		readonly value: RootSchema
 	}
 
-	export interface Inner extends BaseInner {
+	export interface Inner {
 		readonly signature: KeyNode
 		readonly value: BaseRoot
 	}

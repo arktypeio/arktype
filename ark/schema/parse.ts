@@ -21,7 +21,7 @@ import {
 } from "./kinds.js"
 import type { BaseNode } from "./node.js"
 import type { BaseScope } from "./scope.js"
-import type { BaseMeta, BaseMetaSchema } from "./shared/declare.js"
+import type { BaseMeta, MetaSchema } from "./shared/declare.js"
 import { Disjoint } from "./shared/disjoint.js"
 import {
 	constraintKeys,
@@ -132,7 +132,7 @@ const _parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
 	const impl = nodeImplementationsByKind[kind]
 	const inner: dict = {}
 	const { meta: metaSchema, ...schema } = ctx.schema as dict & {
-		meta?: BaseMetaSchema
+		meta?: MetaSchema
 	}
 
 	const meta: BaseMeta & dict =
@@ -268,7 +268,7 @@ export const createNode = (
 	return (nodeCache[hash] = node)
 }
 
-export const withMeta = (node: BaseNode, meta: BaseMeta): BaseNode =>
+export const withMeta = (node: BaseNode, meta: ArkEnv.meta): BaseNode =>
 	createNode(
 		registerNodeId(node.kind, meta.alias),
 		node.kind,

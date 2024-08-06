@@ -2,7 +2,6 @@ import { BaseConstraint } from "./constraint.js"
 import type { NodeCompiler } from "./shared/compile.js"
 import type {
 	BaseErrorContext,
-	BaseInner,
 	BaseNormalizedSchema,
 	declareNode
 } from "./shared/declare.js"
@@ -31,8 +30,7 @@ export namespace Predicate {
 		readonly predicate: predicate
 	}
 
-	export interface Inner<predicate extends Predicate = Predicate>
-		extends BaseInner {
+	export interface Inner<predicate extends Predicate = Predicate> {
 		readonly predicate: predicate
 	}
 

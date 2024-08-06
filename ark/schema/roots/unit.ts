@@ -10,7 +10,6 @@ import {
 } from "@ark/util"
 import type {
 	BaseErrorContext,
-	BaseInner,
 	BaseNormalizedSchema,
 	declareNode
 } from "../shared/declare.js"
@@ -23,13 +22,12 @@ import {
 import type { TraverseAllows } from "../shared/traversal.js"
 import { InternalBasis } from "./basis.js"
 import { defineRightwardIntersections } from "./utils.js"
-
 export namespace Unit {
 	export interface Schema<value = unknown> extends BaseNormalizedSchema {
 		readonly unit: value
 	}
 
-	export interface Inner<value = unknown> extends BaseInner {
+	export interface Inner<value = unknown> {
 		readonly unit: value
 	}
 

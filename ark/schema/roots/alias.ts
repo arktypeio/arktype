@@ -1,20 +1,16 @@
 import { append, cached, domainDescriptions } from "@ark/util"
 import type { NodeCompiler } from "../shared/compile.js"
-import type {
-	BaseInner,
-	BaseNormalizedSchema,
-	declareNode
-} from "../shared/declare.js"
+import type { BaseNormalizedSchema, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.js"
 import { intersectNodes } from "../shared/intersections.js"
+import { $ark } from "../shared/registry.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 import { BaseRoot } from "./root.js"
 import { defineRightwardIntersections } from "./utils.js"
-import { $ark } from "../shared/registry.js"
 
 export namespace Alias {
 	export type Schema<alias extends string = string> = `$${alias}` | Inner<alias>
@@ -25,7 +21,7 @@ export namespace Alias {
 		readonly resolve?: () => BaseRoot
 	}
 
-	export interface Inner<alias extends string = string> extends BaseInner {
+	export interface Inner<alias extends string = string> {
 		readonly alias: alias
 		readonly resolve?: () => BaseRoot
 	}

@@ -3,8 +3,6 @@ import {
 	hasDomain,
 	isEmptyObject,
 	isKeyOf,
-	omit,
-	pick,
 	throwParseError,
 	type array,
 	type listable,
@@ -25,12 +23,10 @@ import type {
 } from "../kinds.js"
 import type { PredicateNode } from "../predicate.js"
 import type { NodeCompiler } from "../shared/compile.js"
-import {
-	metaKeys,
-	type BaseErrorContext,
-	type BaseInner,
-	type BaseNormalizedSchema,
-	type declareNode
+import type {
+	BaseErrorContext,
+	BaseNormalizedSchema,
+	declareNode
 } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { ArkError } from "../shared/errors.js"
@@ -66,7 +62,7 @@ export namespace Intersection {
 		[k in RefinementKind]?: intersectionChildInnerValueOf<k>
 	}
 
-	export interface Inner extends BaseInner, RefinementsInner {
+	export interface Inner extends RefinementsInner {
 		domain?: Domain.Node
 		proto?: Proto.Node
 		structure?: Structure.Node
@@ -237,9 +233,7 @@ const implementation: nodeImplementationOf<Intersection.Declaration> =
 						// be an intersection with the new basis result integrated
 					:	l.$.node(
 							"intersection",
-							Object.assign(omit(l.inner, metaKeys), {
-								[basis.kind]: basis
-							}),
+							{ ...l.inner, [basis.kind]: basis },
 							{ prereduced: true }
 						)
 				)
@@ -348,8 +342,7 @@ const intersectIntersections = (
 	if (hasArkKind(r, "root") && r.hasKind("intersection"))
 		return intersectIntersections(l, r.inner, ctx)
 
-	const baseInner: Intersection.MutableInner =
-		isEmptyObject(l) ? pick(r, metaKeys) : {}
+	const baseInner: Intersection.MutableInner = {}
 
 	const lBasis = l.proto ?? l.domain
 	const rBasis = r.proto ?? r.domain

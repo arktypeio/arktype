@@ -1,8 +1,8 @@
 import type {
 	ArkErrors,
-	BaseMetaSchema,
 	BaseRoot,
 	Disjoint,
+	MetaSchema,
 	Morph,
 	UndeclaredKeyBehavior
 } from "@ark/schema"
@@ -44,7 +44,7 @@ interface Type<out t = unknown, $ = {}>
 
 	traverse(data: unknown): distillOut<t> | ArkErrors
 
-	configure(meta: BaseMetaSchema | string): this
+	configure(meta: MetaSchema): this
 
 	describe(description: string): this
 
