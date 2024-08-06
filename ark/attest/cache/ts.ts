@@ -1,10 +1,8 @@
 import { fromCwd, type SourcePosition } from "@ark/fs"
 import { throwInternalError, type dict } from "@ark/util"
-import prettier from "@prettier/sync"
 import * as tsvfs from "@typescript/vfs"
 import { readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
-import type { Options as PrettierOptions } from "prettier"
 import ts from "typescript"
 import { getConfig } from "../config.js"
 
@@ -203,48 +201,10 @@ export interface StringifiableType extends ts.Type {
 	isUnresolvable: boolean
 }
 
-const declarationPrefix = "type T = "
-const baseTypeFormatOptions: PrettierOptions = {
-	semi: false,
-	printWidth: 60,
-	trailingComma: "none",
-	parser: "typescript"
-}
-
-const formatTypeString = (typeString: string) =>
-	prettier
-		.format(`${declarationPrefix}${typeString}`, {
-			...baseTypeFormatOptions,
-			...getConfig().typeToStringFormat
-		})
-		.slice(declarationPrefix.length)
-		.trimEnd()
-
-const replaceKnownInvalidSyntax = (typeString: string): string => {
-	// Match '...' and '... x more ...' (known truncated type syntax)
-	const regex = /\.\.\.\s*(\d+\s*more\s*\.\.\.)?/g
-
-	// replace these with a string literal "..." so that they can still
-	// form valid expressions, e.g. "..."[]
-	return typeString.replaceAll(regex, '"..."')
-}
-
 export const getStringifiableType = (node: ts.Node): StringifiableType => {
 	const typeChecker = getInternalTypeChecker()
 	const nodeType = typeChecker.getTypeAtLocation(node)
-	let stringified = typeChecker.typeToString(nodeType)
-
-	try {
-		stringified = formatTypeString(stringified)
-	} catch {
-		// if formatting fails (e.g. due to custom typeToString syntax like ... X more),
-		// try to comment out problematic sections
-		try {
-			stringified = formatTypeString(replaceKnownInvalidSyntax(stringified))
-		} catch {
-			// if still fails somehow, just swallow the error and use the unformatted type
-		}
-	}
+	const stringified = typeChecker.typeToString(nodeType)
 
 	return Object.assign(nodeType, {
 		toString: () => stringified,

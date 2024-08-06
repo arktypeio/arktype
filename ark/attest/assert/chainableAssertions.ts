@@ -1,5 +1,6 @@
 import { caller } from "@ark/fs"
 import { printable, snapshot, type Constructor } from "@ark/util"
+import prettier from "@prettier/sync"
 import { type, type validateTypeRoot } from "arktype"
 import * as assert from "node:assert/strict"
 import { isDeepStrictEqual } from "node:util"
@@ -10,6 +11,7 @@ import {
 	type SnapshotArgs
 } from "../cache/snapshots.js"
 import type { Completions } from "../cache/writeAssertionCache.js"
+import { getConfig } from "../config.js"
 import { chainableNoOpProxy } from "../utils.js"
 import {
 	TypeAssertionMapping,
@@ -208,7 +210,7 @@ export class ChainableAssertions implements AssertionRecord {
 		return {
 			get toString() {
 				self.ctx.actual = new TypeAssertionMapping(data => ({
-					actual: data.args[0].type
+					actual: formatTypeString(data.args[0].type)
 				}))
 				self.ctx.allowRegex = true
 				return self.immediateOrChained()
@@ -229,6 +231,44 @@ export class ChainableAssertions implements AssertionRecord {
 
 const checkCompletionsForErrors = (completions?: Completions) => {
 	if (typeof completions === "string") throw new Error(completions)
+}
+
+const declarationPrefix = "type T = "
+
+const formatTypeString = (typeString: string) => {
+	try {
+		return _formatTypeString(typeString)
+	} catch {
+		// if formatting fails (e.g. due to custom typeToString syntax like ... X more),
+		// try to comment out problematic sections
+		try {
+			return _formatTypeString(replaceKnownInvalidSyntax(typeString))
+		} catch {
+			// if still fails somehow, just swallow the error and use the unformatted type
+			return typeString
+		}
+	}
+}
+
+const _formatTypeString = (typeString: string) =>
+	prettier
+		.format(`${declarationPrefix}${typeString}`, {
+			semi: false,
+			printWidth: 60,
+			trailingComma: "none",
+			parser: "typescript",
+			...getConfig().typeToStringFormat
+		})
+		.slice(declarationPrefix.length)
+		.trimEnd()
+
+const replaceKnownInvalidSyntax = (typeString: string): string => {
+	// Match '...' and '... x more ...' (known truncated type syntax)
+	const regex = /\.\.\.\s*(\d+\s*more\s*\.\.\.)?/g
+
+	// replace these with a string literal "..." so that they can still
+	// form valid expressions, e.g. "..."[]
+	return typeString.replaceAll(regex, '"..."')
 }
 
 export type AssertionKind = "value" | "type"
