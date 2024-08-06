@@ -7,7 +7,6 @@ import {
 	printable,
 	throwParseError,
 	unset,
-	type Dict,
 	type Json,
 	type JsonData,
 	type PartialRecord,
@@ -134,12 +133,12 @@ export const parseNode = <kind extends NodeKind>(
 
 const _parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
 	const impl = nodeImplementationsByKind[kind]
-	const inner: Record<string, unknown> = {}
-	const { meta: metaSchema, ...schema } = ctx.schema as Dict & {
+	const inner: dict = {}
+	const { meta: metaSchema, ...schema } = ctx.schema as dict & {
 		meta?: BaseMetaSchema
 	}
 
-	const meta: BaseMeta & Record<string, unknown> =
+	const meta: BaseMeta & dict =
 		metaSchema === undefined ? {}
 		: typeof metaSchema === "string" ? { description: metaSchema }
 		: (metaSchema as never)
@@ -180,7 +179,7 @@ const _parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
 	}
 	const innerEntries = entriesOf(inner)
 
-	let innerJson: Record<string, unknown> = {}
+	let innerJson: dict = {}
 
 	innerEntries.forEach(([k, v]) => {
 		const keyImpl = impl.keys[k]
@@ -200,9 +199,6 @@ const _parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
 	if (impl.finalizeInnerJson)
 		innerJson = impl.finalizeInnerJson(innerJson) as never
 
-	innerJson = possiblyCollapse(innerJson, impl.collapsibleKey, false)
-	const innerHash = JSON.stringify({ kind, ...innerJson })
-
 	let json = { ...innerJson }
 
 	if (!isEmptyObject(meta)) {
@@ -212,6 +208,9 @@ const _parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
 			true
 		)
 	}
+
+	innerJson = possiblyCollapse(innerJson, impl.collapsibleKey, false)
+	const innerHash = JSON.stringify({ kind, ...innerJson })
 
 	json = possiblyCollapse(json, impl.collapsibleKey, false)
 	const collapsibleJson = possiblyCollapse(json, impl.collapsibleKey, true)
@@ -284,7 +283,7 @@ const possiblyCollapse = <allowPrimitive extends boolean>(
 			// if the collapsed value is still an object
 			hasDomain(collapsed, "object") &&
 			// and the JSON did not include any implied keys
-			Object.keys(collapsed).length === 1
+			(Object.keys(collapsed).length === 1 || Array.isArray(collapsed))
 		) {
 			// we can replace it with its collapsed value
 			return collapsed as never
