@@ -110,7 +110,7 @@ const implementation: nodeImplementationOf<Union.Declaration> =
 					)
 
 					if (!ctx.schema.ordered)
-						branches.sort((l, r) => (l.innerHash < r.innerHash ? -1 : 1))
+						branches.sort((l, r) => (l.hash < r.hash ? -1 : 1))
 
 					return branches
 				}

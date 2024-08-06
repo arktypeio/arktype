@@ -40,6 +40,7 @@ import {
 	type kindRightOf
 } from "../shared/implement.js"
 import { intersectNodesRoot, pipeNodesRoot } from "../shared/intersections.js"
+import { $ark } from "../shared/registry.js"
 import { arkKind, hasArkKind } from "../shared/utils.js"
 import type {
 	Structure,
@@ -47,7 +48,6 @@ import type {
 } from "../structure/structure.js"
 import type { Morph } from "./morph.js"
 import type { Union } from "./union.js"
-import { $ark } from "../shared/registry.js"
 
 export interface InternalRootDeclaration extends BaseNodeDeclaration {
 	kind: RootKind
@@ -266,8 +266,8 @@ export abstract class BaseRoot<
 		return r.extends(this as never)
 	}
 
-	configure(configOrDescription: BaseMetaSchema | string): this {
-		return this.configureShallowDescendants(configOrDescription)
+	configure(meta: BaseMetaSchema): this {
+		return this.configureShallowDescendants(meta)
 	}
 
 	describe(description: string): this {

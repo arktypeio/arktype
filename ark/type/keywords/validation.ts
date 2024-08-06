@@ -71,21 +71,21 @@ const creditCard = rootNode({
 const unixTimestamp = rootNode({
 	domain: {
 		domain: "number",
-		description: "a number representing a Unix timestamp"
+		meta: "a number representing a Unix timestamp"
 	},
 	divisor: {
 		rule: 1,
-		description: `an integer representing a Unix timestamp`
+		meta: `an integer representing a Unix timestamp`
 	},
 	min: {
 		rule: -8640000000000000,
-		description: `a Unix timestamp after -8640000000000000`
+		meta: `a Unix timestamp after -8640000000000000`
 	},
 	max: {
 		rule: 8640000000000000,
-		description: "a Unix timestamp before 8640000000000000"
+		meta: "a Unix timestamp before 8640000000000000"
 	},
-	description: "an integer representing a safe Unix timestamp"
+	meta: "an integer representing a safe Unix timestamp"
 })
 
 export interface validationExports {

@@ -49,9 +49,9 @@ import { normalizeAliasSchema, type Alias } from "./roots/alias.js"
 import type { BaseRoot } from "./roots/root.js"
 import { CompiledFunction, NodeCompiler } from "./shared/compile.js"
 import type { NodeKind, RootKind } from "./shared/implement.js"
+import { $ark } from "./shared/registry.js"
 import type { TraverseAllows, TraverseApply } from "./shared/traversal.js"
 import { arkKind, hasArkKind, isNode } from "./shared/utils.js"
-import { $ark } from "./shared/registry.js"
 
 export type InternalResolutions = Record<string, InternalResolution | undefined>
 

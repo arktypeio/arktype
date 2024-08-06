@@ -264,10 +264,10 @@ contextualize(() => {
 		const t = type("number|string").describe("My custom type")
 		attest(t.json).snap({
 			branches: [
-				{ description: "My custom type", domain: "number" },
-				{ description: "My custom type", domain: "string" }
+				{ meta: "My custom type", domain: "number" },
+				{ meta: "My custom type", domain: "string" }
 			],
-			description: "My custom type"
+			meta: "My custom type"
 		})
 	})
 })

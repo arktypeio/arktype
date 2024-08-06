@@ -5,13 +5,11 @@ import {
 	type Entry,
 	type Json,
 	type JsonData,
-	type PartialRecord,
 	type arrayIndexOf,
 	type entryOf,
 	type keySet,
 	type keySetOf,
 	type listable,
-	type propValueOf,
 	type requireKeys,
 	type show
 } from "@ark/util"
@@ -382,13 +380,6 @@ export interface NarrowedAttachments<d extends BaseNodeDeclaration>
 	children: nodeOfKind<d["childKind"]>[]
 }
 
-export const baseKeys: PartialRecord<
-	string,
-	propValueOf<keySchemaDefinitions<any>>
-> = {
-	description: { meta: true }
-} satisfies keySchemaDefinitions<BaseNodeDeclaration> as never
-
 export const implementNode = <d extends BaseNodeDeclaration = never>(
 	_: nodeImplementationInputOf<d>
 ): nodeImplementationOf<d> => {
@@ -411,6 +402,5 @@ export const implementNode = <d extends BaseNodeDeclaration = never>(
 			return problemWithLocation
 		}
 	}
-	Object.assign(implementation.keys, baseKeys)
 	return implementation as never
 }

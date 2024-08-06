@@ -3,6 +3,7 @@ import {
 	flatMorph,
 	hasDomain,
 	isArray,
+	isEmptyObject,
 	printable,
 	throwParseError,
 	unset,
@@ -97,7 +98,7 @@ const discriminateRootKind = (schema: unknown): RootKind => {
 export const writeInvalidSchemaMessage = (schema: unknown): string =>
 	`${printable(schema)} is not a valid type schema`
 
-const nodeCache: { [innerHash: string]: BaseNode } = {}
+const nodeCache: { [hash: string]: BaseNode } = {}
 const nodeCountsByPrefix: PartialRecord<string, number> = {}
 
 const serializeListableChild = (listableNode: listable<BaseNode>) =>
@@ -199,28 +200,25 @@ const _parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
 	if (impl.finalizeInnerJson)
 		innerJson = impl.finalizeInnerJson(innerJson) as never
 
-	let collapsibleJson = innerJson
+	innerJson = possiblyCollapse(innerJson, impl.collapsibleKey, false)
+	const innerHash = JSON.stringify({ kind, ...innerJson })
 
-	const collapsibleKeys = Object.keys(collapsibleJson)
-	if (
-		collapsibleKeys.length === 1 &&
-		collapsibleKeys[0] === impl.collapsibleKey
-	) {
-		collapsibleJson = collapsibleJson[impl.collapsibleKey] as never
-		if (
-			// if the collapsibleJson is still an object
-			hasDomain(collapsibleJson, "object") &&
-			// and the JSON did not include any implied keys
-			Object.keys(innerJson).length === 1
-		) {
-			// we can replace it with its collapsed value
-			innerJson = collapsibleJson
-		}
+	let json = { ...innerJson }
+
+	if (!isEmptyObject(meta)) {
+		json.meta = possiblyCollapse(
+			flatMorph(meta, (k, v) => [k, defaultValueSerializer(v)]),
+			"description",
+			true
+		)
 	}
 
-	const innerHash = JSON.stringify({ kind, ...innerJson })
+	json = possiblyCollapse(json, impl.collapsibleKey, false)
+	const collapsibleJson = possiblyCollapse(json, impl.collapsibleKey, true)
+	const hash = JSON.stringify({ kind, ...json })
+
 	if (ctx.reduceTo) {
-		nodeCache[innerHash] = ctx.reduceTo
+		nodeCache[hash] = ctx.reduceTo
 		return ctx.reduceTo
 	}
 
@@ -240,29 +238,9 @@ const _parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
 		}
 	}
 
-	const metaKeys = Object.keys(meta)
-
-	let json: object
-	let hash: string
-	if (metaKeys.length === 0) {
-		json = innerJson
-		hash = innerHash
-	} else {
-		json = Object.assign(
-			{
-				meta:
-					metaKeys.length === 1 && metaKeys[0] === "description" ?
-						meta.description
-					:	flatMorph(meta, (k, v) => [k, defaultValueSerializer(v)])
-			},
-			innerJson
-		)
-		hash = JSON.stringify(json)
-	}
-
 	// we have to wait until after reduction to return a cached entry,
 	// since reduction can add impliedSiblings
-	if (nodeCache[innerHash]) return nodeCache[innerHash]
+	if (nodeCache[hash]) return nodeCache[hash]
 
 	const attachments: UnknownAttachments & dict = {
 		id: ctx.id,
@@ -280,15 +258,37 @@ const _parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
 	}
 	if (ctx.alias) attachments.alias = ctx.alias
 
-	for (const k in inner) {
-		if (k !== "description" && k !== "in" && k !== "out")
-			attachments[k] = inner[k]
-	}
+	for (const k in inner)
+		if (k !== "in" && k !== "out") attachments[k] = inner[k]
 
 	const node: BaseNode = new nodeClassesByKind[kind](
 		attachments as never,
 		ctx.$
 	)
 
-	return (nodeCache[innerHash] = node)
+	return (nodeCache[hash] = node)
+}
+
+const possiblyCollapse = <allowPrimitive extends boolean>(
+	json: dict,
+	toKey: string | undefined,
+	allowPrimitive: allowPrimitive
+): [allowPrimitive] extends [false] ? dict : unknown => {
+	const collapsibleKeys = Object.keys(json)
+	if (collapsibleKeys.length === 1 && collapsibleKeys[0] === toKey) {
+		const collapsed = json[toKey]
+
+		if (allowPrimitive) return collapsed as never
+
+		if (
+			// if the collapsed value is still an object
+			hasDomain(collapsed, "object") &&
+			// and the JSON did not include any implied keys
+			Object.keys(collapsed).length === 1
+		) {
+			// we can replace it with its collapsed value
+			return collapsed as never
+		}
+	}
+	return json as never
 }

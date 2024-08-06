@@ -485,8 +485,8 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 				{ key: "items", value: "$JsonSchema" },
 				{ key: "type", value: { unit: "array" } }
 			],
-			description: "standalone",
-			domain: { description: "standalone", domain: "object" }
+			meta: "standalone",
+			domain: { meta: "standalone", domain: "object" }
 		})
 
 		const valid: typeof standalone.infer = {
@@ -581,11 +581,9 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			t.internal.firstReferenceOfKindOrThrow("predicate").serializedPredicate
 
 		attest(t.json).snap({
-			description: 'This will "fail"',
-			domain: { description: 'This will "fail"', domain: "string" },
-			predicate: [
-				{ description: 'This will "fail"', predicate: serializedPredicate }
-			]
+			meta: 'This will "fail"',
+			domain: { meta: 'This will "fail"', domain: "string" },
+			predicate: [{ meta: 'This will "fail"', predicate: serializedPredicate }]
 		})
 	})
 

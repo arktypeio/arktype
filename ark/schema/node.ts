@@ -20,6 +20,7 @@ import type { ArkErrors } from "arktype"
 import type { BaseConstraint } from "./constraint.js"
 import type {
 	Inner,
+	NormalizedSchema,
 	mutableInnerOfKind,
 	nodeOfKind,
 	reducibleKindOf
@@ -31,7 +32,6 @@ import type { Unit } from "./roots/unit.js"
 import type { BaseScope } from "./scope.js"
 import type { NodeCompiler } from "./shared/compile.js"
 import type {
-	BaseMeta,
 	BaseMetaSchema,
 	BaseNodeDeclaration,
 	attachmentsOf
@@ -395,14 +395,8 @@ export abstract class BaseNode<
 		) as never)
 	}
 
-	configureShallowDescendants(
-		configOrDescription: BaseMetaSchema | string
-	): this {
-		const config: BaseMeta =
-			typeof configOrDescription === "string" ?
-				{ description: configOrDescription }
-			:	configOrDescription
-		return this.transform((kind, inner) => ({ ...inner, ...config }), {
+	configureShallowDescendants(meta: BaseMetaSchema): this {
+		return this.transform((kind, inner) => ({ ...inner, meta }), {
 			shouldTransform: node => node.kind !== "structure"
 		}) as never
 	}
@@ -473,4 +467,4 @@ export type DeepNodeTransformation = <kind extends NodeKind>(
 	kind: kind,
 	inner: Inner<kind>,
 	ctx: DeepNodeTransformContext
-) => Inner<kind> | null
+) => NormalizedSchema<kind> | null

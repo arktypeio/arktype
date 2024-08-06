@@ -1,6 +1,6 @@
 import type {
 	ArkErrors,
-	BaseInner,
+	BaseMetaSchema,
 	BaseRoot,
 	Disjoint,
 	Morph,
@@ -44,7 +44,7 @@ interface Type<out t = unknown, $ = {}>
 
 	traverse(data: unknown): distillOut<t> | ArkErrors
 
-	configure(configOrDescription: BaseInner | string): this
+	configure(meta: BaseMetaSchema | string): this
 
 	describe(description: string): this
 

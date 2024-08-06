@@ -25,7 +25,7 @@ export namespace Divisor {
 		readonly rule: number
 	}
 
-	export type Schema = Inner | number
+	export type Schema = NormalizedSchema | number
 
 	export interface ErrorContext extends BaseErrorContext<"divisor">, Inner {}
 

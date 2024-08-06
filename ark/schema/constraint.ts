@@ -115,7 +115,7 @@ export const constraintKeyParser =
 			// predicate order must be preserved to ensure inputs are narrowed
 			// and checked in the correct order
 			if (kind === "predicate") return nodes as never
-			return nodes.sort((l, r) => (l.innerHash < r.innerHash ? -1 : 1)) as never
+			return nodes.sort((l, r) => (l.hash < r.hash ? -1 : 1)) as never
 		}
 		const child = ctx.$.node(kind, schema)
 		return child.hasOpenIntersection() ? [child] : (child as any)
@@ -193,7 +193,7 @@ export const flattenConstraints = (inner: object): BaseConstraint[] => {
 			: l.precedence > r.precedence ? 1
 				// preserve order for predicates
 			: l.kind === "predicate" && r.kind === "predicate" ? 0
-			: l.innerHash < r.innerHash ? -1
+			: l.hash < r.hash ? -1
 			: 1
 		)
 
