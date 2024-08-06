@@ -1,4 +1,4 @@
-import { append, type PartialRecord, type TypeGuard } from "@ark/util"
+import type { PartialRecord, TypeGuard } from "@ark/util"
 import type { nodeOfKind } from "../kinds.js"
 import type { BaseNode } from "../node.js"
 import type { Morph } from "../roots/morph.js"
@@ -142,18 +142,29 @@ const _pipeMorphed = (
 	ctx: IntersectionContext
 ): Morph.Node | Disjoint => {
 	const fromIsMorph = from.hasKind("morph")
-	const toIsMorph = to.hasKind("morph")
-	const morphs = fromIsMorph ? [...from.morphs] : [from]
-	const validatedOut = fromIsMorph ? from.validatedOut : from
-	if (validatedOut) {
-		// still piped from context, so allows appending additional morphs
-		const outIntersection = intersectNodes(validatedOut, to, ctx)
-		if (outIntersection instanceof Disjoint) return outIntersection
-		morphs[morphs.length - 1] = outIntersection
-	} else append(morphs, toIsMorph ? to.morphs : to)
 
-	return ctx.$.node("morph", {
-		morphs,
-		in: fromIsMorph ? from.in : from
-	})
+	if (fromIsMorph) {
+		const morphs = [...from.morphs]
+		if (from.validatedOut) {
+			// still piped from context, so allows appending additional morphs
+			const outIntersection = intersectNodes(from.validatedOut, to, ctx)
+			if (outIntersection instanceof Disjoint) return outIntersection
+			morphs[morphs.length - 1] = outIntersection
+		} else morphs.push(to)
+
+		return ctx.$.node("morph", {
+			morphs,
+			in: fromIsMorph ? from.in : from
+		})
+	}
+
+	return to.hasKind("morph") ?
+			ctx.$.node("morph", {
+				morphs: to.morphs,
+				in: _intersectNodes(from, to.in, ctx) as never
+			})
+		:	ctx.$.node("morph", {
+				morphs: [to],
+				in: from
+			})
 }
