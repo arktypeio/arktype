@@ -1,13 +1,17 @@
-import type { ErrorType, merge } from "@ark/util"
+import type { array, ErrorType, merge } from "@ark/util"
 import type { type } from "../ark.js"
 import type { arkKeyOf, getArkKey, toArkKey } from "../keys.js"
 import type { inferTypeRoot, validateTypeRoot } from "../type.js"
+import type { ArrayType } from "./array.js"
 import type { instantiateType } from "./instantiate.js"
 import type { ValidatorType } from "./validator.js"
 
 /** @ts-ignore cast variance */
 interface Type<out t extends object = object, $ = {}>
 	extends ValidatorType<t, $> {
+	readonly(): t extends array ? ArrayType<{ readonly [i in keyof t]: t[i] }, $>
+	:	Type<{ readonly [k in keyof t]: t[k] }, $>
+
 	keyof(): instantiateType<keyof t, $>
 
 	get<k1 extends arkKeyOf<t>, r = instantiateType<getArkKey<t, k1>, $>>(

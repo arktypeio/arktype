@@ -70,4 +70,27 @@ contextualize(() => {
 			)
 		})
 	})
+
+	describe("readonly ", () => {
+		it("object", () => {
+			const from = type({ foo: "string", bar: "number" })
+			const t = from.readonly()
+
+			attest<
+				Type<{
+					readonly foo: string
+					readonly bar: number
+				}>
+			>(t)
+			attest(t === from).equals(true)
+		})
+
+		it("array", () => {
+			const from = type("string").array()
+			const t = from.readonly()
+
+			attest<Type<readonly string[]>>(t)
+			attest(t === from).equals(true)
+		})
+	})
 })

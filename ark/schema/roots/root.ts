@@ -68,6 +68,10 @@ export abstract class BaseRoot<
 		return this
 	}
 
+	readonly(): this {
+		return this
+	}
+
 	readonly branches: readonly nodeOfKind<Union.ChildKind>[] =
 		this.hasKind("union") ? this.inner.branches : [this as never]
 
