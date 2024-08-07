@@ -1,10 +1,11 @@
-import type { BaseRoot, LimitLiteral } from "@ark/schema"
+import type { BaseRoot } from "@ark/schema"
 import {
 	isKeyOf,
 	type requireKeys,
 	throwInternalError,
 	throwParseError
 } from "@ark/util"
+import type { LimitLiteral } from "../../../ast.js"
 import type { ParseContext } from "../../../scope.js"
 import type { InfixOperator } from "../../semantic/infer.js"
 import { parseOperand } from "../shift/operand/operand.js"

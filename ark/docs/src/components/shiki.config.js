@@ -1,5 +1,6 @@
 // @ts-check
 
+import { transformerNotationErrorLevel } from "@shikijs/transformers"
 import { transformerTwoslash } from "@shikijs/twoslash"
 import arkdarkColors from "arkdark/arkdark.json"
 import arkdarkPackageJson from "arkdark/package.json"
@@ -121,6 +122,6 @@ export const shikiConfig = {
 	// @ts-expect-error
 	langs: [arktypeTextmate],
 	// @ts-ignore
-	transformers: [twoslash, addCopyButton],
+	transformers: [twoslash, transformerNotationErrorLevel(), addCopyButton],
 	wrap: true
 }

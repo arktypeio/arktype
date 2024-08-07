@@ -1,7 +1,6 @@
 import type {
 	arkKind,
 	GenericParamAst,
-	GenericProps,
 	PrivateDeclaration,
 	writeMissingSubmoduleAccessMessage,
 	writeUnsatisfiedParameterConstraintMessage
@@ -30,6 +29,7 @@ import type {
 	InfixExpression,
 	PostfixExpression
 } from "./infer.js"
+import type { validateKeyof } from "./keyof.js"
 import type { astToString } from "./utils.js"
 
 export type validateAst<ast, $, args> =
@@ -43,19 +43,11 @@ export type validateAst<ast, $, args> =
 		: operator extends Comparator ? validateRange<l, operator, r, $, args>
 		: operator extends "%" ? validateDivisor<l, $, args>
 		: undefined
-	: ast extends (
-		readonly [infer baseAst, "=", infer unitLiteral extends UnitLiteral]
-	) ?
+	: ast extends [infer baseAst, "=", infer unitLiteral extends UnitLiteral] ?
 		validateDefault<baseAst, unitLiteral, $, args>
-	: ast extends readonly ["keyof", infer operand] ?
-		validateAst<operand, $, args>
-	: ast extends (
-		GenericInstantiationAst<
-			Generic<infer params, any, any> | GenericProps<infer params>,
-			infer argAsts
-		>
-	) ?
-		validateGenericArgs<params, argAsts, $, args, []>
+	: ast extends ["keyof", infer operand] ? validateKeyof<operand, $, args>
+	: ast extends GenericInstantiationAst<infer g, infer argAsts> ?
+		validateGenericArgs<g["paramsAst"], argAsts, $, args, []>
 	:	ErrorMessage<writeUnexpectedExpressionMessage<astToString<ast>>> & {
 			ast: ast
 		}
@@ -82,14 +74,6 @@ type validateGenericArgs<
 				>
 			>
 	:	undefined
-
-export const writeUnsatisfiableExpressionError = <expression extends string>(
-	expression: expression
-): writeUnsatisfiableExpressionError<expression> =>
-	`${expression} results in an unsatisfiable type`
-
-export type writeUnsatisfiableExpressionError<expression extends string> =
-	`${expression} results in an unsatisfiable type`
 
 export const writePrefixedPrivateReferenceMessage = <
 	def extends PrivateDeclaration
@@ -118,7 +102,7 @@ type validateStringAst<def extends string, $> =
 			ErrorMessage<writePrefixedPrivateReferenceMessage<def>>
 		: // these problems would've been caught during a fullStringParse, but it's most
 		// efficient to check for them here in case the string was naively parsed
-		$[alias] extends GenericProps ?
+		$[alias] extends Generic ?
 			ErrorMessage<
 				writeInvalidGenericArgCountMessage<def, $[alias]["names"], []>
 			>

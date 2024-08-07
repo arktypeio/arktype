@@ -1,12 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
-import {
-	writeInvalidKeysMessage,
-	writeNumberIndexMessage,
-	type Matching,
-	type of,
-	type string
-} from "@ark/schema"
+import { writeInvalidKeysMessage, writeNumberIndexMessage } from "@ark/schema"
 import { ark, type } from "arktype"
+import type { Matching, constrain, string } from "arktype/internal/ast.js"
 
 contextualize(() => {
 	it("can get shallow roots by path", () => {
@@ -101,7 +96,9 @@ contextualize(() => {
 		}>(c.infer)
 		attest(c.expression).snap("{ a: 1, b: 1 } | undefined")
 
-		const d = t.get("foof" as of<"foof", Matching<"^f"> & Matching<"f$">>)
+		const d = t.get(
+			"foof" as constrain<"foof", Matching<"^f"> & Matching<"f$">>
+		)
 		// should include { c: 1 } as well but it seems TS can't infer it for now
 		attest<
 			{

@@ -1,7 +1,7 @@
 // import { bench } from "@ark/attest"
 // import { match } from "arktype"
 
-// type("never")
+// bench.baseline(() => type("never"))
 
 // bench("when(3)", () => {
 // 	const matcher = match()

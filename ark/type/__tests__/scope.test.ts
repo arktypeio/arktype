@@ -1,28 +1,39 @@
 import { attest, contextualize } from "@ark/attest"
 import {
-	schema,
+	rootNode,
 	writeUnboundableMessage,
-	writeUnresolvableMessage,
-	type distillOut,
-	type string
+	writeUnresolvableMessage
 } from "@ark/schema"
-import { define, scope, type } from "arktype"
-import type { Module } from "../module.js"
-import { writeUnexpectedCharacterMessage } from "../parser/string/shift/operator/operator.js"
+import { define, scope, type, type Module } from "arktype"
+import type { distillOut, string } from "arktype/internal/ast.js"
+import { writeUnexpectedCharacterMessage } from "arktype/internal/parser/string/shift/operator/operator.js"
 
 contextualize(() => {
 	it("base definition", () => {
-		const types = scope({ a: "string" }).export()
-		attest<string>(types.a.infer)
+		const types = scope({ actual: { name: "string" } }).export()
+
+		const expected = type({
+			name: "string"
+		})
+
+		attest<typeof expected.t>(types.actual.t)
+		attest(types.actual.expression).equals(expected.expression)
 		attest(() =>
 			// @ts-expect-error
 			scope({ a: "strong" }).export()
 		).throwsAndHasTypeError(writeUnresolvableMessage("strong"))
 	})
 
-	it("type definition", () => {
-		const types = scope({ a: type("string") }).export()
-		attest<string>(types.a.infer)
+	it("type definition inline", () => {
+		const $ = scope({ actual: type({ name: "string" }) })
+		const types = $.export()
+
+		const expected = type({ name: "string" })
+
+		attest<typeof expected.t>(types.actual.t)
+		attest(types.actual.expression).equals(expected.expression)
+		attest(types.actual.$.json).equals($.json)
+
 		attest(() =>
 			// @ts-expect-error
 			scope({ a: type("strong") })
@@ -31,22 +42,23 @@ contextualize(() => {
 
 	it("interdependent", () => {
 		const types = scope({
-			a: "string>5",
-			b: "email<=10",
-			c: "a&b"
+			l: "string > 5",
+			r: "email <= 10",
+			actual: "l & r"
 		}).export()
-		attest<string>(types.c.infer)
+
+		const expected = type("email <= 10 & string > 5")
+
+		attest<typeof expected.t>(types.actual.t)
+		attest(types.actual.expression).equals(expected.expression)
 	})
 
-	it("object array", () => {
-		const types = scope({ a: "string", b: [{ c: "a" }] }).export()
-		attest<
-			[
-				{
-					c: string
-				}
-			]
-		>(types.b.infer)
+	it("object tuple", () => {
+		const types = scope({ ref: "string", actual: [{ c: "ref" }] }).export()
+		const expected = type([{ c: "string" }])
+
+		attest<typeof expected.t>(types.actual.t)
+		attest(types.actual.expression).equals(expected.expression)
 	})
 
 	it("doesn't try to validate any in scope", () => {
@@ -61,7 +73,7 @@ contextualize(() => {
 		})
 		attest<number>($.resolve("a").infer)
 
-		attest<string>($.resolve("a").in.infer)
+		attest<string>($.resolve("a").inferIn)
 	})
 
 	it("infers its own helpers", () => {
@@ -70,8 +82,14 @@ contextualize(() => {
 			b: () => $.type("number")
 		})
 		const types = $.export()
+
 		attest<string>(types.a.infer)
+		attest(types.a.expression).equals("string")
+		attest(types.a.$.json).equals($.json)
+
 		attest<number>(types.b.infer)
+		attest(types.b.expression).equals("number")
+		attest(types.b.$.json).equals($.json)
 	})
 
 	it("allows semantically valid helpers", () => {
@@ -80,8 +98,14 @@ contextualize(() => {
 			lessThan10: () => $.type("n<10")
 		})
 		const types = $.export()
-		attest<number>(types.n.infer)
-		attest<number>(types.lessThan10.infer)
+
+		attest<number>(types.n.t)
+		attest(types.n.expression).equals("number")
+
+		const expected = type("number").lessThan(10)
+
+		attest<typeof expected.t>(types.lessThan10.t)
+		attest(types.lessThan10.expression).equals(expected.expression)
 	})
 
 	it("errors on helper parse error", () => {
@@ -146,6 +170,7 @@ contextualize(() => {
 		const out = X({ pear: { tasty: true } })
 		attest(out).snap({ pear: { tasty: true } })
 	})
+
 	describe("define", () => {
 		it("ark", () => {
 			const def = define({
@@ -191,10 +216,10 @@ contextualize(() => {
 
 			// Type hint displays as "..." on hitting cycle (or any if "noErrorTruncation" is true)
 			attest({} as typeof types.a.infer).type.toString.snap(
-				`{ b: { a: "..." } }`
+				"{ b: { a: cyclic } }"
 			)
 			attest({} as typeof types.b.infer.a.b.a.b.a.b.a).type.toString.snap(
-				`{ b: { a: "..." } }`
+				"{ b: { a: cyclic } }"
 			)
 
 			// @ts-expect-error
@@ -234,8 +259,8 @@ contextualize(() => {
 				b: { a: "a|true" }
 			}).export()
 			attest(types).type.toString.snap(`Module<{
-	b: { a: true | { b: false | "..." } }
-	a: { b: false | { a: true | "..." } }
+	a: { b: false | { a: true | cyclic } }
+	b: { a: true | { b: false | cyclic } }
 }>`)
 		})
 
@@ -245,8 +270,8 @@ contextualize(() => {
 				b: { a: "a&b" }
 			}).export()
 			attest(types).type.toString.snap(`Module<{
-	b: { a: { b: { a: "..."; b: "..." }; a: "..." } }
-	a: { b: { a: { b: "..."; a: "..." }; b: "..." } }
+	a: { b: { a: { b: cyclic; a: cyclic }; b: cyclic } }
+	b: { a: { b: { a: cyclic; b: cyclic }; a: cyclic } }
 }>`)
 		})
 
@@ -292,7 +317,7 @@ dependencies[1].contributors[0].email must be a valid email (was "ssalbdivad")`)
 					a: "a|3"
 				}
 			}).export()
-			attest(types.a.infer).type.toString.snap('{ b: { a: 3 | "..." } }')
+			attest(types.a.infer).type.toString.snap("{ b: { a: 3 | cyclic } }")
 
 			attest(types.a.json).snap({
 				domain: "object",
@@ -320,7 +345,7 @@ dependencies[1].contributors[0].email must be a valid email (was "ssalbdivad")`)
 				'b.a.b.a must be an object or 3 (was 4) or b.a must be 3 (was {"b":{"a":4}})'
 			)
 
-			attest(types.b.infer).type.toString.snap('{ a: 3 | { b: "..." } }')
+			attest(types.b.infer).type.toString.snap("{ a: 3 | { b: cyclic } }")
 			attest(types.b.json).snap({
 				domain: "object",
 				required: [{ key: "a", value: ["$a", { unit: 3 }] }]
@@ -337,10 +362,10 @@ dependencies[1].contributors[0].email must be a valid email (was "ssalbdivad")`)
 				}
 			}).export()
 			attest(types.arf.infer).type.toString.snap(
-				'{ b: { c: { b: "..."; c: "..." } } }'
+				"{ b: { c: { b: cyclic; c: cyclic } } }"
 			)
 			attest(types.bork.infer).type.toString.snap(
-				'{ c: { b: "..."; c: "..." } }'
+				"{ c: { b: cyclic; c: cyclic } }"
 			)
 
 			const expectedCyclicJson =
@@ -387,43 +412,6 @@ b.c.c must be an object (was missing)`)
 				]
 			})
 		})
-
-		// 		// https://github.com/arktypeio/arktype/issues/930
-		// 		it("intersect cyclic reference with repeat name", () => {
-		// 			const types = scope({
-		// 				arf: {
-		// 					a: "bork"
-		// 				},
-		// 				bork: {
-		// 					b: "arf&bork"
-		// 				}
-		// 			}).export()
-
-		// 			const resolveRef: string = (
-		// 				types.bork.raw.firstReferenceOfKindOrThrow("alias").json as any
-		// 			).resolve
-
-		// 			attest(types.bork.json).snap({
-		// 				required: [
-		// 					{ key: "b", value: { resolve: resolveRef, alias: "$arf&bork" } }
-		// 				],
-		// 				domain: "object"
-		// 			})
-
-		// 			attest(types.arf.json).snap({
-		// 				required: [
-		// 					{
-		// 						key: "a",
-		// 						value: types.bork.json
-		// 					}
-		// 				],
-		// 				domain: "object"
-		// 			})
-
-		// 			attest(types.arf({ a: { b: {} } }).toString())
-		// 				.snap(`a.b.a must be { b: arf&bork } (was missing)
-		// a.b.b must be arf&bork (was missing)`)
-		// 		})
 	})
 
 	it("can override ambient aliases", () => {
@@ -431,7 +419,7 @@ b.c.c must be an object (was missing)`)
 			foo: {
 				bar: "string"
 			},
-			string: schema({ domain: "string" }).constrain("minLength", 1)
+			string: rootNode({ domain: "string" }).constrain("minLength", 1)
 		}).export()
 		attest<
 			Module<{

@@ -1,11 +1,11 @@
-import { $ark } from "@ark/util"
 import type { BaseRoot } from "../roots/root.js"
-import type { declareNode } from "../shared/declare.js"
+import type { BaseErrorContext, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.js"
+import { $ark } from "../shared/registry.js"
 import type { TraverseAllows } from "../shared/traversal.js"
 import {
 	BaseRange,
@@ -16,28 +16,34 @@ import {
 	type UnknownNormalizedRangeSchema
 } from "./range.js"
 
-export interface BeforeInner extends BaseRangeInner {
-	rule: Date
+export namespace Before {
+	export interface Inner extends BaseRangeInner {
+		rule: Date
+	}
+
+	export interface NormalizedSchema extends UnknownNormalizedRangeSchema {
+		rule: LimitSchemaValue
+	}
+
+	export type Schema = NormalizedSchema | LimitSchemaValue
+
+	export interface ErrorContext extends BaseErrorContext<"before">, Inner {}
+
+	export interface Declaration
+		extends declareNode<{
+			kind: "before"
+			schema: Schema
+			normalizedSchema: NormalizedSchema
+			inner: Inner
+			prerequisite: Date
+			errorContext: ErrorContext
+		}> {}
+
+	export type Node = BeforeNode
 }
 
-export interface NormalizedBeforeSchema extends UnknownNormalizedRangeSchema {
-	rule: LimitSchemaValue
-}
-
-export type BeforeSchema = NormalizedBeforeSchema | LimitSchemaValue
-
-export interface BeforeDeclaration
-	extends declareNode<{
-		kind: "before"
-		schema: BeforeSchema
-		normalizedSchema: NormalizedBeforeSchema
-		inner: BeforeInner
-		prerequisite: Date
-		errorContext: BeforeInner
-	}> {}
-
-export const beforeImplementation: nodeImplementationOf<BeforeDeclaration> =
-	implementNode<BeforeDeclaration>({
+const implementation: nodeImplementationOf<Before.Declaration> =
+	implementNode<Before.Declaration>({
 		kind: "before",
 		collapsibleKey: "rule",
 		hasAssociatedError: true,
@@ -74,9 +80,14 @@ export const beforeImplementation: nodeImplementationOf<BeforeDeclaration> =
 		}
 	})
 
-export class BeforeNode extends BaseRange<BeforeDeclaration> {
+export class BeforeNode extends BaseRange<Before.Declaration> {
 	traverseAllows: TraverseAllows<Date> =
 		this.exclusive ? data => data < this.rule : data => data <= this.rule
 
 	impliedBasis: BaseRoot = $ark.intrinsic.Date.internal
+}
+
+export const Before = {
+	implementation,
+	Node: BeforeNode
 }

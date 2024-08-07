@@ -1,5 +1,4 @@
 import {
-	$ark,
 	appendUnique,
 	arrayEquals,
 	cached,
@@ -11,86 +10,90 @@ import {
 	printable,
 	throwInternalError,
 	throwParseError,
-	type Domain,
 	type Json,
 	type Key,
 	type SerializedPrimitive,
-	type array,
 	type keySet,
 	type show
 } from "@ark/util"
-import type { Node, NodeSchema } from "../kinds.js"
+import type { NodeSchema, nodeOfKind } from "../kinds.js"
 import { typePathToPropString } from "../node.js"
 import {
 	compileLiteralPropAccess,
 	compileSerializedValue,
 	type NodeCompiler
 } from "../shared/compile.js"
-import type { BaseMeta, declareNode } from "../shared/declare.js"
+import type {
+	BaseErrorContext,
+	BaseNormalizedSchema,
+	declareNode
+} from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { ArkError } from "../shared/errors.js"
 import {
 	implementNode,
-	schemaKindsRightOf,
+	unionChildKinds,
 	type IntersectionContext,
 	type RootKind,
+	type UnionChildKind,
 	type nodeImplementationOf
 } from "../shared/implement.js"
 import { intersectNodes, intersectNodesRoot } from "../shared/intersections.js"
 import { registeredReference } from "../shared/registry.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 import { hasArkKind, pathToPropString } from "../shared/utils.js"
-import type { DomainInner, DomainNode } from "./domain.js"
-import type { MorphNode } from "./morph.js"
-import { BaseRoot, type schemaKindRightOf } from "./root.js"
-import type { UnitNode } from "./unit.js"
+import type { Domain } from "./domain.js"
+import type { Morph } from "./morph.js"
+import { BaseRoot } from "./root.js"
+import type { Unit } from "./unit.js"
 import { defineRightwardIntersections } from "./utils.js"
 
-export type UnionChildKind = schemaKindRightOf<"union"> | "alias"
+export namespace Union {
+	export type ChildKind = UnionChildKind
 
-const unionChildKinds: array<UnionChildKind> = [
-	...schemaKindsRightOf("union"),
-	"alias"
-]
+	export type ChildSchema = NodeSchema<ChildKind>
 
-export type UnionChildSchema = NodeSchema<UnionChildKind>
+	export type ChildNode = nodeOfKind<ChildKind>
 
-export type UnionChildNode = Node<UnionChildKind>
+	// allow union nodes as branch definitions that will be flattened on parsing
+	export type BranchSchema = ChildSchema | BaseRoot
 
-// allow union nodes as branch definitions that will be flattened on parsing
-export type UnionBranchSchema = UnionChildSchema | BaseRoot
+	export type Schema<
+		branches extends readonly BranchSchema[] = readonly BranchSchema[]
+	> = NormalizedSchema<branches> | branches
 
-export type UnionSchema<
-	branches extends readonly UnionBranchSchema[] = readonly UnionBranchSchema[]
-> = NormalizedUnionSchema<branches> | branches
+	export interface NormalizedSchema<
+		branches extends readonly BranchSchema[] = readonly BranchSchema[]
+	> extends BaseNormalizedSchema {
+		readonly branches: branches
+		readonly ordered?: true
+	}
 
-export interface NormalizedUnionSchema<
-	branches extends readonly UnionBranchSchema[] = readonly UnionBranchSchema[]
-> extends BaseMeta {
-	readonly branches: branches
-	readonly ordered?: true
+	export interface Inner {
+		readonly branches: readonly ChildNode[]
+		readonly ordered?: true
+	}
+
+	export interface ErrorContext extends BaseErrorContext<"union"> {
+		errors: readonly ArkError[]
+	}
+
+	export interface Declaration
+		extends declareNode<{
+			kind: "union"
+			schema: Schema
+			normalizedSchema: NormalizedSchema
+			inner: Inner
+			errorContext: ErrorContext
+			reducibleTo: RootKind
+			childKind: UnionChildKind
+		}> {}
+
+	export type Node = UnionNode
 }
 
-export interface UnionInner extends BaseMeta {
-	readonly branches: readonly UnionChildNode[]
-	readonly ordered?: true
-}
-
-export interface UnionDeclaration
-	extends declareNode<{
-		kind: "union"
-		schema: UnionSchema
-		normalizedSchema: NormalizedUnionSchema
-		inner: UnionInner
-		errorContext: {
-			errors: readonly ArkError[]
-		}
-		reducibleTo: RootKind
-		childKind: UnionChildKind
-	}> {}
-
-export const unionImplementation: nodeImplementationOf<UnionDeclaration> =
-	implementNode<UnionDeclaration>({
+const implementation: nodeImplementationOf<Union.Declaration> =
+	implementNode<Union.Declaration>({
 		kind: "union",
 		hasAssociatedError: true,
 		collapsibleKey: "branches",
@@ -102,11 +105,11 @@ export const unionImplementation: nodeImplementationOf<UnionDeclaration> =
 					const branches = schema.flatMap(branch =>
 						hasArkKind(branch, "root") ?
 							branch.branches
-						:	ctx.$.node(unionChildKinds, branch as UnionChildSchema)
+						:	ctx.$.node(unionChildKinds, branch as Union.ChildSchema)
 					)
 
-					if (!ctx.schema.ordered)
-						branches.sort((l, r) => (l.innerHash < r.innerHash ? -1 : 1))
+					if (!ctx.normalizedSchema.ordered)
+						branches.sort((l, r) => (l.hash < r.hash ? -1 : 1))
 
 					return branches
 				}
@@ -130,7 +133,7 @@ export const unionImplementation: nodeImplementationOf<UnionDeclaration> =
 		},
 		defaults: {
 			description: node =>
-				describeBranches(node.branches.map(branch => branch.description)),
+				node.distribute(branch => branch.description, describeBranches),
 			expected: ctx => {
 				const byPath = groupBy(ctx.errors, "propString") as Record<
 					string,
@@ -167,7 +170,7 @@ export const unionImplementation: nodeImplementationOf<UnionDeclaration> =
 					// if exactly one operand is never, we can use it to discriminate based on presence
 					return Disjoint.init("presence", l, r)
 				}
-				let resultBranches: readonly UnionChildNode[] | Disjoint
+				let resultBranches: readonly Union.ChildNode[] | Disjoint
 				if (l.ordered) {
 					if (r.ordered) {
 						throwParseError(
@@ -181,7 +184,7 @@ export const unionImplementation: nodeImplementationOf<UnionDeclaration> =
 
 				if (resultBranches instanceof Disjoint) return resultBranches
 
-				return ctx.$.schema(
+				return ctx.$.rootNode(
 					l.ordered || r.ordered ?
 						{
 							branches: resultBranches,
@@ -196,20 +199,20 @@ export const unionImplementation: nodeImplementationOf<UnionDeclaration> =
 
 				if (branches.length === 1) return branches[0]
 
-				return ctx.$.schema(
+				return ctx.$.rootNode(
 					l.ordered ? { branches, ordered: true } : { branches }
 				)
 			})
 		}
 	})
 
-export class UnionNode extends BaseRoot<UnionDeclaration> {
+export class UnionNode extends BaseRoot<Union.Declaration> {
 	isBoolean: boolean =
 		this.branches.length === 2 &&
 		this.branches[0].hasUnit(false) &&
 		this.branches[1].hasUnit(true)
 
-	unitBranches = this.branches.filter((n): n is UnitNode | MorphNode =>
+	unitBranches = this.branches.filter((n): n is Unit.Node | Morph.Node =>
 		n.in.hasKind("unit")
 	)
 
@@ -217,14 +220,13 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 	discriminantJson =
 		this.discriminant ? discriminantToJson(this.discriminant) : null
 
-	expression: string = expressBranches(
-		this.branches.map(n => n.nestableExpression)
+	expression: string = this.distribute(
+		n => n.nestableExpression,
+		expressBranches
 	)
 
 	get shortDescription(): string {
-		return describeBranches(
-			this.branches.map(branch => branch.shortDescription)
-		)
+		return this.distribute(branch => branch.shortDescription, describeBranches)
 	}
 
 	traverseAllows: TraverseAllows = (data, ctx) =>
@@ -315,13 +317,6 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 		}
 	}
 
-	rawKeyOf(): BaseRoot {
-		return this.branches.reduce(
-			(result, branch) => result.and(branch.rawKeyOf()),
-			$ark.intrinsic.unknown.internal
-		)
-	}
-
 	get nestableExpression(): string {
 		// avoid adding unnecessary parentheses around boolean since it's
 		// already collapsed to a single keyword
@@ -333,7 +328,7 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 		if (this.branches.length < 2) return null
 		if (this.unitBranches.length === this.branches.length) {
 			const cases = flatMorph(this.unitBranches, (i, n) => [
-				`${(n.in as UnitNode).serializedValue}`,
+				`${(n.in as Unit.Node).serializedValue}`,
 				n.hasKind("morph") ? n : (true as const)
 			])
 
@@ -359,11 +354,11 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 					let lSerialized: string
 					let rSerialized: string
 					if (entry.kind === "domain") {
-						lSerialized = `"${(entry.l as DomainNode).domain}"`
-						rSerialized = `"${(entry.r as DomainNode).domain}"`
+						lSerialized = `"${(entry.l as Domain.Node).domain}"`
+						rSerialized = `"${(entry.r as Domain.Node).domain}"`
 					} else if (entry.kind === "unit") {
-						lSerialized = (entry.l as UnitNode).serializedValue as never
-						rSerialized = (entry.r as UnitNode).serializedValue as never
+						lSerialized = (entry.l as Unit.Node).serializedValue as never
+						rSerialized = (entry.r as Unit.Node).serializedValue as never
 					} else {
 						return throwInternalError(
 							`Unexpected attempt to discriminate disjoint kind '${entry.kind}'`
@@ -448,6 +443,11 @@ export class UnionNode extends BaseRoot<UnionDeclaration> {
 	}
 }
 
+export const Union = {
+	implementation,
+	Node: UnionNode
+}
+
 const discriminantToJson = (discriminant: Discriminant): Json => ({
 	kind: discriminant.kind,
 	path: discriminant.path.map(k =>
@@ -509,10 +509,10 @@ const describeBranches = (
 }
 
 export const intersectBranches = (
-	l: readonly UnionChildNode[],
-	r: readonly UnionChildNode[],
+	l: readonly Union.ChildNode[],
+	r: readonly Union.ChildNode[],
 	ctx: IntersectionContext
-): readonly UnionChildNode[] | Disjoint => {
+): readonly Union.ChildNode[] | Disjoint => {
 	// If the corresponding r branch is identified as a subtype of an l branch, the
 	// value at rIndex is set to null so we can avoid including previous/future
 	// inersections in the reduced result.
@@ -577,7 +577,7 @@ export const intersectBranches = (
 export const reduceBranches = ({
 	branches,
 	ordered
-}: UnionInner): readonly UnionChildNode[] => {
+}: Union.Inner): readonly Union.ChildNode[] => {
 	if (branches.length < 2) return branches
 
 	const uniquenessByIndex: Record<number, boolean> = branches.map(() => true)
@@ -601,24 +601,7 @@ export const reduceBranches = ({
 			)!
 			if (intersection instanceof Disjoint) continue
 
-			if (
-				!ordered &&
-				(branches[i].includesMorph || branches[j].includesMorph) &&
-				(!arrayEquals(branches[i].shallowMorphs, branches[j].shallowMorphs, {
-					isEqual: (l, r) => l.hasEqualMorphs(r)
-				}) ||
-					!arrayEquals(branches[i].flatMorphs, branches[j].flatMorphs, {
-						isEqual: (l, r) =>
-							l.propString === r.propString && l.node.hasEqualMorphs(r.node)
-					}))
-			) {
-				throwParseError(
-					writeIndiscriminableMorphMessage(
-						branches[i].expression,
-						branches[j].expression
-					)
-				)
-			}
+			if (!ordered) assertDeterminateOverlap(branches[i], branches[j])
 
 			if (intersection.equals(branches[i].in)) {
 				// preserve ordered branches that are a subtype of a subsequent branch
@@ -628,6 +611,23 @@ export const reduceBranches = ({
 		}
 	}
 	return branches.filter((_, i) => uniquenessByIndex[i])
+}
+
+const assertDeterminateOverlap = (l: Union.ChildNode, r: Union.ChildNode) => {
+	if (
+		(l.includesMorph || r.includesMorph) &&
+		(!arrayEquals(l.shallowMorphs, r.shallowMorphs, {
+			isEqual: (l, r) => l.hasEqualMorphs(r)
+		}) ||
+			!arrayEquals(l.flatMorphs, r.flatMorphs, {
+				isEqual: (l, r) =>
+					l.propString === r.propString && l.node.hasEqualMorphs(r.node)
+			}))
+	) {
+		throwParseError(
+			writeIndiscriminableMorphMessage(l.expression, r.expression)
+		)
+	}
 }
 
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
@@ -682,7 +682,7 @@ export const pruneDiscriminant = (
 			// we don't need to revalidate that we're in an object
 			if (
 				nodeKind === "domain" &&
-				(inner as DomainInner).domain === "object" &&
+				(inner as Domain.Inner).domain === "object" &&
 				discriminantCtx.path.length >= ctx.path.length
 			)
 				return null
@@ -709,7 +709,7 @@ export const pruneDiscriminant = (
 export const writeIndiscriminableMorphMessage = (
 	lDescription: string,
 	rDescription: string
-) =>
+): string =>
 	`An unordered union of a type including a morph and a type with overlapping input is indeterminate:
 Left: ${lDescription}
 Right: ${rDescription}`
@@ -717,6 +717,6 @@ Right: ${rDescription}`
 export const writeOrderedIntersectionMessage = (
 	lDescription: string,
 	rDescription: string
-) => `The intersection of two ordered unions is indeterminate:
+): string => `The intersection of two ordered unions is indeterminate:
 Left: ${lDescription}
 Right: ${rDescription}`

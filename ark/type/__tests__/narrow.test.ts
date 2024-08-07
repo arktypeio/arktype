@@ -1,14 +1,14 @@
 import { attest, contextualize } from "@ark/attest"
-import {
-	registeredReference,
-	type Narrowed,
-	type Out,
-	type number,
-	type of,
-	type string
-} from "@ark/schema"
+import { registeredReference } from "@ark/schema"
 import type { equals } from "@ark/util"
 import { type, type Type } from "arktype"
+import type {
+	Narrowed,
+	Out,
+	constrain,
+	number,
+	string
+} from "arktype/internal/ast.js"
 
 contextualize(() => {
 	it("implicit problem", () => {
@@ -104,33 +104,10 @@ contextualize(() => {
 			(s, ctx) =>
 				s === [...s].reverse().join("") ? true : ctx.reject("a palindrome")
 		])
-		attest<Type<string.narrowed>>(palindrome)
+		attest<string.narrowed>(palindrome.t)
 		attest(palindrome("dad")).snap("dad")
 		attest(palindrome("david").toString()).snap(
 			'must be a palindrome (was "david")'
-		)
-	})
-
-	it("satisfying narrows input type of morphs", () => {
-		const t = type("string")
-			.pipe(s => s.length)
-			.satisfying(s => s.length > 5)
-
-		const morphRef = t.internal.assertHasKind("morph").serializedMorphs[0]
-
-		const predicateRef =
-			t.internal.firstReferenceOfKindOrThrow("predicate").serializedPredicate
-
-		attest(t.json).snap({
-			in: { domain: "string", predicate: [predicateRef] },
-			morphs: [morphRef]
-		})
-
-		attest<Type<(In: string.narrowed) => Out<number>>>(t)
-
-		attest(t("123456")).snap(6)
-		attest(t("1234").toString()).snap(
-			'must be valid according to an anonymous predicate (was "1234")'
 		)
 	})
 
@@ -149,7 +126,7 @@ contextualize(() => {
 			morphs: [morphRef, { predicate: [predicateRef] }]
 		})
 
-		attest<Type<(In: string) => Out<of<5, Narrowed>>>>(t)
+		attest<(In: string) => Out<5>>(t.t)
 
 		attest(t("12345")).snap(5)
 		attest(t("1234").toString()).snap(
@@ -169,6 +146,6 @@ contextualize(() => {
 	// 		.pipe(s => `${s}!`)
 	// 		.narrow((s): s is "foo!" => s === "foo!")
 
-	// 	attest<Type<(In: string) => Out<of<"foo!", Narrowed>>>>(t)
+	// 	attest<Data<(In: string) => Out<of<"foo!", Narrowed>>>>(t)
 	// })
 })

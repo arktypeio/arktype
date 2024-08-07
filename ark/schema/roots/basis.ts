@@ -12,10 +12,6 @@ export abstract class InternalBasis<
 	abstract literalKeys: array<Key>
 	declare structure: undefined
 
-	rawKeyOf(): BaseRoot {
-		return this.$.units(this.literalKeys)
-	}
-
 	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
 		if (!this.traverseAllows(data, ctx)) ctx.error(this.errorContext as never)
 	}

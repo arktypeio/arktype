@@ -1,14 +1,13 @@
 import { domainOf } from "./domain.js"
 import { throwInternalError } from "./errors.js"
 import { objectKindOf } from "./objectKinds.js"
-import type { PartialRecord } from "./records.js"
 
 // Eventually we can just import from package.json in the source itself
 // but for now, import assertions are too unstable and it wouldn't support
 // recent node versions (https://nodejs.org/api/esm.html#json-modules).
 
 // For now, we assert this matches the package.json version via a unit test.
-export const arkUtilVersion = "0.1.2"
+export const arkUtilVersion = "0.2.1"
 
 export const initialRegistryContents = {
 	version: arkUtilVersion,
@@ -17,17 +16,19 @@ export const initialRegistryContents = {
 
 export type InitialRegistryContents = typeof initialRegistryContents
 
-export const $ark: ArkEnv.registry = initialRegistryContents as never
+export interface ArkRegistry extends InitialRegistryContents {
+	[k: string]: unknown
+}
+
+export const registry: ArkRegistry = initialRegistryContents as never
 
 declare global {
 	export interface ArkEnv {
-		registry(): {}
+		prototypes(): never
 	}
 
 	export namespace ArkEnv {
-		export type registry = PartialRecord<string, object | symbol> &
-			InitialRegistryContents &
-			ReturnType<ArkEnv["registry"]>
+		export type prototypes = ReturnType<ArkEnv["prototypes"]>
 	}
 }
 
@@ -42,7 +43,7 @@ export const register = (value: object | symbol): string => {
 	if (nameCounts[name]) name = `${name}${nameCounts[name]!++}`
 	else nameCounts[name] = 1
 
-	$ark[name] = value
+	registry[name] = value
 	namesByResolution.set(value, name)
 	return name
 }

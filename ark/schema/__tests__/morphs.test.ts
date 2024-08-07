@@ -1,30 +1,30 @@
 import { attest, contextualize } from "@ark/attest"
-import { schema, tsKeywords } from "@ark/schema"
+import { intrinsic, rootNode } from "@ark/schema"
 import { wellFormedNumberMatcher } from "@ark/util"
 
 contextualize(() => {
 	it("in/out", () => {
-		const parseNumber = schema({
+		const parseNumber = rootNode({
 			in: {
+				meta: "a well-formed numeric string",
 				domain: "string",
-				pattern: wellFormedNumberMatcher,
-				description: "a well-formed numeric string"
+				pattern: wellFormedNumberMatcher
 			},
 			morphs: (s: string) => Number.parseFloat(s)
 		})
 		attest(parseNumber.in.json).snap({
 			domain: "string",
 			pattern: ["^(?!^-0$)-?(?:0|[1-9]\\d*)(?:\\.\\d*[1-9])?$"],
-			description: "a well-formed numeric string"
+			meta: "a well-formed numeric string"
 		})
 		attest(parseNumber.out.json).snap({})
 	})
 
 	it("in/out union", () => {
-		const n = schema([
+		const n = rootNode([
 			{
 				in: "string",
-				morphs: [(s: string) => Number.parseFloat(s), tsKeywords.number]
+				morphs: [(s: string) => Number.parseFloat(s), intrinsic.number]
 			},
 			"number"
 		])

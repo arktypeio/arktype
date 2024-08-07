@@ -1,15 +1,14 @@
 import { attest, contextualize } from "@ark/attest"
 import {
-	internalSchema,
-	keywordNodes,
+	intrinsic,
+	rootNode,
 	writeIndivisibleMessage,
 	writeInvalidKeysMessage,
 	writeNonStructuralOperandMessage,
-	writeUnsatisfiedParameterConstraintMessage,
-	type Out,
-	type string
+	writeUnsatisfiedParameterConstraintMessage
 } from "@ark/schema"
 import { ark, scope, type } from "arktype"
+import type { Out, string, To } from "arktype/internal/ast.js"
 
 contextualize(() => {
 	describe("jsObjects", () => {
@@ -56,7 +55,7 @@ contextualize(() => {
 		it("boolean", () => {
 			const boolean = type("boolean")
 			attest<boolean>(boolean.infer)
-			const expected = internalSchema([{ unit: false }, { unit: true }])
+			const expected = rootNode([{ unit: false }, { unit: true }])
 			// should be simplified to simple checks for true and false literals
 			attest(boolean.json).equals(expected.json)
 		})
@@ -64,7 +63,7 @@ contextualize(() => {
 		it("never", () => {
 			const never = type("never")
 			attest<never>(never.infer)
-			const expected = internalSchema([])
+			const expected = rootNode([])
 			// should be equivalent to a zero-branch union
 			attest(never.json).equals(expected.json)
 		})
@@ -76,7 +75,7 @@ contextualize(() => {
 		})
 
 		it("unknown", () => {
-			const expected = internalSchema({})
+			const expected = rootNode({})
 			// should be equivalent to an unconstrained predicate
 			attest(type("unknown").json).equals(expected.json)
 		})
@@ -176,10 +175,10 @@ contextualize(() => {
 			)
 
 			attest(ip("192.168.1.256").toString()).snap(
-				'must be a valid IPv4 address or a valid IPv6 address (was "192.168.1.256")'
+				'must be a valid IPv6 address or a valid IPv4 address (was "192.168.1.256")'
 			)
 			attest(ip("2001:0db8:85a3:0000:0000:8a2e:0370:733g").toString()).snap(
-				'must be a valid IPv4 address or a valid IPv6 address (was "2001:0db8:85a3:0000:0000:8a2e:0370:733g")'
+				'must be a valid IPv6 address or a valid IPv4 address (was "2001:0db8:85a3:0000:0000:8a2e:0370:733g")'
 			)
 		})
 
@@ -258,7 +257,7 @@ contextualize(() => {
 			const parseUserForm = type("parse.formData").pipe(user)
 
 			attest<
-				(In: FormData) => Out<{
+				(In: FormData) => To<{
 					email: string.matching<"?">
 					file: File
 					tags: (In: string | string[]) => Out<string[]>
@@ -310,6 +309,18 @@ tags[2] must be a string (was object)`)
 			attest(uppercase("foo")).equals("FOO")
 			attest(uppercase(5).toString()).snap("must be a string (was number)")
 		})
+		it("capitalize", () => {
+			const capitalize = type("format.capitalize")
+			attest(capitalize("foo")).equals("Foo")
+			attest(capitalize(5).toString()).snap("must be a string (was number)")
+		})
+		it("normalize", () => {
+			const normalize = type("format.normalize")
+			attest(normalize("\u00F1")).equals("ñ")
+			attest(normalize("\u006E\u0303")).equals("ñ")
+			attest(normalize("\u00F1")).equals(normalize("\u006E\u0303"))
+			attest(normalize(5).toString()).snap("must be a string (was number)")
+		})
 	})
 
 	describe("generics", () => {
@@ -333,7 +344,7 @@ tags[2] must be a string (was object)`)
 			it("invoked validation error", () => {
 				// @ts-expect-error
 				attest(() => ark.Record("string", "string % 2")).throwsAndHasTypeError(
-					writeIndivisibleMessage(keywordNodes.string)
+					writeIndivisibleMessage(intrinsic.string)
 				)
 			})
 
@@ -405,9 +416,9 @@ tags[2] must be a string (was object)`)
 
 			it("non-structure", () => {
 				// @ts-expect-error
-				attest(() => type("string").pick("length")).throwsAndHasTypeError(
-					writeNonStructuralOperandMessage("pick", "string")
-				)
+				attest(() => type("string").pick("length"))
+					.throws(writeNonStructuralOperandMessage("pick", "string"))
+					.type.errors("Property 'pick' does not exist")
 			})
 		})
 
@@ -587,6 +598,88 @@ tags[2] must be a string (was object)`)
 
 			it("invoked", () => {
 				ark.liftArray({ data: "number" })
+			})
+		})
+
+		describe("merged", () => {
+			it("parsed", () => {
+				const types = scope({
+					base: {
+						"foo?": "0",
+						"bar?": "0"
+					},
+					merged: {
+						bar: "1",
+						"baz?": "1"
+					},
+					actual: "merge<base, merged>",
+					expected: {
+						"foo?": "0",
+						bar: "1",
+						"baz?": "1"
+					}
+				}).export()
+
+				attest<typeof types.expected.t>(types.actual.t)
+				attest(types.actual.expression).equals(types.expected.expression)
+			})
+
+			it("invoked", () => {
+				const s = Symbol()
+				const t = ark.merge(
+					{
+						"[string]": "number | bigint",
+						foo: "0",
+						[s]: "true"
+					},
+					{
+						"[string]": "bigint",
+						"foo?": "1n"
+					}
+				)
+
+				const expected = type({
+					"[string]": "bigint",
+					"foo?": "1n",
+					[s]: "true"
+				})
+
+				attest<typeof expected.t>(t.t)
+				attest(t.expression).equals(expected.expression)
+			})
+
+			it("chained", () => {
+				const t = type({
+					"[string]": "number",
+					"bar?": "0",
+					foo: "0"
+				}).merge({
+					"foo?": "1",
+					baz: "1"
+				})
+
+				const expected = type({
+					"[string]": "number",
+					"bar?": "0",
+					"foo?": "1",
+					baz: "1"
+				})
+
+				attest<typeof expected.t>(t.t)
+				attest(t.expression).equals(expected.expression)
+			})
+
+			it("non-object operand", () => {
+				attest(() =>
+					type({
+						foo: "0"
+						// @ts-expect-error
+					}).merge("string")
+				)
+					.throws(writeNonStructuralOperandMessage("merge", "string"))
+					.type.errors(
+						`ErrorType<"Merged type must be an object", [actual: string]>`
+					)
 			})
 		})
 	})

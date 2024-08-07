@@ -1,34 +1,48 @@
-import { $ark } from "@ark/util"
 import { InternalPrimitiveConstraint } from "../constraint.js"
 import type { BaseRoot } from "../roots/root.js"
-import type { BaseMeta, declareNode } from "../shared/declare.js"
+import type {
+	BaseErrorContext,
+	BaseNormalizedSchema,
+	declareNode
+} from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.js"
+import { $ark } from "../shared/registry.js"
 import type { TraverseAllows } from "../shared/traversal.js"
 import type { LengthBoundableData } from "./range.js"
 
-export interface ExactLengthInner extends BaseMeta {
-	readonly rule: number
+export namespace ExactLength {
+	export interface Inner {
+		readonly rule: number
+	}
+
+	export interface NormalizedSchema extends BaseNormalizedSchema {
+		readonly rule: number
+	}
+
+	export type Schema = NormalizedSchema | number
+
+	export interface ErrorContext
+		extends BaseErrorContext<"exactLength">,
+			Inner {}
+
+	export type Declaration = declareNode<{
+		kind: "exactLength"
+		schema: Schema
+		normalizedSchema: NormalizedSchema
+		inner: Inner
+		prerequisite: LengthBoundableData
+		errorContext: ErrorContext
+	}>
+
+	export type Node = ExactLengthNode
 }
 
-export type NormalizedExactLengthSchema = ExactLengthInner
-
-export type ExactLengthSchema = NormalizedExactLengthSchema | number
-
-export type ExactLengthDeclaration = declareNode<{
-	kind: "exactLength"
-	schema: ExactLengthSchema
-	normalizedSchema: NormalizedExactLengthSchema
-	inner: ExactLengthInner
-	prerequisite: LengthBoundableData
-	errorContext: ExactLengthInner
-}>
-
-export const exactLengthImplementation: nodeImplementationOf<ExactLengthDeclaration> =
-	implementNode<ExactLengthDeclaration>({
+const implementation: nodeImplementationOf<ExactLength.Declaration> =
+	implementNode<ExactLength.Declaration>({
 		kind: "exactLength",
 		collapsibleKey: "rule",
 		keys: {
@@ -68,7 +82,7 @@ export const exactLengthImplementation: nodeImplementationOf<ExactLengthDeclarat
 		}
 	})
 
-export class ExactLengthNode extends InternalPrimitiveConstraint<ExactLengthDeclaration> {
+export class ExactLengthNode extends InternalPrimitiveConstraint<ExactLength.Declaration> {
 	traverseAllows: TraverseAllows<LengthBoundableData> = data =>
 		data.length === this.rule
 
@@ -76,4 +90,9 @@ export class ExactLengthNode extends InternalPrimitiveConstraint<ExactLengthDecl
 	readonly compiledNegation: string = `data.length !== ${this.rule}`
 	readonly impliedBasis: BaseRoot = $ark.intrinsic.lengthBoundable.internal
 	readonly expression: string = `{ length: ${this.rule} }`
+}
+
+export const ExactLength = {
+	implementation,
+	Node: ExactLengthNode
 }

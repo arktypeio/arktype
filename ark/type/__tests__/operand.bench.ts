@@ -1,35 +1,35 @@
 import { bench } from "@ark/attest"
 import { type } from "arktype"
 
-type("never")
+bench.baseline(() => type("never"))
 
 bench("single-quoted", () => {
 	const _ = type("'nineteen characters'")
-}).types([610, "instantiations"])
+}).types([630, "instantiations"])
 
 bench("double-quoted", () => {
 	const _ = type('"nineteen characters"')
-}).types([610, "instantiations"])
+}).types([630, "instantiations"])
 
 bench("regex literal", () => {
 	const _ = type("/nineteen characters/")
-}).types([654, "instantiations"])
+}).types([677, "instantiations"])
 
 bench("keyword", () => {
 	const _ = type("string")
-}).types([357, "instantiations"])
+}).types([377, "instantiations"])
 
 bench("number", () => {
 	const _ = type("-98765.4321")
-}).types([432, "instantiations"])
+}).types([458, "instantiations"])
 
 bench("bigint", () => {
 	const _ = type("-987654321n")
-}).types([450, "instantiations"])
+}).types([472, "instantiations"])
 
-bench("instantiations", () => {
+bench("object", () => {
 	const t = type({ foo: "string" })
-}).types([1207, "instantiations"])
+}).types([1642, "instantiations"])
 
 bench("union", () => {
 	// Union is automatically discriminated using shallow or deep keys
@@ -44,4 +44,4 @@ bench("union", () => {
 		.or({
 			kind: "'pleb'"
 		})
-}).types([5445, "instantiations"])
+}).types([7019, "instantiations"])

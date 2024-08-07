@@ -1,20 +1,19 @@
 import { attest, contextualize } from "@ark/attest"
 import {
-	internal,
-	internalSchema,
-	keywordNodes,
+	intrinsic,
+	rootNode,
 	writeInvalidOperandMessage,
 	writeUnboundableMessage
 } from "@ark/schema"
 import { writeMalformedNumericLiteralMessage } from "@ark/util"
 import { type } from "arktype"
-import { writeDoubleRightBoundMessage } from "../parser/semantic/bounds.js"
+import { writeDoubleRightBoundMessage } from "arktype/internal/parser/semantic/bounds.js"
 import {
 	writeMultipleLeftBoundsMessage,
 	writeOpenRangeMessage,
 	writeUnpairableComparatorMessage
-} from "../parser/string/reduce/shared.js"
-import { writeInvalidLimitMessage } from "../parser/string/shift/operator/bounds.js"
+} from "arktype/internal/parser/string/reduce/shared.js"
+import { writeInvalidLimitMessage } from "arktype/internal/parser/string/shift/operator/bounds.js"
 
 contextualize(() => {
 	describe("string expressions", () => {
@@ -32,7 +31,7 @@ contextualize(() => {
 			const t = type("number<10")
 			attest<number>(t.infer)
 			attest(t).type.toString.snap("Type<lessThan<10>, {}>")
-			const expected = internalSchema({
+			const expected = rootNode({
 				domain: "number",
 				max: { rule: 10, exclusive: true }
 			})
@@ -43,7 +42,7 @@ contextualize(() => {
 			const t = type("number<=-49")
 			attest<number>(t.infer)
 			attest(t).type.toString.snap("Type<atMost<-49>, {}>")
-			const expected = internalSchema({
+			const expected = rootNode({
 				domain: "number",
 				max: { rule: -49, exclusive: false }
 			})
@@ -54,7 +53,7 @@ contextualize(() => {
 			const t = type("number==3211993")
 			attest<3211993>(t.infer)
 			attest(t).type.toString.snap("Type<3211993, {}>")
-			const expected = internalSchema({ unit: 3211993 })
+			const expected = rootNode({ unit: 3211993 })
 			attest(t.json).equals(expected.json)
 		})
 
@@ -71,7 +70,7 @@ contextualize(() => {
 			const t = type("-5<number<=5")
 			attest(t).type.toString.snap("Type<is<MoreThan<-5> & AtMost<5>>, {}>")
 			attest<number>(t.infer)
-			const expected = internalSchema({
+			const expected = rootNode({
 				domain: "number",
 				min: { rule: -5, exclusive: true },
 				max: 5
@@ -85,7 +84,7 @@ contextualize(() => {
 				"Type<is<AtLeast<-3.23> & LessThan<4.654>>, {}>"
 			)
 			attest<number>(t.infer)
-			const expected = internalSchema({
+			const expected = rootNode({
 				domain: "number",
 				min: { rule: -3.23 },
 				max: { rule: 4.654, exclusive: true }
@@ -97,7 +96,7 @@ contextualize(() => {
 			const t = type("number > 3")
 			attest(t).type.toString.snap("Type<moreThan<3>, {}>")
 			attest<number>(t.infer)
-			const expected = internalSchema({
+			const expected = rootNode({
 				domain: "number",
 				min: { rule: 3, exclusive: true }
 			})
@@ -271,61 +270,6 @@ contextualize(() => {
 		})
 	})
 
-	describe("constrain", () => {
-		it("min", () => {
-			const t = type("number").constrain("min", 5)
-			const expected = type("number>=5")
-			attest<typeof expected>(t)
-			attest(t.json).equals(expected.json)
-		})
-
-		it("max", () => {
-			const t = type("number").constrain("max", 10)
-			const expected = type("number<=10")
-			attest<typeof expected>(t)
-			attest(t.json).equals(expected.json)
-		})
-
-		it("minLength", () => {
-			const t = type("string").constrain("minLength", 5)
-			const expected = type("string>=5")
-			attest<typeof expected>(t)
-			attest(t.json).equals(expected.json)
-		})
-
-		it("maxLength", () => {
-			const t = type("string").constrain("maxLength", 10)
-			const expected = type("string<=10")
-			attest<typeof expected>(t)
-			attest(t.json).equals(expected.json)
-		})
-
-		it("after", () => {
-			const t = type("Date").constrain("after", new Date("2022-01-01"))
-			// widen the input to a string so both are non-narrowed
-			const expected = type(`Date>=d'${"2022-01-01" as string}'`)
-			attest<typeof expected>(t)
-			attest(t.json).equals(expected.json)
-		})
-
-		it("before", () => {
-			const t = type("Date").constrain("before", 5)
-			const expected = type("Date<=5")
-			attest<typeof expected>(t)
-			attest(t.json).equals(expected.json)
-		})
-
-		it("exclusive", () => {
-			const t = type("number").constrain("min", {
-				rule: 1337,
-				exclusive: true
-			})
-			const expected = type("number>1337")
-			attest<typeof expected>(t)
-			attest(t.json).equals(expected.json)
-		})
-	})
-
 	describe("chained", () => {
 		it("atLeast", () => {
 			const t = type("number").atLeast(5)
@@ -336,13 +280,11 @@ contextualize(() => {
 
 		it("invalid min operand", () => {
 			// @ts-expect-error
-			attest(() => type("string").atLeast(5)).throwsAndHasTypeError(
-				writeInvalidOperandMessage(
-					"min",
-					keywordNodes.number,
-					keywordNodes.string
+			attest(() => type("string").atLeast(5))
+				.throws(
+					writeInvalidOperandMessage("min", intrinsic.number, intrinsic.string)
 				)
-			)
+				.type.errors("Property 'atLeast' does not exist")
 		})
 
 		it("moreThan", () => {
@@ -368,13 +310,11 @@ contextualize(() => {
 
 		it("invalid max operand", () => {
 			// @ts-expect-error
-			attest(() => type("string").lessThan(5)).throwsAndHasTypeError(
-				writeInvalidOperandMessage(
-					"max",
-					keywordNodes.number,
-					keywordNodes.string
+			attest(() => type("string").lessThan(5))
+				.throws(
+					writeInvalidOperandMessage("max", intrinsic.number, intrinsic.string)
 				)
-			)
+				.type.errors("Property 'lessThan' does not exist")
 		})
 
 		it("atLeastLength", () => {
@@ -393,13 +333,15 @@ contextualize(() => {
 
 		it("invalid minLength operand", () => {
 			// @ts-expect-error
-			attest(() => type("bigint").atLeastLength(5)).throwsAndHasTypeError(
-				writeInvalidOperandMessage(
-					"minLength",
-					internal.lengthBoundable,
-					keywordNodes.bigint
+			attest(() => type("bigint").atLeastLength(5))
+				.throws(
+					writeInvalidOperandMessage(
+						"minLength",
+						intrinsic.lengthBoundable,
+						intrinsic.bigint
+					)
 				)
-			)
+				.type.errors("Property 'atLeastLength' does not exist")
 		})
 
 		it("atMostLength", () => {
@@ -418,13 +360,15 @@ contextualize(() => {
 
 		it("invalid maxLength operand", () => {
 			// @ts-expect-error
-			attest(() => type("null").lessThanLength(5)).throwsAndHasTypeError(
-				writeInvalidOperandMessage(
-					"maxLength",
-					internal.lengthBoundable,
-					keywordNodes.null
+			attest(() => type("null").lessThanLength(5))
+				.throws(
+					writeInvalidOperandMessage(
+						"maxLength",
+						intrinsic.lengthBoundable,
+						intrinsic.null
+					)
 				)
-			)
+				.type.errors("Property 'lessThanLength' does not exist")
 		})
 
 		it("atOrAfter", () => {
@@ -444,13 +388,11 @@ contextualize(() => {
 
 		it("invalid after operand", () => {
 			// @ts-expect-error
-			attest(() => type("false").laterThan(new Date())).throwsAndHasTypeError(
-				writeInvalidOperandMessage(
-					"after",
-					keywordNodes.Date,
-					keywordNodes.false
+			attest(() => type("false").laterThan(new Date()))
+				.throws(
+					writeInvalidOperandMessage("after", intrinsic.Date, intrinsic.false)
 				)
-			)
+				.type.errors("Property 'laterThan' does not exist")
 		})
 
 		it("atOrBefore", () => {
@@ -471,13 +413,15 @@ contextualize(() => {
 			attest(() =>
 				// @ts-expect-error
 				type("unknown").atOrBefore(new Date())
-			).throwsAndHasTypeError(
-				writeInvalidOperandMessage(
-					"before",
-					keywordNodes.Date,
-					keywordNodes.unknown
-				)
 			)
+				.throws(
+					writeInvalidOperandMessage(
+						"before",
+						intrinsic.Date,
+						intrinsic.unknown
+					)
+				)
+				.type.errors("Property 'atOrBefore' does not exist")
 		})
 	})
 })

@@ -1,4 +1,4 @@
-import { findPackageRoot, fsRoot, readJson } from "@ark/fs"
+import { assertPackageRoot, fsRoot, readJson } from "@ark/fs"
 import type { Digit } from "@ark/util"
 import { existsSync, renameSync, symlinkSync, unlinkSync } from "fs"
 import { dirname } from "path"
@@ -25,7 +25,7 @@ export const forTypeScriptVersions = (
 ): void => {
 	const passedVersions: TsVersionData[] = []
 	const failedVersions: TsVersionData[] = []
-	const nodeModules = join(findPackageRoot(process.cwd()), "node_modules")
+	const nodeModules = join(assertPackageRoot(process.cwd()), "node_modules")
 	const tsPrimaryPath = join(nodeModules, "typescript")
 	const tsTemporaryPath = join(nodeModules, "typescript-temp")
 	if (existsSync(tsPrimaryPath)) renameSync(tsPrimaryPath, tsTemporaryPath)

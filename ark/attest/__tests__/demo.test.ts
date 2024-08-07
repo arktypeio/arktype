@@ -62,7 +62,7 @@ contextualize(() => {
 		)
 		// @ts-expect-error
 		attest(() => type({ "[object]": "string" })).type.errors(
-			"Indexed key definition 'object' must be a string, number or symbol"
+			"Indexed key definition 'object' must be a string or symbol"
 		)
 	})
 

@@ -1,11 +1,11 @@
-import { $ark } from "@ark/util"
 import type { BaseRoot } from "../roots/root.js"
-import type { declareNode } from "../shared/declare.js"
+import type { BaseErrorContext, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.js"
+import { $ark } from "../shared/registry.js"
 import type { TraverseAllows } from "../shared/traversal.js"
 import {
 	BaseRange,
@@ -14,28 +14,34 @@ import {
 	type UnknownNormalizedRangeSchema
 } from "./range.js"
 
-export interface MaxInner extends BaseRangeInner {
-	rule: number
+export namespace Max {
+	export interface Inner extends BaseRangeInner {
+		rule: number
+	}
+
+	export interface NormalizedSchema extends UnknownNormalizedRangeSchema {
+		rule: number
+	}
+
+	export type Schema = NormalizedSchema | number
+
+	export interface ErrorContext extends BaseErrorContext<"max">, Inner {}
+
+	export interface Declaration
+		extends declareNode<{
+			kind: "max"
+			schema: Schema
+			normalizedSchema: NormalizedSchema
+			inner: Inner
+			prerequisite: number
+			errorContext: ErrorContext
+		}> {}
+
+	export type Node = MaxNode
 }
 
-export interface NormalizedMaxSchema extends UnknownNormalizedRangeSchema {
-	rule: number
-}
-
-export type MaxSchema = NormalizedMaxSchema | number
-
-export interface MaxDeclaration
-	extends declareNode<{
-		kind: "max"
-		schema: MaxSchema
-		normalizedSchema: NormalizedMaxSchema
-		inner: MaxInner
-		prerequisite: number
-		errorContext: MaxInner
-	}> {}
-
-export const maxImplementation: nodeImplementationOf<MaxDeclaration> =
-	implementNode<MaxDeclaration>({
+const implementation: nodeImplementationOf<Max.Declaration> =
+	implementNode<Max.Declaration>({
 		kind: "max",
 		collapsibleKey: "rule",
 		hasAssociatedError: true,
@@ -60,9 +66,14 @@ export const maxImplementation: nodeImplementationOf<MaxDeclaration> =
 		}
 	})
 
-export class MaxNode extends BaseRange<MaxDeclaration> {
+export class MaxNode extends BaseRange<Max.Declaration> {
 	impliedBasis: BaseRoot = $ark.intrinsic.number.internal
 
 	traverseAllows: TraverseAllows<number> =
 		this.exclusive ? data => data < this.rule : data => data <= this.rule
+}
+
+export const Max = {
+	implementation,
+	Node: MaxNode
 }

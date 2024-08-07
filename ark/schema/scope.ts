@@ -1,6 +1,4 @@
 import {
-	$ark,
-	DynamicBase,
 	ParseError,
 	bound,
 	flatMorph,
@@ -13,33 +11,31 @@ import {
 	type Json,
 	type anyOrNever,
 	type array,
+	type conform,
 	type flattenListable,
+	type listable,
+	type noSuggest,
 	type show
 } from "@ark/util"
-import {
-	resolveConfig,
-	type ArkConfig,
-	type ResolvedArkConfig
-} from "./config.js"
+import { resolveConfig, type ArkConfig } from "./config.js"
 import {
 	GenericRoot,
 	LazyGenericBody,
-	type GenericHktSchemaParser,
-	type GenericParamDef
+	type GenericHktSchemaBodyParser,
+	type GenericParamDef,
+	type genericParamSchemasToAst
 } from "./generic.js"
-import type { inferRoot, validateRoot } from "./inference.js"
-import type { internal } from "./keywords/internal.js"
-import type { jsObjects } from "./keywords/jsObjects.js"
-import type { tsKeywords } from "./keywords/tsKeywords.js"
 import {
 	nodeImplementationsByKind,
-	type Node,
 	type NodeSchema,
 	type RootSchema,
+	type nodeOfKind,
 	type reducibleKindOf
 } from "./kinds.js"
 import {
 	RootModule,
+	bindModule,
+	type InternalModule,
 	type PreparsedNodeResolution,
 	type SchemaModule
 } from "./module.js"
@@ -48,56 +44,46 @@ import {
 	parseNode,
 	registerNodeId,
 	schemaKindOf,
+	type NodeParseContext,
 	type NodeParseOptions
 } from "./parse.js"
-import { normalizeAliasSchema, type AliasNode } from "./roots/alias.js"
-import type { BaseRoot, SchemaRoot } from "./roots/root.js"
+import { normalizeAliasSchema, type Alias } from "./roots/alias.js"
+import type { BaseRoot } from "./roots/root.js"
 import { CompiledFunction, NodeCompiler } from "./shared/compile.js"
 import type { NodeKind, RootKind } from "./shared/implement.js"
+import { $ark } from "./shared/registry.js"
 import type { TraverseAllows, TraverseApply } from "./shared/traversal.js"
-import {
-	arkKind,
-	hasArkKind,
-	isNode,
-	type internalImplementationOf
-} from "./shared/utils.js"
-
-export type nodeResolutions<keywords> = { [k in keyof keywords]: BaseRoot }
-
-export type BaseResolutions = Record<string, BaseRoot>
+import { arkKind, hasArkKind, isNode } from "./shared/utils.js"
 
 export type InternalResolutions = Record<string, InternalResolution | undefined>
 
 export type exportedNameOf<$> = Exclude<keyof $ & string, PrivateDeclaration>
 
-export type resolvableReferenceIn<$> =
-	keyof $ extends infer k extends string ?
-		k extends PrivateDeclaration<infer alias> ?
-			alias
-		:	k
+export type resolvableReferenceIn<$> = {
+	[k in keyof $]: k extends string ?
+		k extends PrivateDeclaration<infer alias> ? alias
+		: k extends noSuggest ? never
+		: k
 	:	never
+}[keyof $]
 
 export type resolveReference<reference extends resolvableReferenceIn<$>, $> =
 	reference extends keyof $ ? $[reference] : $[`#${reference}` & keyof $]
 
 export type PrivateDeclaration<key extends string = string> = `#${key}`
 
-type toInternalScope<$> = InternalBaseScope<{
+export type InternalResolution = BaseRoot | GenericRoot | InternalModule
+
+export type toInternalScope<$> = BaseScope<{
 	[k in keyof $]: $[k] extends { [arkKind]: infer kind } ?
 		[$[k]] extends [anyOrNever] ? BaseRoot
 		: kind extends "generic" ? GenericRoot
-		: kind extends "module" ? InternalRootModule
+		: kind extends "module" ? InternalModule
 		: never
 	:	BaseRoot
 }>
 
-// these allow builtin types to be accessed during parsing without cyclic imports
-// they are populated as each scope is parsed with `intrinsic` in its config
-export interface IntrinsicKeywords extends tsKeywords, jsObjects, internal {}
-
-export type InternalResolution = BaseRoot | GenericRoot | InternalRootModule
-
-type CachedResolution = string | InternalResolution
+type CachedResolution = string | BaseRoot | GenericRoot
 
 const schemaBranchesOf = (schema: object) =>
 	isArray(schema) ? schema
@@ -119,16 +105,20 @@ export type writeDuplicateAliasError<alias extends string> =
 
 export type AliasDefEntry = [name: string, defValue: unknown]
 
-const scopesById: Record<string, InternalBaseScope | undefined> = {}
+const scopesById: Record<string, BaseScope | undefined> = {}
 
-$ark.intrinsic = {} as never
+export interface ArkScopeConfig extends ArkConfig {
+	ambient?: boolean | string
+	prereducedAliases?: boolean
+}
 
-export abstract class InternalBaseScope<
-	$ extends InternalResolutions = InternalResolutions
-> implements internalImplementationOf<BaseScope, "t">
-{
-	readonly config: ArkConfig
-	readonly resolvedConfig: ResolvedArkConfig
+export type ResolvedArkScopeConfig = resolveConfig<ArkScopeConfig>
+
+$ark.ambient ??= {} as never
+
+export abstract class BaseScope<$ extends {} = {}> {
+	readonly config: ArkScopeConfig
+	readonly resolvedConfig: ResolvedArkScopeConfig
 	readonly id = `${Object.keys(scopesById).length}$`
 	readonly [arkKind] = "scope"
 
@@ -146,7 +136,7 @@ export abstract class InternalBaseScope<
 		/** The set of names defined at the root-level of the scope mapped to their
 		 * corresponding definitions.**/
 		def: Record<string, unknown>,
-		config?: ArkConfig
+		config?: ArkScopeConfig
 	) {
 		this.config = config ?? {}
 		this.resolvedConfig = resolveConfig(config)
@@ -168,12 +158,6 @@ export abstract class InternalBaseScope<
 			}
 		}) as never
 
-		if ($ark.ambient) {
-			// ensure exportedResolutions is populated
-			$ark.ambient.export()
-			this.resolutions = {}
-		}
-
 		scopesById[this.id] = this
 	}
 
@@ -182,13 +166,8 @@ export abstract class InternalBaseScope<
 	}
 
 	@bound
-	defineSchema(def: RootSchema): RootSchema {
+	defineSchema<def extends RootSchema>(def: def): def {
 		return def
-	}
-
-	@bound
-	schema(def: RootSchema, opts?: NodeParseOptions): BaseRoot {
-		return this.node(schemaKindOf(def), def, opts)
 	}
 
 	@bound
@@ -197,9 +176,9 @@ export abstract class InternalBaseScope<
 	}
 
 	@bound
-	generic(
-		...params: array<GenericParamDef>
-	): ReturnType<GenericHktSchemaParser> {
+	generic<const paramsDef extends readonly GenericParamDef[]>(
+		...params: paramsDef
+	): GenericHktSchemaBodyParser<genericParamSchemasToAst<paramsDef>> {
 		const $: BaseScope = this as never
 		return instantiateDef =>
 			new GenericRoot(
@@ -223,8 +202,8 @@ export abstract class InternalBaseScope<
 		})
 	}
 
-	protected lazyResolutions: AliasNode[] = []
-	lazilyResolve(resolve: () => BaseRoot, syntheticAlias?: string): AliasNode {
+	protected lazyResolutions: Alias.Node[] = []
+	lazilyResolve(resolve: () => BaseRoot, syntheticAlias?: string): Alias.Node {
 		const node = this.node(
 			"alias",
 			{
@@ -238,24 +217,20 @@ export abstract class InternalBaseScope<
 	}
 
 	@bound
-	node<
-		kinds extends NodeKind | array<RootKind>,
-		prereduced extends boolean = false
-	>(
-		kinds: kinds,
-		nodeSchema: NodeSchema<flattenListable<kinds>>,
-		opts = {} as NodeParseOptions<prereduced>
-	): Node<
-		prereduced extends true ? flattenListable<kinds>
-		:	reducibleKindOf<flattenListable<kinds>>
-	> {
+	rootNode(def: RootSchema, opts?: NodeParseOptions): BaseRoot {
+		return this.node(schemaKindOf(def), def, opts)
+	}
+
+	@bound
+	protected preparseNode(
+		kinds: NodeKind | listable<RootKind>,
+		schema: unknown,
+		opts: NodeParseOptions
+	): BaseNode | NodeParseContext {
 		let kind: NodeKind =
-			typeof kinds === "string" ? kinds : schemaKindOf(nodeSchema, kinds)
+			typeof kinds === "string" ? kinds : schemaKindOf(schema, kinds)
 
-		let schema: unknown = nodeSchema
-
-		if (isNode(schema) && schema.kind === kind)
-			return schema.bindScope(this) as never
+		if (isNode(schema) && schema.kind === kind) return schema.bindScope(this)
 
 		if (kind === "alias" && !opts?.prereduced) {
 			const resolution = this.resolveRoot(
@@ -274,22 +249,41 @@ export abstract class InternalBaseScope<
 		const impl = nodeImplementationsByKind[kind]
 		const normalizedSchema = impl.normalize?.(schema) ?? schema
 		// check again after normalization in case a node is a valid collapsed
-		// schema for the kind (e.g. sequence can collapse to element accepting a Node)
+		// schema for the kind (e.g. sequence can collapse to element accepting a Node')
 		if (isNode(normalizedSchema)) {
 			return normalizedSchema.kind === kind ?
-					(normalizedSchema.bindScope(this) as never)
+					normalizedSchema.bindScope(this)
 				:	throwMismatchedNodeRootError(kind, normalizedSchema.kind)
 		}
 
-		const id = registerNodeId(kind, opts)
+		const id = registerNodeId(kind, opts.alias)
 
-		const node = parseNode(
-			id,
+		return {
+			...opts,
+			$: this,
+			args: opts.args ?? {},
 			kind,
 			normalizedSchema,
-			this,
-			opts ?? {}
-		).bindScope(this)
+			id
+		}
+	}
+
+	@bound
+	node<
+		kinds extends NodeKind | array<RootKind>,
+		prereduced extends boolean = false
+	>(
+		kinds: kinds,
+		nodeSchema: NodeSchema<flattenListable<kinds>>,
+		opts = {} as NodeParseOptions<prereduced>
+	): nodeOfKind<
+		prereduced extends true ? flattenListable<kinds>
+		:	reducibleKindOf<flattenListable<kinds>>
+	> {
+		const preparsed = this.preparseNode(kinds, nodeSchema, opts)
+
+		const node =
+			isNode(preparsed) ? preparsed : parseNode(preparsed).bindScope(this)
 
 		if (this.resolved) {
 			// this node was not part of the original scope, so compile an anonymous scope
@@ -304,13 +298,16 @@ export abstract class InternalBaseScope<
 		return node as never
 	}
 
-	protected finalizeRootArgs(opts: NodeParseOptions, resolve: () => BaseRoot) {
+	protected finalizeRootArgs(
+		opts: NodeParseOptions,
+		resolve: () => BaseRoot
+	): NodeParseOptions {
 		const isResolution = opts.alias && opts.alias in this.aliases
 		// if the definition being parsed is not a scope alias and is not a
 		// generic instantiation (i.e. opts don't include args), add this as a resolution.
-		// TODO: this.lazilyResolve(resolve)
-		resolve
-		if (!isResolution) opts.args ??= { this: $ark.intrinsic.unknown as never }
+		if (!isResolution)
+			// this.lazilyResolve(resolve) as never
+			opts.args ??= { this: $ark.intrinsic.unknown || resolve }
 
 		return opts
 	}
@@ -323,16 +320,9 @@ export abstract class InternalBaseScope<
 	}
 
 	maybeResolveRoot(name: string): BaseRoot | undefined {
-		const result = this.maybeResolveGenericOrRoot(name)
+		const result = this.maybeResolve(name)
 		if (hasArkKind(result, "generic")) return
 		return result
-	}
-
-	maybeResolveGenericOrRoot(name: string): BaseRoot | GenericRoot | undefined {
-		const resolution = this.maybeResolve(name)
-		if (hasArkKind(resolution, "module"))
-			return throwParseError(writeMissingSubmoduleAccessMessage(name))
-		return resolution
 	}
 
 	preparseRoot(def: unknown): unknown {
@@ -343,17 +333,22 @@ export abstract class InternalBaseScope<
 		return [k, v]
 	}
 
-	maybeResolve(name: string): InternalResolution | undefined {
+	maybeResolve(name: string): Exclude<CachedResolution, string> | undefined {
 		const resolution = this.maybeShallowResolve(name)
+
 		return typeof resolution === "string" ?
 				this.node("alias", { alias: resolution }, { prereduced: true })
-			:	resolution
+			:	(resolution ?? maybeResolveSubalias(this.aliases, name))
+	}
+
+	get ambient(): InternalModule {
+		return $ark.ambient as never
 	}
 
 	maybeShallowResolve(name: string): CachedResolution | undefined {
 		const cached = this.resolutions[name]
 		if (cached) return cached
-		const def = this.aliases[name] ?? $ark.ambient?.resolutions[name]
+		const def = this.aliases[name] ?? this.ambient?.[name]
 
 		if (!def) return this.maybeResolveSubalias(name)
 
@@ -361,14 +356,8 @@ export abstract class InternalBaseScope<
 		if (hasArkKind(preparsed, "generic"))
 			return (this.resolutions[name] = preparsed.bindScope(this))
 
-		if (hasArkKind(preparsed, "module")) {
-			return (this.resolutions[name] = new RootModule(
-				flatMorph(preparsed, (alias, node) => [
-					alias,
-					(node as BaseRoot | GenericRoot).bindScope(this)
-				])
-			))
-		}
+		if (hasArkKind(preparsed, "module"))
+			return throwParseError(writeMissingSubmoduleAccessMessage(name))
 
 		this.resolutions[name] = name
 		return (this.resolutions[name] = this.parseRoot(preparsed, {
@@ -385,7 +374,7 @@ export abstract class InternalBaseScope<
 
 	import<names extends exportedNameOf<$>[]>(
 		...names: names
-	): show<destructuredImportContext<$, names>> {
+	): SchemaModule<show<destructuredImportContext<$, names>>> {
 		return new RootModule(
 			flatMorph(this.export(...names) as any, (alias, value) => [
 				`#${alias}`,
@@ -398,12 +387,15 @@ export abstract class InternalBaseScope<
 	private _exports: RootExportCache | undefined
 	export<names extends exportedNameOf<$>[]>(
 		...names: names
-	): show<destructuredExportContext<$, names>> {
+	): SchemaModule<show<destructuredExportContext<$, names>>> {
 		if (!this._exports) {
 			this._exports = {}
 			for (const name of this.exportedNames) {
-				const resolution = this.maybeResolve(name)
-				if (hasArkKind(resolution, "root")) {
+				const def = this.aliases[name]
+				if (hasArkKind(def, "module"))
+					this._exports[name] = bindModule(def, this)
+				else {
+					const resolution = this.maybeResolve(name)!
 					resolution.references
 						.filter(node => node.hasKind("alias"))
 						.forEach(aliasNode => {
@@ -416,18 +408,29 @@ export abstract class InternalBaseScope<
 									Object.assign(ref.referencesById, aliasNode.referencesById)
 							})
 						})
+					this._exports[name] = resolution as never
 				}
-				this._exports[name] = resolution as never
 			}
 
 			this.lazyResolutions.forEach(node => node.resolution)
+
+			if (this.resolvedConfig.ambient === true)
+				// spread all exports to ambient
+				Object.assign($ark.ambient as {}, this._exports)
+			else if (typeof this.resolvedConfig.ambient === "string") {
+				// add exports as a subscope with the config value as a name
+				Object.assign($ark.ambient as {}, {
+					[this.resolvedConfig.ambient]: new RootModule({
+						...this._exports
+					})
+				})
+			}
 
 			this._exportedResolutions = resolutionsOfModule(this, this._exports)
 
 			Object.assign(this.json, resolutionsToJson(this._exportedResolutions))
 			Object.assign(this.resolutions, this._exportedResolutions)
-			if (this.config.intrinsic)
-				Object.assign($ark.intrinsic, this._exportedResolutions)
+
 			this.references = Object.values(this.referencesById)
 			if (!this.resolvedConfig.jitless) bindCompiledScope(this.references)
 			this.resolved = true
@@ -444,18 +447,18 @@ export abstract class InternalBaseScope<
 	resolve<name extends exportedNameOf<$>>(
 		name: name
 	): destructuredExportContext<$, []>[name] {
-		return this.export()[name] as never
+		return this.export()[name as never]
 	}
 
-	abstract parseRoot(schema: any, opts?: NodeParseOptions): BaseRoot
+	abstract parseRoot(schema: unknown, opts?: NodeParseOptions): BaseRoot
 }
 
 const resolutionsToJson = (resolutions: InternalResolutions): Json =>
 	flatMorph(resolutions, (k, v) => [
 		k,
-		hasArkKind(v, "root") || hasArkKind(v, "generic") ?
-			v.json
-		:	resolutionsToJson(v)
+		hasArkKind(v, "root") || hasArkKind(v, "generic") ? v.json
+		: hasArkKind(v, "module") ? resolutionsToJson(v)
+		: throwInternalError(`Unexpected resolution ${printable(v)}`)
 	])
 
 const maybeResolveSubalias = (
@@ -475,155 +478,88 @@ const maybeResolveSubalias = (
 
 	const subalias = name.slice(dotIndex + 1)
 	const resolution = prefixSchema[subalias]
-	if (resolution === undefined) return
 
-	if (hasArkKind(resolution, "module"))
-		return maybeResolveSubalias(resolution, subalias)
+	if (resolution === undefined)
+		return maybeResolveSubalias(prefixSchema, subalias)
 
 	if (hasArkKind(resolution, "root") || hasArkKind(resolution, "generic"))
 		return resolution
+
+	if (hasArkKind(resolution, "module"))
+		return throwParseError(writeMissingSubmoduleAccessMessage(name))
 
 	throwInternalError(
 		`Unexpected resolution for alias '${name}': ${printable(resolution)}`
 	)
 }
 
-export type validateAliases<aliases> = {
-	[k in keyof aliases]: aliases[k] extends PreparsedNodeResolution ? aliases[k]
-	:	validateRoot<aliases[k], aliases>
-}
-
-export type instantiateAliases<aliases> = {
-	[k in keyof aliases]: aliases[k] extends PreparsedNodeResolution ? aliases[k]
-	:	inferRoot<aliases[k], aliases>
+type instantiateAliases<aliases> = {
+	[k in keyof aliases]: aliases[k] extends InternalResolution ? aliases[k]
+	:	BaseRoot
 } & unknown
 
-export const schemaScope = <const aliases>(
-	aliases: validateAliases<aliases>,
-	config?: ArkConfig
+export const schemaScope = <
+	const aliases extends {
+		[k in keyof aliases]: conform<
+			aliases[k],
+			RootSchema | PreparsedNodeResolution
+		>
+	}
+>(
+	aliases: aliases,
+	config?: ArkScopeConfig
 ): SchemaScope<instantiateAliases<aliases>> => new SchemaScope(aliases, config)
 
-export interface BaseScope<$ = {}> {
-	t: $
-	[arkKind]: "scope"
-	config: ArkConfig
-	references: readonly BaseNode[]
-	json: Json
-	exportedNames: array<exportedNameOf<$>>
-
-	/** The set of names defined at the root-level of the scope mapped to their
-	 * corresponding definitions.**/
-	aliases: Record<string, unknown>
-	internal: toInternalScope<$>
-
-	defineSchema<const def extends RootSchema>(schema: def): def
-
-	schema<const def extends RootSchema>(
-		schema: def,
-		opts?: NodeParseOptions
-	): SchemaRoot<inferRoot<def, $>, $>
-
-	units<const branches extends array>(
-		values: branches,
-		opts?: NodeParseOptions
-	): SchemaRoot<branches[number], $>
-
-	node<kinds extends NodeKind | array<RootKind>>(
-		kinds: kinds,
-		schema: NodeSchema<flattenListable<kinds>>,
-		opts?: NodeParseOptions
-	): Node<reducibleKindOf<flattenListable<kinds>>>
-
-	import<names extends exportedNameOf<$>[]>(
-		...names: names
-	): SchemaModule<show<destructuredImportContext<$, names>>>
-
-	export<names extends exportedNameOf<$>[]>(
-		...names: names
-	): SchemaModule<show<destructuredExportContext<$, names>>>
-
-	resolve<name extends exportedNameOf<$>>(
-		name: name
-	): $[name] extends PreparsedNodeResolution ? $[name] : SchemaRoot<$[name], $>
-
-	parseRoot(def: any, opts?: NodeParseOptions): SchemaRoot
-}
-
-export class InternalSchemaScope<
+export class SchemaScope<
 	$ extends InternalResolutions = InternalResolutions
-> extends InternalBaseScope<$> {
-	parseRoot(def: unknown, opts: NodeParseOptions = {}): BaseRoot {
-		const node = this.schema(
-			def as never,
+> extends BaseScope<$> {
+	defineRoot<schema extends RootSchema>(schema: schema): schema {
+		return schema
+	}
+
+	parseRoot(schema: RootSchema, opts: NodeParseOptions = {}): BaseRoot {
+		const node = this.rootNode(
+			schema as never,
 			this.finalizeRootArgs(opts, () => node)
 		)
 		return node
 	}
 }
 
-// https://github.com/arktypeio/arktype/issues/1051
-/** @ts-ignore sometimes infinite? requires further investigation */
-export interface SchemaScope<$ = {}> extends BaseScope<$> {
-	defineRoot: this["defineSchema"]
-	parseRoot: this["schema"]
-	generic: GenericHktSchemaParser<$>
-}
+export const $root: SchemaScope = new SchemaScope({})
 
-export const SchemaScope: new <$ = {}>(
-	...args: ConstructorParameters<typeof InternalBaseScope>
-) => SchemaScope<$> = InternalSchemaScope as never
+export const rootNode: SchemaScope["rootNode"] = $root.rootNode
+export const node: SchemaScope["node"] = $root.node
+export const defineSchema: SchemaScope["defineSchema"] = $root.defineSchema
+export const genericNode: SchemaScope["generic"] = $root.generic
 
-export const root: SchemaScope = new SchemaScope({})
-
-export const schema: SchemaScope["schema"] = root.schema
-export const node: SchemaScope["node"] = root.node
-export const defineRoot: SchemaScope["defineRoot"] = root.defineRoot
-export const units: SchemaScope["units"] = root.units
-export const generic: SchemaScope["generic"] = root.generic
-export const internalSchema: InternalBaseScope["schema"] = root.internal.schema
-export const internalNode: InternalBaseScope["node"] = root.internal.node
-export const defineInternalRoot: InternalBaseScope["defineRoot"] =
-	root.internal.defineRoot
-export const internalUnits: InternalBaseScope["units"] = root.internal.units
-export const internalGeneric: InternalBaseScope["generic"] =
-	root.internal.generic
-
-export const parseAsSchema = <castTo = unknown>(
+export const parseAsSchema = (
 	def: unknown,
 	opts?: NodeParseOptions
-): SchemaRoot<castTo, {}> | ParseError => {
+): BaseRoot | ParseError => {
 	try {
-		return schema(def as RootSchema, opts) as never
+		return rootNode(def as RootSchema, opts) as never
 	} catch (e) {
 		if (e instanceof ParseError) return e
 		throw e
 	}
 }
 
-export class InternalRootModule<
-	resolutions extends InternalResolutions = InternalResolutions
-> extends DynamicBase<resolutions> {
-	declare readonly [arkKind]: "module"
-}
-
 export type destructuredExportContext<$, names extends exportedNameOf<$>[]> = {
-	[k in names extends [] ? exportedNameOf<$> : names[number]]: $[k]
+	[k in names["length"] extends 0 ? exportedNameOf<$> : names[number]]: $[k]
 }
 
 export type destructuredImportContext<$, names extends exportedNameOf<$>[]> = {
-	[k in names extends [] ? exportedNameOf<$> : names[number] as `#${k &
+	[k in names["length"] extends 0 ? exportedNameOf<$> : names[number] as `#${k &
 		string}`]: $[k]
 }
 
 export type RootExportCache = Record<
 	string,
-	BaseRoot | GenericRoot | InternalRootModule | undefined
+	BaseRoot | GenericRoot | RootModule | undefined
 >
 
-const resolutionsOfModule = (
-	$: InternalBaseScope,
-	typeSet: RootExportCache
-) => {
+const resolutionsOfModule = ($: BaseScope, typeSet: RootExportCache) => {
 	const result: InternalResolutions = {}
 	for (const k in typeSet) {
 		const v = typeSet[k]
@@ -634,8 +570,7 @@ const resolutionsOfModule = (
 				(innerK, innerV) => [`${k}.${innerK}`, innerV]
 			)
 			Object.assign(result, prefixedResolutions)
-		} else if (hasArkKind(v, "generic")) result[k] = v
-		else if (hasArkKind(v, "root")) result[k] = v
+		} else if (hasArkKind(v, "root") || hasArkKind(v, "generic")) result[k] = v
 		else throwInternalError(`Unexpected scope resolution ${printable(v)}`)
 	}
 	return result

@@ -24,11 +24,17 @@ export type TimeAssertionName = StatName | "mark"
 
 let benchHasRun = false
 
-export const bench = <Fn extends BenchableFunction>(
+type BenchFn = <fn extends BenchableFunction>(
 	name: string,
-	fn: Fn,
-	options: BenchOptions = {}
-): InitialBenchAssertions<Fn> => {
+	fn: fn,
+	options?: BenchOptions
+) => InitialBenchAssertions<fn>
+
+export interface Bench extends BenchFn {
+	baseline: <T>(baselineExpressions: () => T) => void
+}
+
+const benchFn: BenchFn = (name, fn, options) => {
 	const qualifiedPath = [...currentSuitePath, name]
 	console.log(`🏌️  ${qualifiedPath.join("/")}`)
 	const ctx = getBenchCtx(
@@ -60,6 +66,10 @@ export const bench = <Fn extends BenchableFunction>(
 	Object.assign(assertions, createBenchTypeAssertion(ctx))
 	return assertions as never
 }
+
+export const bench: Bench = Object.assign(benchFn, {
+	baseline: () => {}
+})
 
 export const stats = {
 	mean: (callTimes: number[]): number => {

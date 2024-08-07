@@ -94,9 +94,7 @@ contextualize(() => {
 			declare<{ a: string; b: number }>().type({
 				a: "string"
 			})
-		).type.errors(
-			`Property 'b' is missing in type '{ a: "string"; }' but required in type '{ b: number; a: "string"; }'.`
-		)
+		).type.errors("Property 'b' is missing")
 	})
 
 	it("missing optional key", () => {

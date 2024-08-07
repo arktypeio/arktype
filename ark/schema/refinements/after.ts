@@ -1,10 +1,10 @@
-import { $ark } from "@ark/util"
 import type { BaseRoot } from "../roots/root.js"
-import type { declareNode } from "../shared/declare.js"
+import type { BaseErrorContext, declareNode } from "../shared/declare.js"
 import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.js"
+import { $ark } from "../shared/registry.js"
 import type { TraverseAllows } from "../shared/traversal.js"
 import {
 	BaseRange,
@@ -15,28 +15,34 @@ import {
 	type UnknownNormalizedRangeSchema
 } from "./range.js"
 
-export interface AfterInner extends BaseRangeInner {
-	rule: Date
+export namespace After {
+	export interface Inner extends BaseRangeInner {
+		rule: Date
+	}
+
+	export interface NormalizedSchema extends UnknownNormalizedRangeSchema {
+		rule: LimitSchemaValue
+	}
+
+	export interface ErrorContext extends BaseErrorContext<"after">, Inner {}
+
+	export type Schema = NormalizedSchema | LimitSchemaValue
+
+	export interface Declaration
+		extends declareNode<{
+			kind: "after"
+			schema: Schema
+			normalizedSchema: NormalizedSchema
+			inner: Inner
+			prerequisite: Date
+			errorContext: ErrorContext
+		}> {}
+
+	export type Node = AfterNode
 }
 
-export interface NormalizedAfterSchema extends UnknownNormalizedRangeSchema {
-	rule: LimitSchemaValue
-}
-
-export type AfterSchema = NormalizedAfterSchema | LimitSchemaValue
-
-export interface AfterDeclaration
-	extends declareNode<{
-		kind: "after"
-		schema: AfterSchema
-		normalizedSchema: NormalizedAfterSchema
-		inner: AfterInner
-		prerequisite: Date
-		errorContext: AfterInner
-	}> {}
-
-export const afterImplementation: nodeImplementationOf<AfterDeclaration> =
-	implementNode<AfterDeclaration>({
+const implementation: nodeImplementationOf<After.Declaration> =
+	implementNode<After.Declaration>({
 		kind: "after",
 		collapsibleKey: "rule",
 		hasAssociatedError: true,
@@ -67,9 +73,14 @@ export const afterImplementation: nodeImplementationOf<AfterDeclaration> =
 		}
 	})
 
-export class AfterNode extends BaseRange<AfterDeclaration> {
+export class AfterNode extends BaseRange<After.Declaration> {
 	impliedBasis: BaseRoot = $ark.intrinsic.Date.internal
 
 	traverseAllows: TraverseAllows<Date> =
 		this.exclusive ? data => data > this.rule : data => data >= this.rule
+}
+
+export const After = {
+	implementation,
+	Node: AfterNode
 }

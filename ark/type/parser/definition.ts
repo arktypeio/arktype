@@ -1,4 +1,4 @@
-import { hasArkKind, type BaseRoot, type string } from "@ark/schema"
+import { hasArkKind, type BaseRoot } from "@ark/schema"
 import {
 	isThunk,
 	objectKindOf,
@@ -11,13 +11,13 @@ import {
 	type array,
 	type defined,
 	type equals,
-	type isUnknown,
 	type objectKindOrDomainOf,
 	type optionalKeyOf,
 	type requiredKeyOf,
 	type show
 } from "@ark/util"
 import type { type } from "../ark.js"
+import type { string } from "../ast.js"
 import type { ParseContext } from "../scope.js"
 import {
 	parseObjectLiteral,
@@ -63,10 +63,7 @@ export const parseObject = (def: object, ctx: ParseContext): BaseRoot => {
 }
 
 export type inferDefinition<def, $, args> =
-	[def] extends [anyOrNever] ?
-		def extends never ?
-			never
-		:	any
+	[def] extends [anyOrNever] ? def
 	: def extends type.cast<infer t> | ThunkCast<infer t> ? t
 	: def extends string ? inferString<def, $, args>
 	: def extends array ? inferTuple<def, $, args>
@@ -82,7 +79,7 @@ export type validateDefinition<def, $, args> =
 	: def extends array ? validateTuple<def, $, args>
 	: def extends BadDefinitionType ?
 		ErrorMessage<writeBadDefinitionTypeMessage<objectKindOrDomainOf<def>>>
-	: isUnknown<def> extends true ?
+	: unknown extends def ?
 		// this allows the initial list of autocompletions to be populated when a user writes "type()",
 		// before having specified a definition
 		BaseCompletions<$, args> | {}

@@ -98,6 +98,26 @@ import { ark } from "arktype"
 const unfalse = ark.Exclude("boolean", "false")
 ```
 
+### TS (TODO)
+
+```ts
+import { type, type Type } from "arktype"
+
+const createBox = <T extends string>(of: Type<T>) =>
+	type({
+		box: of
+	})
+
+const boxType = createBox(type("string"))
+//    ^?
+
+// @ts-expect-error
+const badBox = createBox(type("number"))
+
+console.log(boxType({ box: 5 }).toString())
+console.log(boxType({ box: "foo" }))
+```
+
 ### Generic HKTs
 
 Our new generics have been built using a new method for integrating arbitrary external types as native ArkType generics! This opens up tons of possibilities for external integrations that would otherwise not be possible, but we're still finalizing the API. As a preview, here's what the implementation of `Exclude` looks like internally:

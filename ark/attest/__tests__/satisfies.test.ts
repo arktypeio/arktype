@@ -1,5 +1,4 @@
-import { attest } from "../assert/attest.js"
-import { contextualize } from "../utils.js"
+import { attest, contextualize } from "@ark/attest"
 
 contextualize(() => {
 	it("can assert types", () => {

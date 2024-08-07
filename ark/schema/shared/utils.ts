@@ -2,6 +2,7 @@ import {
 	flatMorph,
 	isArray,
 	isDotAccessible,
+	noSuggest,
 	printable,
 	throwParseError,
 	type array,
@@ -11,9 +12,10 @@ import {
 } from "@ark/util"
 import type { BaseConstraint } from "../constraint.js"
 import type { GenericRoot } from "../generic.js"
+import type { InternalModule } from "../module.js"
 import type { BaseNode } from "../node.js"
 import type { BaseRoot } from "../roots/root.js"
-import type { InternalBaseScope, InternalRootModule } from "../scope.js"
+import type { BaseScope } from "../scope.js"
 import type { ArkError } from "./errors.js"
 
 export const makeRootAndArrayPropertiesMutable = <o extends object>(
@@ -79,14 +81,14 @@ export const pathToPropString = <stringifiable>(
 
 export type arkKind = typeof arkKind
 
-export const arkKind: unique symbol = Symbol("ArkTypeInternalKind")
+export const arkKind = noSuggest("arkKind")
 
 export interface ArkKinds {
 	constraint: BaseConstraint
 	root: BaseRoot
-	scope: InternalBaseScope
+	scope: BaseScope
 	generic: GenericRoot
-	module: InternalRootModule
+	module: InternalModule
 	error: ArkError
 }
 
@@ -99,8 +101,3 @@ export const hasArkKind = <kind extends ArkKind>(
 
 export const isNode = (value: unknown): value is BaseNode =>
 	hasArkKind(value, "root") || hasArkKind(value, "constraint")
-
-// ideally this could be just declared since it is not used at runtime,
-// but it doesn't play well with typescript-eslint: https://github.com/typescript-eslint/typescript-eslint/issues/4608
-// easiest solution seems to be just having it declared as a value so it doesn't break when we import at runtime
-export const inferred: unique symbol = Symbol("inferred")

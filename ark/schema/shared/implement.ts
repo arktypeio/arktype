@@ -5,18 +5,16 @@ import {
 	type Entry,
 	type Json,
 	type JsonData,
-	type PartialRecord,
 	type arrayIndexOf,
 	type entryOf,
 	type keySet,
 	type keySetOf,
 	type listable,
-	type propValueOf,
 	type requireKeys,
 	type show
 } from "@ark/util"
 import type { NodeConfig, ResolvedUnknownNodeConfig } from "../config.js"
-import type { Declaration, Inner, Node, errorContext } from "../kinds.js"
+import type { Declaration, Inner, errorContext, nodeOfKind } from "../kinds.js"
 import type { BaseNode } from "../node.js"
 import type { NodeParseContext } from "../parse.js"
 import type {
@@ -24,13 +22,14 @@ import type {
 	schemaKindOrRightOf,
 	schemaKindRightOf
 } from "../roots/root.js"
-import type { InternalBaseScope } from "../scope.js"
-import type { StructureInner } from "../structure/structure.js"
+import type { BaseScope } from "../scope.js"
+import type { Structure } from "../structure/structure.js"
 import { compileSerializedValue } from "./compile.js"
 import type {
 	BaseErrorContext,
 	BaseMeta,
-	BaseNodeDeclaration
+	BaseNodeDeclaration,
+	BaseNormalizedSchema
 } from "./declare.js"
 import type { Disjoint } from "./disjoint.js"
 import { isNode } from "./utils.js"
@@ -117,7 +116,7 @@ export const constraintKeys: keySet<ConstraintKind> = flatMorph(
 	(i, kind) => [kind, 1] as const
 )
 
-export const structureKeys: keySetOf<StructureInner> = flatMorph(
+export const structureKeys: keySetOf<Structure.Inner> = flatMorph(
 	[...structuralKinds, "undeclared"],
 	(i, k) => [k, 1] as const
 )
@@ -145,7 +144,7 @@ export interface InternalIntersectionOptions {
 }
 
 export interface IntersectionContext extends InternalIntersectionOptions {
-	$: InternalBaseScope
+	$: BaseScope
 	invert: boolean
 }
 
@@ -153,8 +152,8 @@ export type ConstraintIntersection<
 	lKind extends ConstraintKind,
 	rKind extends kindOrRightOf<lKind>
 > = (
-	l: Node<lKind>,
-	r: Node<rKind>,
+	l: nodeOfKind<lKind>,
+	r: nodeOfKind<rKind>,
 	ctx: IntersectionContext
 ) => BaseNode | Disjoint | null
 
@@ -170,8 +169,8 @@ export type RootIntersection<
 	lKind extends RootKind,
 	rKind extends schemaKindOrRightOf<lKind>
 > = (
-	l: Node<lKind>,
-	r: Node<rKind>,
+	l: nodeOfKind<lKind>,
+	r: nodeOfKind<rKind>,
 	ctx: IntersectionContext
 ) => BaseRoot | Disjoint
 
@@ -208,7 +207,7 @@ export const isNodeKind = (value: unknown): value is NodeKind =>
 export function assertNodeKind<kind extends NodeKind>(
 	value: BaseNode,
 	kind: kind
-): asserts value is Node<kind> {
+): asserts value is nodeOfKind<kind> {
 	const valueIsNode = isNode(value)
 	if (!valueIsNode || value.kind !== kind) {
 		throwParseError(
@@ -232,13 +231,27 @@ export const schemaKindsRightOf = <kind extends RootKind>(
 ): schemaKindRightOf<kind>[] =>
 	rootKinds.slice(precedenceOfKind(kind) + 1) as never
 
-export type KeySchemaDefinitions<d extends BaseNodeDeclaration> = {
+export const unionChildKinds = [
+	...schemaKindsRightOf("union"),
+	"alias"
+] as const
+
+export type UnionChildKind = (typeof unionChildKinds)[number]
+
+export const morphChildKinds = [
+	...schemaKindsRightOf("morph"),
+	"alias"
+] as const
+
+export type MorphChildKind = (typeof morphChildKinds)[number]
+
+export type keySchemaDefinitions<d extends BaseNodeDeclaration> = {
 	[k in keyRequiringSchemaDefinition<d>]: NodeKeyImplementation<d, k>
 }
 
 type keyRequiringSchemaDefinition<d extends BaseNodeDeclaration> = Exclude<
 	keyof d["normalizedSchema"],
-	keyof BaseMeta
+	keyof BaseNormalizedSchema
 >
 
 export const defaultValueSerializer = (v: unknown): JsonData => {
@@ -261,7 +274,6 @@ export type NodeKeyImplementation<
 > = requireKeys<
 	{
 		preserveUndefined?: true
-		meta?: true
 		child?: true
 		serialize?: (schema: instantiated) => JsonData
 		parse?: (
@@ -278,15 +290,15 @@ export type NodeKeyImplementation<
 
 interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	kind: d["kind"]
-	keys: KeySchemaDefinitions<d>
+	keys: keySchemaDefinitions<d>
 	normalize: (schema: d["schema"]) => d["normalizedSchema"]
 	hasAssociatedError: d["errorContext"] extends null ? false : true
-	finalizeJson?: (json: { [k in keyof d["inner"]]: JsonData }) => Json
+	finalizeInnerJson?: (json: { [k in keyof d["inner"]]: JsonData }) => Json
 	collapsibleKey?: keyof d["inner"]
 	reduce?: (
 		inner: d["inner"],
-		$: InternalBaseScope
-	) => Node<d["reducibleTo"]> | Disjoint | undefined
+		$: BaseScope
+	) => nodeOfKind<d["reducibleTo"]> | Disjoint | undefined
 }
 
 export interface UnknownNodeImplementation
@@ -336,7 +348,7 @@ type nodeSchemaaultsImplementationInputFor<kind extends NodeKind> = requireKeys<
 >
 
 export type DescriptionWriter<kind extends NodeKind = NodeKind> = (
-	node: Node<kind>
+	node: nodeOfKind<kind>
 ) => string
 
 export interface UnknownAttachments {
@@ -344,14 +356,18 @@ export interface UnknownAttachments {
 	readonly kind: NodeKind
 	readonly impl: UnknownNodeImplementation
 	readonly id: string
+
 	readonly inner: Record<string, any>
-	readonly entries: readonly Entry<string>[]
+	readonly innerEntries: readonly Entry<string>[]
+	readonly innerJson: object
+	readonly innerHash: string
+
+	readonly meta: BaseMeta
+
 	readonly json: object
-	readonly typeJson: object
+	readonly hash: string
 	readonly collapsibleJson: JsonData
 	readonly children: BaseNode[]
-	readonly innerHash: string
-	readonly typeHash: string
 }
 
 export interface NarrowedAttachments<d extends BaseNodeDeclaration>
@@ -359,17 +375,10 @@ export interface NarrowedAttachments<d extends BaseNodeDeclaration>
 	kind: d["kind"]
 	inner: d["inner"]
 	json: Json
-	typeJson: Json
+	innerJson: Json
 	collapsibleJson: JsonData
-	children: Node<d["childKind"]>[]
+	children: nodeOfKind<d["childKind"]>[]
 }
-
-export const baseKeys: PartialRecord<
-	string,
-	propValueOf<KeySchemaDefinitions<any>>
-> = {
-	description: { meta: true }
-} satisfies KeySchemaDefinitions<BaseNodeDeclaration> as never
 
 export const implementNode = <d extends BaseNodeDeclaration = never>(
 	_: nodeImplementationInputOf<d>
@@ -393,6 +402,5 @@ export const implementNode = <d extends BaseNodeDeclaration = never>(
 			return problemWithLocation
 		}
 	}
-	Object.assign(implementation.keys, baseKeys)
 	return implementation as never
 }

@@ -2,13 +2,11 @@ import {
 	ArkErrors,
 	normalizeIndex,
 	type BaseRoot,
-	type Default,
-	type IndexNode,
+	type Index,
 	type NodeSchema,
-	type of,
-	type OptionalNode,
-	type RequiredNode,
-	type StructureNode,
+	type Optional,
+	type Required,
+	type Structure,
 	type UndeclaredKeyBehavior,
 	type writeInvalidPropertyKeyMessage
 } from "@ark/schema"
@@ -20,6 +18,7 @@ import {
 	stringAndSymbolicEntriesOf,
 	throwParseError,
 	type anyOrNever,
+	type conform,
 	type Dict,
 	type ErrorMessage,
 	type ErrorType,
@@ -30,6 +29,7 @@ import {
 	type mutable,
 	type show
 } from "@ark/util"
+import type { constrain, Default } from "../ast.js"
 import type { ParseContext } from "../scope.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
 import { writeUnassignableDefaultValueMessage } from "./semantic/default.js"
@@ -38,7 +38,7 @@ import type { validateString } from "./semantic/validate.js"
 import type { ParsedDefault } from "./string/shift/operator/default.js"
 
 export const parseObjectLiteral = (def: Dict, ctx: ParseContext): BaseRoot => {
-	let spread: StructureNode | undefined
+	let spread: Structure.Node | undefined
 	const structure: mutable<NodeSchema<"structure">, 2> = {}
 	// We only allow a spread operator to be used as the first key in an object
 	// because to match JS behavior any keys before the spread are overwritten
@@ -72,7 +72,7 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): BaseRoot => {
 
 	const structureNode = ctx.$.node("structure", structure)
 
-	return ctx.$.schema({
+	return ctx.$.rootNode({
 		domain: "object",
 		structure: spread?.merge(structureNode) ?? structureNode
 	})
@@ -122,9 +122,7 @@ export type validateObjectLiteral<def, $, args> = {
 		validateString<indexDef, $, args> extends ErrorMessage<infer message> ?
 			// add a nominal type here to avoid allowing the error message as input
 			ErrorType<message>
-		: inferDefinition<indexDef, $, args> extends (
-			PropertyKey | of<PropertyKey, {}>
-		) ?
+		: inferDefinition<indexDef, $, args> extends Key | constrain<Key, {}> ?
 			// if the indexDef is syntactically and semantically valid,
 			// move on to the validating the value definition
 			validateDefinition<def[k], $, args>
@@ -155,11 +153,14 @@ type validateDefaultValueTuple<
 	args
 > =
 	parseKey<k>["kind"] extends "required" ?
-		readonly [
-			validateDefinition<def[0], $, args>,
-			"=",
-			inferDefinition<def[0], $, args>
-		]
+		conform<
+			def,
+			readonly [
+				validateDefinition<def[0], $, args>,
+				"=",
+				inferDefinition<def[0], $, args>
+			]
+		>
 	:	ErrorMessage<invalidDefaultKeyKindMessage>
 
 type nonOptionalKeyFrom<k, $, args> =
@@ -196,9 +197,9 @@ export type IndexKey<def extends string = string> = `[${def}]`
 export type ParsedEntry =
 	| ParsedUndeclaredEntry
 	| ParsedSpreadEntry
-	| RequiredNode
-	| OptionalNode
-	| IndexNode
+	| Required.Node
+	| Optional.Node
+	| Index.Node
 
 export type ParsedUndeclaredEntry = {
 	kind: "undeclared"
@@ -260,7 +261,7 @@ export const parseEntry = (
 				normalized.required ?
 					[normalized.index, ...normalized.required]
 				:	normalized.index
-			:	normalized.required ?? []
+			:	(normalized.required ?? [])
 		)
 	}
 

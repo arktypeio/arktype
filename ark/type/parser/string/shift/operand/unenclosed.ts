@@ -2,10 +2,11 @@ import {
 	BaseRoot,
 	hasArkKind,
 	writeUnresolvableMessage,
-	type GenericProps,
+	type GenericAst,
 	type GenericRoot,
 	type PrivateDeclaration,
 	type arkKind,
+	type genericParamNames,
 	type resolvableReferenceIn,
 	type resolveReference,
 	type writeNonSubmoduleDotMessage
@@ -21,6 +22,7 @@ import {
 	type anyOrNever,
 	type join
 } from "@ark/util"
+import type { Ark } from "../../../../ark.js"
 import type { GenericInstantiationAst } from "../../../semantic/infer.js"
 import { writePrefixedPrivateReferenceMessage } from "../../../semantic/validate.js"
 import type { DynamicState } from "../../reduce/dynamic.js"
@@ -55,12 +57,12 @@ export type parseUnenclosed<s extends StaticState, $, args> =
 					$,
 					args
 				>
-			: result extends resolvableReferenceIn<ArkEnv.$> ?
+			: result extends resolvableReferenceIn<Ark> ?
 				parseResolution<
 					s,
 					unscanned,
 					result,
-					resolveReference<result, ArkEnv.$>,
+					resolveReference<result, Ark>,
 					// note that we still want the current scope to parse args,
 					// even if the generic was defined in the ambient scope
 					$,
@@ -79,7 +81,7 @@ type parseResolution<
 	args
 > =
 	[resolution] extends [anyOrNever] ? state.setRoot<s, alias, unscanned>
-	: resolution extends GenericProps ?
+	: resolution extends GenericAst ?
 		parseGenericInstantiation<
 			alias,
 			resolution,
@@ -100,12 +102,12 @@ export const parseGenericInstantiation = (
 		return s.error(writeInvalidGenericArgCountMessage(name, g.names, []))
 
 	const parsedArgs = parseGenericArgs(name, g, s)
-	return g(...(parsedArgs as never)) as never
+	return g(...parsedArgs) as never
 }
 
 export type parseGenericInstantiation<
 	name extends string,
-	g extends GenericProps,
+	g extends GenericAst,
 	s extends StaticState,
 	$,
 	args
@@ -118,7 +120,13 @@ export type parseGenericInstantiation<
 			:	// propagate error
 				result
 		:	never
-	:	state.error<writeInvalidGenericArgCountMessage<name, g["names"], []>>
+	:	state.error<
+			writeInvalidGenericArgCountMessage<
+				name,
+				genericParamNames<g["paramsAst"]>,
+				[]
+			>
+		>
 
 const unenclosedToNode = (s: DynamicState, token: string): BaseRoot =>
 	maybeParseReference(s, token) ??
@@ -158,16 +166,16 @@ const maybeParseUnenclosedLiteral = (
 }
 
 type tryResolve<s extends StaticState, token extends string, $, args> =
-	token extends keyof ArkEnv.$ ? token
+	token extends keyof Ark ? token
 	: token extends keyof $ ? token
 	: `#${token}` extends keyof $ ? token
 	: token extends keyof args ? token
 	: token extends `${number}` ? token
 	: token extends BigintLiteral ? token
 	: token extends (
-		`${infer submodule extends (keyof $ | keyof ArkEnv.$) & string}.${infer reference}`
+		`${infer submodule extends (keyof $ | keyof Ark) & string}.${infer reference}`
 	) ?
-		tryResolveSubmodule<token, submodule, reference, s, $ & ArkEnv.$, args>
+		tryResolveSubmodule<token, submodule, reference, s, $ & Ark, [submodule]>
 	:	unresolvableError<s, token, $, args, []>
 
 type tryResolveSubmodule<
@@ -176,12 +184,22 @@ type tryResolveSubmodule<
 	reference extends string,
 	s extends StaticState,
 	$,
-	args
+	submodulePath extends string[]
 > =
 	$[submodule] extends { [arkKind]: "module" } ?
-		reference extends keyof $[submodule] ?
-			token
-		:	unresolvableError<s, reference, $[submodule], args, [submodule]>
+		reference extends keyof $[submodule] ? token
+		: reference extends (
+			`${infer nestedSubmodule extends keyof $[submodule] & string}.${infer nestedReference}`
+		) ?
+			tryResolveSubmodule<
+				token,
+				nestedSubmodule,
+				nestedReference,
+				s,
+				$[submodule],
+				[...submodulePath, nestedSubmodule]
+			>
+		:	unresolvableError<s, reference, $[submodule], {}, submodulePath>
 	:	ErrorMessage<writeNonSubmoduleDotMessage<submodule>>
 
 /** Provide valid completions for the current token, or fallback to an
@@ -213,7 +231,8 @@ type validReferenceFromToken<
 	args,
 	submodulePath extends string[]
 > = Extract<
-	submodulePath extends [] ? BaseCompletions<$, args> : keyof $,
+	submodulePath["length"] extends 0 ? BaseCompletions<$, args>
+	:	resolvableReferenceIn<$>,
 	`${token}${string}`
 >
 

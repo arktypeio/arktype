@@ -1,4 +1,5 @@
-import { fromCwd, rmRf, shell, writeJson } from "@ark/fs"
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports
+import { fromCwd, rmRf, shell, writeJson } from "../fs/index.js"
 import { symlinkSync, unlinkSync } from "fs"
 import { join } from "path"
 

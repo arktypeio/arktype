@@ -37,7 +37,7 @@ export class Rhombus extends Trait<{
 }
 
 // Use compose to implement a type-safe set of Traits
-class Square extends implement(
+export class Square extends implement(
 	Rectangle,
 	Rhombus,
 	// Here we have to implement any declared abstract methods.

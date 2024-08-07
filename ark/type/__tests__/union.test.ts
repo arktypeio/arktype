@@ -1,12 +1,12 @@
 import { attest, contextualize } from "@ark/attest"
 import {
-	internalSchema,
-	keywordNodes,
+	intrinsic,
+	rootNode,
 	writeIndivisibleMessage,
 	writeUnresolvableMessage
 } from "@ark/schema"
 import { type } from "arktype"
-import { writeMissingRightOperandMessage } from "../parser/string/shift/operand/unenclosed.js"
+import { writeMissingRightOperandMessage } from "arktype/internal/parser/string/shift/operand/unenclosed.js"
 
 contextualize(() => {
 	it("binary", () => {
@@ -158,7 +158,7 @@ contextualize(() => {
 	})
 
 	const expected = () =>
-		internalSchema([
+		rootNode([
 			{
 				domain: "object",
 				required: {
@@ -242,14 +242,14 @@ contextualize(() => {
 	it("left semantic error", () => {
 		// @ts-expect-error
 		attest(() => type("symbol%2|string")).throwsAndHasTypeError(
-			writeIndivisibleMessage(keywordNodes.symbol)
+			writeIndivisibleMessage(intrinsic.symbol)
 		)
 	})
 
 	it("right semantic error", () => {
 		// @ts-expect-error
 		attest(() => type("string|symbol%2")).throwsAndHasTypeError(
-			writeIndivisibleMessage(keywordNodes.symbol)
+			writeIndivisibleMessage(intrinsic.symbol)
 		)
 	})
 
@@ -264,10 +264,10 @@ contextualize(() => {
 		const t = type("number|string").describe("My custom type")
 		attest(t.json).snap({
 			branches: [
-				{ description: "My custom type", domain: "number" },
-				{ description: "My custom type", domain: "string" }
+				{ meta: "My custom type", domain: "number" },
+				{ meta: "My custom type", domain: "string" }
 			],
-			description: "My custom type"
+			meta: "My custom type"
 		})
 	})
 })

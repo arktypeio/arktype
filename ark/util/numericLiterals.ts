@@ -2,9 +2,15 @@ import { throwParseError } from "./errors.js"
 
 export type Digit = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
 
-export type NumberLiteral<value extends number = number> = `${value}`
+export type NumberLiteral<n extends number = number> = `${n}`
 
-export type BigintLiteral<value extends bigint = bigint> = `${value}n`
+export type BigintLiteral<n extends bigint = bigint> = `${n}n`
+
+export type IntegerLiteral<n extends bigint = bigint> = `${n}`
+
+export type NonNegativeIntegerLiteral<n extends bigint = bigint> =
+	| `${Digit}`
+	| (`${Exclude<Digit, 0>}${string}` & `${n}`)
 
 /**
  * The goal of the number literal and bigint literal regular expressions is to:

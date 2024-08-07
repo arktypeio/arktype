@@ -1,90 +1,18 @@
-import {
-	Hkt,
-	type array,
-	type conform,
-	type intersectArrays,
-	type isAny,
-	type PartialRecord,
-	type show
-} from "@ark/util"
-import type { Constraints, of, parseConstraints } from "../ast.js"
+import type { PartialRecord, TypeGuard } from "@ark/util"
+import type { nodeOfKind } from "../kinds.js"
 import type { BaseNode } from "../node.js"
-import type {
-	MorphAst,
-	MorphChildNode,
-	MorphNode,
-	Out
-} from "../roots/morph.js"
+import type { Morph } from "../roots/morph.js"
 import type { BaseRoot } from "../roots/root.js"
-import type { InternalBaseScope } from "../scope.js"
+import type { Union } from "../roots/union.js"
+import type { BaseScope } from "../scope.js"
 import { Disjoint } from "./disjoint.js"
-import type {
-	IntersectionContext,
-	RootKind,
-	UnknownIntersectionResult
+import {
+	rootKinds,
+	type IntersectionContext,
+	type RootKind,
+	type UnknownIntersectionResult
 } from "./implement.js"
 import { isNode } from "./utils.js"
-
-export type inferIntersection<l, r> = _inferIntersection<l, r, false>
-
-export type inferPipe<l, r> = _inferIntersection<l, r, true>
-
-type _inferIntersection<l, r, piped extends boolean> =
-	[l] extends [never] ? never
-	: [r] extends [never] ? never
-	: [l & r] extends [never] ? never
-	: isAny<l | r> extends true ? any
-	: l extends MorphAst<infer lIn, infer lOut> ?
-		r extends MorphAst<any, infer rOut> ?
-			piped extends true ?
-				(In: lIn) => Out<rOut>
-			:	// a commutative intersection between two morphs is a ParseError
-				never
-		: piped extends true ? (In: lIn) => Out<r>
-		: (In: _inferIntersection<lIn, r, false>) => Out<lOut>
-	: r extends MorphAst<infer rIn, infer rOut> ?
-		(In: _inferIntersection<rIn, l, false>) => Out<rOut>
-	: parseConstraints<l> extends (
-		[infer lBase, infer lConstraints extends Constraints]
-	) ?
-		parseConstraints<r> extends (
-			[infer rBase, infer rConstraints extends Constraints]
-		) ?
-			of<_inferIntersection<lBase, rBase, piped>, lConstraints & rConstraints>
-		:	of<_inferIntersection<lBase, r, piped>, lConstraints>
-	: parseConstraints<r> extends (
-		[infer rBase, infer rConstraints extends Constraints]
-	) ?
-		of<_inferIntersection<l, rBase, piped>, rConstraints>
-	: [l, r] extends [object, object] ?
-		// adding this intermediate infer result avoids extra instantiations
-		intersectObjects<l, r, piped> extends infer result ?
-			result
-		:	never
-	:	l & r
-
-declare class MorphableIntersection<piped extends boolean> extends Hkt.Kind {
-	hkt: (
-		In: conform<this[Hkt.args], [l: unknown, r: unknown]>
-	) => _inferIntersection<(typeof In)[0], (typeof In)[1], piped>
-}
-
-type intersectObjects<l, r, piped extends boolean> =
-	[l, r] extends [infer lList extends array, infer rList extends array] ?
-		intersectArrays<lList, rList, MorphableIntersection<piped>>
-	:	show<
-			// this looks redundant, but should hit the cache anyways and
-			// preserves index signature + optional keys correctly
-			{
-				[k in keyof l]: k extends keyof r ?
-					_inferIntersection<l[k], r[k], piped>
-				:	l[k]
-			} & {
-				[k in keyof r]: k extends keyof l ?
-					_inferIntersection<l[k], r[k], piped>
-				:	r[k]
-			}
-		>
 
 const intersectionCache: PartialRecord<string, UnknownIntersectionResult> = {}
 
@@ -95,7 +23,7 @@ type InternalNodeIntersection<ctx> = <l extends BaseNode, r extends BaseNode>(
 ) => l["kind"] | r["kind"] extends RootKind ? BaseRoot | Disjoint
 :	BaseNode | Disjoint | null
 
-export const intersectNodesRoot: InternalNodeIntersection<InternalBaseScope> = (
+export const intersectNodesRoot: InternalNodeIntersection<BaseScope> = (
 	l,
 	r,
 	$
@@ -106,11 +34,7 @@ export const intersectNodesRoot: InternalNodeIntersection<InternalBaseScope> = (
 		pipe: false
 	})
 
-export const pipeNodesRoot: InternalNodeIntersection<InternalBaseScope> = (
-	l,
-	r,
-	$
-) =>
+export const pipeNodesRoot: InternalNodeIntersection<BaseScope> = (l, r, $) =>
 	intersectNodes(l, r, {
 		$,
 		invert: false,
@@ -123,13 +47,13 @@ export const intersectNodes: InternalNodeIntersection<IntersectionContext> = (
 	ctx
 ) => {
 	const operator = ctx.pipe ? "|>" : "&"
-	const lrCacheKey = `${l.typeHash}${operator}${r.typeHash}`
+	const lrCacheKey = `${l.hash}${operator}${r.hash}`
 	if (intersectionCache[lrCacheKey] !== undefined)
 		return intersectionCache[lrCacheKey]! as never
 
 	if (!ctx.pipe) {
 		// we can only use this for the commutative & operator
-		const rlCacheKey = `${r.typeHash}${operator}${l.typeHash}`
+		const rlCacheKey = `${r.hash}${operator}${l.hash}`
 		if (intersectionCache[rlCacheKey] !== undefined) {
 			// if the cached result was a Disjoint and the operands originally
 			// appeared in the opposite order, we need to invert it to match
@@ -143,51 +67,10 @@ export const intersectNodes: InternalNodeIntersection<IntersectionContext> = (
 	}
 	if (l.equals(r as never)) return l as never
 
-	let result
-
-	if (ctx.pipe && l.kind !== "union" && r.kind !== "union") {
-		if (l.includesMorph) {
-			if (l.hasKind("morph")) {
-				result =
-					ctx.invert ?
-						pipeToMorph(r as never, l, ctx)
-					:	pipeFromMorph(l, r as never, ctx)
-			} else {
-				result = ctx.$.node("morph", {
-					morphs: [r],
-					in: l
-				})
-			}
-		} else if (r.includesMorph) {
-			if (!r.hasKind("morph")) {
-				result = ctx.$.node("morph", {
-					morphs: [r],
-					in: l
-				})
-			} else {
-				result =
-					ctx.invert ?
-						pipeFromMorph(r, l as never, ctx)
-					:	pipeToMorph(l as never, r, ctx)
-			}
-		}
-	}
-
-	if (!result) {
-		const leftmostKind = l.precedence < r.precedence ? l.kind : r.kind
-		const implementation =
-			l.impl.intersections[r.kind] ?? r.impl.intersections[l.kind]
-		if (implementation === undefined) {
-			// should be two ConstraintNodes that have no relation
-			// this could also happen if a user directly intersects a Type and a ConstraintNode,
-			// but that is not allowed by the external function signature
-			result = null
-		} else if (leftmostKind === l.kind) result = implementation(l, r, ctx)
-		else {
-			result = implementation(r, l, { ...ctx, invert: !ctx.invert })
-			if (result instanceof Disjoint) result = result.invert()
-		}
-	}
+	let result =
+		ctx.pipe && l.hasKindIn(...rootKinds) && r.hasKindIn(...rootKinds) ?
+			_pipeNodes(l, r, ctx)
+		:	_intersectNodes(l, r, ctx)
 
 	if (isNode(result)) {
 		// if the result equals one of the operands, preserve its metadata by
@@ -200,35 +83,88 @@ export const intersectNodes: InternalNodeIntersection<IntersectionContext> = (
 	return result as never
 }
 
-export const pipeFromMorph = (
-	from: MorphNode,
-	to: BaseRoot,
+const _intersectNodes = (
+	l: BaseNode,
+	r: BaseNode,
 	ctx: IntersectionContext
-): MorphNode | Disjoint => {
-	const morphs = [...from.morphs]
-	if (from.validatedOut) {
-		// still piped from context, so allows appending additional morphs
-		const outIntersection = intersectNodes(from.validatedOut, to, ctx)
-		if (outIntersection instanceof Disjoint) return outIntersection
-		morphs[morphs.length - 1] = outIntersection
-	} else morphs.push(to)
-
-	return ctx.$.node("morph", {
-		morphs,
-		in: from.in
-	})
+) => {
+	const leftmostKind = l.precedence < r.precedence ? l.kind : r.kind
+	const implementation =
+		l.impl.intersections[r.kind] ?? r.impl.intersections[l.kind]
+	if (implementation === undefined) {
+		// should be two ConstraintNodes that have no relation
+		// this could also happen if a user directly intersects a Type and a ConstraintNode,
+		// but that is not allowed by the external function signature
+		return null
+	} else if (leftmostKind === l.kind) return implementation(l, r, ctx)
+	else {
+		let result = implementation(r, l, { ...ctx, invert: !ctx.invert })
+		if (result instanceof Disjoint) result = result.invert()
+		return result
+	}
 }
 
-export const pipeToMorph = (
-	from: BaseRoot,
-	to: MorphNode,
+const _pipeNodes = (
+	l: nodeOfKind<RootKind>,
+	r: nodeOfKind<RootKind>,
 	ctx: IntersectionContext
-): MorphNode | Disjoint => {
-	const result = intersectNodes(from, to.in, ctx)
-	if (result instanceof Disjoint) return result
-	return ctx.$.node("morph", {
-		morphs: to.morphs,
-		// TODO: https://github.com/arktypeio/arktype/issues/1067
-		in: result as MorphChildNode
-	})
+) =>
+	l.includesMorph ?
+		ctx.invert ?
+			pipeMorphed(r as never, l, ctx)
+		:	pipeMorphed(l, r as never, ctx)
+	: r.includesMorph ?
+		ctx.invert ?
+			pipeMorphed(r, l as never, ctx)
+		:	pipeMorphed(l as never, r, ctx)
+	:	_intersectNodes(l, r, ctx)
+
+const pipeMorphed = (
+	from: nodeOfKind<RootKind>,
+	to: nodeOfKind<RootKind>,
+	ctx: IntersectionContext
+) =>
+	from.distribute(
+		fromBranch => _pipeMorphed(fromBranch, to, ctx),
+		results => {
+			const viableBranches = results.filter(
+				isNode as TypeGuard<unknown, Morph.Node>
+			)
+			return viableBranches.length === 0 ?
+					Disjoint.init("union", from.branches, to.branches)
+				:	ctx.$.rootNode(viableBranches)
+		}
+	)
+
+const _pipeMorphed = (
+	from: Union.ChildNode,
+	to: nodeOfKind<RootKind>,
+	ctx: IntersectionContext
+): Morph.Node | Disjoint => {
+	const fromIsMorph = from.hasKind("morph")
+
+	if (fromIsMorph) {
+		const morphs = [...from.morphs]
+		if (from.validatedOut) {
+			// still piped from context, so allows appending additional morphs
+			const outIntersection = intersectNodes(from.validatedOut, to, ctx)
+			if (outIntersection instanceof Disjoint) return outIntersection
+			morphs[morphs.length - 1] = outIntersection
+		} else morphs.push(to)
+
+		return ctx.$.node("morph", {
+			morphs,
+			in: fromIsMorph ? from.in : from
+		})
+	}
+
+	return to.hasKind("morph") ?
+			ctx.$.node("morph", {
+				morphs: to.morphs,
+				in: _intersectNodes(from, to.in, ctx) as never
+			})
+		:	ctx.$.node("morph", {
+				morphs: [to],
+				in: from
+			})
 }

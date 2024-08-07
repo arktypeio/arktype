@@ -10,11 +10,7 @@ export type Stringifiable =
 	| null
 	| undefined
 
-/**
- * Force an operation like `{ a: 0 } & { b: 1 }` to be computed so that it displays `{ a: 0; b: 1 }`.
- *
- * Also works for some non-intersections, e.g. `keyof SomeObj` => `"a" | "b" | ...`
- */
+/** Force an operation like `{ a: 0 } & { b: 1 }` to be computed so that it displays `{ a: 0; b: 1 }`. */
 export type show<t> = { [k in keyof t]: t[k] } & unknown
 
 /** @deprecated use "show" instead */
@@ -49,20 +45,16 @@ export type UnknownUnion =
 export type andPreserveUnknown<l, r> =
 	unknown extends l & r ? unknown : show<l & r>
 
-declare const anyOrNever: unique symbol
-
-export type anyOrNever = typeof anyOrNever
-
-export type isAny<t> = 0 extends 1 & t ? true : false
-
-export type isNever<t> = [t] extends [never] ? true : false
-
-export type isUnknown<t> =
-	unknown extends t ?
-		[t] extends [{}] ?
-			false
-		:	true
-	:	false
+/** Can be used to test for the universal subtypes, `any` and `never`, e.g.:
+ *
+ * ```ts
+ * type isAnyOrNever<t> = [t] extends [anyOrNever] ? true : false
+ * ```
+ *
+ *  The actual value is a string literal, but the only realistic subtypes
+ *  of that literal are `any` and `never`.
+ */
+export type anyOrNever = " anyOrNever"
 
 export type conform<t, base> = t extends base ? t : base
 
@@ -72,10 +64,13 @@ export type exactEquals<l, r> =
 	(<_>() => _ extends l ? 1 : 2) extends <_>() => _ extends r ? 1 : 2 ? true
 	:	false
 
-export const id: unique symbol = Symbol("id")
+/** You can avoid suggesting completions by prefixing a string key with whitespace.
+ *  Isn't that keyNominal?
+ */
+export const keyNonimal = " keyNonimal"
 
 export type nominal<t, id extends string> = t & {
-	readonly [id]: id
+	readonly [keyNonimal]: id
 }
 
 export type satisfy<base, t extends base> = t

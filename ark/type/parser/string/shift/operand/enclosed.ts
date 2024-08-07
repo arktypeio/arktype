@@ -41,7 +41,7 @@ export const parseEnclosed = (
 		s.root = s.ctx.$.node("unit", { unit: enclosed })
 	else {
 		const date = tryParseDate(enclosed, writeInvalidDateMessage(enclosed))
-		s.root = s.ctx.$.node("unit", { unit: date, description: enclosed })
+		s.root = s.ctx.$.node("unit", { meta: enclosed, unit: date })
 	}
 }
 

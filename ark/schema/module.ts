@@ -1,26 +1,44 @@
-import { DynamicBase, type anyOrNever } from "@ark/util"
-import type { SchemaRoot } from "./roots/root.js"
-import { arkKind } from "./shared/utils.js"
+import { DynamicBase, flatMorph, type anyOrNever } from "@ark/util"
+import type { BaseRoot } from "./roots/root.js"
+import type {
+	BaseScope,
+	InternalResolution,
+	InternalResolutions
+} from "./scope.js"
+import { arkKind, hasArkKind } from "./shared/utils.js"
 
 export type PreparsedNodeResolution = {
 	[arkKind]: "generic" | "module"
 }
 
-export class RootModule<
-	exports extends object = {}
-> extends DynamicBase<exports> {
+export class RootModule<exports extends {} = {}> extends DynamicBase<exports> {
 	// ensure `[arkKind]` is non-enumerable so it doesn't get spread on import/export
 	get [arkKind](): "module" {
 		return "module"
 	}
 }
 
+export interface InternalModule<
+	exports extends InternalResolutions = InternalResolutions
+> extends RootModule<exports> {}
+
+export const bindModule = (
+	module: InternalModule,
+	$: BaseScope
+): InternalModule =>
+	new RootModule(
+		flatMorph(module, (alias, value) => [
+			alias,
+			hasArkKind(value, "module") ? bindModule(value, $) : value.bindScope($)
+		])
+	)
+
 type exportSchemaScope<$> = {
-	[k in keyof $]: $[k] extends PreparsedNodeResolution ?
+	[k in keyof $]: $[k] extends InternalResolution ?
 		[$[k]] extends [anyOrNever] ?
-			SchemaRoot<$[k], $>
+			BaseRoot
 		:	$[k]
-	:	SchemaRoot<$[k], $>
+	:	BaseRoot
 }
 
 export const SchemaModule: new <$ = {}>(

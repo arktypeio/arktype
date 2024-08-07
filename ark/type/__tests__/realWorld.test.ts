@@ -1,16 +1,16 @@
 import { attest, contextualize } from "@ark/attest"
-import {
-	type AtLeastLength,
-	type AtMostLength,
-	type Narrowed,
-	type number,
-	type of,
-	type Out,
-	registeredReference,
-	type string
-} from "@ark/schema"
-import { scope, type, type Type } from "arktype"
-import type { Module } from "../module.js"
+import { registeredReference, type ArkErrors } from "@ark/schema"
+import { scope, type, type Module } from "arktype"
+import type {
+	AtLeastLength,
+	AtMostLength,
+	constrain,
+	Narrowed,
+	number,
+	Out,
+	string,
+	To
+} from "arktype/internal/ast.js"
 
 contextualize(() => {
 	// https://github.com/arktypeio/arktype/issues/915
@@ -55,7 +55,7 @@ contextualize(() => {
 	coll?: string
 	ts?: TimeStub
 	ttl?: TimeStub
-	user: TimeStub | { name: string; accounts?: "..."[] }
+	user: TimeStub | { name: string; accounts?: cyclic[] }
 	provider: "GitHub" | "Google"
 	providerUserId: string
 }`)
@@ -218,24 +218,21 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			b: "B"
 		})
 
-		attest<
-			Type<
-				{
-					b: {
-						a: {
-							required: boolean
-						}
-					}
-				},
-				{
-					B: {
-						a: {
-							required: boolean
-						}
-					}
+		attest<{
+			b: {
+				a: {
+					required: boolean
 				}
-			>
-		>(C)
+			}
+		}>(C.t)
+
+		attest<{
+			B: {
+				a: {
+					required: boolean
+				}
+			}
+		}>(C.$.t)
 
 		attest(C.json).snap({
 			domain: "object",
@@ -342,7 +339,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		})
 
 		attest<
-			| ((In: string) => Out<string.is<AtLeastLength<1> & AtMostLength<3>>>)
+			| ((In: string) => To<string.is<AtLeastLength<1> & AtMostLength<3>>>)
 			| null
 			| undefined,
 			typeof CreatePatientInput.t.first_name
@@ -489,8 +486,8 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 				{ key: "items", value: "$JsonSchema" },
 				{ key: "type", value: { unit: "array" } }
 			],
-			description: "standalone",
-			domain: { description: "standalone", domain: "object" }
+			meta: "standalone",
+			domain: { meta: "standalone", domain: "object" }
 		})
 
 		const valid: typeof standalone.infer = {
@@ -585,11 +582,9 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			t.internal.firstReferenceOfKindOrThrow("predicate").serializedPredicate
 
 		attest(t.json).snap({
-			description: 'This will "fail"',
-			domain: { description: 'This will "fail"', domain: "string" },
-			predicate: [
-				{ description: 'This will "fail"', predicate: serializedPredicate }
-			]
+			meta: 'This will "fail"',
+			domain: { meta: 'This will "fail"', domain: "string" },
+			predicate: [{ meta: 'This will "fail"', predicate: serializedPredicate }]
 		})
 	})
 
@@ -697,7 +692,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			.pipe(parseBigint)
 			.narrow(validatePositiveBigint)
 
-		attest<(In: string | number) => Out<of<bigint, Narrowed>>>(Amount.t)
+		attest<(In: string | number) => Out<constrain<bigint, Narrowed>>>(Amount.t)
 		attest(Amount.json).snap([
 			{
 				in: "number",
@@ -713,5 +708,148 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		attest(Amount("-5").toString()).snap(
 			"must be valid according to validatePositiveBigint (was -5n)"
 		)
+	})
+
+	it("nested 'and' chained from morph on optional", () => {
+		const validatedTrimString = type("string").pipe(
+			s => s.trim(),
+			type("1<=string<=3")
+		)
+
+		const t = type({
+			"first_name?": validatedTrimString.and("unknown")
+		})
+
+		attest(t.expression).snap(
+			"{ first_name?: (In: string) => Out<string <= 3 & >= 1> }"
+		)
+		attest(t.t).type.toString.snap(`{
+	first_name?: (
+		In: string
+	) => To<is<AtLeastLength<1> & AtMostLength<3>>>
+}`)
+	})
+
+	it("cyclic narrow in scope", () => {
+		const root = scope({
+			filename: "0<string<255",
+			file: {
+				type: "'file'",
+				name: "filename"
+			},
+			directory: {
+				type: "'directory'",
+				name: "filename",
+				children: [
+					"root[]",
+					":",
+					(v, ctx) => {
+						if (new Set(v.map(f => f.name)).size !== v.length)
+							return ctx.mustBe("names must be unique in a directory")
+
+						return true
+					}
+				]
+			},
+			root: "file|directory"
+		}).resolve("root")
+
+		attest(root.t).type.toString.snap(`	| {
+			type: "file"
+			name: is<MoreThanLength<0> & LessThanLength<255>>
+	  }
+	| {
+			type: "directory"
+			name: is<MoreThanLength<0> & LessThanLength<255>>
+			children: constrain<
+				(
+					| {
+							type: "file"
+							name: is<
+								MoreThanLength<0> & LessThanLength<255>
+							>
+					  }
+					| cyclic
+				)[],
+				Narrowed
+			>
+	  }`)
+	})
+
+	// https://github.com/arktypeio/arktype/discussions/1080#discussioncomment-10247616
+	it("pipe to discriminated morph union", () => {
+		const objSchema = type({
+			action: "'order.completed'"
+		}).or({
+			action: `'scheduled'`,
+			id: "parse.integer",
+			calendarID: "parse.integer",
+			appointmentTypeID: "parse.integer"
+		})
+
+		const parseJsonToObj = type("parse.json").pipe(objSchema)
+
+		attest(parseJsonToObj.expression).snap(
+			'(In: string) => Out<{ action: "order.completed" } | { action: "scheduled", appointmentTypeID: unknown, calendarID: unknown, id: unknown }>'
+		)
+
+		const out = parseJsonToObj(
+			JSON.stringify({
+				action: "scheduled",
+				id: "1",
+				calendarID: "1",
+				appointmentTypeID: "1"
+			})
+		)
+
+		attest<
+			| ArkErrors
+			| {
+					action: "order.completed"
+			  }
+			| {
+					action: "scheduled"
+					id: number
+					calendarID: number
+					appointmentTypeID: number
+			  }
+		>(out)
+
+		attest(out).snap({
+			action: "scheduled",
+			id: 1,
+			calendarID: 1,
+			appointmentTypeID: 1
+		})
+	})
+
+	// https://github.com/arktypeio/arktype/discussions/1080#discussioncomment-10247616
+	it("pipe to discriminated morph inner union", () => {
+		const objSchema = type({
+			action: "'order.completed'"
+		}).or({
+			action: "'scheduled' | 'rescheduled' | 'canceled' | 'changed'",
+			id: "parse.integer",
+			calendarID: "parse.integer",
+			appointmentTypeID: "parse.integer"
+		})
+
+		const parseJsonToObj = type("parse.json").pipe(objSchema)
+
+		const out = parseJsonToObj(
+			JSON.stringify({
+				action: "scheduled",
+				id: "1",
+				calendarID: "1",
+				appointmentTypeID: "1"
+			})
+		)
+
+		attest(out).snap({
+			action: "scheduled",
+			id: 1,
+			calendarID: 1,
+			appointmentTypeID: 1
+		})
 	})
 })

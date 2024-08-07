@@ -1,5 +1,5 @@
 import { fromCwd, type SourcePosition } from "@ark/fs"
-import { throwInternalError } from "@ark/util"
+import { throwInternalError, type dict } from "@ark/util"
 import * as tsvfs from "@typescript/vfs"
 import { readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
@@ -75,11 +75,11 @@ const nearestBoundingCallExpression = (
 	position: number
 ): ts.CallExpression | undefined =>
 	node.pos <= position && node.end >= position ?
-		node
+		(node
 			.getChildren()
 			.flatMap(
 				child => nearestBoundingCallExpression(child, position) ?? []
-			)[0] ?? (ts.isCallExpression(node) ? node : undefined)
+			)[0] ?? (ts.isCallExpression(node) ? node : undefined))
 	:	undefined
 
 export const getAbsolutePosition = (
@@ -106,12 +106,13 @@ export type TsconfigInfo = {
 }
 
 export const getTsConfigInfoOrThrow = (): TsconfigInfo => {
-	const config = getConfig().tsconfig
+	const config = getConfig()
+	const tsconfig = config.tsconfig
 	const configFilePath =
-		config ?? ts.findConfigFile(fromCwd(), ts.sys.fileExists, "tsconfig.json")
+		tsconfig ?? ts.findConfigFile(fromCwd(), ts.sys.fileExists, "tsconfig.json")
 	if (!configFilePath) {
 		throw new Error(
-			`File ${config ?? join(fromCwd(), "tsconfig.json")} must exist.`
+			`File ${tsconfig ?? join(fromCwd(), "tsconfig.json")} must exist.`
 		)
 	}
 
@@ -127,9 +128,15 @@ export const getTsConfigInfoOrThrow = (): TsconfigInfo => {
 		)
 	}
 
-	const configObject = result.config
+	const configJson: dict & { compilerOptions: ts.CompilerOptions } =
+		result.config
+
+	configJson.compilerOptions = Object.assign(
+		configJson.compilerOptions ?? {},
+		config.compilerOptions
+	)
 	const configParseResult = ts.parseJsonConfigFileContent(
-		configObject,
+		configJson,
 		ts.sys,
 		dirname(configFilePath),
 		{},
@@ -197,7 +204,20 @@ export interface StringifiableType extends ts.Type {
 export const getStringifiableType = (node: ts.Node): StringifiableType => {
 	const typeChecker = getInternalTypeChecker()
 	const nodeType = typeChecker.getTypeAtLocation(node)
-	const stringified = typeChecker.typeToString(nodeType)
+
+	let stringified = typeChecker.typeToString(nodeType)
+
+	if (stringified.includes("...")) {
+		const nonTruncated = typeChecker.typeToString(
+			nodeType,
+			undefined,
+			ts.TypeFormatFlags.NoTruncation
+		)
+
+		if (nonTruncated.includes(" any") && !stringified.includes(" any"))
+			stringified = nonTruncated.replaceAll(" any", " cyclic")
+		else stringified = nonTruncated
+	}
 
 	return Object.assign(nodeType, {
 		toString: () => stringified,

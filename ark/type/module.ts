@@ -1,19 +1,40 @@
-import { RootModule, type arkKind, type GenericProps } from "@ark/schema"
+import {
+	RootModule,
+	type GenericAst,
+	type PreparsedNodeResolution
+} from "@ark/schema"
 import type { anyOrNever } from "@ark/util"
 import type { Generic } from "./generic.js"
 import type { Type } from "./type.js"
 
-type exportScope<$> = {
-	[k in keyof $]: $[k] extends { [arkKind]: "module" } ?
-		[$[k]] extends [anyOrNever] ?
-			Type<$[k], $>
-		:	$[k]
-	: $[k] extends GenericProps<infer params, infer bodyDef, infer args$> ?
-		Generic<params, bodyDef, $, args$>
-	:	Type<$[k], $>
-}
-
-export const Module: new <$ = {}>(types: exportScope<$>) => Module<$> =
+export const Module: new <$ extends {}>(exports: exportScope<$>) => Module<$> =
 	RootModule as never
 
-export type Module<$ = {}> = RootModule<exportScope<$>>
+export interface Module<$ extends {} = {}> extends RootModule<exportScope<$>> {}
+
+export type exportScope<$> = {
+	[k in keyof $]: instantiateExport<$[k], $>
+} & unknown
+
+export const BoundModule: new <exports extends {}, $ extends {}>(
+	exports: bindExportsToScope<exports, $>,
+	$: $
+) => BoundModule<exports, $> = RootModule as never
+
+export interface BoundModule<exports extends {}, $>
+	extends RootModule<bindExportsToScope<exports, $>> {}
+
+export type bindExportsToScope<exports, $> = {
+	[k in keyof exports]: instantiateExport<exports[k], $>
+} & unknown
+
+export type Submodule<exports extends {}> = RootModule<exports>
+
+export type instantiateExport<t, $> =
+	[t] extends [PreparsedNodeResolution] ?
+		[t] extends [anyOrNever] ? Type<t, $>
+		: t extends GenericAst<infer params, infer body, infer body$> ?
+			Generic<params, body, body$, $>
+		: t extends Submodule<infer exports> ? BoundModule<exports, $>
+		: never
+	:	Type<t, $>

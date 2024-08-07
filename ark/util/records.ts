@@ -128,7 +128,32 @@ export type requiredKeyOf<o> = {
 
 export type optionalKeyOf<o> = Exclude<keyof o, requiredKeyOf<o>>
 
-export type merge<base, merged> = show<Omit<base, keyof merged> & merged>
+export type merge<base, props> =
+	base extends unknown ?
+		props extends unknown ?
+			show<omit<base, keyof props & keyof base> & props>
+		:	never
+	:	never
+
+export type mergeExact<base, props> =
+	base extends unknown ?
+		props extends unknown ?
+			show<omitMerged<base, props> & props>
+		:	never
+	:	never
+
+type omitMerged<base, props> = {
+	[k in keyof base as excludeExactKeyOf<k, props>]: base[k]
+}
+
+type excludeExactKeyOf<key extends PropertyKey, o> = Exclude<
+	key,
+	extractExactKeyOf<key, o>
+>
+
+type extractExactKeyOf<key extends PropertyKey, base> = keyof {
+	[k in keyof base as [key, k] extends [k, key] ? key : never]: 1
+}
 
 export type override<
 	base,
@@ -143,12 +168,12 @@ export const InnerDynamicBase = class {
 	}
 } as new <t extends object>(base: t) => t
 
-/** @ts-expect-error (needed to extend `t`, but safe given ShallowClone's implementation) **/
+/** @ts-ignore (needed to extend `t`, but safe given ShallowClone's implementation) **/
 export class DynamicBase<t extends object> extends InnerDynamicBase<t> {}
 
 export const NoopBase = class {} as new <t extends object>() => t
 
-/** @ts-expect-error (see DynamicBase) **/
+/** @ts-ignore (see DynamicBase) **/
 export class CastableBase<t extends object> extends NoopBase<t> {}
 
 export const splitByKeys = <o extends object, leftKeys extends keySetOf<o>>(
@@ -168,15 +193,53 @@ export const splitByKeys = <o extends object, leftKeys extends keySetOf<o>>(
 	return [l, r]
 }
 
+/** Homomorphic implementation of the builtin Pick.
+ *
+ * Gives different results for certain union expressions like the following:
+ *
+ * @example
+ * // flattens result to { a?: 1 | 2; b?: 1 | 2 }
+ * type PickResult = Pick<{ a: 1; b?: 1 } | { a?: 2; b: 2 }, "a" | "b">
+ *
+ * @example
+ * // preserves original type w/ modifier groupings
+ * type pickResult = pick<{ a: 1; b?: 1 } | { a?: 2; b: 2 }, "a" | "b">
+ */
+export type pick<o, key extends keyof o> =
+	o extends unknown ?
+		{
+			[k in keyof o as k extends key ? k : never]: o[k]
+		}
+	:	// could also consider adding the following to extract literal keys from
+		// index signatures as optional. doesn't match existing TS behavior though:
+		//  & { [k in keyof o as key extends k ? key : never]?: o[k] }
+		never
+
 export const pick = <o extends object, keys extends keySetOf<o>>(
 	o: o,
 	keys: keys
-): show<Pick<o, keyof keys & keyof o>> => splitByKeys(o, keys)[0] as never
+): pick<o, keyof keys & keyof o> => splitByKeys(o, keys)[0] as never
+
+/** Homomorphic implementation of the builtin Omit.
+ *
+ * Gives different results for many union expressions like the following:
+ *
+ * @example
+ * // {}
+ * type OmitResult = Omit<{ a: 1 } | { b: 2 }, never>
+ *
+ * @example
+ * // preserves original type w/ modifier groupings
+ * type omitResult = omit<{ a: 1 } | { b: 2 }, never>
+ */
+export type omit<o, key extends keyof o> = {
+	[k in keyof o as k extends key ? never : k]: o[k]
+}
 
 export const omit = <o extends object, keys extends keySetOf<o>>(
 	o: o,
 	keys: keys
-): show<Omit<o, keyof keys>> => splitByKeys(o, keys)[1] as never
+): omit<o, keyof keys & keyof o> => splitByKeys(o, keys)[1] as never
 
 export type EmptyObject = Record<PropertyKey, never>
 

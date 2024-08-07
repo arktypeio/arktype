@@ -54,27 +54,17 @@ export const domainOf = <data>(data: data): domainOf<data> => {
 		: builtinType) as domainOf<data>
 }
 
-const enumerableDomainDescriptions = {
+/** Each domain's completion for the phrase "must be _____" */
+export const domainDescriptions = {
 	boolean: "boolean",
 	null: "null",
-	undefined: "undefined"
-} as const
-
-const nonEnumerableDomainDescriptions = {
+	undefined: "undefined",
 	bigint: "a bigint",
 	number: "a number",
 	object: "an object",
 	string: "a string",
 	symbol: "a symbol"
-} as const
-
-export type NonEnumerableDomain = keyof typeof nonEnumerableDomainDescriptions
-
-/** Each domain's completion for the phrase "must be _____" */
-export const domainDescriptions = {
-	...nonEnumerableDomainDescriptions,
-	...enumerableDomainDescriptions
-} satisfies Record<Domain, string>
+} as const satisfies Record<Domain, string>
 
 export type domainDescriptions = typeof domainDescriptions
 

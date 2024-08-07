@@ -111,7 +111,7 @@ export const fromHome = (...joinWith: string[]): string =>
 
 export const fsRoot: string = parse(process.cwd()).root
 
-export const findPackageRoot = (fromDir?: string): string => {
+export const findPackageRoot = (fromDir?: string): string | null => {
 	const startDir = fromDir ?? dirOfCaller()
 	let dirToCheck = startDir
 	while (dirToCheck !== fsRoot) {
@@ -127,14 +127,38 @@ export const findPackageRoot = (fromDir?: string): string => {
 		}
 		dirToCheck = join(dirToCheck, "..")
 	}
+	return null
+}
+
+export const assertPackageRoot = (fromDir?: string): string => {
+	const startDir = fromDir ?? dirOfCaller()
+	const result = findPackageRoot(fromDir)
+	if (result) return result
+
 	throw new Error(`${startDir} is not part of a node package.`)
 }
 
+export const findPackageAncestors = (fromDir?: string): string[] => {
+	const dirs: string[] = []
+
+	let dir: string | null = fromDir ?? dirOfCaller()
+
+	while (dir) {
+		dir = findPackageRoot(dir)
+		if (dir) dirs.push(dir)
+	}
+
+	return dirs
+}
+
+export const readPackageJsonAncestors = (fromDir?: string): any[] =>
+	findPackageAncestors(fromDir).map(dir => readPackageJson(dir))
+
 export const fromPackageRoot = (...joinWith: string[]): string =>
-	join(findPackageRoot(dirOfCaller()), ...joinWith)
+	join(assertPackageRoot(dirOfCaller()), ...joinWith)
 
 export const readPackageJson = (startDir?: string): any =>
-	readJson(join(findPackageRoot(startDir), "package.json"))
+	readJson(join(assertPackageRoot(startDir), "package.json"))
 
 export const getSourceControlPaths = (): string[] =>
 	// include tracked and untracked files as long as they are not ignored

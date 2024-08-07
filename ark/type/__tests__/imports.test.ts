@@ -1,7 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
-import { writeDuplicateAliasError, type Morph } from "@ark/schema"
-import { scope, type, type Module } from "arktype"
-import { writePrefixedPrivateReferenceMessage } from "../parser/semantic/validate.js"
+import { writeDuplicateAliasError } from "@ark/schema"
+import { scope, type, type Module, type Type, type BoundModule } from "arktype"
+import { writePrefixedPrivateReferenceMessage } from "arktype/internal/parser/semantic/validate.js"
 
 contextualize(() => {
 	contextualize.each(
@@ -78,14 +78,60 @@ contextualize(() => {
 					Module<{
 						hasCrept: true
 						public: string | true | 3
-						"#three": 3
-						"#no": "no"
-						"#private": string
 					}>
 				>(types)
 			})
 		}
 	)
+
+	it("binds destructured exports", () => {
+		const types = scope({
+			foo: "1",
+			bar: "foo",
+			baz: "bar"
+		}).export("baz")
+
+		attest<
+			BoundModule<
+				{
+					baz: 1
+				},
+				{
+					foo: 1
+					bar: 1
+					baz: 1
+				}
+			>
+		>(types)
+
+		const t = types.baz.or({
+			foo: "foo",
+			bar: "bar",
+			baz: "baz"
+		})
+
+		attest<
+			Type<
+				| 1
+				| {
+						foo: 1
+						bar: 1
+						baz: 1
+				  },
+				{
+					foo: 1
+					bar: 1
+					baz: 1
+				}
+			>
+		>(t)
+		attest(t.expression).snap("{ bar: 1, baz: 1, foo: 1 } | 1")
+		attest(t.$.json).snap({
+			foo: { unit: 1 },
+			bar: { unit: 1 },
+			baz: { unit: 1 }
+		})
+	})
 
 	it("non-generic", () => {
 		const types = scope({

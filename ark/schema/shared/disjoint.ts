@@ -1,10 +1,11 @@
 import { isArray, throwParseError, type Key } from "@ark/util"
-import type { Node } from "../kinds.js"
+import type { nodeOfKind } from "../kinds.js"
 import type { BaseNode } from "../node.js"
 import type { BaseRoot } from "../roots/root.js"
-import type { PropKind } from "../structure/prop.js"
+import type { Prop } from "../structure/prop.js"
 import type { BoundKind } from "./implement.js"
-import { hasArkKind, pathToPropString } from "./utils.js"
+import { isNode, pathToPropString } from "./utils.js"
+import { $ark } from "./registry.js"
 
 export interface DisjointEntry<kind extends DisjointKind = DisjointKind> {
 	kind: kind
@@ -15,11 +16,11 @@ export interface DisjointEntry<kind extends DisjointKind = DisjointKind> {
 }
 
 type OperandsByDisjointKind = {
-	domain: Node<"domain">
-	unit: Node<"unit">
-	proto: Node<"proto">
+	domain: nodeOfKind<"domain">
+	unit: nodeOfKind<"unit">
+	proto: nodeOfKind<"proto">
 	presence: BaseRoot
-	range: Node<BoundKind>
+	range: nodeOfKind<BoundKind>
 	assignability: BaseNode
 	union: readonly BaseRoot[]
 }
@@ -65,9 +66,11 @@ export class Disjoint extends Array<DisjointEntry> {
 		if (this.length === 1) {
 			const { path, l, r } = this[0]
 			const pathString = pathToPropString(path)
-			return `Intersection${
-				pathString && ` at ${pathString}`
-			} of ${describeReasons(l, r)} results in an unsatisfiable type`
+			return writeUnsatisfiableExpressionError(
+				`Intersection${
+					pathString && ` at ${pathString}`
+				} of ${describeReasons(l, r)}`
+			)
 		}
 		return `The following intersections result in unsatisfiable types:\n• ${this.map(
 			({ path, l, r }) => `${path}: ${describeReasons(l, r)}`
@@ -86,12 +89,16 @@ export class Disjoint extends Array<DisjointEntry> {
 		})) as Disjoint
 	}
 
-	withPrefixKey(key: string | symbol, kind: PropKind): Disjoint {
+	withPrefixKey(key: string | symbol, kind: Prop.Kind): Disjoint {
 		return this.map(entry => ({
 			...entry,
 			path: [key, ...entry.path],
 			optional: entry.optional || kind === "optional"
 		})) as Disjoint
+	}
+
+	toNeverIfDisjoint(): BaseRoot {
+		return $ark.intrinsic.never as never
 	}
 }
 
@@ -101,6 +108,14 @@ const describeReasons = (l: unknown, r: unknown): string =>
 	`${describeReason(l)} and ${describeReason(r)}`
 
 const describeReason = (value: unknown): string =>
-	hasArkKind(value, "root") ? value.expression
-	: isArray(value) ? value.map(describeReason).join(" | ")
+	isNode(value) ? value.expression
+	: isArray(value) ? value.map(describeReason).join(" | ") || "never"
 	: String(value)
+
+export const writeUnsatisfiableExpressionError = <expression extends string>(
+	expression: expression
+): writeUnsatisfiableExpressionError<expression> =>
+	`${expression} results in an unsatisfiable type`
+
+export type writeUnsatisfiableExpressionError<expression extends string> =
+	`${expression} results in an unsatisfiable type`

@@ -104,6 +104,8 @@
 		"editorCursor.foreground": "#408fde",
 		"terminalCursor.foreground": "#408fde",
 		"editorCodeLens.foreground": "#00ccff60",
+		"editorInlayHint.background": "#00b7e40c",
+		"editorInlayHint.foreground": "#00ccff60",
 		"errorLens.errorBackground": "#9558f818",
 		"errorLens.errorForeground": "#9558f8a0",
 		"errorLens.warningBackground": "#00b7e40c",

@@ -1,61 +1,57 @@
-import {
-	$ark,
-	append,
-	printable,
-	throwParseError,
-	unset,
-	type Key
-} from "@ark/util"
+import { append, printable, throwParseError, unset, type Key } from "@ark/util"
 import { BaseConstraint } from "../constraint.js"
-import type { Node, RootSchema } from "../kinds.js"
+import type { nodeOfKind, RootSchema } from "../kinds.js"
 import {
 	flatRef,
-	type DeepNodeTransformContext,
+	type BaseNode,
 	type DeepNodeTransformation,
+	type DeepNodeTransformContext,
 	type FlatRef
 } from "../node.js"
 import type { Morph } from "../roots/morph.js"
 import type { BaseRoot } from "../roots/root.js"
 import { compileSerializedValue, type NodeCompiler } from "../shared/compile.js"
-import type { BaseMeta } from "../shared/declare.js"
+import type { BaseNormalizedSchema } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import type { IntersectionContext, RootKind } from "../shared/implement.js"
 import { intersectNodes } from "../shared/intersections.js"
-import { registeredReference } from "../shared/registry.js"
+import { $ark, registeredReference } from "../shared/registry.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
-import type { OptionalDeclaration, OptionalNode } from "./optional.js"
-import type { RequiredDeclaration } from "./required.js"
+import type { Optional } from "./optional.js"
+import type { Required } from "./required.js"
 
-export type PropKind = "required" | "optional"
+export namespace Prop {
+	export type Kind = "required" | "optional"
 
-export type PropNode = Node<PropKind>
+	export type Node = nodeOfKind<Kind>
 
-export interface BasePropSchema extends BaseMeta {
-	readonly key: Key
-	readonly value: RootSchema
-}
+	export interface Schema extends BaseNormalizedSchema {
+		readonly key: Key
+		readonly value: RootSchema
+	}
 
-export interface BasePropInner extends BasePropSchema {
-	readonly value: BaseRoot
-}
+	export interface Inner extends Schema {
+		readonly value: BaseRoot
+	}
 
-export type BasePropDeclaration<kind extends PropKind = PropKind> = {
-	kind: kind
-	prerequisite: object
-	intersectionIsOpen: true
-	childKind: RootKind
+	export interface Declaration<kind extends Kind = Kind> {
+		kind: kind
+		prerequisite: object
+		intersectionIsOpen: true
+		childKind: RootKind
+	}
 }
 
 export const intersectProps = (
-	l: Node<PropKind>,
-	r: Node<PropKind>,
+	l: nodeOfKind<Prop.Kind>,
+	r: nodeOfKind<Prop.Kind>,
 	ctx: IntersectionContext
-): Node<PropKind> | Disjoint | null => {
+): nodeOfKind<Prop.Kind> | Disjoint | null => {
 	if (l.key !== r.key) return null
 
 	const key = l.key
 	let value = intersectNodes(l.value, r.value, ctx)
-	const kind: PropKind = l.required || r.required ? "required" : "optional"
+	const kind: Prop.Kind = l.required || r.required ? "required" : "optional"
 	if (value instanceof Disjoint) {
 		if (kind === "optional") value = $ark.intrinsic.never.internal
 		else {
@@ -95,9 +91,9 @@ export const intersectProps = (
 }
 
 export abstract class BaseProp<
-	kind extends PropKind = PropKind
+	kind extends Prop.Kind = Prop.Kind
 > extends BaseConstraint<
-	kind extends "required" ? RequiredDeclaration : OptionalDeclaration
+	kind extends "required" ? Required.Declaration : Optional.Declaration
 > {
 	required: boolean = this.kind === "required"
 	optional: boolean = this.kind === "optional"
@@ -118,7 +114,7 @@ export abstract class BaseProp<
 	protected override _transform(
 		mapper: DeepNodeTransformation,
 		ctx: DeepNodeTransformContext
-	) {
+	): BaseNode | null {
 		ctx.path.push(this.key)
 		const result = super._transform(mapper, ctx)
 		ctx.path.pop()
@@ -127,7 +123,7 @@ export abstract class BaseProp<
 
 	private defaultValueMorphs: Morph[] = [
 		data => {
-			data[this.key] = (this as OptionalNode).default
+			data[this.key] = (this as Optional.Node).default
 			return data
 		}
 	]
@@ -136,7 +132,7 @@ export abstract class BaseProp<
 		this.defaultValueMorphs
 	)
 
-	hasDefault(): this is OptionalNode & { default: unknown } {
+	hasDefault(): this is Optional.Node & { default: unknown } {
 		return "default" in this
 	}
 

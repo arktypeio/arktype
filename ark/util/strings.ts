@@ -21,24 +21,24 @@ export type charsBeforeLast<s extends string> =
 		:	`${head}${charsBeforeLast<tail>}`
 	:	""
 
-export const anchoredRegex = (regex: RegExp | string) =>
+export const anchoredRegex = (regex: RegExp | string): RegExp =>
 	new RegExp(
 		anchoredSource(regex),
 		typeof regex === "string" ? "" : regex.flags
 	)
 
-export const deanchoredRegex = (regex: RegExp | string) =>
+export const deanchoredRegex = (regex: RegExp | string): RegExp =>
 	new RegExp(
 		deanchoredSource(regex),
 		typeof regex === "string" ? "" : regex.flags
 	)
 
-export const anchoredSource = (regex: RegExp | string) => {
+export const anchoredSource = (regex: RegExp | string): string => {
 	const source = typeof regex === "string" ? regex : regex.source
 	return `^(?:${source})$`
 }
 
-export const deanchoredSource = (regex: RegExp | string) => {
+export const deanchoredSource = (regex: RegExp | string): string => {
 	const source = typeof regex === "string" ? regex : regex.source
 
 	if (source.startsWith("^(?:") && source.endsWith(")$"))

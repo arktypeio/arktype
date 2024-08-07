@@ -153,7 +153,9 @@ const snapshotArgsToQueuedUpdate = ({
 	const snapCall = findCallExpressionAncestor(position, snapFunctionName)
 	const newArgText =
 		typeof serializedValue === "string" && serializedValue.includes("\n") ?
-			"`" + serializedValue.replaceAll("`", "\\`") + "`"
+			"`" +
+			serializedValue.replaceAll("`", "\\`").replaceAll("${", "\\${") +
+			"`"
 		:	JSON.stringify(serializedValue)
 	return {
 		position,
@@ -187,7 +189,7 @@ export const writeUpdates = (queuedUpdates: QueuedUpdate[]): void => {
 }
 
 const runFormatterIfAvailable = (queuedUpdates: QueuedUpdate[]) => {
-	const { formatter, shouldFormat } = getConfig()
+	const { formatCmd: formatter, shouldFormat } = getConfig()
 	if (!shouldFormat) return
 
 	try {

@@ -1,2 +1,5 @@
 packages:
   - "ark/*"
+
+catalog:
+  typescript: 5.5.4

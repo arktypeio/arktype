@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { type } from "arktype"
+import { scope, type, type Type } from "arktype"
 import { AssertionError } from "node:assert"
 
 contextualize(() => {
@@ -25,9 +25,9 @@ contextualize(() => {
 		const t = type("number")
 		try {
 			const result = t("invalid")
-			attest(result instanceof type.errors && result.throw())
+			result instanceof type.errors && result.throw()
 		} catch (e) {
-			attest(e instanceof AggregateError).equals(true)
+			attest(e).instanceOf(AggregateError)
 			attest((e as AggregateError).errors instanceof type.errors)
 			return
 		}
@@ -42,37 +42,31 @@ contextualize(() => {
 		)
 	})
 
-	describe("as", () => {
-		it("valid cast", () => {
-			const from = type("/^foo.*$/")
-			const t = from.as<`foo${string}`>()
+	it("is treated as contravariant", () => {
+		const ok: Type<number> = type("1")
 
-			attest<`foo${string}`>(t.t)
-			attest(t === from).equals(true)
-		})
+		// currently treated as bivariant here, should be error
+		const shouldBeError: Type<string> = type("1")
 
-		it("cast to any", () => {
-			const t = type("unknown").as<any>()
-			attest<any>(t.t)
-		})
+		// errors correctly if t is declared as its own type param
+		const accept = <t extends string>(t: Type<t>) => t
 
-		it("cast to never", () => {
-			const t = type("unknown").as<never>()
-			attest<never>(t.t)
-		})
+		// @ts-expect-error
+		attest(() => accept(type("1"))).type.errors(
+			"Argument of type 'Type<1, {}>' is not assignable to parameter of type 'Type<string, {}>'"
+		)
+	})
 
-		it("missing type param", () => {
-			// @ts-expect-error
-			attest(() => type("string").as()).type.errors.snap(
-				"Expected 1 arguments, but got 0."
-			)
-		})
+	it("Type.Any allows arbitrary scope", () => {
+		const foo = scope({
+			foo: "string"
+		}).resolve("foo")
 
-		it("missing type param with arg", () => {
-			// @ts-expect-error
-			attest(() => type("string").as("foo")).type.errors(
-				"as requires an explicit type parameter like myType.as<t>() "
-			)
-		})
+		const t: Type.Any<string> = foo
+
+		// @ts-expect-error (fails with default ambient type)
+		attest((): Type<string> => foo).type.errors(
+			"Type<string, { foo: string; }>' is not assignable to type 'Type<string, {}>'"
+		)
 	})
 })

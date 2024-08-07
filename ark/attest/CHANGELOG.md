@@ -1,5 +1,31 @@
 # @ark/attest
 
+## 0.11.0
+
+- Fix a bug causing certain serialized types with backticks and template literals to be incorrectly formatted on inline snapshot
+
+- Add a `typeToStringFormat` option for configuring how prettier stringifies types. Also added more documentation for other pre-existing options.
+
+- Allow regex/partial match for `toString` assertions:
+
+```ts
+// ok
+attest({ ark: "type" }).type.toString(/^{.*}$/)
+
+// AssertionError: Actual string 'string[]' did not match regex '^{.*}$'
+attest(["ark", "type"]).type.toString(/^{.*}$/)
+```
+
+- Allow assertions on arbitrary `arktype` Type instance using `satisfies`:
+
+```ts
+// ok
+attest({ ark: "type" }).type.toString.satisfies(/^{.*}$/)
+
+// AssertionError: ark must be a number (was string)
+attest({ ark: "type" }).satisfies({ ark: "number" })
+```
+
 ## 0.10.0
 
 Format serialized types using `prettier`.

@@ -1,7 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
-import { internalSchema, writeUnresolvableMessage } from "@ark/schema"
+import { rootNode, writeUnresolvableMessage } from "@ark/schema"
 import { type } from "arktype"
-import { writeMissingRightOperandMessage } from "../parser/string/shift/operand/unenclosed.js"
+import { writeMissingRightOperandMessage } from "arktype/internal/parser/string/shift/operand/unenclosed.js"
 
 contextualize(() => {
 	describe("tuple expressions", () => {
@@ -55,17 +55,18 @@ contextualize(() => {
 					"instanceof",
 					"integer",
 					"ip",
+					"key",
 					"keyof",
 					"lengthBoundable",
 					"liftArray",
 					"lowercase",
+					"merge",
 					"never",
 					"nonNegativeIntegerString",
 					"null",
 					"number",
 					"object",
 					"parse",
-					"propertyKey",
 					"semver",
 					"string",
 					"symbol",
@@ -127,17 +128,18 @@ contextualize(() => {
 					"format",
 					"integer",
 					"ip",
+					"key",
 					"keyof",
 					"lengthBoundable",
 					"liftArray",
 					"lowercase",
+					"merge",
 					"never",
 					"nonNegativeIntegerString",
 					"null",
 					"number",
 					"object",
 					"parse",
-					"propertyKey",
 					"semver",
 					"string",
 					"symbol",
@@ -196,14 +198,14 @@ contextualize(() => {
 		it("instanceof single", () => {
 			const t = type("instanceof", RegExp)
 			attest<RegExp>(t.infer)
-			const expected = internalSchema(RegExp)
+			const expected = rootNode(RegExp)
 			attest(t.json).equals(expected.json)
 		})
 
 		it("instanceof branches", () => {
 			const t = type("instanceof", Array, Date)
 			attest<unknown[] | Date>(t.infer)
-			const expected = internalSchema([Array, Date])
+			const expected = rootNode([Array, Date])
 			attest(t.json).equals(expected.json)
 		})
 

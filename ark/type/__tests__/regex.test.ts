@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { keywordNodes, writeInvalidOperandMessage } from "@ark/schema"
+import { intrinsic, writeInvalidOperandMessage } from "@ark/schema"
 import { type } from "arktype"
 
 contextualize(() => {
@@ -76,13 +76,15 @@ contextualize(() => {
 
 		it("invalid operand", () => {
 			// @ts-expect-error
-			attest(() => type("number").matching("foo")).throwsAndHasTypeError(
-				writeInvalidOperandMessage(
-					"pattern",
-					keywordNodes.string,
-					keywordNodes.number
+			attest(() => type("number").matching("foo"))
+				.throws(
+					writeInvalidOperandMessage(
+						"pattern",
+						intrinsic.string,
+						intrinsic.number
+					)
 				)
-			)
+				.type.errors("Property 'matching' does not exist")
 		})
 	})
 })

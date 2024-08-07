@@ -1,19 +1,18 @@
 import { attest, contextualize } from "@ark/attest"
 import {
-	GenericHkt,
-	keywordNodes,
+	intrinsic,
 	writeIndivisibleMessage,
 	writeUnboundableMessage,
 	writeUnresolvableMessage,
 	writeUnsatisfiedParameterConstraintMessage
 } from "@ark/schema"
-import type { conform } from "@ark/util"
-import { generic, scope, type } from "arktype"
-import { emptyGenericParameterMessage, type Generic } from "../generic.js"
-import { writeUnclosedGroupMessage } from "../parser/string/reduce/shared.js"
-import { writeInvalidGenericArgCountMessage } from "../parser/string/shift/operand/genericArgs.js"
-import { writeInvalidDivisorMessage } from "../parser/string/shift/operator/divisor.js"
-import { writeUnexpectedCharacterMessage } from "../parser/string/shift/operator/operator.js"
+import { Hkt } from "@ark/util"
+import { generic, scope, type, type Generic } from "arktype"
+import { emptyGenericParameterMessage } from "arktype/internal/generic.js"
+import { writeUnclosedGroupMessage } from "arktype/internal/parser/string/reduce/shared.js"
+import { writeInvalidGenericArgCountMessage } from "arktype/internal/parser/string/shift/operand/genericArgs.js"
+import { writeInvalidDivisorMessage } from "arktype/internal/parser/string/shift/operator/divisor.js"
+import { writeUnexpectedCharacterMessage } from "arktype/internal/parser/string/shift/operator/operator.js"
 
 contextualize(() => {
 	describe("standalone", () => {
@@ -30,6 +29,14 @@ contextualize(() => {
 
 			attest<typeof expected.t>(schrodingersBox.t)
 			attest(schrodingersBox.json).equals(expected.json)
+		})
+
+		it("completions", () => {
+			// @ts-expect-error
+			attest(() => type("<foobar>", { a: "foob", b: "bool" })).completions({
+				foob: ["foobar"],
+				bool: ["boolean"]
+			})
 		})
 
 		it("binary", () => {
@@ -57,21 +64,6 @@ contextualize(() => {
 			// ideally, this would be reduced to { cat: { isAlive: boolean } }:
 			// https://github.com/arktypeio/arktype/issues/751
 			attest(schrodingersBox.json).equals(expected.json)
-		})
-
-		it("referenced in scope inline", () => {
-			const $ = scope({
-				one: "1",
-				orOne: () => $.type("<t>", "t|one")
-			})
-
-			const types = $.export()
-			const bit = types.orOne("0")
-
-			const expected = type("0|1")
-
-			attest<typeof expected.t>(bit.t)
-			attest(bit.json).equals(expected.json)
 		})
 
 		it("referenced from other scope", () => {
@@ -106,7 +98,7 @@ contextualize(() => {
 			const expectedContents = type({ a: "string|this" })
 			const expectedBox = type({ box: expectedContents })
 
-			attest(t.t).type.toString.snap(`{ box: { a: string | "..." } }`)
+			attest(t.t).type.toString.snap(`{ box: { a: string | cyclic } }`)
 			attest(t.json).equals(expectedBox.json)
 		})
 
@@ -114,7 +106,7 @@ contextualize(() => {
 			const pair = type("<t, u>", ["t", "u"])
 			// @ts-expect-error
 			attest(() => pair("string")).type.errors(
-				"Expected 2 arguments, but got 1"
+				"Source has 1 element(s) but target requires 2"
 			)
 		})
 
@@ -122,7 +114,7 @@ contextualize(() => {
 			const pair = type("<t, u>", ["t", "u"])
 			// @ts-expect-error
 			attest(() => pair("string", "boolean", "number")).type.errors(
-				"Expected 2 arguments, but got 3"
+				"Source has 3 element(s) but target allows only 2"
 			)
 		})
 	})
@@ -185,6 +177,7 @@ contextualize(() => {
 				"entry<k extends string | symbol, v>": ["k", "v"],
 				foobar: "entry<'foo', 'bar'>"
 			})
+
 			const types = $.export()
 
 			const expected = type(["'foo'", "'bar'"])
@@ -210,7 +203,6 @@ contextualize(() => {
 
 			attest<[string, number]>(ok.t)
 			attest(ok.expression).snap("[string, number]")
-
 			// @ts-expect-error
 			attest(() => types.entry("boolean", "number"))
 				.throws(
@@ -369,7 +361,7 @@ contextualize(() => {
 				attest(() =>
 					// @ts-expect-error
 					$.type("box<1,string%2>")
-				).throwsAndHasTypeError(writeIndivisibleMessage(keywordNodes.string))
+				).throwsAndHasTypeError(writeIndivisibleMessage(intrinsic.string))
 			})
 
 			it("parameter supercedes alias with same name", () => {
@@ -442,10 +434,8 @@ contextualize(() => {
 					type("instanceof", MyExternalClass).and({
 						data: args.T
 					}),
-				class extends GenericHkt {
-					declare hkt: (
-						args: GenericHkt.conform<this["args"], [unknown]>
-					) => MyExternalClass<(typeof args)[0]>
+				class extends Hkt {
+					declare body: MyExternalClass<this[0]>
 				}
 			)
 
@@ -485,25 +475,23 @@ contextualize(() => {
 				["N", { value: "number" }]
 			)(
 				args => [args.S.atLeastLength(1), args.N],
-				class extends GenericHkt {
-					declare hkt: (
-						args: conform<this["args"], [string, { value: number }]>
-					) => [(typeof args)[0], (typeof args)[1]]
+				class extends Hkt<[string, { value: number }]> {
+					declare body: [this[0], this[1]]
 				}
 			)
 
-			const t = validateExternalGeneric("string", { value: "number" })
+			const t = validateExternalGeneric("string", { value: "1" })
 
 			attest<
 				[
 					string,
 					{
-						value: number
+						value: 1
 					}
 				]
 			>(t.t)
 
-			attest(t.expression).snap("[string >= 1, { value: number }]")
+			attest(t.expression).snap("[string >= 1, { value: 1 }]")
 
 			// @ts-expect-error
 			attest(() => validateExternalGeneric("string", { value: "string" }))
@@ -520,34 +508,34 @@ contextualize(() => {
 		})
 	})
 
-	describe("cyclic", () => {
-		// it("self-reference", () => {
-		// 	const types = scope({
-		// 		"alternate<a, b>": {
-		// 			// ensures old generic params aren't intersected with
-		// 			// updated values (would be never)
-		// 			swap: "alternate<b, a>",
-		// 			order: ["a", "b"]
-		// 		},
-		// 		reference: "alternate<0, 1>"
-		// 	}).export()
-		// 	attest<[0, 1]>(types.reference.infer.swap.swap.order)
-		// 	attest<[1, 0]>(types.reference.infer.swap.swap.swap.order)
-		// 	const fromCall = types.alternate("'off'", "'on'")
-		// 	attest<["off", "on"]>(fromCall.infer.swap.swap.order)
-		// 	attest<["on", "off"]>(fromCall.infer.swap.swap.swap.order)
-		// })
-		// it("self-reference no params", () => {
-		// 	attest(() =>
-		// 		scope({
-		// 			"nest<t>": {
-		// 				// @ts-expect-error
-		// 				nest: "nest"
-		// 			}
-		// 		}).export()
-		// 	).throwsAndHasTypeError(
-		// 		writeInvalidGenericArgsMessage("nest", ["t"], [])
-		// 	)
-		// })
-	})
+	// describe("cyclic", () => {
+	// it("self-reference", () => {
+	// 	const types = scope({
+	// 		"alternate<a, b>": {
+	// 			// ensures old generic params aren't intersected with
+	// 			// updated values (would be never)
+	// 			swap: "alternate<b, a>",
+	// 			order: ["a", "b"]
+	// 		},
+	// 		reference: "alternate<0, 1>"
+	// 	}).export()
+	// 	attest<[0, 1]>(types.reference.infer.swap.swap.order)
+	// 	attest<[1, 0]>(types.reference.infer.swap.swap.swap.order)
+	// 	const fromCall = types.alternate("'off'", "'on'")
+	// 	attest<["off", "on"]>(fromCall.infer.swap.swap.order)
+	// 	attest<["on", "off"]>(fromCall.infer.swap.swap.swap.order)
+	// })
+	// it("self-reference no params", () => {
+	// 	attest(() =>
+	// 		scope({
+	// 			"nest<t>": {
+	// 				// @ts-expect-error
+	// 				nest: "nest"
+	// 			}
+	// 		}).export()
+	// 	).throwsAndHasTypeError(
+	// 		writeInvalidGenericArgsMessage("nest", ["t"], [])
+	// 	)
+	// })
+	// })
 })

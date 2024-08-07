@@ -1,33 +1,34 @@
 import {
-	jsObjects,
+	$ark,
 	makeRootAndArrayPropertiesMutable,
-	tsKeywords,
-	type BaseMeta,
 	type BaseRoot,
+	type MetaSchema,
 	type Morph,
-	type MutableInner,
-	type Node,
-	type Out,
+	type mutableInnerOfKind,
+	type nodeOfKind,
 	type Predicate,
-	type UnionChildKind,
-	type distillConstrainableIn,
-	type distillOut,
-	type inferIntersection,
-	type inferMorphOut,
-	type inferPredicate
+	type Union
 } from "@ark/schema"
 import {
 	append,
 	objectKindOrDomainOf,
 	throwParseError,
+	type array,
 	type BuiltinObjectKind,
+	type conform,
 	type Constructor,
 	type Domain,
 	type ErrorMessage,
-	type array,
-	type conform,
 	type show
 } from "@ark/util"
+import type {
+	distillConstrainableIn,
+	distillOut,
+	inferMorphOut,
+	inferPredicate,
+	Out
+} from "../ast.js"
+import type { inferIntersection } from "../intersect.js"
 import type { ParseContext } from "../scope.js"
 import type { inferDefinition, validateDefinition } from "./definition.js"
 import type { InfixOperator, PostfixExpression } from "./semantic/infer.js"
@@ -38,7 +39,7 @@ export const parseTuple = (def: array, ctx: ParseContext): BaseRoot =>
 	maybeParseTupleExpression(def, ctx) ?? parseTupleLiteral(def, ctx)
 
 export const parseTupleLiteral = (def: array, ctx: ParseContext): BaseRoot => {
-	let sequences: MutableInner<"sequence">[] = [{}]
+	let sequences: mutableInnerOfKind<"sequence">[] = [{}]
 	let i = 0
 	while (i < def.length) {
 		let spread = false
@@ -58,7 +59,7 @@ export const parseTupleLiteral = (def: array, ctx: ParseContext): BaseRoot => {
 			i++
 		}
 		if (spread) {
-			if (!element.extends(jsObjects.Array))
+			if (!element.extends($ark.intrinsic.Array))
 				return throwParseError(writeNonArraySpreadMessage(element.expression))
 
 			// a spread must be distributed over branches e.g.:
@@ -66,7 +67,7 @@ export const parseTupleLiteral = (def: array, ctx: ParseContext): BaseRoot => {
 			// nodes: [string, ...number[]] | [string, true, false]
 			sequences = sequences.flatMap(base =>
 				// since appendElement mutates base, we have to shallow-ish clone it for each branch
-				element.branches.map(branch =>
+				element.distribute(branch =>
 					appendSpreadBranch(makeRootAndArrayPropertiesMutable(base), branch)
 				)
 			)
@@ -76,7 +77,7 @@ export const parseTupleLiteral = (def: array, ctx: ParseContext): BaseRoot => {
 			)
 		}
 	}
-	return ctx.$.internal.schema(
+	return ctx.$.internal.rootNode(
 		sequences.map(
 			sequence =>
 				({
@@ -90,10 +91,10 @@ export const parseTupleLiteral = (def: array, ctx: ParseContext): BaseRoot => {
 type ElementKind = "optional" | "required" | "variadic"
 
 const appendElement = (
-	base: MutableInner<"sequence">,
+	base: mutableInnerOfKind<"sequence">,
 	kind: ElementKind,
 	element: BaseRoot
-): MutableInner<"sequence"> => {
+): mutableInnerOfKind<"sequence"> => {
 	switch (kind) {
 		case "required":
 			if (base.optionals)
@@ -133,13 +134,13 @@ const appendElement = (
 }
 
 const appendSpreadBranch = (
-	base: MutableInner<"sequence">,
-	branch: Node<UnionChildKind>
-): MutableInner<"sequence"> => {
+	base: mutableInnerOfKind<"sequence">,
+	branch: nodeOfKind<Union.ChildKind>
+): mutableInnerOfKind<"sequence"> => {
 	const spread = branch.firstReferenceOfKind("sequence")
 	if (!spread) {
 		// the only array with no sequence reference is unknown[]
-		return appendElement(base, "variadic", tsKeywords.unknown.internal)
+		return appendElement(base, "variadic", $ark.intrinsic.unknown)
 	}
 	spread.prefix.forEach(node => appendElement(base, "required", node))
 	spread.optionals.forEach(node => appendElement(base, "optional", node))
@@ -378,7 +379,7 @@ export type validateInfixExpression<def extends InfixExpression, $, args> =
 				Predicate<distillOut<inferDefinition<def[0], $, args>>>
 			: def[1] extends "=>" ?
 				Morph<distillOut<inferDefinition<def[0], $, args>>, unknown>
-			: def[1] extends "@" ? BaseMeta | string
+			: def[1] extends "@" ? MetaSchema
 			: validateDefinition<def[2], $, args>
 		]
 

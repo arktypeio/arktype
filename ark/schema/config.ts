@@ -1,12 +1,5 @@
-import {
-	$ark,
-	type array,
-	type mutable,
-	type requireKeys,
-	type show
-} from "@ark/util"
-import type { Ark } from "./keywords/keywords.js"
-import type { InternalBaseScope, IntrinsicKeywords } from "./scope.js"
+import type { ArkRegistry, mutable, requireKeys, show } from "@ark/util"
+import type { intrinsic } from "./intrinsic.js"
 import type {
 	ActualWriter,
 	ArkErrorCode,
@@ -19,25 +12,12 @@ import {
 	type DescriptionWriter,
 	type NodeKind
 } from "./shared/implement.js"
+import { $ark } from "./shared/registry.js"
 
-declare global {
-	export interface ArkEnv {
-		$(): Ark
-		meta(): {}
-		preserve(): never
-		registry(): {
-			ambient: InternalBaseScope
-			intrinsic: IntrinsicKeywords
-			config: ArkConfig
-			defaultConfig: ResolvedArkConfig
-		}
-	}
-
-	export namespace ArkEnv {
-		export type $ = ReturnType<ArkEnv["$"]>
-		export type meta = ReturnType<ArkEnv["meta"]>
-		export type preserve = ReturnType<ArkEnv["preserve"]>
-	}
+export interface ArkSchemaRegistry extends ArkRegistry {
+	intrinsic: typeof intrinsic
+	config: ArkConfig
+	defaultConfig: ResolvedArkConfig
 }
 
 type nodeConfigForKind<kind extends NodeKind> = Readonly<
@@ -100,22 +80,16 @@ export const mergeConfigs = (
 
 export interface ArkConfig extends Partial<Readonly<NodeConfigsByKind>> {
 	jitless?: boolean
-	/** @internal */
-	intrinsic?: boolean
-	/** @internal */
-	prereducedAliases?: boolean
 }
 
-type resolveConfig<config extends ArkConfig> = {
-	[k in keyof config]-?: k extends NodeKind ? Required<config[k]> : config[k]
-}
+export type resolveConfig<config extends ArkConfig> = show<
+	{
+		[k in keyof ArkConfig]-?: k extends NodeKind ? Required<config[k]>
+		:	config[k]
+	} & Omit<config, keyof ArkConfig>
+>
 
 export type ResolvedArkConfig = resolveConfig<ArkConfig>
-
-const nonInheritedKeys = [
-	"intrinsic",
-	"prereducedAliases"
-] as const satisfies array<keyof ArkConfig>
 
 export const extendConfig = (
 	base: ArkConfig,
@@ -123,13 +97,10 @@ export const extendConfig = (
 ): ArkConfig => {
 	if (!extension) return base
 	const result = mergeConfigs(base, extension)
-	nonInheritedKeys.forEach(k => {
-		if (!(k in extension)) delete result[k]
-	})
 	return result
 }
 
-export const resolveConfig = (
-	config: ArkConfig | undefined
-): ResolvedArkConfig =>
+export const resolveConfig = <config extends ArkConfig>(
+	config: config | undefined
+): resolveConfig<config> =>
 	extendConfig(extendConfig($ark.defaultConfig, $ark.config), config) as never

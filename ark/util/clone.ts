@@ -1,8 +1,18 @@
-export const shallowClone = <input extends object>(input: input): input =>
-	Object.create(
+/** Shallowly copy the properties and prototype of the object.
+ *
+ * NOTE: this still cannot guarantee arrow functions attached to the object
+ * are rebound in case they reference `this`.
+ *
+ * See: https://x.com/colinhacks/status/1818422039210049985
+ */
+export const shallowClone = <input extends object>(input: input): input => {
+	const cloned = Object.create(
 		Object.getPrototypeOf(input),
 		Object.getOwnPropertyDescriptors(input)
 	)
+
+	return cloned
+}
 
 export const deepClone = <input>(input: input): input =>
 	_deepClone(input, new Map())

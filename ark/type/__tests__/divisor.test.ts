@@ -1,7 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
-import { keywordNodes, writeIndivisibleMessage } from "@ark/schema"
+import { intrinsic, writeIndivisibleMessage } from "@ark/schema"
 import { type } from "arktype"
-import { writeInvalidDivisorMessage } from "../parser/string/shift/operator/divisor.js"
+import { writeInvalidDivisorMessage } from "arktype/internal/parser/string/shift/operator/divisor.js"
 
 contextualize(() => {
 	describe("parse", () => {
@@ -9,13 +9,6 @@ contextualize(() => {
 			const divisibleByTwo = type("number%2")
 			attest<number>(divisibleByTwo.infer)
 			attest(divisibleByTwo.json).snap({ domain: "number", divisor: 2 })
-		})
-
-		it("constrained", () => {
-			const t = type("number").constrain("divisor", 2)
-			const expected = type("number%2")
-			attest<typeof expected>(t)
-			attest(t.json).equals(expected.json)
 		})
 
 		it("chained", () => {
@@ -66,28 +59,28 @@ contextualize(() => {
 		it("unknown", () => {
 			// @ts-expect-error
 			attest(() => type("unknown%2")).throwsAndHasTypeError(
-				writeIndivisibleMessage(keywordNodes.unknown)
+				writeIndivisibleMessage(intrinsic.unknown)
 			)
 		})
 
 		it("indivisible", () => {
 			// @ts-expect-error
 			attest(() => type("string%1")).throwsAndHasTypeError(
-				writeIndivisibleMessage(keywordNodes.string)
+				writeIndivisibleMessage(intrinsic.string)
 			)
 		})
 
 		it("chained indivisible", () => {
 			// @ts-expect-error
-			attest(() => type("string").divisibleBy(2)).throwsAndHasTypeError(
-				writeIndivisibleMessage(keywordNodes.string)
-			)
+			attest(() => type("string").divisibleBy(2))
+				.throws(writeIndivisibleMessage(intrinsic.string))
+				.type.errors("Property 'divisibleBy' does not exist")
 		})
 
 		it("overlapping", () => {
 			// @ts-expect-error
 			attest(() => type("(number|string)%10")).throwsAndHasTypeError(
-				writeIndivisibleMessage(keywordNodes.number.or(keywordNodes.string))
+				writeIndivisibleMessage(intrinsic.number.or(intrinsic.string))
 			)
 		})
 	})

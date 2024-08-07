@@ -1,5 +1,4 @@
 import {
-	$ark,
 	Callable,
 	appendUnique,
 	cached,
@@ -18,18 +17,25 @@ import {
 	type mutable
 } from "@ark/util"
 import type { BaseConstraint } from "./constraint.js"
-import type { Inner, MutableInner, Node, reducibleKindOf } from "./kinds.js"
+import type {
+	Inner,
+	NormalizedSchema,
+	mutableInnerOfKind,
+	nodeOfKind,
+	reducibleKindOf
+} from "./kinds.js"
 import type { NodeParseOptions } from "./parse.js"
-import type { MorphNode } from "./roots/morph.js"
-import type { BaseRoot, Root } from "./roots/root.js"
-import type { UnitNode } from "./roots/unit.js"
-import type { InternalBaseScope } from "./scope.js"
+import type { Morph } from "./roots/morph.js"
+import type { BaseRoot } from "./roots/root.js"
+import type { Unit } from "./roots/unit.js"
+import type { BaseScope } from "./scope.js"
 import type { NodeCompiler } from "./shared/compile.js"
 import type {
-	BaseMeta,
 	BaseNodeDeclaration,
+	MetaSchema,
 	attachmentsOf
 } from "./shared/declare.js"
+import type { ArkErrors } from "./shared/errors.js"
 import {
 	basisKinds,
 	constraintKinds,
@@ -44,14 +50,13 @@ import {
 	type StructuralKind,
 	type UnknownAttachments
 } from "./shared/implement.js"
+import { $ark } from "./shared/registry.js"
 import {
 	TraversalContext,
 	type TraverseAllows,
 	type TraverseApply
 } from "./shared/traversal.js"
 import { isNode, pathToPropString, type arkKind } from "./shared/utils.js"
-
-export type UnknownNode = BaseNode | Root
 
 export abstract class BaseNode<
 	/** uses -ignore rather than -expect-error because this is not an error in .d.ts
@@ -60,7 +65,7 @@ export abstract class BaseNode<
 > extends Callable<(data: d["prerequisite"]) => unknown, attachmentsOf<d>> {
 	constructor(
 		public attachments: UnknownAttachments,
-		public $: InternalBaseScope
+		public $: BaseScope
 	) {
 		super(
 			// pipedFromCtx allows us internally to reuse TraversalContext
@@ -86,7 +91,7 @@ export abstract class BaseNode<
 		)
 	}
 
-	bindScope($: InternalBaseScope): this {
+	bindScope($: BaseScope): this {
 		if (this.$ === $) return this as never
 		return new (this.constructor as any)(this.attachments, $)
 	}
@@ -117,7 +122,7 @@ export abstract class BaseNode<
 			this.$?.resolvedConfig[this.kind].description ??
 			$ark.config[this.kind]?.description ??
 			$ark.defaultConfig[this.kind].description
-		return this.inner.description ?? writer(this as never)
+		return this.meta?.description ?? writer(this as never)
 	}
 
 	// we don't cache this currently since it can be updated once a scope finishes
@@ -139,7 +144,7 @@ export abstract class BaseNode<
 	}
 
 	@cached
-	get shallowMorphs(): MorphNode[] {
+	get shallowMorphs(): Morph.Node[] {
 		return this.shallowReferences
 			.filter(n => n.hasKind("morph"))
 			.sort((l, r) => (l.expression < r.expression ? -1 : 1))
@@ -176,7 +181,7 @@ export abstract class BaseNode<
 		return (this.traverseAllows as any)(data)
 	}
 
-	traverse(data: d["prerequisite"]): unknown {
+	traverse(data: d["prerequisite"]): ArkErrors | {} | null | undefined {
 		return this(data)
 	}
 
@@ -196,9 +201,8 @@ export abstract class BaseNode<
 		if (!this.includesMorph) return this as never
 
 		const ioInner: Record<any, unknown> = {}
-		for (const [k, v] of this.entries) {
+		for (const [k, v] of this.innerEntries) {
 			const keySchemaImplementation = this.impl.keys[k]
-			if (keySchemaImplementation.meta) continue
 
 			if (keySchemaImplementation.child) {
 				const childValue = v as listable<BaseNode>
@@ -219,22 +223,27 @@ export abstract class BaseNode<
 		return this.expression
 	}
 
-	equals(other: UnknownNode): boolean
 	equals(other: BaseNode): boolean {
-		return this.typeHash === other.typeHash
+		return this.innerHash === other.innerHash
 	}
 
-	assertHasKind<kind extends NodeKind>(kind: kind): Node<kind> {
+	assertHasKind<kind extends NodeKind>(kind: kind): nodeOfKind<kind> {
 		if (!this.kind === (kind as never))
 			throwError(`${this.kind} node was not of asserted kind ${kind}`)
 		return this as never
 	}
 
-	hasKind<kind extends NodeKind>(kind: kind): this is Node<kind> {
+	hasKind<kind extends NodeKind>(kind: kind): this is nodeOfKind<kind> {
 		return this.kind === (kind as never)
 	}
 
-	isBasis(): this is Node<BasisKind> {
+	hasKindIn<kinds extends NodeKind[]>(
+		...kinds: kinds
+	): this is nodeOfKind<kinds[number]> {
+		return kinds.includes(this.kind)
+	}
+
+	isBasis(): this is nodeOfKind<BasisKind> {
 		return includes(basisKinds, this.kind)
 	}
 
@@ -242,11 +251,11 @@ export abstract class BaseNode<
 		return includes(constraintKinds, this.kind)
 	}
 
-	isStructural(): this is Node<StructuralKind> {
+	isStructural(): this is nodeOfKind<StructuralKind> {
 		return includes(structuralKinds, this.kind)
 	}
 
-	isRefinement(): this is Node<RefinementKind> {
+	isRefinement(): this is nodeOfKind<RefinementKind> {
 		return includes(refinementKinds, this.kind)
 	}
 
@@ -254,11 +263,11 @@ export abstract class BaseNode<
 		return includes(rootKinds, this.kind)
 	}
 
-	hasUnit<value>(value: unknown): this is UnitNode & { unit: value } {
+	hasUnit<value>(value: unknown): this is Unit.Node & { unit: value } {
 		return this.hasKind("unit") && this.allows(value)
 	}
 
-	hasOpenIntersection(): this is Node<OpenNodeKind> {
+	hasOpenIntersection(): this is nodeOfKind<OpenNodeKind> {
 		return this.impl.intersectionIsOpen as never
 	}
 
@@ -283,11 +292,13 @@ export abstract class BaseNode<
 
 	firstReferenceOfKind<kind extends NodeKind>(
 		kind: kind
-	): Node<kind> | undefined {
+	): nodeOfKind<kind> | undefined {
 		return this.firstReference(node => node.hasKind(kind))
 	}
 
-	firstReferenceOfKindOrThrow<kind extends NodeKind>(kind: kind): Node<kind> {
+	firstReferenceOfKindOrThrow<kind extends NodeKind>(
+		kind: kind
+	): nodeOfKind<kind> {
 		return (
 			this.firstReference(node => node.kind === kind) ??
 			throwError(`${this.id} had no ${kind} references`)
@@ -297,7 +308,9 @@ export abstract class BaseNode<
 	transform<mapper extends DeepNodeTransformation>(
 		mapper: mapper,
 		opts?: DeepNodeTransformOptions
-	): Node<reducibleKindOf<this["kind"]>> | Extract<ReturnType<mapper>, null> {
+	):
+		| nodeOfKind<reducibleKindOf<this["kind"]>>
+		| Extract<ReturnType<mapper>, null> {
 		return this._transform(mapper, {
 			...opts,
 			seen: {},
@@ -371,7 +384,7 @@ export abstract class BaseNode<
 		)
 			return null
 		if (this.kind === "morph") {
-			;(transformedInner as MutableInner<"morph">).in ??= $ark.intrinsic
+			;(transformedInner as mutableInnerOfKind<"morph">).in ??= $ark.intrinsic
 				.unknown as never
 		}
 
@@ -382,35 +395,31 @@ export abstract class BaseNode<
 		) as never)
 	}
 
-	configureShallowDescendants(configOrDescription: BaseMeta | string): this {
-		const config: BaseMeta =
-			typeof configOrDescription === "string" ?
-				{ description: configOrDescription }
-			:	(configOrDescription as never)
-		return this.transform((kind, inner) => ({ ...inner, ...config }), {
+	configureShallowDescendants(meta: MetaSchema): this {
+		return this.transform((kind, inner) => ({ ...inner, meta }), {
 			shouldTransform: node => node.kind !== "structure"
 		}) as never
 	}
 }
 
 /** a literal key (named property) or a node (index signatures) representing part of a type structure */
-export type TypeKey = Key | BaseRoot
+export type KeyOrKeyNode = Key | BaseRoot
 
-export type TypeIndexer = TypeKey | number
+export type GettableKeyOrNode = KeyOrKeyNode | number
 
 export type FlatRef<root extends BaseRoot = BaseRoot> = {
-	path: array<TypeKey>
+	path: array<KeyOrKeyNode>
 	node: root
 	propString: string
 }
 
-export const typePathToPropString = (path: array<TypeKey>) =>
+export const typePathToPropString = (path: array<KeyOrKeyNode>): string =>
 	pathToPropString(path, {
 		stringifyNonKey: node => node.expression
 	})
 
 export const flatRef = <node extends BaseRoot>(
-	path: array<TypeKey>,
+	path: array<KeyOrKeyNode>,
 	node: node
 ): FlatRef<node> => ({
 	path,
@@ -418,13 +427,13 @@ export const flatRef = <node extends BaseRoot>(
 	propString: typePathToPropString(path)
 })
 
-export const flatRefsAreEqual = (l: FlatRef, r: FlatRef) =>
+export const flatRefsAreEqual = (l: FlatRef, r: FlatRef): boolean =>
 	l.propString === r.propString && l.node.equals(r.node)
 
 export const appendUniqueFlatRefs = <node extends BaseRoot>(
 	existing: FlatRef<node>[] | undefined,
 	refs: listable<FlatRef<node>>
-) =>
+): FlatRef<node>[] =>
 	appendUnique(existing, refs, {
 		isEqual: flatRefsAreEqual
 	})
@@ -432,14 +441,14 @@ export const appendUniqueFlatRefs = <node extends BaseRoot>(
 export const appendUniqueNodes = <node extends BaseNode>(
 	existing: node[] | undefined,
 	refs: listable<node>
-) =>
+): node[] =>
 	appendUnique(existing, refs, {
 		isEqual: (l, r) => l.equals(r)
 	})
 
 export type DeepNodeTransformOptions = {
 	shouldTransform?: ShouldTransformFn
-	bindScope?: InternalBaseScope
+	bindScope?: BaseScope
 	prereduced?: boolean
 }
 
@@ -449,7 +458,7 @@ export type ShouldTransformFn = (
 ) => boolean
 
 export interface DeepNodeTransformContext extends DeepNodeTransformOptions {
-	path: mutable<array<TypeKey>>
+	path: mutable<array<KeyOrKeyNode>>
 	seen: { [originalId: string]: (() => BaseNode | undefined) | undefined }
 	parseOptions: NodeParseOptions
 }
@@ -458,4 +467,4 @@ export type DeepNodeTransformation = <kind extends NodeKind>(
 	kind: kind,
 	inner: Inner<kind>,
 	ctx: DeepNodeTransformContext
-) => Inner<kind> | null
+) => NormalizedSchema<kind> | null

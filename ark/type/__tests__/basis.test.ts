@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
+import { writeUnsatisfiableExpressionError } from "@ark/schema"
 import { type } from "arktype"
-import { writeUnsatisfiableExpressionError } from "../parser/semantic/validate.js"
 
 contextualize(() => {
 	describe("intersections", () => {

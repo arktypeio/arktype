@@ -47,10 +47,10 @@ export const RuntimeBenchmarksGraph = () => (
 			}}
 		>
 			<div style={{ ...arkBarStyles, width: "1.06%" }}></div>
-			ArkType (15 ns)
+			ArkType (15 nanoseconds)
 		</div>
 		<div style={{ ...zodBarStyles, width: "100%" }}>
-			&nbsp;&nbsp;Zod (1374 ns)
+			&nbsp;&nbsp;Zod (1374 nanoseconds)
 		</div>
 	</div>
 )

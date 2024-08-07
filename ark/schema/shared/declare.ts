@@ -1,28 +1,49 @@
 import type { merge, show } from "@ark/util"
-import type { Node, reducibleKindOf } from "../kinds.js"
+import type { nodeOfKind, reducibleKindOf } from "../kinds.js"
 import type { Disjoint } from "./disjoint.js"
 import type { NarrowedAttachments, NodeKind } from "./implement.js"
 
-export interface BaseMeta {
-	readonly description?: string
+type withMetaPrefixedKeys<o> = {
+	[k in keyof o as k extends string ? `meta.${k}` : never]: o[k]
 }
 
-export const metaKeys: { [k in keyof BaseMeta]: 1 } = { description: 1 }
+export interface BaseMeta {
+	description?: string
+	alias?: string
+}
+
+declare global {
+	export interface ArkEnv {
+		meta(): {}
+	}
+
+	export namespace ArkEnv {
+		export type meta = show<BaseMeta & ReturnType<ArkEnv["meta"]>>
+	}
+}
+
+export type MetaSchema = string | ArkEnv.meta
+
+export interface BaseNormalizedSchema
+	extends withMetaPrefixedKeys<ArkEnv.meta> {
+	readonly meta?: MetaSchema
+}
 
 interface DeclarationInput {
 	kind: NodeKind
 	schema: unknown
-	normalizedSchema: BaseMeta
-	inner: BaseMeta
+	normalizedSchema: BaseNormalizedSchema
+	inner: object
+	errorContext?: BaseErrorContext
 	reducibleTo?: NodeKind
 	intersectionIsOpen?: true
-	errorContext?: object
 	prerequisite?: unknown
 	childKind?: NodeKind
 }
 
 export interface BaseErrorContext<kind extends NodeKind = NodeKind> {
-	code: kind
+	readonly description?: string
+	readonly code: kind
 }
 
 export type defaultErrorContext<d extends DeclarationInput> = show<
@@ -40,11 +61,9 @@ export type declareNode<
 		prerequisite: prerequisiteOf<d>
 		childKind: never
 		reducibleTo: d["kind"]
+		errorContext: null
 	},
-	d & {
-		errorContext: d["errorContext"] extends {} ? BaseErrorContext<d["kind"]>
-		:	null
-	}
+	d
 >
 
 type prerequisiteOf<d extends DeclarationInput> =
@@ -56,8 +75,8 @@ export type attachmentsOf<d extends BaseNodeDeclaration> =
 export interface BaseNodeDeclaration {
 	kind: NodeKind
 	schema: unknown
-	normalizedSchema: BaseMeta
-	inner: BaseMeta
+	normalizedSchema: BaseNormalizedSchema
+	inner: {}
 	reducibleTo: NodeKind
 	prerequisite: any
 	intersectionIsOpen: boolean
@@ -66,5 +85,5 @@ export interface BaseNodeDeclaration {
 }
 
 export type ownIntersectionResult<d extends BaseNodeDeclaration> =
-	| Node<reducibleKindOf<d["kind"]>>
+	| nodeOfKind<reducibleKindOf<d["kind"]>>
 	| Disjoint

@@ -1,5 +1,4 @@
 import {
-	$ark,
 	append,
 	cached,
 	throwInternalError,
@@ -9,10 +8,11 @@ import {
 	type satisfy
 } from "@ark/util"
 import { BaseConstraint } from "../constraint.js"
-import type { MutableInner, RootSchema } from "../kinds.js"
+import type { RootSchema, mutableInnerOfKind } from "../kinds.js"
 import {
 	appendUniqueFlatRefs,
 	flatRef,
+	type BaseNode,
 	type DeepNodeTransformContext,
 	type DeepNodeTransformation,
 	type FlatRef
@@ -21,7 +21,7 @@ import type { MaxLengthNode } from "../refinements/maxLength.js"
 import type { MinLengthNode } from "../refinements/minLength.js"
 import type { BaseRoot } from "../roots/root.js"
 import type { NodeCompiler } from "../shared/compile.js"
-import type { BaseMeta, declareNode } from "../shared/declare.js"
+import type { BaseNormalizedSchema, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
 	implementNode,
@@ -31,43 +31,48 @@ import {
 	type nodeImplementationOf
 } from "../shared/implement.js"
 import { intersectNodes } from "../shared/intersections.js"
+import { $ark } from "../shared/registry.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 
-export interface NormalizedSequenceSchema extends BaseMeta {
-	readonly prefix?: array<RootSchema>
-	readonly optionals?: array<RootSchema>
-	readonly variadic?: RootSchema
-	readonly minVariadicLength?: number
-	readonly postfix?: array<RootSchema>
+export namespace Sequence {
+	export interface NormalizedSchema extends BaseNormalizedSchema {
+		readonly prefix?: array<RootSchema>
+		readonly optionals?: array<RootSchema>
+		readonly variadic?: RootSchema
+		readonly minVariadicLength?: number
+		readonly postfix?: array<RootSchema>
+	}
+
+	export type Schema = NormalizedSchema | RootSchema
+
+	export interface Inner {
+		// a list of fixed position elements starting at index 0
+		readonly prefix?: array<BaseRoot>
+		// a list of optional elements following prefix
+		readonly optionals?: array<BaseRoot>
+		// the variadic element (only checked if all optional elements are present)
+		readonly variadic?: BaseRoot
+		readonly minVariadicLength?: number
+		// a list of fixed position elements, the last being the last element of the array
+		readonly postfix?: array<BaseRoot>
+	}
+
+	export interface Declaration
+		extends declareNode<{
+			kind: "sequence"
+			schema: Schema
+			normalizedSchema: NormalizedSchema
+			inner: Inner
+			prerequisite: array
+			reducibleTo: "sequence"
+			childKind: RootKind
+		}> {}
+
+	export type Node = SequenceNode
 }
-
-export type SequenceSchema = NormalizedSequenceSchema | RootSchema
-
-export interface SequenceInner extends BaseMeta {
-	// a list of fixed position elements starting at index 0
-	readonly prefix?: array<BaseRoot>
-	// a list of optional elements following prefix
-	readonly optionals?: array<BaseRoot>
-	// the variadic element (only checked if all optional elements are present)
-	readonly variadic?: BaseRoot
-	readonly minVariadicLength?: number
-	// a list of fixed position elements, the last being the last element of the array
-	readonly postfix?: array<BaseRoot>
-}
-
-export interface SequenceDeclaration
-	extends declareNode<{
-		kind: "sequence"
-		schema: SequenceSchema
-		normalizedSchema: NormalizedSequenceSchema
-		inner: SequenceInner
-		prerequisite: array
-		reducibleTo: "sequence"
-		childKind: RootKind
-	}> {}
 
 const fixedSequenceKeySchemaDefinition: NodeKeyImplementation<
-	SequenceDeclaration,
+	Sequence.Declaration,
 	"prefix" | "postfix" | "optionals"
 > = {
 	child: true,
@@ -76,11 +81,11 @@ const fixedSequenceKeySchemaDefinition: NodeKeyImplementation<
 			// empty affixes are omitted. an empty array should therefore
 			// be specified as `{ proto: Array, length: 0 }`
 			undefined
-		:	schema.map(element => ctx.$.schema(element))
+		:	schema.map(element => ctx.$.rootNode(element))
 }
 
-export const sequenceImplementation: nodeImplementationOf<SequenceDeclaration> =
-	implementNode<SequenceDeclaration>({
+const implementation: nodeImplementationOf<Sequence.Declaration> =
+	implementNode<Sequence.Declaration>({
 		kind: "sequence",
 		hasAssociatedError: false,
 		collapsibleKey: "variadic",
@@ -89,7 +94,7 @@ export const sequenceImplementation: nodeImplementationOf<SequenceDeclaration> =
 			optionals: fixedSequenceKeySchemaDefinition,
 			variadic: {
 				child: true,
-				parse: (schema, ctx) => ctx.$.schema(schema, ctx)
+				parse: (schema, ctx) => ctx.$.rootNode(schema, ctx)
 			},
 			minVariadicLength: {
 				// minVariadicLength is reflected in the id of this node,
@@ -233,7 +238,7 @@ export const sequenceImplementation: nodeImplementationOf<SequenceDeclaration> =
 		}
 	})
 
-export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
+export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 	impliedBasis: BaseRoot = $ark.intrinsic.Array.internal
 	prefix: array<BaseRoot> = this.inner.prefix ?? []
 	optionals: array<BaseRoot> = this.inner.optionals ?? []
@@ -288,7 +293,7 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 		}
 	}
 
-	override get flatRefs() {
+	override get flatRefs(): FlatRef[] {
 		const refs: FlatRef[] = []
 
 		appendUniqueFlatRefs(
@@ -361,7 +366,7 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 	protected override _transform(
 		mapper: DeepNodeTransformation,
 		ctx: DeepNodeTransformContext
-	) {
+	): BaseNode | null {
 		ctx.path.push($ark.intrinsic.nonNegativeIntegerString.internal)
 		const result = super._transform(mapper, ctx)
 		ctx.path.pop()
@@ -373,7 +378,12 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 	expression: string = this.description
 }
 
-const sequenceInnerToTuple = (inner: SequenceInner): SequenceTuple => {
+export const Sequence = {
+	implementation,
+	Node: SequenceNode
+}
+
+const sequenceInnerToTuple = (inner: Sequence.Inner): SequenceTuple => {
 	const tuple: mutable<SequenceTuple> = []
 	inner.prefix?.forEach(node => tuple.push({ kind: "prefix", node }))
 	inner.optionals?.forEach(node => tuple.push({ kind: "optionals", node }))
@@ -382,8 +392,8 @@ const sequenceInnerToTuple = (inner: SequenceInner): SequenceTuple => {
 	return tuple
 }
 
-const sequenceTupleToInner = (tuple: SequenceTuple): SequenceInner =>
-	tuple.reduce<MutableInner<"sequence">>((result, node) => {
+const sequenceTupleToInner = (tuple: SequenceTuple): Sequence.Inner =>
+	tuple.reduce<mutableInnerOfKind<"sequence">>((result, node) => {
 		if (node.kind === "variadic") result.variadic = node.node
 		else result[node.kind] = append(result[node.kind], node.node)
 
@@ -402,7 +412,7 @@ export const postfixWithoutVariadicMessage =
 export type postfixWithoutVariadicMessage = typeof postfixWithoutVariadicMessage
 
 export type SequenceElementKind = satisfy<
-	keyof SequenceInner,
+	keyof Sequence.Inner,
 	"prefix" | "optionals" | "variadic" | "postfix"
 >
 

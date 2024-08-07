@@ -1,14 +1,14 @@
 import { attest, contextualize } from "@ark/attest"
 import {
 	assertNodeKind,
+	intrinsic,
 	writeIndiscriminableMorphMessage,
+	writeInvalidOperandMessage,
 	writeMorphIntersectionMessage,
-	type MoreThan,
-	type Out,
-	type of,
-	type string
+	type ArkErrors
 } from "@ark/schema"
-import { scope, type, type Type } from "arktype"
+import { ark, scope, type, type Type } from "arktype"
+import type { MoreThan, Out, To, constrain } from "arktype/internal/ast.js"
 
 contextualize(() => {
 	it("base", () => {
@@ -28,28 +28,62 @@ contextualize(() => {
 		)
 	})
 
-	it("constraints apply to input", () => {
-		const t = type("parse.number").atMostLength(5)
-		attest<(In: string.atMostLength<5>) => Out<number>>(t.t)
-
-		const morphs = t.internal.assertHasKind("morph").serializedMorphs
-		attest(t.json).snap({
-			in: {
-				domain: "string",
-				pattern: [
-					{
-						description: "a well-formed numeric string",
-						flags: "",
-						rule: "^(?!^-0$)-?(?:0|[1-9]\\d*)(?:\\.\\d*[1-9])?$"
-					}
-				],
-				maxLength: 5
-			},
-			morphs
+	it("to", () => {
+		const t = type("parse.json").to({
+			name: "string",
+			age: "number"
 		})
 
-		attest(t("321")).equals(321)
-		attest(t("654321").toString()).snap("must be at most length 5 (was 6)")
+		const tOut = t.out
+		const expected = type({
+			name: "string",
+			age: "number"
+		})
+
+		attest<typeof expected.t>(tOut.t)
+		attest(tOut.expression).equals(expected.expression)
+	})
+
+	describe("try", () => {
+		it("can catch thrown errors", () => {
+			const parseJson = type("string").pipe.try((s): object => JSON.parse(s))
+
+			const out = parseJson("[]")
+
+			attest<ArkErrors | object>(out)
+			attest(out).equals([])
+
+			const badOut = parseJson("{ unquoted: true }")
+
+			const suffix =
+				process.version.startsWith("v22") ? " (line 1 column 3)" : ""
+			attest(badOut.toString()).satisfies(
+				/^must be valid according to an anonymous predicate \(was aborted due to error:\n {4}SyntaxError:/
+			)
+		})
+
+		it("preserves validated out", () => {
+			const t = type("string").pipe.try(s => JSON.parse(s), ark.Array)
+
+			const tOut = t.out
+			const expectedOut = ark.Array
+
+			attest<typeof expectedOut.t>(tOut.t)
+			attest(tOut.expression).equals(expectedOut.expression)
+		})
+	})
+
+	it("can't directly constrain morph", () => {
+		// @ts-expect-error
+		attest(() => type("parse.number").atMostLength(5))
+			.throws(
+				writeInvalidOperandMessage(
+					"maxLength",
+					intrinsic.lengthBoundable,
+					ark.parse.number.internal
+				)
+			)
+			.type.errors("Property 'atMostLength' does not exist")
 	})
 
 	it("within type", () => {
@@ -98,13 +132,11 @@ contextualize(() => {
 		const parsedUser = type("string").pipe(s => JSON.parse(s), user)
 
 		attest<
-			Type<
-				(In: string) => Out<{
-					name: string
-					age: number
-				}>
-			>
-		>(parsedUser)
+			(In: string) => To<{
+				name: string
+				age: number
+			}>
+		>(parsedUser.t)
 
 		const validUser = { name: "David", age: 30 }
 		attest(parsedUser(JSON.stringify(validUser))).equals(validUser)
@@ -131,12 +163,10 @@ contextualize(() => {
 	it("uses pipe for consecutive types", () => {
 		const bar = type({ bar: "number" })
 		const t = type({ foo: "string" }).pipe(bar)
-		attest<
-			Type<{
-				foo: string
-				bar: number
-			}>
-		>(t)
+		attest<{
+			foo: string
+			bar: number
+		}>(t.t)
 		const expected = type({ foo: "string", bar: "number" })
 		attest(t.json).equals(expected.json)
 	})
@@ -171,7 +201,7 @@ contextualize(() => {
 			length => length === 0
 		)
 
-		attest<Type<(In: string) => Out<boolean>>>(inefficientStringIsEmpty)
+		attest<(In: string) => Out<boolean>>(inefficientStringIsEmpty.t)
 		attest(inefficientStringIsEmpty("")).equals(true)
 		attest(inefficientStringIsEmpty("foo")).equals(false)
 		attest(inefficientStringIsEmpty(0).toString()).snap(
@@ -196,14 +226,14 @@ contextualize(() => {
 		const divide100By = type("number", "=>", (n, ctx) =>
 			n !== 0 ? 100 / n : ctx.error("non-zero")
 		)
-		attest<Type<(In: number) => Out<number>>>(divide100By)
+		attest<(In: number) => Out<number>>(divide100By.t)
 		attest(divide100By(5)).equals(20)
 		attest(divide100By(0).toString()).snap("must be non-zero (was 0)")
 	})
 
 	it("at path", () => {
 		const t = type({ a: ["string", "=>", data => data.length] })
-		attest<Type<{ a: (In: string) => Out<number> }>>(t)
+		attest<{ a: (In: string) => Out<number> }>(t.t)
 
 		const input = { a: "four" }
 
@@ -224,11 +254,9 @@ contextualize(() => {
 		const t = b.or(a)
 
 		attest<
-			Type<
-				| ((In: { a: string }) => Out<string>)
-				| ((In: { a: number }) => Out<number>)
-			>
-		>(t)
+			| ((In: { a: string }) => Out<string>)
+			| ((In: { a: number }) => Out<number>)
+		>(t.t)
 		attest(t.json).snap([
 			{
 				in: { required: [{ key: "a", value: "number" }], domain: "object" },
@@ -257,6 +285,18 @@ contextualize(() => {
 		const t = type([{ a: "string" }, "=>", data => JSON.stringify(data)])
 		const out = t({ a: "foo" })
 		attest<string | type.errors>(out).snap('{"a":"foo"}')
+	})
+
+	it(".out inferred based on validatedOut", () => {
+		const unvalidated = type("string").pipe(s => s.length)
+
+		attest<number>(unvalidated.infer)
+		// .out won't be known at runtime
+		attest<Type<unknown>>(unvalidated.out)
+
+		const validated = unvalidated.pipe(type("number"))
+		// now that the output is a validated, type, out can be used standalone
+		attest<Type<number>>(validated.out)
 	})
 
 	it("intersection", () => {
@@ -406,15 +446,16 @@ contextualize(() => {
 	})
 
 	it("directly nested", () => {
+		const a = type("string", "=>", s => s.length)
 		const t = type(
 			{
 				// doesn't work with a nested tuple expression here due to a TS limitation
-				a: type("string", "=>", s => s.length)
+				a
 			},
 			"=>",
 			({ a }) => a === 0
 		)
-		attest<Type<(In: { a: string }) => Out<boolean>>>(t)
+		attest<(In: { a: string }) => Out<boolean>>(t.t)
 		assertNodeKind(t.internal, "morph")
 		const nestedMorph = t.internal.firstReferenceOfKindOrThrow("morph")
 		attest(t.json).snap({
@@ -478,7 +519,7 @@ contextualize(() => {
 				return result
 			}
 		])
-		attest<Type<(In: string) => Out<number>>>(parsedInt)
+		attest<(In: string) => Out<number>>(parsedInt.t)
 		attest(parsedInt("5")).snap(5)
 		attest(parsedInt("five").toString()).snap(
 			'must be an integer string (was "five")'
@@ -487,7 +528,7 @@ contextualize(() => {
 
 	it("nullable return", () => {
 		const toNullableNumber = type(["string", "=>", s => s.length || null])
-		attest<Type<(In: string) => Out<number | null>>>(toNullableNumber)
+		attest<(In: string) => Out<number | null>>(toNullableNumber.t)
 	})
 
 	it("undefinable return", () => {
@@ -496,7 +537,7 @@ contextualize(() => {
 			"=>",
 			s => s.length || undefined
 		])
-		attest<Type<(In: string) => Out<number | undefined>>>(toUndefinableNumber)
+		attest<(In: string) => Out<number | undefined>>(toUndefinableNumber.t)
 	})
 
 	it("null or undefined return", () => {
@@ -508,7 +549,7 @@ contextualize(() => {
 				: s.length === 1 ? null
 				: s.length
 		])
-		attest<Type<(In: string) => Out<number | null | undefined>>>(toMaybeNumber)
+		attest<(In: string) => Out<number | null | undefined>>(toMaybeNumber.t)
 	})
 
 	it("deep intersection", () => {
@@ -517,7 +558,7 @@ contextualize(() => {
 			b: { a: "1" },
 			c: "a&b"
 		}).export()
-		attest<{ a: (In: of<1, MoreThan<0>>) => Out<number> }>(types.c.t)
+		attest<{ a: (In: constrain<1, MoreThan<0>>) => Out<number> }>(types.c.t)
 		const { serializedMorphs } =
 			types.a.internal.firstReferenceOfKindOrThrow("morph")
 

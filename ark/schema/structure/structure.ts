@@ -1,5 +1,4 @@
 import {
-	$ark,
 	append,
 	cached,
 	flatMorph,
@@ -7,9 +6,7 @@ import {
 	spliterate,
 	throwParseError,
 	type array,
-	type join,
-	type Key,
-	type typeToString
+	type Key
 } from "@ark/util"
 import {
 	BaseConstraint,
@@ -17,14 +14,12 @@ import {
 	flattenConstraints,
 	intersectConstraints
 } from "../constraint.js"
-import type { InferredRoot } from "../inference.js"
-import type { NonNegativeIntegerString } from "../keywords/internal.js"
-import type { MutableInner } from "../kinds.js"
-import type { TypeIndexer, TypeKey } from "../node.js"
+import type { mutableInnerOfKind } from "../kinds.js"
+import type { GettableKeyOrNode, KeyOrKeyNode } from "../node.js"
 import { typeOrTermExtends, type BaseRoot } from "../roots/root.js"
-import type { InternalBaseScope } from "../scope.js"
+import type { BaseScope } from "../scope.js"
 import type { NodeCompiler } from "../shared/compile.js"
-import type { BaseMeta, declareNode } from "../shared/declare.js"
+import type { BaseNormalizedSchema, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
 import {
 	implementNode,
@@ -33,6 +28,7 @@ import {
 } from "../shared/implement.js"
 import { intersectNodesRoot } from "../shared/intersections.js"
 import {
+	$ark,
 	registeredReference,
 	type RegisteredReference
 } from "../shared/registry.js"
@@ -46,57 +42,205 @@ import {
 	hasArkKind,
 	makeRootAndArrayPropertiesMutable
 } from "../shared/utils.js"
-import type { IndexNode, IndexSchema } from "./indexed.js"
-import type { OptionalNode, OptionalSchema } from "./optional.js"
-import type { PropNode } from "./prop.js"
-import type { RequiredNode, RequiredSchema } from "./required.js"
-import type { SequenceNode, SequenceSchema } from "./sequence.js"
+import type { Index } from "./index.js"
+import type { Optional } from "./optional.js"
+import type { Prop } from "./prop.js"
+import type { Required } from "./required.js"
+import type { Sequence } from "./sequence.js"
 import { arrayIndexMatcherReference } from "./shared.js"
 
 export type UndeclaredKeyBehavior = "ignore" | UndeclaredKeyHandling
 
 export type UndeclaredKeyHandling = "reject" | "delete"
 
-export interface StructureSchema extends BaseMeta {
-	readonly optional?: readonly OptionalSchema[]
-	readonly required?: readonly RequiredSchema[]
-	readonly index?: readonly IndexSchema[]
-	readonly sequence?: SequenceSchema
-	readonly undeclared?: UndeclaredKeyBehavior
+export namespace Structure {
+	export interface Schema extends BaseNormalizedSchema {
+		readonly optional?: readonly Optional.Schema[]
+		readonly required?: readonly Required.Schema[]
+		readonly index?: readonly Index.Schema[]
+		readonly sequence?: Sequence.Schema
+		readonly undeclared?: UndeclaredKeyBehavior
+	}
+
+	export interface Inner {
+		readonly optional?: readonly Optional.Node[]
+		readonly required?: readonly Required.Node[]
+		readonly index?: readonly Index.Node[]
+		readonly sequence?: Sequence.Node
+		readonly undeclared?: UndeclaredKeyHandling
+	}
+
+	export interface Declaration
+		extends declareNode<{
+			kind: "structure"
+			schema: Schema
+			normalizedSchema: Schema
+			inner: Inner
+			prerequisite: object
+			childKind: StructuralKind
+		}> {}
+
+	export type Node = StructureNode
 }
 
-export interface StructureInner extends BaseMeta {
-	readonly optional?: readonly OptionalNode[]
-	readonly required?: readonly RequiredNode[]
-	readonly index?: readonly IndexNode[]
-	readonly sequence?: SequenceNode
-	readonly undeclared?: UndeclaredKeyHandling
-}
+const createStructuralWriter =
+	(childStringProp: "expression" | "description") => (node: StructureNode) => {
+		if (node.props.length || node.index) {
+			const parts = node.index?.map(String) ?? []
+			node.props.forEach(node => parts.push(node[childStringProp]))
 
-export interface StructureDeclaration
-	extends declareNode<{
-		kind: "structure"
-		schema: StructureSchema
-		normalizedSchema: StructureSchema
-		inner: StructureInner
-		prerequisite: object
-		childKind: StructuralKind
-	}> {}
+			if (node.undeclared) parts.push(`+ (undeclared): ${node.undeclared}`)
 
-export class StructureNode extends BaseConstraint<StructureDeclaration> {
+			const objectLiteralDescription = `{ ${parts.join(", ")} }`
+			return node.sequence ?
+					`${objectLiteralDescription} & ${node.sequence.description}`
+				:	objectLiteralDescription
+		}
+		return node.sequence?.description ?? "{}"
+	}
+
+const structuralDescription = createStructuralWriter("description")
+const structuralExpression = createStructuralWriter("expression")
+
+const implementation: nodeImplementationOf<Structure.Declaration> =
+	implementNode<Structure.Declaration>({
+		kind: "structure",
+		hasAssociatedError: false,
+		normalize: schema => schema,
+		keys: {
+			required: {
+				child: true,
+				parse: constraintKeyParser("required")
+			},
+			optional: {
+				child: true,
+				parse: constraintKeyParser("optional")
+			},
+			index: {
+				child: true,
+				parse: constraintKeyParser("index")
+			},
+			sequence: {
+				child: true,
+				parse: constraintKeyParser("sequence")
+			},
+			undeclared: {
+				parse: behavior => (behavior === "ignore" ? undefined : behavior)
+			}
+		},
+		defaults: {
+			description: structuralDescription
+		},
+		intersections: {
+			structure: (l, r, ctx) => {
+				const lInner = { ...l.inner }
+				const rInner = { ...r.inner }
+				if (l.undeclared) {
+					const lKey = l.keyof()
+					const disjointRKeys = r.requiredLiteralKeys.filter(
+						k => !lKey.allows(k)
+					)
+					if (disjointRKeys.length) {
+						return new Disjoint(
+							...disjointRKeys.map(k => ({
+								kind: "presence" as const,
+								l: $ark.intrinsic.never.internal,
+								r: r.propsByKey[k]!.value,
+								path: [k],
+								optional: false
+							}))
+						)
+					}
+
+					if (rInner.optional)
+						rInner.optional = rInner.optional.filter(n => lKey.allows(n.key))
+					if (rInner.index) {
+						rInner.index = rInner.index.flatMap(n => {
+							if (n.signature.extends(lKey)) return n
+							const indexOverlap = intersectNodesRoot(lKey, n.signature, ctx.$)
+							if (indexOverlap instanceof Disjoint) return []
+							const normalized = normalizeIndex(indexOverlap, n.value, ctx.$)
+							if (normalized.required) {
+								rInner.required =
+									rInner.required ?
+										[...rInner.required, ...normalized.required]
+									:	normalized.required
+							}
+							return normalized.index ?? []
+						})
+					}
+				}
+				if (r.undeclared) {
+					const rKey = r.keyof()
+					const disjointLKeys = l.requiredLiteralKeys.filter(
+						k => !rKey.allows(k)
+					)
+					if (disjointLKeys.length) {
+						return new Disjoint(
+							...disjointLKeys.map(k => ({
+								kind: "presence" as const,
+								l: l.propsByKey[k]!.value,
+								r: $ark.intrinsic.never.internal,
+								path: [k],
+								optional: false
+							}))
+						)
+					}
+
+					if (lInner.optional)
+						lInner.optional = lInner.optional.filter(n => rKey.allows(n.key))
+					if (lInner.index) {
+						lInner.index = lInner.index.flatMap(n => {
+							if (n.signature.extends(rKey)) return n
+							const indexOverlap = intersectNodesRoot(rKey, n.signature, ctx.$)
+							if (indexOverlap instanceof Disjoint) return []
+							const normalized = normalizeIndex(indexOverlap, n.value, ctx.$)
+							if (normalized.required) {
+								lInner.required =
+									lInner.required ?
+										[...lInner.required, ...normalized.required]
+									:	normalized.required
+							}
+							return normalized.index ?? []
+						})
+					}
+				}
+
+				const baseInner: mutableInnerOfKind<"structure"> = {}
+
+				if (l.undeclared || r.undeclared) {
+					baseInner.undeclared =
+						l.undeclared === "reject" || r.undeclared === "reject" ?
+							"reject"
+						:	"delete"
+				}
+
+				return intersectConstraints({
+					kind: "structure",
+					baseInner,
+					l: flattenConstraints(lInner),
+					r: flattenConstraints(rInner),
+					roots: [],
+					ctx
+				})
+			}
+		}
+	})
+
+export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	impliedBasis: BaseRoot = $ark.intrinsic.object.internal
 	impliedSiblings = this.children.flatMap(
 		n => (n.impliedSiblings as BaseConstraint[]) ?? []
 	)
 
-	props: array<PropNode> =
+	props: array<Prop.Node> =
 		this.required ?
 			this.optional ?
 				[...this.required, ...this.optional]
 			:	this.required
-		:	this.optional ?? []
+		:	(this.optional ?? [])
 
-	propsByKey: Record<Key, PropNode | undefined> = flatMorph(
+	propsByKey: Record<Key, Prop.Node | undefined> = flatMorph(
 		this.props,
 		(i, node) => [node.key, node] as const
 	)
@@ -125,7 +269,7 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 		return this.$.node("union", branches)
 	}
 
-	assertHasKeys(keys: array<TypeKey>) {
+	assertHasKeys(keys: array<KeyOrKeyNode>): void {
 		const invalidKeys = keys.filter(k => !typeOrTermExtends(k, this.keyof()))
 
 		if (invalidKeys.length) {
@@ -135,7 +279,7 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 		}
 	}
 
-	get(indexer: TypeIndexer, ...path: array<TypeIndexer>): BaseRoot {
+	get(indexer: GettableKeyOrNode, ...path: array<GettableKeyOrNode>): BaseRoot {
 		let value: BaseRoot | undefined
 		let required = false
 
@@ -202,12 +346,12 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 	readonly exhaustive: boolean =
 		this.undeclared !== undefined || this.index !== undefined
 
-	pick(...keys: TypeKey[]): StructureNode {
+	pick(...keys: KeyOrKeyNode[]): StructureNode {
 		this.assertHasKeys(keys)
 		return this.$.node("structure", this.filterKeys("pick", keys))
 	}
 
-	omit(...keys: TypeKey[]): StructureNode {
+	omit(...keys: KeyOrKeyNode[]): StructureNode {
 		this.assertHasKeys(keys)
 		return this.$.node("structure", this.filterKeys("omit", keys))
 	}
@@ -236,9 +380,8 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 	}
 
 	merge(r: StructureNode): StructureNode {
-		const inner = makeRootAndArrayPropertiesMutable(
-			this.filterKeys("omit", [r.keyof()])
-		)
+		const inner = this.filterKeys("omit", [r.keyof()])
+
 		if (r.required) inner.required = append(inner.required, r.required)
 		if (r.optional) inner.optional = append(inner.optional, r.optional)
 		if (r.index) inner.index = append(inner.index, r.index)
@@ -251,22 +394,22 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 	private filterKeys(
 		operation: "pick" | "omit",
 		keys: array<BaseRoot | Key>
-	): StructureInner {
-		const result = { ...this.inner }
+	): mutableInnerOfKind<"structure"> {
+		const result = makeRootAndArrayPropertiesMutable(this.inner)
 
-		const includeKey = (key: TypeKey) => {
+		const shouldKeep = (key: KeyOrKeyNode) => {
 			const matchesKey = keys.some(k => typeOrTermExtends(key, k))
 			return operation === "pick" ? matchesKey : !matchesKey
 		}
 
 		if (result.required)
-			result.required = result.required.filter(prop => includeKey(prop.key))
+			result.required = result.required.filter(prop => shouldKeep(prop.key))
 
 		if (result.optional)
-			result.optional = result.optional.filter(prop => includeKey(prop.key))
+			result.optional = result.optional.filter(prop => shouldKeep(prop.key))
 
 		if (result.index)
-			result.index = result.index.filter(index => includeKey(index.signature))
+			result.index = result.index.filter(index => shouldKeep(index.signature))
 
 		return result
 	}
@@ -425,173 +568,34 @@ export class StructureNode extends BaseConstraint<StructureDeclaration> {
 	}
 }
 
-const indexerToKey = (indexable: TypeIndexer): TypeKey => {
+export const Structure = {
+	implementation,
+	Node: StructureNode
+}
+
+const indexerToKey = (indexable: GettableKeyOrNode): KeyOrKeyNode => {
 	if (hasArkKind(indexable, "root") && indexable.hasKind("unit"))
 		indexable = indexable.unit as Key
 	if (typeof indexable === "number") indexable = `${indexable}`
 	return indexable
 }
 
-const createStructuralWriter =
-	(childStringProp: "expression" | "description") => (node: StructureNode) => {
-		if (node.props.length || node.index) {
-			const parts = node.index?.map(String) ?? []
-			node.props.forEach(node => parts.push(node[childStringProp]))
-
-			if (node.undeclared) parts.push(`+ (undeclared): ${node.undeclared}`)
-
-			const objectLiteralDescription = `{ ${parts.join(", ")} }`
-			return node.sequence ?
-					`${objectLiteralDescription} & ${node.sequence.description}`
-				:	objectLiteralDescription
-		}
-		return node.sequence?.description ?? "{}"
-	}
-
-const structuralDescription = createStructuralWriter("description")
-const structuralExpression = createStructuralWriter("expression")
-
-export const structureImplementation: nodeImplementationOf<StructureDeclaration> =
-	implementNode<StructureDeclaration>({
-		kind: "structure",
-		hasAssociatedError: false,
-		normalize: schema => schema,
-		keys: {
-			required: {
-				child: true,
-				parse: constraintKeyParser("required")
-			},
-			optional: {
-				child: true,
-				parse: constraintKeyParser("optional")
-			},
-			index: {
-				child: true,
-				parse: constraintKeyParser("index")
-			},
-			sequence: {
-				child: true,
-				parse: constraintKeyParser("sequence")
-			},
-			undeclared: {
-				parse: behavior => (behavior === "ignore" ? undefined : behavior)
-			}
-		},
-		defaults: {
-			description: structuralDescription
-		},
-		intersections: {
-			structure: (l, r, ctx) => {
-				const lInner = { ...l.inner }
-				const rInner = { ...r.inner }
-				if (l.undeclared) {
-					const lKey = l.keyof()
-					const disjointRKeys = r.requiredLiteralKeys.filter(
-						k => !lKey.allows(k)
-					)
-					if (disjointRKeys.length) {
-						return new Disjoint(
-							...disjointRKeys.map(k => ({
-								kind: "presence" as const,
-								l: $ark.intrinsic.never.internal,
-								r: r.propsByKey[k]!.value,
-								path: [k],
-								optional: false
-							}))
-						)
-					}
-
-					if (rInner.optional)
-						rInner.optional = rInner.optional.filter(n => lKey.allows(n.key))
-					if (rInner.index) {
-						rInner.index = rInner.index.flatMap(n => {
-							if (n.signature.extends(lKey)) return n
-							const indexOverlap = intersectNodesRoot(lKey, n.signature, ctx.$)
-							if (indexOverlap instanceof Disjoint) return []
-							const normalized = normalizeIndex(indexOverlap, n.value, ctx.$)
-							if (normalized.required) {
-								rInner.required =
-									rInner.required ?
-										[...rInner.required, ...normalized.required]
-									:	normalized.required
-							}
-							return normalized.index ?? []
-						})
-					}
-				}
-				if (r.undeclared) {
-					const rKey = r.keyof()
-					const disjointLKeys = l.requiredLiteralKeys.filter(
-						k => !rKey.allows(k)
-					)
-					if (disjointLKeys.length) {
-						return new Disjoint(
-							...disjointLKeys.map(k => ({
-								kind: "presence" as const,
-								l: l.propsByKey[k]!.value,
-								r: $ark.intrinsic.never.internal,
-								path: [k],
-								optional: false
-							}))
-						)
-					}
-
-					if (lInner.optional)
-						lInner.optional = lInner.optional.filter(n => rKey.allows(n.key))
-					if (lInner.index) {
-						lInner.index = lInner.index.flatMap(n => {
-							if (n.signature.extends(rKey)) return n
-							const indexOverlap = intersectNodesRoot(rKey, n.signature, ctx.$)
-							if (indexOverlap instanceof Disjoint) return []
-							const normalized = normalizeIndex(indexOverlap, n.value, ctx.$)
-							if (normalized.required) {
-								lInner.required =
-									lInner.required ?
-										[...lInner.required, ...normalized.required]
-									:	normalized.required
-							}
-							return normalized.index ?? []
-						})
-					}
-				}
-
-				const baseInner: MutableInner<"structure"> = {}
-
-				if (l.undeclared || r.undeclared) {
-					baseInner.undeclared =
-						l.undeclared === "reject" || r.undeclared === "reject" ?
-							"reject"
-						:	"delete"
-				}
-
-				return intersectConstraints({
-					kind: "structure",
-					baseInner,
-					l: flattenConstraints(lInner),
-					r: flattenConstraints(rInner),
-					roots: [],
-					ctx
-				})
-			}
-		}
-	})
-
 export const writeNumberIndexMessage = (
 	indexExpression: string,
 	sequenceExpression: string
-) =>
+): string =>
 	`${indexExpression} is not allowed as an array index on ${sequenceExpression}. Use the 'nonNegativeIntegerString' keyword instead.`
 
 export type NormalizedIndex = {
-	index?: IndexNode
-	required?: RequiredNode[]
+	index?: Index.Node
+	required?: Required.Node[]
 }
 
 /** extract enumerable named props from an index signature */
 export const normalizeIndex = (
 	signature: BaseRoot,
 	value: BaseRoot,
-	$: InternalBaseScope
+	$: BaseScope
 ): NormalizedIndex => {
 	const [enumerableBranches, nonEnumerableBranches] = spliterate(
 		signature.branches,
@@ -616,49 +620,14 @@ export const normalizeIndex = (
 	return normalized
 }
 
-export type toArkKey<o, k extends keyof o> =
-	k extends number ?
-		[o, number] extends [array, k] ?
-			NonNegativeIntegerString
-		:	`${k}`
-	:	k
-
-export type arkKeyOf<o> =
-	o extends array ?
-		| (number extends o["length"] ? NonNegativeIntegerString : never)
-		| {
-				[k in keyof o]-?: k extends `${infer index extends number}` ? index | k
-				:	never
-		  }[keyof o & `${number}`]
-	:	{
-			[k in keyof o]: k extends number ? k | `${k}` : k
-		}[keyof o]
-
-export type getArkKey<o, k extends arkKeyOf<o>> = o[Extract<
-	k extends NonNegativeIntegerString ? number : k,
-	keyof o
->]
-
-export const typeKeyToString = (k: TypeKey) =>
+export const typeKeyToString = (k: KeyOrKeyNode): string =>
 	hasArkKind(k, "root") ? k.expression : printable(k)
-
-export type typeKeyToString<k extends TypeKey> = typeToString<
-	k extends InferredRoot<infer t> ? t : k
->
 
 export const writeInvalidKeysMessage = <
 	o extends string,
-	keys extends array<TypeKey>
+	keys extends array<KeyOrKeyNode>
 >(
 	o: o,
 	keys: keys
-) =>
-	`Key${keys.length === 1 ? "" : "s"} ${keys.map(typeKeyToString).join(", ")} ${keys.length === 1 ? "does" : "do"} not exist on ${o}` as writeInvalidKeysMessage<
-		o,
-		keys
-	>
-
-export type writeInvalidKeysMessage<
-	o extends string,
-	keys extends array<TypeKey>
-> = `Key${keys["length"] extends 1 ? "" : "s"} ${join<{ [i in keyof keys]: typeKeyToString<keys[i]> }, ", ">} ${keys["length"] extends 1 ? "does" : "do"} not exist on ${o}`
+): string =>
+	`Key${keys.length === 1 ? "" : "s"} ${keys.map(typeKeyToString).join(", ")} ${keys.length === 1 ? "does" : "do"} not exist on ${o}`

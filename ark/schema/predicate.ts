@@ -1,8 +1,10 @@
-import type { constrain, of } from "./ast.js"
 import { BaseConstraint } from "./constraint.js"
-import type { errorContext } from "./kinds.js"
 import type { NodeCompiler } from "./shared/compile.js"
-import type { BaseMeta, declareNode } from "./shared/declare.js"
+import type {
+	BaseErrorContext,
+	BaseNormalizedSchema,
+	declareNode
+} from "./shared/declare.js"
 import {
 	compileErrorContext,
 	implementNode,
@@ -18,29 +20,39 @@ import type {
 	TraverseApply
 } from "./shared/traversal.js"
 
-export interface PredicateInner<predicate extends Predicate = Predicate>
-	extends BaseMeta {
-	readonly predicate: predicate
+export namespace Predicate {
+	export type Schema<predicate extends Predicate = Predicate> =
+		| NormalizedSchema<predicate>
+		| predicate
+
+	export interface NormalizedSchema<predicate extends Predicate = Predicate>
+		extends BaseNormalizedSchema {
+		readonly predicate: predicate
+	}
+
+	export interface Inner<predicate extends Predicate = Predicate> {
+		readonly predicate: predicate
+	}
+
+	export interface ErrorContext extends BaseErrorContext<"predicate"> {
+		readonly predicate?: Predicate
+	}
+
+	export interface Declaration
+		extends declareNode<{
+			kind: "predicate"
+			schema: Schema
+			normalizedSchema: NormalizedSchema
+			inner: Inner
+			intersectionIsOpen: true
+			errorContext: ErrorContext
+		}> {}
+
+	export type Node = PredicateNode
 }
 
-export type PredicateErrorContext = Partial<PredicateInner>
-
-export type PredicateSchema<predicate extends Predicate = Predicate> =
-	| PredicateInner<predicate>
-	| predicate
-
-export interface PredicateDeclaration
-	extends declareNode<{
-		kind: "predicate"
-		schema: PredicateSchema
-		normalizedSchema: PredicateInner
-		inner: PredicateInner
-		intersectionIsOpen: true
-		errorContext: PredicateErrorContext
-	}> {}
-
-export const predicateImplementation: nodeImplementationOf<PredicateDeclaration> =
-	implementNode<PredicateDeclaration>({
+const implementation: nodeImplementationOf<Predicate.Declaration> =
+	implementNode<Predicate.Declaration>({
 		kind: "predicate",
 		hasAssociatedError: true,
 		collapsibleKey: "predicate",
@@ -62,7 +74,7 @@ export const predicateImplementation: nodeImplementationOf<PredicateDeclaration>
 		}
 	})
 
-export class PredicateNode extends BaseConstraint<PredicateDeclaration> {
+export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 	serializedPredicate: RegisteredReference = registeredReference(this.predicate)
 	compiledCondition = `${this.serializedPredicate}(data, ctx)`
 	compiledNegation = `!${this.compiledCondition}`
@@ -72,7 +84,7 @@ export class PredicateNode extends BaseConstraint<PredicateDeclaration> {
 	expression: string = this.serializedPredicate
 	traverseAllows: TraverseAllows = this.predicate
 
-	errorContext: errorContext<"predicate"> = {
+	errorContext: Predicate.ErrorContext = {
 		code: "predicate",
 		description: this.description
 	}
@@ -95,6 +107,11 @@ export class PredicateNode extends BaseConstraint<PredicateDeclaration> {
 	}
 }
 
+export const Predicate = {
+	implementation,
+	Node: PredicateNode
+}
+
 export type Predicate<data = any> = (
 	data: data,
 	ctx: TraversalContext
@@ -104,10 +121,3 @@ export type PredicateCast<input = never, narrowed extends input = input> = (
 	input: input,
 	ctx: TraversalContext
 ) => input is narrowed
-
-export type inferPredicate<t, predicate> =
-	predicate extends (data: any, ...args: any[]) => data is infer narrowed ?
-		t extends of<unknown, infer constraints> ?
-			constrain<of<narrowed, constraints>, "predicate", any>
-		:	constrain<narrowed, "predicate", any>
-	:	constrain<t, "predicate", any>

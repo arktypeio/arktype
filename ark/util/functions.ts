@@ -87,7 +87,7 @@ export type CallableOptions<attachments extends object> = {
 	bind?: object
 }
 
-/** @ts-expect-error required to cast function type */
+/** @ts-ignore required to cast function type */
 export class Callable<
 	f extends (...args: never[]) => unknown,
 	attachments extends object = {}
@@ -111,6 +111,10 @@ export class Callable<
 export type Guardable<input = unknown, narrowed extends input = input> =
 	| ((In: input) => In is narrowed)
 	| ((In: input) => boolean)
+
+export type TypeGuard<input = unknown, narrowed extends input = input> = (
+	In: input
+) => In is narrowed
 
 /**
  * Checks if the environment has Content Security Policy (CSP) enabled,

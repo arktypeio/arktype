@@ -1,14 +1,19 @@
-import type { Ark } from "@ark/schema"
 import { DynamicBase } from "@ark/util"
-import { type, type inferTypeRoot, type validateTypeRoot } from "arktype"
+import {
+	type,
+	type inferAmbient,
+	type inferTypeRoot,
+	type validateAmbient,
+	type validateTypeRoot
+} from "arktype"
 
-const Class = <def>(def: validateTypeRoot<def, Ark>) => {
+const Class = <def>(def: validateAmbient<def>) => {
 	const validator = type(def as never)
 
-	return class TypeConstructor<t = inferTypeRoot<def, Ark>> extends DynamicBase<
+	return class TypeConstructor<t = inferAmbient<def>> extends DynamicBase<
 		t & object
 	> {
-		static infer: inferTypeRoot<def, Ark>
+		static infer: inferAmbient<def>
 
 		constructor(input: unknown) {
 			const out = validator(input)
@@ -20,12 +25,12 @@ const Class = <def>(def: validateTypeRoot<def, Ark>) => {
 
 		static and<cls extends typeof TypeConstructor, andDef>(
 			this: cls,
-			def: validateTypeRoot<andDef, Ark>
+			def: validateAmbient<andDef>
 		) {
 			return class extends (this as typeof TypeConstructor<
-				InstanceType<cls> & inferTypeRoot<andDef, Ark>
+				InstanceType<cls> & inferAmbient<andDef>
 			>) {
-				static infer: cls["infer"] & inferTypeRoot<andDef, Ark>
+				static infer: cls["infer"] & inferAmbient<andDef>
 			}
 		}
 	}

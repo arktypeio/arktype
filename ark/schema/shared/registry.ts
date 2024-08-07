@@ -1,10 +1,11 @@
 import {
-	$ark,
+	registry,
 	groupBy,
 	register,
-	type InitialRegistryContents
+	type InitialRegistryContents,
+	type NonNegativeIntegerLiteral
 } from "@ark/util"
-import type { NonNegativeIntegerString } from "../keywords/internal.js"
+import type { ArkSchemaRegistry } from "../config.js"
 
 let _registryName = "$ark"
 let suffix = 2
@@ -12,7 +13,9 @@ let suffix = 2
 while (_registryName in globalThis) _registryName = `$ark${suffix++}`
 
 export const registryName = _registryName
-;(globalThis as any)[registryName] = $ark
+;(globalThis as any)[registryName] = registry
+
+export const $ark: ArkSchemaRegistry = registry as never
 
 if (suffix !== 2) {
 	const g: any = globalThis
@@ -55,4 +58,4 @@ export const registeredReference = (
 ): RegisteredReference => reference(register(value))
 
 export type RegisteredReference<to extends string = string> =
-	`$ark${"" | NonNegativeIntegerString}.${to}`
+	`$ark${"" | NonNegativeIntegerLiteral}.${to}`

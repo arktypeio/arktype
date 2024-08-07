@@ -4,7 +4,6 @@ import prettier from "@prettier/sync"
 import { type, type validateTypeRoot } from "arktype"
 import * as assert from "node:assert/strict"
 import { isDeepStrictEqual } from "node:util"
-import type { Options as PrettierOptions } from "prettier"
 import {
 	getSnapshotByName,
 	queueSnapshotUpdate,
@@ -12,11 +11,13 @@ import {
 	type SnapshotArgs
 } from "../cache/snapshots.js"
 import type { Completions } from "../cache/writeAssertionCache.js"
+import { getConfig } from "../config.js"
 import { chainableNoOpProxy } from "../utils.js"
 import {
 	TypeAssertionMapping,
 	assertEqualOrMatching,
 	assertEquals,
+	assertSatisfies,
 	callAssertedFunction,
 	getThrownMessage,
 	throwAssertionError
@@ -75,7 +76,7 @@ export class ChainableAssertions implements AssertionRecord {
 	}
 
 	satisfies(def: unknown): this {
-		type(def as never).assert(def)
+		assertSatisfies(type.raw(def), this.ctx.actual, this.ctx)
 		return this
 	}
 
@@ -209,8 +210,9 @@ export class ChainableAssertions implements AssertionRecord {
 		return {
 			get toString() {
 				self.ctx.actual = new TypeAssertionMapping(data => ({
-					actual: tryFormattingTypeString(data.args[0].type)
+					actual: formatTypeString(data.args[0].type)
 				}))
+				self.ctx.allowRegex = true
 				return self.immediateOrChained()
 			},
 			get errors() {
@@ -233,43 +235,17 @@ const checkCompletionsForErrors = (completions?: Completions) => {
 
 const declarationPrefix = "type T = "
 
-const typeFormatOptions: PrettierOptions = {
-	parser: "typescript",
-	semi: false,
-	useTabs: true,
-	printWidth: 60,
-	trailingComma: "none"
-}
-
 const formatTypeString = (typeString: string) =>
 	prettier
-		.format(`${declarationPrefix}${typeString}`, typeFormatOptions)
+		.format(`${declarationPrefix}${typeString}`, {
+			semi: false,
+			printWidth: 60,
+			trailingComma: "none",
+			parser: "typescript",
+			...getConfig().typeToStringFormat
+		})
 		.slice(declarationPrefix.length)
 		.trimEnd()
-
-const replaceKnownInvalidSyntax = (typeString: string): string => {
-	// Match '...' and '... x more ...' (known truncated type syntax)
-	const regex = /\.\.\.\s*(\d+\s*more\s*\.\.\.)?/g
-
-	// replace these with a string literal "..." so that they can still
-	// form valid expressions, e.g. "..."[]
-	return typeString.replaceAll(regex, '"..."')
-}
-
-const tryFormattingTypeString = (typeString: string): string => {
-	try {
-		typeString = formatTypeString(typeString)
-	} catch {
-		// if formatting fails (e.g. due to custom typeToString syntax like ... X more),
-		// try to comment out problematic sections
-		try {
-			typeString = formatTypeString(replaceKnownInvalidSyntax(typeString))
-		} catch {
-			// if still fails somehow, just swallow the error and use the unformatted type
-		}
-	}
-	return typeString
-}
 
 export type AssertionKind = "value" | "type"
 
@@ -337,7 +313,7 @@ export type TypeAssertionsRoot = {
 }
 
 export type TypeAssertionProps = {
-	toString: valueFromTypeAssertion<string>
+	toString: valueFromTypeAssertion<string | RegExp>
 	errors: valueFromTypeAssertion<string | RegExp, string>
 	completions: (value?: Completions) => void
 }

@@ -1,22 +1,29 @@
 import {
-	InternalBaseScope,
+	BaseScope,
 	hasArkKind,
 	parseGeneric,
 	type AliasDefEntry,
-	type ArkConfig,
+	type ArkScopeConfig,
+	type BaseNode,
 	type BaseRoot,
-	type BaseScope,
 	type GenericArgResolutions,
+	type GenericAst,
 	type GenericParamAst,
-	type GenericParamDef,
-	type GenericProps,
 	type InternalResolutions,
+	type NodeKind,
+	type NodeParseOptions,
+	type NodeSchema,
 	type PreparsedNodeResolution,
 	type PrivateDeclaration,
+	type RootKind,
+	type RootSchema,
 	type arkKind,
 	type destructuredExportContext,
 	type destructuredImportContext,
 	type exportedNameOf,
+	type nodeOfKind,
+	type reducibleKindOf,
+	type toInternalScope,
 	type writeDuplicateAliasError
 } from "@ark/schema"
 import {
@@ -27,22 +34,28 @@ import {
 	throwParseError,
 	type Dict,
 	type ErrorType,
+	type Json,
 	type anyOrNever,
 	type array,
+	type flattenListable,
 	type nominal,
 	type show
 } from "@ark/util"
+import type { Ark } from "./ark.js"
 import {
 	parseGenericParams,
-	type Generic,
 	type GenericDeclaration,
 	type GenericHktParser,
 	type ParameterString,
 	type baseGenericConstraints,
 	type parseValidGenericParams
 } from "./generic.js"
-import { createMatchParser, type MatchParser } from "./match.js"
-import type { Module } from "./module.js"
+import type {
+	BoundModule,
+	Module,
+	Submodule,
+	instantiateExport
+} from "./module.js"
 import {
 	parseObject,
 	writeBadDefinitionTypeMessage,
@@ -67,21 +80,17 @@ import {
 
 export type ScopeParser = <const def>(
 	def: validateScope<def>,
-	config?: ArkConfig
+	config?: ArkScopeConfig
 ) => Scope<inferScope<def>>
 
 export type validateScope<def> = {
-	[k in keyof def]: k extends symbol ?
-		// this should only occur when importing/exporting modules, and those
-		// keys should be ignored
-		unknown
-	: parseScopeKey<k, def>["params"] extends infer params ?
+	[k in keyof def]: parseScopeKey<k, def>["params"] extends infer params ?
 		params extends array<GenericParamAst> ?
 			params["length"] extends 0 ?
 				// not including Type here directly breaks some cyclic tests (last checked w/ TS 5.5).
 				// if you are from the future with a better version of TS and can remove it
 				// without breaking `pnpm typecheck`, go for it.
-				def[k] extends Type | PreparsedResolution ? def[k]
+				def[k] extends Type.Any | PreparsedResolution ? def[k]
 				: k extends PrivateDeclaration<infer name extends keyof def & string> ?
 					ErrorType<writeDuplicateAliasError<name>>
 				:	validateDefinition<def[k], bootstrapAliases<def>, {}>
@@ -109,33 +118,35 @@ export type UnparsedScope = "$"
 type PreparsedResolution = PreparsedNodeResolution
 
 type bootstrapAliases<def> = {
-	[k in Exclude<
-		keyof def,
-		// avoid inferring nominal symbols, e.g. arkKind from Module
-		GenericDeclaration | symbol
-	>]: def[k] extends PreparsedResolution ? def[k]
+	[k in Exclude<keyof def, GenericDeclaration>]: def[k] extends (
+		PreparsedResolution
+	) ?
+		def[k] extends { t: infer g extends GenericAst } ?
+			g
+		:	def[k]
 	: def[k] extends (() => infer thunkReturn extends PreparsedResolution) ?
-		thunkReturn
+		thunkReturn extends { t: infer g extends GenericAst } ?
+			g
+		:	thunkReturn
 	:	Def<def[k]>
 } & {
-	[k in keyof def & GenericDeclaration as extractGenericName<k>]: GenericProps<
+	[k in keyof def & GenericDeclaration as extractGenericName<k>]: GenericAst<
 		parseValidGenericParams<extractGenericParameters<k>, bootstrapAliases<def>>,
 		def[k],
 		UnparsedScope
 	>
 }
 
-type inferBootstrapped<$> = show<{
+type inferBootstrapped<$> = {
 	[name in keyof $]: $[name] extends Def<infer def> ?
 		inferDefinition<def, $, {}>
-	: $[name] extends (
-		Generic<infer params, infer def> | GenericProps<infer params, infer def>
-	) ?
+	: $[name] extends { t: GenericAst<infer params, infer def, infer body$> } ?
 		// add the scope in which the generic was defined here
-		Generic<params, def, $>
-	:	// otherwise should be a submodule
-		$[name]
-}>
+		GenericAst<params, def, body$ extends UnparsedScope ? $ : body$, $>
+	: // should be submodule
+	$[name] extends Module<infer exports> ? Submodule<exports>
+	: never
+} & unknown
 
 type extractGenericName<k> =
 	k extends GenericDeclaration<infer name> ? name : never
@@ -157,21 +168,24 @@ export type resolve<reference extends keyof $ | keyof args, $, args> =
 	:	never
 
 export type moduleKeyOf<$> = {
-	// TODO: check against module directly?
-	[k in keyof $]: $[k] extends { [arkKind]: "module" } ? k & string : never
+	[k in keyof $]: $[k] extends { [arkKind]: "module" } ?
+		[$[k]] extends [anyOrNever] ?
+			never
+		:	k & string
+	:	never
 }[keyof $]
 
 export type tryInferSubmoduleReference<$, token> =
 	token extends `${infer submodule extends moduleKeyOf<$>}.${infer subalias}` ?
 		subalias extends keyof $[submodule] ?
 			$[submodule][subalias]
-		:	never
-	: token extends `${infer submodule}.${infer subalias}` ?
-		submodule extends moduleKeyOf<ArkEnv.$> ?
-			subalias extends keyof ArkEnv.$[submodule] ?
-				ArkEnv.$[submodule][subalias]
-			:	never
-		:	never
+		:	tryInferSubmoduleReference<$[submodule], subalias>
+	: token extends (
+		`${infer submodule extends moduleKeyOf<Ark>}.${infer subalias}`
+	) ?
+		subalias extends keyof Ark[submodule] ?
+			Ark[submodule][subalias]
+		:	tryInferSubmoduleReference<Ark[submodule], subalias>
 	:	never
 
 export interface ParseContext extends TypeParseOptions {
@@ -182,21 +196,15 @@ export interface TypeParseOptions {
 	args?: GenericArgResolutions
 }
 
-export const scope: ScopeParser = ((def: Dict, config: ArkConfig = {}) =>
+export const scope: ScopeParser = ((def: Dict, config: ArkScopeConfig = {}) =>
 	new InternalScope(def, config)) as never
 
 export class InternalScope<
 	$ extends InternalResolutions = InternalResolutions
-> extends InternalBaseScope<$> {
+> extends BaseScope<$> {
 	private parseCache: Record<string, StringParseResult> = {}
 
-	constructor(def: Record<string, unknown>, config?: ArkConfig) {
-		super(def, config)
-	}
-
 	type: InternalTypeParser = new InternalTypeParser(this as never)
-
-	match: MatchParser<$> = createMatchParser(this as never) as never
 
 	declare: () => { type: InternalTypeParser } = (() => ({
 		type: this.type
@@ -301,10 +309,30 @@ export class InternalScope<
 	}
 }
 
-export interface Scope<$ = any> extends BaseScope<$> {
-	type: TypeParser<$>
+export interface Scope<$ = {}> {
+	t: $
+	[arkKind]: "scope"
+	config: ArkScopeConfig
+	references: readonly BaseNode[]
+	json: Json
+	exportedNames: array<exportedNameOf<$>>
 
-	match: MatchParser<$>
+	/** The set of names defined at the root-level of the scope mapped to their
+	 * corresponding definitions.**/
+	aliases: Record<string, unknown>
+	internal: toInternalScope<$>
+
+	defineSchema<const def extends RootSchema>(schema: def): def
+
+	schema(schema: RootSchema, opts?: NodeParseOptions): BaseRoot
+
+	node<kinds extends NodeKind | array<RootKind>>(
+		kinds: kinds,
+		schema: NodeSchema<flattenListable<kinds>>,
+		opts?: NodeParseOptions
+	): nodeOfKind<reducibleKindOf<flattenListable<kinds>>>
+
+	type: TypeParser<$>
 
 	declare: DeclarationParser<$>
 
@@ -312,27 +340,30 @@ export interface Scope<$ = any> extends BaseScope<$> {
 
 	generic: GenericHktParser<$>
 
+	import(): Module<{ [k in exportedNameOf<$> as PrivateDeclaration<k>]: $[k] }>
 	import<names extends exportedNameOf<$>[]>(
 		...names: names
-	): Module<show<destructuredImportContext<$, names>>>
+	): BoundModule<destructuredImportContext<$, names>, $>
 
+	export(): Module<{ [k in exportedNameOf<$>]: $[k] }>
 	export<names extends exportedNameOf<$>[]>(
 		...names: names
-	): Module<show<destructuredExportContext<$, names>>>
+	): BoundModule<show<destructuredExportContext<$, names>>, $>
+
+	resolve<name extends exportedNameOf<$>>(
+		name: name
+	): instantiateExport<$[name], $>
 }
 
-export const Scope: new <$ = any>() => Scope<$> = InternalScope as never
+export const Scope: new <$ = {}>(
+	...args: ConstructorParameters<typeof InternalScope>
+) => Scope<$> = InternalScope as never
 
 export const writeShallowCycleErrorMessage = (
 	name: string,
 	seen: string[]
 ): string =>
 	`Alias '${name}' has a shallow resolution cycle: ${[...seen, name].join(":")}`
-
-export type ParsedScopeKey = {
-	name: string
-	params: array<GenericParamDef>
-}
 
 export type parseScopeKey<k, def> =
 	// trying to infer against GenericDeclaration here directly also fails as of TS 5.5

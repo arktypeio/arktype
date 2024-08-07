@@ -1,5 +1,6 @@
-import type { LimitLiteral, writeUnboundableMessage } from "@ark/schema"
+import type { writeUnboundableMessage } from "@ark/schema"
 import type { ErrorMessage, array, typeToString } from "@ark/util"
+import type { LimitLiteral } from "../../ast.js"
 import type { Comparator } from "../string/reduce/shared.js"
 import type {
 	BoundExpressionKind,

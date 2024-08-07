@@ -1,19 +1,19 @@
+import type { GenericAst } from "@ark/schema"
+import type { BigintLiteral, Hkt, array } from "@ark/util"
+import type { Ark } from "../../ark.js"
 import type {
 	Date,
 	DateLiteral,
 	Default,
-	GenericHkt,
-	GenericProps,
 	LimitLiteral,
 	RegexLiteral,
-	constrain,
+	applyConstraint,
 	distillIn,
 	distillOut,
-	inferIntersection,
 	normalizeLimit,
 	string
-} from "@ark/schema"
-import type { BigintLiteral, array } from "@ark/util"
+} from "../../ast.js"
+import type { inferIntersection } from "../../intersect.js"
 import type {
 	UnparsedScope,
 	resolve,
@@ -35,31 +35,33 @@ export type inferConstrainableAst<ast, $, args> =
 	: never
 
 export type GenericInstantiationAst<
-	generic extends GenericProps = GenericProps,
+	generic extends GenericAst = GenericAst,
 	argAsts extends unknown[] = unknown[]
 > = [generic, "<>", argAsts]
 
+type resolveScope<g$, $> =
+	// If the generic was defined in the current scope, its definition can be
+	// resolved using the same scope as that of the input args.
+	g$ extends UnparsedScope ? $
+	:	// Otherwise, use the scope that was explicitly bound to it.
+		g$
+
 export type inferExpression<ast extends array, $, args> =
-	ast extends GenericInstantiationAst<infer generic, infer argAsts> ?
-		generic["bodyDef"] extends GenericHkt ?
-			GenericHkt.instantiate<
-				generic["bodyDef"],
+	ast extends GenericInstantiationAst<infer g, infer argAsts> ?
+		g["bodyDef"] extends Hkt ?
+			Hkt.apply<
+				g["bodyDef"],
 				{ [i in keyof argAsts]: inferConstrainableAst<argAsts[i], $, args> }
 			>
 		:	inferDefinition<
-				generic["bodyDef"],
-				generic["$"]["t"] extends UnparsedScope ?
-					// If the generic was defined in the current scope, its definition can be
-					// resolved using the same scope as that of the input args.
-					$
-				:	// Otherwise, use the scope that was explicitly associated with it.
-					generic["$"]["t"],
+				g["bodyDef"],
+				resolveScope<g["$"], $>,
 				{
-					// Using keyof g["params"] & number here results in the element types being mixed
-					[i in keyof generic["params"] & `${number}` as generic["names"][i &
-						keyof generic["names"]]]: inferConstrainableAst<
+					// intersect `${number}` to ensure that only array indices are mapped
+					[i in keyof g["names"] &
+						`${number}` as g["names"][i]]: inferConstrainableAst<
 						argAsts[i & keyof argAsts],
-						$,
+						resolveScope<g["arg$"], $>,
 						args
 					>
 				}
@@ -82,7 +84,7 @@ export type inferExpression<ast extends array, $, args> =
 			constrainBound<inferConstrainableAst<ast[2], $, args>, ast[1], ast[0]>
 		:	constrainBound<inferConstrainableAst<ast[0], $, args>, ast[1], ast[2]>
 	: ast[1] extends "%" ?
-		constrain<
+		applyConstraint<
 			inferConstrainableAst<ast[0], $, args>,
 			"divisor",
 			ast[2] & number
@@ -99,8 +101,8 @@ export type constrainBound<
 		comparator extends "==" ?
 			In extends number ? limit
 			: In extends Date ? Date.literal<normalizeLimit<limit>>
-			: constrain<constrainableIn, "exactLength", limit & number>
-		:	constrain<
+			: applyConstraint<constrainableIn, "exactLength", limit & number>
+		:	applyConstraint<
 				constrainableIn,
 				In extends number ?
 					comparator extends MinComparator ?
@@ -143,7 +145,7 @@ export type InfixExpression<
 
 export type inferTerminal<token extends string, $, args> =
 	token extends keyof args | keyof $ ? resolve<token, $, args>
-	: token extends keyof ArkEnv.$ ? ArkEnv.$[token]
+	: token extends keyof Ark ? Ark[token]
 	: `#${token}` extends keyof $ ? resolve<`#${token}`, $, args>
 	: token extends StringLiteral<infer text> ? text
 	: token extends `${infer n extends number}` ? n

@@ -1,13 +1,11 @@
 import type { array } from "./arrays.js"
 import type { domainOf } from "./domain.js"
-import type { andPreserveUnknown, conform } from "./generics.js"
+import type { andPreserveUnknown } from "./generics.js"
 import type { Hkt } from "./hkt.js"
 import type { propValueOf, requiredKeyOf } from "./records.js"
 
-export interface AndPreserveUnknown extends Hkt.Kind {
-	hkt: (
-		args: conform<this[Hkt.args], [unknown, unknown]>
-	) => andPreserveUnknown<(typeof args)[0], (typeof args)[1]>
+export interface AndPreserveUnknown extends Hkt<[unknown, unknown]> {
+	body: andPreserveUnknown<this[0], this[1]>
 }
 
 type SequenceIntersectionKind = "array" | "parameters"
@@ -15,13 +13,13 @@ type SequenceIntersectionKind = "array" | "parameters"
 export type intersectArrays<
 	l extends array,
 	r extends array,
-	operator extends Hkt.Kind = AndPreserveUnknown
+	operator extends Hkt = AndPreserveUnknown
 > = intersectSequences<l, r, [], [], operator, "array">
 
 export type intersectParameters<
 	l extends array,
 	r extends array,
-	operator extends Hkt.Kind = AndPreserveUnknown
+	operator extends Hkt = AndPreserveUnknown
 > = intersectSequences<l, r, [], [], operator, "parameters">
 
 type intersectSequences<
@@ -29,7 +27,7 @@ type intersectSequences<
 	r extends array,
 	acc extends array,
 	postfix extends array,
-	operation extends Hkt.Kind,
+	operation extends Hkt,
 	kind extends SequenceIntersectionKind
 > =
 	l extends readonly [] ?
