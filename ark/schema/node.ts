@@ -16,7 +16,6 @@ import {
 	type listable,
 	type mutable
 } from "@ark/util"
-import type { ArkErrors } from "arktype"
 import type { BaseConstraint } from "./constraint.js"
 import type {
 	Inner,
@@ -36,6 +35,7 @@ import type {
 	MetaSchema,
 	attachmentsOf
 } from "./shared/declare.js"
+import type { ArkErrors } from "./shared/errors.js"
 import {
 	basisKinds,
 	constraintKinds,

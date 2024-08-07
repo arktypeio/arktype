@@ -1,7 +1,14 @@
 import { bench } from "@ark/attest"
 import { type } from "arktype"
 
-bench.baseline(() => type("never"))
+bench.baseline(() => {
+	type({
+		_: "symbol[]",
+		__: { ___: "symbol[]" }
+	})
+
+	type(["symbol[]", "symbol[]", ["symbol[]"]])
+})
 
 bench("dictionary", () => {
 	const dict = type({
@@ -9,7 +16,7 @@ bench("dictionary", () => {
 		b: "number[]",
 		c: { nested: "boolean[]" }
 	})
-}).types([3175, "instantiations"])
+}).types([3537, "instantiations"])
 
 bench("dictionary with optional keys", () => {
 	const dict = type({
@@ -17,8 +24,8 @@ bench("dictionary with optional keys", () => {
 		"b?": "number[]",
 		"c?": { "nested?": "boolean[]" }
 	})
-}).types([3018, "instantiations"])
+}).types([2774, "instantiations"])
 
 bench("tuple", () => {
 	const tuple = type(["string[]", "number[]", ["boolean[]"]])
-}).types([10381, "instantiations"])
+}).types([2689, "instantiations"])

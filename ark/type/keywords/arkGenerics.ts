@@ -26,22 +26,9 @@ const merge = genericNode(
 	["props", tsKeywords.object]
 )(args => args.base.merge(args.props), mergeHkt)
 
-class cloneHkt extends Hkt<[unknown]> {
-	declare body: this[0]
-}
-
-const clone = genericNode("t")(
-	args =>
-		args.t.pipe(data =>
-			util.hasDomain(data, "object") ? util.deepClone(data) : data
-		),
-	cloneHkt
-)
-
 const arkGenericsExports = {
 	liftArray,
-	merge,
-	clone
+	merge
 }
 
 export type arkGenericsExports = inferScope<typeof arkGenericsExports>
