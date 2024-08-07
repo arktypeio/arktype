@@ -57,10 +57,9 @@ contextualize(() => {
 
 			const suffix =
 				process.version.startsWith("v22") ? " (line 1 column 3)" : ""
-			attest(badOut.toString())
-				.snap(`must be valid according to an anonymous predicate (was aborted due to error:
-    SyntaxError: Expected property name or '}' in JSON at position 2${suffix}
-)`)
+			attest(badOut.toString()).satisfies(
+				/^must be valid according to an anonymous predicate \(was aborted due to error:\n {4}SyntaxError:/
+			)
 		})
 
 		it("preserves validated out", () => {

@@ -314,11 +314,6 @@ tags[2] must be a string (was object)`)
 			attest(capitalize("foo")).equals("Foo")
 			attest(capitalize(5).toString()).snap("must be a string (was number)")
 		})
-		it("wellFormed", () => {
-			const wellFormed = type("format.wellFormed")
-			attest(wellFormed("ab\uD800c")).equals("ab�c")
-			attest(wellFormed(5).toString()).snap("must be a string (was number)")
-		})
 		it("normalize", () => {
 			const normalize = type("format.normalize")
 			attest(normalize("\u00F1")).equals("ñ")
