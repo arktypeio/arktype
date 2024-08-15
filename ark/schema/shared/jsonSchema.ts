@@ -1,4 +1,5 @@
-import type { listable } from "@ark/util"
+import { printable, throwInternalError, type listable } from "@ark/util"
+import type { ConstraintKind } from "./implement.js"
 
 export type JsonSchema = JsonSchema.Union | JsonSchema.Branch
 
@@ -65,6 +66,8 @@ export declare namespace JsonSchema {
 		items?: readonly JsonSchema[]
 		additionalItems?: boolean | JsonSchema
 	}
+
+	export type LengthBoundable = String | Array
 }
 
 export type UnsupportedJsonSchemaTypeMessageOptions = {
@@ -94,3 +97,11 @@ export const writeCyclicJsonSchemaMessage = (description: string): string =>
 		reason:
 			"cyclic types are not yet convertible to JSON Schema. If this feature is important to you, please add your feedback at https://github.com/arktypeio/arktype/issues/1087"
 	})
+
+export const throwInternalJsonSchemaOperandError = (
+	kind: ConstraintKind,
+	schema: JsonSchema
+): never =>
+	throwInternalError(
+		`Unexpected JSON Schema input for ${kind}: ${printable(schema)}`
+	)

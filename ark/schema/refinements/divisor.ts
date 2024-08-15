@@ -12,6 +12,7 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.js"
+import type { JsonSchema } from "../shared/jsonSchema.js"
 import { $ark } from "../shared/registry.js"
 import type { TraverseAllows } from "../shared/traversal.js"
 
@@ -72,6 +73,16 @@ export class DivisorNode extends InternalPrimitiveConstraint<Divisor.Declaration
 	readonly compiledNegation: string = `data % ${this.rule} !== 0`
 	readonly impliedBasis: BaseRoot = $ark.intrinsic.number.internal
 	readonly expression: string = `% ${this.rule}`
+
+	reduceJsonSchema(schema: JsonSchema.Numeric): JsonSchema.Numeric {
+		schema.type = "integer"
+
+		if (this.rule === 1) return schema
+
+		schema.multipleOf = this.rule
+
+		return schema
+	}
 }
 
 export const Divisor = {

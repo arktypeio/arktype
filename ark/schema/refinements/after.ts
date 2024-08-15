@@ -1,10 +1,14 @@
-import { describeCollapsibleDate } from "@ark/util"
+import { describeCollapsibleDate, throwParseError } from "@ark/util"
 import type { BaseRoot } from "../roots/root.js"
 import type { BaseErrorContext, declareNode } from "../shared/declare.js"
 import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.js"
+import {
+	writeUnsupportedJsonSchemaTypeMessage,
+	type JsonSchema
+} from "../shared/jsonSchema.js"
 import { $ark } from "../shared/registry.js"
 import type { TraverseAllows } from "../shared/traversal.js"
 import {
@@ -74,6 +78,12 @@ export class AfterNode extends BaseRange<After.Declaration> {
 	collapsibleLimitString = describeCollapsibleDate(this.rule)
 
 	traverseAllows: TraverseAllows<Date> = data => data >= this.rule
+
+	reduceJsonSchema(): JsonSchema {
+		return throwParseError(
+			writeUnsupportedJsonSchemaTypeMessage("Date instance")
+		)
+	}
 }
 
 export const After = {

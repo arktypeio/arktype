@@ -262,7 +262,12 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 	}
 
 	toJsonSchema(): JsonSchema {
-		return this.basis?.toJsonSchema() ?? {}
+		const schema = this.basis?.toJsonSchema() ?? {}
+		return this.refinements.reduce(
+			// cast is required since TS doesn't know children have compatible schema prerequisites
+			(schema, child) => child.reduceJsonSchema(schema as never),
+			schema
+		)
 	}
 
 	traverseAllows: TraverseAllows = (data, ctx) =>

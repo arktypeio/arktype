@@ -9,6 +9,7 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.js"
+import type { JsonSchema } from "../shared/jsonSchema.js"
 import { $ark } from "../shared/registry.js"
 
 export declare namespace Pattern {
@@ -77,6 +78,11 @@ export class PatternNode extends InternalPrimitiveConstraint<Pattern.Declaration
 	readonly compiledCondition: string = `${this.expression}.test(data)`
 	readonly compiledNegation: string = `!${this.compiledCondition}`
 	readonly impliedBasis: BaseRoot = $ark.intrinsic.string.internal
+
+	reduceJsonSchema(schema: JsonSchema.String): JsonSchema.String {
+		schema.pattern = this.rule
+		return schema
+	}
 }
 
 export const Pattern = {

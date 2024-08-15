@@ -5,6 +5,10 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.js"
+import {
+	throwInternalJsonSchemaOperandError,
+	type JsonSchema
+} from "../shared/jsonSchema.js"
 import { $ark } from "../shared/registry.js"
 import type { TraverseAllows } from "../shared/traversal.js"
 import {
@@ -81,6 +85,21 @@ export class MaxLengthNode extends BaseRange<MaxLength.Declaration> {
 
 	traverseAllows: TraverseAllows<LengthBoundableData> = data =>
 		data.length <= this.rule
+
+	reduceJsonSchema(
+		schema: JsonSchema.LengthBoundable
+	): JsonSchema.LengthBoundable {
+		switch (schema.type) {
+			case "string":
+				schema.maxLength = this.rule
+				return schema
+			case "array":
+				schema.maxItems = this.rule
+				return schema
+			default:
+				return throwInternalJsonSchemaOperandError("maxLength", schema)
+		}
+	}
 }
 
 export const MaxLength = {

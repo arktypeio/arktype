@@ -36,6 +36,7 @@ import {
 	type kindLeftOf
 } from "./shared/implement.js"
 import { intersectNodes, intersectNodesRoot } from "./shared/intersections.js"
+import type { JsonSchema } from "./shared/jsonSchema.js"
 import { $ark } from "./shared/registry.js"
 import type { TraverseAllows, TraverseApply } from "./shared/traversal.js"
 import { arkKind } from "./shared/utils.js"
@@ -77,6 +78,10 @@ export abstract class InternalPrimitiveConstraint<
 	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
 	abstract readonly compiledCondition: string
 	abstract readonly compiledNegation: string
+
+	abstract reduceJsonSchema(
+		base: JsonSchema.Constrainable
+	): JsonSchema.Constrainable
 
 	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
 		if (!this.traverseAllows(data, ctx)) ctx.error(this.errorContext as never)

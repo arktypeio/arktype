@@ -10,6 +10,10 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.js"
+import {
+	throwInternalJsonSchemaOperandError,
+	type JsonSchema
+} from "../shared/jsonSchema.js"
 import { $ark } from "../shared/registry.js"
 import type { TraverseAllows } from "../shared/traversal.js"
 import { createLengthRuleParser, type LengthBoundableData } from "./range.js"
@@ -84,6 +88,23 @@ export class ExactLengthNode extends InternalPrimitiveConstraint<ExactLength.Dec
 	readonly compiledNegation: string = `data.length !== ${this.rule}`
 	readonly impliedBasis: BaseRoot = $ark.intrinsic.lengthBoundable.internal
 	readonly expression: string = `== ${this.rule}`
+
+	reduceJsonSchema(
+		schema: JsonSchema.LengthBoundable
+	): JsonSchema.LengthBoundable {
+		switch (schema.type) {
+			case "string":
+				schema.minLength = this.rule
+				schema.maxLength = this.rule
+				return schema
+			case "array":
+				schema.minItems = this.rule
+				schema.maxItems = this.rule
+				return schema
+			default:
+				return throwInternalJsonSchemaOperandError("exactLength", schema)
+		}
+	}
 }
 
 export const ExactLength = {
