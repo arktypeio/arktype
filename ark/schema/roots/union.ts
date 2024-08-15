@@ -40,7 +40,7 @@ import {
 } from "../shared/implement.js"
 import { intersectNodes, intersectNodesRoot } from "../shared/intersections.js"
 import type { JsonSchema } from "../shared/jsonSchema.js"
-import { registeredReference } from "../shared/registry.js"
+import { $ark, registeredReference } from "../shared/registry.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 import { hasArkKind, pathToPropString } from "../shared/utils.js"
 import type { Domain } from "./domain.js"
@@ -213,6 +213,23 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		this.branches[0].hasUnit(false) &&
 		this.branches[1].hasUnit(true)
 
+	get branchGroups(): BaseRoot[] {
+		const branchGroups: BaseRoot[] = []
+		let firstBooleanIndex = -1
+		this.branches.forEach(branch => {
+			if (branch.hasKind("unit") && branch.domain === "boolean") {
+				if (firstBooleanIndex === -1) {
+					firstBooleanIndex = branchGroups.length
+					branchGroups.push(branch)
+				} else branchGroups[firstBooleanIndex] = $ark.intrinsic.boolean
+				return
+			}
+			branchGroups.push(branch)
+		})
+
+		return branchGroups as never
+	}
+
 	unitBranches = this.branches.filter((n): n is Unit.Node | Morph.Node =>
 		n.in.hasKind("unit")
 	)
@@ -232,7 +249,13 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 
 	toJsonSchema(): JsonSchema {
 		return {
-			anyOf: this.branches.map(branch => branch.toJsonSchema())
+			anyOf: this.branchGroups.map(group =>
+				// special case to simplify { const: true } | { const: false }
+				// to the canonical JSON Schema representation { type: "boolean" }
+				group.equals($ark.intrinsic.boolean) ?
+					{ type: "boolean" }
+				:	group.toJsonSchema()
+			)
 		}
 	}
 

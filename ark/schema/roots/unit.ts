@@ -3,6 +3,7 @@ import {
 	domainOf,
 	printable,
 	prototypeKeysOf,
+	throwParseError,
 	type Domain,
 	type JsonPrimitive,
 	type Key,
@@ -19,7 +20,11 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.js"
-import type { JsonSchema } from "../shared/jsonSchema.js"
+import {
+	writeUnsupportedJsonSchemaTypeMessage,
+	type JsonSchema
+} from "../shared/jsonSchema.js"
+import { $ark } from "../shared/registry.js"
 import type { TraverseAllows } from "../shared/traversal.js"
 import { InternalBasis } from "./basis.js"
 import { defineRightwardIntersections } from "./utils.js"
@@ -111,7 +116,11 @@ export class UnitNode extends InternalBasis<Unit.Declaration> {
 	}
 
 	toJsonSchema(): JsonSchema {
-		return {}
+		return $ark.intrinsic.jsonPrimitive.allows(this.unit) ?
+				{ const: this.unit }
+			:	throwParseError(
+					writeUnsupportedJsonSchemaTypeMessage(this.shortDescription)
+				)
 	}
 
 	traverseAllows: TraverseAllows =

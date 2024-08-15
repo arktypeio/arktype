@@ -48,8 +48,7 @@ const intrinsicJson = schemaScope(
 			"number",
 			{ unit: true },
 			{ unit: false },
-			{ unit: null },
-			{ unit: undefined }
+			{ unit: null }
 		],
 		jsonObject: {
 			domain: "object",
@@ -76,7 +75,8 @@ node(
 			...intrinsicJson.jsonPrimitive.branches,
 			"object",
 			"bigint",
-			"symbol"
+			"symbol",
+			{ unit: undefined }
 		]
 	},
 	{ reduceTo: node("intersection", {}, { prereduced: true }) }
