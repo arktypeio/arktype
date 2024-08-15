@@ -106,10 +106,10 @@ const _serialize = (
 }
 
 /**
- * Converts a Date object to a string representation, stopping at the first zero component.
+ * Converts a Date instance to a human-readable description relative to its precision
  *
- * @param {Date} date - The date to be converted to a string.
- * @returns {string} The string representation of the date.
+ * @param {Date} date
+ * @returns {string} - The generated description
  */
 export const describeCollapsibleDate = (date: Date): string => {
 	const year = date.getFullYear()
@@ -137,14 +137,18 @@ export const describeCollapsibleDate = (date: Date): string => {
 
 	let timePortion = date.toLocaleTimeString()
 
-	if (milliseconds) {
-		const formattedMillis = `.${pad(milliseconds, 3)}`
-		if (timePortion.endsWith(" AM") || timePortion.endsWith(" PM"))
-			timePortion = `${timePortion.slice(0, -3)}${formattedMillis}${timePortion.slice(-3)}`
-		else timePortion += formattedMillis
-	}
+	const suffix =
+		timePortion.endsWith(" AM") || timePortion.endsWith(" PM") ?
+			timePortion.slice(-3)
+		:	""
 
-	return `${timePortion}, ${datePortion}`
+	if (suffix) timePortion = timePortion.slice(0, -suffix.length)
+
+	if (milliseconds) timePortion += `.${pad(milliseconds, 3)}`
+	else if (timeWithUnnecessarySeconds.test(timePortion))
+		timePortion = timePortion.slice(0, -3)
+
+	return `${timePortion + suffix}, ${datePortion}`
 }
 
 const months = [
@@ -161,6 +165,8 @@ const months = [
 	"November",
 	"December"
 ]
+
+const timeWithUnnecessarySeconds = /:\d\d:00$/
 
 const pad = (value: number, length: number) =>
 	String(value).padStart(length, "0")
