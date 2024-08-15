@@ -508,6 +508,25 @@ export abstract class BaseRoot<
 	}
 }
 
+export namespace JsonSchema {
+	export type TypeName =
+		| "string"
+		| "integer"
+		| "number"
+		| "object"
+		| "array"
+		| "boolean"
+		| "null"
+
+	export type Unknown = {
+		type: JsonSchema.TypeName | readonly JsonSchema.TypeName[]
+	}
+
+	export type String = {
+		minLength: {}
+	}
+}
+
 export type UndeclaredKeyConfig = {
 	rule: UndeclaredKeyBehavior
 	deep?: boolean
