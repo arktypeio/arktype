@@ -107,10 +107,7 @@ contextualize(() => {
 			const t = type("Date<d'2023/1/12'")
 			attest<Date>(t.infer)
 			attest(t).type.toString.snap('Type<before<"2023/1/12">, {}>')
-			attest(t.json).snap({
-				proto: "Date",
-				before: { exclusive: true, rule: "2023-01-12T05:00:00.000Z" }
-			})
+			attest(t.json).snap({ proto: "Date", before: "2023-01-12T04:59:59.999Z" })
 		})
 
 		it("Date equality", () => {
@@ -130,8 +127,8 @@ contextualize(() => {
 			)
 			attest(t.json).snap({
 				proto: "Date",
-				before: { exclusive: true, rule: "2005-10-10T04:00:00.000Z" },
-				after: { exclusive: true, rule: "2001-10-10T04:00:00.000Z" }
+				before: "2005-10-10T03:59:59.999Z",
+				after: "2001-10-10T04:00:00.001Z"
 			})
 			attest(t.allows(new Date("2003/10/10"))).equals(true)
 			attest(t.allows(new Date("2001/10/10"))).equals(false)

@@ -11,15 +11,16 @@ import {
 	BaseRange,
 	parseExclusiveKey,
 	type BaseRangeInner,
-	type UnknownNormalizedRangeSchema
+	type UnknownExpandedRangeSchema
 } from "./range.js"
 
 export namespace Max {
 	export interface Inner extends BaseRangeInner {
 		rule: number
+		exclusive?: true
 	}
 
-	export interface NormalizedSchema extends UnknownNormalizedRangeSchema {
+	export interface NormalizedSchema extends UnknownExpandedRangeSchema {
 		rule: number
 	}
 

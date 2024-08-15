@@ -1,3 +1,4 @@
+import { describeCollapsibleDate } from "@ark/util"
 import type { BaseRoot } from "../roots/root.js"
 import type { BaseErrorContext, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -9,10 +10,11 @@ import { $ark } from "../shared/registry.js"
 import type { TraverseAllows } from "../shared/traversal.js"
 import {
 	BaseRange,
+	createDateSchemaNormalizer,
 	parseDateLimit,
-	parseExclusiveKey,
 	type BaseRangeInner,
 	type LimitSchemaValue,
+	type UnknownExpandedRangeSchema,
 	type UnknownNormalizedRangeSchema
 } from "./range.js"
 
@@ -25,7 +27,11 @@ export namespace Before {
 		rule: LimitSchemaValue
 	}
 
-	export type Schema = NormalizedSchema | LimitSchemaValue
+	export interface ExpandedSchema extends UnknownExpandedRangeSchema {
+		rule: LimitSchemaValue
+	}
+
+	export type Schema = ExpandedSchema | LimitSchemaValue
 
 	export interface ErrorContext extends BaseErrorContext<"before">, Inner {}
 
@@ -51,23 +57,12 @@ const implementation: nodeImplementationOf<Before.Declaration> =
 			rule: {
 				parse: parseDateLimit,
 				serialize: schema => schema.toISOString()
-			},
-			exclusive: parseExclusiveKey
+			}
 		},
-		normalize: schema =>
-			(
-				typeof schema === "number" ||
-				typeof schema === "string" ||
-				schema instanceof Date
-			) ?
-				{ rule: schema }
-			:	schema,
+		normalize: createDateSchemaNormalizer("before"),
 		defaults: {
-			description: node =>
-				node.exclusive ?
-					`before ${node.stringLimit}`
-				:	`${node.stringLimit} or earlier`,
-			actual: data => data.toLocaleString()
+			description: node => `${node.collapsibleLimitString} or earlier`,
+			actual: describeCollapsibleDate
 		},
 		intersections: {
 			before: (l, r) => (l.isStricterThan(r) ? l : r),
@@ -81,8 +76,9 @@ const implementation: nodeImplementationOf<Before.Declaration> =
 	})
 
 export class BeforeNode extends BaseRange<Before.Declaration> {
-	traverseAllows: TraverseAllows<Date> =
-		this.exclusive ? data => data < this.rule : data => data <= this.rule
+	collapsibleLimitString = describeCollapsibleDate(this.rule)
+
+	traverseAllows: TraverseAllows<Date> = data => data <= this.rule
 
 	impliedBasis: BaseRoot = $ark.intrinsic.Date.internal
 }

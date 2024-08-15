@@ -54,7 +54,7 @@ export const printable = (data: unknown, indent?: number): string => {
 			return (
 				ctorName === "Object" || ctorName === "Array" ?
 					JSON.stringify(_serialize(o, printableOpts, []), null, indent)
-				: o instanceof Date ? o.toDateString()
+				: o instanceof Date ? describeCollapsibleDate(o)
 				: typeof o.expression === "string" ? o.expression
 				: ctorName
 			)
@@ -104,3 +104,63 @@ const _serialize = (
 			return data
 	}
 }
+
+/**
+ * Converts a Date object to a string representation, stopping at the first zero component.
+ *
+ * @param {Date} date - The date to be converted to a string.
+ * @returns {string} The string representation of the date.
+ */
+export const describeCollapsibleDate = (date: Date): string => {
+	const year = date.getFullYear()
+	const month = date.getMonth()
+	const dayOfMonth = date.getDate()
+	const hours = date.getHours()
+	const minutes = date.getMinutes()
+	const seconds = date.getSeconds()
+	const milliseconds = date.getMilliseconds()
+
+	if (
+		month === 0 &&
+		dayOfMonth === 1 &&
+		hours === 0 &&
+		minutes === 0 &&
+		seconds === 0 &&
+		milliseconds === 0
+	)
+		return `${year}`
+
+	const datePortion = `${months[month]} ${dayOfMonth}, ${year}`
+
+	if (hours === 0 && minutes === 0 && seconds === 0 && milliseconds === 0)
+		return datePortion
+
+	let timePortion = date.toLocaleTimeString()
+
+	if (milliseconds) {
+		const formattedMillis = `.${pad(milliseconds, 3)}`
+		if (timePortion.endsWith(" AM") || timePortion.endsWith(" PM"))
+			timePortion = `${timePortion.slice(0, -3)}${formattedMillis}${timePortion.slice(-3)}`
+		else timePortion += formattedMillis
+	}
+
+	return `${timePortion}, ${datePortion}`
+}
+
+const months = [
+	"January",
+	"February",
+	"March",
+	"April",
+	"May",
+	"June",
+	"July",
+	"August",
+	"September",
+	"October",
+	"November",
+	"December"
+]
+
+const pad = (value: number, length: number) =>
+	String(value).padStart(length, "0")

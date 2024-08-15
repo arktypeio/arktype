@@ -470,7 +470,7 @@ other must be a string (was bigint)`)
 			attest<Expected, typeof repro.inferIn>()
 
 			attest(repro.expression).snap(
-				"{ normal: string > 0, optional?: string > 0 }"
+				"{ normal: string >= 1, optional?: string >= 1 }"
 			)
 		})
 	})

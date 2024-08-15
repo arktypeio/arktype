@@ -64,19 +64,11 @@ const implementation: nodeImplementationOf<ExactLength.Declaration> =
 					{ path: ["length"] }
 				),
 			minLength: (exactLength, minLength) =>
-				(
-					minLength.exclusive ?
-						exactLength.rule > minLength.rule
-					:	exactLength.rule >= minLength.rule
-				) ?
+				exactLength.rule >= minLength.rule ?
 					exactLength
 				:	Disjoint.init("range", exactLength, minLength),
 			maxLength: (exactLength, maxLength) =>
-				(
-					maxLength.exclusive ?
-						exactLength.rule < maxLength.rule
-					:	exactLength.rule <= maxLength.rule
-				) ?
+				exactLength.rule <= maxLength.rule ?
 					exactLength
 				:	Disjoint.init("range", exactLength, maxLength)
 		}
