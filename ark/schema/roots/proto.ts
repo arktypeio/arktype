@@ -5,6 +5,7 @@ import {
 	objectKindDescriptions,
 	objectKindOrDomainOf,
 	prototypeKeysOf,
+	throwParseError,
 	type BuiltinObjectKind,
 	type Constructor,
 	type Key,
@@ -21,6 +22,10 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.js"
+import {
+	writeUnsupportedJsonSchemaTypeMessage,
+	type JsonSchema
+} from "../shared/jsonSchema.js"
 import { $ark } from "../shared/registry.js"
 import type { TraverseAllows } from "../shared/traversal.js"
 import { InternalBasis } from "./basis.js"
@@ -108,6 +113,19 @@ export class ProtoNode extends InternalBasis<Proto.Declaration> {
 	compiledCondition = `data instanceof ${this.serializedConstructor}`
 	compiledNegation = `!(${this.compiledCondition})`
 	literalKeys: array<Key> = prototypeKeysOf(this.proto.prototype)
+
+	toJsonSchema(): JsonSchema {
+		switch (this.builtinName) {
+			case "Array":
+				return {
+					type: "array"
+				}
+			default:
+				return throwParseError(
+					writeUnsupportedJsonSchemaTypeMessage(this.description)
+				)
+		}
+	}
 
 	traverseAllows: TraverseAllows = data => data instanceof this.proto
 	expression: string = this.proto.name

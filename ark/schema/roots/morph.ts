@@ -14,6 +14,10 @@ import {
 	type nodeImplementationOf
 } from "../shared/implement.js"
 import { intersectNodes } from "../shared/intersections.js"
+import {
+	writeJsonSchemaMorphMessage,
+	type JsonSchema
+} from "../shared/jsonSchema.js"
 import { $ark, registeredReference } from "../shared/registry.js"
 import type {
 	TraversalContext,
@@ -136,6 +140,10 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 
 	get shortDescription(): string {
 		return this.in.shortDescription
+	}
+
+	toJsonSchema(): JsonSchema {
+		return throwParseError(writeJsonSchemaMorphMessage(this.expression))
 	}
 
 	compile(js: NodeCompiler): void {

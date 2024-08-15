@@ -41,6 +41,7 @@ import {
 	type StructuralKind
 } from "../shared/implement.js"
 import { intersectNodes } from "../shared/intersections.js"
+import type { JsonSchema } from "../shared/jsonSchema.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 import { hasArkKind, isNode } from "../shared/utils.js"
 import type { Sequence } from "../structure/sequence.js"
@@ -256,6 +257,10 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 
 	get shortDescription(): string {
 		return this.basis?.shortDescription ?? "present"
+	}
+
+	toJsonSchema(): JsonSchema {
+		return this.basis?.toJsonSchema() ?? {}
 	}
 
 	traverseAllows: TraverseAllows = (data, ctx) =>

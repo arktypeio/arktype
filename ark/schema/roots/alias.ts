@@ -1,4 +1,4 @@
-import { append, cached, domainDescriptions } from "@ark/util"
+import { append, cached, domainDescriptions, throwParseError } from "@ark/util"
 import type { NodeCompiler } from "../shared/compile.js"
 import type { BaseNormalizedSchema, declareNode } from "../shared/declare.js"
 import { Disjoint } from "../shared/disjoint.js"
@@ -7,6 +7,10 @@ import {
 	type nodeImplementationOf
 } from "../shared/implement.js"
 import { intersectNodes } from "../shared/intersections.js"
+import {
+	writeCyclicJsonSchemaMessage,
+	type JsonSchema
+} from "../shared/jsonSchema.js"
 import { $ark } from "../shared/registry.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 import { BaseRoot } from "./root.js"
@@ -85,6 +89,10 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 
 	get shortDescription(): string {
 		return domainDescriptions.object
+	}
+
+	toJsonSchema(): JsonSchema {
+		return throwParseError(writeCyclicJsonSchemaMessage(this.expression))
 	}
 
 	traverseAllows: TraverseAllows = (data, ctx) => {

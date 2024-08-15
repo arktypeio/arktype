@@ -2,6 +2,7 @@ import {
 	domainDescriptions,
 	domainOf,
 	getBaseDomainKeys,
+	throwParseError,
 	type Domain as _Domain,
 	type array,
 	type Key
@@ -16,6 +17,10 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.js"
+import {
+	writeUnsupportedJsonSchemaTypeMessage,
+	type JsonSchema
+} from "../shared/jsonSchema.js"
 import type { TraverseAllows } from "../shared/traversal.js"
 import { InternalBasis } from "./basis.js"
 
@@ -90,6 +95,14 @@ export class DomainNode extends InternalBasis<Domain.Declaration> {
 
 	get shortDescription(): string {
 		return domainDescriptions[this.domain]
+	}
+
+	toJsonSchema(): JsonSchema {
+		if (this.domain === "bigint" || this.domain === "symbol")
+			return throwParseError(writeUnsupportedJsonSchemaTypeMessage(this.domain))
+		return {
+			type: this.domain
+		}
 	}
 }
 

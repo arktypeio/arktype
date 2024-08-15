@@ -66,3 +66,31 @@ export declare namespace JsonSchema {
 		additionalItems?: boolean | JsonSchema
 	}
 }
+
+export type UnsupportedJsonSchemaTypeMessageOptions = {
+	prefix?: string
+	description: string
+	reason?: string
+}
+
+export const writeUnsupportedJsonSchemaTypeMessage = (
+	input: string | UnsupportedJsonSchemaTypeMessageOptions
+): string => {
+	const normalized = typeof input === "string" ? { description: input } : input
+	return `${normalized.description} is not convertible to JSON Schema`
+}
+
+export const writeJsonSchemaMorphMessage = (description: string): string =>
+	writeUnsupportedJsonSchemaTypeMessage({
+		prefix: "Morph",
+		description,
+		reason:
+			"it represents a transformation, while JSON Schema only allows validation. Consider creating a Schema from one of its endpoints using `.in` or `.out`."
+	})
+
+export const writeCyclicJsonSchemaMessage = (description: string): string =>
+	writeUnsupportedJsonSchemaTypeMessage({
+		description,
+		reason:
+			"cyclic types are not yet convertible to JSON Schema. If this feature is important to you, please add your feedback at https://github.com/arktypeio/arktype/issues/1087"
+	})
