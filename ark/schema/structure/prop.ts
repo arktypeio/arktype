@@ -20,7 +20,7 @@ import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 import type { Optional } from "./optional.js"
 import type { Required } from "./required.js"
 
-export namespace Prop {
+export declare namespace Prop {
 	export type Kind = "required" | "optional"
 
 	export type Node = nodeOfKind<Kind>

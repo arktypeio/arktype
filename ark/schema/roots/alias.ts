@@ -12,7 +12,7 @@ import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 import { BaseRoot } from "./root.js"
 import { defineRightwardIntersections } from "./utils.js"
 
-export namespace Alias {
+export declare namespace Alias {
 	export type Schema<alias extends string = string> = `$${alias}` | Inner<alias>
 
 	export interface NormalizedSchema<alias extends string = string>

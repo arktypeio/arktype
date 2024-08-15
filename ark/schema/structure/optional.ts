@@ -5,7 +5,7 @@ import {
 } from "../shared/implement.js"
 import { BaseProp, intersectProps, type Prop } from "./prop.js"
 
-export namespace Optional {
+export declare namespace Optional {
 	export interface Schema extends Prop.Schema {
 		default?: unknown
 	}

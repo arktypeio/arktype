@@ -101,7 +101,7 @@ export type primitiveConstraintKindOf<In> = Extract<
 	constraintKindOf<In>
 >
 
-export namespace number {
+export declare namespace number {
 	export type atLeast<rule> = constrain<number, AtLeast<rule>>
 
 	export type moreThan<rule> = constrain<number, MoreThan<rule>>
@@ -158,7 +158,7 @@ export type ExactlyLength<rule> = {
 	atMostLength: constraint<rule>
 }
 
-export namespace string {
+export declare namespace string {
 	export type atLeastLength<rule> = constrain<string, AtLeastLength<rule>>
 
 	export type moreThanLength<rule> = constrain<string, MoreThanLength<rule>>
@@ -213,7 +213,7 @@ export type Before<rule> = {
 	before: constraint<rule>
 }
 
-export namespace Date {
+export declare namespace Date {
 	export type atOrAfter<rule> = constrain<Date, AtOrAfter<rule>>
 
 	export type after<rule> = constrain<Date, After<rule>>

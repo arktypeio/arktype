@@ -15,7 +15,7 @@ export abstract class Hkt<constraints extends unknown[] = any> {
 /** A small set of HKT utility types based on https://github.com/gvergnaud/hotscript
  *  See https://github.com/gvergnaud/hotscript/blob/main/src/internals/core/Core.ts
  */
-export namespace Hkt {
+export declare namespace Hkt {
 	export type constructor<constraints extends unknown[] = any> =
 		new () => Hkt<constraints>
 

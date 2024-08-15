@@ -11,7 +11,7 @@ import {
 } from "../shared/implement.js"
 import { $ark } from "../shared/registry.js"
 
-export namespace Pattern {
+export declare namespace Pattern {
 	export interface NormalizedSchema extends BaseNormalizedSchema {
 		readonly rule: string
 		readonly flags?: string

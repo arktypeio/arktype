@@ -17,7 +17,7 @@ import {
 	type UnknownNormalizedRangeSchema
 } from "./range.js"
 
-export namespace After {
+export declare namespace After {
 	export interface Inner extends BaseRangeInner {
 		rule: Date
 	}

@@ -1,8 +1,8 @@
 import type { listable } from "@ark/util"
 
-export type JsonSchema = JsonSchema.Unknown
+export type JsonSchema = JsonSchema.Union | JsonSchema.Branch
 
-export namespace JsonSchema {
+export declare namespace JsonSchema {
 	export type TypeName =
 		| "string"
 		| "integer"
@@ -19,16 +19,14 @@ export namespace JsonSchema {
 		examples?: readonly t[]
 	}
 
-	export type Unknown =
-		| Constrainable
-		| Const
-		| String
-		| Numeric
-		| Object
-		| Array
+	export type Branch = Constrainable | Const | String | Numeric | Object | Array
 
 	export interface Constrainable extends Meta {
 		type?: listable<TypeName>
+	}
+
+	export interface Union extends Meta {
+		anyOf: readonly Branch[]
 	}
 
 	export interface Const extends Meta {

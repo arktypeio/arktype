@@ -39,6 +39,7 @@ import {
 	type nodeImplementationOf
 } from "../shared/implement.js"
 import { intersectNodes, intersectNodesRoot } from "../shared/intersections.js"
+import type { JsonSchema } from "../shared/jsonSchema.js"
 import { registeredReference } from "../shared/registry.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 import { hasArkKind, pathToPropString } from "../shared/utils.js"
@@ -48,7 +49,7 @@ import { BaseRoot } from "./root.js"
 import type { Unit } from "./unit.js"
 import { defineRightwardIntersections } from "./utils.js"
 
-export namespace Union {
+export declare namespace Union {
 	export type ChildKind = UnionChildKind
 
 	export type ChildSchema = NodeSchema<ChildKind>
@@ -227,6 +228,12 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 
 	get shortDescription(): string {
 		return this.distribute(branch => branch.shortDescription, describeBranches)
+	}
+
+	toJsonSchema(): JsonSchema {
+		return {
+			anyOf: this.branches.map(branch => branch.toJsonSchema())
+		}
 	}
 
 	traverseAllows: TraverseAllows = (data, ctx) =>

@@ -21,7 +21,7 @@ import { InternalBasis } from "./basis.js"
 
 export type Domain = _Domain
 
-export namespace Domain {
+export declare namespace Domain {
 	export type NonEnumerable = Exclude<Domain, "undefined" | "null" | "boolean">
 
 	export interface Inner<domain extends NonEnumerable = NonEnumerable> {

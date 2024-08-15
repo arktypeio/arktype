@@ -42,6 +42,7 @@ import {
 	type kindRightOf
 } from "../shared/implement.js"
 import { intersectNodesRoot, pipeNodesRoot } from "../shared/intersections.js"
+import type { JsonSchema } from "../shared/jsonSchema.js"
 import { $ark } from "../shared/registry.js"
 import { arkKind, hasArkKind } from "../shared/utils.js"
 import type {
@@ -89,6 +90,8 @@ export abstract class BaseRoot<
 	}
 
 	abstract get shortDescription(): string
+
+	abstract toJsonSchema(): JsonSchema
 
 	intersect(r: unknown): BaseRoot | Disjoint {
 		const rNode = this.$.parseRoot(r)

@@ -53,7 +53,7 @@ export const ark: Module<Ark> = ambient.export()
 
 export const type: TypeParser<{}> = ambient.type as never
 
-export namespace type {
+export declare namespace type {
 	export type cast<t> = {
 		[inferred]?: t
 	}

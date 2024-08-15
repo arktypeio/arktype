@@ -53,7 +53,7 @@ import type { Proto } from "./proto.js"
 import { BaseRoot } from "./root.js"
 import { defineRightwardIntersections } from "./utils.js"
 
-export namespace Intersection {
+export declare namespace Intersection {
 	export type BasisKind = "domain" | "proto"
 
 	export type ChildKind = BasisKind | ConstraintKind

@@ -25,7 +25,7 @@ import { intersectNodes } from "../shared/intersections.js"
 import { $ark } from "../shared/registry.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 
-export namespace Index {
+export declare namespace Index {
 	export type KeyKind = Exclude<RootKind, "unit">
 
 	export type KeyNode = nodeOfKind<KeyKind>

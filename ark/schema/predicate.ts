@@ -20,7 +20,7 @@ import type {
 	TraverseApply
 } from "./shared/traversal.js"
 
-export namespace Predicate {
+export declare namespace Predicate {
 	export type Schema<predicate extends Predicate = Predicate> =
 		| NormalizedSchema<predicate>
 		| predicate

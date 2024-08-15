@@ -14,7 +14,7 @@ import {
 	type UnknownExpandedRangeSchema
 } from "./range.js"
 
-export namespace Max {
+export declare namespace Max {
 	export interface Inner extends BaseRangeInner {
 		rule: number
 		exclusive?: true

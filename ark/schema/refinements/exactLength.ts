@@ -14,7 +14,7 @@ import { $ark } from "../shared/registry.js"
 import type { TraverseAllows } from "../shared/traversal.js"
 import { createLengthRuleParser, type LengthBoundableData } from "./range.js"
 
-export namespace ExactLength {
+export declare namespace ExactLength {
 	export interface Inner {
 		readonly rule: number
 	}

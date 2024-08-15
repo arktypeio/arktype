@@ -40,7 +40,7 @@ import { $ark } from "./shared/registry.js"
 import type { TraverseAllows, TraverseApply } from "./shared/traversal.js"
 import { arkKind } from "./shared/utils.js"
 
-export namespace Constraint {
+export declare namespace Constraint {
 	export interface Declaration extends BaseNodeDeclaration {
 		kind: ConstraintKind
 	}

@@ -19,10 +19,11 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.js"
+import type { JsonSchema } from "../shared/jsonSchema.js"
 import type { TraverseAllows } from "../shared/traversal.js"
 import { InternalBasis } from "./basis.js"
 import { defineRightwardIntersections } from "./utils.js"
-export namespace Unit {
+export declare namespace Unit {
 	export interface Schema<value = unknown> extends BaseNormalizedSchema {
 		readonly unit: value
 	}
@@ -107,6 +108,10 @@ export class UnitNode extends InternalBasis<Unit.Declaration> {
 		return this.domain === "object" ?
 				domainDescriptions.object
 			:	this.description
+	}
+
+	toJsonSchema(): JsonSchema {
+		return {}
 	}
 
 	traverseAllows: TraverseAllows =

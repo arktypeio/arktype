@@ -33,7 +33,7 @@ type BranchState = {
 
 export type AutocompletePrefix = `${StringifiablePrefixOperator} `
 
-export namespace state {
+export declare namespace state {
 	export type initialize<def extends string> = from<{
 		root: undefined
 		branches: initialBranches

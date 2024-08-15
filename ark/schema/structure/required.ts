@@ -7,7 +7,7 @@ import {
 } from "../shared/implement.js"
 import { BaseProp, intersectProps, type Prop } from "./prop.js"
 
-export namespace Required {
+export declare namespace Required {
 	export interface ErrorContext extends BaseErrorContext<"required"> {
 		missingValueDescription: string
 	}

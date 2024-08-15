@@ -24,7 +24,7 @@ import { hasArkKind } from "../shared/utils.js"
 import { BaseRoot, type schemaKindRightOf } from "./root.js"
 import { defineRightwardIntersections } from "./utils.js"
 
-export namespace Morph {
+export declare namespace Morph {
 	export type ChildKind = schemaKindRightOf<"morph"> | "alias"
 
 	export type ChildNode = nodeOfKind<ChildKind>

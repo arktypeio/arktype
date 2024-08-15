@@ -13,7 +13,7 @@ import {
 	type UnknownExpandedRangeSchema
 } from "./range.js"
 
-export namespace Min {
+export declare namespace Min {
 	export interface Inner extends BaseRangeInner {
 		rule: number
 		exclusive?: true

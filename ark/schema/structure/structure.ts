@@ -53,7 +53,7 @@ export type UndeclaredKeyBehavior = "ignore" | UndeclaredKeyHandling
 
 export type UndeclaredKeyHandling = "reject" | "delete"
 
-export namespace Structure {
+export declare namespace Structure {
 	export interface Schema extends BaseNormalizedSchema {
 		readonly optional?: readonly Optional.Schema[]
 		readonly required?: readonly Required.Schema[]

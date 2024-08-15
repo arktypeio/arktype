@@ -15,7 +15,7 @@ import {
 import { $ark } from "../shared/registry.js"
 import type { TraverseAllows } from "../shared/traversal.js"
 
-export namespace Divisor {
+export declare namespace Divisor {
 	export interface Inner {
 		readonly rule: number
 	}

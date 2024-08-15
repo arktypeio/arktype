@@ -17,7 +17,7 @@ import {
 	type UnknownNormalizedRangeSchema
 } from "./range.js"
 
-export namespace MinLength {
+export declare namespace MinLength {
 	export interface Inner extends BaseRangeInner {
 		rule: number
 	}
