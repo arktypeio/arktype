@@ -16,12 +16,10 @@ import {
 export namespace Min {
 	export interface Inner extends BaseRangeInner {
 		rule: number
-		exclusive?: true
 	}
 
 	export interface NormalizedSchema extends UnknownNormalizedRangeSchema {
 		rule: number
-		exclusive?: boolean
 	}
 
 	export type Schema = NormalizedSchema | number

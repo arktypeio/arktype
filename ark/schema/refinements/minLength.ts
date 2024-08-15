@@ -8,6 +8,7 @@ import { $ark } from "../shared/registry.js"
 import type { TraverseAllows } from "../shared/traversal.js"
 import {
 	BaseRange,
+	parseExclusiveKey,
 	type BaseRangeInner,
 	type LengthBoundableData,
 	type UnknownNormalizedRangeSchema
@@ -45,13 +46,19 @@ const implementation: nodeImplementationOf<MinLength.Declaration> =
 		collapsibleKey: "rule",
 		hasAssociatedError: true,
 		keys: {
-			rule: {}
+			rule: {},
+			exclusive: parseExclusiveKey
 		},
 		normalize: schema =>
 			typeof schema === "number" ? { rule: schema } : schema,
 		defaults: {
 			description: node =>
-				node.rule === 1 ? "non-empty" : `at least length ${node.rule}`,
+				node.exclusive ?
+					node.rule === 0 ?
+						"non-empty"
+					:	`more than length ${node.rule}`
+				: node.rule === 1 ? "non-empty"
+				: `at least length ${node.rule}`,
 			// avoid default message like "must be non-empty (was 0)"
 			actual: data => (data.length === 0 ? null : `${data.length}`)
 		},
@@ -63,8 +70,10 @@ const implementation: nodeImplementationOf<MinLength.Declaration> =
 export class MinLengthNode extends BaseRange<MinLength.Declaration> {
 	readonly impliedBasis: BaseRoot = $ark.intrinsic.lengthBoundable.internal
 
-	traverseAllows: TraverseAllows<LengthBoundableData> = data =>
-		data.length >= this.rule
+	traverseAllows: TraverseAllows<LengthBoundableData> =
+		this.exclusive ?
+			data => data.length > this.rule
+		:	data => data.length >= this.rule
 }
 
 export const MinLength = {

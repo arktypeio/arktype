@@ -21,9 +21,9 @@ import type { Divisor } from "../refinements/divisor.js"
 import type { ExactLength } from "../refinements/exactLength.js"
 import type { Pattern } from "../refinements/pattern.js"
 import type {
-	DateRangeSchema,
 	ExclusiveDateRangeSchema,
 	ExclusiveNumericRangeSchema,
+	InclusiveDateRangeSchema,
 	InclusiveNumericRangeSchema,
 	LimitSchemaValue,
 	UnknownRangeSchema
@@ -491,11 +491,11 @@ export abstract class BaseRoot<
 		return this.constrain("exactLength", schema)
 	}
 
-	atOrAfter(schema: DateRangeSchema): BaseRoot {
+	atOrAfter(schema: InclusiveDateRangeSchema): BaseRoot {
 		return this.constrain("after", schema)
 	}
 
-	atOrBefore(schema: DateRangeSchema): BaseRoot {
+	atOrBefore(schema: InclusiveDateRangeSchema): BaseRoot {
 		return this.constrain("before", schema)
 	}
 

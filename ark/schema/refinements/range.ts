@@ -1,6 +1,6 @@
 import { type array, isKeyOf, type propValueOf, type satisfy } from "@ark/util"
 import { InternalPrimitiveConstraint } from "../constraint.js"
-import type { Declaration, nodeOfKind } from "../kinds.js"
+import type { nodeOfKind } from "../kinds.js"
 import type {
 	BaseNodeDeclaration,
 	BaseNormalizedSchema
@@ -16,9 +16,6 @@ export interface BaseRangeDeclaration extends BaseNodeDeclaration {
 export abstract class BaseRange<
 	d extends BaseRangeDeclaration
 > extends InternalPrimitiveConstraint<d> {
-	// this will only be set on a numeric min/max
-	declare readonly exclusive?: true
-
 	readonly boundOperandKind: OperandKindsByBoundKind[d["kind"]] =
 		operandKindsByBoundKind[this.kind]
 	readonly compiledActual: string =
@@ -76,6 +73,7 @@ export abstract class BaseRange<
 
 export interface BaseRangeInner {
 	readonly rule: number | Date
+	readonly exclusive?: true
 }
 
 export type LimitSchemaValue = Date | number | string
@@ -85,15 +83,30 @@ export type LimitInnerValue<kind extends RangeKind = RangeKind> =
 
 export interface UnknownNormalizedRangeSchema extends BaseNormalizedSchema {
 	readonly rule: LimitSchemaValue
+	readonly exclusive?: boolean
 }
 
 export type UnknownRangeSchema = LimitSchemaValue | UnknownNormalizedRangeSchema
 
-export interface NormalizedDateRangeSchema extends BaseNormalizedSchema {
+export interface ExclusiveNormalizedDateRangeSchema
+	extends BaseNormalizedSchema {
 	rule: LimitSchemaValue
+	exclusive?: true
 }
 
-export type DateRangeSchema = LimitSchemaValue | NormalizedDateRangeSchema
+export type ExclusiveDateRangeSchema =
+	| LimitSchemaValue
+	| ExclusiveNormalizedDateRangeSchema
+
+export interface InclusiveNormalizedDateRangeSchema
+	extends BaseNormalizedSchema {
+	rule: LimitSchemaValue
+	exclusive?: false
+}
+
+export type InclusiveDateRangeSchema =
+	| LimitSchemaValue
+	| InclusiveNormalizedDateRangeSchema
 
 export interface ExclusiveNormalizedNumericRangeSchema
 	extends BaseNormalizedSchema {
@@ -163,12 +176,11 @@ export type NumericallyBoundable = string | number | array
 
 export type Boundable = NumericallyBoundable | Date
 
-export const parseExclusiveKey: keySchemaDefinitions<
-	Declaration<"min" | "max">
->["exclusive"] = {
-	// omit key with value false since it is the default
-	parse: (flag: boolean) => flag || undefined
-}
+export const parseExclusiveKey: keySchemaDefinitions<BaseRangeDeclaration>["exclusive"] =
+	{
+		// omit key with value false since it is the default
+		parse: (flag: boolean) => flag || undefined
+	}
 
 export const parseDateLimit = (limit: LimitSchemaValue): Date =>
 	typeof limit === "string" || typeof limit === "number" ?
