@@ -1,3 +1,4 @@
+import { throwParseError } from "@ark/util"
 import { BaseConstraint } from "./constraint.js"
 import type { NodeCompiler } from "./shared/compile.js"
 import type {
@@ -10,6 +11,7 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "./shared/implement.js"
+import { writeUnsupportedJsonSchemaTypeMessage } from "./shared/jsonSchema.js"
 import {
 	type RegisteredReference,
 	registeredReference
@@ -103,6 +105,15 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 		}
 		js.if(`${this.compiledNegation} && !ctx.hasError()`, () =>
 			js.line(`ctx.error(${this.compiledErrorContext})`)
+		)
+	}
+
+	reduceJsonSchema(): never {
+		return throwParseError(
+			writeUnsupportedJsonSchemaTypeMessage({
+				prefix: "Predicate",
+				description: this.expression
+			})
 		)
 	}
 }

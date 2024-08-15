@@ -27,6 +27,7 @@ import {
 	type StructuralKind
 } from "../shared/implement.js"
 import { intersectNodesRoot } from "../shared/intersections.js"
+import type { JsonSchema } from "../shared/jsonSchema.js"
 import {
 	$ark,
 	registeredReference,
@@ -565,6 +566,12 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		}
 
 		return js
+	}
+
+	reduceJsonSchema<schema extends JsonSchema.Object | JsonSchema.Array>(
+		schema: schema
+	): schema {
+		return schema
 	}
 }
 
