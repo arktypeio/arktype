@@ -324,6 +324,13 @@ contextualize(() => {
 			attest(t.json).equals(expected.json)
 		})
 
+		it("moreThanLength", () => {
+			const t = type("string[]").moreThanLength(5)
+			const expected = type("string[]>5")
+			attest<typeof expected>(t)
+			attest(t.json).equals(expected.json)
+		})
+
 		it("invalid minLength operand", () => {
 			// @ts-expect-error
 			attest(() => type("bigint").atLeastLength(5))
@@ -340,6 +347,13 @@ contextualize(() => {
 		it("atMostLength", () => {
 			const t = type("string").atMostLength(10)
 			const expected = type("string<=10")
+			attest<typeof expected>(t)
+			attest(t.json).equals(expected.json)
+		})
+
+		it("lessThanLength", () => {
+			const t = type("string[]").lessThanLength(10)
+			const expected = type("string[]<10")
 			attest<typeof expected>(t)
 			attest(t.json).equals(expected.json)
 		})
@@ -365,6 +379,13 @@ contextualize(() => {
 			attest(t.json).equals(expected.json)
 		})
 
+		it("laterThan", () => {
+			const t = type("Date").laterThan(new Date("2022-01-01"))
+			const expected = type(`Date>d'${"2022-01-01" as string}'`)
+			attest<typeof expected>(t)
+			attest(t.json).equals(expected.json)
+		})
+
 		it("invalid after operand", () => {
 			// @ts-expect-error
 			attest(() => type("false").laterThan(new Date()))
@@ -377,6 +398,13 @@ contextualize(() => {
 		it("atOrBefore", () => {
 			const t = type("Date").atOrBefore(5)
 			const expected = type("Date<=5")
+			attest<typeof expected>(t)
+			attest(t.json).equals(expected.json)
+		})
+
+		it("earlierThan", () => {
+			const t = type("Date").earlierThan(5)
+			const expected = type("Date<5")
 			attest<typeof expected>(t)
 			attest(t.json).equals(expected.json)
 		})
