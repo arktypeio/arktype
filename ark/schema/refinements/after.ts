@@ -9,7 +9,6 @@ import type { TraverseAllows } from "../shared/traversal.js"
 import {
 	BaseRange,
 	parseDateLimit,
-	parseExclusiveKey,
 	type BaseRangeInner,
 	type LimitSchemaValue,
 	type UnknownNormalizedRangeSchema
@@ -50,8 +49,7 @@ const implementation: nodeImplementationOf<After.Declaration> =
 			rule: {
 				parse: parseDateLimit,
 				serialize: schema => schema.toISOString()
-			},
-			exclusive: parseExclusiveKey
+			}
 		},
 		normalize: schema =>
 			(
@@ -62,10 +60,7 @@ const implementation: nodeImplementationOf<After.Declaration> =
 				{ rule: schema }
 			:	schema,
 		defaults: {
-			description: node =>
-				node.exclusive ?
-					`after ${node.stringLimit}`
-				:	`${node.stringLimit} or later`,
+			description: node => `after ${node.stringLimit}`,
 			actual: data => data.toLocaleString()
 		},
 		intersections: {
@@ -76,8 +71,7 @@ const implementation: nodeImplementationOf<After.Declaration> =
 export class AfterNode extends BaseRange<After.Declaration> {
 	impliedBasis: BaseRoot = $ark.intrinsic.Date.internal
 
-	traverseAllows: TraverseAllows<Date> =
-		this.exclusive ? data => data > this.rule : data => data >= this.rule
+	traverseAllows: TraverseAllows<Date> = data => data >= this.rule
 }
 
 export const After = {
