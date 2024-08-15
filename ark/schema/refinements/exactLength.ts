@@ -12,7 +12,7 @@ import {
 } from "../shared/implement.js"
 import { $ark } from "../shared/registry.js"
 import type { TraverseAllows } from "../shared/traversal.js"
-import type { LengthBoundableData } from "./range.js"
+import { createLengthRuleParser, type LengthBoundableData } from "./range.js"
 
 export namespace ExactLength {
 	export interface Inner {
@@ -46,7 +46,9 @@ const implementation: nodeImplementationOf<ExactLength.Declaration> =
 		kind: "exactLength",
 		collapsibleKey: "rule",
 		keys: {
-			rule: {}
+			rule: {
+				parse: createLengthRuleParser("exactLength")
+			}
 		},
 		normalize: schema =>
 			typeof schema === "number" ? { rule: schema } : schema,
@@ -81,7 +83,7 @@ export class ExactLengthNode extends InternalPrimitiveConstraint<ExactLength.Dec
 	readonly compiledCondition: string = `data.length === ${this.rule}`
 	readonly compiledNegation: string = `data.length !== ${this.rule}`
 	readonly impliedBasis: BaseRoot = $ark.intrinsic.lengthBoundable.internal
-	readonly expression: string = `{ length: ${this.rule} }`
+	readonly expression: string = `== ${this.rule}`
 }
 
 export const ExactLength = {

@@ -263,6 +263,14 @@ export abstract class BaseNode<
 		return includes(rootKinds, this.kind)
 	}
 
+	isUnknown(): boolean {
+		return this.hasKind("intersection") && this.children.length === 0
+	}
+
+	isNever(): boolean {
+		return this.hasKind("union") && this.children.length === 0
+	}
+
 	hasUnit<value>(value: unknown): this is Unit.Node & { unit: value } {
 		return this.hasKind("unit") && this.allows(value)
 	}

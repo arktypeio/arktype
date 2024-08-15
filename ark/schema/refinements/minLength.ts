@@ -1,3 +1,4 @@
+import type { IntersectionNode } from "../roots/intersection.js"
 import type { BaseRoot } from "../roots/root.js"
 import type { BaseErrorContext, declareNode } from "../shared/declare.js"
 import {
@@ -8,6 +9,7 @@ import { $ark } from "../shared/registry.js"
 import type { TraverseAllows } from "../shared/traversal.js"
 import {
 	BaseRange,
+	createLengthRuleParser,
 	createLengthSchemaNormalizer,
 	type BaseRangeInner,
 	type LengthBoundableData,
@@ -39,6 +41,7 @@ export namespace MinLength {
 			normalizedSchema: NormalizedSchema
 			inner: Inner
 			prerequisite: LengthBoundableData
+			reducibleTo: "intersection"
 			errorContext: ErrorContext
 		}> {}
 
@@ -51,8 +54,15 @@ const implementation: nodeImplementationOf<MinLength.Declaration> =
 		collapsibleKey: "rule",
 		hasAssociatedError: true,
 		keys: {
-			rule: {}
+			rule: {
+				parse: createLengthRuleParser("minLength")
+			}
 		},
+		reduce: inner =>
+			inner.rule === 0 ?
+				// a minimum length of zero is trivially satisfied
+				($ark.intrinsic.unknown as IntersectionNode)
+			:	undefined,
 		normalize: createLengthSchemaNormalizer("minLength"),
 		defaults: {
 			description: node =>

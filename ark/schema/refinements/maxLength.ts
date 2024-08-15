@@ -9,6 +9,7 @@ import { $ark } from "../shared/registry.js"
 import type { TraverseAllows } from "../shared/traversal.js"
 import {
 	BaseRange,
+	createLengthRuleParser,
 	createLengthSchemaNormalizer,
 	type BaseRangeInner,
 	type LengthBoundableData,
@@ -37,6 +38,7 @@ export namespace MaxLength {
 		extends declareNode<{
 			kind: "maxLength"
 			schema: Schema
+			reducibleTo: "exactLength"
 			normalizedSchema: NormalizedSchema
 			inner: Inner
 			prerequisite: LengthBoundableData
@@ -52,8 +54,12 @@ const implementation: nodeImplementationOf<MaxLength.Declaration> =
 		collapsibleKey: "rule",
 		hasAssociatedError: true,
 		keys: {
-			rule: {}
+			rule: {
+				parse: createLengthRuleParser("maxLength")
+			}
 		},
+		reduce: (inner, $) =>
+			inner.rule === 0 ? $.node("exactLength", inner) : undefined,
 		normalize: createLengthSchemaNormalizer("maxLength"),
 		defaults: {
 			description: node => `at most length ${node.rule}`,

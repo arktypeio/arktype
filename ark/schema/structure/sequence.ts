@@ -17,6 +17,7 @@ import {
 	type DeepNodeTransformation,
 	type FlatRef
 } from "../node.js"
+import type { ExactLengthNode } from "../refinements/exactLength.js"
 import type { MaxLengthNode } from "../refinements/maxLength.js"
 import type { MinLengthNode } from "../refinements/minLength.js"
 import type { BaseRoot } from "../roots/root.js"
@@ -251,12 +252,16 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 	minLength: number =
 		this.prefix.length + this.minVariadicLength + this.postfix.length
 	minLengthNode: MinLengthNode | null =
-		this.minLength === 0 ? null : this.$.node("minLength", this.minLength)
+		this.minLength === 0 ?
+			null
+			// cast is safe here as the only time this would not be a
+			// MinLengthNode would be when minLength is 0
+		:	(this.$.node("minLength", this.minLength) as never)
 	maxLength: number | null =
 		this.variadic ? null : this.minLength + this.optionals.length
-	maxLengthNode: MaxLengthNode | null =
+	maxLengthNode: MaxLengthNode | ExactLengthNode | null =
 		this.maxLength === null ? null : this.$.node("maxLength", this.maxLength)
-	impliedSiblings: array<MaxLengthNode | MinLengthNode> =
+	impliedSiblings: array<MaxLengthNode | MinLengthNode | ExactLengthNode> =
 		this.minLengthNode ?
 			this.maxLengthNode ?
 				[this.minLengthNode, this.maxLengthNode]

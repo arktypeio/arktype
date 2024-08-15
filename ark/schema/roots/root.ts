@@ -3,6 +3,7 @@ import {
 	cached,
 	includes,
 	omit,
+	throwInternalError,
 	throwParseError,
 	type NonEmptyList,
 	type array
@@ -88,14 +89,6 @@ export abstract class BaseRoot<
 	}
 
 	abstract get shortDescription(): string
-
-	isUnknown(): boolean {
-		return this.hasKind("intersection") && this.children.length === 0
-	}
-
-	isNever(): boolean {
-		return this.hasKind("union") && this.children.length === 0
-	}
 
 	intersect(r: unknown): BaseRoot | Disjoint {
 		const rNode = this.$.parseRoot(r)
@@ -397,6 +390,14 @@ export abstract class BaseRoot<
 		schema: any
 	): BaseRoot {
 		const constraint = this.$.node(kind, schema as never)
+
+		if (constraint.isRoot()) {
+			// if the node reduces to `unknown`, nothing to do (e.g. minLength: 0)
+			return constraint.isUnknown() ? this : (
+					throwInternalError(`Unexpected constraint node ${constraint}`)
+				)
+		}
+
 		const operand = io === "root" ? this : this[io]
 		if (
 			operand.hasKind("morph") ||

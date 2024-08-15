@@ -1,4 +1,10 @@
-import { type array, isKeyOf, type propValueOf, type satisfy } from "@ark/util"
+import {
+	type array,
+	isKeyOf,
+	type propValueOf,
+	type satisfy,
+	throwParseError
+} from "@ark/util"
 import { InternalPrimitiveConstraint } from "../constraint.js"
 import type {
 	Declaration,
@@ -242,6 +248,27 @@ export const parseDateLimit = (limit: LimitSchemaValue): Date =>
 	typeof limit === "string" || typeof limit === "number" ?
 		new Date(limit)
 	:	limit
+
+export type LengthBoundKind = "minLength" | "maxLength" | "exactLength"
+
+export const writeNonIntegerLengthBoundMessage = (
+	kind: LengthBoundKind,
+	limit: number
+): string => `${kind} bound must be an integer (was ${limit})`
+
+export const writeNegativeLengthBoundMessage = (
+	kind: LengthBoundKind,
+	limit: number
+): string => `${kind} bound must be an integer (was ${limit})`
+
+export const createLengthRuleParser =
+	(kind: LengthBoundKind) =>
+	(limit: number): number | undefined => {
+		if (!Number.isInteger(limit))
+			throwParseError(writeNonIntegerLengthBoundMessage(kind, limit))
+		if (limit < 0) throwParseError(writeNegativeLengthBoundMessage(kind, limit))
+		return limit
+	}
 
 type OperandKindsByBoundKind = satisfy<
 	Record<RangeKind, BoundOperandKind>,

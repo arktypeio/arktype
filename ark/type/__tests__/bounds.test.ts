@@ -3,6 +3,8 @@ import {
 	intrinsic,
 	rootNode,
 	writeInvalidOperandMessage,
+	writeNegativeLengthBoundMessage,
+	writeNonIntegerLengthBoundMessage,
 	writeUnboundableMessage
 } from "@ark/schema"
 import { writeMalformedNumericLiteralMessage } from "@ark/util"
@@ -147,6 +149,20 @@ contextualize(() => {
 			attest(t.allows(new Date(now.valueOf() + 1000))).equals(false)
 		})
 
+		it("exclusive length normalized", () => {
+			const t = type("string > 0")
+			const expected = type("string >= 1")
+
+			attest(t.expression).equals(expected.expression)
+		})
+
+		it("trivially satisfied length normalized", () => {
+			const t = type("string >= 0")
+			const expected = type("string")
+
+			attest(t.expression).equals(expected.expression)
+		})
+
 		it("invalid left comparator", () => {
 			// @ts-expect-error
 			attest(() => type("3>number<5")).throwsAndHasTypeError(
@@ -188,6 +204,18 @@ contextualize(() => {
 			// @ts-expect-error
 			attest(() => type("number>0<=200")).type.errors(
 				writeDoubleRightBoundMessage("number")
+			)
+		})
+
+		it("negative-length", () => {
+			attest(() => type("string < 0")).throws(
+				writeNegativeLengthBoundMessage("maxLength", -1)
+			)
+		})
+
+		it("non-integer length", () => {
+			attest(() => type("string >= 2.5")).throws(
+				writeNonIntegerLengthBoundMessage("minLength", 2.5)
 			)
 		})
 
