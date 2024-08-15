@@ -1,9 +1,4 @@
-import type {
-	ExactLength,
-	ExclusiveNumericRangeSchema,
-	exclusivizeRangeSchema,
-	InclusiveNumericRangeSchema
-} from "@ark/schema"
+import type { ExactLength, InclusiveNumericRangeSchema } from "@ark/schema"
 import type { applyConstraint } from "../ast.js"
 import type { ObjectType } from "./object.js"
 
@@ -19,14 +14,6 @@ interface Type<
 	atMostLength<const schema extends InclusiveNumericRangeSchema>(
 		schema: schema
 	): Type<applyConstraint<t, "maxLength", schema>, $>
-
-	moreThanLength<const schema extends ExclusiveNumericRangeSchema>(
-		schema: schema
-	): Type<applyConstraint<t, "minLength", exclusivizeRangeSchema<schema>>, $>
-
-	lessThanLength<const schema extends ExclusiveNumericRangeSchema>(
-		schema: schema
-	): Type<applyConstraint<t, "maxLength", exclusivizeRangeSchema<schema>>, $>
 
 	exactlyLength<const schema extends ExactLength.Schema>(
 		schema: schema

@@ -22,7 +22,6 @@ import type { ExactLength } from "../refinements/exactLength.js"
 import type { Pattern } from "../refinements/pattern.js"
 import type {
 	DateRangeSchema,
-	ExclusiveDateRangeSchema,
 	ExclusiveNumericRangeSchema,
 	InclusiveNumericRangeSchema,
 	LimitSchemaValue,
@@ -479,14 +478,6 @@ export abstract class BaseRoot<
 		return this.constrain("maxLength", schema)
 	}
 
-	moreThanLength(schema: ExclusiveNumericRangeSchema): BaseRoot {
-		return this.constrain("minLength", exclusivizeRangeSchema(schema))
-	}
-
-	lessThanLength(schema: ExclusiveNumericRangeSchema): BaseRoot {
-		return this.constrain("maxLength", exclusivizeRangeSchema(schema))
-	}
-
 	exactlyLength(schema: ExactLength.Schema): BaseRoot {
 		return this.constrain("exactLength", schema)
 	}
@@ -497,14 +488,6 @@ export abstract class BaseRoot<
 
 	atOrBefore(schema: DateRangeSchema): BaseRoot {
 		return this.constrain("before", schema)
-	}
-
-	laterThan(schema: ExclusiveDateRangeSchema): BaseRoot {
-		return this.constrain("after", exclusivizeRangeSchema(schema))
-	}
-
-	earlierThan(schema: ExclusiveDateRangeSchema): BaseRoot {
-		return this.constrain("before", exclusivizeRangeSchema(schema))
 	}
 }
 
