@@ -27,7 +27,11 @@ import {
 	type StructuralKind
 } from "../shared/implement.js"
 import { intersectNodesRoot } from "../shared/intersections.js"
-import type { JsonSchema } from "../shared/jsonSchema.js"
+import {
+	throwInternalJsonSchemaOperandError,
+	writeUnsupportedJsonSchemaTypeMessage,
+	type JsonSchema
+} from "../shared/jsonSchema.js"
 import {
 	$ark,
 	registeredReference,
@@ -568,9 +572,67 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		return js
 	}
 
-	reduceJsonSchema<schema extends JsonSchema.Object | JsonSchema.Array>(
-		schema: schema
-	): schema {
+	reduceJsonSchema(schema: JsonSchema.Structure): JsonSchema.Structure {
+		switch (schema.type) {
+			case "object":
+				return this.reduceObjectJsonSchema(schema)
+			case "array":
+				return schema
+			default:
+				return throwInternalJsonSchemaOperandError("structure", schema)
+		}
+	}
+
+	reduceObjectJsonSchema(schema: JsonSchema.Object): JsonSchema.Object {
+		if (this.props.length) {
+			schema.properties = {}
+			this.props.forEach(prop => {
+				if (typeof prop.key === "symbol") {
+					return throwParseError(
+						writeUnsupportedJsonSchemaTypeMessage(
+							`Sybolic key ${prop.serializedKey}`
+						)
+					)
+				}
+
+				schema.properties![prop.key] = prop.value.toJsonSchema()
+			})
+			if (this.requiredLiteralKeys.length)
+				schema.required = this.requiredLiteralKeys as string[]
+		}
+
+		this.index?.forEach(index => {
+			if (index.signature.equals($ark.intrinsic.string))
+				return (schema.additionalProperties = index.value.toJsonSchema())
+
+			if (!index.signature.extends($ark.intrinsic.string)) {
+				return throwParseError(
+					writeUnsupportedJsonSchemaTypeMessage(
+						`Symbolic index signature ${index.signature.exclude($ark.intrinsic.string)}`
+					)
+				)
+			}
+
+			index.signature.branches.forEach(keyBranch => {
+				if (
+					!keyBranch.hasKind("intersection") ||
+					keyBranch.pattern?.length !== 1
+				) {
+					return throwParseError(
+						writeUnsupportedJsonSchemaTypeMessage(
+							`Index signature ${keyBranch}`
+						)
+					)
+				}
+				schema.patternProperties ??= {}
+				schema.patternProperties[keyBranch.pattern[0].rule] =
+					index.value.toJsonSchema()
+			})
+		})
+
+		if (this.undeclared && !schema.additionalProperties)
+			schema.additionalProperties = false
+
 		return schema
 	}
 }

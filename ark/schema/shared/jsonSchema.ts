@@ -56,7 +56,7 @@ export declare namespace JsonSchema {
 		properties?: Record<string, JsonSchema>
 		required?: string[]
 		patternProperties?: Record<string, JsonSchema>
-		additionalProperties?: boolean
+		additionalProperties?: false | JsonSchema
 	}
 
 	export interface Array extends Meta<readonly unknown[]> {
@@ -64,14 +64,15 @@ export declare namespace JsonSchema {
 		minItems?: number
 		maxItems?: number
 		items?: readonly JsonSchema[]
-		additionalItems?: boolean | JsonSchema
+		additionalItems?: false | JsonSchema
 	}
 
 	export type LengthBoundable = String | Array
+
+	export type Structure = Object | Array
 }
 
 export type UnsupportedJsonSchemaTypeMessageOptions = {
-	prefix?: string
 	description: string
 	reason?: string
 }
@@ -80,13 +81,14 @@ export const writeUnsupportedJsonSchemaTypeMessage = (
 	input: string | UnsupportedJsonSchemaTypeMessageOptions
 ): string => {
 	const normalized = typeof input === "string" ? { description: input } : input
-	return `${normalized.description} is not convertible to JSON Schema`
+	let message = `${normalized.description} is not convertible to JSON Schema`
+	if (normalized.reason) message += ` because ${normalized.reason}`
+	return message
 }
 
 export const writeJsonSchemaMorphMessage = (description: string): string =>
 	writeUnsupportedJsonSchemaTypeMessage({
-		prefix: "Morph",
-		description,
+		description: `Morph ${description}`,
 		reason:
 			"it represents a transformation, while JSON Schema only allows validation. Consider creating a Schema from one of its endpoints using `.in` or `.out`."
 	})

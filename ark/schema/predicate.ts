@@ -111,8 +111,7 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 	reduceJsonSchema(): never {
 		return throwParseError(
 			writeUnsupportedJsonSchemaTypeMessage({
-				prefix: "Predicate",
-				description: this.expression
+				description: `Predicate ${this.expression}`
 			})
 		)
 	}
