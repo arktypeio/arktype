@@ -57,7 +57,9 @@ import { defineRightwardIntersections } from "./utils.js"
 export declare namespace Intersection {
 	export type BasisKind = "domain" | "proto"
 
-	export type ChildKind = BasisKind | ConstraintKind
+	export type ChildKind = BasisKind | RefinementKind | "predicate" | "structure"
+
+	export type FlattenedChildKind = ChildKind | StructuralKind
 
 	export type RefinementsInner = {
 		[k in RefinementKind]?: intersectionChildInnerValueOf<k>
@@ -396,15 +398,15 @@ type conditionalIntersectionKeyOf<t> =
 
 // not sure why explicitly allowing Inner<k> is necessary in these cases,
 // but remove if it can be removed without creating type errors
-type intersectionChildRootValueOf<k extends Intersection.ChildKind> =
+type intersectionChildRootValueOf<k extends Intersection.FlattenedChildKind> =
 	k extends OpenNodeKind ? listable<NodeSchema<k> | Inner<k>>
 	:	NodeSchema<k> | Inner<k>
 
 type conditionalRootValueOfKey<k extends ConditionalIntersectionKey> =
-	k extends Intersection.ChildKind ? intersectionChildRootValueOf<k>
+	k extends Intersection.FlattenedChildKind ? intersectionChildRootValueOf<k>
 	:	ConditionalTerminalIntersectionRoot[k & ConditionalTerminalIntersectionKey]
 
-type intersectionChildInnerValueOf<k extends Intersection.ChildKind> =
+type intersectionChildInnerValueOf<k extends Intersection.FlattenedChildKind> =
 	k extends OpenNodeKind ? readonly nodeOfKind<k>[] : nodeOfKind<k>
 
 export type conditionalRootOf<t> = {
