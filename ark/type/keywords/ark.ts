@@ -44,7 +44,7 @@ export const ambient: Scope<Ark> = scope(
 		...platformObjectsModule,
 		...validationModule,
 		...internalModule,
-		...tsGenerics,
+		...tsGenericsModule,
 		...arkGenericsModule,
 		TypedArray: typedArrayModule,
 		parse: parsingModule,

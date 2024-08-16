@@ -107,7 +107,9 @@ type validateStringAst<def extends string, $> =
 				writeInvalidGenericArgCountMessage<def, $[alias]["names"], []>
 			>
 		: $[alias] extends { [arkKind]: "module" } ?
-			ErrorMessage<writeMissingSubmoduleAccessMessage<def>>
+			"$root" extends keyof $[alias] ?
+				undefined
+			:	ErrorMessage<writeMissingSubmoduleAccessMessage<def>>
 		:	undefined
 	: def extends ErrorMessage ? def
 	: undefined

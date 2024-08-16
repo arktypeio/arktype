@@ -356,8 +356,10 @@ export abstract class BaseScope<$ extends {} = {}> {
 		if (hasArkKind(preparsed, "generic"))
 			return (this.resolutions[name] = preparsed.bindScope(this))
 
-		if (hasArkKind(preparsed, "module"))
-			return throwParseError(writeMissingSubmoduleAccessMessage(name))
+		if (hasArkKind(preparsed, "module")) {
+			if (preparsed.$root) this.resolutions[name] = preparsed.$root
+			else return throwParseError(writeMissingSubmoduleAccessMessage(name))
+		}
 
 		this.resolutions[name] = name
 		return (this.resolutions[name] = this.parseRoot(preparsed, {

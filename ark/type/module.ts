@@ -3,7 +3,8 @@ import {
 	type GenericAst,
 	type PreparsedNodeResolution
 } from "@ark/schema"
-import type { anyOrNever } from "@ark/util"
+import type { anyOrNever, show } from "@ark/util"
+import type { inferred } from "./ast.js"
 import type { Generic } from "./generic.js"
 import type { Type } from "./type.js"
 
@@ -12,9 +13,11 @@ export const Module: new <$ extends {}>(exports: exportScope<$>) => Module<$> =
 
 export interface Module<$ extends {} = {}> extends RootModule<exportScope<$>> {}
 
-export type exportScope<$> = {
-	[k in keyof $]: instantiateExport<$[k], $>
-} & unknown
+export type exportScope<$> = show<
+	{
+		[k in keyof $]: instantiateExport<$[k], $>
+	} & ("$root" extends keyof $ ? { [inferred]: $["$root"] } : {})
+>
 
 export const BoundModule: new <exports extends {}, $ extends {}>(
 	exports: bindExportsToScope<exports, $>,

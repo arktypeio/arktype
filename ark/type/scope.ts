@@ -49,7 +49,7 @@ import {
 	type baseGenericConstraints,
 	type parseValidGenericParams
 } from "./generic.js"
-import type { Ark } from "./keywords/ark.js"
+import type { Ark, type } from "./keywords/ark.js"
 import type {
 	BoundModule,
 	Module,
@@ -163,6 +163,7 @@ export type resolve<reference extends keyof $ | keyof args, $, args> =
 		:	$[reference & keyof $]
 	) extends infer resolution ?
 		[resolution] extends [anyOrNever] ? resolution
+		: resolution extends type.cast<infer t> ? t
 		: resolution extends Def<infer def> ? inferDefinition<def, $, args>
 		: resolution
 	:	never
@@ -175,16 +176,18 @@ export type moduleKeyOf<$> = {
 	:	never
 }[keyof $]
 
+type unwrapPreinferred<t> = t extends type.cast<infer inferred> ? inferred : t
+
 export type tryInferSubmoduleReference<$, token> =
 	token extends `${infer submodule extends moduleKeyOf<$>}.${infer subalias}` ?
 		subalias extends keyof $[submodule] ?
-			$[submodule][subalias]
+			unwrapPreinferred<$[submodule][subalias]>
 		:	tryInferSubmoduleReference<$[submodule], subalias>
 	: token extends (
 		`${infer submodule extends moduleKeyOf<Ark>}.${infer subalias}`
 	) ?
 		subalias extends keyof Ark[submodule] ?
-			Ark[submodule][subalias]
+			unwrapPreinferred<Ark[submodule][subalias]>
 		:	tryInferSubmoduleReference<Ark[submodule], subalias>
 	:	never
 
