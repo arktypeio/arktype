@@ -2,13 +2,13 @@ import type { merge, show } from "@ark/util"
 import type { nodeOfKind, reducibleKindOf } from "../kinds.js"
 import type { Disjoint } from "./disjoint.js"
 import type { NarrowedAttachments, NodeKind } from "./implement.js"
+import type { JsonSchema } from "./jsonSchema.js"
 
 type withMetaPrefixedKeys<o> = {
 	[k in keyof o as k extends string ? `meta.${k}` : never]: o[k]
 }
 
-export interface BaseMeta {
-	description?: string
+export interface BaseMeta extends JsonSchema.Meta {
 	alias?: string
 }
 
