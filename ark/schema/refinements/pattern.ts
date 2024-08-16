@@ -1,3 +1,4 @@
+import { throwParseError } from "@ark/util"
 import { InternalPrimitiveConstraint } from "../constraint.js"
 import type { BaseRoot } from "../roots/root.js"
 import type {
@@ -9,7 +10,10 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.js"
-import type { JsonSchema } from "../shared/jsonSchema.js"
+import {
+	writeUnsupportedJsonSchemaTypeMessage,
+	type JsonSchema
+} from "../shared/jsonSchema.js"
 import { $ark } from "../shared/registry.js"
 
 export declare namespace Pattern {
@@ -80,6 +84,13 @@ export class PatternNode extends InternalPrimitiveConstraint<Pattern.Declaration
 	readonly impliedBasis: BaseRoot = $ark.intrinsic.string.internal
 
 	reduceJsonSchema(schema: JsonSchema.String): JsonSchema.String {
+		if (schema.pattern) {
+			return throwParseError(
+				writeUnsupportedJsonSchemaTypeMessage(
+					`Intersection of patterns ${schema.pattern} & ${this.rule}`
+				)
+			)
+		}
 		schema.pattern = this.rule
 		return schema
 	}
