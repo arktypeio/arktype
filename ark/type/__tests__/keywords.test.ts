@@ -49,7 +49,8 @@ contextualize(() => {
 		it("any in expression", () => {
 			const t = type("string&any")
 			attest<any>(t.infer)
-			attest(t.json).equals(ark.string.json)
+
+			attest(t.json).equals(intrinsic.string.json)
 		})
 
 		it("boolean", () => {
@@ -71,7 +72,7 @@ contextualize(() => {
 		it("never in union", () => {
 			const t = type("string|never")
 			attest<string>(t.infer)
-			attest(t.json).equals(ark.string.json)
+			attest(t.json).equals(intrinsic.string.json)
 		})
 
 		it("unknown", () => {
@@ -664,7 +665,13 @@ tags[2] must be a string (was object)`)
 
 	describe("string", () => {
 		it("unix", () => {
-			const unixTimestamp = type("unix")
+			const unixTimestamp = type("string.unix")
+		})
+	})
+
+	describe("number", () => {
+		it("unix", () => {
+			const unixTimestamp = type("number.unix")
 
 			// valid Unix timestamp
 			attest(unixTimestamp(1621530000)).equals(1621530000)

@@ -1,9 +1,8 @@
 import { rootNode } from "@ark/schema"
-import type { string } from "../ast.js"
+import type { AtLeast, AtMost, DivisibleBy, number } from "../ast.js"
 import type { Module } from "../module.js"
 import { scope } from "../scope.js"
-import { iso8601Matcher } from "./utils/date.js"
-import { regexStringNode } from "./utils/regex.js"
+import { tsKeywordsModule } from "./tsKeywords.js"
 
 /**
  * As per the ECMA-262 specification:
@@ -31,30 +30,21 @@ export const unixTimestampNumber = rootNode({
 	meta: "an integer representing a safe Unix timestamp"
 })
 
-const unix = rootNode({
-	domain: "string",
-	// predicate: (s: string) => {
-	// 	return true
-	// },
-	meta: "an integer string representing a safe Unix timestamp"
-})
-
-const iso8601 = regexStringNode(
-	iso8601Matcher,
-	"An ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date"
-)
-
-export interface datetimeExports {
-	iso8601: string.narrowed
-	unix: string.narrowed
+export type numberExports = {
+	$root: number
+	unix: number.is<
+		DivisibleBy<1> & AtMost<8640000000000000> & AtLeast<-8640000000000000>
+	>
 }
 
-export type datetimeModule = Module<datetimeExports>
+export type numberModule = Module<numberExports>
 
-export const datetimeModule: datetimeModule = scope(
+export const numberModule: numberModule = scope(
 	{
-		iso8601,
-		unix
+		$root: tsKeywordsModule.number,
+		unix: unixTimestampNumber
 	},
-	{ prereducedAliases: true }
+	{
+		prereducedAliases: true
+	}
 ).export()

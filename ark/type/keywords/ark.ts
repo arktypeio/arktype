@@ -12,6 +12,7 @@ import { arkGenericsModule, type arkGenericsExports } from "./arkGenerics.js"
 import { formattingModule, type formattingExports } from "./format.js"
 import { internalModule, type internalExports } from "./internal.js"
 import { jsObjectsModule, type jsObjectExports } from "./jsObjects.js"
+import { numberModule } from "./number.js"
 import { parsingModule, type parsingExports } from "./parsing.js"
 import {
 	platformObjectsModule,
@@ -23,15 +24,9 @@ import { tsKeywordsModule, type tsKeywordExports } from "./tsKeywords.js"
 import { typedArrayModule, type typedArrayExports } from "./typedArray.js"
 import { validationModule, type validationExports } from "./validation.js"
 
-export type WrappedArkKey = "string"
-
 // this type is redundant with the inferred definition of ark but allow types
 // derived from the default scope to be calulated more efficiently
-export interface Ark
-	// remove base inference for keywords that have dedicated submodules
-	extends Omit<Ark.infer, WrappedArkKey> {
-	string: stringModule
-}
+export interface Ark extends Omit<Ark.infer, keyof Ark.Wrapped>, Ark.Wrapped {}
 
 export namespace Ark {
 	export interface infer
@@ -46,6 +41,11 @@ export namespace Ark {
 		parse: Submodule<parsingExports>
 		format: Submodule<formattingExports>
 	}
+
+	export interface Wrapped {
+		string: stringModule
+		number: numberModule
+	}
 }
 
 export const ambient: Scope<Ark> = scope(
@@ -58,6 +58,7 @@ export const ambient: Scope<Ark> = scope(
 		...tsGenericsModule,
 		...arkGenericsModule,
 		string: stringModule,
+		number: numberModule,
 		TypedArray: typedArrayModule,
 		parse: parsingModule,
 		format: formattingModule

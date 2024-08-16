@@ -2,7 +2,15 @@ export { ArkError, ArkErrors } from "@ark/schema"
 export type { ArkConfig, ArkScopeConfig } from "@ark/schema"
 export { Hkt } from "@ark/util"
 export type { Generic } from "./generic.js"
-export { ambient, ark, declare, define, generic, type } from "./keywords/ark.js"
+export {
+	ambient,
+	ark,
+	declare,
+	define,
+	generic,
+	type,
+	type Ark
+} from "./keywords/ark.js"
 export { Module, type BoundModule, type Submodule } from "./module.js"
 export {
 	scope,

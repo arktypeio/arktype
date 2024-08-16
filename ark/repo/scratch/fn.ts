@@ -1,5 +1,4 @@
-import type { inferTypeRoot, validateTypeRoot } from "arktype"
-import type { Ark } from "../../type/ark.js"
+import type { Ark, inferTypeRoot, validateTypeRoot } from "arktype"
 
 export type FunctionParser<$> = {
 	// <ret = unknown>(_?: ":", ret?: validateTypeRoot<ret, $>): <
