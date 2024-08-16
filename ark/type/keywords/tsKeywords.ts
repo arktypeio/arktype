@@ -18,9 +18,9 @@ export interface tsKeywordExports {
 	undefined: undefined
 }
 
-export type tsKeywords = Module<tsKeywordExports>
+export type tsKeywordsModule = Module<tsKeywordExports>
 
-export const tsKeywords: tsKeywords = scope(
+export const tsKeywordsModule: tsKeywordsModule = scope(
 	{
 		any: intrinsic.unknown,
 		bigint: intrinsic.bigint,

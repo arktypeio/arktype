@@ -15,9 +15,9 @@ export interface internalExports {
 	nonNegativeIntegerString: NonNegativeIntegerString
 }
 
-export type internal = Module<internalExports>
+export type internalModule = Module<internalExports>
 
-export const internal: internal = scope(
+export const internalModule: internalModule = scope(
 	{
 		lengthBoundable: intrinsic.lengthBoundable,
 		key: intrinsic.key,

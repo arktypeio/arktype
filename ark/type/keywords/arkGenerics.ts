@@ -4,7 +4,7 @@ import { Hkt } from "@ark/util"
 import type { Out } from "../ast.js"
 import type { Module } from "../module.js"
 import { scope, type inferScope } from "../scope.js"
-import { tsKeywords } from "./tsKeywords.js"
+import { tsKeywordsModule } from "./tsKeywords.js"
 
 class liftArrayHkt extends Hkt<[element: unknown]> {
 	declare body: util.liftArray<this[0]> extends infer lifted ?
@@ -22,8 +22,8 @@ class mergeHkt extends Hkt<[base: object, props: object]> {
 }
 
 const merge = genericNode(
-	["base", tsKeywords.object],
-	["props", tsKeywords.object]
+	["base", tsKeywordsModule.object],
+	["props", tsKeywordsModule.object]
 )(args => args.base.merge(args.props), mergeHkt)
 
 const arkGenericsExports = {
@@ -33,10 +33,10 @@ const arkGenericsExports = {
 
 export type arkGenericsExports = inferScope<typeof arkGenericsExports>
 
-export type arkGenerics = Module<arkGenericsExports>
+export type arkGenericsModule = Module<arkGenericsExports>
 
 const $ = scope(arkGenericsExports, {
 	prereducedAliases: true
 })
 
-export const arkGenerics: arkGenerics = $.export()
+export const arkGenericsModule: arkGenericsModule = $.export()

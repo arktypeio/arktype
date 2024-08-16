@@ -15,9 +15,9 @@ export interface platformObjectExports {
 	URL: URL
 }
 
-export type platformObjects = Module<platformObjectExports>
+export type platformObjectsModule = Module<platformObjectExports>
 
-export const platformObjects: platformObjects = scope(
+export const platformObjectsModule: platformObjectsModule = scope(
 	{
 		ArrayBuffer: ["instanceof", ArrayBuffer],
 		Blob: ["instanceof", Blob],

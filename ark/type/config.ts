@@ -1,5 +1,5 @@
 import type { ArkSchemaRegistry } from "@ark/schema"
-import type { Ark } from "./ark.js"
+import type { Ark } from "./keywords/ark.js"
 import type { exportScope } from "./module.js"
 
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports

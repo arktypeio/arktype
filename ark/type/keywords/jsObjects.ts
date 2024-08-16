@@ -16,9 +16,9 @@ export interface jsObjectExports {
 	Promise: Promise<unknown>
 }
 
-export type jsObjects = Module<jsObjectExports>
+export type jsObjectsModule = Module<jsObjectExports>
 
-export const jsObjects: jsObjects = scope(
+export const jsObjectsModule: jsObjectsModule = scope(
 	{
 		Array: ["instanceof", Array],
 		Date: ["instanceof", Date],

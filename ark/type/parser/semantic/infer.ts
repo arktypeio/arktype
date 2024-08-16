@@ -1,6 +1,5 @@
 import type { GenericAst } from "@ark/schema"
 import type { BigintLiteral, Hkt, array } from "@ark/util"
-import type { Ark } from "../../ark.js"
 import type {
 	Date,
 	DateLiteral,
@@ -14,6 +13,7 @@ import type {
 	string
 } from "../../ast.js"
 import type { inferIntersection } from "../../intersect.js"
+import type { Ark } from "../../keywords/ark.js"
 import type {
 	UnparsedScope,
 	resolve,

@@ -16,9 +16,9 @@ export interface typedArrayExports {
 	BigUint64: BigUint64Array
 }
 
-export type typedArray = Module<typedArrayExports>
+export type typedArrayModule = Module<typedArrayExports>
 
-export const typedArray: typedArray = scope(
+export const typedArrayModule: typedArrayModule = scope(
 	{
 		Int8: ["instanceof", Int8Array],
 		Uint8: ["instanceof", Uint8Array],

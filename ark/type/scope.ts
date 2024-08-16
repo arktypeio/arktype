@@ -41,7 +41,6 @@ import {
 	type nominal,
 	type show
 } from "@ark/util"
-import type { Ark } from "./ark.js"
 import {
 	parseGenericParams,
 	type GenericDeclaration,
@@ -50,6 +49,7 @@ import {
 	type baseGenericConstraints,
 	type parseValidGenericParams
 } from "./generic.js"
+import type { Ark } from "./keywords/ark.js"
 import type {
 	BoundModule,
 	Module,

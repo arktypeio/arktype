@@ -10,8 +10,13 @@ import { scope } from "../scope.js"
 import { tryParseDatePattern } from "./utils/date.js"
 import { regexStringNode } from "./utils/regex.js"
 
+const parsableNumber = regexStringNode(
+	wellFormedNumberMatcher,
+	"a well-formed numeric string"
+)
+
 const number = rootNode({
-	in: regexStringNode(wellFormedNumberMatcher, "a well-formed numeric string"),
+	in: parsableNumber,
 	morphs: (s: string) => Number.parseFloat(s)
 })
 
@@ -99,9 +104,9 @@ export type parsingExports = {
 	formData: (In: FormData) => Out<ParsedFormData>
 }
 
-export type parsing = Module<parsingExports>
+export type parsingModule = Module<parsingExports>
 
-export const parsing: parsing = scope(
+export const parsingModule: parsingModule = scope(
 	{
 		url,
 		number,

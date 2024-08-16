@@ -17,8 +17,8 @@ import {
 	type requiredKeyOf,
 	type show
 } from "@ark/util"
-import type { type } from "../ark.js"
 import type { string } from "../ast.js"
+import type { type } from "../keywords/ark.js"
 import type { ParseContext } from "../scope.js"
 import {
 	parseObjectLiteral,

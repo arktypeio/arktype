@@ -35,9 +35,9 @@ export type formattingExports = {
 	capitalize: (In: string) => Out<string>
 	normalize: (In: string) => Out<string>
 }
-export type formatting = Module<formattingExports>
+export type formattingModule = Module<formattingExports>
 
-export const formatting: formatting = scope(
+export const formattingModule: formattingModule = scope(
 	{
 		trim,
 		uppercase,

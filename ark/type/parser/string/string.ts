@@ -4,7 +4,7 @@ import {
 	throwParseError,
 	type ErrorMessage
 } from "@ark/util"
-import type { Ark } from "../../ark.js"
+import type { Ark } from "../../keywords/ark.js"
 import type { inferAstRoot } from "../semantic/infer.js"
 import type { DynamicState, DynamicStateWithRoot } from "./reduce/dynamic.js"
 import type { StringifiablePrefixOperator } from "./reduce/shared.js"

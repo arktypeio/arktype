@@ -19,8 +19,8 @@ import {
 	type propValueOf,
 	type show
 } from "@ark/util"
-import type { type } from "./ark.js"
 import type { inferPipe } from "./intersect.js"
+import type { type } from "./keywords/ark.js"
 import type { platformObjectExports } from "./keywords/platformObjects.js"
 import type { typedArrayExports } from "./keywords/typedArray.js"
 import type { Type } from "./type.js"

@@ -22,7 +22,7 @@ import {
 	type anyOrNever,
 	type join
 } from "@ark/util"
-import type { Ark } from "../../../../ark.js"
+import type { Ark } from "../../../../keywords/ark.js"
 import type { GenericInstantiationAst } from "../../../semantic/infer.js"
 import { writePrefixedPrivateReferenceMessage } from "../../../semantic/validate.js"
 import type { DynamicState } from "../../reduce/dynamic.js"

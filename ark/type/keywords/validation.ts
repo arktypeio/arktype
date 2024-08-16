@@ -1,12 +1,5 @@
 import { rootNode } from "@ark/schema"
-import type {
-	anonymous,
-	AtLeast,
-	AtMost,
-	DivisibleBy,
-	number,
-	string
-} from "../ast.js"
+import type { anonymous, number, string } from "../ast.js"
 import type { Module } from "../module.js"
 import { scope } from "../scope.js"
 import { creditCardMatcher, isLuhnValid } from "./utils/creditCard.js"
@@ -62,32 +55,6 @@ const creditCard = rootNode({
 	}
 })
 
-/**
- * As per the ECMA-262 specification:
- * A time value supports a slightly smaller range of -8,640,000,000,000,000 to 8,640,000,000,000,000 milliseconds.
- *
- * @see https://262.ecma-international.org/15.0/index.html#sec-time-values-and-time-range
- */
-const unixTimestamp = rootNode({
-	domain: {
-		domain: "number",
-		meta: "a number representing a Unix timestamp"
-	},
-	divisor: {
-		rule: 1,
-		meta: `an integer representing a Unix timestamp`
-	},
-	min: {
-		rule: -8640000000000000,
-		meta: `a Unix timestamp after -8640000000000000`
-	},
-	max: {
-		rule: 8640000000000000,
-		meta: "a Unix timestamp before 8640000000000000"
-	},
-	meta: "an integer representing a safe Unix timestamp"
-})
-
 export interface validationExports {
 	alpha: string.matching<anonymous>
 	alphanumeric: string.matching<anonymous>
@@ -101,14 +68,11 @@ export interface validationExports {
 	semver: string.matching<anonymous>
 	ip: string.matching<anonymous>
 	integer: number.divisibleBy<1>
-	unixTimestamp: number.is<
-		DivisibleBy<1> & AtMost<8640000000000000> & AtLeast<-8640000000000000>
-	>
 }
 
-export type validation = Module<validationExports>
+export type validationModule = Module<validationExports>
 
-export const validation: validation = scope(
+export const validationModule: validationModule = scope(
 	{
 		alpha: regexStringNode(/^[A-Za-z]*$/, "only letters"),
 		alphanumeric: regexStringNode(
@@ -127,8 +91,7 @@ export const validation: validation = scope(
 		integer: rootNode({
 			domain: "number",
 			divisor: 1
-		}),
-		unixTimestamp
+		})
 	},
 	{ prereducedAliases: true }
 ).export()

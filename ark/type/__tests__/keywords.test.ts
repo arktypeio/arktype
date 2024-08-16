@@ -183,7 +183,7 @@ contextualize(() => {
 		})
 
 		it("unixTimestamp", () => {
-			const unixTimestamp = type("unixTimestamp")
+			const unixTimestamp = type("unix")
 
 			// valid Unix timestamp
 			attest(unixTimestamp(1621530000)).equals(1621530000)

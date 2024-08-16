@@ -1,6 +1,6 @@
 import type { array, ErrorType, merge } from "@ark/util"
-import type { type } from "../ark.js"
 import type { arkKeyOf, getArkKey, toArkKey } from "../keys.js"
+import type { type } from "../keywords/ark.js"
 import type { inferTypeRoot, validateTypeRoot } from "../type.js"
 import type { ArrayType } from "./array.js"
 import type { instantiateType } from "./instantiate.js"

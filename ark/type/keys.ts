@@ -5,8 +5,8 @@ import type {
 	NonNegativeIntegerLiteral,
 	typeToString
 } from "@ark/util"
-import type { type } from "./ark.js"
 import type { termOrType } from "./ast.js"
+import type { type } from "./keywords/ark.js"
 
 export type toArkKey<o, k extends keyof o> =
 	k extends number ?

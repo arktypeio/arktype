@@ -13,10 +13,14 @@ export declare namespace JsonSchema {
 		| "boolean"
 		| "null"
 
-	export interface Meta<t = unknown> {
+	/**
+	 *  a subset of JSON Schema's annotations, see:
+	 *  https://json-schema.org/understanding-json-schema/reference/annotations
+	 **/
+	export type Meta<t = unknown> = {
 		title?: string
 		description?: string
-		default?: t
+		deprecated?: true
 		examples?: readonly t[]
 	}
 
