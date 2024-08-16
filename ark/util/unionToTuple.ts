@@ -1,4 +1,5 @@
 import type { array, join } from "./arrays.js"
+import type { Fn } from "./functions.js"
 import type { conform } from "./generics.js"
 
 export type stringifyUnion<
@@ -30,12 +31,13 @@ export type intersectUnion<t> =
 		intersection
 	:	never
 
-export type intersectOverloadReturns<f extends (...args: never[]) => unknown> =
-	intersectUnion<ReturnType<overloadOf<f>>>
+export type intersectOverloadReturns<fn extends Fn> = intersectUnion<
+	ReturnType<overloadOf<fn>>
+>
 
 // Based on: https://tsplay.dev/WvydBm
 export type overloadOf<
-	f extends (...args: never[]) => unknown,
+	fn extends Fn,
 	givenArgs extends array = array
 > = Exclude<
 	collectSignatures<
@@ -44,21 +46,21 @@ export type overloadOf<
 		// encountered, and b) it seems to prevent the collapse of subsequent
 		// "compatible" signatures (eg. "() => void" into "(a?: 1) => void"),
 		// which gives a direct conversion to a union.
-		(() => never) & f,
+		(() => never) & fn,
 		givenArgs,
 		unknown
 	>,
-	f extends () => never ? never : () => never
+	fn extends () => never ? never : () => never
 >
 
-type collectSignatures<f, givenArgs extends array, result> =
-	result & f extends (...args: infer args) => infer returns ?
-		result extends f ?
+type collectSignatures<fn, givenArgs extends array, result> =
+	result & fn extends (...args: infer args) => infer returns ?
+		result extends fn ?
 			never
 		:	| collectSignatures<
-					f,
+					fn,
 					givenArgs,
-					Pick<f, keyof f> & result & ((...args: args) => returns)
+					Pick<fn, keyof fn> & result & ((...args: args) => returns)
 			  >
 			| (args extends givenArgs ? (...args: args) => returns : never)
 	:	never

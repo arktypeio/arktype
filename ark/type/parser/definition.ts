@@ -6,6 +6,7 @@ import {
 	throwParseError,
 	type Dict,
 	type ErrorMessage,
+	type Fn,
 	type Primitive,
 	type anyOrNever,
 	type array,
@@ -128,7 +129,7 @@ type declarationMismatch<def, declared, $, args> = {
 
 // functions are ignored in validation so that cyclic thunk definitions can be
 // inferred in scopes
-type Terminal = RegExp | type.cast<unknown> | ((...args: never[]) => unknown)
+type Terminal = RegExp | type.cast<unknown> | Fn
 
 export type ThunkCast<t = unknown> = () => type.cast<t>
 

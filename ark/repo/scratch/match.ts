@@ -140,7 +140,7 @@
 // }>
 
 // type MatchInvocationContext = {
-// 	thens: readonly ((...args: never[]) => unknown)[]
+// 	thens: readonly Fn[]
 // 	initialInputs: unknown
 // }
 

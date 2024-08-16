@@ -1,5 +1,6 @@
 import type { array } from "./arrays.js"
 import { flatMorph } from "./flatMorph.js"
+import type { Fn } from "./functions.js"
 import type { defined, show } from "./generics.js"
 
 export type Dict<k extends string = string, v = unknown> = {
@@ -28,7 +29,7 @@ export type require<o, maxDepth extends number = 1> = _require<o, [], maxDepth>
 type _require<o, depth extends 1[], maxDepth extends number> =
 	depth["length"] extends maxDepth ? o
 	: o extends object ?
-		o extends (...args: never[]) => unknown ?
+		o extends Fn ?
 			o
 		:	{
 				[k in keyof o]-?: _require<o[k], [...depth, 1], maxDepth>
@@ -48,7 +49,7 @@ export type mutable<o, maxDepth extends number = 1> = _mutable<o, [], maxDepth>
 type _mutable<o, depth extends 1[], maxDepth extends number> =
 	depth["length"] extends maxDepth ? o
 	: o extends object ?
-		o extends (...args: never[]) => unknown ?
+		o extends Fn ?
 			o
 		:	{
 				-readonly [k in keyof o]: _mutable<o[k], [...depth, 1], maxDepth>
@@ -162,18 +163,20 @@ export type override<
 
 export type propValueOf<o> = o[keyof o]
 
-export const InnerDynamicBase = class {
+export const InnerDynamicBase = class {} as new <t extends object>(base: t) => t
+
+/** @ts-ignore (needed to extend `t`) **/
+export interface DynamicBase<t extends object> extends t {}
+// eslint-disable-next-line
+export class DynamicBase<t extends object> {
 	constructor(properties: object) {
 		Object.assign(this, properties)
 	}
-} as new <t extends object>(base: t) => t
-
-/** @ts-ignore (needed to extend `t`, but safe given ShallowClone's implementation) **/
-export class DynamicBase<t extends object> extends InnerDynamicBase<t> {}
+}
 
 export const NoopBase = class {} as new <t extends object>() => t
 
-/** @ts-ignore (see DynamicBase) **/
+/** @ts-ignore (needed to extend `t`) **/
 export class CastableBase<t extends object> extends NoopBase<t> {}
 
 export const splitByKeys = <o extends object, leftKeys extends keySetOf<o>>(

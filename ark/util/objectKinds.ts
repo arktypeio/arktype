@@ -1,6 +1,7 @@
 import type { array } from "./arrays.js"
 import type { DescribeOptions } from "./describe.js"
 import { type Domain, type domainDescriptions, domainOf } from "./domain.js"
+import type { Fn } from "./functions.js"
 import { type Key, isKeyOf } from "./records.js"
 
 export type builtinConstructors = {
@@ -47,7 +48,7 @@ export type BuiltinObjects = {
 
 export type objectKindOf<data extends object> =
 	object extends data ? keyof builtinConstructors | undefined
-	: data extends (...args: never[]) => unknown ? "Function"
+	: data extends Fn ? "Function"
 	: instantiableObjectKind<data> extends never ?
 		keyof builtinConstructors | undefined
 	:	instantiableObjectKind<data>

@@ -1,25 +1,25 @@
 import { attest, contextualize } from "@ark/attest"
 import type { array, conform, overloadOf } from "@ark/util"
 
-declare const f: {
+declare const fn: {
 	(): void
 	(a?: 1): 1
 	(a: 2, b: 2): 2
 }
 
-const pipe = <f extends (...args: any[]) => unknown, args extends array>(
-	args: conform<args, Parameters<overloadOf<f>>>,
-	f: f
-): ReturnType<overloadOf<f, args>> => f(...args) as never
+const pipe = <fn extends (...args: any[]) => unknown, args extends array>(
+	args: conform<args, Parameters<overloadOf<fn>>>,
+	f: fn
+): ReturnType<overloadOf<fn, args>> => f(...args) as never
 
 contextualize(() => {
 	it("parameters", () => {
-		const t = {} as Parameters<overloadOf<typeof f>>
+		const t = {} as Parameters<overloadOf<typeof fn>>
 		attest<[a: 2, b: 2] | [a?: 1 | undefined] | []>(t)
 	})
 
 	it("returns", () => {
-		const t = {} as ReturnType<overloadOf<typeof f>>
+		const t = {} as ReturnType<overloadOf<typeof fn>>
 		attest<void | 1 | 2>(t)
 	})
 

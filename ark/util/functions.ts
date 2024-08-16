@@ -1,5 +1,10 @@
 import { throwInternalError } from "./errors.js"
-import { NoopBase, unset } from "./records.js"
+import { unset } from "./records.js"
+
+export type Fn<
+	in args extends readonly never[] = readonly never[],
+	out returns = unknown
+> = (...args: args) => returns
 
 export const bound = (
 	target: Function,
@@ -74,12 +79,12 @@ export const DynamicFunction = class extends Function {
 	}
 } as DynamicFunction
 
-export type DynamicFunction = new <f extends (...args: never[]) => unknown>(
+export type DynamicFunction = new <fn extends Fn>(
 	...args: ConstructorParameters<typeof Function>
-) => f & {
-	apply(thisArg: null, args: Parameters<f>): ReturnType<f>
+) => fn & {
+	apply(thisArg: null, args: Parameters<fn>): ReturnType<fn>
 
-	call(thisArg: null, ...args: Parameters<f>): ReturnType<f>
+	call(thisArg: null, ...args: Parameters<fn>): ReturnType<fn>
 }
 
 export type CallableOptions<attachments extends object> = {
@@ -88,19 +93,19 @@ export type CallableOptions<attachments extends object> = {
 }
 
 /** @ts-ignore required to cast function type */
-export class Callable<
-	f extends (...args: never[]) => unknown,
-	attachments extends object = {}
-> extends NoopBase<f & attachments> {
+export interface Callable<fn extends Fn, attachments extends object>
+	extends fn,
+		attachments {}
+// eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
+export class Callable<fn extends Fn, attachments extends object = {}> {
 	constructor(
-		f: f,
+		fn: fn,
 		...[opts]: {} extends attachments ? [opts?: CallableOptions<attachments>]
 		:	[opts: CallableOptions<attachments>]
 	) {
-		super()
 		return Object.assign(
 			Object.setPrototypeOf(
-				f.bind(opts?.bind ?? this),
+				fn.bind(opts?.bind ?? this),
 				this.constructor.prototype
 			),
 			opts?.attach

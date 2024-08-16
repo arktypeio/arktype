@@ -1,1 +1,1 @@
-import { type, type ArkErrors } from "arktype"
+import { type } from "arktype"

@@ -31,7 +31,7 @@ export const bindModule = (
 			alias,
 			hasArkKind(value, "module") ? bindModule(value, $) : value.bindScope($)
 		])
-	)
+	) as never
 
 type exportSchemaScope<$> = {
 	[k in keyof $]: $[k] extends InternalResolution ?
