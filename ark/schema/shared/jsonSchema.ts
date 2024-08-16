@@ -63,8 +63,8 @@ export declare namespace JsonSchema {
 		type: "array"
 		minItems?: number
 		maxItems?: number
-		items?: readonly JsonSchema[]
-		additionalItems?: false | JsonSchema
+		items?: JsonSchema | false
+		prefixItems?: readonly JsonSchema[]
 	}
 
 	export type LengthBoundable = String | Array

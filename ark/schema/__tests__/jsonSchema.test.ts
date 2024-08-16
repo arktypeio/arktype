@@ -13,6 +13,7 @@ contextualize(() => {
 			anyOf: [
 				{ type: "number" },
 				{ type: "string" },
+				// boolean is special-cased to merge during conversion
 				{ type: "boolean" },
 				{ const: null }
 			]
@@ -116,6 +117,54 @@ contextualize(() => {
 		attest(node.toJsonSchema()).snap({
 			type: "object",
 			patternProperties: { ".*": { type: "number" } }
+		})
+	})
+
+	it("variadic array", () => {
+		const node = rootNode({
+			proto: Array,
+			sequence: { domain: "string" },
+			minLength: 1,
+			maxLength: 5
+		})
+		const jsonSchema = node.toJsonSchema()
+		attest(jsonSchema).snap({
+			type: "array",
+			items: { type: "string" },
+			minItems: 1,
+			maxItems: 5
+		})
+	})
+
+	it("fixed length tuple", () => {
+		const node = rootNode({
+			proto: Array,
+			sequence: {
+				prefix: [{ domain: "string" }, { domain: "number" }]
+			}
+		})
+		const jsonSchema = node.toJsonSchema()
+		attest(jsonSchema).snap({
+			type: "array",
+			prefixItems: [{ type: "string" }, { type: "number" }],
+			items: false
+		})
+	})
+
+	it("prefixed array", () => {
+		const node = rootNode({
+			proto: Array,
+			sequence: {
+				prefix: [{ domain: "string" }, { domain: "number" }],
+				variadic: { unit: 1 }
+			}
+		})
+		const jsonSchema = node.toJsonSchema()
+		attest(jsonSchema).snap({
+			type: "array",
+			minItems: 2,
+			prefixItems: [{ type: "string" }, { type: "number" }],
+			items: { const: 1 }
 		})
 	})
 

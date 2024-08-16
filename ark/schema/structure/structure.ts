@@ -577,7 +577,14 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			case "object":
 				return this.reduceObjectJsonSchema(schema)
 			case "array":
-				return schema
+				if (this.props.length || this.index) {
+					throwParseError(
+						writeUnsupportedJsonSchemaTypeMessage(
+							`Additional properties on array ${this.expression}`
+						)
+					)
+				}
+				return this.sequence?.reduceJsonSchema(schema) ?? schema
 			default:
 				return throwInternalJsonSchemaOperandError("structure", schema)
 		}

@@ -32,6 +32,10 @@ import {
 	type nodeImplementationOf
 } from "../shared/implement.js"
 import { intersectNodes } from "../shared/intersections.js"
+import {
+	writeUnsupportedJsonSchemaTypeMessage,
+	type JsonSchema
+} from "../shared/jsonSchema.js"
 import { $ark } from "../shared/registry.js"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
 
@@ -381,6 +385,43 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 	tuple: SequenceTuple = sequenceInnerToTuple(this.inner)
 	// this depends on tuple so needs to come after it
 	expression: string = this.description
+
+	reduceJsonSchema(schema: JsonSchema.Array): JsonSchema.Array {
+		if (this.prefix.length)
+			schema.prefixItems = this.prefix.map(node => node.toJsonSchema())
+
+		if (this.optionals.length) {
+			throwParseError(
+				writeUnsupportedJsonSchemaTypeMessage(
+					`Optional tuple element${this.optionals.length > 1 ? "s" : ""} ${this.optionals.join(", ")}`
+				)
+			)
+		}
+
+		if (this.variadic) {
+			schema.items = this.variadic?.toJsonSchema()
+			// length constraints will be enforced by items: false
+			// for non-variadic arrays
+			if (this.minLength) schema.minItems = this.minLength
+			if (this.maxLength) schema.maxItems = this.maxLength
+		} else {
+			schema.items = false
+			// delete min/maxLength constraints that will have been added by the
+			// base intersection node to enforce fixed length
+			delete schema.minItems
+			delete schema.maxItems
+		}
+
+		if (this.postfix.length) {
+			throwParseError(
+				writeUnsupportedJsonSchemaTypeMessage(
+					`Postfix tuple element${this.postfix.length > 1 ? "s" : ""} ${this.postfix.join(", ")}`
+				)
+			)
+		}
+
+		return schema
+	}
 }
 
 export const Sequence = {
