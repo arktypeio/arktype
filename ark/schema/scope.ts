@@ -357,7 +357,8 @@ export abstract class BaseScope<$ extends {} = {}> {
 			return (this.resolutions[name] = preparsed.bindScope(this))
 
 		if (hasArkKind(preparsed, "module")) {
-			if (preparsed.$root) this.resolutions[name] = preparsed.$root
+			if (preparsed.$root)
+				return (this.resolutions[name] = preparsed.$root.bindScope(this))
 			else return throwParseError(writeMissingSubmoduleAccessMessage(name))
 		}
 
@@ -528,12 +529,13 @@ export class SchemaScope<
 	}
 }
 
-export const $root: SchemaScope = new SchemaScope({})
+export const rootSchemaScope: SchemaScope = new SchemaScope({})
 
-export const rootNode: SchemaScope["rootNode"] = $root.rootNode
-export const node: SchemaScope["node"] = $root.node
-export const defineSchema: SchemaScope["defineSchema"] = $root.defineSchema
-export const genericNode: SchemaScope["generic"] = $root.generic
+export const rootNode: SchemaScope["rootNode"] = rootSchemaScope.rootNode
+export const node: SchemaScope["node"] = rootSchemaScope.node
+export const defineSchema: SchemaScope["defineSchema"] =
+	rootSchemaScope.defineSchema
+export const genericNode: SchemaScope["generic"] = rootSchemaScope.generic
 
 export const parseAsSchema = (
 	def: unknown,

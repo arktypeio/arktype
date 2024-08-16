@@ -7,11 +7,11 @@ import {
 import {
 	scope,
 	type,
+	type BoundModule,
 	type Module,
 	type Scope,
 	type Submodule,
-	type Type,
-	type BoundModule
+	type Type
 } from "arktype"
 import type { Out } from "arktype/internal/ast.js"
 
@@ -110,6 +110,35 @@ contextualize.each(
 		// TODO: private aliases
 	}
 )
+
+it("subtype", () => {
+	const foo = scope({ $root: "'foo'", bar: "'bar'" }).export()
+
+	const $ = scope({
+		foo,
+		fooBare: "foo",
+		fooBar: "foo.bar"
+	})
+
+	attest<
+		Scope<{
+			foo: Submodule<{
+				$root: "foo"
+				bar: "bar"
+			}>
+			fooBare: "foo"
+			fooBar: "bar"
+		}>
+	>($)
+
+	const types = $.export()
+
+	attest(types.foo.bar.expression).snap('"bar"')
+	attest(types.foo.$root.expression).snap('"foo"')
+
+	attest(types.fooBar.expression).snap('"bar"')
+	attest(types.fooBare.expression).snap('"foo"')
+})
 
 contextualize.each(
 	"nested submodule",
