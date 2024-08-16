@@ -105,7 +105,7 @@ type _inferObjectLiteral<def extends object, $, args> = {
 	-readonly [k in keyof def as nonOptionalKeyFrom<k, $, args>]: def[k] extends (
 		DefaultValueTuple<infer baseDef, infer defaultValue>
 	) ?
-		def[k] extends anyOrNever ?
+		[def[k]] extends [anyOrNever] ?
 			def[k]
 		:	(In?: inferDefinition<baseDef, $, args>) => Default<defaultValue>
 	:	inferDefinition<def[k], $, args>

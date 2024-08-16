@@ -17,24 +17,35 @@ import {
 	platformObjectsModule,
 	type platformObjectExports
 } from "./platformObjects.js"
+import { stringModule } from "./string.js"
 import { tsGenericsModule, type tsGenericsExports } from "./tsGenerics.js"
 import { tsKeywordsModule, type tsKeywordExports } from "./tsKeywords.js"
 import { typedArrayModule, type typedArrayExports } from "./typedArray.js"
 import { validationModule, type validationExports } from "./validation.js"
 
+export type WrappedArkKey = "string"
+
 // this type is redundant with the inferred definition of ark but allow types
 // derived from the default scope to be calulated more efficiently
 export interface Ark
-	extends tsKeywordExports,
-		jsObjectExports,
-		platformObjectExports,
-		validationExports,
-		tsGenericsExports,
-		arkGenericsExports,
-		internalExports {
-	TypedArray: Submodule<typedArrayExports>
-	parse: Submodule<parsingExports>
-	format: Submodule<formattingExports>
+	// remove base inference for keywords that have dedicated submodules
+	extends Omit<Ark.infer, WrappedArkKey> {
+	string: stringModule
+}
+
+export namespace Ark {
+	export interface infer
+		extends tsKeywordExports,
+			jsObjectExports,
+			platformObjectExports,
+			validationExports,
+			tsGenericsExports,
+			arkGenericsExports,
+			internalExports {
+		TypedArray: Submodule<typedArrayExports>
+		parse: Submodule<parsingExports>
+		format: Submodule<formattingExports>
+	}
 }
 
 export const ambient: Scope<Ark> = scope(
@@ -46,6 +57,7 @@ export const ambient: Scope<Ark> = scope(
 		...internalModule,
 		...tsGenericsModule,
 		...arkGenericsModule,
+		string: stringModule,
 		TypedArray: typedArrayModule,
 		parse: parsingModule,
 		format: formattingModule

@@ -5,13 +5,14 @@ import { scope } from "../scope.js"
 import { tsKeywordsModule } from "./tsKeywords.js"
 import { regexStringNode } from "./utils/regex.js"
 
-const number = regexStringNode(
+const numeric = regexStringNode(
 	wellFormedNumberMatcher,
 	"a well-formed numeric string"
 )
 
 export type stringExports = {
-	number: string.narrowed
+	$root: string
+	numeric: string.narrowed
 }
 
 export type stringModule = Module<stringExports>
@@ -19,7 +20,7 @@ export type stringModule = Module<stringExports>
 export const stringModule: stringModule = scope(
 	{
 		$root: tsKeywordsModule.string,
-		number
+		numeric
 	},
 	{
 		prereducedAliases: true

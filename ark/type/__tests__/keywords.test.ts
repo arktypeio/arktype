@@ -181,28 +181,6 @@ contextualize(() => {
 				'must be a valid IPv6 address or a valid IPv4 address (was "2001:0db8:85a3:0000:0000:8a2e:0370:733g")'
 			)
 		})
-
-		it("unixTimestamp", () => {
-			const unixTimestamp = type("unix")
-
-			// valid Unix timestamp
-			attest(unixTimestamp(1621530000)).equals(1621530000)
-			attest(unixTimestamp(8640000000000000)).equals(8640000000000000)
-			attest(unixTimestamp(-8640000000000000)).equals(-8640000000000000)
-			// invalid Unix timestamp
-			attest(unixTimestamp("foo").toString()).equals(
-				"must be a number representing a Unix timestamp (was string)"
-			)
-			attest(unixTimestamp(1.5).toString()).equals(
-				"must be an integer representing a Unix timestamp (was 1.5)"
-			)
-			attest(unixTimestamp(-8640000000000001).toString()).equals(
-				"must be a Unix timestamp after -8640000000000000 (was -8640000000000001)"
-			)
-			attest(unixTimestamp(8640000000000001).toString()).equals(
-				"must be a Unix timestamp before 8640000000000000 (was 8640000000000001)"
-			)
-		})
 	})
 
 	describe("parse", () => {
@@ -681,6 +659,30 @@ tags[2] must be a string (was object)`)
 						`ErrorType<"Merged type must be an object", [actual: string]>`
 					)
 			})
+		})
+	})
+
+	describe("string", () => {
+		it("unix", () => {
+			const unixTimestamp = type("unix")
+
+			// valid Unix timestamp
+			attest(unixTimestamp(1621530000)).equals(1621530000)
+			attest(unixTimestamp(8640000000000000)).equals(8640000000000000)
+			attest(unixTimestamp(-8640000000000000)).equals(-8640000000000000)
+			// invalid Unix timestamp
+			attest(unixTimestamp("foo").toString()).equals(
+				"must be a number representing a Unix timestamp (was string)"
+			)
+			attest(unixTimestamp(1.5).toString()).equals(
+				"must be an integer representing a Unix timestamp (was 1.5)"
+			)
+			attest(unixTimestamp(-8640000000000001).toString()).equals(
+				"must be a Unix timestamp after -8640000000000000 (was -8640000000000001)"
+			)
+			attest(unixTimestamp(8640000000000001).toString()).equals(
+				"must be a Unix timestamp before 8640000000000000 (was 8640000000000001)"
+			)
 		})
 	})
 })

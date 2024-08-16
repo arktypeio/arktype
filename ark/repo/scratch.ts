@@ -9,5 +9,3 @@ const s = scope({
 })
 
 const types = s.export()
-
-scope()

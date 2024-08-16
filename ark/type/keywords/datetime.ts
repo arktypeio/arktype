@@ -33,10 +33,9 @@ export const unixTimestampNumber = rootNode({
 
 const unix = rootNode({
 	domain: "string",
-	predicate: (s: string) => {
-		const n = Number.parseFloat()
-		return true
-	},
+	// predicate: (s: string) => {
+	// 	return true
+	// },
 	meta: "an integer string representing a safe Unix timestamp"
 })
 
@@ -55,7 +54,7 @@ export type datetimeModule = Module<datetimeExports>
 export const datetimeModule: datetimeModule = scope(
 	{
 		iso8601,
-		unix: unixTimestampNumber
+		unix
 	},
 	{ prereducedAliases: true }
 ).export()
