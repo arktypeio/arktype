@@ -216,14 +216,6 @@ export class InternalScope<
 > extends BaseScope<$> {
 	private parseCache: Record<string, StringParseResult> = {}
 
-	type: InternalTypeParser = new InternalTypeParser(this as never)
-
-	declare: () => { type: InternalTypeParser } = (() => ({
-		type: this.type
-	})).bind(this)
-
-	define: (def: unknown) => unknown = ((def: unknown) => def).bind(this)
-
 	override preparseAlias(k: string, v: unknown): AliasDefEntry {
 		const firstParamIndex = k.indexOf("<")
 		if (firstParamIndex === -1) return [k, v]
@@ -258,17 +250,6 @@ export class InternalScope<
 		if (isThunk(def) && !hasArkKind(def, "generic")) return def()
 
 		return def
-	}
-
-	parseRoot = (def: unknown, opts: TypeParseOptions = {}): BaseRoot => {
-		const node: BaseRoot = this.parse(
-			def,
-			Object.assign(
-				this.finalizeRootArgs(opts, () => node),
-				{ $: this as never }
-			)
-		).bindScope(this)
-		return node
 	}
 
 	parse<defaultable extends boolean = false>(
@@ -318,6 +299,25 @@ export class InternalScope<
 
 		return node as never
 	}
+
+	parseRoot = (def: unknown, opts: TypeParseOptions = {}): BaseRoot => {
+		const node: BaseRoot = this.parse(
+			def,
+			Object.assign(
+				this.finalizeRootArgs(opts, () => node),
+				{ $: this as never }
+			)
+		).bindScope(this)
+		return node
+	}
+
+	type: InternalTypeParser = new InternalTypeParser(this as never)
+
+	declare = (): { type: InternalTypeParser } => ({
+		type: this.type
+	})
+
+	define: (def: unknown) => unknown = ((def: unknown) => def).bind(this)
 }
 
 export interface Scope<$ = {}> {
