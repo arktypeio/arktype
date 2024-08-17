@@ -42,6 +42,7 @@ import {
 	type nominal,
 	type show
 } from "@ark/util"
+import type { inferred } from "./ast.js"
 import {
 	parseGenericParams,
 	type GenericDeclaration,
@@ -50,7 +51,7 @@ import {
 	type baseGenericConstraints,
 	type parseValidGenericParams
 } from "./generic.js"
-import type { Ark, type } from "./keywords/ark.js"
+import type { type } from "./keywords/ark.js"
 import type {
 	BoundModule,
 	Module,
@@ -171,7 +172,7 @@ export type resolve<reference extends keyof $ | keyof args, $, args> =
 		:	$[reference & keyof $]
 	) extends infer resolution ?
 		[resolution] extends [anyOrNever] ? resolution
-		: resolution extends type.cast<infer t> ? t
+		: resolution extends { [inferred]: infer t } ? t
 		: resolution extends Def<infer def> ? inferDefinition<def, $, args>
 		: resolution
 	:	never
@@ -192,11 +193,11 @@ export type tryInferSubmoduleReference<$, token> =
 			unwrapPreinferred<$[submodule][subalias]>
 		:	tryInferSubmoduleReference<$[submodule], subalias>
 	: token extends (
-		`${infer submodule extends moduleKeyOf<Ark>}.${infer subalias}`
+		`${infer submodule extends moduleKeyOf<ArkEnv.$>}.${infer subalias}`
 	) ?
-		subalias extends keyof Ark[submodule] ?
-			unwrapPreinferred<Ark[submodule][subalias]>
-		:	tryInferSubmoduleReference<Ark[submodule], subalias>
+		subalias extends keyof ArkEnv.$[submodule] ?
+			unwrapPreinferred<ArkEnv.$[submodule][subalias]>
+		:	tryInferSubmoduleReference<ArkEnv.$[submodule], subalias>
 	:	never
 
 export interface ParseContext extends TypeParseOptions {

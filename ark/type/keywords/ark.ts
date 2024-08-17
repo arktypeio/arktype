@@ -18,20 +18,22 @@ import { arkString } from "./string.js"
 import { arkTs } from "./ts.js"
 import { arkTypedArray } from "./typedArray.js"
 
-export interface Ark extends Omit<Ark.infer, keyof Ark.Wrapped>, Ark.Wrapped {}
+export interface Ark
+	extends Omit<Ark.keywords, keyof Ark.Wrapped>,
+		Ark.Wrapped {
+	TypedArray: arkTypedArray.submodule
+	parse: arkParse.submodule
+	format: arkFormat.submodule
+}
 
 export namespace Ark {
-	export interface infer
+	export interface keywords
 		extends arkTs.keywords,
 			arkJs.keywords,
 			arkPlatform.keywords,
 			arkString.keywords,
 			arkNumber.keywords,
-			arkBuiltin.keywords {
-		TypedArray: arkTypedArray.submodule
-		parse: arkParse.submodule
-		format: arkFormat.submodule
-	}
+			arkBuiltin.keywords {}
 
 	export interface Wrapped {
 		string: arkString.submodule

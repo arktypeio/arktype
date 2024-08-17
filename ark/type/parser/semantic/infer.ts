@@ -13,7 +13,6 @@ import type {
 	string
 } from "../../ast.js"
 import type { inferIntersection } from "../../intersect.js"
-import type { Ark } from "../../keywords/ark.js"
 import type {
 	UnparsedScope,
 	resolve,
@@ -145,9 +144,7 @@ export type InfixExpression<
 
 export type inferTerminal<token extends string, $, args> =
 	token extends keyof args | keyof $ ? resolve<token, $, args>
-	: // could use resolve here, but having the resolutions preinferred
-	// for modules with root types is a bit more efficient
-	token extends keyof Ark ? Ark.infer[token]
+	: token extends keyof ArkEnv.$ ? resolve<token, ArkEnv.$, args>
 	: `#${token}` extends keyof $ ? resolve<`#${token}`, $, args>
 	: token extends StringLiteral<infer text> ? text
 	: token extends `${infer n extends number}` ? n
