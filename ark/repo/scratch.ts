@@ -1,11 +1,11 @@
 import { scope, type } from "arktype"
 
-const string = scope({ $root: "number", foo: "string" }).export()
+const foo = scope({ $root: "number", foo: "string" }).export()
 
 const s = scope({
-	string,
+	foo: foo,
 	base: "string",
-	sub: "string.foo"
+	sub: "foo.foo"
 })
 
 const types = s.export()

@@ -111,34 +111,48 @@ contextualize.each(
 	}
 )
 
-it("subtype", () => {
-	const foo = scope({ $root: "'foo'", bar: "'bar'" }).export()
+contextualize.each(
+	"subtypes",
+	() => {
+		const foo = scope({ $root: "'foo'", bar: "'bar'" }).export()
 
-	const $ = scope({
-		foo,
-		fooBare: "foo",
-		fooBar: "foo.bar"
-	})
+		const $ = scope({
+			foo,
+			fooBare: "foo",
+			fooBar: "foo.bar"
+		})
 
-	attest<
-		Scope<{
-			foo: Submodule<{
-				$root: "foo"
-				bar: "bar"
-			}>
-			fooBare: "foo"
-			fooBar: "bar"
-		}>
-	>($)
+		return $
+	},
+	it => {
+		it("base", $ => {
+			attest<
+				Scope<{
+					foo: Submodule<{
+						$root: "foo"
+						bar: "bar"
+					}>
+					fooBare: "foo"
+					fooBar: "bar"
+				}>
+			>($)
 
-	const types = $.export()
+			const types = $.export()
 
-	attest(types.foo.bar.expression).snap('"bar"')
-	attest(types.foo.$root.expression).snap('"foo"')
+			attest(types.foo.bar.expression).snap('"bar"')
+			attest(types.foo.$root.expression).snap('"foo"')
 
-	attest(types.fooBar.expression).snap('"bar"')
-	attest(types.fooBare.expression).snap('"foo"')
-})
+			attest(types.fooBar.expression).snap('"bar"')
+			attest(types.fooBare.expression).snap('"foo"')
+		})
+
+		it("completions", $ => {
+			// `foo.$root` should not be included since it is redundant with `foo`
+			// @ts-expect-error
+			attest(() => $.type("foo.")).completions({ "foo.": ["foo.bar"] })
+		})
+	}
+)
 
 contextualize.each(
 	"nested submodule",

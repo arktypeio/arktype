@@ -62,7 +62,9 @@ export type exportedNameOf<$> = Exclude<keyof $ & string, PrivateDeclaration>
 export type resolvableReferenceIn<$> = {
 	[k in keyof $]: k extends string ?
 		k extends PrivateDeclaration<infer alias> ? alias
-		: k extends noSuggest ? never
+		: // technically, $root subtypes are resolvable, but there's never a good
+		// reason to use them over the base alias
+		k extends noSuggest | "$root" ? never
 		: k
 	:	never
 }[keyof $]
