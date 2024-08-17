@@ -363,6 +363,7 @@ export interface UnknownAttachments {
 	readonly innerHash: string
 
 	readonly meta: BaseMeta
+	readonly metaJson: object
 
 	readonly json: object
 	readonly hash: string

@@ -261,7 +261,7 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 		return this.basis?.shortDescription ?? "present"
 	}
 
-	toJsonSchema(): JsonSchema {
+	protected innerToJsonSchema(): JsonSchema {
 		return this.children.reduce(
 			// cast is required since TS doesn't know children have compatible schema prerequisites
 			(schema, child) =>

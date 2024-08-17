@@ -91,7 +91,13 @@ export abstract class BaseRoot<
 
 	abstract get shortDescription(): string
 
-	abstract toJsonSchema(): JsonSchema
+	protected abstract innerToJsonSchema(): JsonSchema
+
+	@cached
+	toJsonSchema(): JsonSchema {
+		const schema = this.innerToJsonSchema()
+		return Object.assign(schema, this.metaJson)
+	}
 
 	intersect(r: unknown): BaseRoot | Disjoint {
 		const rNode = this.$.parseRoot(r)

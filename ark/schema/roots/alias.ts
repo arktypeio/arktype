@@ -91,7 +91,7 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 		return domainDescriptions.object
 	}
 
-	toJsonSchema(): JsonSchema {
+	protected innerToJsonSchema(): JsonSchema {
 		return throwParseError(writeCyclicJsonSchemaMessage(this.expression))
 	}
 

@@ -7,7 +7,6 @@ import {
 	printable,
 	throwParseError,
 	unset,
-	type Json,
 	type JsonData,
 	type PartialRecord,
 	type dict,
@@ -211,13 +210,14 @@ export const createNode = (
 		innerJson = impl.finalizeInnerJson(innerJson) as never
 
 	let json = { ...innerJson }
+	let metaJson: BaseMeta & dict = {}
 
 	if (!isEmptyObject(meta)) {
-		json.meta = possiblyCollapse(
-			flatMorph(meta, (k, v) => [k, defaultValueSerializer(v)]),
-			"description",
-			true
-		)
+		metaJson = flatMorph(meta, (k, v) => [
+			k,
+			k === "examples" ? v : defaultValueSerializer(v)
+		]) as BaseMeta & dict
+		json.meta = possiblyCollapse(metaJson, "description", true)
 	}
 
 	innerJson = possiblyCollapse(innerJson, impl.collapsibleKey, false)
@@ -237,9 +237,10 @@ export const createNode = (
 		impl,
 		inner,
 		innerEntries,
-		innerJson: innerJson as Json,
+		innerJson,
 		innerHash,
 		meta,
+		metaJson,
 		json,
 		hash,
 		collapsibleJson: collapsibleJson as JsonData,

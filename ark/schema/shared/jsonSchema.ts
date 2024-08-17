@@ -1,4 +1,11 @@
-import { printable, throwInternalError, type listable } from "@ark/util"
+import {
+	printable,
+	throwInternalError,
+	type JsonArray,
+	type JsonData,
+	type JsonObject,
+	type listable
+} from "@ark/util"
 import type { ConstraintKind } from "./implement.js"
 
 export type JsonSchema = JsonSchema.Union | JsonSchema.Branch
@@ -17,7 +24,7 @@ export declare namespace JsonSchema {
 	 *  a subset of JSON Schema's annotations, see:
 	 *  https://json-schema.org/understanding-json-schema/reference/annotations
 	 **/
-	export type Meta<t = unknown> = {
+	export type Meta<t extends JsonData = JsonData> = {
 		title?: string
 		description?: string
 		deprecated?: true
@@ -55,7 +62,7 @@ export declare namespace JsonSchema {
 		exclusiveMaximum?: number
 	}
 
-	export interface Object extends Meta<object> {
+	export interface Object extends Meta<JsonObject> {
 		type: "object"
 		properties?: Record<string, JsonSchema>
 		required?: string[]
@@ -63,7 +70,7 @@ export declare namespace JsonSchema {
 		additionalProperties?: false | JsonSchema
 	}
 
-	export interface Array extends Meta<readonly unknown[]> {
+	export interface Array extends Meta<JsonArray> {
 		type: "array"
 		minItems?: number
 		maxItems?: number

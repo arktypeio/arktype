@@ -142,7 +142,7 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 		return this.in.shortDescription
 	}
 
-	toJsonSchema(): JsonSchema {
+	protected innerToJsonSchema(): JsonSchema {
 		return throwParseError(writeJsonSchemaMorphMessage(this.expression))
 	}
 

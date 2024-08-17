@@ -114,7 +114,7 @@ export class ProtoNode extends InternalBasis<Proto.Declaration> {
 	compiledNegation = `!(${this.compiledCondition})`
 	literalKeys: array<Key> = prototypeKeysOf(this.proto.prototype)
 
-	toJsonSchema(): JsonSchema.Array {
+	protected innerToJsonSchema(): JsonSchema.Array {
 		switch (this.builtinName) {
 			case "Array":
 				return {

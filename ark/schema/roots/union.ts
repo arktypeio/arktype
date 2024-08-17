@@ -247,7 +247,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		return this.distribute(branch => branch.shortDescription, describeBranches)
 	}
 
-	toJsonSchema(): JsonSchema {
+	protected innerToJsonSchema(): JsonSchema {
 		return {
 			anyOf: this.branchGroups.map(group =>
 				// special case to simplify { const: true } | { const: false }

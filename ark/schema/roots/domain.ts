@@ -97,7 +97,7 @@ export class DomainNode extends InternalBasis<Domain.Declaration> {
 		return domainDescriptions[this.domain]
 	}
 
-	toJsonSchema(): JsonSchema.Constrainable {
+	protected innerToJsonSchema(): JsonSchema.Constrainable {
 		if (this.domain === "bigint" || this.domain === "symbol")
 			return throwParseError(writeUnsupportedJsonSchemaTypeMessage(this.domain))
 		return {

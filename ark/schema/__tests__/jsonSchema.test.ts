@@ -168,6 +168,47 @@ contextualize(() => {
 		})
 	})
 
+	it("preserves meta", () => {
+		const node = rootNode({
+			domain: "object",
+			required: [
+				{
+					key: "foo",
+					value: {
+						domain: "string",
+						meta: "a foo"
+					}
+				},
+				{
+					key: "bar",
+					value: {
+						domain: "number",
+						meta: {
+							title: "bar",
+							examples: [1337, 7331]
+						}
+					}
+				}
+			],
+			optional: {
+				key: "baz",
+				value: { "meta.deprecated": true, unit: 1 }
+			}
+		})
+
+		const schema = node.toJsonSchema()
+
+		attest(schema).snap({
+			type: "object",
+			properties: {
+				bar: { type: "number", title: "bar", examples: [1337, 7331] },
+				foo: { type: "string", description: "a foo" },
+				baz: { const: 1, deprecated: true }
+			},
+			required: ["bar", "foo"]
+		})
+	})
+
 	it("errors on morph", () => {
 		const morph = rootNode({
 			in: "string",

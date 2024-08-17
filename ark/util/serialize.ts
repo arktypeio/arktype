@@ -11,11 +11,13 @@ export type SerializationOptions = {
 	onUndefined?: string
 }
 
-export type Json =
-	| {
-			[k: string | number]: JsonData
-	  }
-	| JsonData[]
+export type Json = JsonObject | JsonArray
+
+export type JsonObject = {
+	[k: string]: JsonData
+}
+
+export type JsonArray = JsonData[]
 
 export type JsonPrimitive = string | boolean | number | null
 
