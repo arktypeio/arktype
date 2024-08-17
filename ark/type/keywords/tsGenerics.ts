@@ -1,9 +1,8 @@
-import { genericNode } from "@ark/schema"
+import { genericNode, intrinsic } from "@ark/schema"
 import { Hkt, type Key, type omit, type pick, type show } from "@ark/util"
 import type { Module } from "../module.js"
 import { scope, type inferScope } from "../scope.js"
 import { internalModule } from "./internal.js"
-import { tsKeywordsModule } from "./tsKeywords.js"
 
 class RecordHkt extends Hkt<[Key, unknown]> {
 	declare body: Record<this[0], this[1]>
@@ -24,25 +23,25 @@ class PickHkt extends Hkt<[object, Key]> {
 	declare body: pick<this[0], this[1] & keyof this[0]>
 }
 
-const Pick = genericNode(
-	["T", tsKeywordsModule.object],
-	["K", internalModule.key]
-)(args => args.T.pick(args.K as never), PickHkt)
+const Pick = genericNode(["T", intrinsic.object], ["K", internalModule.key])(
+	args => args.T.pick(args.K as never),
+	PickHkt
+)
 
 class OmitHkt extends Hkt<[object, Key]> {
 	declare body: omit<this[0], this[1] & keyof this[0]>
 }
 
-const Omit = genericNode(
-	["T", tsKeywordsModule.object],
-	["K", internalModule.key]
-)(args => args.T.omit(args.K as never), OmitHkt)
+const Omit = genericNode(["T", intrinsic.object], ["K", internalModule.key])(
+	args => args.T.omit(args.K as never),
+	OmitHkt
+)
 
 class PartialHkt extends Hkt<[object]> {
 	declare body: show<Partial<this[0]>>
 }
 
-const Partial = genericNode(["T", tsKeywordsModule.object])(
+const Partial = genericNode(["T", intrinsic.object])(
 	args => args.T.partial(),
 	PartialHkt
 )
@@ -51,7 +50,7 @@ class RequiredHkt extends Hkt<[object]> {
 	declare body: show<Required<this[0]>>
 }
 
-const Required = genericNode(["T", tsKeywordsModule.object])(
+const Required = genericNode(["T", intrinsic.object])(
 	args => args.T.required(),
 	RequiredHkt
 )

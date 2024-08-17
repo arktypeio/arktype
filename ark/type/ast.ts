@@ -21,8 +21,8 @@ import {
 } from "@ark/util"
 import type { inferPipe } from "./intersect.js"
 import type { type } from "./keywords/ark.js"
-import type { platformObjectExports } from "./keywords/platformObjects.js"
-import type { typedArrayExports } from "./keywords/typedArray.js"
+import type { arkPlatform } from "./keywords/platformObjects.js"
+import type { arkTypedArray } from "./keywords/typedArray.js"
 import type { Type } from "./type.js"
 
 export const inferred = noSuggest("arkInferred")
@@ -447,8 +447,8 @@ type distillPostfix<
 type TerminallyInferredObjectKind =
 	| ArkEnv.prototypes
 	| BuiltinObjects[Exclude<BuiltinObjectKind, "Array" | "Function">]
-	| propValueOf<platformObjectExports>
-	| propValueOf<typedArrayExports>
+	| propValueOf<arkPlatform.keywords>
+	| propValueOf<arkTypedArray.submodule>
 
 export type inferPredicate<t, predicate> =
 	predicate extends (data: any, ...args: any[]) => data is infer narrowed ?

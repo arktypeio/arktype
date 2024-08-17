@@ -38,6 +38,7 @@ import {
 	type anyOrNever,
 	type array,
 	type flattenListable,
+	type noSuggest,
 	type nominal,
 	type show
 } from "@ark/util"
@@ -84,7 +85,10 @@ export type ScopeParser = <const def>(
 ) => Scope<inferScope<def>>
 
 export type validateScope<def> = {
-	[k in keyof def]: parseScopeKey<k, def>["params"] extends infer params ?
+	[k in keyof def]: k extends noSuggest ?
+		// avoid trying to parse meta keys when spreading modules
+		unknown
+	: parseScopeKey<k, def>["params"] extends infer params ?
 		params extends array<GenericParamAst> ?
 			params["length"] extends 0 ?
 				// not including Type here directly breaks some cyclic tests (last checked w/ TS 5.5).

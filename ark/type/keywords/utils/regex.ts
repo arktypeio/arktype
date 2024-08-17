@@ -1,9 +1,11 @@
-import { node, type Intersection } from "@ark/schema"
+import { node } from "@ark/schema"
+import type { anonymous, string } from "../../ast.js"
+import type { Type } from "../../type.js"
 
 export const regexStringNode = (
 	regex: RegExp,
 	description: string
-): Intersection.Node =>
+): Type<string.matching<anonymous>> =>
 	node("intersection", {
 		domain: "string",
 		pattern: {

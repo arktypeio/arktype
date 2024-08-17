@@ -24,4 +24,4 @@ const ipv6Matcher = new RegExp(
 
 export const ipv6 = regexStringNode(ipv6Matcher, "a valid IPv6 address")
 
-export const ip = rootNode([ipv4, ipv6])
+export const ip = rootNode([ipv4.internal, ipv6.internal])

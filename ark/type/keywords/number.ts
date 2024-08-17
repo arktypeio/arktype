@@ -1,8 +1,7 @@
-import { rootNode } from "@ark/schema"
+import { intrinsic, rootNode } from "@ark/schema"
 import type { AtLeast, AtMost, DivisibleBy, number } from "../ast.js"
 import type { Module } from "../module.js"
 import { scope } from "../scope.js"
-import { tsKeywordsModule } from "./tsKeywords.js"
 
 /**
  * As per the ECMA-262 specification:
@@ -30,21 +29,41 @@ export const unixTimestampNumber = rootNode({
 	meta: "an integer representing a safe Unix timestamp"
 })
 
-export type numberExports = {
-	$root: number
-	unix: number.is<
-		DivisibleBy<1> & AtMost<8640000000000000> & AtLeast<-8640000000000000>
-	>
-}
-
-export type numberModule = Module<numberExports>
-
-export const numberModule: numberModule = scope(
+const keywords: Module<arkNumber.keywords> = scope(
 	{
-		$root: tsKeywordsModule.number,
+		integer: rootNode({
+			domain: "number",
+			divisor: 1
+		})
+	},
+	{ prereducedAliases: true }
+).export()
+
+const submodule: Module<arkNumber.$> = scope(
+	{
+		...keywords,
+		$root: intrinsic.number,
 		unix: unixTimestampNumber
 	},
 	{
 		prereducedAliases: true
 	}
 ).export()
+
+export const arkNumber = {
+	keywords,
+	submodule
+}
+
+export declare namespace arkNumber {
+	export interface keywords {
+		integer: number.divisibleBy<1>
+	}
+
+	export interface $ extends keywords {
+		$root: number
+		unix: number.is<
+			DivisibleBy<1> & AtMost<8640000000000000> & AtLeast<-8640000000000000>
+		>
+	}
+}

@@ -11,18 +11,14 @@ import type {
 import { arkGenericsModule, type arkGenericsExports } from "./arkGenerics.js"
 import { formattingModule, type formattingExports } from "./format.js"
 import { internalModule, type internalExports } from "./internal.js"
-import { jsObjectsModule, type jsObjectExports } from "./jsObjects.js"
-import { numberModule } from "./number.js"
-import { parsingModule, type parsingExports } from "./parsing.js"
-import {
-	platformObjectsModule,
-	type platformObjectExports
-} from "./platformObjects.js"
-import { stringModule } from "./string.js"
+import { arkJs } from "./js.js"
+import { arkNumber } from "./number.js"
+import { arkParse } from "./parse.js"
+import { arkPlatform } from "./platformObjects.js"
+import { arkString } from "./string.js"
 import { tsGenericsModule, type tsGenericsExports } from "./tsGenerics.js"
-import { tsKeywordsModule, type tsKeywordExports } from "./tsKeywords.js"
-import { typedArrayModule, type typedArrayExports } from "./typedArray.js"
-import { validationModule, type validationExports } from "./validation.js"
+import { arkTs } from "./tsKeywords.js"
+import { arkTypedArray } from "./typedArray.js"
 
 // this type is redundant with the inferred definition of ark but allow types
 // derived from the default scope to be calulated more efficiently
@@ -30,37 +26,38 @@ export interface Ark extends Omit<Ark.infer, keyof Ark.Wrapped>, Ark.Wrapped {}
 
 export namespace Ark {
 	export interface infer
-		extends tsKeywordExports,
-			jsObjectExports,
-			platformObjectExports,
-			validationExports,
+		extends arkTs.keywords,
+			arkJs.keywords,
+			arkPlatform.keywords,
+			arkString.keywords,
 			tsGenericsExports,
 			arkGenericsExports,
 			internalExports {
-		TypedArray: Submodule<typedArrayExports>
-		parse: Submodule<parsingExports>
+		TypedArray: Submodule<arkTypedArray.submodule>
+		parse: Submodule<arkParse.submodule>
 		format: Submodule<formattingExports>
 	}
 
 	export interface Wrapped {
-		string: stringModule
-		number: numberModule
+		string: arkString.$
+		number: arkNumber.$
 	}
 }
 
 export const ambient: Scope<Ark> = scope(
 	{
-		...tsKeywordsModule,
-		...jsObjectsModule,
-		...platformObjectsModule,
-		...validationModule,
+		...arkTs.keywords,
+		...arkJs.keywords,
+		...arkPlatform.keywords,
+		...arkString.keywords,
+		...arkNumber.keywords,
 		...internalModule,
 		...tsGenericsModule,
 		...arkGenericsModule,
-		string: stringModule,
-		number: numberModule,
-		TypedArray: typedArrayModule,
-		parse: parsingModule,
+		string: arkString.submodule,
+		number: arkNumber.submodule,
+		TypedArray: arkTypedArray.submodule,
+		parse: arkParse.submodule,
 		format: formattingModule
 	},
 	{ prereducedAliases: true, ambient: true }

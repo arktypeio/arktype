@@ -1,26 +1,8 @@
-import { intrinsic, type BaseRoot } from "@ark/schema"
+import { intrinsic } from "@ark/schema"
 import type { Module } from "../module.js"
 import { scope } from "../scope.js"
 
-export interface tsKeywordExports {
-	any: any
-	bigint: bigint
-	boolean: boolean
-	false: false
-	never: never
-	null: null
-	number: number
-	object: object
-	string: string
-	symbol: symbol
-	true: true
-	unknown: unknown
-	undefined: undefined
-}
-
-export type tsKeywordsModule = Module<tsKeywordExports>
-
-export const tsKeywordsModule: tsKeywordsModule = scope(
+const keywords: Module<arkTs.keywords> = scope(
 	{
 		any: intrinsic.unknown,
 		bigint: intrinsic.bigint,
@@ -35,6 +17,28 @@ export const tsKeywordsModule: tsKeywordsModule = scope(
 		true: intrinsic.true,
 		unknown: intrinsic.unknown,
 		undefined: intrinsic.undefined
-	} satisfies Record<keyof tsKeywordExports, BaseRoot>,
+	},
 	{ prereducedAliases: true }
 ).export()
+
+export const arkTs = {
+	keywords
+}
+
+export declare namespace arkTs {
+	export interface keywords {
+		any: any
+		bigint: bigint
+		boolean: boolean
+		false: false
+		never: never
+		null: null
+		number: number
+		object: object
+		string: string
+		symbol: symbol
+		true: true
+		unknown: unknown
+		undefined: undefined
+	}
+}

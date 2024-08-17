@@ -1,4 +1,4 @@
-import { rootNode } from "@ark/schema"
+import { rootNode, type IntersectionNode } from "@ark/schema"
 import {
 	isWellFormedInteger,
 	wellFormedIntegerMatcher,
@@ -13,7 +13,7 @@ import { regexStringNode } from "./utils/regex.js"
 const parsableNumber = regexStringNode(
 	wellFormedNumberMatcher,
 	"a well-formed numeric string"
-)
+).internal as IntersectionNode
 
 const number = rootNode({
 	in: parsableNumber,
@@ -21,7 +21,8 @@ const number = rootNode({
 })
 
 const integer = rootNode({
-	in: regexStringNode(wellFormedIntegerMatcher, "a well-formed integer string"),
+	in: regexStringNode(wellFormedIntegerMatcher, "a well-formed integer string")
+		.internal as IntersectionNode,
 	morphs: (s: string, ctx) => {
 		if (!isWellFormedInteger(s))
 			return ctx.error("a well-formed integer string")
@@ -95,18 +96,7 @@ const formData = rootNode({
 	}
 })
 
-export type parsingExports = {
-	url: (In: string) => Out<URL>
-	number: (In: string) => Out<number>
-	integer: (In: string) => Out<number.divisibleBy<1>>
-	date: (In: string) => Out<Date>
-	json: (In: string) => Out<object>
-	formData: (In: FormData) => Out<ParsedFormData>
-}
-
-export type parsingModule = Module<parsingExports>
-
-export const parsingModule: parsingModule = scope(
+const submodule: Module<arkParse.submodule> = scope(
 	{
 		url,
 		number,
@@ -119,3 +109,18 @@ export const parsingModule: parsingModule = scope(
 		prereducedAliases: true
 	}
 ).export()
+
+export const arkParse = {
+	submodule
+}
+
+export declare namespace arkParse {
+	export type submodule = {
+		url: (In: string) => Out<URL>
+		number: (In: string) => Out<number>
+		integer: (In: string) => Out<number.divisibleBy<1>>
+		date: (In: string) => Out<Date>
+		json: (In: string) => Out<object>
+		formData: (In: FormData) => Out<ParsedFormData>
+	}
+}

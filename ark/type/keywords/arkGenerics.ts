@@ -1,10 +1,9 @@
-import { genericNode } from "@ark/schema"
+import { genericNode, intrinsic } from "@ark/schema"
 import * as util from "@ark/util"
 import { Hkt } from "@ark/util"
 import type { Out } from "../ast.js"
 import type { Module } from "../module.js"
 import { scope, type inferScope } from "../scope.js"
-import { tsKeywordsModule } from "./tsKeywords.js"
 
 class liftArrayHkt extends Hkt<[element: unknown]> {
 	declare body: util.liftArray<this[0]> extends infer lifted ?
@@ -22,8 +21,8 @@ class mergeHkt extends Hkt<[base: object, props: object]> {
 }
 
 const merge = genericNode(
-	["base", tsKeywordsModule.object],
-	["props", tsKeywordsModule.object]
+	["base", intrinsic.object],
+	["props", intrinsic.object]
 )(args => args.base.merge(args.props), mergeHkt)
 
 const arkGenericsExports = {
