@@ -1,5 +1,6 @@
 import type { GenericAst } from "@ark/schema"
 import type { BigintLiteral, Hkt, array } from "@ark/util"
+import type { ArkAmbient } from "arktype/config"
 import type {
 	Date,
 	DateLiteral,
@@ -144,7 +145,7 @@ export type InfixExpression<
 
 export type inferTerminal<token extends string, $, args> =
 	token extends keyof args | keyof $ ? resolve<token, $, args>
-	: token extends keyof ArkEnv.$ ? resolve<token, ArkEnv.$, args>
+	: token extends keyof ArkAmbient.$ ? resolve<token, ArkAmbient.$, args>
 	: `#${token}` extends keyof $ ? resolve<`#${token}`, $, args>
 	: token extends StringLiteral<infer text> ? text
 	: token extends `${infer n extends number}` ? n

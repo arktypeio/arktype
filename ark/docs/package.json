@@ -13,6 +13,8 @@
 	"dependencies": {
 		"@ark/fs": "workspace:*",
 		"@ark/util": "workspace:*",
+		"@astrojs/ts-plugin": "1.10.0",
+		"@astrojs/check": "0.9.2",
 		"@astrojs/react": "3.6.2",
 		"@astrojs/starlight": "0.26.1",
 		"@shikijs/transformers": "1.13.0",

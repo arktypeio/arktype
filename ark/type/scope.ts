@@ -43,6 +43,7 @@ import {
 	type nominal,
 	type show
 } from "@ark/util"
+import type { ArkAmbient } from "./config.ts"
 import {
 	parseGenericParams,
 	type GenericDeclaration,
@@ -193,11 +194,11 @@ export type tryInferSubmoduleReference<$, token> =
 			unwrapPreinferred<$[submodule][subalias]>
 		:	tryInferSubmoduleReference<$[submodule], subalias>
 	: token extends (
-		`${infer submodule extends moduleKeyOf<ArkEnv.$>}.${infer subalias}`
+		`${infer submodule extends moduleKeyOf<ArkAmbient.$>}.${infer subalias}`
 	) ?
-		subalias extends keyof ArkEnv.$[submodule] ?
-			unwrapPreinferred<ArkEnv.$[submodule][subalias]>
-		:	tryInferSubmoduleReference<ArkEnv.$[submodule], subalias>
+		subalias extends keyof ArkAmbient.$[submodule] ?
+			unwrapPreinferred<ArkAmbient.$[submodule][subalias]>
+		:	tryInferSubmoduleReference<ArkAmbient.$[submodule], subalias>
 	:	never
 
 export interface ParseContext extends TypeParseOptions {
