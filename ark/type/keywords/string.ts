@@ -1,12 +1,14 @@
-import { intrinsic, rootNode } from "@ark/schema"
-import { wellFormedNumberMatcher } from "@ark/util"
+import { ArkErrors, intrinsic, rootNode } from "@ark/schema"
+import { wellFormedIntegerMatcher, wellFormedNumberMatcher } from "@ark/util"
 import type { anonymous, string } from "../ast.js"
 import type { Module, Submodule } from "../module.js"
 import { scope } from "../scope.js"
+import { arkNumber } from "./number.js"
 import { creditCardMatcher, isLuhnValid } from "./utils/creditCard.js"
 import { iso8601Matcher } from "./utils/date.js"
 import { ip } from "./utils/ip.js"
 import { regexStringNode } from "./utils/regex.js"
+
 // Non-trivial expressions should have an explanation or attribution
 
 const url = rootNode({
@@ -61,13 +63,24 @@ const numeric = regexStringNode(
 	"a well-formed numeric string"
 )
 
-const unix = rootNode({
-	domain: "string",
-	// predicate: (s: string) => {
-	// 	return true
-	// },
-	meta: "an integer string representing a safe Unix timestamp"
-})
+const integer = regexStringNode(
+	wellFormedIntegerMatcher,
+	"a well-formed integer string"
+)
+
+const epoch = integer
+	.narrow((s, ctx) => {
+		// we know this is safe since it has already
+		// been validated as an integer string
+		const n = Number.parseInt(s)
+		const out = arkNumber.submodule.epoch(n)
+		if (out instanceof ArkErrors) {
+			ctx.errors.merge(out)
+			return false
+		}
+		return true
+	})
+	.describe("an integer string representing a safe Unix timestamp")
 
 const iso8601 = regexStringNode(
 	iso8601Matcher,
@@ -98,8 +111,9 @@ const submodule: Module<arkString.submodule> = scope(
 	{
 		$root: intrinsic.string,
 		numeric,
+		integer,
 		iso8601,
-		unix,
+		epoch,
 		...keywords
 	},
 	{
@@ -130,8 +144,9 @@ export declare namespace arkString {
 	interface $ extends keywords {
 		$root: string
 		numeric: string.narrowed
+		integer: string.narrowed
 		iso8601: string.narrowed
-		unix: string.narrowed
+		epoch: string.narrowed
 	}
 
 	export type submodule = Submodule<$>

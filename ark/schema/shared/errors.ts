@@ -115,6 +115,17 @@ export class ArkErrors extends ReadonlyArray<ArkError> {
 		this.count++
 	}
 
+	merge(errors: ArkErrors): void {
+		errors.forEach(e =>
+			this.add(
+				new ArkError(
+					{ ...e, path: [...e.path, ...this.ctx.path] } as never,
+					this.ctx
+				)
+			)
+		)
+	}
+
 	get summary(): string {
 		return this.toString()
 	}
@@ -130,6 +141,10 @@ export class ArkErrors extends ReadonlyArray<ArkError> {
 	throw(): never {
 		throw new AggregateError(this, this.message)
 	}
+}
+
+export type ArkErrorsMergeOptions = {
+	relativePath?: TraversalPath
 }
 
 export interface DerivableErrorContext<

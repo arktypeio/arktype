@@ -1,12 +1,9 @@
 import { rootNode, type IntersectionNode } from "@ark/schema"
-import {
-	isWellFormedInteger,
-	wellFormedIntegerMatcher,
-	wellFormedNumberMatcher
-} from "@ark/util"
+import { isWellFormedInteger, wellFormedNumberMatcher } from "@ark/util"
 import type { Out, number } from "../ast.js"
 import type { Module, Submodule } from "../module.js"
 import { scope } from "../scope.js"
+import { arkString } from "./string.js"
 import { tryParseDatePattern } from "./utils/date.js"
 import { regexStringNode } from "./utils/regex.js"
 
@@ -21,8 +18,7 @@ const number = rootNode({
 })
 
 const integer = rootNode({
-	in: regexStringNode(wellFormedIntegerMatcher, "a well-formed integer string")
-		.internal as IntersectionNode,
+	in: arkString.submodule.integer as never,
 	morphs: (s: string, ctx) => {
 		if (!isWellFormedInteger(s))
 			return ctx.error("a well-formed integer string")

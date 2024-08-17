@@ -136,24 +136,25 @@ contextualize(() => {
 			attest(integer(12.12).toString()).snap("must be an integer (was 12.12)")
 		})
 
-		it("unix", () => {
-			const unixTimestamp = type("number.epoch")
+		it("epoch", () => {
+			const epoch = type("number.epoch")
 
-			// valid Unix timestamp
-			attest(unixTimestamp(1621530000)).equals(1621530000)
-			attest(unixTimestamp(8640000000000000)).equals(8640000000000000)
-			attest(unixTimestamp(-8640000000000000)).equals(-8640000000000000)
-			// invalid Unix timestamp
-			attest(unixTimestamp("foo").toString()).equals(
+			// valid
+			attest(epoch(1621530000)).equals(1621530000)
+			attest(epoch(8640000000000000)).equals(8640000000000000)
+			attest(epoch(-8640000000000000)).equals(-8640000000000000)
+
+			// invalid
+			attest(epoch("foo").toString()).equals(
 				"must be a number representing a Unix timestamp (was string)"
 			)
-			attest(unixTimestamp(1.5).toString()).equals(
+			attest(epoch(1.5).toString()).equals(
 				"must be an integer representing a Unix timestamp (was 1.5)"
 			)
-			attest(unixTimestamp(-8640000000000001).toString()).equals(
+			attest(epoch(-8640000000000001).toString()).equals(
 				"must be a Unix timestamp after -8640000000000000 (was -8640000000000001)"
 			)
-			attest(unixTimestamp(8640000000000001).toString()).equals(
+			attest(epoch(8640000000000001).toString()).equals(
 				"must be a Unix timestamp before 8640000000000000 (was 8640000000000001)"
 			)
 		})
@@ -167,6 +168,7 @@ contextualize(() => {
 				'must be only letters (was "user123")'
 			)
 		})
+
 		it("alphanumeric", () => {
 			const alphanumeric = type("alphanumeric")
 			attest(alphanumeric("user123")).snap("user123")
@@ -176,6 +178,7 @@ contextualize(() => {
 				'must be only letters and digits 0-9 (was "abc@123")'
 			)
 		})
+
 		it("digits", () => {
 			const digits = type("digits")
 			attest(digits("123")).snap("123")
@@ -183,6 +186,7 @@ contextualize(() => {
 				'must be only digits 0-9 (was "user123")'
 			)
 		})
+
 		it("lowercase", () => {
 			const lowercase = type("lowercase")
 			attest(lowercase("var")).snap("var")
@@ -190,6 +194,7 @@ contextualize(() => {
 				'must be only lowercase letters (was "newVar")'
 			)
 		})
+
 		it("uppercase", () => {
 			const uppercase = type("uppercase")
 			attest(uppercase("VAR")).snap("VAR")
@@ -200,6 +205,7 @@ contextualize(() => {
 				'must be only uppercase letters (was "myVar")'
 			)
 		})
+
 		it("email", () => {
 			const email = type("email")
 			attest(email("shawn@mail.com")).snap("shawn@mail.com")
@@ -207,6 +213,7 @@ contextualize(() => {
 				'must be a valid email (was "shawn@email")'
 			)
 		})
+
 		it("uuid", () => {
 			const uuid = type("uuid")
 			attest(uuid("f70b8242-dd57-4e6b-b0b7-649d997140a0")).equals(
@@ -229,6 +236,7 @@ contextualize(() => {
 				'must be a valid credit card number (was "5489582921773370")'
 			)
 		})
+
 		it("semver", () => {
 			attest(ark.semver("1.0.0")).snap("1.0.0")
 			attest(ark.semver("-1.0.0").toString()).equals(
@@ -264,6 +272,7 @@ contextualize(() => {
 				'must be a valid JSON string (was "foo")'
 			)
 		})
+
 		it("number", () => {
 			const parseNum = type("parse.number")
 			attest(parseNum("5")).equals(5)
@@ -272,6 +281,7 @@ contextualize(() => {
 				'must be a well-formed numeric string (was "five")'
 			)
 		})
+
 		it("integer", () => {
 			const parseInt = type("parse.integer")
 			attest(parseInt("5")).equals(5)
@@ -286,6 +296,7 @@ contextualize(() => {
 				'must be an integer in the range Number.MIN_SAFE_INTEGER to Number.MAX_SAFE_INTEGER (was "9007199254740992")'
 			)
 		})
+
 		it("date", () => {
 			const parseDate = type("parse.date")
 			attest(parseDate("5/21/1993").toString()).snap(
@@ -349,21 +360,25 @@ tags[2] must be a string (was object)`)
 			attest(trim("  foo  ")).equals("foo")
 			attest(trim(5).toString()).snap("must be a string (was number)")
 		})
+
 		it("lowercase", () => {
 			const lowercase = type("format.lowercase")
 			attest(lowercase("FOO")).equals("foo")
 			attest(lowercase(5).toString()).snap("must be a string (was number)")
 		})
+
 		it("uppercase", () => {
 			const uppercase = type("format.uppercase")
 			attest(uppercase("foo")).equals("FOO")
 			attest(uppercase(5).toString()).snap("must be a string (was number)")
 		})
+
 		it("capitalize", () => {
 			const capitalize = type("format.capitalize")
 			attest(capitalize("foo")).equals("Foo")
 			attest(capitalize(5).toString()).snap("must be a string (was number)")
 		})
+
 		it("normalize", () => {
 			const normalize = type("format.normalize")
 			attest(normalize("\u00F1")).equals("ñ")
