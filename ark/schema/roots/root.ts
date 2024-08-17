@@ -1,6 +1,4 @@
 import {
-	bound,
-	cached,
 	includes,
 	omit,
 	throwInternalError,
@@ -93,7 +91,7 @@ export abstract class BaseRoot<
 
 	protected abstract innerToJsonSchema(): JsonSchema
 
-	@cached
+	// @cached
 	toJsonSchema(): JsonSchema {
 		const schema = this.innerToJsonSchema()
 		return Object.assign(schema, this.metaJson)
@@ -132,17 +130,17 @@ export abstract class BaseRoot<
 		return this.$.rootNode(this.applyStructuralOperation("omit", keys))
 	}
 
-	@cached
+	// @cached
 	required(): BaseRoot {
 		return this.$.rootNode(this.applyStructuralOperation("required", []))
 	}
 
-	@cached
+	// @cached
 	partial(): BaseRoot {
 		return this.$.rootNode(this.applyStructuralOperation("partial", []))
 	}
 
-	@cached
+	// @cached
 	keyof(): BaseRoot {
 		const result = this.applyStructuralOperation("keyof", []).reduce(
 			(result, branch) => result.intersect(branch).toNeverIfDisjoint(),
@@ -287,16 +285,10 @@ export abstract class BaseRoot<
 		return this.assert(input)
 	}
 
-	pipe = Object.assign(this._pipe, {
-		try: this.tryPipe
-	})
-
-	@bound
 	protected _pipe(...morphs: Morph[]): BaseRoot {
 		return morphs.reduce<BaseRoot>((acc, morph) => acc.pipeOnce(morph), this)
 	}
 
-	@bound
 	protected tryPipe(...morphs: Morph[]): BaseRoot {
 		return morphs.reduce<BaseRoot>(
 			(acc, morph) =>
@@ -318,6 +310,10 @@ export abstract class BaseRoot<
 			this
 		)
 	}
+
+	pipe = Object.assign(this._pipe.bind(this), {
+		try: this.tryPipe.bind(this)
+	})
 
 	to(def: unknown): BaseRoot {
 		return this.toNode(this.$.parseRoot(def))
@@ -347,7 +343,7 @@ export abstract class BaseRoot<
 		)
 	}
 
-	@cached
+	// @cached
 	get flatMorphs(): array<FlatRef<Morph.Node>> {
 		return this.flatRefs.reduce<FlatRef<Morph.Node>[]>(
 			(branches, ref) =>

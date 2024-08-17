@@ -27,7 +27,6 @@ import {
 	type writeDuplicateAliasError
 } from "@ark/schema"
 import {
-	bound,
 	domainOf,
 	hasDomain,
 	isThunk,
@@ -261,8 +260,7 @@ export class InternalScope<
 		return def
 	}
 
-	@bound
-	parseRoot(def: unknown, opts: TypeParseOptions = {}): BaseRoot {
+	parseRoot = (def: unknown, opts: TypeParseOptions = {}): BaseRoot => {
 		const node: BaseRoot = this.parse(
 			def,
 			Object.assign(

@@ -1,6 +1,5 @@
 import {
 	append,
-	cached,
 	throwInternalError,
 	throwParseError,
 	type array,
@@ -335,7 +334,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		return refs
 	}
 
-	@cached
+	// @cached
 	get element(): BaseRoot {
 		return this.$.node("union", this.children)
 	}

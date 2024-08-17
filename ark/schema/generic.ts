@@ -1,5 +1,4 @@
 import {
-	cached,
 	Callable,
 	flatMorph,
 	snapshot,
@@ -118,7 +117,7 @@ export class GenericRoot<
 		) as never
 	}
 
-	@cached
+	// @cached
 	get json(): Json {
 		return {
 			params: this.params.map(param =>
@@ -128,7 +127,7 @@ export class GenericRoot<
 		}
 	}
 
-	@cached
+	// @cached
 	get params(): { [i in keyof params]: [params[i][0], BaseRoot] } {
 		return this.paramDefs.map(param =>
 			typeof param === "string" ?
@@ -137,17 +136,17 @@ export class GenericRoot<
 		) as never
 	}
 
-	@cached
+	// @cached
 	get names(): genericParamNames<params> {
 		return this.params.map(e => e[0]) as never
 	}
 
-	@cached
+	// @cached
 	get constraints(): { [i in keyof params]: BaseRoot } {
 		return this.params.map(e => e[1]) as never
 	}
 
-	@cached
+	// @cached
 	get baseInstantiation(): BaseRoot {
 		return this(...(this.constraints as never)) as never
 	}

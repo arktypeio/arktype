@@ -1,6 +1,5 @@
 import {
 	ParseError,
-	bound,
 	flatMorph,
 	hasDomain,
 	isArray,
@@ -167,20 +166,13 @@ export abstract class BaseScope<$ extends {} = {}> {
 		return this
 	}
 
-	@bound
 	defineSchema<def extends RootSchema>(def: def): def {
 		return def
 	}
 
-	@bound
-	defineRoot(def: RootSchema): RootSchema {
-		return this.defineSchema(def)
-	}
-
-	@bound
-	generic<const paramsDef extends readonly GenericParamDef[]>(
+	generic = <const paramsDef extends readonly GenericParamDef[]>(
 		...params: paramsDef
-	): GenericHktSchemaBodyParser<genericParamSchemasToAst<paramsDef>> {
+	): GenericHktSchemaBodyParser<genericParamSchemasToAst<paramsDef>> => {
 		const $: BaseScope = this as never
 		return instantiateDef =>
 			new GenericRoot(
@@ -191,8 +183,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			) as never
 	}
 
-	@bound
-	units(values: array, opts?: NodeParseOptions): BaseRoot {
+	units = (values: array, opts?: NodeParseOptions): BaseRoot => {
 		const uniqueValues: unknown[] = []
 		for (const value of values)
 			if (!uniqueValues.includes(value)) uniqueValues.push(value)
@@ -218,17 +209,14 @@ export abstract class BaseScope<$ extends {} = {}> {
 		return node
 	}
 
-	@bound
-	rootNode(def: RootSchema, opts?: NodeParseOptions): BaseRoot {
-		return this.node(schemaKindOf(def), def, opts)
-	}
+	rootNode = (def: RootSchema, opts?: NodeParseOptions): BaseRoot =>
+		this.node(schemaKindOf(def), def, opts)
 
-	@bound
-	protected preparseNode(
+	protected preparseNode = (
 		kinds: NodeKind | listable<RootKind>,
 		schema: unknown,
 		opts: NodeParseOptions
-	): BaseNode | NodeParseContext {
+	): BaseNode | NodeParseContext => {
 		let kind: NodeKind =
 			typeof kinds === "string" ? kinds : schemaKindOf(schema, kinds)
 
@@ -270,8 +258,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		}
 	}
 
-	@bound
-	node<
+	node = <
 		kinds extends NodeKind | array<RootKind>,
 		prereduced extends boolean = false
 	>(
@@ -281,7 +268,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 	): nodeOfKind<
 		prereduced extends true ? flattenListable<kinds>
 		:	reducibleKindOf<flattenListable<kinds>>
-	> {
+	> => {
 		const preparsed = this.preparseNode(kinds, nodeSchema, opts)
 
 		const node =
@@ -518,11 +505,7 @@ export const schemaScope = <
 export class SchemaScope<
 	$ extends InternalResolutions = InternalResolutions
 > extends BaseScope<$> {
-	defineRoot<schema extends RootSchema>(schema: schema): schema {
-		return schema
-	}
-
-	parseRoot(schema: RootSchema, opts: NodeParseOptions = {}): BaseRoot {
+	parseRoot = (schema: RootSchema, opts: NodeParseOptions = {}): BaseRoot => {
 		const node = this.rootNode(
 			schema as never,
 			this.finalizeRootArgs(opts, () => node)

@@ -1,4 +1,3 @@
-export { ArkError, ArkErrors } from "@ark/schema"
 export type { ArkConfig, ArkScopeConfig } from "@ark/schema"
 export { Hkt } from "@ark/util"
 export type { Generic } from "./generic.ts"

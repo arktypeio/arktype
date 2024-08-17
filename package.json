@@ -15,6 +15,7 @@
 	"type": "module",
 	"private": true,
 	"scripts": {
+		"ts": "pnpm tsx --conditions ark-ts",
 		"prChecks": "pnpm lint && pnpm build && pnpm testRepo && pnpm bench && pnpm testTsVersions",
 		"attest": "pnpm tsx ./ark/attest/cli/cli.ts",
 		"build": "pnpm -r build",
@@ -27,15 +28,15 @@
 		"testV8": "node --allow-natives-syntax ./ark/repo/testV8.js",
 		"testTsVersions": "pnpm testTyped --tsVersions '*' --compilerOptions '{ \"paths\": {} }'",
 		"bench": "pnpm benchOperand && pnpm benchOperator && pnpm benchObject && pnpm benchCyclic",
-		"benchOperand": "tsx ./ark/type/__tests__/operand.bench.ts",
-		"benchOperator": "tsx ./ark/type/__tests__/operator.bench.ts",
-		"benchObject": "tsx ./ark/type/__tests__/object.bench.ts",
-		"benchCyclic": "tsx ./ark/type/__tests__/cyclic.bench.ts",
-		"scratch": "tsx ./ark/repo/scratch.ts",
+		"benchOperand": "tsx --conditions ark-ts ./ark/type/__tests__/operand.bench.ts",
+		"benchOperator": "tsx --conditions ark-ts ./ark/type/__tests__/operator.bench.ts",
+		"benchObject": "tsx --conditions ark-ts ./ark/type/__tests__/object.bench.ts",
+		"benchCyclic": "tsx --conditions ark-ts ./ark/type/__tests__/cyclic.bench.ts",
+		"scratch": "tsx --conditions ark-ts ./ark/repo/scratch.ts",
 		"lint": "prettier --check . && eslint --max-warnings=0 .",
 		"format": "prettier --write .",
 		"knip": "knip",
-		"ci:publish": "tsx ./ark/repo/publish.ts"
+		"ci:publish": "tsx --conditions ark-ts ./ark/repo/publish.ts"
 	},
 	"devDependencies": {
 		"arktype": "workspace:*",

@@ -1,7 +1,6 @@
 import {
 	appendUnique,
 	arrayEquals,
-	cached,
 	domainDescriptions,
 	flatMorph,
 	groupBy,
@@ -48,7 +47,6 @@ import type { Morph } from "./morph.ts"
 import { BaseRoot } from "./root.ts"
 import type { Unit } from "./unit.ts"
 import { defineRightwardIntersections } from "./utils.ts"
-
 export declare namespace Union {
 	export type ChildKind = UnionChildKind
 
@@ -353,7 +351,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		return this.isBoolean ? "boolean" : super.nestableExpression
 	}
 
-	@cached
+	// @cached
 	discriminate(): Discriminant | null {
 		if (this.branches.length < 2) return null
 		if (this.unitBranches.length === this.branches.length) {

@@ -1,7 +1,6 @@
 import {
 	Callable,
 	appendUnique,
-	cached,
 	flatMorph,
 	includes,
 	isArray,
@@ -116,7 +115,7 @@ export abstract class BaseNode<
 		{ [this.id]: this }
 	)
 
-	@cached
+	// @cached
 	get description(): string {
 		const writer =
 			this.$?.resolvedConfig[this.kind].description ??
@@ -133,7 +132,7 @@ export abstract class BaseNode<
 		)
 	}
 
-	@cached
+	// @cached
 	get shallowReferences(): BaseNode[] {
 		return this.hasKind("structure") ?
 				[this as BaseNode, ...this.children]
@@ -143,7 +142,7 @@ export abstract class BaseNode<
 				)
 	}
 
-	@cached
+	// @cached
 	get shallowMorphs(): Morph.Node[] {
 		return this.shallowReferences
 			.filter(n => n.hasKind("morph"))
@@ -151,7 +150,7 @@ export abstract class BaseNode<
 	}
 
 	// overriden by structural kinds so that only the root at each path is added
-	@cached
+	// @cached
 	get flatRefs(): array<FlatRef> {
 		return this.children
 			.reduce<FlatRef[]>(
@@ -185,12 +184,12 @@ export abstract class BaseNode<
 		return this(data)
 	}
 
-	@cached
+	// @cached
 	get in(): this extends { [arkKind]: "root" } ? BaseRoot : BaseNode {
 		return this.getIo("in") as never
 	}
 
-	@cached
+	// @cached
 	get out(): this extends { [arkKind]: "root" } ? BaseRoot : BaseNode {
 		return this.getIo("out") as never
 	}

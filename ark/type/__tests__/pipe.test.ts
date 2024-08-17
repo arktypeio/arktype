@@ -55,9 +55,9 @@ contextualize(() => {
 
 			const badOut = parseJson("{ unquoted: true }")
 
-			const suffix =
-				process.version.startsWith("v22") ? " (line 1 column 3)" : ""
-			attest(badOut.toString()).satisfies(
+			const a = attest(badOut.toString())
+
+			const z = a.satisfies(
 				/^must be valid according to an anonymous predicate \(was aborted due to error:\n {4}SyntaxError:/
 			)
 		})

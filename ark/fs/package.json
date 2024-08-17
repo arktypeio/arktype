@@ -21,7 +21,7 @@
 		}
 	},
 	"scripts": {
-		"build": "tsx ../repo/build.ts"
+		"build": "tsx --conditions ark-ts ../repo/build.ts"
 	},
 	"files": [
 		"out"

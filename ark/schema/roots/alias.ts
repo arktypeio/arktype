@@ -1,4 +1,4 @@
-import { append, cached, domainDescriptions, throwParseError } from "@ark/util"
+import { append, domainDescriptions, throwParseError } from "@ark/util"
 import type { NodeCompiler } from "../shared/compile.ts"
 import type { BaseNormalizedSchema, declareNode } from "../shared/declare.ts"
 import { Disjoint } from "../shared/disjoint.ts"
@@ -82,7 +82,7 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 	readonly expression: string = this.alias
 	readonly structure = undefined
 
-	@cached
+	// @cached
 	get resolution(): BaseRoot {
 		return this.resolve?.() ?? this.$.resolveRoot(this.alias)
 	}

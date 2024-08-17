@@ -6,35 +6,26 @@ export type Fn<
 	out returns = unknown
 > = (...args: args) => returns
 
-export const bound = (
-	target: Function,
-	ctx: ClassMemberDecoratorContext
-): void => {
-	ctx.addInitializer(function (this: any) {
-		this[ctx.name] = this[ctx.name].bind(this)
-	})
-}
-
-export const cached = <self>(
-	target: (this: self) => any,
-	context:
-		| ClassGetterDecoratorContext<self, any>
-		| ClassMethodDecoratorContext<self, (this: self) => any>
-) =>
-	function (this: self): any {
-		const value = target.call(this)
-		Object.defineProperty(
-			this,
-			context.name,
-			context.kind === "getter" ?
-				{ value }
-			:	{
-					value: () => value,
-					enumerable: false
-				}
-		)
-		return value
-	}
+// export const cached = <self>(
+// 	target: (this: self) => any,
+// 	context:
+// 		| ClassGetterDecoratorContext<self, any>
+// 		| ClassMethodDecoratorContext<self, (this: self) => any>
+// ) =>
+// 	function (this: self): any {
+// 		const value = target.call(this)
+// 		Object.defineProperty(
+// 			this,
+// 			context.name,
+// 			context.kind === "getter" ?
+// 				{ value }
+// 			:	{
+// 					value: () => value,
+// 					enumerable: false
+// 				}
+// 		)
+// 		return value
+// 	}
 
 export const cachedThunk = <t>(thunk: () => t): (() => t) => {
 	let result: t | unset = unset

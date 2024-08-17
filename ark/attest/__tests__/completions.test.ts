@@ -64,6 +64,6 @@ contextualize(() => {
 	it("external package", () => {
 		hasDomain({}, "object")
 		// @ts-expect-error
-		attest(() => hasDomain({}, "b")).completions()
+		attest(() => hasDomain({}, "b")).completions({ b: ["bigint", "boolean"] })
 	})
 })

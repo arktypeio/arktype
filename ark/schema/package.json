@@ -29,10 +29,10 @@
 		"out"
 	],
 	"scripts": {
-		"build": "tsx ../repo/build.ts",
-		"bench": "tsx ./__tests__/comparison.bench.ts",
-		"test": "tsx ../repo/testPackage.ts",
-		"tnt": "tsx ../repo/testPackage.ts --skipTypes"
+		"build": "tsx --conditions ark-ts ../repo/build.ts",
+		"bench": "tsx --conditions ark-ts ./__tests__/comparison.bench.ts",
+		"test": "tsx --conditions ark-ts ../repo/testPackage.ts",
+		"tnt": "tsx --conditions ark-ts ../repo/testPackage.ts --skipTypes"
 	},
 	"dependencies": {
 		"@ark/util": "workspace:*"

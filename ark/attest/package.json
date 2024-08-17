@@ -31,8 +31,8 @@
 		"attest": "out/cli/cli.js"
 	},
 	"scripts": {
-		"build": "tsx ../repo/build.ts",
-		"test": "tsx ../repo/testPackage.ts",
+		"build": "tsx --conditions ark-ts ../repo/build.ts",
+		"test": "tsx --conditions ark-ts ../repo/testPackage.ts",
 		"bunTest": "bun test --preload ../repo/bunTestSetup.ts"
 	},
 	"dependencies": {
