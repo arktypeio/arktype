@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { Trait, compose, implement } from "@ark/util"
-import { Rectangle, Rhombus, Square } from "./traits.example.ts"
+import { Rectangle, Rhombus, Square } from "./traits.scratch.ts"
 
 export class Describable extends Trait<{
 	abstractMethods: {

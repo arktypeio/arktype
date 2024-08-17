@@ -25,7 +25,7 @@ contextualize(() => {
 		const t = type("number")
 		try {
 			const result = t("invalid")
-			result instanceof type.errors && result.throw()
+			if (result instanceof type.errors) result.throw()
 		} catch (e) {
 			attest(e).instanceOf(AggregateError)
 			attest((e as AggregateError).errors instanceof type.errors)

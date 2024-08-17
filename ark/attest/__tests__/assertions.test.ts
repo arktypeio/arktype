@@ -88,6 +88,7 @@ describe("type assertions", () => {
 
 	it("functional asserts don't exist on pure value types", () => {
 		// @ts-expect-error
+		// eslint-disable-next-line @typescript-eslint/no-unused-expressions
 		attest(5).throws
 	})
 

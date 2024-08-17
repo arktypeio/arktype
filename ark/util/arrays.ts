@@ -169,9 +169,13 @@ export const append = <
 		)
 	}
 
-	if (opts?.prepend)
-		Array.isArray(value) ? to.unshift(...value) : to.unshift(value as never)
-	else Array.isArray(value) ? to.push(...value) : to.push(value as never)
+	if (opts?.prepend) {
+		if (Array.isArray(value)) to.unshift(...value)
+		else to.unshift(value as never)
+	} else {
+		if (Array.isArray(value)) to.push(...value)
+		else to.push(value as never)
+	}
 
 	return to as never
 }

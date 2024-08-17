@@ -133,7 +133,7 @@ export type TypeGuard<input = unknown, narrowed extends input = input> = (
 export const envHasCsp = cachedThunk((): boolean => {
 	try {
 		return new Function("return false")()
-	} catch (e) {
+	} catch {
 		return true
 	}
 })

@@ -153,6 +153,7 @@ export class GenericRoot<
 	}
 
 	validateBaseInstantiation(): this {
+		// eslint-disable-next-line @typescript-eslint/no-unused-expressions
 		this.baseInstantiation
 		return this
 	}

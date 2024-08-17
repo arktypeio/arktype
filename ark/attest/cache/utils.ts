@@ -138,9 +138,8 @@ export const createOrUpdateFile = (
 	fileName: string,
 	fileText: string
 ): ts.SourceFile | undefined => {
-	env.sys.fileExists(fileName) ?
-		env.updateFile(fileName, fileText)
-	:	env.createFile(fileName, fileText)
+	if (env.sys.fileExists(fileName)) env.updateFile(fileName, fileText)
+	else env.createFile(fileName, fileText)
 	return env.getSourceFile(fileName)
 }
 

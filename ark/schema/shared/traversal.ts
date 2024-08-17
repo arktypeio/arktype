@@ -42,8 +42,8 @@ export class TraversalContext {
 			path: [...this.path],
 			morphs
 		}
-		this.currentBranch?.queuedMorphs.push(input) ??
-			this.queuedMorphs.push(input)
+		if (this.currentBranch) this.currentBranch.queuedMorphs.push(input)
+		else this.queuedMorphs.push(input)
 	}
 
 	finalize(): unknown {

@@ -59,11 +59,13 @@ export const getFramesFromError = (error: Error): string[] => {
 	// https://github.com/winstonjs/winston/issues/401#issuecomment-61913086
 	try {
 		stack = error.stack
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	} catch (error1) {
 		try {
 			// @ts-expect-error https://github.com/winstonjs/winston/issues/401#issuecomment-61913086
 			const previous = err.__previous__ || err.__previous
 			stack = previous && previous.stack
+			// eslint-disable-next-line @typescript-eslint/no-unused-vars
 		} catch (error2) {
 			stack = null
 		}

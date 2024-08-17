@@ -144,7 +144,7 @@ const appendSpreadBranch = (
 	}
 	spread.prefix.forEach(node => appendElement(base, "required", node))
 	spread.optionals.forEach(node => appendElement(base, "optional", node))
-	spread.variadic && appendElement(base, "variadic", spread.variadic)
+	if (spread.variadic) appendElement(base, "variadic", spread.variadic)
 	spread.postfix.forEach(node => appendElement(base, "required", node))
 	return base
 }

@@ -9,7 +9,6 @@ import type {
 } from "@ark/schema"
 import {
 	throwParseError,
-	whiteSpaceTokens,
 	type array,
 	type Callable,
 	type conform,
@@ -274,9 +273,7 @@ export type parseGenericParams<def extends string, $> = parseNextNameChar<
 	$
 >
 
-const paramsTerminators = { ...whiteSpaceTokens, ",": true, ":": true }
-
-type ParamsTerminator = keyof typeof paramsTerminators
+type ParamsTerminator = WhiteSpaceToken | "," | ":"
 
 const parseName = (
 	scanner: Scanner,

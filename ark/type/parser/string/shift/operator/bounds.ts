@@ -68,12 +68,7 @@ export type parseBound<
 		:	shiftResultOrError
 	:	never
 
-const oneCharComparators = {
-	"<": true,
-	">": true
-} as const
-
-type OneCharComparator = keyof typeof oneCharComparators
+type OneCharComparator = ">" | "<"
 
 export type ComparatorStartChar =
 	Comparator extends `${infer char}${string}` ? char : never
