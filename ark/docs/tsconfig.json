@@ -1,6 +1,8 @@
 {
 	"extends": "../../tsconfig.json",
 	"compilerOptions": {
+		// unfortunately, twoslash doesn't seem to respect customConditions,
+		// so .d.ts will need to be rebuilt to see its static compilation updated
 		"module": "ESNext",
 		"moduleResolution": "Bundler",
 		"allowJs": true,

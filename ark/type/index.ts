@@ -1,4 +1,9 @@
-export type { ArkConfig, ArkScopeConfig } from "@ark/schema"
+export {
+	ArkError,
+	ArkErrors,
+	type ArkConfig,
+	type ArkScopeConfig
+} from "@ark/schema"
 export { Hkt } from "@ark/util"
 export type { Generic } from "./generic.ts"
 export { ambient, ark, declare, define, generic, type } from "./keywords/ark.ts"
