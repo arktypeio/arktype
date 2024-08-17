@@ -24,7 +24,7 @@ export const arkTypedArray = {
 
 export declare namespace arkTypedArray {
 	// See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/TypedArray
-	type $ = {
+	export type submodule = Submodule<{
 		Int8: Int8Array
 		Uint8: Uint8Array
 		Uint8Clamped: Uint8ClampedArray
@@ -36,7 +36,5 @@ export declare namespace arkTypedArray {
 		Float64: Float64Array
 		BigInt64: BigInt64Array
 		BigUint64: BigUint64Array
-	}
-
-	export type submodule = Submodule<$>
+	}>
 }

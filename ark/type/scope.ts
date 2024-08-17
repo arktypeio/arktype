@@ -38,11 +38,11 @@ import {
 	type anyOrNever,
 	type array,
 	type flattenListable,
+	type inferred,
 	type noSuggest,
 	type nominal,
 	type show
 } from "@ark/util"
-import type { inferred } from "./ast.js"
 import {
 	parseGenericParams,
 	type GenericDeclaration,

@@ -1,5 +1,5 @@
 import type { ArkErrors } from "@ark/schema"
-import type { inferred } from "../ast.js"
+import type { inferred } from "@ark/util"
 import type { GenericHktParser } from "../generic.js"
 import type { Module } from "../module.js"
 import { scope, type Scope } from "../scope.js"

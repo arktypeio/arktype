@@ -12,8 +12,7 @@
 			"@ark/attest": ["./ark/attest/index.ts"],
 			"@ark/attest/internal/*": ["./ark/attest/*"],
 			"@ark/schema": ["./ark/schema/index.ts"],
-			"@ark/schema/config": ["./ark/schema/config.ts"],
-			"@ark/schema/internal/*": ["./ark/schema/*"]
+			"@ark/schema/config": ["./ark/schema/config.ts"]
 		},
 		"types": ["mocha", "node"]
 	},

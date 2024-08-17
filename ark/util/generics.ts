@@ -1,5 +1,5 @@
 import type { Primitive } from "./domain.js"
-import type { ErrorMessage } from "./errors.js"
+import { noSuggest, type ErrorMessage } from "./errors.js"
 import type { unionToTuple } from "./unionToTuple.js"
 
 export type Stringifiable =
@@ -102,3 +102,9 @@ export type narrow<t> =
 	: { [k in keyof t]: narrow<t[k]> }
 
 export const narrow = <t>(t: narrow<t>): t => t as t
+
+/** primitive key used to represent an inferred type at compile-time */
+export const inferred = noSuggest("arkInferred")
+
+/** primitive key used to represent an inferred type at compile-time */
+export type inferred = typeof inferred

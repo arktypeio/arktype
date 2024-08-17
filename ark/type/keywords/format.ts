@@ -46,13 +46,11 @@ export const arkFormat = {
 }
 
 export declare namespace arkFormat {
-	export type $ = {
+	export type submodule = Submodule<{
 		trim: (In: string) => Out<string>
 		uppercase: (In: string) => Out<string>
 		lowercase: (In: string) => Out<string>
 		capitalize: (In: string) => Out<string>
 		normalize: (In: string) => Out<string>
-	}
-
-	export type submodule = Submodule<$>
+	}>
 }

@@ -111,14 +111,12 @@ export const arkParse = {
 }
 
 export declare namespace arkParse {
-	export type $ = {
+	export type submodule = Submodule<{
 		url: (In: string) => Out<URL>
 		number: (In: string) => Out<number>
 		integer: (In: string) => Out<number.divisibleBy<1>>
 		date: (In: string) => Out<Date>
 		json: (In: string) => Out<object>
 		formData: (In: FormData) => Out<ParsedFormData>
-	}
-
-	export type submodule = Submodule<$>
+	}>
 }

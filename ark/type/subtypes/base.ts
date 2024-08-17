@@ -6,7 +6,14 @@ import type {
 	Morph,
 	UndeclaredKeyBehavior
 } from "@ark/schema"
-import type { anyOrNever, Callable, ErrorMessage, Json, unset } from "@ark/util"
+import type {
+	anyOrNever,
+	Callable,
+	ErrorMessage,
+	inferred,
+	Json,
+	unset
+} from "@ark/util"
 import type {
 	distillConstrainableIn,
 	distillConstrainableOut,
@@ -14,8 +21,7 @@ import type {
 	distillOut,
 	distillValidatedOut,
 	inferMorphOut,
-	inferPipes,
-	inferred
+	inferPipes
 } from "../ast.js"
 import type { inferIntersection } from "../intersect.js"
 import type { Scope } from "../scope.js"

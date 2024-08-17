@@ -1,5 +1,9 @@
-import { DynamicBase, flatMorph, type anyOrNever } from "@ark/util"
-import type { inferred } from "arktype/internal/ast.js"
+import {
+	DynamicBase,
+	flatMorph,
+	type anyOrNever,
+	type inferred
+} from "@ark/util"
 import type { BaseRoot } from "./roots/root.js"
 import type {
 	BaseScope,

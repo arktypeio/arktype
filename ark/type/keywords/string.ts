@@ -11,18 +11,22 @@ import { regexStringNode } from "./utils/regex.js"
 
 // Non-trivial expressions should have an explanation or attribution
 
+const isValidUrl = (s: string) => {
+	if (URL.canParse as unknown) return URL.canParse(s)
+	// Can be removed once Node 18 is EOL
+	try {
+		new URL(s)
+	} catch {
+		return false
+	}
+	return true
+}
+
 const url = rootNode({
 	domain: "string",
 	predicate: {
 		meta: "a valid URL",
-		predicate: (s: string) => {
-			try {
-				new URL(s)
-			} catch {
-				return false
-			}
-			return true
-		}
+		predicate: isValidUrl
 	}
 })
 
@@ -58,17 +62,17 @@ const creditCard = rootNode({
 	}
 })
 
-const numeric = regexStringNode(
+const numericString = regexStringNode(
 	wellFormedNumberMatcher,
 	"a well-formed numeric string"
 )
 
-const integer = regexStringNode(
+const integerString = regexStringNode(
 	wellFormedIntegerMatcher,
 	"a well-formed integer string"
 )
 
-const epoch = integer
+const epoch = integerString
 	.narrow((s, ctx) => {
 		// we know this is safe since it has already
 		// been validated as an integer string
@@ -110,8 +114,8 @@ const keywords: Module<arkString.keywords> = scope(
 const submodule: Module<arkString.submodule> = scope(
 	{
 		$root: intrinsic.string,
-		numeric,
-		integer,
+		numeric: numericString,
+		integer: integerString,
 		iso8601,
 		epoch,
 		...keywords

@@ -17,8 +17,7 @@
 	"types": "./out/index.d.ts",
 	"exports": {
 		".": "./out/index.js",
-		"./config": "./out/config.js",
-		"./internal/*": "./out/*"
+		"./config": "./out/config.js"
 	},
 	"files": [
 		"out"

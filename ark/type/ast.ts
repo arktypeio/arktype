@@ -25,10 +25,6 @@ import type { arkPlatform } from "./keywords/platform.js"
 import type { arkTypedArray } from "./keywords/typedArray.js"
 import type { Type } from "./type.js"
 
-export const inferred = noSuggest("arkInferred")
-
-export type inferred = typeof inferred
-
 export type Comparator = "<" | "<=" | ">" | ">=" | "=="
 
 export type RegexLiteral<source extends string = string> = `/${source}/`

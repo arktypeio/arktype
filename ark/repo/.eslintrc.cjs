@@ -7,7 +7,8 @@ const noCrossPackageImportPattern = {
 		"**/attest/**",
 		"**/schema/**",
 		"**/type/**",
-		"**/util/**"
+		"**/util/**",
+		"arktype/internal/**"
 	],
 	message: `Use a specifier like '@ark/util' to import from a package`
 }
