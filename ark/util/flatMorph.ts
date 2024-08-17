@@ -1,7 +1,7 @@
-import type { array, listable } from "./arrays.js"
-import type { show } from "./generics.js"
-import type { Entry, Key, entryOf, fromEntries } from "./records.js"
-import type { intersectUnion } from "./unionToTuple.js"
+import type { array, listable } from "./arrays.ts"
+import type { show } from "./generics.ts"
+import type { Entry, Key, entryOf, fromEntries } from "./records.ts"
+import type { intersectUnion } from "./unionToTuple.ts"
 
 type objectFromListableEntries<transformed extends readonly Entry[]> = show<
 	intersectUnion<fromEntries<transformed>>

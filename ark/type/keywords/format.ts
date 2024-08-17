@@ -1,7 +1,7 @@
 import { rootNode } from "@ark/schema"
-import type { Out } from "../ast.js"
-import type { Module, Submodule } from "../module.js"
-import { scope } from "../scope.js"
+import type { Out } from "../ast.ts"
+import type { Module, Submodule } from "../module.ts"
+import { scope } from "../scope.ts"
 
 const trim = rootNode({
 	in: "string",

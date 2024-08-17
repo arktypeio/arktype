@@ -1,5 +1,5 @@
-import type { inferDomain } from "./domain.js"
-import type { BigintLiteral } from "./numericLiterals.js"
+import type { inferDomain } from "./domain.ts"
+import type { BigintLiteral } from "./numericLiterals.ts"
 
 type SerializedString<value extends string = string> = `"${value}"`
 

@@ -1,14 +1,14 @@
 import type { array } from "@ark/util"
-import type { ResolvedArkConfig } from "../config.js"
-import type { Morph } from "../roots/morph.js"
+import type { ResolvedArkConfig } from "../config.ts"
+import type { Morph } from "../roots/morph.ts"
 import {
 	ArkError,
 	ArkErrors,
 	type ArkErrorCode,
 	type ArkErrorContextInput,
 	type ArkErrorInput
-} from "./errors.js"
-import type { TraversalPath } from "./utils.js"
+} from "./errors.ts"
+import type { TraversalPath } from "./utils.ts"
 
 export type QueuedMorphs = {
 	path: TraversalPath

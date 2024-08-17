@@ -2,8 +2,8 @@ import type { LinePosition } from "@ark/fs"
 import { flatMorph } from "@ark/util"
 import ts from "typescript"
 
-import { getConfig } from "../config.js"
-import { getFileKey } from "../utils.js"
+import { getConfig } from "../config.ts"
+import { getFileKey } from "../utils.ts"
 import {
 	TsServer,
 	extractArgumentTypesFromCall,
@@ -11,12 +11,12 @@ import {
 	getInternalTypeChecker,
 	type ArgumentTypes,
 	type StringifiableType
-} from "./ts.js"
+} from "./ts.ts"
 import {
 	gatherInlineInstantiationData,
 	getCallExpressionsByName,
 	getCallLocationFromCallExpression
-} from "./utils.js"
+} from "./utils.ts"
 
 export type AssertionsByFile = Record<string, TypeAssertionData[]>
 

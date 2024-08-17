@@ -11,16 +11,16 @@ import type {
 	distillOut,
 	normalizeLimit,
 	string
-} from "../../ast.js"
-import type { inferIntersection } from "../../intersect.js"
+} from "../../ast.ts"
+import type { inferIntersection } from "../../intersect.ts"
 import type {
 	UnparsedScope,
 	resolve,
 	tryInferSubmoduleReference
-} from "../../scope.js"
-import type { inferDefinition } from "../definition.js"
-import type { Comparator, MinComparator } from "../string/reduce/shared.js"
-import type { StringLiteral } from "../string/shift/operand/enclosed.js"
+} from "../../scope.ts"
+import type { inferDefinition } from "../definition.ts"
+import type { Comparator, MinComparator } from "../string/reduce/shared.ts"
+import type { StringLiteral } from "../string/shift/operand/enclosed.ts"
 
 export type inferAstRoot<ast, $, args> = inferConstrainableAst<ast, $, args>
 

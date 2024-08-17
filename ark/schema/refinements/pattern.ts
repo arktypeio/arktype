@@ -1,20 +1,20 @@
 import { throwParseError } from "@ark/util"
-import { InternalPrimitiveConstraint } from "../constraint.js"
-import type { BaseRoot } from "../roots/root.js"
+import { InternalPrimitiveConstraint } from "../constraint.ts"
+import type { BaseRoot } from "../roots/root.ts"
 import type {
 	BaseErrorContext,
 	BaseNormalizedSchema,
 	declareNode
-} from "../shared/declare.js"
+} from "../shared/declare.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
-} from "../shared/implement.js"
+} from "../shared/implement.ts"
 import {
 	writeUnsupportedJsonSchemaTypeMessage,
 	type JsonSchema
-} from "../shared/jsonSchema.js"
-import { $ark } from "../shared/registry.js"
+} from "../shared/jsonSchema.ts"
+import { $ark } from "../shared/registry.ts"
 
 export declare namespace Pattern {
 	export interface NormalizedSchema extends BaseNormalizedSchema {

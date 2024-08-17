@@ -1,16 +1,16 @@
-import type { IntersectionNode } from "../roots/intersection.js"
-import type { BaseRoot } from "../roots/root.js"
-import type { BaseErrorContext, declareNode } from "../shared/declare.js"
+import type { IntersectionNode } from "../roots/intersection.ts"
+import type { BaseRoot } from "../roots/root.ts"
+import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
-} from "../shared/implement.js"
+} from "../shared/implement.ts"
 import {
 	throwInternalJsonSchemaOperandError,
 	type JsonSchema
-} from "../shared/jsonSchema.js"
-import { $ark } from "../shared/registry.js"
-import type { TraverseAllows } from "../shared/traversal.js"
+} from "../shared/jsonSchema.ts"
+import { $ark } from "../shared/registry.ts"
+import type { TraverseAllows } from "../shared/traversal.ts"
 import {
 	BaseRange,
 	createLengthRuleParser,
@@ -19,7 +19,7 @@ import {
 	type LengthBoundableData,
 	type UnknownExpandedRangeSchema,
 	type UnknownNormalizedRangeSchema
-} from "./range.js"
+} from "./range.ts"
 
 export declare namespace MinLength {
 	export interface Inner extends BaseRangeInner {

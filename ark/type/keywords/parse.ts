@@ -1,11 +1,11 @@
 import { rootNode, type IntersectionNode } from "@ark/schema"
 import { isWellFormedInteger, wellFormedNumberMatcher } from "@ark/util"
-import type { Out, number } from "../ast.js"
-import type { Module, Submodule } from "../module.js"
-import { scope } from "../scope.js"
-import { arkString } from "./string.js"
-import { tryParseDatePattern } from "./utils/date.js"
-import { regexStringNode } from "./utils/regex.js"
+import type { Out, number } from "../ast.ts"
+import type { Module, Submodule } from "../module.ts"
+import { scope } from "../scope.ts"
+import { arkString } from "./string.ts"
+import { tryParseDatePattern } from "./utils/date.ts"
+import { regexStringNode } from "./utils/regex.ts"
 
 const parsableNumber = regexStringNode(
 	wellFormedNumberMatcher,

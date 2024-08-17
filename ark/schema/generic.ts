@@ -8,11 +8,11 @@ import {
 	type Hkt,
 	type Json
 } from "@ark/util"
-import type { BaseNode } from "./node.js"
-import type { BaseRoot } from "./roots/root.js"
-import type { BaseScope } from "./scope.js"
-import { $ark } from "./shared/registry.js"
-import { arkKind } from "./shared/utils.js"
+import type { BaseNode } from "./node.ts"
+import type { BaseRoot } from "./roots/root.ts"
+import type { BaseScope } from "./scope.ts"
+import { $ark } from "./shared/registry.ts"
+import { arkKind } from "./shared/utils.ts"
 
 export type GenericParamAst<
 	name extends string = string,

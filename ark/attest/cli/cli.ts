@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 import { fileName } from "@ark/fs"
 import { basename } from "path"
-import { precache } from "./precache.js"
-import { stats } from "./stats.js"
-import { trace } from "./trace.js"
+import { precache } from "./precache.ts"
+import { stats } from "./stats.ts"
+import { trace } from "./trace.ts"
 
 const subcommands = {
 	precache,

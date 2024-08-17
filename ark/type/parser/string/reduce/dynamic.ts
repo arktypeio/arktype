@@ -5,13 +5,13 @@ import {
 	throwInternalError,
 	throwParseError
 } from "@ark/util"
-import type { LimitLiteral } from "../../../ast.js"
-import type { ParseContext } from "../../../scope.js"
-import type { InfixOperator } from "../../semantic/infer.js"
-import { parseOperand } from "../shift/operand/operand.js"
-import { parseOperator } from "../shift/operator/operator.js"
-import type { Scanner } from "../shift/scanner.js"
-import { parseUntilFinalizer } from "../string.js"
+import type { LimitLiteral } from "../../../ast.ts"
+import type { ParseContext } from "../../../scope.ts"
+import type { InfixOperator } from "../../semantic/infer.ts"
+import { parseOperand } from "../shift/operand/operand.ts"
+import { parseOperator } from "../shift/operator/operator.ts"
+import type { Scanner } from "../shift/scanner.ts"
+import { parseUntilFinalizer } from "../string.ts"
 import {
 	type Comparator,
 	type MinComparator,
@@ -24,7 +24,7 @@ import {
 	writeUnclosedGroupMessage,
 	writeUnmatchedGroupCloseMessage,
 	writeUnpairableComparatorMessage
-} from "./shared.js"
+} from "./shared.ts"
 
 type BranchState = {
 	prefixes: StringifiablePrefixOperator[]

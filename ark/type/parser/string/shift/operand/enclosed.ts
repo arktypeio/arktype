@@ -1,8 +1,8 @@
 import { isKeyOf } from "@ark/util"
-import type { DynamicState } from "../../reduce/dynamic.js"
-import type { StaticState, state } from "../../reduce/static.js"
-import type { Scanner } from "../scanner.js"
-import { tryParseDate, writeInvalidDateMessage } from "./date.js"
+import type { DynamicState } from "../../reduce/dynamic.ts"
+import type { StaticState, state } from "../../reduce/static.ts"
+import type { Scanner } from "../scanner.ts"
+import { tryParseDate, writeInvalidDateMessage } from "./date.ts"
 
 export type StringLiteral<Text extends string = string> =
 	| DoubleQuotedStringLiteral<Text>

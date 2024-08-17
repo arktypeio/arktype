@@ -1,13 +1,13 @@
 import { ArkErrors, intrinsic, rootNode } from "@ark/schema"
 import { wellFormedIntegerMatcher, wellFormedNumberMatcher } from "@ark/util"
-import type { anonymous, string } from "../ast.js"
-import type { Module, Submodule } from "../module.js"
-import { scope } from "../scope.js"
-import { arkNumber } from "./number.js"
-import { creditCardMatcher, isLuhnValid } from "./utils/creditCard.js"
-import { iso8601Matcher } from "./utils/date.js"
-import { ip } from "./utils/ip.js"
-import { regexStringNode } from "./utils/regex.js"
+import type { anonymous, string } from "../ast.ts"
+import type { Module, Submodule } from "../module.ts"
+import { scope } from "../scope.ts"
+import { arkNumber } from "./number.ts"
+import { creditCardMatcher, isLuhnValid } from "./utils/creditCard.ts"
+import { iso8601Matcher } from "./utils/date.ts"
+import { ip } from "./utils/ip.ts"
+import { regexStringNode } from "./utils/regex.ts"
 
 // Non-trivial expressions should have an explanation or attribution
 

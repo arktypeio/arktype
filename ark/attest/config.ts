@@ -12,7 +12,7 @@ import type ts from "typescript"
 import {
 	findAttestTypeScriptVersions,
 	type TsVersionData
-} from "./tsVersioning.js"
+} from "./tsVersioning.ts"
 
 export type TsVersionAliases = autocomplete<"*"> | string[]
 

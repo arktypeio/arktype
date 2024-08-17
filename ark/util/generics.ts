@@ -1,6 +1,6 @@
-import type { Primitive } from "./domain.js"
-import { noSuggest, type ErrorMessage } from "./errors.js"
-import type { unionToTuple } from "./unionToTuple.js"
+import type { Primitive } from "./domain.ts"
+import { noSuggest, type ErrorMessage } from "./errors.ts"
+import type { unionToTuple } from "./unionToTuple.ts"
 
 export type Stringifiable =
 	| string

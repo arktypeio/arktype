@@ -17,43 +17,43 @@ import {
 	type noSuggest,
 	type show
 } from "@ark/util"
-import { resolveConfig, type ArkConfig } from "./config.js"
+import { resolveConfig, type ArkConfig } from "./config.ts"
 import {
 	GenericRoot,
 	LazyGenericBody,
 	type GenericHktSchemaBodyParser,
 	type GenericParamDef,
 	type genericParamSchemasToAst
-} from "./generic.js"
+} from "./generic.ts"
 import {
 	nodeImplementationsByKind,
 	type NodeSchema,
 	type RootSchema,
 	type nodeOfKind,
 	type reducibleKindOf
-} from "./kinds.js"
+} from "./kinds.ts"
 import {
 	RootModule,
 	bindModule,
 	type InternalModule,
 	type PreparsedNodeResolution,
 	type SchemaModule
-} from "./module.js"
-import type { BaseNode } from "./node.js"
+} from "./module.ts"
+import type { BaseNode } from "./node.ts"
 import {
 	parseNode,
 	registerNodeId,
 	schemaKindOf,
 	type NodeParseContext,
 	type NodeParseOptions
-} from "./parse.js"
-import { normalizeAliasSchema, type Alias } from "./roots/alias.js"
-import type { BaseRoot } from "./roots/root.js"
-import { CompiledFunction, NodeCompiler } from "./shared/compile.js"
-import type { NodeKind, RootKind } from "./shared/implement.js"
-import { $ark } from "./shared/registry.js"
-import type { TraverseAllows, TraverseApply } from "./shared/traversal.js"
-import { arkKind, hasArkKind, isNode } from "./shared/utils.js"
+} from "./parse.ts"
+import { normalizeAliasSchema, type Alias } from "./roots/alias.ts"
+import type { BaseRoot } from "./roots/root.ts"
+import { CompiledFunction, NodeCompiler } from "./shared/compile.ts"
+import type { NodeKind, RootKind } from "./shared/implement.ts"
+import { $ark } from "./shared/registry.ts"
+import type { TraverseAllows, TraverseApply } from "./shared/traversal.ts"
+import { arkKind, hasArkKind, isNode } from "./shared/utils.ts"
 
 export type InternalResolutions = Record<string, InternalResolution | undefined>
 

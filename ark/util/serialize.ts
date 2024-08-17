@@ -1,8 +1,8 @@
-import type { array } from "./arrays.js"
-import { domainOf, type Primitive } from "./domain.js"
-import { serializePrimitive, type SerializablePrimitive } from "./primitive.js"
-import type { dict, Dict } from "./records.js"
-import { register } from "./registry.js"
+import type { array } from "./arrays.ts"
+import { domainOf, type Primitive } from "./domain.ts"
+import { serializePrimitive, type SerializablePrimitive } from "./primitive.ts"
+import type { dict, Dict } from "./records.ts"
+import { register } from "./registry.ts"
 
 export type SerializationOptions = {
 	onCycle?: (value: object) => string

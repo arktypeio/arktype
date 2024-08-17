@@ -1,8 +1,8 @@
 import { ensureDir } from "@ark/fs"
 import { execSync } from "child_process"
 import { resolve } from "path"
-import { getConfig } from "../config.js"
-import { baseDiagnosticTscCmd } from "./shared.js"
+import { getConfig } from "../config.ts"
+import { baseDiagnosticTscCmd } from "./shared.ts"
 
 export const trace = async (args: string[]): Promise<void> => {
 	const packageDir = args[0] ?? process.cwd()
@@ -28,11 +28,11 @@ export const trace = async (args: string[]): Promise<void> => {
 		// allow analyze-trace to process the args
 		process.argv = [
 			"node",
-			"node_modules/@typescript/analyze-trace/dist/analyze-trace-dir.js",
+			"node_modules/@typescript/analyze-trace/dist/analyze-trace-dir.ts",
 			traceDir
 		]
 		// TypeScript's analyze-trace tool can be used to automatically detect hot-spots in your code.
 		// It's not a perfect match for what can be optimized, but it can be a helpful place to start
-		await import("@typescript/analyze-trace/dist/analyze-trace-dir.js")
+		await import("@typescript/analyze-trace/dist/analyze-trace-dir.ts")
 	}
 }

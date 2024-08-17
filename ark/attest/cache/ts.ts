@@ -4,7 +4,7 @@ import * as tsvfs from "@typescript/vfs"
 import { readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import ts from "typescript"
-import { getConfig } from "../config.js"
+import { getConfig } from "../config.ts"
 
 export class TsServer {
 	rootFiles!: string[]

@@ -1,8 +1,8 @@
-import type { array } from "./arrays.js"
-import type { DescribeOptions } from "./describe.js"
-import { type Domain, type domainDescriptions, domainOf } from "./domain.js"
-import type { Fn } from "./functions.js"
-import { type Key, isKeyOf } from "./records.js"
+import type { array } from "./arrays.ts"
+import type { DescribeOptions } from "./describe.ts"
+import { type Domain, type domainDescriptions, domainOf } from "./domain.ts"
+import type { Fn } from "./functions.ts"
+import { type Key, isKeyOf } from "./records.ts"
 
 export type builtinConstructors = {
 	Array: ArrayConstructor

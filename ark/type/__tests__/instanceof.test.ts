@@ -1,7 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import { rootNode } from "@ark/schema"
 import { type } from "arktype"
-import { writeInvalidConstructorMessage } from "arktype/internal/parser/tuple.js"
+import { writeInvalidConstructorMessage } from "arktype/internal/parser/tuple.ts"
 
 contextualize(() => {
 	describe("tuple expression", () => {

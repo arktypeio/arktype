@@ -1,8 +1,8 @@
 import type { ErrorMessage } from "@ark/util"
-import type { UnitLiteral } from "../string/shift/operator/default.js"
-import type { inferAstOut, inferTerminal } from "./infer.js"
-import type { astToString } from "./utils.js"
-import type { validateAst } from "./validate.js"
+import type { UnitLiteral } from "../string/shift/operator/default.ts"
+import type { inferAstOut, inferTerminal } from "./infer.ts"
+import type { astToString } from "./utils.ts"
+import type { validateAst } from "./validate.ts"
 
 export type validateDefault<baseAst, unitLiteral extends UnitLiteral, $, args> =
 	validateAst<baseAst, $, args> extends infer e extends ErrorMessage ? e

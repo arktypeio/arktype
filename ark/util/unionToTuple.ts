@@ -1,6 +1,6 @@
-import type { array, join } from "./arrays.js"
-import type { Fn } from "./functions.js"
-import type { conform } from "./generics.js"
+import type { array, join } from "./arrays.ts"
+import type { Fn } from "./functions.ts"
+import type { conform } from "./generics.ts"
 
 export type stringifyUnion<
 	t extends string,

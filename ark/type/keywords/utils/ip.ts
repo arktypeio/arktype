@@ -1,5 +1,5 @@
 import { rootNode } from "@ark/schema"
-import { regexStringNode } from "./regex.js"
+import { regexStringNode } from "./regex.ts"
 
 // Based on https://github.com/validatorjs/validator.js/blob/master/src/lib/isIP.js
 const ipv4Segment = "(?:[0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])"

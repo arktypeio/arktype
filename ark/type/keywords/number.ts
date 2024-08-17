@@ -1,7 +1,7 @@
 import { intrinsic, rootNode } from "@ark/schema"
-import type { AtLeast, AtMost, DivisibleBy, number } from "../ast.js"
-import type { Module, Submodule } from "../module.js"
-import { scope } from "../scope.js"
+import type { AtLeast, AtMost, DivisibleBy, number } from "../ast.ts"
+import type { Module, Submodule } from "../module.ts"
+import { scope } from "../scope.ts"
 
 /**
  * As per the ECMA-262 specification:

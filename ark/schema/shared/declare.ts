@@ -1,8 +1,8 @@
 import type { merge, show } from "@ark/util"
-import type { nodeOfKind, reducibleKindOf } from "../kinds.js"
-import type { Disjoint } from "./disjoint.js"
-import type { NarrowedAttachments, NodeKind } from "./implement.js"
-import type { JsonSchema } from "./jsonSchema.js"
+import type { nodeOfKind, reducibleKindOf } from "../kinds.ts"
+import type { Disjoint } from "./disjoint.ts"
+import type { NarrowedAttachments, NodeKind } from "./implement.ts"
+import type { JsonSchema } from "./jsonSchema.ts"
 
 type withMetaPrefixedKeys<o> = {
 	[k in keyof o as k extends string ? `meta.${k}` : never]: o[k]

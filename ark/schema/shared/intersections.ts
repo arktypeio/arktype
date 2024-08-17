@@ -1,18 +1,18 @@
 import type { PartialRecord, TypeGuard } from "@ark/util"
-import type { nodeOfKind } from "../kinds.js"
-import type { BaseNode } from "../node.js"
-import type { Morph } from "../roots/morph.js"
-import type { BaseRoot } from "../roots/root.js"
-import type { Union } from "../roots/union.js"
-import type { BaseScope } from "../scope.js"
-import { Disjoint } from "./disjoint.js"
+import type { nodeOfKind } from "../kinds.ts"
+import type { BaseNode } from "../node.ts"
+import type { Morph } from "../roots/morph.ts"
+import type { BaseRoot } from "../roots/root.ts"
+import type { Union } from "../roots/union.ts"
+import type { BaseScope } from "../scope.ts"
+import { Disjoint } from "./disjoint.ts"
 import {
 	rootKinds,
 	type IntersectionContext,
 	type RootKind,
 	type UnknownIntersectionResult
-} from "./implement.js"
-import { isNode } from "./utils.js"
+} from "./implement.ts"
+import { isNode } from "./utils.ts"
 
 const intersectionCache: PartialRecord<string, UnknownIntersectionResult> = {}
 

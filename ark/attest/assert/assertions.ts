@@ -2,8 +2,8 @@ import { printable, throwInternalError } from "@ark/util"
 import type { Type } from "arktype"
 import { AssertionError } from "node:assert"
 import * as assert from "node:assert/strict"
-import type { TypeRelationshipAssertionData } from "../cache/writeAssertionCache.js"
-import type { AssertionContext } from "./attest.js"
+import type { TypeRelationshipAssertionData } from "../cache/writeAssertionCache.ts"
+import type { AssertionContext } from "./attest.ts"
 
 export type ThrowAssertionErrorContext = {
 	message: string

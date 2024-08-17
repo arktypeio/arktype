@@ -1,20 +1,20 @@
 import { append, cached, domainDescriptions, throwParseError } from "@ark/util"
-import type { NodeCompiler } from "../shared/compile.js"
-import type { BaseNormalizedSchema, declareNode } from "../shared/declare.js"
-import { Disjoint } from "../shared/disjoint.js"
+import type { NodeCompiler } from "../shared/compile.ts"
+import type { BaseNormalizedSchema, declareNode } from "../shared/declare.ts"
+import { Disjoint } from "../shared/disjoint.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
-} from "../shared/implement.js"
-import { intersectNodes } from "../shared/intersections.js"
+} from "../shared/implement.ts"
+import { intersectNodes } from "../shared/intersections.ts"
 import {
 	writeCyclicJsonSchemaMessage,
 	type JsonSchema
-} from "../shared/jsonSchema.js"
-import { $ark } from "../shared/registry.js"
-import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
-import { BaseRoot } from "./root.js"
-import { defineRightwardIntersections } from "./utils.js"
+} from "../shared/jsonSchema.ts"
+import { $ark } from "../shared/registry.ts"
+import type { TraverseAllows, TraverseApply } from "../shared/traversal.ts"
+import { BaseRoot } from "./root.ts"
+import { defineRightwardIntersections } from "./utils.ts"
 
 export declare namespace Alias {
 	export type Schema<alias extends string = string> = `$${alias}` | Inner<alias>

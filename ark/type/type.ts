@@ -7,7 +7,7 @@ import {
 	type Predicate
 } from "@ark/schema"
 import { Callable, type Constructor, type array, type conform } from "@ark/util"
-import type { distillIn, distillOut } from "./ast.js"
+import type { distillIn, distillOut } from "./ast.ts"
 import {
 	parseGenericParams,
 	type Generic,
@@ -15,20 +15,20 @@ import {
 	type baseGenericConstraints,
 	type parseValidGenericParams,
 	type validateParameterString
-} from "./generic.js"
+} from "./generic.ts"
 import type {
 	inferDefinition,
 	validateDeclared,
 	validateDefinition
-} from "./parser/definition.js"
+} from "./parser/definition.ts"
 import type {
 	IndexOneOperator,
 	IndexZeroOperator,
 	TupleInfixOperator
-} from "./parser/tuple.js"
-import type { InternalScope, Scope, bindThis } from "./scope.js"
-import type { BaseType } from "./subtypes/base.js"
-import type { instantiateType } from "./subtypes/instantiate.js"
+} from "./parser/tuple.ts"
+import type { InternalScope, Scope, bindThis } from "./scope.ts"
+import type { BaseType } from "./subtypes/base.ts"
+import type { instantiateType } from "./subtypes/instantiate.ts"
 
 /** The convenience properties attached to `type` */
 export type TypeParserAttachments =

@@ -1,19 +1,19 @@
 import { caller, getCallStack, type SourcePosition } from "@ark/fs"
 import type { ErrorMessage } from "@ark/util"
-import { getBenchCtx } from "../bench/bench.js"
-import type { Measure } from "../bench/measure.js"
-import { instantiationDataHandler } from "../bench/type.js"
+import { getBenchCtx } from "../bench/bench.ts"
+import type { Measure } from "../bench/measure.ts"
+import { instantiationDataHandler } from "../bench/type.ts"
 import {
 	getTypeAssertionsAtPosition,
 	type VersionedTypeAssertion
-} from "../cache/getCachedAssertions.js"
-import { getConfig, type AttestConfig } from "../config.js"
-import { assertEquals, typeEqualityMapping } from "./assertions.js"
+} from "../cache/getCachedAssertions.ts"
+import { getConfig, type AttestConfig } from "../config.ts"
+import { assertEquals, typeEqualityMapping } from "./assertions.ts"
 import {
 	ChainableAssertions,
 	type AssertionKind,
 	type rootAssertions
-} from "./chainableAssertions.js"
+} from "./chainableAssertions.ts"
 
 export type AttestFn = {
 	<expected>(actual: expected): rootAssertions<expected, AssertionKind>

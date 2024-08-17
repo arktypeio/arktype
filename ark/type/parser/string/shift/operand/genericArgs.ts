@@ -5,10 +5,10 @@ import type {
 	GenericRoot
 } from "@ark/schema"
 import type { array, ErrorMessage, join } from "@ark/util"
-import type { DynamicState } from "../../reduce/dynamic.js"
-import { writeUnclosedGroupMessage } from "../../reduce/shared.js"
-import type { state, StaticState } from "../../reduce/static.js"
-import type { parseUntilFinalizer } from "../../string.js"
+import type { DynamicState } from "../../reduce/dynamic.ts"
+import { writeUnclosedGroupMessage } from "../../reduce/shared.ts"
+import type { state, StaticState } from "../../reduce/static.ts"
+import type { parseUntilFinalizer } from "../../string.ts"
 
 export const parseGenericArgs = (
 	name: string,

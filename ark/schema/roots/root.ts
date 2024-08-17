@@ -8,19 +8,19 @@ import {
 	type NonEmptyList,
 	type array
 } from "@ark/util"
-import { throwInvalidOperandError, type Constraint } from "../constraint.js"
-import type { NodeSchema, nodeOfKind, reducibleKindOf } from "../kinds.js"
+import { throwInvalidOperandError, type Constraint } from "../constraint.ts"
+import type { NodeSchema, nodeOfKind, reducibleKindOf } from "../kinds.ts"
 import {
 	BaseNode,
 	appendUniqueFlatRefs,
 	type FlatRef,
 	type GettableKeyOrNode,
 	type KeyOrKeyNode
-} from "../node.js"
-import type { Predicate } from "../predicate.js"
-import type { Divisor } from "../refinements/divisor.js"
-import type { ExactLength } from "../refinements/exactLength.js"
-import type { Pattern } from "../refinements/pattern.js"
+} from "../node.ts"
+import type { Predicate } from "../predicate.ts"
+import type { Divisor } from "../refinements/divisor.ts"
+import type { ExactLength } from "../refinements/exactLength.ts"
+import type { Pattern } from "../refinements/pattern.ts"
 import type {
 	ExclusiveDateRangeSchema,
 	ExclusiveNumericRangeSchema,
@@ -28,29 +28,29 @@ import type {
 	InclusiveNumericRangeSchema,
 	LimitSchemaValue,
 	UnknownRangeSchema
-} from "../refinements/range.js"
-import type { BaseNodeDeclaration, MetaSchema } from "../shared/declare.js"
+} from "../refinements/range.ts"
+import type { BaseNodeDeclaration, MetaSchema } from "../shared/declare.ts"
 import {
 	Disjoint,
 	writeUnsatisfiableExpressionError
-} from "../shared/disjoint.js"
-import { ArkErrors } from "../shared/errors.js"
+} from "../shared/disjoint.ts"
+import { ArkErrors } from "../shared/errors.ts"
 import {
 	structuralKinds,
 	type NodeKind,
 	type RootKind,
 	type kindRightOf
-} from "../shared/implement.js"
-import { intersectNodesRoot, pipeNodesRoot } from "../shared/intersections.js"
-import type { JsonSchema } from "../shared/jsonSchema.js"
-import { $ark } from "../shared/registry.js"
-import { arkKind, hasArkKind } from "../shared/utils.js"
+} from "../shared/implement.ts"
+import { intersectNodesRoot, pipeNodesRoot } from "../shared/intersections.ts"
+import type { JsonSchema } from "../shared/jsonSchema.ts"
+import { $ark } from "../shared/registry.ts"
+import { arkKind, hasArkKind } from "../shared/utils.ts"
 import type {
 	Structure,
 	UndeclaredKeyBehavior
-} from "../structure/structure.js"
-import type { Morph } from "./morph.js"
-import type { Union } from "./union.js"
+} from "../structure/structure.ts"
+import type { Morph } from "./morph.ts"
+import type { Union } from "./union.ts"
 
 export interface InternalRootDeclaration extends BaseNodeDeclaration {
 	kind: RootKind

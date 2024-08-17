@@ -1,7 +1,7 @@
-import type { Guardable } from "./functions.js"
-import type { anyOrNever } from "./generics.js"
-import type { isDisjoint } from "./intersections.js"
-import type { parseNonNegativeInteger } from "./numericLiterals.js"
+import type { Guardable } from "./functions.ts"
+import type { anyOrNever } from "./generics.ts"
+import type { isDisjoint } from "./intersections.ts"
+import type { parseNonNegativeInteger } from "./numericLiterals.ts"
 
 export type pathToString<
 	segments extends string[],

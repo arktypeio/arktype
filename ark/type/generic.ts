@@ -18,15 +18,15 @@ import {
 	type Hkt,
 	type WhiteSpaceToken
 } from "@ark/util"
-import type { inferDefinition } from "./parser/definition.js"
-import type { inferAstRoot } from "./parser/semantic/infer.js"
-import type { validateAst } from "./parser/semantic/validate.js"
-import { DynamicState } from "./parser/string/reduce/dynamic.js"
-import type { state, StaticState } from "./parser/string/reduce/static.js"
-import { Scanner } from "./parser/string/shift/scanner.js"
-import { parseUntilFinalizer } from "./parser/string/string.js"
-import type { ParseContext, Scope } from "./scope.js"
-import type { inferTypeRoot, Type, validateTypeRoot } from "./type.js"
+import type { inferDefinition } from "./parser/definition.ts"
+import type { inferAstRoot } from "./parser/semantic/infer.ts"
+import type { validateAst } from "./parser/semantic/validate.ts"
+import { DynamicState } from "./parser/string/reduce/dynamic.ts"
+import type { state, StaticState } from "./parser/string/reduce/static.ts"
+import { Scanner } from "./parser/string/shift/scanner.ts"
+import { parseUntilFinalizer } from "./parser/string/string.ts"
+import type { ParseContext, Scope } from "./scope.ts"
+import type { inferTypeRoot, Type, validateTypeRoot } from "./type.ts"
 
 export type ParameterString<params extends string = string> = `<${params}>`
 

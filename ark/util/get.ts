@@ -1,5 +1,5 @@
-import type { conform } from "./generics.js"
-import type { keyOf } from "./records.js"
+import type { conform } from "./generics.ts"
+import type { keyOf } from "./records.ts"
 
 type getKey<o, k> =
 	k extends keyof o ? o[k]

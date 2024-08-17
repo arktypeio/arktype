@@ -17,22 +17,22 @@ import {
 	type requiredKeyOf,
 	type show
 } from "@ark/util"
-import type { string } from "../ast.js"
-import type { type } from "../keywords/ark.js"
-import type { ParseContext } from "../scope.js"
+import type { string } from "../ast.ts"
+import type { type } from "../keywords/ark.ts"
+import type { ParseContext } from "../scope.ts"
 import {
 	parseObjectLiteral,
 	type inferObjectLiteral,
 	type validateObjectLiteral
-} from "./objectLiteral.js"
-import type { validateString } from "./semantic/validate.js"
-import type { BaseCompletions, inferString } from "./string/string.js"
+} from "./objectLiteral.ts"
+import type { validateString } from "./semantic/validate.ts"
+import type { BaseCompletions, inferString } from "./string/string.ts"
 import {
 	parseTuple,
 	type TupleExpression,
 	type inferTuple,
 	type validateTuple
-} from "./tuple.js"
+} from "./tuple.ts"
 
 export const parseObject = (def: object, ctx: ParseContext): BaseRoot => {
 	const objectKind = objectKindOf(def)

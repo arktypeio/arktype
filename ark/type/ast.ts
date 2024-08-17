@@ -19,11 +19,11 @@ import {
 	type propValueOf,
 	type show
 } from "@ark/util"
-import type { inferPipe } from "./intersect.js"
-import type { type } from "./keywords/ark.js"
-import type { arkPlatform } from "./keywords/platform.js"
-import type { arkTypedArray } from "./keywords/typedArray.js"
-import type { Type } from "./type.js"
+import type { inferPipe } from "./intersect.ts"
+import type { type } from "./keywords/ark.ts"
+import type { arkPlatform } from "./keywords/platform.ts"
+import type { arkTypedArray } from "./keywords/typedArray.ts"
+import type { Type } from "./type.ts"
 
 export type Comparator = "<" | "<=" | ">" | ">=" | "=="
 

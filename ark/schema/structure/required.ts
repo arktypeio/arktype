@@ -1,11 +1,11 @@
-import type { BaseErrorContext, declareNode } from "../shared/declare.js"
-import type { ArkErrorContextInput } from "../shared/errors.js"
+import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
+import type { ArkErrorContextInput } from "../shared/errors.ts"
 import {
 	compileErrorContext,
 	implementNode,
 	type nodeImplementationOf
-} from "../shared/implement.js"
-import { BaseProp, intersectProps, type Prop } from "./prop.js"
+} from "../shared/implement.ts"
+import { BaseProp, intersectProps, type Prop } from "./prop.ts"
 
 export declare namespace Required {
 	export interface ErrorContext extends BaseErrorContext<"required"> {

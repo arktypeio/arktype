@@ -5,22 +5,22 @@ import {
 	type satisfy,
 	throwParseError
 } from "@ark/util"
-import { InternalPrimitiveConstraint } from "../constraint.js"
+import { InternalPrimitiveConstraint } from "../constraint.ts"
 import type {
 	Declaration,
 	nodeOfKind,
 	NodeSchema,
 	NormalizedSchema
-} from "../kinds.js"
+} from "../kinds.ts"
 import type {
 	BaseNodeDeclaration,
 	BaseNormalizedSchema
-} from "../shared/declare.js"
-import type { keySchemaDefinitions, RangeKind } from "../shared/implement.js"
-import type { After } from "./after.js"
-import type { Before } from "./before.js"
-import type { MaxLength } from "./maxLength.js"
-import type { MinLength } from "./minLength.js"
+} from "../shared/declare.ts"
+import type { keySchemaDefinitions, RangeKind } from "../shared/implement.ts"
+import type { After } from "./after.ts"
+import type { Before } from "./before.ts"
+import type { MaxLength } from "./maxLength.ts"
+import type { MinLength } from "./minLength.ts"
 
 export interface BaseRangeDeclaration extends BaseNodeDeclaration {
 	kind: RangeKind

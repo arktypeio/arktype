@@ -1,7 +1,7 @@
 import { genericNode, intrinsic } from "@ark/schema"
 import { Hkt, type Key, type omit, type pick, type show } from "@ark/util"
-import type { Module } from "../module.js"
-import { scope } from "../scope.js"
+import type { Module } from "../module.ts"
+import { scope } from "../scope.ts"
 
 class RecordHkt extends Hkt<[Key, unknown]> {
 	declare body: Record<this[0], this[1]>

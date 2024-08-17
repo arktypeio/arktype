@@ -1,5 +1,5 @@
 import { throwParseError, tryParseNumber } from "@ark/util"
-import type { DateLiteral } from "../../../../ast.js"
+import type { DateLiteral } from "../../../../ast.ts"
 
 export const isDateLiteral = (value: unknown): value is DateLiteral =>
 	typeof value === "string" &&

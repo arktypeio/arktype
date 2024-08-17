@@ -1,6 +1,6 @@
 import type { Stringifiable } from "@ark/util"
-import type { Comparator } from "../string/reduce/shared.js"
-import type { InfixExpression, PostfixExpression } from "./infer.js"
+import type { Comparator } from "../string/reduce/shared.ts"
+import type { InfixExpression, PostfixExpression } from "./infer.ts"
 
 export type astToString<ast> =
 	ast extends PostfixExpression<infer operator, infer operand> ?

@@ -1,11 +1,11 @@
 import * as util from "@ark/util"
 import { Hkt, type Digit, type Key } from "@ark/util"
-import type { Module } from "../module.js"
-import { scope } from "../scope.js"
+import type { Module } from "../module.ts"
+import { scope } from "../scope.ts"
 // these are needed to create some internal types
 import { genericNode, intrinsic } from "@ark/schema"
-import type { Out } from "../ast.js"
-import "./ts.js"
+import type { Out } from "../ast.ts"
+import "./ts.ts"
 
 class liftArrayHkt extends Hkt<[element: unknown]> {
 	declare body: util.liftArray<this[0]> extends infer lifted ?

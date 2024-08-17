@@ -6,7 +6,7 @@ import {
 	type EscapeToken,
 	type WhiteSpaceToken
 } from "@ark/util"
-import type { Comparator } from "../reduce/shared.js"
+import type { Comparator } from "../reduce/shared.ts"
 
 export class Scanner<lookahead extends string = string> {
 	private chars: string[]

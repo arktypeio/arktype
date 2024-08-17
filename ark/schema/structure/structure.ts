@@ -13,46 +13,46 @@ import {
 	constraintKeyParser,
 	flattenConstraints,
 	intersectConstraints
-} from "../constraint.js"
-import type { mutableInnerOfKind } from "../kinds.js"
-import type { GettableKeyOrNode, KeyOrKeyNode } from "../node.js"
-import { typeOrTermExtends, type BaseRoot } from "../roots/root.js"
-import type { BaseScope } from "../scope.js"
-import type { NodeCompiler } from "../shared/compile.js"
-import type { BaseNormalizedSchema, declareNode } from "../shared/declare.js"
-import { Disjoint } from "../shared/disjoint.js"
+} from "../constraint.ts"
+import type { mutableInnerOfKind } from "../kinds.ts"
+import type { GettableKeyOrNode, KeyOrKeyNode } from "../node.ts"
+import { typeOrTermExtends, type BaseRoot } from "../roots/root.ts"
+import type { BaseScope } from "../scope.ts"
+import type { NodeCompiler } from "../shared/compile.ts"
+import type { BaseNormalizedSchema, declareNode } from "../shared/declare.ts"
+import { Disjoint } from "../shared/disjoint.ts"
 import {
 	implementNode,
 	type nodeImplementationOf,
 	type StructuralKind
-} from "../shared/implement.js"
-import { intersectNodesRoot } from "../shared/intersections.js"
+} from "../shared/implement.ts"
+import { intersectNodesRoot } from "../shared/intersections.ts"
 import {
 	throwInternalJsonSchemaOperandError,
 	writeUnsupportedJsonSchemaTypeMessage,
 	type JsonSchema
-} from "../shared/jsonSchema.js"
+} from "../shared/jsonSchema.ts"
 import {
 	$ark,
 	registeredReference,
 	type RegisteredReference
-} from "../shared/registry.js"
+} from "../shared/registry.ts"
 import type {
 	TraversalContext,
 	TraversalKind,
 	TraverseAllows,
 	TraverseApply
-} from "../shared/traversal.js"
+} from "../shared/traversal.ts"
 import {
 	hasArkKind,
 	makeRootAndArrayPropertiesMutable
-} from "../shared/utils.js"
-import type { Index } from "./index.js"
-import type { Optional } from "./optional.js"
-import type { Prop } from "./prop.js"
-import type { Required } from "./required.js"
-import type { Sequence } from "./sequence.js"
-import { arrayIndexMatcherReference } from "./shared.js"
+} from "../shared/utils.ts"
+import type { Index } from "./index.ts"
+import type { Optional } from "./optional.ts"
+import type { Prop } from "./prop.ts"
+import type { Required } from "./required.ts"
+import type { Sequence } from "./sequence.ts"
+import { arrayIndexMatcherReference } from "./shared.ts"
 
 export type UndeclaredKeyBehavior = "ignore" | UndeclaredKeyHandling
 

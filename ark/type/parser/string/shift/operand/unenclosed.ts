@@ -22,17 +22,17 @@ import {
 	type anyOrNever,
 	type join
 } from "@ark/util"
-import type { GenericInstantiationAst } from "../../../semantic/infer.js"
-import { writePrefixedPrivateReferenceMessage } from "../../../semantic/validate.js"
-import type { DynamicState } from "../../reduce/dynamic.js"
-import type { StaticState, state } from "../../reduce/static.js"
-import type { BaseCompletions } from "../../string.js"
-import type { Scanner } from "../scanner.js"
+import type { GenericInstantiationAst } from "../../../semantic/infer.ts"
+import { writePrefixedPrivateReferenceMessage } from "../../../semantic/validate.ts"
+import type { DynamicState } from "../../reduce/dynamic.ts"
+import type { StaticState, state } from "../../reduce/static.ts"
+import type { BaseCompletions } from "../../string.ts"
+import type { Scanner } from "../scanner.ts"
 import {
 	parseGenericArgs,
 	writeInvalidGenericArgCountMessage,
 	type ParsedArgs
-} from "./genericArgs.js"
+} from "./genericArgs.ts"
 
 export const parseUnenclosed = (s: DynamicState): void => {
 	const token = s.scanner.shiftUntilNextTerminator()

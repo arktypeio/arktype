@@ -6,7 +6,7 @@ import {
 	type JsonObject,
 	type listable
 } from "@ark/util"
-import type { ConstraintKind } from "./implement.js"
+import type { ConstraintKind } from "./implement.ts"
 
 export type JsonSchema = JsonSchema.Union | JsonSchema.Branch
 

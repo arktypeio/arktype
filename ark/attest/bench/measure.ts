@@ -1,4 +1,4 @@
-import type { StatName } from "./bench.js"
+import type { StatName } from "./bench.ts"
 
 type MeasureUnit = TimeUnit | TypeUnit
 

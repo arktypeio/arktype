@@ -1,5 +1,5 @@
-import type { Module } from "../module.js"
-import { scope } from "../scope.js"
+import type { Module } from "../module.ts"
+import { scope } from "../scope.ts"
 
 const keywords: Module<arkPlatform.keywords> = scope(
 	{

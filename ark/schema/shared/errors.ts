@@ -5,11 +5,11 @@ import {
 	type propwiseXor,
 	type show
 } from "@ark/util"
-import type { ResolvedArkConfig } from "../config.js"
-import type { Prerequisite, errorContext } from "../kinds.js"
-import type { NodeKind } from "./implement.js"
-import type { TraversalContext } from "./traversal.js"
-import { arkKind, pathToPropString, type TraversalPath } from "./utils.js"
+import type { ResolvedArkConfig } from "../config.ts"
+import type { Prerequisite, errorContext } from "../kinds.ts"
+import type { NodeKind } from "./implement.ts"
+import type { TraversalContext } from "./traversal.ts"
+import { arkKind, pathToPropString, type TraversalPath } from "./utils.ts"
 
 export type ArkErrorResult = ArkError | ArkErrors
 

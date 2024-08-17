@@ -1,23 +1,23 @@
 import { envHasCsp, flatMorph, type array, type listable } from "@ark/util"
-import type { ResolvedArkConfig } from "./config.js"
-import type { BaseNode } from "./node.js"
-import { Predicate } from "./predicate.js"
-import { Divisor } from "./refinements/divisor.js"
+import type { ResolvedArkConfig } from "./config.ts"
+import type { BaseNode } from "./node.ts"
+import { Predicate } from "./predicate.ts"
+import { Divisor } from "./refinements/divisor.ts"
 import {
 	boundClassesByKind,
 	boundImplementationsByKind,
 	type BoundDeclarations,
 	type BoundNodesByKind
-} from "./refinements/kinds.js"
-import { Pattern } from "./refinements/pattern.js"
-import { Alias } from "./roots/alias.js"
-import { Domain } from "./roots/domain.js"
-import { Intersection } from "./roots/intersection.js"
-import { Morph } from "./roots/morph.js"
-import { Proto } from "./roots/proto.js"
-import { Union } from "./roots/union.js"
-import { Unit } from "./roots/unit.js"
-import type { BaseScope } from "./scope.js"
+} from "./refinements/kinds.ts"
+import { Pattern } from "./refinements/pattern.ts"
+import { Alias } from "./roots/alias.ts"
+import { Domain } from "./roots/domain.ts"
+import { Intersection } from "./roots/intersection.ts"
+import { Morph } from "./roots/morph.ts"
+import { Proto } from "./roots/proto.ts"
+import { Union } from "./roots/union.ts"
+import { Unit } from "./roots/unit.ts"
+import type { BaseScope } from "./scope.ts"
 import type {
 	ConstraintKind,
 	NodeKind,
@@ -25,14 +25,14 @@ import type {
 	RootKind,
 	UnknownAttachments,
 	UnknownNodeImplementation
-} from "./shared/implement.js"
-import type { makeRootAndArrayPropertiesMutable } from "./shared/utils.js"
-import { Index } from "./structure/index.js"
-import { Optional } from "./structure/optional.js"
-import { Required } from "./structure/required.js"
-import { Sequence } from "./structure/sequence.js"
-import { Structure } from "./structure/structure.js"
-import { $ark } from "./shared/registry.js"
+} from "./shared/implement.ts"
+import { $ark } from "./shared/registry.ts"
+import type { makeRootAndArrayPropertiesMutable } from "./shared/utils.ts"
+import { Index } from "./structure/index.ts"
+import { Optional } from "./structure/optional.ts"
+import { Required } from "./structure/required.ts"
+import { Sequence } from "./structure/sequence.ts"
+import { Structure } from "./structure/structure.ts"
 
 export interface NodeDeclarationsByKind extends BoundDeclarations {
 	alias: Alias.Declaration

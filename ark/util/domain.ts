@@ -1,6 +1,6 @@
-import type { describeDefaults, DescribeOptions } from "./describe.js"
-import type { show } from "./generics.js"
-import type { stringifyUnion } from "./unionToTuple.js"
+import type { describeDefaults, DescribeOptions } from "./describe.ts"
+import type { show } from "./generics.ts"
+import type { stringifyUnion } from "./unionToTuple.ts"
 
 export const hasDomain = <data, domain extends Domain>(
 	data: data,

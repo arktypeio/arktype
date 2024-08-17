@@ -3,6 +3,7 @@
 	"compilerOptions": {
 		// should be off by default, but here as a convenience to toggle
 		// "noErrorTruncation": true,
+		"allowImportingTsExtensions": true,
 		"paths": {
 			"arktype": ["./ark/type/index.ts"],
 			"arktype/config": ["./ark/type/config.ts"],

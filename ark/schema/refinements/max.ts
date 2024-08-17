@@ -1,19 +1,19 @@
-import type { BaseRoot } from "../roots/root.js"
-import type { BaseErrorContext, declareNode } from "../shared/declare.js"
-import { Disjoint } from "../shared/disjoint.js"
+import type { BaseRoot } from "../roots/root.ts"
+import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
+import { Disjoint } from "../shared/disjoint.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
-} from "../shared/implement.js"
-import type { JsonSchema } from "../shared/jsonSchema.js"
-import { $ark } from "../shared/registry.js"
-import type { TraverseAllows } from "../shared/traversal.js"
+} from "../shared/implement.ts"
+import type { JsonSchema } from "../shared/jsonSchema.ts"
+import { $ark } from "../shared/registry.ts"
+import type { TraverseAllows } from "../shared/traversal.ts"
 import {
 	BaseRange,
 	parseExclusiveKey,
 	type BaseRangeInner,
 	type UnknownExpandedRangeSchema
-} from "./range.js"
+} from "./range.ts"
 
 export declare namespace Max {
 	export interface Inner extends BaseRangeInner {

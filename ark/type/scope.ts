@@ -50,35 +50,35 @@ import {
 	type ParameterString,
 	type baseGenericConstraints,
 	type parseValidGenericParams
-} from "./generic.js"
-import type { type } from "./keywords/ark.js"
+} from "./generic.ts"
+import type { type } from "./keywords/ark.ts"
 import type {
 	BoundModule,
 	Module,
 	Submodule,
 	instantiateExport
-} from "./module.js"
+} from "./module.ts"
 import {
 	parseObject,
 	writeBadDefinitionTypeMessage,
 	type inferDefinition,
 	type validateDefinition
-} from "./parser/definition.js"
-import { DynamicState } from "./parser/string/reduce/dynamic.js"
-import type { ParsedDefault } from "./parser/string/shift/operator/default.js"
-import { writeUnexpectedCharacterMessage } from "./parser/string/shift/operator/operator.js"
-import { Scanner } from "./parser/string/shift/scanner.js"
+} from "./parser/definition.ts"
+import { DynamicState } from "./parser/string/reduce/dynamic.ts"
+import type { ParsedDefault } from "./parser/string/shift/operator/default.ts"
+import { writeUnexpectedCharacterMessage } from "./parser/string/shift/operator/operator.ts"
+import { Scanner } from "./parser/string/shift/scanner.ts"
 import {
 	fullStringParse,
 	type StringParseResult
-} from "./parser/string/string.js"
+} from "./parser/string/string.ts"
 import {
 	InternalTypeParser,
 	type DeclarationParser,
 	type DefinitionParser,
 	type Type,
 	type TypeParser
-} from "./type.js"
+} from "./type.ts"
 
 export type ScopeParser = <const def>(
 	def: validateScope<def>,

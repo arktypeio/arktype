@@ -1,5 +1,5 @@
-import type { Module, Submodule } from "../module.js"
-import { scope } from "../scope.js"
+import type { Module, Submodule } from "../module.ts"
+import { scope } from "../scope.ts"
 
 const submodule: Module<arkTypedArray.submodule> = scope(
 	{

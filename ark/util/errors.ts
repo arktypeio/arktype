@@ -1,4 +1,4 @@
-import type { keyNonimal } from "./generics.js"
+import type { keyNonimal } from "./generics.ts"
 
 export class InternalArktypeError extends Error {}
 

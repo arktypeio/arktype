@@ -5,8 +5,8 @@ import type {
 	InclusiveNumericRangeSchema,
 	Pattern
 } from "@ark/schema"
-import type { applyConstraint } from "../ast.js"
-import type { ValidatorType } from "./validator.js"
+import type { applyConstraint } from "../ast.ts"
+import type { ValidatorType } from "./validator.ts"
 
 /** @ts-ignore cast variance */
 interface Type<out t extends string = string, $ = {}>

@@ -8,7 +8,7 @@ import {
 	writeUnsatisfiedParameterConstraintMessage
 } from "@ark/schema"
 import { ark, scope, type } from "arktype"
-import type { Out, string, To } from "arktype/internal/ast.js"
+import type { Out, string, To } from "arktype/internal/ast.ts"
 
 contextualize(() => {
 	describe("js", () => {

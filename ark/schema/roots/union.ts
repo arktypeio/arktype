@@ -16,20 +16,20 @@ import {
 	type keySet,
 	type show
 } from "@ark/util"
-import type { NodeSchema, nodeOfKind } from "../kinds.js"
-import { typePathToPropString } from "../node.js"
+import type { NodeSchema, nodeOfKind } from "../kinds.ts"
+import { typePathToPropString } from "../node.ts"
 import {
 	compileLiteralPropAccess,
 	compileSerializedValue,
 	type NodeCompiler
-} from "../shared/compile.js"
+} from "../shared/compile.ts"
 import type {
 	BaseErrorContext,
 	BaseNormalizedSchema,
 	declareNode
-} from "../shared/declare.js"
-import { Disjoint } from "../shared/disjoint.js"
-import type { ArkError } from "../shared/errors.js"
+} from "../shared/declare.ts"
+import { Disjoint } from "../shared/disjoint.ts"
+import type { ArkError } from "../shared/errors.ts"
 import {
 	implementNode,
 	unionChildKinds,
@@ -37,17 +37,17 @@ import {
 	type RootKind,
 	type UnionChildKind,
 	type nodeImplementationOf
-} from "../shared/implement.js"
-import { intersectNodes, intersectNodesRoot } from "../shared/intersections.js"
-import type { JsonSchema } from "../shared/jsonSchema.js"
-import { $ark, registeredReference } from "../shared/registry.js"
-import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
-import { hasArkKind, pathToPropString } from "../shared/utils.js"
-import type { Domain } from "./domain.js"
-import type { Morph } from "./morph.js"
-import { BaseRoot } from "./root.js"
-import type { Unit } from "./unit.js"
-import { defineRightwardIntersections } from "./utils.js"
+} from "../shared/implement.ts"
+import { intersectNodes, intersectNodesRoot } from "../shared/intersections.ts"
+import type { JsonSchema } from "../shared/jsonSchema.ts"
+import { $ark, registeredReference } from "../shared/registry.ts"
+import type { TraverseAllows, TraverseApply } from "../shared/traversal.ts"
+import { hasArkKind, pathToPropString } from "../shared/utils.ts"
+import type { Domain } from "./domain.ts"
+import type { Morph } from "./morph.ts"
+import { BaseRoot } from "./root.ts"
+import type { Unit } from "./unit.ts"
+import { defineRightwardIntersections } from "./utils.ts"
 
 export declare namespace Union {
 	export type ChildKind = UnionChildKind

@@ -13,23 +13,23 @@ import {
 	constraintKeyParser,
 	flattenConstraints,
 	intersectConstraints
-} from "../constraint.js"
+} from "../constraint.ts"
 import type {
 	Inner,
 	mutableInnerOfKind,
 	nodeOfKind,
 	NodeSchema,
 	Prerequisite
-} from "../kinds.js"
-import type { PredicateNode } from "../predicate.js"
-import type { NodeCompiler } from "../shared/compile.js"
+} from "../kinds.ts"
+import type { PredicateNode } from "../predicate.ts"
+import type { NodeCompiler } from "../shared/compile.ts"
 import type {
 	BaseErrorContext,
 	BaseNormalizedSchema,
 	declareNode
-} from "../shared/declare.js"
-import { Disjoint } from "../shared/disjoint.js"
-import type { ArkError } from "../shared/errors.js"
+} from "../shared/declare.ts"
+import { Disjoint } from "../shared/disjoint.ts"
+import type { ArkError } from "../shared/errors.ts"
 import {
 	implementNode,
 	structureKeys,
@@ -39,20 +39,20 @@ import {
 	type OpenNodeKind,
 	type RefinementKind,
 	type StructuralKind
-} from "../shared/implement.js"
-import { intersectNodes } from "../shared/intersections.js"
-import type { JsonSchema } from "../shared/jsonSchema.js"
-import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
-import { hasArkKind, isNode } from "../shared/utils.js"
-import type { Sequence } from "../structure/sequence.js"
+} from "../shared/implement.ts"
+import { intersectNodes } from "../shared/intersections.ts"
+import type { JsonSchema } from "../shared/jsonSchema.ts"
+import type { TraverseAllows, TraverseApply } from "../shared/traversal.ts"
+import { hasArkKind, isNode } from "../shared/utils.ts"
+import type { Sequence } from "../structure/sequence.ts"
 import type {
 	Structure,
 	UndeclaredKeyBehavior
-} from "../structure/structure.js"
-import type { Domain } from "./domain.js"
-import type { Proto } from "./proto.js"
-import { BaseRoot } from "./root.js"
-import { defineRightwardIntersections } from "./utils.js"
+} from "../structure/structure.ts"
+import type { Domain } from "./domain.ts"
+import type { Proto } from "./proto.ts"
+import { BaseRoot } from "./root.ts"
+import { defineRightwardIntersections } from "./utils.ts"
 
 export declare namespace Intersection {
 	export type BasisKind = "domain" | "proto"

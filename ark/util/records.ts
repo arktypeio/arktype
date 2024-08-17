@@ -1,7 +1,7 @@
-import type { array } from "./arrays.js"
-import { flatMorph } from "./flatMorph.js"
-import type { Fn } from "./functions.js"
-import type { defined, show } from "./generics.js"
+import type { array } from "./arrays.ts"
+import { flatMorph } from "./flatMorph.ts"
+import type { Fn } from "./functions.ts"
+import type { defined, show } from "./generics.ts"
 
 export type Dict<k extends string = string, v = unknown> = {
 	readonly [_ in k]: v

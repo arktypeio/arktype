@@ -16,26 +16,26 @@ import {
 	type listable,
 	type mutable
 } from "@ark/util"
-import type { BaseConstraint } from "./constraint.js"
+import type { BaseConstraint } from "./constraint.ts"
 import type {
 	Inner,
 	NormalizedSchema,
 	mutableInnerOfKind,
 	nodeOfKind,
 	reducibleKindOf
-} from "./kinds.js"
-import type { NodeParseOptions } from "./parse.js"
-import type { Morph } from "./roots/morph.js"
-import type { BaseRoot } from "./roots/root.js"
-import type { Unit } from "./roots/unit.js"
-import type { BaseScope } from "./scope.js"
-import type { NodeCompiler } from "./shared/compile.js"
+} from "./kinds.ts"
+import type { NodeParseOptions } from "./parse.ts"
+import type { Morph } from "./roots/morph.ts"
+import type { BaseRoot } from "./roots/root.ts"
+import type { Unit } from "./roots/unit.ts"
+import type { BaseScope } from "./scope.ts"
+import type { NodeCompiler } from "./shared/compile.ts"
 import type {
 	BaseNodeDeclaration,
 	MetaSchema,
 	attachmentsOf
-} from "./shared/declare.js"
-import type { ArkErrors } from "./shared/errors.js"
+} from "./shared/declare.ts"
+import type { ArkErrors } from "./shared/errors.ts"
 import {
 	basisKinds,
 	constraintKinds,
@@ -49,14 +49,14 @@ import {
 	type RefinementKind,
 	type StructuralKind,
 	type UnknownAttachments
-} from "./shared/implement.js"
-import { $ark } from "./shared/registry.js"
+} from "./shared/implement.ts"
+import { $ark } from "./shared/registry.ts"
 import {
 	TraversalContext,
 	type TraverseAllows,
 	type TraverseApply
-} from "./shared/traversal.js"
-import { isNode, pathToPropString, type arkKind } from "./shared/utils.js"
+} from "./shared/traversal.ts"
+import { isNode, pathToPropString, type arkKind } from "./shared/utils.ts"
 
 export abstract class BaseNode<
 	/** uses -ignore rather than -expect-error because this is not an error in .d.ts

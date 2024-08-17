@@ -1,6 +1,6 @@
 import { node } from "@ark/schema"
-import type { anonymous, string } from "../../ast.js"
-import type { Type } from "../../type.js"
+import type { anonymous, string } from "../../ast.ts"
+import type { Type } from "../../type.ts"
 
 export const regexStringNode = (
 	regex: RegExp,

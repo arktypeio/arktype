@@ -1,10 +1,10 @@
 import type { array, ErrorType, merge } from "@ark/util"
-import type { arkKeyOf, getArkKey, toArkKey } from "../keys.js"
-import type { type } from "../keywords/ark.js"
-import type { inferTypeRoot, validateTypeRoot } from "../type.js"
-import type { ArrayType } from "./array.js"
-import type { instantiateType } from "./instantiate.js"
-import type { ValidatorType } from "./validator.js"
+import type { arkKeyOf, getArkKey, toArkKey } from "../keys.ts"
+import type { type } from "../keywords/ark.ts"
+import type { inferTypeRoot, validateTypeRoot } from "../type.ts"
+import type { ArrayType } from "./array.ts"
+import type { instantiateType } from "./instantiate.ts"
+import type { ValidatorType } from "./validator.ts"
 
 /** @ts-ignore cast variance */
 interface Type<out t extends object = object, $ = {}>

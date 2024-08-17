@@ -6,10 +6,10 @@
 // 	propValueOf,
 // 	unionToTuple
 // } from "@ark/util"
-// import type { distillOut, Narrowed } from "./ast.js"
-// import type { inferIntersection } from "./intersect.js"
-// import type { Scope } from "./scope.js"
-// import type { inferTypeRoot, validateTypeRoot } from "./type.js"
+// import type { distillOut, Narrowed } from "./ast.ts"
+// import type { inferIntersection } from "./intersect.ts"
+// import type { Scope } from "./scope.ts"
+// import type { inferTypeRoot, validateTypeRoot } from "./type.ts"
 
 // type MatchParserContext = {
 // 	thens: readonly ((In: unknown) => unknown)[]

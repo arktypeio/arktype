@@ -4,19 +4,19 @@ import {
 	ensureCacheDirs,
 	getConfig,
 	type ParsedAttestConfig
-} from "../config.js"
-import { chainableNoOpProxy } from "../utils.js"
-import { await1K } from "./await1k.js"
-import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.js"
-import { call1K } from "./call1k.js"
+} from "../config.ts"
+import { chainableNoOpProxy } from "../utils.ts"
+import { await1K } from "./await1k.ts"
+import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.ts"
+import { call1K } from "./call1k.ts"
 import {
 	createTimeComparison,
 	createTimeMeasure,
 	type MarkMeasure,
 	type Measure,
 	type TimeUnit
-} from "./measure.js"
-import { createBenchTypeAssertion, type BenchTypeAssertions } from "./type.js"
+} from "./measure.ts"
+import { createBenchTypeAssertion, type BenchTypeAssertions } from "./type.ts"
 
 export type StatName = keyof typeof stats
 

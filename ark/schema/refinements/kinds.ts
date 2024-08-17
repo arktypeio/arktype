@@ -1,12 +1,12 @@
-import type { BaseConstraint } from "../constraint.js"
-import type { BoundKind, nodeImplementationOf } from "../shared/implement.js"
-import { After } from "./after.js"
-import { Before } from "./before.js"
-import { ExactLength } from "./exactLength.js"
-import { Max } from "./max.js"
-import { MaxLength } from "./maxLength.js"
-import { Min } from "./min.js"
-import { MinLength } from "./minLength.js"
+import type { BaseConstraint } from "../constraint.ts"
+import type { BoundKind, nodeImplementationOf } from "../shared/implement.ts"
+import { After } from "./after.ts"
+import { Before } from "./before.ts"
+import { ExactLength } from "./exactLength.ts"
+import { Max } from "./max.ts"
+import { MaxLength } from "./maxLength.ts"
+import { Min } from "./min.ts"
+import { MinLength } from "./minLength.ts"
 
 export interface BoundDeclarations {
 	min: Min.Declaration

@@ -15,21 +15,21 @@ import type {
 	BaseErrorContext,
 	BaseNormalizedSchema,
 	declareNode
-} from "../shared/declare.js"
-import { Disjoint } from "../shared/disjoint.js"
+} from "../shared/declare.ts"
+import { Disjoint } from "../shared/disjoint.ts"
 import {
 	defaultValueSerializer,
 	implementNode,
 	type nodeImplementationOf
-} from "../shared/implement.js"
+} from "../shared/implement.ts"
 import {
 	writeUnsupportedJsonSchemaTypeMessage,
 	type JsonSchema
-} from "../shared/jsonSchema.js"
-import { $ark } from "../shared/registry.js"
-import type { TraverseAllows } from "../shared/traversal.js"
-import { InternalBasis } from "./basis.js"
-import type { Domain } from "./domain.js"
+} from "../shared/jsonSchema.ts"
+import { $ark } from "../shared/registry.ts"
+import type { TraverseAllows } from "../shared/traversal.ts"
+import { InternalBasis } from "./basis.ts"
+import type { Domain } from "./domain.ts"
 
 export declare namespace Proto {
 	export type Reference = Constructor | BuiltinObjectKind

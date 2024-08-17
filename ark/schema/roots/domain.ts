@@ -11,18 +11,18 @@ import type {
 	BaseErrorContext,
 	BaseNormalizedSchema,
 	declareNode
-} from "../shared/declare.js"
-import { Disjoint } from "../shared/disjoint.js"
+} from "../shared/declare.ts"
+import { Disjoint } from "../shared/disjoint.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
-} from "../shared/implement.js"
+} from "../shared/implement.ts"
 import {
 	writeUnsupportedJsonSchemaTypeMessage,
 	type JsonSchema
-} from "../shared/jsonSchema.js"
-import type { TraverseAllows } from "../shared/traversal.js"
-import { InternalBasis } from "./basis.js"
+} from "../shared/jsonSchema.ts"
+import type { TraverseAllows } from "../shared/traversal.ts"
+import { InternalBasis } from "./basis.ts"
 
 export type Domain = _Domain
 

@@ -1,7 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { rootNode } from "@ark/schema"
-import { boundKindPairsByLower } from "@ark/schema/internal/refinements/range.js"
-import { Disjoint } from "@ark/schema/internal/shared/disjoint.js"
+import { Disjoint, boundKindPairsByLower, rootNode } from "@ark/schema"
 import { entriesOf, flatMorph } from "@ark/util"
 
 const numericCases = {

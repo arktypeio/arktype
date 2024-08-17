@@ -1,22 +1,22 @@
 import type { ArkErrors } from "@ark/schema"
 import type { inferred } from "@ark/util"
-import type { GenericHktParser } from "../generic.js"
-import type { Module } from "../module.js"
-import { scope, type Scope } from "../scope.js"
+import type { GenericHktParser } from "../generic.ts"
+import type { Module } from "../module.ts"
+import { scope, type Scope } from "../scope.ts"
 import type {
 	DeclarationParser,
 	DefinitionParser,
 	TypeParser
-} from "../type.js"
-import { arkBuiltin } from "./builtin.js"
-import { arkFormat } from "./format.js"
-import { arkJs } from "./js.js"
-import { arkNumber } from "./number.js"
-import { arkParse } from "./parse.js"
-import { arkPlatform } from "./platform.js"
-import { arkString } from "./string.js"
-import { arkTs } from "./ts.js"
-import { arkTypedArray } from "./typedArray.js"
+} from "../type.ts"
+import { arkBuiltin } from "./builtin.ts"
+import { arkFormat } from "./format.ts"
+import { arkJs } from "./js.ts"
+import { arkNumber } from "./number.ts"
+import { arkParse } from "./parse.ts"
+import { arkPlatform } from "./platform.ts"
+import { arkString } from "./string.ts"
+import { arkTs } from "./ts.ts"
+import { arkTypedArray } from "./typedArray.ts"
 
 export interface Ark
 	extends Omit<Ark.keywords, keyof Ark.Wrapped>,

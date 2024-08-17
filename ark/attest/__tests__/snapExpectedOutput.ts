@@ -1,5 +1,5 @@
 import { attest, cleanup, setup } from "@ark/attest"
-import type { makeComplexType } from "./utils.js"
+import type { makeComplexType } from "./utils.ts"
 
 setup({ typeToStringFormat: { useTabs: true } })
 

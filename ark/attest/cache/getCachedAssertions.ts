@@ -1,14 +1,14 @@
 import { readJson, type LinePosition, type SourcePosition } from "@ark/fs"
 import { existsSync, readdirSync } from "node:fs"
 import { join } from "node:path"
-import { getConfig } from "../config.js"
-import { getFileKey } from "../utils.js"
+import { getConfig } from "../config.ts"
+import { getFileKey } from "../utils.ts"
 import type {
 	AssertionsByFile,
 	LinePositionRange,
 	TypeAssertionData,
 	TypeAssertionKind
-} from "./writeAssertionCache.js"
+} from "./writeAssertionCache.ts"
 
 export type VersionedAssertionsByFile = [
 	tsVersion: string,
@@ -28,7 +28,10 @@ export const getCachedAssertionEntries = (): VersionedAssertionsByFile[] => {
 		const benchAssertions: AssertionsByFile = {}
 
 		assertionEntries = assertionFiles.map(file => {
-			const data = readJson(join(config.assertionCacheDir, file))
+			const data = readJson(join(config.assertionCacheDir, file)) as Record<
+				string,
+				TypeAssertionData[]
+			>
 			for (const fileName of Object.keys(data)) {
 				const relationshipAssertionData = data[fileName].filter(
 					(entry: TypeAssertionData) => "args" in entry

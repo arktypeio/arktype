@@ -217,7 +217,7 @@ const getLocationFromError = (
  * 	"line": "1",
  * 	"char": "12",
  * 	"method": "Object.<anonymous>",
- * 	"file": "/Users/balupton/some-project/calling-file.js"
+ * 	"file": "/Users/balupton/some-project/calling-file.ts"
  * }
  * ```
  */

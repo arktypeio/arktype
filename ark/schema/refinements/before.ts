@@ -1,17 +1,17 @@
 import { describeCollapsibleDate, throwParseError } from "@ark/util"
-import type { BaseRoot } from "../roots/root.js"
-import type { BaseErrorContext, declareNode } from "../shared/declare.js"
-import { Disjoint } from "../shared/disjoint.js"
+import type { BaseRoot } from "../roots/root.ts"
+import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
+import { Disjoint } from "../shared/disjoint.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
-} from "../shared/implement.js"
+} from "../shared/implement.ts"
 import {
 	writeUnsupportedJsonSchemaTypeMessage,
 	type JsonSchema
-} from "../shared/jsonSchema.js"
-import { $ark } from "../shared/registry.js"
-import type { TraverseAllows } from "../shared/traversal.js"
+} from "../shared/jsonSchema.ts"
+import { $ark } from "../shared/registry.ts"
+import type { TraverseAllows } from "../shared/traversal.ts"
 import {
 	BaseRange,
 	createDateSchemaNormalizer,
@@ -20,7 +20,7 @@ import {
 	type LimitSchemaValue,
 	type UnknownExpandedRangeSchema,
 	type UnknownNormalizedRangeSchema
-} from "./range.js"
+} from "./range.ts"
 
 export declare namespace Before {
 	export interface Inner extends BaseRangeInner {

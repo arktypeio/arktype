@@ -4,13 +4,13 @@ import {
 	type anyOrNever,
 	type inferred
 } from "@ark/util"
-import type { BaseRoot } from "./roots/root.js"
+import type { BaseRoot } from "./roots/root.ts"
 import type {
 	BaseScope,
 	InternalResolution,
 	InternalResolutions
-} from "./scope.js"
-import { arkKind, hasArkKind } from "./shared/utils.js"
+} from "./scope.ts"
+import { arkKind, hasArkKind } from "./shared/utils.ts"
 
 export type PreparsedNodeResolution = {
 	[arkKind]: "generic" | "module"

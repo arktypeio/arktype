@@ -1,13 +1,13 @@
 import { isKeyOf, type WhiteSpaceToken } from "@ark/util"
-import type { DynamicStateWithRoot } from "../../reduce/dynamic.js"
-import type { StaticState, state } from "../../reduce/static.js"
-import { Scanner } from "../scanner.js"
+import type { DynamicStateWithRoot } from "../../reduce/dynamic.ts"
+import type { StaticState, state } from "../../reduce/static.ts"
+import { Scanner } from "../scanner.ts"
 import {
 	comparatorStartChars,
 	parseBound,
 	type ComparatorStartChar
-} from "./bounds.js"
-import { parseDivisor } from "./divisor.js"
+} from "./bounds.ts"
+import { parseDivisor } from "./divisor.ts"
 
 export const parseOperator = (s: DynamicStateWithRoot): void => {
 	const lookahead = s.scanner.shift()

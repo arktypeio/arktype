@@ -27,13 +27,13 @@ import type {
 	inferMorphOut,
 	inferPredicate,
 	Out
-} from "../ast.js"
-import type { inferIntersection } from "../intersect.js"
-import type { ParseContext } from "../scope.js"
-import type { inferDefinition, validateDefinition } from "./definition.js"
-import type { InfixOperator, PostfixExpression } from "./semantic/infer.js"
-import { writeMissingRightOperandMessage } from "./string/shift/operand/unenclosed.js"
-import type { BaseCompletions } from "./string/string.js"
+} from "../ast.ts"
+import type { inferIntersection } from "../intersect.ts"
+import type { ParseContext } from "../scope.ts"
+import type { inferDefinition, validateDefinition } from "./definition.ts"
+import type { InfixOperator, PostfixExpression } from "./semantic/infer.ts"
+import { writeMissingRightOperandMessage } from "./string/shift/operand/unenclosed.ts"
+import type { BaseCompletions } from "./string/string.ts"
 
 export const parseTuple = (def: array, ctx: ParseContext): BaseRoot =>
 	maybeParseTupleExpression(def, ctx) ?? parseTupleLiteral(def, ctx)

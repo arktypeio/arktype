@@ -5,10 +5,10 @@ import {
 	isDotAccessible,
 	serializePrimitive
 } from "@ark/util"
-import type { BaseNode } from "../node.js"
-import type { Discriminant } from "../roots/union.js"
-import { registeredReference } from "./registry.js"
-import type { TraversalKind } from "./traversal.js"
+import type { BaseNode } from "../node.ts"
+import type { Discriminant } from "../roots/union.ts"
+import { registeredReference } from "./registry.ts"
+import type { TraversalKind } from "./traversal.ts"
 
 export type CoercibleValue = string | number | boolean | null | undefined
 

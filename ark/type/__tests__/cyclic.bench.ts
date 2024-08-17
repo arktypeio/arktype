@@ -1,6 +1,6 @@
 import { bench } from "@ark/attest"
 import { scope, type } from "arktype"
-import { cyclic10, cyclic100, cyclic500 } from "./generated/cyclic.js"
+import { cyclic10, cyclic100, cyclic500 } from "./generated/cyclic.ts"
 
 bench.baseline(() => type("never"))
 

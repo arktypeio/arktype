@@ -1,8 +1,8 @@
-import type { array } from "./arrays.js"
-import type { domainOf } from "./domain.js"
-import type { andPreserveUnknown } from "./generics.js"
-import type { Hkt } from "./hkt.js"
-import type { propValueOf, requiredKeyOf } from "./records.js"
+import type { array } from "./arrays.ts"
+import type { domainOf } from "./domain.ts"
+import type { andPreserveUnknown } from "./generics.ts"
+import type { Hkt } from "./hkt.ts"
+import type { propValueOf, requiredKeyOf } from "./records.ts"
 
 export interface AndPreserveUnknown extends Hkt<[unknown, unknown]> {
 	body: andPreserveUnknown<this[0], this[1]>

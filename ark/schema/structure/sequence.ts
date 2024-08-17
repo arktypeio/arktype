@@ -7,8 +7,8 @@ import {
 	type mutable,
 	type satisfy
 } from "@ark/util"
-import { BaseConstraint } from "../constraint.js"
-import type { RootSchema, mutableInnerOfKind } from "../kinds.js"
+import { BaseConstraint } from "../constraint.ts"
+import type { RootSchema, mutableInnerOfKind } from "../kinds.ts"
 import {
 	appendUniqueFlatRefs,
 	flatRef,
@@ -16,28 +16,28 @@ import {
 	type DeepNodeTransformContext,
 	type DeepNodeTransformation,
 	type FlatRef
-} from "../node.js"
-import type { ExactLengthNode } from "../refinements/exactLength.js"
-import type { MaxLengthNode } from "../refinements/maxLength.js"
-import type { MinLengthNode } from "../refinements/minLength.js"
-import type { BaseRoot } from "../roots/root.js"
-import type { NodeCompiler } from "../shared/compile.js"
-import type { BaseNormalizedSchema, declareNode } from "../shared/declare.js"
-import { Disjoint } from "../shared/disjoint.js"
+} from "../node.ts"
+import type { ExactLengthNode } from "../refinements/exactLength.ts"
+import type { MaxLengthNode } from "../refinements/maxLength.ts"
+import type { MinLengthNode } from "../refinements/minLength.ts"
+import type { BaseRoot } from "../roots/root.ts"
+import type { NodeCompiler } from "../shared/compile.ts"
+import type { BaseNormalizedSchema, declareNode } from "../shared/declare.ts"
+import { Disjoint } from "../shared/disjoint.ts"
 import {
 	implementNode,
 	type IntersectionContext,
 	type NodeKeyImplementation,
 	type RootKind,
 	type nodeImplementationOf
-} from "../shared/implement.js"
-import { intersectNodes } from "../shared/intersections.js"
+} from "../shared/implement.ts"
+import { intersectNodes } from "../shared/intersections.ts"
 import {
 	writeUnsupportedJsonSchemaTypeMessage,
 	type JsonSchema
-} from "../shared/jsonSchema.js"
-import { $ark } from "../shared/registry.js"
-import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
+} from "../shared/jsonSchema.ts"
+import { $ark } from "../shared/registry.ts"
+import type { TraverseAllows, TraverseApply } from "../shared/traversal.ts"
 
 export declare namespace Sequence {
 	export interface NormalizedSchema extends BaseNormalizedSchema {

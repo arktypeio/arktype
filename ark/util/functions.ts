@@ -1,5 +1,5 @@
-import { throwInternalError } from "./errors.js"
-import { unset } from "./records.js"
+import { throwInternalError } from "./errors.ts"
+import { unset } from "./records.ts"
 
 export type Fn<
 	in args extends readonly never[] = readonly never[],

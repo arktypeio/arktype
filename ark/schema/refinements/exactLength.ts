@@ -1,22 +1,22 @@
-import { InternalPrimitiveConstraint } from "../constraint.js"
-import type { BaseRoot } from "../roots/root.js"
+import { InternalPrimitiveConstraint } from "../constraint.ts"
+import type { BaseRoot } from "../roots/root.ts"
 import type {
 	BaseErrorContext,
 	BaseNormalizedSchema,
 	declareNode
-} from "../shared/declare.js"
-import { Disjoint } from "../shared/disjoint.js"
+} from "../shared/declare.ts"
+import { Disjoint } from "../shared/disjoint.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
-} from "../shared/implement.js"
+} from "../shared/implement.ts"
 import {
 	throwInternalJsonSchemaOperandError,
 	type JsonSchema
-} from "../shared/jsonSchema.js"
-import { $ark } from "../shared/registry.js"
-import type { TraverseAllows } from "../shared/traversal.js"
-import { createLengthRuleParser, type LengthBoundableData } from "./range.js"
+} from "../shared/jsonSchema.ts"
+import { $ark } from "../shared/registry.ts"
+import type { TraverseAllows } from "../shared/traversal.ts"
+import { createLengthRuleParser, type LengthBoundableData } from "./range.ts"
 
 export declare namespace ExactLength {
 	export interface Inner {
