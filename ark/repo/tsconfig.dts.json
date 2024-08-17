@@ -1,14 +1,10 @@
 {
 	"extends": "../../tsconfig.json",
 	"compilerOptions": {
-		"module": "CommonJS",
-		"moduleResolution": "Node",
-		"verbatimModuleSyntax": false,
 		"rootDir": ".",
 		"outDir": "out",
 		"noEmit": false,
-		"declaration": false,
-		"noCheck": true,
+		"emitDeclarationOnly": true,
 		"paths": {}
 	},
 	"exclude": ["out", "__tests__"]

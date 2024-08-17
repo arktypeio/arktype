@@ -18,16 +18,17 @@ rmRf(outDir)
 try {
 	if (isCjs) {
 		unlinkSync("tsconfig.build.json")
-		symlinkSync(`../repo/tsconfig.cjs.json`, "tsconfig.build.json")
+		symlinkSync(`../repo/tsconfig.cjs.json`, "tsconfig.js.json")
 	}
-	shell("pnpm tsc --project tsconfig.build.json")
-	walkPaths(outDir, { include: path => path.endsWith("js") }).forEach(jsPath =>
+	shell("pnpm tsc --project tsconfig.js.json")
+	walkPaths(outDir).forEach(jsPath =>
 		rewriteFile(jsPath, src => src.replaceAll('.ts"', '.ts"'))
 	)
+	shell("pnpm tsc --project tsconfig.dts.json")
 	if (isCjs) writeJson(join(outDir, "package.json"), { type: "commonjs" })
 } finally {
 	if (isCjs) {
 		unlinkSync("tsconfig.build.json")
-		symlinkSync("../repo/tsconfig.esm.json", "tsconfig.build.json")
+		symlinkSync("../repo/tsconfig.esm.json", "tsconfig.js.json")
 	}
 }

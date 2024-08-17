@@ -4,6 +4,8 @@
 		"rootDir": ".",
 		"outDir": "out",
 		"noEmit": false,
+		"declaration": false,
+		"noCheck": true,
 		"paths": {}
 	},
 	"exclude": ["out", "__tests__"]
