@@ -70,7 +70,8 @@
 		],
 		"ignore": "**/node_modules/**/*",
 		"node-option": [
-			"import=tsx"
+			"import=tsx",
+			"conditions=ark-ts"
 		],
 		"require": "./ark/repo/mocha.globalSetup.ts"
 	},

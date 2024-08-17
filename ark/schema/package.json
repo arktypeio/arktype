@@ -16,8 +16,14 @@
 	"main": "./out/index.js",
 	"types": "./out/index.d.ts",
 	"exports": {
-		".": "./out/index.js",
-		"./config": "./out/config.js"
+		".": {
+			"ark-ts": "./index.ts",
+			"default": "./out/index.js"
+		},
+		"./config": {
+			"ark-ts": "./config.ts",
+			"default": "./out/config.js"
+		}
 	},
 	"files": [
 		"out"
