@@ -94,18 +94,20 @@ type intersectSequences<
 		:	[...acc, ...Hkt.apply<operation, [lHead, rHead]>[], ...postfix]
 	:	never
 
-export type isDisjoint<l, r> =
-	l & r extends never ? true
-	: domainOf<l> & domainOf<r> extends never ? true
+export type isDisjoint<l, r> = overlaps<l, r> extends true ? false : true
+
+export type overlaps<l, r> =
+	l & r extends never ? false
+	: domainOf<l> & domainOf<r> extends never ? false
 	: [l, r] extends [object, object] ?
-		true extends (
+		false extends (
 			propValueOf<{
 				[k in Extract<
 					keyof l & keyof r,
 					requiredKeyOf<l> | requiredKeyOf<r>
-				>]: isDisjoint<l[k], r[k]>
+				>]: overlaps<l[k], r[k]>
 			}>
 		) ?
-			true
-		:	false
-	:	false
+			false
+		:	true
+	:	true
