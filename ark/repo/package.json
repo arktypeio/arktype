@@ -11,5 +11,8 @@
 	},
 	"scripts": {
 		"build": "echo No build required!"
+	},
+	"bin": {
+		"ts": "./ts.sh"
 	}
 }
