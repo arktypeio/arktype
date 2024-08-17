@@ -16,7 +16,7 @@
 		"@astrojs/react": "3.6.2",
 		"@astrojs/starlight": "0.26.1",
 		"@shikijs/transformers": "1.13.0",
-		"@shikijs/twoslash": "1.13.1",
+		"@shikijs/twoslash": "1.13.0",
 		"arkdark": "workspace:*",
 		"arktype": "workspace:*",
 		"astro": "4.14.2",
