@@ -28,16 +28,7 @@ const normalize = rootNode({
 	morphs: (s: string) => s.normalize()
 })
 
-export type formattingExports = {
-	trim: (In: string) => Out<string>
-	uppercase: (In: string) => Out<string>
-	lowercase: (In: string) => Out<string>
-	capitalize: (In: string) => Out<string>
-	normalize: (In: string) => Out<string>
-}
-export type formattingModule = Module<formattingExports>
-
-export const formattingModule: formattingModule = scope(
+const submodule: Module<arkFormat.submodule> = scope(
 	{
 		trim,
 		uppercase,
@@ -49,3 +40,17 @@ export const formattingModule: formattingModule = scope(
 		prereducedAliases: true
 	}
 ).export()
+
+export const arkFormat = {
+	submodule
+}
+
+export declare namespace arkFormat {
+	export type submodule = {
+		trim: (In: string) => Out<string>
+		uppercase: (In: string) => Out<string>
+		lowercase: (In: string) => Out<string>
+		capitalize: (In: string) => Out<string>
+		normalize: (In: string) => Out<string>
+	}
+}

@@ -8,20 +8,16 @@ import type {
 	DefinitionParser,
 	TypeParser
 } from "../type.js"
-import { arkGenericsModule, type arkGenericsExports } from "./arkGenerics.js"
-import { formattingModule, type formattingExports } from "./format.js"
-import { internalModule, type internalExports } from "./internal.js"
+import { arkBuiltin } from "./builtin.js"
+import { arkFormat } from "./format.js"
 import { arkJs } from "./js.js"
 import { arkNumber } from "./number.js"
 import { arkParse } from "./parse.js"
-import { arkPlatform } from "./platformObjects.js"
+import { arkPlatform } from "./platform.js"
 import { arkString } from "./string.js"
-import { tsGenericsModule, type tsGenericsExports } from "./tsGenerics.js"
-import { arkTs } from "./tsKeywords.js"
+import { arkTs } from "./ts.js"
 import { arkTypedArray } from "./typedArray.js"
 
-// this type is redundant with the inferred definition of ark but allow types
-// derived from the default scope to be calulated more efficiently
 export interface Ark extends Omit<Ark.infer, keyof Ark.Wrapped>, Ark.Wrapped {}
 
 export namespace Ark {
@@ -30,12 +26,10 @@ export namespace Ark {
 			arkJs.keywords,
 			arkPlatform.keywords,
 			arkString.keywords,
-			tsGenericsExports,
-			arkGenericsExports,
-			internalExports {
+			arkBuiltin.keywords {
 		TypedArray: Submodule<arkTypedArray.submodule>
 		parse: Submodule<arkParse.submodule>
-		format: Submodule<formattingExports>
+		format: Submodule<arkFormat.submodule>
 	}
 
 	export interface Wrapped {
@@ -51,14 +45,12 @@ export const ambient: Scope<Ark> = scope(
 		...arkPlatform.keywords,
 		...arkString.keywords,
 		...arkNumber.keywords,
-		...internalModule,
-		...tsGenericsModule,
-		...arkGenericsModule,
+		...arkBuiltin.keywords,
 		string: arkString.submodule,
 		number: arkNumber.submodule,
 		TypedArray: arkTypedArray.submodule,
 		parse: arkParse.submodule,
-		format: formattingModule
+		format: arkFormat.submodule
 	},
 	{ prereducedAliases: true, ambient: true }
 ) as never

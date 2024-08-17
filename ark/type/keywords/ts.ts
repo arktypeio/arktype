@@ -1,14 +1,13 @@
 import { genericNode, intrinsic } from "@ark/schema"
 import { Hkt, type Key, type omit, type pick, type show } from "@ark/util"
 import type { Module } from "../module.js"
-import { scope, type inferScope } from "../scope.js"
-import { internalModule } from "./internal.js"
+import { scope } from "../scope.js"
 
 class RecordHkt extends Hkt<[Key, unknown]> {
 	declare body: Record<this[0], this[1]>
 }
 
-const Record = genericNode(["K", internalModule.key], "V")(
+const Record = genericNode(["K", intrinsic.key], "V")(
 	args => ({
 		domain: "object",
 		index: {
@@ -23,7 +22,7 @@ class PickHkt extends Hkt<[object, Key]> {
 	declare body: pick<this[0], this[1] & keyof this[0]>
 }
 
-const Pick = genericNode(["T", intrinsic.object], ["K", internalModule.key])(
+const Pick = genericNode(["T", intrinsic.object], ["K", intrinsic.key])(
 	args => args.T.pick(args.K as never),
 	PickHkt
 )
@@ -32,7 +31,7 @@ class OmitHkt extends Hkt<[object, Key]> {
 	declare body: omit<this[0], this[1] & keyof this[0]>
 }
 
-const Omit = genericNode(["T", intrinsic.object], ["K", internalModule.key])(
+const Omit = genericNode(["T", intrinsic.object], ["K", intrinsic.key])(
 	args => args.T.omit(args.K as never),
 	OmitHkt
 )
@@ -73,22 +72,57 @@ const Extract = genericNode("T", "U")(
 	ExtractHkt
 )
 
-const tsGenericsExports = {
-	Record,
-	Pick,
-	Omit,
-	Exclude,
-	Extract,
-	Partial,
-	Required
+const keywords: Module<arkTs.keywords> = scope(
+	{
+		any: intrinsic.unknown,
+		bigint: intrinsic.bigint,
+		boolean: intrinsic.boolean,
+		false: intrinsic.false,
+		never: intrinsic.never,
+		null: intrinsic.null,
+		number: intrinsic.number,
+		object: intrinsic.object,
+		string: intrinsic.string,
+		symbol: intrinsic.symbol,
+		true: intrinsic.true,
+		unknown: intrinsic.unknown,
+		undefined: intrinsic.undefined,
+		Record,
+		Pick,
+		Omit,
+		Exclude,
+		Extract,
+		Partial,
+		Required
+	},
+	{ prereducedAliases: true }
+).export()
+
+export const arkTs = {
+	keywords
 }
 
-export type tsGenericsExports = inferScope<typeof tsGenericsExports>
-
-export type tsGenericsModule = Module<tsGenericsExports>
-
-const $ = scope(tsGenericsExports, {
-	prereducedAliases: true
-})
-
-export const tsGenericsModule: tsGenericsModule = $.export()
+export declare namespace arkTs {
+	export interface keywords {
+		any: any
+		bigint: bigint
+		boolean: boolean
+		false: false
+		never: never
+		null: null
+		number: number
+		object: object
+		string: string
+		symbol: symbol
+		true: true
+		unknown: unknown
+		undefined: undefined
+		Record: typeof Record.t
+		Pick: typeof Pick.t
+		Omit: typeof Omit.t
+		Exclude: typeof Exclude.t
+		Extract: typeof Extract.t
+		Partial: typeof Partial.t
+		Required: typeof Required.t
+	}
+}
