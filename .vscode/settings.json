@@ -22,7 +22,7 @@
 	"typescript.tsserver.experimental.enableProjectDiagnostics": true,
 	"typescript.tsdk": "./node_modules/typescript/lib",
 	// IF YOU UPDATE THE MOCHA CONFIG HERE, PLEASE ALSO UPDATE package.json/mocha AND ark/repo/mocha.jsonc
-	"mochaExplorer.nodeArgv": ["--import", "tsx", "--conditions", "ark-ts"],
+	"mochaExplorer.nodeArgv": ["--conditions", "ark-ts", "--import", "tsx"],
 	// ignore attest since it requires type information
 	"mochaExplorer.ignore": ["ark/attest/**/*"],
 	"mochaExplorer.require": "ark/repo/mocha.globalSetup.ts",
