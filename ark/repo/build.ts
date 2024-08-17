@@ -1,4 +1,4 @@
-import { symlinkSync, unlinkSync } from "fs"
+import { symlinkSync } from "fs"
 import { join } from "path"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import {
@@ -10,25 +10,23 @@ import {
 	writeJson
 } from "../fs/index.ts"
 
-const isCjs = process.argv.includes("--cjs") || process.env.ARKTYPE_CJS
+const buildKind =
+	process.argv.includes("--cjs") || process.env.ARKTYPE_CJS ? "cjs" : "esm"
 const outDir = fromCwd("out")
 
 rmRf(outDir)
+rmRf("tsconfig.build.json")
 
 try {
-	if (isCjs) {
-		unlinkSync("tsconfig.build.json")
-		symlinkSync(`../repo/tsconfig.cjs.json`, "tsconfig.js.json")
-	}
-	shell("pnpm tsc --project tsconfig.js.json")
+	symlinkSync(`../repo/tsconfig.${buildKind}.json`, "tsconfig.build.json")
+	shell("pnpm tsc --project tsconfig.build.json")
 	walkPaths(outDir).forEach(jsPath =>
 		rewriteFile(jsPath, src => src.replaceAll('.ts"', '.ts"'))
 	)
+	symlinkSync(`../repo/tsconfig.dts.json`, "tsconfig.build.json")
 	shell("pnpm tsc --project tsconfig.dts.json")
-	if (isCjs) writeJson(join(outDir, "package.json"), { type: "commonjs" })
+	if (buildKind === "cjs")
+		writeJson(join(outDir, "package.json"), { type: "commonjs" })
 } finally {
-	if (isCjs) {
-		unlinkSync("tsconfig.build.json")
-		symlinkSync("../repo/tsconfig.esm.json", "tsconfig.js.json")
-	}
+	rmRf("tsconfig.build.json")
 }
