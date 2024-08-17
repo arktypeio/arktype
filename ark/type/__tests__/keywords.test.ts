@@ -11,7 +11,7 @@ import { ark, scope, type } from "arktype"
 import type { Out, string, To } from "arktype/internal/ast.js"
 
 contextualize(() => {
-	describe("jsObjects", () => {
+	describe("js", () => {
 		it("Function", () => {
 			// should not be treated as a morph
 			attest<Function>(type("Function").infer)
@@ -23,72 +23,143 @@ contextualize(() => {
 		})
 	})
 
-	describe("tsKeywords", () => {
-		it("string strings", () => {
-			/**
-			 * 	In honor of @ark-expect-beta aka log(n):
-			 * 		- Zirco author https://github.com/zirco-lang/zrc
-			 * 		- Shameless Rust stan
-			 * 		- Occasional user of ArkType libraries
-			 * 		- Frequent user of ArkType Discord
-			 * 		- Universally renowned two-finger speed typist
-			 */
-			const string = type("string")
-			attest<string>(string.infer)
-			attest(string("string")).snap("string")
+	describe("builtin", () => {
+		describe("liftArray", () => {
+			it("parsed", () => {
+				const liftNumberArray = type("liftArray<number>")
+
+				attest<(In: number | number[]) => Out<number[]>>(liftNumberArray.t)
+
+				attest(liftNumberArray(5)).equals([5])
+				attest(liftNumberArray([5])).equals([5])
+				attest(liftNumberArray("five").toString()).snap(
+					"must be a number or an array (was string)"
+				)
+				attest(liftNumberArray(["five"]).toString()).snap(
+					"must be a number (was object) or [0] must be a number (was string)"
+				)
+			})
+
+			it("invoked", () => {
+				ark.liftArray({ data: "number" })
+			})
 		})
 
-		it("any", () => {
-			const any = type("any")
-			// equivalent to unknown at runtime
-			attest(any.json).equals(type("unknown").json)
-			// inferred as any
-			attest<any>(any.infer)
-		})
+		describe("merged", () => {
+			it("parsed", () => {
+				const types = scope({
+					base: {
+						"foo?": "0",
+						"bar?": "0"
+					},
+					merged: {
+						bar: "1",
+						"baz?": "1"
+					},
+					actual: "merge<base, merged>",
+					expected: {
+						"foo?": "0",
+						bar: "1",
+						"baz?": "1"
+					}
+				}).export()
 
-		it("any in expression", () => {
-			const t = type("string&any")
-			attest<any>(t.infer)
+				attest<typeof types.expected.t>(types.actual.t)
+				attest(types.actual.expression).equals(types.expected.expression)
+			})
 
-			attest(t.json).equals(intrinsic.string.json)
-		})
+			it("invoked", () => {
+				const s = Symbol()
+				const t = ark.merge(
+					{
+						"[string]": "number | bigint",
+						foo: "0",
+						[s]: "true"
+					},
+					{
+						"[string]": "bigint",
+						"foo?": "1n"
+					}
+				)
 
-		it("boolean", () => {
-			const boolean = type("boolean")
-			attest<boolean>(boolean.infer)
-			const expected = rootNode([{ unit: false }, { unit: true }])
-			// should be simplified to simple checks for true and false literals
-			attest(boolean.json).equals(expected.json)
-		})
+				const expected = type({
+					"[string]": "bigint",
+					"foo?": "1n",
+					[s]: "true"
+				})
 
-		it("never", () => {
-			const never = type("never")
-			attest<never>(never.infer)
-			const expected = rootNode([])
-			// should be equivalent to a zero-branch union
-			attest(never.json).equals(expected.json)
-		})
+				attest<typeof expected.t>(t.t)
+				attest(t.expression).equals(expected.expression)
+			})
 
-		it("never in union", () => {
-			const t = type("string|never")
-			attest<string>(t.infer)
-			attest(t.json).equals(intrinsic.string.json)
-		})
+			it("chained", () => {
+				const t = type({
+					"[string]": "number",
+					"bar?": "0",
+					foo: "0"
+				}).merge({
+					"foo?": "1",
+					baz: "1"
+				})
 
-		it("unknown", () => {
-			const expected = rootNode({})
-			// should be equivalent to an unconstrained predicate
-			attest(type("unknown").json).equals(expected.json)
+				const expected = type({
+					"[string]": "number",
+					"bar?": "0",
+					"foo?": "1",
+					baz: "1"
+				})
+
+				attest<typeof expected.t>(t.t)
+				attest(t.expression).equals(expected.expression)
+			})
+
+			it("non-object operand", () => {
+				attest(() =>
+					type({
+						foo: "0"
+						// @ts-expect-error
+					}).merge("string")
+				)
+					.throws(writeNonStructuralOperandMessage("merge", "string"))
+					.type.errors(
+						`ErrorType<"Merged type must be an object", [actual: string]>`
+					)
+			})
 		})
 	})
 
-	describe("validation", () => {
+	describe("number", () => {
 		it("integer", () => {
 			const integer = type("integer")
 			attest(integer(123)).equals(123)
 			attest(integer("123").toString()).snap("must be a number (was string)")
 			attest(integer(12.12).toString()).snap("must be an integer (was 12.12)")
 		})
+
+		it("unix", () => {
+			const unixTimestamp = type("number.epoch")
+
+			// valid Unix timestamp
+			attest(unixTimestamp(1621530000)).equals(1621530000)
+			attest(unixTimestamp(8640000000000000)).equals(8640000000000000)
+			attest(unixTimestamp(-8640000000000000)).equals(-8640000000000000)
+			// invalid Unix timestamp
+			attest(unixTimestamp("foo").toString()).equals(
+				"must be a number representing a Unix timestamp (was string)"
+			)
+			attest(unixTimestamp(1.5).toString()).equals(
+				"must be an integer representing a Unix timestamp (was 1.5)"
+			)
+			attest(unixTimestamp(-8640000000000001).toString()).equals(
+				"must be a Unix timestamp after -8640000000000000 (was -8640000000000001)"
+			)
+			attest(unixTimestamp(8640000000000001).toString()).equals(
+				"must be a Unix timestamp before 8640000000000000 (was 8640000000000001)"
+			)
+		})
+	})
+
+	describe("string", () => {
 		it("alpha", () => {
 			const alpha = type("alpha")
 			attest(alpha("user")).snap("user")
@@ -302,7 +373,64 @@ tags[2] must be a string (was object)`)
 		})
 	})
 
-	describe("generics", () => {
+	describe("ts", () => {
+		it("string strings", () => {
+			/**
+			 * 	In honor of @ark-expect-beta aka log(n):
+			 * 		- Zirco author https://github.com/zirco-lang/zrc
+			 * 		- Shameless Rust stan
+			 * 		- Occasional user of ArkType libraries
+			 * 		- Frequent user of ArkType Discord
+			 * 		- Universally renowned two-finger speed typist
+			 */
+			const string = type("string")
+			attest<string>(string.infer)
+			attest(string("string")).snap("string")
+		})
+
+		it("any", () => {
+			const any = type("any")
+			// equivalent to unknown at runtime
+			attest(any.json).equals(type("unknown").json)
+			// inferred as any
+			attest<any>(any.infer)
+		})
+
+		it("any in expression", () => {
+			const t = type("string&any")
+			attest<any>(t.infer)
+
+			attest(t.json).equals(intrinsic.string.json)
+		})
+
+		it("boolean", () => {
+			const boolean = type("boolean")
+			attest<boolean>(boolean.infer)
+			const expected = rootNode([{ unit: false }, { unit: true }])
+			// should be simplified to simple checks for true and false literals
+			attest(boolean.json).equals(expected.json)
+		})
+
+		it("never", () => {
+			const never = type("never")
+			attest<never>(never.infer)
+			const expected = rootNode([])
+			// should be equivalent to a zero-branch union
+			attest(never.json).equals(expected.json)
+		})
+
+		it("never in union", () => {
+			const t = type("string|never")
+			attest<string>(t.infer)
+			attest(t.json).equals(intrinsic.string.json)
+		})
+
+		it("unknown", () => {
+			const expected = rootNode({})
+			// should be equivalent to an unconstrained predicate
+			attest(type("unknown").json).equals(expected.json)
+		})
+
 		describe("record", () => {
 			it("parsed", () => {
 				const expected = type({ "[string]": "number" })
@@ -558,139 +686,6 @@ tags[2] must be a string (was object)`)
 
 				attest(extracted.expression).equals(expected.expression)
 			})
-		})
-
-		describe("liftArray", () => {
-			it("parsed", () => {
-				const liftNumberArray = type("liftArray<number>")
-
-				attest<(In: number | number[]) => Out<number[]>>(liftNumberArray.t)
-
-				attest(liftNumberArray(5)).equals([5])
-				attest(liftNumberArray([5])).equals([5])
-				attest(liftNumberArray("five").toString()).snap(
-					"must be a number or an array (was string)"
-				)
-				attest(liftNumberArray(["five"]).toString()).snap(
-					"must be a number (was object) or [0] must be a number (was string)"
-				)
-			})
-
-			it("invoked", () => {
-				ark.liftArray({ data: "number" })
-			})
-		})
-
-		describe("merged", () => {
-			it("parsed", () => {
-				const types = scope({
-					base: {
-						"foo?": "0",
-						"bar?": "0"
-					},
-					merged: {
-						bar: "1",
-						"baz?": "1"
-					},
-					actual: "merge<base, merged>",
-					expected: {
-						"foo?": "0",
-						bar: "1",
-						"baz?": "1"
-					}
-				}).export()
-
-				attest<typeof types.expected.t>(types.actual.t)
-				attest(types.actual.expression).equals(types.expected.expression)
-			})
-
-			it("invoked", () => {
-				const s = Symbol()
-				const t = ark.merge(
-					{
-						"[string]": "number | bigint",
-						foo: "0",
-						[s]: "true"
-					},
-					{
-						"[string]": "bigint",
-						"foo?": "1n"
-					}
-				)
-
-				const expected = type({
-					"[string]": "bigint",
-					"foo?": "1n",
-					[s]: "true"
-				})
-
-				attest<typeof expected.t>(t.t)
-				attest(t.expression).equals(expected.expression)
-			})
-
-			it("chained", () => {
-				const t = type({
-					"[string]": "number",
-					"bar?": "0",
-					foo: "0"
-				}).merge({
-					"foo?": "1",
-					baz: "1"
-				})
-
-				const expected = type({
-					"[string]": "number",
-					"bar?": "0",
-					"foo?": "1",
-					baz: "1"
-				})
-
-				attest<typeof expected.t>(t.t)
-				attest(t.expression).equals(expected.expression)
-			})
-
-			it("non-object operand", () => {
-				attest(() =>
-					type({
-						foo: "0"
-						// @ts-expect-error
-					}).merge("string")
-				)
-					.throws(writeNonStructuralOperandMessage("merge", "string"))
-					.type.errors(
-						`ErrorType<"Merged type must be an object", [actual: string]>`
-					)
-			})
-		})
-	})
-
-	describe("string", () => {
-		it("unix", () => {
-			const unixTimestamp = type("string.unix")
-		})
-	})
-
-	describe("number", () => {
-		it("unix", () => {
-			const unixTimestamp = type("number.unix")
-
-			// valid Unix timestamp
-			attest(unixTimestamp(1621530000)).equals(1621530000)
-			attest(unixTimestamp(8640000000000000)).equals(8640000000000000)
-			attest(unixTimestamp(-8640000000000000)).equals(-8640000000000000)
-			// invalid Unix timestamp
-			attest(unixTimestamp("foo").toString()).equals(
-				"must be a number representing a Unix timestamp (was string)"
-			)
-			attest(unixTimestamp(1.5).toString()).equals(
-				"must be an integer representing a Unix timestamp (was 1.5)"
-			)
-			attest(unixTimestamp(-8640000000000001).toString()).equals(
-				"must be a Unix timestamp after -8640000000000000 (was -8640000000000001)"
-			)
-			attest(unixTimestamp(8640000000000001).toString()).equals(
-				"must be a Unix timestamp before 8640000000000000 (was 8640000000000001)"
-			)
 		})
 	})
 })

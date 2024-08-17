@@ -1,4 +1,5 @@
 import { DynamicBase, flatMorph, type anyOrNever } from "@ark/util"
+import type { inferred } from "arktype/internal/ast.js"
 import type { BaseRoot } from "./roots/root.js"
 import type {
 	BaseScope,
@@ -11,7 +12,12 @@ export type PreparsedNodeResolution = {
 	[arkKind]: "generic" | "module"
 }
 
-export class RootModule<exports extends {} = {}> extends DynamicBase<exports> {
+type inferrableIfRooted<exports> = exports &
+	("$root" extends keyof exports ? { [inferred]: exports["$root"] } : {})
+
+export class RootModule<exports extends {} = {}> extends DynamicBase<
+	inferrableIfRooted<exports>
+> {
 	// ensure `[arkKind]` is non-enumerable so it doesn't get spread on import/export
 	get [arkKind](): "module" {
 		return "module"

@@ -125,13 +125,13 @@ type bootstrapAliases<def> = {
 	[k in Exclude<keyof def, GenericDeclaration>]: def[k] extends (
 		PreparsedResolution
 	) ?
-		def[k] extends { t: infer g extends GenericAst } ?
-			g
-		:	def[k]
+		def[k] extends { t: infer g extends GenericAst } ? g
+		: def[k] extends Module<infer $> ? Submodule<$>
+		: def[k]
 	: def[k] extends (() => infer thunkReturn extends PreparsedResolution) ?
-		thunkReturn extends { t: infer g extends GenericAst } ?
-			g
-		:	thunkReturn
+		thunkReturn extends { t: infer g extends GenericAst } ? g
+		: thunkReturn extends Module<infer $> ? Submodule<$>
+		: thunkReturn
 	:	Def<def[k]>
 } & {
 	[k in keyof def & GenericDeclaration as extractGenericName<k>]: GenericAst<
@@ -146,8 +146,7 @@ type inferBootstrapped<$> = {
 		inferDefinition<def, $, {}>
 	: $[name] extends { t: infer g extends GenericAst } ? bindGenericToScope<g, $>
 	: // should be submodule
-	$[name] extends Module<infer exports> ? Submodule<exports>
-	: never
+		$[name]
 } & unknown
 
 export type bindGenericToScope<g extends GenericAst, $> = GenericAst<

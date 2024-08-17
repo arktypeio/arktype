@@ -5,7 +5,7 @@ import {
 	wellFormedNumberMatcher
 } from "@ark/util"
 import type { Out, number } from "../ast.js"
-import type { Module } from "../module.js"
+import type { Module, Submodule } from "../module.js"
 import { scope } from "../scope.js"
 import { tryParseDatePattern } from "./utils/date.js"
 import { regexStringNode } from "./utils/regex.js"
@@ -115,7 +115,7 @@ export const arkParse = {
 }
 
 export declare namespace arkParse {
-	export type submodule = {
+	export type $ = {
 		url: (In: string) => Out<URL>
 		number: (In: string) => Out<number>
 		integer: (In: string) => Out<number.divisibleBy<1>>
@@ -123,4 +123,6 @@ export declare namespace arkParse {
 		json: (In: string) => Out<object>
 		formData: (In: FormData) => Out<ParsedFormData>
 	}
+
+	export type submodule = Submodule<$>
 }

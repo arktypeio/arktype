@@ -1,6 +1,6 @@
 import { intrinsic, rootNode } from "@ark/schema"
-import type { AtLeast, AtMost, DivisibleBy, inferred, number } from "../ast.js"
-import type { Module } from "../module.js"
+import type { AtLeast, AtMost, DivisibleBy, number } from "../ast.js"
+import type { Module, Submodule } from "../module.js"
 import { scope } from "../scope.js"
 
 /**
@@ -9,7 +9,7 @@ import { scope } from "../scope.js"
  *
  * @see https://262.ecma-international.org/15.0/index.html#sec-time-values-and-time-range
  */
-export const unixTimestampNumber = rootNode({
+export const epoch = rootNode({
 	domain: {
 		domain: "number",
 		meta: "a number representing a Unix timestamp"
@@ -43,28 +43,29 @@ const submodule: Module<arkNumber.submodule> = scope(
 	{
 		...keywords,
 		$root: intrinsic.number,
-		unix: unixTimestampNumber
+		epoch
 	},
 	{
 		prereducedAliases: true
 	}
 ).export()
 
-export const arkNumber = {
-	keywords,
-	submodule
-}
-
 export declare namespace arkNumber {
 	export interface keywords {
 		integer: number.divisibleBy<1>
 	}
 
-	export interface submodule extends keywords {
+	export interface $ extends keywords {
 		$root: number
-		[inferred]: number
-		unix: number.is<
+		epoch: number.is<
 			DivisibleBy<1> & AtMost<8640000000000000> & AtLeast<-8640000000000000>
 		>
 	}
+
+	export type submodule = Submodule<$>
+}
+
+export const arkNumber = {
+	keywords,
+	submodule
 }

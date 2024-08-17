@@ -122,6 +122,9 @@ contextualize.each(
 			fooBar: "foo.bar"
 		})
 
+		const fooooo = $.t.fooBare
+		//     ^?
+
 		return $
 	},
 	it => {

@@ -1,7 +1,7 @@
 import type { ArkErrors } from "@ark/schema"
 import type { inferred } from "../ast.js"
 import type { GenericHktParser } from "../generic.js"
-import type { Module, Submodule } from "../module.js"
+import type { Module } from "../module.js"
 import { scope, type Scope } from "../scope.js"
 import type {
 	DeclarationParser,
@@ -28,9 +28,9 @@ export namespace Ark {
 			arkString.keywords,
 			arkNumber.keywords,
 			arkBuiltin.keywords {
-		TypedArray: Submodule<arkTypedArray.submodule>
-		parse: Submodule<arkParse.submodule>
-		format: Submodule<arkFormat.submodule>
+		TypedArray: arkTypedArray.submodule
+		parse: arkParse.submodule
+		format: arkFormat.submodule
 	}
 
 	export interface Wrapped {

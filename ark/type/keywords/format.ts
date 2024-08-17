@@ -1,6 +1,6 @@
 import { rootNode } from "@ark/schema"
 import type { Out } from "../ast.js"
-import type { Module } from "../module.js"
+import type { Module, Submodule } from "../module.js"
 import { scope } from "../scope.js"
 
 const trim = rootNode({
@@ -46,11 +46,13 @@ export const arkFormat = {
 }
 
 export declare namespace arkFormat {
-	export type submodule = {
+	export type $ = {
 		trim: (In: string) => Out<string>
 		uppercase: (In: string) => Out<string>
 		lowercase: (In: string) => Out<string>
 		capitalize: (In: string) => Out<string>
 		normalize: (In: string) => Out<string>
 	}
+
+	export type submodule = Submodule<$>
 }

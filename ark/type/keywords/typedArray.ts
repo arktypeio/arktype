@@ -1,4 +1,4 @@
-import type { Module } from "../module.js"
+import type { Module, Submodule } from "../module.js"
 import { scope } from "../scope.js"
 
 const submodule: Module<arkTypedArray.submodule> = scope(
@@ -24,7 +24,7 @@ export const arkTypedArray = {
 
 export declare namespace arkTypedArray {
 	// See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/TypedArray
-	export type submodule = {
+	type $ = {
 		Int8: Int8Array
 		Uint8: Uint8Array
 		Uint8Clamped: Uint8ClampedArray
@@ -37,4 +37,6 @@ export declare namespace arkTypedArray {
 		BigInt64: BigInt64Array
 		BigUint64: BigUint64Array
 	}
+
+	export type submodule = Submodule<$>
 }
