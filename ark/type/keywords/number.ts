@@ -39,7 +39,7 @@ const keywords: Module<arkNumber.keywords> = scope(
 	{ prereducedAliases: true }
 ).export()
 
-const submodule: Module<arkNumber.$> = scope(
+const submodule: Module<arkNumber.submodule> = scope(
 	{
 		...keywords,
 		$root: intrinsic.number,
@@ -60,7 +60,7 @@ export declare namespace arkNumber {
 		integer: number.divisibleBy<1>
 	}
 
-	export interface $ extends keywords {
+	export interface submodule extends keywords {
 		$root: number
 		unix: number.is<
 			DivisibleBy<1> & AtMost<8640000000000000> & AtLeast<-8640000000000000>

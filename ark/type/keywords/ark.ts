@@ -26,6 +26,7 @@ export namespace Ark {
 			arkJs.keywords,
 			arkPlatform.keywords,
 			arkString.keywords,
+			arkNumber.keywords,
 			arkBuiltin.keywords {
 		TypedArray: Submodule<arkTypedArray.submodule>
 		parse: Submodule<arkParse.submodule>
@@ -33,8 +34,8 @@ export namespace Ark {
 	}
 
 	export interface Wrapped {
-		string: arkString.$
-		number: arkNumber.$
+		string: arkString.submodule
+		number: arkNumber.submodule
 	}
 }
 

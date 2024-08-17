@@ -94,7 +94,7 @@ const keywords: Module<arkString.keywords> = scope(
 	{ prereducedAliases: true }
 ).export()
 
-const submodule: Module<arkString.$> = scope(
+const submodule: Module<arkString.submodule> = scope(
 	{
 		$root: intrinsic.string,
 		numeric,
@@ -127,7 +127,7 @@ export declare namespace arkString {
 		ip: string.matching<anonymous>
 	}
 
-	export interface $ extends keywords {
+	export interface submodule extends keywords {
 		$root: string
 		numeric: string.narrowed
 		iso8601: string.narrowed
