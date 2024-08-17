@@ -38,9 +38,6 @@
 	"search.exclude": {
 		"**/out": true
 	},
-	"debug.javascript.terminalOptions": {
-		"skipFiles": ["!<node_internals>/**"]
-	},
 	"editor.quickSuggestions": {
 		"strings": "on"
 	}
