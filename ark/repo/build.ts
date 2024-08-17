@@ -14,17 +14,20 @@ const buildKind =
 	process.argv.includes("--cjs") || process.env.ARKTYPE_CJS ? "cjs" : "esm"
 const outDir = fromCwd("out")
 
-rmRf(outDir)
-rmRf("tsconfig.build.json")
+const buildCurrentProject = () =>
+	shell("pnpm tsc --project tsconfig.build.json")
 
 try {
+	rmRf(outDir)
+	rmRf("tsconfig.build.json")
 	symlinkSync(`../repo/tsconfig.${buildKind}.json`, "tsconfig.build.json")
-	shell("pnpm tsc --project tsconfig.build.json")
-	walkPaths(outDir).forEach(jsPath =>
-		rewriteFile(jsPath, src => src.replaceAll('.ts"', '.ts"'))
+	buildCurrentProject()
+	walkPaths(outDir, { excludeDirs: true }).forEach(jsPath =>
+		rewriteFile(jsPath, src => src.replaceAll('.ts"', '.js"'))
 	)
+	rmRf("tsconfig.build.json")
 	symlinkSync(`../repo/tsconfig.dts.json`, "tsconfig.build.json")
-	shell("pnpm tsc --project tsconfig.dts.json")
+	buildCurrentProject()
 	if (buildKind === "cjs")
 		writeJson(join(outDir, "package.json"), { type: "commonjs" })
 } finally {
