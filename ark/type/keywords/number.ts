@@ -1,5 +1,5 @@
 import { intrinsic, rootNode } from "@ark/schema"
-import type { AtLeast, AtMost, DivisibleBy, number } from "../ast.js"
+import type { AtLeast, AtMost, DivisibleBy, inferred, number } from "../ast.js"
 import type { Module } from "../module.js"
 import { scope } from "../scope.js"
 
@@ -62,6 +62,7 @@ export declare namespace arkNumber {
 
 	export interface submodule extends keywords {
 		$root: number
+		[inferred]: number
 		unix: number.is<
 			DivisibleBy<1> & AtMost<8640000000000000> & AtLeast<-8640000000000000>
 		>

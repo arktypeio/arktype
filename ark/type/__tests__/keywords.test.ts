@@ -316,6 +316,7 @@ tags[2] must be a string (was object)`)
 				const expected = type({ "[string]": "number" })
 
 				const t = ark.Record("string", "number")
+
 				attest(t.json).equals(expected.json)
 				attest<typeof expected.t>(t.t)
 			})

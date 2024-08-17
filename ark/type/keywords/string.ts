@@ -1,6 +1,6 @@
 import { intrinsic, rootNode } from "@ark/schema"
 import { wellFormedNumberMatcher } from "@ark/util"
-import type { anonymous, string } from "../ast.js"
+import type { anonymous, inferred, string } from "../ast.js"
 import type { Module } from "../module.js"
 import { scope } from "../scope.js"
 import { creditCardMatcher, isLuhnValid } from "./utils/creditCard.js"
@@ -129,6 +129,7 @@ export declare namespace arkString {
 
 	export interface submodule extends keywords {
 		$root: string
+		[inferred]: string
 		numeric: string.narrowed
 		iso8601: string.narrowed
 		unix: string.narrowed

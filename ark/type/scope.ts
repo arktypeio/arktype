@@ -144,13 +144,18 @@ type bootstrapAliases<def> = {
 type inferBootstrapped<$> = {
 	[name in keyof $]: $[name] extends Def<infer def> ?
 		inferDefinition<def, $, {}>
-	: $[name] extends { t: GenericAst<infer params, infer def, infer body$> } ?
-		// add the scope in which the generic was defined here
-		GenericAst<params, def, body$ extends UnparsedScope ? $ : body$, $>
+	: $[name] extends { t: infer g extends GenericAst } ? bindGenericToScope<g, $>
 	: // should be submodule
 	$[name] extends Module<infer exports> ? Submodule<exports>
 	: never
 } & unknown
+
+export type bindGenericToScope<g extends GenericAst, $> = GenericAst<
+	g["paramsAst"],
+	g["bodyDef"],
+	g["$"] extends UnparsedScope ? $ : g["$"],
+	$
+>
 
 type extractGenericName<k> =
 	k extends GenericDeclaration<infer name> ? name : never

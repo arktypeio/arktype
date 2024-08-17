@@ -209,7 +209,9 @@ type instantiateGeneric<
 		Hkt.apply<def, { [i in keyof args]: inferTypeRoot<args[i], args$> }>
 	:	inferDefinition<def, $, bindGenericArgs<params, args$, args>>,
 	args$
->
+> & {
+	m: { [i in keyof args]: inferTypeRoot<args[i], args$> }
+}
 
 type bindGenericArgs<params extends array<GenericParamAst>, $, args> = {
 	[i in keyof params & `${number}` as params[i][0]]: inferTypeRoot<
