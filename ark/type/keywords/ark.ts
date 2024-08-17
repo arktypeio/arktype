@@ -26,7 +26,7 @@ export interface Ark
 	format: arkFormat.submodule
 }
 
-export namespace Ark {
+export declare namespace Ark {
 	export interface keywords
 		extends arkTs.keywords,
 			arkJs.keywords,

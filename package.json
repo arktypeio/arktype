@@ -71,8 +71,9 @@
 		],
 		"ignore": "**/node_modules/**/*",
 		"node-option": [
-			"import=tsx",
-			"conditions=ark-ts"
+			"conditions=ark-ts",
+			"experimental-strip-types",
+			"trace-exit"
 		],
 		"require": "./ark/repo/mocha.globalSetup.ts"
 	},

@@ -121,7 +121,10 @@ export abstract class BaseScope<$ extends {} = {}> {
 	readonly config: ArkScopeConfig
 	readonly resolvedConfig: ResolvedArkScopeConfig
 	readonly id = `${Object.keys(scopesById).length}$`
-	readonly [arkKind] = "scope"
+
+	get [arkKind](): "scope" {
+		return "scope"
+	}
 
 	readonly referencesById: { [id: string]: BaseNode } = {}
 	references: readonly BaseNode[] = []

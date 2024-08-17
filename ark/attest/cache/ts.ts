@@ -16,15 +16,19 @@ export class TsServer {
 		return new TsServer()
 	}
 
-	private constructor(private tsConfigInfo = getTsConfigInfoOrThrow()) {
+	private tsConfigInfo!: TsconfigInfo
+
+	constructor(tsConfigInfo?: TsconfigInfo) {
 		if (TsServer._instance) return TsServer._instance
 
-		const tsLibPaths = getTsLibFiles(tsConfigInfo.parsed.options)
+		this.tsConfigInfo = tsConfigInfo ?? getTsConfigInfoOrThrow()
+
+		const tsLibPaths = getTsLibFiles(this.tsConfigInfo.parsed.options)
 
 		// TS represents windows paths as `C:/Users/ssalb/...`
 		const normalizedCwd = fromCwd().replaceAll(/\\/g, "/")
 
-		this.rootFiles = tsConfigInfo.parsed.fileNames.filter(path =>
+		this.rootFiles = this.tsConfigInfo.parsed.fileNames.filter(path =>
 			path.startsWith(normalizedCwd)
 		)
 

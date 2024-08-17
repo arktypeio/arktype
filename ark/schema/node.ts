@@ -62,10 +62,10 @@ export abstract class BaseNode<
 	 * @ts-ignore allow instantiation assignment to the base type */
 	out d extends BaseNodeDeclaration = BaseNodeDeclaration
 > extends Callable<(data: d["prerequisite"]) => unknown, attachmentsOf<d>> {
-	constructor(
-		public attachments: UnknownAttachments,
-		public $: BaseScope
-	) {
+	attachments: UnknownAttachments
+	$: BaseScope
+
+	constructor(attachments: UnknownAttachments, $: BaseScope) {
 		super(
 			// pipedFromCtx allows us internally to reuse TraversalContext
 			// through pipes and keep track of piped paths. It is not exposed
@@ -88,6 +88,8 @@ export abstract class BaseNode<
 			},
 			{ attach: attachments as never }
 		)
+		this.attachments = attachments
+		this.$ = $
 	}
 
 	bindScope($: BaseScope): this {

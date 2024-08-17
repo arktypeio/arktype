@@ -152,9 +152,11 @@ export interface ReferenceOptions {
 export class NodeCompiler extends CompiledFunction<["data", "ctx"]> {
 	path: string[] = []
 	discriminants: Discriminant[] = []
+	traversalKind: TraversalKind
 
-	constructor(public traversalKind: TraversalKind) {
+	constructor(traversalKind: TraversalKind) {
 		super("data", "ctx")
+		this.traversalKind = traversalKind
 	}
 
 	invoke(node: BaseNode, opts?: InvokeOptions): string {

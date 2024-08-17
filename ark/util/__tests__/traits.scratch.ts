@@ -2,11 +2,13 @@ import { Trait, implement } from "@ark/util"
 
 // Declare a trait just like a normal class
 export class Rectangle extends Trait {
-	constructor(
-		public length: number,
-		public width: number
-	) {
+	length: number
+	width: number
+
+	constructor(length: number, width: number) {
 		super()
+		this.length = length
+		this.width = width
 	}
 
 	area(): number {
@@ -27,8 +29,11 @@ export class Rhombus extends Trait<{
 		largestAngle: number
 	}
 }> {
-	constructor(public side: number) {
+	side: number
+
+	constructor(side: number) {
 		super()
+		this.side = side
 	}
 
 	perimeter(): number {

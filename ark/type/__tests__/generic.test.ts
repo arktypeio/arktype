@@ -426,7 +426,11 @@ contextualize(() => {
 	describe("hkt", () => {
 		it("can infer a generic from an hkt", () => {
 			class MyExternalClass<T> {
-				constructor(public data: T) {}
+				data: T
+
+				constructor(data: T) {
+					this.data = data
+				}
 			}
 
 			const validateExternalGeneric = generic("T")(

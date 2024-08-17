@@ -28,10 +28,13 @@ export class TraversalContext {
 
 	seen: { [id in string]?: unknown[] } = {}
 
-	constructor(
-		public root: unknown,
-		public config: ResolvedArkConfig
-	) {}
+	root: unknown
+	config: ResolvedArkConfig
+
+	constructor(root: unknown, config: ResolvedArkConfig) {
+		this.root = root
+		this.config = config
+	}
 
 	get currentBranch(): BranchTraversalContext | undefined {
 		return this.branches.at(-1)

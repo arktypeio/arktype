@@ -32,13 +32,17 @@ export type MappedTypeAssertionResult = {
 	expected?: unknown
 } | null
 
+export type TypeAssertionMapper = (
+	data: TypeRelationshipAssertionData,
+	ctx: AssertionContext
+) => MappedTypeAssertionResult
+
 export class TypeAssertionMapping {
-	constructor(
-		public fn: (
-			data: TypeRelationshipAssertionData,
-			ctx: AssertionContext
-		) => MappedTypeAssertionResult
-	) {}
+	fn: TypeAssertionMapper
+
+	constructor(fn: TypeAssertionMapper) {
+		this.fn = fn
+	}
 }
 
 export const versionableAssertion =

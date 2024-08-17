@@ -91,8 +91,10 @@ class ResultCollector {
 	private benchStart = performance.now()
 	private bounds: Required<UntilOptions>
 	private lastInvocationStart: number
+	private ctx: BenchContext
 
-	constructor(private ctx: BenchContext) {
+	constructor(ctx: BenchContext) {
+		this.ctx = ctx
 		// By default, will run for either 5 seconds or 100_000 call sets (of 1000 calls), whichever comes first
 		this.bounds = {
 			ms: 5000,
@@ -149,10 +151,12 @@ export class BenchAssertions<
 > {
 	private label: string
 	private lastCallTimes: number[] | undefined
-	constructor(
-		private fn: Fn,
-		private ctx: BenchContext
-	) {
+	private fn: Fn
+	private ctx: BenchContext
+
+	constructor(fn: Fn, ctx: BenchContext) {
+		this.fn = fn
+		this.ctx = ctx
 		this.label = `Call: ${ctx.qualifiedName}`
 	}
 

@@ -184,7 +184,7 @@ type PreparsedKey<
 	key: key
 }
 
-namespace PreparsedKey {
+declare namespace PreparsedKey {
 	export type from<t extends PreparsedKey> = t
 }
 

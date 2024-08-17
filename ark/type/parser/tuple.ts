@@ -214,7 +214,7 @@ type PreparsedElement = {
 	spread: boolean
 }
 
-namespace PreparsedElement {
+declare namespace PreparsedElement {
 	export type from<result extends PreparsedElement> = result
 }
 

@@ -32,7 +32,11 @@ export type ChainableAssertionOptions = {
 type AssertionRecord = Record<keyof rootAssertions<any, AssertionKind>, unknown>
 
 export class ChainableAssertions implements AssertionRecord {
-	constructor(private ctx: AssertionContext) {}
+	private ctx: AssertionContext
+
+	constructor(ctx: AssertionContext) {
+		this.ctx = ctx
+	}
 
 	private serialize(value: unknown) {
 		return snapshot(value)

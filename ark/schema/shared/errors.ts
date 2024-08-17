@@ -20,12 +20,11 @@ export class ArkError<
 	path: TraversalPath
 	data: Prerequisite<code>
 	private nodeConfig: ResolvedArkConfig[code]
+	protected input: ArkErrorContextInput<code>
 
-	constructor(
-		protected input: ArkErrorContextInput<code>,
-		ctx: TraversalContext
-	) {
+	constructor(input: ArkErrorContextInput<code>, ctx: TraversalContext) {
 		super()
+		this.input = input
 		defineProperties(this, input)
 		const data = ctx.data
 		if (input.code === "union") {
@@ -80,8 +79,11 @@ export class ArkError<
 }
 
 export class ArkErrors extends ReadonlyArray<ArkError> {
-	constructor(protected ctx: TraversalContext) {
+	protected ctx: TraversalContext
+
+	constructor(ctx: TraversalContext) {
 		super()
+		this.ctx = ctx
 	}
 
 	byPath: Record<string, ArkError> = {}

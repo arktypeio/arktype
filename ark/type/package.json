@@ -25,9 +25,9 @@
 			"ark-ts": "./config.ts",
 			"default": "./out/config.js"
 		},
-		"./internal/*": {
-			"ark-ts": "./*",
-			"default": "./out/*"
+		"./internal/*.ts": {
+			"ark-ts": "./*.ts",
+			"default": "./out/*.js"
 		}
 	},
 	"files": [

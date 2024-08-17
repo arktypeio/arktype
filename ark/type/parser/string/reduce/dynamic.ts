@@ -47,11 +47,15 @@ export class DynamicState {
 	finalizer: Scanner.FinalizingLookahead | undefined
 	groups: BranchState[] = []
 
-	constructor(
-		public readonly scanner: Scanner,
-		public readonly ctx: ParseContext,
-		public readonly defaultable: boolean
-	) {}
+	scanner: Scanner
+	ctx: ParseContext
+	defaultable: boolean
+
+	constructor(scanner: Scanner, ctx: ParseContext, defaultable: boolean) {
+		this.scanner = scanner
+		this.ctx = ctx
+		this.defaultable = defaultable
+	}
 
 	error(message: string): never {
 		return throwParseError(message)

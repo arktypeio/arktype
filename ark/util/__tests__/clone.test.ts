@@ -28,7 +28,11 @@ contextualize(() => {
 
 	it("should preserve the prototype of the object", () => {
 		class MyClass {
-			constructor(public a: number) {}
+			a: number
+
+			constructor(a: number) {
+				this.a = a
+			}
 		}
 		const obj = new MyClass(1)
 		const cloned = deepClone(obj)
@@ -48,7 +52,11 @@ contextualize(() => {
 
 	it("should preserve the prototype of nested objects", () => {
 		class MyClass {
-			constructor(public a: number) {}
+			a: number
+
+			constructor(a: number) {
+				this.a = a
+			}
 		}
 		const obj = { a: 1, b: new MyClass(2) }
 		const cloned = deepClone(obj)

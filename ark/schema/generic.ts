@@ -70,11 +70,16 @@ export class GenericRoot<
 	declare readonly paramsAst: params
 	declare readonly t: GenericAst<params, bodyDef, {}, {}>
 
+	paramDefs: array<GenericParamDef>
+	bodyDef: bodyDef
+	$: BaseScope
+	arg$: BaseScope
+
 	constructor(
-		public paramDefs: array<GenericParamDef>,
-		public bodyDef: bodyDef,
-		public $: BaseScope,
-		public arg$: BaseScope
+		paramDefs: array<GenericParamDef>,
+		bodyDef: bodyDef,
+		$: BaseScope,
+		arg$: BaseScope
 	) {
 		super((...args: any[]) => {
 			const argNodes = flatMorph(this.names, (i, name) => {
@@ -99,6 +104,11 @@ export class GenericRoot<
 
 			return this.$.parseRoot(bodyDef, { args: argNodes })
 		})
+
+		this.paramDefs = paramDefs
+		this.bodyDef = bodyDef
+		this.$ = $
+		this.arg$ = arg$
 
 		this.validateBaseInstantiation()
 	}
