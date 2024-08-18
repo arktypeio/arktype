@@ -73,8 +73,7 @@
 			"conditions=ark-ts",
 			"import=tsx"
 		],
-		"require": "./ark/repo/mocha.globalSetup.ts",
-		"exit": true
+		"require": "./ark/repo/mocha.globalSetup.ts"
 	},
 	"c8": {
 		"checkCoverage": true,

@@ -28,11 +28,11 @@ export const trace = async (args: string[]): Promise<void> => {
 		// allow analyze-trace to process the args
 		process.argv = [
 			"node",
-			"node_modules/@typescript/analyze-trace/dist/analyze-trace-dir.ts",
+			"node_modules/@typescript/analyze-trace/dist/analyze-trace-dir.js",
 			traceDir
 		]
 		// TypeScript's analyze-trace tool can be used to automatically detect hot-spots in your code.
 		// It's not a perfect match for what can be optimized, but it can be a helpful place to start
-		await import("@typescript/analyze-trace/dist/analyze-trace-dir.ts")
+		await import("@typescript/analyze-trace/dist/analyze-trace-dir.js")
 	}
 }

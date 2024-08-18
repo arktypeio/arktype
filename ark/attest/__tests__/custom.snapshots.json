@@ -1,0 +1,7 @@
+{
+    "externalSnapshots.test.ts": {
+        "toCustomFile": {
+            "re": "do"
+        }
+    }
+}
