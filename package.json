@@ -25,7 +25,7 @@
 		"testTyped": "mocha --exclude 'ark/attest/**/*.test.*'",
 		"testRepo": "pnpm test && pnpm testV8 && cd ./ark/attest && pnpm test",
 		"testV8": "node --allow-natives-syntax ./ark/repo/testV8.js",
-		"testTsVersions": "pnpm testTyped --tsVersions '*' --compilerOptions '{ \"paths\": {} }'",
+		"testTsVersions": "pnpm testTyped --tsVersions '*' --compilerOptions '{ \"customConditions\": [] }'",
 		"bench": "pnpm benchOperand && pnpm benchOperator && pnpm benchObject && pnpm benchCyclic",
 		"benchOperand": "ts ./ark/type/__tests__/operand.bench.ts",
 		"benchOperator": "ts ./ark/type/__tests__/operator.bench.ts",
