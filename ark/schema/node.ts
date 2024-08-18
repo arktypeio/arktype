@@ -117,13 +117,24 @@ export abstract class BaseNode<
 		{ [this.id]: this }
 	)
 
-	// @cached
+	protected redefine<name extends keyof this>(
+		name: name,
+		value: this[name]
+	): this[name] {
+		Object.defineProperty(this, name, { value })
+		return value
+	}
+
 	get description(): string {
 		const writer =
 			this.$?.resolvedConfig[this.kind].description ??
 			$ark.config[this.kind]?.description ??
 			$ark.defaultConfig[this.kind].description
-		return this.meta?.description ?? writer(this as never)
+
+		return this.redefine(
+			"description",
+			this.meta?.description ?? writer(this as never)
+		)
 	}
 
 	// we don't cache this currently since it can be updated once a scope finishes
@@ -136,12 +147,15 @@ export abstract class BaseNode<
 
 	// @cached
 	get shallowReferences(): BaseNode[] {
-		return this.hasKind("structure") ?
+		return this.redefine(
+			"shallowReferences",
+			this.hasKind("structure") ?
 				[this as BaseNode, ...this.children]
 			:	this.children.reduce<BaseNode[]>(
 					(acc, child) => appendUniqueNodes(acc, child.shallowReferences),
 					[this]
 				)
+		)
 	}
 
 	// @cached

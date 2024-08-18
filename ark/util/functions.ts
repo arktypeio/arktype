@@ -6,28 +6,7 @@ export type Fn<
 	out returns = unknown
 > = (...args: args) => returns
 
-// export const cached = <self>(
-// 	target: (this: self) => any,
-// 	context:
-// 		| ClassGetterDecoratorContext<self, any>
-// 		| ClassMethodDecoratorContext<self, (this: self) => any>
-// ) =>
-// 	function (this: self): any {
-// 		const value = target.call(this)
-// 		Object.defineProperty(
-// 			this,
-// 			context.name,
-// 			context.kind === "getter" ?
-// 				{ value }
-// 			:	{
-// 					value: () => value,
-// 					enumerable: false
-// 				}
-// 		)
-// 		return value
-// 	}
-
-export const cachedThunk = <t>(thunk: () => t): (() => t) => {
+export const cached = <t>(thunk: () => t): (() => t) => {
 	let result: t | unset = unset
 	return () => (result === unset ? (result = thunk()) : result)
 }
@@ -121,7 +100,7 @@ export type TypeGuard<input = unknown, narrowed extends input = input> = (
  *
  * The result is cached for subsequent invocations.
  */
-export const envHasCsp = cachedThunk((): boolean => {
+export const envHasCsp = cached((): boolean => {
 	try {
 		return new Function("return false")()
 	} catch {
