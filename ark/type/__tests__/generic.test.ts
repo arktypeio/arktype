@@ -154,7 +154,7 @@ contextualize(() => {
 			const positiveToInteger = type("<n: number > 0>", "n % 1")
 
 			const t = positiveToInteger("number > 0")
-			const expected = type("integer > 0")
+			const expected = type("number.integer > 0")
 
 			attest<typeof expected.t>(t.t)
 			attest(t.expression).equals(expected.expression)

@@ -3,7 +3,7 @@ import { type } from "arktype"
 
 contextualize(() => {
 	it("integer", () => {
-		const integer = type("integer")
+		const integer = type("number.integer")
 		attest(integer(123)).equals(123)
 		attest(integer("123").toString()).snap("must be a number (was string)")
 		attest(integer(12.12).toString()).snap("must be an integer (was 12.12)")

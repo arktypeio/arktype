@@ -12,22 +12,39 @@ import { arkUuid } from "./utils/uuid.ts"
 
 // Non-trivial expressions should have an explanation or attribution
 
-const isValidUrl = (s: string) => {
+const isParsableUrl = (s: string) => {
 	if (URL.canParse as unknown) return URL.canParse(s)
 	// Can be removed once Node 18 is EOL
 	try {
 		new URL(s)
+		return true
 	} catch {
 		return false
 	}
-	return true
+}
+
+const isParsableJson = (s: string) => {
+	try {
+		JSON.parse(s)
+		return true
+	} catch {
+		return false
+	}
 }
 
 const url = rootNode({
 	domain: "string",
 	predicate: {
-		meta: "a URL",
-		predicate: isValidUrl
+		meta: "a URL string",
+		predicate: isParsableUrl
+	}
+})
+
+const json = rootNode({
+	domain: "string",
+	predicate: {
+		meta: "a JSON string",
+		predicate: isParsableJson
 	}
 })
 
@@ -86,18 +103,6 @@ const iso8601 = regexStringNode(
 	"an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date"
 )
 
-const keywords: Module<arkString.keywords> = scope(
-	{
-		creditCard,
-		email,
-		uuid: arkUuid.submodule,
-		url,
-		semver,
-		ip: arkIp.submodule
-	},
-	{ prereducedAliases: true }
-).export()
-
 const submodule: Module<arkString.submodule> = scope(
 	{
 		$root: intrinsic.string,
@@ -113,7 +118,13 @@ const submodule: Module<arkString.submodule> = scope(
 		uppercase: regexStringNode(/^[A-Z]*$/, "only uppercase letters"),
 		iso8601,
 		epoch,
-		...keywords
+		json,
+		semver,
+		ip: arkIp.submodule,
+		creditCard,
+		email,
+		uuid: arkUuid.submodule,
+		url
 	},
 	{
 		prereducedAliases: true
@@ -121,21 +132,11 @@ const submodule: Module<arkString.submodule> = scope(
 ).export()
 
 export const arkString = {
-	keywords,
 	submodule
 }
 
 export declare namespace arkString {
-	export interface keywords {
-		creditCard: string.matching<"?">
-		email: string.matching<"?">
-		uuid: arkUuid.submodule
-		url: string.matching<"?">
-		semver: string.matching<"?">
-		ip: arkIp.submodule
-	}
-
-	interface $ extends keywords {
+	interface $ {
 		$root: string
 		alpha: string.matching<"?">
 		alphanumeric: string.matching<"?">
@@ -146,6 +147,12 @@ export declare namespace arkString {
 		integer: string.narrowed
 		iso8601: string.narrowed
 		epoch: string.narrowed
+		creditCard: string.matching<"?">
+		email: string.matching<"?">
+		uuid: arkUuid.submodule
+		url: string.matching<"?">
+		semver: string.matching<"?">
+		ip: arkIp.submodule
 	}
 
 	export type submodule = Submodule<$>

@@ -49,7 +49,7 @@ contextualize(() => {
 
 	it("formData", () => {
 		const user = type({
-			email: "email",
+			email: "string.email",
 			file: "File",
 			tags: "liftArray<string>"
 		})
@@ -87,7 +87,7 @@ contextualize(() => {
 		data.append("tags", file)
 
 		attest(parseUserForm(data).toString())
-			.snap(`email must be a valid email (was "david")
+			.snap(`email must be an email address (was "david")
 file must be an instance of File (was string)
 tags[2] must be a string (was object)`)
 	})

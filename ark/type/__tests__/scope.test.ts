@@ -43,11 +43,11 @@ contextualize(() => {
 	it("interdependent", () => {
 		const types = scope({
 			l: "string > 5",
-			r: "email <= 10",
+			r: "string.email <= 10",
 			actual: "l & r"
 		}).export()
 
-		const expected = type("email <= 10 & string > 5")
+		const expected = type("string.email <= 10 & string > 5")
 
 		attest<typeof expected.t>(types.actual.t)
 		attest(types.actual.expression).equals(expected.expression)
@@ -236,7 +236,7 @@ contextualize(() => {
 					"contributors?": "contributor[]"
 				},
 				contributor: {
-					email: "email",
+					email: "string.email",
 					"packages?": "package[]"
 				}
 			})
@@ -292,8 +292,8 @@ contextualize(() => {
 			// ideally would only include one error, see:
 			// https://github.com/arktypeio/arktype/issues/924
 			attest(types.package(data).toString())
-				.snap(`contributors[0].email must be a valid email (was "ssalbdivad")
-dependencies[1].contributors[0].email must be a valid email (was "ssalbdivad")`)
+				.snap(`contributors[0].email must be an email address (was "ssalbdivad")
+dependencies[1].contributors[0].email must be an email address (was "ssalbdivad")`)
 		})
 
 		it("can include cyclic data in message", () => {

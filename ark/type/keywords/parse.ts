@@ -33,14 +33,8 @@ const integer = rootNode({
 })
 
 const url = rootNode({
-	in: "string",
-	morphs: (s: string, ctx) => {
-		try {
-			return new URL(s)
-		} catch {
-			return ctx.error("a valid URL")
-		}
-	}
+	in: arkString.submodule.url as never,
+	morphs: (s: string): URL => new URL(s)
 })
 
 const json = rootNode({

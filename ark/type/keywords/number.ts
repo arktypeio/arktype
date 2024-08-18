@@ -29,20 +29,13 @@ export const epoch = rootNode({
 	meta: "an integer representing a safe Unix timestamp"
 })
 
-const keywords: Module<arkNumber.keywords> = scope(
+const submodule: Module<arkNumber.submodule> = scope(
 	{
+		$root: intrinsic.number,
 		integer: rootNode({
 			domain: "number",
 			divisor: 1
-		})
-	},
-	{ prereducedAliases: true }
-).export()
-
-const submodule: Module<arkNumber.submodule> = scope(
-	{
-		...keywords,
-		$root: intrinsic.number,
+		}),
 		epoch
 	},
 	{
@@ -51,21 +44,17 @@ const submodule: Module<arkNumber.submodule> = scope(
 ).export()
 
 export declare namespace arkNumber {
-	export interface keywords {
-		integer: number.divisibleBy<1>
-	}
-
-	export interface $ extends keywords {
+	export interface $ {
 		$root: number
 		epoch: number.is<
 			DivisibleBy<1> & AtMost<8640000000000000> & AtLeast<-8640000000000000>
 		>
+		integer: number.divisibleBy<1>
 	}
 
 	export type submodule = Submodule<$>
 }
 
 export const arkNumber = {
-	keywords,
 	submodule
 }
