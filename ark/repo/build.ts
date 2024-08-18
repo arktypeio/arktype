@@ -3,6 +3,7 @@ import { join } from "path"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import {
 	fromCwd,
+	fromHere,
 	rewriteFile,
 	rmRf,
 	shell,
@@ -14,8 +15,10 @@ const buildKind =
 	process.argv.includes("--cjs") || process.env.ARKTYPE_CJS ? "cjs" : "esm"
 const outDir = fromCwd("out")
 
+const tscBin = fromHere("node_modules", "typescript", "bin", "tsc")
+
 const buildCurrentProject = () =>
-	shell("pnpm tsc --project tsconfig.build.json")
+	shell(`${tscBin} --project tsconfig.build.json`)
 
 try {
 	rmRf(outDir)
