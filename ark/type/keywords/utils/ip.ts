@@ -1,12 +1,12 @@
-import { rootNode } from "@ark/schema"
+import type { string } from "../../ast.ts"
+import type { Submodule } from "../../module.ts"
+import { scope } from "../../scope.ts"
 import { regexStringNode } from "./regex.ts"
 
 // Based on https://github.com/validatorjs/validator.js/blob/master/src/lib/isIP.js
 const ipv4Segment = "(?:[0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])"
 const ipv4Address = `(${ipv4Segment}[.]){3}${ipv4Segment}`
 const ipv4Matcher = new RegExp(`^${ipv4Address}$`)
-
-export const ipv4 = regexStringNode(ipv4Matcher, "a valid IPv4 address")
 
 const ipv6Segment = "(?:[0-9a-fA-F]{1,4})"
 const ipv6Matcher = new RegExp(
@@ -22,6 +22,24 @@ const ipv6Matcher = new RegExp(
 		")(%[0-9a-zA-Z-.:]{1,})?$"
 )
 
-export const ipv6 = regexStringNode(ipv6Matcher, "a valid IPv6 address")
+// Based on https://github.com/validatorjs/validator.js/blob/master/src/lib/isUUID.js
+const submodule = scope(
+	{
+		$root: ["v4 | v6", "@", "an IP address"],
+		v4: regexStringNode(ipv4Matcher, "an IPv4 address"),
+		v6: regexStringNode(ipv6Matcher, "an IPv6 address")
+	},
+	{ prereducedAliases: true }
+).export()
 
-export const ip = rootNode([ipv4.internal, ipv6.internal])
+export const arkIp = {
+	submodule
+}
+
+export declare namespace arkIp {
+	export type submodule = Submodule<{
+		$root: string.matching<"?">
+		v4: string.matching<"?">
+		v6: string.matching<"?">
+	}>
+}

@@ -448,7 +448,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		const test = scope({
 			svgPath: /^\.\/(\d|a|b|c|d|e|f)+(-(\d|a|b|c|d|e|f)+)*\.svg$/,
 			svgMap: {
-				"[svgPath]": "digits"
+				"[svgPath]": "string.digits"
 			}
 		}).export()
 		attest<

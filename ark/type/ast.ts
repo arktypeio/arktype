@@ -86,10 +86,8 @@ export type Matching<rule> = {
 	matching: constraint<rule>
 }
 
-export type anonymous = "?"
-
 export type Narrowed = {
-	predicate: { [k in anonymous]: 1 }
+	predicate: { [k in "?"]: 1 }
 }
 
 export type primitiveConstraintKindOf<In> = Extract<

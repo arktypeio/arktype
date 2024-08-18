@@ -6,7 +6,7 @@ import { scope } from "../scope.ts"
 import { arkNumber } from "./number.ts"
 import { creditCardMatcher, isLuhnValid } from "./utils/creditCard.ts"
 import { iso8601Matcher } from "./utils/date.ts"
-import { ip } from "./utils/ip.ts"
+import { arkIp } from "./utils/ip.ts"
 import { regexStringNode } from "./utils/regex.ts"
 import { arkUuid } from "./utils/uuid.ts"
 
@@ -26,7 +26,7 @@ const isValidUrl = (s: string) => {
 const url = rootNode({
 	domain: "string",
 	predicate: {
-		meta: "a URL string",
+		meta: "a URL",
 		predicate: isValidUrl
 	}
 })
@@ -34,7 +34,7 @@ const url = rootNode({
 // https://www.regular-expressions.info/email.html
 const emailMatcher = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/
 
-const email = regexStringNode(emailMatcher, "a email")
+const email = regexStringNode(emailMatcher, "an email address")
 
 // https://semver.org/
 const semverMatcher =
@@ -88,20 +88,12 @@ const iso8601 = regexStringNode(
 
 const keywords: Module<arkString.keywords> = scope(
 	{
-		alpha: regexStringNode(/^[A-Za-z]*$/, "only letters"),
-		alphanumeric: regexStringNode(
-			/^[A-Za-z\d]*$/,
-			"only letters and digits 0-9"
-		),
-		digits: regexStringNode(/^\d*$/, "only digits 0-9"),
-		lowercase: regexStringNode(/^[a-z]*$/, "only lowercase letters"),
-		uppercase: regexStringNode(/^[A-Z]*$/, "only uppercase letters"),
 		creditCard,
 		email,
 		uuid: arkUuid.submodule,
 		url,
 		semver,
-		ip
+		ip: arkIp.submodule
 	},
 	{ prereducedAliases: true }
 ).export()
@@ -111,6 +103,14 @@ const submodule: Module<arkString.submodule> = scope(
 		$root: intrinsic.string,
 		numeric: numericString,
 		integer: integerString,
+		alpha: regexStringNode(/^[A-Za-z]*$/, "only letters"),
+		alphanumeric: regexStringNode(
+			/^[A-Za-z\d]*$/,
+			"only letters and digits 0-9"
+		),
+		digits: regexStringNode(/^\d*$/, "only digits 0-9"),
+		lowercase: regexStringNode(/^[a-z]*$/, "only lowercase letters"),
+		uppercase: regexStringNode(/^[A-Z]*$/, "only uppercase letters"),
 		iso8601,
 		epoch,
 		...keywords
@@ -127,21 +127,21 @@ export const arkString = {
 
 export declare namespace arkString {
 	export interface keywords {
-		alpha: string.matching<"?">
-		alphanumeric: string.matching<"?">
-		digits: string.matching<"?">
-		lowercase: string.matching<"?">
-		uppercase: string.matching<"?">
 		creditCard: string.matching<"?">
 		email: string.matching<"?">
 		uuid: arkUuid.submodule
 		url: string.matching<"?">
 		semver: string.matching<"?">
-		ip: string.matching<"?">
+		ip: arkIp.submodule
 	}
 
 	interface $ extends keywords {
 		$root: string
+		alpha: string.matching<"?">
+		alphanumeric: string.matching<"?">
+		digits: string.matching<"?">
+		lower: string.matching<"?">
+		upper: string.matching<"?">
 		numeric: string.narrowed
 		integer: string.narrowed
 		iso8601: string.narrowed

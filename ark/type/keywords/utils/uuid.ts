@@ -1,4 +1,3 @@
-import { rootNode } from "@ark/schema"
 import type { string } from "../../ast.ts"
 import type { Submodule } from "../../module.ts"
 import { scope } from "../../scope.ts"
@@ -7,11 +6,13 @@ import { regexStringNode } from "./regex.ts"
 // Based on https://github.com/validatorjs/validator.js/blob/master/src/lib/isUUID.js
 const submodule = scope(
 	{
-		$root: "versioned | nil | max",
-		"#versioned": regexStringNode(
+		// the meta tuple expression ensures the error message does not delegate
+		// to the individual branches, which are too detailed
+		$root: ["versioned | nil | max", "@", "a UUID"],
+		"#nil": "'00000000-0000-0000-0000-000000000000'",
+		"#max": "'ffffffff-ffff-ffff-ffff-ffffffffffff'",
+		"#versioned":
 			/[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i,
-			"a versioned UUID"
-		),
 		v1: regexStringNode(
 			/^[0-9a-f]{8}-[0-9a-f]{4}-1[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
 			"a UUIDv1"
@@ -43,15 +44,7 @@ const submodule = scope(
 		v8: regexStringNode(
 			/^[0-9a-f]{8}-[0-9a-f]{4}-8[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
 			"a UUIDv8"
-		),
-		nil: rootNode({
-			unit: "00000000-0000-0000-0000-000000000000",
-			meta: "the nil UUID"
-		}),
-		max: rootNode({
-			unit: "ffffffff-ffff-ffff-ffff-ffffffffffff",
-			meta: "the max UUID"
-		})
+		)
 	},
 	{ prereducedAliases: true }
 ).export()
