@@ -1,6 +1,6 @@
 import { ArkErrors, intrinsic, rootNode } from "@ark/schema"
 import { wellFormedIntegerMatcher, wellFormedNumberMatcher } from "@ark/util"
-import type { anonymous, string } from "../ast.ts"
+import type { string } from "../ast.ts"
 import type { Module, Submodule } from "../module.ts"
 import { scope } from "../scope.ts"
 import { arkNumber } from "./number.ts"
@@ -8,6 +8,7 @@ import { creditCardMatcher, isLuhnValid } from "./utils/creditCard.ts"
 import { iso8601Matcher } from "./utils/date.ts"
 import { ip } from "./utils/ip.ts"
 import { regexStringNode } from "./utils/regex.ts"
+import { arkUuid } from "./utils/uuid.ts"
 
 // Non-trivial expressions should have an explanation or attribution
 
@@ -25,7 +26,7 @@ const isValidUrl = (s: string) => {
 const url = rootNode({
 	domain: "string",
 	predicate: {
-		meta: "a valid URL",
+		meta: "a URL string",
 		predicate: isValidUrl
 	}
 })
@@ -33,31 +34,25 @@ const url = rootNode({
 // https://www.regular-expressions.info/email.html
 const emailMatcher = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/
 
-const email = regexStringNode(emailMatcher, "a valid email")
+const email = regexStringNode(emailMatcher, "a email")
 
-const uuidMatcher =
-	/^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$/
-
-// https://github.com/validatorjs/validator.js/blob/master/src/lib/isUUID.js
-const uuid = regexStringNode(uuidMatcher, "a valid UUID")
-
+// https://semver.org/
 const semverMatcher =
 	/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
 
-// https://semver.org/
 const semver = regexStringNode(
 	semverMatcher,
-	"a valid semantic version (see https://semver.org/)"
+	"a semantic version (see https://semver.org/)"
 )
 
 const creditCard = rootNode({
 	domain: "string",
 	pattern: {
-		meta: "a valid credit card number",
+		meta: "a credit card number",
 		rule: creditCardMatcher.source
 	},
 	predicate: {
-		meta: "a valid credit card number",
+		meta: "a credit card number",
 		predicate: isLuhnValid
 	}
 })
@@ -103,7 +98,7 @@ const keywords: Module<arkString.keywords> = scope(
 		uppercase: regexStringNode(/^[A-Z]*$/, "only uppercase letters"),
 		creditCard,
 		email,
-		uuid,
+		uuid: arkUuid.submodule,
 		url,
 		semver,
 		ip
@@ -132,17 +127,17 @@ export const arkString = {
 
 export declare namespace arkString {
 	export interface keywords {
-		alpha: string.matching<anonymous>
-		alphanumeric: string.matching<anonymous>
-		digits: string.matching<anonymous>
-		lowercase: string.matching<anonymous>
-		uppercase: string.matching<anonymous>
-		creditCard: string.matching<anonymous>
-		email: string.matching<anonymous>
-		uuid: string.matching<anonymous>
-		url: string.matching<anonymous>
-		semver: string.matching<anonymous>
-		ip: string.matching<anonymous>
+		alpha: string.matching<"?">
+		alphanumeric: string.matching<"?">
+		digits: string.matching<"?">
+		lowercase: string.matching<"?">
+		uppercase: string.matching<"?">
+		creditCard: string.matching<"?">
+		email: string.matching<"?">
+		uuid: arkUuid.submodule
+		url: string.matching<"?">
+		semver: string.matching<"?">
+		ip: string.matching<"?">
 	}
 
 	interface $ extends keywords {

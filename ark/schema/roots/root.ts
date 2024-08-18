@@ -1,5 +1,6 @@
 import {
 	includes,
+	inferred,
 	omit,
 	throwInternalError,
 	throwParseError,
@@ -59,6 +60,7 @@ export abstract class BaseRoot<
 	out d extends InternalRootDeclaration = InternalRootDeclaration
 > extends BaseNode<d> {
 	readonly [arkKind] = "root"
+	declare readonly [inferred]: unknown
 
 	get internal(): this {
 		return this
