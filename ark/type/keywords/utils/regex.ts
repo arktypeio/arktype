@@ -5,7 +5,7 @@ import type { Type } from "../../type.ts"
 export const regexStringNode = (
 	regex: RegExp,
 	description: string
-): Type<string.matching<"?">> =>
+): Type<string.narrowed> =>
 	node("intersection", {
 		domain: "string",
 		pattern: {

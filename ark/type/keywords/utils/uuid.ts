@@ -55,16 +55,16 @@ export const arkUuid = {
 
 export declare namespace arkUuid {
 	export type submodule = Submodule<{
-		$root: string.matching<"?">
-		v1: string.matching<"?">
-		v2: string.matching<"?">
-		v3: string.matching<"?">
-		v4: string.matching<"?">
-		v5: string.matching<"?">
-		v6: string.matching<"?">
-		v7: string.matching<"?">
-		v8: string.matching<"?">
-		nil: string.matching<"?">
-		max: string.matching<"?">
+		$root: string.narrowed
+		v1: string.narrowed
+		v2: string.narrowed
+		v3: string.narrowed
+		v4: string.narrowed
+		v5: string.narrowed
+		v6: string.narrowed
+		v7: string.narrowed
+		v8: string.narrowed
+		nil: string.narrowed
+		max: string.narrowed
 	}>
 }

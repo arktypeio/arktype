@@ -38,8 +38,8 @@ export const arkIp = {
 
 export declare namespace arkIp {
 	export type submodule = Submodule<{
-		$root: string.matching<"?">
-		v4: string.matching<"?">
-		v6: string.matching<"?">
+		$root: string.narrowed
+		v4: string.narrowed
+		v6: string.narrowed
 	}>
 }

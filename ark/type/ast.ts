@@ -10,19 +10,15 @@ import {
 	noSuggest,
 	type anyOrNever,
 	type array,
-	type BuiltinObjectKind,
-	type BuiltinObjects,
 	type conform,
 	type equals,
 	type leftIfEqual,
 	type Primitive,
-	type propValueOf,
 	type show
 } from "@ark/util"
 import type { inferPipe } from "./intersect.ts"
 import type { type } from "./keywords/ark.ts"
-import type { arkPlatform } from "./keywords/platform.ts"
-import type { arkTypedArray } from "./keywords/typedArray.ts"
+import type { arkObject } from "./keywords/object.ts"
 import type { Type } from "./type.ts"
 
 export type Comparator = "<" | "<=" | ">" | ">=" | "=="
@@ -439,10 +435,8 @@ type distillPostfix<
 
 /** Objects we don't want to expand during inference like Date or Promise */
 type TerminallyInferredObjectKind =
+	| arkObject.$[Exclude<keyof arkObject.$, "Array" | "Function" | "$root">]
 	| ArkEnv.prototypes
-	| BuiltinObjects[Exclude<BuiltinObjectKind, "Array" | "Function">]
-	| propValueOf<arkPlatform.keywords>
-	| propValueOf<arkTypedArray.submodule>
 
 export type inferPredicate<t, predicate> =
 	predicate extends (data: any, ...args: any[]) => data is infer narrowed ?

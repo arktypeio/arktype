@@ -43,18 +43,16 @@ const submodule: Module<arkNumber.submodule> = scope(
 	}
 ).export()
 
+export const arkNumber = {
+	submodule
+}
+
 export declare namespace arkNumber {
-	export interface $ {
+	export type submodule = Submodule<{
 		$root: number
 		epoch: number.is<
 			DivisibleBy<1> & AtMost<8640000000000000> & AtLeast<-8640000000000000>
 		>
 		integer: number.divisibleBy<1>
-	}
-
-	export type submodule = Submodule<$>
-}
-
-export const arkNumber = {
-	submodule
+	}>
 }

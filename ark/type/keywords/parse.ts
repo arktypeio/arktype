@@ -1,6 +1,6 @@
 import { rootNode, type IntersectionNode } from "@ark/schema"
 import { isWellFormedInteger, wellFormedNumberMatcher } from "@ark/util"
-import type { Out, number } from "../ast.ts"
+import type { number } from "../ast.ts"
 import type { Module, Submodule } from "../module.ts"
 import { scope } from "../scope.ts"
 import { arkString } from "./string.ts"
@@ -105,12 +105,5 @@ export const arkParse = {
 }
 
 export declare namespace arkParse {
-	export type submodule = Submodule<{
-		url: (In: string) => Out<URL>
-		number: (In: string) => Out<number>
-		integer: (In: string) => Out<number.divisibleBy<1>>
-		date: (In: string) => Out<Date>
-		json: (In: string) => Out<object>
-		formData: (In: FormData) => Out<ParsedFormData>
-	}>
+	export type submodule = Submodule<{}>
 }

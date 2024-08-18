@@ -1,6 +1,6 @@
 import { ArkErrors, intrinsic, rootNode } from "@ark/schema"
 import { wellFormedIntegerMatcher, wellFormedNumberMatcher } from "@ark/util"
-import type { string } from "../ast.ts"
+import type { Out, string } from "../ast.ts"
 import type { Module, Submodule } from "../module.ts"
 import { scope } from "../scope.ts"
 import { arkNumber } from "./number.ts"
@@ -103,6 +103,13 @@ const iso8601 = regexStringNode(
 	"an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date"
 )
 
+// url: (In: string) => Out<URL>
+// number: (In: string) => Out<number>
+// integer: (In: string) => Out<number.divisibleBy<1>>
+// date: (In: string) => Out<Date>
+// json: (In: string) => Out<object>
+// formData: (In: FormData) => Out<ParsedFormData>
+
 const submodule: Module<arkString.submodule> = scope(
 	{
 		$root: intrinsic.string,
@@ -114,8 +121,8 @@ const submodule: Module<arkString.submodule> = scope(
 			"only letters and digits 0-9"
 		),
 		digits: regexStringNode(/^\d*$/, "only digits 0-9"),
-		lowercase: regexStringNode(/^[a-z]*$/, "only lowercase letters"),
-		uppercase: regexStringNode(/^[A-Z]*$/, "only uppercase letters"),
+		lower: regexStringNode(/^[a-z]*$/, "only lowercase letters"),
+		upper: regexStringNode(/^[A-Z]*$/, "only uppercase letters"),
 		iso8601,
 		epoch,
 		json,
@@ -124,7 +131,29 @@ const submodule: Module<arkString.submodule> = scope(
 		creditCard,
 		email,
 		uuid: arkUuid.submodule,
-		url
+		url,
+
+		// formatting
+		trim: rootNode({
+			in: "string",
+			morphs: (s: string) => s.trim()
+		}),
+		toUpper: rootNode({
+			in: "string",
+			morphs: (s: string) => s.toUpperCase()
+		}),
+		toLower: rootNode({
+			in: "string",
+			morphs: (s: string) => s.toLowerCase()
+		}),
+		capitalize: rootNode({
+			in: "string",
+			morphs: (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
+		}),
+		normalize: rootNode({
+			in: "string",
+			morphs: (s: string) => s.normalize()
+		})
 	},
 	{
 		prereducedAliases: true
@@ -136,24 +165,29 @@ export const arkString = {
 }
 
 export declare namespace arkString {
-	interface $ {
+	export type submodule = Submodule<{
 		$root: string
-		alpha: string.matching<"?">
-		alphanumeric: string.matching<"?">
-		digits: string.matching<"?">
-		lower: string.matching<"?">
-		upper: string.matching<"?">
+		alpha: string.narrowed
+		alphanumeric: string.narrowed
+		digits: string.narrowed
+		lower: string.narrowed
+		upper: string.narrowed
 		numeric: string.narrowed
 		integer: string.narrowed
 		iso8601: string.narrowed
 		epoch: string.narrowed
-		creditCard: string.matching<"?">
-		email: string.matching<"?">
+		creditCard: string.narrowed
+		email: string.narrowed
 		uuid: arkUuid.submodule
-		url: string.matching<"?">
-		semver: string.matching<"?">
+		url: string.narrowed
+		semver: string.narrowed
 		ip: arkIp.submodule
-	}
 
-	export type submodule = Submodule<$>
+		// formatting
+		trim: (In: string) => Out<string>
+		toUpper: (In: string) => Out<string>
+		toLower: (In: string) => Out<string>
+		capitalize: (In: string) => Out<string>
+		normalize: (In: string) => Out<string>
+	}>
 }

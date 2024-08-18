@@ -58,7 +58,7 @@ contextualize(() => {
 
 		attest<
 			(In: FormData) => To<{
-				email: string.matching<"?">
+				email: string.narrowed
 				file: File
 				tags: (In: string | string[]) => Out<string[]>
 			}>
