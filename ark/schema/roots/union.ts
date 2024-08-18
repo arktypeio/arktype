@@ -351,7 +351,6 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		return this.isBoolean ? "boolean" : super.nestableExpression
 	}
 
-	// @cached
 	discriminate(): Discriminant | null {
 		if (this.branches.length < 2) return null
 		if (this.unitBranches.length === this.branches.length) {

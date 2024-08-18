@@ -117,7 +117,7 @@ export abstract class BaseNode<
 		{ [this.id]: this }
 	)
 
-	protected redefine<name extends keyof this>(
+	protected cacheGetter<name extends keyof this>(
 		name: name,
 		value: this[name]
 	): this[name] {
@@ -131,7 +131,7 @@ export abstract class BaseNode<
 			$ark.config[this.kind]?.description ??
 			$ark.defaultConfig[this.kind].description
 
-		return this.redefine(
+		return this.cacheGetter(
 			"description",
 			this.meta?.description ?? writer(this as never)
 		)
@@ -145,9 +145,8 @@ export abstract class BaseNode<
 		)
 	}
 
-	// @cached
 	get shallowReferences(): BaseNode[] {
-		return this.redefine(
+		return this.cacheGetter(
 			"shallowReferences",
 			this.hasKind("structure") ?
 				[this as BaseNode, ...this.children]
@@ -158,29 +157,33 @@ export abstract class BaseNode<
 		)
 	}
 
-	// @cached
 	get shallowMorphs(): Morph.Node[] {
-		return this.shallowReferences
-			.filter(n => n.hasKind("morph"))
-			.sort((l, r) => (l.expression < r.expression ? -1 : 1))
+		return this.cacheGetter(
+			"shallowMorphs",
+			this.shallowReferences
+				.filter(n => n.hasKind("morph"))
+				.sort((l, r) => (l.expression < r.expression ? -1 : 1))
+		)
 	}
 
 	// overriden by structural kinds so that only the root at each path is added
-	// @cached
 	get flatRefs(): array<FlatRef> {
-		return this.children
-			.reduce<FlatRef[]>(
-				(acc, child) => appendUniqueFlatRefs(acc, child.flatRefs),
-				[]
-			)
-			.sort((l, r) =>
-				l.path.length > r.path.length ? 1
-				: l.path.length < r.path.length ? -1
-				: l.propString > r.propString ? 1
-				: l.propString < r.propString ? -1
-				: l.node.expression < r.node.expression ? -1
-				: 1
-			)
+		return this.cacheGetter(
+			"flatRefs",
+			this.children
+				.reduce<FlatRef[]>(
+					(acc, child) => appendUniqueFlatRefs(acc, child.flatRefs),
+					[]
+				)
+				.sort((l, r) =>
+					l.path.length > r.path.length ? 1
+					: l.path.length < r.path.length ? -1
+					: l.propString > r.propString ? 1
+					: l.propString < r.propString ? -1
+					: l.node.expression < r.node.expression ? -1
+					: 1
+				)
+		)
 	}
 
 	readonly precedence: number = precedenceOfKind(this.kind)
@@ -200,14 +203,12 @@ export abstract class BaseNode<
 		return this(data)
 	}
 
-	// @cached
 	get in(): this extends { [arkKind]: "root" } ? BaseRoot : BaseNode {
-		return this.getIo("in") as never
+		return this.cacheGetter("in", this.getIo("in")) as never
 	}
 
-	// @cached
 	get out(): this extends { [arkKind]: "root" } ? BaseRoot : BaseNode {
-		return this.getIo("out") as never
+		return this.cacheGetter("out", this.getIo("out")) as never
 	}
 
 	// Should be refactored to use transform

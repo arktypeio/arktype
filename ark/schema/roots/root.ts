@@ -91,7 +91,6 @@ export abstract class BaseRoot<
 
 	protected abstract innerToJsonSchema(): JsonSchema
 
-	// @cached
 	toJsonSchema(): JsonSchema {
 		const schema = this.innerToJsonSchema()
 		return Object.assign(schema, this.metaJson)
@@ -130,18 +129,17 @@ export abstract class BaseRoot<
 		return this.$.rootNode(this.applyStructuralOperation("omit", keys))
 	}
 
-	// @cached
 	required(): BaseRoot {
 		return this.$.rootNode(this.applyStructuralOperation("required", []))
 	}
 
-	// @cached
 	partial(): BaseRoot {
 		return this.$.rootNode(this.applyStructuralOperation("partial", []))
 	}
 
-	// @cached
+	private _keyof?: BaseRoot
 	keyof(): BaseRoot {
+		if (this._keyof) return this._keyof
 		const result = this.applyStructuralOperation("keyof", []).reduce(
 			(result, branch) => result.intersect(branch).toNeverIfDisjoint(),
 			$ark.intrinsic.unknown.internal
@@ -152,7 +150,7 @@ export abstract class BaseRoot<
 				writeUnsatisfiableExpressionError(`keyof ${this.expression}`)
 			)
 		}
-		return result
+		return (this._keyof = result)
 	}
 
 	merge(r: unknown): BaseRoot {
@@ -343,24 +341,26 @@ export abstract class BaseRoot<
 		)
 	}
 
-	// @cached
 	get flatMorphs(): array<FlatRef<Morph.Node>> {
-		return this.flatRefs.reduce<FlatRef<Morph.Node>[]>(
-			(branches, ref) =>
-				appendUniqueFlatRefs(
-					branches,
-					ref.node.hasKind("union") ?
-						ref.node.branches
-							.filter(b => b.hasKind("morph"))
-							.map(branch => ({
-								path: ref.path,
-								propString: ref.propString,
-								node: branch
-							}))
-					: ref.node.hasKind("morph") ? (ref as FlatRef<Morph.Node>)
-					: []
-				),
-			[]
+		return this.cacheGetter(
+			"flatMorphs",
+			this.flatRefs.reduce<FlatRef<Morph.Node>[]>(
+				(branches, ref) =>
+					appendUniqueFlatRefs(
+						branches,
+						ref.node.hasKind("union") ?
+							ref.node.branches
+								.filter(b => b.hasKind("morph"))
+								.map(branch => ({
+									path: ref.path,
+									propString: ref.propString,
+									node: branch
+								}))
+						: ref.node.hasKind("morph") ? (ref as FlatRef<Morph.Node>)
+						: []
+					),
+				[]
+			)
 		)
 	}
 

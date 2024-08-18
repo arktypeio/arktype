@@ -264,7 +264,6 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		...this.optionalLiteralKeys
 	]
 
-	// @cached
 	keyof(): BaseRoot {
 		let branches = this.$.units(this.literalKeys).branches
 		this.index?.forEach(({ signature }) => {

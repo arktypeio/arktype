@@ -82,9 +82,11 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 	readonly expression: string = this.alias
 	readonly structure = undefined
 
-	// @cached
 	get resolution(): BaseRoot {
-		return this.resolve?.() ?? this.$.resolveRoot(this.alias)
+		return this.cacheGetter(
+			"resolution",
+			this.resolve?.() ?? this.$.resolveRoot(this.alias)
+		)
 	}
 
 	get shortDescription(): string {
