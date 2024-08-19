@@ -1,5 +1,5 @@
 import { ArkErrors } from "@ark/schema"
-import { arkNumber } from "../number.ts"
+import { arkNumber } from "../number/number.ts"
 import { integerString } from "./string.ts"
 import { regexStringNode } from "./utils.ts"
 
@@ -99,7 +99,7 @@ export const tryParseDatePattern = (
 	return writeFormattedExpected(opts.format)
 }
 
-const epoch = integerString
+export const epoch = integerString
 	.narrow((s, ctx) => {
 		// we know this is safe since it has already
 		// been validated as an integer string
@@ -113,7 +113,7 @@ const epoch = integerString
 	})
 	.describe("an integer string representing a safe Unix timestamp")
 
-const iso8601 = regexStringNode(
+export const iso8601 = regexStringNode(
 	iso8601Matcher,
 	"an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date"
 )

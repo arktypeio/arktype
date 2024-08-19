@@ -59,7 +59,6 @@ export const arkUuid = {
 
 export declare namespace arkUuid {
 	export type submodule = Submodule<{
-<<<<<<< HEAD:ark/type/keywords/string/uuid.ts
 		$root: string.narrowed
 		v1: string.narrowed
 		v2: string.narrowed
@@ -71,18 +70,5 @@ export declare namespace arkUuid {
 		v8: string.narrowed
 		nil: string.narrowed
 		max: string.narrowed
-=======
-		$root: string.matching<"?">
-		v1: string.matching<"?">
-		v2: string.matching<"?">
-		v3: string.matching<"?">
-		v4: string.matching<"?">
-		v5: string.matching<"?">
-		v6: string.matching<"?">
-		v7: string.matching<"?">
-		v8: string.matching<"?">
-		nil: string.matching<"?">
-		max: string.matching<"?">
->>>>>>> main:ark/type/keywords/utils/uuid.ts
 	}>
 }

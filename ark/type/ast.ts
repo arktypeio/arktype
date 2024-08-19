@@ -18,7 +18,7 @@ import {
 } from "@ark/util"
 import type { inferPipe } from "./intersect.ts"
 import type { type } from "./keywords/ark.ts"
-import type { arkObject } from "./keywords/object.ts"
+import type { arkObject } from "./keywords/object/object.ts"
 import type { Type } from "./type.ts"
 
 export type Comparator = "<" | "<=" | ">" | ">=" | "=="

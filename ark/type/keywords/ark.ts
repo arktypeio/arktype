@@ -9,9 +9,9 @@ import type {
 	TypeParser
 } from "../type.ts"
 import { arkBuiltin } from "./builtin.ts"
-import { arkNumber } from "./number.ts"
-import { arkObject } from "./object.ts"
-import { arkString } from "./string.ts"
+import { arkNumber } from "./number/number.ts"
+import { arkObject } from "./object/object.ts"
+import { arkString } from "./string/string.ts"
 import { arkTs } from "./ts.ts"
 
 export interface Ark
