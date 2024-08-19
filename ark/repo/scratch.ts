@@ -1,5 +1,5 @@
-class Foo {}
+import { type } from "arktype"
 
-const foo = new Foo()
-
-foo.constructor.prototype //?
+const t = type({
+	foo: "string.numeric"
+})

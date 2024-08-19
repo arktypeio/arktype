@@ -40,7 +40,7 @@
 		},
 		"arkChained": {
 			"contentName": "meta.embedded.arktype.definition",
-			"begin": "([^\\)\\(\\s]+)?(\\.)(and|or|when|extends|intersect|exclude|extract|overlaps|subsumes|to)(\\()",
+			"begin": "([^\\)\\(\\s]+)?(\\.)(and|or|when|extends|intersect|exclude|extract|overlaps|subsumes|to|module)(\\()",
 			"beginCaptures": {
 				"2": {
 					"name": "punctuation.accessor.ts"

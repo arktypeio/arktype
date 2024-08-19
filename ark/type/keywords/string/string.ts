@@ -6,6 +6,7 @@ import { scope } from "../../scope.ts"
 import { epoch } from "../number/number.ts"
 import { creditCard } from "./creditCard.ts"
 import { arkIp } from "./ip.ts"
+import { numeric } from "./numeric.ts"
 import { regexStringNode } from "./utils.ts"
 import { arkUuid } from "./uuid.ts"
 
@@ -23,22 +24,15 @@ export const semver = regexStringNode(
 	"a semantic version (see https://semver.org/)"
 )
 
-export const numericString = regexStringNode(
-	wellFormedNumberMatcher,
-	"a well-formed numeric string"
-)
-
 export const integerString = regexStringNode(
 	wellFormedIntegerMatcher,
 	"a well-formed integer string"
 )
 
-
-
 const submodule: Module<arkString.submodule> = scope(
 	{
 		$root: intrinsic.string,
-		numeric: numericString,
+		numeric,
 		integer: integerString,
 		alpha: regexStringNode(/^[A-Za-z]*$/, "only letters"),
 		alphanumeric: regexStringNode(
@@ -97,11 +91,8 @@ export declare namespace arkString {
 		digits: string.narrowed
 		lower: string.narrowed
 		upper: string.narrowed
-		numeric: string.narrowed
-		integer: Submodule<{
-			$root: string.integer
-			parse: (In: string.integer) => Out<number.divisibleBy<1>>
-		}>
+		numeric: numeric.submodule
+
 		iso8601: string.narrowed
 		epoch: string.narrowed
 		creditCard: string.narrowed
