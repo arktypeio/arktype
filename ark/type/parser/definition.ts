@@ -12,6 +12,7 @@ import {
 	type array,
 	type defined,
 	type equals,
+	type inferred,
 	type objectKindOrDomainOf,
 	type optionalKeyOf,
 	type requiredKeyOf,
@@ -65,7 +66,8 @@ export const parseObject = (def: object, ctx: ParseContext): BaseRoot => {
 
 export type inferDefinition<def, $, args> =
 	[def] extends [anyOrNever] ? def
-	: def extends type.cast<infer t> | ThunkCast<infer t> ? t
+	: inferred extends keyof def ? def[inferred]
+	: def extends ThunkCast<infer t> ? t
 	: def extends string ? inferString<def, $, args>
 	: def extends array ? inferTuple<def, $, args>
 	: def extends RegExp ? string.matching<string>
