@@ -3,7 +3,7 @@ import { type } from "arktype"
 
 contextualize(() => {
 	it("trim", () => {
-		const trim = type("string.to.trimmed")
+		const trim = type("string")
 		attest(trim("  foo  ")).equals("foo")
 		attest(trim(5).toString()).snap("must be a string (was number)")
 	})

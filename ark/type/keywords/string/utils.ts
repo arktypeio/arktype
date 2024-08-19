@@ -1,6 +1,6 @@
 import { node } from "@ark/schema"
 import type { Type } from "../../type.ts"
-import type { string } from "../ast.ts"
+import type { string } from "./string.ts"
 
 // Non-trivial expressions should have an explanation or attribution
 

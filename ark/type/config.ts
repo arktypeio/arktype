@@ -13,10 +13,6 @@ declare global {
 	export interface ArkEnv {
 		$(): Ark
 	}
-
-	export namespace ArkEnv {
-		export type $ = ReturnType<ArkEnv["$"]>
-	}
 }
 
 /**
@@ -27,8 +23,8 @@ declare global {
  * If, in the future, docs can build while arktype refers to `ArkEnv.$` directly,
  * this can be removed.
  */
-export namespace ArkAmbient {
-	export type $ = ArkEnv.$
+export declare namespace ArkAmbient {
+	export type $ = ReturnType<ArkEnv["$"]>
 
 	export type meta = ArkEnv.meta
 
