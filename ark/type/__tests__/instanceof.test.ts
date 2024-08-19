@@ -96,7 +96,7 @@ contextualize(() => {
 		it("instance branches", () => {
 			const t = type("instanceof", Date, Map)
 			attest<Date | Map<unknown, unknown>>(t.infer)
-			attest(t.json).equals(type("Date|Map").json)
+			attest(t.json).equals(type("object.Date|object.Map").json)
 		})
 		it("non-constructor", () => {
 			// @ts-expect-error just an assignability failure so we can't validate an error message

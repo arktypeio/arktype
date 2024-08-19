@@ -96,12 +96,12 @@ contextualize(() => {
 		})
 
 		it("Date", () => {
-			const t = type({ key: 'Date = d"1993-05-21"' })
+			const t = type({ key: 'object.Date = d"1993-05-21"' })
 
 			const out = t.assert({})
 
 			// pass the same date instance back
-			const expected = type({ key: ["Date", "=", out.key] })
+			const expected = type({ key: ["object.Date", "=", out.key] })
 
 			// we can't check expected here since the Date instance will not
 			// have a narrowed literal type

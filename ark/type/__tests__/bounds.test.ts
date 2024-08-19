@@ -106,14 +106,14 @@ contextualize(() => {
 		})
 
 		it("single Date", () => {
-			const t = type("Date<d'2023/1/12'")
+			const t = type("object.Date<d'2023/1/12'")
 			attest<Date>(t.infer)
 			attest(t).type.toString.snap('Type<before<"2023/1/12">, {}>')
 			attest(t.json).snap({ proto: "Date", before: "2023-01-12T04:59:59.999Z" })
 		})
 
 		it("Date equality", () => {
-			const t = type("Date==d'2020-1-1'")
+			const t = type("object.Date==d'2020-1-1'")
 			attest<Date>(t.infer)
 			attest(t).type.toString.snap('Type<literal<"2020-1-1">, {}>')
 			attest(t.json).snap({ unit: "2020-01-01T05:00:00.000Z" })
@@ -139,7 +139,7 @@ contextualize(() => {
 
 		it("dynamic Date", () => {
 			const now = new Date()
-			const t = type(`d'2000'<Date<=d'${now.toISOString()}'`)
+			const t = type(`d'2000'<object.Date<=d'${now.toISOString()}'`)
 			attest<Date>(t.infer)
 			attest(t).type.toString.snap(
 				'Type<is<After<"2000"> & AtOrBefore<string>>, {}>'
@@ -397,16 +397,16 @@ contextualize(() => {
 		})
 
 		it("atOrAfter", () => {
-			const t = type("Date").atOrAfter(new Date("2022-01-01"))
+			const t = type("object.Date").atOrAfter(new Date("2022-01-01"))
 			// widen the input to a string so both are non-narrowed
-			const expected = type(`Date>=d'${"2022-01-01" as string}'`)
+			const expected = type(`object.Date>=d'${"2022-01-01" as string}'`)
 			attest<typeof expected>(t)
 			attest(t.json).equals(expected.json)
 		})
 
 		it("laterThan", () => {
-			const t = type("Date").laterThan(new Date("2022-01-01"))
-			const expected = type(`Date>d'${"2022-01-01" as string}'`)
+			const t = type("object.Date").laterThan(new Date("2022-01-01"))
+			const expected = type(`object.Date>d'${"2022-01-01" as string}'`)
 			attest<typeof expected>(t)
 			attest(t.json).equals(expected.json)
 		})
@@ -421,15 +421,15 @@ contextualize(() => {
 		})
 
 		it("atOrBefore", () => {
-			const t = type("Date").atOrBefore(5)
-			const expected = type("Date<=5")
+			const t = type("object.Date").atOrBefore(5)
+			const expected = type("object.Date<=5")
 			attest<typeof expected>(t)
 			attest(t.json).equals(expected.json)
 		})
 
 		it("earlierThan", () => {
-			const t = type("Date").earlierThan(5)
-			const expected = type("Date<5")
+			const t = type("object.Date").earlierThan(5)
+			const expected = type("object.Date<5")
 			attest<typeof expected>(t)
 			attest(t.json).equals(expected.json)
 		})

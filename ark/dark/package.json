@@ -67,7 +67,7 @@
 			},
 			"errorLens.replace": [
 				{
-					"matcher": ".*'ErrorType<(.*)>'",
+					"matcher": ".*'ErrorType<(.*)>'.*$",
 					"message": "$1"
 				},
 				{

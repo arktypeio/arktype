@@ -43,7 +43,7 @@ import type { ArkAmbient } from "./config.ts"
 import {
 	parseGenericParams,
 	type GenericDeclaration,
-	type GenericHktParser,
+	type GenericParser,
 	type ParameterString,
 	type baseGenericConstraints,
 	type parseValidGenericParams
@@ -362,7 +362,7 @@ export interface Scope<$ = {}> {
 
 	define: DefinitionParser<$>
 
-	generic: GenericHktParser<$>
+	generic: GenericParser<$>
 
 	import(): Module<{ [k in exportedNameOf<$> as PrivateDeclaration<k>]: $[k] }>
 	import<names extends exportedNameOf<$>[]>(
