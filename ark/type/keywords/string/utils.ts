@@ -2,6 +2,8 @@ import { node } from "@ark/schema"
 import type { string } from "../../ast.ts"
 import type { Type } from "../../type.ts"
 
+// Non-trivial expressions should have an explanation or attribution
+
 export const regexStringNode = (
 	regex: RegExp,
 	description: string

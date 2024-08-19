@@ -11,25 +11,20 @@ import type {
 import { arkBuiltin } from "./builtin.ts"
 import { arkNumber } from "./number.ts"
 import type { arkObject } from "./object.ts"
-import { arkParse } from "./parse.ts"
 import { arkString } from "./string.ts"
 import { arkTs } from "./ts.ts"
 
 export interface Ark
 	extends Omit<Ark.keywords, keyof Ark.Wrapped>,
-		Ark.Wrapped {
-	parse: arkParse.submodule
-}
+		Ark.Wrapped {}
 
 export declare namespace Ark {
-	export interface keywords
-		extends arkTs.keywords,
-			arkObject.$,
-			arkBuiltin.keywords {}
+	export interface keywords extends arkTs.submodule, arkBuiltin.submodule {}
 
 	export interface Wrapped {
 		string: arkString.submodule
 		number: arkNumber.submodule
+		object: arkObject.submodule
 	}
 }
 
@@ -38,8 +33,7 @@ export const ambient: Scope<Ark> = scope(
 		...arkTs.keywords,
 		...arkBuiltin.keywords,
 		string: arkString.submodule,
-		number: arkNumber.submodule,
-		parse: arkParse.submodule
+		number: arkNumber.submodule
 	},
 	{ prereducedAliases: true, ambient: true }
 ) as never

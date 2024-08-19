@@ -1,7 +1,7 @@
 import type { string } from "../../ast.ts"
 import type { Submodule } from "../../module.ts"
 import { scope } from "../../scope.ts"
-import { regexStringNode } from "./regex.ts"
+import { regexStringNode } from "./utils.ts"
 
 // Based on https://github.com/validatorjs/validator.js/blob/master/src/lib/isUUID.js
 const submodule = scope(

@@ -1,3 +1,8 @@
+import { ArkErrors } from "@ark/schema"
+import { arkNumber } from "../number.ts"
+import { integerString } from "./string.ts"
+import { regexStringNode } from "./utils.ts"
+
 type DayDelimiter = "." | "/" | "-"
 
 const dayDelimiterMatcher = /^[./-]$/
@@ -93,3 +98,30 @@ export const tryParseDatePattern = (
 
 	return writeFormattedExpected(opts.format)
 }
+
+const epoch = integerString
+	.narrow((s, ctx) => {
+		// we know this is safe since it has already
+		// been validated as an integer string
+		const n = Number.parseInt(s)
+		const out = arkNumber.submodule.epoch(n)
+		if (out instanceof ArkErrors) {
+			ctx.errors.merge(out)
+			return false
+		}
+		return true
+	})
+	.describe("an integer string representing a safe Unix timestamp")
+
+const iso8601 = regexStringNode(
+	iso8601Matcher,
+	"an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date"
+)
+
+const parsedate = rootNode({
+	in: "string",
+	morphs: (s: string, ctx) => {
+		const result = tryParseDatePattern(s)
+		return typeof result === "string" ? ctx.error(result) : result
+	}
+})

@@ -86,6 +86,10 @@ export type Narrowed = {
 	predicate: { [k in "?"]: 1 }
 }
 
+export type Branded<rule> = {
+	predicate: constraint<rule>
+}
+
 export type primitiveConstraintKindOf<In> = Extract<
 	Constraint.PrimitiveKind,
 	constraintKindOf<In>
@@ -103,6 +107,8 @@ export declare namespace number {
 	export type divisibleBy<rule> = constrain<number, DivisibleBy<rule>>
 
 	export type narrowed = constrain<number, Narrowed>
+
+	export type branded<rule> = constrain<number, Branded<rule>>
 
 	export type is<constraints extends Constraints> = constrain<
 		number,
@@ -163,6 +169,12 @@ export declare namespace string {
 
 	export type narrowed = constrain<string, Narrowed>
 
+	export type branded<rule> = constrain<string, Branded<rule>>
+
+	export type url = constrain<string, Branded<"url">>
+
+	export type integer = constrain<string, Branded<"integer">>
+
 	export type is<constraints extends Constraints> = constrain<
 		string,
 		constraints
@@ -213,6 +225,8 @@ export declare namespace Date {
 	export type before<rule> = constrain<Date, Before<rule>>
 
 	export type narrowed = constrain<Date, Narrowed>
+
+	export type branded<rule> = constrain<Date, Branded<rule>>
 
 	export type literal<rule> = constrain<Date, Literal<rule>>
 

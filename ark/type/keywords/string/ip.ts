@@ -1,7 +1,7 @@
 import type { string } from "../../ast.ts"
 import type { Submodule } from "../../module.ts"
 import { scope } from "../../scope.ts"
-import { regexStringNode } from "./regex.ts"
+import { regexStringNode } from "./utils.ts"
 
 // Based on https://github.com/validatorjs/validator.js/blob/master/src/lib/isIP.js
 const ipv4Segment = "(?:[0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])"

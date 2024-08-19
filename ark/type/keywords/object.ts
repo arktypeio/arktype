@@ -1,4 +1,4 @@
-import type { Module } from "../module.ts"
+import type { Module, Submodule } from "../module.ts"
 import { scope } from "../scope.ts"
 
 const keywords: Module<arkObject.$> = scope(
@@ -92,7 +92,9 @@ export declare namespace arkObject {
 		BigUint64: BigUint64Array
 	}
 
-	export interface $ extends ecmascript, platform, typedArray {
+	interface $ extends ecmascript, platform, typedArray {
 		$root: object
 	}
+
+	export type submodule = Submodule<$>
 }

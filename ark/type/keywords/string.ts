@@ -1,114 +1,17 @@
-import { ArkErrors, intrinsic, rootNode } from "@ark/schema"
-import { wellFormedIntegerMatcher, wellFormedNumberMatcher } from "@ark/util"
-import type { Out, string } from "../ast.ts"
+import {
+	ArkErrors,
+	intrinsic,
+	rootNode,
+	type IntersectionNode
+} from "@ark/schema"
+import { isWellFormedInteger, wellFormedNumberMatcher } from "@ark/util"
+import type { number, Out, string } from "../ast.ts"
 import type { Module, Submodule } from "../module.ts"
 import { scope } from "../scope.ts"
 import { arkNumber } from "./number.ts"
-import { creditCardMatcher, isLuhnValid } from "./utils/creditCard.ts"
-import { iso8601Matcher } from "./utils/date.ts"
-import { arkIp } from "./utils/ip.ts"
-import { regexStringNode } from "./utils/regex.ts"
-import { arkUuid } from "./utils/uuid.ts"
-
-// Non-trivial expressions should have an explanation or attribution
-
-const isParsableUrl = (s: string) => {
-	if (URL.canParse as unknown) return URL.canParse(s)
-	// Can be removed once Node 18 is EOL
-	try {
-		new URL(s)
-		return true
-	} catch {
-		return false
-	}
-}
-
-const isParsableJson = (s: string) => {
-	try {
-		JSON.parse(s)
-		return true
-	} catch {
-		return false
-	}
-}
-
-const url = rootNode({
-	domain: "string",
-	predicate: {
-		meta: "a URL string",
-		predicate: isParsableUrl
-	}
-})
-
-const json = rootNode({
-	domain: "string",
-	predicate: {
-		meta: "a JSON string",
-		predicate: isParsableJson
-	}
-})
-
-// https://www.regular-expressions.info/email.html
-const emailMatcher = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/
-
-const email = regexStringNode(emailMatcher, "an email address")
-
-// https://semver.org/
-const semverMatcher =
-	/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
-
-const semver = regexStringNode(
-	semverMatcher,
-	"a semantic version (see https://semver.org/)"
-)
-
-const creditCard = rootNode({
-	domain: "string",
-	pattern: {
-		meta: "a credit card number",
-		rule: creditCardMatcher.source
-	},
-	predicate: {
-		meta: "a credit card number",
-		predicate: isLuhnValid
-	}
-})
-
-const numericString = regexStringNode(
-	wellFormedNumberMatcher,
-	"a well-formed numeric string"
-)
-
-const integerString = regexStringNode(
-	wellFormedIntegerMatcher,
-	"a well-formed integer string"
-)
-
-const epoch = integerString
-	.narrow((s, ctx) => {
-		// we know this is safe since it has already
-		// been validated as an integer string
-		const n = Number.parseInt(s)
-		const out = arkNumber.submodule.epoch(n)
-		if (out instanceof ArkErrors) {
-			ctx.errors.merge(out)
-			return false
-		}
-		return true
-	})
-	.describe("an integer string representing a safe Unix timestamp")
-
-const iso8601 = regexStringNode(
-	iso8601Matcher,
-	"an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date"
-)
-
-// url: (In: string) => Out<URL>
-// number: (In: string) => Out<number>
-// integer: (In: string) => Out<number.divisibleBy<1>>
-// date: (In: string) => Out<Date>
-// json: (In: string) => Out<object>
-// formData: (In: FormData) => Out<ParsedFormData>
+import { iso8601Matcher, tryParseDatePattern } from "./string/dates.ts"
+import { arkIp } from "./string/ip.ts"
+import { arkUuid } from "./string/uuid.ts"
 
 const submodule: Module<arkString.submodule> = scope(
 	{
@@ -173,13 +76,16 @@ export declare namespace arkString {
 		lower: string.narrowed
 		upper: string.narrowed
 		numeric: string.narrowed
-		integer: string.narrowed
+		integer: Submodule<{
+			$root: string.integer
+			parse: (In: string.integer) => Out<number.divisibleBy<1>>
+		}>
 		iso8601: string.narrowed
 		epoch: string.narrowed
 		creditCard: string.narrowed
 		email: string.narrowed
 		uuid: arkUuid.submodule
-		url: string.narrowed
+
 		semver: string.narrowed
 		ip: arkIp.submodule
 
@@ -189,5 +95,9 @@ export declare namespace arkString {
 		toLower: (In: string) => Out<string>
 		capitalize: (In: string) => Out<string>
 		normalize: (In: string) => Out<string>
+
+		number: (In: string) => Out<number>
+		date: (In: string) => Out<Date>
+		json: (In: string) => Out<object>
 	}>
 }
