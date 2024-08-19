@@ -1,6 +1,7 @@
 import { rootNode } from "@ark/schema"
 import type { Out, string } from "../../ast.ts"
 import type { Submodule } from "../../module.ts"
+import { submodule } from "../utils.ts"
 
 const isParsableUrl = (s: string) => {
 	if (URL.canParse as unknown) return URL.canParse(s)
@@ -13,7 +14,7 @@ const isParsableUrl = (s: string) => {
 	}
 }
 
-const url = rootNode({
+const $root = rootNode({
 	domain: "string",
 	predicate: {
 		meta: "a URL string",
@@ -21,9 +22,12 @@ const url = rootNode({
 	}
 })
 
-const parseurl = rootNode({
-	in: url as never,
-	morphs: (s: string): URL => new URL(s)
+export const url = submodule({
+	$root,
+	parse: rootNode({
+		in: $root as never,
+		morphs: (s: string): URL => new URL(s)
+	})
 })
 
 export type url = Submodule<{
