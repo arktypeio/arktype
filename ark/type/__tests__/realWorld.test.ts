@@ -106,7 +106,7 @@ contextualize(() => {
 			score: 0
 		})
 
-		attest(out.toString()).snap(`email must be a valid email (was "")
+		attest(out.toString()).snap(`email must be an email address (was "")
 tags must be at least length 3 (was 2)`)
 	})
 
@@ -134,7 +134,7 @@ tags must be at least length 3 (was 2)`)
 
 		const out = schema(data)
 
-		attest(out.toString()).snap(`email must be a valid email (was "")
+		attest(out.toString()).snap(`email must be an email address (was "")
 extra must be a string or null (was missing)
 score must be at least 0 (was -1)
 tags must be at least length 3 (was 2)

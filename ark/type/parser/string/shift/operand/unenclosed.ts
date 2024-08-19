@@ -1,7 +1,7 @@
 import {
-	BaseRoot,
 	hasArkKind,
 	writeUnresolvableMessage,
+	type BaseRoot,
 	type GenericAst,
 	type GenericRoot,
 	type PrivateDeclaration,
@@ -144,7 +144,7 @@ const maybeParseReference = (
 ): BaseRoot | undefined => {
 	if (s.ctx.args?.[token]) return s.ctx.args[token].internal
 	const resolution = s.ctx.$.maybeResolve(token)
-	if (resolution instanceof BaseRoot) return resolution
+	if (hasArkKind(resolution, "root")) return resolution
 	if (resolution === undefined) return
 	if (hasArkKind(resolution, "generic"))
 		return parseGenericInstantiation(token, resolution, s)

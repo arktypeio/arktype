@@ -51,7 +51,7 @@ contextualize(() => {
 		const email = type("email")
 		attest(email("shawn@mail.com")).snap("shawn@mail.com")
 		attest(email("shawn@email").toString()).equals(
-			'must be a valid email (was "shawn@email")'
+			'must be an email address (was "shawn@email")'
 		)
 	})
 
@@ -60,18 +60,18 @@ contextualize(() => {
 		attest(ark.creditCard(validCC)).equals(validCC)
 		// Regex validation
 		attest(ark.creditCard("0".repeat(16)).toString()).equals(
-			'must be a valid credit card number (was "0000000000000000")'
+			'must be a credit card number (was "0000000000000000")'
 		)
 		// Luhn validation
 		attest(ark.creditCard(validCC.slice(0, -1) + "0").toString()).equals(
-			'must be a valid credit card number (was "5489582921773370")'
+			'must be a credit card number (was "5489582921773370")'
 		)
 	})
 
 	it("semver", () => {
 		attest(ark.semver("1.0.0")).snap("1.0.0")
 		attest(ark.semver("-1.0.0").toString()).equals(
-			'must be a valid semantic version (see https://semver.org/) (was "-1.0.0")'
+			'must be a semantic version (see https://semver.org/) (was "-1.0.0")'
 		)
 	})
 })

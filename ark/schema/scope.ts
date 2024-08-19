@@ -330,7 +330,17 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 		return typeof resolution === "string" ?
 				this.node("alias", { alias: resolution }, { prereduced: true })
-			:	(resolution ?? maybeResolveSubalias(this.aliases, name))
+			:	(resolution ?? this.maybeResolveSubalias(name))
+	}
+
+	/** If name is a valid reference to a submodule alias, return its resolution  */
+	protected maybeResolveSubalias(
+		name: string
+	): BaseRoot | GenericRoot | undefined {
+		return (
+			maybeResolveSubalias(this.aliases, name) ??
+			maybeResolveSubalias(this.ambient, name)
+		)
 	}
 
 	get ambient(): InternalModule {
@@ -358,13 +368,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 		return (this.resolutions[name] = this.parseRoot(preparsed, {
 			alias: name
 		}).bindScope(this))
-	}
-
-	/** If name is a valid reference to a submodule alias, return its resolution  */
-	protected maybeResolveSubalias(
-		name: string
-	): BaseRoot | GenericRoot | undefined {
-		return maybeResolveSubalias(this.aliases, name)
 	}
 
 	import<names extends exportedNameOf<$>[]>(

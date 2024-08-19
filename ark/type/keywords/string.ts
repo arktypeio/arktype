@@ -109,8 +109,8 @@ const submodule: Module<arkString.submodule> = scope(
 			"only letters and digits 0-9"
 		),
 		digits: regexStringNode(/^\d*$/, "only digits 0-9"),
-		lowercase: regexStringNode(/^[a-z]*$/, "only lowercase letters"),
-		uppercase: regexStringNode(/^[A-Z]*$/, "only uppercase letters"),
+		lower: regexStringNode(/^[a-z]*$/, "only lowercase letters"),
+		upper: regexStringNode(/^[A-Z]*$/, "only uppercase letters"),
 		iso8601,
 		epoch,
 		...keywords
