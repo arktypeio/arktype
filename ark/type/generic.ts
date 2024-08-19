@@ -41,7 +41,7 @@ export type validateParameterString<s extends ParameterString, $> =
 	:	s
 
 export type validateGenericArg<arg, param extends GenericParamAst, $> =
-	inferTypeRoot<arg, $> extends param[1] ? arg
+	inferTypeRoot<arg, $> extends param[1] ? unknown
 	:	ErrorType<`Invalid argument for ${param[0]}`, [expected: param[1]]>
 
 export type GenericInstantiator<
@@ -403,8 +403,8 @@ interface GenericBodyParser<params extends array<GenericParamAst>, $> {
 		body: validateDefinition<body, $, baseGenericConstraints<params>>
 	): Generic<params, body, $, $>
 
-	// <hkt extends Hkt.constructor>(
-	// 	instantiateDef: LazyGenericBody<baseGenericResolutions<params, $>>,
-	// 	hkt: hkt
-	// ): Generic<params, InstanceType<hkt>, $, $>
+	<hkt extends Hkt.constructor>(
+		instantiateDef: LazyGenericBody<baseGenericResolutions<params, $>>,
+		hkt: hkt
+	): Generic<params, InstanceType<hkt>, $, $>
 }

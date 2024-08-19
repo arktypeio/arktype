@@ -31,12 +31,18 @@ contextualize(() => {
 			attest(schrodingersBox.json).equals(expected.json)
 		})
 
-		it("completions", () => {
+		it("body completions", () => {
 			// @ts-expect-error
 			attest(() => type("<foobar>", { a: "foob", b: "bool" })).completions({
 				foob: ["foobar"],
 				bool: ["boolean"]
 			})
+		})
+
+		it("args completions", () => {
+			const g = type("<t>", { box: "t" })
+			// @ts-expect-error
+			attest(() => g({ box: "numb" })).completions({ numb: ["number"] })
 		})
 
 		it("binary", () => {
@@ -518,6 +524,11 @@ contextualize(() => {
 				proto: "$ark.MyExternalClass",
 				domain: "object"
 			})
+
+			// @ts-expect-error
+			attest(() => validateExternalGeneric({ numb: "numb" })).completions({
+				numb: ["number"]
+			})
 		})
 
 		it("can infer constrained parameters", () => {
@@ -556,6 +567,18 @@ contextualize(() => {
 				.type.errors(
 					`ErrorType<"Invalid argument for N", [expected: { value: number; }]>`
 				)
+
+			attest(() =>
+				// @ts-expect-error
+				validateExternalGeneric({ numb: "numb" }, ["strin"])
+			).completions({
+				numb: ["number"],
+				strin: ["string"]
+			})
+		})
+
+		it("args completions", () => {
+			const g = type("<t>", { box: "t" })
 		})
 	})
 
