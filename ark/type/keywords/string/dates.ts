@@ -1,7 +1,6 @@
-import { ArkErrors } from "@ark/schema"
+import { ArkErrors, rootNode } from "@ark/schema"
 import { arkNumber } from "../number/number.ts"
 import { integer } from "./integer.ts"
-import { integerString } from "./string.ts"
 import { regexStringNode } from "./utils.ts"
 
 type DayDelimiter = "." | "/" | "-"
@@ -119,7 +118,7 @@ export const iso8601 = regexStringNode(
 	"an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date"
 )
 
-const parsedate = rootNode({
+export const parsedate = rootNode({
 	in: "string",
 	morphs: (s: string, ctx) => {
 		const result = tryParseDatePattern(s)

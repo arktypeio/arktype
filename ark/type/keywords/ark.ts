@@ -22,7 +22,7 @@ export declare namespace Ark {
 	export interface keywords extends arkTs.submodule, arkBuiltin.submodule {}
 
 	export interface Wrapped {
-		string: arkString.submodule
+		string: arkString
 		number: arkNumber.submodule
 		object: arkObject.submodule
 	}
@@ -32,7 +32,7 @@ export const ambient: Scope<Ark> = scope(
 	{
 		...arkTs.keywords,
 		...arkBuiltin.keywords,
-		string: arkString.submodule,
+		string: arkString,
 		number: arkNumber.submodule,
 		object: arkObject.submodule
 	},

@@ -12,7 +12,7 @@ import { email } from "./email.ts"
 import { integer } from "./integer.ts"
 import { ip } from "./ip.ts"
 import { lower, toLower } from "./lower.ts"
-import { normalized, toNormalized } from "./normalize.ts"
+import { normalized, toNormalized } from "./normalized.ts"
 import { numeric } from "./numeric.ts"
 import { semver } from "./semver.ts"
 import { toTrimmed, trimmed } from "./trim.ts"
@@ -67,6 +67,7 @@ export type arkString = Submodule<{
 	ip: ip
 	trimmed: trimmed
 	capitalized: capitalized
+	normalized: normalized
 	to: Submodule<{
 		trimmed: toTrimmed
 		capitalized: toCapitalized

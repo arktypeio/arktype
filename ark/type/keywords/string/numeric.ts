@@ -5,7 +5,7 @@ import type { Submodule } from "../../module.ts"
 import { submodule } from "../utils.ts"
 import { regexStringNode } from "./utils.ts"
 
-namespace string {
+declare namespace string {
 	export type numeric = constrain<string, Branded<"numeric">>
 }
 

@@ -1,7 +1,7 @@
 import type { Branded, constrain } from "../../ast.ts"
 import { regexStringNode } from "./utils.ts"
 
-namespace string {
+declare namespace string {
 	export type alpha = constrain<string, Branded<"alpha">>
 }
 

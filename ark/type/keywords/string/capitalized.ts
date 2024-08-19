@@ -2,7 +2,7 @@ import { rootNode } from "@ark/schema"
 import type { Branded, constrain, Out } from "../../ast.ts"
 import { regexStringNode } from "./utils.ts"
 
-namespace string {
+declare namespace string {
 	export type capitalize = constrain<string, Branded<"capitalized">>
 }
 
