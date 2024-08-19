@@ -33,8 +33,8 @@ export const ambient: Scope<Ark> = scope(
 		...arkTs.keywords,
 		...arkBuiltin.keywords,
 		string: arkString,
-		number: arkNumber.submodule,
-		object: arkObject.submodule
+		number: arkNumber,
+		object: arkObject
 	},
 	{ prereducedAliases: true, ambient: true }
 ) as never
