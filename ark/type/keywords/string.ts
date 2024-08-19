@@ -1,15 +1,10 @@
 import {
-	ArkErrors,
 	intrinsic,
-	rootNode,
-	type IntersectionNode
+	rootNode
 } from "@ark/schema"
-import { isWellFormedInteger, wellFormedNumberMatcher } from "@ark/util"
 import type { number, Out, string } from "../ast.ts"
 import type { Module, Submodule } from "../module.ts"
 import { scope } from "../scope.ts"
-import { arkNumber } from "./number.ts"
-import { iso8601Matcher, tryParseDatePattern } from "./string/dates.ts"
 import { arkIp } from "./string/ip.ts"
 import { arkUuid } from "./string/uuid.ts"
 

@@ -371,7 +371,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 		}).bindScope(this))
 	}
 
-
 	import<names extends exportedNameOf<$>[]>(
 		...names: names
 	): SchemaModule<show<destructuredImportContext<$, names>>> {

@@ -2,6 +2,7 @@ import type {
 	ArkErrors,
 	BaseRoot,
 	Disjoint,
+	JsonSchema,
 	MetaSchema,
 	Morph,
 	UndeclaredKeyBehavior
@@ -41,6 +42,7 @@ interface Type<out t = unknown, $ = {}>
 	[inferred]: t
 
 	json: Json
+	toJsonSchema(): JsonSchema
 	description: string
 	expression: string
 	internal: BaseRoot

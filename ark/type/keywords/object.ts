@@ -1,7 +1,7 @@
 import type { Module, Submodule } from "../module.ts"
 import { scope } from "../scope.ts"
 
-const keywords: Module<arkObject.$> = scope(
+const submodule: Module<arkObject.$> = scope(
 	{
 		// ECMAScript Objects
 		Array: ["instanceof", Array],
@@ -43,7 +43,7 @@ const keywords: Module<arkObject.$> = scope(
 ).export()
 
 export const arkObject = {
-	keywords
+	submodule
 }
 
 export declare namespace arkObject {

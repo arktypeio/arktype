@@ -1,7 +1,11 @@
 import type { string } from "../../ast.ts"
 import type { Submodule } from "../../module.ts"
 import { scope } from "../../scope.ts"
+<<<<<<< HEAD:ark/type/keywords/string/ip.ts
 import { regexStringNode } from "./utils.ts"
+=======
+import { regexStringNode } from "./regex.ts"
+>>>>>>> main:ark/type/keywords/utils/ip.ts
 
 // Based on https://github.com/validatorjs/validator.js/blob/master/src/lib/isIP.js
 const ipv4Segment = "(?:[0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])"
@@ -38,8 +42,14 @@ export const arkIp = {
 
 export declare namespace arkIp {
 	export type submodule = Submodule<{
+<<<<<<< HEAD:ark/type/keywords/string/ip.ts
 		$root: string.narrowed
 		v4: string.narrowed
 		v6: string.narrowed
+=======
+		$root: string.matching<"?">
+		v4: string.matching<"?">
+		v6: string.matching<"?">
+>>>>>>> main:ark/type/keywords/utils/ip.ts
 	}>
 }

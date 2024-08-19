@@ -10,7 +10,7 @@ import type {
 } from "../type.ts"
 import { arkBuiltin } from "./builtin.ts"
 import { arkNumber } from "./number.ts"
-import type { arkObject } from "./object.ts"
+import { arkObject } from "./object.ts"
 import { arkString } from "./string.ts"
 import { arkTs } from "./ts.ts"
 
@@ -33,7 +33,8 @@ export const ambient: Scope<Ark> = scope(
 		...arkTs.keywords,
 		...arkBuiltin.keywords,
 		string: arkString.submodule,
-		number: arkNumber.submodule
+		number: arkNumber.submodule,
+		object: arkObject.submodule
 	},
 	{ prereducedAliases: true, ambient: true }
 ) as never
