@@ -325,12 +325,23 @@ export abstract class BaseScope<$ extends {} = {}> {
 		return [k, v]
 	}
 
+
 	maybeResolve(name: string): Exclude<CachedResolution, string> | undefined {
 		const resolution = this.maybeShallowResolve(name)
 
 		return typeof resolution === "string" ?
 				this.node("alias", { alias: resolution }, { prereduced: true })
-			:	(resolution ?? maybeResolveSubalias(this.aliases, name))
+			:	(resolution ?? this.maybeResolveSubalias(name))
+	}
+
+	/** If name is a valid reference to a submodule alias, return its resolution  */
+	protected maybeResolveSubalias(
+		name: string
+	): BaseRoot | GenericRoot | undefined {
+		return (
+			maybeResolveSubalias(this.aliases, name) ??
+			maybeResolveSubalias(this.ambient, name)
+		)
 	}
 
 	get ambient(): InternalModule {
@@ -360,12 +371,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 		}).bindScope(this))
 	}
 
-	/** If name is a valid reference to a submodule alias, return its resolution  */
-	protected maybeResolveSubalias(
-		name: string
-	): BaseRoot | GenericRoot | undefined {
-		return maybeResolveSubalias(this.aliases, name)
-	}
 
 	import<names extends exportedNameOf<$>[]>(
 		...names: names
