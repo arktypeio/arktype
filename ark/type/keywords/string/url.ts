@@ -22,7 +22,7 @@ const url = rootNode({
 })
 
 const parseurl = rootNode({
-	in: arkString.submodule.url as never,
+	in: url as never,
 	morphs: (s: string): URL => new URL(s)
 })
 

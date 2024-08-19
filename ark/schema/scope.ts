@@ -13,8 +13,7 @@ import {
 	type conform,
 	type flattenListable,
 	type listable,
-	type noSuggest,
-	type show
+	type noSuggest
 } from "@ark/util"
 import { resolveConfig, type ArkConfig } from "./config.ts"
 import {
@@ -36,7 +35,8 @@ import {
 	bindModule,
 	type InternalModule,
 	type PreparsedNodeResolution,
-	type SchemaModule
+	type SchemaModule,
+	type instantiateRoot
 } from "./module.ts"
 import type { BaseNode } from "./node.ts"
 import {
@@ -325,7 +325,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 		return [k, v]
 	}
 
-
 	maybeResolve(name: string): Exclude<CachedResolution, string> | undefined {
 		const resolution = this.maybeShallowResolve(name)
 
@@ -371,11 +370,17 @@ export abstract class BaseScope<$ extends {} = {}> {
 		}).bindScope(this))
 	}
 
+	import(): SchemaModule<{ [k in exportedNameOf<$>]: $[k] }>
 	import<names extends exportedNameOf<$>[]>(
 		...names: names
-	): SchemaModule<show<destructuredImportContext<$, names>>> {
+	): SchemaModule<
+		{
+			[k in names[number]]: $[k]
+		} & unknown
+	>
+	import(...names: string[]): SchemaModule {
 		return new RootModule(
-			flatMorph(this.export(...names) as any, (alias, value) => [
+			flatMorph(this.export(...(names as never)) as any, (alias, value) => [
 				`#${alias}`,
 				value
 			]) as never
@@ -384,9 +389,15 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 	private _exportedResolutions: InternalResolutions | undefined
 	private _exports: RootExportCache | undefined
+	export(): SchemaModule<{ [k in exportedNameOf<$>]: $[k] }>
 	export<names extends exportedNameOf<$>[]>(
 		...names: names
-	): SchemaModule<show<destructuredExportContext<$, names>>> {
+	): SchemaModule<
+		{
+			[k in names[number]]: $[k]
+		} & unknown
+	>
+	export(...names: string[]): SchemaModule {
 		if (!this._exports) {
 			this._exports = {}
 			for (const name of this.exportedNames) {
@@ -445,7 +456,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 	resolve<name extends exportedNameOf<$>>(
 		name: name
-	): destructuredExportContext<$, []>[name] {
+	): instantiateRoot<$[name]> {
 		return this.export()[name as never]
 	}
 
@@ -539,15 +550,6 @@ export const parseAsSchema = (
 		if (e instanceof ParseError) return e
 		throw e
 	}
-}
-
-export type destructuredExportContext<$, names extends exportedNameOf<$>[]> = {
-	[k in names["length"] extends 0 ? exportedNameOf<$> : names[number]]: $[k]
-}
-
-export type destructuredImportContext<$, names extends exportedNameOf<$>[]> = {
-	[k in names["length"] extends 0 ? exportedNameOf<$> : names[number] as `#${k &
-		string}`]: $[k]
 }
 
 export type RootExportCache = Record<

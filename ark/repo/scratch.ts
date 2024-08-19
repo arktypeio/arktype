@@ -1,5 +1,5 @@
-import { type } from "arktype"
+class Foo {}
 
-const t = type({
-	a: "nonNegativeIntegerString"
-})
+const foo = new Foo()
+
+foo.constructor.prototype //?

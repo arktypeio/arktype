@@ -42,6 +42,7 @@
 		"@ark/attest": "workspace:*",
 		"@ark/repo": "workspace:*",
 		"@ark/util": "workspace:*",
+		"@ark/fs": "workspace:*",
 		"@types/mocha": "10.0.7",
 		"@types/node": "22.4.0",
 		"@typescript-eslint/eslint-plugin": "8.1.0",

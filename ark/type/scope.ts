@@ -18,8 +18,6 @@ import {
 	type RootKind,
 	type RootSchema,
 	type arkKind,
-	type destructuredExportContext,
-	type destructuredImportContext,
 	type exportedNameOf,
 	type nodeOfKind,
 	type reducibleKindOf,
@@ -39,8 +37,7 @@ import {
 	type flattenListable,
 	type inferred,
 	type noSuggest,
-	type nominal,
-	type show
+	type nominal
 } from "@ark/util"
 import type { ArkAmbient } from "./config.ts"
 import {
@@ -84,6 +81,13 @@ export type ScopeParser = <const def>(
 	def: validateScope<def>,
 	config?: ArkScopeConfig
 ) => Scope<inferScope<def>>
+
+export type ModuleParser = <const def>(
+	def: validateScope<def>,
+	config?: ArkScopeConfig
+) => inferScope<def> extends infer $ ?
+	Module<{ [k in exportedNameOf<$>]: $[k] }>
+:	never
 
 export type validateScope<def> = {
 	[k in keyof def]: k extends noSuggest ?
@@ -208,9 +212,9 @@ export interface TypeParseOptions {
 	args?: GenericArgResolutions
 }
 
-export const scope: ScopeParser = ((def: Dict, config: ArkScopeConfig = {}) =>
-	new InternalScope(def, config)) as never
-
+export interface InternalScope {
+	constructor: typeof InternalScope
+}
 export class InternalScope<
 	$ extends InternalResolutions = InternalResolutions
 > extends BaseScope<$> {
@@ -307,7 +311,7 @@ export class InternalScope<
 				this.finalizeRootArgs(opts, () => node),
 				{ $: this as never }
 			)
-		).bindScope(this)
+		).bindScope(this as never)
 		return node
 	}
 
@@ -318,7 +322,16 @@ export class InternalScope<
 	})
 
 	define: (def: unknown) => unknown = ((def: unknown) => def).bind(this)
+
+	static scope: ScopeParser = ((def: Dict, config: ArkScopeConfig = {}) =>
+		new InternalScope(def, config)) as never
+
+	static module: ModuleParser = ((def: Dict, config: ArkScopeConfig = {}) =>
+		this.scope(def as never, config).export()) as never
 }
+
+export const scope: ScopeParser = InternalScope.scope
+export const module: ModuleParser = InternalScope.module
 
 export interface Scope<$ = {}> {
 	t: $
@@ -354,21 +367,35 @@ export interface Scope<$ = {}> {
 	import(): Module<{ [k in exportedNameOf<$> as PrivateDeclaration<k>]: $[k] }>
 	import<names extends exportedNameOf<$>[]>(
 		...names: names
-	): BoundModule<destructuredImportContext<$, names>, $>
+	): BoundModule<
+		{
+			[k in names[number]]: $[k]
+		} & unknown,
+		$
+	>
 
 	export(): Module<{ [k in exportedNameOf<$>]: $[k] }>
 	export<names extends exportedNameOf<$>[]>(
 		...names: names
-	): BoundModule<show<destructuredExportContext<$, names>>, $>
+	): BoundModule<
+		{
+			[k in names[number]]: $[k]
+		} & unknown,
+		$
+	>
 
 	resolve<name extends exportedNameOf<$>>(
 		name: name
 	): instantiateExport<$[name], $>
 }
 
-export const Scope: new <$ = {}>(
-	...args: ConstructorParameters<typeof InternalScope>
-) => Scope<$> = InternalScope as never
+export interface ScopeConstructor {
+	new <$ = {}>(...args: ConstructorParameters<typeof InternalScope>): Scope<$>
+	scope: ScopeParser
+	module: ModuleParser
+}
+
+export const Scope: ScopeConstructor = InternalScope as never
 
 export const writeShallowCycleErrorMessage = (
 	name: string,

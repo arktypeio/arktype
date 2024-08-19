@@ -113,6 +113,7 @@ module.exports = defineConfig({
 		"@typescript-eslint/ban-types": "off",
 		"@typescript-eslint/no-explicit-any": "off",
 		"@typescript-eslint/no-non-null-assertion": "off",
+		"@typescript-eslint/no-unsafe-declaration-merging": "off",
 		/**
 		 * Namespaces are useful for grouping generic types with related functionality
 		 */

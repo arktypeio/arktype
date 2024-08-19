@@ -1,11 +1,7 @@
 import type { string } from "../../ast.ts"
 import type { Submodule } from "../../module.ts"
 import { scope } from "../../scope.ts"
-<<<<<<< HEAD:ark/type/keywords/string/uuid.ts
 import { regexStringNode } from "./utils.ts"
-=======
-import { regexStringNode } from "./regex.ts"
->>>>>>> main:ark/type/keywords/utils/uuid.ts
 
 // Based on https://github.com/validatorjs/validator.js/blob/master/src/lib/isUUID.js
 const submodule = scope(

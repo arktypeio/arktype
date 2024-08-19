@@ -434,4 +434,19 @@ b.c.c must be an object (was missing)`)
 			domain: "object"
 		})
 	})
+
+	it("module", () => {
+		const types = type.module({
+			foo: "string",
+			bar: "number"
+		})
+		attest<
+			Module<{
+				foo: string
+				bar: number
+			}>
+		>(types)
+		attest(types.foo.json).snap({ domain: "string" })
+		attest(types.bar.json).snap({ domain: "number" })
+	})
 })

@@ -46,12 +46,15 @@ export const bindModule = (
 	) as never
 
 type exportSchemaScope<$> = {
-	[k in keyof $]: $[k] extends InternalResolution ?
-		[$[k]] extends [anyOrNever] ?
-			BaseRoot
-		:	$[k]
-	:	BaseRoot
+	[k in keyof $]: instantiateRoot<$[k]>
 }
+
+export type instantiateRoot<t> =
+	t extends InternalResolution ?
+		[t] extends [anyOrNever] ?
+			BaseRoot
+		:	t
+	:	BaseRoot
 
 export const SchemaModule: new <$ = {}>(
 	types: exportSchemaScope<$>

@@ -167,9 +167,8 @@ export const InnerDynamicBase = class {} as new <t extends object>(base: t) => t
 
 /** @ts-ignore (needed to extend `t`) **/
 export interface DynamicBase<t extends object> extends t {}
-// eslint-disable-next-line
 export class DynamicBase<t extends object> {
-	constructor(properties: object) {
+	constructor(properties: t) {
 		Object.assign(this, properties)
 	}
 }
