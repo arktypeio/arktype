@@ -7,7 +7,7 @@ import {
 	writeUnsatisfiedParameterConstraintMessage
 } from "@ark/schema"
 import { Hkt } from "@ark/util"
-import { generic, scope, type, type Generic } from "arktype"
+import { generic, scope, type, type Generic, type Type } from "arktype"
 import { emptyGenericParameterMessage } from "arktype/internal/generic.ts"
 import { writeUnclosedGroupMessage } from "arktype/internal/parser/string/reduce/shared.ts"
 import { writeInvalidGenericArgCountMessage } from "arktype/internal/parser/string/shift/operand/genericArgs.ts"
@@ -423,6 +423,53 @@ contextualize(() => {
 			})
 		}
 	)
+
+	contextualize.each(
+		"standalone",
+		() =>
+			generic([
+				"t",
+				{
+					foo: "number"
+				}
+			])({ boxOf: "t" }),
+
+		it => {
+			it("valid", g => {
+				const t = g({
+					foo: "number"
+				})
+
+				const expected = type({
+					boxOf: {
+						foo: "number"
+					}
+				})
+
+				attest<typeof expected.t>(t.t)
+				attest(t.expression).equals(expected.expression)
+			})
+
+			it("invalid", g => {
+				attest(() =>
+					// @ts-expect-error
+					g({
+						foo: "string"
+					})
+				).throwsAndHasTypeError(
+					writeUnsatisfiedParameterConstraintMessage("foo", "number", "string")
+				)
+			})
+
+			it("completions", g => {
+				// @ts-expect-error
+				attest(() => g({ foo: "numb" })).completions({
+					numb: ["number"]
+				})
+			})
+		}
+	)
+
 	describe("hkt", () => {
 		it("can infer a generic from an hkt", () => {
 			class MyExternalClass<T> {

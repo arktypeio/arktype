@@ -17,7 +17,10 @@ import {
 	type Hkt,
 	type WhiteSpaceToken
 } from "@ark/util"
-import type { inferDefinition } from "./parser/definition.ts"
+import type {
+	inferDefinition,
+	validateDefinition
+} from "./parser/definition.ts"
 import type { inferAstRoot } from "./parser/semantic/infer.ts"
 import type { validateAst } from "./parser/semantic/validate.ts"
 import { DynamicState } from "./parser/string/reduce/dynamic.ts"
@@ -37,7 +40,7 @@ export type validateParameterString<s extends ParameterString, $> =
 		e
 	:	s
 
-type validateGenericArg<arg, param extends GenericParamAst, $> =
+export type validateGenericArg<arg, param extends GenericParamAst, $> =
 	inferTypeRoot<arg, $> extends param[1] ? arg
 	:	ErrorType<`Invalid argument for ${param[0]}`, [expected: param[1]]>
 
@@ -389,14 +392,19 @@ export type genericParamDefsToAst<defs extends array<GenericParamDef>, $> = [
 	...{ [i in keyof defs]: genericParamDefToAst<defs[i], $> }
 ]
 
-export type GenericHktParser<$ = {}> = <
+export type GenericParser<$ = {}> = <
 	const paramsDef extends array<GenericParamDef>
 >(
 	...params: paramsDef
-) => <
-	hkt extends Hkt.constructor,
-	params extends Array<GenericParamAst> = genericParamDefsToAst<paramsDef, $>
->(
-	instantiateDef: LazyGenericBody<baseGenericResolutions<params, $>>,
-	hkt: hkt
-) => Generic<params, InstanceType<hkt>, $, $>
+) => GenericBodyParser<genericParamDefsToAst<paramsDef, $>, $>
+
+interface GenericBodyParser<params extends array<GenericParamAst>, $> {
+	<const body>(
+		body: validateDefinition<body, $, baseGenericConstraints<params>>
+	): Generic<params, body, $, $>
+
+	// <hkt extends Hkt.constructor>(
+	// 	instantiateDef: LazyGenericBody<baseGenericResolutions<params, $>>,
+	// 	hkt: hkt
+	// ): Generic<params, InstanceType<hkt>, $, $>
+}

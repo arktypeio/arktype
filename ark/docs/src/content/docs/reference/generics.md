@@ -19,7 +19,6 @@ const boxOf = type("<t>", { box: "t" })
 const schrodingersBox = boxOf({ cat: { isAlive: "boolean" } })
 ```
 
-<!--
 #### Constrained Parameters
 
 All syntax in parameters definitions and all references to generic args are fully-type safe and autocompleted like any builtin keyword. Constraints can be used just like TS to limit what can be passed to a generic and allow that arg to be used with operators like `>`.
@@ -132,7 +131,7 @@ const Partial = generic(["T", "object"])(
 		declare body: Partial<this[0]>
 	}
 )
-``` -->
+```
 
 More to come on this as the API is finalized!
 

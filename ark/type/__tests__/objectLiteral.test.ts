@@ -17,6 +17,7 @@ contextualize(() => {
 	describe("named", () => {
 		it("empty", () => {
 			const o = type({})
+			attest<{}>(o.t).type.toString("{}")
 			attest(o.json).equals(type("object").json)
 		})
 

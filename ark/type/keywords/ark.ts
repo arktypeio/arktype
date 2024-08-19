@@ -1,6 +1,6 @@
 import type { ArkErrors } from "@ark/schema"
 import type { inferred } from "@ark/util"
-import type { GenericHktParser } from "../generic.ts"
+import type { GenericParser } from "../generic.ts"
 import type { Module } from "../module.ts"
 import { scope, type Scope } from "../scope.ts"
 import type {
@@ -51,7 +51,7 @@ export declare namespace type {
 	export type errors = ArkErrors
 }
 
-export const generic: GenericHktParser<{}> = ambient.generic as never
+export const generic: GenericParser<{}> = ambient.generic as never
 
 export const define: DefinitionParser<{}> = ambient.define as never
 
