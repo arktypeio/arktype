@@ -1,7 +1,7 @@
 import { intrinsic } from "@ark/schema"
-import type { Out, string } from "../../ast.ts"
+import type { string } from "../../ast.ts"
 import type { Module, Submodule } from "../../module.ts"
-import { epoch } from "../number/number.ts"
+import { epoch } from "../number/epoch.ts"
 import { submodule } from "../utils.ts"
 import { alpha } from "./alpha.ts"
 import { alphanumeric } from "./alphanumeric.ts"
@@ -45,10 +45,7 @@ export const arkString: Module<arkString> = submodule({
 		lower: toLower,
 		normalized: toNormalized
 	}),
-
-	iso8601,
-	epoch,
-	json
+	epoch
 })
 
 export type arkString = Submodule<{
@@ -78,7 +75,4 @@ export type arkString = Submodule<{
 
 	iso8601: string.narrowed
 	epoch: string.narrowed
-
-	date: (In: string) => Out<Date>
-	json: (In: string) => Out<object>
 }>

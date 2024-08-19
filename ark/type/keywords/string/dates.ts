@@ -1,4 +1,5 @@
 import { ArkErrors, rootNode } from "@ark/schema"
+import type { Branded, constrain } from "../../ast.ts"
 import { arkNumber } from "../number/number.ts"
 import { integer } from "./integer.ts"
 import { regexStringNode } from "./utils.ts"
@@ -99,12 +100,18 @@ export const tryParseDatePattern = (
 	return writeFormattedExpected(opts.format)
 }
 
+namespace string {
+	export type epoch = constrain<string, Branded<"epoch">>
+}
+
+export type epoch = string.epoch
+
 export const epoch = integer.$root
 	.narrow((s, ctx) => {
 		// we know this is safe since it has already
 		// been validated as an integer string
 		const n = Number.parseInt(s)
-		const out = arkNumber.submodule.epoch(n)
+		const out = arkNumber.epoch(n)
 		if (out instanceof ArkErrors) {
 			ctx.errors.merge(out)
 			return false
