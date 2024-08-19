@@ -1,6 +1,6 @@
 import { rootNode } from "@ark/schema"
-import type { Branded, constrain, Out } from "../../ast.ts"
 import type { Submodule } from "../../module.ts"
+import type { Branded, constrain, Out } from "../ast.ts"
 import { submodule } from "../utils.ts"
 
 declare namespace string {

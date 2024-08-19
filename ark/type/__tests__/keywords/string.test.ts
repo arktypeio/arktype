@@ -114,7 +114,7 @@ contextualize(() => {
 
 	describe("formatting", () => {
 		it("json", () => {
-			const parseJson = type("parse.json")
+			const parseJson = type("string.json.parse")
 			attest(parseJson('{"a": "hello"}')).snap({ a: "hello" })
 			attest(parseJson(123).toString()).snap("must be a string (was number)")
 			attest(parseJson("foo").toString()).snap(
@@ -123,7 +123,7 @@ contextualize(() => {
 		})
 
 		it("number", () => {
-			const parseNum = type("parse.number")
+			const parseNum = type("string.numeric.parse")
 			attest(parseNum("5")).equals(5)
 			attest(parseNum("5.5")).equals(5.5)
 			attest(parseNum("five").toString()).equals(
@@ -132,7 +132,7 @@ contextualize(() => {
 		})
 
 		it("integer", () => {
-			const parseInt = type("parse.integer")
+			const parseInt = type("string.integer.parse")
 			attest(parseInt("5")).equals(5)
 			attest(parseInt("5.5").toString()).equals(
 				'must be a well-formed integer string (was "5.5")'

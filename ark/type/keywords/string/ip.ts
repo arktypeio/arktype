@@ -1,6 +1,6 @@
-import type { string } from "../../ast.ts"
 import type { Submodule } from "../../module.ts"
 import { submodule } from "../utils.ts"
+import type { string } from "./string.ts"
 import { regexStringNode } from "./utils.ts"
 
 // Based on https://github.com/validatorjs/validator.js/blob/master/src/lib/isIP.js

@@ -1,6 +1,6 @@
 import type { writeUnboundableMessage } from "@ark/schema"
 import type { ErrorMessage, array, typeToString } from "@ark/util"
-import type { LimitLiteral } from "../../ast.ts"
+import type { LimitLiteral } from "../../keywords/ast.ts"
 import type { Comparator } from "../string/reduce/shared.ts"
 import type {
 	BoundExpressionKind,

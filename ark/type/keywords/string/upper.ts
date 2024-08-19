@@ -1,5 +1,5 @@
 import { rootNode } from "@ark/schema"
-import type { Branded, constrain, Out } from "../../ast.ts"
+import type { Branded, constrain, Out } from "../ast.ts"
 import { regexStringNode } from "./utils.ts"
 
 declare namespace string {

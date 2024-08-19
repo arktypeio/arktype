@@ -18,8 +18,8 @@ import {
 	type requiredKeyOf,
 	type show
 } from "@ark/util"
-import type { string } from "../ast.ts"
 import type { type } from "../keywords/ark.ts"
+import type { string } from "../keywords/string/string.ts"
 import type { ParseContext } from "../scope.ts"
 import {
 	parseObjectLiteral,

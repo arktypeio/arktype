@@ -4,7 +4,7 @@ import type {
 	exclusivizeRangeSchema,
 	InclusiveNumericRangeSchema
 } from "@ark/schema"
-import type { applyConstraint } from "../ast.ts"
+import type { applyConstraint } from "../keywords/ast.ts"
 import type { ValidatorType } from "./validator.ts"
 
 /** @ts-ignore cast variance */

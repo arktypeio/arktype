@@ -1,5 +1,5 @@
 import { rootNode } from "@ark/schema"
-import type { number } from "../../ast.ts"
+import type { number } from "./number.ts"
 
 export const integer = rootNode({
 	domain: "number",

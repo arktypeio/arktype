@@ -1,6 +1,6 @@
 import { rootNode } from "@ark/schema"
-import type { Out, string } from "../../ast.ts"
 import type { Submodule } from "../../module.ts"
+import type { Out, string } from "../ast.ts"
 import { submodule } from "../utils.ts"
 
 const isParsableUrl = (s: string) => {

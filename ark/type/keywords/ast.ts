@@ -16,10 +16,12 @@ import {
 	type Primitive,
 	type show
 } from "@ark/util"
-import type { inferPipe } from "./intersect.ts"
-import type { type } from "./keywords/ark.ts"
-import type { arkObject } from "./keywords/object/object.ts"
-import type { Type } from "./type.ts"
+import type { inferPipe } from "../intersect.ts"
+import type { Type } from "../type.ts"
+import type { type } from "./ark.ts"
+import type { number } from "./number/number.ts"
+import type { object } from "./object/object.ts"
+import type { string } from "./string/string.ts"
 
 export type Comparator = "<" | "<=" | ">" | ">=" | "=="
 
@@ -95,44 +97,6 @@ export type primitiveConstraintKindOf<In> = Extract<
 	constraintKindOf<In>
 >
 
-export declare namespace number {
-	export type atLeast<rule> = constrain<number, AtLeast<rule>>
-
-	export type moreThan<rule> = constrain<number, MoreThan<rule>>
-
-	export type atMost<rule> = constrain<number, AtMost<rule>>
-
-	export type lessThan<rule> = constrain<number, LessThan<rule>>
-
-	export type divisibleBy<rule> = constrain<number, DivisibleBy<rule>>
-
-	export type narrowed = constrain<number, Narrowed>
-
-	export type branded<rule> = constrain<number, Branded<rule>>
-
-	export type is<constraints extends Constraints> = constrain<
-		number,
-		constraints
-	>
-
-	export type parseConstraint<
-		kind extends Constraint.PrimitiveKind,
-		schema extends NodeSchema<kind>
-	> =
-		normalizePrimitiveConstraintRoot<schema> extends infer rule ?
-			kind extends "min" ?
-				schema extends { exclusive: true } ?
-					moreThan<rule>
-				:	atLeast<rule>
-			: kind extends "max" ?
-				schema extends { exclusive: true } ?
-					lessThan<rule>
-				:	atMost<rule>
-			: kind extends "divisor" ? divisibleBy<rule>
-			: narrowed
-		:	never
-}
-
 export type AtLeastLength<rule> = {
 	atLeastLength: constraint<rule>
 }
@@ -152,51 +116,6 @@ export type LessThanLength<rule> = {
 export type ExactlyLength<rule> = {
 	atLeastLength: constraint<rule>
 	atMostLength: constraint<rule>
-}
-
-export declare namespace string {
-	export type atLeastLength<rule> = constrain<string, AtLeastLength<rule>>
-
-	export type moreThanLength<rule> = constrain<string, MoreThanLength<rule>>
-
-	export type atMostLength<rule> = constrain<string, AtMostLength<rule>>
-
-	export type lessThanLength<rule> = constrain<string, LessThanLength<rule>>
-
-	export type exactlyLength<rule> = constrain<string, ExactlyLength<rule>>
-
-	export type matching<rule> = constrain<string, Matching<rule>>
-
-	export type narrowed = constrain<string, Narrowed>
-
-	export type branded<rule> = constrain<string, Branded<rule>>
-
-	export type url = constrain<string, Branded<"url">>
-
-	export type integer = constrain<string, Branded<"integer">>
-
-	export type is<constraints extends Constraints> = constrain<
-		string,
-		constraints
-	>
-
-	export type parseConstraint<
-		kind extends Constraint.PrimitiveKind,
-		schema extends NodeSchema<kind>
-	> =
-		normalizePrimitiveConstraintRoot<schema> extends infer rule ?
-			kind extends "minLength" ?
-				schema extends { exclusive: true } ?
-					moreThanLength<rule>
-				:	atLeastLength<rule>
-			: kind extends "maxLength" ?
-				schema extends { exclusive: true } ?
-					lessThanLength<rule>
-				:	atMostLength<rule>
-			: kind extends "pattern" ? matching<rule & string>
-			: kind extends "exactLength" ? exactlyLength<rule>
-			: narrowed
-		:	never
 }
 
 export type AtOrAfter<rule> = {
@@ -449,7 +368,7 @@ type distillPostfix<
 
 /** Objects we don't want to expand during inference like Date or Promise */
 type TerminallyInferredObjectKind =
-	| arkObject.$[Exclude<keyof arkObject.$, "Array" | "Function" | "$root">]
+	| object.$[Exclude<keyof object.$, "Array" | "Function" | "$root">]
 	| ArkEnv.prototypes
 
 export type inferPredicate<t, predicate> =

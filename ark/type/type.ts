@@ -7,7 +7,6 @@ import {
 	type Predicate
 } from "@ark/schema"
 import { Callable, type Constructor, type array, type conform } from "@ark/util"
-import type { distillIn, distillOut } from "./ast.ts"
 import {
 	parseGenericParams,
 	type Generic,
@@ -16,6 +15,7 @@ import {
 	type parseValidGenericParams,
 	type validateParameterString
 } from "./generic.ts"
+import type { distillIn, distillOut } from "./keywords/ast.ts"
 import type {
 	inferDefinition,
 	validateDeclared,

@@ -2,7 +2,7 @@ import type { Module, Submodule } from "../../module.ts"
 import { submodule } from "../utils.ts"
 import { TypedArray } from "./typedArray.ts"
 
-export const arkObject: Module<arkObject.$> = submodule({
+export const object: Module<object.$> = submodule({
 	// ECMAScript Objects
 	Array: ["instanceof", Array],
 	Date: ["instanceof", Date],
@@ -14,7 +14,7 @@ export const arkObject: Module<arkObject.$> = submodule({
 	WeakMap: ["instanceof", WeakMap],
 	WeakSet: ["instanceof", WeakSet],
 	Promise: ["instanceof", Promise],
-
+	TypedArray,
 	// Platform APIs
 	ArrayBuffer: ["instanceof", ArrayBuffer],
 	Blob: ["instanceof", Blob],
@@ -24,20 +24,16 @@ export const arkObject: Module<arkObject.$> = submodule({
 	Headers: ["instanceof", Headers],
 	Request: ["instanceof", Request],
 	Response: ["instanceof", Response],
-	URL: ["instanceof", URL],
-
-	TypedArray
+	URL: ["instanceof", URL]
 })
 
-export type arkObject = arkObject.submodule
+export declare namespace object {
+	export type submodule = Submodule<$>
 
-export declare namespace arkObject {
 	interface $ extends ecmascript, platform {
 		$root: object
 		TypedArray: TypedArray
 	}
-
-	export type submodule = Submodule<$>
 
 	// ECMAScript Objects
 	// See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects

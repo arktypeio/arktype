@@ -1,4 +1,4 @@
-import type { Branded, constrain } from "../../ast.ts"
+import type { Branded, constrain } from "../ast.ts"
 import { regexStringNode } from "./utils.ts"
 
 declare namespace string {

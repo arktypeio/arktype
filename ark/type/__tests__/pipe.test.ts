@@ -29,7 +29,7 @@ contextualize(() => {
 	})
 
 	it("to", () => {
-		const t = type("parse.json").to({
+		const t = type("string.json.parse").to({
 			name: "string",
 			age: "number"
 		})
@@ -75,12 +75,12 @@ contextualize(() => {
 
 	it("can't directly constrain morph", () => {
 		// @ts-expect-error
-		attest(() => type("parse.number").atMostLength(5))
+		attest(() => type("string.numeric.parse").atMostLength(5))
 			.throws(
 				writeInvalidOperandMessage(
 					"maxLength",
 					intrinsic.lengthBoundable,
-					ark.parse.number.internal
+					ark.string.numeric.parse.internal
 				)
 			)
 			.type.errors("Property 'atMostLength' does not exist")
@@ -361,7 +361,7 @@ contextualize(() => {
 	})
 
 	it("union with output", () => {
-		const t = type("number|parse.number")
+		const t = type("number|string.numeric.parse")
 		attest<number>(t.infer)
 		attest<string | number>(t.inferIn)
 	})
@@ -737,9 +737,9 @@ contextualize(() => {
 		)
 	})
 	it("allows undiscriminated union if morphs at path are equal", () => {
-		const t = type({ l: "1", n: "parse.number" }, "|", {
+		const t = type({ l: "1", n: "string.numeric.parse" }, "|", {
 			r: "1",
-			n: "parse.number"
+			n: "string.numeric.parse"
 		})
 
 		attest<
@@ -771,7 +771,7 @@ contextualize(() => {
 			type({
 				foo: "boolean | parse.date"
 			}).or({
-				foo: "boolean | parse.json"
+				foo: "boolean | string.json.parse"
 			})
 		).throws
 			.snap(`ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:

@@ -1,6 +1,6 @@
 import { ArkErrors, rootNode } from "@ark/schema"
-import type { Branded, constrain } from "../../ast.ts"
-import { arkNumber } from "../number/number.ts"
+import type { Branded, constrain } from "../ast.ts"
+import { number } from "../number/number.ts"
 import { integer } from "./integer.ts"
 import { regexStringNode } from "./utils.ts"
 
@@ -111,7 +111,7 @@ export const epoch = integer.$root
 		// we know this is safe since it has already
 		// been validated as an integer string
 		const n = Number.parseInt(s)
-		const out = arkNumber.epoch(n)
+		const out = number.epoch(n)
 		if (out instanceof ArkErrors) {
 			ctx.errors.merge(out)
 			return false

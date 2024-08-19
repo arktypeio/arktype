@@ -118,7 +118,7 @@ tags must be at least length 3 (was 2)`)
 			email: "string.email",
 			tags: "(string>=2)[]>=3",
 			score: "number.integer>=0",
-			"date?": "Date",
+			"date?": "object.Date",
 			"nospace?": nospacePattern,
 			extra: "string|null"
 		})
@@ -783,12 +783,12 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			action: "'order.completed'"
 		}).or({
 			action: `'scheduled'`,
-			id: "parse.integer",
-			calendarID: "parse.integer",
-			appointmentTypeID: "parse.integer"
+			id: "string.integer.parse",
+			calendarID: "string.integer.parse",
+			appointmentTypeID: "string.integer.parse"
 		})
 
-		const parseJsonToObj = type("parse.json").pipe(objSchema)
+		const parseJsonToObj = type("string.json.parse").pipe(objSchema)
 
 		attest(parseJsonToObj.expression).snap(
 			'(In: string) => Out<{ action: "order.completed" } | { action: "scheduled", appointmentTypeID: unknown, calendarID: unknown, id: unknown }>'
@@ -830,12 +830,12 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			action: "'order.completed'"
 		}).or({
 			action: "'scheduled' | 'rescheduled' | 'canceled' | 'changed'",
-			id: "parse.integer",
-			calendarID: "parse.integer",
-			appointmentTypeID: "parse.integer"
+			id: "string.integer.parse",
+			calendarID: "string.integer.parse",
+			appointmentTypeID: "string.integer.parse"
 		})
 
-		const parseJsonToObj = type("parse.json").pipe(objSchema)
+		const parseJsonToObj = type("string.json.parse").pipe(objSchema)
 
 		const out = parseJsonToObj(
 			JSON.stringify({

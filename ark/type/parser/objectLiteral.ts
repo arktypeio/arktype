@@ -29,7 +29,7 @@ import {
 	type mutable,
 	type show
 } from "@ark/util"
-import type { constrain, Default } from "../ast.ts"
+import type { constrain, Default } from "../keywords/ast.ts"
 import type { ParseContext } from "../scope.ts"
 import type { inferDefinition, validateDefinition } from "./definition.ts"
 import { writeUnassignableDefaultValueMessage } from "./semantic/default.ts"

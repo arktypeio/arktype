@@ -5,7 +5,7 @@ import type {
 	MorphAst,
 	parseConstraints,
 	To
-} from "./ast.ts"
+} from "./keywords/ast.ts"
 
 export type inferIntersection<l, r> = _inferIntersection<l, r, false>
 

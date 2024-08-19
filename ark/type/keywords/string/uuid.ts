@@ -1,5 +1,5 @@
-import type { string } from "../../ast.ts"
 import type { Submodule } from "../../module.ts"
+import type { string } from "../ast.ts"
 import { submodule } from "../utils.ts"
 import { regexStringNode } from "./utils.ts"
 

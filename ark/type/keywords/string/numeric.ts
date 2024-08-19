@@ -1,7 +1,7 @@
 import { rootNode } from "@ark/schema"
 import { wellFormedNumberMatcher } from "@ark/util"
-import type { Branded, constrain, Out } from "../../ast.ts"
 import type { Submodule } from "../../module.ts"
+import type { Branded, constrain, Out } from "../ast.ts"
 import { submodule } from "../utils.ts"
 import { regexStringNode } from "./utils.ts"
 

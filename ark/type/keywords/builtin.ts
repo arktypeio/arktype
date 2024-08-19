@@ -4,7 +4,7 @@ import type { Module } from "../module.ts"
 import { scope } from "../scope.ts"
 // these are needed to create some internal types
 import { genericNode, intrinsic } from "@ark/schema"
-import type { Out } from "../ast.ts"
+import type { Out } from "./ast.ts"
 import "./ts.ts"
 
 class liftArrayHkt extends Hkt<[element: unknown]> {
