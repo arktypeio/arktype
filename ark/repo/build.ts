@@ -16,7 +16,9 @@ const buildKind =
 const outDir = fromCwd("out")
 
 const buildCurrentProject = () =>
-	shell(`node ${ fromHere("node_modules", "typescript", "lib", "tsc.js")} --project tsconfig.build.json`)
+	shell(
+		`node ${fromHere("node_modules", "typescript", "lib", "tsc.js")} --project tsconfig.build.json`
+	)
 
 try {
 	rmRf(outDir)
