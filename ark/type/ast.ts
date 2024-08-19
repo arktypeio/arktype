@@ -19,15 +19,11 @@ import {
 	type propValueOf,
 	type show
 } from "@ark/util"
-import type { type } from "./ark.js"
-import type { inferPipe } from "./intersect.js"
-import type { platformObjectExports } from "./keywords/platformObjects.js"
-import type { typedArrayExports } from "./keywords/typedArray.js"
-import type { Type } from "./type.js"
-
-export const inferred = noSuggest("arkInferred")
-
-export type inferred = typeof inferred
+import type { inferPipe } from "./intersect.ts"
+import type { type } from "./keywords/ark.ts"
+import type { arkPlatform } from "./keywords/platform.ts"
+import type { arkTypedArray } from "./keywords/typedArray.ts"
+import type { Type } from "./type.ts"
 
 export type Comparator = "<" | "<=" | ">" | ">=" | "=="
 
@@ -90,10 +86,8 @@ export type Matching<rule> = {
 	matching: constraint<rule>
 }
 
-export type anonymous = "?"
-
 export type Narrowed = {
-	predicate: { [k in anonymous]: 1 }
+	predicate: { [k in "?"]: 1 }
 }
 
 export type primitiveConstraintKindOf<In> = Extract<
@@ -101,7 +95,7 @@ export type primitiveConstraintKindOf<In> = Extract<
 	constraintKindOf<In>
 >
 
-export namespace number {
+export declare namespace number {
 	export type atLeast<rule> = constrain<number, AtLeast<rule>>
 
 	export type moreThan<rule> = constrain<number, MoreThan<rule>>
@@ -158,7 +152,7 @@ export type ExactlyLength<rule> = {
 	atMostLength: constraint<rule>
 }
 
-export namespace string {
+export declare namespace string {
 	export type atLeastLength<rule> = constrain<string, AtLeastLength<rule>>
 
 	export type moreThanLength<rule> = constrain<string, MoreThanLength<rule>>
@@ -213,7 +207,7 @@ export type Before<rule> = {
 	before: constraint<rule>
 }
 
-export namespace Date {
+export declare namespace Date {
 	export type atOrAfter<rule> = constrain<Date, AtOrAfter<rule>>
 
 	export type after<rule> = constrain<Date, After<rule>>
@@ -447,8 +441,8 @@ type distillPostfix<
 type TerminallyInferredObjectKind =
 	| ArkEnv.prototypes
 	| BuiltinObjects[Exclude<BuiltinObjectKind, "Array" | "Function">]
-	| propValueOf<platformObjectExports>
-	| propValueOf<typedArrayExports>
+	| propValueOf<arkPlatform.keywords>
+	| propValueOf<arkTypedArray.submodule>
 
 export type inferPredicate<t, predicate> =
 	predicate extends (data: any, ...args: any[]) => data is infer narrowed ?

@@ -17,19 +17,19 @@ bench("regex literal", () => {
 
 bench("keyword", () => {
 	const _ = type("string")
-}).types([377, "instantiations"])
+}).types([438, "instantiations"])
 
 bench("number", () => {
 	const _ = type("-98765.4321")
-}).types([458, "instantiations"])
+}).types([463, "instantiations"])
 
 bench("bigint", () => {
 	const _ = type("-987654321n")
-}).types([472, "instantiations"])
+}).types([482, "instantiations"])
 
 bench("object", () => {
 	const t = type({ foo: "string" })
-}).types([1642, "instantiations"])
+}).types([1689, "instantiations"])
 
 bench("union", () => {
 	// Union is automatically discriminated using shallow or deep keys
@@ -44,4 +44,4 @@ bench("union", () => {
 		.or({
 			kind: "'pleb'"
 		})
-}).types([7019, "instantiations"])
+}).types([7064, "instantiations"])

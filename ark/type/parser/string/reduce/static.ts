@@ -1,6 +1,6 @@
 import type { Completion, ErrorMessage, defined } from "@ark/util"
-import type { LimitLiteral } from "../../../ast.js"
-import type { Scanner } from "../shift/scanner.js"
+import type { LimitLiteral } from "../../../ast.ts"
+import type { Scanner } from "../shift/scanner.ts"
 import type {
 	Comparator,
 	InvertedComparators,
@@ -13,7 +13,7 @@ import type {
 	writeUnclosedGroupMessage,
 	writeUnmatchedGroupCloseMessage,
 	writeUnpairableComparatorMessage
-} from "./shared.js"
+} from "./shared.ts"
 
 export type StaticState = {
 	root: unknown
@@ -33,7 +33,7 @@ type BranchState = {
 
 export type AutocompletePrefix = `${StringifiablePrefixOperator} `
 
-export namespace state {
+export declare namespace state {
 	export type initialize<def extends string> = from<{
 		root: undefined
 		branches: initialBranches

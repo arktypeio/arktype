@@ -11,14 +11,14 @@ import {
 import { existsSync } from "node:fs"
 import { basename, dirname, isAbsolute, join } from "node:path"
 import type ts from "typescript"
-import { getConfig } from "../config.js"
-import { getFileKey } from "../utils.js"
+import { getConfig } from "../config.ts"
+import { getFileKey } from "../utils.ts"
 import {
 	TsServer,
 	getAbsolutePosition,
 	nearestCallExpressionChild
-} from "./ts.js"
-import { getCallExpressionsByName } from "./utils.js"
+} from "./ts.ts"
+import { getCallExpressionsByName } from "./utils.ts"
 
 export type SnapshotArgs = {
 	position: SourcePosition
@@ -42,7 +42,7 @@ export const getSnapshotByName = (
 	customPath: string | undefined
 ): object => {
 	const snapshotPath = resolveSnapshotPath(file, customPath)
-	return readJson(snapshotPath)?.[basename(file)]?.[name]
+	return (readJson(snapshotPath)?.[basename(file)] as any)?.[name]
 }
 
 /**
@@ -103,7 +103,7 @@ export const updateExternalSnapshot = ({
 	const snapshotData = readJson(snapshotPath) ?? {}
 	const fileKey = basename(position.file)
 	snapshotData[fileKey] = {
-		...snapshotData[fileKey],
+		...(snapshotData[fileKey] as object),
 		[name]: value
 	}
 	writeJson(snapshotPath, snapshotData)
@@ -125,7 +125,7 @@ const writeCachedInlineSnapshotUpdates = () => {
 	if (!existsSync(config.defaultAssertionCachePath)) return
 
 	try {
-		snapshotData = readJson(config.defaultAssertionCachePath).updates
+		snapshotData = readJson(config.defaultAssertionCachePath).updates as never
 	} catch {
 		// If we can't read the snapshot, log an error and move onto the next update
 		console.error(

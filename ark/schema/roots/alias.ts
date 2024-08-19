@@ -1,18 +1,22 @@
-import { append, cached, domainDescriptions } from "@ark/util"
-import type { NodeCompiler } from "../shared/compile.js"
-import type { BaseNormalizedSchema, declareNode } from "../shared/declare.js"
-import { Disjoint } from "../shared/disjoint.js"
+import { append, domainDescriptions, throwParseError } from "@ark/util"
+import type { NodeCompiler } from "../shared/compile.ts"
+import type { BaseNormalizedSchema, declareNode } from "../shared/declare.ts"
+import { Disjoint } from "../shared/disjoint.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
-} from "../shared/implement.js"
-import { intersectNodes } from "../shared/intersections.js"
-import { $ark } from "../shared/registry.js"
-import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
-import { BaseRoot } from "./root.js"
-import { defineRightwardIntersections } from "./utils.js"
+} from "../shared/implement.ts"
+import { intersectNodes } from "../shared/intersections.ts"
+import {
+	writeCyclicJsonSchemaMessage,
+	type JsonSchema
+} from "../shared/jsonSchema.ts"
+import { $ark } from "../shared/registry.ts"
+import type { TraverseAllows, TraverseApply } from "../shared/traversal.ts"
+import { BaseRoot } from "./root.ts"
+import { defineRightwardIntersections } from "./utils.ts"
 
-export namespace Alias {
+export declare namespace Alias {
 	export type Schema<alias extends string = string> = `$${alias}` | Inner<alias>
 
 	export interface NormalizedSchema<alias extends string = string>
@@ -78,13 +82,19 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 	readonly expression: string = this.alias
 	readonly structure = undefined
 
-	@cached
 	get resolution(): BaseRoot {
-		return this.resolve?.() ?? this.$.resolveRoot(this.alias)
+		return this.cacheGetter(
+			"resolution",
+			this.resolve?.() ?? this.$.resolveRoot(this.alias)
+		)
 	}
 
 	get shortDescription(): string {
 		return domainDescriptions.object
+	}
+
+	protected innerToJsonSchema(): JsonSchema {
+		return throwParseError(writeCyclicJsonSchemaMessage(this.expression))
 	}
 
 	traverseAllows: TraverseAllows = (data, ctx) => {

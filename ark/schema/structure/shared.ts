@@ -1,7 +1,7 @@
 import {
 	registeredReference,
 	type RegisteredReference
-} from "../shared/registry.js"
+} from "../shared/registry.ts"
 
 export const arrayIndexSource = `^(?:0|[1-9]\\d*)$`
 

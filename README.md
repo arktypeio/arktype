@@ -234,17 +234,10 @@ Otherwise, consider sending me an email (david@arktype.io) or [message me on Dis
 
 <table>
 	<tr>
-		<th>fubhy</th>
 		<th>sam-goodwin</th>
+		<th>fubhy</th>
 	</tr>
 	<tr>
-		<td>
-			<a href="https://github.com/fubhy"
-				><img
-					height="64px"
-					src="https://avatars.githubusercontent.com/u/1172528"
-			/></a>
-		</td>
 		<td>
 			<a href="https://github.com/sam-goodwin"
 				><img
@@ -252,7 +245,14 @@ Otherwise, consider sending me an email (david@arktype.io) or [message me on Dis
 					src="https://avatars.githubusercontent.com/u/38672686"
 			/></a>
 		</td>
-	</tr>
+		<td>
+			<a href="https://github.com/fubhy"
+				><img
+					height="64px"
+					src="https://avatars.githubusercontent.com/u/1172528"
+			/></a>
+		</td>
+    </tr>
 </table>
 
 ### Sponsors 🥰
@@ -260,8 +260,7 @@ Otherwise, consider sending me an email (david@arktype.io) or [message me on Dis
 <table>
 	<tr>
 		<th>tmm</th>
-		<th>jacksteamdev</th>
-        <th>neodon</th>
+        <th>mishushakov</th>
         <th>mewhhaha</th>
     	<th>codeandcats</th>
 	</tr>
@@ -281,8 +280,8 @@ Otherwise, consider sending me an email (david@arktype.io) or [message me on Dis
 			/></a>
 		</td>
         <td>
-    		<a href="https://github.com/neodon"
-    			><img height="64px" src="https://avatars.githubusercontent.com/u/82944"
+    		<a href="https://github.com/mishushakov"
+    			><img height="64px" src="https://avatars.githubusercontent.com/u/10400064"
     		/></a>
     	</td>
         <td>
@@ -302,7 +301,6 @@ Otherwise, consider sending me an email (david@arktype.io) or [message me on Dis
 	</tr>
 	<tr>
     	<th>Timeraa</th>
-		<th>marcagba</th>
 		<th>Phalangers</th>
     </tr>
     <tr>
@@ -311,13 +309,6 @@ Otherwise, consider sending me an email (david@arktype.io) or [message me on Dis
     			><img
     				height="64px"
     				src="https://avatars.githubusercontent.com/u/29104008"
-    		/></a>
-    	</td>
-		<td>
-    		<a href="https://github.com/marcagba"
-    			><img
-    				height="64px"
-    				src="https://avatars.githubusercontent.com/u/14045559"
     		/></a>
     	</td>
 		<td>

@@ -29,13 +29,13 @@ import {
 	type mutable,
 	type show
 } from "@ark/util"
-import type { constrain, Default } from "../ast.js"
-import type { ParseContext } from "../scope.js"
-import type { inferDefinition, validateDefinition } from "./definition.js"
-import { writeUnassignableDefaultValueMessage } from "./semantic/default.js"
-import type { astToString } from "./semantic/utils.js"
-import type { validateString } from "./semantic/validate.js"
-import type { ParsedDefault } from "./string/shift/operator/default.js"
+import type { constrain, Default } from "../ast.ts"
+import type { ParseContext } from "../scope.ts"
+import type { inferDefinition, validateDefinition } from "./definition.ts"
+import { writeUnassignableDefaultValueMessage } from "./semantic/default.ts"
+import type { astToString } from "./semantic/utils.ts"
+import type { validateString } from "./semantic/validate.ts"
+import type { ParsedDefault } from "./string/shift/operator/default.ts"
 
 export const parseObjectLiteral = (def: Dict, ctx: ParseContext): BaseRoot => {
 	let spread: Structure.Node | undefined
@@ -105,7 +105,7 @@ type _inferObjectLiteral<def extends object, $, args> = {
 	-readonly [k in keyof def as nonOptionalKeyFrom<k, $, args>]: def[k] extends (
 		DefaultValueTuple<infer baseDef, infer defaultValue>
 	) ?
-		def[k] extends anyOrNever ?
+		[def[k]] extends [anyOrNever] ?
 			def[k]
 		:	(In?: inferDefinition<baseDef, $, args>) => Default<defaultValue>
 	:	inferDefinition<def[k], $, args>
@@ -184,7 +184,7 @@ type PreparsedKey<
 	key: key
 }
 
-namespace PreparsedKey {
+declare namespace PreparsedKey {
 	export type from<t extends PreparsedKey> = t
 }
 

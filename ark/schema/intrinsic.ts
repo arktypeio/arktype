@@ -1,6 +1,6 @@
-import { node, schemaScope } from "./scope.js"
-import { $ark } from "./shared/registry.js"
-import { arrayIndexSource } from "./structure/shared.js"
+import { node, schemaScope } from "./scope.ts"
+import { $ark } from "./shared/registry.ts"
+import { arrayIndexSource } from "./structure/shared.ts"
 
 const intrinsicBases = schemaScope(
 	{
@@ -38,19 +38,44 @@ const intrinsicRoots = schemaScope(
 	{ prereducedAliases: true }
 ).export()
 
+// needed to parse index signatures for JSON
+Object.assign($ark.intrinsic, intrinsicRoots)
+
+const intrinsicJson = schemaScope(
+	{
+		jsonPrimitive: [
+			"string",
+			"number",
+			{ unit: true },
+			{ unit: false },
+			{ unit: null }
+		],
+		jsonObject: {
+			domain: "object",
+			index: {
+				signature: "string",
+				value: "$jsonData"
+			}
+		},
+		jsonArray: {
+			proto: Array,
+			sequence: "$jsonData"
+		},
+		jsonData: ["$jsonPrimitive", "$jsonObject", "$jsonArray"],
+		json: ["$jsonObject", "$jsonArray"]
+	},
+	{ prereducedAliases: true }
+).export()
+
 // reduce union of all possible values reduces to unknown
 node(
 	"union",
 	{
 		branches: [
-			"string",
-			"number",
+			...intrinsicJson.jsonPrimitive.branches,
 			"object",
 			"bigint",
 			"symbol",
-			{ unit: true },
-			{ unit: false },
-			{ unit: null },
 			{ unit: undefined }
 		]
 	},
@@ -60,6 +85,7 @@ node(
 export const intrinsic = {
 	...intrinsicBases,
 	...intrinsicRoots,
+	...intrinsicJson,
 	emptyStructure: node("structure", {}, { prereduced: true })
 }
 

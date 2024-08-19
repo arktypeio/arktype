@@ -3,8 +3,8 @@ import {
 	schemaKindsRightOf,
 	type RootIntersection,
 	type RootKind
-} from "../shared/implement.js"
-import type { schemaKindRightOf } from "./root.js"
+} from "../shared/implement.ts"
+import type { schemaKindRightOf } from "./root.ts"
 
 export const defineRightwardIntersections = <kind extends RootKind>(
 	kind: kind,

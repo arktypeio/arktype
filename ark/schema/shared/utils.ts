@@ -10,13 +10,13 @@ import {
 	type requireKeys,
 	type show
 } from "@ark/util"
-import type { BaseConstraint } from "../constraint.js"
-import type { GenericRoot } from "../generic.js"
-import type { InternalModule } from "../module.js"
-import type { BaseNode } from "../node.js"
-import type { BaseRoot } from "../roots/root.js"
-import type { BaseScope } from "../scope.js"
-import type { ArkError } from "./errors.js"
+import type { BaseConstraint } from "../constraint.ts"
+import type { GenericRoot } from "../generic.ts"
+import type { InternalModule } from "../module.ts"
+import type { BaseNode } from "../node.ts"
+import type { BaseRoot } from "../roots/root.ts"
+import type { BaseScope } from "../scope.ts"
+import type { ArkError } from "./errors.ts"
 
 export const makeRootAndArrayPropertiesMutable = <o extends object>(
 	o: o

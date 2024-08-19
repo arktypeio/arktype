@@ -1,10 +1,10 @@
 import { shell, writeJson } from "@ark/fs"
 import { rmSync } from "node:fs"
 import { join } from "node:path"
-import { writeSnapshotUpdatesOnExit } from "./cache/snapshots.js"
-import { analyzeProjectAssertions } from "./cache/writeAssertionCache.js"
-import { ensureCacheDirs, getConfig, type AttestConfig } from "./config.js"
-import { forTypeScriptVersions } from "./tsVersioning.js"
+import { writeSnapshotUpdatesOnExit } from "./cache/snapshots.ts"
+import { analyzeProjectAssertions } from "./cache/writeAssertionCache.ts"
+import { ensureCacheDirs, getConfig, type AttestConfig } from "./config.ts"
+import { forTypeScriptVersions } from "./tsVersioning.ts"
 
 export const setup = (options?: Partial<AttestConfig>): typeof teardown => {
 	if (options) {

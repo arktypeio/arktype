@@ -1,21 +1,27 @@
-import type { BaseRoot } from "../roots/root.js"
-import type { BaseErrorContext, declareNode } from "../shared/declare.js"
+import { describeCollapsibleDate, throwParseError } from "@ark/util"
+import type { BaseRoot } from "../roots/root.ts"
+import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
-} from "../shared/implement.js"
-import { $ark } from "../shared/registry.js"
-import type { TraverseAllows } from "../shared/traversal.js"
+} from "../shared/implement.ts"
+import {
+	writeUnsupportedJsonSchemaTypeMessage,
+	type JsonSchema
+} from "../shared/jsonSchema.ts"
+import { $ark } from "../shared/registry.ts"
+import type { TraverseAllows } from "../shared/traversal.ts"
 import {
 	BaseRange,
+	createDateSchemaNormalizer,
 	parseDateLimit,
-	parseExclusiveKey,
 	type BaseRangeInner,
 	type LimitSchemaValue,
+	type UnknownExpandedRangeSchema,
 	type UnknownNormalizedRangeSchema
-} from "./range.js"
+} from "./range.ts"
 
-export namespace After {
+export declare namespace After {
 	export interface Inner extends BaseRangeInner {
 		rule: Date
 	}
@@ -24,9 +30,13 @@ export namespace After {
 		rule: LimitSchemaValue
 	}
 
-	export interface ErrorContext extends BaseErrorContext<"after">, Inner {}
+	export interface ExpandedSchema extends UnknownExpandedRangeSchema {
+		rule: LimitSchemaValue
+	}
 
-	export type Schema = NormalizedSchema | LimitSchemaValue
+	export type Schema = ExpandedSchema | LimitSchemaValue
+
+	export interface ErrorContext extends BaseErrorContext<"after">, Inner {}
 
 	export interface Declaration
 		extends declareNode<{
@@ -50,23 +60,12 @@ const implementation: nodeImplementationOf<After.Declaration> =
 			rule: {
 				parse: parseDateLimit,
 				serialize: schema => schema.toISOString()
-			},
-			exclusive: parseExclusiveKey
+			}
 		},
-		normalize: schema =>
-			(
-				typeof schema === "number" ||
-				typeof schema === "string" ||
-				schema instanceof Date
-			) ?
-				{ rule: schema }
-			:	schema,
+		normalize: createDateSchemaNormalizer("after"),
 		defaults: {
-			description: node =>
-				node.exclusive ?
-					`after ${node.stringLimit}`
-				:	`${node.stringLimit} or later`,
-			actual: data => data.toLocaleString()
+			description: node => `${node.collapsibleLimitString} or later`,
+			actual: describeCollapsibleDate
 		},
 		intersections: {
 			after: (l, r) => (l.isStricterThan(r) ? l : r)
@@ -76,8 +75,15 @@ const implementation: nodeImplementationOf<After.Declaration> =
 export class AfterNode extends BaseRange<After.Declaration> {
 	impliedBasis: BaseRoot = $ark.intrinsic.Date.internal
 
-	traverseAllows: TraverseAllows<Date> =
-		this.exclusive ? data => data > this.rule : data => data >= this.rule
+	collapsibleLimitString = describeCollapsibleDate(this.rule)
+
+	traverseAllows: TraverseAllows<Date> = data => data >= this.rule
+
+	reduceJsonSchema(): JsonSchema {
+		return throwParseError(
+			writeUnsupportedJsonSchemaTypeMessage("Date instance")
+		)
+	}
 }
 
 export const After = {

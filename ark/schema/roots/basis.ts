@@ -1,8 +1,8 @@
 import type { array, Key } from "@ark/util"
-import type { NodeCompiler } from "../shared/compile.js"
-import { compileErrorContext } from "../shared/implement.js"
-import type { TraverseApply } from "../shared/traversal.js"
-import { BaseRoot, type InternalRootDeclaration } from "./root.js"
+import type { NodeCompiler } from "../shared/compile.ts"
+import { compileErrorContext } from "../shared/implement.ts"
+import type { TraverseApply } from "../shared/traversal.ts"
+import { BaseRoot, type InternalRootDeclaration } from "./root.ts"
 
 export abstract class InternalBasis<
 	d extends InternalRootDeclaration = InternalRootDeclaration

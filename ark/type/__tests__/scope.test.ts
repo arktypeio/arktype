@@ -5,8 +5,8 @@ import {
 	writeUnresolvableMessage
 } from "@ark/schema"
 import { define, scope, type, type Module } from "arktype"
-import type { distillOut, string } from "arktype/internal/ast.js"
-import { writeUnexpectedCharacterMessage } from "arktype/internal/parser/string/shift/operator/operator.js"
+import type { distillOut, string } from "arktype/internal/ast.ts"
+import { writeUnexpectedCharacterMessage } from "arktype/internal/parser/string/shift/operator/operator.ts"
 
 contextualize(() => {
 	it("base definition", () => {
@@ -292,8 +292,8 @@ contextualize(() => {
 			// ideally would only include one error, see:
 			// https://github.com/arktypeio/arktype/issues/924
 			attest(types.package(data).toString())
-				.snap(`contributors[0].email must be a valid email (was "ssalbdivad")
-dependencies[1].contributors[0].email must be a valid email (was "ssalbdivad")`)
+				.snap(`contributors[0].email must be an email address (was "ssalbdivad")
+dependencies[1].contributors[0].email must be an email address (was "ssalbdivad")`)
 		})
 
 		it("can include cyclic data in message", () => {

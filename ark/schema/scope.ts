@@ -1,6 +1,5 @@
 import {
 	ParseError,
-	bound,
 	flatMorph,
 	hasDomain,
 	isArray,
@@ -17,43 +16,43 @@ import {
 	type noSuggest,
 	type show
 } from "@ark/util"
-import { resolveConfig, type ArkConfig } from "./config.js"
+import { resolveConfig, type ArkConfig } from "./config.ts"
 import {
 	GenericRoot,
 	LazyGenericBody,
 	type GenericHktSchemaBodyParser,
 	type GenericParamDef,
 	type genericParamSchemasToAst
-} from "./generic.js"
+} from "./generic.ts"
 import {
 	nodeImplementationsByKind,
 	type NodeSchema,
 	type RootSchema,
 	type nodeOfKind,
 	type reducibleKindOf
-} from "./kinds.js"
+} from "./kinds.ts"
 import {
 	RootModule,
 	bindModule,
 	type InternalModule,
 	type PreparsedNodeResolution,
 	type SchemaModule
-} from "./module.js"
-import type { BaseNode } from "./node.js"
+} from "./module.ts"
+import type { BaseNode } from "./node.ts"
 import {
 	parseNode,
 	registerNodeId,
 	schemaKindOf,
 	type NodeParseContext,
 	type NodeParseOptions
-} from "./parse.js"
-import { normalizeAliasSchema, type Alias } from "./roots/alias.js"
-import type { BaseRoot } from "./roots/root.js"
-import { CompiledFunction, NodeCompiler } from "./shared/compile.js"
-import type { NodeKind, RootKind } from "./shared/implement.js"
-import { $ark } from "./shared/registry.js"
-import type { TraverseAllows, TraverseApply } from "./shared/traversal.js"
-import { arkKind, hasArkKind, isNode } from "./shared/utils.js"
+} from "./parse.ts"
+import { normalizeAliasSchema, type Alias } from "./roots/alias.ts"
+import type { BaseRoot } from "./roots/root.ts"
+import { CompiledFunction, NodeCompiler } from "./shared/compile.ts"
+import type { NodeKind, RootKind } from "./shared/implement.ts"
+import { $ark } from "./shared/registry.ts"
+import type { TraverseAllows, TraverseApply } from "./shared/traversal.ts"
+import { arkKind, hasArkKind, isNode } from "./shared/utils.ts"
 
 export type InternalResolutions = Record<string, InternalResolution | undefined>
 
@@ -62,7 +61,9 @@ export type exportedNameOf<$> = Exclude<keyof $ & string, PrivateDeclaration>
 export type resolvableReferenceIn<$> = {
 	[k in keyof $]: k extends string ?
 		k extends PrivateDeclaration<infer alias> ? alias
-		: k extends noSuggest ? never
+		: // technically, $root subtypes are resolvable, but there's never a good
+		// reason to use them over the base alias
+		k extends noSuggest | "$root" ? never
 		: k
 	:	never
 }[keyof $]
@@ -120,7 +121,10 @@ export abstract class BaseScope<$ extends {} = {}> {
 	readonly config: ArkScopeConfig
 	readonly resolvedConfig: ResolvedArkScopeConfig
 	readonly id = `${Object.keys(scopesById).length}$`
-	readonly [arkKind] = "scope"
+
+	get [arkKind](): "scope" {
+		return "scope"
+	}
 
 	readonly referencesById: { [id: string]: BaseNode } = {}
 	references: readonly BaseNode[] = []
@@ -165,20 +169,13 @@ export abstract class BaseScope<$ extends {} = {}> {
 		return this
 	}
 
-	@bound
 	defineSchema<def extends RootSchema>(def: def): def {
 		return def
 	}
 
-	@bound
-	defineRoot(def: RootSchema): RootSchema {
-		return this.defineSchema(def)
-	}
-
-	@bound
-	generic<const paramsDef extends readonly GenericParamDef[]>(
+	generic = <const paramsDef extends readonly GenericParamDef[]>(
 		...params: paramsDef
-	): GenericHktSchemaBodyParser<genericParamSchemasToAst<paramsDef>> {
+	): GenericHktSchemaBodyParser<genericParamSchemasToAst<paramsDef>> => {
 		const $: BaseScope = this as never
 		return instantiateDef =>
 			new GenericRoot(
@@ -189,8 +186,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			) as never
 	}
 
-	@bound
-	units(values: array, opts?: NodeParseOptions): BaseRoot {
+	units = (values: array, opts?: NodeParseOptions): BaseRoot => {
 		const uniqueValues: unknown[] = []
 		for (const value of values)
 			if (!uniqueValues.includes(value)) uniqueValues.push(value)
@@ -216,17 +212,14 @@ export abstract class BaseScope<$ extends {} = {}> {
 		return node
 	}
 
-	@bound
-	rootNode(def: RootSchema, opts?: NodeParseOptions): BaseRoot {
-		return this.node(schemaKindOf(def), def, opts)
-	}
+	rootNode = (def: RootSchema, opts?: NodeParseOptions): BaseRoot =>
+		this.node(schemaKindOf(def), def, opts)
 
-	@bound
-	protected preparseNode(
+	protected preparseNode = (
 		kinds: NodeKind | listable<RootKind>,
 		schema: unknown,
 		opts: NodeParseOptions
-	): BaseNode | NodeParseContext {
+	): BaseNode | NodeParseContext => {
 		let kind: NodeKind =
 			typeof kinds === "string" ? kinds : schemaKindOf(schema, kinds)
 
@@ -268,8 +261,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		}
 	}
 
-	@bound
-	node<
+	node = <
 		kinds extends NodeKind | array<RootKind>,
 		prereduced extends boolean = false
 	>(
@@ -279,7 +271,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 	): nodeOfKind<
 		prereduced extends true ? flattenListable<kinds>
 		:	reducibleKindOf<flattenListable<kinds>>
-	> {
+	> => {
 		const preparsed = this.preparseNode(kinds, nodeSchema, opts)
 
 		const node =
@@ -338,7 +330,17 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 		return typeof resolution === "string" ?
 				this.node("alias", { alias: resolution }, { prereduced: true })
-			:	(resolution ?? maybeResolveSubalias(this.aliases, name))
+			:	(resolution ?? this.maybeResolveSubalias(name))
+	}
+
+	/** If name is a valid reference to a submodule alias, return its resolution  */
+	protected maybeResolveSubalias(
+		name: string
+	): BaseRoot | GenericRoot | undefined {
+		return (
+			maybeResolveSubalias(this.aliases, name) ??
+			maybeResolveSubalias(this.ambient, name)
+		)
 	}
 
 	get ambient(): InternalModule {
@@ -356,20 +358,16 @@ export abstract class BaseScope<$ extends {} = {}> {
 		if (hasArkKind(preparsed, "generic"))
 			return (this.resolutions[name] = preparsed.bindScope(this))
 
-		if (hasArkKind(preparsed, "module"))
-			return throwParseError(writeMissingSubmoduleAccessMessage(name))
+		if (hasArkKind(preparsed, "module")) {
+			if (preparsed.$root)
+				return (this.resolutions[name] = preparsed.$root.bindScope(this))
+			else return throwParseError(writeMissingSubmoduleAccessMessage(name))
+		}
 
 		this.resolutions[name] = name
 		return (this.resolutions[name] = this.parseRoot(preparsed, {
 			alias: name
 		}).bindScope(this))
-	}
-
-	/** If name is a valid reference to a submodule alias, return its resolution  */
-	protected maybeResolveSubalias(
-		name: string
-	): BaseRoot | GenericRoot | undefined {
-		return maybeResolveSubalias(this.aliases, name)
 	}
 
 	import<names extends exportedNameOf<$>[]>(
@@ -513,11 +511,7 @@ export const schemaScope = <
 export class SchemaScope<
 	$ extends InternalResolutions = InternalResolutions
 > extends BaseScope<$> {
-	defineRoot<schema extends RootSchema>(schema: schema): schema {
-		return schema
-	}
-
-	parseRoot(schema: RootSchema, opts: NodeParseOptions = {}): BaseRoot {
+	parseRoot = (schema: RootSchema, opts: NodeParseOptions = {}): BaseRoot => {
 		const node = this.rootNode(
 			schema as never,
 			this.finalizeRootArgs(opts, () => node)
@@ -526,12 +520,13 @@ export class SchemaScope<
 	}
 }
 
-export const $root: SchemaScope = new SchemaScope({})
+export const rootSchemaScope: SchemaScope = new SchemaScope({})
 
-export const rootNode: SchemaScope["rootNode"] = $root.rootNode
-export const node: SchemaScope["node"] = $root.node
-export const defineSchema: SchemaScope["defineSchema"] = $root.defineSchema
-export const genericNode: SchemaScope["generic"] = $root.generic
+export const rootNode: SchemaScope["rootNode"] = rootSchemaScope.rootNode
+export const node: SchemaScope["node"] = rootSchemaScope.node
+export const defineSchema: SchemaScope["defineSchema"] =
+	rootSchemaScope.defineSchema
+export const genericNode: SchemaScope["generic"] = rootSchemaScope.generic
 
 export const parseAsSchema = (
 	def: unknown,

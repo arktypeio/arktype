@@ -1,6 +1,6 @@
 {
 	"name": "@ark/schema",
-	"version": "0.3.2",
+	"version": "0.3.3",
 	"license": "MIT",
 	"author": {
 		"name": "David Blass",
@@ -16,18 +16,23 @@
 	"main": "./out/index.js",
 	"types": "./out/index.d.ts",
 	"exports": {
-		".": "./out/index.js",
-		"./config": "./out/config.js",
-		"./internal/*": "./out/*"
+		".": {
+			"ark-ts": "./index.ts",
+			"default": "./out/index.js"
+		},
+		"./config": {
+			"ark-ts": "./config.ts",
+			"default": "./out/config.js"
+		}
 	},
 	"files": [
 		"out"
 	],
 	"scripts": {
-		"build": "tsx ../repo/build.ts",
-		"bench": "tsx ./__tests__/comparison.bench.ts",
-		"test": "tsx ../repo/testPackage.ts",
-		"tnt": "tsx ../repo/testPackage.ts --skipTypes"
+		"build": "ts ../repo/build.ts",
+		"bench": "ts ./__tests__/comparison.bench.ts",
+		"test": "ts ../repo/testPackage.ts",
+		"tnt": "ts ../repo/testPackage.ts --skipTypes"
 	},
 	"dependencies": {
 		"@ark/util": "workspace:*"

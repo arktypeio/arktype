@@ -1,7 +1,7 @@
 import type { writeIndivisibleMessage } from "@ark/schema"
 import type { ErrorMessage } from "@ark/util"
-import type { inferAstIn } from "./infer.js"
-import type { validateAst } from "./validate.js"
+import type { inferAstIn } from "./infer.ts"
+import type { validateAst } from "./validate.ts"
 
 export type validateDivisor<l, $, args> =
 	inferAstIn<l, $, args> extends infer data ?

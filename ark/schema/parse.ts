@@ -7,22 +7,21 @@ import {
 	printable,
 	throwParseError,
 	unset,
-	type Json,
 	type JsonData,
 	type PartialRecord,
 	type dict,
 	type listable
 } from "@ark/util"
-import type { GenericArgResolutions } from "./generic.js"
+import type { GenericArgResolutions } from "./generic.ts"
 import {
 	nodeClassesByKind,
 	nodeImplementationsByKind,
 	type NormalizedSchema
-} from "./kinds.js"
-import type { BaseNode } from "./node.js"
-import type { BaseScope } from "./scope.js"
-import type { BaseMeta, MetaSchema } from "./shared/declare.js"
-import { Disjoint } from "./shared/disjoint.js"
+} from "./kinds.ts"
+import type { BaseNode } from "./node.ts"
+import type { BaseScope } from "./scope.ts"
+import type { BaseMeta, MetaSchema } from "./shared/declare.ts"
+import { Disjoint } from "./shared/disjoint.ts"
 import {
 	constraintKeys,
 	defaultValueSerializer,
@@ -31,8 +30,8 @@ import {
 	type NodeKind,
 	type RootKind,
 	type UnknownAttachments
-} from "./shared/implement.js"
-import { hasArkKind } from "./shared/utils.js"
+} from "./shared/implement.ts"
+import { hasArkKind } from "./shared/utils.ts"
 
 export type NodeParseOptions<prereduced extends boolean = boolean> = {
 	alias?: string
@@ -211,13 +210,14 @@ export const createNode = (
 		innerJson = impl.finalizeInnerJson(innerJson) as never
 
 	let json = { ...innerJson }
+	let metaJson: BaseMeta & dict = {}
 
 	if (!isEmptyObject(meta)) {
-		json.meta = possiblyCollapse(
-			flatMorph(meta, (k, v) => [k, defaultValueSerializer(v)]),
-			"description",
-			true
-		)
+		metaJson = flatMorph(meta, (k, v) => [
+			k,
+			k === "examples" ? v : defaultValueSerializer(v)
+		]) as BaseMeta & dict
+		json.meta = possiblyCollapse(metaJson, "description", true)
 	}
 
 	innerJson = possiblyCollapse(innerJson, impl.collapsibleKey, false)
@@ -237,9 +237,10 @@ export const createNode = (
 		impl,
 		inner,
 		innerEntries,
-		innerJson: innerJson as Json,
+		innerJson,
 		innerHash,
 		meta,
+		metaJson,
 		json,
 		hash,
 		collapsibleJson: collapsibleJson as JsonData,

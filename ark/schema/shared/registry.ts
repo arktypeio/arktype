@@ -1,11 +1,11 @@
 import {
-	registry,
 	groupBy,
 	register,
+	registry,
 	type InitialRegistryContents,
 	type NonNegativeIntegerLiteral
 } from "@ark/util"
-import type { ArkSchemaRegistry } from "../config.js"
+import type { ArkSchemaRegistry } from "../config.ts"
 
 let _registryName = "$ark"
 let suffix = 2

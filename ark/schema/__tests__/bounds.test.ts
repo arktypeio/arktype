@@ -1,8 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
-import { rootNode } from "@ark/schema"
+import { Disjoint, boundKindPairsByLower, rootNode } from "@ark/schema"
 import { entriesOf, flatMorph } from "@ark/util"
-import { boundKindPairsByLower } from "@ark/schema/internal/refinements/range.js"
-import { Disjoint } from "@ark/schema/internal/shared/disjoint.js"
 
 const numericCases = {
 	lessThanMin: 4,
@@ -47,10 +45,10 @@ contextualize(() => {
 		})
 
 		attest(t.traverse(lengthCases.lessThanMin)?.toString()).snap(
-			"must be more than length 5 (was 4)"
+			"must be at least length 6 (was 4)"
 		)
 		attest(t.traverse(lengthCases.equalToExclusiveMin)?.toString()).snap(
-			"must be more than length 5 (was 5)"
+			"must be at least length 6 (was 5)"
 		)
 		attest(t.traverse(lengthCases.between)).equals(lengthCases.between)
 		attest(t.traverse(lengthCases.equalToInclusiveMax)).equals(
@@ -69,17 +67,17 @@ contextualize(() => {
 		})
 
 		attest(t.traverse(dateCases.lessThanMin)?.toString()).snap(
-			"must be after 12/31/1969, 7:00:00 PM (was 12/31/1969, 7:00:00 PM)"
+			"must be 7:00:00.006 PM, December 31, 1969 or later (was 7:00:00.004 PM, December 31, 1969)"
 		)
 		attest(t.traverse(dateCases.equalToExclusiveMin)?.toString()).snap(
-			"must be after 12/31/1969, 7:00:00 PM (was 12/31/1969, 7:00:00 PM)"
+			"must be 7:00:00.006 PM, December 31, 1969 or later (was 7:00:00.005 PM, December 31, 1969)"
 		)
 		attest(t.traverse(dateCases.between)).equals(dateCases.between)
 		attest(t.traverse(dateCases.equalToInclusiveMax)).equals(
 			dateCases.equalToInclusiveMax
 		)
 		attest(t.traverse(dateCases.greaterThanMax)?.toString()).snap(
-			"must be 12/31/1969, 7:00:00 PM or earlier (was 12/31/1969, 7:00:00 PM)"
+			"must be 7:00:00.010 PM, December 31, 1969 or earlier (was 7:00:00.011 PM, December 31, 1969)"
 		)
 	})
 

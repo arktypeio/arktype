@@ -27,7 +27,6 @@ import {
 	type writeDuplicateAliasError
 } from "@ark/schema"
 import {
-	bound,
 	domainOf,
 	hasDomain,
 	isThunk,
@@ -38,10 +37,12 @@ import {
 	type anyOrNever,
 	type array,
 	type flattenListable,
+	type inferred,
+	type noSuggest,
 	type nominal,
 	type show
 } from "@ark/util"
-import type { Ark } from "./ark.js"
+import type { ArkAmbient } from "./config.ts"
 import {
 	parseGenericParams,
 	type GenericDeclaration,
@@ -49,34 +50,35 @@ import {
 	type ParameterString,
 	type baseGenericConstraints,
 	type parseValidGenericParams
-} from "./generic.js"
+} from "./generic.ts"
+import type { type } from "./keywords/ark.ts"
 import type {
 	BoundModule,
 	Module,
 	Submodule,
 	instantiateExport
-} from "./module.js"
+} from "./module.ts"
 import {
 	parseObject,
 	writeBadDefinitionTypeMessage,
 	type inferDefinition,
 	type validateDefinition
-} from "./parser/definition.js"
-import { DynamicState } from "./parser/string/reduce/dynamic.js"
-import type { ParsedDefault } from "./parser/string/shift/operator/default.js"
-import { writeUnexpectedCharacterMessage } from "./parser/string/shift/operator/operator.js"
-import { Scanner } from "./parser/string/shift/scanner.js"
+} from "./parser/definition.ts"
+import { DynamicState } from "./parser/string/reduce/dynamic.ts"
+import type { ParsedDefault } from "./parser/string/shift/operator/default.ts"
+import { writeUnexpectedCharacterMessage } from "./parser/string/shift/operator/operator.ts"
+import { Scanner } from "./parser/string/shift/scanner.ts"
 import {
 	fullStringParse,
 	type StringParseResult
-} from "./parser/string/string.js"
+} from "./parser/string/string.ts"
 import {
 	InternalTypeParser,
 	type DeclarationParser,
 	type DefinitionParser,
 	type Type,
 	type TypeParser
-} from "./type.js"
+} from "./type.ts"
 
 export type ScopeParser = <const def>(
 	def: validateScope<def>,
@@ -84,7 +86,10 @@ export type ScopeParser = <const def>(
 ) => Scope<inferScope<def>>
 
 export type validateScope<def> = {
-	[k in keyof def]: parseScopeKey<k, def>["params"] extends infer params ?
+	[k in keyof def]: k extends noSuggest ?
+		// avoid trying to parse meta keys when spreading modules
+		unknown
+	: parseScopeKey<k, def>["params"] extends infer params ?
 		params extends array<GenericParamAst> ?
 			params["length"] extends 0 ?
 				// not including Type here directly breaks some cyclic tests (last checked w/ TS 5.5).
@@ -121,13 +126,13 @@ type bootstrapAliases<def> = {
 	[k in Exclude<keyof def, GenericDeclaration>]: def[k] extends (
 		PreparsedResolution
 	) ?
-		def[k] extends { t: infer g extends GenericAst } ?
-			g
-		:	def[k]
+		def[k] extends { t: infer g extends GenericAst } ? g
+		: def[k] extends Module<infer $> ? Submodule<$>
+		: def[k]
 	: def[k] extends (() => infer thunkReturn extends PreparsedResolution) ?
-		thunkReturn extends { t: infer g extends GenericAst } ?
-			g
-		:	thunkReturn
+		thunkReturn extends { t: infer g extends GenericAst } ? g
+		: thunkReturn extends Module<infer $> ? Submodule<$>
+		: thunkReturn
 	:	Def<def[k]>
 } & {
 	[k in keyof def & GenericDeclaration as extractGenericName<k>]: GenericAst<
@@ -140,13 +145,17 @@ type bootstrapAliases<def> = {
 type inferBootstrapped<$> = {
 	[name in keyof $]: $[name] extends Def<infer def> ?
 		inferDefinition<def, $, {}>
-	: $[name] extends { t: GenericAst<infer params, infer def, infer body$> } ?
-		// add the scope in which the generic was defined here
-		GenericAst<params, def, body$ extends UnparsedScope ? $ : body$, $>
+	: $[name] extends { t: infer g extends GenericAst } ? bindGenericToScope<g, $>
 	: // should be submodule
-	$[name] extends Module<infer exports> ? Submodule<exports>
-	: never
+		$[name]
 } & unknown
+
+export type bindGenericToScope<g extends GenericAst, $> = GenericAst<
+	g["paramsAst"],
+	g["bodyDef"],
+	g["$"] extends UnparsedScope ? $ : g["$"],
+	$
+>
 
 type extractGenericName<k> =
 	k extends GenericDeclaration<infer name> ? name : never
@@ -163,6 +172,7 @@ export type resolve<reference extends keyof $ | keyof args, $, args> =
 		:	$[reference & keyof $]
 	) extends infer resolution ?
 		[resolution] extends [anyOrNever] ? resolution
+		: resolution extends { [inferred]: infer t } ? t
 		: resolution extends Def<infer def> ? inferDefinition<def, $, args>
 		: resolution
 	:	never
@@ -175,17 +185,19 @@ export type moduleKeyOf<$> = {
 	:	never
 }[keyof $]
 
+type unwrapPreinferred<t> = t extends type.cast<infer inferred> ? inferred : t
+
 export type tryInferSubmoduleReference<$, token> =
 	token extends `${infer submodule extends moduleKeyOf<$>}.${infer subalias}` ?
 		subalias extends keyof $[submodule] ?
-			$[submodule][subalias]
+			unwrapPreinferred<$[submodule][subalias]>
 		:	tryInferSubmoduleReference<$[submodule], subalias>
 	: token extends (
-		`${infer submodule extends moduleKeyOf<Ark>}.${infer subalias}`
+		`${infer submodule extends moduleKeyOf<ArkAmbient.$>}.${infer subalias}`
 	) ?
-		subalias extends keyof Ark[submodule] ?
-			Ark[submodule][subalias]
-		:	tryInferSubmoduleReference<Ark[submodule], subalias>
+		subalias extends keyof ArkAmbient.$[submodule] ?
+			unwrapPreinferred<ArkAmbient.$[submodule][subalias]>
+		:	tryInferSubmoduleReference<ArkAmbient.$[submodule], subalias>
 	:	never
 
 export interface ParseContext extends TypeParseOptions {
@@ -203,14 +215,6 @@ export class InternalScope<
 	$ extends InternalResolutions = InternalResolutions
 > extends BaseScope<$> {
 	private parseCache: Record<string, StringParseResult> = {}
-
-	type: InternalTypeParser = new InternalTypeParser(this as never)
-
-	declare: () => { type: InternalTypeParser } = (() => ({
-		type: this.type
-	})).bind(this)
-
-	define: (def: unknown) => unknown = ((def: unknown) => def).bind(this)
 
 	override preparseAlias(k: string, v: unknown): AliasDefEntry {
 		const firstParamIndex = k.indexOf("<")
@@ -246,18 +250,6 @@ export class InternalScope<
 		if (isThunk(def) && !hasArkKind(def, "generic")) return def()
 
 		return def
-	}
-
-	@bound
-	parseRoot(def: unknown, opts: TypeParseOptions = {}): BaseRoot {
-		const node: BaseRoot = this.parse(
-			def,
-			Object.assign(
-				this.finalizeRootArgs(opts, () => node),
-				{ $: this as never }
-			)
-		).bindScope(this)
-		return node
 	}
 
 	parse<defaultable extends boolean = false>(
@@ -307,6 +299,25 @@ export class InternalScope<
 
 		return node as never
 	}
+
+	parseRoot = (def: unknown, opts: TypeParseOptions = {}): BaseRoot => {
+		const node: BaseRoot = this.parse(
+			def,
+			Object.assign(
+				this.finalizeRootArgs(opts, () => node),
+				{ $: this as never }
+			)
+		).bindScope(this)
+		return node
+	}
+
+	type: InternalTypeParser = new InternalTypeParser(this as never)
+
+	declare = (): { type: InternalTypeParser } => ({
+		type: this.type
+	})
+
+	define: (def: unknown) => unknown = ((def: unknown) => def).bind(this)
 }
 
 export interface Scope<$ = {}> {

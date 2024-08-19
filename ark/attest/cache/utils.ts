@@ -1,19 +1,19 @@
 import { filePath } from "@ark/fs"
 import * as tsvfs from "@typescript/vfs"
 import ts from "typescript"
-import { getConfig } from "../config.js"
-import { getFileKey } from "../utils.js"
+import { getConfig } from "../config.ts"
+import { getFileKey } from "../utils.ts"
 import {
 	getDescendants,
 	getFirstAncestorByKindOrThrow,
 	getProgram,
 	getTsConfigInfoOrThrow,
 	getTsLibFiles
-} from "./ts.js"
+} from "./ts.ts"
 import type {
 	AssertionsByFile,
 	LinePositionRange
-} from "./writeAssertionCache.js"
+} from "./writeAssertionCache.ts"
 
 export const getCallLocationFromCallExpression = (
 	callExpression: ts.CallExpression
@@ -138,9 +138,8 @@ export const createOrUpdateFile = (
 	fileName: string,
 	fileText: string
 ): ts.SourceFile | undefined => {
-	env.sys.fileExists(fileName) ?
-		env.updateFile(fileName, fileText)
-	:	env.createFile(fileName, fileText)
+	if (env.sys.fileExists(fileName)) env.updateFile(fileName, fileText)
+	else env.createFile(fileName, fileText)
 	return env.getSourceFile(fileName)
 }
 

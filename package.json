@@ -25,17 +25,17 @@
 		"testTyped": "mocha --exclude 'ark/attest/**/*.test.*'",
 		"testRepo": "pnpm test && pnpm testV8 && cd ./ark/attest && pnpm test",
 		"testV8": "node --allow-natives-syntax ./ark/repo/testV8.js",
-		"testTsVersions": "pnpm testTyped --tsVersions '*' --compilerOptions '{ \"paths\": {} }'",
+		"testTsVersions": "pnpm testTyped --tsVersions '*' --compilerOptions '{ \"customConditions\": [] }'",
 		"bench": "pnpm benchOperand && pnpm benchOperator && pnpm benchObject && pnpm benchCyclic",
-		"benchOperand": "tsx ./ark/type/__tests__/operand.bench.ts",
-		"benchOperator": "tsx ./ark/type/__tests__/operator.bench.ts",
-		"benchObject": "tsx ./ark/type/__tests__/object.bench.ts",
-		"benchCyclic": "tsx ./ark/type/__tests__/cyclic.bench.ts",
-		"scratch": "tsx ./ark/repo/scratch.ts",
+		"benchOperand": "ts ./ark/type/__tests__/operand.bench.ts",
+		"benchOperator": "ts ./ark/type/__tests__/operator.bench.ts",
+		"benchObject": "ts ./ark/type/__tests__/object.bench.ts",
+		"benchCyclic": "ts ./ark/type/__tests__/cyclic.bench.ts",
+		"scratch": "ts ./ark/repo/scratch.ts",
 		"lint": "prettier --check . && eslint --max-warnings=0 .",
 		"format": "prettier --write .",
 		"knip": "knip",
-		"ci:publish": "tsx ./ark/repo/publish.ts"
+		"ci:publish": "ts ./ark/repo/publish.ts"
 	},
 	"devDependencies": {
 		"arktype": "workspace:*",
@@ -43,9 +43,9 @@
 		"@ark/repo": "workspace:*",
 		"@ark/util": "workspace:*",
 		"@types/mocha": "10.0.7",
-		"@types/node": "22.0.0",
-		"@typescript-eslint/eslint-plugin": "7.18.0",
-		"@typescript-eslint/parser": "7.18.0",
+		"@types/node": "22.4.0",
+		"@typescript-eslint/eslint-plugin": "8.1.0",
+		"@typescript-eslint/parser": "8.1.0",
 		"c8": "10.1.2",
 		"eslint": "8.57.0",
 		"eslint-config-prettier": "9.1.0",
@@ -54,12 +54,12 @@
 		"eslint-plugin-import": "2.29.1",
 		"eslint-plugin-mdx": "3.1.5",
 		"eslint-plugin-only-warn": "1.1.0",
-		"eslint-plugin-prefer-arrow-functions": "3.3.2",
-		"knip": "5.27.0",
-		"mocha": "10.7.0",
+		"eslint-plugin-prefer-arrow-functions": "3.4.1",
+		"knip": "5.27.2",
+		"mocha": "10.7.3",
 		"prettier": "3.3.3",
-		"tsx": "4.16.2",
-		"typescript": "5.5.4",
+		"tsx": "4.17.0",
+		"typescript": "catalog:",
 		"typescript-min": "npm:typescript@5.1.5",
 		"typescript-nightly": "npm:typescript@next"
 	},
@@ -70,6 +70,7 @@
 		],
 		"ignore": "**/node_modules/**/*",
 		"node-option": [
+			"conditions=ark-ts",
 			"import=tsx"
 		],
 		"require": "./ark/repo/mocha.globalSetup.ts"
@@ -94,5 +95,5 @@
 	"eslintConfig": {
 		"extends": "./ark/repo/.eslintrc.cjs"
 	},
-	"packageManager": "pnpm@9.6.0"
+	"packageManager": "pnpm@9.7.1"
 }

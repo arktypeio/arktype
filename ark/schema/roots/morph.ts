@@ -5,26 +5,30 @@ import {
 	type array,
 	type listable
 } from "@ark/util"
-import type { nodeOfKind, NodeSchema } from "../kinds.js"
-import type { NodeCompiler } from "../shared/compile.js"
-import type { BaseNormalizedSchema, declareNode } from "../shared/declare.js"
-import { Disjoint } from "../shared/disjoint.js"
+import type { nodeOfKind, NodeSchema } from "../kinds.ts"
+import type { NodeCompiler } from "../shared/compile.ts"
+import type { BaseNormalizedSchema, declareNode } from "../shared/declare.ts"
+import { Disjoint } from "../shared/disjoint.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
-} from "../shared/implement.js"
-import { intersectNodes } from "../shared/intersections.js"
-import { $ark, registeredReference } from "../shared/registry.js"
+} from "../shared/implement.ts"
+import { intersectNodes } from "../shared/intersections.ts"
+import {
+	writeJsonSchemaMorphMessage,
+	type JsonSchema
+} from "../shared/jsonSchema.ts"
+import { $ark, registeredReference } from "../shared/registry.ts"
 import type {
 	TraversalContext,
 	TraverseAllows,
 	TraverseApply
-} from "../shared/traversal.js"
-import { hasArkKind } from "../shared/utils.js"
-import { BaseRoot, type schemaKindRightOf } from "./root.js"
-import { defineRightwardIntersections } from "./utils.js"
+} from "../shared/traversal.ts"
+import { hasArkKind } from "../shared/utils.ts"
+import { BaseRoot, type schemaKindRightOf } from "./root.ts"
+import { defineRightwardIntersections } from "./utils.ts"
 
-export namespace Morph {
+export declare namespace Morph {
 	export type ChildKind = schemaKindRightOf<"morph"> | "alias"
 
 	export type ChildNode = nodeOfKind<ChildKind>
@@ -136,6 +140,10 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 
 	get shortDescription(): string {
 		return this.in.shortDescription
+	}
+
+	protected innerToJsonSchema(): JsonSchema {
+		return throwParseError(writeJsonSchemaMorphMessage(this.expression))
 	}
 
 	compile(js: NodeCompiler): void {

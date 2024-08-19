@@ -1,8 +1,8 @@
 import { ensureDir } from "@ark/fs"
 import { execSync } from "child_process"
 import { resolve } from "path"
-import { getConfig } from "../config.js"
-import { baseDiagnosticTscCmd } from "./shared.js"
+import { getConfig } from "../config.ts"
+import { baseDiagnosticTscCmd } from "./shared.ts"
 
 export const trace = async (args: string[]): Promise<void> => {
 	const packageDir = args[0] ?? process.cwd()

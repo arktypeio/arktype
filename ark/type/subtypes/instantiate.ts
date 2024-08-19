@@ -1,12 +1,12 @@
 import type { anyOrNever, array } from "@ark/util"
-import type { MorphAst } from "../ast.js"
-import type { ArrayType } from "./array.js"
-import type { DateType } from "./date.js"
-import type { MorphType } from "./morph.js"
-import type { NumberType } from "./number.js"
-import type { ObjectType } from "./object.js"
-import type { StringType } from "./string.js"
-import type { ValidatorType } from "./validator.js"
+import type { MorphAst } from "../ast.ts"
+import type { ArrayType } from "./array.ts"
+import type { DateType } from "./date.ts"
+import type { MorphType } from "./morph.ts"
+import type { NumberType } from "./number.ts"
+import type { ObjectType } from "./object.ts"
+import type { StringType } from "./string.ts"
+import type { ValidatorType } from "./validator.ts"
 
 export type instantiateType<t, $> =
 	// if any branch of t is a MorphAst, instantiate it as a MorphType

@@ -1,4 +1,4 @@
-import type { LimitLiteral } from "../../../ast.js"
+import type { LimitLiteral } from "../../../ast.ts"
 
 export type StringifiablePrefixOperator = "keyof"
 

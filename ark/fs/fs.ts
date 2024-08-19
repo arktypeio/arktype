@@ -13,8 +13,8 @@ import { homedir } from "node:os"
 import { dirname, join, parse } from "node:path"
 import * as process from "node:process"
 import { URL, fileURLToPath } from "node:url"
-import { caller } from "./caller.js"
-import { getShellOutput } from "./shell.js"
+import { caller } from "./caller.ts"
+import { getShellOutput } from "./shell.ts"
 export { rmSync } from "node:fs"
 
 export const ensureDir = (path: string): string => {
@@ -28,25 +28,34 @@ export const ensureDir = (path: string): string => {
 
 export const readFile = (path: string): string => readFileSync(path).toString()
 
-export const writeFile = (path: string, contents: string): void =>
+export const writeFile = (path: string, contents: string): string => {
 	writeFileSync(path, contents)
+	return contents
+}
 
-export const readJson = (path: string): any =>
+export const rewriteFile = (
+	path: string,
+	transform: (contents: string) => string
+): string => writeFile(path, transform(readFile(path)))
+
+export const readJson = (path: string): Record<string, unknown> =>
 	JSON.parse(readFileSync(path, { encoding: "utf8" }))
 
 export const writeJson = (path: string, data: object): void =>
 	writeFileSync(path, `${JSON.stringify(data, null, 4)}\n`)
+
+export type JsonTransformer = (data: object) => object
+
+export const rewriteJson = (
+	path: string,
+	transform: (data: object) => object
+): void => writeJson(path, transform(readJson(path)))
 
 export const rmRf = (target: string): void =>
 	rmSync(target, { recursive: true, force: true })
 
 export const cpR = (from: string, to: string): void =>
 	cpSync(from, to, { recursive: true, force: true })
-
-export type JsonTransformer = (data: object) => object
-
-export const rewriteJson = (path: string, transform: JsonTransformer): void =>
-	writeJson(path, transform(readJson(path)))
 
 export type WalkOptions = {
 	ignoreDirsMatching?: RegExp

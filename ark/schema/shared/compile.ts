@@ -5,10 +5,10 @@ import {
 	isDotAccessible,
 	serializePrimitive
 } from "@ark/util"
-import type { BaseNode } from "../node.js"
-import type { Discriminant } from "../roots/union.js"
-import { registeredReference } from "./registry.js"
-import type { TraversalKind } from "./traversal.js"
+import type { BaseNode } from "../node.ts"
+import type { Discriminant } from "../roots/union.ts"
+import { registeredReference } from "./registry.ts"
+import type { TraversalKind } from "./traversal.ts"
 
 export type CoercibleValue = string | number | boolean | null | undefined
 
@@ -152,9 +152,11 @@ export interface ReferenceOptions {
 export class NodeCompiler extends CompiledFunction<["data", "ctx"]> {
 	path: string[] = []
 	discriminants: Discriminant[] = []
+	traversalKind: TraversalKind
 
-	constructor(public traversalKind: TraversalKind) {
+	constructor(traversalKind: TraversalKind) {
 		super("data", "ctx")
+		this.traversalKind = traversalKind
 	}
 
 	invoke(node: BaseNode, opts?: InvokeOptions): string {

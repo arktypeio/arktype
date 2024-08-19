@@ -3,8 +3,8 @@ import type {
 	exclusivizeRangeSchema,
 	InclusiveDateRangeSchema
 } from "@ark/schema"
-import type { applyConstraint } from "../ast.js"
-import type { ObjectType } from "./object.js"
+import type { applyConstraint } from "../ast.ts"
+import type { ObjectType } from "./object.ts"
 
 /** @ts-ignore cast variance */
 interface Type<out t extends globalThis.Date = globalThis.Date, $ = {}>

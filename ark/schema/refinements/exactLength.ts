@@ -1,20 +1,24 @@
-import { InternalPrimitiveConstraint } from "../constraint.js"
-import type { BaseRoot } from "../roots/root.js"
+import { InternalPrimitiveConstraint } from "../constraint.ts"
+import type { BaseRoot } from "../roots/root.ts"
 import type {
 	BaseErrorContext,
 	BaseNormalizedSchema,
 	declareNode
-} from "../shared/declare.js"
-import { Disjoint } from "../shared/disjoint.js"
+} from "../shared/declare.ts"
+import { Disjoint } from "../shared/disjoint.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
-} from "../shared/implement.js"
-import { $ark } from "../shared/registry.js"
-import type { TraverseAllows } from "../shared/traversal.js"
-import type { LengthBoundableData } from "./range.js"
+} from "../shared/implement.ts"
+import {
+	throwInternalJsonSchemaOperandError,
+	type JsonSchema
+} from "../shared/jsonSchema.ts"
+import { $ark } from "../shared/registry.ts"
+import type { TraverseAllows } from "../shared/traversal.ts"
+import { createLengthRuleParser, type LengthBoundableData } from "./range.ts"
 
-export namespace ExactLength {
+export declare namespace ExactLength {
 	export interface Inner {
 		readonly rule: number
 	}
@@ -46,7 +50,9 @@ const implementation: nodeImplementationOf<ExactLength.Declaration> =
 		kind: "exactLength",
 		collapsibleKey: "rule",
 		keys: {
-			rule: {}
+			rule: {
+				parse: createLengthRuleParser("exactLength")
+			}
 		},
 		normalize: schema =>
 			typeof schema === "number" ? { rule: schema } : schema,
@@ -64,19 +70,11 @@ const implementation: nodeImplementationOf<ExactLength.Declaration> =
 					{ path: ["length"] }
 				),
 			minLength: (exactLength, minLength) =>
-				(
-					minLength.exclusive ?
-						exactLength.rule > minLength.rule
-					:	exactLength.rule >= minLength.rule
-				) ?
+				exactLength.rule >= minLength.rule ?
 					exactLength
 				:	Disjoint.init("range", exactLength, minLength),
 			maxLength: (exactLength, maxLength) =>
-				(
-					maxLength.exclusive ?
-						exactLength.rule < maxLength.rule
-					:	exactLength.rule <= maxLength.rule
-				) ?
+				exactLength.rule <= maxLength.rule ?
 					exactLength
 				:	Disjoint.init("range", exactLength, maxLength)
 		}
@@ -89,7 +87,24 @@ export class ExactLengthNode extends InternalPrimitiveConstraint<ExactLength.Dec
 	readonly compiledCondition: string = `data.length === ${this.rule}`
 	readonly compiledNegation: string = `data.length !== ${this.rule}`
 	readonly impliedBasis: BaseRoot = $ark.intrinsic.lengthBoundable.internal
-	readonly expression: string = `{ length: ${this.rule} }`
+	readonly expression: string = `== ${this.rule}`
+
+	reduceJsonSchema(
+		schema: JsonSchema.LengthBoundable
+	): JsonSchema.LengthBoundable {
+		switch (schema.type) {
+			case "string":
+				schema.minLength = this.rule
+				schema.maxLength = this.rule
+				return schema
+			case "array":
+				schema.minItems = this.rule
+				schema.maxItems = this.rule
+				return schema
+			default:
+				return throwInternalJsonSchemaOperandError("exactLength", schema)
+		}
+	}
 }
 
 export const ExactLength = {

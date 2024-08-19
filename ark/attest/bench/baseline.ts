@@ -4,14 +4,14 @@ import process from "node:process"
 import {
 	queueSnapshotUpdate,
 	writeSnapshotUpdatesOnExit
-} from "../cache/snapshots.js"
-import type { BenchContext } from "./bench.js"
+} from "../cache/snapshots.ts"
+import type { BenchContext } from "./bench.ts"
 import {
 	stringifyMeasure,
 	type MarkMeasure,
 	type Measure,
 	type MeasureComparison
-} from "./measure.js"
+} from "./measure.ts"
 
 export const queueBaselineUpdateIfNeeded = (
 	updated: Measure | MarkMeasure,

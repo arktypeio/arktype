@@ -1,13 +1,13 @@
-import { domainOf } from "./domain.js"
-import { throwInternalError } from "./errors.js"
-import { objectKindOf } from "./objectKinds.js"
+import { domainOf } from "./domain.ts"
+import { throwInternalError } from "./errors.ts"
+import { objectKindOf } from "./objectKinds.ts"
 
 // Eventually we can just import from package.json in the source itself
 // but for now, import assertions are too unstable and it wouldn't support
 // recent node versions (https://nodejs.org/api/esm.html#json-modules).
 
 // For now, we assert this matches the package.json version via a unit test.
-export const arkUtilVersion = "0.2.1"
+export const arkUtilVersion = "0.2.2"
 
 export const initialRegistryContents = {
 	version: arkUtilVersion,

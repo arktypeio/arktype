@@ -17,14 +17,14 @@ import type {
 	innerAttachedAs,
 	mutableInnerOfKind,
 	nodeOfKind
-} from "./kinds.js"
-import { BaseNode } from "./node.js"
-import type { NodeParseContext } from "./parse.js"
-import type { Intersection } from "./roots/intersection.js"
-import type { BaseRoot } from "./roots/root.js"
-import type { NodeCompiler } from "./shared/compile.js"
-import type { BaseNodeDeclaration } from "./shared/declare.js"
-import { Disjoint } from "./shared/disjoint.js"
+} from "./kinds.ts"
+import { BaseNode } from "./node.ts"
+import type { NodeParseContext } from "./parse.ts"
+import type { Intersection } from "./roots/intersection.ts"
+import type { BaseRoot } from "./roots/root.ts"
+import type { NodeCompiler } from "./shared/compile.ts"
+import type { BaseNodeDeclaration } from "./shared/declare.ts"
+import { Disjoint } from "./shared/disjoint.ts"
 import {
 	compileErrorContext,
 	constraintKeys,
@@ -34,13 +34,14 @@ import {
 	type RootKind,
 	type StructuralKind,
 	type kindLeftOf
-} from "./shared/implement.js"
-import { intersectNodes, intersectNodesRoot } from "./shared/intersections.js"
-import { $ark } from "./shared/registry.js"
-import type { TraverseAllows, TraverseApply } from "./shared/traversal.js"
-import { arkKind } from "./shared/utils.js"
+} from "./shared/implement.ts"
+import { intersectNodes, intersectNodesRoot } from "./shared/intersections.ts"
+import type { JsonSchema } from "./shared/jsonSchema.ts"
+import { $ark } from "./shared/registry.ts"
+import type { TraverseAllows, TraverseApply } from "./shared/traversal.ts"
+import { arkKind } from "./shared/utils.ts"
 
-export namespace Constraint {
+export declare namespace Constraint {
 	export interface Declaration extends BaseNodeDeclaration {
 		kind: ConstraintKind
 	}
@@ -77,6 +78,10 @@ export abstract class InternalPrimitiveConstraint<
 	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
 	abstract readonly compiledCondition: string
 	abstract readonly compiledNegation: string
+
+	abstract reduceJsonSchema(
+		base: JsonSchema.Constrainable
+	): JsonSchema.Constrainable
 
 	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
 		if (!this.traverseAllows(data, ctx)) ctx.error(this.errorContext as never)

@@ -8,11 +8,11 @@ import {
 } from "@ark/schema"
 import { Hkt } from "@ark/util"
 import { generic, scope, type, type Generic } from "arktype"
-import { emptyGenericParameterMessage } from "arktype/internal/generic.js"
-import { writeUnclosedGroupMessage } from "arktype/internal/parser/string/reduce/shared.js"
-import { writeInvalidGenericArgCountMessage } from "arktype/internal/parser/string/shift/operand/genericArgs.js"
-import { writeInvalidDivisorMessage } from "arktype/internal/parser/string/shift/operator/divisor.js"
-import { writeUnexpectedCharacterMessage } from "arktype/internal/parser/string/shift/operator/operator.js"
+import { emptyGenericParameterMessage } from "arktype/internal/generic.ts"
+import { writeUnclosedGroupMessage } from "arktype/internal/parser/string/reduce/shared.ts"
+import { writeInvalidGenericArgCountMessage } from "arktype/internal/parser/string/shift/operand/genericArgs.ts"
+import { writeInvalidDivisorMessage } from "arktype/internal/parser/string/shift/operator/divisor.ts"
+import { writeUnexpectedCharacterMessage } from "arktype/internal/parser/string/shift/operator/operator.ts"
 
 contextualize(() => {
 	describe("standalone", () => {
@@ -426,7 +426,11 @@ contextualize(() => {
 	describe("hkt", () => {
 		it("can infer a generic from an hkt", () => {
 			class MyExternalClass<T> {
-				constructor(public data: T) {}
+				data: T
+
+				constructor(data: T) {
+					this.data = data
+				}
 			}
 
 			const validateExternalGeneric = generic("T")(

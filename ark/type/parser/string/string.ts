@@ -4,17 +4,17 @@ import {
 	throwParseError,
 	type ErrorMessage
 } from "@ark/util"
-import type { Ark } from "../../ark.js"
-import type { inferAstRoot } from "../semantic/infer.js"
-import type { DynamicState, DynamicStateWithRoot } from "./reduce/dynamic.js"
-import type { StringifiablePrefixOperator } from "./reduce/shared.js"
-import type { state, StaticState } from "./reduce/static.js"
-import type { parseOperand } from "./shift/operand/operand.js"
-import { parseDefault, type ParsedDefault } from "./shift/operator/default.js"
+import type { ArkAmbient } from "arktype/config"
+import type { inferAstRoot } from "../semantic/infer.ts"
+import type { DynamicState, DynamicStateWithRoot } from "./reduce/dynamic.ts"
+import type { StringifiablePrefixOperator } from "./reduce/shared.ts"
+import type { state, StaticState } from "./reduce/static.ts"
+import type { parseOperand } from "./shift/operand/operand.ts"
+import { parseDefault, type ParsedDefault } from "./shift/operator/default.ts"
 import {
 	writeUnexpectedCharacterMessage,
 	type parseOperator
-} from "./shift/operator/operator.js"
+} from "./shift/operator/operator.ts"
 
 /**
  * Try to parse the definition from right to left using the most common syntax.
@@ -39,7 +39,7 @@ export type inferString<def extends string, $, args> = inferAstRoot<
 
 export type BaseCompletions<$, args, otherSuggestions extends string = never> =
 	| resolvableReferenceIn<$>
-	| resolvableReferenceIn<Ark>
+	| resolvableReferenceIn<ArkAmbient.$>
 	| (keyof args & string)
 	| StringifiablePrefixOperator
 	| otherSuggestions

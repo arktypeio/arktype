@@ -1,25 +1,25 @@
 import {
-	bound,
-	cached,
 	includes,
+	inferred,
 	omit,
+	throwInternalError,
 	throwParseError,
 	type NonEmptyList,
 	type array
 } from "@ark/util"
-import { throwInvalidOperandError, type Constraint } from "../constraint.js"
-import type { NodeSchema, nodeOfKind, reducibleKindOf } from "../kinds.js"
+import { throwInvalidOperandError, type Constraint } from "../constraint.ts"
+import type { NodeSchema, nodeOfKind, reducibleKindOf } from "../kinds.ts"
 import {
 	BaseNode,
 	appendUniqueFlatRefs,
 	type FlatRef,
 	type GettableKeyOrNode,
 	type KeyOrKeyNode
-} from "../node.js"
-import type { Predicate } from "../predicate.js"
-import type { Divisor } from "../refinements/divisor.js"
-import type { ExactLength } from "../refinements/exactLength.js"
-import type { Pattern } from "../refinements/pattern.js"
+} from "../node.ts"
+import type { Predicate } from "../predicate.ts"
+import type { Divisor } from "../refinements/divisor.ts"
+import type { ExactLength } from "../refinements/exactLength.ts"
+import type { Pattern } from "../refinements/pattern.ts"
 import type {
 	ExclusiveDateRangeSchema,
 	ExclusiveNumericRangeSchema,
@@ -27,28 +27,29 @@ import type {
 	InclusiveNumericRangeSchema,
 	LimitSchemaValue,
 	UnknownRangeSchema
-} from "../refinements/range.js"
-import type { BaseNodeDeclaration, MetaSchema } from "../shared/declare.js"
+} from "../refinements/range.ts"
+import type { BaseNodeDeclaration, MetaSchema } from "../shared/declare.ts"
 import {
 	Disjoint,
 	writeUnsatisfiableExpressionError
-} from "../shared/disjoint.js"
-import { ArkErrors } from "../shared/errors.js"
+} from "../shared/disjoint.ts"
+import { ArkErrors } from "../shared/errors.ts"
 import {
 	structuralKinds,
 	type NodeKind,
 	type RootKind,
 	type kindRightOf
-} from "../shared/implement.js"
-import { intersectNodesRoot, pipeNodesRoot } from "../shared/intersections.js"
-import { $ark } from "../shared/registry.js"
-import { arkKind, hasArkKind } from "../shared/utils.js"
+} from "../shared/implement.ts"
+import { intersectNodesRoot, pipeNodesRoot } from "../shared/intersections.ts"
+import type { JsonSchema } from "../shared/jsonSchema.ts"
+import { $ark } from "../shared/registry.ts"
+import { arkKind, hasArkKind } from "../shared/utils.ts"
 import type {
 	Structure,
 	UndeclaredKeyBehavior
-} from "../structure/structure.js"
-import type { Morph } from "./morph.js"
-import type { Union } from "./union.js"
+} from "../structure/structure.ts"
+import type { Morph } from "./morph.ts"
+import type { Union } from "./union.ts"
 
 export interface InternalRootDeclaration extends BaseNodeDeclaration {
 	kind: RootKind
@@ -59,6 +60,7 @@ export abstract class BaseRoot<
 	out d extends InternalRootDeclaration = InternalRootDeclaration
 > extends BaseNode<d> {
 	readonly [arkKind] = "root"
+	declare readonly [inferred]: unknown
 
 	get internal(): this {
 		return this
@@ -89,12 +91,11 @@ export abstract class BaseRoot<
 
 	abstract get shortDescription(): string
 
-	isUnknown(): boolean {
-		return this.hasKind("intersection") && this.children.length === 0
-	}
+	protected abstract innerToJsonSchema(): JsonSchema
 
-	isNever(): boolean {
-		return this.hasKind("union") && this.children.length === 0
+	toJsonSchema(): JsonSchema {
+		const schema = this.innerToJsonSchema()
+		return Object.assign(schema, this.metaJson)
 	}
 
 	intersect(r: unknown): BaseRoot | Disjoint {
@@ -130,18 +131,17 @@ export abstract class BaseRoot<
 		return this.$.rootNode(this.applyStructuralOperation("omit", keys))
 	}
 
-	@cached
 	required(): BaseRoot {
 		return this.$.rootNode(this.applyStructuralOperation("required", []))
 	}
 
-	@cached
 	partial(): BaseRoot {
 		return this.$.rootNode(this.applyStructuralOperation("partial", []))
 	}
 
-	@cached
+	private _keyof?: BaseRoot
 	keyof(): BaseRoot {
+		if (this._keyof) return this._keyof
 		const result = this.applyStructuralOperation("keyof", []).reduce(
 			(result, branch) => result.intersect(branch).toNeverIfDisjoint(),
 			$ark.intrinsic.unknown.internal
@@ -152,7 +152,7 @@ export abstract class BaseRoot<
 				writeUnsatisfiableExpressionError(`keyof ${this.expression}`)
 			)
 		}
-		return result
+		return (this._keyof = result)
 	}
 
 	merge(r: unknown): BaseRoot {
@@ -285,16 +285,10 @@ export abstract class BaseRoot<
 		return this.assert(input)
 	}
 
-	pipe = Object.assign(this._pipe, {
-		try: this.tryPipe
-	})
-
-	@bound
 	protected _pipe(...morphs: Morph[]): BaseRoot {
 		return morphs.reduce<BaseRoot>((acc, morph) => acc.pipeOnce(morph), this)
 	}
 
-	@bound
 	protected tryPipe(...morphs: Morph[]): BaseRoot {
 		return morphs.reduce<BaseRoot>(
 			(acc, morph) =>
@@ -316,6 +310,10 @@ export abstract class BaseRoot<
 			this
 		)
 	}
+
+	pipe = Object.assign(this._pipe.bind(this), {
+		try: this.tryPipe.bind(this)
+	})
 
 	to(def: unknown): BaseRoot {
 		return this.toNode(this.$.parseRoot(def))
@@ -345,24 +343,26 @@ export abstract class BaseRoot<
 		)
 	}
 
-	@cached
 	get flatMorphs(): array<FlatRef<Morph.Node>> {
-		return this.flatRefs.reduce<FlatRef<Morph.Node>[]>(
-			(branches, ref) =>
-				appendUniqueFlatRefs(
-					branches,
-					ref.node.hasKind("union") ?
-						ref.node.branches
-							.filter(b => b.hasKind("morph"))
-							.map(branch => ({
-								path: ref.path,
-								propString: ref.propString,
-								node: branch
-							}))
-					: ref.node.hasKind("morph") ? (ref as FlatRef<Morph.Node>)
-					: []
-				),
-			[]
+		return this.cacheGetter(
+			"flatMorphs",
+			this.flatRefs.reduce<FlatRef<Morph.Node>[]>(
+				(branches, ref) =>
+					appendUniqueFlatRefs(
+						branches,
+						ref.node.hasKind("union") ?
+							ref.node.branches
+								.filter(b => b.hasKind("morph"))
+								.map(branch => ({
+									path: ref.path,
+									propString: ref.propString,
+									node: branch
+								}))
+						: ref.node.hasKind("morph") ? (ref as FlatRef<Morph.Node>)
+						: []
+					),
+				[]
+			)
 		)
 	}
 
@@ -397,6 +397,14 @@ export abstract class BaseRoot<
 		schema: any
 	): BaseRoot {
 		const constraint = this.$.node(kind, schema as never)
+
+		if (constraint.isRoot()) {
+			// if the node reduces to `unknown`, nothing to do (e.g. minLength: 0)
+			return constraint.isUnknown() ? this : (
+					throwInternalError(`Unexpected constraint node ${constraint}`)
+				)
+		}
+
 		const operand = io === "root" ? this : this[io]
 		if (
 			operand.hasKind("morph") ||

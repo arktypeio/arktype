@@ -4,19 +4,19 @@ import {
 	ensureCacheDirs,
 	getConfig,
 	type ParsedAttestConfig
-} from "../config.js"
-import { chainableNoOpProxy } from "../utils.js"
-import { await1K } from "./await1k.js"
-import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.js"
-import { call1K } from "./call1k.js"
+} from "../config.ts"
+import { chainableNoOpProxy } from "../utils.ts"
+import { await1K } from "./await1k.ts"
+import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.ts"
+import { call1K } from "./call1k.ts"
 import {
 	createTimeComparison,
 	createTimeMeasure,
 	type MarkMeasure,
 	type Measure,
 	type TimeUnit
-} from "./measure.js"
-import { createBenchTypeAssertion, type BenchTypeAssertions } from "./type.js"
+} from "./measure.ts"
+import { createBenchTypeAssertion, type BenchTypeAssertions } from "./type.ts"
 
 export type StatName = keyof typeof stats
 
@@ -91,8 +91,10 @@ class ResultCollector {
 	private benchStart = performance.now()
 	private bounds: Required<UntilOptions>
 	private lastInvocationStart: number
+	private ctx: BenchContext
 
-	constructor(private ctx: BenchContext) {
+	constructor(ctx: BenchContext) {
+		this.ctx = ctx
 		// By default, will run for either 5 seconds or 100_000 call sets (of 1000 calls), whichever comes first
 		this.bounds = {
 			ms: 5000,
@@ -149,10 +151,12 @@ export class BenchAssertions<
 > {
 	private label: string
 	private lastCallTimes: number[] | undefined
-	constructor(
-		private fn: Fn,
-		private ctx: BenchContext
-	) {
+	private fn: Fn
+	private ctx: BenchContext
+
+	constructor(fn: Fn, ctx: BenchContext) {
+		this.fn = fn
+		this.ctx = ctx
 		this.label = `Call: ${ctx.qualifiedName}`
 	}
 

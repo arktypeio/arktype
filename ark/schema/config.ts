@@ -1,18 +1,18 @@
 import type { ArkRegistry, mutable, requireKeys, show } from "@ark/util"
-import type { intrinsic } from "./intrinsic.js"
+import type { intrinsic } from "./intrinsic.ts"
 import type {
 	ActualWriter,
 	ArkErrorCode,
 	ExpectedWriter,
 	MessageWriter,
 	ProblemWriter
-} from "./shared/errors.js"
+} from "./shared/errors.ts"
 import {
 	isNodeKind,
 	type DescriptionWriter,
 	type NodeKind
-} from "./shared/implement.js"
-import { $ark } from "./shared/registry.js"
+} from "./shared/implement.ts"
+import { $ark } from "./shared/registry.ts"
 
 export interface ArkSchemaRegistry extends ArkRegistry {
 	intrinsic: typeof intrinsic

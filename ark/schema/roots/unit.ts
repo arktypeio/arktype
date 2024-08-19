@@ -3,6 +3,7 @@ import {
 	domainOf,
 	printable,
 	prototypeKeysOf,
+	throwParseError,
 	type Domain,
 	type JsonPrimitive,
 	type Key,
@@ -12,17 +13,22 @@ import type {
 	BaseErrorContext,
 	BaseNormalizedSchema,
 	declareNode
-} from "../shared/declare.js"
-import { Disjoint } from "../shared/disjoint.js"
+} from "../shared/declare.ts"
+import { Disjoint } from "../shared/disjoint.ts"
 import {
 	defaultValueSerializer,
 	implementNode,
 	type nodeImplementationOf
-} from "../shared/implement.js"
-import type { TraverseAllows } from "../shared/traversal.js"
-import { InternalBasis } from "./basis.js"
-import { defineRightwardIntersections } from "./utils.js"
-export namespace Unit {
+} from "../shared/implement.ts"
+import {
+	writeUnsupportedJsonSchemaTypeMessage,
+	type JsonSchema
+} from "../shared/jsonSchema.ts"
+import { $ark } from "../shared/registry.ts"
+import type { TraverseAllows } from "../shared/traversal.ts"
+import { InternalBasis } from "./basis.ts"
+import { defineRightwardIntersections } from "./utils.ts"
+export declare namespace Unit {
 	export interface Schema<value = unknown> extends BaseNormalizedSchema {
 		readonly unit: value
 	}
@@ -107,6 +113,14 @@ export class UnitNode extends InternalBasis<Unit.Declaration> {
 		return this.domain === "object" ?
 				domainDescriptions.object
 			:	this.description
+	}
+
+	protected innerToJsonSchema(): JsonSchema {
+		return $ark.intrinsic.jsonPrimitive.allows(this.unit) ?
+				{ const: this.unit }
+			:	throwParseError(
+					writeUnsupportedJsonSchemaTypeMessage(this.shortDescription)
+				)
 	}
 
 	traverseAllows: TraverseAllows =

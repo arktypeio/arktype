@@ -2,6 +2,7 @@ import {
 	domainDescriptions,
 	domainOf,
 	getBaseDomainKeys,
+	throwParseError,
 	type Domain as _Domain,
 	type array,
 	type Key
@@ -10,18 +11,22 @@ import type {
 	BaseErrorContext,
 	BaseNormalizedSchema,
 	declareNode
-} from "../shared/declare.js"
-import { Disjoint } from "../shared/disjoint.js"
+} from "../shared/declare.ts"
+import { Disjoint } from "../shared/disjoint.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
-} from "../shared/implement.js"
-import type { TraverseAllows } from "../shared/traversal.js"
-import { InternalBasis } from "./basis.js"
+} from "../shared/implement.ts"
+import {
+	writeUnsupportedJsonSchemaTypeMessage,
+	type JsonSchema
+} from "../shared/jsonSchema.ts"
+import type { TraverseAllows } from "../shared/traversal.ts"
+import { InternalBasis } from "./basis.ts"
 
 export type Domain = _Domain
 
-export namespace Domain {
+export declare namespace Domain {
 	export type NonEnumerable = Exclude<Domain, "undefined" | "null" | "boolean">
 
 	export interface Inner<domain extends NonEnumerable = NonEnumerable> {
@@ -90,6 +95,14 @@ export class DomainNode extends InternalBasis<Domain.Declaration> {
 
 	get shortDescription(): string {
 		return domainDescriptions[this.domain]
+	}
+
+	protected innerToJsonSchema(): JsonSchema.Constrainable {
+		if (this.domain === "bigint" || this.domain === "symbol")
+			return throwParseError(writeUnsupportedJsonSchemaTypeMessage(this.domain))
+		return {
+			type: this.domain
+		}
 	}
 }
 

@@ -1,9 +1,9 @@
-import type { array } from "./arrays.js"
-import { hasDomain } from "./domain.js"
-import type { conform, satisfy, show } from "./generics.js"
-import type { intersectParameters } from "./intersections.js"
-import { type Constructor, ancestorsOf } from "./objectKinds.js"
-import { NoopBase } from "./records.js"
+import type { array } from "./arrays.ts"
+import { hasDomain } from "./domain.ts"
+import type { conform, satisfy, show } from "./generics.ts"
+import type { intersectParameters } from "./intersections.ts"
+import { type Constructor, ancestorsOf } from "./objectKinds.ts"
+import { NoopBase } from "./records.ts"
 
 export type TraitImplementation = <
 	traits extends TraitConstructor[],

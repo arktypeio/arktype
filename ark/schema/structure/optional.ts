@@ -1,11 +1,11 @@
-import type { declareNode } from "../shared/declare.js"
+import type { declareNode } from "../shared/declare.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
-} from "../shared/implement.js"
-import { BaseProp, intersectProps, type Prop } from "./prop.js"
+} from "../shared/implement.ts"
+import { BaseProp, intersectProps, type Prop } from "./prop.ts"
 
-export namespace Optional {
+export declare namespace Optional {
 	export interface Schema extends Prop.Schema {
 		default?: unknown
 	}

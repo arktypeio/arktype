@@ -7,7 +7,8 @@ const noCrossPackageImportPattern = {
 		"**/attest/**",
 		"**/schema/**",
 		"**/type/**",
-		"**/util/**"
+		"**/util/**",
+		"arktype/internal/**"
 	],
 	message: `Use a specifier like '@ark/util' to import from a package`
 }
@@ -106,6 +107,9 @@ module.exports = defineConfig({
 		/**
 		 * Allow more flexible typing
 		 */
+		"@typescript-eslint/no-empty-object-type": "off",
+		"@typescript-eslint/no-unsafe-function-type": "off",
+		"@typescript-eslint/no-wrapper-object-types": "off",
 		"@typescript-eslint/ban-types": "off",
 		"@typescript-eslint/no-explicit-any": "off",
 		"@typescript-eslint/no-non-null-assertion": "off",

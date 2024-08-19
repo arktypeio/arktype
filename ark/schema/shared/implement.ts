@@ -13,26 +13,26 @@ import {
 	type requireKeys,
 	type show
 } from "@ark/util"
-import type { NodeConfig, ResolvedUnknownNodeConfig } from "../config.js"
-import type { Declaration, Inner, errorContext, nodeOfKind } from "../kinds.js"
-import type { BaseNode } from "../node.js"
-import type { NodeParseContext } from "../parse.js"
+import type { NodeConfig, ResolvedUnknownNodeConfig } from "../config.ts"
+import type { Declaration, Inner, errorContext, nodeOfKind } from "../kinds.ts"
+import type { BaseNode } from "../node.ts"
+import type { NodeParseContext } from "../parse.ts"
 import type {
 	BaseRoot,
 	schemaKindOrRightOf,
 	schemaKindRightOf
-} from "../roots/root.js"
-import type { BaseScope } from "../scope.js"
-import type { Structure } from "../structure/structure.js"
-import { compileSerializedValue } from "./compile.js"
+} from "../roots/root.ts"
+import type { BaseScope } from "../scope.ts"
+import type { Structure } from "../structure/structure.ts"
+import { compileSerializedValue } from "./compile.ts"
 import type {
 	BaseErrorContext,
 	BaseMeta,
 	BaseNodeDeclaration,
 	BaseNormalizedSchema
-} from "./declare.js"
-import type { Disjoint } from "./disjoint.js"
-import { isNode } from "./utils.js"
+} from "./declare.ts"
+import type { Disjoint } from "./disjoint.ts"
+import { isNode } from "./utils.ts"
 
 export const basisKinds = ["unit", "proto", "domain"] as const
 
@@ -363,6 +363,7 @@ export interface UnknownAttachments {
 	readonly innerHash: string
 
 	readonly meta: BaseMeta
+	readonly metaJson: object
 
 	readonly json: object
 	readonly hash: string

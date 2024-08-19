@@ -1,8 +1,8 @@
-import type { array } from "./arrays.js"
-import type { domainOf } from "./domain.js"
-import type { andPreserveUnknown } from "./generics.js"
-import type { Hkt } from "./hkt.js"
-import type { propValueOf, requiredKeyOf } from "./records.js"
+import type { array } from "./arrays.ts"
+import type { domainOf } from "./domain.ts"
+import type { andPreserveUnknown } from "./generics.ts"
+import type { Hkt } from "./hkt.ts"
+import type { propValueOf, requiredKeyOf } from "./records.ts"
 
 export interface AndPreserveUnknown extends Hkt<[unknown, unknown]> {
 	body: andPreserveUnknown<this[0], this[1]>
@@ -94,18 +94,20 @@ type intersectSequences<
 		:	[...acc, ...Hkt.apply<operation, [lHead, rHead]>[], ...postfix]
 	:	never
 
-export type isDisjoint<l, r> =
-	l & r extends never ? true
-	: domainOf<l> & domainOf<r> extends never ? true
+export type isDisjoint<l, r> = overlaps<l, r> extends true ? false : true
+
+export type overlaps<l, r> =
+	l & r extends never ? false
+	: domainOf<l> & domainOf<r> extends never ? false
 	: [l, r] extends [object, object] ?
-		true extends (
+		false extends (
 			propValueOf<{
 				[k in Extract<
 					keyof l & keyof r,
 					requiredKeyOf<l> | requiredKeyOf<r>
-				>]: isDisjoint<l[k], r[k]>
+				>]: overlaps<l[k], r[k]>
 			}>
 		) ?
-			true
-		:	false
-	:	false
+			false
+		:	true
+	:	true

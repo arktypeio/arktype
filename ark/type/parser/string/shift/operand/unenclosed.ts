@@ -1,7 +1,7 @@
 import {
-	BaseRoot,
 	hasArkKind,
 	writeUnresolvableMessage,
+	type BaseRoot,
 	type GenericAst,
 	type GenericRoot,
 	type PrivateDeclaration,
@@ -22,18 +22,18 @@ import {
 	type anyOrNever,
 	type join
 } from "@ark/util"
-import type { Ark } from "../../../../ark.js"
-import type { GenericInstantiationAst } from "../../../semantic/infer.js"
-import { writePrefixedPrivateReferenceMessage } from "../../../semantic/validate.js"
-import type { DynamicState } from "../../reduce/dynamic.js"
-import type { StaticState, state } from "../../reduce/static.js"
-import type { BaseCompletions } from "../../string.js"
-import type { Scanner } from "../scanner.js"
+import type { ArkAmbient } from "arktype/config"
+import type { GenericInstantiationAst } from "../../../semantic/infer.ts"
+import { writePrefixedPrivateReferenceMessage } from "../../../semantic/validate.ts"
+import type { DynamicState } from "../../reduce/dynamic.ts"
+import type { StaticState, state } from "../../reduce/static.ts"
+import type { BaseCompletions } from "../../string.ts"
+import type { Scanner } from "../scanner.ts"
 import {
 	parseGenericArgs,
 	writeInvalidGenericArgCountMessage,
 	type ParsedArgs
-} from "./genericArgs.js"
+} from "./genericArgs.ts"
 
 export const parseUnenclosed = (s: DynamicState): void => {
 	const token = s.scanner.shiftUntilNextTerminator()
@@ -57,12 +57,12 @@ export type parseUnenclosed<s extends StaticState, $, args> =
 					$,
 					args
 				>
-			: result extends resolvableReferenceIn<Ark> ?
+			: result extends resolvableReferenceIn<ArkAmbient.$> ?
 				parseResolution<
 					s,
 					unscanned,
 					result,
-					resolveReference<result, Ark>,
+					resolveReference<result, ArkAmbient.$>,
 					// note that we still want the current scope to parse args,
 					// even if the generic was defined in the ambient scope
 					$,
@@ -144,7 +144,7 @@ const maybeParseReference = (
 ): BaseRoot | undefined => {
 	if (s.ctx.args?.[token]) return s.ctx.args[token].internal
 	const resolution = s.ctx.$.maybeResolve(token)
-	if (resolution instanceof BaseRoot) return resolution
+	if (hasArkKind(resolution, "root")) return resolution
 	if (resolution === undefined) return
 	if (hasArkKind(resolution, "generic"))
 		return parseGenericInstantiation(token, resolution, s)
@@ -166,16 +166,23 @@ const maybeParseUnenclosedLiteral = (
 }
 
 type tryResolve<s extends StaticState, token extends string, $, args> =
-	token extends keyof Ark ? token
+	token extends keyof ArkAmbient.$ ? token
 	: token extends keyof $ ? token
 	: `#${token}` extends keyof $ ? token
 	: token extends keyof args ? token
 	: token extends `${number}` ? token
 	: token extends BigintLiteral ? token
 	: token extends (
-		`${infer submodule extends (keyof $ | keyof Ark) & string}.${infer reference}`
+		`${infer submodule extends (keyof $ | keyof ArkAmbient.$) & string}.${infer reference}`
 	) ?
-		tryResolveSubmodule<token, submodule, reference, s, $ & Ark, [submodule]>
+		tryResolveSubmodule<
+			token,
+			submodule,
+			reference,
+			s,
+			$ & ArkAmbient.$,
+			[submodule]
+		>
 	:	unresolvableError<s, token, $, args, []>
 
 type tryResolveSubmodule<

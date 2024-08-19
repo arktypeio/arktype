@@ -1,21 +1,38 @@
-import { type array, isKeyOf, type propValueOf, type satisfy } from "@ark/util"
-import { InternalPrimitiveConstraint } from "../constraint.js"
-import type { nodeOfKind } from "../kinds.js"
+import {
+	type array,
+	isKeyOf,
+	type propValueOf,
+	type satisfy,
+	throwParseError
+} from "@ark/util"
+import { InternalPrimitiveConstraint } from "../constraint.ts"
+import type {
+	Declaration,
+	nodeOfKind,
+	NodeSchema,
+	NormalizedSchema
+} from "../kinds.ts"
 import type {
 	BaseNodeDeclaration,
 	BaseNormalizedSchema
-} from "../shared/declare.js"
-import type { keySchemaDefinitions, RangeKind } from "../shared/implement.js"
+} from "../shared/declare.ts"
+import type { keySchemaDefinitions, RangeKind } from "../shared/implement.ts"
+import type { After } from "./after.ts"
+import type { Before } from "./before.ts"
+import type { MaxLength } from "./maxLength.ts"
+import type { MinLength } from "./minLength.ts"
 
 export interface BaseRangeDeclaration extends BaseNodeDeclaration {
 	kind: RangeKind
 	inner: BaseRangeInner
-	normalizedSchema: UnknownNormalizedRangeSchema
+	normalizedSchema: UnknownExpandedRangeSchema
 }
 
 export abstract class BaseRange<
 	d extends BaseRangeDeclaration
 > extends InternalPrimitiveConstraint<d> {
+	declare readonly exclusive?: true
+
 	readonly boundOperandKind: OperandKindsByBoundKind[d["kind"]] =
 		operandKindsByBoundKind[this.kind]
 	readonly compiledActual: string =
@@ -73,7 +90,6 @@ export abstract class BaseRange<
 
 export interface BaseRangeInner {
 	readonly rule: number | Date
-	readonly exclusive?: true
 }
 
 export type LimitSchemaValue = Date | number | string
@@ -81,32 +97,34 @@ export type LimitSchemaValue = Date | number | string
 export type LimitInnerValue<kind extends RangeKind = RangeKind> =
 	kind extends "before" | "after" ? Date : number
 
-export interface UnknownNormalizedRangeSchema extends BaseNormalizedSchema {
+export interface UnknownExpandedRangeSchema extends BaseNormalizedSchema {
 	readonly rule: LimitSchemaValue
 	readonly exclusive?: boolean
 }
 
-export type UnknownRangeSchema = LimitSchemaValue | UnknownNormalizedRangeSchema
+export interface UnknownNormalizedRangeSchema extends BaseNormalizedSchema {
+	readonly rule: LimitSchemaValue
+}
 
-export interface ExclusiveNormalizedDateRangeSchema
-	extends BaseNormalizedSchema {
+export type UnknownRangeSchema = LimitSchemaValue | UnknownExpandedRangeSchema
+
+export interface ExclusiveExpandedDateRangeSchema extends BaseNormalizedSchema {
 	rule: LimitSchemaValue
 	exclusive?: true
 }
 
 export type ExclusiveDateRangeSchema =
 	| LimitSchemaValue
-	| ExclusiveNormalizedDateRangeSchema
+	| ExclusiveExpandedDateRangeSchema
 
-export interface InclusiveNormalizedDateRangeSchema
-	extends BaseNormalizedSchema {
+export interface InclusiveExpandedDateRangeSchema extends BaseNormalizedSchema {
 	rule: LimitSchemaValue
 	exclusive?: false
 }
 
 export type InclusiveDateRangeSchema =
 	| LimitSchemaValue
-	| InclusiveNormalizedDateRangeSchema
+	| InclusiveExpandedDateRangeSchema
 
 export interface ExclusiveNormalizedNumericRangeSchema
 	extends BaseNormalizedSchema {
@@ -176,16 +194,81 @@ export type NumericallyBoundable = string | number | array
 
 export type Boundable = NumericallyBoundable | Date
 
-export const parseExclusiveKey: keySchemaDefinitions<BaseRangeDeclaration>["exclusive"] =
-	{
-		// omit key with value false since it is the default
-		parse: (flag: boolean) => flag || undefined
+export const parseExclusiveKey: keySchemaDefinitions<
+	Declaration<"min" | "max">
+>["exclusive"] = {
+	// omit key with value false since it is the default
+	parse: (flag: boolean) => flag || undefined
+}
+
+export const createLengthSchemaNormalizer =
+	<kind extends "minLength" | "maxLength">(kind: kind) =>
+	(schema: NodeSchema<kind>): NormalizedSchema<kind> => {
+		if (typeof schema === "number") return { rule: schema }
+		const { exclusive, ...normalized } = schema as
+			| MinLength.ExpandedSchema
+			| MaxLength.ExpandedSchema
+		return exclusive ?
+				{
+					...normalized,
+					rule: kind === "minLength" ? normalized.rule + 1 : normalized.rule - 1
+				}
+			:	normalized
+	}
+
+export const createDateSchemaNormalizer =
+	<kind extends DateRangeKind>(kind: kind) =>
+	(schema: NodeSchema<kind>): NormalizedSchema<kind> => {
+		if (
+			typeof schema === "number" ||
+			typeof schema === "string" ||
+			schema instanceof Date
+		)
+			return { rule: schema }
+
+		const { exclusive, ...normalized } = schema as
+			| After.ExpandedSchema
+			| Before.ExpandedSchema
+		if (!exclusive) return normalized
+		const numericLimit =
+			typeof normalized.rule === "number" ? normalized.rule
+			: typeof normalized.rule === "string" ?
+				new Date(normalized.rule).valueOf()
+			:	normalized.rule.valueOf()
+
+		return exclusive ?
+				{
+					...normalized,
+					rule: kind === "after" ? numericLimit + 1 : numericLimit - 1
+				}
+			:	normalized
 	}
 
 export const parseDateLimit = (limit: LimitSchemaValue): Date =>
 	typeof limit === "string" || typeof limit === "number" ?
 		new Date(limit)
 	:	limit
+
+export type LengthBoundKind = "minLength" | "maxLength" | "exactLength"
+
+export const writeNonIntegerLengthBoundMessage = (
+	kind: LengthBoundKind,
+	limit: number
+): string => `${kind} bound must be an integer (was ${limit})`
+
+export const writeNegativeLengthBoundMessage = (
+	kind: LengthBoundKind,
+	limit: number
+): string => `${kind} bound must be an integer (was ${limit})`
+
+export const createLengthRuleParser =
+	(kind: LengthBoundKind) =>
+	(limit: number): number | undefined => {
+		if (!Number.isInteger(limit))
+			throwParseError(writeNonIntegerLengthBoundMessage(kind, limit))
+		if (limit < 0) throwParseError(writeNegativeLengthBoundMessage(kind, limit))
+		return limit
+	}
 
 type OperandKindsByBoundKind = satisfy<
 	Record<RangeKind, BoundOperandKind>,

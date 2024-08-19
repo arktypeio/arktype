@@ -15,22 +15,22 @@ import type {
 	typeToString,
 	writeMalformedNumericLiteralMessage
 } from "@ark/util"
-import type { Generic } from "../../generic.js"
-import type { Comparator } from "../string/reduce/shared.js"
-import type { writeInvalidGenericArgCountMessage } from "../string/shift/operand/genericArgs.js"
-import type { UnitLiteral } from "../string/shift/operator/default.js"
-import type { parseString } from "../string/string.js"
-import type { validateRange } from "./bounds.js"
-import type { validateDefault } from "./default.js"
-import type { validateDivisor } from "./divisor.js"
+import type { Generic } from "../../generic.ts"
+import type { Comparator } from "../string/reduce/shared.ts"
+import type { writeInvalidGenericArgCountMessage } from "../string/shift/operand/genericArgs.ts"
+import type { UnitLiteral } from "../string/shift/operator/default.ts"
+import type { parseString } from "../string/string.ts"
+import type { validateRange } from "./bounds.ts"
+import type { validateDefault } from "./default.ts"
+import type { validateDivisor } from "./divisor.ts"
 import type {
 	GenericInstantiationAst,
 	inferAstRoot,
 	InfixExpression,
 	PostfixExpression
-} from "./infer.js"
-import type { validateKeyof } from "./keyof.js"
-import type { astToString } from "./utils.js"
+} from "./infer.ts"
+import type { validateKeyof } from "./keyof.ts"
+import type { astToString } from "./utils.ts"
 
 export type validateAst<ast, $, args> =
 	ast extends string ? validateStringAst<ast, $>
@@ -107,7 +107,9 @@ type validateStringAst<def extends string, $> =
 				writeInvalidGenericArgCountMessage<def, $[alias]["names"], []>
 			>
 		: $[alias] extends { [arkKind]: "module" } ?
-			ErrorMessage<writeMissingSubmoduleAccessMessage<def>>
+			"$root" extends keyof $[alias] ?
+				undefined
+			:	ErrorMessage<writeMissingSubmoduleAccessMessage<def>>
 		:	undefined
 	: def extends ErrorMessage ? def
 	: undefined

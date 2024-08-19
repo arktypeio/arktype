@@ -1,7 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import { writeUnresolvableMessage } from "@ark/schema"
 import { scope, type } from "arktype"
-import { writeBadDefinitionTypeMessage } from "arktype/internal/parser/definition.js"
+import { writeBadDefinitionTypeMessage } from "arktype/internal/parser/definition.ts"
 
 contextualize(() => {
 	it("in type", () => {

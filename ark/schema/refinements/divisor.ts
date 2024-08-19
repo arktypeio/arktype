@@ -1,21 +1,22 @@
 import {
 	InternalPrimitiveConstraint,
 	writeInvalidOperandMessage
-} from "../constraint.js"
-import type { BaseRoot } from "../roots/root.js"
+} from "../constraint.ts"
+import type { BaseRoot } from "../roots/root.ts"
 import type {
 	BaseErrorContext,
 	BaseNormalizedSchema,
 	declareNode
-} from "../shared/declare.js"
+} from "../shared/declare.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
-} from "../shared/implement.js"
-import { $ark } from "../shared/registry.js"
-import type { TraverseAllows } from "../shared/traversal.js"
+} from "../shared/implement.ts"
+import type { JsonSchema } from "../shared/jsonSchema.ts"
+import { $ark } from "../shared/registry.ts"
+import type { TraverseAllows } from "../shared/traversal.ts"
 
-export namespace Divisor {
+export declare namespace Divisor {
 	export interface Inner {
 		readonly rule: number
 	}
@@ -72,6 +73,16 @@ export class DivisorNode extends InternalPrimitiveConstraint<Divisor.Declaration
 	readonly compiledNegation: string = `data % ${this.rule} !== 0`
 	readonly impliedBasis: BaseRoot = $ark.intrinsic.number.internal
 	readonly expression: string = `% ${this.rule}`
+
+	reduceJsonSchema(schema: JsonSchema.Numeric): JsonSchema.Numeric {
+		schema.type = "integer"
+
+		if (this.rule === 1) return schema
+
+		schema.multipleOf = this.rule
+
+		return schema
+	}
 }
 
 export const Divisor = {

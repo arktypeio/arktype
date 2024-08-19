@@ -1,26 +1,28 @@
-import { BaseConstraint } from "./constraint.js"
-import type { NodeCompiler } from "./shared/compile.js"
+import { throwParseError } from "@ark/util"
+import { BaseConstraint } from "./constraint.ts"
+import type { NodeCompiler } from "./shared/compile.ts"
 import type {
 	BaseErrorContext,
 	BaseNormalizedSchema,
 	declareNode
-} from "./shared/declare.js"
+} from "./shared/declare.ts"
 import {
 	compileErrorContext,
 	implementNode,
 	type nodeImplementationOf
-} from "./shared/implement.js"
+} from "./shared/implement.ts"
+import { writeUnsupportedJsonSchemaTypeMessage } from "./shared/jsonSchema.ts"
 import {
 	type RegisteredReference,
 	registeredReference
-} from "./shared/registry.js"
+} from "./shared/registry.ts"
 import type {
 	TraversalContext,
 	TraverseAllows,
 	TraverseApply
-} from "./shared/traversal.js"
+} from "./shared/traversal.ts"
 
-export namespace Predicate {
+export declare namespace Predicate {
 	export type Schema<predicate extends Predicate = Predicate> =
 		| NormalizedSchema<predicate>
 		| predicate
@@ -103,6 +105,14 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 		}
 		js.if(`${this.compiledNegation} && !ctx.hasError()`, () =>
 			js.line(`ctx.error(${this.compiledErrorContext})`)
+		)
+	}
+
+	reduceJsonSchema(): never {
+		return throwParseError(
+			writeUnsupportedJsonSchemaTypeMessage({
+				description: `Predicate ${this.expression}`
+			})
 		)
 	}
 }

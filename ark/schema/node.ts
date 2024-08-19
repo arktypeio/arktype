@@ -1,7 +1,6 @@
 import {
 	Callable,
 	appendUnique,
-	cached,
 	flatMorph,
 	includes,
 	isArray,
@@ -16,26 +15,26 @@ import {
 	type listable,
 	type mutable
 } from "@ark/util"
-import type { BaseConstraint } from "./constraint.js"
+import type { BaseConstraint } from "./constraint.ts"
 import type {
 	Inner,
 	NormalizedSchema,
 	mutableInnerOfKind,
 	nodeOfKind,
 	reducibleKindOf
-} from "./kinds.js"
-import type { NodeParseOptions } from "./parse.js"
-import type { Morph } from "./roots/morph.js"
-import type { BaseRoot } from "./roots/root.js"
-import type { Unit } from "./roots/unit.js"
-import type { BaseScope } from "./scope.js"
-import type { NodeCompiler } from "./shared/compile.js"
+} from "./kinds.ts"
+import type { NodeParseOptions } from "./parse.ts"
+import type { Morph } from "./roots/morph.ts"
+import type { BaseRoot } from "./roots/root.ts"
+import type { Unit } from "./roots/unit.ts"
+import type { BaseScope } from "./scope.ts"
+import type { NodeCompiler } from "./shared/compile.ts"
 import type {
 	BaseNodeDeclaration,
 	MetaSchema,
 	attachmentsOf
-} from "./shared/declare.js"
-import type { ArkErrors } from "./shared/errors.js"
+} from "./shared/declare.ts"
+import type { ArkErrors } from "./shared/errors.ts"
 import {
 	basisKinds,
 	constraintKinds,
@@ -49,24 +48,24 @@ import {
 	type RefinementKind,
 	type StructuralKind,
 	type UnknownAttachments
-} from "./shared/implement.js"
-import { $ark } from "./shared/registry.js"
+} from "./shared/implement.ts"
+import { $ark } from "./shared/registry.ts"
 import {
 	TraversalContext,
 	type TraverseAllows,
 	type TraverseApply
-} from "./shared/traversal.js"
-import { isNode, pathToPropString, type arkKind } from "./shared/utils.js"
+} from "./shared/traversal.ts"
+import { isNode, pathToPropString, type arkKind } from "./shared/utils.ts"
 
 export abstract class BaseNode<
 	/** uses -ignore rather than -expect-error because this is not an error in .d.ts
 	 * @ts-ignore allow instantiation assignment to the base type */
 	out d extends BaseNodeDeclaration = BaseNodeDeclaration
 > extends Callable<(data: d["prerequisite"]) => unknown, attachmentsOf<d>> {
-	constructor(
-		public attachments: UnknownAttachments,
-		public $: BaseScope
-	) {
+	attachments: UnknownAttachments
+	$: BaseScope
+
+	constructor(attachments: UnknownAttachments, $: BaseScope) {
 		super(
 			// pipedFromCtx allows us internally to reuse TraversalContext
 			// through pipes and keep track of piped paths. It is not exposed
@@ -89,6 +88,8 @@ export abstract class BaseNode<
 			},
 			{ attach: attachments as never }
 		)
+		this.attachments = attachments
+		this.$ = $
 	}
 
 	bindScope($: BaseScope): this {
@@ -116,13 +117,24 @@ export abstract class BaseNode<
 		{ [this.id]: this }
 	)
 
-	@cached
+	protected cacheGetter<name extends keyof this>(
+		name: name,
+		value: this[name]
+	): this[name] {
+		Object.defineProperty(this, name, { value })
+		return value
+	}
+
 	get description(): string {
 		const writer =
 			this.$?.resolvedConfig[this.kind].description ??
 			$ark.config[this.kind]?.description ??
 			$ark.defaultConfig[this.kind].description
-		return this.meta?.description ?? writer(this as never)
+
+		return this.cacheGetter(
+			"description",
+			this.meta?.description ?? writer(this as never)
+		)
 	}
 
 	// we don't cache this currently since it can be updated once a scope finishes
@@ -133,39 +145,45 @@ export abstract class BaseNode<
 		)
 	}
 
-	@cached
 	get shallowReferences(): BaseNode[] {
-		return this.hasKind("structure") ?
+		return this.cacheGetter(
+			"shallowReferences",
+			this.hasKind("structure") ?
 				[this as BaseNode, ...this.children]
 			:	this.children.reduce<BaseNode[]>(
 					(acc, child) => appendUniqueNodes(acc, child.shallowReferences),
 					[this]
 				)
+		)
 	}
 
-	@cached
 	get shallowMorphs(): Morph.Node[] {
-		return this.shallowReferences
-			.filter(n => n.hasKind("morph"))
-			.sort((l, r) => (l.expression < r.expression ? -1 : 1))
+		return this.cacheGetter(
+			"shallowMorphs",
+			this.shallowReferences
+				.filter(n => n.hasKind("morph"))
+				.sort((l, r) => (l.expression < r.expression ? -1 : 1))
+		)
 	}
 
 	// overriden by structural kinds so that only the root at each path is added
-	@cached
 	get flatRefs(): array<FlatRef> {
-		return this.children
-			.reduce<FlatRef[]>(
-				(acc, child) => appendUniqueFlatRefs(acc, child.flatRefs),
-				[]
-			)
-			.sort((l, r) =>
-				l.path.length > r.path.length ? 1
-				: l.path.length < r.path.length ? -1
-				: l.propString > r.propString ? 1
-				: l.propString < r.propString ? -1
-				: l.node.expression < r.node.expression ? -1
-				: 1
-			)
+		return this.cacheGetter(
+			"flatRefs",
+			this.children
+				.reduce<FlatRef[]>(
+					(acc, child) => appendUniqueFlatRefs(acc, child.flatRefs),
+					[]
+				)
+				.sort((l, r) =>
+					l.path.length > r.path.length ? 1
+					: l.path.length < r.path.length ? -1
+					: l.propString > r.propString ? 1
+					: l.propString < r.propString ? -1
+					: l.node.expression < r.node.expression ? -1
+					: 1
+				)
+		)
 	}
 
 	readonly precedence: number = precedenceOfKind(this.kind)
@@ -185,14 +203,12 @@ export abstract class BaseNode<
 		return this(data)
 	}
 
-	@cached
 	get in(): this extends { [arkKind]: "root" } ? BaseRoot : BaseNode {
-		return this.getIo("in") as never
+		return this.cacheGetter("in", this.getIo("in")) as never
 	}
 
-	@cached
 	get out(): this extends { [arkKind]: "root" } ? BaseRoot : BaseNode {
-		return this.getIo("out") as never
+		return this.cacheGetter("out", this.getIo("out")) as never
 	}
 
 	// Should be refactored to use transform
@@ -261,6 +277,14 @@ export abstract class BaseNode<
 
 	isRoot(): this is BaseRoot {
 		return includes(rootKinds, this.kind)
+	}
+
+	isUnknown(): boolean {
+		return this.hasKind("intersection") && this.children.length === 0
+	}
+
+	isNever(): boolean {
+		return this.hasKind("union") && this.children.length === 0
 	}
 
 	hasUnit<value>(value: unknown): this is Unit.Node & { unit: value } {

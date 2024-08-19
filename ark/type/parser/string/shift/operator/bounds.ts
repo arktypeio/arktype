@@ -6,12 +6,12 @@ import {
 	type NodeSchema
 } from "@ark/schema"
 import { isKeyOf, throwParseError, type keySet } from "@ark/util"
-import type { DateLiteral, LimitLiteral } from "../../../../ast.js"
-import type { astToString } from "../../../semantic/utils.js"
+import type { DateLiteral, LimitLiteral } from "../../../../ast.ts"
+import type { astToString } from "../../../semantic/utils.ts"
 import type {
 	DynamicState,
 	DynamicStateWithRoot
-} from "../../reduce/dynamic.js"
+} from "../../reduce/dynamic.ts"
 import {
 	invertedComparators,
 	maxComparators,
@@ -20,11 +20,11 @@ import {
 	type InvertedComparators,
 	type MaxComparator,
 	type OpenLeftBound
-} from "../../reduce/shared.js"
-import type { StaticState, state } from "../../reduce/static.js"
-import { extractDateLiteralSource, isDateLiteral } from "../operand/date.js"
-import type { parseOperand } from "../operand/operand.js"
-import type { Scanner } from "../scanner.js"
+} from "../../reduce/shared.ts"
+import type { StaticState, state } from "../../reduce/static.ts"
+import { extractDateLiteralSource, isDateLiteral } from "../operand/date.ts"
+import type { parseOperand } from "../operand/operand.ts"
+import type { Scanner } from "../scanner.ts"
 
 export const parseBound = (
 	s: DynamicStateWithRoot,
@@ -68,12 +68,7 @@ export type parseBound<
 		:	shiftResultOrError
 	:	never
 
-const oneCharComparators = {
-	"<": true,
-	">": true
-} as const
-
-type OneCharComparator = keyof typeof oneCharComparators
+type OneCharComparator = ">" | "<"
 
 export type ComparatorStartChar =
 	Comparator extends `${infer char}${string}` ? char : never

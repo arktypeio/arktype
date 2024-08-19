@@ -1,8 +1,8 @@
 import type { Predicate, PredicateCast } from "@ark/schema"
-import type { applyConstraint, Out, To } from "../ast.js"
-import type { inferPipe } from "../intersect.js"
-import type { inferTypeRoot, validateTypeRoot } from "../type.js"
-import type { BaseType } from "./base.js"
+import type { applyConstraint, Out, To } from "../ast.ts"
+import type { inferPipe } from "../intersect.ts"
+import type { inferTypeRoot, validateTypeRoot } from "../type.ts"
+import type { BaseType } from "./base.ts"
 
 // t can't be constrained to MorphAst here because it could be a union including some
 // non-morph branches

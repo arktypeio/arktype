@@ -1,6 +1,6 @@
 import type { GenericAst } from "@ark/schema"
 import type { BigintLiteral, Hkt, array } from "@ark/util"
-import type { Ark } from "../../ark.js"
+import type { ArkAmbient } from "arktype/config"
 import type {
 	Date,
 	DateLiteral,
@@ -12,16 +12,16 @@ import type {
 	distillOut,
 	normalizeLimit,
 	string
-} from "../../ast.js"
-import type { inferIntersection } from "../../intersect.js"
+} from "../../ast.ts"
+import type { inferIntersection } from "../../intersect.ts"
 import type {
 	UnparsedScope,
 	resolve,
 	tryInferSubmoduleReference
-} from "../../scope.js"
-import type { inferDefinition } from "../definition.js"
-import type { Comparator, MinComparator } from "../string/reduce/shared.js"
-import type { StringLiteral } from "../string/shift/operand/enclosed.js"
+} from "../../scope.ts"
+import type { inferDefinition } from "../definition.ts"
+import type { Comparator, MinComparator } from "../string/reduce/shared.ts"
+import type { StringLiteral } from "../string/shift/operand/enclosed.ts"
 
 export type inferAstRoot<ast, $, args> = inferConstrainableAst<ast, $, args>
 
@@ -145,7 +145,7 @@ export type InfixExpression<
 
 export type inferTerminal<token extends string, $, args> =
 	token extends keyof args | keyof $ ? resolve<token, $, args>
-	: token extends keyof Ark ? Ark[token]
+	: token extends keyof ArkAmbient.$ ? resolve<token, ArkAmbient.$, args>
 	: `#${token}` extends keyof $ ? resolve<`#${token}`, $, args>
 	: token extends StringLiteral<infer text> ? text
 	: token extends `${infer n extends number}` ? n

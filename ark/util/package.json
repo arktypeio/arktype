@@ -1,6 +1,6 @@
 {
 	"name": "@ark/util",
-	"version": "0.2.1",
+	"version": "0.2.2",
 	"author": {
 		"name": "David Blass",
 		"email": "david@arktype.io",
@@ -10,8 +10,14 @@
 	"main": "./out/index.js",
 	"types": "./out/index.d.ts",
 	"exports": {
-		".": "./out/index.js",
-		"./internal/*": "./out/*",
+		".": {
+			"ark-ts": "./index.ts",
+			"default": "./out/index.js"
+		},
+		"./internal/*": {
+			"ark-ts": "./*",
+			"default": "./out/*"
+		},
 		"./tsconfig.base.json": "./tsconfig.base.json"
 	},
 	"files": [
@@ -19,8 +25,8 @@
 		"tsconfig.base.json"
 	],
 	"scripts": {
-		"build": "tsx ../repo/build.ts",
-		"test": "tsx ../repo/testPackage.ts"
+		"build": "ts ../repo/build.ts",
+		"test": "ts ../repo/testPackage.ts"
 	},
 	"publishConfig": {
 		"access": "public"

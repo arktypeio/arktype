@@ -1,14 +1,13 @@
 import {
 	append,
-	cached,
 	throwInternalError,
 	throwParseError,
 	type array,
 	type mutable,
 	type satisfy
 } from "@ark/util"
-import { BaseConstraint } from "../constraint.js"
-import type { RootSchema, mutableInnerOfKind } from "../kinds.js"
+import { BaseConstraint } from "../constraint.ts"
+import type { RootSchema, mutableInnerOfKind } from "../kinds.ts"
 import {
 	appendUniqueFlatRefs,
 	flatRef,
@@ -16,25 +15,30 @@ import {
 	type DeepNodeTransformContext,
 	type DeepNodeTransformation,
 	type FlatRef
-} from "../node.js"
-import type { MaxLengthNode } from "../refinements/maxLength.js"
-import type { MinLengthNode } from "../refinements/minLength.js"
-import type { BaseRoot } from "../roots/root.js"
-import type { NodeCompiler } from "../shared/compile.js"
-import type { BaseNormalizedSchema, declareNode } from "../shared/declare.js"
-import { Disjoint } from "../shared/disjoint.js"
+} from "../node.ts"
+import type { ExactLengthNode } from "../refinements/exactLength.ts"
+import type { MaxLengthNode } from "../refinements/maxLength.ts"
+import type { MinLengthNode } from "../refinements/minLength.ts"
+import type { BaseRoot } from "../roots/root.ts"
+import type { NodeCompiler } from "../shared/compile.ts"
+import type { BaseNormalizedSchema, declareNode } from "../shared/declare.ts"
+import { Disjoint } from "../shared/disjoint.ts"
 import {
 	implementNode,
 	type IntersectionContext,
 	type NodeKeyImplementation,
 	type RootKind,
 	type nodeImplementationOf
-} from "../shared/implement.js"
-import { intersectNodes } from "../shared/intersections.js"
-import { $ark } from "../shared/registry.js"
-import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
+} from "../shared/implement.ts"
+import { intersectNodes } from "../shared/intersections.ts"
+import {
+	writeUnsupportedJsonSchemaTypeMessage,
+	type JsonSchema
+} from "../shared/jsonSchema.ts"
+import { $ark } from "../shared/registry.ts"
+import type { TraverseAllows, TraverseApply } from "../shared/traversal.ts"
 
-export namespace Sequence {
+export declare namespace Sequence {
 	export interface NormalizedSchema extends BaseNormalizedSchema {
 		readonly prefix?: array<RootSchema>
 		readonly optionals?: array<RootSchema>
@@ -251,12 +255,16 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 	minLength: number =
 		this.prefix.length + this.minVariadicLength + this.postfix.length
 	minLengthNode: MinLengthNode | null =
-		this.minLength === 0 ? null : this.$.node("minLength", this.minLength)
+		this.minLength === 0 ?
+			null
+			// cast is safe here as the only time this would not be a
+			// MinLengthNode would be when minLength is 0
+		:	(this.$.node("minLength", this.minLength) as never)
 	maxLength: number | null =
 		this.variadic ? null : this.minLength + this.optionals.length
-	maxLengthNode: MaxLengthNode | null =
+	maxLengthNode: MaxLengthNode | ExactLengthNode | null =
 		this.maxLength === null ? null : this.$.node("maxLength", this.maxLength)
-	impliedSiblings: array<MaxLengthNode | MinLengthNode> =
+	impliedSiblings: array<MaxLengthNode | MinLengthNode | ExactLengthNode> =
 		this.minLengthNode ?
 			this.maxLengthNode ?
 				[this.minLengthNode, this.maxLengthNode]
@@ -326,9 +334,8 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		return refs
 	}
 
-	@cached
 	get element(): BaseRoot {
-		return this.$.node("union", this.children)
+		return this.cacheGetter("element", this.$.node("union", this.children))
 	}
 
 	// minLength/maxLength compilation should be handled by Intersection
@@ -376,6 +383,43 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 	tuple: SequenceTuple = sequenceInnerToTuple(this.inner)
 	// this depends on tuple so needs to come after it
 	expression: string = this.description
+
+	reduceJsonSchema(schema: JsonSchema.Array): JsonSchema.Array {
+		if (this.prefix.length)
+			schema.prefixItems = this.prefix.map(node => node.toJsonSchema())
+
+		if (this.optionals.length) {
+			throwParseError(
+				writeUnsupportedJsonSchemaTypeMessage(
+					`Optional tuple element${this.optionals.length > 1 ? "s" : ""} ${this.optionals.join(", ")}`
+				)
+			)
+		}
+
+		if (this.variadic) {
+			schema.items = this.variadic?.toJsonSchema()
+			// length constraints will be enforced by items: false
+			// for non-variadic arrays
+			if (this.minLength) schema.minItems = this.minLength
+			if (this.maxLength) schema.maxItems = this.maxLength
+		} else {
+			schema.items = false
+			// delete min/maxLength constraints that will have been added by the
+			// base intersection node to enforce fixed length
+			delete schema.minItems
+			delete schema.maxItems
+		}
+
+		if (this.postfix.length) {
+			throwParseError(
+				writeUnsupportedJsonSchemaTypeMessage(
+					`Postfix tuple element${this.postfix.length > 1 ? "s" : ""} ${this.postfix.join(", ")}`
+				)
+			)
+		}
+
+		return schema
+	}
 }
 
 export const Sequence = {

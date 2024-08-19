@@ -4,7 +4,12 @@
 		"rootDir": ".",
 		"outDir": "out",
 		"noEmit": false,
-		"paths": {}
+		"declaration": false,
+		"noCheck": true,
+		// the errors that would come from this setting don't trigger because of noCheck.
+		// required to force TS to emit despite .ts endings, which we rewrite
+		"allowImportingTsExtensions": false,
+		"customConditions": []
 	},
 	"exclude": ["out", "__tests__"]
 }

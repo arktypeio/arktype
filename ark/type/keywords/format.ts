@@ -1,7 +1,7 @@
 import { rootNode } from "@ark/schema"
-import type { Out } from "../ast.js"
-import type { Module } from "../module.js"
-import { scope } from "../scope.js"
+import type { Out } from "../ast.ts"
+import type { Module, Submodule } from "../module.ts"
+import { scope } from "../scope.ts"
 
 const trim = rootNode({
 	in: "string",
@@ -28,16 +28,7 @@ const normalize = rootNode({
 	morphs: (s: string) => s.normalize()
 })
 
-export type formattingExports = {
-	trim: (In: string) => Out<string>
-	uppercase: (In: string) => Out<string>
-	lowercase: (In: string) => Out<string>
-	capitalize: (In: string) => Out<string>
-	normalize: (In: string) => Out<string>
-}
-export type formatting = Module<formattingExports>
-
-export const formatting: formatting = scope(
+const submodule: Module<arkFormat.submodule> = scope(
 	{
 		trim,
 		uppercase,
@@ -49,3 +40,17 @@ export const formatting: formatting = scope(
 		prereducedAliases: true
 	}
 ).export()
+
+export const arkFormat = {
+	submodule
+}
+
+export declare namespace arkFormat {
+	export type submodule = Submodule<{
+		trim: (In: string) => Out<string>
+		uppercase: (In: string) => Out<string>
+		lowercase: (In: string) => Out<string>
+		capitalize: (In: string) => Out<string>
+		normalize: (In: string) => Out<string>
+	}>
+}

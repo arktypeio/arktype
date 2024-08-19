@@ -1,7 +1,7 @@
-import type { array, listable } from "./arrays.js"
-import type { show } from "./generics.js"
-import type { Entry, Key, entryOf, fromEntries } from "./records.js"
-import type { intersectUnion } from "./unionToTuple.js"
+import type { array, listable } from "./arrays.ts"
+import type { show } from "./generics.ts"
+import type { Entry, Key, entryOf, fromEntries } from "./records.ts"
+import type { intersectUnion } from "./unionToTuple.ts"
 
 type objectFromListableEntries<transformed extends readonly Entry[]> = show<
 	intersectUnion<fromEntries<transformed>>
@@ -49,32 +49,27 @@ export type fromMappedEntries<transformed extends MappedEntry> =
 		arrayFromListableEntries<extractEntries<transformed>>
 	:	objectFromListableEntries<extractEntrySets<transformed>>
 
-export function flatMorph<
-	const o extends array,
-	transformed extends MappedEntry
->(
-	o: o,
-	flatMapEntry: (...args: numericArrayEntry<o>) => transformed
-): fromMappedEntries<transformed>
-export function flatMorph<
-	const o extends object,
-	transformed extends MappedEntry
->(
-	o: o,
-	flatMapEntry: (...args: entryOf<o>) => transformed
-): fromMappedEntries<transformed>
-export function flatMorph<
-	const o extends object,
-	transformed extends MappedEntry
->(
-	o: o,
-	flatMapEntry: (...args: entryArgsWithIndex<o>) => transformed
-): fromMappedEntries<transformed>
-// eslint-disable-next-line prefer-arrow-functions/prefer-arrow-functions
-export function flatMorph(
+export type FlatMorph = {
+	<const o extends array, transformed extends MappedEntry>(
+		o: o,
+		flatMapEntry: (...args: numericArrayEntry<o>) => transformed
+	): fromMappedEntries<transformed>
+
+	<const o extends object, transformed extends MappedEntry>(
+		o: o,
+		flatMapEntry: (...args: entryOf<o>) => transformed
+	): fromMappedEntries<transformed>
+
+	<const o extends object, transformed extends MappedEntry>(
+		o: o,
+		flatMapEntry: (...args: entryArgsWithIndex<o>) => transformed
+	): fromMappedEntries<transformed>
+}
+
+export const flatMorph: FlatMorph = (
 	o: object,
 	flatMapEntry: (...args: any[]) => listable<Entry>
-): any {
+): any => {
 	const inputIsArray = Array.isArray(o)
 	const entries: Entry[] = Object.entries(o).flatMap((entry, i) => {
 		const result =

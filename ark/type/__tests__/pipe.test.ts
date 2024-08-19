@@ -8,7 +8,7 @@ import {
 	type ArkErrors
 } from "@ark/schema"
 import { ark, scope, type, type Type } from "arktype"
-import type { MoreThan, Out, To, constrain } from "arktype/internal/ast.js"
+import type { MoreThan, Out, To, constrain } from "arktype/internal/ast.ts"
 
 contextualize(() => {
 	it("base", () => {
@@ -55,9 +55,9 @@ contextualize(() => {
 
 			const badOut = parseJson("{ unquoted: true }")
 
-			const suffix =
-				process.version.startsWith("v22") ? " (line 1 column 3)" : ""
-			attest(badOut.toString()).satisfies(
+			const a = attest(badOut.toString())
+
+			const z = a.satisfies(
 				/^must be valid according to an anonymous predicate \(was aborted due to error:\n {4}SyntaxError:/
 			)
 		})

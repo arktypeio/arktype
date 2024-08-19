@@ -1,5 +1,5 @@
 import { getShellOutput, rewriteJson, shell } from "@ark/fs"
-import { packages, type ArkPackage } from "./shared.js"
+import { packages, type ArkPackage } from "./shared.ts"
 
 const tagsToPublish: string[] = []
 

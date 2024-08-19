@@ -1,26 +1,26 @@
 import { append, printable, throwParseError, unset, type Key } from "@ark/util"
-import { BaseConstraint } from "../constraint.js"
-import type { nodeOfKind, RootSchema } from "../kinds.js"
+import { BaseConstraint } from "../constraint.ts"
+import type { nodeOfKind, RootSchema } from "../kinds.ts"
 import {
 	flatRef,
 	type BaseNode,
 	type DeepNodeTransformation,
 	type DeepNodeTransformContext,
 	type FlatRef
-} from "../node.js"
-import type { Morph } from "../roots/morph.js"
-import type { BaseRoot } from "../roots/root.js"
-import { compileSerializedValue, type NodeCompiler } from "../shared/compile.js"
-import type { BaseNormalizedSchema } from "../shared/declare.js"
-import { Disjoint } from "../shared/disjoint.js"
-import type { IntersectionContext, RootKind } from "../shared/implement.js"
-import { intersectNodes } from "../shared/intersections.js"
-import { $ark, registeredReference } from "../shared/registry.js"
-import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
-import type { Optional } from "./optional.js"
-import type { Required } from "./required.js"
+} from "../node.ts"
+import type { Morph } from "../roots/morph.ts"
+import type { BaseRoot } from "../roots/root.ts"
+import { compileSerializedValue, type NodeCompiler } from "../shared/compile.ts"
+import type { BaseNormalizedSchema } from "../shared/declare.ts"
+import { Disjoint } from "../shared/disjoint.ts"
+import type { IntersectionContext, RootKind } from "../shared/implement.ts"
+import { intersectNodes } from "../shared/intersections.ts"
+import { $ark, registeredReference } from "../shared/registry.ts"
+import type { TraverseAllows, TraverseApply } from "../shared/traversal.ts"
+import type { Optional } from "./optional.ts"
+import type { Required } from "./required.ts"
 
-export namespace Prop {
+export declare namespace Prop {
 	export type Kind = "required" | "optional"
 
 	export type Node = nodeOfKind<Kind>

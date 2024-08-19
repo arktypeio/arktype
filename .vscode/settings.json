@@ -22,7 +22,7 @@
 	"typescript.tsserver.experimental.enableProjectDiagnostics": true,
 	"typescript.tsdk": "./node_modules/typescript/lib",
 	// IF YOU UPDATE THE MOCHA CONFIG HERE, PLEASE ALSO UPDATE package.json/mocha AND ark/repo/mocha.jsonc
-	"mochaExplorer.nodeArgv": ["--import=tsx"],
+	"mochaExplorer.nodeArgv": ["--conditions", "ark-ts", "--import", "tsx"],
 	// ignore attest since it requires type information
 	"mochaExplorer.ignore": ["ark/attest/**/*"],
 	"mochaExplorer.require": "ark/repo/mocha.globalSetup.ts",
@@ -35,12 +35,8 @@
 		// Hair Space: used as a sentinel for error messages
 		" ": true
 	},
-	"astro.language-server.ls-path": "ark/docs/node_modules/astro",
 	"search.exclude": {
 		"**/out": true
-	},
-	"debug.javascript.terminalOptions": {
-		"skipFiles": ["<node_internals>/**", "**/node_modules/**"]
 	},
 	"editor.quickSuggestions": {
 		"strings": "on"

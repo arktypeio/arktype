@@ -1,7 +1,7 @@
-import type { Guardable } from "./functions.js"
-import type { anyOrNever } from "./generics.js"
-import type { isDisjoint } from "./intersections.js"
-import type { parseNonNegativeInteger } from "./numericLiterals.js"
+import type { Guardable } from "./functions.ts"
+import type { anyOrNever } from "./generics.ts"
+import type { isDisjoint } from "./intersections.ts"
+import type { parseNonNegativeInteger } from "./numericLiterals.ts"
 
 export type pathToString<
 	segments extends string[],
@@ -169,9 +169,13 @@ export const append = <
 		)
 	}
 
-	if (opts?.prepend)
-		Array.isArray(value) ? to.unshift(...value) : to.unshift(value as never)
-	else Array.isArray(value) ? to.push(...value) : to.push(value as never)
+	if (opts?.prepend) {
+		if (Array.isArray(value)) to.unshift(...value)
+		else to.unshift(value as never)
+	} else {
+		if (Array.isArray(value)) to.push(...value)
+		else to.push(value as never)
+	}
 
 	return to as never
 }

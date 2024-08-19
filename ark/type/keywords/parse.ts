@@ -1,22 +1,24 @@
-import { rootNode } from "@ark/schema"
-import {
-	isWellFormedInteger,
-	wellFormedIntegerMatcher,
-	wellFormedNumberMatcher
-} from "@ark/util"
-import type { Out, number } from "../ast.js"
-import type { Module } from "../module.js"
-import { scope } from "../scope.js"
-import { tryParseDatePattern } from "./utils/date.js"
-import { regexStringNode } from "./utils/regex.js"
+import { rootNode, type IntersectionNode } from "@ark/schema"
+import { isWellFormedInteger, wellFormedNumberMatcher } from "@ark/util"
+import type { Out, number } from "../ast.ts"
+import type { Module, Submodule } from "../module.ts"
+import { scope } from "../scope.ts"
+import { arkString } from "./string.ts"
+import { tryParseDatePattern } from "./utils/date.ts"
+import { regexStringNode } from "./utils/regex.ts"
+
+const parsableNumber = regexStringNode(
+	wellFormedNumberMatcher,
+	"a well-formed numeric string"
+).internal as IntersectionNode
 
 const number = rootNode({
-	in: regexStringNode(wellFormedNumberMatcher, "a well-formed numeric string"),
+	in: parsableNumber,
 	morphs: (s: string) => Number.parseFloat(s)
 })
 
 const integer = rootNode({
-	in: regexStringNode(wellFormedIntegerMatcher, "a well-formed integer string"),
+	in: arkString.submodule.integer as never,
 	morphs: (s: string, ctx) => {
 		if (!isWellFormedInteger(s))
 			return ctx.error("a well-formed integer string")
@@ -90,18 +92,7 @@ const formData = rootNode({
 	}
 })
 
-export type parsingExports = {
-	url: (In: string) => Out<URL>
-	number: (In: string) => Out<number>
-	integer: (In: string) => Out<number.divisibleBy<1>>
-	date: (In: string) => Out<Date>
-	json: (In: string) => Out<object>
-	formData: (In: FormData) => Out<ParsedFormData>
-}
-
-export type parsing = Module<parsingExports>
-
-export const parsing: parsing = scope(
+const submodule: Module<arkParse.submodule> = scope(
 	{
 		url,
 		number,
@@ -114,3 +105,18 @@ export const parsing: parsing = scope(
 		prereducedAliases: true
 	}
 ).export()
+
+export const arkParse = {
+	submodule
+}
+
+export declare namespace arkParse {
+	export type submodule = Submodule<{
+		url: (In: string) => Out<URL>
+		number: (In: string) => Out<number>
+		integer: (In: string) => Out<number.divisibleBy<1>>
+		date: (In: string) => Out<Date>
+		json: (In: string) => Out<object>
+		formData: (In: FormData) => Out<ParsedFormData>
+	}>
+}

@@ -4,7 +4,7 @@ import * as tsvfs from "@typescript/vfs"
 import { readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import ts from "typescript"
-import { getConfig } from "../config.js"
+import { getConfig } from "../config.ts"
 
 export class TsServer {
 	rootFiles!: string[]
@@ -16,15 +16,19 @@ export class TsServer {
 		return new TsServer()
 	}
 
-	private constructor(private tsConfigInfo = getTsConfigInfoOrThrow()) {
+	private tsConfigInfo!: TsconfigInfo
+
+	constructor(tsConfigInfo?: TsconfigInfo) {
 		if (TsServer._instance) return TsServer._instance
 
-		const tsLibPaths = getTsLibFiles(tsConfigInfo.parsed.options)
+		this.tsConfigInfo = tsConfigInfo ?? getTsConfigInfoOrThrow()
+
+		const tsLibPaths = getTsLibFiles(this.tsConfigInfo.parsed.options)
 
 		// TS represents windows paths as `C:/Users/ssalb/...`
 		const normalizedCwd = fromCwd().replaceAll(/\\/g, "/")
 
-		this.rootFiles = tsConfigInfo.parsed.fileNames.filter(path =>
+		this.rootFiles = this.tsConfigInfo.parsed.fileNames.filter(path =>
 			path.startsWith(normalizedCwd)
 		)
 

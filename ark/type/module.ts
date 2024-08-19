@@ -4,8 +4,8 @@ import {
 	type PreparsedNodeResolution
 } from "@ark/schema"
 import type { anyOrNever } from "@ark/util"
-import type { Generic } from "./generic.js"
-import type { Type } from "./type.js"
+import type { Generic } from "./generic.ts"
+import type { Type } from "./type.ts"
 
 export const Module: new <$ extends {}>(exports: exportScope<$>) => Module<$> =
 	RootModule as never

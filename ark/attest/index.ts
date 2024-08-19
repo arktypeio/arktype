@@ -1,21 +1,21 @@
-export { cleanup, setup, teardown, writeAssertionData } from "./fixtures.js"
+export { cleanup, setup, teardown, writeAssertionData } from "./fixtures.ts"
 // ensure fixtures are exported before config so additional settings can load
 export { caller, type CallerOfOptions } from "@ark/fs"
-export { attest } from "./assert/attest.js"
-export { bench } from "./bench/bench.js"
+export { attest } from "./assert/attest.ts"
+export { bench } from "./bench/bench.ts"
 export {
 	getBenchAssertionsAtPosition,
 	getTypeAssertionsAtPosition
-} from "./cache/getCachedAssertions.js"
+} from "./cache/getCachedAssertions.ts"
 export type {
 	ArgAssertionData,
 	LinePositionRange,
 	TypeAssertionData,
 	TypeRelationship
-} from "./cache/writeAssertionCache.js"
-export { getDefaultAttestConfig, type AttestConfig } from "./config.js"
+} from "./cache/writeAssertionCache.ts"
+export { getDefaultAttestConfig, type AttestConfig } from "./config.ts"
 export {
 	findAttestTypeScriptVersions,
 	getPrimaryTsVersionUnderTest
-} from "./tsVersioning.js"
-export { contextualize } from "./utils.js"
+} from "./tsVersioning.ts"
+export { contextualize } from "./utils.ts"

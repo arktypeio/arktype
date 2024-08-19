@@ -1,8 +1,8 @@
-import type { array } from "./arrays.js"
-import type { describeDomainOf, domainOf, inferDomain } from "./domain.js"
-import type { anyOrNever, satisfy, Stringifiable } from "./generics.js"
-import type { describeObject } from "./objectKinds.js"
-import type { stringifyUnion } from "./unionToTuple.js"
+import type { array } from "./arrays.ts"
+import type { describeDomainOf, domainOf, inferDomain } from "./domain.ts"
+import type { anyOrNever, satisfy, Stringifiable } from "./generics.ts"
+import type { describeObject } from "./objectKinds.ts"
+import type { stringifyUnion } from "./unionToTuple.ts"
 
 export type DescribeOptions = {
 	includeArticles?: boolean

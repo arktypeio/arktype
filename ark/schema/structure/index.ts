@@ -4,28 +4,28 @@ import {
 	stringAndSymbolicEntriesOf,
 	throwParseError
 } from "@ark/util"
-import { BaseConstraint } from "../constraint.js"
-import type { RootSchema, nodeOfKind } from "../kinds.js"
+import { BaseConstraint } from "../constraint.ts"
+import type { RootSchema, nodeOfKind } from "../kinds.ts"
 import {
 	flatRef,
 	type BaseNode,
 	type DeepNodeTransformContext,
 	type DeepNodeTransformation,
 	type FlatRef
-} from "../node.js"
-import type { BaseRoot } from "../roots/root.js"
-import type { BaseNormalizedSchema, declareNode } from "../shared/declare.js"
-import { Disjoint } from "../shared/disjoint.js"
+} from "../node.ts"
+import type { BaseRoot } from "../roots/root.ts"
+import type { BaseNormalizedSchema, declareNode } from "../shared/declare.ts"
+import { Disjoint } from "../shared/disjoint.ts"
 import {
 	implementNode,
 	type RootKind,
 	type nodeImplementationOf
-} from "../shared/implement.js"
-import { intersectNodes } from "../shared/intersections.js"
-import { $ark } from "../shared/registry.js"
-import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
+} from "../shared/implement.ts"
+import { intersectNodes } from "../shared/intersections.ts"
+import { $ark } from "../shared/registry.ts"
+import type { TraverseAllows, TraverseApply } from "../shared/traversal.ts"
 
-export namespace Index {
+export declare namespace Index {
 	export type KeyKind = Exclude<RootKind, "unit">
 
 	export type KeyNode = nodeOfKind<KeyKind>

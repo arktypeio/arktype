@@ -1,17 +1,22 @@
-import { InternalPrimitiveConstraint } from "../constraint.js"
-import type { BaseRoot } from "../roots/root.js"
+import { throwParseError } from "@ark/util"
+import { InternalPrimitiveConstraint } from "../constraint.ts"
+import type { BaseRoot } from "../roots/root.ts"
 import type {
 	BaseErrorContext,
 	BaseNormalizedSchema,
 	declareNode
-} from "../shared/declare.js"
+} from "../shared/declare.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
-} from "../shared/implement.js"
-import { $ark } from "../shared/registry.js"
+} from "../shared/implement.ts"
+import {
+	writeUnsupportedJsonSchemaTypeMessage,
+	type JsonSchema
+} from "../shared/jsonSchema.ts"
+import { $ark } from "../shared/registry.ts"
 
-export namespace Pattern {
+export declare namespace Pattern {
 	export interface NormalizedSchema extends BaseNormalizedSchema {
 		readonly rule: string
 		readonly flags?: string
@@ -77,6 +82,18 @@ export class PatternNode extends InternalPrimitiveConstraint<Pattern.Declaration
 	readonly compiledCondition: string = `${this.expression}.test(data)`
 	readonly compiledNegation: string = `!${this.compiledCondition}`
 	readonly impliedBasis: BaseRoot = $ark.intrinsic.string.internal
+
+	reduceJsonSchema(schema: JsonSchema.String): JsonSchema.String {
+		if (schema.pattern) {
+			return throwParseError(
+				writeUnsupportedJsonSchemaTypeMessage(
+					`Intersection of patterns ${schema.pattern} & ${this.rule}`
+				)
+			)
+		}
+		schema.pattern = this.rule
+		return schema
+	}
 }
 
 export const Pattern = {

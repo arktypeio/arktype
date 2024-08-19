@@ -5,11 +5,11 @@ import {
 	type propwiseXor,
 	type show
 } from "@ark/util"
-import type { ResolvedArkConfig } from "../config.js"
-import type { Prerequisite, errorContext } from "../kinds.js"
-import type { NodeKind } from "./implement.js"
-import type { TraversalContext } from "./traversal.js"
-import { arkKind, pathToPropString, type TraversalPath } from "./utils.js"
+import type { ResolvedArkConfig } from "../config.ts"
+import type { Prerequisite, errorContext } from "../kinds.ts"
+import type { NodeKind } from "./implement.ts"
+import type { TraversalContext } from "./traversal.ts"
+import { arkKind, pathToPropString, type TraversalPath } from "./utils.ts"
 
 export type ArkErrorResult = ArkError | ArkErrors
 
@@ -20,12 +20,11 @@ export class ArkError<
 	path: TraversalPath
 	data: Prerequisite<code>
 	private nodeConfig: ResolvedArkConfig[code]
+	protected input: ArkErrorContextInput<code>
 
-	constructor(
-		protected input: ArkErrorContextInput<code>,
-		ctx: TraversalContext
-	) {
+	constructor(input: ArkErrorContextInput<code>, ctx: TraversalContext) {
 		super()
+		this.input = input
 		defineProperties(this, input)
 		const data = ctx.data
 		if (input.code === "union") {
@@ -80,8 +79,11 @@ export class ArkError<
 }
 
 export class ArkErrors extends ReadonlyArray<ArkError> {
-	constructor(protected ctx: TraversalContext) {
+	protected ctx: TraversalContext
+
+	constructor(ctx: TraversalContext) {
 		super()
+		this.ctx = ctx
 	}
 
 	byPath: Record<string, ArkError> = {}
@@ -115,6 +117,17 @@ export class ArkErrors extends ReadonlyArray<ArkError> {
 		this.count++
 	}
 
+	merge(errors: ArkErrors): void {
+		errors.forEach(e =>
+			this.add(
+				new ArkError(
+					{ ...e, path: [...e.path, ...this.ctx.path] } as never,
+					this.ctx
+				)
+			)
+		)
+	}
+
 	get summary(): string {
 		return this.toString()
 	}
@@ -130,6 +143,10 @@ export class ArkErrors extends ReadonlyArray<ArkError> {
 	throw(): never {
 		throw new AggregateError(this, this.message)
 	}
+}
+
+export type ArkErrorsMergeOptions = {
+	relativePath?: TraversalPath
 }
 
 export interface DerivableErrorContext<

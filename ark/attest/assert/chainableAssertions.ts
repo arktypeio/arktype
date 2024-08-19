@@ -9,10 +9,10 @@ import {
 	queueSnapshotUpdate,
 	updateExternalSnapshot,
 	type SnapshotArgs
-} from "../cache/snapshots.js"
-import type { Completions } from "../cache/writeAssertionCache.js"
-import { getConfig } from "../config.js"
-import { chainableNoOpProxy } from "../utils.js"
+} from "../cache/snapshots.ts"
+import type { Completions } from "../cache/writeAssertionCache.ts"
+import { getConfig } from "../config.ts"
+import { chainableNoOpProxy } from "../utils.ts"
 import {
 	TypeAssertionMapping,
 	assertEqualOrMatching,
@@ -21,8 +21,8 @@ import {
 	callAssertedFunction,
 	getThrownMessage,
 	throwAssertionError
-} from "./assertions.js"
-import type { AssertionContext } from "./attest.js"
+} from "./assertions.ts"
+import type { AssertionContext } from "./attest.ts"
 
 export type ChainableAssertionOptions = {
 	allowRegex?: boolean
@@ -32,7 +32,11 @@ export type ChainableAssertionOptions = {
 type AssertionRecord = Record<keyof rootAssertions<any, AssertionKind>, unknown>
 
 export class ChainableAssertions implements AssertionRecord {
-	constructor(private ctx: AssertionContext) {}
+	private ctx: AssertionContext
+
+	constructor(ctx: AssertionContext) {
+		this.ctx = ctx
+	}
 
 	private serialize(value: unknown) {
 		return snapshot(value)

@@ -2,11 +2,19 @@ import type {
 	ArkErrors,
 	BaseRoot,
 	Disjoint,
+	JsonSchema,
 	MetaSchema,
 	Morph,
 	UndeclaredKeyBehavior
 } from "@ark/schema"
-import type { anyOrNever, Callable, ErrorMessage, Json, unset } from "@ark/util"
+import type {
+	anyOrNever,
+	Callable,
+	ErrorMessage,
+	inferred,
+	Json,
+	unset
+} from "@ark/util"
 import type {
 	distillConstrainableIn,
 	distillConstrainableOut,
@@ -14,14 +22,13 @@ import type {
 	distillOut,
 	distillValidatedOut,
 	inferMorphOut,
-	inferPipes,
-	inferred
-} from "../ast.js"
-import type { inferIntersection } from "../intersect.js"
-import type { Scope } from "../scope.js"
-import type { inferTypeRoot, validateTypeRoot } from "../type.js"
-import type { ArrayType } from "./array.js"
-import type { instantiateType } from "./instantiate.js"
+	inferPipes
+} from "../ast.ts"
+import type { inferIntersection } from "../intersect.ts"
+import type { Scope } from "../scope.ts"
+import type { inferTypeRoot, validateTypeRoot } from "../type.ts"
+import type { ArrayType } from "./array.ts"
+import type { instantiateType } from "./instantiate.ts"
 
 /** @ts-ignore cast variance */
 interface Type<out t = unknown, $ = {}>
@@ -35,6 +42,7 @@ interface Type<out t = unknown, $ = {}>
 	[inferred]: t
 
 	json: Json
+	toJsonSchema(): JsonSchema
 	description: string
 	expression: string
 	internal: BaseRoot

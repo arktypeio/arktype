@@ -1,20 +1,27 @@
-import type { BaseRoot } from "../roots/root.js"
-import type { BaseErrorContext, declareNode } from "../shared/declare.js"
+import type { IntersectionNode } from "../roots/intersection.ts"
+import type { BaseRoot } from "../roots/root.ts"
+import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
-} from "../shared/implement.js"
-import { $ark } from "../shared/registry.js"
-import type { TraverseAllows } from "../shared/traversal.js"
+} from "../shared/implement.ts"
+import {
+	throwInternalJsonSchemaOperandError,
+	type JsonSchema
+} from "../shared/jsonSchema.ts"
+import { $ark } from "../shared/registry.ts"
+import type { TraverseAllows } from "../shared/traversal.ts"
 import {
 	BaseRange,
-	parseExclusiveKey,
+	createLengthRuleParser,
+	createLengthSchemaNormalizer,
 	type BaseRangeInner,
 	type LengthBoundableData,
+	type UnknownExpandedRangeSchema,
 	type UnknownNormalizedRangeSchema
-} from "./range.js"
+} from "./range.ts"
 
-export namespace MinLength {
+export declare namespace MinLength {
 	export interface Inner extends BaseRangeInner {
 		rule: number
 	}
@@ -23,7 +30,11 @@ export namespace MinLength {
 		rule: number
 	}
 
-	export type Schema = NormalizedSchema | number
+	export interface ExpandedSchema extends UnknownExpandedRangeSchema {
+		rule: number
+	}
+
+	export type Schema = ExpandedSchema | number
 
 	export interface ErrorContext extends BaseErrorContext<"minLength">, Inner {}
 
@@ -34,6 +45,7 @@ export namespace MinLength {
 			normalizedSchema: NormalizedSchema
 			inner: Inner
 			prerequisite: LengthBoundableData
+			reducibleTo: "intersection"
 			errorContext: ErrorContext
 		}> {}
 
@@ -46,19 +58,19 @@ const implementation: nodeImplementationOf<MinLength.Declaration> =
 		collapsibleKey: "rule",
 		hasAssociatedError: true,
 		keys: {
-			rule: {},
-			exclusive: parseExclusiveKey
+			rule: {
+				parse: createLengthRuleParser("minLength")
+			}
 		},
-		normalize: schema =>
-			typeof schema === "number" ? { rule: schema } : schema,
+		reduce: inner =>
+			inner.rule === 0 ?
+				// a minimum length of zero is trivially satisfied
+				($ark.intrinsic.unknown as IntersectionNode)
+			:	undefined,
+		normalize: createLengthSchemaNormalizer("minLength"),
 		defaults: {
 			description: node =>
-				node.exclusive ?
-					node.rule === 0 ?
-						"non-empty"
-					:	`more than length ${node.rule}`
-				: node.rule === 1 ? "non-empty"
-				: `at least length ${node.rule}`,
+				node.rule === 1 ? "non-empty" : `at least length ${node.rule}`,
 			// avoid default message like "must be non-empty (was 0)"
 			actual: data => (data.length === 0 ? null : `${data.length}`)
 		},
@@ -70,10 +82,23 @@ const implementation: nodeImplementationOf<MinLength.Declaration> =
 export class MinLengthNode extends BaseRange<MinLength.Declaration> {
 	readonly impliedBasis: BaseRoot = $ark.intrinsic.lengthBoundable.internal
 
-	traverseAllows: TraverseAllows<LengthBoundableData> =
-		this.exclusive ?
-			data => data.length > this.rule
-		:	data => data.length >= this.rule
+	traverseAllows: TraverseAllows<LengthBoundableData> = data =>
+		data.length >= this.rule
+
+	reduceJsonSchema(
+		schema: JsonSchema.LengthBoundable
+	): JsonSchema.LengthBoundable {
+		switch (schema.type) {
+			case "string":
+				schema.minLength = this.rule
+				return schema
+			case "array":
+				schema.minItems = this.rule
+				return schema
+			default:
+				return throwInternalJsonSchemaOperandError("minLength", schema)
+		}
+	}
 }
 
 export const MinLength = {

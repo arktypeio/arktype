@@ -1,16 +1,16 @@
 import { whiteSpaceTokens, type WhiteSpaceToken } from "@ark/util"
-import type { DynamicState } from "../../reduce/dynamic.js"
-import type { StaticState, state } from "../../reduce/static.js"
-import type { BaseCompletions } from "../../string.js"
-import type { Scanner } from "../scanner.js"
+import type { DynamicState } from "../../reduce/dynamic.ts"
+import type { StaticState, state } from "../../reduce/static.ts"
+import type { BaseCompletions } from "../../string.ts"
+import type { Scanner } from "../scanner.ts"
 import {
 	enclosingChar,
 	enclosingQuote,
 	parseEnclosed,
 	type EnclosingQuote,
 	type EnclosingStartToken
-} from "./enclosed.js"
-import { parseUnenclosed, writeMissingOperandMessage } from "./unenclosed.js"
+} from "./enclosed.ts"
+import { parseUnenclosed, writeMissingOperandMessage } from "./unenclosed.ts"
 
 export const parseOperand = (s: DynamicState): void =>
 	s.scanner.lookahead === "" ? s.error(writeMissingOperandMessage(s))

@@ -1,6 +1,6 @@
 {
 	"name": "@ark/attest",
-	"version": "0.12.0",
+	"version": "0.12.1",
 	"author": {
 		"name": "David Blass",
 		"email": "david@arktype.io",
@@ -15,8 +15,14 @@
 	"main": "./out/index.js",
 	"types": "./out/index.d.ts",
 	"exports": {
-		".": "./out/index.js",
-		"./internal/*": "./out/*"
+		".": {
+			"ark-ts": "./index.ts",
+			"default": "./out/index.js"
+		},
+		"./internal/*": {
+			"ark-ts": "./*",
+			"default": "./out/*"
+		}
 	},
 	"files": [
 		"out"
@@ -25,15 +31,14 @@
 		"attest": "out/cli/cli.js"
 	},
 	"scripts": {
-		"build": "tsx ../repo/build.ts",
-		"test": "tsx ../repo/testPackage.ts",
-		"bunTest": "bun test --preload ../repo/bunTestSetup.ts"
+		"build": "ts ../repo/build.ts",
+		"test": "ts ../repo/testPackage.ts"
 	},
 	"dependencies": {
 		"arktype": "workspace:*",
 		"@ark/fs": "workspace:*",
 		"@ark/util": "workspace:*",
-		"@typescript/vfs": "1.5.3",
+		"@typescript/vfs": "1.6.0",
 		"@typescript/analyze-trace": "0.10.1",
 		"prettier": "3.3.3",
 		"@prettier/sync": "0.5.2"

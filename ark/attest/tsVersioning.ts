@@ -113,8 +113,8 @@ export const findAttestTypeScriptVersions = (): TsVersionData[] => {
 		const nodeModulesPath = join(currentDir, "node_modules")
 		const packageJson = readJson(packageJsonPath)
 		const dependencies: Record<string, string> = {
-			...packageJson.dependencies,
-			...packageJson.devDependencies
+			...(packageJson.dependencies as object),
+			...(packageJson.devDependencies as object)
 		}
 		for (const alias in dependencies) {
 			if (!alias.startsWith("typescript")) continue
@@ -125,7 +125,8 @@ export const findAttestTypeScriptVersions = (): TsVersionData[] => {
 					`TypeScript version ${alias} specified in ${packageJsonPath} must be installed at ${path} `
 				)
 			}
-			const version: string = readJson(join(path, "package.json")).version
+			const version: string = readJson(join(path, "package.json"))
+				.version as string
 			versions.push({
 				alias,
 				version,

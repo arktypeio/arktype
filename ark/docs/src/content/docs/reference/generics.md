@@ -19,6 +19,7 @@ const boxOf = type("<t>", { box: "t" })
 const schrodingersBox = boxOf({ cat: { isAlive: "boolean" } })
 ```
 
+<!--
 #### Constrained Parameters
 
 All syntax in parameters definitions and all references to generic args are fully-type safe and autocompleted like any builtin keyword. Constraints can be used just like TS to limit what can be passed to a generic and allow that arg to be used with operators like `>`.
@@ -120,16 +121,18 @@ console.log(boxType({ box: "foo" }))
 
 ### Generic HKTs
 
-Our new generics have been built using a new method for integrating arbitrary external types as native ArkType generics! This opens up tons of possibilities for external integrations that would otherwise not be possible, but we're still finalizing the API. As a preview, here's what the implementation of `Exclude` looks like internally:
+Our new generics have been built using a new method for integrating arbitrary external types as native ArkType generics! This opens up tons of possibilities for external integrations that would otherwise not be possible, but we're still finalizing the API. As a preview, here's what the implementation of `Partial` looks like internally:
 
 ```ts
-// @noErrors
-class ArkExclude extends generic("T", "U")(args => args.T.exclude(args.U)) {
-	declare hkt: (
-		args: conform<this[Hkt.args], [unknown, unknown]>
-	) => Exclude<(typeof args)[0], (typeof args)[1]>
-}
-```
+import { generic, Hkt } from "arktype"
+
+const Partial = generic(["T", "object"])(
+	args => args.T.partial(),
+	class PartialHkt extends Hkt<[object]> {
+		declare body: Partial<this[0]>
+	}
+)
+``` -->
 
 More to come on this as the API is finalized!
 

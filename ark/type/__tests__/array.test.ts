@@ -1,11 +1,11 @@
 import { attest, contextualize } from "@ark/attest"
 import { writeUnresolvableMessage } from "@ark/schema"
 import { scope, type } from "arktype"
-import { incompleteArrayTokenMessage } from "arktype/internal/parser/string/shift/operator/operator.js"
+import { incompleteArrayTokenMessage } from "arktype/internal/parser/string/shift/operator/operator.ts"
 import {
 	multipleVariadicMesage,
 	writeNonArraySpreadMessage
-} from "arktype/internal/parser/tuple.js"
+} from "arktype/internal/parser/tuple.ts"
 
 contextualize(() => {
 	describe("non-tuple", () => {

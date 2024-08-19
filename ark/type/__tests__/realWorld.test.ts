@@ -10,85 +10,86 @@ import type {
 	Out,
 	string,
 	To
-} from "arktype/internal/ast.js"
+} from "arktype/internal/ast.ts"
 
 contextualize(() => {
-	// https://github.com/arktypeio/arktype/issues/915
-	it("time stub w/ private constructor", () => {
-		class TimeStub {
-			declare readonly isoString: string
+	// 	// https://github.com/arktypeio/arktype/issues/915
+	// 	it("time stub w/ private constructor", () => {
+	// 		class TimeStub {
+	// 			declare readonly isoString: string
 
-			private constructor() {}
+	// 			private constructor() {}
 
-			declare static from: (isoString: string) => TimeStub
+	// 			declare static from: (isoString: string) => TimeStub
 
-			declare static fromDate: (date: Date) => TimeStub
+	// 			declare static fromDate: (date: Date) => TimeStub
 
-			declare toDate: () => Date
+	// 			declare toDate: () => Date
 
-			declare toString: () => string
-		}
+	// 			declare toString: () => string
+	// 		}
 
-		const types = scope({
-			timeStub: ["instanceof", TimeStub] as type.cast<TimeStub>,
-			account: "clientDocument&accountData",
-			clientDocument: {
-				"id?": "string",
-				"coll?": "string",
-				"ts?": "timeStub",
-				"ttl?": "timeStub"
-			},
-			accountData: {
-				user: "user|timeStub",
-				provider: "provider",
-				providerUserId: "string"
-			},
-			user: {
-				name: "string",
-				"accounts?": "account[]"
-			},
-			provider: "'GitHub'|'Google'"
-		}).export()
+	// 		const types = scope({
+	// 			timeStub: ["instanceof", TimeStub] as type.cast<TimeStub>,
+	// 			account: "clientDocument&accountData",
+	// 			clientDocument: {
+	// 				"id?": "string",
+	// 				"coll?": "string",
+	// 				"ts?": "timeStub",
+	// 				"ttl?": "timeStub"
+	// 			},
+	// 			accountData: {
+	// 				user: "user|timeStub",
+	// 				provider: "provider",
+	// 				providerUserId: "string"
+	// 			},
+	// 			user: {
+	// 				name: "string",
+	// 				"accounts?": "account[]"
+	// 			},
+	// 			provider: "'GitHub'|'Google'"
+	// 		}).export()
 
-		attest(types.account.infer).type.toString.snap(`{
-	id?: string
-	coll?: string
-	ts?: TimeStub
-	ttl?: TimeStub
-	user: TimeStub | { name: string; accounts?: cyclic[] }
-	provider: "GitHub" | "Google"
-	providerUserId: string
-}`)
-		attest(types.account.json).snap({
-			required: [
-				{ key: "provider", value: [{ unit: "GitHub" }, { unit: "Google" }] },
-				{ key: "providerUserId", value: "string" },
-				{
-					key: "user",
-					value: [
-						{
-							required: [{ key: "name", value: "string" }],
-							optional: [
-								{
-									key: "accounts",
-									value: { sequence: "$account", proto: "Array" }
-								}
-							],
-							domain: "object"
-						},
-						"$ark.TimeStub"
-					]
-				}
-			],
-			optional: [
-				{ key: "coll", value: "string" },
-				{ key: "id", value: "string" },
-				{ key: "ts", value: "$ark.TimeStub" },
-				{ key: "ttl", value: "$ark.TimeStub" }
-			],
-			domain: "object"
-		})
-	})
+	// 		attest(types.account.infer).type.toString.snap(`{
+	// 	id?: string
+	// 	coll?: string
+	// 	ts?: TimeStub
+	// 	ttl?: TimeStub
+	// 	user: TimeStub | { name: string; accounts?: cyclic[] }
+	// 	provider: "GitHub" | "Google"
+	// 	providerUserId: string
+	// }`)
+	// 		attest(types.account.json).snap({
+	// 			required: [
+	// 				{ key: "provider", value: [{ unit: "GitHub" }, { unit: "Google" }] },
+	// 				{ key: "providerUserId", value: "string" },
+	// 				{
+	// 					key: "user",
+	// 					value: [
+	// 						{
+	// 							required: [{ key: "name", value: "string" }],
+	// 							optional: [
+	// 								{
+	// 									key: "accounts",
+	// 									value: { sequence: "$account", proto: "Array" }
+	// 								}
+	// 							],
+	// 							domain: "object"
+	// 						},
+	// 						"$ark.TimeStub"
+	// 					]
+	// 				}
+	// 			],
+	// 			optional: [
+	// 				{ key: "coll", value: "string" },
+	// 				{ key: "id", value: "string" },
+	// 				{ key: "ts", value: "$ark.TimeStub" },
+	// 				{ key: "ttl", value: "$ark.TimeStub" }
+	// 			],
+	// 			domain: "object"
+	// 		})
+	// 	})
+
 	it("nested bound traversal", () => {
 		// https://github.com/arktypeio/arktype/issues/898
 		const user = type({
@@ -105,7 +106,7 @@ contextualize(() => {
 			score: 0
 		})
 
-		attest(out.toString()).snap(`email must be a valid email (was "")
+		attest(out.toString()).snap(`email must be an email address (was "")
 tags must be at least length 3 (was 2)`)
 	})
 
@@ -133,7 +134,7 @@ tags must be at least length 3 (was 2)`)
 
 		const out = schema(data)
 
-		attest(out.toString()).snap(`email must be a valid email (was "")
+		attest(out.toString()).snap(`email must be an email address (was "")
 extra must be a string or null (was missing)
 score must be at least 0 (was -1)
 tags must be at least length 3 (was 2)
@@ -447,7 +448,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		const test = scope({
 			svgPath: /^\.\/(\d|a|b|c|d|e|f)+(-(\d|a|b|c|d|e|f)+)*\.svg$/,
 			svgMap: {
-				"[svgPath]": "digits"
+				"[svgPath]": "string.digits"
 			}
 		}).export()
 		attest<

@@ -1,26 +1,26 @@
 import { caller } from "@ark/fs"
 import ts from "typescript"
-import { getBenchAssertionsAtPosition } from "../cache/getCachedAssertions.js"
+import { getBenchAssertionsAtPosition } from "../cache/getCachedAssertions.ts"
 import {
 	TsServer,
 	getAbsolutePosition,
 	getAncestors,
 	getDescendants,
 	nearestCallExpressionChild
-} from "../cache/ts.js"
+} from "../cache/ts.ts"
 import {
 	getCallExpressionsByName,
 	getInstantiationsContributedByNode
-} from "../cache/utils.js"
-import { getConfig } from "../config.js"
-import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.js"
-import type { BenchContext } from "./bench.js"
+} from "../cache/utils.ts"
+import { getConfig } from "../config.ts"
+import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.ts"
+import type { BenchContext } from "./bench.ts"
 import {
 	createTypeComparison,
 	type Measure,
 	type MeasureComparison,
 	type TypeUnit
-} from "./measure.js"
+} from "./measure.ts"
 
 export type BenchTypeAssertions = {
 	types: (instantiations?: Measure<TypeUnit>) => void

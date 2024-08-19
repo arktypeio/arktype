@@ -1,7 +1,6 @@
 import {
 	appendUnique,
 	arrayEquals,
-	cached,
 	domainDescriptions,
 	flatMorph,
 	groupBy,
@@ -16,20 +15,20 @@ import {
 	type keySet,
 	type show
 } from "@ark/util"
-import type { NodeSchema, nodeOfKind } from "../kinds.js"
-import { typePathToPropString } from "../node.js"
+import type { NodeSchema, nodeOfKind } from "../kinds.ts"
+import { typePathToPropString } from "../node.ts"
 import {
 	compileLiteralPropAccess,
 	compileSerializedValue,
 	type NodeCompiler
-} from "../shared/compile.js"
+} from "../shared/compile.ts"
 import type {
 	BaseErrorContext,
 	BaseNormalizedSchema,
 	declareNode
-} from "../shared/declare.js"
-import { Disjoint } from "../shared/disjoint.js"
-import type { ArkError } from "../shared/errors.js"
+} from "../shared/declare.ts"
+import { Disjoint } from "../shared/disjoint.ts"
+import type { ArkError } from "../shared/errors.ts"
 import {
 	implementNode,
 	unionChildKinds,
@@ -37,18 +36,18 @@ import {
 	type RootKind,
 	type UnionChildKind,
 	type nodeImplementationOf
-} from "../shared/implement.js"
-import { intersectNodes, intersectNodesRoot } from "../shared/intersections.js"
-import { registeredReference } from "../shared/registry.js"
-import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
-import { hasArkKind, pathToPropString } from "../shared/utils.js"
-import type { Domain } from "./domain.js"
-import type { Morph } from "./morph.js"
-import { BaseRoot } from "./root.js"
-import type { Unit } from "./unit.js"
-import { defineRightwardIntersections } from "./utils.js"
-
-export namespace Union {
+} from "../shared/implement.ts"
+import { intersectNodes, intersectNodesRoot } from "../shared/intersections.ts"
+import type { JsonSchema } from "../shared/jsonSchema.ts"
+import { $ark, registeredReference } from "../shared/registry.ts"
+import type { TraverseAllows, TraverseApply } from "../shared/traversal.ts"
+import { hasArkKind, pathToPropString } from "../shared/utils.ts"
+import type { Domain } from "./domain.ts"
+import type { Morph } from "./morph.ts"
+import { BaseRoot } from "./root.ts"
+import type { Unit } from "./unit.ts"
+import { defineRightwardIntersections } from "./utils.ts"
+export declare namespace Union {
 	export type ChildKind = UnionChildKind
 
 	export type ChildSchema = NodeSchema<ChildKind>
@@ -212,6 +211,23 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		this.branches[0].hasUnit(false) &&
 		this.branches[1].hasUnit(true)
 
+	get branchGroups(): BaseRoot[] {
+		const branchGroups: BaseRoot[] = []
+		let firstBooleanIndex = -1
+		this.branches.forEach(branch => {
+			if (branch.hasKind("unit") && branch.domain === "boolean") {
+				if (firstBooleanIndex === -1) {
+					firstBooleanIndex = branchGroups.length
+					branchGroups.push(branch)
+				} else branchGroups[firstBooleanIndex] = $ark.intrinsic.boolean
+				return
+			}
+			branchGroups.push(branch)
+		})
+
+		return branchGroups as never
+	}
+
 	unitBranches = this.branches.filter((n): n is Unit.Node | Morph.Node =>
 		n.in.hasKind("unit")
 	)
@@ -227,6 +243,18 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 
 	get shortDescription(): string {
 		return this.distribute(branch => branch.shortDescription, describeBranches)
+	}
+
+	protected innerToJsonSchema(): JsonSchema {
+		return {
+			anyOf: this.branchGroups.map(group =>
+				// special case to simplify { const: true } | { const: false }
+				// to the canonical JSON Schema representation { type: "boolean" }
+				group.equals($ark.intrinsic.boolean) ?
+					{ type: "boolean" }
+				:	group.toJsonSchema()
+			)
+		}
 	}
 
 	traverseAllows: TraverseAllows = (data, ctx) =>
@@ -323,7 +351,6 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		return this.isBoolean ? "boolean" : super.nestableExpression
 	}
 
-	@cached
 	discriminate(): Discriminant | null {
 		if (this.branches.length < 2) return null
 		if (this.unitBranches.length === this.branches.length) {

@@ -1,7 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import { rootNode, writeUnresolvableMessage } from "@ark/schema"
 import { type } from "arktype"
-import { writeMissingRightOperandMessage } from "arktype/internal/parser/string/shift/operand/unenclosed.js"
+import { writeMissingRightOperandMessage } from "arktype/internal/parser/string/shift/operand/unenclosed.ts"
 
 contextualize(() => {
 	describe("tuple expressions", () => {
@@ -42,13 +42,10 @@ contextualize(() => {
 					"URL",
 					"WeakMap",
 					"WeakSet",
-					"alpha",
-					"alphanumeric",
 					"any",
 					"bigint",
 					"boolean",
 					"creditCard",
-					"digits",
 					"email",
 					"false",
 					"format",
@@ -57,9 +54,7 @@ contextualize(() => {
 					"ip",
 					"key",
 					"keyof",
-					"lengthBoundable",
 					"liftArray",
-					"lowercase",
 					"merge",
 					"never",
 					"nonNegativeIntegerString",
@@ -73,9 +68,7 @@ contextualize(() => {
 					"this",
 					"true",
 					"undefined",
-					"unixTimestamp",
 					"unknown",
-					"uppercase",
 					"url",
 					"uuid"
 				]
@@ -116,13 +109,10 @@ contextualize(() => {
 					"WeakMap",
 					"WeakSet",
 					"[]",
-					"alpha",
-					"alphanumeric",
 					"any",
 					"bigint",
 					"boolean",
 					"creditCard",
-					"digits",
 					"email",
 					"false",
 					"format",
@@ -130,9 +120,7 @@ contextualize(() => {
 					"ip",
 					"key",
 					"keyof",
-					"lengthBoundable",
 					"liftArray",
-					"lowercase",
 					"merge",
 					"never",
 					"nonNegativeIntegerString",
@@ -146,9 +134,7 @@ contextualize(() => {
 					"this",
 					"true",
 					"undefined",
-					"unixTimestamp",
 					"unknown",
-					"uppercase",
 					"url",
 					"uuid",
 					"|"

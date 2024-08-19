@@ -1,11 +1,11 @@
 import { isArray, throwParseError, type Key } from "@ark/util"
-import type { nodeOfKind } from "../kinds.js"
-import type { BaseNode } from "../node.js"
-import type { BaseRoot } from "../roots/root.js"
-import type { Prop } from "../structure/prop.js"
-import type { BoundKind } from "./implement.js"
-import { isNode, pathToPropString } from "./utils.js"
-import { $ark } from "./registry.js"
+import type { nodeOfKind } from "../kinds.ts"
+import type { BaseNode } from "../node.ts"
+import type { BaseRoot } from "../roots/root.ts"
+import type { Prop } from "../structure/prop.ts"
+import type { BoundKind } from "./implement.ts"
+import { $ark } from "./registry.ts"
+import { isNode, pathToPropString } from "./utils.ts"
 
 export interface DisjointEntry<kind extends DisjointKind = DisjointKind> {
 	kind: kind

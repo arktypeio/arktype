@@ -1,25 +1,27 @@
-import type { BaseRoot } from "../roots/root.js"
-import type { BaseErrorContext, declareNode } from "../shared/declare.js"
-import { Disjoint } from "../shared/disjoint.js"
+import type { BaseRoot } from "../roots/root.ts"
+import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
+import { Disjoint } from "../shared/disjoint.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
-} from "../shared/implement.js"
-import { $ark } from "../shared/registry.js"
-import type { TraverseAllows } from "../shared/traversal.js"
+} from "../shared/implement.ts"
+import type { JsonSchema } from "../shared/jsonSchema.ts"
+import { $ark } from "../shared/registry.ts"
+import type { TraverseAllows } from "../shared/traversal.ts"
 import {
 	BaseRange,
 	parseExclusiveKey,
 	type BaseRangeInner,
-	type UnknownNormalizedRangeSchema
-} from "./range.js"
+	type UnknownExpandedRangeSchema
+} from "./range.ts"
 
-export namespace Max {
+export declare namespace Max {
 	export interface Inner extends BaseRangeInner {
 		rule: number
+		exclusive?: true
 	}
 
-	export interface NormalizedSchema extends UnknownNormalizedRangeSchema {
+	export interface NormalizedSchema extends UnknownExpandedRangeSchema {
 		rule: number
 	}
 
@@ -71,6 +73,12 @@ export class MaxNode extends BaseRange<Max.Declaration> {
 
 	traverseAllows: TraverseAllows<number> =
 		this.exclusive ? data => data < this.rule : data => data <= this.rule
+
+	reduceJsonSchema(schema: JsonSchema.Numeric): JsonSchema.Numeric {
+		if (this.exclusive) schema.exclusiveMaximum = this.rule
+		else schema.maximum = this.rule
+		return schema
+	}
 }
 
 export const Max = {

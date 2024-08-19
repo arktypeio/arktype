@@ -1,14 +1,14 @@
 import type { array } from "@ark/util"
-import type { ResolvedArkConfig } from "../config.js"
-import type { Morph } from "../roots/morph.js"
+import type { ResolvedArkConfig } from "../config.ts"
+import type { Morph } from "../roots/morph.ts"
 import {
 	ArkError,
 	ArkErrors,
 	type ArkErrorCode,
 	type ArkErrorContextInput,
 	type ArkErrorInput
-} from "./errors.js"
-import type { TraversalPath } from "./utils.js"
+} from "./errors.ts"
+import type { TraversalPath } from "./utils.ts"
 
 export type QueuedMorphs = {
 	path: TraversalPath
@@ -28,10 +28,13 @@ export class TraversalContext {
 
 	seen: { [id in string]?: unknown[] } = {}
 
-	constructor(
-		public root: unknown,
-		public config: ResolvedArkConfig
-	) {}
+	root: unknown
+	config: ResolvedArkConfig
+
+	constructor(root: unknown, config: ResolvedArkConfig) {
+		this.root = root
+		this.config = config
+	}
 
 	get currentBranch(): BranchTraversalContext | undefined {
 		return this.branches.at(-1)
@@ -42,8 +45,8 @@ export class TraversalContext {
 			path: [...this.path],
 			morphs
 		}
-		this.currentBranch?.queuedMorphs.push(input) ??
-			this.queuedMorphs.push(input)
+		if (this.currentBranch) this.currentBranch.queuedMorphs.push(input)
+		else this.queuedMorphs.push(input)
 	}
 
 	finalize(): unknown {

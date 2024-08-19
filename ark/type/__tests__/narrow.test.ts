@@ -8,7 +8,7 @@ import type {
 	constrain,
 	number,
 	string
-} from "arktype/internal/ast.js"
+} from "arktype/internal/ast.ts"
 
 contextualize(() => {
 	it("implicit problem", () => {

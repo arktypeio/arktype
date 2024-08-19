@@ -6,18 +6,11 @@ import {
 	type NumberLiteral,
 	type trim
 } from "@ark/util"
-import type { DateLiteral } from "../../../../ast.js"
-import type { DynamicStateWithRoot } from "../../reduce/dynamic.js"
-import type { StringLiteral } from "../operand/enclosed.js"
+import type { DateLiteral } from "../../../../ast.ts"
+import type { DynamicStateWithRoot } from "../../reduce/dynamic.ts"
+import type { StringLiteral } from "../operand/enclosed.ts"
 
-const unitLiteralKeywords = {
-	null: null,
-	undefined,
-	true: true,
-	false: false
-} as const
-
-type UnitLiteralKeyword = keyof typeof unitLiteralKeywords
+type UnitLiteralKeyword = "null" | "undefined" | "true" | "false"
 
 export type UnitLiteral =
 	| StringLiteral
