@@ -1,5 +1,6 @@
 import { ArkErrors } from "@ark/schema"
 import { arkNumber } from "../number/number.ts"
+import { integer } from "./integer.ts"
 import { integerString } from "./string.ts"
 import { regexStringNode } from "./utils.ts"
 
@@ -99,7 +100,7 @@ export const tryParseDatePattern = (
 	return writeFormattedExpected(opts.format)
 }
 
-export const epoch = integerString
+export const epoch = integer.$root
 	.narrow((s, ctx) => {
 		// we know this is safe since it has already
 		// been validated as an integer string

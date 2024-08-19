@@ -22,9 +22,7 @@ export const numeric = module({
 	})
 })
 
-export declare namespace numeric {
-	export type submodule = Submodule<{
-		$root: string.numeric
-		parse: (In: string.numeric) => Out<number>
-	}>
-}
+export type numeric = Submodule<{
+	$root: string.numeric
+	parse: (In: string.numeric) => Out<number>
+}>
