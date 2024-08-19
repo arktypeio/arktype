@@ -128,7 +128,7 @@ contextualize(() => {
 	// })
 
 	it("multi", () => {
-		const naturalNumber = type("number.integer>0")
+		const naturalNumber = type("integer>0")
 		attest(naturalNumber(-1.2).toString()).snap(`(-1.2) must be...
   • an integer
   • more than 0`)
@@ -162,7 +162,7 @@ isAdmin must be false, null or true (was 1)`)
 
 	it("relative path", () => {
 		const signup = type({
-			email: "string.email",
+			email: "email",
 			password: "string",
 			repeatPassword: "string"
 		}).narrow(

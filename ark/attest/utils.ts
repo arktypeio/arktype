@@ -47,7 +47,7 @@ const contextualizeRoot: ContextualizeRoot = (first, contextualTests) => {
 	const suiteNamePath =
 		testsDirChar === -1 ?
 			basename(filePath)
-		:	filePath.slice(testsDirChar + testDirName.length + 1)
+		:	filePath.slice(testsDirChar + testDirName.length)
 	const suiteName = suiteNamePath.slice(0, -testSuffix.length)
 	if (contextualTests) {
 		describe(suiteName, () =>

@@ -72,7 +72,7 @@ const Extract = genericNode("T", "U")(
 	ExtractHkt
 )
 
-const keywords: Module<arkTs.submodule> = scope(
+const keywords: Module<arkTs.keywords> = scope(
 	{
 		any: intrinsic.unknown,
 		bigint: intrinsic.bigint,
@@ -103,7 +103,7 @@ export const arkTs = {
 }
 
 export declare namespace arkTs {
-	export interface submodule {
+	export interface keywords {
 		any: any
 		bigint: bigint
 		boolean: boolean

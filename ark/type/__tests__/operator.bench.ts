@@ -71,7 +71,7 @@ bench("bound-single", () => {
 }).types([1425, "instantiations"])
 
 bench("bound-double", () => {
-	const _ = type("-7<=string.integer<99")
+	const _ = type("-7<=integer<99")
 }).types([2166, "instantiations"])
 
 bench("divisor", () => {

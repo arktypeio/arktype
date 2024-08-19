@@ -31,7 +31,7 @@ export type NonNegativeIntegerString =
 	| `${Digit}`
 	| (`${Exclude<Digit, 0>}${string}` & `${bigint}`)
 
-const keywords: Module<arkBuiltin.submodule> = scope({
+const keywords: Module<arkBuiltin.keywords> = scope({
 	key: intrinsic.key,
 	nonNegativeIntegerString: intrinsic.nonNegativeIntegerString,
 	liftArray,
@@ -43,7 +43,7 @@ export const arkBuiltin = {
 }
 
 export declare namespace arkBuiltin {
-	export interface submodule {
+	export interface keywords {
 		key: Key
 		nonNegativeIntegerString: NonNegativeIntegerString
 		liftArray: typeof liftArray.t

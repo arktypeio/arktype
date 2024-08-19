@@ -67,12 +67,12 @@ contextualize(() => {
 					...threeSixtyNoScope.import("three", "no"),
 					...scopeCreep.export(),
 					public: "hasCrept|three|no|private",
-					"#private": "string.uuid"
+					"#private": "uuid"
 				}).export()
 
 				attest(Object.keys(types)).equals(["hasCrept", "public"])
 
-				attest(types.public.json).equals(type("3|'no'|string.uuid|true").json)
+				attest(types.public.json).equals(type("3|'no'|uuid|true").json)
 
 				attest<
 					Module<{

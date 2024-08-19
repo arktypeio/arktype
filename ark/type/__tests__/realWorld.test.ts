@@ -94,9 +94,9 @@ contextualize(() => {
 		// https://github.com/arktypeio/arktype/issues/898
 		const user = type({
 			name: "string",
-			email: "string.email",
+			email: "email",
 			tags: "(string>=2)[]>=3",
-			score: "number.integer>=0"
+			score: "integer>=0"
 		})
 
 		const out = user({
@@ -106,7 +106,7 @@ contextualize(() => {
 			score: 0
 		})
 
-		attest(out.toString()).snap(`email must be an email address (was "")
+		attest(out.toString()).snap(`email must be a valid email (was "")
 tags must be at least length 3 (was 2)`)
 	})
 
@@ -115,9 +115,9 @@ tags must be at least length 3 (was 2)`)
 
 		const schema = type({
 			name: "string",
-			email: "string.email",
+			email: "email",
 			tags: "(string>=2)[]>=3",
-			score: "number.integer>=0",
+			score: "integer>=0",
 			"date?": "Date",
 			"nospace?": nospacePattern,
 			extra: "string|null"
@@ -134,7 +134,7 @@ tags must be at least length 3 (was 2)`)
 
 		const out = schema(data)
 
-		attest(out.toString()).snap(`email must be an email address (was "")
+		attest(out.toString()).snap(`email must be a valid email (was "")
 extra must be a string or null (was missing)
 score must be at least 0 (was -1)
 tags must be at least length 3 (was 2)

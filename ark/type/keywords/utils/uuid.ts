@@ -1,7 +1,7 @@
 import type { string } from "../../ast.ts"
 import type { Submodule } from "../../module.ts"
 import { scope } from "../../scope.ts"
-import { regexStringNode } from "./utils.ts"
+import { regexStringNode } from "./regex.ts"
 
 // Based on https://github.com/validatorjs/validator.js/blob/master/src/lib/isUUID.js
 const submodule = scope(
@@ -55,16 +55,16 @@ export const arkUuid = {
 
 export declare namespace arkUuid {
 	export type submodule = Submodule<{
-		$root: string.narrowed
-		v1: string.narrowed
-		v2: string.narrowed
-		v3: string.narrowed
-		v4: string.narrowed
-		v5: string.narrowed
-		v6: string.narrowed
-		v7: string.narrowed
-		v8: string.narrowed
-		nil: string.narrowed
-		max: string.narrowed
+		$root: string.matching<"?">
+		v1: string.matching<"?">
+		v2: string.matching<"?">
+		v3: string.matching<"?">
+		v4: string.matching<"?">
+		v5: string.matching<"?">
+		v6: string.matching<"?">
+		v7: string.matching<"?">
+		v8: string.matching<"?">
+		nil: string.matching<"?">
+		max: string.matching<"?">
 	}>
 }

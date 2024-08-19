@@ -9,31 +9,51 @@ import type {
 	TypeParser
 } from "../type.ts"
 import { arkBuiltin } from "./builtin.ts"
+import { arkFormat } from "./format.ts"
+import { arkJs } from "./js.ts"
 import { arkNumber } from "./number.ts"
-import type { arkObject } from "./object.ts"
+import { arkParse } from "./parse.ts"
+import { arkPlatform } from "./platform.ts"
 import { arkString } from "./string.ts"
 import { arkTs } from "./ts.ts"
+import { arkTypedArray } from "./typedArray.ts"
 
 export interface Ark
 	extends Omit<Ark.keywords, keyof Ark.Wrapped>,
-		Ark.Wrapped {}
+		Ark.Wrapped {
+	TypedArray: arkTypedArray.submodule
+	parse: arkParse.submodule
+	format: arkFormat.submodule
+}
 
 export declare namespace Ark {
-	export interface keywords extends arkTs.submodule, arkBuiltin.submodule {}
+	export interface keywords
+		extends arkTs.keywords,
+			arkJs.keywords,
+			arkPlatform.keywords,
+			arkString.keywords,
+			arkNumber.keywords,
+			arkBuiltin.keywords {}
 
 	export interface Wrapped {
 		string: arkString.submodule
 		number: arkNumber.submodule
-		object: arkObject.submodule
 	}
 }
 
 export const ambient: Scope<Ark> = scope(
 	{
 		...arkTs.keywords,
+		...arkJs.keywords,
+		...arkPlatform.keywords,
+		...arkString.keywords,
+		...arkNumber.keywords,
 		...arkBuiltin.keywords,
 		string: arkString.submodule,
-		number: arkNumber.submodule
+		number: arkNumber.submodule,
+		TypedArray: arkTypedArray.submodule,
+		parse: arkParse.submodule,
+		format: arkFormat.submodule
 	},
 	{ prereducedAliases: true, ambient: true }
 ) as never
