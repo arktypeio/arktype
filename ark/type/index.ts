@@ -2,7 +2,8 @@ export {
 	ArkError,
 	ArkErrors,
 	type ArkConfig,
-	type ArkScopeConfig
+	type ArkScopeConfig,
+	type JsonSchema
 } from "@ark/schema"
 export { Hkt } from "@ark/util"
 export type { Generic } from "./generic.ts"

@@ -48,7 +48,7 @@ export const validationSyntax = type({
 	nativeRegexLiteral: /@arktype\.io/,
 	embeddedRegexLiteral: "email&/@arktype\\.io/",
 	divisibility: "number%10", // a multiple of 10
-	bound: "alpha>10", // an alpha-only string with more than 10 characters
+	bound: "string.alpha>10", // an alpha-only string with more than 10 characters
 	range: "1<=email[]<100", // a list of 1 to 99 emails
 	narrows: ["number", ":", n => n % 2 === 1], // an odd integer
 	morphs: ["string", "=>", parseFloat] // validates a string input then parses it to a number

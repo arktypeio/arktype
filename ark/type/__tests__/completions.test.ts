@@ -10,7 +10,7 @@ contextualize(() => {
 	it("completes within objects", () => {
 		// @ts-expect-error
 		attest(() => type({ a: "a", b: "b" })).completions({
-			a: ["alpha", "alphanumeric", "any"],
+			a: ["any"],
 			b: ["bigint", "boolean"]
 		})
 	})

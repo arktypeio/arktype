@@ -1,5 +1,58 @@
 # arktype
 
+## 2.0.0-beta.6
+
+### Add `.toJsonSchema` to `Type`
+
+Convert a Type instance to an equivalent JSON Schema. Will throw a ParseError if the Type contains constraints not supported by JSON Schema or morphs.
+
+```ts
+import { type } from "arktype"
+
+const user = type({
+	name: "string",
+	"age?": "number"
+})
+
+const jsonSchema = user.toJsonSchema()
+```
+
+```json
+{
+	"type": "object",
+	"properties": {
+		"name": {
+			"type": "string"
+		},
+		"age": {
+			"type": "number"
+		}
+	},
+	"required": ["name"]
+}
+```
+
+### `.readonly()` chainable on object and array types
+
+You can now chain `.readonly()` as follows:
+
+```ts
+const readonlyObj = type({ foo: "string", bar: "number" }).readonly()
+
+type InferredAs = {
+	readonly foo: string
+	readonly bar: number
+}
+
+const readonlyObj = type("string[]").readonly()
+
+type InferredAs = readonly string[]
+```
+
+There were also a few breaking changes- previous root keywords `uppercase`, `lowercase`, `alphanumeric`, `alpha` and `digits` were moved to the `string` submodule, and should now be accessed as `string.alias`.
+
+There will be more aliases moving to their respective subtypes in the next release, after which point aliases will be stable for 2.0 🎉
+
 ## 2.0.0-beta.2
 
 ### More Generic Builtins
