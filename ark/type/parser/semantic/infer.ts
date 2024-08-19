@@ -1,6 +1,5 @@
 import type { GenericAst } from "@ark/schema"
 import type { BigintLiteral, Hkt, array } from "@ark/util"
-import type { ArkAmbient } from "arktype/config"
 import type {
 	Date,
 	DateLiteral,
@@ -13,6 +12,7 @@ import type {
 	normalizeLimit,
 	string
 } from "../../ast.ts"
+import type { ArkAmbient } from "../../config.ts"
 import type { inferIntersection } from "../../intersect.ts"
 import type {
 	UnparsedScope,

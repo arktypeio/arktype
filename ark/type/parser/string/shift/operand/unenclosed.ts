@@ -22,7 +22,7 @@ import {
 	type anyOrNever,
 	type join
 } from "@ark/util"
-import type { ArkAmbient } from "arktype/config"
+import type { ArkAmbient } from "../../../../config.ts"
 import type { GenericInstantiationAst } from "../../../semantic/infer.ts"
 import { writePrefixedPrivateReferenceMessage } from "../../../semantic/validate.ts"
 import type { DynamicState } from "../../reduce/dynamic.ts"

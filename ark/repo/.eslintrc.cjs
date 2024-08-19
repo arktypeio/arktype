@@ -100,6 +100,10 @@ module.exports = defineConfig({
 					{
 						group: ["**/index.js", "!**/structure/index.js"],
 						message: `Use a path like '../original/definition.js' instead of a package entrypoint`
+					},
+					{
+						group: ["arktype/config"],
+						message: `Use a relative path to ark/type/config.ts instead`
 					}
 				]
 			}
