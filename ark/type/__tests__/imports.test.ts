@@ -74,12 +74,11 @@ contextualize(() => {
 
 				attest(types.public.json).equals(type("3|'no'|string.uuid|true").json)
 
-				attest<
-					Module<{
-						hasCrept: true
-						public: string | true | 3
-					}>
-				>(types)
+				// have to snapshot the module since TypeScript treats it as bivariant
+				attest(types).type.toString.snap(`Module<{
+	public: string | true | 3
+	three: 3
+}>`)
 			})
 		}
 	)
