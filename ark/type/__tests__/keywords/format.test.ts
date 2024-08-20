@@ -9,8 +9,7 @@ contextualize(() => {
 	})
 
 	it("lowercase", () => {
-		const lowercase = type("string.lower")
-		const lowercase = type("string.lowered")
+		const lowercase = type("string.to.lower")
 		attest(lowercase("FOO")).equals("foo")
 		attest(lowercase(5).toString()).snap("must be a string (was number)")
 	})

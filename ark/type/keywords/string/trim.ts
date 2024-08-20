@@ -14,9 +14,9 @@ export const trimmed = regexStringNode(
 	"trimmed"
 )
 
-export type trim = (In: string) => Out<string.trimmed>
+export type toTrimmed = (In: string) => Out<string.trimmed>
 
-export const trim = rootNode({
+export const toTrimmed = rootNode({
 	in: "string",
 	morphs: (s: string) => s.trim()
 })

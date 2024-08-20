@@ -5,9 +5,5 @@ const user = type({
 })
 
 const endpoint = type({
-	apply: "string.trim",
-	username: "string.lower",
-	password: "string.toLower"
+	username: "string"
 }).pipe(({ username }) => ({ username }), user)
-
-"".toLowerCase()
