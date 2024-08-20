@@ -8,16 +8,16 @@ contextualize(() => {
 		attest(trim(5).toString()).snap("must be a string (was number)")
 	})
 
-	it("lowercase", () => {
-		const lowercase = type("string.to.lower")
-		attest(lowercase("FOO")).equals("foo")
-		attest(lowercase(5).toString()).snap("must be a string (was number)")
+	it("toLower", () => {
+		const toLower = type("string.toLower")
+		attest(toLower("FOO")).equals("foo")
+		attest(toLower(5).toString()).snap("must be a string (was number)")
 	})
 
-	it("uppercase", () => {
-		const uppercase = type("string.to.upper")
-		attest(uppercase("foo")).equals("FOO")
-		attest(uppercase(5).toString()).snap("must be a string (was number)")
+	it("toUpper", () => {
+		const toUpper = type("string.to.upper")
+		attest(toUpper("foo")).equals("FOO")
+		attest(toUpper(5).toString()).snap("must be a string (was number)")
 	})
 
 	it("capitalize", () => {

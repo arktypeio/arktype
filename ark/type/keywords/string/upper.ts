@@ -8,7 +8,7 @@ declare namespace string {
 
 export type upper = string.upper
 
-export const upper = regexStringNode(/^[A-Z]*$/, "only uppercase letters")
+export const upper = regexStringNode(/^[A-Z]*$/, "only toUpper letters")
 
 export type toUpper = (In: string) => Out<string.upper>
 

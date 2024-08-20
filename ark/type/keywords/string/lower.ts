@@ -6,7 +6,7 @@ declare namespace string {
 	export type lower = constrain<string, Branded<"lower">>
 }
 
-export const lower = regexStringNode(/^[a-z]*$/, "only lowercase letters")
+export const lower = regexStringNode(/^[a-z]*$/, "only lower letters")
 
 export type lower = string.lower
 
