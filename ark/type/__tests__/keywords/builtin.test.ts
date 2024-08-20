@@ -1,7 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import { writeNonStructuralOperandMessage } from "@ark/schema"
 import { ark, scope, type } from "arktype"
-import type { Out } from "arktype/internal/ast.ts"
+import type { Out } from "arktype/internal/keywords/ast.ts"
 
 contextualize(() => {
 	describe("liftArray", () => {

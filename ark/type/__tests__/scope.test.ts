@@ -5,7 +5,7 @@ import {
 	writeUnresolvableMessage
 } from "@ark/schema"
 import { define, scope, type, type Module } from "arktype"
-import type { distillOut, string } from "arktype/internal/ast.ts"
+import type { distillOut, string } from "arktype/internal/keywords/ast.ts"
 import { writeUnexpectedCharacterMessage } from "arktype/internal/parser/string/shift/operator/operator.ts"
 
 contextualize(() => {

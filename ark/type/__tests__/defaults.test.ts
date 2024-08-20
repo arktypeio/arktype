@@ -1,12 +1,11 @@
 import { attest, contextualize } from "@ark/attest"
 import { scope, type } from "arktype"
-import type { Date, Default } from "arktype/internal/ast.ts"
+import type { Date, Default } from "arktype/internal/keywords/ast.ts"
 import { invalidDefaultKeyKindMessage } from "arktype/internal/parser/objectLiteral.ts"
 import {
 	shallowDefaultMessage,
 	writeNonLiteralDefaultMessage
 } from "arktype/internal/parser/string/shift/operator/default.ts"
-
 contextualize(() => {
 	describe("parsing and traversal", () => {
 		it("base", () => {

@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { ark, type } from "arktype"
-import type { Out, string, To } from "arktype/internal/ast.ts"
+import type { Out, string, To } from "arktype/internal/keywords/ast.ts"
 
 contextualize(() => {
 	describe("validation", () => {

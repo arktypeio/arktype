@@ -13,7 +13,7 @@ import {
 	type Submodule,
 	type Type
 } from "arktype"
-import type { Out } from "arktype/internal/ast.ts"
+import type { Out } from "arktype/internal/keywords/ast.ts"
 
 contextualize.each(
 	"submodule",

@@ -10,7 +10,7 @@ import type {
 	Out,
 	string,
 	To
-} from "arktype/internal/ast.ts"
+} from "arktype/internal/keywords/ast.ts"
 
 contextualize(() => {
 	// 	// https://github.com/arktypeio/arktype/issues/915

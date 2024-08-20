@@ -5,7 +5,8 @@ import { type, type Type } from "arktype"
 contextualize(() => {
 	describe("type.cast", () => {
 		it("primitive", () => {
-			attest<"foo">(type("string" as type.cast<"foo">).t)
+			const foo = type("string" as type.cast<"foo">).t
+			attest<"foo">(foo)
 		})
 
 		it("object", () => {
@@ -34,6 +35,11 @@ contextualize(() => {
 			attest<Constructor>(constructable.t)
 			attest<Constructor>(constructable.infer)
 			attest<Constructor>(constructable.in.infer)
+		})
+
+		it("undefined", () => {
+			const foo = type("string" as type.cast<"foo">).t
+			attest<"foo">(foo)
 		})
 	})
 

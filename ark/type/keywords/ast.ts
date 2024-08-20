@@ -22,6 +22,9 @@ import type { type } from "./ark.ts"
 import type { number } from "./number/number.ts"
 import type { object } from "./object/object.ts"
 import type { string } from "./string/string.ts"
+export type { number } from "./number/number.ts"
+export type { object } from "./object/object.ts"
+export type { string } from "./string/string.ts"
 
 export type Comparator = "<" | "<=" | ">" | ">=" | "=="
 
