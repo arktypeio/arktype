@@ -17,19 +17,19 @@ import { epoch } from "../number/epoch.ts"
 import { submodule } from "../utils.ts"
 import { alpha } from "./alpha.ts"
 import { alphanumeric } from "./alphanumeric.ts"
-import { capitalize, capitalized } from "./capitalize.ts"
+import { capitalize, precapitalized } from "./capitalize.ts"
 import { creditCard } from "./creditCard.ts"
 import { digits } from "./digits.ts"
 import { email } from "./email.ts"
 import { integer } from "./integer.ts"
 import { ip } from "./ip.ts"
 import { json } from "./json.ts"
-import { lower, toLower } from "./lower.ts"
-import { normalize, normalized } from "./normalize.ts"
+import { lower, prelower } from "./lower.ts"
+import { normalize, preformattedNormalize } from "./normalize.ts"
 import { numeric } from "./numeric.ts"
 import { semver } from "./semver.ts"
 import { trim, trimmed } from "./trim.ts"
-import { toUpper, upper } from "./upper.ts"
+import { preupper, upper } from "./upper.ts"
 import { url } from "./url.ts"
 import { uuid } from "./uuid.ts"
 
@@ -49,13 +49,13 @@ export const string: Module<string.submodule> = submodule({
 	json,
 	trimmed,
 	trim,
-	capitalized,
+	capitalized: precapitalized,
 	toCapitalized: capitalize,
+	preupper,
 	upper,
-	toUpper,
+	prelower,
 	lower,
-	toLower,
-	normalized,
+	preformattedNormalize,
 	toNormalized: normalize,
 	epoch
 })
@@ -121,12 +121,16 @@ export declare namespace string {
 		trim: trim
 		normalize: normalize
 		capitalize: capitalize
-
 		lower: lower
-		toLower: toLower
-
 		upper: upper
-		toUpper: toUpper
+
+		preformatted: Submodule<{
+			trim: trim
+			normalize: preformattedNormalize
+			capitalize: capitalize
+			lower: prelower
+			upper: preupper
+		}>
 
 		iso8601: string.narrowed
 		epoch: string.narrowed

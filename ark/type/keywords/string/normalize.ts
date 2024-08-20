@@ -4,39 +4,47 @@ import type { Branded, constrain, Out } from "../ast.ts"
 import { submodule } from "../utils.ts"
 
 declare namespace string {
-	export type normalized = normalized.NFC
+	namespace preformatted {
+		export type normalize = normalize.NFC
 
-	export namespace normalized {
-		export type NFC = constrain<string, Branded<"normalized.NFC">>
-		export type NFD = constrain<string, Branded<"normalized.NFD">>
-		export type NFKC = constrain<string, Branded<"normalized.NFKC">>
-		export type NFKD = constrain<string, Branded<"normalized.NFKD">>
+		export namespace normalize {
+			export type NFC = constrain<string, Branded<"preformatted.normalize.NFC">>
+			export type NFD = constrain<string, Branded<"preformatted.normalize.NFD">>
+			export type NFKC = constrain<
+				string,
+				Branded<"preformatted.normalize.NFKC">
+			>
+			export type NFKD = constrain<
+				string,
+				Branded<"preformatted.normalize.NFKD">
+			>
+		}
 	}
 }
 
 export type NormalizedForm = "NFC" | "NFD" | "NFKC" | "NFKD"
 
-const normalizedNode = (form: NormalizedForm) =>
+const preformattedNormalizeNode = (form: NormalizedForm) =>
 	rootNode({
 		domain: "string",
 		predicate: (s: string) => s.normalize(form) === s,
 		meta: `${form}-normalized unicode`
 	})
 
-export const normalized = submodule({
+export const preformattedNormalize = submodule({
 	$root: "NFC",
-	NFC: normalizedNode("NFC"),
-	NFD: normalizedNode("NFD"),
-	NFKC: normalizedNode("NFKC"),
-	NFKD: normalizedNode("NFKD")
+	NFC: preformattedNormalizeNode("NFC"),
+	NFD: preformattedNormalizeNode("NFD"),
+	NFKC: preformattedNormalizeNode("NFKC"),
+	NFKD: preformattedNormalizeNode("NFKD")
 })
 
-export type normalized = Submodule<{
-	$root: string.normalized
-	NFC: string.normalized.NFC
-	NFD: string.normalized.NFD
-	NFKC: string.normalized.NFKC
-	NFKD: string.normalized.NFKD
+export type preformattedNormalize = Submodule<{
+	$root: string.preformatted.normalize
+	NFC: string.preformatted.normalize.NFC
+	NFD: string.preformatted.normalize.NFD
+	NFKC: string.preformatted.normalize.NFKC
+	NFKD: string.preformatted.normalize.NFKD
 }>
 
 const normalizeNode = (form: NormalizedForm) =>
@@ -54,9 +62,9 @@ export const normalize = submodule({
 })
 
 export type normalize = Submodule<{
-	$root: (In: string) => Out<string.normalized>
-	NFC: (In: string) => Out<string.normalized.NFC>
-	NFD: (In: string) => Out<string.normalized.NFD>
-	NFKC: (In: string) => Out<string.normalized.NFKC>
-	NFKD: (In: string) => Out<string.normalized.NFKD>
+	$root: (In: string) => Out<string.preformatted.normalize>
+	NFC: (In: string) => Out<string.preformatted.normalize.NFC>
+	NFD: (In: string) => Out<string.preformatted.normalize.NFD>
+	NFKC: (In: string) => Out<string.preformatted.normalize.NFKC>
+	NFKD: (In: string) => Out<string.preformatted.normalize.NFKD>
 }>

@@ -3,16 +3,16 @@ import type { Branded, constrain, Out } from "../ast.ts"
 import { regexStringNode } from "./utils.ts"
 
 declare namespace string {
-	export type lower = constrain<string, Branded<"lower">>
+	export type prelower = constrain<string, Branded<"prelower">>
 }
 
-export const lower = regexStringNode(/^[a-z]*$/, "only lower letters")
+export const prelower = regexStringNode(/^[a-z]*$/, "only prelower letters")
 
-export type lower = string.lower
+export type prelower = string.prelower
 
-export type toLower = (In: string) => Out<string.lower>
+export type lower = (In: string) => Out<string.prelower>
 
-export const toLower = rootNode({
+export const lower = rootNode({
 	in: "string",
 	morphs: (s: string) => s.toLowerCase()
 })

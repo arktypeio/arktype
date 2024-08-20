@@ -3,16 +3,16 @@ import type { Branded, constrain, Out } from "../ast.ts"
 import { regexStringNode } from "./utils.ts"
 
 declare namespace string {
-	export type upper = constrain<string, Branded<"upper">>
+	export type preupper = constrain<string, Branded<"preupper">>
 }
 
-export type upper = string.upper
+export type preupper = string.preupper
 
-export const upper = regexStringNode(/^[A-Z]*$/, "only toUpper letters")
+export const preupper = regexStringNode(/^[A-Z]*$/, "only upper letters")
 
-export type toUpper = (In: string) => Out<string.upper>
+export type upper = (In: string) => Out<string.preupper>
 
-export const toUpper = rootNode({
+export const upper = rootNode({
 	in: "string",
 	morphs: (s: string) => s.toUpperCase()
 })

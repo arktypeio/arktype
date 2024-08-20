@@ -6,9 +6,9 @@ declare namespace string {
 	export type capitalized = constrain<string, Branded<"capitalized">>
 }
 
-export type capitalized = string.capitalized
+export type precaptialized = string.capitalized
 
-export const capitalized = regexStringNode(/^\S(.+)$/, "capitalized")
+export const precapitalized = regexStringNode(/^\S(.+)$/, "capitalized")
 
 export type capitalize = (In: string) => Out<string.capitalized>
 
