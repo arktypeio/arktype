@@ -30,22 +30,22 @@ contextualize(() => {
 			)
 		})
 
-		it("toLower", () => {
-			const toLower = type("string.toLower")
-			attest(toLower("var")).snap("var")
-			attest(toLower("newVar").toString()).equals(
-				'must be only toLower letters (was "newVar")'
+		it("lowercase", () => {
+			const lowercase = type("string.lower")
+			attest(lowercase("var")).snap("var")
+			attest(lowercase("newVar").toString()).equals(
+				'must be only lowercase letters (was "newVar")'
 			)
 		})
 
-		it("toUpper", () => {
-			const toUpper = type("string.upper")
-			attest(toUpper("VAR")).snap("VAR")
-			attest(toUpper("CONST_VAR").toString()).equals(
-				'must be only toUpper letters (was "CONST_VAR")'
+		it("uppercase", () => {
+			const uppercase = type("string.upper")
+			attest(uppercase("VAR")).snap("VAR")
+			attest(uppercase("CONST_VAR").toString()).equals(
+				'must be only uppercase letters (was "CONST_VAR")'
 			)
-			attest(toUpper("myVar").toString()).equals(
-				'must be only toUpper letters (was "myVar")'
+			attest(uppercase("myVar").toString()).equals(
+				'must be only uppercase letters (was "myVar")'
 			)
 		})
 
@@ -85,16 +85,16 @@ contextualize(() => {
 			attest(trim(5).toString()).snap("must be a string (was number)")
 		})
 
-		it("toLower", () => {
-			const toLower = type("string.toLower")
-			attest(toLower("FOO")).equals("foo")
-			attest(toLower(5).toString()).snap("must be a string (was number)")
+		it("lowercase", () => {
+			const lowercase = type("string.toLower")
+			attest(lowercase("FOO")).equals("foo")
+			attest(lowercase(5).toString()).snap("must be a string (was number)")
 		})
 
-		it("toUpper", () => {
-			const toUpper = type("string.toUpper")
-			attest(toUpper("foo")).equals("FOO")
-			attest(toUpper(5).toString()).snap("must be a string (was number)")
+		it("uppercase", () => {
+			const uppercase = type("string.toUpper")
+			attest(uppercase("foo")).equals("FOO")
+			attest(uppercase(5).toString()).snap("must be a string (was number)")
 		})
 
 		it("capitalize", () => {

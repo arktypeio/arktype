@@ -1,22 +1,13 @@
-import { scope, type } from "arktype"
-
-const string = scope({
-	$root: "string",
-	somethingElse: "$root[]"
-}).export()
-
-const $ = scope({
-	bar: string,
-	foobra: "Exclude<boolean, true>"
-})
-
-const t = $.type("bar.somethingElse")
+import { type } from "arktype"
 
 const user = type({
 	username: "string"
 })
 
 const endpoint = type({
-	username: "string"
-})
+	apply: "string.trim",
+	username: "string.lower",
+	password: "string.toLower"
+}).pipe(({ username }) => ({ username }), user)
+
 "".toLowerCase()
