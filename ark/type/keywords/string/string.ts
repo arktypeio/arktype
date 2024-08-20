@@ -117,16 +117,20 @@ export declare namespace string {
 		semver: semver
 		ip: ip
 		json: json
+
 		trimmed: trimmed
-		toTrimmed: toTrimmed
 		capitalized: capitalized
-		toCapitalized: toCapitalized
 		normalized: normalized
-		toNormalized: toNormalized
 		lower: lower
-		toLower: toLower
 		upper: upper
-		toUpper: toUpper
+
+		to: Submodule<{
+			trimmed: toTrimmed
+			capitalized: toCapitalized
+			normalized: toNormalized
+			lower: toLower
+			upper: toUpper
+		}>
 
 		iso8601: string.narrowed
 		epoch: string.narrowed

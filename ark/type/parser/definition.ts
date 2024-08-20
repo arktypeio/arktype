@@ -12,7 +12,6 @@ import {
 	type array,
 	type defined,
 	type equals,
-	type inferred,
 	type objectKindOrDomainOf,
 	type optionalKeyOf,
 	type requiredKeyOf,
