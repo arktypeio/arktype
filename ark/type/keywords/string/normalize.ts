@@ -39,21 +39,21 @@ export type normalized = Submodule<{
 	NFKD: string.normalized.NFKD
 }>
 
-const toNormalizedNode = (form: NormalizedForm) =>
+const normalizeNode = (form: NormalizedForm) =>
 	rootNode({
 		in: "string",
 		morphs: (s: string) => s.normalize(form)
 	})
 
-export const toNormalized = submodule({
+export const normalize = submodule({
 	$root: "NFC",
-	NFC: toNormalizedNode("NFC"),
-	NFD: toNormalizedNode("NFD"),
-	NFKC: toNormalizedNode("NFKC"),
-	NFKD: toNormalizedNode("NFKD")
+	NFC: normalizeNode("NFC"),
+	NFD: normalizeNode("NFD"),
+	NFKC: normalizeNode("NFKC"),
+	NFKD: normalizeNode("NFKD")
 })
 
-export type toNormalized = Submodule<{
+export type normalize = Submodule<{
 	$root: (In: string) => Out<string.normalized>
 	NFC: (In: string) => Out<string.normalized.NFC>
 	NFD: (In: string) => Out<string.normalized.NFD>

@@ -17,19 +17,19 @@ import { epoch } from "../number/epoch.ts"
 import { submodule } from "../utils.ts"
 import { alpha } from "./alpha.ts"
 import { alphanumeric } from "./alphanumeric.ts"
-import { capitalized, toCapitalized } from "./capitalized.ts"
+import { capitalize, capitalized } from "./capitalize.ts"
 import { creditCard } from "./creditCard.ts"
 import { digits } from "./digits.ts"
 import { email } from "./email.ts"
 import { integer } from "./integer.ts"
 import { ip } from "./ip.ts"
 import { json } from "./json.ts"
-import { lower, toLower } from "./lower.ts"
-import { normalized, toNormalized } from "./normalized.ts"
+import { lowercase, lowercased } from "./lowercase.ts"
+import { normalize, normalized } from "./normalize.ts"
 import { numeric } from "./numeric.ts"
 import { semver } from "./semver.ts"
-import { toTrimmed, trimmed } from "./trim.ts"
-import { toUpper, upper } from "./upper.ts"
+import { trim, trimmed } from "./trim.ts"
+import { uppercase, uppercased } from "./uppercase.ts"
 import { url } from "./url.ts"
 import { uuid } from "./uuid.ts"
 
@@ -48,15 +48,15 @@ export const string: Module<string.submodule> = submodule({
 	url,
 	json,
 	trimmed,
-	toTrimmed,
+	trim,
 	capitalized,
-	toCapitalized,
-	upper,
-	toUpper,
-	lower,
-	toLower,
+	toCapitalized: capitalize,
+	upper: uppercased,
+	toUpper: uppercase,
+	lower: lowercased,
+	toLower: lowercase,
 	normalized,
-	toNormalized,
+	toNormalized: normalize,
 	epoch
 })
 
@@ -118,19 +118,20 @@ export declare namespace string {
 		ip: ip
 		json: json
 
+		trim: trim
 		trimmed: trimmed
-		capitalized: capitalized
-		normalized: normalized
-		lower: lower
-		upper: upper
 
-		to: Submodule<{
-			trimmed: toTrimmed
-			capitalized: toCapitalized
-			normalized: toNormalized
-			lower: toLower
-			upper: toUpper
-		}>
+		capitalize: capitalize
+		capitalized: capitalized
+
+		normalize: normalize
+		normalized: normalized
+
+		lowercase: lowercase
+		lowercased: lowercased
+
+		uppercase: uppercase
+		uppercased: uppercased
 
 		iso8601: string.narrowed
 		epoch: string.narrowed
