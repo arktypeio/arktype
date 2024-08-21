@@ -27,7 +27,7 @@ import type {
 	LimitSchemaValue,
 	UnknownRangeSchema
 } from "../refinements/range.ts"
-import type { BaseNodeDeclaration } from "../shared/declare.ts"
+import type { BaseNodeDeclaration, MetaSchema } from "../shared/declare.ts"
 import {
 	Disjoint,
 	writeUnsatisfiableExpressionError
@@ -254,16 +254,8 @@ export abstract class BaseRoot<
 		return r.extends(this as never)
 	}
 
-	configure(
-		meta: ArkEnv.meta | ((currentMeta: ArkEnv.meta) => ArkEnv.meta)
-	): this {
-		//this.configureShallowDescendants(meta)
-		const newMeta =
-			typeof meta === "function" ? meta(this.meta) : { ...this.meta, ...meta }
-		return this.$.node(this.kind, {
-			...this.inner,
-			meta: newMeta
-		}) as never
+	configure(meta: MetaSchema): this {
+		return this.configureShallowDescendants(meta)
 	}
 
 	describe(description: string): this {

@@ -106,7 +106,9 @@ contextualize(() => {
 		it("capitalize.preformatted", () => {
 			const capitalized = type("string.capitalize.preformatted")
 			attest(capitalized("Foo")).equals("Foo")
-			attest(capitalized("bar").toString()).snap()
+			attest(capitalized("bar").toString()).snap(
+				'must be capitalized (was "bar")'
+			)
 		})
 
 		it("normalize", () => {

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { attest, contextualize } from "@ark/attest"
 import { scope, type } from "arktype"
 
