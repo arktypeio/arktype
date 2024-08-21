@@ -1,6 +1,6 @@
 import { rootNode } from "@ark/schema"
 import type { Submodule } from "../../module.ts"
-import type { Branded, constrain, Out } from "../ast.ts"
+import type { Branded, constrain, To } from "../ast.ts"
 import { submodule } from "../utils.ts"
 
 declare namespace string {
@@ -29,12 +29,20 @@ const $root = rootNode({
 export const url = submodule({
 	$root,
 	parse: rootNode({
-		in: $root as never,
-		morphs: (s: string): URL => new URL(s)
+		declaredIn: $root as never,
+		in: "string",
+		morphs: (s: string, ctx) => {
+			try {
+				return new URL(s)
+			} catch {
+				return ctx.error("a URL string")
+			}
+		},
+		declaredOut: rootNode(URL)
 	})
 })
 
 export type url = Submodule<{
 	$root: string.url
-	parse: (In: string.url) => Out<URL>
+	parse: (In: string.url) => To<URL>
 }>

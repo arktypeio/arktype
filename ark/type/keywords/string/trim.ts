@@ -1,6 +1,6 @@
 import { rootNode } from "@ark/schema"
 import type { Submodule } from "../../module.ts"
-import type { Branded, constrain, Out } from "../ast.ts"
+import type { Branded, constrain, To } from "../ast.ts"
 import { submodule } from "../utils.ts"
 import { regexStringNode } from "./utils.ts"
 
@@ -9,18 +9,21 @@ declare namespace string {
 }
 
 export type trim = Submodule<{
-	$root: (In: string) => Out<string.trimmed>
+	$root: (In: string) => To<string.trimmed>
 	preformatted: string.trimmed
 }>
+
+const preformatted = regexStringNode(
+	// no leading or trailing whitespace
+	/^\S.*\S$|^\S?$/,
+	"trimmed"
+)
 
 export const trim = submodule({
 	$root: rootNode({
 		in: "string",
-		morphs: (s: string) => s.trim()
+		morphs: (s: string) => s.trim(),
+		declaredOut: preformatted
 	}),
-	preformatted: regexStringNode(
-		// no leading or trailing whitespace
-		/^\S.*\S$|^\S?$/,
-		"trimmed"
-	)
+	preformatted
 })

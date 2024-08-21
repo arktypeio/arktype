@@ -1,13 +1,11 @@
-import { node } from "@ark/schema"
-import type { Type } from "../../type.ts"
-import type { string } from "./string.ts"
+import { node, type IntersectionNode } from "@ark/schema"
 
 // Non-trivial expressions should have an explanation or attribution
 
 export const regexStringNode = (
 	regex: RegExp,
 	description: string
-): Type<string.narrowed> =>
+): IntersectionNode =>
 	node("intersection", {
 		domain: "string",
 		pattern: {

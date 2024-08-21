@@ -1,6 +1,6 @@
-import { ArkErrors, rootNode } from "@ark/schema"
+import { ArkErrors, intrinsic, rootNode } from "@ark/schema"
 import type { Submodule } from "../../module.ts"
-import type { Branded, constrain, Out } from "../ast.ts"
+import type { Branded, constrain, To } from "../ast.ts"
 import { number } from "../number/number.ts"
 import { submodule } from "../utils.ts"
 import { integer } from "./integer.ts"
@@ -112,36 +112,56 @@ const parsableDate = rootNode({
 	}
 }).assertHasKind("intersection")
 
+const epoch$root = integer.$root.internal
+	.narrow((s, ctx) => {
+		// we know this is safe since it has already
+		// been validated as an integer string
+		const n = Number.parseInt(s)
+		const out = number.epoch(n)
+		if (out instanceof ArkErrors) {
+			ctx.errors.merge(out)
+			return false
+		}
+		return true
+	})
+	.withMeta({
+		description: "an integer string representing a safe Unix timestamp"
+	})
+	.assertHasKind("intersection")
+
 const epoch = submodule({
-	$root: integer.$root
-		.narrow((s, ctx) => {
-			// we know this is safe since it has already
-			// been validated as an integer string
-			const n = Number.parseInt(s)
-			const out = number.epoch(n)
-			if (out instanceof ArkErrors) {
-				ctx.errors.merge(out)
-				return false
-			}
-			return true
-		})
-		.describe("an integer string representing a safe Unix timestamp"),
-	parse: ["$root", "=>", s => new Date(s)]
+	$root: epoch$root,
+	parse: rootNode({
+		in: epoch$root,
+		morphs: (s: string) => new Date(s),
+		declaredOut: intrinsic.Date
+	})
 })
 
+const iso8601$root = regexStringNode(
+	iso8601Matcher,
+	"an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date"
+).internal.assertHasKind("intersection")
+
 const iso8601 = submodule({
-	$root: regexStringNode(
-		iso8601Matcher,
-		"an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date"
-	),
-	parse: ["$root", "=>", s => new Date(s)]
+	$root: iso8601$root,
+	parse: rootNode({
+		in: iso8601$root,
+		morphs: (s: string) => new Date(s),
+		declaredOut: intrinsic.Date
+	})
 })
 
 export const date = submodule({
 	$root: parsableDate,
 	parse: rootNode({
-		in: parsableDate,
-		morphs: (s: string) => new Date(s)
+		declaredIn: parsableDate,
+		morphs: (s: string, ctx) => {
+			const date = new Date(s)
+			if (Number.isNaN(date.valueOf())) return ctx.error("a parsable date")
+			return date
+		},
+		declaredOut: intrinsic.Date
 	}),
 	iso8601,
 	epoch
@@ -158,13 +178,13 @@ declare namespace string {
 
 export type date = Submodule<{
 	$root: string.date
-	parse: (In: string.date) => Out<Date>
+	parse: (In: string.date) => To<Date>
 	iso8601: Submodule<{
 		$root: string.date.iso8601
-		parse: (In: string.date.iso8601) => Out<Date>
+		parse: (In: string.date.iso8601) => To<Date>
 	}>
 	epoch: Submodule<{
 		$root: string.date.epoch
-		parse: (In: string.date.epoch) => Out<Date>
+		parse: (In: string.date.epoch) => To<Date>
 	}>
 }>

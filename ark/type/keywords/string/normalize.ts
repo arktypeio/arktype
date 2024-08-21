@@ -1,6 +1,7 @@
 import { rootNode } from "@ark/schema"
+import { flatMorph } from "@ark/util"
 import type { Submodule } from "../../module.ts"
-import type { Branded, constrain, Out } from "../ast.ts"
+import type { Branded, constrain, To } from "../ast.ts"
 import { submodule } from "../utils.ts"
 
 declare namespace string {
@@ -14,59 +15,74 @@ declare namespace string {
 	}
 }
 
-export type NormalizedForm = "NFC" | "NFD" | "NFKC" | "NFKD"
+export const normalizedForms = ["NFC", "NFD", "NFKC", "NFKD"] as const
 
-const normalizedNode = (form: NormalizedForm) =>
-	rootNode({
-		domain: "string",
-		predicate: (s: string) => s.normalize(form) === s,
-		meta: `${form}-normalized unicode`
-	})
+export type NormalizedForm = (typeof normalizedForms)[number]
 
-const normalizeNode = (form: NormalizedForm) =>
-	rootNode({
-		in: "string",
-		morphs: (s: string) => s.normalize(form)
-	})
+const preformattedNodes = flatMorph(
+	normalizedForms,
+	(i, form) =>
+		[
+			form,
+			rootNode({
+				domain: "string",
+				predicate: (s: string) => s.normalize(form) === s,
+				meta: `${form}-normalized unicode`
+			})
+		] as const
+)
+
+const normalizeNodes = flatMorph(
+	normalizedForms,
+	(i, form) =>
+		[
+			form,
+			rootNode({
+				in: "string",
+				morphs: (s: string) => s.normalize(form),
+				declaredOut: preformattedNodes[form]
+			})
+		] as const
+)
 
 export type NFC = Submodule<{
-	$root: (In: string) => Out<string.normalized.NFC>
-	NFC: string.normalized.NFC
+	$root: (In: string) => To<string.normalized.NFC>
+	preformatted: string.normalized.NFC
 }>
 
 export const NFC = submodule({
-	$root: normalizeNode("NFC"),
-	NFC: normalizedNode("NFC")
+	$root: normalizeNodes.NFC,
+	preformatted: preformattedNodes.NFC
 })
 
 export type NFD = Submodule<{
-	$root: (In: string) => Out<string.normalized.NFD>
-	NFD: string.normalized.NFD
+	$root: (In: string) => To<string.normalized.NFD>
+	preformatted: string.normalized.NFD
 }>
 
 export const NFD = submodule({
-	$root: normalizeNode("NFD"),
-	NFD: normalizedNode("NFD")
+	$root: normalizeNodes.NFD,
+	preformatted: preformattedNodes.NFD
 })
 
 export type NFKC = Submodule<{
-	$root: (In: string) => Out<string.normalized.NFKC>
-	NFKC: string.normalized.NFKC
+	$root: (In: string) => To<string.normalized.NFKC>
+	preformatted: string.normalized.NFKC
 }>
 
 export const NFKC = submodule({
-	$root: normalizeNode("NFKC"),
-	NFKC: normalizedNode("NFKC")
+	$root: normalizeNodes.NFKC,
+	preformatted: preformattedNodes.NFKC
 })
 
 export type NFKD = Submodule<{
-	$root: (In: string) => Out<string.normalized.NFKD>
-	NFKD: string.normalized.NFKD
+	$root: (In: string) => To<string.normalized.NFKD>
+	preformatted: string.normalized.NFKD
 }>
 
 export const NFKD = submodule({
-	$root: normalizeNode("NFKD"),
-	NFKD: normalizedNode("NFKD")
+	$root: normalizeNodes.NFKD,
+	preformatted: preformattedNodes.NFKD
 })
 
 export const normalize = submodule({
