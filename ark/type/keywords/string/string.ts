@@ -17,7 +17,7 @@ import { epoch } from "../number/epoch.ts"
 import { submodule } from "../utils.ts"
 import { alpha } from "./alpha.ts"
 import { alphanumeric } from "./alphanumeric.ts"
-import { capitalize, precapitalized } from "./capitalize.ts"
+import { capitalize } from "./capitalize.ts"
 import { creditCard } from "./creditCard.ts"
 import { digits } from "./digits.ts"
 import { email } from "./email.ts"
@@ -71,10 +71,6 @@ export declare namespace string {
 	export type narrowed = constrain<string, Narrowed>
 
 	export type branded<rule> = constrain<string, Branded<rule>>
-
-	export type url = constrain<string, Branded<"url">>
-
-	export type integer = constrain<string, Branded<"integer">>
 
 	export type is<constraints extends Constraints> = constrain<
 		string,
