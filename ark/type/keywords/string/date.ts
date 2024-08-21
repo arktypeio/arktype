@@ -1,6 +1,8 @@
 import { ArkErrors, rootNode } from "@ark/schema"
-import type { Branded, constrain } from "../ast.ts"
+import type { Submodule } from "../../module.ts"
+import type { Branded, constrain, Out } from "../ast.ts"
 import { number } from "../number/number.ts"
+import { submodule } from "../utils.ts"
 import { integer } from "./integer.ts"
 import { regexStringNode } from "./utils.ts"
 
@@ -100,37 +102,69 @@ export const tryParseDatePattern = (
 	return writeFormattedExpected(opts.format)
 }
 
+const isParsableDate = (s: string) => !Number.isNaN(new Date(s).valueOf())
+
+const parsableDate = rootNode({
+	domain: "string",
+	predicate: {
+		meta: "a parsable date",
+		predicate: isParsableDate
+	}
+}).assertHasKind("intersection")
+
+const epoch = submodule({
+	$root: integer.$root
+		.narrow((s, ctx) => {
+			// we know this is safe since it has already
+			// been validated as an integer string
+			const n = Number.parseInt(s)
+			const out = number.epoch(n)
+			if (out instanceof ArkErrors) {
+				ctx.errors.merge(out)
+				return false
+			}
+			return true
+		})
+		.describe("an integer string representing a safe Unix timestamp"),
+	parse: ["$root", "=>", s => new Date(s)]
+})
+
+const iso8601 = submodule({
+	$root: regexStringNode(
+		iso8601Matcher,
+		"an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date"
+	),
+	parse: ["$root", "=>", s => new Date(s)]
+})
+
+export const date = submodule({
+	$root: parsableDate,
+	parse: rootNode({
+		in: parsableDate,
+		morphs: (s: string) => new Date(s)
+	}),
+	iso8601,
+	epoch
+})
+
 declare namespace string {
+	export type date = constrain<string, Branded<"date">>
+
 	export namespace date {
 		export type epoch = constrain<string, Branded<"date.epoch">>
+		export type iso8601 = constrain<string, Branded<"date.iso8601">>
 	}
 }
 
-export type epoch = string.date.epoch
-
-export const epoch = integer.$root
-	.narrow((s, ctx) => {
-		// we know this is safe since it has already
-		// been validated as an integer string
-		const n = Number.parseInt(s)
-		const out = number.epoch(n)
-		if (out instanceof ArkErrors) {
-			ctx.errors.merge(out)
-			return false
-		}
-		return true
-	})
-	.describe("an integer string representing a safe Unix timestamp")
-
-export const iso8601 = regexStringNode(
-	iso8601Matcher,
-	"an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date"
-)
-
-export const parsedate = rootNode({
-	in: "string",
-	morphs: (s: string, ctx) => {
-		const result = tryParseDatePattern(s)
-		return typeof result === "string" ? ctx.error(result) : result
-	}
-})
+export type date = Submodule<{
+	$root: string.date
+	parse: (In: string.date) => Out<Date>
+	iso8601: Submodule<{
+		$root: string.date.iso8601
+		parse: (In: string.date.iso8601) => Out<Date>
+	}>
+	epoch: Submodule<{
+		$root: string.date.epoch
+		parse: (In: string.date.epoch) => Out<Date>
+	}>
+}>

@@ -1,22 +1,16 @@
-import { scope, type } from "arktype"
+// import { scope, type } from "arktype"
 
-const string = scope({
-	$root: "string",
-	somethingElse: "$root[]"
-}).export()
+// const string = scope({
+// 	$root: "string",
+// 	somethingElse: "$root[]"
+// }).export()
 
-const $ = scope({
-	bar: string,
-	foobra: "Exclude<boolean, true>"
-})
+const a = new Date()
 
-const t = $.type("bar.somethingElse")
+a //?
 
-const user = type({
-	username: "string"
-})
+const d = new Date("foo")
 
-const endpoint = type({
-	username: "string"
-})
-"".toLowerCase()
+d //?
+
+Number.isNaN(d.valueOf()) //?

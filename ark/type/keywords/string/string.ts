@@ -19,6 +19,7 @@ import { alpha } from "./alpha.ts"
 import { alphanumeric } from "./alphanumeric.ts"
 import { capitalize } from "./capitalize.ts"
 import { creditCard } from "./creditCard.ts"
+import type { date } from "./date.ts"
 import { digits } from "./digits.ts"
 import { email } from "./email.ts"
 import { integer } from "./integer.ts"
@@ -108,14 +109,12 @@ export declare namespace string {
 		semver: semver
 		ip: ip
 		json: json
+		date: date
 
 		trim: trim
 		normalize: normalize
 		capitalize: capitalize
 		lower: lower
 		upper: upper
-
-		iso8601: string.narrowed
-		epoch: string.narrowed
 	}>
 }

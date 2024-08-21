@@ -13,7 +13,7 @@ export type SerializationOptions = {
 
 export type Json = JsonObject | JsonArray
 
-export type JsonObject = {
+export interface JsonObject {
 	[k: string]: JsonData
 }
 

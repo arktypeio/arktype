@@ -1,5 +1,4 @@
 import { rootNode } from "@ark/schema"
-import type { Json } from "@ark/util"
 import type { Submodule } from "../../module.ts"
 import type { Branded, constrain, Out } from "../ast.ts"
 import { submodule } from "../utils.ts"
@@ -35,5 +34,5 @@ export const json = submodule({
 
 export type json = Submodule<{
 	$root: string.json
-	parse: (In: string.json) => Out<Json>
+	parse: (In: string.json) => Out<object>
 }>

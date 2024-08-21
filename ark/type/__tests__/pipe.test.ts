@@ -68,10 +68,10 @@ contextualize(() => {
 		})
 
 		it("preserves validated out", () => {
-			const t = type("string").pipe.try(s => JSON.parse(s), ark.Array)
+			const t = type("string").pipe.try(s => JSON.parse(s), ark.object.Array)
 
 			const tOut = t.out
-			const expectedOut = ark.Array
+			const expectedOut = ark.object.Array
 
 			attest<typeof expectedOut.t>(tOut.t)
 			attest(tOut.expression).equals(expectedOut.expression)
@@ -374,7 +374,7 @@ contextualize(() => {
 	it("deep union", () => {
 		const types = scope({
 			a: { a: ["number>0", "=>", data => `${data}`] },
-			b: { a: "Function" },
+			b: { a: "object.Function" },
 			c: "a|b"
 		}).export()
 		attest<
@@ -747,16 +747,7 @@ contextualize(() => {
 			n: "string.numeric.parse"
 		})
 
-		attest<
-			| {
-					l: 1
-					n: (In: string) => Out<number>
-			  }
-			| {
-					r: 1
-					n: (In: string) => Out<number>
-			  }
-		>(t.t)
+		attest(t).type.toString.snap()
 
 		const serializedMorphs =
 			t.internal.firstReferenceOfKindOrThrow("morph").serializedMorphs
@@ -772,13 +763,14 @@ contextualize(() => {
 		)
 	})
 	it("fails on indiscriminable morph in nested union", () => {
-		attest(() =>
+		const indiscriminable = () =>
 			type({
-				foo: "boolean | parse.date"
+				foo: "boolean | string.date.parse"
 			}).or({
 				foo: "boolean | string.json.parse"
 			})
-		).throws
+
+		attest(indiscriminable).throws
 			.snap(`ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
 Left: { foo: (In: string) => Out<unknown> | false | true }
 Right: { foo: (In: string) => Out<unknown> | false | true }`)
