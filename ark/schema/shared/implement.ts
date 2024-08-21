@@ -274,7 +274,7 @@ export type NodeKeyImplementation<
 > = requireKeys<
 	{
 		preserveUndefined?: true
-		child?: true
+		child?: boolean
 		serialize?: (schema: instantiated) => JsonData
 		parse?: (
 			schema: Exclude<d["normalizedSchema"][k], undefined>,
@@ -284,7 +284,8 @@ export type NodeKeyImplementation<
 	// require parse if we can't guarantee the schema value will be valid on inner
 	| (d["normalizedSchema"][k] extends instantiated | undefined ? never
 	  :	"parse")
-	// require keys containing children specify it
+	// require keys containing children specify it, although it can be false in cases like
+	// declaredOut where we don't want to treat the node as a child
 	| ([instantiated] extends [listable<BaseNode>] ? "child" : never)
 >
 

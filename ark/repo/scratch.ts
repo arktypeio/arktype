@@ -1,16 +1,17 @@
-// import { scope, type } from "arktype"
+import { type } from "arktype"
 
-// const string = scope({
-// 	$root: "string",
-// 	somethingElse: "$root[]"
-// }).export()
+const user = type({
+	name: "string",
+	"age?": "0 <= number < 200"
+})
 
-const a = new Date()
+console.log(user.toJsonSchema())
 
-a //?
-
-const d = new Date("foo")
-
-d //?
-
-Number.isNaN(d.valueOf()) //?
+const result = {
+	type: "object",
+	properties: {
+		name: { type: "string" },
+		age: { type: "number", exclusiveMaximum: 200, minimum: 0 }
+	},
+	required: ["name"]
+}

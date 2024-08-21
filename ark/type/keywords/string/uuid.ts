@@ -46,7 +46,7 @@ export const uuid = submodule({
 	)
 })
 
-namespace string {
+declare namespace string {
 	export type uuid = constrain<string, Branded<"uuid">>
 
 	export namespace uuid {

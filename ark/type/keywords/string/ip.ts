@@ -22,7 +22,7 @@ const ipv6Matcher = new RegExp(
 		")(%[0-9a-zA-Z-.:]{1,})?$"
 )
 
-namespace string {
+declare namespace string {
 	export type ip = constrain<string, Branded<"ip">>
 
 	export namespace ip {

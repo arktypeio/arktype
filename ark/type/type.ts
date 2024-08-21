@@ -134,21 +134,6 @@ export class InternalTypeParser extends Callable<
 	}
 }
 
-// export type validateConstraint<t, constraint> =
-// 	t extends constraint ? unknown
-// 	:	ErrorType<`Invalid argument`, [expected: constraint]>
-
-// export type ConstrainedTypeParser<constraint, $ = {}> = <
-// 	const def,
-// 	t = inferTypeRoot<def, $>
-// >(
-// 	def: validateTypeRoot<def, $> & validateConstraint<t, constraint>
-// ) => Type<t, $>
-
-// declare const parse: ConstrainedTypeParser<{
-// 	foo: number
-// }>
-
 export type DeclarationParser<$> = <preinferred>() => {
 	// for some reason, making this a const parameter breaks preinferred validation
 	type: <const def>(

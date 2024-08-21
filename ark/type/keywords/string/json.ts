@@ -3,7 +3,7 @@ import type { Submodule } from "../../module.ts"
 import type { Branded, constrain, Out } from "../ast.ts"
 import { submodule } from "../utils.ts"
 
-namespace string {
+declare namespace string {
 	export type json = constrain<string, Branded<"json">>
 }
 
