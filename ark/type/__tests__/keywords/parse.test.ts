@@ -40,7 +40,9 @@ contextualize(() => {
 		attest(parseDate("5/21/1993").toString()).snap(
 			"Fri May 21 1993 00:00:00 GMT-0400 (Eastern Daylight Time)"
 		)
-		attest(parseDate("foo").toString()).snap('must be a valid date (was "foo")')
+		attest(parseDate("foo").toString()).snap(
+			'must be a parsable date (was "foo")'
+		)
 		attest(parseDate(5).toString()).snap("must be a string (was number)")
 	})
 

@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { ark, type } from "arktype"
-import type { Out, string, To } from "arktype/internal/keywords/ast.ts"
+import type { Out, To, string } from "arktype/internal/keywords/ast.ts"
 
 contextualize(() => {
 	it("alpha", () => {
@@ -33,7 +33,7 @@ contextualize(() => {
 		const email = type("string.email")
 		attest(email("shawn@mail.com")).snap("shawn@mail.com")
 		attest(email("shawn@email").toString()).equals(
-			'must be a valid email (was "shawn@email")'
+			'must be an email address (was "shawn@email")'
 		)
 	})
 
@@ -42,18 +42,18 @@ contextualize(() => {
 		attest(ark.string.creditCard(validCC)).equals(validCC)
 		// Regex validation
 		attest(ark.string.creditCard("0".repeat(16)).toString()).snap(
-			'must be a valid credit card number (was "0000000000000000")'
+			'must be a credit card number (was "0000000000000000")'
 		)
 		// Luhn validation
 		attest(ark.string.creditCard(validCC.slice(0, -1) + "0").toString()).snap(
-			'must be a valid credit card number (was "5489582921773370")'
+			'must be a credit card number (was "5489582921773370")'
 		)
 	})
 
 	it("semver", () => {
 		attest(ark.string.semver("1.0.0")).snap("1.0.0")
 		attest(ark.string.semver("-1.0.0").toString()).snap(
-			'must be a valid semantic version (see https://semver.org/) (was "-1.0.0")'
+			'must be a semantic version (see https://semver.org/) (was "-1.0.0")'
 		)
 	})
 

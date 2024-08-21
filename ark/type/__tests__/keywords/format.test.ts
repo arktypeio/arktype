@@ -18,7 +18,7 @@ contextualize(() => {
 		const lower = type("string.lower.preformatted")
 		attest(lower("var")).snap("var")
 		attest(lower("newVar").toString()).snap(
-			'must be only lower letters (was "newVar")'
+			'must be only lowercase letters (was "newVar")'
 		)
 	})
 
@@ -32,10 +32,10 @@ contextualize(() => {
 		const upper = type("string.upper.preformatted")
 		attest(upper("VAR")).snap("VAR")
 		attest(upper("CONST_VAR").toString()).snap(
-			'must be only upper letters (was "CONST_VAR")'
+			'must be only uppercase letters (was "CONST_VAR")'
 		)
 		attest(upper("myVar").toString()).snap(
-			'must be only upper letters (was "myVar")'
+			'must be only uppercase letters (was "myVar")'
 		)
 	})
 
