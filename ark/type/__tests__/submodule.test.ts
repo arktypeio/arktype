@@ -13,7 +13,6 @@ import {
 	type Submodule,
 	type Type
 } from "arktype"
-import type { Out } from "arktype/internal/keywords/ast.ts"
 
 contextualize.each(
 	"submodule",
@@ -103,7 +102,7 @@ contextualize.each(
 			attest(dateFrom(new Date())).instanceOf(Date)
 
 			attest(dateFrom("foobar").toString()).snap(
-				'must be a valid date (was "foobar")'
+				'must be a parsable date (was "foobar")'
 			)
 		})
 

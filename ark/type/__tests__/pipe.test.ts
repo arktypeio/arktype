@@ -753,7 +753,7 @@ contextualize(() => {
 			t.internal.firstReferenceOfKindOrThrow("morph").serializedMorphs
 
 		attest(t.expression).snap(
-			"{ l: 1, n: (In: string /^(?!^-0$)-?(?:0|[1-9]\\d*)(?:\\.\\d*[1-9])?$/) => Out<unknown> } | { n: (In: string /^(?!^-0$)-?(?:0|[1-9]\\d*)(?:\\.\\d*[1-9])?$/) => Out<unknown>, r: 1 }"
+			"{ l: 1, n: (In: string /^(?!^-0$)-?(?:0|[1-9]\\d*)(?:\\.\\d*[1-9])?$/) => Out<number> } | { n: (In: string /^(?!^-0$)-?(?:0|[1-9]\\d*)(?:\\.\\d*[1-9])?$/) => Out<number>, r: 1 }"
 		)
 		attest(t({ l: 1, n: "234" })).snap({ l: 1, n: 234 })
 		attest(t({ r: 1, n: "234" })).snap({ r: 1, n: 234 })
@@ -772,7 +772,7 @@ contextualize(() => {
 
 		attest(indiscriminable).throws
 			.snap(`ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
-Left: { foo: (In: string) => Out<unknown> | false | true }
-Right: { foo: (In: string) => Out<unknown> | false | true }`)
+Left: { foo: (In: string ) => Out<Date> | false | true }
+Right: { foo: (In: string) => Out<{ [string]: number | string | false | null | true | jsonObject | jsonData[] } | jsonData[]> | false | true }`)
 	})
 })

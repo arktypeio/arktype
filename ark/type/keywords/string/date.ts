@@ -1,6 +1,6 @@
 import { ArkErrors, intrinsic, rootNode } from "@ark/schema"
 import type { Submodule } from "../../module.ts"
-import type { Branded, constrain, To } from "../ast.ts"
+import type { Branded, To, constrain } from "../ast.ts"
 import { number } from "../number/number.ts"
 import { submodule } from "../utils.ts"
 import { integer } from "./integer.ts"
@@ -156,6 +156,7 @@ export const date = submodule({
 	$root: parsableDate,
 	parse: rootNode({
 		declaredIn: parsableDate,
+		in: "string",
 		morphs: (s: string, ctx) => {
 			const date = new Date(s)
 			if (Number.isNaN(date.valueOf())) return ctx.error("a parsable date")

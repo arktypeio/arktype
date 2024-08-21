@@ -4,22 +4,21 @@ import type {
 	AtLeastLength,
 	AtMostLength,
 	Branded,
-	constrain,
 	Constraints,
 	ExactlyLength,
 	LessThanLength,
 	Matching,
 	MoreThanLength,
 	Narrowed,
+	constrain,
 	normalizePrimitiveConstraintRoot
 } from "../ast.ts"
-import { epoch } from "../number/epoch.ts"
 import { submodule } from "../utils.ts"
 import { alpha } from "./alpha.ts"
 import { alphanumeric } from "./alphanumeric.ts"
 import { capitalize } from "./capitalize.ts"
 import { creditCard } from "./creditCard.ts"
-import type { date } from "./date.ts"
+import { date } from "./date.ts"
 import { digits } from "./digits.ts"
 import { email } from "./email.ts"
 import { integer } from "./integer.ts"
@@ -53,7 +52,7 @@ export const string: Module<string.submodule> = submodule({
 	lower,
 	normalize,
 	capitalize,
-	epoch
+	date
 })
 
 export declare namespace string {
