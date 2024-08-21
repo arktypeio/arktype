@@ -369,7 +369,7 @@ export interface Scope<$ = {}> {
 		...names: names
 	): BoundModule<
 		{
-			[k in names[number]]: $[k]
+			[k in names[number] as PrivateDeclaration<k>]: $[k]
 		} & unknown,
 		$
 	>

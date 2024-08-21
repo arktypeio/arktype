@@ -370,12 +370,14 @@ export abstract class BaseScope<$ extends {} = {}> {
 		}).bindScope(this))
 	}
 
-	import(): SchemaModule<{ [k in exportedNameOf<$>]: $[k] }>
+	import(): SchemaModule<{
+		[k in exportedNameOf<$> as PrivateDeclaration<k>]: $[k]
+	}>
 	import<names extends exportedNameOf<$>[]>(
 		...names: names
 	): SchemaModule<
 		{
-			[k in names[number]]: $[k]
+			[k in names[number] as PrivateDeclaration<k>]: $[k]
 		} & unknown
 	>
 	import(...names: string[]): SchemaModule {

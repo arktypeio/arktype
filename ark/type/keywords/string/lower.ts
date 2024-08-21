@@ -1,18 +1,22 @@
 import { rootNode } from "@ark/schema"
+import type { Submodule } from "../../module.ts"
 import type { Branded, constrain, Out } from "../ast.ts"
+import { submodule } from "../utils.ts"
 import { regexStringNode } from "./utils.ts"
 
 declare namespace string {
-	export type prelower = constrain<string, Branded<"prelower">>
+	export type lower = constrain<string, Branded<"lowercase">>
 }
 
-export const prelower = regexStringNode(/^[a-z]*$/, "only prelower letters")
+export type lower = Submodule<{
+	$root: (In: string) => Out<string.lower>
+	preformatted: string.lower
+}>
 
-export type prelower = string.prelower
-
-export type lower = (In: string) => Out<string.prelower>
-
-export const lower = rootNode({
-	in: "string",
-	morphs: (s: string) => s.toLowerCase()
+export const lower = submodule({
+	$root: rootNode({
+		in: "string",
+		morphs: (s: string) => s.toLowerCase()
+	}),
+	preformatted: regexStringNode(/^[a-z]*$/, "only lowercase letters")
 })

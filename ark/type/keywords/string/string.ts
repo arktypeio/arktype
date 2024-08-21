@@ -24,12 +24,12 @@ import { email } from "./email.ts"
 import { integer } from "./integer.ts"
 import { ip } from "./ip.ts"
 import { json } from "./json.ts"
-import { lower, prelower } from "./lower.ts"
-import { normalize, preformattedNormalize } from "./normalize.ts"
+import { lower } from "./lower.ts"
+import { normalize } from "./normalize.ts"
 import { numeric } from "./numeric.ts"
 import { semver } from "./semver.ts"
-import { trim, trimmed } from "./trim.ts"
-import { preupper, upper } from "./upper.ts"
+import { trim } from "./trim.ts"
+import { upper } from "./upper.ts"
 import { url } from "./url.ts"
 import { uuid } from "./uuid.ts"
 
@@ -47,16 +47,11 @@ export const string: Module<string.submodule> = submodule({
 	uuid,
 	url,
 	json,
-	trimmed,
 	trim,
-	capitalized: precapitalized,
-	toCapitalized: capitalize,
-	preupper,
 	upper,
-	prelower,
 	lower,
-	preformattedNormalize,
-	toNormalized: normalize,
+	normalize,
+	capitalize,
 	epoch
 })
 
@@ -123,14 +118,6 @@ export declare namespace string {
 		capitalize: capitalize
 		lower: lower
 		upper: upper
-
-		preformatted: Submodule<{
-			trim: trim
-			normalize: preformattedNormalize
-			capitalize: capitalize
-			lower: prelower
-			upper: preupper
-		}>
 
 		iso8601: string.narrowed
 		epoch: string.narrowed
