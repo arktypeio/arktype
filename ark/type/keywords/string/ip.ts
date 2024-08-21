@@ -1,6 +1,6 @@
 import type { Submodule } from "../../module.ts"
+import type { Branded, constrain } from "../ast.ts"
 import { submodule } from "../utils.ts"
-import type { string } from "./string.ts"
 import { regexStringNode } from "./utils.ts"
 
 // Based on https://github.com/validatorjs/validator.js/blob/master/src/lib/isIP.js
@@ -22,6 +22,15 @@ const ipv6Matcher = new RegExp(
 		")(%[0-9a-zA-Z-.:]{1,})?$"
 )
 
+namespace string {
+	export type ip = constrain<string, Branded<"ip">>
+
+	export namespace ip {
+		export type v4 = constrain<string, Branded<"ip.v4">>
+		export type v6 = constrain<string, Branded<"ip.v6">>
+	}
+}
+
 // Based on https://github.com/validatorjs/validator.js/blob/master/src/lib/isUUID.js
 export const ip = submodule({
 	$root: ["v4 | v6", "@", "an IP address"],
@@ -30,7 +39,7 @@ export const ip = submodule({
 })
 
 export type ip = Submodule<{
-	$root: string.narrowed
-	v4: string.narrowed
-	v6: string.narrowed
+	$root: string.ip
+	v4: string.ip.v4
+	v6: string.ip.v6
 }>

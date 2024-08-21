@@ -1,4 +1,5 @@
 import { rootNode } from "@ark/schema"
+import type { Json } from "@ark/util"
 import type { Submodule } from "../../module.ts"
 import type { Branded, constrain, Out } from "../ast.ts"
 import { submodule } from "../utils.ts"
@@ -28,13 +29,11 @@ export const json = submodule({
 	$root,
 	parse: rootNode({
 		in: $root as never,
-		// TODO: ideally we'd want to just reuse the JSON.parse result from
-		// validation here. Need some way to "cast" a type-level input/output
 		morphs: (s: string) => JSON.parse(s)
 	})
 })
 
 export type json = Submodule<{
 	$root: string.json
-	parse: (In: string.json) => Out<object>
+	parse: (In: string.json) => Out<Json>
 }>

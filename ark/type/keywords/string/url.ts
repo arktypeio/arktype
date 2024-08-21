@@ -1,8 +1,11 @@
 import { rootNode } from "@ark/schema"
 import type { Submodule } from "../../module.ts"
-import type { Out } from "../ast.ts"
+import type { Branded, constrain, Out } from "../ast.ts"
 import { submodule } from "../utils.ts"
-import type { string } from "./string.ts"
+
+namespace string {
+	export type url = constrain<string, Branded<"url">>
+}
 
 const isParsableUrl = (s: string) => {
 	if (URL.canParse as unknown) return URL.canParse(s)

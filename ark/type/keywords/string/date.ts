@@ -100,11 +100,13 @@ export const tryParseDatePattern = (
 	return writeFormattedExpected(opts.format)
 }
 
-namespace string {
-	export type epoch = constrain<string, Branded<"epoch">>
+declare namespace string {
+	export namespace date {
+		export type epoch = constrain<string, Branded<"date.epoch">>
+	}
 }
 
-export type epoch = string.epoch
+export type epoch = string.date.epoch
 
 export const epoch = integer.$root
 	.narrow((s, ctx) => {

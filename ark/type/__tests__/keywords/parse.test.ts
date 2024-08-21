@@ -49,20 +49,14 @@ contextualize(() => {
 
 	it("formData", () => {
 		const user = type({
-			email: "email",
-			file: "File",
+			email: "string.email",
+			file: "object.File",
 			tags: "liftArray<string>"
 		})
 
-		const parseUserForm = type("parse.formData").pipe(user)
+		const parseUserForm = type("object.FormData.parse").pipe(user)
 
-		attest<
-			(In: FormData) => To<{
-				email: string.matching<"?">
-				file: File
-				tags: (In: string | string[]) => Out<string[]>
-			}>
-		>(parseUserForm.t)
+		attest(parseUserForm).type.toString.snap()
 
 		// support Node18
 		if (!globalThis.File) return

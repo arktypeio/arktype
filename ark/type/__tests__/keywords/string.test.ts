@@ -30,25 +30,6 @@ contextualize(() => {
 			)
 		})
 
-		it("lower", () => {
-			const lower = type("string.lower")
-			attest(lower("var")).snap("var")
-			attest(lower("newVar").toString()).equals(
-				'must be only lower letters (was "newVar")'
-			)
-		})
-
-		it("upper", () => {
-			const upper = type("string.preupper")
-			attest(upper("VAR")).snap("VAR")
-			attest(upper("CONST_VAR").toString()).equals(
-				'must be only upper letters (was "CONST_VAR")'
-			)
-			attest(upper("myVar").toString()).equals(
-				'must be only upper letters (was "myVar")'
-			)
-		})
-
 		it("email", () => {
 			const email = type("string.email")
 			attest(email("shawn@mail.com")).snap("shawn@mail.com")
@@ -91,16 +72,41 @@ contextualize(() => {
 			attest(lower(5).toString()).snap("must be a string (was number)")
 		})
 
+		it("lower.preformatted", () => {
+			const lower = type("string.lower.preformatted")
+			attest(lower("var")).snap("var")
+			attest(lower("newVar").toString()).snap(
+				'must be only lower letters (was "newVar")'
+			)
+		})
+
 		it("upper", () => {
 			const upper = type("string.upper")
 			attest(upper("foo")).equals("FOO")
 			attest(upper(5).toString()).snap("must be a string (was number)")
 		})
 
+		it("upper.preformatted", () => {
+			const upper = type("string.upper.preformatted")
+			attest(upper("VAR")).snap("VAR")
+			attest(upper("CONST_VAR").toString()).snap(
+				'must be only upper letters (was "CONST_VAR")'
+			)
+			attest(upper("myVar").toString()).snap(
+				'must be only upper letters (was "myVar")'
+			)
+		})
+
 		it("capitalize", () => {
 			const capitalize = type("string.capitalize")
 			attest(capitalize("foo")).equals("Foo")
 			attest(capitalize(5).toString()).snap("must be a string (was number)")
+		})
+
+		it("capitalize.preformatted", () => {
+			const capitalized = type("string.capitalize.preformatted")
+			attest(capitalized("Foo")).equals("Foo")
+			attest(capitalized("bar").toString()).snap()
 		})
 
 		it("normalize", () => {
@@ -112,7 +118,7 @@ contextualize(() => {
 		})
 	})
 
-	describe("formatting", () => {
+	describe("parsing", () => {
 		it("json", () => {
 			const parseJson = type("string.json.parse")
 			attest(parseJson('{"a": "hello"}')).snap({ a: "hello" })
