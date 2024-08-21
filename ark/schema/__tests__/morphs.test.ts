@@ -36,39 +36,41 @@ contextualize(() => {
 		"declared",
 		() => {
 			const declared = rootNode({
-				domain: "object",
-				meta: "declared object",
-				predicate: () => throwError("declared out should not be invoked")
-			})
+				meta: "declared",
+				predicate: () => throwError("declared node should not be invoked")
+			}).assertHasKind("intersection")
 
-			const node = rootNode({
-				in: "string",
+			const declaredMorph = rootNode({
 				morphs: (s: string) => JSON.parse(s),
+				declaredIn: declared,
 				declaredOut: declared
 			})
-			return { declared, node }
+
+			return { declared, declaredMorph }
 		},
 		it => {
-			it("declared out", ({ node, declared }) => {
-				attest(node.json).equals({
-					in: "string",
-					morphs: node.assertHasKind("morph").serializedMorphs,
-					declarations: {
-						out: declared.json
-					}
+			it("preserves and extracts the declarations without calling them", ({
+				declaredMorph,
+				declared
+			}) => {
+				attest(declaredMorph.json).equals({
+					morphs: declaredMorph.assertHasKind("morph").serializedMorphs,
+					declaredIn: declared.json,
+					declaredOut: declared.json
 				})
 
-				attest(declared.description).snap("declared object")
-				attest(node.out.expression).equals(declared.expression)
+				attest(declared.description).snap("declared")
+				attest(declaredMorph.in.description).equals(declared.description)
+				attest(declaredMorph.out.description).equals(declared.description)
 
 				// declared validator should not be called
-				attest(node("{}")).equals({})
+				attest(declaredMorph("{}")).equals({})
 			})
 
-			it("can be piped to declared out", ({ node, declared }) => {
+			it("can be piped to declaredOut", ({ declaredMorph, declared }) => {
 				const pipeToNode = rootNode({
 					in: "string",
-					morphs: [(s: string) => s.slice(1), node]
+					morphs: [(s: string) => s.slice(1), declaredMorph]
 				})
 
 				attest(pipeToNode.out.description).equals(declared.description)

@@ -536,12 +536,6 @@ export class SchemaScope<
 
 export const rootSchemaScope: SchemaScope = new SchemaScope({})
 
-export const rootNode: SchemaScope["rootNode"] = rootSchemaScope.rootNode
-export const node: SchemaScope["node"] = rootSchemaScope.node
-export const defineSchema: SchemaScope["defineSchema"] =
-	rootSchemaScope.defineSchema
-export const genericNode: SchemaScope["generic"] = rootSchemaScope.generic
-
 export const parseAsSchema = (
 	def: unknown,
 	opts?: NodeParseOptions
@@ -639,3 +633,12 @@ const compileScope = (references: readonly BaseNode[]) =>
 				[k: `${string}Apply`]: TraverseApply
 			}
 		>()()
+
+// ensure the scope is resolved so JIT will be applied to future types
+rootSchemaScope.export()
+
+export const rootNode: SchemaScope["rootNode"] = rootSchemaScope.rootNode
+export const node: SchemaScope["node"] = rootSchemaScope.node
+export const defineSchema: SchemaScope["defineSchema"] =
+	rootSchemaScope.defineSchema
+export const genericNode: SchemaScope["generic"] = rootSchemaScope.generic

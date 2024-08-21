@@ -4,7 +4,6 @@ import {
 	omit,
 	throwInternalError,
 	throwParseError,
-	type NonEmptyList,
 	type array
 } from "@ark/util"
 import { throwInvalidOperandError, type Constraint } from "../constraint.ts"
@@ -169,15 +168,7 @@ export abstract class BaseRoot<
 		)
 	}
 
-	private applyStructuralOperation<
-		operation extends
-			| "pick"
-			| "omit"
-			| "required"
-			| "partial"
-			| "merge"
-			| "keyof"
-	>(
+	private applyStructuralOperation<operation extends StructuralOperationName>(
 		operation: operation,
 		args: Parameters<BaseRoot[operation]>
 	): Union.ChildNode[] {
@@ -198,6 +189,7 @@ export abstract class BaseRoot<
 			}
 
 			if (operation === "keyof") return structure.keyof()
+			if (operation === "get") return structure.get(...(args as [never]))
 
 			const structuralMethodName: keyof Structure.Node =
 				operation === "required" ? "require"
@@ -214,20 +206,11 @@ export abstract class BaseRoot<
 	get(...path: GettableKeyOrNode[]): BaseRoot {
 		if (path[0] === undefined) return this
 
-		if (this.hasKind("union")) {
-			return this.branches.reduce(
-				(acc, b) => acc.or(b.get(...path)),
-				$ark.intrinsic.never.internal
-			)
-		}
+		const branches = this.applyStructuralOperation("get", path)
 
-		const branch = this as {} as Union.ChildNode
-
-		return (
-			branch.structure?.get(
-				...(path as {} as NonEmptyList<GettableKeyOrNode>)
-			) ??
-			throwParseError(writeNonStructuralOperandMessage("get", this.expression))
+		return branches.reduce(
+			(acc, b) => acc.or(b.get(...path)),
+			$ark.intrinsic.never.internal
 		)
 	}
 
