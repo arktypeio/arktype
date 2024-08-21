@@ -1,9 +1,11 @@
+import { intrinsic } from "@ark/schema"
 import type { Module, Submodule } from "../../module.ts"
 import { submodule } from "../utils.ts"
 import { formData } from "./formData.ts"
 import { TypedArray } from "./typedArray.ts"
 
 export const object: Module<object.$> = submodule({
+	$root: intrinsic.object,
 	// ECMAScript Objects
 	// See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
 	Array: ["instanceof", Array],

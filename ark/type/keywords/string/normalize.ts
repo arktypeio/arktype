@@ -94,7 +94,7 @@ export const normalize = submodule({
 })
 
 export type normalize = Submodule<{
-	$root: NFC
+	$root: (In: string) => To<string.normalized.NFC>
 	NFC: NFC
 	NFD: NFD
 	NFKC: NFKC

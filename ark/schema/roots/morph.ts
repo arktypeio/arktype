@@ -6,7 +6,7 @@ import {
 	type listable,
 	type mutable
 } from "@ark/util"
-import type { nodeOfKind, NodeSchema } from "../kinds.ts"
+import type { NodeSchema, nodeOfKind } from "../kinds.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
 import type { BaseNormalizedSchema, declareNode } from "../shared/declare.ts"
 import { Disjoint } from "../shared/disjoint.ts"
@@ -193,12 +193,12 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 	}
 
 	compile(js: NodeCompiler): void {
-		if (!this.validatedIn) return
 		if (js.traversalKind === "Allows") {
+			if (!this.validatedIn) return
 			js.return(js.invoke(this.validatedIn))
 			return
 		}
-		js.line(js.invoke(this.validatedIn))
+		if (this.validatedIn) js.line(js.invoke(this.validatedIn))
 		js.line(`ctx.queueMorphs(${this.compiledMorphs})`)
 	}
 
