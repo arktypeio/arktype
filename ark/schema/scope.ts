@@ -510,17 +510,18 @@ type instantiateAliases<aliases> = {
 	:	BaseRoot
 } & unknown
 
-export const schemaScope = <
-	const aliases extends {
+export type SchemaScopeParser = <const aliases>(
+	aliases: {
 		[k in keyof aliases]: conform<
 			aliases[k],
 			RootSchema | PreparsedNodeResolution
 		>
-	}
->(
-	aliases: aliases,
+	},
 	config?: ArkScopeConfig
-): SchemaScope<instantiateAliases<aliases>> => new SchemaScope(aliases, config)
+) => SchemaScope<instantiateAliases<aliases>>
+
+export const schemaScope: SchemaScopeParser = (aliases, config) =>
+	new SchemaScope(aliases, config)
 
 export class SchemaScope<
 	$ extends InternalResolutions = InternalResolutions

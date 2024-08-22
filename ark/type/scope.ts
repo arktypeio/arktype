@@ -9,7 +9,6 @@ import {
 	type GenericArgResolutions,
 	type GenericAst,
 	type GenericParamAst,
-	type InternalResolutions,
 	type NodeKind,
 	type NodeParseOptions,
 	type NodeSchema,
@@ -215,9 +214,7 @@ export interface TypeParseOptions {
 export interface InternalScope {
 	constructor: typeof InternalScope
 }
-export class InternalScope<
-	$ extends InternalResolutions = InternalResolutions
-> extends BaseScope<$> {
+export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 	private parseCache: Record<string, StringParseResult> = {}
 
 	override preparseAlias(k: string, v: unknown): AliasDefEntry {
