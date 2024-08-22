@@ -2,7 +2,19 @@ import React from "react"
 import { FloatYourBoat } from "./FloatYourBoat.js"
 import { PlatformCloud } from "./PlatformCloud.js"
 
-export const HeroBackdrop = () => (
+// workaround for compatibility issue between MDX and Astro,
+// allows specifying this directive as a prop
+export type HeroBackdropProps = {
+	"client:only": "react"
+}
+
+declare module "react" {
+	interface HTMLAttributes<T> {
+		class?: string
+	}
+}
+
+export const HeroBackdrop = (props: HeroBackdropProps) => (
 	<div
 		style={{
 			position: "absolute",

@@ -26,7 +26,7 @@ export const types = scope({
 	},
 	contributor: {
 		// Subtypes like 'email' are inferred like 'string' but provide additional validation at runtime.
-		email: "email",
+		email: "string.email",
 		"packages?": "package[]"
 	}
 }).export()

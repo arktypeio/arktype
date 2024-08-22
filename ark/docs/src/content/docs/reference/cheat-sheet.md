@@ -6,6 +6,7 @@ sidebar:
 
 Lots more docs are on the way, but I want to highlight some of the most useful synatx patterns/features that are carried over from alpha as well as those new to the 2.0 release.
 
+<!--
 ```ts
 import { type } from "arktype"
 
@@ -77,4 +78,4 @@ if (maybeMe instanceof type.errors) {
 }
 ```
 
-There's so much more I want to share but I want to get at least an initial version of the 2.0 branch merged tonight so look forward to that next week!
+There's so much more I want to share but I want to get at least an initial version of the 2.0 branch merged tonight so look forward to that next week! -->

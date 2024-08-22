@@ -6,33 +6,33 @@
 	"scripts": {
 		"dev": "astro dev",
 		"start": "astro dev",
-		"build": "astro build",
-		"preview": "astro preview",
-		"astro": "astro"
+		"build": "pnpm check && astro build",
+		"check": "astro check --minimumSeverity warning --minimumFailingSeverity warning",
+		"preview": "astro preview"
 	},
 	"dependencies": {
-		"arktype": "workspace:*",
 		"@ark/fs": "workspace:*",
 		"@ark/util": "workspace:*",
-		"arkdark": "workspace:*",
-		"@astrojs/ts-plugin": "1.10.0",
-		"@astrojs/check": "0.9.2",
+		"@astrojs/check": "0.9.3",
 		"@astrojs/react": "3.6.2",
 		"@astrojs/starlight": "0.26.1",
-		"@shikijs/transformers": "1.13.0",
-		"@shikijs/twoslash": "1.13.0",
-		"astro": "4.14.2",
+		"@astrojs/ts-plugin": "1.10.1",
+		"@shikijs/transformers": "1.14.1",
+		"@shikijs/twoslash": "1.14.1",
+		"arkdark": "workspace:*",
+		"arktype": "workspace:*",
+		"astro": "4.14.5",
 		"astro-og-canvas": "0.5.3",
 		"canvaskit-wasm": "0.39.1",
-		"framer-motion": "11.3.28",
+		"framer-motion": "11.3.29",
 		"react": "18.3.1",
 		"react-dom": "18.3.1",
 		"sharp": "0.33.5",
-		"shiki": "1.13.0",
+		"shiki": "1.14.1",
 		"twoslash": "0.2.9"
 	},
 	"devDependencies": {
-		"@types/react": "18.3.3",
+		"@types/react": "18.3.4",
 		"@types/react-dom": "18.3.0",
 		"typescript": "catalog:"
 	}
