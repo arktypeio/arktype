@@ -45,13 +45,8 @@ contextualize(() => {
 					"any",
 					"bigint",
 					"boolean",
-					"creditCard",
-					"email",
 					"false",
-					"format",
 					"instanceof",
-					"integer",
-					"ip",
 					"key",
 					"keyof",
 					"liftArray",
@@ -61,16 +56,12 @@ contextualize(() => {
 					"null",
 					"number",
 					"object",
-					"parse",
-					"semver",
 					"string",
 					"symbol",
 					"this",
 					"true",
 					"undefined",
-					"unknown",
-					"url",
-					"uuid"
+					"unknown"
 				]
 			})
 			// @ts-expect-error
@@ -112,12 +103,7 @@ contextualize(() => {
 					"any",
 					"bigint",
 					"boolean",
-					"creditCard",
-					"email",
 					"false",
-					"format",
-					"integer",
-					"ip",
 					"key",
 					"keyof",
 					"liftArray",
@@ -127,16 +113,12 @@ contextualize(() => {
 					"null",
 					"number",
 					"object",
-					"parse",
-					"semver",
 					"string",
 					"symbol",
 					"this",
 					"true",
 					"undefined",
 					"unknown",
-					"url",
-					"uuid",
 					"|"
 				]
 			})

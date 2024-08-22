@@ -200,10 +200,10 @@ contextualize(() => {
 		attest(t.json).equals(expected())
 	})
 
-	it("root autocompletions", () => {
+	it("root autocompletion", () => {
 		// @ts-expect-error
 		attest(() => type({ a: "s" }, "|", { b: "boolean" })).completions({
-			s: ["semver", "string", "symbol"]
+			s: ["string", "symbol"]
 		})
 		// @ts-expect-error
 		attest(() => type({ a: "string" }, "|", { b: "b" })).completions({

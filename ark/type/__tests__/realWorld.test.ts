@@ -56,14 +56,14 @@ contextualize(() => {
 		}).export()
 
 		attest(types.account.infer).type.toString.snap(`{
-		id?: string
-		coll?: string
-		ts?: TimeStub
-		ttl?: TimeStub
-		user: TimeStub | { name: string; accounts?: cyclic[] }
-		provider: "GitHub" | "Google"
-		providerUserId: string
-	}`)
+	id?: string
+	coll?: string
+	ts?: TimeStub
+	ttl?: TimeStub
+	user: TimeStub | { name: string; accounts?: cyclic[] }
+	provider: "GitHub" | "Google"
+	providerUserId: string
+}`)
 		attest(types.account.json).snap({
 			required: [
 				{ key: "provider", value: [{ unit: "GitHub" }, { unit: "Google" }] },

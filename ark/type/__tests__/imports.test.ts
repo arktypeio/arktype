@@ -76,7 +76,7 @@ contextualize(() => {
 
 				// have to snapshot the module since TypeScript treats it as bivariant
 				attest(types).type.toString.snap(`Module<{
-	public: string | true | 3
+	public: true | 3 | "no" | string.uuid;
 	three: 3
 }>`)
 			})

@@ -56,7 +56,16 @@ contextualize(() => {
 
 		const parseUserForm = type("FormData.parse").pipe(user)
 
-		attest(parseUserForm).type.toString.snap()
+		attest(parseUserForm).type.toString.snap(`Type<
+	(
+		In: FormData
+	) => To<{
+		email: email
+		file: File
+		tags: (In: string | string[]) => Out<string[]>
+	}>,
+	{}
+>`)
 
 		const data = new FormData()
 		const file = new registry.FileConstructor([], "")

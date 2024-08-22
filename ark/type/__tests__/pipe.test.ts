@@ -747,7 +747,11 @@ contextualize(() => {
 			n: "string.numeric.parse"
 		})
 
-		attest(t).type.toString.snap()
+		attest(t).type.toString.snap(`Type<
+	| { l: 1; n: (In: numeric) => To<number> }
+	| { r: 1; n: (In: numeric) => To<number> },
+	{}
+>`)
 
 		const serializedMorphs =
 			t.internal.firstReferenceOfKindOrThrow("morph").serializedMorphs
