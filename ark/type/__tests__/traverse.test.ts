@@ -109,6 +109,15 @@ contextualize(() => {
 		attest(t({ a: false }).toString()).snap("a must be null (was false)")
 	})
 
+	it("serialized actual for discriminated union", () => {
+		const t = type({ a: "'foo'" }).or({ a: "'bar'" })
+		attest(t({ a: '"extra quotes"' }).toString()).snap(
+			'a must be "bar" or "foo" (was "\\"extra quotes\\"")'
+		)
+		attest(t({ a: "" }).toString()).snap('a must be "bar" or "foo" (was "")')
+		attest(t({ a: 5 }).toString()).snap('a must be "bar" or "foo" (was 5)')
+	})
+
 	// TODO: https://github.com/arktypeio/arktype/issues/962
 	// it("multiple switch", () => {
 	// 	const types = scope({

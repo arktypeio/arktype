@@ -319,7 +319,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 
 		js.line(`ctx.error({
 	expected: ${JSON.stringify(expected)},
-	actual: ${condition},
+	actual: JSON.stringify(${condition}),
 	relativePath: [${serializedPathSegments}]
 })`)
 	}
