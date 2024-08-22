@@ -7,7 +7,7 @@ import {
 	writeUnsatisfiedParameterConstraintMessage
 } from "@ark/schema"
 import { Hkt } from "@ark/util"
-import { generic, scope, type, type Generic, type Type } from "arktype"
+import { generic, scope, type, type Generic } from "arktype"
 import { emptyGenericParameterMessage } from "arktype/internal/generic.ts"
 import { writeUnclosedGroupMessage } from "arktype/internal/parser/string/reduce/shared.ts"
 import { writeInvalidGenericArgCountMessage } from "arktype/internal/parser/string/shift/operand/genericArgs.ts"
@@ -430,6 +430,22 @@ contextualize(() => {
 		}
 	)
 
+	it("args completions from type", () => {
+		const g = type("<t>", { box: "t" })
+
+		attest(() =>
+			g({
+				// @ts-expect-error
+				foo: "numb",
+				// @ts-expect-error
+				bar: "big"
+			})
+		).completions({
+			numb: ["number"],
+			big: ["bigint"]
+		})
+	})
+
 	contextualize.each(
 		"standalone",
 		() =>
@@ -439,7 +455,6 @@ contextualize(() => {
 					foo: "number"
 				}
 			])({ boxOf: "t" }),
-
 		it => {
 			it("valid", g => {
 				const t = g({
@@ -463,7 +478,11 @@ contextualize(() => {
 						foo: "string"
 					})
 				).throwsAndHasTypeError(
-					writeUnsatisfiedParameterConstraintMessage("foo", "number", "string")
+					writeUnsatisfiedParameterConstraintMessage(
+						"t",
+						"{ foo: number }",
+						"{ foo: string }"
+					)
 				)
 			})
 
@@ -575,10 +594,6 @@ contextualize(() => {
 				numb: ["number"],
 				strin: ["string"]
 			})
-		})
-
-		it("args completions", () => {
-			const g = type("<t>", { box: "t" })
 		})
 	})
 

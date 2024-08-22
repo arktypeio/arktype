@@ -7,6 +7,7 @@ import {
 	type Hkt,
 	type Json
 } from "@ark/util"
+import type { RootSchema } from "./kinds.ts"
 import type { BaseNode } from "./node.ts"
 import type { BaseRoot } from "./roots/root.ts"
 import type { BaseScope } from "./scope.ts"
@@ -183,22 +184,25 @@ export type genericParamSchemasToAst<
 export type genericHktToConstraints<hkt extends abstract new () => Hkt> =
 	InstanceType<hkt>["constraints"]
 
-export type GenericHktSchemaParser = <
+export type GenericRootParser = <
 	const paramsDef extends readonly GenericParamDef[]
 >(
 	...params: paramsDef
-) => GenericHktSchemaBodyParser<genericParamSchemasToAst<paramsDef>>
+) => GenericRootBodyParser<genericParamSchemasToAst<paramsDef>>
 
-export type GenericHktSchemaBodyParser<params extends array<GenericParamAst>> =
+export type GenericRootBodyParser<params extends array<GenericParamAst>> = {
+	<const body>(body: RootSchema): GenericRoot<params, body>
+
 	<hkt extends Hkt.constructor>(
 		instantiateDef: LazyGenericBody<GenericArgResolutions<params>>,
 		hkt: hkt
-	) => GenericRoot<
+	): GenericRoot<
 		{
 			[i in keyof params]: [params[i][0], genericHktToConstraints<hkt>[i]]
 		},
 		InstanceType<hkt>
 	>
+}
 
 export const writeUnsatisfiedParameterConstraintMessage = <
 	name extends string,

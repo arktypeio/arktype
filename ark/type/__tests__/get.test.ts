@@ -160,7 +160,7 @@ contextualize(() => {
 
 		// number subtype
 		// @ts-expect-error
-		attest(() => t.get(ark.integer)).throws(
+		attest(() => t.get(ark.number.integer)).throws(
 			writeNumberIndexMessage("number % 1", t.expression)
 		)
 	})

@@ -6,7 +6,9 @@ import {
 	printable,
 	throwInternalError,
 	throwParseError,
+	type Constructor,
 	type Dict,
+	type Fn,
 	type Json,
 	type anyOrNever,
 	type array,
@@ -19,9 +21,7 @@ import { resolveConfig, type ArkConfig } from "./config.ts"
 import {
 	GenericRoot,
 	LazyGenericBody,
-	type GenericHktSchemaBodyParser,
-	type GenericParamDef,
-	type genericParamSchemasToAst
+	type GenericRootParser
 } from "./generic.ts"
 import {
 	nodeImplementationsByKind,
@@ -173,14 +173,12 @@ export abstract class BaseScope<$ extends {} = {}> {
 		return def
 	}
 
-	generic = <const paramsDef extends readonly GenericParamDef[]>(
-		...params: paramsDef
-	): GenericHktSchemaBodyParser<genericParamSchemasToAst<paramsDef>> => {
+	generic: GenericRootParser = (...params) => {
 		const $: BaseScope = this as never
-		return instantiateDef =>
+		return (def: unknown, possibleHkt?: Constructor) =>
 			new GenericRoot(
 				params,
-				new LazyGenericBody(instantiateDef),
+				possibleHkt ? new LazyGenericBody(def as Fn) : def,
 				$,
 				$
 			) as never
