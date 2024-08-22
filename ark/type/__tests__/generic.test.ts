@@ -477,13 +477,17 @@ contextualize(() => {
 					g({
 						foo: "string"
 					})
-				).throwsAndHasTypeError(
-					writeUnsatisfiedParameterConstraintMessage(
-						"t",
-						"{ foo: number }",
-						"{ foo: string }"
-					)
 				)
+					.throws(
+						writeUnsatisfiedParameterConstraintMessage(
+							"t",
+							"{ foo: number }",
+							"{ foo: string }"
+						)
+					)
+					.type.errors(
+						`ErrorType<"Invalid argument for t", [expected: { foo: number; }]>`
+					)
 			})
 
 			it("completions", g => {
