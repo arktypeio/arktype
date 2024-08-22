@@ -497,8 +497,12 @@ const maybeResolveSubalias = (
 	if (hasArkKind(resolution, "root") || hasArkKind(resolution, "generic"))
 		return resolution
 
-	if (hasArkKind(resolution, "module"))
-		return throwParseError(writeMissingSubmoduleAccessMessage(name))
+	if (hasArkKind(resolution, "module")) {
+		return (
+			resolution.$root ??
+			throwParseError(writeMissingSubmoduleAccessMessage(name))
+		)
+	}
 
 	throwInternalError(
 		`Unexpected resolution for alias '${name}': ${printable(resolution)}`

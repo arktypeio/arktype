@@ -7,6 +7,8 @@ declare namespace string {
 	export type json = constrain<string, Branded<"json">>
 }
 
+const jsonStringDescription = "a JSON string"
+
 const isParsableJson = (s: string) => {
 	try {
 		JSON.parse(s)
@@ -19,7 +21,7 @@ const isParsableJson = (s: string) => {
 const $root = rootNode({
 	domain: "string",
 	predicate: {
-		meta: "a JSON string",
+		meta: jsonStringDescription,
 		predicate: isParsableJson
 	}
 })
@@ -28,7 +30,24 @@ export const json = submodule({
 	$root,
 	parse: rootNode({
 		in: "string",
-		morphs: (s: string) => JSON.parse(s),
+		morphs: (s: string, ctx) => {
+			if (s.length === 0) {
+				return ctx.error({
+					code: "predicate",
+					expected: jsonStringDescription,
+					actual: "empty"
+				})
+			}
+			try {
+				return JSON.parse(s)
+			} catch (e) {
+				return ctx.error({
+					code: "predicate",
+					expected: jsonStringDescription,
+					problem: `must be ${jsonStringDescription} (${e})`
+				})
+			}
+		},
 		declaredOut: intrinsic.json
 	})
 })

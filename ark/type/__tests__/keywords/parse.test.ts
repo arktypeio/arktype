@@ -6,8 +6,8 @@ contextualize(() => {
 		const parseJson = type("string.json.parse")
 		attest(parseJson('{"a": "hello"}')).snap({ a: "hello" })
 		attest(parseJson(123).toString()).snap("must be a string (was number)")
-		attest(parseJson("foo").toString()).snap(
-			'must be a valid JSON string (was "foo")'
+		attest(parseJson("{").toString()).snap(
+			"must be a JSON string (SyntaxError: Expected property name or '}' in JSON at position 1 (line 1 column 2))"
 		)
 	})
 
