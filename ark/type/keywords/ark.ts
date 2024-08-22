@@ -9,8 +9,8 @@ import type {
 	TypeParser
 } from "../type.ts"
 import { arkBuiltin } from "./builtin.ts"
+import { arkPrototypes } from "./constructors/constructors.ts"
 import { number } from "./number/number.ts"
-import { object } from "./object/object.ts"
 import { string } from "./string/string.ts"
 import { arkTs } from "./ts.ts"
 
@@ -19,22 +19,21 @@ export interface Ark
 		Ark.Wrapped {}
 
 export declare namespace Ark {
-	export interface keywords extends arkTs.submodule, arkBuiltin.submodule {}
+	export interface keywords extends arkTs, arkPrototypes, arkBuiltin {}
 
 	export interface Wrapped {
 		string: string.submodule
 		number: number.submodule
-		object: object.submodule
 	}
 }
 
 export const ambient: Scope<Ark> = scope(
 	{
-		...arkTs.keywords,
-		...arkBuiltin.keywords,
+		...arkTs,
+		...arkPrototypes,
+		...arkBuiltin,
 		string,
-		number,
-		object
+		number
 	},
 	{ prereducedAliases: true, ambient: true }
 ) as never

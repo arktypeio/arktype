@@ -68,10 +68,10 @@ contextualize(() => {
 		})
 
 		it("preserves validated out", () => {
-			const t = type("string").pipe.try(s => JSON.parse(s), ark.object.Array)
+			const t = type("string").pipe.try(s => JSON.parse(s), ark.Array)
 
 			const tOut = t.out
-			const expectedOut = ark.object.Array
+			const expectedOut = ark.Array
 
 			attest<typeof expectedOut.t>(tOut.t)
 			attest(tOut.expression).equals(expectedOut.expression)
@@ -374,7 +374,7 @@ contextualize(() => {
 	it("deep union", () => {
 		const types = scope({
 			a: { a: ["number>0", "=>", data => `${data}`] },
-			b: { a: "object.Function" },
+			b: { a: "Function" },
 			c: "a|b"
 		}).export()
 		attest<

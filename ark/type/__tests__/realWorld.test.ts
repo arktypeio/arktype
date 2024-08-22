@@ -123,7 +123,7 @@ tags must be at least length 3 (was 2)`)
 			email: "string.email",
 			tags: "(string>=2)[]>=3",
 			score: "number.integer>=0",
-			"date?": "object.Date",
+			"date?": "Date",
 			"nospace?": nospacePattern,
 			extra: "string|null"
 		})

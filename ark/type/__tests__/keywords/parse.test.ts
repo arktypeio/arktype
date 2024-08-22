@@ -1,4 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
+import { registry } from "@ark/util"
 import { type } from "arktype"
 
 contextualize(() => {
@@ -49,19 +50,16 @@ contextualize(() => {
 	it("formData", () => {
 		const user = type({
 			email: "string.email",
-			file: "object.File",
+			file: "File",
 			tags: "liftArray<string>"
 		})
 
-		const parseUserForm = type("object.FormData.parse").pipe(user)
+		const parseUserForm = type("FormData.parse").pipe(user)
 
 		attest(parseUserForm).type.toString.snap()
 
-		// support Node18
-		if (!globalThis.File) return
-
 		const data = new FormData()
-		const file = new File([], "")
+		const file = new registry.FileConstructor([], "")
 
 		data.append("email", "david@arktype.io")
 		data.append("file", file)

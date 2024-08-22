@@ -1,11 +1,10 @@
-import { intrinsic } from "@ark/schema"
+import { registry } from "@ark/util"
 import type { Module, Submodule } from "../../module.ts"
 import { submodule } from "../utils.ts"
-import { formData } from "./formData.ts"
-import { TypedArray } from "./typedArray.ts"
+import { FormDataModule } from "./FormData.ts"
+import { TypedArray } from "./TypedArray.ts"
 
-export const object: Module<object.$> = submodule({
-	$root: intrinsic.object,
+export const arkPrototypes: Module<arkPrototypes> = submodule({
 	// ECMAScript Objects
 	// See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
 	Array: ["instanceof", Array],
@@ -25,20 +24,20 @@ export const object: Module<object.$> = submodule({
 	// Must be implemented in Node etc. as well as the browser to include here
 	ArrayBuffer: ["instanceof", ArrayBuffer],
 	Blob: ["instanceof", Blob],
-	// support Node18
-	File: ["instanceof", globalThis.File ?? Blob],
-	formData,
+	File: ["instanceof", registry.FileConstructor],
+	FormData: FormDataModule,
 	Headers: ["instanceof", Headers],
 	Request: ["instanceof", Request],
 	Response: ["instanceof", Response],
 	URL: ["instanceof", URL]
 })
 
-export declare namespace object {
+export type arkPrototypes = arkPrototypes.submodule
+
+export declare namespace arkPrototypes {
 	export type submodule = Submodule<$>
 
 	interface $ extends ecmascript, platform {
-		$root: object
 		TypedArray: TypedArray
 	}
 
@@ -59,10 +58,19 @@ export declare namespace object {
 		ArrayBuffer: ArrayBuffer
 		Blob: Blob
 		File: File
-		FormData: formData
+		FormData: FormDataModule
 		Headers: Headers
 		Request: Request
 		Response: Response
 		URL: URL
 	}
+
+	export interface instances extends ecmascript, platform, TypedArray {}
+
+	export type instanceOf<name extends keyof instances = keyof instances> =
+		instances[name]
+
+	export type instanceOfExcluding<
+		name extends keyof instances = keyof instances
+	> = instances[Exclude<keyof instances, name>]
 }

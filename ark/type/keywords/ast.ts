@@ -19,11 +19,11 @@ import {
 import type { inferPipe } from "../intersect.ts"
 import type { Type } from "../type.ts"
 import type { type } from "./ark.ts"
+import type { arkPrototypes } from "./constructors/constructors.ts"
 import type { number } from "./number/number.ts"
-import type { object } from "./object/object.ts"
 import type { string } from "./string/string.ts"
+export type { arkPrototypes as object } from "./constructors/constructors.ts"
 export type { number } from "./number/number.ts"
-export type { object } from "./object/object.ts"
 export type { string } from "./string/string.ts"
 
 export type Comparator = "<" | "<=" | ">" | ">=" | "=="
@@ -371,7 +371,7 @@ type distillPostfix<
 
 /** Objects we don't want to expand during inference like Date or Promise */
 type TerminallyInferredObjectKind =
-	| object.$[Exclude<keyof object.$, "Array" | "Function" | "$root">]
+	| arkPrototypes.instanceOfExcluding<"Array" | "Function">
 	| ArkEnv.prototypes
 
 export type inferPredicate<t, predicate> =

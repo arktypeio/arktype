@@ -1,11 +1,11 @@
 import * as util from "@ark/util"
 import { Hkt, type Digit, type Key } from "@ark/util"
-import type { Module } from "../module.ts"
-import { scope } from "../scope.ts"
+import type { Module, Submodule } from "../module.ts"
 // these are needed to create some internal types
 import { genericNode, intrinsic } from "@ark/schema"
 import type { Out } from "./ast.ts"
 import "./ts.ts"
+import { submodule } from "./utils.ts"
 
 class liftArrayHkt extends Hkt<[element: unknown]> {
 	declare body: util.liftArray<this[0]> extends infer lifted ?
@@ -31,22 +31,16 @@ export type NonNegativeIntegerString =
 	| `${Digit}`
 	| (`${Exclude<Digit, 0>}${string}` & `${bigint}`)
 
-const keywords: Module<arkBuiltin.submodule> = scope({
+export const arkBuiltin: Module<arkBuiltin> = submodule({
 	key: intrinsic.key,
 	nonNegativeIntegerString: intrinsic.nonNegativeIntegerString,
 	liftArray,
 	merge
-}).export()
+})
 
-export const arkBuiltin = {
-	keywords
-}
-
-export declare namespace arkBuiltin {
-	export interface submodule {
-		key: Key
-		nonNegativeIntegerString: NonNegativeIntegerString
-		liftArray: typeof liftArray.t
-		merge: typeof merge.t
-	}
-}
+export type arkBuiltin = Submodule<{
+	key: Key
+	nonNegativeIntegerString: NonNegativeIntegerString
+	liftArray: typeof liftArray.t
+	merge: typeof merge.t
+}>

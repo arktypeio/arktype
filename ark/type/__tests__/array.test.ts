@@ -161,18 +161,14 @@ value at [1] must be a number (was false)`)
 		})
 
 		it("spreads array expressions", () => {
-			const greatSpread = type(["0", "...", "(object.Date|object.RegExp)[]"])
+			const greatSpread = type(["0", "...", "(Date|RegExp)[]"])
 			attest<[0, ...(RegExp | Date)[]]>(greatSpread.infer)
 		})
 
 		it("distributes spread unions", () => {
-			const t = type(["1", "...", "(object.Date[] | object.RegExp[])"])
+			const t = type(["1", "...", "(Date[] | RegExp[])"])
 			attest<[1, ...(Date[] | RegExp[])]>(t.infer)
-			const expected = type(["1", "...", "object.Date[]"]).or([
-				"1",
-				"...",
-				"object.RegExp[]"
-			])
+			const expected = type(["1", "...", "Date[]"]).or(["1", "...", "RegExp[]"])
 			attest(t.json).equals(expected.json)
 		})
 
@@ -283,11 +279,11 @@ value at [1] must be a number (was false)`)
 			const b = type([{ b: "boolean" }, "[]"])
 			const t = type([{ a: "string" }, "...", b]).and([
 				{ c: "number" },
-				{ d: "object.Date" }
+				{ d: "Date" }
 			])
 			const expected = type([
 				{ a: "string", c: "number" },
-				{ b: "boolean", d: "object.Date" }
+				{ b: "boolean", d: "Date" }
 			])
 			attest(t.json).equals(expected.json)
 		})
