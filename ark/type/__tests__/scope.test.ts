@@ -184,7 +184,7 @@ contextualize(() => {
 		it("ark error", () => {
 			// currently is a no-op, so only has type error
 			// @ts-expect-error
-			attest(define({ a: "boolean|foo" })).type.errors(
+			attest(() => define({ a: "boolean|foo" })).type.errors(
 				writeUnresolvableMessage("foo")
 			)
 		})
@@ -193,10 +193,12 @@ contextualize(() => {
 			const $ = scope({
 				a: "string[]"
 			})
+
 			const ok = $.define(["a[]|boolean"])
 			attest<["a[]|boolean"]>(ok)
+
 			// @ts-expect-error
-			attest($.define({ not: "ok" })).type.errors(
+			attest(() => $.define({ not: "ok" })).type.errors(
 				writeUnresolvableMessage("ok")
 			)
 		})
