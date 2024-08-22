@@ -206,12 +206,7 @@ export abstract class BaseRoot<
 	get(...path: GettableKeyOrNode[]): BaseRoot {
 		if (path[0] === undefined) return this
 
-		const branches = this.applyStructuralOperation("get", path)
-
-		return branches.reduce(
-			(acc, b) => acc.or(b.get(...path)),
-			$ark.intrinsic.never.internal
-		)
+		return this.$.rootNode(this.applyStructuralOperation("get", path)) as never
 	}
 
 	extract(r: unknown): BaseRoot {
