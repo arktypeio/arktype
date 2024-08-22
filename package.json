@@ -38,15 +38,15 @@
 		"ci:publish": "ts ./ark/repo/publish.ts"
 	},
 	"devDependencies": {
-		"arktype": "workspace:*",
 		"@ark/attest": "workspace:*",
+		"@ark/fs": "workspace:*",
 		"@ark/repo": "workspace:*",
 		"@ark/util": "workspace:*",
-		"@ark/fs": "workspace:*",
 		"@types/mocha": "10.0.7",
-		"@types/node": "22.4.0",
-		"@typescript-eslint/eslint-plugin": "8.1.0",
-		"@typescript-eslint/parser": "8.1.0",
+		"@types/node": "22.5.0",
+		"@typescript-eslint/eslint-plugin": "8.2.0",
+		"@typescript-eslint/parser": "8.2.0",
+		"arktype": "workspace:*",
 		"c8": "10.1.2",
 		"eslint": "8.57.0",
 		"eslint-config-prettier": "9.1.0",
@@ -56,13 +56,13 @@
 		"eslint-plugin-mdx": "3.1.5",
 		"eslint-plugin-only-warn": "1.1.0",
 		"eslint-plugin-prefer-arrow-functions": "3.4.1",
-		"knip": "5.27.2",
+		"knip": "5.27.3",
 		"mocha": "10.7.3",
 		"prettier": "3.3.3",
 		"tsx": "4.17.0",
 		"typescript": "catalog:",
 		"typescript-min": "npm:typescript@5.1.5",
-		"typescript-nightly": "npm:typescript@next"
+		"typescript-nightly": "npm:typescript@5.7.0-dev.20240822"
 	},
 	"mocha": {
 		"//": "IF YOU UPDATE THE MOCHA CONFIG HERE, PLEASE ALSO UPDATE ark/repo/mocha.jsonc AND .vscode/settings.json",

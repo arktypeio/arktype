@@ -1,7 +1,14 @@
-import { isArray, throwParseError, type Key } from "@ark/util"
+import {
+	isArray,
+	throwParseError,
+	type Key,
+	type PartialRecord
+} from "@ark/util"
 import type { nodeOfKind } from "../kinds.ts"
 import type { BaseNode } from "../node.ts"
+import type { Domain } from "../roots/domain.ts"
 import type { BaseRoot } from "../roots/root.ts"
+import type { DiscriminantKind } from "../roots/union.ts"
 import type { Prop } from "../structure/prop.ts"
 import type { BoundKind } from "./implement.ts"
 import { $ark } from "./registry.ts"
@@ -9,6 +16,7 @@ import { isNode, pathToPropString } from "./utils.ts"
 
 export interface DisjointEntry<kind extends DisjointKind = DisjointKind> {
 	kind: kind
+	discriminantKind: DiscriminantKind | undefined
 	l: OperandsByDisjointKind[kind]
 	r: OperandsByDisjointKind[kind]
 	path: Key[]
@@ -16,7 +24,7 @@ export interface DisjointEntry<kind extends DisjointKind = DisjointKind> {
 }
 
 type OperandsByDisjointKind = {
-	domain: nodeOfKind<"domain">
+	domain: nodeOfKind<"domain"> | Domain.Enumerable
 	unit: nodeOfKind<"unit">
 	proto: nodeOfKind<"proto">
 	presence: BaseRoot
@@ -39,6 +47,7 @@ export class Disjoint extends Array<DisjointEntry> {
 	): Disjoint {
 		return new Disjoint({
 			kind,
+			discriminantKind: discriminatKindsByDisjointKind[kind],
 			l,
 			r,
 			path: ctx?.path ?? [],
@@ -54,6 +63,7 @@ export class Disjoint extends Array<DisjointEntry> {
 	): Disjoint {
 		this.push({
 			kind,
+			discriminantKind: discriminatKindsByDisjointKind[kind],
 			l,
 			r,
 			path: ctx?.path ?? [],
@@ -119,3 +129,11 @@ export const writeUnsatisfiableExpressionError = <expression extends string>(
 
 export type writeUnsatisfiableExpressionError<expression extends string> =
 	`${expression} results in an unsatisfiable type`
+
+const discriminatKindsByDisjointKind: PartialRecord<
+	DisjointKind,
+	DiscriminantKind
+> = {
+	domain: "typeOf",
+	unit: "identity"
+}
