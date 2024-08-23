@@ -1,4 +1,5 @@
 import {
+	$ark,
 	BaseScope,
 	hasArkKind,
 	parseGeneric,
@@ -9,6 +10,7 @@ import {
 	type GenericArgResolutions,
 	type GenericAst,
 	type GenericParamAst,
+	type GenericRoot,
 	type NodeKind,
 	type NodeParseOptions,
 	type NodeSchema,
@@ -25,6 +27,7 @@ import {
 } from "@ark/schema"
 import {
 	domainOf,
+	flatMorph,
 	hasDomain,
 	isThunk,
 	throwParseError,
@@ -38,7 +41,7 @@ import {
 	type noSuggest,
 	type nominal
 } from "@ark/util"
-import type { ArkAmbient } from "./config.ts"
+import type { ArkAmbient, ArkSchemaRegistry } from "./config.ts"
 import {
 	parseGenericParams,
 	type GenericDeclaration,
@@ -47,7 +50,7 @@ import {
 	type baseGenericConstraints,
 	type parseValidGenericParams
 } from "./generic.ts"
-import type { type } from "./keywords/ark.ts"
+import type { Ark, type } from "./keywords/ark.ts"
 import type {
 	BoundModule,
 	Module,
@@ -123,14 +126,6 @@ export type bindThis<def> = {}
 /** nominal type for an unparsed definition used during scope bootstrapping */
 type Def<def = {}> = nominal<def, "unparsed">
 
-export type resolutionToAst<alias extends string, resolution> =
-	[resolution] extends [anyOrNever] ? InferredAst<resolution, alias>
-	: resolution extends Def<infer def> ? DefAst<def, alias>
-	: resolution extends { [arkKind]: "module"; $root: infer root } ?
-		InferredAst<root, alias>
-	: resolution extends GenericAst ? resolution
-	: InferredAst<resolution, alias>
-
 /** sentinel indicating a scope that will be associated with a generic has not yet been parsed */
 export type UnparsedScope = "$"
 
@@ -190,6 +185,14 @@ export type resolve<
 	args
 >
 
+export type resolutionToAst<alias extends string, resolution> =
+	[resolution] extends [anyOrNever] ? InferredAst<resolution, alias>
+	: resolution extends Def<infer def> ? DefAst<def, alias>
+	: resolution extends { [arkKind]: "module"; $root: infer root } ?
+		InferredAst<root, alias>
+	: resolution extends GenericAst ? resolution
+	: InferredAst<resolution, alias>
+
 export type inferResolution<resolution, $, args> =
 	[resolution] extends [anyOrNever] ? resolution
 	: resolution extends { [inferred]: infer t } ? t
@@ -203,8 +206,6 @@ export type moduleKeyOf<$> = {
 		:	k & string
 	:	never
 }[keyof $]
-
-// export type Resolutions = { [k in keyof Ark]: Ark[k] extends Submodule<infer $> ? `${k & string}.` }
 
 type unwrapPreinferred<t> = t extends type.cast<infer inferred> ? inferred : t
 
@@ -221,6 +222,12 @@ export type tryInferSubmoduleReference<$, token> =
 		:	tryInferSubmoduleReference<ArkAmbient.$[submodule], subalias>
 	:	never
 
+export interface ArkTypeRegistry extends ArkSchemaRegistry {
+	typeAttachments?: Module<Ark.typeAttachments>
+}
+
+export const $arkTypeRegistry: ArkTypeRegistry = $ark
+
 export interface ParseContext extends TypeParseOptions {
 	$: InternalScope
 }
@@ -232,6 +239,7 @@ export interface TypeParseOptions {
 export interface InternalScope {
 	constructor: typeof InternalScope
 }
+
 export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 	private parseCache: Record<string, StringParseResult> = {}
 
@@ -265,10 +273,29 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		]
 	}
 
+	protected cacheGetter<name extends keyof this>(
+		name: name,
+		value: this[name]
+	): this[name] {
+		Object.defineProperty(this, name, { value })
+		return value
+	}
+
 	override preparseRoot(def: unknown): unknown {
 		if (isThunk(def) && !hasArkKind(def, "generic")) return def()
 
 		return def
+	}
+
+	get ambientAttachments(): Ark.boundTypeAttachments<$> | undefined {
+		if (!$arkTypeRegistry.typeAttachments) return
+		return this.cacheGetter(
+			"ambientAttachments",
+			flatMorph($arkTypeRegistry.typeAttachments, (k, v) => [
+				k,
+				(v as {} as BaseRoot | GenericRoot).bindScope(this)
+			]) as never
+		)
 	}
 
 	parse<defaultable extends boolean = false>(

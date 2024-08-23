@@ -1,37 +1,58 @@
-import type { ArkErrors } from "@ark/schema"
+import type { ArkErrors, arkKind } from "@ark/schema"
 import type { inferred } from "@ark/util"
 import type { GenericParser } from "../generic.ts"
-import type { Module } from "../module.ts"
-import { scope, type Scope } from "../scope.ts"
+import type { BoundModule, Module } from "../module.ts"
+import { $arkTypeRegistry, scope, type Scope } from "../scope.ts"
 import type {
 	DeclarationParser,
 	DefinitionParser,
 	TypeParser
 } from "../type.ts"
-import { arkBuiltin } from "./builtin.ts"
+import { arkBuiltins } from "./builtins.ts"
 import { arkPrototypes } from "./constructors/constructors.ts"
 import { number } from "./number/number.ts"
 import { string } from "./string/string.ts"
-import { arkTs } from "./ts.ts"
+import { arkTsGenerics, arkTsKeywords } from "./ts.ts"
+import { submodule } from "./utils.ts"
 
 export interface Ark
-	extends Omit<Ark.keywords, keyof Ark.Wrapped>,
-		Ark.Wrapped {}
+	extends Omit<Ark.keywords, keyof Ark.wrapped>,
+		Ark.wrapped {}
 
 export declare namespace Ark {
-	export interface keywords extends arkTs, arkPrototypes, arkBuiltin {}
+	export interface keywords
+		extends arkTsKeywords,
+			arkTsGenerics,
+			arkPrototypes,
+			arkBuiltins {}
 
-	export interface Wrapped {
+	export interface wrapped {
 		string: string.submodule
 		number: number.submodule
 	}
+
+	export interface typeAttachments extends arkTsKeywords, arkBuiltins {
+		Record: arkTsGenerics["Record"]
+	}
+
+	export interface boundTypeAttachments<$>
+		extends Omit<BoundModule<typeAttachments, $>, arkKind> {}
+
+	export interface resolutions {}
 }
+
+$arkTypeRegistry.typeAttachments = submodule({
+	...arkTsKeywords,
+	...arkBuiltins,
+	Record: arkTsGenerics.Record
+})
 
 export const ambient: Scope<Ark> = scope(
 	{
-		...arkTs,
+		...arkTsKeywords,
+		...arkTsGenerics,
 		...arkPrototypes,
-		...arkBuiltin,
+		...arkBuiltins,
 		string,
 		number
 	},

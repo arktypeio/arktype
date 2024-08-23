@@ -15,6 +15,7 @@ import {
 	type parseValidGenericParams,
 	type validateParameterString
 } from "./generic.ts"
+import type { Ark } from "./keywords/ark.ts"
 import type { distillIn, distillOut } from "./keywords/ast.ts"
 import type {
 	inferDefinition,
@@ -41,7 +42,7 @@ export type TypeParserAttachments =
 	// map over to remove call signatures
 	Omit<TypeParser, never>
 
-export interface TypeParser<$ = {}> {
+export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	// Parse and check the definition, returning either the original input for a
 	// valid definition or a string representing an error message.
 	<const def, r = Type<inferTypeRoot<def, $>, $>>(
@@ -90,6 +91,16 @@ export class InternalTypeParser extends Callable<
 	TypeParserAttachments
 > {
 	constructor($: InternalScope) {
+		const attach: TypeParserAttachments = Object.assign(
+			{
+				errors: ArkErrors,
+				raw: $.parseRoot as never,
+				module: $.constructor.module,
+				scope: $.constructor.scope
+			} satisfies Omit<TypeParserAttachments, keyof Ark.typeAttachments>,
+			// this won't be defined during bootstrapping, but externall always will be
+			$.ambientAttachments!
+		)
 		super(
 			(...args) => {
 				if (args.length === 1) {
@@ -123,12 +134,7 @@ export class InternalTypeParser extends Callable<
 			},
 			{
 				bind: $,
-				attach: {
-					errors: ArkErrors,
-					raw: $.parseRoot as never,
-					module: $.constructor.module,
-					scope: $.constructor.scope
-				}
+				attach
 			}
 		)
 	}
