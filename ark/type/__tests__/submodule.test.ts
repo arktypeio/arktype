@@ -2,11 +2,14 @@ import { attest, contextualize } from "@ark/attest"
 import {
 	writeMissingSubmoduleAccessMessage,
 	writeNonSubmoduleDotMessage,
-	writeUnresolvableMessage
+	writeUnresolvableMessage,
+	type arkKind
 } from "@ark/schema"
+import type { anyOrNever } from "@ark/util"
 import {
 	scope,
 	type,
+	type Ark,
 	type BoundModule,
 	type Module,
 	type Scope,
@@ -23,6 +26,20 @@ contextualize.each(
 			sub: scope({ alias: "number" }).export()
 		}),
 	it => {
+		it("no module keywords resolve directly", () => {
+			// precomputed deepResolutions should only have inferred types and generics as values
+			type illegalDirectModuleReferences = {
+				[k in keyof Ark.deepResolutions]: [Ark.deepResolutions[k]] extends (
+					[anyOrNever]
+				) ?
+					never
+				: Ark.deepResolutions[k] extends { [arkKind]: "module" } ? k
+				: never
+			}[keyof Ark.deepResolutions]
+
+			attest<never>({} as illegalDirectModuleReferences)
+		})
+
 		it("base", $ => {
 			const types = $.export()
 			attest<

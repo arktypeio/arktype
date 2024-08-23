@@ -20,25 +20,30 @@ export interface Ark
 
 export declare namespace Ark {
 	export interface keywords
-		extends arkTsKeywords,
-			arkTsGenerics,
-			arkPrototypes,
-			arkBuiltins {}
+		extends arkTsKeywords.$,
+			arkTsGenerics.$,
+			// don't include TypedArray since it is only a Module
+			arkPrototypes.keywords,
+			arkBuiltins.$ {}
 
-	export interface wrapped {
+	export interface wrapped extends arkPrototypes.wrapped {
 		string: string.submodule
 		number: number.submodule
 	}
 
-	export interface typeAttachments extends Omit<arkTsKeywords, arkKind> {
-		Key: arkBuiltins["Key"]
-		Record: arkTsGenerics["Record"]
+	export interface typeAttachments extends arkTsKeywords.$ {
+		Key: arkBuiltins.$["Key"]
+		Record: arkTsGenerics.$["Record"]
 	}
 
 	export interface boundTypeAttachments<$>
 		extends Omit<BoundModule<typeAttachments, $>, arkKind> {}
 
-	export interface resolutions {}
+	export interface deepResolutions
+		extends keywords,
+			string.deepResolutions,
+			number.deepResolutions,
+			arkPrototypes.deepResolutions {}
 }
 
 $arkTypeRegistry.typeAttachments = {

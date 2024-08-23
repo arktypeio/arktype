@@ -1,5 +1,6 @@
 import { ArkErrors, intrinsic, rootNode } from "@ark/schema"
-import type { Submodule } from "../../module.ts"
+import type { Module, Submodule } from "../../module.ts"
+import type { type } from "../ark.ts"
 import type { Branded, To, constrain } from "../ast.ts"
 import { number } from "../number/number.ts"
 import { submodule } from "../utils.ts"
@@ -152,7 +153,16 @@ const iso = submodule({
 	})
 })
 
-export const date = submodule({
+declare namespace string {
+	export type date = constrain<string, Branded<"date">>
+
+	export namespace date {
+		export type epoch = constrain<string, Branded<"date.epoch">>
+		export type iso = constrain<string, Branded<"date.iso">>
+	}
+}
+
+export const stringDate: stringDate.module = submodule({
 	$root: parsableDate,
 	parse: rootNode({
 		declaredIn: parsableDate,
@@ -168,24 +178,51 @@ export const date = submodule({
 	epoch
 })
 
-declare namespace string {
-	export type date = constrain<string, Branded<"date">>
+export declare namespace stringDate {
+	export type module = Module<stringDate.submodule>
 
-	export namespace date {
-		export type epoch = constrain<string, Branded<"date.epoch">>
-		export type iso = constrain<string, Branded<"date.iso">>
+	export type submodule = Submodule<$>
+
+	export type $ = {
+		$root: string.date
+		parse: (In: string.date) => To<Date>
+		iso: iso.submodule
+		epoch: epoch.submodule
+	}
+
+	type shallowResolutions = {
+		[k in keyof $ as `string.date.${k}`]: $[k] extends type.cast<infer t> ? t
+		:	$[k]
+	}
+
+	export interface deepResolutions
+		extends shallowResolutions,
+			iso.deepResolutions,
+			epoch.deepResolutions {}
+
+	export namespace iso {
+		export type submodule = Submodule<$>
+
+		export type $ = {
+			$root: string.date.iso
+			parse: (In: string.date.iso) => To<Date>
+		}
+
+		export type deepResolutions = {
+			[k in keyof $ as `string.date.iso.${k}`]: $[k]
+		}
+	}
+
+	export namespace epoch {
+		export type submodule = Submodule<$>
+
+		export type $ = {
+			$root: string.date.epoch
+			parse: (In: string.date.epoch) => To<Date>
+		}
+
+		export type deepResolutions = {
+			[k in keyof $ as `string.date.epoch.${k}`]: $[k]
+		}
 	}
 }
-
-export type date = Submodule<{
-	$root: string.date
-	parse: (In: string.date) => To<Date>
-	iso: Submodule<{
-		$root: string.date.iso
-		parse: (In: string.date.iso) => To<Date>
-	}>
-	epoch: Submodule<{
-		$root: string.date.epoch
-		parse: (In: string.date.epoch) => To<Date>
-	}>
-}>

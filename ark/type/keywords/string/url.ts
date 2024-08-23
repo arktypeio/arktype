@@ -1,5 +1,5 @@
 import { rootNode } from "@ark/schema"
-import type { Submodule } from "../../module.ts"
+import type { Module, Submodule } from "../../module.ts"
 import type { Branded, constrain, To } from "../ast.ts"
 import { submodule } from "../utils.ts"
 
@@ -26,7 +26,7 @@ const $root = rootNode({
 	}
 })
 
-export const url = submodule({
+export const url: url.module = submodule({
 	$root,
 	parse: rootNode({
 		declaredIn: $root as never,
@@ -42,7 +42,17 @@ export const url = submodule({
 	})
 })
 
-export type url = Submodule<{
-	$root: string.url
-	parse: (In: string.url) => To<URL>
-}>
+export declare namespace url {
+	export type module = Module<submodule>
+
+	export type submodule = Submodule<$>
+
+	export type $ = {
+		$root: string.url
+		parse: (In: string.url) => To<URL>
+	}
+
+	export type deepResolutions = {
+		[k in keyof $ as `string.url.${k}`]: $[k]
+	}
+}
