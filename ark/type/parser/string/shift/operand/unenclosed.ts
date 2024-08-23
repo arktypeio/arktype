@@ -157,10 +157,25 @@ type tryResolve<
 	token extends keyof ArkAmbient.$ ?
 		parseResolution<s, unscanned, token, ArkAmbient.$[token], $, args>
 	: token extends `${number}` ? state.setRoot<s, token, unscanned>
-	: token extends `${infer submodule}.${infer reference}` ?
+	: token extends (
+		`${infer submodule extends keyof $ & string}.${infer reference}`
+	) ?
 		tryResolveSubmodule<
 			token,
-			submodule,
+			$[submodule],
+			reference,
+			s,
+			unscanned,
+			$,
+			args,
+			[submodule]
+		>
+	: token extends (
+		`${infer submodule extends keyof ArkAmbient.$ & string}.${infer reference}`
+	) ?
+		tryResolveSubmodule<
+			token,
+			ArkAmbient.$[submodule],
 			reference,
 			s,
 			unscanned,
@@ -174,7 +189,7 @@ type tryResolve<
 
 type tryResolveSubmodule<
 	token extends string,
-	submodule extends string,
+	resolution,
 	reference extends string,
 	s extends StaticState,
 	unscanned extends string,
@@ -182,58 +197,24 @@ type tryResolveSubmodule<
 	args,
 	submodulePath extends string[]
 > =
-	submodule extends keyof $ ?
-		_tryResolveSubmodule<
-			token,
-			submodule,
-			reference,
-			s,
-			unscanned,
-			$,
-			args,
-			submodulePath
-		>
-	: submodule extends keyof ArkAmbient.$ ?
-		_tryResolveSubmodule<
-			token,
-			submodule,
-			reference,
-			s,
-			unscanned,
-			ArkAmbient.$,
-			args,
-			submodulePath
-		>
-	:	state.error<writeNonSubmoduleDotMessage<submodule>>
-
-type _tryResolveSubmodule<
-	token extends string,
-	submodule extends keyof $ & string,
-	reference extends string,
-	s extends StaticState,
-	unscanned extends string,
-	$,
-	args,
-	submodulePath extends string[]
-> =
-	$[submodule] extends { [arkKind]: "module" } ?
-		reference extends keyof $[submodule] ?
-			parseResolution<s, unscanned, token, $[submodule][reference], $, args>
+	resolution extends { [arkKind]: "module" } ?
+		reference extends keyof resolution ?
+			parseResolution<s, unscanned, token, resolution[reference], $, args>
 		: reference extends (
-			`${infer nestedSubmodule extends keyof $[submodule] & string}.${infer nestedReference}`
+			`${infer nestedSubmodule extends keyof resolution & string}.${infer nestedReference}`
 		) ?
-			_tryResolveSubmodule<
+			tryResolveSubmodule<
 				token,
-				nestedSubmodule,
+				resolution[nestedSubmodule],
 				nestedReference,
 				s,
 				unscanned,
-				$[submodule],
+				$,
 				args,
 				[...submodulePath, nestedSubmodule]
 			>
-		:	unresolvableState<s, reference, $[submodule], {}, submodulePath>
-	:	state.error<writeNonSubmoduleDotMessage<submodule>>
+		:	unresolvableState<s, reference, $, {}, submodulePath>
+	:	state.error<writeNonSubmoduleDotMessage<token>>
 
 /** Provide valid completions for the current token, or fallback to an
  * unresolvable error if there are none */
