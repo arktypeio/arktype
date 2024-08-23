@@ -182,6 +182,20 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 		)
 	}
 
+	declareIn(declaredIn: Morph.ChildNode): MorphNode {
+		return this.$.node("morph", {
+			...this.inner,
+			declaredIn
+		})
+	}
+
+	declareOut(declaredOut: BaseRoot): MorphNode {
+		return this.$.node("morph", {
+			...this.inner,
+			declaredOut
+		})
+	}
+
 	expression = `(In: ${this.in.expression}) => Out<${this.out.expression}>`
 
 	get shortDescription(): string {

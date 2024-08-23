@@ -345,8 +345,21 @@ type distillArray<
 	constraints extends DistilledKind,
 	prefix extends array
 > =
+	_distillArray<t, io, constraints, prefix> extends infer result ?
+		t extends unknown[] ?
+			result
+		:	// if the original array was readonly, ensure the distilled array is as well
+			Readonly<t>
+	:	never
+
+type _distillArray<
+	t extends array,
+	io extends IoKind,
+	constraints extends DistilledKind,
+	prefix extends array
+> =
 	t extends readonly [infer head, ...infer tail] ?
-		distillArray<
+		_distillArray<
 			tail,
 			io,
 			constraints,

@@ -257,7 +257,7 @@ export abstract class BaseNode<
 	}
 
 	assertHasKind<kind extends NodeKind>(kind: kind): nodeOfKind<kind> {
-		if (!this.kind === (kind as never))
+		if (this.kind !== kind)
 			throwError(`${this.kind} node was not of asserted kind ${kind}`)
 		return this as never
 	}

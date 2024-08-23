@@ -62,7 +62,7 @@ contextualize(() => {
 	) => To<{
 		email: email
 		file: File
-		tags: (In: string | string[]) => Out<string[]>
+		tags: (In: string | string[]) => To<string[]>
 	}>,
 	{}
 >`)

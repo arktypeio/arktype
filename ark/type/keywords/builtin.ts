@@ -4,21 +4,21 @@ import { Hkt, type Key } from "@ark/util"
 import type { Module, Submodule } from "../module.ts"
 import { submodule } from "./utils.ts"
 
-class mergeHkt extends Hkt<[base: object, props: object]> {
+class MergeHkt extends Hkt<[base: object, props: object]> {
 	declare body: util.merge<this[0], this[1]>
 }
 
-const merge = genericNode(
+const Merge = genericNode(
 	["base", intrinsic.object],
 	["props", intrinsic.object]
-)(args => args.base.merge(args.props), mergeHkt)
+)(args => args.base.merge(args.props), MergeHkt)
 
 export const arkBuiltin: Module<arkBuiltin> = submodule({
-	key: intrinsic.key,
-	merge
+	Key: intrinsic.key,
+	Merge
 })
 
 export type arkBuiltin = Submodule<{
-	key: Key
-	merge: typeof merge.t
+	Key: Key
+	Merge: typeof Merge.t
 }>

@@ -17,7 +17,8 @@ import {
 	tryParseWellFormedNumber,
 	type BigintLiteral,
 	type anyOrNever,
-	type join
+	type join,
+	type lastOf
 } from "@ark/util"
 import type { ArkAmbient } from "../../../../config.ts"
 import type { GenericInstantiationAst } from "../../../semantic/infer.ts"
@@ -213,24 +214,26 @@ type tryResolveSubmodule<
 				args,
 				[...submodulePath, nestedSubmodule]
 			>
-		:	unresolvableState<s, reference, $, {}, submodulePath>
-	:	state.error<writeNonSubmoduleDotMessage<token>>
+		:	unresolvableState<s, reference, resolution, {}, submodulePath>
+	:	state.error<writeNonSubmoduleDotMessage<lastOf<submodulePath>>>
 
 /** Provide valid completions for the current token, or fallback to an
  * unresolvable error if there are none */
 export type unresolvableState<
 	s extends StaticState,
 	token extends string,
-	$,
+	resolutions,
 	args,
 	submodulePath extends string[]
 > =
-	validReferenceFromToken<token, $, args, submodulePath> extends never ?
+	validReferenceFromToken<token, resolutions, args, submodulePath> extends (
+		never
+	) ?
 		state.error<
 			writeUnresolvableMessage<qualifiedReference<token, submodulePath>>
 		>
 	:	state.completion<`${s["scanned"]}${qualifiedReference<
-			validReferenceFromToken<token, $, args, submodulePath>,
+			validReferenceFromToken<token, resolutions, args, submodulePath>,
 			submodulePath
 		>}`>
 
