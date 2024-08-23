@@ -25,4 +25,49 @@ contextualize(() => {
 		attest(out).snap({ foo: "bar" })
 		attest(original).snap({ foo: "  bar  " })
 	})
+
+	it("can be configured to mutate", () => {
+		const types = type.module(
+			{
+				trimAndMutate: { foo: "string.trim" }
+			},
+			{ clone: false }
+		)
+
+		const original = { foo: "  bar  " }
+
+		const out = types.trimAndMutate(original)
+
+		attest(out).snap({ foo: "bar" })
+		attest(out).is(original)
+	})
+
+	it("can be configured to mutate", () => {
+		const types = type.module(
+			{
+				trimAndMutate: { foo: "string.trim" }
+			},
+			{ clone: false }
+		)
+
+		const original = { foo: "  bar  " }
+
+		const out = types.trimAndMutate(original)
+
+		attest(out).snap({ foo: "bar" })
+		attest(out).is(original)
+	})
+
+	it("can be configured to use a custom clone implementation", () => {
+		const types = type.module(
+			{
+				trimAndMutate: { foo: "string.trim" }
+			},
+			{ clone: original => ({ ...original, customCloned: true }) }
+		)
+
+		const out = types.trimAndMutate({ foo: "  bar  " })
+
+		attest(out).unknown.snap({ foo: "bar", customCloned: true })
+	})
 })

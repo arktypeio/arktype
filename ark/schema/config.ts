@@ -78,14 +78,20 @@ export const mergeConfigs = (
 	return result
 }
 
+export type CloneImplementation = <original extends object>(
+	original: original
+) => original
+
 export interface ArkConfig extends Partial<Readonly<NodeConfigsByKind>> {
 	jitless?: boolean
+	clone?: boolean | CloneImplementation
 }
 
 export type resolveConfig<config extends ArkConfig> = show<
 	{
 		[k in keyof ArkConfig]-?: k extends NodeKind ? Required<config[k]>
-		:	config[k]
+		: k extends "clone" ? CloneImplementation | false
+		: config[k]
 	} & Omit<config, keyof ArkConfig>
 >
 
