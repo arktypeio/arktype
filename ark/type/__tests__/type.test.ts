@@ -1,5 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
-import { ark, scope, type, type Type } from "arktype"
+import { GenericRoot } from "@ark/schema"
+import { flatMorph } from "@ark/util"
+import { ark, scope, Type, type, type Ark } from "arktype"
 import { AssertionError } from "node:assert"
 
 contextualize(() => {
@@ -82,5 +84,37 @@ contextualize(() => {
 		)
 
 		attest(numbers.expression).snap("[1, 2, 4, 0, 3, 5]")
+	})
+
+	it("attached types", () => {
+		const attachments: Record<keyof Ark.typeAttachments, string | object> =
+			flatMorph({ ...type }, (k, v) =>
+				v instanceof Type ? [k, v.expression]
+				: v instanceof GenericRoot ? [k, v.json]
+				: []
+			)
+
+		attest(attachments).snap({
+			bigint: "bigint",
+			boolean: "boolean",
+			false: "false",
+			never: "never",
+			null: "null",
+			number: "number",
+			object: "object",
+			string: "string",
+			symbol: "symbol",
+			true: "true",
+			unknown: "unknown",
+			undefined: "undefined",
+			Key: "string | symbol",
+			Record: ark.Record.internal.json
+		})
+
+		attest<number>(type.number.t)
+	})
+
+	it("ark attached", () => {
+		attest<string>(type.ark.number.integer.expression).snap("number % 1")
 	})
 })

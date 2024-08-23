@@ -15,7 +15,7 @@ import {
 	type parseValidGenericParams,
 	type validateParameterString
 } from "./generic.ts"
-import type { Ark } from "./keywords/ark.ts"
+import type { Ark, ark } from "./keywords/ark.ts"
 import type { distillIn, distillOut } from "./keywords/ast.ts"
 import type {
 	inferDefinition,
@@ -84,6 +84,7 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	errors: typeof ArkErrors
 	module: ModuleParser
 	scope: ScopeParser
+	ark: typeof ark
 }
 
 export class InternalTypeParser extends Callable<
@@ -96,9 +97,11 @@ export class InternalTypeParser extends Callable<
 				errors: ArkErrors,
 				raw: $.parseRoot as never,
 				module: $.constructor.module,
-				scope: $.constructor.scope
+				scope: $.constructor.scope,
+				// this won't be defined during bootstrapping, but externally always will be
+				ark: $.ambient as never
 			} satisfies Omit<TypeParserAttachments, keyof Ark.typeAttachments>,
-			// this won't be defined during bootstrapping, but externall always will be
+			// also won't be defined during bootstrapping
 			$.ambientAttachments!
 		)
 		super(

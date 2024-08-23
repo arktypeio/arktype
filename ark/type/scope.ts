@@ -223,7 +223,7 @@ export type tryInferSubmoduleReference<$, token> =
 	:	never
 
 export interface ArkTypeRegistry extends ArkSchemaRegistry {
-	typeAttachments?: Module<Ark.typeAttachments>
+	typeAttachments?: Ark.boundTypeAttachments<any>
 }
 
 export const $arkTypeRegistry: ArkTypeRegistry = $ark

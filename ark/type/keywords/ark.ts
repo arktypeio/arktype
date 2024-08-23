@@ -13,7 +13,6 @@ import { arkPrototypes } from "./constructors/constructors.ts"
 import { number } from "./number/number.ts"
 import { string } from "./string/string.ts"
 import { arkTsGenerics, arkTsKeywords } from "./ts.ts"
-import { submodule } from "./utils.ts"
 
 export interface Ark
 	extends Omit<Ark.keywords, keyof Ark.wrapped>,
@@ -31,7 +30,8 @@ export declare namespace Ark {
 		number: number.submodule
 	}
 
-	export interface typeAttachments extends arkTsKeywords, arkBuiltins {
+	export interface typeAttachments extends Omit<arkTsKeywords, arkKind> {
+		Key: arkBuiltins["Key"]
 		Record: arkTsGenerics["Record"]
 	}
 
@@ -41,11 +41,11 @@ export declare namespace Ark {
 	export interface resolutions {}
 }
 
-$arkTypeRegistry.typeAttachments = submodule({
+$arkTypeRegistry.typeAttachments = {
 	...arkTsKeywords,
-	...arkBuiltins,
+	Key: arkBuiltins.Key,
 	Record: arkTsGenerics.Record
-})
+}
 
 export const ambient: Scope<Ark> = scope(
 	{
