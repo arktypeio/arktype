@@ -1,45 +1,39 @@
 import type { writeUnboundableMessage } from "@ark/schema"
-import type { array, ErrorMessage, typeToString } from "@ark/util"
+import type {
+	ErrorMessage,
+	NumberLiteral,
+	array,
+	typeToString
+} from "@ark/util"
+import type { LimitLiteral } from "../../keywords/ast.ts"
 import type { Comparator } from "../string/reduce/shared.ts"
 import type {
 	BoundExpressionKind,
 	writeInvalidLimitMessage
 } from "../string/shift/operator/bounds.ts"
-import type { inferAstIn, InferredAst } from "./infer.ts"
+import type { inferAstIn } from "./infer.ts"
 import type { astToString } from "./utils.ts"
 import type { validateAst } from "./validate.ts"
 
-type InferredLimit = number | Date
-
 export type validateRange<l, comparator extends Comparator, r, $, args> =
-	l extends InferredAst<InferredLimit> ?
-		validateBound<r, comparator, l, "left", $, args>
+	l extends LimitLiteral ? validateBound<r, comparator, l, "left", $, args>
 	: l extends [infer leftAst, Comparator, unknown] ?
 		ErrorMessage<writeDoubleRightBoundMessage<astToString<leftAst>>>
-	:	validateBound<
-			l,
-			comparator,
-			r extends InferredAst<InferredLimit> ? r : never,
-			"right",
-			$,
-			args
-		>
+	:	validateBound<l, comparator, r & LimitLiteral, "right", $, args>
 
 export type validateBound<
 	boundedAst,
 	comparator extends Comparator,
-	limitAst extends InferredAst<InferredLimit>,
+	limit extends LimitLiteral,
 	boundKind extends BoundExpressionKind,
 	$,
 	args
 > =
 	inferAstIn<boundedAst, $, args> extends infer bounded ?
 		isNumericallyBoundable<bounded> extends true ?
-			limitAst[0] extends number ?
+			limit extends NumberLiteral ?
 				validateAst<boundedAst, $, args>
-			:	ErrorMessage<
-					writeInvalidLimitMessage<comparator, limitAst[2], boundKind>
-				>
+			:	ErrorMessage<writeInvalidLimitMessage<comparator, limit, boundKind>>
 		: [bounded] extends [Date] ?
 			// allow numeric or date literal as a Date limit
 			validateAst<boundedAst, $, args>

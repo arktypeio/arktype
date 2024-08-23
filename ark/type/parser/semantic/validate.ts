@@ -36,8 +36,12 @@ import type { validateKeyof } from "./keyof.ts"
 import type { astToString } from "./utils.ts"
 
 export type validateAst<ast, $, args> =
-	ast extends InferredAst ? validateInferredAst<ast[0], ast[2]>
-	: ast extends DefAst ? undefined
+	ast extends ErrorMessage ? ast
+	: ast extends InferredAst ? validateInferredAst<ast[0], ast[2]>
+	: ast extends DefAst ?
+		ast[2] extends PrivateDeclaration ?
+			ErrorMessage<writePrefixedPrivateReferenceMessage<ast[2]>>
+		:	undefined
 	: ast extends PostfixExpression<infer operator, infer operand> ?
 		operator extends "[]" ?
 			validateAst<operand, $, args>

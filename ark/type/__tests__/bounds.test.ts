@@ -190,7 +190,7 @@ contextualize(() => {
 		it("double left", () => {
 			// @ts-expect-error
 			attest(() => type("3<5<8")).throwsAndHasTypeError(
-				writeMultipleLeftBoundsMessage(3, ">", 5, ">")
+				writeMultipleLeftBoundsMessage("3", ">", "5", ">")
 			)
 		})
 

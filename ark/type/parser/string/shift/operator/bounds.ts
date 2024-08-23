@@ -7,6 +7,7 @@ import {
 } from "@ark/schema"
 import { isKeyOf, throwParseError, type keySet } from "@ark/util"
 import type { DateLiteral, LimitLiteral } from "../../../../keywords/ast.ts"
+import type { InferredAst } from "../../../semantic/infer.ts"
 import type { astToString } from "../../../semantic/utils.ts"
 import type {
 	DynamicState,
@@ -21,7 +22,7 @@ import {
 	type MaxComparator,
 	type OpenLeftBound
 } from "../../reduce/shared.ts"
-import type { StaticState, state } from "../../reduce/static.ts"
+import type { state, StaticState } from "../../reduce/static.ts"
 import { extractDateLiteralSource, isDateLiteral } from "../operand/date.ts"
 import type { parseOperand } from "../operand/operand.ts"
 import type { Scanner } from "../scanner.ts"
@@ -33,7 +34,7 @@ export const parseBound = (
 	const comparator = shiftComparator(s, start)
 	if (s.root.hasKind("unit")) {
 		if (typeof s.root.unit === "number") {
-			s.reduceLeftBound(s.root.unit, comparator)
+			s.reduceLeftBound(`${s.root.unit}`, comparator)
 			s.unsetRoot()
 			return
 		}
@@ -62,7 +63,9 @@ export type parseBound<
 				infer nextUnscanned
 			>
 		) ?
-			s["root"] extends `${infer limit extends LimitLiteral}` ?
+			s["root"] extends (
+				InferredAst<Date | number, infer limit extends LimitLiteral>
+			) ?
 				state.reduceLeftBound<s, limit, comparator, nextUnscanned>
 			:	parseRightBound<state.scanTo<s, nextUnscanned>, comparator, $, args>
 		:	shiftResultOrError
@@ -178,7 +181,7 @@ export const parseRightBound = (
 	// if the comparator is ==, both the min and max of that pair will be applied
 	for (const kind of getBoundKinds(
 		comparator,
-		typeof limit === "number" ? limit : (limitToken as DateLiteral),
+		typeof limit === "number" ? `${limit}` : (limitToken as DateLiteral),
 		previousRoot,
 		"right"
 	))
@@ -207,7 +210,9 @@ export type parseRightBound<
 	args
 > =
 	parseOperand<s, $, args> extends infer nextState extends StaticState ?
-		nextState["root"] extends `${infer limit extends LimitLiteral}` ?
+		nextState["root"] extends (
+			InferredAst<unknown, infer limit extends LimitLiteral>
+		) ?
 			s["branches"]["leftBound"] extends {} ?
 				comparator extends MaxComparator ?
 					state.reduceRange<
