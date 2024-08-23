@@ -142,23 +142,13 @@ contextualize(() => {
 			testNonEmpty(nonEmpty)
 		})
 
-		it("can apply constraints via :", () => {
-			const nonEmpty = type("<arr: unknown[]>", "arr > 0")
-			testNonEmpty(nonEmpty)
-		})
-
 		it("can apply constraints with whitespace", () => {
 			const nonEmpty = type("<   arr     extends    unknown  []>", "arr > 0")
 			testNonEmpty(nonEmpty)
 		})
 
-		it("can apply constraints with whitespace and :", () => {
-			const nonEmpty = type("<   arr     :    unknown  []   >", "arr > 0")
-			testNonEmpty(nonEmpty)
-		})
-
 		it("constrained constraint", () => {
-			const positiveToInteger = type("<n: number > 0>", "n % 1")
+			const positiveToInteger = type("<n extends number > 0>", "n % 1")
 
 			const t = positiveToInteger("number > 0")
 			const expected = type("number.integer > 0")
@@ -181,7 +171,7 @@ contextualize(() => {
 
 		it("unsatisfied parameter string", () => {
 			const $ = scope({
-				"entry<k extends string | symbol, v>": ["k", "v"],
+				"entry<k extends Key, v>": ["k", "v"],
 				foobar: "entry<'foo', 'bar'>"
 			})
 
@@ -227,8 +217,8 @@ contextualize(() => {
 		it("errors on unsatisfied constraints from current scope", () => {
 			attest(() =>
 				scope({
-					"entry<k extends key, v>": ["k", "v"],
-					key: "string | symbol",
+					"entry<k extends specialKey, v>": ["k", "v"],
+					specialKey: "string | symbol",
 					goodEntry: "entry<'foo', 1>",
 					// @ts-expect-error
 					badEntry: "entry<1, 0>"
