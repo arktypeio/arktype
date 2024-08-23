@@ -39,7 +39,7 @@ export type DayPattern<delimiter extends DayDelimiter = DayDelimiter> =
 		}[keyof DayPatterns]
 	:	never
 
-export type DateFormat = "iso8601" | DayPattern
+export type DateFormat = "iso" | DayPattern
 
 export type DateOptions = {
 	format?: DateFormat
@@ -70,10 +70,10 @@ export const tryParseDatePattern = (
 		const result = new Date(data)
 		return isValidDateInstance(result) ? result : "a valid date"
 	}
-	if (opts.format === "iso8601") {
+	if (opts.format === "iso") {
 		return iso8601Matcher.test(data) ?
 				new Date(data)
-			:	writeFormattedExpected("iso8601")
+			:	writeFormattedExpected("iso")
 	}
 	const dataParts = data.split(dayDelimiterMatcher)
 	// will be the first delimiter matched, if there is one
@@ -138,15 +138,15 @@ const epoch = submodule({
 	})
 })
 
-const iso8601$root = regexStringNode(
+const iso$root = regexStringNode(
 	iso8601Matcher,
 	"an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date"
 ).internal.assertHasKind("intersection")
 
-const iso8601 = submodule({
-	$root: iso8601$root,
+const iso = submodule({
+	$root: iso$root,
 	parse: rootNode({
-		in: iso8601$root,
+		in: iso$root,
 		morphs: (s: string) => new Date(s),
 		declaredOut: intrinsic.Date
 	})
@@ -164,7 +164,7 @@ export const date = submodule({
 		},
 		declaredOut: intrinsic.Date
 	}),
-	iso8601,
+	iso,
 	epoch
 })
 
@@ -173,16 +173,16 @@ declare namespace string {
 
 	export namespace date {
 		export type epoch = constrain<string, Branded<"date.epoch">>
-		export type iso8601 = constrain<string, Branded<"date.iso8601">>
+		export type iso = constrain<string, Branded<"date.iso">>
 	}
 }
 
 export type date = Submodule<{
 	$root: string.date
 	parse: (In: string.date) => To<Date>
-	iso8601: Submodule<{
-		$root: string.date.iso8601
-		parse: (In: string.date.iso8601) => To<Date>
+	iso: Submodule<{
+		$root: string.date.iso
+		parse: (In: string.date.iso) => To<Date>
 	}>
 	epoch: Submodule<{
 		$root: string.date.epoch

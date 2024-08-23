@@ -45,6 +45,20 @@ contextualize(() => {
 		attest(t.allows(true)).equals(false)
 	})
 
+	it("literals can be included in domain branches", () => {
+		const t = type("string|bigint|true")
+		attest(t.json).snap(["bigint", "string", { unit: true }])
+		attest(t.internal.hasKind("union") && t.internal.discriminantJson).snap({
+			kind: "typeOf",
+			path: [],
+			cases: { '"bigint"': true, '"string"': true, '"boolean"': { unit: true } }
+		})
+		attest(t.allows("foo")).equals(true)
+		attest(t.allows(5n)).equals(true)
+		attest(t.allows(true)).equals(true)
+		attest(t.allows(5)).equals(false)
+	})
+
 	const getPlaces = () =>
 		scope({
 			rainForest: {

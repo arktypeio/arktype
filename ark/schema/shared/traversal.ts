@@ -1,4 +1,4 @@
-import type { array } from "@ark/util"
+import { deepClone, type array } from "@ark/util"
 import type { ResolvedArkConfig } from "../config.ts"
 import type { Morph } from "../roots/morph.ts"
 import {
@@ -51,6 +51,10 @@ export class TraversalContext {
 
 	finalize(): unknown {
 		if (this.hasError()) return this.errors
+
+		if (!this.queuedMorphs.length) return this.root
+
+		this.root = deepClone(this.root)
 
 		// invoking morphs that are Nodes will reuse this context, potentially
 		// adding additional morphs, so we have to continue looping until
