@@ -6,7 +6,7 @@ import {
 	type NodeSchema
 } from "@ark/schema"
 import { isKeyOf, throwParseError, type keySet } from "@ark/util"
-import type { DateLiteral, LimitLiteral } from "../../../../keywords/ast.ts"
+import type { DateLiteral } from "../../../../keywords/ast.ts"
 import type { InferredAst } from "../../../semantic/infer.ts"
 import type { astToString } from "../../../semantic/utils.ts"
 import type {
@@ -34,7 +34,7 @@ export const parseBound = (
 	const comparator = shiftComparator(s, start)
 	if (s.root.hasKind("unit")) {
 		if (typeof s.root.unit === "number") {
-			s.reduceLeftBound(`${s.root.unit}`, comparator)
+			s.reduceLeftBound(s.root.unit, comparator)
 			s.unsetRoot()
 			return
 		}
@@ -64,7 +64,10 @@ export type parseBound<
 			>
 		) ?
 			s["root"] extends (
-				InferredAst<Date | number, infer limit extends LimitLiteral>
+				InferredAst<
+					Date | number,
+					`${infer limit extends number | DateLiteral}`
+				>
 			) ?
 				state.reduceLeftBound<s, limit, comparator, nextUnscanned>
 			:	parseRightBound<state.scanTo<s, nextUnscanned>, comparator, $, args>
@@ -104,7 +107,7 @@ export const writeIncompatibleRangeMessage = (
 
 export const getBoundKinds = (
 	comparator: Comparator,
-	limit: LimitLiteral,
+	limit: number | DateLiteral,
 	root: BaseRoot,
 	boundKind: BoundExpressionKind
 ): BoundKind[] => {
@@ -181,7 +184,7 @@ export const parseRightBound = (
 	// if the comparator is ==, both the min and max of that pair will be applied
 	for (const kind of getBoundKinds(
 		comparator,
-		typeof limit === "number" ? `${limit}` : (limitToken as DateLiteral),
+		typeof limit === "number" ? limit : (limitToken as DateLiteral),
 		previousRoot,
 		"right"
 	))
@@ -211,7 +214,7 @@ export type parseRightBound<
 > =
 	parseOperand<s, $, args> extends infer nextState extends StaticState ?
 		nextState["root"] extends (
-			InferredAst<unknown, infer limit extends LimitLiteral>
+			InferredAst<unknown, `${infer limit extends number | DateLiteral}`>
 		) ?
 			s["branches"]["leftBound"] extends {} ?
 				comparator extends MaxComparator ?

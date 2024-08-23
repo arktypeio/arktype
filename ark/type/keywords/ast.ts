@@ -13,7 +13,6 @@ import {
 	type conform,
 	type equals,
 	type leftIfEqual,
-	type NumberLiteral,
 	type Primitive,
 	type show
 } from "@ark/util"
@@ -47,7 +46,7 @@ export type constrain<base, constraints extends Constraints> = base & {
 	[constrained]: constraints
 }
 
-export type LimitLiteral = NumberLiteral | DateLiteral
+export type LimitLiteral = number | DateLiteral
 
 export type normalizeLimit<limit> =
 	limit extends DateLiteral<infer source> ? source

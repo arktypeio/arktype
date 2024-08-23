@@ -1,10 +1,5 @@
 import type { writeUnboundableMessage } from "@ark/schema"
-import type {
-	ErrorMessage,
-	NumberLiteral,
-	array,
-	typeToString
-} from "@ark/util"
+import type { ErrorMessage, array, typeToString } from "@ark/util"
 import type { LimitLiteral } from "../../keywords/ast.ts"
 import type { Comparator } from "../string/reduce/shared.ts"
 import type {
@@ -31,7 +26,7 @@ export type validateBound<
 > =
 	inferAstIn<boundedAst, $, args> extends infer bounded ?
 		isNumericallyBoundable<bounded> extends true ?
-			limit extends NumberLiteral ?
+			limit extends number ?
 				validateAst<boundedAst, $, args>
 			:	ErrorMessage<writeInvalidLimitMessage<comparator, limit, boundKind>>
 		: [bounded] extends [Date] ?

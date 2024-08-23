@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { scope, type, type Type } from "arktype"
+import { ark, scope, type, type Type } from "arktype"
 import { AssertionError } from "node:assert"
 
 contextualize(() => {
@@ -68,5 +68,19 @@ contextualize(() => {
 		attest((): Type<string> => foo).type.errors(
 			"Type<string, { foo: string; }>' is not assignable to type 'Type<string, {}>'"
 		)
+	})
+
+	it("distribute", () => {
+		const t = type("===", 0, "1", "2", 3, "4", 5)
+
+		const numbers = t.distribute(
+			(n): Type<number> =>
+				n.extends(ark.number.$root) ? n : (
+					type.raw(n.expression.slice(1, -1)).as<number>()
+				),
+			branches => type.raw(branches).as<number[]>()
+		)
+
+		attest(numbers.expression).snap("[1, 2, 4, 0, 3, 5]")
 	})
 })

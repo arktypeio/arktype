@@ -89,8 +89,10 @@ export abstract class BaseRange<
 }
 
 export interface BaseRangeInner {
-	readonly rule: number | Date
+	readonly rule: LimitValue
 }
+
+export type LimitValue = Date | number
 
 export type LimitSchemaValue = Date | number | string
 
