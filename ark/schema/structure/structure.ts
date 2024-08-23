@@ -110,7 +110,15 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 	implementNode<Structure.Declaration>({
 		kind: "structure",
 		hasAssociatedError: false,
-		normalize: schema => schema,
+		normalize: (schema, ctx) => {
+			if (!schema.undeclared && ctx.onUndeclaredKey !== "ignore") {
+				return {
+					...schema,
+					undeclared: ctx.onUndeclaredKey
+				}
+			}
+			return schema
+		},
 		keys: {
 			required: {
 				child: true,

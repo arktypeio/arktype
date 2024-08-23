@@ -238,7 +238,8 @@ export abstract class BaseScope<$ extends {} = {}> {
 		}
 
 		const impl = nodeImplementationsByKind[kind]
-		const normalizedSchema = impl.normalize?.(schema) ?? schema
+		const normalizedSchema =
+			impl.normalize?.(schema, this.resolvedConfig) ?? schema
 		// check again after normalization in case a node is a valid collapsed
 		// schema for the kind (e.g. sequence can collapse to element accepting a Node')
 		if (isNode(normalizedSchema)) {

@@ -22,7 +22,7 @@ import type {
 	schemaKindOrRightOf,
 	schemaKindRightOf
 } from "../roots/root.ts"
-import type { BaseScope } from "../scope.ts"
+import type { BaseScope, ResolvedArkScopeConfig } from "../scope.ts"
 import type { Structure } from "../structure/structure.ts"
 import { compileSerializedValue } from "./compile.ts"
 import type {
@@ -292,7 +292,10 @@ export type NodeKeyImplementation<
 interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	kind: d["kind"]
 	keys: keySchemaDefinitions<d>
-	normalize: (schema: d["schema"]) => d["normalizedSchema"]
+	normalize: (
+		schema: d["schema"],
+		ctx: ResolvedArkScopeConfig
+	) => d["normalizedSchema"]
 	hasAssociatedError: d["errorContext"] extends null ? false : true
 	finalizeInnerJson?: (json: { [k in keyof d["inner"]]: JsonData }) => Json
 	collapsibleKey?: keyof d["inner"]

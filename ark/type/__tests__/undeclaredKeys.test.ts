@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { type } from "arktype"
+import { scope, type } from "arktype"
 
 contextualize(() => {
 	describe("traversal", () => {
@@ -96,6 +96,25 @@ b must be removed`)
 			attest(o({ a: 2, b: true }).toString()).snap(
 				"a must be a string or removed (was 2)"
 			)
+		})
+
+		it("can be configured", () => {
+			const types = type.module(
+				{
+					user: {
+						name: "string"
+					}
+				},
+				{
+					onUndeclaredKey: "delete"
+				}
+			)
+
+			attest(types.user.json).snap({
+				undeclared: "delete",
+				required: [{ key: "name", value: "string" }],
+				domain: "object"
+			})
 		})
 	})
 })
