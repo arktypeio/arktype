@@ -66,7 +66,7 @@ contextualize(() => {
 			attest(o({ b: true, c: false })).snap({ b: true })
 			// can handle missing keys
 			attest(o({ a: 2 }).toString()).snap(
-				"a must be a string (was number) or b must be boolean (was missing)"
+				"a must be a string (was a number) or b must be boolean (was missing)"
 			)
 		})
 
@@ -82,7 +82,7 @@ contextualize(() => {
 			const o = type({ "+": "reject", a: "string[]" })
 			attest(o({ a: ["shawn"] })).snap({ a: ["shawn"] })
 			attest(o({ a: [2] }).toString()).snap(
-				"a[0] must be a string (was number)"
+				"a[0] must be a string (was a number)"
 			)
 			attest(o({ b: ["shawn"] }).toString())
 				.snap(`a must be an array (was missing)

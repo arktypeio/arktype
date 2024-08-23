@@ -84,7 +84,7 @@ contextualize(() => {
 		attest(types.b.allows(b)).equals(true)
 		attest(types.b.allows(almostB)).equals(false)
 		attest(types.b(almostB)?.toString()).snap(
-			"a.b.a.b must be an object (was string)"
+			"a.b.a.b must be an object (was a string)"
 		)
 	})
 })

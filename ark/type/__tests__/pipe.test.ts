@@ -24,7 +24,7 @@ contextualize(() => {
 		const out = t(5)
 		attest<string | type.errors>(out).equals("5")
 		const result = t("foo")
-		attest(result.toString()).snap("must be a number (was string)")
+		attest(result.toString()).snap("must be a number (was a string)")
 	})
 
 	it("disjoint", () => {
@@ -116,7 +116,7 @@ contextualize(() => {
 			t.internal.firstReferenceOfKindOrThrow("morph").serializedMorphs
 
 		attest(t.internal.assertHasKind("union").discriminantJson).snap({
-			kind: "unit",
+			kind: "identity",
 			path: [],
 			cases: {
 				"0": { in: { unit: 0 }, morphs: serializedMorphs },
@@ -210,7 +210,7 @@ contextualize(() => {
 		attest(inefficientStringIsEmpty("")).equals(true)
 		attest(inefficientStringIsEmpty("foo")).equals(false)
 		attest(inefficientStringIsEmpty(0).toString()).snap(
-			"must be a string (was number)"
+			"must be a string (was a number)"
 		)
 	})
 
@@ -493,7 +493,7 @@ contextualize(() => {
 			types.a.internal.assertHasKind("morph").serializedMorphs
 
 		attest(types.c.internal.assertHasKind("union").discriminantJson).snap({
-			kind: "domain",
+			kind: "typeOf",
 			path: ["0"],
 			cases: {
 				'"number"': {

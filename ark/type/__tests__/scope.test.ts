@@ -213,7 +213,7 @@ contextualize(() => {
 
 			attest(types.a(a)).equals(a)
 			attest(types.a({ b: { a: { b: { a: 5 } } } }).toString()).snap(
-				"b.a.b.a must be an object (was number)"
+				"b.a.b.a must be an object (was a number)"
 			)
 
 			// Type hint displays as "..." on hitting cycle (or any if "noErrorTruncation" is true)

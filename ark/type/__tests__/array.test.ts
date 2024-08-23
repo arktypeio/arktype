@@ -18,11 +18,11 @@ contextualize(() => {
 			attest(t(["foo", "bar"])).snap(["foo", "bar"])
 			attest(t.allows(["foo", "bar", 5])).equals(false)
 			attest(t(["foo", "bar", 5]).toString()).snap(
-				"value at [2] must be a string (was number)"
+				"value at [2] must be a string (was a number)"
 			)
 			attest(t.allows([5, "foo", "bar"])).equals(false)
 			attest(t([5, "foo", "bar"]).toString()).snap(
-				"value at [0] must be a string (was number)"
+				"value at [0] must be a string (was a number)"
 			)
 		})
 
@@ -39,7 +39,7 @@ contextualize(() => {
 			)
 			attest(t.allows([["foo", 5]])).equals(false)
 			attest(t([["foo", 5]]).toString()).snap(
-				"value at [0][1] must be a string (was number)"
+				"value at [0][1] must be a string (was a number)"
 			)
 		})
 
@@ -81,12 +81,12 @@ contextualize(() => {
 			attest(t(["", 0])).snap(["", 0])
 			attest(t.allows([true, 0])).equals(false)
 			attest(t([true, 0]).toString()).snap(
-				"value at [0] must be a string (was true)"
+				"value at [0] must be a string (was boolean)"
 			)
 			attest(t.allows([0, false])).equals(false)
 			attest(t([0, false]).toString())
-				.snap(`value at [0] must be a string (was number)
-value at [1] must be a number (was false)`)
+				.snap(`value at [0] must be a string (was a number)
+value at [1] must be a number (was boolean)`)
 			// too short
 			attest(t.allows([""])).equals(false)
 			attest(t([""]).toString()).snap("must be exactly length 2 (was 1)")
@@ -139,7 +139,7 @@ value at [1] must be a number (was false)`)
 			attest(t([])).equals([])
 			attest(t(["foo"])).equals(["foo"])
 			attest(t([5]).toString()).snap(
-				"value at [0] must be a string (was number)"
+				"value at [0] must be a string (was a number)"
 			)
 			attest(t(["foo", "bar"]).toString()).snap(
 				"must be at most length 1 (was 2)"
@@ -376,8 +376,8 @@ value at [1] must be a number (was false)`)
 		it("multiple errors", () => {
 			const stringArray = type("string[]")
 			attest(stringArray([1, 2]).toString())
-				.snap(`value at [0] must be a string (was number)
-value at [1] must be a string (was number)`)
+				.snap(`value at [0] must be a string (was a number)
+value at [1] must be a string (was a number)`)
 		})
 	})
 })

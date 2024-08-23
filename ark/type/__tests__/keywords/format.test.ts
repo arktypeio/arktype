@@ -5,13 +5,13 @@ contextualize(() => {
 	it("trim", () => {
 		const trim = type("string.trim")
 		attest(trim("  foo  ")).equals("foo")
-		attest(trim(5).toString()).snap("must be a string (was number)")
+		attest(trim(5).toString()).snap("must be a string (was a number)")
 	})
 
 	it("lower", () => {
 		const lower = type("string.lower")
 		attest(lower("FOO")).equals("foo")
-		attest(lower(5).toString()).snap("must be a string (was number)")
+		attest(lower(5).toString()).snap("must be a string (was a number)")
 	})
 
 	it("lower.preformatted", () => {
@@ -25,7 +25,7 @@ contextualize(() => {
 	it("upper", () => {
 		const upper = type("string.upper")
 		attest(upper("foo")).equals("FOO")
-		attest(upper(5).toString()).snap("must be a string (was number)")
+		attest(upper(5).toString()).snap("must be a string (was a number)")
 	})
 
 	it("upper.preformatted", () => {
@@ -42,7 +42,7 @@ contextualize(() => {
 	it("capitalize", () => {
 		const capitalize = type("string.capitalize")
 		attest(capitalize("foo")).equals("Foo")
-		attest(capitalize(5).toString()).snap("must be a string (was number)")
+		attest(capitalize(5).toString()).snap("must be a string (was a number)")
 	})
 
 	it("capitalize.preformatted", () => {
@@ -58,6 +58,6 @@ contextualize(() => {
 		attest(normalize("\u00F1")).equals("ñ")
 		attest(normalize("\u006E\u0303")).equals("ñ")
 		attest(normalize("\u00F1")).equals(normalize("\u006E\u0303"))
-		attest(normalize(5).toString()).snap("must be a string (was number)")
+		attest(normalize(5).toString()).snap("must be a string (was a number)")
 	})
 })

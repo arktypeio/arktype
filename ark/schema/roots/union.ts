@@ -40,7 +40,11 @@ import {
 } from "../shared/implement.ts"
 import { intersectNodes, intersectNodesRoot } from "../shared/intersections.ts"
 import type { JsonSchema } from "../shared/jsonSchema.ts"
-import { $ark, registeredReference } from "../shared/registry.ts"
+import {
+	$ark,
+	registeredReference,
+	type RegisteredReference
+} from "../shared/registry.ts"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.ts"
 import { hasArkKind, pathToPropString } from "../shared/utils.ts"
 import type { Domain } from "./domain.ts"
@@ -329,8 +333,8 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		const serializedExpected = JSON.stringify(expected)
 		const serializedActual =
 			this.discriminant.kind === "typeOf" ?
-				(`${serializedTypeOfDescriptions}[typeof data]` as never)
-			:	`${serializedPrintable}(data)`
+				`${serializedTypeOfDescriptions}[${condition}]`
+			:	`${serializedPrintable}(${condition})`
 
 		js.line(`ctx.error({
 	expected: ${serializedExpected},
@@ -440,8 +444,8 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 						candidates.push({
 							kind: entry.discriminantKind,
 							cases: Object.assign(
-								flatMorph(lSerialized, k => [k, [l]]),
-								flatMorph(rSerialized, k => [k, [r]])
+								flatMorph(lSerialized, (i, k) => [k, [l]]),
+								flatMorph(rSerialized, (i, k) => [k, [r]])
 							) as never,
 							path: entry.path
 						})
@@ -571,21 +575,13 @@ const describeBranches = (
 		(descriptions[0] === "true" && descriptions[1] === "false")
 	)
 		return "boolean"
-	let description = ""
+
 	// keep track of seen descriptions to avoid duplication
 	const seen: Record<string, true | undefined> = {}
-	for (let i = 0; i < descriptions.length - 1; i++) {
-		if (seen[descriptions[i]]) continue
-		seen[descriptions[i]] = true
-		description += descriptions[i]
-		if (i < descriptions.length - 2) description += delimiter
-	}
+	const unique = descriptions.filter(s => (seen[s] ? false : (seen[s] = true)))
+	const last = unique.pop()!
 
-	const lastDescription = descriptions.at(-1)!
-	if (!seen[lastDescription])
-		description += `${finalDelimiter}${descriptions[descriptions.length - 1]}`
-
-	return description
+	return `${unique.join(delimiter)}${unique.length ? finalDelimiter : ""}${last}`
 }
 
 export const intersectBranches = (
@@ -742,7 +738,7 @@ export type DiscriminatedCases<
 
 export type DiscriminantKinds = {
 	typeOf: JsTypeOf
-	identity: SerializedPrimitive
+	identity: SerializedPrimitive | RegisteredReference
 }
 
 export type DiscriminantKind = show<keyof DiscriminantKinds>

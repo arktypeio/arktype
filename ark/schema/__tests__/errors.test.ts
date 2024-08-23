@@ -35,7 +35,7 @@ contextualize(() => {
 		})
 		attest(t.traverse([5])).snap([5])
 		attest(t.traverse([5, "five"])?.toString()).snap(
-			"value at [1] must be a number (was string)"
+			"value at [1] must be a number (was a string)"
 		)
 	})
 
@@ -46,7 +46,7 @@ contextualize(() => {
 		})
 		attest(superSpecialBigint.description).snap("my special bigint")
 		attest(superSpecialBigint.traverse(5)?.toString()).snap(
-			"must be my special bigint (was number)"
+			"must be my special bigint (was a number)"
 		)
 	})
 
@@ -94,7 +94,7 @@ contextualize(() => {
 		const superSpecialNumber = types.superSpecialNumber
 		attest(superSpecialNumber.description).snap("my special number")
 		attest(superSpecialNumber("five")?.toString()).snap(
-			"must be my special number (was string)"
+			"must be my special number (was a string)"
 		)
 	})
 
@@ -106,14 +106,14 @@ contextualize(() => {
 		})
 		const mySpecialSymbol = schemaScope({}).rootNode("symbol")
 		attest(mySpecialSymbol.traverse("foo")?.toString()).snap(
-			"must be my special symbol (was string)"
+			"must be my special symbol (was a string)"
 		)
 		configure({
 			domain: $ark.defaultConfig.domain
 		})
 		const myBoringSymbol = schemaScope({}).rootNode("symbol")
 		attest(myBoringSymbol.traverse("foo")?.toString()).snap(
-			"must be a symbol (was string)"
+			"must be a symbol (was a string)"
 		)
 	})
 })

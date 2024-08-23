@@ -72,10 +72,7 @@ const implementation: nodeImplementationOf<Domain.Declaration> =
 			typeof schema === "string" ? { domain: schema } : schema,
 		defaults: {
 			description: node => domainDescriptions[node.domain],
-			actual: data =>
-				typeof data === "boolean" ?
-					`${data}`
-				:	domainDescriptions[domainOf(data)]
+			actual: data => domainDescriptions[domainOf(data)]
 		},
 		intersections: {
 			domain: (l, r) => Disjoint.init("domain", l, r)

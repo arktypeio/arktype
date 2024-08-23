@@ -378,8 +378,10 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		attest(CreatePatientInput({ first_name: " John  " }).toString()).snap(
 			"first_name must be at most length 3 (was 4)"
 		)
+		// ideally, this would be "a string or null", but it is described
+		// as an object since discrimination uses the typeof operator
 		attest(CreatePatientInput({ first_name: 5 }).toString()).snap(
-			"first_name must be a string or null (was 5)"
+			"first_name must be a string or an object (was a number)"
 		)
 	})
 
@@ -530,7 +532,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			box: { box: { box: {} } }
 		})
 		attest(box({ box: { box: { box: "whoops" } } })?.toString()).snap(
-			'box.box.box must be an object (was string) or must be null (was {"box":{"box":{"box":"whoops"}}})'
+			'box.box.box must be an object (was a string) or must be null (was {"box":{"box":{"box":"whoops"}}})'
 		)
 	})
 

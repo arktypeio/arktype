@@ -31,7 +31,7 @@ contextualize(() => {
 				"foo must be a string (was missing)"
 			)
 			attest(o({ foo: "", bar: "" }).toString()).snap(
-				"bar must be a number (was string)"
+				"bar must be a number (was a string)"
 			)
 		})
 
@@ -41,7 +41,7 @@ contextualize(() => {
 				type({ foo: "string", bar: ["number", "=", "5"] })
 			)
 				.throws.snap(
-					'ParseError: Default value at "bar" must be a number (was string)'
+					'ParseError: Default value at "bar" must be a number (was a string)'
 				)
 				.type.errors()
 		})
@@ -148,7 +148,7 @@ contextualize(() => {
 			// @ts-expect-error
 			attest(() => type({ foo: "string", bar: "number = true" }))
 				.throws.snap(
-					'ParseError: Default value at "bar" must be a number (was true)'
+					'ParseError: Default value at "bar" must be a number (was boolean)'
 				)
 				.type.errors("true is not assignable to number")
 		})
