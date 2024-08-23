@@ -93,7 +93,7 @@ export declare namespace state {
 	export type addPrefix<
 		s extends StaticState,
 		prefix extends StringifiablePrefixOperator,
-		unscanned extends string
+		unscanned extends string = s["unscanned"]
 	> = from<{
 		root: s["root"]
 		branches: {

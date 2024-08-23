@@ -16,8 +16,6 @@ import {
 	tryParseWellFormedBigint,
 	tryParseWellFormedNumber,
 	type BigintLiteral,
-	type Completion,
-	type ErrorMessage,
 	type anyOrNever,
 	type join
 } from "@ark/util"
@@ -44,22 +42,29 @@ export type parseUnenclosed<s extends StaticState, $, args> =
 	Scanner.shiftUntilNextTerminator<s["unscanned"]> extends (
 		Scanner.shiftResult<infer token, infer unscanned>
 	) ?
-		token extends "keyof" ?
-			state.addPrefix<s, "keyof", unscanned>
-		:	tryResolve<state.scanTo<s, unscanned>, token, $, args>
+		tryResolve<s, unscanned, token, $, args> extends state.from<infer s> ?
+			s
+		:	never
 	:	never
 
 type parseResolution<
 	s extends StaticState,
+	unscanned extends string,
 	alias extends string,
 	resolution,
 	$,
 	args
 > =
-	[resolution] extends [anyOrNever] ? state.setRoot<s, alias>
+	[resolution] extends [anyOrNever] ? state.setRoot<s, alias, unscanned>
 	: resolution extends GenericAst ?
-		parseGenericInstantiation<alias, resolution, s, $, args>
-	:	state.setRoot<s, alias>
+		parseGenericInstantiation<
+			alias,
+			resolution,
+			state.scanTo<s, unscanned>,
+			$,
+			args
+		>
+	:	state.setRoot<s, alias, unscanned>
 
 export const parseGenericInstantiation = (
 	name: string,
@@ -135,60 +140,104 @@ const maybeParseUnenclosedLiteral = (
 		return s.ctx.$.node("unit", { unit: maybeBigint })
 }
 
-type tryResolve<s extends StaticState, token extends string, $, args> =
-	// this assumes there are no private aliases in the ambient scope
-	token extends keyof ArkAmbient.$ ?
-		parseResolution<s, token, ArkAmbient.$[token], $, args>
-	: token extends keyof $ ? parseResolution<s, token, $[token], $, args>
+type tryResolve<
+	s extends StaticState,
+	unscanned extends string,
+	token extends string,
+	$,
+	args
+> =
+	token extends keyof args ?
+		parseResolution<s, unscanned, token, args[token], $, args>
+	: token extends keyof $ ?
+		parseResolution<s, unscanned, token, $[token], $, args>
 	: `#${token}` extends keyof $ ?
-		parseResolution<s, token, $[`#${token}`], $, args>
-	: token extends keyof args ? parseResolution<s, token, args[token], $, args>
-	: token extends `${number}` ? state.setRoot<s, token>
-	: token extends BigintLiteral ? state.setRoot<s, token>
-	: token extends (
-		`${infer submodule extends (keyof $ | keyof ArkAmbient.$) & string}.${infer reference}`
-	) ?
+		parseResolution<s, unscanned, token, $[`#${token}`], $, args>
+	: // this assumes there are no private aliases in the ambient scope
+	token extends keyof ArkAmbient.$ ?
+		parseResolution<s, unscanned, token, ArkAmbient.$[token], $, args>
+	: token extends `${number}` ? state.setRoot<s, token, unscanned>
+	: token extends `${infer submodule}.${infer reference}` ?
 		tryResolveSubmodule<
 			token,
 			submodule,
 			reference,
 			s,
-			$ & ArkAmbient.$,
+			unscanned,
+			$,
 			args,
 			[submodule]
 		>
-	:	state.error<unresolvableError<s, token, $, args, []>>
+	: token extends BigintLiteral ? state.setRoot<s, token, unscanned>
+	: token extends "keyof" ? state.addPrefix<s, "keyof", unscanned>
+	: unresolvableState<s, token, $, args, []>
 
 type tryResolveSubmodule<
+	token extends string,
+	submodule extends string,
+	reference extends string,
+	s extends StaticState,
+	unscanned extends string,
+	$,
+	args,
+	submodulePath extends string[]
+> =
+	submodule extends keyof $ ?
+		_tryResolveSubmodule<
+			token,
+			submodule,
+			reference,
+			s,
+			unscanned,
+			$,
+			args,
+			submodulePath
+		>
+	: submodule extends keyof ArkAmbient.$ ?
+		_tryResolveSubmodule<
+			token,
+			submodule,
+			reference,
+			s,
+			unscanned,
+			ArkAmbient.$,
+			args,
+			submodulePath
+		>
+	:	state.error<writeNonSubmoduleDotMessage<submodule>>
+
+type _tryResolveSubmodule<
 	token extends string,
 	submodule extends keyof $ & string,
 	reference extends string,
 	s extends StaticState,
+	unscanned extends string,
 	$,
 	args,
 	submodulePath extends string[]
 > =
 	$[submodule] extends { [arkKind]: "module" } ?
 		reference extends keyof $[submodule] ?
-			parseResolution<s, token, $[submodule][reference], $, args>
+			parseResolution<s, unscanned, token, $[submodule][reference], $, args>
 		: reference extends (
 			`${infer nestedSubmodule extends keyof $[submodule] & string}.${infer nestedReference}`
 		) ?
-			tryResolveSubmodule<
+			_tryResolveSubmodule<
 				token,
 				nestedSubmodule,
 				nestedReference,
 				s,
+				unscanned,
 				$[submodule],
 				args,
 				[...submodulePath, nestedSubmodule]
 			>
-		:	unresolvableError<s, reference, $[submodule], {}, submodulePath>
-	:	writeNonSubmoduleDotMessage<submodule>
+		:	unresolvableState<s, reference, $[submodule], {}, submodulePath>
+	:	state.error<writeNonSubmoduleDotMessage<submodule>>
 
 /** Provide valid completions for the current token, or fallback to an
  * unresolvable error if there are none */
-export type unresolvableError<
+export type unresolvableState<
 	s extends StaticState,
 	token extends string,
 	$,
@@ -196,10 +245,10 @@ export type unresolvableError<
 	submodulePath extends string[]
 > =
 	validReferenceFromToken<token, $, args, submodulePath> extends never ?
-		ErrorMessage<
+		state.error<
 			writeUnresolvableMessage<qualifiedReference<token, submodulePath>>
 		>
-	:	Completion<`${s["scanned"]}${qualifiedReference<
+	:	state.completion<`${s["scanned"]}${qualifiedReference<
 			validReferenceFromToken<token, $, args, submodulePath>,
 			submodulePath
 		>}`>

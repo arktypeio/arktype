@@ -209,6 +209,15 @@ contextualize.each(
 			attest(t.expression).snap("[1]")
 		})
 
+		it("non-submodule dot access", $ => {
+			attest(() =>
+				type({
+					// @ts-expect-error
+					a: "true.subtype"
+				})
+			).throwsAndHasTypeError(writeNonSubmoduleDotMessage("true"))
+		})
+
 		it("completions", $ => {
 			attest(() =>
 				$.type({
