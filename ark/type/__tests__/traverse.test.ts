@@ -113,6 +113,8 @@ contextualize(() => {
 		)
 	})
 
+	// previously was affected by a caching issue
+	// https://github.com/arktypeio/arktype/issues/962
 	it("multiple switch", () => {
 		const types = scope({
 			a: { foo: "string" },
