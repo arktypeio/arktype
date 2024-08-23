@@ -113,6 +113,21 @@ contextualize(() => {
 		)
 	})
 
+	it("multiple switch", () => {
+		const types = scope({
+			a: { foo: "string" },
+			b: { foo: "number" },
+			c: { foo: "Function" },
+			d: "a|b|c"
+		}).export()
+		attest(types.d({}).toString()).snap(
+			"foo must be an object, a number or a string (was undefined)"
+		)
+		attest(types.d({ foo: null }).toString()).snap(
+			"foo must be a function (was null)"
+		)
+	})
+
 	it("serialized actual for discriminated union", () => {
 		const t = type({ a: "'foo'" }).or({ a: "'bar'" })
 		attest(t({ a: '"extra quotes"' }).toString()).snap(
