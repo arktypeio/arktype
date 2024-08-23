@@ -60,6 +60,7 @@ import {
 	type inferDefinition,
 	type validateDefinition
 } from "./parser/definition.ts"
+import type { DefAst, InferredAst } from "./parser/semantic/infer.ts"
 import { DynamicState } from "./parser/string/reduce/dynamic.ts"
 import type { ParsedDefault } from "./parser/string/shift/operator/default.ts"
 import { writeUnexpectedCharacterMessage } from "./parser/string/shift/operator/operator.ts"
@@ -122,6 +123,14 @@ export type bindThis<def> = {}
 /** nominal type for an unparsed definition used during scope bootstrapping */
 type Def<def = {}> = nominal<def, "unparsed">
 
+export type resolutionToAst<alias extends string, resolution> =
+	[resolution] extends [anyOrNever] ? InferredAst<resolution, alias>
+	: resolution extends Def<infer def> ? DefAst<def, alias>
+	: resolution extends { [arkKind]: "module"; $root: infer root } ?
+		InferredAst<root, alias>
+	: resolution extends GenericAst ? resolution
+	: InferredAst<resolution, alias>
+
 /** sentinel indicating a scope that will be associated with a generic has not yet been parsed */
 export type UnparsedScope = "$"
 
@@ -171,17 +180,21 @@ type extractGenericParameters<k> =
 	// causes TS fail to infer a narrowed result as of 5.5
 	k extends `${string}<${infer params}>` ? ParameterString<params> : never
 
-export type resolve<reference extends keyof $ | keyof args, $, args> =
-	(
-		reference extends keyof args ?
-			args[reference]
-		:	$[reference & keyof $]
-	) extends infer resolution ?
-		[resolution] extends [anyOrNever] ? resolution
-		: resolution extends { [inferred]: infer t } ? t
-		: resolution extends Def<infer def> ? inferDefinition<def, $, args>
-		: resolution
-	:	never
+export type resolve<
+	reference extends keyof $ | keyof args,
+	$,
+	args
+> = inferResolution<
+	reference extends keyof args ? args[reference] : $[reference & keyof $],
+	$,
+	args
+>
+
+export type inferResolution<resolution, $, args> =
+	[resolution] extends [anyOrNever] ? resolution
+	: resolution extends { [inferred]: infer t } ? t
+	: resolution extends Def<infer def> ? inferDefinition<def, $, args>
+	: resolution
 
 export type moduleKeyOf<$> = {
 	[k in keyof $]: $[k] extends { [arkKind]: "module" } ?
@@ -190,6 +203,8 @@ export type moduleKeyOf<$> = {
 		:	k & string
 	:	never
 }[keyof $]
+
+// export type Resolutions = { [k in keyof Ark]: Ark[k] extends Submodule<infer $> ? `${k & string}.` }
 
 type unwrapPreinferred<t> = t extends type.cast<infer inferred> ? inferred : t
 

@@ -7,9 +7,8 @@ import type { validateAst } from "./validate.ts"
 export type validateDefault<baseAst, unitLiteral extends UnitLiteral, $, args> =
 	validateAst<baseAst, $, args> extends infer e extends ErrorMessage ? e
 	: // check against the output of the type since morphs will not occur
-	inferTerminal<unitLiteral, $, args> extends inferAstOut<baseAst, $, args> ?
-		undefined
-	:	ErrorMessage<
+	inferTerminal<unitLiteral> extends inferAstOut<baseAst, $, args> ? undefined
+	: ErrorMessage<
 			writeUnassignableDefaultValueMessage<astToString<baseAst>, unitLiteral>
 		>
 

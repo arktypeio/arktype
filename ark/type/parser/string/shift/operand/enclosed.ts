@@ -1,4 +1,6 @@
 import { isKeyOf } from "@ark/util"
+import type { Date, string } from "../../../../keywords/ast.ts"
+import type { InferredAst } from "../../../semantic/infer.ts"
 import type { DynamicState } from "../../reduce/dynamic.ts"
 import type { StaticState, state } from "../../reduce/static.ts"
 import type { Scanner } from "../scanner.ts"
@@ -57,7 +59,12 @@ export type parseEnclosed<
 			state.error<writeUnterminatedEnclosedMessage<scanned, enclosingStart>>
 		:	state.setRoot<
 				s,
-				`${enclosingStart}${scanned}${EnclosingTokens[enclosingStart]}`,
+				InferredAst<
+					enclosingStart extends EnclosingQuote ? scanned
+					: enclosingStart extends "/" ? string.matching<scanned>
+					: Date.literal<scanned>,
+					`${enclosingStart}${scanned}${EnclosingTokens[enclosingStart]}`
+				>,
 				nextUnscanned extends Scanner.shift<string, infer unscanned> ? unscanned
 				:	""
 			>

@@ -1,6 +1,5 @@
 import type { GenericAst } from "@ark/schema"
 import type { BigintLiteral, Hkt, array } from "@ark/util"
-import type { ArkAmbient } from "../../config.ts"
 import type { inferIntersection } from "../../intersect.ts"
 import type {
 	Date,
@@ -14,11 +13,7 @@ import type {
 	normalizeLimit
 } from "../../keywords/ast.ts"
 import type { string } from "../../keywords/string/string.ts"
-import type {
-	UnparsedScope,
-	resolve,
-	tryInferSubmoduleReference
-} from "../../scope.ts"
+import type { UnparsedScope } from "../../scope.ts"
 import type { inferDefinition } from "../definition.ts"
 import type { Comparator, MinComparator } from "../string/reduce/shared.ts"
 import type { StringLiteral } from "../string/shift/operand/enclosed.ts"
@@ -31,8 +26,20 @@ export type inferAstOut<ast, $, args> = distillOut<inferAstRoot<ast, $, args>>
 
 export type inferConstrainableAst<ast, $, args> =
 	ast extends array ? inferExpression<ast, $, args>
-	: ast extends string ? inferTerminal<ast, $, args>
+	: ast extends string ? inferTerminal<ast>
 	: never
+
+export type DefAst<def = unknown, alias extends string = string> = [
+	def,
+	"def",
+	alias
+]
+
+export type InferredAst<t = unknown, def extends string = string> = [
+	t,
+	"inferred",
+	def
+]
 
 export type GenericInstantiationAst<
 	generic extends GenericAst = GenericAst,
@@ -47,7 +54,9 @@ type resolveScope<g$, $> =
 		g$
 
 export type inferExpression<ast extends array, $, args> =
-	ast extends GenericInstantiationAst<infer g, infer argAsts> ?
+	ast extends InferredAst<infer resolution> ? resolution
+	: ast extends DefAst<infer def> ? inferDefinition<def, $, args>
+	: ast extends GenericInstantiationAst<infer g, infer argAsts> ?
 		g["bodyDef"] extends Hkt ?
 			Hkt.apply<
 				g["bodyDef"],
@@ -76,7 +85,7 @@ export type inferExpression<ast extends array, $, args> =
 			inferConstrainableAst<ast[2], $, args>
 		>
 	: ast[1] extends "=" ?
-		inferTerminal<ast[2] & string, $, args> extends infer defaultValue ?
+		inferTerminal<ast[2] & string> extends infer defaultValue ?
 			(In?: inferConstrainableAst<ast[0], $, args>) => Default<defaultValue>
 		:	never
 	: ast[1] extends Comparator ?
@@ -143,15 +152,10 @@ export type InfixExpression<
 	r = unknown
 > = [l, operator, r]
 
-export type inferTerminal<token extends string, $, args> =
-	token extends keyof args | keyof $ ? resolve<token, $, args>
-	: token extends keyof ArkAmbient.$ ? resolve<token, ArkAmbient.$, args>
-	: `#${token}` extends keyof $ ? resolve<`#${token}`, $, args>
-	: token extends StringLiteral<infer text> ? text
+export type inferTerminal<token extends string> =
+	token extends StringLiteral<infer text> ? text
 	: token extends `${infer n extends number}` ? n
 	: token extends BigintLiteral<infer b> ? b
 	: token extends RegexLiteral<infer source> ? string.matching<source>
 	: token extends DateLiteral<infer source> ? Date.literal<source>
-	: // doing this last allows us to infer never if it isn't valid rather than check
-		// if it's a valid submodule reference ahead of time
-		tryInferSubmoduleReference<$, token>
+	: never
