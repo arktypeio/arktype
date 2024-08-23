@@ -67,9 +67,11 @@ export type inferDefinition<def, $, args> =
 	[def] extends [anyOrNever] ? def
 	: def extends type.cast<infer t> ?
 		{} extends t ?
-			// unlike in TS, ArkType object literals are constrained to object
-			// so we use that as the base type inferred when parsing {}
-			object
+			[t] extends [anyOrNever] ?
+				t
+			:	// unlike in TS, ArkType object literals are constrained to object
+				// so we use that as the base type inferred when parsing {}
+				object
 		:	t
 	: def extends ThunkCast<infer t> ? t
 	: def extends string ? inferString<def, $, args>

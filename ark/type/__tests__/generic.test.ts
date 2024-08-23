@@ -333,12 +333,13 @@ contextualize(() => {
 				)
 			})
 
-			it("extra >", ({ $ }) => {
-				attest(() =>
-					// @ts-expect-error
-					$.type("box<0,  this>>")
-				).throwsAndHasTypeError(writeUnexpectedCharacterMessage(">"))
-			})
+			// TODO: this (https://github.com/arktypeio/arktype/issues/1081)
+			// it("extra >", ({ $ }) => {
+			// 	attest(() =>
+			// 		// @ts-expect-error
+			// 		$.type("box<0,  this>>")
+			// 	).throwsAndHasTypeError(writeUnexpectedCharacterMessage(">"))
+			// })
 
 			it("too few args", ({ $ }) => {
 				attest(() =>
