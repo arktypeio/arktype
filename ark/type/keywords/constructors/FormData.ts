@@ -28,7 +28,7 @@ export const FormDataModule: Module<FormDataModule> = submodule({
 						existing instanceof registry.FileConstructor
 					)
 						result[k] = [existing, v]
-					else existing.push(v)
+					else (existing as FormDataValue[]).push(v)
 				} else result[k] = v
 			}
 			return result

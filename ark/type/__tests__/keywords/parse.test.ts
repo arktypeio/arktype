@@ -7,8 +7,8 @@ contextualize(() => {
 		const parseJson = type("string.json.parse")
 		attest(parseJson('{"a": "hello"}')).snap({ a: "hello" })
 		attest(parseJson(123).toString()).snap("must be a string (was a number)")
-		attest(parseJson("{").toString()).snap(
-			"must be a JSON string (SyntaxError: Expected property name or '}' in JSON at position 1 (line 1 column 2))"
+		attest(parseJson("{").toString()).satisfies(
+			/^must be a JSON string \(SyntaxError:.*\)$/
 		)
 	})
 
@@ -68,6 +68,10 @@ contextualize(() => {
 >`)
 
 		const data = new FormData()
+
+		// Node18 doesn't have a File constructor
+		if (process.version.startsWith("v18")) return
+
 		const file = new registry.FileConstructor([], "")
 
 		data.append("email", "david@arktype.io")
