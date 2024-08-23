@@ -73,7 +73,6 @@ const Extract = genericNode("T", "U")(
 )
 
 export const arkTs: Module<arkTs> = submodule({
-	any: intrinsic.unknown,
 	bigint: intrinsic.bigint,
 	boolean: intrinsic.boolean,
 	false: intrinsic.false,
@@ -96,7 +95,6 @@ export const arkTs: Module<arkTs> = submodule({
 })
 
 export type arkTs = Submodule<{
-	any: any
 	bigint: bigint
 	boolean: boolean
 	false: false

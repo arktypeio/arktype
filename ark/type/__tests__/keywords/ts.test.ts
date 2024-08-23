@@ -25,7 +25,7 @@ contextualize(() => {
 	})
 
 	it("any", () => {
-		const any = type("any")
+		const any = type("unknown" as type.cast<any>)
 		// equivalent to unknown at runtime
 		attest(any.json).equals(type("unknown").json)
 		// inferred as any
@@ -33,7 +33,7 @@ contextualize(() => {
 	})
 
 	it("any in expression", () => {
-		const t = type("string&any")
+		const t = type("string", "&", "unknown" as type.cast<any>)
 		attest<any>(t.infer)
 
 		attest(t.json).equals(intrinsic.string.json)

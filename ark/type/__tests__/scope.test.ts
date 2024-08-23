@@ -175,10 +175,9 @@ contextualize(() => {
 		it("ark", () => {
 			const def = define({
 				a: "string|number",
-				b: ["boolean"],
-				c: "this"
+				b: ["boolean"]
 			})
-			attest<{ a: "string|number"; b: ["boolean"]; c: "this" }>(def)
+			attest<{ a: "string|number"; b: ["boolean"] }>(def)
 		})
 
 		it("ark error", () => {

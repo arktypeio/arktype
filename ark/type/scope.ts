@@ -114,7 +114,10 @@ export type validateScope<def> = {
 
 export type inferScope<def> = inferBootstrapped<bootstrapAliases<def>>
 
-export type bindThis<def> = { this: Def<def> }
+// TODO: this (https://github.com/arktypeio/arktype/issues/1081)
+// this: Def<def>
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export type bindThis<def> = {}
 
 /** nominal type for an unparsed definition used during scope bootstrapping */
 type Def<def = {}> = nominal<def, "unparsed">
