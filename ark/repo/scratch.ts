@@ -1,20 +1,24 @@
 import { type } from "arktype"
 
-const isoDateString = type("string").narrow((s, ctx) => {
-	if (!/.*/.test(s)) return ctx.mustBe("a valid ISO date string")
-	return true
+// Syntax carried over from 1.0 + TS
+export const currentTsSyntax = type({
+	keyword: "null",
+	stringLiteral: "'TS'",
+	numberLiteral: "5",
+	bigintLiteral: "5n",
+	union: "string|number",
+	intersection: "boolean&true",
+	array: "Date[]",
+	grouping: "(0|1)[]",
+	objectLiteral: {
+		nested: "string",
+		"optional?": "number"
+	},
+	arrayOfObjectLiteral: [
+		{
+			name: "string"
+		},
+		"[]"
+	],
+	tuple: ["number", "number"]
 })
-
-const isoDate = isoDateString.pipe(s => new Date(s))
-
-const test = type({
-	date: "string.date.iso.parse"
-})
-
-const o = {
-	date: "1991-01-01T00:00:00.000Z"
-}
-
-test(o)
-
-console.log(typeof o.date) // logs "object"
