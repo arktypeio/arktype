@@ -3,9 +3,8 @@
 	"compilerOptions": {
 		"allowImportingTsExtensions": true,
 		"customConditions": ["ark-ts"],
-		"types": ["mocha", "node"]
-		// should be off by default, but here as a convenience to toggle
-		// "noErrorTruncation": true,
+		"types": ["mocha", "node"],
+		"noErrorTruncation": true
 	},
 	"exclude": ["**/out", "**/node_modules", "./ark/docs"]
 }

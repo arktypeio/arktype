@@ -1,9 +1,7 @@
+import { genericNode, intrinsic } from "@ark/schema"
 import type * as util from "@ark/util"
 import { Hkt, type Key } from "@ark/util"
 import type { Module, Submodule } from "../module.ts"
-// these are needed to create some internal types
-import { genericNode, intrinsic } from "@ark/schema"
-import "./ts.ts"
 import { submodule } from "./utils.ts"
 
 class mergeHkt extends Hkt<[base: object, props: object]> {
