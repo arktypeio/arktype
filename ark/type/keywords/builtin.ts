@@ -1,52 +1,24 @@
-import * as util from "@ark/util"
-import { Hkt, type Digit, type Key } from "@ark/util"
-import type { Module } from "../module.ts"
-import { scope } from "../scope.ts"
-// these are needed to create some internal types
 import { genericNode, intrinsic } from "@ark/schema"
-import type { Out } from "../ast.ts"
-import "./ts.ts"
+import type * as util from "@ark/util"
+import { Hkt, type Key } from "@ark/util"
+import type { Module, Submodule } from "../module.ts"
+import { submodule } from "./utils.ts"
 
-class liftArrayHkt extends Hkt<[element: unknown]> {
-	declare body: util.liftArray<this[0]> extends infer lifted ?
-		(In: this[0] | lifted) => Out<lifted>
-	:	never
-}
-
-const liftArray = genericNode("element")(
-	args => args.element.or(args.element.array()).pipe(util.liftArray),
-	liftArrayHkt
-)
-
-class mergeHkt extends Hkt<[base: object, props: object]> {
+class MergeHkt extends Hkt<[base: object, props: object]> {
 	declare body: util.merge<this[0], this[1]>
 }
 
-const merge = genericNode(
+const Merge = genericNode(
 	["base", intrinsic.object],
 	["props", intrinsic.object]
-)(args => args.base.merge(args.props), mergeHkt)
+)(args => args.base.merge(args.props), MergeHkt)
 
-export type NonNegativeIntegerString =
-	| `${Digit}`
-	| (`${Exclude<Digit, 0>}${string}` & `${bigint}`)
+export const arkBuiltin: Module<arkBuiltin> = submodule({
+	Key: intrinsic.key,
+	Merge
+})
 
-const keywords: Module<arkBuiltin.keywords> = scope({
-	key: intrinsic.key,
-	nonNegativeIntegerString: intrinsic.nonNegativeIntegerString,
-	liftArray,
-	merge
-}).export()
-
-export const arkBuiltin = {
-	keywords
-}
-
-export declare namespace arkBuiltin {
-	export interface keywords {
-		key: Key
-		nonNegativeIntegerString: NonNegativeIntegerString
-		liftArray: typeof liftArray.t
-		merge: typeof merge.t
-	}
-}
+export type arkBuiltin = Submodule<{
+	Key: Key
+	Merge: typeof Merge.t
+}>

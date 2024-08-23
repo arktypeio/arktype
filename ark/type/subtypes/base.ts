@@ -15,6 +15,7 @@ import type {
 	Json,
 	unset
 } from "@ark/util"
+import type { inferIntersection } from "../intersect.ts"
 import type {
 	distillConstrainableIn,
 	distillConstrainableOut,
@@ -23,8 +24,7 @@ import type {
 	distillValidatedOut,
 	inferMorphOut,
 	inferPipes
-} from "../ast.ts"
-import type { inferIntersection } from "../intersect.ts"
+} from "../keywords/ast.ts"
 import type { Scope } from "../scope.ts"
 import type { inferTypeRoot, validateTypeRoot } from "../type.ts"
 import type { ArrayType } from "./array.ts"

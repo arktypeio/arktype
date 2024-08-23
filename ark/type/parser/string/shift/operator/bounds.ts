@@ -6,7 +6,7 @@ import {
 	type NodeSchema
 } from "@ark/schema"
 import { isKeyOf, throwParseError, type keySet } from "@ark/util"
-import type { DateLiteral, LimitLiteral } from "../../../../ast.ts"
+import type { DateLiteral, LimitLiteral } from "../../../../keywords/ast.ts"
 import type { astToString } from "../../../semantic/utils.ts"
 import type {
 	DynamicState,

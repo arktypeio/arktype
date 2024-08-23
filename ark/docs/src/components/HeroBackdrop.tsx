@@ -2,7 +2,26 @@ import React from "react"
 import { FloatYourBoat } from "./FloatYourBoat.js"
 import { PlatformCloud } from "./PlatformCloud.js"
 
-export const HeroBackdrop = () => (
+// workaround for compatibility issue between MDX and Astro
+declare module "react" {
+	// T must be present to match type params of base type
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	interface HTMLAttributes<T> {
+		class?: string
+	}
+}
+
+// workaround for compatibility issue between MDX and Astro,
+// allows specifying this directive as a prop
+export type HeroBackdropProps = {
+	"client:only": "react"
+}
+
+export type HeroBackdropComponent = (
+	props: HeroBackdropProps
+) => React.JSX.Element
+
+export const HeroBackdrop: HeroBackdropComponent = () => (
 	<div
 		style={{
 			position: "absolute",

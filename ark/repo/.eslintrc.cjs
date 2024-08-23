@@ -100,6 +100,10 @@ module.exports = defineConfig({
 					{
 						group: ["**/index.js", "!**/structure/index.js"],
 						message: `Use a path like '../original/definition.js' instead of a package entrypoint`
+					},
+					{
+						group: ["arktype/config"],
+						message: `Use a relative path to ark/type/config.ts instead`
 					}
 				]
 			}
@@ -113,6 +117,7 @@ module.exports = defineConfig({
 		"@typescript-eslint/ban-types": "off",
 		"@typescript-eslint/no-explicit-any": "off",
 		"@typescript-eslint/no-non-null-assertion": "off",
+		"@typescript-eslint/no-unsafe-declaration-merging": "off",
 		/**
 		 * Namespaces are useful for grouping generic types with related functionality
 		 */

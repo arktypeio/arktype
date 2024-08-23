@@ -1,7 +1,25 @@
 import { attest, contextualize } from "@ark/attest"
-import { schemaScope } from "@ark/schema"
+import { rootNode, schemaScope } from "@ark/schema"
 
 contextualize(() => {
+	it("has jit in scope", () => {
+		const types = schemaScope({
+			foo: {
+				domain: "string"
+			}
+		}).export()
+
+		attest(types.foo.jit).equals(true)
+	})
+
+	it("has jit standalone", () => {
+		const node = rootNode({
+			domain: "string"
+		})
+
+		attest(node.jit).equals(true)
+	})
+
 	it("reference", () => {
 		const types = schemaScope({
 			a: {
@@ -66,7 +84,7 @@ contextualize(() => {
 		attest(types.b.allows(b)).equals(true)
 		attest(types.b.allows(almostB)).equals(false)
 		attest(types.b(almostB)?.toString()).snap(
-			"a.b.a.b must be an object (was string)"
+			"a.b.a.b must be an object (was a string)"
 		)
 	})
 })

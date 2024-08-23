@@ -6,23 +6,22 @@ import {
 	printable,
 	throwInternalError,
 	throwParseError,
+	type Constructor,
 	type Dict,
+	type Fn,
 	type Json,
 	type anyOrNever,
 	type array,
 	type conform,
 	type flattenListable,
 	type listable,
-	type noSuggest,
-	type show
+	type noSuggest
 } from "@ark/util"
 import { resolveConfig, type ArkConfig } from "./config.ts"
 import {
 	GenericRoot,
 	LazyGenericBody,
-	type GenericHktSchemaBodyParser,
-	type GenericParamDef,
-	type genericParamSchemasToAst
+	type GenericRootParser
 } from "./generic.ts"
 import {
 	nodeImplementationsByKind,
@@ -36,7 +35,8 @@ import {
 	bindModule,
 	type InternalModule,
 	type PreparsedNodeResolution,
-	type SchemaModule
+	type SchemaModule,
+	type instantiateRoot
 } from "./module.ts"
 import type { BaseNode } from "./node.ts"
 import {
@@ -173,14 +173,12 @@ export abstract class BaseScope<$ extends {} = {}> {
 		return def
 	}
 
-	generic = <const paramsDef extends readonly GenericParamDef[]>(
-		...params: paramsDef
-	): GenericHktSchemaBodyParser<genericParamSchemasToAst<paramsDef>> => {
+	generic: GenericRootParser = (...params) => {
 		const $: BaseScope = this as never
-		return instantiateDef =>
+		return (def: unknown, possibleHkt?: Constructor) =>
 			new GenericRoot(
 				params,
-				new LazyGenericBody(instantiateDef),
+				possibleHkt ? new LazyGenericBody(def as Fn) : def,
 				$,
 				$
 			) as never
@@ -240,7 +238,8 @@ export abstract class BaseScope<$ extends {} = {}> {
 		}
 
 		const impl = nodeImplementationsByKind[kind]
-		const normalizedSchema = impl.normalize?.(schema) ?? schema
+		const normalizedSchema =
+			impl.normalize?.(schema, this.resolvedConfig) ?? schema
 		// check again after normalization in case a node is a valid collapsed
 		// schema for the kind (e.g. sequence can collapse to element accepting a Node')
 		if (isNode(normalizedSchema)) {
@@ -370,11 +369,19 @@ export abstract class BaseScope<$ extends {} = {}> {
 		}).bindScope(this))
 	}
 
+	import(): SchemaModule<{
+		[k in exportedNameOf<$> as PrivateDeclaration<k>]: $[k]
+	}>
 	import<names extends exportedNameOf<$>[]>(
 		...names: names
-	): SchemaModule<show<destructuredImportContext<$, names>>> {
+	): SchemaModule<
+		{
+			[k in names[number] as PrivateDeclaration<k>]: $[k]
+		} & unknown
+	>
+	import(...names: string[]): SchemaModule {
 		return new RootModule(
-			flatMorph(this.export(...names) as any, (alias, value) => [
+			flatMorph(this.export(...(names as never)) as any, (alias, value) => [
 				`#${alias}`,
 				value
 			]) as never
@@ -383,9 +390,15 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 	private _exportedResolutions: InternalResolutions | undefined
 	private _exports: RootExportCache | undefined
+	export(): SchemaModule<{ [k in exportedNameOf<$>]: $[k] }>
 	export<names extends exportedNameOf<$>[]>(
 		...names: names
-	): SchemaModule<show<destructuredExportContext<$, names>>> {
+	): SchemaModule<
+		{
+			[k in names[number]]: $[k]
+		} & unknown
+	>
+	export(...names: string[]): SchemaModule {
 		if (!this._exports) {
 			this._exports = {}
 			for (const name of this.exportedNames) {
@@ -444,7 +457,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 	resolve<name extends exportedNameOf<$>>(
 		name: name
-	): destructuredExportContext<$, []>[name] {
+	): instantiateRoot<$[name]> {
 		return this.export()[name as never]
 	}
 
@@ -483,8 +496,12 @@ const maybeResolveSubalias = (
 	if (hasArkKind(resolution, "root") || hasArkKind(resolution, "generic"))
 		return resolution
 
-	if (hasArkKind(resolution, "module"))
-		return throwParseError(writeMissingSubmoduleAccessMessage(name))
+	if (hasArkKind(resolution, "module")) {
+		return (
+			resolution.$root ??
+			throwParseError(writeMissingSubmoduleAccessMessage(name))
+		)
+	}
 
 	throwInternalError(
 		`Unexpected resolution for alias '${name}': ${printable(resolution)}`
@@ -496,17 +513,18 @@ type instantiateAliases<aliases> = {
 	:	BaseRoot
 } & unknown
 
-export const schemaScope = <
-	const aliases extends {
+export type SchemaScopeParser = <const aliases>(
+	aliases: {
 		[k in keyof aliases]: conform<
 			aliases[k],
 			RootSchema | PreparsedNodeResolution
 		>
-	}
->(
-	aliases: aliases,
+	},
 	config?: ArkScopeConfig
-): SchemaScope<instantiateAliases<aliases>> => new SchemaScope(aliases, config)
+) => SchemaScope<instantiateAliases<aliases>>
+
+export const schemaScope: SchemaScopeParser = (aliases, config) =>
+	new SchemaScope(aliases, config)
 
 export class SchemaScope<
 	$ extends InternalResolutions = InternalResolutions
@@ -522,12 +540,6 @@ export class SchemaScope<
 
 export const rootSchemaScope: SchemaScope = new SchemaScope({})
 
-export const rootNode: SchemaScope["rootNode"] = rootSchemaScope.rootNode
-export const node: SchemaScope["node"] = rootSchemaScope.node
-export const defineSchema: SchemaScope["defineSchema"] =
-	rootSchemaScope.defineSchema
-export const genericNode: SchemaScope["generic"] = rootSchemaScope.generic
-
 export const parseAsSchema = (
 	def: unknown,
 	opts?: NodeParseOptions
@@ -538,15 +550,6 @@ export const parseAsSchema = (
 		if (e instanceof ParseError) return e
 		throw e
 	}
-}
-
-export type destructuredExportContext<$, names extends exportedNameOf<$>[]> = {
-	[k in names["length"] extends 0 ? exportedNameOf<$> : names[number]]: $[k]
-}
-
-export type destructuredImportContext<$, names extends exportedNameOf<$>[]> = {
-	[k in names["length"] extends 0 ? exportedNameOf<$> : names[number] as `#${k &
-		string}`]: $[k]
 }
 
 export type RootExportCache = Record<
@@ -634,3 +637,12 @@ const compileScope = (references: readonly BaseNode[]) =>
 				[k: `${string}Apply`]: TraverseApply
 			}
 		>()()
+
+// ensure the scope is resolved so JIT will be applied to future types
+rootSchemaScope.export()
+
+export const rootNode: SchemaScope["rootNode"] = rootSchemaScope.rootNode
+export const node: SchemaScope["node"] = rootSchemaScope.node
+export const defineSchema: SchemaScope["defineSchema"] =
+	rootSchemaScope.defineSchema
+export const genericNode: SchemaScope["generic"] = rootSchemaScope.generic

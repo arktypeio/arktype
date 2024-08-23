@@ -27,7 +27,9 @@ import { InternalBasis } from "./basis.ts"
 export type Domain = _Domain
 
 export declare namespace Domain {
-	export type NonEnumerable = Exclude<Domain, "undefined" | "null" | "boolean">
+	export type Enumerable = "undefined" | "null" | "boolean"
+
+	export type NonEnumerable = Exclude<Domain, Enumerable>
 
 	export interface Inner<domain extends NonEnumerable = NonEnumerable> {
 		readonly domain: domain
@@ -70,7 +72,7 @@ const implementation: nodeImplementationOf<Domain.Declaration> =
 			typeof schema === "string" ? { domain: schema } : schema,
 		defaults: {
 			description: node => domainDescriptions[node.domain],
-			actual: data => (typeof data === "boolean" ? `${data}` : domainOf(data))
+			actual: data => domainDescriptions[domainOf(data)]
 		},
 		intersections: {
 			domain: (l, r) => Disjoint.init("domain", l, r)

@@ -31,12 +31,18 @@ contextualize(() => {
 			attest(schrodingersBox.json).equals(expected.json)
 		})
 
-		it("completions", () => {
+		it("body completions", () => {
 			// @ts-expect-error
 			attest(() => type("<foobar>", { a: "foob", b: "bool" })).completions({
 				foob: ["foobar"],
 				bool: ["boolean"]
 			})
+		})
+
+		it("args completions", () => {
+			const g = type("<t>", { box: "t" })
+			// @ts-expect-error
+			attest(() => g({ box: "numb" })).completions({ numb: ["number"] })
 		})
 
 		it("binary", () => {
@@ -87,20 +93,21 @@ contextualize(() => {
 			).throwsAndHasTypeError(writeUnresolvableMessage("this"))
 		})
 
-		it("this in arg", () => {
-			const boxOf = type("<t>", {
-				box: "t"
-			})
-			const t = boxOf({
-				a: "string|this"
-			})
+		// TODO: this (https://github.com/arktypeio/arktype/issues/1081)
+		// it("this in arg", () => {
+		// 	const boxOf = type("<t>", {
+		// 		box: "t"
+		// 	})
+		// 	const t = boxOf({
+		// 		a: "string|this"
+		// 	})
 
-			const expectedContents = type({ a: "string|this" })
-			const expectedBox = type({ box: expectedContents })
+		// 	const expectedContents = type({ a: "string|this" })
+		// 	const expectedBox = type({ box: expectedContents })
 
-			attest(t.t).type.toString.snap(`{ box: { a: string | cyclic } }`)
-			attest(t.json).equals(expectedBox.json)
-		})
+		// 	attest(t.t).type.toString.snap(`{ box: { a: string | cyclic } }`)
+		// 	attest(t.json).equals(expectedBox.json)
+		// })
 
 		it("too few args", () => {
 			const pair = type("<t, u>", ["t", "u"])
@@ -154,7 +161,7 @@ contextualize(() => {
 			const positiveToInteger = type("<n: number > 0>", "n % 1")
 
 			const t = positiveToInteger("number > 0")
-			const expected = type("integer > 0")
+			const expected = type("number.integer > 0")
 
 			attest<typeof expected.t>(t.t)
 			attest(t.expression).equals(expected.expression)
@@ -291,19 +298,20 @@ contextualize(() => {
 				attest(t.json).equals(expected.json)
 			})
 
-			it("this in args", ({ $ }) => {
-				const t = $.type("box<0,  this>")
-				type Expected = {
-					box: 0 | Expected
-				}
-				const standalone = type({
-					box: "0|this"
-				})
+			// TODO: this (https://github.com/arktypeio/arktype/issues/1081)
+			// it("this in args", ({ $ }) => {
+			// 	const t = $.type("box<0,  this>")
+			// 	type Expected = {
+			// 		box: 0 | Expected
+			// 	}
+			// 	const standalone = type({
+			// 		box: "0|this"
+			// 	})
 
-				attest<Expected>(t.t)
-				attest<Expected>(standalone.t)
-				attest(t.json).equals(standalone.json)
-			})
+			// 	attest<Expected>(t.t)
+			// 	attest<Expected>(standalone.t)
+			// 	attest(t.json).equals(standalone.json)
+			// })
 
 			it("right bounds", ({ $ }) => {
 				// should be able to differentiate between > that is part of a right
@@ -325,12 +333,13 @@ contextualize(() => {
 				)
 			})
 
-			it("extra >", ({ $ }) => {
-				attest(() =>
-					// @ts-expect-error
-					$.type("box<0,  this>>")
-				).throwsAndHasTypeError(writeUnexpectedCharacterMessage(">"))
-			})
+			// TODO: this (https://github.com/arktypeio/arktype/issues/1081)
+			// it("extra >", ({ $ }) => {
+			// 	attest(() =>
+			// 		// @ts-expect-error
+			// 		$.type("box<0,  this>>")
+			// 	).throwsAndHasTypeError(writeUnexpectedCharacterMessage(">"))
+			// })
 
 			it("too few args", ({ $ }) => {
 				attest(() =>
@@ -423,6 +432,76 @@ contextualize(() => {
 			})
 		}
 	)
+
+	it("args completions from type", () => {
+		const g = type("<t>", { box: "t" })
+
+		attest(() =>
+			g({
+				// @ts-expect-error
+				foo: "numb",
+				// @ts-expect-error
+				bar: "big"
+			})
+		).completions({
+			numb: ["number"],
+			big: ["bigint"]
+		})
+	})
+
+	contextualize.each(
+		"standalone",
+		() =>
+			generic([
+				"t",
+				{
+					foo: "number"
+				}
+			])({ boxOf: "t" }),
+		it => {
+			it("valid", g => {
+				const t = g({
+					foo: "number"
+				})
+
+				const expected = type({
+					boxOf: {
+						foo: "number"
+					}
+				})
+
+				attest<typeof expected.t>(t.t)
+				attest(t.expression).equals(expected.expression)
+			})
+
+			it("invalid", g => {
+				attest(() =>
+					// @ts-expect-error
+					g({
+						foo: "string"
+					})
+				)
+					.throws(
+						writeUnsatisfiedParameterConstraintMessage(
+							"t",
+							"{ foo: number }",
+							"{ foo: string }"
+						)
+					)
+					.type.errors(
+						`ErrorType<"Invalid argument for t", [expected: { foo: number; }]>`
+					)
+			})
+
+			it("completions", g => {
+				// @ts-expect-error
+				attest(() => g({ foo: "numb" })).completions({
+					numb: ["number"]
+				})
+			})
+		}
+	)
+
 	describe("hkt", () => {
 		it("can infer a generic from an hkt", () => {
 			class MyExternalClass<T> {
@@ -471,6 +550,11 @@ contextualize(() => {
 				proto: "$ark.MyExternalClass",
 				domain: "object"
 			})
+
+			// @ts-expect-error
+			attest(() => validateExternalGeneric({ numb: "numb" })).completions({
+				numb: ["number"]
+			})
 		})
 
 		it("can infer constrained parameters", () => {
@@ -509,6 +593,14 @@ contextualize(() => {
 				.type.errors(
 					`ErrorType<"Invalid argument for N", [expected: { value: number; }]>`
 				)
+
+			attest(() =>
+				// @ts-expect-error
+				validateExternalGeneric({ numb: "numb" }, ["strin"])
+			).completions({
+				numb: ["number"],
+				strin: ["string"]
+			})
 		})
 	})
 

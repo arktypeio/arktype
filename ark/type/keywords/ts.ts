@@ -1,7 +1,7 @@
 import { genericNode, intrinsic } from "@ark/schema"
 import { Hkt, type Key, type omit, type pick, type show } from "@ark/util"
-import type { Module } from "../module.ts"
-import { scope } from "../scope.ts"
+import type { Module, Submodule } from "../module.ts"
+import { submodule } from "./utils.ts"
 
 class RecordHkt extends Hkt<[Key, unknown]> {
 	declare body: Record<this[0], this[1]>
@@ -72,57 +72,46 @@ const Extract = genericNode("T", "U")(
 	ExtractHkt
 )
 
-const keywords: Module<arkTs.keywords> = scope(
-	{
-		any: intrinsic.unknown,
-		bigint: intrinsic.bigint,
-		boolean: intrinsic.boolean,
-		false: intrinsic.false,
-		never: intrinsic.never,
-		null: intrinsic.null,
-		number: intrinsic.number,
-		object: intrinsic.object,
-		string: intrinsic.string,
-		symbol: intrinsic.symbol,
-		true: intrinsic.true,
-		unknown: intrinsic.unknown,
-		undefined: intrinsic.undefined,
-		Record,
-		Pick,
-		Omit,
-		Exclude,
-		Extract,
-		Partial,
-		Required
-	},
-	{ prereducedAliases: true }
-).export()
+export const arkTs: Module<arkTs> = submodule({
+	bigint: intrinsic.bigint,
+	boolean: intrinsic.boolean,
+	false: intrinsic.false,
+	never: intrinsic.never,
+	null: intrinsic.null,
+	number: intrinsic.number,
+	object: intrinsic.object,
+	string: intrinsic.string,
+	symbol: intrinsic.symbol,
+	true: intrinsic.true,
+	unknown: intrinsic.unknown,
+	undefined: intrinsic.undefined,
+	Record,
+	Pick,
+	Omit,
+	Exclude,
+	Extract,
+	Partial,
+	Required
+})
 
-export const arkTs = {
-	keywords
-}
-
-export declare namespace arkTs {
-	export interface keywords {
-		any: any
-		bigint: bigint
-		boolean: boolean
-		false: false
-		never: never
-		null: null
-		number: number
-		object: object
-		string: string
-		symbol: symbol
-		true: true
-		unknown: unknown
-		undefined: undefined
-		Record: typeof Record.t
-		Pick: typeof Pick.t
-		Omit: typeof Omit.t
-		Exclude: typeof Exclude.t
-		Extract: typeof Extract.t
-		Partial: typeof Partial.t
-		Required: typeof Required.t
-	}
-}
+export type arkTs = Submodule<{
+	bigint: bigint
+	boolean: boolean
+	false: false
+	never: never
+	null: null
+	number: number
+	object: object
+	string: string
+	symbol: symbol
+	true: true
+	unknown: unknown
+	undefined: undefined
+	Record: typeof Record.t
+	Pick: typeof Pick.t
+	Omit: typeof Omit.t
+	Exclude: typeof Exclude.t
+	Extract: typeof Extract.t
+	Partial: typeof Partial.t
+	Required: typeof Required.t
+}>

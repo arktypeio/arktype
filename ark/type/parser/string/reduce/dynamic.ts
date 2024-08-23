@@ -5,7 +5,7 @@ import {
 	throwInternalError,
 	throwParseError
 } from "@ark/util"
-import type { LimitLiteral } from "../../../ast.ts"
+import type { LimitLiteral } from "../../../keywords/ast.ts"
 import type { ParseContext } from "../../../scope.ts"
 import type { InfixOperator } from "../../semantic/infer.ts"
 import { parseOperand } from "../shift/operand/operand.ts"

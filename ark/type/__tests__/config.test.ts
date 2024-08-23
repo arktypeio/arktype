@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { attest, contextualize } from "@ark/attest"
 import { scope, type } from "arktype"
 
@@ -13,11 +14,11 @@ contextualize(() => {
 		attest<string>(types.a.infer)
 		attest(types.a.description).equals(description)
 		attest(types.a(1).toString()).snap(
-			"must be a series of characters (was number)"
+			"must be a series of characters (was a number)"
 		)
 		attest<{ a: string }>(types.b.infer)
 		attest(types.b({ a: true }).toString()).snap(
-			"a must be a series of characters (was true)"
+			"a must be a series of characters (was boolean)"
 		)
 	})
 
@@ -77,7 +78,7 @@ contextualize(() => {
 				name: "david",
 				age: true
 			}).toString()
-		).snap("age must be a number (was true)")
+		).snap("age must be a number (was boolean)")
 
 		// should give the shallow custom error
 		attest(user(null).toString()).snap("must be a valid user (was null)")

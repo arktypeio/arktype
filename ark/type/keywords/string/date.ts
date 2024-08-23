@@ -1,3 +1,11 @@
+import { ArkErrors, intrinsic, rootNode } from "@ark/schema"
+import type { Submodule } from "../../module.ts"
+import type { Branded, To, constrain } from "../ast.ts"
+import { number } from "../number/number.ts"
+import { submodule } from "../utils.ts"
+import { integer } from "./integer.ts"
+import { regexStringNode } from "./utils.ts"
+
 type DayDelimiter = "." | "/" | "-"
 
 const dayDelimiterMatcher = /^[./-]$/
@@ -31,7 +39,7 @@ export type DayPattern<delimiter extends DayDelimiter = DayDelimiter> =
 		}[keyof DayPatterns]
 	:	never
 
-export type DateFormat = "iso8601" | DayPattern
+export type DateFormat = "iso" | DayPattern
 
 export type DateOptions = {
 	format?: DateFormat
@@ -62,10 +70,10 @@ export const tryParseDatePattern = (
 		const result = new Date(data)
 		return isValidDateInstance(result) ? result : "a valid date"
 	}
-	if (opts.format === "iso8601") {
+	if (opts.format === "iso") {
 		return iso8601Matcher.test(data) ?
 				new Date(data)
-			:	writeFormattedExpected("iso8601")
+			:	writeFormattedExpected("iso")
 	}
 	const dataParts = data.split(dayDelimiterMatcher)
 	// will be the first delimiter matched, if there is one
@@ -93,3 +101,91 @@ export const tryParseDatePattern = (
 
 	return writeFormattedExpected(opts.format)
 }
+
+const isParsableDate = (s: string) => !Number.isNaN(new Date(s).valueOf())
+
+const parsableDate = rootNode({
+	domain: "string",
+	predicate: {
+		meta: "a parsable date",
+		predicate: isParsableDate
+	}
+}).assertHasKind("intersection")
+
+const epoch$root = integer.$root.internal
+	.narrow((s, ctx) => {
+		// we know this is safe since it has already
+		// been validated as an integer string
+		const n = Number.parseInt(s)
+		const out = number.epoch(n)
+		if (out instanceof ArkErrors) {
+			ctx.errors.merge(out)
+			return false
+		}
+		return true
+	})
+	.withMeta({
+		description: "an integer string representing a safe Unix timestamp"
+	})
+	.assertHasKind("intersection")
+
+const epoch = submodule({
+	$root: epoch$root,
+	parse: rootNode({
+		in: epoch$root,
+		morphs: (s: string) => new Date(s),
+		declaredOut: intrinsic.Date
+	})
+})
+
+const iso$root = regexStringNode(
+	iso8601Matcher,
+	"an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date"
+).internal.assertHasKind("intersection")
+
+const iso = submodule({
+	$root: iso$root,
+	parse: rootNode({
+		in: iso$root,
+		morphs: (s: string) => new Date(s),
+		declaredOut: intrinsic.Date
+	})
+})
+
+export const date = submodule({
+	$root: parsableDate,
+	parse: rootNode({
+		declaredIn: parsableDate,
+		in: "string",
+		morphs: (s: string, ctx) => {
+			const date = new Date(s)
+			if (Number.isNaN(date.valueOf())) return ctx.error("a parsable date")
+			return date
+		},
+		declaredOut: intrinsic.Date
+	}),
+	iso,
+	epoch
+})
+
+declare namespace string {
+	export type date = constrain<string, Branded<"date">>
+
+	export namespace date {
+		export type epoch = constrain<string, Branded<"date.epoch">>
+		export type iso = constrain<string, Branded<"date.iso">>
+	}
+}
+
+export type date = Submodule<{
+	$root: string.date
+	parse: (In: string.date) => To<Date>
+	iso: Submodule<{
+		$root: string.date.iso
+		parse: (In: string.date.iso) => To<Date>
+	}>
+	epoch: Submodule<{
+		$root: string.date.epoch
+		parse: (In: string.date.epoch) => To<Date>
+	}>
+}>

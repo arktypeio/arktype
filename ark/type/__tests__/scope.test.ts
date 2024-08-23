@@ -5,7 +5,7 @@ import {
 	writeUnresolvableMessage
 } from "@ark/schema"
 import { define, scope, type, type Module } from "arktype"
-import type { distillOut, string } from "arktype/internal/ast.ts"
+import type { distillOut, string } from "arktype/internal/keywords/ast.ts"
 import { writeUnexpectedCharacterMessage } from "arktype/internal/parser/string/shift/operator/operator.ts"
 
 contextualize(() => {
@@ -43,11 +43,11 @@ contextualize(() => {
 	it("interdependent", () => {
 		const types = scope({
 			l: "string > 5",
-			r: "email <= 10",
+			r: "string.email <= 10",
 			actual: "l & r"
 		}).export()
 
-		const expected = type("email <= 10 & string > 5")
+		const expected = type("string.email <= 10 & string > 5")
 
 		attest<typeof expected.t>(types.actual.t)
 		attest(types.actual.expression).equals(expected.expression)
@@ -175,16 +175,15 @@ contextualize(() => {
 		it("ark", () => {
 			const def = define({
 				a: "string|number",
-				b: ["boolean"],
-				c: "this"
+				b: ["boolean"]
 			})
-			attest<{ a: "string|number"; b: ["boolean"]; c: "this" }>(def)
+			attest<{ a: "string|number"; b: ["boolean"] }>(def)
 		})
 
 		it("ark error", () => {
 			// currently is a no-op, so only has type error
 			// @ts-expect-error
-			attest(define({ a: "boolean|foo" })).type.errors(
+			attest(() => define({ a: "boolean|foo" })).type.errors(
 				writeUnresolvableMessage("foo")
 			)
 		})
@@ -193,10 +192,12 @@ contextualize(() => {
 			const $ = scope({
 				a: "string[]"
 			})
+
 			const ok = $.define(["a[]|boolean"])
 			attest<["a[]|boolean"]>(ok)
+
 			// @ts-expect-error
-			attest($.define({ not: "ok" })).type.errors(
+			attest(() => $.define({ not: "ok" })).type.errors(
 				writeUnresolvableMessage("ok")
 			)
 		})
@@ -211,7 +212,7 @@ contextualize(() => {
 
 			attest(types.a(a)).equals(a)
 			attest(types.a({ b: { a: { b: { a: 5 } } } }).toString()).snap(
-				"b.a.b.a must be an object (was number)"
+				"b.a.b.a must be an object (was a number)"
 			)
 
 			// Type hint displays as "..." on hitting cycle (or any if "noErrorTruncation" is true)
@@ -236,7 +237,7 @@ contextualize(() => {
 					"contributors?": "contributor[]"
 				},
 				contributor: {
-					email: "email",
+					email: "string.email",
 					"packages?": "package[]"
 				}
 			})
@@ -433,5 +434,20 @@ b.c.c must be an object (was missing)`)
 			required: [{ key: "bar", value: { domain: "string", minLength: 1 } }],
 			domain: "object"
 		})
+	})
+
+	it("module", () => {
+		const types = type.module({
+			foo: "string",
+			bar: "number"
+		})
+		attest<
+			Module<{
+				foo: string
+				bar: number
+			}>
+		>(types)
+		attest(types.foo.json).snap({ domain: "string" })
+		attest(types.bar.json).snap({ domain: "number" })
 	})
 })

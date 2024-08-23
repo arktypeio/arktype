@@ -21,14 +21,14 @@ import {
 	type ErrorMessage,
 	type show
 } from "@ark/util"
+import type { inferIntersection } from "../intersect.ts"
 import type {
 	distillConstrainableIn,
 	distillOut,
 	inferMorphOut,
 	inferPredicate,
 	Out
-} from "../ast.ts"
-import type { inferIntersection } from "../intersect.ts"
+} from "../keywords/ast.ts"
 import type { ParseContext } from "../scope.ts"
 import type { inferDefinition, validateDefinition } from "./definition.ts"
 import type { InfixOperator, PostfixExpression } from "./semantic/infer.ts"

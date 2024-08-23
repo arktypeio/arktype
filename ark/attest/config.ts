@@ -17,7 +17,7 @@ import {
 export type TsVersionAliases = autocomplete<"*"> | string[]
 
 type BaseAttestConfig = {
-	tsconfig: string | undefined
+	tsconfig: string | null | undefined
 	compilerOptions: ts.CompilerOptions
 	updateSnapshots: boolean
 	/** A string or list of strings representing the TypeScript version aliases to run.

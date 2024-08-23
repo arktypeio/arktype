@@ -1,4 +1,10 @@
-import { envHasCsp, flatMorph, type array, type listable } from "@ark/util"
+import {
+	deepClone,
+	envHasCsp,
+	flatMorph,
+	type array,
+	type listable
+} from "@ark/util"
 import type { ResolvedArkConfig } from "./config.ts"
 import type { BaseNode } from "./node.ts"
 import { Predicate } from "./predicate.ts"
@@ -80,7 +86,9 @@ $ark.defaultConfig = Object.assign(
 		implementation.defaults
 	]),
 	{
-		jitless: envHasCsp()
+		jitless: envHasCsp(),
+		clone: deepClone,
+		onUndeclaredKey: "ignore"
 	} satisfies Omit<ResolvedArkConfig, NodeKind>
 ) as never
 

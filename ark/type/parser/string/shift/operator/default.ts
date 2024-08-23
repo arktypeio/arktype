@@ -6,7 +6,7 @@ import {
 	type NumberLiteral,
 	type trim
 } from "@ark/util"
-import type { DateLiteral } from "../../../../ast.ts"
+import type { DateLiteral } from "../../../../keywords/ast.ts"
 import type { DynamicStateWithRoot } from "../../reduce/dynamic.ts"
 import type { StringLiteral } from "../operand/enclosed.ts"
 

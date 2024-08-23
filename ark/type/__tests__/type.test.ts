@@ -38,7 +38,7 @@ contextualize(() => {
 		const t = type({ a: "string" })
 		attest(t.assert({ a: "1" })).equals({ a: "1" })
 		attest(() => t.assert({ a: 1 })).throws.snap(
-			"AggregateError: a must be a string (was number)"
+			"AggregateError: a must be a string (was a number)"
 		)
 	})
 

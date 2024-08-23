@@ -6,6 +6,6 @@ contextualize(() => {
 
 		attest(() => {
 			attest({ foo: "bar" }).satisfies({ foo: "number" })
-		}).throws("foo must be a number (was string)")
+		}).throws("foo must be a number (was a string)")
 	})
 })

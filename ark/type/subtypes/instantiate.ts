@@ -1,5 +1,5 @@
 import type { anyOrNever, array } from "@ark/util"
-import type { MorphAst } from "../ast.ts"
+import type { MorphAst } from "../keywords/ast.ts"
 import type { ArrayType } from "./array.ts"
 import type { DateType } from "./date.ts"
 import type { MorphType } from "./morph.ts"

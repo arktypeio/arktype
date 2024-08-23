@@ -13,7 +13,6 @@ import {
 	type Submodule,
 	type Type
 } from "arktype"
-import type { Out } from "arktype/internal/ast.ts"
 
 contextualize.each(
 	"submodule",
@@ -95,15 +94,15 @@ contextualize.each(
 		})
 
 		it("can reference subaliases in expression", () => {
-			const dateFrom = type("parse.date | Date")
+			const dateFrom = type("string.date.parse | Date")
 
-			attest<Date | ((In: string) => Out<Date>)>(dateFrom.t)
+			attest(dateFrom.t).type.toString.snap("Date | ((In: date) => To<Date>)")
 
 			attest(dateFrom("05-21-1993")).instanceOf(Date)
 			attest(dateFrom(new Date())).instanceOf(Date)
 
 			attest(dateFrom("foobar").toString()).snap(
-				'must be a valid date (was "foobar")'
+				'must be a parsable date (was "foobar")'
 			)
 		})
 
@@ -208,6 +207,15 @@ contextualize.each(
 			const t = $.type(["outer.inner.alias"])
 			attest<Type<[1], Expected$>>(t)
 			attest(t.expression).snap("[1]")
+		})
+
+		it("non-submodule dot access", $ => {
+			attest(() =>
+				type({
+					// @ts-expect-error
+					a: "true.subtype"
+				})
+			).throwsAndHasTypeError(writeNonSubmoduleDotMessage("true"))
 		})
 
 		it("completions", $ => {

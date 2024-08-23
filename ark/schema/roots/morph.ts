@@ -3,9 +3,10 @@ import {
 	liftArray,
 	throwParseError,
 	type array,
-	type listable
+	type listable,
+	type mutable
 } from "@ark/util"
-import type { nodeOfKind, NodeSchema } from "../kinds.ts"
+import type { NodeSchema, nodeOfKind } from "../kinds.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
 import type { BaseNormalizedSchema, declareNode } from "../shared/declare.ts"
 import { Disjoint } from "../shared/disjoint.ts"
@@ -36,13 +37,17 @@ export declare namespace Morph {
 	export type ChildSchema = NodeSchema<ChildKind>
 
 	export interface Inner {
-		readonly in: ChildNode
+		readonly in?: ChildNode
 		readonly morphs: array<Morph | BaseRoot>
+		readonly declaredIn?: ChildNode
+		readonly declaredOut?: BaseRoot
 	}
 
 	export interface Schema extends BaseNormalizedSchema {
-		readonly in: ChildSchema
+		readonly in?: ChildSchema
 		readonly morphs: listable<Morph | BaseRoot>
+		readonly declaredIn?: ChildNode
+		readonly declaredOut?: BaseRoot
 	}
 
 	export interface Declaration
@@ -82,6 +87,14 @@ const implementation: nodeImplementationOf<Morph.Declaration> =
 					morphs.map(m =>
 						hasArkKind(m, "root") ? m.json : registeredReference(m)
 					)
+			},
+			declaredIn: {
+				child: false,
+				serialize: node => node.json
+			},
+			declaredOut: {
+				child: false,
+				serialize: node => node.json
 			}
 		},
 		normalize: schema => schema,
@@ -99,13 +112,31 @@ const implementation: nodeImplementationOf<Morph.Declaration> =
 				const inTersection = intersectNodes(l.in, r.in, ctx)
 				if (inTersection instanceof Disjoint) return inTersection
 
+				const baseInner: Omit<mutable<Morph.Inner>, "in"> = {
+					morphs: l.morphs
+				}
+
+				if (l.declaredIn || r.declaredIn) {
+					const declaredIn = intersectNodes(l.in, r.in, ctx)
+					// we can't treat this as a normal Disjoint since it's just declared
+					// it should only happen if someone's essentially trying to create a broken type
+					if (declaredIn instanceof Disjoint) return declaredIn.throw()
+					else baseInner.declaredIn = declaredIn as never
+				}
+
+				if (l.declaredOut || r.declaredOut) {
+					const declaredOut = intersectNodes(l.out, r.out, ctx)
+					if (declaredOut instanceof Disjoint) return declaredOut.throw()
+					else baseInner.declaredOut = declaredOut
+				}
+
 				// in case from is a union, we need to distribute the branches
 				// to can be a union as any schema is allowed
 				return inTersection.distribute(
 					inBranch =>
 						ctx.$.node("morph", {
-							morphs: l.morphs,
-							in: inBranch as never
+							...baseInner,
+							in: inBranch as Morph.ChildNode
 						}),
 					ctx.$.rootNode
 				)
@@ -128,15 +159,44 @@ const implementation: nodeImplementationOf<Morph.Declaration> =
 export class MorphNode extends BaseRoot<Morph.Declaration> {
 	serializedMorphs: string[] = this.morphs.map(registeredReference)
 	compiledMorphs = `[${this.serializedMorphs}]`
-	structure = this.in.structure
 
-	traverseAllows: TraverseAllows = (data, ctx) =>
-		this.in.traverseAllows(data, ctx)
+	lastMorph = this.inner.morphs.at(-1)
+	validatedIn: BaseRoot | undefined = this.inner.in
+	validatedOut: BaseRoot | undefined =
+		hasArkKind(this.lastMorph, "root") ?
+			Object.assign(this.referencesById, this.lastMorph.out.referencesById) &&
+			this.lastMorph.out
+		:	undefined;
 
-	traverseApply: TraverseApply = (data, ctx) => {
-		this.in.traverseApply(data, ctx)
-		ctx.queueMorphs(this.morphs)
+	override get in(): Morph.ChildNode {
+		return (
+			this.declaredIn ??
+			this.inner.in ??
+			($ark.intrinsic.unknown.internal as Morph.ChildNode)
+		)
 	}
+
+	override get out(): BaseRoot {
+		return (
+			this.declaredOut ?? this.validatedOut ?? $ark.intrinsic.unknown.internal
+		)
+	}
+
+	declareIn(declaredIn: Morph.ChildNode): MorphNode {
+		return this.$.node("morph", {
+			...this.inner,
+			declaredIn
+		})
+	}
+
+	declareOut(declaredOut: BaseRoot): MorphNode {
+		return this.$.node("morph", {
+			...this.inner,
+			declaredOut
+		})
+	}
+
+	expression = `(In: ${this.in.expression}) => Out<${this.out.expression}>`
 
 	get shortDescription(): string {
 		return this.in.shortDescription
@@ -148,19 +208,20 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 
 	compile(js: NodeCompiler): void {
 		if (js.traversalKind === "Allows") {
-			js.return(js.invoke(this.in))
+			if (!this.validatedIn) return
+			js.return(js.invoke(this.validatedIn))
 			return
 		}
-		js.line(js.invoke(this.in))
+		if (this.validatedIn) js.line(js.invoke(this.validatedIn))
 		js.line(`ctx.queueMorphs(${this.compiledMorphs})`)
 	}
 
-	override get in(): Morph.ChildNode {
-		return this.inner.in
-	}
+	traverseAllows: TraverseAllows = (data, ctx) =>
+		!this.validatedIn || this.validatedIn.traverseAllows(data, ctx)
 
-	override get out(): BaseRoot {
-		return this.validatedOut ?? $ark.intrinsic.unknown.internal
+	traverseApply: TraverseApply = (data, ctx) => {
+		if (this.validatedIn) this.validatedIn.traverseApply(data, ctx)
+		ctx.queueMorphs(this.morphs)
 	}
 
 	/** Check if the morphs of r are equal to those of this node */
@@ -173,15 +234,6 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 					lMorph.equals(rMorph))
 		})
 	}
-
-	lastMorph = this.inner.morphs.at(-1)
-	validatedOut: BaseRoot | undefined =
-		hasArkKind(this.lastMorph, "root") ?
-			Object.assign(this.referencesById, this.lastMorph.out.referencesById) &&
-			this.lastMorph.out
-		:	undefined
-
-	expression = `(In: ${this.in.expression}) => Out<${this.out.expression}>`
 }
 
 export const Morph = {

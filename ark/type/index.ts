@@ -10,6 +10,7 @@ export type { Generic } from "./generic.ts"
 export { ambient, ark, declare, define, generic, type } from "./keywords/ark.ts"
 export { Module, type BoundModule, type Submodule } from "./module.ts"
 export {
+	module,
 	scope,
 	type Scope,
 	type inferScope,

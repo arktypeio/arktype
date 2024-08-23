@@ -1,7 +1,11 @@
 import { attest, contextualize } from "@ark/attest"
 import { writeInvalidKeysMessage, writeNumberIndexMessage } from "@ark/schema"
 import { ark, type } from "arktype"
-import type { Matching, constrain, string } from "arktype/internal/ast.ts"
+import type {
+	Matching,
+	constrain,
+	string
+} from "arktype/internal/keywords/ast.ts"
 
 contextualize(() => {
 	it("can get shallow roots by path", () => {
@@ -141,9 +145,7 @@ contextualize(() => {
 			writeInvalidKeysMessage(t.expression, ["5.5"])
 		)
 
-		attest(t.get(ark.nonNegativeIntegerString).expression).snap(
-			"string | undefined"
-		)
+		attest(t.get(ark.Array.index).expression).snap("string | undefined")
 	})
 
 	it("number access on non-variadic", () => {
@@ -156,7 +158,7 @@ contextualize(() => {
 
 		// number subtype
 		// @ts-expect-error
-		attest(() => t.get(ark.integer)).throws(
+		attest(() => t.get(ark.number.integer)).throws(
 			writeNumberIndexMessage("number % 1", t.expression)
 		)
 	})

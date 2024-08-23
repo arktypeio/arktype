@@ -1,5 +1,5 @@
 import type { Completion, ErrorMessage, defined } from "@ark/util"
-import type { LimitLiteral } from "../../../ast.ts"
+import type { LimitLiteral } from "../../../keywords/ast.ts"
 import type { Scanner } from "../shift/scanner.ts"
 import type {
 	Comparator,
@@ -80,7 +80,7 @@ export declare namespace state {
 	export type setRoot<
 		s extends StaticState,
 		root,
-		unscanned extends string
+		unscanned extends string = s["unscanned"]
 	> = from<{
 		root: root
 		branches: s["branches"]
@@ -93,7 +93,7 @@ export declare namespace state {
 	export type addPrefix<
 		s extends StaticState,
 		prefix extends StringifiablePrefixOperator,
-		unscanned extends string
+		unscanned extends string = s["unscanned"]
 	> = from<{
 		root: s["root"]
 		branches: {

@@ -22,7 +22,7 @@ import type {
 	schemaKindOrRightOf,
 	schemaKindRightOf
 } from "../roots/root.ts"
-import type { BaseScope } from "../scope.ts"
+import type { BaseScope, ResolvedArkScopeConfig } from "../scope.ts"
 import type { Structure } from "../structure/structure.ts"
 import { compileSerializedValue } from "./compile.ts"
 import type {
@@ -274,7 +274,7 @@ export type NodeKeyImplementation<
 > = requireKeys<
 	{
 		preserveUndefined?: true
-		child?: true
+		child?: boolean
 		serialize?: (schema: instantiated) => JsonData
 		parse?: (
 			schema: Exclude<d["normalizedSchema"][k], undefined>,
@@ -284,14 +284,18 @@ export type NodeKeyImplementation<
 	// require parse if we can't guarantee the schema value will be valid on inner
 	| (d["normalizedSchema"][k] extends instantiated | undefined ? never
 	  :	"parse")
-	// require keys containing children specify it
+	// require keys containing children specify it, although it can be false in cases like
+	// declaredOut where we don't want to treat the node as a child
 	| ([instantiated] extends [listable<BaseNode>] ? "child" : never)
 >
 
 interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	kind: d["kind"]
 	keys: keySchemaDefinitions<d>
-	normalize: (schema: d["schema"]) => d["normalizedSchema"]
+	normalize: (
+		schema: d["schema"],
+		ctx: ResolvedArkScopeConfig
+	) => d["normalizedSchema"]
 	hasAssociatedError: d["errorContext"] extends null ? false : true
 	finalizeInnerJson?: (json: { [k in keyof d["inner"]]: JsonData }) => Json
 	collapsibleKey?: keyof d["inner"]

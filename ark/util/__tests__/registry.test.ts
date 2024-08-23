@@ -1,7 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
+import { readPackageJson } from "@ark/fs"
 import { arkUtilVersion } from "@ark/util"
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import { readPackageJson } from "../../fs/index.ts"
 
 contextualize(() => {
 	it("version matches package.json", () => {

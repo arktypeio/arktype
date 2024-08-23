@@ -52,6 +52,15 @@ export class TraversalContext {
 	finalize(): unknown {
 		if (this.hasError()) return this.errors
 
+		if (!this.queuedMorphs.length) return this.root
+
+		if (
+			typeof this.root === "object" &&
+			this.root !== null &&
+			this.config.clone
+		)
+			this.root = this.config.clone(this.root)
+
 		// invoking morphs that are Nodes will reuse this context, potentially
 		// adding additional morphs, so we have to continue looping until
 		// queuedMorphs is empty rather than iterating over the list once

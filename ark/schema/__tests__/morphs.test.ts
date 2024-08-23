@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { intrinsic, rootNode } from "@ark/schema"
-import { wellFormedNumberMatcher } from "@ark/util"
+import { throwError, wellFormedNumberMatcher } from "@ark/util"
 
 contextualize(() => {
 	it("in/out", () => {
@@ -31,4 +31,52 @@ contextualize(() => {
 		attest(n.in.expression).snap("number | string")
 		attest(n.out.expression).snap("number")
 	})
+
+	contextualize.each(
+		"declared",
+		() => {
+			const declared = rootNode({
+				meta: "declared",
+				predicate: () => throwError("declared node should not be invoked")
+			}).assertHasKind("intersection")
+
+			const declaredMorph = rootNode({
+				morphs: (s: string) => JSON.parse(s),
+				declaredIn: declared,
+				declaredOut: declared
+			})
+
+			return { declared, declaredMorph }
+		},
+		it => {
+			it("preserves and extracts the declarations without calling them", ({
+				declaredMorph,
+				declared
+			}) => {
+				attest(declaredMorph.json).equals({
+					morphs: declaredMorph.assertHasKind("morph").serializedMorphs,
+					declaredIn: declared.json,
+					declaredOut: declared.json
+				})
+
+				attest(declared.description).snap("declared")
+				attest(declaredMorph.in.description).equals(declared.description)
+				attest(declaredMorph.out.description).equals(declared.description)
+
+				// declared validator should not be called
+				attest(declaredMorph("{}")).equals({})
+			})
+
+			it("can be piped to declaredOut", ({ declaredMorph, declared }) => {
+				const pipeToNode = rootNode({
+					in: "string",
+					morphs: [(s: string) => s.slice(1), declaredMorph]
+				})
+
+				attest(pipeToNode.out.description).equals(declared.description)
+
+				attest(pipeToNode("z{}")).equals({})
+			})
+		}
+	)
 })

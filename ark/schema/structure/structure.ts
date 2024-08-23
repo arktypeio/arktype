@@ -110,7 +110,15 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 	implementNode<Structure.Declaration>({
 		kind: "structure",
 		hasAssociatedError: false,
-		normalize: schema => schema,
+		normalize: (schema, ctx) => {
+			if (!schema.undeclared && ctx.onUndeclaredKey !== "ignore") {
+				return {
+					...schema,
+					undeclared: ctx.onUndeclaredKey
+				}
+			}
+			return schema
+		},
 		keys: {
 			required: {
 				child: true,
@@ -148,6 +156,7 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 						return new Disjoint(
 							...disjointRKeys.map(k => ({
 								kind: "presence" as const,
+								discriminantKind: undefined,
 								l: $ark.intrinsic.never.internal,
 								r: r.propsByKey[k]!.value,
 								path: [k],
@@ -183,6 +192,7 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 						return new Disjoint(
 							...disjointLKeys.map(k => ({
 								kind: "presence" as const,
+								discriminantKind: undefined,
 								l: l.propsByKey[k]!.value,
 								r: $ark.intrinsic.never.internal,
 								path: [k],

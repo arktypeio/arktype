@@ -1,7 +1,7 @@
-import type { string } from "../../ast.ts"
 import type { Submodule } from "../../module.ts"
-import { scope } from "../../scope.ts"
-import { regexStringNode } from "./regex.ts"
+import type { Branded, constrain } from "../ast.ts"
+import { submodule } from "../utils.ts"
+import { regexStringNode } from "./utils.ts"
 
 // Based on https://github.com/validatorjs/validator.js/blob/master/src/lib/isIP.js
 const ipv4Segment = "(?:[0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])"
@@ -22,24 +22,24 @@ const ipv6Matcher = new RegExp(
 		")(%[0-9a-zA-Z-.:]{1,})?$"
 )
 
+declare namespace string {
+	export type ip = constrain<string, Branded<"ip">>
+
+	export namespace ip {
+		export type v4 = constrain<string, Branded<"ip.v4">>
+		export type v6 = constrain<string, Branded<"ip.v6">>
+	}
+}
+
 // Based on https://github.com/validatorjs/validator.js/blob/master/src/lib/isUUID.js
-const submodule = scope(
-	{
-		$root: ["v4 | v6", "@", "an IP address"],
-		v4: regexStringNode(ipv4Matcher, "an IPv4 address"),
-		v6: regexStringNode(ipv6Matcher, "an IPv6 address")
-	},
-	{ prereducedAliases: true }
-).export()
+export const ip = submodule({
+	$root: ["v4 | v6", "@", "an IP address"],
+	v4: regexStringNode(ipv4Matcher, "an IPv4 address"),
+	v6: regexStringNode(ipv6Matcher, "an IPv6 address")
+})
 
-export const arkIp = {
-	submodule
-}
-
-export declare namespace arkIp {
-	export type submodule = Submodule<{
-		$root: string.matching<"?">
-		v4: string.matching<"?">
-		v6: string.matching<"?">
-	}>
-}
+export type ip = Submodule<{
+	$root: string.ip
+	v4: string.ip.v4
+	v6: string.ip.v6
+}>

@@ -17,6 +17,7 @@ contextualize(() => {
 	describe("named", () => {
 		it("empty", () => {
 			const o = type({})
+			attest<object>(o.t).type.toString("object")
 			attest(o.json).equals(type("object").json)
 		})
 
@@ -106,7 +107,7 @@ contextualize(() => {
 			const o = type({ "a?": "string" })
 			attest(o({ a: "a" })).snap({ a: "a" })
 			attest(o({})).snap({})
-			attest(o({ a: 1 }).toString()).snap("a must be a string (was number)")
+			attest(o({ a: 1 }).toString()).snap("a must be a string (was a number)")
 		})
 
 		// it("optional symbol", () => {
@@ -234,10 +235,10 @@ contextualize(() => {
 			const validWithSymbol = { a: "a", [Symbol()]: null }
 			attest(validWithSymbol).equals(validWithSymbol)
 
-			attest(o({ a: 1 }).toString()).snap("a must be a string (was number)")
+			attest(o({ a: 1 }).toString()).snap("a must be a string (was a number)")
 			attest(o({ a: true, b: false }).toString())
-				.snap(`a must be a string (was true)
-b must be a string (was false)`)
+				.snap(`a must be a string (was boolean)
+b must be a string (was boolean)`)
 		})
 
 		it("symbol index", () => {
@@ -324,8 +325,8 @@ value at [${zildjianName}] must be 1 (was undefined)`)
 					str: 100,
 					[sym]: "💯"
 				}).toString()
-			).snap(`str must be a string (was number)
-value at [${symName}] must be a number (was string)`)
+			).snap(`str must be a string (was a number)
+value at [Symbol(symbol7)] must be a number (was a string)`)
 		})
 
 		it("all key kinds", () => {
@@ -353,7 +354,7 @@ value at [${symName}] must be a number (was string)`)
 				}).toString()
 			).snap(`required must be "foo" (was missing)
 optional must be "bar" (was "wrongString")
-other must be a string (was bigint)`)
+other must be a string (was a bigint)`)
 		})
 
 		it("index key from scope", () => {

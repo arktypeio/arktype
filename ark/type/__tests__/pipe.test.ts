@@ -8,7 +8,12 @@ import {
 	type ArkErrors
 } from "@ark/schema"
 import { ark, scope, type, type Type } from "arktype"
-import type { MoreThan, Out, To, constrain } from "arktype/internal/ast.ts"
+import type {
+	MoreThan,
+	Out,
+	To,
+	constrain
+} from "arktype/internal/keywords/ast.ts"
 
 contextualize(() => {
 	it("base", () => {
@@ -19,7 +24,7 @@ contextualize(() => {
 		const out = t(5)
 		attest<string | type.errors>(out).equals("5")
 		const result = t("foo")
-		attest(result.toString()).snap("must be a number (was string)")
+		attest(result.toString()).snap("must be a number (was a string)")
 	})
 
 	it("disjoint", () => {
@@ -29,7 +34,7 @@ contextualize(() => {
 	})
 
 	it("to", () => {
-		const t = type("parse.json").to({
+		const t = type("string.json.parse").to({
 			name: "string",
 			age: "number"
 		})
@@ -63,10 +68,10 @@ contextualize(() => {
 		})
 
 		it("preserves validated out", () => {
-			const t = type("string").pipe.try(s => JSON.parse(s), ark.Array)
+			const t = type("string").pipe.try(s => JSON.parse(s), ark.Array.readonly)
 
 			const tOut = t.out
-			const expectedOut = ark.Array
+			const expectedOut = ark.Array.readonly
 
 			attest<typeof expectedOut.t>(tOut.t)
 			attest(tOut.expression).equals(expectedOut.expression)
@@ -75,12 +80,12 @@ contextualize(() => {
 
 	it("can't directly constrain morph", () => {
 		// @ts-expect-error
-		attest(() => type("parse.number").atMostLength(5))
+		attest(() => type("string.numeric.parse").atMostLength(5))
 			.throws(
 				writeInvalidOperandMessage(
 					"maxLength",
 					intrinsic.lengthBoundable,
-					ark.parse.number.internal
+					ark.string.numeric.parse.internal
 				)
 			)
 			.type.errors("Property 'atMostLength' does not exist")
@@ -111,7 +116,7 @@ contextualize(() => {
 			t.internal.firstReferenceOfKindOrThrow("morph").serializedMorphs
 
 		attest(t.internal.assertHasKind("union").discriminantJson).snap({
-			kind: "unit",
+			kind: "identity",
 			path: [],
 			cases: {
 				"0": { in: { unit: 0 }, morphs: serializedMorphs },
@@ -205,7 +210,7 @@ contextualize(() => {
 		attest(inefficientStringIsEmpty("")).equals(true)
 		attest(inefficientStringIsEmpty("foo")).equals(false)
 		attest(inefficientStringIsEmpty(0).toString()).snap(
-			"must be a string (was number)"
+			"must be a string (was a number)"
 		)
 	})
 
@@ -361,7 +366,7 @@ contextualize(() => {
 	})
 
 	it("union with output", () => {
-		const t = type("number|parse.number")
+		const t = type("number|string.numeric.parse")
 		attest<number>(t.infer)
 		attest<string | number>(t.inferIn)
 	})
@@ -488,7 +493,7 @@ contextualize(() => {
 			types.a.internal.assertHasKind("morph").serializedMorphs
 
 		attest(types.c.internal.assertHasKind("union").discriminantJson).snap({
-			kind: "domain",
+			kind: "typeOf",
 			path: ["0"],
 			cases: {
 				'"number"': {
@@ -737,27 +742,22 @@ contextualize(() => {
 		)
 	})
 	it("allows undiscriminated union if morphs at path are equal", () => {
-		const t = type({ l: "1", n: "parse.number" }, "|", {
+		const t = type({ l: "1", n: "string.numeric.parse" }, "|", {
 			r: "1",
-			n: "parse.number"
+			n: "string.numeric.parse"
 		})
 
-		attest<
-			| {
-					l: 1
-					n: (In: string) => Out<number>
-			  }
-			| {
-					r: 1
-					n: (In: string) => Out<number>
-			  }
-		>(t.t)
+		attest(t).type.toString.snap(`Type<
+	| { l: 1; n: (In: numeric) => To<number> }
+	| { r: 1; n: (In: numeric) => To<number> },
+	{}
+>`)
 
 		const serializedMorphs =
 			t.internal.firstReferenceOfKindOrThrow("morph").serializedMorphs
 
 		attest(t.expression).snap(
-			"{ l: 1, n: (In: string /^(?!^-0$)-?(?:0|[1-9]\\d*)(?:\\.\\d*[1-9])?$/) => Out<unknown> } | { n: (In: string /^(?!^-0$)-?(?:0|[1-9]\\d*)(?:\\.\\d*[1-9])?$/) => Out<unknown>, r: 1 }"
+			"{ l: 1, n: (In: string /^(?!^-0$)-?(?:0|[1-9]\\d*)(?:\\.\\d*[1-9])?$/) => Out<number> } | { n: (In: string /^(?!^-0$)-?(?:0|[1-9]\\d*)(?:\\.\\d*[1-9])?$/) => Out<number>, r: 1 }"
 		)
 		attest(t({ l: 1, n: "234" })).snap({ l: 1, n: 234 })
 		attest(t({ r: 1, n: "234" })).snap({ r: 1, n: 234 })
@@ -767,15 +767,16 @@ contextualize(() => {
 		)
 	})
 	it("fails on indiscriminable morph in nested union", () => {
-		attest(() =>
+		const indiscriminable = () =>
 			type({
-				foo: "boolean | parse.date"
+				foo: "boolean | string.date.parse"
 			}).or({
-				foo: "boolean | parse.json"
+				foo: "boolean | string.json.parse"
 			})
-		).throws
+
+		attest(indiscriminable).throws
 			.snap(`ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
-Left: { foo: (In: string) => Out<unknown> | false | true }
-Right: { foo: (In: string) => Out<unknown> | false | true }`)
+Left: { foo: (In: string ) => Out<Date> | false | true }
+Right: { foo: (In: string) => Out<{ [string]: number | string | false | null | true | jsonObject | jsonData[] } | jsonData[]> | false | true }`)
 	})
 })

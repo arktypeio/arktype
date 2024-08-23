@@ -1,6 +1,6 @@
 import type { ArkErrors } from "@ark/schema"
 import type { inferred } from "@ark/util"
-import type { GenericHktParser } from "../generic.ts"
+import type { GenericParser } from "../generic.ts"
 import type { Module } from "../module.ts"
 import { scope, type Scope } from "../scope.ts"
 import type {
@@ -9,51 +9,31 @@ import type {
 	TypeParser
 } from "../type.ts"
 import { arkBuiltin } from "./builtin.ts"
-import { arkFormat } from "./format.ts"
-import { arkJs } from "./js.ts"
-import { arkNumber } from "./number.ts"
-import { arkParse } from "./parse.ts"
-import { arkPlatform } from "./platform.ts"
-import { arkString } from "./string.ts"
+import { arkPrototypes } from "./constructors/constructors.ts"
+import { number } from "./number/number.ts"
+import { string } from "./string/string.ts"
 import { arkTs } from "./ts.ts"
-import { arkTypedArray } from "./typedArray.ts"
 
 export interface Ark
 	extends Omit<Ark.keywords, keyof Ark.Wrapped>,
-		Ark.Wrapped {
-	TypedArray: arkTypedArray.submodule
-	parse: arkParse.submodule
-	format: arkFormat.submodule
-}
+		Ark.Wrapped {}
 
 export declare namespace Ark {
-	export interface keywords
-		extends arkTs.keywords,
-			arkJs.keywords,
-			arkPlatform.keywords,
-			arkString.keywords,
-			arkNumber.keywords,
-			arkBuiltin.keywords {}
+	export interface keywords extends arkTs, arkPrototypes, arkBuiltin {}
 
 	export interface Wrapped {
-		string: arkString.submodule
-		number: arkNumber.submodule
+		string: string.submodule
+		number: number.submodule
 	}
 }
 
 export const ambient: Scope<Ark> = scope(
 	{
-		...arkTs.keywords,
-		...arkJs.keywords,
-		...arkPlatform.keywords,
-		...arkString.keywords,
-		...arkNumber.keywords,
-		...arkBuiltin.keywords,
-		string: arkString.submodule,
-		number: arkNumber.submodule,
-		TypedArray: arkTypedArray.submodule,
-		parse: arkParse.submodule,
-		format: arkFormat.submodule
+		...arkTs,
+		...arkPrototypes,
+		...arkBuiltin,
+		string,
+		number
 	},
 	{ prereducedAliases: true, ambient: true }
 ) as never
@@ -70,7 +50,7 @@ export declare namespace type {
 	export type errors = ArkErrors
 }
 
-export const generic: GenericHktParser<{}> = ambient.generic as never
+export const generic: GenericParser<{}> = ambient.generic as never
 
 export const define: DefinitionParser<{}> = ambient.define as never
 

@@ -1,5 +1,5 @@
 import type { Predicate, PredicateCast } from "@ark/schema"
-import type { applyConstraint } from "../ast.ts"
+import type { applyConstraint } from "../keywords/ast.ts"
 import type { BaseType } from "./base.ts"
 import type { instantiateType } from "./instantiate.ts"
 

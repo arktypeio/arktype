@@ -67,19 +67,18 @@ contextualize(() => {
 					...threeSixtyNoScope.import("three", "no"),
 					...scopeCreep.export(),
 					public: "hasCrept|three|no|private",
-					"#private": "uuid"
+					"#private": "string.uuid"
 				}).export()
 
 				attest(Object.keys(types)).equals(["hasCrept", "public"])
 
-				attest(types.public.json).equals(type("3|'no'|uuid|true").json)
+				attest(types.public.json).equals(type("3|'no'|string.uuid|true").json)
 
-				attest<
-					Module<{
-						hasCrept: true
-						public: string | true | 3
-					}>
-				>(types)
+				// have to snapshot the module since TypeScript treats it as bivariant
+				attest(types).type.toString.snap(`Module<{
+	public: true | 3 | uuid | "no"
+	hasCrept: true
+}>`)
 			})
 		}
 	)

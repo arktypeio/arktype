@@ -4,99 +4,104 @@ import { scope, type, type Module } from "arktype"
 import type {
 	AtLeastLength,
 	AtMostLength,
-	constrain,
 	Narrowed,
-	number,
 	Out,
-	string,
-	To
-} from "arktype/internal/ast.ts"
+	To,
+	constrain,
+	number,
+	string
+} from "arktype/internal/keywords/ast.ts"
+
+declare class TimeStub {
+	declare readonly isoString: string
+
+	private constructor()
+
+	declare static from: (isoString: string) => TimeStub
+
+	declare static fromDate: (date: Date) => TimeStub
+
+	declare toDate: () => Date
+
+	declare toString: () => string
+}
 
 contextualize(() => {
-	// 	// https://github.com/arktypeio/arktype/issues/915
-	// 	it("time stub w/ private constructor", () => {
-	// 		class TimeStub {
-	// 			declare readonly isoString: string
+	// https://github.com/arktypeio/arktype/issues/915
+	it("time stub w/ private constructor", () => {
+		// TimeStub is just declared at a type-level since --experimental-strip-types
+		// doesn't yet support private constructors
 
-	// 			private constructor() {}
+		const MockTimeStub = class TimeStub {}
 
-	// 			declare static from: (isoString: string) => TimeStub
+		const types = scope({
+			timeStub: ["instanceof", MockTimeStub] as type.cast<TimeStub>,
+			account: "clientDocument&accountData",
+			clientDocument: {
+				"id?": "string",
+				"coll?": "string",
+				"ts?": "timeStub",
+				"ttl?": "timeStub"
+			},
+			accountData: {
+				user: "user|timeStub",
+				provider: "provider",
+				providerUserId: "string"
+			},
+			user: {
+				name: "string",
+				"accounts?": "account[]"
+			},
+			provider: "'GitHub'|'Google'"
+		}).export()
 
-	// 			declare static fromDate: (date: Date) => TimeStub
-
-	// 			declare toDate: () => Date
-
-	// 			declare toString: () => string
-	// 		}
-
-	// 		const types = scope({
-	// 			timeStub: ["instanceof", TimeStub] as type.cast<TimeStub>,
-	// 			account: "clientDocument&accountData",
-	// 			clientDocument: {
-	// 				"id?": "string",
-	// 				"coll?": "string",
-	// 				"ts?": "timeStub",
-	// 				"ttl?": "timeStub"
-	// 			},
-	// 			accountData: {
-	// 				user: "user|timeStub",
-	// 				provider: "provider",
-	// 				providerUserId: "string"
-	// 			},
-	// 			user: {
-	// 				name: "string",
-	// 				"accounts?": "account[]"
-	// 			},
-	// 			provider: "'GitHub'|'Google'"
-	// 		}).export()
-
-	// 		attest(types.account.infer).type.toString.snap(`{
-	// 	id?: string
-	// 	coll?: string
-	// 	ts?: TimeStub
-	// 	ttl?: TimeStub
-	// 	user: TimeStub | { name: string; accounts?: cyclic[] }
-	// 	provider: "GitHub" | "Google"
-	// 	providerUserId: string
-	// }`)
-	// 		attest(types.account.json).snap({
-	// 			required: [
-	// 				{ key: "provider", value: [{ unit: "GitHub" }, { unit: "Google" }] },
-	// 				{ key: "providerUserId", value: "string" },
-	// 				{
-	// 					key: "user",
-	// 					value: [
-	// 						{
-	// 							required: [{ key: "name", value: "string" }],
-	// 							optional: [
-	// 								{
-	// 									key: "accounts",
-	// 									value: { sequence: "$account", proto: "Array" }
-	// 								}
-	// 							],
-	// 							domain: "object"
-	// 						},
-	// 						"$ark.TimeStub"
-	// 					]
-	// 				}
-	// 			],
-	// 			optional: [
-	// 				{ key: "coll", value: "string" },
-	// 				{ key: "id", value: "string" },
-	// 				{ key: "ts", value: "$ark.TimeStub" },
-	// 				{ key: "ttl", value: "$ark.TimeStub" }
-	// 			],
-	// 			domain: "object"
-	// 		})
-	// 	})
+		attest(types.account.infer).type.toString.snap(`{
+	id?: string
+	coll?: string
+	ts?: TimeStub
+	ttl?: TimeStub
+	user: TimeStub | { name: string; accounts?: cyclic[] }
+	provider: "GitHub" | "Google"
+	providerUserId: string
+}`)
+		attest(types.account.json).snap({
+			required: [
+				{ key: "provider", value: [{ unit: "GitHub" }, { unit: "Google" }] },
+				{ key: "providerUserId", value: "string" },
+				{
+					key: "user",
+					value: [
+						{
+							required: [{ key: "name", value: "string" }],
+							optional: [
+								{
+									key: "accounts",
+									value: { sequence: "$account", proto: "Array" }
+								}
+							],
+							domain: "object"
+						},
+						"$ark.TimeStub"
+					]
+				}
+			],
+			optional: [
+				{ key: "coll", value: "string" },
+				{ key: "id", value: "string" },
+				{ key: "ts", value: "$ark.TimeStub" },
+				{ key: "ttl", value: "$ark.TimeStub" }
+			],
+			domain: "object"
+		})
+	})
 
 	it("nested bound traversal", () => {
 		// https://github.com/arktypeio/arktype/issues/898
 		const user = type({
 			name: "string",
-			email: "email",
+			email: "string.email",
 			tags: "(string>=2)[]>=3",
-			score: "integer>=0"
+			score: "number.integer>=0"
 		})
 
 		const out = user({
@@ -115,9 +120,9 @@ tags must be at least length 3 (was 2)`)
 
 		const schema = type({
 			name: "string",
-			email: "email",
+			email: "string.email",
 			tags: "(string>=2)[]>=3",
-			score: "integer>=0",
+			score: "number.integer>=0",
 			"date?": "Date",
 			"nospace?": nospacePattern,
 			extra: "string|null"
@@ -373,8 +378,10 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		attest(CreatePatientInput({ first_name: " John  " }).toString()).snap(
 			"first_name must be at most length 3 (was 4)"
 		)
+		// ideally, this would be "a string or null", but it is described
+		// as an object since discrimination uses the typeof operator
 		attest(CreatePatientInput({ first_name: 5 }).toString()).snap(
-			"first_name must be a string or null (was 5)"
+			"first_name must be a string or an object (was a number)"
 		)
 	})
 
@@ -525,7 +532,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			box: { box: { box: {} } }
 		})
 		attest(box({ box: { box: { box: "whoops" } } })?.toString()).snap(
-			'box.box.box must be an object (was string) or must be null (was {"box":{"box":{"box":"whoops"}}})'
+			'box.box.box must be an object (was a string) or must be null (was {"box":{"box":{"box":"whoops"}}})'
 		)
 	})
 
@@ -783,15 +790,15 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			action: "'order.completed'"
 		}).or({
 			action: `'scheduled'`,
-			id: "parse.integer",
-			calendarID: "parse.integer",
-			appointmentTypeID: "parse.integer"
+			id: "string.integer.parse",
+			calendarID: "string.integer.parse",
+			appointmentTypeID: "string.integer.parse"
 		})
 
-		const parseJsonToObj = type("parse.json").pipe(objSchema)
+		const parseJsonToObj = type("string.json.parse").pipe(objSchema)
 
 		attest(parseJsonToObj.expression).snap(
-			'(In: string) => Out<{ action: "order.completed" } | { action: "scheduled", appointmentTypeID: unknown, calendarID: unknown, id: unknown }>'
+			'(In: string) => Out<{ action: "order.completed" } | { action: "scheduled", appointmentTypeID: number % 1, calendarID: number % 1, id: number % 1 }>'
 		)
 
 		const out = parseJsonToObj(
@@ -830,12 +837,12 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			action: "'order.completed'"
 		}).or({
 			action: "'scheduled' | 'rescheduled' | 'canceled' | 'changed'",
-			id: "parse.integer",
-			calendarID: "parse.integer",
-			appointmentTypeID: "parse.integer"
+			id: "string.integer.parse",
+			calendarID: "string.integer.parse",
+			appointmentTypeID: "string.integer.parse"
 		})
 
-		const parseJsonToObj = type("parse.json").pipe(objSchema)
+		const parseJsonToObj = type("string.json.parse").pipe(objSchema)
 
 		const out = parseJsonToObj(
 			JSON.stringify({

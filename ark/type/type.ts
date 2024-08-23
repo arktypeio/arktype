@@ -7,7 +7,6 @@ import {
 	type Predicate
 } from "@ark/schema"
 import { Callable, type Constructor, type array, type conform } from "@ark/util"
-import type { distillIn, distillOut } from "./ast.ts"
 import {
 	parseGenericParams,
 	type Generic,
@@ -16,6 +15,7 @@ import {
 	type parseValidGenericParams,
 	type validateParameterString
 } from "./generic.ts"
+import type { distillIn, distillOut } from "./keywords/ast.ts"
 import type {
 	inferDefinition,
 	validateDeclared,
@@ -26,7 +26,13 @@ import type {
 	IndexZeroOperator,
 	TupleInfixOperator
 } from "./parser/tuple.ts"
-import type { InternalScope, Scope, bindThis } from "./scope.ts"
+import type {
+	InternalScope,
+	ModuleParser,
+	Scope,
+	ScopeParser,
+	bindThis
+} from "./scope.ts"
 import type { BaseType } from "./subtypes/base.ts"
 import type { instantiateType } from "./subtypes/instantiate.ts"
 
@@ -75,6 +81,8 @@ export interface TypeParser<$ = {}> {
 
 	raw(def: unknown): BaseType<any, $>
 	errors: typeof ArkErrors
+	module: ModuleParser
+	scope: ScopeParser
 }
 
 export class InternalTypeParser extends Callable<
@@ -117,7 +125,9 @@ export class InternalTypeParser extends Callable<
 				bind: $,
 				attach: {
 					errors: ArkErrors,
-					raw: $.parseRoot as never
+					raw: $.parseRoot as never,
+					module: $.constructor.module,
+					scope: $.constructor.scope
 				}
 			}
 		)

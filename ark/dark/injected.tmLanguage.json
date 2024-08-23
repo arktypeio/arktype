@@ -14,7 +14,7 @@
 	"repository": {
 		"arkDefinition": {
 			"contentName": "meta.embedded.arktype.definition",
-			"begin": "([^\\)\\(\\s]+)?(\\.)?(type|scope|define|match|fn)(\\()",
+			"begin": "([^\\)\\(\\s]+)?(\\.)?(type|scope|define|match|fn|module)(\\()",
 			"beginCaptures": {
 				"2": {
 					"name": "punctuation.accessor.ts"

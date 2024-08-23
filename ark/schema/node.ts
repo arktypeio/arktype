@@ -97,6 +97,19 @@ export abstract class BaseNode<
 		return new (this.constructor as any)(this.attachments, $)
 	}
 
+	withMeta(
+		meta: ArkEnv.meta | ((currentMeta: ArkEnv.meta) => ArkEnv.meta)
+	): this {
+		const newMeta =
+			typeof meta === "function" ?
+				meta({ ...this.meta })
+			:	{ ...this.meta, ...meta }
+		return this.$.node(this.kind, {
+			...this.inner,
+			meta: newMeta
+		}) as never
+	}
+
 	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
 	abstract traverseApply: TraverseApply<d["prerequisite"]>
 	abstract expression: string
@@ -244,7 +257,7 @@ export abstract class BaseNode<
 	}
 
 	assertHasKind<kind extends NodeKind>(kind: kind): nodeOfKind<kind> {
-		if (!this.kind === (kind as never))
+		if (this.kind !== kind)
 			throwError(`${this.kind} node was not of asserted kind ${kind}`)
 		return this as never
 	}

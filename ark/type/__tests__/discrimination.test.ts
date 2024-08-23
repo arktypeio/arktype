@@ -8,7 +8,7 @@ contextualize(() => {
 		const t = type("'a'|'b'")
 		attest(t.json).snap([{ unit: "a" }, { unit: "b" }])
 		attest(t.internal.hasKind("union") && t.internal.discriminantJson).snap({
-			kind: "unit",
+			kind: "identity",
 			path: [],
 			cases: { '"a"': true, '"b"': true }
 		})
@@ -21,7 +21,7 @@ contextualize(() => {
 		const t = type("'a'|'b'|'c'")
 		attest(t.json).snap([{ unit: "a" }, { unit: "b" }, { unit: "c" }])
 		attest(t.internal.hasKind("union") && t.internal.discriminantJson).snap({
-			kind: "unit",
+			kind: "identity",
 			path: [],
 			cases: { '"a"': true, '"b"': true, '"c"': true }
 		})
@@ -29,6 +29,34 @@ contextualize(() => {
 		attest(t.allows("b")).equals(true)
 		attest(t.allows("c")).equals(true)
 		attest(t.allows("d")).equals(false)
+	})
+
+	it(">2 domain branches", () => {
+		const t = type("string|bigint|number")
+		attest(t.json).snap(["bigint", "number", "string"])
+		attest(t.internal.hasKind("union") && t.internal.discriminantJson).snap({
+			kind: "typeOf",
+			path: [],
+			cases: { '"bigint"': true, '"number"': true, '"string"': true }
+		})
+		attest(t.allows("foo")).equals(true)
+		attest(t.allows(5n)).equals(true)
+		attest(t.allows(5)).equals(true)
+		attest(t.allows(true)).equals(false)
+	})
+
+	it("literals can be included in domain branches", () => {
+		const t = type("string|bigint|true")
+		attest(t.json).snap(["bigint", "string", { unit: true }])
+		attest(t.internal.hasKind("union") && t.internal.discriminantJson).snap({
+			kind: "typeOf",
+			path: [],
+			cases: { '"bigint"': true, '"string"': true, '"boolean"': { unit: true } }
+		})
+		attest(t.allows("foo")).equals(true)
+		attest(t.allows(5n)).equals(true)
+		attest(t.allows(true)).equals(true)
+		attest(t.allows(5)).equals(false)
 	})
 
 	const getPlaces = () =>
@@ -47,11 +75,11 @@ contextualize(() => {
 		const $ = getPlaces()
 		const t = $.type("ocean|sky|rainForest|desert")
 		attest(t.internal.hasKind("union") && t.internal.discriminantJson).snap({
-			kind: "unit",
+			kind: "identity",
 			path: ["color"],
 			cases: {
 				'"blue"': {
-					kind: "unit",
+					kind: "identity",
 					path: ["climate"],
 					cases: {
 						'"dry"': { required: [{ key: "isSky", value: { unit: true } }] },
@@ -112,7 +140,7 @@ contextualize(() => {
 		])
 
 		attest(t.internal.hasKind("union") && t.internal.discriminantJson).snap({
-			kind: "unit",
+			kind: "identity",
 			path: ["color"],
 			cases: {
 				'"blue"': {
@@ -142,13 +170,13 @@ contextualize(() => {
 			["ocean|rainForest", "|", { temperature: "'hot'" }]
 		])
 		attest(t.internal.hasKind("union") && t.internal.discriminantJson).snap({
-			kind: "unit",
+			kind: "identity",
 			path: ["temperature"],
 			cases: {
 				'"cold"': true,
 				'"hot"': true,
 				default: {
-					kind: "unit",
+					kind: "identity",
 					path: ["color"],
 					cases: {
 						'"blue"': {
@@ -181,7 +209,7 @@ contextualize(() => {
 		const sRef = registeredReference(s)
 		const t = type({ [s]: "0" }).or({ [s]: "1" })
 		attest(t.internal.hasKind("union") && t.internal.discriminantJson).snap({
-			kind: "unit",
+			kind: "identity",
 			path: [sRef],
 			cases: {
 				"0": true,

@@ -2,6 +2,22 @@ import type { describeDefaults, DescribeOptions } from "./describe.ts"
 import type { show } from "./generics.ts"
 import type { stringifyUnion } from "./unionToTuple.ts"
 
+export type JsTypeOf =
+	| "object"
+	| "function"
+	| "number"
+	| "bigint"
+	| "boolean"
+	| "string"
+	| "symbol"
+	| "undefined"
+	| "null"
+
+export const domainToJsTypesOf = (domain: Domain): JsTypeOf[] =>
+	domain === "null" ? ["object"]
+	: domain === "object" ? ["object", "function"]
+	: [domain]
+
 export const hasDomain = <data, domain extends Domain>(
 	data: data,
 	kind: domain
@@ -65,6 +81,11 @@ export const domainDescriptions = {
 	string: "a string",
 	symbol: "a symbol"
 } as const satisfies Record<Domain, string>
+
+export const jsTypeOfDescriptions = {
+	...domainDescriptions,
+	function: "a function"
+} as const satisfies Record<JsTypeOf, string>
 
 export type domainDescriptions = typeof domainDescriptions
 

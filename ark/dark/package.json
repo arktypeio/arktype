@@ -2,7 +2,7 @@
 	"name": "arkdark",
 	"displayName": "ArkDark",
 	"description": "Syntax highlighting, inline errors and theme for ArkType⛵",
-	"version": "5.7.1",
+	"version": "5.7.4",
 	"publisher": "arktypeio",
 	"type": "module",
 	"scripts": {
@@ -67,7 +67,7 @@
 			},
 			"errorLens.replace": [
 				{
-					"matcher": ".*'ErrorType<(.*)>'\\.$",
+					"matcher": ".*'ErrorType<(.*)>'.*$",
 					"message": "$1"
 				},
 				{

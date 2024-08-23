@@ -13,6 +13,7 @@ import {
 	type NodeKind
 } from "./shared/implement.ts"
 import { $ark } from "./shared/registry.ts"
+import type { UndeclaredKeyBehavior } from "./structure/structure.ts"
 
 export interface ArkSchemaRegistry extends ArkRegistry {
 	intrinsic: typeof intrinsic
@@ -64,28 +65,35 @@ export const mergeConfigs = (
 	base: ArkConfig,
 	extensions: ArkConfig
 ): mutable<ArkConfig> => {
-	const result = { ...base }
+	const result: any = { ...base }
 	let k: keyof ArkConfig
 	for (k in extensions) {
 		result[k] =
 			isNodeKind(k) ?
 				{
-					...(base as any)[k],
-					...(extensions as any)[k]
+					...base[k],
+					...extensions[k]
 				}
-			:	(extensions[k] as never)
+			:	extensions[k]
 	}
 	return result
 }
 
+export type CloneImplementation = <original extends object>(
+	original: original
+) => original
+
 export interface ArkConfig extends Partial<Readonly<NodeConfigsByKind>> {
 	jitless?: boolean
+	clone?: boolean | CloneImplementation
+	onUndeclaredKey?: UndeclaredKeyBehavior
 }
 
 export type resolveConfig<config extends ArkConfig> = show<
 	{
 		[k in keyof ArkConfig]-?: k extends NodeKind ? Required<config[k]>
-		:	config[k]
+		: k extends "clone" ? CloneImplementation | false
+		: config[k]
 	} & Omit<config, keyof ArkConfig>
 >
 

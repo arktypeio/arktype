@@ -122,7 +122,7 @@ contextualize(() => {
 		})
 
 		it("double Date", () => {
-			const t = type("d'2001/10/10'<Date<d'2005/10/10'")
+			const t = type("d'2001/10/10'< Date < d'2005/10/10'")
 			attest<Date>(t.infer)
 			attest(t.t).type.toString.snap(
 				'is<After<"2001/10/10"> & Before<"2005/10/10">>'
@@ -139,7 +139,7 @@ contextualize(() => {
 
 		it("dynamic Date", () => {
 			const now = new Date()
-			const t = type(`d'2000'<Date<=d'${now.toISOString()}'`)
+			const t = type(`d'2000'< Date <=d'${now.toISOString()}'`)
 			attest<Date>(t.infer)
 			attest(t).type.toString.snap(
 				'Type<is<After<"2000"> & AtOrBefore<string>>, {}>'

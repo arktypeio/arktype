@@ -11,7 +11,7 @@ import { writeMissingRightOperandMessage } from "arktype/internal/parser/string/
 contextualize(() => {
 	it("autocompletion", () => {
 		// @ts-expect-error
-		attest(() => type("k")).completions({ k: ["key", "keyof"] })
+		attest(() => type("k")).completions({ k: ["keyof"] })
 	})
 
 	it("root expression", () => {

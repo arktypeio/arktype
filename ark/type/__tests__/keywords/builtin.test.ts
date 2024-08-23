@@ -1,30 +1,8 @@
 import { attest, contextualize } from "@ark/attest"
 import { writeNonStructuralOperandMessage } from "@ark/schema"
 import { ark, scope, type } from "arktype"
-import type { Out } from "arktype/internal/ast.ts"
 
 contextualize(() => {
-	describe("liftArray", () => {
-		it("parsed", () => {
-			const liftNumberArray = type("liftArray<number>")
-
-			attest<(In: number | number[]) => Out<number[]>>(liftNumberArray.t)
-
-			attest(liftNumberArray(5)).equals([5])
-			attest(liftNumberArray([5])).equals([5])
-			attest(liftNumberArray("five").toString()).snap(
-				"must be a number or an array (was string)"
-			)
-			attest(liftNumberArray(["five"]).toString()).snap(
-				"must be a number (was object) or [0] must be a number (was string)"
-			)
-		})
-
-		it("invoked", () => {
-			ark.liftArray({ data: "number" })
-		})
-	})
-
 	describe("merged", () => {
 		it("parsed", () => {
 			const types = scope({
@@ -36,7 +14,7 @@ contextualize(() => {
 					bar: "1",
 					"baz?": "1"
 				},
-				actual: "merge<base, merged>",
+				actual: "Merge<base, merged>",
 				expected: {
 					"foo?": "0",
 					bar: "1",
@@ -50,7 +28,7 @@ contextualize(() => {
 
 		it("invoked", () => {
 			const s = Symbol()
-			const t = ark.merge(
+			const t = ark.Merge(
 				{
 					"[string]": "number | bigint",
 					foo: "0",
