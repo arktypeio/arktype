@@ -11,8 +11,8 @@ import type { astToString } from "./utils.ts"
 import type { validateAst } from "./validate.ts"
 
 export type validateRange<l, comparator extends Comparator, r, $, args> =
-	l extends LimitLiteral ? validateBound<r, comparator, l, "left", $, args>
-	: l extends [infer leftAst, Comparator, unknown] ?
+	[l] extends [LimitLiteral] ? validateBound<r, comparator, l, "left", $, args>
+	: [l] extends [[infer leftAst, Comparator, unknown]] ?
 		ErrorMessage<writeDoubleRightBoundMessage<astToString<leftAst>>>
 	:	validateBound<l, comparator, r & LimitLiteral, "right", $, args>
 

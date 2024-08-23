@@ -1,5 +1,5 @@
 import type { GenericAst } from "@ark/schema"
-import type { Hkt, NumberLiteral, array } from "@ark/util"
+import type { Hkt, array } from "@ark/util"
 import type { inferIntersection } from "../../intersect.ts"
 import type {
 	Date,
@@ -107,10 +107,7 @@ export type constrainBound<
 > =
 	distillIn<constrainableIn> extends infer In ?
 		comparator extends "==" ?
-			In extends number ?
-				limit extends NumberLiteral<infer n> ?
-					n
-				:	never
+			In extends number ? limit
 			: In extends Date ? Date.literal<normalizeLimit<limit>>
 			: applyConstraint<constrainableIn, "exactLength", limit & number>
 		:	applyConstraint<
