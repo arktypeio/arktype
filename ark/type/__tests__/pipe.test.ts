@@ -68,10 +68,10 @@ contextualize(() => {
 		})
 
 		it("preserves validated out", () => {
-			const t = type("string").pipe.try(s => JSON.parse(s), ark.Array)
+			const t = type("string").pipe.try(s => JSON.parse(s), ark.Array.readonly)
 
 			const tOut = t.out
-			const expectedOut = ark.Array
+			const expectedOut = ark.Array.readonly
 
 			attest<typeof expectedOut.t>(tOut.t)
 			attest(tOut.expression).equals(expectedOut.expression)

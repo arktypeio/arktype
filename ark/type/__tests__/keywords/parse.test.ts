@@ -51,7 +51,7 @@ contextualize(() => {
 		const user = type({
 			email: "string.email",
 			file: "File",
-			tags: "liftArray<string>"
+			tags: "Array.liftFrom<string>"
 		})
 
 		const parseUserForm = type("FormData.parse").pipe(user)

@@ -145,9 +145,7 @@ contextualize(() => {
 			writeInvalidKeysMessage(t.expression, ["5.5"])
 		)
 
-		attest(t.get(ark.nonNegativeIntegerString).expression).snap(
-			"string | undefined"
-		)
+		attest(t.get(ark.Array.index).expression).snap("string | undefined")
 	})
 
 	it("number access on non-variadic", () => {

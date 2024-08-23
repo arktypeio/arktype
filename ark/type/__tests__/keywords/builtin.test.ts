@@ -6,7 +6,7 @@ import type { Out } from "arktype/internal/keywords/ast.ts"
 contextualize(() => {
 	describe("liftArray", () => {
 		it("parsed", () => {
-			const liftNumberArray = type("liftArray<number>")
+			const liftNumberArray = type("Array.liftFrom<number>")
 
 			attest<(In: number | number[]) => Out<number[]>>(liftNumberArray.t)
 
@@ -21,7 +21,7 @@ contextualize(() => {
 		})
 
 		it("invoked", () => {
-			ark.liftArray({ data: "number" })
+			ark.Array.liftFrom({ data: "number" })
 		})
 	})
 

@@ -1,13 +1,14 @@
 import { registry } from "@ark/util"
 import type { Module, Submodule } from "../../module.ts"
 import { submodule } from "../utils.ts"
+import { ArrayModule } from "./Array.ts"
 import { FormDataModule } from "./FormData.ts"
 import { TypedArray } from "./TypedArray.ts"
 
 export const arkPrototypes: Module<arkPrototypes> = submodule({
 	// ECMAScript Objects
 	// See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
-	Array: ["instanceof", Array],
+	Array: ArrayModule,
 	Date: ["instanceof", Date],
 	Error: ["instanceof", Error],
 	Function: ["instanceof", Function],
@@ -37,7 +38,10 @@ export type arkPrototypes = arkPrototypes.submodule
 export declare namespace arkPrototypes {
 	export type submodule = Submodule<$>
 
-	interface $ extends ecmascript, platform {
+	interface $ extends Omit<ecmascript, keyof Wrapped>, platform, Wrapped {}
+
+	export interface Wrapped {
+		Array: ArrayModule
 		TypedArray: TypedArray
 	}
 
