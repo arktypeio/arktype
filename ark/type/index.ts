@@ -6,7 +6,7 @@ export {
 	type JsonSchema
 } from "@ark/schema"
 export { Hkt } from "@ark/util"
-export type { Generic } from "./generic.ts"
+export { Generic } from "./generic.ts"
 export {
 	ambient,
 	ark,

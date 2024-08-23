@@ -1,11 +1,11 @@
-import type {
-	arkKind,
-	GenericAst,
-	GenericParamAst,
-	GenericParamDef,
-	genericParamNames,
+import {
 	GenericRoot,
-	LazyGenericBody
+	type arkKind,
+	type GenericAst,
+	type GenericParamAst,
+	type GenericParamDef,
+	type genericParamNames,
+	type LazyGenericBody
 } from "@ark/schema"
 import {
 	throwParseError,
@@ -15,6 +15,7 @@ import {
 	type ErrorMessage,
 	type ErrorType,
 	type Hkt,
+	type Json,
 	type WhiteSpaceToken
 } from "@ark/util"
 import type {
@@ -247,7 +248,17 @@ export interface Generic<
 	arg$: Scope<arg$>
 
 	internal: GenericRoot
+	json: Json
 }
+
+export type GenericConstructor<
+	params extends array<GenericParamAst> = array<GenericParamAst>,
+	bodyDef = unknown,
+	$ = {},
+	arg$ = {}
+> = new () => Generic<params, bodyDef, $, arg$>
+
+export const Generic: GenericConstructor = GenericRoot as never
 
 export type GenericDeclaration<
 	name extends string = string,

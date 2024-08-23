@@ -1,7 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
-import { GenericRoot } from "@ark/schema"
 import { flatMorph } from "@ark/util"
-import { ark, scope, Type, type, type Ark } from "arktype"
+import { ark, Generic, scope, Type, type, type Ark } from "arktype"
 import { AssertionError } from "node:assert"
 
 contextualize(() => {
@@ -90,7 +89,7 @@ contextualize(() => {
 		const attachments: Record<keyof Ark.typeAttachments, string | object> =
 			flatMorph({ ...type }, (k, v) =>
 				v instanceof Type ? [k, v.expression]
-				: v instanceof GenericRoot ? [k, v.json]
+				: v instanceof Generic ? [k, v.json]
 				: []
 			)
 
