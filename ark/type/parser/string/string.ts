@@ -64,6 +64,7 @@ export const fullStringParse = (s: DynamicState): StringParseResult => {
 	return result
 }
 
+// @ts-ignore
 type fullStringParse<s extends StaticState, $, args> = extractFinalizedResult<
 	parseUntilFinalizer<s, $, args>
 >

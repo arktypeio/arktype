@@ -8,7 +8,6 @@ import {
 	type arkKind,
 	type genericParamNames,
 	type resolvableReferenceIn,
-	type resolveReference,
 	type writeNonSubmoduleDotMessage
 } from "@ark/schema"
 import {
@@ -45,51 +44,22 @@ export type parseUnenclosed<s extends StaticState, $, args> =
 	Scanner.shiftUntilNextTerminator<s["unscanned"]> extends (
 		Scanner.shiftResult<infer token, infer unscanned>
 	) ?
-		token extends "keyof" ? state.addPrefix<s, "keyof", unscanned>
-		: tryResolve<s, token, $, args> extends infer result ?
-			result extends ErrorMessage<infer message> ? state.error<message>
-			: result extends resolvableReferenceIn<$> ?
-				parseResolution<
-					s,
-					unscanned,
-					result,
-					resolveReference<result, $>,
-					$,
-					args
-				>
-			: result extends resolvableReferenceIn<ArkAmbient.$> ?
-				parseResolution<
-					s,
-					unscanned,
-					result,
-					resolveReference<result, ArkAmbient.$>,
-					// note that we still want the current scope to parse args,
-					// even if the generic was defined in the ambient scope
-					$,
-					args
-				>
-			:	state.setRoot<s, result, unscanned>
-		:	never
+		token extends "keyof" ?
+			state.addPrefix<s, "keyof", unscanned>
+		:	tryResolve<state.scanTo<s, unscanned>, token, $, args>
 	:	never
 
 type parseResolution<
 	s extends StaticState,
-	unscanned extends string,
 	alias extends string,
 	resolution,
 	$,
 	args
 > =
-	[resolution] extends [anyOrNever] ? state.setRoot<s, alias, unscanned>
+	[resolution] extends [anyOrNever] ? state.setRoot<s, alias>
 	: resolution extends GenericAst ?
-		parseGenericInstantiation<
-			alias,
-			resolution,
-			state.scanTo<s, unscanned>,
-			$,
-			args
-		>
-	:	state.setRoot<s, alias, unscanned>
+		parseGenericInstantiation<alias, resolution, s, $, args>
+	:	state.setRoot<s, alias>
 
 export const parseGenericInstantiation = (
 	name: string,
@@ -166,12 +136,15 @@ const maybeParseUnenclosedLiteral = (
 }
 
 type tryResolve<s extends StaticState, token extends string, $, args> =
-	token extends keyof ArkAmbient.$ ? token
-	: token extends keyof $ ? token
-	: `#${token}` extends keyof $ ? token
-	: token extends keyof args ? token
-	: token extends `${number}` ? token
-	: token extends BigintLiteral ? token
+	// this assumes there are no private aliases in the ambient scope
+	token extends keyof ArkAmbient.$ ?
+		parseResolution<s, token, ArkAmbient.$[token], $, args>
+	: token extends keyof $ ? parseResolution<s, token, $[token], $, args>
+	: `#${token}` extends keyof $ ?
+		parseResolution<s, token, $[`#${token}`], $, args>
+	: token extends keyof args ? parseResolution<s, token, args[token], $, args>
+	: token extends `${number}` ? state.setRoot<s, token>
+	: token extends BigintLiteral ? state.setRoot<s, token>
 	: token extends (
 		`${infer submodule extends (keyof $ | keyof ArkAmbient.$) & string}.${infer reference}`
 	) ?
@@ -181,20 +154,23 @@ type tryResolve<s extends StaticState, token extends string, $, args> =
 			reference,
 			s,
 			$ & ArkAmbient.$,
+			args,
 			[submodule]
 		>
-	:	unresolvableError<s, token, $, args, []>
+	:	state.error<unresolvableError<s, token, $, args, []>>
 
 type tryResolveSubmodule<
-	token,
+	token extends string,
 	submodule extends keyof $ & string,
 	reference extends string,
 	s extends StaticState,
 	$,
+	args,
 	submodulePath extends string[]
 > =
 	$[submodule] extends { [arkKind]: "module" } ?
-		reference extends keyof $[submodule] ? token
+		reference extends keyof $[submodule] ?
+			parseResolution<s, token, $[submodule][reference], $, args>
 		: reference extends (
 			`${infer nestedSubmodule extends keyof $[submodule] & string}.${infer nestedReference}`
 		) ?
@@ -204,10 +180,11 @@ type tryResolveSubmodule<
 				nestedReference,
 				s,
 				$[submodule],
+				args,
 				[...submodulePath, nestedSubmodule]
 			>
 		:	unresolvableError<s, reference, $[submodule], {}, submodulePath>
-	:	ErrorMessage<writeNonSubmoduleDotMessage<submodule>>
+	:	writeNonSubmoduleDotMessage<submodule>
 
 /** Provide valid completions for the current token, or fallback to an
  * unresolvable error if there are none */

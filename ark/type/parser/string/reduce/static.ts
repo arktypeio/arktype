@@ -80,7 +80,7 @@ export declare namespace state {
 	export type setRoot<
 		s extends StaticState,
 		root,
-		unscanned extends string
+		unscanned extends string = s["unscanned"]
 	> = from<{
 		root: root
 		branches: s["branches"]
