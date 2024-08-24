@@ -61,6 +61,4 @@ export declare namespace stringJson {
 		$root: string.json
 		parse: (In: string.json) => To<object>
 	}
-
-	export type deepResolutions = { [k in keyof $ as `string.json.${k}`]: $[k] }
 }

@@ -38,12 +38,6 @@ export declare namespace Ark {
 
 	export interface boundTypeAttachments<$>
 		extends Omit<BoundModule<typeAttachments, $>, arkKind> {}
-
-	export interface deepResolutions
-		extends keywords,
-			string.deepResolutions,
-			number.deepResolutions,
-			arkPrototypes.deepResolutions {}
 }
 
 $arkTypeRegistry.typeAttachments = {

@@ -195,21 +195,12 @@ export declare namespace stringDate {
 		:	$[k]
 	}
 
-	export interface deepResolutions
-		extends shallowResolutions,
-			iso.deepResolutions,
-			epoch.deepResolutions {}
-
 	export namespace iso {
 		export type submodule = Submodule<$>
 
 		export type $ = {
 			$root: string.date.iso
 			parse: (In: string.date.iso) => To<Date>
-		}
-
-		export type deepResolutions = {
-			[k in keyof $ as `string.date.iso.${k}`]: $[k]
 		}
 	}
 
@@ -219,10 +210,6 @@ export declare namespace stringDate {
 		export type $ = {
 			$root: string.date.epoch
 			parse: (In: string.date.epoch) => To<Date>
-		}
-
-		export type deepResolutions = {
-			[k in keyof $ as `string.date.epoch.${k}`]: $[k]
 		}
 	}
 }

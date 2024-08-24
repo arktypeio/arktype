@@ -28,8 +28,4 @@ export declare namespace upper {
 		$root: (In: string) => To<string.uppercase>
 		preformatted: string.uppercase
 	}
-
-	export type deepResolutions = {
-		[k in keyof $ as `string.upper.${k}`]: $[k]
-	}
 }

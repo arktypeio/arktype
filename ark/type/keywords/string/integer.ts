@@ -40,8 +40,4 @@ export declare namespace stringInteger {
 		$root: string.integer
 		parse: (In: string.integer) => To<number.divisibleBy<1>>
 	}
-
-	export type deepResolutions = {
-		[k in keyof $ as `string.integer.${k}`]: $[k]
-	}
 }

@@ -48,11 +48,6 @@ export declare namespace arkPrototypes {
 		FormData: arkFormData.submodule
 	}
 
-	export interface deepResolutions
-		extends arkArray.deepResolutions,
-			TypedArray.deepResolutions,
-			arkFormData.deepResolutions {}
-
 	export type ecmascript = {
 		Array: Array<unknown>
 		Date: Date

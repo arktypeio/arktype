@@ -28,8 +28,4 @@ export declare namespace capitalize {
 		$root: (In: string) => To<string.capitalized>
 		preformatted: string.capitalized
 	}
-
-	export type deepResolutions = {
-		[k in keyof $ as `string.capitalize.${k}`]: $[k]
-	}
 }

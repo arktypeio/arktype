@@ -125,18 +125,4 @@ export declare namespace string {
 	type shallowResolutions = {
 		[k in keyof $ as `string.${k}`]: $[k] extends type.cast<infer t> ? t : $[k]
 	}
-
-	export interface deepResolutions
-		extends shallowResolutions,
-			stringNumeric.deepResolutions,
-			stringInteger.deepResolutions,
-			uuid.deepResolutions,
-			ip.deepResolutions,
-			stringJson.deepResolutions,
-			stringDate.deepResolutions,
-			trim.deepResolutions,
-			normalize.deepResolutions,
-			capitalize.deepResolutions,
-			lower.deepResolutions,
-			upper.deepResolutions {}
 }

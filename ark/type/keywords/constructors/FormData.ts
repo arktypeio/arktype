@@ -58,6 +58,4 @@ export declare namespace arkFormData {
 		parse: (In: FormData) => To<ParsedFormData>
 		parsed: ParsedFormData
 	}
-
-	export type deepResolutions = { [k in keyof $ as `FormData.${k}`]: $[k] }
 }

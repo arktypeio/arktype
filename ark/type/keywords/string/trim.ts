@@ -32,8 +32,4 @@ export declare namespace trim {
 		$root: (In: string) => To<string.trimmed>
 		preformatted: string.trimmed
 	}
-
-	export type deepResolutions = {
-		[k in keyof $ as `string.trim.${k}`]: $[k]
-	}
 }

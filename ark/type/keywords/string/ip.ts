@@ -48,6 +48,4 @@ export declare namespace ip {
 		v4: string.ip.v4
 		v6: string.ip.v6
 	}
-
-	export type deepResolutions = { [k in keyof $ as `string.ip.${k}`]: $[k] }
 }

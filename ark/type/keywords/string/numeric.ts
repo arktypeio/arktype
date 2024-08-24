@@ -32,8 +32,4 @@ export declare namespace stringNumeric {
 		$root: string.numeric
 		parse: (In: string.numeric) => To<number>
 	}
-
-	export type deepResolutions = {
-		[k in keyof $ as `string.numeric.${k}`]: $[k]
-	}
 }

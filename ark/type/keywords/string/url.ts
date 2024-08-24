@@ -51,8 +51,4 @@ export declare namespace url {
 		$root: string.url
 		parse: (In: string.url) => To<URL>
 	}
-
-	export type deepResolutions = {
-		[k in keyof $ as `string.url.${k}`]: $[k]
-	}
 }

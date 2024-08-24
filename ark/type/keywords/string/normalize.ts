@@ -93,23 +93,12 @@ export declare namespace normalize {
 		:	$[k]
 	}
 
-	export interface deepResolutions
-		extends shallowResolutions,
-			NFC.deepResolutions,
-			NFD.deepResolutions,
-			NFKC.deepResolutions,
-			NFKD.deepResolutions {}
-
 	export namespace NFC {
 		export type submodule = Submodule<$>
 
 		export type $ = {
 			$root: (In: string) => To<string.normalized.NFC>
 			preformatted: string.normalized.NFC
-		}
-
-		export type deepResolutions = {
-			[k in keyof $ as `string.normalize.NFC.${k}`]: $[k]
 		}
 	}
 
@@ -120,10 +109,6 @@ export declare namespace normalize {
 			$root: (In: string) => To<string.normalized.NFD>
 			preformatted: string.normalized.NFD
 		}
-
-		export type deepResolutions = {
-			[k in keyof $ as `string.normalize.NFD.${k}`]: $[k]
-		}
 	}
 
 	export namespace NFKC {
@@ -133,10 +118,6 @@ export declare namespace normalize {
 			$root: (In: string) => To<string.normalized.NFKC>
 			preformatted: string.normalized.NFKC
 		}
-
-		export type deepResolutions = {
-			[k in keyof $ as `string.normalize.NFKC.${k}`]: $[k]
-		}
 	}
 
 	export namespace NFKD {
@@ -145,10 +126,6 @@ export declare namespace normalize {
 		export type $ = {
 			$root: (In: string) => To<string.normalized.NFKD>
 			preformatted: string.normalized.NFKD
-		}
-
-		export type deepResolutions = {
-			[k in keyof $ as `string.normalize.NFKD.${k}`]: $[k]
 		}
 	}
 }

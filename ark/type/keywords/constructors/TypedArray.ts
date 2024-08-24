@@ -34,6 +34,4 @@ export declare namespace TypedArray {
 		BigInt64: BigInt64Array
 		BigUint64: BigUint64Array
 	}
-
-	export type deepResolutions = { [k in keyof $ as `TypedArray.${k}`]: $[k] }
 }

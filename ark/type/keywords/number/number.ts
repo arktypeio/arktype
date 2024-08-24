@@ -68,6 +68,4 @@ export declare namespace number {
 		epoch: epoch
 		integer: integer
 	}
-
-	export type deepResolutions = { [k in keyof $ as `number.${k}`]: $[k] }
 }

@@ -40,10 +40,6 @@ export declare namespace arkArray {
 		index: NonNegativeIntegerString
 		liftFrom: typeof liftFrom.t
 	}
-
-	export type deepResolutions = {
-		[k in keyof $ as `Array.${k}`]: $[k]
-	}
 }
 
 export type NonNegativeIntegerString =

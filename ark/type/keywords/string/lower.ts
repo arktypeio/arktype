@@ -28,8 +28,4 @@ export declare namespace lower {
 		$root: (In: string) => To<string.lowercase>
 		preformatted: string.lowercase
 	}
-
-	export type deepResolutions = {
-		[k in keyof $ as `string.lower.${k}`]: $[k]
-	}
 }

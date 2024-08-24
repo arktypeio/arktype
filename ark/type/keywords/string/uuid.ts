@@ -77,8 +77,4 @@ export declare namespace uuid {
 		v7: string.uuid.v7
 		v8: string.uuid.v8
 	}
-
-	export type deepResolutions = {
-		[k in keyof $ as `string.uuid.${k}`]: $[k]
-	}
 }
