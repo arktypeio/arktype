@@ -1,12 +1,12 @@
-import { attest, contextualize } from "@arktype/attest"
+import { attest, contextualize } from "@ark/attest"
 import {
-	keywordNodes,
-	rawSchema,
+	intrinsic,
+	rootNode,
 	writeIndivisibleMessage,
 	writeUnresolvableMessage
-} from "@arktype/schema"
+} from "@ark/schema"
 import { type } from "arktype"
-import { writeMissingRightOperandMessage } from "../parser/string/shift/operand/unenclosed.js"
+import { writeMissingRightOperandMessage } from "arktype/internal/parser/string/shift/operand/unenclosed.ts"
 
 contextualize(() => {
 	it("binary", () => {
@@ -158,7 +158,7 @@ contextualize(() => {
 	})
 
 	const expected = () =>
-		rawSchema([
+		rootNode([
 			{
 				domain: "object",
 				required: {
@@ -200,10 +200,10 @@ contextualize(() => {
 		attest(t.json).equals(expected())
 	})
 
-	it("root autocompletions", () => {
+	it("root autocompletion", () => {
 		// @ts-expect-error
 		attest(() => type({ a: "s" }, "|", { b: "boolean" })).completions({
-			s: ["semver", "string", "symbol"]
+			s: ["string", "symbol"]
 		})
 		// @ts-expect-error
 		attest(() => type({ a: "string" }, "|", { b: "b" })).completions({
@@ -242,14 +242,14 @@ contextualize(() => {
 	it("left semantic error", () => {
 		// @ts-expect-error
 		attest(() => type("symbol%2|string")).throwsAndHasTypeError(
-			writeIndivisibleMessage(keywordNodes.symbol)
+			writeIndivisibleMessage(intrinsic.symbol)
 		)
 	})
 
 	it("right semantic error", () => {
 		// @ts-expect-error
 		attest(() => type("string|symbol%2")).throwsAndHasTypeError(
-			writeIndivisibleMessage(keywordNodes.symbol)
+			writeIndivisibleMessage(intrinsic.symbol)
 		)
 	})
 
@@ -264,10 +264,10 @@ contextualize(() => {
 		const t = type("number|string").describe("My custom type")
 		attest(t.json).snap({
 			branches: [
-				{ description: "My custom type", domain: "number" },
-				{ description: "My custom type", domain: "string" }
+				{ meta: "My custom type", domain: "number" },
+				{ meta: "My custom type", domain: "string" }
 			],
-			description: "My custom type"
+			meta: "My custom type"
 		})
 	})
 })

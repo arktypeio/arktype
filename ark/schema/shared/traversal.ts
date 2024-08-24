@@ -1,14 +1,14 @@
-import type { array } from "@arktype/util"
-import type { Morph } from "../roots/morph.js"
-import type { ResolvedArkConfig } from "../scope.js"
+import type { array } from "@ark/util"
+import type { ResolvedArkConfig } from "../config.ts"
+import type { Morph } from "../roots/morph.ts"
 import {
 	ArkError,
 	ArkErrors,
 	type ArkErrorCode,
 	type ArkErrorContextInput,
 	type ArkErrorInput
-} from "./errors.js"
-import type { TraversalPath } from "./utils.js"
+} from "./errors.ts"
+import type { TraversalPath } from "./utils.ts"
 
 export type QueuedMorphs = {
 	path: TraversalPath
@@ -26,12 +26,15 @@ export class TraversalContext {
 	errors: ArkErrors = new ArkErrors(this)
 	branches: BranchTraversalContext[] = []
 
-	seen: { [id in string]?: object[] } = {}
+	seen: { [id in string]?: unknown[] } = {}
 
-	constructor(
-		public root: unknown,
-		public config: ResolvedArkConfig
-	) {}
+	root: unknown
+	config: ResolvedArkConfig
+
+	constructor(root: unknown, config: ResolvedArkConfig) {
+		this.root = root
+		this.config = config
+	}
 
 	get currentBranch(): BranchTraversalContext | undefined {
 		return this.branches.at(-1)
@@ -42,12 +45,21 @@ export class TraversalContext {
 			path: [...this.path],
 			morphs
 		}
-		this.currentBranch?.queuedMorphs.push(input) ??
-			this.queuedMorphs.push(input)
+		if (this.currentBranch) this.currentBranch.queuedMorphs.push(input)
+		else this.queuedMorphs.push(input)
 	}
 
 	finalize(): unknown {
 		if (this.hasError()) return this.errors
+
+		if (!this.queuedMorphs.length) return this.root
+
+		if (
+			typeof this.root === "object" &&
+			this.root !== null &&
+			this.config.clone
+		)
+			this.root = this.config.clone(this.root)
 
 		// invoking morphs that are Nodes will reuse this context, potentially
 		// adding additional morphs, so we have to continue looping until

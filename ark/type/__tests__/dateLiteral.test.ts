@@ -1,6 +1,6 @@
-import { attest, contextualize } from "@arktype/attest"
+import { attest, contextualize } from "@ark/attest"
 import { type } from "arktype"
-import { writeInvalidDateMessage } from "../parser/string/shift/operand/date.js"
+import { writeInvalidDateMessage } from "arktype/internal/parser/string/shift/operand/date.ts"
 
 contextualize(() => {
 	it("base", () => {

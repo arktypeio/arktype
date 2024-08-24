@@ -1,16 +1,17 @@
-import type { BaseRoot, LimitLiteral } from "@arktype/schema"
+import type { BaseRoot } from "@ark/schema"
 import {
 	isKeyOf,
 	type requireKeys,
 	throwInternalError,
 	throwParseError
-} from "@arktype/util"
-import type { ParseContext } from "../../../scope.js"
-import type { InfixOperator } from "../../semantic/infer.js"
-import { parseOperand } from "../shift/operand/operand.js"
-import { parseOperator } from "../shift/operator/operator.js"
-import { Scanner } from "../shift/scanner.js"
-import { parseUntilFinalizer } from "../string.js"
+} from "@ark/util"
+import type { LimitLiteral } from "../../../keywords/ast.ts"
+import type { ParseContext } from "../../../scope.ts"
+import type { InfixOperator } from "../../semantic/infer.ts"
+import { parseOperand } from "../shift/operand/operand.ts"
+import { parseOperator } from "../shift/operator/operator.ts"
+import type { Scanner } from "../shift/scanner.ts"
+import { parseUntilFinalizer } from "../string.ts"
 import {
 	type Comparator,
 	type MinComparator,
@@ -23,7 +24,7 @@ import {
 	writeUnclosedGroupMessage,
 	writeUnmatchedGroupCloseMessage,
 	writeUnpairableComparatorMessage
-} from "./shared.js"
+} from "./shared.ts"
 
 type BranchState = {
 	prefixes: StringifiablePrefixOperator[]
@@ -35,7 +36,6 @@ type BranchState = {
 export type DynamicStateWithRoot = requireKeys<DynamicState, "root">
 
 export class DynamicState {
-	readonly scanner: Scanner
 	// set root type to `any` so that all constraints can be applied
 	root: BaseRoot<any> | undefined
 	branches: BranchState = {
@@ -47,11 +47,14 @@ export class DynamicState {
 	finalizer: Scanner.FinalizingLookahead | undefined
 	groups: BranchState[] = []
 
-	constructor(
-		def: string,
-		public readonly ctx: ParseContext
-	) {
-		this.scanner = new Scanner(def)
+	scanner: Scanner
+	ctx: ParseContext
+	defaultable: boolean
+
+	constructor(scanner: Scanner, ctx: ParseContext, defaultable: boolean) {
+		this.scanner = scanner
+		this.ctx = ctx
+		this.defaultable = defaultable
 	}
 
 	error(message: string): never {
@@ -153,9 +156,7 @@ export class DynamicState {
 	}
 
 	parseUntilFinalizer(): DynamicStateWithRoot {
-		return parseUntilFinalizer(
-			new DynamicState(this.scanner.unscanned, this.ctx)
-		)
+		return parseUntilFinalizer(new DynamicState(this.scanner, this.ctx, false))
 	}
 
 	parseOperator(this: DynamicStateWithRoot): void {

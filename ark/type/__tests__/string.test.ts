@@ -1,8 +1,8 @@
-import { attest, contextualize } from "@arktype/attest"
-import { writeUnresolvableMessage } from "@arktype/schema"
+import { attest, contextualize } from "@ark/attest"
+import { writeUnresolvableMessage } from "@ark/schema"
 import { type } from "arktype"
-import { writeUnterminatedEnclosedMessage } from "../parser/string/shift/operand/enclosed.js"
-import { writeExpressionExpectedMessage } from "../parser/string/shift/operand/unenclosed.js"
+import { writeUnterminatedEnclosedMessage } from "arktype/internal/parser/string/shift/operand/enclosed.ts"
+import { writeExpressionExpectedMessage } from "arktype/internal/parser/string/shift/operand/unenclosed.ts"
 
 contextualize(() => {
 	it("errors on empty string", () => {
@@ -40,7 +40,7 @@ contextualize(() => {
 
 	it("shallow multi autocomplete", () => {
 		// @ts-expect-error
-		attest(() => type("s")).completions({ s: ["semver", "string", "symbol"] })
+		attest(() => type("s")).completions({ s: ["string", "symbol"] })
 	})
 
 	it("post-operator autocomplete", () => {

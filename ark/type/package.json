@@ -1,7 +1,7 @@
 {
 	"name": "arktype",
 	"description": "TypeScript's 1:1 validator, optimized from editor to runtime",
-	"version": "2.0.0-dev.24",
+	"version": "2.0.0-rc.0",
 	"license": "MIT",
 	"author": {
 		"name": "David Blass",
@@ -10,25 +10,38 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/arktypeio/arktype.git"
+		"url": "https://github.com/arktypeio/arktype.git",
+		"directory": "ark/type"
 	},
 	"type": "module",
 	"main": "./out/index.js",
 	"types": "./out/index.d.ts",
 	"exports": {
-		".": "./out/index.js",
-		"./config": "./out/config.js",
-		"./internal/*": "./out/*"
+		".": {
+			"ark-ts": "./index.ts",
+			"default": "./out/index.js"
+		},
+		"./config": {
+			"ark-ts": "./config.ts",
+			"default": "./out/config.js"
+		},
+		"./internal/*.ts": {
+			"ark-ts": "./*.ts",
+			"default": "./out/*.js"
+		}
 	},
 	"files": [
 		"out"
 	],
 	"scripts": {
-		"build": "tsx ../repo/build.ts",
-		"test": "tsx ../repo/testPackage.ts"
+		"build": "ts ../repo/build.ts",
+		"test": "ts ../repo/testPackage.ts"
 	},
 	"dependencies": {
-		"@arktype/util": "workspace:*",
-		"@arktype/schema": "workspace:*"
+		"@ark/util": "workspace:*",
+		"@ark/schema": "workspace:*"
+	},
+	"publishConfig": {
+		"access": "public"
 	}
 }

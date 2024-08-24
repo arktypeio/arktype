@@ -1,42 +1,59 @@
-import type { BaseRoot } from "../roots/root.js"
-import type { declareNode } from "../shared/declare.js"
-import { Disjoint } from "../shared/disjoint.js"
+import { describeCollapsibleDate, throwParseError } from "@ark/util"
+import type { BaseRoot } from "../roots/root.ts"
+import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
+import { Disjoint } from "../shared/disjoint.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
-} from "../shared/implement.js"
-import type { TraverseAllows } from "../shared/traversal.js"
+} from "../shared/implement.ts"
+import {
+	writeUnsupportedJsonSchemaTypeMessage,
+	type JsonSchema
+} from "../shared/jsonSchema.ts"
+import { $ark } from "../shared/registry.ts"
+import type { TraverseAllows } from "../shared/traversal.ts"
 import {
 	BaseRange,
+	createDateSchemaNormalizer,
 	parseDateLimit,
-	parseExclusiveKey,
 	type BaseRangeInner,
 	type LimitSchemaValue,
+	type UnknownExpandedRangeSchema,
 	type UnknownNormalizedRangeSchema
-} from "./range.js"
+} from "./range.ts"
 
-export interface BeforeInner extends BaseRangeInner {
-	rule: Date
+export declare namespace Before {
+	export interface Inner extends BaseRangeInner {
+		rule: Date
+	}
+
+	export interface NormalizedSchema extends UnknownNormalizedRangeSchema {
+		rule: LimitSchemaValue
+	}
+
+	export interface ExpandedSchema extends UnknownExpandedRangeSchema {
+		rule: LimitSchemaValue
+	}
+
+	export type Schema = ExpandedSchema | LimitSchemaValue
+
+	export interface ErrorContext extends BaseErrorContext<"before">, Inner {}
+
+	export interface Declaration
+		extends declareNode<{
+			kind: "before"
+			schema: Schema
+			normalizedSchema: NormalizedSchema
+			inner: Inner
+			prerequisite: Date
+			errorContext: ErrorContext
+		}> {}
+
+	export type Node = BeforeNode
 }
 
-export interface NormalizedBeforeSchema extends UnknownNormalizedRangeSchema {
-	rule: LimitSchemaValue
-}
-
-export type BeforeSchema = NormalizedBeforeSchema | LimitSchemaValue
-
-export interface BeforeDeclaration
-	extends declareNode<{
-		kind: "before"
-		schema: BeforeSchema
-		normalizedSchema: NormalizedBeforeSchema
-		inner: BeforeInner
-		prerequisite: Date
-		errorContext: BeforeInner
-	}> {}
-
-export const beforeImplementation: nodeImplementationOf<BeforeDeclaration> =
-	implementNode<BeforeDeclaration>({
+const implementation: nodeImplementationOf<Before.Declaration> =
+	implementNode<Before.Declaration>({
 		kind: "before",
 		collapsibleKey: "rule",
 		hasAssociatedError: true,
@@ -44,23 +61,12 @@ export const beforeImplementation: nodeImplementationOf<BeforeDeclaration> =
 			rule: {
 				parse: parseDateLimit,
 				serialize: schema => schema.toISOString()
-			},
-			exclusive: parseExclusiveKey
+			}
 		},
-		normalize: schema =>
-			(
-				typeof schema === "number" ||
-				typeof schema === "string" ||
-				schema instanceof Date
-			) ?
-				{ rule: schema }
-			:	schema,
+		normalize: createDateSchemaNormalizer("before"),
 		defaults: {
-			description: node =>
-				node.exclusive ?
-					`before ${node.stringLimit}`
-				:	`${node.stringLimit} or earlier`,
-			actual: data => data.toLocaleString()
+			description: node => `${node.collapsibleLimitString} or earlier`,
+			actual: describeCollapsibleDate
 		},
 		intersections: {
 			before: (l, r) => (l.isStricterThan(r) ? l : r),
@@ -73,9 +79,21 @@ export const beforeImplementation: nodeImplementationOf<BeforeDeclaration> =
 		}
 	})
 
-export class BeforeNode extends BaseRange<BeforeDeclaration> {
-	traverseAllows: TraverseAllows<Date> =
-		this.exclusive ? data => data < this.rule : data => data <= this.rule
+export class BeforeNode extends BaseRange<Before.Declaration> {
+	collapsibleLimitString = describeCollapsibleDate(this.rule)
 
-	impliedBasis: BaseRoot = this.$.keywords.Date.raw
+	traverseAllows: TraverseAllows<Date> = data => data <= this.rule
+
+	impliedBasis: BaseRoot = $ark.intrinsic.Date.internal
+
+	reduceJsonSchema(): JsonSchema {
+		return throwParseError(
+			writeUnsupportedJsonSchemaTypeMessage("Date instance")
+		)
+	}
+}
+
+export const Before = {
+	implementation,
+	Node: BeforeNode
 }

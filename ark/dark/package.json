@@ -2,7 +2,7 @@
 	"name": "arkdark",
 	"displayName": "ArkDark",
 	"description": "Syntax highlighting, inline errors and theme for ArkType⛵",
-	"version": "5.3.0",
+	"version": "5.7.4",
 	"publisher": "arktypeio",
 	"type": "module",
 	"scripts": {
@@ -57,6 +57,9 @@
 			}
 		],
 		"configurationDefaults": {
+			"editor.quickSuggestions": {
+				"strings": "on"
+			},
 			"errorLens.followCursor": "closestProblem",
 			"errorLens.delay": 0,
 			"errorLens.editorHoverPartsEnabled": {
@@ -64,7 +67,7 @@
 			},
 			"errorLens.replace": [
 				{
-					"matcher": ".*'keyError<\"(.*)\">'\\.$",
+					"matcher": ".*'ErrorType<(.*)>'.*$",
 					"message": "$1"
 				},
 				{

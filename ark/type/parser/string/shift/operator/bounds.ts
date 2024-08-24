@@ -1,33 +1,30 @@
 import {
+	$ark,
+	writeUnboundableMessage,
 	type BaseRoot,
 	type BoundKind,
-	type DateLiteral,
-	type LimitLiteral,
-	type NodeSchema,
-	internalKeywords,
-	jsObjects,
-	tsKeywords,
-	writeUnboundableMessage
-} from "@arktype/schema"
-import { isKeyOf, type keySet, throwParseError } from "@arktype/util"
-import type { astToString } from "../../../semantic/utils.js"
+	type NodeSchema
+} from "@ark/schema"
+import { isKeyOf, throwParseError, type keySet } from "@ark/util"
+import type { DateLiteral, LimitLiteral } from "../../../../keywords/ast.ts"
+import type { astToString } from "../../../semantic/utils.ts"
 import type {
 	DynamicState,
 	DynamicStateWithRoot
-} from "../../reduce/dynamic.js"
+} from "../../reduce/dynamic.ts"
 import {
+	invertedComparators,
+	maxComparators,
+	writeUnpairableComparatorMessage,
 	type Comparator,
 	type InvertedComparators,
 	type MaxComparator,
-	type OpenLeftBound,
-	invertedComparators,
-	maxComparators,
-	writeUnpairableComparatorMessage
-} from "../../reduce/shared.js"
-import type { StaticState, state } from "../../reduce/static.js"
-import { extractDateLiteralSource, isDateLiteral } from "../operand/date.js"
-import type { parseOperand } from "../operand/operand.js"
-import type { Scanner } from "../scanner.js"
+	type OpenLeftBound
+} from "../../reduce/shared.ts"
+import type { StaticState, state } from "../../reduce/static.ts"
+import { extractDateLiteralSource, isDateLiteral } from "../operand/date.ts"
+import type { parseOperand } from "../operand/operand.ts"
+import type { Scanner } from "../scanner.ts"
 
 export const parseBound = (
 	s: DynamicStateWithRoot,
@@ -41,9 +38,8 @@ export const parseBound = (
 			return
 		}
 		if (s.root.unit instanceof Date) {
-			const literal = `d'${
-				s.root.description ?? s.root.unit.toISOString()
-			}'` as const
+			const literal =
+				`d'${s.root.description ?? s.root.unit.toISOString()}'` as const
 			s.unsetRoot()
 			s.reduceLeftBound(literal, comparator)
 			return
@@ -72,12 +68,7 @@ export type parseBound<
 		:	shiftResultOrError
 	:	never
 
-const oneCharComparators = {
-	"<": true,
-	">": true
-} as const
-
-type OneCharComparator = keyof typeof oneCharComparators
+type OneCharComparator = ">" | "<"
 
 export type ComparatorStartChar =
 	Comparator extends `${infer char}${string}` ? char : never
@@ -92,17 +83,16 @@ const shiftComparator = (
 	s: DynamicState,
 	start: ComparatorStartChar
 ): Comparator =>
-	s.scanner.lookaheadIs("=") ? `${start}${s.scanner.shift()}`
-	: isKeyOf(start, oneCharComparators) ? start
-	: s.error(singleEqualsMessage)
+	s.scanner.lookaheadIs("=") ?
+		`${start}${s.scanner.shift()}`
+	:	(start as OneCharComparator)
 
 type shiftComparator<
 	start extends ComparatorStartChar,
 	unscanned extends string
 > =
 	unscanned extends `=${infer nextUnscanned}` ? [`${start}=`, nextUnscanned]
-	: start extends OneCharComparator ? [start, unscanned]
-	: state.error<singleEqualsMessage>
+	:	[start & OneCharComparator, unscanned]
 
 export const writeIncompatibleRangeMessage = (
 	l: BoundKind,
@@ -115,7 +105,7 @@ export const getBoundKinds = (
 	root: BaseRoot,
 	boundKind: BoundExpressionKind
 ): BoundKind[] => {
-	if (root.extends(tsKeywords.number)) {
+	if (root.extends($ark.intrinsic.number)) {
 		if (typeof limit !== "number") {
 			return throwParseError(
 				writeInvalidLimitMessage(comparator, limit, boundKind)
@@ -127,7 +117,7 @@ export const getBoundKinds = (
 			: ["max"]
 		)
 	}
-	if (root.extends(internalKeywords.lengthBoundable)) {
+	if (root.extends($ark.intrinsic.lengthBoundable)) {
 		if (typeof limit !== "number") {
 			return throwParseError(
 				writeInvalidLimitMessage(comparator, limit, boundKind)
@@ -139,7 +129,7 @@ export const getBoundKinds = (
 			: ["maxLength"]
 		)
 	}
-	if (root.extends(jsObjects.Date)) {
+	if (root.extends($ark.intrinsic.Date)) {
 		// allow either numeric or date limits
 		return (
 			comparator === "==" ? ["after", "before"]
@@ -149,10 +139,6 @@ export const getBoundKinds = (
 	}
 	return throwParseError(writeUnboundableMessage(root.expression))
 }
-
-export const singleEqualsMessage =
-	"= is not a valid comparator. Use == to check for equality"
-type singleEqualsMessage = typeof singleEqualsMessage
 
 const openLeftBoundToRoot = (
 	leftBound: OpenLeftBound

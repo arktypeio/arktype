@@ -1,60 +1,59 @@
+import { append, printable, throwParseError, unset, type Key } from "@ark/util"
+import { BaseConstraint } from "../constraint.ts"
+import type { nodeOfKind, RootSchema } from "../kinds.ts"
 import {
-	compileSerializedValue,
-	printable,
-	registeredReference,
-	throwParseError,
-	unset,
-	type Key
-} from "@arktype/util"
-import { BaseConstraint } from "../constraint.js"
-import type { Node, RootSchema } from "../kinds.js"
-import type {
-	DeepNodeTransformation,
-	DeepNodeTransformationContext
-} from "../node.js"
-import type { Morph } from "../roots/morph.js"
-import type { BaseRoot } from "../roots/root.js"
-import type { NodeCompiler } from "../shared/compile.js"
-import type { BaseMeta } from "../shared/declare.js"
-import { Disjoint } from "../shared/disjoint.js"
-import type { IntersectionContext, RootKind } from "../shared/implement.js"
-import { intersectNodes } from "../shared/intersections.js"
-import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
-import type { OptionalDeclaration, OptionalNode } from "./optional.js"
-import type { RequiredDeclaration } from "./required.js"
+	flatRef,
+	type BaseNode,
+	type DeepNodeTransformation,
+	type DeepNodeTransformContext,
+	type FlatRef
+} from "../node.ts"
+import type { Morph } from "../roots/morph.ts"
+import type { BaseRoot } from "../roots/root.ts"
+import { compileSerializedValue, type NodeCompiler } from "../shared/compile.ts"
+import type { BaseNormalizedSchema } from "../shared/declare.ts"
+import { Disjoint } from "../shared/disjoint.ts"
+import type { IntersectionContext, RootKind } from "../shared/implement.ts"
+import { intersectNodes } from "../shared/intersections.ts"
+import { $ark, registeredReference } from "../shared/registry.ts"
+import type { TraverseAllows, TraverseApply } from "../shared/traversal.ts"
+import type { Optional } from "./optional.ts"
+import type { Required } from "./required.ts"
 
-export type PropKind = "required" | "optional"
+export declare namespace Prop {
+	export type Kind = "required" | "optional"
 
-export type PropNode = Node<PropKind>
+	export type Node = nodeOfKind<Kind>
 
-export interface BasePropSchema extends BaseMeta {
-	readonly key: Key
-	readonly value: RootSchema
-}
+	export interface Schema extends BaseNormalizedSchema {
+		readonly key: Key
+		readonly value: RootSchema
+	}
 
-export interface BasePropInner extends BasePropSchema {
-	readonly value: BaseRoot
-}
+	export interface Inner extends Schema {
+		readonly value: BaseRoot
+	}
 
-export type BasePropDeclaration<kind extends PropKind = PropKind> = {
-	kind: kind
-	prerequisite: object
-	intersectionIsOpen: true
-	childKind: RootKind
+	export interface Declaration<kind extends Kind = Kind> {
+		kind: kind
+		prerequisite: object
+		intersectionIsOpen: true
+		childKind: RootKind
+	}
 }
 
 export const intersectProps = (
-	l: Node<PropKind>,
-	r: Node<PropKind>,
+	l: nodeOfKind<Prop.Kind>,
+	r: nodeOfKind<Prop.Kind>,
 	ctx: IntersectionContext
-): Node<PropKind> | Disjoint | null => {
+): nodeOfKind<Prop.Kind> | Disjoint | null => {
 	if (l.key !== r.key) return null
 
 	const key = l.key
 	let value = intersectNodes(l.value, r.value, ctx)
-	const kind: PropKind = l.required || r.required ? "required" : "optional"
+	const kind: Prop.Kind = l.required || r.required ? "required" : "optional"
 	if (value instanceof Disjoint) {
-		if (kind === "optional") value = ctx.$.keywords.never.raw
+		if (kind === "optional") value = $ark.intrinsic.never.internal
 		else {
 			// if either operand was optional, the Disjoint has to be treated as optional
 			return value.withPrefixKey(
@@ -92,20 +91,30 @@ export const intersectProps = (
 }
 
 export abstract class BaseProp<
-	kind extends PropKind = PropKind
+	kind extends Prop.Kind = Prop.Kind
 > extends BaseConstraint<
-	kind extends "required" ? RequiredDeclaration : OptionalDeclaration
+	kind extends "required" ? Required.Declaration : Optional.Declaration
 > {
 	required: boolean = this.kind === "required"
-	impliedBasis: BaseRoot = this.$.keywords.object.raw
+	optional: boolean = this.kind === "optional"
+	impliedBasis: BaseRoot = $ark.intrinsic.object.internal
 	serializedKey: string = compileSerializedValue(this.key)
 	compiledKey: string =
 		typeof this.key === "string" ? this.key : this.serializedKey
 
+	override get flatRefs(): FlatRef[] {
+		return append(
+			this.value.flatRefs.map(ref =>
+				flatRef([this.key, ...ref.path], ref.node)
+			),
+			flatRef([this.key], this.value)
+		)
+	}
+
 	protected override _transform(
 		mapper: DeepNodeTransformation,
-		ctx: DeepNodeTransformationContext
-	) {
+		ctx: DeepNodeTransformContext
+	): BaseNode | null {
 		ctx.path.push(this.key)
 		const result = super._transform(mapper, ctx)
 		ctx.path.pop()
@@ -114,7 +123,7 @@ export abstract class BaseProp<
 
 	private defaultValueMorphs: Morph[] = [
 		data => {
-			data[this.key] = (this as OptionalNode).default
+			data[this.key] = (this as Optional.Node).default
 			return data
 		}
 	]
@@ -123,7 +132,7 @@ export abstract class BaseProp<
 		this.defaultValueMorphs
 	)
 
-	hasDefault(): this is OptionalNode & { default: unknown } {
+	hasDefault(): this is Optional.Node & { default: unknown } {
 		return "default" in this
 	}
 
@@ -135,7 +144,7 @@ export abstract class BaseProp<
 			ctx?.path.pop()
 			return allowed
 		}
-		return !this.required
+		return this.optional
 	}
 
 	traverseApply: TraverseApply<object> = (data, ctx) => {

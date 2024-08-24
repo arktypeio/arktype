@@ -1,5 +1,5 @@
 import { execSync } from "child_process"
-import { baseDiagnosticTscCmd } from "./shared.js"
+import { baseDiagnosticTscCmd } from "./shared.ts"
 
 export const stats = (args: string[]): void => {
 	const packageDirs = args.length ? args : [process.cwd()]

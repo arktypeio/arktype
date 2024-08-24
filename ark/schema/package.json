@@ -1,6 +1,6 @@
 {
-	"name": "@arktype/schema",
-	"version": "0.1.16",
+	"name": "@ark/schema",
+	"version": "0.4.0",
 	"license": "MIT",
 	"author": {
 		"name": "David Blass",
@@ -9,26 +9,35 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/arktypeio/arktype.git"
+		"url": "https://github.com/arktypeio/arktype.git",
+		"directory": "ark/schema"
 	},
 	"type": "module",
 	"main": "./out/index.js",
 	"types": "./out/index.d.ts",
 	"exports": {
-		".": "./out/index.js",
-		"./config": "./out/config.js",
-		"./internal/*": "./out/*"
+		".": {
+			"ark-ts": "./index.ts",
+			"default": "./out/index.js"
+		},
+		"./config": {
+			"ark-ts": "./config.ts",
+			"default": "./out/config.js"
+		}
 	},
 	"files": [
 		"out"
 	],
 	"scripts": {
-		"build": "tsx ../repo/build.ts",
-		"bench": "tsx ./__tests__/comparison.bench.ts",
-		"test": "tsx ../repo/testPackage.ts",
-		"tnt": "tsx ../repo/testPackage.ts --skipTypes"
+		"build": "ts ../repo/build.ts",
+		"bench": "ts ./__tests__/comparison.bench.ts",
+		"test": "ts ../repo/testPackage.ts",
+		"tnt": "ts ../repo/testPackage.ts --skipTypes"
 	},
 	"dependencies": {
-		"@arktype/util": "workspace:*"
+		"@ark/util": "workspace:*"
+	},
+	"publishConfig": {
+		"access": "public"
 	}
 }

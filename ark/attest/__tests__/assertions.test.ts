@@ -1,9 +1,9 @@
-import { attest } from "@arktype/attest"
+import { attest } from "@ark/attest"
 import * as assert from "node:assert/strict"
 
 const o = { ark: "type" }
 
-specify("type assertions", () => {
+describe("type assertions", () => {
 	it("type parameter", () => {
 		attest<{ ark: string }>(o)
 		assert.throws(
@@ -25,8 +25,43 @@ specify("type assertions", () => {
 	})
 
 	it("type toString", () => {
-		attest(o).type.toString("{ ark: string; }")
-		attest(o).type.toString.is("{ ark: string; }")
+		attest(o).type.toString("{ ark: string }")
+		attest(o).type.toString.is("{ ark: string }")
+		attest(o).type.toString.satisfies(/^{.*}$/)
+		assert.throws(
+			() => attest(o).type.toString.satisfies(/^a.*z$/),
+			assert.AssertionError,
+			"typfsde"
+		)
+	})
+
+	it("type toString regex", () => {
+		attest(o).type.toString(/^{.*}$/)
+		assert.throws(
+			() => attest(o).type.toString(/^a.*z$/),
+			assert.AssertionError,
+			"typfsde"
+		)
+	})
+
+	it("type toString multiline", () => {
+		const obj = {
+			ark: "type",
+			type: "script",
+			vali: "dator",
+			opti: "mized",
+			from: "editor",
+			to: "runtime"
+		}
+
+		attest(obj).type.toString.is(`{
+	ark: string
+	type: string
+	vali: string
+	opti: string
+	from: string
+	to: string
+}`)
 	})
 
 	it("equals", () => {
@@ -53,6 +88,7 @@ specify("type assertions", () => {
 
 	it("functional asserts don't exist on pure value types", () => {
 		// @ts-expect-error
+		// eslint-disable-next-line @typescript-eslint/no-unused-expressions
 		attest(5).throws
 	})
 

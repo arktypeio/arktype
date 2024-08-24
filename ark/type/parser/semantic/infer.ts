@@ -1,29 +1,33 @@
+import type { GenericAst } from "@ark/schema"
+import type { BigintLiteral, Hkt, array } from "@ark/util"
+import type { ArkAmbient } from "../../config.ts"
+import type { inferIntersection } from "../../intersect.ts"
 import type {
 	Date,
 	DateLiteral,
-	GenericProps,
+	Default,
 	LimitLiteral,
 	RegexLiteral,
-	ambient,
-	constrain,
+	applyConstraint,
 	distillIn,
-	inferIntersection,
-	normalizeLimit,
-	string
-} from "@arktype/schema"
-import type { BigintLiteral, array } from "@arktype/util"
+	distillOut,
+	normalizeLimit
+} from "../../keywords/ast.ts"
+import type { string } from "../../keywords/string/string.ts"
 import type {
 	UnparsedScope,
 	resolve,
 	tryInferSubmoduleReference
-} from "../../scope.js"
-import type { inferDefinition } from "../definition.js"
-import type { Comparator, MinComparator } from "../string/reduce/shared.js"
-import type { StringLiteral } from "../string/shift/operand/enclosed.js"
+} from "../../scope.ts"
+import type { inferDefinition } from "../definition.ts"
+import type { Comparator, MinComparator } from "../string/reduce/shared.ts"
+import type { StringLiteral } from "../string/shift/operand/enclosed.ts"
 
 export type inferAstRoot<ast, $, args> = inferConstrainableAst<ast, $, args>
 
 export type inferAstIn<ast, $, args> = distillIn<inferAstRoot<ast, $, args>>
+
+export type inferAstOut<ast, $, args> = distillOut<inferAstRoot<ast, $, args>>
 
 export type inferConstrainableAst<ast, $, args> =
 	ast extends array ? inferExpression<ast, $, args>
@@ -31,31 +35,37 @@ export type inferConstrainableAst<ast, $, args> =
 	: never
 
 export type GenericInstantiationAst<
-	generic extends GenericProps = GenericProps,
+	generic extends GenericAst = GenericAst,
 	argAsts extends unknown[] = unknown[]
 > = [generic, "<>", argAsts]
 
+type resolveScope<g$, $> =
+	// If the generic was defined in the current scope, its definition can be
+	// resolved using the same scope as that of the input args.
+	g$ extends UnparsedScope ? $
+	:	// Otherwise, use the scope that was explicitly bound to it.
+		g$
+
 export type inferExpression<ast extends array, $, args> =
-	ast extends GenericInstantiationAst<infer generic, infer argAsts> ?
-		inferDefinition<
-			generic["def"],
-			generic["$"]["t"] extends UnparsedScope ?
-				// If the generic was defined in the current scope, its definition can be
-				// resolved using the same scope as that of the input args.
-				$
-			:	// Otherwise, use the scope that was explicitly associated with it.
-				generic["$"]["t"],
-			{
-				// Using keyof g["params"] & number here results in the element types
-				// being mixed- another reason TS should not have separate `${number}` and number keys!
-				[i in keyof generic["params"] &
-					`${number}` as generic["params"][i]]: inferConstrainableAst<
-					argAsts[i & keyof argAsts],
-					$,
-					args
-				>
-			}
-		>
+	ast extends GenericInstantiationAst<infer g, infer argAsts> ?
+		g["bodyDef"] extends Hkt ?
+			Hkt.apply<
+				g["bodyDef"],
+				{ [i in keyof argAsts]: inferConstrainableAst<argAsts[i], $, args> }
+			>
+		:	inferDefinition<
+				g["bodyDef"],
+				resolveScope<g["$"], $>,
+				{
+					// intersect `${number}` to ensure that only array indices are mapped
+					[i in keyof g["names"] &
+						`${number}` as g["names"][i]]: inferConstrainableAst<
+						argAsts[i & keyof argAsts],
+						resolveScope<g["arg$"], $>,
+						args
+					>
+				}
+			>
 	: ast[1] extends "[]" ? inferConstrainableAst<ast[0], $, args>[]
 	: ast[1] extends "|" ?
 		| inferConstrainableAst<ast[0], $, args>
@@ -65,12 +75,16 @@ export type inferExpression<ast extends array, $, args> =
 			inferConstrainableAst<ast[0], $, args>,
 			inferConstrainableAst<ast[2], $, args>
 		>
+	: ast[1] extends "=" ?
+		inferTerminal<ast[2] & string, $, args> extends infer defaultValue ?
+			(In?: inferConstrainableAst<ast[0], $, args>) => Default<defaultValue>
+		:	never
 	: ast[1] extends Comparator ?
 		ast[0] extends LimitLiteral ?
 			constrainBound<inferConstrainableAst<ast[2], $, args>, ast[1], ast[0]>
 		:	constrainBound<inferConstrainableAst<ast[0], $, args>, ast[1], ast[2]>
 	: ast[1] extends "%" ?
-		constrain<
+		applyConstraint<
 			inferConstrainableAst<ast[0], $, args>,
 			"divisor",
 			ast[2] & number
@@ -87,8 +101,8 @@ export type constrainBound<
 		comparator extends "==" ?
 			In extends number ? limit
 			: In extends Date ? Date.literal<normalizeLimit<limit>>
-			: constrain<constrainableIn, "exactLength", limit & number>
-		:	constrain<
+			: applyConstraint<constrainableIn, "exactLength", limit & number>
+		:	applyConstraint<
 				constrainableIn,
 				In extends number ?
 					comparator extends MinComparator ?
@@ -131,7 +145,7 @@ export type InfixExpression<
 
 export type inferTerminal<token extends string, $, args> =
 	token extends keyof args | keyof $ ? resolve<token, $, args>
-	: token extends keyof ambient ? ambient[token]
+	: token extends keyof ArkAmbient.$ ? resolve<token, ArkAmbient.$, args>
 	: `#${token}` extends keyof $ ? resolve<`#${token}`, $, args>
 	: token extends StringLiteral<infer text> ? text
 	: token extends `${infer n extends number}` ? n

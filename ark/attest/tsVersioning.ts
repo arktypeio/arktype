@@ -1,5 +1,5 @@
-import { findPackageRoot, fsRoot, readJson } from "@arktype/fs"
-import type { Digit } from "@arktype/util"
+import { assertPackageRoot, fsRoot, readJson } from "@ark/fs"
+import type { Digit } from "@ark/util"
 import { existsSync, renameSync, symlinkSync, unlinkSync } from "fs"
 import { dirname } from "path"
 import { join } from "path/posix"
@@ -25,7 +25,7 @@ export const forTypeScriptVersions = (
 ): void => {
 	const passedVersions: TsVersionData[] = []
 	const failedVersions: TsVersionData[] = []
-	const nodeModules = join(findPackageRoot(process.cwd()), "node_modules")
+	const nodeModules = join(assertPackageRoot(process.cwd()), "node_modules")
 	const tsPrimaryPath = join(nodeModules, "typescript")
 	const tsTemporaryPath = join(nodeModules, "typescript-temp")
 	if (existsSync(tsPrimaryPath)) renameSync(tsPrimaryPath, tsTemporaryPath)
@@ -113,8 +113,8 @@ export const findAttestTypeScriptVersions = (): TsVersionData[] => {
 		const nodeModulesPath = join(currentDir, "node_modules")
 		const packageJson = readJson(packageJsonPath)
 		const dependencies: Record<string, string> = {
-			...packageJson.dependencies,
-			...packageJson.devDependencies
+			...(packageJson.dependencies as object),
+			...(packageJson.devDependencies as object)
 		}
 		for (const alias in dependencies) {
 			if (!alias.startsWith("typescript")) continue
@@ -125,7 +125,8 @@ export const findAttestTypeScriptVersions = (): TsVersionData[] => {
 					`TypeScript version ${alias} specified in ${packageJsonPath} must be installed at ${path} `
 				)
 			}
-			const version: string = readJson(join(path, "package.json")).version
+			const version: string = readJson(join(path, "package.json"))
+				.version as string
 			versions.push({
 				alias,
 				version,

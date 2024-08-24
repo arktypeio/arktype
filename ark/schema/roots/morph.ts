@@ -1,41 +1,68 @@
 import {
-	arrayFrom,
-	registeredReference,
+	arrayEquals,
+	liftArray,
 	throwParseError,
-	type BuiltinObjectKind,
-	type BuiltinObjects,
-	type Primitive,
-	type anyOrNever,
 	type array,
 	type listable,
-	type show
-} from "@arktype/util"
-import type { of } from "../ast.js"
-import type { type } from "../inference.js"
-import type { Node, NodeSchema } from "../kinds.js"
-import type { StaticArkOption } from "../scope.js"
-import type { NodeCompiler } from "../shared/compile.js"
-import type { BaseMeta, declareNode } from "../shared/declare.js"
-import { Disjoint } from "../shared/disjoint.js"
-import type { ArkError, ArkErrors } from "../shared/errors.js"
+	type mutable
+} from "@ark/util"
+import type { NodeSchema, nodeOfKind } from "../kinds.ts"
+import type { NodeCompiler } from "../shared/compile.ts"
+import type { BaseNormalizedSchema, declareNode } from "../shared/declare.ts"
+import { Disjoint } from "../shared/disjoint.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
-} from "../shared/implement.js"
-import { intersectNodes, type inferPipe } from "../shared/intersections.js"
+} from "../shared/implement.ts"
+import { intersectNodes } from "../shared/intersections.ts"
+import {
+	writeJsonSchemaMorphMessage,
+	type JsonSchema
+} from "../shared/jsonSchema.ts"
+import { $ark, registeredReference } from "../shared/registry.ts"
 import type {
 	TraversalContext,
 	TraverseAllows,
 	TraverseApply
-} from "../shared/traversal.js"
-import { hasArkKind } from "../shared/utils.js"
-import type { DefaultableAst } from "../structure/optional.js"
-import { BaseRoot, type Root, type schemaKindRightOf } from "./root.js"
-import { defineRightwardIntersections } from "./utils.js"
+} from "../shared/traversal.ts"
+import { hasArkKind } from "../shared/utils.ts"
+import { BaseRoot, type schemaKindRightOf } from "./root.ts"
+import { defineRightwardIntersections } from "./utils.ts"
 
-export type MorphChildKind = schemaKindRightOf<"morph"> | "alias"
+export declare namespace Morph {
+	export type ChildKind = schemaKindRightOf<"morph"> | "alias"
 
-const morphChildKinds: array<MorphChildKind> = [
+	export type ChildNode = nodeOfKind<ChildKind>
+
+	export type ChildSchema = NodeSchema<ChildKind>
+
+	export interface Inner {
+		readonly in?: ChildNode
+		readonly morphs: array<Morph | BaseRoot>
+		readonly declaredIn?: ChildNode
+		readonly declaredOut?: BaseRoot
+	}
+
+	export interface Schema extends BaseNormalizedSchema {
+		readonly in?: ChildSchema
+		readonly morphs: listable<Morph | BaseRoot>
+		readonly declaredIn?: ChildNode
+		readonly declaredOut?: BaseRoot
+	}
+
+	export interface Declaration
+		extends declareNode<{
+			kind: "morph"
+			schema: Schema
+			normalizedSchema: Schema
+			inner: Inner
+			childKind: ChildKind
+		}> {}
+
+	export type Node = MorphNode
+}
+
+const morphChildKinds: array<Morph.ChildKind> = [
 	"alias",
 	"intersection",
 	"unit",
@@ -43,37 +70,10 @@ const morphChildKinds: array<MorphChildKind> = [
 	"proto"
 ]
 
-export type MorphChildNode = Node<MorphChildKind>
-
-export type MorphChildSchema = NodeSchema<MorphChildKind>
-
 export type Morph<i = any, o = unknown> = (In: i, ctx: TraversalContext) => o
 
-export type Out<o = any> = ["=>", o]
-
-export type MorphAst<i = any, o = any> = (In: i) => Out<o>
-
-export interface MorphInner extends BaseMeta {
-	readonly in: MorphChildNode
-	readonly morphs: array<Morph | Root>
-}
-
-export interface MorphSchema extends BaseMeta {
-	readonly in: MorphChildSchema
-	readonly morphs: listable<Morph | Root>
-}
-
-export interface MorphDeclaration
-	extends declareNode<{
-		kind: "morph"
-		schema: MorphSchema
-		normalizedSchema: MorphSchema
-		inner: MorphInner
-		childKind: MorphChildKind
-	}> {}
-
-export const morphImplementation: nodeImplementationOf<MorphDeclaration> =
-	implementNode<MorphDeclaration>({
+const implementation: nodeImplementationOf<Morph.Declaration> =
+	implementNode<Morph.Declaration>({
 		kind: "morph",
 		hasAssociatedError: false,
 		keys: {
@@ -82,11 +82,19 @@ export const morphImplementation: nodeImplementationOf<MorphDeclaration> =
 				parse: (schema, ctx) => ctx.$.node(morphChildKinds, schema)
 			},
 			morphs: {
-				parse: arrayFrom,
+				parse: liftArray,
 				serialize: morphs =>
 					morphs.map(m =>
 						hasArkKind(m, "root") ? m.json : registeredReference(m)
 					)
+			},
+			declaredIn: {
+				child: false,
+				serialize: node => node.json
+			},
+			declaredOut: {
+				child: false,
+				serialize: node => node.json
 			}
 		},
 		normalize: schema => schema,
@@ -96,7 +104,7 @@ export const morphImplementation: nodeImplementationOf<MorphDeclaration> =
 		},
 		intersections: {
 			morph: (l, r, ctx) => {
-				if (l.morphs.some((morph, i) => morph !== r.morphs[i])) {
+				if (!l.hasEqualMorphs(r)) {
 					return throwParseError(
 						writeMorphIntersectionMessage(l.expression, r.expression)
 					)
@@ -104,214 +112,139 @@ export const morphImplementation: nodeImplementationOf<MorphDeclaration> =
 				const inTersection = intersectNodes(l.in, r.in, ctx)
 				if (inTersection instanceof Disjoint) return inTersection
 
+				const baseInner: Omit<mutable<Morph.Inner>, "in"> = {
+					morphs: l.morphs
+				}
+
+				if (l.declaredIn || r.declaredIn) {
+					const declaredIn = intersectNodes(l.in, r.in, ctx)
+					// we can't treat this as a normal Disjoint since it's just declared
+					// it should only happen if someone's essentially trying to create a broken type
+					if (declaredIn instanceof Disjoint) return declaredIn.throw()
+					else baseInner.declaredIn = declaredIn as never
+				}
+
+				if (l.declaredOut || r.declaredOut) {
+					const declaredOut = intersectNodes(l.out, r.out, ctx)
+					if (declaredOut instanceof Disjoint) return declaredOut.throw()
+					else baseInner.declaredOut = declaredOut
+				}
+
 				// in case from is a union, we need to distribute the branches
 				// to can be a union as any schema is allowed
-				return ctx.$.schema(
-					inTersection.branches.map(inBranch =>
+				return inTersection.distribute(
+					inBranch =>
 						ctx.$.node("morph", {
-							morphs: l.morphs,
-							in: inBranch
-						})
-					)
+							...baseInner,
+							in: inBranch as Morph.ChildNode
+						}),
+					ctx.$.rootNode
 				)
 			},
 			...defineRightwardIntersections("morph", (l, r, ctx) => {
 				const inTersection = intersectNodes(l.in, r, ctx)
-				return (
-					inTersection instanceof Disjoint ? inTersection
-					: inTersection.kind === "union" ?
-						ctx.$.node(
-							"union",
-							inTersection.branches.map(branch => ({
+				return inTersection instanceof Disjoint ? inTersection : (
+						inTersection.distribute(
+							branch => ({
 								...l.inner,
-								in: branch
-							}))
+								in: branch as Morph.ChildNode
+							}),
+							ctx.$.rootNode
 						)
-					:	ctx.$.node("morph", {
-							...l.inner,
-							in: inTersection
-						})
-				)
+					)
 			})
 		}
 	})
 
-export class MorphNode extends BaseRoot<MorphDeclaration> {
+export class MorphNode extends BaseRoot<Morph.Declaration> {
 	serializedMorphs: string[] = this.morphs.map(registeredReference)
 	compiledMorphs = `[${this.serializedMorphs}]`
 
-	traverseAllows: TraverseAllows = (data, ctx) =>
-		this.in.traverseAllows(data, ctx)
+	lastMorph = this.inner.morphs.at(-1)
+	validatedIn: BaseRoot | undefined = this.inner.in
+	validatedOut: BaseRoot | undefined =
+		hasArkKind(this.lastMorph, "root") ?
+			Object.assign(this.referencesById, this.lastMorph.out.referencesById) &&
+			this.lastMorph.out
+		:	undefined;
 
-	traverseApply: TraverseApply = (data, ctx) => {
-		this.in.traverseApply(data, ctx)
-		ctx.queueMorphs(this.morphs)
+	override get in(): Morph.ChildNode {
+		return (
+			this.declaredIn ??
+			this.inner.in ??
+			($ark.intrinsic.unknown.internal as Morph.ChildNode)
+		)
 	}
 
-	expression = `(In: ${this.in.expression}) => Out<${this.out?.expression ?? "unknown"}>`
+	override get out(): BaseRoot {
+		return (
+			this.declaredOut ?? this.validatedOut ?? $ark.intrinsic.unknown.internal
+		)
+	}
+
+	declareIn(declaredIn: Morph.ChildNode): MorphNode {
+		return this.$.node("morph", {
+			...this.inner,
+			declaredIn
+		})
+	}
+
+	declareOut(declaredOut: BaseRoot): MorphNode {
+		return this.$.node("morph", {
+			...this.inner,
+			declaredOut
+		})
+	}
+
+	expression = `(In: ${this.in.expression}) => Out<${this.out.expression}>`
 
 	get shortDescription(): string {
 		return this.in.shortDescription
 	}
 
+	protected innerToJsonSchema(): JsonSchema {
+		return throwParseError(writeJsonSchemaMorphMessage(this.expression))
+	}
+
 	compile(js: NodeCompiler): void {
 		if (js.traversalKind === "Allows") {
-			js.return(js.invoke(this.in))
+			if (!this.validatedIn) return
+			js.return(js.invoke(this.validatedIn))
 			return
 		}
-		js.line(js.invoke(this.in))
+		if (this.validatedIn) js.line(js.invoke(this.validatedIn))
 		js.line(`ctx.queueMorphs(${this.compiledMorphs})`)
 	}
 
-	override get in(): BaseRoot {
-		return this.inner.in
+	traverseAllows: TraverseAllows = (data, ctx) =>
+		!this.validatedIn || this.validatedIn.traverseAllows(data, ctx)
+
+	traverseApply: TraverseApply = (data, ctx) => {
+		if (this.validatedIn) this.validatedIn.traverseApply(data, ctx)
+		ctx.queueMorphs(this.morphs)
 	}
 
-	lastMorph = this.inner.morphs.at(-1)
-	validatedOut: BaseRoot | undefined =
-		hasArkKind(this.lastMorph, "root") ?
-			Object.assign(this.referencesById, this.lastMorph.out.referencesById) &&
-			this.lastMorph.out
-		:	undefined
-
-	override get out(): BaseRoot {
-		return this.validatedOut ?? this.$.keywords.unknown.raw
+	/** Check if the morphs of r are equal to those of this node */
+	hasEqualMorphs(r: MorphNode): boolean {
+		return arrayEquals(this.morphs, r.morphs, {
+			isEqual: (lMorph, rMorph) =>
+				lMorph === rMorph ||
+				(hasArkKind(lMorph, "root") &&
+					hasArkKind(rMorph, "root") &&
+					lMorph.equals(rMorph))
+		})
 	}
+}
 
-	rawKeyOf(): BaseRoot {
-		return this.in.rawKeyOf()
-	}
+export const Morph = {
+	implementation,
+	Node: MorphNode
 }
 
 export const writeMorphIntersectionMessage = (
 	lDescription: string,
 	rDescription: string
-) =>
+): string =>
 	`The intersection of distinct morphs at a single path is indeterminate:
 Left: ${lDescription}
 Right: ${rDescription}`
-
-export type inferPipes<t, pipes extends Morph[]> =
-	pipes extends [infer head extends Morph, ...infer tail extends Morph[]] ?
-		inferPipes<
-			head extends type.cast<infer tPipe> ? inferPipe<t, tPipe>
-			:	(In: distillConstrainableIn<t>) => Out<inferMorphOut<head>>,
-			tail
-		>
-	:	t
-
-export type inferMorphOut<morph extends Morph> = Exclude<
-	ReturnType<morph>,
-	ArkError | ArkErrors
->
-
-export type distillIn<t> =
-	includesMorphsOrConstraints<t> extends true ? _distill<t, "in", "base"> : t
-
-export type distillOut<t> =
-	includesMorphsOrConstraints<t> extends true ? _distill<t, "out", "base"> : t
-
-export type distillConstrainableIn<t> =
-	includesMorphsOrConstraints<t> extends true ?
-		_distill<t, "in", "constrainable">
-	:	t
-
-export type distillConstrainableOut<t> =
-	includesMorphsOrConstraints<t> extends true ?
-		_distill<t, "out", "constrainable">
-	:	t
-
-export type includesMorphsOrConstraints<t> =
-	[t, _distill<t, "in", "base">, t, _distill<t, "out", "base">] extends (
-		[_distill<t, "in", "base">, t, _distill<t, "out", "base">, t]
-	) ?
-		false
-	:	true
-
-export type includesMorphs<t> =
-	[
-		_distill<t, "in", "constrainable">,
-		_distill<t, "out", "constrainable">
-	] extends (
-		[_distill<t, "out", "constrainable">, _distill<t, "in", "constrainable">]
-	) ?
-		false
-	:	true
-
-type _distill<
-	t,
-	io extends "in" | "out",
-	distilledKind extends "base" | "constrainable"
-> =
-	t extends TerminallyInferredObjectKind | Primitive ? t
-	: unknown extends t ? unknown
-	: t extends MorphAst<infer i, infer o> ?
-		io extends "in" ?
-			_distill<i, io, distilledKind>
-		:	_distill<o, io, distilledKind>
-	: t extends DefaultableAst<infer t> ? _distill<t, io, distilledKind>
-	: t extends of<infer base, any> ?
-		distilledKind extends "base" ?
-			_distill<base, io, distilledKind>
-		:	t
-	: t extends array ? distillArray<t, io, distilledKind, []>
-	: // we excluded this from TerminallyInferredObjectKind so that those types could be
-	// inferred before checking morphs/defaults, which extend Function
-	t extends Function ? t
-	: // avoid recursing into classes with private props etc.
-	{ [k in keyof t]: t[k] } extends t ?
-		io extends "in" ?
-			show<
-				{
-					[k in keyof t as k extends defaultableKeyOf<t> ? never : k]: _distill<
-						t[k],
-						io,
-						distilledKind
-					>
-				} & { [k in defaultableKeyOf<t>]?: _distill<t[k], io, distilledKind> }
-			>
-		:	{
-				[k in keyof t]: _distill<t[k], io, distilledKind>
-			}
-	:	t
-
-type defaultableKeyOf<t> = {
-	[k in keyof t]: [t[k]] extends [anyOrNever] ? never
-	: t[k] extends DefaultableAst ? k
-	: never
-}[keyof t]
-
-type distillArray<
-	t extends array,
-	io extends "in" | "out",
-	constraints extends "base" | "constrainable",
-	prefix extends array
-> =
-	t extends readonly [infer head, ...infer tail] ?
-		distillArray<
-			tail,
-			io,
-			constraints,
-			[...prefix, _distill<head, io, constraints>]
-		>
-	:	[...prefix, ...distillPostfix<t, io, constraints>]
-
-type distillPostfix<
-	t extends array,
-	io extends "in" | "out",
-	constraints extends "base" | "constrainable",
-	postfix extends array = []
-> =
-	t extends readonly [...infer init, infer last] ?
-		distillPostfix<
-			init,
-			io,
-			constraints,
-			[_distill<last, io, constraints>, ...postfix]
-		>
-	:	[...{ [i in keyof t]: _distill<t[i], io, constraints> }, ...postfix]
-
-/** Objects we don't want to expand during inference like Date or Promise */
-type TerminallyInferredObjectKind =
-	| StaticArkOption<"preserve">
-	| BuiltinObjects[Exclude<BuiltinObjectKind, "Array" | "Function">]

@@ -1,6 +1,6 @@
-import type { LimitLiteral } from "@arktype/schema"
-import type { Completion, ErrorMessage, defined } from "@arktype/util"
-import type { Scanner } from "../shift/scanner.js"
+import type { Completion, ErrorMessage, defined } from "@ark/util"
+import type { LimitLiteral } from "../../../keywords/ast.ts"
+import type { Scanner } from "../shift/scanner.ts"
 import type {
 	Comparator,
 	InvertedComparators,
@@ -13,7 +13,7 @@ import type {
 	writeUnclosedGroupMessage,
 	writeUnmatchedGroupCloseMessage,
 	writeUnpairableComparatorMessage
-} from "./shared.js"
+} from "./shared.ts"
 
 export type StaticState = {
 	root: unknown
@@ -33,7 +33,7 @@ type BranchState = {
 
 export type AutocompletePrefix = `${StringifiablePrefixOperator} `
 
-export namespace state {
+export declare namespace state {
 	export type initialize<def extends string> = from<{
 		root: undefined
 		branches: initialBranches
@@ -44,7 +44,7 @@ export namespace state {
 	}>
 
 	export type error<message extends string> = from<{
-		root: undefined
+		root: ErrorMessage<message>
 		branches: initialBranches
 		groups: []
 		finalizer: ErrorMessage<message>
@@ -53,7 +53,7 @@ export namespace state {
 	}>
 
 	export type completion<text extends string> = from<{
-		root: undefined
+		root: Completion<text>
 		branches: initialBranches
 		groups: []
 		finalizer: Completion<text>
@@ -80,7 +80,7 @@ export namespace state {
 	export type setRoot<
 		s extends StaticState,
 		root,
-		unscanned extends string
+		unscanned extends string = s["unscanned"]
 	> = from<{
 		root: root
 		branches: s["branches"]
@@ -93,7 +93,7 @@ export namespace state {
 	export type addPrefix<
 		s extends StaticState,
 		prefix extends StringifiablePrefixOperator,
-		unscanned extends string
+		unscanned extends string = s["unscanned"]
 	> = from<{
 		root: s["root"]
 		branches: {

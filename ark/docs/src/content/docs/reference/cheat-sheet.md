@@ -4,8 +4,6 @@ sidebar:
   order: 3
 ---
 
-Lots more docs are on the way, but I want to highlight some of the most useful synatx patterns/features that are carried over from alpha as well as those new to the 2.0 release.
-
 ```ts
 import { type } from "arktype"
 
@@ -35,7 +33,7 @@ export const currentTsSyntax = type({
 // available syntax new to 2.0
 
 export const upcomingTsSyntax = type({
-	keyof: "keyof bigint",
+	keyof: "keyof object",
 	variadicTuples: ["true", "...", "false[]"],
 	arrayOfObjectLiteral: type({ name: "string" }).array()
 })
@@ -43,13 +41,13 @@ export const upcomingTsSyntax = type({
 // runtime-specific syntax and builtin keywords with great error messages
 
 export const validationSyntax = type({
-	keywords: "email|uuid|creditCard|integer", // and many more
-	builtinParsers: "parse.date", // parses a Date from a string
+	keywords: "string.email | string.uuid | string.creditCard | number.integer", // and many more
+	builtinParsers: "string.date.parse", // parses a Date from a string
 	nativeRegexLiteral: /@arktype\.io/,
-	embeddedRegexLiteral: "email&/@arktype\\.io/",
-	divisibility: "number%10", // a multiple of 10
-	bound: "alpha>10", // an alpha-only string with more than 10 characters
-	range: "1<=email[]<100", // a list of 1 to 99 emails
+	embeddedRegexLiteral: "string.email & /@arktype\\.io/",
+	divisibility: "number % 10", // a multiple of 10
+	bound: "string.alpha > 10", // an alpha-only string with more than 10 characters
+	range: "1 <= string.email[] < 100", // a list of 1 to 99 emails
 	narrows: ["number", ":", n => n % 2 === 1], // an odd integer
 	morphs: ["string", "=>", parseFloat] // validates a string input then parses it to a number
 })
@@ -76,5 +74,3 @@ if (maybeMe instanceof type.errors) {
 	console.log(maybeMe.summary)
 }
 ```
-
-There's so much more I want to share but I want to get at least an initial version of the 2.0 branch merged tonight so look forward to that next week!

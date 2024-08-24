@@ -1,24 +1,27 @@
 import {
 	entriesOf,
+	flatMorph,
 	hasDomain,
 	isArray,
+	isEmptyObject,
 	printable,
 	throwParseError,
 	unset,
-	type Dict,
-	type Json,
 	type JsonData,
+	type PartialRecord,
+	type dict,
 	type listable
-} from "@arktype/util"
+} from "@ark/util"
+import type { GenericArgResolutions } from "./generic.ts"
 import {
 	nodeClassesByKind,
 	nodeImplementationsByKind,
 	type NormalizedSchema
-} from "./kinds.js"
-import type { BaseNode } from "./node.js"
-import type { UnknownRoot } from "./roots/root.js"
-import type { RawRootScope } from "./scope.js"
-import { Disjoint } from "./shared/disjoint.js"
+} from "./kinds.ts"
+import type { BaseNode } from "./node.ts"
+import type { BaseScope } from "./scope.ts"
+import type { BaseMeta, MetaSchema } from "./shared/declare.ts"
+import { Disjoint } from "./shared/disjoint.ts"
 import {
 	constraintKeys,
 	defaultValueSerializer,
@@ -27,8 +30,8 @@ import {
 	type NodeKind,
 	type RootKind,
 	type UnknownAttachments
-} from "./shared/implement.js"
-import { hasArkKind } from "./shared/utils.js"
+} from "./shared/implement.ts"
+import { hasArkKind } from "./shared/utils.ts"
 
 export type NodeParseOptions<prereduced extends boolean = boolean> = {
 	alias?: string
@@ -39,14 +42,16 @@ export type NodeParseOptions<prereduced extends boolean = boolean> = {
 	 * Useful for defining reductions like number|string|bigint|symbol|object|true|false|null|undefined => unknown
 	 **/
 	reduceTo?: BaseNode
+	args?: GenericArgResolutions
 }
 
 export interface NodeParseContext<kind extends NodeKind = NodeKind>
 	extends NodeParseOptions {
-	$: RawRootScope
+	$: BaseScope
+	args: GenericArgResolutions
+	kind: kind
+	normalizedSchema: NormalizedSchema<kind>
 	id: string
-	args?: Record<string, UnknownRoot>
-	schema: NormalizedSchema<kind>
 }
 
 export const schemaKindOf = <kind extends RootKind = RootKind>(
@@ -63,161 +68,222 @@ export const schemaKindOf = <kind extends RootKind = RootKind>(
 }
 
 const discriminateRootKind = (schema: unknown): RootKind => {
-	switch (typeof schema) {
-		case "string":
-			return schema[0] === "$" ? "alias" : "domain"
-		case "function":
-			return hasArkKind(schema, "root") ? schema.kind : "proto"
-		case "object": {
-			// throw at end of function
-			if (schema === null) break
+	if (hasArkKind(schema, "root")) return schema.kind
+	if (typeof schema === "string") return schema[0] === "$" ? "alias" : "domain"
+	if (typeof schema === "function") return "proto"
 
-			if ("morphs" in schema) return "morph"
+	// throw at end of function
+	if (typeof schema !== "object" || schema === null)
+		return throwParseError(writeInvalidSchemaMessage(schema))
 
-			if ("branches" in schema || isArray(schema)) return "union"
+	if ("morphs" in schema) return "morph"
 
-			if ("unit" in schema) return "unit"
+	if ("branches" in schema || isArray(schema)) return "union"
 
-			if ("alias" in schema) return "alias"
+	if ("unit" in schema) return "unit"
 
-			const schemaKeys = Object.keys(schema)
+	if ("alias" in schema) return "alias"
 
-			if (schemaKeys.length === 0 || schemaKeys.some(k => k in constraintKeys))
-				return "intersection"
-			if ("proto" in schema) return "proto"
-			if ("domain" in schema) return "domain"
-		}
-	}
-	return throwParseError(`${printable(schema)} is not a valid type schema`)
+	const schemaKeys = Object.keys(schema)
+
+	if (schemaKeys.length === 0 || schemaKeys.some(k => k in constraintKeys))
+		return "intersection"
+	if ("proto" in schema) return "proto"
+	if ("domain" in schema) return "domain"
+
+	return throwParseError(writeInvalidSchemaMessage(schema))
 }
 
-const nodeCache: { [innerHash: string]: BaseNode } = {}
+export const writeInvalidSchemaMessage = (schema: unknown): string =>
+	`${printable(schema)} is not a valid type schema`
+
+const nodeCache: { [hash: string]: BaseNode } = {}
+const nodeCountsByPrefix: PartialRecord<string, number> = {}
 
 const serializeListableChild = (listableNode: listable<BaseNode>) =>
 	isArray(listableNode) ?
 		listableNode.map(node => node.collapsibleJson)
 	:	listableNode.collapsibleJson
 
-export const parseNode = (kind: NodeKind, ctx: NodeParseContext): BaseNode => {
-	const impl = nodeImplementationsByKind[kind]
-	const inner: Record<string, unknown> = {}
+export const registerNodeId = (kind: NodeKind, alias?: string): string => {
+	const prefix = alias ?? kind
+	nodeCountsByPrefix[prefix] ??= 0
+	return `${prefix}${++nodeCountsByPrefix[prefix]!}`
+}
+
+export const parseNode = <kind extends NodeKind>(
+	ctx: NodeParseContext<kind>
+): BaseNode => {
+	const impl = nodeImplementationsByKind[ctx.kind]
+	const inner: dict = {}
+	const { meta: metaSchema, ...schema } = ctx.normalizedSchema as dict & {
+		meta?: MetaSchema
+	}
+
+	const meta: BaseMeta & dict =
+		metaSchema === undefined ? {}
+		: typeof metaSchema === "string" ? { description: metaSchema }
+		: (metaSchema as never)
+
 	// ensure node entries are parsed in order of precedence, with non-children
 	// parsed first
-	const schemaEntries = entriesOf(ctx.schema as Dict).sort(([lKey], [rKey]) =>
-		isNodeKind(lKey) ?
-			isNodeKind(rKey) ? precedenceOfKind(lKey) - precedenceOfKind(rKey)
-			:	1
-		: isNodeKind(rKey) ? -1
-		: lKey < rKey ? -1
-		: 1
-	)
-	const children: BaseNode[] = []
-	for (const entry of schemaEntries) {
+	const innerSchemaEntries = entriesOf(schema)
+		.sort(([lKey], [rKey]) =>
+			isNodeKind(lKey) ?
+				isNodeKind(rKey) ? precedenceOfKind(lKey) - precedenceOfKind(rKey)
+				:	1
+			: isNodeKind(rKey) ? -1
+			: lKey < rKey ? -1
+			: 1
+		)
+		.filter(([k, v]) => {
+			// move meta. prefixed props to meta, overwriting existing nested
+			// props of the same name if they exist
+			if (k.startsWith("meta.")) {
+				const metaKey = k.slice(5)
+				meta[metaKey] = v
+				return false
+			}
+			return true
+		})
+
+	for (const entry of innerSchemaEntries) {
 		const k = entry[0]
 		const keyImpl = impl.keys[k]
 		if (!keyImpl)
-			return throwParseError(`Key ${k} is not valid on ${kind} schema`)
+			return throwParseError(`Key ${k} is not valid on ${ctx.kind} schema`)
 
 		const v = keyImpl.parse ? keyImpl.parse(entry[1], ctx) : entry[1]
 		if (v !== unset && (v !== undefined || keyImpl.preserveUndefined))
 			inner[k] = v
 	}
-	const entries = entriesOf(inner)
-
-	let json: Record<string, unknown> = {}
-	let typeJson: Record<string, unknown> = {}
-	entries.forEach(([k, v]) => {
-		const listableNode = v as listable<BaseNode>
-		const keyImpl = impl.keys[k]
-		const serialize =
-			keyImpl.serialize ??
-			(keyImpl.child ? serializeListableChild : defaultValueSerializer)
-
-		json[k] = serialize(listableNode)
-
-		if (keyImpl.child) {
-			if (isArray(listableNode)) children.push(...listableNode)
-			else children.push(listableNode)
-		}
-		if (!keyImpl.meta) typeJson[k] = json[k]
-	})
-
-	if (impl.finalizeJson) {
-		json = impl.finalizeJson(json) as never
-		typeJson = impl.finalizeJson(typeJson) as never
-	}
-
-	let collapsibleJson = json
-
-	const collapsibleKeys = Object.keys(collapsibleJson)
-	if (
-		collapsibleKeys.length === 1 &&
-		collapsibleKeys[0] === impl.collapsibleKey
-	) {
-		collapsibleJson = collapsibleJson[impl.collapsibleKey] as never
-		if (
-			// if the collapsibleJson is still an object
-			hasDomain(collapsibleJson, "object") &&
-			// and the JSON did not include any implied keys
-			Object.keys(json).length === 1
-		) {
-			// we can replace it with its collapsed value
-			json = collapsibleJson
-			typeJson = collapsibleJson
-		}
-	}
-
-	const innerHash = JSON.stringify({ kind, ...json })
-	if (ctx.reduceTo) {
-		nodeCache[innerHash] = ctx.reduceTo
-		return ctx.reduceTo
-	}
-
-	const typeHash = JSON.stringify({ kind, ...typeJson })
 
 	if (impl.reduce && !ctx.prereduced) {
 		const reduced = impl.reduce(inner, ctx.$)
 		if (reduced) {
 			if (reduced instanceof Disjoint) return reduced.throw()
 
-			// if we're defining the resolution of an alias and the result is
-			// reduced to another node, add the alias to that node if it doesn't
-			// already have one.
-			if (ctx.alias) reduced.alias ??= ctx.alias
-
 			// we can't cache this reduction for now in case the reduction involved
 			// impliedSiblings
-			return reduced
+			return withMeta(reduced, meta)
 		}
 	}
 
+	const node = createNode(ctx.id, ctx.kind, inner, meta, ctx.$)
+
+	if (ctx.reduceTo) {
+		nodeCache[node.hash] = ctx.reduceTo
+		return ctx.reduceTo
+	}
+
+	return node
+}
+
+export const createNode = (
+	id: string,
+	kind: NodeKind,
+	inner: dict,
+	meta: BaseMeta,
+	$: BaseScope
+): BaseNode => {
+	const impl = nodeImplementationsByKind[kind]
+	const innerEntries = entriesOf(inner)
+	const children: BaseNode[] = []
+	let innerJson: dict = {}
+
+	innerEntries.forEach(([k, v]) => {
+		const keyImpl = impl.keys[k]
+		const serialize =
+			keyImpl.serialize ??
+			(keyImpl.child ? serializeListableChild : defaultValueSerializer)
+
+		innerJson[k] = serialize(v as never)
+
+		if (keyImpl.child) {
+			const listableNode = v as listable<BaseNode>
+			if (isArray(listableNode)) children.push(...listableNode)
+			else children.push(listableNode)
+		}
+	})
+
+	if (impl.finalizeInnerJson)
+		innerJson = impl.finalizeInnerJson(innerJson) as never
+
+	let json = { ...innerJson }
+	let metaJson: BaseMeta & dict = {}
+
+	if (!isEmptyObject(meta)) {
+		metaJson = flatMorph(meta, (k, v) => [
+			k,
+			k === "examples" ? v : defaultValueSerializer(v)
+		]) as BaseMeta & dict
+		json.meta = possiblyCollapse(metaJson, "description", true)
+	}
+
+	innerJson = possiblyCollapse(innerJson, impl.collapsibleKey, false)
+	const innerHash = JSON.stringify({ kind, ...innerJson })
+
+	json = possiblyCollapse(json, impl.collapsibleKey, false)
+	const collapsibleJson = possiblyCollapse(json, impl.collapsibleKey, true)
+	const hash = JSON.stringify({ kind, ...json })
+
 	// we have to wait until after reduction to return a cached entry,
 	// since reduction can add impliedSiblings
-	if (nodeCache[innerHash]) return nodeCache[innerHash]
+	if (nodeCache[hash]) return nodeCache[hash]
 
-	const attachments = {
-		id: ctx.id,
+	const attachments: UnknownAttachments & dict = {
+		id,
 		kind,
 		impl,
 		inner,
-		entries,
-		json: json as Json,
-		typeJson: typeJson as Json,
-		collapsibleJson: collapsibleJson as JsonData,
-		children,
+		innerEntries,
+		innerJson,
 		innerHash,
-		typeHash,
-		$: ctx.$
-	} satisfies UnknownAttachments as Record<string, any>
-	if (ctx.alias) attachments.alias = ctx.alias
-
-	for (const k in inner) {
-		if (k !== "description" && k !== "in" && k !== "out")
-			attachments[k] = inner[k]
+		meta,
+		metaJson,
+		json,
+		hash,
+		collapsibleJson: collapsibleJson as JsonData,
+		children
 	}
 
-	const node: BaseNode = new nodeClassesByKind[kind](attachments as never)
+	for (const k in inner)
+		if (k !== "in" && k !== "out") attachments[k] = inner[k]
 
-	nodeCache[innerHash] = node
-	return node
+	const node: BaseNode = new nodeClassesByKind[kind](attachments as never, $)
+
+	return (nodeCache[hash] = node)
+}
+
+export const withMeta = (node: BaseNode, meta: ArkEnv.meta): BaseNode =>
+	createNode(
+		registerNodeId(node.kind, meta.alias),
+		node.kind,
+		node.inner,
+		meta,
+		node.$
+	) as never
+
+const possiblyCollapse = <allowPrimitive extends boolean>(
+	json: dict,
+	toKey: string | undefined,
+	allowPrimitive: allowPrimitive
+): [allowPrimitive] extends [false] ? dict : unknown => {
+	const collapsibleKeys = Object.keys(json)
+	if (collapsibleKeys.length === 1 && collapsibleKeys[0] === toKey) {
+		const collapsed = json[toKey]
+
+		if (allowPrimitive) return collapsed as never
+
+		if (
+			// if the collapsed value is still an object
+			hasDomain(collapsed, "object") &&
+			// and the JSON did not include any implied keys
+			(Object.keys(collapsed).length === 1 || Array.isArray(collapsed))
+		) {
+			// we can replace it with its collapsed value
+			return collapsed as never
+		}
+	}
+	return json as never
 }

@@ -1,7 +1,7 @@
-import { attest, contextualize } from "@arktype/attest"
-import { writeUnresolvableMessage } from "@arktype/schema"
+import { attest, contextualize } from "@ark/attest"
+import { writeUnresolvableMessage } from "@ark/schema"
 import { scope, type } from "arktype"
-import { writeBadDefinitionTypeMessage } from "../parser/definition.js"
+import { writeBadDefinitionTypeMessage } from "arktype/internal/parser/definition.ts"
 
 contextualize(() => {
 	it("in type", () => {
@@ -36,12 +36,21 @@ contextualize(() => {
 			}
 		}>(types.a.infer)
 
-		// attest(types.a.node).snap({ object: { props: { b: "b" } } })
+		attest(types.a.json).snap({
+			required: [
+				{
+					key: "b",
+					value: { required: [{ key: "a", value: "string" }], domain: "object" }
+				}
+			],
+			domain: "object"
+		})
 		attest<{ a: string }>(types.b.infer)
 
-		// attest(types.b.node).snap({
-		//     object: { props: { a: { object: { props: { a: "string" } } } } }
-		// })
+		attest(types.b.json).snap({
+			required: [{ key: "a", value: "string" }],
+			domain: "object"
+		})
 	})
 
 	it("expression from thunk", () => {
@@ -52,9 +61,13 @@ contextualize(() => {
 		})
 		const types = $.export()
 		attest<{ a: string; b: boolean }>(types.aAndB.infer)
-		// attest(types.aAndB.node).snap({
-		//     object: { props: { a: "string", b: "boolean" } }
-		// })
+		attest(types.aAndB.json).snap({
+			required: [
+				{ key: "a", value: "string" },
+				{ key: "b", value: [{ unit: false }, { unit: true }] }
+			],
+			domain: "object"
+		})
 	})
 
 	it("shallow in type", () => {

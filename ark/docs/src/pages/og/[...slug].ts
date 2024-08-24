@@ -1,4 +1,4 @@
-import { fromPackageRoot } from "@arktype/fs"
+import { fromPackageRoot } from "@ark/fs"
 import { OGImageRoute } from "astro-og-canvas"
 import { getCollection } from "astro:content"
 

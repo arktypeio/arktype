@@ -1,16 +1,25 @@
-export { ArkError, ArkErrors as ArkErrors } from "@arktype/schema"
-export type { Ark, ArkConfig, Out } from "@arktype/schema"
-export { ambient, ark, declare, define, match, type } from "./ark.js"
-export { Module } from "./module.js"
 export {
+	ArkError,
+	ArkErrors,
+	type ArkConfig,
+	type ArkScopeConfig,
+	type JsonSchema
+} from "@ark/schema"
+export { Hkt } from "@ark/util"
+export type { Generic } from "./generic.ts"
+export { ambient, ark, declare, define, generic, type } from "./keywords/ark.ts"
+export { Module, type BoundModule, type Submodule } from "./module.ts"
+export {
+	module,
 	scope,
 	type Scope,
 	type inferScope,
 	type validateScope
-} from "./scope.js"
+} from "./scope.ts"
 export {
 	Type,
-	type AnyType,
+	type inferAmbient,
 	type inferTypeRoot,
+	type validateAmbient,
 	type validateTypeRoot
-} from "./type.js"
+} from "./type.ts"

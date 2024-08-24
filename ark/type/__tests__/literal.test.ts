@@ -1,10 +1,10 @@
-import { attest, contextualize } from "@arktype/attest"
-import { printable, registeredReference } from "@arktype/util"
+import { attest, contextualize } from "@ark/attest"
+import { registeredReference } from "@ark/schema"
+import { printable } from "@ark/util"
 import { type } from "arktype"
 
-contextualize(
-	"tuple expression",
-	() => {
+contextualize(() => {
+	describe("tuple expression", () => {
 		it("literal", () => {
 			const t = type(["===", 5])
 			attest<5>(t.infer)
@@ -57,9 +57,9 @@ contextualize(
 				{ unit: true }
 			])
 		})
-	},
-	"root expression",
-	() => {
+	})
+
+	describe("root expression", () => {
 		it("single", () => {
 			const t = type("===", true)
 			attest<true>(t.infer)
@@ -86,5 +86,5 @@ contextualize(
 				{ unit: true }
 			])
 		})
-	}
-)
+	})
+})

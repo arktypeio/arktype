@@ -1,11 +1,11 @@
-import type { Root, writeIndivisibleMessage } from "@arktype/schema"
-import type { ErrorMessage } from "@arktype/util"
-import type { inferAstIn } from "./infer.js"
-import type { validateAst } from "./validate.js"
+import type { writeIndivisibleMessage } from "@ark/schema"
+import type { ErrorMessage } from "@ark/util"
+import type { inferAstIn } from "./infer.ts"
+import type { validateAst } from "./validate.ts"
 
 export type validateDivisor<l, $, args> =
 	inferAstIn<l, $, args> extends infer data ?
 		[data] extends [number] ?
 			validateAst<l, $, args>
-		:	ErrorMessage<writeIndivisibleMessage<Root<data>>>
+		:	ErrorMessage<writeIndivisibleMessage<data>>
 	:	never

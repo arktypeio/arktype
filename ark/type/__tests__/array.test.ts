@@ -1,15 +1,14 @@
-import { attest, contextualize } from "@arktype/attest"
-import { writeUnresolvableMessage } from "@arktype/schema"
+import { attest, contextualize } from "@ark/attest"
+import { writeUnresolvableMessage } from "@ark/schema"
 import { scope, type } from "arktype"
-import { incompleteArrayTokenMessage } from "../parser/string/shift/operator/operator.js"
+import { incompleteArrayTokenMessage } from "arktype/internal/parser/string/shift/operator/operator.ts"
 import {
 	multipleVariadicMesage,
 	writeNonArraySpreadMessage
-} from "../parser/tuple.js"
+} from "arktype/internal/parser/tuple.ts"
 
-contextualize(
-	"non-tuple",
-	() => {
+contextualize(() => {
+	describe("non-tuple", () => {
 		it("allows and apply", () => {
 			const t = type("string[]")
 			attest<string[]>(t.infer)
@@ -19,11 +18,11 @@ contextualize(
 			attest(t(["foo", "bar"])).snap(["foo", "bar"])
 			attest(t.allows(["foo", "bar", 5])).equals(false)
 			attest(t(["foo", "bar", 5]).toString()).snap(
-				"value at [2] must be a string (was number)"
+				"value at [2] must be a string (was a number)"
 			)
 			attest(t.allows([5, "foo", "bar"])).equals(false)
 			attest(t([5, "foo", "bar"]).toString()).snap(
-				"value at [0] must be a string (was number)"
+				"value at [0] must be a string (was a number)"
 			)
 		})
 
@@ -40,7 +39,7 @@ contextualize(
 			)
 			attest(t.allows([["foo", 5]])).equals(false)
 			attest(t([["foo", 5]]).toString()).snap(
-				"value at [0][1] must be a string (was number)"
+				"value at [0][1] must be a string (was a number)"
 			)
 		})
 
@@ -72,9 +71,9 @@ contextualize(
 				incompleteArrayTokenMessage
 			)
 		})
-	},
-	"non-variadic tuple",
-	() => {
+	})
+
+	describe("non-variadic tuple", () => {
 		it("shallow", () => {
 			const t = type(["string", "number"])
 			attest<[string, number]>(t.infer)
@@ -82,12 +81,12 @@ contextualize(
 			attest(t(["", 0])).snap(["", 0])
 			attest(t.allows([true, 0])).equals(false)
 			attest(t([true, 0]).toString()).snap(
-				"value at [0] must be a string (was true)"
+				"value at [0] must be a string (was boolean)"
 			)
 			attest(t.allows([0, false])).equals(false)
 			attest(t([0, false]).toString())
-				.snap(`value at [0] must be a string (was number)
-value at [1] must be a number (was false)`)
+				.snap(`value at [0] must be a string (was a number)
+value at [1] must be a number (was boolean)`)
 			// too short
 			attest(t.allows([""])).equals(false)
 			attest(t([""]).toString()).snap("must be exactly length 2 (was 1)")
@@ -140,7 +139,7 @@ value at [1] must be a number (was false)`)
 			attest(t([])).equals([])
 			attest(t(["foo"])).equals(["foo"])
 			attest(t([5]).toString()).snap(
-				"value at [0] must be a string (was number)"
+				"value at [0] must be a string (was a number)"
 			)
 			attest(t(["foo", "bar"]).toString()).snap(
 				"must be at most length 1 (was 2)"
@@ -151,9 +150,9 @@ value at [1] must be a number (was false)`)
 			const t = type([["string", "?"], "string", "?"])
 			attest<[[string?], string?]>(t.infer)
 		})
-	},
-	"variadic tuple",
-	() => {
+	})
+
+	describe("variadic tuple", () => {
 		it("spreads simple arrays", () => {
 			const wellRested = type(["string", "...", "number[]"])
 			attest<[string, ...number[]]>(wellRested.infer)
@@ -233,9 +232,9 @@ value at [1] must be a number (was false)`)
 				])
 			).throwsAndHasTypeError(multipleVariadicMesage)
 		})
-	},
-	"intersection",
-	() => {
+	})
+
+	describe("intersection", () => {
 		it("shallow array intersection", () => {
 			const t = type("string[]&'foo'[]")
 			const expected = type("'foo'[]")
@@ -301,7 +300,7 @@ value at [1] must be a number (was false)`)
 			attest(t.json).equals(expected.json)
 		})
 
-		// based on the equivalent type-level test from @arktype/util
+		// based on the equivalent type-level test from @ark/util
 		it("kitchen sink", () => {
 			const l = type([
 				{ a: "0" },
@@ -344,8 +343,6 @@ value at [1] must be a number (was false)`)
 			const l = type(["...", [{ a: "0" }, "[]"], { b: "0" }, { c: "0" }])
 			const r = type([{ x: "0" }, { y: "0" }, "...", [{ z: "0" }, "[]"]])
 
-			// currently getting this "Expected" result at a type-level incurs
-			// too high a performance cost for such a niche intersection.
 			const expected = type([
 				{ a: "0", x: "0" },
 				{ a: "0", y: "0" },
@@ -379,8 +376,8 @@ value at [1] must be a number (was false)`)
 		it("multiple errors", () => {
 			const stringArray = type("string[]")
 			attest(stringArray([1, 2]).toString())
-				.snap(`value at [0] must be a string (was number)
-value at [1] must be a string (was number)`)
+				.snap(`value at [0] must be a string (was a number)
+value at [1] must be a string (was a number)`)
 		})
-	}
-)
+	})
+})

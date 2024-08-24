@@ -1,21 +1,23 @@
-import { attest, contextualize } from "@arktype/attest"
+import { attest, contextualize } from "@ark/attest"
 import {
+	registeredReference,
 	writeInvalidPropertyKeyMessage,
 	writeUnboundableMessage,
 	writeUnresolvableMessage
-} from "@arktype/schema"
-import { printable, registeredReference } from "@arktype/util"
+} from "@ark/schema"
+import { printable } from "@ark/util"
 import { scope, type } from "arktype"
 import {
 	writeInvalidSpreadTypeMessage,
 	writeInvalidUndeclaredBehaviorMessage
-} from "../parser/objectLiteral.js"
+} from "arktype/internal/parser/objectLiteral.ts"
+import { writeUnexpectedCharacterMessage } from "arktype/internal/parser/string/shift/operator/operator.ts"
 
-contextualize(
-	"named",
-	() => {
+contextualize(() => {
+	describe("named", () => {
 		it("empty", () => {
 			const o = type({})
+			attest<object>(o.t).type.toString("object")
 			attest(o.json).equals(type("object").json)
 		})
 
@@ -88,7 +90,7 @@ contextualize(
 		it("intersection", () => {
 			const t = type({ a: "number" }).and({ b: "boolean" })
 			// Should be simplified from {a: number} & {b: boolean} to {a: number, b: boolean}
-			attest(t.infer).type.toString.snap("{ a: number; b: boolean; }")
+			attest(t.infer).type.toString.snap("{ a: number; b: boolean }")
 			attest(t.json).equals(type({ a: "number", b: "boolean" }).json)
 		})
 
@@ -105,7 +107,7 @@ contextualize(
 			const o = type({ "a?": "string" })
 			attest(o({ a: "a" })).snap({ a: "a" })
 			attest(o({})).snap({})
-			attest(o({ a: 1 }).toString()).snap("a must be a string (was number)")
+			attest(o({ a: 1 }).toString()).snap("a must be a string (was a number)")
 		})
 
 		// it("optional symbol", () => {
@@ -120,9 +122,9 @@ contextualize(
 		// 		optional: [{ key: name, value: "number" }]
 		// 	})
 		// })
-	},
-	"spread syntax",
-	() => {
+	})
+
+	describe("spread syntax", () => {
 		it("within scope", () => {
 			const s = scope({
 				user: { isAdmin: "false", name: "string" },
@@ -216,9 +218,9 @@ contextualize(
 				]
 			})
 		})
-	},
-	"index",
-	() => {
+	})
+
+	describe("index", () => {
 		it("string index", () => {
 			const o = type({ "[string]": "string" })
 			attest<{ [x: string]: string }>(o.infer)
@@ -233,10 +235,10 @@ contextualize(
 			const validWithSymbol = { a: "a", [Symbol()]: null }
 			attest(validWithSymbol).equals(validWithSymbol)
 
-			attest(o({ a: 1 }).toString()).snap("a must be a string (was number)")
+			attest(o({ a: 1 }).toString()).snap("a must be a string (was a number)")
 			attest(o({ a: true, b: false }).toString())
-				.snap(`a must be a string (was true)
-b must be a string (was false)`)
+				.snap(`a must be a string (was boolean)
+b must be a string (was boolean)`)
 		})
 
 		it("symbol index", () => {
@@ -323,8 +325,8 @@ value at [${zildjianName}] must be 1 (was undefined)`)
 					str: 100,
 					[sym]: "💯"
 				}).toString()
-			).snap(`str must be a string (was number)
-value at [${symName}] must be a number (was string)`)
+			).snap(`str must be a string (was a number)
+value at [Symbol(symbol7)] must be a number (was a string)`)
 		})
 
 		it("all key kinds", () => {
@@ -352,7 +354,7 @@ value at [${symName}] must be a number (was string)`)
 				}).toString()
 			).snap(`required must be "foo" (was missing)
 optional must be "bar" (was "wrongString")
-other must be a string (was bigint)`)
+other must be a string (was a bigint)`)
 		})
 
 		it("index key from scope", () => {
@@ -412,7 +414,9 @@ other must be a string (was bigint)`)
 					// @ts-expect-error
 					"[unresolvable]": "'unresolvable' is unresolvable"
 				})
-			).throwsAndHasTypeError(writeUnresolvableMessage("unresolvable"))
+			)
+				.throws(writeUnexpectedCharacterMessage("i"))
+				.type.errors(writeUnresolvableMessage("unresolvable"))
 		})
 
 		it("semantic error in index definition", () => {
@@ -453,9 +457,26 @@ other must be a string (was bigint)`)
 				required: [{ key: "[string]", value: "string" }]
 			})
 		})
-	},
-	"undeclared",
-	() => {
+
+		// https://github.com/arktypeio/arktype/issues/1040
+		it("can constrain optional keys", () => {
+			const repro = type({
+				normal: "string>0",
+				"optional?": "string>0"
+			})
+
+			type Expected = { normal: string; optional?: string }
+
+			attest<Expected, typeof repro.infer>()
+			attest<Expected, typeof repro.inferIn>()
+
+			attest(repro.expression).snap(
+				"{ normal: string >= 1, optional?: string >= 1 }"
+			)
+		})
+	})
+
+	describe("undeclared", () => {
 		it("can parse an undeclared restriction", () => {
 			const t = type({ "+": "reject" })
 			attest<{}>(t.infer)
@@ -477,5 +498,5 @@ other must be a string (was bigint)`)
 				domain: "object"
 			})
 		})
-	}
-)
+	})
+})

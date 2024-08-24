@@ -1,4 +1,4 @@
-# @arktype/schema
+# @ark/schema
 
 Underlying schema language parsed from arktype syntax.
 

@@ -1,28 +1,41 @@
-import { attest, contextualize } from "@arktype/attest"
-import type { AtLeastLength, AtMostLength, Out, string } from "@arktype/schema"
-import { registeredReference } from "@arktype/util"
-import { scope, type, type Type } from "arktype"
-import type { Module } from "../module.js"
+import { attest, contextualize } from "@ark/attest"
+import { registeredReference, type ArkErrors } from "@ark/schema"
+import { scope, type, type Module } from "arktype"
+import type {
+	AtLeastLength,
+	AtMostLength,
+	Narrowed,
+	Out,
+	To,
+	constrain,
+	number,
+	string
+} from "arktype/internal/keywords/ast.ts"
+
+declare class TimeStub {
+	declare readonly isoString: string
+
+	private constructor()
+
+	declare static from: (isoString: string) => TimeStub
+
+	declare static fromDate: (date: Date) => TimeStub
+
+	declare toDate: () => Date
+
+	declare toString: () => string
+}
 
 contextualize(() => {
 	// https://github.com/arktypeio/arktype/issues/915
 	it("time stub w/ private constructor", () => {
-		class TimeStub {
-			declare readonly isoString: string
+		// TimeStub is just declared at a type-level since --experimental-strip-types
+		// doesn't yet support private constructors
 
-			private constructor() {}
-
-			declare static from: (isoString: string) => TimeStub
-
-			declare static fromDate: (date: Date) => TimeStub
-
-			declare toDate: () => Date
-
-			declare toString: () => string
-		}
+		const MockTimeStub = class TimeStub {}
 
 		const types = scope({
-			timeStub: ["instanceof", TimeStub] as type.cast<TimeStub>,
+			timeStub: ["instanceof", MockTimeStub] as type.cast<TimeStub>,
 			account: "clientDocument&accountData",
 			clientDocument: {
 				"id?": "string",
@@ -42,9 +55,15 @@ contextualize(() => {
 			provider: "'GitHub'|'Google'"
 		}).export()
 
-		attest(types.account.infer).type.toString.snap(
-			'{ id?: string; coll?: string; ts?: TimeStub; ttl?: TimeStub; user: TimeStub | { name: string; accounts?: ...[]; }; provider: "GitHub" | "Google"; providerUserId: string; }'
-		)
+		attest(types.account.infer).type.toString.snap(`{
+	id?: string
+	coll?: string
+	ts?: TimeStub
+	ttl?: TimeStub
+	user: TimeStub | { name: string; accounts?: cyclic[] }
+	provider: "GitHub" | "Google"
+	providerUserId: string
+}`)
 		attest(types.account.json).snap({
 			required: [
 				{ key: "provider", value: [{ unit: "GitHub" }, { unit: "Google" }] },
@@ -75,13 +94,14 @@ contextualize(() => {
 			domain: "object"
 		})
 	})
+
 	it("nested bound traversal", () => {
 		// https://github.com/arktypeio/arktype/issues/898
 		const user = type({
 			name: "string",
-			email: "email",
+			email: "string.email",
 			tags: "(string>=2)[]>=3",
-			score: "integer>=0"
+			score: "number.integer>=0"
 		})
 
 		const out = user({
@@ -91,7 +111,7 @@ contextualize(() => {
 			score: 0
 		})
 
-		attest(out.toString()).snap(`email must be a valid email (was "")
+		attest(out.toString()).snap(`email must be an email address (was "")
 tags must be at least length 3 (was 2)`)
 	})
 
@@ -100,9 +120,9 @@ tags must be at least length 3 (was 2)`)
 
 		const schema = type({
 			name: "string",
-			email: "email",
+			email: "string.email",
 			tags: "(string>=2)[]>=3",
-			score: "integer>=0",
+			score: "number.integer>=0",
 			"date?": "Date",
 			"nospace?": nospacePattern,
 			extra: "string|null"
@@ -119,7 +139,7 @@ tags must be at least length 3 (was 2)`)
 
 		const out = schema(data)
 
-		attest(out.toString()).snap(`email must be a valid email (was "")
+		attest(out.toString()).snap(`email must be an email address (was "")
 extra must be a string or null (was missing)
 score must be at least 0 (was -1)
 tags must be at least length 3 (was 2)
@@ -204,24 +224,21 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			b: "B"
 		})
 
-		attest<
-			Type<
-				{
-					b: {
-						a: {
-							required: boolean
-						}
-					}
-				},
-				{
-					B: {
-						a: {
-							required: boolean
-						}
-					}
+		attest<{
+			b: {
+				a: {
+					required: boolean
 				}
-			>
-		>(C)
+			}
+		}>(C.t)
+
+		attest<{
+			B: {
+				a: {
+					required: boolean
+				}
+			}
+		}>(C.$.t)
 
 		attest(C.json).snap({
 			domain: "object",
@@ -328,7 +345,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		})
 
 		attest<
-			| ((In: string) => Out<string.is<AtLeastLength<1> & AtMostLength<3>>>)
+			| ((In: string) => To<string.is<AtLeastLength<1> & AtMostLength<3>>>)
 			| null
 			| undefined,
 			typeof CreatePatientInput.t.first_name
@@ -361,8 +378,10 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		attest(CreatePatientInput({ first_name: " John  " }).toString()).snap(
 			"first_name must be at most length 3 (was 4)"
 		)
+		// ideally, this would be "a string or null", but it is described
+		// as an object since discrimination uses the typeof operator
 		attest(CreatePatientInput({ first_name: 5 }).toString()).snap(
-			"first_name must be a string or null (was 5)"
+			"first_name must be a string or an object (was a number)"
 		)
 	})
 
@@ -436,13 +455,13 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		const test = scope({
 			svgPath: /^\.\/(\d|a|b|c|d|e|f)+(-(\d|a|b|c|d|e|f)+)*\.svg$/,
 			svgMap: {
-				"[svgPath]": "digits"
+				"[svgPath]": "string.digits"
 			}
 		}).export()
 		attest<
 			Module<{
 				svgMap: {
-					[x: string & string.matching<string>]: string
+					[x: string.matching<string>]: string
 				}
 				svgPath: string.matching<string>
 			}>
@@ -475,8 +494,8 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 				{ key: "items", value: "$JsonSchema" },
 				{ key: "type", value: { unit: "array" } }
 			],
-			description: "standalone",
-			domain: { description: "standalone", domain: "object" }
+			meta: "standalone",
+			domain: { meta: "standalone", domain: "object" }
 		})
 
 		const valid: typeof standalone.infer = {
@@ -513,7 +532,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			box: { box: { box: {} } }
 		})
 		attest(box({ box: { box: { box: "whoops" } } })?.toString()).snap(
-			'box.box.box must be an object (was string) or must be null (was {"box":{"box":{"box":"whoops"}}})'
+			'box.box.box must be an object (was a string) or must be null (was {"box":{"box":{"box":"whoops"}}})'
 		)
 	})
 
@@ -558,5 +577,287 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		attest(types.Library({}).toString()).snap(
 			"sections must be an object (was missing)"
 		)
+	})
+
+	it("narrowed quoted description", () => {
+		const t = type("string")
+			.narrow(() => true)
+			.describe('This will "fail"')
+
+		attest<string.narrowed>(t.t)
+
+		const serializedPredicate =
+			t.internal.firstReferenceOfKindOrThrow("predicate").serializedPredicate
+
+		attest(t.json).snap({
+			meta: 'This will "fail"',
+			domain: { meta: 'This will "fail"', domain: "string" },
+			predicate: [{ meta: 'This will "fail"', predicate: serializedPredicate }]
+		})
+	})
+
+	it("extract in of narrowed morph", () => {
+		const SubSubType = type("string").pipe(s => parseInt(s))
+		const SubType = type({ amount: SubSubType }).narrow(() => true)
+		const MyType = type({
+			sub: SubType
+		})
+
+		type MyType = typeof MyType.in.infer
+
+		attest<
+			{
+				sub: {
+					amount: string
+				}
+			},
+			MyType
+		>()
+	})
+
+	it("narrowed morph", () => {
+		const t = type("string")
+			.pipe(s => parseInt(s))
+			.narrow(n => true)
+
+		attest<(In: string) => Out<number.narrowed>>(t.t)
+
+		const u = t.pipe(
+			n => `${n}`,
+			s => `${s}++` as const
+		)
+
+		attest(u.t).type.toString("(In: string) => Out<`${string}++`>")
+	})
+
+	it("recursive reference from union", () => {
+		const $ = scope({
+			TypeWithKeywords: "ArraySchema",
+			Schema: "number|ArraySchema",
+			ArraySchema: {
+				"additionalItems?": "Schema"
+			}
+		})
+
+		$.export()
+
+		attest($.json).snap({
+			TypeWithKeywords: {
+				optional: [
+					{ key: "additionalItems", value: ["$ArraySchema", "number"] }
+				],
+				domain: "object"
+			},
+			Schema: ["$ArraySchema", "number"],
+			ArraySchema: {
+				optional: [
+					{ key: "additionalItems", value: ["$ArraySchema", "number"] }
+				],
+				domain: "object"
+			}
+		})
+	})
+
+	// https://discord.com/channels/957797212103016458/957804102685982740/1254900389346807849
+	it("narrows nested morphs", () => {
+		const parseBigint = type("string").pipe(s => BigInt(s))
+		const fee = type({ amount: parseBigint }).narrow(
+			fee => typeof fee.amount === "bigint"
+		)
+
+		const Claim = type({
+			fee
+		})
+
+		const out = Claim.assert({ fee: { amount: "5" } })
+
+		attest(out).equals({ fee: { amount: 5n } })
+	})
+
+	// https://github.com/arktypeio/arktype/issues/1037
+	it("can morph an optional key", () => {
+		const t = type({
+			"optionalKey?": ["string", "=>", x => x.toLowerCase()]
+		})
+
+		attest<{
+			optionalKey?: (In: string) => Out<string>
+		}>(t.t)
+
+		attest(t({})).equals({})
+
+		attest(t({ optionalKey: "FOO" })).snap({ optionalKey: "foo" })
+	})
+
+	// https://discord.com/channels/957797212103016458/1261621890775126160/1261621890775126160
+	it("can narrow output of a piped union", () => {
+		const parseBigint = (v: string | number) => BigInt(v)
+		const morphReference = registeredReference(parseBigint)
+		const validatePositiveBigint = (b: bigint) => b > 0n
+		const predicateReference = registeredReference(validatePositiveBigint)
+
+		const Amount = type("string|number")
+			.pipe(parseBigint)
+			.narrow(validatePositiveBigint)
+
+		attest<(In: string | number) => Out<constrain<bigint, Narrowed>>>(Amount.t)
+		attest(Amount.json).snap([
+			{
+				in: "number",
+				morphs: [morphReference, { predicate: [predicateReference] }]
+			},
+			{
+				in: "string",
+				morphs: [morphReference, { predicate: [predicateReference] }]
+			}
+		])
+
+		attest(Amount("1000")).equals(1000n)
+		attest(Amount("-5").toString()).snap(
+			"must be valid according to validatePositiveBigint (was -5n)"
+		)
+	})
+
+	it("nested 'and' chained from morph on optional", () => {
+		const validatedTrimString = type("string").pipe(
+			s => s.trim(),
+			type("1<=string<=3")
+		)
+
+		const t = type({
+			"first_name?": validatedTrimString.and("unknown")
+		})
+
+		attest(t.expression).snap(
+			"{ first_name?: (In: string) => Out<string <= 3 & >= 1> }"
+		)
+		attest(t.t).type.toString.snap(`{
+	first_name?: (
+		In: string
+	) => To<is<AtLeastLength<1> & AtMostLength<3>>>
+}`)
+	})
+
+	it("cyclic narrow in scope", () => {
+		const root = scope({
+			filename: "0<string<255",
+			file: {
+				type: "'file'",
+				name: "filename"
+			},
+			directory: {
+				type: "'directory'",
+				name: "filename",
+				children: [
+					"root[]",
+					":",
+					(v, ctx) => {
+						if (new Set(v.map(f => f.name)).size !== v.length)
+							return ctx.mustBe("names must be unique in a directory")
+
+						return true
+					}
+				]
+			},
+			root: "file|directory"
+		}).resolve("root")
+
+		attest(root.t).type.toString.snap(`	| {
+			type: "file"
+			name: is<MoreThanLength<0> & LessThanLength<255>>
+	  }
+	| {
+			type: "directory"
+			name: is<MoreThanLength<0> & LessThanLength<255>>
+			children: constrain<
+				(
+					| {
+							type: "file"
+							name: is<
+								MoreThanLength<0> & LessThanLength<255>
+							>
+					  }
+					| cyclic
+				)[],
+				Narrowed
+			>
+	  }`)
+	})
+
+	// https://github.com/arktypeio/arktype/discussions/1080#discussioncomment-10247616
+	it("pipe to discriminated morph union", () => {
+		const objSchema = type({
+			action: "'order.completed'"
+		}).or({
+			action: `'scheduled'`,
+			id: "string.integer.parse",
+			calendarID: "string.integer.parse",
+			appointmentTypeID: "string.integer.parse"
+		})
+
+		const parseJsonToObj = type("string.json.parse").pipe(objSchema)
+
+		attest(parseJsonToObj.expression).snap(
+			'(In: string) => Out<{ action: "order.completed" } | { action: "scheduled", appointmentTypeID: number % 1, calendarID: number % 1, id: number % 1 }>'
+		)
+
+		const out = parseJsonToObj(
+			JSON.stringify({
+				action: "scheduled",
+				id: "1",
+				calendarID: "1",
+				appointmentTypeID: "1"
+			})
+		)
+
+		attest<
+			| ArkErrors
+			| {
+					action: "order.completed"
+			  }
+			| {
+					action: "scheduled"
+					id: number
+					calendarID: number
+					appointmentTypeID: number
+			  }
+		>(out)
+
+		attest(out).snap({
+			action: "scheduled",
+			id: 1,
+			calendarID: 1,
+			appointmentTypeID: 1
+		})
+	})
+
+	// https://github.com/arktypeio/arktype/discussions/1080#discussioncomment-10247616
+	it("pipe to discriminated morph inner union", () => {
+		const objSchema = type({
+			action: "'order.completed'"
+		}).or({
+			action: "'scheduled' | 'rescheduled' | 'canceled' | 'changed'",
+			id: "string.integer.parse",
+			calendarID: "string.integer.parse",
+			appointmentTypeID: "string.integer.parse"
+		})
+
+		const parseJsonToObj = type("string.json.parse").pipe(objSchema)
+
+		const out = parseJsonToObj(
+			JSON.stringify({
+				action: "scheduled",
+				id: "1",
+				calendarID: "1",
+				appointmentTypeID: "1"
+			})
+		)
+
+		attest(out).snap({
+			action: "scheduled",
+			id: 1,
+			calendarID: 1,
+			appointmentTypeID: 1
+		})
 	})
 })

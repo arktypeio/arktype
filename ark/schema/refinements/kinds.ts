@@ -1,51 +1,31 @@
-import type { BaseConstraint } from "../constraint.js"
-import type { BoundKind, nodeImplementationOf } from "../shared/implement.js"
-import {
-	type AfterDeclaration,
-	AfterNode,
-	afterImplementation
-} from "./after.js"
-import {
-	type BeforeDeclaration,
-	BeforeNode,
-	beforeImplementation
-} from "./before.js"
-import {
-	type ExactLengthDeclaration,
-	ExactLengthNode,
-	exactLengthImplementation
-} from "./exactLength.js"
-import { type MaxDeclaration, MaxNode, maxImplementation } from "./max.js"
-import {
-	type MaxLengthDeclaration,
-	MaxLengthNode,
-	maxLengthImplementation
-} from "./maxLength.js"
-import { type MinDeclaration, MinNode, minImplementation } from "./min.js"
-import {
-	type MinLengthDeclaration,
-	MinLengthNode,
-	minLengthImplementation
-} from "./minLength.js"
+import type { BaseConstraint } from "../constraint.ts"
+import type { BoundKind, nodeImplementationOf } from "../shared/implement.ts"
+import { After } from "./after.ts"
+import { Before } from "./before.ts"
+import { ExactLength } from "./exactLength.ts"
+import { Max } from "./max.ts"
+import { MaxLength } from "./maxLength.ts"
+import { Min } from "./min.ts"
+import { MinLength } from "./minLength.ts"
 
 export interface BoundDeclarations {
-	min: MinDeclaration
-	max: MaxDeclaration
-	minLength: MinLengthDeclaration
-	maxLength: MaxLengthDeclaration
-	exactLength: ExactLengthDeclaration
-	after: AfterDeclaration
-	before: BeforeDeclaration
+	min: Min.Declaration
+	max: Max.Declaration
+	minLength: MinLength.Declaration
+	maxLength: MaxLength.Declaration
+	exactLength: ExactLength.Declaration
+	after: After.Declaration
+	before: Before.Declaration
 }
 
 export interface BoundNodesByKind {
-	min: MinNode
-	max: MaxNode
-	minLength: MinLengthNode
-	maxLength: MaxLengthNode
-	exactLength: ExactLengthNode
-	after: AfterNode
-	before: BeforeNode
+	min: Min.Node
+	max: Max.Node
+	minLength: MinLength.Node
+	maxLength: MaxLength.Node
+	exactLength: ExactLength.Node
+	after: After.Node
+	before: Before.Node
 }
 
 export type boundImplementationsByKind = {
@@ -53,22 +33,22 @@ export type boundImplementationsByKind = {
 }
 
 export const boundImplementationsByKind: boundImplementationsByKind = {
-	min: minImplementation,
-	max: maxImplementation,
-	minLength: minLengthImplementation,
-	maxLength: maxLengthImplementation,
-	exactLength: exactLengthImplementation,
-	after: afterImplementation,
-	before: beforeImplementation
+	min: Min.implementation,
+	max: Max.implementation,
+	minLength: MinLength.implementation,
+	maxLength: MaxLength.implementation,
+	exactLength: ExactLength.implementation,
+	after: After.implementation,
+	before: Before.implementation
 }
 
 export const boundClassesByKind: Record<BoundKind, typeof BaseConstraint<any>> =
 	{
-		min: MinNode,
-		max: MaxNode,
-		minLength: MinLengthNode,
-		maxLength: MaxLengthNode,
-		exactLength: ExactLengthNode,
-		after: AfterNode,
-		before: BeforeNode
+		min: Min.Node,
+		max: Max.Node,
+		minLength: MinLength.Node,
+		maxLength: MaxLength.Node,
+		exactLength: ExactLength.Node,
+		after: After.Node,
+		before: Before.Node
 	}

@@ -5,64 +5,78 @@ import {
 	type array,
 	type mutable,
 	type satisfy
-} from "@arktype/util"
-import { BaseConstraint } from "../constraint.js"
-import type { MutableInner, RootSchema } from "../kinds.js"
-import type {
-	DeepNodeTransformation,
-	DeepNodeTransformationContext
-} from "../node.js"
-import type { MaxLengthNode } from "../refinements/maxLength.js"
-import type { MinLengthNode } from "../refinements/minLength.js"
-import type { BaseRoot } from "../roots/root.js"
-import type { NodeCompiler } from "../shared/compile.js"
-import type { BaseMeta, declareNode } from "../shared/declare.js"
-import { Disjoint } from "../shared/disjoint.js"
+} from "@ark/util"
+import { BaseConstraint } from "../constraint.ts"
+import type { RootSchema, mutableInnerOfKind } from "../kinds.ts"
+import {
+	appendUniqueFlatRefs,
+	flatRef,
+	type BaseNode,
+	type DeepNodeTransformContext,
+	type DeepNodeTransformation,
+	type FlatRef
+} from "../node.ts"
+import type { ExactLengthNode } from "../refinements/exactLength.ts"
+import type { MaxLengthNode } from "../refinements/maxLength.ts"
+import type { MinLengthNode } from "../refinements/minLength.ts"
+import type { BaseRoot } from "../roots/root.ts"
+import type { NodeCompiler } from "../shared/compile.ts"
+import type { BaseNormalizedSchema, declareNode } from "../shared/declare.ts"
+import { Disjoint } from "../shared/disjoint.ts"
 import {
 	implementNode,
 	type IntersectionContext,
 	type NodeKeyImplementation,
 	type RootKind,
 	type nodeImplementationOf
-} from "../shared/implement.js"
-import { intersectNodes } from "../shared/intersections.js"
-import type { TraverseAllows, TraverseApply } from "../shared/traversal.js"
+} from "../shared/implement.ts"
+import { intersectNodes } from "../shared/intersections.ts"
+import {
+	writeUnsupportedJsonSchemaTypeMessage,
+	type JsonSchema
+} from "../shared/jsonSchema.ts"
+import { $ark } from "../shared/registry.ts"
+import type { TraverseAllows, TraverseApply } from "../shared/traversal.ts"
 
-export interface NormalizedSequenceSchema extends BaseMeta {
-	readonly prefix?: array<RootSchema>
-	readonly optionals?: array<RootSchema>
-	readonly variadic?: RootSchema
-	readonly minVariadicLength?: number
-	readonly postfix?: array<RootSchema>
+export declare namespace Sequence {
+	export interface NormalizedSchema extends BaseNormalizedSchema {
+		readonly prefix?: array<RootSchema>
+		readonly optionals?: array<RootSchema>
+		readonly variadic?: RootSchema
+		readonly minVariadicLength?: number
+		readonly postfix?: array<RootSchema>
+	}
+
+	export type Schema = NormalizedSchema | RootSchema
+
+	export interface Inner {
+		// a list of fixed position elements starting at index 0
+		readonly prefix?: array<BaseRoot>
+		// a list of optional elements following prefix
+		readonly optionals?: array<BaseRoot>
+		// the variadic element (only checked if all optional elements are present)
+		readonly variadic?: BaseRoot
+		readonly minVariadicLength?: number
+		// a list of fixed position elements, the last being the last element of the array
+		readonly postfix?: array<BaseRoot>
+	}
+
+	export interface Declaration
+		extends declareNode<{
+			kind: "sequence"
+			schema: Schema
+			normalizedSchema: NormalizedSchema
+			inner: Inner
+			prerequisite: array
+			reducibleTo: "sequence"
+			childKind: RootKind
+		}> {}
+
+	export type Node = SequenceNode
 }
-
-export type SequenceSchema = NormalizedSequenceSchema | RootSchema
-
-export interface SequenceInner extends BaseMeta {
-	// a list of fixed position elements starting at index 0
-	readonly prefix?: array<BaseRoot>
-	// a list of optional elements following prefix
-	readonly optionals?: array<BaseRoot>
-	// the variadic element (only checked if all optional elements are present)
-	readonly variadic?: BaseRoot
-	readonly minVariadicLength?: number
-	// a list of fixed position elements, the last being the last element of the array
-	readonly postfix?: array<BaseRoot>
-}
-
-export interface SequenceDeclaration
-	extends declareNode<{
-		kind: "sequence"
-		schema: SequenceSchema
-		normalizedSchema: NormalizedSequenceSchema
-		inner: SequenceInner
-		prerequisite: array
-		reducibleTo: "sequence"
-		childKind: RootKind
-	}> {}
 
 const fixedSequenceKeySchemaDefinition: NodeKeyImplementation<
-	SequenceDeclaration,
+	Sequence.Declaration,
 	"prefix" | "postfix" | "optionals"
 > = {
 	child: true,
@@ -71,11 +85,11 @@ const fixedSequenceKeySchemaDefinition: NodeKeyImplementation<
 			// empty affixes are omitted. an empty array should therefore
 			// be specified as `{ proto: Array, length: 0 }`
 			undefined
-		:	schema.map(element => ctx.$.schema(element))
+		:	schema.map(element => ctx.$.rootNode(element))
 }
 
-export const sequenceImplementation: nodeImplementationOf<SequenceDeclaration> =
-	implementNode<SequenceDeclaration>({
+const implementation: nodeImplementationOf<Sequence.Declaration> =
+	implementNode<Sequence.Declaration>({
 		kind: "sequence",
 		hasAssociatedError: false,
 		collapsibleKey: "variadic",
@@ -84,7 +98,7 @@ export const sequenceImplementation: nodeImplementationOf<SequenceDeclaration> =
 			optionals: fixedSequenceKeySchemaDefinition,
 			variadic: {
 				child: true,
-				parse: (schema, ctx) => ctx.$.schema(schema, ctx)
+				parse: (schema, ctx) => ctx.$.rootNode(schema, ctx)
 			},
 			minVariadicLength: {
 				// minVariadicLength is reflected in the id of this node,
@@ -228,23 +242,29 @@ export const sequenceImplementation: nodeImplementationOf<SequenceDeclaration> =
 		}
 	})
 
-export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
-	impliedBasis: BaseRoot = this.$.keywords.Array.raw
+export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
+	impliedBasis: BaseRoot = $ark.intrinsic.Array.internal
 	prefix: array<BaseRoot> = this.inner.prefix ?? []
 	optionals: array<BaseRoot> = this.inner.optionals ?? []
-	prevariadic: BaseRoot[] = [...this.prefix, ...this.optionals]
+	prevariadic: array<BaseRoot> = [...this.prefix, ...this.optionals]
 	postfix: array<BaseRoot> = this.inner.postfix ?? []
+	variadicOrPostfix: array<BaseRoot> =
+		this.variadic ? [this.variadic, ...this.postfix] : this.postfix
 	isVariadicOnly: boolean = this.prevariadic.length + this.postfix.length === 0
 	minVariadicLength: number = this.inner.minVariadicLength ?? 0
 	minLength: number =
 		this.prefix.length + this.minVariadicLength + this.postfix.length
 	minLengthNode: MinLengthNode | null =
-		this.minLength === 0 ? null : this.$.node("minLength", this.minLength)
+		this.minLength === 0 ?
+			null
+			// cast is safe here as the only time this would not be a
+			// MinLengthNode would be when minLength is 0
+		:	(this.$.node("minLength", this.minLength) as never)
 	maxLength: number | null =
 		this.variadic ? null : this.minLength + this.optionals.length
-	maxLengthNode: MaxLengthNode | null =
+	maxLengthNode: MaxLengthNode | ExactLengthNode | null =
 		this.maxLength === null ? null : this.$.node("maxLength", this.maxLength)
-	impliedSiblings: array<MaxLengthNode | MinLengthNode> =
+	impliedSiblings: array<MaxLengthNode | MinLengthNode | ExactLengthNode> =
 		this.minLengthNode ?
 			this.maxLengthNode ?
 				[this.minLengthNode, this.maxLengthNode]
@@ -281,6 +301,43 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 		}
 	}
 
+	override get flatRefs(): FlatRef[] {
+		const refs: FlatRef[] = []
+
+		appendUniqueFlatRefs(
+			refs,
+			this.prevariadic.flatMap((element, i) =>
+				append(
+					element.flatRefs.map(ref => flatRef([`${i}`, ...ref.path], ref.node)),
+					flatRef([`${i}`], element)
+				)
+			)
+		)
+
+		appendUniqueFlatRefs(
+			refs,
+			this.variadicOrPostfix.flatMap(element =>
+				// a postfix index can't be directly represented as a type
+				// key, so we just use the same matcher for variadic
+				append(
+					element.flatRefs.map(ref =>
+						flatRef(
+							[$ark.intrinsic.nonNegativeIntegerString.internal, ...ref.path],
+							ref.node
+						)
+					),
+					flatRef([$ark.intrinsic.nonNegativeIntegerString.internal], element)
+				)
+			)
+		)
+
+		return refs
+	}
+
+	get element(): BaseRoot {
+		return this.cacheGetter("element", this.$.node("union", this.children))
+	}
+
 	// minLength/maxLength compilation should be handled by Intersection
 	compile(js: NodeCompiler): void {
 		this.prefix.forEach((node, i) => js.traverseKey(`${i}`, `data[${i}]`, node))
@@ -315,9 +372,9 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 
 	protected override _transform(
 		mapper: DeepNodeTransformation,
-		ctx: DeepNodeTransformationContext
-	) {
-		ctx.path.push(this.$.keywords.nonNegativeIntegerString.raw)
+		ctx: DeepNodeTransformContext
+	): BaseNode | null {
+		ctx.path.push($ark.intrinsic.nonNegativeIntegerString.internal)
 		const result = super._transform(mapper, ctx)
 		ctx.path.pop()
 		return result
@@ -326,9 +383,51 @@ export class SequenceNode extends BaseConstraint<SequenceDeclaration> {
 	tuple: SequenceTuple = sequenceInnerToTuple(this.inner)
 	// this depends on tuple so needs to come after it
 	expression: string = this.description
+
+	reduceJsonSchema(schema: JsonSchema.Array): JsonSchema.Array {
+		if (this.prefix.length)
+			schema.prefixItems = this.prefix.map(node => node.toJsonSchema())
+
+		if (this.optionals.length) {
+			throwParseError(
+				writeUnsupportedJsonSchemaTypeMessage(
+					`Optional tuple element${this.optionals.length > 1 ? "s" : ""} ${this.optionals.join(", ")}`
+				)
+			)
+		}
+
+		if (this.variadic) {
+			schema.items = this.variadic?.toJsonSchema()
+			// length constraints will be enforced by items: false
+			// for non-variadic arrays
+			if (this.minLength) schema.minItems = this.minLength
+			if (this.maxLength) schema.maxItems = this.maxLength
+		} else {
+			schema.items = false
+			// delete min/maxLength constraints that will have been added by the
+			// base intersection node to enforce fixed length
+			delete schema.minItems
+			delete schema.maxItems
+		}
+
+		if (this.postfix.length) {
+			throwParseError(
+				writeUnsupportedJsonSchemaTypeMessage(
+					`Postfix tuple element${this.postfix.length > 1 ? "s" : ""} ${this.postfix.join(", ")}`
+				)
+			)
+		}
+
+		return schema
+	}
 }
 
-const sequenceInnerToTuple = (inner: SequenceInner): SequenceTuple => {
+export const Sequence = {
+	implementation,
+	Node: SequenceNode
+}
+
+const sequenceInnerToTuple = (inner: Sequence.Inner): SequenceTuple => {
 	const tuple: mutable<SequenceTuple> = []
 	inner.prefix?.forEach(node => tuple.push({ kind: "prefix", node }))
 	inner.optionals?.forEach(node => tuple.push({ kind: "optionals", node }))
@@ -337,8 +436,8 @@ const sequenceInnerToTuple = (inner: SequenceInner): SequenceTuple => {
 	return tuple
 }
 
-const sequenceTupleToInner = (tuple: SequenceTuple): SequenceInner =>
-	tuple.reduce<MutableInner<"sequence">>((result, node) => {
+const sequenceTupleToInner = (tuple: SequenceTuple): Sequence.Inner =>
+	tuple.reduce<mutableInnerOfKind<"sequence">>((result, node) => {
 		if (node.kind === "variadic") result.variadic = node.node
 		else result[node.kind] = append(result[node.kind], node.node)
 
@@ -357,7 +456,7 @@ export const postfixWithoutVariadicMessage =
 export type postfixWithoutVariadicMessage = typeof postfixWithoutVariadicMessage
 
 export type SequenceElementKind = satisfy<
-	keyof SequenceInner,
+	keyof Sequence.Inner,
 	"prefix" | "optionals" | "variadic" | "postfix"
 >
 
@@ -431,7 +530,7 @@ const _intersectSequences = (
 					"required"
 				)
 			)
-			s.result = [...s.result, { kind, node: s.ctx.$.keywords.never.raw }]
+			s.result = [...s.result, { kind, node: $ark.intrinsic.never.internal }]
 		} else if (kind === "optionals") {
 			// if the element result is optional and unsatisfiable, the
 			// intersection can still be satisfied as long as the tuple

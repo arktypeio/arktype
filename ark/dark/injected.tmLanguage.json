@@ -6,17 +6,49 @@
 	"patterns": [
 		{
 			"include": "#arkDefinition"
+		},
+		{
+			"include": "#arkChained"
 		}
 	],
 	"repository": {
 		"arkDefinition": {
 			"contentName": "meta.embedded.arktype.definition",
-			"begin": "(([^\\)\\(\\s]+)?(?:type|scope|define|match|fn|\\.morph|\\.and|\\.or|\\.when|\\.extends|\\.intersect))(\\()",
+			"begin": "([^\\)\\(\\s]+)?(\\.)?(type|scope|define|match|fn|module)(\\()",
 			"beginCaptures": {
-				"1": {
-					"name": "entity.name.function.ts"
+				"2": {
+					"name": "punctuation.accessor.ts"
 				},
 				"3": {
+					"name": "entity.name.function.ts"
+				},
+				"4": {
+					"name": "meta.brace.round.ts"
+				}
+			},
+			"end": "\\)",
+			"endCaptures": {
+				"0": {
+					"name": "meta.brace.round.ts"
+				}
+			},
+			"patterns": [
+				{
+					"include": "#arkAll"
+				}
+			]
+		},
+		"arkChained": {
+			"contentName": "meta.embedded.arktype.definition",
+			"begin": "([^\\)\\(\\s]+)?(\\.)(and|or|when|extends|intersect|exclude|extract|overlaps|subsumes|to)(\\()",
+			"beginCaptures": {
+				"2": {
+					"name": "punctuation.accessor.ts"
+				},
+				"3": {
+					"name": "entity.name.function.ts"
+				},
+				"4": {
 					"name": "meta.brace.round.ts"
 				}
 			},

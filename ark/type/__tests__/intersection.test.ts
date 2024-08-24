@@ -1,11 +1,12 @@
-import { attest, contextualize } from "@arktype/attest"
+import { attest, contextualize } from "@ark/attest"
 import {
-	keywordNodes,
+	intrinsic,
 	writeIndivisibleMessage,
-	writeUnresolvableMessage
-} from "@arktype/schema"
+	writeUnresolvableMessage,
+	writeUnsatisfiableExpressionError
+} from "@ark/schema"
 import { type } from "arktype"
-import { writeMissingRightOperandMessage } from "../parser/string/shift/operand/unenclosed.js"
+import { writeMissingRightOperandMessage } from "arktype/internal/parser/string/shift/operand/unenclosed.ts"
 
 contextualize(() => {
 	it("two types", () => {
@@ -82,16 +83,21 @@ contextualize(() => {
 			"ParseError: Intersection of string and number results in an unsatisfiable type"
 		)
 	})
+	it("intersection with never", () => {
+		attest(() => type("string&never")).throws(
+			writeUnsatisfiableExpressionError("Intersection of string and never")
+		)
+	})
 	it("left semantic error", () => {
 		// @ts-expect-error
 		attest(() => type("string%2&'foo'")).throwsAndHasTypeError(
-			writeIndivisibleMessage(keywordNodes.string)
+			writeIndivisibleMessage(intrinsic.string)
 		)
 	})
 	it("right semantic error", () => {
 		// @ts-expect-error
 		attest(() => type("'foo'&string%2")).throwsAndHasTypeError(
-			writeIndivisibleMessage(keywordNodes.string)
+			writeIndivisibleMessage(intrinsic.string)
 		)
 	})
 	it("chained validation error", () => {

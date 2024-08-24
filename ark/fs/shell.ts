@@ -1,21 +1,29 @@
-import { execSync } from "node:child_process"
+import { execSync, type ExecSyncOptions } from "node:child_process"
 import * as process from "node:process"
 
-// @snipStart:shell
-export type ShellOptions = Parameters<typeof execSync>[1] & {
-	env?: Record<string, unknown>
-	stdio?: "pipe" | "inherit"
-	returnOutput?: boolean
+export type ShellOptions = Omit<ExecSyncOptions, "stdio"> & {
+	env?: Record<string, string | undefined>
 }
 
-/** Run the cmd synchronously. Pass returnOutput if you need the result, otherwise it will go to terminal. */
+/** Run the cmd synchronously. Output goes to terminal. */
 export const shell = (
 	cmd: string,
-	{ returnOutput, env, ...otherOptions }: ShellOptions = {}
+	{ env, ...otherOptions }: ShellOptions = {}
+): void => {
+	execSync(cmd, {
+		env: { ...process.env, ...env },
+		...otherOptions,
+		stdio: "inherit"
+	})
+}
+
+/** Run the cmd synchronously, returning output as a string */
+export const getShellOutput = (
+	cmd: string,
+	{ env, ...otherOptions }: ShellOptions = {}
 ): string =>
 	execSync(cmd, {
-		stdio: returnOutput ? "pipe" : "inherit",
 		env: { ...process.env, ...env },
-		...otherOptions
-	})?.toString() ?? ""
-// @snipEnd
+		...otherOptions,
+		stdio: "pipe"
+	})!.toString()

@@ -1,36 +1,37 @@
 import {
-	BaseRoot,
 	hasArkKind,
 	writeUnresolvableMessage,
-	type GenericProps,
+	type BaseRoot,
+	type GenericAst,
+	type GenericRoot,
 	type PrivateDeclaration,
-	type ambient,
 	type arkKind,
+	type genericParamNames,
+	type resolvableReferenceIn,
 	type writeNonSubmoduleDotMessage
-} from "@arktype/schema"
+} from "@ark/schema"
 import {
 	printable,
 	throwParseError,
-	tryParseNumber,
 	tryParseWellFormedBigint,
+	tryParseWellFormedNumber,
 	type BigintLiteral,
-	type Completion,
-	type ErrorMessage,
 	type anyOrNever,
-	type join
-} from "@arktype/util"
-import type { Generic } from "../../../../generic.js"
-import type { GenericInstantiationAst } from "../../../semantic/infer.js"
-import { writePrefixedPrivateReferenceMessage } from "../../../semantic/validate.js"
-import type { DynamicState } from "../../reduce/dynamic.js"
-import type { StaticState, state } from "../../reduce/static.js"
-import type { BaseCompletions } from "../../string.js"
-import type { Scanner } from "../scanner.js"
+	type join,
+	type lastOf
+} from "@ark/util"
+import type { ArkAmbient } from "../../../../config.ts"
+import type { GenericInstantiationAst } from "../../../semantic/infer.ts"
+import { writePrefixedPrivateReferenceMessage } from "../../../semantic/validate.ts"
+import type { DynamicState } from "../../reduce/dynamic.ts"
+import type { StaticState, state } from "../../reduce/static.ts"
+import type { BaseCompletions } from "../../string.ts"
+import type { Scanner } from "../scanner.ts"
 import {
 	parseGenericArgs,
-	writeInvalidGenericArgsMessage,
+	writeInvalidGenericArgCountMessage,
 	type ParsedArgs
-} from "./genericArgs.js"
+} from "./genericArgs.ts"
 
 export const parseUnenclosed = (s: DynamicState): void => {
 	const token = s.scanner.shiftUntilNextTerminator()
@@ -42,61 +43,66 @@ export type parseUnenclosed<s extends StaticState, $, args> =
 	Scanner.shiftUntilNextTerminator<s["unscanned"]> extends (
 		Scanner.shiftResult<infer token, infer unscanned>
 	) ?
-		token extends "keyof" ? state.addPrefix<s, "keyof", unscanned>
-		: tryResolve<s, token, $, args> extends infer result ?
-			result extends ErrorMessage<infer message> ? state.error<message>
-			: result extends keyof $ ?
-				[$[result]] extends [anyOrNever] ? state.setRoot<s, result, unscanned>
-				: $[result] extends GenericProps ?
-					parseGenericInstantiation<
-						token,
-						$[result],
-						state.scanTo<s, unscanned>,
-						$,
-						args
-					>
-				:	state.setRoot<s, result, unscanned>
-			:	state.setRoot<s, result, unscanned>
+		tryResolve<s, unscanned, token, $, args> extends state.from<infer s> ?
+			s
 		:	never
 	:	never
 
+type parseResolution<
+	s extends StaticState,
+	unscanned extends string,
+	alias extends string,
+	resolution,
+	$,
+	args
+> =
+	[resolution] extends [anyOrNever] ? state.setRoot<s, alias, unscanned>
+	: resolution extends GenericAst ?
+		parseGenericInstantiation<
+			alias,
+			resolution,
+			state.scanTo<s, unscanned>,
+			$,
+			args
+		>
+	:	state.setRoot<s, alias, unscanned>
+
 export const parseGenericInstantiation = (
 	name: string,
-	g: Generic,
+	g: GenericRoot,
 	s: DynamicState
 ): BaseRoot => {
 	s.scanner.shiftUntilNonWhitespace()
 	const lookahead = s.scanner.shift()
 	if (lookahead !== "<")
-		return s.error(writeInvalidGenericArgsMessage(name, g.params, []))
+		return s.error(writeInvalidGenericArgCountMessage(name, g.names, []))
 
-	const parsedArgs = parseGenericArgs(name, g.params, s)
-	const remainingChars = parsedArgs.unscanned.length
-	// set the scanner position to where the args scanner left off
-	s.scanner.jumpToIndex(
-		remainingChars === 0 ? s.scanner.length : -remainingChars
-	)
-	return g(...parsedArgs.result) as never
+	const parsedArgs = parseGenericArgs(name, g, s)
+	return g(...parsedArgs) as never
 }
 
 export type parseGenericInstantiation<
 	name extends string,
-	g extends GenericProps,
+	g extends GenericAst,
 	s extends StaticState,
 	$,
 	args
-	// have to skip whitespace here since TS allows instantiations like `Partial    <T>`
 > =
+	// skip whitepsace to allow instantiations like `Partial    <T>`
 	Scanner.skipWhitespace<s["unscanned"]> extends `<${infer unscanned}` ?
-		parseGenericArgs<name, g["params"], unscanned, $, args> extends (
-			infer result
-		) ?
+		parseGenericArgs<name, g, unscanned, $, args> extends infer result ?
 			result extends ParsedArgs<infer argAsts, infer nextUnscanned> ?
 				state.setRoot<s, GenericInstantiationAst<g, argAsts>, nextUnscanned>
 			:	// propagate error
 				result
 		:	never
-	:	state.error<writeInvalidGenericArgsMessage<name, g["params"], []>>
+	:	state.error<
+			writeInvalidGenericArgCountMessage<
+				name,
+				genericParamNames<g["paramsAst"]>,
+				[]
+			>
+		>
 
 const unenclosedToNode = (s: DynamicState, token: string): BaseRoot =>
 	maybeParseReference(s, token) ??
@@ -112,12 +118,13 @@ const maybeParseReference = (
 	s: DynamicState,
 	token: string
 ): BaseRoot | undefined => {
-	if (s.ctx.args?.[token]) return s.ctx.args[token].raw
+	if (s.ctx.args?.[token]) return s.ctx.args[token].internal
 	const resolution = s.ctx.$.maybeResolve(token)
-	if (resolution instanceof BaseRoot) return resolution
+	if (hasArkKind(resolution, "root")) return resolution
 	if (resolution === undefined) return
 	if (hasArkKind(resolution, "generic"))
-		return parseGenericInstantiation(token, resolution as Generic, s)
+		return parseGenericInstantiation(token, resolution, s)
+
 	return throwParseError(`Unexpected resolution ${printable(resolution)}`)
 }
 
@@ -125,7 +132,7 @@ const maybeParseUnenclosedLiteral = (
 	s: DynamicState,
 	token: string
 ): BaseRoot | undefined => {
-	const maybeNumber = tryParseNumber(token, { strict: true })
+	const maybeNumber = tryParseWellFormedNumber(token)
 	if (maybeNumber !== undefined)
 		return s.ctx.$.node("unit", { unit: maybeNumber })
 
@@ -134,48 +141,99 @@ const maybeParseUnenclosedLiteral = (
 		return s.ctx.$.node("unit", { unit: maybeBigint })
 }
 
-type tryResolve<s extends StaticState, token extends string, $, args> =
-	token extends keyof ambient ? token
-	: token extends keyof $ ? token
-	: `#${token}` extends keyof $ ? token
-	: token extends keyof args ? token
-	: token extends `${number}` ? token
-	: token extends BigintLiteral ? token
-	: token extends (
-		`${infer submodule extends (keyof $ | keyof ambient) & string}.${infer reference}`
-	) ?
-		tryResolveSubmodule<token, submodule, reference, s, $ & ambient, args>
-	:	unresolvableError<s, token, $, args, []>
-
-type tryResolveSubmodule<
-	token,
-	submodule extends keyof $ & string,
-	reference extends string,
+type tryResolve<
 	s extends StaticState,
+	unscanned extends string,
+	token extends string,
 	$,
 	args
 > =
-	$[submodule] extends { [arkKind]: "module" } ?
-		reference extends keyof $[submodule] ?
-			token
-		:	unresolvableError<s, reference, $[submodule], args, [submodule]>
-	:	ErrorMessage<writeNonSubmoduleDotMessage<submodule>>
+	token extends keyof args ?
+		parseResolution<s, unscanned, token, args[token], $, args>
+	: token extends keyof $ ?
+		parseResolution<s, unscanned, token, $[token], $, args>
+	: `#${token}` extends keyof $ ?
+		parseResolution<s, unscanned, token, $[`#${token}`], $, args>
+	: // this assumes there are no private aliases in the ambient scope
+	token extends keyof ArkAmbient.$ ?
+		parseResolution<s, unscanned, token, ArkAmbient.$[token], $, args>
+	: token extends `${number}` ? state.setRoot<s, token, unscanned>
+	: token extends (
+		`${infer submodule extends keyof $ & string}.${infer reference}`
+	) ?
+		tryResolveSubmodule<
+			token,
+			$[submodule],
+			reference,
+			s,
+			unscanned,
+			$,
+			args,
+			[submodule]
+		>
+	: token extends (
+		`${infer submodule extends keyof ArkAmbient.$ & string}.${infer reference}`
+	) ?
+		tryResolveSubmodule<
+			token,
+			ArkAmbient.$[submodule],
+			reference,
+			s,
+			unscanned,
+			$,
+			args,
+			[submodule]
+		>
+	: token extends BigintLiteral ? state.setRoot<s, token, unscanned>
+	: token extends "keyof" ? state.addPrefix<s, "keyof", unscanned>
+	: unresolvableState<s, token, $, args, []>
 
-/** Provide valid completions for the current token, or fallback to an
- * unresolvable error if there are none */
-export type unresolvableError<
-	s extends StaticState,
+type tryResolveSubmodule<
 	token extends string,
+	resolution,
+	reference extends string,
+	s extends StaticState,
+	unscanned extends string,
 	$,
 	args,
 	submodulePath extends string[]
 > =
-	validReferenceFromToken<token, $, args, submodulePath> extends never ?
-		ErrorMessage<
+	resolution extends { [arkKind]: "module" } ?
+		reference extends keyof resolution ?
+			parseResolution<s, unscanned, token, resolution[reference], $, args>
+		: reference extends (
+			`${infer nestedSubmodule extends keyof resolution & string}.${infer nestedReference}`
+		) ?
+			tryResolveSubmodule<
+				token,
+				resolution[nestedSubmodule],
+				nestedReference,
+				s,
+				unscanned,
+				$,
+				args,
+				[...submodulePath, nestedSubmodule]
+			>
+		:	unresolvableState<s, reference, resolution, {}, submodulePath>
+	:	state.error<writeNonSubmoduleDotMessage<lastOf<submodulePath>>>
+
+/** Provide valid completions for the current token, or fallback to an
+ * unresolvable error if there are none */
+export type unresolvableState<
+	s extends StaticState,
+	token extends string,
+	resolutions,
+	args,
+	submodulePath extends string[]
+> =
+	validReferenceFromToken<token, resolutions, args, submodulePath> extends (
+		never
+	) ?
+		state.error<
 			writeUnresolvableMessage<qualifiedReference<token, submodulePath>>
 		>
-	:	Completion<`${s["scanned"]}${qualifiedReference<
-			validReferenceFromToken<token, $, args, submodulePath>,
+	:	state.completion<`${s["scanned"]}${qualifiedReference<
+			validReferenceFromToken<token, resolutions, args, submodulePath>,
 			submodulePath
 		>}`>
 
@@ -190,7 +248,8 @@ type validReferenceFromToken<
 	args,
 	submodulePath extends string[]
 > = Extract<
-	submodulePath extends [] ? BaseCompletions<$, args> : keyof $,
+	submodulePath["length"] extends 0 ? BaseCompletions<$, args>
+	:	resolvableReferenceIn<$>,
 	`${token}${string}`
 >
 

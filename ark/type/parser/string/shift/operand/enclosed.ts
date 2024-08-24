@@ -1,8 +1,8 @@
-import { isKeyOf } from "@arktype/util"
-import type { DynamicState } from "../../reduce/dynamic.js"
-import type { StaticState, state } from "../../reduce/static.js"
-import type { Scanner } from "../scanner.js"
-import { tryParseDate, writeInvalidDateMessage } from "./date.js"
+import { isKeyOf } from "@ark/util"
+import type { DynamicState } from "../../reduce/dynamic.ts"
+import type { StaticState, state } from "../../reduce/static.ts"
+import type { Scanner } from "../scanner.ts"
+import { tryParseDate, writeInvalidDateMessage } from "./date.ts"
 
 export type StringLiteral<Text extends string = string> =
 	| DoubleQuotedStringLiteral<Text>
@@ -41,7 +41,7 @@ export const parseEnclosed = (
 		s.root = s.ctx.$.node("unit", { unit: enclosed })
 	else {
 		const date = tryParseDate(enclosed, writeInvalidDateMessage(enclosed))
-		s.root = s.ctx.$.node("unit", { unit: date, description: enclosed })
+		s.root = s.ctx.$.node("unit", { meta: enclosed, unit: date })
 	}
 }
 

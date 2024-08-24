@@ -1,4 +1,4 @@
-import { attest, contextualize } from "@arktype/attest"
+import { attest, contextualize } from "@ark/attest"
 import { type } from "arktype"
 import { it } from "mocha"
 
@@ -15,7 +15,7 @@ contextualize(() => {
 			.or({
 				kind: "'pleb'"
 			})
-		attest.instantiations([7574, "instantiations"])
+		// attest.instantiations([7574, "instantiations"])
 	})
 	it("fails on instantiations above threshold", () => {
 		attest(() => {

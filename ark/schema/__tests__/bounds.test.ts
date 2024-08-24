@@ -1,8 +1,6 @@
-import { attest, contextualize } from "@arktype/attest"
-import { schema } from "@arktype/schema"
-import { entriesOf, flatMorph } from "@arktype/util"
-import { boundKindPairsByLower } from "../refinements/range.js"
-import { Disjoint } from "../shared/disjoint.js"
+import { attest, contextualize } from "@ark/attest"
+import { Disjoint, boundKindPairsByLower, rootNode } from "@ark/schema"
+import { entriesOf, flatMorph } from "@ark/util"
 
 const numericCases = {
 	lessThanMin: 4,
@@ -18,68 +16,68 @@ const lengthCases = flatMorph(numericCases, (name, v) => [name, "1".repeat(v)])
 
 contextualize(() => {
 	it("numeric apply", () => {
-		const t = schema({
+		const t = rootNode({
 			domain: "number",
 			min: { rule: 5, exclusive: true },
 			max: { rule: 10 }
 		})
 
-		attest(t.traverse(numericCases.lessThanMin).toString()).snap(
+		attest(t.traverse(numericCases.lessThanMin)?.toString()).snap(
 			"must be more than 5 (was 4)"
 		)
-		attest(t.traverse(numericCases.equalToExclusiveMin).toString()).snap(
+		attest(t.traverse(numericCases.equalToExclusiveMin)?.toString()).snap(
 			"must be more than 5 (was 5)"
 		)
 		attest(t.traverse(numericCases.between)).equals(numericCases.between)
 		attest(t.traverse(numericCases.equalToInclusiveMax)).equals(
 			numericCases.equalToInclusiveMax
 		)
-		attest(t.traverse(numericCases.greaterThanMax).toString()).snap(
+		attest(t.traverse(numericCases.greaterThanMax)?.toString()).snap(
 			"must be at most 10 (was 11)"
 		)
 	})
 
 	it("length apply", () => {
-		const t = schema({
+		const t = rootNode({
 			domain: "string",
 			minLength: { rule: 5, exclusive: true },
 			maxLength: { rule: 10 }
 		})
 
-		attest(t.traverse(lengthCases.lessThanMin).toString()).snap(
-			"must be more than length 5 (was 4)"
+		attest(t.traverse(lengthCases.lessThanMin)?.toString()).snap(
+			"must be at least length 6 (was 4)"
 		)
-		attest(t.traverse(lengthCases.equalToExclusiveMin).toString()).snap(
-			"must be more than length 5 (was 5)"
+		attest(t.traverse(lengthCases.equalToExclusiveMin)?.toString()).snap(
+			"must be at least length 6 (was 5)"
 		)
 		attest(t.traverse(lengthCases.between)).equals(lengthCases.between)
 		attest(t.traverse(lengthCases.equalToInclusiveMax)).equals(
 			lengthCases.equalToInclusiveMax
 		)
-		attest(t.traverse(lengthCases.greaterThanMax).toString()).snap(
+		attest(t.traverse(lengthCases.greaterThanMax)?.toString()).snap(
 			"must be at most length 10 (was 11)"
 		)
 	})
 
 	it("date apply", () => {
-		const t = schema({
+		const t = rootNode({
 			proto: Date,
 			after: { rule: 5, exclusive: true },
 			before: { rule: 10 }
 		})
 
-		attest(t.traverse(dateCases.lessThanMin).toString()).snap(
-			"must be after 12/31/1969, 7:00:00 PM (was 12/31/1969, 7:00:00 PM)"
+		attest(t.traverse(dateCases.lessThanMin)?.toString()).snap(
+			"must be 7:00:00.006 PM, December 31, 1969 or later (was 7:00:00.004 PM, December 31, 1969)"
 		)
-		attest(t.traverse(dateCases.equalToExclusiveMin).toString()).snap(
-			"must be after 12/31/1969, 7:00:00 PM (was 12/31/1969, 7:00:00 PM)"
+		attest(t.traverse(dateCases.equalToExclusiveMin)?.toString()).snap(
+			"must be 7:00:00.006 PM, December 31, 1969 or later (was 7:00:00.005 PM, December 31, 1969)"
 		)
 		attest(t.traverse(dateCases.between)).equals(dateCases.between)
 		attest(t.traverse(dateCases.equalToInclusiveMax)).equals(
 			dateCases.equalToInclusiveMax
 		)
-		attest(t.traverse(dateCases.greaterThanMax).toString()).snap(
-			"must be 12/31/1969, 7:00:00 PM or earlier (was 12/31/1969, 7:00:00 PM)"
+		attest(t.traverse(dateCases.greaterThanMax)?.toString()).snap(
+			"must be 7:00:00.010 PM, December 31, 1969 or earlier (was 7:00:00.011 PM, December 31, 1969)"
 		)
 	})
 
@@ -95,7 +93,7 @@ contextualize(() => {
 				: dateCases
 
 			it("allows", () => {
-				const t = schema({
+				const t = rootNode({
 					...basis,
 					[min]: { rule: 5, exclusive: true },
 					[max]: { rule: 10 }
@@ -109,13 +107,13 @@ contextualize(() => {
 			})
 
 			it("unit range reduces", () => {
-				const l = schema({
+				const l = rootNode({
 					...basis,
 					[min]: {
 						rule: 6
 					}
 				} as never)
-				const r = schema({
+				const r = rootNode({
 					...basis,
 					[max]: {
 						rule: 6
@@ -123,15 +121,15 @@ contextualize(() => {
 				} as never)
 				const expected =
 					min === "min" ?
-						schema({
+						rootNode({
 							unit: 6
 						})
 					: min === "minLength" ?
-						schema({
+						rootNode({
 							...basis,
 							exactLength: 6
 						} as never)
-					:	schema({
+					:	rootNode({
 							unit: new Date(6)
 						})
 
@@ -140,13 +138,13 @@ contextualize(() => {
 			})
 
 			it("non-overlapping exclusive", () => {
-				const l = schema({
+				const l = rootNode({
 					...basis,
 					[min]: {
 						rule: 3
 					}
 				} as never)
-				const r = schema({
+				const r = rootNode({
 					...basis,
 					[max]: {
 						rule: 3,
@@ -158,8 +156,8 @@ contextualize(() => {
 			})
 
 			it("non-overlapping limits", () => {
-				const l = schema({ ...basis, [min]: 3 } as never)
-				const r = schema({
+				const l = rootNode({ ...basis, [min]: 3 } as never)
+				const r = rootNode({
 					...basis,
 					[max]: 1
 				} as never)
@@ -168,11 +166,11 @@ contextualize(() => {
 			})
 
 			it("greater min is stricter", () => {
-				const lesser = schema({
+				const lesser = rootNode({
 					...basis,
 					[min]: 3
 				} as never)
-				const greater = schema({
+				const greater = rootNode({
 					...basis,
 					[min]: 4
 				} as never)
@@ -181,11 +179,11 @@ contextualize(() => {
 			})
 
 			it("lesser max is stricter", () => {
-				const lesser = schema({
+				const lesser = rootNode({
 					...basis,
 					[max]: 3
 				} as never)
-				const greater = schema({
+				const greater = rootNode({
 					...basis,
 					[max]: { rule: 4, exclusive: true }
 				} as never)
@@ -194,11 +192,11 @@ contextualize(() => {
 			})
 
 			it("exclusive wins if limits equal", () => {
-				const exclusive = schema({
+				const exclusive = rootNode({
 					...basis,
 					[max]: { rule: 3, exclusive: true }
 				} as never)
-				const inclusive = schema({
+				const inclusive = rootNode({
 					...basis,
 					[max]: 3
 				} as never)

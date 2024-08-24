@@ -1,39 +1,48 @@
-import type { BaseRoot } from "../roots/root.js"
-import type { declareNode } from "../shared/declare.js"
+import type { BaseRoot } from "../roots/root.ts"
+import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
-} from "../shared/implement.js"
-import type { TraverseAllows } from "../shared/traversal.js"
+} from "../shared/implement.ts"
+import type { JsonSchema } from "../shared/jsonSchema.ts"
+import { $ark } from "../shared/registry.ts"
+import type { TraverseAllows } from "../shared/traversal.ts"
 import {
 	BaseRange,
-	type BaseRangeInner,
 	parseExclusiveKey,
-	type UnknownNormalizedRangeSchema
-} from "./range.js"
+	type BaseRangeInner,
+	type UnknownExpandedRangeSchema
+} from "./range.ts"
 
-export interface MinInner extends BaseRangeInner {
-	rule: number
+export declare namespace Min {
+	export interface Inner extends BaseRangeInner {
+		rule: number
+		exclusive?: true
+	}
+
+	export interface NormalizedSchema extends UnknownExpandedRangeSchema {
+		rule: number
+	}
+
+	export type Schema = NormalizedSchema | number
+
+	export interface ErrorContext extends BaseErrorContext<"min">, Inner {}
+
+	export interface Declaration
+		extends declareNode<{
+			kind: "min"
+			schema: Schema
+			normalizedSchema: NormalizedSchema
+			inner: Inner
+			prerequisite: number
+			errorContext: ErrorContext
+		}> {}
+
+	export type Node = MinNode
 }
 
-export interface NormalizedMinRoot extends UnknownNormalizedRangeSchema {
-	rule: number
-}
-
-export type MinSchema = NormalizedMinRoot | number
-
-export interface MinDeclaration
-	extends declareNode<{
-		kind: "min"
-		schema: MinSchema
-		normalizedSchema: NormalizedMinRoot
-		inner: MinInner
-		prerequisite: number
-		errorContext: MinInner
-	}> {}
-
-export const minImplementation: nodeImplementationOf<MinDeclaration> =
-	implementNode<MinDeclaration>({
+const implementation: nodeImplementationOf<Min.Declaration> =
+	implementNode<Min.Declaration>({
 		kind: "min",
 		collapsibleKey: "rule",
 		hasAssociatedError: true,
@@ -52,9 +61,20 @@ export const minImplementation: nodeImplementationOf<MinDeclaration> =
 		}
 	})
 
-export class MinNode extends BaseRange<MinDeclaration> {
-	readonly impliedBasis: BaseRoot = this.$.keywords.number.raw
+export class MinNode extends BaseRange<Min.Declaration> {
+	readonly impliedBasis: BaseRoot = $ark.intrinsic.number.internal
 
 	traverseAllows: TraverseAllows<number> =
 		this.exclusive ? data => data > this.rule : data => data >= this.rule
+
+	reduceJsonSchema(schema: JsonSchema.Numeric): JsonSchema.Numeric {
+		if (this.exclusive) schema.exclusiveMinimum = this.rule
+		else schema.minimum = this.rule
+		return schema
+	}
+}
+
+export const Min = {
+	implementation,
+	Node: MinNode
 }

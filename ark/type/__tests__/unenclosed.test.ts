@@ -1,11 +1,10 @@
-import { attest, contextualize } from "@arktype/attest"
-import { writeUnresolvableMessage } from "@arktype/schema"
-import { writeMalformedNumericLiteralMessage } from "@arktype/util"
+import { attest, contextualize } from "@ark/attest"
+import { writeUnresolvableMessage } from "@ark/schema"
+import { writeMalformedNumericLiteralMessage } from "@ark/util"
 import { scope, type } from "arktype"
 
-contextualize(
-	"identifier",
-	() => {
+contextualize(() => {
+	describe("identifier", () => {
 		it("keyword", () => {
 			attest<string>(type("string").infer)
 		})
@@ -21,9 +20,9 @@ contextualize(
 				writeUnresolvableMessage("HUH")
 			)
 		})
-	},
-	"number",
-	() => {
+	})
+
+	describe("number", () => {
 		it("positive whole", () => {
 			const four = type("4")
 			attest<4>(four.infer)
@@ -88,9 +87,9 @@ contextualize(
 				writeMalformedNumericLiteralMessage("-0", "number")
 			)
 		})
-	},
-	"bigint",
-	() => {
+	})
+
+	describe("bigint", () => {
 		it("positive", () => {
 			const t = type("12345678910987654321n")
 			// Is prime :D
@@ -132,5 +131,5 @@ contextualize(
 				writeMalformedNumericLiteralMessage("-0n", "bigint")
 			)
 		})
-	}
-)
+	})
+})

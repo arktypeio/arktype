@@ -1,22 +1,32 @@
 {
-	"name": "@arktype/fs",
-	"version": "0.0.20",
+	"name": "@ark/fs",
+	"version": "0.3.0",
 	"author": {
 		"name": "David Blass",
 		"email": "david@arktype.io",
 		"url": "https://arktype.io"
 	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/arktypeio/arktype.git",
+		"directory": "ark/fs"
+	},
 	"type": "module",
 	"main": "./out/index.js",
 	"types": "./out/index.d.ts",
 	"exports": {
-		".": "./out/index.js",
-		"./internal/*": "./out/*"
+		".": {
+			"ark-ts": "./index.ts",
+			"default": "./out/index.js"
+		}
 	},
 	"scripts": {
-		"build": "tsx ../repo/build.ts"
+		"build": "ts ../repo/build.ts"
 	},
 	"files": [
 		"out"
-	]
+	],
+	"publishConfig": {
+		"access": "public"
+	}
 }

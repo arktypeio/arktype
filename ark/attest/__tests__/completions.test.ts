@@ -1,5 +1,5 @@
-import { attest, contextualize } from "@arktype/attest"
-import { hasDomain } from "@arktype/util"
+import { attest, contextualize } from "@ark/attest"
+import { hasDomain } from "@ark/util"
 import assert from "assert"
 
 type Obj = {
@@ -64,6 +64,6 @@ contextualize(() => {
 	it("external package", () => {
 		hasDomain({}, "object")
 		// @ts-expect-error
-		attest(() => hasDomain({}, "b")).completions
+		attest(() => hasDomain({}, "b")).completions({ b: ["bigint", "boolean"] })
 	})
 })

@@ -1,20 +1,19 @@
-import { filePath } from "@arktype/fs"
-import { throwInternalError } from "@arktype/util"
+import { filePath } from "@ark/fs"
 import * as tsvfs from "@typescript/vfs"
 import ts from "typescript"
-import { getConfig } from "../config.js"
-import { getFileKey } from "../utils.js"
+import { getConfig } from "../config.ts"
+import { getFileKey } from "../utils.ts"
 import {
 	getDescendants,
 	getFirstAncestorByKindOrThrow,
 	getProgram,
 	getTsConfigInfoOrThrow,
 	getTsLibFiles
-} from "./ts.js"
+} from "./ts.ts"
 import type {
 	AssertionsByFile,
 	LinePositionRange
-} from "./writeAssertionCache.js"
+} from "./writeAssertionCache.ts"
 
 export const getCallLocationFromCallExpression = (
 	callExpression: ts.CallExpression
@@ -139,10 +138,22 @@ export const createOrUpdateFile = (
 	fileName: string,
 	fileText: string
 ): ts.SourceFile | undefined => {
-	env.sys.fileExists(fileName) ?
-		env.updateFile(fileName, fileText)
-	:	env.createFile(fileName, fileText)
+	if (env.sys.fileExists(fileName)) env.updateFile(fileName, fileText)
+	else env.createFile(fileName, fileText)
 	return env.getSourceFile(fileName)
+}
+
+declare module "typescript" {
+	interface SourceFile {
+		imports: ts.StringLiteral[]
+	}
+
+	interface Program {
+		getResolvedModuleFromModuleSpecifier(
+			moduleSpecifier: ts.StringLiteralLike,
+			sourceFile?: ts.SourceFile
+		): ts.ResolvedModuleWithFailedLookupLocations
+	}
 }
 
 const getInstantiationsWithFile = (fileText: string, fileName: string) => {
@@ -151,9 +162,6 @@ const getInstantiationsWithFile = (fileText: string, fileName: string) => {
 	const program = getProgram(env)
 	program.emit(file)
 	const count = program.getInstantiationCount()
-	if (count === undefined)
-		throwInternalError(`Unable to gather instantiation count for ${fileText}`)
-
 	return count
 }
 

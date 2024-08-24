@@ -1,9 +1,10 @@
-import { attest, contextualize } from "@arktype/attest"
-import { dirName, readJson, writeJson } from "@arktype/fs"
+import { attest, contextualize } from "@ark/attest"
+import { attestInternal } from "@ark/attest/internal/assert/attest.ts"
+import { dirName, readJson, writeJson } from "@ark/fs"
 import * as assert from "node:assert/strict"
 import { rmSync } from "node:fs"
 import { join } from "node:path"
-import { attestInternal } from "../assert/attest.js"
+
 const testDir = dirName()
 const testFile = "externalSnapshots.test.ts"
 const o = { re: "do" }

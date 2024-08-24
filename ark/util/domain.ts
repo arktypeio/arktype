@@ -1,5 +1,22 @@
-import type { show } from "./generics.js"
-import type { stringifyUnion } from "./unionToTuple.js"
+import type { describeDefaults, DescribeOptions } from "./describe.ts"
+import type { show } from "./generics.ts"
+import type { stringifyUnion } from "./unionToTuple.ts"
+
+export type JsTypeOf =
+	| "object"
+	| "function"
+	| "number"
+	| "bigint"
+	| "boolean"
+	| "string"
+	| "symbol"
+	| "undefined"
+	| "null"
+
+export const domainToJsTypesOf = (domain: Domain): JsTypeOf[] =>
+	domain === "null" ? ["object"]
+	: domain === "object" ? ["object", "function"]
+	: [domain]
 
 export const hasDomain = <data, domain extends Domain>(
 	data: data,
@@ -53,31 +70,31 @@ export const domainOf = <data>(data: data): domainOf<data> => {
 		: builtinType) as domainOf<data>
 }
 
-const enumerableDomainDescriptions = {
+/** Each domain's completion for the phrase "must be _____" */
+export const domainDescriptions = {
 	boolean: "boolean",
 	null: "null",
-	undefined: "undefined"
-} as const
-
-const nonEnumerableDomainDescriptions = {
+	undefined: "undefined",
 	bigint: "a bigint",
 	number: "a number",
 	object: "an object",
 	string: "a string",
 	symbol: "a symbol"
-} as const
+} as const satisfies Record<Domain, string>
 
-export type NonEnumerableDomain = keyof typeof nonEnumerableDomainDescriptions
-
-/** Each domain's completion for the phrase "must be _____" */
-export const domainDescriptions = {
-	...nonEnumerableDomainDescriptions,
-	...enumerableDomainDescriptions
-} satisfies Record<Domain, string>
+export const jsTypeOfDescriptions = {
+	...domainDescriptions,
+	function: "a function"
+} as const satisfies Record<JsTypeOf, string>
 
 export type domainDescriptions = typeof domainDescriptions
 
-export type describeDomainOf<t> = stringifyUnion<
-	domainDescriptions[domainOf<t>],
-	" or "
+export type describeDomainOf<
+	t,
+	opts extends DescribeOptions = {}
+> = stringifyUnion<
+	opts["includeArticles"] extends true ? domainDescriptions[domainOf<t>]
+	:	domainOf<t>,
+	opts["branchDelimiter"] extends string ? opts["branchDelimiter"]
+	:	describeDefaults["branchDelimiter"]
 >

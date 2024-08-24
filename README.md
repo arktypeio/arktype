@@ -31,7 +31,7 @@ For an ever better in-editor developer experience, try the [ArkDark VSCode exten
 ```ts @blockFrom:dev/test/examples/type.ts
 import { type } from "arktype"
 
-// Definitions are statically parsed and inferred as TS.
+// Definitions are statically parsed and inferred as TS
 export const user = type({
 	name: "string",
 	device: {
@@ -83,7 +83,7 @@ export const currentTsSyntax = type({
 // available syntax new to 2.0
 
 export const upcomingTsSyntax = type({
-	keyof: "keyof bigint",
+	keyof: "keyof object",
 	variadicTuples: ["true", "...", "false[]"]
 })
 
@@ -137,7 +137,7 @@ There's so much more I want to share but I want to get at least an initial versi
 
 ArkType supports many of TypeScript's built-in types and operators, as well as some new ones dedicated exclusively to runtime validation. In fact, we got a little ahead of ourselves and built a ton of cool features, but we're still working on getting caught up syntax and API docs. Keep an eye out for more in the next couple weeks ⛵
 
-In the meantime, check out the examples here and use the type hints you get to learn how you can customize your types and scopes. If you want to explore some of the more advanced features, take a look at [our unit tests](./dev/test) or ask us [on Discord](https://discord.gg/xEzdc3fJQC) if your functionality is supported. If not, [create a GitHub issue](https://github.com/arktypeio/arktype/issues/new) so we can prioritize it!
+In the meantime, check out the examples here and use the type hints you get to learn how you can customize your types and scopes. If you want to explore some of the more advanced features, take a look at [our unit tests](./ark/type/__tests__) or ask us [on Discord](https://discord.gg/xEzdc3fJQC) if your functionality is supported. If not, [create a GitHub issue](https://github.com/arktypeio/arktype/issues/new) so we can prioritize it!
 
 ## Integrations
 
@@ -234,17 +234,10 @@ Otherwise, consider sending me an email (david@arktype.io) or [message me on Dis
 
 <table>
 	<tr>
-		<th>fubhy</th>
 		<th>sam-goodwin</th>
+		<th>fubhy</th>
 	</tr>
 	<tr>
-		<td>
-			<a href="https://github.com/fubhy"
-				><img
-					height="64px"
-					src="https://avatars.githubusercontent.com/u/1172528"
-			/></a>
-		</td>
 		<td>
 			<a href="https://github.com/sam-goodwin"
 				><img
@@ -252,7 +245,14 @@ Otherwise, consider sending me an email (david@arktype.io) or [message me on Dis
 					src="https://avatars.githubusercontent.com/u/38672686"
 			/></a>
 		</td>
-	</tr>
+		<td>
+			<a href="https://github.com/fubhy"
+				><img
+					height="64px"
+					src="https://avatars.githubusercontent.com/u/1172528"
+			/></a>
+		</td>
+    </tr>
 </table>
 
 ### Sponsors 🥰
@@ -260,8 +260,7 @@ Otherwise, consider sending me an email (david@arktype.io) or [message me on Dis
 <table>
 	<tr>
 		<th>tmm</th>
-		<th>jacksteamdev</th>
-        <th>neodon</th>
+        <th>mishushakov</th>
         <th>mewhhaha</th>
     	<th>codeandcats</th>
 	</tr>
@@ -281,8 +280,8 @@ Otherwise, consider sending me an email (david@arktype.io) or [message me on Dis
 			/></a>
 		</td>
         <td>
-    		<a href="https://github.com/neodon"
-    			><img height="64px" src="https://avatars.githubusercontent.com/u/82944"
+    		<a href="https://github.com/mishushakov"
+    			><img height="64px" src="https://avatars.githubusercontent.com/u/10400064"
     		/></a>
     	</td>
         <td>
@@ -302,7 +301,6 @@ Otherwise, consider sending me an email (david@arktype.io) or [message me on Dis
 	</tr>
 	<tr>
     	<th>Timeraa</th>
-		<th>marcagba</th>
 		<th>Phalangers</th>
     </tr>
     <tr>
@@ -311,13 +309,6 @@ Otherwise, consider sending me an email (david@arktype.io) or [message me on Dis
     			><img
     				height="64px"
     				src="https://avatars.githubusercontent.com/u/29104008"
-    		/></a>
-    	</td>
-		<td>
-    		<a href="https://github.com/marcagba"
-    			><img
-    				height="64px"
-    				src="https://avatars.githubusercontent.com/u/14045559"
     		/></a>
     	</td>
 		<td>

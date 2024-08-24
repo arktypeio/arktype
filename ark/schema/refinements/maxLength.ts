@@ -1,56 +1,72 @@
-import type { BaseRoot } from "../roots/root.js"
-import type { declareNode } from "../shared/declare.js"
-import { Disjoint } from "../shared/disjoint.js"
+import type { BaseRoot } from "../roots/root.ts"
+import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
+import { Disjoint } from "../shared/disjoint.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
-} from "../shared/implement.js"
-import type { TraverseAllows } from "../shared/traversal.js"
+} from "../shared/implement.ts"
+import {
+	throwInternalJsonSchemaOperandError,
+	type JsonSchema
+} from "../shared/jsonSchema.ts"
+import { $ark } from "../shared/registry.ts"
+import type { TraverseAllows } from "../shared/traversal.ts"
 import {
 	BaseRange,
-	parseExclusiveKey,
+	createLengthRuleParser,
+	createLengthSchemaNormalizer,
 	type BaseRangeInner,
 	type LengthBoundableData,
+	type UnknownExpandedRangeSchema,
 	type UnknownNormalizedRangeSchema
-} from "./range.js"
+} from "./range.ts"
 
-export interface MaxLengthInner extends BaseRangeInner {
-	rule: number
+export declare namespace MaxLength {
+	export interface Inner extends BaseRangeInner {
+		rule: number
+	}
+
+	export interface NormalizedSchema extends UnknownNormalizedRangeSchema {
+		rule: number
+	}
+
+	export interface ExpandedSchema extends UnknownExpandedRangeSchema {
+		rule: number
+	}
+
+	export type Schema = ExpandedSchema | number
+
+	export interface ErrorContext extends BaseErrorContext<"maxLength">, Inner {}
+
+	export interface Declaration
+		extends declareNode<{
+			kind: "maxLength"
+			schema: Schema
+			reducibleTo: "exactLength"
+			normalizedSchema: NormalizedSchema
+			inner: Inner
+			prerequisite: LengthBoundableData
+			errorContext: ErrorContext
+		}> {}
+
+	export type Node = MaxLengthNode
 }
 
-export interface NormalizedMaxLengthSchema
-	extends UnknownNormalizedRangeSchema {
-	rule: number
-}
-
-export type MaxLengthSchema = NormalizedMaxLengthSchema | number
-
-export interface MaxLengthDeclaration
-	extends declareNode<{
-		kind: "maxLength"
-		schema: MaxLengthSchema
-		normalizedSchema: NormalizedMaxLengthSchema
-		inner: MaxLengthInner
-		prerequisite: LengthBoundableData
-		errorContext: MaxLengthInner
-	}> {}
-
-export const maxLengthImplementation: nodeImplementationOf<MaxLengthDeclaration> =
-	implementNode<MaxLengthDeclaration>({
+const implementation: nodeImplementationOf<MaxLength.Declaration> =
+	implementNode<MaxLength.Declaration>({
 		kind: "maxLength",
 		collapsibleKey: "rule",
 		hasAssociatedError: true,
 		keys: {
-			rule: {},
-			exclusive: parseExclusiveKey
+			rule: {
+				parse: createLengthRuleParser("maxLength")
+			}
 		},
-		normalize: schema =>
-			typeof schema === "number" ? { rule: schema } : schema,
+		reduce: (inner, $) =>
+			inner.rule === 0 ? $.node("exactLength", inner) : undefined,
+		normalize: createLengthSchemaNormalizer("maxLength"),
 		defaults: {
-			description: node =>
-				node.exclusive ?
-					`less than length ${node.rule}`
-				:	`at most length ${node.rule}`,
+			description: node => `at most length ${node.rule}`,
 			actual: data => `${data.length}`
 		},
 		intersections: {
@@ -64,11 +80,29 @@ export const maxLengthImplementation: nodeImplementationOf<MaxLengthDeclaration>
 		}
 	})
 
-export class MaxLengthNode extends BaseRange<MaxLengthDeclaration> {
-	readonly impliedBasis: BaseRoot = this.$.keywords.lengthBoundable.raw
+export class MaxLengthNode extends BaseRange<MaxLength.Declaration> {
+	readonly impliedBasis: BaseRoot = $ark.intrinsic.lengthBoundable.internal
 
-	traverseAllows: TraverseAllows<LengthBoundableData> =
-		this.exclusive ?
-			data => data.length < this.rule
-		:	data => data.length <= this.rule
+	traverseAllows: TraverseAllows<LengthBoundableData> = data =>
+		data.length <= this.rule
+
+	reduceJsonSchema(
+		schema: JsonSchema.LengthBoundable
+	): JsonSchema.LengthBoundable {
+		switch (schema.type) {
+			case "string":
+				schema.maxLength = this.rule
+				return schema
+			case "array":
+				schema.maxItems = this.rule
+				return schema
+			default:
+				return throwInternalJsonSchemaOperandError("maxLength", schema)
+		}
+	}
+}
+
+export const MaxLength = {
+	implementation,
+	Node: MaxLengthNode
 }

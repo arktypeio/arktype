@@ -1,20 +1,16 @@
-import type { array, Key } from "@arktype/util"
+import type { array, Key } from "@ark/util"
+import type { NodeCompiler } from "../shared/compile.ts"
+import { compileErrorContext } from "../shared/implement.ts"
+import type { TraverseApply } from "../shared/traversal.ts"
+import { BaseRoot, type InternalRootDeclaration } from "./root.ts"
 
-import type { NodeCompiler } from "../shared/compile.js"
-import { compileErrorContext } from "../shared/implement.js"
-import type { TraverseApply } from "../shared/traversal.js"
-import { BaseRoot, type RawRootDeclaration } from "./root.js"
-
-export abstract class RawBasis<
-	d extends RawRootDeclaration = RawRootDeclaration
+export abstract class InternalBasis<
+	d extends InternalRootDeclaration = InternalRootDeclaration
 > extends BaseRoot<d> {
 	abstract compiledCondition: string
 	abstract compiledNegation: string
 	abstract literalKeys: array<Key>
-
-	rawKeyOf(): BaseRoot {
-		return this.$.units(this.literalKeys)
-	}
+	declare structure: undefined
 
 	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
 		if (!this.traverseAllows(data, ctx)) ctx.error(this.errorContext as never)

@@ -1,11 +1,20 @@
 {
 	"extends": "../../tsconfig.json",
 	"compilerOptions": {
+		// unfortunately, twoslash doesn't seem to respect customConditions,
+		// so .d.ts will need to be rebuilt to see its static compilation updated
 		"module": "ESNext",
 		"moduleResolution": "Bundler",
-		"allowImportingTsExtensions": true,
 		"allowJs": true,
-		"jsx": "preserve"
+		"jsx": "preserve",
+		"plugins": [{ "name": "@astrojs/ts-plugin" }]
 	},
-	"exclude": ["**/out", "**/node_modules"]
+	// temporarily disabled until it can handle Starlight's frontmatter
+	"mdx": {
+		"checkMdx": true,
+		"plugins": []
+	},
+	// in addition to ignoring the additional dirs, this needs
+	// to be redeclared to avoid excluding ark/docs
+	"exclude": [".astro", "out", "dist", "node_modules"]
 }

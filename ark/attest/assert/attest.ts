@@ -1,30 +1,30 @@
-import { caller, getCallStack, type SourcePosition } from "@arktype/fs"
-import type { inferTypeRoot, validateTypeRoot } from "arktype"
-import { getBenchCtx } from "../bench/bench.js"
-import type { Measure } from "../bench/measure.js"
-import { instantiationDataHandler } from "../bench/type.js"
+import { caller, getCallStack, type SourcePosition } from "@ark/fs"
+import type { ErrorMessage } from "@ark/util"
+import { getBenchCtx } from "../bench/bench.ts"
+import type { Measure } from "../bench/measure.ts"
+import { instantiationDataHandler } from "../bench/type.ts"
 import {
 	getTypeAssertionsAtPosition,
 	type VersionedTypeAssertion
-} from "../cache/getCachedAssertions.js"
-import { getConfig, type AttestConfig } from "../config.js"
-import { assertEquals, typeEqualityMapping } from "./assertions.js"
+} from "../cache/getCachedAssertions.ts"
+import { getConfig, type AttestConfig } from "../config.ts"
+import { assertEquals, typeEqualityMapping } from "./assertions.ts"
 import {
 	ChainableAssertions,
 	type AssertionKind,
 	type rootAssertions
-} from "./chainableAssertions.js"
+} from "./chainableAssertions.ts"
 
 export type AttestFn = {
 	<expected, actual extends expected = never>(
-		...args: [actual] extends [never] ? [value: expected] : []
-	): [expected] extends [never] ? rootAssertions<unknown, AssertionKind>
-	:	rootAssertions<expected, AssertionKind>
-	<actual, def>(
-		actual: actual,
-		def: validateTypeRoot<def>
-	): asserts actual is unknown extends actual ? inferTypeRoot<def> & actual
-	:	Extract<actual, inferTypeRoot<def>>
+		...args: actual extends never ?
+			[
+				ErrorMessage<"Type-only assertion requires two explicit genreic params, e.g. attest<expected, actual>">
+			]
+		:	[]
+	): void
+
+	<expected>(actual: expected): rootAssertions<expected, AssertionKind>
 
 	instantiations: (count?: Measure<"instantiations"> | undefined) => void
 }
@@ -83,4 +83,4 @@ export const attest: AttestFn = Object.assign(attestInternal, {
 		ctx.lastSnapCallPosition = calledFrom
 		instantiationDataHandler({ ...ctx, kind: "instantiations" }, args, false)
 	}
-})
+}) as never

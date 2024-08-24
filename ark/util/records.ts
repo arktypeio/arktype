@@ -1,9 +1,14 @@
-import type { array } from "./arrays.js"
-import { flatMorph } from "./flatMorph.js"
-import type { defined, show } from "./generics.js"
+import type { array } from "./arrays.ts"
+import { flatMorph } from "./flatMorph.ts"
+import type { Fn } from "./functions.ts"
+import type { defined, show } from "./generics.ts"
 
 export type Dict<k extends string = string, v = unknown> = {
 	readonly [_ in k]: v
+}
+
+export type dict<v = unknown, k extends string = string> = {
+	[_ in k]: v
 }
 
 /** Either:
@@ -24,7 +29,7 @@ export type require<o, maxDepth extends number = 1> = _require<o, [], maxDepth>
 type _require<o, depth extends 1[], maxDepth extends number> =
 	depth["length"] extends maxDepth ? o
 	: o extends object ?
-		o extends (...args: never[]) => unknown ?
+		o extends Fn ?
 			o
 		:	{
 				[k in keyof o]-?: _require<o[k], [...depth, 1], maxDepth>
@@ -44,7 +49,7 @@ export type mutable<o, maxDepth extends number = 1> = _mutable<o, [], maxDepth>
 type _mutable<o, depth extends 1[], maxDepth extends number> =
 	depth["length"] extends maxDepth ? o
 	: o extends object ?
-		o extends (...args: never[]) => unknown ?
+		o extends Fn ?
 			o
 		:	{
 				-readonly [k in keyof o]: _mutable<o[k], [...depth, 1], maxDepth>
@@ -75,18 +80,18 @@ export const fromEntries = <const entries extends readonly Entry[]>(
 ): fromEntries<entries> => Object.fromEntries(entries) as never
 
 /** Mimics the result of Object.keys(...) */
-export type keysOf<o> =
+export type keyOf<o> =
 	o extends array ?
 		number extends o["length"] ?
 			`${number}`
 		:	keyof o & `${number}`
 	:	{
-			[K in keyof o]: K extends string ? K
-			: K extends number ? `${K}`
+			[k in keyof o]: k extends string ? k
+			: k extends number ? `${k}`
 			: never
 		}[keyof o]
 
-export const keysOf = <o extends object>(o: o): keysOf<o>[] =>
+export const keysOf = <o extends object>(o: o): keyOf<o>[] =>
 	Object.keys(o) as never
 
 export const isKeyOf = <k extends string | number | symbol, o extends object>(
@@ -124,7 +129,32 @@ export type requiredKeyOf<o> = {
 
 export type optionalKeyOf<o> = Exclude<keyof o, requiredKeyOf<o>>
 
-export type merge<base, merged> = show<Omit<base, keyof merged> & merged>
+export type merge<base, props> =
+	base extends unknown ?
+		props extends unknown ?
+			show<omit<base, keyof props & keyof base> & props>
+		:	never
+	:	never
+
+export type mergeExact<base, props> =
+	base extends unknown ?
+		props extends unknown ?
+			show<omitMerged<base, props> & props>
+		:	never
+	:	never
+
+type omitMerged<base, props> = {
+	[k in keyof base as excludeExactKeyOf<k, props>]: base[k]
+}
+
+type excludeExactKeyOf<key extends PropertyKey, o> = Exclude<
+	key,
+	extractExactKeyOf<key, o>
+>
+
+type extractExactKeyOf<key extends PropertyKey, base> = keyof {
+	[k in keyof base as [key, k] extends [k, key] ? key : never]: 1
+}
 
 export type override<
 	base,
@@ -133,18 +163,19 @@ export type override<
 
 export type propValueOf<o> = o[keyof o]
 
-export const InnerDynamicBase = class {
-	constructor(properties: object) {
+export const InnerDynamicBase = class {} as new <t extends object>(base: t) => t
+
+/** @ts-ignore (needed to extend `t`) **/
+export interface DynamicBase<t extends object> extends t {}
+export class DynamicBase<t extends object> {
+	constructor(properties: t) {
 		Object.assign(this, properties)
 	}
-} as new <t extends object>(base: t) => t
-
-/** @ts-expect-error (needed to extend `t`, but safe given ShallowClone's implementation) **/
-export class DynamicBase<t extends object> extends InnerDynamicBase<t> {}
+}
 
 export const NoopBase = class {} as new <t extends object>() => t
 
-/** @ts-expect-error (see DynamicBase) **/
+/** @ts-ignore (needed to extend `t`) **/
 export class CastableBase<t extends object> extends NoopBase<t> {}
 
 export const splitByKeys = <o extends object, leftKeys extends keySetOf<o>>(
@@ -164,15 +195,53 @@ export const splitByKeys = <o extends object, leftKeys extends keySetOf<o>>(
 	return [l, r]
 }
 
+/** Homomorphic implementation of the builtin Pick.
+ *
+ * Gives different results for certain union expressions like the following:
+ *
+ * @example
+ * // flattens result to { a?: 1 | 2; b?: 1 | 2 }
+ * type PickResult = Pick<{ a: 1; b?: 1 } | { a?: 2; b: 2 }, "a" | "b">
+ *
+ * @example
+ * // preserves original type w/ modifier groupings
+ * type pickResult = pick<{ a: 1; b?: 1 } | { a?: 2; b: 2 }, "a" | "b">
+ */
+export type pick<o, key extends keyof o> =
+	o extends unknown ?
+		{
+			[k in keyof o as k extends key ? k : never]: o[k]
+		}
+	:	// could also consider adding the following to extract literal keys from
+		// index signatures as optional. doesn't match existing TS behavior though:
+		//  & { [k in keyof o as key extends k ? key : never]?: o[k] }
+		never
+
 export const pick = <o extends object, keys extends keySetOf<o>>(
 	o: o,
 	keys: keys
-): show<Pick<o, keyof keys & keyof o>> => splitByKeys(o, keys)[0] as never
+): pick<o, keyof keys & keyof o> => splitByKeys(o, keys)[0] as never
+
+/** Homomorphic implementation of the builtin Omit.
+ *
+ * Gives different results for many union expressions like the following:
+ *
+ * @example
+ * // {}
+ * type OmitResult = Omit<{ a: 1 } | { b: 2 }, never>
+ *
+ * @example
+ * // preserves original type w/ modifier groupings
+ * type omitResult = omit<{ a: 1 } | { b: 2 }, never>
+ */
+export type omit<o, key extends keyof o> = {
+	[k in keyof o as k extends key ? never : k]: o[k]
+}
 
 export const omit = <o extends object, keys extends keySetOf<o>>(
 	o: o,
 	keys: keys
-): show<Omit<o, keyof keys>> => splitByKeys(o, keys)[1] as never
+): omit<o, keyof keys & keyof o> => splitByKeys(o, keys)[1] as never
 
 export type EmptyObject = Record<PropertyKey, never>
 
@@ -227,4 +296,8 @@ export type withJsDoc<o, jsDocSource> = show<
 
 type _withJsDoc<o, jsDocSource> = {
 	[k in keyof jsDocSource]-?: o[k & keyof o]
+}
+
+export type propertyDescriptorsOf<o extends object> = {
+	[k in keyof o]: TypedPropertyDescriptor<o[k]>
 }

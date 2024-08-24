@@ -1,5 +1,5 @@
 {
-	"name": "arktypeio",
+	"name": "ark",
 	"description": "TypeScript's 1:1 validator, optimized from editor to runtime",
 	"license": "MIT",
 	"funding": "https://github.com/arktypeio/arktype?sponsor=1",
@@ -15,29 +15,39 @@
 	"type": "module",
 	"private": true,
 	"scripts": {
-		"prChecks": "pnpm lint && pnpm testRepo && pnpm testTsVersions",
+		"prChecks": "pnpm lint && pnpm build && pnpm testRepo && pnpm bench && pnpm testTsVersions",
+		"attest": "pnpm tsx ./ark/attest/cli/cli.ts",
 		"build": "pnpm -r build",
 		"buildCjs": "ARKTYPE_CJS=1 pnpm -r build",
+		"rmBuild": "pnpm -r exec rm -rf out",
+		"tsc": "node ./node_modules/typescript/lib/tsc.js",
 		"test": "pnpm testTyped --skipTypes",
 		"testTyped": "mocha --exclude 'ark/attest/**/*.test.*'",
-		"testRepo": "pnpm test && cd ./ark/attest && pnpm test",
-		"testTsVersions": "tsx ./ark/repo/testTsVersions.ts",
-		"typecheck": "tsc --noEmit",
+		"testRepo": "pnpm test && pnpm testV8 && cd ./ark/attest && pnpm test",
+		"testV8": "node --allow-natives-syntax ./ark/repo/testV8.js",
+		"testTsVersions": "pnpm testTyped --tsconfig null --tsVersions '*' --compilerOptions '{ \"strictNullChecks\": true }'",
+		"bench": "pnpm benchOperand && pnpm benchOperator && pnpm benchObject && pnpm benchCyclic",
+		"benchOperand": "ts ./ark/type/__tests__/operand.bench.ts",
+		"benchOperator": "ts ./ark/type/__tests__/operator.bench.ts",
+		"benchObject": "ts ./ark/type/__tests__/object.bench.ts",
+		"benchCyclic": "ts ./ark/type/__tests__/cyclic.bench.ts",
+		"scratch": "ts ./ark/repo/scratch.ts",
 		"lint": "prettier --check . && eslint --max-warnings=0 .",
 		"format": "prettier --write .",
 		"knip": "knip",
-		"ci:publish": "changeset publish",
-		"ci:version": "changeset version"
+		"ci:publish": "ts ./ark/repo/publish.ts"
 	},
 	"devDependencies": {
+		"@ark/attest": "workspace:*",
+		"@ark/fs": "workspace:*",
+		"@ark/repo": "workspace:*",
+		"@ark/util": "workspace:*",
+		"@types/mocha": "10.0.7",
+		"@types/node": "22.5.0",
+		"@typescript-eslint/eslint-plugin": "8.2.0",
+		"@typescript-eslint/parser": "8.2.0",
 		"arktype": "workspace:*",
-		"@arktype/attest": "workspace:*",
-		"@arktype/repo": "workspace:*",
-		"@arktype/util": "workspace:*",
-		"@changesets/changelog-github": "0.5.0",
-		"@changesets/cli": "2.27.5",
-		"@types/node": "20.14.2",
-		"prettier": "3.3.2",
+		"c8": "10.1.2",
 		"eslint": "8.57.0",
 		"eslint-config-prettier": "9.1.0",
 		"eslint-define-config": "2.1.0",
@@ -45,17 +55,14 @@
 		"eslint-plugin-import": "2.29.1",
 		"eslint-plugin-mdx": "3.1.5",
 		"eslint-plugin-only-warn": "1.1.0",
-		"eslint-plugin-prefer-arrow-functions": "3.3.2",
-		"@typescript-eslint/eslint-plugin": "7.13.0",
-		"@typescript-eslint/parser": "7.13.0",
-		"c8": "10.0.0",
-		"knip": "5.18.2",
-		"tsx": "4.15.2",
-		"typescript": "5.4.5",
-		"typescript-min": "npm:typescript@5.1.6",
-		"typescript-nightly": "npm:typescript@next",
-		"mocha": "10.4.0",
-		"@types/mocha": "10.0.6"
+		"eslint-plugin-prefer-arrow-functions": "3.4.1",
+		"knip": "5.27.3",
+		"mocha": "10.7.3",
+		"prettier": "3.3.3",
+		"tsx": "4.17.0",
+		"typescript": "catalog:",
+		"typescript-min": "npm:typescript@5.1.5",
+		"typescript-nightly": "npm:typescript@5.7.0-dev.20240822"
 	},
 	"mocha": {
 		"//": "IF YOU UPDATE THE MOCHA CONFIG HERE, PLEASE ALSO UPDATE ark/repo/mocha.jsonc AND .vscode/settings.json",
@@ -64,6 +71,7 @@
 		],
 		"ignore": "**/node_modules/**/*",
 		"node-option": [
+			"conditions=ark-ts",
 			"import=tsx"
 		],
 		"require": "./ark/repo/mocha.globalSetup.ts"
@@ -88,5 +96,5 @@
 	"eslintConfig": {
 		"extends": "./ark/repo/.eslintrc.cjs"
 	},
-	"packageManager": "pnpm@9.1.4"
+	"packageManager": "pnpm@9.8.0+sha512.8e4c3550fb500e808dbc30bb0ce4dd1eb614e30b1c55245f211591ec2cdf9c611cabd34e1364b42f564bd54b3945ed0f49d61d1bbf2ec9bd74b866fcdc723276"
 }

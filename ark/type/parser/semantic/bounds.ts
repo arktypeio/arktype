@@ -1,13 +1,14 @@
-import type { LimitLiteral, writeUnboundableMessage } from "@arktype/schema"
-import type { ErrorMessage, array } from "@arktype/util"
-import type { Comparator } from "../string/reduce/shared.js"
+import type { writeUnboundableMessage } from "@ark/schema"
+import type { ErrorMessage, array, typeToString } from "@ark/util"
+import type { LimitLiteral } from "../../keywords/ast.ts"
+import type { Comparator } from "../string/reduce/shared.ts"
 import type {
 	BoundExpressionKind,
 	writeInvalidLimitMessage
-} from "../string/shift/operator/bounds.js"
-import type { inferAstIn } from "./infer.js"
-import type { astToString } from "./utils.js"
-import type { validateAst } from "./validate.js"
+} from "../string/shift/operator/bounds.ts"
+import type { inferAstIn } from "./infer.ts"
+import type { astToString } from "./utils.ts"
+import type { validateAst } from "./validate.ts"
 
 export type validateRange<l, comparator extends Comparator, r, $, args> =
 	l extends LimitLiteral ? validateBound<r, comparator, l, "left", $, args>
@@ -28,17 +29,10 @@ export type validateBound<
 			limit extends number ?
 				validateAst<boundedAst, $, args>
 			:	ErrorMessage<writeInvalidLimitMessage<comparator, limit, boundKind>>
-		: bounded extends Date ?
+		: [bounded] extends [Date] ?
 			// allow numeric or date literal as a Date limit
 			validateAst<boundedAst, $, args>
-		:	ErrorMessage<
-				writeUnboundableMessage<
-					astToString<
-						boundKind extends "left" ? boundedAst[0 & keyof boundedAst]
-						:	boundedAst
-					>
-				>
-			>
+		:	ErrorMessage<writeUnboundableMessage<typeToString<bounded>>>
 	:	never
 
 // Check each numerically boundable type individually so an expression comprised

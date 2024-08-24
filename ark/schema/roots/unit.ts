@@ -3,39 +3,59 @@ import {
 	domainOf,
 	printable,
 	prototypeKeysOf,
+	throwParseError,
 	type Domain,
 	type JsonPrimitive,
 	type Key,
 	type array
-} from "@arktype/util"
-import type { BaseMeta, declareNode } from "../shared/declare.js"
-import { Disjoint } from "../shared/disjoint.js"
+} from "@ark/util"
+import type {
+	BaseErrorContext,
+	BaseNormalizedSchema,
+	declareNode
+} from "../shared/declare.ts"
+import { Disjoint } from "../shared/disjoint.ts"
 import {
 	defaultValueSerializer,
 	implementNode,
 	type nodeImplementationOf
-} from "../shared/implement.js"
-import type { TraverseAllows } from "../shared/traversal.js"
-import { RawBasis } from "./basis.js"
-import { defineRightwardIntersections } from "./utils.js"
+} from "../shared/implement.ts"
+import {
+	writeUnsupportedJsonSchemaTypeMessage,
+	type JsonSchema
+} from "../shared/jsonSchema.ts"
+import { $ark } from "../shared/registry.ts"
+import type { TraverseAllows } from "../shared/traversal.ts"
+import { InternalBasis } from "./basis.ts"
+import type { DomainNode } from "./domain.ts"
+import { defineRightwardIntersections } from "./utils.ts"
+export declare namespace Unit {
+	export interface Schema<value = unknown> extends BaseNormalizedSchema {
+		readonly unit: value
+	}
 
-export type UnitSchema<value = unknown> = UnitInner<value>
+	export interface Inner<value = unknown> {
+		readonly unit: value
+	}
 
-export interface UnitInner<value = unknown> extends BaseMeta {
-	readonly unit: value
+	export interface ErrorContext<value = unknown>
+		extends BaseErrorContext<"unit">,
+			Inner<value> {}
+
+	export interface Declaration
+		extends declareNode<{
+			kind: "unit"
+			schema: Schema
+			normalizedSchema: Schema
+			inner: Inner
+			errorContext: ErrorContext
+		}> {}
+
+	export type Node = UnitNode
 }
 
-export interface UnitDeclaration
-	extends declareNode<{
-		kind: "unit"
-		schema: UnitSchema
-		normalizedSchema: UnitSchema
-		inner: UnitInner
-		errorContext: UnitInner
-	}> {}
-
-export const unitImplementation: nodeImplementationOf<UnitDeclaration> =
-	implementNode<UnitDeclaration>({
+const implementation: nodeImplementationOf<Unit.Declaration> =
+	implementNode<Unit.Declaration>({
 		kind: "unit",
 		hasAssociatedError: true,
 		keys: {
@@ -55,28 +75,50 @@ export const unitImplementation: nodeImplementationOf<UnitDeclaration> =
 		},
 		intersections: {
 			unit: (l, r) => Disjoint.init("unit", l, r),
-			...defineRightwardIntersections("unit", (l, r) =>
-				r.allows(l.unit) ? l : (
-					Disjoint.init(
-						"assignability",
-						l,
-						r.hasKind("intersection") ?
-							r.children.find(
-								rConstraint => !rConstraint.allows(l.unit as never)
-							)!
-						:	r
-					)
+			...defineRightwardIntersections("unit", (l, r) => {
+				if (r.allows(l.unit)) return l
+
+				// will always be a disjoint at this point, but we try to use
+				// a domain Disjoint if possible since it's better for discrimination
+
+				const rBasis = r.hasKind("intersection") ? r.basis : r
+				if (rBasis) {
+					const rDomain =
+						rBasis.hasKind("domain") ? rBasis : (
+							($ark.intrinsic.object as DomainNode)
+						)
+					if (l.domain !== rDomain.domain) {
+						const lDomainDisjointValue =
+							(
+								l.domain === "undefined" ||
+								l.domain === "null" ||
+								l.domain === "boolean"
+							) ?
+								l.domain
+							:	($ark.intrinsic[l.domain] as DomainNode)
+						return Disjoint.init("domain", lDomainDisjointValue, rDomain)
+					}
+				}
+
+				return Disjoint.init(
+					"assignability",
+					l,
+					r.hasKind("intersection") ?
+						r.children.find(
+							rConstraint => !rConstraint.allows(l.unit as never)
+						)!
+					:	r
 				)
-			)
+			})
 		}
 	})
 
-export class UnitNode extends RawBasis<UnitDeclaration> {
+export class UnitNode extends InternalBasis<Unit.Declaration> {
 	compiledValue: JsonPrimitive = (this.json as any).unit
-	serializedValue: JsonPrimitive =
+	serializedValue: string =
 		typeof this.unit === "string" || this.unit instanceof Date ?
 			JSON.stringify(this.compiledValue)
-		:	this.compiledValue
+		:	`${this.compiledValue}`
 	literalKeys: array<Key> = prototypeKeysOf(this.unit)
 
 	compiledCondition: string = compileEqualityCheck(
@@ -96,10 +138,23 @@ export class UnitNode extends RawBasis<UnitDeclaration> {
 			:	this.description
 	}
 
+	protected innerToJsonSchema(): JsonSchema {
+		return $ark.intrinsic.jsonPrimitive.allows(this.unit) ?
+				{ const: this.unit }
+			:	throwParseError(
+					writeUnsupportedJsonSchemaTypeMessage(this.shortDescription)
+				)
+	}
+
 	traverseAllows: TraverseAllows =
 		this.unit instanceof Date ?
 			data => data instanceof Date && data.toISOString() === this.compiledValue
 		:	data => data === this.unit
+}
+
+export const Unit = {
+	implementation,
+	Node: UnitNode
 }
 
 const compileEqualityCheck = (

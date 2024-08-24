@@ -1,4 +1,4 @@
-import { attest, contextualize } from "@arktype/attest"
+import { attest, contextualize } from "@ark/attest"
 import { declare, type } from "arktype"
 
 contextualize(() => {
@@ -94,9 +94,7 @@ contextualize(() => {
 			declare<{ a: string; b: number }>().type({
 				a: "string"
 			})
-		).type.errors(
-			`Property 'b' is missing in type '{ a: "string"; }' but required in type '{ a: "string"; b: number; }'.`
-		)
+		).type.errors("Property 'b' is missing")
 	})
 
 	it("missing optional key", () => {

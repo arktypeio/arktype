@@ -1,33 +1,49 @@
 import {
-	RawPrimitiveConstraint,
+	InternalPrimitiveConstraint,
 	writeInvalidOperandMessage
-} from "../constraint.js"
-import type { BaseRoot, RawRootDeclaration, Root } from "../roots/root.js"
-import type { BaseMeta, declareNode } from "../shared/declare.js"
+} from "../constraint.ts"
+import type { BaseRoot } from "../roots/root.ts"
+import type {
+	BaseErrorContext,
+	BaseNormalizedSchema,
+	declareNode
+} from "../shared/declare.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
-} from "../shared/implement.js"
-import type { TraverseAllows } from "../shared/traversal.js"
+} from "../shared/implement.ts"
+import type { JsonSchema } from "../shared/jsonSchema.ts"
+import { $ark } from "../shared/registry.ts"
+import type { TraverseAllows } from "../shared/traversal.ts"
 
-export interface DivisorInner extends BaseMeta {
-	readonly rule: number
+export declare namespace Divisor {
+	export interface Inner {
+		readonly rule: number
+	}
+
+	export interface NormalizedSchema extends BaseNormalizedSchema {
+		readonly rule: number
+	}
+
+	export type Schema = NormalizedSchema | number
+
+	export interface ErrorContext extends BaseErrorContext<"divisor">, Inner {}
+
+	export interface Declaration
+		extends declareNode<{
+			kind: "divisor"
+			schema: Schema
+			normalizedSchema: NormalizedSchema
+			inner: Inner
+			prerequisite: number
+			errorContext: ErrorContext
+		}> {}
+
+	export type Node = DivisorNode
 }
 
-export type DivisorSchema = DivisorInner | number
-
-export interface DivisorDeclaration
-	extends declareNode<{
-		kind: "divisor"
-		schema: DivisorSchema
-		normalizedSchema: DivisorInner
-		inner: DivisorInner
-		prerequisite: number
-		errorContext: DivisorInner
-	}> {}
-
-export const divisorImplementation: nodeImplementationOf<DivisorDeclaration> =
-	implementNode<DivisorDeclaration>({
+const implementation: nodeImplementationOf<Divisor.Declaration> =
+	implementNode<Divisor.Declaration>({
 		kind: "divisor",
 		collapsibleKey: "rule",
 		keys: {
@@ -50,23 +66,37 @@ export const divisorImplementation: nodeImplementationOf<DivisorDeclaration> =
 		}
 	})
 
-export class DivisorNode extends RawPrimitiveConstraint<DivisorDeclaration> {
+export class DivisorNode extends InternalPrimitiveConstraint<Divisor.Declaration> {
 	traverseAllows: TraverseAllows<number> = data => data % this.rule === 0
 
 	readonly compiledCondition: string = `data % ${this.rule} === 0`
 	readonly compiledNegation: string = `data % ${this.rule} !== 0`
-	readonly impliedBasis: BaseRoot<RawRootDeclaration> =
-		this.$.keywords.number.raw
+	readonly impliedBasis: BaseRoot = $ark.intrinsic.number.internal
 	readonly expression: string = `% ${this.rule}`
+
+	reduceJsonSchema(schema: JsonSchema.Numeric): JsonSchema.Numeric {
+		schema.type = "integer"
+
+		if (this.rule === 1) return schema
+
+		schema.multipleOf = this.rule
+
+		return schema
+	}
 }
 
-export const writeIndivisibleMessage = <node extends Root>(
-	t: node
-): writeIndivisibleMessage<node> =>
-	writeInvalidOperandMessage("divisor", t.$.raw.keywords.number, t)
+export const Divisor = {
+	implementation,
+	Node: DivisorNode
+}
 
-export type writeIndivisibleMessage<node extends Root> =
-	writeInvalidOperandMessage<"divisor", node>
+export const writeIndivisibleMessage = (t: BaseRoot): string =>
+	writeInvalidOperandMessage("divisor", $ark.intrinsic.number as never, t)
+
+export type writeIndivisibleMessage<actual> = writeInvalidOperandMessage<
+	"divisor",
+	actual
+>
 
 // https://en.wikipedia.org/wiki/Euclidean_algorithm
 const greatestCommonDivisor = (l: number, r: number) => {

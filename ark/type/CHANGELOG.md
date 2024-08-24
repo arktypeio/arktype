@@ -1,5 +1,481 @@
 # arktype
 
+## 2.0.0-beta.6
+
+### Add `.toJsonSchema` to `Type`
+
+Convert a Type instance to an equivalent JSON Schema. Will throw a ParseError if the Type contains constraints not supported by JSON Schema or morphs.
+
+```ts
+import { type } from "arktype"
+
+const user = type({
+	name: "string",
+	"age?": "number"
+})
+
+const jsonSchema = user.toJsonSchema()
+```
+
+```json
+{
+	"type": "object",
+	"properties": {
+		"name": {
+			"type": "string"
+		},
+		"age": {
+			"type": "number"
+		}
+	},
+	"required": ["name"]
+}
+```
+
+### `.readonly()` chainable on object and array types
+
+You can now chain `.readonly()` as follows:
+
+```ts
+const readonlyObj = type({ foo: "string", bar: "number" }).readonly()
+
+type InferredAs = {
+	readonly foo: string
+	readonly bar: number
+}
+
+const readonlyObj = type("string[]").readonly()
+
+type InferredAs = readonly string[]
+```
+
+There were also a few breaking changes- previous root keywords `uppercase`, `lowercase`, `alphanumeric`, `alpha` and `digits` were moved to the `string` submodule, and should now be accessed as `string.alias`.
+
+There will be more aliases moving to their respective subtypes in the next release, after which point aliases will be stable for 2.0 🎉
+
+## 2.0.0-beta.2
+
+### More Generic Builtins
+
+Added equivalents for the following generics:
+
+- **Required**
+- **Partial**
+
+Like the other genreic utilities, these can be instantiated in one of three ways:
+
+### Syntactic Definition
+
+```ts
+const types = scope({
+	user: {
+		name: "string",
+		"age?": "number"
+	},
+	partialUser: "Partial<user>"
+}).export()
+
+// Type<{
+//     name?: string;
+//     age?: number;
+// }>
+types.partialUser
+```
+
+### Chained Definition
+
+```ts
+const user = type({
+	name: "string",
+	"age?": "number"
+}).required()
+
+// Type<{
+//     name: string;
+//     age: number;
+// }>
+const basicUser = user.required()
+```
+
+### Invoked Definition
+
+```ts
+import { ark, type } from "arktype"
+
+const user = type({
+	name: "string",
+	"age?": "number"
+})
+
+// Type<{
+//     name?: string;
+//     age?: number;
+// }>
+const partialUser = ark.Partial(user)
+```
+
+### New Keywords
+
+We've added a new `unixTimestamp` keyword for an integer value representing the unix epoch. Thanks @Bas950 🎉
+
+### Deep undeclared key behavior
+
+You can now deeply reject or delete all undeclared keys on a type with the following method:
+
+```ts
+const husband = type({
+	name: "string",
+	wife: {
+		name: "string"
+	}
+}).onDeepUndeclaredKey("delete")
+
+// { name: "David", wife: { name: "Savannah" } }
+const out = husband({
+	name: "David",
+	age: 31,
+	wife: {
+		name: "Savannah",
+		age: 31
+	}
+})
+```
+
+## 2.0.0-beta.1
+
+### Generic Builtins
+
+In addition to `Record`, the following generics from TS are now available in ArkType:
+
+- **Pick**
+- **Omit**
+- **Extract**
+- **Exclude**
+
+These can be instantiated in one of three ways:
+
+### Syntactic Definition
+
+```ts
+// Type<1>
+const one = type("Extract<0 | 1, 1>")
+```
+
+### Chained Definition
+
+```ts
+const user = type({
+	name: "string",
+	"age?": "number",
+	isAdmin: "boolean"
+})
+
+// Type<{
+//     name: string;
+//     age?: number;
+// }>
+const basicUser = user.pick("name", "age")
+```
+
+### Invoked Definition
+
+```ts
+import { ark } from "arktype"
+
+// Type<true>
+const unfalse = ark.Exclude("boolean", "false")
+```
+
+### New Keywords
+
+#### BuiltinObjects
+
+We've added many new keywords for builtin JavaScript objects:
+
+- `ArrayBuffer`
+- `Blob`
+- `File`
+- `FormData`
+- `Headers`
+- `Request`
+- `Response`
+- `URL`
+- `TypedArray.Int8`
+- `TypedArray.Uint8`
+- `TypedArray.Uint8Clamped`
+- `TypedArray.Int16`
+- `TypedArray.Uint16`
+- `TypedArray.Int32`
+- `TypedArray.Uint32`
+- `TypedArray.Float32`
+- `TypedArray.Float64`
+- `TypedArray.BigInt64`
+- `TypedArray.BigUint64`
+
+#### `pasre.formData` and `liftArray`
+
+We've also added a new builtin parse keyword, `parse.formData`. It validates an input is an instance of `FormData`, then converts it to a `Record<string, string | File | string[] | File[]>`. The first entry for a given key will have a `string | File` value. If subsequent entries with the same key are encountered, the value will be an array listing them.
+
+This is especially useful when combined with a new builtin generic, `liftArray`. This generic accepts a single parameter, accepts inputs of that type or arrays of that type, and converts the input to an array if it is not one already.
+
+Here's an example of how they can be used together:
+
+```ts
+const user = type({
+	email: "email",
+	file: "File",
+	tags: "liftArray<string>"
+})
+
+// Type<(In: FormData) => Out<{
+//     email: string.matching<"?">;
+//     file: File;
+//     tags: (In: string | string[]) => Out<string[]>;
+// }>>
+const parseUserForm = type("parse.formData").pipe(user)
+```
+
+### Generic HKTs
+
+Our new generics have been built using a new method for integrating arbitrary external types as native ArkType generics! This opens up tons of possibilities for external integrations that would otherwise not be possible, but we're still finalizing the API. As a preview, here's what the implementation of `Exclude` looks like internally:
+
+```ts
+class ArkExclude extends generic("T", "U")(args => args.T.exclude(args.U)) {
+	declare hkt: (
+		args: conform<this[Hkt.args], [unknown, unknown]>
+	) => Exclude<(typeof args)[0], (typeof args)[1]>
+}
+```
+
+More to come on this as the API is finalized!
+
+## 2.0.0-beta.0
+
+### Generics
+
+Native generic syntax is finally available! 🎉
+
+Here are some examples of how this powerful feature can be used:
+
+#### Standalone Type Syntax
+
+```ts
+const boxOf = type("<t>", { box: "t" })
+
+const schrodingersBox = boxOf({ cat: { isAlive: "boolean" } })
+
+const expected = type({
+	box: {
+		cat: { isAlive: "boolean" }
+	}
+})
+
+// true
+console.log(expected.equals(schrodingersBox))
+```
+
+#### Constrained Parameters
+
+All syntax in parameters definitions and all references to generic args are fully-type safe and autocompleted like any builtin keyword. Constraints can be used just like TS to limit what can be passed to a generic and allow that arg to be used with operators like `>`.
+
+```ts
+const nonEmpty = type("<arr extends unknown[]>", "arr > 0")
+const nonEmptyNumberArray = nonEmpty("number[]")
+
+const expected = type("number[] > 0")
+
+// true
+console.log(expected.equals(nonEmptyNumberArray))
+```
+
+#### Scoped
+
+There is a special syntax for specifying generics in a scope:
+
+```ts
+const types = scope({
+	"box<t, u>": {
+		box: "t | u"
+	},
+	bitBox: "box<0, 1>"
+}).export()
+
+const expected = type({ box: "0|1" })
+
+// true
+console.log(expected.equals(types.bitBox))
+```
+
+#### Builtins
+
+Record is now available as a builtin keyword.
+
+```ts
+const stringRecord = type("Record<string, string>")
+
+const expected = type({
+	"[string]": "string"
+})
+
+// true
+console.log(expected.equals(stringRecord))
+```
+
+Other common utils like `Pick` and `Omit` to follow in the an upcoming release.
+
+Recursive and cyclic generics are also currently unavailable and will be added soon.
+
+For more usage examples, check out the unit tests for generics [here](https://github.com/arktypeio/arktype/blob/main/ark/type/__tests__/generic.test.ts).
+
+This feature was built to be very robust and flexible. We're excited to see what you do with it!
+
+### Fix narrowing output of some piped unions
+
+In recent versions, types like the following would fail to parse:
+
+```ts
+// Previously was a ParseError, now correctly inferred as
+// (In: string | number) => Out<of<bigint, Narrowed>>
+const Amount = type("string|number")
+	.pipe(v => BigInt(v))
+	.narrow(b => b > 0n)
+```
+
+## 2.0.0-dev.29
+
+### Fix parsing for expressions starting with subalias references
+
+In recent versions, types like the following would fail to parse:
+
+```ts
+// ParseError: "parse.date | Date" is unresolvable
+const dateFrom = type("parse.date | Date")
+```
+
+Those expressions are once again resolved correctly.
+
+## 2.0.0-dev.28
+
+### Fix inference for constrained or morphed optional keys (https://github.com/arktypeio/arktype/issues/1040)
+
+```ts
+const repro = type({
+	normal: "string>0",
+	"optional?": "string>0"
+})
+
+type Expected = { normal: string; optional?: string }
+
+// these are both now identical to Expected
+// (previously, optional was inferred as string.moreThanLength<0>)
+type Actual = typeof repro.infer
+type ActualIn = typeof repro.infer
+```
+
+## 2.0.0-dev.27
+
+### Fixed an issue causing morphs on optional keys to give a type error incorrectly indicating they had default values, e.g.:
+
+```ts
+const t = type({
+	// previously had a type error here
+	"optionalKey?": ["string", "=>", x => x.toLowerCase()]
+})
+
+// now correctly inferred as
+type T = {
+	optionalKey?: (In: string) => Out<string>
+}
+```
+
+## 2.0.0-dev.26
+
+### Improved string default parsing
+
+String defaults are now parsed more efficiently by the core string parser. They can include arbitrary whitespace and give more specific errors.
+
+### Fix a resolution issue on certain cyclic unions
+
+```ts
+// Now resolves correctly
+const types = scope({
+	TypeWithKeywords: "ArraySchema",
+	Schema: "number|ArraySchema",
+	ArraySchema: {
+		"additionalItems?": "Schema"
+	}
+}).export()
+```
+
+## 2.0.0-dev.25
+
+### String defaults
+
+Previously, setting a default value on an object required a tuple expression:
+
+```ts
+const myType = type({ value: ["number", "=", 42] })
+```
+
+This is still valid, but now a more convenient syntax is supported for many common cases:
+
+```ts
+const myType = type({ value: "number = 42" })
+```
+
+The original syntax is still supported, and will be required for cases where the default value is not a serializable primitive e.g.
+
+```ts
+const mySymbol = Symbol()
+const myType = type({ value: ["symbol", "=", mySymbol] })
+```
+
+### Chained index access
+
+This allows type-safe chained index access on types via a .get method
+
+```ts
+const myUnion = type(
+	{
+		foo: {
+			bar: "0"
+		}
+	},
+	"|",
+	{
+		foo: {
+			bar: "1"
+		}
+	}
+)
+
+// Type<0 | 1>
+const fooBar = myUnion.get("foo", "bar")
+```
+
+### `format` subscope keyword
+
+The new built-in format subscope contains keywords for transforming validated strings:
+
+```ts
+const foo =
+
+const trim = type("format.trim")
+
+// "fOO"
+console.log(trim(" fOO "))
+
+const lowercase = type("format.lowercase")
+
+// " foo "
+console.log(lowercase(" fOO "))
+
+// " FOO "
+const uppercase = type("format.uppercase")
+```
+
+### Many more improvements, especially related to morphs across unions
+
 ## 2.0.0-dev.24
 
 ### Fix constrained narrow/pipe tuple expression input inference

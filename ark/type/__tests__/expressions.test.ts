@@ -1,11 +1,10 @@
-import { attest, contextualize } from "@arktype/attest"
-import { rawSchema, writeUnresolvableMessage } from "@arktype/schema"
+import { attest, contextualize } from "@ark/attest"
+import { rootNode, writeUnresolvableMessage } from "@ark/schema"
 import { type } from "arktype"
-import { writeMissingRightOperandMessage } from "../parser/string/shift/operand/unenclosed.js"
+import { writeMissingRightOperandMessage } from "arktype/internal/parser/string/shift/operand/unenclosed.ts"
 
-contextualize(
-	"tuple expressions",
-	() => {
+contextualize(() => {
+	describe("tuple expressions", () => {
 		it("nested", () => {
 			const t = type(["string|bigint", "|", ["number", "|", "boolean"]])
 			attest<string | number | bigint | boolean>(t.infer)
@@ -18,47 +17,47 @@ contextualize(
 					"...",
 					"===",
 					"Array",
+					"ArrayBuffer",
+					"Blob",
 					"Date",
 					"Error",
+					"Exclude",
+					"Extract",
+					"File",
+					"FormData",
 					"Function",
+					"Headers",
+					"Key",
 					"Map",
+					"Merge",
+					"Omit",
+					"Partial",
+					"Pick",
 					"Promise",
 					"Record",
 					"RegExp",
+					"Request",
+					"Required",
+					"Response",
 					"Set",
+					"TypedArray",
+					"URL",
 					"WeakMap",
 					"WeakSet",
-					"alpha",
-					"alphanumeric",
-					"any",
 					"bigint",
 					"boolean",
-					"creditCard",
-					"digits",
-					"email",
 					"false",
-					"format",
 					"instanceof",
-					"integer",
-					"ip",
 					"keyof",
-					"lowercase",
 					"never",
 					"null",
 					"number",
 					"object",
-					"parse",
-					"semver",
 					"string",
 					"symbol",
-					"this",
 					"true",
 					"undefined",
-					"unknown",
-					"uppercase",
-					"url",
-					"uuid",
-					"void"
+					"unknown"
 				]
 			})
 			// @ts-expect-error
@@ -71,47 +70,47 @@ contextualize(
 					"?",
 					"@",
 					"Array",
+					"ArrayBuffer",
+					"Blob",
 					"Date",
 					"Error",
+					"Exclude",
+					"Extract",
+					"File",
+					"FormData",
 					"Function",
+					"Headers",
+					"Key",
 					"Map",
+					"Merge",
+					"Omit",
+					"Partial",
+					"Pick",
 					"Promise",
 					"Record",
 					"RegExp",
+					"Request",
+					"Required",
+					"Response",
 					"Set",
+					"TypedArray",
+					"URL",
 					"WeakMap",
 					"WeakSet",
 					"[]",
-					"alpha",
-					"alphanumeric",
-					"any",
 					"bigint",
 					"boolean",
-					"creditCard",
-					"digits",
-					"email",
 					"false",
-					"format",
-					"integer",
-					"ip",
 					"keyof",
-					"lowercase",
 					"never",
 					"null",
 					"number",
 					"object",
-					"parse",
-					"semver",
 					"string",
 					"symbol",
-					"this",
 					"true",
 					"undefined",
 					"unknown",
-					"uppercase",
-					"url",
-					"uuid",
-					"void",
 					"|"
 				]
 			})
@@ -141,9 +140,9 @@ contextualize(
 				type([{ s: "strng" }, "|", "number"])
 			}).throwsAndHasTypeError(writeUnresolvableMessage("strng"))
 		})
-	},
-	"root expression",
-	() => {
+	})
+
+	describe("root expression", () => {
 		it("=== single", () => {
 			const t = type("===", 5)
 			attest<5>(t.infer)
@@ -159,14 +158,14 @@ contextualize(
 		it("instanceof single", () => {
 			const t = type("instanceof", RegExp)
 			attest<RegExp>(t.infer)
-			const expected = rawSchema(RegExp)
+			const expected = rootNode(RegExp)
 			attest(t.json).equals(expected.json)
 		})
 
 		it("instanceof branches", () => {
 			const t = type("instanceof", Array, Date)
 			attest<unknown[] | Date>(t.infer)
-			const expected = rawSchema([Array, Date])
+			const expected = rootNode([Array, Date])
 			attest(t.json).equals(expected.json)
 		})
 
@@ -212,5 +211,5 @@ contextualize(
 			attest<typeof expected.infer>(t.infer)
 			attest(t.json).equals(expected.json)
 		})
-	}
-)
+	})
+})

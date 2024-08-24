@@ -1,5 +1,5 @@
-import { attest, contextualize } from "@arktype/attest"
-import type { withJsDoc } from "../records.js"
+import { attest, contextualize } from "@ark/attest"
+import type { merge, mergeExact, withJsDoc } from "@ark/util"
 
 contextualize(() => {
 	it("identical keys", () => {
@@ -16,7 +16,7 @@ contextualize(() => {
 
 		const result: Result = { foo: "bar" }
 		// should have annotation "is a foo"
-		result.foo
+		const { foo } = result
 
 		attest<Result, Target>()
 	})
@@ -36,7 +36,7 @@ contextualize(() => {
 
 		const result: Result = { foo: "foo" }
 		// should have annotation "is a foo"
-		result.foo
+		const { foo } = result
 
 		attest<withJsDoc<Target, Source>, Target>()
 	})
@@ -56,7 +56,7 @@ contextualize(() => {
 
 		const result: Result = { foo: "foo", baz: "baz" }
 		// should have annotation "is a foo"
-		result.foo
+		const { foo } = result
 
 		attest<withJsDoc<Target, Source>, Target>()
 	})
@@ -75,8 +75,41 @@ contextualize(() => {
 
 		const result: Result = { foo: "foo" }
 		// should have annotation "is a foo"
-		result.foo
+		const { foo } = result
 
 		attest<withJsDoc<Target, Source>, { foo: "foo" }>()
+	})
+
+	it("merge with index signatures", () => {
+		type t = merge<
+			{ [k: string]: number | string; foo?: 1; bar: 1 },
+			{ [k: string]: number; bar: 0; baz?: 0 }
+		>
+
+		attest<
+			{
+				[x: string]: number
+				bar: 0
+				baz?: 0
+			},
+			t
+		>()
+	})
+
+	it("mergeExact with index signatures", () => {
+		type t = mergeExact<
+			{ [k: string]: number | string; foo?: 1; bar: 1 },
+			{ [k: string]: number; bar: 0; baz?: 0 }
+		>
+
+		attest<
+			{
+				[x: string]: number
+				foo?: 1
+				bar: 0
+				baz?: 0
+			},
+			t
+		>()
 	})
 })

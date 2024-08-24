@@ -1,15 +1,14 @@
-import { attest, contextualize } from "@arktype/attest"
-import { rawSchema } from "@arktype/schema"
-import { type, type Type } from "arktype"
-import { writeInvalidConstructorMessage } from "../parser/tuple.js"
+import { attest, contextualize } from "@ark/attest"
+import { rootNode } from "@ark/schema"
+import { type } from "arktype"
+import { writeInvalidConstructorMessage } from "arktype/internal/parser/tuple.ts"
 
-contextualize(
-	"tuple expression",
-	() => {
+contextualize(() => {
+	describe("tuple expression", () => {
 		it("base", () => {
 			const t = type(["instanceof", Error])
 			attest<Error>(t.infer)
-			const expected = rawSchema(Error)
+			const expected = rootNode(Error)
 			attest(t.json).equals(expected.json)
 			const e = new Error()
 			attest(t(e)).equals(e)
@@ -50,12 +49,14 @@ contextualize(
 				"Type '() => void' is not assignable to type"
 			)
 		})
+
+		// If perf cost too high can use global type config to expand ArkEnv.preserve
 		it("user-defined class", () => {
 			class ArkClass {
-				private isArk = true
+				isArk = true
 			}
 			const ark = type(["instanceof", ArkClass])
-			attest<Type<ArkClass>>(ark)
+			attest<ArkClass>(ark.t)
 			// not expanded since there are no morphs
 			attest(ark.infer).type.toString("ArkClass")
 			attest(ark.in.infer).type.toString("ArkClass")
@@ -65,27 +66,28 @@ contextualize(
 				"must be an instance of ArkClass (was object)"
 			)
 		})
-		// TODO: Fix- Investigate bidirectional check impact on perf to narrow private props without breaking this case:
-		// const tt = type({
-		// 	f: ["string", "=>", (s) => [] as unknown]
-		// })
-		// // Should be inferred as {f: unknown}
-		// type FF = typeof tt.infer
-		// If perf cost too high can use global type config to expand TerminallyInferredObjects
+		it("bidirectional checks doesn't break pipe inference", () => {
+			const tt = type({
+				f: ["string", "=>", s => [] as unknown]
+			})
+			// Should be inferred as {f: unknown}
+			type FF = typeof tt.infer
+		})
+
 		it("class with private properties", () => {
 			class ArkClass {
 				private isArk = true
 			}
 			const ark = type(["instanceof", ArkClass])
 
-			attest<Type<ArkClass>>(ark)
+			attest<ArkClass>(ark.t)
 			// not expanded since there are no morphs
 			attest(ark.infer).type.toString("ArkClass")
 			attest(ark.in.infer).type.toString("ArkClass")
 		})
-	},
-	"root expression",
-	() => {
+	})
+
+	describe("root expression", () => {
 		it("class", () => {
 			const t = type("instanceof", Error)
 			attest<Error>(t.infer)
@@ -94,7 +96,7 @@ contextualize(
 		it("instance branches", () => {
 			const t = type("instanceof", Date, Map)
 			attest<Date | Map<unknown, unknown>>(t.infer)
-			attest(t.json).equals(type("Date|Map").json)
+			attest(t.json).equals(type("Date | Map").json)
 		})
 		it("non-constructor", () => {
 			// @ts-expect-error just an assignability failure so we can't validate an error message
@@ -102,5 +104,5 @@ contextualize(
 				writeInvalidConstructorMessage("Error")
 			)
 		})
-	}
-)
+	})
+})

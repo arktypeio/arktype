@@ -1,5 +1,7 @@
-import { caller } from "@arktype/fs"
-import { printable, snapshot, type Constructor } from "@arktype/util"
+import { caller } from "@ark/fs"
+import { printable, snapshot, type Constructor } from "@ark/util"
+import prettier from "@prettier/sync"
+import { type, type validateTypeRoot } from "arktype"
 import * as assert from "node:assert/strict"
 import { isDeepStrictEqual } from "node:util"
 import {
@@ -7,18 +9,20 @@ import {
 	queueSnapshotUpdate,
 	updateExternalSnapshot,
 	type SnapshotArgs
-} from "../cache/snapshots.js"
-import type { Completions } from "../cache/writeAssertionCache.js"
-import { chainableNoOpProxy } from "../utils.js"
+} from "../cache/snapshots.ts"
+import type { Completions } from "../cache/writeAssertionCache.ts"
+import { getConfig } from "../config.ts"
+import { chainableNoOpProxy } from "../utils.ts"
 import {
 	TypeAssertionMapping,
 	assertEqualOrMatching,
 	assertEquals,
+	assertSatisfies,
 	callAssertedFunction,
 	getThrownMessage,
 	throwAssertionError
-} from "./assertions.js"
-import type { AssertionContext } from "./attest.js"
+} from "./assertions.ts"
+import type { AssertionContext } from "./attest.ts"
 
 export type ChainableAssertionOptions = {
 	allowRegex?: boolean
@@ -28,7 +32,11 @@ export type ChainableAssertionOptions = {
 type AssertionRecord = Record<keyof rootAssertions<any, AssertionKind>, unknown>
 
 export class ChainableAssertions implements AssertionRecord {
-	constructor(private ctx: AssertionContext) {}
+	private ctx: AssertionContext
+
+	constructor(ctx: AssertionContext) {
+		this.ctx = ctx
+	}
 
 	private serialize(value: unknown) {
 		return snapshot(value)
@@ -68,6 +76,11 @@ export class ChainableAssertions implements AssertionRecord {
 
 	equals(expected: unknown): this {
 		assertEquals(expected, this.ctx.actual, this.ctx)
+		return this
+	}
+
+	satisfies(def: unknown): this {
+		assertSatisfies(type.raw(def), this.ctx.actual, this.ctx)
 		return this
 	}
 
@@ -201,8 +214,9 @@ export class ChainableAssertions implements AssertionRecord {
 		return {
 			get toString() {
 				self.ctx.actual = new TypeAssertionMapping(data => ({
-					actual: data.args[0].type
+					actual: formatTypeString(data.args[0].type)
 				}))
+				self.ctx.allowRegex = true
 				return self.immediateOrChained()
 			},
 			get errors() {
@@ -218,9 +232,24 @@ export class ChainableAssertions implements AssertionRecord {
 		}
 	}
 }
+
 const checkCompletionsForErrors = (completions?: Completions) => {
 	if (typeof completions === "string") throw new Error(completions)
 }
+
+const declarationPrefix = "type T = "
+
+const formatTypeString = (typeString: string) =>
+	prettier
+		.format(`${declarationPrefix}${typeString}`, {
+			semi: false,
+			printWidth: 60,
+			trailingComma: "none",
+			parser: "typescript",
+			...getConfig().typeToStringFormat
+		})
+		.slice(declarationPrefix.length)
+		.trimEnd()
 
 export type AssertionKind = "value" | "type"
 
@@ -278,6 +307,7 @@ export type comparableValueAssertion<expected, kind extends AssertionKind> = {
 	instanceOf: (constructor: Constructor) => nextAssertions<kind>
 	is: (value: expected) => nextAssertions<kind>
 	completions: (value?: Completions) => void
+	satisfies: <def>(def: validateTypeRoot<def>) => nextAssertions<kind>
 	// This can be used to assert values without type constraints
 	unknown: Omit<comparableValueAssertion<unknown, kind>, "unknown">
 }
@@ -287,7 +317,7 @@ export type TypeAssertionsRoot = {
 }
 
 export type TypeAssertionProps = {
-	toString: valueFromTypeAssertion<string>
+	toString: valueFromTypeAssertion<string | RegExp>
 	errors: valueFromTypeAssertion<string | RegExp, string>
 	completions: (value?: Completions) => void
 }

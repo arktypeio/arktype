@@ -1,14 +1,19 @@
 {
-	"name": "@arktype/repo",
+	"name": "@ark/repo",
 	"private": true,
 	"type": "module",
 	"dependencies": {
 		"arktype": "workspace:*",
-		"@arktype/attest": "workspace:*",
-		"@arktype/fs": "workspace:*",
-		"zod": "3.23.8"
+		"@ark/attest": "workspace:*",
+		"@ark/fs": "workspace:*",
+		"zod": "3.23.8",
+		"type-fest": "4.25.0",
+		"typescript": "5.6.0-beta"
 	},
 	"scripts": {
 		"build": "echo No build required!"
+	},
+	"bin": {
+		"ts": "./ts.js"
 	}
 }

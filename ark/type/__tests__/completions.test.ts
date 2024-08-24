@@ -1,16 +1,15 @@
-import { attest, contextualize } from "@arktype/attest"
+import { attest, contextualize } from "@ark/attest"
 import { scope, type } from "arktype"
 
 contextualize(() => {
 	it("completes standalone keyword", () => {
 		// @ts-expect-error
-		attest(() => type("s")).completions({ s: ["semver", "string", "symbol"] })
+		attest(() => type("s")).completions({ s: ["string", "symbol"] })
 	})
 
 	it("completes within objects", () => {
 		// @ts-expect-error
-		attest(() => type({ a: "a", b: "b" })).completions({
-			a: ["alpha", "alphanumeric", "any"],
+		attest(() => type({ b: "b" })).completions({
 			b: ["bigint", "boolean"]
 		})
 	})
@@ -19,6 +18,13 @@ contextualize(() => {
 		// @ts-expect-error
 		attest(() => type("string|n")).completions({
 			"string|n": ["string|never", "string|null", "string|number"]
+		})
+	})
+
+	it("completes within expressions in objects", () => {
+		// @ts-expect-error
+		attest(() => type({ key: "number | b" })).completions({
+			"number | b": ["number | bigint", "number | boolean"]
 		})
 	})
 

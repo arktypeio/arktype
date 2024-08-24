@@ -22,9 +22,9 @@ import { type } from "arktype"
 // hover to see the type-level representation
 const contact = type({
 	// many common constraints are available as built-in keywords
-	email: "email",
+	email: "string.email",
 	// others can be written as type-safe expressions
-	score: "integer < 100"
+	score: "number.integer < 100"
 })
 
 // if you need the TS type, just infer it out as normal
@@ -45,8 +45,8 @@ While the expression syntax we've been using is ideal for creating new types, ch
 import { type, type Type } from "arktype"
 
 const _contact = type({
-	email: "email",
-	score: "integer < 100"
+	email: "string.email",
+	score: "number.integer < 100"
 })
 
 type _Contact = typeof _contact.t
@@ -67,7 +67,7 @@ Structured constraints like divisors and ranges will only take us so far. Luckil
 import { type } from "arktype"
 
 // ---cut---
-const palindromicEmail = type("email").narrow((address, ctx) => {
+const palindromicEmail = type("string.email").narrow((address, ctx) => {
 	if (address === [...address].reverse().join("")) {
 		// congratulations! your email is somehow a palindrome
 		return true
@@ -78,7 +78,7 @@ const palindromicEmail = type("email").narrow((address, ctx) => {
 
 const palindromicContact = type({
 	email: palindromicEmail,
-	score: "integer < 100"
+	score: "number.integer < 100"
 })
 ```
 
@@ -87,7 +87,7 @@ We can invoke `palindromicContact` anywhere to get validated data or a list of e
 ```ts
 import { ArkErrors, type } from "arktype"
 
-const palindromicEmail = type("email").narrow((address, ctx) => {
+const palindromicEmail = type("string.email").narrow((address, ctx) => {
 	if (address === [...address].reverse().join("")) {
 		// congratulations! your email is somehow a palindrome
 		return true
@@ -98,7 +98,7 @@ const palindromicEmail = type("email").narrow((address, ctx) => {
 
 const palindromicContact = type({
 	email: palindromicEmail,
-	score: "integer < 100"
+	score: "number.integer < 100"
 })
 
 interface RuntimeErrors extends ArkErrors {

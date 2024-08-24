@@ -1,13 +1,22 @@
-import { isArray, throwParseError, type Key } from "@arktype/util"
-import type { Node } from "../kinds.js"
-import type { BaseNode } from "../node.js"
-import type { BaseRoot } from "../roots/root.js"
-import type { PropKind } from "../structure/prop.js"
-import type { BoundKind } from "./implement.js"
-import { hasArkKind, pathToPropString } from "./utils.js"
+import {
+	isArray,
+	throwParseError,
+	type Key,
+	type PartialRecord
+} from "@ark/util"
+import type { nodeOfKind } from "../kinds.ts"
+import type { BaseNode } from "../node.ts"
+import type { Domain } from "../roots/domain.ts"
+import type { BaseRoot } from "../roots/root.ts"
+import type { DiscriminantKind } from "../roots/union.ts"
+import type { Prop } from "../structure/prop.ts"
+import type { BoundKind } from "./implement.ts"
+import { $ark } from "./registry.ts"
+import { isNode, pathToPropString } from "./utils.ts"
 
 export interface DisjointEntry<kind extends DisjointKind = DisjointKind> {
 	kind: kind
+	discriminantKind: DiscriminantKind | undefined
 	l: OperandsByDisjointKind[kind]
 	r: OperandsByDisjointKind[kind]
 	path: Key[]
@@ -15,11 +24,11 @@ export interface DisjointEntry<kind extends DisjointKind = DisjointKind> {
 }
 
 type OperandsByDisjointKind = {
-	domain: Node<"domain">
-	unit: Node<"unit">
-	proto: Node<"proto">
+	domain: nodeOfKind<"domain"> | Domain.Enumerable
+	unit: nodeOfKind<"unit">
+	proto: nodeOfKind<"proto">
 	presence: BaseRoot
-	range: Node<BoundKind>
+	range: nodeOfKind<BoundKind>
 	assignability: BaseNode
 	union: readonly BaseRoot[]
 }
@@ -38,6 +47,7 @@ export class Disjoint extends Array<DisjointEntry> {
 	): Disjoint {
 		return new Disjoint({
 			kind,
+			discriminantKind: discriminatKindsByDisjointKind[kind],
 			l,
 			r,
 			path: ctx?.path ?? [],
@@ -53,6 +63,7 @@ export class Disjoint extends Array<DisjointEntry> {
 	): Disjoint {
 		this.push({
 			kind,
+			discriminantKind: discriminatKindsByDisjointKind[kind],
 			l,
 			r,
 			path: ctx?.path ?? [],
@@ -65,9 +76,11 @@ export class Disjoint extends Array<DisjointEntry> {
 		if (this.length === 1) {
 			const { path, l, r } = this[0]
 			const pathString = pathToPropString(path)
-			return `Intersection${
-				pathString && ` at ${pathString}`
-			} of ${describeReasons(l, r)} results in an unsatisfiable type`
+			return writeUnsatisfiableExpressionError(
+				`Intersection${
+					pathString && ` at ${pathString}`
+				} of ${describeReasons(l, r)}`
+			)
 		}
 		return `The following intersections result in unsatisfiable types:\n• ${this.map(
 			({ path, l, r }) => `${path}: ${describeReasons(l, r)}`
@@ -86,12 +99,16 @@ export class Disjoint extends Array<DisjointEntry> {
 		})) as Disjoint
 	}
 
-	withPrefixKey(key: string | symbol, kind: PropKind): Disjoint {
+	withPrefixKey(key: string | symbol, kind: Prop.Kind): Disjoint {
 		return this.map(entry => ({
 			...entry,
 			path: [key, ...entry.path],
 			optional: entry.optional || kind === "optional"
 		})) as Disjoint
+	}
+
+	toNeverIfDisjoint(): BaseRoot {
+		return $ark.intrinsic.never as never
 	}
 }
 
@@ -101,6 +118,22 @@ const describeReasons = (l: unknown, r: unknown): string =>
 	`${describeReason(l)} and ${describeReason(r)}`
 
 const describeReason = (value: unknown): string =>
-	hasArkKind(value, "root") ? value.expression
-	: isArray(value) ? value.map(describeReason).join(" | ")
+	isNode(value) ? value.expression
+	: isArray(value) ? value.map(describeReason).join(" | ") || "never"
 	: String(value)
+
+export const writeUnsatisfiableExpressionError = <expression extends string>(
+	expression: expression
+): writeUnsatisfiableExpressionError<expression> =>
+	`${expression} results in an unsatisfiable type`
+
+export type writeUnsatisfiableExpressionError<expression extends string> =
+	`${expression} results in an unsatisfiable type`
+
+const discriminatKindsByDisjointKind: PartialRecord<
+	DisjointKind,
+	DiscriminantKind
+> = {
+	domain: "typeOf",
+	unit: "identity"
+}

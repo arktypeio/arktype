@@ -1,6 +1,8 @@
-import type { array } from "./arrays.js"
-import { type Domain, type domainDescriptions, domainOf } from "./domain.js"
-import { type Key, isKeyOf } from "./records.js"
+import type { array } from "./arrays.ts"
+import type { DescribeOptions } from "./describe.ts"
+import { type Domain, type domainDescriptions, domainOf } from "./domain.ts"
+import type { Fn } from "./functions.ts"
+import { type Key, isKeyOf } from "./records.ts"
 
 export type builtinConstructors = {
 	Array: ArrayConstructor
@@ -46,14 +48,21 @@ export type BuiltinObjects = {
 
 export type objectKindOf<data extends object> =
 	object extends data ? keyof builtinConstructors | undefined
-	: data extends (...args: never[]) => unknown ? "Function"
+	: data extends Fn ? "Function"
 	: instantiableObjectKind<data> extends never ?
 		keyof builtinConstructors | undefined
 	:	instantiableObjectKind<data>
 
-export type describeObject<o extends object> =
-	objectKindOf<o> extends string ? objectKindDescriptions[objectKindOf<o>]
-	:	domainDescriptions["object"]
+export type describeObject<
+	o extends object,
+	opts extends DescribeOptions = {}
+> =
+	objectKindOf<o> extends string ?
+		[opts["includeArticles"]] extends [true] ?
+			objectKindDescriptions[objectKindOf<o>]
+		:	objectKindOf<o>
+	: [opts["includeArticles"]] extends [true] ? domainDescriptions["object"]
+	: "object"
 
 type instantiableObjectKind<data extends object> = {
 	[kind in keyof builtinConstructors]: data extends (
@@ -84,7 +93,7 @@ export const objectKindOrDomainOf = <data>(
 	data: data
 ): (objectKindOf<data & object> & {}) | domainOf<data> =>
 	(typeof data === "object" && data !== null ?
-		objectKindOf(data) ?? "object"
+		(objectKindOf(data) ?? "object")
 	:	domainOf(data)) as never
 
 export type objectKindOrDomainOf<data> =

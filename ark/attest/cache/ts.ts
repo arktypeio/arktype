@@ -1,29 +1,34 @@
-import { fromCwd, type SourcePosition } from "@arktype/fs"
-import { throwInternalError } from "@arktype/util"
+import { fromCwd, type SourcePosition } from "@ark/fs"
+import { throwInternalError, type dict } from "@ark/util"
 import * as tsvfs from "@typescript/vfs"
 import { readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import ts from "typescript"
-import { getConfig } from "../config.js"
+import { getConfig } from "../config.ts"
 
 export class TsServer {
 	rootFiles!: string[]
 	virtualEnv!: tsvfs.VirtualTypeScriptEnvironment
+	program!: ts.Program
 
 	private static _instance: TsServer | null = null
 	static get instance(): TsServer {
 		return new TsServer()
 	}
 
-	private constructor(private tsConfigInfo = getTsConfigInfoOrThrow()) {
+	private tsConfigInfo!: TsconfigInfo
+
+	constructor(tsConfigInfo?: TsconfigInfo) {
 		if (TsServer._instance) return TsServer._instance
 
-		const tsLibPaths = getTsLibFiles(tsConfigInfo.parsed.options)
+		this.tsConfigInfo = tsConfigInfo ?? getTsConfigInfoOrThrow()
+
+		const tsLibPaths = getTsLibFiles(this.tsConfigInfo.parsed.options)
 
 		// TS represents windows paths as `C:/Users/ssalb/...`
 		const normalizedCwd = fromCwd().replaceAll(/\\/g, "/")
 
-		this.rootFiles = tsConfigInfo.parsed.fileNames.filter(path =>
+		this.rootFiles = this.tsConfigInfo.parsed.fileNames.filter(path =>
 			path.startsWith(normalizedCwd)
 		)
 
@@ -39,6 +44,8 @@ export class TsServer {
 			ts,
 			this.tsConfigInfo.parsed.options
 		)
+
+		this.program = this.virtualEnv.languageService.getProgram()!
 
 		TsServer._instance = this
 	}
@@ -72,11 +79,11 @@ const nearestBoundingCallExpression = (
 	position: number
 ): ts.CallExpression | undefined =>
 	node.pos <= position && node.end >= position ?
-		node
+		(node
 			.getChildren()
 			.flatMap(
 				child => nearestBoundingCallExpression(child, position) ?? []
-			)[0] ?? (ts.isCallExpression(node) ? node : undefined)
+			)[0] ?? (ts.isCallExpression(node) ? node : undefined))
 	:	undefined
 
 export const getAbsolutePosition = (
@@ -103,12 +110,13 @@ export type TsconfigInfo = {
 }
 
 export const getTsConfigInfoOrThrow = (): TsconfigInfo => {
-	const config = getConfig().tsconfig
+	const config = getConfig()
+	const tsconfig = config.tsconfig
 	const configFilePath =
-		config ?? ts.findConfigFile(fromCwd(), ts.sys.fileExists, "tsconfig.json")
+		tsconfig ?? ts.findConfigFile(fromCwd(), ts.sys.fileExists, "tsconfig.json")
 	if (!configFilePath) {
 		throw new Error(
-			`File ${config ?? join(fromCwd(), "tsconfig.json")} must exist.`
+			`File ${tsconfig ?? join(fromCwd(), "tsconfig.json")} must exist.`
 		)
 	}
 
@@ -124,9 +132,15 @@ export const getTsConfigInfoOrThrow = (): TsconfigInfo => {
 		)
 	}
 
-	const configObject = result.config
+	const configJson: dict & { compilerOptions: ts.CompilerOptions } =
+		result.config
+
+	configJson.compilerOptions = Object.assign(
+		configJson.compilerOptions ?? {},
+		config.compilerOptions
+	)
 	const configParseResult = ts.parseJsonConfigFileContent(
-		configObject,
+		configJson,
 		ts.sys,
 		dirname(configFilePath),
 		{},
@@ -193,10 +207,22 @@ export interface StringifiableType extends ts.Type {
 
 export const getStringifiableType = (node: ts.Node): StringifiableType => {
 	const typeChecker = getInternalTypeChecker()
-	// in a call like attest<object>({a: true}),
-	// passing arg.expression avoids inferring {a: true} as object
 	const nodeType = typeChecker.getTypeAtLocation(node)
-	const stringified = typeChecker.typeToString(nodeType)
+
+	let stringified = typeChecker.typeToString(nodeType)
+
+	if (stringified.includes("...")) {
+		const nonTruncated = typeChecker.typeToString(
+			nodeType,
+			undefined,
+			ts.TypeFormatFlags.NoTruncation
+		)
+
+		if (nonTruncated.includes(" any") && !stringified.includes(" any"))
+			stringified = nonTruncated.replaceAll(" any", " cyclic")
+		else stringified = nonTruncated
+	}
+
 	return Object.assign(nodeType, {
 		toString: () => stringified,
 		isUnresolvable: (nodeType as any).intrinsicName === "error"

@@ -1,32 +1,40 @@
-import { caller, type SourcePosition } from "@arktype/fs"
+import { caller, rmRf, type SourcePosition } from "@ark/fs"
 import { performance } from "node:perf_hooks"
 import {
 	ensureCacheDirs,
 	getConfig,
 	type ParsedAttestConfig
-} from "../config.js"
-import { chainableNoOpProxy } from "../utils.js"
-import { await1K } from "./await1k.js"
-import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.js"
-import { call1K } from "./call1k.js"
+} from "../config.ts"
+import { chainableNoOpProxy } from "../utils.ts"
+import { await1K } from "./await1k.ts"
+import { compareToBaseline, queueBaselineUpdateIfNeeded } from "./baseline.ts"
+import { call1K } from "./call1k.ts"
 import {
 	createTimeComparison,
 	createTimeMeasure,
 	type MarkMeasure,
 	type Measure,
 	type TimeUnit
-} from "./measure.js"
-import { createBenchTypeAssertion, type BenchTypeAssertions } from "./type.js"
+} from "./measure.ts"
+import { createBenchTypeAssertion, type BenchTypeAssertions } from "./type.ts"
 
 export type StatName = keyof typeof stats
 
 export type TimeAssertionName = StatName | "mark"
 
-export const bench = <Fn extends BenchableFunction>(
+let benchHasRun = false
+
+type BenchFn = <fn extends BenchableFunction>(
 	name: string,
-	fn: Fn,
-	options: BenchOptions = {}
-): InitialBenchAssertions<Fn> => {
+	fn: fn,
+	options?: BenchOptions
+) => InitialBenchAssertions<fn>
+
+export interface Bench extends BenchFn {
+	baseline: <T>(baselineExpressions: () => T) => void
+}
+
+const benchFn: BenchFn = (name, fn, options) => {
 	const qualifiedPath = [...currentSuitePath, name]
 	console.log(`🏌️  ${qualifiedPath.join("/")}`)
 	const ctx = getBenchCtx(
@@ -34,8 +42,15 @@ export const bench = <Fn extends BenchableFunction>(
 		fn.constructor.name === "AsyncFunction",
 		options
 	)
+
+	if (!benchHasRun) {
+		rmRf(ctx.cfg.cacheDir)
+		ensureCacheDirs()
+		benchHasRun = true
+	}
+
 	ctx.benchCallPosition = caller()
-	ensureCacheDirs()
+
 	if (
 		typeof ctx.cfg.filter === "string" &&
 		!qualifiedPath.includes(ctx.cfg.filter)
@@ -49,8 +64,12 @@ export const bench = <Fn extends BenchableFunction>(
 
 	const assertions = new BenchAssertions(fn, ctx)
 	Object.assign(assertions, createBenchTypeAssertion(ctx))
-	return assertions as any
+	return assertions as never
 }
+
+export const bench: Bench = Object.assign(benchFn, {
+	baseline: () => {}
+})
 
 export const stats = {
 	mean: (callTimes: number[]): number => {
@@ -72,8 +91,10 @@ class ResultCollector {
 	private benchStart = performance.now()
 	private bounds: Required<UntilOptions>
 	private lastInvocationStart: number
+	private ctx: BenchContext
 
-	constructor(private ctx: BenchContext) {
+	constructor(ctx: BenchContext) {
+		this.ctx = ctx
 		// By default, will run for either 5 seconds or 100_000 call sets (of 1000 calls), whichever comes first
 		this.bounds = {
 			ms: 5000,
@@ -130,10 +151,12 @@ export class BenchAssertions<
 > {
 	private label: string
 	private lastCallTimes: number[] | undefined
-	constructor(
-		private fn: Fn,
-		private ctx: BenchContext
-	) {
+	private fn: Fn
+	private ctx: BenchContext
+
+	constructor(fn: Fn, ctx: BenchContext) {
+		this.fn = fn
+		this.ctx = ctx
 		this.label = `Call: ${ctx.qualifiedName}`
 	}
 
@@ -149,7 +172,7 @@ export class BenchAssertions<
 
 	private callTimesSync() {
 		if (!this.lastCallTimes) {
-			this.lastCallTimes = loopCalls(this.fn as any, this.ctx)
+			this.lastCallTimes = loopCalls(this.fn as never, this.ctx)
 			this.lastCallTimes.sort()
 		}
 		this.applyCallTimeHooks()
@@ -158,7 +181,7 @@ export class BenchAssertions<
 
 	private async callTimesAsync() {
 		if (!this.lastCallTimes) {
-			this.lastCallTimes = await loopAsyncCalls(this.fn as any, this.ctx)
+			this.lastCallTimes = await loopAsyncCalls(this.fn as never, this.ctx)
 			this.lastCallTimes.sort()
 		}
 		this.applyCallTimeHooks()
@@ -172,7 +195,7 @@ export class BenchAssertions<
 		:	Measure<TimeUnit> | undefined,
 		callTimes: number[]
 	) {
-		if (name === "mark") return this.markAssertion(baseline as any, callTimes)
+		if (name === "mark") return this.markAssertion(baseline as never, callTimes)
 
 		const ms: number = stats[name as StatName](callTimes)
 		const comparison = createTimeComparison(ms, baseline as Measure<TimeUnit>)
@@ -195,7 +218,7 @@ export class BenchAssertions<
 			baseline ?
 				Object.entries(baseline)
 				// If nothing was passed, gather all available baselines by setting their values to undefined.
-			:	Object.entries(stats).map(([kind]) => [kind, undefined])) as any
+			:	Object.entries(stats).map(([kind]) => [kind, undefined])) as never
 		const markResults = Object.fromEntries(
 			markEntries.map(([kind, kindBaseline]) => {
 				console.group(kind)
@@ -215,7 +238,7 @@ export class BenchAssertions<
 	}
 
 	private getNextAssertions(): NextAssertions {
-		return createBenchTypeAssertion(this.ctx) as any as NextAssertions
+		return createBenchTypeAssertion(this.ctx) as never as NextAssertions
 	}
 
 	private createStatMethod<Name extends TimeAssertionName>(
@@ -259,21 +282,24 @@ export class BenchAssertions<
 		const assertions = this.createStatMethod(
 			"median",
 			baseline
-		) as any as ReturnedAssertions
+		) as never as ReturnedAssertions
 		return assertions
 	}
 
 	mean(baseline?: Measure<TimeUnit>): ReturnedAssertions {
 		this.ctx.lastSnapCallPosition = caller()
-		return this.createStatMethod("mean", baseline) as any as ReturnedAssertions
+		return this.createStatMethod(
+			"mean",
+			baseline
+		) as never as ReturnedAssertions
 	}
 
 	mark(baseline?: MarkMeasure): ReturnedAssertions {
 		this.ctx.lastSnapCallPosition = caller()
 		return this.createStatMethod(
 			"mark",
-			baseline as any
-		) as any as ReturnedAssertions
+			baseline as never
+		) as never as ReturnedAssertions
 	}
 }
 

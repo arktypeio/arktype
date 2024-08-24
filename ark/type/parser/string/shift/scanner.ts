@@ -1,5 +1,12 @@
-import { isKeyOf, type Dict } from "@arktype/util"
-import type { Comparator } from "../reduce/shared.js"
+import {
+	escapeToken,
+	isKeyOf,
+	whiteSpaceTokens,
+	type Dict,
+	type EscapeToken,
+	type WhiteSpaceToken
+} from "@ark/util"
+import type { Comparator } from "../reduce/shared.ts"
 
 export class Scanner<lookahead extends string = string> {
 	private chars: string[]
@@ -31,7 +38,7 @@ export class Scanner<lookahead extends string = string> {
 		let shifted = ""
 		while (this.lookahead) {
 			if (condition(this, shifted)) {
-				if (shifted[shifted.length - 1] === Scanner.escapeToken)
+				if (shifted[shifted.length - 1] === escapeToken)
 					shifted = shifted.slice(0, -1)
 				else break
 			}
@@ -51,6 +58,10 @@ export class Scanner<lookahead extends string = string> {
 
 	jumpToIndex(i: number): void {
 		this.i = i < 0 ? this.length + i : i
+	}
+
+	jumpForward(count: number): void {
+		this.i += count
 	}
 
 	get location(): number {
@@ -78,24 +89,8 @@ export class Scanner<lookahead extends string = string> {
 	): this is Scanner<Extract<keyof tokens, string>> {
 		return this.lookahead in tokens
 	}
-}
 
-export namespace Scanner {
-	export type UntilCondition = (scanner: Scanner, shifted: string) => boolean
-
-	export type OnInputEndFn = (scanner: Scanner, shifted: string) => string
-
-	export type ShiftUntilOptions = {
-		onInputEnd?: OnInputEndFn
-	}
-
-	export const lookaheadIsTerminator: UntilCondition = (scanner: Scanner) =>
-		scanner.lookahead in terminatingChars
-
-	export const lookaheadIsNotWhitespace: UntilCondition = (scanner: Scanner) =>
-		!(scanner.lookahead in whiteSpaceTokens)
-
-	export const terminatingChars = {
+	static terminatingChars = {
 		"<": true,
 		">": true,
 		"=": true,
@@ -105,41 +100,28 @@ export namespace Scanner {
 		"[": true,
 		"%": true,
 		" ": true,
-		",": true
+		",": true,
+		":": true
 	} as const
 
-	export type TerminatingChar = keyof typeof terminatingChars
-
-	export const finalizingLookaheads = {
+	static finalizingLookaheads = {
 		">": true,
 		",": true,
-		"": true
+		"": true,
+		"=": true
 	} as const
 
-	export type FinalizingLookahead = keyof typeof finalizingLookaheads
+	static lookaheadIsTerminator: Scanner.UntilCondition = (scanner: Scanner) =>
+		scanner.lookahead in this.terminatingChars
 
-	export type InfixToken = Comparator | "|" | "&" | "%" | ":" | "=>"
+	static lookaheadIsNotWhitespace: Scanner.UntilCondition = (
+		scanner: Scanner
+	) => !(scanner.lookahead in whiteSpaceTokens)
 
-	export type PostfixToken = "[]"
-
-	export type OperatorToken = InfixToken | PostfixToken
-
-	export const escapeToken = "\\"
-
-	export type EscapeToken = typeof escapeToken
-
-	export const whiteSpaceTokens = {
-		" ": true,
-		"\n": true,
-		"\t": true
-	} as const
-
-	export type WhiteSpaceToken = keyof typeof whiteSpaceTokens
-
-	export const lookaheadIsFinalizing = (
+	static lookaheadIsFinalizing = (
 		lookahead: string,
 		unscanned: string
-	): lookahead is ">" | "," =>
+	): lookahead is ">" | "," | "=" =>
 		lookahead === ">" ?
 			unscanned[0] === "=" ?
 				// >== would only occur in an expression like Array<number>==5
@@ -148,9 +130,14 @@ export namespace Scanner {
 				// if > is the end of a generic instantiation, the next token will be an operator or the end of the string
 			:	unscanned.trimStart() === "" ||
 				isKeyOf(unscanned.trimStart()[0], Scanner.terminatingChars)
-			// if the lookahead is a finalizing token but not >, it's unambiguously a finalizer (currently just ",")
-		:	lookahead === ","
+			// "=" is a finalizer on its own (representing a default value),
+			// but not with a second "=" (an equality comparator)
+		: lookahead === "=" ? unscanned[0] !== "="
+			// ","" is unambiguously a finalizer
+		: lookahead === ","
+}
 
+export declare namespace Scanner {
 	export type lookaheadIsFinalizing<
 		lookahead extends string,
 		unscanned extends string
@@ -165,8 +152,30 @@ export namespace Scanner {
 			) ?
 				true
 			:	false
+		: lookahead extends "=" ?
+			unscanned extends `=${string}` ?
+				false
+			:	true
 		: lookahead extends "," ? true
 		: false
+
+	export type UntilCondition = (scanner: Scanner, shifted: string) => boolean
+
+	export type OnInputEndFn = (scanner: Scanner, shifted: string) => string
+
+	export type ShiftUntilOptions = {
+		onInputEnd?: OnInputEndFn
+	}
+
+	export type TerminatingChar = keyof typeof Scanner.terminatingChars
+
+	export type FinalizingLookahead = keyof typeof Scanner.finalizingLookaheads
+
+	export type InfixToken = Comparator | "|" | "&" | "%" | ":" | "=>"
+
+	export type PostfixToken = "[]"
+
+	export type OperatorToken = InfixToken | PostfixToken
 
 	export type shift<
 		lookahead extends string,

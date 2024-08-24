@@ -1,35 +1,32 @@
-import type { isDisjoint } from "./intersections.js"
-import type { parseNonNegativeInteger } from "./numericLiterals.js"
+import type { Guardable } from "./functions.ts"
+import type { anyOrNever } from "./generics.ts"
+import type { isDisjoint } from "./intersections.ts"
+import type { parseNonNegativeInteger } from "./numericLiterals.ts"
 
 export type pathToString<
 	segments extends string[],
 	delimiter extends string = "/"
 > = segments extends [] ? "/" : join<segments, delimiter>
 
+export const join = <segments extends array<string>, delimiter extends string>(
+	segments: segments,
+	delimiter: delimiter
+): join<segments, delimiter> => segments.join(delimiter) as never
+
 export type join<
-	segments extends string[],
+	segments extends array<string>,
 	delimiter extends string,
 	result extends string = ""
 > =
-	segments extends [infer head extends string, ...infer tail extends string[]] ?
+	segments extends (
+		readonly [infer head extends string, ...infer tail extends string[]]
+	) ?
 		join<
 			tail,
 			delimiter,
 			result extends "" ? head : `${result}${delimiter}${head}`
 		>
 	:	result
-
-export type split<
-	s extends string,
-	delimiter extends string,
-	current extends string = "",
-	result extends string[] = []
-> =
-	s extends `${infer head}${infer tail}` ?
-		head extends delimiter ?
-			split<tail, delimiter, "", [...result, current]>
-		:	split<tail, delimiter, `${current}${head}`, result>
-	:	[...result, current]
 
 export const getPath = (root: unknown, path: string[]): unknown => {
 	let result: any = root
@@ -103,28 +100,32 @@ export type initOf<t extends array> =
 
 export type numericStringKeyOf<t extends array> = Extract<keyof t, `${number}`>
 
-export type indexOf<a extends array> =
+export type arrayIndexOf<a extends array> =
 	keyof a extends infer k ? parseNonNegativeInteger<k & string> : never
 
-export const arrayFrom = <t>(
-	data: t
-): t extends array ?
-	[t] extends [null] ?
-		// check for any/never
-		t[]
-	:	t
-:	t[] => (Array.isArray(data) ? data : [data]) as never
+export type liftArray<t> =
+	t extends array ?
+		[t] extends [anyOrNever] ?
+			t[]
+		:	t
+	:	t[]
+
+export const liftArray = <t>(data: t): liftArray<t> =>
+	(Array.isArray(data) ? data : [data]) as never
 
 export const spliterate = <item, included extends item>(
 	list: readonly item[],
-	by: (item: item) => item is included
-): [included: included[], excluded: Exclude<item, included>[]] => {
+	by: Guardable<item, included>
+): [
+	included: included[],
+	excluded: item extends included ? item[] : Exclude<item, included>[]
+] => {
 	const result: [any[], any[]] = [[], []]
 	for (const item of list) {
 		if (by(item)) result[0].push(item)
 		else result[1].push(item)
 	}
-	return result
+	return result as never
 }
 
 export const ReadonlyArray = Array as unknown as new <T>(
@@ -148,21 +149,18 @@ export type AppendOptions = {
  *
  * @param to The array to which `value` is to be added. If `to` is `undefined`, a new array
  * is created as `[value]` if value was not undefined, otherwise `[]`.
- * @param value The value to add to the array. If `value` is `undefined`, does nothing.
+ * @param value The value to add to the array.
  * @param opts
  * 		prepend: If true, adds the element to the beginning of the array instead of the end
  */
 export const append = <
-	to extends element[] | undefined,
-	element,
-	value extends listable<element> | undefined
+	to extends unknown[] | undefined,
+	value extends listable<(to & {})[number]>
 >(
 	to: to,
 	value: value,
 	opts?: AppendOptions
-): Exclude<to, undefined> | Extract<value & to, undefined> => {
-	if (value === undefined) return to ?? ([] as any)
-
+): to & {} => {
 	if (to === undefined) {
 		return (
 			value === undefined ? []
@@ -171,9 +169,13 @@ export const append = <
 		)
 	}
 
-	if (opts?.prepend)
-		Array.isArray(value) ? to.unshift(...value) : to.unshift(value as never)
-	else Array.isArray(value) ? to.push(...value) : to.push(value as never)
+	if (opts?.prepend) {
+		if (Array.isArray(value)) to.unshift(...value)
+		else to.unshift(value as never)
+	} else {
+		if (Array.isArray(value)) to.push(...value)
+		else to.push(value as never)
+	}
 
 	return to as never
 }
@@ -191,7 +193,7 @@ export const conflatenate = <element>(
 	if (elementOrList === undefined || elementOrList === null)
 		return to ?? ([] as never)
 
-	if (to === undefined || to === null) return arrayFrom(elementOrList) as never
+	if (to === undefined || to === null) return liftArray(elementOrList) as never
 
 	return to.concat(elementOrList) as never
 }
@@ -207,20 +209,29 @@ export const conflatenateAll = <element>(
 ): readonly element[] =>
 	elementsOrLists.reduce<readonly element[]>(conflatenate, [])
 
+export interface ComparisonOptions<t = unknown> {
+	isEqual?: (l: t, r: t) => boolean
+}
+
 /**
- * Appends a value to an array if it is not already included, returning the array
+ * Appends a value or concatenates an array to an array if it is not already included, returning the array
  *
  * @param to The array to which `value` is to be appended. If `to` is `undefined`, a new array
  * is created including only `value`.
- * @param value The value to append to the array. If `to` includes `value`, nothing is appended.
+ * @param value An array or value to append to the array. If `to` includes `value`, nothing is appended.
  */
 export const appendUnique = <to extends unknown[]>(
 	to: to | undefined,
-	value: to[number]
+	value: NoInfer<Readonly<to> | to[number]>,
+	opts?: ComparisonOptions<to[number]>
 ): to => {
-	if (to === undefined) return [value] as never
+	if (to === undefined)
+		return Array.isArray(value) ? (value as never) : ([value] as never)
 
-	if (!to.includes(value)) to.push(value)
+	const isEqual = opts?.isEqual ?? ((l, r) => l === r)
+	liftArray(value).forEach(v => {
+		if (!to.some(existing => isEqual(existing as never, v as never))) to.push(v)
+	})
 
 	return to
 }
@@ -243,10 +254,18 @@ export const groupBy = <element, discriminant extends groupableKeyOf<element>>(
 ): groupBy<element, discriminant> =>
 	array.reduce<Record<PropertyKey, any>>((result, item) => {
 		const key = item[discriminant] as never
-		result[key] ??= []
-		result[key].push(item)
+		result[key] = append(result[key], item)
 		return result
-	}, {})
+	}, {}) as never
 
-export const arrayEquals = (l: array, r: array) =>
-	l.length === r.length && l.every((lItem, i) => lItem === r[i])
+export const arrayEquals = <element>(
+	l: array<element>,
+	r: array<element>,
+	opts?: ComparisonOptions<element>
+): boolean =>
+	l.length === r.length &&
+	l.every(
+		opts?.isEqual ?
+			(lItem, i) => opts.isEqual!(lItem, r[i])
+		:	(lItem, i) => lItem === r[i]
+	)

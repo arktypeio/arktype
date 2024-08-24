@@ -9,25 +9,22 @@ import {
 	type describe,
 	type listable,
 	type satisfy
-} from "@arktype/util"
+} from "@ark/util"
 import type {
 	Inner,
-	MutableInner,
-	Node,
 	NodeSchema,
 	Prerequisite,
-	innerAttachedAs
-} from "./kinds.js"
-import { BaseNode } from "./node.js"
-import type { NodeParseContext } from "./parse.js"
-import type {
-	IntersectionInner,
-	MutableIntersectionInner
-} from "./roots/intersection.js"
-import type { BaseRoot, Root, UnknownRoot } from "./roots/root.js"
-import type { NodeCompiler } from "./shared/compile.js"
-import type { RawNodeDeclaration } from "./shared/declare.js"
-import { Disjoint } from "./shared/disjoint.js"
+	innerAttachedAs,
+	mutableInnerOfKind,
+	nodeOfKind
+} from "./kinds.ts"
+import { BaseNode } from "./node.ts"
+import type { NodeParseContext } from "./parse.ts"
+import type { Intersection } from "./roots/intersection.ts"
+import type { BaseRoot } from "./roots/root.ts"
+import type { NodeCompiler } from "./shared/compile.ts"
+import type { BaseNodeDeclaration } from "./shared/declare.ts"
+import { Disjoint } from "./shared/disjoint.ts"
 import {
 	compileErrorContext,
 	constraintKeys,
@@ -37,19 +34,32 @@ import {
 	type RootKind,
 	type StructuralKind,
 	type kindLeftOf
-} from "./shared/implement.js"
-import { intersectNodes, intersectNodesRoot } from "./shared/intersections.js"
-import type { TraverseAllows, TraverseApply } from "./shared/traversal.js"
-import { arkKind } from "./shared/utils.js"
+} from "./shared/implement.ts"
+import { intersectNodes, intersectNodesRoot } from "./shared/intersections.ts"
+import type { JsonSchema } from "./shared/jsonSchema.ts"
+import { $ark } from "./shared/registry.ts"
+import type { TraverseAllows, TraverseApply } from "./shared/traversal.ts"
+import { arkKind } from "./shared/utils.ts"
 
-export interface BaseConstraintDeclaration extends RawNodeDeclaration {
-	kind: ConstraintKind
+export declare namespace Constraint {
+	export interface Declaration extends BaseNodeDeclaration {
+		kind: ConstraintKind
+	}
+
+	export type ReductionResult = BaseRoot | Disjoint | Intersection.MutableInner
+
+	export interface Attachments {
+		impliedBasis: BaseRoot | null
+		impliedSiblings?: array<BaseConstraint> | null
+	}
+
+	export type PrimitiveKind = Exclude<ConstraintKind, StructuralKind>
 }
 
 export abstract class BaseConstraint<
 	/** uses -ignore rather than -expect-error because this is not an error in .d.ts
 	 * @ts-ignore allow instantiation assignment to the base type */
-	out d extends BaseConstraintDeclaration = BaseConstraintDeclaration
+	out d extends Constraint.Declaration = Constraint.Declaration
 > extends BaseNode<d> {
 	readonly [arkKind] = "constraint"
 	abstract readonly impliedBasis: BaseRoot | null
@@ -62,17 +72,16 @@ export abstract class BaseConstraint<
 	}
 }
 
-export type ConstraintReductionResult =
-	| BaseRoot
-	| Disjoint
-	| MutableIntersectionInner
-
-export abstract class RawPrimitiveConstraint<
-	d extends BaseConstraintDeclaration
+export abstract class InternalPrimitiveConstraint<
+	d extends Constraint.Declaration
 > extends BaseConstraint<d> {
 	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
 	abstract readonly compiledCondition: string
 	abstract readonly compiledNegation: string
+
+	abstract reduceJsonSchema(
+		base: JsonSchema.Constrainable
+	): JsonSchema.Constrainable
 
 	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
 		if (!this.traverseAllows(data, ctx)) ctx.error(this.errorContext as never)
@@ -107,9 +116,11 @@ export const constraintKeyParser =
 				// Omit empty lists as input
 				return
 			}
-			return schema
-				.map(schema => ctx.$.node(kind, schema as never))
-				.sort((l, r) => (l.innerHash < r.innerHash ? -1 : 1)) as never
+			const nodes = schema.map(schema => ctx.$.node(kind, schema as never))
+			// predicate order must be preserved to ensure inputs are narrowed
+			// and checked in the correct order
+			if (kind === "predicate") return nodes as never
+			return nodes.sort((l, r) => (l.hash < r.hash ? -1 : 1)) as never
 		}
 		const child = ctx.$.node(kind, schema)
 		return child.hasOpenIntersection() ? [child] : (child as any)
@@ -130,12 +141,12 @@ interface ConstraintIntersectionState<
 
 export const intersectConstraints = <kind extends ConstraintGroupKind>(
 	s: ConstraintIntersectionState<kind>
-): Node<RootKind | Extract<kind, "structure">> | Disjoint => {
+): nodeOfKind<RootKind | Extract<kind, "structure">> | Disjoint => {
 	const head = s.r.shift()
 	if (!head) {
 		let result: BaseNode | Disjoint =
 			s.l.length === 0 && s.kind === "structure" ?
-				s.ctx.$.keywords.unknown.raw
+				$ark.intrinsic.unknown.internal
 			:	s.ctx.$.node(
 					s.kind,
 					Object.assign(s.baseInner, unflattenConstraints(s.l)),
@@ -185,7 +196,9 @@ export const flattenConstraints = (inner: object): BaseConstraint[] => {
 		.sort((l, r) =>
 			l.precedence < r.precedence ? -1
 			: l.precedence > r.precedence ? 1
-			: l.innerHash < r.innerHash ? -1
+				// preserve order for predicates
+			: l.kind === "predicate" && r.kind === "predicate" ? 0
+			: l.hash < r.hash ? -1
 			: 1
 		)
 
@@ -195,8 +208,8 @@ export const flattenConstraints = (inner: object): BaseConstraint[] => {
 // TODO: Fix type
 export const unflattenConstraints = (
 	constraints: array<BaseConstraint>
-): IntersectionInner & Inner<"structure"> => {
-	const inner: MutableIntersectionInner & MutableInner<"structure"> = {}
+): Intersection.Inner & Inner<"structure"> => {
+	const inner: Intersection.MutableInner & mutableInnerOfKind<"structure"> = {}
 	for (const constraint of constraints) {
 		if (constraint.hasOpenIntersection()) {
 			inner[constraint.kind] = append(
@@ -225,7 +238,7 @@ export type constraintKindOrLeftOf<kind extends ConstraintKind> =
 export type intersectConstraintKinds<
 	l extends ConstraintKind,
 	r extends ConstraintKind
-> = Node<l | r | "unit" | "union"> | Disjoint | null
+> = nodeOfKind<l | r | "unit" | "union"> | Disjoint | null
 
 export const throwInvalidOperandError = (
 	...args: Parameters<typeof writeInvalidOperandMessage>
@@ -233,27 +246,20 @@ export const throwInvalidOperandError = (
 
 export const writeInvalidOperandMessage = <
 	kind extends ConstraintKind,
-	expected extends Root,
-	actual extends Root
+	expected extends BaseRoot,
+	actual extends BaseRoot
 >(
 	kind: kind,
 	expected: expected,
 	actual: actual
-): writeInvalidOperandMessage<kind, actual> =>
+): string =>
 	`${capitalize(kind)} operand must be ${
 		expected.description
 	} (was ${actual.exclude(expected).description})` as never
 
 export type writeInvalidOperandMessage<
 	kind extends ConstraintKind,
-	actual extends Root
+	actual
 > = `${Capitalize<kind>} operand must be ${describe<
 	Prerequisite<kind>
->} (was ${describe<Exclude<actual["infer"], Prerequisite<kind>>>})`
-
-export interface ConstraintAttachments {
-	impliedBasis: UnknownRoot | null
-	impliedSiblings?: array<BaseConstraint> | null
-}
-
-export type PrimitiveConstraintKind = Exclude<ConstraintKind, StructuralKind>
+>} (was ${describe<Exclude<actual, Prerequisite<kind>>>})`

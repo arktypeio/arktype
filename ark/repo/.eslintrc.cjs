@@ -1,6 +1,18 @@
 // @ts-check
 const { defineConfig } = require("eslint-define-config")
 
+const noCrossPackageImportPattern = {
+	group: [
+		"**/fs/**",
+		"**/attest/**",
+		"**/schema/**",
+		"**/type/**",
+		"**/util/**",
+		"arktype/internal/**"
+	],
+	message: `Use a specifier like '@ark/util' to import from a package`
+}
+
 module.exports = defineConfig({
 	parser: "@typescript-eslint/parser",
 	plugins: [
@@ -66,6 +78,12 @@ module.exports = defineConfig({
 		 * Imports
 		 */
 		"import/no-cycle": "warn",
+		"@typescript-eslint/explicit-module-boundary-types": [
+			"warn",
+			{
+				allowArgumentsExplicitlyTypedAsAny: true
+			}
+		],
 		"@typescript-eslint/consistent-type-imports": [
 			"warn",
 			{ fixStyle: "inline-type-imports" }
@@ -78,19 +96,14 @@ module.exports = defineConfig({
 			"warn",
 			{
 				patterns: [
+					noCrossPackageImportPattern,
 					{
-						group: [
-							"**/fs/**",
-							"**/attest/**",
-							"**/schema/**",
-							"**/type/**",
-							"**/util/**"
-						],
-						message: `Use a specifier like '@arktype/util' to import from a package`
+						group: ["**/index.js", "!**/structure/index.js"],
+						message: `Use a path like '../original/definition.js' instead of a package entrypoint`
 					},
 					{
-						group: ["**/index.js"],
-						message: `Use a path like '../original/definition.js' instead of a package entrypoint`
+						group: ["arktype/config"],
+						message: `Use a relative path to ark/type/config.ts instead`
 					}
 				]
 			}
@@ -98,9 +111,13 @@ module.exports = defineConfig({
 		/**
 		 * Allow more flexible typing
 		 */
+		"@typescript-eslint/no-empty-object-type": "off",
+		"@typescript-eslint/no-unsafe-function-type": "off",
+		"@typescript-eslint/no-wrapper-object-types": "off",
 		"@typescript-eslint/ban-types": "off",
 		"@typescript-eslint/no-explicit-any": "off",
 		"@typescript-eslint/no-non-null-assertion": "off",
+		"@typescript-eslint/no-unsafe-declaration-merging": "off",
 		/**
 		 * Namespaces are useful for grouping generic types with related functionality
 		 */
@@ -133,6 +150,27 @@ module.exports = defineConfig({
 				"import/no-extraneous-dependencies": "warn"
 			}
 		},
+
+		{
+			// Amend the index.js import restriction to allow for relative imports of
+			// ark/schema/structure/index.js, since it is for IndexNode, not a barrel file
+			files: ["**/ark/schema/structure/**"],
+			rules: {
+				"@typescript-eslint/no-restricted-imports": [
+					"warn",
+					{
+						patterns: [
+							noCrossPackageImportPattern,
+							{
+								// still restrict import from package entrypoints (relative parents)
+								group: ["../**/index.js"],
+								message: `Use a path like '../original/definition.js' instead of a package entrypoint`
+							}
+						]
+					}
+				]
+			}
+		},
 		{
 			// These also shouldn't have extraneous dependencies but can use node builtins
 			files: ["**/ark/attest/**", "**/ark/fs/**", "**/ark/docs/**"],
@@ -154,7 +192,19 @@ module.exports = defineConfig({
 				"@typescript-eslint/ban-ts-comment": "off",
 				"@typescript-eslint/explicit-module-boundary-types": "off",
 				"import/no-extraneous-dependencies": "off",
-				"import/no-nodejs-modules": "off"
+				"import/no-nodejs-modules": "off",
+				"@typescript-eslint/no-restricted-imports": [
+					"warn",
+					{
+						patterns: [
+							{
+								group: ["../**"],
+								message:
+									"Tests must import from package entrypoints (use /internal if necessary)"
+							}
+						]
+					}
+				]
 			}
 		}
 	]

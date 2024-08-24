@@ -11,7 +11,7 @@ If you've ever wondered how [ArkType](https://github.com/arktypeio/arktype) can 
 ## Installation
 
 ```bash
-npm install @arktype/attest
+npm install @ark/attest
 ```
 
 _Note: This package is still in alpha! Your feedback will help us iterate toward a stable 1.0._
@@ -37,7 +37,7 @@ export default defineConfig({
 `setupVitest.ts`
 
 ```ts
-import { setup, teardown } from "@arktype/attest"
+import { setup } from "@ark/attest"
 
 // config options can be passed here
 export default () => setup({})
@@ -56,7 +56,7 @@ export default () => setup({})
 `setupMocha.ts`
 
 ```ts
-import { setup, teardown } from "@arktype/attest"
+import { setup, teardown } from "@ark/attest"
 
 // config options can be passed here
 export const mochaGlobalSetup = () => setup({})
@@ -73,7 +73,7 @@ Bun support is currently pending a [bug in the way their source maps translate t
 Here are some simple examples of type assertions and snapshotting:
 
 ```ts
-// @arktype/attest assertions can be made from any unit test framework with a global setup/teardown
+// @ark/attest assertions can be made from any unit test framework with a global setup/teardown
 describe("attest features", () => {
 	it("type and value assertions", () => {
 		const even = type("number%2")
@@ -140,6 +140,88 @@ describe("attest features", () => {
 })
 ```
 
+## Options
+
+Options can be specified in one of 3 ways:
+
+- An argument passed to your test process, e.g. `--skipTypes` or `--benchPercentThreshold 10`
+- An environment variable with an `ATTEST_` prefix, e.g. `ATTEST_skipTypes=1` or `ATTEST_benchPercentThreshold=10`
+- Passed as an option to attest's `setup` function, e.g.:
+
+`setupVitest.ts`
+
+```ts
+import * as attest from "@ark/attest"
+
+export const setup = () =>
+	attest.setup({
+		skipTypes: true,
+		benchPercentThreshold: 10
+	})
+```
+
+Here are the current defaults for all available options. Please note, some of these are experimental and subject to change:
+
+```ts
+export const getDefaultAttestConfig = (): BaseAttestConfig => ({
+	tsconfig:
+		existsSync(fromCwd("tsconfig.json")) ? fromCwd("tsconfig.json") : undefined,
+	attestAliases: ["attest", "attestInternal"],
+	updateSnapshots: false,
+	skipTypes: false,
+	skipInlineInstantiations: false,
+	tsVersions: "typescript",
+	benchPercentThreshold: 20,
+	benchErrorOnThresholdExceeded: true,
+	filter: undefined,
+	testDeclarationAliases: ["bench", "it", "test"],
+	formatter: `npm exec --no -- prettier --write`,
+	shouldFormat: true,
+	typeToStringFormat: {}
+})
+```
+
+### `skipTypes`
+
+`skipTypes` is extremely useful for iterating quickly during development without having to typecheck your project to test runtime logic.
+
+When this setting is enabled, setup will skip typechecking and all assertions requiring type information will be skipped.
+
+You likely want two scripts, one for running tests with types and one for tests without:
+
+```json
+		"test": "ATTEST_skipTypes=1 vitest run",
+		"testWithTypes": "vitest run",
+```
+
+Our recommendation is to use `test` when:
+
+- Only wanting to test runtime logic during development
+- Running tests in watch mode or via VSCode's Test Explorer
+
+Use `testWithTypes` when:
+
+- You've made changes to your types and want to recheck your type-level assertions
+- You're running your tests in CI
+
+### `typeToStringFormat`
+
+A set of [`prettier.Options`](https://prettier.io/docs/en/options.html) overrides that apply specifically `type.toString` formatting.
+
+Any options you provide will override the defaults, which are as follows:
+
+```jsonc
+{
+	"semi": false,
+	// note this print width is optimized for type serialization, not general code
+	"printWidth": 60,
+	"trailingComma": "none",
+	"parser": "typescript"
+}
+```
+
+The easiest way to provide overrides is to the `setup` function, but they can also be provided as a JSON serialized string either passed to a `--typeToStringFormat` CLI flag or set as the value of `ATTEST_typeToStringFormat` on `process.env`.
+
 ## Benches
 
 Benches are run separately from tests and don't require any special setup. If the below file was `benches.ts`, you could run it using something like `tsx benches.ts` or `ts-node benches.ts`:
@@ -167,6 +249,31 @@ bench(
 	// Seems like our type is O(n) with respect to the length of the input- not bad!
 	.types([337, "instantiations"])
 ```
+
+If you're benchmarking an API, you'll need to include a "baseline expression" so that instantiations created when your API is initially invoked don't add noise to the individual tests.
+
+Here's an example of what that looks like:
+
+```ts
+import { bench } from "@ark/attest"
+import { type } from "arktype"
+
+// baseline expression
+type("boolean")
+
+bench("single-quoted", () => {
+	const _ = type("'nineteen characters'")
+	// would be 2697 without baseline
+}).types([610, "instantiations"])
+
+bench("keyword", () => {
+	const _ = type("string")
+	// would be 2507 without baseline
+}).types([356, "instantiations"])
+```
+
+> [!WARNING]  
+> Be sure your baseline expression is not identical to an expression you are using in any of your benchmarks. If it is, the individual benchmarks will reuse its cached types, leading to reduced (or 0) instantiations.
 
 If you'd like to fail in CI above a threshold, you can add flags like the following (default value is 20%, but it will not throw unless `--benchErrorOnThresholdExceeded` is set):
 
@@ -196,7 +303,7 @@ If no directories are provided, defaults to CWD.
 npm run attest trace .
 ```
 
-Creates a trace.json file in a .tstrace directory that can be viewed as a type performance heat map via a tool like https://ui.perfetto.dev/. Also summarizes any hot spots as identified by `@typescript/analyze-trace`.
+Creates a trace.json file in `.attest/trace` that can be viewed as a type performance heat map via a tool like https://ui.perfetto.dev/. Also summarizes any hot spots as identified by `@typescript/analyze-trace`.
 
 Trace expects a single argument representing the root directory of the root package for which to gather type information.
 
@@ -222,7 +329,7 @@ This ensures that type assertions can be made across processes without creating 
 There is a tsVersions setting that allows testing multiple TypeScript aliases at once.
 
 ````ts globalSetup.ts
-import { setup } from "@arktype/attest"
+import { setup } from "@ark/attest"
 /** A string or list of strings representing the TypeScript version aliases to run.
  *
  * Aliases must be specified as a package.json dependency or devDependency beginning with "typescript".
@@ -246,7 +353,7 @@ The most flexible attest APIs are `getTypeAssertionsAtPosition` and `caller`.
 Here's an example of how you might use them in your own API:
 
 ```ts
-import { getTypeAssertionsAtPosition, caller } from "@arktype/attest"
+import { getTypeAssertionsAtPosition, caller } from "@ark/attest"
 
 const yourCustomAssert = <expectedType>(actualValue: expectedType) => {
 	const position = caller()

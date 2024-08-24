@@ -1,21 +1,24 @@
-import { ensureDir, fromCwd } from "@arktype/fs"
+import { ensureDir, fromCwd } from "@ark/fs"
 import {
-	arrayFrom,
 	isArray,
+	liftArray,
 	tryParseNumber,
 	type autocomplete
-} from "@arktype/util"
+} from "@ark/util"
 import { existsSync } from "node:fs"
 import { join, resolve } from "node:path"
+import type * as prettier from "prettier"
+import type ts from "typescript"
 import {
 	findAttestTypeScriptVersions,
 	type TsVersionData
-} from "./tsVersioning.js"
+} from "./tsVersioning.ts"
 
 export type TsVersionAliases = autocomplete<"*"> | string[]
 
 type BaseAttestConfig = {
-	tsconfig: string | undefined
+	tsconfig: string | null | undefined
+	compilerOptions: ts.CompilerOptions
 	updateSnapshots: boolean
 	/** A string or list of strings representing the TypeScript version aliases to run.
 	 *
@@ -38,8 +41,19 @@ type BaseAttestConfig = {
 	benchErrorOnThresholdExceeded: boolean
 	filter: string | undefined
 	testDeclarationAliases: string[]
-	formatter: string
+	formatCmd: string
 	shouldFormat: boolean
+	/**
+	 *  Provided options will override the following defaults.
+	 *  Any options not listed will fallback to Prettier's default value.
+	 *
+	 * {
+	 *	 semi: false,
+	 *	 printWidth: 60,
+	 *	 trailingComma: "none",
+	 * }
+	 */
+	typeToStringFormat: prettier.Options
 }
 
 export type AttestConfig = Partial<BaseAttestConfig>
@@ -47,6 +61,7 @@ export type AttestConfig = Partial<BaseAttestConfig>
 export const getDefaultAttestConfig = (): BaseAttestConfig => ({
 	tsconfig:
 		existsSync(fromCwd("tsconfig.json")) ? fromCwd("tsconfig.json") : undefined,
+	compilerOptions: {},
 	attestAliases: ["attest", "attestInternal"],
 	updateSnapshots: false,
 	skipTypes: false,
@@ -56,16 +71,34 @@ export const getDefaultAttestConfig = (): BaseAttestConfig => ({
 	benchErrorOnThresholdExceeded: true,
 	filter: undefined,
 	testDeclarationAliases: ["bench", "it", "test"],
-	formatter: `npm exec --no -- prettier --write`,
-	shouldFormat: true
+	formatCmd: `npm exec --no -- prettier --write`,
+	shouldFormat: true,
+	typeToStringFormat: {}
 })
 
+const flagAliases: { [k in keyof AttestConfig]?: string[] } = {
+	updateSnapshots: ["u", "update"]
+}
+
+const findParamIndex = (flagOrAlias: string) =>
+	process.argv.findIndex(
+		arg => arg === `-${flagOrAlias}` || arg === `--${flagOrAlias}`
+	)
+
 const hasFlag = (flag: keyof AttestConfig) =>
-	process.argv.some(arg => arg.includes(flag))
+	findParamIndex(flag) !== -1 ||
+	flagAliases[flag]?.some(alias => findParamIndex(alias) !== -1)
 
 const getParamValue = (param: keyof AttestConfig) => {
-	const paramIndex = process.argv.findIndex(arg => arg.includes(param))
-	if (paramIndex === -1) return undefined
+	let paramIndex = findParamIndex(param)
+	if (paramIndex === -1) {
+		if (!flagAliases[param]) return
+
+		for (let i = 0; i < flagAliases[param].length && paramIndex === -1; i++)
+			paramIndex = findParamIndex(flagAliases[param][i])
+
+		if (paramIndex === -1) return
+	}
 
 	const raw = process.argv[paramIndex + 1]
 	if (raw === "true") return true
@@ -76,6 +109,9 @@ const getParamValue = (param: keyof AttestConfig) => {
 		return tryParseNumber(raw, { errorOnFail: true })
 
 	if (param === "tsVersions" || param === "attestAliases") return raw.split(",")
+
+	if (param === "typeToStringFormat" || param === "compilerOptions")
+		return JSON.parse(raw)
 
 	return raw
 }
@@ -133,9 +169,10 @@ const isTsVersionAliases = (
 
 const parseTsVersions = (aliases: TsVersionAliases): TsVersionData[] => {
 	const versions = findAttestTypeScriptVersions()
-	if (aliases === "*") return versions
+	if (aliases === "*" || (isArray(aliases) && aliases[0] === "*"))
+		return versions
 
-	return arrayFrom(aliases).map(alias => {
+	return liftArray(aliases).map(alias => {
 		const matching = versions.find(v => v.alias === alias)
 		if (!matching) {
 			throw new Error(
@@ -148,11 +185,12 @@ const parseTsVersions = (aliases: TsVersionAliases): TsVersionData[] => {
 	})
 }
 
-const cachedConfig = parseConfig()
+let cachedConfig: ParsedAttestConfig | undefined
 
-export const getConfig = (): ParsedAttestConfig => cachedConfig
+export const getConfig = (): ParsedAttestConfig => parseConfig()
 
 export const ensureCacheDirs = (): void => {
+	cachedConfig ??= getConfig()
 	ensureDir(cachedConfig.cacheDir)
 	ensureDir(cachedConfig.assertionCacheDir)
 }

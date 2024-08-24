@@ -1,22 +1,14 @@
-import { attest, contextualize } from "@arktype/attest"
-import { keywordNodes, writeIndivisibleMessage } from "@arktype/schema"
+import { attest, contextualize } from "@ark/attest"
+import { intrinsic, writeIndivisibleMessage } from "@ark/schema"
 import { type } from "arktype"
-import { writeInvalidDivisorMessage } from "../parser/string/shift/operator/divisor.js"
+import { writeInvalidDivisorMessage } from "arktype/internal/parser/string/shift/operator/divisor.ts"
 
-contextualize(
-	"parse",
-	() => {
+contextualize(() => {
+	describe("parse", () => {
 		it("integer literal", () => {
 			const divisibleByTwo = type("number%2")
 			attest<number>(divisibleByTwo.infer)
 			attest(divisibleByTwo.json).snap({ domain: "number", divisor: 2 })
-		})
-
-		it("constrained", () => {
-			const t = type("number").constrain("divisor", 2)
-			const expected = type("number%2")
-			attest<typeof expected>(t)
-			attest(t.json).equals(expected.json)
 		})
 
 		it("chained", () => {
@@ -67,33 +59,33 @@ contextualize(
 		it("unknown", () => {
 			// @ts-expect-error
 			attest(() => type("unknown%2")).throwsAndHasTypeError(
-				writeIndivisibleMessage(keywordNodes.unknown)
+				writeIndivisibleMessage(intrinsic.unknown)
 			)
 		})
 
 		it("indivisible", () => {
 			// @ts-expect-error
 			attest(() => type("string%1")).throwsAndHasTypeError(
-				writeIndivisibleMessage(keywordNodes.string)
+				writeIndivisibleMessage(intrinsic.string)
 			)
 		})
 
 		it("chained indivisible", () => {
 			// @ts-expect-error
-			attest(() => type("string").divisibleBy(2)).throwsAndHasTypeError(
-				writeIndivisibleMessage(keywordNodes.string)
-			)
+			attest(() => type("string").divisibleBy(2))
+				.throws(writeIndivisibleMessage(intrinsic.string))
+				.type.errors("Property 'divisibleBy' does not exist")
 		})
 
 		it("overlapping", () => {
 			// @ts-expect-error
 			attest(() => type("(number|string)%10")).throwsAndHasTypeError(
-				writeIndivisibleMessage(keywordNodes.number.or(keywordNodes.string))
+				writeIndivisibleMessage(intrinsic.number.or(intrinsic.string))
 			)
 		})
-	},
-	"intersection",
-	() => {
+	})
+
+	describe("intersection", () => {
 		it("identical", () => {
 			const t = type("number%2&number%2")
 			attest(t.json).equals(type("number%2").json)
@@ -124,5 +116,5 @@ contextualize(
 				"ParseError: Intersection of % 3 and 8 results in an unsatisfiable type"
 			)
 		})
-	}
-)
+	})
+})

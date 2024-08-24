@@ -1,37 +1,12 @@
-import { throwInternalError } from "./errors.js"
-import { NoopBase, unset } from "./records.js"
+import { throwInternalError } from "./errors.ts"
+import { unset } from "./records.ts"
 
-export const bound = (
-	target: Function,
-	ctx: ClassMemberDecoratorContext
-): void => {
-	ctx.addInitializer(function (this: any) {
-		this[ctx.name] = this[ctx.name].bind(this)
-	})
-}
+export type Fn<
+	in args extends readonly never[] = readonly never[],
+	out returns = unknown
+> = (...args: args) => returns
 
-export const cached = <self>(
-	target: (this: self) => any,
-	context:
-		| ClassGetterDecoratorContext<self, any>
-		| ClassMethodDecoratorContext<self, (this: self) => any>
-) =>
-	function (this: self): any {
-		const value = target.call(this)
-		Object.defineProperty(
-			this,
-			context.name,
-			context.kind === "getter" ?
-				{ value }
-			:	{
-					value: () => value,
-					enumerable: false
-				}
-		)
-		return value
-	}
-
-export const cachedThunk = <t>(thunk: () => t): (() => t) => {
+export const cached = <t>(thunk: () => t): (() => t) => {
 	let result: t | unset = unset
 	return () => (result === unset ? (result = thunk()) : result)
 }
@@ -74,12 +49,12 @@ export const DynamicFunction = class extends Function {
 	}
 } as DynamicFunction
 
-export type DynamicFunction = new <f extends (...args: never[]) => unknown>(
+export type DynamicFunction = new <fn extends Fn>(
 	...args: ConstructorParameters<typeof Function>
-) => f & {
-	apply(thisArg: null, args: Parameters<f>): ReturnType<f>
+) => fn & {
+	apply(thisArg: null, args: Parameters<fn>): ReturnType<fn>
 
-	call(thisArg: null, ...args: Parameters<f>): ReturnType<f>
+	call(thisArg: null, ...args: Parameters<fn>): ReturnType<fn>
 }
 
 export type CallableOptions<attachments extends object> = {
@@ -87,16 +62,19 @@ export type CallableOptions<attachments extends object> = {
 	bind?: object
 }
 
-/** @ts-expect-error required to cast function type */
-export class Callable<
-	f extends (...args: never[]) => unknown,
-	attachments extends object = {}
-> extends NoopBase<f & attachments> {
-	constructor(f: f, opts?: CallableOptions<attachments>) {
-		super()
+/** @ts-ignore required to cast function type */
+export interface Callable<fn extends Fn, attachments extends object>
+	extends fn,
+		attachments {}
+export class Callable<fn extends Fn, attachments extends object = {}> {
+	constructor(
+		fn: fn,
+		...[opts]: {} extends attachments ? [opts?: CallableOptions<attachments>]
+		:	[opts: CallableOptions<attachments>]
+	) {
 		return Object.assign(
 			Object.setPrototypeOf(
-				f.bind(opts?.bind ?? this),
+				fn.bind(opts?.bind ?? this),
 				this.constructor.prototype
 			),
 			opts?.attach
@@ -108,6 +86,10 @@ export type Guardable<input = unknown, narrowed extends input = input> =
 	| ((In: input) => In is narrowed)
 	| ((In: input) => boolean)
 
+export type TypeGuard<input = unknown, narrowed extends input = input> = (
+	In: input
+) => In is narrowed
+
 /**
  * Checks if the environment has Content Security Policy (CSP) enabled,
  * preventing JIT-optimized code from being compiled via new Function().
@@ -117,10 +99,10 @@ export type Guardable<input = unknown, narrowed extends input = input> =
  *
  * The result is cached for subsequent invocations.
  */
-export const envHasCsp = cachedThunk((): boolean => {
+export const envHasCsp = cached((): boolean => {
 	try {
 		return new Function("return false")()
-	} catch (e) {
+	} catch {
 		return true
 	}
 })

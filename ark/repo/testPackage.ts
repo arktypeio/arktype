@@ -1,4 +1,4 @@
-import { fromHere, shell } from "@arktype/fs"
+import { fromHere, shell } from "@ark/fs"
 
 shell(
 	`pnpm mocha --config ${fromHere("mocha.package.jsonc")} ${process.argv

@@ -1,6 +1,6 @@
-import { attest, contextualize } from "@arktype/attest"
+import { attest, contextualize } from "@ark/attest"
 import { type } from "arktype"
-import { writeBadDefinitionTypeMessage } from "../parser/definition.js"
+import { writeBadDefinitionTypeMessage } from "arktype/internal/parser/definition.ts"
 
 contextualize(() => {
 	it("undefined", () => {

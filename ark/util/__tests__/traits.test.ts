@@ -1,5 +1,6 @@
-import { attest, contextualize } from "@arktype/attest"
-import { Trait, compose, implement } from "@arktype/util"
+import { attest, contextualize } from "@ark/attest"
+import { Trait, compose, implement } from "@ark/util"
+import { Rectangle, Rhombus, Square } from "./traits.scratch.ts"
 
 export class Describable extends Trait<{
 	abstractMethods: {
@@ -47,9 +48,12 @@ contextualize(() => {
 				{
 					limit?: number
 				},
-				{
-					description?: string
-				}?
+				(
+					| {
+							description?: string
+					  }
+					| undefined
+				)?
 			],
 			Params
 		>()
@@ -143,7 +147,18 @@ contextualize(() => {
 		class B extends Trait<{ abstractMethods: { b(): number } }> {}
 		// @ts-expect-error
 		attest(class C extends implement(A, B, {}) {}).type.errors(
-			"Type '{}' is missing the following properties from type '{ a: () => number; b: () => number; }': a, b"
+			`Type '{}' is missing the following properties from type '{ a: () => number; b: () => number; }': a, b`
 		)
+	})
+
+	it("example", () => {
+		const square = new Square(5)
+		attest(square.area()).equals(25)
+		attest(square.perimeter()).equals(20)
+		attest(square.isRegular).equals(true)
+		attest(square instanceof Square).equals(true)
+		attest(square instanceof Rectangle).equals(true)
+		attest(square instanceof Rhombus).equals(true)
+		attest(square.traitsOf()).equals([Rectangle, Rhombus])
 	})
 })

@@ -1,4 +1,4 @@
-import { attest, contextualize } from "@arktype/attest"
+import { attest, contextualize } from "@ark/attest"
 import { scope, type } from "arktype"
 
 contextualize(() => {
@@ -17,7 +17,7 @@ contextualize(() => {
 	it("domain", () => {
 		const t = type("number")
 		attest(t(5)).snap(5)
-		attest(t("foo").toString()).snap("must be a number (was string)")
+		attest(t("foo").toString()).snap("must be a number (was a string)")
 	})
 
 	it("pattern", () => {
@@ -60,7 +60,7 @@ contextualize(() => {
 		const t = type("string|number[]")
 		attest(t([1])).snap([1])
 		attest(t("hello")).snap("hello")
-		attest(t(2).toString()).snap("must be a string or an object (was number)")
+		attest(t(2).toString()).snap("must be a string or an object (was a number)")
 		attest(t({}).toString()).snap("must be an array (was object)")
 	})
 
@@ -79,7 +79,7 @@ contextualize(() => {
 			"bar must be boolean (was missing) or foo must be a string (was missing)"
 		)
 		attest(t({ bar: "swapped", foo: true }).toString()).snap(
-			'bar must be boolean (was "swapped") or foo must be a string (was true)'
+			'bar must be boolean (was "swapped") or foo must be a string (was boolean)'
 		)
 	})
 
@@ -104,9 +104,39 @@ contextualize(() => {
 		attest(t({ a: "ok" })).snap({ a: "ok" })
 		attest(t({ a: 5 })).snap({ a: 5 })
 		// value isn't present
-		attest(t({}).toString()).snap("a must be null (was missing)")
+		attest(t({}).toString()).snap(
+			"a must be a number, a string or an object (was undefined)"
+		)
 		// unsatisfying value
-		attest(t({ a: false }).toString()).snap("a must be null (was false)")
+		attest(t({ a: false }).toString()).snap(
+			"a must be a number, a string or an object (was boolean)"
+		)
+	})
+
+	// previously was affected by a caching issue
+	// https://github.com/arktypeio/arktype/issues/962
+	it("multiple switch", () => {
+		const types = scope({
+			a: { foo: "string" },
+			b: { foo: "number" },
+			c: { foo: "Function" },
+			d: "a|b|c"
+		}).export()
+		attest(types.d({}).toString()).snap(
+			"foo must be an object, a number or a string (was undefined)"
+		)
+		attest(types.d({ foo: null }).toString()).snap(
+			"foo must be a function (was null)"
+		)
+	})
+
+	it("serialized actual for discriminated union", () => {
+		const t = type({ a: "'foo'" }).or({ a: "'bar'" })
+		attest(t({ a: '"extra quotes"' }).toString()).snap(
+			'a must be "bar" or "foo" (was "\\"extra quotes\\"")'
+		)
+		attest(t({ a: "" }).toString()).snap('a must be "bar" or "foo" (was "")')
+		attest(t({ a: 5 }).toString()).snap('a must be "bar" or "foo" (was 5)')
 	})
 
 	// TODO: https://github.com/arktypeio/arktype/issues/962
@@ -128,7 +158,7 @@ contextualize(() => {
 	// })
 
 	it("multi", () => {
-		const naturalNumber = type("integer>0")
+		const naturalNumber = type("number.integer>0")
 		attest(naturalNumber(-1.2).toString()).snap(`(-1.2) must be...
   • an integer
   • more than 0`)
@@ -155,14 +185,14 @@ contextualize(() => {
 		})
 
 		attest(out.toString())
-			.snap(`luckyNumbers[1] must be a bigint or a number (was string)
+			.snap(`luckyNumbers[1] must be a bigint or a number (was a string)
 name must be a string (was missing)
 isAdmin must be false, null or true (was 1)`)
 	})
 
 	it("relative path", () => {
 		const signup = type({
-			email: "email",
+			email: "string.email",
 			password: "string",
 			repeatPassword: "string"
 		}).narrow(
