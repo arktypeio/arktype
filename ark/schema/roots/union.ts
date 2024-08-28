@@ -17,7 +17,6 @@ import {
 	type show
 } from "@ark/util"
 import type { NodeSchema, nodeOfKind } from "../kinds.ts"
-import { typePathToPropString } from "../node.ts"
 import {
 	compileLiteralPropAccess,
 	compileSerializedValue,
@@ -46,7 +45,7 @@ import {
 	type RegisteredReference
 } from "../shared/registry.ts"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.ts"
-import { hasArkKind, pathToPropString } from "../shared/utils.ts"
+import { hasArkKind } from "../shared/utils.ts"
 import type { Domain } from "./domain.ts"
 import type { Morph } from "./morph.ts"
 import { BaseRoot } from "./root.ts"
@@ -289,12 +288,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			return this.compileIndiscriminable(js)
 
 		// we need to access the path as optional so we don't throw if it isn't present
-		const condition = this.discriminant.path.reduce<string>(
-			(acc, k) => acc + compileLiteralPropAccess(k, true),
-			// eventually, we should calculate the discriminant based on native typeof
-			// to avoid this overhead
-			this.discriminant.kind === "typeOf" ? "typeof data" : "data"
-		)
+		const condition = `${this.discriminant.kind === "typeOf" ? "typeof data" : "data"}${this.discriminant.optionallyChainedPropString}`
 
 		const cases = this.discriminant.cases
 
@@ -381,7 +375,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			return {
 				kind: "identity",
 				path: [],
-				propString: "",
+				optionallyChainedPropString: "",
 				cases
 			}
 		}
@@ -482,7 +476,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		const bestCtx: DiscriminantContext = {
 			kind: best.kind,
 			path: best.path,
-			propString: pathToPropString(best.path)
+			optionallyChainedPropString: optionallyChainPropString(best.path)
 		}
 
 		const cases = flatMorph(best.cases, (k, caseBranches) => {
@@ -515,13 +509,14 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		}
 
 		return {
-			kind: best.kind,
-			path: best.path,
-			propString: pathToPropString(best.path),
+			...bestCtx,
 			cases
 		}
 	}
 }
+
+const optionallyChainPropString = (path: Key[]): string =>
+	path.reduce<string>((acc, k) => acc + compileLiteralPropAccess(k, true), "")
 
 const serializedTypeOfDescriptions = registeredReference(jsTypeOfDescriptions)
 
@@ -711,7 +706,7 @@ export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
 
 type DiscriminantContext<kind extends DiscriminantKind = DiscriminantKind> = {
 	path: Key[]
-	propString: string
+	optionallyChainedPropString: string
 	kind: kind
 }
 
@@ -755,9 +750,11 @@ export const pruneDiscriminant = (
 		},
 		{
 			shouldTransform: (node, ctx) => {
-				const propString = typePathToPropString(ctx.path)
+				// safe to cast here as index nodes are never discriminants
+				const propString = optionallyChainPropString(ctx.path as Key[])
 
-				if (!discriminantCtx.propString.startsWith(propString)) return false
+				if (!discriminantCtx.optionallyChainedPropString.startsWith(propString))
+					return false
 
 				if (node.hasKind("domain") && node.domain === "object")
 					// if we've already checked a path at least as long as the current one,
@@ -766,7 +763,7 @@ export const pruneDiscriminant = (
 
 				if (
 					(node.hasKind("domain") || discriminantCtx.kind === "identity") &&
-					propString === discriminantCtx.propString
+					propString === discriminantCtx.optionallyChainedPropString
 				)
 					// if the discriminant has already checked the domain at the current path
 					// (or a unit literal, implying a domain), we don't need to recheck it
