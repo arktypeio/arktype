@@ -748,32 +748,34 @@ export const pruneDiscriminant = (
 	discriminantCtx: DiscriminantContext
 ): BaseRoot | null =>
 	discriminantBranch.transform(
-		(nodeKind, inner, ctx) => {
-			// if we've already checked a path at least as long as the current one,
-			// we don't need to revalidate that we're in an object
-			if (
-				nodeKind === "domain" &&
-				(inner as Domain.Inner).domain === "object" &&
-				discriminantCtx.path.length >= ctx.path.length
-			)
-				return null
+		(nodeKind, inner) => {
+			if (nodeKind === "domain" || nodeKind === "unit") return null
 
-			// if the discriminant has already checked the domain at the current path
-			// (or a unit literal, implying a domain), we don't need to recheck it
-			if (
-				(nodeKind === "domain" || discriminantCtx.kind === "identity") &&
-				typePathToPropString(ctx.path) === discriminantCtx.propString
-			)
-				return null
 			return inner
 		},
 		{
-			shouldTransform: node =>
+			shouldTransform: (node, ctx) => {
+				const propString = typePathToPropString(ctx.path)
+
+				if (!discriminantCtx.propString.startsWith(propString)) return false
+
+				if (node.hasKind("domain") && node.domain === "object")
+					// if we've already checked a path at least as long as the current one,
+					// we don't need to revalidate that we're in an object
+					return true
+
+				if (
+					(node.hasKind("domain") || discriminantCtx.kind === "identity") &&
+					propString === discriminantCtx.propString
+				)
+					// if the discriminant has already checked the domain at the current path
+					// (or a unit literal, implying a domain), we don't need to recheck it
+					return true
+
 				// we don't need to recurse into index nodes as they will never
 				// have a required path therefore can't be used to discriminate
-				(node.children.length !== 0 && node.kind !== "index") ||
-				node.kind === "domain" ||
-				node.kind === "unit"
+				return node.children.length !== 0 && node.kind !== "index"
+			}
 		}
 	)
 

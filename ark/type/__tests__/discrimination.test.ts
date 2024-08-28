@@ -227,7 +227,7 @@ contextualize(() => {
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1100
-	it("discrimnated null + object", () => {
+	it("discriminated null + object", () => {
 		const company = type({
 			id: "number"
 		}).or("string | null")
@@ -236,5 +236,48 @@ contextualize(() => {
 		attest(company({ id: 1 })).equals({ id: 1 })
 		attest(company("foo")).equals("foo")
 		attest(company(5)?.toString()).snap("must be a number (was 5)")
+	})
+
+	it("differing inner discriminated paths", () => {
+		const discriminated = type(
+			{
+				innerA: {
+					id: "1"
+				}
+			},
+			"|",
+			{
+				innerB: {
+					id: "1"
+				}
+			}
+		)
+			.or({ innerA: { id: "2" } })
+			.or({ innerB: { id: "2" } })
+
+		const union = discriminated.internal.assertHasKind("union")
+
+		attest(union.discriminantJson).snap({
+			kind: "identity",
+			path: ["innerB", "id"],
+			cases: {
+				"1": true,
+				"2": true,
+				default: {
+					kind: "identity",
+					path: ["innerA", "id"],
+					cases: { "1": true, "2": true }
+				}
+			}
+		})
+
+		attest(union({ innerA: { id: 1 } })).equals({ innerA: { id: 1 } })
+		attest(union({ innerB: { id: 1 } })).equals({ innerB: { id: 1 } })
+		attest(union({ innerA: { id: 2 } })).equals({ innerA: { id: 2 } })
+		attest(union({ innerB: { id: 2 } })).equals({ innerB: { id: 2 } })
+
+		attest(union({})?.toString()).snap(
+			"innerA.id must be 1 or 2 (was undefined)"
+		)
 	})
 })

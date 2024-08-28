@@ -53,12 +53,14 @@ export type PathToPropStringOptions<stringifiable = PropertyKey> = requireKeys<
 	stringifiable extends PropertyKey ? never : "stringifyNonKey"
 >
 
-export const pathToPropString = <stringifiable>(
+export type PathToPropStringFn = <stringifiable>(
 	path: array<stringifiable>,
 	...[opts]: [stringifiable] extends [PropertyKey] ?
 		[opts?: PathToPropStringOptions]
 	:	NoInfer<[opts: PathToPropStringOptions<stringifiable>]>
-): string => {
+) => string
+
+export const pathToPropString: PathToPropStringFn = (path, ...[opts]) => {
 	const stringifySymbol = opts?.stringifySymbol ?? printable
 	const propAccessChain = path.reduce<string>((s, k) => {
 		switch (typeof k) {
