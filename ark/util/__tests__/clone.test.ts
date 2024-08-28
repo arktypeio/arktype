@@ -135,9 +135,42 @@ contextualize(() => {
 		attest(original.a).equals(5)
 	})
 
-	it("preserves builtins", () => {
-		const dateClone = deepClone(new Date(2000, 1))
-		attest(dateClone).instanceOf(Date)
-		attest(dateClone.toISOString()).equals("2000-02-01T00:00:00.000Z")
+	it("Date", () => {
+		const original = new Date(2000, 1)
+		const cloned = deepClone(original)
+		attest(cloned).instanceOf(Date)
+		attest(cloned.toISOString()).equals(original.toISOString())
+		original.setDate(original.getDate() + 1)
+		attest(cloned.getDate()).equals(1)
+		attest(original.getDate()).equals(2)
+		cloned.setDate(3)
+		attest(cloned.getDate()).equals(3)
+		attest(original.getDate()).equals(2)
+	})
+
+	it("Set", () => {
+		const original = new Set([1, 2, 3])
+		const cloned = deepClone(original)
+		attest(cloned).instanceOf(Set)
+		attest(cloned.has(1)).equals(true)
+		attest(cloned.has(4)).equals(false)
+
+		cloned.add(4)
+		attest(cloned.has(4)).equals(true)
+		attest(original.has(4)).equals(false)
+	})
+
+	it("Map", () => {
+		const original = new Map([
+			[1, 2],
+			[3, 4]
+		])
+		const cloned = deepClone(original)
+		attest(cloned).instanceOf(Map)
+		attest(cloned.get(1)).equals(2)
+		attest(cloned.get(4)).equals(undefined)
+		cloned.set(5, 6)
+		attest(cloned.get(5)).equals(6)
+		attest(original.get(5)).equals(undefined)
 	})
 })

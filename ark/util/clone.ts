@@ -1,4 +1,9 @@
-import { objectKindOf, type BuiltinObjectKind } from "./objectKinds.ts"
+import {
+	builtinConstructors,
+	getBuiltinNameOfConstructor,
+	objectKindOf,
+	type BuiltinObjectKind
+} from "./objectKinds.ts"
 import type { keySet } from "./records.ts"
 
 /** Shallowly copy the properties and prototype of the object.
@@ -25,30 +30,35 @@ export const deepClone = <input extends object>(input: input): input =>
 const deepClonableObjectKind: keySet<BuiltinObjectKind> = {
 	Array: 1,
 	Set: 1,
-	WeakSet: 1,
-	Map: 1,
-	WeakMap: 1
+	Map: 1
 }
 
 const _clone = (input: unknown, seen: Map<unknown, unknown> | null): any => {
 	if (typeof input !== "object" || input === null) return input
 	if (seen?.has(input)) return seen.get(input)
 
-	const builtinConstructorName = objectKindOf(input)
+	const builtinConstructorName = getBuiltinNameOfConstructor(input.constructor)
 
-	if (
-		builtinConstructorName &&
-		!deepClonableObjectKind[builtinConstructorName]
-	) {
-		if (builtinConstructorName === "Date")
-			return new Date((input as Date).getTime())
-
-		return input
+	if (builtinConstructorName) {
+		if (!deepClonableObjectKind[builtinConstructorName]) {
+			if (builtinConstructorName === "Date")
+				return new Date((input as Date).getTime())
+			else return input
+		}
+	} else {
+		const inheritableBuiltinConstructorName = objectKindOf(input)
+		if (
+			inheritableBuiltinConstructorName &&
+			inheritableBuiltinConstructorName !== "Array"
+		)
+			// we can clone array subclass using slice, but not other subclasses of other builtins like Set and Map
+			return input
 	}
 
 	const cloned =
-		Array.isArray(input) ?
-			input.slice()
+		Array.isArray(input) ? input.slice()
+		: builtinConstructorName ?
+			new (builtinConstructors[builtinConstructorName] as any)()
 		:	Object.create(Object.getPrototypeOf(input))
 
 	const propertyDescriptors = Object.getOwnPropertyDescriptors(input)
@@ -61,12 +71,9 @@ const _clone = (input: unknown, seen: Map<unknown, unknown> | null): any => {
 
 	Object.defineProperties(cloned, propertyDescriptors)
 
-	if (builtinConstructorName === "Set" || builtinConstructorName === "WeakSet")
+	if (builtinConstructorName === "Set")
 		for (const item of input as Set<unknown>) cloned.add(_clone(item, seen))
-	else if (
-		builtinConstructorName === "Map" ||
-		builtinConstructorName === "WeakMap"
-	) {
+	else if (builtinConstructorName === "Map") {
 		for (const [k, v] of input as Map<unknown, unknown>)
 			cloned.set(k, _clone(v, seen))
 	}

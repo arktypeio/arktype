@@ -114,10 +114,6 @@ export const objectKindDescriptions = {
 
 export type objectKindDescriptions = typeof objectKindDescriptions
 
-export const getBuiltinNameOfConstructorOf = (
-	instance: object
-): BuiltinObjectKind | null => getBuiltinNameOfConstructor(instance.constructor)
-
 /**
  * this will only return an object kind if it's the root constructor
  * example TypeError would return null not 'Error'
