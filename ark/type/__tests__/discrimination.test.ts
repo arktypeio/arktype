@@ -225,4 +225,13 @@ contextualize(() => {
 			"value at [Symbol(lobmyS)] must be 0 or 1 (was 2)"
 		)
 	})
+
+	// https://github.com/arktypeio/arktype/issues/1100
+	it("discrimnated null + object", () => {
+		const company = type({
+			id: "number"
+		}).or("string | null")
+
+		company(null)
+	})
 })

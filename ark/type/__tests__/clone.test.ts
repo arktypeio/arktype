@@ -26,6 +26,11 @@ contextualize(() => {
 		attest(original).snap({ foo: "  bar  " })
 	})
 
+	it("default clone implementation preserves prototypes", () => {
+		const t = type(["Date", "=>", d => d.toISOString()])
+		attest(t.from(new Date(2000, 1))).equals("2000-01-01T00:00:00.000Z")
+	})
+
 	it("can be configured to mutate", () => {
 		const types = type.module(
 			{

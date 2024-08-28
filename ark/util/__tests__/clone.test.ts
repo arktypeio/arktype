@@ -101,4 +101,43 @@ contextualize(() => {
 		attest(cloned !== arr).equals(true)
 		attest(cloned.extraProp).equals(arr.extraProp)
 	})
+
+	it("rebinds methods", () => {
+		class MyClass {
+			a: number
+
+			constructor(a: number) {
+				this.a = a
+			}
+
+			getA() {
+				return this.a
+			}
+
+			setA(a: number) {
+				this.a = a
+			}
+		}
+
+		const original = new MyClass(5)
+		const cloned = deepClone(original)
+
+		attest(cloned.getA()).equals(5)
+
+		cloned.a = 6
+
+		attest(cloned.getA()).equals(6)
+
+		cloned.setA(7)
+
+		attest(cloned.getA()).equals(7)
+
+		attest(original.a).equals(5)
+	})
+
+	it("preserves builtins", () => {
+		const dateClone = deepClone(new Date(2000, 1))
+		attest(dateClone).instanceOf(Date)
+		attest(dateClone.toISOString()).equals("2000-02-01T00:00:00.000Z")
+	})
 })

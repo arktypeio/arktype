@@ -1,13 +1,9 @@
-import { shell } from "@ark/fs"
+import { type } from "arktype"
 
-const times: number[] = []
+export const company = type({
+	id: "number"
+})
 
-for (let i = 0; i < 10; i++) {
-	const start = performance.now()
-	shell("pnpm attest stats")
-	const end = performance.now()
-	console.log(end - start)
-	times.push(end - start)
-}
+const maybe = company.or("string | null")
 
-console.log(times.reduce((a, b) => a + b, 0) / times.length)
+maybe(null)

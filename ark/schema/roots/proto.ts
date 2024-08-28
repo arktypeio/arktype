@@ -1,7 +1,7 @@
 import {
 	builtinConstructors,
 	constructorExtends,
-	getExactBuiltinConstructorName,
+	getBuiltinNameOfConstructorOf,
 	objectKindDescriptions,
 	objectKindOrDomainOf,
 	prototypeKeysOf,
@@ -73,7 +73,7 @@ const implementation: nodeImplementationOf<Proto.Declaration> =
 		keys: {
 			proto: {
 				serialize: ctor =>
-					getExactBuiltinConstructorName(ctor) ?? defaultValueSerializer(ctor)
+					getBuiltinNameOfConstructorOf(ctor) ?? defaultValueSerializer(ctor)
 			}
 		},
 		normalize: schema =>
@@ -106,7 +106,7 @@ const implementation: nodeImplementationOf<Proto.Declaration> =
 	})
 
 export class ProtoNode extends InternalBasis<Proto.Declaration> {
-	builtinName: BuiltinObjectKind | null = getExactBuiltinConstructorName(
+	builtinName: BuiltinObjectKind | null = getBuiltinNameOfConstructorOf(
 		this.proto
 	)
 	serializedConstructor: string = (this.json as { proto: string }).proto

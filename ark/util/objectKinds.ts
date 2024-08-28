@@ -4,25 +4,9 @@ import { type Domain, type domainDescriptions, domainOf } from "./domain.ts"
 import type { Fn } from "./functions.ts"
 import { type Key, isKeyOf } from "./records.ts"
 
-export type builtinConstructors = {
-	Array: ArrayConstructor
-	Date: DateConstructor
-	Error: ErrorConstructor
-	Function: FunctionConstructor
-	Map: MapConstructor
-	RegExp: RegExpConstructor
-	Set: SetConstructor
-	String: StringConstructor
-	Number: NumberConstructor
-	Boolean: BooleanConstructor
-	WeakMap: WeakMapConstructor
-	WeakSet: WeakSetConstructor
-	Promise: PromiseConstructor
-}
-
 // Built-in object constructors based on a subset of:
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
-export const builtinConstructors: builtinConstructors = {
+export const builtinConstructors = {
 	Array,
 	Date,
 	Error,
@@ -38,12 +22,12 @@ export const builtinConstructors: builtinConstructors = {
 	Promise
 }
 
-export type BuiltinObjectConstructors = typeof builtinConstructors
+export type builtinConstructors = typeof builtinConstructors
 
-export type BuiltinObjectKind = keyof BuiltinObjectConstructors
+export type BuiltinObjectKind = keyof builtinConstructors
 
 export type BuiltinObjects = {
-	[kind in BuiltinObjectKind]: InstanceType<BuiltinObjectConstructors[kind]>
+	[kind in BuiltinObjectKind]: InstanceType<builtinConstructors[kind]>
 }
 
 export type objectKindOf<data extends object> =
@@ -130,10 +114,16 @@ export const objectKindDescriptions = {
 
 export type objectKindDescriptions = typeof objectKindDescriptions
 
-// this will only return an object kind if it's the root constructor
-// example TypeError would return undefined not 'Error'
-export const getExactBuiltinConstructorName = (
-	ctor: unknown
+export const getBuiltinNameOfConstructorOf = (
+	instance: object
+): BuiltinObjectKind | null => getBuiltinNameOfConstructor(instance.constructor)
+
+/**
+ * this will only return an object kind if it's the root constructor
+ * example TypeError would return null not 'Error'
+ **/
+export const getBuiltinNameOfConstructor = (
+	ctor: Function
 ): BuiltinObjectKind | null => {
 	const constructorName: string | null = Object(ctor).name ?? null
 	return (
