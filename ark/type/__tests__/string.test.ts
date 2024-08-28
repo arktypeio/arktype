@@ -12,9 +12,10 @@ contextualize(() => {
 
 	it("ignores whitespace between identifiers/operators", () => {
 		const t = type(`  \n   string  |
-    \tboolean    []   `)
-		attest<string | boolean[]>(t.infer)
-		attest(t.json).equals(type("string|boolean[]").json)
+           number
+    \t|boolean    []   `)
+		attest<string | number | boolean[]>(t.infer)
+		attest(t.json).equals(type("string|number|boolean[]").json)
 	})
 
 	it("errors on bad whitespace", () => {
