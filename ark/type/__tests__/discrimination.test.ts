@@ -232,6 +232,9 @@ contextualize(() => {
 			id: "number"
 		}).or("string | null")
 
-		company(null)
+		attest(company(null)).equals(null)
+		attest(company({ id: 1 })).equals({ id: 1 })
+		attest(company("foo")).equals("foo")
+		attest(company(5)?.toString()).snap("must be a number (was 5)")
 	})
 })
