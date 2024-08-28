@@ -99,9 +99,9 @@ export class Scanner<lookahead extends string = string> {
 		")": true,
 		"[": true,
 		"%": true,
-		" ": true,
 		",": true,
-		":": true
+		":": true,
+		...whiteSpaceTokens
 	} as const
 
 	static finalizingLookaheads = {

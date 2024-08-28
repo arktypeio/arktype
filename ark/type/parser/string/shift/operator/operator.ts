@@ -1,4 +1,4 @@
-import { isKeyOf, type WhiteSpaceToken } from "@ark/util"
+import { isKeyOf, type WhiteSpaceToken, whiteSpaceTokens } from "@ark/util"
 import type { DynamicStateWithRoot } from "../../reduce/dynamic.ts"
 import type { StaticState, state } from "../../reduce/static.ts"
 import { Scanner } from "../scanner.ts"
@@ -23,7 +23,7 @@ export const parseOperator = (s: DynamicStateWithRoot): void => {
 			s.finalize(lookahead)
 		: isKeyOf(lookahead, comparatorStartChars) ? parseBound(s, lookahead)
 		: lookahead === "%" ? parseDivisor(s)
-		: lookahead === " " ? parseOperator(s)
+		: lookahead in whiteSpaceTokens ? parseOperator(s)
 		: s.error(writeUnexpectedCharacterMessage(lookahead))
 	)
 }
