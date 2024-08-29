@@ -109,7 +109,50 @@ contextualize.each(
 			)
 		})
 
-		// TODO: private aliases
+		it("allows unbound module in scope", () => {
+			const mod = scope({
+				a: "number"
+			}).export()
+
+			const use1 = scope({
+				mod,
+				b: "mod.a"
+			})
+
+			attest(use1).type.toString.snap(
+				"Scope<{ b: number; mod: Submodule<{ a: number }> }>"
+			)
+
+			use1.export()
+			attest(use1.json).snap({
+				"mod.a": { domain: "number" },
+				b: { domain: "number" }
+			})
+		})
+
+		// https://github.com/arktypeio/arktype/issues/1103
+		it("allows BoundModule reference in scope", () => {
+			const mod2 = scope({
+				a: "number",
+				c: "string"
+			}).export("a")
+
+			const use2 = scope({
+				mod2,
+				b: "mod2.a"
+			})
+
+			attest(use2).type.toString.snap(`Scope<{
+	b: number
+	mod2: Submodule<{ a: number }>
+}>`)
+
+			use2.export()
+			attest(use2.json).snap({
+				"mod2.a": { domain: "number" },
+				b: { domain: "number" }
+			})
+		})
 	}
 )
 
