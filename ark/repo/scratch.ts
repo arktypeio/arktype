@@ -1,5 +1,5 @@
 import { type } from "arktype"
 
-type({
+const t = type({
 	"test?": type("string").pipe(x => x === "true")
 })

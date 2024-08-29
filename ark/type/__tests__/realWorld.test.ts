@@ -859,4 +859,15 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			appointmentTypeID: 1
 		})
 	})
+
+	// https://discord.com/channels/957797212103016458/957804102685982740/1276840721370054688
+	it("directly nested piped type instantiation", () => {
+		const t = type({
+			"test?": type("string").pipe(x => x === "true")
+		})
+
+		attest<{
+			test?: (In: string) => Out<boolean>
+		}>(t.t)
+	})
 })
