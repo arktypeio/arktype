@@ -1,3 +1,7 @@
 import { type } from "arktype"
 
-const t = type("4 < number % 2 <= 10")
+const user = type({
+	name: "string",
+	"age?": "number",
+	tags: "string[]"
+})
