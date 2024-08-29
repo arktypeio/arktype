@@ -10,6 +10,7 @@ import { Callable, type Constructor, type array, type conform } from "@ark/util"
 import {
 	parseGenericParams,
 	type Generic,
+	type GenericParser,
 	type ParameterString,
 	type baseGenericConstraints,
 	type parseValidGenericParams,
@@ -84,6 +85,7 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	errors: typeof ArkErrors
 	module: ModuleParser
 	scope: ScopeParser
+	generic: GenericParser<$>
 	ark: typeof ark
 }
 
@@ -98,6 +100,7 @@ export class InternalTypeParser extends Callable<
 				raw: $.parseRoot as never,
 				module: $.constructor.module,
 				scope: $.constructor.scope,
+				generic: $.generic as never,
 				// this won't be defined during bootstrapping, but externally always will be
 				ark: $.ambient as never
 			} satisfies Omit<TypeParserAttachments, keyof Ark.typeAttachments>,
