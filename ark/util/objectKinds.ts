@@ -2,49 +2,122 @@ import type { array } from "./arrays.ts"
 import type { DescribeOptions } from "./describe.ts"
 import { type Domain, type domainDescriptions, domainOf } from "./domain.ts"
 import type { Fn } from "./functions.ts"
+import type { satisfy } from "./generics.ts"
 import { type Key, isKeyOf } from "./records.ts"
 
-export type builtinConstructors = {
-	Array: ArrayConstructor
-	Date: DateConstructor
-	Error: ErrorConstructor
-	Function: FunctionConstructor
-	Map: MapConstructor
-	RegExp: RegExpConstructor
-	Set: SetConstructor
-	String: StringConstructor
-	Number: NumberConstructor
-	Boolean: BooleanConstructor
-	WeakMap: WeakMapConstructor
-	WeakSet: WeakSetConstructor
-	Promise: PromiseConstructor
-}
-
-// Built-in object constructors based on a subset of:
-// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
-export const builtinConstructors: builtinConstructors = {
+// ECMAScript Objects
+// See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
+export const ecmascriptConstructors = {
 	Array,
+	Boolean,
 	Date,
 	Error,
 	Function,
 	Map,
+	Number,
+	Promise,
 	RegExp,
 	Set,
 	String,
-	Number,
-	Boolean,
 	WeakMap,
-	WeakSet,
-	Promise
+	WeakSet
 }
 
-export type BuiltinObjectConstructors = typeof builtinConstructors
+export type ecmascriptConstructors = typeof ecmascriptConstructors
 
-export type BuiltinObjectKind = keyof BuiltinObjectConstructors
+// we have to narrow instantiateConstructors here since a lot of the builtin defaults use `any`
+export type EcmascriptObjects = satisfy<
+	instantiateConstructors<keyof ecmascriptConstructors>,
+	{
+		Array: Array<unknown>
+		Boolean: Boolean
+		Date: Date
+		Error: Error
+		Function: Function
+		Map: Map<unknown, unknown>
+		Number: Number
+		RegExp: RegExp
+		Set: Set<unknown>
+		String: String
+		WeakMap: WeakMap<object, unknown>
+		WeakSet: WeakSet<object>
+		Promise: Promise<unknown>
+	}
+>
 
-export type BuiltinObjects = {
-	[kind in BuiltinObjectKind]: InstanceType<BuiltinObjectConstructors[kind]>
+/** Node18 */
+export const FileConstructor = globalThis.File ?? Blob
+
+// need to type these explicitly due to a resolution issue
+export type platformConstructors = {
+	ArrayBuffer: ArrayBufferConstructor
+	Blob: typeof Blob
+	File: typeof File
+	FormData: typeof FormData
+	Headers: typeof Headers
+	Request: typeof Request
+	Response: typeof Response
+	URL: typeof URL
 }
+
+// Platform APIs
+// See https://developer.mozilla.org/en-US/docs/Web/API
+// Must be implemented in Node etc. as well as the browser to include here
+export const platformConstructors: platformConstructors = {
+	ArrayBuffer,
+	Blob,
+	File: FileConstructor,
+	FormData,
+	Headers,
+	Request,
+	Response,
+	URL
+}
+
+export type PlatformObjects = instantiateConstructors<
+	keyof platformConstructors
+>
+
+export const typedArrayConstructors = {
+	Int8Array,
+	Uint8Array,
+	Uint8ClampedArray,
+	Int16Array,
+	Uint16Array,
+	Int32Array,
+	Uint32Array,
+	Float32Array,
+	Float64Array,
+	BigInt64Array,
+	BigUint64Array
+}
+
+export type typedArrayConstructors = typeof typedArrayConstructors
+
+export type TypedArrayObjects = instantiateConstructors<
+	keyof typedArrayConstructors
+>
+
+// Built-in object constructors based on a subset of:
+// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
+export const builtinConstructors = {
+	...ecmascriptConstructors,
+	...platformConstructors,
+	...typedArrayConstructors,
+	String,
+	Number,
+	Boolean
+}
+
+export type builtinConstructors = typeof builtinConstructors
+
+export type BuiltinObjectKind = keyof builtinConstructors
+
+type instantiateConstructors<kind extends BuiltinObjectKind> = {
+	[k in kind]: InstanceType<builtinConstructors[k]>
+}
+
+export type BuiltinObjects = instantiateConstructors<BuiltinObjectKind>
 
 export type objectKindOf<data extends object> =
 	object extends data ? keyof builtinConstructors | undefined
@@ -111,8 +184,7 @@ export const hasObjectKind = <kind extends keyof builtinConstructors>(
 
 export const isArray = (data: unknown): data is array => Array.isArray(data)
 
-/** Each defaultObjectKind's completion for the phrase "must be _____" */
-export const objectKindDescriptions = {
+export const ecmascriptDescriptions = {
 	Array: "an array",
 	Function: "a function",
 	Date: "a Date",
@@ -126,14 +198,48 @@ export const objectKindDescriptions = {
 	Promise: "a Promise",
 	WeakMap: "a WeakMap",
 	WeakSet: "a WeakSet"
+} as const satisfies Record<keyof EcmascriptObjects, string>
+
+export const platformDescriptions = {
+	ArrayBuffer: "an ArrayBuffer instance",
+	Blob: "a Blob instance",
+	File: "a File instance",
+	FormData: "a FormData instance",
+	Headers: "a Headers instance",
+	Request: "a Request instance",
+	Response: "a Response instance",
+	URL: "a URL instance"
+}
+
+export const typedArrayDescriptions = {
+	Int8Array: "an Int8Array",
+	Uint8Array: "a Uint8Array",
+	Uint8ClampedArray: "a Uint8ClampedArray",
+	Int16Array: "an Int16Array",
+	Uint16Array: "a Uint16Array",
+	Int32Array: "an Int32Array",
+	Uint32Array: "a Uint32Array",
+	Float32Array: "a Float32Array",
+	Float64Array: "a Float64Array",
+	BigInt64Array: "a BigInt64Array",
+	BigUint64Array: "a BigUint64Array"
+} as const satisfies Record<keyof typedArrayConstructors, string>
+
+/** Each defaultObjectKind's completion for the phrase "must be _____" */
+export const objectKindDescriptions = {
+	...ecmascriptDescriptions,
+	...platformDescriptions,
+	...typedArrayDescriptions
 } as const satisfies Record<BuiltinObjectKind, string>
 
 export type objectKindDescriptions = typeof objectKindDescriptions
 
-// this will only return an object kind if it's the root constructor
-// example TypeError would return undefined not 'Error'
-export const getExactBuiltinConstructorName = (
-	ctor: unknown
+/**
+ * this will only return an object kind if it's the root constructor
+ * example TypeError would return null not 'Error'
+ **/
+export const getBuiltinNameOfConstructor = (
+	ctor: Function
 ): BuiltinObjectKind | null => {
 	const constructorName: string | null = Object(ctor).name ?? null
 	return (

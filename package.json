@@ -20,6 +20,7 @@
 		"build": "pnpm -r build",
 		"buildCjs": "ARKTYPE_CJS=1 pnpm -r build",
 		"rmBuild": "pnpm -r exec rm -rf out",
+		"ts": "node ./ark/repo/ts.js",
 		"tsc": "node ./node_modules/typescript/lib/tsc.js",
 		"test": "pnpm testTyped --skipTypes",
 		"testTyped": "mocha --exclude 'ark/attest/**/*.test.*'",
@@ -43,9 +44,9 @@
 		"@ark/repo": "workspace:*",
 		"@ark/util": "workspace:*",
 		"@types/mocha": "10.0.7",
-		"@types/node": "22.5.0",
-		"@typescript-eslint/eslint-plugin": "8.2.0",
-		"@typescript-eslint/parser": "8.2.0",
+		"@types/node": "22.5.1",
+		"@typescript-eslint/eslint-plugin": "8.3.0",
+		"@typescript-eslint/parser": "8.3.0",
 		"arktype": "workspace:*",
 		"c8": "10.1.2",
 		"eslint": "8.57.0",
@@ -56,13 +57,13 @@
 		"eslint-plugin-mdx": "3.1.5",
 		"eslint-plugin-only-warn": "1.1.0",
 		"eslint-plugin-prefer-arrow-functions": "3.4.1",
-		"knip": "5.27.3",
+		"knip": "5.27.4",
 		"mocha": "10.7.3",
 		"prettier": "3.3.3",
-		"tsx": "4.17.0",
+		"tsx": "4.19.0",
 		"typescript": "catalog:",
 		"typescript-min": "npm:typescript@5.1.5",
-		"typescript-nightly": "npm:typescript@5.7.0-dev.20240822"
+		"typescript-nightly": "npm:typescript@5.7.0-dev.20240829"
 	},
 	"mocha": {
 		"//": "IF YOU UPDATE THE MOCHA CONFIG HERE, PLEASE ALSO UPDATE ark/repo/mocha.jsonc AND .vscode/settings.json",
@@ -96,5 +97,5 @@
 	"eslintConfig": {
 		"extends": "./ark/repo/.eslintrc.cjs"
 	},
-	"packageManager": "pnpm@9.8.0+sha512.8e4c3550fb500e808dbc30bb0ce4dd1eb614e30b1c55245f211591ec2cdf9c611cabd34e1364b42f564bd54b3945ed0f49d61d1bbf2ec9bd74b866fcdc723276"
+	"packageManager": "pnpm@9.9.0"
 }

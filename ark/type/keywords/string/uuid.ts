@@ -1,4 +1,4 @@
-import type { Submodule } from "../../module.ts"
+import type { Module, Submodule } from "../../module.ts"
 import type { Branded, constrain } from "../ast.ts"
 import { submodule } from "../utils.ts"
 import { regexStringNode } from "./utils.ts"
@@ -61,14 +61,20 @@ declare namespace string {
 	}
 }
 
-export type uuid = Submodule<{
-	$root: string.uuid
-	v1: string.uuid.v1
-	v2: string.uuid.v2
-	v3: string.uuid.v3
-	v4: string.uuid.v4
-	v5: string.uuid.v5
-	v6: string.uuid.v6
-	v7: string.uuid.v7
-	v8: string.uuid.v8
-}>
+export declare namespace uuid {
+	export type module = Module<submodule>
+
+	export type submodule = Submodule<$>
+
+	export type $ = {
+		$root: string.uuid
+		v1: string.uuid.v1
+		v2: string.uuid.v2
+		v3: string.uuid.v3
+		v4: string.uuid.v4
+		v5: string.uuid.v5
+		v6: string.uuid.v6
+		v7: string.uuid.v7
+		v8: string.uuid.v8
+	}
+}

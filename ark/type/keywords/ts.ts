@@ -3,6 +3,42 @@ import { Hkt, type Key, type omit, type pick, type show } from "@ark/util"
 import type { Module, Submodule } from "../module.ts"
 import { submodule } from "./utils.ts"
 
+export const arkTsKeywords: arkTsKeywords = submodule({
+	bigint: intrinsic.bigint,
+	boolean: intrinsic.boolean,
+	false: intrinsic.false,
+	never: intrinsic.never,
+	null: intrinsic.null,
+	number: intrinsic.number,
+	object: intrinsic.object,
+	string: intrinsic.string,
+	symbol: intrinsic.symbol,
+	true: intrinsic.true,
+	unknown: intrinsic.unknown,
+	undefined: intrinsic.undefined
+})
+
+export type arkTsKeywords = Module<arkTsKeywords.$>
+
+export declare namespace arkTsKeywords {
+	export type submodule = Submodule<$>
+
+	export type $ = {
+		bigint: bigint
+		boolean: boolean
+		false: false
+		never: never
+		null: null
+		number: number
+		object: object
+		string: string
+		symbol: symbol
+		true: true
+		unknown: unknown
+		undefined: undefined
+	}
+}
+
 class RecordHkt extends Hkt<[Key, unknown]> {
 	declare body: Record<this[0], this[1]>
 }
@@ -72,19 +108,7 @@ const Extract = genericNode("T", "U")(
 	ExtractHkt
 )
 
-export const arkTs: Module<arkTs> = submodule({
-	bigint: intrinsic.bigint,
-	boolean: intrinsic.boolean,
-	false: intrinsic.false,
-	never: intrinsic.never,
-	null: intrinsic.null,
-	number: intrinsic.number,
-	object: intrinsic.object,
-	string: intrinsic.string,
-	symbol: intrinsic.symbol,
-	true: intrinsic.true,
-	unknown: intrinsic.unknown,
-	undefined: intrinsic.undefined,
+export const arkTsGenerics: arkTsGenerics.module = submodule({
 	Record,
 	Pick,
 	Omit,
@@ -94,24 +118,18 @@ export const arkTs: Module<arkTs> = submodule({
 	Required
 })
 
-export type arkTs = Submodule<{
-	bigint: bigint
-	boolean: boolean
-	false: false
-	never: never
-	null: null
-	number: number
-	object: object
-	string: string
-	symbol: symbol
-	true: true
-	unknown: unknown
-	undefined: undefined
-	Record: typeof Record.t
-	Pick: typeof Pick.t
-	Omit: typeof Omit.t
-	Exclude: typeof Exclude.t
-	Extract: typeof Extract.t
-	Partial: typeof Partial.t
-	Required: typeof Required.t
-}>
+export declare namespace arkTsGenerics {
+	export type module = Module<arkTsGenerics.$>
+
+	export type submodule = Submodule<$>
+
+	export type $ = {
+		Record: typeof Record.t
+		Pick: typeof Pick.t
+		Omit: typeof Omit.t
+		Exclude: typeof Exclude.t
+		Extract: typeof Extract.t
+		Partial: typeof Partial.t
+		Required: typeof Required.t
+	}
+}

@@ -378,10 +378,9 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		attest(CreatePatientInput({ first_name: " John  " }).toString()).snap(
 			"first_name must be at most length 3 (was 4)"
 		)
-		// ideally, this would be "a string or null", but it is described
-		// as an object since discrimination uses the typeof operator
+
 		attest(CreatePatientInput({ first_name: 5 }).toString()).snap(
-			"first_name must be a string or an object (was a number)"
+			"first_name must be a string or null (was a number)"
 		)
 	})
 
@@ -859,5 +858,16 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			calendarID: 1,
 			appointmentTypeID: 1
 		})
+	})
+
+	// https://discord.com/channels/957797212103016458/957804102685982740/1276840721370054688
+	it("directly nested piped type instantiation", () => {
+		const t = type({
+			"test?": type("string").pipe(x => x === "true")
+		})
+
+		attest<{
+			test?: (In: string) => Out<boolean>
+		}>(t.t)
 	})
 })

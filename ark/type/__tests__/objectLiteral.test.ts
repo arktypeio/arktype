@@ -3,7 +3,8 @@ import {
 	registeredReference,
 	writeInvalidPropertyKeyMessage,
 	writeUnboundableMessage,
-	writeUnresolvableMessage
+	writeUnresolvableMessage,
+	type ArkErrors
 } from "@ark/schema"
 import { printable } from "@ark/util"
 import { scope, type } from "arktype"
@@ -41,6 +42,21 @@ contextualize(() => {
 				required: [{ key: "b", value: "number" }],
 				optional: [{ key: "a", value: "string" }]
 			})
+		})
+
+		// https://github.com/arktypeio/arktype/issues/1102
+		it("only optional keys not reduced to object", () => {
+			const o = type({ "a?": "number" })
+
+			const U = type({ b: o })
+			attest(U.expression).snap("{ b: { a?: number } }")
+			attest<{
+				b: {
+					a?: number
+				}
+			}>(U.t)
+			attest<typeof U.t>(U.infer)
+			attest<typeof U.t>(U.inferIn)
 		})
 
 		it("symbol key", () => {

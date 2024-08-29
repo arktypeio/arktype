@@ -8,7 +8,7 @@ import {
 	writeUnboundableMessage
 } from "@ark/schema"
 import { writeMalformedNumericLiteralMessage } from "@ark/util"
-import { type, type inferAmbient } from "arktype"
+import { type } from "arktype"
 import { writeDoubleRightBoundMessage } from "arktype/internal/parser/semantic/bounds.ts"
 import {
 	writeMultipleLeftBoundsMessage,

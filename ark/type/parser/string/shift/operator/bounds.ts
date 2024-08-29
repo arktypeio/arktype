@@ -6,7 +6,8 @@ import {
 	type NodeSchema
 } from "@ark/schema"
 import { isKeyOf, throwParseError, type keySet } from "@ark/util"
-import type { DateLiteral, LimitLiteral } from "../../../../keywords/ast.ts"
+import type { DateLiteral } from "../../../../keywords/ast.ts"
+import type { InferredAst } from "../../../semantic/infer.ts"
 import type { astToString } from "../../../semantic/utils.ts"
 import type {
 	DynamicState,
@@ -21,7 +22,7 @@ import {
 	type MaxComparator,
 	type OpenLeftBound
 } from "../../reduce/shared.ts"
-import type { StaticState, state } from "../../reduce/static.ts"
+import type { state, StaticState } from "../../reduce/static.ts"
 import { extractDateLiteralSource, isDateLiteral } from "../operand/date.ts"
 import type { parseOperand } from "../operand/operand.ts"
 import type { Scanner } from "../scanner.ts"
@@ -62,7 +63,12 @@ export type parseBound<
 				infer nextUnscanned
 			>
 		) ?
-			s["root"] extends `${infer limit extends LimitLiteral}` ?
+			s["root"] extends (
+				InferredAst<
+					Date | number,
+					`${infer limit extends number | DateLiteral}`
+				>
+			) ?
 				state.reduceLeftBound<s, limit, comparator, nextUnscanned>
 			:	parseRightBound<state.scanTo<s, nextUnscanned>, comparator, $, args>
 		:	shiftResultOrError
@@ -101,7 +107,7 @@ export const writeIncompatibleRangeMessage = (
 
 export const getBoundKinds = (
 	comparator: Comparator,
-	limit: LimitLiteral,
+	limit: number | DateLiteral,
 	root: BaseRoot,
 	boundKind: BoundExpressionKind
 ): BoundKind[] => {
@@ -207,7 +213,9 @@ export type parseRightBound<
 	args
 > =
 	parseOperand<s, $, args> extends infer nextState extends StaticState ?
-		nextState["root"] extends `${infer limit extends LimitLiteral}` ?
+		nextState["root"] extends (
+			InferredAst<unknown, `${infer limit extends number | DateLiteral}`>
+		) ?
 			s["branches"]["leftBound"] extends {} ?
 				comparator extends MaxComparator ?
 					state.reduceRange<

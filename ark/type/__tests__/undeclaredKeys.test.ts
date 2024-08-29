@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { scope, type } from "arktype"
+import { type } from "arktype"
 
 contextualize(() => {
 	describe("traversal", () => {

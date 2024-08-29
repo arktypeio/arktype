@@ -1,5 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
-import { scope, type, type Type } from "arktype"
+import { flatMorph } from "@ark/util"
+import { ark, Generic, scope, Type, type, type Ark } from "arktype"
 import { AssertionError } from "node:assert"
 
 contextualize(() => {
@@ -68,5 +69,51 @@ contextualize(() => {
 		attest((): Type<string> => foo).type.errors(
 			"Type<string, { foo: string; }>' is not assignable to type 'Type<string, {}>'"
 		)
+	})
+
+	it("distribute", () => {
+		const t = type("===", 0, "1", "2", 3, "4", 5)
+
+		const numbers = t.distribute(
+			(n): Type<number> =>
+				n.extends(ark.number.$root) ? n : (
+					type.raw(n.expression.slice(1, -1)).as<number>()
+				),
+			branches => type.raw(branches).as<number[]>()
+		)
+
+		attest(numbers.expression).snap("[1, 2, 4, 0, 3, 5]")
+	})
+
+	it("attached types", () => {
+		const attachments: Record<keyof Ark.typeAttachments, string | object> =
+			flatMorph({ ...type }, (k, v) =>
+				v instanceof Type ? [k, v.expression]
+				: v instanceof Generic ? [k, v.json]
+				: []
+			)
+
+		attest(attachments).snap({
+			bigint: "bigint",
+			boolean: "boolean",
+			false: "false",
+			never: "never",
+			null: "null",
+			number: "number",
+			object: "object",
+			string: "string",
+			symbol: "symbol",
+			true: "true",
+			unknown: "unknown",
+			undefined: "undefined",
+			Key: "string | symbol",
+			Record: ark.Record.internal.json
+		})
+
+		attest<number>(type.number.t)
+	})
+
+	it("ark attached", () => {
+		attest<string>(type.ark.number.integer.expression).snap("number % 1")
 	})
 })

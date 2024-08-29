@@ -9,6 +9,7 @@ import type {
 } from "@ark/schema"
 import type {
 	anyOrNever,
+	array,
 	Callable,
 	ErrorMessage,
 	inferred,
@@ -105,6 +106,11 @@ interface Type<out t = unknown, $ = {}>
 	): this is instantiateType<inferTypeRoot<def, $>, $>
 
 	overlaps<def>(r: validateTypeRoot<def, $>): boolean
+
+	distribute<mapOut, reduceOut = mapOut[]>(
+		mapBranch: (branch: Type, i: number, branches: array<Type>) => mapOut,
+		reduceMapped?: (mappedBranches: mapOut[]) => reduceOut
+	): reduceOut
 
 	// deprecate Function methods so they are deprioritized as suggestions
 

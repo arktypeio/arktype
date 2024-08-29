@@ -1,5 +1,6 @@
 import { intrinsic, type Constraint, type NodeSchema } from "@ark/schema"
 import type { Module, Submodule } from "../../module.ts"
+import type { type } from "../ark.ts"
 import type {
 	AtLeastLength,
 	AtMostLength,
@@ -18,22 +19,22 @@ import { alpha } from "./alpha.ts"
 import { alphanumeric } from "./alphanumeric.ts"
 import { capitalize } from "./capitalize.ts"
 import { creditCard } from "./creditCard.ts"
-import { date } from "./date.ts"
+import { stringDate } from "./date.ts"
 import { digits } from "./digits.ts"
 import { email } from "./email.ts"
-import { integer } from "./integer.ts"
+import { integer, type stringInteger } from "./integer.ts"
 import { ip } from "./ip.ts"
-import { json } from "./json.ts"
+import { json, type stringJson } from "./json.ts"
 import { lower } from "./lower.ts"
 import { normalize } from "./normalize.ts"
-import { numeric } from "./numeric.ts"
+import { numeric, type stringNumeric } from "./numeric.ts"
 import { semver } from "./semver.ts"
 import { trim } from "./trim.ts"
 import { upper } from "./upper.ts"
 import { url } from "./url.ts"
 import { uuid } from "./uuid.ts"
 
-export const string: Module<string.submodule> = submodule({
+export const string = submodule({
 	$root: intrinsic.string,
 	numeric,
 	integer,
@@ -52,7 +53,7 @@ export const string: Module<string.submodule> = submodule({
 	lower,
 	normalize,
 	capitalize,
-	date
+	date: stringDate
 })
 
 export declare namespace string {
@@ -95,25 +96,33 @@ export declare namespace string {
 			: narrowed
 		:	never
 
-	export type submodule = Submodule<{
+	export type module = Module<string.submodule>
+
+	export type submodule = Submodule<$>
+
+	export type $ = {
 		$root: string
 		alpha: alpha
 		alphanumeric: alphanumeric
 		digits: digits
-		numeric: numeric
-		integer: integer
+		numeric: stringNumeric.submodule
+		integer: stringInteger.submodule
 		creditCard: creditCard
 		email: email
-		uuid: uuid
+		uuid: uuid.submodule
 		semver: semver
-		ip: ip
-		json: json
-		date: date
+		ip: ip.submodule
+		json: stringJson.submodule
+		date: stringDate.submodule
 
-		trim: trim
-		normalize: normalize
-		capitalize: capitalize
-		lower: lower
-		upper: upper
-	}>
+		trim: trim.submodule
+		normalize: normalize.submodule
+		capitalize: capitalize.submodule
+		lower: lower.submodule
+		upper: upper.submodule
+	}
+
+	type shallowResolutions = {
+		[k in keyof $ as `string.${k}`]: $[k] extends type.cast<infer t> ? t : $[k]
+	}
 }

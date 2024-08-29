@@ -1,9 +1,15 @@
 import type { Stringifiable } from "@ark/util"
 import type { Comparator } from "../string/reduce/shared.ts"
-import type { InfixExpression, PostfixExpression } from "./infer.ts"
+import type {
+	DefAst,
+	InferredAst,
+	InfixExpression,
+	PostfixExpression
+} from "./infer.ts"
 
 export type astToString<ast> =
-	ast extends PostfixExpression<infer operator, infer operand> ?
+	ast extends InferredAst | DefAst ? ast[2]
+	: ast extends PostfixExpression<infer operator, infer operand> ?
 		operator extends "[]" ?
 			`${astToString<operand>}[]`
 		:	never

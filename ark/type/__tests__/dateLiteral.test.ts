@@ -34,8 +34,8 @@ contextualize(() => {
 		attest(() => type("d'tuesday'")).throws(writeInvalidDateMessage("tuesday"))
 	})
 
-	it("can morph a Date", () => {
+	it("morphable", () => {
 		const t = type(["Date", "=>", d => d.toISOString()])
-		attest(t.from(new Date(2000, 1))).equals("2000-01-01T00:00:00.000Z")
+		attest(t.from(new Date(2000, 1))).snap("2000-02-01T05:00:00.000Z")
 	})
 })

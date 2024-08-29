@@ -137,7 +137,18 @@ export type validateObjectLiteral<def, $, args> = {
 
 type validateDefaultableValue<def, k extends keyof def, $, args> =
 	def[k] extends DefaultValueTuple ?
-		validateDefaultValueTuple<def[k], k, $, args>
+		[def[k]] extends [anyOrNever] ?
+			/** this extra [anyOrNever] check is required to ensure that nested `type` invocations
+			 * like the following are not prematurely validated by the outer call:
+			 *
+			 * ```ts
+			 * type({
+			 * 	"test?": type("string").pipe(x => x === "true")
+			 * })
+			 * ```
+			 */
+			def[k]
+		:	validateDefaultValueTuple<def[k], k, $, args>
 	:	validateDefinition<def[k], $, args>
 
 type DefaultValueTuple<baseDef = unknown, defaultValue = unknown> = readonly [

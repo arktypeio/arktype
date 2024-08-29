@@ -1,11 +1,11 @@
-import type {
-	arkKind,
-	GenericAst,
-	GenericParamAst,
-	GenericParamDef,
-	genericParamNames,
+import {
 	GenericRoot,
-	LazyGenericBody
+	type arkKind,
+	type GenericAst,
+	type GenericParamAst,
+	type GenericParamDef,
+	type genericParamNames,
+	type LazyGenericBody
 } from "@ark/schema"
 import {
 	throwParseError,
@@ -15,6 +15,7 @@ import {
 	type ErrorMessage,
 	type ErrorType,
 	type Hkt,
+	type Json,
 	type WhiteSpaceToken
 } from "@ark/util"
 import type {
@@ -247,7 +248,17 @@ export interface Generic<
 	arg$: Scope<arg$>
 
 	internal: GenericRoot
+	json: Json
 }
+
+export type GenericConstructor<
+	params extends array<GenericParamAst> = array<GenericParamAst>,
+	bodyDef = unknown,
+	$ = {},
+	arg$ = {}
+> = new () => Generic<params, bodyDef, $, arg$>
+
+export const Generic: GenericConstructor = GenericRoot as never
 
 export type GenericDeclaration<
 	name extends string = string,
@@ -276,7 +287,7 @@ export type parseGenericParams<def extends string, $> = parseNextNameChar<
 	$
 >
 
-type ParamsTerminator = WhiteSpaceToken | "," | ":"
+type ParamsTerminator = WhiteSpaceToken | ","
 
 const parseName = (
 	scanner: Scanner,
@@ -314,10 +325,8 @@ type parseNextNameChar<
 			name extends "" ? ErrorMessage<emptyGenericParameterMessage>
 			: lookahead extends "," ?
 				parseName<nextUnscanned, [...result, [name, unknown]], $>
-			: lookahead extends ":" | WhiteSpaceToken ?
-				// pass in unscanned instead of nextUnscanned here so we don't
-				// miss the ":" terminator
-				_parseOptionalConstraint<unscanned, name, result, $>
+			: lookahead extends WhiteSpaceToken ?
+				_parseOptionalConstraint<nextUnscanned, name, result, $>
 			:	never
 		:	parseNextNameChar<nextUnscanned, `${name}${lookahead}`, result, $>
 	: name extends "" ? result
@@ -325,7 +334,7 @@ type parseNextNameChar<
 
 const extendsToken = "extends "
 
-type ConstrainingToken = ":" | typeof extendsToken
+type extendsToken = typeof extendsToken
 
 const _parseOptionalConstraint = (
 	scanner: Scanner,
@@ -334,9 +343,7 @@ const _parseOptionalConstraint = (
 	ctx: ParseContext
 ): GenericParamDef[] => {
 	scanner.shiftUntilNonWhitespace()
-
-	if (scanner.lookahead === ":") scanner.shift()
-	else if (scanner.unscanned.startsWith(extendsToken))
+	if (scanner.unscanned.startsWith(extendsToken))
 		scanner.jumpForward(extendsToken.length)
 	else {
 		// if we don't have a contraining token here, return now so we can
@@ -359,7 +366,7 @@ type _parseOptionalConstraint<
 	$
 > =
 	Scanner.skipWhitespace<unscanned> extends (
-		`${ConstrainingToken}${infer nextUnscanned}`
+		`${extendsToken}${infer nextUnscanned}`
 	) ?
 		parseUntilFinalizer<state.initialize<nextUnscanned>, $, {}> extends (
 			infer finalArgState extends StaticState

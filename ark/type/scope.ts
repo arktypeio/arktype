@@ -1,4 +1,5 @@
 import {
+	$ark,
 	BaseScope,
 	hasArkKind,
 	parseGeneric,
@@ -9,6 +10,7 @@ import {
 	type GenericArgResolutions,
 	type GenericAst,
 	type GenericParamAst,
+	type GenericRoot,
 	type NodeKind,
 	type NodeParseOptions,
 	type NodeSchema,
@@ -25,6 +27,7 @@ import {
 } from "@ark/schema"
 import {
 	domainOf,
+	flatMorph,
 	hasDomain,
 	isThunk,
 	throwParseError,
@@ -38,7 +41,7 @@ import {
 	type noSuggest,
 	type nominal
 } from "@ark/util"
-import type { ArkAmbient } from "./config.ts"
+import type { ArkAmbient, ArkSchemaRegistry } from "./config.ts"
 import {
 	parseGenericParams,
 	type GenericDeclaration,
@@ -47,7 +50,7 @@ import {
 	type baseGenericConstraints,
 	type parseValidGenericParams
 } from "./generic.ts"
-import type { type } from "./keywords/ark.ts"
+import type { Ark, type } from "./keywords/ark.ts"
 import type {
 	BoundModule,
 	Module,
@@ -60,6 +63,7 @@ import {
 	type inferDefinition,
 	type validateDefinition
 } from "./parser/definition.ts"
+import type { DefAst, InferredAst } from "./parser/semantic/infer.ts"
 import { DynamicState } from "./parser/string/reduce/dynamic.ts"
 import type { ParsedDefault } from "./parser/string/shift/operator/default.ts"
 import { writeUnexpectedCharacterMessage } from "./parser/string/shift/operator/operator.ts"
@@ -171,17 +175,29 @@ type extractGenericParameters<k> =
 	// causes TS fail to infer a narrowed result as of 5.5
 	k extends `${string}<${infer params}>` ? ParameterString<params> : never
 
-export type resolve<reference extends keyof $ | keyof args, $, args> =
-	(
-		reference extends keyof args ?
-			args[reference]
-		:	$[reference & keyof $]
-	) extends infer resolution ?
-		[resolution] extends [anyOrNever] ? resolution
-		: resolution extends { [inferred]: infer t } ? t
-		: resolution extends Def<infer def> ? inferDefinition<def, $, args>
-		: resolution
-	:	never
+export type resolve<
+	reference extends keyof $ | keyof args,
+	$,
+	args
+> = inferResolution<
+	reference extends keyof args ? args[reference] : $[reference & keyof $],
+	$,
+	args
+>
+
+export type resolutionToAst<alias extends string, resolution> =
+	[resolution] extends [anyOrNever] ? InferredAst<resolution, alias>
+	: resolution extends Def<infer def> ? DefAst<def, alias>
+	: resolution extends { [arkKind]: "module"; $root: infer root } ?
+		InferredAst<root, alias>
+	: resolution extends GenericAst ? resolution
+	: InferredAst<resolution, alias>
+
+export type inferResolution<resolution, $, args> =
+	[resolution] extends [anyOrNever] ? resolution
+	: resolution extends { [inferred]: infer t } ? t
+	: resolution extends Def<infer def> ? inferDefinition<def, $, args>
+	: resolution
 
 export type moduleKeyOf<$> = {
 	[k in keyof $]: $[k] extends { [arkKind]: "module" } ?
@@ -206,6 +222,12 @@ export type tryInferSubmoduleReference<$, token> =
 		:	tryInferSubmoduleReference<ArkAmbient.$[submodule], subalias>
 	:	never
 
+export interface ArkTypeRegistry extends ArkSchemaRegistry {
+	typeAttachments?: Ark.boundTypeAttachments<any>
+}
+
+export const $arkTypeRegistry: ArkTypeRegistry = $ark
+
 export interface ParseContext extends TypeParseOptions {
 	$: InternalScope
 }
@@ -217,6 +239,7 @@ export interface TypeParseOptions {
 export interface InternalScope {
 	constructor: typeof InternalScope
 }
+
 export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 	private parseCache: Record<string, StringParseResult> = {}
 
@@ -250,10 +273,29 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		]
 	}
 
+	protected cacheGetter<name extends keyof this>(
+		name: name,
+		value: this[name]
+	): this[name] {
+		Object.defineProperty(this, name, { value })
+		return value
+	}
+
 	override preparseRoot(def: unknown): unknown {
 		if (isThunk(def) && !hasArkKind(def, "generic")) return def()
 
 		return def
+	}
+
+	get ambientAttachments(): Ark.boundTypeAttachments<$> | undefined {
+		if (!$arkTypeRegistry.typeAttachments) return
+		return this.cacheGetter(
+			"ambientAttachments",
+			flatMorph($arkTypeRegistry.typeAttachments, (k, v) => [
+				k,
+				(v as {} as BaseRoot | GenericRoot).bindScope(this)
+			]) as never
+		)
 	}
 
 	parse<defaultable extends boolean = false>(

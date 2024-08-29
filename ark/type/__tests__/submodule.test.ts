@@ -2,11 +2,14 @@ import { attest, contextualize } from "@ark/attest"
 import {
 	writeMissingSubmoduleAccessMessage,
 	writeNonSubmoduleDotMessage,
-	writeUnresolvableMessage
+	writeUnresolvableMessage,
+	type arkKind
 } from "@ark/schema"
+import type { anyOrNever } from "@ark/util"
 import {
 	scope,
 	type,
+	type Ark,
 	type BoundModule,
 	type Module,
 	type Scope,

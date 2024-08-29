@@ -1,38 +1,38 @@
 import type { GenericAst } from "@ark/schema"
-import type { BigintLiteral, Hkt, array } from "@ark/util"
-import type { ArkAmbient } from "../../config.ts"
+import type { Hkt, array } from "@ark/util"
 import type { inferIntersection } from "../../intersect.ts"
 import type {
 	Date,
-	DateLiteral,
 	Default,
 	LimitLiteral,
-	RegexLiteral,
 	applyConstraint,
 	distillIn,
 	distillOut,
 	normalizeLimit
 } from "../../keywords/ast.ts"
-import type { string } from "../../keywords/string/string.ts"
-import type {
-	UnparsedScope,
-	resolve,
-	tryInferSubmoduleReference
-} from "../../scope.ts"
+import type { UnparsedScope } from "../../scope.ts"
+import type { inferAmbient } from "../../type.ts"
 import type { inferDefinition } from "../definition.ts"
 import type { Comparator, MinComparator } from "../string/reduce/shared.ts"
-import type { StringLiteral } from "../string/shift/operand/enclosed.ts"
 
-export type inferAstRoot<ast, $, args> = inferConstrainableAst<ast, $, args>
+export type inferAstRoot<ast, $, args> =
+	ast extends array ? inferExpression<ast, $, args> : never
 
 export type inferAstIn<ast, $, args> = distillIn<inferAstRoot<ast, $, args>>
 
 export type inferAstOut<ast, $, args> = distillOut<inferAstRoot<ast, $, args>>
 
-export type inferConstrainableAst<ast, $, args> =
-	ast extends array ? inferExpression<ast, $, args>
-	: ast extends string ? inferTerminal<ast, $, args>
-	: never
+export type DefAst<def = unknown, alias extends string = string> = [
+	def,
+	"def",
+	alias
+]
+
+export type InferredAst<t = unknown, def extends string = string> = [
+	t,
+	"inferred",
+	def
+]
 
 export type GenericInstantiationAst<
 	generic extends GenericAst = GenericAst,
@@ -46,56 +46,64 @@ type resolveScope<g$, $> =
 	:	// Otherwise, use the scope that was explicitly bound to it.
 		g$
 
-export type inferExpression<ast extends array, $, args> =
-	ast extends GenericInstantiationAst<infer g, infer argAsts> ?
-		g["bodyDef"] extends Hkt ?
-			Hkt.apply<
-				g["bodyDef"],
-				{ [i in keyof argAsts]: inferConstrainableAst<argAsts[i], $, args> }
+export type inferExpression<ast, $, args> =
+	ast extends array ?
+		ast extends InferredAst<infer resolution> ? resolution
+		: ast extends DefAst<infer def> ? inferDefinition<def, $, args>
+		: ast extends GenericInstantiationAst<infer g, infer argAsts> ?
+			g["bodyDef"] extends Hkt ?
+				Hkt.apply<
+					g["bodyDef"],
+					{ [i in keyof argAsts]: inferExpression<argAsts[i], $, args> }
+				>
+			:	inferDefinition<
+					g["bodyDef"],
+					resolveScope<g["$"], $>,
+					{
+						// intersect `${number}` to ensure that only array indices are mapped
+						[i in keyof g["names"] &
+							`${number}` as g["names"][i]]: inferExpression<
+							argAsts[i & keyof argAsts],
+							resolveScope<g["arg$"], $>,
+							args
+						>
+					}
+				>
+		: ast[1] extends "[]" ? inferExpression<ast[0], $, args>[]
+		: ast[1] extends "|" ?
+			inferExpression<ast[0], $, args> | inferExpression<ast[2], $, args>
+		: ast[1] extends "&" ?
+			inferIntersection<
+				inferExpression<ast[0], $, args>,
+				inferExpression<ast[2], $, args>
 			>
-		:	inferDefinition<
-				g["bodyDef"],
-				resolveScope<g["$"], $>,
-				{
-					// intersect `${number}` to ensure that only array indices are mapped
-					[i in keyof g["names"] &
-						`${number}` as g["names"][i]]: inferConstrainableAst<
-						argAsts[i & keyof argAsts],
-						resolveScope<g["arg$"], $>,
-						args
-					>
-				}
+		: ast[1] extends "=" ?
+			//  inferAmbient is safe since the default value is always a literal
+			inferAmbient<ast[2]> extends infer defaultValue ?
+				(In?: inferExpression<ast[0], $, args>) => Default<defaultValue>
+			:	never
+		: ast[1] extends Comparator ?
+			ast[0] extends LimitLiteral ?
+				constrainBound<inferExpression<ast[2], $, args>, ast[1], ast[0]>
+			:	constrainBound<
+					inferExpression<ast[0], $, args>,
+					ast[1],
+					ast[2] & LimitLiteral
+				>
+		: ast[1] extends "%" ?
+			applyConstraint<
+				inferExpression<ast[0], $, args>,
+				"divisor",
+				ast[2] & number
 			>
-	: ast[1] extends "[]" ? inferConstrainableAst<ast[0], $, args>[]
-	: ast[1] extends "|" ?
-		| inferConstrainableAst<ast[0], $, args>
-		| inferConstrainableAst<ast[2], $, args>
-	: ast[1] extends "&" ?
-		inferIntersection<
-			inferConstrainableAst<ast[0], $, args>,
-			inferConstrainableAst<ast[2], $, args>
-		>
-	: ast[1] extends "=" ?
-		inferTerminal<ast[2] & string, $, args> extends infer defaultValue ?
-			(In?: inferConstrainableAst<ast[0], $, args>) => Default<defaultValue>
-		:	never
-	: ast[1] extends Comparator ?
-		ast[0] extends LimitLiteral ?
-			constrainBound<inferConstrainableAst<ast[2], $, args>, ast[1], ast[0]>
-		:	constrainBound<inferConstrainableAst<ast[0], $, args>, ast[1], ast[2]>
-	: ast[1] extends "%" ?
-		applyConstraint<
-			inferConstrainableAst<ast[0], $, args>,
-			"divisor",
-			ast[2] & number
-		>
-	: ast[0] extends "keyof" ? keyof inferConstrainableAst<ast[1], $, args>
-	: never
+		: ast[0] extends "keyof" ? keyof inferExpression<ast[1], $, args>
+		: never
+	:	never
 
 export type constrainBound<
 	constrainableIn,
 	comparator extends Comparator,
-	limit
+	limit extends LimitLiteral
 > =
 	distillIn<constrainableIn> extends infer In ?
 		comparator extends "==" ?
@@ -142,16 +150,3 @@ export type InfixExpression<
 	l = unknown,
 	r = unknown
 > = [l, operator, r]
-
-export type inferTerminal<token extends string, $, args> =
-	token extends keyof args | keyof $ ? resolve<token, $, args>
-	: token extends keyof ArkAmbient.$ ? resolve<token, ArkAmbient.$, args>
-	: `#${token}` extends keyof $ ? resolve<`#${token}`, $, args>
-	: token extends StringLiteral<infer text> ? text
-	: token extends `${infer n extends number}` ? n
-	: token extends BigintLiteral<infer b> ? b
-	: token extends RegexLiteral<infer source> ? string.matching<source>
-	: token extends DateLiteral<infer source> ? Date.literal<source>
-	: // doing this last allows us to infer never if it isn't valid rather than check
-		// if it's a valid submodule reference ahead of time
-		tryInferSubmoduleReference<$, token>

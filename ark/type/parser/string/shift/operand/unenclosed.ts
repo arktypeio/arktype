@@ -16,12 +16,16 @@ import {
 	tryParseWellFormedBigint,
 	tryParseWellFormedNumber,
 	type BigintLiteral,
-	type anyOrNever,
+	type NumberLiteral,
 	type join,
 	type lastOf
 } from "@ark/util"
 import type { ArkAmbient } from "../../../../config.ts"
-import type { GenericInstantiationAst } from "../../../semantic/infer.ts"
+import type { resolutionToAst } from "../../../../scope.ts"
+import type {
+	GenericInstantiationAst,
+	InferredAst
+} from "../../../semantic/infer.ts"
 import { writePrefixedPrivateReferenceMessage } from "../../../semantic/validate.ts"
 import type { DynamicState } from "../../reduce/dynamic.ts"
 import type { StaticState, state } from "../../reduce/static.ts"
@@ -56,16 +60,11 @@ type parseResolution<
 	$,
 	args
 > =
-	[resolution] extends [anyOrNever] ? state.setRoot<s, alias, unscanned>
-	: resolution extends GenericAst ?
-		parseGenericInstantiation<
-			alias,
-			resolution,
-			state.scanTo<s, unscanned>,
-			$,
-			args
-		>
-	:	state.setRoot<s, alias, unscanned>
+	resolutionToAst<alias, resolution> extends infer ast ?
+		ast extends GenericAst ?
+			parseGenericInstantiation<alias, ast, state.scanTo<s, unscanned>, $, args>
+		:	state.setRoot<s, ast, unscanned>
+	:	never
 
 export const parseGenericInstantiation = (
 	name: string,
@@ -157,7 +156,8 @@ type tryResolve<
 	: // this assumes there are no private aliases in the ambient scope
 	token extends keyof ArkAmbient.$ ?
 		parseResolution<s, unscanned, token, ArkAmbient.$[token], $, args>
-	: token extends `${number}` ? state.setRoot<s, token, unscanned>
+	: token extends NumberLiteral<infer n> ?
+		state.setRoot<s, InferredAst<n, token>, unscanned>
 	: token extends (
 		`${infer submodule extends keyof $ & string}.${infer reference}`
 	) ?
@@ -184,7 +184,8 @@ type tryResolve<
 			args,
 			[submodule]
 		>
-	: token extends BigintLiteral ? state.setRoot<s, token, unscanned>
+	: token extends BigintLiteral<infer b> ?
+		state.setRoot<s, InferredAst<b, token>, unscanned>
 	: token extends "keyof" ? state.addPrefix<s, "keyof", unscanned>
 	: unresolvableState<s, token, $, args, []>
 

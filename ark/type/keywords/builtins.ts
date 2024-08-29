@@ -13,12 +13,18 @@ const Merge = genericNode(
 	["props", intrinsic.object]
 )(args => args.base.merge(args.props), MergeHkt)
 
-export const arkBuiltin: Module<arkBuiltin> = submodule({
+export const arkBuiltins: arkBuiltins = submodule({
 	Key: intrinsic.key,
 	Merge
 })
 
-export type arkBuiltin = Submodule<{
-	Key: Key
-	Merge: typeof Merge.t
-}>
+export type arkBuiltins = Module<arkBuiltins.$>
+
+export declare namespace arkBuiltins {
+	export type submodule = Submodule<$>
+
+	export type $ = {
+		Key: Key
+		Merge: typeof Merge.t
+	}
+}

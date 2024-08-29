@@ -5,31 +5,31 @@ bench.baseline(() => type("never"))
 
 bench("single-quoted", () => {
 	const _ = type("'nineteen characters'")
-}).types([630, "instantiations"])
+}).types([689, "instantiations"])
 
 bench("double-quoted", () => {
 	const _ = type('"nineteen characters"')
-}).types([630, "instantiations"])
+}).types([689, "instantiations"])
 
 bench("regex literal", () => {
 	const _ = type("/nineteen characters/")
-}).types([677, "instantiations"])
+}).types([701, "instantiations"])
 
 bench("keyword", () => {
 	const _ = type("string")
-}).types([438, "instantiations"])
+}).types([507, "instantiations"])
 
 bench("number", () => {
 	const _ = type("-98765.4321")
-}).types([463, "instantiations"])
+}).types([471, "instantiations"])
 
 bench("bigint", () => {
 	const _ = type("-987654321n")
-}).types([482, "instantiations"])
+}).types([550, "instantiations"])
 
 bench("object", () => {
 	const t = type({ foo: "string" })
-}).types([1689, "instantiations"])
+}).types([1810, "instantiations"])
 
 bench("union", () => {
 	// Union is automatically discriminated using shallow or deep keys
@@ -44,4 +44,4 @@ bench("union", () => {
 		.or({
 			kind: "'pleb'"
 		})
-}).types([7064, "instantiations"])
+}).types([7371, "instantiations"])

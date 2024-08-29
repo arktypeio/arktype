@@ -1,15 +1,16 @@
 import type { ErrorMessage } from "@ark/util"
+import type { inferAmbient } from "../../type.ts"
 import type { UnitLiteral } from "../string/shift/operator/default.ts"
-import type { inferAstOut, inferTerminal } from "./infer.ts"
+import type { inferAstOut } from "./infer.ts"
 import type { astToString } from "./utils.ts"
 import type { validateAst } from "./validate.ts"
 
 export type validateDefault<baseAst, unitLiteral extends UnitLiteral, $, args> =
 	validateAst<baseAst, $, args> extends infer e extends ErrorMessage ? e
 	: // check against the output of the type since morphs will not occur
-	inferTerminal<unitLiteral, $, args> extends inferAstOut<baseAst, $, args> ?
-		undefined
-	:	ErrorMessage<
+	//  inferAmbient is safe since the default value is always a literal
+	inferAmbient<unitLiteral> extends inferAstOut<baseAst, $, args> ? undefined
+	: ErrorMessage<
 			writeUnassignableDefaultValueMessage<astToString<baseAst>, unitLiteral>
 		>
 

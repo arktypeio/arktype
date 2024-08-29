@@ -1,6 +1,6 @@
 import { intrinsic, rootNode } from "@ark/schema"
 import { wellFormedIntegerMatcher } from "@ark/util"
-import type { Submodule } from "../../module.ts"
+import type { Module, Submodule } from "../../module.ts"
 import type { Branded, constrain, To } from "../ast.ts"
 import type { number } from "../number/number.ts"
 import { submodule } from "../utils.ts"
@@ -15,7 +15,7 @@ const $root = regexStringNode(
 	"a well-formed integer string"
 )
 
-export const integer = submodule({
+export const integer: stringInteger.module = submodule({
 	$root,
 	parse: rootNode({
 		in: $root,
@@ -31,7 +31,13 @@ export const integer = submodule({
 	})
 })
 
-export type integer = Submodule<{
-	$root: string.integer
-	parse: (In: string.integer) => To<number.divisibleBy<1>>
-}>
+export declare namespace stringInteger {
+	export type module = Module<submodule>
+
+	export type submodule = Submodule<$>
+
+	export type $ = {
+		$root: string.integer
+		parse: (In: string.integer) => To<number.divisibleBy<1>>
+	}
+}

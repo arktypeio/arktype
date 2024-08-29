@@ -1,6 +1,7 @@
 import { rootNode } from "@ark/schema"
 import { flatMorph } from "@ark/util"
-import type { Submodule } from "../../module.ts"
+import type { Module, Submodule } from "../../module.ts"
+import type { type } from "../ark.ts"
 import type { Branded, constrain, To } from "../ast.ts"
 import { submodule } from "../utils.ts"
 
@@ -45,40 +46,20 @@ const normalizeNodes = flatMorph(
 		] as const
 )
 
-export type NFC = Submodule<{
-	$root: (In: string) => To<string.normalized.NFC>
-	preformatted: string.normalized.NFC
-}>
-
 export const NFC = submodule({
 	$root: normalizeNodes.NFC,
 	preformatted: preformattedNodes.NFC
 })
-
-export type NFD = Submodule<{
-	$root: (In: string) => To<string.normalized.NFD>
-	preformatted: string.normalized.NFD
-}>
 
 export const NFD = submodule({
 	$root: normalizeNodes.NFD,
 	preformatted: preformattedNodes.NFD
 })
 
-export type NFKC = Submodule<{
-	$root: (In: string) => To<string.normalized.NFKC>
-	preformatted: string.normalized.NFKC
-}>
-
 export const NFKC = submodule({
 	$root: normalizeNodes.NFKC,
 	preformatted: preformattedNodes.NFKC
 })
-
-export type NFKD = Submodule<{
-	$root: (In: string) => To<string.normalized.NFKD>
-	preformatted: string.normalized.NFKD
-}>
 
 export const NFKD = submodule({
 	$root: normalizeNodes.NFKD,
@@ -93,10 +74,58 @@ export const normalize = submodule({
 	NFKD
 })
 
-export type normalize = Submodule<{
-	$root: (In: string) => To<string.normalized.NFC>
-	NFC: NFC
-	NFD: NFD
-	NFKC: NFKC
-	NFKD: NFKD
-}>
+export declare namespace normalize {
+	export type module = Module<submodule>
+
+	export type submodule = Submodule<$>
+
+	export type $ = {
+		$root: (In: string) => To<string.normalized.NFC>
+		NFC: NFC.submodule
+		NFD: NFD.submodule
+		NFKC: NFKC.submodule
+		NFKD: NFKD.submodule
+	}
+
+	type shallowResolutions = {
+		[k in keyof $ as `string.normalize.${k}`]: $[k] extends type.cast<infer t> ?
+			t
+		:	$[k]
+	}
+
+	export namespace NFC {
+		export type submodule = Submodule<$>
+
+		export type $ = {
+			$root: (In: string) => To<string.normalized.NFC>
+			preformatted: string.normalized.NFC
+		}
+	}
+
+	export namespace NFD {
+		export type submodule = Submodule<$>
+
+		export type $ = {
+			$root: (In: string) => To<string.normalized.NFD>
+			preformatted: string.normalized.NFD
+		}
+	}
+
+	export namespace NFKC {
+		export type submodule = Submodule<$>
+
+		export type $ = {
+			$root: (In: string) => To<string.normalized.NFKC>
+			preformatted: string.normalized.NFKC
+		}
+	}
+
+	export namespace NFKD {
+		export type submodule = Submodule<$>
+
+		export type $ = {
+			$root: (In: string) => To<string.normalized.NFKD>
+			preformatted: string.normalized.NFKD
+		}
+	}
+}

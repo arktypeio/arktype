@@ -12,6 +12,7 @@ import type {
 	charsAfterFirst,
 	Completion,
 	ErrorMessage,
+	NumberLiteral,
 	typeToString,
 	writeMalformedNumericLiteralMessage
 } from "@ark/util"
@@ -24,8 +25,10 @@ import type { validateRange } from "./bounds.ts"
 import type { validateDefault } from "./default.ts"
 import type { validateDivisor } from "./divisor.ts"
 import type {
+	DefAst,
 	GenericInstantiationAst,
 	inferAstRoot,
+	InferredAst,
 	InfixExpression,
 	PostfixExpression
 } from "./infer.ts"
@@ -33,7 +36,12 @@ import type { validateKeyof } from "./keyof.ts"
 import type { astToString } from "./utils.ts"
 
 export type validateAst<ast, $, args> =
-	ast extends string ? validateStringAst<ast, $>
+	ast extends ErrorMessage ? ast
+	: ast extends InferredAst ? validateInferredAst<ast[0], ast[2]>
+	: ast extends DefAst ?
+		ast[2] extends PrivateDeclaration ?
+			ErrorMessage<writePrefixedPrivateReferenceMessage<ast[2]>>
+		:	undefined
 	: ast extends PostfixExpression<infer operator, infer operand> ?
 		operator extends "[]" ?
 			validateAst<operand, $, args>
@@ -87,37 +95,28 @@ export type writePrefixedPrivateReferenceMessage<
 > =
 	`Private type references should not include '#'. Use '${charsAfterFirst<def>}' instead.`
 
-type validateStringAst<def extends string, $> =
-	def extends `${infer n extends number}` ?
-		number extends n ?
+type validateInferredAst<inferred, def extends string> =
+	def extends NumberLiteral ?
+		number extends inferred ?
 			ErrorMessage<writeMalformedNumericLiteralMessage<def, "number">>
 		:	undefined
-	: def extends BigintLiteral<infer b> ?
-		bigint extends b ?
+	: def extends BigintLiteral ?
+		bigint extends inferred ?
 			ErrorMessage<writeMalformedNumericLiteralMessage<def, "bigint">>
 		:	undefined
-	: maybeExtractAlias<def, $> extends infer alias extends keyof $ ?
-		[$[alias]] extends [anyOrNever] ? def
-		: def extends PrivateDeclaration ?
-			ErrorMessage<writePrefixedPrivateReferenceMessage<def>>
-		: // these problems would've been caught during a fullStringParse, but it's most
-		// efficient to check for them here in case the string was naively parsed
-		$[alias] extends Generic ?
-			ErrorMessage<
-				writeInvalidGenericArgCountMessage<def, $[alias]["names"], []>
-			>
-		: $[alias] extends { [arkKind]: "module" } ?
-			"$root" extends keyof $[alias] ?
-				undefined
-			:	ErrorMessage<writeMissingSubmoduleAccessMessage<def>>
-		:	undefined
+	: [inferred] extends [anyOrNever] ? undefined
+	: def extends PrivateDeclaration ?
+		ErrorMessage<writePrefixedPrivateReferenceMessage<def>>
+	: // these problems would've been caught during a fullStringParse, but it's most
+	// efficient to check for them here in case the string was naively parsed
+	inferred extends Generic ?
+		ErrorMessage<writeInvalidGenericArgCountMessage<def, inferred["names"], []>>
+	: inferred extends { [arkKind]: "module" } ?
+		"$root" extends keyof inferred ?
+			undefined
+		:	ErrorMessage<writeMissingSubmoduleAccessMessage<def>>
 	: def extends ErrorMessage ? def
 	: undefined
-
-export type maybeExtractAlias<def extends string, $> =
-	def extends keyof $ ? def
-	: `#${def}` extends keyof $ ? `#${def}`
-	: null
 
 export type validateString<def extends string, $, args> =
 	validateAst<parseString<def, $, args>, $, args> extends (

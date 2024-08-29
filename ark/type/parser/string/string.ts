@@ -5,6 +5,7 @@ import {
 	type ErrorMessage
 } from "@ark/util"
 import type { ArkAmbient } from "../../config.ts"
+import type { resolutionToAst } from "../../scope.ts"
 import type { inferAstRoot } from "../semantic/infer.ts"
 import type { DynamicState, DynamicStateWithRoot } from "./reduce/dynamic.ts"
 import type { StringifiablePrefixOperator } from "./reduce/shared.ts"
@@ -24,10 +25,10 @@ export type parseString<def extends string, $, args> =
 	def extends keyof $ ?
 		// def could also be a generic reference here, in which case it will
 		// fail semantic validation because it has no args
-		def
+		resolutionToAst<def, $[def]>
 	: def extends `${infer child}[]` ?
 		child extends keyof $ ?
-			[child, "[]"]
+			[resolutionToAst<child, $[child]>, "[]"]
 		:	fullStringParse<state.initialize<def>, $, args>
 	:	fullStringParse<state.initialize<def>, $, args>
 

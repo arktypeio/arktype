@@ -1,4 +1,4 @@
-import type { Submodule } from "../../module.ts"
+import type { Module, Submodule } from "../../module.ts"
 import type { Branded, constrain } from "../ast.ts"
 import { submodule } from "../utils.ts"
 import { regexStringNode } from "./utils.ts"
@@ -32,14 +32,20 @@ declare namespace string {
 }
 
 // Based on https://github.com/validatorjs/validator.js/blob/master/src/lib/isUUID.js
-export const ip = submodule({
+export const ip: ip.module = submodule({
 	$root: ["v4 | v6", "@", "an IP address"],
 	v4: regexStringNode(ipv4Matcher, "an IPv4 address"),
 	v6: regexStringNode(ipv6Matcher, "an IPv6 address")
 })
 
-export type ip = Submodule<{
-	$root: string.ip
-	v4: string.ip.v4
-	v6: string.ip.v6
-}>
+export declare namespace ip {
+	export type module = Module<submodule>
+
+	export type submodule = Submodule<$>
+
+	export type $ = {
+		$root: string.ip
+		v4: string.ip.v4
+		v6: string.ip.v6
+	}
+}
