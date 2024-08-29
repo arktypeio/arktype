@@ -66,7 +66,7 @@ export type platformConstructors = {
 export const platformConstructors: platformConstructors = {
 	ArrayBuffer,
 	Blob,
-	File,
+	File: FileConstructor,
 	FormData,
 	Headers,
 	Request,
