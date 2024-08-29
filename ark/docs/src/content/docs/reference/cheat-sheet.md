@@ -1,8 +1,10 @@
 ---
 title: API cheat sheet
 sidebar:
-  order: 3
+  order: 1
 ---
+
+## Keywords
 
 ```ts
 import { type } from "arktype"
@@ -27,17 +29,16 @@ export const currentTsSyntax = type({
 		},
 		"[]"
 	],
-	tuple: ["number", "number"]
-})
-
-// available syntax new to 2.0
-
-export const upcomingTsSyntax = type({
+	tuple: ["number", "number"],
 	keyof: "keyof object",
 	variadicTuples: ["true", "...", "false[]"],
 	arrayOfObjectLiteral: type({ name: "string" }).array()
 })
+```
 
+## Constraints
+
+```ts
 // runtime-specific syntax and builtin keywords with great error messages
 
 export const validationSyntax = type({
@@ -74,3 +75,72 @@ if (maybeMe instanceof type.errors) {
 	console.log(maybeMe.summary)
 }
 ```
+
+## 2.0
+
+<!--
+add a "this" keyword resolvable from types without an associated scope alias
+
+```ts
+const disappointingGift = type({ label: "string", "box?": "this" })
+const { out, errors } = disappointingGift(fetchGift())
+
+// inferred as string | undefined
+const chainable = out?.box?.box?.label
+
+type DisappointingGift = typeof disappointingGift.infer
+// equivalent to...
+type ExplicitDisappointingGift = {
+	label: string
+	box?: ExplicitDisappointingGift
+}
+```
+
+For similar behavior within a scoped definition, you should continue to reference the alias by name:
+
+```ts
+const types = scope({
+	disappointingGift: {
+		label: "string",
+		// Resolves correctly to the root of the current type
+		"box?": "disappointingGift"
+	}
+}).compile()
+```
+
+Attempting to reference "this" from within a scope will result in a ParseError:
+
+```ts
+const types = scope({
+	disappointingGift: {
+		label: "string",
+		// Runtime and Type Error: "'this' is unresolvable"
+		"box?": "this"
+	}
+}).compile()
+``` -->
+
+<!--
+Date literals
+
+Date literals can now be defined using the following syntax:
+
+```ts
+// single or double quoted string preceded by "d"
+// enclosed string is passed to the Date constructor
+const exactDate = type("d'2023-07-04'")
+```
+
+This is mostly useful in the context of ranges, where they can be applies as limits to a non-literal `Date` (normal rules about comparators and single/double bounds apply):
+
+```ts
+// a Date after 2000 but before 2010
+const dateInRange = type("d'2000'<Date<=d'2010-1-1'")
+```
+
+Since what is enclosed by the date literal tokens is not parsed, you can also insert values dynamically, e.g.:
+
+```ts
+// a Date in the past
+const  = type(`Date<=d"${Date.now()}"`)
+``` -->

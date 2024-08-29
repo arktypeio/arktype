@@ -30,7 +30,12 @@ export const arkFormData: arkFormData.module = submodule({
 		morphs: (data: FormData): ParsedFormData => {
 			const result: ParsedFormData = {}
 
-			for (const [k, v] of data) {
+			// no cast is actually required here, but with
+			// typescript.tsserver.experimental.enableProjectDiagnostics: true
+			// this file periodically displays as having an error, likely due to the
+			// lack of a `File` type.
+			type FormDataEntries = [string, FormDataValue][]
+			for (const [k, v] of data as {} as FormDataEntries) {
 				if (k in result) {
 					const existing = result[k]
 					if (
