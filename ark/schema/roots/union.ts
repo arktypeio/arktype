@@ -2,13 +2,11 @@ import {
 	appendUnique,
 	arrayEquals,
 	domainDescriptions,
-	domainToJsTypesOf,
 	flatMorph,
 	groupBy,
 	isArray,
 	jsTypeOfDescriptions,
 	printable,
-	throwInternalError,
 	throwParseError,
 	type JsTypeOf,
 	type Json,
@@ -287,9 +285,11 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		)
 			return this.compileIndiscriminable(js)
 
-		const conditionPrefix = this.discriminant.kind === "typeOf" ? "typeof " : ""
 		// we need to access the path as optional so we don't throw if it isn't present
-		const condition = `${conditionPrefix}${this.discriminant.optionallyChainedPropString}`
+		let condition = this.discriminant.optionallyChainedPropString
+
+		if (this.discriminant.kind === "domain")
+			condition = `typeof ${condition} === "object" ? ${condition} === null ? "null" : "object" : typeof ${condition} === "function" ? "object" : typeof ${condition}`
 
 		const cases = this.discriminant.cases
 
@@ -311,7 +311,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		}
 
 		const expected = describeBranches(
-			this.discriminant.kind === "typeOf" ?
+			this.discriminant.kind === "domain" ?
 				caseKeys.map(k => {
 					const jsTypeOf = k.slice(1, -1) as JsTypeOf
 					return jsTypeOf === "function" ?
@@ -327,7 +327,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 
 		const serializedExpected = JSON.stringify(expected)
 		const serializedActual =
-			this.discriminant.kind === "typeOf" ?
+			this.discriminant.kind === "domain" ?
 				`${serializedTypeOfDescriptions}[${condition}]`
 			:	`${serializedPrintable}(${condition})`
 
@@ -374,7 +374,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			])
 
 			return {
-				kind: "identity",
+				kind: "unit",
 				path: [],
 				optionallyChainedPropString: "data",
 				cases
@@ -389,79 +389,45 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 				if (!(result instanceof Disjoint)) continue
 
 				for (const entry of result) {
-					if (!entry.discriminantKind || entry.optional) continue
+					if (!entry.kind || entry.optional) continue
 
-					let lSerialized: string[]
-					let rSerialized: string[]
+					let lSerialized: string
+					let rSerialized: string
 
-					switch (entry.discriminantKind) {
-						case "typeOf": {
-							const lValue = entry.l as Domain.Node | Domain.Enumerable
-							const rValue = entry.r as Domain.Node | Domain.Enumerable
-							const lDomain =
-								typeof lValue === "string" ? lValue : lValue.domain
-							const rDomain =
-								typeof rValue === "string" ? rValue : rValue.domain
-							if (
-								(lDomain === "null" && rDomain === "object") ||
-								(rDomain === "null" && lDomain === "object")
-							)
-								// since we use typeof as a discriminant, we can't use this domain disjoint
-								continue
-
-							lSerialized = domainToJsTypesOf(lDomain).map(
-								typeOf => `"${typeOf}"`
-							)
-							rSerialized = domainToJsTypesOf(rDomain).map(
-								typeOf => `"${typeOf}"`
-							)
-							break
-						}
-						case "identity": {
-							lSerialized = [(entry.l as Unit.Node).serializedValue]
-							rSerialized = [(entry.r as Unit.Node).serializedValue]
-							break
-						}
-						default:
-							entry.discriminantKind satisfies never
-							throwInternalError(
-								`Unexpected discriminant kind ${entry.discriminantKind}`
-							)
-					}
+					if (entry.kind === "domain") {
+						const lValue = entry.l as Domain.Node | Domain.Enumerable
+						const rValue = entry.r as Domain.Node | Domain.Enumerable
+						lSerialized = `"${typeof lValue === "string" ? lValue : lValue.domain}"`
+						rSerialized = `"${typeof rValue === "string" ? rValue : rValue.domain}"`
+					} else if (entry.kind === "unit") {
+						lSerialized = (entry.l as Unit.Node).serializedValue
+						rSerialized = (entry.r as Unit.Node).serializedValue
+					} else continue
 
 					const matching = candidates.find(
-						d =>
-							arrayEquals(d.path, entry.path) &&
-							d.kind === entry.discriminantKind
+						d => arrayEquals(d.path, entry.path) && d.kind === entry.kind
 					)
 
 					if (!matching) {
 						candidates.push({
-							kind: entry.discriminantKind,
-							cases: Object.assign(
-								flatMorph(lSerialized, (i, k) => [k, [l]]),
-								flatMorph(rSerialized, (i, k) => [k, [r]])
-							) as never,
+							kind: entry.kind,
+							cases: {
+								[lSerialized]: [l],
+								[rSerialized]: [r]
+							},
 							path: entry.path
 						})
-						continue
+					} else {
+						matching.cases[lSerialized] = appendUnique(
+							matching.cases[lSerialized],
+							l
+						)
+
+						matching.cases[rSerialized] = appendUnique(
+							matching.cases[rSerialized],
+							r
+						)
 					}
-
-					lSerialized.forEach(
-						lSerialized =>
-							(matching.cases[lSerialized] = appendUnique(
-								matching.cases[lSerialized],
-								l
-							))
-					)
-
-					rSerialized.forEach(
-						rSerialized =>
-							(matching.cases[rSerialized] = appendUnique(
-								matching.cases[rSerialized],
-								r
-							))
-					)
 				}
 			}
 		}
@@ -735,8 +701,8 @@ export type DiscriminatedCases<
 }
 
 export type DiscriminantKinds = {
-	typeOf: JsTypeOf
-	identity: SerializedPrimitive | RegisteredReference
+	domain: Domain
+	unit: SerializedPrimitive | RegisteredReference
 }
 
 export type DiscriminantKind = show<keyof DiscriminantKinds>
@@ -765,7 +731,7 @@ export const pruneDiscriminant = (
 					return true
 
 				if (
-					(node.hasKind("domain") || discriminantCtx.kind === "identity") &&
+					(node.hasKind("domain") || discriminantCtx.kind === "unit") &&
 					propString === discriminantCtx.optionallyChainedPropString
 				)
 					// if the discriminant has already checked the domain at the current path

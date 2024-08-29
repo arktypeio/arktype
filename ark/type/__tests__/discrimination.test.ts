@@ -8,7 +8,7 @@ contextualize(() => {
 		const t = type("'a'|'b'")
 		attest(t.json).snap([{ unit: "a" }, { unit: "b" }])
 		attest(t.internal.assertHasKind("union").discriminantJson).snap({
-			kind: "identity",
+			kind: "unit",
 			path: [],
 			cases: { '"a"': true, '"b"': true }
 		})
@@ -21,7 +21,7 @@ contextualize(() => {
 		const t = type("'a'|'b'|'c'")
 		attest(t.json).snap([{ unit: "a" }, { unit: "b" }, { unit: "c" }])
 		attest(t.internal.assertHasKind("union").discriminantJson).snap({
-			kind: "identity",
+			kind: "unit",
 			path: [],
 			cases: { '"a"': true, '"b"': true, '"c"': true }
 		})
@@ -35,7 +35,7 @@ contextualize(() => {
 		const t = type("string|bigint|number")
 		attest(t.json).snap(["bigint", "number", "string"])
 		attest(t.internal.assertHasKind("union").discriminantJson).snap({
-			kind: "typeOf",
+			kind: "domain",
 			path: [],
 			cases: { '"bigint"': true, '"number"': true, '"string"': true }
 		})
@@ -49,7 +49,7 @@ contextualize(() => {
 		const t = type("string|bigint|true")
 		attest(t.json).snap(["bigint", "string", { unit: true }])
 		attest(t.internal.assertHasKind("union").discriminantJson).snap({
-			kind: "typeOf",
+			kind: "domain",
 			path: [],
 			cases: { '"bigint"': true, '"string"': true, '"boolean"': { unit: true } }
 		})
@@ -75,11 +75,11 @@ contextualize(() => {
 		const $ = getPlaces()
 		const t = $.type("ocean|sky|rainForest|desert")
 		attest(t.internal.assertHasKind("union").discriminantJson).snap({
-			kind: "identity",
+			kind: "unit",
 			path: ["color"],
 			cases: {
 				'"blue"': {
-					kind: "identity",
+					kind: "unit",
 					path: ["climate"],
 					cases: {
 						'"dry"': { required: [{ key: "isSky", value: { unit: true } }] },
@@ -136,7 +136,7 @@ contextualize(() => {
 		])
 
 		attest(t.internal.assertHasKind("union").discriminantJson).snap({
-			kind: "identity",
+			kind: "unit",
 			path: ["color"],
 			cases: {
 				'"blue"': {
@@ -166,13 +166,13 @@ contextualize(() => {
 			["ocean|rainForest", "|", { temperature: "'hot'" }]
 		])
 		attest(t.internal.assertHasKind("union").discriminantJson).snap({
-			kind: "identity",
+			kind: "unit",
 			path: ["temperature"],
 			cases: {
 				'"cold"': true,
 				'"hot"': true,
 				default: {
-					kind: "identity",
+					kind: "unit",
 					path: ["color"],
 					cases: {
 						'"blue"': {
@@ -203,7 +203,7 @@ contextualize(() => {
 		const sRef = registeredReference(s)
 		const t = type({ [s]: "0" }).or({ [s]: "1" })
 		attest(t.internal.assertHasKind("union").discriminantJson).snap({
-			kind: "identity",
+			kind: "unit",
 			path: [sRef],
 			cases: {
 				"0": true,
@@ -229,7 +229,9 @@ contextualize(() => {
 		attest(company(null)).equals(null)
 		attest(company({ id: 1 })).equals({ id: 1 })
 		attest(company("foo")).equals("foo")
-		attest(company(5)?.toString()).snap()
+		attest(company(5)?.toString()).snap(
+			"must be a string, an object or null (was a number)"
+		)
 	})
 
 	it("differing inner discriminated paths", () => {
@@ -252,13 +254,13 @@ contextualize(() => {
 		const union = discriminated.internal.assertHasKind("union")
 
 		attest(union.discriminantJson).snap({
-			kind: "identity",
+			kind: "unit",
 			path: ["innerB", "id"],
 			cases: {
 				"1": true,
 				"2": true,
 				default: {
-					kind: "identity",
+					kind: "unit",
 					path: ["innerA", "id"],
 					cases: { "1": true, "2": true }
 				}

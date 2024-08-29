@@ -116,7 +116,7 @@ contextualize(() => {
 			t.internal.firstReferenceOfKindOrThrow("morph").serializedMorphs
 
 		attest(t.internal.assertHasKind("union").discriminantJson).snap({
-			kind: "identity",
+			kind: "unit",
 			path: [],
 			cases: {
 				"0": { in: { unit: 0 }, morphs: serializedMorphs },
@@ -493,7 +493,7 @@ contextualize(() => {
 			types.a.internal.assertHasKind("morph").serializedMorphs
 
 		attest(types.c.internal.assertHasKind("union").discriminantJson).snap({
-			kind: "typeOf",
+			kind: "domain",
 			path: ["0"],
 			cases: {
 				'"number"': {
