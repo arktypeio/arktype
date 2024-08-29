@@ -16,7 +16,7 @@ bench("dictionary", () => {
 		b: "number[]",
 		c: { nested: "boolean[]" }
 	})
-}).types([3573, "instantiations"])
+}).types([3895, "instantiations"])
 
 bench("dictionary with optional keys", () => {
 	const dict = type({
@@ -24,8 +24,8 @@ bench("dictionary with optional keys", () => {
 		"b?": "number[]",
 		"c?": { "nested?": "boolean[]" }
 	})
-}).types([2810, "instantiations"])
+}).types([3124, "instantiations"])
 
 bench("tuple", () => {
 	const tuple = type(["string[]", "number[]", ["boolean[]"]])
-}).types([2829, "instantiations"])
+}).types([3029, "instantiations"])
