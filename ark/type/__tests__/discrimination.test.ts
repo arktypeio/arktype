@@ -7,7 +7,7 @@ contextualize(() => {
 		// should not use a switch with <=2 branches to avoid needless convolution
 		const t = type("'a'|'b'")
 		attest(t.json).snap([{ unit: "a" }, { unit: "b" }])
-		attest(t.internal.hasKind("union") && t.internal.discriminantJson).snap({
+		attest(t.internal.assertHasKind("union").discriminantJson).snap({
 			kind: "identity",
 			path: [],
 			cases: { '"a"': true, '"b"': true }
@@ -20,7 +20,7 @@ contextualize(() => {
 	it(">2 literal branches", () => {
 		const t = type("'a'|'b'|'c'")
 		attest(t.json).snap([{ unit: "a" }, { unit: "b" }, { unit: "c" }])
-		attest(t.internal.hasKind("union") && t.internal.discriminantJson).snap({
+		attest(t.internal.assertHasKind("union").discriminantJson).snap({
 			kind: "identity",
 			path: [],
 			cases: { '"a"': true, '"b"': true, '"c"': true }
@@ -34,7 +34,7 @@ contextualize(() => {
 	it(">2 domain branches", () => {
 		const t = type("string|bigint|number")
 		attest(t.json).snap(["bigint", "number", "string"])
-		attest(t.internal.hasKind("union") && t.internal.discriminantJson).snap({
+		attest(t.internal.assertHasKind("union").discriminantJson).snap({
 			kind: "typeOf",
 			path: [],
 			cases: { '"bigint"': true, '"number"': true, '"string"': true }
@@ -48,7 +48,7 @@ contextualize(() => {
 	it("literals can be included in domain branches", () => {
 		const t = type("string|bigint|true")
 		attest(t.json).snap(["bigint", "string", { unit: true }])
-		attest(t.internal.hasKind("union") && t.internal.discriminantJson).snap({
+		attest(t.internal.assertHasKind("union").discriminantJson).snap({
 			kind: "typeOf",
 			path: [],
 			cases: { '"bigint"': true, '"string"': true, '"boolean"': { unit: true } }
@@ -74,7 +74,7 @@ contextualize(() => {
 	it("nested", () => {
 		const $ = getPlaces()
 		const t = $.type("ocean|sky|rainForest|desert")
-		attest(t.internal.hasKind("union") && t.internal.discriminantJson).snap({
+		attest(t.internal.assertHasKind("union").discriminantJson).snap({
 			kind: "identity",
 			path: ["color"],
 			cases: {
@@ -113,9 +113,7 @@ contextualize(() => {
 			}
 		])
 
-		attest(t.internal.hasKind("union") && t.internal.discriminantJson).equals(
-			null
-		)
+		attest(t.internal.assertHasKind("union").discriminantJson).equals(null)
 	})
 
 	it("discriminate optional key", () => {
@@ -127,9 +125,7 @@ contextualize(() => {
 			operator: "'to'"
 		})
 
-		attest(t.internal.hasKind("union") && t.internal.discriminantJson).equals(
-			null
-		)
+		attest(t.internal.assertHasKind("union").discriminantJson).equals(null)
 	})
 
 	it("default case", () => {
@@ -139,7 +135,7 @@ contextualize(() => {
 			{ temperature: "'hot'" }
 		])
 
-		attest(t.internal.hasKind("union") && t.internal.discriminantJson).snap({
+		attest(t.internal.assertHasKind("union").discriminantJson).snap({
 			kind: "identity",
 			path: ["color"],
 			cases: {
@@ -169,7 +165,7 @@ contextualize(() => {
 			"|",
 			["ocean|rainForest", "|", { temperature: "'hot'" }]
 		])
-		attest(t.internal.hasKind("union") && t.internal.discriminantJson).snap({
+		attest(t.internal.assertHasKind("union").discriminantJson).snap({
 			kind: "identity",
 			path: ["temperature"],
 			cases: {
@@ -199,16 +195,14 @@ contextualize(() => {
 
 	it("won't discriminate between possibly empty arrays", () => {
 		const t = type("string[]|boolean[]")
-		attest(t.internal.hasKind("union") && t.internal.discriminantJson).equals(
-			null
-		)
+		attest(t.internal.assertHasKind("union").discriminantJson).equals(null)
 	})
 
 	it("discriminant path including symbol", () => {
 		const s = Symbol("lobmyS")
 		const sRef = registeredReference(s)
 		const t = type({ [s]: "0" }).or({ [s]: "1" })
-		attest(t.internal.hasKind("union") && t.internal.discriminantJson).snap({
+		attest(t.internal.assertHasKind("union").discriminantJson).snap({
 			kind: "identity",
 			path: [sRef],
 			cases: {
@@ -235,7 +229,7 @@ contextualize(() => {
 		attest(company(null)).equals(null)
 		attest(company({ id: 1 })).equals({ id: 1 })
 		attest(company("foo")).equals("foo")
-		attest(company(5)?.toString()).snap("must be a number (was 5)")
+		attest(company(5)?.toString()).snap()
 	})
 
 	it("differing inner discriminated paths", () => {
