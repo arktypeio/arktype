@@ -483,9 +483,23 @@ contextualize(() => {
 					)
 			})
 
-			it("completions", g => {
+			it("completions in instantiation", g => {
 				// @ts-expect-error
 				attest(() => g({ foo: "numb" })).completions({
+					numb: ["number"]
+				})
+			})
+
+			it("completions in contraint", () => {
+				attest(() =>
+					generic([
+						"t",
+						{
+							// @ts-expect-error
+							foo: "numb"
+						}
+					])
+				).completions({
 					numb: ["number"]
 				})
 			})
