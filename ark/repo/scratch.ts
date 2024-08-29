@@ -1,9 +1,5 @@
 import { type } from "arktype"
 
-export const company = type({
-	id: "number"
+type({
+	"test?": type("string").pipe(x => x === "true")
 })
-
-const maybe = company.or("string | null")
-
-maybe(null)
