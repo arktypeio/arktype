@@ -483,11 +483,34 @@ contextualize(() => {
 					)
 			})
 
-			it("completions", g => {
+			it("completions in instantiation", g => {
 				// @ts-expect-error
 				attest(() => g({ foo: "numb" })).completions({
 					numb: ["number"]
 				})
+			})
+
+			it("completions in contraint", () => {
+				attest(() =>
+					generic([
+						"t",
+						{
+							// @ts-expect-error
+							foo: "numb"
+						}
+					])
+				).completions({
+					numb: ["number"]
+				})
+			})
+
+			it("is available on type", () => {
+				const nonEmpty = type.generic(["s", "string"])("s > 0")
+
+				const expected = type("string.alpha > 0")
+				const actual = nonEmpty("string.alpha")
+				attest<typeof expected>(actual)
+				attest(actual.expression).equals(expected.expression)
 			})
 		}
 	)

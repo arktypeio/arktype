@@ -402,7 +402,13 @@ export type genericParamDefsToAst<defs extends array<GenericParamDef>, $> = [
 export type GenericParser<$ = {}> = <
 	const paramsDef extends array<GenericParamDef>
 >(
-	...params: paramsDef
+	...params: {
+		[i in keyof paramsDef]: paramsDef[i] extends (
+			readonly [infer name, infer def]
+		) ?
+			readonly [name, validateTypeRoot<def, $>]
+		:	paramsDef[i]
+	}
 ) => GenericBodyParser<genericParamDefsToAst<paramsDef, $>, $>
 
 interface GenericBodyParser<params extends array<GenericParamAst>, $> {
