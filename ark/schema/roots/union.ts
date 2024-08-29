@@ -287,8 +287,9 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		)
 			return this.compileIndiscriminable(js)
 
+		const conditionPrefix = this.discriminant.kind === "typeOf" ? "typeof " : ""
 		// we need to access the path as optional so we don't throw if it isn't present
-		const condition = `${this.discriminant.kind === "typeOf" ? "typeof data" : "data"}${this.discriminant.optionallyChainedPropString}`
+		const condition = `${conditionPrefix}${this.discriminant.optionallyChainedPropString}`
 
 		const cases = this.discriminant.cases
 
@@ -375,7 +376,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			return {
 				kind: "identity",
 				path: [],
-				optionallyChainedPropString: "",
+				optionallyChainedPropString: "data",
 				cases
 			}
 		}
@@ -508,15 +509,17 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			Object.assign(this.referencesById, cases.default.referencesById)
 		}
 
-		return {
-			...bestCtx,
+		return Object.assign(bestCtx, {
 			cases
-		}
+		})
 	}
 }
 
 const optionallyChainPropString = (path: Key[]): string =>
-	path.reduce<string>((acc, k) => acc + compileLiteralPropAccess(k, true), "")
+	path.reduce<string>(
+		(acc, k) => acc + compileLiteralPropAccess(k, true),
+		"data"
+	)
 
 const serializedTypeOfDescriptions = registeredReference(jsTypeOfDescriptions)
 
