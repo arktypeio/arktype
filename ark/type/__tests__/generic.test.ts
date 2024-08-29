@@ -12,7 +12,6 @@ import { emptyGenericParameterMessage } from "arktype/internal/generic.ts"
 import { writeUnclosedGroupMessage } from "arktype/internal/parser/string/reduce/shared.ts"
 import { writeInvalidGenericArgCountMessage } from "arktype/internal/parser/string/shift/operand/genericArgs.ts"
 import { writeInvalidDivisorMessage } from "arktype/internal/parser/string/shift/operator/divisor.ts"
-import { writeUnexpectedCharacterMessage } from "arktype/internal/parser/string/shift/operator/operator.ts"
 
 contextualize(() => {
 	describe("standalone", () => {

@@ -37,11 +37,10 @@ import {
 	type anyOrNever,
 	type array,
 	type flattenListable,
-	type inferred,
 	type noSuggest,
 	type nominal
 } from "@ark/util"
-import type { ArkAmbient, ArkSchemaRegistry } from "./config.ts"
+import type { ArkSchemaRegistry } from "./config.ts"
 import {
 	parseGenericParams,
 	type GenericDeclaration,
@@ -50,7 +49,7 @@ import {
 	type baseGenericConstraints,
 	type parseValidGenericParams
 } from "./generic.ts"
-import type { Ark, type } from "./keywords/ark.ts"
+import type { Ark } from "./keywords/ark.ts"
 import type {
 	BoundModule,
 	Module,
@@ -137,12 +136,13 @@ type bootstrapAliases<def> = {
 		PreparsedResolution
 	) ?
 		def[k] extends { t: infer g extends GenericAst } ? g
-		: def[k] extends Module<infer $> ? Submodule<$>
+		: def[k] extends Module<infer $> | BoundModule<infer $, any> ? Submodule<$>
 		: def[k]
 	: def[k] extends (() => infer thunkReturn extends PreparsedResolution) ?
 		thunkReturn extends { t: infer g extends GenericAst } ? g
-		: thunkReturn extends Module<infer $> ? Submodule<$>
-		: thunkReturn
+		: thunkReturn extends Module<infer $> | BoundModule<infer $, any> ?
+			Submodule<$>
+		:	thunkReturn
 	:	Def<def[k]>
 } & {
 	[k in keyof def & GenericDeclaration as extractGenericName<k>]: GenericAst<
@@ -175,16 +175,6 @@ type extractGenericParameters<k> =
 	// causes TS fail to infer a narrowed result as of 5.5
 	k extends `${string}<${infer params}>` ? ParameterString<params> : never
 
-export type resolve<
-	reference extends keyof $ | keyof args,
-	$,
-	args
-> = inferResolution<
-	reference extends keyof args ? args[reference] : $[reference & keyof $],
-	$,
-	args
->
-
 export type resolutionToAst<alias extends string, resolution> =
 	[resolution] extends [anyOrNever] ? InferredAst<resolution, alias>
 	: resolution extends Def<infer def> ? DefAst<def, alias>
@@ -193,12 +183,6 @@ export type resolutionToAst<alias extends string, resolution> =
 	: resolution extends GenericAst ? resolution
 	: InferredAst<resolution, alias>
 
-export type inferResolution<resolution, $, args> =
-	[resolution] extends [anyOrNever] ? resolution
-	: resolution extends { [inferred]: infer t } ? t
-	: resolution extends Def<infer def> ? inferDefinition<def, $, args>
-	: resolution
-
 export type moduleKeyOf<$> = {
 	[k in keyof $]: $[k] extends { [arkKind]: "module" } ?
 		[$[k]] extends [anyOrNever] ?
@@ -206,21 +190,6 @@ export type moduleKeyOf<$> = {
 		:	k & string
 	:	never
 }[keyof $]
-
-type unwrapPreinferred<t> = t extends type.cast<infer inferred> ? inferred : t
-
-export type tryInferSubmoduleReference<$, token> =
-	token extends `${infer submodule extends moduleKeyOf<$>}.${infer subalias}` ?
-		subalias extends keyof $[submodule] ?
-			unwrapPreinferred<$[submodule][subalias]>
-		:	tryInferSubmoduleReference<$[submodule], subalias>
-	: token extends (
-		`${infer submodule extends moduleKeyOf<ArkAmbient.$>}.${infer subalias}`
-	) ?
-		subalias extends keyof ArkAmbient.$[submodule] ?
-			unwrapPreinferred<ArkAmbient.$[submodule][subalias]>
-		:	tryInferSubmoduleReference<ArkAmbient.$[submodule], subalias>
-	:	never
 
 export interface ArkTypeRegistry extends ArkSchemaRegistry {
 	typeAttachments?: Ark.boundTypeAttachments<any>
