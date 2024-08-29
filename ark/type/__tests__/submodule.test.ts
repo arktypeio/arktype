@@ -109,7 +109,18 @@ contextualize.each(
 			)
 		})
 
-		// TODO: private aliases
+		// https://github.com/arktypeio/arktype/issues/1103
+		it("allows BoundModule reference in scope", () => {
+			const mod2 = scope({
+				a: "number",
+				c: "string"
+			}).export("a")
+
+			const use2 = scope({
+				mod2,
+				b: "mod2.a"
+			}).export()
+		})
 	}
 )
 
