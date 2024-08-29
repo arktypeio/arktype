@@ -63,7 +63,7 @@
 		"tsx": "4.19.0",
 		"typescript": "catalog:",
 		"typescript-min": "npm:typescript@5.1.5",
-		"typescript-nightly": "npm:typescript@5.7.0-dev.20240822"
+		"typescript-nightly": "npm:typescript@5.7.0-dev.20240829"
 	},
 	"mocha": {
 		"//": "IF YOU UPDATE THE MOCHA CONFIG HERE, PLEASE ALSO UPDATE ark/repo/mocha.jsonc AND .vscode/settings.json",

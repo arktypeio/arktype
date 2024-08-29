@@ -160,7 +160,7 @@ const getInstantiationsWithFile = (fileText: string, fileName: string) => {
 	const env = getIsolatedEnv()
 	const file = createOrUpdateFile(env, fileName, fileText)
 	const program = getProgram(env)
-	program.emit(file)
+	program.getSemanticDiagnostics(file)
 	const count = program.getInstantiationCount()
 	return count
 }

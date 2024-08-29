@@ -28,4 +28,4 @@ bench("dictionary with optional keys", () => {
 
 bench("tuple", () => {
 	const tuple = type(["string[]", "number[]", ["boolean[]"]])
-}).types([3029, "instantiations"])
+}).types([3034, "instantiations"])
