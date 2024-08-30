@@ -33,8 +33,8 @@
 		"benchObject": "ts ./ark/type/__tests__/object.bench.ts",
 		"benchCyclic": "ts ./ark/type/__tests__/cyclic.bench.ts",
 		"scratch": "ts ./ark/repo/scratch.ts",
-		"lint": "prettier --check . && eslint --max-warnings=0 .",
-		"format": "prettier --write .",
+		"lint": "prettier --config ark/repo/.prettierrc.mjs --check . && eslint --max-warnings=0 .",
+		"format": "prettier --config ark/repo/.prettierrc.mjs --write .",
 		"knip": "knip",
 		"latest": "pnpm -r up --latest",
 		"ci:publish": "ts ./ark/repo/publish.ts"
@@ -61,6 +61,7 @@
 		"knip": "5.27.4",
 		"mocha": "10.7.3",
 		"prettier": "3.3.3",
+		"prettier-plugin-astro": "0.14.1",
 		"tsx": "4.19.0",
 		"typescript": "catalog:",
 		"typescript-min": "npm:typescript@5.1.5",
@@ -87,13 +88,6 @@
 		],
 		"extension": ".ts",
 		"reporter": "lcovonly"
-	},
-	"prettier": {
-		"useTabs": true,
-		"semi": false,
-		"trailingComma": "none",
-		"experimentalTernaries": true,
-		"arrowParens": "avoid"
 	},
 	"eslintConfig": {
 		"extends": "./ark/repo/.eslintrc.cjs"

@@ -1,0 +1,21 @@
+---
+import { TabItem, Tabs } from "@astrojs/starlight/components"
+import Code from "./Code.astro"
+
+interface Props {
+	string?: string
+	tuple?: string
+	spread?: string
+	fluent?: string
+}
+---
+
+<Tabs>
+	{
+		Astro.props.string && (
+			<TabItem label="string">
+				<Code code={Astro.props.string} lang="ts" />
+			</TabItem>
+		)
+	}
+</Tabs>

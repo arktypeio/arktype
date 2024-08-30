@@ -42,6 +42,7 @@ module.exports = defineConfig({
 		"**/node_modules/**",
 		"**/*js",
 		"*.astro",
+		"**/.next/**",
 		"*scratch.ts",
 		"**/scratch/**",
 		"**/examples/**"
@@ -179,7 +180,7 @@ module.exports = defineConfig({
 			}
 		},
 		{
-			files: ["**/ark/repo/**", "**/ark/docs/**"],
+			files: ["**/ark/repo/**", "**/ark/docs/**", "**/ark/docs2/**"],
 			rules: {
 				"@typescript-eslint/explicit-module-boundary-types": "off"
 			}

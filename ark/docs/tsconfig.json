@@ -9,7 +9,6 @@
 		"jsx": "preserve",
 		"plugins": [{ "name": "@astrojs/ts-plugin" }]
 	},
-	// temporarily disabled until it can handle Starlight's frontmatter
 	"mdx": {
 		"checkMdx": true,
 		"plugins": []
