@@ -42,8 +42,6 @@ Imagine we want to define a new Type representing a non-empty list of `Contact`.
 While the expression syntax we've been using is ideal for creating new types, chaining is a great way to refine or transform existing ones.
 
 ```ts
-import { type, type Type } from "arktype"
-
 const _contact = type({
 	email: "string.email",
 	score: "number.integer < 100"
@@ -53,7 +51,7 @@ type _Contact = typeof _contact.t
 
 interface Contact extends _Contact {}
 
-export const contact: Type<Contact> = _contact
+export const contact: type<Contact> = _contact
 // ---cut---
 // a non-empty list of Contact
 const contacts = contact.array().atLeastLength(1)
@@ -64,9 +62,6 @@ const contacts = contact.array().atLeastLength(1)
 Structured constraints like divisors and ranges will only take us so far. Luckily, they integrate seamlessly with whatever custom validation logic you need.
 
 ```ts
-import { type } from "arktype"
-
-// ---cut---
 const palindromicEmail = type("string.email").narrow((address, ctx) => {
 	if (address === [...address].reverse().join("")) {
 		// congratulations! your email is somehow a palindrome
@@ -85,8 +80,6 @@ const palindromicContact = type({
 We can invoke `palindromicContact` anywhere to get validated data or a list of errors with a user-friendly summary.
 
 ```ts
-import { ArkErrors, type } from "arktype"
-
 const palindromicEmail = type("string.email").narrow((address, ctx) => {
 	if (address === [...address].reverse().join("")) {
 		// congratulations! your email is somehow a palindrome
@@ -101,7 +94,7 @@ const palindromicContact = type({
 	score: "number.integer < 100"
 })
 
-interface RuntimeErrors extends ArkErrors {
+interface RuntimeErrors extends type.errors {
 	/**email must be a palindrome (was "david@arktype.io")
 score (133.7) must be...
   • an integer
@@ -109,7 +102,7 @@ score (133.7) must be...
 	summary: string
 }
 
-const narrowMessage = (e: ArkErrors): e is RuntimeErrors => true
+const narrowMessage = (e: type.errors): e is RuntimeErrors => true
 // ---cut---
 const out = palindromicContact({
 	email: "david@arktype.io",

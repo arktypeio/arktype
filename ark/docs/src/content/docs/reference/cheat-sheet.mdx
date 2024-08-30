@@ -18,16 +18,17 @@ const t = type("string")
 ```
 	</SyntaxTab>
 
-	<SyntaxTab fluent>
+    <SyntaxTab fluent>
+
 ```ts
 const t = type.string
 ```
-	</SyntaxTab>
+
+    </SyntaxTab>
+
 </Tabs>
 
 ```ts
-import { type } from "arktype"
-
 export const currentTsSyntax = type({
 	keyword: "null",
 	stringLiteral: "'TS'",
@@ -57,8 +58,6 @@ export const currentTsSyntax = type({
 ## Constraints
 
 ```ts
-import { type } from "arktype"
-
 // runtime-specific syntax and builtin keywords with great error messages
 
 export const validationSyntax = type({

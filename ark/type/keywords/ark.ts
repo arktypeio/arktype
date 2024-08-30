@@ -6,6 +6,7 @@ import { $arkTypeRegistry, scope, type Scope } from "../scope.ts"
 import type {
 	DeclarationParser,
 	DefinitionParser,
+	Type,
 	TypeParser
 } from "../type.ts"
 import { arkBuiltins } from "./builtins.ts"
@@ -69,6 +70,8 @@ export declare namespace type {
 
 	export type errors = ArkErrors
 }
+
+export type type<t = unknown, $ = {}> = Type<t, $>
 
 export const generic: GenericParser<{}> = ambient.generic as never
 

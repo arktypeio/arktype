@@ -81,15 +81,13 @@ if (!(out instanceof type.errors)) {
 At this point, our implementation is starting to look pretty clean, but in many cases like this one, we can skip straight to the punch line with one of ArkType's many built-in aliases for validation and parsing, `string.json.parse`:
 
 ```ts
-import { type, type ArkErrors } from "arktype"
-
-interface RuntimeErrors extends ArkErrors {
+interface RuntimeErrors extends type.errors {
 	/**name must be a string (was true) 
 version must be a semantic version (see https://semver.org/) (was "v2.0.0")*/
 	summary: string
 }
 
-const narrowMessage = (e: ArkErrors): e is RuntimeErrors => true
+const narrowMessage = (e: type.errors): e is RuntimeErrors => true
 
 // ---cut---
 // .to is a sugared .pipe for a single parsed output validator

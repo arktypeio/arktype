@@ -34,8 +34,17 @@ export const twoslash = transformerTwoslash({
 			"global.d.ts": `import type * as a from "arktype"
 
 declare global {
-    const type: typeof a.type
-    const scope: typeof a.scope
+	const type: typeof a.type
+	namespace type {
+		export type cast<t> = {
+			[a.inferred]?: t
+		}
+
+		export type errors = a.ArkErrors
+	}
+
+	type type<t = unknown, $ = {}> = a.Type<t, $>
+	const scope: typeof a.scope
 }`
 		},
 		filterNode: node => {

@@ -11,7 +11,6 @@ If you already know TypeScript, congratulations- you just learned most of ArkTyp
 ## Define
 
 ```ts
-// @noErrors
 import { type } from "arktype"
 
 const user = type({
@@ -56,9 +55,6 @@ const user = type({
 To decouple `device` from `user`, just move it to its own type and reference it.
 
 ```ts
-import { type } from "arktype"
-
-// ---cut---
 const device = type({
 	platform: "'android' | 'ios'",
 	"versions?": "(number | string)[]"
@@ -75,8 +71,6 @@ const user = type({
 At runtime, we can pass `unknown` data to our type and get back either a validated `User` or an array of clear, customizable errors with a root `summary`.
 
 ```ts
-import { type, type ArkErrors } from "arktype"
-
 const user = type({
 	name: "string",
 	device: {
@@ -85,7 +79,7 @@ const user = type({
 	}
 })
 
-interface RuntimeErrors extends ArkErrors {
+interface RuntimeErrors extends type.errors {
 	/**device.platform must be "android" or "ios" (was "enigma")
 device.versions[2] must be a number or a string (was bigint)*/
 	summary: string
