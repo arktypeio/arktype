@@ -243,6 +243,12 @@ export const omit = <o extends object, keys extends keySetOf<o>>(
 	keys: keys
 ): omit<o, keyof keys & keyof o> => splitByKeys(o, keys)[1] as never
 
+/** Returns onTrue if the type is exactly `{}` and onFalse otherwise*/
+export type ifEmptyObjectLiteral<t, onTrue = true, onFalse = false> =
+	[unknown, t & (null | undefined)] extends [t | null | undefined, never] ?
+		onTrue
+	:	onFalse
+
 export type EmptyObject = Record<PropertyKey, never>
 
 export const isEmptyObject = (o: object): o is EmptyObject =>

@@ -59,6 +59,19 @@ contextualize(() => {
 			attest<typeof U.t>(U.inferIn)
 		})
 
+		// https://github.com/arktypeio/arktype/issues/1102
+		it("optional keys in union not reduced to object", () => {
+			const U = type({ b: type({ "a?": "number" }).or("number") })
+			attest(U.expression).snap("{ b: number | { a?: number } }")
+			attest<{
+				b:
+					| {
+							a?: number
+					  }
+					| number
+			}>(U.t)
+		})
+
 		it("symbol key", () => {
 			const s = Symbol()
 			const name = registeredReference(s)
