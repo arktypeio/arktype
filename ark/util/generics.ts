@@ -25,12 +25,6 @@ export type exactMessageOnError<t extends object, u extends object> = {
 	:	ErrorMessage<`'${k & string}' is not a valid key`>
 } & u
 
-/** Returns onTrue if the type is exactly `{}` and onFalse otherwise*/
-export type ifEmptyObjectLiteral<t, onTrue = true, onFalse = false> =
-	[unknown, t & (null | undefined)] extends [t | null | undefined, never] ?
-		onTrue
-	:	onFalse
-
 export type leftIfEqual<l, r> = [l, r] extends [r, l] ? l : r
 
 export type UnknownUnion =
