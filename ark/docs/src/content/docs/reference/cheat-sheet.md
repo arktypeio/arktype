@@ -6,10 +6,11 @@ sidebar:
 
 ## Keywords
 
+## Keywords
+
 ```ts
 import { type } from "arktype"
 
-// Syntax carried over from 1.0 + TS
 export const currentTsSyntax = type({
 	keyword: "null",
 	stringLiteral: "'TS'",
@@ -32,13 +33,15 @@ export const currentTsSyntax = type({
 	tuple: ["number", "number"],
 	keyof: "keyof object",
 	variadicTuples: ["true", "...", "false[]"],
-	arrayOfObjectLiteral: type({ name: "string" }).array()
+	arrayOfObjectLiteralChained: type({ name: "string" }).array()
 })
 ```
 
 ## Constraints
 
 ```ts
+import { type } from "arktype"
+
 // runtime-specific syntax and builtin keywords with great error messages
 
 export const validationSyntax = type({
