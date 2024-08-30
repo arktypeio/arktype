@@ -163,7 +163,7 @@ ArkType's isomorphic parser has parallel static and dynamic implementations. Thi
 
 If you're curious, below is an example of what that looks like under the hood. If not, close that hood back up, `npm install arktype` and enjoy top-notch developer experience 🧑‍💻
 
-```ts @blockFrom:src/parse/string/shift/operator/operator.ts:parseOperator
+```ts
 export const parseOperator = (s: DynamicState): void => {
 	const lookahead = s.scanner.shift()
 	return (
