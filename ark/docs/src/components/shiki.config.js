@@ -30,6 +30,14 @@ export const twoslash = transformerTwoslash({
 			...defaultCompilerOptions,
 			exactOptionalPropertyTypes: true
 		},
+		extraFiles: {
+			"global.d.ts": `import type * as a from "arktype"
+
+declare global {
+    const type: typeof a.type
+    const scope: typeof a.scope
+}`
+		},
 		filterNode: node => {
 			switch (node.type) {
 				case "hover":
