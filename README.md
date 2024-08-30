@@ -28,7 +28,7 @@ Defining basic types in ArkType is just like TypeScript, so if you already know 
 
 For an ever better in-editor developer experience, try the [ArkDark VSCode extension](https://marketplace.visualstudio.com/items?itemName=arktypeio.arkdark) for syntax highlighting.
 
-```ts @blockFrom:dev/test/examples/type.ts
+```ts
 import { type } from "arktype"
 
 // Definitions are statically parsed and inferred as TS

@@ -1,0 +1,20 @@
+---
+import { TabItem, Tabs } from "@astrojs/starlight/components"
+import Code from "./Code.astro"
+
+interface Props {
+	kind: string
+	children: unknown
+}
+
+const withArkTypeImports = (code: string) =>
+	`import { type, scope } from "arktype"
+// ---cut---
+${code}`
+
+const codeblockHtml = await Astro.slots.render("default")
+---
+
+<TabItem label={Astro.props.kind}>
+	<Fragment set:html={codeblockHtml} />
+</TabItem>
