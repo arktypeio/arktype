@@ -66,11 +66,11 @@ export const parseObject = (def: object, ctx: ParseContext): BaseRoot => {
 
 export type inferDefinition<def, $, args> =
 	[def] extends [anyOrNever] ? def
-	: def extends type.cast<infer t> ?
-		// unlike in TS, ArkType object literals are constrained to object
-		// so we use that as the base type inferred when parsing {}
-		ifEmptyObjectLiteral<t, object, t>
-	: def extends ThunkCast<infer t> ? t
+	: def extends type.cast<infer t> | ThunkCast<infer t> ?
+		// {} as a def is handled here since according to TS it extends { " arkInferred"?: t  }.
+		// Unlike in TS however, ArkType object literals are constrained to object
+		// so we use that as the base type inferred when parsing {}.
+		ifEmptyObjectLiteral<def, object, t>
 	: def extends string ? inferString<def, $, args>
 	: def extends array ? inferTuple<def, $, args>
 	: def extends RegExp ? string.matching<string>

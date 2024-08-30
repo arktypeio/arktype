@@ -27,10 +27,8 @@ export type exactMessageOnError<t extends object, u extends object> = {
 
 /** Returns onTrue if the type is exactly `{}` and onFalse otherwise*/
 export type ifEmptyObjectLiteral<t, onTrue = true, onFalse = false> =
-	{} extends t ?
-		keyof t extends never ?
-			onTrue
-		:	onFalse
+	[unknown, t & (null | undefined)] extends [t | null | undefined, never] ?
+		onTrue
 	:	onFalse
 
 export type leftIfEqual<l, r> = [l, r] extends [r, l] ? l : r
