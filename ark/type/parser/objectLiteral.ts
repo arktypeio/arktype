@@ -28,7 +28,7 @@ import {
 	type mutable,
 	type show
 } from "@ark/util"
-import type { constrain, Default } from "../keywords/ast.ts"
+import type { constrain, Default, OptionalAst } from "../keywords/ast.ts"
 import type { ParseContext } from "../scope.ts"
 import type { inferDefinition, validateDefinition } from "./definition.ts"
 import type { astToString } from "./semantic/utils.ts"
@@ -100,19 +100,23 @@ type _inferObjectLiteral<def extends object, $, args> = {
 	// since def is a const parameter, we remove the readonly modifier here
 	// support for builtin readonly tracked here:
 	// https://github.com/arktypeio/arktype/issues/808
-	-readonly [k in keyof def as nonOptionalKeyFrom<k, $, args>]: def[k] extends (
-		DefaultValueTuple<infer baseDef, infer defaultValue>
-	) ?
+	-readonly [k in keyof def as nonOptionalKeyFrom2<
+		k,
+		def[k],
+		$,
+		args
+	>]: def[k] extends DefaultValueTuple<infer baseDef, infer defaultValue> ?
 		[def[k]] extends [anyOrNever] ?
 			def[k]
 		:	(In?: inferDefinition<baseDef, $, args>) => Default<defaultValue>
 	:	inferDefinition<def[k], $, args>
 } & {
-	-readonly [k in keyof def as optionalKeyFrom<k>]?: inferDefinition<
+	-readonly [k in keyof def as optionalKeyFrom2<
+		k,
 		def[k],
 		$,
 		args
-	>
+	>]?: inferDefinition<def[k], $, args>
 }
 
 export type validateObjectLiteral<def, $, args> = {
@@ -172,6 +176,19 @@ type validateDefaultValueTuple<
 		>
 	:	ErrorMessage<invalidDefaultKeyKindMessage>
 
+type nonOptionalKeyFrom2<k, v, $, args> =
+	parseKey<k> extends PreparsedKey<"required", infer parsedKey> ?
+		inferDefinition<v, $, args> extends OptionalAst ?
+			never
+		:	parsedKey
+	: parseKey<k> extends PreparsedKey<"index", infer parsedKey> ?
+		inferDefinition<parsedKey, $, args> extends infer inferredKey extends Key ?
+			inferredKey
+		:	never
+	:	// "..." is handled at the type root so is handled neither here nor in optionalKeyFrom
+		// "+" has no effect on inference
+		never
+
 type nonOptionalKeyFrom<k, $, args> =
 	parseKey<k> extends PreparsedKey<"required", infer inner> ? inner
 	: parseKey<k> extends PreparsedKey<"index", infer inner> ?
@@ -181,6 +198,10 @@ type nonOptionalKeyFrom<k, $, args> =
 	:	// "..." is handled at the type root so is handled neither here nor in optionalKeyFrom
 		// "+" has no effect on inference
 		never
+
+type optionalKeyFrom2<k, v, $, args> =
+	| (inferDefinition<v, $, args> extends OptionalAst ? k : never)
+	| optionalKeyFrom<k>
 
 type optionalKeyFrom<k> =
 	parseKey<k> extends PreparsedKey<"optional", infer inner> ? inner : never
