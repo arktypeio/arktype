@@ -28,6 +28,7 @@ const transformStringToDate = type("string.date.parse")
 const string = type.string
 // all builtin keywords and modules are available under `ark`
 const date = type.ark.Date
+// subtype keywords refine or transform their root type
 //`.root` gets the base type of a subtyped module
 const dateFormattedString = type.ark.string.date.root
 const isoFormattedString = type.ark.string.date.iso.root
