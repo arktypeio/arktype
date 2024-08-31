@@ -160,23 +160,29 @@ export type schemaToConstraint<
 		: Narrowed
 	:	never
 
-export type distillIn<t> = finalizeDistillation<t, _distill<t, "in", "base">>
+export type distillIn<t> = finalizeDistillation<
+	t,
+	_distill<t, { endpoint: "in" }>
+>
 
-export type distillOut<t> = finalizeDistillation<t, _distill<t, "out", "base">>
+export type distillOut<t> = finalizeDistillation<
+	t,
+	_distill<t, { endpoint: "out" }>
+>
 
 export type distillConstrainableIn<t> = finalizeDistillation<
 	t,
-	_distill<t, "in", "constrainable">
+	_distill<t, { endpoint: "in"; branded: true }>
 >
 
 export type distillConstrainableOut<t> = finalizeDistillation<
 	t,
-	_distill<t, "out", "constrainable">
+	_distill<t, { endpoint: "out"; branded: true }>
 >
 
 export type distillValidatedOut<t> = finalizeDistillation<
 	t,
-	_distill<t, "out.validated", "constrainable">
+	_distill<t, { endpoint: "out.validated"; branded: true }>
 >
 
 export type DistillEndpoint = "in" | "out" | "out.validated"
@@ -186,76 +192,68 @@ export type DistillOptions = {
 	branded?: true
 }
 
-export type distill<t, opts extends DistillOptions = {}> = _distill<
-	t,
-	opts["endpoint"],
-	"base"
->
+export type distill<t, opts extends DistillOptions = {}> = _distill<t, opts>
 
 type finalizeDistillation<t, distilled> =
 	equals<t, distilled> extends true ? t : distilled
 
 export type includesMorphs<t> =
 	[
-		_distill<t, "in", "constrainable">,
-		_distill<t, "out", "constrainable">
+		_distill<t, { endpoint: "in"; branded: true }>,
+		_distill<t, { endpoint: "out"; branded: true }>
 	] extends (
-		[_distill<t, "out", "constrainable">, _distill<t, "in", "constrainable">]
+		[
+			_distill<t, { endpoint: "out"; branded: true }>,
+			_distill<t, { endpoint: "in"; branded: true }>
+		]
 	) ?
 		false
 	:	true
 
-type DistilledKind = "base" | "constrainable"
-
-type _distill<
-	t,
-	io extends DistillEndpoint,
-	distilledKind extends DistilledKind
-> =
+type _distill<t, opts extends DistillOptions> =
 	// ensure optional keys don't prevent extracting defaults
 	t extends undefined ? t
 	: [t] extends [anyOrNever] ? t
 	: parseConstraints<t> extends (
 		[infer base, infer constraints extends Constraints]
 	) ?
-		distilledKind extends "base" ?
-			_distill<base, io, distilledKind>
-		:	constrain<_distill<base, io, distilledKind>, constraints>
+		opts["branded"] extends true ?
+			constrain<_distill<base, opts>, constraints>
+		:	_distill<base, opts>
 	: t extends TerminallyInferredObjectKind | Primitive ? t
 	: unknown extends t ? unknown
 	: t extends MorphAst<infer i, infer o> ?
-		io extends "in" ? _distill<i, io, distilledKind>
-		: io extends "out.validated" ?
+		opts["endpoint"] extends "in" ? _distill<i, opts>
+		: opts["endpoint"] extends "out.validated" ?
 			o extends To<infer validatedOut> ?
-				_distill<validatedOut, io, distilledKind>
+				_distill<validatedOut, opts>
 			:	unknown
-		: io extends "out" ? _distill<o[1], io, distilledKind>
-		: _distill<o[1], io, distilledKind> extends infer r ?
+		: opts["endpoint"] extends "out" ? _distill<o[1], opts>
+		: _distill<o[1], opts> extends infer r ?
 			o extends To ?
 				(In: i) => To<r>
 			:	(In: i) => Out<r>
 		:	never
-	: t extends DefaultedAst<infer t> ? _distill<t, io, distilledKind>
-	: t extends array ? distillArray<t, io, distilledKind, []>
+	: t extends DefaultedAst<infer t> ? _distill<t, opts>
+	: t extends array ? distillArray<t, opts, []>
 	: // we excluded this from TerminallyInferredObjectKind so that those types could be
 	// inferred before checking morphs/defaults, which extend Function
 	t extends Function ? t
 	: // avoid recursing into classes with private props etc.
 	{ [k in keyof t]: t[k] } extends t ?
-		io extends "in" ?
+		opts["endpoint"] extends "in" ?
 			show<
 				{
 					[k in keyof t as k extends defaultedKeyOf<t> ? never : k]: _distill<
 						t[k],
-						io,
-						distilledKind
+						opts
 					>
 				} & {
-					[k in defaultedKeyOf<t>]?: _distill<t[k], io, distilledKind>
+					[k in defaultedKeyOf<t>]?: _distill<t[k], opts>
 				}
 			>
 		:	{
-				[k in keyof t]: _distill<t[k], io, distilledKind>
+				[k in keyof t]: _distill<t[k], opts>
 			}
 	:	t
 
@@ -267,11 +265,10 @@ type defaultedKeyOf<t> = {
 
 type distillArray<
 	t extends array,
-	io extends DistillEndpoint,
-	constraints extends DistilledKind,
+	opts extends DistillOptions,
 	prefix extends array
 > =
-	_distillArray<t, io, constraints, prefix> extends infer result ?
+	_distillArray<t, opts, prefix> extends infer result ?
 		t extends unknown[] ?
 			result
 		:	// if the original array was readonly, ensure the distilled array is as well
@@ -280,33 +277,21 @@ type distillArray<
 
 type _distillArray<
 	t extends array,
-	io extends DistillEndpoint,
-	constraints extends DistilledKind,
+	opts extends DistillOptions,
 	prefix extends array
 > =
 	t extends readonly [infer head, ...infer tail] ?
-		_distillArray<
-			tail,
-			io,
-			constraints,
-			[...prefix, _distill<head, io, constraints>]
-		>
-	:	[...prefix, ...distillPostfix<t, io, constraints>]
+		_distillArray<tail, opts, [...prefix, _distill<head, opts>]>
+	:	[...prefix, ...distillPostfix<t, opts>]
 
 type distillPostfix<
 	t extends array,
-	io extends DistillEndpoint,
-	constraints extends DistilledKind,
+	opts extends DistillOptions,
 	postfix extends array = []
 > =
 	t extends readonly [...infer init, infer last] ?
-		distillPostfix<
-			init,
-			io,
-			constraints,
-			[_distill<last, io, constraints>, ...postfix]
-		>
-	:	[...{ [i in keyof t]: _distill<t[i], io, constraints> }, ...postfix]
+		distillPostfix<init, opts, [_distill<last, opts>, ...postfix]>
+	:	[...{ [i in keyof t]: _distill<t[i], opts> }, ...postfix]
 
 /** Objects we don't want to expand during inference like Date or Promise */
 type TerminallyInferredObjectKind =
