@@ -28,7 +28,8 @@ export const twoslash = transformerTwoslash({
 	twoslashOptions: {
 		compilerOptions: {
 			...defaultCompilerOptions,
-			exactOptionalPropertyTypes: true
+			exactOptionalPropertyTypes: true,
+			noErrorTruncation: true
 		},
 		extraFiles: {
 			"global.d.ts": `import type * as a from "arktype"
@@ -56,6 +57,10 @@ declare global {
 					if (node.text.startsWith("type")) {
 						return true
 					}
+					// when `noErrorTruncation` is enabled, TS displays the type
+					// of an anonymous cyclic type as `any` instead of using
+					// `...`, so replace it to clarify the type is accurately inferred
+					node.text = node.text.replaceAll(" any", " ...")
 					if (node.text.startsWith("const")) {
 						// show type with completions populated for known examples
 						node.text = node.text.replace(
