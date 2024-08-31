@@ -60,10 +60,6 @@ export type Literal<rule> = {
 	literal: constraint<rule>
 }
 
-export type Length<rule> = {
-	length: constraint<rule>
-}
-
 export type Narrowed = {
 	predicate: { "?": 1 }
 }
@@ -109,14 +105,11 @@ export type applyConstraintSchema<
 > =
 	t extends MorphAst<infer i, infer o> ?
 		(
-			In: leftIfEqual<
-				i,
-				applyConstraint<i, kind, schemaToConstraint<kind, schema>>
-			>
+			In: leftIfEqual<i, applyConstraint<i, schemaToConstraint<kind, schema>>>
 		) => o
-	:	leftIfEqual<t, applyConstraint<t, kind, schemaToConstraint<kind, schema>>>
+	:	leftIfEqual<t, applyConstraint<t, schemaToConstraint<kind, schema>>>
 
-type applyConstraint<t, kind, constraint> =
+type applyConstraint<t, constraint> =
 	parseConstraints<t> extends (
 		[infer base, infer constraints extends Constraints]
 	) ?
@@ -125,9 +118,9 @@ type applyConstraint<t, kind, constraint> =
 			string.is<constraint & constraints>
 		: [Date, base] extends [base, Date] ? Date.is<constraint & constraints>
 		: constrain<base, constraints & constraint>
-	: [number, t] extends [t, number] ? number.parseConstraint<kind, constraint>
-	: [string, t] extends [t, string] ? string.parseConstraint<kind, constraint>
-	: [Date, t] extends [t, Date] ? Date.parseConstraint<kind, constraint>
+	: [number, t] extends [t, number] ? number.withConstraint<constraint>
+	: [string, t] extends [t, string] ? string.withConstraint<constraint>
+	: [Date, t] extends [t, Date] ? Date.withConstraint<constraint>
 	: constrain<t, conform<constraint, Constraints>>
 
 export type parseConstraints<t> =
@@ -161,7 +154,6 @@ export type schemaToConstraint<
 	normalizePrimitiveConstraintRoot<schema> extends infer rule ?
 		kind extends "pattern" ? Matching<rule>
 		: kind extends "divisor" ? DivisibleBy<rule>
-		: kind extends "exactLength" ? Length<rule>
 		: kind extends "min" ? number.minSchemaToConstraint<schema, rule>
 		: kind extends "max" ? number.maxSchemaToConstraint<schema, rule>
 		: kind extends "minLength" ? minLengthSchemaToConstraint<schema, rule>

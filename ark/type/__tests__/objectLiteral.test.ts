@@ -157,7 +157,7 @@ contextualize(() => {
 				[s]: type.number.optional()
 			})
 			attest<{ [s]?: number }>(t.infer)
-			attest(t.json).snap({
+			attest(t.json).equals({
 				optional: [
 					{
 						key: keyReference,
@@ -370,8 +370,8 @@ value at [${zildjianName}] must be 1 (was undefined)`)
 					str: 100,
 					[sym]: "💯"
 				}).toString()
-			).snap(`str must be a string (was a number)
-value at [Symbol(symbol7)] must be a number (was a string)`)
+			).equals(`str must be a string (was a number)
+value at [${symName}] must be a number (was a string)`)
 		})
 
 		it("all key kinds", () => {

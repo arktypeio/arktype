@@ -1,4 +1,4 @@
-import { intrinsic, type Constraint, type NodeSchema } from "@ark/schema"
+import { intrinsic } from "@ark/schema"
 import type { Module, Submodule } from "../../module.ts"
 import type { type } from "../ark.ts"
 import type {
@@ -12,8 +12,7 @@ import type {
 	Narrowed,
 	Optional,
 	constrain,
-	constraint,
-	normalizePrimitiveConstraintRoot
+	constraint
 } from "../ast.ts"
 import { submodule } from "../utils.ts"
 import { alpha } from "./alpha.ts"
@@ -85,24 +84,15 @@ export declare namespace string {
 		constraints
 	>
 
-	export type parseConstraint<
-		kind extends Constraint.PrimitiveKind,
-		schema extends NodeSchema<kind>
-	> =
-		normalizePrimitiveConstraintRoot<schema> extends infer rule ?
-			kind extends "minLength" ?
-				schema extends { exclusive: true } ?
-					moreThanLength<rule>
-				:	atLeastLength<rule>
-			: kind extends "maxLength" ?
-				schema extends { exclusive: true } ?
-					lessThanLength<rule>
-				:	atMostLength<rule>
-			: kind extends "pattern" ? matching<rule & string>
-			: kind extends "exactLength" ? exactlyLength<rule>
-			: kind extends "optional" ? optional
-			: narrowed
-		:	never
+	export type withConstraint<constraint> =
+		constraint extends ExactlyLength<infer rule> ? exactlyLength<rule>
+		: constraint extends MoreThanLength<infer rule> ? moreThanLength<rule>
+		: constraint extends AtLeastLength<infer rule> ? atLeastLength<rule>
+		: constraint extends AtMostLength<infer rule> ? atMostLength<rule>
+		: constraint extends LessThanLength<infer rule> ? lessThanLength<rule>
+		: constraint extends Matching<infer rule> ? matching<rule>
+		: constraint extends Narrowed ? narrowed
+		: never
 
 	export type module = Module<string.submodule>
 

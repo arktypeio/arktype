@@ -1,4 +1,3 @@
-import type { Constraint, NodeSchema } from "@ark/schema"
 import type {
 	Branded,
 	constrain,
@@ -7,7 +6,6 @@ import type {
 	Literal,
 	Narrowed,
 	normalizeLimit,
-	normalizePrimitiveConstraintRoot,
 	Optional
 } from "../ast.ts"
 
@@ -54,20 +52,11 @@ export declare namespace Date {
 		schema extends { exclusive: true } ? Before<normalizeLimit<rule>>
 		:	AtOrBefore<normalizeLimit<rule>>
 
-	export type parseConstraint<
-		kind extends Constraint.PrimitiveKind,
-		schema extends NodeSchema<kind>
-	> =
-		normalizePrimitiveConstraintRoot<schema> extends infer rule ?
-			kind extends "after" ?
-				schema extends { exclusive: true } ?
-					after<normalizeLimit<rule>>
-				:	atOrAfter<normalizeLimit<rule>>
-			: kind extends "before" ?
-				schema extends { exclusive: true } ?
-					before<normalizeLimit<rule>>
-				:	atOrBefore<normalizeLimit<rule>>
-			: kind extends "optional" ? optional
-			: narrowed
-		:	never
+	export type withConstraint<constraint> =
+		constraint extends After<infer rule> ? after<rule>
+		: constraint extends Before<infer rule> ? before<rule>
+		: constraint extends AtOrAfter<infer rule> ? atOrAfter<rule>
+		: constraint extends AtOrBefore<infer rule> ? atOrBefore<rule>
+		: constraint extends Narrowed ? narrowed
+		: never
 }

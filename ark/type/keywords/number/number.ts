@@ -1,4 +1,4 @@
-import { intrinsic, type Constraint, type NodeSchema } from "@ark/schema"
+import { intrinsic } from "@ark/schema"
 import type { Module, Submodule } from "../../module.ts"
 import type {
 	Branded,
@@ -6,7 +6,6 @@ import type {
 	constraint,
 	Constraints,
 	Narrowed,
-	normalizePrimitiveConstraintRoot,
 	Optional
 } from "../ast.ts"
 import { submodule } from "../utils.ts"
@@ -67,23 +66,14 @@ export declare namespace number {
 	export type maxSchemaToConstraint<schema, rule> =
 		schema extends { exclusive: true } ? LessThan<rule> : AtMost<rule>
 
-	export type parseConstraint<
-		kind extends Constraint.PrimitiveKind,
-		schema extends NodeSchema<kind>
-	> =
-		normalizePrimitiveConstraintRoot<schema> extends infer rule ?
-			kind extends "min" ?
-				schema extends { exclusive: true } ?
-					moreThan<rule>
-				:	atLeast<rule>
-			: kind extends "max" ?
-				schema extends { exclusive: true } ?
-					lessThan<rule>
-				:	atMost<rule>
-			: kind extends "divisor" ? divisibleBy<rule>
-			: kind extends "optional" ? optional
-			: narrowed
-		:	never
+	export type withConstraint<constraint> =
+		constraint extends MoreThan<infer rule> ? moreThan<rule>
+		: constraint extends AtLeast<infer rule> ? atLeast<rule>
+		: constraint extends AtMost<infer rule> ? atMost<rule>
+		: constraint extends LessThan<infer rule> ? lessThan<rule>
+		: constraint extends DivisibleBy<infer rule> ? divisibleBy<rule>
+		: constraint extends Narrowed ? narrowed
+		: never
 
 	export type module = Module<submodule>
 
