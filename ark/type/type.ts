@@ -18,6 +18,8 @@ import {
 } from "./generic.ts"
 import type { Ark, ark } from "./keywords/ark.ts"
 import type { distillIn, distillOut } from "./keywords/ast.ts"
+import type { BaseType } from "./methods/base.ts"
+import type { instantiateType } from "./methods/instantiate.ts"
 import type {
 	inferDefinition,
 	validateDeclared,
@@ -35,8 +37,6 @@ import type {
 	ScopeParser,
 	bindThis
 } from "./scope.ts"
-import type { BaseType } from "./subtypes/base.ts"
-import type { instantiateType } from "./subtypes/instantiate.ts"
 
 /** The convenience properties attached to `type` */
 export type TypeParserAttachments =

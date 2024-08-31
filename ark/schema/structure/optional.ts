@@ -1,4 +1,6 @@
+import { throwParseError } from "@ark/util"
 import type { declareNode } from "../shared/declare.ts"
+import { ArkErrors } from "../shared/errors.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
@@ -50,6 +52,18 @@ const implementation: nodeImplementationOf<Optional.Declaration> =
 	})
 
 export class OptionalNode extends BaseProp<"optional"> {
+	constructor(...args: ConstructorParameters<typeof BaseProp>) {
+		super(...args)
+		if ("default" in this.inner) {
+			const out = this.value.in(this.inner.default)
+			if (out instanceof ArkErrors) {
+				throwParseError(
+					writeUnassignableDefaultValueMessage(this.compiledKey, out.message)
+				)
+			}
+		}
+	}
+
 	expression = `${this.compiledKey}?: ${this.value.expression}`
 }
 
@@ -57,3 +71,16 @@ export const Optional = {
 	implementation,
 	Node: OptionalNode
 }
+
+export const writeUnassignableDefaultValueMessage = <
+	key extends string,
+	message extends string
+>(
+	key: key,
+	message: message
+): string => `Default value at ${key} ${message}`
+
+export type writeUnassignableDefaultValueMessage<
+	baseDef extends string,
+	defaultValue extends string
+> = `Default value ${defaultValue} is not assignable to ${baseDef}`

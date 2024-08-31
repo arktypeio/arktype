@@ -1,3 +1,4 @@
+import type { writeUnassignableDefaultValueMessage } from "@ark/schema"
 import type { ErrorMessage } from "@ark/util"
 import type { inferAmbient } from "../../type.ts"
 import type { UnitLiteral } from "../string/shift/operator/default.ts"
@@ -13,16 +14,3 @@ export type validateDefault<baseAst, unitLiteral extends UnitLiteral, $, args> =
 	: ErrorMessage<
 			writeUnassignableDefaultValueMessage<astToString<baseAst>, unitLiteral>
 		>
-
-export const writeUnassignableDefaultValueMessage = <
-	key extends string,
-	message extends string
->(
-	key: key,
-	message: message
-): string => `Default value at ${key} ${message}`
-
-export type writeUnassignableDefaultValueMessage<
-	baseDef extends string,
-	defaultValue extends string
-> = `Default value ${defaultValue} is not assignable to ${baseDef}`

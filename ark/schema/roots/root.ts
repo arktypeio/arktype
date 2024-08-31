@@ -257,8 +257,16 @@ export abstract class BaseRoot<
 		return this.configure({ description })
 	}
 
+	optional(): this {
+		return this.withMeta({ optional: true })
+	}
+
+	default(value: unknown): this {
+		return this.withMeta({ default: value })
+	}
+
 	from(input: unknown): unknown {
-		// ideally we wouldn't validate here but for now we need to do determine
+		// ideally we might not validate here but for now we need to do determine
 		// which morphs to apply
 		return this.assert(input)
 	}

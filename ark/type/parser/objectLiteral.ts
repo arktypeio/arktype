@@ -1,5 +1,4 @@
 import {
-	ArkErrors,
 	normalizeIndex,
 	type BaseRoot,
 	type Index,
@@ -32,7 +31,6 @@ import {
 import type { constrain, Default } from "../keywords/ast.ts"
 import type { ParseContext } from "../scope.ts"
 import type { inferDefinition, validateDefinition } from "./definition.ts"
-import { writeUnassignableDefaultValueMessage } from "./semantic/default.ts"
 import type { astToString } from "./semantic/utils.ts"
 import type { validateString } from "./semantic/validate.ts"
 import type { ParsedDefault } from "./string/shift/operator/default.ts"
@@ -246,16 +244,6 @@ export const parseEntry = (
 	if (isArray(parsedValue)) {
 		if (parsedKey.kind !== "required")
 			throwParseError(invalidDefaultKeyKindMessage)
-
-		const out = parsedValue[0].traverse(parsedValue[2])
-		if (out instanceof ArkErrors) {
-			throwParseError(
-				writeUnassignableDefaultValueMessage(
-					printable(parsedKey.key),
-					out.message
-				)
-			)
-		}
 
 		return ctx.$.node("optional", {
 			key: parsedKey.key,
