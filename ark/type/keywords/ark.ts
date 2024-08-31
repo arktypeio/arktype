@@ -6,8 +6,10 @@ import { $arkTypeRegistry, scope, type Scope } from "../scope.ts"
 import type {
 	DeclarationParser,
 	DefinitionParser,
+	inferTypeRoot,
 	Type,
-	TypeParser
+	TypeParser,
+	validateTypeRoot
 } from "../type.ts"
 import { arkBuiltins } from "./builtins.ts"
 import { arkPrototypes } from "./constructors/constructors.ts"
@@ -69,6 +71,12 @@ export declare namespace type {
 	}
 
 	export type errors = ArkErrors
+
+	export type infer<def, $ = {}> = inferTypeRoot<def, $>
+
+	export namespace infer {}
+
+	export type validate<def, $ = {}> = validateTypeRoot<def, $>
 }
 
 export type type<t = unknown, $ = {}> = Type<t, $>

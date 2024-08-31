@@ -19,7 +19,13 @@ contextualize(() => {
 
 			attest(o.json).snap({
 				required: [{ key: "foo", value: "string" }],
-				optional: [{ default: 5, key: "bar", value: "number" }],
+				optional: [
+					{
+						default: 5,
+						key: "bar",
+						value: { domain: "number", meta: { default: 5 } }
+					}
+				],
 				domain: "object"
 			})
 
@@ -41,7 +47,7 @@ contextualize(() => {
 				.throws.snap(
 					'ParseError: Default value for key "bar" must be a number (was a string)'
 				)
-				.type.errors.snap()
+				.type.errors.snap("Type 'string' is not assignable to type 'number'.")
 		})
 
 		it("validated default in scope", () => {
@@ -49,7 +55,7 @@ contextualize(() => {
 			// https://github.com/arktypeio/arktype/issues/1018
 			const types = scope({
 				specialNumber: "number",
-				obj: { foo: "string", bar: ["specialNumber", "=", 5] }
+				obj: { foo: "string", bar: ["specialNumber = 5", "=", 5] }
 			}).export()
 
 			attest(types.obj.json).snap({
