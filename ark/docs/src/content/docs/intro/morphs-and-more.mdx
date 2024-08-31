@@ -11,8 +11,6 @@ Sometimes, data at the boundaries of your code requires more than validation bef
 Morphs can be **piped** before, after or between validators and even chained to other morphs.
 
 ```ts
-import { type } from "arktype"
-// ---cut---
 // Hover to see the type-level representation
 const parseJson = type("string").pipe((s): object => JSON.parse(s))
 
@@ -28,7 +26,6 @@ This is a good start, but there are still a couple major issues with our morph.
 What happens if we pass a string that isn't valid JSON?
 
 ```ts
-import { type } from "arktype"
 const parseJson = type("string").pipe((s): object => JSON.parse(s))
 // ---cut---
 
@@ -43,8 +40,6 @@ If you do happen to find yourself at the mercy of an unsafe API, you might consi
 Luckily, there is a built-in API for wrapping `pipe`d functions you don't trust:
 
 ```ts
-import { type } from "arktype"
-// ---cut---
 const parseJson = type("string").pipe.try((s): object => JSON.parse(s))
 
 // Now returns an introspectable error instead of crashing 🎉
@@ -60,8 +55,6 @@ else console.log(out)
 The best part about `pipe` is that since any `Type` is root-invokable, `Type`s themselves _are_ already morphs! This means validating out parsed output is as easy as adding another pipe:
 
 ```ts
-import { type } from "arktype"
-// ---cut---
 const parseJson = type("string").pipe.try(
 	(s): object => JSON.parse(s),
 	type({

@@ -39,9 +39,6 @@ Thousands of hours of optimization have gone into making validating native type 
 Suppose we want to move `platform` and `version` from our original type to a new `device` property.
 
 ```ts
-import { type } from "arktype"
-
-// ---cut---
 const user = type({
 	name: "string",
 	// nested definitions don't need to be wrapped

@@ -7,21 +7,31 @@ sidebar:
 import { Tabs } from "@astrojs/starlight/components"
 import SyntaxTab from "../../../components/SyntaxTab.astro"
 
-## Keywords
-
-### Primitives
+### Keywords
 
 <Tabs>
 	<SyntaxTab string>
-```ts 
-const t = type("string")
+```ts
+const string = type("string")
+const date = type("Date")
+// subtype keywords refine or transform their root type
+const dateFormattedString = type("string.date")
+const isoFormattedString = type("string.date.iso")
+const transformStringToDate = type("string.date.parse")
 ```
 	</SyntaxTab>
 
     <SyntaxTab fluent>
 
 ```ts
-const t = type.string
+// primitive keywords are exposed directly on `type`
+const string = type.string
+// all builtin keywords and modules are available under `ark`
+const date = type.ark.Date
+//`.root` gets the base type of a subtyped module
+const dateFormattedString = type.ark.string.date.root
+const isoFormattedString = type.ark.string.date.iso
+const transformStringToDate = type.ark.string.date.parse
 ```
 
     </SyntaxTab>
