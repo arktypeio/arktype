@@ -23,8 +23,8 @@ const liftFrom = genericNode("element")(args => {
 }, liftFromHkt)
 
 export const arkArray: arkArray.module = submodule({
-	$root: intrinsic.Array,
-	readonly: "$root",
+	root: intrinsic.Array,
+	readonly: "root",
 	index: intrinsic.nonNegativeIntegerString,
 	liftFrom
 })
@@ -35,7 +35,7 @@ export declare namespace arkArray {
 	export type submodule = Submodule<$>
 
 	export type $ = {
-		$root: unknown[]
+		root: unknown[]
 		readonly: readonly unknown[]
 		index: NonNegativeIntegerString
 		liftFrom: typeof liftFrom.t

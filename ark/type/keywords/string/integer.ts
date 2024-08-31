@@ -10,15 +10,15 @@ declare namespace string {
 	export type integer = constrain<string, Branded<"integer">>
 }
 
-const $root = regexStringNode(
+const root = regexStringNode(
 	wellFormedIntegerMatcher,
 	"a well-formed integer string"
 )
 
 export const integer: stringInteger.module = submodule({
-	$root,
+	root,
 	parse: rootNode({
-		in: $root,
+		in: root,
 		morphs: (s: string, ctx) => {
 			const parsed = Number.parseInt(s)
 			return Number.isSafeInteger(parsed) ? parsed : (
@@ -37,7 +37,7 @@ export declare namespace stringInteger {
 	export type submodule = Submodule<$>
 
 	export type $ = {
-		$root: string.integer
+		root: string.integer
 		parse: (In: string.integer) => To<number.divisibleBy<1>>
 	}
 }

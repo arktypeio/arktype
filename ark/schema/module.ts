@@ -21,7 +21,7 @@ export class RootModule<exports extends {} = {}> extends DynamicBase<exports> {
 export interface InternalModule<
 	exports extends InternalResolutions = InternalResolutions
 > extends RootModule<exports> {
-	$root?: BaseRoot
+	root?: BaseRoot
 }
 
 export const bindModule = (

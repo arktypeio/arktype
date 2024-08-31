@@ -17,7 +17,7 @@ import { epoch } from "./epoch.ts"
 import { integer } from "./integer.ts"
 
 export const number: number.module = submodule({
-	$root: intrinsic.number,
+	root: intrinsic.number,
 	integer,
 	epoch
 })
@@ -64,7 +64,7 @@ export declare namespace number {
 	export type submodule = Submodule<$>
 
 	export type $ = {
-		$root: number
+		root: number
 		epoch: epoch
 		integer: integer
 	}

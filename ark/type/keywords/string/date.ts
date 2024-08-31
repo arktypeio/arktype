@@ -113,7 +113,7 @@ const parsableDate = rootNode({
 	}
 }).assertHasKind("intersection")
 
-const epoch$root = integer.$root.internal
+const epochroot = integer.root.internal
 	.narrow((s, ctx) => {
 		// we know this is safe since it has already
 		// been validated as an integer string
@@ -131,23 +131,23 @@ const epoch$root = integer.$root.internal
 	.assertHasKind("intersection")
 
 const epoch = submodule({
-	$root: epoch$root,
+	root: epochroot,
 	parse: rootNode({
-		in: epoch$root,
+		in: epochroot,
 		morphs: (s: string) => new Date(s),
 		declaredOut: intrinsic.Date
 	})
 })
 
-const iso$root = regexStringNode(
+const isoroot = regexStringNode(
 	iso8601Matcher,
 	"an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date"
 ).internal.assertHasKind("intersection")
 
 const iso = submodule({
-	$root: iso$root,
+	root: isoroot,
 	parse: rootNode({
-		in: iso$root,
+		in: isoroot,
 		morphs: (s: string) => new Date(s),
 		declaredOut: intrinsic.Date
 	})
@@ -163,7 +163,7 @@ declare namespace string {
 }
 
 export const stringDate: stringDate.module = submodule({
-	$root: parsableDate,
+	root: parsableDate,
 	parse: rootNode({
 		declaredIn: parsableDate,
 		in: "string",
@@ -184,7 +184,7 @@ export declare namespace stringDate {
 	export type submodule = Submodule<$>
 
 	export type $ = {
-		$root: string.date
+		root: string.date
 		parse: (In: string.date) => To<Date>
 		iso: iso.submodule
 		epoch: epoch.submodule
@@ -199,7 +199,7 @@ export declare namespace stringDate {
 		export type submodule = Submodule<$>
 
 		export type $ = {
-			$root: string.date.iso
+			root: string.date.iso
 			parse: (In: string.date.iso) => To<Date>
 		}
 	}
@@ -208,7 +208,7 @@ export declare namespace stringDate {
 		export type submodule = Submodule<$>
 
 		export type $ = {
-			$root: string.date.epoch
+			root: string.date.epoch
 			parse: (In: string.date.epoch) => To<Date>
 		}
 	}

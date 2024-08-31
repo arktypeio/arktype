@@ -178,7 +178,7 @@ type extractGenericParameters<k> =
 export type resolutionToAst<alias extends string, resolution> =
 	[resolution] extends [anyOrNever] ? InferredAst<resolution, alias>
 	: resolution extends Def<infer def> ? DefAst<def, alias>
-	: resolution extends { [arkKind]: "module"; $root: infer root } ?
+	: resolution extends { [arkKind]: "module"; root: infer root } ?
 		InferredAst<root, alias>
 	: resolution extends GenericAst ? resolution
 	: InferredAst<resolution, alias>

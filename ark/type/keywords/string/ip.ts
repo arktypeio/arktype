@@ -33,7 +33,7 @@ declare namespace string {
 
 // Based on https://github.com/validatorjs/validator.js/blob/master/src/lib/isUUID.js
 export const ip: ip.module = submodule({
-	$root: ["v4 | v6", "@", "an IP address"],
+	root: ["v4 | v6", "@", "an IP address"],
 	v4: regexStringNode(ipv4Matcher, "an IPv4 address"),
 	v6: regexStringNode(ipv6Matcher, "an IPv6 address")
 })
@@ -44,7 +44,7 @@ export declare namespace ip {
 	export type submodule = Submodule<$>
 
 	export type $ = {
-		$root: string.ip
+		root: string.ip
 		v4: string.ip.v4
 		v6: string.ip.v6
 	}

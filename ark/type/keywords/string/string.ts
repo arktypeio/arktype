@@ -35,7 +35,7 @@ import { url } from "./url.ts"
 import { uuid } from "./uuid.ts"
 
 export const string = submodule({
-	$root: intrinsic.string,
+	root: intrinsic.string,
 	numeric,
 	integer,
 	alpha,
@@ -101,7 +101,7 @@ export declare namespace string {
 	export type submodule = Submodule<$>
 
 	export type $ = {
-		$root: string
+		root: string
 		alpha: alpha
 		alphanumeric: alphanumeric
 		digits: digits

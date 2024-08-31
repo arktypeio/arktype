@@ -61,9 +61,9 @@ export type exportedNameOf<$> = Exclude<keyof $ & string, PrivateDeclaration>
 export type resolvableReferenceIn<$> = {
 	[k in keyof $]: k extends string ?
 		k extends PrivateDeclaration<infer alias> ? alias
-		: // technically, $root subtypes are resolvable, but there's never a good
+		: // technically, root subtypes are resolvable, but there's never a good
 		// reason to use them over the base alias
-		k extends noSuggest | "$root" ? never
+		k extends noSuggest | "root" ? never
 		: k
 	:	never
 }[keyof $]
@@ -358,8 +358,8 @@ export abstract class BaseScope<$ extends {} = {}> {
 			return (this.resolutions[name] = preparsed.bindScope(this))
 
 		if (hasArkKind(preparsed, "module")) {
-			if (preparsed.$root)
-				return (this.resolutions[name] = preparsed.$root.bindScope(this))
+			if (preparsed.root)
+				return (this.resolutions[name] = preparsed.root.bindScope(this))
 			else return throwParseError(writeMissingSubmoduleAccessMessage(name))
 		}
 
@@ -498,7 +498,7 @@ const maybeResolveSubalias = (
 
 	if (hasArkKind(resolution, "module")) {
 		return (
-			resolution.$root ??
+			resolution.root ??
 			throwParseError(writeMissingSubmoduleAccessMessage(name))
 		)
 	}

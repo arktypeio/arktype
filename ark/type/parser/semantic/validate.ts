@@ -112,7 +112,7 @@ type validateInferredAst<inferred, def extends string> =
 	inferred extends Generic ?
 		ErrorMessage<writeInvalidGenericArgCountMessage<def, inferred["names"], []>>
 	: inferred extends { [arkKind]: "module" } ?
-		"$root" extends keyof inferred ?
+		"root" extends keyof inferred ?
 			undefined
 		:	ErrorMessage<writeMissingSubmoduleAccessMessage<def>>
 	: def extends ErrorMessage ? def

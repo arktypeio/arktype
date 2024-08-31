@@ -11,7 +11,7 @@ declare namespace string {
 const preformatted = regexStringNode(/^[a-z]*$/, "only lowercase letters")
 
 export const lower: lower.module = submodule({
-	$root: rootNode({
+	root: rootNode({
 		in: "string",
 		morphs: (s: string) => s.toLowerCase(),
 		declaredOut: preformatted
@@ -25,7 +25,7 @@ export declare namespace lower {
 	export type submodule = Submodule<$>
 
 	export type $ = {
-		$root: (In: string) => To<string.lowercase>
+		root: (In: string) => To<string.lowercase>
 		preformatted: string.lowercase
 	}
 }

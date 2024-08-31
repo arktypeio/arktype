@@ -47,27 +47,27 @@ const normalizeNodes = flatMorph(
 )
 
 export const NFC = submodule({
-	$root: normalizeNodes.NFC,
+	root: normalizeNodes.NFC,
 	preformatted: preformattedNodes.NFC
 })
 
 export const NFD = submodule({
-	$root: normalizeNodes.NFD,
+	root: normalizeNodes.NFD,
 	preformatted: preformattedNodes.NFD
 })
 
 export const NFKC = submodule({
-	$root: normalizeNodes.NFKC,
+	root: normalizeNodes.NFKC,
 	preformatted: preformattedNodes.NFKC
 })
 
 export const NFKD = submodule({
-	$root: normalizeNodes.NFKD,
+	root: normalizeNodes.NFKD,
 	preformatted: preformattedNodes.NFKD
 })
 
 export const normalize = submodule({
-	$root: "NFC",
+	root: "NFC",
 	NFC,
 	NFD,
 	NFKC,
@@ -80,7 +80,7 @@ export declare namespace normalize {
 	export type submodule = Submodule<$>
 
 	export type $ = {
-		$root: (In: string) => To<string.normalized.NFC>
+		root: (In: string) => To<string.normalized.NFC>
 		NFC: NFC.submodule
 		NFD: NFD.submodule
 		NFKC: NFKC.submodule
@@ -97,7 +97,7 @@ export declare namespace normalize {
 		export type submodule = Submodule<$>
 
 		export type $ = {
-			$root: (In: string) => To<string.normalized.NFC>
+			root: (In: string) => To<string.normalized.NFC>
 			preformatted: string.normalized.NFC
 		}
 	}
@@ -106,7 +106,7 @@ export declare namespace normalize {
 		export type submodule = Submodule<$>
 
 		export type $ = {
-			$root: (In: string) => To<string.normalized.NFD>
+			root: (In: string) => To<string.normalized.NFD>
 			preformatted: string.normalized.NFD
 		}
 	}
@@ -115,7 +115,7 @@ export declare namespace normalize {
 		export type submodule = Submodule<$>
 
 		export type $ = {
-			$root: (In: string) => To<string.normalized.NFKC>
+			root: (In: string) => To<string.normalized.NFKC>
 			preformatted: string.normalized.NFKC
 		}
 	}
@@ -124,7 +124,7 @@ export declare namespace normalize {
 		export type submodule = Submodule<$>
 
 		export type $ = {
-			$root: (In: string) => To<string.normalized.NFKD>
+			root: (In: string) => To<string.normalized.NFKD>
 			preformatted: string.normalized.NFKD
 		}
 	}

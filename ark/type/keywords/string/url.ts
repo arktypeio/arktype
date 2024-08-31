@@ -18,7 +18,7 @@ const isParsableUrl = (s: string) => {
 	}
 }
 
-const $root = rootNode({
+const root = rootNode({
 	domain: "string",
 	predicate: {
 		meta: "a URL string",
@@ -27,9 +27,9 @@ const $root = rootNode({
 })
 
 export const url: url.module = submodule({
-	$root,
+	root,
 	parse: rootNode({
-		declaredIn: $root as never,
+		declaredIn: root as never,
 		in: "string",
 		morphs: (s: string, ctx) => {
 			try {
@@ -48,7 +48,7 @@ export declare namespace url {
 	export type submodule = Submodule<$>
 
 	export type $ = {
-		$root: string.url
+		root: string.url
 		parse: (In: string.url) => To<URL>
 	}
 }

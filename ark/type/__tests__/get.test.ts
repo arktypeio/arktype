@@ -152,7 +152,7 @@ contextualize(() => {
 		const t = type({ foo: "number" }).array()
 
 		// @ts-expect-error
-		attest(() => t.get(ark.number.$root)).throws(
+		attest(() => t.get(ark.number.root)).throws(
 			writeNumberIndexMessage("number", t.expression)
 		)
 

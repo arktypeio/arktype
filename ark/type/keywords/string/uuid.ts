@@ -7,7 +7,7 @@ import { regexStringNode } from "./utils.ts"
 export const uuid = submodule({
 	// the meta tuple expression ensures the error message does not delegate
 	// to the individual branches, which are too detailed
-	$root: ["versioned | nil | max", "@", "a UUID"],
+	root: ["versioned | nil | max", "@", "a UUID"],
 	"#nil": "'00000000-0000-0000-0000-000000000000'",
 	"#max": "'ffffffff-ffff-ffff-ffff-ffffffffffff'",
 	"#versioned":
@@ -67,7 +67,7 @@ export declare namespace uuid {
 	export type submodule = Submodule<$>
 
 	export type $ = {
-		$root: string.uuid
+		root: string.uuid
 		v1: string.uuid.v1
 		v2: string.uuid.v2
 		v3: string.uuid.v3

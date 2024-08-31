@@ -28,7 +28,7 @@ export type bindExportsToScope<exports, $> = {
 
 export type Submodule<exports extends {}> = RootModule<
 	exports &
-		("$root" extends keyof exports ? { [inferred]: exports["$root"] } : {})
+		("root" extends keyof exports ? { [inferred]: exports["root"] } : {})
 >
 
 export type instantiateExport<t, $> =

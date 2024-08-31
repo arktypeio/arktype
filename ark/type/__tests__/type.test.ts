@@ -76,7 +76,7 @@ contextualize(() => {
 
 		const numbers = t.distribute(
 			(n): Type<number> =>
-				n.extends(ark.number.$root) ? n : (
+				n.extends(ark.number.root) ? n : (
 					type.raw(n.expression.slice(1, -1)).as<number>()
 				),
 			branches => type.raw(branches).as<number[]>()

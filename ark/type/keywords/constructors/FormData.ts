@@ -22,7 +22,7 @@ const parsed = rootNode({
 })
 
 export const arkFormData: arkFormData.module = submodule({
-	$root: ["instanceof", FormData],
+	root: ["instanceof", FormData],
 	value,
 	parsed,
 	parse: rootNode({
@@ -58,7 +58,7 @@ export declare namespace arkFormData {
 	export type submodule = Submodule<$>
 
 	export type $ = {
-		$root: FormData
+		root: FormData
 		value: FormDataValue
 		parse: (In: FormData) => To<ParsedFormData>
 		parsed: ParsedFormData

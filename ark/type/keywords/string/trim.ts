@@ -15,7 +15,7 @@ const preformatted = regexStringNode(
 )
 
 export const trim: trim.module = submodule({
-	$root: rootNode({
+	root: rootNode({
 		in: "string",
 		morphs: (s: string) => s.trim(),
 		declaredOut: preformatted
@@ -29,7 +29,7 @@ export declare namespace trim {
 	export type submodule = Submodule<$>
 
 	export type $ = {
-		$root: (In: string) => To<string.trimmed>
+		root: (In: string) => To<string.trimmed>
 		preformatted: string.trimmed
 	}
 }

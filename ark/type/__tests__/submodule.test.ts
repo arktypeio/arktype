@@ -159,7 +159,7 @@ contextualize.each(
 contextualize.each(
 	"subtypes",
 	() => {
-		const foo = scope({ $root: "'foo'", bar: "'bar'" }).export()
+		const foo = scope({ root: "'foo'", bar: "'bar'" }).export()
 
 		const $ = scope({
 			foo,
@@ -174,7 +174,7 @@ contextualize.each(
 			attest<
 				Scope<{
 					foo: Submodule<{
-						$root: "foo"
+						root: "foo"
 						bar: "bar"
 					}>
 					fooBare: "foo"
@@ -185,14 +185,14 @@ contextualize.each(
 			const types = $.export()
 
 			attest(types.foo.bar.expression).snap('"bar"')
-			attest(types.foo.$root.expression).snap('"foo"')
+			attest(types.foo.root.expression).snap('"foo"')
 
 			attest(types.fooBar.expression).snap('"bar"')
 			attest(types.fooBare.expression).snap('"foo"')
 		})
 
 		it("completions", $ => {
-			// `foo.$root` should not be included since it is redundant with `foo`
+			// `foo.root` should not be included since it is redundant with `foo`
 			// @ts-expect-error
 			attest(() => $.type("foo.")).completions({ "foo.": ["foo.bar"] })
 		})

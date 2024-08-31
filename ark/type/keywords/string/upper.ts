@@ -11,7 +11,7 @@ declare namespace string {
 const preformatted = regexStringNode(/^[A-Z]*$/, "only uppercase letters")
 
 export const upper: upper.module = submodule({
-	$root: rootNode({
+	root: rootNode({
 		in: "string",
 		morphs: (s: string) => s.toUpperCase(),
 		declaredOut: preformatted
@@ -25,7 +25,7 @@ export declare namespace upper {
 	export type submodule = Submodule<$>
 
 	export type $ = {
-		$root: (In: string) => To<string.uppercase>
+		root: (In: string) => To<string.uppercase>
 		preformatted: string.uppercase
 	}
 }
