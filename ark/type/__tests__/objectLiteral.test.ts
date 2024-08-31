@@ -150,18 +150,23 @@ contextualize(() => {
 			attest(o({ a: 1 }).toString()).snap("a must be a string (was a number)")
 		})
 
-		// it("optional symbol", () => {
-		// 	const s = Symbol()
-		// 	const name = reference(s)
-		// 	const t = type({
-		// 		[optional(s)]: "number"
-		// 	})
-		// 	attest<{ [s]?: number }>(t.infer)
-		// 	attest(t.json).equals({
-		// 		domain: "object",
-		// 		optional: [{ key: name, value: "number" }]
-		// 	})
-		// })
+		it("optional symbol", () => {
+			const s = Symbol()
+			const keyReference = registeredReference(s)
+			const t = type({
+				[s]: type.number.optional()
+			})
+			attest<{ [s]?: number }>(t.infer)
+			attest(t.json).snap({
+				optional: [
+					{
+						key: keyReference,
+						value: { domain: "number", meta: { optional: true } }
+					}
+				],
+				domain: "object"
+			})
+		})
 	})
 
 	describe("spread syntax", () => {
