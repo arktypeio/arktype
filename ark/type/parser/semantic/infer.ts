@@ -83,8 +83,8 @@ export type inferExpression<ast, $, args> =
 			:	never
 		: ast[1] extends Comparator ?
 			ast[0] extends LimitLiteral ?
-				constrainBound<inferExpression<ast[2], $, args>, ast[1], ast[0]>
-			:	constrainBound<
+				brandBound<inferExpression<ast[2], $, args>, ast[1], ast[0]>
+			:	brandBound<
 					inferExpression<ast[0], $, args>,
 					ast[1],
 					ast[2] & LimitLiteral
@@ -99,18 +99,18 @@ export type inferExpression<ast, $, args> =
 		: never
 	:	never
 
-export type constrainBound<
-	constrainableIn,
+export type brandBound<
+	brandableIn,
 	comparator extends Comparator,
 	limit extends LimitLiteral
 > =
-	distill.In<constrainableIn> extends infer In ?
+	distill.In<brandableIn> extends infer In ?
 		comparator extends "==" ?
 			In extends number ? limit
 			: In extends Date ? Date.literal<normalizeLimit<limit>>
-			: applyConstraintSchema<constrainableIn, "exactLength", limit & number>
+			: applyConstraintSchema<brandableIn, "exactLength", limit & number>
 		:	applyConstraintSchema<
-				constrainableIn,
+				brandableIn,
 				In extends number ?
 					comparator extends MinComparator ?
 						"min"

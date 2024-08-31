@@ -190,7 +190,7 @@ export namespace distill {
 		}
 	}
 
-	export type unbrand<t> = distill<t>
+	export type unbranded<t> = distill<t>
 
 	export namespace introspectable {
 		export type Out<t> = distill<t, { endpoint: "out.introspectable" }>
