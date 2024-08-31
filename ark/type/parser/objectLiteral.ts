@@ -116,7 +116,11 @@ type _inferObjectLiteral<def extends object, $, args> = {
 		def[k],
 		$,
 		args
-	>]?: inferDefinition<def[k], $, args>
+	>]?: inferDefinition<def[k], $, args> extends infer t ?
+		t extends OptionalAst<infer nonOptionalT> ?
+			nonOptionalT
+		:	t
+	:	never
 }
 
 export type validateObjectLiteral<def, $, args> = {

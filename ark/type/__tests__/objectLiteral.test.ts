@@ -3,11 +3,11 @@ import {
 	registeredReference,
 	writeInvalidPropertyKeyMessage,
 	writeUnboundableMessage,
-	writeUnresolvableMessage,
-	type ArkErrors
+	writeUnresolvableMessage
 } from "@ark/schema"
 import { printable } from "@ark/util"
 import { scope, type } from "arktype"
+import type { string } from "arktype/internal/keywords/ast.ts"
 import {
 	writeInvalidSpreadTypeMessage,
 	writeInvalidUndeclaredBehaviorMessage
@@ -46,7 +46,7 @@ contextualize(() => {
 
 		it("chained optional", () => {
 			const optionalString = type("string").optional()
-			attest(optionalString.t).type.toString.snap("string.optional")
+			attest<string.optional>(optionalString.t)
 			attest<string>(optionalString.infer)
 
 			const o = type({ a: optionalString })

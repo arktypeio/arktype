@@ -337,7 +337,7 @@ dependencies[1].contributors[0].email must be an email address (was "ssalbdivad"
 				'b.a.b.a must be an object or 3 (was 4) or b.a must be 3 (was {"b":{"a":4}})'
 			)
 
-			attest(types.b.infer).type.toString.snap()
+			attest(types.b.infer).type.toString.snap("{ a: 3 | { b: cyclic } }")
 			attest(types.b.json).snap({
 				domain: "object",
 				required: [{ key: "a", value: ["$a", { unit: 3 }] }]

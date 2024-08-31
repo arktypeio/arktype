@@ -1,12 +1,12 @@
 import { attest, contextualize } from "@ark/attest"
 import { scope, type } from "arktype"
 import type { Default } from "arktype/internal/keywords/ast.ts"
+import type { Date } from "arktype/internal/keywords/constructors/Date.ts"
 import { invalidDefaultKeyKindMessage } from "arktype/internal/parser/objectLiteral.ts"
 import {
-    shallowDefaultMessage,
-    writeNonLiteralDefaultMessage
+	shallowDefaultMessage,
+	writeNonLiteralDefaultMessage
 } from "arktype/internal/parser/string/shift/operator/default.ts"
-import type { Date } from "../keywords/constructors/Date.ts"
 
 contextualize(() => {
 	describe("parsing and traversal", () => {
@@ -71,8 +71,21 @@ contextualize(() => {
 		})
 
 		it("chained", () => {
-			const o = type({ a: type("string").default("") })
-			attest<{ a?: string }>(o.infer)
+			const defaultedString = type("string").default("")
+			attest(defaultedString.t).type.toString.snap(
+				'(In?: string | undefined) => Default<"">'
+			)
+			attest(defaultedString.json).snap({
+				domain: "string",
+				meta: { default: "" }
+			})
+
+			const o = type({ a: defaultedString })
+			attest(o.t).type.toString.snap(
+				'{ a: (In?: string | undefined) => Default<""> }'
+			)
+			attest<{ a?: string }>(o.inferIn)
+			attest<{ a: string }>(o.infer)
 			attest(o.json).snap({
 				optional: [
 					{

@@ -19,6 +19,7 @@ import type {
 import type { inferIntersection } from "../intersect.ts"
 import type {
 	applyConstraint,
+	Default,
 	distillConstrainableIn,
 	distillConstrainableOut,
 	distillIn,
@@ -63,7 +64,12 @@ interface Type<out t = unknown, $ = {}>
 
 	optional<r = applyConstraint<t, Optional>>(): instantiateType<r, $>
 
-	default(value: this["infer"]): this
+	default<
+		value extends this["infer"],
+		r = (In?: this["tIn"]) => Default<value>
+	>(
+		value: value
+	): instantiateType<r, $>
 
 	onUndeclaredKey(behavior: UndeclaredKeyBehavior): this
 
