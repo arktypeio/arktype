@@ -68,10 +68,6 @@ export type Branded<rule> = {
 	predicate: constraint<rule>
 }
 
-export type Optional = {
-	optional?: {}
-}
-
 export type primitiveConstraintKindOf<In> = Extract<
 	Constraint.PrimitiveKind,
 	constraintKindOf<In>
@@ -219,7 +215,7 @@ type _distill<t, io extends IoKind, distilledKind extends DistilledKind> =
 				_distill<validatedOut, io, distilledKind>
 			:	unknown
 		:	_distill<o[1], io, distilledKind>
-	: t extends DefaultableAst<infer t> ? _distill<t, io, distilledKind>
+	: t extends DefaultedAst<infer t> ? _distill<t, io, distilledKind>
 	: t extends array ? distillArray<t, io, distilledKind, []>
 	: // we excluded this from TerminallyInferredObjectKind so that those types could be
 	// inferred before checking morphs/defaults, which extend Function
@@ -229,13 +225,13 @@ type _distill<t, io extends IoKind, distilledKind extends DistilledKind> =
 		io extends "in" ?
 			show<
 				{
-					[k in keyof t as k extends defaultableKeyOf<t> ? never : k]: _distill<
+					[k in keyof t as k extends defaultedKeyOf<t> ? never : k]: _distill<
 						t[k],
 						io,
 						distilledKind
 					>
 				} & {
-					[k in defaultableKeyOf<t>]?: _distill<t[k], io, distilledKind>
+					[k in defaultedKeyOf<t>]?: _distill<t[k], io, distilledKind>
 				}
 			>
 		:	{
@@ -243,9 +239,9 @@ type _distill<t, io extends IoKind, distilledKind extends DistilledKind> =
 			}
 	:	t
 
-export type defaultableKeyOf<t> = {
+type defaultedKeyOf<t> = {
 	[k in keyof t]: [t[k]] extends [anyOrNever] ? never
-	: t[k] extends DefaultableAst ? k
+	: t[k] extends DefaultedAst ? k
 	: never
 }[keyof t]
 
@@ -331,8 +327,30 @@ export type To<o = any> = ["=>", o, true]
 
 export type MorphAst<i = any, o extends Out = Out> = (In: i) => o
 
+export type Optional = {
+	optional?: {}
+}
+
+export type OptionalAst<t = unknown> = constrain<t, Optional>
+
 export type Default<v = any> = ["=", v]
 
-export type DefaultableAst<t = any, v = any> = (In?: t) => Default<v>
+export type DefaultedAst<t = any, v = any> = (In?: t) => Default<v>
 
 export type termOrType<t> = t | Type<t, any>
+
+// type withMetaOptionals<o> = show<
+// 	{
+// 		[k in keyof o as k extends metaOptionalKeyOf<o> ? never : k]: o[k]
+// 	} & {
+// 		[k in metaOptionalKeyOf<o>]?: o[k] extends OptionalAst<infer t> ? t : never
+// 	}
+// >
+
+// type metaOptionalKeyOf<o> = {
+// 	[k in keyof o]: o[k] extends OptionalAst ?
+// 		[o[k]] extends [anyOrNever] ?
+// 			never
+// 		:	k
+// 	:	never
+// }[keyof o]
