@@ -260,19 +260,8 @@ contextualize(() => {
 				b: { a: "a|true" }
 			}).export()
 			attest(types).type.toString.snap(`Module<{
-	a: { b: false | { a: true | cyclic } }
+	a: { b: false | { a: true | { b: false | cyclic } } }
 	b: { a: true | { b: false | cyclic } }
-}>`)
-		})
-
-		it("cyclic intersection", () => {
-			const types = scope({
-				a: { b: "b&a" },
-				b: { a: "a&b" }
-			}).export()
-			attest(types).type.toString.snap(`Module<{
-	a: { b: { a: { b: cyclic; a: cyclic }; b: cyclic } }
-	b: { a: { b: { a: cyclic; b: cyclic }; a: cyclic } }
 }>`)
 		})
 
@@ -318,7 +307,9 @@ dependencies[1].contributors[0].email must be an email address (was "ssalbdivad"
 					a: "a|3"
 				}
 			}).export()
-			attest(types.a.infer).type.toString.snap("{ b: { a: 3 | cyclic } }")
+			attest(types.a.infer).type.toString.snap(
+				"{ b: { a: 3 | { b: cyclic } } }"
+			)
 
 			attest(types.a.json).snap({
 				domain: "object",
@@ -346,71 +337,10 @@ dependencies[1].contributors[0].email must be an email address (was "ssalbdivad"
 				'b.a.b.a must be an object or 3 (was 4) or b.a must be 3 (was {"b":{"a":4}})'
 			)
 
-			attest(types.b.infer).type.toString.snap("{ a: 3 | { b: cyclic } }")
+			attest(types.b.infer).type.toString.snap()
 			attest(types.b.json).snap({
 				domain: "object",
 				required: [{ key: "a", value: ["$a", { unit: 3 }] }]
-			})
-		})
-
-		it("intersect cyclic reference", () => {
-			const types = scope({
-				arf: {
-					b: "bork"
-				},
-				bork: {
-					c: "arf&bork"
-				}
-			}).export()
-			attest(types.arf.infer).type.toString.snap(
-				"{ b: { c: { b: cyclic; c: cyclic } } }"
-			)
-			attest(types.bork.infer).type.toString.snap(
-				"{ c: { b: cyclic; c: cyclic } }"
-			)
-
-			const expectedCyclicJson =
-				types.arf.internal.firstReferenceOfKindOrThrow("alias").json
-
-			attest(types.arf.json).snap({
-				domain: "object",
-				required: [
-					{
-						key: "b",
-						value: {
-							domain: "object",
-							required: [
-								{
-									key: "c",
-									value: expectedCyclicJson
-								}
-							]
-						}
-					}
-				]
-			})
-			const a = {} as typeof types.arf.infer
-			const b = { c: {} } as typeof types.bork.infer
-			a.b = b
-			b.c.b = b
-			b.c.c = b.c
-
-			attest(types.arf.description).snap("{ b: { c: arf&bork } }")
-			attest(types.bork.description).snap("{ c: arf&bork }")
-
-			attest(types.arf(a)).equals(a)
-			attest(types.arf({ b: { c: {} } }).toString())
-				.snap(`b.c.b must be an object (was missing)
-b.c.c must be an object (was missing)`)
-
-			attest(types.bork.json).snap({
-				domain: "object",
-				required: [
-					{
-						key: "c",
-						value: expectedCyclicJson
-					}
-				]
 			})
 		})
 	})

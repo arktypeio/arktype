@@ -100,7 +100,7 @@ type _inferObjectLiteral<def extends object, $, args> = {
 	// since def is a const parameter, we remove the readonly modifier here
 	// support for builtin readonly tracked here:
 	// https://github.com/arktypeio/arktype/issues/808
-	-readonly [k in keyof def as nonOptionalKeyFrom2<
+	-readonly [k in keyof def as nonOptionalKeyFrom<
 		k,
 		def[k],
 		$,
@@ -111,7 +111,7 @@ type _inferObjectLiteral<def extends object, $, args> = {
 		:	(In?: inferDefinition<baseDef, $, args>) => Default<defaultValue>
 	:	inferDefinition<def[k], $, args>
 } & {
-	-readonly [k in keyof def as optionalKeyFrom2<
+	-readonly [k in keyof def as optionalKeyFrom<
 		k,
 		def[k],
 		$,
@@ -176,11 +176,15 @@ type validateDefaultValueTuple<
 		>
 	:	ErrorMessage<invalidDefaultKeyKindMessage>
 
-type nonOptionalKeyFrom2<k, v, $, args> =
+type nonOptionalKeyFrom<k, v, $, args> =
 	parseKey<k> extends PreparsedKey<"required", infer parsedKey> ?
-		inferDefinition<v, $, args> extends OptionalAst ?
-			never
-		:	parsedKey
+		inferDefinition<v, $, args> extends infer t ?
+			[t] extends [OptionalAst] ?
+				[t] extends [anyOrNever] ?
+					parsedKey
+				:	never
+			:	parsedKey
+		:	never
 	: parseKey<k> extends PreparsedKey<"index", infer parsedKey> ?
 		inferDefinition<parsedKey, $, args> extends infer inferredKey extends Key ?
 			inferredKey
@@ -189,22 +193,17 @@ type nonOptionalKeyFrom2<k, v, $, args> =
 		// "+" has no effect on inference
 		never
 
-type nonOptionalKeyFrom<k, $, args> =
-	parseKey<k> extends PreparsedKey<"required", infer inner> ? inner
-	: parseKey<k> extends PreparsedKey<"index", infer inner> ?
-		inferDefinition<inner, $, args> extends infer t extends Key ?
-			t
+type optionalKeyFrom<k, v, $, args> =
+	parseKey<k> extends PreparsedKey<"optional", infer parsedKey> ? parsedKey
+	: parseKey<k> extends PreparsedKey<"required", infer parsedKey> ?
+		inferDefinition<v, $, args> extends infer t ?
+			[t] extends [OptionalAst] ?
+				[t] extends [anyOrNever] ?
+					never
+				:	parsedKey
+			:	never
 		:	never
-	:	// "..." is handled at the type root so is handled neither here nor in optionalKeyFrom
-		// "+" has no effect on inference
-		never
-
-type optionalKeyFrom2<k, v, $, args> =
-	| (inferDefinition<v, $, args> extends OptionalAst ? k : never)
-	| optionalKeyFrom<k>
-
-type optionalKeyFrom<k> =
-	parseKey<k> extends PreparsedKey<"optional", infer inner> ? inner : never
+	:	never
 
 type PreparsedKey<
 	kind extends ParsedKeyKind = ParsedKeyKind,
