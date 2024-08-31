@@ -1,7 +1,12 @@
+// @ts-nocheck
 import { type } from "arktype"
 
-// Syntax carried over from 1.0 + TS
-export const currentTsSyntax = type({
+type.unit(5)
+
+type.enumerated(5, true)
+
+// Syntax carrierd over from 1.0 + TS
+export const curentTsSyntax = type({
 	keyword: "null",
 	stringLiteral: "'TS'",
 	numberLiteral: "5",

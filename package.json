@@ -89,6 +89,24 @@
 		"extension": ".ts",
 		"reporter": "lcovonly"
 	},
+	"prettier": {
+		"useTabs": true,
+		"semi": false,
+		"trailingComma": "none",
+		"experimentalTernaries": true,
+		"arrowParens": "avoid",
+		"plugins": [
+			"prettier-plugin-astro"
+		],
+		"overrides": [
+			{
+				"files": "*.astro",
+				"options": {
+					"parser": "astro"
+				}
+			}
+		]
+	},
 	"eslintConfig": {
 		"extends": "./ark/repo/.eslintrc.cjs"
 	},

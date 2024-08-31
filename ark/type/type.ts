@@ -87,6 +87,8 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	scope: ScopeParser
 	generic: GenericParser<$>
 	ark: typeof ark
+	unit: UnitTypeParser<$>
+	enumerated: EnumeratedTypeParser<$>
 }
 
 export class InternalTypeParser extends Callable<
@@ -102,7 +104,9 @@ export class InternalTypeParser extends Callable<
 				scope: $.constructor.scope,
 				generic: $.generic as never,
 				// this won't be defined during bootstrapping, but externally always will be
-				ark: $.ambient as never
+				ark: $.ambient as never,
+				unit: $.unit,
+				enumerated: $.enumerated
 			} satisfies Omit<TypeParserAttachments, keyof Ark.typeAttachments>,
 			// also won't be defined during bootstrapping
 			$.ambientAttachments!
@@ -152,6 +156,11 @@ export type DeclarationParser<$> = <preinferred>() => {
 		def: validateDeclared<preinferred, def, $, bindThis<def>>
 	) => Type<preinferred, $>
 }
+
+export type UnitTypeParser<$> = <const t>(value: t) => Type<t, $>
+export type EnumeratedTypeParser<$> = <const values extends readonly unknown[]>(
+	...values: values
+) => Type<values[number], $>
 
 export type DefinitionParser<$> = <def>(def: validateTypeRoot<def, $>) => def
 

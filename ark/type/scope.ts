@@ -75,8 +75,10 @@ import {
 	InternalTypeParser,
 	type DeclarationParser,
 	type DefinitionParser,
+	type EnumeratedTypeParser,
 	type Type,
-	type TypeParser
+	type TypeParser,
+	type UnitTypeParser
 } from "./type.ts"
 
 export type ScopeParser = <const def>(
@@ -326,6 +328,11 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		return node
 	}
 
+	unit: UnitTypeParser<$> = value => this.units([value]) as never
+
+	enumerated: EnumeratedTypeParser<$> = (...values) =>
+		this.units(values) as never
+
 	type: InternalTypeParser = new InternalTypeParser(this as never)
 
 	declare = (): { type: InternalTypeParser } => ({
@@ -366,6 +373,9 @@ export interface Scope<$ = {}> {
 		schema: NodeSchema<flattenListable<kinds>>,
 		opts?: NodeParseOptions
 	): nodeOfKind<reducibleKindOf<flattenListable<kinds>>>
+
+	unit: UnitTypeParser<$>
+	enumerated: EnumeratedTypeParser<$>
 
 	type: TypeParser<$>
 
