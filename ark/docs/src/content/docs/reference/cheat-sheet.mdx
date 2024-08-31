@@ -53,12 +53,12 @@ const literals = type({
 	number: "1337",
 	bigint: "1337n",
 	string: {
-		singleQuoted: "'string'",
-		doubleQuoted: '"string"'
+		singleQuoted: "'typescript'",
+		doubleQuoted: '"arktype"'
 	},
 	date: {
-    	// date literals represent a Date instance with an exact value
-    	// they're primarily useful in ranges (see below)
+    	// Date literals represent a Date instance with an exact value.
+    	// They're primarily useful in ranges (see below).
     	singleQuoted: "d'01-01-1970'",
     	doubleQuoted: 'd"01-01-1970"'
     },
@@ -80,6 +80,23 @@ const exactValueFromSet = type.enumerated(1337, true, null)
     </SyntaxTab>
 
 </Tabs>
+
+### Objects
+
+```ts
+const symbolicKey = Symbol()
+
+const object = type({
+	requiredKey: "string",
+	"optionalKey?": "string.uuid",
+	// Nested definitions don't require additional `type` calls.
+	[symbolicKey]: {
+		key: "unknown"
+	},
+	// Index signatures are unlabeled and support arbitrary expressions.
+	"[string]": "string"
+})
+```
 
 ```ts
 export const currentTsSyntax = type({
