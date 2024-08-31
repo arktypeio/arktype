@@ -353,7 +353,7 @@ const _parseOptionalConstraint = (
 		return parseName(scanner, result, ctx)
 	}
 
-	const s = parseUntilFinalizer(new DynamicState(scanner, ctx, false))
+	const s = parseUntilFinalizer(new DynamicState(scanner, ctx))
 	result.push([name, s.root])
 
 	return parseName(scanner, result, ctx)

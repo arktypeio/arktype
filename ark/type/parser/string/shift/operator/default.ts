@@ -1,10 +1,9 @@
 import type { BaseRoot } from "@ark/schema"
-import {
-	throwParseError,
-	type BigintLiteral,
-	type ErrorMessage,
-	type NumberLiteral,
-	type trim
+import type {
+	BigintLiteral,
+	ErrorMessage,
+	NumberLiteral,
+	trim
 } from "@ark/util"
 import type { DateLiteral } from "../../../../keywords/ast.ts"
 import type { DynamicStateWithRoot } from "../../reduce/dynamic.ts"
@@ -22,8 +21,6 @@ export type UnitLiteral =
 export type ParsedDefault = [BaseRoot, "=", unknown]
 
 export const parseDefault = (s: DynamicStateWithRoot): ParsedDefault => {
-	if (!s.defaultable) return throwParseError(shallowDefaultMessage)
-
 	// store the node that will be bounded
 	const baseNode = s.unsetRoot()
 	s.parseOperand()
@@ -52,7 +49,3 @@ export const writeNonLiteralDefaultMessage = <defaultDef extends string>(
 
 export type writeNonLiteralDefaultMessage<defaultDef extends string> =
 	`Default value '${defaultDef}' must a literal value`
-
-export const shallowDefaultMessage = `Default values must be specified on objects like { isAdmin: 'boolean = false' }`
-
-export type shallowDefaultMessage = typeof shallowDefaultMessage

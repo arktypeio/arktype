@@ -2,11 +2,7 @@ import { attest, contextualize } from "@ark/attest"
 import { scope, type } from "arktype"
 import type { Default } from "arktype/internal/keywords/ast.ts"
 import type { Date } from "arktype/internal/keywords/constructors/Date.ts"
-import { invalidDefaultKeyKindMessage } from "arktype/internal/parser/objectLiteral.ts"
-import {
-	shallowDefaultMessage,
-	writeNonLiteralDefaultMessage
-} from "arktype/internal/parser/string/shift/operator/default.ts"
+import { writeNonLiteralDefaultMessage } from "arktype/internal/parser/string/shift/operator/default.ts"
 
 contextualize(() => {
 	describe("parsing and traversal", () => {
@@ -45,14 +41,7 @@ contextualize(() => {
 				.throws.snap(
 					'ParseError: Default value for key "bar" must be a number (was a string)'
 				)
-				.type.errors()
-		})
-
-		it("optional with default", () => {
-			attest(() =>
-				// @ts-expect-error
-				type({ foo: "string", "bar?": ["number", "=", 5] })
-			).throwsAndHasTypeError(invalidDefaultKeyKindMessage)
+				.type.errors.snap()
 		})
 
 		it("validated default in scope", () => {
@@ -209,15 +198,26 @@ contextualize(() => {
 		})
 
 		it("optional with default", () => {
-			// would be ideal if this was a type error
-			attest(() => type({ foo: "string", "bar?": "number = 5" })).throws(
-				invalidDefaultKeyKindMessage
-			)
+			const t = type({ foo: "string", "bar?": "number = 5" })
+			attest<{
+				foo: string
+				bar?: number
+			}>(t.inferIn)
+			attest<{
+				foo: string
+				bar?: number
+			}>(t.infer)
+
+			const fromTuple = type({ foo: "string", "bar?": ["number", "=", 5] })
+			attest<typeof t.t>(fromTuple.t)
+			attest(fromTuple.json).equals(t.json)
 		})
 
 		it("shallow default", () => {
-			// would be ideal if this was a type error as well
-			attest(() => type("string='foo'")).throws(shallowDefaultMessage)
+			const t = type("string='foo'")
+			const expected = type("string").default("foo")
+			attest<typeof expected.t>(t.t)
+			attest(t.json).equals(expected.json)
 		})
 	})
 
