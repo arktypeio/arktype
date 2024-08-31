@@ -91,6 +91,7 @@ export declare namespace string {
 		: constraint extends AtMostLength<infer rule> ? atMostLength<rule>
 		: constraint extends LessThanLength<infer rule> ? lessThanLength<rule>
 		: constraint extends Matching<infer rule> ? matching<rule>
+		: constraint extends Optional ? optional
 		: constraint extends Narrowed ? narrowed
 		: never
 

@@ -36,7 +36,7 @@ export declare namespace Date {
 
 	export type narrowed = constrain<Date, Narrowed>
 
-	export type optional = constrain<string, Optional>
+	export type optional = constrain<Date, Optional>
 
 	export type branded<rule> = constrain<Date, Branded<rule>>
 
@@ -57,6 +57,7 @@ export declare namespace Date {
 		: constraint extends Before<infer rule> ? before<rule>
 		: constraint extends AtOrAfter<infer rule> ? atOrAfter<rule>
 		: constraint extends AtOrBefore<infer rule> ? atOrBefore<rule>
+		: constraint extends Optional ? optional
 		: constraint extends Narrowed ? narrowed
 		: never
 }

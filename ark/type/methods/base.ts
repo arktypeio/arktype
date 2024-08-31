@@ -18,13 +18,15 @@ import type {
 } from "@ark/util"
 import type { inferIntersection } from "../intersect.ts"
 import type {
+	applyConstraint,
 	distillConstrainableIn,
 	distillConstrainableOut,
 	distillIn,
 	distillOut,
 	distillValidatedOut,
 	inferMorphOut,
-	inferPipes
+	inferPipes,
+	Optional
 } from "../keywords/ast.ts"
 import type { Scope } from "../scope.ts"
 import type { inferTypeRoot, validateTypeRoot } from "../type.ts"
@@ -59,7 +61,7 @@ interface Type<out t = unknown, $ = {}>
 
 	describe(description: string): this
 
-	optional(): this
+	optional<r = applyConstraint<t, Optional>>(): instantiateType<r, $>
 
 	default(value: this["infer"]): this
 

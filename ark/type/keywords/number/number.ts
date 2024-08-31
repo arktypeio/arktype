@@ -51,7 +51,7 @@ export declare namespace number {
 
 	export type narrowed = constrain<number, Narrowed>
 
-	export type optional = constrain<string, Optional>
+	export type optional = constrain<number, Optional>
 
 	export type branded<rule> = constrain<number, Branded<rule>>
 
@@ -72,6 +72,7 @@ export declare namespace number {
 		: constraint extends AtMost<infer rule> ? atMost<rule>
 		: constraint extends LessThan<infer rule> ? lessThan<rule>
 		: constraint extends DivisibleBy<infer rule> ? divisibleBy<rule>
+		: constraint extends Optional ? optional
 		: constraint extends Narrowed ? narrowed
 		: never
 

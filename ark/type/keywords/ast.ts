@@ -109,7 +109,7 @@ export type applyConstraintSchema<
 		) => o
 	:	leftIfEqual<t, applyConstraint<t, schemaToConstraint<kind, schema>>>
 
-type applyConstraint<t, constraint> =
+export type applyConstraint<t, constraint> =
 	parseConstraints<t> extends (
 		[infer base, infer constraints extends Constraints]
 	) ?

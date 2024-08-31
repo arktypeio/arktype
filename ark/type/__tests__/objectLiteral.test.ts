@@ -45,8 +45,12 @@ contextualize(() => {
 		})
 
 		it("chained optional", () => {
-			const o = type({ a: type("string").optional() })
-			attest<{ a?: string }>(o.infer)
+			const optionalString = type("string").optional()
+			attest(optionalString.t).type.toString.snap("string.optional")
+			attest<string>(optionalString.infer)
+
+			const o = type({ a: optionalString })
+			attest(o.t).type.toString.snap("{ a?: string }")
 			attest(o.json).snap({
 				optional: [
 					{ key: "a", value: { domain: "string", meta: { optional: true } } }
