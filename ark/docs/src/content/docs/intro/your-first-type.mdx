@@ -82,7 +82,7 @@ device.versions[2] must be a number or a string (was bigint)*/
 	summary: string
 }
 
-const narrowMessage = (e: ArkErrors): e is RuntimeErrors => true
+const narrowMessage = (e: type.errors): e is RuntimeErrors => true
 
 // ---cut---
 const out = user({
