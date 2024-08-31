@@ -13,7 +13,6 @@
 		"resolveJsonModule": true,
 		"exactOptionalPropertyTypes": true,
 		"forceConsistentCasingInFileNames": true,
-		"stripInternal": true,
-		"allowJs": true
+		"stripInternal": true
 	}
 }

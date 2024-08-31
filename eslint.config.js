@@ -1,8 +1,17 @@
 // @ts-check
 
-import eslint from "@eslint/js"
-import eslintPluginImportX from "eslint-plugin-import-x"
 import tseslint from "typescript-eslint"
+
+/** These actually have types but I'm not sure how to enable esModuleInterop
+ * with allowJs in the root tsconfig, which dramatically slows typechecking */
+
+// @ts-expect-error
+import eslint from "@eslint/js"
+// @ts-expect-error
+import eslintPluginImportX from "eslint-plugin-import-x"
+
+/** These actually don't have types as of now */
+
 // @ts-expect-error
 import onlyWarn from "eslint-plugin-only-warn"
 // @ts-expect-error
