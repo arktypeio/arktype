@@ -17,7 +17,7 @@ import {
 	type validateParameterString
 } from "./generic.ts"
 import type { Ark, ark } from "./keywords/ark.ts"
-import type { distillIn, distillOut } from "./keywords/ast.ts"
+import type { distill } from "./keywords/ast.ts"
 import type { BaseType } from "./methods/base.ts"
 import type { instantiateType } from "./methods/instantiate.ts"
 import type {
@@ -74,8 +74,8 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 		..._2: zero extends "===" ? rest
 		: zero extends "instanceof" ? conform<rest, readonly Constructor[]>
 		: one extends TupleInfixOperator ?
-			one extends ":" ? [Predicate<distillIn<inferTypeRoot<zero, $>>>]
-			: one extends "=>" ? [Morph<distillOut<inferTypeRoot<zero, $>>, unknown>]
+			one extends ":" ? [Predicate<distill.In<inferTypeRoot<zero, $>>>]
+			: one extends "=>" ? [Morph<distill.Out<inferTypeRoot<zero, $>>, unknown>]
 			: one extends "@" ? [MetaSchema]
 			: [validateTypeRoot<rest[0], $>]
 		:	[]

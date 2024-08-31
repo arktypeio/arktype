@@ -24,8 +24,7 @@ import {
 import type { inferIntersection } from "../intersect.ts"
 import type {
 	Default,
-	distillConstrainableIn,
-	distillOut,
+	distill,
 	inferMorphOut,
 	inferPredicate,
 	Out
@@ -379,9 +378,9 @@ export type validateInfixExpression<def extends InfixExpression, $, args> =
 			def[1] extends "|" ? validateDefinition<def[2], $, args>
 			: def[1] extends "&" ? validateDefinition<def[2], $, args>
 			: def[1] extends ":" ?
-				Predicate<distillOut<inferDefinition<def[0], $, args>>>
+				Predicate<distill.Out<inferDefinition<def[0], $, args>>>
 			: def[1] extends "=>" ?
-				Morph<distillOut<inferDefinition<def[0], $, args>>, unknown>
+				Morph<distill.Out<inferDefinition<def[0], $, args>>, unknown>
 			: def[1] extends "@" ? MetaSchema
 			: def[1] extends "=" ? inferDefinition<def[0], $, args>
 			: validateDefinition<def[2], $, args>
@@ -461,7 +460,7 @@ export const writeMalformedFunctionalExpressionMessage = (
 export type parseMorph<inDef, morph, $, args> =
 	morph extends Morph ?
 		inferMorphOut<morph> extends infer out ?
-			(In: distillConstrainableIn<inferDefinition<inDef, $, args>>) => Out<out>
+			(In: distill.brandable.In<inferDefinition<inDef, $, args>>) => Out<out>
 		:	never
 	:	never
 

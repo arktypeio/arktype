@@ -20,11 +20,7 @@ import type { inferIntersection } from "../intersect.ts"
 import type {
 	applyConstraint,
 	Default,
-	distillConstrainableIn,
-	distillConstrainableOut,
-	distillIn,
-	distillOut,
-	distillValidatedOut,
+	distill,
 	inferMorphOut,
 	inferPipes,
 	Optional
@@ -36,13 +32,13 @@ import type { instantiateType } from "./instantiate.ts"
 
 /** @ts-ignore cast variance */
 interface Type<out t = unknown, $ = {}>
-	extends Callable<(data: unknown) => distillOut<t> | ArkErrors> {
+	extends Callable<(data: unknown) => distill.Out<t> | ArkErrors> {
 	t: t
-	tIn: distillConstrainableIn<t>
-	tOut: distillConstrainableOut<t>
-	tValidatedOut: distillValidatedOut<t>
-	infer: distillOut<t>
-	inferIn: distillIn<t>
+	tIn: distill.brandable.In<t>
+	tOut: distill.brandable.Out<t>
+	tValidatedOut: distill.introspectable.Out<t>
+	infer: distill.Out<t>
+	inferIn: distill.In<t>
 	[inferred]: t
 
 	json: Json
@@ -56,7 +52,7 @@ interface Type<out t = unknown, $ = {}>
 
 	allows(data: unknown): data is this["inferIn"]
 
-	traverse(data: unknown): distillOut<t> | ArkErrors
+	traverse(data: unknown): distill.Out<t> | ArkErrors
 
 	configure(meta: MetaSchema): this
 
@@ -156,11 +152,11 @@ interface Type<out t = unknown, $ = {}>
 }
 
 interface ChainedPipeSignature<t, $> {
-	<a extends Morph<distillOut<t>>, r = instantiateType<inferPipes<t, [a]>, $>>(
+	<a extends Morph<distill.Out<t>>, r = instantiateType<inferPipes<t, [a]>, $>>(
 		a: a
 	): r
 	<
-		a extends Morph<distillOut<t>>,
+		a extends Morph<distill.Out<t>>,
 		b extends Morph<inferMorphOut<a>>,
 		r = instantiateType<inferPipes<t, [a, b]>, $>
 	>(
@@ -168,7 +164,7 @@ interface ChainedPipeSignature<t, $> {
 		b: b
 	): r
 	<
-		a extends Morph<distillOut<t>>,
+		a extends Morph<distill.Out<t>>,
 		b extends Morph<inferMorphOut<a>>,
 		c extends Morph<inferMorphOut<b>>,
 		r = instantiateType<inferPipes<t, [a, b, c]>, $>
@@ -178,7 +174,7 @@ interface ChainedPipeSignature<t, $> {
 		c: c
 	): r
 	<
-		a extends Morph<distillOut<t>>,
+		a extends Morph<distill.Out<t>>,
 		b extends Morph<inferMorphOut<a>>,
 		c extends Morph<inferMorphOut<b>>,
 		d extends Morph<inferMorphOut<c>>,
@@ -190,7 +186,7 @@ interface ChainedPipeSignature<t, $> {
 		d: d
 	): r
 	<
-		a extends Morph<distillOut<t>>,
+		a extends Morph<distill.Out<t>>,
 		b extends Morph<inferMorphOut<a>>,
 		c extends Morph<inferMorphOut<b>>,
 		d extends Morph<inferMorphOut<c>>,
@@ -204,7 +200,7 @@ interface ChainedPipeSignature<t, $> {
 		e: e
 	): r
 	<
-		a extends Morph<distillOut<t>>,
+		a extends Morph<distill.Out<t>>,
 		b extends Morph<inferMorphOut<a>>,
 		c extends Morph<inferMorphOut<b>>,
 		d extends Morph<inferMorphOut<c>>,
@@ -220,7 +216,7 @@ interface ChainedPipeSignature<t, $> {
 		f: f
 	): r
 	<
-		a extends Morph<distillOut<t>>,
+		a extends Morph<distill.Out<t>>,
 		b extends Morph<inferMorphOut<a>>,
 		c extends Morph<inferMorphOut<b>>,
 		d extends Morph<inferMorphOut<c>>,

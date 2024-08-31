@@ -5,8 +5,7 @@ import type {
 	Default,
 	LimitLiteral,
 	applyConstraintSchema,
-	distillIn,
-	distillOut,
+	distill,
 	normalizeLimit
 } from "../../keywords/ast.ts"
 import type { Date } from "../../keywords/constructors/Date.ts"
@@ -18,9 +17,9 @@ import type { Comparator, MinComparator } from "../string/reduce/shared.ts"
 export type inferAstRoot<ast, $, args> =
 	ast extends array ? inferExpression<ast, $, args> : never
 
-export type inferAstIn<ast, $, args> = distillIn<inferAstRoot<ast, $, args>>
+export type inferAstIn<ast, $, args> = distill.In<inferAstRoot<ast, $, args>>
 
-export type inferAstOut<ast, $, args> = distillOut<inferAstRoot<ast, $, args>>
+export type inferAstOut<ast, $, args> = distill.Out<inferAstRoot<ast, $, args>>
 
 export type DefAst<def = unknown, alias extends string = string> = [
 	def,
@@ -105,7 +104,7 @@ export type constrainBound<
 	comparator extends Comparator,
 	limit extends LimitLiteral
 > =
-	distillIn<constrainableIn> extends infer In ?
+	distill.In<constrainableIn> extends infer In ?
 		comparator extends "==" ?
 			In extends number ? limit
 			: In extends Date ? Date.literal<normalizeLimit<limit>>

@@ -11,12 +11,7 @@ import type {
 	TypeParser,
 	validateTypeRoot
 } from "../type.ts"
-import type {
-	distillConstrainableIn,
-	distillConstrainableOut,
-	distillIn,
-	distillOut
-} from "./ast.ts"
+import type { distill } from "./ast.ts"
 import { arkBuiltins } from "./builtins.ts"
 import { arkPrototypes } from "./constructors/constructors.ts"
 import { number } from "./number/number.ts"
@@ -81,16 +76,20 @@ export declare namespace type {
 	export type infer<def, $ = {}> = inferTypeRoot<def, $>
 
 	export namespace infer {
-		export type In<def, $ = {}> = distillIn<inferTypeRoot<def, $>>
+		export type In<def, $ = {}> = distill.In<inferTypeRoot<def, $>>
 
-		export type Out<def, $ = {}> = distillOut<inferTypeRoot<def, $>>
+		export type Out<def, $ = {}> = distill.Out<inferTypeRoot<def, $>>
 
-		export namespace branded {
-			export type In<def, $ = {}> = distillConstrainableIn<
+		export namespace brandable {
+			export type In<def, $ = {}> = distill.brandable.In<inferTypeRoot<def, $>>
+
+			export type Out<def, $ = {}> = distill.brandable.Out<
 				inferTypeRoot<def, $>
 			>
+		}
 
-			export type Out<def, $ = {}> = distillConstrainableOut<
+		export namespace introspectable {
+			export type Out<def, $ = {}> = distill.introspectable.Out<
 				inferTypeRoot<def, $>
 			>
 		}

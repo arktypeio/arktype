@@ -160,39 +160,42 @@ export type schemaToConstraint<
 		: Narrowed
 	:	never
 
-export type distillIn<t> = finalizeDistillation<
+export type distill<
 	t,
-	_distill<t, { endpoint: "in" }>
->
+	opts extends distill.Options = {}
+> = finalizeDistillation<t, _distill<t, opts>>
 
-export type distillOut<t> = finalizeDistillation<
-	t,
-	_distill<t, { endpoint: "out" }>
->
+export namespace distill {
+	export type Endpoint = "in" | "out" | "out.introspectable"
 
-export type distillConstrainableIn<t> = finalizeDistillation<
-	t,
-	_distill<t, { endpoint: "in"; branded: true }>
->
+	export type Options = {
+		endpoint?: Endpoint
+		branded?: true
+	}
 
-export type distillConstrainableOut<t> = finalizeDistillation<
-	t,
-	_distill<t, { endpoint: "out"; branded: true }>
->
+	export type In<t> = distill<t, { endpoint: "in" }>
 
-export type distillValidatedOut<t> = finalizeDistillation<
-	t,
-	_distill<t, { endpoint: "out.validated"; branded: true }>
->
+	export type Out<t> = distill<t, { endpoint: "out" }>
 
-export type DistillEndpoint = "in" | "out" | "out.validated"
+	export namespace brandable {
+		export type In<t> = distill<t, { endpoint: "in"; branded: true }>
 
-export type DistillOptions = {
-	endpoint?: DistillEndpoint
-	branded?: true
+		export type Out<t> = distill<t, { endpoint: "out"; branded: true }>
+
+		export namespace introspectable {
+			export type Out<t> = distill<
+				t,
+				{ endpoint: "out.introspectable"; branded: true }
+			>
+		}
+	}
+
+	export type unbrand<t> = distill<t>
+
+	export namespace introspectable {
+		export type Out<t> = distill<t, { endpoint: "out.introspectable" }>
+	}
 }
-
-export type distill<t, opts extends DistillOptions = {}> = _distill<t, opts>
 
 type finalizeDistillation<t, distilled> =
 	equals<t, distilled> extends true ? t : distilled
@@ -210,7 +213,7 @@ export type includesMorphs<t> =
 		false
 	:	true
 
-type _distill<t, opts extends DistillOptions> =
+type _distill<t, opts extends distill.Options> =
 	// ensure optional keys don't prevent extracting defaults
 	t extends undefined ? t
 	: [t] extends [anyOrNever] ? t
@@ -224,7 +227,7 @@ type _distill<t, opts extends DistillOptions> =
 	: unknown extends t ? unknown
 	: t extends MorphAst<infer i, infer o> ?
 		opts["endpoint"] extends "in" ? _distill<i, opts>
-		: opts["endpoint"] extends "out.validated" ?
+		: opts["endpoint"] extends "out.introspectable" ?
 			o extends To<infer validatedOut> ?
 				_distill<validatedOut, opts>
 			:	unknown
@@ -265,7 +268,7 @@ type defaultedKeyOf<t> = {
 
 type distillArray<
 	t extends array,
-	opts extends DistillOptions,
+	opts extends distill.Options,
 	prefix extends array
 > =
 	_distillArray<t, opts, prefix> extends infer result ?
@@ -277,7 +280,7 @@ type distillArray<
 
 type _distillArray<
 	t extends array,
-	opts extends DistillOptions,
+	opts extends distill.Options,
 	prefix extends array
 > =
 	t extends readonly [infer head, ...infer tail] ?
@@ -286,7 +289,7 @@ type _distillArray<
 
 type distillPostfix<
 	t extends array,
-	opts extends DistillOptions,
+	opts extends distill.Options,
 	postfix extends array = []
 > =
 	t extends readonly [...infer init, infer last] ?
@@ -315,7 +318,7 @@ export type inferPipes<t, pipes extends Morph[]> =
 		inferPipes<
 			pipes[0] extends type.cast<infer tPipe> ? inferPipe<t, tPipe>
 			: inferMorphOut<head> extends infer out ?
-				(In: distillConstrainableIn<t>) => Out<out>
+				(In: distill.brandable.In<t>) => Out<out>
 			:	never,
 			tail
 		>
@@ -343,19 +346,3 @@ export type Default<v = any> = ["=", v]
 export type DefaultedAst<t = any, v = any> = (In?: t) => Default<v>
 
 export type termOrType<t> = t | Type<t, any>
-
-// type withMetaOptionals<o> = show<
-// 	{
-// 		[k in keyof o as k extends metaOptionalKeyOf<o> ? never : k]: o[k]
-// 	} & {
-// 		[k in metaOptionalKeyOf<o>]?: o[k] extends OptionalAst<infer t> ? t : never
-// 	}
-// >
-
-// type metaOptionalKeyOf<o> = {
-// 	[k in keyof o]: o[k] extends OptionalAst ?
-// 		[o[k]] extends [anyOrNever] ?
-// 			never
-// 		:	k
-// 	:	never
-// }[keyof o]
