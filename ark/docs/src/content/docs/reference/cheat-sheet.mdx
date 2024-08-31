@@ -91,7 +91,7 @@ const object = type({
 	"optionalKey?": "string.uuid",
 	// Nested definitions don't require additional `type` calls.
 	[symbolicKey]: {
-		key: "unknown"
+		nested: "unknown"
 	},
 	// Index signatures are unlabeled and support arbitrary expressions.
 	"[string]": "string"
