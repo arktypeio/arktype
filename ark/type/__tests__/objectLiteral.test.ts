@@ -44,6 +44,17 @@ contextualize(() => {
 			})
 		})
 
+		it("chained optional", () => {
+			const o = type({ a: type("string").optional() })
+			attest<{ a?: string }>(o.infer)
+			attest(o.json).snap({
+				optional: [
+					{ key: "a", value: { domain: "string", meta: { optional: true } } }
+				],
+				domain: "object"
+			})
+		})
+
 		// https://github.com/arktypeio/arktype/issues/1102
 		it("only optional keys not reduced to object", () => {
 			const o = type({ "a?": "number" })

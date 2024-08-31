@@ -59,6 +59,10 @@ interface Type<out t = unknown, $ = {}>
 
 	describe(description: string): this
 
+	optional(): this
+
+	default(value: this["infer"]): this
+
 	onUndeclaredKey(behavior: UndeclaredKeyBehavior): this
 
 	onDeepUndeclaredKey(behavior: UndeclaredKeyBehavior): this

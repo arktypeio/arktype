@@ -6,6 +6,7 @@ import {
 	shallowDefaultMessage,
 	writeNonLiteralDefaultMessage
 } from "arktype/internal/parser/string/shift/operator/default.ts"
+
 contextualize(() => {
 	describe("parsing and traversal", () => {
 		it("base", () => {
@@ -64,6 +65,21 @@ contextualize(() => {
 			attest(types.obj.json).snap({
 				required: [{ key: "foo", value: "string" }],
 				optional: [{ default: 5, key: "bar", value: "number" }],
+				domain: "object"
+			})
+		})
+
+		it("chained", () => {
+			const o = type({ a: type("string").default("") })
+			attest<{ a?: string }>(o.infer)
+			attest(o.json).snap({
+				optional: [
+					{
+						default: "",
+						key: "a",
+						value: { domain: "string", meta: { default: "" } }
+					}
+				],
 				domain: "object"
 			})
 		})
