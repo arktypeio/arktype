@@ -41,7 +41,7 @@ contextualize(() => {
 				type({ foo: "string", bar: ["number", "=", "5"] })
 			)
 				.throws.snap(
-					'ParseError: Default value at "bar" must be a number (was a string)'
+					'ParseError: Default value for key "bar" must be a number (was a string)'
 				)
 				.type.errors()
 		})
@@ -148,7 +148,7 @@ contextualize(() => {
 			// @ts-expect-error
 			attest(() => type({ foo: "string", bar: "number = true" }))
 				.throws.snap(
-					'ParseError: Default value at "bar" must be a number (was boolean)'
+					'ParseError: Default value for key "bar" must be a number (was boolean)'
 				)
 				.type.errors("true is not assignable to number")
 		})

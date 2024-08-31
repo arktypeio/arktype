@@ -58,7 +58,7 @@ export class OptionalNode extends BaseProp<"optional"> {
 			const out = this.value.in(this.inner.default)
 			if (out instanceof ArkErrors) {
 				throwParseError(
-					writeUnassignableDefaultValueMessage(this.compiledKey, out.message)
+					writeUnassignableDefaultValueMessage(this.serializedKey, out.message)
 				)
 			}
 		}
@@ -78,7 +78,7 @@ export const writeUnassignableDefaultValueMessage = <
 >(
 	key: key,
 	message: message
-): string => `Default value at ${key} ${message}`
+): string => `Default value for key ${key} ${message}`
 
 export type writeUnassignableDefaultValueMessage<
 	baseDef extends string,
