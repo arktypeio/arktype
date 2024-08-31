@@ -97,12 +97,11 @@ type _inferObjectLiteral<def extends object, $, args> = {
 	// since def is a const parameter, we remove the readonly modifier here
 	// support for builtin readonly tracked here:
 	// https://github.com/arktypeio/arktype/issues/808
-	-readonly [k in keyof def as nonOptionalKeyFrom<
-		k,
-		def[k],
-		$,
-		args
-	>]: inferDefinition<def[k], $, args>
+	-readonly [k in keyof def as nonOptionalKeyFrom<k, def[k], $, args>]: [
+		def[k]
+	] extends [anyOrNever] ?
+		def[k]
+	:	inferDefinition<def[k], $, args>
 } & {
 	-readonly [k in keyof def as optionalKeyFrom<
 		k,

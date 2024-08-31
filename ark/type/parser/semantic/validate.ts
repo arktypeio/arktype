@@ -50,9 +50,8 @@ export type validateAst<ast, $, args> =
 		operator extends "&" | "|" ? validateInfix<ast, $, args>
 		: operator extends Comparator ? validateRange<l, operator, r, $, args>
 		: operator extends "%" ? validateDivisor<l, $, args>
-		: undefined
-	: ast extends [infer baseAst, "=", infer unitLiteral extends UnitLiteral] ?
-		validateDefault<baseAst, unitLiteral, $, args>
+		: operator extends "=" ? validateDefault<l, r & UnitLiteral, $, args>
+		: never
 	: ast extends ["keyof", infer operand] ? validateKeyof<operand, $, args>
 	: ast extends GenericInstantiationAst<infer g, infer argAsts> ?
 		validateGenericArgs<g["paramsAst"], argAsts, $, args, []>
