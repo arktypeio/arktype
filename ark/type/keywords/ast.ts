@@ -65,11 +65,15 @@ export type Length<rule> = {
 }
 
 export type Narrowed = {
-	predicate: { [k in "?"]: 1 }
+	predicate: { "?": 1 }
 }
 
 export type Branded<rule> = {
 	predicate: constraint<rule>
+}
+
+export type Optional = {
+	optional?: {}
 }
 
 export type primitiveConstraintKindOf<In> = Extract<
@@ -98,35 +102,33 @@ export type ExactlyLength<rule> = {
 	atMostLength: constraint<rule>
 }
 
-export type applyConstraint<
+export type applyConstraintSchema<
 	t,
 	kind extends Constraint.PrimitiveKind,
 	schema extends NodeSchema<kind>
 > =
 	t extends MorphAst<infer i, infer o> ?
-		(In: leftIfEqual<i, _applyConstraint<i, kind, schema>>) => o
-	:	leftIfEqual<t, _applyConstraint<t, kind, schema>>
+		(
+			In: leftIfEqual<
+				i,
+				applyConstraint<i, kind, schemaToConstraint<kind, schema>>
+			>
+		) => o
+	:	leftIfEqual<t, applyConstraint<t, kind, schemaToConstraint<kind, schema>>>
 
-type _applyConstraint<
-	t,
-	kind extends Constraint.PrimitiveKind,
-	schema extends NodeSchema<kind>
-> =
-	schemaToConstraint<kind, schema> extends infer constraint ?
-		parseConstraints<t> extends (
-			[infer base, infer constraints extends Constraints]
-		) ?
-			[number, base] extends [base, number] ?
-				number.is<constraint & constraints>
-			: [string, base] extends [base, string] ?
-				string.is<constraint & constraints>
-			: [Date, base] extends [base, Date] ? Date.is<constraint & constraints>
-			: constrain<base, constraints & constraint>
-		: [number, t] extends [t, number] ? number.parseConstraint<kind, schema>
-		: [string, t] extends [t, string] ? string.parseConstraint<kind, schema>
-		: [Date, t] extends [t, Date] ? Date.parseConstraint<kind, schema>
-		: constrain<t, conform<constraint, Constraints>>
-	:	never
+type applyConstraint<t, kind, constraint> =
+	parseConstraints<t> extends (
+		[infer base, infer constraints extends Constraints]
+	) ?
+		[number, base] extends [base, number] ? number.is<constraint & constraints>
+		: [string, base] extends [base, string] ?
+			string.is<constraint & constraints>
+		: [Date, base] extends [base, Date] ? Date.is<constraint & constraints>
+		: constrain<base, constraints & constraint>
+	: [number, t] extends [t, number] ? number.parseConstraint<kind, constraint>
+	: [string, t] extends [t, string] ? string.parseConstraint<kind, constraint>
+	: [Date, t] extends [t, Date] ? Date.parseConstraint<kind, constraint>
+	: constrain<t, conform<constraint, Constraints>>
 
 export type parseConstraints<t> =
 	t extends constrain<infer base, infer constraints> ?
@@ -306,14 +308,14 @@ type TerminallyInferredObjectKind =
 export type inferPredicate<t, predicate> =
 	predicate extends (data: any, ...args: any[]) => data is infer narrowed ?
 		t extends constrain<unknown, infer constraints> ?
-			applyConstraint<constrain<narrowed, constraints>, "predicate", any>
-		:	applyConstraint<narrowed, "predicate", any>
-	:	applyConstraint<t, "predicate", any>
+			applyConstraintSchema<constrain<narrowed, constraints>, "predicate", any>
+		:	applyConstraintSchema<narrowed, "predicate", any>
+	:	applyConstraintSchema<t, "predicate", any>
 
 export type constrainWithPredicate<t> =
 	t extends constrain<unknown, infer constraints> ?
-		applyConstraint<constrain<t, constraints>, "predicate", any>
-	:	applyConstraint<t, "predicate", any>
+		applyConstraintSchema<constrain<t, constraints>, "predicate", any>
+	:	applyConstraintSchema<t, "predicate", any>
 
 export type inferPipes<t, pipes extends Morph[]> =
 	pipes extends [infer head extends Morph, ...infer tail extends Morph[]] ?

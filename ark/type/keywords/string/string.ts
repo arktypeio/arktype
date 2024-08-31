@@ -10,6 +10,7 @@ import type {
 	LessThanLength,
 	MoreThanLength,
 	Narrowed,
+	Optional,
 	constrain,
 	constraint,
 	normalizePrimitiveConstraintRoot
@@ -75,6 +76,8 @@ export declare namespace string {
 
 	export type narrowed = constrain<string, Narrowed>
 
+	export type optional = constrain<string, Optional>
+
 	export type branded<rule> = constrain<string, Branded<rule>>
 
 	export type is<constraints extends Constraints> = constrain<
@@ -97,6 +100,7 @@ export declare namespace string {
 				:	atMostLength<rule>
 			: kind extends "pattern" ? matching<rule & string>
 			: kind extends "exactLength" ? exactlyLength<rule>
+			: kind extends "optional" ? optional
 			: narrowed
 		:	never
 

@@ -6,7 +6,8 @@ import type {
 	constraint,
 	Constraints,
 	Narrowed,
-	normalizePrimitiveConstraintRoot
+	normalizePrimitiveConstraintRoot,
+	Optional
 } from "../ast.ts"
 import { submodule } from "../utils.ts"
 import { epoch } from "./epoch.ts"
@@ -51,6 +52,8 @@ export declare namespace number {
 
 	export type narrowed = constrain<number, Narrowed>
 
+	export type optional = constrain<string, Optional>
+
 	export type branded<rule> = constrain<number, Branded<rule>>
 
 	export type is<constraints extends Constraints> = constrain<
@@ -78,6 +81,7 @@ export declare namespace number {
 					lessThan<rule>
 				:	atMost<rule>
 			: kind extends "divisor" ? divisibleBy<rule>
+			: kind extends "optional" ? optional
 			: narrowed
 		:	never
 

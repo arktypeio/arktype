@@ -2,12 +2,12 @@ import type { GenericAst } from "@ark/schema"
 import type { Hkt, array } from "@ark/util"
 import type { inferIntersection } from "../../intersect.ts"
 import type {
-    Default,
-    LimitLiteral,
-    applyConstraint,
-    distillIn,
-    distillOut,
-    normalizeLimit
+	Default,
+	LimitLiteral,
+	applyConstraintSchema,
+	distillIn,
+	distillOut,
+	normalizeLimit
 } from "../../keywords/ast.ts"
 import type { Date } from "../../keywords/constructors/Date.ts"
 import type { UnparsedScope } from "../../scope.ts"
@@ -91,7 +91,7 @@ export type inferExpression<ast, $, args> =
 					ast[2] & LimitLiteral
 				>
 		: ast[1] extends "%" ?
-			applyConstraint<
+			applyConstraintSchema<
 				inferExpression<ast[0], $, args>,
 				"divisor",
 				ast[2] & number
@@ -109,8 +109,8 @@ export type constrainBound<
 		comparator extends "==" ?
 			In extends number ? limit
 			: In extends Date ? Date.literal<normalizeLimit<limit>>
-			: applyConstraint<constrainableIn, "exactLength", limit & number>
-		:	applyConstraint<
+			: applyConstraintSchema<constrainableIn, "exactLength", limit & number>
+		:	applyConstraintSchema<
 				constrainableIn,
 				In extends number ?
 					comparator extends MinComparator ?

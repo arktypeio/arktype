@@ -7,7 +7,8 @@ import type {
 	Literal,
 	Narrowed,
 	normalizeLimit,
-	normalizePrimitiveConstraintRoot
+	normalizePrimitiveConstraintRoot,
+	Optional
 } from "../ast.ts"
 
 export type AtOrAfter<rule> = {
@@ -37,6 +38,8 @@ export declare namespace Date {
 
 	export type narrowed = constrain<Date, Narrowed>
 
+	export type optional = constrain<string, Optional>
+
 	export type branded<rule> = constrain<Date, Branded<rule>>
 
 	export type literal<rule> = constrain<Date, Literal<rule>>
@@ -64,6 +67,7 @@ export declare namespace Date {
 				schema extends { exclusive: true } ?
 					before<normalizeLimit<rule>>
 				:	atOrBefore<normalizeLimit<rule>>
-			:	narrowed
+			: kind extends "optional" ? optional
+			: narrowed
 		:	never
 }
