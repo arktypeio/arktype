@@ -33,7 +33,9 @@
 		"benchObject": "ts ./ark/type/__tests__/object.bench.ts",
 		"benchCyclic": "ts ./ark/type/__tests__/cyclic.bench.ts",
 		"scratch": "ts ./ark/repo/scratch.ts",
-		"lint": "prettier --check . && eslint --max-warnings=0 .",
+		"lint": "pnpm checkPrettier && pnpm checkEslint",
+		"checkPrettier": "prettier --check .",
+		"checkEslint": "eslint --max-warnings=0 .",
 		"format": "prettier --write .",
 		"knip": "knip",
 		"latest": "pnpm -r up --latest",
@@ -44,17 +46,15 @@
 		"@ark/fs": "workspace:*",
 		"@ark/repo": "workspace:*",
 		"@ark/util": "workspace:*",
+		"@types/eslint__js": "8.42.3",
 		"@types/mocha": "10.0.7",
 		"@types/node": "22.5.1",
-		"@typescript-eslint/eslint-plugin": "8.3.0",
-		"@typescript-eslint/parser": "8.3.0",
 		"arktype": "workspace:*",
 		"c8": "10.1.2",
-		"eslint": "8.57.0",
-		"eslint-config-prettier": "9.1.0",
-		"eslint-define-config": "2.1.0",
-		"eslint-import-resolver-typescript": "3.6.3",
-		"eslint-plugin-import": "2.29.1",
+		"eslint": "9.9.1",
+		"typescript-eslint": "8.3.0",
+		"@eslint/js": "9.9.1",
+		"eslint-plugin-import-x": "4.1.1",
 		"eslint-plugin-mdx": "3.1.5",
 		"eslint-plugin-only-warn": "1.1.0",
 		"eslint-plugin-prefer-arrow-functions": "3.4.1",
@@ -106,9 +106,6 @@
 				}
 			}
 		]
-	},
-	"eslintConfig": {
-		"extends": "./ark/repo/.eslintrc.cjs"
 	},
 	"packageManager": "pnpm@9.9.0"
 }
