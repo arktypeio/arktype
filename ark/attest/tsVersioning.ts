@@ -118,7 +118,7 @@ export const findAttestTypeScriptVersions = (): TsVersionData[] => {
 		}
 		for (const alias in dependencies) {
 			if (!alias.startsWith("typescript")) continue
-
+			if (alias.includes("eslint", 10)) continue
 			const path = join(nodeModulesPath, alias)
 			if (!existsSync(path)) {
 				throw Error(
