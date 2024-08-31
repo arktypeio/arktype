@@ -11,6 +11,12 @@ import type {
 	TypeParser,
 	validateTypeRoot
 } from "../type.ts"
+import type {
+	distillConstrainableIn,
+	distillConstrainableOut,
+	distillIn,
+	distillOut
+} from "./ast.ts"
 import { arkBuiltins } from "./builtins.ts"
 import { arkPrototypes } from "./constructors/constructors.ts"
 import { number } from "./number/number.ts"
@@ -74,7 +80,21 @@ export declare namespace type {
 
 	export type infer<def, $ = {}> = inferTypeRoot<def, $>
 
-	export namespace infer {}
+	export namespace infer {
+		export type In<def, $ = {}> = distillIn<inferTypeRoot<def, $>>
+
+		export type Out<def, $ = {}> = distillOut<inferTypeRoot<def, $>>
+
+		export namespace branded {
+			export type In<def, $ = {}> = distillConstrainableIn<
+				inferTypeRoot<def, $>
+			>
+
+			export type Out<def, $ = {}> = distillConstrainableOut<
+				inferTypeRoot<def, $>
+			>
+		}
+	}
 
 	export type validate<def, $ = {}> = validateTypeRoot<def, $>
 }

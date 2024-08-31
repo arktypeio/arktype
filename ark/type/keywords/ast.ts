@@ -176,7 +176,20 @@ export type distillConstrainableOut<t> = finalizeDistillation<
 
 export type distillValidatedOut<t> = finalizeDistillation<
 	t,
-	_distill<t, "validatedOut", "constrainable">
+	_distill<t, "out.validated", "constrainable">
+>
+
+export type DistillEndpoint = "in" | "out" | "out.validated"
+
+export type DistillOptions = {
+	endpoint?: DistillEndpoint
+	branded?: true
+}
+
+export type distill<t, opts extends DistillOptions = {}> = _distill<
+	t,
+	opts["endpoint"],
+	"base"
 >
 
 type finalizeDistillation<t, distilled> =
@@ -192,11 +205,13 @@ export type includesMorphs<t> =
 		false
 	:	true
 
-type IoKind = "in" | "out" | "validatedOut"
-
 type DistilledKind = "base" | "constrainable"
 
-type _distill<t, io extends IoKind, distilledKind extends DistilledKind> =
+type _distill<
+	t,
+	io extends DistillEndpoint,
+	distilledKind extends DistilledKind
+> =
 	// ensure optional keys don't prevent extracting defaults
 	t extends undefined ? t
 	: [t] extends [anyOrNever] ? t
@@ -210,11 +225,16 @@ type _distill<t, io extends IoKind, distilledKind extends DistilledKind> =
 	: unknown extends t ? unknown
 	: t extends MorphAst<infer i, infer o> ?
 		io extends "in" ? _distill<i, io, distilledKind>
-		: io extends "validatedOut" ?
+		: io extends "out.validated" ?
 			o extends To<infer validatedOut> ?
 				_distill<validatedOut, io, distilledKind>
 			:	unknown
-		:	_distill<o[1], io, distilledKind>
+		: io extends "out" ? _distill<o[1], io, distilledKind>
+		: _distill<o[1], io, distilledKind> extends infer r ?
+			o extends To ?
+				(In: i) => To<r>
+			:	(In: i) => Out<r>
+		:	never
 	: t extends DefaultedAst<infer t> ? _distill<t, io, distilledKind>
 	: t extends array ? distillArray<t, io, distilledKind, []>
 	: // we excluded this from TerminallyInferredObjectKind so that those types could be
@@ -247,7 +267,7 @@ type defaultedKeyOf<t> = {
 
 type distillArray<
 	t extends array,
-	io extends IoKind,
+	io extends DistillEndpoint,
 	constraints extends DistilledKind,
 	prefix extends array
 > =
@@ -260,7 +280,7 @@ type distillArray<
 
 type _distillArray<
 	t extends array,
-	io extends IoKind,
+	io extends DistillEndpoint,
 	constraints extends DistilledKind,
 	prefix extends array
 > =
@@ -275,7 +295,7 @@ type _distillArray<
 
 type distillPostfix<
 	t extends array,
-	io extends IoKind,
+	io extends DistillEndpoint,
 	constraints extends DistilledKind,
 	postfix extends array = []
 > =

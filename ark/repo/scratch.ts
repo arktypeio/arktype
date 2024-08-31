@@ -12,7 +12,3 @@ const instantiated = arkBox({
 })
 
 console.log(instantiated.expression)
-
-arkBox({
-	ark: "string"
-})
