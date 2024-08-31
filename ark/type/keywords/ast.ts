@@ -20,8 +20,9 @@ import type { inferPipe } from "../intersect.ts"
 import type { Type } from "../type.ts"
 import type { type } from "./ark.ts"
 import type { arkPrototypes } from "./constructors/constructors.ts"
-import type { number } from "./number/number.ts"
-import type { string } from "./string/string.ts"
+import type { Date } from "./constructors/Date.ts"
+import type { DivisibleBy, number } from "./number/number.ts"
+import type { Matching, string } from "./string/string.ts"
 export type { arkPrototypes as object } from "./constructors/constructors.ts"
 export type { number } from "./number/number.ts"
 export type { string } from "./string/string.ts"
@@ -53,38 +54,14 @@ export type normalizeLimit<limit> =
 	: limit extends number | string ? limit
 	: never
 
-type constraint<rule> = { [k in rule & PropertyKey]: 1 }
-
-export type AtLeast<rule> = {
-	atLeast: constraint<rule>
-}
-
-export type AtMost<rule> = {
-	atMost: constraint<rule>
-}
-
-export type MoreThan<rule> = {
-	moreThan: constraint<rule>
-}
-
-export type LessThan<rule> = {
-	lessThan: constraint<rule>
-}
+export type constraint<rule> = { [k in rule & PropertyKey]: 1 }
 
 export type Literal<rule> = {
 	literal: constraint<rule>
 }
 
-export type DivisibleBy<rule> = {
-	divisibleBy: constraint<rule>
-}
-
 export type Length<rule> = {
 	length: constraint<rule>
-}
-
-export type Matching<rule> = {
-	matching: constraint<rule>
 }
 
 export type Narrowed = {
@@ -119,56 +96,6 @@ export type LessThanLength<rule> = {
 export type ExactlyLength<rule> = {
 	atLeastLength: constraint<rule>
 	atMostLength: constraint<rule>
-}
-
-export type AtOrAfter<rule> = {
-	atOrAfter: constraint<rule>
-}
-
-export type AtOrBefore<rule> = {
-	atOrBefore: constraint<rule>
-}
-
-export type After<rule> = {
-	after: constraint<rule>
-}
-
-export type Before<rule> = {
-	before: constraint<rule>
-}
-
-export declare namespace Date {
-	export type atOrAfter<rule> = constrain<Date, AtOrAfter<rule>>
-
-	export type after<rule> = constrain<Date, After<rule>>
-
-	export type atOrBefore<rule> = constrain<Date, AtOrBefore<rule>>
-
-	export type before<rule> = constrain<Date, Before<rule>>
-
-	export type narrowed = constrain<Date, Narrowed>
-
-	export type branded<rule> = constrain<Date, Branded<rule>>
-
-	export type literal<rule> = constrain<Date, Literal<rule>>
-
-	export type is<constraints extends Constraints> = constrain<Date, constraints>
-
-	export type parseConstraint<
-		kind extends Constraint.PrimitiveKind,
-		schema extends NodeSchema<kind>
-	> =
-		normalizePrimitiveConstraintRoot<schema> extends infer rule ?
-			kind extends "after" ?
-				schema extends { exclusive: true } ?
-					after<normalizeLimit<rule>>
-				:	atOrAfter<normalizeLimit<rule>>
-			: kind extends "before" ?
-				schema extends { exclusive: true } ?
-					before<normalizeLimit<rule>>
-				:	atOrBefore<normalizeLimit<rule>>
-			:	narrowed
-		:	never
 }
 
 export type applyConstraint<
@@ -218,6 +145,13 @@ export type normalizePrimitiveConstraintRoot<
 	"rule" extends keyof schema ? conform<schema["rule"], PropertyKey>
 	:	conform<schema, PropertyKey>
 
+type minLengthSchemaToConstraint<schema, rule> =
+	schema extends { exclusive: true } ? MoreThanLength<rule>
+	:	AtLeastLength<rule>
+
+type maxLengthSchemaToConstraint<schema, rule> =
+	schema extends { exclusive: true } ? LessThanLength<rule> : AtMostLength<rule>
+
 export type schemaToConstraint<
 	kind extends Constraint.PrimitiveKind,
 	schema extends NodeSchema<kind>
@@ -226,32 +160,14 @@ export type schemaToConstraint<
 		kind extends "pattern" ? Matching<rule>
 		: kind extends "divisor" ? DivisibleBy<rule>
 		: kind extends "exactLength" ? Length<rule>
-		: kind extends "min" ?
-			schema extends { exclusive: true } ?
-				MoreThan<rule>
-			:	AtLeast<rule>
-		: kind extends "max" ?
-			schema extends { exclusive: true } ?
-				LessThan<rule>
-			:	AtMost<rule>
-		: kind extends "minLength" ?
-			schema extends { exclusive: true } ?
-				MoreThanLength<rule>
-			:	AtLeastLength<rule>
-		: kind extends "maxLength" ?
-			schema extends { exclusive: true } ?
-				LessThanLength<rule>
-			:	AtMostLength<rule>
+		: kind extends "min" ? number.minSchemaToConstraint<schema, rule>
+		: kind extends "max" ? number.maxSchemaToConstraint<schema, rule>
+		: kind extends "minLength" ? minLengthSchemaToConstraint<schema, rule>
+		: kind extends "maxLength" ? maxLengthSchemaToConstraint<schema, rule>
 		: kind extends "exactLength" ? ExactlyLength<rule>
-		: kind extends "after" ?
-			schema extends { exclusive: true } ?
-				After<normalizeLimit<rule>>
-			:	AtOrAfter<normalizeLimit<rule>>
-		: kind extends "before" ?
-			schema extends { exclusive: true } ?
-				Before<normalizeLimit<rule>>
-			:	AtOrBefore<normalizeLimit<rule>>
-		:	Narrowed
+		: kind extends "after" ? Date.afterSchemaToConstraint<schema, rule>
+		: kind extends "before" ? Date.beforeSchemaToConstraint<schema, rule>
+		: Narrowed
 	:	never
 
 export type distillIn<t> = finalizeDistillation<t, _distill<t, "in", "base">>

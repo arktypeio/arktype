@@ -8,10 +8,10 @@ import type {
 	Constraints,
 	ExactlyLength,
 	LessThanLength,
-	Matching,
 	MoreThanLength,
 	Narrowed,
 	constrain,
+	constraint,
 	normalizePrimitiveConstraintRoot
 } from "../ast.ts"
 import { submodule } from "../utils.ts"
@@ -55,6 +55,10 @@ export const string = submodule({
 	capitalize,
 	date: stringDate
 })
+
+export type Matching<rule> = {
+	matching: constraint<rule>
+}
 
 export declare namespace string {
 	export type atLeastLength<rule> = constrain<string, AtLeastLength<rule>>

@@ -238,7 +238,7 @@ export class BenchAssertions<
 	}
 
 	private getNextAssertions(): NextAssertions {
-		return createBenchTypeAssertion(this.ctx) as never as NextAssertions
+		return createBenchTypeAssertion(this.ctx) as never
 	}
 
 	private createStatMethod<Name extends TimeAssertionName>(
@@ -279,27 +279,18 @@ export class BenchAssertions<
 
 	median(baseline?: Measure<TimeUnit>): ReturnedAssertions {
 		this.ctx.lastSnapCallPosition = caller()
-		const assertions = this.createStatMethod(
-			"median",
-			baseline
-		) as never as ReturnedAssertions
+		const assertions = this.createStatMethod("median", baseline)
 		return assertions
 	}
 
 	mean(baseline?: Measure<TimeUnit>): ReturnedAssertions {
 		this.ctx.lastSnapCallPosition = caller()
-		return this.createStatMethod(
-			"mean",
-			baseline
-		) as never as ReturnedAssertions
+		return this.createStatMethod("mean", baseline)
 	}
 
 	mark(baseline?: MarkMeasure): ReturnedAssertions {
 		this.ctx.lastSnapCallPosition = caller()
-		return this.createStatMethod(
-			"mark",
-			baseline as never
-		) as never as ReturnedAssertions
+		return this.createStatMethod("mark", baseline as never)
 	}
 }
 

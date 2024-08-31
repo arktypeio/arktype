@@ -2,14 +2,14 @@ import type { GenericAst } from "@ark/schema"
 import type { Hkt, array } from "@ark/util"
 import type { inferIntersection } from "../../intersect.ts"
 import type {
-	Date,
-	Default,
-	LimitLiteral,
-	applyConstraint,
-	distillIn,
-	distillOut,
-	normalizeLimit
+    Default,
+    LimitLiteral,
+    applyConstraint,
+    distillIn,
+    distillOut,
+    normalizeLimit
 } from "../../keywords/ast.ts"
+import type { Date } from "../../keywords/constructors/Date.ts"
 import type { UnparsedScope } from "../../scope.ts"
 import type { inferAmbient } from "../../type.ts"
 import type { inferDefinition } from "../definition.ts"

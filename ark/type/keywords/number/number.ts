@@ -1,14 +1,10 @@
 import { intrinsic, type Constraint, type NodeSchema } from "@ark/schema"
 import type { Module, Submodule } from "../../module.ts"
 import type {
-	AtLeast,
-	AtMost,
 	Branded,
 	constrain,
+	constraint,
 	Constraints,
-	DivisibleBy,
-	LessThan,
-	MoreThan,
 	Narrowed,
 	normalizePrimitiveConstraintRoot
 } from "../ast.ts"
@@ -21,6 +17,26 @@ export const number: number.module = submodule({
 	integer,
 	epoch
 })
+
+export type AtLeast<rule> = {
+	atLeast: constraint<rule>
+}
+
+export type AtMost<rule> = {
+	atMost: constraint<rule>
+}
+
+export type MoreThan<rule> = {
+	moreThan: constraint<rule>
+}
+
+export type LessThan<rule> = {
+	lessThan: constraint<rule>
+}
+
+export type DivisibleBy<rule> = {
+	divisibleBy: constraint<rule>
+}
 
 export declare namespace number {
 	export type atLeast<rule> = constrain<number, AtLeast<rule>>
@@ -41,6 +57,12 @@ export declare namespace number {
 		number,
 		constraints
 	>
+
+	export type minSchemaToConstraint<schema, rule> =
+		schema extends { exclusive: true } ? MoreThan<rule> : AtLeast<rule>
+
+	export type maxSchemaToConstraint<schema, rule> =
+		schema extends { exclusive: true } ? LessThan<rule> : AtMost<rule>
 
 	export type parseConstraint<
 		kind extends Constraint.PrimitiveKind,

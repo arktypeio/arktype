@@ -1,6 +1,5 @@
 {
 	"editor.defaultFormatter": "esbenp.prettier-vscode",
-	"prettier.configPath": "./ark/repo/.prettierrc.mjs",
 	"editor.codeActionsOnSave": [
 		"editor.formatOnSave",
 		"source.fixAll.eslint",
