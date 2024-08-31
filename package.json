@@ -33,8 +33,8 @@
 		"benchObject": "ts ./ark/type/__tests__/object.bench.ts",
 		"benchCyclic": "ts ./ark/type/__tests__/cyclic.bench.ts",
 		"scratch": "ts ./ark/repo/scratch.ts",
-		"lint": "prettier --config ark/repo/.prettierrc.mjs --check . && eslint --max-warnings=0 .",
-		"format": "prettier --config ark/repo/.prettierrc.mjs --write .",
+		"lint": "prettier --check . && eslint --max-warnings=0 .",
+		"format": "prettier --write .",
 		"knip": "knip",
 		"latest": "pnpm -r up --latest",
 		"ci:publish": "ts ./ark/repo/publish.ts"
