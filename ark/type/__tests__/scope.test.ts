@@ -273,7 +273,7 @@ contextualize(() => {
 				b: { a: "a|true" }
 			}).export()
 			attest(types).type.toString.snap(`Module<{
-	a: { b: false | { a: true | { b: false | cyclic } } }
+	a: { b: false | { a: true | cyclic } }
 	b: { a: true | { b: false | cyclic } }
 }>`)
 		})
@@ -381,9 +381,7 @@ b.c.c must be an object (was missing)`)
 					a: "a|3"
 				}
 			}).export()
-			attest(types.a.infer).type.toString.snap(
-				"{ b: { a: 3 | { b: cyclic } } }"
-			)
+			attest(types.a.infer).type.toString.snap("{ b: { a: 3 | cyclic } }")
 
 			attest(types.a.json).snap({
 				domain: "object",

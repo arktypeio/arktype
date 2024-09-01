@@ -50,7 +50,11 @@ contextualize(() => {
 			attest<string>(optionalString.infer)
 
 			const o = type({ a: optionalString })
-			attest(o.t).type.toString.snap("{ a?: string }")
+			// directly inferring the optional key causes recursive generics/intersections to fail,
+			// so instead we just distill it out like defaults
+			attest(o.t).type.toString.snap("{ a: optional }")
+			attest(o.infer).type.toString.snap("{ a?: string }")
+			attest(o.inferIn).type.toString.snap("{ a?: string }")
 			attest(o.json).snap({
 				optional: [
 					{ key: "a", value: { domain: "string", meta: { optional: true } } }

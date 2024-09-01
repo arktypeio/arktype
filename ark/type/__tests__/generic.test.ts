@@ -647,7 +647,9 @@ contextualize(() => {
 						nest: "nest"
 					}
 				}).export()
-			).type.errors.snap()
+			).type.errors.snap(
+				'Type \'"nest"\' is not assignable to type \'"Unexpectedly failed to parse the expression resulting from ... " & { ast: GenericAst<[["t", unknown]], { readonly nest: "nest"; }, "$", "$">; }\'.Type \'"nest"\' is not assignable to type \'"Unexpectedly failed to parse the expression resulting from ... "\'.'
+			)
 		})
 	})
 })
