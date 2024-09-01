@@ -27,7 +27,7 @@ bench("union-string", () => {
 
 bench("union-tuple", () => {
 	const _ = type(["number", "|", "string"])
-}).types([1395, "instantiations"])
+}).types([1199, "instantiations"])
 
 bench("union-chain", () => {
 	const _ = type("number").or("string")
@@ -43,7 +43,7 @@ bench("intersection-string", () => {
 
 bench("intersection-tuple", () => {
 	const _ = type(["number", "&", "0"])
-}).types([1353, "instantiations"])
+}).types([1157, "instantiations"])
 
 bench("intersection-chain", () => {
 	const _ = type("number").and("0")
@@ -69,28 +69,28 @@ bench("group-deep", () => {
 
 bench("bound-single", () => {
 	const _ = type("string>5")
-}).types([1574, "instantiations"])
+}).types([1611, "instantiations"])
 
 bench("bound-double", () => {
 	const _ = type("-7<=string.integer<99")
-}).types([2751, "instantiations"])
+}).types([2768, "instantiations"])
 
 bench("divisor", () => {
 	const _ = type("number%5")
-}).types([1113, "instantiations"])
+}).types([1138, "instantiations"])
 
 bench("filter-tuple", () => {
 	const _ = type(["boolean", ":", b => b])
-}).types([1409, "instantiations"])
+}).types([1407, "instantiations"])
 
 bench("filter-chain", () => {
 	const _ = type("boolean").narrow(b => b)
-}).types([905, "instantiations"])
+}).types([898, "instantiations"])
 
 bench("morph-tuple", () => {
 	const _ = type(["boolean", "=>", b => b])
-}).types([1318, "instantiations"])
+}).types([1325, "instantiations"])
 
 bench("morph-chain", () => {
 	const _ = type("boolean").pipe(b => b)
-}).types([912, "instantiations"])
+}).types([918, "instantiations"])

@@ -1,4 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
+import { chainableNoOpProxy } from "@ark/attest/internal/utils.js"
 import {
 	intrinsic,
 	writeIndivisibleMessage,
@@ -6,7 +7,7 @@ import {
 	writeUnresolvableMessage,
 	writeUnsatisfiedParameterConstraintMessage
 } from "@ark/schema"
-import { Hkt } from "@ark/util"
+import { Hkt, type domainDescriptions } from "@ark/util"
 import { generic, scope, type, type Generic } from "arktype"
 import { emptyGenericParameterMessage } from "arktype/internal/generic.ts"
 import { writeUnclosedGroupMessage } from "arktype/internal/parser/string/reduce/shared.ts"
@@ -616,34 +617,39 @@ contextualize(() => {
 		})
 	})
 
-	// describe("cyclic", () => {
-	// it("self-reference", () => {
-	// 	const types = scope({
-	// 		"alternate<a, b>": {
-	// 			// ensures old generic params aren't intersected with
-	// 			// updated values (would be never)
-	// 			swap: "alternate<b, a>",
-	// 			order: ["a", "b"]
-	// 		},
-	// 		reference: "alternate<0, 1>"
-	// 	}).export()
-	// 	attest<[0, 1]>(types.reference.infer.swap.swap.order)
-	// 	attest<[1, 0]>(types.reference.infer.swap.swap.swap.order)
-	// 	const fromCall = types.alternate("'off'", "'on'")
-	// 	attest<["off", "on"]>(fromCall.infer.swap.swap.order)
-	// 	attest<["on", "off"]>(fromCall.infer.swap.swap.swap.order)
-	// })
-	// it("self-reference no params", () => {
-	// 	attest(() =>
-	// 		scope({
-	// 			"nest<t>": {
-	// 				// @ts-expect-error
-	// 				nest: "nest"
-	// 			}
-	// 		}).export()
-	// 	).throwsAndHasTypeError(
-	// 		writeInvalidGenericArgsMessage("nest", ["t"], [])
-	// 	)
-	// })
-	// })
+	// currently types only, runtime pending: https://github.com/arktypeio/arktype/issues/1082
+	describe("cyclic", () => {
+		it("self-reference", () => {
+			const getTypes = () =>
+				scope({
+					"alternate<a, b>": {
+						// ensures old generic params aren't intersected with
+						// updated values (would be never)
+						swap: "alternate<b, a>",
+						order: ["a", "b"]
+					},
+					reference: "alternate<0, 1>"
+				}).export()
+			const types = chainableNoOpProxy as ReturnType<typeof getTypes>
+			attest<[0, 1]>(types.reference.infer.swap.swap.order)
+			attest<[1, 0]>(types.reference.infer.swap.swap.swap.order)
+			const getFromCall = () => types.alternate("'off'", "'on'")
+			const fromCall = chainableNoOpProxy as ReturnType<typeof getFromCall>
+
+			attest<["off", "on"]>(fromCall.infer.swap.swap.order)
+			attest<["on", "off"]>(fromCall.infer.swap.swap.swap.order)
+		})
+		it("self-reference no params", () => {
+			attest(() =>
+				scope({
+					"nest<t>": {
+						// @ts-expect-error
+						nest: "nest"
+					}
+				}).export()
+			).type.errors.snap(
+				'Type \'"nest"\' is not assignable to type \'"Unexpectedly failed to parse the expression resulting from ... " & { ast: GenericAst<[["t", unknown]], { readonly nest: "nest"; }, "$", "$">; }\'.Type \'"nest"\' is not assignable to type \'"Unexpectedly failed to parse the expression resulting from ... "\'.'
+			)
+		})
+	})
 })

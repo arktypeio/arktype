@@ -76,7 +76,7 @@ contextualize(() => {
 
 		const numbers = t.distribute(
 			(n): Type<number> =>
-				n.extends(ark.number.$root) ? n : (
+				n.extends(type.number) ? n : (
 					type.raw(n.expression.slice(1, -1)).as<number>()
 				),
 			branches => type.raw(branches).as<number[]>()
@@ -115,5 +115,17 @@ contextualize(() => {
 
 	it("ark attached", () => {
 		attest<string>(type.ark.number.integer.expression).snap("number % 1")
+	})
+
+	it("unit", () => {
+		const t = type.unit(5)
+		attest<5>(t.t)
+		attest(t.expression).equals("5")
+	})
+
+	it("enumerated", () => {
+		const t = type.enumerated(5, true, null)
+		attest<5 | true | null>(t.t)
+		attest(t.expression).snap("5 | null | true")
 	})
 })

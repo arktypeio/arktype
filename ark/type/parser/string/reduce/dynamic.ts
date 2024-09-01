@@ -49,12 +49,10 @@ export class DynamicState {
 
 	scanner: Scanner
 	ctx: ParseContext
-	defaultable: boolean
 
-	constructor(scanner: Scanner, ctx: ParseContext, defaultable: boolean) {
+	constructor(scanner: Scanner, ctx: ParseContext) {
 		this.scanner = scanner
 		this.ctx = ctx
-		this.defaultable = defaultable
 	}
 
 	error(message: string): never {
@@ -156,7 +154,7 @@ export class DynamicState {
 	}
 
 	parseUntilFinalizer(): DynamicStateWithRoot {
-		return parseUntilFinalizer(new DynamicState(this.scanner, this.ctx, false))
+		return parseUntilFinalizer(new DynamicState(this.scanner, this.ctx))
 	}
 
 	parseOperator(this: DynamicStateWithRoot): void {

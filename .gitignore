@@ -9,6 +9,7 @@ tmp
 .DS_Store
 .docusaurus
 .astro
+.next
 .cache-loader
 .attest
 coverage

@@ -160,7 +160,15 @@ const getInstantiationsWithFile = (fileText: string, fileName: string) => {
 	const env = getIsolatedEnv()
 	const file = createOrUpdateFile(env, fileName, fileText)
 	const program = getProgram(env)
+
+	// trigger type checking to generate instantiations
+	// (was previously program.emit(file), but that as of TS 5.6 that doesn't
+	// work, so this may need to change if instantiations is reported as 0 after
+	// a future TypeScript update)
 	program.getSemanticDiagnostics(file)
+	// this may lead to additional type checking per Jake Bailey from the TS
+	// team, although it doesn't currently affect any of our internal benchmarks
+	program.getDeclarationDiagnostics(file)
 	const count = program.getInstantiationCount()
 	return count
 }

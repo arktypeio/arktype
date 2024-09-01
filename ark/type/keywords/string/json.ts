@@ -18,7 +18,7 @@ const isParsableJson = (s: string) => {
 	}
 }
 
-const $root = rootNode({
+const root = rootNode({
 	domain: "string",
 	predicate: {
 		meta: jsonStringDescription,
@@ -27,7 +27,7 @@ const $root = rootNode({
 })
 
 export const json: stringJson.module = submodule({
-	$root,
+	root,
 	parse: rootNode({
 		in: "string",
 		morphs: (s: string, ctx) => {
@@ -58,7 +58,7 @@ export declare namespace stringJson {
 	export type submodule = Submodule<$>
 
 	export type $ = {
-		$root: string.json
+		root: string.json
 		parse: (In: string.json) => To<object>
 	}
 }

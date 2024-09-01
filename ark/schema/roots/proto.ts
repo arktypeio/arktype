@@ -4,12 +4,9 @@ import {
 	getBuiltinNameOfConstructor,
 	objectKindDescriptions,
 	objectKindOrDomainOf,
-	prototypeKeysOf,
 	throwParseError,
 	type BuiltinObjectKind,
-	type Constructor,
-	type Key,
-	type array
+	type Constructor
 } from "@ark/util"
 import type {
 	BaseErrorContext,
@@ -112,7 +109,6 @@ export class ProtoNode extends InternalBasis<Proto.Declaration> {
 	serializedConstructor: string = (this.json as { proto: string }).proto
 	compiledCondition = `data instanceof ${this.serializedConstructor}`
 	compiledNegation = `!(${this.compiledCondition})`
-	literalKeys: array<Key> = prototypeKeysOf(this.proto.prototype)
 
 	protected innerToJsonSchema(): JsonSchema.Array {
 		switch (this.builtinName) {

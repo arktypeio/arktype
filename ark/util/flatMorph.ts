@@ -33,7 +33,7 @@ type extractEntries<e extends listable<Entry>> =
 	e extends readonly Entry[] ? e[number] : e
 
 type entryArgsWithIndex<o> = {
-	[k in keyof o]: [k: k, v: o[k], i: number]
+	[k in keyof o]-?: [k: k, v: Exclude<o[k], undefined>, i: number]
 }[keyof o]
 
 type numericArrayEntry<a extends array> =

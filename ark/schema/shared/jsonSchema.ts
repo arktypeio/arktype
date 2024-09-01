@@ -2,7 +2,6 @@ import {
 	printable,
 	throwInternalError,
 	type JsonArray,
-	type JsonData,
 	type JsonObject,
 	type listable
 } from "@ark/util"
@@ -24,10 +23,11 @@ export declare namespace JsonSchema {
 	 *  a subset of JSON Schema's annotations, see:
 	 *  https://json-schema.org/understanding-json-schema/reference/annotations
 	 **/
-	export type Meta<t extends JsonData = JsonData> = {
+	export type Meta<t = unknown> = {
 		title?: string
 		description?: string
 		deprecated?: true
+		default?: t
 		examples?: readonly t[]
 	}
 

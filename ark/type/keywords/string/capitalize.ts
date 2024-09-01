@@ -11,7 +11,7 @@ declare namespace string {
 const preformatted = regexStringNode(/^[A-Z].*$/, "capitalized")
 
 export const capitalize: capitalize.module = submodule({
-	$root: rootNode({
+	root: rootNode({
 		in: "string",
 		morphs: (s: string) => s.charAt(0).toUpperCase() + s.slice(1),
 		declaredOut: preformatted
@@ -25,7 +25,7 @@ export declare namespace capitalize {
 	export type submodule = Submodule<$>
 
 	export type $ = {
-		$root: (In: string) => To<string.capitalized>
+		root: (In: string) => To<string.capitalized>
 		preformatted: string.capitalized
 	}
 }

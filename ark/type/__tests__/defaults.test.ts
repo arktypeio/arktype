@@ -1,11 +1,9 @@
 import { attest, contextualize } from "@ark/attest"
 import { scope, type } from "arktype"
-import type { Date, Default } from "arktype/internal/keywords/ast.ts"
-import { invalidDefaultKeyKindMessage } from "arktype/internal/parser/objectLiteral.ts"
-import {
-	shallowDefaultMessage,
-	writeNonLiteralDefaultMessage
-} from "arktype/internal/parser/string/shift/operator/default.ts"
+import type { Default } from "arktype/internal/keywords/ast.ts"
+import type { Date } from "arktype/internal/keywords/constructors/Date.ts"
+import { writeNonLiteralDefaultMessage } from "arktype/internal/parser/string/shift/operator/default.ts"
+
 contextualize(() => {
 	describe("parsing and traversal", () => {
 		it("base", () => {
@@ -21,7 +19,13 @@ contextualize(() => {
 
 			attest(o.json).snap({
 				required: [{ key: "foo", value: "string" }],
-				optional: [{ default: 5, key: "bar", value: "number" }],
+				optional: [
+					{
+						default: 5,
+						key: "bar",
+						value: { domain: "number", meta: { default: 5 } }
+					}
+				],
 				domain: "object"
 			})
 
@@ -41,29 +45,64 @@ contextualize(() => {
 				type({ foo: "string", bar: ["number", "=", "5"] })
 			)
 				.throws.snap(
-					'ParseError: Default value at "bar" must be a number (was a string)'
+					'ParseError: Default value for key "bar" must be a number (was a string)'
 				)
-				.type.errors()
-		})
-
-		it("optional with default", () => {
-			attest(() =>
-				// @ts-expect-error
-				type({ foo: "string", "bar?": ["number", "=", 5] })
-			).throwsAndHasTypeError(invalidDefaultKeyKindMessage)
+				.type.errors.snap("Type 'string' is not assignable to type 'number'.")
 		})
 
 		it("validated default in scope", () => {
-			// note the string version of this does not work, see
-			// https://github.com/arktypeio/arktype/issues/1018
 			const types = scope({
 				specialNumber: "number",
-				obj: { foo: "string", bar: ["specialNumber", "=", 5] }
+				stringDefault: { foo: "string", bar: "specialNumber = 5" },
+				tupleDefault: { foo: "string", bar: ["specialNumber", "=", 5] }
 			}).export()
 
-			attest(types.obj.json).snap({
+			attest<{
+				foo: string
+				bar: (In?: number | undefined) => Default<5>
+			}>(types.stringDefault.t)
+
+			attest<typeof types.stringDefault.t>(types.tupleDefault.t)
+
+			attest(types.stringDefault.json).snap({
 				required: [{ key: "foo", value: "string" }],
-				optional: [{ default: 5, key: "bar", value: "number" }],
+				optional: [
+					{
+						default: 5,
+						key: "bar",
+						value: { domain: "number", meta: { default: 5 } }
+					}
+				],
+				domain: "object"
+			})
+
+			attest(types.tupleDefault.json).equals(types.stringDefault.json)
+		})
+
+		it("chained", () => {
+			const defaultedString = type("string").default("")
+			attest(defaultedString.t).type.toString.snap(
+				'(In?: string | undefined) => Default<"">'
+			)
+			attest(defaultedString.json).snap({
+				domain: "string",
+				meta: { default: "" }
+			})
+
+			const o = type({ a: defaultedString })
+			attest(o.t).type.toString.snap(
+				'{ a: (In?: string | undefined) => Default<""> }'
+			)
+			attest<{ a?: string }>(o.inferIn)
+			attest<{ a: string }>(o.infer)
+			attest(o.json).snap({
+				optional: [
+					{
+						default: "",
+						key: "a",
+						value: { domain: "string", meta: { default: "" } }
+					}
+				],
 				domain: "object"
 			})
 		})
@@ -148,7 +187,7 @@ contextualize(() => {
 			// @ts-expect-error
 			attest(() => type({ foo: "string", bar: "number = true" }))
 				.throws.snap(
-					'ParseError: Default value at "bar" must be a number (was boolean)'
+					'ParseError: Default value for key "bar" must be a number (was boolean)'
 				)
 				.type.errors("true is not assignable to number")
 		})
@@ -172,22 +211,39 @@ contextualize(() => {
 				specialNumber: { domain: "number" },
 				obj: {
 					required: [{ key: "foo", value: "string" }],
-					optional: [{ default: 5, key: "bar", value: "number" }],
+					optional: [
+						{
+							default: 5,
+							key: "bar",
+							value: { domain: "number", meta: { default: 5 } }
+						}
+					],
 					domain: "object"
 				}
 			})
 		})
 
 		it("optional with default", () => {
-			// would be ideal if this was a type error
-			attest(() => type({ foo: "string", "bar?": "number = 5" })).throws(
-				invalidDefaultKeyKindMessage
-			)
+			const t = type({ foo: "string", "bar?": "number = 5" })
+			attest<{
+				foo: string
+				bar?: number
+			}>(t.inferIn)
+			attest<{
+				foo: string
+				bar?: number
+			}>(t.infer)
+
+			const fromTuple = type({ foo: "string", "bar?": ["number", "=", 5] })
+			attest<typeof t.t>(fromTuple.t)
+			attest(fromTuple.json).equals(t.json)
 		})
 
 		it("shallow default", () => {
-			// would be ideal if this was a type error as well
-			attest(() => type("string='foo'")).throws(shallowDefaultMessage)
+			const t = type("string='foo'")
+			const expected = type("string").default("foo")
+			attest<typeof expected.t>(t.t)
+			attest(t.json).equals(expected.json)
 		})
 	})
 
@@ -209,7 +265,9 @@ contextualize(() => {
 
 			const result = l.and(r)
 			attest(result.json).snap({
-				optional: [{ default: 5, key: "bar", value: { unit: 5 } }],
+				optional: [
+					{ default: 5, key: "bar", value: { unit: 5, meta: { default: 5 } } }
+				],
 				domain: "object"
 			})
 		})

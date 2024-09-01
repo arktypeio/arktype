@@ -3,11 +3,11 @@ import {
 	registeredReference,
 	writeInvalidPropertyKeyMessage,
 	writeUnboundableMessage,
-	writeUnresolvableMessage,
-	type ArkErrors
+	writeUnresolvableMessage
 } from "@ark/schema"
 import { printable } from "@ark/util"
 import { scope, type } from "arktype"
+import type { string } from "arktype/internal/keywords/ast.ts"
 import {
 	writeInvalidSpreadTypeMessage,
 	writeInvalidUndeclaredBehaviorMessage
@@ -41,6 +41,25 @@ contextualize(() => {
 				domain: "object",
 				required: [{ key: "b", value: "number" }],
 				optional: [{ key: "a", value: "string" }]
+			})
+		})
+
+		it("chained optional", () => {
+			const optionalString = type("string").optional()
+			attest<string.optional>(optionalString.t)
+			attest<string>(optionalString.infer)
+
+			const o = type({ a: optionalString })
+			// directly inferring the optional key causes recursive generics/intersections to fail,
+			// so instead we just distill it out like defaults
+			attest(o.t).type.toString.snap("{ a: optional }")
+			attest(o.infer).type.toString.snap("{ a?: string }")
+			attest(o.inferIn).type.toString.snap("{ a?: string }")
+			attest(o.json).snap({
+				optional: [
+					{ key: "a", value: { domain: "string", meta: { optional: true } } }
+				],
+				domain: "object"
 			})
 		})
 
@@ -139,18 +158,23 @@ contextualize(() => {
 			attest(o({ a: 1 }).toString()).snap("a must be a string (was a number)")
 		})
 
-		// it("optional symbol", () => {
-		// 	const s = Symbol()
-		// 	const name = reference(s)
-		// 	const t = type({
-		// 		[optional(s)]: "number"
-		// 	})
-		// 	attest<{ [s]?: number }>(t.infer)
-		// 	attest(t.json).equals({
-		// 		domain: "object",
-		// 		optional: [{ key: name, value: "number" }]
-		// 	})
-		// })
+		it("optional symbol", () => {
+			const s = Symbol()
+			const keyReference = registeredReference(s)
+			const t = type({
+				[s]: type.number.optional()
+			})
+			attest<{ [s]?: number }>(t.infer)
+			attest(t.json).equals({
+				optional: [
+					{
+						key: keyReference,
+						value: { domain: "number", meta: { optional: true } }
+					}
+				],
+				domain: "object"
+			})
+		})
 	})
 
 	describe("spread syntax", () => {
@@ -354,8 +378,8 @@ value at [${zildjianName}] must be 1 (was undefined)`)
 					str: 100,
 					[sym]: "💯"
 				}).toString()
-			).snap(`str must be a string (was a number)
-value at [Symbol(symbol7)] must be a number (was a string)`)
+			).equals(`str must be a string (was a number)
+value at [${symName}] must be a number (was a string)`)
 		})
 
 		it("all key kinds", () => {

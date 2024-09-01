@@ -5,7 +5,7 @@ export {
 	type ArkScopeConfig,
 	type JsonSchema
 } from "@ark/schema"
-export { Hkt } from "@ark/util"
+export { Hkt, inferred } from "@ark/util"
 export { Generic } from "./generic.ts"
 export {
 	ambient,

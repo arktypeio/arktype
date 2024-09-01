@@ -1,5 +1,6 @@
 import { isKeyOf } from "@ark/util"
-import type { Date, string } from "../../../../keywords/ast.ts"
+import type { string } from "../../../../keywords/ast.ts"
+import type { Date } from "../../../../keywords/constructors/Date.ts"
 import type { InferredAst } from "../../../semantic/infer.ts"
 import type { DynamicState } from "../../reduce/dynamic.ts"
 import type { StaticState, state } from "../../reduce/static.ts"

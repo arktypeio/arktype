@@ -22,9 +22,10 @@ import {
 	type show
 } from "@ark/util"
 import type { inferIntersection } from "../intersect.ts"
+import type { type } from "../keywords/ark.ts"
 import type {
-	distillConstrainableIn,
-	distillOut,
+	Default,
+	distill,
 	inferMorphOut,
 	inferPredicate,
 	Out
@@ -343,6 +344,8 @@ export type inferTupleExpression<def extends TupleExpression, $, args> =
 		inferPredicate<inferDefinition<def[0], $, args>, def[2]>
 	: def[1] extends "=>" ? parseMorph<def[0], def[2], $, args>
 	: def[1] extends "@" ? inferDefinition<def[0], $, args>
+	: def[1] extends "=" ?
+		(In?: inferDefinition<def[0], $, args>) => Default<def[2]>
 	: def extends readonly ["===", ...infer values] ? values[number]
 	: def extends (
 		readonly ["instanceof", ...infer constructors extends Constructor[]]
@@ -375,11 +378,10 @@ export type validateInfixExpression<def extends InfixExpression, $, args> =
 			def[1],
 			def[1] extends "|" ? validateDefinition<def[2], $, args>
 			: def[1] extends "&" ? validateDefinition<def[2], $, args>
-			: def[1] extends ":" ?
-				Predicate<distillOut<inferDefinition<def[0], $, args>>>
-			: def[1] extends "=>" ?
-				Morph<distillOut<inferDefinition<def[0], $, args>>, unknown>
+			: def[1] extends ":" ? Predicate<type.infer.Out<def[0], $, args>>
+			: def[1] extends "=>" ? Morph<type.infer.Out<def[0], $, args>>
 			: def[1] extends "@" ? MetaSchema
+			: def[1] extends "=" ? type.infer.Out<def[0], $, args>
 			: validateDefinition<def[2], $, args>
 		]
 
@@ -427,7 +429,7 @@ export type IndexOneOperator = TuplePostfixOperator | TupleInfixOperator
 
 export type TuplePostfixOperator = "[]"
 
-export type TupleInfixOperator = "&" | "|" | "=>" | ":" | "@"
+export type TupleInfixOperator = "&" | "|" | "=>" | ":" | "@" | "="
 
 export type IndexOneExpression<
 	token extends IndexOneOperator = IndexOneOperator
@@ -457,7 +459,7 @@ export const writeMalformedFunctionalExpressionMessage = (
 export type parseMorph<inDef, morph, $, args> =
 	morph extends Morph ?
 		inferMorphOut<morph> extends infer out ?
-			(In: distillConstrainableIn<inferDefinition<inDef, $, args>>) => Out<out>
+			(In: distill.brandable.In<inferDefinition<inDef, $, args>>) => Out<out>
 		:	never
 	:	never
 
@@ -473,6 +475,9 @@ export const parseNarrowTuple: PostfixParser<":"> = (def, ctx) => {
 const parseAttributeTuple: PostfixParser<"@"> = (def, ctx) =>
 	ctx.$.parse(def[0], ctx).configureShallowDescendants(def[2] as never)
 
+const parseDefaultTuple: PostfixParser<"="> = (def, ctx) =>
+	ctx.$.parse(def[0], ctx).default(def[2] as never)
+
 const indexOneParsers: {
 	[token in IndexOneOperator]: PostfixParser<token>
 } = {
@@ -481,7 +486,8 @@ const indexOneParsers: {
 	"[]": parseArrayTuple,
 	":": parseNarrowTuple,
 	"=>": parseMorphTuple,
-	"@": parseAttributeTuple
+	"@": parseAttributeTuple,
+	"=": parseDefaultTuple
 }
 
 export type IndexZeroOperator = "keyof" | "instanceof" | "==="

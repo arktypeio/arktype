@@ -1,6 +1,6 @@
 import type { Predicate, PredicateCast } from "@ark/schema"
 import type { inferPipe } from "../intersect.ts"
-import type { applyConstraint, Out, To } from "../keywords/ast.ts"
+import type { applyConstraintSchema, Out, To } from "../keywords/ast.ts"
 import type { inferTypeRoot, validateTypeRoot } from "../type.ts"
 import type { BaseType } from "./base.ts"
 
@@ -17,7 +17,7 @@ interface Type<out t = unknown, $ = {}> extends BaseType<t, $> {
 	): Type<
 		(
 			[narrowed] extends [never] ?
-				applyConstraint<this["tOut"], "predicate", Predicate>
+				applyConstraintSchema<this["tOut"], "predicate", Predicate>
 			:	narrowed
 		) extends infer o ?
 			this["tValidatedOut"] extends this["tOut"] ?

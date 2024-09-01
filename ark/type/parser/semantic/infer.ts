@@ -2,14 +2,13 @@ import type { GenericAst } from "@ark/schema"
 import type { Hkt, array } from "@ark/util"
 import type { inferIntersection } from "../../intersect.ts"
 import type {
-	Date,
 	Default,
 	LimitLiteral,
-	applyConstraint,
-	distillIn,
-	distillOut,
+	applyConstraintSchema,
+	distill,
 	normalizeLimit
 } from "../../keywords/ast.ts"
+import type { Date } from "../../keywords/constructors/Date.ts"
 import type { UnparsedScope } from "../../scope.ts"
 import type { inferAmbient } from "../../type.ts"
 import type { inferDefinition } from "../definition.ts"
@@ -18,9 +17,9 @@ import type { Comparator, MinComparator } from "../string/reduce/shared.ts"
 export type inferAstRoot<ast, $, args> =
 	ast extends array ? inferExpression<ast, $, args> : never
 
-export type inferAstIn<ast, $, args> = distillIn<inferAstRoot<ast, $, args>>
+export type inferAstIn<ast, $, args> = distill.In<inferAstRoot<ast, $, args>>
 
-export type inferAstOut<ast, $, args> = distillOut<inferAstRoot<ast, $, args>>
+export type inferAstOut<ast, $, args> = distill.Out<inferAstRoot<ast, $, args>>
 
 export type DefAst<def = unknown, alias extends string = string> = [
 	def,
@@ -84,14 +83,14 @@ export type inferExpression<ast, $, args> =
 			:	never
 		: ast[1] extends Comparator ?
 			ast[0] extends LimitLiteral ?
-				constrainBound<inferExpression<ast[2], $, args>, ast[1], ast[0]>
-			:	constrainBound<
+				brandBound<inferExpression<ast[2], $, args>, ast[1], ast[0]>
+			:	brandBound<
 					inferExpression<ast[0], $, args>,
 					ast[1],
 					ast[2] & LimitLiteral
 				>
 		: ast[1] extends "%" ?
-			applyConstraint<
+			applyConstraintSchema<
 				inferExpression<ast[0], $, args>,
 				"divisor",
 				ast[2] & number
@@ -100,18 +99,18 @@ export type inferExpression<ast, $, args> =
 		: never
 	:	never
 
-export type constrainBound<
-	constrainableIn,
+export type brandBound<
+	brandableIn,
 	comparator extends Comparator,
 	limit extends LimitLiteral
 > =
-	distillIn<constrainableIn> extends infer In ?
+	distill.In<brandableIn> extends infer In ?
 		comparator extends "==" ?
 			In extends number ? limit
 			: In extends Date ? Date.literal<normalizeLimit<limit>>
-			: applyConstraint<constrainableIn, "exactLength", limit & number>
-		:	applyConstraint<
-				constrainableIn,
+			: applyConstraintSchema<brandableIn, "exactLength", limit & number>
+		:	applyConstraintSchema<
+				brandableIn,
 				In extends number ?
 					comparator extends MinComparator ?
 						"min"
@@ -143,7 +142,15 @@ export type PostfixExpression<
 	operand = unknown
 > = readonly [operand, operator]
 
-export type InfixOperator = "|" | "&" | Comparator | "%" | ":" | "=>" | "@"
+export type InfixOperator =
+	| "|"
+	| "&"
+	| Comparator
+	| "%"
+	| ":"
+	| "=>"
+	| "@"
+	| "="
 
 export type InfixExpression<
 	operator extends InfixOperator = InfixOperator,

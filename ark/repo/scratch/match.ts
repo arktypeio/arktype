@@ -6,7 +6,7 @@
 // 	propValueOf,
 // 	unionToTuple
 // } from "@ark/util"
-// import type { distillOut, Narrowed } from "./ast.ts"
+// import type { distill, Narrowed } from "./ast.ts"
 // import type { inferIntersection } from "./intersect.ts"
 // import type { Scope } from "./scope.ts"
 // import type { inferTypeRoot, validateTypeRoot } from "./type.ts"
@@ -46,7 +46,7 @@
 // 	Narrowed
 // >
 
-// type getUnhandledBranches<ctx extends MatchParserContext> = distillOut<
+// type getUnhandledBranches<ctx extends MatchParserContext> = distill.Out<
 // 	Exclude<ctx["exhaustiveOver"], getHandledBranches<ctx>>
 // >
 
@@ -64,7 +64,7 @@
 
 // // infer the types handled by a match branch, which is identical to `inferTypeRoot` while properly
 // // excluding cases that are already handled by other branches
-// type inferMatchBranch<def, ctx extends MatchParserContext> = distillOut<
+// type inferMatchBranch<def, ctx extends MatchParserContext> = distill.Out<
 // 	inferIntersection<getUnhandledBranches<ctx>, inferTypeRoot<def, ctx["$"]>>
 // >
 
@@ -112,7 +112,7 @@
 // 	:	validateWhenDefinition<def, ctx>
 // } & {
 // 	[k in Exclude<keyof ctx["$"], keyof cases>]?: (
-// 		In: distillOut<inferIntersection<getUnhandledBranches<ctx>, ctx["$"][k]>>
+// 		In: distill.Out<inferIntersection<getUnhandledBranches<ctx>, ctx["$"][k]>>
 // 	) => unknown
 // } & {
 // 	default?: (In: getUnhandledBranches<ctx>) => unknown

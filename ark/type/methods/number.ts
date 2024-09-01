@@ -4,7 +4,7 @@ import type {
 	exclusivizeRangeSchema,
 	InclusiveNumericRangeSchema
 } from "@ark/schema"
-import type { applyConstraint } from "../keywords/ast.ts"
+import type { applyConstraintSchema } from "../keywords/ast.ts"
 import type { ValidatorType } from "./validator.ts"
 
 /** @ts-ignore cast variance */
@@ -12,23 +12,23 @@ interface Type<out t extends number = number, $ = {}>
 	extends ValidatorType<t, $> {
 	divisibleBy<const schema extends Divisor.Schema>(
 		schema: schema
-	): Type<applyConstraint<t, "divisor", schema>, $>
+	): Type<applyConstraintSchema<t, "divisor", schema>, $>
 
 	atLeast<const schema extends InclusiveNumericRangeSchema>(
 		schema: schema
-	): Type<applyConstraint<t, "min", schema>, $>
+	): Type<applyConstraintSchema<t, "min", schema>, $>
 
 	atMost<const schema extends InclusiveNumericRangeSchema>(
 		schema: schema
-	): Type<applyConstraint<t, "max", schema>, $>
+	): Type<applyConstraintSchema<t, "max", schema>, $>
 
 	moreThan<const schema extends ExclusiveNumericRangeSchema>(
 		schema: schema
-	): Type<applyConstraint<t, "min", exclusivizeRangeSchema<schema>>, $>
+	): Type<applyConstraintSchema<t, "min", exclusivizeRangeSchema<schema>>, $>
 
 	lessThan<const schema extends ExclusiveNumericRangeSchema>(
 		schema: schema
-	): Type<applyConstraint<t, "max", exclusivizeRangeSchema<schema>>, $>
+	): Type<applyConstraintSchema<t, "max", exclusivizeRangeSchema<schema>>, $>
 }
 
 export type { Type as NumberType }

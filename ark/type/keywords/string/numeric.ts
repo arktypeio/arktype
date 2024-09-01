@@ -9,15 +9,15 @@ declare namespace string {
 	export type numeric = constrain<string, Branded<"numeric">>
 }
 
-const $root = regexStringNode(
+const root = regexStringNode(
 	wellFormedNumberMatcher,
 	"a well-formed numeric string"
 )
 
 export const numeric: stringNumeric.module = submodule({
-	$root,
+	root,
 	parse: rootNode({
-		in: $root,
+		in: root,
 		morphs: (s: string) => Number.parseFloat(s),
 		declaredOut: intrinsic.number
 	})
@@ -29,7 +29,7 @@ export declare namespace stringNumeric {
 	export type submodule = Submodule<$>
 
 	export type $ = {
-		$root: string.numeric
+		root: string.numeric
 		parse: (In: string.numeric) => To<number>
 	}
 }

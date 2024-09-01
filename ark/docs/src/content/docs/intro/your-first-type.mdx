@@ -11,7 +11,6 @@ If you already know TypeScript, congratulations- you just learned most of ArkTyp
 ## Define
 
 ```ts
-// @noErrors
 import { type } from "arktype"
 
 const user = type({
@@ -22,10 +21,6 @@ const user = type({
 
 // extract the type if needed
 type User = typeof user.infer
-// ---cut-start---
-// this empty line prevents the source syntax highlighting from breaking
-
-// ---cut-end---
 ```
 
 If you make a mistake, don't worry- every definition gets the autocomplete and validation you're used to from your editor, all within TypeScript's type system.
@@ -44,9 +39,6 @@ Thousands of hours of optimization have gone into making validating native type 
 Suppose we want to move `platform` and `version` from our original type to a new `device` property.
 
 ```ts
-import { type } from "arktype"
-
-// ---cut---
 const user = type({
 	name: "string",
 	// nested definitions don't need to be wrapped
@@ -60,9 +52,6 @@ const user = type({
 To decouple `device` from `user`, just move it to its own type and reference it.
 
 ```ts
-import { type } from "arktype"
-
-// ---cut---
 const device = type({
 	platform: "'android' | 'ios'",
 	"versions?": "(number | string)[]"
@@ -79,8 +68,6 @@ const user = type({
 At runtime, we can pass `unknown` data to our type and get back either a validated `User` or an array of clear, customizable errors with a root `summary`.
 
 ```ts
-import { type, type ArkErrors } from "arktype"
-
 const user = type({
 	name: "string",
 	device: {
@@ -89,13 +76,13 @@ const user = type({
 	}
 })
 
-interface RuntimeErrors extends ArkErrors {
+interface RuntimeErrors extends type.errors {
 	/**device.platform must be "android" or "ios" (was "enigma")
 device.versions[2] must be a number or a string (was bigint)*/
 	summary: string
 }
 
-const narrowMessage = (e: ArkErrors): e is RuntimeErrors => true
+const narrowMessage = (e: type.errors): e is RuntimeErrors => true
 
 // ---cut---
 const out = user({

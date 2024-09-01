@@ -29,7 +29,7 @@ bench("bigint", () => {
 
 bench("object", () => {
 	const t = type({ foo: "string" })
-}).types([1810, "instantiations"])
+}).types([1603, "instantiations"])
 
 bench("union", () => {
 	// Union is automatically discriminated using shallow or deep keys
@@ -44,4 +44,4 @@ bench("union", () => {
 		.or({
 			kind: "'pleb'"
 		})
-}).types([7371, "instantiations"])
+}).types([6691, "instantiations"])

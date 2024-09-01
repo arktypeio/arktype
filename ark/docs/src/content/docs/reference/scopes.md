@@ -1,7 +1,7 @@
 ---
 title: Scopes
 sidebar:
-  order: 1
+  order: 2
 ---
 
 Scopes are the foundation of ArkType, and one of the most powerful features for users wanting full control over configuration and to make their own keywords available fluidly within string definition syntax.

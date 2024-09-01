@@ -20,8 +20,9 @@ import type { inferPipe } from "../intersect.ts"
 import type { Type } from "../type.ts"
 import type { type } from "./ark.ts"
 import type { arkPrototypes } from "./constructors/constructors.ts"
-import type { number } from "./number/number.ts"
-import type { string } from "./string/string.ts"
+import type { Date } from "./constructors/Date.ts"
+import type { DivisibleBy, number } from "./number/number.ts"
+import type { Matching, string } from "./string/string.ts"
 export type { arkPrototypes as object } from "./constructors/constructors.ts"
 export type { number } from "./number/number.ts"
 export type { string } from "./string/string.ts"
@@ -53,42 +54,14 @@ export type normalizeLimit<limit> =
 	: limit extends number | string ? limit
 	: never
 
-type constraint<rule> = { [k in rule & PropertyKey]: 1 }
-
-export type AtLeast<rule> = {
-	atLeast: constraint<rule>
-}
-
-export type AtMost<rule> = {
-	atMost: constraint<rule>
-}
-
-export type MoreThan<rule> = {
-	moreThan: constraint<rule>
-}
-
-export type LessThan<rule> = {
-	lessThan: constraint<rule>
-}
+export type constraint<rule> = { [k in rule & PropertyKey]: 1 }
 
 export type Literal<rule> = {
 	literal: constraint<rule>
 }
 
-export type DivisibleBy<rule> = {
-	divisibleBy: constraint<rule>
-}
-
-export type Length<rule> = {
-	length: constraint<rule>
-}
-
-export type Matching<rule> = {
-	matching: constraint<rule>
-}
-
 export type Narrowed = {
-	predicate: { [k in "?"]: 1 }
+	predicate: { "?": 1 }
 }
 
 export type Branded<rule> = {
@@ -121,85 +94,30 @@ export type ExactlyLength<rule> = {
 	atMostLength: constraint<rule>
 }
 
-export type AtOrAfter<rule> = {
-	atOrAfter: constraint<rule>
-}
-
-export type AtOrBefore<rule> = {
-	atOrBefore: constraint<rule>
-}
-
-export type After<rule> = {
-	after: constraint<rule>
-}
-
-export type Before<rule> = {
-	before: constraint<rule>
-}
-
-export declare namespace Date {
-	export type atOrAfter<rule> = constrain<Date, AtOrAfter<rule>>
-
-	export type after<rule> = constrain<Date, After<rule>>
-
-	export type atOrBefore<rule> = constrain<Date, AtOrBefore<rule>>
-
-	export type before<rule> = constrain<Date, Before<rule>>
-
-	export type narrowed = constrain<Date, Narrowed>
-
-	export type branded<rule> = constrain<Date, Branded<rule>>
-
-	export type literal<rule> = constrain<Date, Literal<rule>>
-
-	export type is<constraints extends Constraints> = constrain<Date, constraints>
-
-	export type parseConstraint<
-		kind extends Constraint.PrimitiveKind,
-		schema extends NodeSchema<kind>
-	> =
-		normalizePrimitiveConstraintRoot<schema> extends infer rule ?
-			kind extends "after" ?
-				schema extends { exclusive: true } ?
-					after<normalizeLimit<rule>>
-				:	atOrAfter<normalizeLimit<rule>>
-			: kind extends "before" ?
-				schema extends { exclusive: true } ?
-					before<normalizeLimit<rule>>
-				:	atOrBefore<normalizeLimit<rule>>
-			:	narrowed
-		:	never
-}
-
-export type applyConstraint<
+export type applyConstraintSchema<
 	t,
 	kind extends Constraint.PrimitiveKind,
 	schema extends NodeSchema<kind>
 > =
 	t extends MorphAst<infer i, infer o> ?
-		(In: leftIfEqual<i, _applyConstraint<i, kind, schema>>) => o
-	:	leftIfEqual<t, _applyConstraint<t, kind, schema>>
+		(
+			In: leftIfEqual<i, applyConstraint<i, schemaToConstraint<kind, schema>>>
+		) => o
+	:	leftIfEqual<t, applyConstraint<t, schemaToConstraint<kind, schema>>>
 
-type _applyConstraint<
-	t,
-	kind extends Constraint.PrimitiveKind,
-	schema extends NodeSchema<kind>
-> =
-	schemaToConstraint<kind, schema> extends infer constraint ?
-		parseConstraints<t> extends (
-			[infer base, infer constraints extends Constraints]
-		) ?
-			[number, base] extends [base, number] ?
-				number.is<constraint & constraints>
-			: [string, base] extends [base, string] ?
-				string.is<constraint & constraints>
-			: [Date, base] extends [base, Date] ? Date.is<constraint & constraints>
-			: constrain<base, constraints & constraint>
-		: [number, t] extends [t, number] ? number.parseConstraint<kind, schema>
-		: [string, t] extends [t, string] ? string.parseConstraint<kind, schema>
-		: [Date, t] extends [t, Date] ? Date.parseConstraint<kind, schema>
-		: constrain<t, conform<constraint, Constraints>>
-	:	never
+export type applyConstraint<t, constraint> =
+	parseConstraints<t> extends (
+		[infer base, infer constraints extends Constraints]
+	) ?
+		[number, base] extends [base, number] ? number.is<constraint & constraints>
+		: [string, base] extends [base, string] ?
+			string.is<constraint & constraints>
+		: [Date, base] extends [base, Date] ? Date.is<constraint & constraints>
+		: constrain<base, constraints & constraint>
+	: [number, t] extends [t, number] ? number.withConstraint<constraint>
+	: [string, t] extends [t, string] ? string.withConstraint<constraint>
+	: [Date, t] extends [t, Date] ? Date.withConstraint<constraint>
+	: constrain<t, conform<constraint, Constraints>>
 
 export type parseConstraints<t> =
 	t extends constrain<infer base, infer constraints> ?
@@ -218,6 +136,13 @@ export type normalizePrimitiveConstraintRoot<
 	"rule" extends keyof schema ? conform<schema["rule"], PropertyKey>
 	:	conform<schema, PropertyKey>
 
+type minLengthSchemaToConstraint<schema, rule> =
+	schema extends { exclusive: true } ? MoreThanLength<rule>
+	:	AtLeastLength<rule>
+
+type maxLengthSchemaToConstraint<schema, rule> =
+	schema extends { exclusive: true } ? LessThanLength<rule> : AtMostLength<rule>
+
 export type schemaToConstraint<
 	kind extends Constraint.PrimitiveKind,
 	schema extends NodeSchema<kind>
@@ -225,127 +150,145 @@ export type schemaToConstraint<
 	normalizePrimitiveConstraintRoot<schema> extends infer rule ?
 		kind extends "pattern" ? Matching<rule>
 		: kind extends "divisor" ? DivisibleBy<rule>
-		: kind extends "exactLength" ? Length<rule>
-		: kind extends "min" ?
-			schema extends { exclusive: true } ?
-				MoreThan<rule>
-			:	AtLeast<rule>
-		: kind extends "max" ?
-			schema extends { exclusive: true } ?
-				LessThan<rule>
-			:	AtMost<rule>
-		: kind extends "minLength" ?
-			schema extends { exclusive: true } ?
-				MoreThanLength<rule>
-			:	AtLeastLength<rule>
-		: kind extends "maxLength" ?
-			schema extends { exclusive: true } ?
-				LessThanLength<rule>
-			:	AtMostLength<rule>
+		: kind extends "min" ? number.minSchemaToConstraint<schema, rule>
+		: kind extends "max" ? number.maxSchemaToConstraint<schema, rule>
+		: kind extends "minLength" ? minLengthSchemaToConstraint<schema, rule>
+		: kind extends "maxLength" ? maxLengthSchemaToConstraint<schema, rule>
 		: kind extends "exactLength" ? ExactlyLength<rule>
-		: kind extends "after" ?
-			schema extends { exclusive: true } ?
-				After<normalizeLimit<rule>>
-			:	AtOrAfter<normalizeLimit<rule>>
-		: kind extends "before" ?
-			schema extends { exclusive: true } ?
-				Before<normalizeLimit<rule>>
-			:	AtOrBefore<normalizeLimit<rule>>
-		:	Narrowed
+		: kind extends "after" ? Date.afterSchemaToConstraint<schema, rule>
+		: kind extends "before" ? Date.beforeSchemaToConstraint<schema, rule>
+		: Narrowed
 	:	never
 
-export type distillIn<t> = finalizeDistillation<t, _distill<t, "in", "base">>
-
-export type distillOut<t> = finalizeDistillation<t, _distill<t, "out", "base">>
-
-export type distillConstrainableIn<t> = finalizeDistillation<
+export type distill<
 	t,
-	_distill<t, "in", "constrainable">
->
+	opts extends distill.Options = {}
+> = finalizeDistillation<t, _distill<t, opts>>
 
-export type distillConstrainableOut<t> = finalizeDistillation<
-	t,
-	_distill<t, "out", "constrainable">
->
+export namespace distill {
+	export type Endpoint = "in" | "out" | "out.introspectable"
 
-export type distillValidatedOut<t> = finalizeDistillation<
-	t,
-	_distill<t, "validatedOut", "constrainable">
->
+	export type Options = {
+		endpoint?: Endpoint
+		branded?: true
+	}
+
+	export type In<t> = distill<t, { endpoint: "in" }>
+
+	export type Out<t> = distill<t, { endpoint: "out" }>
+
+	export namespace brandable {
+		export type In<t> = distill<t, { endpoint: "in"; branded: true }>
+
+		export type Out<t> = distill<t, { endpoint: "out"; branded: true }>
+
+		export namespace introspectable {
+			export type Out<t> = distill<
+				t,
+				{ endpoint: "out.introspectable"; branded: true }
+			>
+		}
+	}
+
+	export type unbranded<t> = distill<t>
+
+	export namespace introspectable {
+		export type Out<t> = distill<t, { endpoint: "out.introspectable" }>
+	}
+}
 
 type finalizeDistillation<t, distilled> =
 	equals<t, distilled> extends true ? t : distilled
 
 export type includesMorphs<t> =
 	[
-		_distill<t, "in", "constrainable">,
-		_distill<t, "out", "constrainable">
+		_distill<t, { endpoint: "in"; branded: true }>,
+		_distill<t, { endpoint: "out"; branded: true }>
 	] extends (
-		[_distill<t, "out", "constrainable">, _distill<t, "in", "constrainable">]
+		[
+			_distill<t, { endpoint: "out"; branded: true }>,
+			_distill<t, { endpoint: "in"; branded: true }>
+		]
 	) ?
 		false
 	:	true
 
-type IoKind = "in" | "out" | "validatedOut"
-
-type DistilledKind = "base" | "constrainable"
-
-type _distill<t, io extends IoKind, distilledKind extends DistilledKind> =
+type _distill<t, opts extends distill.Options> =
 	// ensure optional keys don't prevent extracting defaults
 	t extends undefined ? t
 	: [t] extends [anyOrNever] ? t
 	: parseConstraints<t> extends (
 		[infer base, infer constraints extends Constraints]
 	) ?
-		distilledKind extends "base" ?
-			_distill<base, io, distilledKind>
-		:	constrain<_distill<base, io, distilledKind>, constraints>
+		opts["branded"] extends true ?
+			constrain<_distill<base, opts>, constraints>
+		:	_distill<base, opts>
 	: t extends TerminallyInferredObjectKind | Primitive ? t
 	: unknown extends t ? unknown
 	: t extends MorphAst<infer i, infer o> ?
-		io extends "in" ? _distill<i, io, distilledKind>
-		: io extends "validatedOut" ?
+		opts["endpoint"] extends "in" ? _distill<i, opts>
+		: opts["endpoint"] extends "out.introspectable" ?
 			o extends To<infer validatedOut> ?
-				_distill<validatedOut, io, distilledKind>
+				_distill<validatedOut, opts>
 			:	unknown
-		:	_distill<o[1], io, distilledKind>
-	: t extends DefaultableAst<infer t> ? _distill<t, io, distilledKind>
-	: t extends array ? distillArray<t, io, distilledKind, []>
+		: opts["endpoint"] extends "out" ? _distill<o[1], opts>
+		: _distill<o[1], opts> extends infer r ?
+			o extends To ?
+				(In: i) => To<r>
+			:	(In: i) => Out<r>
+		:	never
+	: t extends DefaultedAst<infer t> ? _distill<t, opts>
+	: t extends array ? distillArray<t, opts, []>
 	: // we excluded this from TerminallyInferredObjectKind so that those types could be
 	// inferred before checking morphs/defaults, which extend Function
 	t extends Function ? t
 	: // avoid recursing into classes with private props etc.
 	{ [k in keyof t]: t[k] } extends t ?
-		io extends "in" ?
+		opts["endpoint"] extends "in" ?
 			show<
 				{
-					[k in keyof t as k extends defaultableKeyOf<t> ? never : k]: _distill<
-						t[k],
-						io,
-						distilledKind
-					>
+					[k in keyof t as k extends defaultedKeyOf<t> | metaOptionalKey<t> ?
+						never
+					:	k]: _distill<t[k], opts>
 				} & {
-					[k in defaultableKeyOf<t>]?: _distill<t[k], io, distilledKind>
+					[k in defaultedKeyOf<t> | metaOptionalKey<t>]?: _distill<t[k], opts>
 				}
 			>
-		:	{
-				[k in keyof t]: _distill<t[k], io, distilledKind>
-			}
+		:	show<
+				{
+					[k in keyof t as k extends metaOptionalKey<t> ? never : k]: _distill<
+						t[k],
+						opts
+					>
+				} & {
+					[k in keyof t as k extends metaOptionalKey<t> ? k : never]?: _distill<
+						t[k],
+						opts
+					>
+				}
+			>
 	:	t
 
-export type defaultableKeyOf<t> = {
+type defaultedKeyOf<t> = {
 	[k in keyof t]: [t[k]] extends [anyOrNever] ? never
-	: t[k] extends DefaultableAst ? k
+	: t[k] extends DefaultedAst ? k
 	: never
 }[keyof t]
 
+type metaOptionalKey<o> = {
+	[k in keyof o]: o[k] extends OptionalAst ?
+		[o[k]] extends [anyOrNever] ?
+			never
+		:	k
+	:	never
+}[keyof o]
+
 type distillArray<
 	t extends array,
-	io extends IoKind,
-	constraints extends DistilledKind,
+	opts extends distill.Options,
 	prefix extends array
 > =
-	_distillArray<t, io, constraints, prefix> extends infer result ?
+	_distillArray<t, opts, prefix> extends infer result ?
 		t extends unknown[] ?
 			result
 		:	// if the original array was readonly, ensure the distilled array is as well
@@ -354,33 +297,21 @@ type distillArray<
 
 type _distillArray<
 	t extends array,
-	io extends IoKind,
-	constraints extends DistilledKind,
+	opts extends distill.Options,
 	prefix extends array
 > =
 	t extends readonly [infer head, ...infer tail] ?
-		_distillArray<
-			tail,
-			io,
-			constraints,
-			[...prefix, _distill<head, io, constraints>]
-		>
-	:	[...prefix, ...distillPostfix<t, io, constraints>]
+		_distillArray<tail, opts, [...prefix, _distill<head, opts>]>
+	:	[...prefix, ...distillPostfix<t, opts>]
 
 type distillPostfix<
 	t extends array,
-	io extends IoKind,
-	constraints extends DistilledKind,
+	opts extends distill.Options,
 	postfix extends array = []
 > =
 	t extends readonly [...infer init, infer last] ?
-		distillPostfix<
-			init,
-			io,
-			constraints,
-			[_distill<last, io, constraints>, ...postfix]
-		>
-	:	[...{ [i in keyof t]: _distill<t[i], io, constraints> }, ...postfix]
+		distillPostfix<init, opts, [_distill<last, opts>, ...postfix]>
+	:	[...{ [i in keyof t]: _distill<t[i], opts> }, ...postfix]
 
 /** Objects we don't want to expand during inference like Date or Promise */
 type TerminallyInferredObjectKind =
@@ -390,21 +321,21 @@ type TerminallyInferredObjectKind =
 export type inferPredicate<t, predicate> =
 	predicate extends (data: any, ...args: any[]) => data is infer narrowed ?
 		t extends constrain<unknown, infer constraints> ?
-			applyConstraint<constrain<narrowed, constraints>, "predicate", any>
-		:	applyConstraint<narrowed, "predicate", any>
-	:	applyConstraint<t, "predicate", any>
+			applyConstraintSchema<constrain<narrowed, constraints>, "predicate", any>
+		:	applyConstraintSchema<narrowed, "predicate", any>
+	:	applyConstraintSchema<t, "predicate", any>
 
 export type constrainWithPredicate<t> =
 	t extends constrain<unknown, infer constraints> ?
-		applyConstraint<constrain<t, constraints>, "predicate", any>
-	:	applyConstraint<t, "predicate", any>
+		applyConstraintSchema<constrain<t, constraints>, "predicate", any>
+	:	applyConstraintSchema<t, "predicate", any>
 
 export type inferPipes<t, pipes extends Morph[]> =
 	pipes extends [infer head extends Morph, ...infer tail extends Morph[]] ?
 		inferPipes<
 			pipes[0] extends type.cast<infer tPipe> ? inferPipe<t, tPipe>
 			: inferMorphOut<head> extends infer out ?
-				(In: distillConstrainableIn<t>) => Out<out>
+				(In: distill.brandable.In<t>) => Out<out>
 			:	never,
 			tail
 		>
@@ -421,8 +352,14 @@ export type To<o = any> = ["=>", o, true]
 
 export type MorphAst<i = any, o extends Out = Out> = (In: i) => o
 
+export type Optional = {
+	optional?: {}
+}
+
+export type OptionalAst<t = unknown> = constrain<t, Optional>
+
 export type Default<v = any> = ["=", v]
 
-export type DefaultableAst<t = any, v = any> = (In?: t) => Default<v>
+export type DefaultedAst<t = any, v = any> = (In?: t) => Default<v>
 
 export type termOrType<t> = t | Type<t, any>

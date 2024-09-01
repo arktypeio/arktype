@@ -5,7 +5,7 @@ import {
 	writeUnresolvableMessage
 } from "@ark/schema"
 import { define, scope, type, type Module } from "arktype"
-import type { distillOut, string } from "arktype/internal/keywords/ast.ts"
+import type { distill, string } from "arktype/internal/keywords/ast.ts"
 import { writeUnexpectedCharacterMessage } from "arktype/internal/parser/string/shift/operator/operator.ts"
 
 contextualize(() => {
@@ -242,7 +242,9 @@ contextualize(() => {
 				}
 			})
 
-		type Package = distillOut<ReturnType<typeof getCyclicScope>["t"]["package"]>
+		type Package = distill.Out<
+			ReturnType<typeof getCyclicScope>["t"]["package"]
+		>
 
 		const getCyclicData = () => {
 			const packageData = {
@@ -254,17 +256,6 @@ contextualize(() => {
 			return packageData
 		}
 
-		it("cyclic union", () => {
-			const types = scope({
-				a: { b: "b|false" },
-				b: { a: "a|true" }
-			}).export()
-			attest(types).type.toString.snap(`Module<{
-	a: { b: false | { a: true | cyclic } }
-	b: { a: true | { b: false | cyclic } }
-}>`)
-		})
-
 		it("cyclic intersection", () => {
 			const types = scope({
 				a: { b: "b&a" },
@@ -273,6 +264,17 @@ contextualize(() => {
 			attest(types).type.toString.snap(`Module<{
 	a: { b: { a: { b: cyclic; a: cyclic }; b: cyclic } }
 	b: { a: { b: { a: cyclic; b: cyclic }; a: cyclic } }
+}>`)
+		})
+
+		it("cyclic union", () => {
+			const types = scope({
+				a: { b: "b|false" },
+				b: { a: "a|true" }
+			}).export()
+			attest(types).type.toString.snap(`Module<{
+	a: { b: false | { a: true | cyclic } }
+	b: { a: true | { b: false | cyclic } }
 }>`)
 		})
 
@@ -307,50 +309,6 @@ dependencies[1].contributors[0].email must be an email address (was "ssalbdivad"
 			attest(nonSelfDependent(data).toString()).snap(
 				'must be valid according to an anonymous predicate (was {"name":"arktype","dependencies":[{"name":"typescript"},"(cycle)"],"contributors":[{"email":"david@arktype.io"}]})'
 			)
-		})
-
-		it("union cyclic reference", () => {
-			const types = scope({
-				a: {
-					b: "b"
-				},
-				b: {
-					a: "a|3"
-				}
-			}).export()
-			attest(types.a.infer).type.toString.snap("{ b: { a: 3 | cyclic } }")
-
-			attest(types.a.json).snap({
-				domain: "object",
-				required: [
-					{
-						key: "b",
-						value: {
-							domain: "object",
-							required: [{ key: "a", value: ["$a", { unit: 3 }] }]
-						}
-					}
-				]
-			})
-
-			const valid: typeof types.a.infer = { b: { a: 3 } }
-
-			attest(types.a(valid)).equals(valid)
-
-			valid.b.a = valid
-
-			// check cyclic
-			attest(types.a(valid)).equals(valid)
-
-			attest(types.a({ b: { a: { b: { a: 4 } } } }).toString()).snap(
-				'b.a.b.a must be an object or 3 (was 4) or b.a must be 3 (was {"b":{"a":4}})'
-			)
-
-			attest(types.b.infer).type.toString.snap("{ a: 3 | { b: cyclic } }")
-			attest(types.b.json).snap({
-				domain: "object",
-				required: [{ key: "a", value: ["$a", { unit: 3 }] }]
-			})
 		})
 
 		it("intersect cyclic reference", () => {
@@ -411,6 +369,50 @@ b.c.c must be an object (was missing)`)
 						value: expectedCyclicJson
 					}
 				]
+			})
+		})
+
+		it("union cyclic reference", () => {
+			const types = scope({
+				a: {
+					b: "b"
+				},
+				b: {
+					a: "a|3"
+				}
+			}).export()
+			attest(types.a.infer).type.toString.snap("{ b: { a: 3 | cyclic } }")
+
+			attest(types.a.json).snap({
+				domain: "object",
+				required: [
+					{
+						key: "b",
+						value: {
+							domain: "object",
+							required: [{ key: "a", value: ["$a", { unit: 3 }] }]
+						}
+					}
+				]
+			})
+
+			const valid: typeof types.a.infer = { b: { a: 3 } }
+
+			attest(types.a(valid)).equals(valid)
+
+			valid.b.a = valid
+
+			// check cyclic
+			attest(types.a(valid)).equals(valid)
+
+			attest(types.a({ b: { a: { b: { a: 4 } } } }).toString()).snap(
+				'b.a.b.a must be an object or 3 (was 4) or b.a must be 3 (was {"b":{"a":4}})'
+			)
+
+			attest(types.b.infer).type.toString.snap("{ a: 3 | { b: cyclic } }")
+			attest(types.b.json).snap({
+				domain: "object",
+				required: [{ key: "a", value: ["$a", { unit: 3 }] }]
 			})
 		})
 	})

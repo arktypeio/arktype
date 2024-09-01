@@ -1,4 +1,4 @@
-import { intrinsic, type Constraint, type NodeSchema } from "@ark/schema"
+import { intrinsic } from "@ark/schema"
 import type { Module, Submodule } from "../../module.ts"
 import type { type } from "../ark.ts"
 import type {
@@ -8,11 +8,11 @@ import type {
 	Constraints,
 	ExactlyLength,
 	LessThanLength,
-	Matching,
 	MoreThanLength,
 	Narrowed,
+	Optional,
 	constrain,
-	normalizePrimitiveConstraintRoot
+	constraint
 } from "../ast.ts"
 import { submodule } from "../utils.ts"
 import { alpha } from "./alpha.ts"
@@ -35,7 +35,7 @@ import { url } from "./url.ts"
 import { uuid } from "./uuid.ts"
 
 export const string = submodule({
-	$root: intrinsic.string,
+	root: intrinsic.string,
 	numeric,
 	integer,
 	alpha,
@@ -56,6 +56,10 @@ export const string = submodule({
 	date: stringDate
 })
 
+export type Matching<rule> = {
+	matching: constraint<rule>
+}
+
 export declare namespace string {
 	export type atLeastLength<rule> = constrain<string, AtLeastLength<rule>>
 
@@ -71,6 +75,8 @@ export declare namespace string {
 
 	export type narrowed = constrain<string, Narrowed>
 
+	export type optional = constrain<string, Optional>
+
 	export type branded<rule> = constrain<string, Branded<rule>>
 
 	export type is<constraints extends Constraints> = constrain<
@@ -78,30 +84,23 @@ export declare namespace string {
 		constraints
 	>
 
-	export type parseConstraint<
-		kind extends Constraint.PrimitiveKind,
-		schema extends NodeSchema<kind>
-	> =
-		normalizePrimitiveConstraintRoot<schema> extends infer rule ?
-			kind extends "minLength" ?
-				schema extends { exclusive: true } ?
-					moreThanLength<rule>
-				:	atLeastLength<rule>
-			: kind extends "maxLength" ?
-				schema extends { exclusive: true } ?
-					lessThanLength<rule>
-				:	atMostLength<rule>
-			: kind extends "pattern" ? matching<rule & string>
-			: kind extends "exactLength" ? exactlyLength<rule>
-			: narrowed
-		:	never
+	export type withConstraint<constraint> =
+		constraint extends ExactlyLength<infer rule> ? exactlyLength<rule>
+		: constraint extends MoreThanLength<infer rule> ? moreThanLength<rule>
+		: constraint extends AtLeastLength<infer rule> ? atLeastLength<rule>
+		: constraint extends AtMostLength<infer rule> ? atMostLength<rule>
+		: constraint extends LessThanLength<infer rule> ? lessThanLength<rule>
+		: constraint extends Matching<infer rule> ? matching<rule>
+		: constraint extends Optional ? optional
+		: constraint extends Narrowed ? narrowed
+		: never
 
 	export type module = Module<string.submodule>
 
 	export type submodule = Submodule<$>
 
 	export type $ = {
-		$root: string
+		root: string
 		alpha: alpha
 		alphanumeric: alphanumeric
 		digits: digits
