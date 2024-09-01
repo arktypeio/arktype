@@ -2,11 +2,11 @@ import type { ArkErrors, arkKind } from "@ark/schema"
 import type { inferred } from "@ark/util"
 import type { GenericParser } from "../generic.ts"
 import type { BoundModule, Module } from "../module.ts"
+import type { inferDefinition } from "../parser/definition.ts"
 import { $arkTypeRegistry, scope, type Scope } from "../scope.ts"
 import type {
 	DeclarationParser,
 	DefinitionParser,
-	inferTypeRoot,
 	Type,
 	TypeParser,
 	validateTypeRoot
@@ -73,24 +73,30 @@ export declare namespace type {
 
 	export type errors = ArkErrors
 
-	export type infer<def, $ = {}> = inferTypeRoot<def, $>
+	export type infer<def, $ = {}, args = {}> = inferDefinition<def, $, args>
 
 	export namespace infer {
-		export type In<def, $ = {}> = distill.In<inferTypeRoot<def, $>>
+		export type In<def, $ = {}, args = {}> = distill.In<
+			inferDefinition<def, $, args>
+		>
 
-		export type Out<def, $ = {}> = distill.Out<inferTypeRoot<def, $>>
+		export type Out<def, $ = {}, args = {}> = distill.Out<
+			inferDefinition<def, $, args>
+		>
 
 		export namespace brandable {
-			export type In<def, $ = {}> = distill.brandable.In<inferTypeRoot<def, $>>
+			export type In<def, $ = {}, args = {}> = distill.brandable.In<
+				inferDefinition<def, $, args>
+			>
 
-			export type Out<def, $ = {}> = distill.brandable.Out<
-				inferTypeRoot<def, $>
+			export type Out<def, $ = {}, args = {}> = distill.brandable.Out<
+				inferDefinition<def, $, args>
 			>
 		}
 
 		export namespace introspectable {
-			export type Out<def, $ = {}> = distill.introspectable.Out<
-				inferTypeRoot<def, $>
+			export type Out<def, $ = {}, args = {}> = distill.introspectable.Out<
+				inferDefinition<def, $, args>
 			>
 		}
 	}

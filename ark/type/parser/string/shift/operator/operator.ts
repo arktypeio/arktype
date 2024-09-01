@@ -1,4 +1,4 @@
-import { isKeyOf, type WhiteSpaceToken, whiteSpaceTokens } from "@ark/util"
+import { isKeyOf, whiteSpaceTokens, type WhiteSpaceToken } from "@ark/util"
 import type { DynamicStateWithRoot } from "../../reduce/dynamic.ts"
 import type { StaticState, state } from "../../reduce/static.ts"
 import { Scanner } from "../scanner.ts"

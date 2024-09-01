@@ -256,6 +256,17 @@ contextualize(() => {
 			return packageData
 		}
 
+		it("cyclic intersection", () => {
+			const types = scope({
+				a: { b: "b&a" },
+				b: { a: "a&b" }
+			}).export()
+			attest(types).type.toString.snap(`Module<{
+	a: { b: { a: { b: cyclic; a: cyclic }; b: cyclic } }
+	b: { a: { b: { a: cyclic; b: cyclic }; a: cyclic } }
+}>`)
+		})
+
 		it("cyclic union", () => {
 			const types = scope({
 				a: { b: "b|false" },
@@ -298,6 +309,67 @@ dependencies[1].contributors[0].email must be an email address (was "ssalbdivad"
 			attest(nonSelfDependent(data).toString()).snap(
 				'must be valid according to an anonymous predicate (was {"name":"arktype","dependencies":[{"name":"typescript"},"(cycle)"],"contributors":[{"email":"david@arktype.io"}]})'
 			)
+		})
+
+		it("intersect cyclic reference", () => {
+			const types = scope({
+				arf: {
+					b: "bork"
+				},
+				bork: {
+					c: "arf&bork"
+				}
+			}).export()
+			attest(types.arf.infer).type.toString.snap(
+				"{ b: { c: { b: cyclic; c: cyclic } } }"
+			)
+			attest(types.bork.infer).type.toString.snap(
+				"{ c: { b: cyclic; c: cyclic } }"
+			)
+
+			const expectedCyclicJson =
+				types.arf.internal.firstReferenceOfKindOrThrow("alias").json
+
+			attest(types.arf.json).snap({
+				domain: "object",
+				required: [
+					{
+						key: "b",
+						value: {
+							domain: "object",
+							required: [
+								{
+									key: "c",
+									value: expectedCyclicJson
+								}
+							]
+						}
+					}
+				]
+			})
+			const a = {} as typeof types.arf.infer
+			const b = { c: {} } as typeof types.bork.infer
+			a.b = b
+			b.c.b = b
+			b.c.c = b.c
+
+			attest(types.arf.description).snap("{ b: { c: arf&bork } }")
+			attest(types.bork.description).snap("{ c: arf&bork }")
+
+			attest(types.arf(a)).equals(a)
+			attest(types.arf({ b: { c: {} } }).toString())
+				.snap(`b.c.b must be an object (was missing)
+b.c.c must be an object (was missing)`)
+
+			attest(types.bork.json).snap({
+				domain: "object",
+				required: [
+					{
+						key: "c",
+						value: expectedCyclicJson
+					}
+				]
+			})
 		})
 
 		it("union cyclic reference", () => {

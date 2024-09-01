@@ -51,18 +51,32 @@ contextualize(() => {
 		})
 
 		it("validated default in scope", () => {
-			// note the string version of this does not work, see
-			// https://github.com/arktypeio/arktype/issues/1018
 			const types = scope({
 				specialNumber: "number",
-				obj: { foo: "string", bar: ["specialNumber = 5", "=", 5] }
+				stringDefault: { foo: "string", bar: "specialNumber = 5" },
+				tupleDefault: { foo: "string", bar: ["specialNumber", "=", 5] }
 			}).export()
 
-			attest(types.obj.json).snap({
+			attest<{
+				foo: string
+				bar: (In?: number | undefined) => Default<5>
+			}>(types.stringDefault.t)
+
+			attest<typeof types.stringDefault.t>(types.tupleDefault.t)
+
+			attest(types.stringDefault.json).snap({
 				required: [{ key: "foo", value: "string" }],
-				optional: [{ default: 5, key: "bar", value: "number" }],
+				optional: [
+					{
+						default: 5,
+						key: "bar",
+						value: { domain: "number", meta: { default: 5 } }
+					}
+				],
 				domain: "object"
 			})
+
+			attest(types.tupleDefault.json).equals(types.stringDefault.json)
 		})
 
 		it("chained", () => {
@@ -197,7 +211,13 @@ contextualize(() => {
 				specialNumber: { domain: "number" },
 				obj: {
 					required: [{ key: "foo", value: "string" }],
-					optional: [{ default: 5, key: "bar", value: "number" }],
+					optional: [
+						{
+							default: 5,
+							key: "bar",
+							value: { domain: "number", meta: { default: 5 } }
+						}
+					],
 					domain: "object"
 				}
 			})
@@ -245,7 +265,9 @@ contextualize(() => {
 
 			const result = l.and(r)
 			attest(result.json).snap({
-				optional: [{ default: 5, key: "bar", value: { unit: 5 } }],
+				optional: [
+					{ default: 5, key: "bar", value: { unit: 5, meta: { default: 5 } } }
+				],
 				domain: "object"
 			})
 		})

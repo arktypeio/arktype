@@ -22,6 +22,7 @@ import {
 	type show
 } from "@ark/util"
 import type { inferIntersection } from "../intersect.ts"
+import type { type } from "../keywords/ark.ts"
 import type {
 	Default,
 	distill,
@@ -377,12 +378,10 @@ export type validateInfixExpression<def extends InfixExpression, $, args> =
 			def[1],
 			def[1] extends "|" ? validateDefinition<def[2], $, args>
 			: def[1] extends "&" ? validateDefinition<def[2], $, args>
-			: def[1] extends ":" ?
-				Predicate<distill.Out<inferDefinition<def[0], $, args>>>
-			: def[1] extends "=>" ?
-				Morph<distill.Out<inferDefinition<def[0], $, args>>, unknown>
+			: def[1] extends ":" ? Predicate<type.infer.Out<def[0], $, args>>
+			: def[1] extends "=>" ? Morph<type.infer.Out<def[0], $, args>>
 			: def[1] extends "@" ? MetaSchema
-			: def[1] extends "=" ? inferDefinition<def[0], $, args>
+			: def[1] extends "=" ? type.infer.Out<def[0], $, args>
 			: validateDefinition<def[2], $, args>
 		]
 

@@ -18,9 +18,7 @@ export type UnitLiteral =
 	| DateLiteral
 	| UnitLiteralKeyword
 
-export type ParsedDefault = [BaseRoot, "=", unknown]
-
-export const parseDefault = (s: DynamicStateWithRoot): ParsedDefault => {
+export const parseDefault = (s: DynamicStateWithRoot): BaseRoot => {
 	// store the node that will be bounded
 	const baseNode = s.unsetRoot()
 	s.parseOperand()
@@ -30,9 +28,7 @@ export const parseDefault = (s: DynamicStateWithRoot): ParsedDefault => {
 	if (!defaultNode.hasKind("unit"))
 		return s.error(writeNonLiteralDefaultMessage(defaultNode.expression))
 
-	// assignability is checked in parseEntries
-
-	return [baseNode, "=", defaultNode.unit]
+	return baseNode.default(defaultNode.unit)
 }
 
 export type parseDefault<root, unscanned extends string> =

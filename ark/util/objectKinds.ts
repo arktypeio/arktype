@@ -1,9 +1,9 @@
 import type { array } from "./arrays.ts"
 import type { DescribeOptions } from "./describe.ts"
-import { type Domain, type domainDescriptions, domainOf } from "./domain.ts"
+import { type domainDescriptions, domainOf } from "./domain.ts"
 import type { Fn } from "./functions.ts"
 import type { satisfy } from "./generics.ts"
-import { type Key, isKeyOf } from "./records.ts"
+import { isKeyOf } from "./records.ts"
 
 // ECMAScript Objects
 // See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
@@ -280,38 +280,6 @@ export type normalizedKeyOf<t> =
 			`${k}`
 		:	k
 	:	never
-
-/** Mimics output of TS's keyof operator at runtime */
-export const prototypeKeysOf = <t>(value: t): normalizedKeyOf<t>[] => {
-	const result: Key[] = []
-	let curr = value
-	while (curr !== Object.prototype && curr !== null && curr !== undefined) {
-		for (const k of Object.getOwnPropertyNames(curr))
-			if (k !== "constructor" && !result.includes(k)) result.push(k)
-
-		for (const symbol of Object.getOwnPropertySymbols(curr))
-			if (!result.includes(symbol)) result.push(symbol)
-
-		curr = Object.getPrototypeOf(curr)
-	}
-	return result as never
-}
-
-const baseKeysByDomain: Record<Domain, readonly Key[]> = {
-	bigint: prototypeKeysOf(0n),
-	boolean: prototypeKeysOf(false),
-	null: [],
-	number: prototypeKeysOf(0),
-	// TS doesn't include the Object prototype in keyof, so keyof object is never
-	object: [],
-	string: prototypeKeysOf(""),
-	symbol: prototypeKeysOf(Symbol()),
-	undefined: []
-}
-
-export const getBaseDomainKeys = <domain extends Domain>(
-	domain: domain
-): Key[] => [...baseKeysByDomain[domain]]
 
 export const constructorExtends = (
 	ctor: Constructor,

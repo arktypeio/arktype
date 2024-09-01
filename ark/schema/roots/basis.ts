@@ -1,4 +1,3 @@
-import type { array, Key } from "@ark/util"
 import type { NodeCompiler } from "../shared/compile.ts"
 import { compileErrorContext } from "../shared/implement.ts"
 import type { TraverseApply } from "../shared/traversal.ts"
@@ -9,7 +8,6 @@ export abstract class InternalBasis<
 > extends BaseRoot<d> {
 	abstract compiledCondition: string
 	abstract compiledNegation: string
-	abstract literalKeys: array<Key>
 	declare structure: undefined
 
 	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {

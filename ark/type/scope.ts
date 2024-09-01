@@ -66,10 +66,7 @@ import type { DefAst, InferredAst } from "./parser/semantic/infer.ts"
 import { DynamicState } from "./parser/string/reduce/dynamic.ts"
 import { writeUnexpectedCharacterMessage } from "./parser/string/shift/operator/operator.ts"
 import { Scanner } from "./parser/string/shift/scanner.ts"
-import {
-	fullStringParse,
-	type StringParseResult
-} from "./parser/string/string.ts"
+import { fullStringParse } from "./parser/string/string.ts"
 import {
 	InternalTypeParser,
 	type DeclarationParser,
@@ -211,7 +208,7 @@ export interface InternalScope {
 }
 
 export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
-	private parseCache: Record<string, StringParseResult> = {}
+	private parseCache: Record<string, BaseRoot> = {}
 
 	override preparseAlias(k: string, v: unknown): AliasDefEntry {
 		const firstParamIndex = k.indexOf("<")
@@ -275,7 +272,7 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 				// resolutions like "this" or generic args
 				return this.parseString(def, ctx)
 			}
-			return (this.parseCache[def] ??= this.parseString(def, ctx)) as never
+			return (this.parseCache[def] ??= this.parseString(def, ctx))
 		}
 		return hasDomain(def, "object") ?
 				parseObject(def, ctx)

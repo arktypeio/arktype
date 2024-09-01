@@ -11,7 +11,7 @@ import type { DynamicState, DynamicStateWithRoot } from "./reduce/dynamic.ts"
 import type { StringifiablePrefixOperator } from "./reduce/shared.ts"
 import type { state, StaticState } from "./reduce/static.ts"
 import type { parseOperand } from "./shift/operand/operand.ts"
-import { parseDefault, type ParsedDefault } from "./shift/operator/default.ts"
+import { parseDefault } from "./shift/operator/default.ts"
 import {
 	writeUnexpectedCharacterMessage,
 	type parseOperator
@@ -45,11 +45,9 @@ export type BaseCompletions<$, args, otherSuggestions extends string = never> =
 	| StringifiablePrefixOperator
 	| otherSuggestions
 
-export type StringParseResult = BaseRoot | ParsedDefault
-
-export const fullStringParse = (s: DynamicState): StringParseResult => {
+export const fullStringParse = (s: DynamicState): BaseRoot => {
 	s.parseOperand()
-	let result: StringParseResult = parseUntilFinalizer(s).root
+	let result = parseUntilFinalizer(s).root
 	if (!result) {
 		return throwInternalError(
 			`Root was unexpectedly unset after parsing string '${s.scanner.scanned}'`

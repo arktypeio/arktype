@@ -2,12 +2,9 @@ import {
 	domainDescriptions,
 	domainOf,
 	printable,
-	prototypeKeysOf,
 	throwParseError,
 	type Domain,
-	type JsonPrimitive,
-	type Key,
-	type array
+	type JsonPrimitive
 } from "@ark/util"
 import type {
 	BaseErrorContext,
@@ -119,7 +116,6 @@ export class UnitNode extends InternalBasis<Unit.Declaration> {
 		typeof this.unit === "string" || this.unit instanceof Date ?
 			JSON.stringify(this.compiledValue)
 		:	`${this.compiledValue}`
-	literalKeys: array<Key> = prototypeKeysOf(this.unit)
 
 	compiledCondition: string = compileEqualityCheck(
 		this.unit,
