@@ -247,17 +247,26 @@ type _distill<t, opts extends distill.Options> =
 		opts["endpoint"] extends "in" ?
 			show<
 				{
-					[k in keyof t as k extends defaultedKeyOf<t> ? never : k]: _distill<
+					[k in keyof t as k extends defaultedKeyOf<t> | metaOptionalKey<t> ?
+						never
+					:	k]: _distill<t[k], opts>
+				} & {
+					[k in defaultedKeyOf<t> | metaOptionalKey<t>]?: _distill<t[k], opts>
+				}
+			>
+		:	show<
+				{
+					[k in keyof t as k extends metaOptionalKey<t> ? never : k]: _distill<
 						t[k],
 						opts
 					>
 				} & {
-					[k in defaultedKeyOf<t>]?: _distill<t[k], opts>
+					[k in keyof t as k extends metaOptionalKey<t> ? k : never]?: _distill<
+						t[k],
+						opts
+					>
 				}
 			>
-		:	{
-				[k in keyof t]: _distill<t[k], opts>
-			}
 	:	t
 
 type defaultedKeyOf<t> = {
@@ -265,6 +274,14 @@ type defaultedKeyOf<t> = {
 	: t[k] extends DefaultedAst ? k
 	: never
 }[keyof t]
+
+type metaOptionalKey<o> = {
+	[k in keyof o]: o[k] extends OptionalAst ?
+		[o[k]] extends [anyOrNever] ?
+			never
+		:	k
+	:	never
+}[keyof o]
 
 type distillArray<
 	t extends array,
