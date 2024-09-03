@@ -18,6 +18,7 @@ import {
 	type Json,
 	type WhiteSpaceToken
 } from "@ark/util"
+import type { type } from "./keywords/ark.ts"
 import type {
 	inferDefinition,
 	validateDefinition
@@ -29,7 +30,7 @@ import type { state, StaticState } from "./parser/string/reduce/static.ts"
 import { Scanner } from "./parser/string/shift/scanner.ts"
 import { parseUntilFinalizer } from "./parser/string/string.ts"
 import type { ParseContext, Scope } from "./scope.ts"
-import type { inferTypeRoot, Type, validateTypeRoot } from "./type.ts"
+import type { Type } from "./type.ts"
 
 export type ParameterString<params extends string = string> = `<${params}>`
 
@@ -42,7 +43,7 @@ export type validateParameterString<s extends ParameterString, $> =
 	:	s
 
 export type validateGenericArg<arg, param extends GenericParamAst, $> =
-	inferTypeRoot<arg, $> extends param[1] ? unknown
+	type.infer<arg, $> extends param[1] ? unknown
 	:	ErrorType<`Invalid argument for ${param[0]}`, [expected: param[1]]>
 
 export type GenericInstantiator<
@@ -54,13 +55,13 @@ export type GenericInstantiator<
 	params["length"] extends 1 ?
 		{
 			<const a, r = instantiateGeneric<def, params, [a], $, args$>>(
-				a: validateTypeRoot<a, args$> & validateGenericArg<a, params[0], args$>
+				a: type.validate<a, args$> & validateGenericArg<a, params[0], args$>
 			): r
 		}
 	: params["length"] extends 2 ?
 		{
 			<const a, const b, r = instantiateGeneric<def, params, [a, b], $, args$>>(
-				...args: [validateTypeRoot<a, args$>, validateTypeRoot<b, args$>] &
+				...args: [type.validate<a, args$>, type.validate<b, args$>] &
 					[
 						validateGenericArg<a, params[0], args$>,
 						validateGenericArg<b, params[1], args$>
@@ -76,9 +77,9 @@ export type GenericInstantiator<
 				r = instantiateGeneric<def, params, [a, b, c], $, args$>
 			>(
 				...args: [
-					validateTypeRoot<a, args$>,
-					validateTypeRoot<b, args$>,
-					validateTypeRoot<c, args$>
+					type.validate<a, args$>,
+					type.validate<b, args$>,
+					type.validate<c, args$>
 				] &
 					[
 						validateGenericArg<a, params[0], args$>,
@@ -97,10 +98,10 @@ export type GenericInstantiator<
 				r = instantiateGeneric<def, params, [a, b, c, d], $, args$>
 			>(
 				...args: [
-					validateTypeRoot<a, args$>,
-					validateTypeRoot<b, args$>,
-					validateTypeRoot<c, args$>,
-					validateTypeRoot<d, args$>
+					type.validate<a, args$>,
+					type.validate<b, args$>,
+					type.validate<c, args$>,
+					type.validate<d, args$>
 				] &
 					[
 						validateGenericArg<a, params[0], args$>,
@@ -121,11 +122,11 @@ export type GenericInstantiator<
 				r = instantiateGeneric<def, params, [a, b, c, d, e], $, args$>
 			>(
 				...args: [
-					validateTypeRoot<a, args$>,
-					validateTypeRoot<b, args$>,
-					validateTypeRoot<c, args$>,
-					validateTypeRoot<d, args$>,
-					validateTypeRoot<e, args$>
+					type.validate<a, args$>,
+					type.validate<b, args$>,
+					type.validate<c, args$>,
+					type.validate<d, args$>,
+					type.validate<e, args$>
 				] &
 					[
 						validateGenericArg<a, params[0], args$>,
@@ -148,12 +149,12 @@ export type GenericInstantiator<
 				r = instantiateGeneric<def, params, [a, b, c, d, e, f], $, args$>
 			>(
 				...args: [
-					validateTypeRoot<a, args$>,
-					validateTypeRoot<b, args$>,
-					validateTypeRoot<c, args$>,
-					validateTypeRoot<d, args$>,
-					validateTypeRoot<e, args$>,
-					validateTypeRoot<f, args$>
+					type.validate<a, args$>,
+					type.validate<b, args$>,
+					type.validate<c, args$>,
+					type.validate<d, args$>,
+					type.validate<e, args$>,
+					type.validate<f, args$>
 				] &
 					[
 						validateGenericArg<a, params[0], args$>,
@@ -178,13 +179,13 @@ export type GenericInstantiator<
 				r = instantiateGeneric<def, params, [a, b, c, d, e, f, g], $, args$>
 			>(
 				...args: [
-					validateTypeRoot<a, args$>,
-					validateTypeRoot<b, args$>,
-					validateTypeRoot<c, args$>,
-					validateTypeRoot<d, args$>,
-					validateTypeRoot<e, args$>,
-					validateTypeRoot<f, args$>,
-					validateTypeRoot<g, args$>
+					type.validate<a, args$>,
+					type.validate<b, args$>,
+					type.validate<c, args$>,
+					type.validate<d, args$>,
+					type.validate<e, args$>,
+					type.validate<f, args$>,
+					type.validate<g, args$>
 				] &
 					[
 						validateGenericArg<a, params[0], args$>,
@@ -209,13 +210,13 @@ type instantiateGeneric<
 	args$
 > = Type<
 	[def] extends [Hkt] ?
-		Hkt.apply<def, { [i in keyof args]: inferTypeRoot<args[i], args$> }>
+		Hkt.apply<def, { [i in keyof args]: type.infer<args[i], args$> }>
 	:	inferDefinition<def, $, bindGenericArgs<params, args$, args>>,
 	args$
 >
 
 type bindGenericArgs<params extends array<GenericParamAst>, $, args> = {
-	[i in keyof params & `${number}` as params[i][0]]: inferTypeRoot<
+	[i in keyof params & `${number}` as params[i][0]]: type.infer<
 		args[i & keyof args],
 		$
 	>
@@ -391,9 +392,8 @@ type _parseOptionalConstraint<
 
 type genericParamDefToAst<schema extends GenericParamDef, $> =
 	schema extends string ? [schema, unknown]
-	: schema extends readonly [infer name, infer def] ?
-		[name, inferTypeRoot<def, $>]
-	:	never
+	: schema extends readonly [infer name, infer def] ? [name, type.infer<def, $>]
+	: never
 
 export type genericParamDefsToAst<defs extends array<GenericParamDef>, $> = [
 	...{ [i in keyof defs]: genericParamDefToAst<defs[i], $> }
@@ -406,7 +406,7 @@ export type GenericParser<$ = {}> = <
 		[i in keyof paramsDef]: paramsDef[i] extends (
 			readonly [infer name, infer def]
 		) ?
-			readonly [name, validateTypeRoot<def, $>]
+			readonly [name, type.validate<def, $>]
 		:	paramsDef[i]
 	}
 ) => GenericBodyParser<genericParamDefsToAst<paramsDef, $>, $>

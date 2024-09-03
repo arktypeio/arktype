@@ -16,12 +16,11 @@ import {
 	type parseValidGenericParams,
 	type validateParameterString
 } from "./generic.ts"
-import type { Ark, ark } from "./keywords/ark.ts"
+import type { Ark, ark, type } from "./keywords/ark.ts"
 import type { distill } from "./keywords/ast.ts"
 import type { BaseType } from "./methods/base.ts"
 import type { instantiateType } from "./methods/instantiate.ts"
 import type {
-	inferDefinition,
 	validateDeclared,
 	validateDefinition
 } from "./parser/definition.ts"
@@ -46,9 +45,7 @@ export type TypeParserAttachments =
 export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	// Parse and check the definition, returning either the original input for a
 	// valid definition or a string representing an error message.
-	<const def, r = Type<inferTypeRoot<def, $>, $>>(
-		def: validateTypeRoot<def, $>
-	): r
+	<const def, r = Type<type.infer<def, $>, $>>(def: type.validate<def, $>): r
 
 	<params extends ParameterString, const def>(
 		params: validateParameterString<params, $>,
@@ -64,20 +61,20 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 		const zero,
 		const one,
 		const rest extends array,
-		r = Type<inferTypeRoot<[zero, one, ...rest], $>, $>
+		r = Type<type.infer<[zero, one, ...rest], $>, $>
 	>(
-		_0: zero extends IndexZeroOperator ? zero : validateTypeRoot<zero, $>,
-		_1: zero extends "keyof" ? validateTypeRoot<one, $>
+		_0: zero extends IndexZeroOperator ? zero : type.validate<zero, $>,
+		_1: zero extends "keyof" ? type.validate<one, $>
 		: zero extends "instanceof" ? conform<one, Constructor>
 		: zero extends "===" ? conform<one, unknown>
 		: conform<one, IndexOneOperator>,
 		..._2: zero extends "===" ? rest
 		: zero extends "instanceof" ? conform<rest, readonly Constructor[]>
 		: one extends TupleInfixOperator ?
-			one extends ":" ? [Predicate<distill.In<inferTypeRoot<zero, $>>>]
-			: one extends "=>" ? [Morph<distill.Out<inferTypeRoot<zero, $>>, unknown>]
+			one extends ":" ? [Predicate<distill.In<type.infer<zero, $>>>]
+			: one extends "=>" ? [Morph<distill.Out<type.infer<zero, $>>, unknown>]
 			: one extends "@" ? [MetaSchema]
-			: [validateTypeRoot<rest[0], $>]
+			: [type.validate<rest[0], $>]
 		:	[]
 	): r
 
@@ -162,19 +159,7 @@ export type EnumeratedTypeParser<$> = <const values extends readonly unknown[]>(
 	...values: values
 ) => Type<values[number], $>
 
-export type DefinitionParser<$> = <def>(def: validateTypeRoot<def, $>) => def
-
-export type validateTypeRoot<def, $ = {}> = validateDefinition<
-	def,
-	$,
-	bindThis<def>
->
-
-export type inferTypeRoot<def, $> = inferDefinition<def, $, bindThis<def>>
-
-export type validateAmbient<def> = validateTypeRoot<def, {}>
-
-export type inferAmbient<def> = inferTypeRoot<def, {}>
+export type DefinitionParser<$> = <def>(def: type.validate<def, $>) => def
 
 export type Type<t = unknown, $ = {}> = instantiateType<t, $>
 

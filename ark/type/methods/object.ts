@@ -1,7 +1,6 @@
 import type { array, ErrorType, merge } from "@ark/util"
 import type { arkKeyOf, getArkKey, toArkKey } from "../keys.ts"
 import type { type } from "../keywords/ark.ts"
-import type { inferTypeRoot, validateTypeRoot } from "../type.ts"
 import type { ArrayType } from "./array.ts"
 import type { instantiateType } from "./instantiate.ts"
 import type { ValidatorType } from "./validator.ts"
@@ -54,8 +53,8 @@ interface Type<out t extends object = object, $ = {}>
 		$
 	>
 
-	merge<const def, r = inferTypeRoot<def, $>>(
-		def: validateTypeRoot<def, $> &
+	merge<const def, r = type.infer<def, $>>(
+		def: type.validate<def, $> &
 			(r extends object ? unknown
 			:	ErrorType<"Merged type must be an object", [actual: r]>)
 	): Type<merge<t, r & object>, $>

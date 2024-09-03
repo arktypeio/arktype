@@ -9,7 +9,7 @@
 // import type { distill, Narrowed } from "./ast.ts"
 // import type { inferIntersection } from "./intersect.ts"
 // import type { Scope } from "./scope.ts"
-// import type { inferTypeRoot, validateTypeRoot } from "./type.ts"
+// import type { type.infer, type.validate } from "./type.ts"
 
 // type MatchParserContext = {
 // 	thens: readonly ((In: unknown) => unknown)[]
@@ -56,16 +56,16 @@
 // > = override<ctx, { thens: [...ctx["thens"], ...branches] }>
 
 // type validateWhenDefinition<def, ctx extends MatchParserContext> =
-// 	def extends validateTypeRoot<def, ctx["$"]> ?
+// 	def extends type.validate<def, ctx["$"]> ?
 // 		inferMatchBranch<def, ctx> extends getHandledBranches<ctx> ?
 // 			ErrorMessage<"This branch is redundant and will never be reached">
 // 		:	def
-// 	:	validateTypeRoot<def, ctx["$"]>
+// 	:	type.validate<def, ctx["$"]>
 
-// // infer the types handled by a match branch, which is identical to `inferTypeRoot` while properly
+// // infer the types handled by a match branch, which is identical to `type.infer` while properly
 // // excluding cases that are already handled by other branches
 // type inferMatchBranch<def, ctx extends MatchParserContext> = distill.Out<
-// 	inferIntersection<getUnhandledBranches<ctx>, inferTypeRoot<def, ctx["$"]>>
+// 	inferIntersection<getUnhandledBranches<ctx>, type.infer<def, ctx["$"]>>
 // >
 
 // export type ChainableMatchParser<ctx extends MatchParserContext> = {

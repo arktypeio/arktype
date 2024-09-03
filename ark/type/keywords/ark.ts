@@ -2,14 +2,16 @@ import type { ArkErrors, arkKind } from "@ark/schema"
 import type { inferred } from "@ark/util"
 import type { GenericParser } from "../generic.ts"
 import type { BoundModule, Module } from "../module.ts"
-import type { inferDefinition } from "../parser/definition.ts"
-import { $arkTypeRegistry, scope, type Scope } from "../scope.ts"
+import type {
+	inferDefinition,
+	validateDefinition
+} from "../parser/definition.ts"
+import { $arkTypeRegistry, scope, type bindThis, type Scope } from "../scope.ts"
 import type {
 	DeclarationParser,
 	DefinitionParser,
 	Type,
-	TypeParser,
-	validateTypeRoot
+	TypeParser
 } from "../type.ts"
 import type { distill } from "./ast.ts"
 import { arkBuiltins } from "./builtins.ts"
@@ -73,7 +75,11 @@ export declare namespace type {
 
 	export type errors = ArkErrors
 
-	export type infer<def, $ = {}, args = {}> = inferDefinition<def, $, args>
+	export type infer<def, $ = {}, args = bindThis<def>> = inferDefinition<
+		def,
+		$,
+		args
+	>
 
 	export namespace infer {
 		export type In<def, $ = {}, args = {}> = distill.In<
@@ -101,7 +107,11 @@ export declare namespace type {
 		}
 	}
 
-	export type validate<def, $ = {}> = validateTypeRoot<def, $>
+	export type validate<def, $ = {}, args = bindThis<def>> = validateDefinition<
+		def,
+		$,
+		args
+	>
 }
 
 export type type<t = unknown, $ = {}> = Type<t, $>

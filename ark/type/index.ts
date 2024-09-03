@@ -24,10 +24,4 @@ export {
 	type inferScope,
 	type validateScope
 } from "./scope.ts"
-export {
-	Type,
-	type inferAmbient,
-	type inferTypeRoot,
-	type validateAmbient,
-	type validateTypeRoot
-} from "./type.ts"
+export { Type } from "./type.ts"

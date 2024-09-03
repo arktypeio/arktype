@@ -17,6 +17,7 @@ import type {
 	unset
 } from "@ark/util"
 import type { inferIntersection } from "../intersect.ts"
+import type { type } from "../keywords/ark.ts"
 import type {
 	applyConstraint,
 	Default,
@@ -26,7 +27,6 @@ import type {
 	Optional
 } from "../keywords/ast.ts"
 import type { Scope } from "../scope.ts"
-import type { inferTypeRoot, validateTypeRoot } from "../type.ts"
 import type { ArrayType } from "./array.ts"
 import type { instantiateType } from "./instantiate.ts"
 
@@ -78,19 +78,19 @@ interface Type<out t = unknown, $ = {}>
 	get in(): instantiateType<this["tIn"], $>
 	get out(): instantiateType<this["tValidatedOut"], $>
 
-	intersect<const def, r = inferTypeRoot<def, $>>(
-		def: validateTypeRoot<def, $>
+	intersect<const def, r = type.infer<def, $>>(
+		def: type.validate<def, $>
 	): instantiateType<inferIntersection<t, r>, $> | Disjoint
 
 	// these defaulted params are split up to optimize
 	// type perf while maintaining accurate inference for test cases
 	// like "nested 'and' chained from morph on optional"
-	and<const def, r = inferTypeRoot<def, $>>(
-		def: validateTypeRoot<def, $>
+	and<const def, r = type.infer<def, $>>(
+		def: type.validate<def, $>
 	): instantiateType<inferIntersection<t, r>, $>
 
-	or<const def, r = inferTypeRoot<def, $>>(
-		def: validateTypeRoot<def, $>
+	or<const def, r = type.infer<def, $>>(
+		def: type.validate<def, $>
 	): instantiateType<t | r, $>
 
 	array(): ArrayType<t[], $>
@@ -98,22 +98,22 @@ interface Type<out t = unknown, $ = {}>
 	pipe: ChainedPipes<t, $>
 
 	equals<def>(
-		def: validateTypeRoot<def, $>
-	): this is instantiateType<inferTypeRoot<def, $>, $>
+		def: type.validate<def, $>
+	): this is instantiateType<type.infer<def, $>, $>
 
 	extract<def>(
-		r: validateTypeRoot<def, $>
-	): instantiateType<Extract<t, inferTypeRoot<def, $>>, $>
+		r: type.validate<def, $>
+	): instantiateType<Extract<t, type.infer<def, $>>, $>
 
 	exclude<def>(
-		r: validateTypeRoot<def, $>
-	): instantiateType<Exclude<t, inferTypeRoot<def, $>>, $>
+		r: type.validate<def, $>
+	): instantiateType<Exclude<t, type.infer<def, $>>, $>
 
 	extends<def>(
-		other: validateTypeRoot<def, $>
-	): this is instantiateType<inferTypeRoot<def, $>, $>
+		other: type.validate<def, $>
+	): this is instantiateType<type.infer<def, $>, $>
 
-	overlaps<def>(r: validateTypeRoot<def, $>): boolean
+	overlaps<def>(r: type.validate<def, $>): boolean
 
 	distribute<mapOut, reduceOut = mapOut[]>(
 		mapBranch: (branch: Type, i: number, branches: array<Type>) => mapOut,

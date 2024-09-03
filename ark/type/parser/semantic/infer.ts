@@ -1,6 +1,7 @@
 import type { GenericAst } from "@ark/schema"
 import type { Hkt, array } from "@ark/util"
 import type { inferIntersection } from "../../intersect.ts"
+import type { type } from "../../keywords/ark.ts"
 import type {
 	Default,
 	LimitLiteral,
@@ -10,7 +11,6 @@ import type {
 } from "../../keywords/ast.ts"
 import type { Date } from "../../keywords/constructors/Date.ts"
 import type { UnparsedScope } from "../../scope.ts"
-import type { inferAmbient } from "../../type.ts"
 import type { inferDefinition } from "../definition.ts"
 import type { Comparator, MinComparator } from "../string/reduce/shared.ts"
 
@@ -77,8 +77,8 @@ export type inferExpression<ast, $, args> =
 				inferExpression<ast[2], $, args>
 			>
 		: ast[1] extends "=" ?
-			//  inferAmbient is safe since the default value is always a literal
-			inferAmbient<ast[2]> extends infer defaultValue ?
+			//  type.infer is safe since the default value is always a literal
+			type.infer<ast[2]> extends infer defaultValue ?
 				(In?: inferExpression<ast[0], $, args>) => Default<defaultValue>
 			:	never
 		: ast[1] extends Comparator ?

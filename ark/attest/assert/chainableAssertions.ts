@@ -1,7 +1,7 @@
 import { caller } from "@ark/fs"
 import { printable, snapshot, type Constructor } from "@ark/util"
 import prettier from "@prettier/sync"
-import { type, type validateTypeRoot } from "arktype"
+import { type } from "arktype"
 import * as assert from "node:assert/strict"
 import { isDeepStrictEqual } from "node:util"
 import {
@@ -307,7 +307,7 @@ export type comparableValueAssertion<expected, kind extends AssertionKind> = {
 	instanceOf: (constructor: Constructor) => nextAssertions<kind>
 	is: (value: expected) => nextAssertions<kind>
 	completions: (value?: Completions) => void
-	satisfies: <def>(def: validateTypeRoot<def>) => nextAssertions<kind>
+	satisfies: <def>(def: type.validate<def>) => nextAssertions<kind>
 	// This can be used to assert values without type constraints
 	unknown: Omit<comparableValueAssertion<unknown, kind>, "unknown">
 }
