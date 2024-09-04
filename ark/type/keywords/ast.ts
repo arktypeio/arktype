@@ -247,40 +247,35 @@ type _distill<t, opts extends distill.Options> =
 		opts["endpoint"] extends "in" ?
 			show<
 				{
-					[k in keyof t as k extends defaultedKeyOf<t> | metaOptionalKey<t> ?
-						never
+					[k in keyof t as k extends optionalInputKeyOf<t> ? never
 					:	k]: _distill<t[k], opts>
 				} & {
-					[k in defaultedKeyOf<t> | metaOptionalKey<t>]?: _distill<t[k], opts>
+					[k in optionalInputKeyOf<t>]?: _distill<t[k], opts>
 				}
 			>
 		:	show<
 				{
-					[k in keyof t as k extends metaOptionalKey<t> ? never : k]: _distill<
-						t[k],
-						opts
-					>
+					[k in keyof t as k extends metaOptionalKeyOf<t> ? never
+					:	k]: _distill<t[k], opts>
 				} & {
-					[k in keyof t as k extends metaOptionalKey<t> ? k : never]?: _distill<
-						t[k],
-						opts
-					>
+					[k in keyof t as k extends metaOptionalKeyOf<t> ? k
+					:	never]?: _distill<t[k], opts>
 				}
 			>
 	:	t
 
-type defaultedKeyOf<t> = {
-	[k in keyof t]: [t[k]] extends [anyOrNever] ? never
-	: t[k] extends DefaultedAst ? k
-	: never
-}[keyof t]
+type optionalInputKeyOf<o> = metaDefaultedKeyOf<o> | metaOptionalKeyOf<o>
 
-type metaOptionalKey<o> = {
-	[k in keyof o]: o[k] extends OptionalAst ?
-		[o[k]] extends [anyOrNever] ?
-			never
-		:	k
-	:	never
+type metaDefaultedKeyOf<o> = {
+	[k in keyof o]: [o[k]] extends [anyOrNever] ? never
+	: o[k] extends DefaultedAst ? k
+	: never
+}[keyof o]
+
+type metaOptionalKeyOf<o> = {
+	[k in keyof o]: [o[k]] extends [anyOrNever] ? never
+	: o[k] extends OptionalAst ? k
+	: never
 }[keyof o]
 
 type distillArray<
@@ -289,10 +284,15 @@ type distillArray<
 	prefix extends array
 > =
 	_distillArray<t, opts, prefix> extends infer result ?
-		t extends unknown[] ?
-			result
+		(t extends unknown[] ? result
 		:	// if the original array was readonly, ensure the distilled array is as well
-			Readonly<t>
+			Readonly<t>) & // re-intersect non-array props for a type like `{ name: string } & string[]`
+			_distill<
+				{
+					[k in keyof t as k extends keyof unknown[] ? never : k]: t[k]
+				},
+				opts
+			>
 	:	never
 
 type _distillArray<

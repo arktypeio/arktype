@@ -886,4 +886,10 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		const out = cn({ city: "foo", name: "foo" })
 		attest(out.toString()).snap("name must be removed or city must be removed")
 	})
+
+	it("array intersection", () => {
+		const t = type({ name: "string" }).and("string[]")
+		attest(t).type.toString.snap("Type<{ name: string } & string[], {}>")
+		attest(t.infer).type.toString.snap("{ name: string } & string[]")
+	})
 })

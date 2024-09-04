@@ -51,9 +51,14 @@ interface MorphableIntersection<piped extends boolean>
 }
 
 type intersectObjects<l, r, piped extends boolean> =
-	[l, r] extends [infer lList extends array, infer rList extends array] ?
-		intersectArrays<lList, rList, MorphableIntersection<piped>>
-	:	show<
+	l extends array ?
+		r extends array ?
+			intersectArrays<l, r, MorphableIntersection<piped>>
+		:	// for an intersection with exactly one array operand like { name: string } & string[],
+			// don't compute the intersection to avoid including prototype props
+			l & r
+	: r extends array ? l & r
+	: show<
 			// this looks redundant, but should hit the cache anyways and
 			// preserves index signature + optional keys correctly
 			{
