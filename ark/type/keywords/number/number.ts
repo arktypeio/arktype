@@ -8,11 +8,11 @@ import type {
 	Narrowed,
 	Optional
 } from "../ast.ts"
-import { submodule } from "../utils.ts"
+import { arkModule } from "../utils.ts"
 import { epoch } from "./epoch.ts"
 import { integer } from "./integer.ts"
 
-export const number: number.module = submodule({
+export const number: number.module = arkModule({
 	root: intrinsic.number,
 	integer,
 	epoch

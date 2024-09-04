@@ -182,7 +182,7 @@ isAdmin must be false, null or true (was 1)`)
 				d.password === d.repeatPassword ||
 				ctx.reject({
 					expected: "identical to password",
-					actual: null,
+					actual: "",
 					relativePath: ["repeatPassword"]
 				})
 		)

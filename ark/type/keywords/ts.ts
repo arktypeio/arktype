@@ -1,9 +1,9 @@
 import { genericNode, intrinsic } from "@ark/schema"
 import { Hkt, type Key, type omit, type pick, type show } from "@ark/util"
 import type { Module, Submodule } from "../module.ts"
-import { submodule } from "./utils.ts"
+import { arkModule } from "./utils.ts"
 
-export const arkTsKeywords: arkTsKeywords = submodule({
+export const arkTsKeywords: arkTsKeywords = arkModule({
 	bigint: intrinsic.bigint,
 	boolean: intrinsic.boolean,
 	false: intrinsic.false,
@@ -36,6 +36,20 @@ export declare namespace arkTsKeywords {
 		true: true
 		unknown: unknown
 		undefined: undefined
+	}
+}
+
+export const unknown = arkModule({
+	root: intrinsic.unknown,
+	any: intrinsic.unknown
+})
+
+export declare namespace unknown {
+	export type submodule = Submodule<$>
+
+	export type $ = {
+		root: unknown
+		any: any
 	}
 }
 
@@ -108,7 +122,7 @@ const Extract = genericNode("T", "U")(
 	ExtractHkt
 )
 
-export const arkTsGenerics: arkTsGenerics.module = submodule({
+export const arkTsGenerics: arkTsGenerics.module = arkModule({
 	Record,
 	Pick,
 	Omit,

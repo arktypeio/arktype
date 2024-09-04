@@ -2,7 +2,7 @@ import { intrinsic, rootNode } from "@ark/schema"
 import { wellFormedNumberMatcher } from "@ark/util"
 import type { Module, Submodule } from "../../module.ts"
 import type { Branded, constrain, To } from "../ast.ts"
-import { submodule } from "../utils.ts"
+import { arkModule } from "../utils.ts"
 import { regexStringNode } from "./utils.ts"
 
 declare namespace string {
@@ -14,7 +14,7 @@ const root = regexStringNode(
 	"a well-formed numeric string"
 )
 
-export const numeric: stringNumeric.module = submodule({
+export const numeric: stringNumeric.module = arkModule({
 	root,
 	parse: rootNode({
 		in: root,

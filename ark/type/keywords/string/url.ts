@@ -1,7 +1,7 @@
 import { rootNode } from "@ark/schema"
 import type { Module, Submodule } from "../../module.ts"
 import type { Branded, constrain, To } from "../ast.ts"
-import { submodule } from "../utils.ts"
+import { arkModule } from "../utils.ts"
 
 declare namespace string {
 	export type url = constrain<string, Branded<"url">>
@@ -26,7 +26,7 @@ const root = rootNode({
 	}
 })
 
-export const url: url.module = submodule({
+export const url: url.module = arkModule({
 	root,
 	parse: rootNode({
 		declaredIn: root as never,

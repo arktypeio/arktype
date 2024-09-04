@@ -3,7 +3,7 @@ import { flatMorph } from "@ark/util"
 import type { Module, Submodule } from "../../module.ts"
 import type { type } from "../ark.ts"
 import type { Branded, constrain, To } from "../ast.ts"
-import { submodule } from "../utils.ts"
+import { arkModule } from "../utils.ts"
 
 declare namespace string {
 	export type normalized = normalized.NFC
@@ -46,27 +46,27 @@ const normalizeNodes = flatMorph(
 		] as const
 )
 
-export const NFC = submodule({
+export const NFC = arkModule({
 	root: normalizeNodes.NFC,
 	preformatted: preformattedNodes.NFC
 })
 
-export const NFD = submodule({
+export const NFD = arkModule({
 	root: normalizeNodes.NFD,
 	preformatted: preformattedNodes.NFD
 })
 
-export const NFKC = submodule({
+export const NFKC = arkModule({
 	root: normalizeNodes.NFKC,
 	preformatted: preformattedNodes.NFKC
 })
 
-export const NFKD = submodule({
+export const NFKD = arkModule({
 	root: normalizeNodes.NFKD,
 	preformatted: preformattedNodes.NFKD
 })
 
-export const normalize = submodule({
+export const normalize = arkModule({
 	root: "NFC",
 	NFC,
 	NFD,

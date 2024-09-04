@@ -7,7 +7,7 @@ import {
 	type PlatformObjects
 } from "@ark/util"
 import type { Module, Submodule } from "../../module.ts"
-import { submodule } from "../utils.ts"
+import { arkModule } from "../utils.ts"
 import { arkArray } from "./Array.ts"
 import { arkFormData } from "./FormData.ts"
 import { TypedArray } from "./TypedArray.ts"
@@ -18,7 +18,7 @@ const omittedPrototypes = {
 	String: 1
 } satisfies keySet<keyof EcmascriptObjects>
 
-export const arkPrototypes: arkPrototypes.module = submodule({
+export const arkPrototypes: arkPrototypes.module = arkModule({
 	...flatMorph(
 		{ ...ecmascriptConstructors, ...platformConstructors },
 		(k, v) => (k in omittedPrototypes ? [] : ([k, ["instanceof", v]] as const))

@@ -14,7 +14,7 @@ import type {
 	constrain,
 	constraint
 } from "../ast.ts"
-import { submodule } from "../utils.ts"
+import { arkModule } from "../utils.ts"
 import { alpha } from "./alpha.ts"
 import { alphanumeric } from "./alphanumeric.ts"
 import { capitalize } from "./capitalize.ts"
@@ -34,7 +34,7 @@ import { upper } from "./upper.ts"
 import { url } from "./url.ts"
 import { uuid } from "./uuid.ts"
 
-export const string = submodule({
+export const string = arkModule({
 	root: intrinsic.string,
 	numeric,
 	integer,

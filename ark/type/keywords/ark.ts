@@ -18,7 +18,7 @@ import { arkBuiltins } from "./builtins.ts"
 import { arkPrototypes } from "./constructors/constructors.ts"
 import { number } from "./number/number.ts"
 import { string } from "./string/string.ts"
-import { arkTsGenerics, arkTsKeywords } from "./ts.ts"
+import { arkTsGenerics, arkTsKeywords, unknown } from "./ts.ts"
 
 export interface Ark
 	extends Omit<Ark.keywords, keyof Ark.wrapped>,
@@ -35,6 +35,7 @@ export declare namespace Ark {
 	export interface wrapped extends arkPrototypes.wrapped {
 		string: string.submodule
 		number: number.submodule
+		unknown: unknown.submodule
 	}
 
 	export interface typeAttachments extends arkTsKeywords.$ {
@@ -59,7 +60,8 @@ export const ambient: Scope<Ark> = scope(
 		...arkPrototypes,
 		...arkBuiltins,
 		string,
-		number
+		number,
+		unknown
 	},
 	{ prereducedAliases: true, ambient: true }
 ) as never

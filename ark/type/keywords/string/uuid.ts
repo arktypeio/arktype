@@ -1,10 +1,10 @@
 import type { Module, Submodule } from "../../module.ts"
 import type { Branded, constrain } from "../ast.ts"
-import { submodule } from "../utils.ts"
+import { arkModule } from "../utils.ts"
 import { regexStringNode } from "./utils.ts"
 
 // Based on https://github.com/validatorjs/validator.js/blob/master/src/lib/isUUID.js
-export const uuid = submodule({
+export const uuid = arkModule({
 	// the meta tuple expression ensures the error message does not delegate
 	// to the individual branches, which are too detailed
 	root: ["versioned | nil | max", "@", "a UUID"],

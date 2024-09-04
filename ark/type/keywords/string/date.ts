@@ -3,7 +3,7 @@ import type { Module, Submodule } from "../../module.ts"
 import type { type } from "../ark.ts"
 import type { Branded, To, constrain } from "../ast.ts"
 import { number } from "../number/number.ts"
-import { submodule } from "../utils.ts"
+import { arkModule } from "../utils.ts"
 import { integer } from "./integer.ts"
 import { regexStringNode } from "./utils.ts"
 
@@ -130,7 +130,7 @@ const epochroot = integer.root.internal
 	})
 	.assertHasKind("intersection")
 
-const epoch = submodule({
+const epoch = arkModule({
 	root: epochroot,
 	parse: rootNode({
 		in: epochroot,
@@ -144,7 +144,7 @@ const isoroot = regexStringNode(
 	"an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date"
 ).internal.assertHasKind("intersection")
 
-const iso = submodule({
+const iso = arkModule({
 	root: isoroot,
 	parse: rootNode({
 		in: isoroot,
@@ -162,7 +162,7 @@ declare namespace string {
 	}
 }
 
-export const stringDate: stringDate.module = submodule({
+export const stringDate: stringDate.module = arkModule({
 	root: parsableDate,
 	parse: rootNode({
 		declaredIn: parsableDate,

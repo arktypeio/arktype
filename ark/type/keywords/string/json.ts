@@ -1,7 +1,7 @@
 import { intrinsic, rootNode } from "@ark/schema"
 import type { Module, Submodule } from "../../module.ts"
 import type { Branded, To, constrain } from "../ast.ts"
-import { submodule } from "../utils.ts"
+import { arkModule } from "../utils.ts"
 
 declare namespace string {
 	export type json = constrain<string, Branded<"json">>
@@ -26,7 +26,7 @@ const root = rootNode({
 	}
 })
 
-export const json: stringJson.module = submodule({
+export const json: stringJson.module = arkModule({
 	root,
 	parse: rootNode({
 		in: "string",

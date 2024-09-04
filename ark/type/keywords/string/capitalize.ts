@@ -1,7 +1,7 @@
 import { rootNode } from "@ark/schema"
 import type { Module, Submodule } from "../../module.ts"
 import type { Branded, constrain, To } from "../ast.ts"
-import { submodule } from "../utils.ts"
+import { arkModule } from "../utils.ts"
 import { regexStringNode } from "./utils.ts"
 
 declare namespace string {
@@ -10,7 +10,7 @@ declare namespace string {
 
 const preformatted = regexStringNode(/^[A-Z].*$/, "capitalized")
 
-export const capitalize: capitalize.module = submodule({
+export const capitalize: capitalize.module = arkModule({
 	root: rootNode({
 		in: "string",
 		morphs: (s: string) => s.charAt(0).toUpperCase() + s.slice(1),
