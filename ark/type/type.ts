@@ -78,6 +78,7 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 		:	[]
 	): r
 
+	$: Scope<$>
 	raw(def: unknown): BaseType<any, $>
 	errors: typeof ArkErrors
 	module: ModuleParser
@@ -96,6 +97,7 @@ export class InternalTypeParser extends Callable<
 		const attach: TypeParserAttachments = Object.assign(
 			{
 				errors: ArkErrors,
+				$: $ as never,
 				raw: $.parseRoot as never,
 				module: $.constructor.module,
 				scope: $.constructor.scope,

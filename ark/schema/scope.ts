@@ -280,31 +280,29 @@ export abstract class BaseScope<$ extends {} = {}> {
 	bindReference<reference extends BaseNode | GenericRoot>(
 		reference: reference
 	): reference {
-		if (reference.$ === this) return reference as never
+		const bound =
+			reference.$ === this ? reference
+			: isNode(reference) ?
+				new (reference.constructor as any)(reference.attachments, this)
+			:	new GenericRoot(
+					reference.params as never,
+					reference.bodyDef,
+					reference.$,
+					this as never
+				)
 
-		if (isNode(reference)) {
-			const bound = new (reference.constructor as any)(
-				reference.attachments,
-				this
-			)
-			if (this.resolved) {
-				// this node was not part of the original scope, so compile an anonymous scope
-				// including only its references
-				if (!this.resolvedConfig.jitless) bindCompiledScope(bound.references)
-			} else {
-				// we're still parsing the scope itself, so defer compilation but
-				// add the node as a reference
-				Object.assign(this.referencesById, bound.referencesById)
-			}
-			return bound
+		if (this.resolved) {
+			// this node was not part of the original scope, so compile an anonymous scope
+			// including only its references
+			if (!bound.jit && !this.resolvedConfig.jitless)
+				bindCompiledScope(bound.references)
+		} else {
+			// we're still parsing the scope itself, so defer compilation but
+			// add the node as a reference
+			Object.assign(this.referencesById, bound.referencesById)
 		}
 
-		return new GenericRoot(
-			reference.params as never,
-			reference.bodyDef,
-			reference.$,
-			this as never
-		) as never
+		return bound
 	}
 
 	protected finalizeRootArgs(

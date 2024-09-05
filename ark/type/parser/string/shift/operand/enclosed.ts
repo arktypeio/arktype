@@ -1,4 +1,4 @@
-import { isKeyOf } from "@ark/util"
+import { isKeyOf, throwParseError } from "@ark/util"
 import type { string } from "../../../../keywords/ast.ts"
 import type { Date } from "../../../../keywords/constructors/Date.ts"
 import type { InferredAst } from "../../../semantic/infer.ts"
@@ -30,8 +30,12 @@ export const parseEnclosed = (
 	// Shift the scanner one additional time for the second enclosing token
 	s.scanner.shift()
 	if (enclosing === "/") {
-		// fail parsing if the regex is invalid
-		new RegExp(enclosed)
+		try {
+			new RegExp(enclosed)
+		} catch (e) {
+			throwParseError(String(e))
+		}
+
 		s.root = s.ctx.$.node(
 			"intersection",
 			{
