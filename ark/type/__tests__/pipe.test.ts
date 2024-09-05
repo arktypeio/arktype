@@ -45,6 +45,17 @@ contextualize(() => {
 		attest(tOut.expression).equals(expected.expression)
 	})
 
+	it("withIn", () => {
+		const t = type("string")
+			.pipe(s => s.length)
+			.withIn(t => t.atLeastLength(1))
+
+		const expected = type("string >= 1").pipe(s => s.length)
+
+		attest(t.expression).equals(expected.expression)
+		attest<typeof expected.t>(t.t)
+	})
+
 	describe("try", () => {
 		it("can catch thrown errors", () => {
 			const parseJson = type("string").pipe.try((s): object => JSON.parse(s))

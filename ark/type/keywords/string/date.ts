@@ -1,6 +1,5 @@
 import { ArkErrors, intrinsic, rootNode } from "@ark/schema"
 import type { Module, Submodule } from "../../module.ts"
-import type { type } from "../ark.ts"
 import type { Branded, To, constrain } from "../ast.ts"
 import { number } from "../number/number.ts"
 import { arkModule } from "../utils.ts"
@@ -188,11 +187,6 @@ export declare namespace stringDate {
 		parse: (In: string.date) => To<Date>
 		iso: iso.submodule
 		epoch: epoch.submodule
-	}
-
-	type shallowResolutions = {
-		[k in keyof $ as `string.date.${k}`]: $[k] extends type.cast<infer t> ? t
-		:	$[k]
 	}
 
 	export namespace iso {

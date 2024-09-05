@@ -113,15 +113,11 @@ export declare namespace string {
 		ip: ip.submodule
 		json: stringJson.submodule
 		date: stringDate.submodule
-
+		url: url.submodule
 		trim: trim.submodule
 		normalize: normalize.submodule
 		capitalize: capitalize.submodule
 		lower: lower.submodule
 		upper: upper.submodule
-	}
-
-	type shallowResolutions = {
-		[k in keyof $ as `string.${k}`]: $[k] extends type.cast<infer t> ? t : $[k]
 	}
 }

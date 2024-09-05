@@ -1,7 +1,6 @@
 import { rootNode } from "@ark/schema"
 import { flatMorph } from "@ark/util"
 import type { Module, Submodule } from "../../module.ts"
-import type { type } from "../ark.ts"
 import type { Branded, constrain, To } from "../ast.ts"
 import { arkModule } from "../utils.ts"
 
@@ -87,11 +86,6 @@ export declare namespace normalize {
 		NFKD: NFKD.submodule
 	}
 
-	type shallowResolutions = {
-		[k in keyof $ as `string.normalize.${k}`]: $[k] extends type.cast<infer t> ?
-			t
-		:	$[k]
-	}
 
 	export namespace NFC {
 		export type submodule = Submodule<$>

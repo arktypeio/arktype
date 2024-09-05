@@ -12,6 +12,19 @@ interface Type<out t = unknown, $ = {}> extends BaseType<t, $> {
 		def: type.validate<def, $>
 	): Type<inferPipe<t, r>, $>
 
+	withIn<mappedIn extends this["inferBrandableIn"]>(
+		mapIn: (In: this["in"]) => BaseType & { inferBrandableIn: mappedIn }
+	): Type<
+		this["inferIntrospectableOut"] extends this["inferBrandableOut"] ?
+			(In: mappedIn) => To<this["inferBrandableOut"]>
+		:	(In: mappedIn) => Out<this["inferBrandableOut"]>,
+		$
+	>
+
+	withOut<mappedOut extends this["inferBrandableOut"]>(
+		mapOut: (In: this["out"]) => BaseType & { inferBrandableOut: mappedOut }
+	): Type<(In: this["inferBrandableIn"]) => To<mappedOut>, $>
+
 	narrow<narrowed extends this["infer"] = never>(
 		predicate: Predicate<this["infer"]> | PredicateCast<this["infer"], narrowed>
 	): Type<
