@@ -1,6 +1,5 @@
 import { intrinsic } from "@ark/schema"
 import type { Module, Submodule } from "../../module.ts"
-import type { type } from "../ark.ts"
 import type {
 	AtLeastLength,
 	AtMostLength,
