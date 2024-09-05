@@ -32,7 +32,9 @@ contextualize(() => {
 		it("invoked", () => {
 			const t = ark.Array.liftFrom({ data: "number" })
 
-			attest(t.t).type.toString.snap()
+			attest(t.t).type.toString.snap(`(
+	In: { data: number } | { data: number }[]
+) => To<{ data: number }[]>`)
 			attest(t.expression).snap(
 				"(In: { data: number }) => Out<{ data: number }[]> | (In: { data: number }[]) => Out<{ data: number }[]>"
 			)
