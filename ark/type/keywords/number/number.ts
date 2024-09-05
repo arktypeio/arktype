@@ -73,6 +73,8 @@ export declare namespace number {
 
 	export type NegativeInfinity = branded<"NegativeInfinity">
 
+	export type safe = branded<"safe">
+
 	export type is<constraints extends Constraints> = constrain<
 		number,
 		constraints
@@ -102,7 +104,7 @@ export declare namespace number {
 		root: number
 		epoch: epoch
 		integer: integer
-		safe: is<AtLeast<-9007199254740991> & AtMost<9007199254740991>>
+		safe: safe
 		NaN: NaN
 		Infinity: Infinity
 		NegativeInfinity: NegativeInfinity

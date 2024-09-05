@@ -58,7 +58,7 @@ contextualize(() => {
 		const nan = type("number.NaN")
 
 		attest(nan.allows(Number.NaN)).equals(true)
-		attest(nan.allows(0)).equals(false)
+		attest(nan(0).toString()).snap("must be NaN (was 0)")
 	})
 
 	it("PositiveInfinity", () => {
