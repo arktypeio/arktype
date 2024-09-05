@@ -92,11 +92,6 @@ export abstract class BaseNode<
 		this.$ = $
 	}
 
-	bindScope($: BaseScope): this {
-		if (this.$ === $) return this as never
-		return new (this.constructor as any)(this.attachments, $)
-	}
-
 	withMeta(
 		meta: ArkEnv.meta | ((currentMeta: ArkEnv.meta) => ArkEnv.meta)
 	): this {

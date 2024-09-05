@@ -554,13 +554,13 @@ const structureOf = (branch: Union.ChildNode): Structure.Node | null => {
 		return (
 			branch.inner.structure ??
 			(branch.basis?.domain === "object" ?
-				$ark.intrinsic.emptyStructure.bindScope(branch.$)
+				branch.$.bindReference($ark.intrinsic.emptyStructure)
 			:	null)
 		)
 	}
 
 	if (branch.isBasis() && branch.domain === "object")
-		return $ark.intrinsic.emptyStructure.bindScope(branch.$)
+		return branch.$.bindReference($ark.intrinsic.emptyStructure)
 
 	return null
 }

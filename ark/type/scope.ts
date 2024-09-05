@@ -260,12 +260,16 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 			"ambientAttachments",
 			flatMorph($arkTypeRegistry.typeAttachments, (k, v) => [
 				k,
-				(v as {} as BaseRoot | GenericRoot).bindScope(this)
+				this.bindReference(v as {} as BaseRoot | GenericRoot)
 			]) as never
 		)
 	}
 
 	parse(def: unknown, ctx: ParseContext): BaseRoot {
+		return this.bindReference(this._parse(def, ctx))
+	}
+
+	private _parse(def: unknown, ctx: ParseContext): BaseRoot {
 		if (typeof def === "string") {
 			if (ctx.args && Object.keys(ctx.args).some(k => def.includes(k))) {
 				// we can only rely on the cache if there are no contextual
@@ -307,7 +311,7 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 				this.finalizeRootArgs(opts, () => node),
 				{ $: this as never }
 			)
-		).bindScope(this as never)
+		)
 		return node
 	}
 

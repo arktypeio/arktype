@@ -31,4 +31,51 @@ contextualize(() => {
 			"must be a Unix timestamp before 8640000000000000 (was 8640000000000001)"
 		)
 	})
+
+	it("safe", () => {
+		const safe = type("number.safe")
+
+		attest(safe.allows(Number.MAX_SAFE_INTEGER)).equals(true)
+		attest(safe.allows(Number.MIN_SAFE_INTEGER)).equals(true)
+		attest(safe.allows(0)).equals(true)
+		attest(safe.allows(0.5)).equals(true)
+		attest(safe(Number.MAX_SAFE_INTEGER + 1).toString()).snap(
+			"must be at most 9007199254740991 (was 9007199254740992)"
+		)
+		attest(safe(Number.MIN_SAFE_INTEGER - 1).toString()).snap(
+			"must be at least -9007199254740991 (was -9007199254740992)"
+		)
+		attest(safe(Infinity).toString()).snap(
+			"must be at most 9007199254740991 (was Infinity)"
+		)
+		attest(safe(-Infinity).toString()).snap(
+			"must be at least -9007199254740991 (was -Infinity)"
+		)
+		attest(safe(NaN).toString()).snap("NaN")
+	})
+
+	it("NaN", () => {
+		const nan = type("number.NaN")
+
+		attest(nan.allows(Number.NaN)).equals(true)
+		attest(nan.allows(0)).equals(false)
+	})
+
+	it("PositiveInfinity", () => {
+		const infinity = type("number.Infinity")
+		attest(infinity.allows(Number.POSITIVE_INFINITY)).equals(true)
+		attest(infinity(0).toString()).snap("must be Infinity (was 0)")
+		attest(infinity(Number.NEGATIVE_INFINITY).toString()).snap(
+			"must be Infinity (was -Infinity)"
+		)
+	})
+
+	it("NegativeInfinity", () => {
+		const negativeInfinity = type("number.NegativeInfinity")
+		attest(negativeInfinity.allows(Number.NEGATIVE_INFINITY)).equals(true)
+		attest(negativeInfinity(0).toString()).snap("must be -Infinity (was 0)")
+		attest(negativeInfinity(Number.POSITIVE_INFINITY).toString()).snap(
+			"must be -Infinity (was Infinity)"
+		)
+	})
 })

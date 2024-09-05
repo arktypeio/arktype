@@ -1,7 +1,5 @@
 import { type } from "arktype"
 
-const foo = type([])
+const safe = type("number.safe")
 
-console.log(foo.json)
-
-foo([1]) //?
+safe(5) //?

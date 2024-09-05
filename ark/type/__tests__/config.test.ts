@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { attest, contextualize } from "@ark/attest"
+import { rootNode } from "@ark/schema"
 import { scope, type } from "arktype"
 
 contextualize(() => {
@@ -93,5 +94,46 @@ contextualize(() => {
 		).export()
 
 		attest(types.fast.internal.jit).equals(false)
+	})
+
+	it("jit by default", () => {
+		const t = type("/^foo.*$/")
+		attest(t.internal.jit).equals(true)
+	})
+
+	it("builtin keywords jit by default", () => {
+		const t = type("string")
+		attest(t.internal.jit).equals(true)
+
+		const sub = type("string.normalize.NFC.preformatted")
+		attest(sub.internal.jit).equals(true)
+	})
+
+	it("jit by default in scope", () => {
+		const $ = scope({
+			defined: "55",
+			referenced: rootNode({ unit: 5 })
+		})
+
+		// no JIT until scope is resolved
+		attest($.type("defined").internal.jit).equals(false)
+		attest($.type("referenced").internal.jit).equals(false)
+
+		const types = $.export()
+
+		attest(types.defined.internal.jit).equals(true)
+		attest(types.referenced.internal.jit).equals(true)
+
+		attest($.type("defined").internal.jit).equals(true)
+		attest($.type("referenced").internal.jit).equals(true)
+	})
+
+	it("jit by default in submodule", () => {
+		const types = type.module({
+			inner: type.module({
+				foo: "55"
+			})
+		})
+		attest(types.inner.foo.internal.jit).equals(true)
 	})
 })

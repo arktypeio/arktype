@@ -118,16 +118,6 @@ export class GenericRoot<
 		return this.bodyDef instanceof LazyGenericBody
 	}
 
-	bindScope($: BaseScope): this {
-		if (this.arg$ === ($ as never)) return this
-		return new GenericRoot(
-			this.params as never,
-			this.bodyDef,
-			this.$,
-			$ as never
-		) as never
-	}
-
 	protected cacheGetter<name extends keyof this>(
 		name: name,
 		value: this[name]
@@ -166,6 +156,10 @@ export class GenericRoot<
 
 	get internal(): this {
 		return this
+	}
+
+	get referencesById(): Record<string, BaseNode> {
+		return this.baseInstantiation.internal.referencesById
 	}
 
 	get references(): BaseNode[] {
