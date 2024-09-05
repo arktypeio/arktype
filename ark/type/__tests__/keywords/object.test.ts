@@ -22,15 +22,20 @@ contextualize(() => {
 			attest(liftNumberArray(5)).equals([5])
 			attest(liftNumberArray([5])).equals([5])
 			attest(liftNumberArray("five").toString()).snap(
-				'must be a number or an array (was "five")'
+				"must be a number or an object (was a string)"
 			)
 			attest(liftNumberArray(["five"]).toString()).snap(
-				"must be a number (was an object) or [0] must be a number (was a string)"
+				"value at [0] must be a number (was a string)"
 			)
 		})
 
 		it("invoked", () => {
-			ark.Array.liftFrom({ data: "number" })
+			const t = ark.Array.liftFrom({ data: "number" })
+
+			attest(t.t).type.toString.snap()
+			attest(t.expression).snap(
+				"(In: { data: number }) => Out<{ data: number }[]> | (In: { data: number }[]) => Out<{ data: number }[]>"
+			)
 		})
 	})
 })

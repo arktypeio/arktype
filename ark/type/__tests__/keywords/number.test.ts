@@ -51,9 +51,7 @@ contextualize(() => {
 		attest(safe(-Infinity).toString()).snap(
 			"must be at least -9007199254740991 (was -Infinity)"
 		)
-		attest(safe(NaN).toString()).snap(
-			"must be at least -9007199254740991 (was NaN)"
-		)
+		attest(safe(NaN).toString()).snap("must be a safe number (was NaN)")
 	})
 
 	it("NaN", () => {
