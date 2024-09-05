@@ -252,10 +252,14 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 		node.isRefinement()
 	)
 
-	expression: string =
-		this.structure?.expression ||
-		`${this.basis ? this.basis.nestableExpression + " " : ""}${this.refinements.join(" & ")}` ||
-		"unknown"
+	get expression(): string {
+		let expression =
+			this.structure?.expression ||
+			`${this.basis ? this.basis.nestableExpression + " " : ""}${this.refinements.join(" & ")}` ||
+			"unknown"
+		if (expression === "Array == 0") expression = "[]"
+		return this.cacheGetter("expression", expression)
+	}
 
 	get shortDescription(): string {
 		return this.basis?.shortDescription ?? "present"
