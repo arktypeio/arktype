@@ -897,7 +897,9 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		const t = type(["string", "string"]).or(["null", "=>", () => undefined])
 
 		attest(t.expression).snap("[string, string] | (In: null) => Out<unknown>")
-		attest(t.t).type.toString.snap()
+		attest(t.t).type.toString.snap(
+			"[string, string] | ((In: null) => Out<undefined>)"
+		)
 		attest(t.inferIn).type.toString("[string, string] | null")
 		attest(t.infer).type.toString("[string, string] | undefined")
 	})
