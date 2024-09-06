@@ -119,7 +119,9 @@ const maybeParseReference = (
 ): BaseRoot | undefined => {
 	if (s.ctx.args?.[token]) {
 		const arg = s.ctx.args[token]
-		return typeof arg === "string" ? s.ctx.$.node("alias", { alias: arg }) : arg
+		return typeof arg === "string" ?
+				s.ctx.$.node("alias", { alias: arg, resolve: arg })
+			:	arg
 	}
 	const resolution = s.ctx.$.maybeResolve(token)
 	if (hasArkKind(resolution, "root")) return resolution

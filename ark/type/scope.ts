@@ -4,6 +4,7 @@ import {
 	hasArkKind,
 	isNode,
 	parseGeneric,
+	registerNode,
 	type AliasDefEntry,
 	type ArkScopeConfig,
 	type BaseNode,
@@ -311,13 +312,14 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 			$: this as never
 		}
 
-		const isResolution = opts.alias && opts.alias in this.aliases
+		return registerNode(opts.alias ?? "type", id => {
+			const isResolution = ctx.alias && ctx.alias in this.aliases
 
-		// if the definition being parsed is not a scope alias and is not a
-		// generic instantiation (i.e. opts don't include args), add this as a resolution.
-		if (!isResolution && !opts.args) ctx.args = { this: {} }
-
-		return this.parse(def, ctx)
+			// if the definition being parsed is not a scope alias and is not a
+			// generic instantiation (i.e. opts don't include args), add this as a resolution.
+			if (!isResolution && !ctx.args) ctx.args = { this: id }
+			return this.parse(def, ctx)
+		})
 	}
 
 	unit: UnitTypeParser<$> = value => this.units([value]) as never

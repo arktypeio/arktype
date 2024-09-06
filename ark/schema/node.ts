@@ -251,20 +251,28 @@ export abstract class BaseNode<
 		return this.innerHash === other.innerHash
 	}
 
+	hasKind<kind extends NodeKind>(kind: kind): this is nodeOfKind<kind> {
+		return this.kind === (kind as never)
+	}
+
 	assertHasKind<kind extends NodeKind>(kind: kind): nodeOfKind<kind> {
 		if (this.kind !== kind)
 			throwError(`${this.kind} node was not of asserted kind ${kind}`)
 		return this as never
 	}
 
-	hasKind<kind extends NodeKind>(kind: kind): this is nodeOfKind<kind> {
-		return this.kind === (kind as never)
-	}
-
 	hasKindIn<kinds extends NodeKind[]>(
 		...kinds: kinds
 	): this is nodeOfKind<kinds[number]> {
 		return kinds.includes(this.kind)
+	}
+
+	assertHasKindIn<kinds extends NodeKind[]>(
+		...kinds: kinds
+	): nodeOfKind<kinds[number]> {
+		if (!includes(kinds, this.kind))
+			throwError(`${this.kind} node was not one of asserted kinds ${kinds}`)
+		return this as never
 	}
 
 	isBasis(): this is nodeOfKind<BasisKind> {

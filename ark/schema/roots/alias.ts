@@ -1,9 +1,11 @@
 import { append, domainDescriptions, throwParseError } from "@ark/util"
+import { nodesById, type NodeId } from "../parse.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
 import type { BaseNormalizedSchema, declareNode } from "../shared/declare.ts"
 import { Disjoint } from "../shared/disjoint.ts"
 import {
 	implementNode,
+	rootKinds,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
 import { intersectNodes } from "../shared/intersections.ts"
@@ -13,6 +15,7 @@ import {
 } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.ts"
+import { isNode } from "../shared/utils.ts"
 import { BaseRoot } from "./root.ts"
 import { defineRightwardIntersections } from "./utils.ts"
 
@@ -22,12 +25,12 @@ export declare namespace Alias {
 	export interface NormalizedSchema<alias extends string = string>
 		extends BaseNormalizedSchema {
 		readonly alias: alias
-		readonly resolve?: () => BaseRoot
+		readonly resolve?: NodeId | (() => BaseRoot)
 	}
 
 	export interface Inner<alias extends string = string> {
 		readonly alias: alias
-		readonly resolve?: () => BaseRoot
+		readonly resolve?: NodeId | (() => BaseRoot)
 	}
 
 	export interface Declaration
@@ -83,10 +86,17 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 	readonly structure = undefined
 
 	get resolution(): BaseRoot {
-		return this.cacheGetter(
-			"resolution",
-			this.resolve?.() ?? this.$.resolveRoot(this.alias)
-		)
+		let result: BaseRoot
+
+		if (typeof this.resolve === "string") {
+			const globalResolution = nodesById[this.resolve]
+			result =
+				isNode(globalResolution) ?
+					globalResolution.assertHasKindIn(...rootKinds)
+				:	globalResolution(this.resolve).assertHasKindIn(...rootKinds)
+		} else result = this.resolve?.() ?? this.$.resolveRoot(this.alias)
+
+		return this.cacheGetter("resolution", result)
 	}
 
 	get shortDescription(): string {
