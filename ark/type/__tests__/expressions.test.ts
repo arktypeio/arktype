@@ -192,7 +192,9 @@ contextualize(() => {
 
 		it("morph", () => {
 			const t = type({ a: "string" }, "=>", In => ({ b: In.a }))
-			attest(t).type.toString.snap()
+			attest(t).type.toString.snap(
+				"Type<(In: { a: string }) => Out<{ b: string }>, {}>"
+			)
 			attest(t.expression).snap("(In: { a: string }) => Out<unknown>")
 		})
 
