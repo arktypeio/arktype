@@ -122,9 +122,8 @@ export type BuiltinObjects = instantiateConstructors<BuiltinObjectKind>
 export type objectKindOf<data extends object> =
 	object extends data ? keyof builtinConstructors | undefined
 	: data extends Fn ? "Function"
-	: instantiableObjectKind<data> extends never ?
-		keyof builtinConstructors | undefined
-	:	instantiableObjectKind<data>
+	: instantiableObjectKind<data> extends never ? undefined
+	: instantiableObjectKind<data>
 
 export type describeObject<
 	o extends object,

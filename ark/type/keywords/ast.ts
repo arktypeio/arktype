@@ -14,6 +14,7 @@ import {
 	type equals,
 	type isSafelyMappable,
 	type leftIfEqual,
+	type objectKindOf,
 	type Primitive,
 	type show
 } from "@ark/util"
@@ -130,9 +131,14 @@ export type parseConstraints<t> =
 			[bigint, constraints]
 		: equals<t, symbol & { [constrained]: constraints }> extends true ?
 			[symbol, constraints]
-		: equals<t, Date & { [constrained]: constraints }> extends true ?
-			[Date, constraints]
-		:	[base, constraints]
+		: objectKindOf<t> extends infer kind ?
+			kind extends BuiltinTerminalObjectKind ?
+				[arkPrototypes.instanceOf<kind>, constraints]
+			: // delegate array constraint distillation to distillArray
+			kind extends "Array" ? null
+			: kind extends undefined ? [Omit<base, constrained>, constraints]
+			: [base, constraints]
+		:	never
 	:	null
 
 export type normalizePrimitiveConstraintRoot<
@@ -229,12 +235,12 @@ type _distill<t, opts extends distill.Options> =
 			constrain<_distill<base, opts>, constraints>
 		:	_distill<base, opts>
 	: unknown extends t ? unknown
-	: t extends TerminallyInferredObjectKind | Primitive ? t
+	: t extends TerminallyInferredObject | Primitive ? t
 	: t extends MorphAst<infer i, infer o> ?
 		opts["branded"] extends true ?
 			distillIo<i, o, opts>
 		:	distillUnbrandedIo<t, i, o, opts>
-	: t extends array ? distillArray<t, opts, []>
+	: t extends array ? distillArray<t, opts>
 	: t extends DefaultedAst<infer t> ? _distill<t, opts>
 	: // we excluded this from TerminallyInferredObjectKind so that those types could be
 	// inferred before checking morphs/defaults, which extend Function
@@ -321,12 +327,8 @@ type metaOptionalKeyOf<o> = {
 	: never
 }[keyof o]
 
-type distillArray<
-	t extends array,
-	opts extends distill.Options,
-	prefix extends array
-> =
-	_distillArray<t, opts, prefix> extends infer result ?
+type distillArray<t extends array, opts extends distill.Options> =
+	_distillArray<[...t], opts, []> extends infer result ?
 		distillNonArraykeys<
 			t,
 			// preserve readonly of the original array
@@ -347,7 +349,8 @@ type distillNonArraykeys<
 			_distill<
 				{
 					[k in keyof originalArray as k extends (
-						keyof distilledArray | constrained
+						| keyof distilledArray
+						| (opts["branded"] extends true ? never : constrained)
 					) ?
 						never
 					:	k]: originalArray[k]
@@ -373,9 +376,14 @@ type distillPostfix<
 		distillPostfix<init, opts, [_distill<last, opts>, ...postfix]>
 	:	[...{ [i in keyof t]: _distill<t[i], opts> }, ...postfix]
 
+type BuiltinTerminalObjectKind = Exclude<
+	keyof arkPrototypes.instances,
+	"Array" | "Function"
+>
+
 /** Objects we don't want to expand during inference like Date or Promise */
-type TerminallyInferredObjectKind =
-	| arkPrototypes.instanceOfExcluding<"Array" | "Function">
+type TerminallyInferredObject =
+	| arkPrototypes.instanceOf<BuiltinTerminalObjectKind>
 	| ArkEnv.prototypes
 
 export type inferPredicate<t, predicate> =

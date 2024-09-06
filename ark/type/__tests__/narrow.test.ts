@@ -71,6 +71,12 @@ contextualize(() => {
 				return false
 			}
 		])
+
+		attest<constrain<{ a: number; b: number }, Narrowed>>(abEqual.t)
+		attest<{
+			a: number
+			b: number
+		}>(abEqual.infer)
 		attest(abEqual({ a: 1, b: 1 })).equals({ a: 1, b: 1 })
 		attest(abEqual({ a: 1, b: 2 }).toString()).snap(
 			'a must be equal to b (was {"a":1,"b":2})\nb must be equal to a (was {"a":1,"b":2})'
@@ -174,21 +180,25 @@ contextualize(() => {
 			.narrow(() => true)
 			.pipe(() => true)
 		attest<number>(number.inferIn)
+		attest<number>(number.in.infer)
 
 		const string = type("string")
 			.narrow(() => true)
 			.pipe(() => true)
 		attest<string>(string.inferIn)
+		attest<string>(string.in.infer)
 
 		const bigint = type("bigint")
 			.narrow(() => true)
 			.pipe(() => true)
 		attest<bigint>(bigint.inferIn)
+		attest<bigint>(bigint.in.infer)
 
 		const symbol = type("symbol")
 			.narrow(() => true)
 			.pipe(() => true)
 		attest<symbol>(symbol.inferIn)
+		attest<symbol>(symbol.in.infer)
 
 		const date = type("Date")
 			.narrow(() => true)
@@ -201,12 +211,12 @@ contextualize(() => {
 			.narrow(() => true)
 			.pipe(() => true)
 		attest<{ foo: number }>(object.inferIn)
+		attest<{ foo: number }>(object.in.infer)
 
 		const nested = type({ foo: ["number.integer", "=>", n => n++] })
-		attest(nested.t).type.toString.snap(`{
-	foo: (In: integer) => Out<number>
-}`)
+		attest(nested.t).type.toString.snap()
 		attest<{ foo: number }>(nested.inferIn)
+		attest<{ foo: number }>(nested.in.infer)
 	})
 
 	it("can distill constrained arrays", () => {
@@ -214,6 +224,7 @@ contextualize(() => {
 			.narrow(() => true)
 			.pipe(() => true)
 		attest<string[]>(array.inferIn)
+		attest<string[]>(array.in.infer)
 
 		const objArray = type({ foo: "string.date.parse" })
 			.array()
@@ -224,5 +235,10 @@ contextualize(() => {
 				foo: string
 			}[]
 		>(objArray.inferIn)
+		attest<
+			{
+				foo: string
+			}[]
+		>(objArray.in.infer)
 	})
 })
