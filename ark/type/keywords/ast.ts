@@ -12,6 +12,7 @@ import {
 	type array,
 	type conform,
 	type equals,
+	type isSafelyMappable,
 	type leftIfEqual,
 	type Primitive,
 	type show
@@ -217,21 +218,6 @@ export type includesMorphs<t> =
 		false
 	:	true
 
-type Zfsdfafdsfa = distill<
-	//   ^?
-	(
-		In: constrain<
-			{
-				foo: number
-			},
-			Narrowed
-		>
-	) => Out<boolean>,
-	{ endpoint: "in" }
->
-
-// type Constrained<t = unknown> = constrain<t, Constraints>
-
 type _distill<t, opts extends distill.Options> =
 	// ensure optional keys don't prevent extracting defaults
 	t extends undefined ? t
@@ -248,32 +234,39 @@ type _distill<t, opts extends distill.Options> =
 		opts["branded"] extends true ?
 			distillIo<i, o, opts>
 		:	distillUnbrandedIo<t, i, o, opts>
-	: t extends DefaultedAst<infer t> ? _distill<t, opts>
 	: t extends array ? distillArray<t, opts, []>
+	: t extends DefaultedAst<infer t> ? _distill<t, opts>
 	: // we excluded this from TerminallyInferredObjectKind so that those types could be
 	// inferred before checking morphs/defaults, which extend Function
 	t extends Function ? t
-	: // avoid recursing into classes with private props etc.
-	{ [k in keyof t]: t[k] } extends t ?
-		opts["endpoint"] extends "in" ?
-			show<
-				{
-					[k in keyof t as k extends optionalInputKeyOf<t> ? never
-					:	k]: _distill<t[k], opts>
-				} & {
-					[k in optionalInputKeyOf<t>]?: _distill<t[k], opts>
-				}
-			>
-		:	show<
-				{
-					[k in keyof t as k extends metaOptionalKeyOf<t> ? never
-					:	k]: _distill<t[k], opts>
-				} & {
-					[k in keyof t as k extends metaOptionalKeyOf<t> ? k
-					:	never]?: _distill<t[k], opts>
-				}
-			>
-	:	t
+	: isSafelyMappable<t> extends true ? distillMappable<t, opts>
+	: t
+
+type distillMappable<o, opts extends distill.Options> =
+	opts["endpoint"] extends "in" ?
+		show<
+			{
+				[k in keyof o as k extends optionalInputKeyOf<o> ? never : k]: _distill<
+					o[k],
+					opts
+				>
+			} & {
+				[k in optionalInputKeyOf<o>]?: _distill<o[k], opts>
+			}
+		>
+	:	show<
+			{
+				[k in keyof o as k extends metaOptionalKeyOf<o> ? never : k]: _distill<
+					o[k],
+					opts
+				>
+			} & {
+				[k in keyof o as k extends metaOptionalKeyOf<o> ? k : never]?: _distill<
+					o[k],
+					opts
+				>
+			}
+		>
 
 // have to jump through a bunch of extra hoops to preserve the named instantiation of
 // constrain<base, constraints>. If it degrades to `t & {[constrained]: constraints}`,
@@ -342,19 +335,21 @@ type distillArray<
 		>
 	:	never
 
-type NonDistilledArrayKey = keyof unknown[] | constrained
-
 // re-intersect non-array props for a type like `{ name: string } & string[]`
 type distillNonArraykeys<
 	originalArray extends array,
 	distilledArray,
 	opts extends distill.Options
 > =
-	keyof originalArray extends NonDistilledArrayKey ? distilledArray
+	keyof originalArray extends keyof distilledArray | constrained ?
+		distilledArray
 	:	distilledArray &
 			_distill<
 				{
-					[k in keyof originalArray as k extends NonDistilledArrayKey ? never
+					[k in keyof originalArray as k extends (
+						keyof distilledArray | constrained
+					) ?
+						never
 					:	k]: originalArray[k]
 				},
 				opts
