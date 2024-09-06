@@ -86,7 +86,6 @@ export declare namespace normalize {
 		NFKD: NFKD.submodule
 	}
 
-
 	export namespace NFC {
 		export type submodule = Submodule<$>
 

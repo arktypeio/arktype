@@ -6,7 +6,7 @@ bench.baseline(() => type("never"))
 
 bench("cyclic 10 intersection", () => {
 	const s = scope(cyclic10).type("user&user2").infer
-}).types([58396, "instantiations"])
+}).types([168430, "instantiations"])
 
 bench("cyclic(10)", () => {
 	const types = scope(cyclic10).export()
