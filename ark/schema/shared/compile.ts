@@ -6,6 +6,7 @@ import {
 	serializePrimitive
 } from "@ark/util"
 import type { BaseNode } from "../node.ts"
+import type { NodeId } from "../parse.ts"
 import type { Discriminant } from "../roots/union.ts"
 import { registeredReference } from "./registry.ts"
 import type { TraversalKind } from "./traversal.ts"
@@ -159,17 +160,20 @@ export class NodeCompiler extends CompiledFunction<["data", "ctx"]> {
 		this.traversalKind = traversalKind
 	}
 
-	invoke(node: BaseNode, opts?: InvokeOptions): string {
+	invoke(node: BaseNode | NodeId, opts?: InvokeOptions): string {
 		const arg = opts?.arg ?? this.data
-		if (this.requiresContextFor(node))
-			return `${this.reference(node, opts)}(${arg}, ${this.ctx})`
+		const requiresContext =
+			typeof node === "string" ? true : this.requiresContextFor(node)
+		const id = typeof node === "string" ? node : node.id
+		if (requiresContext)
+			return `${this.referenceToId(id, opts)}(${arg}, ${this.ctx})`
 
-		return `${this.reference(node, opts)}(${arg})`
+		return `${this.referenceToId(id, opts)}(${arg})`
 	}
 
-	reference(node: BaseNode, opts?: ReferenceOptions): string {
+	referenceToId(id: NodeId, opts?: ReferenceOptions): string {
 		const invokedKind = opts?.kind ?? this.traversalKind
-		const base = `this.${node.id}${invokedKind}`
+		const base = `this.${id}${invokedKind}`
 		return opts?.bind ? `${base}.bind(${opts?.bind})` : base
 	}
 

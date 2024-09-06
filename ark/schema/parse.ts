@@ -204,7 +204,7 @@ const _parseNode = (ctx: NodeParseContext): BaseNode => {
 }
 
 export const createNode = (
-	id: string,
+	id: NodeId,
 	kind: NodeKind,
 	inner: dict,
 	meta: BaseMeta,
@@ -280,8 +280,8 @@ export const createNode = (
 }
 
 export const withMeta = (node: BaseNode, meta: ArkEnv.meta): BaseNode => {
-	const id = meta.alias ?? node.kind
-	return registerNode(id, () =>
+	const prefix = meta.alias ?? node.kind
+	return registerNode(prefix, id =>
 		createNode(id, node.kind, node.inner, meta, node.$)
 	)
 }

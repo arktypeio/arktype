@@ -9,6 +9,8 @@ contextualize(() => {
 			"box?": "this"
 		})
 
+		const id = disappointingGift.internal.id
+
 		type ExpectedDisappointingGift = {
 			label: string
 			box?: ExpectedDisappointingGift
@@ -16,7 +18,15 @@ contextualize(() => {
 		attest<ExpectedDisappointingGift>(disappointingGift.infer)
 		attest(disappointingGift.json).snap({
 			required: [{ key: "label", value: "string" }],
-			optional: [{ key: "box", value: {} }],
+			optional: [
+				{
+					key: "box",
+					value: {
+						alias: `$${id}`,
+						resolve: id
+					}
+				}
+			],
 			domain: "object"
 		})
 	})

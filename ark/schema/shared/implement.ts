@@ -16,7 +16,7 @@ import {
 import type { NodeConfig, ResolvedUnknownNodeConfig } from "../config.ts"
 import type { Declaration, Inner, errorContext, nodeOfKind } from "../kinds.ts"
 import type { BaseNode } from "../node.ts"
-import type { NodeParseContext } from "../parse.ts"
+import type { NodeId, NodeParseContext } from "../parse.ts"
 import type {
 	BaseRoot,
 	schemaKindOrRightOf,
@@ -360,7 +360,7 @@ export interface UnknownAttachments {
 	alias?: string
 	readonly kind: NodeKind
 	readonly impl: UnknownNodeImplementation
-	readonly id: string
+	readonly id: NodeId
 
 	readonly inner: Record<string, any>
 	readonly innerEntries: readonly Entry<string>[]

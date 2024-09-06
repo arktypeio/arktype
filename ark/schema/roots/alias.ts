@@ -124,7 +124,15 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 	compile(js: NodeCompiler): void {
 		js.if(`ctx.seen.${this.id}?.includes(data)`, () => js.return(true))
 		js.line(`ctx.seen.${this.id} ??= []`).line(`ctx.seen.${this.id}.push(data)`)
-		js.return(js.invoke(this.resolution))
+
+		js.return(
+			js.invoke(
+				// if the resolver is a reference to a global id, reuse the existing
+				// reference rather than eagerly compiling the resolution,
+				// which would infinitely recurse
+				typeof this.resolve === "string" ? this.resolve : this.resolution
+			)
+		)
 	}
 }
 
