@@ -126,8 +126,7 @@ export class InternalTypeParser extends Callable<
 					// treat as a generic
 					const params = parseGenericParams(args[0].slice(1, -1), {
 						$,
-						args: {},
-						isThis: false
+						args: {}
 					})
 
 					return new GenericRoot(

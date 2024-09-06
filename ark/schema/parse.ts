@@ -10,15 +10,16 @@ import {
 	type JsonData,
 	type PartialRecord,
 	type dict,
-	type listable
+	type listable,
+	type nominal
 } from "@ark/util"
-import type { GenericArgResolutions } from "./generic.ts"
 import {
 	nodeClassesByKind,
 	nodeImplementationsByKind,
 	type NormalizedSchema
 } from "./kinds.ts"
 import type { BaseNode } from "./node.ts"
+import type { BaseRoot } from "./roots/root.ts"
 import type { BaseScope } from "./scope.ts"
 import type { BaseMeta, MetaSchema } from "./shared/declare.ts"
 import { Disjoint } from "./shared/disjoint.ts"
@@ -33,6 +34,8 @@ import {
 } from "./shared/implement.ts"
 import { hasArkKind } from "./shared/utils.ts"
 
+export type ContextualArgs = Record<string, BaseRoot | NodeId>
+
 export type NodeParseOptions<prereduced extends boolean = boolean> = {
 	alias?: string
 	prereduced?: prereduced
@@ -42,18 +45,16 @@ export type NodeParseOptions<prereduced extends boolean = boolean> = {
 	 * Useful for defining reductions like number|string|bigint|symbol|object|true|false|null|undefined => unknown
 	 **/
 	reduceTo?: BaseNode
-	args?: GenericArgResolutions
-	isThis?: boolean
+	args?: ContextualArgs
 }
 
 export interface NodeParseContext<kind extends NodeKind = NodeKind>
 	extends NodeParseOptions {
 	$: BaseScope
-	args: GenericArgResolutions
+	args: ContextualArgs
 	kind: kind
 	normalizedSchema: NormalizedSchema<kind>
-	id: string
-	thisId: string | null
+	id: NodeId
 }
 
 export const schemaKindOf = <kind extends RootKind = RootKind>(
@@ -107,10 +108,11 @@ const serializeListableChild = (listableNode: listable<BaseNode>) =>
 		listableNode.map(node => node.collapsibleJson)
 	:	listableNode.collapsibleJson
 
-export const registerNodeId = (kind: NodeKind, alias?: string): string => {
-	const prefix = alias ?? kind
+export type NodeId = nominal<string, "NodeId">
+
+export const registerNodeId = (prefix: string): NodeId => {
 	nodeCountsByPrefix[prefix] ??= 0
-	return `${prefix}${++nodeCountsByPrefix[prefix]!}`
+	return `${prefix}${++nodeCountsByPrefix[prefix]!}` as never
 }
 
 export const parseNode = <kind extends NodeKind>(
@@ -259,7 +261,7 @@ export const createNode = (
 
 export const withMeta = (node: BaseNode, meta: ArkEnv.meta): BaseNode =>
 	createNode(
-		registerNodeId(node.kind, meta.alias),
+		registerNodeId(meta.alias ?? node.kind),
 		node.kind,
 		node.inner,
 		meta,

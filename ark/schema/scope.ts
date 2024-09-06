@@ -43,6 +43,7 @@ import {
 	parseNode,
 	registerNodeId,
 	schemaKindOf,
+	type NodeId,
 	type NodeParseContext,
 	type NodeParseOptions
 } from "./parse.ts"
@@ -213,11 +214,19 @@ export abstract class BaseScope<$ extends {} = {}> {
 	rootNode = (def: RootSchema, opts?: NodeParseOptions): BaseRoot =>
 		this.node(schemaKindOf(def), def, opts)
 
-	protected preparseNode = (
+	protected preresolveRoot(
+		def: unknown,
+		opts: NodeParseOptions
+	): BaseRoot | NodeId {
+		if (isNode(def) && def.isRoot()) return def
+		return registerNodeId(opts.alias ?? "type")
+	}
+
+	protected preparseNode(
 		kinds: NodeKind | listable<RootKind>,
 		schema: unknown,
 		opts: NodeParseOptions
-	): BaseNode | NodeParseContext => {
+	): BaseNode | NodeParseContext {
 		let kind: NodeKind =
 			typeof kinds === "string" ? kinds : schemaKindOf(schema, kinds)
 
@@ -248,16 +257,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 				:	throwMismatchedNodeRootError(kind, normalizedSchema.kind)
 		}
 
-		const id = registerNodeId(kind, opts.alias)
-
-		let thisId: string | null = null
-
-		if (opts.isThis) {
-			const isResolution = opts.alias && opts.alias in this.aliases
-			// if the definition being parsed is not a scope alias and is not a
-			// generic instantiation (i.e. opts don't include args), add this as a resolution.
-			if (!isResolution && !opts.args) thisId = id
-		}
+		const id = registerNodeId(opts.alias ?? kind)
 
 		const ctx: NodeParseContext = {
 			...opts,
@@ -265,10 +265,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			args: opts.args ?? {},
 			kind,
 			normalizedSchema,
-			id,
-			thisId,
-			// once the thisId has been set, set isThis to false to avoid overriding the root thisId
-			isThis: false
+			id
 		}
 
 		return ctx
@@ -548,7 +545,7 @@ export class SchemaScope<
 	$ extends InternalResolutions = InternalResolutions
 > extends BaseScope<$> {
 	parseRoot = (schema: RootSchema, opts: NodeParseOptions = {}): BaseRoot =>
-		this.rootNode(schema as never, { ...opts, isThis: true })
+		this.rootNode(schema as never, opts)
 }
 
 export const rootSchemaScope: SchemaScope = new SchemaScope({})

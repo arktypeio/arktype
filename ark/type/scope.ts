@@ -2,12 +2,13 @@ import {
 	$ark,
 	BaseScope,
 	hasArkKind,
+	isNode,
 	parseGeneric,
 	type AliasDefEntry,
 	type ArkScopeConfig,
 	type BaseNode,
 	type BaseRoot,
-	type GenericArgResolutions,
+	type ContextualArgs,
 	type GenericAst,
 	type GenericParamAst,
 	type GenericRoot,
@@ -194,11 +195,11 @@ export const $arkTypeRegistry: ArkTypeRegistry = $ark
 
 export interface ParseContext extends TypeParseOptions {
 	$: InternalScope
-	isThis: boolean
 }
 
 export interface TypeParseOptions {
-	args?: GenericArgResolutions
+	args?: ContextualArgs
+	alias?: string
 }
 
 export interface InternalScope {
@@ -228,8 +229,7 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 			() => {
 				const params = parseGenericParams(paramString, {
 					$: this as never,
-					args: {},
-					isThis: false
+					args: {}
 				})
 
 				const generic = parseGeneric(params, v, this as never)
@@ -303,8 +303,23 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		return node as never
 	}
 
-	parseRoot = (def: unknown, opts: TypeParseOptions = {}): BaseRoot =>
-		this.parse(def, { ...opts, $: this as never, isThis: true })
+	parseRoot = (def: unknown, opts: TypeParseOptions = {}): BaseRoot => {
+		const idOrNode = this.preresolveRoot(def, opts)
+		if (isNode(idOrNode)) return this.bindReference(idOrNode)
+
+		const ctx: ParseContext = {
+			...opts,
+			$: this as never
+		}
+
+		const isResolution = opts.alias && opts.alias in this.aliases
+
+		// if the definition being parsed is not a scope alias and is not a
+		// generic instantiation (i.e. opts don't include args), add this as a resolution.
+		if (!isResolution && !opts.args) ctx.args = { this: idOrNode }
+
+		return this.parse(def, ctx)
+	}
 
 	unit: UnitTypeParser<$> = value => this.units([value]) as never
 
