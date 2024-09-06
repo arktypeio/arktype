@@ -305,20 +305,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 		return bound
 	}
 
-	protected finalizeRootArgs(
-		opts: NodeParseOptions,
-		resolve: () => BaseRoot
-	): NodeParseOptions {
-		const isResolution = opts.alias && opts.alias in this.aliases
-		// if the definition being parsed is not a scope alias and is not a
-		// generic instantiation (i.e. opts don't include args), add this as a resolution.
-		if (!isResolution)
-			// this.lazilyResolve(resolve) as never
-			opts.args ??= { this: $ark.intrinsic.unknown || resolve }
-
-		return opts
-	}
-
 	resolveRoot(name: string): BaseRoot {
 		return (
 			this.maybeResolveRoot(name) ??
@@ -547,13 +533,8 @@ export const schemaScope: SchemaScopeParser = (aliases, config) =>
 export class SchemaScope<
 	$ extends InternalResolutions = InternalResolutions
 > extends BaseScope<$> {
-	parseRoot = (schema: RootSchema, opts: NodeParseOptions = {}): BaseRoot => {
-		const node = this.rootNode(
-			schema as never,
-			this.finalizeRootArgs(opts, () => node)
-		)
-		return node
-	}
+	parseRoot = (schema: RootSchema, opts: NodeParseOptions = {}): BaseRoot =>
+		this.rootNode(schema as never, opts)
 }
 
 export const rootSchemaScope: SchemaScope = new SchemaScope({})

@@ -115,10 +115,7 @@ export type validateScope<def> = {
 
 export type inferScope<def> = inferBootstrapped<bootstrapAliases<def>>
 
-// TODO: this (https://github.com/arktypeio/arktype/issues/1081)
-// this: Def<def>
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export type bindThis<def> = {}
+export type bindThis<def> = { this: Def<def> }
 
 /** nominal type for an unparsed definition used during scope bootstrapping */
 type Def<def = {}> = nominal<def, "unparsed">
@@ -197,6 +194,7 @@ export const $arkTypeRegistry: ArkTypeRegistry = $ark
 
 export interface ParseContext extends TypeParseOptions {
 	$: InternalScope
+	thisId?: string
 }
 
 export interface TypeParseOptions {
@@ -305,14 +303,14 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 	}
 
 	parseRoot = (def: unknown, opts: TypeParseOptions = {}): BaseRoot => {
-		const node: BaseRoot = this.parse(
-			def,
-			Object.assign(
-				this.finalizeRootArgs(opts, () => node),
-				{ $: this as never }
-			)
-		)
-		return node
+		const ctx: ParseContext = Object.assign(opts, { $: this as never })
+
+		// const isResolution = ctx.alias && ctx.alias in this.aliases
+		// // if the definition being parsed is not a scope alias and is not a
+		// // generic instantiation (i.e. opts don't include args), add this as a resolution.
+		// if (!isResolution) ctx.thisId ??= id
+
+		return this.parse(def, ctx)
 	}
 
 	unit: UnitTypeParser<$> = value => this.units([value]) as never
