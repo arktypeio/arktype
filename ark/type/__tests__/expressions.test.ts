@@ -189,11 +189,12 @@ contextualize(() => {
 
 			attest(t.json).equals(type({ a: "string" }).or({ b: "boolean" }).json)
 		})
-		// TODO: infinitely deep why?
-		// it("morph", () => {
-		// 	const t = type({ a: "string" }, "=>", (In) => ({ b: In.a }))
-		// 	attest<Type<(In: { a: string }) => Out<{ b: string }>, Ark>>(t)
-		// })
+
+		it("morph", () => {
+			const t = type({ a: "string" }, "=>", In => ({ b: In.a }))
+			attest(t).type.toString.snap()
+			attest(t.expression).snap("(In: { a: string }) => Out<unknown>")
+		})
 
 		it("narrow", () => {
 			const t = type(

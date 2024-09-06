@@ -322,13 +322,14 @@ contextualize(() => {
 
 	it("object intersection", () => {
 		const $ = scope({
-			a: [{ a: "1" }, "=>", data => `${data}`],
+			// ideally the annotation for data wouldn't be required
+			a: [{ a: "1" }, "=>", (data: { a: 1 }) => `${data}`],
 			b: { b: "2" },
 			c: "a&b"
 		})
 		const types = $.export()
-		// TODO: FIX
-		// attest<Type<(In: { a: 1; b: 2 }) => string>>(types.c)
+
+		attest<Type<(In: { a: 1; b: 2 }) => Out<string>>>(types.c)
 		assertNodeKind(types.c.internal, "morph")
 		attest(types.c.json).snap({
 			in: {

@@ -63,7 +63,6 @@
 // 		attest(t.json).equals(type([{ a: "string" }, "|", { b: "this" }]).json)
 // 	})
 
-// 	// TODO: reenable
 // 	it("tuple expression", () => {
 // 		const t = type([{ a: "string" }, "|", { b: "this" }])
 // 		attest(t.infer).type.toString.snap(

@@ -449,7 +449,6 @@ export const parseMorphTuple: PostfixParser<"=>"> = (def, ctx) => {
 			writeMalformedFunctionalExpressionMessage("=>", def[2])
 		)
 	}
-	// TODO: nested morphs?
 	return ctx.$.parse(def[0], ctx).pipe(def[2] as Morph)
 }
 

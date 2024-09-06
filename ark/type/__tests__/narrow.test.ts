@@ -133,13 +133,13 @@ contextualize(() => {
 		attest<`f${string}`>(t.infer)
 	})
 
-	// TODO: reenable
-	// https://github.com/arktypeio/arktype/issues/970
-	// it("narrows the output type of an morph within a single type", () => {
-	// 	const t = type("string")
-	// 		.pipe(s => `${s}!`)
-	// 		.narrow((s): s is "foo!" => s === "foo!")
+	it("narrows the output type of an morph within a single type", () => {
+		const t = type("string")
+			.pipe(s => `${s}!`)
+			.narrow((s): s is "foo!" => s === "foo!")
 
-	// 	attest<Data<(In: string) => Out<of<"foo!", Narrowed>>>>(t)
-	// })
+		attest(t.t).type.toString.snap('(In: string) => Out<"foo!">')
+		attest<string>(t.inferIn)
+		attest<"foo!">(t.infer)
+	})
 })

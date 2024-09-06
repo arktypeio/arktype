@@ -27,7 +27,7 @@ contextualize(() => {
 		const limit = {} as ((s: string) => string) & ((n: number) => number)
 		type fromNumber = ReturnType<overloadOf<typeof limit, [number]>>
 		attest<number, fromNumber>()
-		// // TODO: doesn't work for subtypes?
+		// currently doesn't work for subtypes
 		// type fromString = overloadOf<typeof limit, ["foo"]>
 		// attest<string, fromString>()
 	})
