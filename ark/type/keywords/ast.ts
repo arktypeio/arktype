@@ -291,17 +291,31 @@ type distillArray<
 	prefix extends array
 > =
 	_distillArray<t, opts, prefix> extends infer result ?
-		(t extends unknown[] ? result
-		:	// if the original array was readonly, ensure the distilled array is as well
-			Readonly<t>) & // re-intersect non-array props for a type like `{ name: string } & string[]`
+		distillNonArraykeys<
+			t,
+			// preserve readonly of the original array
+			t extends unknown[] ? result : Readonly<t>,
+			opts
+		>
+	:	never
+
+type NonDistilledArrayKey = keyof unknown[] | constrained
+
+// re-intersect non-array props for a type like `{ name: string } & string[]`
+type distillNonArraykeys<
+	originalArray extends array,
+	distilledArray,
+	opts extends distill.Options
+> =
+	keyof originalArray extends NonDistilledArrayKey ? distilledArray
+	:	distilledArray &
 			_distill<
 				{
-					[k in keyof t as k extends keyof unknown[] | constrained ? never
-					:	k]: t[k]
+					[k in keyof originalArray as k extends NonDistilledArrayKey ? never
+					:	k]: originalArray[k]
 				},
 				opts
 			>
-	:	never
 
 type _distillArray<
 	t extends array,
