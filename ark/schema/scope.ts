@@ -221,7 +221,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		let kind: NodeKind =
 			typeof kinds === "string" ? kinds : schemaKindOf(schema, kinds)
 
-		if (isNode(schema) && schema.kind === kind) return schema.bindScope(this)
+		if (isNode(schema) && schema.kind === kind) return schema
 
 		if (kind === "alias" && !opts?.prereduced) {
 			const resolution = this.resolveRoot(
@@ -244,7 +244,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		// schema for the kind (e.g. sequence can collapse to element accepting a Node')
 		if (isNode(normalizedSchema)) {
 			return normalizedSchema.kind === kind ?
-					normalizedSchema.bindScope(this)
+					normalizedSchema
 				:	throwMismatchedNodeRootError(kind, normalizedSchema.kind)
 		}
 
@@ -273,20 +273,36 @@ export abstract class BaseScope<$ extends {} = {}> {
 	> => {
 		const preparsed = this.preparseNode(kinds, nodeSchema, opts)
 
-		const node =
-			isNode(preparsed) ? preparsed : parseNode(preparsed).bindScope(this)
+		const node = isNode(preparsed) ? preparsed : parseNode(preparsed)
+		return this.bindReference(node) as never
+	}
+
+	bindReference<reference extends BaseNode | GenericRoot>(
+		reference: reference
+	): reference {
+		const bound =
+			reference.$ === this ? reference
+			: isNode(reference) ?
+				new (reference.constructor as any)(reference.attachments, this)
+			:	new GenericRoot(
+					reference.params as never,
+					reference.bodyDef,
+					reference.$,
+					this as never
+				)
 
 		if (this.resolved) {
 			// this node was not part of the original scope, so compile an anonymous scope
 			// including only its references
-			if (!this.resolvedConfig.jitless) bindCompiledScope(node.references)
+			if (!bound.jit && !this.resolvedConfig.jitless)
+				bindCompiledScope(bound.references)
 		} else {
 			// we're still parsing the scope itself, so defer compilation but
 			// add the node as a reference
-			Object.assign(this.referencesById, node.referencesById)
+			Object.assign(this.referencesById, bound.referencesById)
 		}
 
-		return node as never
+		return bound
 	}
 
 	protected finalizeRootArgs(
@@ -329,7 +345,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 		return typeof resolution === "string" ?
 				this.node("alias", { alias: resolution }, { prereduced: true })
-			:	(resolution ?? this.maybeResolveSubalias(name))
+			:	resolution
 	}
 
 	/** If name is a valid reference to a submodule alias, return its resolution  */
@@ -355,18 +371,20 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 		const preparsed = this.preparseRoot(def)
 		if (hasArkKind(preparsed, "generic"))
-			return (this.resolutions[name] = preparsed.bindScope(this))
+			return (this.resolutions[name] = this.bindReference(preparsed))
 
 		if (hasArkKind(preparsed, "module")) {
 			if (preparsed.root)
-				return (this.resolutions[name] = preparsed.root.bindScope(this))
+				return (this.resolutions[name] = this.bindReference(preparsed.root))
 			else return throwParseError(writeMissingSubmoduleAccessMessage(name))
 		}
 
 		this.resolutions[name] = name
-		return (this.resolutions[name] = this.parseRoot(preparsed, {
-			alias: name
-		}).bindScope(this))
+		return (this.resolutions[name] = this.bindReference(
+			this.parseRoot(preparsed, {
+				alias: name
+			})
+		))
 	}
 
 	import(): SchemaModule<{

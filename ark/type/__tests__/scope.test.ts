@@ -64,7 +64,10 @@ contextualize(() => {
 	it("doesn't try to validate any in scope", () => {
 		const $ = scope({ a: {} as any })
 		attest<any>($.resolve("a").infer)
-		attest<[number, any]>($.type(["number", "a"]).infer)
+
+		const t = $.type(["number", "a"])
+
+		attest<[number, any]>(t.infer)
 	})
 
 	it("infers input and output", () => {

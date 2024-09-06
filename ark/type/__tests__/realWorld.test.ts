@@ -870,4 +870,26 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			test?: (In: string) => Out<boolean>
 		}>(t.t)
 	})
+
+	it("discriminated union error", () => {
+		const c = type({ city: "string", "+": "reject" }).pipe(o => ({
+			...o,
+			type: "city"
+		}))
+		const n = type({ name: "string", "+": "reject" }).pipe(o => ({
+			...o,
+			type: "name"
+		}))
+
+		const cn = c.or(n)
+
+		const out = cn({ city: "foo", name: "foo" })
+		attest(out.toString()).snap("name must be removed or city must be removed")
+	})
+
+	it("array intersection", () => {
+		const t = type({ name: "string" }).and("string[]")
+		attest(t).type.toString.snap("Type<{ name: string } & string[], {}>")
+		attest(t.infer).type.toString.snap("{ name: string } & string[]")
+	})
 })

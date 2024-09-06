@@ -255,13 +255,14 @@ type keyRequiringSchemaDefinition<d extends BaseNodeDeclaration> = Exclude<
 >
 
 export const defaultValueSerializer = (v: unknown): JsonData => {
-	if (
-		typeof v === "string" ||
-		typeof v === "boolean" ||
-		typeof v === "number" ||
-		v === null
-	)
+	if (typeof v === "string" || typeof v === "boolean" || v === null) return v
+
+	if (typeof v === "number") {
+		if (Number.isNaN(v)) return "NaN"
+		if (v === Number.POSITIVE_INFINITY) return "Infinity"
+		if (v === Number.NEGATIVE_INFINITY) return "-Infinity"
 		return v
+	}
 
 	return compileSerializedValue(v)
 }

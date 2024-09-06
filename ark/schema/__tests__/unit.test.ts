@@ -85,4 +85,28 @@ contextualize(() => {
 		attest(t.allows(o)).equals(true)
 		attest(t.allows(new Object())).equals(false)
 	})
+
+	it("NaN", () => {
+		const t = rootNode({ unit: NaN })
+		attest(t.json).snap({ unit: "NaN" })
+		attest(t.expression).snap("NaN")
+		attest(t.allows(NaN)).equals(true)
+		attest(t.allows(0)).equals(false)
+	})
+
+	it("Infinity", () => {
+		const t = rootNode({ unit: Infinity })
+		attest(t.json).snap({ unit: "Infinity" })
+		attest(t.expression).snap("Infinity")
+		attest(t.allows(Infinity)).equals(true)
+		attest(t.allows(0)).equals(false)
+	})
+
+	it("-Infinity", () => {
+		const t = rootNode({ unit: -Infinity })
+		attest(t.json).snap({ unit: "-Infinity" })
+		attest(t.expression).snap("-Infinity")
+		attest(t.allows(-Infinity)).equals(true)
+		attest(t.allows(0)).equals(false)
+	})
 })

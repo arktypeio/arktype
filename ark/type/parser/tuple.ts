@@ -11,6 +11,7 @@ import {
 } from "@ark/schema"
 import {
 	append,
+	isEmptyObject,
 	objectKindOrDomainOf,
 	throwParseError,
 	type array,
@@ -79,12 +80,16 @@ export const parseTupleLiteral = (def: array, ctx: ParseContext): BaseRoot => {
 		}
 	}
 	return ctx.$.internal.rootNode(
-		sequences.map(
-			sequence =>
-				({
+		sequences.map(sequence =>
+			isEmptyObject(sequence) ?
+				{
+					proto: Array,
+					exactLength: 0
+				}
+			:	({
 					proto: Array,
 					sequence
-				}) as const
+				} as const)
 		)
 	)
 }

@@ -53,12 +53,8 @@ export class ArkError<
 		)
 	}
 
-	get actual(): string | null {
-		// null is a valid value of actual meaning it should be omitted, so
-		// check for undefined explicitly
-		return this.input.actual !== undefined ?
-				this.input.actual
-			:	this.nodeConfig.actual?.(this.data as never)
+	get actual(): string {
+		return this.input.actual ?? this.nodeConfig.actual?.(this.data as never)
 	}
 
 	get problem(): string {
@@ -153,7 +149,7 @@ export interface DerivableErrorContext<
 	code extends ArkErrorCode = ArkErrorCode
 > {
 	expected: string
-	actual: string | null
+	actual: string
 	problem: string
 	message: string
 	data: Prerequisite<code>
@@ -211,4 +207,4 @@ export type ExpectedWriter<code extends ArkErrorCode = ArkErrorCode> = (
 
 export type ActualWriter<code extends ArkErrorCode = ArkErrorCode> = (
 	data: getAssociatedDataForError<code>
-) => string | null
+) => string

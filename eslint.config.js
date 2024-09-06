@@ -1,6 +1,5 @@
 // @ts-check
 
-import { fixupPluginRules } from "@eslint/compat"
 import tseslint from "typescript-eslint"
 
 /** These actually have types but I'm not sure how to enable esModuleInterop
@@ -9,7 +8,7 @@ import tseslint from "typescript-eslint"
 // @ts-expect-error
 import eslint from "@eslint/js"
 // @ts-expect-error
-import eslintPluginImport from "eslint-plugin-import"
+import importPlugin from "eslint-plugin-import"
 
 /** These actually don't have types as of now */
 
@@ -37,7 +36,7 @@ export default tseslint.config(
 	{
 		plugins: {
 			"@typescript-eslint": tseslint.plugin,
-			import: fixupPluginRules(eslintPluginImport),
+			import: importPlugin,
 			"only-warn": onlyWarn,
 			"prefer-arrow-functions": preferArrowFunctions
 		},

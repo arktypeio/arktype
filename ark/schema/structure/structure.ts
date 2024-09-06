@@ -497,7 +497,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				if (!matched) {
 					if (traversalKind === "Allows") return false
 					if (this.undeclared === "reject")
-						ctx.error({ expected: "removed", actual: null, relativePath: [k] })
+						ctx.error({ expected: "removed", actual: "", relativePath: [k] })
 					else {
 						ctx.queueMorphs([
 							data => {
@@ -570,7 +570,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				return this.undeclared === "reject" ?
 						js
 							.line(
-								`ctx.error({ expected: "removed", actual: null, relativePath: [k] })`
+								`ctx.error({ expected: "removed", actual: "", relativePath: [k] })`
 							)
 							.if("ctx.failFast", () => js.return())
 					:	js.line(`ctx.queueMorphs([data => { delete data[k]; return data }])`)

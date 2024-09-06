@@ -34,9 +34,9 @@ import type { instantiateType } from "./instantiate.ts"
 interface Type<out t = unknown, $ = {}>
 	extends Callable<(data: unknown) => distill.Out<t> | ArkErrors> {
 	t: t
-	tIn: distill.brandable.In<t>
-	tOut: distill.brandable.Out<t>
-	tValidatedOut: distill.introspectable.Out<t>
+	inferBrandableIn: distill.brandable.In<t>
+	inferBrandableOut: distill.brandable.Out<t>
+	inferIntrospectableOut: distill.introspectable.Out<t>
 	infer: distill.Out<t>
 	inferIn: distill.In<t>
 	[inferred]: t
@@ -62,7 +62,7 @@ interface Type<out t = unknown, $ = {}>
 
 	default<
 		value extends this["infer"],
-		r = (In?: this["tIn"]) => Default<value>
+		r = (In?: this["inferBrandableIn"]) => Default<value>
 	>(
 		value: value
 	): instantiateType<r, $>
@@ -75,8 +75,8 @@ interface Type<out t = unknown, $ = {}>
 
 	as<t = unset>(...args: validateChainedAsArgs<t>): instantiateType<t, $>
 
-	get in(): instantiateType<this["tIn"], $>
-	get out(): instantiateType<this["tValidatedOut"], $>
+	get in(): instantiateType<this["inferBrandableIn"], $>
+	get out(): instantiateType<this["inferIntrospectableOut"], $>
 
 	intersect<const def, r = type.infer<def, $>>(
 		def: type.validate<def, $>

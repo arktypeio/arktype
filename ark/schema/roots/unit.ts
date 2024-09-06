@@ -145,7 +145,8 @@ export class UnitNode extends InternalBasis<Unit.Declaration> {
 	traverseAllows: TraverseAllows =
 		this.unit instanceof Date ?
 			data => data instanceof Date && data.toISOString() === this.compiledValue
-		:	data => data === this.unit
+		: Number.isNaN(this.unit) ? data => Number.isNaN(data)
+		: data => data === this.unit
 }
 
 export const Unit = {
@@ -162,5 +163,8 @@ const compileEqualityCheck = (
 		const condition = `data instanceof Date && data.toISOString() === ${serializedValue}`
 		return negated ? `!(${condition})` : condition
 	}
+
+	if (Number.isNaN(unit)) return `${negated ? "!" : ""}Number.isNaN(data)`
+
 	return `data ${negated ? "!" : "="}== ${serializedValue}`
 }

@@ -1,4 +1,4 @@
-import { intrinsic } from "@ark/schema"
+import { intrinsic, rootNode } from "@ark/schema"
 import type { Module, Submodule } from "../../module.ts"
 import type {
 	Branded,
@@ -8,14 +8,26 @@ import type {
 	Narrowed,
 	Optional
 } from "../ast.ts"
-import { submodule } from "../utils.ts"
+import { arkModule } from "../utils.ts"
 import { epoch } from "./epoch.ts"
 import { integer } from "./integer.ts"
 
-export const number: number.module = submodule({
+export const number: number.module = arkModule({
 	root: intrinsic.number,
 	integer,
-	epoch
+	epoch,
+	safe: rootNode({
+		domain: "number",
+		min: Number.MIN_SAFE_INTEGER,
+		max: Number.MAX_SAFE_INTEGER,
+		predicate: {
+			predicate: n => !Number.isNaN(n),
+			meta: "a safe number"
+		}
+	}),
+	NaN: ["===", Number.NaN],
+	Infinity: ["===", Number.POSITIVE_INFINITY],
+	NegativeInfinity: ["===", Number.NEGATIVE_INFINITY]
 })
 
 export type AtLeast<rule> = {
@@ -55,6 +67,14 @@ export declare namespace number {
 
 	export type branded<rule> = constrain<number, Branded<rule>>
 
+	export type NaN = branded<"NaN">
+
+	export type Infinity = branded<"Infinity">
+
+	export type NegativeInfinity = branded<"NegativeInfinity">
+
+	export type safe = branded<"safe">
+
 	export type is<constraints extends Constraints> = constrain<
 		number,
 		constraints
@@ -84,5 +104,9 @@ export declare namespace number {
 		root: number
 		epoch: epoch
 		integer: integer
+		safe: safe
+		NaN: NaN
+		Infinity: Infinity
+		NegativeInfinity: NegativeInfinity
 	}
 }

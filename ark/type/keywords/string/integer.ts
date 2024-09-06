@@ -3,7 +3,7 @@ import { wellFormedIntegerMatcher } from "@ark/util"
 import type { Module, Submodule } from "../../module.ts"
 import type { Branded, constrain, To } from "../ast.ts"
 import type { number } from "../number/number.ts"
-import { submodule } from "../utils.ts"
+import { arkModule } from "../utils.ts"
 import { regexStringNode } from "./utils.ts"
 
 declare namespace string {
@@ -15,7 +15,7 @@ const root = regexStringNode(
 	"a well-formed integer string"
 )
 
-export const integer: stringInteger.module = submodule({
+export const integer: stringInteger.module = arkModule({
 	root,
 	parse: rootNode({
 		in: root,

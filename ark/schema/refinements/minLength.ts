@@ -72,7 +72,7 @@ const implementation: nodeImplementationOf<MinLength.Declaration> =
 			description: node =>
 				node.rule === 1 ? "non-empty" : `at least length ${node.rule}`,
 			// avoid default message like "must be non-empty (was 0)"
-			actual: data => (data.length === 0 ? null : `${data.length}`)
+			actual: data => (data.length === 0 ? "" : `${data.length}`)
 		},
 		intersections: {
 			minLength: (l, r) => (l.isStricterThan(r) ? l : r)

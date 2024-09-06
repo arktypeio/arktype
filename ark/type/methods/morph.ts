@@ -17,12 +17,12 @@ interface Type<out t = unknown, $ = {}> extends BaseType<t, $> {
 	): Type<
 		(
 			[narrowed] extends [never] ?
-				applyConstraintSchema<this["tOut"], "predicate", Predicate>
+				applyConstraintSchema<this["inferBrandableOut"], "predicate", Predicate>
 			:	narrowed
 		) extends infer o ?
-			this["tValidatedOut"] extends this["tOut"] ?
-				(In: this["tIn"]) => To<o>
-			:	(In: this["tIn"]) => Out<o>
+			this["inferIntrospectableOut"] extends this["inferBrandableOut"] ?
+				(In: this["inferBrandableIn"]) => To<o>
+			:	(In: this["inferBrandableIn"]) => Out<o>
 		:	never,
 		$
 	>

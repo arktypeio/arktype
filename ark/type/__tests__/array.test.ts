@@ -74,6 +74,15 @@ contextualize(() => {
 	})
 
 	describe("non-variadic tuple", () => {
+		it("empty", () => {
+			const t = type([])
+			attest<[]>(t.infer)
+			attest(t.expression).snap("[]")
+			attest(t.json).snap({ proto: "Array", exactLength: 0 })
+			attest(t([])).equals([])
+			attest(t([1]).toString()).snap("must be exactly length 0 (was 1)")
+		})
+
 		it("shallow", () => {
 			const t = type(["string", "number"])
 			attest<[string, number]>(t.infer)

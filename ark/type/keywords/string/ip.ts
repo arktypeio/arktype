@@ -1,6 +1,6 @@
 import type { Module, Submodule } from "../../module.ts"
 import type { Branded, constrain } from "../ast.ts"
-import { submodule } from "../utils.ts"
+import { arkModule } from "../utils.ts"
 import { regexStringNode } from "./utils.ts"
 
 // Based on https://github.com/validatorjs/validator.js/blob/master/src/lib/isIP.js
@@ -32,7 +32,7 @@ declare namespace string {
 }
 
 // Based on https://github.com/validatorjs/validator.js/blob/master/src/lib/isUUID.js
-export const ip: ip.module = submodule({
+export const ip: ip.module = arkModule({
 	root: ["v4 | v6", "@", "an IP address"],
 	v4: regexStringNode(ipv4Matcher, "an IPv4 address"),
 	v6: regexStringNode(ipv6Matcher, "an IPv6 address")

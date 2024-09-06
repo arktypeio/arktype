@@ -1,6 +1,5 @@
 import { intrinsic } from "@ark/schema"
 import type { Module, Submodule } from "../../module.ts"
-import type { type } from "../ark.ts"
 import type {
 	AtLeastLength,
 	AtMostLength,
@@ -14,7 +13,7 @@ import type {
 	constrain,
 	constraint
 } from "../ast.ts"
-import { submodule } from "../utils.ts"
+import { arkModule } from "../utils.ts"
 import { alpha } from "./alpha.ts"
 import { alphanumeric } from "./alphanumeric.ts"
 import { capitalize } from "./capitalize.ts"
@@ -34,7 +33,7 @@ import { upper } from "./upper.ts"
 import { url } from "./url.ts"
 import { uuid } from "./uuid.ts"
 
-export const string = submodule({
+export const string = arkModule({
 	root: intrinsic.string,
 	numeric,
 	integer,
@@ -113,15 +112,11 @@ export declare namespace string {
 		ip: ip.submodule
 		json: stringJson.submodule
 		date: stringDate.submodule
-
+		url: url.submodule
 		trim: trim.submodule
 		normalize: normalize.submodule
 		capitalize: capitalize.submodule
 		lower: lower.submodule
 		upper: upper.submodule
-	}
-
-	type shallowResolutions = {
-		[k in keyof $ as `string.${k}`]: $[k] extends type.cast<infer t> ? t : $[k]
 	}
 }

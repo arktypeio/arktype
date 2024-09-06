@@ -2,7 +2,7 @@ import { genericNode, intrinsic, rootNode } from "@ark/schema"
 import { Hkt, liftArray, type Digit } from "@ark/util"
 import type { Module, Submodule } from "../../module.ts"
 import type { To } from "../ast.ts"
-import { submodule } from "../utils.ts"
+import { arkModule } from "../utils.ts"
 
 class liftFromHkt extends Hkt<[element: unknown]> {
 	declare body: liftArray<this[0]> extends infer lifted ?
@@ -22,7 +22,7 @@ const liftFrom = genericNode("element")(args => {
 		)
 }, liftFromHkt)
 
-export const arkArray: arkArray.module = submodule({
+export const arkArray: arkArray.module = arkModule({
 	root: intrinsic.Array,
 	readonly: "root",
 	index: intrinsic.nonNegativeIntegerString,

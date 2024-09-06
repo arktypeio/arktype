@@ -31,7 +31,9 @@ export const bindModule = (
 	new RootModule(
 		flatMorph(module, (alias, value) => [
 			alias,
-			hasArkKind(value, "module") ? bindModule(value, $) : value.bindScope($)
+			hasArkKind(value, "module") ?
+				bindModule(value, $)
+			:	$.bindReference(value)
 		])
 	) as never
 

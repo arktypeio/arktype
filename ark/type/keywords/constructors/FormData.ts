@@ -2,7 +2,7 @@ import { rootNode } from "@ark/schema"
 import { registry } from "@ark/util"
 import type { Module, Submodule } from "../../module.ts"
 import type { To } from "../ast.ts"
-import { submodule } from "../utils.ts"
+import { arkModule } from "../utils.ts"
 
 export type FormDataValue = string | File
 
@@ -21,7 +21,7 @@ const parsed = rootNode({
 	}
 })
 
-export const arkFormData: arkFormData.module = submodule({
+export const arkFormData: arkFormData.module = arkModule({
 	root: ["instanceof", FormData],
 	value,
 	parsed,
