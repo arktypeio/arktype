@@ -125,6 +125,10 @@ export type parseConstraints<t> =
 			[number, constraints]
 		: equals<t, string & { [constrained]: constraints }> extends true ?
 			[string, constraints]
+		: equals<t, bigint & { [constrained]: constraints }> extends true ?
+			[bigint, constraints]
+		: equals<t, symbol & { [constrained]: constraints }> extends true ?
+			[symbol, constraints]
 		: equals<t, Date & { [constrained]: constraints }> extends true ?
 			[Date, constraints]
 		:	[base, constraints]
@@ -226,7 +230,10 @@ type _distill<t, opts extends distill.Options> =
 	: t extends TerminallyInferredObjectKind | Primitive ? t
 	: unknown extends t ? unknown
 	: t extends MorphAst<infer i, infer o> ?
-		opts["endpoint"] extends "in" ? _distill<i, opts>
+		opts["endpoint"] extends "in" ?
+			opts["branded"] extends true ? _distill<i, opts>
+			: t extends MorphAst<constrain<infer base, any>> ? _distill<base, opts>
+			: _distill<i, opts>
 		: opts["endpoint"] extends "out.introspectable" ?
 			o extends To<infer validatedOut> ?
 				_distill<validatedOut, opts>
@@ -289,7 +296,8 @@ type distillArray<
 			Readonly<t>) & // re-intersect non-array props for a type like `{ name: string } & string[]`
 			_distill<
 				{
-					[k in keyof t as k extends keyof unknown[] ? never : k]: t[k]
+					[k in keyof t as k extends keyof unknown[] | constrained ? never
+					:	k]: t[k]
 				},
 				opts
 			>

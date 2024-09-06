@@ -304,8 +304,7 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 	}
 
 	parseRoot = (def: unknown, opts: TypeParseOptions = {}): BaseRoot => {
-		const idOrNode = this.preresolveRoot(def, opts)
-		if (isNode(idOrNode)) return this.bindReference(idOrNode)
+		if (isNode(def) && def.isRoot()) return this.bindReference(def)
 
 		const ctx: ParseContext = {
 			...opts,
@@ -316,7 +315,7 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 
 		// if the definition being parsed is not a scope alias and is not a
 		// generic instantiation (i.e. opts don't include args), add this as a resolution.
-		if (!isResolution && !opts.args) ctx.args = { this: idOrNode }
+		if (!isResolution && !opts.args) ctx.args = { this: {} }
 
 		return this.parse(def, ctx)
 	}

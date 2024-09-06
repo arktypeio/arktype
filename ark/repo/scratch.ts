@@ -34,3 +34,9 @@ const out = userType({
 })
 
 console.log(out)
+
+// const t = type("string[]")
+// 	.narrow(() => true)
+// 	.pipe(v => v.toString())
+
+// const td = typeof t.inferBrandableIn

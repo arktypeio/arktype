@@ -34,7 +34,7 @@ declare global {
 }
 
 const namesByResolution = new WeakMap<object | symbol, string>()
-const nameCounts: Record<string, number | undefined> = {}
+const nameCounts: Record<string, number | undefined> = Object.create(null)
 
 export const register = (value: object | symbol): string => {
 	const existingName = namesByResolution.get(value)

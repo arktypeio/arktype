@@ -41,10 +41,8 @@ import {
 import type { BaseNode } from "./node.ts"
 import {
 	parseNode,
-	registerNodeId,
 	schemaKindOf,
-	type NodeId,
-	type NodeParseContext,
+	type NodeParseContextInput,
 	type NodeParseOptions
 } from "./parse.ts"
 import { normalizeAliasSchema, type Alias } from "./roots/alias.ts"
@@ -54,7 +52,6 @@ import type { NodeKind, RootKind } from "./shared/implement.ts"
 import { $ark } from "./shared/registry.ts"
 import type { TraverseAllows, TraverseApply } from "./shared/traversal.ts"
 import { arkKind, hasArkKind, isNode } from "./shared/utils.ts"
-
 export type InternalResolutions = Record<string, InternalResolution | undefined>
 
 export type exportedNameOf<$> = Exclude<keyof $ & string, PrivateDeclaration>
@@ -214,19 +211,11 @@ export abstract class BaseScope<$ extends {} = {}> {
 	rootNode = (def: RootSchema, opts?: NodeParseOptions): BaseRoot =>
 		this.node(schemaKindOf(def), def, opts)
 
-	protected preresolveRoot(
-		def: unknown,
-		opts: NodeParseOptions
-	): BaseRoot | NodeId {
-		if (isNode(def) && def.isRoot()) return def
-		return registerNodeId(opts.alias ?? "type")
-	}
-
 	protected preparseNode(
 		kinds: NodeKind | listable<RootKind>,
 		schema: unknown,
 		opts: NodeParseOptions
-	): BaseNode | NodeParseContext {
+	): BaseNode | NodeParseContextInput {
 		let kind: NodeKind =
 			typeof kinds === "string" ? kinds : schemaKindOf(schema, kinds)
 
@@ -257,18 +246,13 @@ export abstract class BaseScope<$ extends {} = {}> {
 				:	throwMismatchedNodeRootError(kind, normalizedSchema.kind)
 		}
 
-		const id = registerNodeId(opts.alias ?? kind)
-
-		const ctx: NodeParseContext = {
+		return {
 			...opts,
 			$: this,
 			args: opts.args ?? {},
 			kind,
-			normalizedSchema,
-			id
+			normalizedSchema
 		}
-
-		return ctx
 	}
 
 	node = <
@@ -284,7 +268,10 @@ export abstract class BaseScope<$ extends {} = {}> {
 	> => {
 		const preparsed = this.preparseNode(kinds, nodeSchema, opts)
 
-		const node = isNode(preparsed) ? preparsed : parseNode(preparsed)
+		if (isNode(preparsed)) return this.bindReference(preparsed) as never
+
+		const node = parseNode(preparsed)
+
 		return this.bindReference(node) as never
 	}
 

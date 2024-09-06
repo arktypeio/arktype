@@ -2,7 +2,13 @@ import { attest, contextualize } from "@ark/attest"
 import { registeredReference } from "@ark/schema"
 import type { equals } from "@ark/util"
 import { type } from "arktype"
-import type { Out, number, string } from "arktype/internal/keywords/ast.ts"
+import type {
+	Narrowed,
+	Out,
+	constrain,
+	number,
+	string
+} from "arktype/internal/keywords/ast.ts"
 
 contextualize(() => {
 	it("implicit problem", () => {
@@ -141,5 +147,82 @@ contextualize(() => {
 		attest(t.t).type.toString.snap('(In: string) => Out<"foo!">')
 		attest<string>(t.inferIn)
 		attest<"foo!">(t.infer)
+	})
+
+	it("narrow then pipe", () => {
+		const toString = (bigint: bigint) => bigint.toString()
+		const predicate = () => true
+
+		const predicateId = registeredReference(predicate)
+		const morphId = registeredReference(toString)
+
+		const A = type("bigint").narrow(predicate).pipe(toString)
+
+		attest<(In: constrain<bigint, Narrowed>) => Out<string>>(A.t)
+		attest<bigint>(A.in.infer)
+		attest<bigint>(A.inferIn)
+		attest<string>(A.infer)
+
+		attest(A.json).snap({
+			in: { domain: "bigint", predicate: [predicateId] },
+			morphs: [morphId]
+		})
+	})
+
+	it("can distill constrained builtins", () => {
+		const number = type("number")
+			.narrow(() => true)
+			.pipe(() => true)
+		attest<number>(number.inferIn)
+
+		const string = type("string")
+			.narrow(() => true)
+			.pipe(() => true)
+		attest<string>(string.inferIn)
+
+		const bigint = type("bigint")
+			.narrow(() => true)
+			.pipe(() => true)
+		attest<bigint>(bigint.inferIn)
+
+		const symbol = type("symbol")
+			.narrow(() => true)
+			.pipe(() => true)
+		attest<symbol>(symbol.inferIn)
+
+		const date = type("Date")
+			.narrow(() => true)
+			.pipe(() => true)
+		attest<Date>(date.inferIn)
+	})
+
+	it("can distill constrained objects", () => {
+		const object = type({ foo: "number" })
+			.narrow(() => true)
+			.pipe(() => true)
+		attest<{ foo: number }>(object.inferIn)
+
+		const nested = type({ foo: ["number.integer", "=>", n => n++] })
+		attest(nested.t).type.toString.snap(`{
+	foo: (In: number.integer) => Out<number>
+}`)
+		attest<{ foo: number }>(nested.inferIn)
+	})
+
+	it("can distill constrained arrays", () => {
+		const array = type("string[]")
+			.narrow(() => true)
+			.pipe(() => true)
+		attest<string[]>(array.inferIn)
+
+		const objArray = type({ foo: "string.date.parse" })
+			.array()
+			.narrow(() => true)
+			.pipe(d => d)
+		attest<
+			{
+				foo: string
+			}[]
+		>(objArray.inferIn)
 	})
 })

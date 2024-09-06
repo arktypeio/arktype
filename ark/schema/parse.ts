@@ -48,12 +48,16 @@ export type NodeParseOptions<prereduced extends boolean = boolean> = {
 	args?: ContextualArgs
 }
 
-export interface NodeParseContext<kind extends NodeKind = NodeKind>
+export interface NodeParseContextInput<kind extends NodeKind = NodeKind>
 	extends NodeParseOptions {
 	$: BaseScope
 	args: ContextualArgs
 	kind: kind
 	normalizedSchema: NormalizedSchema<kind>
+}
+
+export interface NodeParseContext<kind extends NodeKind = NodeKind>
+	extends NodeParseContextInput<kind> {
 	id: NodeId
 }
 
@@ -110,14 +114,30 @@ const serializeListableChild = (listableNode: listable<BaseNode>) =>
 
 export type NodeId = nominal<string, "NodeId">
 
+export type NodeResolver = (id: NodeId) => BaseNode
+
+export const nodesById: Record<NodeId, BaseNode | NodeResolver> = {}
+
 export const registerNodeId = (prefix: string): NodeId => {
 	nodeCountsByPrefix[prefix] ??= 0
 	return `${prefix}${++nodeCountsByPrefix[prefix]!}` as never
 }
 
-export const parseNode = <kind extends NodeKind>(
-	ctx: NodeParseContext<kind>
-): BaseNode => {
+export const registerNode = <node extends BaseNode>(
+	prefix: string,
+	resolve: (id: NodeId) => node
+): node => {
+	const id = registerNodeId(prefix)
+	nodesById[id] = resolve
+	return (nodesById[id] = resolve(id))
+}
+
+export const parseNode = (ctxInput: NodeParseContextInput): BaseNode =>
+	registerNode(ctxInput.alias ?? ctxInput.kind, id =>
+		_parseNode(Object.assign(ctxInput, { id }))
+	)
+
+const _parseNode = (ctx: NodeParseContext): BaseNode => {
 	const impl = nodeImplementationsByKind[ctx.kind]
 	const inner: dict = {}
 	const { meta: metaSchema, ...schema } = ctx.normalizedSchema as dict & {
@@ -259,14 +279,12 @@ export const createNode = (
 	return (nodeCache[hash] = node)
 }
 
-export const withMeta = (node: BaseNode, meta: ArkEnv.meta): BaseNode =>
-	createNode(
-		registerNodeId(meta.alias ?? node.kind),
-		node.kind,
-		node.inner,
-		meta,
-		node.$
-	) as never
+export const withMeta = (node: BaseNode, meta: ArkEnv.meta): BaseNode => {
+	const id = meta.alias ?? node.kind
+	return registerNode(id, () =>
+		createNode(id, node.kind, node.inner, meta, node.$)
+	)
+}
 
 const possiblyCollapse = <allowPrimitive extends boolean>(
 	json: dict,
