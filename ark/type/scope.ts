@@ -194,7 +194,7 @@ export const $arkTypeRegistry: ArkTypeRegistry = $ark
 
 export interface ParseContext extends TypeParseOptions {
 	$: InternalScope
-	thisId?: string
+	isThis: boolean
 }
 
 export interface TypeParseOptions {
@@ -228,7 +228,8 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 			() => {
 				const params = parseGenericParams(paramString, {
 					$: this as never,
-					args: {}
+					args: {},
+					isThis: false
 				})
 
 				const generic = parseGeneric(params, v, this as never)
@@ -302,16 +303,8 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		return node as never
 	}
 
-	parseRoot = (def: unknown, opts: TypeParseOptions = {}): BaseRoot => {
-		const ctx: ParseContext = Object.assign(opts, { $: this as never })
-
-		// const isResolution = ctx.alias && ctx.alias in this.aliases
-		// // if the definition being parsed is not a scope alias and is not a
-		// // generic instantiation (i.e. opts don't include args), add this as a resolution.
-		// if (!isResolution) ctx.thisId ??= id
-
-		return this.parse(def, ctx)
-	}
+	parseRoot = (def: unknown, opts: TypeParseOptions = {}): BaseRoot =>
+		this.parse(def, { ...opts, $: this as never, isThis: true })
 
 	unit: UnitTypeParser<$> = value => this.units([value]) as never
 

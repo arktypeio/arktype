@@ -43,6 +43,7 @@ export type NodeParseOptions<prereduced extends boolean = boolean> = {
 	 **/
 	reduceTo?: BaseNode
 	args?: GenericArgResolutions
+	isThis?: boolean
 }
 
 export interface NodeParseContext<kind extends NodeKind = NodeKind>
@@ -52,6 +53,7 @@ export interface NodeParseContext<kind extends NodeKind = NodeKind>
 	kind: kind
 	normalizedSchema: NormalizedSchema<kind>
 	id: string
+	thisId: string | null
 }
 
 export const schemaKindOf = <kind extends RootKind = RootKind>(

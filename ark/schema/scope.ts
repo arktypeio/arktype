@@ -250,14 +250,28 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 		const id = registerNodeId(kind, opts.alias)
 
-		return {
+		let thisId: string | null = null
+
+		if (opts.isThis) {
+			const isResolution = opts.alias && opts.alias in this.aliases
+			// if the definition being parsed is not a scope alias and is not a
+			// generic instantiation (i.e. opts don't include args), add this as a resolution.
+			if (!isResolution && !opts.args) thisId = id
+		}
+
+		const ctx: NodeParseContext = {
 			...opts,
 			$: this,
 			args: opts.args ?? {},
 			kind,
 			normalizedSchema,
-			id
+			id,
+			thisId,
+			// once the thisId has been set, set isThis to false to avoid overriding the root thisId
+			isThis: false
 		}
+
+		return ctx
 	}
 
 	node = <
@@ -534,7 +548,7 @@ export class SchemaScope<
 	$ extends InternalResolutions = InternalResolutions
 > extends BaseScope<$> {
 	parseRoot = (schema: RootSchema, opts: NodeParseOptions = {}): BaseRoot =>
-		this.rootNode(schema as never, opts)
+		this.rootNode(schema as never, { ...opts, isThis: true })
 }
 
 export const rootSchemaScope: SchemaScope = new SchemaScope({})
