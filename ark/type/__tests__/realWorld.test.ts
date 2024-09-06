@@ -892,4 +892,13 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		attest(t).type.toString.snap("Type<{ name: string } & string[], {}>")
 		attest(t.infer).type.toString.snap("{ name: string } & string[]")
 	})
+
+	it("tuple or morph inference", () => {
+		const t = type(["string", "string"]).or(["null", "=>", () => undefined])
+
+		attest(t.expression).snap("[string, string] | (In: null) => Out<unknown>")
+		attest(t.t).type.toString.snap()
+		attest(t.inferIn).type.toString("[string, string] | null")
+		attest(t.infer).type.toString("[string, string] | undefined")
+	})
 })

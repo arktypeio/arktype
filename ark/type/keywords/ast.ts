@@ -217,6 +217,21 @@ export type includesMorphs<t> =
 		false
 	:	true
 
+type Zfsdfafdsfa = distill<
+	//   ^?
+	(
+		In: constrain<
+			{
+				foo: number
+			},
+			Narrowed
+		>
+	) => Out<boolean>,
+	{ endpoint: "in" }
+>
+
+// type Constrained<t = unknown> = constrain<t, Constraints>
+
 type _distill<t, opts extends distill.Options> =
 	// ensure optional keys don't prevent extracting defaults
 	t extends undefined ? t
@@ -227,23 +242,12 @@ type _distill<t, opts extends distill.Options> =
 		opts["branded"] extends true ?
 			constrain<_distill<base, opts>, constraints>
 		:	_distill<base, opts>
-	: t extends TerminallyInferredObjectKind | Primitive ? t
 	: unknown extends t ? unknown
+	: t extends TerminallyInferredObjectKind | Primitive ? t
 	: t extends MorphAst<infer i, infer o> ?
-		opts["endpoint"] extends "in" ?
-			opts["branded"] extends true ? _distill<i, opts>
-			: t extends MorphAst<constrain<infer base, any>> ? _distill<base, opts>
-			: _distill<i, opts>
-		: opts["endpoint"] extends "out.introspectable" ?
-			o extends To<infer validatedOut> ?
-				_distill<validatedOut, opts>
-			:	unknown
-		: opts["endpoint"] extends "out" ? _distill<o[1], opts>
-		: _distill<o[1], opts> extends infer r ?
-			o extends To ?
-				(In: i) => To<r>
-			:	(In: i) => Out<r>
-		:	never
+		opts["branded"] extends true ?
+			distillIo<i, o, opts>
+		:	distillUnbrandedIo<t, i, o, opts>
 	: t extends DefaultedAst<infer t> ? _distill<t, opts>
 	: t extends array ? distillArray<t, opts, []>
 	: // we excluded this from TerminallyInferredObjectKind so that those types could be
@@ -270,6 +274,45 @@ type _distill<t, opts extends distill.Options> =
 				}
 			>
 	:	t
+
+// have to jump through a bunch of extra hoops to preserve the named instantiation of
+// constrain<base, constraints>. If it degrades to `t & {[constrained]: constraints}`,
+// we'll not longer be able to extract the constraints and distill will infinitely recurse.
+type distillUnbrandedIo<
+	t extends MorphAst,
+	i,
+	o extends Out,
+	opts extends distill.Options
+> =
+	t extends (
+		MorphAst<
+			constrain<infer constrainedIn, any>,
+			Out<constrain<infer constrainedOut, any>>
+		>
+	) ?
+		distillIo<
+			constrainedIn,
+			o extends To ? To<constrainedOut> : Out<constrainedOut>,
+			opts
+		>
+	: t extends MorphAst<constrain<infer constrainedIn, any>> ?
+		distillIo<constrainedIn, o, opts>
+	: t extends MorphAst<any, Out<constrain<infer constrainedOut, any>>> ?
+		distillIo<i, o extends To ? To<constrainedOut> : Out<constrainedOut>, opts>
+	:	distillIo<i, o, opts>
+
+type distillIo<i, o extends Out, opts extends distill.Options> =
+	opts["endpoint"] extends "in" ? _distill<i, opts>
+	: opts["endpoint"] extends "out.introspectable" ?
+		o extends To<infer validatedOut> ?
+			_distill<validatedOut, opts>
+		:	unknown
+	: opts["endpoint"] extends "out" ? _distill<o[1], opts>
+	: _distill<o[1], opts> extends infer r ?
+		o extends To ?
+			(In: i) => To<r>
+		:	(In: i) => Out<r>
+	:	never
 
 type optionalInputKeyOf<o> = metaDefaultedKeyOf<o> | metaOptionalKeyOf<o>
 
