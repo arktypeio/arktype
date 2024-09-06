@@ -79,7 +79,7 @@ export const parseTupleLiteral = (def: array, ctx: ParseContext): BaseRoot => {
 			)
 		}
 	}
-	return ctx.$.internal.rootNode(
+	return ctx.$.rootNode(
 		sequences.map(sequence =>
 			isEmptyObject(sequence) ?
 				{
