@@ -27,6 +27,7 @@ import type {
 	LimitSchemaValue,
 	UnknownRangeSchema
 } from "../refinements/range.ts"
+import { bindCompiledScope } from "../scope.ts"
 import type { BaseNodeDeclaration, MetaSchema } from "../shared/declare.ts"
 import {
 	Disjoint,
@@ -269,6 +270,10 @@ export abstract class BaseRoot<
 		// ideally we might not validate here but for now we need to do determine
 		// which morphs to apply
 		return this.assert(input)
+	}
+
+	precompile(): void {
+		if (!this.$.resolvedConfig.jitless) bindCompiledScope(this.references)
 	}
 
 	protected _pipe(...morphs: Morph[]): BaseRoot {

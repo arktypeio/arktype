@@ -18,30 +18,19 @@ contextualize(() => {
 		attest<ExpectedDisappointingGift>(disappointingGift.infer)
 
 		attest(disappointingGift({ label: "foo" })).snap({ label: "foo" })
-		attest(disappointingGift({ label: "foo", box: { label: "bar" } })).snap()
+		attest(disappointingGift({ label: "foo", box: { label: "bar" } })).snap({
+			label: "foo",
+			box: { label: "bar" }
+		})
 		attest(
 			disappointingGift({
 				label: "foo",
 				box: { label: "bar", box: {} }
 			}).toString()
-		).snap()
-
-		// attest(disappointingGift.json).snap({
-		// 	required: [{ key: "label", value: "string" }],
-		// 	optional: [
-		// 		{
-		// 			key: "box",
-		// 			value: {
-		// 				alias: `$${id}`,
-		// 				resolve: id
-		// 			}
-		// 		}
-		// 	],
-		// 	domain: "object"
-		// })
+		).snap("box.box.label must be a string (was missing)")
 	})
 
-	it("doesn't change when rereferenced", () => {
+	it("equivalent to recursive scoped type", () => {
 		const initial = type({
 			initial: "this"
 		})
@@ -85,7 +74,11 @@ contextualize(() => {
 		attest(t.infer).type.toString.snap(
 			"{ a: string; } | { b: { a: string; } | any; }"
 		)
-		attest(t.json).equals(type([{ a: "string" }, "|", { b: "this" }]).json)
+		attest(t({ a: "foo" })).snap({ a: "foo" })
+		attest(t({ a: "foo", b: { a: "bar" } })).snap({ a: "foo", b: { a: "bar" } })
+		attest(t({ a: "foo", b: { a: "bar", b: {} } }).toString()).snap(
+			"b.b.a must be a string (was missing)"
+		)
 	})
 
 	it("tuple expression", () => {

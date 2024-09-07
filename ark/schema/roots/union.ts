@@ -268,8 +268,12 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		for (let i = 0; i < this.branches.length; i++) {
 			ctx.pushBranch()
 			this.branches[i].traverseApply(data, ctx)
-			if (!ctx.hasError())
-				return ctx.queuedMorphs.push(...ctx.popBranch().queuedMorphs)
+			if (!ctx.hasError()) {
+				return (
+					this.branches[i].includesMorph &&
+					ctx.queuedMorphs.push(...ctx.popBranch().queuedMorphs)
+				)
+			}
 			errors.push(ctx.popBranch().error!)
 		}
 		ctx.error({ code: "union", errors })
@@ -346,7 +350,11 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 					.line("ctx.pushBranch()")
 					.line(js.invoke(branch))
 					.if("!ctx.hasError()", () =>
-						js.return("ctx.queuedMorphs.push(...ctx.popBranch().queuedMorphs)")
+						js.return(
+							branch.includesMorph ?
+								"ctx.queuedMorphs.push(...ctx.popBranch().queuedMorphs)"
+							:	undefined
+						)
 					)
 					.line("errors.push(ctx.popBranch().error)")
 			)

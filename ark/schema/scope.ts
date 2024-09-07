@@ -533,8 +533,10 @@ export const schemaScope: SchemaScopeParser = (aliases, config) =>
 export class SchemaScope<
 	$ extends InternalResolutions = InternalResolutions
 > extends BaseScope<$> {
-	parseRoot = (schema: RootSchema, opts: NodeParseOptions = {}): BaseRoot =>
-		this.rootNode(schema as never, opts)
+	parseRoot = (schema: RootSchema, opts: NodeParseOptions = {}): BaseRoot => {
+		const node = this.rootNode(schema as never, opts)
+		return node
+	}
 }
 
 export const rootSchemaScope: SchemaScope = new SchemaScope({})
@@ -603,7 +605,6 @@ export const bindCompiledScope = (references: readonly BaseNode[]): void => {
 			// if node has already been bound to another scope or anonymous type, don't rebind it
 			continue
 		}
-		node.jit = true
 		node.traverseAllows =
 			compiledTraversals[`${node.id}Allows`].bind(compiledTraversals)
 		if (node.isRoot() && !node.allowsRequiresContext) {
@@ -613,6 +614,7 @@ export const bindCompiledScope = (references: readonly BaseNode[]): void => {
 		}
 		node.traverseApply =
 			compiledTraversals[`${node.id}Apply`].bind(compiledTraversals)
+		node.jit = true
 	}
 }
 

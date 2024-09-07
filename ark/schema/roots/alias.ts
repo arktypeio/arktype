@@ -90,24 +90,28 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 	readonly structure = undefined
 
 	get resolution(): BaseRoot {
-		let result: BaseRoot
+		if (typeof this.resolve !== "string") {
+			return this.cacheGetter(
+				"resolution",
+				this.resolve?.() ?? this.$.resolveRoot(this.alias)
+			)
+		}
 
-		if (typeof this.resolve === "string") {
-			let globalResolution = nodesById[this.resolve]
-			const seen: PartialRecord<NodeId> = {}
-			while (typeof globalResolution === "string") {
-				if (seen[globalResolution]) {
-					return throwParseError(
-						`Unable to resolve cyclic id ${globalResolution}`
-					)
-				}
-				seen[globalResolution] = true
-				globalResolution = nodesById[globalResolution]
+		let globalResolution = nodesById[this.resolve]
+		const seen: PartialRecord<NodeId> = {}
+		while (typeof globalResolution === "string") {
+			if (seen[globalResolution]) {
+				return throwParseError(
+					`Unable to resolve cyclic id ${globalResolution}`
+				)
 			}
-			result = globalResolution.assertHasKindIn(...rootKinds)
-		} else result = this.resolve?.() ?? this.$.resolveRoot(this.alias)
-
-		return this.cacheGetter("resolution", result)
+			seen[globalResolution] = true
+			globalResolution = nodesById[globalResolution]
+		}
+		return this.cacheGetter(
+			"resolution",
+			globalResolution.assertHasKindIn(...rootKinds)
+		)
 	}
 
 	get shortDescription(): string {
@@ -135,15 +139,7 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 	compile(js: NodeCompiler): void {
 		js.if(`ctx.seen.${this.id}?.includes(data)`, () => js.return(true))
 		js.line(`ctx.seen.${this.id} ??= []`).line(`ctx.seen.${this.id}.push(data)`)
-
-		js.return(
-			js.invoke(
-				// if the resolver is a reference to a global id, reuse the existing
-				// reference rather than eagerly compiling the resolution,
-				// which would infinitely recurse
-				typeof this.resolve === "string" ? this.resolve : this.resolution
-			)
-		)
+		js.return(js.invoke(this.resolution))
 	}
 }
 
