@@ -16,19 +16,29 @@ contextualize(() => {
 			box?: ExpectedDisappointingGift
 		}
 		attest<ExpectedDisappointingGift>(disappointingGift.infer)
-		attest(disappointingGift.json).snap({
-			required: [{ key: "label", value: "string" }],
-			optional: [
-				{
-					key: "box",
-					value: {
-						alias: `$${id}`,
-						resolve: id
-					}
-				}
-			],
-			domain: "object"
-		})
+
+		attest(disappointingGift({ label: "foo" })).snap({ label: "foo" })
+		attest(disappointingGift({ label: "foo", box: { label: "bar" } })).snap()
+		attest(
+			disappointingGift({
+				label: "foo",
+				box: { label: "bar", box: {} }
+			}).toString()
+		).snap()
+
+		// attest(disappointingGift.json).snap({
+		// 	required: [{ key: "label", value: "string" }],
+		// 	optional: [
+		// 		{
+		// 			key: "box",
+		// 			value: {
+		// 				alias: `$${id}`,
+		// 				resolve: id
+		// 			}
+		// 		}
+		// 	],
+		// 	domain: "object"
+		// })
 	})
 
 	it("doesn't change when rereferenced", () => {

@@ -405,24 +405,10 @@ export abstract class BaseScope<$ extends {} = {}> {
 			this._exports = {}
 			for (const name of this.exportedNames) {
 				const def = this.aliases[name]
-				if (hasArkKind(def, "module"))
-					this._exports[name] = bindModule(def, this)
-				else {
-					const resolution = this.maybeResolve(name)!
-					resolution.references
-						.filter(node => node.hasKind("alias"))
-						.forEach(aliasNode => {
-							Object.assign(
-								aliasNode.referencesById,
-								aliasNode.resolution.referencesById
-							)
-							resolution.references.forEach(ref => {
-								if (aliasNode.id in ref.referencesById)
-									Object.assign(ref.referencesById, aliasNode.referencesById)
-							})
-						})
-					this._exports[name] = resolution as never
-				}
+				this._exports[name] =
+					hasArkKind(def, "module") ?
+						bindModule(def, this)
+					:	bootstrapAliasReferences(this.maybeResolve(name)!)
 			}
 
 			this.lazyResolutions.forEach(node => node.resolution)
@@ -464,6 +450,22 @@ export abstract class BaseScope<$ extends {} = {}> {
 	}
 
 	abstract parseRoot(schema: unknown, opts?: NodeParseOptions): BaseRoot
+}
+
+const bootstrapAliasReferences = (resolution: BaseRoot | GenericRoot) => {
+	resolution.references
+		.filter(node => node.hasKind("alias"))
+		.forEach(aliasNode => {
+			Object.assign(
+				aliasNode.referencesById,
+				aliasNode.resolution.referencesById
+			)
+			resolution.references.forEach(ref => {
+				if (aliasNode.id in ref.referencesById)
+					Object.assign(ref.referencesById, aliasNode.referencesById)
+			})
+		})
+	return resolution
 }
 
 const resolutionsToJson = (resolutions: InternalResolutions): Json =>
