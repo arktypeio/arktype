@@ -1,4 +1,9 @@
-import { append, domainDescriptions, throwParseError } from "@ark/util"
+import {
+	append,
+	domainDescriptions,
+	throwParseError,
+	type PartialRecord
+} from "@ark/util"
 import { nodesById, type NodeId } from "../parse.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
 import type { BaseNormalizedSchema, declareNode } from "../shared/declare.ts"
@@ -15,7 +20,6 @@ import {
 } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.ts"
-import { isNode } from "../shared/utils.ts"
 import { BaseRoot } from "./root.ts"
 import { defineRightwardIntersections } from "./utils.ts"
 
@@ -89,11 +93,18 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 		let result: BaseRoot
 
 		if (typeof this.resolve === "string") {
-			const globalResolution = nodesById[this.resolve]
-			result =
-				isNode(globalResolution) ?
-					globalResolution.assertHasKindIn(...rootKinds)
-				:	globalResolution(this.resolve).assertHasKindIn(...rootKinds)
+			let globalResolution = nodesById[this.resolve]
+			const seen: PartialRecord<NodeId> = {}
+			while (typeof globalResolution === "string") {
+				if (seen[globalResolution]) {
+					return throwParseError(
+						`Unable to resolve cyclic id ${globalResolution}`
+					)
+				}
+				seen[globalResolution] = true
+				globalResolution = nodesById[globalResolution]
+			}
+			result = globalResolution.assertHasKindIn(...rootKinds)
 		} else result = this.resolve?.() ?? this.$.resolveRoot(this.alias)
 
 		return this.cacheGetter("resolution", result)

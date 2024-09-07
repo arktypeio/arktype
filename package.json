@@ -39,7 +39,8 @@
 		"format": "prettier --write .",
 		"knip": "knip",
 		"latest": "pnpm -r up --latest",
-		"ci:publish": "ts ./ark/repo/publish.ts"
+		"ci:publish": "ts ./ark/repo/publish.ts",
+		"publishExtension": "cd ark/dark && pnpm publishExtension"
 	},
 	"devDependencies": {
 		"@ark/attest": "workspace:*",

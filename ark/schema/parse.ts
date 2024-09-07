@@ -46,6 +46,7 @@ export type NodeParseOptions<prereduced extends boolean = boolean> = {
 	 **/
 	reduceTo?: BaseNode
 	args?: ContextualArgs
+	thisId?: NodeId
 }
 
 export interface NodeParseContextInput<kind extends NodeKind = NodeKind>
@@ -116,7 +117,7 @@ export type NodeId = nominal<string, "NodeId">
 
 export type NodeResolver = (id: NodeId) => BaseNode
 
-export const nodesById: Record<NodeId, BaseNode | NodeResolver> = {}
+export const nodesById: Record<NodeId, BaseNode | NodeId> = {}
 
 export const registerNodeId = (prefix: string): NodeId => {
 	nodeCountsByPrefix[prefix] ??= 0
@@ -128,14 +129,15 @@ export const registerNode = <node extends BaseNode>(
 	resolve: (id: NodeId) => node
 ): node => {
 	const id = registerNodeId(prefix)
-	nodesById[id] = resolve
+	nodesById[id] = id
 	return (nodesById[id] = resolve(id))
 }
 
 export const parseNode = (ctxInput: NodeParseContextInput): BaseNode =>
-	registerNode(ctxInput.alias ?? ctxInput.kind, id =>
-		_parseNode(Object.assign(ctxInput, { id }))
-	)
+	registerNode(ctxInput.alias ?? ctxInput.kind, id => {
+		if (ctxInput.thisId) nodesById[ctxInput.thisId] = id
+		return _parseNode(Object.assign(ctxInput, { id }))
+	})
 
 const _parseNode = (ctx: NodeParseContext): BaseNode => {
 	const impl = nodeImplementationsByKind[ctx.kind]

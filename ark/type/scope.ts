@@ -3,6 +3,7 @@ import {
 	BaseScope,
 	hasArkKind,
 	isNode,
+	nodesById,
 	parseGeneric,
 	registerNode,
 	type AliasDefEntry,
@@ -313,12 +314,14 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		}
 
 		return registerNode(opts.alias ?? "type", id => {
-			const isResolution = ctx.alias && ctx.alias in this.aliases
+			const isScopeAlias = ctx.alias && ctx.alias in this.aliases
 
 			// if the definition being parsed is not a scope alias and is not a
 			// generic instantiation (i.e. opts don't include args), add this as a resolution.
-			if (!isResolution && !ctx.args) ctx.args = { this: id }
-			return this.parse(def, ctx)
+			if (!isScopeAlias && !ctx.args) ctx.args = { this: id }
+			const node = this.parse(def, ctx)
+			nodesById[id] = node.id
+			return node
 		})
 	}
 

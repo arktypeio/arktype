@@ -6,7 +6,7 @@
 	"publisher": "arktypeio",
 	"type": "module",
 	"scripts": {
-		"vspublish": "pnpx vsce publish"
+		"publishExtension": "pnpx vsce publish"
 	},
 	"files": [
 		"*.json"
