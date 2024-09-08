@@ -1,4 +1,4 @@
-import { schema } from "@ark/schema"
+import { rootSchema } from "@ark/schema"
 import { registry } from "@ark/util"
 import type { Module, Submodule } from "../../module.ts"
 import type { To } from "../ast.ts"
@@ -8,11 +8,11 @@ export type FormDataValue = string | File
 
 export type ParsedFormData = Record<string, FormDataValue | FormDataValue[]>
 
-const value = schema(["string", registry.FileConstructor])
+const value = rootSchema(["string", registry.FileConstructor])
 
 const parsedFormDataValue = value.or(value.array())
 
-const parsed = schema({
+const parsed = rootSchema({
 	meta: "an object representing parsed form data",
 	domain: "object",
 	index: {
@@ -25,7 +25,7 @@ export const arkFormData: arkFormData.module = arkModule({
 	root: ["instanceof", FormData],
 	value,
 	parsed,
-	parse: schema({
+	parse: rootSchema({
 		in: FormData,
 		morphs: (data: FormData): ParsedFormData => {
 			const result: ParsedFormData = {}

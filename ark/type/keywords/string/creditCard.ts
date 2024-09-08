@@ -1,4 +1,4 @@
-import { schema } from "@ark/schema"
+import { rootSchema } from "@ark/schema"
 import type { Branded, constrain } from "../ast.ts"
 
 // https://github.com/validatorjs/validator.js/blob/master/src/lib/isLuhnNumber.js
@@ -30,7 +30,7 @@ declare namespace string {
 	export type creditCard = constrain<string, Branded<"creditCard">>
 }
 
-export const creditCard = schema({
+export const creditCard = rootSchema({
 	domain: "string",
 	pattern: {
 		meta: "a credit card number",

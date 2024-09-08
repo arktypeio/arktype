@@ -5,3 +5,7 @@ const t = type({ foo: "1" })
 	.pipe(o => Object.values(o))
 
 console.log(t.internal.precompilation)
+
+type({
+	foo: "string"
+})

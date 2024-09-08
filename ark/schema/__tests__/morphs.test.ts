@@ -1,10 +1,10 @@
 import { attest, contextualize } from "@ark/attest"
-import { intrinsic, schema } from "@ark/schema"
+import { intrinsic, rootSchema } from "@ark/schema"
 import { throwError, wellFormedNumberMatcher } from "@ark/util"
 
 contextualize(() => {
 	it("in/out", () => {
-		const parseNumber = schema({
+		const parseNumber = rootSchema({
 			in: {
 				meta: "a well-formed numeric string",
 				domain: "string",
@@ -21,7 +21,7 @@ contextualize(() => {
 	})
 
 	it("in/out union", () => {
-		const n = schema([
+		const n = rootSchema([
 			{
 				in: "string",
 				morphs: [(s: string) => Number.parseFloat(s), intrinsic.number]
@@ -35,12 +35,12 @@ contextualize(() => {
 	contextualize.each(
 		"declared",
 		() => {
-			const declared = schema({
+			const declared = rootSchema({
 				meta: "declared",
 				predicate: () => throwError("declared node should not be invoked")
 			}).assertHasKind("intersection")
 
-			const declaredMorph = schema({
+			const declaredMorph = rootSchema({
 				morphs: (s: string) => JSON.parse(s),
 				declaredIn: declared,
 				declaredOut: declared
@@ -68,7 +68,7 @@ contextualize(() => {
 			})
 
 			it("can be piped to declaredOut", ({ declaredMorph, declared }) => {
-				const pipeToNode = schema({
+				const pipeToNode = rootSchema({
 					in: "string",
 					morphs: [(s: string) => s.slice(1), declaredMorph]
 				})

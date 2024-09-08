@@ -1,9 +1,9 @@
 import { attest, contextualize } from "@ark/attest"
-import { $ark, configure, schema, schemaScope } from "@ark/schema"
+import { $ark, configure, rootSchema, schemaScope } from "@ark/schema"
 
 contextualize(() => {
 	it("shallow", () => {
-		const n = schema({
+		const n = rootSchema({
 			domain: "number",
 			divisor: 3
 		})
@@ -12,7 +12,7 @@ contextualize(() => {
 	})
 
 	it("at path", () => {
-		const o = schema({
+		const o = rootSchema({
 			domain: "object",
 			required: {
 				key: "foo",
@@ -29,7 +29,7 @@ contextualize(() => {
 	})
 
 	it("array", () => {
-		const t = schema({
+		const t = rootSchema({
 			proto: Array,
 			sequence: "number"
 		})
@@ -40,7 +40,7 @@ contextualize(() => {
 	})
 
 	it("custom description integrated with error", () => {
-		const superSpecialBigint = schema({
+		const superSpecialBigint = rootSchema({
 			domain: "bigint",
 			meta: "my special bigint"
 		})
@@ -51,7 +51,7 @@ contextualize(() => {
 	})
 
 	it("custom description on parent doesn't affect children", () => {
-		const evenNumber = schema({
+		const evenNumber = rootSchema({
 			meta: "an even number",
 			domain: "number",
 			divisor: 2

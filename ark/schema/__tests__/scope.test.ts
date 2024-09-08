@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { schema, schemaScope } from "@ark/schema"
+import { rootSchema, schemaScope } from "@ark/schema"
 
 contextualize(() => {
 	it("has jit in scope", () => {
@@ -13,7 +13,7 @@ contextualize(() => {
 	})
 
 	it("has jit standalone", () => {
-		const node = schema({
+		const node = rootSchema({
 			domain: "string"
 		})
 

@@ -1,4 +1,4 @@
-import { intrinsic, schema } from "@ark/schema"
+import { intrinsic, rootSchema } from "@ark/schema"
 import type { Module, Submodule } from "../../module.ts"
 import type { Branded, To, constrain } from "../ast.ts"
 import { arkModule } from "../utils.ts"
@@ -18,7 +18,7 @@ const isParsableJson = (s: string) => {
 	}
 }
 
-const root = schema({
+const root = rootSchema({
 	domain: "string",
 	predicate: {
 		meta: jsonStringDescription,
@@ -28,7 +28,7 @@ const root = schema({
 
 export const json: stringJson.module = arkModule({
 	root,
-	parse: schema({
+	parse: rootSchema({
 		in: "string",
 		morphs: (s: string, ctx) => {
 			if (s.length === 0) {

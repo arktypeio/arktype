@@ -1,4 +1,4 @@
-import { schema } from "@ark/schema"
+import { rootSchema } from "@ark/schema"
 import type { AtLeast, AtMost, DivisibleBy, number } from "./number.ts"
 
 /**
@@ -8,7 +8,7 @@ import type { AtLeast, AtMost, DivisibleBy, number } from "./number.ts"
  * @see https://262.ecma-international.org/15.0/index.html#sec-time-values-and-time-range
  */
 
-export const epoch = schema({
+export const epoch = rootSchema({
 	domain: {
 		domain: "number",
 		meta: "a number representing a Unix timestamp"

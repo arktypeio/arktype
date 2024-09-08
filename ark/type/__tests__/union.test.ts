@@ -1,7 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import {
 	intrinsic,
-	schema,
+	rootSchema,
 	writeIndivisibleMessage,
 	writeUnresolvableMessage
 } from "@ark/schema"
@@ -158,7 +158,7 @@ contextualize(() => {
 	})
 
 	const expected = () =>
-		schema([
+		rootSchema([
 			{
 				domain: "object",
 				required: {

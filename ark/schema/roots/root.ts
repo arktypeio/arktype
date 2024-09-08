@@ -272,8 +272,9 @@ export abstract class BaseRoot<
 		return this.assert(input)
 	}
 
-	precompile(): void {
-		if (!this.$.resolvedConfig.jitless) bindPrecompilation(this.references)
+	precompile(): this {
+		bindPrecompilation(this.references)
+		return this
 	}
 
 	protected _pipe(...morphs: Morph[]): BaseRoot {

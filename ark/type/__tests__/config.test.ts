@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { attest, contextualize } from "@ark/attest"
-import { schema } from "@ark/schema"
+import { rootSchema } from "@ark/schema"
 import { scope, type } from "arktype"
 
 contextualize(() => {
@@ -112,7 +112,7 @@ contextualize(() => {
 	it("jit by default in scope", () => {
 		const $ = scope({
 			defined: "55",
-			referenced: schema({ unit: 5 })
+			referenced: rootSchema({ unit: 5 })
 		})
 
 		const types = $.export()

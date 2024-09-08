@@ -4,7 +4,9 @@ import {
 	GenericRoot,
 	type MetaSchema,
 	type Morph,
-	type Predicate
+	type NodeParseOptions,
+	type Predicate,
+	type RootSchema
 } from "@ark/schema"
 import { Callable, type Constructor, type array, type conform } from "@ark/util"
 import {
@@ -84,6 +86,7 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 	module: ModuleParser
 	scope: ScopeParser
 	generic: GenericParser<$>
+	schema: SchemaParser<$>
 	ark: typeof ark
 	unit: UnitTypeParser<$>
 	enumerated: EnumeratedTypeParser<$>
@@ -102,6 +105,7 @@ export class InternalTypeParser extends Callable<
 				module: $.constructor.module,
 				scope: $.constructor.scope,
 				generic: $.generic as never,
+				schema: $.schema as never,
 				// this won't be defined during bootstrapping, but externally always will be
 				ark: $.ambient as never,
 				unit: $.unit,
@@ -162,6 +166,11 @@ export type EnumeratedTypeParser<$> = <const values extends readonly unknown[]>(
 ) => Type<values[number], $>
 
 export type DefinitionParser<$> = <def>(def: type.validate<def, $>) => def
+
+export type SchemaParser<$> = (
+	schema: RootSchema,
+	opts?: NodeParseOptions
+) => Type<unknown, $>
 
 export type Type<t = unknown, $ = {}> = instantiateType<t, $>
 

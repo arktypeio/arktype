@@ -1,9 +1,9 @@
 import { attest, contextualize } from "@ark/attest"
-import { schema, writeOrderedIntersectionMessage } from "@ark/schema"
+import { rootSchema, writeOrderedIntersectionMessage } from "@ark/schema"
 
 contextualize(() => {
 	it("binary", () => {
-		const l = schema([
+		const l = rootSchema([
 			{
 				domain: "number",
 				divisor: 2
@@ -13,7 +13,7 @@ contextualize(() => {
 				divisor: 3
 			}
 		])
-		const r = schema({
+		const r = rootSchema({
 			domain: "number",
 			divisor: 5
 		})
@@ -25,12 +25,12 @@ contextualize(() => {
 	})
 
 	it("reduces union", () => {
-		const n = schema(["number", {}, { unit: 5 }])
+		const n = rootSchema(["number", {}, { unit: 5 }])
 		attest(n.json).snap({})
 	})
 
 	it("union of all types reduced to unknown", () => {
-		const n = schema([
+		const n = rootSchema([
 			"string",
 			"number",
 			"object",
@@ -45,17 +45,17 @@ contextualize(() => {
 	})
 
 	it("normalizes union order", () => {
-		const l = schema(["number", "string"])
-		const r = schema(["string", "number"])
+		const l = rootSchema(["number", "string"])
+		const r = rootSchema(["string", "number"])
 		attest(l.json).equals(r.json)
 	})
 
 	it("doesn't normalize ordered unions", () => {
-		const l = schema({
+		const l = rootSchema({
 			branches: ["string", "number"],
 			ordered: true
 		})
-		const r = schema({
+		const r = rootSchema({
 			branches: ["number", "string"],
 			ordered: true
 		})
@@ -63,31 +63,31 @@ contextualize(() => {
 	})
 
 	it("reducible intersection with union", () => {
-		const l = schema({
+		const l = rootSchema({
 			domain: "string",
 			minLength: 1
 		})
-		const r = schema(["string", Array])
+		const r = rootSchema(["string", Array])
 		const result = l.and(r)
 		attest(result.json).equals(l.json)
 	})
 
 	it("unordered union with ordered union", () => {
-		const l = schema({
+		const l = rootSchema({
 			branches: ["string", "number"],
 			ordered: true
 		})
-		const r = schema(["number", "string"])
+		const r = rootSchema(["number", "string"])
 		const result = l.and(r)
 		attest(result.json).equals(l.json)
 	})
 
 	it("intersection of ordered unions", () => {
-		const l = schema({
+		const l = rootSchema({
 			branches: ["string", "number"],
 			ordered: true
 		})
-		const r = schema({
+		const r = rootSchema({
 			branches: ["number", "string"],
 			ordered: true
 		})
