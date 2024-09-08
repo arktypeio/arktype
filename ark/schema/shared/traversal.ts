@@ -10,19 +10,19 @@ import {
 } from "./errors.ts"
 import type { TraversalPath } from "./utils.ts"
 
-export type QueuedMorphs = {
+export type MorphsAtPath = {
 	path: TraversalPath
 	morphs: array<Morph>
 }
 
 export type BranchTraversalContext = {
 	error: ArkError | undefined
-	queuedMorphs: QueuedMorphs[]
+	queuedMorphs: MorphsAtPath[]
 }
 
 export class TraversalContext {
 	path: TraversalPath = []
-	queuedMorphs: QueuedMorphs[] = []
+	queuedMorphs: MorphsAtPath[] = []
 	errors: ArkErrors = new ArkErrors(this)
 	branches: BranchTraversalContext[] = []
 
@@ -41,7 +41,7 @@ export class TraversalContext {
 	}
 
 	queueMorphs(morphs: array<Morph>): void {
-		const input: QueuedMorphs = {
+		const input: MorphsAtPath = {
 			path: [...this.path],
 			morphs
 		}
