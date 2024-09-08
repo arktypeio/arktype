@@ -165,7 +165,7 @@ export type innerAttachedAs<kind extends ConstraintKind> =
 export type mutableInnerOfKind<kind extends NodeKind> =
 	makeRootAndArrayPropertiesMutable<Inner<kind>>
 
-export type mutableNormalizedSchemaOfKind<kind extends NodeKind> =
+export type mutableNormalizedRootOfKind<kind extends NodeKind> =
 	makeRootAndArrayPropertiesMutable<NormalizedSchema<kind>>
 
 export type errorContext<kind extends NodeKind> =

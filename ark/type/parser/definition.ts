@@ -1,4 +1,4 @@
-import { hasArkKind, type RootSchema } from "@ark/schema"
+import { hasArkKind, type BaseRoot } from "@ark/schema"
 import {
 	isThunk,
 	objectKindOf,
@@ -35,7 +35,7 @@ import {
 	type validateTuple
 } from "./tuple.ts"
 
-export const parseObject = (def: object, ctx: ParseContext): RootSchema => {
+export const parseObject = (def: object, ctx: ParseContext): BaseRoot => {
 	const objectKind = objectKindOf(def)
 	switch (objectKind) {
 		case undefined:
@@ -44,10 +44,14 @@ export const parseObject = (def: object, ctx: ParseContext): RootSchema => {
 		case "Array":
 			return parseTuple(def as array, ctx)
 		case "RegExp":
-			return {
-				domain: "string",
-				pattern: def as RegExp
-			}
+			return ctx.$.node(
+				"intersection",
+				{
+					domain: "string",
+					pattern: def as RegExp
+				},
+				{ prereduced: true }
+			)
 		case "Function": {
 			const resolvedDef = isThunk(def) ? def() : def
 			if (hasArkKind(resolvedDef, "root")) return resolvedDef

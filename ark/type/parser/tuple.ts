@@ -1,12 +1,12 @@
 import {
 	$ark,
 	makeRootAndArrayPropertiesMutable,
+	type BaseRoot,
 	type MetaSchema,
 	type Morph,
-	type mutableNormalizedSchemaOfKind,
+	type mutableInnerOfKind,
 	type nodeOfKind,
 	type Predicate,
-	type RootSchema,
 	type Union
 } from "@ark/schema"
 import {
@@ -37,14 +37,11 @@ import type { InfixOperator, PostfixExpression } from "./semantic/infer.ts"
 import { writeMissingRightOperandMessage } from "./string/shift/operand/unenclosed.ts"
 import type { BaseCompletions } from "./string/string.ts"
 
-export const parseTuple = (def: array, ctx: ParseContext): RootSchema =>
+export const parseTuple = (def: array, ctx: ParseContext): BaseRoot =>
 	maybeParseTupleExpression(def, ctx) ?? parseTupleLiteral(def, ctx)
 
-export const parseTupleLiteral = (
-	def: array,
-	ctx: ParseContext
-): RootSchema => {
-	let sequences: MutableSequenceSchema[] = [{}]
+export const parseTupleLiteral = (def: array, ctx: ParseContext): BaseRoot => {
+	let sequences: mutableInnerOfKind<"sequence">[] = [{}]
 	let i = 0
 	while (i < def.length) {
 		let spread = false
@@ -100,10 +97,10 @@ export const parseTupleLiteral = (
 type ElementKind = "optional" | "required" | "variadic"
 
 const appendElement = (
-	base: MutableSequenceSchema,
+	base: mutableInnerOfKind<"sequence">,
 	kind: ElementKind,
-	element: RootSchema
-): MutableSequenceSchema => {
+	element: BaseRoot
+): mutableInnerOfKind<"sequence"> => {
 	switch (kind) {
 		case "required":
 			if (base.optionals)
@@ -128,20 +125,24 @@ const appendElement = (
 			// e.g. [...string[], number, ...string[]]
 			if (base.postfix) throwParseError(multipleVariadicMesage)
 			if (base.variadic) {
+				if (!base.variadic.equals(element)) {
+					// e.g. [...string[], ...number[]]
+					throwParseError(multipleVariadicMesage)
+				}
 				// e.g. [...string[], ...string[]]
-				throwParseError(multipleVariadicMesage)
+				// do nothing, second spread doesn't change the type
 			} else {
 				// e.g. [string, ...number[]]
-				base.variadic = element
+				base.variadic = element.internal
 			}
 			return base
 	}
 }
 
 const appendSpreadBranch = (
-	base: MutableSequenceSchema,
+	base: mutableInnerOfKind<"sequence">,
 	branch: nodeOfKind<Union.ChildKind>
-): MutableSequenceSchema => {
+): mutableInnerOfKind<"sequence"> => {
 	const spread = branch.firstReferenceOfKind("sequence")
 	if (!spread) {
 		// the only array with no sequence reference is unknown[]
@@ -154,12 +155,10 @@ const appendSpreadBranch = (
 	return base
 }
 
-type MutableSequenceSchema = mutableNormalizedSchemaOfKind<"sequence">
-
 const maybeParseTupleExpression = (
 	def: array,
 	ctx: ParseContext
-): RootSchema | undefined => {
+): BaseRoot | undefined => {
 	const tupleExpressionResult =
 		isIndexZeroExpression(def) ? prefixParsers[def[0]](def as never, ctx)
 		: isIndexOneExpression(def) ? indexOneParsers[def[1]](def as never, ctx)
@@ -420,12 +419,12 @@ const parseArrayTuple: PostfixParser<"[]"> = (def, ctx) =>
 export type PostfixParser<token extends IndexOneOperator> = (
 	def: IndexOneExpression<token>,
 	ctx: ParseContext
-) => RootSchema
+) => BaseRoot
 
 export type PrefixParser<token extends IndexZeroOperator> = (
 	def: IndexZeroExpression<token>,
 	ctx: ParseContext
-) => RootSchema
+) => BaseRoot
 
 export type TupleExpression = IndexZeroExpression | IndexOneExpression
 

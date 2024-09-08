@@ -1,4 +1,4 @@
-import type { BaseRoot, RootSchema } from "@ark/schema"
+import type { BaseRoot } from "@ark/schema"
 import {
 	isKeyOf,
 	type requireKeys,
@@ -36,7 +36,8 @@ type BranchState = {
 export type DynamicStateWithRoot = requireKeys<DynamicState, "root">
 
 export class DynamicState {
-	root: RootSchema | undefined
+	// set root type to `any` so that all constraints can be applied
+	root: BaseRoot<any> | undefined
 	branches: BranchState = {
 		prefixes: [],
 		leftBound: null,
