@@ -278,7 +278,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 	bindReference<reference extends BaseNode | GenericRoot>(
 		reference: reference
 	): reference {
-		const bound =
+		const bound: reference =
 			reference.$ === this ? reference
 			: isNode(reference) ?
 				new (reference.constructor as any)(reference.attachments, this)
@@ -292,15 +292,19 @@ export abstract class BaseScope<$ extends {} = {}> {
 		if (this.resolved) {
 			// this node was not part of the original scope, so compile an anonymous scope
 			// including only its references
-			if (!bound.jit && !this.resolvedConfig.jitless)
-				bindCompiledScope(bound.references)
+			if (
+				isNode(bound) &&
+				!bound.precompilation &&
+				!this.resolvedConfig.jitless
+			)
+				bindPrecompilation(bound.references)
 		} else {
 			// we're still parsing the scope itself, so defer compilation but
 			// add the node as a reference
 			Object.assign(this.referencesById, bound.referencesById)
 		}
 
-		return bound
+		return bound as never
 	}
 
 	resolveRoot(name: string): BaseRoot {
@@ -431,7 +435,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			Object.assign(this.resolutions, this._exportedResolutions)
 
 			this.references = Object.values(this.referencesById)
-			if (!this.resolvedConfig.jitless) bindCompiledScope(this.references)
+			if (!this.resolvedConfig.jitless) bindPrecompilation(this.references)
 			this.resolved = true
 		}
 		const namesToExport = names.length ? names : this.exportedNames
@@ -598,10 +602,11 @@ export const writeMissingSubmoduleAccessMessage = <name extends string>(
 export type writeMissingSubmoduleAccessMessage<name extends string> =
 	`Reference to submodule '${name}' must specify an alias`
 
-export const bindCompiledScope = (references: readonly BaseNode[]): void => {
-	const compiledTraversals = compileScope(references)
+export const bindPrecompilation = (references: readonly BaseNode[]): void => {
+	const precompilation = writePrecompilation(references)
+	const compiledTraversals = instantiatePrecompilation(precompilation)
 	for (const node of references) {
-		if (node.jit) {
+		if (node.precompilation) {
 			// if node has already been bound to another scope or anonymous type, don't rebind it
 			continue
 		}
@@ -614,41 +619,30 @@ export const bindCompiledScope = (references: readonly BaseNode[]): void => {
 		}
 		node.traverseApply =
 			compiledTraversals[`${node.id}Apply`].bind(compiledTraversals)
-		node.jit = true
+		node.precompilation = precompilation
 	}
 }
 
-const compileScope = (references: readonly BaseNode[]) =>
-	new CompiledFunction()
-		.block("return", js => {
-			references.forEach(node => {
-				const allowsCompiler = new NodeCompiler("Allows").indent()
-				js.block(
-					`${node.id}Allows(${allowsCompiler.argNames.join(", ")})`,
-					js => {
-						node.compile(allowsCompiler)
-						return js.line(allowsCompiler.body)
-					},
-					","
-				)
-				const applyCompiler = new NodeCompiler("Apply").indent()
-				js.block(
-					`${node.id}Apply(${applyCompiler.argNames.join(", ")})`,
-					js => {
-						node.compile(applyCompiler)
-						return js.line(applyCompiler.body)
-					},
-					","
-				)
-			})
-			return js
-		})
-		.compile<
-			() => {
-				[k: `${string}Allows`]: TraverseAllows
-				[k: `${string}Apply`]: TraverseApply
-			}
-		>()()
+const instantiatePrecompilation = (precompilation: string) =>
+	new CompiledFunction().return(precompilation).compile<
+		() => {
+			[k: `${string}Allows`]: TraverseAllows
+			[k: `${string}Apply`]: TraverseApply
+		}
+	>()()
+
+const writePrecompilation = (references: readonly BaseNode[]) =>
+	references.reduce((js, node) => {
+		const allowsCompiler = new NodeCompiler("Allows")
+		node.compile(allowsCompiler)
+		const allowsJs = allowsCompiler.write(`${node.id}Allows`)
+
+		const applyCompiler = new NodeCompiler("Apply")
+		node.compile(applyCompiler)
+		const applyJs = applyCompiler.write(`${node.id}Apply`)
+
+		return `${js}\t${allowsJs},\t${applyJs},\n`
+	}, "{\n") + "}"
 
 // ensure the scope is resolved so JIT will be applied to future types
 rootSchemaScope.export()

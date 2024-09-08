@@ -109,6 +109,12 @@ export class CompiledFunction<
 		return this.line(`return ${expression}`)
 	}
 
+	write(name = "anonymous"): string {
+		return `${name}(${this.argNames.join(", ")}) {
+${this.body}
+}`
+	}
+
 	compile<
 		f extends (
 			...args: {

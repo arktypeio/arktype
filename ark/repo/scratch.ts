@@ -1,7 +1,7 @@
 import { type } from "arktype"
 
-const t = type(["string", "string"])
-	.array()
-	.or(["null", "=>", () => undefined])
+const t = type({ foo: "1" })
+	.or({ bar: "1" })
+	.pipe(o => Object.values(o))
 
-const T = t.infer
+console.log(t.internal.precompilation)

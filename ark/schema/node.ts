@@ -195,7 +195,7 @@ export abstract class BaseNode<
 	}
 
 	readonly precedence: number = precedenceOfKind(this.kind)
-	jit = false
+	precompilation: string | undefined
 
 	allows = (data: d["prerequisite"]): boolean => {
 		if (this.allowsRequiresContext) {
