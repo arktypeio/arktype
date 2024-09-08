@@ -5,6 +5,7 @@ import {
 	type NodeSchema,
 	type Optional,
 	type Required,
+	type RootSchema,
 	type Structure,
 	type UndeclaredKeyBehavior,
 	type writeInvalidPropertyKeyMessage
@@ -32,7 +33,10 @@ import type { inferDefinition, validateDefinition } from "./definition.ts"
 import type { astToString } from "./semantic/utils.ts"
 import type { validateString } from "./semantic/validate.ts"
 
-export const parseObjectLiteral = (def: Dict, ctx: ParseContext): BaseRoot => {
+export const parseObjectLiteral = (
+	def: Dict,
+	ctx: ParseContext
+): RootSchema => {
 	let spread: Structure.Node | undefined
 	const structure: mutable<NodeSchema<"structure">, 2> = {}
 	// We only allow a spread operator to be used as the first key in an object
@@ -67,10 +71,10 @@ export const parseObjectLiteral = (def: Dict, ctx: ParseContext): BaseRoot => {
 
 	const structureNode = ctx.$.node("structure", structure)
 
-	return ctx.$.rootNode({
+	return {
 		domain: "object",
 		structure: spread?.merge(structureNode) ?? structureNode
-	})
+	}
 }
 
 export const writeInvalidUndeclaredBehaviorMessage = (

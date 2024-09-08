@@ -5,6 +5,7 @@ import {
 	type GenericAst,
 	type GenericRoot,
 	type PrivateDeclaration,
+	type RootSchema,
 	type arkKind,
 	type genericParamNames,
 	type resolvableReferenceIn,
@@ -40,7 +41,7 @@ import {
 export const parseUnenclosed = (s: DynamicState): void => {
 	const token = s.scanner.shiftUntilNextTerminator()
 	if (token === "keyof") s.addPrefix("keyof")
-	else s.root = unenclosedToNode(s, token)
+	else s.root = unenclosedToSchema(s, token)
 }
 
 export type parseUnenclosed<s extends StaticState, $, args> =
@@ -103,7 +104,7 @@ export type parseGenericInstantiation<
 			>
 		>
 
-const unenclosedToNode = (s: DynamicState, token: string): BaseRoot =>
+const unenclosedToSchema = (s: DynamicState, token: string): RootSchema =>
 	maybeParseReference(s, token) ??
 	maybeParseUnenclosedLiteral(s, token) ??
 	s.error(
@@ -116,7 +117,7 @@ const unenclosedToNode = (s: DynamicState, token: string): BaseRoot =>
 const maybeParseReference = (
 	s: DynamicState,
 	token: string
-): BaseRoot | undefined => {
+): RootSchema | undefined => {
 	if (s.ctx.args?.[token]) {
 		const arg = s.ctx.args[token]
 		return typeof arg === "string" ?
