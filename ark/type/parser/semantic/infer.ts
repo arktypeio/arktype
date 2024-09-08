@@ -1,6 +1,7 @@
 import type { GenericAst } from "@ark/schema"
 import type { Hkt, array } from "@ark/util"
 import type { inferIntersection } from "../../intersect.ts"
+import type { arkKeyOf } from "../../keys.ts"
 import type { type } from "../../keywords/ark.ts"
 import type {
 	Default,
@@ -95,7 +96,7 @@ export type inferExpression<ast, $, args> =
 				"divisor",
 				ast[2] & number
 			>
-		: ast[0] extends "keyof" ? keyof inferExpression<ast[1], $, args>
+		: ast[0] extends "keyof" ? arkKeyOf<inferExpression<ast[1], $, args>>
 		: never
 	:	never
 

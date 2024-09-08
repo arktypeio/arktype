@@ -1,5 +1,5 @@
 import type { array, ErrorType, merge } from "@ark/util"
-import type { arkKeyOf, getArkKey, toArkKey } from "../keys.ts"
+import type { arkGet, arkKeyOf, toArkKey } from "../keys.ts"
 import type { type } from "../keywords/ark.ts"
 import type { ArrayType } from "./array.ts"
 import type { instantiateType } from "./instantiate.ts"
@@ -11,24 +11,24 @@ interface Type<out t extends object = object, $ = {}>
 	readonly(): t extends array ? ArrayType<{ readonly [i in keyof t]: t[i] }, $>
 	:	Type<{ readonly [k in keyof t]: t[k] }, $>
 
-	keyof(): instantiateType<keyof t, $>
+	keyof(): instantiateType<arkKeyOf<t>, $>
 
-	get<k1 extends arkKeyOf<t>, r = instantiateType<getArkKey<t, k1>, $>>(
+	get<k1 extends arkKeyOf<t>, r = instantiateType<arkGet<t, k1>, $>>(
 		k1: k1 | type.cast<k1>
 	): r
 	get<
 		k1 extends arkKeyOf<t>,
-		k2 extends arkKeyOf<getArkKey<t, k1>>,
-		r = instantiateType<getArkKey<getArkKey<t, k1>, k2>, $>
+		k2 extends arkKeyOf<arkGet<t, k1>>,
+		r = instantiateType<arkGet<arkGet<t, k1>, k2>, $>
 	>(
 		k1: k1 | type.cast<k1>,
 		k2: k2 | type.cast<k2>
 	): r
 	get<
 		k1 extends arkKeyOf<t>,
-		k2 extends arkKeyOf<getArkKey<t, k1>>,
-		k3 extends arkKeyOf<getArkKey<getArkKey<t, k1>, k2>>,
-		r = instantiateType<getArkKey<getArkKey<getArkKey<t, k1>, k2>, k3>, $>
+		k2 extends arkKeyOf<arkGet<t, k1>>,
+		k3 extends arkKeyOf<arkGet<arkGet<t, k1>, k2>>,
+		r = instantiateType<arkGet<arkGet<arkGet<t, k1>, k2>, k3>, $>
 	>(
 		k1: k1 | type.cast<k1>,
 		k2: k2 | type.cast<k2>,
