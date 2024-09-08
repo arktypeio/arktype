@@ -34,12 +34,6 @@ export const forTypeScriptVersions = (
 		for (const version of versions) {
 			const targetPath =
 				version.path === tsPrimaryPath ? tsTemporaryPath : version.path
-			const tsPackageJson = readJson(join(targetPath, "package.json"))
-			if (tsPackageJson.name !== "typescript") {
-				throw new Error(
-					`Expected to find a TypeScript version ${version.version} at ${version.path}`
-				)
-			}
 			console.log(
 				`⛵ Switching to TypeScript version ${version.alias} (${version.version})...`
 			)
@@ -82,10 +76,12 @@ export type TsVersionData = {
 	path: string
 }
 
+const possibleTsVersionPrefix = "typescript"
+const strictTsVersionPrefix = "@ark/attest-ts-"
+
 /**
  * Find and return the paths of all installed TypeScript versions, including the
- * primary version installed as "typescript" and all dependencies beginning with
- * "typescript-".
+ * all dependencies beginning with "typescript" or "@ark/attest-ts-".
  *
  * Starts checking from the current directory and looks for node_modules in parent
  * directories up to the file system root.
@@ -93,10 +89,10 @@ export type TsVersionData = {
  * Alternate versions can be installed using a package.json dependency like:
  *
  * ```json
- * "typescript-latest": "npm:typescript@latest"
+ * "@ark/attest-ts-min": "npm:typescript@5.1.6"
  * ```
  * @returns {TsVersionData[]} Each version mapped to data, e.g.:
- * 		{alias: "typescript-latest", version: "5.3.3", path: "/home/ssalb/arktype/node_modules/typescript-latest" }
+ * 		{alias: "@ark/attest-ts-min", version: "5.1.6", path: "/home/ssalb/arktype/node_modules/@ark/attest-ts-min" } *
  *
  * @throws {Error} If a TypeScript version specified in package.json is not
  * installed at the expected location in node_modules.
@@ -117,19 +113,29 @@ export const findAttestTypeScriptVersions = (): TsVersionData[] => {
 			...(packageJson.devDependencies as object)
 		}
 		for (const alias in dependencies) {
-			if (!alias.startsWith("typescript")) continue
-			if (alias.includes("eslint", 10)) continue
+			if (
+				!alias.startsWith(possibleTsVersionPrefix) &&
+				!alias.startsWith(strictTsVersionPrefix)
+			)
+				continue
+
 			const path = join(nodeModulesPath, alias)
 			if (!existsSync(path)) {
 				throw Error(
 					`TypeScript version ${alias} specified in ${packageJsonPath} must be installed at ${path} `
 				)
 			}
-			const version: string = readJson(join(path, "package.json"))
-				.version as string
+			const typescriptJson = readJson(join(path, "package.json"))
+
+			if (typescriptJson.name !== "typescript") {
+				if (alias.startsWith(strictTsVersionPrefix))
+					throw new Error(`Package at ${path} should be named "typescript"`)
+				continue
+			}
+
 			versions.push({
 				alias,
-				version,
+				version: typescriptJson.version as string,
 				path
 			})
 		}
