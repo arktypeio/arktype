@@ -13,6 +13,7 @@ import { emptyGenericParameterMessage } from "arktype/internal/generic.ts"
 import { writeUnclosedGroupMessage } from "arktype/internal/parser/string/reduce/shared.ts"
 import { writeInvalidGenericArgCountMessage } from "arktype/internal/parser/string/shift/operand/genericArgs.ts"
 import { writeInvalidDivisorMessage } from "arktype/internal/parser/string/shift/operator/divisor.ts"
+import { writeUnexpectedCharacterMessage } from "arktype/internal/parser/string/shift/operator/operator.ts"
 
 contextualize(() => {
 	describe("standalone", () => {
@@ -288,20 +289,19 @@ contextualize(() => {
 				attest(t.json).equals(expected.json)
 			})
 
-			// TODO: this (https://github.com/arktypeio/arktype/issues/1081)
-			// it("this in args", ({ $ }) => {
-			// 	const t = $.type("box<0,  this>")
-			// 	type Expected = {
-			// 		box: 0 | Expected
-			// 	}
-			// 	const standalone = type({
-			// 		box: "0|this"
-			// 	})
+			it("this in args", ({ $ }) => {
+				const t = $.type("box<0,  this>")
+				type Expected = {
+					box: 0 | Expected
+				}
+				const standalone = type({
+					box: "0|this"
+				})
 
-			// 	attest<Expected>(t.t)
-			// 	attest<Expected>(standalone.t)
-			// 	attest(t.json).equals(standalone.json)
-			// })
+				attest<Expected>(t.t)
+				attest<Expected>(standalone.t)
+				attest(t.json).equals(standalone.json)
+			})
 
 			it("right bounds", ({ $ }) => {
 				// should be able to differentiate between > that is part of a right
@@ -323,13 +323,12 @@ contextualize(() => {
 				)
 			})
 
-			// TODO: this (https://github.com/arktypeio/arktype/issues/1081)
-			// it("extra >", ({ $ }) => {
-			// 	attest(() =>
-			// 		// @ts-expect-error
-			// 		$.type("box<0,  this>>")
-			// 	).throwsAndHasTypeError(writeUnexpectedCharacterMessage(">"))
-			// })
+			it("extra >", ({ $ }) => {
+				attest(() =>
+					// @ts-expect-error
+					$.type("box<0,  this>>")
+				).throwsAndHasTypeError(writeUnexpectedCharacterMessage(">"))
+			})
 
 			it("too few args", ({ $ }) => {
 				attest(() =>

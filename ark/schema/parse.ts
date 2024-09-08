@@ -91,7 +91,7 @@ const discriminateRootKind = (schema: unknown): RootKind => {
 
 	if ("unit" in schema) return "unit"
 
-	if ("alias" in schema) return "alias"
+	if ("reference" in schema) return "alias"
 
 	const schemaKeys = Object.keys(schema)
 

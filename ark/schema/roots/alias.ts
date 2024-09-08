@@ -1,8 +1,8 @@
 import {
 	append,
 	domainDescriptions,
-	throwParseError,
-	type PartialRecord
+	throwInternalError,
+	throwParseError
 } from "@ark/util"
 import { nodesById, type NodeId } from "../parse.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
@@ -10,7 +10,6 @@ import type { BaseNormalizedSchema, declareNode } from "../shared/declare.ts"
 import { Disjoint } from "../shared/disjoint.ts"
 import {
 	implementNode,
-	rootKinds,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
 import { intersectNodes } from "../shared/intersections.ts"
@@ -20,6 +19,7 @@ import {
 } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.ts"
+import { hasArkKind } from "../shared/utils.ts"
 import { BaseRoot } from "./root.ts"
 import { defineRightwardIntersections } from "./utils.ts"
 
@@ -74,12 +74,12 @@ const implementation: nodeImplementationOf<Alias.Declaration> =
 				ctx.$.lazilyResolve(
 					() =>
 						neverIfDisjoint(intersectNodes(l.resolution, r.resolution, ctx)),
-					`${l.alias}${ctx.pipe ? "=>" : "&"}${r.alias}`
+					`${l.reference}${ctx.pipe ? "=>" : "&"}${r.reference}`
 				),
 			...defineRightwardIntersections("alias", (l, r, ctx) =>
 				ctx.$.lazilyResolve(
 					() => neverIfDisjoint(intersectNodes(l.resolution, r, ctx)),
-					`${l.alias}${ctx.pipe ? "=>" : "&"}${r.alias}`
+					`${l.reference}${ctx.pipe ? "=>" : "&"}${r.id}`
 				)
 			)
 		}
@@ -90,12 +90,7 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 	readonly structure = undefined
 
 	get resolution(): BaseRoot {
-		if (this.resolve) {
-			return this.cacheGetter(
-				"resolution",
-				this.resolve?.() ?? this.$.resolveRoot(this.reference)
-			)
-		}
+		if (this.resolve) return this.cacheGetter("resolution", this.resolve())
 
 		if (this.reference[0] === "$")
 			return this.$.resolveRoot(this.reference.slice(1))
@@ -103,18 +98,20 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 		const id = this.reference as NodeId
 
 		let resolution = nodesById[id]
-		const seen: PartialRecord<NodeId> = {}
+		const seen: NodeId[] = []
 		while (typeof resolution === "string") {
-			if (seen[resolution])
-				return throwParseError(`Unable to resolve cyclic id ${resolution}`)
+			if (seen.includes(resolution))
+				return throwParseError(writeShallowCycleErrorMessage(resolution, seen))
 
-			seen[resolution] = true
+			seen.push(resolution)
 			resolution = nodesById[resolution]
 		}
-		return this.cacheGetter(
-			"resolution",
-			resolution.assertHasKindIn(...rootKinds)
-		)
+		if (!hasArkKind(resolution, "root")) {
+			return throwInternalError(`Unexpected resolution for reference ${this.reference}
+Seen: [${seen.join("->")}] 
+Resolution: ${resolution}`)
+		}
+		return this.cacheGetter("resolution", resolution)
 	}
 
 	get shortDescription(): string {
@@ -147,6 +144,12 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 		js.return(js.invoke(this.resolution))
 	}
 }
+
+export const writeShallowCycleErrorMessage = (
+	name: string,
+	seen: string[]
+): string =>
+	`Alias '${name}' has a shallow resolution cycle: ${[...seen, name].join("->")}`
 
 export const Alias = {
 	implementation,

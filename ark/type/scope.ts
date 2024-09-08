@@ -419,12 +419,6 @@ export interface ScopeConstructor {
 
 export const Scope: ScopeConstructor = InternalScope as never
 
-export const writeShallowCycleErrorMessage = (
-	name: string,
-	seen: string[]
-): string =>
-	`Alias '${name}' has a shallow resolution cycle: ${[...seen, name].join(":")}`
-
 export type parseScopeKey<k, def> =
 	// trying to infer against GenericDeclaration here directly also fails as of TS 5.5
 	k extends `${infer name}<${infer params}>` ?

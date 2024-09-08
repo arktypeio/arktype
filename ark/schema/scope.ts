@@ -50,7 +50,7 @@ import {
 import { Alias } from "./roots/alias.ts"
 import type { BaseRoot } from "./roots/root.ts"
 import { CompiledFunction, NodeCompiler } from "./shared/compile.ts"
-import type { NodeKind, RootKind } from "./shared/implement.ts"
+import { rootKinds, type NodeKind, type RootKind } from "./shared/implement.ts"
 import { $ark } from "./shared/registry.ts"
 import type { TraverseAllows, TraverseApply } from "./shared/traversal.ts"
 import { arkKind, hasArkKind, isNode } from "./shared/utils.ts"
@@ -228,11 +228,15 @@ export class SchemaScope<$ extends {} = {}> {
 		if (isNode(schema) && schema.kind === kind) return schema
 
 		if (kind === "alias" && !opts?.prereduced) {
-			const resolution = this.resolveRoot(
-				Alias.implementation.normalize(schema as never, this).reference
+			const { reference } = Alias.implementation.normalize(
+				schema as never,
+				this
 			)
-			schema = resolution
-			kind = resolution.kind
+			if (reference.startsWith("$")) {
+				const resolution = this.resolveRoot(reference.slice(1))
+				schema = resolution
+				kind = resolution.kind
+			}
 		} else if (kind === "union" && hasDomain(schema, "object")) {
 			const branches = schemaBranchesOf(schema)
 			if (branches?.length === 1) {
@@ -356,18 +360,25 @@ export class SchemaScope<$ extends {} = {}> {
 
 		if (!def) return this.maybeResolveSubalias(name)
 
-		const preparsed = this.preparseRoot(def)
-		if (hasArkKind(preparsed, "generic"))
-			return (this.resolutions[name] = this.bindReference(preparsed))
+		const preparsedDef = this.preparseRoot(def)
+		if (hasArkKind(preparsedDef, "generic"))
+			return (this.resolutions[name] = this.bindReference(preparsedDef))
 
-		if (hasArkKind(preparsed, "module")) {
-			if (preparsed.root)
-				return (this.resolutions[name] = this.bindReference(preparsed.root))
+		if (hasArkKind(preparsedDef, "module")) {
+			if (preparsedDef.root)
+				return (this.resolutions[name] = this.bindReference(preparsedDef.root))
 			else return throwParseError(writeMissingSubmoduleAccessMessage(name))
 		}
 
-		this.resolutions[name] = name
-		return (this.resolutions[name] = this.parse(preparsed, {
+		const ctxOrNode = this.preparseNode(rootKinds, preparsedDef, {
+			alias: name
+		})
+
+		if (hasArkKind(ctxOrNode, "root"))
+			return (this.resolutions[name] = ctxOrNode)
+
+		this.resolutions[name] = ctxOrNode.id
+		return (this.resolutions[name] = this.parse(preparsedDef, {
 			alias: name
 		}))
 	}
