@@ -18,7 +18,8 @@ import type {
 	mutableInnerOfKind,
 	nodeOfKind,
 	NodeSchema,
-	Prerequisite
+	Prerequisite,
+	RootSchema
 } from "../kinds.ts"
 import type { PredicateNode } from "../predicate.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
@@ -41,6 +42,7 @@ import {
 } from "../shared/implement.ts"
 import { intersectNodes } from "../shared/intersections.ts"
 import type { JsonSchema } from "../shared/jsonSchema.ts"
+import { $ark } from "../shared/registry.ts"
 import type { TraverseAllows, TraverseApply } from "../shared/traversal.ts"
 import { hasArkKind, isNode } from "../shared/utils.ts"
 import type { Sequence } from "../structure/sequence.ts"
@@ -73,14 +75,25 @@ export declare namespace Intersection {
 
 	export type MutableInner = mutableInnerOfKind<"intersection">
 
-	export type NormalizedSchema = Omit<Schema, StructuralKind | "undeclared">
-
-	export type Schema<inferredBasis = any> = show<
+	export type ConstraintsSchema<inferredBasis = any> = show<
 		BaseNormalizedSchema & {
 			domain?: Domain.Schema
 			proto?: Proto.Schema
 		} & conditionalRootOf<inferredBasis>
 	>
+
+	export type NormalizedSchema = Omit<
+		ConstraintsSchema,
+		StructuralKind | "undeclared"
+	>
+
+	export type Schema<inferredBasis = any> =
+		| ConstraintsSchema<inferredBasis>
+		| AstSchema
+
+	export interface AstSchema extends BaseNormalizedSchema {
+		intersection: readonly RootSchema[]
+	}
 
 	export interface ErrorContext
 		extends BaseErrorContext<"intersection">,
@@ -107,6 +120,13 @@ const implementation: nodeImplementationOf<Intersection.Declaration> =
 		hasAssociatedError: true,
 		normalize: rawSchema => {
 			if (isNode(rawSchema)) return rawSchema
+			if ("intersection" in rawSchema) {
+				return rawSchema.intersection.reduce(
+					(node, schema) => node.and(schema),
+					$ark.intrinsic.unknown
+				)
+			}
+
 			const { structure, ...schema } = rawSchema
 			const hasRootStructureKey = !!structure
 			const normalizedStructure = (structure as mutable<Structure.Schema>) ?? {}
